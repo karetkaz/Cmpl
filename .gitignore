@@ -1,0 +1,17 @@
+**/cmake-build-*/
+**/.*/
+**/out
+**/tmp
+
+*.o
+*.a
+*.so
+*.dll
+*.dylib
+*.wasm
+main
+*.exe
+*.tmp
+*.suo
+*.sdf
+*.user
