@@ -32,7 +32,7 @@ int gx_initSurf(gx_Surf s, gx_Clip clip, gx_Clut clut, int flags) {
 		} else return -3;
 	} else s->clipPtr = clip;
 	//~ s->movePtr = s->offsPtr = 0;
-	gx_initdraw(s, rop2_cpy);
+	//~ gx_initdraw(s, rop2_cpy);
 	return 0;
 }
 
@@ -171,11 +171,11 @@ extern void callcolcpy(void colcpy(void), void* dst, void* src, unsigned cnt);
 		modify [eax edx ecx esi edi]\
 		value [] = "call ebx";
 
-extern long mixpix(void fn(void), long col2, long col1, long alpha8);
-extern void setpix(void fn(void), void* dst, long col);
+//~ extern long mixpix(void fn(void), long col2, long col1, long alpha8);
+//~ extern void setpix(void fn(void), void* dst, long col);
 
-#pragma aux setpix parm [edx] [edi] [eax] modify [edx] = "call edx";
-#pragma aux mixpix parm [ebx] [eax] [edx] [ecx] modify [edx] value [eax] = "call ebx";
+//~ #pragma aux setpix parm [edx] [edi] [eax] modify [edx] = "call edx";
+//~ #pragma aux mixpix parm [ebx] [eax] [edx] [ecx] modify [edx] value [eax] = "call ebx";
 //~ #pragma aux sumpix parm [ebx] [esi] [edx] [ecx] modify [edx ecx] value [eax] = "call ebx";
 
 #define bilinear
@@ -183,7 +183,7 @@ extern void setpix(void fn(void), void* dst, long col);
 void gx_zoomsurf(gx_Surf dst, gx_Rect rect, gx_Surf src, gx_Rect roi, int lin) {
 	struct gx_Rect_t drec, srec;
 	//~ void (*mixpfn)(void)=0;
-	void (*setpfn)(void)=0;
+	//~ void (*setpfn)(void)=0;
 	long (*getpix)(gx_Surf, long, long);
 	long dx, dy, sx, sy, y;
 	char *d, *dptr;
@@ -207,7 +207,7 @@ void gx_zoomsurf(gx_Surf dst, gx_Rect rect, gx_Surf src, gx_Rect roi, int lin) {
 		drec.w = dst->width;
 		drec.h = dst->height;
 	} else drec = *rect;
-	switch (dst->depth) {
+	/*switch (dst->depth) {
 		extern void setpix_32(void);
 		extern void setpix_24(void);
 		extern void setpix_16(void);
@@ -218,7 +218,7 @@ void gx_zoomsurf(gx_Surf dst, gx_Rect rect, gx_Surf src, gx_Rect roi, int lin) {
 		case 16 : setpfn = setpix_16; break;
 		case  8 : setpfn = setpix_08; break;
 		default : return;
-	}
+	}*/
 	if (drec.w <= 0 || drec.h <= 0) return;
 	if (srec.w <= 0 || srec.h <= 0) return;
 	if (!(dptr = (char*)gx_cliprect(dst, &drec))) return;
@@ -235,7 +235,8 @@ void gx_zoomsurf(gx_Surf dst, gx_Rect rect, gx_Surf src, gx_Rect roi, int lin) {
 		for (d = dptr, sx = srec.x << 16; x < drec.w; ++x) {
 			//~ long c00 = gx_getpnear(src, sx, sy);
 			//~ long c00 = getpix(src, sx, sy);
-			setpix(setpfn, d, getpix(src, sx, sy));
+			//~ setpix(setpfn, d, getpix(src, sx, sy));
+			gx_setpixel(dst, sx >> 16, sy >> 16, getpix(src, sx, sy));
 			d += dst->pixeLen; sx += dx;
 		}
 		dptr += dst->scanLen; sy += dy;
@@ -331,7 +332,7 @@ int  gx_loadFNT(gx_Surf dst, const char* fontfile) {
 	dst->depth = 8;
 	dst->pixeLen = 1;
 	dst->scanLen = 8;
-	gx_initdraw(dst, rop2_cpy);
+	//~ gx_initdraw(dst, rop2_cpy);
 	
 	//~ dst->clutPtr;		// clutPtr / cibgPtr (cursor BG data) / ...
 	//~ dst->basePtr;		// always base of surface
@@ -410,6 +411,7 @@ void gx_drawText(gx_Surf dst, int x, int y, gx_Surf fnt, const char *str, long c
 }
 
 unsigned char gx_buff[65536*4];
+
 pattern	gx_patt[]={
 	{0xff, 0xff, 0x00, 0x00, 0xff, 0xff, 0x00, 0x00},	//  0 |	====	line
 	{0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80},	//  1 |	 / /	liteslash

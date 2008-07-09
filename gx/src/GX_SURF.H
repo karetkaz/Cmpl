@@ -178,7 +178,7 @@ extern void	gx_destroySurf(gx_Surf surf);
 //{		DRV_RAS.asm
 
 extern int	gx_locksurf(gx_Surf, long lock);
-extern int	gx_initdraw(gx_Surf, cblt_mode);
+//~ extern int	gx_initdraw(gx_Surf, cblt_mode);
 extern void*	gx_cliprect(gx_Surf, gx_Rect);
 //~ extern void*	gx_clipclip(gx_Surf, gx_Clip);
 
@@ -188,10 +188,10 @@ extern long	gx_getpixel(gx_Surf, int, int);				// Get Pixel
 extern long	gx_getpnear(gx_Surf, long, long);				// Get Pixel
 extern long	gx_getpnlin(gx_Surf, long, long);				// Get Pixel
 extern void	gx_setpixel(gx_Surf, int, int, long);			// Set Pixel
-extern void	gx_sethline(gx_Surf, int, int, int, long);		// Horizontal Line
-extern void	gx_setvline(gx_Surf, int, int, int, long);		// Verical Line
+//~ extern void	gx_sethline(gx_Surf, int, int, int, long);		// Horizontal Line
+//~ extern void	gx_setvline(gx_Surf, int, int, int, long);		// Verical Line
 extern void	gx_setblock(gx_Surf, int, int, int, int, long);		// Block (bar)
-extern void	gx_setpline(gx_Surf, int, int, int, long, pattern);	// Pattern Line
+//~ extern void	gx_setpline(gx_Surf, int, int, int, long, pattern);	// Pattern Line
 
 typedef void (*cblt_proc)(void);
 

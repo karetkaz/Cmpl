@@ -126,7 +126,7 @@ gx_Surf struc				; Surface
 	movePtr			dd ?		; + 32
 gx_Surf ends
 
-extern gx_initdraw : proc
+; extern gx_initdraw : proc
 
 .data
 
@@ -546,10 +546,10 @@ gx_modeopen:		; int gx_modeopen(gx_Surf, int Hres, int Vres, int Depth, CRTCInfo
 	mov	[edx].gx_Surf.clutPtr, 0
 	mov	eax, PageBase
 	mov	[edx].gx_Surf.basePtr, eax
-	push	0
-	push	edx
-	call	gx_initdraw
-	add	esp, 8
+	; push	0
+	; push	edx
+	; call	gx_initdraw
+	; add	esp, 8
 	gx_modeopen_exit1:
 	popad
 	xor	eax, eax

@@ -258,12 +258,27 @@ inline vecptr veccpy(vecptr dst, vecptr src) {
 	return dst;
 }
 
-
 inline vecptr vecneg(vecptr dst, vecptr src) {
 	dst->x = -src->x;
 	dst->y = -src->y;
 	dst->z = -src->z;
 	dst->w = -src->w;
+	return dst;
+}
+
+inline vecptr vecabs(vecptr dst, vecptr src) {
+	dst->x = src->x >= 0 ? src->x : -src->x;
+	dst->y = src->y >= 0 ? src->y : -src->y;
+	dst->z = src->z >= 0 ? src->z : -src->z;
+	dst->w = src->w >= 0 ? src->w : -src->w;
+	return dst;
+}
+
+inline vecptr vecrcp(vecptr dst, vecptr src) {
+	dst->x = src->x ? 1. / src->x : 0;
+	dst->y = src->y ? 1. / src->y : 0;
+	dst->z = src->z ? 1. / src->z : 0;
+	dst->w = src->w ? 1. / src->w : 0;
 	return dst;
 }
 
@@ -590,6 +605,28 @@ matptr matldR(matptr dst, vecptr dir, scalar ang) {
 	return dst;
 }
 
+matptr matldS(matptr dst, vecptr dir, scalar cnt) {
+	vector tmp;
+	matidn(dst);
+	vecsca(&tmp, dir, cnt);
+	dst->xx = tmp.x;
+	dst->yy = tmp.y;
+	dst->zz = tmp.z;
+	//~ dst->ww = tmp.w;
+	return dst;
+}
+
+matptr matldT(matptr dst, vecptr dir, scalar cnt) {
+	vector tmp;
+	matidn(dst);
+	vecsca(&tmp, dir, cnt);
+	dst->xt = tmp.x;
+	dst->yt = tmp.y;
+	dst->zt = tmp.z;
+	//~ dst->wt = tmp.w;
+	return dst;
+}
+
 void ortho_mat(matptr dst, float l, float r, float b, float t, float n, float f) {
 	float	rl = r - l, tb = t - b, nf = n - f;
 	if (rl == 0. || tb  == 0. || nf  == 0. ) return;
@@ -733,15 +770,6 @@ argb matrgb(matptr mat, argb rgb) {
 	vecldc(&tmp, rgb);
 	matvp3(&tmp, mat, &tmp);
 	return vecrgb(&tmp);
-}
-
-vecptr matvp2(vecptr dst, matptr mat, vecptr src) {
-	vector tmp;
-	if (src == dst)
-		src = veccpy(&tmp, src);
-	dst->x = vecdp2(&mat->x, src);
-	dst->y = vecdp2(&mat->y, src);
-	return dst;
 }
 */
 

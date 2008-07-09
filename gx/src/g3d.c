@@ -63,14 +63,14 @@ typedef float scalar;
 
 #define MCGA 0
 
-//~ #define SCRW (1280)
-//~ #define SCRH (1024)
+#define SCRW (1280)
+#define SCRH (1024)
 
 //~ #define SCRW (640)
 //~ #define SCRH (480)
 
-#define SCRW (320)
-#define SCRH (240)
+//~ #define SCRW (320)
+//~ #define SCRH (240)
 
 #define SCRD (32)
 
@@ -167,10 +167,11 @@ static struct {			// lights
 	//~ vector	attn;		// attenuation = 1 / (K1 + K2 · dist + K3 · dist ** 2)
 	//~ scalar	spot;		// == 1
 }
+
 Lights[] = {
 	{	// light0
 		L_on,
-		{{150, 150, 150, 1}},	// lpos
+		{{15, 15, 15, 1}},	// lpos
 		//~ {{0., 0., 0., 1}},	// ldir
 		{{.8, .0, .0, 1}},	// ambi
 		{{1., 0., 1., 1}},	// diff
@@ -178,7 +179,7 @@ Lights[] = {
 		}, // * /
 	{	// light1
 		L_on,
-		{{150, 0, -150, 1}},	// lpos
+		{{15, 0, -15, 1}},	// lpos
 		//~ {{0., 0., 0., 1}},	// ldir
 		{{.2, .2, .2, 1}},	// ambi
 		{{1., 1., 1., 1}},	// diff
@@ -192,7 +193,9 @@ struct mat {			// material
 	vector diff;		// Diffuse
 	vector spec;		// Specular
 	scalar spow;
-} material = {
+}
+
+material = {
 	{{.0, .0, .0, 1}},		// emissive color
 	{{.8, .8, .8, 1}},		// ambient color
 	{{.8, .8, .8, 1}},		// diffuse color
@@ -323,7 +326,7 @@ inline argb lit(vecptr pos, vecptr nrm, vecptr eye, matptr view) {
 	veccpy(&col, &material.emis);
 	for (i = 0; i < n; i += 1) if (Lights[i].attr & L_on) {
 		scalar dotp;
-		vector tmp, lp, k, L, R;
+		vector tmp, lp, k, L;//, R;
 		mapvec(&lp, view, &Lights[i].lpos);
 
 		// Ambient
@@ -339,7 +342,7 @@ inline argb lit(vecptr pos, vecptr nrm, vecptr eye, matptr view) {
 		} // */
 
 		// Specular
-		//~ vecnrm(&R, reflect(&tmp, eye, pos));
+		/*/~ vecnrm(&R, reflect(&tmp, eye, pos));
 		vecnrm(&R, vecsub(&tmp, &L, pos));
 		if ((dotp = vecdp3(nrm, &R)) > 0) {
 			vecmul(&k, &material.spec, &Lights[i].spec);
@@ -449,6 +452,8 @@ void prelit(argb c[], vecptr eye, matptr view) {
 }// */
 
 void g3_setpixel(gx_Surf s, int x, int y, unsigned z, long c) {
+	if ((unsigned)x >= (unsigned)SCRW) return;
+	if ((unsigned)y >= (unsigned)SCRH) return;
 	if (zBuff[y * SCRW + x] >= z) {
 		zBuff[y * SCRW + x] = z;
 		gx_setpixel(s, x, y, c);
@@ -459,8 +464,6 @@ void g3_setpixel(gx_Surf s, int x, int y, unsigned z, long c) {
 void g3_putpixel(gx_Surf s, vecptr p1, int c) {
 	long x = scatoi((SCRW-1) * (sconst(1) + p1->x) / 2);
 	long y = scatoi((SCRH-1) * (sconst(1) - p1->y) / 2);
-	if (x < 0 || x >= SCRW) return;
-	if (y < 0 || y >= SCRH) return;
 	g3_setpixel(s, x, y, stof24((sconst(1) - p1->z) / 2), c);
 }
 
@@ -527,7 +530,7 @@ void g3_drawline(gx_Surf s, vecptr p1, vecptr p2, long c) {
 	//g3_setpixel(s,x2,y2,z2,c);
 }
 
-/*void g3_drawoval(gx_Surf s, vecptr p1, long rx, long ry, long c) {
+void g3_drawoval(gx_Surf s, vecptr p1, long rx, long ry, long c) {
 	long r;
 	long x0, x1, sx, dx = 0;
 	long y0, y1, sy, dy = 0;
@@ -600,11 +603,13 @@ void g3_filloval(gx_Surf s, vecptr p1, long rx, long ry, long c) {
 			y0++; y1--;
 			r += dy -= sx;
 		}
+		if (y0 < 0 || y1 >= SCRH) continue;
+		if (x0 < 0) x0 = 0;
+		if (x1 > SCRW) x1 = SCRW;
 		for (x = x0; x < x1; x += 1) g3_setpixel(s,x,y0,z,c);
 		for (x = x0; x < x1; x += 1) g3_setpixel(s,x,y1,z,c);
 	}
 }
-//*/
 
 void g3_fill3gon(gx_Surf s, vector *p, texpos *t, argb *c, int i1, int i2, int i3) {
 	argb (*tex2D)(gx_Surf, long, long) = 0;
@@ -921,12 +926,57 @@ void g3_drawmesh(gx_Surf s, camera_p cam) {		// this should be wireframe
 	}
 	if (draw & dspL) for (i = 0; i < sizeof(Lights) / sizeof(*Lights); i += 1) {
 		vector lp;
-		long col = vecrgb(&Lights[i].ambi).col;
+		long siz, col = vecrgb(&Lights[i].ambi).col;
 		mapvec(&lp, &proj, &Lights[i].lpos);
-		//~ g3_drawoval(s, &lp, (int)((1+lp.z)*500), (int)((1+lp.z)*500), col);
-		//~ if (Lights[i].attr & L_on) g3_filloval(s, &lp, (int)((1+lp.z)*500), (int)((1+lp.z)*500), col);
-		if (Lights[i].attr & L_on) g3_putpixel(s, &lp, col);
-	}// */
+		//~ siz = (int)(SCRH * 1 * (1. / sqrt(lp.x*lp.x + lp.y*lp.y + lp.z*lp.z)));
+		siz = (int)((1+lp.z) * SCRW);
+		if (Lights[i].attr & L_on)
+			g3_filloval(s, &lp, siz, siz, col);
+		else
+			g3_drawoval(s, &lp, siz, siz, col);
+	}
+	{// if (draw & dspB) // bounds
+		vector c0, c1, c2, c3, c4, c5, c6, c7;
+		void bboxMesh(vecptr, vecptr);
+		bboxMesh(&c0, &c6);		// aabb
+
+		c4.x = c7.x = c3.x = c0.x;
+		c1.x = c2.x = c5.x = c6.x;
+
+		c1.y = c5.y = c4.y = c0.y;
+		c3.y = c2.y = c7.y = c6.y;
+
+		c1.z = c2.z = c3.z = c0.z;
+		c4.z = c5.z = c7.z = c6.z;
+
+		mapvec(&c0, &proj, &c0);
+		mapvec(&c1, &proj, &c1);
+		mapvec(&c2, &proj, &c2);
+		mapvec(&c3, &proj, &c3);
+		mapvec(&c4, &proj, &c4);
+		mapvec(&c5, &proj, &c5);
+		mapvec(&c6, &proj, &c6);
+		mapvec(&c7, &proj, &c7);
+
+		// front
+		g3_drawline(s, &c0, &c1, norm_col);
+		g3_drawline(s, &c1, &c2, norm_col);
+		g3_drawline(s, &c2, &c3, norm_col);
+		g3_drawline(s, &c3, &c0, norm_col);
+
+		// back
+		g3_drawline(s, &c4, &c5, norm_col);
+		g3_drawline(s, &c5, &c6, norm_col);
+		g3_drawline(s, &c6, &c7, norm_col);
+		g3_drawline(s, &c7, &c4, norm_col);
+
+		// join
+		g3_drawline(s, &c0, &c4, norm_col);
+		g3_drawline(s, &c1, &c5, norm_col);
+		g3_drawline(s, &c2, &c6, norm_col);
+		g3_drawline(s, &c3, &c7, norm_col);
+
+	}
 }
 
 // zoomsurf?
@@ -1112,10 +1162,11 @@ int main() {
 
 	k3d_open();
 
-	printf ("reading tetx : %d\n", gx_loadBMP(&img, "text/earth1.bmp", 32));
-	mesheval(evalP_sphere, division, division, 0);
-	//~ mesheval(evalP_tours, division, division, 0);
-	//~ mesheval(evalP_apple, division, division, 0);
+	printf ("reading tetx : %d\n", gx_loadBMP(&img, "text/earth2.bmp", 32));
+	//~ mesheval(evalP_sphere, division, division, 0);
+	//~ mesheval(evalP_tours, division, division, 3);
+	//~ mesheval(evalP_apple, division, division, 3);
+	//~ mesheval(evalP_001, division, division, 0);
 	/*
 	vtx[0] = 0; vtx[1] = 0; vtx[2] = 0; 
 	o = addvtxdv(vtx,0,0);
@@ -1129,6 +1180,7 @@ int main() {
 	//~ addtri(o,x,y);
 	//~ */
 
+	printf ("reading mesh : %d\n", readf1("mesh/rabbit"));
 	//~ printf ("reading mesh : %d\n", readf("mesh/tp.txt"));
 
 	//~ missing
@@ -1147,10 +1199,32 @@ int main() {
 	//~ printf("vtx cnt : %d / %d\n", mesh.vtxcnt, mesh.maxvtx);
 	//~ printf("tri cnt : %d / %d\n", mesh.tricnt, mesh.maxtri);
 	centmesh();
+	//~ tranMesh(matldT(&projM, vecldf(&tgt,  10,  10, 0, 0), 1));
+	//~ tranMesh(matldS(&projM, vecldf(&tgt,  10,  10, 10, 0), 1));
 	//~ printf("%d\n", saveMesh("scorpion.msh")); k3d_exit(); getch(); return 0;
 	//~ optimesh();
-
 	//~ coor(S,S,S);
+
+	printf("vtx cnt : %d / %d\n", mesh.vtxcnt, mesh.maxvtx);
+	printf("tri cnt : %d / %d\n", mesh.tricnt, mesh.maxtri);
+	bboxMesh(&tgt, &eye);
+	printf("box min : %f, %f, %f\n", tgt.x, tgt.y, tgt.z);
+	printf("box max : %f, %f, %f\n", eye.x, eye.y, eye.z);
+	printf("press any key ...\n");
+
+	//~ vecsub(&tgt, &tgt, &eye);
+	vecabs(&tgt, &tgt);
+	S = tgt.x;
+	if (S < tgt.y) S = tgt.y;
+	if (S < tgt.z) S = tgt.z;
+
+	tranMesh(matldS(&projM, vecldf(&up, 1, 1, 1, 0), 20./S));
+
+	bboxMesh(&tgt, &eye);
+	printf("box min : %f, %f, %f\n", tgt.x, tgt.y, tgt.z);
+	printf("box max : %f, %f, %f\n", eye.x, eye.y, eye.z);
+
+	S= 10.;
 	matidn(&viewM);
 	vecldf(&up,   0,  1,  0, 1);
 	vecldf(&tgt,  0,  0,  0, 1);
@@ -1158,9 +1232,6 @@ int main() {
 	camset(&cam, &eye, &tgt, &up);
 	projv_mat(&projM, 45, (SCRW+.0)/SCRH, 1, 1000, 0);
 
-	printf("vtx cnt : %d / %d\n", mesh.vtxcnt, mesh.maxvtx);
-	printf("tri cnt : %d / %d\n", mesh.tricnt, mesh.maxtri);
-	printf("press any key ...\n");
 	if (getch()== 27) {
 		k3d_exit();
 		return 0;
@@ -1267,7 +1338,7 @@ int main() {
 		//~ zBuff[SCRW/2 + SCRH*SCRH/2] = 0;
 		//~ d = zBuff[SCRW/2+SCRW*SCRH/2];
 		//~ zBuff[SCRW/2+SCRW*SCRH/2] = 0;
-		if (draw & dspZ) zsurf(&offs);
+		//~ if (draw & dspZ) zsurf(&offs);
 		//~ blursurf(&offs, 256);
 		/*
 		gx_copysurf(&offs, 0, 0, &img, 0);
@@ -1299,9 +1370,9 @@ int main() {
 		//~ gx_drawCurs(&offs, ox = mx, oy = my, &cur1, CURS_GET+CURS_MIX);		// show curs
 		#if MCGA
 		//~ waitretrace();
-		gx_callcbltf(colcpy_lum32, (void*)0xA0000, offs.basePtr, 320*200, NULL);
+		//~ gx_callcbltf(colcpy_lum32, (void*)0xA0000, offs.basePtr, 320*200, NULL);
 		//~ gx_callcbltf(colcpy_xtr32, (void*)0xA0000, zBuff, 320*200, (void*)3);
-		//~ gx_callcbltf(colcpy_xtr32, (void*)0xA0000, offs.basePtr, 320*200, (void*)1);
+		gx_callcbltf(colcpy_xtr32, (void*)0xA0000, offs.basePtr, 320*200, (void*)1);
 		#else
 		gx_vgacopy(&offs, 0);
 		#endif

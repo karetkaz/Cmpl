@@ -3,7 +3,7 @@
 ; option casemap : none
 
 public gx_locksurf		; int	gx_locksurf(gx_Surf, lock_type);
-public gx_initdraw		; void	gx_initdraw(gx_Surf, cmix_type);
+; public gx_initdraw		; void	gx_initdraw(gx_Surf, cmix_type);
 public gx_mapcolor		; long	gx_mapcolor(gx_Surf, argb);					Get Color in internal format
 public gx_cliprect		; void* gx_cliprect(gx_Surf, gx_Rect);
 ; public gx_clipclip		; void* gx_clipclip(gx_Surf, gx_Clip);
@@ -12,9 +12,9 @@ public gx_getpixel		; long	gx_getpixel(gx_Surf, int, int);					Get Pixel
 public gx_getpnear		; long	gx_getpnear(gx_Surf, fixed16, fixed16);				Get Pixel
 public gx_getpnlin		; long	gx_getpnear(gx_Surf, fixed16, fixed16);				Get Pixel
 public gx_setpixel		; void	gx_setpixel(gx_Surf, int, int, long);				Set Pixel
-public gx_sethline		; void	gx_sethline(gx_Surf, int x1, int y, int x2, long);		Horizontal Line
-public gx_setvline		; void	gx_setvline(gx_Surf, int x, int y1, int x2, long);		Verical Line
-public gx_setpline		; void	gx_setpline(gx_Surf, int x1, int y, int x2, long, Pattern);	Pattern Line
+; public gx_sethline		; void	gx_sethline(gx_Surf, int x1, int y, int x2, long);		Horizontal Line
+; public gx_setvline		; void	gx_setvline(gx_Surf, int x, int y1, int x2, long);		Verical Line
+; public gx_setpline		; void	gx_setpline(gx_Surf, int x1, int y, int x2, long, Pattern);	Pattern Line
 public gx_setblock		; void	gx_setblock(gx_Surf, int x1, int y1, int x2, int y2, long);	Block (fill rect)
 public gx_getcbltf		; gx_cbltf gx_getcbltf(cbltf_type, int depth, int opbpp);
 public gx_callcbltf		; void gx_callcbltf(gx_cbltf, void*, void*, unsigned, void*);
@@ -25,10 +25,10 @@ public gx_callcbltf		; void gx_callcbltf(gx_cbltf, void*, void*, unsigned, void*
 ; public mixcol_16
 ; public mixcol_08
 
-public setpix_32
-public setpix_24
-public setpix_16
-public setpix_08
+; public setpix_32
+; public setpix_24
+; public setpix_16
+; public setpix_08
 
 
 gx_Rect struc				; Rectangle
@@ -62,8 +62,8 @@ gx_Surf struc				; Surface
 	scanLen			dd ?		; + 16
 	clutPtr			dd ?		; + 20
 	basePtr			dd ?		; + 24
-	offsPtr			dd ?		; + 28
-	movePtr			dd ?		; + 32
+	; offsPtr			dd ?		; + 28
+	; movePtr			dd ?		; + 32
 gx_Surf ends
 ;/--------------------------------------------------------------\  0
 ;|			     ClipPtr				|
@@ -78,11 +78,11 @@ gx_Surf ends
 ;|--------------+---------------+---------------+---------------| 20
 ;|			     basePtr				|
 ;|--------------------------------------------------------------| 24
-;|			     offsPtr				|
+;|			     offsPtr				|X
 ;|--------------------------------------------------------------| 28
-;|			     movePtr				|
+;|			     movePtr				|X
 ;|--------------+---------------+---------------+---------------|.32
-;|			     fillPtr				|
+;|			     fillPtr				|X
 ;|--------------+---------------+---------------+---------------| 36
 ;|								|
 ;|--------------------------------------------------------------| 40
@@ -106,10 +106,10 @@ IS_RDONLY	equ	0FF00h		;0	read only mask
 
 .data
 
-	col_32_put	dd	setpix_32_cpy,	setpix_32_and,	setpix_32_ior,	setpix_32_xor
-	col_24_put	dd	setpix_24_cpy,	setpix_24_and,	setpix_24_ior,	setpix_24_xor
-	col_16_put	dd	setpix_16_cpy,	setpix_16_and,	setpix_16_ior,	setpix_16_xor
-	col_08_put	dd	setpix_08_cpy,	setpix_08_and,	setpix_08_ior,	setpix_08_xor
+	; col_32_put	dd	setpix_32_cpy,	setpix_32_and,	setpix_32_ior,	setpix_32_xor
+	; col_24_put	dd	setpix_24_cpy,	setpix_24_and,	setpix_24_ior,	setpix_24_xor
+	; col_16_put	dd	setpix_16_cpy,	setpix_16_and,	setpix_16_ior,	setpix_16_xor
+	; col_08_put	dd	setpix_08_cpy,	setpix_08_and,	setpix_08_ior,	setpix_08_xor
 	; col_24_put	dd	setpix_24_cpy,	andpix_24,	iorpix_24,	xorpix_24
 	; col_16_put	dd	setpix_16_cpy,	andpix_16,	iorpix_16,	xorpix_16
 	; col_08_put	dd	setpix_08_cpy,	andpix_08,	iorpix_08,	xorpix_08
@@ -157,108 +157,6 @@ gx_locksurf proc near
 	ret
 
 gx_locksurf endp
-
-;°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°
-; Init Surface to draw
-; void* gx_initdraw(gx_Surf, rop2_type);
-; in  :	gx_Surf
-; out : NULL if fail
-; use :
-; call:
-;°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°
-gx_initdraw proc
-	push	edx
-	mov	edx, [esp+4+4]
-	mov	eax, [esp+4+8]
-	mov	ah, [edx].gx_Surf.depth
-	cmp	al, 5
-	jbe	initdraw_ropa
-	xor	al, al
-	initdraw_ropa:
-	cmp	ah, 24
-	je	initdraw_24
-	jb	initdraw_splt
-	cmp	ah, 32
-	je	initdraw_32
-	jmp	initdraw_exit
-	initdraw_splt:
-	cmp	ah, 8
-	je	initdraw_08
-	jb	initdraw_exit
-	; cmp	ah, 15
-	; je	initdraw_15
-	; jb	initdraw_exit
-	cmp	ah, 16
-	je	initdraw_16
-	initdraw_exit:
-	mov	[edx].gx_Surf.offsPtr, offset proc_dummi
-	mov	[edx].gx_Surf.movePtr, offset proc_dummi
-	xor	eax, eax
-	pop	edx
-	ret
-
-gx_initdraw endp
-
-;°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°
-; adjust Clip
-; void* gx_clipclip(Surface, int, int);
-; in  :	Surface
-;	X
-;	Y
-; out : Address (NULL if fail)
-; use :
-; call:
-;°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°
-; gx_clipclip:					; review
-	; push	ebx
-	; xor	eax, eax
-	; mov	ebx, [esp + 4 + 4*1]		; surf
-	; mov	ecx, [esp + 4 + 4*2]		; clip
-	; mov	edx, ebx
-	; cmp	[edx], eax
-	; jz	gx_clipclip_clip
-	; mov	edx, [edx]
-	; gx_clipclip_clip:				; ax = surf.clip.t; if ax > clip.t clip.t = ax
-	; mov	ax, [edx].gx_Clip.clipT
-	; cmp	ax, [ecx].gx_Clip.clipT
-	; jb	gx_clipclip_T_ok
-	; mov	[ecx].gx_Clip.clipT, ax
-	; gx_clipclip_T_ok:				; ax = surf.clip.b; if ax < clip.b clip.b = ax
-	; mov	ax, [edx].gx_Clip.clipB
-	; cmp	ax, [ecx].gx_Clip.clipB
-	; ja	gx_clipclip_B_ok
-	; mov	[ecx].gx_Clip.clipB, ax
-	; gx_clipclip_B_ok:				; ax = surf.clip.l; if ax > clip.l clip.l = ax
-	; mov	ax, [edx].gx_Clip.clipL
-	; cmp	ax, [ecx].gx_Clip.clipL
-	; jb	gx_clipclip_L_ok
-	; mov	[ecx].gx_Clip.clipL, ax
-	; gx_clipclip_L_ok:				; ax = surf.clip.r; if ax < clip.r clip.r = ax
-	; mov	ax, [edx].gx_Clip.clipR
-	; cmp	ax, [ecx].gx_Clip.clipR
-	; ja	gx_clipclip_R_ok
-	; mov	[ecx].gx_Clip.clipR, ax
-	; gx_clipclip_R_ok:
-
-	; cmp	ax, [ecx].gx_Clip.clipT
-	; cmp	ax, [ecx].gx_Clip.clipB
-	; ja	gx_clipclip_fail
-	; cmp	ax, [ecx].gx_Clip.clipL
-	; cmp	ax, [ecx].gx_Clip.clipR
-	; ja	gx_clipclip_fail
-
-	; mov	eax, [ebx].gx_Surf.scnLnLen
-	; movzx	edx, [ecx].gx_Clip.clipT
-	; movzx	ecx, [ecx].gx_Clip.clipT
-	; call	[ebx].gx_Surf.offsPtr
-	; add	eax, [ebx].gx_Surf.basePtr
-	; pop	ebx
-	; ret
-
-	; gx_clipclip_fail:
-	; xor	eax, eax
-	; pop	ebx
-	; ret
 
 ;°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°
 ; adjust Rect
@@ -324,11 +222,16 @@ gx_cliprect:
 	sub	[ecx].gx_Rect.rectH, eax
 	jbe	gx_cliprect_fail		; if (CF OR ZF is set) return 0;
 
-	mov	eax, [ebx].gx_Surf.scanLen
+	; mov	eax, [ebx].gx_Surf.scanLen
 	mov	edx, [ecx].gx_Rect.rectY
 	mov	ecx, [ecx].gx_Rect.rectX
-	call	[ebx].gx_Surf.offsPtr
-	add	eax, [ebx].gx_Surf.basePtr
+
+	jmp	gx_cliprect_fail
+	movzx	eax, [ebx].gx_Surf.pixeLen
+	call	addr_dd[eax * 4]
+	; call	[ebx].gx_Surf.offsPtr
+
+	; add	eax, [ebx].gx_Surf.basePtr
 	pop	ebx
 	ret
 
@@ -485,6 +388,8 @@ gx_mapcolor endp
 ; call:
 ;°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°
 gx_getpaddr proc
+; xor	eax, eax
+; ret
 	push	ebx
 	mov	ebx, [esp + 4 + 4*1]
 	mov	ecx, [esp + 4 + 4*2]
@@ -497,9 +402,12 @@ gx_getpaddr proc
 	mov	ax, [ebx].gx_Surf.horzRes
 	cmp	ecx, eax
 	jae	gx_getpaddr_fail
-	mov	eax, [ebx].gx_Surf.scanLen
-	call	[ebx].gx_Surf.offsPtr
-	add	eax, [ebx].gx_Surf.basePtr
+
+	movzx	eax, [ebx].gx_Surf.pixeLen
+	call	addr_dd[eax * 4]
+
+	; call	addr_dd[[ebx].gx_Surf.pixeLen]
+
 	pop	ebx
 	ret
 
@@ -521,6 +429,8 @@ gx_getpaddr endp
 ; call:
 ;°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°
 gx_getpixel proc
+; xor	eax, eax
+; ret
 	push	ebx
 	xor	eax, eax
 	mov	ebx, [esp + 4 + 4*1]
@@ -533,9 +443,10 @@ gx_getpixel proc
 	mov	ax, [ebx].gx_Surf.horzRes
 	cmp	ecx, eax
 	jae	gx_getpixel_fail
-	mov	eax, [ebx].gx_Surf.scanLen
-	call	[ebx].gx_Surf.offsPtr
-	add	eax, [ebx].gx_Surf.basePtr
+
+	movzx	eax, [ebx].gx_Surf.pixeLen
+	call	addr_dd[eax * 4]
+
 	mov	eax, [eax]
 	pop	ebx
 	ret
@@ -558,11 +469,14 @@ gx_getpixel endp
 ; call:
 ;°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°
 gx_getpnear proc
+; xor	eax, eax
+; ret
 	push	ebx
 	xor	eax, eax
 	mov	ebx, [esp + 4 + 4*1]
 	mov	ecx, [esp + 4 + 4*2]
 	mov	edx, [esp + 4 + 4*3]
+
 	cmp	[ebx].gx_Surf.depth, 32
 	jnz	gx_getpnear_fail
 
@@ -603,11 +517,13 @@ gx_getpnear endp
 ; call:
 ;°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°
 gx_getpnlin proc
+; ret
 	push	esi
 	push	ebx
 	mov	ebx, [esp + 8 + 4*1]
 	mov	ecx, [esp + 8 + 4*2]
 	mov	edx, [esp + 8 + 4*3]
+
 	cmp	[ebx].gx_Surf.depth, 32
 	jnz	gx_getpnlin_fail
 
@@ -734,37 +650,43 @@ gx_getpnlin endp
 ; call:
 ;°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°
 gx_setpixel proc
+; ret
 	push	ebx
 	push	edi
 	mov	ebx, [esp + 8 + 4*1]			; surf
 	mov	ecx, [esp + 8 + 4*2]			; x
 	mov	edx, [esp + 8 + 4*3]			; y
-	mov	edi, ebx
+
+	mov	edi, ebx						; clip
 	cmp	dword ptr [edi], 0
 	je	gx_setpixel_clip
 	mov	edi, [edi]
 	gx_setpixel_clip:
-	xor	eax, eax
 
-	mov	ax, [edi].gx_Clip.clipL
+	movzx	eax, [edi].gx_Clip.clipL
 	cmp	ecx, eax
 	jl	gx_setpixel_fail
-	mov	ax, [edi].gx_Clip.clipT
+
+	movzx	eax, [edi].gx_Clip.clipT
 	cmp	edx, eax
 	jl	gx_setpixel_fail
-	mov	ax, [edi].gx_Clip.clipR
+
+	movzx	eax, [edi].gx_Clip.clipR
 	cmp	ecx, eax
 	jae	gx_setpixel_fail
-	mov	ax, [edi].gx_Clip.clipB
+
+	movzx	eax, [edi].gx_Clip.clipB
 	cmp	edx, eax
 	jae	gx_setpixel_fail
 
-	mov	edi, [ebx].gx_Surf.basePtr
-	mov	eax, [ebx].gx_Surf.scanLen
-	call	[ebx].gx_Surf.offsPtr
-	add	edi, eax
+	movzx	eax, [ebx].gx_Surf.pixeLen
+	call	addr_dd[eax * 4]
+	mov	edi, eax
+
 	mov	eax, [esp + 8 + 4*4]			; col
-	call	[ebx].gx_Surf.movePtr
+
+	movzx	ebx, [ebx].gx_Surf.pixeLen
+	call	spix_dd[ebx * 4]
 
 	gx_setpixel_fail:
 	pop	edi
@@ -772,150 +694,6 @@ gx_setpixel proc
 	ret
 
 gx_setpixel endp
-
-;°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°
-; Horizontal Line
-; void gx_hline(gx_Surf, int, int, int, long);
-; in  :	gx_Surf
-;	X1
-;	Y
-;	X2
-;	Color
-; out :
-; use :
-; call:
-;°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°
-gx_sethline proc near
-	push	ebx
-	push	edi
-	mov	ebx, [esp + 8 + 4*1]			; surf
-	mov	ecx, [esp + 8 + 4*2]			; x1
-	mov	edx, [esp + 8 + 4*3]			; y
-	cmp	ecx, [esp + 8 + 4*4]			; x2
-	jl	gx_sethline_nosx			; x1 < x2
-	xchg	ecx, [esp + 8 + 4*4]
-	gx_sethline_nosx:
-	mov	edi, ebx
-	cmp	dword ptr [edi], 0
-	je	gx_sethline_clip
-	mov	edi, [edi]
-	gx_sethline_clip:
-	xor	eax, eax
-	; clip y first
-	mov	ax, [edi].gx_Clip.clipT		; if (y  < clip.T) return;
-	cmp	edx, eax
-	jl	gx_sethline_fail
-	mov	ax, [edi].gx_Clip.clipB		; if (y >= clip.B) return;
-	cmp	edx, eax
-	jae	gx_sethline_fail
-	mov	ax, [edi].gx_Clip.clipL		; if (x1 < clip.L) x1 = clip.L
-	cmp	ecx, eax
-	jge	gx_sethline_x1ok
-	mov	ecx, eax
-	gx_sethline_x1ok:
-	mov	ax, [edi].gx_Clip.clipR		; if (x2 > clip.R) x2 = clip.R
-	cmp	[esp + 8 + 4*4], eax
-	jl	gx_sethline_x2ok
-	mov	[esp + 8 + 4*4], eax
-	gx_sethline_x2ok:
-	sub	[esp + 8 + 4*4], ecx			; if ((x2 -= x1) <= 0) return;
-	jbe	gx_sethline_fail			; if CF OR ZF is set 
-
-	mov	edi, [ebx].gx_Surf.basePtr
-	mov	eax, [ebx].gx_Surf.scanLen
-	call	[ebx].gx_Surf.offsPtr
-	add	edi, eax
-	mov	ecx, [esp + 8 + 4*4]			; cnt
-	mov	eax, [esp + 8 + 4*5]			; col
-
-	push	esi
-	movzx	esi, [ebx].gx_Surf.pixeLen
-	mov	ebx, [ebx].gx_Surf.movePtr
-	gx_sethline_loop:				; remove loop ???
-	call	ebx
-	add	edi, esi
-	dec	ecx
-	jnz	gx_sethline_loop
-	pop	esi
-
-	gx_sethline_fail:
-	pop	edi
-	pop	ebx
-	ret
-
-gx_sethline endp
-
-;°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°
-; Vertical Line
-; void gx_vline(gx_Surf, int, int, int, long);
-; in  :	gx_Surf
-;	X1
-;	Y1
-;	Y2
-;	Color
-; out :
-; use :
-; call:
-;°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°
-gx_setvline proc near
-	push	ebx
-	push	edi
-	mov	ebx, [esp + 8 + 4*1]			; surf
-	mov	ecx, [esp + 8 + 4*2]			; x
-	mov	edx, [esp + 8 + 4*3]			; y1
-	cmp	edx, [esp + 8 + 4*4]			; y2
-	jl	gx_setvline_nosy			; y1 < y2
-	xchg	edx, [esp + 8 + 4*4]
-	gx_setvline_nosy:
-	mov	edi, ebx
-	cmp	dword ptr [edi], 0
-	je	gx_setvline_clip
-	mov	edi, [edi]
-	gx_setvline_clip:
-	xor	eax, eax
-	; clip x first
-	mov	ax, [edi].gx_Clip.clipL		; if (x  < clip.L) return
-	cmp	ecx, eax
-	jl	gx_setvline_fail
-	mov	ax, [edi].gx_Clip.clipR		; if (x >= clip.R) return
-	cmp	ecx, eax
-	jge	gx_setvline_fail
-	mov	ax, [edi].gx_Clip.clipT		; if (y1 < clip.T) y1 = clip.T
-	cmp	edx, eax
-	jge	gx_setvline_y1ok
-	mov	edx, eax
-	gx_setvline_y1ok:
-	mov	ax, [edi].gx_Clip.clipB		; if (y2 > clip.B) y2 = clip.Y
-	cmp	[esp + 8 + 4*4], eax
-	jl	gx_setvline_y2ok
-	mov	[esp + 8 + 4*4], eax
-	gx_setvline_y2ok:
-	sub	[esp + 8 + 4*4], edx			; if ((y2 -= y1) <= 0) return;
-	jbe	gx_setvline_fail			; if CF OR ZF is set 
-
-	mov	edi, [ebx].gx_Surf.basePtr
-	mov	eax, [ebx].gx_Surf.scanLen
-	call	[ebx].gx_Surf.offsPtr
-	add	edi, eax
-	mov	ecx, [esp + 8 + 4*4]			; cnt
-	mov	eax, [esp + 8 + 4*5]			; col
-
-	push	esi
-	mov	esi, [ebx].gx_Surf.scanLen
-	mov	ebx, [ebx].gx_Surf.movePtr
-	gx_setvline_loop:
-	call	ebx
-	add	edi, esi
-	dec	ecx
-	jnz	gx_setvline_loop
-	pop	esi
-
-	gx_setvline_fail:
-	pop	edi
-	pop	ebx
-	ret
-
-gx_setvline endp
 
 ;°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°
 ; block
@@ -936,69 +714,82 @@ gx_setblock proc near
 	mov	ebx, [esp + 8 + 4*1]			; surf
 	mov	ecx, [esp + 8 + 4*2]			; x1
 	mov	edx, [esp + 8 + 4*3]			; y1
+
 	cmp	ecx, [esp + 8 + 4*4]			; x2
 	jl	gx_setblock_nosx			; x1 < x2
 	xchg	ecx, [esp + 8 + 4*4]
 	gx_setblock_nosx:
-	cmp	edx, [esp + 8 + 4*5]			; y2
-	jl	gx_setblock_nosy			; y1 < y2
+
+	cmp	edx, [esp + 8 + 4*5]		; y2
+	jl	gx_setblock_nosy		; y1 < y2
 	xchg	edx, [esp + 8 + 4*5]
 	gx_setblock_nosy:
+
 	mov	edi, ebx
 	cmp	dword ptr [edi], 0
 	je	gx_setblock_clip
 	mov	edi, [edi]
 	gx_setblock_clip:
-	xor	eax, eax
-	mov	ax, [edi].gx_Clip.clipL		; if (x1 < clip.L) x1 = clip.L
+
+	; xor	eax, eax
+
+	movzx	eax, [edi].gx_Clip.clipL	; if (x1 < clip.L) x1 = clip.L
 	cmp	ecx, eax
 	jge	gx_setblock_x1ok
 	mov	ecx, eax
 	gx_setblock_x1ok:
-	mov	ax, [edi].gx_Clip.clipT		; if (y1 < clip.T) y1 = clip.T
+
+	movzx	eax, [edi].gx_Clip.clipT	; if (y1 < clip.T) y1 = clip.T
 	cmp	edx, eax
 	jge	gx_setblock_y1ok
 	mov	edx, eax
 	gx_setblock_y1ok:
-	mov	ax, [edi].gx_Clip.clipR		; if (x2 > clip.R) x2 = clip.R
+
+	movzx	eax, [edi].gx_Clip.clipR	; if (x2 > clip.R) x2 = clip.R
 	cmp	[esp + 8 + 4*4], eax
 	jl	gx_setblock_x2ok
 	mov	[esp + 8 + 4*4], eax
 	gx_setblock_x2ok:
-	sub	[esp + 8 + 4*4], ecx			; if ((x2 -= x1) <= 0) return;
-	jbe	gx_setblock_fail			; if CF OR ZF is set 
 
-	mov	ax, [edi].gx_Clip.clipB		; if (y2 > clip.B) y2 = clip.B
+	movzx	eax, [edi].gx_Clip.clipB	; if (y2 > clip.B) y2 = clip.B
 	cmp	[esp + 8 + 4*5], eax
 	jl	gx_setblock_y2ok
 	mov	[esp + 8 + 4*5], eax
 	gx_setblock_y2ok:
-	sub	[esp + 8 + 4*5], edx			; if ((y2 -= y1) <= 0) return;
-	jbe	gx_setblock_fail			; if CF OR ZF is set 
 
-	mov	edi, [ebx].gx_Surf.basePtr
-	mov	eax, [ebx].gx_Surf.scanLen
-	call	[ebx].gx_Surf.offsPtr
-	add	edi, eax
-	mov	eax, [esp + 8 + 4*6]			; col
+	sub	[esp + 8 + 4*4], ecx		; if ((x2 -= x1) <= 0) return;
+	jbe	gx_setblock_fail		; if CF OR ZF is set
+	sub	[esp + 8 + 4*5], edx		; if ((y2 -= y1) <= 0) return;
+	jbe	gx_setblock_fail		; if CF OR ZF is set
 
 	push	esi
-	mov	ecx, [ebx].gx_Surf.scanLen
-	mov	[esp + 12 + 4*1], edi
-	mov	[esp + 12 + 4*2], ecx			; scanLen
-	movzx	esi, [ebx].gx_Surf.pixeLen		; pixeLen
-	mov	ebx, [ebx].gx_Surf.movePtr		; proc
+
+	movzx	esi, [ebx].gx_Surf.pixeLen
+
+	call	addr_dd[esi * 4]
+
+	mov	[esp + 12 + 4*1], eax		; save addres of first pixel
+
+	mov	eax, [ebx].gx_Surf.scanLen
+	mov	[esp + 12 + 4*2], eax		; scanLen
+
+	mov	ebx, spix_dd[esi * 4]
+
+	mov	eax, [esp + 12 + 4*6]		; col
 
 	gx_setblock_vert:				; vertical loop
+	mov	edi, [esp + 12 + 4*1]			; base
 	mov	ecx, [esp + 12 + 4*2]			; scanLen
-	mov	edi, [esp + 12 + 4*1]
-	add	[esp + 12 + 4*1], ecx
-	mov	ecx, [esp + 12 + 4*4]
+	add	[esp + 12 + 4*1], ecx			; base += scanLen
+
+	mov	ecx, [esp + 12 + 4*4]			; get width
 	gx_setblock_horz:
-	call	ebx
+	; call	ebx
+	mov	[edi], eax
 	add	edi, esi
 	dec	ecx
 	jnz	gx_setblock_horz
+
 	dec	dword ptr[esp + 12 + 4*5]
 	jnz	gx_setblock_vert
 	pop	esi
@@ -1010,144 +801,6 @@ gx_setblock proc near
 
 gx_setblock endp
 
-;°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°
-; Pattern Line
-; void gx_pline(gx_Surf, int, int, int, long, Pattern);
-; in  :	gx_Surf
-;	X1
-;	Y1
-;	X2
-;	Color
-;	Pattern
-; out :
-; use :
-; call:
-;°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°
-gx_setpline proc near
-	push	ebx
-	push	edi
-	mov	ebx, [esp + 8 + 4*1]			; surf
-	mov	ecx, [esp + 8 + 4*2]			; x1
-	mov	edx, [esp + 8 + 4*3]			; y
-	cmp	ecx, [esp + 8 + 4*4]			; x2
-	jl	gx_setpline_nosx			; x1 < x2
-	xchg	ecx, [esp + 8 + 4*4]
-	gx_setpline_nosx:
-	mov	edi, ebx
-	cmp	dword ptr [edi], 0
-	je	gx_setpline_clip
-	mov	edi, [edi]
-	gx_setpline_clip:
-	xor	eax, eax
-	; clip y first
-	mov	ax, [edi].gx_Clip.clipT		; if (y  < clip.T) return;
-	cmp	edx, eax
-	jl	gx_setpline_fail
-	mov	ax, [edi].gx_Clip.clipB		; if (y >= clip.B) return;
-	cmp	edx, eax
-	jge	gx_setpline_fail
-	mov	ax, [edi].gx_Clip.clipL		; if (x1 < clip.L) x1 = clip.L
-	cmp	ecx, eax
-	jge	gx_setpline_x1ok
-	mov	ecx, eax
-	gx_setpline_x1ok:
-	mov	ax, [edi].gx_Clip.clipR		; if (x2 > clip.R) x2 = clip.R
-	cmp	[esp + 8 + 4*4], eax
-	jl	gx_setpline_x2ok
-	mov	[esp + 8 + 4*4], eax
-	gx_setpline_x2ok:
-	sub	[esp + 8 + 4*4], ecx			; if ((x2 -= x1) <= 0) return;
-	jbe	gx_setpline_fail			; if CF OR ZF is set 
-
-	mov	eax, [esp + 8 + 4*6]			; prepare pattern
-	push	ecx
-	push	edx
-	and	edx, 7
-	mov	al, [eax+edx]
-	and	cl, 7
-	rol	al, cl
-	pop	edx
-	pop	ecx
-	mov	[esp + 8 + 4*6], al			; save it
-
-	mov	edi, [ebx].gx_Surf.basePtr
-	mov	eax, [ebx].gx_Surf.scanLen
-	call	[ebx].gx_Surf.offsPtr
-	add	edi, eax
-
-	mov	ecx, [esp + 8 + 4*4]			; cnt
-	mov	eax, [esp + 8 + 4*5]			; col
-
-	push	esi
-	movzx	esi, [ebx].gx_Surf.pixeLen
-	mov	ebx, [ebx].gx_Surf.movePtr
-	gx_setpline_loop:				; remove loop ???
-	rol	byte ptr [esp + 12 + 4*6], 1
-	jnc	gx_setpline_skip
-	call	ebx
-	gx_setpline_skip:
-	add	edi, esi
-	dec	ecx
-	jnz	gx_setpline_loop
-	pop	esi
-
-	gx_setpline_fail:
-	pop	edi
-	pop	ebx
-	ret
-
-gx_setpline endp
-
-;°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°
-;	initialize Surface
-; in  :	al : ropcode
-;	edx : gx_surf
-; out :	eax : rop addr
-;°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°
-initdraw_08:
-	mov	[edx].gx_Surf.offsPtr, offset addr_get08
-initrop2_08:
-	and	eax, 0000000FH
-	mov	eax, [col_08_put + eax * 4]
-	mov	[edx].gx_Surf.movePtr, eax
-	pop	edx
-	ret
-
-; initdraw_15:
-	; mov	[edx].gx_Surf.offsPtr, offset addr_get15
-; initrop2_15:
-	; and	eax, 0000000FH
-	; mov	eax, [move_15 + eax * 4]
-	; mov	[edx].gx_Surf.movePtr, eax
-	; pop	edx
-	; ret
-
-initdraw_16:
-	mov	[edx].gx_Surf.offsPtr, offset addr_get16
-initrop2_16:
-	and	eax, 0000000FH
-	mov	eax, [col_16_put + eax * 4]
-	mov	[edx].gx_Surf.movePtr, eax
-	pop	edx
-	ret
-
-initdraw_24:
-	mov	[edx].gx_Surf.offsPtr, offset addr_get24
-initrop2_24:
-	and	eax, 0000000FH
-	mov	eax, [col_24_put + eax * 4]
-	mov	[edx].gx_Surf.movePtr, eax
-	pop	edx
-	ret
-
-initdraw_32:
-	mov	[edx].gx_Surf.offsPtr, offset addr_get32
-initrop2_32:
-	and	eax, 0000000FH
-	mov	eax, [col_32_put + eax * 4]
-	mov	[edx].gx_Surf.movePtr, eax
-	pop	edx
-	ret
 
 ;°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°
 ;	Pixel Address
@@ -1157,34 +810,48 @@ initrop2_32:
 ; out :	eax : Y * Surface.ScnLnLen + X * Surface.PixelLen
 ; mod :	edx
 ;°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°
+
+; in  edx : x
+; in  ecx : y
+; in  ebx : surf
+; out eax : addr
+
 addr_get08:
+	mov	eax, [ebx].gx_Surf.scanLen
 	mul	dx
 	shl	edx, 16
 	mov	dx, ax
 	lea	eax, [edx + ecx*1]
+	add	eax, [ebx].gx_Surf.basePtr
 	ret
 
 addr_get15:
 addr_get16:
+	mov	eax, [ebx].gx_Surf.scanLen
 	mul	dx
 	shl	edx, 16
 	mov	dx, ax
 	lea	eax, [edx + ecx*2]
+	add	eax, [ebx].gx_Surf.basePtr
 	ret
 
 addr_get24:
+	mov	eax, [ebx].gx_Surf.scanLen
 	mul	dx
 	shl	edx, 16
 	mov	dx, ax
 	add	edx, ecx
 	lea	eax, [edx + ecx*2]
+	add	eax, [ebx].gx_Surf.basePtr
 	ret
 
 addr_get32:
+	mov	eax, [ebx].gx_Surf.scanLen
 	mul	dx
 	shl	edx, 16
 	mov	dx, ax
 	lea	eax, [edx + ecx*4]
+	add	eax, [ebx].gx_Surf.basePtr
 	ret
 
 ; long setpix(void* src, fixed16 delta);
@@ -1193,82 +860,29 @@ addr_get32:
 ; public setpix_24
 ; public setpix_16
 ; public setpix_08
+;		0		1		2		3		4
+spix_dd	dd	proc_dummi,	setpix_08,	setpix_16,	setpix_24,	setpix_32
+addr_dd	dd	proc_dummi,	addr_get08,	addr_get16,	addr_get24,	addr_get32
 
 setpix_32:
-setpix_32_cpy:
 	mov	[edi], eax
-	ret
-setpix_32_and:
-	and	[edi], eax
-	ret
-setpix_32_ior:
-	or	[edi], eax
-	ret
-setpix_32_xor:
-	xor	[edi], eax
 	ret
 
 setpix_24:
-setpix_24_cpy:
 	mov	[edi+0], al
 	mov	edx, eax
 	mov	[edi+1], ah
 	shr	edx, 16
 	mov	[edi+2], dl
 	ret
-setpix_24_and:
-	and	[edi+0], al
-	mov	edx, eax
-	and	[edi+1], ah
-	shl	edx, 16
-	and	[edi+2], dl
-	ret
-setpix_24_ior:
-	or	[edi+0], al
-	mov	edx, eax
-	or	[edi+1], ah
-	shl	edx, 16
-	or	[edi+2], dl
-	ret
-setpix_24_xor:
-	xor	[edi+0], al
-	mov	edx, eax
-	xor	[edi+1], ah
-	shl	edx, 16
-	xor	[edi+2], dl
-	ret
 
 setpix_16:
 setpix_15:
-setpix_16_cpy:
-setpix_15_cpy:
 	mov	[edi], ax
-	ret
-setpix_16_and:
-setpix_15_and:
-	and	[edi], ax
-	ret
-setpix_16_ior:
-setpix_15_ior:
-	or	[edi], ax
-	ret
-setpix_16_xor:
-setpix_15_xor:
-	xor	[edi], ax
 	ret
 
 setpix_08:
-setpix_08_cpy:
 	mov	[edi], al
-	ret
-setpix_08_and:
-	and	[edi], al
-	ret
-setpix_08_ior:
-	or	[edi], al
-	ret
-setpix_08_xor:
-	xor	[edi], al
 	ret
 
 ; mixcol_32:			; in eax color, edx color, ecx value

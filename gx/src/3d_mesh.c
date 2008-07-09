@@ -122,7 +122,7 @@ int addtri(unsigned p1, unsigned p2, unsigned p3) {
 	return mesh.tricnt ++;
 }
 
-void mesheval(double* evalP(double [3], double s, double t), unsigned sdiv, unsigned tdiv, unsigned closed) {
+void mesheval(double* evalP(double [3], double [3], double s, double t), unsigned sdiv, unsigned tdiv, unsigned closed) {
 	unsigned si, ti, mp[256][256];
 	double pos[3], s, ds = 1. / (sdiv - 1);
 	double nrm[3], t, dt = 1. / (tdiv - 1);
@@ -130,7 +130,8 @@ void mesheval(double* evalP(double [3], double s, double t), unsigned sdiv, unsi
 	for (t = ti = 0; ti < tdiv; ti++, t += dt) {
 		for (s = si = 0; si < sdiv; si++, s += ds) {
 			double tex[2]; tex[0] = t; tex[1] = s;
-			mp[ti][si] = addvtxdv(evalP(pos, s, t), evalN(nrm, s, t, evalP), tex);
+			evalP(pos, nrm, s, t);
+			mp[ti][si] = addvtxdv(pos, nrm, tex);
 		}
 	}
 	for (ti = 0; ti < tdiv - 1; ti += 1) {
@@ -233,6 +234,30 @@ int readf(char* name) {
 		else 
 			fprintf(stdout, "tri : cnt:%d n:%d\n", cnt, n);
 	}
+	return 0;
+}
+
+int readf1(char* name) {
+	FILE *f = fopen(name, "r");
+	int cnt, n;
+	if (f == NULL) return -1;
+
+	fscanf(f, "%d", &cnt);
+	//~ if (fgetc(f) != '\n') return 1;
+
+	for (n = 0; n < cnt; n += 1) {
+		double pos[3], nrm[3];//, tex[2];
+		fscanf(f, "%lf%lf%lf", &pos[0], &pos[1], &pos[2]);
+		fscanf(f, "%lf%lf%lf", &nrm[0], &nrm[1], &nrm[2]);
+		if (n != addvtxdv(pos, nrm, NULL)) return -99;
+	}
+	for ( ; ; ) {
+		unsigned tri[3];
+		fscanf(f, "%d%d%d", &tri[0], &tri[1], &tri[2]);
+		if (feof(f)) break;
+		addtri(tri[0], tri[1], tri[2]);
+	}
+	fclose(f);
 	return 0;
 }
 
@@ -342,9 +367,43 @@ int readMobj(char* name) {
 	return 0;
 }
 
+void optimesh() {
+	unsigned i, j, k, n;
+	for (n = i = 1; i < mesh.vtxcnt; i += 1) {
+		for (j = 0; j < n && !vtxequ(i, j); j += 1);
+		if (j == n) mesh.vtxptr[n++] = mesh.vtxptr[i];
+		else vecadd(&mesh.vtxptr[j].nrm, &mesh.vtxptr[j].nrm, &mesh.vtxptr[i].nrm);
+		for (k = 0; k < mesh.tricnt; k += 1) {
+			if (mesh.triptr[k].i1 == i) mesh.triptr[k].i1 = j;
+			if (mesh.triptr[k].i2 == i) mesh.triptr[k].i2 = j;
+			if (mesh.triptr[k].i3 == i) mesh.triptr[k].i3 = j;
+		}
+	}
+	for (j = 0; j < n; j += 1) vecnrm(&mesh.vtxptr[j].nrm, &mesh.vtxptr[j].nrm);
+	mesh.vtxcnt = n;
+}
+
+void bboxMesh(vecptr min, vecptr max) {
+	unsigned i;
+	if (mesh.vtxcnt == 0) {
+		vecldf(min, 0, 0, 0, 0);
+		vecldf(max, 0, 0, 0, 0);
+		return;
+	}
+
+	veccpy(min, &mesh.vtxptr[0].pos);
+	veccpy(max, &mesh.vtxptr[0].pos);
+
+	for (i = 1; i < mesh.vtxcnt; i += 1) {
+		vecmax(max, max, &mesh.vtxptr[i].pos);
+		vecmin(min, min, &mesh.vtxptr[i].pos);
+	}
+}
+
 void centmesh() {
 	unsigned i;
 	vector min, max, center;
+	//~ bboxMesh(&min, &max);
 	for (i = 0; i < mesh.vtxcnt; i += 1) {
 		if (i == 0) {
 			veccpy(&min, veccpy(&max, &mesh.vtxptr[i].pos));
@@ -365,20 +424,10 @@ void centmesh() {
 	}
 }
 
-void optimesh() {
-	unsigned i, j, k, n;
-	for (n = i = 1; i < mesh.vtxcnt; i += 1) {
-		for (j = 0; j < n && !vtxequ(i, j); j += 1);
-		if (j == n) mesh.vtxptr[n++] = mesh.vtxptr[i];
-		else vecadd(&mesh.vtxptr[j].nrm, &mesh.vtxptr[j].nrm, &mesh.vtxptr[i].nrm);
-		for (k = 0; k < mesh.tricnt; k += 1) {
-			if (mesh.triptr[k].i1 == i) mesh.triptr[k].i1 = j;
-			if (mesh.triptr[k].i2 == i) mesh.triptr[k].i2 = j;
-			if (mesh.triptr[k].i3 == i) mesh.triptr[k].i3 = j;
-		}
-	}
-	for (j = 0; j < n; j += 1) vecnrm(&mesh.vtxptr[j].nrm, &mesh.vtxptr[j].nrm);
-	mesh.vtxcnt = n;
+void tranMesh(matptr mat) {
+	unsigned i;
+	for (i = 0; i < mesh.vtxcnt; i += 1)
+		matvp4(&mesh.vtxptr[i].pos, mat, &mesh.vtxptr[i].pos);
 }
 
 //}
