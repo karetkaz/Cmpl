@@ -1,1237 +1,1057 @@
-/****************************************************************************
-*   File: Scan.c
-*   Date: 2007/04/20
-*   Desc: Lexical analyzer
-*============================================================================
-*
-*
-****************************************************************************/
+//{ #include "code.c"
+#include "ccvm.h"
+//~ scan.c - Parser ------------------------------------------------------------
 
-#include <string.h>
-#include <stdio.h>
-#include <math.h>
+//~ TODO: this realy sucks
 
-#include "node.h"
-#include "type.c"
-
-static const unsigned tok_map[256] = {
-	/* 000 nul */	0,//tok_eot,
-	/* 001 soh */	sym_und,
-	/* 002 stx */	sym_und,
-	/* 003 etx */	sym_und,
-	/* 004 eot */	sym_und,
-	/* 005 enq */	sym_und,
-	/* 006 ack */	sym_und,
-	/* 007 bel */	sym_und,
-	/* 010 bs  */	sym_und,
-	/* 011 ht  */	sym_spc,	// horz tab
-	/* 012 nl  */	sym_spc,	// new line
-	/* 013 vt  */	sym_und,//sym_spc,
-	/* 014 ff  */	sym_und,//sym_spc,
-	/* 015 cr  */	sym_und,
-	/* 016 so  */	sym_und,
-	/* 017 si  */	sym_und,
-	/* 020 dle */	sym_und,
-	/* 021 dc1 */	sym_und,
-	/* 022 dc2 */	sym_und,
-	/* 023 dc3 */	sym_und,
-	/* 024 dc4 */	sym_und,
-	/* 025 nak */	sym_und,
-	/* 026 syn */	sym_und,
-	/* 027 etb */	sym_und,
-	/* 030 can */	sym_und,
-	/* 031 em  */	sym_und,
-	/* 032 sub */	sym_und,
-	/* 033 esc */	sym_und,
-	/* 034 fs  */	sym_und,
-	/* 035 gs  */	sym_und,
-	/* 036 rs  */	sym_und,
-	/* 037 us  */	sym_und,
-	/* 040 sp  */	sym_spc,
-	/* 041 !   */	tok_opr,
-	/* 042 "   */	tok_val,
-	/* 043 #   */	sym_und,
-	/* 044 $   */	sym_und,
-	/* 045 %   */	tok_opr,
-	/* 046 &   */	tok_opr,
-	/* 047 '   */	tok_val,
-	/* 050 (   */	sym_lbs,
-	/* 051 )   */	sym_rbs,
-	/* 052 *   */	tok_opr,
-	/* 053 +   */	tok_opr,
-	/* 054 ,   */	sym_com,
-	/* 055 -   */	tok_opr,
-	/* 056 .   */	sym_dot,
-	/* 057 /   */	tok_opr,
-	/* 060 0   */	tok_val,
-	/* 061 1   */	tok_val,
-	/* 062 2   */	tok_val,
-	/* 063 3   */	tok_val,
-	/* 064 4   */	tok_val,
-	/* 065 5   */	tok_val,
-	/* 066 6   */	tok_val,
-	/* 067 7   */	tok_val,
-	/* 070 8   */	tok_val,
-	/* 071 9   */	tok_val,
-	/* 072 :   */	sym_col,
-	/* 073 ;   */	sym_sem,
-	/* 074 <   */	tok_opr,
-	/* 075 =   */	tok_opr,
-	/* 076 >   */	tok_opr,
-	/* 077 ?   */	sym_qtm,
-	/* 100 @   */	sym_und,
-	/* 101 A   */	tok_idf,
-	/* 102 B   */	tok_idf,
-	/* 103 C   */	tok_idf,
-	/* 104 D   */	tok_idf,
-	/* 105 E   */	tok_idf,
-	/* 106 F   */	tok_idf,
-	/* 107 G   */	tok_idf,
-	/* 110 H   */	tok_idf,
-	/* 111 I   */	tok_idf,
-	/* 112 J   */	tok_idf,
-	/* 113 K   */	tok_idf,
-	/* 114 L   */	tok_idf,
-	/* 115 M   */	tok_idf,
-	/* 116 N   */	tok_idf,
-	/* 117 O   */	tok_idf,
-	/* 120 P   */	tok_idf,
-	/* 121 Q   */	tok_idf,
-	/* 122 R   */	tok_idf,
-	/* 123 S   */	tok_idf,
-	/* 124 T   */	tok_idf,
-	/* 125 U   */	tok_idf,
-	/* 126 V   */	tok_idf,
-	/* 127 W   */	tok_idf,
-	/* 130 X   */	tok_idf,
-	/* 131 Y   */	tok_idf,
-	/* 132 Z   */	tok_idf,
-	/* 133 [   */	sym_lbi,
-	/* 134 \   */	sym_und,
-	/* 135 ]   */	sym_rbi,
-	/* 136 ^   */	tok_opr,
-	/* 137 _   */	tok_idf,
-	/* 140 `   */	sym_und,
-	/* 141 a   */	tok_idf,
-	/* 142 b   */	tok_idf,
-	/* 143 c   */	tok_idf,
-	/* 144 d   */	tok_idf,
-	/* 145 e   */	tok_idf,
-	/* 146 f   */	tok_idf,
-	/* 147 g   */	tok_idf,
-	/* 150 h   */	tok_idf,
-	/* 151 i   */	tok_idf,
-	/* 152 j   */	tok_idf,
-	/* 153 k   */	tok_idf,
-	/* 154 l   */	tok_idf,
-	/* 155 m   */	tok_idf,
-	/* 156 n   */	tok_idf,
-	/* 157 o   */	tok_idf,
-	/* 160 p   */	tok_idf,
-	/* 161 q   */	tok_idf,
-	/* 162 r   */	tok_idf,
-	/* 163 s   */	tok_idf,
-	/* 164 t   */	tok_idf,
-	/* 165 u   */	tok_idf,
-	/* 166 v   */	tok_idf,
-	/* 167 w   */	tok_idf,
-	/* 170 x   */	tok_idf,
-	/* 171 y   */	tok_idf,
-	/* 172 z   */	tok_idf,
-	/* 173 {   */	sym_lbb,
-	/* 174 |   */	tok_opr,
-	/* 175 }   */	sym_rbb,
-	/* 176 ~   */	tok_opr,
-	/* 177    */	sym_und,
-	/* 200 �   */	sym_und,
-	/* 201 �   */	sym_und,
-	/* 202 �   */	sym_und,
-	/* 203 �   */	sym_und,
-	/* 204 �   */	sym_und,
-	/* 205 �   */	sym_und,
-	/* 206 �   */	sym_und,
-	/* 207 �   */	sym_und,
-	/* 210 �   */	sym_und,
-	/* 211 �   */	sym_und,
-	/* 212 �   */	sym_und,
-	/* 213 �   */	sym_und,
-	/* 214 �   */	sym_und,
-	/* 215 �   */	sym_und,
-	/* 216 �   */	sym_und,
-	/* 217 �   */	sym_und,
-	/* 220 �   */	sym_und,
-	/* 221 �   */	sym_und,
-	/* 222 �   */	sym_und,
-	/* 223 �   */	sym_und,
-	/* 224 �   */	sym_und,
-	/* 225 �   */	sym_und,
-	/* 226 �   */	sym_und,
-	/* 227 �   */	sym_und,
-	/* 230 �   */	sym_und,
-	/* 231 �   */	sym_und,
-	/* 232 �   */	sym_und,
-	/* 233 �   */	sym_und,
-	/* 234 �   */	sym_und,
-	/* 235 �   */	sym_und,
-	/* 236 �   */	sym_und,
-	/* 237 �   */	sym_und,
-	/* 240 �   */	sym_und,
-	/* 241 �   */	sym_und,
-	/* 242 �   */	sym_und,
-	/* 243 �   */	sym_und,
-	/* 244 �   */	sym_und,
-	/* 245 �   */	sym_und,
-	/* 246 �   */	sym_und,
-	/* 247 �   */	sym_und,
-	/* 250 �   */	sym_und,
-	/* 251 �   */	sym_und,
-	/* 252 �   */	sym_und,
-	/* 253 �   */	sym_und,
-	/* 254 �   */	sym_und,
-	/* 255 �   */	sym_und,
-	/* 256 �   */	sym_und,
-	/* 257 �   */	sym_und,
-	/* 260 �   */	sym_und,
-	/* 261 �   */	sym_und,
-	/* 262 �   */	sym_und,
-	/* 263 �   */	sym_und,
-	/* 264 �   */	sym_und,
-	/* 265 �   */	sym_und,
-	/* 266 �   */	sym_und,
-	/* 267 �   */	sym_und,
-	/* 270 �   */	sym_und,
-	/* 271 �   */	sym_und,
-	/* 272 �   */	sym_und,
-	/* 273 �   */	sym_und,
-	/* 274 �   */	sym_und,
-	/* 275 �   */	sym_und,
-	/* 276 �   */	sym_und,
-	/* 277 �   */	sym_und,
-	/* 300 �   */	sym_und,
-	/* 301 �   */	sym_und,
-	/* 302 �   */	sym_und,
-	/* 303 �   */	sym_und,
-	/* 304 �   */	sym_und,
-	/* 305 �   */	sym_und,
-	/* 306 �   */	sym_und,
-	/* 307 �   */	sym_und,
-	/* 310 �   */	sym_und,
-	/* 311 �   */	sym_und,
-	/* 312 �   */	sym_und,
-	/* 313 �   */	sym_und,
-	/* 314 �   */	sym_und,
-	/* 315 �   */	sym_und,
-	/* 316 �   */	sym_und,
-	/* 317 �   */	sym_und,
-	/* 320 �   */	sym_und,
-	/* 321 �   */	sym_und,
-	/* 322 �   */	sym_und,
-	/* 323 �   */	sym_und,
-	/* 324 �   */	sym_und,
-	/* 325 �   */	sym_und,
-	/* 326 �   */	sym_und,
-	/* 327 �   */	sym_und,
-	/* 330 �   */	sym_und,
-	/* 331 �   */	sym_und,
-	/* 332 �   */	sym_und,
-	/* 333 �   */	sym_und,
-	/* 334 �   */	sym_und,
-	/* 335 �   */	sym_und,
-	/* 336 �   */	sym_und,
-	/* 337 �   */	sym_und,
-	/* 340 �   */	sym_und,
-	/* 341 �   */	sym_und,
-	/* 342 �   */	sym_und,
-	/* 343 �   */	sym_und,
-	/* 344 �   */	sym_und,
-	/* 345 �   */	sym_und,
-	/* 346 �   */	sym_und,
-	/* 347 �   */	sym_und,
-	/* 350 �   */	sym_und,
-	/* 351 �   */	sym_und,
-	/* 352 �   */	sym_und,
-	/* 353 �   */	sym_und,
-	/* 354 �   */	sym_und,
-	/* 355 �   */	sym_und,
-	/* 356 �   */	sym_und,
-	/* 357 �   */	sym_und,
-	/* 360 �   */	sym_und,
-	/* 361 �   */	sym_und,
-	/* 362 �   */	sym_und,
-	/* 363 �   */	sym_und,
-	/* 364 �   */	sym_und,
-	/* 365 �   */	sym_und,
-	/* 366 �   */	sym_und,
-	/* 367 �   */	sym_und,
-	/* 370 �   */	sym_und,
-	/* 371 �   */	sym_und,
-	/* 372 �   */	sym_und,
-	/* 373 �   */	sym_und,
-	/* 374 �   */	sym_und,
-	/* 375 �   */	sym_und,
-	/* 376 �   */	sym_und,
-	/* 377 �   */	sym_und,
+node scan(state s, int mode);
+node stmt(state s, int mode);
+node decl(state s, int mode);
+node expr(state s, int mode);
+defn spec(state s, int *kind);
+node dvar(state s, defn typ, int qual);
+int args(state s, int mode);
+enum {
+	//~ fl_void = 0,
+	fl_type = 1,
+	fl_name = 2,
+	fl_init = 4,
 };
 
-static inline int readch(state s) {
-	int nextc, currc = 0;
-	if (s->nextc) {
-		currc = s->nextc;
-		s->nextc = 0;
-		return currc;
-	}
-	if (s->file) {
-		if ((currc = fgetc(s->file)) == -1) {
-			return 0;
-		}
-		while (currc == '\\') {
-			switch (nextc = fgetc(s->file)) {
-				default   : {
-					s->nextc = nextc;
-					return currc;
-				} break;
-				case   -1 : {
-					//~ raiseerror(s, 5, s->line, "no-newline at end of file");
-					return currc;
-				} break;
-				case '\n' : {
-					if ((currc = fgetc(s->file)) == -1) {
-						raiseerror(s, 5, s->line, "backslash-newline at end of file");
-						return 0;
-					}
-					s->line += 1;
-				} break;
-			}
-		}
-	}
-	else if (s->buff) {
-		if ((currc = *s->buff) == 0) {
-			return 0;
-		}
-		else s->buff += 1;
-		while (currc == '\\') {
-			switch (nextc = *s->buff) {
-				default   : {
-					s->buff += 1;
-					s->nextc = nextc;
-					return currc;
-				} break;
-				case    0 : {
-					raiseerror(s, 5, s->line, "backslash-newline at end of file");
-					return currc;
-				} break;
-				case '\n' : {
-					s->buff += 1;
-					if ((currc = *s->buff) == 0) {
-						raiseerror(s, 5, s->line, "backslash-newline at end of file");
-						return 0;
-					}
-					else s->buff += 1;
-					s->line += 1;
-				} break;
-			}
-		}//*/
-	}
-	//~ else {
-	//~ }
-	if (currc == '\n') {
-		s->line += 1;
-	}
-	//~ printf(s->buff);
-	return currc;
-}
+// TODO temp only
 
-static int getchr(state s) {
-	return s->curchr = readch(s);
-}
-
-static int nextch(state s) {
-	return s->nextc = readch(s);
-}
-
-//~ ----------------------------------------------------------------------------
-static int gethex(char chr) {
-	if (chr >= '0' && chr <= '9') return chr - '0';
-	else if (chr >= 'A' && chr <= 'F') return chr - 'A' + 10;
-	else if (chr >= 'a' && chr <= 'f') return chr - 'a' + 10;
-	return -1;
-}
-
-static int getoct(char chr) {
-	if (chr >= '0' && chr <= '7') return chr - '0';
-	return -1;
-}
-
-static int bslash(state s) {
-	if (s->curchr != '\\') return -1;
-	switch (getchr(s)) {
-		case  'a' : getchr(s); return 7;
-		case  'b' : getchr(s); return '\b';
-		case  'f' : getchr(s); return '\f';
-		case  'n' : getchr(s); return '\n';
-		case  'r' : getchr(s); return '\r';
-		case  't' : getchr(s); return '\t';
-		case  'v' : getchr(s); return '\v';
-		case '\'' : getchr(s); return '\'';
-		case '\"' : getchr(s); return '\"';
-		case '\\' : getchr(s); return '\\';
-		case '\?' : getchr(s); return '\?';
-		// oct sequence (max len = 3)
-		case '0' :
-		case '1' :
-		case '2' :
-		case '3' :
-		case '4' :
-		case '5' :
-		case '6' :
-		case '7' : {
-			int tmp, val = getoct(s->curchr);
-			if ((tmp = getoct(getchr(s))) >= 0) {
-				val = (val << 3) | tmp;
-				if ((tmp = getoct(getchr(s))) >= 0) {
-					val = (val << 3) | tmp;
-					getchr(s);
-				}
-			}
-			if (val & 0xffffff00)
-				raiseerror(s, 4, s->line, "oct escape sequence overflow");
-			return val & 0xff;
-		}
-		// hex sequence (max len = 2)
-		case 'x' : {
-			int tmp, val = 0;
-			if ((tmp = gethex(getchr(s))) >= 0) {
-				val = (val << 4) | tmp;
-				if ((tmp = gethex(getchr(s))) >= 0) {
-					val = (val << 4) | tmp;
-					getchr(s);
-				}
-			} else raiseerror(s, -1, s->line, "hex escape sequence invalid");
-			return val & 0xff;
-		}
-		default : raiseerror(s, -1, s->line, "unknown escape sequence");
-	}
-	return 0;
-}
-
-//~ ----------------------------------------------------------------------------
-static int getval(state s, node tok) {
-	register char *ptr = s->buffp;
-	if (s->curchr == '\'') {			// chr constant
-		int val = 0;
-		while (getchr(s)) {
-			if (s->curchr == '\\') {
-				*ptr = bslash(s);
-				if (ptr - s->buffer <= bufmaxlen) {
-					val = (val << 8) | *ptr;
-					ptr += 1;
-				}
-			}
-			if (s->curchr == '\'') {
-				break;
-			}
-			else if (s->curchr == '\n') {
-				break;
-			}
-			else {
-				*ptr = s->curchr;
-				if (ptr - s->buffer <= bufmaxlen) {
-					val = val << 8 | *ptr++;
-				}
-			}
-		}
-		s->buffer[bufmaxlen] = *ptr = 0;
-		if (s->curchr == '\'') {
-			if (ptr - s->buffer > bufmaxlen)
-				raiseerror(s, -1, s->line, "buffer overrun");
-			else if (ptr == s->buffp)
-				raiseerror(s, -1, s->line, "empty character constant");
-			else if (ptr > s->buffp + sizeof(int))
-				raiseerror(s, 1, s->line, "character constant truncated");
-			else if (ptr > s->buffp + sizeof(char))
-				raiseerror(s, 5, s->line, "multi character constant");
-			getchr(s);
-			tok->cint = val;
-			tok->type = type_int;
-			return tok->kind = tok_val;
-		}
-		if (s->curchr == 0 || s->curchr == '\n')
-			raiseerror(s, -1, s->line, "unclosed character constant ('\'' missing)");
-		return tok->kind = tok_err;
-	}
-	else if (s->curchr == '\"') {		// str constant
-		//~ char* cstr = s->buffp;
-		register unsigned hs = 0xffffffff;
-		while (getchr(s)) {
-			if (s->curchr == '\\') {
-				*ptr = bslash(s);
-				if (ptr - s->buffer <= bufmaxlen) {
-					hs = (hs >> 8) ^ crc_tab[(hs ^ *ptr++) & 0xff];
-					//~ hs ^= *ptr++;
-				}
-			}
-			if (s->curchr == '\"') {
-				break;
-			}
-			else if (s->curchr == '\n') {
-				break;
-			}
-			else if (ptr - s->buffer <= bufmaxlen) {
-				*ptr = s->curchr;
-				hs = (hs >> 8) ^ crc_tab[(hs ^ *ptr++) & 0xff];
-				//~ hs ^= *ptr++ = s->curchr;
-			}
-		}
-		if (s->curchr != '\"') {		// error
-			raiseerror(s, -1, s->line, "unclosed string constant ('\"' missing)");
-			return tok->kind = tok_err;
-		}
-		if (ptr - s->buffer == bufmaxlen) {
-			raiseerror(s, 1, s->line, "string constant truncated");
-			s->buffer[bufmaxlen] = 0;
-		}
-		getchr(s);
-		*ptr = 0;
-		hs ^= 0xffffffff;
-		//~ tok->cstr = lookupstr(s, s->buffp, ptr - s->buffp, hs);
-		//~ if (tok->cstr == cstr)
-		tok->type = install(s, type_str, lookupstr(s, s->buffp, ptr - s->buffp, hs), ptr - s->buffp, tok_val);
-		//~ tok->type = type_str;
-		return tok->kind = tok_val;
-	}
-	else {								// num constant
-		double flt = 0;
-		int val = 0, exp = 0;
-		char *suf;
-		enum {
-			get_any = 0x0000,		// val_int
-			get_oct = 0x0001,		// val_int
-			get_bin = 0x0002,		// val_int
-			get_hex = 0x0004,		// val_int
-			get_val = 0x0008,		// read [0..9]
-
-			got_dot = 0x0010,		// '.' taken
-			got_exp = 0x0020,		// 'E' taken
-			neg_exp = 0x0040,		// +/- taken
-			not_oct = 0x0080,		// 8/9 taken
-
-			oct_err = 0x0081,		// get_oct | not_oct
-			got_err = 0x0200,		// error
-			val_ovf = 0x0400,		// overflov
-		} ;
-		int get_type = get_any;
-		if (s->curchr == '0') {
-			get_type = get_oct;
-			*ptr++ = s->curchr; getchr(s);
-			if (s->curchr == 'b' || s->curchr == 'B') {
-				get_type = get_bin | get_val;
-				*ptr++ = s->curchr; getchr(s);
-			}
-			else if (s->curchr == 'x' || s->curchr == 'X') {
-				get_type = get_hex | get_val;
-				*ptr++ = s->curchr; getchr(s);
-			}
-		}
-		while (s->curchr) {
-			if (get_type & (get_bin | get_hex)) {
-				if (get_type & get_bin) {
-					if (s->curchr >= '0' && s->curchr <= '1') {
-						if (val & 0x80000000) get_type |= val_ovf;
-						val = (val << 1) | (s->curchr - '0');
-						get_type &= ~get_val;
-					}
-					else break;
-				}
-				else if (s->curchr >= '0' && s->curchr <= '9') {
-					if (val & 0xF0000000) get_type |= val_ovf;
-					val = (val << 4) | (s->curchr - '0');
-					get_type &= ~get_val;
-				}
-				else if (s->curchr >= 'a' && s->curchr <= 'f') {
-					if (val & 0xF0000000) get_type |= val_ovf;
-					val = (val << 4) | (s->curchr - 'a' + 10);
-					get_type &= ~get_val;
-				}
-				else if (s->curchr >= 'A' && s->curchr <= 'F') {
-					if (val & 0xF0000000) get_type |= val_ovf;
-					val = (val << 4) | (s->curchr - 'A' + 10);
-					get_type &= ~get_val;
-				}
-				else break;
-			}
-			else if (s->curchr == '.') {
-				if (get_type & (get_val | got_dot | got_exp)) {
-					get_type |= got_err;
-					break;
-				}
-				val = 0;
-				get_type |= got_dot;
-			}
-			else if (s->curchr == 'e' || s->curchr == 'E') {
-				if ((get_type & (get_val | got_exp))) {
-					get_type |= got_err;
-					break;
-				}
-				if (!(get_type & got_dot)) val = 0;
-				get_type |= got_exp;
-				get_type |= get_val;
-				switch (nextch(s)) {
-					case '-' : get_type |= neg_exp;
-					case '+' : *ptr++ = s->curchr; getchr(s);
-				}
-			}
-			else if (s->curchr >= '0' && s->curchr <= '9') {
-				if (get_type & got_exp) {
-					exp = exp * 10 + s->curchr - '0';
-				}
-				else {
-					if (get_type & got_dot) val -= 1;
-					else {
-						if (get_type & get_oct) {
-							if (s->curchr >= '0' && s->curchr <= '7') {
-								if (val & 0xE0000000) get_type |= val_ovf;
-								val = (val << 3) + (s->curchr - '0');
-							}
-							else get_type |= not_oct;
-						}
-						else {
-							if (val & 0xF0000000) get_type |= val_ovf;		//???
-							val = val * 10 + s->curchr - '0';
-						}
-					}
-					flt = flt * 10 + s->curchr - '0';
-				}
-				get_type &= ~get_val;
-			}
-			else break;
-			*ptr++ = s->curchr;
-			getchr(s);
-		}
-		suf = ptr;		// sufix on number ?
-		//~ *ptr = 0; printf("[%c]\t%08x\t%s\n", s->curchr, get_type, s->tokstr);
-		while (s->curchr) {
-			if (s->curchr == '.' || s->curchr == '_') ;
-			else if (s->curchr >= '0' && s->curchr <= '9') ;
-			else if (s->curchr >= 'a' && s->curchr <= 'z') ;
-			else if (s->curchr >= 'A' && s->curchr <= 'Z') ;
-			else break;
-			get_type |= got_err;
-			*ptr++ = s->curchr;
-			getchr(s);
-		}
-		*ptr = 0;
-		if (*suf) {			// error
-			raiseerror(s, -1, s->line, "invalid suffix in numeric constant '%s'", suf);
-			return tok->kind = tok_err;
-		}
-		if (get_type & (get_val | got_err)) {			// error
-			raiseerror(s, -1, s->line, "parse error in numeric constant \"%s\"", s->buffp);
-			return tok->kind = tok_err;
-		}
-		if (get_type & (got_dot | got_exp)) {			// double
-			tok->cflt = flt * pow(10, (get_type & neg_exp ? -exp : exp) + val);
-			tok->type = type_flt;
-			return tok->kind = tok_val;
-		}
-		else {											// integer
-			if ((get_type & oct_err) == oct_err) {
-				raiseerror(s, -1, s->line, "parse error in octal constant \"%s\"", s->buffp);
-				return tok->kind = tok_err;
-			}
-			else if (!(get_type & (get_hex|get_oct|get_bin)) && (val = (long)flt) < 0) get_type |= val_ovf;
-
-			if (get_type & val_ovf) {
-				raiseerror(s, 1, s->line, "integer constant truncated \"%s\"", s->buffp);
-			}
-			else if (val < 0) {
-				raiseerror(s, 2, s->line, "integer constant overflow \"%s\"", s->buffp);
-			}
-			tok->cint = val;
-			tok->type = type_int;
-			return tok->kind = tok_val;
-		}
-	}
-	return tok->kind = tok_err;
-}
-
-static int getidf(state s, node tok) {
-	register unsigned hs = 0xffffffff;
-	register char *ptr = s->buffp;
-	for( ; ; ) {
-		if (s->curchr >= '0' && s->curchr <= '9') {
-		} else if (tok_map[s->curchr] == tok_idf) {
-		} else break;
-		if (ptr - s->buffer <= bufmaxlen) {
-			*ptr = s->curchr;
-			hs = (hs >> 8) ^ crc_tab[(hs ^ *ptr++) & 0xff];
-		}
-		getchr(s);
-	}
-	*ptr = 0;
-	hs ^= 0xffffffff;
-	tok->kind = tok_idf;
-	tok->name = lookupstr(s, s->buffp, ptr - s->buffp, hs);
-	tok->type = lookupdef(s, tok->name, s->level, hs);
-	return tok_idf;
-}
-
-static int getopr(state s, node tok) {
-	char *ptr = s->buffp;
-	switch (s->curchr) {
-		case ',' : {
-			*ptr++ = ',';
-			tok->kind = opr_com;
-			getchr(s);
+static void dumpxml(FILE *fout, node ast, int lev, char* text) {
+	if (ast) switch (ast->kind) {
+		//{ STMT
+		case CODE_inf : {
+			dumpxml(fout, ast->cinf.stmt, lev, text);
 		} break;
-		case '~' : {
-			*ptr++ = '~';
-			tok->kind = opr_not;
-			getchr(s);
+		case OPER_nop : {
+			//~ fputmsg(fout, "%I<STMT id='%d' expr='%?k'>\n", lev, ast->kind, ast);
+			dumpxml(fout, ast->stmt, lev, "expr");
+			//~ fputmsg(fout, "%I</STMT>\n", lev);
 		} break;
-		case '=' : {
-			*ptr++ = '=';
-			getchr(s);
-			if (s->curchr == '=') {
-				*ptr++ = '=';
-				tok->kind = opr_equ;
-				getchr(s);
+		case OPER_beg : {
+			node l = ast->stmt;
+			fputmsg(fout, "%I<list id='%d' type='%?T'>\n", lev, ast->kind, ast->type, ast->type, ast->line, tok_tbl[ast->kind].name, ast);
+			for (l = ast->stmt; l; l = l->next)
+				dumpxml(fout, l, lev + 1, text);
+			fputmsg(fout, "%I</list>\n", lev, ast->kind, ast->type, ast->type, ast->line, tok_tbl[ast->kind].name, ast);
+		} break;
+		case OPER_jmp : {
+			fputmsg(fout, "%I<stmt id='%d' stmt='if (%?+k)'>\n", lev, ast->kind, ast->test);
+			dumpxml(fout, ast->test, lev + 1, "test");
+			dumpxml(fout, ast->stmt, lev + 1, "stmt");
+			fputmsg(fout, "%I</stmt>\n", lev);
+		} break;
+		case OPER_for : {
+			fputmsg(fout, "%I<stmt id='%d' stmt='for (%?+k; %?+k; %?+k)'>\n", lev, ast->kind, ast->init, ast->test, ast->step);
+			dumpxml(fout, ast->init, lev + 1, "init");
+			dumpxml(fout, ast->test, lev + 1, "test");
+			dumpxml(fout, ast->step, lev + 1, "step");
+			dumpxml(fout, ast->stmt, lev + 1, "stmt");
+			fputmsg(fout, "%I</stmt>\n", lev);
+		} break;
+		//}
+
+		//{ OPER
+		case OPER_fnc : break;		// '()'
+		case OPER_dot : 		// '.'
+		case OPER_idx : {		// '[]'
+		} //break;
+
+		case OPER_pls : 		// '+'
+		case OPER_mns : 		// '-'
+		case OPER_cmt : 		// '~'
+		case OPER_not : {		// '!'
+		} //break;
+
+		//~ case OPER_pow : 		// '**'
+		case OPER_add : 		// '+'
+		case OPER_sub : 		// '-'
+		case OPER_mul : 		// '*'
+		case OPER_div : 		// '/'
+		case OPER_mod : {		// '%'
+		} //break;
+
+		case OPER_shl : 		// '>>'
+		case OPER_shr : 		// '<<'
+		case OPER_and : 		// '&'
+		case OPER_ior : 		// '|'
+		case OPER_xor : {		// '^'
+		} //break;
+
+		case OPER_equ : 		// '=='
+		case OPER_neq : 		// '!='
+		case OPER_lte : 		// '<'
+		case OPER_leq : 		// '<='
+		case OPER_gte : 		// '>'
+		case OPER_geq : {		// '>='
+		} //break;
+
+		//~ case OPER_lnd : 		// '&&'
+		//~ case OPER_lor : 		// '||'
+		//~ case OPER_sel : 		// '?:'
+		//~ case OPER_min : 		// '?<'
+		//~ case OPER_max : 		// '?>'
+
+		//~ case ASGN_pow : 		// '**='
+		//~ case ASGN_add : 		// '+='
+		//~ case ASGN_sub : 		// '-='
+		//~ case ASGN_mul : 		// '*='
+		//~ case ASGN_div : 		// '/='
+		//~ case ASGN_mod : 		// '%='
+
+		//~ case ASGN_shl : 		// '>>='
+		//~ case ASGN_shr : 		// '<<='
+		//~ case ASGN_and : 		// '&='
+		//~ case ASGN_ior : 		// '|='
+		//~ case ASGN_xor : 		// '^='
+
+		case ASGN_set : {		// '='
+			fputmsg(fout, "%I<%s id='%d' type='%?T' oper='%?k' expr='%?+k'>\n", lev, text, ast->kind, ast->type, ast, ast);
+			dumpxml(fout, ast->lhso, lev + 1, "lval");
+			dumpxml(fout, ast->rhso, lev + 1, "rval");
+			fputmsg(fout, "%I</%s>\n", lev, text, ast->kind, ast->type, ast);
+		} break;
+		//}*/
+
+		//{ TVAL
+		case CNST_int : 
+		case CNST_flt : 
+		case CNST_str : {
+			fputmsg(fout, "%I<cnst id='%d' type='%?T'>%k</cnst>\n", lev, ast->kind, ast->type, ast);
+		} break;
+		case TYPE_ref : {
+			fputmsg(fout, "%I<%s id='%d' type='%?T'>%s</%s>\n", lev, text, ast->kind, ast->type, ast->name, text);
+		} break;
+		//}
+
+		default: fatal(s, "Node(%k)", ast);
+	}
+	else ;
+}
+
+node scan(state s, int mode) {
+	node tok, lst = 0, ast = 0;
+
+	#if 0		// read ahead all tokens
+	while (read_tok(s, tok = newnode(s, 0))) {
+		if (!ast) s->_tok = tok;
+		else ast->next = tok;
+		ast = tok;
+	}
+	//~ if (s->errc) return 0;
+	ast = 0;
+	#endif
+
+	trace(+32, "enter:scan(%?k)", peek(s));
+	//~ enter(s, FILE_new, s->file);
+	
+	//~ enter(s, newNode(FILE_new));
+	enter(s, 0);
+	while (peek(s)) {
+		if ((tok = stmt(s, 0))) {
+			if (!ast) ast = lst = tok;
+			else lst = lst->next = tok;
+			if (mode && tok->kind != OPER_nop)
+				error(s, s->file, ast->line, "declaration expected");
+		}
+	}
+	leave(s, 3, &s->glob);
+
+	if (s->nest)
+		error(s, s->file, s->line, "premature end of file");
+	trace(-32, "leave:scan('%k')", peek(s));
+
+	if (ast) {
+		node tmp = newnode(s, OPER_beg);
+		//~ tmp->name = filename;
+		tmp->stmt = ast;
+		ast = tmp;
+	}
+
+	if (1) {
+		FILE *f = fopen("out.xml", "wt");
+		if (f != NULL) {
+			dumpxml(f, ast, 0, "node");
+			fclose(f);
+		}
+	}
+
+	return ast;
+}
+
+node stmt(state s, int mode) {
+	node ast, tmp = peek(s);
+	int qual = 0;// qual(s, mode);
+	trace(+16, "enter:stmt('%k')", peek(s));
+	if (skip(s, OPER_nop)) ast = 0;			// ;
+	else if ((ast = next(s, OPER_beg))) {		// {...}
+		node beg = 0;
+		ast->kind = OPER_beg;
+		enter(s, 0);
+		while (peek(s) && !skip(s, OPER_end)) {
+			if (!peek(s)) break;
+			if ((tmp = stmt(s, 0))) {
+				if (!beg) ast->stmt = tmp;
+				else beg->next = tmp;
+				beg = tmp;
 			}
-			else tok->kind = ass_equ;
-		} break;
-		case '!' : {
-			*ptr++ = '!';
-			getchr(s);
-			if (s->curchr == '=') {
-				*ptr++ = '=';
-				tok->kind = opr_neq;
-				getchr(s);
-			}
-			else tok->kind = opr_neg;
-		} break;
-		case '>' : {
-			*ptr++ = '>';
-			getchr(s);
-			if (s->curchr == '>') {
-				*ptr++ = '>';
-				getchr(s);
-				if (s->curchr == '=') {
-					*ptr++ = '=';
-					tok->kind = ass_shr;
-					getchr(s);
+		}
+		if (!ast->stmt) {			// eat sort of {{{...}}}
+			delnode(s, ast);
+			ast = 0;
+		}// */
+		leave(s, 7, &ast->type);
+	}
+	else if ((ast = next(s, OPER_jmp))) {		// if (...)
+		enter(s, 0);
+		if (skip(s, PNCT_lp)) {
+			ast->test = expr(s, 1);
+			if (skip(s, PNCT_rp)) {
+				ast->stmt = stmt(s, 1);
+				if (skip(s, OPER_els)) {
+					ast->step = stmt(s, 1);
 				}
-				else tok->kind = opr_shr;
+				else ast->step = NULL;
 			}
-			else if (s->curchr == '=') {
-				*ptr++ = '=';
-				tok->kind = opr_geq;
-				getchr(s);
-			}
-			else tok->kind = opr_gte;
-		} break;
-		case '<' : {
-			*ptr++ = '<';
-			getchr(s);
-			if (s->curchr == '<') {
-				*ptr++ = '<';
-				getchr(s);
-				if (s->curchr == '=') {
-					*ptr++ = '=';
-					tok->kind = ass_shl;
-					getchr(s);
-				}
-				else tok->kind = opr_shl;
-			}
-			else if (s->curchr == '=') {
-				*ptr++ = '=';
-				tok->kind = opr_leq;
-				getchr(s);
-			}
-			else tok->kind = opr_lte;
-		} break;
-		case '&' : {
-			*ptr++ = '&';
-			getchr(s);
-			if(s->curchr == '=') {
-				*ptr++ = '=';
-				tok->kind = ass_and;
-				getchr(s);
-			}
-			/*else if (s->curchr == '&') {
-				*ptr++ = '&';
-				tok->kind ^= opr_lnd;
-				getchr(s);
-			}*/
-			else tok->kind = opr_and;
-		} break;
-		case '|' : {
-			*ptr++ = '|';
-			getchr(s);
-			if(s->curchr == '=') {
-				*ptr++ = '=';
-				tok->kind = ass_or;
-				getchr(s);
-			}
-			/*else if (s->curchr == '|') {
-				*ptr++ = '|';
-				tok->kind ^= opr_lor;
-				getchr(s);
-			}*/
-			else tok->kind = opr_or;
-		} break;
-		case '^' : {
-			*ptr++ = '^';
-			getchr(s);
-			if (s->curchr == '=') {
-				*ptr++ = '=';
-				tok->kind = ass_xor;
-				getchr(s);
-			}
-			else tok->kind = opr_xor;
-		} break;
-		case '+' : {
-			*ptr++ = '+';
-			getchr(s);
-			if (s->curchr == '=') {
-				*ptr++ = '=';
-				tok->kind = ass_add;
-				getchr(s);
-			}
-			/*else if (s->curchr == '+') {
-				*ptr++ = '+';
-				tok->kind = opr_inc;
-				getchr(s);
-			}*/
-			else tok->kind = opr_add;
-		} break;
-		case '-' : {
-			*ptr++ = '-';
-			getchr(s);
-			if (s->curchr == '=') {
-				*ptr++ = '=';
-				tok->kind = ass_sub;
-				getchr(s);
-			}
-			/*else if (s->curchr == '-') {
-				*ptr++ = '-';
-				tok->kind = opr_dec;
-				getchr(s);
-			}*/
-			else tok->kind = opr_sub;
-		} break;
-		case '*' : {
-			*ptr++ = '*';
-			getchr(s);
-			if (s->curchr == '=') {
-				*ptr++ = '=';
-				tok->kind = ass_mul;
-				getchr(s);
-			}
-			else tok->kind = opr_mul;
-		} break;
-		case '/' : {
-			*ptr++ = '/';
-			getchr(s);
-			if (s->curchr == '=') {
-				*ptr++ = '=';
-				tok->kind = ass_div;
-				getchr(s);
-			}
-			else tok->kind = opr_div;
-		} break;
-		case '%' : {
-			*ptr++ = '%';
-			getchr(s);
-			if (s->curchr == '=') {
-				*ptr++ = '=';
-				tok->kind = ass_mod;
-				getchr(s);
-			}
-			else tok->kind = opr_mod;
-		} break;
-	}
-	*ptr = 0;
-	return tok->kind;
-}
-
-node next_token(state s) {
-	node tmp;
-	if (s->nextt) {
-		tmp = s->nextt;
-		s->nextt = 0;
-		return tmp;
-	}
-	if ((s->buffp + 65536) > (s->buffer + bufmaxlen)) {
-		raiseerror(s, -15, 0, "innternal error Memory overrun");
-		return 0;
-	}
-	while (s->curchr) {			// skip white spaces AND comments
-		if (tok_map[s->curchr] == sym_spc) {			// skip white spaces
-			getchr(s);
-			continue;
+			else error(s, s->file, s->line, " ')' expected");
 		}
-		if (s->curchr == '/' && nextch(s) == '/') {		// skip line comments
-			while (getchr(s)) {
-				if (s->curchr == '\n') break;
-			}
-			getchr(s);
-			continue;
-		}
-		if (s->curchr == '/' && nextch(s) == '*') {		// skip block comments
-			int curl = s->line;
-			while (getchr(s)) {
-				//~ if (s->curchr == '/' && nextch(s) == '*') {
-					//~ raiseerror(s, 5, s->line, "\"/*\" within comment");
-				//~ }
-				if (s->curchr == '*' && nextch(s) == '/') break;
-			}
-			if (s->curchr == 0) {
-				raiseerror(s, -5, curl, "unterminated comment");
-				return 0;
-			}
-			getchr(s);		// read '/'
-			getchr(s);		// get next char
-			continue;
-		}
-		else break;
+		else error(s, s->file, s->line, " '(' expected");
+		leave(s, 7, &ast->type);
 	}
-	if (!s->curchr) return 0;
-	tmp = (node)s->buffp;
-	memset(tmp,0,sizeof(struct token_t));
-	s->buffp += sizeof(struct token_t);
-	tmp->line = s->line;
-	//~ tmp->kind = tok_err;
-	switch (tok_map[s->curchr]) {
-		case tok_val : getval(s, tmp); return tmp;
-		case tok_opr : getopr(s, tmp); return tmp;
-		case tok_idf : getidf(s, tmp); return tmp;
-		case sym_dot : {	// tok_val OR sym_dot ?
-			if (tok_map[nextch(s)] == tok_val) {
-				getval(s, tmp);
-				return tmp;
+	else if ((ast = next(s, OPER_for))) {		// for (...)
+		enter(s, 0);
+		if (!skip(s, PNCT_lp)) {
+			error(s, s->file, s->line, " '(' expected");
+		}
+		if (!skip(s, OPER_nop)) {		// init
+			int qual = 0;
+			defn typ = spec(s, &qual);
+			ast->init = typ ? dvar(s, typ, qual) : expr(s, 0);
+			if (!skip(s, OPER_nop))
+				error(s, s->file, s->line, " ';' expected");
+		}
+		else ast->init = 0;
+		if (!skip(s, OPER_nop)) {		// test
+			ast->test = expr(s, 1);
+			if (!skip(s, OPER_nop)) {
+				error(s, s->file, s->line, " ';' expected");
 			}
 		}
-		default : {			// symbol
-			tmp->kind = tok_map[s->curchr];
-			s->buffp[0] = s->curchr;
-			s->buffp[1] = 0;
-			getchr(s);
-			return tmp;
+		else ast->test = 0;
+		if (!skip(s, PNCT_rp)) {		// incr
+			ast->step = expr(s, 1);
+			if (!skip(s, PNCT_rp)) {
+				error(s, s->file, s->line, " ')' expected");
+			}
 		}
+		else ast->step = 0;
+		ast->stmt = stmt(s, 1);
+		leave(s, 7, &ast->type);
 	}
-	return 0;
-}
-
-node back_token(state s, node ref) {
-	if (s->nextt) return NULL;
-	s->nextt = ref;
-	return ref;
-}
-
-node eat_token(state s, node ref) {
-	node tok = (node)(s->buffp - sizeof(struct token_t));
-	if (!s->nextt && ref == tok) {
-		s->buffp = (char*)tok;
-		return tok;
-	}
-	return NULL;
-}
-
-node new_token(state s) {
-	node tmp = (node)s->buffp;
-	memset(tmp,0,sizeof(struct token_t));
-	s->buffp += sizeof(struct token_t);
-	tmp->line = s->line;
-	tmp->kind = 0;//tok_und;
-	return tmp;
-}
-//~ ----------------------------------------------------------------------------
-
-int enterblock(state s, symbol t, node f, node test, node cont) {
-	if (!t && f) s->levelb[s->level].wait += 1;
-	s->level += 1;
-	s->levelb[s->level].wait = 0;
-	s->levelb[s->level].link = t;
-	s->levelb[s->level].fork = f;
-	s->levelb[s->level].test = test;
-	s->levelb[s->level].incr = cont;
-	return s->level;
-}
-
-int leaveblock(state s) {					// !!!
-	//~ s->levelb[s->level].link = 0;
-	//~ s->levelb[s->level].fork = 0;
-	//~ s->levelb[s->level].test = 0;
-	//~ s->levelb[s->level].incr = 0;
-	uninst(s, s->level);
-	return s->level -= 1;
-}
-
-int allign(int offs, int pack) {
-	switch (pack) {
-		default : return offs;
-		case  1 : return offs;
-		case  2 : return (offs +  1) & (~1);
-		case  4 : return (offs +  3) & (~3);
-		case  8 : return (offs +  7) & (~7);
-		case 16 : return (offs + 15) & (~15);
-		case 32 : return (offs + 31) & (~31);
-	}
-}
-
-//~ ----------------------------------------------------------------------------
-void cc_init(state s, const char * str) {
-	s->buffp = s->buffer;
-	s->buff = (char*)str;
-	s->nextc = 0;
-	s->nextt = 0;
-	s->level = 0;
-	s->line = 1;
-
-	memset(s->strt, 0, sizeof(s->strt));
-	memset(s->deft, 0, sizeof(s->deft));
-	stmt_if 	= install(s, 0, "if",		0, idf_kwd);
-	stmt_for	= install(s, 0, "for",		0, idf_kwd);
-	stmt_fork	= install(s, 0, "fork",		0, idf_kwd);
-				  //~ install(s, 0, "break",	0, idf_kwd);
-				  //~ install(s, 0, "continue",0, idf_kwd);
-	//~ stmt_ret	= install(s, 0, "return",	0, idf_kwd);
-
-				  //~ install(s, 0, "define",	0, 0);
-
-				  install(s, 0, "const",	0, idf_dcl | idm_con);
-				  install(s, 0, "static",	0, idf_dcl | idm_sta);
-				  install(s, 0, "volatile",	0, idf_dcl | idm_vol);
-				  //~ install(s, 0, "inline",	0, idf_dcl | 0x10);
-				  //~ install(s, 0, "extern",	0, idf_dcl | 0x20);
-
-	oper_sof	= install(s, 0, "sizeof",	0, 0);
-				  //~ install(s, 0, "struct",	0, idf_dcl);
-				  //~ install(s, 0, "union",	0, idf_dcl);
-
-	type_str	= install(s, 0, "cstr",			0, idf_dcl | idm_con);
-	type_void	= install(s, 0, "void",		0, idf_dcl);
-	oper_out	= install(s, type_void, "print",	0, idf_ref);
-				  //~ install(s, 0, "char",		1, idf_dcl);
-				  //~ install(s, 0, "short",	2, idf_dcl);
-				  //~ install(s, 0, "long",		8, idf_dcl);
-
-	type_int	= install(s, 0, "int",		4, idf_dcl);
-	type_flt	= install(s, 0, "float",	4, idf_dcl);
-				  //~ install(s, 0, "double",	8, tok_dcl);
-	getchr(s);
-}
-
-int cc_open(state s, const char * str) {
-	s->file = fopen(s->name = str, "r");
-	if (!s->file) return -1;
-	cc_init(s, NULL);
-	return 0;
-}
-
-int cc_done(state s) {
-	if (!s->file) return -1;
-	fclose(s->file);
-	return s->errc;
-}
-
-int raiseerror(state s, int level, int line, char* msg, ...) {
-	/**
-	 * level < 0 : error
-	 * level > 0 : warning
-	 * line > 0  : error in file/line
-	 * error ==0 : ???
-	 * line == 0 : ???
-	**/
-	void **argp = (void **)&msg;
-	//~ char *name = "scan.c";
-	char *name = (char*)(s->name ? s->name : "temp.c");
-	FILE *file = stderr;
-	if (level < 0) s->errc += 1;
-	if (line && level) {
-		fprintf(file, "%s:%d: %s: ", name, line, level < 0 ? "error" : "warning");
-	}
-	else if (level) {
-		//~ fprintf(file, "%s:%s: ", name, level < 0 ? "error" : "warning");
-	}
-	else if (line) {
-		//~ fprintf(file, "%s:%d: ", name);
-	}
-	else {
-	}
-	while (*msg) {
-		if (*msg == '%') {
-			switch (*(msg+=1)) {
-				case '%' : msg += 1; argp += 0; fputc('%', file); break;
-				case 'x' : msg += 1; argp += 1; fprintf(file, "%08x", *(int*)argp); break;
-				case 'd' : msg += 1; argp += 1; fprintf(file, "%d", *(int*)argp); break;
-				case 'c' : msg += 1; argp += 1; fprintf(file, "%c", *(char*)argp); break;
-				case 's' : msg += 1; argp += 1; fprintf(file, "%s", *(char**)argp); break;
+	else if ((ast = peek(s))) {			// decl|expr
+		/*if (lookup(s, ast, NULL)) {
+			if (istype(ast)) {	// decl
+			}
+			else {			// expr
 			}
 		}
 		else {
-			fputc(*msg, file);
-			msg += 1;
+			next(s, 0);
+			if (skip(s, PNCT_cln))	// :label
+				install(s, ast);
+		}// */
+		ast = newnode(s, OPER_nop);
+		ast->line = s->line;
+		ast->type = spec(s, &qual);
+		ast->stmt = dvar(s, ast->type, qual);
+		if (!skip(s, OPER_nop)) {
+			error(s, s->file, s->line, " ';' expected, not `%k`", peek(s));
+			while (peek(s) && !skip(s, OPER_nop)) {
+				if (skip(s, OPER_end)) return 0;
+				skip(s, 0);
+			}
 		}
+		if (ast->type && mode)
+			error(s, s->file, s->line, "unexpected declaration");
+#if 0		// print asm code for expr
+		tmp = newnode(s, CODE_inf);
+		tmp->cinf.stmt = ast;
+		ast = tmp;
+#endif
 	}
-	fputc('\n', file);
-	return 0;
+	trace(-16, "leave:stmt('%+k')", ast);
+	return ast;
 }
 
-//{--8<-------------------------------------------------------------------------\-
-void print_token(node ref, int fmt) {
-	if (!ref) {
-		printf("null");
-		if (fmt) printf("\n");
-		return;
-	}
-	//~ if ((ref->kind == opr_com) && fmt) return;
-	if (fmt & 2) {
-		switch (ref->kind & tok_msk) {
-			default		 : printf("(?)"); break;
-			case tok_val : printf("val"); break;
-			case tok_idf : printf("idf"); break;
-			case tok_opr : printf("opr"); break;
-			case tok_sym : printf("sym"); break;
+node decl(state s, int mode) {
+	//~ switch (mode)
+		//~ case 0 : enable or not <expr>.
+		//~ case 7 : native decl.
+	return NULL;
+}
+
+defn type(state s, int mode) {
+	node tok;
+	defn def = 0;
+	/*while ((tok = peek(s))) {		// qual : const/packed/volatile
+		if (tok->kind == QUAL_con) {	// constant
+			if (qual & QUAL_con) error(s, s->file, tok->line, "duplicate qualifier: %k", tok);
+			qual |= QUAL_con;
+			skip(s, 0);
+			continue;
 		}
-		printf(" [%08x] ", ref->kind);
+		if (tok->kind == QUAL_vol) {	// volatile
+			if (qual & QUAL_vol) error(s, s->file, tok->line, "duplicate qualifier: %k", tok);
+			qual |= QUAL_vol;
+			skip(s, 0);
+			continue;
+		}
+		break;
+	}*/
+	while ((tok = peek(s))) {		// type(.type)*
+		defn tmp = lookup(s, tok, 0);
+		if (!tmp || !istype(tok)) break;
+		next(s, 0);
+		def = tmp;
+		if (!skip(s, OPER_dot)) break;
 	}
-	//~ if (fmt & 4 && ref->type) printf("(typename %s) ", ref->type->name);
-	switch (ref->kind & tok_msk) {
-		case tok_val : {
-			if (ref->type == type_int) printf("%d", ref->cint);
-			else if (ref->type == type_flt) printf("%f", ref->cflt);
-			else if (ref->type && ref->type->type == type_str) printf("\"%s\"", ref->type->name);
-		} break;
-		case tok_idf : {
-			printf("%s", ref->name);
-			//~ switch (ref->kind & 0xff00) {
-				//~ case tok_def : printf("def %s", ref->name); break;
-				//~ case tok_kwd : printf("kwd %s", ref->name); break;
-				//~ case tok_dcl : printf("dcl %s", ref->name); break;
-				//~ case tok_var : printf("var %s", ref->name); break;
-			//~ }
-		} break;
-		case tok_opr : {
-			switch (ref->kind) {
-				default : printf("'?'"); break;
-				case opr_nop : {
-					printf("l%d:", ref->line);
-				} break;
-				case opr_jmp : {
-					if (ref->type == stmt_fork) {
-							printf("fork");
+	if (def) {
+		while (skip(s, PNCT_lc)) {			// array	: int [20][30] | int[100](int)
+			defn tmp = newdefn(s, TYPE_arr);
+			if (!skip(s, PNCT_rc)) {
+				tmp->init = expr(s, CNST_int);
+				if (!skip(s, PNCT_rc)) {
+					error(s, s->file, s->line, "missing ']'");
+					return tmp;
+				}
+			}
+			tmp->type = def;
+			def = tmp;
+		}// */
+		if (skip(s, PNCT_lp)) {				// function
+			defn tmp = newdefn(s, TYPE_fnc);
+			enter(s, 0);
+			args(s, fl_type+fl_name);
+			leave(s, 1, &tmp->args);
+			tmp->type = def;
+			def = tmp;
+			//declare(s, TYPE_def, newnode(s, TYPE_ref), def, argv);
+		}
+		//~ else break;
+	}
+	//~ debug("typename = %T", def);
+	return def;
+}
+
+node expr(state s, int mode) {
+	node	buff[TOKS], *base = buff + TOKS;
+	node	*post = buff, *prec = base, tok;
+	char	sym[TOKS];							// symbol stack {, [, (, ?
+	int	level = 0, unary = 1;						// precedence, top of sym , start in unary mode
+	sym[level] = 0;
+
+	trace(+2, "enter:expr('%k')", peek(s));
+	while ((tok = peek(s))) {						// parse
+		int pri = level << 4;
+		switch (tok->kind) {
+			default : {
+				if (tok_tbl[tok->kind].argc) {			// operator
+					if (unary) {
+						*post++ = 0;
+						error(s, s->file, tok->line, "syntax error before token '%k'", tok);
+					}
+					unary = 1;
+					goto tok_op;
+				} else {
+					if (!unary)
+						error(s, s->file, tok->line, "syntax error before token '%k'", tok);
+					unary = 0;
+					goto tok_ty;
+				}
+			} break;
+			case PNCT_lp  : {			// '('
+				if (unary)			// a + (3*b)
+					*post++ = 0;
+				else if (skip(s, PNCT_rp)) {	// a()
+					*post++ = 0;
+				}
+				//~ else			// a(...)
+				tok->kind = OPER_fnc;
+				sym[++level] = '(';
+				unary = 1;
+			} goto tok_op;
+			case PNCT_rp  : {			// ')'
+				if (!unary && sym[level] == '(') {
+					tok->kind = OPER_nop;
+					level -= 1;
+				}
+				else if (level == 0) {
+					tok = 0;
+					break;
+				}
+				else {
+					error(s, s->file, tok->line, "syntax error before ')' token");
+					break;
+				}
+				unary = 0;
+			} goto tok_op;
+			case PNCT_lc  : {			// '['
+				if (!unary)
+					tok->kind = OPER_idx;
+				else error(s, s->file, tok->line, "syntax error before '[' token");
+				sym[++level] = '[';
+				unary = 1;
+			} goto tok_op;
+			case PNCT_rc  : {			// ']'
+				if (!unary && sym[level] == '[') {
+					tok->kind = OPER_nop;
+					level -= 1;
+				}
+				else if (!level) {
+					tok = 0;
+					break;
+				}
+				else {
+					error(s, s->file, tok->line, "syntax error before ']' token");
+					break;
+				}
+				unary = 0;
+			} goto tok_op;
+			case PNCT_qst : {			// '?'
+				if (unary) {
+					*post++ = 0;		// ???
+					error(s, s->file, tok->line, "syntax error before '?' token");
+				}
+				tok->kind = OPER_sel;
+				sym[++level] = '?';
+				unary = 1;
+			} goto tok_op;
+			case PNCT_cln : {			// ':'
+				if (!unary && sym[level] == '?') {
+					tok->kind = OPER_nop;
+					level -= 1;
+				}
+				else if (level == 0) {
+					tok = 0;
+					break;
+				}
+				else {
+					error(s, s->file, tok->line, "syntax error before ':' token");
+					break;
+				}
+				unary = 1;
+			} goto tok_op;
+			case OPER_pls : {			// '+'
+				if (!unary)
+					tok->kind = OPER_add;
+				unary = 1;
+			} goto tok_op;
+			case OPER_mns : {			// '-'
+				if (!unary)
+					tok->kind = OPER_sub;
+				unary = 1;
+			} goto tok_op;
+			case OPER_not : {			// '!'
+				if (!unary)
+					error(s, s->file, tok->line, "syntax error before '!' token");
+				unary = 1;
+			} goto tok_op;
+			case OPER_cmt : {			// '~'
+				if (!unary)
+					error(s, s->file, tok->line, "syntax error before '~' token");
+				unary = 1;
+			} goto tok_op;
+
+			case OPER_com : 			// ','
+				if (level || mode != TYPE_ref) {
+					if (unary)
+						error(s, s->file, tok->line, "syntax error before ',' token");
+					unary = 1;
+					goto tok_op;
+				}
+				// else fall through
+			case OPER_jmp : 			// 'if'
+			case OPER_for : 			// 'for'
+			case OPER_els : 			// 'else'
+			case OPER_beg : 			// '{'
+			case OPER_end : 			// '}'
+			case OPER_nop : 			// ';'
+				tok = 0;			// done
+				break;
+			tok_op: {
+				int oppri = tok_tbl[tok->kind].type;
+				tok->pril = pri | (oppri & 0x0f);
+				if (oppri & 0x10) while (prec < buff + TOKS) {
+					if ((*prec)->pril <= tok->pril)
+						break;
+					*post++ = *prec++;
+				}
+				else while (prec < buff + TOKS) {
+					if ((*prec)->pril < tok->pril)
+						break;
+					*post++ = *prec++;
+				}
+				if (tok->kind != OPER_nop) {
+					*--prec = tok;
+				}
+			} break;
+			tok_ty: {
+				*post++ = tok;
+			} break;
+		}
+		if (!tok) break;
+		if (post >= prec) {
+			error(s, s->file, s->line, "Expression too complex");
+			return 0;
+		}
+		next(s, 0);
+	}
+	if (unary || level) {							// error
+		char c = level ? sym[level] : 0;
+		error(s, s->file, s->line, "missing %s", c == '(' ? "')'" : c == '[' ? "']'" : c == '?' ? "':'" : "expression");
+		//~ return 0;
+	}
+	else if (prec > buff) {							// build
+		//~ defn typ = 0;
+		node *ptr, *lhs;//, *dup;
+		while (prec < buff + TOKS)					// flush
+			*post++ = *prec++;
+		for (lhs = ptr = buff; ptr < post; ptr += 1) {
+			//~ fputmsg(stdout, "%k ", *ptr);
+			if ((tok = *ptr) == NULL) ;				// skip
+			else if (tok_tbl[tok->kind].argc) {			// oper
+				int argc = tok_tbl[tok->kind].argc;
+				if ((lhs -= argc) < buff) {
+					// fatal
+					debug("expr(<overflow>) %k", tok);
+					return 0;
+				}
+				switch (argc) {
+					case 1 : {
+						tok->test = 0;
+						tok->lhso = 0;
+						tok->rhso = lhs[0];
+					} break;
+					case 2 : {
+						tok->test = 0;
+						tok->lhso = lhs[0];
+						tok->rhso = lhs[1];
+					} break;
+					case 3 : {
+						tok->test = lhs[0];
+						tok->lhso = lhs[1];
+						tok->rhso = lhs[2];
+					} break;
+					default:
+						debug("expr(<>)");
+				}
+				switch (tok->kind) {				// temporary only cgen
+					case ASGN_add : {
+						node tmp = newnode(s, OPER_add);
+						tmp->rhso = tok->rhso;
+						tmp->lhso = tok->lhso;
+						tok->kind = ASGN_set;
+						tok->rhso = tmp;
+						//~ tmp->next = tok;
+						//~ tok->next = tmp;
+					} break;
+					case ASGN_sub : {
+						node tmp = newnode(s, OPER_sub);
+						tmp->rhso = tok->rhso;
+						tmp->lhso = tok->lhso;
+						tok->kind = ASGN_set;
+						tok->rhso = tmp;
+					} break;
+					case ASGN_mul : {
+						node tmp = newnode(s, OPER_mul);
+						tmp->rhso = tok->rhso;
+						tmp->lhso = tok->lhso;
+						tok->kind = ASGN_set;
+						tok->rhso = tmp;
+					} break;
+					case ASGN_div : {
+						node tmp = newnode(s, OPER_div);
+						tmp->rhso = tok->rhso;
+						tmp->lhso = tok->lhso;
+						tok->kind = ASGN_set;
+						tok->rhso = tmp;
+					} break;
+					case ASGN_mod : {
+						node tmp = newnode(s, OPER_mod);
+						tmp->rhso = tok->rhso;
+						tmp->lhso = tok->lhso;
+						tok->kind = ASGN_set;
+						tok->rhso = tmp;
+					} break;
+					case ASGN_shl : {
+						node tmp = newnode(s, OPER_shl);
+						tmp->rhso = tok->rhso;
+						tmp->lhso = tok->lhso;
+						tok->kind = ASGN_set;
+						tok->rhso = tmp;
+					} break;
+					case ASGN_shr : {
+						node tmp = newnode(s, OPER_shr);
+						tmp->rhso = tok->rhso;
+						tmp->lhso = tok->lhso;
+						tok->kind = ASGN_set;
+						tok->rhso = tmp;
+					} break;
+					case ASGN_ior : {
+						node tmp = newnode(s, OPER_ior);
+						tmp->rhso = tok->rhso;
+						tmp->lhso = tok->lhso;
+						tok->kind = ASGN_set;
+						tok->rhso = tmp;
+					} break;
+				}
+			}
+			/*/ find duplicate sub-trees				// ????
+			for (dup = buff; dup < lhs; dup += 1) {
+				if (samenode(*dup, tok)) {
+					print(0, INFO, s->file, tok->line, "+dupp: %+k", *dup);
+					break;
+				}
+				//~ if (tok) print(0, 0, s->file, tok->line, "+dupp: %+k", *dup);
+			} // */
+			*lhs++ = tok;
+		}
+		//~ fputmsg(stdout, "\n");
+	}
+	lookup(s, tok, 0);
+	trace(-2, "leave:expr('%+k')", tok);
+	return tok;
+}
+
+int args(state s, int mode) {
+	int argc = 0;
+	while (peek(s) && !skip(s, PNCT_rp)) {			// args
+		int qual = 0;
+		defn arg = 0, typ = type(s, qual);		// type
+		node val = 0, tag = next(s, TYPE_ref);		// name
+		if (skip(s, ASGN_set))
+			val = expr(s, TYPE_ref);		// init (const)
+		if (!tag)
+			tag = newnode(s, TYPE_ref);
+		if (typ && tag) {
+			//~ trace(0, "function(arg:%d : %T %k);", argc, typ, tag);
+			arg = declare(s, TYPE_ref, tag, typ, 0);
+			arg->init = val;
+			//~ arg->used = 1;
+		}
+		//~ if (typ && !(mode & fl_type))
+			//~ error(s, s->file, tag->line, "unexpected %T", typ);
+		//~ if (tag && !(mode & fl_name))
+			//~ error(s, s->file, tag->line, "unexpected %k", tag);
+		//~ if (val && !(mode & fl_init))
+			//~ error(s, s->file, tag->line, "unexpected %+k", val);
+
+		if (!skip(s, OPER_com)) {
+			if (test(s, PNCT_rp)) continue;
+			//~ if (!tmp) error(s, "missing declarator", s->file, s->line);
+			error(s, s->file, s->line, "',' expected");
+		}
+		if (!peek(s)) break;
+		argc++;
+	}
+	return argc;
+}
+
+defn spec(state s, int *kind) {
+	node tok, tag = 0;
+	defn tmp, def = 0;
+	int qual = 0;			// Access Modifier / Qualifyer
+	int offs = 0;
+	int size = 0;
+	int pack = 4;			// allignment
+
+	trace(+8, "enter:spec('%k')", peek(s));
+	//~ Storage Class	: auto register static extern typedef
+
+	//~ if (skipToken(s, 'static'|'inline')) qual |= 'static';
+	//~ if (skipToken(s, 'packed')) qual |= 'packed';
+	//~ if (skipToken(s, 'public')) qual |= 'public';
+	//~ if (skipToken(s, 'extern')) qual |= 'extern';
+
+	if (skip(s, TYPE_def)) {			// define
+		//~ define name type			// typedef
+		//~ define name = expr			// macro
+
+		if ((tag = next(s, TYPE_ref))) {
+			if (skip(s, ASGN_set)) {	// cnstdef: define PI = 3.14;
+				node val = expr(s, TYPE_def);
+				//~ int constnode = iscons(val);
+				int constnode = eval(NULL, val, TYPE_any);
+				if (constnode) {
+					//~ defn typ = lookup(s, 0, tag);
+					def = declare(s, constnode, tag, 0, 0);
+					def->type = val->type;
+					def->init = val;
+				}
+				else {
+					error(s, s->file, val->line, "Constant expression expected", peek(s));
+					def = declare(s, TYPE_def, tag, 0, 0);
+					def->type = NULL;
+					def->init = val;
+				}
+				trace(1, "define('%T' as '%k')", def, val);
+			}
+			else {				// typedef: define u4 unsigned int;
+				if ((def = type(s, qual)))
+					def = declare(s, TYPE_def, tag, def, 0);
+				else
+					error(s, s->file, tag->line, "typename excepted");
+				trace(1, "define('%T' as '%T')", def, def);
+			}
+			/*if (!skip(s, OPER_nop)) {
+				print(s, -1, s->file, tok->line, "unexcepted token '%k'", peek(s));
+				if (!peek(s)) return 0;
+				while (!skip(s, OPER_nop)) {
+					if (skip(s, OPER_end)) return 0;
+					skip(s, 0);
+				}
+			}*/
+		}
+		else error(s, s->file, s->line, "Identifyer expected");
+		*kind = TYPE_def;
+	}
+	else if (skip(s, TYPE_rec)) {			// struct
+		if (!(tag = next(s, TYPE_ref))) {	// name?
+			tag = newnode(s, TYPE_ref);
+			tag->line = s->line;
+		}
+		if (skip(s, PNCT_cln)) {		// pack?
+			if ((tok = next(s, CNST_int))) {
+				switch ((int)tok->cint) {
+					default : 
+						error(s, s->file, s->line, "alignment must be a small power of two, not %d", tok->cint);
+						break;
+					case  0 : pack =  0; break;
+					case  1 : pack =  1; break;
+					case  2 : pack =  2; break;
+					case  4 : pack =  4; break;
+					case  8 : pack =  8; break;
+					case 16 : pack = 16; break;
+				}
+			}
+		}
+		if (tag && skip(s, OPER_beg)) {		// body
+			def = declare(s, TYPE_rec, tag, 0, 0);
+			enter(s, def);
+			//~ while (skipToken(s, 'inherit'));
+			while (!skip(s, OPER_end)) {
+				defn typ = spec(s, &qual);
+				if (typ && (tok = next(s, TYPE_ref))) {
+					offs = align(offs, pack, typ->size);
+					tmp = declare(s, TYPE_ref, tok, typ, 0);
+					tmp->offs = offs;
+					offs += typ->size;
+					if (size < offs) size = offs;
+				}
+				if (!skip(s, OPER_nop)) {
+					// TODO error
+					if (!(tok = peek(s))) return 0;
+					error(s, s->file, tok->line, "unexcepted token '%k'", tok);
+					while (!skip(s, OPER_nop)) {
+						if (skip(s, OPER_end)) break;//return 0;
+						skip(s, 0);
+					}
+				}
+			}
+			def->size = size;
+			leave(s, 3, &def->args);		// ???
+			if (!def->args) warn(s, 2, s->file, s->line, "empty declaration");
+		}
+		if (kind) *kind = TYPE_def;
+	}
+	//~ else if (skip(s, TYPE_cls)) ;			// class
+	else if (skip(s, TYPE_enu)) {			// enum
+		if (!(tag = next(s, TYPE_ref))) {	// name?
+			tag = newnode(s, TYPE_ref);
+			tag->line = s->line;
+		}
+		/*if (skip(s, PNCT_lp)) {		// args?
+		}*/
+		if (tag && skip(s, OPER_beg)) {		// body
+			if (tag->name) def = declare(s, TYPE_enu, tag, 0, 0);
+			if (tag->name) enter(s, def);
+			while (!skip(s, OPER_end)) {
+				if ((tok = next(s, TYPE_ref))) {
+					tmp = declare(s, CNST_int, tok, type_i32, 0);
+					if (skip(s, ASGN_set)) {
+						tmp->init = expr(s, CNST_int);
+						if (eval(NULL, tmp->init, TYPE_i32) != CNST_int)
+							error(s, s->file, s->line, "integer constant expected");
+						//~ if (iscons(tmp->init) != CNST_int)
+							//~ error(s, s->file, s->line, "integer constant expected");
 					}
 					else {
-						if (ref->olhs)
-							printf("goto if false");
-						else
-							printf("goto");
+						tmp->init = newnode(s, CNST_int);
+						tmp->init->type = type_i32;
+						tmp->init->cint = offs;
+						offs += 1;
 					}
-				} break;
-				//~ case opr_out : printf("cout << "); break;
-				case opr_tpc : printf("(%s)", ref->type->name); break;
-				case opr_mul : printf("*"); break;
-				case opr_div : printf("/"); break;
-				case opr_mod : printf("%%"); break;
-
-				case opr_add : printf("+"); break;
-				case opr_sub : printf("-"); break;
-
-				case opr_shr : printf(">>"); break;
-				case opr_shl : printf("<<"); break;
-
-				case opr_gte : printf(">"); break;
-				case opr_geq : printf(">="); break;
-				case opr_lte : printf("<"); break;
-				case opr_leq : printf("<="); break;
-
-				case opr_neq : printf("!="); break;
-				case opr_equ : printf("=="); break;
-
-				case opr_and : printf("&"); break;
-				case opr_xor : printf("^"); break;
-				case opr_or  : printf("|"); break;
-
-				case opr_lnd : printf("&&"); break;
-				case opr_lor : printf("||"); break;
-
-				case ass_equ : printf("="); break;
-
-				case ass_mul : printf("*="); break;
-				case ass_div : printf("/="); break;
-				case ass_mod : printf("%%="); break;
-				case ass_add : printf("+="); break;
-				case ass_sub : printf("-="); break;
-				case ass_shr : printf(">>="); break;
-				case ass_shl : printf("<<="); break;
-				case ass_and : printf("&="); break;
-				case ass_xor : printf("^="); break;
-				case ass_or  : printf("|="); break;
-
-				case opr_ite : printf("?"); break;
-				case opr_els : printf(":"); break;
-
-				case opr_unm : printf("-"); break;
-				case opr_unp : printf("+"); break;
-				case opr_neg : printf("!"); break;
-				case opr_not : printf("~"); break;
-				case opr_idx : printf("[]"); break;
-				case opr_dot : printf("."); break;
-				//~ case opr_ptr : printf("*"); break;
-				case opr_fnc : printf("%s()", ref->name); break;
-				//~ case opr_def : printf("%s<>", ref->name); break;
-
-				case opr_com : printf(","); break;
+				}
+				/*else {
+					error(s, s->file, s->line, "identifyer expected");
+					return 0;
+				}*/
+				if (!skip(s, OPER_nop)) {
+					// TODO error
+					if (!(tok = peek(s))) return 0;
+					error(s, s->file, tok->line, "unexcepted token '%k'", tok);
+					while (!skip(s, OPER_nop)) {
+						if (skip(s, OPER_end)) break;//return 0;
+						skip(s, 0);
+					}
+				}
 			}
-		} break;
-		default : break;
+			if (tag->name) leave(s, 3, tag->name ? &def->args : 0);
+		}
+		if (kind) *kind = TYPE_def;
 	}
-	if (fmt) printf("\n");
-	fflush(stdout);
+	else def = type(s, 0);
+	trace(-8, "leave:spec('%+T')", def);
+	return def;
 }
 
-void print_strt(state s) {
-	int i;
-	printf("strt : table\n");
-	for (i = 0; i < MAX_TBLS; i+=1) {
-		struct llist_t *list = s->strt[i];
-		if (list) {
-			printf("%3d\t",i);
-			while (list) {
-				char *name = (char*)list->data;
-				printf("%s ", name);
-				list = list->next;
+node dvar(state s, defn typ, int qual) {
+	node prev = 0, root = 0;
+	node body = 0, tag;
+	defn ref;
+
+	trace(+4, "enter:dclr('%k')", peek(s));
+
+	if (typ == 0) {
+		return expr(s, 0);
+	}
+	else while ((tag = next(s, TYPE_ref))) {
+		defn def = typ, argv = 0;
+		if (skip(s, PNCT_lp)) {				// function
+			//~ trace(0, "function");
+			enter(s, 0);
+			args(s, fl_name);
+			if (skip(s, OPER_beg)) {			// int foo(...){
+				node tmp, list = 0;
+				while (peek(s) && !skip(s, OPER_end)) {
+					if ((tmp = stmt(s, 0))) {
+						if (!list) body = tmp;
+						else list->next = tmp;
+						list = tmp;
+					}
+				}
 			}
-			printf("\n");
+			leave(s, 3, &argv);
+		}
+		else while (skip(s, PNCT_lc)) {			// array	: int [20][30] | int(int)[100]
+			defn tmp = newdefn(s, TYPE_arr);
+			tmp->init = expr(s, CNST_int);
+			if (!skip(s, PNCT_rc)) {
+				error(s, s->file, s->line, "missing ']'");
+				break;
+			}
+			tmp->type = def;
+			def = tmp;
+		}// */
+		if (body && argv) {
+			ref = declare(s, TYPE_fnc, tag, def, argv);
+			ref->init = body;
+		}
+		else {
+			ref = declare(s, TYPE_ref, tag, def, argv);
+			if (skip(s, ASGN_set))
+				ref->init = expr(s, TYPE_ref);
+		}
+		if (!prev) root = tag;
+		else prev->next = tag;
+		prev = tag;
+
+		if (!skip(s, OPER_com)) break;
+		if (!test(s, TYPE_ref))
+			error(s, s->file, s->line, "unexpected ','");
+		/*
+		if (ast && ast->kind == OPER_com)
+			ast->rhso = tok;
+		else ast = tok;
+		*/
+		//~ trace(4, "declare('%T' as '%+T')", ref, typ);
+	}
+
+	trace(-4, "leave:dclr('%-k')", root);
+	return root;
+}
+
+int argc(defn sym) {
+	int argc = 0;
+	defn arg = sym->args;
+	while (arg) {
+		argc += 1;
+		arg = arg->next;
+	}
+	return argc;
+}
+
+void enter(state s, defn def) {
+	s->nest += 1;
+	s->scope[s->nest].csym = def;
+	//~ s->scope[s->nest].stmt = NULL;
+	//~ return &s->scope[s->nest];
+}
+
+void leave(state s, int mode, defn *d) {
+	defn ref = 0, def = 0;
+	int i;
+	s->nest -= 1;
+	for (i = 0; i < TBLS; i++) {
+		defn def = s->deft[i];
+		while (def && def->nest > s->nest) {
+			defn tmp = def;
+			def = def->deft;
+			tmp->deft = 0;
+		}
+		s->deft[i] = def;
+	}
+	while (s->defs) {
+		defn sym = s->defs;
+		if (sym->nest <= s->nest) break;
+
+		s->defs = sym->next;
+
+		if (sym->kind == TYPE_ref) {		// ref
+			if (mode & 4 && !sym->used)
+				warn(s, 8, s->file, sym->link ? sym->link->line : 0, "unused variable '%T'", sym);
+			sym->next = ref;
+			ref = sym;
+		} else {
+			sym->next = def;
+			def = sym;
+		}
+
+		if (d) {
+			//~ if (mode & 2) // type
+			sym->next = *d;
+			*d = sym;
 		}
 	}
+	//~ return &s->scope[s->nest + 1];
 }
 
-//}--8<------------------------------------------------------------------------*/
+/** COMP.C ---------------------------------------------------------------------
+ * scan a source
+ * @param mode : no script mode
+**/
+/** STMT.C ---------------------------------------------------------------------
+ * scan a statement (mode ? enable decl : do not)
+ * @param mode : enable or not <decl>.
+ *	ex : "for( ; ; ) int a;", if mode == 0 => error
+ * stmt := ';'
+!*	 | (<decl> | <expr>) ';'
+ *	 | '{' <stmt>* '}'
+ *	 | (static)? 'if' (<expr>) <stmt> ('else' <stmt>)?
+ *	 | (static | parallel)? 'for' '(' <decl>?';' <expr>?';' <expr>? ')' <stmt>
++*	 | 'return' <expr>? ';'
++*	 | 'continue' ';'
++*	 | 'break' <IDTF>?;
++*	 | 'goto' <IDTF>;
++*	 | <IDTF> ':'
++*	 | 'sync' ('('<vars>')')? '{'<stmt>'}'		// synchtonized
++*	 | 'task' ('('<vars>')')? '{'<stmt>'}'		// parallel task
+?*	 | 'fork'					// ? : task with code length = 0
+x*sync {
+x*	task {
+x*		statements;
+x*	}
+x*	task {
+x*		statements;
+x*	}
+x*	task {
+x*		statements;
+x*	}
+x*} // sync : wait for tasks
+x* static if(...)		// compile time test
+x* static for(...)		// loop unroll
+x* parallel for(...)		// parallel loop
+**/
+/** DECL.C ---------------------------------------------------------------------
+ * scan a declaration, add to ast tree
+ * @param mode : enable or not <expr>.
+ *<decl>:
 
-/*--8<--------------------------------------------------------------------------
+ * variable
+ * 	typename <idtf> (= <expr>)?, (<idtf> (= <expr>)?)? \;
+ + array
+ * 	typename <idtf>[]... (= <expr>)?, (<idtf> (= <expr>)?)? \;
+ + function
+ * 	typename <idtf> \( <args> \) ({<stmt>})? \;
+ + operator
+ * 	typename <oper> \( <args> \) ({<stmt>})? \;
+ * template
 
-struct state_t s;
-node t;
+ *	define ...
+ - 	define '{'(name'('constant)')'*'}'		// enum
+ * 	define <idtf> = <cons>;				// typed, named const
+ * 	define <idtf> <type>;				// typedef
+ ? 	define <idtf>(args...) {stmt}			// inline
+ *	struct (\:<pack>)? (tag) '{'(<decl>)*'}'	// record
 
-//~ #include "type.c"
+ *	enumerate ...
+ *	enum <idtf>? {(<idtf> (= cintexpr)?;)+}		// enum
+ !	enum <idtf>\(...\) {(<idtf> \(... \);)+}	// enum
 
-int main() {
-	char exp[]  = "'' di 0378 0xff 0b11111111c 255 1243879878 0xffffffff 0. .0 0.0 1. .1 0.33 0e33 1e33 1e-33 3.14e-100 \"hello vilag\" '\\\"' 'Q' '\\x51' '\\121' 'WBMP' 'xx\\x4B'\n";
-	//~ char exp[]  = "\"3d\" \"4f\" \"ks\" \"ks\" \"kw45ys\" \"k3ys\" \"k34uys\" \"kerghs\" \"kerths\" \"ke6h53s\" \"k35hs\" \"k356h3s\" \"krebyts\" \"kertherts\" \"kertherts\" \"kserth\" \n";
-	//~ char exp[]  = "int a[10], b[100] = (1,2,3,4,5);, c[20*sin(.5)]=88, d(int a,b,c);\n";
-	//~ char exp[]  = "int a(int) = 0, f;\n";
-	//~ puts(exp); fflush(stdout);
-	cc_init(&s, exp); while ((t = next_token(&s))) print_token(t,4+2+1);
-	//~ initstate(&s, exp); printf("\n%d\n", s.buffp - s.buffer);
-	//~ printf("%d\n", sizeof(struct state_t));
-	printf("%d\n", sizeof(struct token_t));
-	//~ printf("%d\n", sizeof(struct llist_t));
-	//~ print_strt(&s);
-	//~ printf("\n%d\n", s.buffp - s.buffer);
-	print_defn(&s);
-	//~ int i; for (i=0; i<256; i+=1) printf("\t/%c %03o %c   %c/\tsym_und,\n", '*',i ,i , '*');
-	return 0;
-}
+ *	packed ???
 
-//--8<------------------------------------------------------------------------*/
+ *	typename
+ *	template
+
+ * var	(static)? <type> name = expr [, name = expr]*
+ * arr	 $ (static)? <type> name'['expr']' (= '('(expr[,expr]*)')'|expr)?
+X* fnc	 $ (static)? <type> name'('type name (= expr)? [,type name (= expr)?]*')'
+X* ???	 $ (packed)? <type> name'('type name (= expr)? [,type name (= expr)?]*')'
+ * 	 $ static float[100][100] a, b, c;
+ *
+
+//~ defn spec(state s, int *qual);		// type specifyer
+//~ node dclr(state s, defn typ, int qual);	// declarator | expr
+//~ node args(state s) ;			// scan function arguments
+
+//~ packed(2) struct
+
+//~ template class
+//~ template function
+//~ template operator
+
+//~ template(typename t1, typename t2) pair;
+//~ pair.t1
+
+//~ template(typename ElementT, int size) class stack {
+//~ 	ElementT bp[size], *sp = bp;
+//~ 
+//~ }
+
+//~ enum token(int prec, int argc, str name) {
+//~ 	TYPE_i32(0x1, 0, "integer");
+//~ 	STMT_for(0x0, 0, "for");
+//~ 	OPER_add(0xc, 2, "+");
+//~ 	ASGN_mul(0x2, 2, "*=");
+//~ }
+//~ TYPE_i32.name === "integer"
+**/
+/** EXPR.C ---------------------------------------------------------------------
+ * scan and or type check an expression
+ * if mode == TYPE_ref then exit when ','
+ * <expr> := 
+ * 	 | CNST
+ * 	 | IDTF
+ * 	 | <expr> '[' <expr> ']'		\arr	array
++* 	 | '[' <expr> ']'			\ptr	pointer
+ * 	 | <expr> '(' <expr>? ')'		\fnc	function
+ * 	 | '(' <expr> ')'			\pri	precedence
+ * 	 | OPER <expr>				\uop	unary operator
+ * 	 | <expr> OPER <expr>			\bop	binary operator
+ * 	 | <expr> '?' <expr> ':' <expr>		\top	ternary operator
+ * 	returns the root node of the expression tree
+**/
+//}
