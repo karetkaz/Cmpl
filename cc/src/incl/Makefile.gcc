@@ -1,12 +1,13 @@
 INCLUDE = -I .
-CFLAGS = -w
+CFLAGS = -Wall -ggdb
 COPTS = -c -m32
 LIBS = -lm
-LNK = gcc
+#~ CCC = C:/gcc/bin/gcc
 CCC = gcc
+LNK = $(CCC)
 
 main: $(OBJS)
-	$(LNK) -m32 -o $(BINDIR)/main $(OBJS) $(LIBS)
+	$(LNK) -m32 -o $(BINDIR)/main $(LIBS) $(OBJS)
 
 $(OBJDIR)/main.o:
 	$(CCC) $(COPTS) $(CFLAGS) $(SRCDIR)/main.c -o $(OBJDIR)/main.o

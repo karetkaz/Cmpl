@@ -1,13 +1,15 @@
 //{ #include "clex.c"
 
-#include "ccvm.h"
+#include "main.h"
 //~~~~~~~~~~ Lexer ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #include <unistd.h>
 #include <string.h>
 #include <fcntl.h>
 #include <math.h>
 
-int cc_srcf(state s, char* file) {
+int fill_buf(state s);
+
+int source(state s, int mode, char* file) {
 	if (s->_fin > 3)
 		close(s->_fin);
 	s->_fin = -1;
@@ -19,12 +21,16 @@ int cc_srcf(state s, char* file) {
 	s->line = 0;
 	//~ s->nest = 0;
 
-	if (file) {
+	if (file && mode == 0) {
 		if ((s->_fin = open(file, O_RDONLY)) <= 0) return -1;
 		s->file = file;
 		s->line = 1;
-		//fill_buf(s);
 	}
+	else if (file) {
+		s->_cnt = strlen(file);
+		s->_ptr = file;
+	}
+	fill_buf(s);
 	return 0;
 }
 
@@ -83,15 +89,52 @@ int peek_chr(state s) {
 }
 
 int back_chr(state s, int chr) {
-	if (s->_chr != -1) {
-		//~ fatal(s, __FILE__, __LINE__, "back_chr()\n");
-		fatal(s, "back_chr()\n");
-		return 0;
-	}
+	dieif (s->_chr != -1);
 	return s->_chr = chr;
 }
 
-int rehash(register char* str, unsigned size) {
+/*//~ alloc/realloc/calloc
+inline unsigned memlen(list meml) {
+	return meml->data - (unsigned char*)meml;
+	//~ return (unsigned char*)&meml->data - meml->data;
+}
+
+void* newmem(state s, unsigned size, unsigned algn) {
+	list mem;
+	//~ if (oldp == (void*)-1);	// malloc
+	//~ else if (oldp == (void*)0);	// calloc
+	//~ else {}			// ralloc
+	for (mem = s->free; mem; mem = mem->next) {
+		unsigned len = memlen(mem);
+		if (size >= len + sizeof(mem)) {
+			list seg = (list)(mem->data + len);
+			seg->data = mem->data;
+			seg->next = s->used;
+			s->used = seg;
+			mem->data += len + sizeof(mem);
+			return seg->data;
+		}
+	}
+	return 0;
+}
+
+void delmem(state s, void* memp) {
+	list ml;
+	//~ if (memp == (void*)-1) return;
+	//~ if (memp == (void*)0) return;
+	//~ else 
+	for (ml = s->used; ml; ml = ml->next) {
+		if (ml->data == memp) {
+			ml->next = s->free;
+			s->free = ml;
+			return;
+		}
+	}
+	//~ error()
+}
+*/
+
+int rehash(register const char* str, unsigned size) {
 	static unsigned const crc_tab[256] = {
 		0x00000000, 0x77073096, 0xEE0E612C, 0x990951BA,
 		0x076DC419, 0x706AF48F, 0xE963A535, 0x9E6495A3,
@@ -167,53 +210,12 @@ int rehash(register char* str, unsigned size) {
 	return (hs ^ 0xffffffff) % TBLS;
 }
 
-/*//~ alloc/realloc/calloc
-inline unsigned memlen(list meml) {
-	return meml->data - (unsigned char*)meml;
-	//~ return (unsigned char*)&meml->data - meml->data;
-}
-
-void* newmem(state s, unsigned size, unsigned algn) {
-	list mem;
-	//~ if (oldp == (void*)-1);	// malloc
-	//~ else if (oldp == (void*)0);	// calloc
-	//~ else {}			// ralloc
-	for (mem = s->free; mem; mem = mem->next) {
-		unsigned len = memlen(mem);
-		if (size >= len + sizeof(mem)) {
-			list seg = (list)(mem->data + len);
-			seg->data = mem->data;
-			seg->next = s->used;
-			s->used = seg;
-			mem->data += len + sizeof(mem);
-			return seg->data;
-		}
-	}
-	return 0;
-}
-
-void delmem(state s, void* memp) {
-	list ml;
-	//~ if (memp == (void*)-1) return;
-	//~ if (memp == (void*)0) return;
-	//~ else 
-	for (ml = s->used; ml; ml = ml->next) {
-		if (ml->data == memp) {
-			ml->next = s->free;
-			s->free = ml;
-			return;
-		}
-	}
-	//~ error()
-}
-*/
-
-char* lookupstr(state s, char *name, unsigned size, unsigned hash) {
+char *mapstr(state s, char *name, unsigned size/* = -1U*/, unsigned hash/* = -1U*/) {
 
 	list newn, next, prev = 0;
 
-	if (hash == -1) hash = rehash(name, size);
-
+	if (size == -1U) size = strlen(name);
+	if (hash == -1U) hash = rehash(name, size);
 	for (next = s->strt[hash]; next; next = next->next) {
 		//~ int slen = next->data - (unsigned char*)next;
 		register int c = memcmp(next->data, name, size);
@@ -229,8 +231,8 @@ char* lookupstr(state s, char *name, unsigned size, unsigned hash) {
 	}
 
 	s->buffp += size+1;
-	newn = (struct list_t*)s->buffp;
-	s->buffp += sizeof(struct list_t);
+	newn = (struct listn_t*)s->buffp;
+	s->buffp += sizeof(struct listn_t);
 
 	if (!prev) s->strt[hash] = newn;
 	else prev->next = newn;
@@ -241,7 +243,7 @@ char* lookupstr(state s, char *name, unsigned size, unsigned hash) {
 	return name;
 }
 
-int bslash(state s) {
+int escchr(state s) {
 	int chr;
 	switch (chr = read_chr(s)) {
 		case  'a' : return '\a';
@@ -753,10 +755,10 @@ int read_tok(state s, node tok)
 				read_chr(s);
 				tok->kind = ASGN_and;
 			}
-			/*else if (chr == '&') {
+			else if (chr == '&') {
 				read_chr(s);
 				tok->kind = OPER_lnd;
-			}*/
+			}
 			else tok->kind = OPER_and;
 		} break;
 		case '|' : {
@@ -765,10 +767,10 @@ int read_tok(state s, node tok)
 				read_chr(s);
 				tok->kind = ASGN_ior;
 			}
-			/*else if (chr == '|') {
+			else if (chr == '|') {
 				read_chr(s);
 				tok->kind = OPER_lor;
-			}*/
+			}
 			else tok->kind = OPER_ior;
 		} break;
 		case '^' : {
@@ -837,7 +839,7 @@ int read_tok(state s, node tok)
 			while ((chr = read_chr(s)) != -1) {
 				if (chr == '\'') break;
 				else if (chr == '\n') break;
-				else if (chr == '\\') chr = bslash(s);
+				else if (chr == '\\') chr = escchr(s);
 				val = val << 8 | chr;
 				*ptr++ = chr;
 			}
@@ -860,7 +862,7 @@ int read_tok(state s, node tok)
 			while ((chr = read_chr(s)) != -1) {
 				if (chr == '\"') break;
 				else if (chr == '\n') break;
-				else if (chr == '\\') chr = bslash(s);
+				else if (chr == '\\') chr = escchr(s);
 				*ptr++ = chr;
 			}
 			*ptr = 0;
@@ -870,7 +872,7 @@ int read_tok(state s, node tok)
 			}
 			tok->type = type_str;
 			tok->hash = rehash(beg, ptr - beg);
-			tok->name = lookupstr(s, beg, ptr - beg, tok->hash);
+			tok->name = mapstr(s, beg, ptr - beg, tok->hash);
 			return tok->kind = CNST_str;
 		} break;
 		read_idf : {		// [a-zA-Z_][a-zA-Z0-9_]*
@@ -888,10 +890,12 @@ int read_tok(state s, node tok)
 				return CNST_int;
 			}
 			else if (!strcmp(beg, "__FILE__")) {
-				tok->kind = CNST_str;
+				//~ return (*tok = s->ccfn).kind;
+				int len = strlen(s->file);
 				tok->type = type_str;
-				tok->name = s->file;
-				return CNST_str;
+				tok->hash = rehash(s->file, len);
+				tok->name = mapstr(s, beg, len, tok->hash);
+				return tok->kind = CNST_str;
 			}
 			else if (!strcmp(beg, "__DEFN__")) {
 				ptr = beg;
@@ -903,10 +907,10 @@ int read_tok(state s, node tok)
 						while ((*ptr++ = *src++)) ;
 					}
 				}
-				tok->kind = CNST_str;
-				tok->name = lookupstr(s, beg, ptr - beg, rehash(beg, ptr - beg));
 				tok->type = type_str;
-				return CNST_str;
+				tok->hash = rehash(beg, ptr - beg);
+				tok->name = mapstr(s, beg, ptr - beg, tok->hash);
+				return tok->kind = CNST_str;
 			}
 			//~ else if (!strcmp(beg, "__TIME__"));
 			//~ else if (!strcmp(beg, "__DATE__"));
@@ -921,7 +925,7 @@ int read_tok(state s, node tok)
 				tok->kind = TYPE_ref;
 				tok->type = tok->link = 0;
 				tok->hash = rehash(beg, ptr - beg);
-				tok->name = lookupstr(s, beg, ptr - beg, tok->hash);
+				tok->name = mapstr(s, beg, ptr - beg, tok->hash);
 			}
 		} break;
 		read_num : {		//!TODO ([0-9]+.[0-9]*| ...)([eE][+-]?[0-9]+)?
@@ -1046,6 +1050,7 @@ int read_tok(state s, node tok)
 				tok->kind = CNST_flt;
 				//~ tok->type = type_f64;
 				tok->cflt = flt * pow(10, (get_type & neg_exp ? -exp : exp) + val);
+				//~ return CNST_flt;
 			}
 			else {					// integer
 				if ((get_type & oct_err) == oct_err) {
@@ -1056,9 +1061,9 @@ int read_tok(state s, node tok)
 					warn(s, 2, s->file, tok->line, "integer constant '%s' is too large", beg);
 				}
 				tok->kind = CNST_int;
+				//~ tok->type = type_i32;
 				tok->cint = val;
-				//~ tok->type = type_i64;
-				return CNST_int;
+				//~ return CNST_int;
 			}
 		} break;
 	}
@@ -1069,7 +1074,7 @@ node peek(state s) {
 	if (s->_tok == 0) {
 		s->_tok = newnode(s, 0);
 		if (!read_tok(s, s->_tok)) {
-			delnode(s, s->_tok);
+			eatnode(s, s->_tok);
 			s->_tok = 0;
 		}
 	}
@@ -1099,7 +1104,7 @@ int skip(state s, int kind) {
 	if (!ast || (kind && ast->kind != kind))
 		return 0;
 	s->_tok = ast->next;
-	delnode(s, ast);
+	eatnode(s, ast);
 	return 1;
 }
 //}

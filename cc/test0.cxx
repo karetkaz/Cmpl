@@ -1,7 +1,43 @@
+//~ xterm -e gdb --quiet main
 //~ main -c -wx text0.cxx
 //~ main -c -t text0.cxx
 //~ main -c -x -we test0.cxx
 //~ ./main -x "3 + 3 -4 + -2;"
+
+//~ define pi2 = math.pi;
+
+//~ int a, b, c;
+//~ 2 + math.pi;
+//~ -math.pi;
+
+//~ -math.sin(2);
+
+//~ int32 operator add(int32 a, int32 b) {return emit(i32.add, i32(b), i32(a));}
+//~ int32 operator add(int32 ref a, int32 b) {return a = emit(i32.add, i32(b), i32(a));}
+
+//~ emit(f32.div, f32 (3.14), f32(2.));	// ok
+//~ emit(f32.neg, f32(math.pi));		// ok
+//~ emit(f32.div, float(3.16), f32(1.));	// ok
+
+//~ emit(v4f.dp4, f32(3), f32(2), f32(1), f32(0), f32(3), f32(2), f32(1), f32(0));
+//~ emit(v4f.add, f32(3), f32(2), f32(1), f32(0), f32(3), f32(2), f32(1), f32(0));
+define a_re = 3;
+define a_im = 4;
+define b_re = 2;
+define b_im = 5;
+
+emit(void, f32(b_re));		// a.re * b.im, a.im * b.re
+
+//~ emit(void, f32(b_im), f32(b_re), f32(a_im), f32(a_re));		// a.re * b.re, a.im * b.im
+//~ emit(void, f32(b_re), f32(b_im), f32(a_im), f32(a_re));		// a.re * b.im, a.im * b.re
+/*im = */emit(f64.add);				//>im = a.re * b.im + a.im * b.re
+/*re = */emit(f64.sub);				//>re = a.re * b.re - a.im * b.im
+
+//~ emit(void, f32(3), f32(2), f32(1), f32(0));
+//~ emit(void, f32(1), f32(2), f32(3), f32(4));
+//~ emit(swz.zyxx);
+//~ math.sin(math.pi);
+//~ emit(f32.div);
 
 /* type test
 /+	alias
@@ -64,9 +100,7 @@ int[] fn(int a, int b, double d) {
 // +/
 
 //~ // */
-
-//~ /* functios
-
+/* functions
 //~ double e = math.e;
 //~ double pi = math.pi;
 //~ double pi2 = math.pi/2;
@@ -95,7 +129,6 @@ int[] fn(int a, int b, double d) {
 //~ int64 a = libc.shl(int64(b), 50);
 
 // */
-
 /* constants
 //~ flt64 a = -0.;
 //~ flt64 b = +0.;
@@ -113,7 +146,7 @@ int[] fn(int a, int b, double d) {
 //~ flt32 seps = flt32.eps;
 //~ flt32 smin = flt32.min;
 //~ flt32 smax = flt32.max;
-*/
+// */
 
 /* test bits
 int32 a := 0x80000100;
@@ -159,7 +192,6 @@ if (a) {
 // +/
 
 // */
-
 /* test libc
 //~ flt64 one = math.log(math.exp(8.));
 //~ if (0) {
@@ -168,27 +200,23 @@ one = math.log(flt64(3));
 //~ }
 
 //~ */
-
 /* factorial
 define  n = 5;
 double res = 1;
 //~ int i;
-for (int32 i = 1; i <= n; i += 1)
+for (int i = 1; i <= n; i += 1)
 	res *= i;
 
 // */
-
 /* calc e
 define eps = 1e-30;
-flt32 tmp = 1, res = 1;
-// i;
-for (int i = 1; tmp > eps; i += 1) {
+flt32 tmp, res = 1;
+for (int32 i = 1; tmp > eps; i += 1) {
 	res += tmp /= i;
 	//~ res = res + (tmp = tmp / i);
 	//~ tmp = tmp / i; res = res + tmp;
 }
 // */
-
 /* count a lot
 int32 a = 0x04f;
 int32 b = 0x04f;
@@ -200,17 +228,16 @@ for (int i = 1; i <= n; i += 1) {
 	c += float(i);
 }
 // */
-
 /* test if
-define signed int32;
-define float flt32;
-signed i = 1 + 4;
-float a = 4 * 2;
+//~ define signed int32;
+//~ signed i = 1 + 4;
+//~ float a = 4 * 2;
 
+//~ define i = 2;
 if (i) {
 	if (i == 1) a = 1.1; else a = 2.1;
 	if (i == 1) a = 1.2; else ;
-	if (i == 1); else a = 2.2;
+	if (i == 1) ;else a = 2.2;
 	if (i == 1) a = 1.3;
 
 	else if (i == 2) a = 1.42;
@@ -236,7 +263,6 @@ else {
 	//~ {{;};;{;}}
 
 // */
-
 /* test if static
 //~ define i = 0;
 float a = math.nan;
@@ -254,245 +280,192 @@ else {
 
 /* RayTrace
 define rgb int32;
-define qual = 0;
+define qual = 2;
 define width = 320 << qual;
 define height = 240 << qual;
 
 rgb cBuff[width][height];
-int zBuff[width][height];
+//~ int zBuff[width][height];
 
-//~ bmp.save("raytr1.bmp", cBuff, width, height);
+class Light {
+	vector	ambi;		// Ambient
+	vector	diff;		// Diffuse
+	vector	spec;		// Specular
+	vector	attn;		// Attenuation
+	vector	pos;		// position
+	vector	dir;		// direction
+	scalar	sCos;
+	scalar	sExp;
+	short	attr;		// typeof(on/off)
+	vec4f lit(out ambi, out diff, out spec, vec4f pos, vec4f nrm, vec4f eye, Material mtl) {
+		vec4f tmp, color = mtl.emis;
 
-//~ */
+		if (attr & L_on) {
+			vecptr D = pos - this.pos;	// distance
+			vecptr R, L = dir;			// (L) lightDir
+			scalar dotp, attn = 1, spot = 1;
 
-/** 3d math
+			if (vec4f.dp3(dir, dir)) {			// directional or spot light
+				if (sCos) {						// Spot Light
+					scalar spot = L.dp3(D.nrm());
+					attn = 0;
+					if (spot > cos(toRad(sCos))) {
+						spot **= sExp;
+					}
+				}
+			}
+			else {
+				L = vec4f.nrm(D);
+			}// * /
 
-struct flt32 {
-	final flt32 add(flt32 lhs, flt32 rhs) {emit(vm.add.f32, flt32(lhs), flt32(rhs));}
-	final flt32 operator +=(out flt32 lhs, flt32 rhs) = (lhs = add(lhs, rhs));
-	final flt32 operator + (flt32 lhs, flt32 rhs) = (add(lhs, rhs));
+			attn = spot / vecpev(this.attn, D.len());
+
+			color += ambi = this.ambi * mtl.ambi * attn;
+
+			if ((dotp = -vecdp3(N, L)) > 0) {
+				color += diff = this.diff * mtl.diff * (attn * dotp);
+
+				R = vecnrm(vecrfl(V - eye, N));
+				if ((dotp = -vecdp3(R, L)) > 0) {
+					color += spec = this.spec * mtl.spec * (attn * (dotp ** spow));
+				}
+			}
+		}
+		return color;
+		col[i].rgb = vecrgb(&color);
+	}
 }
 
-//~ int08
-//~ int16
-//~ int32
-//~ int64
-
-//~ uns08
-//~ uns16
-//~ uns32
-//~ uns64
-
-//? flt16
-//~ flt32
-//~ flt64
-
-//p2x32
-//+ f2x32
-
-//p4x32
-//? f8x16
-//+ f4x32
-//+ f2x64
-
-struct vec4f : p4x32 {
-	//~ flt32 x;
-	//~ flt32 y;
-	//~ flt32 z;
-	//~ flt32 w;
-	//~ static this() {}
-	this() {emit(vm.ldz.x4);}
-	this(flt32 a) {emit(vm.dup.x1, 0, a); emit(vm.dup.x2, 0);}
-	this(flt32 x, flt32 y, flt32 z) {this.x = x; this.y = y; this.z = z; this.w = 0;}
-	this(flt32 x, flt32 y, flt32 z, flt32 w) {this.x = x; this.y = y; this.z = z; this.w = w;}
-
-	vec4f final operator +(vec4f lhs, vec4f rhs) {return add(lhs, rhs);}
-	vec4f final operator +(vec4f lhs, flt32 rhs) {return add(lhs, vec4f(rhs));}
-	vec4f final operator +(flt32 lhs, vec4f rhs) {return add(vec4f(lhs), rhs);}
-	vec4f final operator +=(out vec4f lhs, vec4f rhs) {return lhs = add(lhs, rhs);}
-	vec4f final operator +=(out vec4f lhs, flt32 rhs) {return lhs = add(lhs, vec4f(rhs));}
-
-	static vec4f neg(vec4f rhs) {emit(vm.neg.pf4, p4x32(rhs));}
-	static vec4f add(vec4f lhs, vec4f rhs) {return emit(vm.add.pf4, vec4f(lhs), vec4f(rhs));}
-	static vec4f sub(vec4f lhs, vec4f rhs) {return emit(vm.sub.pf4, vec4f(lhs), vec4f(rhs));}
-	static vec4f mul(vec4f lhs, vec4f rhs) {return emit(vm.mul.pf4, vec4f(lhs), vec4f(rhs));}
-	static vec4f div(vec4f lhs, vec4f rhs) {return emit(vm.div.pf4, vec4f(lhs), vec4f(rhs));}
-
-	static flt32 dp3(vec4f lhs, vec4f rhs) {return flt32(vm.emit(vm.dp3.pf4, vec4f(lhs), vec4f(rhs)));}
-	static flt32 dp4(vec4f lhs, vec4f rhs) {return flt32(vm.emit(vm.dp4.pf4, vec4f(lhs), vec4f(rhs)));}
-	static flt32 dph(vec4f lhs, vec4f rhs) {return flt32(vm.emit(vm.dph.pf4, vec4f(lhs), vec4f(rhs)));}
-	static flt32 len(vec4f lhs) {return sqrt(flt32(vm.emit(vm.dph.pf4, vec4f(lhs), vec4f(lhs))));}
-
-	static flt32 eval(float val) {return (((w * val + z) * val + y) * val) + x;}
-
-	flt32 dp3(vec4f rhs) {return dp3(this, rhs);}
-	flt32 dph(vec4f rhs) {return dph(this, rhs);}
-	flt32 dp4(vec4f rhs) {return dp4(this, rhs);}
-	flt32 len() {return len(this);}
-
-	static vec4f mul(out vec4f res, ref vec4f lhs, ref vec4f rhs) {
-		res.x = lhs.x * rhs.x;
-		res.y = lhs.y * rhs.y;
-		res.z = lhs.z * rhs.z;
-		res.w = lhs.w * rhs.w;
-		return res;
-	}
-
-	operator vec *= (vec rhs) {return mul(this, this, rhs);}
-	static operator vec * (vec lhs, vec rhs) {return mul(this, lhs, rhs);}
-
-	flt32 operator () (flt32 val) {return this.eval(val);}
+class Material {	// material
+	vec4f emis(0, 0, 0, 1);		// Emissive
+	vec4f ambi(0, 0, 0, 1);		// Ambient
+	vec4f diff(0, 0, 0, 1);		// Diffuse
+	vec4f spec(0, 0, 0, 1);		// Specular
+	flt32 spow(1);				// Shin...
+	static Material Brass = Material {
+		ambi(0.329410, 0.223529, 0.027451, 1),
+		diff(0.780392, 0.568627, 0.113725, 1),
+		spec(0.992157, 0.941176, 0.807843, 1),
+		spow(27.8974)
+	};
+	static Material Bronze = Material {
+		ambi(0.2125, 0.1275, 0.054, 1.0),
+		diff(0.714, 0.4284, 0.18144, 1.0), 
+		spec(0.393548, 0.271906, 0.166721),
+		spow(25.6)
+	};
+	static Material Chrome = Material {
+		ambi(0.25, 0.25, 0.25, 1.0),
+		diff(0.4, 0.4, 0.4, 1.0),
+		spec(0.774597, 0.774597, 0.774597, 1.0),
+		spow(76.8)
+	};
+	static Material Silver = Material {
+		ambi(0.19225, 0.19225, 0.19225, 1.0),
+		diff(0.50754, 0.50754, 0.50754, 1.0),
+		spec(0.508273, 0.508273, 0.508273, 1.0),
+		spow(51.2)
+	};
+	static Material Gold = Material {
+		ambi(0.24725, 0.1995, 0.0745, 1.0),
+		diff(0.75164, 0.60648, 0.22648, 1.0),
+		spec(0.628281, 0.555802, 0.366065, 1.0),
+		spow(51.2)
+	};
+	static Material Jade = Material {
+		ambi(0.135,0.2225,0.1575,0.95),
+		diff(0.54, 0.89, 0.63, 0.95),
+		spec(0.316228, 0.316228, 0.316228, 0.95),
+		spow(12.8)
+	};
+	static Material Ruby = Material {
+		ambi(0.1745,0.01175 ,0.01175,0.55 ),
+		spec(0.61424,0.04136, 0.04136,0.55),
+		diff(0.727811, 0.626959, 0.626959,0.55),
+		spow(76.8)
+	};
+	lit(Light[] l) {}
 };
 
-struct mat4f {
-	vec4f x;
-	vec4f y;
-	vec4f z;
-	vec4f w;
-	//~ static this() {}
-	this() {}
-	//~ this(flt32 a) {emit(vm.dup.x1, 0, a); emit(vm.dup.x2, 0);}
-	//~ this(flt32 x, flt32 y, flt32 z) {this.x = x; this.y = y; this.z = z; this.w = 0;}
-	//~ this(flt32 x, flt32 y, flt32 z, flt32 w) {this.x = x; this.y = y; this.z = z; this.w = w;}
+lights[] = {
+	Light(...),
+	new lghtsrc(...),
+};
 
-	mat4f operator +(ref mat4f lhs, ref mat4f rhs) {return add(new, lhs, rhs);}
-	mat4f operator +=(out mat4f lhs, ref mat4f rhs) {return add(lhs, lhs, rhs);}
+scene[] = {
+	new prim(new sphere(...), mtl.gold),
+	new prim(new tours(...), mtl.gold),
+	new mesh(mtl.gold),
+};
 
-	static vec4f dp3(ref mat4f mat, vec4f vec) {
-		return vec4f(
-			vec4f.dp3(mat.x, vec),
-			vec4f.dp3(mat.y, vec),
-			vec4f.dp3(mat.z, vec),
-			1);
-	}
-	static vec4f dp4(ref mat4f mat, vec4f vec) {
-		return vec4f(
-			vec4f.dp4(mat.x, src),
-			vec4f.dp4(mat.y, src),
-			vec4f.dp4(mat.z, src),
-			vec4f.dp4(mat.w, src));
-	}
-	static vec4f dph(ref mat4f mat, vec4f vec) {
-		return vec4f(
-			vec4f.dph(mat.x, src),
-			vec4f.dph(mat.y, src),
-			vec4f.dph(mat.z, src),
-			vec4f.dph(mat.w, src));
-	}
-
-	vec4f dp3(vec4f rhs) {return dp3(this, rhs);}
-	vec4f dph(vec4f rhs) {return dph(this, rhs);}
-	vec4f dp4(vec4f rhs) {return dp4(this, rhs);}
-
-	operator vec4f mul(ref mat4f mat, vec4f vec) {return dp4(mat, rhs);}
-
-	static mat4f add(out mat4f res, ref mat4f lhs, ref mat4f rhs) {
-		res.x = lhs.x + rhs.x;
-		res.y = lhs.y + rhs.y;
-		res.z = lhs.z + rhs.z;
-		res.w = lhs.w + rhs.w;
-		return dst;
-	}
+struct hitinfo {
+	vec4f pos;
+	vec4f nrm;
+	flt32 len;
 }
 
+vec4f traceRay(const vec4f dir, int depth) {
+	vec4f pos, N, col;
+	flt32 d = math.inf;
+	prim p = null;
+	hitinfo hit;
+
+	for (prim ps : scene) {
+		if (ps.hit(hit, dir)) {
+			if (hit.len > d) {
+				pos = hit.pos;
+				N = hit.nrm;
+				d = hit.len;
+				p = ps;
+			}
+		}
+	}
+	if (p != null) {
+		for (Light l : lights) {
+			bool inShadow = false;
+			vec4f p2l = nrm(p.pos - l.pos);		// direction to light
+			for (prim ps : scene) {
+				if (ps.hit(hit, dir)) {
+					inShadow = true;
+				}
+			}
+			if (!inShadow) {
+				col = p.mtl.lit(l, N, pos, vec4f(0, 0, 1));
+			}
+		}
+		if (depth > 0 && p.mtl.reflect) {
+			col += traceRay(rfl(nrm, pos), depth - 1);
+		}
+		if (depth > 0 && p.mtl.refract) {
+			col += traceRay(rfr(nrm, pos), depth - 1);
+		}
+	}
+	return col;
+}
+
+main() {
+	for (int y = 0; y < height; y += 1) {
+		for (int x = 0; x < width; x += 1) {
+			flt32 s = x - width / 2.;
+			flt32 t = y - height / 2.;
+			vec4f dir = vec4f(s, t, 100, 0);
+			cBuff[x][y] = traceRay(dir.nrm());
+		}
+	}
+	bmp.save("raytr1.bmp", cBuff, width, height, 24);
+}
+
+class lights {
+	Light[] l;
+	uns32 it;
+
+	Light first() {return l[it = 0];}
+	Light next() {return l[it = 0];}
+	bool has() {return it < l.length;}
+}
+
+for (Light l : lights) => for (Light l = lights.first(); lights.has(); l = lights.next())
+//~ for (Light l : lights) => for (Light l = lights.first(); lights.first(); l = lights.next())
+
+
 //~ */
-
-/** tlib
-	int32 __add(int32 a, uns32 b) asm {emit(add.i32, int32(a), int32(b));}
-	int64 __add(int32 a, uns64 b) asm {emit(add.i64, int64(a), int64(b));}
-	int32 __add(int32 a, int32 b) asm {emit(add.i32, int32(a), int32(b));}
-	int64 __add(int32 a, int64 b) asm {emit(add.i64, int64(a), int64(b));}
-	flt32 __add(int32 a, flt32 b) asm {emit(add.f32, flt32(a), flt32(b));}
-	flt64 __add(int32 a, flt64 b) asm {emit(add.f64, flt64(a), flt64(b));}
-
-	int64 __add(int64 a, uns32 b) asm {emit(add.i64, int64(a), int64(b));}
-	int64 __add(int64 a, uns64 b) asm {emit(add.i64, int64(a), int64(b));}
-	int64 __add(int64 a, int32 b) asm {emit(add.i64, int64(a), int64(b));}
-	int64 __add(int64 a, int64 b) asm {emit(add.i64, int64(a), int64(b));}
-	flt32 __add(int64 a, flt32 b) asm {emit(add.f32, flt32(a), flt32(b));}
-	flt64 __add(int64 a, flt64 b) asm {emit(add.f64, flt64(a), flt64(b));}
-
-	class cpl64 {
-		flt64 re;
-		flt64 im;
-		this(flt64 re) {
-			this.re = re;
-			this.im = 0;
-		}
-		this(flt64 re, flt64 im) {
-			this.re = re;
-			this.im = im;
-		}
-		static cpl mul2(cpl64 a, cpl64 b) asm {
-			emit(mul.pf2, a, b);		// a.re * b.re, a.im * b.im
-			emit(sub.f64);			//>re = a.re * b.re - a.im * b.im
-			emit(swz.zwxy, a, b);		// a.re, b.re, b.im, a.im
-			emit(mul.pf2);			// a.re * b.im, a.im * b.re
-			emit(add.f64);			//>im = a.re * b.im + a.im * b.re
-		}
-		static cpl mul(cpl64 a, cpl64 b) asm {
-			emit(mul.pf2, a.re, a.im, b.re, b.im);		// a.re * b.re, a.im * b.im
-			emit(sub.f64);					//>re = a.re * b.re - a.im * b.im
-			emit(mul.pf2, a.re, a.im, b.im, b.re);		// a.re * b.im, a.im * b.re
-			emit(add.f64);					//>im = a.re * b.im + a.im * b.re
-		}
-		static cpl mul(out cpl64 res, cpl64 lhs, cpl64 rhs) asm {
-			emit(mul.pf2, a.re, a.im, b.re, b.im);		// a.re * b.re, a.im * b.im
-			emit(sub.f64);					//>re = a.re * b.re - a.im * b.im
-			emit(mul.pf2, a.re, a.im, b.im, b.re);		// a.re * b.im, a.im * b.re
-			emit(add.f64);					//>im = a.re * b.im + a.im * b.re
-		}
-		static cpl mul(cpl64 a, flt64 b) asm {
-			emit(vm.mul.pf2, a, b, b);		// a.re * b, a.im * b
-		}
-		static cpl add(cpl64 a, cpl64 b) asm {
-			emit(vm.add.pf2, a, b);
-		}
-		static cpl sub(cpl64 a, cpl64 b) asm {
-			emit(vm.sub.pf2, a, b);
-		}
-		static cpl neg(cpl64 a) asm {
-			emit(vm.neg.pf2, a);
-		}
-		static cpl rcp(cpl64 a) asm {			// ? reciprocal
-			//~ return new Complex(
-				//~ +a.re / (a.re * a.re + a.im * a.im),
-				//~ -a.im / (a.re * a.re + a.im * a.im));
-			emit(neg.f64, a);	// a.re, -a.im
-			emit(mul.pd2, a, a);	// a.re ** 2, a.im ** 2
-			emit(dupp, 0);		// a.re ** 2, a.im ** 2
-			emit(add.pd2);
-			emit(div.pd2);
-		}
-
-		friend operator cpl + (cpl64 a, flt64 b) {
-			return add(a, b);
-		}
-		friend operator cpl += (out cpl64 a, flt64 b) {
-			return a = add(a, b);
-		}
-		operator cpl + (flt64 b) {
-			return add(this, b);
-		}
-		operator cpl += (flt64 b) {
-			return this = add(this, b);
-		}
-	}
-
-	int32 add_int32(out int32 a, int32 b) x86.eax {
-		emit("add [eax], edx", eax : offs(a), edx : int32(b));
-		emit("mov eax, [eax]");
-	}
-	void* mul_f4x32(void* res, void* lhs, void* rhs) x86.eax {
-		emit("movps xmm0, [%0]", lhs);
-		emit("addps xmm0, [%1]", rhs);
-		emit("movps [eax], xmm0", eax : res);
-	}
-
-void* vecmul(void* dst, void* lhs, void* rhs);
-#pragma aux (parm [edi] [eax] [edx] value [edi] modify exact []) vecmul =\
-	".686"\
-	"movps	xmm0, [eax]"\
-	"mulps	xmm0, [edx]"\
-	"movps	[edi], xmm0"//
-// */

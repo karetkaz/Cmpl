@@ -113,6 +113,7 @@ void b32hib(struct libcargv *args) {
 	x |= x >> 16;
 	setret(uns32t, args, x - (x >> 1));
 }
+void b32lob(struct libcargv *args) ;
 void b32shl(struct libcargv *args) {
 	uns32t x = poparg(args, uns32t);
 	uns32t y = poparg(args, uns32t);
@@ -130,6 +131,39 @@ void b32sar(struct libcargv *args) {
 	int32t y = poparg(args, int32t);
 	setret(int32t, args, x >> y);
 	//~ debug("int32 shl(int32 x(%d), int32 y(%d)) = %d", x, y, x >> y);
+}
+
+void b32zxt(struct libcargv *args) {
+	uns32t val = poparg(args, int32t);
+	int32t ofs = poparg(args, int32t);
+	int32t cnt = poparg(args, int32t);
+	val <<= 32 - (ofs + cnt);
+	setret(int32t, args, val >> (32 - cnt));
+	//~ debug("int32 zxt(int32 x(%d), int32 y(%d)) = %d", x, y, x >> y);
+}
+void b32sxt(struct libcargv *args) {
+	int32t val = poparg(args, int32t);
+	int32t ofs = poparg(args, int32t);
+	int32t cnt = poparg(args, int32t);
+	val <<= 32 - (ofs + cnt);
+	setret(int32t, args, val >> (32 - cnt));
+	//~ debug("int32 zxt(int32 x(%d), int32 y(%d)) = %d", x, y, x >> y);
+}
+void b64zxt(struct libcargv *args) {
+	uns64t val = poparg(args, int64t);
+	int32t ofs = poparg(args, int32t);
+	int32t cnt = poparg(args, int32t);
+	val <<= 64 - (ofs + cnt);
+	setret(int64t, args, val >> (64 - cnt));
+	//~ debug("int32 zxt(int32 x(%d), int32 y(%d)) = %d", x, y, x >> y);
+}
+void b64sxt(struct libcargv *args) {
+	int64t val = poparg(args, int64t);
+	int32t ofs = poparg(args, int32t);
+	int32t cnt = poparg(args, int32t);
+	val <<= 64 - (ofs + cnt);
+	setret(int64t, args, val >> (64 - cnt));
+	//~ debug("int32 zxt(int32 x(%d), int32 y(%d)) = %d", x, y, x >> y);
 }
 
 void b64shl(struct libcargv *args) {
@@ -153,7 +187,7 @@ void b64sar(struct libcargv *args) {
 
 static struct lfun {
 	void (*call)(struct libcargv*);
-	char* proto;//, *name;
+	const char* proto;//, *name;
 	defn sym;
 	uns08t ret, arg, pop;
 }

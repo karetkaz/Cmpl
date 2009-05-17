@@ -34,42 +34,48 @@ typedef enum {		// swizzle
 } vec_swz;
 
 int cpldblmul(state s) {
-	int c0, c1, c2;
 	cc_init(s);
-	cc_buff(s, 0, __FILE__, __LINE__,
-		//~ "flt64 r, i;"		// set c0 here
+	srcbuff(s, __FILE__, __LINE__ + 1,
 		"flt64 re = 3, im = 4;"		// -14, 23
 		"flt64 r2 = 2, i2 = 5;"
-#ifdef USE_COMPILED_CODE
+#if 0
 		"flt64 r1 = re, i1 = im;"
 		"re = r1 * r2 - i1 * i2;"
 		"im = i1 * r2 + r1 * i2;"
+#else
+		"emit(p4d.mul, flt64(i2), flt64(r2), flt64(im), flt64(re));\n"	// tmp1,2 = a.re * b.re, a.im * b.im
+		"emit(p4d.mul, flt64(r2), flt64(i2), flt64(im), flt64(re));\n"	// tmp3,4 = a.re * b.im, a.im * b.re
+		"im = emit(f64.add);\n"			//>im = a.re * b.im + a.im * b.re
+		"re = emit(f64.sub);\n"			//>re = a.re * b.re - a.im * b.im
 #endif
 	);
-	vm_cgen(s);
+
+	compile(s, 0);
+	gencode(s);
+#if 0
 	c0 = (c1 = (c2 = s->code.rets) - 4) - 4*0;
-#ifndef USE_COMPILED_CODE
-	emit(s, opc_dup4, argidx(s, c1));
-	emit(s, opc_dup4, argidx(s, c2));
-	emit(s, p4d_mul, noarg);
-	emit(s, f64_sub, noarg);
+
+	emitidx(s, opc_dup4, c1);
+	emitidx(s, opc_dup4, c2);
+	emit(s, v2d_mul);
+	emit(s, f64_sub);
 
 	// we have one double on stack
-	emit(s, opc_dup4, argidx(s, c1));
-	emit(s, opc_dup4, argidx(s, c2));
-	emit(s, p4d_swz, argi(zwxy));
-	emit(s, p4d_mul, noarg);
-	emit(s, f64_add, noarg);
+	emitidx(s, opc_dup4, c1);
+	emitidx(s, opc_dup4, c2);
+	emit(s, p4d_swz, zwxy);
+	emit(s, v2d_mul);
+	emit(s, f64_add);
 
 	// we have two double on stack
-	emit(s, opc_set4, argidx(s, c0));
+	emitidx(s, opc_set4, c0);
 	//~ emit(s, opc_pop, argidx(s, c0));		// pop until c0
 #endif
 
 	printf("Stack max = %d / %d slots\n", s->code.mins * 4, s->code.mins);
 	printf("Code size = %d / %d instructions\n", s->code.cs, s->code.ic);
-	vm_exec(s, cc, ss, dl);
-	vm_dasm(s, NULL);
+	execute(s, cc, ss, -1);
+	//~ dump(s, "asm");
 	//~ cc_tags(s, NULL);
 	vm_tags(s);
 	return cc_done(s);
