@@ -79,6 +79,7 @@ node stmt(state s, int mode) {
 		// TODO parallel if -> error;
 		if (skip(s, PNCT_lp)) {
 			ast->test = expr(s, 1);
+			//~ if (ast->test) ast->test->cast = TYPE_bit;
 			if (skip(s, PNCT_rp)) {
 				ast->stmt = stmt(s, 1);
 				if (skip(s, OPER_els)) {
@@ -86,7 +87,7 @@ node stmt(state s, int mode) {
 				}
 				else ast->step = NULL;
 			}
-			else error(s, s->file, s->line, " ')' expected");
+			else error(s, s->file, s->line, " ')' expected, not %k", peek(s));
 		}
 		else error(s, s->file, s->line, " '(' expected");
 		ast->type = leave(s, 7);
@@ -123,7 +124,7 @@ node stmt(state s, int mode) {
 		ast->type = leave(s, 7);
 	}
 	else if ((ast = decl(s, qual))) {		// type?
-		node tmp = newnode(s, TYPE_def2);
+		node tmp = newnode(s, OPER_nop);
 		tmp->line = ast->line;
 		tmp->stmt = ast;
 		ast = tmp;
@@ -160,7 +161,7 @@ node dvar(state s, defn typ, int qual);
 node decl(state s, int qual) {
 	defn typ = spec(s, qual);
 	if ((typ = spec(s, qual))) {
-		node ast = newnode(s, TYPE_def2);
+		node ast = newnode(s, TYPE_def);
 		ast->type = typ;
 		return ast;
 	}
@@ -183,7 +184,7 @@ node expr(state s, int mode) {
 	sym[level] = 0;
 
 	trace(+2, "enter:expr('%k')", peek(s));
-	while ((tok = peek(s))) {						// parse
+	while ((tok = next(s, 0))) {						// parse
 		int pri = level << 4;
 		switch (tok->kind) {
 			default : {
@@ -206,6 +207,8 @@ node expr(state s, int mode) {
 					*post++ = 0;
 				else if (skip(s, PNCT_rp)) {	// a()
 					*post++ = 0;
+					//~ tok->kind = OPER_fnc;
+					//~ goto tok_op;
 				}
 				//~ else			// a(...)
 				tok->kind = OPER_fnc;
@@ -218,6 +221,7 @@ node expr(state s, int mode) {
 					level -= 1;
 				}
 				else if (level == 0) {
+					back(s, tok);
 					tok = 0;
 					break;
 				}
@@ -240,6 +244,7 @@ node expr(state s, int mode) {
 					level -= 1;
 				}
 				else if (!level) {
+					back(s, tok);
 					tok = 0;
 					break;
 				}
@@ -264,6 +269,7 @@ node expr(state s, int mode) {
 					level -= 1;
 				}
 				else if (level == 0) {
+					back(s, tok);
 					tok = 0;
 					break;
 				}
@@ -308,7 +314,8 @@ node expr(state s, int mode) {
 			case OPER_beg : 			// '{'
 			case OPER_end : 			// '}'
 			case OPER_nop : 			// ';'
-				tok = 0;			// done
+				back(s, tok);
+				tok = 0;
 				break;
 			tok_op: {
 				int oppri = tok_tbl[tok->kind].type;
@@ -336,7 +343,6 @@ node expr(state s, int mode) {
 			error(s, s->file, s->line, "Expression too complex");
 			return 0;
 		}
-		next(s, 0);
 	}
 	if (unary || level) {							// error
 		char c = level ? sym[level] : 0;
@@ -449,73 +455,49 @@ node expr(state s, int mode) {
 			*lhs++ = tok;
 		}
 	}
-	trace(-2, "leave:expr('%+k')", tok);
+	if (tok && !lookup(s, 0, tok))
+		error(s, s->file, tok->line, "bum %+k", tok);
+	trace(-2, "leave:expr('%+k') %k", tok, peek(s));
 	return tok;
 }
 
 extern int align(int offs, int pack, int size);
 
 node dvar(state s, defn typ, int qual) {
-	node prev = 0, root = 0;
-	node body = 0, tag;
-	defn ref;
+	//~ node prev = 0, root = 0;
+	node tag = 0;
+	defn ref = 0;
 
 	trace(+4, "enter:dclr('%k')", peek(s));
 
-	while ((tag = next(s, TYPE_ref))) {
-		defn def = typ, argv = 0;
-		if (skip(s, PNCT_lp)) {				// function
-			//~ trace(0, "function");
-			enter(s, 0);
-			//~ args(s, fl_name);
-			if (skip(s, OPER_beg)) {			// int foo(...){
-				node tmp, list = 0;
-				while (peek(s) && !skip(s, OPER_end)) {
-					if ((tmp = stmt(s, 0))) {
-						if (!list) body = tmp;
-						else list->next = tmp;
-						list = tmp;
-					}
-				}
-			}
-			argv = leave(s, 3);
-		}
-		/*else while (skip(s, PNCT_lc)) {	// array
-			defn tmp = newdefn(s, TYPE_arr);
-			tmp->init = expr(s, CNST_int);
-			if (!skip(s, PNCT_rc)) {
-				error(s, s->file, s->line, "missing ']'");
-				break;
-			}
-			tmp->type = def;
-			def = tmp;
-		}*/
-		if (body && argv) {
-			ref = declare(s, TYPE_ref, tag, def, argv);
-			ref->init = body;
-		}
-		else {
-			ref = declare(s, TYPE_ref, tag, def, argv);
-			if (skip(s, ASGN_set))
-				ref->init = expr(s, TYPE_ref);
-		}
-		if (!prev) root = tag;
-		else prev->next = tag;
-		prev = tag;
-
-		if (!skip(s, OPER_com)) break;
-		if (!test(s, TYPE_ref))
-			error(s, s->file, s->line, "unexpected ','");
-		/*
-		if (ast && ast->kind == OPER_com)
-			ast->rhso = tok;
-		else ast = tok;
-		*/
-		//~ trace(4, "declare('%T' as '%+T')", ref, typ);
+	if (!(tag = next(s, TYPE_ref))) {
+		debug("id expected, not %k", peek(s));
+		return 0;
 	}
 
+	ref = declare(s, TYPE_ref, tag, typ, 0);
+
+	if (skip(s, ASGN_set))
+		ref->init = expr(s, TYPE_ref);
+
+	if (test(s, OPER_nop)) {
+		return tag;
+	}
+
+	if (test(s, PNCT_lp)) {		// function
+		fatal(s, "function");
+	}
+	else if (test(s, PNCT_lc)) {	// array
+		fatal(s, "array");
+	}
+	else if (skip(s, OPER_com)) {	// ,
+		fatal(s, "multi");
+	}
+	else error(s, s->file, s->line, "unexpected %k");
+	error(s, s->file, s->line, "unexpected %k");
+
 	trace(-4, "leave:dclr('%-k')", root);
-	return root;
+	return tag;
 }// */
 
 defn type(state s, int qual) {
@@ -565,32 +547,29 @@ defn spec(state s, int qual) {
 	int pack = 4;
 
 	trace(+8, "enter:spec('%k')", peek(s));
-	if (skip(s, TYPE_def2)) {		// define
+	if (skip(s, TYPE_def)) {		// define
 		//~ define name type			// typedef
 		//~ define name = expr			// macro
 		// errif(qual != 0);
 
 		qual = 0;
 		if ((tag = next(s, TYPE_ref))) {
-			if (skip(s, ASGN_set)) {	// cnstdef: define PI = 3.14;
+			if (skip(s, ASGN_set)) {	// define PI = 3.14;
 				node val = expr(s, 0);
-				int constnode = eval(NULL, val, 0);
-				if (constnode) {
-					//~ defn typ = lookup(s, 0, tag);
-					def = declare(s, constnode, tag, 0, 0);
-					def->type = val->type;
+				if (eval(NULL, val, 0)) {
+					def = declare(s, TYPE_def, tag, val->type, 0);
 					def->init = val;
 				}
 				else {
 					error(s, s->file, val->line, "Constant expression expected", peek(s));
-					def = declare(s, TYPE_def2 , tag, 0, 0);
+					def = declare(s, TYPE_def, tag, 0, 0);
 					def->type = NULL;
 					def->init = val;
 				}
 				trace(1, "define('%T' as '%k')", def, val);
 			}
-			else if ((def = type(s, qual))) {
-				def = declare(s, TYPE_def2, tag, def, 0);
+			else if ((def = type(s, qual))) {	// define sin math.sin;	???
+				def = declare(s, TYPE_def, tag, def, 0);
 			}
 			else {
 				error(s, s->file, tag->line, "typename excepted");

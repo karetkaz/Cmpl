@@ -11,34 +11,37 @@
 //~ -math.pi;
 
 //~ -math.sin(2);
-
+/* Emit Test
 //~ int32 operator add(int32 a, int32 b) {return emit(i32.add, i32(b), i32(a));}
 //~ int32 operator add(int32 ref a, int32 b) {return a = emit(i32.add, i32(b), i32(a));}
 
-//~ emit(f32.div, f32 (3.14), f32(2.));	// ok
-//~ emit(f32.neg, f32(math.pi));		// ok
-//~ emit(f32.div, float(3.16), f32(1.));	// ok
+//~ flt32 res = emit(f32.div, f32(2), f32(math.pi));	// ok
+//~ flt32 res = emit(f32.neg, f32(math.pi));		// ok
+//~ flt32 res = emit(void, f32(3.14));				// ok
+flt64 res = sin(math.pi/4);				// ok
 
 //~ emit(v4f.dp4, f32(3), f32(2), f32(1), f32(0), f32(3), f32(2), f32(1), f32(0));
 //~ emit(v4f.add, f32(3), f32(2), f32(1), f32(0), f32(3), f32(2), f32(1), f32(0));
-define a_re = 3;
-define a_im = 4;
-define b_re = 2;
-define b_im = 5;
+/+	Complex mul
+define a_re = 3.;
+define a_im = 4.;
+define b_re = 2.;
+define b_im = 5.;
 
-emit(void, f32(b_re));		// a.re * b.im, a.im * b.re
+//~ flt64 re2 = a_re * b_re - a_im * b_im;
+//~ flt64 im2 = a_re * b_im + a_im * b_re;
 
-//~ emit(void, f32(b_im), f32(b_re), f32(a_im), f32(a_re));		// a.re * b.re, a.im * b.im
-//~ emit(void, f32(b_re), f32(b_im), f32(a_im), f32(a_re));		// a.re * b.im, a.im * b.re
-/*im = */emit(f64.add);				//>im = a.re * b.im + a.im * b.re
-/*re = */emit(f64.sub);				//>re = a.re * b.re - a.im * b.im
+emit(v2d.mul, f64(a_re), f64(a_im), f64(b_re), f64(b_im));		// a.re * b.re, a.im * b.im
+flt64 re = emit(f64.sub);										//>re = a.re * b.re - a.im * b.im
+emit(v2d.mul, f64(a_re), f64(a_im), f64(b_im), f64(b_re));		// a.re * b.im, a.im * b.re 
+flt64 im = emit(f64.add);										//>im = a.re * b.im + a.im * b.re
+//~ +/
 
-//~ emit(void, f32(3), f32(2), f32(1), f32(0));
 //~ emit(void, f32(1), f32(2), f32(3), f32(4));
 //~ emit(swz.zyxx);
 //~ math.sin(math.pi);
 //~ emit(f32.div);
-
+//~ */
 /* type test
 /+	alias
 define type int08;
@@ -148,13 +151,14 @@ int[] fn(int a, int b, double d) {
 //~ flt32 smax = flt32.max;
 // */
 
-/* test bits
-int32 a := 0x80000100;
-int32 res := -1;
+//~ /* test bits
+int32 a = 0x80001482;
+int32 res = -1;
 //~ /+	// public static int bsr(int i)
-int32 lib := math.bsr(a);
+//~ int32 lib = bsr(a);
 if (a) {
-	uns32 x = a, ans = 0;
+	uns32 x = a;
+	uns32 ans = 0;
 	if (x & 0xffff0000) { ans += 16; x >>= 16; }
 	if (x & 0x0000ff00) { ans +=  8; x >>=  8; }
 	if (x & 0x000000f0) { ans +=  4; x >>=  4; }
@@ -164,8 +168,8 @@ if (a) {
 }// +/
 
 /+	// public static int hi1(int i)
-int32 lib = math.bhi(a);
-{
+int32 lib = bhi(a);
+if (1) {
 	uns32 u = a;
 	u |= u >> 1;
 	u |= u >> 2;
@@ -180,14 +184,15 @@ int32 lib = math.bhi(a);
 // +/
 
 /+	// public static int bitswap(uns i)
-int32 lib = math.bsw(a);
+//~ int32 lib = bsw(a);
 if (a) {
-	unsigned x = a;
+	uns32 x = a;
 	x = ((x >> 1) & 0x55555555) | ((x & 0x55555555) << 1);
 	x = ((x >> 2) & 0x33333333) | ((x & 0x33333333) << 2);
 	x = ((x >> 4) & 0x0F0F0F0F) | ((x & 0x0F0F0F0F) << 4);
 	x = ((x >> 8) & 0x00FF00FF) | ((x & 0x00FF00FF) << 8);
 	res = (x >> 16) | (x << 16);
+	//~ res = x >> 16;
 }
 // +/
 

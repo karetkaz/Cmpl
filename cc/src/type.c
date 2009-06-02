@@ -1,4 +1,4 @@
-//{ #include "type.c"
+// { #include "type.c"
 #include "main.h"
 //~ type.c ---------------------------------------------------------------------
 #include <string.h>
@@ -90,7 +90,7 @@ defn iscall(node ast) {		// returns type ref
 	return ast->type;
 }*/
 
-int typecmp(defn sym, char* name, node argv) {
+/*int typecmp(defn sym, char* name, node argv) {
 	defn argt = sym->args;
 	if (sym->name == 0)
 		return 0;
@@ -107,17 +107,17 @@ int typecmp(defn sym, char* name, node argv) {
 	if (argv)
 		return 0;
 
-	/*while (argt) {
+	/ *while (argt) {
 		if (!argt->init)
 			return 0;
 		argt = argt->next;
-	}*/
+	}* /
 
 	if (argt)
 		return 0;
 
 	return 1;
-}
+}*/
 
 defn instlibc(state s, const char* name) {
 	int argsize = 0;
@@ -129,8 +129,6 @@ defn instlibc(state s, const char* name) {
 	if (!(ftag = next(s, TYPE_ref))) return 0;	// int ...
 	if (!(ftyp = lookup(s, 0, ftag))) return 0;
 	if (!istype(ftag)) return 0;
-
-	//~ ret_ty = qual(s, 0);
 
 	if (!(ftag = next(s, TYPE_ref))) return 0;	// int bsr ...
 
@@ -160,12 +158,25 @@ defn instlibc(state s, const char* name) {
 		}
 	}
 	if (!peek(s)) {
-		defn def = declare(s, TYPE_ref, ftag, ftyp, args);
+		defn def = newdefn(s, TYPE_ref);
+		unsigned hash = ftag->hash;
+		def->name = ftag->name;
+		def->nest = s->nest;
+		def->type = ftyp;
+		def->args = args;
+		def->link = 0;
 		def->libc = 1;
 		def->call = 1;
 		def->size = argsize;
+
+		def->next = s->deft[hash];
+		s->deft[hash] = def;
+
+		// link
+		def->defs = s->defs;
+		s->defs = def;
 		return def;
-	}// */
+	}
 	return NULL;
 }// */
 
@@ -178,9 +189,9 @@ defn install(state s, int kind, const char* name, unsigned size) {
 		case -1 : return instlibc(s, name);
 
 		// constant
-		case CNST_int : typ = type_i64; break;
-		case CNST_flt : typ = type_f64; break;
-		case CNST_str : typ = type_str; break;
+		case CNST_int : typ = type_i64; kind = TYPE_def; break;
+		case CNST_flt : typ = type_f64; kind = TYPE_def; break;
+		case CNST_str : typ = type_str; kind = TYPE_def; break;
 
 		// basetype
 		case TYPE_vid :
@@ -197,7 +208,7 @@ defn install(state s, int kind, const char* name, unsigned size) {
 		case TYPE_ptr :
 
 		// usertype
-		case TYPE_def2 :
+		case TYPE_def :
 		case TYPE_enu :
 		case TYPE_rec :
 
@@ -238,10 +249,11 @@ defn declare(state s, int kind, node tag, defn rtyp, defn args) {
 	}
 
 	// if declared on current level raise an error
+
+	//~ debug("%k[%d]", tag, tag->hash);
 	for (def = s->deft[hash]; def; def = def->next) {
 		if (def->nest < s->nest) break;
-		// TODO: int typecmp(defn sym, char* name, node args)
-		if (def->name && (strcmp(def->name, tag->name) == 0)) {
+		if (def->name && strcmp(def->name, tag->name) == 0) {
 			error(s, s->file, tag->line, "redefinition of '%T'", def);
 			if (def->link && s->file)
 				info(s, s->file, def->link->line, "first defined here");
@@ -261,6 +273,10 @@ defn declare(state s, int kind, node tag, defn rtyp, defn args) {
 	//~ tag->type = rtyp;
 
 	switch (kind) {
+		default :
+			fatal(s, "declare:install('%T')", def);
+			//~ break;
+
 		//~ case CNST_int : def->type = type_i32; break;
 		//~ case CNST_flt : def->type = type_f32; break;
 		//~ case CNST_str : def->type = type_str; break;
@@ -269,6 +285,7 @@ defn declare(state s, int kind, node tag, defn rtyp, defn args) {
 			//~ def->type = typ;
 			//~ def->size = 4;
 		//~ } break;
+		case TYPE_def :
 		//~ case TYPE_fnc :
 		case TYPE_ref : {		// variable
 			tag->kind = kind;
@@ -336,4 +353,4 @@ int align(int offs, int pack, int size) {
 	}
 }
 
-//}
+// }

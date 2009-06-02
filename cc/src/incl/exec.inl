@@ -29,7 +29,7 @@ case opc_jz   : NEXT(4, -1, 1) {
 		pu->ip += ip->jmp - 4;
 #endif
 } break;
-case opc_ji   : NEXT(1, -1, 1) {
+case opc_jmpi : NEXT(1, -1, 1) {
 #ifdef EXEC
 	//~ pu->ip = (void*)(long)SP(0, u4);
 	STOP(error_opc);
@@ -601,7 +601,7 @@ case f64_f32 : NEXT(1, -1, 2) {
 #undef RHS
 #undef LHS
 //}
-//{ 0x8? : PF4		// f32x4
+//{ 0x8? : PF4		// vector
 //{
 	//~ x:sp(3)0
 	//~ y:sp(2)1
@@ -769,7 +769,7 @@ case v4f_dph : NEXT(1, -7, 8) {
 #undef SPZ
 #undef SPW
 //}*/
-//{ 0x9? : PF2		// f64x2
+//{ 0x9? : PF2		// complex
 #define RHS SP(0, pd)
 #define LHS SP(4, pd)
 case v2d_neg : NEXT(1, -0, 4) {

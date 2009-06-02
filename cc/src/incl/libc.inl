@@ -188,43 +188,44 @@ void b64sar(struct libcargv *args) {
 static struct lfun {
 	void (*call)(struct libcargv*);
 	const char* proto;//, *name;
+	uns08t arg, pop;
+	//~ uns08t ret;
 	defn sym;
-	uns08t ret, arg, pop;
 }
 libcfnc[] = {
-	{f32abs, "flt32 abs(flt32 x)", 0},
-	{f32sin, "flt32 sin(flt32 x)", 0},
-	{f32cos, "flt32 cos(flt32 x)", 0},
-	{f32tan, "flt32 tan(flt32 x)", 0},
+	//~ {f32abs, "flt32 abs(flt32 x)", 0},
+	//~ {f32sin, "flt32 sin(flt32 x)", 0},
+	//~ {f32cos, "flt32 cos(flt32 x)", 0},
+	//~ {f32tan, "flt32 tan(flt32 x)", 0},
 
-	{f64abs, "flt64 abs(flt64 x)", 0},
-	{f64sin, "flt64 sin(flt64 x)", 0},
-	{f64cos, "flt64 cos(flt64 x)", 0},
-	{f64atan2, "flt64 atan2(flt64 x, flt64 y)", 0},
+	{f64abs, "flt64 abs(flt64 x)", 2, 0},
+	{f64sin, "flt64 sin(flt64 x)", 2, 0},
+	//~ {f64cos, "flt64 cos(flt64 x)", 0},
+	//~ {f64atan2, "flt64 atan2(flt64 x, flt64 y)", 0},
 	//~ {f64_lg2, "flt64 log2(flt64 x)", 0},
 	//~ {f64_xp2, "flt64 exp2(flt64 x)", 0},
-	{f64log, "flt64 log(flt64 x)", 0},
-	{f64exp, "flt64 exp(flt64 x)", 0},
+	//~ {f64log, "flt64 log(flt64 x)", 0},
+	//~ {f64exp, "flt64 exp(flt64 x)", 0},
 
-	{b32btc, "int32 btc(uns32 x)", 0},		// bitcount
-	{b32btc, "int32 btc(uns32 x)", 0},
-	{b32bsf, "int32 bsf(uns32 x)", 0},
-	{b32bsr, "int32 bsr(uns32 x)", 0},
-	{b32bsf, "int32 bsf(int32 x)", 0},
-	{b32bsr, "int32 bsr(int32 x)", 0},
-	{b32swp, "int32 bsw(int32 x)", 0},
-	{b32swp, "uns32 bsw(uns32 x)", 0},
-	{b32hib, "int32 bhi(int32 x)", 0},
-	{b32hib, "uns32 bhi(uns32 x)", 0},
+	//~ {b32btc, "int32 btc(uns32 x)", 0},		// bitcount
+	//~ {b32btc, "int32 btc(uns32 x)", 0},
+	//~ {b32bsf, "int32 bsf(uns32 x)", 0},
+	//~ {b32bsr, "int32 bsr(uns32 x)", 0},
+	{b32bsf, "int32 bsf(int32 x)", 1, 0},
+	{b32bsr, "int32 bsr(int32 x)", 1, 0},
+	//~ {b32swp, "int32 bsw(int32 x)", 0},
+	//~ {b32swp, "uns32 bsw(uns32 x)", 0},
+	//~ {b32hib, "int32 bhi(int32 x)", 0},
+	//~ {b32hib, "uns32 bhi(uns32 x)", 0},
 
-	{b32shl, "int32 shl(uns32 x, int32 y)", 0},
-	{b32shl, "int32 shl(int32 x, int32 y)", 0},
-	{b32shr, "int32 shr(uns32 x, int32 y)", 0},
-	{b32sar, "int32 shr(int32 x, int32 y)", 0},
+	//~ {b32shl, "int32 shl(uns32 x, int32 y)", 0},
+	//~ {b32shl, "int32 shl(int32 x, int32 y)", 0},
+	//~ {b32shr, "int32 shr(uns32 x, int32 y)", 0},
+	//~ {b32sar, "int32 shr(int32 x, int32 y)", 0},
 
-	{b64shl, "int64 shl(int64 x, int32 y)", 0},
+	//~ {b64shl, "int64 shl(int64 x, int32 y)", 0},
 	//~ {b64shl, "int64 shl(uns64 x, int32 y)", 0},
-	{b64shr, "int64 shr(int64 x, int32 y)", 0},
-	{b64sar, "int64 sar(int64 x, int32 y)", 0},
+	//~ {b64shr, "int64 shr(int64 x, int32 y)", 0},
+	//~ {b64sar, "int64 sar(int64 x, int32 y)", 0},
 	//~ {b64shr, "int64 shr(uns64 x, int32 y)", 0},
 };

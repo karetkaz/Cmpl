@@ -19,11 +19,12 @@
 #define bufmaxlen (128<<20)
 
 #define trace(__LEV, msg, ...)// {fputmsg(stderr, "%s:%d:trace[%04x]:"msg"\n", __FILE__, __LINE__, __LEV, ##__VA_ARGS__);fflush(stderr);}
-#define debug(msg, ...) {fputmsg(stderr, "%s:%d:%s:debug:"msg"\n", __FILE__, __LINE__, __func__, ##__VA_ARGS__);fflush(stderr);}
+#define debug(msg, ...) {fputmsg(stdout, "%s:%d:%s:debug:"msg"\n", __FILE__, __LINE__, __func__, ##__VA_ARGS__);fflush(stderr);}
+#define debug2(__FILE, __LINE, msg, ...) {fputmsg(stderr, "%s:%d:%s:debug:"msg"\n", __FILE, __LINE, __func__, ##__VA_ARGS__);fflush(stderr);}
 #define fatal(__ENV, msg, ...) { fputmsg(stderr, "%s:%d:%s:fatal:"msg"\n", __FILE__, __LINE__, __func__, ##__VA_ARGS__); fflush(stderr);}
 #define dieif(__EXP) if (__EXP) { fputmsg(stderr, "%s:%d:debug: `"#__EXP"`\n", __FILE__, __LINE__); fflush(stderr); exit(-1);}
 
-#if 1
+#if 0
 #define error(__ENV, __FILE, __LINE, msg, ...) perr(__ENV, -1, __FILE__, __LINE__, msg, ##__VA_ARGS__)
 #define warn(__ENV, __LEVEL, __FILE, __LINE, msg, ...) perr(__ENV, __LEVEL, __FILE__, __LINE__, msg, ##__VA_ARGS__)
 #define info(__ENV, __FILE, __LINE, msg, ...) perr(__ENV, 0, __FILE__, __LINE__, msg, ##__VA_ARGS__)
@@ -59,11 +60,18 @@ enum {
 	//~ opc_ldi,
 	//~ opc_sti,
 
+	opc_neg,
 	opc_add,
 	opc_sub,
 	opc_mul,
 	opc_div,
 	opc_mod,
+
+	opc_shl,
+	opc_shr,
+	opc_and,
+	opc_ior,
+	opc_xor,
 
 	//~ opc_cz = 0x02000 << 0,
 	opc_ceq = 0x02001 << 0,
@@ -79,12 +87,6 @@ enum {
 	opc_cne = opc_not + opc_ceq,
 	opc_cgt = opc_not + opc_cle,
 	opc_cge = opc_not + opc_clt,
-
-	opc_shl,
-	opc_shr,
-	opc_and,
-	opc_ior,
-	opc_xor,
 
 	//~ opc_ldcr = opc_ldc4,
 	//~ opc_ldcf = opc_ldc4,
@@ -222,10 +224,10 @@ typedef struct cell_t {			// processor
 	unsigned int	pp;			// parent proc(==0 main) / ???
 
 	// flags[?]
-	//~ unsigned	zf:1;			// zero flag
-	//~ unsigned	sf:1;			// sign flag
-	//~ unsigned	cf:1;			// carry flag
-	//~ unsigned	of:1;			// overflow flag
+	unsigned	zf:1;			// zero flag
+	unsigned	sf:1;			// sign flag
+	unsigned	cf:1;			// carry flag
+	unsigned	of:1;			// overflow flag
 
 	unsigned char	*ip;			// Instruction pointer		/ prev1 ip
 	unsigned char	*sp;			// Stack pointer(bp + ss)	/ prev2 ip
@@ -241,7 +243,7 @@ struct listn_t {			// linked list node
 struct astn_t {				// ast node
 	uns32t		line;				// token on line / code offset
 	uns08t		kind;				// code : TYPE_ref, OPER_???, CNST_???
-	uns08t		cast;				// lhs & rhs type
+	uns08t		cast;				// cast To castId(this->type);
 	uns16t		XXXX;				// TYPE_ref hash / priority level
 	union {
 		int64t		cint;			// cnst : integer
@@ -464,6 +466,8 @@ int istype(node ast);
 
 node peek(state);
 node next(state, int kind);
+void back(state, node ast);
+
 int  skip(state, int kind);
 int  test(state, int kind);
 

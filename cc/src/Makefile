@@ -19,6 +19,8 @@ include incl/Makefile.gcc
 
 clean:
 	rm -f $(OBJS) $(BINDIR)/main
+	#~ rm -f $(OBJDIR)/main.o $(BINDIR)/main
 	#~ del *.o
 
 rebuild:clean main
+	#~ rm -f $(OBJDIR)/main.o $(BINDIR)/main

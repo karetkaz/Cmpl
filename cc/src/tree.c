@@ -127,11 +127,11 @@ int eval(node res, node ast, int get) {
 		} break;*/
 
 		case OPER_pls : {		// '+'
-			if (!eval(res, ast->rhso, ast->cast))
+			if (!eval(res, ast->rhso, get))
 				return 0;
 		} break;
 		case OPER_mns : {		// '-'
-			if (!eval(res, ast->rhso, ast->cast))
+			if (!eval(res, ast->rhso, get))
 				return 0;
 			switch (res->kind) {
 				default : return 0;
@@ -140,7 +140,7 @@ int eval(node res, node ast, int get) {
 			}
 		} break;
 		case OPER_cmt : {		// '~'
-			if (!eval(res, ast->rhso, ast->cast))
+			if (!eval(res, ast->rhso, get))
 				return 0;
 			switch (res->kind) {
 				default : return 0;
@@ -152,8 +152,8 @@ int eval(node res, node ast, int get) {
 
 		case OPER_not : {		// '!'
 
-			dieif(ast->cast != TYPE_bit);
-			if (!eval(res, ast->rhso, ast->cast))
+			dieif(get != TYPE_bit);
+			if (!eval(res, ast->rhso, get))
 				return 0;
 
 			switch (res->kind) {
@@ -170,9 +170,9 @@ int eval(node res, node ast, int get) {
 		case OPER_mul : 		// '*'
 		case OPER_div : 		// '/'
 		case OPER_mod : {		// '%'
-			if (!eval(&lhs, ast->lhso, ast->cast))
+			if (!eval(&lhs, ast->lhso, get))
 				return 0;
-			if (!eval(&rhs, ast->rhso, ast->cast))
+			if (!eval(&rhs, ast->rhso, get))
 				return 0;
 			dieif(lhs.kind != rhs.kind);
 
@@ -207,9 +207,9 @@ int eval(node res, node ast, int get) {
 		case OPER_geq : 		// '>='
 		case OPER_lte : 		// '<'
 		case OPER_leq : {		// '<='
-			if (!eval(&lhs, ast->lhso, ast->cast))
+			if (!eval(&lhs, ast->lhso, get))
 				return 0;
-			if (!eval(&rhs, ast->rhso, ast->cast))
+			if (!eval(&rhs, ast->rhso, get))
 				return 0;
 			dieif(lhs.kind != rhs.kind);
 
@@ -245,9 +245,9 @@ int eval(node res, node ast, int get) {
 		case OPER_and : 		// '&'
 		case OPER_ior : 		// '|'
 		case OPER_xor : {		// '^'
-			if (!eval(&lhs, ast->lhso, ast->cast))
+			if (!eval(&lhs, ast->lhso, get))
 				return 0;
-			if (!eval(&rhs, ast->rhso, ast->cast))
+			if (!eval(&rhs, ast->rhso, get))
 				return 0;
 			dieif(lhs.kind != rhs.kind);
 
@@ -269,10 +269,10 @@ int eval(node res, node ast, int get) {
 
 		case OPER_lnd : 
 		case OPER_lor : {
-			dieif(ast->cast != TYPE_bit);
-			if (!eval(&lhs, ast->lhso, ast->cast))
+			dieif(get != TYPE_bit);
+			if (!eval(&lhs, ast->lhso, get))
 				return 0;
-			if (!eval(&rhs, ast->rhso, ast->cast))
+			if (!eval(&rhs, ast->rhso, get))
 				return 0;
 
 			dieif(lhs.kind != rhs.kind);

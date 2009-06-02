@@ -1,4 +1,4 @@
-//{ #include "clex.c"
+// { #include "clex.c"
 
 #include "main.h"
 //~~~~~~~~~~ Lexer ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1092,6 +1092,11 @@ node next(state s, int kind) {
 	return 0;
 }
 
+void back(state s, node ast) {
+	ast->next = s->_tok;
+	s->_tok = ast;
+}
+
 int test(state s, int kind) {
 	node ast = peek(s);
 	if (!ast || (kind && ast->kind != kind))
@@ -1107,4 +1112,4 @@ int skip(state s, int kind) {
 	eatnode(s, ast);
 	return 1;
 }
-//}
+// }

@@ -11,13 +11,13 @@ void fputast(FILE *fout, node ast, int mode, int level/*=0xf*/);
 void fputsym(FILE *fout, defn sym, int mode, int level) {
 	if (sym) switch (sym->kind) {
 		// define
-		case CNST_int : 
+		/*case CNST_int : 
 		case CNST_flt : 
 		case CNST_str : {
 			if (mode > 0 && sym->init)
 				fputmsg(fout, "define %s = %?+k", sym->name, sym->init);
 			else fputmsg(fout, "%s", sym->name);
-		} break;
+		} break;*/
 
 		/*case TYPE_def : {
 			if (mode && sym->type) {
@@ -80,6 +80,18 @@ void fputsym(FILE *fout, defn sym, int mode, int level) {
 				if (mode > 0)
 					fputc(' ', fout);
 				fputs(sym->name, fout);
+			}
+			if (sym->libc || sym->call) {
+				fputc('(', fout);
+				if (sym->args) {
+					defn args = sym->args;
+					while (args) {
+						fputsym(fout, args->type, mode, 0);
+						if ((args = args->next))
+							fputs(", ", fout);
+					}
+				}
+				fputc(')', fout);
 			}
 			if (mode > 1 && sym->init)
 				fputmsg(fout, " = %+k", sym->init);
@@ -263,8 +275,8 @@ void fputast(FILE *fout, node ast, int mode, int level) {
 				case OPER_cmt : fputs("~", fout); break;		// '~'
 				case OPER_not : fputs("!", fout); break;		// '!'
 
-				case OPER_shl : fputs(">>", fout); break;		// '>>'
-				case OPER_shr : fputs("<<", fout); break;		// '<<'
+				case OPER_shr : fputs(">>", fout); break;		// '>>'
+				case OPER_shl : fputs("<<", fout); break;		// '<<'
 				case OPER_and : fputs("&", fout); break;		// '&'
 				case OPER_ior : fputs("|", fout); break;		// '|'
 				case OPER_xor : fputs("^", fout); break;		// '^'
@@ -295,6 +307,18 @@ void fputast(FILE *fout, node ast, int mode, int level) {
 			else
 				fputc(',', fout);
 		} break;
+
+		case OPER_sel : {		// '?:'
+			if (mode > 0) {
+				fputast(fout, ast->test, mode, pre);
+				fputs(" ? ", fout);
+				fputast(fout, ast->lhso, mode, pre);
+				fputs(" : ", fout);
+				fputast(fout, ast->rhso, mode, pre);
+			}
+			else
+				fputs("?:", fout);
+		}break;
 		//}
 
 		//{ TVAL
@@ -302,7 +326,7 @@ void fputast(FILE *fout, node ast, int mode, int level) {
 		case CNST_flt : fputmsg(fout, "%F", ast->cflt); break;
 		case CNST_str : fputmsg(fout, "'%s'", ast->name); break;
 		case TYPE_ref : fputmsg(fout, "%s", ast->name); break;
-		//~ case TYPE_def : fputmsg(fout, "%s", ast->name); break;
+		case TYPE_def : fputmsg(fout, "%s", ast->name); break;
 		case EMIT_opc : fputmsg(fout, "emit"); break;
 		//}
 
