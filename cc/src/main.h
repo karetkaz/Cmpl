@@ -38,7 +38,7 @@
 enum {
 	OP = 0, ID = 1, TY = 2, XX = -1,
 	#define TOKDEF(NAME, PREC, ARGC, KIND, STR) NAME,
-	#include "incl/defs.inl"
+	#include "incl/defs.h"
 	tok_last,
 };
 
@@ -53,7 +53,7 @@ extern const tok_inf tok_tbl[255];
 // Opcodes - VM
 enum {
 	#define OPCDEF(Name, Code, Size, Args, Push, Time, Mnem) Name = Code,
-	#include "incl/defs.inl"
+	#include "incl/defs.h"
 	opc_last,
 
 	opc_ldc = 0x0100,

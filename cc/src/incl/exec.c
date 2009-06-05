@@ -171,7 +171,7 @@ case opc_ldz4 : NEXT(1, +4, 0) {
 #endif
 } break;
 //}
-/*{ 0x2? : MEM		// Load & Store
+/*{ 0x2? : MEM		// Memory
 case opc_ldi1 : NEXT(1, +1, 0);{
 #ifdef EXEC
 	MEMP((void*)(long)SP(0, i4));
@@ -848,7 +848,7 @@ case v2d_max : NEXT(1, -7, 8) {
 } break;
 //}*/
 default : STOP(error_opc);
-case opc_cmp : {// TODO : this is incomplete
+/*case opc_cmp : {// TODO : this is incomplete
 	#ifdef EXEC
 	int res = 0;
 	#endif
@@ -921,11 +921,11 @@ case opc_cmp : {// TODO : this is incomplete
 	if ((ip->arg.u1 & opc_not) & 0xff) res = !res;
 	SPRES(i4) = res;
 	#endif
-} break;
+} break;// */
 //}-----------------------------------------------------------------------------
 #undef MEMP
 #undef EXEC
-#undef SETF
-#undef CDBG
+//~ #undef SETF
+//~ #undef CDBG
 #undef NEXT
 #undef STOP

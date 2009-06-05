@@ -25,41 +25,13 @@ defn newdefn(state s, int kind) {
 	return def;
 }
 
-int islval(node ast) {			// is an lvalue (has ref)
+/*int islval(node ast) {			// is an lvalue (has ref)
 	if (!ast) return 0;
 	if (ast->kind == TYPE_ref)
 		return 1;
 	if (ast->kind == OPER_idx)
 		return 1;
 	return 0;
-}
-
-//~ rett(defn get, defn ret)
-//~ promote
-//		any vid bit uns int flt ptr def
-
-//any	 0   0   0   0   0   0   0   0 
-//vid	 0  vid  0   0   0   0   0   0 
-//bit	 0   0  bit uns int flt ptr def
-//uns	 0   0  uns uns int flt ptr def
-//int	 0   0  int int int flt ptr def
-//flt	 0   0  flt flt flt flt  -  def
-//ptr	 0   0  ptr ptr ptr  -  ptr def
-//def	 0   0  def def def def def def
-
-
-/*defn promote(defn ty) {
-	if (ty) switch (ty->kind) {
-		case TYPE_vid : return type_vid;
-		//~ case TYPE_bit : return type_bin;
-		case TYPE_uns : return type_u32;
-		case TYPE_int : return (ty->size == 8) ? type_i64 : type_i32;
-		case TYPE_flt : return (ty->size == 8) ? type_f64 : type_f32;
-		//~ case TYPE_ptr : return ty->size ? type_arr : type_ptr;
-		//~ case TYPE_enu :
-		//~ case TYPE_rec :
-	}
-	return NULL;
 }*/
 
 //~ node iscnst(node ast) ;
@@ -311,9 +283,9 @@ defn declare(state s, int kind, node tag, defn rtyp, defn args) {
 	return def;
 }
 
-defn getsym();
+//~ defn getsym();
 
-int samenode(node lhs, node rhs) {
+/*int samenode(node lhs, node rhs) {
 	if (lhs == rhs) return 1;
 
 	if (!lhs && rhs) return 0;
@@ -338,7 +310,7 @@ int samenode(node lhs, node rhs) {
 				&& samenode(lhs->rhso, rhs->rhso);
 	}
 	return 0;
-}
+}// */
 
 int align(int offs, int pack, int size) {
 	switch (pack < size ? pack : size) {

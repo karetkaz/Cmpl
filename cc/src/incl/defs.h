@@ -14,6 +14,7 @@ TOKDEF(TYPE_i32, 0x03, 0, TY, "TYPE_i32")
 TOKDEF(TYPE_i64, 0x03, 0, TY, "TYPE_i64")
 TOKDEF(TYPE_f32, 0x04, 0, TY, "TYPE_f32")
 TOKDEF(TYPE_f64, 0x04, 0, TY, "TYPE_f64")
+//~ TOKDEF(TYPE_p4x, 0x04, 0, TY, "TYPE_p4x")
 
 //~ TOKDEF(TYPE_v4f, 0x05, 0, TY, "vec4f")
 //~ TOKDEF(TYPE_v2d, 0x05, 0, TY, "vec2d")
@@ -187,9 +188,9 @@ OPCDEF(opc_set4, 0x19, 1, 0, 0, 1,	"set.4")	//
 OPCDEF(opc_ldz1, 0x1a, 0, 0, 0, 1,	"ldz.1")	// push(0);			[…, a, b, c => […, a, b, c, 0;
 OPCDEF(opc_ldz2, 0x1b, 0, 0, 0, 1,	"ldz.2")	// push(0, 0);			[…, a, b, c => […, a, b, c, 0, 0;
 OPCDEF(opc_ldz4, 0x1c, 0, 0, 0, 1,	"ldz.4")	// push(0, 0, 0, 0);		[…, a, b, c => […, a, b, c, 0, 0, 0, 0;
-OPCDEF(opc_ldcr, 0x1d, 4, 0, 0, 1,	"ldc.ref")	// TEMP
-OPCDEF(opc_ldcf, 0x1e, 4, 0, 0, 1,	"ldc.f32")	// TEMP
-OPCDEF(opc_ldcF, 0x1f, 8, 0, 0, 1,	"ldc.f64")	// TEMP
+OPCDEF(opc_ldcr, 0x1d, 4, 0, 0, 1,	"ldc.ref")	// TEMP/dup.?256
+OPCDEF(opc_ldcf, 0x1e, 4, 0, 0, 1,	"ldc.f32")	// TEMP/set.?256
+OPCDEF(opc_ldcF, 0x1f, 8, 0, 0, 1,	"ldc.f64")	// TEMP/ldz.?256
 //~ mem ========================================================================
 OPCDEF(opc_ldi1, 0x20, 0, 0, 0, 1,	"ldi.b")	// copy(sp, sp(0) 1);		[…, a, b, c => […, a, b, *c;
 OPCDEF(opc_ldi2, 0x21, 0, 0, 0, 1,	"ldi.h")	// copy(sp, sp(0) 2);		[…, a, b, c => […, a, b, *c;
@@ -354,7 +355,6 @@ OPCDEF(p4d___f,  0x9f,-1, 0, 0, 1,	NULL)		//-Extended ops: idx, rev, imm, mem
 //~ ??? ========================================================================e
 //~ ??? ========================================================================f
 
-//? dp2
 //~ abs
 //~ sat
 //~ nrm
@@ -367,33 +367,11 @@ OPCDEF(p4d___f,  0x9f,-1, 0, 0, 1,	NULL)		//-Extended ops: idx, rev, imm, mem
 //~ lrp
 //~ pow
 
-/* extended opcodes ???argc = 1: [size:2][type:2][code:4]
-	type:
-	ext_set = 0,		// 3 / sp(n) = opr(sp(n), sp(0)); pop(size & 1)				// a += b
-	ext_dup = 1,		// 3 / sp(0) = opr(sp(0), sp(n)); loc((1<<size)>>1[0, 1, 2, 4])		// (a+a) < c
-	ext_sto = 2,		// 6 / mp[n] = opr(mp[n], sp(0)); pop(size & 1)				// a += b
-	ext_lod = 3,		// 6 / sp(0) = opr(sp(0), mp[n]); loc((1<<size)>>1[0, 1, 2, 4])		// (a+a) < c
+/* extended opcodes ???argc = 1+3: [indr:2][type:2][code:4]
 
-	switch (type) {
-		case ext_idx : ip += 3; {
-			lhs = sp + u1[ip + 2];
-			rhs = sp + 0;
-			switch (size) {
-				case 0 : dst = (sp -= 1);	// new result	push(opr(sp(n) sp(0)))
-				case 1 : 					sp(0) = opr(sp(0) sp(n))
-				case 2 : dst = (sp -= 1);	// get result	sp(n) = opr(sp(n) sp(0))
-				case 3 : dst = (lhs);		// set result	sp(n) = opr(sp(n) sp(0)); pop
-			}
-		}
-		dst = ip + 2
-		lhs = sp(ip[2])
-		rhs = ip(0)
-	}
-
-	bin : b32	? native / stacksize
+	bin : b32
 	num : i32/i64/f32/f64
 	vec : .../p4i/p2l/p4f/p2d
-
 	opc = code		// b32		num			vec
 
 	neg = 0x0,		// cmt		neg			neg
@@ -415,22 +393,29 @@ OPCDEF(p4d___f,  0x9f,-1, 0, 0, 1,	NULL)		//-Extended ops: idx, rev, imm, mem
 	cvt = 0xe,		// shr		f64|bool	dp4
 	cvt = 0xf,		// sar		ext			ext
 
+	switch (indr) {
+		case 0 : sp[i] = sp[j] OP sp[k];
+		case 1 : [sp[i]] = sp[j] OP sp[k];
+		case 2 : sp[i] = [sp[j]] OP sp[k];
+		case 3 : sp[i] = sp[j] OP [sp[k]];
+	}
+
 //~ */
 /* opc_bit argc = 1: [extop:3][cnt:5]		// bit ops
 	//~ opx == 000 : test/scan 		??
 		-- as flags after cmp --------------
 		//~ cnt== 00 : nop
-		//~ cnt== 01 : seq		// zero 	: ==
-		//~ cnt== 02 : sne		// !zero	: !=
-		//~ cnt== 03 : ???		// sign 	: <
-		//~ cnt== 04 : ???		// sign|zero	: <=
-		//~ cnt== 05 : ???		// !sign 	: >
-		//~ cnt== 06 : ???		// !sign|zero	: >=
-		//~ cnt== 07 : ???		// !ovf 	: 
-		//~ cnt== 08 : ???		// 
+		//~ cnt== 01 : seq		// zero 		: ==
+		//~ cnt== 02 : sne		// !zero		: !=
+		//~ cnt== 03 : ???		// sign 		: <
+		//~ cnt== 04 : ???		// (sign|zero)	: <=
+		//~ cnt== 05 : ???		// !sign 		: >
+		//~ cnt== 06 : ???		// !(sign|zero)	: >=
+		//~ cnt== 07 : ???		// ovf  		: 
+		//~ cnt== 08 : ???		// !ovf 		: 
 		//~ cnt== 09 : ???		// 
-		//~ cnt== 0a : ???		// 
-		//~ cnt== 0b : ???		// 
+		//~ cnt== 0a : ssat		// saturate (signed)
+		//~ cnt== 0b : usat		// saturate (unsigned)
 		-- as flags after cmp --------------
 		//~ cnt== 0c : any		// any bit set ( != 0) ? 0 : 1
 		//~ cnt== 0d : all		// all bits set ( = -1)? 0 : 1
@@ -458,14 +443,14 @@ OPCDEF(p4d___f,  0x9f,-1, 0, 0, 1,	NULL)		//-Extended ops: idx, rev, imm, mem
 	//~ opx == 101 : clr		// clear
 	//~ opx == 111 : cmt		// complement
 //~ */
-/* opc_zxt argc = 1: [offs:3][size:5]		// extend
+/* opc_ext argc = 1: [offs:3][size:5]		// extend (zero/sign)
 opc_zxt argc = 1: [offs:3][size:5]
-		(unsigned)(val << (32 - (offs + size))) >> (32 - size);
+		((unsigned)val << (32 - (offs + size))) >> (32 - size);
 
 opc_sxt argc = 1: [offs:3][size:5]
-		(signed)(val << (32 - (offs + size))) >> (32 - size);
+		((signed)val << (32 - (offs + size))) >> (32 - size);
 //~ */
-/* opc_cmp argc = 1; [sat:2][cmp:4][typ:2]				// compare
+/* opc_cmp argc = 1: [sat:2][cmp:4][typ:2]	// compare
 	bit:[0-1: type : i32, f32, i64, f64]
 	bit:[2-3: <ctz, ceq, clt, cle>]
 		?0	nz	a == 0
