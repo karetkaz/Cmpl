@@ -200,12 +200,12 @@ libcfnc[] = {
 
 	{f64abs, "flt64 abs(flt64 x)", 2, 0},
 	{f64sin, "flt64 sin(flt64 x)", 2, 0},
-	//~ {f64cos, "flt64 cos(flt64 x)", 0},
-	//~ {f64atan2, "flt64 atan2(flt64 x, flt64 y)", 0},
-	//~ {f64_lg2, "flt64 log2(flt64 x)", 0},
-	//~ {f64_xp2, "flt64 exp2(flt64 x)", 0},
-	//~ {f64log, "flt64 log(flt64 x)", 0},
-	//~ {f64exp, "flt64 exp(flt64 x)", 0},
+	{f64cos, "flt64 cos(flt64 x)", 0},
+	{f64atan2, "flt64 atan2(flt64 x, flt64 y)", 4, 0},
+	//~ {f64lg2, "flt64 log2(flt64 x)", 2, 0},
+	//~ {f64xp2, "flt64 exp2(flt64 x)", 2, 0},
+	{f64log, "flt64 log(flt64 x)", 2, 0},
+	{f64exp, "flt64 exp(flt64 x)", 2, 0},
 
 	//~ {b32btc, "int32 btc(uns32 x)", 0},		// bitcount
 	//~ {b32btc, "int32 btc(uns32 x)", 0},
@@ -213,9 +213,8 @@ libcfnc[] = {
 	//~ {b32bsr, "int32 bsr(uns32 x)", 0},
 	{b32bsf, "int32 bsf(int32 x)", 1, 0},
 	{b32bsr, "int32 bsr(int32 x)", 1, 0},
-	//~ {b32swp, "int32 bsw(int32 x)", 0},
-	//~ {b32swp, "uns32 bsw(uns32 x)", 0},
-	//~ {b32hib, "int32 bhi(int32 x)", 0},
+	{b32swp, "int32 swp(int32 x)", 1, 0},
+	{b32hib, "int32 bhi(int32 x)", 1, 0},
 	//~ {b32hib, "uns32 bhi(uns32 x)", 0},
 
 	//~ {b32shl, "int32 shl(uns32 x, int32 y)", 0},

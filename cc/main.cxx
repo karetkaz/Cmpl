@@ -5,13 +5,14 @@
 //~ int32 operator add(int32 a, int32 b) {return emit(i32.add, i32(b), i32(a));}
 //~ int32 operator add(int32 ref a, int32 b) {return a = emit(i32.add, i32(b), i32(a));}
 
-//~ flt32 res1 = emit(f32.div, f32(2), f32(math.pi));	// ok
-//~ flt64 res2 = emit(f32.neg, f32(math.pi));		// ok
+flt32 res1 = emit(f32.div, f32(2), f32(math.pi));	// ok
+//~ flt64 res2 = emit(f64.neg, f64(math.pi));		// ok
 //~ flt64 res3 = emit(void, f32(3.14));				// ok
 
 //~ flt32 res = emit(v4f.dp4, f32(3), f32(2), f32(1), f32(0), f32(3), f32(2), f32(1), f32(0));
 //f32x4 res = 
 //~ emit(v4f.add, f32(3), f32(2), f32(1), f32(0), f32(3), f32(2), f32(1), f32(0));
+
 /+	Complex mul
 define a_re = 3.;
 define a_im = 4.;
@@ -35,7 +36,7 @@ int32 res = -1;
 int32 lib = bsr(var);
 if (var) {
 	uns32 x = var;
-	uns32 ans = 0;
+	uns08 ans = 0;
 	if (x & 0xffff0000) { ans += 16; x >>= 16; }
 	if (x & 0x0000ff00) { ans +=  8; x >>=  8; }
 	if (x & 0x000000f0) { ans +=  4; x >>=  4; }
@@ -92,7 +93,15 @@ struct vec4d {
 	float z;
 	float w;
 }
-define dd vec4d.vec3d;
+
+define v4 vec4d;
+define v3 vec4d.vec3d;
+
+vec4d v;
+//~ v.x = 0;
+//~ v.y = 1;
+//~ v.z = 2;
+//~ v = vec4d(1,2,3,4);
 
 // +/
 /+X	typdef
@@ -295,49 +304,51 @@ class Material {	// material
 	vec4f diff(0, 0, 0, 1);		// Diffuse
 	vec4f spec(0, 0, 0, 1);		// Specular
 	flt32 spow(1);				// Shin...
-	static Material Brass = Material {
-		ambi(0.329410, 0.223529, 0.027451, 1),
-		diff(0.780392, 0.568627, 0.113725, 1),
-		spec(0.992157, 0.941176, 0.807843, 1),
-		spow(27.8974)
-	};
-	static Material Bronze = Material {
-		ambi(0.2125, 0.1275, 0.054, 1.0),
-		diff(0.714, 0.4284, 0.18144, 1.0), 
-		spec(0.393548, 0.271906, 0.166721),
-		spow(25.6)
-	};
-	static Material Chrome = Material {
-		ambi(0.25, 0.25, 0.25, 1.0),
-		diff(0.4, 0.4, 0.4, 1.0),
-		spec(0.774597, 0.774597, 0.774597, 1.0),
-		spow(76.8)
-	};
-	static Material Silver = Material {
-		ambi(0.19225, 0.19225, 0.19225, 1.0),
-		diff(0.50754, 0.50754, 0.50754, 1.0),
-		spec(0.508273, 0.508273, 0.508273, 1.0),
-		spow(51.2)
-	};
-	static Material Gold = Material {
-		ambi(0.24725, 0.1995, 0.0745, 1.0),
-		diff(0.75164, 0.60648, 0.22648, 1.0),
-		spec(0.628281, 0.555802, 0.366065, 1.0),
-		spow(51.2)
-	};
-	static Material Jade = Material {
-		ambi(0.135,0.2225,0.1575,0.95),
-		diff(0.54, 0.89, 0.63, 0.95),
-		spec(0.316228, 0.316228, 0.316228, 0.95),
-		spow(12.8)
-	};
-	static Material Ruby = Material {
-		ambi(0.1745,0.01175 ,0.01175,0.55 ),
-		spec(0.61424,0.04136, 0.04136,0.55),
-		diff(0.727811, 0.626959, 0.626959,0.55),
-		spow(76.8)
-	};
-	lit(Light[] l) {}
+	this (vec4f ambi, vec4f diff, vec4f spec, flt32 spow) {
+		...
+	}
+
+	static Material Brass = Material(
+		f32x4(0.329410, 0.223529, 0.027451, 1),
+		f32x4(0.780392, 0.568627, 0.113725, 1),
+		f32x4(0.992157, 0.941176, 0.807843, 1),
+		flt32(27.8974));
+
+	static Material Bronze = Material(
+		f32x4(0.2125, 0.1275, 0.054, 1.0),
+		f32x4(0.714, 0.4284, 0.18144, 1.0), 
+		f32x4(0.393548, 0.271906, 0.166721),
+		flt32(25.6));
+
+	static Material Chrome = Material(
+		f32x4(0.25, 0.25, 0.25, 1.0),
+		f32x4(0.4, 0.4, 0.4, 1.0),
+		f32x4(0.774597, 0.774597, 0.774597, 1.0),
+		flt32(76.8));
+
+	static Material Silver = Material(
+		f32x4(0.19225, 0.19225, 0.19225, 1.0),
+		f32x4(0.50754, 0.50754, 0.50754, 1.0),
+		f32x4(0.508273, 0.508273, 0.508273, 1.0),
+		flt32(51.2));
+
+	static Material Gold = Material(
+		f32x4(0.24725, 0.1995, 0.0745, 1.0),
+		f32x4(0.75164, 0.60648, 0.22648, 1.0),
+		f32x4(0.628281, 0.555802, 0.366065, 1.0),
+		flt32(51.2));
+
+	static Material Jade = Material(
+		f32x4(0.135,0.2225,0.1575,0.95),
+		f32x4(0.54, 0.89, 0.63, 0.95),
+		f32x4(0.316228, 0.316228, 0.316228, 0.95),
+		flt32(12.8));
+
+	static Material Ruby = Material(
+		f32x4(0.1745,0.01175 ,0.01175,0.55 ),
+		f32x4(0.61424,0.04136, 0.04136,0.55),
+		f32x4(0.727811, 0.626959, 0.626959,0.55),
+		flt32(76.8));
 };
 
 lights[] = {

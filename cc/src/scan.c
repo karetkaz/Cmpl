@@ -30,13 +30,13 @@ node scan(state s, int mode) {
 			if (!ast) ast = lst = tok;
 			else lst = lst->next = tok;
 			if (mode && tok->kind != OPER_nop)
-				error(s, s->file, ast->line, "declaration expected");
+				error(s, ast->line, "declaration expected");
 		}
 	}
-	s->glob = leave(s, 3);
+	s->glob = leave(s);
 
 	if (s->nest)
-		error(s, s->file, s->line, "premature end of file");
+		error(s, s->line, "premature end of file");
 	trace(-32, "leave:scan('%k')", peek(s));
 
 	if (ast) {
@@ -52,12 +52,16 @@ node scan(state s, int mode) {
 
 node stmt(state s, int mode) {
 	node ast, tmp = peek(s);
-	int qual = 0;// qual(s, mode);			// static | parallel
+	int qual = 0;// qual(s, mode);			// static | const | parallel
 	trace(+16, "enter:stmt('%k')", peek(s));
+
+	if (skip(s, OPER_end)) return 0;			// ;
+
 	if (skip(s, OPER_nop)) ast = 0;			// ;
-	else if ((ast = next(s, OPER_beg))) {		// {...}
+	else if ((ast = next(s, OPER_beg))) {	// {...}
 		node end = 0;
-		ast->cast = qual;
+		//~ ast->cast = qual;
+		//~ ast->cast = TYPE_vid;
 		enter(s, 0);
 		while (peek(s) && !skip(s, OPER_end)) {
 			if (!peek(s)) break;
@@ -67,18 +71,20 @@ node stmt(state s, int mode) {
 				end = tmp;
 			}
 		}
-		ast->type = leave(s, 7);
+		ast->type = leave(s);
 		if (!ast->stmt) {			// eat sort of {{;{;};{}{}}}
 			eatnode(s, ast);
 			ast = 0;
 		}// */
 	}
-	else if ((ast = next(s, OPER_jmp))) {		// if (...)
+	else if ((ast = next(s, OPER_jmp))) {	// if (...)
 		enter(s, 0);
 		ast->cast = qual;
+		//~ ast->cast = TYPE_vid;
 		// TODO parallel if -> error;
 		if (skip(s, PNCT_lp)) {
 			ast->test = expr(s, 1);
+				//~ ast->test->cast = TYPE_bit;
 			//~ if (ast->test) ast->test->cast = TYPE_bit;
 			if (skip(s, PNCT_rp)) {
 				ast->stmt = stmt(s, 1);
@@ -87,59 +93,64 @@ node stmt(state s, int mode) {
 				}
 				else ast->step = NULL;
 			}
-			else error(s, s->file, s->line, " ')' expected, not %k", peek(s));
+			else error(s, s->line, " ')' expected, not %k", peek(s));
 		}
-		else error(s, s->file, s->line, " '(' expected");
-		ast->type = leave(s, 7);
+		else error(s, s->line, " '(' expected");
+		ast->type = leave(s);
 	}
-	else if ((ast = next(s, OPER_for))) {		// for (...)
+	else if ((ast = next(s, OPER_for))) {	// for (...)
 		enter(s, 0);
-		ast->cast = qual;
+		//~ ast->cast = qual;
+		//~ ast->cast = TYPE_vid;
 		ast->init = 0;
 		ast->test = 0;
 		ast->step = 0;
 		if (!skip(s, PNCT_lp)) {
-			error(s, s->file, s->line, " '(' expected");
+			error(s, s->line, " '(' expected");
 		}
 		if (!skip(s, OPER_nop)) {		// init
 			ast->init = decl(s, 0);
 			if (!ast->init)
 				ast->init = expr(s, 0);
 			if (!skip(s, OPER_nop))
-				error(s, s->file, s->line, " ';' expected");
+				error(s, s->line, " ';' expected");
 		}
 		if (!skip(s, OPER_nop)) {		// test 
 			ast->test = expr(s, 1);
 			if (!skip(s, OPER_nop)) {
-				error(s, s->file, s->line, " ';' expected");
+				error(s, s->line, " ';' expected");
 			}
 		}
 		if (!skip(s, PNCT_rp)) {		// incr
 			ast->step = expr(s, 1);
 			if (!skip(s, PNCT_rp)) {
-				error(s, s->file, s->line, " ')' expected");
+				error(s, s->line, " ')' expected");
 			}
 		}
 		ast->stmt = stmt(s, 1);
-		ast->type = leave(s, 7);
+		ast->type = leave(s);
 	}
 	else if ((ast = decl(s, qual))) {		// type?
 		node tmp = newnode(s, OPER_nop);
 		tmp->line = ast->line;
 		tmp->stmt = ast;
 		ast = tmp;
+		//~ ast->cast = qual;
+		//~ ast->cast = TYPE_vid;
 
 		if (ast->type && mode)
-			error(s, s->file, s->line, "unexpected declaration");
+			error(s, s->line, "unexpected declaration");
 	}
 	else if ((ast = expr(s, 0))) {			// expr;
 		node tmp = newnode(s, OPER_nop);
 		tmp->line = ast->line;
 		tmp->stmt = ast;
 		ast = tmp;
+		//~ ast->cast = qual;
+		//~ ast->cast = TYPE_vid;
 
 		if (!skip(s, OPER_nop)) {
-			error(s, s->file, s->line, " ';' expected, not `%k`", peek(s));
+			error(s, s->line, " ';' expected, not `%k`", peek(s));
 			while (peek(s) && !skip(s, OPER_nop)) {
 				if (skip(s, OPER_end)) return 0;
 				skip(s, 0);
@@ -151,6 +162,7 @@ node stmt(state s, int mode) {
 	}
 
 	trace(-16, "leave:stmt('%+k')", ast);
+	//~ if (ast) debug("%+k", ast->stmt);
 	return ast;
 }
 
@@ -159,16 +171,23 @@ defn type(state s, int qual);
 node dvar(state s, defn typ, int qual);
 
 node decl(state s, int qual) {
-	defn typ = spec(s, qual);
+	defn typ;
 	if ((typ = spec(s, qual))) {
 		node ast = newnode(s, TYPE_def);
 		ast->type = typ;
+		ast->name = typ->name;
+		ast->cast = TYPE_def;
+		//~ debug("%+T", typ);
+		//~ debug("%+k", ast);
 		return ast;
 	}
 	if ((typ = type(s, qual))) {
-		return dvar(s, typ, qual);
+		node ast = dvar(s, typ, qual);
+		if (ast)
+			ast->type = typ;
+		//~ debug("%+k", ast);
+		return ast;
 	}
-	//~ if (spec(s));
 	return NULL;
 }
 
@@ -191,13 +210,13 @@ node expr(state s, int mode) {
 				if (tok_tbl[tok->kind].argc) {			// operator
 					if (unary) {
 						*post++ = 0;
-						error(s, s->file, tok->line, "syntax error before '%k'", tok);
+						error(s, tok->line, "syntax error before '%k'", tok);
 					}
 					unary = 1;
 					goto tok_op;
 				} else {
 					if (!unary)
-						error(s, s->file, tok->line, "syntax error before '%k'", tok);
+						error(s, tok->line, "syntax error before '%k'", tok);
 					unary = 0;
 					goto tok_id;
 				}
@@ -226,7 +245,7 @@ node expr(state s, int mode) {
 					break;
 				}
 				else {
-					error(s, s->file, tok->line, "syntax error before ')' token");
+					error(s, tok->line, "syntax error before ')' token");
 					break;
 				}
 				unary = 0;
@@ -234,7 +253,7 @@ node expr(state s, int mode) {
 			case PNCT_lc  : {			// '['
 				if (!unary)
 					tok->kind = OPER_idx;
-				else error(s, s->file, tok->line, "syntax error before '[' token");
+				else error(s, tok->line, "syntax error before '[' token");
 				sym[++level] = '[';
 				unary = 1;
 			} goto tok_op;
@@ -249,7 +268,7 @@ node expr(state s, int mode) {
 					break;
 				}
 				else {
-					error(s, s->file, tok->line, "syntax error before ']' token");
+					error(s, tok->line, "syntax error before ']' token");
 					break;
 				}
 				unary = 0;
@@ -257,7 +276,7 @@ node expr(state s, int mode) {
 			case PNCT_qst : {			// '?'
 				if (unary) {
 					*post++ = 0;		// ???
-					error(s, s->file, tok->line, "syntax error before '?' token");
+					error(s, tok->line, "syntax error before '?' token");
 				}
 				tok->kind = OPER_sel;
 				sym[++level] = '?';
@@ -274,7 +293,7 @@ node expr(state s, int mode) {
 					break;
 				}
 				else {
-					error(s, s->file, tok->line, "syntax error before ':' token");
+					error(s, tok->line, "syntax error before ':' token");
 					break;
 				}
 				unary = 1;
@@ -291,19 +310,19 @@ node expr(state s, int mode) {
 			} goto tok_op;
 			case OPER_not : {			// '!'
 				if (!unary)
-					error(s, s->file, tok->line, "syntax error before '!' token");
+					error(s, tok->line, "syntax error before '!' token");
 				unary = 1;
 			} goto tok_op;
 			case OPER_cmt : {			// '~'
 				if (!unary)
-					error(s, s->file, tok->line, "syntax error before '~' token");
+					error(s, tok->line, "syntax error before '~' token");
 				unary = 1;
 			} goto tok_op;
 
 			case OPER_com : 			// ','
 				if (level || mode != TYPE_ref) {
 					if (unary)
-						error(s, s->file, tok->line, "syntax error before ',' token");
+						error(s, tok->line, "syntax error before ',' token");
 					unary = 1;
 					goto tok_op;
 				}
@@ -340,13 +359,13 @@ node expr(state s, int mode) {
 		}
 		if (!tok) break;
 		if (post >= prec) {
-			error(s, s->file, s->line, "Expression too complex");
+			error(s, s->line, "Expression too complex");
 			return 0;
 		}
 	}
 	if (unary || level) {							// error
 		char c = level ? sym[level] : 0;
-		error(s, s->file, s->line, "missing %s", c == '(' ? "')'" : c == '[' ? "']'" : c == '?' ? "':'" : "expression");
+		error(s, s->line, "missing %s", c == '(' ? "')'" : c == '[' ? "']'" : c == '?' ? "':'" : "expression");
 		//~ return 0;
 	}
 	else if (prec > buff) {							// build
@@ -456,7 +475,7 @@ node expr(state s, int mode) {
 		}
 	}
 	if (tok && !lookup(s, 0, tok))
-		error(s, s->file, tok->line, "bum %+k", tok);
+		error(s, tok->line, "bum %+k", tok);
 	trace(-2, "leave:expr('%+k') %k", tok, peek(s));
 	return tok;
 }
@@ -481,6 +500,10 @@ node dvar(state s, defn typ, int qual) {
 		ref->init = expr(s, TYPE_ref);
 
 	if (test(s, OPER_nop)) {
+		tag->kind = TYPE_def;
+		tag->cast = TYPE_ref;
+		tag->line = ref->line;
+		tag->link = ref;
 		return tag;
 	}
 
@@ -493,10 +516,12 @@ node dvar(state s, defn typ, int qual) {
 	else if (skip(s, OPER_com)) {	// ,
 		fatal(s, "multi");
 	}
-	else error(s, s->file, s->line, "unexpected %k");
-	error(s, s->file, s->line, "unexpected %k");
+	else
+		error(s, s->line, "unexpected %k");
+	error(s, s->line, "unexpected %k");
 
 	trace(-4, "leave:dclr('%-k')", root);
+	debug("dclr('%+k')", tag);
 	return tag;
 }// */
 
@@ -519,7 +544,7 @@ defn type(state s, int qual) {
 			if (!skip(s, PNCT_rc)) {
 				tmp->init = expr(s, CNST_int);
 				if (!skip(s, PNCT_rc)) {
-					error(s, s->file, s->line, "missing ']'");
+					error(s, s->line, "missing ']'");
 					return tmp;
 				}
 			}
@@ -561,7 +586,7 @@ defn spec(state s, int qual) {
 					def->init = val;
 				}
 				else {
-					error(s, s->file, val->line, "Constant expression expected", peek(s));
+					error(s, val->line, "Constant expression expected", peek(s));
 					def = declare(s, TYPE_def, tag, 0, 0);
 					def->type = NULL;
 					def->init = val;
@@ -572,11 +597,11 @@ defn spec(state s, int qual) {
 				def = declare(s, TYPE_def, tag, def, 0);
 			}
 			else {
-				error(s, s->file, tag->line, "typename excepted");
+				error(s, tag->line, "typename excepted");
 			}
 			trace(1, "define('%T' as '%T')", def, def);
 			if (!skip(s, OPER_nop)) {
-				error(s, s->file, tok->line, "unexcepted token '%k'", peek(s));
+				error(s, s->line, "unexcepted token '%k'", peek(s));
 				if (!peek(s)) return 0;
 				while (peek(s)) {
 					if (skip(s, OPER_nop)) return 0;
@@ -585,7 +610,7 @@ defn spec(state s, int qual) {
 				}
 			}
 		}
-		else error(s, s->file, s->line, "Identifyer expected");
+		else error(s, s->line, "Identifyer expected");
 	}
 	else if (skip(s, TYPE_rec)) {		// struct
 		if (!(tag = next(s, TYPE_ref))) {	// name?
@@ -596,7 +621,7 @@ defn spec(state s, int qual) {
 			if ((tok = next(s, CNST_int))) {
 				switch ((int)tok->cint) {
 					default : 
-						error(s, s->file, s->line, "alignment must be a small power of two, not %d", tok->cint);
+						error(s, s->line, "alignment must be a small power of two, not %d", tok->cint);
 						break;
 					case  0 : pack =  0; break;
 					case  1 : pack =  1; break;
@@ -623,7 +648,7 @@ defn spec(state s, int qual) {
 					if (size < offs) size = offs;
 				}
 				if (!skip(s, OPER_nop)) {
-					error(s, s->file, tok->line, "unexcepted token '%k'", tok);
+					error(s, s->line, "unexcepted token '%k'", peek(s));
 					while ((tok = peek(s))) {
 						if (skip(s, OPER_nop)) break;
 						if (skip(s, OPER_end)) break;
@@ -632,7 +657,7 @@ defn spec(state s, int qual) {
 				}
 			}
 			def->size = size;
-			def->args = leave(s, 3);
+			def->args = leave(s);
 			if (!def->args)
 				warn(s, 2, s->file, s->line, "empty declaration");
 		}
@@ -652,9 +677,9 @@ defn spec(state s, int qual) {
 					if (skip(s, ASGN_set)) {
 						tmp->init = expr(s, CNST_int);
 						if (eval(NULL, tmp->init, TYPE_int) != CNST_int)
-							error(s, s->file, s->line, "integer constant expected");
+							error(s, s->line, "integer constant expected");
 						//~ if (iscons(tmp->init) != CNST_int)
-							//~ error(s, s->file, s->line, "integer constant expected");
+							//~ error(s, s->line, "integer constant expected");
 					}
 					else {
 						tmp->init = newnode(s, CNST_int);
@@ -664,13 +689,13 @@ defn spec(state s, int qual) {
 					}
 				}
 				/*else {
-					error(s, s->file, s->line, "identifyer expected");
+					error(s, s->line, "identifyer expected");
 					return 0;
 				}*/
 				if (!skip(s, OPER_nop)) {
 					// TODO error
 					if (!(tok = peek(s))) return 0;
-					error(s, s->file, tok->line, "unexcepted token '%k'", tok);
+					error(s, tok->line, "unexcepted token '%k'", tok);
 					while (!skip(s, OPER_nop)) {
 						if (skip(s, OPER_end)) break;//return 0;
 						skip(s, 0);
@@ -678,7 +703,7 @@ defn spec(state s, int qual) {
 				}
 			}
 			if (tag->name)
-				def->args = leave(s, 3);
+				def->args = leave(s);
 		}
 	}
 	else {					// type
@@ -694,7 +719,7 @@ void enter(state s, defn def) {
 	//~ return &s->scope[s->nest];
 }
 
-defn leave(state s, int mode) {
+defn leave(state s) {
 	int i;
 	defn arg = 0;
 	s->nest -= 1;
@@ -740,16 +765,16 @@ defn leave(state s, int mode) {
 			//~ arg->used = 1;
 		}
 		//~ if (typ && !(mode & fl_type))
-			//~ error(s, s->file, tag->line, "unexpected %T", typ);
+			//~ error(s, tag->line, "unexpected %T", typ);
 		//~ if (tag && !(mode & fl_name))
-			//~ error(s, s->file, tag->line, "unexpected %k", tag);
+			//~ error(s, tag->line, "unexpected %k", tag);
 		//~ if (val && !(mode & fl_init))
-			//~ error(s, s->file, tag->line, "unexpected %+k", val);
+			//~ error(s, tag->line, "unexpected %+k", val);
 
 		if (!skip(s, OPER_com)) {
 			if (test(s, PNCT_rp)) continue;
 			//~ if (!tmp) error(s, "missing declarator", s->file, s->line);
-			error(s, s->file, s->line, "',' expected");
+			error(s, s->line, "',' expected");
 		}
 		if (!peek(s)) break;
 		argc++;
@@ -760,13 +785,13 @@ defn leave(state s, int mode) {
 /*int Qual() {
 	while ((tok = peek(s))) {		// qual : const/packed/volatile
 		if (tok->kind == QUAL_con) {	// constant
-			if (qual & QUAL_con) error(s, s->file, tok->line, "duplicate qualifier: %k", tok);
+			if (qual & QUAL_con) error(s, tok->line, "duplicate qualifier: %k", tok);
 			qual |= QUAL_con;
 			skip(s, 0);
 			continue;
 		}
 		if (tok->kind == QUAL_vol) {	// volatile
-			if (qual & QUAL_vol) error(s, s->file, tok->line, "duplicate qualifier: %k", tok);
+			if (qual & QUAL_vol) error(s, tok->line, "duplicate qualifier: %k", tok);
 			qual |= QUAL_vol;
 			skip(s, 0);
 			continue;
@@ -775,11 +800,11 @@ defn leave(state s, int mode) {
 	}
 }// */
 
-/** COMP -----------------------------------------------------------------------
+/** scan -----------------------------------------------------------------------
  * scan a source
  * @param mode : script mode
 **/
-/** STMT -----------------------------------------------------------------------
+/** stmt -----------------------------------------------------------------------
  * scan a statement (mode ? enable decl : do not)
  * @param mode : enable or not <decl>.
  *	ex : "for( ; ; ) int a;", if mode == 0 => error
@@ -801,7 +826,7 @@ defn leave(state s, int mode) {
 >* static for (...)		// loop unroll
 >* parallel for (...)		// parallel loop
 **/
-/** DECL -----------------------------------------------------------------------
+/** decl -----------------------------------------------------------------------
  * scan a declaration, add to ast tree
  * @param mode : enable or not <expr>.
  * decl :
@@ -849,7 +874,7 @@ X* fnc	 $ (static)? <type> name'('type name (= expr)? [,type name (= expr)?]*')'
 //~ 	ASGN_mul(0x2, 2, "*=");
 //~ }
 **/
-/** EXPR -----------------------------------------------------------------------
+/** expr -----------------------------------------------------------------------
  * scan an expression
  * if mode then exit on ','
  * expr

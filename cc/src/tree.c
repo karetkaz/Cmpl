@@ -302,8 +302,6 @@ int eval(node res, node ast, int get) {
 
 		case TYPE_uns :
 		case TYPE_u32 :
-		//~ case TYPE_u64 :
-
 		case TYPE_int :
 		case TYPE_i32 :
 		case TYPE_i64 : res->cint = constint(res); res->kind = CNST_int; break;

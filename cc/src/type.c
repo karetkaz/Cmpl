@@ -115,8 +115,6 @@ defn instlibc(state s, const char* name) {
 				if (!(atyp = lookup(s, 0, atag))) break;
 				if (!istype(atag)) break;
 
-				//~ arg_ty = qual(s, 0);
-
 				if (!(atag = next(s, TYPE_ref)))
 					atag = newnode(s, TYPE_ref);
 
@@ -126,7 +124,7 @@ defn instlibc(state s, const char* name) {
 				if (skip(s, PNCT_rp)) break;
 				if (!skip(s, OPER_com)) break;
 			}
-			args = leave(s, 3);
+			args = leave(s);
 		}
 	}
 	if (!peek(s)) {
@@ -136,7 +134,6 @@ defn instlibc(state s, const char* name) {
 		def->nest = s->nest;
 		def->type = ftyp;
 		def->args = args;
-		def->link = 0;
 		def->libc = 1;
 		def->call = 1;
 		def->size = argsize;
@@ -169,12 +166,12 @@ defn install(state s, int kind, const char* name, unsigned size) {
 		case TYPE_vid :
 		case TYPE_bit :
 		case TYPE_uns :
-		case TYPE_u32 :
-		//~ case TYPE_u64 :
 		case TYPE_int :
+		case TYPE_flt :
+
+		case TYPE_u32 :
 		case TYPE_i32 :
 		case TYPE_i64 :
-		case TYPE_flt :
 		case TYPE_f32 :
 		case TYPE_f64 :
 		case TYPE_ptr :
@@ -226,9 +223,9 @@ defn declare(state s, int kind, node tag, defn rtyp, defn args) {
 	for (def = s->deft[hash]; def; def = def->next) {
 		if (def->nest < s->nest) break;
 		if (def->name && strcmp(def->name, tag->name) == 0) {
-			error(s, s->file, tag->line, "redefinition of '%T'", def);
-			if (def->link && s->file)
-				info(s, s->file, def->link->line, "first defined here");
+			error(s, tag->line, "redefinition of '%T'", def);
+			if (def->file && def->line)
+				info(s, def->file, def->line, "first defined here");
  		}
 	}
 
@@ -241,7 +238,6 @@ defn declare(state s, int kind, node tag, defn rtyp, defn args) {
 
 	def->type = rtyp;
 	def->args = args;
-	def->link = tag;
 	//~ tag->type = rtyp;
 
 	switch (kind) {

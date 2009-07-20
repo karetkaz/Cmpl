@@ -285,7 +285,7 @@ int escchr(state s) {
 			else if (h1 >= 'a' && h1 <= 'f') h1 -= 'a' - 10;
 			else if (h1 >= 'A' && h1 <= 'F') h1 -= 'A' - 10;
 			else {
-				error(s, s->file, s->line, "hex escape sequence invalid");
+				error(s, s->line, "hex escape sequence invalid");
 				return 0;
 			}
 
@@ -293,14 +293,14 @@ int escchr(state s) {
 			else if (h2 >= 'a' && h2 <= 'f') h2 -= 'a' - 10;
 			else if (h2 >= 'A' && h2 <= 'F') h2 -= 'A' - 10;
 			else {
-				error(s, s->file, s->line, "hex escape sequence invalid");
+				error(s, s->line, "hex escape sequence invalid");
 				return 0;
 			}
 			return h1 << 4 | h2;
 		}
 		default  : {
 			//~ back_chr(s, chr);
-			error(s, s->file, s->line, "unknown escape sequence '\\%c'", chr);
+			error(s, s->line, "unknown escape sequence '\\%c'", chr);
 		} return -1;
 	}
 	return 0;
@@ -613,7 +613,7 @@ int read_tok(state s, node tok)
 						warn(s, 8, s->file, s->line, "\"/ *\" within comment(%d)", c - 1);
 					prev_chr = chr;
 				}
-				if (chr == -1) error(s, s->file, line, "unterminated comment");
+				if (chr == -1) error(s, line, "unterminated comment");
 				//~ else debug("\n!!!comment.box :}\n");
 				chr = read_chr(s);
 			}
@@ -626,7 +626,7 @@ int read_tok(state s, node tok)
 					if (prev_chr == '+' && chr == '/' && !--l) break;
 					prev_chr = chr;
 				}
-				if (chr == -1) error(s, s->file, line, "unterminated comment");
+				if (chr == -1) error(s, line, "unterminated comment");
 				//~ else debug("\n!!!comment.block :}\n");
 				chr = read_chr(s);
 			}
@@ -651,7 +651,7 @@ int read_tok(state s, node tok)
 		default  : {
 			if (chr_map[chr & 0xff] & (ALPHA|UNDER)) goto read_idf;
 			if (chr_map[chr & 0xff] & DIGIT) goto read_num;
-			error(s, s->file, s->line, "error reading char: '%c'", chr);
+			error(s, s->line, "error reading char: '%c'", chr);
 			tok->kind = TOKN_err;
 		} break;
 		case '.' : {
@@ -845,11 +845,11 @@ int read_tok(state s, node tok)
 			}
 			*ptr = 0;
 			if (chr != '\'') {					// error
-				error(s, s->file, s->line, "unclosed character constant ('\'' missing)");
+				error(s, s->line, "unclosed character constant ('\'' missing)");
 				return tok->kind = TOKN_err;
 			}
 			if (ptr == beg) {
-				error(s, s->file, s->line, "empty character constant");
+				error(s, s->line, "empty character constant");
 				return tok->kind = TOKN_err;
 			}
 			else if (ptr > beg + sizeof(int)) warn(s, 1, s->file, s->line, "character constant truncated");
@@ -867,7 +867,7 @@ int read_tok(state s, node tok)
 			}
 			*ptr = 0;
 			if (chr != '\"') {					// error
-				error(s, s->file, s->line, "unclosed string constant ('\"' missing)");
+				error(s, s->line, "unclosed string constant ('\"' missing)");
 				return tok->kind = TOKN_err;
 			}
 			tok->type = type_str;
@@ -1041,9 +1041,9 @@ int read_tok(state s, node tok)
 			}
 			back_chr(s, chr);
 			if (*suf || (get_type & get_val)) {	// error
-				error(s, s->file, tok->line, "parse error in numeric constant \"%s\"", beg);
-				if ((get_type & exp_err) == exp_err) error(s, s->file, tok->line, "exponent has no digits");
-				else if (*suf) error(s, s->file, tok->line, "invalid suffix in numeric constant '%s'", suf);
+				error(s, tok->line, "parse error in numeric constant \"%s\"", beg);
+				if ((get_type & exp_err) == exp_err) error(s, tok->line, "exponent has no digits");
+				else if (*suf) error(s, tok->line, "invalid suffix in numeric constant '%s'", suf);
 				return tok->kind;
 			}
 			if (get_type & (got_flt)) {		// float
@@ -1054,7 +1054,7 @@ int read_tok(state s, node tok)
 			}
 			else {					// integer
 				if ((get_type & oct_err) == oct_err) {
-					error(s, s->file, s->line, "parse error in octal constant \"%s\"", beg);
+					error(s, s->line, "parse error in octal constant \"%s\"", beg);
 					return tok->kind = TOKN_err;
 				}
 				if (get_type & val_ovf) {

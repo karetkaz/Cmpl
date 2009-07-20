@@ -1,18 +1,18 @@
 #ifdef TOKDEF
 TOKDEF(TYPE_any, 0x00, 0, TY, "TYPE_any")	// first enum == 0/boolean
 TOKDEF(TYPE_vid, 0x01, 0, TY, "void")		// void
-TOKDEF(TYPE_bit, 0x02, 0, TY, "bool")		// boolean, uns32, uns16, uns08:	if(TYPE_bit)
+TOKDEF(TYPE_bit, 0x02, 0, TY, "bool")		// boolean, uns32, uns16, uns8:	if(TYPE_bit)
 TOKDEF(TYPE_uns, 0x03, 0, TY, "TYPE_uns")
-TOKDEF(TYPE_int, 0x04, 0, TY, "TYPE_int")	// int32, int16, int08, int64
-TOKDEF(TYPE_flt, 0x05, 0, TY, "TYPE_flt")	// flt32, flt64
-//~ TOKDEF(TYPE_vec, 0x06, 0, TY, "TYPE_vec")	// vec4f, vec2d, vec4i, ...
+TOKDEF(TYPE_int, 0x04, 0, TY, "TYPE_int")	// int64, int32, int16, int8
+TOKDEF(TYPE_flt, 0x05, 0, TY, "TYPE_flt")	// flt64, flt32
+//~ TOKDEF(TYPE_vec, 0x06, 0, TY, "TYPE_vec")	// (p2f64, p4f32), (p2i64, p4i32, p8i16, p16i8), ...
 TOKDEF(TYPE_ptr, 0x07, 0, TY, "TYPE_ptr")	// string, array, variable|function
 TOKDEF(TYPE_def, 0x08, 0, ID, "define")		// struct, union, constant|typename
 
 TOKDEF(TYPE_u32, 0x02, 0, TY, "TYPE_u32")
 TOKDEF(TYPE_i32, 0x03, 0, TY, "TYPE_i32")
-TOKDEF(TYPE_i64, 0x03, 0, TY, "TYPE_i64")
 TOKDEF(TYPE_f32, 0x04, 0, TY, "TYPE_f32")
+TOKDEF(TYPE_i64, 0x03, 0, TY, "TYPE_i64")
 TOKDEF(TYPE_f64, 0x04, 0, TY, "TYPE_f64")
 //~ TOKDEF(TYPE_p4x, 0x04, 0, TY, "TYPE_p4x")
 
@@ -80,11 +80,12 @@ TOKDEF(OPER_shl, 0x0b, 2, OP, ".shl")		// a << b
 
 TOKDEF(OPER_add, 0x0c, 2, OP, ".add")		// a+b
 TOKDEF(OPER_sub, 0x0c, 2, OP, ".sub")		// a-b
+
 TOKDEF(OPER_mul, 0x0d, 2, OP, ".mul")		// a*b
 TOKDEF(OPER_div, 0x0d, 2, OP, ".div")		// a/b
 TOKDEF(OPER_mod, 0x0d, 2, OP, ".mod")		// a%b
 
-TOKDEF(OPER_pls, 0x1e, 1, OP, ".pos")		// +a		unary plus
+TOKDEF(OPER_pls, 0x1e, 1, OP, ".pls")		// +a		unary plus
 TOKDEF(OPER_mns, 0x1e, 1, OP, ".neg")		// -a		unary minus
 TOKDEF(OPER_cmt, 0x1e, 1, OP, ".cmt")		// ~a		complement
 TOKDEF(OPER_not, 0x1e, 1, OP, ".not")		// !a		logical not
@@ -153,44 +154,44 @@ TOKDEF(ASGN_pow, 0x0a, 2, OP, ">")		// a **= b
  * Name : enum name;
  * Code : value of enum;
  * Size : opcode length (1 + argsize) (-1 variable) (0 ???);
- * Args : on stack elements check (pops);
- * Stch : ;
+ * Schk : requires n stack elements;
+ * Spop : pops n stack elements;
  * Tick : ticks for executing instruction;
  */
 //~ sys ========================================================================
 OPCDEF(opc_nop,  0x00, 0, 0, 0, 1,	"nop")		// ;					[…, a, b, c => […, a, b, c;
-OPCDEF(opc_loc,  0x01, 1, 0, 0, 1,	"loc")		// sp += 4*arg.1;		[…, a, b, c => […, a, b, c, …;
-OPCDEF(opc_pop,  0x02, 1, 0, 0, 1,	"pop")		// sp -= 4*arg.1;		[…, a, b, c => […, a, b;
+OPCDEF(opc_loc,  0x01, 1,-1,-1, 1,	"loc")		// sp += 4*arg.1;		[…, a, b, c => […, a, b, c, …;
+OPCDEF(opc_pop,  0x02, 1,-1,-1, 1,	"pop")		// sp -= 4*arg.1;		[…, a, b, c => […, a, b;
 OPCDEF(opc___3,  0x03, 0, 0, 0, 1,	NULL)		// 						[…, a, b, c => […, a, b, c, a;
 OPCDEF(opc___4,  0x04, 0, 0, 0, 1,	NULL)		// 						[…, a, b, c => […, c, b;
-OPCDEF(opc___5,  0x05, 0, 0, 0, 1,	"ldsp")		// push(SP + arg.3); SP += 4;	[…, a, b, c => […, a, b, c, SP;
+OPCDEF(opc___5,  0x05,-1, 0, 0, 1,	"ldsp")		// push(SP + arg.3); SP += 4;	[…, a, b, c => […, a, b, c, SP;
 OPCDEF(opc_call, 0x06, 0, 0, 0, 1,	"call")		// push(IP); ip += arg.3;	[…, a, b, c => […, a, b, c, IP;
-OPCDEF(opc_jmpi, 0x07, 1, 0, 0, 1,	"jmpi")		// IP = pop();				[…, a, b, c => […, a, b;
+OPCDEF(opc_jmpi, 0x07, 0, 1, 1, 1,	"jmpi")		// IP = pop();				[…, a, b, c => […, a, b;
 OPCDEF(opc_jmp,  0x08, 3, 0, 0, 1,	"jmp")		// IP += arg.3;			[…, a, b, c => […, a, b, c;
-OPCDEF(opc_jnz,  0x09, 3, 0, 0, 1,	"jnz")		// if pop(0)!=0 IP += arg.3;	[…, a, b, c => […, a, b;
-OPCDEF(opc_jz,   0x0a, 3, 0, 0, 1,	"jz")		// if pop(0)==0 IP += arg.3;	[…, a, b, c => […, a, b;
-OPCDEF(opc___b2, 0x0b, 3, 0, 0, 1,	"js")		// if pop(0) <0 IP += arg.3;	[…, a, b, c => […, a, b;
-OPCDEF(opc_cmp,  0x0c, 0, 0, 0, 1,	"cmp")		// TEMP: this is Ugly
+OPCDEF(opc_jnz,  0x09, 3, 1, 1, 1,	"jnz")		// if pop(0)!=0 IP += arg.3;	[…, a, b, c => […, a, b;
+OPCDEF(opc_jz,   0x0a, 3, 1, 1, 1,	"jz")		// if pop(0)==0 IP += arg.3;	[…, a, b, c => […, a, b;
+OPCDEF(opc___0b, 0x0b,-1, 0, 0, 1,	NULL)		// if pop(0) <0 IP += arg.3;	[…, a, b, c => […, a, b;
+OPCDEF(opc___0c, 0x0c,-1, 0, 0, 1,	NULL)		// 
 OPCDEF(opc_libc, 0x0d, 1, 0, 0, 1,	"libc")		//-lib call
 OPCDEF(opc_task, 0x0e, 3, 0, 0, 1,	"task")		// arg.3 : [code:16][data:8] task, [?fork if (arg.code == 0)]
 OPCDEF(opc_sysc, 0x0f, 1, 0, 0, 1,	"sysc")		// arg.1 : [type:8](exit, halt, wait?join?sync, trap) (alloc, free, copy, init) ...
 //~ stk ========================================================================
-OPCDEF(opc_ldc1, 0x10, 1, 0, 0, 1,	"ldc.b08")	// push(arg.1);			:2[…, a, b, c => […, a, b, c, 2;
-OPCDEF(opc_ldc2, 0x11, 2, 0, 0, 1,	"ldc.b16")	// push(arg.2);			:2[…, a, b, c => […, a, b, c, 2;
-OPCDEF(opc_ldc4, 0x12, 4, 0, 0, 1,	"ldc.b32")	// push(arg.4);			:2[…, a, b, c => […, a, b, c, 2;
-OPCDEF(opc_ldc8, 0x13, 8, 0, 0, 1,	"ldc.b64")	// push(arg.8);			:2[…, a, b, c => […, a, b, c, 2;
-OPCDEF(opc_dup1, 0x14, 1, 0, 0, 1,	"dup.1")	// push(sp(n));			:2[…, a, b, c => […, a, b, c, a;
-OPCDEF(opc_dup2, 0x15, 1, 0, 0, 1,	"dup.2")	// push(sp(n))x2;		:2[…, a, b, c => […, a, b, c, a, b;
-OPCDEF(opc_dup4, 0x16, 1, 0, 0, 1,	"dup.4")	// push(sp(n))x4;		:3[…, a, b, c, d => […, a, b, c, d, a, b, c, d;
-OPCDEF(opc_set1, 0x17, 1, 0, 0, 1,	"set.1")	// 
-OPCDEF(opc_set2, 0x18, 1, 0, 0, 1,	"set.2")	// 
-OPCDEF(opc_set4, 0x19, 1, 0, 0, 1,	"set.4")	// 
-OPCDEF(opc_ldz1, 0x1a, 0, 0, 0, 1,	"ldz.1")	// push(0);			[…, a, b, c => […, a, b, c, 0;
-OPCDEF(opc_ldz2, 0x1b, 0, 0, 0, 1,	"ldz.2")	// push(0, 0);			[…, a, b, c => […, a, b, c, 0, 0;
-OPCDEF(opc_ldz4, 0x1c, 0, 0, 0, 1,	"ldz.4")	// push(0, 0, 0, 0);		[…, a, b, c => […, a, b, c, 0, 0, 0, 0;
-OPCDEF(opc_ldcr, 0x1d, 4, 0, 0, 1,	"ldc.ref")	// TEMP/dup.?256
-OPCDEF(opc_ldcf, 0x1e, 4, 0, 0, 1,	"ldc.f32")	// TEMP/set.?256
-OPCDEF(opc_ldcF, 0x1f, 8, 0, 0, 1,	"ldc.f64")	// TEMP/ldz.?256
+OPCDEF(opc_ldc1, 0x10, 1, 0,-1, 1,	"ldc.b08")	// push(arg.1);			:2[…, a, b, c => […, a, b, c, 2;
+OPCDEF(opc_ldc2, 0x11, 2, 0,-1, 1,	"ldc.b16")	// push(arg.2);			:2[…, a, b, c => […, a, b, c, 2;
+OPCDEF(opc_ldc4, 0x12, 4, 0,-1, 1,	"ldc.b32")	// push(arg.4);			:2[…, a, b, c => […, a, b, c, 2;
+OPCDEF(opc_ldc8, 0x13, 8, 0,-2, 1,	"ldc.b64")	// push(arg.8);			:2[…, a, b, c => […, a, b, c, 2;
+OPCDEF(opc_dup1, 0x14, 1,-1,-1, 1,	"dup.1")	// push(sp(n));			:2[…, a, b, c => […, a, b, c, a;
+OPCDEF(opc_dup2, 0x15, 1,-1,-1, 1,	"dup.2")	// push(sp(n))x2;		:2[…, a, b, c => […, a, b, c, a, b;
+OPCDEF(opc_dup4, 0x16, 1,-1,-1, 1,	"dup.4")	// push(sp(n))x4;		:3[…, a, b, c, d => […, a, b, c, d, a, b, c, d;
+OPCDEF(opc_set1, 0x17, 1,-1,-1, 1,	"set.1")	// 
+OPCDEF(opc_set2, 0x18, 1,-1,-1, 1,	"set.2")	// 
+OPCDEF(opc_set4, 0x19, 1,-1,-1, 1,	"set.4")	// 
+OPCDEF(opc_ldz1, 0x1a, 0, 0,-1, 1,	"ldz.1")	// push(0);			[…, a, b, c => […, a, b, c, 0;
+OPCDEF(opc_ldz2, 0x1b, 0, 0,-1, 1,	"ldz.2")	// push(0, 0);			[…, a, b, c => […, a, b, c, 0, 0;
+OPCDEF(opc_ldz4, 0x1c, 0, 0,-1, 1,	"ldz.4")	// push(0, 0, 0, 0);		[…, a, b, c => […, a, b, c, 0, 0, 0, 0;
+OPCDEF(opc_ldcr, 0x1d, 4, 0,-1, 1,	"ldc.ref")	// TEMP/dup.?256
+OPCDEF(opc_ldcf, 0x1e, 4, 0,-1, 1,	"ldc.f32")	// TEMP/set.?256
+OPCDEF(opc_ldcF, 0x1f, 8, 0,-2, 1,	"ldc.f64")	// TEMP/ldz.?256
 //~ mem ========================================================================
 OPCDEF(opc_ldi1, 0x20, 0, 0, 0, 1,	"ldi.b")	// copy(sp, sp(0) 1);		[…, a, b, c => […, a, b, *c;
 OPCDEF(opc_ldi2, 0x21, 0, 0, 0, 1,	"ldi.h")	// copy(sp, sp(0) 2);		[…, a, b, c => […, a, b, *c;
@@ -209,22 +210,22 @@ OPCDEF(opc___d,  0x2d, 4, 0, 0, 1,	"stm.w")	//
 OPCDEF(opc___e,  0x2e, 4, 0, 0, 1,	"stm.d")	// 
 OPCDEF(opc___f,  0x2f, 4, 0, 0, 1,	"stm.q")	// 
 //~ bit[ 32] ===================================================================
-OPCDEF(b32_cmt,  0x30, 0, 0, 0, 1,	"b32.cmt")	// sp(0) = ~sp(0);
-OPCDEF(b32___1,  0x31, 0, 0, 0, 1,	"add.Carry")	// sp(1) += sp(0); pop;
-OPCDEF(b32___2,  0x32, 0, 0, 0, 1,	"sub.Borrow")	// sp(1) -= sp(0); pop;
-OPCDEF(u32_mul,  0x33, 0, 0, 0, 1,	"u32.mul")	// sp(1) *= sp(0); pop;
-OPCDEF(u32_div,  0x34, 0, 0, 0, 1,	"u32.div")	// sp(1) /= sp(0); pop;
-OPCDEF(u32_mod,  0x35, 0, 0, 0, 1,	"u32.mod")	// sp(1) %= sp(0); pop;
-OPCDEF(b32___6,  0x36, 1, 0, 0, 1,	"bit.")		// sp(0) = {any, all, ...} (sp(0));
-OPCDEF(b32_not,  0x37, 0, 0, 0, 1,	"b32.not")	// sp(0) = !sp(0);
-OPCDEF(u32_clt,  0x38, 0, 0, 0, 1,	"u32.clt")	// sp(1).b32 = sp(1).u32 < sp(0).u32; pop;
-OPCDEF(u32_cle,  0x39, 0, 0, 0, 1,	"u32.cgt")	// sp(1).b32 = sp(1).u32 > sp(0).u32; pop;
-OPCDEF(b32_and,  0x3a, 0, 0, 0, 1,	"b32.and")	// sp(1).u32 &= sp(0).u32; pop;
-OPCDEF(b32_ior,  0x3b, 0, 0, 0, 1,	"b32.ior")	// sp(1).u32 |= sp(0).u32; pop;
-OPCDEF(b32_xor,  0x3c, 0, 0, 0, 1,	"b32.xor")	// sp(1).u32 ^= sp(0).u32; pop;
-OPCDEF(b32_shl,  0x3d, 0, 0, 0, 1,	"b32.shl")	// sp(1).u32 <<= sp(0).u32; pop;
-OPCDEF(b32_shr,  0x3e, 0, 0, 0, 1,	"b32.shr")	// sp(1).u32 >>= sp(0).u32; pop;
-OPCDEF(b32_sar,  0x3f, 0, 0, 0, 1,	"b32.sar")	// sp(1).i32 >>= sp(0).i32; pop;
+OPCDEF(b32_cmt,  0x30, 0, 1, 0, 1,	"b32.cmt")	// sp(0) = ~sp(0);
+OPCDEF(b32___1,  0x31, 0, 0, 0, 1,	"b32.adc")	// sp(1) += sp(0); pop;
+OPCDEF(b32___2,  0x32, 0, 0, 0, 1,	"b32.sbb")	// sp(1) -= sp(0); pop;
+OPCDEF(u32_mul,  0x33, 0, 2, 1, 1,	"u32.mul")	// sp(1) *= sp(0); pop;
+OPCDEF(u32_div,  0x34, 0, 2, 1, 1,	"u32.div")	// sp(1) /= sp(0); pop;
+OPCDEF(u32_mad,  0x35, 0, 3, 1, 1,	"mad")		// mul; add;
+OPCDEF(b32___6,  0x36, 1, 1, 0, 1,	"bit.")		// sp(0) = {any, all, ...}[opc.arg.i1](sp(0));
+OPCDEF(b32_not,  0x37, 0, 1, 0, 1,	"b32.not")	// sp(0) = !sp(0);
+OPCDEF(u32_clt,  0x38, 0, 2, 1, 1,	"u32.clt")	// sp(1).b32 = sp(1).u32 < sp(0).u32; pop;
+OPCDEF(u32_cgt,  0x39, 0, 2, 1, 1,	"u32.cgt")	// sp(1).b32 = sp(1).u32 > sp(0).u32; pop;
+OPCDEF(b32_and,  0x3a, 0, 2, 1, 1,	"b32.and")	// sp(1).u32 &= sp(0).u32; pop;
+OPCDEF(b32_ior,  0x3b, 0, 2, 1, 1,	"b32.ior")	// sp(1).u32 |= sp(0).u32; pop;
+OPCDEF(b32_xor,  0x3c, 0, 2, 1, 1,	"b32.xor")	// sp(1).u32 ^= sp(0).u32; pop;
+OPCDEF(b32_shl,  0x3d, 0, 2, 1, 1,	"b32.shl")	// sp(1).u32 <<= sp(0).u32; pop;
+OPCDEF(b32_shr,  0x3e, 0, 2, 1, 1,	"b32.shr")	// sp(1).u32 >>= sp(0).u32; pop;
+OPCDEF(b32_sar,  0x3f, 0, 2, 1, 1,	"b32.sar")	// sp(1).i32 >>= sp(0).i32; pop;
 //~ OPCDEF(0x3x, 0, opc_rot,	"rot")	 	//?rotate
 //~ OPCDEF(0x3x, 1, opc_extu,	"zxt")		//!zero.extend arg:[offs:3][size:5]
 //~ OPCDEF(0x3x, 1, opc_exts,	"sxt")		//!sign.extend arg:[offs:3][size:5]
@@ -237,99 +238,99 @@ OPCDEF(i32_mul,  0x43, 0, 2, 1, 1,	"i32.mul")	// sp(1).i32 *= sp(0).i32; pop;
 OPCDEF(i32_div,  0x44, 0, 2, 1, 1,	"i32.div")	// sp(1).i32 /= sp(0).i32; pop;
 OPCDEF(i32_mod,  0x45, 0, 2, 1, 1,	"i32.mod")	// sp(1).i32 %= sp(0).i32; pop;
 OPCDEF(i32___6,  0x46, 1, 0, 0, 1,	NULL)		// sp(0).i32 = {...} (sp(0).i32);
-OPCDEF(i32___7,  0x47, 0, 2, 1, 1,	"i32.ceq")	// sp(1).b32 = sp(1).i32 == sp(0).i32; pop;
-OPCDEF(i32___8,  0x48, 0, 2, 1, 1,	"i32.clt")	// sp(1).b32 = sp(1).i32  < sp(0).i32; pop;
-OPCDEF(i32___9,  0x49, 0, 2, 1, 1,	"i32.cgt")	// sp(1).b32 = sp(1).i32  > sp(0).i32; pop;
+OPCDEF(i32_ceq,  0x47, 0, 2, 1, 1,	"i32.ceq")	// sp(1).b32 = sp(1).i32 == sp(0).i32; pop;
+OPCDEF(i32_clt,  0x48, 0, 2, 1, 1,	"i32.clt")	// sp(1).b32 = sp(1).i32  < sp(0).i32; pop;
+OPCDEF(i32_cgt,  0x49, 0, 2, 1, 1,	"i32.cgt")	// sp(1).b32 = sp(1).i32  > sp(0).i32; pop;
 OPCDEF(i32___a,  0x4a, 0, 0, 0, 1,	NULL)	// sar
-OPCDEF(i32_bol,  0x4b, 0, 1, 0, 1,	"tob.i")	// push(pop.i32 != 0)
-OPCDEF(i32_f32,  0x4c, 0, 1, 0, 1,	"tof.i")	// push(f32(pop.i32))
-OPCDEF(i32_i64,  0x4d, 0, 1, 0, 1,	"tol.i")	// push(i64(pop.i32))
-OPCDEF(i32_f64,  0x4e, 0, 1, 0, 1,	"tod.i")	// push(f64(pop.i32))
+OPCDEF(i32_bol,  0x4b, 0, 1, 0, 1,	"i32.cvt2_bool")	// push(pop.i32 != 0)
+OPCDEF(i32_f32,  0x4c, 0, 1, 0, 1,	"i32.cvt2_f32")	// push(f32(pop.i32))
+OPCDEF(i32_i64,  0x4d, 0, 1,-1, 1,	"i32.cvt2_i64")	// push(i64(pop.i32))
+OPCDEF(i32_f64,  0x4e, 0, 1,-1, 1,	"i32.cvt2_f64")	// push(f64(pop.i32))
 OPCDEF(i32___f,  0x4f, 3, 0, 0, 1,	NULL)		//?Extended ops: idx,rev,imm,mem
 //~ f32[ 32] ===================================================================
 OPCDEF(f32_neg,  0x50, 0, 1, 0, 1,	"f32.neg")	// sp(0) = -sp(0);
-OPCDEF(f32_add,  0x51, 0, 2, 0, 1,	"f32.add")	// sp(1) += sp(0); pop;
-OPCDEF(f32_sub,  0x52, 0, 2, 0, 1,	"f32.sub")	// sp(1) -= sp(0); pop;
-OPCDEF(f32_mul,  0x53, 0, 2, 0, 1,	"f32.mul")	// sp(1) *= sp(0); pop;
-OPCDEF(f32_div,  0x54, 0, 2, 0, 1,	"f32.div")	// sp(1) /= sp(0); pop;
-OPCDEF(f32_mod,  0x55, 0, 2, 0, 1,	"f32.mod")	// sp(1) %= sp(0); pop;
-OPCDEF(f32___6,  0x56, 1, 0, 0, 1,	"")	// sp(0) = {...} (sp(0));
-OPCDEF(f32_ceq,  0x57, 0, 2, 0, 1,	"f32.ceq")	// sp(1).b32 = sp(1).f32 == sp(0).f32; pop;
-OPCDEF(f32_clt,  0x58, 0, 2, 0, 1,	"f32.clt")	// sp(1).b32 = sp(1).f32  < sp(0).f32; pop;
-OPCDEF(f32_cgt,  0x59, 0, 2, 0, 1,	"f32.cgt")	// sp(1).b32 = sp(1).f32  > sp(0).f32; pop;
+OPCDEF(f32_add,  0x51, 0, 2, 1, 1,	"f32.add")	// sp(1) += sp(0); pop;
+OPCDEF(f32_sub,  0x52, 0, 2, 1, 1,	"f32.sub")	// sp(1) -= sp(0); pop;
+OPCDEF(f32_mul,  0x53, 0, 2, 1, 1,	"f32.mul")	// sp(1) *= sp(0); pop;
+OPCDEF(f32_div,  0x54, 0, 2, 1, 1,	"f32.div")	// sp(1) /= sp(0); pop;
+OPCDEF(f32_mod,  0x55, 0, 2, 1, 1,	"f32.mod")	// sp(1) %= sp(0); pop;
+OPCDEF(f32___6,  0x56, 1, 0, 0, 1,	NULL)	// sp(0) = {...} (sp(0));
+OPCDEF(f32_ceq,  0x57, 0, 2, 1, 1,	"f32.ceq")	// sp(1).b32 = sp(1).f32 == sp(0).f32; pop;
+OPCDEF(f32_clt,  0x58, 0, 2, 1, 1,	"f32.clt")	// sp(1).b32 = sp(1).f32  < sp(0).f32; pop;
+OPCDEF(f32_cgt,  0x59, 0, 2, 1, 1,	"f32.cgt")	// sp(1).b32 = sp(1).f32  > sp(0).f32; pop;
 OPCDEF(f32___a,  0x5a, 0, 0, 0, 1,	NULL)	// abs
-OPCDEF(f32_i32,  0x5b, 0, 1, 0, 1,	"tob.i")	// push(i32(pop.f32))
-OPCDEF(f32_bol,  0x5c, 0, 1, 0, 1,	"tof.i")	// push(pop.f32 != 0)
-OPCDEF(f32_i64,  0x5d, 0, 1, 0, 1,	"tol.i")	// push(i64(pop.f32))
-OPCDEF(f32_f64,  0x5e, 0, 1, 0, 1,	"tod.i")	// push(f64(pop.f32))
+OPCDEF(f32_i32,  0x5b, 0, 1, 0, 1,	"f32.cvt2_i32")	// push(i32(pop.f32))
+OPCDEF(f32_bol,  0x5c, 0, 1, 0, 1,	"f32.cvt2_bool")	// push(pop.f32 != 0)
+OPCDEF(f32_i64,  0x5d, 0, 1,-1, 1,	"f32.cvt2_i64")	// push(i64(pop.f32))
+OPCDEF(f32_f64,  0x5e, 0, 1,-1, 1,	"f32.cvt2_f64")	// push(f64(pop.f32))
 OPCDEF(f32___f,  0x5f, 0, 0, 0, 1,	NULL)		//-Extended ops: idx, rev, imm, mem
 //~ i64[ 64] ===================================================================
 OPCDEF(i64_neg,  0x60, 0, 2, 0, 1,	"i64.neg")	// sp(0) = -sp(0);
-OPCDEF(i64_add,  0x61, 0, 4, 0, 1,	"i64.add")	// sp(2) += sp(0); pop2;
-OPCDEF(i64_sub,  0x62, 0, 4, 0, 1,	"i64.sub")	// sp(2) -= sp(0); pop2;
-OPCDEF(i64_mul,  0x63, 0, 4, 0, 1,	"i64.mul")	// sp(2) *= sp(0); pop2;
-OPCDEF(i64_div,  0x64, 0, 4, 0, 1,	"i64.div")	// sp(2) /= sp(0); pop2;
-OPCDEF(i64_mod,  0x65, 0, 4, 0, 1,	"i64.mod")	// sp(2) %= sp(0); pop2;
-OPCDEF(i64___6,  0x66, 1, 0, 0, 1,	"")	// sp(0) = {...} (sp(0));
-OPCDEF(i64_ceq,  0x67, 0, 4, 0, 1,	"i64.ceq")	// sp(2).b32 = sp(2).i64 == sp(0).i64; pop2;
-OPCDEF(i64_clt,  0x68, 0, 4, 0, 1,	"i64.clt")	// sp(2).b32 = sp(2).i64  < sp(0).i64; pop2;
-OPCDEF(i64_cgt,  0x69, 0, 4, 0, 1,	"i64.cgt")	// sp(2).b32 = sp(2).i64  > sp(0).i64; pop2;
+OPCDEF(i64_add,  0x61, 0, 4, 2, 1,	"i64.add")	// sp(2) += sp(0); pop2;
+OPCDEF(i64_sub,  0x62, 0, 4, 2, 1,	"i64.sub")	// sp(2) -= sp(0); pop2;
+OPCDEF(i64_mul,  0x63, 0, 4, 2, 1,	"i64.mul")	// sp(2) *= sp(0); pop2;
+OPCDEF(i64_div,  0x64, 0, 4, 2, 1,	"i64.div")	// sp(2) /= sp(0); pop2;
+OPCDEF(i64_mod,  0x65, 0, 4, 2, 1,	"i64.mod")	// sp(2) %= sp(0); pop2;
+OPCDEF(i64___6,  0x66, 1, 0, 0, 1,	NULL)	// sp(0) = {...} (sp(0));
+OPCDEF(i64_ceq,  0x67, 0, 4, 3, 1,	"i64.ceq")	// sp(2).b32 = sp(2).i64 == sp(0).i64; pop2;
+OPCDEF(i64_clt,  0x68, 0, 4, 3, 1,	"i64.clt")	// sp(2).b32 = sp(2).i64  < sp(0).i64; pop2;
+OPCDEF(i64_cgt,  0x69, 0, 4, 3, 1,	"i64.cgt")	// sp(2).b32 = sp(2).i64  > sp(0).i64; pop2;
 OPCDEF(i64___a,  0x6a, 0, 0, 0, 1,	NULL)	// abs
-OPCDEF(i64_i32,  0x6b, 0, 2, 0, 1,	"tob.i")	// push(i32(pop.i64))
-OPCDEF(i64_f32,  0x6c, 0, 2, 0, 1,	"tof.i")	// push(f32(pop.i64))
-OPCDEF(i64_bol,  0x6d, 0, 2, 0, 1,	"tol.i")	// push(pop.i64 != 0)
-OPCDEF(i64_f64,  0x6e, 0, 2, 0, 1,	"tod.i")	// push(f64(pop.i64))
+OPCDEF(i64_i32,  0x6b, 0, 2, 1, 1,	"i64.cvt2_i32")	// push(i32(pop.i64))
+OPCDEF(i64_f32,  0x6c, 0, 2, 1, 1,	"i64.cvt2_f32")	// push(f32(pop.i64))
+OPCDEF(i64_bol,  0x6d, 0, 2, 1, 1,	"i64.cvt2_bool")	// push(pop.i64 != 0)
+OPCDEF(i64_f64,  0x6e, 0, 2, 0, 1,	"i64.cvt2_f64")	// push(f64(pop.i64))
 OPCDEF(i64___f,  0x6f, 0, 0, 0, 1,	NULL)		//-Extended ops: idx, rev, imm, mem
 //~ f64[ 64] ===================================================================
 OPCDEF(f64_neg,  0x70, 0, 2, 0, 1,	"f64.neg")	// sp(0) = -sp(0);
-OPCDEF(f64_add,  0x71, 0, 4, 0, 1,	"f64.add")	// sp(2) += sp(0); pop2;
-OPCDEF(f64_sub,  0x72, 0, 4, 0, 1,	"f64.sub")	// sp(2) -= sp(0); pop2;
-OPCDEF(f64_mul,  0x73, 0, 4, 0, 1,	"f64.mul")	// sp(2) *= sp(0); pop2;
-OPCDEF(f64_div,  0x74, 0, 4, 0, 1,	"f64.div")	// sp(2) /= sp(0); pop2;
-OPCDEF(f64_mod,  0x75, 0, 4, 0, 1,	"f64.mod")	// sp(2) %= sp(0); pop2;
-OPCDEF(f64___6,  0x76, 1, 0, 0, 1,	"")	// sp(0) = {min, max, ...} (sp(0));
-OPCDEF(f64_ceq,  0x77, 0, 4, 0, 1,	"f64.ceq")	// sp(2).b32 = sp(2).f64 == sp(0).f64; pop2;
-OPCDEF(f64_clt,  0x78, 0, 4, 0, 1,	"f64.clt")	// sp(2).b32 = sp(2).f64  < sp(0).f64; pop2;
-OPCDEF(f64_cgt,  0x79, 0, 4, 0, 1,	"f64.cgt")	// sp(2).b32 = sp(2).f64  > sp(0).f64; pop2;
+OPCDEF(f64_add,  0x71, 0, 4, 2, 1,	"f64.add")	// sp(2) += sp(0); pop2;
+OPCDEF(f64_sub,  0x72, 0, 4, 2, 1,	"f64.sub")	// sp(2) -= sp(0); pop2;
+OPCDEF(f64_mul,  0x73, 0, 4, 2, 1,	"f64.mul")	// sp(2) *= sp(0); pop2;
+OPCDEF(f64_div,  0x74, 0, 4, 2, 1,	"f64.div")	// sp(2) /= sp(0); pop2;
+OPCDEF(f64_mod,  0x75, 0, 4, 2, 1,	"f64.mod")	// sp(2) %= sp(0); pop2;
+OPCDEF(f64___6,  0x76, 1, 0, 0, 1,	NULL)	// sp(0) = {min, max, ...} (sp(0));
+OPCDEF(f64_ceq,  0x77, 0, 4, 3, 1,	"f64.ceq")	// sp(2).b32 = sp(2).f64 == sp(0).f64; pop2;
+OPCDEF(f64_clt,  0x78, 0, 4, 3, 1,	"f64.clt")	// sp(2).b32 = sp(2).f64  < sp(0).f64; pop2;
+OPCDEF(f64_cgt,  0x79, 0, 4, 3, 1,	"f64.cgt")	// sp(2).b32 = sp(2).f64  > sp(0).f64; pop2;
 OPCDEF(f64___a,  0x7a, 0, 0, 0, 1,	NULL)	//
-OPCDEF(f64_i32,  0x7b, 0, 2, 0, 1,	"cvt")	// push(i32(pop.f64))
-OPCDEF(f64_f32,  0x7c, 0, 2, 0, 1,	"cvt")	// push(f32(pop.f64))
-OPCDEF(f64_i64,  0x7d, 0, 2, 0, 1,	"cvt")	// push(i64(pop.f64))
-OPCDEF(f64_bol,  0x7e, 0, 2, 0, 1,	"cvt")	// push(pop.f64 != 0)
+OPCDEF(f64_i32,  0x7b, 0, 2, 1, 1,	"f64.cvt2_i32")	// push(i32(pop.f64))
+OPCDEF(f64_f32,  0x7c, 0, 2, 1, 1,	"f64.cvt2_f32")	// push(f32(pop.f64))
+OPCDEF(f64_i64,  0x7d, 0, 2, 0, 1,	"f64.cvt2_i64")	// push(i64(pop.f64))
+OPCDEF(f64_bol,  0x7e, 0, 2, 1, 1,	"f64.cvt2_bool")	// push(pop.f64 != 0)
 OPCDEF(f64___f,  0x7f, 0, 0, 0, 1,	NULL)		//-Extended ops: idx, rev, imm, mem
 //~ v4f[128] ===================================================================8
-OPCDEF(v4f_neg,  0x80, 0, 0, 0, 1,	"fv4.neg")	// sp(0) = -sp(0);
-OPCDEF(v4f_add,  0x81, 0, 0, 0, 1,	"fv4.add")	// sp(4) += sp(0); pop4;
-OPCDEF(v4f_sub,  0x82, 0, 0, 0, 1,	"fv4.sub")	// sp(4) -= sp(0); pop4;
-OPCDEF(v4f_mul,  0x83, 0, 0, 0, 1,	"fv4.mul")	// sp(4) *= sp(0); pop4;
-OPCDEF(v4f_div,  0x84, 0, 0, 0, 1,	"fv4.div")	// sp(4) /= sp(0); pop4;
-OPCDEF(v4f_crs,  0x85, 0, 0, 0, 1,	"fv3.crs")	// cross
-OPCDEF(v4f___6,  0x86, 0, 0, 0, 1,	"")	//
-OPCDEF(v4f_cmp,  0x87, 0, 0, 0, 1,	"fv4.ceq")	// sp(4).b32 = sp(4) == sp(0) pop7;
-OPCDEF(v4f_min,  0x88, 0, 0, 0, 1,	"fv4.min")	// sp(4).b32 = sp(4) <? sp(0) pop4;
-OPCDEF(v4f_max,  0x89, 0, 0, 0, 1,	"fv4.max")	// sp(4).b32 = sp(4) >? sp(0) pop4;
-OPCDEF(v4f___a,  0x8a, 0, 0, 0, 1,	"")		// pov, lrp, ..., abs, log, cos, ...
-OPCDEF(v4f___b,  0x8b, 0, 0, 0, 1,	"")	//
-OPCDEF(v4f_dp3,  0x8c, 0, 0, 7, 1,	"dot.fv3")	//
-OPCDEF(v4f_dp4,  0x8d, 0, 0, 7, 1,	"dot.fv4")	//
-OPCDEF(v4f_dph,  0x8e, 0, 0, 7, 1,	"dot.fvh")	//
+OPCDEF(v4f_neg,  0x80, 0, 4, 0, 1,	"fv4.neg")	// sp(0) = -sp(0);
+OPCDEF(v4f_add,  0x81, 0, 8, 4, 1,	"fv4.add")	// sp(4) += sp(0); pop4;
+OPCDEF(v4f_sub,  0x82, 0, 8, 4, 1,	"fv4.sub")	// sp(4) -= sp(0); pop4;
+OPCDEF(v4f_mul,  0x83, 0, 8, 4, 1,	"fv4.mul")	// sp(4) *= sp(0); pop4;
+OPCDEF(v4f_div,  0x84, 0, 8, 4, 1,	"fv4.div")	// sp(4) /= sp(0); pop4;
+OPCDEF(v4f_crs,  0x85, 0, 8, 4, 1,	"fv3.crs")	// cross
+OPCDEF(v4f___6,  0x86, 0, 0, 0, 1,	NULL)	//
+OPCDEF(v4f_cmp,  0x87, 0, 8, 7, 1,	"fv4.ceq")	// sp(4).b32 = sp(4) == sp(0) pop7;
+OPCDEF(v4f_min,  0x88, 0, 8, 4, 1,	"fv4.min")	// sp(4).b32 = sp(4) <? sp(0) pop4;
+OPCDEF(v4f_max,  0x89, 0, 8, 4, 1,	"fv4.max")	// sp(4).b32 = sp(4) >? sp(0) pop4;
+OPCDEF(v4f___a,  0x8a, 0, 0, 0, 1,	NULL)		// pov, lrp, ..., abs, log, cos, ...
+OPCDEF(v4f___b,  0x8b, 0, 0, 0, 1,	NULL)	//
+OPCDEF(v4f_dp3,  0x8c, 0, 8, 7, 1,	"dot.fv3")	//
+OPCDEF(v4f_dp4,  0x8d, 0, 8, 7, 1,	"dot.fv4")	//
+OPCDEF(v4f_dph,  0x8e, 0, 8, 7, 1,	"dot.fvh")	//
 OPCDEF(v4f___f,  0x8f, 0, 0, 0, 1,	NULL)		//-Extended ops: idx, rev, imm, mem
 //~ p4d[128] ===================================================================9
-OPCDEF(v2d_neg,  0x90, 0, 0, 0, 1,	"neg.pf2")	// sp(0) = -sp(0);
-OPCDEF(v2d_add,  0x91, 0, 0, 0, 1,	"add.pf2")	// sp(4) += sp(0); pop4;
-OPCDEF(v2d_sub,  0x92, 0, 0, 0, 1,	"sub.pf2")	// sp(4) -= sp(0); pop4;
-OPCDEF(v2d_mul,  0x93, 0, 0, 0, 1,	"mul.pf2")	// sp(4) *= sp(0); pop4;
-OPCDEF(v2d_div,  0x94, 0, 0, 0, 1,	"div.pf2")	// sp(4) /= sp(0); pop4;
-OPCDEF(p4d___5,  0x95, 0, 0, 0, 1,	"")		// mod
-OPCDEF(p4d_swz,  0x96, 2, 0, 0, 1,	"px4.swz")	// swizzle
-OPCDEF(v2d_ceq,  0x97, 0, 0, 0, 1,	"ceq.pf2")	// sp(1) = sp(1) == sp(0) pop7;
-OPCDEF(v2d_min,  0x98, 0, 0, 0, 1,	"min.pf2")	// sp(1) = sp(1) <? sp(0) pop4;
-OPCDEF(v2d_max,  0x99, 0, 0, 0, 1,	"max.pf2")	// sp(1) = sp(1) >? sp(0) pop4;
-OPCDEF(p4d___a,  0x9a, 0, 0, 0, 1,	"")	//
-OPCDEF(p4d___b,  0x9b, 0, 0, 0, 1,	"p2i.alu")	//
-OPCDEF(p4d___c,  0x9c, 0, 0, 0, 1,	"p4i.alu")	//
-OPCDEF(p4d___d,  0x9d, 0, 0, 0, 1,	"p8i.alu")	//
-OPCDEF(p4d___e,  0x9e, 0, 0, 0, 1,	"p16.alu")	//
+OPCDEF(v2d_neg,  0x90, 0, 4, 0, 1,	"neg.pf2")	// sp(0) = -sp(0);
+OPCDEF(v2d_add,  0x91, 0, 8, 4, 1,	"add.pf2")	// sp(4) += sp(0); pop4;
+OPCDEF(v2d_sub,  0x92, 0, 8, 4, 1,	"sub.pf2")	// sp(4) -= sp(0); pop4;
+OPCDEF(v2d_mul,  0x93, 0, 8, 4, 1,	"mul.pf2")	// sp(4) *= sp(0); pop4;
+OPCDEF(v2d_div,  0x94, 0, 8, 4, 1,	"div.pf2")	// sp(4) /= sp(0); pop4;
+OPCDEF(p4d___5,  0x95, 0, 0, 0, 1,	NULL)		// mod
+OPCDEF(p4d_swz,  0x96, 1, 4, 0, 1,	"px4.swz")	// swizzle
+OPCDEF(v2d_ceq,  0x97, 0, 8, 7, 1,	"ceq.pf2")	// sp(1) = sp(1) == sp(0) pop7;
+OPCDEF(v2d_min,  0x98, 0, 8, 4, 1,	"min.pf2")	// sp(1) = sp(1) <? sp(0) pop4;
+OPCDEF(v2d_max,  0x99, 0, 8, 4, 1,	"max.pf2")	// sp(1) = sp(1) >? sp(0) pop4;
+OPCDEF(p4d___a,  0x9a, 0, 0, 0, 1,	NULL)	//
+OPCDEF(p4d___b,  0x9b, 1, 0, 0, 1,	"p2i.alu")	//
+OPCDEF(p4d___c,  0x9c, 1, 0, 0, 1,	"p4i.alu")	//
+OPCDEF(p4d___d,  0x9d, 1, 0, 0, 1,	"p8i.alu")	//
+OPCDEF(p4d___e,  0x9e, 1, 0, 0, 1,	"p16.alu")	//
 OPCDEF(p4d___f,  0x9f,-1, 0, 0, 1,	NULL)		//-Extended ops: idx, rev, imm, mem
 //~ rgb[ 32] ===================================================================a
 //~ OPCDEF(rgb_neg,  0xa0, 0, 	"rgb.neg")
@@ -372,26 +373,29 @@ OPCDEF(p4d___f,  0x9f,-1, 0, 0, 1,	NULL)		//-Extended ops: idx, rev, imm, mem
 	bin : b32
 	num : i32/i64/f32/f64
 	vec : .../p4i/p2l/p4f/p2d
-	opc = code		// b32		num			vec
+	opc = code		// bin		num			vec
 
-	neg = 0x0,		// cmt		neg			neg
-	add = 0x1,		// adc*		add			add
-	sub = 0x2,		// sbb*		sub			sub
-	mul = 0x3,		// mul*		mul			mul
-	div = 0x4,		// div*		div			div
-	mod = 0x5,		// mad		rem			crs
-	fun = 0x6,		// bsf,...	abs, sin, pow, ...
+	neg = 0x?0,		// cmt		neg			neg
+	add = 0x?1,		// and		add			add
+	sub = 0x?2,		// ior 		sub			sub
+	mul = 0x?3,		// xor 		mul			mul
+	div = 0x?4,		// shl 		div			div
+	mod = 0x?5,		// shr		rem			crs
+	fun = 0x?6,		// sar		abs, sin, pow, ...
 
-	ceq = 0x7,		// not		ceq			ceq
-	clt = 0x8,		// ult		clt			min
-	cge = 0x9,		// ugt		cgt			max
+	ceq = 0x?7,		// not		ceq			ceq
+	clt = 0x?8,		// ult		clt			min
+	cge = 0x?9,		// ugt		cgt			max
 
-	??? = 0xa,		// and		 ? 			 ? 
-	cvt = 0xb,		// ior		i32|bool	dp2
-	cvt = 0xc,		// xor		f32|bool	dp3
-	cvt = 0xd,		// shl		i64|bool	dph
-	cvt = 0xe,		// shr		f64|bool	dp4
-	cvt = 0xf,		// sar		ext			ext
+	??? = 0x?a,		// mad		 ? 			 ? 
+	cvt = 0x?b,		// ?		i32|bool	dp2
+	cvt = 0x?c,		// ?		f32|bool	dp3
+	cvt = 0x?d,		// ?		i64|bool	dph
+	cvt = 0x?e,		// ?		f64|bool	dp4
+	cvt = 0x?f,		// ?		ext			ext
+
+bit, sxt, zxt, 
+adc, sbb, mul, div, mod, rot, 
 
 	switch (indr) {
 		case 0 : sp[i] = sp[j] OP sp[k];
@@ -433,6 +437,7 @@ OPCDEF(p4d___f,  0x9f,-1, 0, 0, 1,	NULL)		//-Extended ops: idx, rev, imm, mem
 		//~ cnt== 18 : lo1		// keep lowest bit / 1 << bsr
 		//~ cnt== 19 : bsr		// scan reverse / lg2(lo1)
 		//~ cnt== 1a : swp		// swap bits
+		//~ xxx== 20 : 
 
 	//~ opx == 001 : shl		// shift left
 	//~ opx == 010 : shr		// shift right

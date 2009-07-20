@@ -25,11 +25,11 @@
 #define dieif(__EXP) if (__EXP) { fputmsg(stderr, "%s:%d:debug: `"#__EXP"`\n", __FILE__, __LINE__); fflush(stderr); exit(-1);}
 
 #if 0
-#define error(__ENV, __FILE, __LINE, msg, ...) perr(__ENV, -1, __FILE__, __LINE__, msg, ##__VA_ARGS__)
+#define error(__ENV, __LINE, msg, ...) perr(__ENV, -1, __FILE__, __LINE__, msg, ##__VA_ARGS__)
 #define warn(__ENV, __LEVEL, __FILE, __LINE, msg, ...) perr(__ENV, __LEVEL, __FILE__, __LINE__, msg, ##__VA_ARGS__)
 #define info(__ENV, __FILE, __LINE, msg, ...) perr(__ENV, 0, __FILE__, __LINE__, msg, ##__VA_ARGS__)
 #else
-#define error(__ENV, __FILE, __LINE, msg, ...) perr(__ENV, -1, __FILE, __LINE, msg, ##__VA_ARGS__)
+#define error(__ENV, __LINE, msg, ...) perr(__ENV, -1, (__ENV)->file, __LINE, msg, ##__VA_ARGS__)
 #define warn(__ENV, __LEVEL, __FILE, __LINE, msg, ...) perr(__ENV, __LEVEL, __FILE, __LINE, msg, ##__VA_ARGS__)
 #define info(__ENV, __FILE, __LINE, msg, ...) perr(__ENV, 0, __FILE, __LINE, msg, ##__VA_ARGS__)
 #endif
@@ -57,7 +57,7 @@ enum {
 	opc_last,
 
 	opc_ldc = 0x0100,
-	//~ opc_ldi,
+	opc_ldi,
 	//~ opc_sti,
 
 	opc_neg,
@@ -74,19 +74,19 @@ enum {
 	opc_xor,
 
 	//~ opc_cz = 0x02000 << 0,
-	opc_ceq = 0x02001 << 0,
-	opc_clt = 0x02002 << 0,
-	opc_cle = 0x02003 << 0,
-	cmp_i32 = 0x02000 << 2,
-	cmp_f32 = 0x02001 << 2,
-	cmp_i64 = 0x02002 << 2,
-	cmp_f64 = 0x02003 << 2,
-	cmp_tun = 0x02001 << 4,		// unsigned / unordered
-	opc_not = 0x02001 << 5,		// 
-	//~ opc_cnz = opc_not + opc_c2z,
-	opc_cne = opc_not + opc_ceq,
-	opc_cgt = opc_not + opc_cle,
-	opc_cge = opc_not + opc_clt,
+	opc_ceq,// = 0x02001 << 0,
+	opc_clt,// = 0x02002 << 0,
+	//~ opc_cle,// = 0x02003 << 0,
+	//~ cmp_i32,// = 0x02000 << 2,
+	//~ cmp_f32,// = 0x02001 << 2,
+	//~ cmp_i64,// = 0x02002 << 2,
+	//~ cmp_f64 = 0x02003 << 2,
+	//~ cmp_tun = 0x02001 << 4,		// unsigned / unordered
+	//~ opc_not,// = 0x02001 << 5,		// 
+	//~ opc_cnz,// = opc_not + opc_c2z,
+	//~ opc_cne,// = opc_not + opc_ceq,
+	opc_cgt,// = opc_not + opc_cle,
+	//~ opc_cge,// = opc_not + opc_clt,
 
 	//~ opc_ldcr = opc_ldc4,
 	//~ opc_ldcf = opc_ldc4,
@@ -100,6 +100,8 @@ enum {
 typedef struct {
 	int const	code;
 	int const	size;
+	int const	chck;
+	int const	pops;
 	char const *name;
 } opc_inf;
 extern const opc_inf opc_tbl[255];
@@ -108,6 +110,17 @@ struct libcargv {
 	unsigned char* retv;	// retval
 	unsigned char* argv;	// 
 };
+
+typedef struct {
+	uns32t x;
+	uns32t y;
+	uns32t z;
+	uns32t w;
+} u32x4t;
+typedef struct {
+	uns32t x;
+	uns32t y;
+} u32x2t;
 
 typedef struct {
 	flt32t x;
@@ -307,69 +320,70 @@ struct astn_t {				// ast node
 	node		next;				// 
 };
 struct symn_t {				// symbol
-	defn	defs;		// simbols on table
-	defn	next;		// link
-
-	uns16t	nest;		// declaration level
 	uns08t	kind;		// TYPE_ref || TYPE_xxx
+	uns16t	nest;		// declaration level
 
-	uns08t	used:1;		// qual: used(ref/def)
-	uns08t	onst:1;		// qual: on stack(val)
-	uns08t	libc:1;		// native (fun / var) / 
+	//~ uns08t	priv:1;		// private
+	//~ uns08t	stat:1;		// static
+	//~ uns08t	read:1;		// final? (const)
+	uns08t	used:1;		// used(ref/def)
+	uns08t	onst:1;		// temp / on stack(val)
+	uns08t	libc:1;		// native (fun / var)
 	uns08t	call:1;		// is a function
 	//~ uns08t	asgn:1;		// assigned a value
-	//~ uns08t	temp:1;		// qual: remove valiable (!static && level > 0)
-	//~ uns08t	call:1;		// qual: used(ref/def)
 
-	union {
-	uns32t	size;		// addrof(TYPE_ref) / sizeof(TYPE_xxx)
-	uns32t	offs;
-	};
+	union {uns32t	size, offs;};	// addrof(TYPE_ref) / sizeof(TYPE_xxx)
+	defn	type;		// base type of TYPE_ref (void, int, float, struct, ...)
+	defn	args;		// REC fields / FUN args
+	node	init;		// VAR init / FUN body
 
+	char*	name;
 	char*	file;
 	int		line;
 
-	// symcmp(symt s1, symt s2) : return strcmp(name, name)==0 && argcmp(args, args)==0;
-	defn	type;		// base type of TYPE_ref (void, int, float, struct, ...)
-	char*	name;		// name of symbol
-	defn	args;		// REC fields / FUN args
-	node	init;		// VAR init / FUN body
-	node	link;		// declaration link
+	// list(scoping)
+	defn	defs;		// simbols on stack
+	defn	next;		// simbols on table/args
+
+};
+
+struct buff_t {
+	char *ptr;
+	char *end;
+	char beg[];
 };
 
 struct state_t {			// enviroment (context)
-	int	errc;			// error count
-	int	warn;			// warning level
-
-	char*	file;			// current file name
-	int	line;			// current line number
+	int		errc;			// error count
 	FILE*	logf;			// log file (errors + warnings)
 
-	strT	strt;		// string table (identifyers || string constants)
-	int	copt;		// optimization levevel
+	struct {				// Scanner
+		int		warn;		// warning level
+		int		copt;		// optimization levevel
+		int		nest;		// nest level : modified by (enterblock/leaveblock)
+		struct {			// Lexer
+			char*	file;	// current file name
+			int		line;	// current line number
+			// INPUT
+			struct {
+				int		_chr;		// saved char
+				int		_fin;		// file handle (-1) for cc_buff()
+				int		_cnt;		// chars left in buffer
+				char*	_ptr;		// pointer parsing trough source
+				uns08t	_buf[1024];	// cache
+			};//fin;
+			node	tokp;		// token pool
+			node	_tok;		// next token
+			// BUFFER
+		};// file[TOKS];
 
-	struct {			// Lexer
-		// INPUT
-		struct {
-			int	_chr;		// saved char
-			int	_fin;		// file handle (-1) for cc_buff()
-			int	_cnt;		// chars left in buffer
-			char*	_ptr;		// pointer parsing trough source
-			uns08t	_buf[1024];	// cache
-		};//fin;
-		// BUFFER
-		//~ char*	_beg;		// buffer[i]
-		//~ char*	_ptr;		// buffer[i + token_text_length]
-		node	tokp;		// token pool
-		node	_tok;		// next token
-	};// file[TOKS];
-	struct {			// Scanner
 		node	root;		// program
 		defn	glob;		// definitions : leave();
 
+		strT	strt;		// string table
 		defT	deft;		// definitions / declarations
 		defn	defs;		// definitions / declarations stack
-		int		nest;		// nest level : modified by (enterblock/leaveblock)
+
 
 		struct {		// current decl
 			defn	csym;
@@ -380,18 +394,18 @@ struct state_t {			// enviroment (context)
 			//~ node	_con;	// list: continue
 		} scope[TOKS];
 	};
-	struct {			// bytecode
-		unsigned char*	memp;			// memory == buffp
+	struct {				// bytecode
+		unsigned char*	mem;			// memory == buffp
 		unsigned long	mems;			// memory size ?
 
 		//~ unsigned int	tick;			// 
-		unsigned int	mins;			// stack min size
-		unsigned int	rets;			// stack size on return
+		unsigned int	sm;			// stack min size
 		unsigned int	pc;			// prev / program counter
-		//~ unsigned int	ic;			// instruction count / executed
+		unsigned int	ic;			// instruction count / executed
 
+		unsigned int	ss;			// stack size on return
 		unsigned int	cs;			// code size / program counter
-		//~ unsigned int	ds;			// data size
+		unsigned int	ds;			// data size
 		//~ cell		pu;			// procs
 
 		//~ unsigned char*	ip;			// Instruction pointer
@@ -413,13 +427,12 @@ struct state_t {			// enviroment (context)
 		};
 		**/
 	} code;
-
-	//~ char*		host;		// current "dos"/"win"/"lnx"?
-	//~ char*		cwdp;		// path of directory
-	//~ char*		binp;		// path of program
-	//~ char*		binn;		// name of program
-	//~ long		buffs;			// size of buffer
-	char*	buffp;			// ???
+	//~ struct scan_t *scan;
+	//~ struct code_t *code;
+	//~ unsigned char *ptr;
+	//~ unsigned char *end;
+	//~ unsigned char buff[];
+	char	*buffp;					// ???
 	char	buffer[bufmaxlen+2];	// buffer base (!!! static)
 };
 
@@ -477,7 +490,7 @@ node expr(state, int mode);		// parse expression	(mode : ?)
 node scan(state, int mode);		// parse program	(mode : script mode)
 
 void enter(state s, defn def);
-defn leave(state s, int mode);
+defn leave(state s);
 
 /** try to evaluate an expression
  * @return CNST_xxx if expression can be folded 0 otherwise
