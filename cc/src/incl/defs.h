@@ -1,13 +1,12 @@
 #ifdef TOKDEF
 TOKDEF(TYPE_any, 0x00, 0, TY, "TYPE_any")	// first enum == 0/boolean
-TOKDEF(TYPE_vid, 0x01, 0, TY, "void")		// void
-TOKDEF(TYPE_bit, 0x02, 0, TY, "bool")		// boolean, uns32, uns16, uns8:	if(TYPE_bit)
-TOKDEF(TYPE_uns, 0x03, 0, TY, "TYPE_uns")
-TOKDEF(TYPE_int, 0x04, 0, TY, "TYPE_int")	// int64, int32, int16, int8
-TOKDEF(TYPE_flt, 0x05, 0, TY, "TYPE_flt")	// flt64, flt32
-//~ TOKDEF(TYPE_vec, 0x06, 0, TY, "TYPE_vec")	// (p2f64, p4f32), (p2i64, p4i32, p8i16, p16i8), ...
-TOKDEF(TYPE_ptr, 0x07, 0, TY, "TYPE_ptr")	// string, array, variable|function
-TOKDEF(TYPE_def, 0x08, 0, ID, "define")		// struct, union, constant|typename
+TOKDEF(TYPE_vid, 0x01, 0, TY, "TYPE_vid")		// void
+TOKDEF(TYPE_bit, 0x02, 0, TY, "TYPE_bit")		//  bool, uns32, uns16, uns8
+TOKDEF(TYPE_int, 0x03, 0, TY, "TYPE_int")		// int64, int32, int16, int8
+TOKDEF(TYPE_flt, 0x04, 0, TY, "TYPE_flt")		// flt64, flt32
+//~ TOKDEF(TYPE_vec, 0x05, 0, TY, "TYPE_vec")	// (p2f64, p4f32), (p2i64, p4i32, p8i16, p16i8), (p2u64, p4u32, p8u16, p16u8), ...
+TOKDEF(TYPE_arr, 0x06, 0, TY, "TYPE_arr")	// string, array, variable|function
+TOKDEF(TYPE_def, 0x07, 0, ID, "define")		// struct, union, constant|typename
 
 TOKDEF(TYPE_u32, 0x02, 0, TY, "TYPE_u32")
 TOKDEF(TYPE_i32, 0x03, 0, TY, "TYPE_i32")
@@ -30,11 +29,12 @@ TOKDEF(TYPE_rec, 0x07, 0, ID, "struct")
 TOKDEF(EMIT_opc, 0x00, 0, ID, "emit")
 
 //~ TOKDEF(CNST_chr, 0x02, 0, TY, "CNST_uns")	// 'a'
-//~ TOKDEF(CNST_uns, 0x02, 0, TY, "CNST_uns")	// uns64
-TOKDEF(CNST_int, 0x03, 0, TY, "CNST_int")	// int64
+//~ TOKDEF(CNST_uns, 0x02, 0, TY, "CNST_uns")	// uns32
+TOKDEF(CNST_int, 0x03, 0, TY, "CNST_int")	// int32
 TOKDEF(CNST_flt, 0x04, 0, TY, "CNST_flt")	// flt64
 TOKDEF(CNST_str, 0x05, 0, TY, "CNST_str")	// string
 
+TOKDEF(TYPE_val, 0x07, 0, ID, "define(val)")	// define a = 9;
 TOKDEF(TYPE_ref, 0x05, 0, TY, "TYPE_ref")	// identifyer/variable/typename/constant
 //~ TOKDEF(TYPE_new, 0x05, 0, TY, "TYPE_new")	// int a;
 
@@ -151,12 +151,12 @@ TOKDEF(ASGN_pow, 0x0a, 2, OP, ">")		// a **= b
 
 #ifdef OPCDEF
 /* #define OPCDEF(Name, Code, Size, Args, Push, Time, Mnem) Name = Code
- * Name : enum name;
- * Code : value of enum;
- * Size : opcode length (1 + argsize) (-1 variable) (0 ???);
- * Schk : requires n stack elements;
- * Spop : pops n stack elements;
- * Tick : ticks for executing instruction;
+ * Name: enum name;
+ * Code: value of enum;
+ * Size: opcode length (1 + argsize) (-1 variable) (0 ???);
+ * Schk: requires n stack elements;
+ * Spop: pops n stack elements;
+ * Tick: ticks for executing instruction;
  */
 //~ sys ========================================================================
 OPCDEF(opc_nop,  0x00, 0, 0, 0, 1,	"nop")		// ;					[…, a, b, c => […, a, b, c;
@@ -173,8 +173,8 @@ OPCDEF(opc_jz,   0x0a, 3, 1, 1, 1,	"jz")		// if pop(0)==0 IP += arg.3;	[…, a, b,
 OPCDEF(opc___0b, 0x0b,-1, 0, 0, 1,	NULL)		// if pop(0) <0 IP += arg.3;	[…, a, b, c => […, a, b;
 OPCDEF(opc___0c, 0x0c,-1, 0, 0, 1,	NULL)		// 
 OPCDEF(opc_libc, 0x0d, 1, 0, 0, 1,	"libc")		//-lib call
-OPCDEF(opc_task, 0x0e, 3, 0, 0, 1,	"task")		// arg.3 : [code:16][data:8] task, [?fork if (arg.code == 0)]
-OPCDEF(opc_sysc, 0x0f, 1, 0, 0, 1,	"sysc")		// arg.1 : [type:8](exit, halt, wait?join?sync, trap) (alloc, free, copy, init) ...
+OPCDEF(opc_task, 0x0e, 3, 0, 0, 1,	"task")		// arg.3: [code:16][data:8] task, [?fork if (arg.code == 0)]
+OPCDEF(opc_sysc, 0x0f, 1, 0, 0, 1,	"sysc")		// arg.1: [type:8](exit, halt, wait?join?sync, trap) (alloc, free, copy, init) ...
 //~ stk ========================================================================
 OPCDEF(opc_ldc1, 0x10, 1, 0,-1, 1,	"ldc.b08")	// push(arg.1);			:2[…, a, b, c => […, a, b, c, 2;
 OPCDEF(opc_ldc2, 0x11, 2, 0,-1, 1,	"ldc.b16")	// push(arg.2);			:2[…, a, b, c => […, a, b, c, 2;
@@ -215,7 +215,7 @@ OPCDEF(b32___1,  0x31, 0, 0, 0, 1,	"b32.adc")	// sp(1) += sp(0); pop;
 OPCDEF(b32___2,  0x32, 0, 0, 0, 1,	"b32.sbb")	// sp(1) -= sp(0); pop;
 OPCDEF(u32_mul,  0x33, 0, 2, 1, 1,	"u32.mul")	// sp(1) *= sp(0); pop;
 OPCDEF(u32_div,  0x34, 0, 2, 1, 1,	"u32.div")	// sp(1) /= sp(0); pop;
-OPCDEF(u32_mad,  0x35, 0, 3, 1, 1,	"mad")		// mul; add;
+OPCDEF(u32_mad,  0x35, 0, 3, 1, 1,	"u32.mad")		// mul; add;
 OPCDEF(b32___6,  0x36, 1, 1, 0, 1,	"bit.")		// sp(0) = {any, all, ...}[opc.arg.i1](sp(0));
 OPCDEF(b32_not,  0x37, 0, 1, 0, 1,	"b32.not")	// sp(0) = !sp(0);
 OPCDEF(u32_clt,  0x38, 0, 2, 1, 1,	"u32.clt")	// sp(1).b32 = sp(1).u32 < sp(0).u32; pop;
@@ -368,11 +368,14 @@ OPCDEF(p4d___f,  0x9f,-1, 0, 0, 1,	NULL)		//-Extended ops: idx, rev, imm, mem
 //~ lrp
 //~ pow
 
-/* extended opcodes ???argc = 1+3: [indr:2][type:2][code:4]
 
-	bin : b32
-	num : i32/i64/f32/f64
-	vec : .../p4i/p2l/p4f/p2d
+//~ bit, sxt, zxt, 
+//~ adc, sbb, mul, div, mod, rot, 
+
+/* opcode table
+	bin: b32
+	num: i32/i64/f32/f64
+	vec: .../p4i/p2l/p4f/p2d
 	opc = code		// bin		num			vec
 
 	neg = 0x?0,		// cmt		neg			neg
@@ -393,60 +396,59 @@ OPCDEF(p4d___f,  0x9f,-1, 0, 0, 1,	NULL)		//-Extended ops: idx, rev, imm, mem
 	cvt = 0x?d,		// ?		i64|bool	dph
 	cvt = 0x?e,		// ?		f64|bool	dp4
 	cvt = 0x?f,		// ?		ext			ext
-
-bit, sxt, zxt, 
-adc, sbb, mul, div, mod, rot, 
-
+//~ */
+/* extended opcodes argc = 3: [opc:4][ind:2][res:6][lhs:6][rhs:6]
 	switch (indr) {
-		case 0 : sp[i] = sp[j] OP sp[k];
-		case 1 : [sp[i]] = sp[j] OP sp[k];
-		case 2 : sp[i] = [sp[j]] OP sp[k];
-		case 3 : sp[i] = sp[j] OP [sp[k]];
+		case 0: sp[res] = sp[lhs] OP sp[rhs];
+		case 1: *sp[res] = sp[lhs] OP sp[rhs];
+		case 2: sp[res] = *sp[lhs] OP sp[rhs];
+		case 3: sp[res] = sp[lhs] OP *sp[rhs];
 	}
+	// chck = max(res, lhs, rhs);
 
 //~ */
 /* opc_bit argc = 1: [extop:3][cnt:5]		// bit ops
-	//~ opx == 000 : test/scan 		??
+	//~ opx == 000: test/scan 		??
 		-- as flags after cmp --------------
-		//~ cnt== 00 : nop
-		//~ cnt== 01 : seq		// zero 		: ==
-		//~ cnt== 02 : sne		// !zero		: !=
-		//~ cnt== 03 : ???		// sign 		: <
-		//~ cnt== 04 : ???		// (sign|zero)	: <=
-		//~ cnt== 05 : ???		// !sign 		: >
-		//~ cnt== 06 : ???		// !(sign|zero)	: >=
-		//~ cnt== 07 : ???		// ovf  		: 
-		//~ cnt== 08 : ???		// !ovf 		: 
-		//~ cnt== 09 : ???		// 
-		//~ cnt== 0a : ssat		// saturate (signed)
-		//~ cnt== 0b : usat		// saturate (unsigned)
+		//~ cnt== 00: nop
+		//~ cnt== 01: seq		// zero 		: ==
+		//~ cnt== 02: sne		// !zero		: !=
+		//~ cnt== 03: ???		// sign 		: <
+		//~ cnt== 04: ???		// (sign|zero)	: <=
+		//~ cnt== 05: ???		// !sign 		: >
+		//~ cnt== 06: ???		// !(sign|zero)	: >=
+		//~ cnt== 07: ???		// ovf  		: 
+		//~ cnt== 08: ???		// !ovf 		: 
+		//~ cnt== 09: ???		// 
+		//~ cnt== 0a: ssat		// saturate (signed)
+		//~ cnt== 0b: usat		// saturate (unsigned)
 		-- as flags after cmp --------------
-		//~ cnt== 0c : any		// any bit set ( != 0) ? 0 : 1
-		//~ cnt== 0d : all		// all bits set ( = -1)? 0 : 1
-		//~ cnt== 0e : sgn		// sign bit set ( < 0) ? 0 : 1
-		//~ cnt== 0f : par		// parity bit set ? 0 : 1
+		//~ cnt== 0c: any		// any bit set ( != 0) ? 0 : 1
+		//~ cnt== 0d: all		// all bits set ( = -1)? 0 : 1
+		//~ cnt== 0e: sgn		// sign bit set ( < 0) ? 0 : 1
+		//~ cnt== 0f: par		// parity bit set ? 0 : 1
 		------------------------------------
-		//~ cnt== 10 : shl		// 1
-		//~ cnt== 11 : shr		// 1
-		//~ cnt== 12 : sar		// 1
-		//~ cnt== 13 : rol		// 1
-		//~ cnt== 14 : ror		// 1
-		//~ cnt== 15 : cnt		// count bits
-		//~ cnt== 16 : hi1		// keep highest bit / 1 << bsf
-		//~ cnt== 17 : bsf		// scan forward / lg2(hi1)
-		//~ cnt== 18 : lo1		// keep lowest bit / 1 << bsr
-		//~ cnt== 19 : bsr		// scan reverse / lg2(lo1)
-		//~ cnt== 1a : swp		// swap bits
-		//~ xxx== 20 : 
+		//~ cnt== 10: shl		// 1
+		//~ cnt== 11: shr		// 1
+		//~ cnt== 12: sar		// 1
+		//~ cnt== 13: rol		// 1
+		//~ cnt== 14: ror		// 1
+		//~ cnt== 15: cnt		// count bits
+		//~ cnt== 16: hi1		// keep highest bit / 1 << bsf
+		//~ cnt== 17: bsf		// scan forward / lg2(hi1)
+		//~ cnt== 18: lo1		// keep lowest bit / 1 << bsr
+		//~ cnt== 19: bsr		// scan reverse / lg2(lo1)
+		//~ cnt== 1a: swp		// swap bits
+		//~ xxx== 20: 
 
-	//~ opx == 001 : shl		// shift left
-	//~ opx == 010 : shr		// shift right
-	//~ opx == 011 : sar		// shift arithm right
+	//~ opx == 001: shl		// shift left
+	//~ opx == 010: shr		// shift right
+	//~ opx == 011: sar		// shift arithm right
 
-	//~ opx == 100 : get		// get bit
-	//~ opx == 110 : set		// set bit
-	//~ opx == 101 : clr		// clear
-	//~ opx == 111 : cmt		// complement
+	//~ opx == 100: get		// get bit
+	//~ opx == 110: set		// set bit
+	//~ opx == 101: clr		// clear
+	//~ opx == 111: cmt		// complement
 //~ */
 /* opc_ext argc = 1: [offs:3][size:5]		// extend (zero/sign)
 opc_zxt argc = 1: [offs:3][size:5]
@@ -456,7 +458,7 @@ opc_sxt argc = 1: [offs:3][size:5]
 		((signed)val << (32 - (offs + size))) >> (32 - size);
 //~ */
 /* opc_cmp argc = 1: [sat:2][cmp:4][typ:2]	// compare
-	bit:[0-1: type : i32, f32, i64, f64]
+	bit:[0-1: type: i32, f32, i64, f64]
 	bit:[2-3: <ctz, ceq, clt, cle>]
 		?0	nz	a == 0
 		1	eq	a == b
@@ -474,10 +476,10 @@ opc_sxt argc = 1: [offs:3][size:5]
 */
 /* opc_p4i argc = 1: [sat:1][uns:1][typ:2][opc:4]
 	typ:
-		00 :	u8[16]
-		01 :	u16[8]
-		10 :	u32[4]
-		11 :	u64[2]
+		00:	u8[16]
+		01:	u16[8]
+		10:	u32[4]
+		11:	u64[2]
 	uns:
 		unsigned
 	sat:

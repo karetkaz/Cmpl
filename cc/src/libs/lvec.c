@@ -208,6 +208,17 @@ argb rgbovr(argb lhs, argb rhs) {
 	return res;
 }
 //} */
+
+//{#################################  SCALAR  ##################################
+float f32rsq(float val) {
+//~ #if (sizeof(unsigned) != 32) error
+	const float magicValue = 1597358720.0f;
+	float tmp = (float)*((unsigned*)&val);
+	tmp = (tmp * -0.5f) + magicValue;
+	unsigned tmp2 = (unsigned)tmp;
+	return *(float*)&tmp2;
+}
+//}
 //{#################################  VECTOR  ##################################
 
 inline vecptr vecldc(vecptr dst, argb col) {
@@ -363,6 +374,10 @@ inline vecptr vecHCS(vecptr dst, vecptr src) {
 	if (len) vecsca(dst, src, 1. / len);
 	else dst->x = dst->y = dst->z = dst->w = 0;
 	return dst;
+}
+
+inline scalar nrmdot(vecptr n, vecptr l) {
+	return vecdp3(n, l) * f32rsq(vecdp3(n, n) * vecdp3(l, l));
 }
 
 //~ inline vecptr vecMOV(vecptr dst, vecptr src, int how);

@@ -15,14 +15,14 @@
 #define TBLS 1024
 
 // static memory size for state
-// TODO : malloc-it
+// TODO: malloc-it
 #define bufmaxlen (128<<20)
 
 #define trace(__LEV, msg, ...)// {fputmsg(stderr, "%s:%d:trace[%04x]:"msg"\n", __FILE__, __LINE__, __LEV, ##__VA_ARGS__);fflush(stderr);}
-#define debug(msg, ...) {fputmsg(stdout, "%s:%d:%s:debug:"msg"\n", __FILE__, __LINE__, __func__, ##__VA_ARGS__);fflush(stderr);}
-#define debug2(__FILE, __LINE, msg, ...) {fputmsg(stderr, "%s:%d:%s:debug:"msg"\n", __FILE, __LINE, __func__, ##__VA_ARGS__);fflush(stderr);}
-#define fatal(__ENV, msg, ...) { fputmsg(stderr, "%s:%d:%s:fatal:"msg"\n", __FILE__, __LINE__, __func__, ##__VA_ARGS__); fflush(stderr);}
-#define dieif(__EXP) if (__EXP) { fputmsg(stderr, "%s:%d:debug: `"#__EXP"`\n", __FILE__, __LINE__); fflush(stderr); exit(-1);}
+#define debug(msg, ...) {fputfmt(stdout, "%s:%d:%s:debug:"msg"\n", __FILE__, __LINE__, __func__, ##__VA_ARGS__);fflush(stderr);}
+#define debug2(__FILE, __LINE, msg, ...) {fputfmt(stderr, "%s:%d:%s:debug:"msg"\n", __FILE, __LINE, __func__, ##__VA_ARGS__);fflush(stderr);}
+#define fatal(__ENV, msg, ...) { fputfmt(stderr, "%s:%d:%s:fatal:"msg"\n", __FILE__, __LINE__, __func__, ##__VA_ARGS__); fflush(stderr); exit(-2);}
+#define dieif(__EXP) if (__EXP) { fputfmt(stderr, "%s:%d:debug: `"#__EXP"`\n", __FILE__, __LINE__); fflush(stderr); exit(-1);}
 
 #if 0
 #define error(__ENV, __LINE, msg, ...) perr(__ENV, -1, __FILE__, __LINE__, msg, ##__VA_ARGS__)
@@ -41,7 +41,6 @@ enum {
 	#include "incl/defs.h"
 	tok_last,
 };
-
 typedef struct {
 	int const	kind;
 	int const	type;
@@ -96,7 +95,6 @@ enum {
 	//~ opc_file,		// file info
 	//~ opc_docc,		// doc comment
 };
-
 typedef struct {
 	int const	code;
 	int const	size;
@@ -121,7 +119,6 @@ typedef struct {
 	uns32t x;
 	uns32t y;
 } u32x2t;
-
 typedef struct {
 	flt32t x;
 	flt32t y;
@@ -252,61 +249,67 @@ struct listn_t {			// linked list node
 	unsigned char	*data;
 	//~ unsigned int	size;
 };
+/*struct buff_t {
+	char *ptr;
+	char *end;
+	char beg[];
+};*/
 
-struct astn_t {				// ast node
+
+struct astn_t {				// ast node	
 	uns32t		line;				// token on line / code offset
-	uns08t		kind;				// code : TYPE_ref, OPER_???, CNST_???
+	uns08t		kind;				// code: TYPE_ref, OPER_???, CNST_???
 	uns08t		cast;				// cast To castId(this->type);
 	uns16t		XXXX;				// TYPE_ref hash / priority level
 	union {
-		int64t		cint;			// cnst : integer
-		flt64t		cflt;			// cnst : float
+		int64t		cint;			// cnst: integer
+		flt64t		cflt;			// cnst: float
 		struct {
 			union {
-				node	stmt;			// STMT : statement block
-				node	rhso;			// OPER : left hand side operand / true block / statement
+				node	stmt;			// STMT: statement block
+				node	rhso;			// OPER: left hand side operand / true block / statement
 			};
 			union {
-				node	step;			// STMT : for statement increment expression / if else block
-				node	lhso;			// OPER : right hand side operand / false block / increment
+				node	step;			// STMT: for statement increment expression / if else block
+				node	lhso;			// OPER: right hand side operand / false block / increment
 				char*	name;			// IDTF
 			};
 			union {
-				node	test;			// OPER : ?: operator condition / if for while condition
+				node	test;			// OPER: ?: operator condition / if for while condition
 				long	hash;			// IDTF
 			};
 			union {
-				node	init;			// STMT : just for statement 'for' & nop
-				defn	link;			// IDTF/OPER : link ? TYPE_ref : TYPE_def
+				node	init;			// STMT: just for statement 'for' & nop
+				defn	link;			// IDTF/OPER: link ? TYPE_ref : TYPE_def
 				// temp values
-				long	pril;			// OPER : used temporarly by cast();
+				long	pril;			// OPER: used temporarly by cast();
 			};
 		};// */
 		/*
-		union  {					// CNST_xxx : constant
-			int64t	cint;			// cnst : integer
-			flt64t	cflt;			// cnst : float
+		union  {					// CNST_xxx: constant
+			int64t	cint;			// cnst: integer
+			flt64t	cflt;			// cnst: float
 			//~ int32t	cpi4[2];		// ???
 			//~ int64t	cpi2[2];		// rat
 			//~ flt32t	cpf4[4];		// vec
 			//~ flt64t	cpf2[2];		// cpl
 		} cnst;
-		struct {				// TYPE_xxx : typename
+		struct {				// TYPE_xxx: typename
 			defn	decl;			// link to reference
 			node	link;			// func body / replacement
 			char*	name;			// name of identifyer
 			uns32t	hash;			// hash code for 'name'
 		} idtf;
-		struct {				// OPER_xxx : operator
+		struct {				// OPER_xxx: operator
 			node	rhso;			// right hand side operand
 			node	lhso;			// left hand side operand
 			node	test;			// ?: operator condition
 			defn	call;			// assigned operator
 		} oper;
-		struct {				// STMT_xxx : statement
+		struct {				// STMT_xxx: statement
 			node	stmt;			// statement / then block
 			node	step;			// increment / else block
-			node	test;			// condition : if, for
+			node	test;			// condition: if, for
 			node	init;			// for statement init
 		} stmt;
 		/ *struct {					// list of next-linked nodes
@@ -320,6 +323,7 @@ struct astn_t {				// ast node
 	node		next;				// 
 };
 struct symn_t {				// symbol
+	defn	all;		// simbols in program
 	uns08t	kind;		// TYPE_ref || TYPE_xxx
 	uns16t	nest;		// declaration level
 
@@ -347,20 +351,16 @@ struct symn_t {				// symbol
 
 };
 
-struct buff_t {
-	char *ptr;
-	char *end;
-	char beg[];
-};
-
 struct state_t {			// enviroment (context)
 	int		errc;			// error count
 	FILE*	logf;			// log file (errors + warnings)
+	defn	glob;			// symbols
+	defn	all;			// symbols
 
 	struct {				// Scanner
 		int		warn;		// warning level
 		int		copt;		// optimization levevel
-		int		nest;		// nest level : modified by (enterblock/leaveblock)
+		int		nest;		// nest level: modified by (enterblock/leaveblock)
 		struct {			// Lexer
 			char*	file;	// current file name
 			int		line;	// current line number
@@ -378,12 +378,11 @@ struct state_t {			// enviroment (context)
 		};// file[TOKS];
 
 		node	root;		// program
-		defn	glob;		// definitions : leave();
 
 		strT	strt;		// string table
 		defT	deft;		// definitions / declarations
-		defn	defs;		// definitions / declarations stack
 
+		defn	defs;		// definitions / declarations stack
 
 		struct {		// current decl
 			defn	csym;
@@ -447,47 +446,60 @@ extern defn type_str;
 
 extern defn emit_opc;
 
-void fputmsg(FILE *fout, const char *msg, ...);
-//~ void fputsym(FILE *fout, defn sym, int mode);
-void fputast(FILE *fout, node ast, int mode, int pri);
-void fputasm(FILE *fout, bcde ip, int len, int offs);
+//~ util
+int parseint(const char *str, int *res);
+
+//~ clog
+void fputfmt(FILE *fout, const char *msg, ...);
 void perr(state s, int level, const char *file, int line, const char *msg, ...);
 
-defn newdefn(state s, int kind);
+//~ void fputsym(FILE *fout, defn sym, int mode, int level);
+//~ void fputast(FILE *fout, node ast, int mode, int level);
+//~ void fputopc(FILE *fout, bcde opc, int len, int offset);
+
+void dumpasm(FILE *fout, unsigned char* beg, int len, int offs);
+
+//~ void dumpast(FILE *fout, node ast, int mode);
+void dumpsym(FILE *fout, defn sym, int mode);
+
+typedef enum {
+	dump_bin = 0x0000100,
+	dump_sym = 0x0000200,
+	dump_asm = 0x0000300,
+	dump_ast = 0x0000800,		// temp
+	dump_xml = 0x0000807,		// temp
+} dumpWhat;
+
+void dump(state, FILE*, dumpWhat);
+
 node newnode(state s, int kind);
 void eatnode(state s, node ast);
+node intnode(state s, int64t v);
+//~ node fltnode(state s, flt64t v);
+node strnode(state s, char *v);
+node fh8node(state s, uns64t v);
 
-int source(state, int mode, char* text);		// mode: file/text
-
-defn lookup(state s, defn loc, node ast);
+defn newdefn(state s, int kind);
 defn install(state s, int kind, const char* name, unsigned size);
 defn declare(state s, int kind, node tag, defn rtyp, defn args);
-
-//~ node fltnode(state s, flt64t v);
-node intnode(state s, int64t v);
-node fh8node(state s, uns64t v);
-node strnode(state s, char *v);
+defn lookup(state s, defn loc, node ast);
 
 int32t constbol(node ast);
 //~ int64t constint(node ast);
 //~ flt64t constflt(node ast);
 
-//~ int cast(state s, node ptr, node arg);
-int istype(node ast);
-//~ int typeId(node ast);
-//~ int castid(node lhs, node rhs);
+//~ int source(state, int mode, char* text);		// mode: file/text
 
 node peek(state);
-node next(state, int kind);
-void back(state, node ast);
+//~ node next(state, int kind);
+//~ void back(state, node ast);
+//~ int  skip(state, int kind);
+//~ int  test(state, int kind);
 
-int  skip(state, int kind);
-int  test(state, int kind);
-
-node expr(state, int mode);		// parse expression	(mode : ?)
-//~ node decl(state, int mode);		// parse declaration	(mode : enable expr)
-//~ node stmt(state, int mode);		// parse statement	(mode : enable decl)
-node scan(state, int mode);		// parse program	(mode : script mode)
+node expr(state, int mode);		// parse expression	(mode: ?)
+//~ node decl(state, int mode);		// parse declaration	(mode: enable expr)
+//~ node stmt(state, int mode);		// parse statement	(mode: enable decl)
+node scan(state, int mode);		// parse program	(mode: script mode)
 
 void enter(state s, defn def);
 defn leave(state s);
@@ -499,12 +511,21 @@ defn leave(state s);
  * @param get: one of TYPE_xxx
  */
 int eval(node res, node ast, int get);
+
 /** generate byte code for tree
  * @return TYPE_xxx, 0 on error
  * @param ast: tree to be generated
  * @param get: one of TYPE_xxx
  */
 int cgen(state s, node ast, int get);
+
+int istype(node ast);
+int isemit(node ast);
+int islval(node ast);
+defn linkOf(node ast);
+
+int castId(defn ast);
+int castOp(defn lhs, defn rhs);
 
 int cc_init(state);
 int cc_done(state);

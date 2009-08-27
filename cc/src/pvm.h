@@ -19,47 +19,51 @@ typedef struct astn_t *node;
 
 /// vm
 
-//~ int emitidx(state s, int opc, int pos);
-//~ int emiti32(state s, int opc, int32t arg);
-//~ int emiti64(state s, int opc, int64t arg);
-//~ int emitf32(state s, int opc, flt32t arg);
-//~ int emitf64(state s, int opc, flt64t arg);
-
 //~ int cgen(state, int opt);
 
 //~ int emit(state, int opc, ... );
 
-//~ int dump(state, int what, char* file);
-
 //~ state create();
 //~ int destroy(state);
 
-//? text = prep(input)
-//? toks = clex(text) + lex.errors
-//~ tree = scan(text) + stx.errors
-//~ root = type(tree) + sem.errors
-//~ code = cgen(root) + fatal.errors
+typedef enum {
+	source_none = 0,
+	source_file,
+	source_text,
+	binary_file,
+} vmLoadType;
 
-int srctext(state, char *file, int line, char *text);	// {source(s,0,text);setsrc(file, line);
+int vmLoad(state, vmLoadType, char*);
+
+int source(state, int mode, char* text);		// mode: file/text
+int logger(state, char *file);				// file for errors
+int srctext(state, char *file, int line, char *text);
 int srcfile(state, char *file);				// source(s,1,text);
 int logfile(state, char *file);				// file for errors
 
-int compile(state, int mode);				// expr, script, source, decl, makefile
+int compile(state, int mode);				// script, source, decl, makefile
+int gencode(state, int mode);				// debug level / optimizations
+int execute(state, int cc, int ss);
 
-//~ int gencode(state);
-//~ int execute(state, int cc, int ss, int dbgfn(state, cell, int puid, bcde ip, int ss));
-//~ int source(state, int mode, char* text);		// mode: file/text
+// compile
+node scan(state, int mode);				// source / script
+node decl(state, int mode);				// enable statements
+node stmt(state, int mode);				// enable decls
+node expr(state, int mode);				// enable comma
+//~ defn spec(state, int qual);
+//~ defn type(state, int qual);
 
+// gencode
+int emitidx(state, int opc, int stpos);
+int emiti32(state, int opc, int32t arg);
+int emiti64(state, int opc, int64t arg);
+int emitf32(state, int opc, flt32t arg);
+int emitf64(state, int opc, flt64t arg);
+int emit(state, int opc, ...);			// ret: program counter
 
+int cgen(state, node ast, int get);		// ret: typeId(ast)
 
-//~ node unit(state, int mode);				// source / script
-//~ node decl(state, int mode);				// enable statements
-//~ node stmt(state, int mode);				// enable decls
-//~ node expr(state, int mode);				// enable comma
-
-//~ int cgen(state, int dbgl);			// 
-
-//~ int emit(state, int opc, ...);		// ret: error code
+// execute
 //~ int exec(state, int cc, int ss);	// ret: error code
 
 #endif
