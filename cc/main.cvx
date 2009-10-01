@@ -1,17 +1,25 @@
 //~ ./main -x "3 + 3 -4 + -2;"
-//~ define pi2 = math.pi;
+//~ define pi_2 = math.pi / 2;
 
 /* Emit Test
+
+//~ define f32x4(x, y, x, w) = emit(nop, f32(w), f32(z), f32(y), f32(x));
+//~ define operator + (f32x4 x, f32x4 y) = emit(v4f.add, f32(y.w), f32(y.z), f32(y.y), f32(y.x), f32(x.w), f32(x.z), f32(x.y), f32(x.x));
 //~ int32 operator add(int32 a, int32 b) {return emit(i32.add, i32(b), i32(a));}
 //~ int32 operator add(int32 ref a, int32 b) {return a = emit(i32.add, i32(b), i32(a));}
 
 //~ flt32 res1 = emit(f32.div, f32(2), f32(math.pi));	// ok
-//~ flt64 res2 = emit(f64.neg, f64(math.pi));		// ok
-//~ flt64 res3 = emit(void, f32(3.14));				// ok
+//~ flt64 res2 = emit(f64.neg, f64(math.pi));			// ok
+//~ flt64 res3 = emit(void, f32(math.pi));				// ok
 
+emit(void, f32(11), f32(12), f32(13), f32(14));
+emit(void, f32(21), f32(22), f32(23), f32(24));
+flt32 dotp = emit(v4f.dp4);
+
+//~ f32x4 res = emit(v4f.add);
+//~ f64x2 res5 = emit(void, f64(1), f64(2));
 //~ flt32 res = emit(v4f.dp4, f32(3), f32(2), f32(1), f32(0), f32(3), f32(2), f32(1), f32(0));
-//f32x4 res = 
-//~ emit(v4f.add, f32(3), f32(2), f32(1), f32(0), f32(3), f32(2), f32(1), f32(0));
+//~ f32x4 res = emit(v4f.add, f32(3), f32(2), f32(1), f32(0), f32(3), f32(2), f32(1), f32(0));
 
 /+	Complex mul
 define a_re = 3.;
@@ -131,6 +139,21 @@ int[] fn(int a, int b, double d) {
 	};
 };
 // +/
+struct s1 {
+struct s2 {
+struct s3 {
+struct s4 {
+struct s5 {
+struct s6 {
+struct s7 {
+	int a;
+};
+};
+};
+};
+};
+};
+};
 //~*/
 
 /* functions
@@ -174,7 +197,7 @@ for (int32 i = 1; i <= n; i += 1)
 	res *= i;
 
 // */
-//~ /* calc e
+/* calc e
 define eps = 1e-25;
 double res = 1;
 double tmp = 1;
@@ -239,8 +262,22 @@ if (a == a) {
 }
 // */
 
+/*
+flt32 ss;
+flt32 tt;
 
-//~ uns32 a = 0x00A000[1][2][3][4];
+define s flt32:1;
+define t flt32:2;
+
+define R = 1;
+//~ flt32 x = R * sin(s) * cos(t);
+//~ flt32 y = R * sin(s) * sin(t);
+flt32 z = R * cos(s);
+
+//~ setPos(x, y, z);
+//~ setNrm(x, y, z);
+// */
+/* uns32 a = 0x00A000[1][2][3][4];
 //~ uns32 t[2][3][4];
 //~ {t[0][0][0][0][0];}
 //~ uns32 a = 0x00A000[0][1][2];
@@ -252,16 +289,22 @@ if (a == a) {
 
 //~ float W = width;
 //~ float H = height;
-
-/* RayTrace
+*/
+//~ /* RayTrace
 define rgb int32;
-define qual = 2;
+define qual = 1;
 define width = 320 << qual;
 define height = 240 << qual;
 
-rgb cBuff[width][height];
-//~ int zBuff[width][height];
+rgb cBuff[width * height];
+int zBuff[width * height];
 
+/*
+for (int i = 0; i < height; i += 1)
+	for (int j = 0; j < width; j += 1)
+		cBuff[i * width + j] := i ^ j;
+// * /
+/*
 class Light {
 	vector	ambi;		// Ambient
 	vector	diff;		// Diffuse
@@ -325,7 +368,8 @@ class Material {	// material
 		f32x4(0.329410, 0.223529, 0.027451, 1),
 		f32x4(0.780392, 0.568627, 0.113725, 1),
 		f32x4(0.992157, 0.941176, 0.807843, 1),
-		flt32(27.8974));
+		flt32(27.8974)
+	);
 
 	static Material Bronze = Material(
 		f32x4(0.2125, 0.1275, 0.054, 1.0),
@@ -358,7 +402,7 @@ class Material {	// material
 		flt32(12.8));
 
 	static Material Ruby = Material(
-		f32x4(0.1745,0.01175 ,0.01175,0.55 ),
+		f32x4(0.1745,0.01175 ,0.01175,0.55),
 		f32x4(0.61424,0.04136, 0.04136,0.55),
 		f32x4(0.727811, 0.626959, 0.626959,0.55),
 		flt32(76.8));

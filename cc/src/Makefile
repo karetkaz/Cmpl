@@ -14,7 +14,7 @@ LNK=gcc -m32
 #~ # -w99 -6s -oa
 #~ COPTS=-i=$(INCLUDE)
 #~ LIBS=
-#~ LNK=wcl386 -q
+#~ LNK=wcl386 -q -d3
 #~ CCC=wcc386
 
 SRCDIR=
@@ -26,10 +26,11 @@ OBJS=\
 	$(OBJDIR)scan.o\
 	$(OBJDIR)tree.o\
 	$(OBJDIR)type.o\
+	$(OBJDIR)code.o\
 	$(OBJDIR)main.o
 
 main: $(OBJS)
-	$(LNK) $(OUTEXE)$(BINDIR)main $(LIBS) $(OBJS)
+	$(LNK) $(OUTEXE)$(BINDIR)main $(OBJS) $(LIBS)
 
 $(OBJDIR)main.o:
 	$(CCC) $(COPTS) $(CFLAGS) $(SRCDIR)main.c $(OUTOBJ)$(OBJDIR)main.o
@@ -54,8 +55,9 @@ clean:
 	#~ rm -f $(BINDIR)main.exe
 
 debug:
-	#~ xterm -e 
-	gdb main
+	#~ xterm -e gdb main
+	#~ gdb main
+	wdw main
 
 build:clean main
 

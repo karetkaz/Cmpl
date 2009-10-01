@@ -1,56 +1,56 @@
 // { #include "tree.c"
-#include "main.h"
 //~ tree.c - tree related stuff ------------------------------------------------
 #include <string.h>
 #include <math.h>
+#include "main.h"
 
-node newnode(state s, int kind) {
-	node ast;
+astn newnode(state s, int kind) {
+	astn ast;
 	if (s->tokp) {
 		ast = s->tokp;
 		s->tokp = ast->next;
 	}
 	else {
-		ast = (node)s->buffp;
-		s->buffp += sizeof(struct astn_t);
+		ast = (astn)s->buffp;
+		s->buffp += sizeof(struct astn);
 		//~ if (s->buffp >= !!!)
 	}
-	memset(ast, 0, sizeof(struct astn_t));
+	memset(ast, 0, sizeof(struct astn));
 	ast->kind = kind;
 	return ast;
 }
 
-node fltnode(state s, flt64t v) {
-	node ast = newnode(s, CNST_flt);
+astn fltnode(state s, flt64t v) {
+	astn ast = newnode(s, CNST_flt);
 	ast->cflt = v;
 	return ast;
 }
 
-node intnode(state s, int64t v) {
-	node ast = newnode(s, CNST_int);
+astn intnode(state s, int64t v) {
+	astn ast = newnode(s, CNST_int);
 	ast->cint = v;
 	return ast;
 }
 
-node fh8node(state s, uns64t v) {
-	node ast = newnode(s, CNST_flt);
+astn fh8node(state s, uns64t v) {
+	astn ast = newnode(s, CNST_flt);
 	ast->cint = v;
 	return ast;
 }
 
-node strnode(state s, char * v) {
-	node ast = newnode(s, CNST_str);
+astn strnode(state s, char * v) {
+	astn ast = newnode(s, CNST_str);
 	ast->name = v;
 	return ast;
 }
 
-void eatnode(state s, node ast) {
+void eatnode(state s, astn ast) {
 	if (!ast) return;
 	ast->next = s->tokp;
 	s->tokp = ast;
 }
 
-signed constbol(node ast) {
+signed constbol(astn ast) {
 	if (ast) switch (ast->kind) {
 		case CNST_int: return ast->cint != 0;
 		case CNST_flt: return ast->cflt != 0;
@@ -59,7 +59,7 @@ signed constbol(node ast) {
 	return 0;
 }
 
-int64t constint(node ast) {
+int64t constint(astn ast) {
 	if (ast) switch (ast->kind) {
 		case CNST_int: return (int64t)ast->cint;
 		case CNST_flt: return (int64t)ast->cflt;
@@ -68,7 +68,7 @@ int64t constint(node ast) {
 	return 0;
 }
 
-flt64t constflt(node ast) {
+flt64t constflt(astn ast) {
 	if (ast) switch (ast->kind) {
 		case CNST_int: return (flt64t)ast->cint;
 		case CNST_flt: return (flt64t)ast->cflt;
@@ -77,8 +77,8 @@ flt64t constflt(node ast) {
 	return 0;
 }
 
-int eval(node res, node ast, int get) {
-	struct astn_t lhs, rhs;
+int eval(astn res, astn ast, int get) {
+	struct astn lhs, rhs;
 
 	if (!ast) return 0;
 	if (!res) res = &rhs;
@@ -293,7 +293,7 @@ int eval(node res, node ast, int get) {
 	return res->kind;
 }
 
-/*int sametree(node lhs, node rhs) {
+/*int sametree(astn lhs, astn rhs) {
 	if (lhs == rhs) return 1;
 
 	if (!lhs && rhs) return 0;

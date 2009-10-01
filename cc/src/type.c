@@ -3,36 +3,37 @@
 //~ type.c ---------------------------------------------------------------------
 #include <string.h>
 
-defn type_vid = 0;
-defn type_bol = 0;
-defn type_u32 = 0;
+symn type_vid = 0;
+symn type_bol = 0;
+symn type_u32 = 0;
 
-defn type_i32 = 0;
-defn type_i64 = 0;
-defn type_f32 = 0;
-defn type_f64 = 0;
-defn type_str = 0;
+symn type_i32 = 0;
+symn type_i64 = 0;
+symn type_f32 = 0;
+symn type_f64 = 0;
 
-//~ defn type_ptr = 0;
+symn type_str = 0;
+
+//~ symn type_ptr = 0;
 
 extern int rehash(register const char* str, unsigned size);
 
 //~ Install
-defn newdefn(state s, int kind) {
-	defn def = (defn)s->buffp;
-	s->buffp += sizeof(struct symn_t);
-	memset(def, 0, sizeof(struct symn_t));
+symn newdefn(state s, int kind) {
+	symn def = (symn)s->buffp;
+	s->buffp += sizeof(struct symn);
+	memset(def, 0, sizeof(struct symn));
 	def->kind = kind;
 	return def;
 }
 
-defn install(state s, int kind, const char* name, unsigned size) {
-	defn typ = 0, def = 0;
+symn instlibc(state s, const char* name);
+symn install(state s, int kind, const char* name, unsigned size) {
+	symn typ = 0, def = 0;
 	unsigned hash = 0;
 
 	switch (kind) {		// check
 		// declare
-		defn instlibc(state s, const char* name);
 		case -1: return instlibc(s, name);
 
 		// constant
@@ -51,6 +52,7 @@ defn install(state s, int kind, const char* name, unsigned size) {
 		case TYPE_i64:
 		case TYPE_f32:
 		case TYPE_f64:
+		case TYPE_p4x:
 		//~ case TYPE_ptr:
 
 		// usertype
@@ -87,12 +89,12 @@ defn install(state s, int kind, const char* name, unsigned size) {
 
 	return def;
 }
-defn declare(state s, int kind, node tag, defn rtyp, defn args) {
+symn declare(state s, int kind, astn tag, symn rtyp, symn args) {
 	int hash = tag ? tag->hash : 0;
-	defn def;// = s->deft[hash];
+	symn def;// = s->deft[hash];
 
 	if (!tag || tag->kind != TYPE_ref) {
-		debug("declare: node('%k') is null or not an identifyer", tag);
+		debug("declare: astn('%k') is null or not an identifyer", tag);
 		return 0;
 	}
 
@@ -121,7 +123,7 @@ defn declare(state s, int kind, node tag, defn rtyp, defn args) {
 		default: fatal(s, "declare:install('%T')", def);
 
 		//~ case TYPE_enu:			// typedefn enum
-		//~ case TYPE_rec:			// typedefn struct
+		case TYPE_rec:			// typedefn struct
 
 		//~ case TYPE_val:			// constant
 		case TYPE_def:			// typename
@@ -148,11 +150,11 @@ defn declare(state s, int kind, node tag, defn rtyp, defn args) {
 }
 
 /* iscall()
-node iscnst(node ast) ;
-defn iscast(node ast) ;		// returns type def
-defn isemit(node ast) ;		// returns type ref
-defn islibc(node ast) {		// returns type ref
-	defn res;
+astn iscnst(astn ast) ;
+symn iscast(astn ast) ;		// returns type def
+symn isemit(astn ast) ;		// returns type ref
+symn islibc(astn ast) {		// returns type ref
+	symn res;
 	if (!ast || ast->kind != OPER_fnc) return 0;
 	if (ast->lhso) switch (ast->lhso->kind) {
 		case TYPE_ref: res = ast->lhso->link; break;
@@ -161,7 +163,7 @@ defn islibc(node ast) {		// returns type ref
 	return res && res->libc ? res : 0;
 }
 
-int iscast(node ast) {		// type (...)
+int iscast(astn ast) {		// type (...)
 	if (!ast) return 0;
 	if (ast->kind != OPER_fnc) return 0;
 	return istype(ast->lhso);
@@ -171,7 +173,7 @@ int iscast(node ast) {		// type (...)
 	//~ return ast->type;
 }
 
-defn iscall(node ast) {		// returns type ref
+symn iscall(astn ast) {		// returns type ref
 	if (!ast) return 0;
 	if (ast->kind == OPER_fnc)
 		ast = ast->lhso;
@@ -179,7 +181,7 @@ defn iscall(node ast) {		// returns type ref
 	if (ast->stmt || ast->link) return 0;
 	return ast->type;
 }*/
-int istype(node ast) {		// type[.type]*
+int istype(astn ast) {		// type[.type]*
 	if (!ast) return 0;
 
 	//~ dieif(ast->type == 0);
@@ -196,7 +198,7 @@ int istype(node ast) {		// type[.type]*
 	if (ast->link && ast->link->kind == TYPE_ref) return 0;
 	return ast->type->kind;
 }
-int isemit(node ast) {		// emit (...)
+int isemit(astn ast) {		// emit (...)
 	if (!ast) return 0;
 	if (ast->kind != OPER_fnc) return 0;
 
@@ -205,7 +207,7 @@ int isemit(node ast) {		// emit (...)
 
 	return EMIT_opc;
 }
-int islval(node ast) {
+int islval(astn ast) {
 	if (!ast) return 0;
 	//~ if (ast->kind != OPER_fnc) return 0;
 	if (ast->kind == TYPE_def) {	// mean new
@@ -218,22 +220,22 @@ int islval(node ast) {
 	return 0;
 }// */
 
-defn linkOf(node ast) {
+symn linkOf(astn ast) {
 	if (ast && ast->kind == OPER_dot)
 		ast = ast->rhso;
 	if (ast && ast->kind == TYPE_ref)
 		return ast->link;
-	debug("linkof:%s",tok_tbl[ast->kind].name);
+	debug("linkof:%s:%k",tok_tbl[ast->kind].name, ast);
 	return 0;
 }// */
-//~ defn typeOf(node ast);
-//~ long sizeOf(node ast);
+//~ symn typeOf(astn ast);
+//~ long sizeOf(astn ast);
 
 //~ LookUp
 /** Cast
  * returns one of (u32, i32, i64, f32, f64{, p4f, p4d})
 **/
-int castId(defn typ) {
+int castId(symn typ) {
 	if (typ) switch (typ->kind) {
 		default: fatal(0, "%T", typ);
 		case TYPE_vid: return TYPE_vid;
@@ -257,6 +259,7 @@ int castId(defn typ) {
 		case TYPE_i64:
 		case TYPE_f32:
 		case TYPE_f64:
+		case TYPE_p4x:
 			return typ->kind;
 
 		case TYPE_enu:	// TYPE_v2d
@@ -266,7 +269,7 @@ int castId(defn typ) {
 	}
 	return 0;
 }
-int castOp(defn lht, defn rht) {
+int castOp(symn lht, symn rht) {
 	switch (castId(lht)) {
 		case TYPE_u32: switch (castId(rht)) {
 			case TYPE_u32: return TYPE_u32;
@@ -306,29 +309,29 @@ int castOp(defn lht, defn rht) {
 	}
 	return 0;
 }// */
-defn lookup(state s, defn loc, node ast) {
-	node ref = 0, args = 0;
-	defn typ = 0, sym = 0;
+symn lookup(state s, symn loc, astn ast) {
+	astn ref = 0, args = 0;
+	symn typ = 0, sym = 0;
 	if (!ast) {
 		return 0;
 	}
 	switch (ast->kind) {
 		case OPER_dot: {
 			if (!lookup(s, loc, ast->lhso)) {
-				debug("lookup %+k", ast);// TODO: rem
+				debug("lookup %+k in %T", ast->lhso, loc);// TODO: rem
 				return 0;
 			}
 			loc = ast->lhso->type;
 			ref = ast->rhso;
 		} break;
 		case OPER_fnc: {
-			defn lin = isemit(ast) ? emit_opc : 0;
+			symn lin = isemit(ast) ? emit_opc : 0;
 			args = ast->rhso;
 
 			if (args) {
-				node next = 0;
+				astn next = 0;
 				while (args->kind == OPER_com) {
-					node arg = args->rhso;
+					astn arg = args->rhso;
 					if (!lookup(s, lin, arg)) {
 						if (!lin || !lookup(s, 0, arg)) {
 							debug("arg(%+k)", arg);
@@ -342,7 +345,7 @@ defn lookup(state s, defn loc, node ast) {
 				}
 				if (!lookup(s, lin, args)) {
 					if (!lin || !lookup(s, 0, args)) {
-						debug("arg(%k)", args);
+						debug("arg(%+k)", args);
 						return 0;
 					}
 				}
@@ -379,8 +382,8 @@ defn lookup(state s, defn loc, node ast) {
 			}
 		} break;
 		case OPER_idx: {
-			defn lht = lookup(s, 0, ast->lhso);
-			defn rht = lookup(s, 0, ast->rhso);
+			symn lht = lookup(s, 0, ast->lhso);
+			symn rht = lookup(s, 0, ast->rhso);
 
 			ast->init = 0;
 			if (!lht || !rht) {
@@ -416,7 +419,7 @@ defn lookup(state s, defn loc, node ast) {
 		case OPER_cmt: {	// '~'
 			int cast;
 			// 'lhs op rhs' => op(lhs, rhs)
-			defn ret = lookup(s, 0, ast->rhso);
+			symn ret = lookup(s, 0, ast->rhso);
 			if ((cast = castId(ret))) {
 				// TODO: float.cmt: invalid
 				ast->rhso->cast = cast;
@@ -425,7 +428,7 @@ defn lookup(state s, defn loc, node ast) {
 			return ast->type = NULL;
 		} break;
 		case OPER_not: {		// '!'
-			defn ret = lookup(s, 0, ast->rhso);
+			symn ret = lookup(s, 0, ast->rhso);
 			if (castId(ret)) {
 				return ast->type = type_bol;
 			}
@@ -437,8 +440,8 @@ defn lookup(state s, defn loc, node ast) {
 		case OPER_mul:
 		case OPER_div:
 		case OPER_mod: {		// 'lhs op rhs' => op(lhs, rhs)
-			defn lht = lookup(s, 0, ast->lhso);
-			defn rht = lookup(s, 0, ast->rhso);
+			symn lht = lookup(s, 0, ast->lhso);
+			symn rht = lookup(s, 0, ast->rhso);
 
 			ast->init = 0;
 			if (!lht || !rht) {
@@ -469,8 +472,8 @@ defn lookup(state s, defn loc, node ast) {
 		case OPER_and:		// '&'
 		case OPER_ior:		// '|'
 		case OPER_xor: {		// '^'
-			defn lht = lookup(s, 0, ast->lhso);
-			defn rht = lookup(s, 0, ast->rhso);
+			symn lht = lookup(s, 0, ast->lhso);
+			symn rht = lookup(s, 0, ast->rhso);
 
 			ast->init = 0;
 			if (!lht || !rht) {
@@ -503,9 +506,9 @@ defn lookup(state s, defn loc, node ast) {
 		case OPER_leq:		// '<='
 		case OPER_gte:		// '>'
 		case OPER_geq: {		// '>='
-			defn lht = lookup(s, 0, ast->lhso);
-			defn rht = lookup(s, 0, ast->rhso);
-			//~ defn ret = castTy(lht, rht);
+			symn lht = lookup(s, 0, ast->lhso);
+			symn rht = lookup(s, 0, ast->rhso);
+			//~ symn ret = castTy(lht, rht);
 
 			ast->init = 0;
 			if (!lht || !rht) {
@@ -525,8 +528,8 @@ defn lookup(state s, defn loc, node ast) {
 		} break;
 
 		case ASGN_set: {		// ':='
-			defn lht = lookup(s, 0, ast->lhso);
-			defn rht = lookup(s, 0, ast->rhso);
+			symn lht = lookup(s, 0, ast->lhso);
+			symn rht = lookup(s, 0, ast->rhso);
 
 			ast->init = 0;
 			ast->type = lht;
@@ -558,8 +561,8 @@ defn lookup(state s, defn loc, node ast) {
 
 		case OPER_lor: 
 		case OPER_lnd: {
-			defn lht = lookup(s, 0, ast->lhso);
-			defn rht = lookup(s, 0, ast->rhso);
+			symn lht = lookup(s, 0, ast->lhso);
+			symn rht = lookup(s, 0, ast->rhso);
 			if (castId(lht) && castId(rht)) {
 				ast->cast = TYPE_bit;
 				return ast->type = type_bol;
@@ -568,10 +571,10 @@ defn lookup(state s, defn loc, node ast) {
 		} break;
 
 		/*case OPER_sel: {
-			defn cmp = lookup(s, 0, ast->test);
-			defn lht = lookup(s, 0, ast->lhso);
-			defn rht = lookup(s, 0, ast->rhso);
-			//~ defn ret = castTy(lht, rht);
+			symn cmp = lookup(s, 0, ast->test);
+			symn lht = lookup(s, 0, ast->lhso);
+			symn rht = lookup(s, 0, ast->rhso);
+			//~ symn ret = castTy(lht, rht);
 			if (castId(cmp)) {
 				&& (ast->cast = castId(ret)))
 				return ast->type = ret;
@@ -590,8 +593,8 @@ defn lookup(state s, defn loc, node ast) {
 	sym = loc ? loc->args : s->deft[ref->hash];
 
 	for (; sym; sym = sym->next) {
-		node arg = args;			// callee arguments
-		defn par = sym->args;		// caller arguments
+		astn arg = args;			// callee arguments
+		symn par = sym->args;		// caller arguments
 		//~ if (!sym->name) continue;
 		if (!sym->name || strcmp(sym->name, ref->name) != 0) continue;
 		//~ debug("%k ?= %T", ref, sym);
@@ -626,6 +629,7 @@ defn lookup(state s, defn loc, node ast) {
 			case TYPE_flt:
 			case TYPE_f32:
 			case TYPE_f64:
+			case TYPE_p4x:
 			//~ case TYPE_ptr:
 
 			case TYPE_enu:
@@ -649,7 +653,7 @@ defn lookup(state s, defn loc, node ast) {
 				//~ ref->cast = sym->type->kind;
 				//~ ast->rhso = sym->init;	// init|body
 				ref->link = sym;
-				sym->used = 1;
+				//~ sym->used = 1;
 			} break;
 			default: {
 				error(s, ast->line, "undeclared `%k`", ast);
@@ -660,9 +664,8 @@ defn lookup(state s, defn loc, node ast) {
 				ast->link = sym;
 			} break;
 		}
-
 		while (arg && par) {
-			defn typ = par->type;
+			symn typ = par->type;
 			//~ debug("%T:(%T, %T)", sym, typ, arg->type);
 			if (typ == arg->type || castOp(typ, arg->type)) {
 				arg->cast = castId(typ);
@@ -680,7 +683,12 @@ defn lookup(state s, defn loc, node ast) {
 	}
 
 	//~ debug("lookup(%k in `%?T`) is %T[%T]", ref, loc, ast->type, sym);
-	return typ = ast->type;
+	typ = ast->type;
+	if (typ == NULL) {
+		error(s, ast->line, "undeclared identifyer `%k`", ast);
+		declare(s, TYPE_ref, ast, type_i32, NULL);
+	}
+	return typ;
 }
 int align(int offs, int pack, int size) {
 	switch (pack < size ? pack : size) {

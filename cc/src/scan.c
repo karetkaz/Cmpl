@@ -1,19 +1,21 @@
-#include "main.h"
-#include <string.h>
 #include <unistd.h>
+
+#include <string.h>
+#include <ctype.h>
 #include <fcntl.h>
 #include <math.h>
+#include "main.h"
 
 //{~~~~~~~~~ Lexer ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-//~ node peek(state);
-//~ node next(state, int kind);
-//~ void back(state, node ast);
-//~ int  skip(state, int kind);
-//~ int  test(state, int kind);
+//~ export astn peek(state);
+//~ export astn next(state, int kind);
+//~ export void back(state, astn ast);
+//~ export bool skip(state, int kind);
+//~ export bool test(state, int kind);
 
 int fill_buf(state s);
 
-int source(state s, int mode, char* file) {
+int source(state s, LoadType mode, char* file) {
 	if (s->_fin > 3)
 		close(s->_fin);
 	s->_fin = -1;
@@ -32,7 +34,7 @@ int source(state s, int mode, char* file) {
 			s->file = file;
 			s->line = 1;
 		} break;
-		case source_text: {
+		case source_buff: {
 			s->_cnt = strlen(file);
 			s->_ptr = file;
 		} break;
@@ -45,10 +47,10 @@ int source(state s, int mode, char* file) {
 int fill_buf(state s) {
 	if (s->_fin >= 0) {
 		unsigned char* base = s->_buf + s->_cnt;
-		int size = sizeof(s->_buf) - s->_cnt;
+		int l, size = sizeof(s->_buf) - s->_cnt;
 		memcpy(s->_buf, s->_ptr, s->_cnt);
-		s->_cnt += read(s->_fin, base, size);
-		if (s->_cnt < sizeof(s->_buf)) {
+		s->_cnt += l = read(s->_fin, base, size);
+		if (l == 0) {
 			s->_buf[s->_cnt] = 0;
 			close(s->_fin);
 			s->_fin = -1;
@@ -65,7 +67,9 @@ int read_chr(state s) {
 		s->_chr = -1;
 		return chr;
 	}
-	if (s->_cnt <= 4 && fill_buf(s) <= 0) return -1;
+	if (s->_cnt <= 4 && fill_buf(s) <= 0) {
+		return -1;
+	}
 	while (*s->_ptr == '\\' && (s->_ptr[1] == '\n' || s->_ptr[1] == '\r')) {
 		if (s->_ptr[1] == '\r' && s->_ptr[2] == '\n') {
 			s->_cnt -= 3;
@@ -218,6 +222,34 @@ int rehash(register const char* str, unsigned size) {
 	return (hs ^ 0xffffffff) % TBLS;
 }
 
+/**
+ * @param t text to search in
+ * @param p lowercase pattern
+ * @return a pointer to the match, or NULL if not found.
+ * search with wildcard ? and *
+ */
+char *strfindstr(const char *t, const char *p, int flgs) {
+	int i, ic = flgs & 1;
+
+	for (i = 0; *t && p[i]; ++t, ++i) {
+		if (p[i] == '*')
+			return strfindstr(t, p + i + 1, flgs) ? (char*)t - i : 0;
+
+		if (p[i] == '?' || p[i] == *t)		// skip | match
+			continue;
+
+		if (ic && p[i] == tolower(*t))		// ignore case
+			continue;
+
+		t -= i;
+		i = -1;
+	}
+	while (p[i] == '*')			// "a***" is "a"
+		++p;					// keep i for return
+
+	return p[i] ? 0 : (char*)t - i;
+}
+
 int parseint(register const char *str, int *res) {
 	int val = 0;
 	while (*str >= '0' && *str <= '9') {
@@ -354,7 +386,7 @@ int escchr(state s) {
 	return 0;
 }
 
-int read_tok(state s, node tok)
+int read_tok(state s, astn tok)
 //!TODO: remove "debug"
 //!TODO: fix readnum change with 2 pass reader
 {
@@ -643,12 +675,14 @@ int read_tok(state s, node tok)
 			int line = s->line;
 			int next = peek_chr(s);
 			if (next == '/') {
+				int prevchr = chr;
 				//~ debug("!!!comment.line: /");
 				for (read_chr(s); chr != -1; chr = read_chr(s)) {
 					//~ debug("%c", chr);
 					if (chr == '\n') break;
+					prevchr = chr;
 				}
-				if (chr == -1) warn(s, 9, s->file, line, "no newline at end of file");
+				if (chr == -1) warn(s, 9, s->file, line, "no newline at end of file(%c)", prevchr);
 				else if (s->line != line+1) warn(s, 9, s->file, line, "multi-line comment");
 			}
 			else if (next == '*') {
@@ -661,7 +695,7 @@ int read_tok(state s, node tok)
 						warn(s, 8, s->file, s->line, "\"/ *\" within comment(%d)", c - 1);
 					prev_chr = chr;
 				}
-				if (chr == -1) error(s, line, "unterminated comment");
+				if (chr == -1) error(s, line, "unterminated comment2");
 				//~ else debug("\n!!!comment.box:}\n");
 				chr = read_chr(s);
 			}
@@ -674,7 +708,7 @@ int read_tok(state s, node tok)
 					if (prev_chr == '+' && chr == '/' && !--l) break;
 					prev_chr = chr;
 				}
-				if (chr == -1) error(s, line, "unterminated comment");
+				if (chr == -1) error(s, line, "unterminated comment1");
 				//~ else debug("\n!!!comment.block:}\n");
 				chr = read_chr(s);
 			}
@@ -683,8 +717,8 @@ int read_tok(state s, node tok)
 			warn(s, 5, s->file, s->line, "null character(s) ignored");
 			while (!chr) chr = read_chr(s);
 		}
-		
-		if (chr == '#') {
+
+		/*if (chr == '#') {
 			char tmp[1024], *ptr = tmp;
 			for (chr = read_chr(s); chr != -1; chr = read_chr(s)) {
 				if (ptr < tmp + 1024)
@@ -707,8 +741,8 @@ int read_tok(state s, node tok)
 				//~ debug("%s", tmp + 1);
 				//~ debug("#pragma line ", tmp + 1);
 			}
-		}
-		
+		}*/
+
 		if (!(chr_map[chr & 0xff] & SPACE)) break;
 		chr = read_chr(s);
 	}
@@ -976,7 +1010,7 @@ int read_tok(state s, node tok)
 			else if (!strcmp(beg, "__DEFN__")) {
 				ptr = beg;
 				for(chr = 0; chr <= s->nest; chr += 1) {
-					defn sym = s->scope[chr].csym;
+					symn sym = s->scope[chr].csym;
 					if (sym && sym->name) {
 						char* src = sym->name;
 						if (ptr != beg) ptr[-1] = '.';
@@ -1146,7 +1180,7 @@ int read_tok(state s, node tok)
 	return tok->kind;
 }
 
-node peek(state s) {
+astn peek(state s) {
 	if (s->_tok == 0) {
 		s->_tok = newnode(s, 0);
 		if (!read_tok(s, s->_tok)) {
@@ -1158,10 +1192,10 @@ node peek(state s) {
 	return s->_tok;
 }
 
-node next(state s, int kind) {
+astn next(state s, int kind) {
 	if (!peek(s)) return 0;
 	if (!kind || s->_tok->kind == kind) {
-		node ast = s->_tok;
+		astn ast = s->_tok;
 		s->_tok = ast->next;
 		ast->next = 0;
 		return ast;
@@ -1169,20 +1203,20 @@ node next(state s, int kind) {
 	return 0;
 }
 
-void back(state s, node ast) {
+void back(state s, astn ast) {
 	ast->next = s->_tok;
 	s->_tok = ast;
 }
 
 int test(state s, int kind) {
-	node ast = peek(s);
+	astn ast = peek(s);
 	if (!ast || (kind && ast->kind != kind))
 		return 0;
 	return 1;
 }
 
 int skip(state s, int kind) {
-	node ast = peek(s);
+	astn ast = peek(s);
 	if (!ast || (kind && ast->kind != kind))
 		return 0;
 	s->_tok = ast->next;
@@ -1192,13 +1226,13 @@ int skip(state s, int kind) {
 //}
 
 //{~~~~~~~~~ Parser ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-node scan(state s, int mode);
-node stmt(state s, int mode);
-node decl(state s, int mode);
-node expr(state s, int mode);
+//~ export astn scan(state s, int mode);
+//~ export astn stmt(state s, int mode);
+//~ export astn decl(state s, int mode);
+//~ export astn expr(state s, int mode);
 
-node scan(state s, int mode) {
-	node tok, lst = 0, ast = 0;
+astn scan(state s, int mode) {
+	astn tok, lst = 0, ast = 0;
 
 	#if 0		// read ahead all tokens or not
 	while (read_tok(s, tok = newnode(s, 0))) {
@@ -1223,14 +1257,14 @@ node scan(state s, int mode) {
 				error(s, ast->line, "declaration expected");
 		}
 	}
-	s->glob = leave(s);
+	s->glob = leave(s, NULL);
 
 	if (s->nest)
 		error(s, s->line, "premature end of file");
 	trace(-32, "leave:scan('%k')", peek(s));
 
 	if (ast) {
-		node tmp = newnode(s, OPER_beg);
+		astn tmp = newnode(s, OPER_beg);
 		tmp->name = s->file;
 		tmp->rhso = ast;
 		tmp->lhso = lst;
@@ -1240,8 +1274,8 @@ node scan(state s, int mode) {
 	return ast;
 }
 
-node stmt(state s, int mode) {
-	node ast, tmp = peek(s);
+astn stmt(state s, int mode) {
+	astn ast, tmp = peek(s);
 	int qual = 0;// qual(s, mode);			// static | const | parallel
 	trace(+16, "enter:stmt('%k')", peek(s));
 
@@ -1249,7 +1283,7 @@ node stmt(state s, int mode) {
 
 	if (skip(s, OPER_nop)) ast = 0;			// ;
 	else if ((ast = next(s, OPER_beg))) {	// {...}
-		node end = 0;
+		astn end = 0;
 		//~ ast->cast = qual;
 		//~ ast->cast = TYPE_vid;
 		enter(s, 0);
@@ -1261,7 +1295,7 @@ node stmt(state s, int mode) {
 				end = tmp;
 			}
 		}
-		ast->type = leave(s);
+		ast->type = leave(s, NULL);
 		if (!ast->stmt) {			// eat sort of {{;{;};{}{}}}
 			eatnode(s, ast);
 			ast = 0;
@@ -1286,7 +1320,7 @@ node stmt(state s, int mode) {
 			else error(s, s->line, " ')' expected, not %k", peek(s));
 		}
 		else error(s, s->line, " '(' expected");
-		ast->type = leave(s);
+		ast->type = leave(s, NULL);
 	}
 	else if ((ast = next(s, OPER_for))) {	// for (...)
 		enter(s, 0);
@@ -1318,10 +1352,10 @@ node stmt(state s, int mode) {
 			}
 		}
 		ast->stmt = stmt(s, 1);
-		ast->type = leave(s);
+		ast->type = leave(s, NULL);
 	}
 	else if ((ast = decl(s, qual))) {		// type?
-		node tmp = newnode(s, OPER_nop);
+		astn tmp = newnode(s, OPER_nop);
 		tmp->line = ast->line;
 		tmp->stmt = ast;
 		ast = tmp;
@@ -1332,7 +1366,7 @@ node stmt(state s, int mode) {
 			error(s, s->line, "unexpected declaration");
 	}
 	else if ((ast = expr(s, 0))) {			// expr;
-		node tmp = newnode(s, OPER_nop);
+		astn tmp = newnode(s, OPER_nop);
 		tmp->line = ast->line;
 		tmp->stmt = ast;
 		ast = tmp;
@@ -1356,14 +1390,14 @@ node stmt(state s, int mode) {
 	return ast;
 }
 
-defn spec(state s, int qual);
-defn type(state s, int qual);
-node dvar(state s, defn typ, int qual);
+symn spec(state s, int qual);
+symn type(state s, int qual);
+astn dvar(state s, symn typ, int qual);
 
-node decl(state s, int qual) {
-	defn typ;
+astn decl(state s, int qual) {
+	symn typ;
 	if ((typ = spec(s, qual))) {
-		node ast = newnode(s, TYPE_def);
+		astn ast = newnode(s, TYPE_def);
 		ast->type = typ;
 		ast->name = typ->name;
 		ast->cast = TYPE_def;
@@ -1372,7 +1406,7 @@ node decl(state s, int qual) {
 		return ast;
 	}
 	if ((typ = type(s, qual))) {
-		node ast = dvar(s, typ, qual);
+		astn ast = dvar(s, typ, qual);
 		if (ast)
 			ast->type = typ;
 		//~ debug("%+k", ast);
@@ -1381,11 +1415,11 @@ node decl(state s, int qual) {
 	return NULL;
 }
 
-node expr(state s, int mode) {
-	node	buff[TOKS], *base = buff + TOKS;
-	node	*post = buff, *prec = base, tok;
-	char	sym[TOKS];							// symbol stack {, [, (, ?
-	int	level = 0, unary = 1;						// precedence, top of sym , start in unary mode
+astn expr(state s, int mode) {
+	astn buff[TOKS], *base = buff + TOKS;
+	astn *post = buff, *prec = base, tok;
+	char sym[TOKS];							// symbol stack {, [, (, ?
+	int level = 0, unary = 1;						// precedence, top of sym , start in unary mode
 	sym[level] = 0;
 
 	trace(+2, "enter:expr('%k')", peek(s));
@@ -1555,7 +1589,7 @@ node expr(state s, int mode) {
 		//~ return 0;
 	}
 	else if (prec > buff) {							// build
-		node *ptr, *lhs;
+		astn *ptr, *lhs;
 		while (prec < buff + TOKS)					// flush
 			*post++ = *prec++;
 		for (lhs = ptr = buff; ptr < post; ptr += 1) {
@@ -1588,7 +1622,7 @@ node expr(state s, int mode) {
 				#if TODO_REM_TEMP // TODO: remove replacer
 				switch (tok->kind) {				// temporary only cgen
 					case ASGN_add: {
-						node tmp = newnode(s, OPER_add);
+						astn tmp = newnode(s, OPER_add);
 						tmp->rhso = tok->rhso;
 						tmp->lhso = tok->lhso;
 						tok->kind = ASGN_set;
@@ -1597,49 +1631,49 @@ node expr(state s, int mode) {
 						//~ tok->next = tmp;
 					} break;
 					case ASGN_sub: {
-						node tmp = newnode(s, OPER_sub);
+						astn tmp = newnode(s, OPER_sub);
 						tmp->rhso = tok->rhso;
 						tmp->lhso = tok->lhso;
 						tok->kind = ASGN_set;
 						tok->rhso = tmp;
 					} break;
 					case ASGN_mul: {
-						node tmp = newnode(s, OPER_mul);
+						astn tmp = newnode(s, OPER_mul);
 						tmp->rhso = tok->rhso;
 						tmp->lhso = tok->lhso;
 						tok->kind = ASGN_set;
 						tok->rhso = tmp;
 					} break;
 					case ASGN_div: {
-						node tmp = newnode(s, OPER_div);
+						astn tmp = newnode(s, OPER_div);
 						tmp->rhso = tok->rhso;
 						tmp->lhso = tok->lhso;
 						tok->kind = ASGN_set;
 						tok->rhso = tmp;
 					} break;
 					case ASGN_mod: {
-						node tmp = newnode(s, OPER_mod);
+						astn tmp = newnode(s, OPER_mod);
 						tmp->rhso = tok->rhso;
 						tmp->lhso = tok->lhso;
 						tok->kind = ASGN_set;
 						tok->rhso = tmp;
 					} break;
 					case ASGN_shl: {
-						node tmp = newnode(s, OPER_shl);
+						astn tmp = newnode(s, OPER_shl);
 						tmp->rhso = tok->rhso;
 						tmp->lhso = tok->lhso;
 						tok->kind = ASGN_set;
 						tok->rhso = tmp;
 					} break;
 					case ASGN_shr: {
-						node tmp = newnode(s, OPER_shr);
+						astn tmp = newnode(s, OPER_shr);
 						tmp->rhso = tok->rhso;
 						tmp->lhso = tok->lhso;
 						tok->kind = ASGN_set;
 						tok->rhso = tmp;
 					} break;
 					case ASGN_ior: {
-						node tmp = newnode(s, OPER_ior);
+						astn tmp = newnode(s, OPER_ior);
 						tmp->rhso = tok->rhso;
 						tmp->lhso = tok->lhso;
 						tok->kind = ASGN_set;
@@ -1648,7 +1682,7 @@ node expr(state s, int mode) {
 				}
 				#endif
 			}
-			/*/ find duplicate sub-trees				// ????
+			/*~ find duplicate sub-trees				// ????
 			for (dup = buff; dup < lhs; dup += 1) {
 				if (samenode(*dup, tok)) {
 					print(0, INFO, s->file, tok->line, "+dupp: %+k", *dup);
@@ -1661,33 +1695,20 @@ node expr(state s, int mode) {
 			*lhs++ = tok;
 		}
 	}
-	if (tok && !lookup(s, 0, tok))
-		error(s, tok->line, "bum %+k", tok);
 	trace(-2, "leave:expr('%+k') %k", tok, peek(s));
+	if (tok && !lookup(s, 0, tok)) {
+		debug("BUM: `%+k`", tok);
+		// error(s, tok->line, "bum %+k", tok);
+	}
 	return tok;
 }
 
 extern int align(int offs, int pack, int size);
 
-int sizeoffs(defn typ) {
-	struct astn_t dim;
-	switch (typ->kind) {
-		case TYPE_arr: {
-			if (!eval(&dim, typ->init, TYPE_i32))
-				return 0;
-			typ->size = dim.cint * sizeoffs(typ->type);
-			//~ fputmsg(stdout, "sizeof(%+T) = %d\n", typ, typ->size);
-			return typ->size;
-		} break;
-		default: return typ->size;
-	}
-	return 0;
-}
-
-node dvar(state s, defn typ, int qual) {
-	//~ node prev = 0, root = 0;
-	node tag = 0;
-	defn ref = 0;
+astn dvar(state s, symn typ, int qual) {
+	//~ astn prev = 0, root = 0;
+	astn tag = 0;
+	symn ref = 0;
 
 	trace(+4, "enter:dclr('%k')", peek(s));
 
@@ -1708,33 +1729,18 @@ node dvar(state s, defn typ, int qual) {
 	else if (test(s, PNCT_lp)) {		// function
 		fatal(s, "function");
 	}
-	else if (test(s, PNCT_lc)) {		// array
-		defn arr = 0, nxt;
-		if (skip(s, PNCT_lc)) {
-			//~ struct astn_t dim;
-			defn tmp = newdefn(s, TYPE_arr);
-			if (!skip(s, PNCT_rc)) {
-				tmp->init = expr(s, CNST_int);
-				if (!skip(s, PNCT_rc)) {
-					error(s, s->line, "missing ']'");
-					return 0;
-				}
-			}
-			//~ if (!eval(&dim, tmp->init, TYPE_i32))
-				//~ dim.cint = 0;
-			//~ tmp->size = dim.cint * typ->size;
-			//~ tmp->type = typ;
-			//~ typ = tmp;
-
-			if (!arr) arr = tmp;
-			else nxt->type = tmp;
-			nxt = tmp;
+	else if (skip(s, PNCT_lc)) {		// array[]
+		struct astn len;
+		symn arr = newdefn(s, TYPE_arr);
+		arr->init = expr(s, CNST_int);
+		if (!skip(s, PNCT_rc)) {
+			error(s, s->line, "missing ']'");
+			return 0;
 		}
-		nxt->type = typ;
-		debug("%+T", arr);
-		sizeoffs(arr);
-		ref->type = arr;// */
-		ref->size = 0;
+		if (eval(&len, arr->init, CNST_int))
+			arr->size = typ->size * len.cint;
+		arr->type = typ;
+		ref->type = arr;
 	}
 
 	if (test(s, OPER_nop)) {
@@ -1752,9 +1758,9 @@ node dvar(state s, defn typ, int qual) {
 	return tag;
 }// */
 
-defn type(state s, int qual) {
-	node tok = 0;
-	defn tmp = 0, def = 0;
+symn type(state s, int qual) {
+	astn tok = 0;
+	symn tmp = 0, def = 0;
 	tmp = 0;
 	while ((tok = peek(s))) {		// type(.type)*
 		if (!lookup(s, tmp, tok)) break;
@@ -1767,7 +1773,7 @@ defn type(state s, int qual) {
 	}
 	/*if (def) {
 		while (skip(s, PNCT_lc)) {			// array	: int [20][30] | int[100](int)
-			defn tmp = newdefn(s, TYPE_arr);
+			symn tmp = newdefn(s, TYPE_arr);
 			if (!skip(s, PNCT_rc)) {
 				tmp->init = expr(s, CNST_int);
 				if (!skip(s, PNCT_rc)) {
@@ -1779,7 +1785,7 @@ defn type(state s, int qual) {
 			def = tmp;
 		}// * /
 		if (skip(s, PNCT_lp)) {				// function
-			defn tmp = newdefn(s, TYPE_fnc);
+			symn tmp = newdefn(s, TYPE_fnc);
 			enter(s, 0);
 			args(s, fl_type+fl_name);
 			leave(s, 1, &tmp->args);
@@ -1791,9 +1797,9 @@ defn type(state s, int qual) {
 	return def;
 }
 
-defn spec(state s, int qual) {
-	node tok, tag = 0;
-	defn tmp, def = 0;
+symn spec(state s, int qual) {
+	astn tok, tag = 0;
+	symn tmp, def = 0;
 	int offs = 0;
 	int size = 0;
 	int pack = 4;
@@ -1807,7 +1813,7 @@ defn spec(state s, int qual) {
 		qual = 0;
 		if ((tag = next(s, TYPE_ref))) {
 			if (skip(s, ASGN_set)) {	// define PI = 3.14;
-				node val = expr(s, 0);
+				astn val = expr(s, 0);
 				//~ debug("define: %+k", val);
 				if (eval(NULL, val, 0)) {
 					def = declare(s, TYPE_def, tag, val->type, 0);
@@ -1822,7 +1828,31 @@ defn spec(state s, int qual) {
 				trace(1, "define('%T' as '%k')", def, val);
 			}
 			else if ((def = type(s, qual))) {	// define sin math.sin;	???
-				def = declare(s, TYPE_def, tag, def, 0);
+				if (skip(s, PNCT_cln)) {
+					if ((tok = next(s, CNST_int))) {
+						def = declare(s, TYPE_ref, tag, def, 0);
+						def->offs = tok->cint;
+						def->onst = 1;
+					}
+				}
+				else// */
+					def = declare(s, TYPE_def, tag, def, 0);
+			}
+			else if (skip(s, PNCT_cln)) {	// define a: typename@;
+				
+				astn val = expr(s, 0);
+				//~ debug("define: %+k", val);
+				if (eval(NULL, val, 0)) {
+					def = declare(s, TYPE_def, tag, val->type, 0);
+					def->init = val;
+				}
+				else {
+					error(s, val->line, "Constant expression expected, got: '%+k'", val);
+					def = declare(s, TYPE_def, tag, 0, 0);
+					def->type = NULL;
+					def->init = val;
+				}
+				trace(1, "define('%T' as '%k')", def, val);
 			}
 			else {
 				error(s, tag->line, "typename excepted");
@@ -1866,7 +1896,7 @@ defn spec(state s, int qual) {
 			//~ while (skipToken(s, 'inherit'));
 			while (!skip(s, OPER_end)) {
 				//~ int ql = qual(s, 0);
-				defn typ = spec(s, qual);
+				symn typ = spec(s, qual);
 				if (!typ) typ = type(s, qual);
 				if (typ && (tok = next(s, TYPE_ref))) {
 					offs = align(offs, pack, typ->size);
@@ -1885,7 +1915,7 @@ defn spec(state s, int qual) {
 				}
 			}
 			def->size = size;
-			def->args = leave(s);
+			def->args = leave(s, def);
 			if (!def->args)
 				warn(s, 2, s->file, s->line, "empty declaration");
 		}
@@ -1931,7 +1961,7 @@ defn spec(state s, int qual) {
 				}
 			}
 			if (tag->name)
-				def->args = leave(s);
+				def->args = leave(s, def);
 		}
 	}
 	else {					// type
@@ -1940,11 +1970,11 @@ defn spec(state s, int qual) {
 	return def;
 }
 
-//~ defn declLibc() {}
-defn instlibc(state s, const char* name) {
-	node ftag = 0;
+//~ symn declLibc() {}
+symn instlibc(state s, const char* name) {
+	astn ftag = 0;
 	int argsize = 0;
-	defn args = 0, ftyp = 0;
+	symn args = 0, ftyp = 0;
 	s->_ptr = (char*)name;
 	s->_cnt = strlen(name);
 	//~ s->_tok = 0;
@@ -1960,8 +1990,8 @@ defn instlibc(state s, const char* name) {
 		if (!skip(s, PNCT_rp)) {		// int bsr ( )
 			enter(s, ftyp);
 			while (peek(s)) {
-				node atag = 0;
-				defn atyp = 0;
+				astn atag = 0;
+				symn atyp = 0;
 
 				if (!(atag = next(s, TYPE_ref))) break;	// int
 				if (!(atyp = lookup(s, 0, atag))) break;
@@ -1976,11 +2006,11 @@ defn instlibc(state s, const char* name) {
 				if (skip(s, PNCT_rp)) break;
 				if (!skip(s, OPER_com)) break;
 			}
-			args = leave(s);
+			args = leave(s, NULL);
 		}
 	}
 	if (!peek(s)) {
-		defn def = newdefn(s, TYPE_ref);
+		symn def = newdefn(s, TYPE_ref);
 		unsigned hash = ftag->hash;
 		def->name = ftag->name;
 		def->nest = s->nest;
@@ -2005,31 +2035,33 @@ defn instlibc(state s, const char* name) {
 	return NULL;
 }// */
 
-void enter(state s, defn def) {
+void enter(state s, symn def) {
 	s->nest += 1;
 	s->scope[s->nest].csym = def;
 	//~ s->scope[s->nest].stmt = NULL;
 	//~ return &s->scope[s->nest];
 }
-defn leave(state s) {
+symn leave(state s, symn fldp) {
 	int i;
-	defn arg = 0;
+	symn arg = 0;
 	s->nest -= 1;
 
 	// clear from table
 	for (i = 0; i < TBLS; i++) {
-		defn def = s->deft[i];
+		symn def = s->deft[i];
 		while (def && def->nest > s->nest) {
-			defn tmp = def;
+			symn tmp = def;
 			def = def->next;
 			tmp->next = 0;
+
+			//~ tmp->fild = fldp;
 		}
 		s->deft[i] = def;
 	}
 
 	// clear from stack
 	while (s->defs) {
-		defn sym = s->defs;
+		symn sym = s->defs;
 
 		if (sym->nest <= s->nest) break;
 		s->defs = sym->defs;
