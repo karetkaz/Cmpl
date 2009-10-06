@@ -1,16 +1,15 @@
-#include "gx_surf.h"
+#include "g2_surf.h"
+#include "image.c"
 
 //~ gx_draw____
 //~ gx_fill____
 //~ gx_clip____
 
-#define bezp
-
-void gx_drawrect(gx_Surf dst, int x0, int y0, int x1, int y1, long col) {
+void gx_drawrect(gx_Surf *dst, int x0, int y0, int x1, int y1, long col) {
 	//~ TODO
 }
 
-void gx_drawoval(gx_Surf dst, int x0, int y0, int x1, int y1, long col) {
+void gx_drawoval(gx_Surf *dst, int x0, int y0, int x1, int y1, long col) {
 	/*
 	int dx,dy,sx,sy,r;
 	if(x0 > x1)xchg(x0,x1);
@@ -38,7 +37,7 @@ void gx_drawoval(gx_Surf dst, int x0, int y0, int x1, int y1, long col) {
 	*/
 }
 
-void gx_drawline(gx_Surf dst, int x0, int y0, int x1, int y1, long col) {
+void g2_drawline(gx_Surf *surf, int x0, int y0, int x1, int y1, long col) {
 	//~ TODO : replace Bresenham with DDA, resolve clipping 
 	int dx, dy, sx, sy, r;
 	dx = x1 - x0;
@@ -48,7 +47,7 @@ void gx_drawline(gx_Surf dst, int x0, int y0, int x1, int y1, long col) {
 	if (dx > dy) {
 		r = dx >> 1;
 		while (x0 != x1) {
-			gx_setpixel(dst, x0, y0, col);
+			gx_setpixel(surf, x0, y0, col);
 			if ((r += dy) > dx) {
 				y0 += sy;
 				r -= dx;
@@ -58,7 +57,7 @@ void gx_drawline(gx_Surf dst, int x0, int y0, int x1, int y1, long col) {
 	} else {
 		r = dy >> 1;
 		while (y0 != y1) {
-			gx_setpixel(dst, x0, y0, col);
+			gx_setpixel(surf, x0, y0, col);
 			if ((r+=dx) > dy) {
 				x0 += sx;
 				r -= dy;
@@ -66,19 +65,13 @@ void gx_drawline(gx_Surf dst, int x0, int y0, int x1, int y1, long col) {
 			y0 += sy;
 		}
 	}
-	gx_setpixel(dst, x0, y0, col);
+	gx_setpixel(surf, x0, y0, col);
 }
 
-void gx_drawbez2(gx_Surf dst, int x0, int y0, int x1, int y1, int x2, int y2, long col) {
+void gx_drawbez2(gx_Surf *dst, int x0, int y0, int x1, int y1, int x2, int y2, long col) {
 	int px_2, px_1, px_0 = x0;
 	int py_2, py_1, py_0 = y0;
-	double t, dt = .01;
-	#ifdef bezp
-	long olc = gx_mapcolor(dst, 0x8f8f8f);
-	gx_drawline(dst, x0, y0, x1, y1, olc);
-	gx_drawline(dst, x1, y1, x2, y2, olc);
-	gx_drawline(dst, (x0+x1)/2, (y0+y1)/2, (x1+x2)/2, (y1+y2)/2, olc);
-	#endif
+	double t, dt = 1./128;
 	px_1 = 2 * (x1 - x0);
 	py_1 = 2 * (y1 - y0);
 	px_2 = x2 - 2*x1 + x0;
@@ -86,16 +79,40 @@ void gx_drawbez2(gx_Surf dst, int x0, int y0, int x1, int y1, int x2, int y2, lo
 	for (t = dt; t < 1; t += dt) {
 		x1 = (((px_2)*t + px_1)*t + px_0);
 		y1 = (((py_2)*t + py_1)*t + py_0);
-		gx_drawline(dst, x0, y0, x1, y1, col);
+		g2_drawline(dst, x0, y0, x1, y1, col);
 		x0 = x1; y0 = y1;
 	}
-	gx_drawline(dst, x0, y0, x2, y2, col);
+	g2_drawline(dst, x0, y0, x2, y2, col);
 }
 
-void gx_drawbez3(gx_Surf dst, int x0, int y0, int x1, int y1, int x2, int y2, int x3, int y3, long col) {
+void gx_drawbez3a(gx_Surf *dst, int x0, int y0, int x1, int y1, int x2, int y2, int x3, int y3, long col) {
 	int px_3, px_2, px_1, px_0 = x0;
 	int py_3, py_2, py_1, py_0 = y0;
-	double t, dt = 1./128;
+	double t, dt = 1./512;
+	px_1 = 3 * (x1 - x0);
+	py_1 = 3 * (y1 - y0);
+	px_2 = 3 * (x2 - x1) - px_1;
+	py_2 = 3 * (y2 - y1) - py_1;
+	px_3 = x3 - px_2 - px_1 - px_0;
+	py_3 = y3 - py_2 - py_1 - py_0;
+	for (t = dt; t < 1; t += dt) {
+		x1 = ((((px_3)*t + px_2)*t + px_1)*t + px_0);
+		y1 = ((((py_3)*t + py_2)*t + py_1)*t + py_0);
+		g2_drawline(dst, x0, y0, x1, y1, col);
+		x0 = x1; y0 = y1;
+	}
+	g2_drawline(dst, x0, y0, x3, y3, col);
+}
+
+/*static inline int abs(int n)
+{
+	return n > 0 ? n : -n;
+}
+
+void gx_drawbez3(gx_Surf *dst, int x0, int y0, int x1, int y1, int x2, int y2, int x3, int y3, long col) {
+	int px_3, px_2, px_1, px_0 = x0;
+	int py_3, py_2, py_1, py_0 = y0;
+	double dt = 0.25, ddt = 0.05, t = 0, err = 4.0;
 	#ifdef bezp
 	long olc = gx_mapcolor(dst, 0x8f8f8f);
 	gx_drawline(dst, x0, y0, x1, y1, olc);
@@ -111,11 +128,33 @@ void gx_drawbez3(gx_Surf dst, int x0, int y0, int x1, int y1, int x2, int y2, in
 	py_2 = 3 * (y2 - y1) - py_1;
 	px_3 = x3 - px_2 - px_1 - px_0;
 	py_3 = y3 - py_2 - py_1 - py_0;
-	for (t = dt; t < 1; t += dt) {
-		x1 = ((((px_3)*t + px_2)*t + px_1)*t + px_0);
-		y1 = ((((py_3)*t + py_2)*t + py_1)*t + py_0);
-		gx_drawline(dst, x0, y0, x1, y1, col);
+	
+	while ( t < 1 ) {
+		double t2 = t + dt;
+		
+		x1 = ((((px_3)*t2 + px_2)*t2 + px_1)*t2 + px_0);
+		y1 = ((((py_3)*t2 + py_2)*t2 + py_1)*t2 + py_0);
+		
+		
+		if(x1==x2 && y1==y2)
+		{
+			dt *= 2;
+			continue;
+		}
+		
+		if(abs((x1-x0)*(y1-y0)/(err)) > 1.0)
+		{
+			dt /= 2;
+			continue;
+		}
+		
+		t = t2;
+		
+		g2_drawline(dst, x0, y0, x1, y1, col);
+		//gx_setpixel(dst, x0, y0, col);
 		x0 = x1; y0 = y1;
+		
+		
 	}
-	gx_drawline(dst, x0, y0, x3, y3, col);
+	//g2_drawline(dst, x0, y0, x3, y3, col);
 }//*/

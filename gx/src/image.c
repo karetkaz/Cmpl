@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
-#include "gx_surf.h"
+#include <malloc.h>
+#include "g2_surf.h"
 
 #define BMP_RLE 0x01
 #define BMP_OS2 0x02
@@ -108,6 +109,8 @@ static int bmprln_04raw(unsigned char* dst, FILE* src, unsigned cnt) {
 	return 0;
 }
 
+static int bmprln_01rle(unsigned char* dst, FILE* src, unsigned cnt) ;
+
 static int bmprln_04rle(unsigned char* dst, FILE* src, unsigned cnt) {
 	for(;;){
 		if(fread(dst, 2, 1, src) == 0)return 0;
@@ -169,8 +172,7 @@ static int bmpwln_raw(FILE* dst, unsigned char* src, unsigned cnt) {
 }
 
 static int bmpwln_01raw(FILE* dst, unsigned char* src, unsigned cnt) {
-	//~ unsigned char* tmp;
-	while(cnt--){
+	while (cnt--) {
 		int tmp = 0;
 		tmp |= (*src++ & 0x01) << 7;
 		tmp |= (*src++ & 0x01) << 6;
@@ -186,7 +188,7 @@ static int bmpwln_01raw(FILE* dst, unsigned char* src, unsigned cnt) {
 }
 
 static int bmpwln_04raw(FILE* dst, unsigned char* src, unsigned cnt) {
-	while(cnt--){
+	while (cnt--) {
 		int tmp = 0;
 		tmp |= (*src++ & 0x0f) << 4;
 		tmp |= (*src++ & 0x0f) << 0;
@@ -195,22 +197,31 @@ static int bmpwln_04raw(FILE* dst, unsigned char* src, unsigned cnt) {
 	return 1;
 }
 
-static int bmpwln_04rle(FILE* dst, unsigned char* src, unsigned cnt) {		//TODO
-	return -1;		// implement
-}
-
-static int bmpwln_08rle(FILE* dst, unsigned char* src, unsigned cnt) {		//TODO
-	return -1;		// implement
-}
+static int bmpwln_04rle(FILE* dst, unsigned char* src, unsigned cnt) {return -1;} // TODO
+static int bmpwln_08rle(FILE* dst, unsigned char* src, unsigned cnt) {return -1;} // TODO
 
 //	open / save image formats
-int gx_loadBMP(gx_Surf dst, char* src, int depth) {
-	gx_Clut_s	bmppal;			// bitmap palette
+
+char* gx_readBMP_errors[] = {
+	/* 0 */"OK",
+	/* 1 */"can not open FILE",
+	/* 2 */"Invalid Bitmap Format",
+	/* 3 */"Invalid Header Size",
+	/* 4 */"Invalid Bitmap Depth",
+	/* 5 */"Invalid Bitmap Encoding(Compression)",
+	/* 6 */"Invalid Surface color converter",
+	/* 7 */"Invalid Surface destination color depth",
+	/* 8 */"can not init surface",
+	/* 9 */"Invalid"
+};
+
+int gx_readBMP(gx_Surf *dst, FILE* fin, int depth) {
+	gx_Clut		bmppal;			// bitmap palette
 	bmplnreader	bmplrd;			// bitmap line reader
 	BMP_HDR		bmphdr;			// bitmap header
 	BMP_INF		bmpinf;			// bitmap info header
 	int		bmplsz;			// bitmap line size
-	FILE*		fin;			// bitmap input file
+	//~ FILE*		fin;			// bitmap input file
 	char*		ptr;			// ptr to surface line
 	char*		tmpbuff;		// bitmap temp buffer
 	cblt_proc	convln;			// color convereter rutine
@@ -223,7 +234,7 @@ int gx_loadBMP(gx_Surf dst, char* src, int depth) {
 		//~ case -1 : depth = 32; break;
 		default : return 7;
 	}
-	if (!(fin = fopen(src,"rb"))) return 1;
+	//~ if (!(fin = fopen(src,"rb"))) return 1;
 	fread(&bmphdr, sizeof(BMP_HDR), 1, fin);
 	switch (bmphdr.manfact) {		// Validid Bitmap Formats
 		case 'MB' : break;		// BM -
@@ -232,7 +243,7 @@ int gx_loadBMP(gx_Surf dst, char* src, int depth) {
 		case 'PC' : break;		// CP -
 		case 'CI' : break;		// IC -
 		case 'TP' : break;		// PT - Pointer
-		default   : fclose(fin); return 2;
+		default   : return 2;
 	}
 	fread(&bmpinf, bmphdr.hdrsize-4, 1, fin);
 	switch (bmphdr.hdrsize) {
@@ -244,7 +255,7 @@ int gx_loadBMP(gx_Surf dst, char* src, int depth) {
 		} break;			// OS/2 1.x;
 		case 40 : break;		// Windows;
 		case 64 : break;		// OS/2 2+;
-		default : fclose(fin); return 3;
+		default : return 3;
 	}
 	switch (bmpinf.depth) {
 		case  1 : {
@@ -264,16 +275,15 @@ int gx_loadBMP(gx_Surf dst, char* src, int depth) {
 		} break;
 		case 24 : bmplrd = bmprln_raw; break;
 		case 32 : bmplrd = bmprln_raw; break;
-		default : fclose(fin); return 4;
+		default : return 4;
 	}
 	switch (bmpinf.encoding) {
 		case  0 : break;		// no compression
 		case  1 : bmplrd = bmprln_08rle; break;
 		case  2 : bmplrd = bmprln_04rle; break;
-		default : fclose(fin); return 5;
+		default : return 5;
 	}
 	if (!(convln = gx_getcbltf(cblt_conv, depth, bmpinf.depth<8 ? 8 : bmpinf.depth))) {
-		fclose(fin);
 		return 6;
 	}
 	dst->depth  = depth;
@@ -281,12 +291,10 @@ int gx_loadBMP(gx_Surf dst, char* src, int depth) {
 	dst->height = bmpinf.height;
 	dst->scanLen = 0;
 	if (gx_initSurf(dst, 0, &bmppal, SURF_DNTCLR | (depth == 8 ? SURF_CPYPAL : 0))) {
-		fclose(fin);
 		return 8;
 	}
 	bmplsz = ((bmpinf.depth * bmpinf.width >> 3) + 3) & (~3);
 	/*if (!(tmpbuff = (char*) malloc(bmplsz))) {
-		fclose(fin);
 		return 9;
 	}//*/
 	tmpbuff = (char*)gx_buff;
@@ -298,12 +306,20 @@ int gx_loadBMP(gx_Surf dst, char* src, int depth) {
 		gx_callcbltf(convln, ptr, tmpbuff, bmpinf.width, &bmppal);
 	}
 	//~ free(tmpbuff);
-	fclose(fin);
 	return 0;
 }
 
-int gx_saveBMP(char* dst, gx_Surf src, int flags) {
-	gx_Clut_s	bmppal;			// bitmap palette
+int gx_loadBMP(gx_Surf *surf, const char* src, int depth) {
+	int res;
+	FILE *fin = fopen(src, "rb");
+	if (!fin) return -1;
+	res = gx_readBMP(surf, fin, depth);
+	fclose(fin);
+	return res;
+}
+
+int gx_saveBMP(char* dst, gx_Surf *src, int flags) {
+	gx_Clut		bmppal;			// bitmap palette
 	bmplnwriter	bmplwr;			// bitmap line writer
 	BMP_HDR		bmphdr;			// bitmap header
 	BMP_INF		bmpinf;			// bitmap info header
@@ -314,18 +330,19 @@ int gx_saveBMP(char* dst, gx_Surf src, int flags) {
 	cblt_proc	convln;			// color convereter rutine
 	memset(&bmphdr, 0, sizeof(BMP_HDR));
 	memset(&bmpinf, 0, sizeof(BMP_INF));
-	memset(&bmppal, 0, sizeof(gx_Clut_s));
+	memset(&bmppal, 0, sizeof(gx_Clut));
 	flags &= ~BMP_RLE;				// not implemented	//TODO
 	switch (src->depth) {
 		case  8 : {
 			if (src->clutPtr) {
-				memcpy(&bmppal, src->clutPtr, sizeof(gx_Clut_s));
+				memcpy(&bmppal, src->clutPtr, sizeof(gx_Clut));
 				if (bmppal.count <= 16)
 					if (bmppal.count == 2)
 						bmpinf.depth = 1;
 					else bmpinf.depth = 4;
 				else bmpinf.depth = 8;
-			} else {
+			}
+			else {
 				for (bmplsz = 0; bmplsz < 256; ++bmplsz) {
 					bmppal.data[bmplsz].a = 255;
 					bmppal.data[bmplsz].r = bmplsz;
@@ -341,13 +358,17 @@ int gx_saveBMP(char* dst, gx_Surf src, int flags) {
 					if (flags & BMP_RLE) {
 						bmpinf.encoding = 2;
 						bmplwr = bmpwln_04rle;
-					} else	bmplwr = bmpwln_04raw;
+					}
+					else
+						bmplwr = bmpwln_04raw;
 				} break;
 				case 8 : {
 					if (flags & BMP_RLE) {
 						bmpinf.encoding = 1;
 						bmplwr = bmpwln_08rle;
-					} else	bmplwr = bmpwln_raw;
+					}
+					else
+						bmplwr = bmpwln_raw;
 				} break;
 			}
 		}break;
@@ -386,12 +407,12 @@ int gx_saveBMP(char* dst, gx_Surf src, int flags) {
 	return 0;
 }
 
-int gx_loadCUR(gx_Surf dst, char* src, int flags) {
+int gx_loadCUR(gx_Surf *dst, const char* src, int flags) {
 	FILE		*fin;
 	CUR_HDR		curhdr;
 	CUR_DIR		curdir;
 	CUR_BMP		curbmp;
-	gx_Clut_s	bmppal;			// bitmap palette
+	gx_Clut		bmppal;			// bitmap palette
 	char		*ptr, *tmp;		// ptr to surface line
 	int x, y, c, i = 0;
 	if (!(fin = fopen(src,"rb"))) return 1;
@@ -487,14 +508,15 @@ int gx_loadCUR(gx_Surf dst, char* src, int flags) {
 	return 0;
 }
 
+#if 1
 #pragma pack(8)
-#include "libs/libjpeg/jpeglib.h"
-#pragma library (libjpeg);
+#include "jpeglib.h"
+//~ #pragma library (libjpeg);
 
-int gx_loadJPG(gx_Surf dst, char* src, int depth) {
+int gx_loadJPG(gx_Surf *dst, const char* src, int depth) {
 	FILE*		fin;
 	cblt_proc	convln;			// color convereter rutine
-	char*		tmpbuff;		// bitmap temp buffer
+	unsigned char* tmpbuff;		// bitmap temp buffer
 	char*		ptr;			// ptr to surface line
 	/* This struct contains the JPEG decompression parameters and pointers to
 	 * working space (which is allocated as needed by the JPEG library).
@@ -559,7 +581,7 @@ int gx_loadJPG(gx_Surf dst, char* src, int depth) {
 	}//*/
 
 	/* Step 6: while (scan lines remain to be read) */
-	tmpbuff = (char*)gx_buff;
+	tmpbuff = (unsigned char*)gx_buff;
 	ptr = (char*)dst->basePtr;
 	while (cinfo.output_scanline < cinfo.output_height) {
 		(void) jpeg_read_scanlines(&cinfo, &tmpbuff, 1);
@@ -577,5 +599,5 @@ int gx_loadJPG(gx_Surf dst, char* src, int depth) {
 	fclose(fin);
 	return 0;
 }
-
+#endif
 //##############################################################################

@@ -1,7 +1,7 @@
 #ifndef __gx_VBE_h
 #define __gx_VBE_h
 
-#include "gx_surf.h"
+#include "g2_surf.h"
 
 #define MD_LINEAR 0x4000
 #define MD_DNTCLR 0x8000
@@ -110,13 +110,13 @@ extern void gx_vbeexit();
  *			: > 0 dpmi error : hiword(0x31), loword(?)
 **/
 
-extern int gx_modeopen(gx_Surf, int XRes, int YRes, int Flgs, CRTCInfo);
+extern int gx_modeopen(gx_Surf*, int XRes, int YRes, int Flgs, CRTCInfo);
 
 extern void gx_wait_retr();
 
 //~ extern int gx_vbesurf(gx_Surf dst, int page);
 
-extern int gx_vgacopy(gx_Surf src, int page);
+extern int gx_vgacopy(gx_Surf *src, int page);
 
 #if __cplusplus
 }

@@ -1,16 +1,17 @@
 #include <malloc.h>
 #include <string.h>
-#include "gx_surf.h"
-#include "gx_color.h"
+#include "g2_surf.h"
+#include "g2_argb.h"
 #include <stdio.h>
 
 extern void colcpy_32cpy();
 extern void colcpy_32mix();
 
-int gx_initSurf(gx_Surf s, gx_Clip clip, gx_Clut clut, int flags) {
+int gx_initSurf(gx_Surf *s, gx_Clip *clip, gx_Clut *clut, int flags) {
 	int	tmp = s->depth; s->flags = 0;
 	s->pixeLen = tmp == 8 ? 1 : tmp == 15 ? 2 : tmp == 16 ? 2 : tmp == 24 ? 3 : tmp == 32 ? 4 : 0;
 	if (!s->scanLen) s->scanLen = s->pixeLen * s->width;
+	// TODO: if (flags & Reuse) then ...
 	if ((flags & SURF_NO_MEM) == 0) {
 		tmp = s->scanLen * s->height;
 		if ((s->basePtr = malloc(tmp))) {
@@ -26,7 +27,7 @@ int gx_initSurf(gx_Surf s, gx_Clip clip, gx_Clut clut, int flags) {
 		} else return -2;
 	} else s->clutPtr = clut;
 	if (clip && (flags & SURF_CPYCLP)) {
-		if ((s->clipPtr = (gx_Clip)malloc(sizeof(struct gx_Clip_t)))) {
+		if ((s->clipPtr = (gx_Clip*)malloc(sizeof(struct gx_Clip_t)))) {
 			memcpy(s->clipPtr, clip, sizeof(struct gx_Clip_t));
 			s->flags |= SURF_DELCLP;
 		} else return -3;
@@ -36,14 +37,14 @@ int gx_initSurf(gx_Surf s, gx_Clip clip, gx_Clut clut, int flags) {
 	return 0;
 }
 
-void gx_doneSurf(gx_Surf surf) {
+void gx_doneSurf(gx_Surf *surf/* , int flags */) {
 	if (surf->clipPtr && (surf->flags & SURF_DELCLP)) free(surf->clipPtr);
 	if (surf->basePtr && (surf->flags & SURF_DELMEM)) free(surf->basePtr);
 	if (surf->clutPtr && (surf->flags & SURF_DELLUT)) free(surf->clutPtr);
 }
 
-gx_Surf gx_createSurf(unsigned width, unsigned height, unsigned depth, int flags) {
-	gx_Surf surf = (gx_Surf)malloc(sizeof(struct gx_Surf_t));
+gx_Surf* gx_createSurf(unsigned width, unsigned height, unsigned depth, int flags) {
+	gx_Surf *surf = (gx_Surf*)malloc(sizeof(struct gx_Surf_t));
 	if (surf) {
 		surf->width = width;
 		surf->height = height;
@@ -57,17 +58,17 @@ gx_Surf gx_createSurf(unsigned width, unsigned height, unsigned depth, int flags
 	return surf;
 }
 
-gx_Surf gx_attachSurf(gx_Surf src, gx_Rect roi) {
+gx_Surf* gx_attachSurf(gx_Surf *src, gx_Rect *roi) {
 	struct gx_Rect_t clip;
 	void*	basePtr;
-	gx_Surf surf = 0;
+	gx_Surf *surf = 0;
 	if (roi == NULL) {
 		clip.x = clip.y = 0;
 		clip.w = src->width;
 		clip.h = src->height;
 	} else clip = *roi;
 	if ((basePtr = gx_cliprect(src, &clip))) {
-		if ((surf = (gx_Surf)malloc(sizeof(struct gx_Surf_t)))) {
+		if ((surf = (gx_Surf*)malloc(sizeof(struct gx_Surf_t)))) {
 			*surf = *src;
 			surf->basePtr = basePtr;
 			surf->flags &= ~(SURF_DELCLP | SURF_DELMEM | SURF_DELLUT);
@@ -76,19 +77,28 @@ gx_Surf gx_attachSurf(gx_Surf src, gx_Rect roi) {
 	return surf;
 }
 
-void gx_destroySurf(gx_Surf surf) {
+void gx_destroySurf(gx_Surf *surf) {
 	if (surf->clipPtr && (surf->flags & SURF_DELCLP)) free(surf->clipPtr);
 	if (surf->basePtr && (surf->flags & SURF_DELMEM)) free(surf->basePtr);
 	if (surf->clutPtr && (surf->flags & SURF_DELLUT)) free(surf->clutPtr);
 	free(surf);
 }
 
-//~ void gx_copysurf(gx_Surf dst, gx_Rect drec, gx_Surf src, gx_Rect srec);
-//~ void gx_fillrect(gx_Surf dst, gx_Rect roi, color_t col) {}
-//~ void gx_copyrect(gx_Surf dst, int x, int y, gx_Rect roi) {}
+/*void* gx_cliprect(gx_Surf surf, gx_Rect roi) {
+	gx_Clip clp = surf->clipPtr ? surf->clipPtr : (gx_Clip)surf;
+	roi->w += roi->x;
+	roi->h += roi->y;
+	if (clp->l > roi->x) roi->x = clp->l;
+	if (clp->t > roi->y) roi->y = clp->t;
+	if (clp->r < roi->w) roi->w = clp->r;
+	if (clp->b < roi->h) roi->h = clp->b;
+	if ((roi->w -= roi->x) <= 0) return 0;
+	if ((roi->h -= roi->y) <= 0) return 0;
+	return gx_getpaddr(surf, roi->x, roi->y);
+}// */
 
-void gx_copysurf1(gx_Surf dst, int x, int y, gx_Surf src, gx_Rect roi) {
-	gx_Clip clp = dst->clipPtr ? dst->clipPtr : (gx_Clip)dst;
+void gx_copysurf1(gx_Surf *dst, int x, int y, gx_Surf *src, gx_Rect *roi) {
+	gx_Clip *clp = dst->clipPtr ? dst->clipPtr : (gx_Clip*)dst;
 	struct gx_Rect_t rect;
 	char *dptr, *sptr;
 	register int tmp;
@@ -135,7 +145,7 @@ void gx_copysurf1(gx_Surf dst, int x, int y, gx_Surf src, gx_Rect roi) {
 	}
 }
 
-void gx_copysurf(gx_Surf dst, int x, int y, gx_Surf src, gx_Rect roi) {
+void gx_copysurf2(gx_Surf *dst, int x, int y, gx_Surf *src, gx_Rect *roi) {
 	struct gx_Rect_t clip;
 	char *dptr, *sptr;
 	void (*cblt)() = 0;
@@ -153,7 +163,7 @@ void gx_copysurf(gx_Surf dst, int x, int y, gx_Surf src, gx_Rect roi) {
 		if (roi->w < clip.w) clip.w = roi->w;
 		if (roi->h < clip.h) clip.h = roi->h;
 	}
-	if(clip.w <= 0 || clip.h <= 0) return;
+	//~ if(clip.w <= 0 || clip.h <= 0) return;
 	dptr = (char*)gx_cliprect(dst, &clip);
 	sptr = (char*)gx_getpaddr(src, clip.x - x, clip.y - y);
 	cblt = gx_getcbltf(cblt_conv, dst->depth, src->depth);
@@ -165,28 +175,92 @@ void gx_copysurf(gx_Surf dst, int x, int y, gx_Surf src, gx_Rect roi) {
 	}
 }
 
+int gx_copysurf(gx_Surf *dst, int x, int y, gx_Surf *src, gx_Rect *roi, cblt_mode mode) {
+	register char *dptr, *sptr;
+	register void (*cblt)();
+	struct gx_Rect_t clip;
+
+	clip.x = roi ? roi->x : 0;
+	clip.y = roi ? roi->y : 0;
+	clip.w = roi ? roi->w : src->width;
+	clip.h = roi ? roi->h : src->height;
+
+	if(!(sptr = (char*)gx_cliprect(src, &clip))) return -1;	// we have W & H
+
+	switch (mode) {
+
+		case cblt_cpy : {
+			clip.x = x; clip.y = y;
+			if(!(dptr = (char*)gx_cliprect(dst, &clip))) return -1;	// we have W & H
+			if(!(cblt = gx_getcbltf(cblt_conv, dst->depth, src->depth))) return -1;
+		} break;
+
+		case cblt_and : {
+			clip.x = x; clip.y = y;
+			if (dst->depth != src->depth) return -1;
+			if(!(dptr = (char*)gx_cliprect(dst, &clip))) return -1;	// we have W & H
+			if(!(cblt = gx_getcbltf(cblt_copy, dst->depth, cblt_and))) return -1;
+		} break;
+
+		case cblt_or  : {
+			clip.x = x; clip.y = y;
+			if (dst->depth != src->depth) return -1;
+			if(!(dptr = (char*)gx_cliprect(dst, &clip))) return -1;	// we have W & H
+			if(!(cblt = gx_getcbltf(cblt_copy, dst->depth, cblt_or))) return -1;
+		} break;
+
+		case cblt_xor : {
+			clip.x = x; clip.y = y;
+			if (dst->depth != src->depth) return -1;
+			if(!(dptr = (char*)gx_cliprect(dst, &clip))) return -1;	// we have W & H
+			if(!(cblt = gx_getcbltf(cblt_conv, dst->depth, cblt_xor))) return -1;
+		} break;
+
+		default : return -1;
+	}
+
+	while (clip.h--) {
+		gx_callcbltf(cblt, dptr, sptr, clip.w, 0);
+		dptr += dst->scanLen;
+		sptr += src->scanLen;
+	}
+
+	return 0;
+}
+
+int gx_fillsurf(gx_Surf *dst, gx_Rect *roi, cblt_mode mode, long col) {
+	register char *dptr;
+	register void (*cblt)();
+	struct gx_Rect_t clip;
+
+	clip.x = roi ? roi->x : 0;
+	clip.y = roi ? roi->y : 0;
+	clip.w = roi ? roi->w : dst->width;
+	clip.h = roi ? roi->h : dst->height;
+
+	if(!(dptr = (char*)gx_cliprect(dst, &clip))) return -1;
+	if(!(cblt = gx_getcbltf(cblt_fill, dst->depth, 0))) return 1;
+
+	while (clip.h--) {
+		gx_callcbltf(cblt, dptr, NULL, clip.w, (void*)col);
+		dptr += dst->scanLen;
+		//~ sptr += src->scanLen;
+	}
+
+	return 0;
+}
+
 extern void callcolcpy(void colcpy(void), void* dst, void* src, unsigned cnt);
 #pragma aux callcolcpy\
 		parm  [eax] [edi] [esi] [ecx]\
 		modify [eax edx ecx esi edi]\
 		value [] = "call ebx";
 
-//~ extern long mixpix(void fn(void), long col2, long col1, long alpha8);
-//~ extern void setpix(void fn(void), void* dst, long col);
-
-//~ #pragma aux setpix parm [edx] [edi] [eax] modify [edx] = "call edx";
-//~ #pragma aux mixpix parm [ebx] [eax] [edx] [ecx] modify [edx] value [eax] = "call ebx";
-//~ #pragma aux sumpix parm [ebx] [esi] [edx] [ecx] modify [edx ecx] value [eax] = "call ebx";
-
-#define bilinear
-
-void gx_zoomsurf(gx_Surf dst, gx_Rect rect, gx_Surf src, gx_Rect roi, int lin) {
+void gx_zoomsurf2(gx_Surf *dst, gx_Rect *rect, gx_Surf *src, gx_Rect *roi, int lin) {
+	long (*getpix)(gx_Surf*, long, long) = lin ? gx_getpblin : gx_getpnear;
 	struct gx_Rect_t drec, srec;
-	//~ void (*mixpfn)(void)=0;
-	//~ void (*setpfn)(void)=0;
-	long (*getpix)(gx_Surf, long, long);
-	long dx, dy, sx, sy, y;
-	char *d, *dptr;
+	long dx, dy, sx, sy, x, y;
+	char *dptr;
 	srec.x = srec.y = 0;
 	srec.w = src->width;
 	srec.h = src->height;
@@ -207,49 +281,192 @@ void gx_zoomsurf(gx_Surf dst, gx_Rect rect, gx_Surf src, gx_Rect roi, int lin) {
 		drec.w = dst->width;
 		drec.h = dst->height;
 	} else drec = *rect;
-	/*switch (dst->depth) {
-		extern void setpix_32(void);
-		extern void setpix_24(void);
-		extern void setpix_16(void);
-		extern void setpix_08(void);
-
-		case 32 : setpfn = setpix_32; break;
-		case 24 : setpfn = setpix_24; break;
-		case 16 : setpfn = setpix_16; break;
-		case  8 : setpfn = setpix_08; break;
-		default : return;
-	}*/
 	if (drec.w <= 0 || drec.h <= 0) return;
 	if (srec.w <= 0 || srec.h <= 0) return;
 	if (!(dptr = (char*)gx_cliprect(dst, &drec))) return;
-	dx = (srec.w - 1 << 16) / drec.w;
-	dy = (srec.h - 1 << 16) / drec.h;
+	dx = ((srec.w - 1) << 16) / drec.w;
+	dy = ((srec.h - 1) << 16) / drec.h;
 
-	if (dx & 0xfffe0000 || dy & 0xfffe0000) {
-		getpix = gx_getpnlin;
+	if (dx & 0xfffe0000 || dy & 0xfffe0000) {	// here we have some problems
+		//~ char tmpbuff[65535];
+		getpix = gx_getpnear;
 	}
-	else getpix = lin ? gx_getpnlin : gx_getpnear;
 
-	for (y=0,sy = srec.y << 16; drec.h; --drec.h,++y) {
-		long x = 0;
-		for (d = dptr, sx = srec.x << 16; x < drec.w; ++x) {
-			//~ long c00 = gx_getpnear(src, sx, sy);
-			//~ long c00 = getpix(src, sx, sy);
-			//~ setpix(setpfn, d, getpix(src, sx, sy));
-			gx_setpixel(dst, sx >> 16, sy >> 16, getpix(src, sx, sy));
-			d += dst->pixeLen; sx += dx;
+	for (y = 0, sy = srec.y << 16; y < drec.h; ++y, sy += dy) {
+		register long *ptr = (long *)dptr; dptr += dst->scanLen;
+		for (x = 0, sx = srec.x << 16; x < drec.w; ++x, sx += dx) {
+			*ptr++ = getpix(src, sx, sy);
+			gx_setpixel(dst, x, y, getpix(src, sx, sy));
 		}
-		dptr += dst->scanLen; sy += dy;
 	}
 }
 
-void gx_drawCurs(gx_Surf dst, int x, int y, gx_Surf cur, int hide) {
+inline argb mix2(argb p1, argb p2, long l) {
+	p1.r += (l * (p2.r - p1.r)) >> 16;
+	p1.g += (l * (p2.g - p1.g)) >> 16;
+	p1.b += (l * (p2.b - p1.b)) >> 16;
+	return p1;
+}
+
+inline argb mix4(argb p1, argb p2, argb p3, argb p4, long lx, long ly) {
+	return mix2(mix2(p1, p2, lx), mix2(p3, p4, lx), ly);
+}
+
+void gx_zoomsurf(gx_Surf *dst, gx_Rect *rect, gx_Surf *src, gx_Rect *roi, int lin) {
+	struct gx_Rect_t drec, srec;
+	long dx, dy, sx, sy, x, y;
+	char *dln, *sln;
+
+	if (roi == 0) {
+		srec.x = srec.y = 0;
+		srec.w = src->width;
+		srec.h = src->height;
+	} else srec = *roi;
+
+	if (rect == 0) {
+		drec.x = drec.y = 0;
+		drec.w = dst->width;
+		drec.h = dst->height;
+	} else drec = *rect;
+
+	if (!(dln = (char*)gx_cliprect(dst, &drec))) return;
+	if (!(sln = (char*)gx_cliprect(src, &srec))) return;
+
+	dx = ((srec.w - 1) << 16) / drec.w;
+	dy = ((srec.h - 1) << 16) / drec.h;
+	//~ #define xxkhk 0XFFFF0000
+	#define xxkhk 0XFFFE0000
+	if (lin == 0) {
+		for (y = 0, sy = 0; y < drec.h; ++y) {
+			long *spx = (long *)sln;
+			long *dpx = (long *)dln;
+			for (x = 0, sx = srec.x << 16; x < drec.w; ++x, sx += dx) {
+				*dpx++ = spx[sx >> 16];
+			}
+			dln += dst->scanLen;
+			if ((sy += dy) & 0xffff0000) {
+				sln += (sy >> 16) * src->scanLen;
+				sy &= 0x0000ffff;
+			}
+		}
+	}
+	else if (dx & xxkhk && dy & xxkhk) {
+		int i, j, cnt = (dx >> 16) * (dy >> 16);
+		//~ return;
+		for (y = sy = 0; y < drec.h; ++y) {
+			argb *dpx = (argb*)dln;
+			argb *sum = (argb*)sln;
+
+			for (x = 0, sx = srec.x << 16; x < drec.w; ++x, sx += dx, dpx++) {
+				char *lns = (char *)&sum[sx >> 16];
+				long r = 0, g = 0, b = 0;
+				for (j = 0; j < dy >> 16; j++) {
+					argb *spx = (argb *)lns;
+					for (i = 0; i < dx >> 16; i++) {
+						r += spx->r;
+						g += spx->g;
+						b += spx->b;
+						spx++;
+					}
+					lns += src->scanLen;
+				}
+				dpx->r = r / cnt;
+				dpx->g = g / cnt;
+				dpx->b = b / cnt;
+				//~ *dpx = sum[sx >> 16];
+			}
+			dln += dst->scanLen;
+			if ((sy += dy) & 0xffff0000) {
+				sln += (sy >> 16) * src->scanLen;
+				sy &= 0x0000ffff;
+			}
+		}
+	}
+	else if (dx & xxkhk) {
+		int i, len = (dx >> 16) + 3;
+		//~ return;
+		for (y = sy = 0; y < drec.h; ++y) {
+			argb *dpx = (argb*)dln;
+			argb *sum = (argb*)sln;
+			for (x = 0, sx = srec.x << 16; x < drec.w; ++x, sx += dx) {
+				argb *ln1 = (argb *)&sum[sx >> 16];
+				argb *ln2 = (argb *)((char*)ln1 + src->scanLen);
+				argb col;
+				long r = 0, g = 0, b = 0;
+				for (i = 0; i < len; i++, ln1++, ln2++) {
+					col = mix2(ln1[0], ln2[0], sy & 0xffff);
+					r += col.r; g+= col.g; b += col.b;
+				}
+				col.r = r / len;
+				col.g = g / len;
+				col.b = b / len;
+				//~ col = mix2(col, mix2(ln1[0], ln2[0], sy & 0xffff), sx & 0xffff);
+				//~ dpx->r = r / len;
+				//~ dpx->g = g / len;
+				//~ dpx->b = b / len;
+				*dpx++ = col;
+			}
+			dln += dst->scanLen;
+			if ((sy += dy) & 0xffff0000) {
+				sln += (sy >> 16) * src->scanLen;
+				sy &= 0x0000ffff;
+			}
+		}
+	}
+	else if (dy & xxkhk) {
+		int i, len = dy >> 16;
+		//~ return;
+		for (y = 0, sy = srec.y << 16; y < drec.h; ++y, sy += dy) {
+			register unsigned long *sptr = gx_getpaddr(src, srec.x, sy >> 16);
+			register argb *d = (argb *)dln;
+			for (x = 0, sx = srec.x << 16; x < drec.w; ++x, sx += dx) {
+				argb *ln1 = (argb *)&sptr[sx >> 16];
+				long r = 0, g = 0, b = 0;
+				for (i = 0; i < len; i++) {
+					argb c = mix2(ln1[0], ln1[1], sx & 0xffff);
+					ln1 = (argb *)((char*)ln1 + src->scanLen);
+					r += c.r; g+= c.g; b += c.b;
+				}
+				d->r = r / len;
+				d->g = g / len;
+				d->b = b / len;
+				d++;
+			}
+			dln += dst->scanLen;
+		}
+	}
+	else for (y = sy = 0; y < drec.h; ++y) {
+		argb *dpx = (argb *)dln;
+		//~ return;
+		for (x = 0, sx = srec.x << 16; x < drec.w; ++x, sx += dx) {
+			argb *ln1 = &((argb *)sln)[sx >> 16];
+			argb *ln2 = (argb *)((char*)ln1 + src->scanLen);
+			*dpx++ = mix4(ln1[0], ln1[1], ln2[0], ln2[1], sx & 0xffff, sy & 0xffff);
+		}
+		dln += dst->scanLen;
+		if ((sy += dy) & 0xffff0000) {
+			sln += (sy >> 16) * src->scanLen;
+			sy &= 0x0000ffff;
+		}
+	}// */
+
+	/*for (y = 0, sy = srec.y << 16; y < drec.h; ++y, sy += dy) {
+		register long *ptr = (long *)dptr; dptr += dst->scanLen;
+		for (x = 0, sx = srec.x << 16; x < drec.w; ++x, sx += dx) {
+			*ptr++ = getpix(src, sx, sy);
+			gx_setpixel(dst, x, y, getpix(src, sx, sy));
+		}
+	}// */
+
+}
+
+void gx_drawCurs(gx_Surf *dst, int x, int y, gx_Surf *cur, int hide) {
 	char *d, *s, *dptr, *sptr, tmp[32*32*4];		// 4096 bytes
 	struct gx_Rect_t clp;
 	void (*rdbfn)();
 	void (*wtbfn)();
 
-	if (cur->flags & SURF_ID_GET != SURF_ID_CUR) return;
+	if (cur->flags && SURF_ID_GET != SURF_ID_CUR) return;
 
 	rdbfn = gx_getcbltf(cblt_conv, 32, dst->depth);
 	wtbfn = gx_getcbltf(cblt_conv, dst->depth, 32);
@@ -285,8 +502,8 @@ void gx_drawCurs(gx_Surf dst, int x, int y, gx_Surf cur, int hide) {
 //~ void gx_copySurf();
 //~ void gx_copyRect();
 
-int  gx_loadFNT(gx_Surf dst, const char* fontfile) {
-	gx_Llut lut;
+int  gx_loadFNT(gx_Surf *dst, const char* fontfile) {
+	gx_Llut *lut;
 	char tmp[4096], *ptr;
 	int fsize, i;
 	FILE *fin = fopen(fontfile, "rb");
@@ -314,7 +531,7 @@ int  gx_loadFNT(gx_Surf dst, const char* fontfile) {
 		ptr[6] = (tmp[i] & 0X02) ? 255 : 0;
 		ptr[7] = (tmp[i] & 0X01) ? 255 : 0;
 	}
-	lut = (gx_Llut)dst->clutPtr;
+	lut = (gx_Llut*)dst->clutPtr;
 	lut->max_w = 8;
 	lut->max_h = fsize >> 8;
 	fsize = lut->max_w * lut->max_h;
@@ -341,8 +558,8 @@ int  gx_loadFNT(gx_Surf dst, const char* fontfile) {
 	return 0;
 }
 
-void gx_drawChar1(gx_Surf dst, int x, int y, gx_Surf fnt, char chr, long col) {
-	gx_Llut  lut = (gx_Llut)fnt->clutPtr;
+void gx_drawChar1(gx_Surf *dst, int x, int y, gx_Surf *fnt, char chr, long col) {
+	gx_Llut *lut = (gx_Llut*)fnt->clutPtr;
 	//struct gx_Surf_t face = *fnt;
 	struct gx_Rect_t clip;
 	char *dptr, *sptr=0;
@@ -372,8 +589,8 @@ void gx_drawChar1(gx_Surf dst, int x, int y, gx_Surf fnt, char chr, long col) {
 	
 }
 
-void gx_drawChar(gx_Surf dst, int x, int y, gx_Surf fnt, char chr, long col) {
-	struct gx_FDIR face = (*(gx_Llut)fnt->clutPtr).data[(unsigned)chr];
+void gx_drawChar(gx_Surf *dst, int x, int y, gx_Surf *fnt, char chr, long col) {
+	struct gx_FDIR face = (*(gx_Llut*)fnt->clutPtr).data[(unsigned)chr];
 	struct gx_Rect_t clip;
 	void (*cblt)() = 0;
 	char *dptr, *sptr;
@@ -402,11 +619,38 @@ void gx_drawChar(gx_Surf dst, int x, int y, gx_Surf fnt, char chr, long col) {
 	}
 }
 
-void gx_drawText(gx_Surf dst, int x, int y, gx_Surf fnt, const char *str, long col) {
+void gx_clipText(gx_Rect *roi, gx_Surf *fnt, const char *str) {
+	struct gx_FDIR face;
+	int H = 0, W = 0;
+	roi->w = 0;
+	roi->h = 0;
+	while (*str) {
+		unsigned chr = *str++;
+		face = (*(gx_Llut*)fnt->clutPtr).data[chr];
+		if (H < face.height) H = face.height;
+		switch (*str) {
+			//~ case '\r': str += str[1] == '\n';
+			case '\n': roi->h += H; W = 0; break;
+
+			//~ case '\t': wln += 8; break;
+
+			default:
+				face = (*(gx_Llut*)fnt->clutPtr).data[chr];
+				W += face.width;
+		}
+
+		if (roi->w < W)
+			roi->w = W;
+		if (roi->h < H)
+			roi->h = H;
+	}
+}
+
+void gx_drawText(gx_Surf *dst, int x, int y, gx_Surf *fnt, const char *str, long col) {
 	char chr;
 	while ((chr = *str++)) {
 		gx_drawChar(dst, x, y, fnt, chr, col);
-		x += ((gx_Llut)fnt->clutPtr)->data[(unsigned)chr].width;
+		x += ((gx_Llut*)fnt->clutPtr)->data[(unsigned)chr].width;
 	}
 }
 

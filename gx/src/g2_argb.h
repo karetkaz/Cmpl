@@ -1,7 +1,7 @@
 #ifndef __Color_Space_h
 #define __Color_Space_h
 
-#include "gx_surf.h"
+#include "g2_surf.h"
 
 typedef enum {				// ARGB Mask
 	argb_bchn = 0x000001,		// Blue Channel
@@ -18,6 +18,7 @@ typedef enum {				// ARGB Mask
 } argb_chns;
 
 typedef union {				// ARGB color structutre
+	unsigned long val;
 	unsigned long col;
 	struct {
 		unsigned char	b;

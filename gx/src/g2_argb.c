@@ -1,7 +1,7 @@
 #include <math.h>
 #include <string.h>
-#include "gx_surf.h"
-#include "gx_color.h"
+#include "g2_surf.h"
+#include "g2_argb.h"
 #include "libs/fixed/fixed.h"
 #include "libs/fixed/fxp3d.h"
 #pragma library (libfixed);
@@ -280,11 +280,7 @@ static argb amix_ams(argb dst, argb src, unsigned alpha) {	//X blend with alpha 
 }*/
 
 //##############################################################################
-static argb mask_chn(argb dst, argb src, unsigned cmask) {	// mask channels
-	register argb tmp;
-	tmp.col = ((dst.col & ~cmask) | (src.col & cmask));
-	return tmp;
-}
+static argb mask_chn(argb dst, argb src, unsigned cmask);	// mask channels
 
 #if defined __WATCOMC__
 #pragma aux mask_chn parm [eax] [edx] [ecx] modify [edx ecx] value [eax] = \
@@ -292,6 +288,12 @@ static argb mask_chn(argb dst, argb src, unsigned cmask) {	// mask channels
 	"not	ecx"\
 	"and	eax, ecx"\
 	"or	eax, edx";
+#else
+static argb mask_chn(argb dst, argb src, unsigned cmask) {	// mask channels
+	register argb tmp;
+	tmp.col = ((dst.col & ~cmask) | (src.col & cmask));
+	return tmp;
+}
 #endif
 
 //}
@@ -1180,7 +1182,6 @@ void draw_rect(gx_Surf dst, gx_Rect rec, long c) {
 	int x1 = rec->w + x0;
 	int y1 = rec->h + y0;
 	void *tmp = dst->movePtr;
-	gx_initdraw(dst, rop2_xor);
 	gx_vline(dst, x0, y0, y1, c);
 	gx_vline(dst, x1, y0, y1, c);
 	gx_hline(dst, x0, y0, x1, c);

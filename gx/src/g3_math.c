@@ -1,5 +1,7 @@
 #include <math.h>
 
+//~ typedef float scalar;
+
 /*
 typedef union color8_t {				// bool vect || byte vect || argb
 	unsigned long val;
@@ -63,7 +65,7 @@ typedef struct camera_t {
 	vector	dirU;			// camera up direction
 	vector	dirF;			// camera forward direction
 	vector	pos;			// camera Location
-	scalar	zoom;			// aspect;
+	scalar	zoom;			// , aspect;
 } camera, *camera_p;
 
 typedef enum {				// swizzle
@@ -99,17 +101,17 @@ typedef enum {				// swizzle
 	xzzw = 0xe8, yzzw = 0xe9, zzzw = 0xea, wzzw = 0xeb, xwzw = 0xec, ywzw = 0xed, zwzw = 0xee, wwzw = 0xef, 
 	xxww = 0xf0, yxww = 0xf1, zxww = 0xf2, wxww = 0xf3, xyww = 0xf4, yyww = 0xf5, zyww = 0xf6, wyww = 0xf7, 
 	xzww = 0xf8, yzww = 0xf9, zzww = 0xfa, wzww = 0xfb, xwww = 0xfc, ywww = 0xfd, zwww = 0xfe, wwww = 0xff
-} vec_swz;
+} vswzop;
 
 typedef enum {				// compare
-	GX_CMP_EQ = 0,
-	GX_CMP_LT = 1,
-	GX_CMP_LE = 2,
+	vcmpEQ = 0,
+	vcmpLT = 1,
+	vcmpLE = 2,
 	//~ GX_CMP_SD = 3,
-	GX_CMP_NE = 4,
-	GX_CMP_GE = 5,
-	GX_CMP_GT = 6
-} vec_cmp;
+	vcmpNE = 4,
+	vcmpGE = 5,
+	vcmpGT = 6
+} vcmpop;
 
 //#################################  COLOR8  ###################################
 /*//{
@@ -242,11 +244,27 @@ argb argbovr(argb lhs, argb rhs) {
 //} */
 //#################################  VECTOR  ###################################
 
-inline vecptr vecldf(vecptr dst, float x, float y, float z, float w) {
-	dst->x = scaldf(x);
-	dst->y = scaldf(y);
-	dst->z = scaldf(z);
-	dst->w = scaldf(w);
+inline vecptr veclds(vecptr dst, scalar s) {
+	dst->x = s;
+	dst->y = s;
+	dst->z = s;
+	dst->w = s;
+	return dst;
+}
+
+inline vecptr vecldf(vecptr dst, scalar x, scalar y, scalar z, scalar w) {
+	dst->x = x;
+	dst->y = y;
+	dst->z = z;
+	dst->w = w;
+	return dst;
+}
+
+inline vecptr vecld4(vecptr dst, vecptr xyz, scalar w) {
+	dst->x = xyz->x;
+	dst->y = xyz->y;
+	dst->z = xyz->z;
+	dst->w = w;
 	return dst;
 }
 
@@ -256,7 +274,7 @@ inline vecptr veccpy(vecptr dst, vecptr src) {
 	dst->z = src->z;
 	dst->w = src->w;
 	return dst;
-}
+}// */
 
 inline vecptr vecneg(vecptr dst, vecptr src) {
 	dst->x = -src->x;
@@ -283,23 +301,23 @@ inline vecptr vecrcp(vecptr dst, vecptr src) {
 }
 
 inline vecptr vecsat(vecptr dst, vecptr src) {
-	if (src->x > sconst(1)) dst->x = sconst(1); else if (src->x < 0) dst->x = 0; else dst->x = src->x;
-	if (src->y > sconst(1)) dst->y = sconst(1); else if (src->y < 0) dst->y = 0; else dst->y = src->y;
-	if (src->z > sconst(1)) dst->z = sconst(1); else if (src->z < 0) dst->z = 0; else dst->z = src->z;
-	if (src->w > sconst(1)) dst->w = sconst(1); else if (src->w < 0) dst->w = 0; else dst->w = src->w;
+	if (src->x > 1) dst->x = 1; else if (src->x < 0) dst->x = 0; else dst->x = src->x;
+	if (src->y > 1) dst->y = 1; else if (src->y < 0) dst->y = 0; else dst->y = src->y;
+	if (src->z > 1) dst->z = 1; else if (src->z < 0) dst->z = 0; else dst->z = src->z;
+	if (src->w > 1) dst->w = 1; else if (src->w < 0) dst->w = 0; else dst->w = src->w;
 	return dst;
 }
 
 inline scalar vecdp3(vecptr lhs, vecptr rhs) {
-	return scamul(lhs->x, rhs->x) + scamul(lhs->y, rhs->y) + scamul(lhs->z, rhs->z);
+	return lhs->x * rhs->x + lhs->y * rhs->y + lhs->z * rhs->z;
 }
 
 inline scalar vecdph(vecptr lhs, vecptr rhs) {
-	return scamul(lhs->x, rhs->x) + scamul(lhs->y, rhs->y) + scamul(lhs->z, rhs->z) + lhs->w;
+	return lhs->x * rhs->x + lhs->y * rhs->y + lhs->z * rhs->z + lhs->w;
 }
 
 inline scalar vecdp4(vecptr lhs, vecptr rhs) {
-	return scamul(lhs->x, rhs->x) + scamul(lhs->y, rhs->y) + scamul(lhs->z, rhs->z) + scamul(lhs->w, rhs->w);
+	return lhs->x * rhs->x + lhs->y * rhs->y + lhs->z * rhs->z + lhs->w * rhs->w;
 }
 
 inline vecptr vecmin(vecptr dst, vecptr lhs, vecptr rhs) {
@@ -335,33 +353,33 @@ inline vecptr vecsub(vecptr dst, vecptr lhs, vecptr rhs) {
 }
 
 inline vecptr vecmul(vecptr dst, vecptr lhs, vecptr rhs) {
-	dst->x = scamul(lhs->x, rhs->x);
-	dst->y = scamul(lhs->y, rhs->y);
-	dst->z = scamul(lhs->z, rhs->z);
-	dst->w = scamul(lhs->w, rhs->w);
+	dst->x = lhs->x * rhs->x;
+	dst->y = lhs->y * rhs->y;
+	dst->z = lhs->z * rhs->z;
+	dst->w = lhs->w * rhs->w;
 	return dst;
 }
 
 inline vecptr veccrs(vecptr dst, vecptr lhs, vecptr rhs) {
 	vector tmp;
-	//~ if (src == dst) src = veccpy(&tmp, src);
-	tmp.x = scamul(lhs->y, rhs->z) - scamul(lhs->z, rhs->y);
-	tmp.y = scamul(lhs->z, rhs->x) - scamul(lhs->x, rhs->z);
-	tmp.z = scamul(lhs->x, rhs->y) - scamul(lhs->y, rhs->x);
-	return veccpy(dst, &tmp);
+	tmp.x = lhs->y * rhs->z - lhs->z * rhs->y;
+	tmp.y = lhs->z * rhs->x - lhs->x * rhs->z;
+	tmp.z = lhs->x * rhs->y - lhs->y * rhs->x;
+	return *dst = tmp, dst;
 }
 
 inline vecptr vecsca(vecptr dst, vecptr lhs, scalar rhs) {
-	dst->x = scamul(lhs->x, rhs);
-	dst->y = scamul(lhs->y, rhs);
-	dst->z = scamul(lhs->z, rhs);
-	dst->w = scamul(lhs->w, rhs);
+	dst->x = lhs->x * rhs;
+	dst->y = lhs->y * rhs;
+	dst->z = lhs->z * rhs;
+	dst->w = lhs->w * rhs;
 	return dst;
 }
 
-inline vecptr vecswz(vecptr dst, vecptr src, vec_swz swz) {
+inline vecptr vecswz(vecptr dst, vecptr src, vswzop swz) {
 	vector tmp;
-	if (src == dst) src = veccpy(&tmp, src);
+	if (src == dst)
+		tmp = *src, src = &tmp;
 	dst->x = src->v[(swz >> 0) & 3]; 
 	dst->y = src->v[(swz >> 2) & 3]; 
 	dst->z = src->v[(swz >> 4) & 3]; 
@@ -369,42 +387,75 @@ inline vecptr vecswz(vecptr dst, vecptr src, vec_swz swz) {
 	return dst;
 }
 
-inline scalar vecnrm(vecptr dst, vecptr src) {
+inline vecptr vecnrm(vecptr dst, vecptr src) {
 	scalar len = vecdp3(src, src);
-	if (len) vecsca(dst, src, 1 / scasqrt(len));
-	else dst->x = dst->y = dst->z = dst->w = 0;
-	return len;
+	if (len) len = 1. / sqrt(len);
+	dst->x = src->x * len;
+	dst->y = src->y * len;
+	dst->z = src->z * len;
+	dst->w = src->w * len;
+	return dst;
 }
+
+/*inline vecptr vecHCS(vecptr dst, vecptr src) {
+	scalar len = src->w;
+	if (len) len = 1. / len;
+	dst->x *= len;
+	dst->y *= len;
+	dst->z *= len;
+	dst->w *= len;
+	return dst;
+}*/
 
 //~ inline vecptr vecMOV(vecptr dst, vecptr src, int how);
 
-//? inline vecptr vecABS(vecptr dst, vecptr src);	| a |						// max(-src, src)
+//? inline vecptr vecABS(vecptr dst, vecptr src);	| a |		// max(-src, src)
 //+ inline vecptr vecRCP(vecptr dst, vecptr src);	1 / a
-//~ inline vecptr vecRSQ(vecptr dst, vecptr src);								// <=> vecPOW(dst, src, <-1/2, -1/2, -1/2, -1/2>)
+//~ inline vecptr vecRSQ(vecptr dst, vecptr src);			// <=> vecPOW(dst, src, <-1/2, -1/2, -1/2, -1/2>)
 
-//? inline vecptr vecFLR(vecptr dst, vecptr src);
+//? inline vecptr vecFLR(vecptr dst, vecptr src);		//
 //? inline vecptr vecFRC(vecptr dst, vecptr src);
 
 //+ inline vecptr vecSIN(vecptr dst, vecptr src);
 //+ inline vecptr vecCOS(vecptr dst, vecptr src);
 //+ inline vecptr vecLG2(vecptr dst, vecptr src);
 //+ inline vecptr vecEX2(vecptr dst, vecptr src);
-
-//? inline vecptr vecPOW(vecptr dst, vecptr lhs, vecptr rhs);					// Exp2(rhs * Log2(lhs))
+//? inline vecptr vecPOW(vecptr dst, vecptr lhs, vecptr rhs);				// Exp2(rhs * Log2(lhs))
 //+ inline vecptr vecLRP(vecptr dst, vecptr lhs, vecptr rhs, vecptr cnt);		// lhs*(cnt) + rhs*(1-cnt)
 
 //~ inline vecptr vecLIT(vecptr dst, ???);
 
-//? inline vecptr vecCMP(vecptr dst, vecptr lhs, vecptr rhs, int how);			// min/max/sge/slt
-//~ inline vecptr vecMAX(vecptr dst, vecptr lhs, vecptr rhs);	// set \lt
-//~ inline vecptr vecMIN(vecptr dst, vecptr lhs, vecptr rhs);	// set \ge
-//~ inline vecptr vecSGE(vecptr dst, vecptr lhs, vecptr rhs);	// set \ge
-//~ inline vecptr vecSLT(vecptr dst, vecptr lhs, vecptr rhs);	// set \lt
+//~ inline vecptr vecMAX(vecptr dst, vecptr lhs, vecptr rhs);	// dst.* = lhs.* >= rhs.* ? lhs.* : rhs.*
+//~ inline vecptr vecMIN(vecptr dst, vecptr lhs, vecptr rhs);	// dst.* = lhs.* < rhs.* ? lhs.* : rhs.*
+//~ inline vecptr vecSGE(vecptr dst, vecptr lhs, vecptr rhs);	// dst.* = lhs.* >= rhs.* ? 0 : 1
+//~ inline vecptr vecSLT(vecptr dst, vecptr lhs, vecptr rhs);	// dst.* = lhs.* < rhs.* ? 0 : 1
 
 //~ inline vecptr vecMAD(vecptr dst, vecptr src, vecptr mul, vecptr add);
 
-/*
+inline argb vecrgb(vecptr src) {
+	argb res;
+	//~ res.a = src->a < 0 ? 0 : src->a > 1 ? 255 : (src->a * 255);
+	res.r = src->r < 0 ? 0 : src->r > 1 ? 255 : (src->r * 255);
+	res.g = src->g < 0 ? 0 : src->g > 1 ? 255 : (src->g * 255);
+	res.b = src->b < 0 ? 0 : src->b > 1 ? 255 : (src->b * 255);
+	return res;
+}
 
+inline vecptr vecrfl(vecptr dst, vecptr dir, vecptr nrm) {	// reflect
+	return vecsub(dst, dir, vecsca(dst, nrm, 2 * vecdp3(nrm, dir)));
+}// */
+
+inline scalar vecpev(vecptr pol, scalar val) {
+	return ((((pol->w) * val + pol->z) * val + pol->y) * val) + pol->x;
+}
+
+inline scalar veclen(vecptr src) {
+	return sqrt(vecdp3(src, src));
+}
+
+//~ inline vecptr vecrfr(vecptr dst, vecptr dir, vecptr nrm);	// refract
+
+/*
 inline long veccmp(vecptr lhs, vecptr rhs, vec_cmp cmp) {
 	union {
 		long val;
@@ -446,39 +497,18 @@ vecptr vecldc(vecptr dst, argb col) {
 	return dst;
 }
 
-argb vecrgb(vecptr src) {
-	argb res;
-	res.b = src->b < sconst(0) ? 0 : src->b > sconst(1) ? 255 : scatoi(src->b * sconst(255));
-	res.g = src->g < sconst(0) ? 0 : src->g > sconst(1) ? 255 : scatoi(src->g * sconst(255));
-	res.r = src->r < sconst(0) ? 0 : src->r > sconst(1) ? 255 : scatoi(src->r * sconst(255));
-	res.a = src->a < sconst(0) ? 0 : src->a > sconst(1) ? 255 : scatoi(src->a * sconst(255));
-	return res;
-}
-
 scalar vecdp2(vecptr lhs, vecptr rhs) {
 	return lhs->x * rhs->x + lhs->y * rhs->y;
-}
-
-inline scalar vecdp2(vecptr lhs, vecptr rhs) {
-	return scamul(lhs->x, rhs->x) + scamul(lhs->y, rhs->y);
 }
 
 */
 
 //#################################  MATRIX  ###################################
 matptr matidn(matptr dst) {
-	dst->m11 = sconst(1); dst->m12 = 0; dst->m13 = 0; dst->m14 = 0;
-	dst->m21 = 0; dst->m22 = sconst(1); dst->m23 = 0; dst->m24 = 0;
-	dst->m31 = 0; dst->m32 = 0; dst->m33 = sconst(1); dst->m34 = 0;
-	dst->m41 = 0; dst->m42 = 0; dst->m43 = 0; dst->m44 = sconst(1);
-	return dst;
-}
-
-matptr matcpy(matptr dst, matptr src) {
-	veccpy(&dst->x, &src->x);
-	veccpy(&dst->y, &src->y);
-	veccpy(&dst->z, &src->z);
-	veccpy(&dst->w, &src->w);
+	dst->m11 = 1; dst->m12 = 0; dst->m13 = 0; dst->m14 = 0;
+	dst->m21 = 0; dst->m22 = 1; dst->m23 = 0; dst->m24 = 0;
+	dst->m31 = 0; dst->m32 = 0; dst->m33 = 1; dst->m34 = 0;
+	dst->m41 = 0; dst->m42 = 0; dst->m43 = 0; dst->m44 = 1;
 	return dst;
 }
 
@@ -512,10 +542,10 @@ matptr matmul(matptr dst, matptr lhs, matptr rhs) {
 	for(row = 0; row < 4; ++row) {
 		for(col = 0; col < 4; ++col) {
 			tmp.m[row][col] = \
-				scamul(lhs->m[row][0], rhs->m[0][col])+
-				scamul(lhs->m[row][1], rhs->m[1][col])+
-				scamul(lhs->m[row][2], rhs->m[2][col])+
-				scamul(lhs->m[row][3], rhs->m[3][col]);
+				lhs->m[row][0] * rhs->m[0][col]+
+				lhs->m[row][1] * rhs->m[1][col]+
+				lhs->m[row][2] * rhs->m[2][col]+
+				lhs->m[row][3] * rhs->m[3][col];
 		}
 	}
 	*dst = tmp;
@@ -525,17 +555,18 @@ matptr matmul(matptr dst, matptr lhs, matptr rhs) {
 vecptr matvp3(vecptr dst, matptr mat, vecptr src) {
 	vector tmp;
 	if (src == dst)
-		src = veccpy(&tmp, src);
+		tmp = *src, src = &tmp;
 	dst->x = vecdp3(&mat->x, src);
 	dst->y = vecdp3(&mat->y, src);
 	dst->z = vecdp3(&mat->z, src);
+	dst->w = 1;//vecdp3(&mat->w, src);
 	return dst;
 }
 
 vecptr matvp4(vecptr dst, matptr mat, vecptr src) {
 	vector tmp;
 	if (src == dst)
-		src = veccpy(&tmp, src);
+		tmp = *src, src = &tmp;
 	dst->x = vecdp4(&mat->x, src);
 	dst->y = vecdp4(&mat->y, src);
 	dst->z = vecdp4(&mat->z, src);
@@ -546,21 +577,22 @@ vecptr matvp4(vecptr dst, matptr mat, vecptr src) {
 vecptr matvph(vecptr dst, matptr mat, vecptr src) {
 	vector tmp;
 	if (src == dst)
-		src = veccpy(&tmp, src);
+		tmp = *src, src = &tmp;
 	dst->x = vecdph(&mat->x, src);
 	dst->y = vecdph(&mat->y, src);
 	dst->z = vecdph(&mat->z, src);
+	dst->w = vecdph(&mat->w, src);
 	return dst;
 }
 
-matptr matldf(matptr dst, float _11, float _12, float _13, float _14\
-						, float _21, float _22, float _23, float _24\
-						, float _31, float _32, float _33, float _34\
-						, float _41, float _42, float _43, float _44) {
-	dst->m11 = scaldf(_11); dst->m12 = scaldf(_12); dst->m13 = scaldf(_13); dst->m14 = scaldf(_14);
-	dst->m21 = scaldf(_21); dst->m22 = scaldf(_22); dst->m23 = scaldf(_23); dst->m24 = scaldf(_24);
-	dst->m31 = scaldf(_31); dst->m32 = scaldf(_32); dst->m33 = scaldf(_33); dst->m34 = scaldf(_34);
-	dst->m41 = scaldf(_41); dst->m42 = scaldf(_42); dst->m43 = scaldf(_43); dst->m44 = scaldf(_44);
+matptr matldf(matptr dst, scalar _11, scalar _12, scalar _13, scalar _14\
+			, scalar _21, scalar _22, scalar _23, scalar _24\
+			, scalar _31, scalar _32, scalar _33, scalar _34\
+			, scalar _41, scalar _42, scalar _43, scalar _44) {
+	dst->m11 = _11; dst->m12 = _12; dst->m13 = _13; dst->m14 = _14;
+	dst->m21 = _21; dst->m22 = _22; dst->m23 = _23; dst->m24 = _24;
+	dst->m31 = _31; dst->m32 = _32; dst->m33 = _33; dst->m34 = _34;
+	dst->m41 = _41; dst->m42 = _42; dst->m43 = _43; dst->m44 = _44;
 	//~ dst->m11 = _11; dst->m12 = _12; dst->m13 = _13; dst->m14 = _14;
 	//~ dst->m21 = _21; dst->m22 = _22; dst->m23 = _23; dst->m24 = _24;
 	//~ dst->m31 = _31; dst->m32 = _32; dst->m33 = _33; dst->m34 = _34;
@@ -571,37 +603,37 @@ matptr matldf(matptr dst, float _11, float _12, float _13, float _14\
 matptr matldR(matptr dst, vecptr dir, scalar ang) {
 	vector tmp;
 	scalar xx, yy, zz, xy, yz, xz;
-	scalar sin_t = scasin(ang);
-	scalar cos_t = scacos(ang);
-	scalar one_c = sconst(1) - cos_t;
+	scalar sin_t = sin(ang);
+	scalar cos_t = cos(ang);
+	scalar one_c = 1 - cos_t;
 	vecsca(&tmp, dir, sin_t);
 
-	xx = scamul(dir->x, dir->x);
-	yy = scamul(dir->y, dir->y);
-	zz = scamul(dir->z, dir->z);
-	xy = scamul(dir->x, dir->y);
-	xz = scamul(dir->x, dir->z);
-	yz = scamul(dir->y, dir->z);
+	xx = dir->x * dir->x;
+	yy = dir->y * dir->y;
+	zz = dir->z * dir->z;
+	xy = dir->x * dir->y;
+	xz = dir->x * dir->z;
+	yz = dir->y * dir->z;
 
-	dst->xx = scamul(one_c, xx) + cos_t;
-	dst->xy = scamul(one_c, xy) - tmp.z;
-	dst->xz = scamul(one_c, xz) + tmp.y;
-	dst->xt = sconst(0);
+	dst->xx = one_c * xx + cos_t;
+	dst->xy = one_c * xy - tmp.z;
+	dst->xz = one_c * xz + tmp.y;
+	dst->xt = 0;
 
-	dst->yx = scamul(one_c, xy) + tmp.z;
-	dst->yy = scamul(one_c, yy) + cos_t;
-	dst->yz = scamul(one_c, yz) - tmp.x;
-	dst->yt = sconst(0);
+	dst->yx = one_c * xy + tmp.z;
+	dst->yy = one_c * yy + cos_t;
+	dst->yz = one_c * yz - tmp.x;
+	dst->yt = 0;
 
-	dst->zx = scamul(one_c, xz) - tmp.y;
-	dst->zy = scamul(one_c, yz) + tmp.x;
-	dst->zz = scamul(one_c, zz) + cos_t;
-	dst->zt = sconst(0);
+	dst->zx = one_c * xz - tmp.y;
+	dst->zy = one_c * yz + tmp.x;
+	dst->zz = one_c * zz + cos_t;
+	dst->zt = 0;
 
-	dst->wx = sconst(0);
-	dst->wy = sconst(0);
-	dst->wz = sconst(0);
-	dst->wt = sconst(1);
+	dst->wx = 0;
+	dst->wy = 0;
+	dst->wz = 0;
+	dst->wt = 1;
 	return dst;
 }
 
@@ -627,20 +659,10 @@ matptr matldT(matptr dst, vecptr dir, scalar cnt) {
 	return dst;
 }
 
-void ortho_mat(matptr dst, float l, float r, float b, float t, float n, float f) {
+void ortho_mat(matptr dst, scalar l, scalar r, scalar b, scalar t, scalar n, scalar f) {
+	matrix tmp;
 	float	rl = r - l, tb = t - b, nf = n - f;
 	if (rl == 0. || tb  == 0. || nf  == 0. ) return;
-	matldf(dst,			// Projection matrix - orthographic
-		2 / rl,			0.,				0.,				-(r+l) / rl,
-		0.,				2 / tb,			0.,				-(t+b) / tb,
-		0.,				0.,				2 / nf,			-(f+n) / nf,
-		0.,				0.,				0.,				1.);
-}
-
-void persp_mat(matptr dst, float l, float r, float b, float t, float n, float f) {
-	float	rl = r - l, tb = t - b, nf = n - f;
-	if (rl == 0. || tb  == 0. || nf  == 0. ) return;
-	/*
 	matldf(dst,							// scale
 		2/(r-l),		0.,				0.,				0.,
 		0.,				2/(t-b),		0.,				0.,
@@ -651,51 +673,81 @@ void persp_mat(matptr dst, float l, float r, float b, float t, float n, float f)
 		0.,				1.,				0.,				-(t+b)/2,
 		0.,				0.,				1.,				-(n+f)/2,
 		0.,				0.,				0.,				1.));
-	--- Ortographic ---
+
+	/*matldf(dst,			// Projection matrix - orthographic
+		2 / rl,			0.,				0.,				-(r+l) / rl,
+		0.,				2 / tb,			0.,				-(t+b) / tb,
+		0.,				0.,				2 / nf,			-(f+n) / nf,
+		0.,				0.,				0.,				1.);// */
+}
+
+void persp_mat(matptr dst, scalar l, scalar r, scalar b, scalar t, scalar n, scalar f) {
+	matrix tmp;
+	float	rl = r - l, tb = t - b, nf = n - f;
+	if (rl == 0. || tb  == 0. || nf  == 0. ) return;
+	//~ /*
+	matldf(dst,							// scale
+		2/(r-l),		0.,				0.,				0.,
+		0.,				2/(t-b),		0.,				0.,
+		0.,				0.,				2/(n-f),		0.,
+		0.,				0.,				0.,				1.);
+	matmul(dst, dst, matldf(&tmp,		// translate
+		1.,				0.,				0.,				-(l+r)/2,
+		0.,				1.,				0.,				-(t+b)/2,
+		0.,				0.,				1.,				-(n+f)/2,
+		0.,				0.,				0.,				1.));
+	//~ --- Ortographic ---
 	matmul(dst, dst, matldf(&tmp,		// perspective
 		n,				0.,				0.,				0,
 		0.,				n,				0.,				0,
 		0.,				0.,				n+f,			-n*f,
 		0.,				0.,				1.,				0.));
-	*/
-	matldf(dst,			// Projection matrix - perspective
+	// */
+	/*matldf(dst,			// Projection matrix - perspective
 		2*n / rl,	0.,			-(r+l) / rl,	0.,
 		0.,			2*n / tb,	-(t+b) / tb,	0.,
 		0.,			0.,			+(n+f) / nf,	-2*n*f / nf,
-		0.,			0.,			1.,				0.);
+		0.,			0.,			1.,				0.);// */
 }
 
-void projv_mat(matptr dst, float fovy, float asp, float n, float f, int ortho) {
-	//~ matrix tmp;
-	float bot, nf = n-f;
-	//~ fovy *= (3.14159265358979323846 / 180) / 2;
-	//~ if (!(bot = cos( fovy ))) bot = 10000.;
-	//~ else bot = sin( fovy ) / bot;
-	bot = tan( fovy * ((3.14159265358979323846 / 180) / 2));
+void projv_mat(matptr dst, scalar fovy, scalar asp, scalar n, scalar f) {
+	scalar bot = 1, nf = n-f;
+	/*matrix tmp;
+	if (fovy) bot = tan( fovy*(3.14159265358979323846/180)/2);
 	asp *= bot;
-	/*matldf(dst,		// ortho
+	matldf(dst,			// Projection matrix - orthographic
 		1 / asp,		0.,				0.,				0,
 		0.,				1 / bot,		0.,				0,
 		0.,				0.,				2 / nf,			-(f+n) / nf,
 		0.,				0.,				0.,				1.);
-	if (!ortho) matmul(dst, dst, matldf(&tmp,		// perspective
+	if (fovy) matmul(dst, dst, matldf(&tmp,		// perspective
 		n,				0.,				0.,				0,
 		0.,				n,				0.,				0,
 		0.,				0.,				n+f,			-n*f,
-		0.,				0.,				1.,				0.));*/
-	if (ortho) 	matldf(dst,		// ortho
-		1 / asp,		0.,				0.,				0,
-		0.,				1 / bot,		0.,				0,
-		0.,				0.,				2 / nf,			-(f+n) / nf,
-		0.,				0.,				0.,				1.);
-	else matldf(dst,			// perspective
-		n / asp,		0.,				0.,				0,
-		0.,				n / bot,		0.,				0,
-		0.,				0.,				(n+f) / nf,		-2*n*f / nf,
-		0.,				0.,				1.,				0);
+		0.,				0.,				1.,				0.));
+	// */
+	if (fovy) {
+		bot = tan( fovy * ((3.14159265358979323846 / 180)));
+		asp *= bot;
+		matldf(dst,		// perspective
+			n / asp,	0.,		0.,		0,
+			0.,		n / bot,	0.,		0,
+			0.,		0.,		(n+f) / nf,	-2*n*f / nf,
+			0.,		0.,		1.,		0);
+	}
+	else {
+		asp *= bot;
+		matldf(dst,		// orthographic
+			1 / asp,	0.,		0.,		0,
+			0.,		1 / bot,	0.,		0,
+			0.,		0.,		2 / nf,		-(f+n) / nf,
+			0.,		0.,		0.,		1.);
+	}
+	// */
 }
 
-/*matptr matnul(matptr dst) {
+//~ /*
+matptr matnul(matptr dst) {
 	dst->m11 = 0; dst->m12 = 0; dst->m13 = 0; dst->m14 = 0;
 	dst->m21 = 0; dst->m22 = 0; dst->m23 = 0; dst->m24 = 0;
 	dst->m31 = 0; dst->m32 = 0; dst->m33 = 0; dst->m34 = 0;
@@ -703,10 +755,16 @@ void projv_mat(matptr dst, float fovy, float asp, float n, float f, int ortho) {
 	return dst;
 }
 
+matptr matcpy(matptr dst, matptr src) {
+	*dst = *src;
+	return dst;
+}
+
 matptr matran(matptr dst, matptr src) {
 	matrix tmp;
 	int row, col;
-	if (src == dst) {*tmp = src; rsc = &tmp;}
+	if (src == dst)
+		src = matcpy(&tmp, src);//{*tmp = src; rsc = &tmp;}
 	for(row = 0; row < 4; ++row)
 		for(col = 0; col < 4; ++col)
 			tmp.m[col][row] = src->m[row][col];
@@ -720,22 +778,22 @@ static scalar det3x3(scalar x1, scalar x2, scalar x3, scalar y1, scalar y2, scal
 }
 
 scalar matdet(matptr src) {
-	scalar* x = (scalar*)&src->vx.v;
-	scalar* y = (scalar*)&src->vy.v;
-	scalar* z = (scalar*)&src->vz.v;
-	scalar* w = (scalar*)&src->vw.v;
+	scalar* x = (scalar*)&src->x.v;
+	scalar* y = (scalar*)&src->y.v;
+	scalar* z = (scalar*)&src->z.v;
+	scalar* w = (scalar*)&src->w.v;
 	return	x[0] * det3x3(y[1], y[2], y[3], z[1], z[2], z[3], w[1], w[2], w[3])-
-			x[1] * det3x3(y[0], y[2], y[3], z[0], z[2], z[3], w[0], w[2], w[3])+
-			x[2] * det3x3(y[0], y[1], y[3], z[0], z[1], z[3], w[0], w[1], w[3])-
-			x[3] * det3x3(y[0], y[1], y[2], z[0], z[1], z[2], w[0], w[1], w[2]);
+		x[1] * det3x3(y[0], y[2], y[3], z[0], z[2], z[3], w[0], w[2], w[3])+
+		x[2] * det3x3(y[0], y[1], y[3], z[0], z[1], z[3], w[0], w[1], w[3])-
+		x[3] * det3x3(y[0], y[1], y[2], z[0], z[1], z[2], w[0], w[1], w[2]);
 }
 
 matptr matadj(matptr dst, matptr src) {
 	matrix tmp;
-	scalar* x = (scalar*)&tmp.vx.v;
-	scalar* y = (scalar*)&tmp.vy.v;
-	scalar* z = (scalar*)&tmp.vz.v;
-	scalar* w = (scalar*)&tmp.vw.v;
+	scalar* x = (scalar*)&tmp.x.v;
+	scalar* y = (scalar*)&tmp.y.v;
+	scalar* z = (scalar*)&tmp.z.v;
+	scalar* w = (scalar*)&tmp.w.v;
 	matran(&tmp, src);
 	dst->m11 = +det3x3(y[1], y[2], y[3], z[1], z[2], z[3], w[1], w[2], w[3]);
 	dst->m12 = -det3x3(y[0], y[2], y[3], z[0], z[2], z[3], w[0], w[2], w[3]);
@@ -760,18 +818,19 @@ scalar matinv(matptr dst, matptr src) {
 	scalar det = matdet(src);
 	if (det) {
 		matadj(dst, src);
-		matsca(dst, dst, scainv(det));
+		matsca(dst, dst, 1. / det);
 	}
 	return det;
 }
 
+/*
 argb matrgb(matptr mat, argb rgb) {
 	vector tmp;
 	vecldc(&tmp, rgb);
 	matvp3(&tmp, mat, &tmp);
 	return vecrgb(&tmp);
 }
-*/
+//~ */
 
 //#################################  camera  ###################################
 void camset(camera_p cam, vecptr eye, vecptr tgt, vecptr up) {
@@ -779,8 +838,9 @@ void camset(camera_p cam, vecptr eye, vecptr tgt, vecptr up) {
 	vecnrm(&cam->dirF, vecsub(&tmp, tgt, eye));
 	vecnrm(&cam->dirR, veccrs(&tmp, up, &tmp));
 	veccrs(&cam->dirU, &cam->dirF, &cam->dirR);
-	veccpy(&cam->pos, eye);
-	cam->zoom = sconst(1);
+	//~ veccpy(&cam->pos, eye);
+	cam->pos = *eye;
+	cam->zoom = 1;
 }
 
 void cammov(camera_p cam, vecptr dir, scalar cnt) {
@@ -792,7 +852,7 @@ void cammov(camera_p cam, vecptr dir, scalar cnt) {
 void camrot(camera_p cam, vecptr dir, scalar ang) {
 	matrix tmp;
 	if (ang == 0) return;
-	matldR(&tmp, dir, scadiv(ang, cam->zoom));
+	matldR(&tmp, dir, ang / cam->zoom);
 	vecnrm(&cam->dirF, matvph(&cam->dirF, &tmp, &cam->dirF));
 	vecnrm(&cam->dirR, matvph(&cam->dirR, &tmp, &cam->dirR));
 	veccrs(&cam->dirU, &cam->dirF, &cam->dirR);
@@ -801,16 +861,25 @@ void camrot(camera_p cam, vecptr dir, scalar ang) {
 matptr cammat(matptr mat, camera_p cam) {
 	//~ vecsca(&mat->x, &cam->dirR, cam->zoom);
 	//~ vecsca(&mat->y, &cam->dirU, cam->zoom);
-	veccpy(&mat->x, &cam->dirR);
-	veccpy(&mat->y, &cam->dirU);
-	veccpy(&mat->z, &cam->dirF);
-
-	mat->xt = -vecdp3(&cam->dirR, &cam->pos);
-	mat->yt = -vecdp3(&cam->dirU, &cam->pos);
-	mat->zt = -vecdp3(&cam->dirF, &cam->pos);
-	mat->wx = sconst(0);
-	mat->wy = sconst(0);
-	mat->wz = sconst(0);
-	mat->wt = sconst(1);
+	vecld4(&mat->x, &cam->dirR, -vecdp3(&cam->dirR, &cam->pos));
+	vecld4(&mat->y, &cam->dirU, -vecdp3(&cam->dirU, &cam->pos));
+	vecld4(&mat->z, &cam->dirF, -vecdp3(&cam->dirF, &cam->pos));
+	vecldf(&mat->w, 0., 0., 0., 1.);
+	//~ mat->x.x = cam->dirR.x;
+	//~ mat->x.y = cam->dirR.y;
+	//~ mat->x.z = cam->dirR.z;
+	//~ mat->x.w = -vecdp3(&cam->dirR, &cam->pos);
+	//~ mat->y.x = cam->dirU.x;
+	//~ mat->y.y = cam->dirU.y;
+	//~ mat->y.z = cam->dirU.z;
+	//~ mat->y.w = -vecdp3(&cam->dirU, &cam->pos);
+	//~ mat->z.x = cam->dirF.x;
+	//~ mat->z.y = cam->dirF.y;
+	//~ mat->z.z = cam->dirF.z;
+	//~ mat->z.w = -vecdp3(&cam->dirF, &cam->pos);
+	//~ mat->w.x = 0;
+	//~ mat->w.y = 0;
+	//~ mat->w.z = 0;
+	//~ mat->w.w = 1;
 	return mat;
 }
