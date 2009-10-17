@@ -38,7 +38,7 @@ int source(state s, LoadType mode, char* file) {
 			s->_cnt = strlen(file);
 			s->_ptr = file;
 		} break;
-		default: fatal(s, "source");
+		default: fatal("source");
 	}
 	fill_buf(s);
 	return 0;
@@ -101,7 +101,7 @@ int peek_chr(state s) {
 }
 
 int back_chr(state s, int chr) {
-	dieif (s->_chr != -1);
+	dieif (s->_chr != -1, "");
 	return s->_chr = chr;
 }
 
@@ -250,9 +250,19 @@ char *strfindstr(const char *t, const char *p, int flgs) {
 	return p[i] ? 0 : (char*)t - i;
 }
 
-int parseint(register const char *str, int *res) {
+int parseint(register const char *str, int *res, int hexchr) {
 	int val = 0;
-	while (*str >= '0' && *str <= '9') {
+	if (hexchr && *str == hexchr) while (*++str) {
+		if (*str >= '0' && *str <= '9')
+			val = val * 16 + (*str - '0');
+		else if (*str >= 'A' && *str <= 'F')
+			val = val * 16 + 10 +(*str - 'A');
+		else if (*str >= 'a' && *str <= 'f')
+			val = val * 16 + 10 +(*str - 'a');
+		else break;
+		//~ str += 1;
+	}
+	else while (*str >= '0' && *str <= '9') {
 		val = val * 10 + (*str - '0');
 		str += 1;
 	}
@@ -1245,7 +1255,7 @@ astn scan(state s, int mode) {
 	ast = 0;
 	#endif
 
-	trace(+32, "enter:scan(%?k)", peek(s));
+	trace(+32, "enter(%?k)", peek(s));
 
 	//~ enter(s, newNode(s, FILE_new));
 	enter(s, 0);
@@ -1261,7 +1271,6 @@ astn scan(state s, int mode) {
 
 	if (s->nest)
 		error(s, s->line, "premature end of file");
-	trace(-32, "leave:scan('%k')", peek(s));
 
 	if (ast) {
 		astn tmp = newnode(s, OPER_beg);
@@ -1271,13 +1280,15 @@ astn scan(state s, int mode) {
 		ast = tmp;
 	}
 
+	trace(-32, "leave('%k')", peek(s));
+
 	return ast;
 }
 
 astn stmt(state s, int mode) {
 	astn ast, tmp = peek(s);
 	int qual = 0;// qual(s, mode);			// static | const | parallel
-	trace(+16, "enter:stmt('%k')", peek(s));
+	trace(+16, "enter('%k')", peek(s));
 
 	if (skip(s, OPER_end)) return 0;			// ;
 
@@ -1382,10 +1393,10 @@ astn stmt(state s, int mode) {
 		}
 	}
 	else {
-		fatal(s, __FILE__, __LINE__, "00dfskj-ssx");
+		fatal("00dfskj-ssx");
 	}
 
-	trace(-16, "leave:stmt('%+k')", ast);
+	trace(-16, "leave('%+k')", ast);
 	//~ if (ast) debug("%+k", ast->stmt);
 	return ast;
 }
@@ -1422,7 +1433,7 @@ astn expr(state s, int mode) {
 	int level = 0, unary = 1;						// precedence, top of sym , start in unary mode
 	sym[level] = 0;
 
-	trace(+2, "enter:expr('%k')", peek(s));
+	trace(+2, "enter('%k')", peek(s));
 	while ((tok = next(s, 0))) {					// parse
 		int pri = level << 4;
 		switch (tok->kind) {
@@ -1597,7 +1608,7 @@ astn expr(state s, int mode) {
 			else if (tok_tbl[tok->kind].argc) {		// oper
 				int argc = tok_tbl[tok->kind].argc;
 				if ((lhs -= argc) < buff) {
-					fatal(s, "expr(<overflow>) %k", tok);
+					fatal("expr(<overflow>) %k", tok);
 					return 0;
 				}
 				switch (argc) {
@@ -1695,11 +1706,11 @@ astn expr(state s, int mode) {
 			*lhs++ = tok;
 		}
 	}
-	trace(-2, "leave:expr('%+k') %k", tok, peek(s));
 	if (tok && !lookup(s, 0, tok)) {
 		debug("BUM: `%+k`", tok);
 		// error(s, tok->line, "bum %+k", tok);
 	}
+	trace(-2, "leave('%+k') %k", tok, peek(s));
 	return tok;
 }
 
@@ -1710,7 +1721,7 @@ astn dvar(state s, symn typ, int qual) {
 	astn tag = 0;
 	symn ref = 0;
 
-	trace(+4, "enter:dclr('%k')", peek(s));
+	trace(+4, "enter('%k')", peek(s));
 
 	if (!(tag = next(s, TYPE_ref))) {
 		debug("id expected, not %k", peek(s));
@@ -1724,10 +1735,10 @@ astn dvar(state s, symn typ, int qual) {
 
 	if (test(s, OPER_nop));
 	else if (skip(s, OPER_com)) {		// ,
-		fatal(s, "multi");
+		fatal("variables");
 	}
 	else if (test(s, PNCT_lp)) {		// function
-		fatal(s, "function");
+		fatal("function");
 	}
 	else if (skip(s, PNCT_lc)) {		// array[]
 		struct astn len;
@@ -1753,8 +1764,7 @@ astn dvar(state s, symn typ, int qual) {
 
 	error(s, s->line, "unexpected %k", peek(s));
 
-	trace(-4, "leave:dclr('%-k')", root);
-	debug("dclr('%+k')", tag);
+	trace(-4, "leave('%-k')", tag);
 	return tag;
 }// */
 
@@ -1804,13 +1814,14 @@ symn spec(state s, int qual) {
 	int size = 0;
 	int pack = 4;
 
-	trace(+8, "enter:spec('%k')", peek(s));
+	trace(+8, "enter('%k')", peek(s));
 	if (skip(s, TYPE_def)) {		// define
 		//~ define name type			// typedef
 		//~ define name = expr			// macro
 		// errif(qual != 0);
 
 		qual = 0;
+		//~ oper = skip(s, OPER_dot);
 		if ((tag = next(s, TYPE_ref))) {
 			if (skip(s, ASGN_set)) {	// define PI = 3.14;
 				astn val = expr(s, 0);
@@ -1828,7 +1839,7 @@ symn spec(state s, int qual) {
 				trace(1, "define('%T' as '%k')", def, val);
 			}
 			else if ((def = type(s, qual))) {	// define sin math.sin;	???
-				if (skip(s, PNCT_cln)) {
+				/*if (skip(s, PNCT_cln)) {
 					if ((tok = next(s, CNST_int))) {
 						def = declare(s, TYPE_ref, tag, def, 0);
 						def->offs = tok->cint;
@@ -1836,7 +1847,7 @@ symn spec(state s, int qual) {
 					}
 				}
 				else// */
-					def = declare(s, TYPE_def, tag, def, 0);
+				def = declare(s, TYPE_def, tag, def, 0);
 			}
 			else if (skip(s, PNCT_cln)) {	// define a: typename@;
 				
@@ -1867,6 +1878,10 @@ symn spec(state s, int qual) {
 					skip(s, 0);
 				}
 			}
+		}
+		else if (skip(s, OPER_dot)) {
+			//~ node argc = args(s, 0);
+			error(s, s->line, "operator overloading not implemented yet");
 		}
 		else error(s, s->line, "Identifyer expected");
 	}
@@ -1966,7 +1981,7 @@ symn spec(state s, int qual) {
 	}
 	else {					// type
 	}
-	trace(-8, "leave:spec('%+T')", def);
+	trace(-8, "leave('%+T')", def);
 	return def;
 }
 
@@ -2027,8 +2042,8 @@ symn instlibc(state s, const char* name) {
 		def->defs = s->defs;
 		s->defs = def;
 
-		def->all = s->all;
-		s->all = def;
+		//~ def->all = s->all;
+		//~ s->all = def;
 
 		return def;
 	}
@@ -2041,6 +2056,7 @@ void enter(state s, symn def) {
 	//~ s->scope[s->nest].stmt = NULL;
 	//~ return &s->scope[s->nest];
 }
+
 symn leave(state s, symn fldp) {
 	int i;
 	symn arg = 0;
@@ -2053,18 +2069,18 @@ symn leave(state s, symn fldp) {
 			symn tmp = def;
 			def = def->next;
 			tmp->next = 0;
-
-			//~ tmp->fild = fldp;
 		}
 		s->deft[i] = def;
 	}
 
 	// clear from stack
-	while (s->defs) {
+	while (s->defs && s->nest < s->defs->nest) {
 		symn sym = s->defs;
 
-		if (sym->nest <= s->nest) break;
 		s->defs = sym->defs;
+		sym->defs = s->all;
+		s->all = sym;
+
 		sym->next = arg;
 		arg = sym;
 	}

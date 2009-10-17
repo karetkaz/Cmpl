@@ -10,7 +10,7 @@ LNK=gcc -m32
 #~ INCLUDE='$(WATCOM)\h;$(WATCOM)\h\nt'
 #~ OUTOBJ=-fo=
 #~ OUTEXE=-fe=
-#~ CFLAGS=-zq -d3
+#~ CFLAGS=-q -d3
 #~ # -w99 -6s -oa
 #~ COPTS=-i=$(INCLUDE)
 #~ LIBS=
@@ -18,9 +18,9 @@ LNK=gcc -m32
 #~ CCC=wcc386
 
 SRCDIR=
-OBJDIR=
+OBJDIR=../tmp/obj/
 #~ ../tmp/
-BINDIR=
+BINDIR=../
 OBJS=\
 	$(OBJDIR)clog.o\
 	$(OBJDIR)scan.o\
@@ -31,6 +31,9 @@ OBJS=\
 
 main: $(OBJS)
 	$(LNK) $(OUTEXE)$(BINDIR)main $(OBJS) $(LIBS)
+
+$(OBJDIR)objfw.o:
+	$(CCC) $(COPTS) $(CFLAGS) $(SRCDIR)objfw.c $(OUTOBJ)$(OBJDIR)objfw.o
 
 $(OBJDIR)main.o:
 	$(CCC) $(COPTS) $(CFLAGS) $(SRCDIR)main.c $(OUTOBJ)$(OBJDIR)main.o
@@ -51,8 +54,6 @@ $(OBJDIR)code.o:
 
 clean:
 	rm -f $(OBJS)
-	#~ rm -f $(BINDIR)main
-	#~ rm -f $(BINDIR)main.exe
 
 debug:
 	#~ xterm -e gdb main

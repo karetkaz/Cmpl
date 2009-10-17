@@ -26,14 +26,15 @@
 // TODO: malloc-it
 #define bufmaxlen (128<<20)
 
-#define trace(__LEV, msg, ...)// {fputmsg(stderr, "%s:%d:trace[%04x]:"msg"\n", __FILE__, __LINE__, __LEV, ##__VA_ARGS__);fflush(stderr);}
-#define debug(msg, ...) {fputfmt(stdout, "%s:%d:%s:debug:"msg"\n", __FILE__, __LINE__, __func__, ##__VA_ARGS__);fflush(stderr);}
-#define debug2(__FILE, __LINE, msg, ...) {fputfmt(stderr, "%s:%d:%s:debug:"msg"\n", __FILE, __LINE, __func__, ##__VA_ARGS__);fflush(stderr);}
-#define fatal(__ENV, msg, ...) { fputfmt(stderr, "%s:%d:%s:fatal:"msg"\n", __FILE__, __LINE__, __func__, ##__VA_ARGS__); fflush(stderr); exit(-2);}
-#define dieif(__EXP) if (__EXP) { fputfmt(stderr, "%s:%d:debug: `"#__EXP"`\n", __FILE__, __LINE__); fflush(stderr); exit(-1);}
+#define SRCPOS "src\\" __FILE__, __LINE__, __func__
+
+#define trace(__LEV, msg, ...)// {fputfmt(stderr, "%s:%d:trace:%s: "msg"\n", SRCPOS, ##__VA_ARGS__);fflush(stderr);}
+#define debug(msg, ...) {fputfmt(stdout, "%s:%d:debug:%s: "msg"\n", SRCPOS, ##__VA_ARGS__);fflush(stderr);}
+#define fatal(msg, ...) { fputfmt(stderr, "%s:%d:fatal:%s: "msg"\n", SRCPOS, ##__VA_ARGS__); fflush(stderr); exit(-2);}
+#define dieif(__EXP, msg, ...) {if (__EXP) {fputfmt(stderr, "%s:%d:fatal(`"#__EXP"`):%s: "msg"\n", SRCPOS, ##__VA_ARGS__); fflush(stderr); exit(-1);}}
 
 #if 0
-#define error(__ENV, __LINE, msg, ...) perr(__ENV, -1, __FILE__, __LINE__, msg, ##__VA_ARGS__)
+#define error(__ENV, __LINE, msg, ...) perr(__ENV, -1, SRCPTH __FILE__, __LINE__, msg, ##__VA_ARGS__)
 #define warn(__ENV, __LEVEL, __FILE, __LINE, msg, ...) perr(__ENV, __LEVEL, __FILE__, __LINE__, msg, ##__VA_ARGS__)
 #define info(__ENV, __FILE, __LINE, msg, ...) perr(__ENV, 0, __FILE__, __LINE__, msg, ##__VA_ARGS__)
 #else
@@ -101,7 +102,14 @@ enum {
 
 	opc_line,		// line info
 	get_ip,		// instruction pointer
-	get_sp,		// instruction pointer
+	get_sp,		// stack pointer
+	seg_code,	// pc = ptr - beg; ptr += code->cs;
+	loc_data,
+	//~ seg_data,
+	//~ vminf_ip,		// instruction pointer
+	//~ vminf_sp,		// stack pointer
+	//~ vminf_pos,
+	//~ vminf_cnt,
 	//~ opc_file,		// file info
 	//~ opc_docc,		// doc comment
 };
@@ -115,33 +123,28 @@ typedef struct {
 } opc_inf;
 extern const opc_inf opc_tbl[255];
 
-struct libcargv {
-	unsigned char* retv;	// retval
-	unsigned char* argv;	// 
-};
-
-typedef struct {
+typedef struct {	// i32x4
 	uns32t x;
 	uns32t y;
 	uns32t z;
 	uns32t w;
 } u32x4t;
-typedef struct {	// rational
+typedef struct {	// i64x2: rational
 	uns64t x;
 	uns64t y;
 } u32x2t;
-typedef struct {	// vector
+typedef struct {	// f32x4: vector
 	flt32t x;
 	flt32t y;
 	flt32t z;
 	flt32t w;
 } f32x4t;
-typedef struct {	// complex
+typedef struct {	// f64x2: complex
 	flt64t x;
 	flt64t y;
 } f64x2t;
 
-typedef union {			// stack value type
+typedef union {		// stack value type
 	int08t	i1;
 	uns08t	u1;
 	int16t	i2;
@@ -166,34 +169,6 @@ typedef union {			// stack value type
 	flt32t _s[4];
 	flt64t _d[2];
 } pd128t;
-
-typedef union {
-	flt32t d[4];
-	struct {
-		flt32t x;
-		flt32t y;
-		flt32t z;
-		flt32t w;
-	};
-	struct {
-		flt32t r;
-		flt32t g;
-		flt32t b;
-		flt32t a;
-	};
-} f32x4t, *f32x4;
-
-typedef union {
-	flt64t d[2];
-	struct {
-		flt64t x;
-		flt64t y;
-	};
-	struct {
-		flt64t re;
-		flt64t im;
-	};
-} f64x2t, *f64x2;
 
 typedef union {
 	uint8_t _b[16];
@@ -242,38 +217,23 @@ typedef union {
 //} */
 
 typedef struct listn_t *list, **strt;
-typedef struct symn *symn, **symt;		// sym (astn, table)
-
-typedef struct cell {			// processor
-	//~ unsigned int	ss;			// ss / stack size
-	//~ unsigned int	cs;			// child start(==0 join) / code size (pc)
-	//~ unsigned int	pp;			// parent proc(==0 main) / ???
-
-	unsigned char	*ip;			// Instruction pointer
-	unsigned char	*sp;			// Stack pointer(bp + ss)
-	unsigned char	*bp;			// Stack base
-
-	// flags ?
-	//~ unsigned	zf:1;			// zero flag
-	//~ unsigned	sf:1;			// sign flag
-	//~ unsigned	cf:1;			// carry flag
-	//~ unsigned	of:1;			// overflow flag
-
-} *cell;
+typedef struct symn **symt;		// sym (astn, table)
 
 struct listn_t {			// linked list astn
 	struct listn_t	*next;
 	unsigned char	*data;
 	//~ unsigned int	size;
 };
+
 /*struct buff {
 	long cnt;
 	char *ptr;
 	char beg[];
-};// */
+};
 
 //~ inline int getBuffChr(struct buff *b) {if (--b->cnt > 0) return *b->ptr++; return 0;}
 //~ inline int getBuffChr(struct buff *b) {return *(--s->_cnt, s->_ptr++);}
+// */
 
 struct astn {				// ast astn
 	uns32t		line;				// token on line / code offset
@@ -342,7 +302,6 @@ struct astn {				// ast astn
 	astn		next;				// 
 };
 struct symn {				// symbol
-	symn	all;		// simbols in program
 	uns08t	kind;		// TYPE_ref || TYPE_xxx
 	uns16t	nest;		// declaration level
 
@@ -350,12 +309,12 @@ struct symn {				// symbol
 	//~ uns08t	stat:1;		// static
 	//~ uns08t	read:1;		// const
 	//~ uns08t	used:1;		// used(ref/def)
-	uns08t	onst:1;		// temp / on stack(val) (probably better (offs < 0))
+	//~ uns08t	onst:1;		// temp / on stack(val) (probably better (offs < 0))
 	uns08t	libc:1;		// native (fun)
 	uns08t	call:1;		// is a function
 	//~ uns08t	asgn:1;		// assigned a value
 
-	union {uns32t	size, offs;};	// addrof(TYPE_ref) / sizeof(TYPE_xxx)
+	union {int32t	size, offs;};	// addrof(TYPE_ref) / sizeof(TYPE_xxx)
 	symn	type;		// base type of TYPE_ref (void, int, float, struct, ...)
 	symn	args;		// REC fields / FUN args
 	astn	init;		// VAR init / FUN body
@@ -365,9 +324,21 @@ struct symn {				// symbol
 	int		line;
 
 	// list(scoping)
-	symn	defs;		// simbols on stack
+	symn	defs;		// simbols on stack/all
 	symn	next;		// simbols on table/args
 };
+
+/* symbol for references/reflection
+struct symn {
+	char*	name;
+	char*	file;
+	int		line;
+
+	int32t	offs;		// addrof(TYPE_ref) / sizeof(TYPE_ref)
+
+	symn	type;		// base type
+	symn	args[];		// REC fields / FUN args
+};// */
 
 struct state_t {			// enviroment (context)
 	int		errc;			// error count
@@ -434,7 +405,7 @@ extern symn type_f32x4;
 extern symn type_f64x2;
 
 //~ util
-int parseint(const char *str, int *res);
+int parseint(const char *str, int *res, int hexchr);
 char *strfindstr(const char *t, const char *p, int flags);
 
 //~ clog
@@ -444,20 +415,21 @@ void perr(state s, int level, const char *file, int line, const char *msg, ...);
 //~ void fputsym(FILE *fout, symn sym, int mode, int level);
 //~ void fputast(FILE *fout, astn ast, int mode, int level);
 //~ void fputopc(FILE *fout, bcde opc, int len, int offset);
+
 //~ void fputasm(FILE *fout, void *ip, int len, int length);
 
+void dumpasm(FILE *fout, vmEnv s, int offs);
 void dumpsym(FILE *fout, symn sym, int mode);
-void dumpast(FILE *fout, astn ast, int mode);
+//~ void dumpast(FILE *fout, astn ast, int mode);
+
 //~ void dumpxml(FILE *fout, astn ast, int mode);
 //~ void dumpxml(FILE *fout, astn ast, int lev, const char* text, int level);
-void dumpasm(FILE *fout, vmEnv s, int offs);
 
 typedef enum {
-	dump_bin = 0x0000100,
+	//~ dump_bin = 0x0000100,
 	dump_sym = 0x0000200,
 	dump_asm = 0x0000300,
-	dump_ast = 0x0000800,		// temp
-	dump_xml = 0x0000807,		// temp
+	dump_ast = 0x0000400,
 } dumpWhat;
 
 void dump(state, FILE*, dumpWhat);
@@ -517,13 +489,14 @@ symn linkOf(astn ast);
 int castId(symn ast);
 int castOp(symn lhs, symn rhs);
 
+void vm_info(vmEnv);
 int cc_init(state);
 int cc_done(state);
 
 vmEnv vmGetEnv(state env, int size, int ss);
 
 int fixjump(vmEnv s, int src, int dst, int stc);
-void installlibc(state s);
+void installlibc(state, void call(libcarg), const char* proto);
 
 int rehash(const char* str, unsigned size);
 //~ int align(int offs, int pack, int size);

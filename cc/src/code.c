@@ -1,4 +1,5 @@
 #include <math.h>
+#include <string.h>
 #include "main.h"
 
 #ifdef __WATCOMC__
@@ -6,22 +7,6 @@
 #endif
 
 #pragma pack(push, 1)
-/*typedef union {			// stack value type
-	int08t	i1;
-	uns08t	u1;
-	int16t	i2;
-	uns16t	u2;
-	int32t	i4;
-	uns32t	u4;
-	int64t	i8;
-	uns64t	u8;
-	flt32t	f4;
-	flt64t	f8;
-	//TODO: remove pf, pd, x4
-	f32x4t	pf;
-	f64x2t	pd;
-	u32x4t	x4;
-} stkval;*/
 typedef struct bcde {			// byte code decoder
 	uns08t opc;
 	union {
@@ -33,7 +18,7 @@ typedef struct bcde {			// byte code decoder
 			uns16t	cl;	// code to exec paralel
 		};
 		/*struct {				// extended
-			uns32t opc:4;		// 0-15
+			uns32t opc:4;		// 0 ... 15
 			uns32t mem:2;		// 
 			uns32t res:6;		// Result
 			uns32t lhs:6;		// a
@@ -51,17 +36,17 @@ typedef struct bcde {			// byte code decoder
 		}ext;*/
 	};
 } *bcde;
-struct vmEnv {		// cgen enviroment
-	void *env;
-	unsigned int	sm;			// max stack size
-	unsigned int	pc;			// prev / program counter
-	unsigned int	ic;			// instruction count / executed
+#pragma pack(pop)
+//~ /*
+struct vmEnv {
+	unsigned int	pc;			// entry point / prev program counter
+	unsigned int	ic;			// executed / instruction count
+	unsigned int	cs;			// code size
+
+	unsigned int	ss;			// stack size / current stack size
+	unsigned int	sm;			// stack minimum size
 
 	unsigned int	ds;			// data size
-	unsigned int	cs;			// code size / program counter
-	unsigned int	ss;			// stack size / current stack size
-
-	//~ unsigned char	*sp;		// copy stack - on exec
 
 	/** memory mapping
 	 *	data(RW):ds		:	initialized data
@@ -81,80 +66,109 @@ struct vmEnv {		// cgen enviroment
 		Seg_Code = 1,
 	};
 	**/
-	unsigned long _cnt;
+	void *env;
+	//~ unsigned long _cnt; // return (_end - _ptr);
+	//~ unsigned long _len; // return (_ptr - _mem);
 	unsigned char *_ptr;
-	unsigned char _mem[];	// cache
+	unsigned char *_end;
+	unsigned char _mem[];
 };//*vmEnv;
-#pragma pack(pop)
+
+typedef struct cell {			// processor
+	//~ unsigned int	ss;			// ss / stack size
+	//~ unsigned int	cs;			// child start(==0 join) / code size (pc)
+	//~ unsigned int	pp;			// parent proc(==0 main) / ???
+
+	unsigned char	*ip;			// Instruction pointer
+	unsigned char	*sp;			// Stack pointer(bp + ss)
+	unsigned char	*bp;			// Stack base
+
+	// flags ?
+	//~ unsigned	zf:1;			// zero flag
+	//~ unsigned	sf:1;			// sign flag
+	//~ unsigned	cf:1;			// carry flag
+	//~ unsigned	of:1;			// overflow flag
+
+} *cell; // */
+
+struct libcarg {
+	void* data;	// user data
+	void* retv;	// retval
+	char* argv;	// first arg
+};
 
 //{ libc.c ---------------------------------------------------------------------
 #define poparg(__ARGV, __TYPE) ((__TYPE*)((__ARGV)->argv += ((sizeof(__TYPE) | 3) & ~3)))[-1]
 #define setret(__TYPE, __ARGV, __VAL) (*((__TYPE*)(__ARGV->retv)) = (__TYPE)(__VAL))
 
-/*
-#define popARG(__ARGV, __TYPE) ((__TYPE*)((__ARGV)->argv += ((sizeof(__TYPE) | 3) & ~3)))[-1]
-flt32t popf32(struct libcargv *args) { return popARG(args, flt32t); }
-int32t popi32(struct libcargv *args) { return popARG(args, int32t); }
-flt64t popf64(struct libcargv *args) { return popARG(args, flt64t); }
-int64t popi64(struct libcargv *args) { return popARG(args, int64t); }
+//~ /*
+void* usrval(libcarg args) { return args->data; }
+flt32t popf32(libcarg args) { return poparg(args, flt32t); }
+int32t popi32(libcarg args) { return poparg(args, int32t); }
+flt64t popf64(libcarg args) { return poparg(args, flt64t); }
+int64t popi64(libcarg args) { return poparg(args, int64t); }
+void reti32(libcarg args, int32t val) { setret(int32t, args, val); }
+void reti64(libcarg args, int64t val) { setret(int64t, args, val); }
+void retf32(libcarg args, flt32t val) { setret(flt32t, args, val); }
+void retf64(libcarg args, flt64t val) { setret(flt64t, args, val); }
 // */
 
-void f32abs(struct libcargv *args) {
+void f32abs(libcarg args) {
 	flt32t x = poparg(args, flt32t);
 	setret(flt32t, args, fabs(x));
 }
-void f32sin(struct libcargv *args) {
+void f32sin(libcarg args) {
 	flt32t x = poparg(args, flt32t);
 	setret(flt32t, args, sin(x));
 }
-void f32cos(struct libcargv *args) {
+void f32cos(libcarg args) {
 	flt32t x = poparg(args, flt32t);
 	setret(flt32t, args, cos(x));
 }
-void f32tan(struct libcargv *args) {
+void f32tan(libcarg args) {
 	flt32t x = poparg(args, flt32t);
 	setret(flt32t, args, tan(x));
 }
 
-void f64abs(struct libcargv *args) {
+void f64abs(libcarg args) {
 	flt64t x = poparg(args, flt64t);
 	setret(flt64t, args, fabs(x));
 }
-void f64sin(struct libcargv *args) {
+void f64sin(libcarg args) {
 	flt64t x = poparg(args, flt64t);
 	setret(flt64t, args, sin(x));
 }
-void f64cos(struct libcargv *args) {
+void f64cos(libcarg args) {
 	flt64t x = poparg(args, flt64t);
 	setret(flt64t, args, cos(x));
 }
-void f64atan2(struct libcargv *args) {
+void f64atan2(libcarg args) {
 	flt64t x = poparg(args, flt64t);
 	flt64t y = poparg(args, flt64t);
 	setret(flt64t, args, atan2(x, y));
 	//~ debug("flt64t atan2(flt64t x(%G), flt64t y(%G)) = %G", x, y, atan2(x, y));
 }
 
-/*void f64lg2(struct libcargv *args) {
+/*void f64lg2(libcarg args) {
 	double log2(double);
 	flt64t *sp = stk;
 	*sp = log2(*sp);
 }
-void f64_xp2(struct libcargv *args) {
+void f64_xp2(libcarg args) {
 	double exp2(double);
 	flt64t *sp = stk;
 	*sp = exp2(*sp);
 }*/
-void f64log(struct libcargv *args) {
+void f64log(libcarg args) {
 	flt64t x = poparg(args, flt64t);
 	setret(flt64t, args, log(x));
 }
-void f64exp(struct libcargv *args) {
+void f64exp(libcarg args) {
 	flt64t x = poparg(args, flt64t);
 	setret(flt64t, args, exp(x));
 }
 
-void b32btc(struct libcargv *args) {
+void b32btc(libcarg args) {
 	uns32t x = poparg(args, uns32t);
 	x -= ((x >> 1) & 0x55555555);
 	x = (((x >> 2) & 0x33333333) + (x & 0x33333333));
@@ -163,7 +177,7 @@ void b32btc(struct libcargv *args) {
 	x += (x >> 16);
 	setret(uns32t, args, x & 0x3f);
 }
-void b32bsf(struct libcargv *args) {
+void b32bsf(libcarg args) {
 	uns32t x = poparg(args, uns32t);
 	int ans = 0;
 	if ((x & 0x0000ffff) == 0) { ans += 16; x >>= 16; }
@@ -173,7 +187,7 @@ void b32bsf(struct libcargv *args) {
 	if ((x & 0x00000001) == 0) { ans +=  1; }
 	setret(uns32t, args, x ? ans : -1);
 }
-void b32bsr(struct libcargv *args) {
+void b32bsr(libcarg args) {
 	uns32t x = poparg(args, uns32t);
 	unsigned ans = 0;
 	if ((x & 0xffff0000) != 0) { ans += 16; x >>= 16; }
@@ -183,7 +197,7 @@ void b32bsr(struct libcargv *args) {
 	if ((x & 0x00000002) != 0) { ans +=  1; }
 	setret(uns32t, args, x ? ans : -1);
 }
-void b32swp(struct libcargv *args) {
+void b32swp(libcarg args) {
 	uns32t x = poparg(args, uns32t);
 	x = ((x >> 1) & 0x55555555) | ((x & 0x55555555) << 1);
 	x = ((x >> 2) & 0x33333333) | ((x & 0x33333333) << 2);
@@ -191,7 +205,7 @@ void b32swp(struct libcargv *args) {
 	x = ((x >> 8) & 0x00FF00FF) | ((x & 0x00FF00FF) << 8);
 	setret(uns32t, args, (x >> 16) | (x << 16));
 }
-void b32hib(struct libcargv *args) {
+void b32hib(libcarg args) {
 	uns32t x = poparg(args, uns32t);
 	x |= x >> 1;
 	x |= x >> 2;
@@ -200,27 +214,27 @@ void b32hib(struct libcargv *args) {
 	x |= x >> 16;
 	setret(uns32t, args, x - (x >> 1));
 }
-void b32lob(struct libcargv *args) ;
-void b32shl(struct libcargv *args) {
+void b32lob(libcarg args) ;
+void b32shl(libcarg args) {
 	uns32t x = poparg(args, uns32t);
 	uns32t y = poparg(args, uns32t);
 	setret(uns32t, args, x << y);
 	//~ debug("uns32 shl(uns32t x(%d), uns32t y(%d)) = %d", x, y, x << y);
 }
-void b32shr(struct libcargv *args) {
+void b32shr(libcarg args) {
 	uns32t x = poparg(args, uns32t);
 	uns32t y = poparg(args, uns32t);
 	setret(uns32t, args, x >> y);
 	//~ debug("uns32 shl(uns32 x(%d), uns32 y(%d)) = %d", x, y, x >> y);
 }
-void b32sar(struct libcargv *args) {
+void b32sar(libcarg args) {
 	int32t x = poparg(args, int32t);
 	int32t y = poparg(args, int32t);
 	setret(int32t, args, x >> y);
 	//~ debug("int32 shl(int32 x(%d), int32 y(%d)) = %d", x, y, x >> y);
 }
 
-void b32zxt(struct libcargv *args) {
+void b32zxt(libcarg args) {
 	uns32t val = poparg(args, int32t);
 	int32t ofs = poparg(args, int32t);
 	int32t cnt = poparg(args, int32t);
@@ -228,7 +242,7 @@ void b32zxt(struct libcargv *args) {
 	setret(int32t, args, val >> (32 - cnt));
 	//~ debug("int32 zxt(int32 x(%d), int32 y(%d)) = %d", x, y, x >> y);
 }
-void b32sxt(struct libcargv *args) {
+void b32sxt(libcarg args) {
 	int32t val = poparg(args, int32t);
 	int32t ofs = poparg(args, int32t);
 	int32t cnt = poparg(args, int32t);
@@ -236,7 +250,7 @@ void b32sxt(struct libcargv *args) {
 	setret(int32t, args, val >> (32 - cnt));
 	//~ debug("int32 zxt(int32 x(%d), int32 y(%d)) = %d", x, y, x >> y);
 }
-void b64zxt(struct libcargv *args) {
+void b64zxt(libcarg args) {
 	uns64t val = poparg(args, int64t);
 	int32t ofs = poparg(args, int32t);
 	int32t cnt = poparg(args, int32t);
@@ -244,7 +258,7 @@ void b64zxt(struct libcargv *args) {
 	setret(int64t, args, val >> (64 - cnt));
 	//~ debug("int32 zxt(int32 x(%d), int32 y(%d)) = %d", x, y, x >> y);
 }
-void b64sxt(struct libcargv *args) {
+void b64sxt(libcarg args) {
 	int64t val = poparg(args, int64t);
 	int32t ofs = poparg(args, int32t);
 	int32t cnt = poparg(args, int32t);
@@ -253,39 +267,33 @@ void b64sxt(struct libcargv *args) {
 	//~ debug("int32 zxt(int32 x(%d), int32 y(%d)) = %d", x, y, x >> y);
 }
 
-void b64shl(struct libcargv *args) {
+void b64shl(libcarg args) {
 	uns64t x = poparg(args, uns64t);
 	int32t y = poparg(args, int32t);
 	setret(uns64t, args, x << y);
 	//~ debug("int64 shl(int64 x(%D), int32 y(%D)) = %D", x, y, x << y);
 }
-void b64shr(struct libcargv *args) {
+void b64shr(libcarg args) {
 	uns64t x = poparg(args, uns64t);
 	int32t y = poparg(args, int32t);
 	setret(uns64t, args, x >> y);
 	//~ debug("int64 shl(int64 x(%D), int32 y(%D)) = %D", x, y, x << y);
 }
-void b64sar(struct libcargv *args) {
+void b64sar(libcarg args) {
 	int64t x = poparg(args, uns64t);
 	int32t y = poparg(args, int32t);
 	setret(uns64t, args, x >> y);
 	//~ debug("int64 shl(int64 x(%D), int32 y(%D)) = %D", x, y, x << y);
 }
 
-void setpos(struct libcargv *args) {
-	flt32t x = poparg(args, flt32t);
-	flt32t y = poparg(args, flt32t);
-	flt32t z = poparg(args, flt32t);
-	debug("setPos(%f, %f, %f)", x, y, z);
-}
-
+static int libccnt = 0;
 static struct lfun {
-	void (*call)(struct libcargv*);
+	void (*call)(libcarg);
 	const char* proto;//, *name;
-	uns08t arg, pop;
+	uns08t chk, pop;
 	symn sym;
 }
-libcfnc[] = {
+libcfnc[256] = {
 	{f32abs, "flt32 abs(flt32 x)"},
 	{f32sin, "flt32 sin(flt32 x)"},
 	{f32cos, "flt32 cos(flt32 x)"},
@@ -320,18 +328,44 @@ libcfnc[] = {
 	//~ {b64shr, "int64 shr(int64 x, int32 y)"},
 	//~ {b64sar, "int64 sar(int64 x, int32 y)"},
 	//~ {b64shr, "int64 shr(uns64 x, int32 y)"},
-	{setpos, "void setPos(flt32, flt32, flt32)"},
-	{setpos, "void setNrm(flt32, flt32, flt32)"},
-	{setpos, "void setCol(flt32, flt32, flt32)"},
+	//~ {setpos, "void setPos(flt32 x, flt32 y, flt32 z)", 3, 3},
+	//~ {setpos, "void setNrm(flt32 x, flt32 y, flt32 z)", 3, 3},
+	//~ {setpos, "void setCol(flt32 x, flt32 y, flt32 z)", 3, 3},
+	//~ {getarg, "flt32 getArg(int32 arg, flt32 min, flt32 max)", 3, 2},
 	//~ {getTex, "argb tex2d(flt32, flt32)"},
 };
 
-void installlibc(state s) {
-	int i;
-	for (i = 0; i < sizeof(libcfnc) / sizeof(*libcfnc); i += 1) {
-		libcfnc[i].sym = install(s, -1, libcfnc[i].proto, 0);
-		libcfnc[i].sym->offs = i;
+void installlibc(state s, void libc(libcarg), const char* proto) {
+	int i = libccnt;
+
+	if (libccnt == 0) {
+		while (libcfnc[libccnt].proto)
+			libccnt += 1;
 	}
+
+	if (libccnt >= 255)
+		return;
+
+	libcfnc[libccnt].call = libc;
+	libcfnc[libccnt].proto = proto;
+
+	while (libcfnc[i].proto) {
+		symn sym = install(s, -1, libcfnc[i].proto, 0);
+		int stdiff = 0, retsize = sym->type->size;
+		symn arg;
+
+		for (arg = sym->args; arg; arg = arg->next)
+			stdiff += arg->type->size;
+
+		libcfnc[i].sym = sym;
+		libcfnc[i].sym->offs = i;
+
+		libcfnc[i].pop = (stdiff - retsize) / 4;
+		libcfnc[i].chk = stdiff / 4;
+
+		i++;
+	}
+	libccnt = i;
 }
 //}
 
@@ -343,22 +377,38 @@ int emit(vmEnv s, int opc, ...) {
 		return s->cs;
 	}
 	if (opc == get_sp) {
+		return -s->ss;
+	}
+	/*if (opc == seg_data) {
+		return s->ss;
+	}// */
+	if (opc == loc_data) {
+		s->_ptr += arg.i4;
+		return 0;
+	}
+	if (opc == seg_code) {
+		s->pc = s->_ptr - s->_mem;
+		s->_ptr += s->cs;
 		return s->ss;
 	}
 	if (opc == opc_line) {
 		static int line = 0;
 		if (line != arg.i4) {
-			//~ info(s, s->file, arg.i4, "emit(line)");
+			//~ debug("emit(line = %d)", arg.i4);
 			line = arg.i4;
 		}
-		return s->cs;
+		return s->pc;
 	}
 
-	if (s->_cnt < 16) {
+	if (s->_end - s->_ptr < 16) {
 		debug("memory overrun");
 		return -1;
 	}
-
+	/*else if (opc == opc_pop) {
+		debug("pop %d", arg.i4);
+		if (arg.u4 > 255U)
+			return -1;
+	}*/
 	/*else if (opc == opc_ldci) {
 		if (arg.u8 == 0) opc = opc_ldz;
 		else if (arg.u8 <= 0xff) opc = opc_ldc1;
@@ -534,11 +584,11 @@ int emit(vmEnv s, int opc, ...) {
 
 	/*~:)) ?? rollback (optimize)
 	else if (opc == opc_ldz1) {
-		ip = (bcde)&s->mem[s->pc];
+		ip = (bcde)&s->_ptr[s->pc];
 		if (ip->opc == opc_ldz1) {
 			opc = opc_ldz2;
 			s->cs = s->pc;
-			s->sm -= 1;
+			s->ss -= 1;
 		}
 	}
 	else if (opc == opc_ldz2) {
@@ -546,9 +596,10 @@ int emit(vmEnv s, int opc, ...) {
 		if (ip->opc == opc_ldz2) {
 			opc = opc_ldz4;
 			s->cs = s->pc;
-			s->sm -= 2;
+			s->ss -= 2;
 		}
 	}
+	/ *
 	else if (opc == opc_dup1) {			// TODO 
 		ip = (bcde)&s->mem[s->pc];
 		if (ip->opc == opc_dup1 && ip->idx == arg.u4) {
@@ -557,7 +608,7 @@ int emit(vmEnv s, int opc, ...) {
 			s->sm += 1;
 			return s->pc;
 		}
-	}* /
+	}
 	/ *else if (opc == opc_dup2) {
 		ip = (bcde)&s->mem[s->pc];
 		if (ip->opc == opc_dup2 && ip->idx == arg.u4) {
@@ -588,19 +639,20 @@ int emit(vmEnv s, int opc, ...) {
 	}// */
 
 	if (opc > opc_last) {
-		//~ fatal(s, __FILE__, __LINE__, "xxx_opc%x", opc);
-		fatal(s, "xxx_opc%x", opc);
+		//~ fatal("xxx_opc%x", opc);
+		fatal("invalid opc_0x%x", opc);
 		return 0;
 	}
 
-	ip = (bcde)&s->_mem[s->cs];
+	ip = (bcde)&s->_ptr[s->cs];
 	ip->opc = opc;
 	ip->arg = arg;
 
 	s->pc = s->cs;
-	switch (opc) {
-		error_opc: fatal(s, "invalid opcode: [%02x]", ip->opc); return -1;
-		error_stc: fatal(s, "stack underflow: near opcode %A", ip); return -1;
+	//~ debug("@%04x[ss:%03d]: %A", s->pc, s->ss, ip);
+	switch (opc) {		//#exec.c
+		error_opc: fatal("invalid opcode: [%02x]", ip->opc); return -1;
+		error_stc: fatal("stack underflow: near opcode %A", ip); return -1;
 		#define STOP(__ERR, __CHK) if (__CHK) goto __ERR
 		#define NEXT(__IP, __CHK, __SP)\
 			STOP(error_stc, s->ss < (__CHK));\
@@ -614,45 +666,48 @@ int emit(vmEnv s, int opc, ...) {
 
 	s->ic += s->pc != s->cs;
 
-	s->_cnt -= s->cs - s->pc;
-	s->_ptr -= s->cs - s->pc;
-
 	if (s->sm < s->ss)
 		s->sm = s->ss;
 
+	//~ debug("emit: %A", ip);
+	//~ debug(">emit:@%04x[ss:%03d / %03d]: %A", s->pc, s->ss, s->sm, ip);
+	//~ debug(">emit:@%04x[ss:%03d]: %A", s->pc, s->ss, ip);
 	return s->pc;
 }
 
 int emitidx(vmEnv s, int opc, int arg) {
 	stkval tmp;
-	tmp.i4 = s->ss - arg;
+	tmp.i4 = s->ss + arg;
+	if (tmp.u4 > 255) {
+		debug("%d", tmp.u4);
+		return 0;
+	}
+	if (tmp.u4 > s->ss) {
+		debug("%d", tmp.u4);
+		return 0;
+	}
 	return emit(s, opc, tmp);
 }
-
 int emitint(vmEnv s, int opc, int64t arg) {
 	stkval tmp;
 	tmp.i8 = arg;
 	return emit(s, opc, tmp);
 }
-
 int emiti32(vmEnv s, int32t arg) {
 	stkval tmp;
 	tmp.i4 = arg;
 	return emit(s, opc_ldc4, tmp);
 }
-
 int emiti64(vmEnv s, int64t arg) {
 	stkval tmp;
 	tmp.i8 = arg;
 	return emit(s, opc_ldc8, tmp);
 }
-
 int emitf32(vmEnv s, flt32t arg) {
 	stkval tmp;
 	tmp.f4 = arg;
 	return emit(s, opc_ldcf, tmp);
 }
-
 int emitf64(vmEnv s, flt64t arg) {
 	stkval tmp;
 	tmp.f8 = arg;
@@ -660,7 +715,7 @@ int emitf64(vmEnv s, flt64t arg) {
 }
 
 int fixjump(vmEnv s, int src, int dst, int stc) {
-	bcde ip = (bcde)(s->_mem + src);
+	bcde ip = (bcde)(s->_ptr + src);
 	if (src >= 0) switch (ip->opc) {
 		case opc_jmp:
 		case opc_jnz:
@@ -670,7 +725,7 @@ int fixjump(vmEnv s, int src, int dst, int stc) {
 	return 0;
 }
 
-/*static cell task(vmEnv ee, int cl, int dl) {
+/*static cell task(vmEnv ee, cell pu, int cc, int n, int cl, int dl) {
 	// find an empty cpu
 	cell pu = 0;//pp;
 	while (pu && pu->ip)
@@ -683,7 +738,7 @@ int fixjump(vmEnv s, int src, int dst, int stc) {
 		pu->sp = pu->bp + ss - cl;
 		memcpy(pu->sp, pp->sp, cl * 4);
 	}
-	return pu;
+	return pu + n;
 }// */
 
 /*static int done(vmEnv ee, int cp) {
@@ -693,51 +748,14 @@ int fixjump(vmEnv s, int src, int dst, int stc) {
 
 static cell getProc(vmEnv ee, cell pu) {return ((pu && pu->ip) ? pu : 0);}
 
-void vm_tags(state s, cell pu) {
-	symn ptr;
-	vmEnv code = s->code;
-	FILE *fout = stdout;
-	for (ptr = s->glob; ptr; ptr = ptr->next) {
-		if (ptr->kind == TYPE_ref && ptr->onst) {
-			int spos = code->ss - ptr->offs;
-			stkval* sp = (stkval*)(pu->sp + 4 * spos);
-			symn typ = ptr->type;
-			if (ptr->file && ptr->line)
-				fputfmt(fout, "%s:%d:", ptr->file, ptr->line);
-			fputfmt(fout, "sp(0x%02x):%s", spos, ptr->name);
-			switch(typ ? typ->kind : 0) {
-				default:
-				TYPE_XXX:
-					fputfmt(fout, " = ????\n");
-					break;
-				case TYPE_p4x: {
-					if (typ == type_f32x4)
-						fputfmt(fout, " = f32x4(%g, %g, %g, %g)\n", sp->pf.x, sp->pf.y, sp->pf.z, sp->pf.w);
-					if (typ == type_f64x2)
-						fputfmt(fout, " = f64x2(%G, %G)\n", sp->pd.x, sp->pd.y);
-				} break;
-				case TYPE_bit: switch (typ->size) {
-					case 1: case 2:
-					case 4: fputfmt(fout, " = u32[%008x](%u)\n", sp->i4, sp->i4); break;
-					case 8: fputfmt(fout, " = u64[%016X](%U)\n", sp->i8, sp->i8); break;
-					default: goto TYPE_XXX;
-				} break;
-				case TYPE_int: switch (typ->size) {
-					case 1: case 2:
-					case 4: fputfmt(fout, " = i32[%008x](%d)\n", sp->i4, sp->i4); break;
-					case 8: fputfmt(fout, " = i64[%016X](%D)\n", sp->i8, sp->i8); break;
-					default: goto TYPE_XXX;
-				} break;
-				case TYPE_flt: switch (typ->size) {
-					case 4: fputfmt(fout, " = f32[%008x](%f)\n", sp->i4, sp->f4); break;
-					case 8: fputfmt(fout, " = f64[%016X](%G)\n", sp->i8, sp->f8); break;
-					default: goto TYPE_XXX;
-				} break;
-				case TYPE_rec: fputfmt(fout, ":struct\n"); break;
-				case TYPE_arr: fputfmt(fout, ":array\n"); break;
-			}
-		}
-	}
+void vm_info(vmEnv s) {
+	int i;
+	//~ i = s->sm; printf("stack max: %dM, %dK, %dB, %d slots\n", i >> 20, i >> 20, i, s->sm);
+	//~ i = s->cs; printf("code size: %dM, %dK, %dB, %d instructions\n", i >> 20, i >> 10, i, 0);//, s->ic);
+
+	i = s->cs; printf("code(@.%04x) size: %dM, %dK, %dB, %d instructions\n", s->pc, i >> 20, i >> 10, i, s->ic);
+	i = s->ds; printf("data(@.%04x) size: %dM, %dK, %dB\n", 0, i >> 20, i >> 10, i);
+	printf("stack minimum size: %d\n", s->sm);
 }
 
 /** exec
@@ -746,80 +764,50 @@ void vm_tags(state s, cell pu) {
  * @arg ss: stack size
  * @return: error code
 **/
-int nodbg(vmEnv env, cell pu, int n, bcde ip, unsigned ss) {
+/*int nodbg(vmEnv env, cell pu, int n, bcde ip, unsigned ss) {
 	//~ bcde ip = pu[n].ip;
+	return 0;
+}// */
+
+int nodbg(vmEnv env, int pu, void *ip, long* sptr, int sc) {
 	return 0;
 }
 
-int exec(vmEnv env, unsigned cc, unsigned ss, dbgf dbg) {
+int exec(vmEnv vm, unsigned cc, unsigned ss, dbgf dbg, void* ud) {
 	struct cell proc[1], *pu = proc;	// execution units
-	//~ unsigned long size = env->code.mems;
-	//~ unsigned char *mem = env->code.mem;
-	//~ unsigned char *end = env->_ptr + env->_cnt;
 
 	register bcde ip;
 	register unsigned char *st;
 
-	if (cc > sizeof(proc) / sizeof(*proc)) {
+	/*if (cc > sizeof(proc) / sizeof(*proc)) {
 		debug("cell overrun\n");
 		return -1;
-	}
-	if (ss < env->sm * 4) {
-		debug("stack overrun\n");
+	}* /
+	/ *if (ss < env->sm) {
+		debug("stack overrun(%d, %d)\n", ss, env->sm);
 		return -1;
 	}
-	if ((env->cs + env->ds + ss * cc) >= env->_cnt) {
+	/ *if ((env->cs + ss * cc) >= ?) {
 		debug("memory overrun\n");
 		return -1;
-	}
-
-	/*for (; (signed)cc >= 0; cc -= 1) {
-		pu = &proc[cc];
-		pu->bp = end -= ss;
-		pu->sp = 0;
-		pu->ip = 0;
-		//~ pu->zf = 0;
-		//~ pu->sf = 0;
-		//~ pu->cf = 0;
-		//~ pu->of = 0;
-	}// */
-
-	pu = proc;
-	pu->ip = env->_mem;//TODO + env->cs;
-	pu->bp = env->_mem + env->_cnt;
-	pu->sp = pu->bp + ss;
-
-	/*if (env->sp && env->ss) {
-		pu->sp -= env->ss;
-		memcpy(pu->sp, env->sp, env->ss);
 	}*/
 
-	if (dbg == NULL)
-		dbg = (void*)nodbg;
+	pu->ip = vm->_mem + vm->pc;
+	pu->bp = vm->_end - ss;
+	pu->sp = vm->_end;
 
-	while ((pu = getProc(NULL, proc))) {
+	if (dbg == NULL)
+		dbg = nodbg;
+
+	while ((pu = getProc(vm, proc))) {
 
 		st = pu->sp;			// stack
 		ip = (bcde)pu->ip;
 
 		//~ tick += pu == proc;		// count tiks
 
-		/*if (dbg) {		// break
-			// TODO: dbg function should set next break point ???
-			switch (dbg(env, pu, 0, ip, ss)) {
-				case 'c': dbg = 0; break;	// continue
-				case 's': break;			// step into
-				case  0:
-				case 'n': break;			// step next
-				case 'q': return 0;		// quit
-				default: {
-					debug("invalid return");
-					return -1;
-				}
-			}
-		}*/
+		dbg(vm, 0, ip, (long*)st, (vm->_end - st) / 4);
 
-		dbg(env, pu, 0, ip, ss);
 		switch (ip->opc) {		// exec
 			error_opc: debug("invalid opcode: [%02x]", ip->opc); return -1;
 			error_ovf: debug("stack overflow: op[%A]", ip); return -2;
@@ -834,26 +822,10 @@ int exec(vmEnv env, unsigned cc, unsigned ss, dbgf dbg) {
 			#include "incl/exec.c"
 		}
 	}
-	vm_tags(env->env, proc);
+
+	//~ dbg(vm, 0, NULL, (long*)pu->sp, (vm->_end - pu->sp) / 4);
 	return 0;
 }
-
-/*void fputdat(FILE *fout, void *p, int len, int max) {
-	unsigned char* ptr = p;
-	int i;
-	if (len > 1 && len < max) {
-		for (i = 0; i < len - 2; i++) {
-			if (i < max) fprintf(fout, "%02x ", ptr[i]);
-			else fprintf(fout, "   ");
-		}
-		if (i < max)
-			fprintf(fout, "%02x... ", ptr[i]);
-	}
-	else for (i = 0; i < len; i++) {
-		if (i < opc_tbl[ip->opc].size) fprintf(fout, "%02x ", ptr[i]);
-		else fprintf(fout, "   ");
-	}
-}*/
 
 void fputopc(FILE *fout, bcde ip, int len, int offs) {
 	int i;
@@ -934,7 +906,7 @@ void fputopc(FILE *fout, bcde ip, int len, int offs) {
 }
 
 void fputasm(FILE *fout, unsigned char* beg, int len, int offs) {
-	unsigned is = 1345, i;
+	unsigned is = 12345, i;
 	for (i = 0; i < len; i += is) {
 		bcde ip = (bcde)(beg + i);
 		switch (ip->opc) {
@@ -951,19 +923,46 @@ void fputasm(FILE *fout, unsigned char* beg, int len, int offs) {
 	}
 }
 
-void dumpasm(FILE *fout, vmEnv s, int offs) {
-	fputasm(fout, s->_mem, s->cs, offs);
+void dumpasm(FILE *fout, vmEnv s, int mode) {
+	unsigned is = 12345, ss = 0, i;
+	for (i = 0; i < s->cs; i += is) {
+		bcde ip = (bcde)(s->_mem + s->pc + i);
+
+		switch (ip->opc) {
+			error_opc: fputfmt(stderr, "invalid opcode: %02x '%?s'", ip->opc, tok_tbl[ip->opc].name); return;
+			#define NEXT(__IP, __CHK, __SP) {is = (__IP); ss += (__SP);}
+			#define STOP(__ERR, __CHK) if (__CHK) goto __ERR
+			#include "incl/exec.c"
+		}
+
+		//~ fputfmt(fout, ".%04x:%9A\n", i, ip);
+		//~ fputfmt(fout, ".%04x:\t%A\n", i, ip);
+
+		if (mode & 0x10)		// offset
+			fputfmt(fout, ".%04x: ", i);
+
+		if (mode & 0x20)		// stack
+			fputfmt(fout, "ss(%03d): ", ss);
+
+		fputopc(fout, ip, mode & 0xf, mode & 0x10 ? i : -1);
+
+		fputc('\n', fout);
+	}
+	//~ fputasm(fout, s->_mem + s->pc, s->cs, offs);
 }
 
-vmEnv vmInit(void *dst, int size, int ss) {
-	vmEnv s = dst;
+vmEnv vmInit(void *dst, int size) {
+	vmEnv s = NULL;
 	//~ memset(s, 0, sizeof(struct vmEnv));
-	s->ds = s->ic = 0;
-	s->cs = s->pc = 0;
-	s->ss = s->sm = 0;
-	s->_cnt = size - sizeof(struct vmEnv);
-	s->_ptr = s->_mem;
-	s->ss = ss / 4;
+	if (size -= sizeof(struct vmEnv) > 0) {
+		s = dst;
+		//~ s->ds = s->ic = 0;
+		s->cs = s->pc = 0;
+		s->ss = s->sm = 0;
+		//~ s->_cnt = size - sizeof(struct vmEnv);
+		s->_ptr = s->_mem;
+		s->_end = s->_mem + size - sizeof(struct vmEnv);
+	}
 	return s;
 }
 
@@ -971,7 +970,7 @@ void* cc_malloc(state s, unsigned size);
 
 //!TODO: temp: vmGetEnv
 vmEnv vmGetEnv(state s, int size, int ss) {
-	s->code = vmInit(cc_malloc(s, size), size, ss);
-	s->code->env =s;
+	s->code = vmInit(cc_malloc(s, size), size);
+	s->code->env = s;
 	return s->code;
 }

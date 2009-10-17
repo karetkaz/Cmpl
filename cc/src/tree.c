@@ -133,7 +133,7 @@ int eval(astn res, astn ast, int get) {
 
 		case OPER_not: {		// '!'
 
-			dieif(get != TYPE_bit);
+			dieif(get != TYPE_bit, "");
 			if (!eval(res, ast->rhso, get))
 				return 0;
 
@@ -154,8 +154,7 @@ int eval(astn res, astn ast, int get) {
 				return 0;
 			if (!eval(&rhs, ast->rhso, get))
 				return 0;
-			dieif(lhs.kind != rhs.kind);
-			//~ if (lhs.kind != rhs.kind) debug("eval operator %k (%s, %s): %s", ast, tok_tbl[lhs.kind].name, tok_tbl[rhs.kind].name, tok_tbl[get].name);
+			dieif(lhs.kind != rhs.kind, "eval operator %k (%s, %s): %s", ast, tok_tbl[lhs.kind].name, tok_tbl[rhs.kind].name, tok_tbl[get].name);
 
 			switch (rhs.kind) {
 				default: return 0;
@@ -192,7 +191,7 @@ int eval(astn res, astn ast, int get) {
 				return 0;
 			if (!eval(&rhs, ast->rhso, get))
 				return 0;
-			dieif(lhs.kind != rhs.kind);
+			dieif(lhs.kind != rhs.kind, "eval operator %k (%s, %s): %s", ast, tok_tbl[lhs.kind].name, tok_tbl[rhs.kind].name, tok_tbl[get].name);
 
 			switch (rhs.kind) {
 				default: return 0;
@@ -230,7 +229,7 @@ int eval(astn res, astn ast, int get) {
 				return 0;
 			if (!eval(&rhs, ast->rhso, get))
 				return 0;
-			dieif(lhs.kind != rhs.kind);
+			dieif(lhs.kind != rhs.kind, "eval operator %k (%s, %s): %s", ast, tok_tbl[lhs.kind].name, tok_tbl[rhs.kind].name, tok_tbl[get].name);
 			switch (rhs.kind) {
 				default:
 					debug("eval(%+k) : %s", ast->rhso, tok_tbl[rhs.kind].name);
@@ -250,13 +249,14 @@ int eval(astn res, astn ast, int get) {
 
 		case OPER_lnd:
 		case OPER_lor: {
-			dieif(get != TYPE_bit);
+			dieif(get != TYPE_bit, "");
 			if (!eval(&lhs, ast->lhso, get))
 				return 0;
 			if (!eval(&rhs, ast->rhso, get))
 				return 0;
 
-			dieif(lhs.kind != rhs.kind);
+			dieif(lhs.kind != rhs.kind, "eval operator %k (%s, %s): %s", ast, tok_tbl[lhs.kind].name, tok_tbl[rhs.kind].name, tok_tbl[get].name);
+
 			res->kind = CNST_int;
 			switch (ast->kind) {
 				case OPER_lor: res->cint = lhs.cint || rhs.cint; break;
