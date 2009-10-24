@@ -58,11 +58,11 @@ case opc_sysc : NEXT(2, 0, -0) {
 } break;
 case opc_libc : NEXT(2, libcfnc[ip->idx].chk, -libcfnc[ip->idx].pop) {
 #ifdef EXEC
-	struct libcarg args;
-	args.data = ud;
-	args.argv = (char *)st;
-	args.retv = st + libcfnc[ip->idx].pop * 4;
-	libcfnc[ip->idx].call(&args);
+	//struct libcarg args;
+	//~ args.data = ud;
+	vm->s->argv = (char *)st;
+	vm->s->retv = st + libcfnc[ip->idx].pop * 4;
+	libcfnc[ip->idx].call(vm->s);
 #endif
 } break;
 case opc_call : NEXT(4, 0, +1) {

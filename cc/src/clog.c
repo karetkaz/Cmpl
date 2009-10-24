@@ -1,42 +1,28 @@
 //~ #include "clog.c"
 
-#include "main.h"
+#include "pvmc.h"
 //~~~~~~~~~~ Output ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #include <stdarg.h>
 #include <string.h>
 
-enum Format{
+enum Format {
 	noIden = 0x0100,
 	nlBody = 0x0010,
 	nlElIf = 0x0020,
 };
-
 static void fputsym(FILE *fout, symn sym, int mode, int level) {
 	if (sym) switch (sym->kind) {
-		// define
-		/*case CNST_int: 
-		case CNST_flt:
-		case CNST_str: {
-			if (mode > 0 && sym->init)
-				fputfmt(fout, "define %s = %?+k", sym->name, sym->init);
-			else fputfmt(fout, "%s", sym->name);
-		} break;*/
-
-		/*case TYPE_def: {
-			if (mode && sym->type) {
-				fputfmt(fout, "define %s ", sym->name);
-				fputsym(fout, sym->type, mode, level);
-			}
-			else fputfmt(fout, "?%?s!", sym->name);
-		} break;*/
 
 		// typename
 		case TYPE_vid:
 		case TYPE_bit:
 		case TYPE_int:
-		case TYPE_f32:
-		case TYPE_f64:
-		case TYPE_flt: {
+		//~ case TYPE_i32:
+		//~ case TYPE_i64:
+		case TYPE_flt:
+		//~ case TYPE_f32:
+		//~ case TYPE_f64:
+		/* TODO: types*/ {
 			// TODO recurese
 			fputfmt(fout, "%?s", sym->name);
 		} break;
@@ -53,24 +39,6 @@ static void fputsym(FILE *fout, symn sym, int mode, int level) {
 		} break;
 
 		// variable
-		/*case TYPE_fnc: {
-			fputsym(fout, sym->type, mode);
-			if (sym->name) {
-				fputc(' ', fout);
-				fputs(sym->name, fout);
-			}
-			fputc('(', fout);
-			if (sym->args) {
-				symn args = sym->args;
-				while (args) {
-					fputsym(fout, args->type, mode);
-					if ((args = args->next))
-						fputs(", ", fout);
-				}
-			}
-			fputc(')', fout);
-		} break;
-		// */
 		case TYPE_arr: {
 			//~ fputfmt(fout, "(");
 			fputfmt(fout, "[%?+k]", sym->init);
@@ -101,11 +69,12 @@ static void fputsym(FILE *fout, symn sym, int mode, int level) {
 			if (mode > 1 && sym->init)
 				fputfmt(fout, " = %+k", sym->init);
 		} break;
-		default: 
-			if (sym->kind < TYPE_ref)
-				fputfmt(fout, "%s", sym->name);
-			else
-				fputfmt(fout, "[%d]?%s?", sym->kind, tok_tbl[sym->kind].name);
+		//~ TODO case TYPE_def: fputfmt("define %s", sym->name);
+		default:
+			//~ if (sym->kind <= TYPE_ref)
+				//~ fputfmt(fout, "%s", sym->name);
+			//~ else
+			debug("%t('%s')", sym->kind, sym->name);
 			break;
 	}
 	else fputs("(null)", fout);
@@ -113,9 +82,10 @@ static void fputsym(FILE *fout, symn sym, int mode, int level) {
 static void fputast(FILE *fout, astn ast, int mode, int level) {
 	int pre = ast ? ast->kind & 0x0f : 0;
 	int noiden = mode & noIden;	// \n{ ...
-	//~ int nlelse = mode & nlElse;	// ...}'\n'else ...
-	int nlelif = 1;	// else\n if (...) ...
-	int nlbody = 0;	// \n{ ...
+	int nlelif = mode & nlElIf;	// ...}'\n'else ...
+	int nlbody = mode & nlBody;	// \n{ ...
+	//~ int nlelif = 1;	// else\n if (...) ...
+	//~ int nlbody = 1;	// \n{ ...
 
 	mode &= 0xf;
 	/*if (ast && mode &&!noiden) switch (ast->kind) {
@@ -147,9 +117,10 @@ static void fputast(FILE *fout, astn ast, int mode, int level) {
 				fputs("{}", fout);
 				break;
 			}
+			//~ mode | nlbody | nlelif;
 			fputfmt(fout, "%I%{\n", noiden ? 0 : level);
 			for (lst = ast->stmt; lst; lst = lst->next)
-				fputast(fout, lst, mode, level + 1);
+				fputast(fout, lst, mode | nlbody | nlelif, level + 1);
 			//~ fputfmt(fout, "% 4I|", 1);
 			fputfmt(fout, "%I}\n", level, ast->type);
 		} break;
@@ -165,11 +136,11 @@ static void fputast(FILE *fout, astn ast, int mode, int level) {
 				int kind = ast->stmt->kind;
 				if (!nlbody && kind == OPER_beg) {
 					fputfmt(fout, " ");
-					fputast(fout, ast->stmt, mode | noIden, level);
+					fputast(fout, ast->stmt, mode | nlbody | nlelif | noIden, level);
 				}
 				else {
 					fputfmt(fout, "\n");
-					fputast(fout, ast->stmt, mode, level + (kind != OPER_beg));
+					fputast(fout, ast->stmt, mode | nlbody | nlelif, level + (kind != OPER_beg));
 				}
 			}
 			else fputfmt(fout, ";\n");
@@ -177,15 +148,15 @@ static void fputast(FILE *fout, astn ast, int mode, int level) {
 				int kind = ast->step->kind;
 				if (!nlbody && (kind == OPER_beg)) {
 					fputfmt(fout, "%Ielse ", level);
-					fputast(fout, ast->step, mode | noIden, level);
+					fputast(fout, ast->step, mode | nlbody | nlelif | noIden, level);
 				}
 				else if (!nlelif && (kind == OPER_jmp)) {
 					fputfmt(fout, "%Ielse ", level);
-					fputast(fout, ast->step, mode | noIden, level);
+					fputast(fout, ast->step, mode | nlbody | nlelif | noIden, level);
 				}
 				else {
 					fputfmt(fout, "%Ielse\n", level);
-					fputast(fout, ast->step, mode, level + (kind != OPER_beg));
+					fputast(fout, ast->step, mode | nlbody | nlelif, level + (kind != OPER_beg));
 				}
 			}
 		} break;
@@ -201,11 +172,11 @@ static void fputast(FILE *fout, astn ast, int mode, int level) {
 				int kind = ast->stmt->kind;
 				if (!nlbody && kind == OPER_beg) {
 					fputfmt(fout, " ");
-					fputast(fout, ast->stmt, mode | noIden, level);
+					fputast(fout, ast->stmt, mode | nlbody | nlelif | noIden, level);
 				}
 				else {
 					fputfmt(fout, "\n");
-					fputast(fout, ast->stmt, mode, level + (kind != OPER_beg));
+					fputast(fout, ast->stmt, mode | nlbody | nlelif, level + (kind != OPER_beg));
 				}
 				/*if (blst && !nlbody) {
 					fputfmt(fout, "%Ifor (%+k; %+k; %+k) ", level, ast->init, ast->test, ast->step);
@@ -219,7 +190,6 @@ static void fputast(FILE *fout, astn ast, int mode, int level) {
 			else fputfmt(fout, ";\n");
 		} break;
 		//} */ // STMT
-
 		//{ OPER
 		case OPER_dot: {	// '.'
 			if (mode > 0) {
@@ -334,41 +304,41 @@ static void fputast(FILE *fout, astn ast, int mode, int level) {
 				fputs("?:", fout);
 		}break;
 		//}
-
 		//{ TVAL
 		case EMIT_opc: fputfmt(fout, "emit"); break;
 		case CNST_int: fputfmt(fout, "%D", ast->cint); break;
 		case CNST_flt: fputfmt(fout, "%F", ast->cflt); break;
 		case CNST_str: fputfmt(fout, "'%s'", ast->name); break;
 		case TYPE_ref: fputfmt(fout, "%s", ast->name); break;
-		case TYPE_val: fputfmt(fout, "%s", ast->name); break;
 		case TYPE_def: {
 			symn sym = ast->link;
-			if (mode < 1 || !ast->cast) {		// in expr || use
+			symn typ = ast->type;
+			if (mode < 1) {
 				fputfmt(fout, "%s", ast->name);
 			}
-			else switch(ast->cast) {
-				case TYPE_ref: {			// var
-					fputfmt(fout, "%T %s", ast->type, ast->name);
-					if (sym && sym->init)
+			else {
+				switch (sym->kind) {
+					case TYPE_def: fputfmt(fout, "define %s", ast->name); break;
+					case TYPE_ref: fputfmt(fout, "%T %s", typ, ast->name); break;
+				}
+				if (!sym || !typ) {
+					fputfmt(fout, ": ?err?");
+				}
+				else {
+					if (sym->init) {
+						//~ fputfmt(fout, " = %T(%+k)", sym->type, sym->init);
 						fputfmt(fout, " = %+k", sym->init);
-				} break;
-
-				default:
-				case TYPE_def: {			// type | const
-					fputfmt(fout, "define %s", ast->name);
-					/*if (sym && sym->kind == TYPE_def)
-						fputfmt(fout, " = %T(%+k)", ast->type, sym->init);
-					else fputfmt(fout, " %T", ast->type, sym->init);
-					*/
-				} break;
+					}
+					else {
+						fputfmt(fout, " %+T", typ);
+					}
+				}
 			}
 		} break;
 		//}
 
 		default:
-			//~ fputfmt(fout, "(?%?s[0x%02x])", tok_tbl[ast->kind].name, ast->kind);
-			//~ fputfmt(fout, "([0x%02x]:'%?s')", ast->kind, tok_tbl[ast->kind].name);
+			//~ fputfmt(fout, "([0x%02x]:'%k')", ast->kind, ast->kind);
 			fputfmt(fout, "([0x%02x]:'ERROR')", ast->kind);
 			break;
 	}
@@ -415,7 +385,12 @@ static void FPUTFMT(FILE *fout, const char *msg, va_list ap) {
 			switch (chr = *msg++) {
 				case 0: return;//--msg; break;
 				default: fputc(chr, fout); continue;
-				case 'T': {		// sym type, list, ????
+				case 't': {		// token
+					unsigned arg = va_arg(ap, unsigned);
+					dieif (arg > tok_last, "");
+					str = (char*)tok_tbl[arg].name;
+				} break;
+				case 'T': {		// type
 					symn sym = va_arg(ap, symn);
 					if (!sym && nil)
 						continue;
@@ -430,7 +405,7 @@ static void FPUTFMT(FILE *fout, const char *msg, va_list ap) {
 							break;
 					}
 				} continue;
-				case 'k': {		// ast: astn, expr, unit
+				case 'k': {		// node
 					astn ast = va_arg(ap, astn);
 					if (!ast && nil)
 						continue;
@@ -446,7 +421,7 @@ static void FPUTFMT(FILE *fout, const char *msg, va_list ap) {
 							break;
 					}
 				} continue;
-				case 'A': {		// dasm (code)
+				case 'A': {		// opcode
 					void* opc = va_arg(ap, void*);
 					if (nil && !opc) continue;
 					fputopc(fout, opc, len, -1);
@@ -651,17 +626,18 @@ void fputfmt(FILE *fout, const char *msg, ...) {
 }
 
 void perr(state s, int level, const char *file, int line, const char *msg, ...) {
-	FILE *fout =  (s && s->logf) ? s->logf : stderr;
+	FILE *fout =  (s && s && s->logf) ? s->logf : stderr;
+	int warnl = s->cc ? s->cc->warn : 0;
 	va_list argp;
 
 	if (level) {
-		if (level < 0 || s->warn < 0) {
+		if (level < 0 || warnl < 0) {
 			if (file && line)
 				fprintf(fout, "%s:%u:", file, line);
 			fprintf(fout, "error:");
 			s->errc += 1;
 		}
-		else if (level <= s->warn) {
+		else if (level <= warnl) {
 			if (file && line)
 				fprintf(fout, "%s:%u:", file, line);
 			fprintf(fout, "warn%d:", level);
@@ -700,8 +676,9 @@ void perr(state s, int level, const char *file, int line, const char *msg, ...) 
 void dumpsym(FILE *fout, symn sym, int alma) {
 	symn ptr, bs[TOKS], *ss = bs;
 	symn *tp, bp[TOKS], *sp = bp;
+	const int chrtyp = 0;
 	for (*sp = sym; sp >= bp;) {
-		int tch = '?';
+		char* tch = chrtyp ? "?" : "???: ";
 		if (!(ptr = *sp)) {
 			--sp, --ss;
 			continue;
@@ -717,12 +694,12 @@ void dumpsym(FILE *fout, symn sym, int alma) {
 			//~ case TYPE_def: tch = '#'; break;
 
 			// variable/function
-			case TYPE_ref: tch = '$'; break;
+			case TYPE_ref: tch = chrtyp ? "$" : "var: "; break;
 
 			// typename
 			case TYPE_def:	// TODO
 				//~ if (ptr->init) {
-					tch = '#';
+					tch = chrtyp ? "#" : "def: ";
 					break;
 				//~ }
 
@@ -745,24 +722,23 @@ void dumpsym(FILE *fout, symn sym, int alma) {
 			case TYPE_rec: 
 				*++sp = ptr->args;
 				*ss++ = ptr;
-				tch = '^';
+				tch = chrtyp ? "^" : "typ: ";
 				break;
 
 			case EMIT_opc:
-				*++sp = ptr->args;
-				*ss++ = ptr;
-				tch = '@';
+				tch = chrtyp ? "@" : "opc: ";
 				break;
 
 			default:
-				debug("psym:%d:%T['%s']", ptr->kind, ptr, tok_tbl[ptr->kind].name);
-				tch = '?';
+				debug("psym:%d:%T['%t']", ptr->kind, ptr, ptr->kind);
+				tch = chrtyp ? "?" : "err: ";
 				break;
 		}
+
 		if (ptr->file && ptr->line)
 			fputfmt(fout, "%s:%d:", ptr->file, ptr->line);
 
-		fputc(tch, fout);
+		fputs(tch, fout);
 
 		for (tp = bs; tp < ss; tp++) {
 			symn typ = *tp;
@@ -821,7 +797,7 @@ void dumpxml(FILE *fout, astn ast, int lev, const char* text, int level) {
 
 	fputfmt(fout, "%I<%s id='%d' oper='%?k'", lev, text, ast->kind, ast);
 	if (level & 1) fputfmt(fout, " type='%?T'", ast->type);
-	if (level & 2) fputfmt(fout, " cast='%s'", tok_tbl[ast->cast].name);
+	if (level & 2) fputfmt(fout, " cast='%t'", ast->cast);
 	if (level & 8) fputfmt(fout, " line='%d'", ast->line);
 	if (level & 4) fputfmt(fout, " stmt='%+k'", ast);
 	switch (ast->kind) {
@@ -927,8 +903,8 @@ void dumpxml(FILE *fout, astn ast, int lev, const char* text, int level) {
 
 		//{ TVAL
 		case EMIT_opc:
-		case TYPE_val:
 		case TYPE_def:
+		case TYPE_enu:
 		case TYPE_ref:
 		case CNST_int:
 		case CNST_flt:
@@ -937,21 +913,34 @@ void dumpxml(FILE *fout, astn ast, int lev, const char* text, int level) {
 		} break;
 		//}
 
-		default: fatal("%s / %k", tok_tbl[ast->kind].name, ast); break;
+		default: fatal("%t / %k", ast->kind, ast); break;
 	}
 }
 void dumpast(FILE *fout, astn ast, int level) {
-	if (level)
+	if (level & 0x0f)
 		dumpxml(fout, ast, 0, "root", level);
 	else
-		fputfmt(fout, "%-k", ast);
+		fputast(fout, ast, level | 2, 0);
 }
 
-void dump(state s, FILE *fout, dumpWhat mode) {
+void dump(state s, char *file, dumpMode mode, char *text) {
+	FILE *fout = stdout;
 	int level = mode & 0xff;
-	switch (mode & ~0xff) {
-		case dump_sym: dumpsym(fout, s->glob, level); break;
-		case dump_ast: dumpast(fout, s->root, level); break;
-		case dump_asm: dumpasm(fout, s->code, level); break;
+
+	if (file)
+		fout = fopen(file, (mode & dump_new) ? "w" : "a");
+
+	dieif(!fout, "cannot open file '%s'", file);
+
+	if (text != NULL)
+		fputs(text, fout);
+
+	switch (mode & dumpMask) {
+		case dump_sym: dumpsym(fout, s->cc->defs, level); break;
+		case dump_ast: dumpast(fout, s->cc->root, level); break;
+		case dump_asm: dumpasm(fout, s->vm, level); break;
+		default: debug("invalid mode");
 	}
+	if (file)
+		fclose(fout);
 }

@@ -4,149 +4,11 @@
 #include <ctype.h>
 #include <fcntl.h>
 #include <math.h>
-#include "main.h"
+#include "pvmc.h"
 
-//{~~~~~~~~~ Lexer ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-//~ export astn peek(state);
-//~ export astn next(state, int kind);
-//~ export void back(state, astn ast);
-//~ export bool skip(state, int kind);
-//~ export bool test(state, int kind);
+//{~~~~~~~~~ Utils ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-int fill_buf(state s);
-
-int source(state s, LoadType mode, char* file) {
-	if (s->_fin > 3)
-		close(s->_fin);
-	s->_fin = -1;
-	s->_chr = -1;
-	s->_ptr = 0;
-	s->_cnt = 0;
-	s->_tok = 0;
-	//~ s->file = 0;
-	s->line = 0;
-	//~ s->nest = 0;
-
-	switch (mode) {
-		case source_none: break;
-		case source_file: {
-			if ((s->_fin = open(file, O_RDONLY)) <= 0) return -1;
-			s->file = file;
-			s->line = 1;
-		} break;
-		case source_buff: {
-			s->_cnt = strlen(file);
-			s->_ptr = file;
-		} break;
-		default: fatal("source");
-	}
-	fill_buf(s);
-	return 0;
-}
-
-int fill_buf(state s) {
-	if (s->_fin >= 0) {
-		unsigned char* base = s->_buf + s->_cnt;
-		int l, size = sizeof(s->_buf) - s->_cnt;
-		memcpy(s->_buf, s->_ptr, s->_cnt);
-		s->_cnt += l = read(s->_fin, base, size);
-		if (l == 0) {
-			s->_buf[s->_cnt] = 0;
-			close(s->_fin);
-			s->_fin = -1;
-		}
-		s->_ptr = (char*)s->_buf;
-	}
-	//~ print(0, ERROR, __FILE__, __LINE__, "fill_buff():%d", s->_cnt);
-	return s->_cnt;
-}
-
-int read_chr(state s) {
-	if (s->_chr != -1) {
-		int chr = s->_chr;
-		s->_chr = -1;
-		return chr;
-	}
-	if (s->_cnt <= 4 && fill_buf(s) <= 0) {
-		return -1;
-	}
-	while (*s->_ptr == '\\' && (s->_ptr[1] == '\n' || s->_ptr[1] == '\r')) {
-		if (s->_ptr[1] == '\r' && s->_ptr[2] == '\n') {
-			s->_cnt -= 3;
-			s->_ptr += 3;
-		} else {
-			s->_ptr += 2;
-			s->_cnt -= 2;
-		}
-		if (s->_cnt <= 4 && !fill_buf(s)) {
-			warn(s, 9, s->file, s->line, "backslash-newline at end of file");
-			return -1;
-		}
-		s->line += s->line != 0;
-	}
-	if (*s->_ptr == '\r' || *s->_ptr == '\n') {
-		if (s->_ptr[0] == '\r' && s->_ptr[1] == '\n')
-			--s->_cnt, s->_ptr++;
-		--s->_cnt, s->_ptr++;
-		s->line += s->line != 0;
-		return '\n';
-	}
-	return *(--s->_cnt, s->_ptr++);
-}
-
-int peek_chr(state s) {
-	if (s->_chr == -1)
-		s->_chr = read_chr(s);
-	return s->_chr;
-}
-
-int back_chr(state s, int chr) {
-	dieif (s->_chr != -1, "");
-	return s->_chr = chr;
-}
-
-/*//~ alloc/realloc/calloc
-inline unsigned memlen(list meml) {
-	return meml->data - (unsigned char*)meml;
-	//~ return (unsigned char*)&meml->data - meml->data;
-}
-
-void* newmem(state s, unsigned size, unsigned algn) {
-	list mem;
-	//~ if (oldp == (void*)-1);	// malloc
-	//~ else if (oldp == (void*)0);	// calloc
-	//~ else {}			// ralloc
-	for (mem = s->free; mem; mem = mem->next) {
-		unsigned len = memlen(mem);
-		if (size >= len + sizeof(mem)) {
-			list seg = (list)(mem->data + len);
-			seg->data = mem->data;
-			seg->next = s->used;
-			s->used = seg;
-			mem->data += len + sizeof(mem);
-			return seg->data;
-		}
-	}
-	return 0;
-}
-
-void delmem(state s, void* memp) {
-	list ml;
-	//~ if (memp == (void*)-1) return;
-	//~ if (memp == (void*)0) return;
-	//~ else 
-	for (ml = s->used; ml; ml = ml->next) {
-		if (ml->data == memp) {
-			ml->next = s->free;
-			s->free = ml;
-			return;
-		}
-	}
-	//~ error()
-}
-*/
-
-int rehash(register const char* str, unsigned size) {
+int rehash(register const char* str, unsigned len) {
 	static unsigned const crc_tab[256] = {
 		0x00000000, 0x77073096, 0xEE0E612C, 0x990951BA,
 		0x076DC419, 0x706AF48F, 0xE963A535, 0x9E6495A3,
@@ -216,7 +78,7 @@ int rehash(register const char* str, unsigned size) {
 
 	register unsigned hs = 0xffffffff;
 
-	if (str) while (size-- > 0)
+	if (str) while (len-- > 0)
 		hs = (hs >> 8) ^ crc_tab[(hs ^ (*str++)) & 0xff];
 
 	return (hs ^ 0xffffffff) % TBLS;
@@ -250,8 +112,16 @@ char *strfindstr(const char *t, const char *p, int flgs) {
 	return p[i] ? 0 : (char*)t - i;
 }
 
-int parseint(register const char *str, int *res, int hexchr) {
+char* parsecmd(char *ptr, char *cmd, char *sws) {
+	while (*cmd && *cmd == *ptr) cmd++, ptr++;
+	if (sws && !strchr(sws, *ptr)) return 0;
+	if (sws) while (strchr(sws, *ptr)) ++ptr;
+	return ptr;
+}
+// TODO: make it char* parseint(char *ptr, int *res, char *hexskip)
+int parseInt(const char *str, int *res, int hexchr) {
 	int val = 0;
+	//~ debug("parse(%c, %s)", hexchr, str);
 	if (hexchr && *str == hexchr) while (*++str) {
 		if (*str >= '0' && *str <= '9')
 			val = val * 16 + (*str - '0');
@@ -300,40 +170,102 @@ int parsef64(register const char *str, flt64t *res) {
 }
 */
 
-char *mapstr(state s, char *name, unsigned size/* = -1U*/, unsigned hash/* = -1U*/) {
+//}
 
-	list newn, next, prev = 0;
+//{~~~~~~~~~ Input ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+extern int fill_buf(ccEnv s);
+int source(ccEnv s, srcType mode, char* file) {
+	if (s->_fin > 3)
+		close(s->_fin);
+	s->_fin = -1;
+	s->_chr = -1;
+	s->_ptr = 0;
+	s->_cnt = 0;
+	s->_tok = 0;
+	//~ s->file = 0;
+	s->line = 0;
+	//~ s->nest = 0;
 
-	if (size == -1U) size = strlen(name);
-	if (hash == -1U) hash = rehash(name, size);
-	for (next = s->strt[hash]; next; next = next->next) {
-		//~ int slen = next->data - (unsigned char*)next;
-		register int c = memcmp(next->data, name, size);
-		if (c == 0) return (char*)next->data;
-		if (c > 0) break;
-		prev = next;
+	if (mode & srcFile) {
+		if ((s->_fin = open(file, O_RDONLY)) <= 0)
+			return -1;
+		s->file = file;
+		s->line = 1;
 	}
-
-	if (name != s->buffp) {
-		debug("lookupstr(name != s->buffp)");
-		memcpy(s->buffp, name, size);
-		name = s->buffp;
+	else if (file) {
+		s->_cnt = strlen(file);
+		s->_ptr = file;
 	}
-
-	s->buffp += size+1;
-	newn = (struct listn_t*)s->buffp;
-	s->buffp += sizeof(struct listn_t);
-
-	if (!prev) s->strt[hash] = newn;
-	else prev->next = newn;
-
-	newn->next = next;
-	newn->data = (unsigned char *)name;
-
-	return name;
+	/*else {
+		if (s->_fin > 3)
+			close(s->_fin);
+	}// */
+	fill_buf(s);
+	return 0;
 }
 
-int escchr(state s) {
+int fill_buf(ccEnv s) {
+	if (s->_fin >= 0) {
+		unsigned char* base = s->_buf + s->_cnt;
+		int l, size = sizeof(s->_buf) - s->_cnt;
+		memcpy(s->_buf, s->_ptr, s->_cnt);
+		s->_cnt += l = read(s->_fin, base, size);
+		if (l == 0) {
+			s->_buf[s->_cnt] = 0;
+			close(s->_fin);
+			s->_fin = -1;
+		}
+		s->_ptr = (char*)s->_buf;
+	}
+	//~ print(0, ERROR, __FILE__, __LINE__, "fill_buff():%d", s->_cnt);
+	return s->_cnt;
+}
+
+int read_chr(ccEnv s) {
+	if (s->_chr != -1) {
+		int chr = s->_chr;
+		s->_chr = -1;
+		return chr;
+	}
+	if (s->_cnt <= 4 && fill_buf(s) <= 0) {
+		return -1;
+	}
+	while (*s->_ptr == '\\' && (s->_ptr[1] == '\n' || s->_ptr[1] == '\r')) {
+		if (s->_ptr[1] == '\r' && s->_ptr[2] == '\n') {
+			s->_cnt -= 3;
+			s->_ptr += 3;
+		} else {
+			s->_ptr += 2;
+			s->_cnt -= 2;
+		}
+		if (s->_cnt <= 4 && !fill_buf(s)) {
+			warn(s->s, 9, s->file, s->line, "backslash-newline at end of file");
+			return -1;
+		}
+		s->line += s->line != 0;
+	}
+	if (*s->_ptr == '\r' || *s->_ptr == '\n') {
+		if (s->_ptr[0] == '\r' && s->_ptr[1] == '\n')
+			--s->_cnt, s->_ptr++;
+		--s->_cnt, s->_ptr++;
+		s->line += s->line != 0;
+		return '\n';
+	}
+	return *(--s->_cnt, s->_ptr++);
+}
+
+int peek_chr(ccEnv s) {
+	if (s->_chr == -1)
+		s->_chr = read_chr(s);
+	return s->_chr;
+}
+
+int back_chr(ccEnv s, int chr) {
+	dieif (s->_chr != -1, "");
+	return s->_chr = chr;
+}
+
+int escchr(ccEnv s) {
 	int chr;
 	switch (chr = read_chr(s)) {
 		case  'a': return '\a';
@@ -363,7 +295,7 @@ int escchr(state s) {
 				}
 			}
 			if (val & 0xffffff00)
-				warn(s, 4, s->file, s->line, "octal escape sequence overflow");
+				warn(s->s, 4, s->file, s->line, "octal escape sequence overflow");
 			return val & 0xff;
 		}
 
@@ -375,7 +307,7 @@ int escchr(state s) {
 			else if (h1 >= 'a' && h1 <= 'f') h1 -= 'a' - 10;
 			else if (h1 >= 'A' && h1 <= 'F') h1 -= 'A' - 10;
 			else {
-				error(s, s->line, "hex escape sequence invalid");
+				error(s->s, s->line, "hex escape sequence invalid");
 				return 0;
 			}
 
@@ -383,20 +315,61 @@ int escchr(state s) {
 			else if (h2 >= 'a' && h2 <= 'f') h2 -= 'a' - 10;
 			else if (h2 >= 'A' && h2 <= 'F') h2 -= 'A' - 10;
 			else {
-				error(s, s->line, "hex escape sequence invalid");
+				error(s->s, s->line, "hex escape sequence invalid");
 				return 0;
 			}
 			return h1 << 4 | h2;
 		}
 		default: {
 			//~ back_chr(s, chr);
-			error(s, s->line, "unknown escape sequence '\\%c'", chr);
+			error(s->s, s->line, "unknown escape sequence '\\%c'", chr);
 		} return -1;
 	}
 	return 0;
 }
 
-int read_tok(state s, astn tok)
+//}
+
+//{~~~~~~~~~ Lexer ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//~ export astn peek(state);
+//~ export astn next(state, int kind);
+//~ export void back(state, astn ast);
+//~ export bool skip(state, int kind);
+//~ export bool test(state, int kind);
+
+char *mapstr(ccEnv s, char *name, unsigned size/* = -1U*/, unsigned hash/* = -1U*/) {
+
+	list newn, next, prev = 0;
+
+	if (size == -1U) size = strlen(name);
+	if (hash == -1U) hash = rehash(name, size);
+	for (next = s->strt[hash]; next; next = next->next) {
+		//~ int slen = next->data - (unsigned char*)next;
+		register int c = memcmp(next->data, name, size);
+		if (c == 0) return (char*)next->data;
+		if (c > 0) break;
+		prev = next;
+	}
+	if (name != s->buffp) {
+		debug("lookupstr(name != s->buffp)");
+		memcpy(s->buffp, name, size);
+		name = s->buffp;
+	}
+
+	s->buffp += size + 1;
+	newn = (struct listn_t*)s->buffp;
+	s->buffp += sizeof(struct listn_t);
+
+	if (!prev) s->strt[hash] = newn;
+	else prev->next = newn;
+
+	newn->next = next;
+	newn->data = (unsigned char *)name;
+
+	return name;
+}
+
+int read_tok(ccEnv s, astn tok)
 //!TODO: remove "debug"
 //!TODO: fix readnum change with 2 pass reader
 {
@@ -692,8 +665,8 @@ int read_tok(state s, astn tok)
 					if (chr == '\n') break;
 					prevchr = chr;
 				}
-				if (chr == -1) warn(s, 9, s->file, line, "no newline at end of file(%c)", prevchr);
-				else if (s->line != line+1) warn(s, 9, s->file, line, "multi-line comment");
+				if (chr == -1) warn(s->s, 9, s->file, line, "no newline at end of file(%c)", prevchr);
+				else if (s->line != line+1) warn(s->s, 9, s->file, line, "multi-line comment");
 			}
 			else if (next == '*') {
 				int c = 0, prev_chr = 0;
@@ -702,10 +675,10 @@ int read_tok(state s, astn tok)
 					//~ if (prev_chr) debug("%c", chr);
 					if (prev_chr == '*' && chr == '/') break;
 					if (prev_chr == '/' && chr == '*' && c++)
-						warn(s, 8, s->file, s->line, "\"/ *\" within comment(%d)", c - 1);
+						warn(s->s, 8, s->file, s->line, "\"/ *\" within comment(%d)", c - 1);
 					prev_chr = chr;
 				}
-				if (chr == -1) error(s, line, "unterminated comment2");
+				if (chr == -1) error(s->s, line, "unterminated comment2");
 				//~ else debug("\n!!!comment.box:}\n");
 				chr = read_chr(s);
 			}
@@ -718,13 +691,13 @@ int read_tok(state s, astn tok)
 					if (prev_chr == '+' && chr == '/' && !--l) break;
 					prev_chr = chr;
 				}
-				if (chr == -1) error(s, line, "unterminated comment1");
+				if (chr == -1) error(s->s, line, "unterminated comment1");
 				//~ else debug("\n!!!comment.block:}\n");
 				chr = read_chr(s);
 			}
 		}
 		if (chr == 0) {
-			warn(s, 5, s->file, s->line, "null character(s) ignored");
+			warn(s->s, 5, s->file, s->line, "null character(s) ignored");
 			while (!chr) chr = read_chr(s);
 		}
 
@@ -771,7 +744,7 @@ int read_tok(state s, astn tok)
 			if (chr_map[chr & 0xff] & DIGIT) goto read_num;
 
 			// control(<32) or non ascii character(>127) ?
-			error(s, s->line, "error reading char: '%c'", chr);
+			error(s->s, s->line, "error reading char: '%c'", chr);
 			tok->kind = TOKN_err;
 		} break;
 		case '.': {
@@ -965,20 +938,20 @@ int read_tok(state s, astn tok)
 			}
 			*ptr = 0;
 			if (chr != '\'') {					// error
-				error(s, s->line, "unclosed character constant ('\'' missing)");
+				error(s->s, s->line, "unclosed character constant ('\'' missing)");
 				return tok->kind = TOKN_err;
 			}
 			if (ptr == beg) {
-				error(s, s->line, "empty character constant");
+				error(s->s, s->line, "empty character constant");
 				return tok->kind = TOKN_err;
 			}
-			else if (ptr > beg + sizeof(int)) warn(s, 1, s->file, s->line, "character constant truncated");
-			else if (ptr > beg + sizeof(char)) warn(s, 5, s->file, s->line, "multi character constant");
+			else if (ptr > beg + sizeof(int)) warn(s->s, 1, s->file, s->line, "character constant truncated");
+			else if (ptr > beg + sizeof(char)) warn(s->s, 5, s->file, s->line, "multi character constant");
 			tok->cint = val;
 			tok->type = type_i64;
 			return tok->kind = CNST_int;
 		} break;
-		case '\"': {		// \"[^\"\n]*
+		/*TODO: case '\"': {		// \"[^\"\n]*
 			while ((chr = read_chr(s)) != -1) {
 				if (chr == '\"') break;
 				else if (chr == '\n') break;
@@ -987,14 +960,14 @@ int read_tok(state s, astn tok)
 			}
 			*ptr = 0;
 			if (chr != '\"') {					// error
-				error(s, s->line, "unclosed string constant ('\"' missing)");
+				error(s->s, s->line, "unclosed string constant ('\"' missing)");
 				return tok->kind = TOKN_err;
 			}
 			tok->type = type_str;
 			tok->hash = rehash(beg, ptr - beg);
 			tok->name = mapstr(s, beg, ptr - beg, tok->hash);
 			return tok->kind = CNST_str;
-		} break;
+		} break;// */
 		read_idf: {		// [a-zA-Z_][a-zA-Z0-9_]*
 			while (chr != -1) {
 				if (!(chr_map[chr & 0xff] & CWORD)) break;
@@ -1003,7 +976,7 @@ int read_tok(state s, astn tok)
 			}
 			*ptr = 0;
 			back_chr(s, chr);
-			if (!strcmp(beg, "__LINE__")) {
+			/*if (!strcmp(beg, "__LINE__")) {
 				tok->kind = CNST_int;
 				tok->type = type_i32;
 				tok->cint = s->line;
@@ -1034,7 +1007,8 @@ int read_tok(state s, astn tok)
 			}
 			//~ else if (!strcmp(beg, "__TIME__"));
 			//~ else if (!strcmp(beg, "__DATE__"));
-			else for(chr = 0; chr < tok_last; chr += 1) {
+			else // */
+			for(chr = 0; chr < tok_last; chr += 1) {
 				if (tok_tbl[chr].kind != ID) continue;
 				if (strcmp(beg, tok_tbl[chr].name) == 0) {
 					tok->kind = chr;
@@ -1066,9 +1040,9 @@ int read_tok(state s, astn tok)
 				exp_err = got_exp + get_val,
 				oct_err = get_oct + not_oct,
 			} ;int get_type = get_val;
-			char *suf;				// suffix
+			char *suf;					// suffix
 			double flt = 0;				// float value
-			int val = 0, exp = 0;			// value
+			int val = 0, exp = 0;		// value
 			if (chr == '0') {
 				*ptr++ = chr; chr = read_chr(s);
 				if (chr == 'b' || chr == 'B') {
@@ -1161,9 +1135,9 @@ int read_tok(state s, astn tok)
 			}
 			back_chr(s, chr);
 			if (*suf || (get_type & get_val)) {	// error
-				error(s, tok->line, "parse error in numeric constant \"%s\"", beg);
-				if ((get_type & exp_err) == exp_err) error(s, tok->line, "exponent has no digits");
-				else if (*suf) error(s, tok->line, "invalid suffix in numeric constant '%s'", suf);
+				error(s->s, tok->line, "parse error in numeric constant \"%s\"", beg);
+				if ((get_type & exp_err) == exp_err) error(s->s, tok->line, "exponent has no digits");
+				else if (*suf) error(s->s, tok->line, "invalid suffix in numeric constant '%s'", suf);
 				return tok->kind;
 			}
 			if (get_type & (got_flt)) {		// float
@@ -1174,11 +1148,11 @@ int read_tok(state s, astn tok)
 			}
 			else {					// integer
 				if ((get_type & oct_err) == oct_err) {
-					error(s, s->line, "parse error in octal constant \"%s\"", beg);
+					error(s->s, s->line, "parse error in octal constant \"%s\"", beg);
 					return tok->kind = TOKN_err;
 				}
 				if (get_type & val_ovf) {
-					warn(s, 2, s->file, tok->line, "integer constant '%s' is too large", beg);
+					warn(s->s, 2, s->file, tok->line, "integer constant '%s' is too large", beg);
 				}
 				tok->kind = CNST_int;
 				//~ tok->type = type_i32;
@@ -1190,7 +1164,7 @@ int read_tok(state s, astn tok)
 	return tok->kind;
 }
 
-astn peek(state s) {
+astn peek(ccEnv s) {
 	if (s->_tok == 0) {
 		s->_tok = newnode(s, 0);
 		if (!read_tok(s, s->_tok)) {
@@ -1202,7 +1176,7 @@ astn peek(state s) {
 	return s->_tok;
 }
 
-astn next(state s, int kind) {
+astn next(ccEnv s, int kind) {
 	if (!peek(s)) return 0;
 	if (!kind || s->_tok->kind == kind) {
 		astn ast = s->_tok;
@@ -1213,19 +1187,19 @@ astn next(state s, int kind) {
 	return 0;
 }
 
-void back(state s, astn ast) {
+void back(ccEnv s, astn ast) {
 	ast->next = s->_tok;
 	s->_tok = ast;
 }
 
-int test(state s, int kind) {
+int test(ccEnv s, int kind) {
 	astn ast = peek(s);
 	if (!ast || (kind && ast->kind != kind))
 		return 0;
 	return 1;
 }
 
-int skip(state s, int kind) {
+int skip(ccEnv s, int kind) {
 	astn ast = peek(s);
 	if (!ast || (kind && ast->kind != kind))
 		return 0;
@@ -1236,12 +1210,7 @@ int skip(state s, int kind) {
 //}
 
 //{~~~~~~~~~ Parser ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-//~ export astn scan(state s, int mode);
-//~ export astn stmt(state s, int mode);
-//~ export astn decl(state s, int mode);
-//~ export astn expr(state s, int mode);
-
-astn scan(state s, int mode) {
+int scan(ccEnv s, int mode) {
 	astn tok, lst = 0, ast = 0;
 
 	#if 0		// read ahead all tokens or not
@@ -1263,29 +1232,31 @@ astn scan(state s, int mode) {
 		if ((tok = stmt(s, 0))) {
 			if (!ast) ast = lst = tok;
 			else lst = lst->next = tok;
-			if (mode && tok->kind != OPER_nop)
-				error(s, ast->line, "declaration expected");
+			if (mode && (tok->kind != OPER_nop))
+				error(s->s, ast->line, "declaration expected");
 		}
 	}
-	s->glob = leave(s, NULL);
+	s->defs = leave(s);
 
 	if (s->nest)
-		error(s, s->line, "premature end of file");
+		error(s->s, s->line, "premature end of file");
 
 	if (ast) {
 		astn tmp = newnode(s, OPER_beg);
-		tmp->name = s->file;
-		tmp->rhso = ast;
-		tmp->lhso = lst;
+		//~ tmp->name = s->file;
+		tmp->stmt = ast;
+		//~ tmp->lhso = lst;
 		ast = tmp;
 	}
 
+	s->root = ast;
+
 	trace(-32, "leave('%k')", peek(s));
 
-	return ast;
+	return s->s->errc;
 }
 
-astn stmt(state s, int mode) {
+astn stmt(ccEnv s, int mode) {
 	astn ast, tmp = peek(s);
 	int qual = 0;// qual(s, mode);			// static | const | parallel
 	trace(+16, "enter('%k')", peek(s));
@@ -1306,7 +1277,7 @@ astn stmt(state s, int mode) {
 				end = tmp;
 			}
 		}
-		ast->type = leave(s, NULL);
+		ast->type = leave(s);
 		if (!ast->stmt) {			// eat sort of {{;{;};{}{}}}
 			eatnode(s, ast);
 			ast = 0;
@@ -1328,10 +1299,10 @@ astn stmt(state s, int mode) {
 				}
 				else ast->step = NULL;
 			}
-			else error(s, s->line, " ')' expected, not %k", peek(s));
+			else error(s->s, s->line, " ')' expected, not %k", peek(s));
 		}
-		else error(s, s->line, " '(' expected");
-		ast->type = leave(s, NULL);
+		else error(s->s, s->line, " '(' expected");
+		ast->type = leave(s);
 	}
 	else if ((ast = next(s, OPER_for))) {	// for (...)
 		enter(s, 0);
@@ -1341,29 +1312,29 @@ astn stmt(state s, int mode) {
 		ast->test = 0;
 		ast->step = 0;
 		if (!skip(s, PNCT_lp)) {
-			error(s, s->line, " '(' expected");
+			error(s->s, s->line, " '(' expected");
 		}
 		if (!skip(s, OPER_nop)) {		// init
 			ast->init = decl(s, 0);
 			if (!ast->init)
 				ast->init = expr(s, 0);
 			if (!skip(s, OPER_nop))
-				error(s, s->line, " ';' expected");
+				error(s->s, s->line, " ';' expected");
 		}
 		if (!skip(s, OPER_nop)) {		// test 
 			ast->test = expr(s, 1);
 			if (!skip(s, OPER_nop)) {
-				error(s, s->line, " ';' expected");
+				error(s->s, s->line, " ';' expected");
 			}
 		}
 		if (!skip(s, PNCT_rp)) {		// incr
 			ast->step = expr(s, 1);
 			if (!skip(s, PNCT_rp)) {
-				error(s, s->line, " ')' expected");
+				error(s->s, s->line, " ')' expected");
 			}
 		}
 		ast->stmt = stmt(s, 1);
-		ast->type = leave(s, NULL);
+		ast->type = leave(s);
 	}
 	else if ((ast = decl(s, qual))) {		// type?
 		astn tmp = newnode(s, OPER_nop);
@@ -1374,7 +1345,7 @@ astn stmt(state s, int mode) {
 		//~ ast->cast = TYPE_vid;
 
 		if (ast->type && mode)
-			error(s, s->line, "unexpected declaration");
+			error(s->s, s->line, "unexpected declaration");
 	}
 	else if ((ast = expr(s, 0))) {			// expr;
 		astn tmp = newnode(s, OPER_nop);
@@ -1385,7 +1356,7 @@ astn stmt(state s, int mode) {
 		//~ ast->cast = TYPE_vid;
 
 		if (!skip(s, OPER_nop)) {
-			error(s, s->line, " ';' expected, not `%k`", peek(s));
+			error(s->s, s->line, " ';' expected, not `%k`", peek(s));
 			while (peek(s) && !skip(s, OPER_nop)) {
 				if (skip(s, OPER_end)) return 0;
 				skip(s, 0);
@@ -1401,32 +1372,79 @@ astn stmt(state s, int mode) {
 	return ast;
 }
 
-symn spec(state s, int qual);
-symn type(state s, int qual);
-astn dvar(state s, symn typ, int qual);
+astn spec(ccEnv s, int qual);
+symn type(ccEnv s, int qual);
+//~ astn dvar(ccEnv s, symn typ, int qual);
 
-astn decl(state s, int qual) {
+astn decl(ccEnv s, int qual) {
+	astn ast = NULL;
 	symn typ;
-	if ((typ = spec(s, qual))) {
-		astn ast = newnode(s, TYPE_def);
+	trace(+2, "enter('%k')", peek(s));
+ 	if ((ast = spec(s, qual))) {
+		//~ ast = typ->
+		/*newnode(s, TYPE_def);
 		ast->type = typ;
+		ast->line = typ->line;
 		ast->name = typ->name;
-		ast->cast = TYPE_def;
-		//~ debug("%+T", typ);
-		//~ debug("%+k", ast);
-		return ast;
+		ast->cast = TYPE_def;*/
+		//~ debug("%+k: %+T", ast, typ);
 	}
-	if ((typ = type(s, qual))) {
-		astn ast = dvar(s, typ, qual);
+	else if ((typ = type(s, qual))) {
+		/*astn ast = dvar(s, typ, qual);
 		if (ast)
 			ast->type = typ;
 		//~ debug("%+k", ast);
-		return ast;
+		*/
+		//~ astn tag = 0;
+		symn ref = 0;
+
+		if (!(ast = next(s, TYPE_ref))) {
+			debug("id expected, not %k", peek(s));
+			return 0;
+		}
+
+		ref = declare(s, TYPE_ref, ast, typ, 0);
+
+		if (test(s, OPER_nop));				// int a;
+		else if (skip(s, ASGN_set)) {		// int a = 7;
+			ref->init = expr(s, TYPE_ref);
+		}
+		else if (skip(s, OPER_com)) {		// int a, ...
+			fatal("variables");
+		}
+		else if (test(s, PNCT_lp)) {		// int a()
+			fatal("function");
+		}
+		else if (skip(s, PNCT_lc)) {		// int a[]
+			struct astn len;
+			symn arr = newdefn(s, TYPE_arr);
+			arr->init = expr(s, CNST_int);
+			if (!skip(s, PNCT_rc)) {
+				error(s->s, s->line, "missing ']'");
+				return 0;
+			}
+			if (eval(&len, arr->init, CNST_int))
+				arr->size = typ->size * len.cint;
+			arr->type = typ;
+			ref->type = arr;
+		}
+
+		if (!test(s, OPER_nop)) {
+			error(s->s, s->line, "unexpected %k", peek(s));
+			return 0;
+		}
+
+		ast->type = typ;
+		ast->kind = TYPE_def;
+		ast->cast = TYPE_ref;
+		ast->line = ref->line;
+		ast->link = ref;
 	}
-	return NULL;
+	trace(-4, "leave('%-k')", ast);
+	return ast;
 }
 
-astn expr(state s, int mode) {
+astn expr(ccEnv s, int mode) {
 	astn buff[TOKS], *base = buff + TOKS;
 	astn *post = buff, *prec = base, tok;
 	char sym[TOKS];							// symbol stack {, [, (, ?
@@ -1461,13 +1479,13 @@ astn expr(state s, int mode) {
 				if (tok_tbl[tok->kind].argc) {			// operator
 					if (unary) {
 						*post++ = 0;
-						error(s, tok->line, "syntax error before '%k'", tok);
+						error(s->s, tok->line, "syntax error before '%k'", tok);
 					}
 					unary = 1;
 					goto tok_op;
 				} else {
 					if (!unary)
-						error(s, tok->line, "syntax error before '%k'", tok);
+						error(s->s, tok->line, "syntax error before '%k'", tok);
 					unary = 0;
 					goto tok_id;
 				}
@@ -1496,7 +1514,7 @@ astn expr(state s, int mode) {
 					break;
 				}
 				else {
-					error(s, tok->line, "syntax error before ')' token");
+					error(s->s, tok->line, "syntax error before ')' token");
 					break;
 				}
 				unary = 0;
@@ -1504,7 +1522,7 @@ astn expr(state s, int mode) {
 			case PNCT_lc: {			// '['
 				if (!unary)
 					tok->kind = OPER_idx;
-				else error(s, tok->line, "syntax error before '[' token");
+				else error(s->s, tok->line, "syntax error before '[' token");
 				sym[++level] = '[';
 				unary = 1;
 			} goto tok_op;
@@ -1519,7 +1537,7 @@ astn expr(state s, int mode) {
 					break;
 				}
 				else {
-					error(s, tok->line, "syntax error before ']' token");
+					error(s->s, tok->line, "syntax error before ']' token");
 					break;
 				}
 				unary = 0;
@@ -1527,7 +1545,7 @@ astn expr(state s, int mode) {
 			case PNCT_qst: {			// '?'
 				if (unary) {
 					*post++ = 0;		// ???
-					error(s, tok->line, "syntax error before '?' token");
+					error(s->s, tok->line, "syntax error before '?' token");
 				}
 				tok->kind = OPER_sel;
 				sym[++level] = '?';
@@ -1544,7 +1562,7 @@ astn expr(state s, int mode) {
 					break;
 				}
 				else {
-					error(s, tok->line, "syntax error before ':' token");
+					error(s->s, tok->line, "syntax error before ':' token");
 					break;
 				}
 				unary = 1;
@@ -1561,19 +1579,19 @@ astn expr(state s, int mode) {
 			} goto tok_op;
 			case OPER_not: {			// '!'
 				if (!unary)
-					error(s, tok->line, "syntax error before '!' token");
+					error(s->s, tok->line, "syntax error before '!' token");
 				unary = 1;
 			} goto tok_op;
 			case OPER_cmt: {			// '~'
 				if (!unary)
-					error(s, tok->line, "syntax error before '~' token");
+					error(s->s, tok->line, "syntax error before '~' token");
 				unary = 1;
 			} goto tok_op;
 
 			case OPER_com:				// ','
 				if (level || mode != TYPE_ref) {
 					if (unary)
-						error(s, tok->line, "syntax error before ',' token");
+						error(s->s, tok->line, "syntax error before ',' token");
 					unary = 1;
 					goto tok_op;
 				}
@@ -1590,13 +1608,13 @@ astn expr(state s, int mode) {
 		}
 		if (!tok) break;
 		if (post >= prec) {
-			error(s, s->line, "Expression too complex");
+			error(s->s, s->line, "Expression too complex");
 			return 0;
 		}
 	}
 	if (unary || level) {							// error
 		char c = level ? sym[level] : 0;
-		error(s, s->line, "missing %s", c == '(' ? "')'" : c == '[' ? "']'" : c == '?' ? "':'" : "expression");
+		error(s->s, s->line, "missing %s", c == '(' ? "')'" : c == '[' ? "']'" : c == '?' ? "':'" : "expression");
 		//~ return 0;
 	}
 	else if (prec > buff) {							// build
@@ -1630,7 +1648,7 @@ astn expr(state s, int mode) {
 					default:
 						debug("expr(<%k>)", tok);
 				}
-				#if TODO_REM_TEMP // TODO: remove replacer
+				#ifdef TODO_REM_TEMP // TODO: remove replacer
 				switch (tok->kind) {				// temporary only cgen
 					case ASGN_add: {
 						astn tmp = newnode(s, OPER_add);
@@ -1716,62 +1734,9 @@ astn expr(state s, int mode) {
 
 extern int align(int offs, int pack, int size);
 
-astn dvar(state s, symn typ, int qual) {
-	//~ astn prev = 0, root = 0;
-	astn tag = 0;
-	symn ref = 0;
-
-	trace(+4, "enter('%k')", peek(s));
-
-	if (!(tag = next(s, TYPE_ref))) {
-		debug("id expected, not %k", peek(s));
-		return 0;
-	}
-
-	ref = declare(s, TYPE_ref, tag, typ, 0);
-
-	if (skip(s, ASGN_set))
-		ref->init = expr(s, TYPE_ref);
-
-	if (test(s, OPER_nop));
-	else if (skip(s, OPER_com)) {		// ,
-		fatal("variables");
-	}
-	else if (test(s, PNCT_lp)) {		// function
-		fatal("function");
-	}
-	else if (skip(s, PNCT_lc)) {		// array[]
-		struct astn len;
-		symn arr = newdefn(s, TYPE_arr);
-		arr->init = expr(s, CNST_int);
-		if (!skip(s, PNCT_rc)) {
-			error(s, s->line, "missing ']'");
-			return 0;
-		}
-		if (eval(&len, arr->init, CNST_int))
-			arr->size = typ->size * len.cint;
-		arr->type = typ;
-		ref->type = arr;
-	}
-
-	if (test(s, OPER_nop)) {
-		tag->kind = TYPE_def;
-		tag->cast = TYPE_ref;
-		tag->line = ref->line;
-		tag->link = ref;
-		return tag;
-	}
-
-	error(s, s->line, "unexpected %k", peek(s));
-
-	trace(-4, "leave('%-k')", tag);
-	return tag;
-}// */
-
-symn type(state s, int qual) {
+symn type(ccEnv s, int qual) {
 	astn tok = 0;
 	symn tmp = 0, def = 0;
-	tmp = 0;
 	while ((tok = peek(s))) {		// type(.type)*
 		if (!lookup(s, tmp, tok)) break;
 		if (!istype(tok)) break;
@@ -1798,7 +1763,7 @@ symn type(state s, int qual) {
 			symn tmp = newdefn(s, TYPE_fnc);
 			enter(s, 0);
 			args(s, fl_type+fl_name);
-			leave(s, 1, &tmp->args);
+			leave(s);
 			tmp->type = def;
 			def = tmp;
 			//declare(s, TYPE_def, newnode(s, TYPE_ref), def, argv);
@@ -1807,7 +1772,7 @@ symn type(state s, int qual) {
 	return def;
 }
 
-symn spec(state s, int qual) {
+astn spec(ccEnv s, int qual) {
 	astn tok, tag = 0;
 	symn tmp, def = 0;
 	int offs = 0;
@@ -1815,62 +1780,39 @@ symn spec(state s, int qual) {
 	int pack = 4;
 
 	trace(+8, "enter('%k')", peek(s));
-	if (skip(s, TYPE_def)) {		// define
-		//~ define name type			// typedef
-		//~ define name = expr			// macro
-		// errif(qual != 0);
-
+	if (skip(s, TYPE_def)) {			// define
 		qual = 0;
-		//~ oper = skip(s, OPER_dot);
 		if ((tag = next(s, TYPE_ref))) {
-			if (skip(s, ASGN_set)) {	// define PI = 3.14;
+			symn typ = 0;
+			if ((typ = type(s, qual))) {	// define sin math.sin;	???
+				def = declare(s, TYPE_def, tag, typ, 0);
+				//~ def->init = 0;
+			}
+			else if (skip(s, ASGN_set)) {	// define PI = 3.14;
+				struct astn tmp;
 				astn val = expr(s, 0);
-				//~ debug("define: %+k", val);
-				if (eval(NULL, val, 0)) {
+				if (eval(&tmp, val, TYPE_any)) {
 					def = declare(s, TYPE_def, tag, val->type, 0);
+					//~ def->init = cpynode(s, &tmp);
 					def->init = val;
+					typ = def->type;
 				}
 				else {
-					error(s, val->line, "Constant expression expected, got: '%+k'", val);
+					error(s->s, val->line, "Constant expression expected, got: '%+k'", val);
 					def = declare(s, TYPE_def, tag, 0, 0);
 					def->type = NULL;
 					def->init = val;
 				}
 				trace(1, "define('%T' as '%k')", def, val);
 			}
-			else if ((def = type(s, qual))) {	// define sin math.sin;	???
-				/*if (skip(s, PNCT_cln)) {
-					if ((tok = next(s, CNST_int))) {
-						def = declare(s, TYPE_ref, tag, def, 0);
-						def->offs = tok->cint;
-						def->onst = 1;
-					}
-				}
-				else// */
-				def = declare(s, TYPE_def, tag, def, 0);
-			}
-			else if (skip(s, PNCT_cln)) {	// define a: typename@;
-				
-				astn val = expr(s, 0);
-				//~ debug("define: %+k", val);
-				if (eval(NULL, val, 0)) {
-					def = declare(s, TYPE_def, tag, val->type, 0);
-					def->init = val;
-				}
-				else {
-					error(s, val->line, "Constant expression expected, got: '%+k'", val);
-					def = declare(s, TYPE_def, tag, 0, 0);
-					def->type = NULL;
-					def->init = val;
-				}
-				trace(1, "define('%T' as '%k')", def, val);
-			}
-			else {
-				error(s, tag->line, "typename excepted");
-			}
-			trace(1, "define('%T' as '%T')", def, def);
+			else error(s->s, tag->line, "typename excepted");
+
+			tag->kind = TYPE_def;
+			tag->type = typ;
+			tag->link = def;
+
 			if (!skip(s, OPER_nop)) {
-				error(s, s->line, "unexcepted token '%k'", peek(s));
+				error(s->s, s->line, "unexcepted token '%k'", peek(s));
 				if (!peek(s)) return 0;
 				while (peek(s)) {
 					if (skip(s, OPER_nop)) return 0;
@@ -1879,11 +1821,7 @@ symn spec(state s, int qual) {
 				}
 			}
 		}
-		else if (skip(s, OPER_dot)) {
-			//~ node argc = args(s, 0);
-			error(s, s->line, "operator overloading not implemented yet");
-		}
-		else error(s, s->line, "Identifyer expected");
+		else error(s->s, s->line, "Identifyer expected");
 	}
 	else if (skip(s, TYPE_rec)) {		// struct
 		if (!(tag = next(s, TYPE_ref))) {	// name?
@@ -1908,11 +1846,10 @@ symn spec(state s, int qual) {
 		if (skip(s, OPER_beg)) {			// body
 			def = declare(s, TYPE_rec, tag, 0, 0);
 			enter(s, def);
-			//~ while (skipToken(s, 'inherit'));
 			while (!skip(s, OPER_end)) {
 				//~ int ql = qual(s, 0);
-				symn typ = spec(s, qual);
-				if (!typ) typ = type(s, qual);
+				//~ symn typ = spec(s, qual);
+				symn typ = type(s, qual);
 				if (typ && (tok = next(s, TYPE_ref))) {
 					offs = align(offs, pack, typ->size);
 					tmp = declare(s, TYPE_ref, tok, typ, 0);
@@ -1921,7 +1858,7 @@ symn spec(state s, int qual) {
 					if (size < offs) size = offs;
 				}
 				if (!skip(s, OPER_nop)) {
-					error(s, s->line, "unexcepted token '%k'", peek(s));
+					error(s->s, s->line, "unexcepted token '%k'", peek(s));
 					while ((tok = peek(s))) {
 						if (skip(s, OPER_nop)) break;
 						if (skip(s, OPER_end)) break;
@@ -1930,27 +1867,29 @@ symn spec(state s, int qual) {
 				}
 			}
 			def->size = size;
-			def->args = leave(s, def);
+			def->args = leave(s);
 			if (!def->args)
-				warn(s, 2, s->file, s->line, "empty declaration");
+				warn(s->s, 2, s->file, s->line, "empty declaration");
 		}
 	}
 	//else if (skip(s, TYPE_cls));		// class
 	else if (skip(s, TYPE_enu)) {		// enum
 		if (!(tag = next(s, TYPE_ref))) {	// name?
-			tag = newnode(s, TYPE_ref);
-			tag->line = s->line;
+			tag = NULL;//newnode(s, TYPE_ref);
+			//~ tag->line = s->line;
 		}
-		if (tag && skip(s, OPER_beg)) {		// body
-			if (tag->name) def = declare(s, TYPE_enu, tag, 0, 0);
-			if (tag->name) enter(s, def);
+		if (/* tag &&  */skip(s, OPER_beg)) {		// body
+			if (tag) {
+				def = declare(s, TYPE_enu, tag, 0, 0);
+				enter(s, def);
+			}
 			while (!skip(s, OPER_end)) {
 				if ((tok = next(s, TYPE_ref))) {
-					tmp = declare(s, CNST_int, tok, type_i32, 0);
+					tmp = declare(s, TYPE_def, tok, type_i32, 0);
 					if (skip(s, ASGN_set)) {
 						tmp->init = expr(s, CNST_int);
 						if (eval(NULL, tmp->init, TYPE_int) != CNST_int)
-							error(s, s->line, "integer constant expected");
+							error(s->s, s->line, "integer constant expected");
 						//~ if (iscons(tmp->init) != CNST_int)
 							//~ error(s, s->line, "integer constant expected");
 					}
@@ -1961,32 +1900,25 @@ symn spec(state s, int qual) {
 						offs += 1;
 					}
 				}
-				/*else {
-					error(s, s->line, "identifyer expected");
-					return 0;
-				}*/
 				if (!skip(s, OPER_nop)) {
 					// TODO error
 					if (!(tok = peek(s))) return 0;
-					error(s, tok->line, "unexcepted token '%k'", tok);
+					error(s->s, tok->line, "unexcepted token '%k'", tok);
 					while (!skip(s, OPER_nop)) {
 						if (skip(s, OPER_end)) break;//return 0;
 						skip(s, 0);
 					}
 				}
 			}
-			if (tag->name)
-				def->args = leave(s, def);
+			if (tag)
+				def->args = leave(s);
 		}
 	}
-	else {					// type
-	}
 	trace(-8, "leave('%+T')", def);
-	return def;
+	return tag;
 }
 
-//~ symn declLibc() {}
-symn instlibc(state s, const char* name) {
+symn instlibc(ccEnv s, const char* name) {
 	astn ftag = 0;
 	int argsize = 0;
 	symn args = 0, ftyp = 0;
@@ -2021,7 +1953,7 @@ symn instlibc(state s, const char* name) {
 				if (skip(s, PNCT_rp)) break;
 				if (!skip(s, OPER_com)) break;
 			}
-			args = leave(s, NULL);
+			args = leave(s);
 		}
 	}
 	if (!peek(s)) {
@@ -2042,22 +1974,19 @@ symn instlibc(state s, const char* name) {
 		def->defs = s->defs;
 		s->defs = def;
 
-		//~ def->all = s->all;
-		//~ s->all = def;
-
 		return def;
 	}
 	return NULL;
 }// */
 
-void enter(state s, symn def) {
+void enter(ccEnv s, symn def) {
 	s->nest += 1;
-	s->scope[s->nest].csym = def;
+	//~ debug("enter(%d, %?T)", s->nest, def);
+	//~ s->scope[s->nest].csym = def;
 	//~ s->scope[s->nest].stmt = NULL;
-	//~ return &s->scope[s->nest];
 }
 
-symn leave(state s, symn fldp) {
+symn leave(ccEnv s) {
 	int i;
 	symn arg = 0;
 	s->nest -= 1;
@@ -2118,21 +2047,17 @@ symn leave(state s, symn fldp) {
  *	ex: "for( ; ; ) int a;", if mode == 0 => error
  * stmt: ';'
  *	| expr ';'
- *	| decl ';'
+ *	| `if (mode) decl ';'`
  *	| '{' stmt* '}'
  *	| 'static'? 'if' (expr) stmt ('else' stmt)?
  *	| ('static' | 'parallel')? 'for' '(' (decl | expr)? ';' expr?';' expr? ')' stmt
 +*	| 'return' expr? ';'
 +*	| 'continue' ';'
 +*	| 'break' ';'
-+*	| ID ':'
-+*	| 'sync' ('(' ID ')')? '{' stmt '}'		// synchtonized
-+*	| 'task' ('(' ID ')')? '{' stmt '}'		// parallel task
-?*	| 'fork'
 
 >* static if (...)		// compile time test
 >* static for (...)		// loop unroll
->* parallel for (...)		// parallel loop
+>* parallel for (...)	// parallel loop
 **/
 /** decl -----------------------------------------------------------------------
  * scan a declaration, add to ast tree
@@ -2189,11 +2114,11 @@ X* fnc	 $ (static)? <type> name'('type name (= expr)? [,type name (= expr)?]*')'
  * if mode then exit on ','
  * expr: ID
  * 	 | expr '[' expr ']'		// \arr	array
-?* 	 | '[' expr ']'			// \ptr	pointer
+?* 	 | '[' expr ']'				// \ptr	pointer
  * 	 | expr '(' expr? ')'		// \fnc	function
- * 	 | '(' expr ')'			// \pri	precedence
- * 	 | OP expr			// \uop	unary
- * 	 | expr OP expr			// \bop	binary
+ * 	 | '(' expr ')'				// \pri	precedence
+ * 	 | ['+', '-'] expr					// \uop	unary
+ * 	 | expr ['+', '*', ...] expr	// \bop	binary
  * 	 | expr '?' expr ':' expr	// \top	ternary
  * 	 ;
 **/

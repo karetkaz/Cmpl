@@ -11,14 +11,14 @@ LNK=gcc -m32
 #~ OUTOBJ=-fo=
 #~ OUTEXE=-fe=
 #~ CFLAGS=-q -d3
-#~ # -w99 -6s -oa
+#~ # -w99 -6s -oa -hd
 #~ COPTS=-i=$(INCLUDE)
 #~ LIBS=
-#~ LNK=wcl386 -q -d3
+#~ LNK=wcl386 $(CFLAGS) 
 #~ CCC=wcc386
 
 SRCDIR=
-OBJDIR=../tmp/obj/
+OBJDIR=../
 #~ ../tmp/
 BINDIR=../
 OBJS=\
@@ -27,16 +27,16 @@ OBJS=\
 	$(OBJDIR)tree.o\
 	$(OBJDIR)type.o\
 	$(OBJDIR)code.o\
+	$(OBJDIR)pvmc.o\
 	$(OBJDIR)main.o
 
 main: $(OBJS)
 	$(LNK) $(OUTEXE)$(BINDIR)main $(OBJS) $(LIBS)
 
-$(OBJDIR)objfw.o:
-	$(CCC) $(COPTS) $(CFLAGS) $(SRCDIR)objfw.c $(OUTOBJ)$(OBJDIR)objfw.o
-
 $(OBJDIR)main.o:
 	$(CCC) $(COPTS) $(CFLAGS) $(SRCDIR)main.c $(OUTOBJ)$(OBJDIR)main.o
+$(OBJDIR)pvmc.o:
+	$(CCC) $(COPTS) $(CFLAGS) $(SRCDIR)pvmc.c $(OUTOBJ)$(OBJDIR)pvmc.o
 $(OBJDIR)clog.o:
 	$(CCC) $(COPTS) $(CFLAGS) $(SRCDIR)clog.c $(OUTOBJ)$(OBJDIR)clog.o
 $(OBJDIR)buff.o:
@@ -54,11 +54,12 @@ $(OBJDIR)code.o:
 
 clean:
 	rm -f $(OBJS)
+#~ rm -f $(OBJDIR)main.o
 
 debug:
-	#~ xterm -e gdb main
-	#~ gdb main
-	wdw main
+	#~ xterm -e gdb $(BINDIR)main
+	#~ gdb $(BINDIR)main
+	wdw $(BINDIR)main
 
 build:clean main
 

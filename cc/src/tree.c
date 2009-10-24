@@ -2,9 +2,9 @@
 //~ tree.c - tree related stuff ------------------------------------------------
 #include <string.h>
 #include <math.h>
-#include "main.h"
+#include "pvmc.h"
 
-astn newnode(state s, int kind) {
+astn newnode(ccEnv s, int kind) {
 	astn ast;
 	if (s->tokp) {
 		ast = s->tokp;
@@ -20,31 +20,32 @@ astn newnode(state s, int kind) {
 	return ast;
 }
 
-astn fltnode(state s, flt64t v) {
+astn fltnode(ccEnv s, flt64t v) {
 	astn ast = newnode(s, CNST_flt);
 	ast->cflt = v;
 	return ast;
 }
-
-astn intnode(state s, int64t v) {
+astn intnode(ccEnv s, int64t v) {
 	astn ast = newnode(s, CNST_int);
 	ast->cint = v;
 	return ast;
 }
-
-astn fh8node(state s, uns64t v) {
+astn fh8node(ccEnv s, uns64t v) {
 	astn ast = newnode(s, CNST_flt);
 	ast->cint = v;
 	return ast;
 }
-
-astn strnode(state s, char * v) {
+astn strnode(ccEnv s, char * v) {
 	astn ast = newnode(s, CNST_str);
 	ast->name = v;
 	return ast;
 }
-
-void eatnode(state s, astn ast) {
+astn cpynode(ccEnv s, astn src) {
+	astn ast = newnode(s, 0);
+	*ast = *src;
+	return ast;
+}
+void eatnode(ccEnv s, astn ast) {
 	if (!ast) return;
 	ast->next = s->tokp;
 	s->tokp = ast;
@@ -55,45 +56,52 @@ signed constbol(astn ast) {
 		case CNST_int: return ast->cint != 0;
 		case CNST_flt: return ast->cflt != 0;
 	}
-	debug("constbol('%k')", ast);
+	debug("%+k", ast);
 	return 0;
 }
-
 int64t constint(astn ast) {
 	if (ast) switch (ast->kind) {
 		case CNST_int: return (int64t)ast->cint;
 		case CNST_flt: return (int64t)ast->cflt;
 	}
-	debug("constint('%k')", ast);
+	debug("%+k", ast);
 	return 0;
 }
-
 flt64t constflt(astn ast) {
 	if (ast) switch (ast->kind) {
 		case CNST_int: return (flt64t)ast->cint;
 		case CNST_flt: return (flt64t)ast->cflt;
 	}
-	debug("constflt('%k')", ast);
+	debug("%+k", ast);
 	return 0;
 }
 
 int eval(astn res, astn ast, int get) {
 	struct astn lhs, rhs;
+	int cast;
 
 	if (!ast) return 0;
 	if (!res) res = &rhs;
-	if (!get) get = ast->cast;
+
+	if ((cast = ast->cast) < TYPE_enu) {
+		cast = tok_tbl[cast].type;
+	}
+
+	//~ if (!get) get = cast;
 
 	switch (ast->kind) {
 
+		// TODO: 
+		case OPER_dot: return eval(res, ast->rhso, get);
+
 		default:
-			//~ debug("Eval(%k[%s])", ast, tok_tbl[ast->kind].name);
+			debug("%t(%+k)", ast->kind, ast);
+		case OPER_fnc:
 			return 0;
 
 		case CNST_int:
 		case CNST_flt:
 		case CNST_str: *res = *ast; break;
-		case TYPE_val: return eval(res, ast->stmt, get);
 		/*case TYPE_ref: {
 			if (istype(ast->rhso)) return 0;
 			ret = eval(res, ast->rhso, get);
@@ -106,6 +114,17 @@ int eval(astn res, astn ast, int get) {
 			if (ast->lhso && !istype(ast->lhso)) return 0;
 			ret = eval(res, ast->rhso, castcon(0, ast->lhso));
 		} break;*/
+		case TYPE_ref: {
+			symn typ = ast->type;		// type
+			symn var = ast->link;		// link
+			dieif(!typ || !var, "%+t (%T || %T)", ast->kind, typ, var);
+
+			if (var->kind == TYPE_def) {
+				if (var->init)
+					return eval(res, var->init, get);
+			}
+			return 0;
+		} break;
 
 		case OPER_pls: {		// '+'
 			if (!eval(res, ast->rhso, get))
@@ -150,11 +169,11 @@ int eval(astn res, astn ast, int get) {
 		case OPER_mul:			// '*'
 		case OPER_div:			// '/'
 		case OPER_mod: {		// '%'
-			if (!eval(&lhs, ast->lhso, get))
+			if (!eval(&lhs, ast->lhso, cast))
 				return 0;
-			if (!eval(&rhs, ast->rhso, get))
+			if (!eval(&rhs, ast->rhso, cast))
 				return 0;
-			dieif(lhs.kind != rhs.kind, "eval operator %k (%s, %s): %s", ast, tok_tbl[lhs.kind].name, tok_tbl[rhs.kind].name, tok_tbl[get].name);
+			dieif(lhs.kind != rhs.kind, "eval operator %k (%t, %t): %t", ast, lhs.kind, rhs.kind, get);
 
 			switch (rhs.kind) {
 				default: return 0;
@@ -187,12 +206,11 @@ int eval(astn res, astn ast, int get) {
 		case OPER_geq:			// '>='
 		case OPER_lte:			// '<'
 		case OPER_leq: {		// '<='
-			if (!eval(&lhs, ast->lhso, get))
+			if (!eval(&lhs, ast->lhso, cast))
 				return 0;
-			if (!eval(&rhs, ast->rhso, get))
+			if (!eval(&rhs, ast->rhso, cast))
 				return 0;
-			dieif(lhs.kind != rhs.kind, "eval operator %k (%s, %s): %s", ast, tok_tbl[lhs.kind].name, tok_tbl[rhs.kind].name, tok_tbl[get].name);
-
+			dieif(lhs.kind != rhs.kind, "eval operator %k (%t, %t): %t", ast, lhs.kind, rhs.kind, get);
 			switch (rhs.kind) {
 				default: return 0;
 				case CNST_int: {
@@ -225,14 +243,15 @@ int eval(astn res, astn ast, int get) {
 		case OPER_and:			// '&'
 		case OPER_ior:			// '|'
 		case OPER_xor: {		// '^'
-			if (!eval(&lhs, ast->lhso, get))
+			if (!eval(&lhs, ast->lhso, cast))
 				return 0;
-			if (!eval(&rhs, ast->rhso, get))
+			if (!eval(&rhs, ast->rhso, cast))
 				return 0;
-			dieif(lhs.kind != rhs.kind, "eval operator %k (%s, %s): %s", ast, tok_tbl[lhs.kind].name, tok_tbl[rhs.kind].name, tok_tbl[get].name);
+			dieif(lhs.kind != rhs.kind, "eval operator %k (%t, %t): %t", ast, lhs.kind, rhs.kind, get);
+
 			switch (rhs.kind) {
 				default:
-					debug("eval(%+k) : %s", ast->rhso, tok_tbl[rhs.kind].name);
+					debug("eval(%+k) : %t", ast->rhso, rhs.kind);
 					return 0;
 				case CNST_int: {
 					res->kind = CNST_int;
@@ -250,12 +269,11 @@ int eval(astn res, astn ast, int get) {
 		case OPER_lnd:
 		case OPER_lor: {
 			dieif(get != TYPE_bit, "");
-			if (!eval(&lhs, ast->lhso, get))
+			if (!eval(&lhs, ast->lhso, cast))
 				return 0;
-			if (!eval(&rhs, ast->rhso, get))
+			if (!eval(&rhs, ast->rhso, cast))
 				return 0;
-
-			dieif(lhs.kind != rhs.kind, "eval operator %k (%s, %s): %s", ast, tok_tbl[lhs.kind].name, tok_tbl[rhs.kind].name, tok_tbl[get].name);
+			dieif(lhs.kind != rhs.kind, "eval operator %k (%t, %t): %t", ast, lhs.kind, rhs.kind, get);
 
 			res->kind = CNST_int;
 			switch (ast->kind) {
@@ -266,34 +284,42 @@ int eval(astn res, astn ast, int get) {
 		case OPER_sel: {		// '?:'
 			if (!eval(&lhs, ast->test, TYPE_bit))
 				return 0;
-			return eval(res, lhs.cint ? ast->lhso : ast->rhso, get);
+			return eval(res, lhs.cint ? ast->lhso : ast->rhso, cast);
 		} break;
 	}
 	if (get != res->kind) switch (get) {
 		default: {
 			int ret = res->kind;
-			debug("eval(%02x):%02x", get, ret);
-			debug("eval(%s):%s", tok_tbl[get&15].name, tok_tbl[ret&15].name);
-			//~ debug("lookup(%04x):%s", get, tok_tbl[get&15].name);
+			debug("eval(%k, %t):%t", ast, get, ret);
 		} return 0;
 
-		case TYPE_any: return res->kind;
+		case TYPE_any:		// no cast
+			break;
 
-		case TYPE_bit: res->cint = constbol(res); res->kind = CNST_int; break;
+		case TYPE_bit:
+			res->cint = constbol(res);
+			res->kind = CNST_int;
+			break;
 
-		//~ case TYPE_int:
+		case TYPE_int:
 		//~ case TYPE_u32:
-		case TYPE_i32:
-		case TYPE_i64: res->cint = constint(res); res->kind = CNST_int; break;
+		//~ case TYPE_i32:
+		//~ case TYPE_i64:
+			res->cint = constint(res);
+			res->kind = CNST_int;
+			break;
 
-		//~ case TYPE_flt:
-		case TYPE_f32:
-		case TYPE_f64: res->cflt = constflt(res); res->kind = CNST_flt; break;
+		case TYPE_flt:
+		//~ case TYPE_f32:
+		//~ case TYPE_f64:
+			res->cflt = constflt(res);
+			res->kind = CNST_flt;
+			break;
 	}
 	return res->kind;
 }
 
-/*int sametree(astn lhs, astn rhs) {
+/*int cmptree(astn lhs, astn rhs) {
 	if (lhs == rhs) return 1;
 
 	if (!lhs && rhs) return 0;

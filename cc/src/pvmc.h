@@ -6,15 +6,14 @@
  *
  *
 *******************************************************************************/
-#include "pvm.h"
-
 #ifndef __CCVM_H
 #define __CCVM_H
+#include "api.h"
 
-#include <stdio.h>
+//~ #include <stdio.h>
 #include <stdlib.h>
 
-#define TODO_REM_TEMP 3
+#define TODO_REM_TEMP
 
 // maximum tokens in expressions & nest level
 #define TOKS 2048
@@ -22,23 +21,19 @@
 // symbol & hash table size
 #define TBLS 1024
 
-// static memory size for state
-// TODO: malloc-it
-#define bufmaxlen (128<<20)
-
-#define SRCPOS "src\\" __FILE__, __LINE__, __func__
-
-#define trace(__LEV, msg, ...)// {fputfmt(stderr, "%s:%d:trace:%s: "msg"\n", SRCPOS, ##__VA_ARGS__);fflush(stderr);}
+// debug, errors
+#define SRCPOS __FILE__, __LINE__, __func__
+//~ #define SRCPOS "src/" __FILE__, __LINE__, __func__
+#define trace(__LEV, msg, ...) // {fputfmt(stderr, "%s:%d:trace:%s: "msg"\n", SRCPOS, ##__VA_ARGS__);fflush(stderr);}
 #define debug(msg, ...) {fputfmt(stdout, "%s:%d:debug:%s: "msg"\n", SRCPOS, ##__VA_ARGS__);fflush(stderr);}
 #define fatal(msg, ...) { fputfmt(stderr, "%s:%d:fatal:%s: "msg"\n", SRCPOS, ##__VA_ARGS__); fflush(stderr); exit(-2);}
 #define dieif(__EXP, msg, ...) {if (__EXP) {fputfmt(stderr, "%s:%d:fatal(`"#__EXP"`):%s: "msg"\n", SRCPOS, ##__VA_ARGS__); fflush(stderr); exit(-1);}}
-
 #if 0
 #define error(__ENV, __LINE, msg, ...) perr(__ENV, -1, SRCPTH __FILE__, __LINE__, msg, ##__VA_ARGS__)
 #define warn(__ENV, __LEVEL, __FILE, __LINE, msg, ...) perr(__ENV, __LEVEL, __FILE__, __LINE__, msg, ##__VA_ARGS__)
 #define info(__ENV, __FILE, __LINE, msg, ...) perr(__ENV, 0, __FILE__, __LINE__, msg, ##__VA_ARGS__)
 #else
-#define error(__ENV, __LINE, msg, ...) perr(__ENV, -1, (__ENV)->file, __LINE, msg, ##__VA_ARGS__)
+#define error(__ENV, __LINE, msg, ...) perr(__ENV, -1, (__ENV)->cc->file, __LINE, msg, ##__VA_ARGS__)
 #define warn(__ENV, __LEVEL, __FILE, __LINE, msg, ...) perr(__ENV, __LEVEL, __FILE, __LINE, msg, ##__VA_ARGS__)
 #define info(__ENV, __FILE, __LINE, msg, ...) perr(__ENV, 0, __FILE, __LINE, msg, ##__VA_ARGS__)
 #endif
@@ -64,10 +59,6 @@ enum {
 	#include "incl/defs.h"
 	opc_last,
 
-	//~ opc_ldc = 0x0100,
-	//~ opc_ldi,
-	//~ opc_sti,
-
 	opc_neg,
 	opc_add,
 	opc_sub,
@@ -81,30 +72,23 @@ enum {
 	opc_ior,
 	opc_xor,
 
-	//~ opc_cz = 0x02000 << 0,
-	opc_ceq,// = 0x02001 << 0,
-	opc_clt,// = 0x02002 << 0,
-	opc_cle,// = 0x02003 << 0,
-	//~ cmp_i32,// = 0x02000 << 2,
-	//~ cmp_f32,// = 0x02001 << 2,
-	//~ cmp_i64,// = 0x02002 << 2,
-	//~ cmp_f64 = 0x02003 << 2,
-	//~ cmp_tun = 0x02001 << 4,		// unsigned / unordered
-	//~ opc_not,// = 0x02001 << 5,		// 
-	//~ opc_cnz,// = opc_not + opc_c2z,
-	opc_cne,// = opc_not + opc_ceq,
-	opc_cgt,// = opc_not + opc_cle,
-	opc_cge,// = opc_not + opc_clt,
+	opc_ceq,
+	opc_clt,
+	opc_cle,
+	opc_cne,
+	opc_cgt,
+	opc_cge,
 
-	//~ opc_ldcr = opc_ldc4,
-	//~ opc_ldcf = opc_ldc4,
-	//~ opc_ldcF = opc_ldc8,
+	//~ opc_ldc,
+	//~ opc_ldi,
+	//~ opc_sti,
 
 	opc_line,		// line info
 	get_ip,		// instruction pointer
 	get_sp,		// stack pointer
 	seg_code,	// pc = ptr - beg; ptr += code->cs;
 	loc_data,
+
 	//~ seg_data,
 	//~ vminf_ip,		// instruction pointer
 	//~ vminf_sp,		// stack pointer
@@ -112,6 +96,10 @@ enum {
 	//~ vminf_cnt,
 	//~ opc_file,		// file info
 	//~ opc_docc,		// doc comment
+
+	//~ opc_ldcr = opc_ldc4,
+	//~ opc_ldcf = opc_ldc4,
+	//~ opc_ldcF = opc_ldc8,
 };
 typedef struct {
 	int const	code;
@@ -161,68 +149,13 @@ typedef union {		// stack value type
 	u32x4t	x4;
 } stkval;
 
-/*typedef union temps{
-	uns08t _b[16];
-	uns16t _w[8];
-	uns32t _l[4];
-	uns64t _q[2];
-	flt32t _s[4];
-	flt64t _d[2];
-} pd128t;
-
-typedef union {
-	uint8_t _b[16];
-	uint16_t _w[8];
-	uint32_t _l[4];
-	uint64_t _q[2];
-	flt32t _s[4];
-	flt64t _d[2];
-} XMMReg;
-
-typedef union {
-	uint8_t _b[8];
-	uint16_t _w[2];
-	uint32_t _l[1];
-	uint64_t q;
-} MMXReg;
-
-//{ list
-//~ 0000: .. .. .. ..
-//~ ....: .. .. .. ..
-//~ 8000: .. .. .. ..: [data+00]
-//~ 8004: .. .. .. ..: [data+04]
-//~ 8008: .. .. .. ..: [data+08]
-//~ 800C: .. .. .. ..: [data+0C]
-//~ 8010: .. .. .. ..: [data+10]
-//~ 8014: .. .. .. ..: [data+14]
-//~ 8018: .. .. .. ..: [data+18]
-//~ ....: .. .. .. ..: 
-//~ 8040: 00 00 00 00: next
-//~ 8044: 00 00 80 04: data => list.dlen = list.data - &list.next;
-//}
-//{ packed data
-//~ typedef union    p2f64t;
-//~ typedef union    p4f32t;
-//~ typedef union    p8f16t;
-
-//~ typedef union    p2i64t;
-//~ typedef union    p4i32t;
-//~ typedef union    p8i16t;
-//~ typedef union    p16i8t;
-
-//~ typedef union    p2u64t;
-//~ typedef union    p4u32t;
-//~ typedef union    p8u16t;
-//~ typedef union    p16u8t;
-//} */
-
 typedef struct listn_t *list, **strt;
 typedef struct symn **symt;		// sym (astn, table)
 
 struct listn_t {			// linked list astn
 	struct listn_t	*next;
 	unsigned char	*data;
-	//~ unsigned int	size;
+	//~ unsigned int	size;	// := &this - data
 };
 
 /*struct buff {
@@ -268,7 +201,7 @@ struct astn {				// ast astn
 		union  {					// CNST_xxx: constant
 			int64t	cint;			// cnst: integer
 			flt64t	cflt;			// cnst: float
-			//~ int32t	cpi4[2];		// ???
+			//~ int32t	cpi4[4];		// rgb
 			//~ int64t	cpi2[2];		// rat
 			//~ flt32t	cpf4[4];		// vec
 			//~ flt64t	cpf2[2];		// cpl
@@ -302,9 +235,19 @@ struct astn {				// ast astn
 	astn		next;				// 
 };
 struct symn {				// symbol
-	uns08t	kind;		// TYPE_ref || TYPE_xxx
-	uns16t	nest;		// declaration level
+	char*	name;
+	char*	file;
+	int		line;
 
+	union {
+	int32t	size;	// addrof(TYPE_ref)
+	int32t	offs;	// sizeof(TYPE_xxx)
+	};
+	symn	type;		// base type of TYPE_ref (void, int, float, struct, ...)
+	symn	args;		// REC fields / FUN args
+	// reflection ends here
+
+	uns08t	kind;		// TYPE_ref || TYPE_xxx
 	//~ uns08t	priv:1;		// private
 	//~ uns08t	stat:1;		// static
 	//~ uns08t	read:1;		// const
@@ -313,43 +256,27 @@ struct symn {				// symbol
 	uns08t	libc:1;		// native (fun)
 	uns08t	call:1;		// is a function
 	//~ uns08t	asgn:1;		// assigned a value
-
-	union {int32t	size, offs;};	// addrof(TYPE_ref) / sizeof(TYPE_xxx)
-	symn	type;		// base type of TYPE_ref (void, int, float, struct, ...)
-	symn	args;		// REC fields / FUN args
+	uns16t	nest;		// declaration level
 	astn	init;		// VAR init / FUN body
-
-	char*	name;
-	char*	file;
-	int		line;
 
 	// list(scoping)
 	symn	defs;		// simbols on stack/all
 	symn	next;		// simbols on table/args
 };
 
-/* symbol for references/reflection
-struct symn {
-	char*	name;
-	char*	file;
-	int		line;
+struct ccEnv {
+	state	s;
+	int		warn;		// warning level
+	astn	root;		// statements
+	symn	defs;		// definitions
 
-	int32t	offs;		// addrof(TYPE_ref) / sizeof(TYPE_ref)
+	symn	all;		// all symbols TODO:Temp
+	strt	strt;		// string table
+	symt	deft;		// definitions: hashStack;
 
-	symn	type;		// base type
-	symn	args[];		// REC fields / FUN args
-};// */
+	int		nest;		// nest level: modified by (enterblock/leaveblock)
 
-struct state_t {			// enviroment (context)
-	int		errc;			// error count
-	FILE*	logf;			// log file (errors + warnings)
-	symn	glob;			// symbols
-	symn	all;			// symbols
-
-	struct {				// Scanner
-		int		warn;		// warning level
-		int		copt;		// optimization levevel
-		int		nest;		// nest level: modified by (enterblock/leaveblock)
+	struct {
 		struct {			// Lexer
 			char*	file;	// current file name
 			int		line;	// current line number
@@ -363,32 +290,55 @@ struct state_t {			// enviroment (context)
 			};//fin;
 			astn	tokp;		// token pool
 			astn	_tok;		// next token
-			// BUFFER
 		};// file[TOKS];
 
-		astn	root;		// program
-
-		strt	strt;		// string table
-		symt	deft;		// definitions / declarations
-
-		symn	defs;		// definitions / declarations stack
-
-		struct {		// current decl
+		/*struct {		// current decl
 			symn	csym;
 			//~ symn	cref;
 			//~ astn	stmt;
 
 			//~ astn	_brk;	// list: break
 			//~ astn	_con;	// list: continue
-		} scope[TOKS];
+		} scope[TOKS];// */
 	};
-	vmEnv	code;
-	//~ struct scan_t *scan;
-	//~ struct code_t *code;
 
-	char	*buffp;					// ???
-	//~ struct buff alma;
-	char	buffer[bufmaxlen+2];	// buffer base (!!! static)
+	char	*buffp;					// TODO: remove this
+};
+struct vmEnv {
+	state	s;
+	unsigned int	pc;			// entry point / prev program counter
+	unsigned int	ic;			// ?executed? / instruction count
+	unsigned int	cs;			// code size
+
+	unsigned int	ss;			// stack size / current stack size
+	unsigned int	sm;			// stack minimum size
+
+	unsigned int	ds;			// data size
+
+	/** memory mapping
+	 *	data(RW):ds		:	initialized data
+	 *	code(RX):cs		:	instructions
+	 *	heap(RW):		:	
+	 *	stack(RW):ss	:	
+	 *
+	+mp------------+ip------------+hp------------+bp---------------+sp
+	|   code[cs]   |   data[ds]   |   heap[??]   |  stack[ss*cc]   |
+	+--------------+--------------+--------------+-----------------+
+	?      r-x     |      r--     |     rw-      |       rw-       |
+	+--------------+--------------+--------------+-----------------+
+	enum Segment
+	{
+		Seg_Data = 0,
+		Seg_Init = 1,
+		Seg_Code = 1,
+	};
+	**/
+
+	//~ unsigned long _cnt; // return (_end - _ptr);
+	//~ unsigned long _len; // return (_ptr - _mem);
+	unsigned char *_ptr;
+	unsigned char *_end;
+	unsigned char _mem[];
 };
 
 extern symn type_vid;
@@ -405,7 +355,9 @@ extern symn type_f32x4;
 extern symn type_f64x2;
 
 //~ util
-int parseint(const char *str, int *res, int hexchr);
+int parseInt(const char *str, int *res, int hexchr);
+char* parsecmd(char *ptr, char *cmd, char *sws);
+
 char *strfindstr(const char *t, const char *p, int flags);
 
 //~ clog
@@ -415,56 +367,47 @@ void perr(state s, int level, const char *file, int line, const char *msg, ...);
 //~ void fputsym(FILE *fout, symn sym, int mode, int level);
 //~ void fputast(FILE *fout, astn ast, int mode, int level);
 //~ void fputopc(FILE *fout, bcde opc, int len, int offset);
-
 //~ void fputasm(FILE *fout, void *ip, int len, int length);
 
 void dumpasm(FILE *fout, vmEnv s, int offs);
 void dumpsym(FILE *fout, symn sym, int mode);
-//~ void dumpast(FILE *fout, astn ast, int mode);
-
-//~ void dumpxml(FILE *fout, astn ast, int mode);
+void dumpast(FILE *fout, astn ast, int mode);
 //~ void dumpxml(FILE *fout, astn ast, int lev, const char* text, int level);
 
-typedef enum {
-	//~ dump_bin = 0x0000100,
-	dump_sym = 0x0000200,
-	dump_asm = 0x0000300,
-	dump_ast = 0x0000400,
-} dumpWhat;
+void* getmem(state s, int size);
 
-void dump(state, FILE*, dumpWhat);
+astn newnode(ccEnv s, int kind);
+astn cpynode(ccEnv s, astn src);
+void eatnode(ccEnv s, astn ast);
+astn intnode(ccEnv s, int64t v);
+//~ astn fltnode(ccEnv s, flt64t v);
+astn strnode(ccEnv s, char *v);
+astn fh8node(ccEnv s, uns64t v);
 
-astn newnode(state s, int kind);
-void eatnode(state s, astn ast);
-astn intnode(state s, int64t v);
-//~ astn fltnode(state s, flt64t v);
-astn strnode(state s, char *v);
-astn fh8node(state s, uns64t v);
-
-symn newdefn(state s, int kind);
-symn install(state s, int kind, const char* name, unsigned size);
-symn declare(state s, int kind, astn tag, symn rtyp, symn args);
-symn lookup(state s, symn loc, astn ast);
+symn newdefn(ccEnv s, int kind);
+symn install(ccEnv s, int kind, const char* name, unsigned size);
+symn declare(ccEnv s, int kind, astn tag, symn rtyp, symn args);
+symn lookin(symn sym, astn ast, /* astn ref,  */astn args);
+symn lookup(ccEnv s, symn loc, astn ast);
 
 int32t constbol(astn ast);
 //~ int64t constint(astn ast);
 //~ flt64t constflt(astn ast);
 
-//~ int source(state, int mode, char* text);		// mode: file/text
+astn peek(ccEnv);
+//~ astn next(ccEnv, int kind);
+//~ void back(ccEnv, astn ast);
+//~ int  skip(ccEnv, int kind);
+//~ int  test(ccEnv, int kind);
 
-astn peek(state);
-//~ astn next(state, int kind);
-//~ void back(state, astn ast);
-//~ int  skip(state, int kind);
-//~ int  test(state, int kind);
+astn expr(ccEnv, int mode);		// parse expression	(mode: ?)
+astn decl(ccEnv, int mode);		// parse declaration	(mode: enable expr)
+astn stmt(ccEnv, int mode);		// parse statement	(mode: enable decl)
 
-astn expr(state, int mode);		// parse expression	(mode: ?)
-//~ astn decl(state, int mode);		// parse declaration	(mode: enable expr)
-//~ astn stmt(state, int mode);		// parse statement	(mode: enable decl)
-astn scan(state, int mode);		// parse program	(mode: script mode)
+int scan(ccEnv, int mode);		// parse program	(mode: script mode)
 
-void enter(state s, symn def);
-symn leave(state s, symn def);
+void enter(ccEnv s, symn def);
+symn leave(ccEnv s);
 
 /** try to evaluate an expression
  * @return CNST_xxx if expression can be folded 0 otherwise
@@ -479,27 +422,43 @@ int eval(astn res, astn ast, int get);
  * @param ast: tree to be generated
  * @param get: one of TYPE_xxx
  */
-int cgen(state s, astn ast, int get);
+int emit(vmEnv, int opc, ...);			// ret: program counter
+int emiti32(vmEnv, int32t arg);
+int emiti64(vmEnv, int64t arg);
+int emitf32(vmEnv, flt32t arg);
+int emitf64(vmEnv, flt64t arg);
+int emitidx(vmEnv, int opc, int stpos);
+int emitint(vmEnv, int opc, int64t arg);
+int fixjump(vmEnv s, int src, int dst, int stc);
+
+int cgen(state, astn ast, int get);		// ret: typeId(ast)
 
 int istype(astn ast);
 int isemit(astn ast);
-int islval(astn ast);
+//~ int islval(astn ast);
 symn linkOf(astn ast);
 
 int castId(symn ast);
 int castOp(symn lhs, symn rhs);
 
-void vm_info(vmEnv);
-int cc_init(state);
-int cc_done(state);
+//~ void vm_info(vmEnv);
+//~ int cc_init(state);
+//~ int cc_done(state);
 
-vmEnv vmGetEnv(state env, int size, int ss);
+//~ int logger(state, char *file);						// file for errors
+int source(ccEnv, srcType mode, char* text);		// mode: file/text
 
-int fixjump(vmEnv s, int src, int dst, int stc);
-void installlibc(state, void call(libcarg), const char* proto);
+//~ void installlibc(state, void call(state), const char* proto);
 
 int rehash(const char* str, unsigned size);
 //~ int align(int offs, int pack, int size);
-char *mapstr(state s, char *name, unsigned size/* = -1U*/, unsigned hash/* = -1U*/);
+char *mapstr(ccEnv s, char *name, unsigned size/* = -1U*/, unsigned hash/* = -1U*/);
+
+
+void vm_tags(ccEnv s, char *sptr, int slen);
+//~ void vm_info(vmEnv vm);
+int dbgNone(vmEnv vm, int pu, void *ip, long* sptr, int sc);
+int dbgCon(vmEnv vm, int pu, void *ip, long* sptr, int sc);
+int nodbg(vmEnv vm, int pu, void *ip, long* sptr, int sc);
 
 #endif

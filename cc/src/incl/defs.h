@@ -10,10 +10,10 @@ TOKDEF(TYPE_def, 0x07, 0, ID, "define")		// struct, union, constant|typename
 
 TOKDEF(TYPE_u32, 0x02, 0, TY, "TYPE_u32")
 TOKDEF(TYPE_i32, 0x03, 0, TY, "TYPE_i32")
-TOKDEF(TYPE_f32, 0x04, 0, TY, "TYPE_f32")
 TOKDEF(TYPE_i64, 0x03, 0, TY, "TYPE_i64")
+TOKDEF(TYPE_f32, 0x04, 0, TY, "TYPE_f32")
 TOKDEF(TYPE_f64, 0x04, 0, TY, "TYPE_f64")
-TOKDEF(TYPE_p4x, 0x04, 0, TY, "TYPE_p4x")
+TOKDEF(TYPE_p4x, 0x06, 0, TY, "TYPE_p4x")
 
 //~ TOKDEF(TYPE_v4f, 0x05, 0, TY, "vec4f")
 //~ TOKDEF(TYPE_v2d, 0x05, 0, TY, "vec2d")
@@ -34,7 +34,7 @@ TOKDEF(CNST_int, 0x03, 0, TY, "CNST_int")	// int32
 TOKDEF(CNST_flt, 0x04, 0, TY, "CNST_flt")	// flt64
 TOKDEF(CNST_str, 0x05, 0, TY, "CNST_str")	// string
 
-TOKDEF(TYPE_val, 0x07, 0, ID, "define(val)")	// define a = 9;
+//~ TOKDEF(TYPE_val, 0x07, 0, ID, "define(val)")	// define a = 9;
 TOKDEF(TYPE_ref, 0x05, 0, TY, "TYPE_ref")	// identifyer/variable/typename/constant
 //~ TOKDEF(TYPE_new, 0x05, 0, TY, "TYPE_new")	// int a;
 

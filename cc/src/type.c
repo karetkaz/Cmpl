@@ -1,6 +1,4 @@
-// { #include "type.c"
-#include "main.h"
-//~ type.c ---------------------------------------------------------------------
+#include "pvmc.h"
 #include <string.h>
 
 symn type_vid = 0;
@@ -12,14 +10,13 @@ symn type_i64 = 0;
 symn type_f32 = 0;
 symn type_f64 = 0;
 
-symn type_str = 0;
-
+//~ symn type_str = 0;
 //~ symn type_ptr = 0;
 
 extern int rehash(register const char* str, unsigned size);
 
 //~ Install
-symn newdefn(state s, int kind) {
+symn newdefn(ccEnv s, int kind) {
 	symn def = (symn)s->buffp;
 	s->buffp += sizeof(struct symn);
 	memset(def, 0, sizeof(struct symn));
@@ -27,8 +24,9 @@ symn newdefn(state s, int kind) {
 	return def;
 }
 
-symn instlibc(state s, const char* name);
-symn install(state s, int kind, const char* name, unsigned size) {
+symn instlibc(ccEnv s, const char* name);
+
+symn install(ccEnv s, int kind, const char* name, unsigned size) {
 	symn typ = 0, def = 0;
 	unsigned hash = 0;
 
@@ -39,7 +37,7 @@ symn install(state s, int kind, const char* name, unsigned size) {
 		// constant
 		case CNST_int: typ = type_i64; kind = TYPE_def; break;
 		case CNST_flt: typ = type_f64; kind = TYPE_def; break;
-		case CNST_str: typ = type_str; kind = TYPE_def; break;
+		//TODO: case CNST_str: typ = type_str; kind = TYPE_def; break;
 
 		// basetype
 		case TYPE_vid:
@@ -47,11 +45,11 @@ symn install(state s, int kind, const char* name, unsigned size) {
 		case TYPE_int:
 		case TYPE_flt:
 
-		case TYPE_u32:
-		case TYPE_i32:
-		case TYPE_i64:
-		case TYPE_f32:
-		case TYPE_f64:
+		//~ case TYPE_u32:
+		//~ case TYPE_i32:
+		//~ case TYPE_i64:
+		//~ case TYPE_f32:
+		//~ case TYPE_f64:
 		case TYPE_p4x:
 		//~ case TYPE_ptr:
 
@@ -66,12 +64,12 @@ symn install(state s, int kind, const char* name, unsigned size) {
 			break;
 
 		default:
-			fatal("install '%s'", name);	// this
+			fatal("%t(%s)", kind, name);	// this
 			return 0;
 	}
 
 	def = newdefn(s, kind);
-	def->kind = kind;
+	//~ def->kind = kind;
 	def->nest = s->nest;
 	def->type = typ;
 	def->name = (char*)name;
@@ -84,12 +82,9 @@ symn install(state s, int kind, const char* name, unsigned size) {
 	def->defs = s->defs;
 	s->defs = def;
 
-	//~ def->all = s->all;
-	//~ s->all = def;
-
 	return def;
 }
-symn declare(state s, int kind, astn tag, symn rtyp, symn args) {
+symn declare(ccEnv s, int kind, astn tag, symn rtyp, symn args) {
 	int hash = tag ? tag->hash : 0;
 	symn def;// = s->deft[hash];
 
@@ -102,9 +97,9 @@ symn declare(state s, int kind, astn tag, symn rtyp, symn args) {
 	for (def = s->deft[hash]; def; def = def->next) {
 		if (def->nest < s->nest) break;
 		if (def->name && strcmp(def->name, tag->name) == 0) {
-			error(s, tag->line, "redefinition of '%T'", def);
+			error(s->s, tag->line, "redefinition of '%T'", def);
 			if (def->file && def->line)
-				info(s, def->file, def->line, "first defined here");
+				info(s->s, def->file, def->line, "first defined here");
  		}
 	}
 
@@ -120,12 +115,12 @@ symn declare(state s, int kind, astn tag, symn rtyp, symn args) {
 	//~ tag->type = rtyp;
 
 	switch (kind) {
-		default: fatal("declare:install('%T')", def);
+		default: fatal("install('%t')", kind);
 
-		//~ case TYPE_enu:			// typedefn enum
+		//~ case CNST_int:			// typedefn enum
+		case TYPE_enu:			// typedefn enum
 		case TYPE_rec:			// typedefn struct
 
-		//~ case TYPE_val:			// constant
 		case TYPE_def:			// typename
 		case TYPE_ref: {		// variable
 			tag->kind = kind;
@@ -134,6 +129,7 @@ symn declare(state s, int kind, astn tag, symn rtyp, symn args) {
 			//~ def->size = typ->size;
 		} break;
 	}
+
 	// hash
 	def->next = s->deft[hash];
 	s->deft[hash] = def;
@@ -181,6 +177,16 @@ symn iscall(astn ast) {		// returns type ref
 	if (ast->stmt || ast->link) return 0;
 	return ast->type;
 }*/
+
+/*astn iscdef(astn ast) {
+	if (!ast) return 0;
+	if (ast->kind == TYPE_ref)
+		return 0;
+	if (!ast->link)
+		return 0;
+	return ast->link->init;
+}*/
+
 int istype(astn ast) {		// type[.type]*
 	if (!ast) return 0;
 
@@ -189,15 +195,21 @@ int istype(astn ast) {		// type[.type]*
 	//~ dieif(ast->kind != TYPE_ref);
 	//~ dieif(ast->kind == TYPE_def);
 
-	if (ast->kind == TYPE_def) {
+	if (ast->kind == TYPE_ref) {
 		return ast->link && ast->link->kind != TYPE_ref;
 	}
-	if (ast->kind != TYPE_ref) return 0;
-	//~ return ast->link && ast->link->kind != TYPE_ref;
 
-	if (ast->link && ast->link->kind == TYPE_ref) return 0;
-	return ast->type->kind;
-}
+	if (ast->kind == EMIT_opc)
+		return 0;
+
+	debug("%t(%+k)", ast->kind, ast);
+	return 0;
+	//~ if (ast->kind != TYPE_ref) return 0;
+	// return ast->link && ast->link->kind != TYPE_ref;
+
+	//~ if (ast->link && ast->link->kind == TYPE_ref) return 0;
+	//~ return ast->type->kind;
+}// */
 int isemit(astn ast) {		// emit (...)
 	if (!ast) return 0;
 	if (ast->kind != OPER_fnc) return 0;
@@ -206,16 +218,13 @@ int isemit(astn ast) {		// emit (...)
 	if (ast->lhso->kind != EMIT_opc) return 0;
 
 	return EMIT_opc;
-}
-int islval(astn ast) {
+}// */
+/*int islval(astn ast) {
 	if (!ast) return 0;
 	//~ if (ast->kind != OPER_fnc) return 0;
-	if (ast->kind == TYPE_def) {	// mean new
-		if (!ast->link) return 0;
-		return ast->cast == TYPE_ref;
-	}
+
 	if (ast->kind == TYPE_ref) {	// variable
-		return 1;
+		return ast->link && ast->link->kind == TYPE_ref;
 	}
 	return 0;
 }// */
@@ -223,10 +232,9 @@ int islval(astn ast) {
 symn linkOf(astn ast) {
 	if (ast && ast->kind == OPER_dot)
 		ast = ast->rhso;
-	if (ast && ast->kind == TYPE_ref)
-		return ast->link;
-	debug("linkof:%s:%k",tok_tbl[ast->kind].name, ast);
-	return 0;
+	dieif(!ast, "");
+	dieif(ast->kind != TYPE_ref, "%+k", ast);
+	return ast->link;
 }// */
 //~ symn typeOf(astn ast);
 //~ long sizeOf(astn ast);
@@ -309,8 +317,8 @@ int castOp(symn lht, symn rht) {
 	}
 	return 0;
 }// */
-//TODO: lookin(symn list, astn node, astn args): type
-symn lookin(symn sym, astn ast, astn ref, astn args) {
+
+symn lookin(symn sym, astn ref, astn args) {
 	for (; sym; sym = sym->next) {
 		astn arg = args;			// callee arguments
 		symn par = sym->args;		// caller arguments
@@ -319,23 +327,19 @@ symn lookin(symn sym, astn ast, astn ref, astn args) {
 		//~ debug("%k ?= %T", ref, sym);
 
 		switch (sym->kind) {
-			/*case TYPE_val: {
-				//~ debug("%k ^= %T(%?k)", ref, sym->type, sym->init);
-				//~ if (args && !args->cast) continue;
-				ref->kind = TYPE_val;
-				ref->type = ast->type = sym->type;
+
+			// constant/variable/operator/property/function/typename ?
+			case EMIT_opc:
+			case TYPE_def:
+			case TYPE_ref: {
+				//~ debug("%+k := %T[%t](%?k)", ref, sym->type, sym->kind, sym->init);
+
+				ref->kind = TYPE_ref;
+				ref->type = sym->type;
 				//~ ast->cast = castId(sym->type);
-				ref->rhso = sym->init;
+				//~ ast->rhso = sym->init;	// init|body|cnst
 				ref->link = sym;
-			} break;*/
-			case TYPE_def: {
-				//~ debug("%k ^= %T(%?k)", ref, sym->type, sym->init);
-				//~ if (args && !args->cast) continue;
-				ref->kind = sym->init ? TYPE_val : TYPE_def;
-				ref->type = ast->type = sym->type;
-				//~ ast->cast = castId(sym->type);
-				ref->rhso = sym->init;
-				ref->link = sym;
+				ref->stmt = 0;
 			} break;
 
 			// typename
@@ -355,25 +359,12 @@ symn lookin(symn sym, astn ast, astn ref, astn args) {
 			case TYPE_rec: {
 				//~ if (args) continue;	// cast probably
 				ref->kind = TYPE_ref;
-				ref->type = ast->type = sym;
-				ast->cast = castId(sym);
-				ref->stmt = 0;
+				ref->type = sym;
+				ref->cast = castId(sym);
 				ref->link = sym;
+				ref->stmt = 0;
 			} break;// */
 
-			// variable/operator/property/function ?
-			case EMIT_opc:
-			case TYPE_ref: {
-				// TODO lot to do here
-				//~ debug("%k $= %T(%?k)", ref, sym->type, sym->init);
-				ref->kind = TYPE_ref;
-				ast->type = ref->type = sym->type;
-				//~ ast->cast = ref->cast = castId(sym->type);
-				//~ ref->cast = sym->type->kind;
-				//~ ast->rhso = sym->init;	// init|body
-				ref->link = sym;
-				//~ sym->used = 1;
-			} break;
 		}
 		while (arg && par) {
 			symn typ = par->type;
@@ -394,12 +385,14 @@ symn lookin(symn sym, astn ast, astn ref, astn args) {
 	}
 	return sym;
 }
-symn lookup(state s, symn loc, astn ast) {
+symn lookup(ccEnv s, symn loc, astn ast) {
 	astn ref = 0, args = 0;
-	symn typ = 0, sym = 0;
+	symn sym = 0;
+
 	if (!ast) {
 		return 0;
 	}
+
 	switch (ast->kind) {
 		case OPER_dot: {
 			if (!lookup(s, loc, ast->lhso)) {
@@ -491,7 +484,7 @@ symn lookup(state s, symn loc, astn ast) {
 				//~ case 0: // not a builtin type, find it.
 			}*/
 
-			dieif(!lht->type, "");
+			dieif(!lht->type, "%+k", ast);
 			if (ast->lhso && ast->lhso->kind != OPER_idx)
 				debug("TODO(%+k):sizeof(%+T)=%d", ast->lhso, lht, lht->size);
 			debug("TODO(%+k):sizeof(%+T)=%d", ast, lht->type, lht->type->size);
@@ -512,7 +505,7 @@ symn lookup(state s, symn loc, astn ast) {
 			}
 			return ast->type = NULL;
 		} break;
-		case OPER_not: {		// '!'
+		case OPER_not: {	// '!'
 			symn ret = lookup(s, 0, ast->rhso);
 			if (castId(ret)) {
 				return ast->type = type_bol;
@@ -524,7 +517,7 @@ symn lookup(state s, symn loc, astn ast) {
 		case OPER_sub:
 		case OPER_mul:
 		case OPER_div:
-		case OPER_mod: {		// 'lhs op rhs' => op(lhs, rhs)
+		case OPER_mod: {	// 'lhs op rhs' => op(lhs, rhs)
 			symn lht = lookup(s, 0, ast->lhso);
 			symn rht = lookup(s, 0, ast->rhso);
 
@@ -556,7 +549,7 @@ symn lookup(state s, symn loc, astn ast) {
 		case OPER_shr:		// '<<'
 		case OPER_and:		// '&'
 		case OPER_ior:		// '|'
-		case OPER_xor: {		// '^'
+		case OPER_xor: {	// '^'
 			symn lht = lookup(s, 0, ast->lhso);
 			symn rht = lookup(s, 0, ast->rhso);
 
@@ -575,7 +568,7 @@ symn lookup(state s, symn loc, astn ast) {
 					return ast->type = type_i32;
 				case TYPE_f32:
 				case TYPE_f64: {
-					error(s, ast->line, "invalid cast(%+k)", ast);
+					error(s->s, ast->line, "invalid cast(%+k)", ast);
 					return 0;
 				}
 			}
@@ -590,7 +583,7 @@ symn lookup(state s, symn loc, astn ast) {
 		case OPER_lte:		// '<'
 		case OPER_leq:		// '<='
 		case OPER_gte:		// '>'
-		case OPER_geq: {		// '>='
+		case OPER_geq: {	// '>='
 			symn lht = lookup(s, 0, ast->lhso);
 			symn rht = lookup(s, 0, ast->rhso);
 			//~ symn ret = castTy(lht, rht);
@@ -612,7 +605,7 @@ symn lookup(state s, symn loc, astn ast) {
 			return 0;
 		} break;
 
-		case ASGN_set: {		// ':='
+		case ASGN_set: {	// ':='
 			symn lht = lookup(s, 0, ast->lhso);
 			symn rht = lookup(s, 0, ast->rhso);
 
@@ -640,7 +633,6 @@ symn lookup(state s, symn loc, astn ast) {
 
 		case CNST_int: ast->cast = TYPE_i32; return ast->type = type_i32;
 		case CNST_flt: ast->cast = TYPE_f64; return ast->type = type_f64;
-		case TYPE_val:
 		case TYPE_ref: ref = ast; break;
 		case EMIT_opc: return 0;
 
@@ -668,115 +660,26 @@ symn lookup(state s, symn loc, astn ast) {
 		} break;*/
 
 		default: {
-			debug("invalid lookup `%s` in %T", tok_tbl[ast->kind].name, loc);
+			debug("invalid lookup(%s:%d) `%t` in %T", s->file, ast->line, ast->kind, loc);
 		} return NULL;
-
 	}
 
 	//~ debug("%k[%d] in %T{%+k}", ref, ast->hash, loc, ast);
 
 	sym = loc ? loc->args : s->deft[ref->hash];
 
-	sym = lookin(sym, ast, ref, args);
+	sym = lookin(sym, ref, args);
 
-/*	for (; sym; sym = sym->next) {
-		astn arg = args;			// callee arguments
-		symn par = sym->args;		// caller arguments
-		//~ if (!sym->name) continue;
-		if (!sym->name || strcmp(sym->name, ref->name) != 0) continue;
-		//~ debug("%k ?= %T", ref, sym);
+	ast->type = ref->type;
 
-		switch (sym->kind) {
-			/ *case TYPE_val: {
-				//~ debug("%k ^= %T(%?k)", ref, sym->type, sym->init);
-				//~ if (args && !args->cast) continue;
-				ref->kind = TYPE_val;
-				ref->type = ast->type = sym->type;
-				//~ ast->cast = castId(sym->type);
-				ref->rhso = sym->init;
-				ref->link = sym;
-			} break;* /
-			case TYPE_def: {
-				//~ debug("%k ^= %T(%?k)", ref, sym->type, sym->init);
-				//~ if (args && !args->cast) continue;
-				ref->kind = sym->init ? TYPE_val : TYPE_def;
-				ref->type = ast->type = sym->type;
-				//~ ast->cast = castId(sym->type);
-				ref->rhso = sym->init;
-				ref->link = sym;
-			} break;
-
-			// typename
-			case TYPE_vid:
-			case TYPE_bit:
-			case TYPE_u32:
-			case TYPE_int:
-			case TYPE_i32:
-			case TYPE_i64:
-			case TYPE_flt:
-			case TYPE_f32:
-			case TYPE_f64:
-			case TYPE_p4x:
-			//~ case TYPE_ptr:
-
-			case TYPE_enu:
-			case TYPE_rec: {
-				//~ if (args) continue;	// cast probably
-				ref->kind = TYPE_ref;
-				ref->type = ast->type = sym;
-				ast->cast = castId(sym);
-				ref->stmt = 0;
-				ref->link = sym;
-			} break;// * /
-
-			// variable/operator/property/function ?
-			case EMIT_opc:
-			case TYPE_ref: {
-				// TODO lot to do here
-				//~ debug("%k $= %T(%?k)", ref, sym->type, sym->init);
-				ref->kind = TYPE_ref;
-				ast->type = ref->type = sym->type;
-				//~ ast->cast = ref->cast = castId(sym->type);
-				//~ ref->cast = sym->type->kind;
-				//~ ast->rhso = sym->init;	// init|body
-				ref->link = sym;
-				//~ sym->used = 1;
-			} break;
-			default: {
-				error(s, ast->line, "undeclared `%k`", ast);
-				sym = declare(s, TOKN_err, ast, NULL, NULL);
-				sym->type = type_i32;
-				ast->kind = TYPE_ref;
-				ast->type = type_i32;
-				ast->link = sym;
-			} break;
-		}
-		while (arg && par) {
-			symn typ = par->type;
-			//~ debug("%T:(%T, %T)", sym, typ, arg->type);
-			if (typ == arg->type || castOp(typ, arg->type)) {
-				arg->cast = castId(typ);
-				arg = arg->next;
-				par = par->next;
-				continue;
-			}
-			break;
-		}
-		if (!arg && !typ)
-			break;
-		//~ debug("%k[%d] is %T{%+k}", ref, ast->hash, loc, ast);
-		// if we are here then sym is found.
-		//~ break;
-	}
-*/
-	//~ debug("lookup(%k in `%?T`) is %T[%T]", ref, loc, ast->type, sym);
-	typ = ast->type;
+	/* typ = ast->type;
 	if (typ == NULL && loc == NULL) {
-		error(s, ast->line, "undeclared identifyer `%k`", ast);
-		declare(s, TYPE_ref, ast, type_i32, NULL);
-	}
-	return typ;
+		error(s->s, ast->line, "undeclared identifyer `%k`", ref);
+		declare(s, TYPE_ref, ref, type_i32, NULL);
+	}*/
+	return ast->type;
 }
+
 int align(int offs, int pack, int size) {
 	switch (pack < size ? pack : size) {
 		default: 
