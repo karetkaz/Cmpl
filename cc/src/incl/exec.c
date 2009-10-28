@@ -1,4 +1,6 @@
 #define SP(__POS, __TYP) (((stkval*)(((char*)st)+(4*(__POS))))->__TYP)
+#define MP(__POS, __TYP) (((stkval*)(((char*)mp)+(1*(__POS))))->__TYP)
+
 //~ #define SPRES(__TYP) (((stkval*)((char*)pu->sp))->__TYP)
 // { switch (ip->opc)------------------------------------------------------------
 //{ 0x0?: SYS		// System
@@ -160,43 +162,15 @@ case opc_ldz4: NEXT(1, 0, +4) {
 #endif
 } break;
 //}
-/*{ 0x2?: MEM		// Memory
-case opc_ldi1: NEXT(1, 0, +1);{
+//{ 0x2?: MEM		// Memory
+case opc_ldi4: NEXT(1, 1, -0);{
 #ifdef EXEC
-	MEMP((void*)(long)SP(0, i4));
-	sp->d1 = mp->d1;
+	SP(0, i4) = MP(SP(0, i4), i2);
 #endif
 } break;
-case opc_ldi2: NEXT(1, 0, +1);{
+case opc_sti4: NEXT(1, 2, -1);{
 #ifdef EXEC
-	MEMP((void*)(long)SP(0, i4));
-	sp->d2 = mp->d2;
-#endif
-} break;
-case opc_ldi4: NEXT(1, 0, +1);{
-#ifdef EXEC
-	MEMP((void*)(long)SP(0, i4));
-	sp->i4 = mp->i4;
-#endif
-} break;
-case opc_sti1: NEXT(1, 2, -2);{
-#ifdef EXEC
-	MEMP((void*)(long)SP(1, i4));
-	mp->d1 = sp->i4;
-#endif
-} break;
-case opc_sti2: NEXT(1, 2, -2);{
-#ifdef EXEC
-	//~ MEMP(sp[1].vp);
-	MEMP((void*)(long)sp[1].i4);
-	mp->d2 = sp->i4;
-#endif
-} break;
-case opc_sti4: NEXT(1, 2, -2);{
-#ifdef EXEC
-	//~ MEMP(sp[1].vp);
-	MEMP((void*)(long)sp[1].i4);
-	mp->i4 = sp->i4;
+	MP(SP(1, i4), i2) = SP(0, i4);
 #endif
 } break;
 //}*/

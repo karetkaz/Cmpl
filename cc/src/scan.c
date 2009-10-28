@@ -369,7 +369,7 @@ char *mapstr(ccEnv s, char *name, unsigned size/* = -1U*/, unsigned hash/* = -1U
 	return name;
 }
 
-int read_tok(ccEnv s, astn tok)
+static int read_tok(ccEnv s, astn tok)
 //!TODO: remove "debug"
 //!TODO: fix readnum change with 2 pass reader
 {
@@ -1176,7 +1176,7 @@ astn peek(ccEnv s) {
 	return s->_tok;
 }
 
-astn next(ccEnv s, int kind) {
+static astn next(ccEnv s, int kind) {
 	if (!peek(s)) return 0;
 	if (!kind || s->_tok->kind == kind) {
 		astn ast = s->_tok;
@@ -1187,19 +1187,19 @@ astn next(ccEnv s, int kind) {
 	return 0;
 }
 
-void back(ccEnv s, astn ast) {
+static void back(ccEnv s, astn ast) {
 	ast->next = s->_tok;
 	s->_tok = ast;
 }
 
-int test(ccEnv s, int kind) {
+static int test(ccEnv s, int kind) {
 	astn ast = peek(s);
 	if (!ast || (kind && ast->kind != kind))
 		return 0;
 	return 1;
 }
 
-int skip(ccEnv s, int kind) {
+static int skip(ccEnv s, int kind) {
 	astn ast = peek(s);
 	if (!ast || (kind && ast->kind != kind))
 		return 0;
@@ -1210,6 +1210,12 @@ int skip(ccEnv s, int kind) {
 //}
 
 //{~~~~~~~~~ Parser ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+static astn decl(ccEnv, int mode);		// parse declaration	(mode: enable expr)
+static astn stmt(ccEnv, int mode);		// parse statement	(mode: enable decl)
+static astn spec(ccEnv s, int qual);
+static symn type(ccEnv s, int qual);
+//~ astn dvar(ccEnv s, symn typ, int qual);
+
 int scan(ccEnv s, int mode) {
 	astn tok, lst = 0, ast = 0;
 
@@ -1256,7 +1262,104 @@ int scan(ccEnv s, int mode) {
 	return s->s->errc;
 }
 
-astn stmt(ccEnv s, int mode) {
+/*static int scan3(ccEnv s, int mode, char *pre, char *post) {
+	astn tok, lst = 0, ast = 0;
+
+	trace(+32, "enter(%?k)", peek(s));
+
+	//~ enter(s, newNode(s, FILE_new));
+	enter(s, 0);
+	if (pre) {
+		int _fin = s->_fin;
+		char *_ptr = s->_ptr;
+		int _cnt = s->_cnt;
+		int _chr = s->_chr;
+		astn _tok = s->_tok;
+		int line = s->line;
+
+		s->line = 0;
+		s->_fin = -1;
+		s->_ptr = pre;
+		s->_cnt = strlen(pre);
+		s->_chr = -1;
+		s->_tok = NULL;
+
+		while (peek(s)) {
+			if ((tok = stmt(s, 0))) {
+				if (!ast) ast = lst = tok;
+				else lst = lst->next = tok;
+				if (mode && (tok->kind != OPER_nop))
+					error(s->s, ast->line, "declaration expected");
+			}
+		}
+
+		s->_fin = _fin;
+		s->_ptr = _ptr;
+		s->_cnt = _cnt;
+		s->_chr = _chr;
+		s->_tok = _tok;
+		s->line = line;
+	}
+	while (peek(s)) {
+		if ((tok = stmt(s, 0))) {
+			if (!ast) ast = lst = tok;
+			else lst = lst->next = tok;
+			if (mode && (tok->kind != OPER_nop))
+				error(s->s, ast->line, "declaration expected");
+		}
+	}
+	if (post) {
+		int _fin = s->_fin;
+		char *_ptr = s->_ptr;
+		int _cnt = s->_cnt;
+		int _chr = s->_chr;
+		astn _tok = s->_tok;
+		int line = s->line;
+
+		s->line = 0;
+		s->_fin = -1;
+		s->_ptr = post;
+		s->_cnt = strlen(post);
+		s->_chr = -1;
+		s->_tok = NULL;
+
+		while (peek(s)) {
+			if ((tok = stmt(s, 0))) {
+				if (!ast) ast = lst = tok;
+				else lst = lst->next = tok;
+				if (mode && (tok->kind != OPER_nop))
+					error(s->s, ast->line, "declaration expected");
+			}
+		}
+
+		s->_fin = _fin;
+		s->_ptr = _ptr;
+		s->_cnt = _cnt;
+		s->_chr = _chr;
+		s->_tok = _tok;
+		s->line = line;
+	}
+	s->defs = leave(s);
+
+	if (s->nest)
+		error(s->s, s->line, "premature end of file");
+
+	if (ast) {
+		astn tmp = newnode(s, OPER_beg);
+		//~ tmp->name = s->file;
+		tmp->stmt = ast;
+		//~ tmp->lhso = lst;
+		ast = tmp;
+	}
+
+	s->root = ast;
+
+	trace(-32, "leave('%k')", peek(s));
+
+	return s->s->errc;
+}// */
+
+static astn stmt(ccEnv s, int mode) {
 	astn ast, tmp = peek(s);
 	int qual = 0;// qual(s, mode);			// static | const | parallel
 	trace(+16, "enter('%k')", peek(s));
@@ -1372,11 +1475,7 @@ astn stmt(ccEnv s, int mode) {
 	return ast;
 }
 
-astn spec(ccEnv s, int qual);
-symn type(ccEnv s, int qual);
-//~ astn dvar(ccEnv s, symn typ, int qual);
-
-astn decl(ccEnv s, int qual) {
+static astn decl(ccEnv s, int qual) {
 	astn ast = NULL;
 	symn typ;
 	trace(+2, "enter('%k')", peek(s));
@@ -1724,7 +1823,7 @@ astn expr(ccEnv s, int mode) {
 			*lhs++ = tok;
 		}
 	}
-	if (tok && !lookup(s, 0, tok)) {
+	if (mode != TYPE_def && tok && !lookup(s, 0, tok)) {
 		debug("BUM: `%+k`", tok);
 		// error(s, tok->line, "bum %+k", tok);
 	}
@@ -1734,7 +1833,7 @@ astn expr(ccEnv s, int mode) {
 
 extern int align(int offs, int pack, int size);
 
-symn type(ccEnv s, int qual) {
+static symn type(ccEnv s, int qual) {
 	astn tok = 0;
 	symn tmp = 0, def = 0;
 	while ((tok = peek(s))) {		// type(.type)*
@@ -1772,7 +1871,15 @@ symn type(ccEnv s, int qual) {
 	return def;
 }
 
-astn spec(ccEnv s, int qual) {
+static int eattoken(ccEnv s, int kind) {
+	if (!skip(s, kind)) {
+		error(s->s, s->line, "`%t` excepted", kind);
+		return 0;
+	}
+	return kind;
+}
+
+static astn spec(ccEnv s, int qual) {
 	astn tok, tag = 0;
 	symn tmp, def = 0;
 	int offs = 0;
@@ -1784,11 +1891,28 @@ astn spec(ccEnv s, int qual) {
 		qual = 0;
 		if ((tag = next(s, TYPE_ref))) {
 			symn typ = 0;
-			if ((typ = type(s, qual))) {	// define sin math.sin;	???
-				def = declare(s, TYPE_def, tag, typ, 0);
-				//~ def->init = 0;
+			if (skip(s, PNCT_lp)) {				// define sqr(double a) = a * a;
+				symn arg = NULL;
+				astn val = NULL;
+				enter(s, NULL);
+				debug("alma");
+				/*if (!(typ = type(s, qual))) {
+					error(s->s, s->line, "typename expected");
+					return 0;
+				}*/
+				if ((tok = next(s, TYPE_ref))) {
+					arg = declare(s, TYPE_def, tok, 0, 0);
+					arg->offs = -1;
+				}
+				//~ TODO:... 1. arg yet
+				if (!eattoken(s, PNCT_rp)) return 0;
+				if (!eattoken(s, ASGN_set)) return 0;
+				val = expr(s, TYPE_def);
+				arg = leave(s);
+				def = declare(s, TYPE_def, tag, type_vid, arg);
+				def->init = val;
 			}
-			else if (skip(s, ASGN_set)) {	// define PI = 3.14;
+			else if (skip(s, ASGN_set)) {		// define PI = 3.14;
 				struct astn tmp;
 				astn val = expr(s, 0);
 				if (eval(&tmp, val, TYPE_any)) {
@@ -1804,6 +1928,10 @@ astn spec(ccEnv s, int qual) {
 					def->init = val;
 				}
 				trace(1, "define('%T' as '%k')", def, val);
+			}
+			else if ((typ = type(s, qual))) {	// define sin math.sin;	???
+				def = declare(s, TYPE_def, tag, typ, 0);
+				//~ def->init = 0;
 			}
 			else error(s->s, tag->line, "typename excepted");
 

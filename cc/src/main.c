@@ -1,343 +1,334 @@
-#include "api.h"
+#include "pvmc.h"
 #include <math.h>
 #include <stdlib.h>
+#include <string.h>
 
-//~ #define debug(msg, ...) fprintf(stdout, "%s:%d:debug:%s: "msg"\n", __FILE__, __LINE__, __func__, ##__VA_ARGS__)
-//~ #define debug(msg, ...) fprintf(stdout, "%s:%d:debug: "msg"\n", __FILE__, __LINE__, ##__VA_ARGS__)
-#define debug(msg, ...) fprintf(stdout, msg"\n", ##__VA_ARGS__)
+// default values
+static const int wl = 9;		// warninig level
+static const int ol = 0;		// optimize level
 
-typedef struct userData {
-	double s, t, S, T;
-	int pos:1;
-	double px, py, pz;
-	int nrm:1;
-	double nx, ny, nz;
-	int col:1;
-	double cr, cg, cb;
+static const int cc = 1;			// execution cores
+static const int ss = 1 << 10;		// execution stack(256K)
+//~ static const int hs = 128 << 20;	// execution heap(128M)
 
-} *userData;
-void setPos(state args) {
-	userData d = args->data;
-	d->px = popf32(args);
-	d->py = popf32(args);
-	d->pz = popf32(args);
-	d->pos = 1;
-	//~ debug("setNrm(%f, %f, %f)", x, y, z);
+void usage(state s, char* prog, char* cmd) {
+	if (cmd == NULL) {
+		fputfmt(stdout, "Usage: %s <command> [options] ...\n", prog);
+		fputfmt(stdout, "<Commands>\n");
+		fputfmt(stdout, "\t-c: compile\n");
+		fputfmt(stdout, "\t-e: execute\n");
+		fputfmt(stdout, "\t-d: diassemble\n");
+		fputfmt(stdout, "\t-h: help\n");
+		fputfmt(stdout, "\t=<expression>: eval\n");
+		//~ fputfmt(stdout, "\t-d: dump\n");
+	}
+	else if (strcmp(cmd, "-c") == 0) {
+		fputfmt(stdout, "compile: %s -c [options] files...\n", prog);
+		fputfmt(stdout, "Options:\n");
+
+		fputfmt(stdout, "\t[Output]\n");
+		fputfmt(stdout, "\t-o <file> set file for output. [default=stdout]\n");
+		fputfmt(stdout, "\t-t tags\n");
+		fputfmt(stdout, "\t-s assembled code\n");
+
+		fputfmt(stdout, "\t[Loging]\n");
+		fputfmt(stdout, "\t-l <file> set file for errors. [default=stderr]\n");
+		fputfmt(stdout, "\t-w<num> set warning level to <num> [default=%d]\n", wl);
+		fputfmt(stdout, "\t-wa all warnings\n");
+		fputfmt(stdout, "\t-wx treat warnings as errors\n");
+
+		fputfmt(stdout, "\t[Debuging]\n");
+		fputfmt(stdout, "\t-(ast|xml) output format\n");
+		fputfmt(stdout, "\t-x<n> execute on <n> procs [default=%d]\n", cc);
+		fputfmt(stdout, "\t-xd<n> debug on <n> procs [default=%d]\n", cc);
+
+		//~ fputfmt(stdout, "\t[Debug & Optimization]\n");
+	}
+	else if (strcmp(cmd, "-e") == 0) {
+		fputfmt(stdout, "command: '-e': execute\n");
+	}
+	else if (strcmp(cmd, "-d") == 0) {
+		fputfmt(stdout, "command: '-d': disassemble\n");
+	}
+	else if (strcmp(cmd, "-m") == 0) {
+		fputfmt(stdout, "command: '-m': make\n");
+	}
+	else if (strcmp(cmd, "-h") == 0) {
+		fputfmt(stdout, "command: '-h': help\n");
+	}
+	else {
+		fputfmt(stdout, "invalid help for: '%s'\n", cmd);
+	}
 }
-void setNrm(state args) {
-	userData d = args->data;
-	d->nx = popf32(args);
-	d->ny = popf32(args);
-	d->nz = popf32(args);
-	d->nrm = 1;
-	int len = d->nx*d->nx + d->ny*d->ny + d->nz*d->nz;
-	if (len) {
-		len = 1. / sqrt(len);
-		d->nx *= len;
-		d->ny *= len;
-		d->nz *= len;
-	}
-	//~ debug("setNrm(%f, %f, %f)", x, y, z);
-}
-void setCol(state args) {
-	userData d = args->data;
-	d->cr = popf32(args);
-	d->cg = popf32(args);
-	d->cb = popf32(args);
-	d->col = 1;
-	//~ debug("setNrm(%f, %f, %f)", x, y, z);
-}
-void getArg(state args) {
-	userData d = args->data;
-	int32t c = popi32(args);
-	flt64t min = popf64(args);
-	flt64t max = popf64(args);
-	switch (c) {
-		case 's': retf32(args, d->S = d->s * (max - min) + min); break;
-		case 't': retf32(args, d->T = d->t * (max - min) + min); break;
-		default : debug("getArg: invalid argument"); break;
-	}
-	//~ debug("getArg('%c', %f, %f)", c, min, max);
-}
 
-extern int lookupflt(ccEnv s, char *name, double* res);
-extern int lookupint(ccEnv s, char *name, int* res);
-extern int lookup_nz(ccEnv s, char *name);
-
-/*int mainq(int argc, char *argv[]) {
-	char *srcf = "main.cvx";
-	char *logf = 0;//"main.log";
-	char *outf = "main.out";
-	static struct state st[1];
-	struct userData ud;
-	int cs = 0, ct = 0;
-	int i, j;
-
-	double smin = 0, tmin = 0;
-	double smax = 0, tmax = 0;
-	int sdiv = 0, tdiv = 0;
-	double s, t, ds, dt;
-
-	int wtf = 0;
-	FILE* out = stdout;
-
-	st->_cnt = sizeof(st->_mem);
-	st->_ptr = st->_mem;
-	st->cc = 0;
-	st->vm = 0;
-
-	if (argc == 2) {
-		srcf = argv[1];
-		logf = NULL;
-		outf = NULL;
-	}
-
-	if (!ccInit(st))
-		return 1;
-
-	install(s, TYPE_var, "const flt32 s", &ud.s);
-	install(s, TYPE_var, "const flt32 t", &ud.t);
-
-	install(s, TYPE_var, "flt32 x", &ud.x);
-	install(s, TYPE_var, "flt32 y", &ud.y);
-	install(s, TYPE_var, "flt32 z", &ud.z);
-
-	if (logfile(st, logf) != 0) {
-		debug("can not open file `%s`\n", srcf);
-		return -1;
-	}
-	if (srcfile(st, srcf) != 0) {
-		debug("can not open file `%s`\n", srcf);
-		return -1;
-	}
-	if (compile(st, 0) != 0) {
-		debug("compile failed");
-		return st->errc;
-	}
-	if (gencode(st, 0) != 0) {
-		debug("gencode failed");
-		return st->errc;
-	}
-
-	st->data = &ud;
-
-	if (lookup_nz(st->cc, "hasTex"))
-		wtf |= 1;
-	if (lookup_nz(st->cc, "hasNrm"))
-		wtf |= 2;
-
-	if (!(out = fopen("obj.obj", "w")))
-		return -1;
-
-	cs = lookup_nz(st->cc, "closeS");
-	ct = lookup_nz(st->cc, "closeT");
-
-	lookupflt(st->cc, "smin", &smin);
-	lookupflt(st->cc, "smax", &smax);
-	lookupint(st->cc, "sdiv", &sdiv);
-
-	lookupflt(st->cc, "tmin", &tmin);
-	lookupflt(st->cc, "tmax", &tmax);
-	lookupint(st->cc, "tdiv", &tdiv);
-
-	//~ exec(st->vm, 1, 4096, dbgInfo);
-	vmInfo(st->vm);
-
-	ds = (smax - smin) / (sdiv - cs);
-	dt = (tmax - tmin) / (tdiv - ct);
-	for (t = tmin, j = 0; j < tdiv; t += dt, ++j) {
-		for (s = smin, i = 0; i < sdiv; s += ds, ++i) {
-			//~ ud.x = ud.y = ud.z = 0. / 0;
-			//~ ud.s = s; ud.t = t;
-
-			if (exec(st->vm, 1, 4096, NULL) != 0) {
-				debug("error");
-				return -1;
-			}
-
-			if (!ud.pos) {
-				debug("position not updated");
-				return -1;
-			}
-			if (!ud.nrm && (wtf & 2)) {
-				debug("normal not updated");
-				return -1;
-			}
-
-			fprintf(out, "v %f %f %f\n", ud.px, ud.py, ud.pz);
-			if (wtf & 1) fprintf(out, "vt %f %f\n", ud.s, ud.t);
-			if (wtf & 2) fprintf(out, "vn %f %f %f\n", ud.nx, ud.ny, ud.nz);
+int vmHelp(char *cmd) {
+	FILE *out = stdout;
+	int i, k, n = 0;
+	for (i = 0; i < opc_last; ++i) {
+		char *opc = (char*)opc_tbl[i].name;
+		if (opc && strfindstr(opc, cmd, 1)) {
+			fputfmt(out, "Instruction: %s\n", opc);
+			n += 1;
+			k = i;
 		}
 	}
+	if (n == 1 && strcmp(cmd, opc_tbl[k].name) == 0) {
+		fputfmt(out, "Opcode: 0x%02x\n", opc_tbl[k].code);
+		fputfmt(out, "Length: %d\n", opc_tbl[k].size);
+		fputfmt(out, "Stack min: %d\n", opc_tbl[k].chck);
+		fputfmt(out, "Stack diff: %d\n", opc_tbl[k].diff);
+		//~ fputfmt(out, "0x%02x	%d		\n", opc_tbl[k].code, opc_tbl[k].size-1);
+		//~ fputfmt(out, "\nDescription\n");
+		//~ fputfmt(out, "The '%s' instruction %s\n", opc_tbl[k].name, "#");
+		//~ fputfmt(out, "\nOperation\n");
+		//~ fputfmt(out, "#\n");
+		//~ fputfmt(out, "\nExceptions\n");
+		//~ fputfmt(out, "None#\n");
+		//~ fputfmt(out, "\n");		// end of text
+	}
+	else if (n == 0) {
+		fputfmt(out, "No Entry for: '%s'\n", cmd);
+	}
+	return n;
+}
 
-	for (j = 0; j < tdiv - 1; ++j) {
-		int l1 = j * tdiv + 1;
-		int l2 = l1 + 1;
-		for (i = 0; i < sdiv - 1; ++i) {
-			int v1 = l1 + i;
-			int v2 = v1 + 1;
-			int v4 = l2 + 1;
-			int v3 = v4 + 1;
-			//~ int v1 = l1 + i;
-			//~ int v2 = v1 + N;
-			//~ int v3 = v2 + 1;
-			//~ int v4 = v1 + 1;
-			switch (wtf) {
-				default: debug("invalid %d", wtf);
-				case 0: fprintf(out, "f %d %d %d %d\n", v1, v2, v3, v4); break;
-				case 1: fprintf(out, "f %d/%d %d/%d %d/%d %d/%d\n", v1, v1, v2, v2, v3, v3, v4, v4); break;
-				case 2: fprintf(out, "f %d//%d %d//%d %d//%d %d//%d\n", v1, v1, v2, v2, v3, v3, v4, v4); break;
-				case 3: fprintf(out, "f %d/%d/%d %d/%d/%d %d/%d/%d %d/%d/%d\n", v1, v1, v1, v2, v2, v2, v3, v3, v3, v4, v4, v4);
-			}
-		}
+int evalexp(ccEnv s, char* text) {
+	struct astn res;
+	astn ast;
+	symn typ;
+	int tid;
+
+	source(s, 0, text);
+	ast = expr(s, 0);
+	typ = lookup(s, 0, ast);
+	tid = eval(&res, ast, TYPE_flt);
+
+	if (peek(s))
+		fputfmt(stdout, "unexpected: `%k`\n", peek(s));
+
+	fputfmt(stdout, "eval(`%+k`) = ", ast);
+
+	if (ast && typ && tid) {
+		fputfmt(stdout, "%T(%k)\n", typ, &res);
+		return 0;
 	}
 
-	if (out != stdout)
-		fclose(out);
+	fputfmt(stdout, "ERROR(typ:`%T`, tid:%d)\n", typ, tid);
+	//~ dumpast(stdout, ast, 15);
 
-	return 0;
-}// */
-// */
-int main(int argc, char *argv[]) {
-	char *srcf = "main.cvx";
-	char *logf = 0;//"obj3d.log";
-	char *outf = 0;//"obj3d.out";
+	return -1;
+}
+
+int program(int argc, char *argv[]) {
 	static struct state s[1];
-	struct userData ud;
-	double delta;
-	int i, j, n, N;
-	int cs = 0, ct = 0;
-	int wtf = 0;
-	FILE* out = stdout;
+	char *prg, *cmd, hexc = '#';
+	dbgf dbg = nodbg;//Info;
 
 	s->_cnt = sizeof(s->_mem);
 	s->_ptr = s->_mem;
 	s->cc = 0;
 	s->vm = 0;
 
-	if (argc == 2) {
-		srcf = argv[1];
-		logf = NULL;
-		outf = NULL;
+	prg = argv[0];
+	cmd = argv[1];
+	if (argc <= 2) {
+		if (argc < 2) {
+			usage(s, prg, NULL);
+		}
+		else if (*cmd != '-') {
+			return evalexp(ccInit(s), cmd);
+		}
+		else if (strcmp(cmd, "-api") == 0) {
+			dumpsym(stdout, leave(ccInit(s)), 1);
+		}
+		else if (strcmp(cmd, "-syms") == 0) {
+			symn sym = leave(ccInit(s));
+			while (sym) {
+				dumpsym(stdout, sym, 0);
+				sym = sym->defs;
+			}
+			//~ dumpsym(stdout, leave(s), 1);
+		}
+		else if (strcmp(cmd, "-emit") == 0) {
+			ccInit(s);
+			dumpsym(stdout, emit_opc->args, 1);
+		}
+		else usage(s, prg, cmd);
 	}
+	else if (strcmp(cmd, "-c") == 0) {	// compile
+		int level = -1, argi = 2;
+		int warn = wl;
+		int outc = 0;			// output
+		char *srcf = 0;			// source
+		char *logf = 0;			// logger
+		char *outf = 0;			// output
+		enum {
+			gen_code = 0x0010,
+			out_tags = 0x0011,	// tags	// ?offs?
+			out_tree = 0x0002,	// walk
 
-	if (!ccInit(s))
-		return 1;
+			out_dasm = 0x0013,	// dasm
+			run_code = 0x0014,	// exec
+		};
 
-	installlibc(s, getArg, "flt32 getArg(int32 arg, flt64 min, flt64 max)");
-	installlibc(s, setPos, "void setPos(flt32 x, flt32 y, flt32 z)");
-	installlibc(s, setNrm, "void setNrm(flt32 x, flt32 y, flt32 z)");
+		// options
+		while (argi < argc) {
+			char *arg = argv[argi];
 
-	//~ install(s, TYPE_var, "const flt32 s", &ud.s);
-	//~ install(s, TYPE_var, "const flt32 t", &ud.t);
+			// source file
+			if (*arg != '-') {
+				if (srcf) {
+					fputfmt(stderr, "multiple sources not suported\n");
+					return -1;
+				}
+				srcf = arg;
+			}
 
-	//~ install(s, TYPE_var, "flt32 x", &ud.x);
-	//~ install(s, TYPE_var, "flt32 y", &ud.y);
-	//~ install(s, TYPE_var, "flt32 z", &ud.z);
+			// output file
+			else if (strcmp(arg, "-l") == 0) {		// log
+				if (++argi >= argc || logf) {
+					fputfmt(stderr, "logger error\n");
+					return -1;
+				}
+				logf = arg;
+			}
+			else if (strcmp(arg, "-o") == 0) {		// out
+				if (++argi >= argc || outf) {
+					fputfmt(stderr, "output error\n");
+					return -1;
+				}
+				outf = arg;
+			}
 
-	if (logfile(s, logf) != 0) {
-		debug("can not open file `%s`\n", srcf);
-		return -1;
-	}
-	if (srcfile(s, srcf) != 0) {
-		srcf = "../obj3d.cvx";
-		if (srcfile(s, srcf) != 0) {
-			debug("can not open file `%s`\n", srcf);
+			// output text
+			else if (strncmp(arg, "-x", 2) == 0) {		// exec
+				char *str = arg + 2;
+				outc = run_code;
+				if (*str == 'd') {
+					dbg = dbgInfo;
+					str += 1;
+				}
+				else if (*str == 'D') {
+					dbg = dbgCon;
+					str += 1;
+				}
+				if (!parseInt(str, &level, 0)) {
+					fputfmt(stderr, "invalid level '%s'\n", arg + 2);
+					debug("invalid level '%s'\n", arg + 2);
+					return 0;
+				}
+			}
+			else if (strncmp(arg, "-t", 2) == 0) {		// tags
+				if (!parseInt(arg + 2, &level, hexc)) {
+					fputfmt(stderr, "invalid level '%s'\n", arg + 2);
+					debug("invalid level '%s'\n", arg + 2);
+					return 0;
+				}
+				outc = out_tags;
+			}
+			else if (strncmp(arg, "-s", 2) == 0) {		// dasm
+				if (!parseInt(arg + 2, &level, hexc)) {
+					fputfmt(stderr, "invalid level '%s'\n", arg + 2);
+					debug("invalid level '%s'\n", arg + 2);
+					return 0;
+				}
+				outc = out_dasm;
+			}
+			else if (strncmp(arg, "-c", 2) == 0) {		// tree
+				if (!parseInt(arg + 2, &level, hexc)) {
+					fputfmt(stderr, "invalid level '%s'\n", arg + 2);
+					debug("invalid level '%s'\n", arg + 2);
+					return 0;
+				}
+				outc = out_tree;
+			}
+
+			// Override settings
+			else if (strncmp(arg, "-w", 2) == 0) {		// warning level
+				if (strcmp(arg, "-wx"))
+					warn = -1;
+				else if (strcmp(arg, "-wa"))
+					warn = 9;
+				else if (!parseInt(arg + 2, &warn, 0)) {
+					fputfmt(stderr, "invalid level '%s'\n", arg + 2);
+					debug("invalid level '%s'\n", arg + 2);
+					return 0;
+				}
+			}
+			/*else if (strncmp(arg, "-d", 2) == 0) {		// optimize/debug level
+				return -1;
+			}*/
+
+			else {
+				fputfmt(stderr, "invalid option '%s' for -compile\n", arg);
+				return -1;
+			}
+			++argi;
+			//~ debug("level :0x%02x: arg[%d]: '%s'", level, argi - 2, arg);
+		}
+		if (logfile(s, logf) != 0) {
+			fputfmt(stderr, "can not open file `%s`\n", srcf);
 			return -1;
 		}
-	}
-	if (compile(s, 0) != 0) {
-		debug("compile failed");
-		return s->errc;
-	}
-	if (gencode(s, 0) != 0) {
-		debug("gencode failed");
-		return s->errc;
-	}
-
-	//~ dump(s, outf, dump_new | dump_sym | 0x01, "tags:\n");
-	//~ dump(s, outf, dump_ast | 0x00, "\ncode (ast):\n");
-	//~ dump(s, outf, dump_ast | 0x0f, "\ncode (xml):\n");
-	//~ dump(s, outf, dump_asm | 0x39, "\ndasm:\n");
-
-	s->data = &ud;
-	if (!lookupint(s->cc, "division", &N)) {
-		n = 32;
-		debug("division: %d", n);
-	}
-
-	cs = lookup_nz(s->cc, "closeS");
-	ct = lookup_nz(s->cc, "closeT");
-
-	if (lookup_nz(s->cc, "hasTex"))
-		wtf |= 1;
-
-	if (lookup_nz(s->cc, "smaximum"))
-		debug("alma");
-
-	if (lookup_nz(s->cc, "hasNrm"))
-		wtf |= 2;
-
-	if (!(out = fopen("obj.obj", "w")))
-		return -1;
-
-	//~ exec(s->vm, 1, 4096, dbgInfo);
-	vmInfo(s->vm);
-
-	delta = 1. / (n = (N - 1));
-	for (ud.t = j = 0; j <= n; ud.t += delta, ++j) {
-		if (j == n && ct) ud.t = 0;
-		for (ud.s = i = 0; i <= n; ud.s += delta, ++i) {
-			if (i == n && cs) ud.s = 0;
-			ud.pos = ud.nrm = 0;
-			if (exec(s->vm, 1, 4096, NULL) != 0) {
-				debug("error");
-				return -1;
-			}
-
-			if (!ud.pos) {
-				debug("position not updated");
-				return -1;
-			}
-			if (!ud.nrm && (wtf & 2)) {
-				debug("normal not updated");
-				return -1;
-			}
-
-			fprintf(out, "v %f %f %f\n", ud.px, ud.py, ud.pz);
-			if (wtf & 1) fprintf(out, "vt %f %f\n", ud.s, ud.t);
-			if (wtf & 2) fprintf(out, "vn %f %f %f\n", ud.nx, ud.ny, ud.nz);
+		if (srcfile(s, srcf) != 0) {
+			fputfmt(stderr, "can not open file `%s`\n", srcf);
+			return -1;
 		}
-	}
+		if (compile(s, !srcUnit) != 0) {
+			//~ fputfmt(stderr, "can not open file `%s`\n", srcf);
+			return s->errc;
+		}
+		if (gencode(s, 0) != 0) {
+			//~ fputfmt(stderr, "can not open file `%s`\n", srcf);
+			return s->errc;
+		}
 
-	for (j = 0; j < n; ++j) {
-		int l1 = j * N + 1;
-		for (i = 0; i < n; ++i) {
-			int v1 = l1 + i;
-			int v2 = v1 + 1;
-			int v4 = v1 + N;
-			int v3 = v4 + 1;
-			//~ int v1 = l1 + i;
-			//~ int v2 = v1 + N;
-			//~ int v3 = v2 + 1;
-			//~ int v4 = v1 + 1;
-			switch (wtf) {
-				default: debug("invalid %d", wtf);
-				case 0: fprintf(out, "f %d %d %d %d\n", v1, v2, v3, v4); break;
-				case 1: fprintf(out, "f %d/%d %d/%d %d/%d %d/%d\n", v1, v1, v2, v2, v3, v3, v4, v4); break;
-				case 2: fprintf(out, "f %d//%d %d//%d %d//%d %d//%d\n", v1, v1, v2, v2, v3, v3, v4, v4); break;
-				case 3: fprintf(out, "f %d/%d/%d %d/%d/%d %d/%d/%d %d/%d/%d\n", v1, v1, v1, v2, v2, v2, v3, v3, v3, v4, v4, v4);
+		switch (outc) {
+			case out_tree: dump(s, outf, dump_ast | (level & 0xff), NULL); break;
+			case out_dasm: dump(s, outf, dump_asm | (level & 0xff), NULL); break;
+			case out_tags: dump(s, outf, dump_sym | (1), NULL); break;
+			case run_code: exec(s->vm, cc, ss, dbg); break;
+		}
+
+		return 0;
+	}
+	else if (strcmp(cmd, "-e") == 0) {	// execute
+		fatal("unimplemented option '%s' \n", cmd);
+		//~ objfile(s, ...);
+		//~ return execute(s, cc, ss, dbgl);
+	}
+	else if (strcmp(cmd, "-d") == 0) {	// assemble
+		fatal("unimplemented option '%s' \n", cmd);
+		//~ objfile(s, ...);
+		//~ return dumpasm(s, cc, ss, dbgl);
+	}
+	else if (strcmp(cmd, "-m") == 0) {	// make
+		fatal("unimplemented option '%s' \n", cmd);
+	}
+	else if (strcmp(cmd, "-h") == 0) {	// help
+		char *t = argv[2];
+		if (argc < 3) {
+			usage(s, argv[0], argc < 4 ? argv[3] : NULL);
+		}
+		else if (strcmp(t, "-s") == 0) {
+			int i = 3;
+			if (argc == 3) {
+				vmHelp("?");
+			}
+			else while (i < argc) {
+				vmHelp(argv[i++]);
 			}
 		}
+		//~ else if (strcmp(t, "-x") == 0) ;
 	}
-
-	if (out != stdout)
-		fclose(out);
-
+	else if (argc == 2 && *cmd != '-') {	// try to eval
+		return evalexp(ccInit(s), cmd);
+	}
+	else fputfmt(stderr, "invalid option '%s'", cmd);
 	return 0;
 }
 
-int main2(int argc, char *argv[]) {
+int main(int argc, char *argv[]) {
 	if (1 && argc == 1) {
 		char *args[] = {
 			"psvm",		// program name
@@ -350,7 +341,7 @@ int main2(int argc, char *argv[]) {
 		};
 		argc = sizeof(args) / sizeof(*args);
 		argv = args;
-	}// */
+	}
 
 	setbuf(stdout, NULL);
 	setbuf(stderr, NULL);

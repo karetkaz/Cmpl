@@ -401,9 +401,8 @@ astn peek(ccEnv);
 //~ int  test(ccEnv, int kind);
 
 astn expr(ccEnv, int mode);		// parse expression	(mode: ?)
-astn decl(ccEnv, int mode);		// parse declaration	(mode: enable expr)
-astn stmt(ccEnv, int mode);		// parse statement	(mode: enable decl)
-
+//~ astn decl(ccEnv, int mode);		// parse declaration	(mode: enable expr)
+//~ astn stmt(ccEnv, int mode);		// parse statement	(mode: enable decl)
 int scan(ccEnv, int mode);		// parse program	(mode: script mode)
 
 void enter(ccEnv s, symn def);
@@ -415,7 +414,9 @@ symn leave(ccEnv s);
  * @param res: where to put the result
  * @param get: one of TYPE_xxx
  */
+
 int eval(astn res, astn ast, int get);
+int cgen(state s, astn ast, int get);		// ret: typeId(ast)
 
 /** generate byte code for tree
  * @return TYPE_xxx, 0 on error
@@ -431,8 +432,6 @@ int emitidx(vmEnv, int opc, int stpos);
 int emitint(vmEnv, int opc, int64t arg);
 int fixjump(vmEnv s, int src, int dst, int stc);
 
-int cgen(state, astn ast, int get);		// ret: typeId(ast)
-
 int istype(astn ast);
 int isemit(astn ast);
 //~ int islval(astn ast);
@@ -441,11 +440,6 @@ symn linkOf(astn ast);
 int castId(symn ast);
 int castOp(symn lhs, symn rhs);
 
-//~ void vm_info(vmEnv);
-//~ int cc_init(state);
-//~ int cc_done(state);
-
-//~ int logger(state, char *file);						// file for errors
 int source(ccEnv, srcType mode, char* text);		// mode: file/text
 
 //~ void installlibc(state, void call(state), const char* proto);
@@ -456,7 +450,6 @@ char *mapstr(ccEnv s, char *name, unsigned size/* = -1U*/, unsigned hash/* = -1U
 
 
 void vm_tags(ccEnv s, char *sptr, int slen);
-//~ void vm_info(vmEnv vm);
 int dbgNone(vmEnv vm, int pu, void *ip, long* sptr, int sc);
 int dbgCon(vmEnv vm, int pu, void *ip, long* sptr, int sc);
 int nodbg(vmEnv vm, int pu, void *ip, long* sptr, int sc);

@@ -57,66 +57,66 @@ typedef struct cell {			// processor
 
 //{ libc.c ---------------------------------------------------------------------
 
-void f32abs(state s) {
+static void f32abs(state s) {
 	flt32t x = poparg(s, flt32t);
 	setret(flt32t, s, fabs(x));
 }
-void f32sin(state s) {
+static void f32sin(state s) {
 	flt32t x = poparg(s, flt32t);
 	setret(flt32t, s, sin(x));
 }
-void f32cos(state s) {
+static void f32cos(state s) {
 	flt32t x = poparg(s, flt32t);
 	setret(flt32t, s, cos(x));
 }
-void f32tan(state s) {
+static void f32tan(state s) {
 	flt32t x = poparg(s, flt32t);
 	setret(flt32t, s, tan(x));
 }
-void f32sqrt(state s) {
+static void f32sqrt(state s) {
 	flt32t x = poparg(s, flt32t);
 	setret(flt32t, s, sqrt(x));
 }
 
-void f64abs(state s) {
+static void f64abs(state s) {
 	flt64t x = poparg(s, flt64t);
 	setret(flt64t, s, fabs(x));
 }
-void f64sin(state s) {
+static void f64sin(state s) {
 	flt64t x = poparg(s, flt64t);
 	setret(flt64t, s, sin(x));
 }
-void f64cos(state s) {
+static void f64cos(state s) {
 	flt64t x = poparg(s, flt64t);
 	setret(flt64t, s, cos(x));
 }
-void f64atan2(state s) {
+static void f64log(state s) {
+	flt64t x = poparg(s, flt64t);
+	setret(flt64t, s, log(x));
+}
+static void f64exp(state s) {
+	flt64t x = poparg(s, flt64t);
+	setret(flt64t, s, exp(x));
+}
+static void f64atan2(state s) {
 	flt64t x = poparg(s, flt64t);
 	flt64t y = poparg(s, flt64t);
 	setret(flt64t, s, atan2(x, y));
 	//~ debug("flt64t atan2(flt64t x(%G), flt64t y(%G)) = %G", x, y, atan2(x, y));
 }
 
-/*void f64lg2(state s) {
+/*static void f64lg2(state s) {
 	double log2(double);
 	flt64t *sp = stk;
 	*sp = log2(*sp);
 }
-void f64_xp2(state s) {
+static void f64_xp2(state s) {
 	double exp2(double);
 	flt64t *sp = stk;
 	*sp = exp2(*sp);
 }*/
-void f64log(state s) {
-	flt64t x = poparg(s, flt64t);
-	setret(flt64t, s, log(x));
-}
-void f64exp(state s) {
-	flt64t x = poparg(s, flt64t);
-	setret(flt64t, s, exp(x));
-}
 
-void b32btc(state s) {
+static void b32btc(state s) {
 	uns32t x = poparg(s, uns32t);
 	x -= ((x >> 1) & 0x55555555);
 	x = (((x >> 2) & 0x33333333) + (x & 0x33333333));
@@ -125,7 +125,7 @@ void b32btc(state s) {
 	x += (x >> 16);
 	setret(uns32t, s, x & 0x3f);
 }
-void b32bsf(state s) {
+static void b32bsf(state s) {
 	uns32t x = poparg(s, uns32t);
 	int ans = 0;
 	if ((x & 0x0000ffff) == 0) { ans += 16; x >>= 16; }
@@ -135,7 +135,7 @@ void b32bsf(state s) {
 	if ((x & 0x00000001) == 0) { ans +=  1; }
 	setret(uns32t, s, x ? ans : -1);
 }
-void b32bsr(state s) {
+static void b32bsr(state s) {
 	uns32t x = poparg(s, uns32t);
 	unsigned ans = 0;
 	if ((x & 0xffff0000) != 0) { ans += 16; x >>= 16; }
@@ -145,7 +145,7 @@ void b32bsr(state s) {
 	if ((x & 0x00000002) != 0) { ans +=  1; }
 	setret(uns32t, s, x ? ans : -1);
 }
-void b32swp(state s) {
+static void b32swp(state s) {
 	uns32t x = poparg(s, uns32t);
 	x = ((x >> 1) & 0x55555555) | ((x & 0x55555555) << 1);
 	x = ((x >> 2) & 0x33333333) | ((x & 0x33333333) << 2);
@@ -153,7 +153,7 @@ void b32swp(state s) {
 	x = ((x >> 8) & 0x00FF00FF) | ((x & 0x00FF00FF) << 8);
 	setret(uns32t, s, (x >> 16) | (x << 16));
 }
-void b32hib(state s) {
+static void b32hib(state s) {
 	uns32t x = poparg(s, uns32t);
 	x |= x >> 1;
 	x |= x >> 2;
@@ -162,27 +162,27 @@ void b32hib(state s) {
 	x |= x >> 16;
 	setret(uns32t, s, x - (x >> 1));
 }
-void b32lob(state s) ;
-void b32shl(state s) {
+static void b32lob(state s) ;
+static void b32shl(state s) {
 	uns32t x = poparg(s, uns32t);
 	uns32t y = poparg(s, uns32t);
 	setret(uns32t, s, x << y);
 	//~ debug("uns32 shl(uns32t x(%d), uns32t y(%d)) = %d", x, y, x << y);
 }
-void b32shr(state s) {
+static void b32shr(state s) {
 	uns32t x = poparg(s, uns32t);
 	uns32t y = poparg(s, uns32t);
 	setret(uns32t, s, x >> y);
 	//~ debug("uns32 shl(uns32 x(%d), uns32 y(%d)) = %d", x, y, x >> y);
 }
-void b32sar(state s) {
+static void b32sar(state s) {
 	int32t x = poparg(s, int32t);
 	int32t y = poparg(s, int32t);
 	setret(int32t, s, x >> y);
 	//~ debug("int32 shl(int32 x(%d), int32 y(%d)) = %d", x, y, x >> y);
 }
 
-void b32zxt(state s) {
+static void b32zxt(state s) {
 	uns32t val = poparg(s, int32t);
 	int32t ofs = poparg(s, int32t);
 	int32t cnt = poparg(s, int32t);
@@ -190,7 +190,7 @@ void b32zxt(state s) {
 	setret(int32t, s, val >> (32 - cnt));
 	//~ debug("int32 zxt(int32 x(%d), int32 y(%d)) = %d", x, y, x >> y);
 }
-void b32sxt(state s) {
+static void b32sxt(state s) {
 	int32t val = poparg(s, int32t);
 	int32t ofs = poparg(s, int32t);
 	int32t cnt = poparg(s, int32t);
@@ -198,7 +198,7 @@ void b32sxt(state s) {
 	setret(int32t, s, val >> (32 - cnt));
 	//~ debug("int32 zxt(int32 x(%d), int32 y(%d)) = %d", x, y, x >> y);
 }
-void b64zxt(state s) {
+static void b64zxt(state s) {
 	uns64t val = poparg(s, int64t);
 	int32t ofs = poparg(s, int32t);
 	int32t cnt = poparg(s, int32t);
@@ -206,7 +206,7 @@ void b64zxt(state s) {
 	setret(int64t, s, val >> (64 - cnt));
 	//~ debug("int32 zxt(int32 x(%d), int32 y(%d)) = %d", x, y, x >> y);
 }
-void b64sxt(state s) {
+static void b64sxt(state s) {
 	int64t val = poparg(s, int64t);
 	int32t ofs = poparg(s, int32t);
 	int32t cnt = poparg(s, int32t);
@@ -215,19 +215,19 @@ void b64sxt(state s) {
 	//~ debug("int32 zxt(int32 x(%d), int32 y(%d)) = %d", x, y, x >> y);
 }
 
-void b64shl(state s) {
+static void b64shl(state s) {
 	uns64t x = poparg(s, uns64t);
 	int32t y = poparg(s, int32t);
 	setret(uns64t, s, x << y);
 	//~ debug("int64 shl(int64 x(%D), int32 y(%D)) = %D", x, y, x << y);
 }
-void b64shr(state s) {
+static void b64shr(state s) {
 	uns64t x = poparg(s, uns64t);
 	int32t y = poparg(s, int32t);
 	setret(uns64t, s, x >> y);
 	//~ debug("int64 shl(int64 x(%D), int32 y(%D)) = %D", x, y, x << y);
 }
-void b64sar(state s) {
+static void b64sar(state s) {
 	int64t x = poparg(s, uns64t);
 	int32t y = poparg(s, int32t);
 	setret(uns64t, s, x >> y);
@@ -242,6 +242,7 @@ static struct lfun {
 	symn sym;
 }
 libcfnc[256] = {
+	/*
 	{f32abs, "flt32 abs(flt32 x)"},
 	{f32sin, "flt32 sin(flt32 x)"},
 	{f32cos, "flt32 cos(flt32 x)"},
@@ -282,6 +283,8 @@ libcfnc[256] = {
 	//~ {setpos, "void setCol(flt32 x, flt32 y, flt32 z)", 3, 3},
 	//~ {getarg, "flt32 getArg(int32 arg, flt32 min, flt32 max)", 3, 2},
 	//~ {getTex, "argb tex2d(flt32, flt32)"},
+	// */
+	{NULL},
 };
 
 void installlibc(state s, void libc(state), const char* proto) {
@@ -746,15 +749,11 @@ void vm_tags(ccEnv s, char *sptr, int slen) {
 	}
 }
 
-void vmInfo(vmEnv vm) {
+void vmInfo(FILE* out, vmEnv vm) {
 	int i;
-	//~ i = vm->sm; printf("stack max: %dM, %dK, %dB, %d slots\n", i >> 20, i >> 20, i, vm->sm);
-	//~ i = vm->cs; printf("code size: %dM, %dK, %dB, %d instructions\n", i >> 20, i >> 10, i, 0);//, vm->ic);
-
-	i = vm->cs; printf("code(@.%04x) size: %dM, %dK, %dB, %d instructions\n", vm->pc, i >> 20, i >> 10, i, vm->ic);
-	//~ i = vm->cs; printf("code(@.%04x) size: %dM, %dK, %dB\n", vm->pc, i >> 20, i >> 10, i);
-	i = vm->ds; printf("data(@.%04x) size: %dM, %dK, %dB\n", 0, i >> 20, i >> 10, i);
-	printf("stack minimum size: %d\n", vm->sm);
+	fprintf(out, "stack minimum size: %d\n", vm->sm);
+	i = vm->ds; fprintf(out, "data(@.%04x) size: %dM, %dK, %dB\n", 0, i >> 20, i >> 10, i);
+	i = vm->cs; fprintf(out, "code(@.%04x) size: %dM, %dK, %dB, %d instructions\n", vm->pc, i >> 20, i >> 10, i, vm->ic);
 }
 
 /** exec
@@ -763,12 +762,12 @@ void vmInfo(vmEnv vm) {
  * @arg ss: stack size
  * @return: error code
 **/
-
 int exec(vmEnv vm, unsigned cc, unsigned ss, dbgf dbg) {
 	struct cell proc[1], *pu = proc;	// execution units
 
 	register bcde ip;
 	register unsigned char *st;
+	register void *mp = NULL;
 
 	/*if (cc > sizeof(proc) / sizeof(*proc)) {
 		debug("cell overrun\n");
@@ -812,7 +811,6 @@ int exec(vmEnv vm, unsigned cc, unsigned ss, dbgf dbg) {
 			//~ #define CDBG
 			//~ #define FLGS
 			#define NEXT(__IP, __CHK, __SP) {pu->sp -= 4*(__SP); pu->ip += (__IP);}
-			//~ #define MEMP(__MPTR) (mp = (__MPTR))
 			#define STOP(__ERR, __CHK) if (__CHK) goto __ERR
 			#define EXEC
 			#include "incl/exec.c"
@@ -923,6 +921,7 @@ void fputasm(FILE *fout, unsigned char* beg, int len, int offs) {
 
 void dumpasm(FILE *fout, vmEnv s, int mode) {
 	unsigned is = 12345, ss = 0, i;
+	vmInfo(fout, s);
 	for (i = 0; i < s->cs; i += is) {
 		bcde ip = (bcde)(s->_mem + s->pc + i);
 

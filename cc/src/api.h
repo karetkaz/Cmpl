@@ -35,7 +35,7 @@ typedef struct state {
 
 	long _cnt;
 	char *_ptr;
-	char _mem[128 << 20];
+	char _mem[4 << 20];
 } *state;
 
 typedef enum {
@@ -66,9 +66,6 @@ int srcfile(state, char *file);				// source
 int srctext(state, char *file, int line, char *src);				// source
 int compile(state, srcType mode);			// script, unit; //, decl, make
 int gencode(state, int level);
-int program(int argc, char *argv[]);		// int main(int argc, char *argv[]) {return program(argc, argv);}
-
-//~ int execute(state, unsigned cc, unsigned ss, dbgf dbg);	// cc := cells; ss := stack
 
 // execute
 typedef int (*dbgf)(vmEnv vm, int pu, void *ip, long* sptr, int sc);
@@ -90,10 +87,12 @@ int ccDone(state s);
 
 vmEnv vmInit(state s);
 //~ int vmOpen(state, srcType, char* source);
-void vmInfo(vmEnv s);
+void vmInfo(FILE*, vmEnv s);
 int vmDone(state s);
 
 void installlibc(state, void call(state), const char* proto);
+void installvar(state, void* ref, const char* proto);
+
 #define poparg(__ARGV, __TYPE) ((__TYPE*)((__ARGV)->argv += ((sizeof(__TYPE) | 3) & ~3)))[-1]
 #define setret(__TYPE, __ARGV, __VAL) (*((__TYPE*)(__ARGV->retv)) = (__TYPE)(__VAL))
 
@@ -106,22 +105,13 @@ static inline int32t popi32(state s) { return poparg(s, int32t); }
 static inline flt64t popf64(state s) { return poparg(s, flt64t); }
 static inline int64t popi64(state s) { return poparg(s, int64t); }
 
-//~ flt32t popf32(state);
-//~ int32t popi32(state);
-//~ flt64t popf64(state);
-//~ int64t popi64(state);
-//~ void reti32(state, int32t val);
-//~ void reti64(state, int64t val);
-//~ void retf32(state, flt32t val);
-//~ void retf64(state, flt64t val);
-
 #endif
 
 /* example ccTags
  * int ccTags(state s, char *srcfile) {
  * 	if (!ccOpen(s, srcFile, srcfile))	// will cal ccInit
  * 		return ccDone(s);
- * 	if (ccScan(s, srcScript) != 0)
+ * 	if (compile(s, srcScript) != 0)
  * 		return ccDone(s);
  * 	ccDone(s);		// here returns 0
  * 	dump(s, "tags.txt", dump_new | dump_sym, NULL);

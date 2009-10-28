@@ -166,11 +166,20 @@ for (int32 i = 1; i <= n; i += 1)
 
 // */
 
+//~ double res = sqrt(2.0);
+
+//~ define abs(a) = a < 0 ? -a : a;
+
+define sqr(a) = a * a;
+
+double a = sqr(4.3);
+
 /* calc e
 define eps = 1e-25;
 double res = 1;
 double tmp = 1;
-for (int i = 1; tmp > eps; i += 1) {
+int i;
+for (i = 1; tmp > eps; i += 1) {
 	res += tmp /= i;
 }
 // */
@@ -229,7 +238,7 @@ flt64 val = 1;//math.nan;
 bool isNan = val != val;
 // */
 
-//~ /* libc 3D
+/* libc 3D
 define division = 2;
 define closedS = 0;
 define closedT = 0;

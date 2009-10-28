@@ -1,14 +1,17 @@
 #include "pvmc.h"
 #include <string.h>
 
-symn type_vid = 0;
-symn type_bol = 0;
-symn type_u32 = 0;
+symn type_vid = NULL;
+symn type_bol = NULL;
+symn type_u32 = NULL;
+symn type_i32 = NULL;
+symn type_i64 = NULL;
+symn type_f32 = NULL;
+symn type_f64 = NULL;
 
-symn type_i32 = 0;
-symn type_i64 = 0;
-symn type_f32 = 0;
-symn type_f64 = 0;
+symn type_f32x4 = NULL;
+symn type_f64x2 = NULL;
+
 
 //~ symn type_str = 0;
 //~ symn type_ptr = 0;
@@ -93,7 +96,8 @@ symn declare(ccEnv s, int kind, astn tag, symn rtyp, symn args) {
 		return 0;
 	}
 
-	// if declared on current level raise an error
+	// if declared on current level raise error
+	// TODO: use lookin here;
 	for (def = s->deft[hash]; def; def = def->next) {
 		if (def->nest < s->nest) break;
 		if (def->name && strcmp(def->name, tag->name) == 0) {
@@ -115,7 +119,7 @@ symn declare(ccEnv s, int kind, astn tag, symn rtyp, symn args) {
 	//~ tag->type = rtyp;
 
 	switch (kind) {
-		default: fatal("install('%t')", kind);
+		default: fatal("%t('%+k')", kind, tag);
 
 		//~ case CNST_int:			// typedefn enum
 		case TYPE_enu:			// typedefn enum
@@ -396,7 +400,7 @@ symn lookup(ccEnv s, symn loc, astn ast) {
 	switch (ast->kind) {
 		case OPER_dot: {
 			if (!lookup(s, loc, ast->lhso)) {
-				debug("lookup %+k in %T", ast->lhso, loc);// TODO: rem
+				debug("lookup %+k in %T", ast->lhso, loc);
 				return 0;
 			}
 			loc = ast->lhso->type;
@@ -440,6 +444,7 @@ symn lookup(ccEnv s, symn loc, astn ast) {
 				ast->cast = castId(ast->type);
 				return ast->type;
 			}
+
 			switch (ast->lhso->kind) {
 				case EMIT_opc: {
 					if (!args)
@@ -523,7 +528,7 @@ symn lookup(ccEnv s, symn loc, astn ast) {
 
 			ast->init = 0;
 			if (!lht || !rht) {
-				debug("cast(%T, %T)", lht, rht);
+				debug("cast(%T, %T)[%k]", lht, rht, ast);
 				return NULL;
 			}
 			switch (ast->cast = castOp(lht, rht)) {
@@ -647,7 +652,8 @@ symn lookup(ccEnv s, symn loc, astn ast) {
 			return NULL;
 		} break;
 
-		/*case OPER_sel: {
+		/*
+		case OPER_sel: {
 			symn cmp = lookup(s, 0, ast->test);
 			symn lht = lookup(s, 0, ast->lhso);
 			symn rht = lookup(s, 0, ast->rhso);
@@ -657,7 +663,7 @@ symn lookup(ccEnv s, symn loc, astn ast) {
 				return ast->type = ret;
 			}
 			return NULL;
-		} break;*/
+		} break;// */
 
 		default: {
 			debug("invalid lookup(%s:%d) `%t` in %T", s->file, ast->line, ast->kind, loc);

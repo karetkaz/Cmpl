@@ -4,29 +4,13 @@
 #include <time.h>
 #include "pvmc.h"
 
-//~ astn iscdef(astn);
 //~ #include "clog.c"
 //~ #include "scan.c"
 //~ #include "code.c"
 //~ #include "tree.c"
 //~ #include "type.c"
 
-// default values
-static const int wl = 9;		// warninig level
-static const int ol = 0;		// optimize level
-
-static const int cc = 1;			// execution cores
-static const int ss = 1 << 10;		// execution stack(256K)
-//~ static const int hs = 128 << 20;	// execution heap(128M)
 void dumpxml(FILE *fout, astn ast, int lev, const char* text, int level);
-
-#if defined(WINDOWS) || defined(_WIN32)
-const char* os = "Windows";
-#elif defined(linux) || defined(_linux)
-const char* os = "Linux";
-#else
-const char* os = "Unknown";
-#endif
 
 const tok_inf tok_tbl[255] = {
 	#define TOKDEF(NAME, TYPE, SIZE, KIND, STR) {KIND, TYPE, SIZE, STR},
@@ -238,7 +222,7 @@ int cgen(state s, astn ast, int get) {
 						arg = &tmp;
 
 					if (!cgen(s, arg, cast)) {
-						fatal("push(arg, %+k)", arg);
+						fatal("push(arg, %+k, %t)", arg, cast);
 						return 0;
 					}
 				}
@@ -416,7 +400,7 @@ int cgen(state s, astn ast, int get) {
 				}
 			}
 			else {
-				/*int opcSet, opcDup;
+				int opcSet, opcDup;
 				if (!cgen(s, ast->lhso, TYPE_ref)) {
 					debug("cgen(lhs, %+k)", ast->lhso);
 					return 0;
@@ -482,7 +466,8 @@ int cgen(state s, astn ast, int get) {
 			symn typ = ast->type;		// type
 			symn var = ast->link;		// link
 			//~ debug("define %k", ast);
-			dieif(!typ || !var, "typ:%T, var:%T", typ, var);
+			//~ dieif(!typ || !var, "typ:%T, var:%T", typ, var);
+			dieif(!var, "typ:%T, var:%T", typ, var);
 
 			if (var->kind == TYPE_ref) {		// TYPE_new
 				astn val = var->init;
@@ -557,7 +542,13 @@ int cgen(state s, astn ast, int get) {
 			symn var = ast->link;		// link
 			dieif(!typ || !var, "%+t (%T || %T)", ast->kind, typ, var);
 
-			if (var->kind == TYPE_ref) {
+			if (var->kind == TYPE_def) {	// define
+				if (var->init)
+					ret = cgen(s, var->init, get);
+				if (get == TYPE_vid) ret = get;
+				if (get == TYPE_any) ret = TYPE_vid;
+			}
+			else if (var->kind == TYPE_ref) {
 				if (var->libc) {	// libc
 					//~ debug("libc(%k): %+T", ast, ast->link);
 					ret = castId(typ);
@@ -572,23 +563,29 @@ int cgen(state s, astn ast, int get) {
 						default: debug("error %04x: %t", ret, ret); break;
 						case TYPE_u32:
 						case TYPE_i32:
-						case TYPE_f32: emitidx(s->vm, opc_dup1, var->offs); break;
+						case TYPE_f32: dieif(emitidx(s->vm, opc_dup1, var->offs) <= 0, "%+k", ast); break;
 						case TYPE_i64:
-						case TYPE_f64: emitidx(s->vm, opc_dup2, var->offs); break;
+						//~ case TYPE_f64: dieif(emitidx(s->vm, opc_dup2, var->offs) <= 0, "%+T", var); break;
+						case TYPE_f64: {
+							if (emitidx(s->vm, opc_dup2, var->offs) <= 0) {
+								dumpsym(stderr, var, 0);
+								fatal("%+k", ast);
+							}
+						}
 					}
 					//~ fatal("unimpl '%+k'(%T)", ast, var);
 					//~ return 0;
 				}
-				else /* if (var) */ {	// in memory
-					fatal("unimpl '%+k'(%T)", ast, var);
-					return 0;
-				}
-			}
-			else if (var->kind == TYPE_def) {
-				if (var->init)
-					ret = cgen(s, var->init, get);
-				if (get == TYPE_vid) ret = get;
-				if (get == TYPE_any) ret = TYPE_vid;
+				/*else / * if (var) * / {	// in memory
+					switch (ret = castId(typ)) {
+						default: debug("error %04x: %t", ret, ret); break;
+						case TYPE_u32:
+						case TYPE_i32:
+						case TYPE_f32: dieif(emitidx(s->vm, opc_dup1, var->offs) <= 0, "%+k", ast); break;
+						case TYPE_i64:
+						case TYPE_f64: dieif(emitidx(s->vm, opc_dup2, var->offs) <= 0, "%+k", ast); break;
+					}
+				}// */
 			}
 			else fatal("");
 		} break;
@@ -734,36 +731,7 @@ int gencode(state s, int level) {
 	return s->errc;
 }
 
-//~ int execute(state s, int cc, int ss) {return 0;}
-
-int evalexp(ccEnv s, char* text) {
-	struct astn res;
-	astn ast;
-	symn typ;
-	int tid;
-
-	source(s, 0, text);
-	ast = expr(s, 0);
-	typ = lookup(s, 0, ast);
-	tid = eval(&res, ast, TYPE_flt);
-
-	if (peek(s))
-		fputfmt(stdout, "unexpected: `%k`\n", peek(s));
-
-	fputfmt(stdout, "eval(`%+k`) = ", ast);
-
-	if (ast && typ && tid) {
-		fputfmt(stdout, "%T(%k)\n", typ, &res);
-		return 0;
-	}
-
-	fputfmt(stdout, "ERROR(typ:`%T`, tid:%d)\n", typ, tid);
-	//~ dumpast(stdout, ast, 15);
-
-	return -1;
-}
-
-symn install3(ccEnv s, int kind, const char* name, unsigned size, symn typ, astn val) {
+static symn install3(ccEnv s, int kind, const char* name, unsigned size, symn typ, astn val) {
 	symn def = install(s, kind, name, size);
 	if (def) {
 		def->type = typ;
@@ -772,7 +740,7 @@ symn install3(ccEnv s, int kind, const char* name, unsigned size, symn typ, astn
 	return def;
 }
 
-void instint(ccEnv s, symn it, int64t sgn) {
+static void instint(ccEnv s, symn it, int64t sgn) {
 	int size = it->size;
 	int bits = size * 8;
 	int64t mask = (-1LLU >> -bits);
@@ -787,9 +755,6 @@ void instint(ccEnv s, symn it, int64t sgn) {
 	it->args = leave(s);
 }//~ */
 
-symn type_f32x4 = NULL;
-symn type_f64x2 = NULL;
-
 ccEnv ccInit(state s) {
 	ccEnv c = getmem(s, sizeof(struct ccEnv));
 	int i, TYPE_opc = EMIT_opc;
@@ -800,6 +765,8 @@ ccEnv ccInit(state s) {
 
 	if (c == NULL)
 		return NULL;
+
+	memset(c, 0, sizeof(struct ccEnv));
 
 	c->s = s;
 	s->cc = c;
@@ -823,7 +790,10 @@ ccEnv ccInit(state s) {
 	c->all = 0;
 
 	c->deft = getmem(s, TBLS * sizeof(symn));
+	memset(c->deft, 0, TBLS * sizeof(symn));
 	c->strt = getmem(s, TBLS * sizeof(list));
+	memset(c->strt, 0, TBLS * sizeof(symn));
+
 	c->buffp = s->_ptr;
 
 	//{ install Type
@@ -1053,7 +1023,7 @@ vmEnv vmInit(state s) {
 
 ccEnv ccOpen(state s, srcType mode, char *src) {
 	if (s->cc || ccInit(s)) {
-		if (source(s->cc, mode, src) != 0)
+		if (source(s->cc, mode & srcFile, src) != 0)
 			return NULL;
 	}
 	return s->cc;
@@ -1204,7 +1174,6 @@ void fputsymtbl(FILE* fout, ccEnv s) {
 }
 #endif
 
-//~ symn lookin(symn sym, astn ref, astn args);
 symn findsym(ccEnv s, char *name) {
 	struct astn ast;
 	memset(&ast, 0, sizeof(struct astn));
@@ -1213,7 +1182,7 @@ symn findsym(ccEnv s, char *name) {
 	ast.hash = rehash(name, strlen(name));
 	return lookin(s->defs, &ast, NULL);
 }
-int lookupint(ccEnv s, char *name, int* res) {
+int findint(ccEnv s, char *name, int* res) {
 	struct astn ast;
 	symn sym = findsym(s, name);
 	if (sym && eval(&ast, sym->init, TYPE_int)) {
@@ -1222,7 +1191,7 @@ int lookupint(ccEnv s, char *name, int* res) {
 	}
 	return 0;
 }
-int lookupflt(ccEnv s, char *name, double* res) {
+int findflt(ccEnv s, char *name, double* res) {
 	struct astn ast;
 	symn sym = findsym(s, name);
 	if (sym && eval(&ast, sym->init, TYPE_flt)) {
@@ -1242,92 +1211,11 @@ int lookup_nz(ccEnv s, char *name) {
 	return 0;
 }
 
-int vmHelp(char *cmd) {
-	FILE *out = stdout;
-	int i, k, n = 0;
-	for (i = 0; i < opc_last; ++i) {
-		char *opc = (char*)opc_tbl[i].name;
-		if (opc && strfindstr(opc, cmd, 1)) {
-			fputfmt(out, "Instruction: %s\n", opc);
-			n += 1;
-			k = i;
-		}
-	}
-	if (n == 1 && strcmp(cmd, opc_tbl[k].name) == 0) {
-		fputfmt(out, "Opcode: 0x%02x\n", opc_tbl[k].code);
-		fputfmt(out, "Length: %d\n", opc_tbl[k].size);
-		fputfmt(out, "Stack min: %d\n", opc_tbl[k].chck);
-		fputfmt(out, "Stack diff: %d\n", opc_tbl[k].diff);
-		//~ fputfmt(out, "0x%02x	%d		\n", opc_tbl[k].code, opc_tbl[k].size-1);
-		//~ fputfmt(out, "\nDescription\n");
-		//~ fputfmt(out, "The '%s' instruction %s\n", opc_tbl[k].name, "#");
-		//~ fputfmt(out, "\nOperation\n");
-		//~ fputfmt(out, "#\n");
-		//~ fputfmt(out, "\nExceptions\n");
-		//~ fputfmt(out, "None#\n");
-		//~ fputfmt(out, "\n");		// end of text
-	}
-	else if (n == 0) {
-		fputfmt(out, "No Entry for: '%s'\n", cmd);
-	}
-	return n;
-}
-
 //} */
-
-void usage(state s, char* prog, char* cmd) {
-	if (cmd == NULL) {
-		fputfmt(stdout, "Usage: %s <command> [options] ...\n", prog);
-		fputfmt(stdout, "<Commands>\n");
-		fputfmt(stdout, "\t-c: compile\n");
-		fputfmt(stdout, "\t-e: execute\n");
-		fputfmt(stdout, "\t-d: diassemble\n");
-		fputfmt(stdout, "\t-h: help\n");
-		fputfmt(stdout, "\t=<expression>: eval\n");
-		//~ fputfmt(stdout, "\t-d: dump\n");
-	}
-	else if (strcmp(cmd, "-c") == 0) {
-		fputfmt(stdout, "compile: %s -c [options] files...\n", prog);
-		fputfmt(stdout, "Options:\n");
-
-		fputfmt(stdout, "\t[Output]\n");
-		fputfmt(stdout, "\t-o <file> set file for output. [default=stdout]\n");
-		fputfmt(stdout, "\t-t tags\n");
-		fputfmt(stdout, "\t-s assembled code\n");
-
-		fputfmt(stdout, "\t[Loging]\n");
-		fputfmt(stdout, "\t-l <file> set file for errors. [default=stderr]\n");
-		fputfmt(stdout, "\t-w<num> set warning level to <num> [default=%d]\n", wl);
-		fputfmt(stdout, "\t-wa all warnings\n");
-		fputfmt(stdout, "\t-wx treat warnings as errors\n");
-
-		fputfmt(stdout, "\t[Debuging]\n");
-		fputfmt(stdout, "\t-(ast|xml) output format\n");
-		fputfmt(stdout, "\t-x<n> execute on <n> procs [default=%d]\n", cc);
-		fputfmt(stdout, "\t-xd<n> debug on <n> procs [default=%d]\n", cc);
-
-		//~ fputfmt(stdout, "\t[Debug & Optimization]\n");
-	}
-	else if (strcmp(cmd, "-e") == 0) {
-		fputfmt(stdout, "command: '-e': execute\n");
-	}
-	else if (strcmp(cmd, "-d") == 0) {
-		fputfmt(stdout, "command: '-d': disassemble\n");
-	}
-	else if (strcmp(cmd, "-m") == 0) {
-		fputfmt(stdout, "command: '-m': make\n");
-	}
-	else if (strcmp(cmd, "-h") == 0) {
-		fputfmt(stdout, "command: '-h': help\n");
-	}
-	else {
-		fputfmt(stdout, "invalid help for: '%s'\n", cmd);
-	}
-}
 
 int dbgInfo(vmEnv vm, int pu, void *ip, long* sptr, int sc) {
 	if (ip == NULL) {
-		vmInfo(vm);
+		vmInfo(stdout, vm);
 		if (vm->s && vm->s->cc)
 			vm_tags(vm->s->cc, (char*)sptr, sc);
 		else if (!vm->s) {
@@ -1342,7 +1230,7 @@ int dbgCon(vmEnv vm, int pu, void *ip, long* sptr, int sc) {
 	char *arg;
 
 	if (ip == NULL) {
-		vmInfo(vm);
+		vmInfo(stdout, vm);
 		if (vm->s && vm->s->cc)
 			vm_tags(vm->s->cc, (char*)sptr, sc);
 		else if (!vm->s) {
@@ -1444,210 +1332,5 @@ int dbgCon(vmEnv vm, int pu, void *ip, long* sptr, int sc) {
 	return 0;
 }
 int nodbg(vmEnv vm, int pu, void *ip, long* sptr, int sc) {
-	return 0;
-}
-
-int program(int argc, char *argv[]) {
-	static struct state s[1];
-	char *prg, *cmd, hexc = '#';
-	dbgf dbg = dbgInfo;
-
-	s->_cnt = sizeof(s->_mem);
-	s->_ptr = s->_mem;
-	s->cc = 0;
-	s->vm = 0;
-
-	prg = argv[0];
-	cmd = argv[1];
-	if (argc <= 2) {
-		if (argc < 2) {
-			usage(s, prg, NULL);
-		}
-		else if (*cmd != '-') {
-			return evalexp(ccInit(s), cmd);
-		}
-		else if (strcmp(cmd, "-api") == 0) {
-			dumpsym(stdout, leave(ccInit(s)), 1);
-		}
-		else if (strcmp(cmd, "-syms") == 0) {
-			symn sym = leave(ccInit(s));
-			while (sym) {
-				dumpsym(stdout, sym, 0);
-				sym = sym->defs;
-			}
-			//~ dumpsym(stdout, leave(s), 1);
-		}
-		else if (strcmp(cmd, "-emit") == 0) {
-			ccInit(s);
-			dumpsym(stdout, emit_opc->args, 1);
-		}
-		else usage(s, prg, cmd);
-	}
-	else if (strcmp(cmd, "-c") == 0) {	// compile
-		int level = -1, argi = 2;
-		int warn = wl;
-		int outc = 0;			// output
-		char *srcf = 0;			// source
-		char *logf = 0;			// logger
-		char *outf = 0;			// output
-		enum {
-			gen_code = 0x0010,
-			out_tags = 0x0011,	// tags	// ?offs?
-			out_tree = 0x0002,	// walk
-
-			out_dasm = 0x0013,	// dasm
-			run_code = 0x0014,	// exec
-		};
-
-		// options
-		while (argi < argc) {
-			char *arg = argv[argi];
-
-			// source file
-			if (*arg != '-') {
-				if (srcf) {
-					fputfmt(stderr, "multiple sources not suported\n");
-					return -1;
-				}
-				srcf = arg;
-			}
-
-			// output file
-			else if (strcmp(arg, "-l") == 0) {		// log
-				if (++argi >= argc || logf) {
-					fputfmt(stderr, "logger error\n");
-					return -1;
-				}
-				logf = arg;
-			}
-			else if (strcmp(arg, "-o") == 0) {		// out
-				if (++argi >= argc || outf) {
-					fputfmt(stderr, "output error\n");
-					return -1;
-				}
-				outf = arg;
-			}
-
-			// output text
-			else if (strncmp(arg, "-x", 2) == 0) {		// exec
-				char *str = arg + 2;
-				outc = run_code;
-				if (*str == 'd') {
-					dbg = dbgCon;
-					str += 1;
-				}
-				else if (!parseInt(arg + 2, &level, 0)) {
-					fputfmt(stderr, "invalid level '%s'\n", arg + 2);
-					debug("invalid level '%s'\n", arg + 2);
-					return 0;
-				}
-			}
-			else if (strncmp(arg, "-t", 2) == 0) {		// tags
-				if (!parseInt(arg + 2, &level, hexc)) {
-					fputfmt(stderr, "invalid level '%s'\n", arg + 2);
-					debug("invalid level '%s'\n", arg + 2);
-					return 0;
-				}
-				outc = out_tags;
-			}
-			else if (strncmp(arg, "-s", 2) == 0) {		// dasm
-				if (!parseInt(arg + 2, &level, hexc)) {
-					fputfmt(stderr, "invalid level '%s'\n", arg + 2);
-					debug("invalid level '%s'\n", arg + 2);
-					return 0;
-				}
-				outc = out_dasm;
-			}
-			else if (strncmp(arg, "-c", 2) == 0) {		// tree
-				if (!parseInt(arg + 2, &level, hexc)) {
-					fputfmt(stderr, "invalid level '%s'\n", arg + 2);
-					debug("invalid level '%s'\n", arg + 2);
-					return 0;
-				}
-				outc = out_tree;
-			}
-
-			// Override settings
-			else if (strncmp(arg, "-w", 2) == 0) {		// warning level
-				if (strcmp(arg, "-wx"))
-					warn = -1;
-				else if (strcmp(arg, "-wa"))
-					warn = 9;
-				else if (!parseInt(arg + 2, &warn, 0)) {
-					fputfmt(stderr, "invalid level '%s'\n", arg + 2);
-					debug("invalid level '%s'\n", arg + 2);
-					return 0;
-				}
-			}
-			/*else if (strncmp(arg, "-d", 2) == 0) {		// optimize/debug level
-				return -1;
-			}*/
-
-			else {
-				fputfmt(stderr, "invalid option '%s' for -compile\n", arg);
-				return -1;
-			}
-			++argi;
-			//~ debug("level :0x%02x: arg[%d]: '%s'", level, argi - 2, arg);
-		}
-		if (logfile(s, logf) != 0) {
-			fputfmt(stderr, "can not open file `%s`\n", srcf);
-			return -1;
-		}
-		if (srcfile(s, srcf) != 0) {
-			fputfmt(stderr, "can not open file `%s`\n", srcf);
-			return -1;
-		}
-		if (compile(s, !srcUnit) != 0) {
-			//~ fputfmt(stderr, "can not open file `%s`\n", srcf);
-			return s->errc;
-		}
-		if (gencode(s, 0) != 0) {
-			//~ fputfmt(stderr, "can not open file `%s`\n", srcf);
-			return s->errc;
-		}
-
-		switch (outc) {
-			case out_tree: dump(s, outf, dump_ast | (level & 0xff), NULL); break;
-			case out_dasm: dump(s, outf, dump_asm | (level & 0xff), NULL); break;
-			case out_tags: dump(s, outf, dump_sym | (1), NULL); break;
-			case run_code: exec(s->vm, cc, ss, dbg); break;
-		}
-
-		return 0;
-	}
-	else if (strcmp(cmd, "-e") == 0) {	// execute
-		fatal("unimplemented option '%s' \n", cmd);
-		//~ objfile(s, ...);
-		//~ return exec(s, cc, ss, dbgl);
-	}
-	else if (strcmp(cmd, "-d") == 0) {	// assemble
-		fatal("unimplemented option '%s' \n", cmd);
-		//~ objfile(s, ...);
-		//~ return dumpasm(s, cc, ss, dbgl);
-	}
-	else if (strcmp(cmd, "-m") == 0) {	// make
-		fatal("unimplemented option '%s' \n", cmd);
-	}
-	else if (strcmp(cmd, "-h") == 0) {	// help
-		char *t = argv[2];
-		if (argc < 3) {
-			usage(s, argv[0], argc < 4 ? argv[3] : NULL);
-		}
-		else if (strcmp(t, "-s") == 0) {
-			int i = 3;
-			if (argc == 3) {
-				vmHelp("?");
-			}
-			else while (i < argc) {
-				vmHelp(argv[i++]);
-			}
-		}
-		//~ else if (strcmp(t, "-x") == 0) ;
-	}
-	else if (argc == 2 && *cmd != '-') {	// try to eval
-		return evalexp(ccInit(s), cmd);
-	}
-	else fputfmt(stderr, "invalid option '%s'", cmd);
 	return 0;
 }
