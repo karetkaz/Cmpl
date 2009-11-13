@@ -25,11 +25,14 @@
 #define SRCPOS __FILE__, __LINE__, __func__
 //~ #define SRCPOS "src/" __FILE__, __LINE__, __func__
 #define trace(__LEV, msg, ...) // {fputfmt(stderr, "%s:%d:trace:%s: "msg"\n", SRCPOS, ##__VA_ARGS__);fflush(stderr);}
+
 #define debug(msg, ...) {fputfmt(stdout, "%s:%d:debug:%s: "msg"\n", SRCPOS, ##__VA_ARGS__);fflush(stderr);}
+//~ #define dbgif(__EXP, msg, ...) {if (__EXP) fputfmt(stdout, "%s:%d:debug:%s: "msg"\n", SRCPOS, ##__VA_ARGS__);fflush(stderr);}
+
 #define fatal(msg, ...) { fputfmt(stderr, "%s:%d:fatal:%s: "msg"\n", SRCPOS, ##__VA_ARGS__); fflush(stderr); exit(-2);}
 #define dieif(__EXP, msg, ...) {if (__EXP) {fputfmt(stderr, "%s:%d:fatal(`"#__EXP"`):%s: "msg"\n", SRCPOS, ##__VA_ARGS__); fflush(stderr); exit(-1);}}
 #if 0
-#define error(__ENV, __LINE, msg, ...) perr(__ENV, -1, SRCPTH __FILE__, __LINE__, msg, ##__VA_ARGS__)
+#define error(__ENV, __LINE, msg, ...) perr(__ENV, -1, __FILE__, __LINE__, msg, ##__VA_ARGS__)
 #define warn(__ENV, __LEVEL, __FILE, __LINE, msg, ...) perr(__ENV, __LEVEL, __FILE__, __LINE__, msg, ##__VA_ARGS__)
 #define info(__ENV, __FILE, __LINE, msg, ...) perr(__ENV, 0, __FILE__, __LINE__, msg, ##__VA_ARGS__)
 #else
@@ -85,7 +88,8 @@ enum {
 
 	opc_line,		// line info
 	get_ip,		// instruction pointer
-	get_sp,		// stack pointer
+	get_sp,		// get stack pointer
+	set_sp,		// set stack pointer
 	seg_code,	// pc = ptr - beg; ptr += code->cs;
 	loc_data,
 
@@ -387,7 +391,7 @@ astn fh8node(ccEnv s, uns64t v);
 symn newdefn(ccEnv s, int kind);
 symn install(ccEnv s, int kind, const char* name, unsigned size);
 symn declare(ccEnv s, int kind, astn tag, symn rtyp, symn args);
-symn lookin(symn sym, astn ast, /* astn ref,  */astn args);
+symn lookin(ccEnv s, symn sym, astn ast, astn args);
 symn lookup(ccEnv s, symn loc, astn ast);
 
 int32t constbol(astn ast);
@@ -400,7 +404,7 @@ astn peek(ccEnv);
 //~ int  skip(ccEnv, int kind);
 //~ int  test(ccEnv, int kind);
 
-astn expr(ccEnv, int mode);		// parse expression	(mode: ?)
+astn expr(ccEnv, int mode);		// parse expression	(mode: lookup)
 //~ astn decl(ccEnv, int mode);		// parse declaration	(mode: enable expr)
 //~ astn stmt(ccEnv, int mode);		// parse statement	(mode: enable decl)
 int scan(ccEnv, int mode);		// parse program	(mode: script mode)
@@ -432,13 +436,16 @@ int emitidx(vmEnv, int opc, int stpos);
 int emitint(vmEnv, int opc, int64t arg);
 int fixjump(vmEnv s, int src, int dst, int stc);
 
+int isType(symn sym);
 int istype(astn ast);
+
 int isemit(astn ast);
 //~ int islval(astn ast);
 symn linkOf(astn ast);
 
 int castId(symn ast);
-int castOp(symn lhs, symn rhs);
+int castOp(symn lhs, symn rhs, int uns);
+//~ int castTo(astn ast, symn typ);
 
 int source(ccEnv, srcType mode, char* text);		// mode: file/text
 

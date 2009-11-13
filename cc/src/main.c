@@ -4,7 +4,7 @@
 #include <string.h>
 
 // default values
-static const int wl = 9;		// warninig level
+static const int wl = -1;		// warninig level
 static const int ol = 0;		// optimize level
 
 static const int cc = 1;			// execution cores
@@ -104,7 +104,7 @@ int evalexp(ccEnv s, char* text) {
 	tid = eval(&res, ast, TYPE_flt);
 
 	if (peek(s))
-		fputfmt(stdout, "unexpected: `%k`\n", peek(s));
+		error(s->s, 0, "unexpected: `%k`\n", peek(s));
 
 	fputfmt(stdout, "eval(`%+k`) = ", ast);
 

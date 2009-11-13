@@ -267,17 +267,17 @@ case u32_cgt: NEXT(1, 2, -1) {
 	SP(0, i4) = sxt(SP(0, i4), ip->arg.u1 >> 5, ip->arg.u1 & 31);
 #endif
 } break;*/
-/*case u32_mul: NEXT(1, 2, -1) {
+case u32_mul: NEXT(1, 2, -1) {
 #ifdef EXEC
 	SP(1, u4) *= SP(0, u4);
 #endif
-} break;*/
-/*case u32_div: NEXT(1, 2, -1) {
+} break;
+case u32_div: NEXT(1, 2, -1) {
 #ifdef EXEC
 	STOP(error_div, SP(0, u4) == 0);
 	SP(1, u4) /= SP(0, u4);
 #endif
-} break;*/
+} break;
 /*case u32_mod: NEXT(1, 2, -1) {
 #ifdef EXEC
 	STOP(error_div, SP(0, u4) == 0);
@@ -412,6 +412,7 @@ case f32_mod: NEXT(1, 2, -1) {
 	SP(1, f4) = fmod(SP(1, f4), SP(0, f4));
 #endif
 } break;
+
 case f32_ceq: NEXT(1, 2, -1) {
 #ifdef EXEC
 	SP(1, i4) = SP(1, f4) == SP(0, f4);
@@ -427,6 +428,7 @@ case f32_cgt: NEXT(1, 2, -1) {
 	SP(1, i4) = SP(1, f4)  > SP(0, f4);
 #endif
 } break;
+
 case f32_i32: NEXT(1, 1, -0) {
 #ifdef EXEC
 	SP(0, i4) = SP(0, f4);

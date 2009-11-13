@@ -56,7 +56,7 @@ typedef struct cell {			// processor
 } *cell; // */
 
 //{ libc.c ---------------------------------------------------------------------
-
+/*
 static void f32abs(state s) {
 	flt32t x = poparg(s, flt32t);
 	setret(flt32t, s, fabs(x));
@@ -77,10 +77,13 @@ static void f32sqrt(state s) {
 	flt32t x = poparg(s, flt32t);
 	setret(flt32t, s, sqrt(x));
 }
+// */
+//~ #pragma intrinsic(log,cos,sin,tan,sqrt,fabs,pow,atan2,fmod)
+//~ #pragma intrinsic(acos,asin,atan,cosh,exp,log10,sinh,tanh)
 
 static void f64abs(state s) {
 	flt64t x = poparg(s, flt64t);
-	setret(flt64t, s, fabs(x));
+	setret(flt64t, s, abs(x));
 }
 static void f64sin(state s) {
 	flt64t x = poparg(s, flt64t);
@@ -90,6 +93,11 @@ static void f64cos(state s) {
 	flt64t x = poparg(s, flt64t);
 	setret(flt64t, s, cos(x));
 }
+static void f64tan(state s) {
+	flt64t x = poparg(s, flt64t);
+	setret(flt64t, s, tan(x));
+}
+
 static void f64log(state s) {
 	flt64t x = poparg(s, flt64t);
 	setret(flt64t, s, log(x));
@@ -98,11 +106,20 @@ static void f64exp(state s) {
 	flt64t x = poparg(s, flt64t);
 	setret(flt64t, s, exp(x));
 }
+static void f64pow(state s) {
+	flt64t x = poparg(s, flt64t);
+	flt64t y = poparg(s, flt64t);
+	setret(flt64t, s, pow(x, y));
+}
+static void f64sqrt(state s) {
+	flt64t x = poparg(s, flt64t);
+	setret(flt64t, s, sqrt(x));
+}
+
 static void f64atan2(state s) {
 	flt64t x = poparg(s, flt64t);
 	flt64t y = poparg(s, flt64t);
 	setret(flt64t, s, atan2(x, y));
-	//~ debug("flt64t atan2(flt64t x(%G), flt64t y(%G)) = %G", x, y, atan2(x, y));
 }
 
 /*static void f64lg2(state s) {
@@ -121,8 +138,7 @@ static void b32btc(state s) {
 	x -= ((x >> 1) & 0x55555555);
 	x = (((x >> 2) & 0x33333333) + (x & 0x33333333));
 	x = (((x >> 4) + x) & 0x0f0f0f0f);
-	x += (x >> 8);
-	x += (x >> 16);
+	x += (x >> 8) + (x >> 16);
 	setret(uns32t, s, x & 0x3f);
 }
 static void b32bsf(state s) {
@@ -162,24 +178,22 @@ static void b32hib(state s) {
 	x |= x >> 16;
 	setret(uns32t, s, x - (x >> 1));
 }
-static void b32lob(state s) ;
-static void b32shl(state s) {
-	uns32t x = poparg(s, uns32t);
-	uns32t y = poparg(s, uns32t);
-	setret(uns32t, s, x << y);
-	//~ debug("uns32 shl(uns32t x(%d), uns32t y(%d)) = %d", x, y, x << y);
-}
-static void b32shr(state s) {
-	uns32t x = poparg(s, uns32t);
-	uns32t y = poparg(s, uns32t);
-	setret(uns32t, s, x >> y);
-	//~ debug("uns32 shl(uns32 x(%d), uns32 y(%d)) = %d", x, y, x >> y);
-}
-static void b32sar(state s) {
-	int32t x = poparg(s, int32t);
+//~ static void b32lob(state s) := x & -x;
+
+static void b64shl(state s) {
+	uns64t x = poparg(s, uns64t);
 	int32t y = poparg(s, int32t);
-	setret(int32t, s, x >> y);
-	//~ debug("int32 shl(int32 x(%d), int32 y(%d)) = %d", x, y, x >> y);
+	setret(uns64t, s, x << y);
+}
+static void b64shr(state s) {
+	uns64t x = poparg(s, uns64t);
+	int32t y = poparg(s, int32t);
+	setret(uns64t, s, x >> y);
+}
+static void b64sar(state s) {
+	int64t x = poparg(s, uns64t);
+	int32t y = poparg(s, int32t);
+	setret(uns64t, s, x >> y);
 }
 
 static void b32zxt(state s) {
@@ -188,7 +202,6 @@ static void b32zxt(state s) {
 	int32t cnt = poparg(s, int32t);
 	val <<= 32 - (ofs + cnt);
 	setret(int32t, s, val >> (32 - cnt));
-	//~ debug("int32 zxt(int32 x(%d), int32 y(%d)) = %d", x, y, x >> y);
 }
 static void b32sxt(state s) {
 	int32t val = poparg(s, int32t);
@@ -196,45 +209,22 @@ static void b32sxt(state s) {
 	int32t cnt = poparg(s, int32t);
 	val <<= 32 - (ofs + cnt);
 	setret(int32t, s, val >> (32 - cnt));
-	//~ debug("int32 zxt(int32 x(%d), int32 y(%d)) = %d", x, y, x >> y);
 }
-static void b64zxt(state s) {
+/*static void b64zxt(state s) {
 	uns64t val = poparg(s, int64t);
 	int32t ofs = poparg(s, int32t);
 	int32t cnt = poparg(s, int32t);
 	val <<= 64 - (ofs + cnt);
 	setret(int64t, s, val >> (64 - cnt));
-	//~ debug("int32 zxt(int32 x(%d), int32 y(%d)) = %d", x, y, x >> y);
-}
+}// */
 static void b64sxt(state s) {
 	int64t val = poparg(s, int64t);
 	int32t ofs = poparg(s, int32t);
 	int32t cnt = poparg(s, int32t);
 	val <<= 64 - (ofs + cnt);
 	setret(int64t, s, val >> (64 - cnt));
-	//~ debug("int32 zxt(int32 x(%d), int32 y(%d)) = %d", x, y, x >> y);
 }
 
-static void b64shl(state s) {
-	uns64t x = poparg(s, uns64t);
-	int32t y = poparg(s, int32t);
-	setret(uns64t, s, x << y);
-	//~ debug("int64 shl(int64 x(%D), int32 y(%D)) = %D", x, y, x << y);
-}
-static void b64shr(state s) {
-	uns64t x = poparg(s, uns64t);
-	int32t y = poparg(s, int32t);
-	setret(uns64t, s, x >> y);
-	//~ debug("int64 shl(int64 x(%D), int32 y(%D)) = %D", x, y, x << y);
-}
-static void b64sar(state s) {
-	int64t x = poparg(s, uns64t);
-	int32t y = poparg(s, int32t);
-	setret(uns64t, s, x >> y);
-	//~ debug("int64 shl(int64 x(%D), int32 y(%D)) = %D", x, y, x << y);
-}
-
-static int libccnt = 0;
 static struct lfun {
 	void (*call)(state);
 	const char* proto;//, *name;
@@ -242,82 +232,87 @@ static struct lfun {
 	symn sym;
 }
 libcfnc[256] = {
-	/*
-	{f32abs, "flt32 abs(flt32 x)"},
-	{f32sin, "flt32 sin(flt32 x)"},
-	{f32cos, "flt32 cos(flt32 x)"},
-	{f32tan, "flt32 tan(flt32 x)"},
-	{f32sqrt, "flt32 sqrt(flt32 x)"},
-
-	//~ {f64abs, "flt64 abs(flt64 x)"},
-	//~ {f64sin, "flt64 sin(flt64 x)"},
-	//~ {f64cos, "flt64 cos(flt64 x)"},
-	//~ {f64atan2, "flt64 atan2(flt64 x, flt64 y)"},
-	//~ {f64lg2, "flt64 log2(flt64 x)"},
-	//~ {f64xp2, "flt64 exp2(flt64 x)"},
+	{f64abs, "flt64 abs(flt64 x)"},
+	{f64sin, "flt64 sin(flt64 x)"},
+	{f64cos, "flt64 cos(flt64 x)"},
+	{f64tan, "flt64 tan(flt64 x)"},
 	{f64log, "flt64 log(flt64 x)"},
 	{f64exp, "flt64 exp(flt64 x)"},
+	{f64pow, "flt64 pow(flt64 x, flt64 y)"},
+	{f64sqrt, "flt64 sqrt(flt64 x)"},
+	{f64atan2, "flt64 atan2(flt64 x, flt64 y)"},
 
-	//~ {b32btc, "int32 btc(uns32 x)"},		// bitcount
+	//~ {f64lg2, "flt64 log2(flt64 x)"},
+	//~ {f64xp2, "flt64 exp2(flt64 x)"},
+
+	{b32btc, "int32 btc(uns32 x)"},		// bitcount
 	//~ {b32btc, "int32 btc(uns32 x)"},
-	//~ {b32bsf, "int32 bsf(uns32 x)"},
-	//~ {b32bsr, "int32 bsr(uns32 x)"},
 	{b32bsf, "int32 bsf(int32 x)"},
 	{b32bsr, "int32 bsr(int32 x)"},
 	{b32swp, "int32 swp(int32 x)"},
 	{b32hib, "int32 bhi(int32 x)"},
 	{b32hib, "uns32 bhi(uns32 x)"},
 
-	//~ {b32shl, "int32 shl(uns32 x, int32 y)"},
-	//~ {b32shl, "int32 shl(int32 x, int32 y)"},
-	//~ {b32shr, "int32 shr(uns32 x, int32 y)"},
-	//~ {b32sar, "int32 shr(int32 x, int32 y)"},
-
-	//~ {b64shl, "int64 shl(int64 x, int32 y)"},
+	{b64shl, "int64 shl(int64 x, int32 y)"},
 	//~ {b64shl, "int64 shl(uns64 x, int32 y)"},
-	//~ {b64shr, "int64 shr(int64 x, int32 y)"},
-	//~ {b64sar, "int64 sar(int64 x, int32 y)"},
+	{b64shr, "int64 shr(int64 x, int32 y)"},
 	//~ {b64shr, "int64 shr(uns64 x, int32 y)"},
-	//~ {setpos, "void setPos(flt32 x, flt32 y, flt32 z)", 3, 3},
-	//~ {setpos, "void setNrm(flt32 x, flt32 y, flt32 z)", 3, 3},
-	//~ {setpos, "void setCol(flt32 x, flt32 y, flt32 z)", 3, 3},
-	//~ {getarg, "flt32 getArg(int32 arg, flt32 min, flt32 max)", 3, 2},
-	//~ {getTex, "argb tex2d(flt32, flt32)"},
-	// */
+	{b64sar, "int64 sar(int64 x, int32 y)"},
+
+	{b64sxt, "int64 ext(int64 val, int32 offs, int32 bits)"},
+	//~ {b64zxt, "int64 ext(uns64 val, int32 offs, int32 bits)"},
+	{b32sxt, "int32 ext(int32 val, int32 offs, int32 bits)"},
+	{b32zxt, "int32 ext(uns32 val, int32 offs, int32 bits)"},
+
 	{NULL},
 };
 
-void installlibc(state s, void libc(state), const char* proto) {
-	int i = libccnt;
+int installlibc(state s, void libc(state), const char* proto) {
+	static int libccnt = 0;
+	int stdiff = 0;
+	symn arg, sym;
 
-	if (libccnt == 0) {
-		while (libcfnc[libccnt].proto)
-			libccnt += 1;
+	if (!libccnt && !libc && !proto) {
+		int i;
+		for (i = 0; libcfnc[i].proto; ++i) {
+			//~ int j = 
+			installlibc(s, libcfnc[i].call, libcfnc[i].proto);
+			//~ debug("libc[%d]: %s;", j, libcfnc[i].proto);
+		}
+		if (proto == NULL)
+			return libccnt;
+	}// */
+
+	if (libccnt >= 255) {
+		error(s, 0, "to many functions on install('%s')", proto);
+		return -1;
 	}
-
-	if (libccnt >= 255)
-		return;
 
 	libcfnc[libccnt].call = libc;
 	libcfnc[libccnt].proto = proto;
+	
+	if (!libc || !proto)
+		return 0;
 
-	while (libcfnc[i].proto) {
-		symn sym = install(s->cc, -1, libcfnc[i].proto, 0);
-		int stdiff = 0, retsize = sym->type->size;
-		symn arg;
+	sym = install(s->cc, -1, libcfnc[libccnt].proto, 0);
 
-		for (arg = sym->args; arg; arg = arg->next)
-			stdiff += arg->type->size;
-
-		libcfnc[i].sym = sym;
-		libcfnc[i].sym->offs = i;
-
-		libcfnc[i].pop = (stdiff - retsize) / 4;
-		libcfnc[i].chk = stdiff / 4;
-
-		i++;
+	if (sym == NULL) {
+		error(s, 0, "install('%s')", proto);
+		return -2;
 	}
-	libccnt = i;
+
+	for (arg = sym->args; arg; arg = arg->next)
+		stdiff += arg->type->size;
+	libcfnc[libccnt].chk = stdiff / 4;
+	stdiff -= sym->type->size;
+	libcfnc[libccnt].pop = stdiff / 4;
+
+	libcfnc[libccnt].sym = sym;
+	libcfnc[libccnt].sym->offs = libccnt;
+
+	libccnt += 1;
+
+	return libccnt - 1;
 }
 //}
 
@@ -330,6 +325,9 @@ int emit(vmEnv s, int opc, ...) {
 	}
 	if (opc == get_sp) {
 		return -s->ss;
+	}
+	if (opc == set_sp) {
+		return s->ss = arg.i4;
 	}
 	/*if (opc == seg_data) {
 		return s->ss;
@@ -427,7 +425,7 @@ int emit(vmEnv s, int opc, ...) {
 
 	// cmp
 	else if (opc == opc_ceq) switch (arg.i4) {
-		case TYPE_u32:
+		case TYPE_u32: //opc = u32_ceq; break;
 		case TYPE_i32: opc = i32_ceq; break;
 		case TYPE_f32: opc = f32_ceq; break;
 		case TYPE_i64: opc = i64_ceq; break;
@@ -435,7 +433,7 @@ int emit(vmEnv s, int opc, ...) {
 		default: return -1;
 	}
 	else if (opc == opc_clt) switch (arg.i4) {
-		case TYPE_u32:
+		case TYPE_u32: opc = u32_clt; break;
 		case TYPE_i32: opc = i32_clt; break;
 		case TYPE_f32: opc = f32_clt; break;
 		case TYPE_i64: opc = i64_clt; break;
@@ -443,7 +441,7 @@ int emit(vmEnv s, int opc, ...) {
 		default: return -1;
 	}
 	else if (opc == opc_cgt) switch (arg.i4) {
-		case TYPE_u32:
+		case TYPE_u32: opc = u32_cgt; break;
 		case TYPE_i32: opc = i32_cgt; break;
 		case TYPE_f32: opc = f32_cgt; break;
 		case TYPE_i64: opc = i64_cgt; break;
@@ -452,7 +450,7 @@ int emit(vmEnv s, int opc, ...) {
 	}
 	else if (opc == opc_cne) {
 		switch (arg.i4) {
-			case TYPE_u32:
+			case TYPE_u32: // compare equ
 			case TYPE_i32: opc = i32_ceq; break;
 			case TYPE_f32: opc = f32_ceq; break;
 			case TYPE_i64: opc = i64_ceq; break;
@@ -465,7 +463,7 @@ int emit(vmEnv s, int opc, ...) {
 	}
 	else if (opc == opc_cle) {
 		switch (arg.i4) {
-			case TYPE_u32:
+			case TYPE_u32: opc = u32_cgt; break;
 			case TYPE_i32: opc = i32_cgt; break;
 			case TYPE_f32: opc = f32_cgt; break;
 			case TYPE_i64: opc = i64_cgt; break;
@@ -478,7 +476,7 @@ int emit(vmEnv s, int opc, ...) {
 	}
 	else if (opc == opc_cge) {
 		switch (arg.i4) {
-			case TYPE_u32:
+			case TYPE_u32: opc = u32_clt; break;
 			case TYPE_i32: opc = i32_clt; break;
 			case TYPE_f32: opc = f32_clt; break;
 			case TYPE_i64: opc = i64_clt; break;
@@ -597,6 +595,9 @@ int emit(vmEnv s, int opc, ...) {
 		}
 	}// */
 
+	if (opc  == opc_pop && !arg.i4)
+		return s->pc;
+
 	if (opc > opc_last) {
 		//~ fatal("xxx_opc%x", opc);
 		fatal("invalid opc_0x%x", opc);
@@ -610,7 +611,7 @@ int emit(vmEnv s, int opc, ...) {
 	s->pc = s->cs;
 	//~ debug("@%04x[ss:%03d]: %A", s->pc, s->ss, ip);
 	switch (opc) {		//#exec.c
-		error_opc: fatal("invalid opcode: [%02x]", ip->opc); return -1;
+		error_opc: fatal("invalid opcode: [%02x] %A", ip->opc, ip); return -1;
 		error_stc: fatal("stack underflow: near opcode %A", ip); return -1;
 		#define STOP(__ERR, __CHK) if (__CHK) goto __ERR
 		#define NEXT(__IP, __CHK, __SP)\
@@ -654,11 +655,11 @@ int emitidx(vmEnv s, int opc, int arg) {
 	stkval tmp;
 	tmp.i4 = s->ss + arg;
 	if (tmp.u4 > 255) {
-		debug("%d", tmp.u4);
+		fatal("%d", tmp.u4);
 		return 0;
 	}
 	if (tmp.u4 > s->ss) {
-		debug("%d", tmp.u4);
+		fatal("%d", tmp.u4);
 		return 0;
 	}
 	return emit(s, opc, tmp);
@@ -738,11 +739,41 @@ void vm_tags(ccEnv s, char *sptr, int slen) {
 					default: goto TYPE_XXX;
 				} break;
 				case TYPE_rec: fputfmt(fout, ":struct\n"); break;
-				case TYPE_arr: fputfmt(fout, ":array\n"); break;
+				case TYPE_arr: {
+					int i = 0, n = typ->type->size;
+					fputfmt(fout, ":array[");
+					while (i < typ->size) {
+						switch(typ->type->kind) {
+							case TYPE_bit: switch (typ->type->size) {
+								case 1: case 2:
+								case 4: fputfmt(fout, "u32[%008x](%u)", sp->i4, sp->i4); break;
+								case 8: fputfmt(fout, "u64[%016X](%U)", sp->i8, sp->i8); break;
+								default: goto TYPE_XXX;
+							} break;
+							case TYPE_int: switch (typ->type->size) {
+								case 1: case 2:
+								case 4: fputfmt(fout, "i32[%008x](%d)", sp->i4, sp->i4); break;
+								case 8: fputfmt(fout, "i64[%016X](%D)", sp->i8, sp->i8); break;
+								default: goto TYPE_XXX;
+							} break;
+							case TYPE_flt: switch (typ->type->size) {
+								case 4: fputfmt(fout, "f32[%008x](%f)", sp->i4, sp->f4); break;
+								case 8: fputfmt(fout, "f64[%016X](%G)", sp->i8, sp->f8); break;
+								default: goto TYPE_XXX;
+							} break;
+							case TYPE_rec: fputfmt(fout, ":struct\n"); break;
+							default: goto TYPE_XXX;
+						}
+						if ((i += n) < typ->size)
+							fputfmt(fout, ", ");
+						sp = (void*)((char*)sp + n);
+					}
+					fputfmt(fout, "]\n");
+				} break;
 
 				default:
 				TYPE_XXX:
-					fputfmt(fout, " = ????\n");
+					fputfmt(fout, "(%T) = ????\n", typ);
 					break;
 			}
 		}
@@ -931,9 +962,6 @@ void dumpasm(FILE *fout, vmEnv s, int mode) {
 			#define STOP(__ERR, __CHK) if (__CHK) goto __ERR
 			#include "incl/exec.c"
 		}
-
-		//~ fputfmt(fout, ".%04x:%9A\n", i, ip);
-		//~ fputfmt(fout, ".%04x:\t%A\n", i, ip);
 
 		if (mode & 0x10)		// offset
 			fputfmt(fout, ".%04x: ", i);

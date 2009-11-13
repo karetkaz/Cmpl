@@ -7,16 +7,16 @@ LIBS=-lm
 CCC=gcc -m32
 LNK=gcc -m32
 
-INCLUDE='$(WATCOM)\h;$(WATCOM)\h\nt'
-OUTOBJ=-fo=
-OUTEXE=-fe=
-CFLAGS=-zq -ei -6s -d0 -oa
-# -w99 -d3 -6s -oa -hd
-COPTS=-i=$(INCLUDE)
-LIBS=
-LNK=wcl386 $(CFLAGS) 
-CCC=wcc386
-LIB=WLIB -q
+#~ INCLUDE='$(WATCOM)\h;$(WATCOM)\h\nt'
+#~ OUTOBJ=-fo=
+#~ OUTEXE=-fe=
+#~ CFLAGS=-zq -ei -6s -d3
+#~ # -w99 -d3 -6s -oa -hd
+#~ COPTS=-i=$(INCLUDE)
+#~ LIBS=
+#~ LNK=wcl386 $(CFLAGS) 
+#~ CCC=wcc386
+#~ LIB=WLIB -q
 
 SRCDIR=
 OBJDIR=
@@ -62,9 +62,9 @@ clean:
 #~ rm -f $(OBJDIR)main.o
 
 debug:
-	#~ xterm -e gdb $(BINDIR)main
+	xterm -e gdb $(BINDIR)main
 	#~ gdb $(BINDIR)main
-	wdw $(BINDIR)main
+	#~ wdw "$(BINDIR)main"
 
 build:clean main
 

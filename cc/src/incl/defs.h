@@ -4,7 +4,7 @@ TOKDEF(TYPE_vid, 0x01, 0, TY, "TYPE_vid")		// void
 TOKDEF(TYPE_bit, 0x02, 0, TY, "TYPE_bit")		//  bool, uns32, uns16, uns8
 TOKDEF(TYPE_int, 0x03, 0, TY, "TYPE_int")		// int64, int32, int16, int8
 TOKDEF(TYPE_flt, 0x04, 0, TY, "TYPE_flt")		// flt64, flt32
-//~ TOKDEF(TYPE_vec, 0x05, 0, TY, "TYPE_vec")	// (p2f64, p4f32), (p2i64, p4i32, p8i16, p16i8), (p2u64, p4u32, p8u16, p16u8), ...
+TOKDEF(TYPE_p4x, 0x05, 0, TY, "TYPE_vec")	// (p2f64, p4f32), (p2i64, p4i32, p8i16, p16i8), (p2u64, p4u32, p8u16, p16u8), ...
 TOKDEF(TYPE_arr, 0x06, 0, TY, "TYPE_arr")	// string, array, variable|function
 TOKDEF(TYPE_def, 0x07, 0, ID, "define")		// struct, union, constant|typename
 
@@ -13,7 +13,8 @@ TOKDEF(TYPE_i32, 0x03, 0, TY, "TYPE_i32")
 TOKDEF(TYPE_i64, 0x03, 0, TY, "TYPE_i64")
 TOKDEF(TYPE_f32, 0x04, 0, TY, "TYPE_f32")
 TOKDEF(TYPE_f64, 0x04, 0, TY, "TYPE_f64")
-TOKDEF(TYPE_p4x, 0x06, 0, TY, "TYPE_p4x")
+//~ TOKDEF(TYPE_p4x, 0x05, 0, TY, "TYPE_p4x")
+//~ TOKDEF(TYPE_p4x, 0x05, 0, TY, "TYPE_p4x")
 
 //~ TOKDEF(TYPE_v4f, 0x05, 0, TY, "vec4f")
 //~ TOKDEF(TYPE_v2d, 0x05, 0, TY, "vec2d")
@@ -34,16 +35,15 @@ TOKDEF(CNST_int, 0x03, 0, TY, "CNST_int")	// int32
 TOKDEF(CNST_flt, 0x04, 0, TY, "CNST_flt")	// flt64
 TOKDEF(CNST_str, 0x05, 0, TY, "CNST_str")	// string
 
-//~ TOKDEF(TYPE_val, 0x07, 0, ID, "define(val)")	// define a = 9;
 TOKDEF(TYPE_ref, 0x05, 0, TY, "TYPE_ref")	// identifyer/variable/typename/constant
 //~ TOKDEF(TYPE_new, 0x05, 0, TY, "TYPE_new")	// int a;
 
 TOKDEF(OPER_nop, 0x00, 0, XX, ";")		// stmt: expr
-TOKDEF(OPER_beg, 0x00, 0, XX, "{")		// stmt: list {...}
-TOKDEF(OPER_jmp, 0x00, 0, ID, "if")		// stmt: if then else | break | continue | goto
-TOKDEF(OPER_for, 0x00, 0, ID, "for")		// stmt: for, while, repeat
-TOKDEF(OPER_els, 0x00, 0, ID, "else")		// ????
-TOKDEF(OPER_end, 0x00, 0, XX, "}")		// ????
+TOKDEF(STMT_beg, 0x00, 0, XX, "{")		// stmt: list {...}
+TOKDEF(STMT_for, 0x00, 0, ID, "for")		// stmt: for, while, repeat
+TOKDEF(STMT_if,  0x00, 0, ID, "if")		// stmt: if then else | break | continue | goto
+TOKDEF(STMT_els, 0x00, 0, ID, "else")		// ????
+TOKDEF(STMT_end, 0x00, 0, XX, "}")		// ????
 
 //~ Operators ==================================================================
 TOKDEF(OPER_com, 0x01, 2, OP, ",")		// a, b

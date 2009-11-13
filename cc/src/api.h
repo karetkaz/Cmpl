@@ -90,7 +90,7 @@ vmEnv vmInit(state s);
 void vmInfo(FILE*, vmEnv s);
 int vmDone(state s);
 
-void installlibc(state, void call(state), const char* proto);
+int installlibc(state, void call(state), const char* proto);
 void installvar(state, void* ref, const char* proto);
 
 #define poparg(__ARGV, __TYPE) ((__TYPE*)((__ARGV)->argv += ((sizeof(__TYPE) | 3) & ~3)))[-1]

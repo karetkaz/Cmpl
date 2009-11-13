@@ -20,6 +20,7 @@ static void fputsym(FILE *fout, symn sym, int mode, int level) {
 		//~ case TYPE_i32:
 		//~ case TYPE_i64:
 		case TYPE_flt:
+		case TYPE_p4x:
 		//~ case TYPE_f32:
 		//~ case TYPE_f64:
 		/* TODO: types*/ {
@@ -46,23 +47,24 @@ static void fputsym(FILE *fout, symn sym, int mode, int level) {
 			//~ fputfmt(fout, "):(%d)", sym->size);
 		} break;
 
+		case EMIT_opc:
+		case TYPE_def:
 		case TYPE_ref: {
-			if (mode > 0)
+			if (mode > 0 && sym->type) {
 				fputsym(fout, sym->type, mode, 0);
-			if (sym->name) {
-				if (mode > 0)
-					fputc(' ', fout);
-				fputs(sym->name, fout);
+				fputc(' ', fout);
 			}
-			if (sym->libc || sym->call) {
+
+			if (sym->name)
+				fputs(sym->name, fout);
+
+			if (/* sym->libc || sym->call ||  */sym->args) {
+				symn arg = sym->args;
 				fputc('(', fout);
-				if (sym->args) {
-					symn args = sym->args;
-					while (args) {
-						fputsym(fout, args->type, mode, 0);
-						if ((args = args->next))
-							fputs(", ", fout);
-					}
+				while (arg) {
+					fputsym(fout, arg, mode, 0);
+					if ((arg = arg->next))
+						fputs(", ", fout);
 				}
 				fputc(')', fout);
 			}
@@ -90,7 +92,7 @@ static void fputast(FILE *fout, astn ast, int mode, int level) {
 	mode &= 0xf;
 	/*if (ast && mode &&!noiden) switch (ast->kind) {
 		case OPER_nop:
-		case OPER_beg:
+		case STMT_beg:
 		case OPER_jmp:
 		case OPER_for:
 		case OPER_els:
@@ -110,7 +112,7 @@ static void fputast(FILE *fout, astn ast, int mode, int level) {
 			fputfmt(fout, "%I%+k;\n", noiden ? 0 : level, ast->rhso);
 			//~ fputfmt(fout, "%8d|%I%+k;\n", ast->line, noiden ? 0 : level, ast->rhso);
 		} break;
-		case OPER_beg: {
+		case STMT_beg: {
 			astn lst;
 			if (mode < 2) {
 				//~ goto ferrast;
@@ -124,7 +126,7 @@ static void fputast(FILE *fout, astn ast, int mode, int level) {
 			//~ fputfmt(fout, "% 4I|", 1);
 			fputfmt(fout, "%I}\n", level, ast->type);
 		} break;
-		case OPER_jmp: {
+		case STMT_if:  {
 			if (mode < 2) {
 				fputs("if", fout);
 				if (mode > 0)
@@ -134,33 +136,33 @@ static void fputast(FILE *fout, astn ast, int mode, int level) {
 			fputfmt(fout, "%Iif (%+k)", noiden ? 0 : level, ast->test);
 			if (ast->stmt) {
 				int kind = ast->stmt->kind;
-				if (!nlbody && kind == OPER_beg) {
+				if (!nlbody && kind == STMT_beg) {
 					fputfmt(fout, " ");
 					fputast(fout, ast->stmt, mode | nlbody | nlelif | noIden, level);
 				}
 				else {
 					fputfmt(fout, "\n");
-					fputast(fout, ast->stmt, mode | nlbody | nlelif, level + (kind != OPER_beg));
+					fputast(fout, ast->stmt, mode | nlbody | nlelif, level + (kind != STMT_beg));
 				}
 			}
 			else fputfmt(fout, ";\n");
 			if (ast->step) {
 				int kind = ast->step->kind;
-				if (!nlbody && (kind == OPER_beg)) {
+				if (!nlbody && (kind == STMT_beg)) {
 					fputfmt(fout, "%Ielse ", level);
 					fputast(fout, ast->step, mode | nlbody | nlelif | noIden, level);
 				}
-				else if (!nlelif && (kind == OPER_jmp)) {
+				else if (!nlelif && (kind == STMT_if)) {
 					fputfmt(fout, "%Ielse ", level);
 					fputast(fout, ast->step, mode | nlbody | nlelif | noIden, level);
 				}
 				else {
 					fputfmt(fout, "%Ielse\n", level);
-					fputast(fout, ast->step, mode | nlbody | nlelif, level + (kind != OPER_beg));
+					fputast(fout, ast->step, mode | nlbody | nlelif, level + (kind != STMT_beg));
 				}
 			}
 		} break;
-		case OPER_for: {
+		case STMT_for: {
 			if (mode < 2) {
 				fputs("for", fout);
 				if (mode > 0)
@@ -170,13 +172,13 @@ static void fputast(FILE *fout, astn ast, int mode, int level) {
 			fputfmt(fout, "%Ifor (%+k; %+k; %+k)", noiden ? 0 : level, ast->init, ast->test, ast->step);
 			if (ast->stmt) {
 				int kind = ast->stmt->kind;
-				if (!nlbody && kind == OPER_beg) {
+				if (!nlbody && kind == STMT_beg) {
 					fputfmt(fout, " ");
 					fputast(fout, ast->stmt, mode | nlbody | nlelif | noIden, level);
 				}
 				else {
 					fputfmt(fout, "\n");
-					fputast(fout, ast->stmt, mode | nlbody | nlelif, level + (kind != OPER_beg));
+					fputast(fout, ast->stmt, mode | nlbody | nlelif, level + (kind != STMT_beg));
 				}
 				/*if (blst && !nlbody) {
 					fputfmt(fout, "%Ifor (%+k; %+k; %+k) ", level, ast->init, ast->test, ast->step);
@@ -627,10 +629,10 @@ void fputfmt(FILE *fout, const char *msg, ...) {
 
 void perr(state s, int level, const char *file, int line, const char *msg, ...) {
 	FILE *fout =  (s && s && s->logf) ? s->logf : stderr;
-	int warnl = s->cc ? s->cc->warn : 0;
+	int warnl = 99;//s->cc ? s->cc->warn : 9;
 	va_list argp;
 
-	if (level) {
+	/*if (level) {
 		if (level < 0 || warnl < 0) {
 			if (file && line)
 				fprintf(fout, "%s:%u:", file, line);
@@ -640,12 +642,27 @@ void perr(state s, int level, const char *file, int line, const char *msg, ...) 
 		else if (level <= warnl) {
 			if (file && line)
 				fprintf(fout, "%s:%u:", file, line);
-			fprintf(fout, "warn%d:", level);
+			fprintf(fout, "warning:", level);
 		}
 		else return;
 	}
-	else if (file && line)
+	else */
+
+	if (level > 0) {
+		if (warnl < 0)
+			level = warnl;
+		if (level > warnl)
+			return;
+	}
+	else
+		s->errc += 1;
+
+	if (file && line)
 		fprintf(fout, "%s:%u:", file, line);
+
+	if (level)
+		fprintf(fout, "%s:", level < 0 ? "error" : "warning");
+
 	va_start(argp, msg);
 	FPUTFMT(fout, msg, argp);
 	fputc('\n', fout);
@@ -807,21 +824,21 @@ void dumpxml(FILE *fout, astn ast, int lev, const char* text, int level) {
 			dumpxml(fout, ast->stmt, lev+1, "expr", level);
 			fputfmt(fout, "%I</%s>\n", lev, text);
 		} break;
-		case OPER_beg: {
+		case STMT_beg: {
 			astn l = ast->stmt;
 			fputfmt(fout, ">\n");
 			for (l = ast->stmt; l; l = l->next)
 				dumpxml(fout, l, lev + 1, "stmt", level);
 			fputfmt(fout, "%I</%s>\n", lev, text);
 		} break;
-		case OPER_jmp: {
+		case STMT_if: {
 			fputfmt(fout, ">\n");
 			dumpxml(fout, ast->test, lev + 1, "test", level);
 			dumpxml(fout, ast->stmt, lev + 1, "then", level);
 			dumpxml(fout, ast->step, lev + 1, "else", level);
 			fputfmt(fout, "%I</%s>\n", lev, text);
 		} break;
-		case OPER_for: {
+		case STMT_for: {
 			fputfmt(fout, ">\n");
 			dumpxml(fout, ast->init, lev + 1, "init", level);
 			dumpxml(fout, ast->test, lev + 1, "test", level);
