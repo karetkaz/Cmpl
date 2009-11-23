@@ -1,4 +1,13 @@
-INCLUDE=
+#INCLUDE=
+OUTOBJ=-o 
+OUTEXE=-o 
+CFLAGS=-O0 -g3
+COPTS=-c
+LIBS=
+CCC=lcc
+LNK=lcc
+
+#INCLUDE=
 OUTOBJ=-o
 OUTEXE=-o
 CFLAGS=-O0 -ggdb -g3
@@ -6,23 +15,26 @@ COPTS=-c -Wall
 LIBS=-lm
 CCC=gcc -m32
 LNK=gcc -m32
+DBG=gdb
 
-#~ INCLUDE='$(WATCOM)\h;$(WATCOM)\h\nt'
+#~ #INCLUDE='$(WATCOM)\h;$(WATCOM)\h\nt'
 #~ OUTOBJ=-fo=
 #~ OUTEXE=-fe=
-#~ CFLAGS=-zq -ei -6s -d3
-#~ # -w99 -d3 -6s -oa -hd
-#~ COPTS=-i=$(INCLUDE)
+#~ CFLAGS=-zq -ei -6r -d3
+#~ #-d3 -oa -hd
+#~ COPTS=-wx
+#~ #-i=$(INCLUDE)
 #~ LIBS=
 #~ LNK=wcl386 $(CFLAGS) 
 #~ CCC=wcc386
 #~ LIB=WLIB -q
+#~ DBG=wdw
 
 SRCDIR=
 OBJDIR=
 #~ ../tmp/obj/
 #~ ../tmp/
-BINDIR=../
+BINDIR=..\\
 OBJS=\
 	$(OBJDIR)clog.o\
 	$(OBJDIR)scan.o\
@@ -59,12 +71,12 @@ $(OBJDIR)code.o:
 
 clean:
 	rm -f $(OBJS) $(OBJDIR)main.o
+#~ del -f $(OBJS) $(OBJDIR)main.o
 #~ rm -f $(OBJDIR)main.o
 
 debug:
-	xterm -e gdb $(BINDIR)main
-	#~ gdb $(BINDIR)main
-	#~ wdw "$(BINDIR)main"
+	#~ xterm -e gdb $(BINDIR)main
+	$(DBG) "$(BINDIR)main"
 
 build:clean main
 

@@ -56,6 +56,7 @@ typedef struct cell {			// processor
 } *cell; // */
 
 //{ libc.c ---------------------------------------------------------------------
+#define useBuiltInFuncs
 /*
 static void f32abs(state s) {
 	flt32t x = poparg(s, flt32t);
@@ -81,6 +82,7 @@ static void f32sqrt(state s) {
 //~ #pragma intrinsic(log,cos,sin,tan,sqrt,fabs,pow,atan2,fmod)
 //~ #pragma intrinsic(acos,asin,atan,cosh,exp,log10,sinh,tanh)
 
+#ifdef useBuiltInFuncs
 static void f64abs(state s) {
 	flt64t x = poparg(s, flt64t);
 	setret(flt64t, s, abs(x));
@@ -224,14 +226,16 @@ static void b64sxt(state s) {
 	val <<= 64 - (ofs + cnt);
 	setret(int64t, s, val >> (64 - cnt));
 }
+#endif
 
 static struct lfun {
 	void (*call)(state);
-	const char* proto;//, *name;
+	const char* proto;
 	uns08t chk, pop;
 	symn sym;
 }
 libcfnc[256] = {
+#ifdef useBuiltInFuncs
 	{f64abs, "flt64 abs(flt64 x)"},
 	{f64sin, "flt64 sin(flt64 x)"},
 	{f64cos, "flt64 cos(flt64 x)"},
@@ -263,7 +267,8 @@ libcfnc[256] = {
 	//~ {b64zxt, "int64 ext(uns64 val, int32 offs, int32 bits)"},
 	{b32sxt, "int32 ext(int32 val, int32 offs, int32 bits)"},
 	{b32zxt, "int32 ext(uns32 val, int32 offs, int32 bits)"},
-
+#endif
+	// */
 	{NULL},
 };
 
@@ -316,6 +321,10 @@ int installlibc(state s, void libc(state), const char* proto) {
 }
 //}
 
+static inline bcde getip(vmEnv s, int pos) {
+	return (bcde)(s->_ptr + pos);
+}
+
 int emit(vmEnv s, int opc, ...) {
 	bcde ip = 0;
 	stkval arg = *(stkval*)(&opc + 1);
@@ -344,7 +353,7 @@ int emit(vmEnv s, int opc, ...) {
 	if (opc == opc_line) {
 		static int line = 0;
 		if (line != arg.i4) {
-			//~ debug("emit(line = %d)", arg.i4);
+			//~ debug("line = %d", arg.i4);
 			line = arg.i4;
 		}
 		return s->pc;
@@ -352,7 +361,7 @@ int emit(vmEnv s, int opc, ...) {
 
 	if (s->_end - s->_ptr < 16) {
 		debug("memory overrun");
-		return -1;
+		return 0;
 	}
 	/*else if (opc == opc_ldc) {
 		if (arg.u8 == 0) opc = opc_ldz;
@@ -370,7 +379,7 @@ int emit(vmEnv s, int opc, ...) {
 		case TYPE_f64: opc = f64_neg; break;
 		//~ case TYPE_pf2: opc = p4d_neg; break;
 		//~ case TYPE_pf4: opc = p4f_neg; break;
-		default: return -1;
+		default: return 0;
 	}
 	else if (opc == opc_add) switch (arg.i4) {
 		case TYPE_u32:
@@ -380,7 +389,7 @@ int emit(vmEnv s, int opc, ...) {
 		case TYPE_f64: opc = f64_add; break;
 		//~ case TYPE_pf2: opc = p4d_add; break;
 		//~ case TYPE_pf4: opc = p4f_add; break;
-		default: return -1;
+		default: return 0;
 	}
 	else if (opc == opc_sub) switch (arg.i4) {
 		case TYPE_u32:
@@ -390,7 +399,7 @@ int emit(vmEnv s, int opc, ...) {
 		case TYPE_f64: opc = f64_sub; break;
 		//~ case TYPE_pf2: opc = p4d_sub; break;
 		//~ case TYPE_pf4: opc = p4f_sub; break;
-		default: return -1;
+		default: return 0;
 	}
 	else if (opc == opc_mul) switch (arg.i4) {
 		case TYPE_u32: opc = u32_mul; break;
@@ -400,7 +409,7 @@ int emit(vmEnv s, int opc, ...) {
 		case TYPE_f64: opc = f64_mul; break;
 		//~ case TYPE_pf2: opc = p4d_mul; break;
 		//~ case TYPE_pf4: opc = p4f_mul; break;
-		default: return -1;
+		default: return 0;
 	}
 	else if (opc == opc_div) switch (arg.i4) {
 		case TYPE_u32: opc = u32_div; break;
@@ -410,7 +419,7 @@ int emit(vmEnv s, int opc, ...) {
 		case TYPE_f64: opc = f64_div; break;
 		//~ case TYPE_pf2: opc = p4d_div; break;
 		//~ case TYPE_pf4: opc = p4f_div; break;
-		default: return -1;
+		default: return 0;
 	}
 	else if (opc == opc_mod) switch (arg.i4) {
 		//~ case TYPE_u32: opc = u32_mod; break;
@@ -420,7 +429,7 @@ int emit(vmEnv s, int opc, ...) {
 		case TYPE_f64: opc = f64_mod; break;
 		//~ case TYPE_pf2: opc = p4d_mod; break;
 		//~ case TYPE_pf4: opc = p4f_mod; break; p4f_crs ???
-		default: return -1;
+		default: return 0;
 	}
 
 	// cmp
@@ -430,7 +439,7 @@ int emit(vmEnv s, int opc, ...) {
 		case TYPE_f32: opc = f32_ceq; break;
 		case TYPE_i64: opc = i64_ceq; break;
 		case TYPE_f64: opc = f64_ceq; break;
-		default: return -1;
+		default: return 0;
 	}
 	else if (opc == opc_clt) switch (arg.i4) {
 		case TYPE_u32: opc = u32_clt; break;
@@ -438,7 +447,7 @@ int emit(vmEnv s, int opc, ...) {
 		case TYPE_f32: opc = f32_clt; break;
 		case TYPE_i64: opc = i64_clt; break;
 		case TYPE_f64: opc = f64_clt; break;
-		default: return -1;
+		default: return 0;
 	}
 	else if (opc == opc_cgt) switch (arg.i4) {
 		case TYPE_u32: opc = u32_cgt; break;
@@ -446,20 +455,19 @@ int emit(vmEnv s, int opc, ...) {
 		case TYPE_f32: opc = f32_cgt; break;
 		case TYPE_i64: opc = i64_cgt; break;
 		case TYPE_f64: opc = f64_cgt; break;
-		default: return -1;
+		default: return 0;
 	}
-	else if (opc == opc_cne) {
+	/*else if (opc == opc_cne) {
 		switch (arg.i4) {
 			case TYPE_u32: // compare equ
 			case TYPE_i32: opc = i32_ceq; break;
 			case TYPE_f32: opc = f32_ceq; break;
 			case TYPE_i64: opc = i64_ceq; break;
 			case TYPE_f64: opc = f64_ceq; break;
-			default: return -1;
+			default: return 0;
 		}
-		if (emit(s, opc) <= 0)
-			return -1;
-		return emit(s, b32_not);
+		//~ if (!emit(s, opc)) return 0;
+		return emit(s, opc) ? emit(s, b32_not) : 0;
 	}
 	else if (opc == opc_cle) {
 		switch (arg.i4) {
@@ -468,11 +476,9 @@ int emit(vmEnv s, int opc, ...) {
 			case TYPE_f32: opc = f32_cgt; break;
 			case TYPE_i64: opc = i64_cgt; break;
 			case TYPE_f64: opc = f64_cgt; break;
-			default: return -1;
+			default: return 0;
 		}
-		if (emit(s, opc) <= 0)
-			return -1;
-		return emit(s, b32_not);
+		return emit(s, opc) ? emit(s, b32_not) : 0;
 	}
 	else if (opc == opc_cge) {
 		switch (arg.i4) {
@@ -481,38 +487,36 @@ int emit(vmEnv s, int opc, ...) {
 			case TYPE_f32: opc = f32_clt; break;
 			case TYPE_i64: opc = i64_clt; break;
 			case TYPE_f64: opc = f64_clt; break;
-			default: return -1;
+			default: return 0;
 		}
-		if (emit(s, opc) <= 0)
-			return -1;
-		return emit(s, b32_not);
-	}
+		return emit(s, opc) ? emit(s, b32_not) : 0;
+	}// */
 
 	// bit
 	else if (opc == opc_shl) switch (arg.i4) {
 		case TYPE_u32:
 		case TYPE_i32: opc = b32_shl; break;
-		default: return -1;
+		default: return 0;
 	}
 	else if (opc == opc_shr) switch (arg.i4) {
 		case TYPE_i32: opc = b32_sar; break;
 		case TYPE_u32: opc = b32_shr; break;
-		default: return -1;
+		default: return 0;
 	}
 	else if (opc == opc_and) switch (arg.i4) {
 		case TYPE_u32:
 		case TYPE_i32: opc = b32_and; break;
-		default: return -1;
+		default: return 0;
 	}
 	else if (opc == opc_ior) switch (arg.i4) {
 		case TYPE_u32:
 		case TYPE_i32: opc = b32_ior; break;
-		default: return -1;
+		default: return 0;
 	}
 	else if (opc == opc_xor) switch (arg.i4) {
 		case TYPE_u32:
 		case TYPE_i32: opc = b32_xor; break;
-		default: return -1;
+		default: return 0;
 	}
 
 	/*else if (opc == opc_ldi) switch (arg.i4) {
@@ -521,7 +525,7 @@ int emit(vmEnv s, int opc, ...) {
 		case  4: opc = opc_ldi4; break;
 		case  8: opc = opc_ldi8; break;
 		case 16: opc = opc_ldiq; break;
-		default: return -1;
+		default: return 0;
 	}
 	else if (opc == opc_sti) switch (arg.i4) {
 		case  1: opc = opc_sti1; break;
@@ -529,12 +533,12 @@ int emit(vmEnv s, int opc, ...) {
 		case  4: opc = opc_sti4; break;
 		case  8: opc = opc_sti8; break;
 		case 16: opc = opc_stiq; break;
-		default: return -1;
+		default: return 0;
 	}*/
 
 	/*~:)) ?? rollbacks
 	if (opc == opc_ldz1) {
-		ip = (bcde)&s->_ptr[s->pc];
+		ip = getip(s, s->pc);
 		if (ip->opc == opc_ldz1) {
 			opc = opc_ldz2;
 			s->cs = s->pc;
@@ -542,7 +546,7 @@ int emit(vmEnv s, int opc, ...) {
 		}
 	}
 	else if (opc == opc_ldz2) {
-		ip = (bcde)&s->mem[s->pc];
+		ip = getip(s, s->pc);
 		if (ip->opc == opc_ldz2) {
 			opc = opc_ldz4;
 			s->cs = s->pc;
@@ -550,7 +554,7 @@ int emit(vmEnv s, int opc, ...) {
 		}
 	}
 	else if (opc == opc_dup1) {			// TODO 
-		ip = (bcde)&s->mem[s->pc];
+		ip = getip(s, s->pc);
 		if (ip->opc == opc_dup1 && ip->idx == arg.u4) {
 			ip->opc = opc_dup2;
 			ip->idx -= 1;
@@ -559,7 +563,7 @@ int emit(vmEnv s, int opc, ...) {
 		}
 	}
 	else if (opc == opc_dup2) {
-		ip = (bcde)&s->mem[s->pc];
+		ip = getip(s, s->pc);
 		if (ip->opc == opc_dup2 && ip->idx == arg.u4) {
 			ip->opc = opc_dup4;
 			ip->idx -= 2;
@@ -569,21 +573,21 @@ int emit(vmEnv s, int opc, ...) {
 	}
 	/ *
 	else if (opc == b32_not) {
-		ip = (bcde)&s->mem[s->pc];
+		ip = getip(s, s->pc);
 		if (ip->opc == b32_not) {
 			s->cs = s->pc;
 			return s->pc;
 		}
 	}
 	else if (opc == opc_jnz || opc == opc_jz) {
-		ip = (bcde)&s->memp[s->pc];
+		ip = getip(s, s->pc);
 		if (ip->opc == b32_not && ip->arg.u1 == 1) {
 			opc = (opc == opc_jnz) ? opc_jz : opc_jnz;
 			s->cs = s->pc;
 		}
 	}// * /
 	/ *else if (opc == opc_shl || opc == opc_shr || opc == opc_sar) {
-		ip = (bcde)&s->memp[s->pc];
+		ip = getip(s, s->pc);
 		if (ip->opc == opc_ldc4) {
 			if (opc == opc_shl) arg.i1 = 1 << 5;
 			if (opc == opc_shr) arg.i1 = 2 << 5;
@@ -595,24 +599,23 @@ int emit(vmEnv s, int opc, ...) {
 		}
 	}// */
 
-	if (opc  == opc_pop && !arg.i4)
-		return s->pc;
-
 	if (opc > opc_last) {
-		//~ fatal("xxx_opc%x", opc);
 		fatal("invalid opc_0x%x", opc);
 		return 0;
 	}
 
-	ip = (bcde)&s->_ptr[s->cs];
+	if (opc  == opc_pop && !arg.i4)
+		return s->pc;
+
+	ip = getip(s, s->cs);
 	ip->opc = opc;
 	ip->arg = arg;
 
 	s->pc = s->cs;
 	//~ debug("@%04x[ss:%03d]: %A", s->pc, s->ss, ip);
 	switch (opc) {		//#exec.c
-		error_opc: fatal("invalid opcode: [%02x] %A", ip->opc, ip); return -1;
-		error_stc: fatal("stack underflow: near opcode %A", ip); return -1;
+		error_opc: error(s->s, 0, "invalid opcode: [%02x] %A", ip->opc, ip); return 0;
+		error_stc: error(s->s, 0, "stack underflow: near opcode %A", ip); return 0;
 		#define STOP(__ERR, __CHK) if (__CHK) goto __ERR
 		#define NEXT(__IP, __CHK, __SP)\
 			STOP(error_stc, s->ss < (__CHK));\
@@ -655,11 +658,12 @@ int emitidx(vmEnv s, int opc, int arg) {
 	stkval tmp;
 	tmp.i4 = s->ss + arg;
 	if (tmp.u4 > 255) {
-		fatal("%d", tmp.u4);
+		error(s->s, 0, "0x%02x(%d)", opc, tmp.u4);
+		fputasm(stdout, s->_ptr, s->cs, 0x31);
 		return 0;
 	}
 	if (tmp.u4 > s->ss) {
-		fatal("%d", tmp.u4);
+		error(s->s, 0, "%d", tmp.u4);
 		return 0;
 	}
 	return emit(s, opc, tmp);
@@ -670,12 +674,13 @@ int emitint(vmEnv s, int opc, int64t arg) {
 	return emit(s, opc, tmp);
 }
 int fixjump(vmEnv s, int src, int dst, int stc) {
-	bcde ip = (bcde)(s->_ptr + src);
+	bcde ip = getip(s, src);
+
 	if (src >= 0) switch (ip->opc) {
 		case opc_jmp:
 		case opc_jnz:
 		case opc_jz: ip->jmp = dst - src; break;
-		default: debug("expecting jump, but found: '%+A'", ip);
+		default: fatal("expecting jump, but found: '%+A'", ip);
 	}
 	return 0;
 }
@@ -703,6 +708,40 @@ int fixjump(vmEnv s, int src, int dst, int stc) {
 
 static cell getProc(vmEnv ee, cell pu) {return ((pu && pu->ip) ? pu : 0);}
 
+void vm_fputval(FILE *fout, symn typ, stkval* sp) {
+	switch(typ ? typ->kind : 0) {
+		case TYPE_p4x: {
+			if (typ == type_f32x4)
+				fputfmt(fout, "f32x4(%g, %g, %g, %g)", sp->pf.x, sp->pf.y, sp->pf.z, sp->pf.w);
+			if (typ == type_f64x2)
+				fputfmt(fout, "f64x2(%G, %G)", sp->pd.x, sp->pd.y);
+		} break;
+		case TYPE_bit: switch (typ->size) {
+			case 1: case 2:
+			case 4: fputfmt(fout, "u32[%008x](%u)", sp->i4, sp->i4); break;
+			case 8: fputfmt(fout, "u64[%016X](%U)", sp->i8, sp->i8); break;
+			default: goto TYPE_XXX;
+		} break;
+		case TYPE_int: switch (typ->size) {
+			case 1: case 2:
+			case 4: fputfmt(fout, "i32[%008x](%d)", sp->i4, sp->i4); break;
+			case 8: fputfmt(fout, "i64[%016X](%D)", sp->i8, sp->i8); break;
+			default: goto TYPE_XXX;
+		} break;
+		case TYPE_flt: switch (typ->size) {
+			case 4: fputfmt(fout, "f32[%008x](%f)", sp->i4, sp->f4); break;
+			case 8: fputfmt(fout, "f64[%016X](%G)", sp->i8, sp->f8); break;
+			default: goto TYPE_XXX;
+		} break;
+		//~ case TYPE_rec: fputfmt(fout, "struct{}"); break;
+		//~ case TYPE_arr: fputfmt(fout, "array[]"); break;
+		default:
+		TYPE_XXX:
+			fputfmt(fout, "error", typ);
+			break;
+	}
+}
+
 void vm_tags(ccEnv s, char *sptr, int slen) {
 	FILE *fout = stdout;
 	symn ptr;
@@ -715,67 +754,25 @@ void vm_tags(ccEnv s, char *sptr, int slen) {
 				fputfmt(fout, "%s:%d:", ptr->file, ptr->line);
 			fputfmt(fout, "sp(%d):%s", spos, ptr->name);
 			switch(typ ? typ->kind : 0) {
-				case TYPE_p4x: {
-					if (typ == type_f32x4)
-						fputfmt(fout, " = f32x4(%g, %g, %g, %g)\n", sp->pf.x, sp->pf.y, sp->pf.z, sp->pf.w);
-					if (typ == type_f64x2)
-						fputfmt(fout, " = f64x2(%G, %G)\n", sp->pd.x, sp->pd.y);
-				} break;
-				case TYPE_bit: switch (typ->size) {
-					case 1: case 2:
-					case 4: fputfmt(fout, " = u32[%008x](%u)\n", sp->i4, sp->i4); break;
-					case 8: fputfmt(fout, " = u64[%016X](%U)\n", sp->i8, sp->i8); break;
-					default: goto TYPE_XXX;
-				} break;
-				case TYPE_int: switch (typ->size) {
-					case 1: case 2:
-					case 4: fputfmt(fout, " = i32[%008x](%d)\n", sp->i4, sp->i4); break;
-					case 8: fputfmt(fout, " = i64[%016X](%D)\n", sp->i8, sp->i8); break;
-					default: goto TYPE_XXX;
-				} break;
-				case TYPE_flt: switch (typ->size) {
-					case 4: fputfmt(fout, " = f32[%008x](%f)\n", sp->i4, sp->f4); break;
-					case 8: fputfmt(fout, " = f64[%016X](%G)\n", sp->i8, sp->f8); break;
-					default: goto TYPE_XXX;
-				} break;
 				case TYPE_rec: fputfmt(fout, ":struct\n"); break;
 				case TYPE_arr: {
 					int i = 0, n = typ->type->size;
 					fputfmt(fout, ":array[");
 					while (i < typ->size) {
-						switch(typ->type->kind) {
-							case TYPE_bit: switch (typ->type->size) {
-								case 1: case 2:
-								case 4: fputfmt(fout, "u32[%008x](%u)", sp->i4, sp->i4); break;
-								case 8: fputfmt(fout, "u64[%016X](%U)", sp->i8, sp->i8); break;
-								default: goto TYPE_XXX;
-							} break;
-							case TYPE_int: switch (typ->type->size) {
-								case 1: case 2:
-								case 4: fputfmt(fout, "i32[%008x](%d)", sp->i4, sp->i4); break;
-								case 8: fputfmt(fout, "i64[%016X](%D)", sp->i8, sp->i8); break;
-								default: goto TYPE_XXX;
-							} break;
-							case TYPE_flt: switch (typ->type->size) {
-								case 4: fputfmt(fout, "f32[%008x](%f)", sp->i4, sp->f4); break;
-								case 8: fputfmt(fout, "f64[%016X](%G)", sp->i8, sp->f8); break;
-								default: goto TYPE_XXX;
-							} break;
-							case TYPE_rec: fputfmt(fout, ":struct\n"); break;
-							default: goto TYPE_XXX;
-						}
+						vm_fputval(fout, typ, sp);
 						if ((i += n) < typ->size)
 							fputfmt(fout, ", ");
 						sp = (void*)((char*)sp + n);
 					}
-					fputfmt(fout, "]\n");
+					fputfmt(fout, "]");
 				} break;
 
 				default:
-				TYPE_XXX:
-					fputfmt(fout, "(%T) = ????\n", typ);
+					fputs(" = ", fout);
+					vm_fputval(fout, typ, sp);
 					break;
 			}
+			fputc('\n', fout);
 		}
 	}
 }
@@ -835,9 +832,9 @@ int exec(vmEnv vm, unsigned cc, unsigned ss, dbgf dbg) {
 			return -9;
 
 		switch (ip->opc) {		// exec
-			error_opc: debug("invalid opcode: [%02x]", ip->opc); return -1;
-			error_ovf: debug("stack overflow: op[%A]", ip); return -2;
-			error_div: debug("division by zero: op[%A]", ip); return -3;
+			error_opc: error(vm->s, 0, "invalid opcode: [%02x]", ip->opc); return -1;
+			error_ovf: error(vm->s, 0, "stack overflow: op[%A]", ip); return -2;
+			error_div: error(vm->s, 0, "division by zero: op[%A]", ip); return -3;
 			//~ error_mem: debug("segmentation fault"); return -5;
 			//~ #define CDBG
 			//~ #define FLGS
@@ -932,29 +929,10 @@ void fputopc(FILE *fout, bcde ip, int len, int offs) {
 	}
 }
 
-void fputasm(FILE *fout, unsigned char* beg, int len, int offs) {
-	unsigned is = 12345, i;
+void fputasm(FILE *fout, unsigned char* beg, int len, int mode) {
+	unsigned is = 12345, ss = 0, i;
 	for (i = 0; i < len; i += is) {
 		bcde ip = (bcde)(beg + i);
-		switch (ip->opc) {
-			error_opc: fputfmt(stderr, "invalid opcode: %02x '%A'", ip->opc, ip); return;
-			#define NEXT(__IP, __CHK, __SP) {is = (__IP);}
-			#define STOP(__ERR, __CHK) if (__CHK) goto __ERR
-			#include "incl/exec.c"
-		}
-		//~ fputfmt(fout, ".%04x:%9A\n", i, ip);
-		//~ fputfmt(fout, ".%04x:\t%A\n", i, ip);
-		fputfmt(fout, ".%04x: ", i);
-		fputopc(fout, ip, 0, i);
-		fputc('\n', fout);
-	}
-}
-
-void dumpasm(FILE *fout, vmEnv s, int mode) {
-	unsigned is = 12345, ss = 0, i;
-	vmInfo(fout, s);
-	for (i = 0; i < s->cs; i += is) {
-		bcde ip = (bcde)(s->_mem + s->pc + i);
 
 		switch (ip->opc) {
 			error_opc: fputfmt(stderr, "invalid opcode: %02x '%A'", ip->opc, ip); return;
@@ -966,12 +944,16 @@ void dumpasm(FILE *fout, vmEnv s, int mode) {
 		if (mode & 0x10)		// offset
 			fputfmt(fout, ".%04x: ", i);
 
-		if (mode & 0x20)		// stack
+		if (mode & 0x20)		// TODO: remove stack
 			fputfmt(fout, "ss(%03d): ", ss);
 
 		fputopc(fout, ip, mode & 0xf, mode & 0x10 ? i : -1);
 
 		fputc('\n', fout);
 	}
-	//~ fputasm(fout, s->_mem + s->pc, s->cs, offs);
+}
+
+void dumpasm(FILE *fout, vmEnv s, int mode) {
+	vmInfo(fout, s);
+	fputasm(fout, s->_mem + s->pc, s->cs, mode);
 }

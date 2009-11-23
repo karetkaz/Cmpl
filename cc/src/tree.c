@@ -22,22 +22,22 @@ astn newnode(ccEnv s, int kind) {
 
 astn fltnode(ccEnv s, flt64t v) {
 	astn ast = newnode(s, CNST_flt);
-	ast->cflt = v;
+	ast->cnst.cflt = v;
 	return ast;
 }
 astn intnode(ccEnv s, int64t v) {
 	astn ast = newnode(s, CNST_int);
-	ast->cint = v;
+	ast->cnst.cint = v;
 	return ast;
 }
 astn fh8node(ccEnv s, uns64t v) {
 	astn ast = newnode(s, CNST_flt);
-	ast->cint = v;
+	ast->cnst.cint = v;
 	return ast;
 }
 astn strnode(ccEnv s, char * v) {
 	astn ast = newnode(s, CNST_str);
-	ast->name = v;
+	ast->cnst.cstr = v;
 	return ast;
 }
 astn cpynode(ccEnv s, astn src) {
@@ -53,24 +53,24 @@ void eatnode(ccEnv s, astn ast) {
 
 signed constbol(astn ast) {
 	if (ast) switch (ast->kind) {
-		case CNST_int: return ast->cint != 0;
-		case CNST_flt: return ast->cflt != 0;
+		case CNST_int: return ast->cnst.cint != 0;
+		case CNST_flt: return ast->cnst.cflt != 0;
 	}
 	debug("%+k", ast);
 	return 0;
 }
 int64t constint(astn ast) {
 	if (ast) switch (ast->kind) {
-		case CNST_int: return (int64t)ast->cint;
-		case CNST_flt: return (int64t)ast->cflt;
+		case CNST_int: return (int64t)ast->cnst.cint;
+		case CNST_flt: return (int64t)ast->cnst.cflt;
 	}
 	debug("%+k", ast);
 	return 0;
 }
 flt64t constflt(astn ast) {
 	if (ast) switch (ast->kind) {
-		case CNST_int: return (flt64t)ast->cint;
-		case CNST_flt: return (flt64t)ast->cflt;
+		case CNST_int: return (flt64t)ast->cnst.cint;
+		case CNST_flt: return (flt64t)ast->cnst.cflt;
 	}
 	debug("%+k", ast);
 	return 0;
@@ -92,7 +92,7 @@ int eval(astn res, astn ast, int get) {
 	switch (ast->kind) {
 
 		// TODO: 
-		case OPER_dot: return eval(res, ast->rhso, get);
+		case OPER_dot: return eval(res, ast->op.rhso, get);
 
 		default:
 			debug("%t(%+k)", ast->kind, ast);
@@ -116,7 +116,7 @@ int eval(astn res, astn ast, int get) {
 		} break;*/
 		case TYPE_ref: {
 			symn typ = ast->type;		// type
-			symn var = ast->link;		// link
+			symn var = ast->id.link;		// link
 			dieif(!typ || !var, "%+t (%T || %T)", ast->kind, typ, var);
 
 			if (var->kind == TYPE_def) {
@@ -127,25 +127,25 @@ int eval(astn res, astn ast, int get) {
 		} break;
 
 		case OPER_pls: {		// '+'
-			if (!eval(res, ast->rhso, get))
+			if (!eval(res, ast->op.rhso, get))
 				return 0;
 		} break;
 		case OPER_mns: {		// '-'
-			if (!eval(res, ast->rhso, get))
+			if (!eval(res, ast->op.rhso, get))
 				return 0;
 			switch (res->kind) {
 				default: return 0;
-				case CNST_int: res->cint = -res->cint; break;
-				case CNST_flt: res->cflt = -res->cflt; break;
+				case CNST_int: res->cnst.cint = -res->cnst.cint; break;
+				case CNST_flt: res->cnst.cflt = -res->cnst.cflt; break;
 			}
 		} break;
 		case OPER_cmt: {		// '~'
-			if (!eval(res, ast->rhso, get))
+			if (!eval(res, ast->op.rhso, get))
 				return 0;
 			switch (res->kind) {
 				default: return 0;
-				case CNST_int: res->cint = ~res->cint; break;
-				case CNST_flt: res->cflt = 1. / res->cflt; break;
+				case CNST_int: res->cnst.cint = ~res->cnst.cint; break;
+				case CNST_flt: res->cnst.cflt = 1. / res->cnst.cflt; break;
 				//TODO: case CNST_flt: debug("Expression must be integral");
 			}
 		} break;
@@ -153,13 +153,13 @@ int eval(astn res, astn ast, int get) {
 		case OPER_not: {		// '!'
 
 			dieif(get != TYPE_bit, "");
-			if (!eval(res, ast->rhso, get))
+			if (!eval(res, ast->op.rhso, get))
 				return 0;
 
 			switch (res->kind) {
 				default: return 0;
-				case CNST_int: res->kind = CNST_int; res->cint = !res->cint; break;
-				case CNST_flt: res->kind = CNST_int; res->cint = !res->cflt; break;
+				case CNST_int: res->kind = CNST_int; res->cnst.cint = !res->cnst.cint; break;
+				case CNST_flt: res->kind = CNST_int; res->cnst.cint = !res->cnst.cflt; break;
 			}
 		} break;
 
@@ -169,9 +169,9 @@ int eval(astn res, astn ast, int get) {
 		case OPER_mul:			// '*'
 		case OPER_div:			// '/'
 		case OPER_mod: {		// '%'
-			if (!eval(&lhs, ast->lhso, cast))
+			if (!eval(&lhs, ast->op.lhso, cast))
 				return 0;
-			if (!eval(&rhs, ast->rhso, cast))
+			if (!eval(&rhs, ast->op.rhso, cast))
 				return 0;
 			dieif(lhs.kind != rhs.kind, "eval operator %k (%t, %t): %t", ast, lhs.kind, rhs.kind, get);
 
@@ -180,21 +180,21 @@ int eval(astn res, astn ast, int get) {
 				case CNST_int: {
 					res->kind = CNST_int;
 					switch (ast->kind) {
-						case OPER_add: res->cint = lhs.cint + rhs.cint; break;		// '+'
-						case OPER_sub: res->cint = lhs.cint - rhs.cint; break;		// '-'
-						case OPER_mul: res->cint = lhs.cint * rhs.cint; break;		// '*'
-						case OPER_div: res->cint = lhs.cint / rhs.cint; break;		// '/'
-						case OPER_mod: res->cint = lhs.cint % rhs.cint; break;		// '%'
+						case OPER_add: res->cnst.cint = lhs.cnst.cint + rhs.cnst.cint; break;		// '+'
+						case OPER_sub: res->cnst.cint = lhs.cnst.cint - rhs.cnst.cint; break;		// '-'
+						case OPER_mul: res->cnst.cint = lhs.cnst.cint * rhs.cnst.cint; break;		// '*'
+						case OPER_div: res->cnst.cint = lhs.cnst.cint / rhs.cnst.cint; break;		// '/'
+						case OPER_mod: res->cnst.cint = lhs.cnst.cint % rhs.cnst.cint; break;		// '%'
 					}
 				} break;
 				case CNST_flt: {
 					res->kind = CNST_flt;
 					switch (ast->kind) {
-						case OPER_add: res->cflt = lhs.cflt + rhs.cflt; break;		// '+'
-						case OPER_sub: res->cflt = lhs.cflt - rhs.cflt; break;		// '-'
-						case OPER_mul: res->cflt = lhs.cflt * rhs.cflt; break;		// '*'
-						case OPER_div: res->cflt = lhs.cflt / rhs.cflt; break;		// '/'
-						case OPER_mod: res->cflt = fmod(lhs.cflt, rhs.cflt); break;		// '%'
+						case OPER_add: res->cnst.cflt = lhs.cnst.cflt + rhs.cnst.cflt; break;		// '+'
+						case OPER_sub: res->cnst.cflt = lhs.cnst.cflt - rhs.cnst.cflt; break;		// '-'
+						case OPER_mul: res->cnst.cflt = lhs.cnst.cflt * rhs.cnst.cflt; break;		// '*'
+						case OPER_div: res->cnst.cflt = lhs.cnst.cflt / rhs.cnst.cflt; break;		// '/'
+						case OPER_mod: res->cnst.cflt = fmod(lhs.cnst.cflt, rhs.cnst.cflt); break;		// '%'
 					}
 				} break;
 			}
@@ -206,9 +206,9 @@ int eval(astn res, astn ast, int get) {
 		case OPER_geq:			// '>='
 		case OPER_lte:			// '<'
 		case OPER_leq: {		// '<='
-			if (!eval(&lhs, ast->lhso, cast))
+			if (!eval(&lhs, ast->op.lhso, cast))
 				return 0;
-			if (!eval(&rhs, ast->rhso, cast))
+			if (!eval(&rhs, ast->op.rhso, cast))
 				return 0;
 			dieif(lhs.kind != rhs.kind, "eval operator %k (%t, %t): %t", ast, lhs.kind, rhs.kind, get);
 			switch (rhs.kind) {
@@ -216,23 +216,23 @@ int eval(astn res, astn ast, int get) {
 				case CNST_int: {
 					res->kind = CNST_int;
 					switch (ast->kind) {
-						case OPER_neq: res->cint = lhs.cint != rhs.cint; break;
-						case OPER_equ: res->cint = lhs.cint == rhs.cint; break;
-						case OPER_gte: res->cint = lhs.cint  > rhs.cint; break;
-						case OPER_geq: res->cint = lhs.cint >= rhs.cint; break;
-						case OPER_lte: res->cint = lhs.cint  < rhs.cint; break;
-						case OPER_leq: res->cint = lhs.cint <= rhs.cint; break;
+						case OPER_neq: res->cnst.cint = lhs.cnst.cint != rhs.cnst.cint; break;
+						case OPER_equ: res->cnst.cint = lhs.cnst.cint == rhs.cnst.cint; break;
+						case OPER_gte: res->cnst.cint = lhs.cnst.cint  > rhs.cnst.cint; break;
+						case OPER_geq: res->cnst.cint = lhs.cnst.cint >= rhs.cnst.cint; break;
+						case OPER_lte: res->cnst.cint = lhs.cnst.cint  < rhs.cnst.cint; break;
+						case OPER_leq: res->cnst.cint = lhs.cnst.cint <= rhs.cnst.cint; break;
 					}
 				} break;
 				case CNST_flt: {
 					res->kind = CNST_int;
 					switch (ast->kind) {
-						case OPER_neq: res->cint = lhs.cflt != rhs.cflt; break;
-						case OPER_equ: res->cint = lhs.cflt == rhs.cflt; break;
-						case OPER_gte: res->cint = lhs.cflt  > rhs.cflt; break;
-						case OPER_geq: res->cint = lhs.cflt >= rhs.cflt; break;
-						case OPER_lte: res->cint = lhs.cflt  < rhs.cflt; break;
-						case OPER_leq: res->cint = lhs.cflt <= rhs.cflt; break;
+						case OPER_neq: res->cnst.cint = lhs.cnst.cflt != rhs.cnst.cflt; break;
+						case OPER_equ: res->cnst.cint = lhs.cnst.cflt == rhs.cnst.cflt; break;
+						case OPER_gte: res->cnst.cint = lhs.cnst.cflt  > rhs.cnst.cflt; break;
+						case OPER_geq: res->cnst.cint = lhs.cnst.cflt >= rhs.cnst.cflt; break;
+						case OPER_lte: res->cnst.cint = lhs.cnst.cflt  < rhs.cnst.cflt; break;
+						case OPER_leq: res->cnst.cint = lhs.cnst.cflt <= rhs.cnst.cflt; break;
 					}
 				} break;
 			}
@@ -243,24 +243,24 @@ int eval(astn res, astn ast, int get) {
 		case OPER_and:			// '&'
 		case OPER_ior:			// '|'
 		case OPER_xor: {		// '^'
-			if (!eval(&lhs, ast->lhso, cast))
+			if (!eval(&lhs, ast->op.lhso, cast))
 				return 0;
-			if (!eval(&rhs, ast->rhso, cast))
+			if (!eval(&rhs, ast->op.rhso, cast))
 				return 0;
 			dieif(lhs.kind != rhs.kind, "eval operator %k (%t, %t): %t", ast, lhs.kind, rhs.kind, get);
 
 			switch (rhs.kind) {
 				default:
-					debug("eval(%+k) : %t", ast->rhso, rhs.kind);
+					debug("eval(%+k) : %t", ast->op.rhso, rhs.kind);
 					return 0;
 				case CNST_int: {
 					res->kind = CNST_int;
 					switch (ast->kind) {
-						case OPER_shr: res->cint = lhs.cint >> rhs.cint; break;
-						case OPER_shl: res->cint = lhs.cint << rhs.cint; break;
-						case OPER_and: res->cint = lhs.cint  & rhs.cint; break;
-						case OPER_xor: res->cint = lhs.cint  ^ rhs.cint; break;
-						case OPER_ior: res->cint = lhs.cint  | rhs.cint; break;
+						case OPER_shr: res->cnst.cint = lhs.cnst.cint >> rhs.cnst.cint; break;
+						case OPER_shl: res->cnst.cint = lhs.cnst.cint << rhs.cnst.cint; break;
+						case OPER_and: res->cnst.cint = lhs.cnst.cint  & rhs.cnst.cint; break;
+						case OPER_xor: res->cnst.cint = lhs.cnst.cint  ^ rhs.cnst.cint; break;
+						case OPER_ior: res->cnst.cint = lhs.cnst.cint  | rhs.cnst.cint; break;
 					}
 				} break;
 			}
@@ -269,22 +269,22 @@ int eval(astn res, astn ast, int get) {
 		case OPER_lnd:
 		case OPER_lor: {
 			dieif(get != TYPE_bit, "");
-			if (!eval(&lhs, ast->lhso, cast))
+			if (!eval(&lhs, ast->op.lhso, cast))
 				return 0;
-			if (!eval(&rhs, ast->rhso, cast))
+			if (!eval(&rhs, ast->op.rhso, cast))
 				return 0;
 			dieif(lhs.kind != rhs.kind, "eval operator %k (%t, %t): %t", ast, lhs.kind, rhs.kind, get);
 
 			res->kind = CNST_int;
 			switch (ast->kind) {
-				case OPER_lor: res->cint = lhs.cint || rhs.cint; break;
-				case OPER_lnd: res->cint = lhs.cint && rhs.cint; break;
+				case OPER_lor: res->cnst.cint = lhs.cnst.cint || rhs.cnst.cint; break;
+				case OPER_lnd: res->cnst.cint = lhs.cnst.cint && rhs.cnst.cint; break;
 			}
 		} break;
 		case OPER_sel: {		// '?:'
-			if (!eval(&lhs, ast->test, TYPE_bit))
+			if (!eval(&lhs, ast->op.test, TYPE_bit))
 				return 0;
-			return eval(res, lhs.cint ? ast->lhso : ast->rhso, cast);
+			return eval(res, lhs.cnst.cint ? ast->op.lhso : ast->op.rhso, cast);
 		} break;
 	}
 	if (get != res->kind) switch (get) {
@@ -297,7 +297,7 @@ int eval(astn res, astn ast, int get) {
 			break;
 
 		case TYPE_bit:
-			res->cint = constbol(res);
+			res->cnst.cint = constbol(res);
 			res->kind = CNST_int;
 			break;
 
@@ -305,14 +305,14 @@ int eval(astn res, astn ast, int get) {
 		//~ case TYPE_u32:
 		//~ case TYPE_i32:
 		//~ case TYPE_i64:
-			res->cint = constint(res);
+			res->cnst.cint = constint(res);
 			res->kind = CNST_int;
 			break;
 
 		case TYPE_flt:
 		//~ case TYPE_f32:
 		//~ case TYPE_f64:
-			res->cflt = constflt(res);
+			res->cnst.cflt = constflt(res);
 			res->kind = CNST_flt;
 			break;
 	}

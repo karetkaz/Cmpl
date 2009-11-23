@@ -23,7 +23,7 @@ typedef struct vmEnv *vmEnv;
 typedef struct state {
 	FILE*	logf;			// log file (errors + warnings)
 	int		errc;			// error count
-	//~ int		copt;		// optimization levevel
+	int		opti;			// optimization levevel
 
 	ccEnv cc;		// compiler enviroment
 	vmEnv vm;		// execution enviroment

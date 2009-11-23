@@ -28,6 +28,8 @@ TOKDEF(TYPE_rec, 0x07, 0, ID, "struct")
 //~ TOKDEF(TYPE_cls, 0x07, 0, ID, "class")
 
 TOKDEF(EMIT_opc, 0x00, 0, ID, "emit")
+TOKDEF(QUAL_sta, 0x01, 0, ID, "static")
+TOKDEF(QUAL_par, 0x02, 0, ID, "parralel")
 
 //~ TOKDEF(CNST_chr, 0x02, 0, TY, "CNST_uns")	// 'a'
 //~ TOKDEF(CNST_uns, 0x02, 0, TY, "CNST_uns")	// uns32
@@ -154,7 +156,7 @@ TOKDEF(ASGN_pow, 0x0a, 2, OP, ">")		// a **= b
 /* #define OPCDEF(Name, Code, Size, Diff, Chck, Time, Mnem) Name = Code
  * Name: enum name;
  * Code: value of enum;
- * Size: opcode length; (-1 variable) (0 ???);
+ * Size: opcode length; (-1 variable) (0 ?);
  * Diff: pops n stack elements;
 
  * Schk: requires n stack elements;

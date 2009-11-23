@@ -5,7 +5,7 @@
 
 // default values
 static const int wl = -1;		// warninig level
-static const int ol = 0;		// optimize level
+//~ static const int ol = 0;		// optimize level
 
 static const int cc = 1;			// execution cores
 static const int ss = 1 << 10;		// execution stack(256K)
@@ -135,8 +135,8 @@ int program(int argc, char *argv[]) {
 		if (argc < 2) {
 			usage(s, prg, NULL);
 		}
-		else if (*cmd != '-') {
-			return evalexp(ccInit(s), cmd);
+		else if (*cmd == '=') {
+			return evalexp(ccInit(s), cmd + 1);
 		}
 		else if (strcmp(cmd, "-api") == 0) {
 			dumpsym(stdout, leave(ccInit(s)), 1);

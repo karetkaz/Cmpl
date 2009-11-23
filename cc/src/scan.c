@@ -931,7 +931,7 @@ static int readTok(ccEnv s, astn tok)
 			}
 			else if (ptr > beg + sizeof(int)) warn(s->s, 1, s->file, s->line, "character constant truncated");
 			else if (ptr > beg + sizeof(char)) warn(s->s, 5, s->file, s->line, "multi character constant");
-			tok->cint = val;
+			tok->cnst.cint = val;
 			tok->type = type_i64;
 			return tok->kind = CNST_int;
 		} break;
@@ -948,8 +948,8 @@ static int readTok(ccEnv s, astn tok)
 				return tok->kind = TOKN_err;
 			}
 			tok->type = NULL;//TODO: type_str;
-			tok->hash = rehash(beg, ptr - beg);
-			tok->name = mapstr(s, beg, ptr - beg, tok->hash);
+			tok->id.hash = rehash(beg, ptr - beg);
+			tok->id.name = mapstr(s, beg, ptr - beg, tok->id.hash);
 			return tok->kind = CNST_str;
 		} break;// */
 		read_idf: {		// [a-zA-Z_][a-zA-Z0-9_]*
@@ -1001,9 +1001,9 @@ static int readTok(ccEnv s, astn tok)
 			}
 			if (chr == tok_last) {
 				tok->kind = TYPE_ref;
-				tok->type = tok->link = 0;
-				tok->hash = rehash(beg, ptr - beg);
-				tok->name = mapstr(s, beg, ptr - beg, tok->hash);
+				tok->type = tok->id.link = 0;
+				tok->id.hash = rehash(beg, ptr - beg);
+				tok->id.name = mapstr(s, beg, ptr - beg, tok->id.hash);
 			}
 		} break;
 		read_num: {		//!TODO: ([0-9]+.[0-9]*| ...)([eE][+-]?[0-9]+)?
@@ -1126,9 +1126,8 @@ static int readTok(ccEnv s, astn tok)
 			}
 			if (get_type & (got_flt)) {		// float
 				tok->kind = CNST_flt;
-				//~ tok->type = type_f64;
-				tok->cflt = flt * pow(10, (get_type & neg_exp ? -exp : exp) + val);
-				//~ return CNST_flt;
+				tok->type = type_f64;
+				tok->cnst.cflt = flt * pow(10, (get_type & neg_exp ? -exp : exp) + val);
 			}
 			else {					// integer
 				if ((get_type & oct_err) == oct_err) {
@@ -1139,8 +1138,8 @@ static int readTok(ccEnv s, astn tok)
 					warn(s->s, 2, s->file, tok->line, "integer constant '%s' is too large", beg);
 				}
 				tok->kind = CNST_int;
-				//~ tok->type = type_i32;
-				tok->cint = val;
+				tok->type = type_i32;
+				tok->cnst.cint = val;
 				//~ return CNST_int;
 			}
 		} break;
@@ -1187,7 +1186,7 @@ static void backTok(ccEnv s, astn ast) {
 	s->_tok = ast;
 }
 
-/*static int test(ccEnv s, int kind) {
+static int test(ccEnv s, int kind) {
 	astn ast = peek(s);
 	if (!ast || (kind && ast->kind != kind))
 		return 0;
@@ -1220,7 +1219,7 @@ static int skiptok(ccEnv s, int kind, int skp) {
 
 //{~~~~~~~~~ Parser ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 static astn decl(ccEnv, int mode);		// parse declaration	(mode: enable expr)
-static astn stmt(ccEnv, int mode);		// parse statement	(mode: enable decl)
+static astn stmt(ccEnv, int mode);		// parse statement		(mode: enable decl)
 static astn spec(ccEnv s, int qual);
 static symn type(ccEnv s, int qual);
 
@@ -1353,7 +1352,7 @@ int scan(ccEnv s, int mode) {
 
 	if (ast) {
 		astn tmp = newnode(s, STMT_beg);
-		tmp->stmt = ast;
+		tmp->stmt.stmt = ast;
 		ast = tmp;
 	}
 
@@ -1372,24 +1371,20 @@ static astn stmt(ccEnv s, int mode) {
 
 	if (skip(s, STMT_end)) return 0;			// } TODO: in case of errors
 
-	/* TODO: static and paralel pre check
-	if ((ast = next(s, OPER_par))) {		// 'parralel' ('for' | '{')
-		if (test(s, STMT_for));
+	//~ /* TODO: static and paralel pre check
+	if ((ast = next(s, QUAL_par))) {		// 'parralel' ('for' | '{')
+		if (test(s, STMT_for))
+			qual = QUAL_par;
 		//~ if (test(s, STMT_beg));
-		else {
-			backTok(s, ast);
-		}
+		else backTok(s, ast);
 		ast = 0;
 	}
-	if ((ast = next(s, OPER_sta))) {		// 'static' ('if' | 'for')
-		if (test(s, STMT_for))
-			qual = OPER_sta;
-		if (test(s, STMT_if));
-			qual = OPER_sta;
-		else {
-			
-			backTok(s, ast);
-		}
+	if ((ast = next(s, QUAL_sta))) {		// 'static' ('if' | 'for')
+		//~ if (test(s, STMT_for))			// loop unroll
+			//~ qual = QUAL_sta;
+		if (test(s, STMT_if))				// compile time
+			qual = QUAL_sta;
+		else backTok(s, ast);
 		ast = 0;
 	}// */
 
@@ -1402,32 +1397,34 @@ static astn stmt(ccEnv s, int mode) {
 		skiptok(s, PNCT_lp, 0);
 		if (!skip(s, OPER_nop)) {		// init
 			// TODO: enable var decl only
-			ast->init = decl(s, 0);
-			if (!ast->init) {
-				ast->init = expr(s, TYPE_vid);
+			ast->stmt.init = decl(s, 0);
+			if (!ast->stmt.init) {
+				ast->stmt.init = expr(s, TYPE_vid);
 				skiptok(s, OPER_nop, 0);
 			}
 		}
 		if (!skip(s, OPER_nop)) {		// test
-			ast->test = expr(s, TYPE_bit);
+			ast->stmt.test = expr(s, TYPE_bit);
 			skiptok(s, OPER_nop, 0);
 		}
 		if (!skip(s, PNCT_rp)) {		// incr
-			ast->step = expr(s, TYPE_vid);
+			ast->stmt.step = expr(s, TYPE_vid);
 			skiptok(s, PNCT_rp, 0);
 		}
-		ast->stmt = stmt(s, 1);
+		ast->stmt.stmt = stmt(s, 1);
 		ast->type = leave(s);	// TODO: ???
+		ast->cast = qual;
 	}
 	else if ((ast = next(s, STMT_if))) {	// if (...)
 		enter(s, 0);
 		skiptok(s, PNCT_lp, 0);
-		ast->test = expr(s, TYPE_bit);
+		ast->stmt.test = expr(s, TYPE_bit);
 		skiptok(s, PNCT_rp, 0);
-		ast->stmt = stmt(s, 1);
+		ast->stmt.stmt = stmt(s, 1);
 		if (skip(s, STMT_els))
-			ast->step = stmt(s, 1);
+			ast->stmt.step = stmt(s, 1);
 		ast->type = leave(s);		// TODO: ???
+		ast->cast = qual;
 	}
 	else if ((ast = next(s, STMT_beg))) {	// { ... }
 		astn end = 0;
@@ -1435,13 +1432,13 @@ static astn stmt(ccEnv s, int mode) {
 		while (!skip(s, STMT_end)) {
 			if (!peek(s)) break;
 			if ((tmp = stmt(s, 0))) {
-				if (!end) ast->stmt = tmp;
+				if (!end) ast->stmt.stmt = tmp;
 				else end->next = tmp;
 				end = tmp;
 			}
 		}
 		ast->type = leave(s);		// TODO: 
-		if (!ast->stmt) {			// eat sort of {{;{;};{}{}}}
+		if (!ast->stmt.stmt) {			// eat sort of {{;{;};{}{}}}
 			eatnode(s, ast);
 			ast = 0;
 		}// */
@@ -1449,7 +1446,7 @@ static astn stmt(ccEnv s, int mode) {
 	else if ((ast = decl(s, qual))) {		// type?
 		astn tmp = newnode(s, OPER_nop);
 		tmp->line = ast->line;
-		tmp->stmt = ast;
+		tmp->stmt.stmt = ast;
 		ast = tmp;
 
 		if (ast->type && mode)
@@ -1458,7 +1455,7 @@ static astn stmt(ccEnv s, int mode) {
 	else if ((ast = expr(s, TYPE_vid))) {	// expr;
 		astn tmp = newnode(s, OPER_nop);
 		tmp->line = ast->line;
-		tmp->stmt = ast;
+		tmp->stmt.stmt = ast;
 		ast = tmp;
 		skiptok(s, OPER_nop, 1);
 	}
@@ -1486,7 +1483,7 @@ static astn args(ccEnv s, int mode) {
 			break;
 		}
 
-		arg = declare(s, TYPE_ref, atag, atyp, 0);
+		arg = declare(s, TYPE_ref, atag, atyp);
 
 		argsize += atyp->size;
 		switch (castId(atyp)) {
@@ -1504,8 +1501,8 @@ static astn args(ccEnv s, int mode) {
 
 		if (root) {
 			astn tmp = newnode(s, OPER_com);
-			tmp->lhso = root;
-			tmp->rhso = atag;
+			tmp->op.lhso = root;
+			tmp->op.rhso = atag;
 			atag = tmp;
 		}
 		root = atag;
@@ -1514,66 +1511,67 @@ static astn args(ccEnv s, int mode) {
 			break;
 		}
 	}
-	debug("args(%+k)", root);
+	//~ debug("args(%+k)", root);
 	return root;
 }
 
 static astn decl(ccEnv s, int qual) {
 	astn tag = NULL;
-	symn typ, ref;
+	symn typ;//, def;
 	trace(+2, "enter('%k')", peek(s));
 	if ((tag = spec(s, qual))) ;
 	else if ((typ = type(s, qual))) {
-		//~ astn argv = NULL;
+		astn argv = NULL;
 		//~ astn init = NULL;
+		symn ref = NULL;
 
 		if (!(tag = next(s, TYPE_ref))) {
 			debug("id expected, not %k", peek(s));
 			return 0;
 		}
 
-		ref = declare(s, TYPE_ref, tag, typ, NULL);
+		ref = declare(s, TYPE_ref, tag, typ);
 
 		if (skip(s, OPER_nop)) ;			// int a;
 		else if (skip(s, ASGN_set)) {		// int a = 7;
 			ref->init = expr(s, TYPE_vid);
 			skiptok(s, OPER_nop, 0);
 		}
-		else if (skip(s, OPER_com)) {		// int a, ...
-			fatal("variables");
-		}
-		else if (skip(s, PNCT_lp)) {		// int a()
+		else if (skip(s, PNCT_lp)) {		// int a(...) (';' | '=' | '{')
 			enter(s, NULL);
-			//~ fatal("function");
-			args(s, 0);
+			argv = args(s, 0);
 			skiptok(s, PNCT_rp, 0);
-			if (skip(s, OPER_nop)) ;			// int sqr(int a);
+			if (skip(s, OPER_nop)) {			// int sqr(int a);
+				fatal("unimplemented");
+			}
 			else if (skip(s, ASGN_set)) {		// int sqr(int a) = a * a;
-				ref->init = expr(s, TYPE_vid);
+				ref->init = expr(s, TYPE_vid);	// TODO: exclude: int fact(int n) = n * fact(n - 1);
 				skiptok(s, OPER_nop, 0);
 			}
 			else if (skip(s, STMT_beg)) {		// int sqr(int a) {return a * a;}
-				fatal("unimplemented");
-				//~ ref->init = stmt(s, 0);
-				//~ skiptok(s, STMT_end, 0);
+				//~ fatal("unimplemented");
+				ref->init = stmt(s, 0);
+				skiptok(s, STMT_end, 0);
 			}
 			ref->args = leave(s);
 			ref->call = 1;
 		}
 		else {
+			//else if (skip(s, OPER_com));		// int a, ...
 			error(s->s, s->line, "unexpected %k", peek(s));
 			return 0;
 		}
-		/*if (!test(s, OPER_nop)) {
-			error(s->s, s->line, "unexpected %k", peek(s));
-			return 0;
-		}*/
+		//~ debug("define: %+T = %+k", ref, ref->init);
 
-		tag->type = typ;
+		/* TODO: this
+		def = lookin(s, ref->next, tag, argv);
+		if (def && def->nest == ref->nest) {
+			error(s->s, tag->line, "redefinition of '%+T'", def);
+			if (def->file && def->line)
+				info(s->s, def->file, def->line, "first defined here");
+		}// */
+
 		tag->kind = TYPE_def;
-		//~ ast->cast = TYPE_ref;
-		tag->line = ref->line;
-		tag->link = ref;
 	}
 	trace(-2, "leave('%-k')", ast);
 	return tag;
@@ -1595,14 +1593,14 @@ astn expr(ccEnv s, int mode) {
 			} break;
 			tok_op: {
 				int oppri = tok_tbl[tok->kind].type;
-				tok->pril = pri | (oppri & 0x0f);
+				tok->XXXX = pri | (oppri & 0x0f);
 				if (oppri & 0x10) while (prec < buff + TOKS) {
-					if ((*prec)->pril <= tok->pril)
+					if ((*prec)->XXXX <= tok->XXXX)
 						break;
 					*post++ = *prec++;
 				}
 				else while (prec < buff + TOKS) {
-					if ((*prec)->pril < tok->pril)
+					if ((*prec)->XXXX < tok->XXXX)
 						break;
 					*post++ = *prec++;
 				}
@@ -1649,7 +1647,8 @@ astn expr(ccEnv s, int mode) {
 					break;
 				}
 				else {
-					error(s->s, tok->line, "syntax error before ')' token");
+					error(s->s, tok->line, "syntax error before '%k'", tok);
+					//~ error(s->s, tok->line, "syntax error before ')' token");
 					break;
 				}
 				unary = 0;
@@ -1657,7 +1656,11 @@ astn expr(ccEnv s, int mode) {
 			case PNCT_lc: {			// '['
 				if (!unary)
 					tok->kind = OPER_idx;
-				else error(s->s, tok->line, "syntax error before '[' token");
+				else {
+					error(s->s, tok->line, "syntax error before '%k'", tok);
+					//~ error(s->s, tok->line, "syntax error before '[' token");
+					//~ break?;
+				}
 				sym[++level] = '[';
 				unary = 1;
 			} goto tok_op;
@@ -1672,7 +1675,8 @@ astn expr(ccEnv s, int mode) {
 					break;
 				}
 				else {
-					error(s->s, tok->line, "syntax error before ']' token");
+					error(s->s, tok->line, "syntax error before '%k'", tok);
+					//~ error(s->s, tok->line, "syntax error before ']' token");
 					break;
 				}
 				unary = 0;
@@ -1680,7 +1684,8 @@ astn expr(ccEnv s, int mode) {
 			case PNCT_qst: {			// '?'
 				if (unary) {
 					*post++ = 0;		// ???
-					error(s->s, tok->line, "syntax error before '?' token");
+					error(s->s, tok->line, "syntax error before '%k'", tok);
+					//~ error(s->s, tok->line, "syntax error before '?' token");
 				}
 				tok->kind = OPER_sel;
 				sym[++level] = '?';
@@ -1697,7 +1702,8 @@ astn expr(ccEnv s, int mode) {
 					break;
 				}
 				else {
-					error(s->s, tok->line, "syntax error before ':' token");
+					error(s->s, tok->line, "syntax error before '%k'", tok);
+					//~ error(s->s, tok->line, "syntax error before ':' token");
 					break;
 				}
 				unary = 1;
@@ -1714,19 +1720,22 @@ astn expr(ccEnv s, int mode) {
 			} goto tok_op;
 			case OPER_not: {			// '!'
 				if (!unary)
-					error(s->s, tok->line, "syntax error before '!' token");
+					error(s->s, tok->line, "syntax error before '%k'", tok);
+					//~ error(s->s, tok->line, "syntax error before '!' token");
 				unary = 1;
 			} goto tok_op;
 			case OPER_cmt: {			// '~'
 				if (!unary)
-					error(s->s, tok->line, "syntax error before '~' token");
+					error(s->s, tok->line, "syntax error before '%k'", tok);
+					//~ error(s->s, tok->line, "syntax error before '~' token");
 				unary = 1;
 			} goto tok_op;
 
 			case OPER_com:				// ','
 				if (level || mode != TYPE_ref) {
 					if (unary)
-						error(s->s, tok->line, "syntax error before ',' token");
+						error(s->s, tok->line, "syntax error before '%k'", tok);
+						//~ error(s->s, tok->line, "syntax error before ',' token");
 					unary = 1;
 					goto tok_op;
 				}
@@ -1766,19 +1775,19 @@ astn expr(ccEnv s, int mode) {
 				}
 				switch (argc) {
 					case 1: {
-						tok->test = 0;
-						tok->lhso = 0;
-						tok->rhso = lhs[0];
+						tok->op.test = 0;
+						tok->op.lhso = 0;
+						tok->op.rhso = lhs[0];
 					} break;
 					case 2: {
-						tok->test = 0;
-						tok->lhso = lhs[0];
-						tok->rhso = lhs[1];
+						tok->op.test = 0;
+						tok->op.lhso = lhs[0];
+						tok->op.rhso = lhs[1];
 					} break;
 					case 3: {
-						tok->test = lhs[0];
-						tok->lhso = lhs[1];
-						tok->rhso = lhs[2];
+						tok->op.test = lhs[0];
+						tok->op.lhso = lhs[1];
+						tok->op.rhso = lhs[2];
 					} break;
 					default:
 						debug("expr(<%k>)", tok);
@@ -1787,61 +1796,59 @@ astn expr(ccEnv s, int mode) {
 				switch (tok->kind) {				// temporary only cgen
 					case ASGN_add: {
 						astn tmp = newnode(s, OPER_add);
-						tmp->rhso = tok->rhso;
-						tmp->lhso = tok->lhso;
+						tmp->op.rhso = tok->op.rhso;
+						tmp->op.lhso = tok->op.lhso;
 						tok->kind = ASGN_set;
-						tok->rhso = tmp;
-						//~ tmp->next = tok;
-						//~ tok->next = tmp;
+						tok->op.rhso = tmp;
 					} break;
 					case ASGN_sub: {
 						astn tmp = newnode(s, OPER_sub);
-						tmp->rhso = tok->rhso;
-						tmp->lhso = tok->lhso;
+						tmp->op.rhso = tok->op.rhso;
+						tmp->op.lhso = tok->op.lhso;
 						tok->kind = ASGN_set;
-						tok->rhso = tmp;
+						tok->op.rhso = tmp;
 					} break;
 					case ASGN_mul: {
 						astn tmp = newnode(s, OPER_mul);
-						tmp->rhso = tok->rhso;
-						tmp->lhso = tok->lhso;
+						tmp->op.rhso = tok->op.rhso;
+						tmp->op.lhso = tok->op.lhso;
 						tok->kind = ASGN_set;
-						tok->rhso = tmp;
+						tok->op.rhso = tmp;
 					} break;
 					case ASGN_div: {
 						astn tmp = newnode(s, OPER_div);
-						tmp->rhso = tok->rhso;
-						tmp->lhso = tok->lhso;
+						tmp->op.rhso = tok->op.rhso;
+						tmp->op.lhso = tok->op.lhso;
 						tok->kind = ASGN_set;
-						tok->rhso = tmp;
+						tok->op.rhso = tmp;
 					} break;
 					case ASGN_mod: {
 						astn tmp = newnode(s, OPER_mod);
-						tmp->rhso = tok->rhso;
-						tmp->lhso = tok->lhso;
+						tmp->op.rhso = tok->op.rhso;
+						tmp->op.lhso = tok->op.lhso;
 						tok->kind = ASGN_set;
-						tok->rhso = tmp;
+						tok->op.rhso = tmp;
 					} break;
 					case ASGN_shl: {
 						astn tmp = newnode(s, OPER_shl);
-						tmp->rhso = tok->rhso;
-						tmp->lhso = tok->lhso;
+						tmp->op.rhso = tok->op.rhso;
+						tmp->op.lhso = tok->op.lhso;
 						tok->kind = ASGN_set;
-						tok->rhso = tmp;
+						tok->op.rhso = tmp;
 					} break;
 					case ASGN_shr: {
 						astn tmp = newnode(s, OPER_shr);
-						tmp->rhso = tok->rhso;
-						tmp->lhso = tok->lhso;
+						tmp->op.rhso = tok->op.rhso;
+						tmp->op.lhso = tok->op.lhso;
 						tok->kind = ASGN_set;
-						tok->rhso = tmp;
+						tok->op.rhso = tmp;
 					} break;
 					case ASGN_ior: {
 						astn tmp = newnode(s, OPER_ior);
-						tmp->rhso = tok->rhso;
-						tmp->lhso = tok->lhso;
+						tmp->op.rhso = tok->op.rhso;
+						tmp->op.lhso = tok->op.lhso;
 						tok->kind = ASGN_set;
-						tok->rhso = tmp;
+						tok->op.rhso = tmp;
 					} break;
 				}
 				#endif
@@ -1860,7 +1867,7 @@ astn expr(ccEnv s, int mode) {
 		}
 	}
 	if (mode && tok && !lookup(s, 0, tok)) {
-		error(s->s, tok->line, "bum %+k", tok);
+		error(s->s, tok->line, "invalid expression: %+k", tok);
 	}
 	trace(-2, "leave('%+k') %k", tok, peek(s));
 	return tok;
@@ -1887,6 +1894,8 @@ static symn type(ccEnv s, int qual) {
 		def = sym;
 
 		if (!skip(s, OPER_dot)) break;
+		// TODO: build tree and push back if not a typename.
+		// 
 	}// */
 	/*if (def && skip(s, PNCT_lc)) {			// array	: int [20]
 		symn tmp = newdefn(s, TYPE_arr);
@@ -1899,7 +1908,6 @@ static symn type(ccEnv s, int qual) {
 		tmp->type = def;
 		def = tmp;
 	}// */
-	//if (def && skip(s, PNCT_lp)) ;			// function
 	return def;
 }
 
@@ -1919,27 +1927,27 @@ static astn spec(ccEnv s, int qual) {
 				struct astn tmp;
 				astn val = expr(s, TYPE_def);
 				if (eval(&tmp, val, TYPE_any)) {
-					def = declare(s, TYPE_def, tag, val->type, 0);
+					def = declare(s, TYPE_def, tag, val->type);
 					//~ def->init = cpynode(s, &tmp);
 					def->init = val;
 					typ = def->type;
 				}
 				else {
 					error(s->s, val->line, "Constant expression expected, got: '%+k'", val);
-					def = declare(s, TYPE_def, tag, 0, 0);
-					def->type = NULL;
+					def = declare(s, TYPE_def, tag, 0);
+					//~ def->type = NULL;
 					def->init = val;
 				}
 				trace(1, "define('%T' as '%k')", def, val);
 			}
 			else if ((typ = type(s, qual))) {	// define sin math.sin;	???
-				def = declare(s, TYPE_def, tag, typ, 0);
+				def = declare(s, TYPE_def, tag, typ);
 			}
 			else error(s->s, tag->line, "typename excepted");
 
-			tag->kind = TYPE_def;
 			tag->type = typ;
-			tag->link = def;
+			tag->kind = TYPE_def;
+			tag->id.link = def;
 
 			if (!skip(s, OPER_nop)) {
 				error(s->s, s->line, "unexcepted token '%k'", peek(s));
@@ -1974,7 +1982,7 @@ static astn spec(ccEnv s, int qual) {
 			}
 		}// */
 		if (skip(s, STMT_beg)) {			// body
-			def = declare(s, TYPE_rec, tag, 0, 0);
+			def = declare(s, TYPE_rec, tag, 0);
 			enter(s, def);
 			while (!skip(s, STMT_end)) {
 				//~ int ql = qual(s, 0);
@@ -1982,7 +1990,7 @@ static astn spec(ccEnv s, int qual) {
 				symn typ = type(s, qual);
 				if (typ && (tok = next(s, TYPE_ref))) {
 					offs = align(offs, pack, typ->size);
-					tmp = declare(s, TYPE_ref, tok, typ, 0);
+					tmp = declare(s, TYPE_ref, tok, typ);
 					tmp->size = offs;
 					offs += typ->size;
 					if (size < offs) size = offs;
@@ -2011,7 +2019,7 @@ static astn spec(ccEnv s, int qual) {
 		}
 		while (!skip(s, STMT_end)) {
 			if ((tok = next(s, TYPE_ref))) {
-				tmp = declare(s, TYPE_def, tok, type_i32, 0);
+				tmp = declare(s, TYPE_def, tok, type_i32);
 				if (skip(s, ASGN_set)) {
 					tmp->init = expr(s, CNST_int);
 					if (eval(NULL, tmp->init, TYPE_int) != CNST_int)
@@ -2022,7 +2030,7 @@ static astn spec(ccEnv s, int qual) {
 				else {
 					tmp->init = newnode(s, CNST_int);
 					tmp->init->type = type_i32;
-					tmp->init->cint = offs;
+					tmp->init->cnst.cint = offs;
 					offs += 1;
 				}
 			}
@@ -2037,7 +2045,7 @@ static astn spec(ccEnv s, int qual) {
 			}
 		}
 		if (tag) {
-			def = declare(s, TYPE_enu, tag, 0, 0);
+			def = declare(s, TYPE_enu, tag, 0);
 			def->args = leave(s);
 		}
 	}
@@ -2074,7 +2082,7 @@ symn instlibc(ccEnv s, const char* name) {
 				if (!(atag = next(s, TYPE_ref)))
 					atag = newnode(s, TYPE_ref);
 
-				declare(s, TYPE_ref, atag, atyp, 0);
+				declare(s, TYPE_ref, atag, atyp);
 				argsize += atyp->size;
 
 				if (skip(s, PNCT_rp)) break;
@@ -2085,8 +2093,8 @@ symn instlibc(ccEnv s, const char* name) {
 	}
 	if (!peek(s)) {
 		symn def = newdefn(s, TYPE_ref);
-		unsigned hash = ftag->hash;
-		def->name = ftag->name;
+		unsigned hash = ftag->id.hash;
+		def->name = ftag->id.name;
 		def->nest = s->nest;
 		def->type = ftyp;
 		def->args = args;
@@ -2143,24 +2151,6 @@ symn leave(ccEnv s) {
 
 	return arg;
 }
-
-/*int Qual() {
-	while ((tok = peek(s))) {		// qual: const/packed/volatile
-		if (tok->kind == QUAL_con) {	// constant
-			if (qual & QUAL_con) error(s, tok->line, "duplicate qualifier: %k", tok);
-			qual |= QUAL_con;
-			skip(s, 0);
-			continue;
-		}
-		if (tok->kind == QUAL_vol) {	// volatile
-			if (qual & QUAL_vol) error(s, tok->line, "duplicate qualifier: %k", tok);
-			qual |= QUAL_vol;
-			skip(s, 0);
-			continue;
-		}
-		break;
-	}
-}// */
 
 //}
 

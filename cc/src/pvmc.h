@@ -22,15 +22,14 @@
 #define TBLS 1024
 
 // debug, errors
-#define SRCPOS __FILE__, __LINE__, __func__
-//~ #define SRCPOS "src/" __FILE__, __LINE__, __func__
-#define trace(__LEV, msg, ...) // {fputfmt(stderr, "%s:%d:trace:%s: "msg"\n", SRCPOS, ##__VA_ARGS__);fflush(stderr);}
 
-#define debug(msg, ...) {fputfmt(stdout, "%s:%d:debug:%s: "msg"\n", SRCPOS, ##__VA_ARGS__);fflush(stderr);}
-//~ #define dbgif(__EXP, msg, ...) {if (__EXP) fputfmt(stdout, "%s:%d:debug:%s: "msg"\n", SRCPOS, ##__VA_ARGS__);fflush(stderr);}
+#define pdbg(__DBG, msg, ...) {fputfmt(stderr, "%s:%d:"__DBG":%s: "msg"\n", __FILE__, __LINE__, __func__, ##__VA_ARGS__); fflush(stderr);}
+//~ #define pdbg(__DBG, msg, ...) {fputfmt(stderr, "%s:%d:"__DBG": "msg"\n", __FILE__, __LINE__, ##__VA_ARGS__); fflush(stderr);}
+#define trace(__LEV, msg, ...) //pdbg("trace", ##__VA_ARGS__)
+#define debug(msg, ...) pdbg("debug", msg, ##__VA_ARGS__)
+#define fatal(msg, ...) {pdbg("fatal", msg, ##__VA_ARGS__); exit(-2);}
+#define dieif(__EXP, msg, ...) {if (__EXP) fatal(msg, ##__VA_ARGS__)}
 
-#define fatal(msg, ...) { fputfmt(stderr, "%s:%d:fatal:%s: "msg"\n", SRCPOS, ##__VA_ARGS__); fflush(stderr); exit(-2);}
-#define dieif(__EXP, msg, ...) {if (__EXP) {fputfmt(stderr, "%s:%d:fatal(`"#__EXP"`):%s: "msg"\n", SRCPOS, ##__VA_ARGS__); fflush(stderr); exit(-1);}}
 #if 0
 #define error(__ENV, __LINE, msg, ...) perr(__ENV, -1, __FILE__, __LINE__, msg, ##__VA_ARGS__)
 #define warn(__ENV, __LEVEL, __FILE, __LINE, msg, ...) perr(__ENV, __LEVEL, __FILE__, __LINE__, msg, ##__VA_ARGS__)
@@ -83,8 +82,8 @@ enum {
 	opc_cge,
 
 	//~ opc_ldc,
-	//~ opc_ldi,
-	//~ opc_sti,
+	opc_ldi,
+	opc_sti,
 
 	opc_line,		// line info
 	get_ip,		// instruction pointer
@@ -178,7 +177,7 @@ struct astn {				// ast astn
 	uns08t		cast;				// cast To castId(this->type);
 	uns16t		XXXX;				// TYPE_ref hash / priority level
 	union {
-		int64t		cint;			// cnst: integer
+		/*int64t		cint;			// cnst: integer
 		flt64t		cflt;			// cnst: float
 		struct {
 			union {
@@ -201,34 +200,35 @@ struct astn {				// ast astn
 				long	pril;			// OPER: used temporarly by cast();
 			};
 		};// */
-		/*
+		//~ /*
 		union  {					// CNST_xxx: constant
 			int64t	cint;			// cnst: integer
 			flt64t	cflt;			// cnst: float
+			char*	cstr;			// cnst: float
 			//~ int32t	cpi4[4];		// rgb
 			//~ int64t	cpi2[2];		// rat
 			//~ flt32t	cpf4[4];		// vec
 			//~ flt64t	cpf2[2];		// cpl
 		} cnst;
-		struct {				// TYPE_xxx: typename
-			symn	decl;			// link to reference
-			astn	link;			// func body / replacement
-			char*	name;			// name of identifyer
-			uns32t	hash;			// hash code for 'name'
-		} idtf;
-		struct {				// OPER_xxx: operator
+		struct {					// OPER_xxx: operator
 			astn	rhso;			// right hand side operand
 			astn	lhso;			// left hand side operand
 			astn	test;			// ?: operator condition
-			symn	call;			// assigned operator
-		} oper;
-		struct {				// STMT_xxx: statement
+			//~ symn	link;			// assigned operator convert to function call
+		} op;
+		struct {					// STMT_xxx: statement
 			astn	stmt;			// statement / then block
 			astn	step;			// increment / else block
 			astn	test;			// condition: if, for
 			astn	init;			// for statement init
 		} stmt;
-		/ *struct {					// list of next-linked nodes
+		struct {					// TYPE_xxx: identifyer
+			//~ symn	decl;			// link to reference
+			char*	name;			// name of identifyer
+			uns32t	hash;			// hash code for 'name'
+			symn	link;			// func body / replacement
+		} id;
+		/*struct {					// list of next-linked nodes
 			astn	next;
 			astn	tail;
 			uns32t	count;
@@ -345,6 +345,8 @@ struct vmEnv {
 	unsigned char _mem[];
 };
 
+static inline int kindOf(astn ast) {return ast ? ast->kind : 0;}
+
 extern symn type_vid;
 extern symn type_bol;
 extern symn type_u32;
@@ -371,6 +373,7 @@ void perr(state s, int level, const char *file, int line, const char *msg, ...);
 //~ void fputsym(FILE *fout, symn sym, int mode, int level);
 //~ void fputast(FILE *fout, astn ast, int mode, int level);
 //~ void fputopc(FILE *fout, bcde opc, int len, int offset);
+void fputasm(FILE *fout, unsigned char *beg, int len, int mode);
 //~ void fputasm(FILE *fout, void *ip, int len, int length);
 
 void dumpasm(FILE *fout, vmEnv s, int offs);
@@ -389,8 +392,9 @@ astn strnode(ccEnv s, char *v);
 astn fh8node(ccEnv s, uns64t v);
 
 symn newdefn(ccEnv s, int kind);
+symn installex(ccEnv s, int kind, const char* name, unsigned size, symn type, astn init);
 symn install(ccEnv s, int kind, const char* name, unsigned size);
-symn declare(ccEnv s, int kind, astn tag, symn rtyp, symn args);
+symn declare(ccEnv s, int kind, astn tag, symn rtyp);
 symn lookin(ccEnv s, symn sym, astn ast, astn args);
 symn lookup(ccEnv s, symn loc, astn ast);
 
