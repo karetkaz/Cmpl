@@ -7,32 +7,169 @@
 #include "g2_surf.h"
 #include "g2_argb.h"
 
-#define LOBIT(__VAL) ((__VAL) & -(__VAL))
-
 #define __WIN_DRV
 //~ #define __VBE_DRV
+
 #include "g3_draw.c"
 
-vector eye, tgt, up;
-scalar O = 4;
-scalar S = 8;			// eye(zpos)
+double O = 2;
+double N = 1;
+double epsilon = 1e-10;
+//~ scalar S = 8;			// eye(zpos)
 
-#define guispeed (.5)
-const scalar d = guispeed;		// move
-const scalar D = guispeed * 8;		// fast
-const scalar r = toRad(guispeed);	// rotate
+//~ #define guispeed (.5)
+double speed = .5;
+#define d speed
+#define D (10 * speed)
+#define r (toRad(d))
+#define R (toRad(D))
 
-int division = 32;
 char *obj = 0;
 char *tex = 0;
 char *fnt = 0;
-char *sky = 0;
-mesh msh;
+//~ char *sky = 0;
 
-gx_Surf envt[6];
+int resx = 800;
+int resy = 600;
+
+union vector eye, tgt, up;
+//~ union matrix proj, view, world;
+//~ struct camera Camera, *cam = &Camera;
+struct camera cam[1];
+
+//~ struct gx_Surf envt[6];
 struct lght *rm = 0;
+struct gx_Surf offs;		// offscreen
+struct mesh msh;
+int vtx = 0;
+
+vector getobjvec(int Normal) {
+	if (rm != NULL)
+		return Normal ? &rm->dir : &rm->pos;
+	if ((vtx %= msh.vtxcnt + 1))
+		return (Normal ? msh.nrm : msh.pos) + vtx - 1;
+	return NULL;
+}
 
 int osdProgress(float);
+
+void readIni() {
+	char *is = " ";
+	//~ static char sect[1024];		// section;
+	static char temp[65536];
+	char *ptr = temp, *arg;
+	FILE* fin = fopen("gx.ini", "rt");
+	obj = 0;
+	tex = 0;
+	fnt = 0;
+	if (fin) for ( ; ; ) {
+		int cnt = temp + sizeof(temp) - ptr;
+
+		fgets(ptr, cnt, fin);
+		if (feof(fin)) break;
+		ptr[strlen(ptr) - 1] = 0;
+
+		if (*ptr == '#') continue;				// Comment
+		if (*ptr == '\0') continue;				// Empty line
+		if ((arg = readKVP(ptr, "screen.font", "=", is))) {
+			int len = strlen(arg);
+			strcpy(ptr, arg);
+			fnt = ptr;
+			ptr += len + 1;
+			continue;
+		}
+		if ((arg = readKVP(ptr, "screen.width", "=", is))) {
+			if (*readNum(arg, &resx))
+				debug("invalid number: %s", arg);
+			continue;
+		}
+		if ((arg = readKVP(ptr, "screen.height", "=", is))) {
+			if (*readNum(arg, &resy))
+				debug("invalid number: %s", arg);
+			continue;
+		}
+		if ((arg = readKVP(ptr, "screen.speed", "=", is))) {
+			if (*readFlt(arg, &speed))
+				debug("invalid number: %s", arg);
+			continue;
+		}
+
+		if ((arg = readKVP(ptr, "material", "=", is))) {
+			int num;
+			if (*readNum(arg, &num) == '\0') {
+				if (num > sizeof(defmtl)/sizeof(*defmtl)) {
+					debug("invalid material: %s", arg);
+					num = 0;
+				}
+				debug("using material: %d", num);
+				msh.mtl = defmtl[num];
+			}
+			else debug("invalid number: %s", ptr);
+			continue;
+		}
+		if ((arg = readKVP(ptr, "texture", "=", is))) {
+			int len = strlen(arg);
+			strcpy(ptr, arg);
+			tex = ptr;
+			ptr += len + 1;
+			continue;
+		}
+		if ((arg = readKVP(ptr, "object.size", "=", is))) {
+			if (*readFlt(arg, &O))
+				debug("invalid number: %s", arg);
+			continue;
+		}
+		if ((arg = readKVP(ptr, "normal.size", "=", is))) {
+			if (*readFlt(arg, &N))
+				debug("invalid number: %s", arg);
+			continue;
+		}
+		if ((arg = readKVP(ptr, "epsilon", "=", is))) {
+			if (*readFlt(arg, &epsilon))
+				debug("invalid number: %s", arg);
+			continue;
+		}
+		if ((arg = readKVP(ptr, "object", "=", is))) {
+			int len = strlen(arg);
+			strcpy(ptr, arg);
+			obj = ptr;
+			ptr += len + 1;
+			continue;
+		}
+		if ((arg = readKVP(ptr, "object", "{", is))) {
+			obj = ptr;
+			strncpy(ptr,
+			"!\n"
+			"flt64 s = st(1);\n"
+			"flt64 t = st(2);\n"
+			"flt64 x = s;\n"
+			"flt64 y = t;\n"
+			"flt64 z = 0;\n"
+			"\n", cnt);
+			ptr += strlen(ptr);
+			while (1) {
+				cnt = temp + sizeof(temp) - ptr;
+				fgets(ptr, cnt, fin);
+				if (feof(fin)) break;
+				if (*ptr == '}') break;				// Comment
+				if (*ptr == '#') continue;			// Comment
+				if (*ptr == '\n') continue;			// Empty line
+				ptr += strlen(ptr);
+			}
+			strncpy(ptr, "\nsetPos(x, y, z);\n", cnt);
+			ptr += strlen(ptr) + 1;
+		}
+		/*if ((ptr = readKVP(buff, "skybox", "=", is))) {
+			int len = strlen(ptr);
+			if (str + len < temp + sizeof(temp)) {
+				strcpy(sky = str, ptr);
+				str += len + 1;
+			}
+			continue;
+		}//*/
+	}
+	//~ debug("%s", obj);
+}
 
 void reload() {
 	char *ext;
@@ -43,38 +180,54 @@ void reload() {
 			res = gx_loadBMP(&msh.mtl.tex, tex, 32);
 		if (stricmp(ext, "jpg") == 0)
 			res = gx_loadJPG(&msh.mtl.tex, tex, 32);
-		printf("ReadText('%s'): %d\n", tex, res);
+		debug("ReadText('%s'): %d", tex, res);
 	}
-	if (obj && *obj != '@') {
-		printf("ReadMesh('%s'): %d\n", obj, readMesh(&msh, obj));
+	if (obj && *obj == '!') {
+		debug("EvalMesh('%s'): %d", "!", evalMesh(&msh, obj + 1, 64, 64));
 	}
 	else if (obj) {
+		debug("ReadMesh('%s'): %d", obj, readMesh(&msh, obj));
+	}
+	/*else if (obj) {
 		double* (*evalP)(double [3], double [3], double s, double t) = 0;
-		if (stricmp(obj, "@Sphere") == 0)
+		int div = 64;
+		char *val = obj + 1;
+		char *fun = readNum(val, &div);
+		if (stricmp(fun, "Sphere") == 0)
 			evalP = evalP_sphere;
-		if (stricmp(obj, "@tours") == 0)
+		if (stricmp(fun, "tours") == 0)
 			evalP = evalP_tours;
-		if (stricmp(obj, "@cone") == 0)
+		if (stricmp(fun, "cone") == 0)
 			evalP = evalP_cone;
-		if (stricmp(obj, "@apple") == 0)
+		if (stricmp(fun, "apple") == 0)
 			evalP = evalP_apple;
-		if (stricmp(obj, "@plane") == 0)
+		if (stricmp(fun, "plane") == 0)
 			evalP = evalP_plane;
-		if (stricmp(obj, "@001") == 0)
+		if (stricmp(fun, "_001") == 0)
 			evalP = evalP_001;
-		if (stricmp(obj, "@002") == 0)
+		if (stricmp(fun, "_002") == 0)
 			evalP = evalP_002;
-		if (stricmp(obj, "@003") == 0)
+		if (stricmp(fun, "_003") == 0)
 			evalP = evalP_003;
-		if (stricmp(obj, "@004") == 0)
+		if (stricmp(fun, "_004") == 0)
 			evalP = evalP_004;
-		if (stricmp(obj, "@005") == 0)
+		if (stricmp(fun, "_005") == 0)
 			evalP = evalP_005;
-		if (stricmp(obj, "@006") == 0)
+		if (stricmp(fun, "_006") == 0)
 			evalP = evalP_006;
-		if (stricmp(obj, "@007") == 0)
+		if (stricmp(fun, "_007") == 0)
 			evalP = evalP_007;
-		printf("EvalMesh('%s'): %d\n", obj + 1, evalMesh(&msh, evalP, division, division, 0));
+		printf("EvalMesh('%s'): %d\n", fun, evalMesh(&msh, evalP, div, div, 0));
+	}*/
+	else {
+		msh.vtxcnt = msh.tricnt = msh.segcnt = 0;
+		setvtxD(&msh, 0, 'p', 0, 0, -1);
+		setvtxD(&msh, 1, 'p', 0, -1, 0);
+		setvtxD(&msh, 2, 'p', -1, 0, 0);
+		setvtxD(&msh, 0, 'n', 0, 0, -1);
+		setvtxD(&msh, 1, 'n', 0, -1, 0);
+		setvtxD(&msh, 2, 'n', -1, 0, 0);
+		addtri(&msh, 0, 1, 2);
 	}
 }
 
@@ -83,35 +236,32 @@ void ratHND(int btn, int mx, int my) {
 	int mdx = mx - ox;
 	int mdy = my - oy;
 	ox = mx; oy = my;
-	Mx = mx; My = my;
 	if (btn == 1) {
-		camera *camera = cam;
 		if (mdx) {
-			matrix tmp;
-			matldR(&tmp, &camera->dirU, mdx * r);
-			vecnrm(&camera->dirF, matvph(&camera->dirF, &tmp, &camera->dirF));
-			vecnrm(&camera->dirR, matvph(&camera->dirR, &tmp, &camera->dirR));
-			veccrs(&camera->dirU, &camera->dirF, &camera->dirR);
-			matvph(&camera->pos, &tmp, &camera->pos);
+			union matrix tmp;
+			matldR(&tmp, &cam->dirU, mdx * R);
+			vecnrm(&cam->dirF, matvph(&cam->dirF, &tmp, &cam->dirF));
+			vecnrm(&cam->dirR, matvph(&cam->dirR, &tmp, &cam->dirR));
+			veccrs(&cam->dirU, &cam->dirF, &cam->dirR);
+			matvph(&cam->pos, &tmp, &cam->pos);
 		}
 		if (mdy) {
-			matrix tmp;
-			matldR(&tmp, &camera->dirR, mdy * r);
-			vecnrm(&camera->dirF, matvph(&camera->dirF, &tmp, &camera->dirF));
-			vecnrm(&camera->dirR, matvph(&camera->dirR, &tmp, &camera->dirR));
-			veccrs(&camera->dirU, &camera->dirF, &camera->dirR);
-			matvph(&camera->pos, &tmp, &camera->pos);
+			union matrix tmp;
+			matldR(&tmp, &cam->dirR, mdy * R);
+			vecnrm(&cam->dirF, matvph(&cam->dirF, &tmp, &cam->dirF));
+			vecnrm(&cam->dirR, matvph(&cam->dirR, &tmp, &cam->dirR));
+			veccrs(&cam->dirU, &cam->dirF, &cam->dirR);
+			matvph(&cam->pos, &tmp, &cam->pos);
 		}
 	}
 	else if (btn == 2) {
-		if (rm != NULL) {
-			camera *camera = cam;
-			matrix tmp, tmp1, tmp2;
-			matldR(&tmp1, &camera->dirU, mdx * r);
-			matldR(&tmp2, &camera->dirR, mdy * r);
+		vector N;
+		if ((N = getobjvec(1))) {
+			union matrix tmp, tmp1, tmp2;
+			matldR(&tmp1, &cam->dirU, mdx * r);
+			matldR(&tmp2, &cam->dirR, mdy * r);
 			matmul(&tmp, &tmp1, &tmp2);
-			matvp3(&rm->dir, &tmp, &rm->dir);
-			vecnrm(&rm->dir, &rm->dir);
+			vecnrm(N, matvp3(N, &tmp, N));
 		}
 		else {
 			if (mdy) camrot(cam, &cam->dirR, mdy * r);		// turn: up / down
@@ -119,18 +269,17 @@ void ratHND(int btn, int mx, int my) {
 		}
 	}
 	else if (btn == 3) {
-		if (rm != NULL) {
-			camera *camera = cam;
-			matrix tmp, tmp1, tmp2;
-			matldT(&tmp1, &camera->dirU, -mdy * r);
-			matldT(&tmp2, &camera->dirR, mdx * r);
+		vector P;
+		if ((P = getobjvec(0))) {
+			union matrix tmp, tmp1, tmp2;
+			matldT(&tmp1, &cam->dirU, -mdy * d);
+			matldT(&tmp2, &cam->dirR, mdx * d);
 			matmul(&tmp, &tmp1, &tmp2);
-			matvph(&rm->pos, &tmp, &rm->pos);
+			matvph(P, &tmp, P);
 		}
 		else {
-			camera *camera = cam;
-			if (mdy) cammov(camera, &camera->dirF, mdy * d);		// move: forward
-			//~ if (mdx) camrot(camera, &camera->dirU, mdx * r);		// turn: left / right
+			if (mdy) cammov(cam, &cam->dirF, mdy * d);		// move: forward
+			//~ if (mdx) camrot(cam, &cam->dirU, mdx * r);		// turn: left / right
 		}
 	}
 }
@@ -163,13 +312,14 @@ int kbdHND(int lkey, int key) {
 
 		case '\t': draw = (draw & ~draw_mode) | ((draw + LOBIT(draw_mode)) & draw_mode); break;
 		case '/' : draw = (draw & ~cull_mode) | ((draw + LOBIT(cull_mode)) & cull_mode); break;
+		case '?' : draw = (draw & ~cull_mode) | ((draw - LOBIT(cull_mode)) & cull_mode); break;
 		//~ case ']' : draw = (draw & ~pcol_mode) | ((draw + LOBIT(pcol_mode)) & pcol_mode); break;
 		case '^' : {
 			g3_drawline = (g3_drawline == g3_drawlineA ? g3_drawlineB : g3_drawlineA);
 			//~ draw ^= text_afine;
 		} break;
 
-		case '`' : draw ^= disp_info; break;
+		case '~' : draw ^= disp_info; break;
 		case 'L' : draw ^= disp_lght; break;
 		case 'b' : draw ^= disp_bbox; break;
 		case 'Z' : draw ^= disp_zbuf; break;
@@ -181,6 +331,7 @@ int kbdHND(int lkey, int key) {
 		case 'N' : msh.hasNrm = !msh.hasNrm; break;
 		case 'l' : draw ^= draw_lit; break;
 
+		case '`' : vtx = 0; rm = NULL; break;
 		case '0' : case '1' : case '2' :
 		case '3' : case '4' : case '5' :
 		case '6' : case '7' : case '8' :
@@ -190,10 +341,20 @@ int kbdHND(int lkey, int key) {
 				rm = &Lights[key - '0'];
 			}
 		} break;
+		case '.' : vtx += 1; break;
+		case '>' : vtx -= 1; break;
+
+
 		case '[': if (rm) rm->sCos -= 1.; break;
 		case ']': if (rm) rm->sCos += 1.; break;
 		case '{': if (rm) rm->sExp -= 1.1; break;
 		case '}': if (rm) rm->sExp += 1.1; break;
+
+		case '\b' : {
+			optiMesh(&msh, 1e-15, osdProgress);
+			printf("vtx cnt : %d / %d\n", msh.vtxcnt, msh.maxvtx);
+			printf("tri cnt : %d / %d\n", msh.tricnt, msh.maxtri);
+		} break; // */
 
 		case '\\': {
 			printf("normalize Mesh ...");
@@ -206,126 +367,56 @@ int kbdHND(int lkey, int key) {
 			printf("done\n");
 		} break;
 
-		case '\b' : {
-			optiMesh(&msh, 1e-15, osdProgress);
-			printf("vtx cnt : %d / %d\n", msh.vtxcnt, msh.maxvtx);
-			printf("tri cnt : %d / %d\n", msh.tricnt, msh.maxtri);
-		} break; // */
-
-		case ':' : {
-			printf("saving Mesh ... ");
-			save_obj(&msh, "out.obj");
-			printf("done\n");
-			//~ centMesh(&msh, O);
-		} break;
 		case ';' : {
 			//~ printf("load Mesh ... ");
 			reload(&msh, obj, tex);
 			centMesh(&msh, O);
 			//~ printf("done\n");
 		} break;
-		/*case '=' : {
-			sdivMesh(&msh);
-			//~ centMesh(&msh, O);
-		} break; // */
+		case '\'' : 
+		case '"' : {
+			printf("subdivide Mesh ...");
+			sdivMesh(&msh, 1);
+			printf("done\n");
+		}
+
+		case 18:		// CTrl + r
+			readIni();
+			break;
+
+		case 16:		// CTrl + p
+			gx_saveBMP("mesh.bmp", &offs, 0);
+			break;
+
+		case 19:		// CTrl + s
+			save_obj(&msh, "mesh.obj");
+			break;
+
+		default: debug("kbdHND(lkey(%d), key(%d))", lkey, key);
 	}
 	return 0;
 }
 
-//~ #define cubemap "dots"
-//~ #define cubemap "mars"
-//~ #define cubemap "media/text/mars/"
-
-void readIni() {
-	char *is = "= \t";
-	static char temp[65536], *str = temp;
-	char buff[65536], *ptr = NULL;
-	FILE* fin = fopen("gx.ini", "rt");
-	if (fin) for ( ; ; ) {
-		//~ if (ptr) debug("%s", ptr);
-		fgets(ptr = buff, sizeof(buff), fin);
-		if (feof(fin)) break;
-		buff[strlen(buff) - 1] = 0;
-
-		if (*buff == '#') continue;				// Comment
-		if (*buff == '\n') continue;			// Empty line
-		if ((ptr = readcmd(buff, "division", is))) {
-			readNum(ptr, &division);
-			continue;
-		}
-		if ((ptr = readcmd(buff, "font", is))) {
-			int len = strlen(ptr);
-			if (str + len < temp + sizeof(temp)) {
-				strcpy(fnt = str, ptr);
-				str += len + 1;
-			}
-			continue;
-		}
-		if ((ptr = readcmd(buff, "texture", is))) {
-			int len = strlen(ptr);
-			if (str + len < temp + sizeof(temp)) {
-				strcpy(tex = str, ptr);
-				str += len + 1;
-			}
-			continue;
-		}
-		if ((ptr = readcmd(buff, "object", is))) {
-			int len = strlen(ptr);
-			if (str + len < temp + sizeof(temp)) {
-				strcpy(obj = str, ptr);
-				str += len + 1;
-			}
-			continue;
-		}
-		if ((ptr = readcmd(buff, "skybox", is))) {
-			int len = strlen(ptr);
-			if (str + len < temp + sizeof(temp)) {
-				strcpy(sky = str, ptr);
-				str += len + 1;
-			}
-			continue;
-		}
-	}
-}
-
 flip_scr flip;
-int (*peek)(int);
+int (*peekMsg)(int);
 int isChanged(float now, float p) {
 	static float old = 0;
 	if (fabs(old - now) > p)
 		old = now;
 	return old == now;
 }
-int isChangedTime(time_t now) {
-	static time_t old = 0;
-	int result;
-	if (result = (old != now))
-		old = now;
-	return result;
-}
 int osdProgress(float prec) {
 	char str[256];
-
-	static gx_Rect roi;
-	if (prec == +0.) {		// begin
-		roi.x = roi.y = 0;
-		roi.w = roi.h = 0;
-		//~ gx_fillsurf(&offs, NULL, gx_fillAmix, 0xa0ffffff);
-	}
-
 	if (isChanged(prec, 1e-0)) {
 		sprintf(str, "progressing: %.2f%%", prec);
 		setCaption(str);
 	}
-	//~ gx_setblock(&offs, roi.x, roi.y, roi.x + roi.w, roi.y + roi.h, 0x0000ff);
-	//~ gx_clipText(&roi, &font, str);
-	//~ gx_drawText(&offs, roi.x, roi.y, &font, str, 0xffffff);
-	//~ if (noChange(prec, 1e-0))
-		//~ flip(&offs, 0/*, &roi */);
-	return peek(0);
+	return peekMsg(0);
 }
 
 int main(int argc, char* argv[]) {
+	struct gx_Surf font;		// font
+
 	struct {
 		time_t	sec;
 		time_t	cnt;
@@ -334,14 +425,15 @@ int main(int argc, char* argv[]) {
 	} fps = {0,0,0,0};
 	char str[1024];
 	void (*done)(void);
+	struct gx_Rect box;
 	int e;
 
-	//~ if (argc == 2) division = atoi(argv[1]);
-	initMesh(&msh, division * division);
+	initMesh(&msh, 1024);
 	setbuf(stdout, NULL);
-	msh.mtl = defmtl[9];
+	msh.mtl = defmtl[12];
 
-	for (e = 0; e < lights; e += 1) {
+	for (e = 1; e < lights; e += 1) {
+		//~ vecneg(&Lights[e].dir, &Lights[e].pos); // lookat(0,0,0)
 		vecnrm(&Lights[e].dir, &Lights[e].dir);
 		//~ vecldf(&Lights[e].dir, 0, 0, 0, 0);
 		//~ vecldf(&Lights[e].attn, 1, 1, 0, 0);
@@ -364,6 +456,10 @@ int main(int argc, char* argv[]) {
 	if (argc == 2) {		// drop in
 		obj = argv[1];
 	}
+	else if (argc == 3) {		// drop in
+		obj = argv[1];
+		tex = argv[2];
+	}
 	else while (--argc > 0) {
 		char *cmd = *++argv;
 		if (strncmp(cmd, "-o", 2) == 0) {
@@ -378,6 +474,7 @@ int main(int argc, char* argv[]) {
 	}
 
 	reload();
+	//~ initMesh(&mesh, 16);
 	bboxMesh(&msh, &tgt, &eye);
 	printf("box min : %f, %f, %f\n", tgt.x, tgt.y, tgt.z);
 	printf("box max : %f, %f, %f\n", eye.x, eye.y, eye.z);
@@ -387,48 +484,46 @@ int main(int argc, char* argv[]) {
 
 	vecldf(&up, 0, 1, 0, 1);
 	vecldf(&tgt, 0, 0, 0, 1);
-	vecldf(&eye, 0, 0, S, 1);
 
-	//~ vecldf(&eye, 0, 0, O * 8, 1);
-	camset(cam, &eye, &tgt, &up);
-
+	//~ vecldf(&eye, 0, 0, 1, 1);
+	//~ camset(cam, &eye, &tgt, &up);
 	kbdHND(0, 13);
 
-	projv_mat(&projM, 10, ASPR, 1, 100);
-
-	offs.clipPtr = 0;
-	offs.width = SCRW;
-	offs.height = SCRH;
-	offs.flags = 0;
-	offs.depth = 32;
-	offs.pixeLen = 4;
-	offs.scanLen = SCRW*4;
-	offs.clutPtr = 0;
-	offs.basePtr = &cBuff;
-
 	if ((e = gx_loadFNT(&font, fnt))) {
-		printf("Cannot open font '%s': %d\n", fnt, e);
+		debug("Cannot open font '%s': %d\n", fnt, e);
 		gx_doneSurf(&font);
 		freeMesh(&msh);
 		return -2;
 	}
 
-	if (init_WIN(&offs, &flip, &peek, &done, ratHND, kbdHND)) {
+	if ((e = g3_init(&offs, resx, resy))) {
+		debug("Error: %d\n", e);
+		gx_doneSurf(&font);
+		gx_doneSurf(&offs);
+		freeMesh(&msh);
+		return -2;
+	}
+
+	projv_mat(&cam->proj, 10, (double)resx / resy, 5, 100);
+
+	if (init_WIN(&offs, &flip, &peekMsg, &done, ratHND, kbdHND)) {
 		printf("Cannot init surface\n");
 		gx_doneSurf(&font);
+		gx_doneSurf(&offs);
 		freeMesh(&msh);
 		return -1;
 	}
 
-	for(fps.cnt = 0, fps.sec = time(NULL); peek(1) != -1; fps.cnt++) {
-		matrix proj, view;
-		vector v[6];
-		#define nextln ((ln+=1)*16)
-		int tris = 0, ln = -1;
+	for(fps.cnt = 0, fps.sec = time(NULL); peekMsg(1) != -1; fps.cnt++) {
+		union matrix proj[1], view[1];
+		union vector v[6];
+		#define nextln ((ln += box.h) - box.h)
+		int tris = 0, ln = 0;
 
-		for (e = 0; e < SCRW * SCRH; e += 1) {		// clear
+		for (e = 0; e < scrw * scrh; e += 1) {		// clear
 			cBuff[e] = 0x00000000;
-			zBuff[e] = 0x3fffffff;
+			//~ zBuff[e] = 0x3fffffff;
+			zBuff[e] = 0x00ffffff;
 		}
 		if (fps.sec != time(NULL)) {				// fps
 			fps.col = fps.cnt < 30 ? 0xff0000 : fps.cnt < 50 ? 0xffff00 : 0x00ff00;
@@ -443,8 +538,9 @@ int main(int argc, char* argv[]) {
 		#endif
 
 		if (draw & disp_mesh) {
-			matidn(&view);
-			tris += g3_drawmesh(&msh, &view, cam);
+			matidn(view);
+			msh.hlplt = vtx;
+			tris += g3_drawmesh(&msh, view, cam);
 			//~ view.zt += 2*O;
 			//~ tris += g3_drawmesh(&msh, &view, cam);
 			//~ view.zt -= 4*O;
@@ -453,7 +549,7 @@ int main(int argc, char* argv[]) {
 			//~ tris += g3_drawmesh(&msh, &view, cam);
 		}
 		if (draw & disp_zbuf) {
-			for(e = 0; e < SCRW*SCRH; e += 1) {
+			for(e = 0; e < scrw*scrh; e += 1) {
 				long z = zBuff[e];
 				z = (z >> 15) & 0x1ff;
 				if (z < 256) z = ~z & 0xff;
@@ -462,56 +558,57 @@ int main(int argc, char* argv[]) {
 		}
 		if (draw & disp_lght) {
 			int i = 0;
-			matmul(&proj, &projM, cammat(&view, cam));
+			cammat(view, cam);
+			matmul(proj, &cam->proj, view);
 			for (i = 0; i < lights; i += 1) {
 				scalar lsize = .5;
-				mappos(v, &proj, &Lights[i].pos);
+				mappos(v, proj, &Lights[i].pos);
 				if (Lights[i].attr & L_on)
 					g3_filloval(v, lsize, lsize, vecrgb(&Lights[i].diff).col);
 				g3_drawoval(v, lsize, lsize, vecrgb(&Lights[i].ambi).col);
 				if (vecdp3(&Lights[i].dir, &Lights[i].dir)) {
-					mappos(v + 1, &proj, vecadd(v + 1, &Lights[i].pos, &Lights[i].dir));
+					mappos(v + 1, proj, vecadd(v + 1, &Lights[i].pos, &Lights[i].dir));
 					g3_drawline(v + 0, v + 1, vecrgb(&Lights[i].diff).col);
 				}
 			}
 		}
 		if (draw & disp_info) {
-			//~ sprintf(str, "fps: %d / tpf(%d)", fps.fps, tris);gx_drawText(&offs, SCRW - 8*strlen(str)-10, nextln, &font, str, fps.col);
-			sprintf(str, "Object size: %g, tvx:%d, tri:%d%s%s", O, msh.vtxcnt, msh.tricnt, msh.hasTex ? ", tex" : "", msh.hasNrm ? ", nrm" : "");
-			gx_drawText(&offs, SCRW - 8*strlen(str)-10, nextln, &font, str, fps.col);
-
-			//~ sprintf(str, "lights(Ambi:%d, Diff:%d, Spec:%d)", (draw & litAmbi) != 0, (draw & litDiff) != 0, (draw & litSpec) != 0);
-			//~ gx_drawText(&offs, SCRW - 8*strlen(str)-10, nextln, &font, str, 0xffffffff);
+			sprintf(str, "Object size: %g, tvx:%d, tri:%d, seg:%d%s%s", O, msh.vtxcnt, msh.tricnt, msh.segcnt, msh.hasTex ? ", tex" : "", msh.hasNrm ? ", nrm" : "");
+			gx_clipText(&box, &font, str); gx_drawText(&offs, scrw - box.w - 10, nextln, &font, str, 0xffffffff);
 
 			sprintf(str, "camera(%g, %g, %g)", cam->pos.x, cam->pos.y, cam->pos.z);
-			gx_drawText(&offs, SCRW - 8*strlen(str)-10, nextln, &font, str, 0xffffffff);
+			gx_clipText(&box, &font, str); gx_drawText(&offs, scrw - box.w - 10, nextln, &font, str, 0xffffffff);
 
-			if (rm) {
-				sprintf(str, "light[%d].pos(%g, %g, %g); cos(%g), exp(%g)", rm-Lights, rm->pos.x, rm->pos.y, rm->pos.z, rm->sCos, rm->sExp);
-				gx_drawText(&offs, SCRW - 8*strlen(str)-10, nextln, &font, str, 0xffffffff);
+			if (getobjvec(0)) {
+				vector P = getobjvec(0);
+				vector N = getobjvec(1);
+				//~ sprintf(str, "light[%d].pos(%g, %g, %g); cos(%g), exp(%g)", rm-Lights, rm->pos.x, rm->pos.y, rm->pos.z, rm->sCos, rm->sExp);
+				sprintf(str, "object: P(%.3f, %.3f, %.3f), N(%.3f, %.3f, %.3f)", P->x, P->y, P->z, N->x, N->y, N->z);
+				gx_clipText(&box, &font, str); gx_drawText(&offs, scrw - box.w - 10, nextln, &font, str, 0xffffffff);
 				//~ sprintf(str, "camera1(%g, %g, %g)", cam1.pos.x, cam1.pos.y, cam1.pos.z);
 				//~ gx_drawText(&offs, SCRW - 8*strlen(str)-10, nextln, &font, str, 0xffffffff);
 			}
 			for (e = 0; e < lights; e += 1) {
 				argb lcol = vecrgb(&Lights[e].ambi);
 				sprintf(str, "light %d : %s", e, Lights[e].attr & L_on ? "On" : "Off");
-				gx_drawText(&offs, SCRW - 8*strlen(str)-10, nextln, &font, str, lcol.val);
+				gx_clipText(&box, &font, str); gx_drawText(&offs, scrw - box.w - 10, nextln, &font, str, lcol.val);
 			}
 
-			sprintf(str, "%08x", (int)zBuff[SCRC]);
-			gx_drawText(&offs, SCRW - 8*strlen(str)-10, nextln, &font, str, 0xffff00ff);
 		}
+		//~ g3_drawOXYZ(cam, 1);
 		if (fps.cnt == 0) {
 			sprintf(str, "tvx:%d, tri:%d/%d, fps: %d", msh.vtxcnt, tris, msh.tricnt, fps.fps);
 			setCaption(str);
 		}
 
 		flip(&offs, 0);
+		//~ sleep(0);
 
 		#undef nextln
 	}
 
 	gx_doneSurf(&font);
+	gx_doneSurf(&offs);
 	freeMesh(&msh);
 	done();
 	return 0;

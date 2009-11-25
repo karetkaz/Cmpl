@@ -215,13 +215,12 @@ char* gx_readBMP_errors[] = {
 	/* 9 */"Invalid"
 };
 
-int gx_readBMP(gx_Surf *dst, FILE* fin, int depth) {
-	gx_Clut		bmppal;			// bitmap palette
+int gx_readBMP(gx_Surf dst, FILE* fin, int depth) {
+	struct gx_Clut bmppal;			// bitmap palette
 	bmplnreader	bmplrd;			// bitmap line reader
 	BMP_HDR		bmphdr;			// bitmap header
 	BMP_INF		bmpinf;			// bitmap info header
-	int		bmplsz;			// bitmap line size
-	//~ FILE*		fin;			// bitmap input file
+	int			bmplsz;			// bitmap line size
 	char*		ptr;			// ptr to surface line
 	char*		tmpbuff;		// bitmap temp buffer
 	cblt_proc	convln;			// color convereter rutine
@@ -259,17 +258,17 @@ int gx_readBMP(gx_Surf *dst, FILE* fin, int depth) {
 	}
 	switch (bmpinf.depth) {
 		case  1 : {
-			fread(&bmppal.data, sizeof(union gx_RGBQ), 2, fin);
+			fread(&bmppal.data, sizeof(argb), 2, fin);
 			bmplrd = bmprln_01raw;
 			bmppal.count = 2;
 		} break;
 		case  4 : {
-			fread(&bmppal.data, sizeof(union gx_RGBQ),  16, fin);
+			fread(&bmppal.data, sizeof(argb),  16, fin);
 			bmplrd = bmprln_04raw;
 			bmppal.count = 16;
 		} break;
 		case  8 : {
-			fread(&bmppal.data, sizeof(union gx_RGBQ), 256, fin);
+			fread(&bmppal.data, sizeof(argb), 256, fin);
 			bmplrd = bmprln_raw;
 			bmppal.count = 256;
 		} break;
@@ -309,7 +308,7 @@ int gx_readBMP(gx_Surf *dst, FILE* fin, int depth) {
 	return 0;
 }
 
-int gx_loadBMP(gx_Surf *surf, const char* src, int depth) {
+int gx_loadBMP(gx_Surf surf, const char* src, int depth) {
 	int res;
 	FILE *fin = fopen(src, "rb");
 	if (!fin) return -1;
@@ -318,8 +317,8 @@ int gx_loadBMP(gx_Surf *surf, const char* src, int depth) {
 	return res;
 }
 
-int gx_saveBMP(char* dst, gx_Surf *src, int flags) {
-	gx_Clut		bmppal;			// bitmap palette
+int gx_saveBMP(const char* dst, gx_Surf src, int flags) {
+	struct gx_Clut bmppal;			// bitmap palette
 	bmplnwriter	bmplwr;			// bitmap line writer
 	BMP_HDR		bmphdr;			// bitmap header
 	BMP_INF		bmpinf;			// bitmap info header
@@ -334,7 +333,7 @@ int gx_saveBMP(char* dst, gx_Surf *src, int flags) {
 	flags &= ~BMP_RLE;				// not implemented	//TODO
 	switch (src->depth) {
 		case  8 : {
-			if (src->clutPtr) {
+			/*if (src->clutPtr) {
 				memcpy(&bmppal, src->clutPtr, sizeof(gx_Clut));
 				if (bmppal.count <= 16)
 					if (bmppal.count == 2)
@@ -342,7 +341,8 @@ int gx_saveBMP(char* dst, gx_Surf *src, int flags) {
 					else bmpinf.depth = 4;
 				else bmpinf.depth = 8;
 			}
-			else {
+			else // */
+			{
 				for (bmplsz = 0; bmplsz < 256; ++bmplsz) {
 					bmppal.data[bmplsz].a = 255;
 					bmppal.data[bmplsz].r = bmplsz;
@@ -371,7 +371,7 @@ int gx_saveBMP(char* dst, gx_Surf *src, int flags) {
 						bmplwr = bmpwln_raw;
 				} break;
 			}
-		}break;
+		}break;// */
 		case 15 :
 		case 16 :
 		case 24 :
@@ -407,12 +407,12 @@ int gx_saveBMP(char* dst, gx_Surf *src, int flags) {
 	return 0;
 }
 
-int gx_loadCUR(gx_Surf *dst, const char* src, int flags) {
+int gx_loadCUR(gx_Surf dst, const char* src, int flags) {
 	FILE		*fin;
 	CUR_HDR		curhdr;
 	CUR_DIR		curdir;
 	CUR_BMP		curbmp;
-	gx_Clut		bmppal;			// bitmap palette
+	struct gx_Clut bmppal;			// bitmap palette
 	char		*ptr, *tmp;		// ptr to surface line
 	int x, y, c, i = 0;
 	if (!(fin = fopen(src,"rb"))) return 1;
@@ -435,38 +435,38 @@ int gx_loadCUR(gx_Surf *dst, const char* src, int flags) {
 	}
 	tmp = ptr = (char*)dst->basePtr + dst->scanLen * dst->height;
 	dst->scanLen = curbmp.width * 4;
-	dst->clutPtr = (char*)dst->basePtr + dst->scanLen * dst->height;
+	dst->tempPtr = (char*)dst->basePtr + dst->scanLen * dst->height;
 	dst->flags |= SURF_ID_CUR;
 	dst->hotSpot.x = curdir.hotspotx;
 	dst->hotSpot.y = curdir.hotspoty;
 	switch (curbmp.depth) {
 		case  1 : {
-			fread(&bmppal.data, sizeof(union gx_RGBQ), 2, fin);
+			fread(&bmppal.data, sizeof(argb), 2, fin);
 			for(y = 0; y < curdir.height; ++y) {
 				ptr -= dst->scanLen;
 				for(x = 0; x < curdir.width; ++x, ++i) {
 					if ((i & 7) == 0) c = fgetc(fin); else c <<= 1;
-					((union gx_RGBQ *)ptr)[x] = bmppal.data[(c>>7) & 0x01];
+					((argb*)ptr)[x] = bmppal.data[(c>>7) & 0x01];
 				}
 			}
 		} break;
 		case  4 : {
-			fread(&bmppal.data, sizeof(union gx_RGBQ),  16, fin);
+			fread(&bmppal.data, sizeof(argb),  16, fin);
 			for(y = 0; y < curdir.height; ++y) {
 				ptr -= dst->scanLen;
 				for(x = 0; x < curdir.width; ++x, ++i) {
 					if ((i & 1) == 0) c = fgetc(fin); else c <<= 4;
-					((union gx_RGBQ *)ptr)[x] = bmppal.data[(c>>4) & 0x0f];
+					((argb*)ptr)[x] = bmppal.data[(c>>4) & 0x0f];
 				}
 			}
 		} break;
 		case  8 : {
-			fread(&bmppal.data, sizeof(union gx_RGBQ), 256, fin);
+			fread(&bmppal.data, sizeof(argb), 256, fin);
 			for(y = 0; y < curdir.height; ++y) {
 				ptr -= dst->scanLen;
 				for(x = 0; x < curdir.width; ++x) {
 					c = fgetc(fin);
-					((union gx_RGBQ *)ptr)[x] = bmppal.data[c];
+					((argb*)ptr)[x] = bmppal.data[c];
 				}
 			}
 		} break;
@@ -474,10 +474,10 @@ int gx_loadCUR(gx_Surf *dst, const char* src, int flags) {
 			for(y = 0; y < curdir.height; ++y) {
 				ptr -= dst->scanLen;
 				for(x = 0; x < curdir.width; ++x) {
-					((union gx_RGBQ *)ptr)[x].b = fgetc(fin);
-					((union gx_RGBQ *)ptr)[x].g = fgetc(fin);
-					((union gx_RGBQ *)ptr)[x].r = fgetc(fin);
-					((union gx_RGBQ *)ptr)[x].a = 0;
+					((argb*)ptr)[x].b = fgetc(fin);
+					((argb*)ptr)[x].g = fgetc(fin);
+					((argb*)ptr)[x].r = fgetc(fin);
+					((argb*)ptr)[x].a = 0;
 				}
 			}
 		} break;
@@ -485,10 +485,10 @@ int gx_loadCUR(gx_Surf *dst, const char* src, int flags) {
 			for(y = 0; y < curdir.height; ++y) {
 				ptr -= dst->scanLen;
 				for(x = 0; x < curdir.width; ++x) {
-					((union gx_RGBQ *)ptr)[x].b = fgetc(fin);
-					((union gx_RGBQ *)ptr)[x].g = fgetc(fin);
-					((union gx_RGBQ *)ptr)[x].r = fgetc(fin);
-					((union gx_RGBQ *)ptr)[x].a = fgetc(fin);
+					((argb*)ptr)[x].b = fgetc(fin);
+					((argb*)ptr)[x].g = fgetc(fin);
+					((argb*)ptr)[x].r = fgetc(fin);
+					((argb*)ptr)[x].a = fgetc(fin);
 				}
 			}
 		} break;
@@ -500,7 +500,7 @@ int gx_loadCUR(gx_Surf *dst, const char* src, int flags) {
 			ptr -= dst->scanLen;
 			for(x = 0; x < curdir.width; ++x, ++i) {
 				if ((i & 7) == 0) c = fgetc(fin); else c <<= 1;
-				((union gx_RGBQ *)ptr)[x].a = ((c>>7) & 0x01) ? 0 : 255;
+				((argb*)ptr)[x].a = ((c>>7) & 0x01) ? 0 : 255;
 			}
 		}
 	}
@@ -510,10 +510,10 @@ int gx_loadCUR(gx_Surf *dst, const char* src, int flags) {
 
 #if 1
 #pragma pack(8)
-#include "jpeglib.h"
+#include "../lib/include/jpeglib.h"
 //~ #pragma library (libjpeg);
 
-int gx_loadJPG(gx_Surf *dst, const char* src, int depth) {
+int gx_loadJPG(gx_Surf dst, const char* src, int depth) {
 	FILE*		fin;
 	cblt_proc	convln;			// color convereter rutine
 	unsigned char* tmpbuff;		// bitmap temp buffer

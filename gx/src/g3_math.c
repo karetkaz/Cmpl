@@ -2,6 +2,7 @@
 
 //~ typedef float scalar;
 
+//~ #define inline inline
 /*
 typedef union color8_t {				// bool vect || byte vect || argb
 	unsigned long val;
@@ -21,7 +22,7 @@ typedef union color8_t {				// bool vect || byte vect || argb
 } bvec, argb;
 //~ */
 
-typedef union vector_t {
+typedef union vector {
 	scalar v[4];
 	struct {
 		scalar x;
@@ -35,16 +36,16 @@ typedef union vector_t {
 		scalar b;
 		scalar a;
 	};
-} vector, *vecptr;
+} *vector;
 
-typedef union matrix_t {
+typedef union matrix {
 	scalar d[16];
 	scalar m[4][4];
 	struct {
-		vector x;
-		vector y;
-		vector z;
-		vector w;
+		union vector x;
+		union vector y;
+		union vector z;
+		union vector w;
 	};
 	struct {
 		scalar m11, m12, m13, m14;
@@ -58,15 +59,16 @@ typedef union matrix_t {
 		scalar zx, zy, zz, zt;
 		scalar wx, wy, wz, wt;
 	};
-} matrix, *matptr;
+} *matrix;
 
-typedef struct camera_t {
-	vector	dirR;			// camera right direction
-	vector	dirU;			// camera up direction
-	vector	dirF;			// camera forward direction
-	vector	pos;			// camera Location
+typedef struct camera {
+	union matrix proj;			// projection matrix
+	union vector dirR;			// camera right direction
+	union vector dirU;			// camera up direction
+	union vector dirF;			// camera forward direction
+	union vector pos;			// camera Location
 	scalar	zoom;			// , aspect;
-} camera, *camera_p;
+} *camera;
 
 typedef enum {				// swizzle
 	xxxx = 0x00, yxxx = 0x01, zxxx = 0x02, wxxx = 0x03, xyxx = 0x04, yyxx = 0x05, zyxx = 0x06, wyxx = 0x07, 
@@ -244,7 +246,7 @@ argb argbovr(argb lhs, argb rhs) {
 //} */
 //#################################  VECTOR  ###################################
 
-inline vecptr veclds(vecptr dst, scalar s) {
+inline vector veclds(vector dst, scalar s) {
 	dst->x = s;
 	dst->y = s;
 	dst->z = s;
@@ -252,7 +254,7 @@ inline vecptr veclds(vecptr dst, scalar s) {
 	return dst;
 }
 
-inline vecptr vecldf(vecptr dst, scalar x, scalar y, scalar z, scalar w) {
+inline vector vecldf(vector dst, scalar x, scalar y, scalar z, scalar w) {
 	dst->x = x;
 	dst->y = y;
 	dst->z = z;
@@ -260,7 +262,7 @@ inline vecptr vecldf(vecptr dst, scalar x, scalar y, scalar z, scalar w) {
 	return dst;
 }
 
-inline vecptr vecld4(vecptr dst, vecptr xyz, scalar w) {
+inline vector vecld4(vector dst, vector xyz, scalar w) {
 	dst->x = xyz->x;
 	dst->y = xyz->y;
 	dst->z = xyz->z;
@@ -268,7 +270,7 @@ inline vecptr vecld4(vecptr dst, vecptr xyz, scalar w) {
 	return dst;
 }
 
-inline vecptr veccpy(vecptr dst, vecptr src) {
+inline vector veccpy(vector dst, vector src) {
 	dst->x = src->x;
 	dst->y = src->y;
 	dst->z = src->z;
@@ -276,7 +278,7 @@ inline vecptr veccpy(vecptr dst, vecptr src) {
 	return dst;
 }// */
 
-inline vecptr vecneg(vecptr dst, vecptr src) {
+inline vector vecneg(vector dst, vector src) {
 	dst->x = -src->x;
 	dst->y = -src->y;
 	dst->z = -src->z;
@@ -284,7 +286,7 @@ inline vecptr vecneg(vecptr dst, vecptr src) {
 	return dst;
 }
 
-inline vecptr vecabs(vecptr dst, vecptr src) {
+inline vector vecabs(vector dst, vector src) {
 	dst->x = src->x >= 0 ? src->x : -src->x;
 	dst->y = src->y >= 0 ? src->y : -src->y;
 	dst->z = src->z >= 0 ? src->z : -src->z;
@@ -292,7 +294,7 @@ inline vecptr vecabs(vecptr dst, vecptr src) {
 	return dst;
 }
 
-inline vecptr vecrcp(vecptr dst, vecptr src) {
+inline vector vecrcp(vector dst, vector src) {
 	dst->x = src->x ? 1. / src->x : 0;
 	dst->y = src->y ? 1. / src->y : 0;
 	dst->z = src->z ? 1. / src->z : 0;
@@ -300,7 +302,7 @@ inline vecptr vecrcp(vecptr dst, vecptr src) {
 	return dst;
 }
 
-inline vecptr vecsat(vecptr dst, vecptr src) {
+inline vector vecsat(vector dst, vector src) {
 	if (src->x > 1) dst->x = 1; else if (src->x < 0) dst->x = 0; else dst->x = src->x;
 	if (src->y > 1) dst->y = 1; else if (src->y < 0) dst->y = 0; else dst->y = src->y;
 	if (src->z > 1) dst->z = 1; else if (src->z < 0) dst->z = 0; else dst->z = src->z;
@@ -308,19 +310,19 @@ inline vecptr vecsat(vecptr dst, vecptr src) {
 	return dst;
 }
 
-inline scalar vecdp3(vecptr lhs, vecptr rhs) {
+inline scalar vecdp3(vector lhs, vector rhs) {
 	return lhs->x * rhs->x + lhs->y * rhs->y + lhs->z * rhs->z;
 }
 
-inline scalar vecdph(vecptr lhs, vecptr rhs) {
+inline scalar vecdph(vector lhs, vector rhs) {
 	return lhs->x * rhs->x + lhs->y * rhs->y + lhs->z * rhs->z + lhs->w;
 }
 
-inline scalar vecdp4(vecptr lhs, vecptr rhs) {
+inline scalar vecdp4(vector lhs, vector rhs) {
 	return lhs->x * rhs->x + lhs->y * rhs->y + lhs->z * rhs->z + lhs->w * rhs->w;
 }
 
-inline vecptr vecmin(vecptr dst, vecptr lhs, vecptr rhs) {
+inline vector vecmin(vector dst, vector lhs, vector rhs) {
 	dst->x = lhs->x < rhs->x ? lhs->x : rhs->x;
 	dst->y = lhs->y < rhs->y ? lhs->y : rhs->y;
 	dst->z = lhs->z < rhs->z ? lhs->z : rhs->z;
@@ -328,7 +330,7 @@ inline vecptr vecmin(vecptr dst, vecptr lhs, vecptr rhs) {
 	return dst;
 }
 
-inline vecptr vecmax(vecptr dst, vecptr lhs, vecptr rhs) {
+inline vector vecmax(vector dst, vector lhs, vector rhs) {
 	dst->x = lhs->x > rhs->x ? lhs->x : rhs->x;
 	dst->y = lhs->y > rhs->y ? lhs->y : rhs->y;
 	dst->z = lhs->z > rhs->z ? lhs->z : rhs->z;
@@ -336,7 +338,7 @@ inline vecptr vecmax(vecptr dst, vecptr lhs, vecptr rhs) {
 	return dst;
 }
 
-inline vecptr vecadd(vecptr dst, vecptr lhs, vecptr rhs) {
+inline vector vecadd(vector dst, vector lhs, vector rhs) {
 	dst->x = lhs->x + rhs->x;
 	dst->y = lhs->y + rhs->y;
 	dst->z = lhs->z + rhs->z;
@@ -344,7 +346,7 @@ inline vecptr vecadd(vecptr dst, vecptr lhs, vecptr rhs) {
 	return dst;
 }
 
-inline vecptr vecsub(vecptr dst, vecptr lhs, vecptr rhs) {
+inline vector vecsub(vector dst, vector lhs, vector rhs) {
 	dst->x = lhs->x - rhs->x;
 	dst->y = lhs->y - rhs->y;
 	dst->z = lhs->z - rhs->z;
@@ -352,7 +354,7 @@ inline vecptr vecsub(vecptr dst, vecptr lhs, vecptr rhs) {
 	return dst;
 }
 
-inline vecptr vecmul(vecptr dst, vecptr lhs, vecptr rhs) {
+inline vector vecmul(vector dst, vector lhs, vector rhs) {
 	dst->x = lhs->x * rhs->x;
 	dst->y = lhs->y * rhs->y;
 	dst->z = lhs->z * rhs->z;
@@ -360,15 +362,15 @@ inline vecptr vecmul(vecptr dst, vecptr lhs, vecptr rhs) {
 	return dst;
 }
 
-inline vecptr veccrs(vecptr dst, vecptr lhs, vecptr rhs) {
-	vector tmp;
+inline vector veccrs(vector dst, vector lhs, vector rhs) {
+	union vector tmp;
 	tmp.x = lhs->y * rhs->z - lhs->z * rhs->y;
 	tmp.y = lhs->z * rhs->x - lhs->x * rhs->z;
 	tmp.z = lhs->x * rhs->y - lhs->y * rhs->x;
 	return *dst = tmp, dst;
 }
 
-inline vecptr vecsca(vecptr dst, vecptr lhs, scalar rhs) {
+inline vector vecsca(vector dst, vector lhs, scalar rhs) {
 	dst->x = lhs->x * rhs;
 	dst->y = lhs->y * rhs;
 	dst->z = lhs->z * rhs;
@@ -376,8 +378,8 @@ inline vecptr vecsca(vecptr dst, vecptr lhs, scalar rhs) {
 	return dst;
 }
 
-inline vecptr vecswz(vecptr dst, vecptr src, vswzop swz) {
-	vector tmp;
+inline vector vecswz(vector dst, vector src, vswzop swz) {
+	union vector tmp;
 	if (src == dst)
 		tmp = *src, src = &tmp;
 	dst->x = src->v[(swz >> 0) & 3]; 
@@ -387,7 +389,7 @@ inline vecptr vecswz(vecptr dst, vecptr src, vswzop swz) {
 	return dst;
 }
 
-inline vecptr vecnrm(vecptr dst, vecptr src) {
+inline vector vecnrm(vector dst, vector src) {
 	scalar len = vecdp3(src, src);
 	if (len) len = 1. / sqrt(len);
 	dst->x = src->x * len;
@@ -397,7 +399,7 @@ inline vecptr vecnrm(vecptr dst, vecptr src) {
 	return dst;
 }
 
-/*inline vecptr vecHCS(vecptr dst, vecptr src) {
+/*inline vector vecHCS(vector dst, vector src) {
 	scalar len = src->w;
 	if (len) len = 1. / len;
 	dst->x *= len;
@@ -407,32 +409,32 @@ inline vecptr vecnrm(vecptr dst, vecptr src) {
 	return dst;
 }*/
 
-//~ inline vecptr vecMOV(vecptr dst, vecptr src, int how);
+//~ inline vector vecMOV(vector dst, vector src, int how);
 
-//? inline vecptr vecABS(vecptr dst, vecptr src);	| a |		// max(-src, src)
-//+ inline vecptr vecRCP(vecptr dst, vecptr src);	1 / a
-//~ inline vecptr vecRSQ(vecptr dst, vecptr src);			// <=> vecPOW(dst, src, <-1/2, -1/2, -1/2, -1/2>)
+//? inline vector vecABS(vector dst, vector src);	| a |		// max(-src, src)
+//+ inline vector vecRCP(vector dst, vector src);	1 / a
+//~ inline vector vecRSQ(vector dst, vector src);			// <=> vecPOW(dst, src, <-1/2, -1/2, -1/2, -1/2>)
 
-//? inline vecptr vecFLR(vecptr dst, vecptr src);		//
-//? inline vecptr vecFRC(vecptr dst, vecptr src);
+//? inline vector vecFLR(vector dst, vector src);		//
+//? inline vector vecFRC(vector dst, vector src);
 
-//+ inline vecptr vecSIN(vecptr dst, vecptr src);
-//+ inline vecptr vecCOS(vecptr dst, vecptr src);
-//+ inline vecptr vecLG2(vecptr dst, vecptr src);
-//+ inline vecptr vecEX2(vecptr dst, vecptr src);
-//? inline vecptr vecPOW(vecptr dst, vecptr lhs, vecptr rhs);				// Exp2(rhs * Log2(lhs))
-//+ inline vecptr vecLRP(vecptr dst, vecptr lhs, vecptr rhs, vecptr cnt);		// lhs*(cnt) + rhs*(1-cnt)
+//+ inline vector vecSIN(vector dst, vector src);
+//+ inline vector vecCOS(vector dst, vector src);
+//+ inline vector vecLG2(vector dst, vector src);
+//+ inline vector vecEX2(vector dst, vector src);
+//? inline vector vecPOW(vector dst, vector lhs, vector rhs);				// Exp2(rhs * Log2(lhs))
+//+ inline vector vecLRP(vector dst, vector lhs, vector rhs, vector cnt);		// lhs*(cnt) + rhs*(1-cnt)
 
-//~ inline vecptr vecLIT(vecptr dst, ???);
+//~ inline vector vecLIT(vector dst, ???);
 
-//~ inline vecptr vecMAX(vecptr dst, vecptr lhs, vecptr rhs);	// dst.* = lhs.* >= rhs.* ? lhs.* : rhs.*
-//~ inline vecptr vecMIN(vecptr dst, vecptr lhs, vecptr rhs);	// dst.* = lhs.* < rhs.* ? lhs.* : rhs.*
-//~ inline vecptr vecSGE(vecptr dst, vecptr lhs, vecptr rhs);	// dst.* = lhs.* >= rhs.* ? 0 : 1
-//~ inline vecptr vecSLT(vecptr dst, vecptr lhs, vecptr rhs);	// dst.* = lhs.* < rhs.* ? 0 : 1
+//~ inline vector vecMAX(vector dst, vector lhs, vector rhs);	// dst.* = lhs.* >= rhs.* ? lhs.* : rhs.*
+//~ inline vector vecMIN(vector dst, vector lhs, vector rhs);	// dst.* = lhs.* < rhs.* ? lhs.* : rhs.*
+//~ inline vector vecSGE(vector dst, vector lhs, vector rhs);	// dst.* = lhs.* >= rhs.* ? 0 : 1
+//~ inline vector vecSLT(vector dst, vector lhs, vector rhs);	// dst.* = lhs.* < rhs.* ? 0 : 1
 
-//~ inline vecptr vecMAD(vecptr dst, vecptr src, vecptr mul, vecptr add);
+//~ inline vector vecMAD(vector dst, vector src, vector mul, vector add);
 
-inline argb vecrgb(vecptr src) {
+inline argb vecrgb(vector src) {
 	argb res;
 	//~ res.a = src->a < 0 ? 0 : src->a > 1 ? 255 : (src->a * 255);
 	res.r = src->r < 0 ? 0 : src->r > 1 ? 255 : (src->r * 255);
@@ -441,22 +443,27 @@ inline argb vecrgb(vecptr src) {
 	return res;
 }
 
-inline vecptr vecrfl(vecptr dst, vecptr dir, vecptr nrm) {	// reflect
+inline vector vecrfl(vector dst, vector dir, vector nrm) {	// reflect
 	return vecsub(dst, dir, vecsca(dst, nrm, 2 * vecdp3(nrm, dir)));
 }// */
 
-inline scalar vecpev(vecptr pol, scalar val) {
+inline scalar vecpev(vector pol, scalar val) {
 	return ((((pol->w) * val + pol->z) * val + pol->y) * val) + pol->x;
 }
 
-inline scalar veclen(vecptr src) {
+inline scalar veclen(vector src) {
 	return sqrt(vecdp3(src, src));
 }
 
-//~ inline vecptr vecrfr(vecptr dst, vecptr dir, vecptr nrm);	// refract
+inline scalar vecdst(vector lhs, vector rhs) {
+	union vector tmp[1];
+	return veclen(vecsub(tmp, lhs, rhs));
+}
+
+//~ inline vector vecrfr(vector dst, vector dir, vector nrm);	// refract
 
 /*
-inline long veccmp(vecptr lhs, vecptr rhs, vec_cmp cmp) {
+inline long veccmp(vector lhs, vector rhs, vec_cmp cmp) {
 	union {
 		long val;
 		struct {
@@ -474,7 +481,7 @@ inline long veccmp(vecptr lhs, vecptr rhs, vec_cmp cmp) {
 	return res.val;
 }
 
-long vecequ(vecptr lhs, vecptr rhs, scalar eps) {
+long vecequ(vector lhs, vector rhs, scalar eps) {
 	if ((lhs->x > rhs->x) ? (lhs->x - rhs->x) : (rhs->x - lhs->x) > eps) return 0;
 	if ((lhs->y > rhs->y) ? (lhs->y - rhs->y) : (rhs->y - lhs->y) > eps) return 0;
 	if ((lhs->z > rhs->z) ? (lhs->z - rhs->z) : (rhs->z - lhs->z) > eps) return 0;
@@ -489,7 +496,7 @@ long vecequ(vecptr lhs, vecptr rhs, scalar eps) {
 	"mulps	xmm0, xmm1"\
 	"movups	[edi], xmm0"// 
 
-vecptr vecldc(vecptr dst, argb col) {
+vector vecldc(vector dst, argb col) {
 	dst->b = scaldf(col.b / 255.);
 	dst->g = scaldf(col.g / 255.);
 	dst->r = scaldf(col.r / 255.);
@@ -497,14 +504,14 @@ vecptr vecldc(vecptr dst, argb col) {
 	return dst;
 }
 
-scalar vecdp2(vecptr lhs, vecptr rhs) {
+scalar vecdp2(vector lhs, vector rhs) {
 	return lhs->x * rhs->x + lhs->y * rhs->y;
 }
 
 */
 
 //#################################  MATRIX  ###################################
-matptr matidn(matptr dst) {
+matrix matidn(matrix dst) {
 	dst->m11 = 1; dst->m12 = 0; dst->m13 = 0; dst->m14 = 0;
 	dst->m21 = 0; dst->m22 = 1; dst->m23 = 0; dst->m24 = 0;
 	dst->m31 = 0; dst->m32 = 0; dst->m33 = 1; dst->m34 = 0;
@@ -512,7 +519,7 @@ matptr matidn(matptr dst) {
 	return dst;
 }
 
-matptr matadd(matptr dst, matptr lhs, matptr rhs) {
+matrix matadd(matrix dst, matrix lhs, matrix rhs) {
 	vecadd(&dst->x, &lhs->x, &rhs->x);
 	vecadd(&dst->y, &lhs->y, &rhs->y);
 	vecadd(&dst->z, &lhs->z, &rhs->z);
@@ -520,7 +527,7 @@ matptr matadd(matptr dst, matptr lhs, matptr rhs) {
 	return dst;
 }
 
-matptr matsub(matptr dst, matptr lhs, matptr rhs) {
+matrix matsub(matrix dst, matrix lhs, matrix rhs) {
 	vecsub(&dst->x, &lhs->x, &rhs->x);
 	vecsub(&dst->y, &lhs->y, &rhs->y);
 	vecsub(&dst->z, &lhs->z, &rhs->z);
@@ -528,7 +535,7 @@ matptr matsub(matptr dst, matptr lhs, matptr rhs) {
 	return dst;
 }
 
-matptr matsca(matptr dst, matptr lhs, scalar rhs) {
+matrix matsca(matrix dst, matrix lhs, scalar rhs) {
 	vecsca(&dst->x, &lhs->x, rhs);
 	vecsca(&dst->y, &lhs->y, rhs);
 	vecsca(&dst->z, &lhs->z, rhs);
@@ -536,8 +543,8 @@ matptr matsca(matptr dst, matptr lhs, scalar rhs) {
 	return dst;
 }
 
-matptr matmul(matptr dst, matptr lhs, matptr rhs) {
-	matrix tmp;
+matrix matmul(matrix dst, matrix lhs, matrix rhs) {
+	union matrix tmp;
 	int row, col;
 	for(row = 0; row < 4; ++row) {
 		for(col = 0; col < 4; ++col) {
@@ -552,8 +559,8 @@ matptr matmul(matptr dst, matptr lhs, matptr rhs) {
 	return dst;//matcpy(dst, &tmp);
 }
 
-vecptr matvp3(vecptr dst, matptr mat, vecptr src) {
-	vector tmp;
+vector matvp3(vector dst, matrix mat, vector src) {
+	union vector tmp;
 	if (src == dst)
 		tmp = *src, src = &tmp;
 	dst->x = vecdp3(&mat->x, src);
@@ -563,8 +570,8 @@ vecptr matvp3(vecptr dst, matptr mat, vecptr src) {
 	return dst;
 }
 
-vecptr matvp4(vecptr dst, matptr mat, vecptr src) {
-	vector tmp;
+vector matvp4(vector dst, matrix mat, vector src) {
+	union vector tmp;
 	if (src == dst)
 		tmp = *src, src = &tmp;
 	dst->x = vecdp4(&mat->x, src);
@@ -574,8 +581,8 @@ vecptr matvp4(vecptr dst, matptr mat, vecptr src) {
 	return dst;
 }
 
-vecptr matvph(vecptr dst, matptr mat, vecptr src) {
-	vector tmp;
+vector matvph(vector dst, matrix mat, vector src) {
+	union vector tmp;
 	if (src == dst)
 		tmp = *src, src = &tmp;
 	dst->x = vecdph(&mat->x, src);
@@ -585,7 +592,8 @@ vecptr matvph(vecptr dst, matptr mat, vecptr src) {
 	return dst;
 }
 
-matptr matldf(matptr dst, scalar _11, scalar _12, scalar _13, scalar _14\
+matrix matldf(matrix dst
+			, scalar _11, scalar _12, scalar _13, scalar _14\
 			, scalar _21, scalar _22, scalar _23, scalar _24\
 			, scalar _31, scalar _32, scalar _33, scalar _34\
 			, scalar _41, scalar _42, scalar _43, scalar _44) {
@@ -600,8 +608,8 @@ matptr matldf(matptr dst, scalar _11, scalar _12, scalar _13, scalar _14\
 	return dst;
 }
 
-matptr matldR(matptr dst, vecptr dir, scalar ang) {
-	vector tmp;
+matrix matldR(matrix dst, vector dir, scalar ang) {
+	union vector tmp;
 	scalar xx, yy, zz, xy, yz, xz;
 	scalar sin_t = sin(ang);
 	scalar cos_t = cos(ang);
@@ -637,8 +645,8 @@ matptr matldR(matptr dst, vecptr dir, scalar ang) {
 	return dst;
 }
 
-matptr matldS(matptr dst, vecptr dir, scalar cnt) {
-	vector tmp;
+matrix matldS(matrix dst, vector dir, scalar cnt) {
+	union vector tmp;
 	matidn(dst);
 	vecsca(&tmp, dir, cnt);
 	dst->xx = tmp.x;
@@ -648,8 +656,8 @@ matptr matldS(matptr dst, vecptr dir, scalar cnt) {
 	return dst;
 }
 
-matptr matldT(matptr dst, vecptr dir, scalar cnt) {
-	vector tmp;
+matrix matldT(matrix dst, vector dir, scalar cnt) {
+	union vector tmp;
 	matidn(dst);
 	vecsca(&tmp, dir, cnt);
 	dst->xt = tmp.x;
@@ -659,8 +667,8 @@ matptr matldT(matptr dst, vecptr dir, scalar cnt) {
 	return dst;
 }
 
-void ortho_mat(matptr dst, scalar l, scalar r, scalar b, scalar t, scalar n, scalar f) {
-	matrix tmp;
+void ortho_mat(matrix dst, scalar l, scalar r, scalar b, scalar t, scalar n, scalar f) {
+	union matrix tmp;
 	float	rl = r - l, tb = t - b, nf = n - f;
 	if (rl == 0. || tb  == 0. || nf  == 0. ) return;
 	matldf(dst,							// scale
@@ -681,8 +689,8 @@ void ortho_mat(matptr dst, scalar l, scalar r, scalar b, scalar t, scalar n, sca
 		0.,				0.,				0.,				1.);// */
 }
 
-void persp_mat(matptr dst, scalar l, scalar r, scalar b, scalar t, scalar n, scalar f) {
-	matrix tmp;
+void persp_mat(matrix dst, scalar l, scalar r, scalar b, scalar t, scalar n, scalar f) {
+	union matrix tmp;
 	float	rl = r - l, tb = t - b, nf = n - f;
 	if (rl == 0. || tb  == 0. || nf  == 0. ) return;
 	//~ /*
@@ -710,9 +718,9 @@ void persp_mat(matptr dst, scalar l, scalar r, scalar b, scalar t, scalar n, sca
 		0.,			0.,			1.,				0.);// */
 }
 
-void projv_mat(matptr dst, scalar fovy, scalar asp, scalar n, scalar f) {
+void projv_mat(matrix dst, scalar fovy, scalar asp, scalar n, scalar f) {
 	scalar bot = 1, nf = n-f;
-	/*matrix tmp;
+	/*union matrix tmp;
 	if (fovy) bot = tan( fovy*(3.14159265358979323846/180)/2);
 	asp *= bot;
 	matldf(dst,			// Projection matrix - orthographic
@@ -747,7 +755,7 @@ void projv_mat(matptr dst, scalar fovy, scalar asp, scalar n, scalar f) {
 }
 
 //~ /*
-matptr matnul(matptr dst) {
+matrix matnul(matrix dst) {
 	dst->m11 = 0; dst->m12 = 0; dst->m13 = 0; dst->m14 = 0;
 	dst->m21 = 0; dst->m22 = 0; dst->m23 = 0; dst->m24 = 0;
 	dst->m31 = 0; dst->m32 = 0; dst->m33 = 0; dst->m34 = 0;
@@ -755,13 +763,13 @@ matptr matnul(matptr dst) {
 	return dst;
 }
 
-matptr matcpy(matptr dst, matptr src) {
+matrix matcpy(matrix dst, matrix src) {
 	*dst = *src;
 	return dst;
 }
 
-matptr matran(matptr dst, matptr src) {
-	matrix tmp;
+matrix matran(matrix dst, matrix src) {
+	union matrix tmp;
 	int row, col;
 	if (src == dst)
 		src = matcpy(&tmp, src);//{*tmp = src; rsc = &tmp;}
@@ -777,7 +785,7 @@ static scalar det3x3(scalar x1, scalar x2, scalar x3, scalar y1, scalar y2, scal
 			x3 * (y1 * z2 - z1 * y2);
 }
 
-scalar matdet(matptr src) {
+scalar matdet(matrix src) {
 	scalar* x = (scalar*)&src->x.v;
 	scalar* y = (scalar*)&src->y.v;
 	scalar* z = (scalar*)&src->z.v;
@@ -788,8 +796,8 @@ scalar matdet(matptr src) {
 		x[3] * det3x3(y[0], y[1], y[2], z[0], z[1], z[2], w[0], w[1], w[2]);
 }
 
-matptr matadj(matptr dst, matptr src) {
-	matrix tmp;
+matrix matadj(matrix dst, matrix src) {
+	union matrix tmp;
 	scalar* x = (scalar*)&tmp.x.v;
 	scalar* y = (scalar*)&tmp.y.v;
 	scalar* z = (scalar*)&tmp.z.v;
@@ -814,7 +822,7 @@ matptr matadj(matptr dst, matptr src) {
 	return dst;
 }
 
-scalar matinv(matptr dst, matptr src) {
+scalar matinv(matrix dst, matrix src) {
 	scalar det = matdet(src);
 	if (det) {
 		matadj(dst, src);
@@ -824,8 +832,8 @@ scalar matinv(matptr dst, matptr src) {
 }
 
 /*
-argb matrgb(matptr mat, argb rgb) {
-	vector tmp;
+argb matrgb(matrix mat, argb rgb) {
+	union vectortmp;
 	vecldc(&tmp, rgb);
 	matvp3(&tmp, mat, &tmp);
 	return vecrgb(&tmp);
@@ -833,8 +841,8 @@ argb matrgb(matptr mat, argb rgb) {
 //~ */
 
 //#################################  camera  ###################################
-void camset(camera_p cam, vecptr eye, vecptr tgt, vecptr up) {
-	vector tmp;
+void camset(camera cam, vector eye, vector tgt, vector up) {
+	union vector tmp;
 	vecnrm(&cam->dirF, vecsub(&tmp, tgt, eye));
 	vecnrm(&cam->dirR, veccrs(&tmp, up, &tmp));
 	veccrs(&cam->dirU, &cam->dirF, &cam->dirR);
@@ -843,14 +851,14 @@ void camset(camera_p cam, vecptr eye, vecptr tgt, vecptr up) {
 	cam->zoom = 1;
 }
 
-void cammov(camera_p cam, vecptr dir, scalar cnt) {
-	vector tmp;
+void cammov(camera cam, vector dir, scalar cnt) {
+	union vector tmp;
 	vecsca(&tmp, dir, cnt);
 	vecadd(&cam->pos, &cam->pos, &tmp);
 }
 
-void camrot(camera_p cam, vecptr dir, scalar ang) {
-	matrix tmp;
+void camrot(camera cam, vector dir, scalar ang) {
+	union matrix tmp;
 	if (ang == 0) return;
 	matldR(&tmp, dir, ang / cam->zoom);
 	vecnrm(&cam->dirF, matvph(&cam->dirF, &tmp, &cam->dirF));
@@ -858,7 +866,7 @@ void camrot(camera_p cam, vecptr dir, scalar ang) {
 	veccrs(&cam->dirU, &cam->dirF, &cam->dirR);
 }
 
-matptr cammat(matptr mat, camera_p cam) {
+matrix cammat(matrix mat, camera cam) {
 	//~ vecsca(&mat->x, &cam->dirR, cam->zoom);
 	//~ vecsca(&mat->y, &cam->dirU, cam->zoom);
 	vecld4(&mat->x, &cam->dirR, -vecdp3(&cam->dirR, &cam->pos));

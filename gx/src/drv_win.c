@@ -2,15 +2,10 @@
 #include <winuser.h>
 #include "g2_surf.h"
 
+static HWND wDC = 0;
 static HWND hWnd = 0;
 static HINSTANCE  mainhins = 0;
-static char *class_name = "Library_BMP_Window";
-
-#ifdef __OLD
-static HDC mDC;
-static void* PIX;
-static HBITMAP MEM;
-#endif
+static char *class_name = "GFX(2/3)D_GDI_Window";
 
 static BITMAPINFO BMP;
 static int (*kbdH)(int,int) = 0;
@@ -33,7 +28,20 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 	return 0;
 }
 
+void ClientResize(HWND hWnd, int nWidth, int nHeight)
+{
+  POINT ptDiff;
+  RECT rcClient, rcWindow;
+  GetClientRect(hWnd, &rcClient);
+  GetWindowRect(hWnd, &rcWindow);
+  ptDiff.x = (rcWindow.right - rcWindow.left) - rcClient.right;
+  ptDiff.y = (rcWindow.bottom - rcWindow.top) - rcClient.bottom;
+  MoveWindow(hWnd,rcWindow.left, rcWindow.top, nWidth + ptDiff.x, nHeight + ptDiff.y, TRUE);
+}
+
 int initWIN(int w, int h, int (*kbd)(int,int), void (*rat)(int,int,int)) {
+	POINT ptDiff;
+	RECT rcClient, rcWindow;
 	WNDCLASS windowClass;
 	windowClass.style = CS_OWNDC; // The style of the window. CS_OWNDC means every window has it's own DC
 	windowClass.lpfnWndProc = DefWindowProc;//bitmapWindowHandler; // The function to call when this window receives a message
@@ -49,14 +57,13 @@ int initWIN(int w, int h, int (*kbd)(int,int), void (*rat)(int,int,int)) {
 
 	RegisterClass(&windowClass); // Register the class
 	hWnd = CreateWindow(
-		"Library_BMP_Window",		// Name of the window class (registered above)
+		class_name,			// Name of the window class (registered above)
 		"Window",			// Name of the window, appears in the window title bar
-		WS_BORDER | WS_MINIMIZEBOX | \
-		WS_CAPTION | WS_SYSMENU,	// Window style
+		WS_MINIMIZEBOX | WS_SYSMENU,	// Window style
 		CW_USEDEFAULT,			// X coordinate of the window on-screen
 		CW_USEDEFAULT,			// Y coordinate of the window on-screen
-		w,				// width of the window
-		h,				// height of the window
+		w,					// width of the window
+		h,					// height of the window
 		NULL,				// Handle to a parent window (none)
 		NULL,				// Handle to a child window (none)
 		mainhins,			// Handle to the current Instance
@@ -64,7 +71,7 @@ int initWIN(int w, int h, int (*kbd)(int,int), void (*rat)(int,int,int)) {
 	);
 	BMP.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
 	BMP.bmiHeader.biWidth = w;
-	BMP.bmiHeader.biHeight = h;
+	BMP.bmiHeader.biHeight = -h;
 	BMP.bmiHeader.biPlanes = 1;
 	BMP.bmiHeader.biBitCount = 32;
 	BMP.bmiHeader.biCompression = BI_RGB;
@@ -73,17 +80,16 @@ int initWIN(int w, int h, int (*kbd)(int,int), void (*rat)(int,int,int)) {
 	BMP.bmiHeader.biYPelsPerMeter = 0;
 	BMP.bmiHeader.biClrUsed = 0;
 	BMP.bmiHeader.biClrImportant = 0;
-	#ifdef __OLD
-	mDC = CreateCompatibleDC(0);
-	MEM = CreateDIBSection(mDC, &BMP, DIB_RGB_COLORS, &PIX, NULL, 0);
-	#else
-	BMP.bmiHeader.biHeight = -h;
-	#endif
-	//~ wDC = GetDC(hWnd);
+
+	wDC = GetDC(hWnd);
 	kbdH = kbd;
 	ratH = rat;
 	ShowWindow(hWnd, SW_SHOW);
-	
+	GetClientRect(hWnd, &rcClient);
+	GetWindowRect(hWnd, &rcWindow);
+	ptDiff.x = (rcWindow.right - rcWindow.left) - rcClient.right;
+	ptDiff.y = (rcWindow.bottom - rcWindow.top) - rcClient.bottom;
+	MoveWindow(hWnd, rcWindow.left, rcWindow.top, ptDiff.x + w, ptDiff.y + h, TRUE);
 	return 0;
 }
 
@@ -92,39 +98,15 @@ void setCaption(char* str) {
 }
 
 void doneWin(void) {
-#ifdef __OLD
-	DeleteObject(MEM);
-	DeleteDC(mDC);
-#endif
 	printf("done\n");
 }
 
-int gx_wincopy(gx_Surf *src, int unused) {
+int gx_wincopy(gx_Surf src, int unused) {
 	if(hWnd != 0) {
-#ifdef __OLD
-		int y, w, h;
-		HBITMAP hbmOld = SelectObject(mDC, MEM);
-		cblt_proc cvt = gx_getcbltf(cblt_conv, 32, src->depth);
-		DWORD *dpix = (DWORD *)PIX + (BMP.bmiHeader.biHeight * BMP.bmiHeader.biWidth);
-		char *spix = src->basePtr;
-
-		w = src->width < BMP.bmiHeader.biWidth ? src->width : BMP.bmiHeader.biWidth;
-		h = src->height < BMP.bmiHeader.biHeight ? src->height : BMP.bmiHeader.biHeight;
-		if (!PIX || !spix || !cvt || w <= 0 || h <= 0) return -1;
-		for(y = 0; y < h; ++y) {
-			dpix -= BMP.bmiHeader.biWidth;
-			gx_callcbltf(cvt, dpix, spix, w, 0);
-			spix += src->scanLen;
-		}
-		BitBlt(GetDC(hWnd), 0, 0, BMP.bmiHeader.biWidth, BMP.bmiHeader.biHeight, mDC, 0, 0, SRCCOPY);
-		SelectObject(mDC, hbmOld);
-#else
-		SetDIBitsToDevice( GetDC(hWnd), 
+		SetDIBitsToDevice( wDC,
 			0, 0, src->width, src->height,
 			0, 0, 0, src->height,
 			src->basePtr, &BMP, DIB_RGB_COLORS);
-
-#endif
 	}
 	return 0;
 }
@@ -145,11 +127,11 @@ int winmsg(int a) {
 	//~ return act;
 }
 
-int init_WIN(gx_Surf *offs, flip_scr *flip, peek_msg *msgp, void (**done)(void), void ratHND(int btn, int mx, int my), int kbdHND(int lkey, int key)) {
-	initWIN(SCRW, SCRH, kbdHND, ratHND);
-	*msgp = winmsg;
-	*done = doneWin;
+int init_WIN(gx_Surf offs, flip_scr *flip, peek_msg *msgp, void (**done)(void), void ratHND(int btn, int mx, int my), int kbdHND(int lkey, int key)) {
+	initWIN(offs->width, offs->height, kbdHND, ratHND);
 	*flip = gx_wincopy;
+	*done = doneWin;
+	*msgp = winmsg;
 	return 0;
 }
 

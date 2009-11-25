@@ -1,3 +1,4 @@
+REM ~ The Twist - Watching The Good Life
 @echo off
 
 SET BIND=..\
@@ -14,7 +15,8 @@ SET OBJS=%OBJD%drv_ras.obj %OBJD%g2_surf.obj %OBJD%g2_draw.obj %OBJD%main.obj
 REM ~ SET OBJS=%OBJD%mcga.obj,%OBJD%drv_vbe.obj,%OBJD%drv_ras.obj,%OBJD%g2_surf.obj,%OBJD%g2_draw.obj,%OBJD%main.obj
 
 SET INCLUDE=%WATCOM%\h;%WATCOM%\h\nt;%WATCOM%\h\win;%LIBD%libjpeg
-SET CFLAGS=-zq -ei -6s -d3 -i=%INCLUDE%
+SET CFLAGS=-zq -ei -6s -d3
+REM ~ -ei -6s -d3 -i=%INCLUDE%
 REM ~ SET CFLAGS=-zq -ei -6r -s -w3 -ei -j -fp6 -fpi87 -bt=nt -bm -d0 -oaxt
 SET PATH=%PATH%;%WATCOM%\BINNT;%WATCOM%\BINW
 
@@ -24,7 +26,7 @@ REM ~ ren 3rdpart\libjpeg.lib debug\libjpeg.lib
 
 echo Assemble
 
-wasm -q -w10 -c drv_ras.asm -fo=%OBJD%drv_ras.obj
+wasm -q -w10 -c drv_ras.asm -fo=%OBJD%\drv_ras.obj
 IF ERRORLEVEL 1 GOTO exit
 
 REM ~ wasm -q -w10 -c drv_vbe.asm -fo=%OBJD%\drv_vbe.obj
@@ -49,7 +51,7 @@ echo Link
 REM ~ SYSTEM : dos32a, dos4g, causeway, nt, (win32)
 REM ~ wlink OP q Library %LIBD%libjpeg.lib LIBPath %LIBD% PATH %OBJD% FILE %OBJS% NAME %BIND%\%NAME% OP stack=512K SYSTEM dos4g
 REM ~ wlink OP q LIBPath %LIBD% PATH %OBJD% FILE %OBJS% NAME %BIND%\%NAME% OP stack=512K SYSTEM nt
-wcl386 -bt=dos4g -q -d3s %OBJS% %LIBD%libjpeg.lib -fe=%BIND%%NAME%
+wcl386 -bt=nt -q -d3 %OBJS% %LIBD%libjpeg.lib %LIBD%libpvmc.lib -fe=%BIND%%NAME%
 
 IF ERRORLEVEL 1 GOTO exit
 

@@ -7,50 +7,21 @@
 #include "g2_surf.h"
 #include "g2_argb.h"
 
-#define scatoi(__VAL, __FIX) ((long)((__VAL) * (1<<__FIX)))
-
-#define MCGA 0
-
-//~ #define SCRW (1280)
-//~ #define SCRH (1024)
-
-//~ #define SCRW (1024)
-//~ #define SCRH (768)
-
-#define SCRW (800)
-#define SCRH (600)
-
-//~ #define SCRW (640)
-//~ #define SCRH (480)
-
-//~ #define SCRW (320)
-//~ #define SCRH (240)
-
-#define SCRD (32)
-//~ | MD_LINEAR
-
-#if (MCGA == 1)
-#undef SCRW
-#undef SCRH
-#undef SCRD
-#define SCRW (320)
-#define SCRH (200)
-#endif
-
-#define ASPR ((SCRW+.0)/SCRH)
-#define SCRC (SCRW/2 + SCRW*SCRH/2)
+#define scatoi(__VAL, __FIX) ((long)((__VAL) * (1 << (__FIX))))
 
 typedef float scalar;
 #include "g3_math.c"
 
 #define toRad(__A) ((__A) * (3.14159265358979323846 / 180))
 
-unsigned long cBuff[SCRW*SCRH];
-unsigned long bBuff[SCRW*SCRH];
-unsigned long zBuff[SCRW*SCRH];
-gx_Clip rec = {0, 0, SCRW, SCRH};
+extern double N;
+// TODO: remove these
+signed scrw, scrh;
+signed long *cBuff;
+signed long *zBuff;
+struct gx_Clip rec;//= {0, 0, SCRW, SCRH};
 
-matrix projM;		// projection matrix
+//~ union matrix projM;		// projection matrix
 
 enum {
 	//~ draw_next = 0x0001,
@@ -86,9 +57,9 @@ enum {
 };
 
 //~ int draw = draw_fill|litMode|disp_info;
-int draw = disp_mesh + disp_info + draw_fill;
+int draw = disp_mesh | draw_fill | cull_front | disp_info;
 
-typedef union {
+typedef union texcol {
 	struct {
 		unsigned short s;
 		unsigned short t;
@@ -105,99 +76,75 @@ typedef union {
 	};
 	unsigned long val;
 	argb rgb;
-} texcol;
+} *texcol;
 
 typedef struct {		// material
-	vector ambi;		// Ambient
-	vector diff;		// Diffuse
-	vector spec;		// Specular
+	union vector ambi;		// Ambient
+	union vector diff;		// Diffuse
+	union vector spec;		// Specular
 	scalar spow;		// Shin...
-	vector emis;		// Emissive
-	gx_Surf tex;	// texture map
+	union vector emis;		// Emissive
+	struct gx_Surf tex;	// texture map
 } material, *mtlptr;
-
-typedef struct {		// vertex
-	vector	pos;		// (x, y, z, 1) position
-	vector	nrm;		// (x, y, z, 0) normal
-	texcol	tex;		// (s, t, 0, 0) tetxure|color
-} vertex;
-
-typedef struct {		// mesh
-	material	mtl;	// back, fore;
-	//~ gx_Surf	nrm;	// (normal +| height) map
-	unsigned maxvtx, vtxcnt;	// vertices
-	unsigned maxtri, tricnt;	// triangles
-	vertex *vtxptr;
-	struct tri {			// triangle list
-		//~ unsigned id;	// groupId & mtl
-		unsigned i1;
-		unsigned i2;
-		unsigned i3;
-	} *triptr;
-	int hasTex:1;
-	int hasNrm:1;
-} mesh;
-
-enum {
-	L_off  = 0x0000,		// light is off
-	L_on   = 0x0001,		// light is on
-	//~ L_attn = 0x0002,		// attenuate
-	//~ L_dir  = 0x0004,		// is directional
-};
 
 #define lz 2
 #define lp 2
 #define lA 10
 
 static struct lght {		// lights
-	short	attr;		// typeof
-	vector	ambi;		// Ambient
-	vector	diff;		// Diffuse
-	vector	spec;		// Specular
-	vector	attn;		// Attenuation
-	vector	pos;		// position
-	vector	dir;		// direction
+	enum {						// Type
+		L_off  = 0x0000,		// light is off
+		L_on   = 0x0001,		// light is on
+		//~ L_attn = 0x0002,		// attenuate
+		//~ L_dir  = 0x0004,		// is directional
+		//~ L_spot = 0x0008,		// is directional
+	} attr;
+	union vector	ambi;		// Ambient
+	union vector	diff;		// Diffuse
+	union vector	spec;		// Specular
+	union vector	attn;		// Attenuation
+	union vector	pos;		// position
+	union vector	dir;		// direction
 	scalar	sCos;
 	scalar	sExp;
-	//~ int alma;
 }
 Lights[] = {
 	{	// light0(Gray)
-		L_off,
+		L_on,
 		{{.6, .6, .6, 1}},	// ambi
 		{{.9, .9, .9, 1}},	// diff
 		{{1., 1., 1., 1}},	// spec
 		{{1., 0., 0., 0}},	// attn
-		{{-2, +15, -15, 1}},	// pos
+		//~ {{-2, +15, -15, 1}},	// pos
+		{{+lp, +lp, +lz, 1}},	// pos
 		{{0., 0., 0., 0}},	// dir
 		0, 32}, // */
 	{	// light1(RGB/R)
-		L_on,
+		L_off,
 		{{.4, .0, .0, 1}},	// ambi
 		{{.8, .0, .0, 1}},	// diff
 		{{1., 1., 1., 1}},	// spec
 		{{1., 0., 0., 0}},	// attn
 		{{+lp, -lp, +lz, 1}},	// pos
-		//~ {{-0., +0., -0., 0}},	// dir // is normalized in main()
-		{{-lp, +lp, -lz, 0}},	// dir // is normalized in main()
-		lA, 2}, // */
+		{{-0., +0., -0., 0}},	// dir // is normalized in main()
+		lA, 32}, // */
 	{	// light2(RGB/G)
-		0,
+		L_off,
 		{{0., .4, .0, 1}},	// ambi
 		{{.0, .8, .0, 1}},	// diff
 		{{1., 1., 1., 1}},	// spec
 		{{1., .0, 0., 0}},	// attn
 		{{-lp, -lp, +lz, 1}},	// pos
-		{{+lp, +lp, -lz, 0}},	// dir // is normalized in main()
+		{{-0., +0., -0., 0}},	// dir // is normalized in main()
 		lA, 32}, // */
 	{	// light3(RGB/B)
-		0,
+		L_off,
 		{{.0, .0, .4, 1}},	// ambi
 		{{.0, .0, .8, 1}},	// diff
 		{{1., 1., 1., 1}},	// spec
 		{{1., .0, 0., 0}},	// attn
 		{{-lp, +lp, +lz, 1}},	// pos
-		{{+lp, -lp, -lz, 0}},	// dir // is normalized in main()
+		{{-0., +0., -0., 0}},	// dir // is normalized in main()
 		lA, 32},
 };
 
@@ -321,7 +268,7 @@ material defmtl[]={
 #define lights (sizeof(Lights) / sizeof(*Lights))
 
 /* frustum
-void frustum_get(vector planes[6], matptr mat) {
+void frustum_get(union vector planes[6], matrix mat) {
 	//~ near and far	: -1 < z < 1
 	vecnrm(&planes[0], vecadd(&planes[0], &mat->w, &mat->z));
 	vecnrm(&planes[1], vecsub(&planes[1], &mat->w, &mat->z));
@@ -333,7 +280,7 @@ void frustum_get(vector planes[6], matptr mat) {
 	vecnrm(&planes[5], vecsub(&planes[5], &mat->w, &mat->y));
 }
 
-int ftest_sphere(vector planes[6], vecptr p) {			// clip sphere
+int ftest_sphere(union vector planes[6], vector p) {			// clip sphere
 	scalar r = -p->w;
 	if (vecdph(&planes[0], p) <= r) return 0;
 	if (vecdph(&planes[1], p) <= r) return 0;
@@ -344,7 +291,7 @@ int ftest_sphere(vector planes[6], vecptr p) {			// clip sphere
 	return 1;	// inside
 }
 
-int ftest_point(vector planes[6], vecptr p) {			// clip point
+int ftest_point(union vector planes[6], vector p) {			// clip point
 	const scalar r = 0;
 	if (vecdph(p, &planes[0]) <= r) return 0;
 	if (vecdph(p, &planes[1]) <= r) return 0;
@@ -355,14 +302,10 @@ int ftest_point(vector planes[6], vecptr p) {			// clip point
 	return 1;	// inside
 }
 
-int ftest_aabox(vector planes[6], vecptr bmin, vecptr bmax) {			// clip aabb
-	return 0;	// implement
-}
-
-vecptr bsphere(vecptr s, vecptr p1, vecptr p2, vecptr p3) {
+vector bsphere(vector s, vector p1, vector p2, vector p3) {
 	scalar	len, ln1, ln2;
-	vector	tmp;
-	//~ vector	min, max;
+	union vector	tmp;
+	//~ union vector	min, max;
 	//~ vecmax(&max, vecmax(&tmp, p1, p2), p3);					// minimum
 	//~ vecmin(&min, vecmin(&tmp, p1, p2), p3);					// maximum
 	//~ vecsca(s, vecadd(&tmp, &min, &max), sconst(1./2));		// Box center
@@ -378,27 +321,28 @@ vecptr bsphere(vecptr s, vecptr p1, vecptr p2, vecptr p3) {
 	return s;
 }
 
-vecptr centerpt(vecptr P, vecptr p1, vecptr p2, vecptr p3) {
+vector centerpt(vector P, vector p1, vector p2, vector p3) {
 	vecadd(P, vecadd(P, p1, p2), p3);
 	vecsca(P, P, 1./3);
 	return P;
 }
 // */
 
-scalar backface(vecptr N, vecptr p1, vecptr p2, vecptr p3) {
-	vector e1, e2, tmp;
+scalar backface(vector N, vector p1, vector p2, vector p3) {
+	union vector e1, e2, tmp;
 	if (!N) N = &tmp;
-	vecsub(&e1, p1, p2);
-	vecsub(&e2, p1, p3);
+	vecsub(&e1, p2, p1);
+	vecsub(&e2, p3, p1);
 	vecnrm(N, veccrs(N, &e1, &e2));
 	N->w = 0;
-	return vecdp3(p1, N);
-}
+	return vecdp3(N, p1);
+}// */
 
-vecptr mappos(vecptr dst, matptr mat, vecptr src) {
-	vector tmp;
+vector mappos(vector dst, matrix mat, vector src) {
+	union vector tmp;
 	if (src == dst)
-		tmp = *src, src = &tmp;
+		src = veccpy(&tmp, src);
+
 	dst->w = vecdph(&mat->w, src);
 	if (dst->w != 0) dst->w = 1.0 / dst->w;
 	dst->x = vecdph(&mat->x, src) * dst->w;
@@ -407,8 +351,8 @@ vecptr mappos(vecptr dst, matptr mat, vecptr src) {
 	return dst;
 }
 
-vecptr mapnrm(vecptr dst, matptr mat, vecptr src) {
-	vector tmp;
+vector mapnrm(vector dst, matrix mat, vector src) {
+	union vector tmp;
 	if (src == dst)
 		src = veccpy(&tmp, src);
 	//~ dst->w = vecdph(&mat->w, src);
@@ -420,28 +364,6 @@ vecptr mapnrm(vecptr dst, matptr mat, vecptr src) {
 }
 
 //~ ----------------------------------------------------------------------------
-int freeMesh(mesh *msh) {
-	msh->maxtri = msh->tricnt = 0;
-	msh->maxvtx = msh->vtxcnt = 0;
-	free(msh->vtxptr);
-	msh->vtxptr = 0;
-	free(msh->triptr);
-	msh->triptr = 0;
-	return 0;
-}
-
-int initMesh(mesh *msh, int n) {
-	msh->maxtri = n; msh->tricnt = 0;
-	msh->maxvtx = n; msh->vtxcnt = 0;
-	msh->triptr = (struct tri*)malloc(sizeof(struct tri) * msh->maxtri);
-	msh->vtxptr = (vertex*)malloc(sizeof(vertex) * msh->maxvtx);
-	if (!msh->triptr || !msh->vtxptr) {
-		freeMesh(msh);
-		return -1;
-	}
-	return 0;
-}
-
 inline float absf(float a) {return a < 0 ? -a : a;}
 inline float satf(float a) {return a < 0 ? 0 : a > 1 ? 1 : a;}
 
@@ -469,7 +391,7 @@ inline argb fltrgb(scalar src) {
 	return res;
 }
 
-inline argb nrmrgb(vecptr src) {
+inline argb nrmrgb(vector src) {
 	argb res;
 	//~ scalar r = src->r < -1 ? 0 : src->r > 1 ? 1 : ((src->r + 1) / 2);
 	//~ scalar g = src->g < -1 ? 0 : src->g > 1 ? 1 : ((src->g + 1) / 2);
@@ -502,19 +424,33 @@ inline argb torgb(long val) {
 #include "g3_mesh.c"
 
 //~ ----------------------------------------------------------------------------
-void g3_setpixel(int x, int y, unsigned z, long c) {
-	gx_Clip* const roi = &rec;
-	if (y < roi->ymin || y >= roi->ymax) return;
-	if (x < roi->xmin || x >= roi->xmax) return;
-	if (zBuff[y * SCRW + x] >= z) {
-		zBuff[y * SCRW + x] = z;
-		cBuff[y * SCRW + x] = c;
-	}
+int g3_init(gx_Surf offs, int w, int h) {
+	int memsize;
+	rec.xmin = 0;
+	rec.ymin = 0;
+	rec.xmax = (scrw = w) - 0;
+	rec.ymax = (scrh = h) - 0;
+	memsize = w * h * sizeof(long);
+
+	cBuff = malloc(2 * memsize);
+	if (cBuff == NULL) return -1;
+	zBuff = cBuff + w * h;
+
+	offs->clipPtr = 0;
+	offs->width = w;
+	offs->height = h;
+	offs->flags = 0;
+	offs->depth = 32;
+	offs->pixeLen = 4;
+	offs->scanLen = w*4;
+	offs->basePtr = cBuff;
+	offs->tempPtr = zBuff;
+	return 0;
 }
 
-void g3_setpixel_nc(int x, int y, unsigned z, long c) {
-	int offs = y * SCRW + x;
-	gx_Clip* const roi = &rec;
+void g3_setpixel(int x, int y, unsigned z, long c) {
+	int offs = y * scrw + x;
+	const gx_Clip roi = &rec;
 	if (y < roi->ymin || y >= roi->ymax) return;
 	if (x < roi->xmin || x >= roi->xmax) return;
 	if (zBuff[offs] >= z) {
@@ -523,43 +459,33 @@ void g3_setpixel_nc(int x, int y, unsigned z, long c) {
 	}
 }
 
-void g3_mixpixel_orig(int x, int y, unsigned z, argb c, int a) {
-	gx_Clip* const roi = &rec;
+void g3_setpixel_nc(int x, int y, unsigned z, long c) {
+	int offs = y * scrw + x;
+	const gx_Clip roi = &rec;
 	if (y < roi->ymin || y >= roi->ymax) return;
 	if (x < roi->xmin || x >= roi->xmax) return;
-	if (zBuff[y * SCRW + x] >= z) {
-		argb *dst = (argb*)&cBuff[y * SCRW + x];
-		zBuff[y * SCRW + x] = z;
-		a += a >> 8;
-		dst->r += ((c.r - dst->r) * a) >> 8;
-		dst->g += ((c.g - dst->g) * a) >> 8;
-		dst->b += ((c.b - dst->b) * a) >> 8;
+	if (zBuff[offs] >= z) {
+		zBuff[offs] = z;
+		cBuff[offs] = c;
 	}
 }
 
-void g3_mixpixel(int x, int y, unsigned z, argb c, int a) {
-	int offs = y * SCRW + x;
+void mixpixel(int x, int y, unsigned z, argb c, int a) {
+	int offs = y * scrw + x;
 	argb *dst = (argb*)&cBuff[offs];
 	//~ gx_Clip* const roi = &rec;
 	//~ if (y < roi->ymin || y >= roi->ymax) return;
 	//~ if (x < roi->xmin || x >= roi->xmax) return;
-	if (zBuff[offs] >= z) {
+	a &= 0xff;
+	if (zBuff[offs] > z) {
 		zBuff[offs] = z;
-		a += a >> 8;
 		dst->r += ((c.r - dst->r) * a) >> 8;
 		dst->g += ((c.g - dst->g) * a) >> 8;
 		dst->b += ((c.b - dst->b) * a) >> 8;
 	}
-}
+}// */
 
-void g3_putpixel(vecptr p1, int c) {
-	long x = scatoi((SCRW-1) * (1 + p1->x) / 2, 0);
-	long y = scatoi((SCRH-1) * (1 - p1->y) / 2, 0);
-	long z = scatoi((1 - p1->z) / 2, 24);
-	g3_setpixel(x, y, z, c);
-}
-
-int g2_clipcalc(gx_Clip *roi, int x, int y) {
+int g2_clipcalc(gx_Clip roi, int x, int y) {
 	int c = (y >= roi->ymax) << 0;
 	c |= (y <  roi->ymin) << 1;
 	c |= (x >= roi->xmax) << 2;
@@ -567,7 +493,7 @@ int g2_clipcalc(gx_Clip *roi, int x, int y) {
 	return c;
 }
 
-int g2_clipline(gx_Clip *roi, int *x1, int *y1, int *x2, int *y2) {
+int g2_clipline(gx_Clip roi, int *x1, int *y1, int *x2, int *y2) {
 	//~ gx_Clip *roi = &rec;//(gx_Clip *)gx_getclip(surf);
 	int c1 = g2_clipcalc(roi, *x1, *y1);
 	int c2 = g2_clipcalc(roi, *x2, *y2);
@@ -612,7 +538,7 @@ int g2_clipline(gx_Clip *roi, int *x1, int *y1, int *x2, int *y2) {
 	return 1;
 }
 
-int g3_clipline(gx_Clip *roi, int *x1, int *y1, int *z1, int *x2, int *y2, int *z2) {
+int g3_clipline(gx_Clip roi, int *x1, int *y1, int *z1, int *x2, int *y2, int *z2) {
 	int c1 = g2_clipcalc(roi, *x1, *y1);
 	int c2 = g2_clipcalc(roi, *x2, *y2);
 	int x, dx, y, dy, z, e;
@@ -660,145 +586,147 @@ int g3_clipline(gx_Clip *roi, int *x1, int *y1, int *z1, int *x2, int *y2, int *
 	return 1;
 }
 
-void g3_drawlineA(vecptr p1, vecptr p2, long c) {		// this works ??
-	int x, dx, y, dy, z = 0, zs=0;
-	int x1, y1, z1;
-	int x2, y2, z2;
-
-	x1 = scatoi((SCRW-1) * (1 + p1->x) / 2, 0);
-	y1 = scatoi((SCRH-1) * (1 - p1->y) / 2, 0);
-	z1 = scatoi((1 - p1->z) / 2, 24);
-
-	x2 = scatoi((SCRW-1) * (1 + p2->x) / 2, 0);
-	y2 = scatoi((SCRH-1) * (1 - p2->y) / 2, 0);
-	z2 = scatoi((1 - p2->z) / 2, 24);
-
-	if (!g3_clipline(&rec, &x1, &y1, &z1, &x2, &y2, &z2)) return;
-
-	dx = x2 - x1;
-	dy = y2 - y1;
-
-	if (dx && dy) {
-		argb src;
-		long xs, ys;
-		src.val = c;
-
-		if (y1 > y2) {
-			y = y1; y1 = y2; y2 = y;
-			x = x1; x1 = x2; x2 = x;
-			z = z1; z1 = z2; z2 = z;
-		}
-		xs = (dx << 16) / dy;
-		ys = (dy << 16) / dx;
-
-		if ((xs >> 16) ^ (xs >> 31)) {		// FIXME: abs(xs) < abs(ys)
-			if (x1 > x2) {
-				y = y1; y1 = y2; y2 = y;
-				x = x1; x1 = x2; x2 = x;
-				z = z1; z1 = z2; z2 = z;
-			}// */
-			y = (y1 << 16) - (y1 > y2);
-			//~ zs = ((z = z1) - z2) / dx;
-			for (x = x1; x <= x2; x += 1, y += ys, z += zs) {
-				y2 = (y1 = y >> 16) + 1;
-				g3_mixpixel(x, y1, z, src, ~y >> 8 & 0xff);
-				g3_mixpixel(x, y2, z, src, +y >> 8 & 0xff);
-			}
-		}
-		else {				// col major
-			x = (x1 << 16) - (x1 > x2);
-			//~ zs = ((z = z1) - z2) / dy;
-			for (y = y1; y <= y2; y += 1, x += xs, z += zs) {
-				x2 = (x1 = x >> 16) + 1;
-				g3_mixpixel(x1, y, z, src, ~x >> 8 & 0xff);
-				g3_mixpixel(x2, y, z, src, +x >> 8 & 0xff);
-			}
-		}// */
-	}
-	else if (dx) {				// vline
-		y = y1;
-		if (x1 > x2) {x = x1; x1 = x2; x2 = x;}
-		//~ zs = ((z = z1) - z2) / dx;
-		for (x = x1; x <= x2; x++, z += zs)
-			g3_setpixel(x, y, z, c);
-	}
-	else if (dy) {				// hline
-		x = x1;
-		if (y1 > y2) {y = y1; y1 = y2; y2 = y;}
-		//~ zs = ((z = z1) - z2) / dy;
-		for (y = y1; y <= y2; y++, z += zs)
-			g3_setpixel(x, y, z, c);
-	}
-	else g3_setpixel(x1, y1, z, c);// */
+//~ ----------------------------------------------------------------------------
+void g3_putpixel(vector p1, int c) {
+	long x = scatoi((scrw-1) * (1 + p1->x) / 2, 0);
+	long y = scatoi((scrh-1) * (1 - p1->y) / 2, 0);
+	long z = scatoi((1 - p1->z) / 2, 24);
+	g3_setpixel(x, y, z, c);
 }
 
-void g3_drawlinea(vecptr p1, vecptr p2, argb c) {		// under construction
+void g3_drawlineA(vector p1, vector p2, long c0) {		//TODO
+	struct gx_Clip roi = rec;
+	argb c;
 	int x, y, z = 0, zs=0;
-	int x1, y1, z1;
-	int x2, y2, z2;
+	int x1, y1, z1, dx;
+	int x2, y2, z2, dy;
 
-	if (p1->y < p2->y) {vecptr t = p1; p1 = p2; p2 = t;}	// : y1 < y2
+	if (p1->y < p2->y) {vector t = p1; p1 = p2; p2 = t;}	// : y1 < y2
+	c.val = c0;
 
-	x1 = scatoi((SCRW-1) * (1 + p1->x) / 2, 0);
-	y1 = scatoi((SCRH-1) * (1 - p1->y) / 2, 0);
+	x1 = scatoi((scrw-1) * (1 + p1->x) / 2, 0);
+	y1 = scatoi((scrh-1) * (1 - p1->y) / 2, 0);
 	z1 = scatoi((1 - p1->z) / 2, 24);
 
-	x2 = scatoi((SCRW-1) * (1 + p2->x) / 2, 0);
-	y2 = scatoi((SCRH-1) * (1 - p2->y) / 2, 0);
+	x2 = scatoi((scrw-1) * (1 + p2->x) / 2, 0);
+	y2 = scatoi((scrh-1) * (1 - p2->y) / 2, 0);
 	z2 = scatoi((1 - p2->z) / 2, 24);
 
-	if (!g3_clipline(&rec, &x1, &y1, &z1, &x2, &y2, &z2)) return;
+	dx = x2 - x1; dy = y2 - y1;
+	roi.xmin = rec.xmin;
+	roi.ymin = rec.ymin;
+	roi.xmax = rec.xmax - 1;
+	roi.ymax = rec.ymax - 1;
+
+	if (!g3_clipline(&roi, &x1, &y1, &z1, &x2, &y2, &z2)) return;
 
 	if (y1 == y2 && x1 == x2) {		// pixel
 		//~ g3_setpixel(x1, y1, z, c.val);
 	}
 	else if (y1 == y2) {			// vline
 		if (x1 > x2) {x = x1; x1 = x2; x2 = x;}
-		zs = (z2 - (z = z1)) / (x2 - x1);
+		zs = (z2 - (z = z1)) / dx;
 		for (x = x1; x < x2; x++, z += zs)
 			g3_setpixel(x, y1, z, c.val);
 	}
 	else if (x1 == x2) {			// hline
-		zs = (z2 - (z = z1)) / (y2 - y1);
+		zs = (z2 - (z = z1)) / dy;
 		for (y = y1; y < y2; y++, z += zs)
 			g3_setpixel(x1, y, z, c.val);
 	}
-	else {					// fixme
-		long xs, zs, Zs;
-		x = (x1 << 16) - (x1 > x2);
-		xs = ((x2 - x1) << 16) / (y2 - y1);
-		zs = (z2 - (z = z1)) / (y2 - y1);
-		Zs = (z2 - (z = z1)) / (x2 - x1);
-		for (y = y1; y < y2; y += 1, x += xs, z += zs) {
-			x1 = x >> 16;
-			x2 = (x + xs) >> 16;
-			if (xs >> 16 == 0 || xs >> 16 == -1) {
-				x2 = (x1 = x >> 16) + 1;
-				g3_mixpixel(x1, y, z, c, ~x >> 8 & 0xff);
-				g3_mixpixel(x2, y, z, c, +x >> 8 & 0xff);
+	else {
+		long xs = (((x2 - x1) << 16) / (y2 - y1));
+		if ((xs >> 16) == (xs >> 31)) {							// fixme
+			zs = (z2 - (z = z1)) / dy;
+			x = (x1 << 16) - (x1 > x2);
+			for (y = y1; y <= y2; y += 1, x += xs, z += zs) {
+				int X = x >> 16;
+				mixpixel(X + 0, y, z, c, (~x >> 8) & 0xff);
+				mixpixel(X + 1, y, z, c, (+x >> 8) & 0xff);
 			}
-			else {
-				int Z = z, X;
-				if (x1 > x2) {X = x1; x1 = x2; x2 = X;}
-				Zs = (z2 - (Z = z)) / (x2 - x1);
-				for (X = x1; X < x2; X++, Z += Zs)
-					g3_setpixel(X, y, Z, c.val);
+		}
+		else if (x1 < x2) {
+			long ys = (((y2 - y1) << 16) / (x2 - x1));
+			zs = (z2 - (z = z1)) / dx;
+			y = (y1 << 16);
+			for (x = x1; x <= x2; x++, y += ys, z += zs) {
+				int Y = y >> 16;
+				mixpixel(x, Y + 0, z, c, (~y >> 8) & 0xff);
+				mixpixel(x, Y + 1, z, c, (+y >> 8) & 0xff);
+			}
+		}
+		else {
+			long ys = (((y2 - y1) << 16) / (x1 - x2));
+			zs = (z2 - (z = z1)) / dx;
+			y = (y1 << 16);
+			for (x = x1; x >= x2; x--, y += ys, z += zs) {
+				int Y = y >> 16;
+				mixpixel(x, Y + 0, z, c, (~y >> 8) & 0xff);
+				mixpixel(x, Y + 1, z, c, (+y >> 8) & 0xff);
 			}
 		}
 	}
+	/*else {							// fixme
+		long xs;
+		xs = (dx << 16) / (dy);
+		x = (x1 << 16) - (x1 > x2);
+
+		if (xs >> 16 == xs >> 31) {
+			zs = (z2 - (z = z1)) / (dy);
+			for (y = y1; y < y2; y += 1) {
+				int X = x >> 16;
+				/ *int a, offs = y * scrw + (x >> 16);
+				argb *dst = (argb*)&cBuff[offs];
+				a = ~x >> 8 & 0xff;
+				dst->r += ((c.r - dst->r) * a) >> 8;
+				dst->g += ((c.g - dst->g) * a) >> 8;
+				dst->b += ((c.b - dst->b) * a) >> 8;
+				dst += 1;
+				a = +x >> 8 & 0xff;
+				dst->r += ((c.r - dst->r) * a) >> 8;
+				dst->g += ((c.g - dst->g) * a) >> 8;
+				dst->b += ((c.b - dst->b) * a) >> 8;
+				//~ * /
+				//~ g3_mixpixel(X + 0, y, z, c, ~x >> 8);
+				//~ g3_mixpixel(X + 1, y, z, c, +x >> 8);
+				z += zs;
+				x += xs;
+			}
+		}
+		else {
+			int as = ((dy << 16) / dx);
+			zs = (z2 - (z = z1)) / dx;
+			//~ x1 = x1;
+			for (y = y1; y < y2; y += 1, x += xs) {
+				//~ int X, a = x1 > x2 ? 0xff00 : 0x0000;
+				int X, a = -(x1 < x2);
+				x1 = x >> 16;
+				x2 = (x + xs) >> 16;
+				if (x1 > x2) {X = x1; x1 = x2; x2 = X;}
+				for (X = x1; X < x2; X++) {
+					g3_mixpixel(X, y + 0, z, c, ~a >> 8);
+					g3_mixpixel(X, y + 1, z, c, +a >> 8);
+					//~ g3_mixpixel(X, y + 0, z, c, a);
+					//~ g3_mixpixel(X, y + 1, z, c, ~a);
+					z += zs;
+					a += as;
+				}
+			}
+		}
+	}*/
 }
 
-void g3_drawlineB(vecptr p1, vecptr p2, long c) {		// BresenHam
+void g3_drawlineB(vector p1, vector p2, long c) {		// BresenHam
 	long sx = 1, dx;
 	long sy = 1, dy;
 	long zs = 0, e;
 
-	int x1 = scatoi((SCRW-1) * (1 + p1->x) / 2, 0);
-	int y1 = scatoi((SCRH-1) * (1 - p1->y) / 2, 0);
+	int x1 = scatoi((scrw-1) * (1 + p1->x) / 2, 0);
+	int y1 = scatoi((scrh-1) * (1 - p1->y) / 2, 0);
 	int z1 = scatoi((1 - p1->z) / 2, 24);
 
-	int x2 = scatoi((SCRW-1) * (1 + p2->x) / 2, 0);
-	int y2 = scatoi((SCRH-1) * (1 - p2->y) / 2, 0);
+	int x2 = scatoi((scrw-1) * (1 + p2->x) / 2, 0);
+	int y2 = scatoi((scrh-1) * (1 - p2->y) / 2, 0);
 	int z2 = scatoi((1 - p2->z) / 2, 24);
 
 	if (!g3_clipline(&rec, &x1, &y1, &z1, &x2, &y2, &z2)) return;
@@ -839,19 +767,19 @@ void g3_drawlineB(vecptr p1, vecptr p2, long c) {		// BresenHam
 	}
 }
 
-void (*g3_drawline)(vecptr p1, vecptr p2, long c) = g3_drawlineB;
+void (*g3_drawline)(vector p1, vector p2, long c) = g3_drawlineA;
 
-void g3_drawoval(vecptr p1, scalar rx, scalar ry, long c) {
+void g3_drawoval(vector p1, scalar rx, scalar ry, long c) {
 	long r;
 	long x0, x1, sx, dx = 0;
 	long y0, y1, sy, dy = 0;
 
-	long x = scatoi((SCRW-1) * (1 + p1->x) / 2, 0);
-	long y = scatoi((SCRH-1) * (1 - p1->y) / 2, 0);
+	long x = scatoi((scrw-1) * (1 + p1->x) / 2, 0);
+	long y = scatoi((scrh-1) * (1 - p1->y) / 2, 0);
 	long z = scatoi((1 - p1->z) / 2, 24);
 
-	rx *= p1->w * ((SCRW/2) / ASPR);
-	ry *= p1->w * ((SCRW/2) / ASPR);
+	rx *= p1->w * (scrw/2);
+	ry *= p1->w * (scrw/2);
 
 	x0 = x - rx; y0 = y - ry;
 	x1 = x + rx; y1 = y + ry;
@@ -883,26 +811,25 @@ void g3_drawoval(vecptr p1, scalar rx, scalar ry, long c) {
 	}
 }
 
-void g3_filloval(vecptr p1, scalar rx, scalar ry, long c) {
+void g3_filloval(vector p1, scalar rx, scalar ry, long c) {
 	long x0, x1, sx, dx = 0;
 	long y0, y1, sy, dy = 0;
 	long r;
 
-	long x = scatoi((SCRW-1) * (1 + p1->x) / 2, 0);
-	long y = scatoi((SCRH-1) * (1 - p1->y) / 2, 0);
+	long x = scatoi((scrw-1) * (1 + p1->x) / 2, 0);
+	long y = scatoi((scrh-1) * (1 - p1->y) / 2, 0);
 	long z = scatoi((1 - p1->z) / 2, 24);
 
-	rx *= p1->w * ((SCRW/2) / ASPR);
-	ry *= p1->w * ((SCRW/2) / ASPR);
+	//~ rx *= p1->w * ((scrw/2) / ((scalar)scrw/scrh));
+	//~ ry *= p1->w * ((scrw/2) / ((scalar)scrw/scrh));
+	rx *= p1->w * (scrw/2);
+	ry *= p1->w * (scrw/2);
 
 	x0 = x - rx; y0 = y - ry;
 	x1 = x + rx; y1 = y + ry;
 
 	if(x0 > x1) {x0 ^= x1; x1 ^= x0; x0 ^= x1;}
 	if(y0 > y1) {y0 ^= y1; y1 ^= y0; y0 ^= y1;}
-
-	//~ if (x1 < 0 || x0 > SCRW) return;
-	//~ if (y1 < 0 || y0 > SCRH) return;
 
 	dx = x1 - x0; dy = y1 - y0;
 	x1 = x0 += dx >> 1; x0 += dx & 1;
@@ -920,26 +847,35 @@ void g3_filloval(vecptr p1, scalar rx, scalar ry, long c) {
 			y0++; y1--;
 			r += dy -= sx;
 		}
+		
 		if (x0 < 0) x0 = 0;
-		if (x1 > SCRW) x1 = SCRW;
+		if (x1 > scrw) x1 = scrw;
 		if (y0 >= 0) for (x = x0; x <= x1; x += 1) g3_setpixel(x, y0, z, c);
-		if (y1 < SCRH) for (x = x0; x <= x1; x += 1) g3_setpixel(x, y1, z, c);
+		if (y1 < scrh) for (x = x0; x <= x1; x += 1) g3_setpixel(x, y1, z, c);
 	}
 }
 
-typedef struct {
-	//~ argb rgb;
+
+
+/* typedef struct ssds {
+	long x;
+	long z;
+	long s;
+	long t;
+	argb c;
+} *ssds;// */
+
+typedef struct edge {
 	long x, dx, z, dz;		//
 	long s, ds, t, dt;		// texture
 	long r, dr, g, dg, b, db;	// RGB color
 	//~ long sz, dsz, tz, dtz, rz, drz;
 	//~ float A, dA, S0, S1, T0, T1, Z0, Z1;
-	//~ vector pos, dp;
-	//~ vector nrm, dn;
-	//~ vector col, dc;
-} edge;
-
-matrix proj, view, world;
+	//~ union vector pos, dp;
+	//~ union vector nrm, dn;
+	//~ union vector col, dc;
+	//~ argb rgb;
+} *edge;
 
 /*float lrpst(float u0, float u1, float z0, float z1, float a) {
 	//~ return u0 + a * (u1 - u0);
@@ -949,8 +885,9 @@ matrix proj, view, world;
 float lerpz(float u1, float u0, float a) {
 	return u0 + a * (u1 - u0);
 }*/
+//~ inline void edge_init2(edge e, alma a0, alma a1, vector v0, vector v1, int len, int skip);
 
-inline void edge_init(edge *e, long x1, long x2, long z1, long z2, argb c1, argb c2, long s1, long s2, long t1, long t2, int len, int skip) {
+inline void edge_init(edge e, long x1, long x2, long z1, long z2, argb c1, argb c2, long s1, long s2, long t1, long t2, int len, int skip) {
 	if (len <= 0) return;
 
 	e->dx = (x2 - (e->x = x1)) / len;
@@ -989,7 +926,7 @@ inline void edge_init(edge *e, long x1, long x2, long z1, long z2, argb c1, argb
 
 }// */
 
-inline void edge_initX(edge *e, edge *l, edge *r, int len, int skip) {
+inline void edge_initX(edge e, edge l, edge r, int len, int skip) {
 	e->dx = (r->x - (e->x = l->x)) / len;
 	e->dz = (r->z - (e->z = l->z)) / len;
 
@@ -1044,7 +981,7 @@ inline void edge_initX(edge *e, edge *l, edge *r, int len, int skip) {
 	}
 }
 
-inline void edge_next(edge *e) {
+inline void edge_next(edge e) {
 	e->x += e->dx;
 	e->z += e->dz;
 
@@ -1068,12 +1005,12 @@ inline void edge_next(edge *e) {
 
 }
 
-static void drawtriHelper(edge *l, edge *r, int y1, int y2, gx_Surf *img, argb tex2D(gx_Surf*, long, long)) {
-	edge vX;
+/*static void drawtriHelper(edge l, edge r, int y1, int y2, gx_Surf img, argb tex2D(gx_Surf, long, long)) {
+	struct edge vX;
 	register int x, y;
-	unsigned long *zb;
+	signed long *zb;
 	register argb *cb;
-	gx_Clip *roi = &rec;
+	gx_Clip roi = &rec;
 	for (y = y1; y < y2; y++) {
 		int lx = l->x >> 16;
 		int rx = r->x >> 16;
@@ -1087,10 +1024,10 @@ static void drawtriHelper(edge *l, edge *r, int y1, int y2, gx_Surf *img, argb t
 
 			edge_initX(&vX, l, r, xlr, sx);
 
-			zb = &zBuff[SCRW * y + lx];
-			cb = (argb *)&cBuff[SCRW * y + lx];
+			zb = &zBuff[scrw * y + lx];
+			cb = (argb *)&cBuff[scrw * y + lx];
 			while (lx < rx) {
-				if ((unsigned)vX.z < *zb) {
+				if (vX.z < *zb) {
 					*zb = vX.z;
 					if (tex2D) {
 						argb tex = tex2D(img, vX.s, vX.t);
@@ -1110,23 +1047,70 @@ static void drawtriHelper(edge *l, edge *r, int y1, int y2, gx_Surf *img, argb t
 		}
 		edge_next(l);
 		edge_next(r);
+	}// * /
+}*/
+
+static void drawtri(edge l, edge r, int swap, int y1, int y2, gx_Surf img, argb tex2D(gx_Surf, long, long)) {
+	struct edge v;
+	register int x, y;
+	long *zb;
+	register argb *cb;
+	gx_Clip roi = &rec;
+	if (swap) { edge x = l; l = r; r = x;}
+	for (y = y1; y < y2; y++) {
+		int lx = l->x >> 16;
+		int rx = r->x >> 16;
+		int xlr = rx - lx, sx = 0;
+		if (xlr > 0) {
+			if (rx > roi->xmax) rx = roi->xmax;
+			if (lx < (x = roi->xmin)) {
+				sx = x - lx;
+				lx = x;
+			}
+
+			edge_initX(&v, l, r, xlr, sx);
+
+			zb = &zBuff[scrw * y + lx];
+			cb = (argb *)&cBuff[scrw * y + lx];
+			while (lx < rx) {
+				if ((signed long)v.z < *zb) {
+					*zb = v.z;
+					if (tex2D) {
+						argb tex = tex2D(img, v.s, v.t);
+						cb->b = (v.b * tex.b) >> 24;
+						cb->g = (v.g * tex.g) >> 24;
+						cb->r = (v.r * tex.r) >> 24;
+					}
+					else {
+						cb->b = v.b >> 16;
+						cb->g = v.g >> 16;
+						cb->r = v.r >> 16;
+					}
+				}
+				edge_next(&v);
+				lx++; zb++; cb++;
+			}
+		}
+		edge_next(l);
+		edge_next(r);
 	}// */
 }
 
-void g3_fill3gon(vector *p, texcol *tc, texcol *lc, int i1, int i2, int i3, gx_Surf *img) {
-	argb (*tex2D)(gx_Surf*, long, long) = 0;
-	gx_Clip *roi = &rec;
-	//~ unsigned long *zb;
-	//~ register argb *cb;
-	long x1, x2, x3;
-	long y1, y2, y3;
-	long z1, z2, z3;
-	long s1, s2, s3;
-	long t1, t2, t3;
+void g3_fill3gon(vector p, texcol tc, texcol lc, int i1, int i2, int i3, gx_Surf img) {
+	argb (*tex2D)(gx_Surf, long, long) = 0;
+	gx_Clip roi = &rec;
+	long x1, x2, x3;	// fixed(16, 16)
+	long y1, y2, y3;	// fixed(32, 0)
+	long z1, z2, z3;	// fixed(8, 24)
+	long s1, s2, s3;	// fixed(16, 16)
+	long t1, t2, t3;	// fixed(16, 16)
+	argb c1, c2, c3;	// argb(8, 8, 8)
+
 	long dy1 = 0, dy2 = 0;
 	long ly1 = 0, ly2 = 0;
-	argb c1, c2, c3;
-	edge v1, v2;//, *l, *r;
+
+	struct edge v1, v2;
+	//~ struct ssds s1, s2, s3;
 	register int y = roi->ymin;
 
 	// sort by y
@@ -1134,22 +1118,25 @@ void g3_fill3gon(vector *p, texcol *tc, texcol *lc, int i1, int i2, int i3, gx_S
 	if (p[i1].y < p[i2].y) {i1 ^= i2; i2 ^= i1; i1 ^= i2;}
 	if (p[i2].y < p[i3].y) {i2 ^= i3; i3 ^= i2; i2 ^= i3;}
 
-	y1 = scatoi((SCRH-1) * (1 - p[i1].y) / 2, 0);
-	y2 = scatoi((SCRH-1) * (1 - p[i2].y) / 2, 0);
-	y3 = scatoi((SCRH-1) * (1 - p[i3].y) / 2, 0);
+	y1 = scatoi((scrh-1) * (1 - p[i1].y) / 2, 0);
+	y2 = scatoi((scrh-1) * (1 - p[i2].y) / 2, 0);
+	y3 = scatoi((scrh-1) * (1 - p[i3].y) / 2, 0);
 
 	if (y1 < y3) {				// clip (y)
 
-		// calc only if we draw something
-		x1 = scatoi((SCRW-1) * (1. + p[i1].x) / 2., 16);
-		x2 = scatoi((SCRW-1) * (1. + p[i2].x) / 2., 16);
-		x3 = scatoi((SCRW-1) * (1. + p[i3].x) / 2., 16);
+		x1 = scatoi((scrw-1) * (1. + p[i1].x) / 2., 16);
+		x2 = scatoi((scrw-1) * (1. + p[i2].x) / 2., 16);
+		x3 = scatoi((scrw-1) * (1. + p[i3].x) / 2., 16);
+
 		z1 = scatoi((1 - p[i1].z) / 2, 24);
 		z2 = scatoi((1 - p[i2].z) / 2, 24);
 		z3 = scatoi((1 - p[i3].z) / 2, 24);
-		c1.col = c2.col = c3.col = 0x0ffffff;
+
+		c1.col = c2.col = c3.col = 0x00ffffff;
+
 		if (img && tc) {
-			int w = img->width-1, h = img->height-1;
+			int w = img->width-1;
+			int h = img->height-1;
 			s1 = tc[i1].tex.s * w;
 			t1 = tc[i1].tex.t * h;
 			s2 = tc[i2].tex.s * w;
@@ -1158,12 +1145,13 @@ void g3_fill3gon(vector *p, texcol *tc, texcol *lc, int i1, int i2, int i3, gx_S
 			t3 = tc[i3].tex.t * h;
 
 			//~ tex2D = (argb (*)(gx_Surf*, long, long)) gx_getpnear;
-			tex2D = (argb (*)(gx_Surf*, long, long)) gx_getpblin;
+			tex2D = (argb (*)(gx_Surf, long, long)) gx_getpblin;
 
+			//TODO: mip-map selection
 			//~ if (y1 == y2) w = X2 - X1;
 			//~ else if (y2 == y3) w = X3 - X2;
 			//~ else w = X1 < X3 ? X1 - X2 : X3 - X1;
-			//~ printf ("tri H:(%+014d), W:(%+014d)\r", tmp, ((w < 0 ? -w : w) >> 16));
+			//~ printf ("tri H:(%+014d), W:(%+014d)\r", y3 - y1, ((w < 0 ? -w : w) >> 16));
 			//~ if ((w >>= 16) < 0)w = -w;
 			//~ if (tmp > SCRH || ((w < 0 ? -w : w) >> 16) > SCRW) return;
 		}
@@ -1177,6 +1165,7 @@ void g3_fill3gon(vector *p, texcol *tc, texcol *lc, int i1, int i2, int i3, gx_S
 			c2.col = 0x0ffffff;
 			c3.col = 0x0ffffff;
 		}
+
 		if (lc) {
 			#define litmix(__r, __a, __b) {\
 				(__r).r = ((__a).r + (__b).r) / 2;\
@@ -1185,6 +1174,7 @@ void g3_fill3gon(vector *p, texcol *tc, texcol *lc, int i1, int i2, int i3, gx_S
 			litmix(c1, c1, lc[i1]);
 			litmix(c2, c2, lc[i2]);
 			litmix(c3, c3, lc[i3]);
+			#undef litmix
 		}
 
 		// calc slope y3 - y1 (the longest)
@@ -1217,29 +1207,19 @@ void g3_fill3gon(vector *p, texcol *tc, texcol *lc, int i1, int i2, int i3, gx_S
 	} else return;
 	if (y1 < y2) {				// y1 < y < y2
 		edge_init(&v2, x1, x2, z1, z2, c1, c2, s1, s2, t1, t2, ly1, dy1);
-		if (v2.dx > v1.dx) {
-			drawtriHelper(&v1, &v2, y1, y2, img, tex2D);
-		} else {
-			drawtriHelper(&v2, &v1, y1, y2, img, tex2D);
-		}
+		drawtri(&v1, &v2, v2.dx < v1.dx, y1, y2, img, tex2D);
 	}
 	if (y2 < y3) {				// y2 < y < y3
 		edge_init(&v2, x2, x3, z2, z3, c2, c3, s2, s3, t2, t3, ly2, dy2);
-		if (v2.x > v1.x) {
-			drawtriHelper(&v1, &v2, y2, y3, img, tex2D);
-		} else {
-			drawtriHelper(&v2, &v1, y2, y3, img, tex2D);
-		}
+		drawtri(&v1, &v2, v2.x < v1.x, y2, y3, img, tex2D);
 	}
 }
 
-camera Camera, *cam = &Camera;
-
-int g3_drawenvc(gx_Surf img[6], vecptr view, matptr proj, double size) {
+int g3_drawenvc(struct gx_Surf img[6], vector view, matrix proj, double size) {
 	#define CLPNRM 1
 	//~ const scalar e = 0;
-	vector v[8];//, nrm[1];
-	texcol t[8];
+	union vector v[8];//, nrm[1];
+	union texcol t[8];
 
 	v[4].x = v[7].x = v[3].x = v[0].x = -size;
 	v[1].x = v[2].x = v[5].x = v[6].x = +size;
@@ -1315,27 +1295,53 @@ int g3_drawenvc(gx_Surf img[6], vecptr view, matptr proj, double size) {
 	return 0;
 }// */
 
-int g3_drawmesh(mesh *msh, matptr mmat, camera_p cam) {			// this should be wireframe
-	gx_Surf *img = NULL;
-	//~ const long flat_col = 0xffffff;
+void g3_drawOXYZ(camera cam, double n) {
+	union matrix tmp[3];
+	matrix proj, view;
+	union vector v[4];
+
+	view = cammat(tmp, cam);
+	proj = matmul(tmp + 2, &cam->proj, view);
+	vecldf(v + 0, 0, 0, 0, 0);
+	vecldf(v + 1, n, 0, 0, 0);
+	vecldf(v + 2, 0, n, 0, 0);
+	vecldf(v + 3, 0, 0, n, 0);
+
+	mappos(v + 0, proj, v + 0);
+	mappos(v + 1, proj, v + 1);
+	mappos(v + 2, proj, v + 2);
+	mappos(v + 3, proj, v + 3);
+
+	g3_drawline(v, v + 1, 0xff0000);
+	g3_drawline(v, v + 2, 0x00ff00);
+	g3_drawline(v, v + 3, 0x0000ff);
+
+}// */
+
+int g3_drawmesh(mesh msh, matrix objm, camera cam) {			// this should be wireframe
+	gx_Surf img = NULL;
+	const long line_col = 0xffffff;
 	const long norm_col = 0xff0000;
 	const long bbox_col = 0xff00ff;
+
 	unsigned i, l, tricnt = 0;
-	//~ matrix invv;
-	vector eye, v[8];
+	union vector eye, v[8];
 	material lcol[lights];
+	union matrix tmp[3];
+	matrix proj, view;
 
 	#define MAXVTX (65536*16)
-	static vector pos[MAXVTX];
-	static texcol col[MAXVTX];
-	static texcol littmparr[MAXVTX];
-	texcol *lit = 0;
+	static union vector pos[MAXVTX];
+	//~ static union vector nrm[MAXVTX];
+	static union texcol col[MAXVTX];
+	static union texcol littmparr[MAXVTX];
+	texcol lit = 0;
 	if (msh->vtxcnt > MAXVTX) return -1;
 
 	//~ World*Wiew*Proj
-	cammat(&view, cam);
-	matmul(&world, &view, mmat);
-	matmul(&proj, &projM, &world);
+	cammat(tmp, cam);
+	view = matmul(tmp + 1, cammat(tmp, cam), objm);
+	proj = matmul(tmp + 2, &cam->proj, view);
 
 	//~ frustum_get(v, &proj);
 	//~ matinv(&invv, mmat);
@@ -1357,17 +1363,17 @@ int g3_drawmesh(mesh *msh, matptr mmat, camera_p cam) {			// this should be wire
 
 	for (i = 0; i < msh->vtxcnt; i += 1) {		// calc
 
-		mappos(pos + i, &proj, &(msh->vtxptr[i].pos));
+		mappos(pos + i, proj, msh->pos + i);
 
 		if (lit) {
-			vector tmp, color = msh->mtl.emis;
-			//~ const vecptr N = &msh->vtxptr[i].nrm;	// normalVec
-			//~ const vecptr V = &msh->vtxptr[i].pos;	// vertexPos
-			const vecptr N = matvp3(v+0, mmat, &msh->vtxptr[i].nrm);	// normalVec
-			const vecptr V = matvph(v+1, mmat, &msh->vtxptr[i].pos);	// vertexPos
+			union vector tmp, color = msh->mtl.emis;
+			//~ const vector N = &msh->vtxptr[i].nrm;	// normalVec
+			//~ const vector V = &msh->vtxptr[i].pos;	// vertexPos
+			const vector N = matvp3(v+0, objm, msh->nrm + i);	// normalVec
+			const vector V = matvph(v+1, objm, msh->pos + i);	// vertexPos
 			for (l = 0; l < lights; l += 1) if (Lights[l].attr & L_on) {
-				vecptr D = vecsub(v+2, V, &Lights[l].pos);
-				vecptr R, L = &Lights[l].dir;
+				vector D = vecsub(v+2, V, &Lights[l].pos);
+				vector R, L = &Lights[l].dir;
 				scalar dotp, attn = 1, spot = 1;
 
 				if (vecdp3(L, L)) {					// directional or spot light
@@ -1405,11 +1411,11 @@ int g3_drawmesh(mesh *msh, matptr mmat, camera_p cam) {			// this should be wire
 		}
 
 		if (img)
-			col[i].val = msh->vtxptr[i].tex.val;
+			col[i].val = msh->tex[i].val;
 		else if (lit)
 			col[i].rgb = torgb(0);
 		else
-			col[i].rgb = nrmrgb(&msh->vtxptr[i].nrm);
+			col[i].rgb = nrmrgb(msh->nrm + i);
 	}
 
 	if (img && !msh->hasTex) {
@@ -1426,19 +1432,18 @@ int g3_drawmesh(mesh *msh, matptr mmat, camera_p cam) {			// this should be wire
 		long i2 = msh->triptr[i].i2;
 		long i3 = msh->triptr[i].i3;
 
-		if (pos[i1].w <= 0 || pos[i2].w <= 0 || pos[i3].w <= 0) continue;
-
 		switch (draw & cull_mode) {				// culling faces(FIXME)
-			default : return 0;
-			case cull_none : break;
-			case cull_front : {
-				if (backface(0, pos+i1, pos+i2, pos+i3) < 0)
-					continue;
-			} break;
-			case cull_back : {
-				if (backface(0, pos+i1, pos+i2, pos+i3) > 0)
-					continue;
-			} break;
+			default: return 0;
+			case cull_none: break;
+			case cull_front:
+			case cull_back: {
+				scalar fA = (pos[i2].x - pos[i1].x) * (pos[i3].y - pos[i1].y);
+				scalar fB = (pos[i2].y - pos[i1].y) * (pos[i3].x - pos[i1].x);
+				switch (draw & cull_mode) {
+					case cull_back: if (fA <= fB) continue; break;
+					case cull_front: if (fA >= fB) continue; break;
+				}
+			}
 		}
 		switch (draw & draw_mode) {
 			default : return 0;
@@ -1456,17 +1461,25 @@ int g3_drawmesh(mesh *msh, matptr mmat, camera_p cam) {			// this should be wire
 				g3_fill3gon(pos, col, lit, i1, i2, i3, img);
 			} break;
 		}
-		if (draw & disp_norm) {					// normals
-			mappos(v+0, &proj, vecadd(v+3, &msh->vtxptr[i1].pos, &msh->vtxptr[i1].nrm));
-			mappos(v+1, &proj, vecadd(v+4, &msh->vtxptr[i2].pos, &msh->vtxptr[i2].nrm));
-			mappos(v+2, &proj, vecadd(v+5, &msh->vtxptr[i3].pos, &msh->vtxptr[i3].nrm));
-			g3_drawline(v+0, pos+i1, norm_col);
-			g3_drawline(v+1, pos+i2, norm_col);
-			g3_drawline(v+2, pos+i3, norm_col);
-		}
 		tricnt += 1;
 	}
-	if (draw & disp_bbox) {				// bbox
+	for (i = 0; i < msh->segcnt; i += 1) {		// draw segs
+		long i1 = msh->segptr[i].p1;
+		long i2 = msh->segptr[i].p2;
+		g3_drawline(pos+i1, pos+i2, line_col);
+	}
+	if (msh->hlplt > 0 && msh->hlplt <= msh->vtxcnt) {
+		const float lsize = .5;
+		g3_drawoval(pos + msh->hlplt - 1, lsize, lsize, bbox_col);
+	}
+	if (draw & disp_norm) {						// normals
+		for (i = 0; i < msh->vtxcnt; i += 1) {
+			vecadd(v, msh->pos + i, vecsca(v, msh->nrm + i, N));
+			mappos(v, proj, v);
+			g3_drawline(v, pos + i, norm_col);
+		}
+	}
+	if (draw & disp_bbox) {						// bbox
 		bboxMesh(msh, v + 0, v + 6);
 		v[4].x = v[7].x = v[3].x = v[0].x;
 		v[1].x = v[2].x = v[5].x = v[6].x;
@@ -1475,14 +1488,14 @@ int g3_drawmesh(mesh *msh, matptr mmat, camera_p cam) {			// this should be wire
 		v[1].z = v[2].z = v[3].z = v[0].z;
 		v[4].z = v[5].z = v[7].z = v[6].z;
 
-		mappos(v + 0, &proj, v + 0);
-		mappos(v + 1, &proj, v + 1);
-		mappos(v + 2, &proj, v + 2);
-		mappos(v + 3, &proj, v + 3);
-		mappos(v + 4, &proj, v + 4);
-		mappos(v + 5, &proj, v + 5);
-		mappos(v + 6, &proj, v + 6);
-		mappos(v + 7, &proj, v + 7);
+		mappos(v + 0, proj, v + 0);
+		mappos(v + 1, proj, v + 1);
+		mappos(v + 2, proj, v + 2);
+		mappos(v + 3, proj, v + 3);
+		mappos(v + 4, proj, v + 4);
+		mappos(v + 5, proj, v + 5);
+		mappos(v + 6, proj, v + 6);
+		mappos(v + 7, proj, v + 7);
 
 		// front
 		g3_drawline(v + 0, v + 1, bbox_col);
@@ -1505,90 +1518,6 @@ int g3_drawmesh(mesh *msh, matptr mmat, camera_p cam) {			// this should be wire
 	return tricnt;
 }
 
-// zoomsurf?
-void blursurf(gx_Surf *dst, int cnt) {
-	int x, y;
-	for (y = 1; y < dst->height - 1; y += 1) {
-		long *zptr = (long*)&zBuff[y*SCRW];
-		argb *dptr = (argb*)gx_getpaddr(dst, 1, y);
-		argb *sptr = (argb*)gx_getpaddr(dst, 1, y);
-		argb *sptm = (argb*)((char*)sptr - dst->scanLen);
-		argb *sptp = (argb*)((char*)sptr + dst->scanLen);
-		for (x = 1; x < dst->width - 1; x += 1) {
-			unsigned r = (sptm[x-1].r + sptm[x].r + sptm[x+1].r + sptr[x-1].r + sptr[x+1].r + sptp[x-1].r + sptp[x].r + sptp[x+1].r) >> 3;
-			unsigned g = (sptm[x-1].g + sptm[x].g + sptm[x+1].g + sptr[x-1].g + sptr[x+1].g + sptp[x-1].g + sptp[x].g + sptp[x+1].g) >> 3;
-			unsigned b = (sptm[x-1].b + sptm[x].b + sptm[x+1].b + sptr[x-1].b + sptr[x+1].b + sptp[x-1].b + sptp[x].b + sptp[x+1].b) >> 3;
-			//~ if ((r -= cnt) < 0) dptr[x].r = 0; else dptr[x].r = r >> 3;
-			//~ if ((g -= cnt) < 0) dptr[x].g = 0; else dptr[x].g = g >> 3;
-			//~ if ((b -= cnt) < 0) dptr[x].b = 0; else dptr[x].b = b >> 3;
-
-			cnt = zptr[x] & 0xffffff;
-			if ((cnt = (cnt >> 15)) > 255) cnt = ~cnt & 0xff;
-			cnt ^= 255;
-
-			//~ cnt = (zptr[x] >> 16) & 0xff;
-			dptr[x].r = sptr[x].r + (cnt * (r - sptr[x].r) >> 8);
-			dptr[x].g = sptr[x].g + (cnt * (g - sptr[x].g) >> 8);
-			dptr[x].b = sptr[x].b + (cnt * (b - sptr[x].b) >> 8);
-		}
-	}
-}
-
-void blursurfx() {
-	argb res;
-	int i, j, x, y, w = 4;
-	for (y = w; y < SCRH - w; y += 1) {
-		for (x = w; x < SCRW - w; x += 1) {
-			//~ int cnt = zBuff[y*SCRW+x] & 0xffffff;
-			//~ argb *dst = (argb *)&bBuff[y*SCRW+x];
-			//~ argb *src = (argb *)&cBuff[y*SCRW+x];
-
-			unsigned cr = 0, cg = 0, cb = 0;
-			for (j = y-w; j < y+w; j += 1) {
-				for (i = x-w; i < x+w; i += 1) {
-					argb *pix = (argb *)(&cBuff[j*SCRW+i]);
-					cr += pix->r;
-					cg += pix->g;
-					cb += pix->b;
-				}
-			}
-			res.r = cr / (w*w*4);
-			res.g = cg / (w*w*4);
-			res.b = cb / (w*w*4);
-			//~ for (j = y-w; j < y+w; j += 1)
-				//~ for (i = x-w; i < x+w; i += 1)
-					//~ bBuff[j*SCRW+i] = res.col;
-			bBuff[y*SCRW+x] = res.col;
-
-			//~ if ((cnt = (cnt >> 15)) > 255) cnt = ~cnt & 0xff;
-			//~ cnt ^= 255;
-			//~ *dst = argbmix(res, *src, cnt);
-			//~ dst->r += (cnt * (src->r - dst->r) >> 8);
-			//~ dst->g += (cnt * (src->g - dst->g) >> 8);
-			//~ bBuff[y*SCRW+x] = res.col;
-			//~ */
-		}
-	}
-	for (y = 1; y < SCRH; y += 1) {
-		for (x = 1; x < SCRW; x += 1) {
-			//~ cBuff[y*SCRW+x] = bBuff[y*SCRW+x];
-			argb *dst = (argb *)&cBuff[y*SCRW+x];
-			argb *src = (argb *)&bBuff[y*SCRW+x];
-			int cnt = zBuff[y*SCRW+x] & 0xffffff;
-
-			if ((cnt = (cnt >> 15)) > 255) cnt = ~cnt & 0xff;
-			cnt ^= 255;
-			dst->r += (cnt * (src->r - dst->r) >> 8);
-			dst->g += (cnt * (src->g - dst->g) >> 8);
-			dst->b += (cnt * (src->b - dst->b) >> 8);
-			//~ if (draw & dspZ)
-				//~ dst->val = (cnt << 16 | cnt << 8 | cnt);
-			//~ if (cnt != 0xffffff)
-				//~ *dst = *src;
-		}
-	}//*/
-}
-
 enum {
 	rat_mov = 1 << 0,
 	rat_lbp = 1 << 1,
@@ -1600,11 +1529,7 @@ enum {
 	rat_mbr = 1 << 6,
 };
 
-struct gx_Surf_t offs;		// offscreen
-struct gx_Surf_t font;		// font
-int Mx, My;//, act = 0;
-
-typedef int (*flip_scr)(gx_Surf*, int);
+typedef int (*flip_scr)(gx_Surf, int);
 typedef int (*peek_msg)(int);
 
 #if defined __WIN_DRV
