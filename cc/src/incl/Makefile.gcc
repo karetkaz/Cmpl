@@ -1,0 +1,11 @@
+#INCLUDE=
+OUTOBJ=-o
+OUTEXE=-o
+#~ CFLAGS=-O0 -g3 -ggdb
+CFLAGS=-O2 -g0
+COPTS=-c -Wall
+LIBS=-lm
+CCC=gcc -m32
+LNK=gcc -m32
+DBG=gdb
+LIBNAME=libpvmc.a

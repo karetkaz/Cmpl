@@ -1,34 +1,5 @@
-#INCLUDE=
-OUTOBJ=-o 
-OUTEXE=-o 
-CFLAGS=-O0 -g3
-COPTS=-c
-LIBS=
-CCC=lcc
-LNK=lcc
-
-#INCLUDE=
-OUTOBJ=-o
-OUTEXE=-o
-CFLAGS=-O0 -ggdb -g3
-COPTS=-c -Wall
-LIBS=-lm
-CCC=gcc -m32
-LNK=gcc -m32
-DBG=gdb
-
-#~ #INCLUDE='$(WATCOM)\h;$(WATCOM)\h\nt'
-#~ OUTOBJ=-fo=
-#~ OUTEXE=-fe=
-#~ CFLAGS=-zq -ei -6r -d3
-#~ #-d3 -oa -hd
-#~ COPTS=-wx
-#~ #-i=$(INCLUDE)
-#~ LIBS=
-#~ LNK=wcl386 $(CFLAGS) 
-#~ CCC=wcc386
-#~ LIB=WLIB -q
-#~ DBG=wdw
+include incl/Makefile.gcc
+LIB=WLIB -q
 
 SRCDIR=
 OBJDIR=
@@ -41,19 +12,19 @@ OBJS=\
 	$(OBJDIR)tree.o\
 	$(OBJDIR)type.o\
 	$(OBJDIR)code.o\
-	$(OBJDIR)pvmc.o
+	$(OBJDIR)ccvm.o
 	#~ $(OBJDIR)main.o
 
 main: clean $(OBJS) $(OBJDIR)main.o
 	$(LNK) $(OUTEXE)$(BINDIR)main $(OBJS) main.o $(LIBS)
 
 lib:$(OBJS)
-	$(LIB) libpvmc.lib $(OBJS)
+	$(LIB) $(LIBNAME) $(OBJS)
 
 $(OBJDIR)main.o:
 	$(CCC) $(COPTS) $(CFLAGS) $(SRCDIR)main.c $(OUTOBJ)$(OBJDIR)main.o
-$(OBJDIR)pvmc.o:
-	$(CCC) $(COPTS) $(CFLAGS) $(SRCDIR)pvmc.c $(OUTOBJ)$(OBJDIR)pvmc.o
+$(OBJDIR)ccvm.o:
+	$(CCC) $(COPTS) $(CFLAGS) $(SRCDIR)ccvm.c $(OUTOBJ)$(OBJDIR)ccvm.o
 $(OBJDIR)clog.o:
 	$(CCC) $(COPTS) $(CFLAGS) $(SRCDIR)clog.c $(OUTOBJ)$(OBJDIR)clog.o
 $(OBJDIR)buff.o:

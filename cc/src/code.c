@@ -1,6 +1,6 @@
 #include <math.h>
 #include <string.h>
-#include "pvmc.h"
+#include "ccvm.h"
 
 #ifdef __WATCOMC__
 #pragma disable_message(124);
@@ -17,22 +17,104 @@ typedef struct bcde {			// byte code decoder
 			uns08t	dl;	// data to copy to stack
 			uns16t	cl;	// code to exec paralel
 		};
-		/*struct {				// extended
+		/*struct {				// extended3: 4 bytes `res := lhs OP rhs`
 			uns32t opc:4;		// 0 ... 15
-			uns32t mem:2;		// 
-			uns32t res:6;		// Result
-			uns32t lhs:6;		// a
-			uns32t rhs:6;		// b
-			
-		}ext;*/
-		/*struct {				// extended
-			uint8_t opc:4;		// 0-15
+
+			uns32t mem:2;		// mem
+			uns32t res:6;		// res
+			uns32t lhs:6;		// lhs
+			uns32t rhs:6;		// rhs
+			//{ --8<-------------------------------------------
+			void *res = sp + ip->ext.res;
+			void *lhs = sp + ip->ext.lhs;
+			void *rhs = sp + ip->ext.rhs;
+			switch (ip->ext.mem) {
+				case 1: res = *(void**)res; break;
+				case 2: lhs = *(void**)lhs; break;
+				case 3: rhs = *(void**)rhs; break;
+			}
+			switch (ip->ext.opc) {
+				case ext_add: ...add(res, lhs, rhs); break;
+				case ext_...:
+			}
+			//} --8<-------------------------------------------
+		}ext;// */
+		struct {				// extended3: 5 - 8 bytes
+			uns32t opc:4;		// 0 ... 15
+
+			uns32t imm:1;		// 
+			uns32t tmp:1;		// 
+			uns32t mem:2;		// ???
+			union {
+				struct {				// indexed: sp[res] := sp[lhs] OP sp[rhs]
+					uns32t res:8;		// res
+					uns32t lhs:8;		// lhs
+					uns32t rhs:8;		// rhs
+					//~ uns32t xxx:8;		// ???
+				};
+				struct {				// immediate sp(0) := sp(0) OP (val | [val])
+					uns32t val:32;		// imm
+				};
+			};
+			/*{ --8<-------------------------------------------
+			void *res, *lhs, *rhs;
+			if (imm) {
+				res = sp + ip->ext.res;
+				rhs = ip->ext.val;
+				switch (ip->ext.mem) {
+					case 1: res = memAt(s, res); break;
+					case 2: 
+					case 3: rhs = memAt(s, rhs); break;
+				}
+				lhs = res;
+			}
+			else {
+				res = sp + ip->ext.res;
+				lhs = sp + ip->ext.lhs;
+				rhs = sp + ip->ext.rhs;
+				switch (ip->ext.mem) {
+					case 1: res = memAt(s, res); break;
+					case 2: lhs = memAt(s, lhs); break;
+					case 3: rhs = memAt(s, rhs); break;
+				}
+			}
+			switch (ip->ext.opc) {
+				case ext_add: ...add(res, lhs, rhs); break;
+				case ext_...:
+			}
+			// */
+		}ext;// */
+		/*struct {				// extended ?(x86)?
+			uint8_t opc:4;		// 0 ... 15
 			uint8_t opt:2;		// idx(3) / rev(3) / imm(6) / mem(6)
 			uint8_t mem:2;		// mem size
 			union {
 				uint8_t si[4];
 				val32t	arg;
 			};
+		/+extended opcodes ???argc = 1: [size:2][type:2][code:4]
+			type:
+			ext_set = 0,		// 3 / sp(n) = opr(sp(n), sp(0)); pop(size & 1)				// a += b
+			ext_dup = 1,		// 3 / sp(0) = opr(sp(0), sp(n)); loc((1<<size)>>1[0, 1, 2, 4])		// (a+a) < c
+			ext_sto = 2,		// 6 / mp[n] = opr(mp[n], sp(0)); pop(size & 1)				// a += b
+			ext_lod = 3,		// 6 / sp(0) = opr(sp(0), mp[n]); loc((1<<size)>>1[0, 1, 2, 4])		// (a+a) < c
+
+			switch (type) {
+				case ext_idx : ip += 3; {
+					lhs = sp + u1[ip + 2];
+					rhs = sp + 0;
+					switch (size) {
+						case 0 : dst = (sp -= 1);	// new result	push(opr(sp(n) sp(0)))
+						case 1 : 					sp(0) = opr(sp(0) sp(n))
+						case 2 : dst = (sp -= 1);	// get result	sp(n) = opr(sp(n) sp(0))
+						case 3 : dst = (lhs);		// set result	sp(n) = opr(sp(n) sp(0)); pop
+					}
+				}
+				dst = ip + 2
+				lhs = sp(ip[2])
+				rhs = ip(0)
+			}
+
 		}ext;*/
 	};
 } *bcde;
@@ -55,30 +137,8 @@ typedef struct cell {			// processor
 
 } *cell; // */
 
+//~ #define useBuiltInFuncs
 //{ libc.c ---------------------------------------------------------------------
-#define useBuiltInFuncs
-/*
-static void f32abs(state s) {
-	flt32t x = poparg(s, flt32t);
-	setret(flt32t, s, fabs(x));
-}
-static void f32sin(state s) {
-	flt32t x = poparg(s, flt32t);
-	setret(flt32t, s, sin(x));
-}
-static void f32cos(state s) {
-	flt32t x = poparg(s, flt32t);
-	setret(flt32t, s, cos(x));
-}
-static void f32tan(state s) {
-	flt32t x = poparg(s, flt32t);
-	setret(flt32t, s, tan(x));
-}
-static void f32sqrt(state s) {
-	flt32t x = poparg(s, flt32t);
-	setret(flt32t, s, sqrt(x));
-}
-// */
 //~ #pragma intrinsic(log,cos,sin,tan,sqrt,fabs,pow,atan2,fmod)
 //~ #pragma intrinsic(acos,asin,atan,cosh,exp,log10,sinh,tanh)
 
@@ -226,15 +286,18 @@ static void b64sxt(state s) {
 	val <<= 64 - (ofs + cnt);
 	setret(int64t, s, val >> (64 - cnt));
 }
+
 #endif
 
 static struct lfun {
 	void (*call)(state);
 	const char* proto;
-	uns08t chk, pop;
+	// TODO: check these values
+	int08t chk, pop;
 	symn sym;
 }
 libcfnc[256] = {
+	{NULL},
 #ifdef useBuiltInFuncs
 	{f64abs, "flt64 abs(flt64 x)"},
 	{f64sin, "flt64 sin(flt64 x)"},
@@ -263,12 +326,13 @@ libcfnc[256] = {
 	//~ {b64shr, "int64 shr(uns64 x, int32 y)"},
 	{b64sar, "int64 sar(int64 x, int32 y)"},
 
+	//~ {i32i64, "int64 i32i64(int32 val)"},
+
 	{b64sxt, "int64 ext(int64 val, int32 offs, int32 bits)"},
 	//~ {b64zxt, "int64 ext(uns64 val, int32 offs, int32 bits)"},
 	{b32sxt, "int32 ext(int32 val, int32 offs, int32 bits)"},
 	{b32zxt, "int32 ext(uns32 val, int32 offs, int32 bits)"},
 #endif
-	// */
 	{NULL},
 };
 
@@ -277,25 +341,31 @@ int installlibc(state s, void libc(state), const char* proto) {
 	int stdiff = 0;
 	symn arg, sym;
 
-	if (!libccnt && !libc && !proto) {
+	if (!libc && proto && strcmp(proto, "print") == 0) {
 		int i;
 		for (i = 0; libcfnc[i].proto; ++i) {
-			//~ int j = 
-			installlibc(s, libcfnc[i].call, libcfnc[i].proto);
-			//~ debug("libc[%d]: %s;", j, libcfnc[i].proto);
+			fputfmt(stdout, "%s\n", libcfnc[i].proto);
+			//~ installlibc(s, libcfnc[i].call, libcfnc[i].proto);
 		}
-		if (proto == NULL)
-			return libccnt;
-	}// */
+	}
 
-	if (libccnt >= 255) {
+	if (!libccnt && !libc) {
+		libccnt = 1;
+		if (!libc) while (libcfnc[libccnt].proto) {
+			int i = libccnt;
+			installlibc(s, libcfnc[i].call, libcfnc[i].proto);
+		}
+		return libccnt;
+	}
+
+	if (libccnt >= (sizeof(libcfnc) / sizeof(*libcfnc))) {
 		error(s, 0, "to many functions on install('%s')", proto);
 		return -1;
 	}
 
 	libcfnc[libccnt].call = libc;
 	libcfnc[libccnt].proto = proto;
-	
+
 	if (!libc || !proto)
 		return 0;
 
@@ -313,7 +383,7 @@ int installlibc(state s, void libc(state), const char* proto) {
 	libcfnc[libccnt].pop = stdiff / 4;
 
 	libcfnc[libccnt].sym = sym;
-	libcfnc[libccnt].sym->offs = libccnt;
+	sym->offs = -libccnt;
 
 	libccnt += 1;
 
@@ -457,40 +527,18 @@ int emit(vmEnv s, int opc, ...) {
 		case TYPE_f64: opc = f64_cgt; break;
 		default: return 0;
 	}
-	/*else if (opc == opc_cne) {
-		switch (arg.i4) {
-			case TYPE_u32: // compare equ
-			case TYPE_i32: opc = i32_ceq; break;
-			case TYPE_f32: opc = f32_ceq; break;
-			case TYPE_i64: opc = i64_ceq; break;
-			case TYPE_f64: opc = f64_ceq; break;
-			default: return 0;
-		}
-		//~ if (!emit(s, opc)) return 0;
-		return emit(s, opc) ? emit(s, b32_not) : 0;
+	else if (opc == opc_cne) {
+		if (emit(s, opc_ceq, arg))
+			opc = b32_not;
 	}
 	else if (opc == opc_cle) {
-		switch (arg.i4) {
-			case TYPE_u32: opc = u32_cgt; break;
-			case TYPE_i32: opc = i32_cgt; break;
-			case TYPE_f32: opc = f32_cgt; break;
-			case TYPE_i64: opc = i64_cgt; break;
-			case TYPE_f64: opc = f64_cgt; break;
-			default: return 0;
-		}
-		return emit(s, opc) ? emit(s, b32_not) : 0;
+		if (emit(s, opc_cgt, arg))
+			opc = b32_not;
 	}
 	else if (opc == opc_cge) {
-		switch (arg.i4) {
-			case TYPE_u32: opc = u32_clt; break;
-			case TYPE_i32: opc = i32_clt; break;
-			case TYPE_f32: opc = f32_clt; break;
-			case TYPE_i64: opc = i64_clt; break;
-			case TYPE_f64: opc = f64_clt; break;
-			default: return 0;
-		}
-		return emit(s, opc) ? emit(s, b32_not) : 0;
-	}// */
+		if (emit(s, opc_clt, arg))
+			opc = b32_not;
+	}
 
 	// bit
 	else if (opc == opc_shl) switch (arg.i4) {
@@ -677,10 +725,10 @@ int fixjump(vmEnv s, int src, int dst, int stc) {
 	bcde ip = getip(s, src);
 
 	if (src >= 0) switch (ip->opc) {
+		default: fatal("no Ip here");
 		case opc_jmp:
 		case opc_jnz:
 		case opc_jz: ip->jmp = dst - src; break;
-		default: fatal("expecting jump, but found: '%+A'", ip);
 	}
 	return 0;
 }
@@ -812,6 +860,8 @@ int exec(vmEnv vm, unsigned cc, unsigned ss, dbgf dbg) {
 	//~TODO: memset(vm->_mem, 0, vm->ds);
 	*/
 
+	//~ vm->ic = 0;
+
 	memset(vm->_mem, 0, vm->ds);
 	pu->ip = vm->_mem + vm->pc;
 	pu->bp = vm->_end - ss;
@@ -822,7 +872,7 @@ int exec(vmEnv vm, unsigned cc, unsigned ss, dbgf dbg) {
 
 	while ((pu = getProc(vm, proc))) {
 
-		//~ s->ic += 1;
+		//~ vm->ic += 1;
 		st = pu->sp;			// stack
 		ip = (bcde)pu->ip;
 
@@ -935,7 +985,7 @@ void fputasm(FILE *fout, unsigned char* beg, int len, int mode) {
 		bcde ip = (bcde)(beg + i);
 
 		switch (ip->opc) {
-			error_opc: fputfmt(stderr, "invalid opcode: %02x '%A'", ip->opc, ip); return;
+			error_opc: error(NULL, 0, "invalid opcode: %02x '%A'", ip->opc, ip); return;
 			#define NEXT(__IP, __CHK, __SP) {is = (__IP); ss += (__SP);}
 			#define STOP(__ERR, __CHK) if (__CHK) goto __ERR
 			#include "incl/exec.c"
@@ -956,4 +1006,8 @@ void fputasm(FILE *fout, unsigned char* beg, int len, int mode) {
 void dumpasm(FILE *fout, vmEnv s, int mode) {
 	vmInfo(fout, s);
 	fputasm(fout, s->_mem + s->pc, s->cs, mode);
+}
+
+void dumpasmdbg(FILE *fout, vmEnv s, int mark, int mode) {
+	fputasm(fout, (unsigned char*)getip(s, mark), s->cs, mode);
 }

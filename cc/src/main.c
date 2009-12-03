@@ -1,4 +1,4 @@
-#include "pvmc.h"
+#include "ccvm.h"
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
@@ -63,7 +63,7 @@ void usage(state s, char* prog, char* cmd) {
 
 int vmHelp(char *cmd) {
 	FILE *out = stdout;
-	int i, k, n = 0;
+	int i, k = 0, n = 0;
 	for (i = 0; i < opc_last; ++i) {
 		char *opc = (char*)opc_tbl[i].name;
 		if (opc && strfindstr(opc, cmd, 1)) {
@@ -104,7 +104,7 @@ int evalexp(ccEnv s, char* text) {
 	tid = eval(&res, ast, TYPE_flt);
 
 	if (peek(s))
-		error(s->s, 0, "unexpected: `%k`\n", peek(s));
+		error(s->s, 0, "unexpected: `%k`", peek(s));
 
 	fputfmt(stdout, "eval(`%+k`) = ", ast);
 
@@ -284,6 +284,7 @@ int program(int argc, char *argv[]) {
 		}
 
 		switch (outc) {
+			default: fatal("no Ip here");
 			case out_tree: dump(s, outf, dump_ast | (level & 0xff), NULL); break;
 			case out_dasm: dump(s, outf, dump_asm | (level & 0xff), NULL); break;
 			case out_tags: dump(s, outf, dump_sym | (1), NULL); break;
@@ -293,17 +294,17 @@ int program(int argc, char *argv[]) {
 		return 0;
 	}
 	else if (strcmp(cmd, "-e") == 0) {	// execute
-		fatal("unimplemented option '%s' \n", cmd);
+		fatal("unimplemented");
 		//~ objfile(s, ...);
 		//~ return execute(s, cc, ss, dbgl);
 	}
 	else if (strcmp(cmd, "-d") == 0) {	// assemble
-		fatal("unimplemented option '%s' \n", cmd);
+		fatal("unimplemented");
 		//~ objfile(s, ...);
 		//~ return dumpasm(s, cc, ss, dbgl);
 	}
 	else if (strcmp(cmd, "-m") == 0) {	// make
-		fatal("unimplemented option '%s' \n", cmd);
+		fatal("unimplemented");
 	}
 	else if (strcmp(cmd, "-h") == 0) {	// help
 		char *t = argv[2];
@@ -335,9 +336,8 @@ int main(int argc, char *argv[]) {
 			//~ "-emit",
 			//~ "-api",
 			"-c",		// compile command
-			//~ "-c#0",		// execute command
-			"-xd",		// execute command
-			"../main.cvx",
+			"-xd",		// execute & show symbols command
+			"../test.cvx",
 		};
 		argc = sizeof(args) / sizeof(*args);
 		argv = args;

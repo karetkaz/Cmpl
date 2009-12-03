@@ -1,7 +1,6 @@
 #define SP(__POS, __TYP) (((stkval*)(((char*)st)+(4*(__POS))))->__TYP)
 #define MP(__POS, __TYP) (((stkval*)(((char*)mp)+(1*(__POS))))->__TYP)
 
-//~ #define SPRES(__TYP) (((stkval*)((char*)pu->sp))->__TYP)
 // { switch (ip->opc)------------------------------------------------------------
 //{ 0x0?: SYS		// System
 case opc_nop  : NEXT(1, 0, 0) {
@@ -402,8 +401,8 @@ case f32_mul: NEXT(1, 2, -1) {
 } break;
 case f32_div: NEXT(1, 2, -1) {
 #ifdef EXEC
-	STOP(error_div, SP(0, f4) == 0);
 	SP(1, f4) /= SP(0, f4);
+	STOP(error_div, SP(0, f4) == 0);
 #endif
 } break;
 case f32_mod: NEXT(1, 2, -1) {
@@ -526,11 +525,13 @@ case i64_f64: NEXT(1, 2, -0) {
 //{ 0x7?: F64		// Double
 case f64_neg: NEXT(1, 2, -0) {
 #ifdef EXEC
+	//~ EXEC(f64neg, sp, 0,sp)
 	SP(0, f8) = -SP(0, f8);
 #endif
 } break;
 case f64_add: NEXT(1, 4, -2) {
 #ifdef EXEC
+	//~ EXEC(f64neg, sp + 2, sp + 2, sp)
 	SP(2, f8) += SP(0, f8);
 #endif
 } break;
@@ -546,8 +547,8 @@ case f64_mul: NEXT(1, 4, -2) {
 } break;
 case f64_div: NEXT(1, 4, -2) {
 #ifdef EXEC
-	STOP(error_div, SP(0, f8) == 0);
 	SP(2, f8) /= SP(0, f8);
+	STOP(error_div, SP(0, f8) == 0);
 #endif
 } break;
 case f64_mod: NEXT(1, 4, -2) {
