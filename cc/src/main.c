@@ -4,14 +4,16 @@
 #include <string.h>
 
 // default values
-static const int wl = -1;		// warninig level
-//~ static const int ol = 0;		// optimize level
+static const int wl = 3;		// warning level
+static const int ol = 0;		// optimize level
 
 static const int cc = 1;			// execution cores
 static const int ss = 1 << 10;		// execution stack(256K)
 //~ static const int hs = 128 << 20;	// execution heap(128M)
 
-void usage(state s, char* prog, char* cmd) {
+extern int vmTest();
+
+void usage(char* prog, char* cmd) {
 	if (cmd == NULL) {
 		fputfmt(stdout, "Usage: %s <command> [options] ...\n", prog);
 		fputfmt(stdout, "<Commands>\n");
@@ -120,20 +122,17 @@ int evalexp(ccEnv s, char* text) {
 }
 
 int program(int argc, char *argv[]) {
-	static struct state s[1];
-	char *prg, *cmd, hexc = '#';
-	dbgf dbg = nodbg;//Info;
+	static char mem[64 << 10];	// 128K
+	state s = gsInit(mem, sizeof(mem));
 
-	s->_cnt = sizeof(s->_mem);
-	s->_ptr = s->_mem;
-	s->cc = 0;
-	s->vm = 0;
+	char *prg, *cmd, hexc = '#';
+	dbgf dbg = NULL;//nodbg;//Info;
 
 	prg = argv[0];
 	cmd = argv[1];
 	if (argc <= 2) {
 		if (argc < 2) {
-			usage(s, prg, NULL);
+			usage(prg, NULL);
 		}
 		else if (*cmd == '=') {
 			return evalexp(ccInit(s), cmd + 1);
@@ -147,21 +146,42 @@ int program(int argc, char *argv[]) {
 				dumpsym(stdout, sym, 0);
 				sym = sym->defs;
 			}
+			ccDone(s);
 			//~ dumpsym(stdout, leave(s), 1);
 		}
 		else if (strcmp(cmd, "-emit") == 0) {
 			ccInit(s);
-			dumpsym(stdout, emit_opc->args, 1);
+			if (emit_opc)
+				dumpsym(stdout, emit_opc->args, 1);
 		}
-		else usage(s, prg, cmd);
+		else if (strcmp(cmd, "-test") == 0) {
+			ccInit(s);
+			if (emit_opc)
+				dumpsym(stdout, emit_opc->args, 1);
+			ccDone(s);
+		}
+		else usage(prg, cmd);
+	}
+	else if (strcmp(cmd, "-vm") == 0) {	//
+		cmd = argv[2];
+		if (!cmd || !*cmd)
+			cmd = "test";
+
+		if (strcmp(cmd, "test") == 0)
+			return vmTest();
+
+		if (strcmp(cmd, "help") == 0)
+			return vmHelp("*");
 	}
 	else if (strcmp(cmd, "-c") == 0) {	// compile
 		int level = -1, argi = 2;
 		int warn = wl;
+		int opti = ol;
 		int outc = 0;			// output
 		char *srcf = 0;			// source
 		char *logf = 0;			// logger
 		char *outf = 0;			// output
+
 		enum {
 			gen_code = 0x0010,
 			out_tags = 0x0011,	// tags	// ?offs?
@@ -200,8 +220,8 @@ int program(int argc, char *argv[]) {
 				outf = arg;
 			}
 
-			// output text
-			else if (strncmp(arg, "-x", 2) == 0) {		// exec
+			// output what
+			else if (strncmp(arg, "-x", 2) == 0) {		// exec(DelMe)
 				char *str = arg + 2;
 				outc = run_code;
 				if (*str == 'd') {
@@ -245,11 +265,20 @@ int program(int argc, char *argv[]) {
 
 			// Override settings
 			else if (strncmp(arg, "-w", 2) == 0) {		// warning level
-				if (strcmp(arg, "-wx"))
+				if (strcmp(arg, "-wx") == 0)
 					warn = -1;
-				else if (strcmp(arg, "-wa"))
+				else if (strcmp(arg, "-wa") == 0)
 					warn = 9;
 				else if (!parseInt(arg + 2, &warn, 0)) {
+					fputfmt(stderr, "invalid level '%s'\n", arg + 2);
+					debug("invalid level '%s'\n", arg + 2);
+					return 0;
+				}
+			}
+			else if (strncmp(arg, "-O", 2) == 0) {		// optimize level
+				if (strcmp(arg, "-Oa") == 0)
+					opti = 3;
+				else if (!parseInt(arg + 2, &opti, 0)) {
 					fputfmt(stderr, "invalid level '%s'\n", arg + 2);
 					debug("invalid level '%s'\n", arg + 2);
 					return 0;
@@ -266,39 +295,45 @@ int program(int argc, char *argv[]) {
 			++argi;
 			//~ debug("level :0x%02x: arg[%d]: '%s'", level, argi - 2, arg);
 		}
+
 		if (logfile(s, logf) != 0) {
 			fputfmt(stderr, "can not open file `%s`\n", srcf);
 			return -1;
 		}
+
 		if (srcfile(s, srcf) != 0) {
 			fputfmt(stderr, "can not open file `%s`\n", srcf);
 			return -1;
 		}
-		if (compile(s, !srcUnit) != 0) {
-			//~ fputfmt(stderr, "can not open file `%s`\n", srcf);
-			return s->errc;
-		}
-		if (gencode(s, 0) != 0) {
-			//~ fputfmt(stderr, "can not open file `%s`\n", srcf);
-			return s->errc;
-		}
+		debug("compiler.init:%d Bytes", s->cc->_ptr - s->_mem);
 
-		switch (outc) {
+		if (compile(s, warn) != 0) {
+			return s->errc;
+		}
+		debug("compiler.scan:%d Bytes", s->cc->_ptr - s->_mem);
+
+		if (gencode(s, opti) != 0) {
+			return s->errc;
+		}
+		//~ debug("code:%d Bytes", s->vm->cs);
+		//~ debug("data:%d Bytes", s->vm->ds);
+
+		if (outc) switch (outc) {
 			default: fatal("no Ip here");
 			case out_tree: dump(s, outf, dump_ast | (level & 0xff), NULL); break;
 			case out_dasm: dump(s, outf, dump_asm | (level & 0xff), NULL); break;
 			case out_tags: dump(s, outf, dump_sym | (1), NULL); break;
-			case run_code: exec(s->vm, cc, ss, dbg); break;
+			case run_code: exec(s->vm, ss, dbg); break;
 		}
 
 		return 0;
 	}
-	else if (strcmp(cmd, "-e") == 0) {	// execute
+	else if (strcmp(cmd, "-e") == 0) {	// exec
 		fatal("unimplemented");
 		//~ objfile(s, ...);
 		//~ return execute(s, cc, ss, dbgl);
 	}
-	else if (strcmp(cmd, "-d") == 0) {	// assemble
+	else if (strcmp(cmd, "-d") == 0) {	// dasm
 		fatal("unimplemented");
 		//~ objfile(s, ...);
 		//~ return dumpasm(s, cc, ss, dbgl);
@@ -309,7 +344,7 @@ int program(int argc, char *argv[]) {
 	else if (strcmp(cmd, "-h") == 0) {	// help
 		char *t = argv[2];
 		if (argc < 3) {
-			usage(s, argv[0], argc < 4 ? argv[3] : NULL);
+			usage(argv[0], argc < 4 ? argv[3] : NULL);
 		}
 		else if (strcmp(t, "-s") == 0) {
 			int i = 3;

@@ -1,0 +1,644 @@
+//~ ./main ="3 + 3 -4 + -2"
+//~ src/pvmc.h
+
+/* TODOS:
+ * static if should not enter new scope
+ * Double parsing precision loss (Tokenizer): se pi
+ * 
+ * TODO: int fact(int n) = (n * fact(n - 1)); : castId(NULL) ??? why ?
+ * 
+**/
+//~ int fact(int n) = (n * fact(n - 1));
+
+//~ /* Emit Test K
+//! emit : emit(emit.type.opcode, emit.type(arg), ...);
+//! args will be pushed on the stack right to left
+//! they must be casted to types in emit: see program -emit
+//! opcode also must be an opc from emit or void
+//! int32 a = emit(void, f32(3.14));
+//! int32 st[2] = emit(void);			// see the top of stack as int[2]
+//! see program -emit
+
+/+	Basic emits 1
+int32 shl(int32 value, int count) = emit(i32.shl, i32(count), i32(value));
+int32 sar(int32 value, int count) = emit(i32.sar, i32(count), i32(value));
+int32 shr(int32 value, int count) = emit(i32.shr, i32(count), i32(value));
+
+int a = sar(-1, 8);
+//~ +/
+/+	Basic emits
+flt32 res1 = emit(f32.div, f32(2), f32(math.pi));	// ok
+flt64 res2 = emit(f64.neg, f64(math.pi));			// ok
+flt32 res3 = emit(void, f32(math.pi));				// ok
+int32 res4 = emit(void, f32(math.pi));				// ok
+
+emit(void, f64(math.pi));
+int32 i32 = emit(void);
+flt32 f32 = emit(void);
+int64 i64 = emit(void);
+flt64 f64 = emit(void);
+
+//~ +/
+/+	swizzle test
+f32x4 swz1 = emit(swz.xyzw, f32(math.pi/8), f32(math.pi/4), f32(math.pi/2), f32(math.pi));
+//~ f32x4 swz2 = emit(swz.xzwy, f32(1/2), f32(2/2), f32(3/2), f32(4/2));
+//~ int alfa = emit(void, f32(1/2));
+//~ +/
+//~ /+	vector 4xf32 test
+emit(void, f32(11), f32(12), f32(13), f32(14));
+emit(void, f32(21), f32(22), f32(23), f32(24));
+//~ flt32 vdot = emit(v4f.dp4);
+flt32 sp[16] = emit(void);
+flt32 x = sp[5];
+
+//~ flt32 stop[4] = new flt32[4];
+//~ f64x2 res5 = emit(void, f64(1), f64(2));
+//~ +/
+/+	Complex mul
+define a_re = 3.;
+define a_im = 4.;
+define b_re = 2.;
+define b_im = 5.;
+
+enum prog {
+	sisd = 9;
+	simd;
+	none;
+}
+
+define test2exec = prog.none;
+define times2exec = 10000000;
+
+//~ flt64 re = a_re * b_re - a_im * b_im;
+//~ flt64 im = a_re * b_im + a_im * b_re;
+
+//~ emit(v2d.mul, f64(b_im), f64(b_re), f64(a_im), f64(a_re));		// a.re * b.re, a.im * b.im
+//~ flt64 re = emit(f64.sub);										//>re = a.re * b.re - a.im * b.im
+//~ emit(v2d.mul, f64(b_re), f64(b_im), f64(a_im), f64(a_re));		// a.re * b.im, a.im * b.re
+//~ flt64 im = emit(f64.add);										//>im = a.re * b.im + a.im * b.re
+
+static if (test2exec == prog.sisd) {	// 28.689(10000000)
+	for (int i = 0; i < times2exec; i += 1) {
+		flt64 re = a_re * b_re - a_im * b_im;
+		flt64 im = a_re * b_im + a_im * b_re;
+	}
+}
+static if (test2exec == prog.simd) {	// 26.072(10000000)
+	for (int i = 0; i < times2exec; i += 1) {
+		emit(v2d.mul, f64(b_im), f64(b_re), f64(a_im), f64(a_re));		// a.re * b.re, a.im * b.im
+		flt64 re = emit(f64.sub);										//>re = a.re * b.re - a.im * b.im
+		emit(v2d.mul, f64(b_re), f64(b_im), f64(a_im), f64(a_re));		// a.re * b.im, a.im * b.re
+		flt64 im = emit(f64.add);										//>im = a.re * b.im + a.im * b.re
+	}
+}
+//~ +/
+
+//~ */
+/* Libc Test K
+int32 var = 0x00001081;
+int32 res = -1;
+/+	// public static int bsr(int i)
+int32 lib = bsr(var);
+if (var != 0) {
+	uns32 ans = 0;
+	uns32 x = var;
+	if (x & 0xffff0000) { ans += 16; x >>= 16; }
+	if (x & 0x0000ff00) { ans +=  8; x >>=  8; }
+	if (x & 0x000000f0) { ans +=  4; x >>=  4; }
+	if (x & 0x0000000c) { ans +=  2; x >>=  2; }
+	if (x & 0x00000002) { ans +=  1; }
+	res = ans;
+}
+//~+/
+/+	// public static int hi1(int i)
+int32 lib = bhi(var);
+if (var) {
+	uns32 u = var;
+	u |= u >> 1;
+	u |= u >> 2;
+	u |= u >> 4;
+	u |= u >> 8;
+	u |= u >> 16;
+	res = u - (u >> 1);
+}
+//~+/
+/+	// public static int lo1(int i)
+	res = var & -var;
+//~+/
+/+	// public static int bitswap(uns i)
+int32 lib = swp(var);
+if (var) {
+	uns32 x = var;
+	x = ((x >> 1) & 0x55555555) | ((x & 0x55555555) << 1);
+	x = ((x >> 2) & 0x33333333) | ((x & 0x33333333) << 2);
+	x = ((x >> 4) & 0x0F0F0F0F) | ((x & 0x0F0F0F0F) << 4);
+	x = ((x >> 8) & 0x00FF00FF) | ((x & 0x00FF00FF) << 8);
+	res = (x >> 16) | (x << 16);
+}
+//~+/
+//~*/
+/* Call Test X
+/+	Basic functions
+double sqr(double a) = double(a * a);
+//~ double res2 = sqrt(sqr(5));
+int a2z = sqr(2.5);
+
+//~ flt32(int32 x) = emit(i32.f32, i32(x));
+
+//~ flt32 dot3(f32x4 a, f32x4 b) = emit(v4f.dp3, v4f(b), v4f(a));
+//~ flt32 dotH(f32x4 a, f32x4 b) = emit(v4f.dph, v4f(b), v4f(a));		// XXX
+//~ flt32 dot4(f32x4 a, f32x4 b) = emit(v4f.dp4, v4f(b), v4f(a));
+//~ f32x4 rdiv(f32x4 a, f32x4 b) = emit(v4f.div, v4f(b), v4f(a));
+
+//~ define .add(f32x4 x, f32x4 y) = emit(v4f.add, v4f(y), v4f(x));
+//~ define .sub(f32x4 x, f32x4 y) = emit(v4f.sub, v4f(y), v4f(x));
+//~ define Dot3(f32x4 x, f32x4 y) = emit(v4f.dp3, v4f(y), v4f(x));
+
+//~ define ty flt32;
+//~ ty abs(ty a) = a < 0 ? -a : a;
+//~ ty sqr(ty a) = a * a;
+//~ ty a1 = sqr(1,2,3,4);
+//~ ty a2 = sqr(4);
+//~ ty a3 = sqr(12);
+//~ flt64 top[2] = emit(void, f64(1), f64(2));
+//~ float a = sin(math.pi);
+// +/
+// */
+/* Type Test X
+/+ Math Constants
+define E		= 2.71828182845904523536028747135266249775724709369995957496696763;	// A001113
+define Pi		= 3.14159265358979323846264338327950288419716939937510582097494459;	// A000796
+define Phi		= 1.61803398874989484820458683436563811772030917980576286213544862;	// A001622
+define Sqrt2	= 1.41421356237309504880168872420969807856967187537694807317667974;	// A002193
+define SqrtE	= 1.64872127070012814684865078781416357165377610071014801157507931;	// A019774
+define SqrtPi	= 1.77245385090551602729816748334114518279754945612238712821380779;	// A002161
+define SqrtPhi	= 1.27201964951406896425242246173749149171560804184009624861664038;	// A139339
+define Ln2		= 0.693147180559945309417232121458176568075500134360255254120680009;	// A002162
+define Log2E	= 1 / Ln2;
+define Ln10		= 2.30258509299404568401799145468436420760110148862877297603332790;	// A002392
+define Log10E	= 1 / Ln10;
+//~ +/
+/+	alias1
+define Math math;
+define nan = Math.nan;
+bool c0 = math.isNan(0.);
+bool c1 = math.isNan(math.nan);
+bool c2 = math.isNan(Math.nan);
+
+//~ bool xxx = Math.nan != Math.nan;
+//~ +/
+/+	alias
+define myint uns16;
+int64 min = myint.min;
+int64 max = myint.max;
+int64 msk = myint.mask;
+int64 bts = myint.bits;
+int64 size = myint.size;
+//~ +/
+/+X	struct
+struct vec4d {
+	struct vec3d {
+		float x;
+		float y;
+		float z;
+	};
+	float x;
+	float y;
+	float z;
+	float w;
+}
+
+define v4 vec4d;
+define v3 vec4d.vec3d;
+
+v3 v;
+//~ v.x = 0;
+//~ v.y = 1;
+//~ v.z = 2;
+//~ v = vec4d(1,2,3,4);
+
+struct s1 {
+struct s2 {
+struct s3 {
+struct s4 {
+struct s5 {
+struct s6 {
+struct s7 {
+	int a;
+};
+};
+};
+};
+};
+};
+};
+
+// +/
+/+	function
+double sqr(double x) = x * x;	// inline
+int isNan(flt64 x) = x != x;
+int isNan(flt32 x) = x != x;
+//~ int isNan(int32 x) = x == 0x7fffffff;
+//~ int isNan(int16 x) = x == 0x7fff;
+//~ int isNan(int8 x) = x == 0x7f;
+
+void count(flt32 x) {for (int i = 0; i < x; i += 1);}
+
+double lerp(double a, double b, double t) = a + t * (b - a);
+//~ int a = isNan(9);
+int a = isNan(flt64(math.nan));
+//~ int a = isNan(0x7fffffff);
+//~ int x[] = emit(void);
+//~ double a = 3;// + math.nan;
+//~ double q = lerp(5, 7, .1);
+//~ double X = count(5);
+//~ int a = sqr(8);
+// +/
+/+	constant
+define ftype flt64;
+ftype b = 0.;
+ftype a = -0.;
+//~ ftype B = +0.;
+ftype c = math.nan;
+bool w = a == b;
+ftype x = c == c;
+
+float v = 1 - 2 * math.pi;
+int32 xxx = float(int(3));
+flt64 f = 1e310;
+flt32 f32 = math.inf;
+flt64 f64 = math.inf;
+flt64 f642 = f32;
+flt32 f322 = f64;
+//~ +/
+/+X	operators
+
+//~ define v4f32(flt32 xyz) = emit(v4f, f32(xyz), f32(xyz), f32(xyz), f32(xyz));
+//~ define v4f32(flt32 x, flt32 y, flt32 z) = emit(v4f, f32(x), f32(y), f32(z), f32(1));
+//~ define v4f32(flt32 x, flt32 y, flt32 z, flt32 w) = emit(v4f, f32(x), f32(y), f32(z), f32(w));
+
+// class
+v4f32 operator(flt32 x, flt32 y, flt32 z, flt32 w) = emit(v4f, f32(x), f32(y), f32(z), f32(w));
+
+// object
+void operator(v4f32 lhs) (flt32 x, flt32 y, flt32 z, flt32 w) {
+	//~ usage: stupid
+	//~ v4f32 a;
+	//~ a(1,2,3,4);
+	//~ a(1,2,9,4);
+	
+	lhs.x = x;
+	lhs.y = y;
+	lhs.z = z;
+	lhs.w = w;
+}
+
+flt32 operator (v4f32 lhs) (flt32 val) {
+	//~ usage:
+	//~ v4f32 polyv4f = v4f32(1,2,3,4);
+	//~ flt32 polyval = polyv4f(8);
+
+	return ((((lhs.w) * val + lhs.z) * val + lhs.y) * val) + lhs.x;
+}
+flt32 operator (v4f32 lhs) [int32 idx] {
+	if (idx == 0 || idx == 'x')
+		return lhs.x;
+	if (idx == 1 || idx == 'y')
+		return lhs.y;
+	if (idx == 2 || idx == 'z')
+		return lhs.z;
+	if (idx == 3 || idx == 'w')
+		return lhs.w;
+	return 0.0;
+
+	//~ if (int[0, 'x'].has(idx))
+		//~ return lhs.x;
+}
+
+v4f32 operator (v4f32 lhs) % (v4f32 rhs) {
+	return v4f32.crs(lhs, rhs);
+}
+flt32 operator (v4f32 lhs) ^ (v4f32 rhs) {	// length
+	v4f32 tmp = lhs - rhs;
+	return v4f32.dp3(tmp, tmp);
+}
+
+//~ int operator -(int rhs) = emit(i32.add, rhs);
+//~ int operator (int lhs) + (int rhs) = emit(i32.add, i32(rhs), i32(lhs));
+
+//~ +/
+/+ Complex: X
+struct Complex {
+	flt64 re;
+	flt64 im;
+}
+Complex operator (flt64 re, flt64 im) = emit(v2d, f64(re), f64(im));
+
+//~ Complex operator -(Complex rhs) = Complex(-rhs.re, -rhs.im);
+//~ Complex operator (Complex lhs) + (Complex rhs) = Complex(lhs.re + rhs.re, lhs.im + rhs.im);
+//~ Complex operator (Complex lhs) - (Complex rhs) = Complex(lhs.re - rhs.re, lhs.im - rhs.im);
+
+Complex operator -(Complex rhs) = emit(v2d.neg);
+Complex operator (Complex lhs) + (Complex rhs) = emit(v2d.add);
+Complex operator (Complex lhs) - (Complex rhs) = emit(v2d.sub);
+
+Complex operator (Complex a) * (Complex b) {
+	emit(v2d.mul, f64(b.im), f64(b.re), f64(a.im), f64(a.re));		// a.re * b.re, a.im * b.im
+	flt64 re = emit(f64.sub);										//>re = a.re * b.re - a.im * b.im
+	emit(v2d.mul, f64(b.re), f64(b.im), f64(a.im), f64(a.re));		// a.re * b.im, a.im * b.re
+	flt64 im = emit(f64.add);										//>im = a.re * b.im + a.im * b.re
+	return Complex(re, im);
+}
+
+//~ +/
+/+ Compare:
+define ty flt64;
+ty x = 5;
+ty y = 5;
+bool eq = x == y;
+bool lt = x < y;
+bool gt = x > y;
+
+//~ bool ne = x != y;
+//~ bool le = x <= y;
+//~ bool ge = x >= y;
+//~ +/
+
+//~*/
+
+/* calc e
+//~ define double float;
+define eps = 1e-20;
+double res = 1;
+double tmp = 1;
+for (int i = 1; tmp > eps; i += 1) {
+	res += tmp /= i;
+}
+// */
+/* factorial
+define n = 5;
+int64 res = 1;
+for (int i = 1; i <= n; i += 1)
+	res *= i;
+
+// */
+
+/* test if:
+int i = 3;
+flt64 a = 9;
+if (a) {
+	i = 0;
+}
+else {
+	a = 2;
+}
+//~ */
+
+/* test if:
+int i = 3;
+float a = 4;
+if (i) {
+	a = 0;
+	if (i == 1) a = 1.1; else a = 2.1;
+	if (i == 1) a = 1.2; else ;
+	if (i == 1) ;else a = 2.2;
+	if (i == 1) a = 3;
+
+	else if (i == 2) a = 1.42;
+	else if (i == 3) a = 1.43;
+	else if (i == 4) a = 1.44;
+	else if (i == 5) a = 1.45;
+	else if (i == 6) a = 1.46;
+}
+else {
+	if (a <= 5) {
+		if (a < 2.5) i = 1;
+		else i = 2;
+	}
+	else {
+		if (a < 7.5) i = 3;
+		else i = 4;
+	}
+}
+
+// */
+/* test if: 'when nothing happens'
+if (1)
+	{{{{{;;;};}};;;}{;;;}}
+else
+	{{;};;{;}}
+//*/
+/* test if: isNan(val)
+bool isNan(flt32 x) = x != x;
+flt64 val = 1;//math.nan;
+bool isNan1 = isNan(val);
+//~ bool isNan2 = val != val;
+// */
+
+/* RayTrace
+define rgb int32;
+define qual = 1;
+define width = 320 << qual;
+define height = 240 << qual;
+
+rgb cBuff[width * height];
+int zBuff[width * height];
+
+
+/+
+for (int i = 0; i < height; i += 1)
+	for (int j = 0; j < width; j += 1)
+		cBuff[i * width + j] := i ^ j;
+// +/
+
+class Light {
+	vector	ambi;		// Ambient
+	vector	diff;		// Diffuse
+	vector	spec;		// Specular
+	vector	attn;		// Attenuation
+	vector	pos;		// position
+	vector	dir;		// direction
+	scalar	sCos;
+	scalar	sExp;
+	short	attr;		// typeof(on/off)
+}
+
+vec4f lit(out ambi, out diff, out spec, vec4f pos, vec4f nrm, vec4f eye, Material mtl) {
+	vec4f tmp, color = mtl.emis;
+
+	if (attr & L_on) {
+		vecptr D = pos - this.pos;	// distance
+		vecptr R, L = dir;			// (L) lightDir
+		scalar dotp, attn = 1, spot = 1;
+
+		if (vec4f.dp3(dir, dir)) {			// directional or spot light
+			if (sCos) {						// Spot Light
+				scalar spot = L.dp3(D.nrm());
+				attn = 0;
+				if (spot > cos(toRad(sCos))) {
+					spot **= sExp;
+				}
+			}
+		}
+		else {
+			L = vec4f.nrm(D);
+		}// * /
+
+		attn = spot / vecpev(this.attn, D.len());
+
+		color += ambi = this.ambi * mtl.ambi * attn;
+
+		if ((dotp = -vecdp3(N, L)) > 0) {
+			color += diff = this.diff * mtl.diff * (attn * dotp);
+
+			R = vecnrm(vecrfl(V - eye, N));
+			if ((dotp = -vecdp3(R, L)) > 0) {
+				color += spec = this.spec * mtl.spec * (attn * (dotp ** spow));
+			}
+		}
+	}
+	return color;
+	col[i].rgb = vecrgb(&color);
+}
+
+operator Material(vec4f ambi, vec4f diff, vec4f spec, flt32 spow) {
+	...
+}
+
+class Material {	// material
+	vec4f emis(0, 0, 0, 1);		// Emissive
+	vec4f ambi(0, 0, 0, 1);		// Ambient
+	vec4f diff(0, 0, 0, 1);		// Diffuse
+	vec4f spec(0, 0, 0, 1);		// Specular
+	flt32 spow(1);				// Shin...
+	this (vec4f ref ambi, vec4f ref diff, vec4f ref spec, flt32 spow) {
+		...
+	}
+
+	static Material Brass = Material(
+		f32x4(0.329410, 0.223529, 0.027451, 1),
+		f32x4(0.780392, 0.568627, 0.113725, 1),
+		f32x4(0.992157, 0.941176, 0.807843, 1),
+		flt32(27.8974)
+	);
+
+	static Material Bronze = Material(
+		f32x4(0.2125, 0.1275, 0.054, 1.0),
+		f32x4(0.714, 0.4284, 0.18144, 1.0), 
+		f32x4(0.393548, 0.271906, 0.166721),
+		flt32(25.6));
+
+	static Material Chrome = Material(
+		f32x4(0.25, 0.25, 0.25, 1.0),
+		f32x4(0.4, 0.4, 0.4, 1.0),
+		f32x4(0.774597, 0.774597, 0.774597, 1.0),
+		flt32(76.8));
+
+	static Material Silver = Material(
+		f32x4(0.19225, 0.19225, 0.19225, 1.0),
+		f32x4(0.50754, 0.50754, 0.50754, 1.0),
+		f32x4(0.508273, 0.508273, 0.508273, 1.0),
+		flt32(51.2));
+
+	static Material Gold = Material(
+		f32x4(0.24725, 0.1995, 0.0745, 1.0),
+		f32x4(0.75164, 0.60648, 0.22648, 1.0),
+		f32x4(0.628281, 0.555802, 0.366065, 1.0),
+		flt32(51.2));
+
+	static Material Jade = Material(
+		f32x4(0.135,0.2225,0.1575,0.95),
+		f32x4(0.54, 0.89, 0.63, 0.95),
+		f32x4(0.316228, 0.316228, 0.316228, 0.95),
+		flt32(12.8));
+
+	static Material Ruby = Material(
+		f32x4(0.1745,0.01175 ,0.01175,0.55),
+		f32x4(0.61424,0.04136, 0.04136,0.55),
+		f32x4(0.727811, 0.626959, 0.626959,0.55),
+		flt32(76.8));
+};
+
+lights[] = {
+	Light(...),
+	new lghtsrc(...),
+};
+
+scene[] = {
+	new prim(new sphere(...), mtl.gold),
+	new prim(new tours(...), mtl.gold),
+	new mesh(mtl.gold),
+};
+
+struct hitinfo {
+	vec4f pos;
+	vec4f nrm;
+	flt32 len;
+}
+
+vec4f traceRay(const vec4f dir, int depth) {
+	vec4f pos, N, col;
+	flt32 d = math.inf;
+	prim p = null;
+	hitinfo hit;
+
+	for (prim ps : scene) {
+		if (ps.hit(hit, dir)) {
+			if (hit.len > d) {
+				pos = hit.pos;
+				N = hit.nrm;
+				d = hit.len;
+				p = ps;
+			}
+		}
+	}
+	if (p != null) {
+		for (Light l : lights) {
+			bool inShadow = false;
+			vec4f p2l = nrm(p.pos - l.pos);		// direction to light
+			for (prim ps : scene) {
+				if (ps.hit(hit, dir)) {
+					inShadow = true;
+				}
+			}
+			if (!inShadow) {
+				col = p.mtl.lit(l, N, pos, vec4f(0, 0, 1));
+			}
+		}
+		if (depth > 0 && p.mtl.reflect) {
+			col += traceRay(rfl(nrm, pos), depth - 1);
+		}
+		if (depth > 0 && p.mtl.refract) {
+			col += traceRay(rfr(nrm, pos), depth - 1);
+		}
+	}
+	return col;
+}
+
+main() {
+	for (int y = 0; y < height; y += 1) {
+		for (int x = 0; x < width; x += 1) {
+			flt32 s = x - width / 2.;
+			flt32 t = y - height / 2.;
+			vec4f dir = vec4f(s, t, 100, 0);
+			cBuff[x][y] = traceRay(dir.nrm());
+		}
+	}
+	bmp.save("raytr1.bmp", cBuff, width, height, 24);
+}
+
+class lights {
+	Light[] l;
+	uns32 it;
+
+	Light first() {return l[it = 0];}
+	Light next() {return l[it = 0];}
+	bool has() {return it < l.length;}
+}
+
+for (Light l : lights) => for (Light l = lights.first(); lights.has(); l = lights.next())
+//~ for (Light l : lights) => for (Light l = lights.first(); lights.first(); l = lights.next())
+
+
+//~ */
+

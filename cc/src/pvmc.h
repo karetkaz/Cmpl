@@ -35,13 +35,15 @@ typedef struct state {
 
 	long _cnt;
 	char *_ptr;
-	char _mem[4 << 20];
+	//~ char _mem[4 << 20];
+	char _mem[];
 } *state;
 
 typedef enum {
 	srcFile = 0x10,		// file / buffer
-	srcUnit = 0x01,		// unit / script
-	srcScript =  0,		// !srcUnit
+	//~ srcAuto = -1,		// first token: 'unit' ...
+	//~ srcUnit = 0x01,		// unit / script (ask the file what is it ? (: first tokens : 'package' 'name'))
+	//~ srcScript =  0,		// !srcUnit
 	//~ srcDefs, srcMake;
 
 	//~ skipCgen = 0x02,		// gen Code
@@ -60,36 +62,35 @@ typedef enum {
 
 } srcType, dumpMode;
 
-// TODO:
-//~ state gsInit(void* mem, unsigned size);
+state gsInit(void* mem, unsigned size);
 
 // compile
 int logfile(state, char *file);				// logger
 int srcfile(state, char *file);				// source
 int srctext(state, char *file, int line, char *src);				// source
-int compile(state, srcType mode);			// script, unit; //, decl, make
-int gencode(state, int level);
+int compile(state, int level);				// warning level
+int gencode(state, int level);				// optimize level
+//~ int execute(state, int cc, int ss, dbgf dbg);
 
 // execute
-typedef int (*dbgf)(vmEnv vm, int pu, void *ip, long* sptr, int sc);
-int dbgInfo(vmEnv, int, void*, long*, int);				// if compiled file will print results azt the end
+typedef int (*dbgf)(vmEnv vm, int pu, void *ip, long* sptr, int scnt);
+int dbgInfo(vmEnv, int, void*, long*, int);				// if compiled file will print results at the end
 int dbgCon(vmEnv, int, void*, long*, int);				// 
-int nodbg(vmEnv, int, void*, long*, int);				// or pass NULL to execute
-int exec(vmEnv, unsigned cc, unsigned ss, dbgf dbg);
+int exec(vmEnv, unsigned ss, dbgf dbg);
 
 // output
 void dump(state, char*, dumpMode, char* text);
 
 // use less these
-ccEnv ccInit(state s);
+ccEnv ccInit(state);
 ccEnv ccOpen(state, srcType, char* source);
 //~ int ccScan(ccEnv, srcType);		// scan the source file into ast
-int ccDone(state s);
+int ccDone(state);
 
 //~ gencode()
 
 vmEnv vmInit(state s);
-//~ int vmOpen(state, srcType, char* source);
+//~ int vmOpen(state, char* source);
 void vmInfo(FILE*, vmEnv s);
 int vmDone(state s);
 
@@ -113,10 +114,10 @@ static inline int64t popi64(state s) { return poparg(s, int64t); }
  * int ccTags(state s, char *srcfile) {
  * 	if (!ccOpen(s, srcFile, srcfile))	// will cal ccInit
  * 		return ccDone(s);
- * 	if (compile(s, srcScript) != 0)
+ * 	if (compile(s, wl) != 0)
  * 		return ccDone(s);
  * 	ccDone(s);		// here returns 0
  * 	dump(s, "tags.txt", dump_new | dump_sym, NULL);
  * 	return 0;
  * }
- */
+**/

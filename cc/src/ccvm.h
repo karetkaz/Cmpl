@@ -1,3 +1,4 @@
+//~ gcc -save-temps -m32 -o../main -Wall -O2 -g0 clog.c scan.c tree.c type.c code.c ccvm.c main.c
 /*******************************************************************************
  *   File: main.c
  *   Date: 2007/04/20
@@ -24,10 +25,10 @@
 
 #define trace(__LEV, msg, ...) //pdbg("trace", ##__VA_ARGS__)
 #define debug(msg, ...) pdbg("debug", msg, ##__VA_ARGS__)
-#define fatal(msg, ...)  {pdbg("fatal", msg, ##__VA_ARGS__); exit(-2);}
+#define fatal(msg, ...)  {pdbg("fatal", msg, ##__VA_ARGS__); /* exit(-2); */}
 #define dieif(__EXP, msg, ...) {if (__EXP) fatal(msg, ##__VA_ARGS__)}
 
-#if 0
+#if 1
 // debug information
 #define error(__ENV, __LINE, msg, ...) perr(__ENV, -1, __FILE__, __LINE__, msg, ##__VA_ARGS__)
 #define warn(__ENV, __LEVEL, __FILE, __LINE, msg, ...) perr(__ENV, __LEVEL, __FILE__, __LINE__, msg, ##__VA_ARGS__)
@@ -57,7 +58,7 @@ extern const tok_inf tok_tbl[255];
 // Opcodes - VM
 enum {
 	#define OPCDEF(Name, Code, Size, Args, Push, Time, Mnem) Name = Code,
-	#include "incl/defs.h"
+	#include "code.h"
 	opc_last,
 
 	opc_neg,
@@ -202,14 +203,15 @@ struct astn {				// ast astn
 	astn		next;				// 
 };
 struct symn {				// symbol
-	char*	name;
 	char*	file;
 	int		line;
 
+	char*	name;
 	union {
-	int32t	size;	// addrof(TYPE_ref)
-	int32t	offs;	// sizeof(TYPE_xxx)
+	int32t	size;	// sizeof(TYPE_xxx)
+	int32t	offs;	// addrof(TYPE_ref)
 	};
+	//~ symn	decl;		// declared in
 	symn	type;		// base type of TYPE_ref (void, int, float, struct, ...)
 	symn	args;		// REC fields / FUN args
 	// reflection ends here
@@ -219,17 +221,34 @@ struct symn {				// symbol
 	//~ uns08t	stat:1;		// static
 	//~ uns08t	read:1;		// const
 	//~ uns08t	used:1;		// used(ref/def)
-	//~ uns08t	onst:1;		// temp / on stack(val) (probably better (offs < 0))
-	//~ uns08t	libc:1;		// native (fun)
-	uns08t	call:1;		// is a function
-	//~ uns08t	asgn:1;		// assigned a value
+
+	uns08t	call:1;		// is function
+	//~ uns08t	load:1;		// is indirect (TYPE_ref)
+
+	//~ uns08t	onst:1;		// stack  (val): replaced with (offs < 0 or: offs < 255)
+	//~ uns08t	libc:1;		// native (fun): replaced with (offs < 0 or: offs < 255)
+	//~ uns08t	temp:1;		// no lookup: set name to null
+
+	uns08t	xxxx:7;		// -Wpadded
 	uns16t	nest;		// declaration level
+	//~ uns32t	used;		//TODO: times used
 	astn	init;		// VAR init / FUN body
 
 	// list(scoping)
 	symn	defs;		// simbols on stack/all
 	symn	next;		// simbols on table/args
 };
+
+/* struct typeinf {
+ * 	string	file;
+ * 	int32t	line;
+ * 	string	name;
+ * 	int32t	size;
+ * 	typeinf	decl;		// declared type
+ * 	typeinf	type;		// fun: return type / cls:inherited type / def: type / var: type
+ * 	typeinf	args[];		// fun: arguments / cls: members / def: null / var: null
+ * }
+ */
 
 struct ccEnv {
 	state	s;
@@ -243,20 +262,22 @@ struct ccEnv {
 
 	int		nest;		// nest level: modified by (enterblock/leaveblock)
 
+	char*	file;	// current file name
+	int		line;	// current line number
+	//~ struct astn line;
+
 	struct {
 		struct {			// Lexer
-			char*	file;	// current file name
-			int		line;	// current line number
 			// INPUT
 			struct {
-				int		_chr;		// saved char
 				int		_fin;		// file handle (-1) for cc_buff()
 				int		_cnt;		// chars left in buffer
 				char*	_ptr;		// pointer parsing trough source
 				uns08t	_buf[1024];	// cache
-			};//fin;
+			}fin;
 			astn	tokp;		// token pool
 			astn	_tok;		// next token
+			int		_chr;		// next char
 		};// file[TOKS];
 
 		/*struct {		// current decl
@@ -269,7 +290,10 @@ struct ccEnv {
 		} scope[TOKS];// */
 	};
 
-	char	*buffp;					// TODO: remove this
+	char	*_ptr;					// TODO: remove this
+	long	_cnt;					// TODO: remove this
+	//~ char	*_ptr;					// TODO: remove this
+	//~ char	*_cnt;					// TODO: remove this
 };
 struct vmEnv {
 	state	s;
@@ -289,6 +313,7 @@ struct vmEnv {
 	unsigned char _mem[];
 };
 
+//~ static inline int canscan(ccEnv env) {return env && env->_cnt > 0;}
 static inline int kindOf(astn ast) {return ast ? ast->kind : 0;}
 
 extern symn type_vid;
@@ -301,6 +326,7 @@ extern symn type_f64;
 extern symn type_str;
 
 extern symn emit_opc;
+
 extern symn type_f32x4;
 extern symn type_f64x2;
 
@@ -324,7 +350,7 @@ void perr(state s, int level, const char *file, int line, const char *msg, ...);
 void dumpasm(FILE *fout, vmEnv s, int offs);
 void dumpsym(FILE *fout, symn sym, int mode);
 void dumpast(FILE *fout, astn ast, int mode);
-//~ void dumpxml(FILE *fout, astn ast, int lev, const char* text, int level);
+void dumpxml(FILE *fout, astn ast, int lev, const char* text, int level);
 
 // ccvm
 void* getmem(state s, int size, unsigned clear);
@@ -395,6 +421,7 @@ symn linkOf(astn ast, int notjustrefs);
 
 int castId(symn ast);
 int castOp(symn lhs, symn rhs, int uns);
+int castTo(astn ast, int tid);
 //~ int castTo(astn ast, symn typ);
 
 int source(ccEnv, srcType mode, char* text);		// mode: file/text
@@ -406,10 +433,7 @@ int rehash(const char* str, unsigned size);
 char *mapstr(ccEnv s, char *name, unsigned size/* = -1U*/, unsigned hash/* = -1U*/);
 
 
-void vm_tags(ccEnv s, char *sptr, int slen);
-int dbgNone(vmEnv vm, int pu, void *ip, long* sptr, int sc);
-int dbgCon(vmEnv vm, int pu, void *ip, long* sptr, int sc);
-int nodbg(vmEnv vm, int pu, void *ip, long* sptr, int sc);
+void vmTags(ccEnv s, char *sptr, int slen);
 
 void dumpasmdbg(FILE *fout, vmEnv s, int mark, int mode);
 

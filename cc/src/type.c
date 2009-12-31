@@ -8,19 +8,28 @@ symn type_i32 = NULL;
 symn type_i64 = NULL;
 symn type_f32 = NULL;
 symn type_f64 = NULL;
+symn type_str = NULL;
 
 symn type_f32x4 = NULL;
 symn type_f64x2 = NULL;
 
-//~ symn type_str = 0;
 //~ symn type_ptr = 0;
 
 extern int rehash(register const char* str, unsigned size);
 
 //~ Install
 symn newdefn(ccEnv s, int kind) {
-	symn def = (symn)s->buffp;
-	s->buffp += sizeof(struct symn);
+	symn def = NULL;
+
+	if (s->_cnt > sizeof(struct symn)){
+		def = (symn)s->_ptr;
+		s->_ptr += sizeof(struct symn);
+		s->_cnt -= sizeof(struct symn);
+	}
+	else {
+		fatal("memory overrun");
+	}
+
 	memset(def, 0, sizeof(struct symn));
 	def->kind = kind;
 	return def;
@@ -69,6 +78,7 @@ symn install(ccEnv s, int kind, const char* name, unsigned size) {
 		case TYPE_bit:
 		case TYPE_int:
 		case TYPE_flt:
+		//~ case TYPE_arr:
 
 		//~ case TYPE_u32:
 		//~ case TYPE_i32:
@@ -158,7 +168,6 @@ int isType(symn sym) {
 	//~ debug("%+T", sym);
 	return 1;		// type
 }
-
 int istype(astn ast) {
 	if (!ast) return 0;
 
@@ -174,6 +183,43 @@ int istype(astn ast) {
 	debug("%t(%+k)", ast->kind, ast);
 	return 0;
 }// */
+
+symn linkTo(astn ast, symn sym) {
+	symn typ = NULL;
+	if (!ast) return 0;
+	switch (sym->kind) {
+		default: fatal("no Ip here");
+		case EMIT_opc:
+		case TYPE_def:
+		case TYPE_ref: {
+			//~ debug("%+k := %t(%T) : %+T = %+k", ref, sym->kind, sym, sym->type, sym->init);
+			typ = sym->type;
+		} break;
+
+		// typename
+		case TYPE_vid:
+		case TYPE_bit:
+		case TYPE_u32:
+		case TYPE_int:
+		case TYPE_i32:
+		case TYPE_i64:
+		case TYPE_flt:
+		case TYPE_f32:
+		case TYPE_f64:
+		case TYPE_p4x:
+		//~ case TYPE_arr:
+		//~ case TYPE_ptr:
+
+		case TYPE_enu:
+		case TYPE_rec: {
+			typ = sym;
+		} break;
+	}
+	ast->kind = TYPE_ref;
+	ast->type = typ;
+	ast->id.link = sym;
+	return sym;
+}
 
 symn linkOf(astn ast, int njr) {
 	if (!ast) return 0;
@@ -202,6 +248,51 @@ symn linkOf(astn ast, int njr) {
 
 /** Cast
  * returns one of (u32, i32, i64, f32, f64{, p4f, p4d})
+**/
+int castTT(int lht, int rht, int uns) {
+	switch (lht) {
+		case TYPE_u32: switch (rht) {
+			case TYPE_u32: return TYPE_u32;
+			case TYPE_i32: return uns ? TYPE_u32 : TYPE_i32;
+			case TYPE_i64: return TYPE_i64;
+			case TYPE_f32: return TYPE_f32;
+			case TYPE_f64: return TYPE_f64;
+		} break;
+		case TYPE_i32: switch (rht) {
+			case TYPE_u32: return TYPE_u32;
+			case TYPE_i32: return TYPE_i32;
+			case TYPE_i64: return TYPE_i64;
+			case TYPE_f32: return TYPE_f32;
+			case TYPE_f64: return TYPE_f64;
+		} break;
+		case TYPE_i64: switch (rht) {
+			case TYPE_u32: return TYPE_i64;
+			case TYPE_i32: return TYPE_i64;
+			case TYPE_i64: return TYPE_i64;
+			case TYPE_f32: return TYPE_f32;
+			case TYPE_f64: return TYPE_f64;
+		} break;
+		case TYPE_f32: switch (rht) {
+			case TYPE_u32: return TYPE_f32;
+			case TYPE_i32: return TYPE_f32;
+			case TYPE_i64: return TYPE_f32;
+			case TYPE_f32: return TYPE_f32;
+			case TYPE_f64: return TYPE_f64;
+		} break;
+		case TYPE_f64: switch (rht) {
+			case TYPE_u32: return TYPE_f64;
+			case TYPE_i32: return TYPE_f64;
+			case TYPE_i64: return TYPE_f64;
+			case TYPE_f32: return TYPE_f64;
+			case TYPE_f64: return TYPE_f64;
+		} break;
+	}
+	debug("failed(%t, %t)", lht, rht);
+	return 0;
+}
+
+/* int castId(symn typ)
+ * returns internal type for symbol
 **/
 int castId(symn typ) {
 	if (typ) switch (typ->kind) {
@@ -233,53 +324,49 @@ int castId(symn typ) {
 		case TYPE_p4x:
 			return typ->kind;
 
-		case TYPE_enu:	// TYPE_v2d
-		case TYPE_arr:
+		case TYPE_ar3:
+		case TYPE_enu:
 		case TYPE_rec:
 			return typ->kind;
 	}
+	debug("failed(%+T)", typ);
 	return 0;
 }
+
+// promote
 int castOp(symn lht, symn rht, int uns) {
-	switch (castId(lht)) {
-		case TYPE_u32: switch (castId(rht)) {
-			case TYPE_u32: return TYPE_u32;
-			case TYPE_i32: return uns ? TYPE_u32 : TYPE_i32;
-			case TYPE_i64: return TYPE_i64;
-			case TYPE_f32: return TYPE_f32;
-			case TYPE_f64: return TYPE_f64;
-		} break;
-		case TYPE_i32: switch (castId(rht)) {
-			case TYPE_u32: return TYPE_u32;
-			case TYPE_i32: return TYPE_i32;
-			case TYPE_i64: return TYPE_i64;
-			case TYPE_f32: return TYPE_f32;
-			case TYPE_f64: return TYPE_f64;
-		} break;
-		case TYPE_i64: switch (castId(rht)) {
-			case TYPE_u32: return TYPE_i64;
-			case TYPE_i32: return TYPE_i64;
-			case TYPE_i64: return TYPE_i64;
-			case TYPE_f32: return TYPE_f32;
-			case TYPE_f64: return TYPE_f64;
-		} break;
-		case TYPE_f32: switch (castId(rht)) {
-			case TYPE_u32: return TYPE_f32;
-			case TYPE_i32: return TYPE_f32;
-			case TYPE_i64: return TYPE_f32;
-			case TYPE_f32: return TYPE_f32;
-			case TYPE_f64: return TYPE_f64;
-		} break;
-		case TYPE_f64: switch (castId(rht)) {
-			case TYPE_u32: return TYPE_f64;
-			case TYPE_i32: return TYPE_f64;
-			case TYPE_i64: return TYPE_f64;
-			case TYPE_f32: return TYPE_f64;
-			case TYPE_f64: return TYPE_f64;
-		} break;
+	return castTT(castId(lht), castId(rht), uns);
+}
+
+// returns internal type or 0 on fail
+int castTo(astn ast, int cast) {
+	if (!ast)
+		return 0;
+	
+	if (!ast->type)
+		return ast->cast = cast;
+
+	switch (cast) {
+		case TYPE_bit: cast = TYPE_u32; break;
+		case TYPE_vid: return ast->cast = cast;
 	}
-	return 0;
-}// */
+	return ast->cast = castTT(castId(ast->type), cast, 0);
+}
+
+// returns internal type or 0 on fail
+int castTy(astn ast, int cast) {
+	switch (ast->cast = cast) {
+		case TYPE_u32: ast->type = type_u32; break;
+		case TYPE_i32: ast->type = type_i32; break;
+		case TYPE_i64: ast->type = type_i64; break;
+		case TYPE_f32: ast->type = type_f32; break;
+		case TYPE_f64: ast->type = type_f64; break;
+		default:
+			debug("%t", cast);
+			return 0;
+	}
+	return cast;
+}
 
 symn lookin(ccEnv s, symn sym, astn ref, astn args) {
 	symn best = 0;
@@ -337,52 +424,28 @@ symn lookin(ccEnv s, symn sym, astn ref, astn args) {
 	if (sym) {
 		symn par = sym->args;		// caller arguments
 		astn arg = args;			// callee arguments
-		symn typ = NULL;
-		switch (sym->kind) {
-			default: fatal("no Ip here");
-			case EMIT_opc:
-			case TYPE_def:
-			case TYPE_ref: {
-				//~ debug("%+k := %t(%T) : %+T = %+k", ref, sym->kind, sym, sym->type, sym->init);
-				typ = sym->type;
-			} break;
-
-			// typename
-			case TYPE_vid:
-			case TYPE_bit:
-			case TYPE_u32:
-			case TYPE_int:
-			case TYPE_i32:
-			case TYPE_i64:
-			case TYPE_flt:
-			case TYPE_f32:
-			case TYPE_f64:
-			case TYPE_p4x:
-			//~ case TYPE_ptr:
-
-			case TYPE_enu:
-			case TYPE_rec: {
-				typ = sym;
-			} break;
-		}
+		linkTo(ref, sym);
 		while (arg && par) {
-			arg->cast = castId(par->type);
+			int cast = castId(par->type);
+			if (arg->cast != cast) {
+				//~ astn rhs = cpynode(s, arg);
+				//~ arg->kind = OPER_fnc;
+				//~ arg->op.lhso = NULL;
+				//~ arg->op.rhso = rhs;
+				//~ arg->type = NULL;
+				if (!castTy(arg, cast))
+					error(s->s, arg->line, "cannot set cast to %T", par->type);
+			}
+
 			//~ debug("arg(%+k): %t", arg, arg->cast);
 			arg = arg->next;
 			par = par->next;
 		}
-		if (typ != sym && args && args->next) {
+		if (ref->type != sym && args && args->next) {
 			//~ debug("%+k == %T", ref, sym);
 			//~ else look for ".ctor(args)" in sym or what the fuck ?
 			dieif(arg || par, "fatal(%+k)", ref);
 		}
-
-		//~ ref->cast = castId(typ);
-		ref->kind = TYPE_ref;
-		ref->type = typ;
-		ref->id.link = sym;	// typ == sym ? NULL : sym;
-		//~ ref->stmt = 0;
-
 	}
 
 	return sym;
@@ -396,7 +459,7 @@ symn lookup(ccEnv s, symn loc, astn ast) {
 	}
 
 	switch (ast->kind) {
-		default: fatal("no Ip here");
+		default: fatal("no Ip here %t(%+k)", ast->kind, ast);
 
 		case OPER_dot: {
 			sym = lookup(s, loc, ast->op.lhso);
@@ -434,7 +497,6 @@ symn lookup(ccEnv s, symn loc, astn ast) {
 					next = args->op.rhso;
 					args = args->op.lhso;
 				}
-				//~ debug("arg(%+k, %T)", args, lin);
 				if (!lookup(s, lin, args)) {
 					if (!lin || !lookup(s, 0, args)) {
 						debug("arg(%+k)", args);
@@ -460,13 +522,34 @@ symn lookup(ccEnv s, symn loc, astn ast) {
 					loc = ast->op.lhso->op.lhso->type;
 					ref = ast->op.lhso->op.rhso;
 				} break;
-				default: ref = ast->op.lhso; break;
+				case TYPE_ref: ref = ast->op.lhso; break;
+				default: fatal("no Ip here %t(%+k)", ast->kind, ast);
 			}//*/
 
 		} break;
 		case OPER_idx: {
 			symn lht = lookup(s, 0, ast->op.lhso);
 			symn rht = lookup(s, 0, ast->op.rhso);
+			/*if ((args = ast->op.rhso)) {
+				astn next = 0;
+				while (args->kind == OPER_com) {
+					astn arg = args->op.rhso;
+						debug("arg(%+k)", arg);
+					if (!lookup(s, NULL, arg)) {
+						debug("arg(%+k)", arg);
+						return 0;
+					}
+					args->op.rhso->next = next;
+					next = args->op.rhso;
+					args = args->op.lhso;
+				}
+				debug("arg(%+k)", args);
+				if (!lookup(s, NULL, args)) {
+					debug("arg(%+k)", args);
+					return 0;
+				}
+				args->next = next;
+			}*/
 
 			//~ ast->op.link = 0;
 			if (!lht || !rht || args) {
@@ -475,33 +558,50 @@ symn lookup(ccEnv s, symn loc, astn ast) {
 			}
 
 			dieif(!lht->type, "%+k", ast);
-			if (kindOf(ast->op.lhso) != OPER_idx)
-				debug("TODO(%+k):sizeof(%+T)=%d", ast->op.lhso, lht, lht->size);
+			//~ if (kindOf(ast->op.lhso) != OPER_idx) debug("TODO(%+k):sizeof(%+T)=%d", ast->op.lhso, lht, lht->size);
 			debug("TODO(%+k):sizeof(%+T)=%d", ast, lht->type, lht->type->size);
 			return ast->type = lht->type;
 			return 0;
 		} break;
 
 		case OPER_pls:		// '+'
-		case OPER_mns:		// '-'
-		case OPER_cmt: {	// '~'
-			int cast;
-			// 'lhs op rhs' => op(lhs, rhs)
-			symn ret = lookup(s, 0, ast->op.rhso);
-			if ((cast = castId(ret))) {
-				// TODO: float.cmt: invalid
-				ast->op.rhso->cast = cast;
-				return ast->type = ret;
+		case OPER_mns: {	// '-'
+			symn rht = lookup(s, 0, ast->op.rhso);
+
+			if (!rht) {
+				debug("cast(%T)[%k]: %+k", rht, ast, ast);
+				return NULL;
 			}
-			return ast->type = NULL;
-		} break;
-		case OPER_not: {	// '!'
-			symn ret = lookup(s, 0, ast->op.rhso);
-			if (castId(ret)) {
-				return ast->type = type_bol;
+
+			if (!castTy(ast, castId(rht))) {
+				fatal("%k %T: %+k):%t", ast, rht, ast, castId(rht));
+				// 'lhs + rhs' => tok_name[OPER_add] '(lhs, rhs)'
+				//~ args = ast->lhso;
+				//~ ast->rhso->next = 0;
+				//~ args->next = ast->rhso;
+				//~ fun = tok_tbl[ast->kind].name;
+				//~ ref = ast;
+				//~ return ast->type;
 			}
-			return ast->type = NULL;
 		} break;
+		case OPER_cmt: {
+			symn rht = lookup(s, 0, ast->op.rhso);
+
+			if (!rht) {
+				debug("cast(%T)[%k]: %+k", rht, ast, ast);
+				return NULL;
+			}
+
+			switch (castTy(ast, castId(rht))) {
+				case TYPE_u32:
+				case TYPE_i32:
+				case TYPE_i64: return ast->type;
+				//~ case TYPE_f32:
+				//~ case TYPE_f64:
+				default: fatal("%k %T: %+k):%t", ast, rht, ast, castId(rht));
+			}
+		} break;
+		//~ case OPER_not:
 
 		case OPER_add:
 		case OPER_sub:
@@ -513,25 +613,20 @@ symn lookup(ccEnv s, symn loc, astn ast) {
 
 			//~ ast->op.link = 0;
 			if (!lht || !rht) {
-				debug("cast(%T, %T)[%k]", lht, rht, ast);
+				debug("cast(%T, %T)[%k]: %+k", lht, rht, ast, ast);
 				return NULL;
 			}
-			switch (ast->cast = castOp(lht, rht, 0)) {
-				case TYPE_u32: return ast->type = type_u32;
-				case TYPE_i32: return ast->type = type_i32;
-				case TYPE_i64: return ast->type = type_i64;
-				case TYPE_f32: return ast->type = type_f32;
-				case TYPE_f64: return ast->type = type_f64;
-				//~ case TYPE_p4x: return ast->type = type_f32x4;
+
+			if (!castTy(ast, castOp(lht, rht, 0))) {
+				fatal("%T %k %T: %+k):%t", lht, ast, rht, ast, castOp(lht, rht, 0));
+				// 'lhs + rhs' => tok_name[OPER_add] '(lhs, rhs)'
+				//~ args = ast->lhso;
+				//~ ast->rhso->next = 0;
+				//~ args->next = ast->rhso;
+				//~ fun = tok_tbl[ast->kind].name;
+				//~ ref = ast;
 			}
 
-			fatal("(%+k):%t", ast, ast->cast);
-
-			// 'lhs + rhs' => tok_name[OPER_add] '(lhs, rhs)'
-			//~ args = ast->lhso;
-			//~ ast->rhso->next = 0;
-			//~ args->next = ast->rhso;
-			//~ fun = tok_tbl[ast->kind].name;
 		} break;
 
 		case OPER_shl:		// '>>'
@@ -546,15 +641,16 @@ symn lookup(ccEnv s, symn loc, astn ast) {
 				debug("cast(%T, %T): %T", lht, rht, 0);
 				return NULL;
 			}
-			switch (ast->cast = castOp(lht, rht, ast->kind == OPER_shl)) {
-				case TYPE_u32: return ast->type = type_u32;
-				case TYPE_i32: return ast->type = type_i32;
-				case TYPE_i64: return ast->type = type_i64;
+			switch (castTy(ast, castOp(lht, rht, ast->kind == OPER_shl))) {
 				case TYPE_f32:
-				case TYPE_f64: {
+				case TYPE_f64:
 					error(s->s, ast->line, "invalid cast(%+k)", ast);
 					return 0;
-				}
+
+				case TYPE_u32:
+				case TYPE_i32:
+				case TYPE_i64:
+					return ast->type;
 			}
 			fatal("(%+k):%t", ast, ast->cast);
 		} break;
@@ -583,6 +679,35 @@ symn lookup(ccEnv s, symn loc, astn ast) {
 			fatal("(%+k):%t", ast, ast->cast);
 		} break;
 
+		case OPER_lor:
+		case OPER_lnd: {
+			symn lht = lookup(s, 0, ast->op.lhso);
+			symn rht = lookup(s, 0, ast->op.rhso);
+
+			if (!lht || !rht) {
+				debug("cast(%T, %T)", lht, rht);
+				return NULL;
+			}
+
+			ast->cast = TYPE_bit;
+			ast->type = type_bol;
+		} break;
+
+		case OPER_sel: {
+			symn cmp = lookup(s, 0, ast->op.test);
+			symn lht = lookup(s, 0, ast->op.lhso);
+			symn rht = lookup(s, 0, ast->op.rhso);
+
+			if (!cmp || !lht || !rht) {
+				debug("cast(%T, %T)[%k]", lht, rht, ast);
+				return NULL;
+			}
+
+			if (!castTy(ast, castOp(lht, rht, 0))) {
+				fatal("%T %k %T: %+k):%t", lht, ast, rht, ast, castOp(lht, rht, 0));
+			}
+		} break;
+
 		case ASGN_set: {	// ':='
 			symn lht = lookup(s, 0, ast->op.lhso);
 			symn rht = lookup(s, 0, ast->op.rhso);
@@ -602,62 +727,39 @@ symn lookup(ccEnv s, symn loc, astn ast) {
 			fatal("TODO");
 		} break;
 
-		case CNST_int: {
+		case CNST_int:
+		case CNST_flt:
+		case CNST_str: {
 			if (loc || args) {
 				debug("cast()[]");
 				return NULL;
 			}
-			ast->cast = TYPE_i32;
-			return ast->type = type_i32;
-		}
-		case CNST_flt: {
-			if (loc || args) {
-				debug("cast()[]");
-				return NULL;
+			switch (ast->kind) {
+				case CNST_int: ast->type = type_i32; break;
+				case CNST_flt: ast->type = type_f64; break;
+				case CNST_str: ast->type = type_str; break;
 			}
-			ast->cast = TYPE_f64;
-			return ast->type = type_f64;
-		}
-
-		case TYPE_ref: ref = ast; break;
-		case EMIT_opc: return 0;
-
-		case OPER_lor:
-		case OPER_lnd: {
-			symn lht = lookup(s, 0, ast->op.lhso);
-			symn rht = lookup(s, 0, ast->op.rhso);
-			if (castId(lht) && castId(rht)) {
-				ast->cast = TYPE_bit;
-				return ast->type = type_bol;
-			}
-			return NULL;
 		} break;
 
-		case OPER_sel: {
-			symn cmp = lookup(s, 0, ast->op.test);
-			symn lht = lookup(s, 0, ast->op.lhso);
-			symn rht = lookup(s, 0, ast->op.rhso);
-
-			if (!cmp || !lht || !rht || args) {
-				debug("cast(%T, %T)[%k]", lht, rht, ast);
-				return NULL;
-			}
-			switch (ast->cast = castOp(lht, rht, 0)) {
-				case TYPE_u32: return ast->type = type_u32;
-				case TYPE_i32: return ast->type = type_i32;
-				case TYPE_i64: return ast->type = type_i64;
-				case TYPE_f32: return ast->type = type_f32;
-				case TYPE_f64: return ast->type = type_f64;
-			}
-		} return NULL;
+		case TYPE_ref: ref = ast; break;
+		//~ case EMIT_opc: return 0;
 	}
 
-	sym = loc ? loc->args : s->deft[ref->id.hash];
+	if (ref != NULL) {
+		sym = loc ? loc->args : s->deft[ref->id.hash];
 
-	sym = lookin(s, sym, ref, args);
+		//~ debug("lookin(sym, %+k, %+k):%T", ref, args, sym);
+		sym = lookin(s, sym, ref, args);
 
-	ast->type = ref->type;
-	ast->cast = castId(ast->type);
+		if (sym) {
+			ast->type = ref->type;
+			ast->cast = castId(ast->type);
+			if (!ast->cast)
+				debug("%T(%+k)", sym, ast);
+		}
+	}
+
+	//~ if (ast->line) debug("%?T(%k: ref(%k)): %+k", ast->type, ast, ref, ast);
 
 	return ast->type;
 }

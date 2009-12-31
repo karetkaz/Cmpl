@@ -1,8 +1,8 @@
 #INCLUDE='$(WATCOM)\h;$(WATCOM)\h\nt'
 OUTOBJ=-fo=
 OUTEXE=-fe=
-CFLAGS=-zq -ei -6s -d0 -oa
-#~ CFLAGS=-zq -ei -6s -d3
+#~ CFLAGS=-zq -ei -6s -d0 -oa
+CFLAGS=-zq -d3 -od -zpw -zw
 #-d3 -oa -hd
 COPTS=-wx
 #-i=$(INCLUDE)

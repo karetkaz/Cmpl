@@ -10,10 +10,13 @@ astn newnode(ccEnv s, int kind) {
 		ast = s->tokp;
 		s->tokp = ast->next;
 	}
+	else if (s->_cnt > sizeof(struct astn)){
+		ast = (astn)s->_ptr;
+		s->_ptr += sizeof(struct astn);
+		s->_cnt -= sizeof(struct astn);
+	}
 	else {
-		ast = (astn)s->buffp;
-		s->buffp += sizeof(struct astn);
-		//~ if (s->buffp >= !!!)
+		fatal("memory overrun");
 	}
 	memset(ast, 0, sizeof(struct astn));
 	ast->kind = kind;
@@ -60,21 +63,24 @@ signed constbol(astn ast) {
 		case CNST_int: return ast->con.cint != 0;
 		case CNST_flt: return ast->con.cflt != 0;
 	}
-	fatal("not a constant");
+	fatal("not a constant %+k", ast);
+	return 0;
 }
 int64t constint(astn ast) {
 	if (ast) switch (ast->kind) {
 		case CNST_int: return (int64t)ast->con.cint;
 		case CNST_flt: return (int64t)ast->con.cflt;
 	}
-	fatal("not a constant");
+	fatal("not a constant %+k", ast);
+	return 0;
 }
 flt64t constflt(astn ast) {
 	if (ast) switch (ast->kind) {
 		case CNST_int: return (flt64t)ast->con.cint;
 		case CNST_flt: return (flt64t)ast->con.cflt;
 	}
-	fatal("not a constant");
+	fatal("not a constant %+k", ast);
+	return 0;
 }
 
 int eval(astn res, astn ast, int get) {
@@ -94,6 +100,7 @@ int eval(astn res, astn ast, int get) {
 		// TODO: 
 		case OPER_dot: return eval(res, ast->op.rhso, get);
 
+		case OPER_idx:
 		case OPER_fnc:
 			return 0;
 

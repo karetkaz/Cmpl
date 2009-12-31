@@ -1,11 +1,12 @@
 include incl/Makefile.gcc
+#~ include incl/Makefile.wcc
 LIB=WLIB -q
 
 SRCDIR=
 OBJDIR=
 #~ ../tmp/obj/
 #~ ../tmp/
-BINDIR=..\\
+BINDIR=../
 OBJS=\
 	$(OBJDIR)clog.o\
 	$(OBJDIR)scan.o\
@@ -47,7 +48,8 @@ clean:
 
 debug:
 	#~ xterm -e gdb $(BINDIR)main
-	$(DBG) "$(BINDIR)main"
+	#~ $(DBG) "$(BINDIR)main"
+	wdw "..\main"
 
 build:clean main
 

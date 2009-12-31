@@ -137,7 +137,7 @@ typedef struct cell {			// processor
 
 } *cell; // */
 
-//~ #define useBuiltInFuncs
+#define useBuiltInFuncs
 //{ libc.c ---------------------------------------------------------------------
 //~ #pragma intrinsic(log,cos,sin,tan,sqrt,fabs,pow,atan2,fmod)
 //~ #pragma intrinsic(acos,asin,atan,cosh,exp,log10,sinh,tanh)
@@ -292,9 +292,9 @@ static void b64sxt(state s) {
 static struct lfun {
 	void (*call)(state);
 	const char* proto;
-	// TODO: check these values
-	int08t chk, pop;
 	symn sym;
+	// TODO: check these values
+	int08t chk, pop, pad[2];
 }
 libcfnc[256] = {
 	{NULL},
@@ -529,15 +529,15 @@ int emit(vmEnv s, int opc, ...) {
 	}
 	else if (opc == opc_cne) {
 		if (emit(s, opc_ceq, arg))
-			opc = b32_not;
+			opc = opc_not;
 	}
 	else if (opc == opc_cle) {
 		if (emit(s, opc_cgt, arg))
-			opc = b32_not;
+			opc = opc_not;
 	}
 	else if (opc == opc_cge) {
 		if (emit(s, opc_clt, arg))
-			opc = b32_not;
+			opc = opc_not;
 	}
 
 	// bit
@@ -567,7 +567,11 @@ int emit(vmEnv s, int opc, ...) {
 		default: return 0;
 	}
 
-	/*else if (opc == opc_ldi) switch (arg.i4) {
+	else if (opc == opc_ldi) switch (arg.i4) {
+		//~ case TYPE_i32:
+		//~ case TYPE_u32:
+		//~ case TYPE_f32: opc = opc_ldi4; break;
+
 		case  1: opc = opc_ldi1; break;
 		case  2: opc = opc_ldi2; break;
 		case  4: opc = opc_ldi4; break;
@@ -575,7 +579,7 @@ int emit(vmEnv s, int opc, ...) {
 		case 16: opc = opc_ldiq; break;
 		default: return 0;
 	}
-	else if (opc == opc_sti) switch (arg.i4) {
+	/*else if (opc == opc_sti) switch (arg.i4) {
 		case  1: opc = opc_sti1; break;
 		case  2: opc = opc_sti2; break;
 		case  4: opc = opc_sti4; break;
@@ -660,10 +664,10 @@ int emit(vmEnv s, int opc, ...) {
 	ip->arg = arg;
 
 	s->pc = s->cs;
-	//~ debug("@%04x[ss:%03d]: %A", s->pc, s->ss, ip);
+	//~ debug("@%04x[ss:%03d]: %01A", s->pc, s->ss, ip);
 	switch (opc) {		//#exec.c
 		error_opc: error(s->s, 0, "invalid opcode: [%02x] %A", ip->opc, ip); return 0;
-		error_stc: error(s->s, 0, "stack underflow: near opcode %A", ip); return 0;
+		error_stc: error(s->s, 0, "stack underflow(%d): near opcode %A", s->ss, ip); return 0;
 		#define STOP(__ERR, __CHK) if (__CHK) goto __ERR
 		#define NEXT(__IP, __CHK, __SP)\
 			STOP(error_stc, s->ss < (__CHK));\
@@ -672,7 +676,7 @@ int emit(vmEnv s, int opc, ...) {
 		//~ #define EXEC(__STMT)
 		//~ #define MEMP(__MPTR)
 		//~ #define CHECK()
-		#include "incl/exec.c"
+		#include "code.h"
 	}
 
 	s->ic += s->pc != s->cs;
@@ -754,9 +758,12 @@ int fixjump(vmEnv s, int src, int dst, int stc) {
 	sigsnd(pp->pp, SIG_quit);
 }// */
 
-static cell getProc(vmEnv ee, cell pu) {return ((pu && pu->ip) ? pu : 0);}
-
-void vm_fputval(FILE *fout, symn typ, stkval* sp) {
+void vm_fputval(FILE *fout, symn typ, stkval* sp, int flgs) {
+	typedef enum {
+		flg_type = 0x01,
+		flg_hex = 0x02,
+		flg_offs = 0x04,
+	} flagbits;
 	switch(typ ? typ->kind : 0) {
 		case TYPE_p4x: {
 			if (typ == type_f32x4)
@@ -766,19 +773,47 @@ void vm_fputval(FILE *fout, symn typ, stkval* sp) {
 		} break;
 		case TYPE_bit: switch (typ->size) {
 			case 1: case 2:
-			case 4: fputfmt(fout, "u32[%008x](%u)", sp->i4, sp->i4); break;
-			case 8: fputfmt(fout, "u64[%016X](%U)", sp->i8, sp->i8); break;
+			//~ case 4: fputfmt(fout, "u32[%008x](%u)", sp->i4, sp->i4); break;
+			//~ case 8: fputfmt(fout, "u64[%016X](%U)", sp->i8, sp->i8); break;
+			case 4: 
+				if (flgs & flg_type) fputfmt(fout, "u32");
+				if (flgs & flg_hex) fputfmt(fout, "[%008x]", sp->i4);
+				fputfmt(fout, "(%u)", sp->i4);
+				break;
+			case 8:
+				if (flgs & flg_type) fputfmt(fout, "u64");
+				if (flgs & flg_hex) fputfmt(fout, "[%016X]", sp->i8);
+				fputfmt(fout, "(%U)", sp->i8);
+				break;
 			default: goto TYPE_XXX;
 		} break;
 		case TYPE_int: switch (typ->size) {
 			case 1: case 2:
-			case 4: fputfmt(fout, "i32[%008x](%d)", sp->i4, sp->i4); break;
-			case 8: fputfmt(fout, "i64[%016X](%D)", sp->i8, sp->i8); break;
+			//~ case 4: fputfmt(fout, "i32[%008x](%d)", sp->i4, sp->i4); break;
+			//~ case 8: fputfmt(fout, "i64[%016X](%D)", sp->i8, sp->i8); break;
+			case 4: 
+				if (flgs & flg_type) fputfmt(fout, "i32");
+				if (flgs & flg_hex) fputfmt(fout, "[%008x]", sp->i4);
+				fputfmt(fout, "(%d)", sp->i4);
+				break;
+			case 8:
+				if (flgs & flg_type) fputfmt(fout, "i64");
+				if (flgs & flg_hex) fputfmt(fout, "[%016X]", sp->i8);
+				fputfmt(fout, "(%D)", sp->i8);
+				break;
 			default: goto TYPE_XXX;
 		} break;
 		case TYPE_flt: switch (typ->size) {
-			case 4: fputfmt(fout, "f32[%008x](%f)", sp->i4, sp->f4); break;
-			case 8: fputfmt(fout, "f64[%016X](%G)", sp->i8, sp->f8); break;
+			case 4: 
+				if (flgs & flg_type) fputfmt(fout, "f32");
+				if (flgs & flg_hex) fputfmt(fout, "[%008x]", sp->i4);
+				fputfmt(fout, "(%.30g)", sp->f4);
+				break;
+			case 8:
+				if (flgs & flg_type) fputfmt(fout, "f64");
+				if (flgs & flg_hex) fputfmt(fout, "[%016X]", sp->i8);
+				fputfmt(fout, "(%.30G)", sp->f8);
+				break;
 			default: goto TYPE_XXX;
 		} break;
 		//~ case TYPE_rec: fputfmt(fout, "struct{}"); break;
@@ -790,7 +825,35 @@ void vm_fputval(FILE *fout, symn typ, stkval* sp) {
 	}
 }
 
-void vm_tags(ccEnv s, char *sptr, int slen) {
+int vmTest() {
+	int e = 0;
+	struct bcde opc, *ip = &opc;
+	opc.arg.i8 = 0;
+	for (opc.opc = 0; opc.opc < opc_last; opc.opc++) {
+		int err = 0;
+		if (opc_tbl[opc.opc].size == 0) continue;
+		if (opc_tbl[opc.opc].code != opc.opc) {
+			fprintf(stderr, "invalid '%s'[%02x]\n", opc_tbl[opc.opc].name, opc.opc);
+			e += err = 1;
+		}
+		else switch (opc.opc) {
+			error_len: e += 1; debug("opcode size 0x%02x: '%A'", opc.opc, ip); break;
+			error_chk: e += 1; debug("stack check 0x%02x: '%A'", opc.opc, ip); break;
+			error_dif: e += 1; debug("stack difference 0x%02x: '%A'", opc.opc, ip); break;
+			error_opc: e += 1; debug("unimplemented opcode 0x%02x: '%A'", opc.opc, ip); break;
+			#define NEXT(__IP, __CHK, __DIF) {\
+				if (opc_tbl[opc.opc].size != 0 && opc_tbl[opc.opc].size != (__IP)) goto error_len;\
+				if (opc_tbl[opc.opc].chck != 9 && opc_tbl[opc.opc].chck != (__CHK)) goto error_chk;\
+				if (opc_tbl[opc.opc].diff != 9 && opc_tbl[opc.opc].diff != (__DIF)) goto error_dif;\
+			}
+			#define STOP(__ERR, __CHK) if (__CHK) goto __ERR
+			#include "code.h"
+		}
+	}
+	return e;
+}
+
+void vmTags(ccEnv s, char *sptr, int slen) {
 	FILE *fout = stdout;
 	symn ptr;
 	for (ptr = s->defs; ptr; ptr = ptr->next) {
@@ -803,21 +866,26 @@ void vm_tags(ccEnv s, char *sptr, int slen) {
 			fputfmt(fout, "sp(%d):%s", spos, ptr->name);
 			switch(typ ? typ->kind : 0) {
 				case TYPE_rec: fputfmt(fout, ":struct\n"); break;
-				case TYPE_arr: {
-					int i = 0, n = typ->type->size;
-					fputfmt(fout, ":array[");
-					while (i < typ->size) {
-						vm_fputval(fout, typ, sp);
-						if ((i += n) < typ->size)
+				case TYPE_ar3: {
+					int i = 0;
+					struct astn ns;
+					if (!eval(&ns, typ->init, TYPE_int)) {
+						fputfmt(fout, ":array = error");
+						break;
+					}
+					fputfmt(fout, ":array [");
+					while (i < ns.con.cint) {
+						vm_fputval(fout, typ->type, sp, 1);
+						if (++i < ns.con.cint)
 							fputfmt(fout, ", ");
-						sp = (void*)((char*)sp + n);
+						sp = (void*)((char*)sp + typ->type->size);
 					}
 					fputfmt(fout, "]");
 				} break;
 
 				default:
 					fputs(" = ", fout);
-					vm_fputval(fout, typ, sp);
+					vm_fputval(fout, typ, sp, -1);
 					break;
 			}
 			fputc('\n', fout);
@@ -832,78 +900,176 @@ void vmInfo(FILE* out, vmEnv vm) {
 	i = vm->cs; fprintf(out, "code(@.%04x) size: %dM, %dK, %dB, %d instructions\n", vm->pc, i >> 20, i >> 10, i, vm->ic);
 }
 
+typedef enum {
+	doInit,		// initialize, master is runing
+	doTask,		// start a new processor
+	doWait,		// wait for childs
+	//~ doBrk,		// 
+	//~ getNext,	// get next working cell
+	//~ doSync = 1;		// syncronize
+} doWhat;
+
+static int lobit(int a) {return a & -a;}
+static int mtt(vmEnv ee, doWhat cmd, cell pu, int n) {
+	static int workers = 0;
+	switch (cmd) {
+		case doInit: {			// master thread is running
+			int i;
+			workers = 1;
+			for (i = 0; i < n; ++i) {
+				pu[i].ip = 0;
+			}
+		} break;
+		case doTask: if (workers) {		// uninitialized or no more processors left
+			// the lowest free processor
+			int fpu = lobit(~workers);
+			workers |= fpu;
+			return fpu;
+		} break;
+		case doWait: {			// master thread is running
+			workers = 1;
+		} break;
+		/*case doBrk: if (ee->dbg) {
+			ee->dbg(ee, ....);
+		} break;*/
+	}
+	return 0;
+}
+
 /** exec
+ * executes on a single thread
  * @arg env: enviroment
  * @arg cc: cell count
  * @arg ss: stack size
  * @return: error code
 **/
-int exec(vmEnv vm, unsigned cc, unsigned ss, dbgf dbg) {
-	struct cell proc[1], *pu = proc;	// execution units
+static int execpu(vmEnv vm, cell pu) {
+	//~ unsigned char *bp = pu->sp;
+	unsigned char *mp = NULL;//vm->_mem;
 
-	register bcde ip;
-	register unsigned char *st;
-	register void *mp = NULL;
+	while (pu->ip) {
 
-	/*if (cc > sizeof(proc) / sizeof(*proc)) {
-		debug("cell overrun\n");
-		return -1;
-	}* /
-	/ *if (ss < env->sm) {
-		debug("stack overrun(%d, %d)\n", ss, env->sm);
-		return -1;
+		register bcde ip = (bcde)pu->ip;
+		register unsigned char *st = pu->sp;
+
+		switch (ip->opc) {		// exec
+			error_opc: error(vm->s, 0, "invalid opcode: [%02x]", ip->opc); return -1;
+			error_ovf: error(vm->s, 0, "stack overflow: op[%A]", ip); return -2;
+			error_div: error(vm->s, 0, "division by zero: op[%A]", ip); break;//return -3;
+			//~ error_mem: error(vm->s, 0, "segmentation fault: op[%A]", ip); return -4;
+			#define NEXT(__IP, __CHK, __SP) {pu->sp -= 4*(__SP); pu->ip += (__IP);}
+			#define STOP(__ERR, __CHK) if (__CHK) goto __ERR
+			#define EXEC
+			//~ #define FLGS
+			#include "code.h"
+		}
 	}
-	/ *if ((env->cs + ss * cc) >= ?) {
-		debug("memory overrun\n");
-		return -1;
+
+	return 0;
+}
+
+static int dbugpu(vmEnv vm, cell pu, dbgf dbg) {
+	unsigned char *bp = pu->sp;
+	unsigned char *mp = NULL;//vm->_mem;
+
+	while (pu->ip) {
+
+		register bcde ip = (bcde)pu->ip;
+		register unsigned char *st = pu->sp;
+
+		// we should call here mtt(vm, doBrk, ...)
+		if (dbg(vm, 0, ip, (long*)st, (bp - st) / 4))
+			return -9;
+
+		switch (ip->opc) {		// exec
+			error_opc: error(vm->s, 0, "invalid opcode: [%02x]", ip->opc); return -1;
+			error_ovf: error(vm->s, 0, "stack overflow: op[%A]", ip); return -2;
+			error_div: error(vm->s, 0, "division by zero: op[%A]", ip); break;//return -3;
+			//~ error_mem: error(vm->s, 0, "segmentation fault: op[%A]", ip); return -4;
+			#define NEXT(__IP, __CHK, __SP) {pu->sp -= 4*(__SP); pu->ip += (__IP);}
+			#define STOP(__ERR, __CHK) if (__CHK) goto __ERR
+			#define EXEC
+			//~ #define FLGS
+			#include "code.h"
+		}
 	}
-	//~TODO: memset(vm->_mem, 0, vm->ds);
-	*/
 
-	//~ vm->ic = 0;
+	dbg(vm, 0, NULL, (long*)pu->sp, (vm->_end - pu->sp) / 4);
+	return 0;
+}
 
-	memset(vm->_mem, 0, vm->ds);
+int exec(vmEnv vm, unsigned ss, dbgf dbg) {
+	struct cell pu[1];
+
 	pu->ip = vm->_mem + vm->pc;
 	pu->bp = vm->_end - ss;
 	pu->sp = vm->_end;
 
-	if (dbg == NULL)
-		dbg = nodbg;
+	return dbg ? dbugpu(vm, pu, dbg) : execpu(vm, pu);
+}
 
-	while ((pu = getProc(vm, proc))) {
+/*int execute_emu(vmEnv vm, unsigned cc, unsigned ss, dbgf dbg) {
+	struct cell procs[32], *pu = procs;
+
+	register bcde ip;
+	register void *mp = NULL;
+	register unsigned char *st;
+
+	if (cc > sizeof(procs) / sizeof(*procs)) {
+		debug("cells overrun");
+		return -1;
+	}
+	/ *if (ss < env->sm) {
+		debug("stack overrun(%d, %d)", ss, env->sm);
+		return -1;
+	}
+	/ *if ((env->cs + ss * cc) >= ?) {
+		debug("memory overrun");
+		return -1;
+	}
+	* /
+
+	pu->ip = vm->_mem + vm->pc;
+	pu->bp = vm->_end - ss;
+	pu->sp = vm->_end;
+
+	if (!mtt(vm, doInit, pu, cc)) {
+		debug("thread creation failed");
+		return -1;
+	}
+
+	while (pu->ip) {
 
 		//~ vm->ic += 1;
 		st = pu->sp;			// stack
 		ip = (bcde)pu->ip;
 
-		//~ tick += pu == proc;		// count tiks
-
-		if (dbg(vm, 0, ip, (long*)st, (vm->_end - st) / 4))
+		if (dbg && dbg(vm, 0, ip, (long*)st, (vm->_end - st) / 4))
 			return -9;
 
 		switch (ip->opc) {		// exec
 			error_opc: error(vm->s, 0, "invalid opcode: [%02x]", ip->opc); return -1;
 			error_ovf: error(vm->s, 0, "stack overflow: op[%A]", ip); return -2;
 			error_div: error(vm->s, 0, "division by zero: op[%A]", ip); return -3;
-			//~ error_mem: debug("segmentation fault"); return -5;
-			//~ #define CDBG
-			//~ #define FLGS
+			//~ error_mem: error(vm->s, 0, "segmentation fault: op[%A]", ip); return -5;
 			#define NEXT(__IP, __CHK, __SP) {pu->sp -= 4*(__SP); pu->ip += (__IP);}
 			#define STOP(__ERR, __CHK) if (__CHK) goto __ERR
 			#define EXEC
-			#include "incl/exec.c"
+			//~ #define FLGS
+			#include "code.h"
 		}
+
+		//~ pu = procs + mtt(vm, getNext, procs, pu - procs);
 	}
 
-	dbg(vm, 0, NULL, (long*)proc->sp, (vm->_end - proc->sp) / 4);
-
-	//~ dbg(vm, 0, NULL, (long*)pu->sp, (vm->_end - pu->sp) / 4);
+	if (dbg) dbg(vm, 0, NULL, (long*)pu->sp, (vm->_end - pu->sp) / 4);
 	return 0;
-}
+}*/
 
-void fputopc(FILE *fout, bcde ip, int len, int offs) {
+void fputopc(FILE *fout, unsigned char* ptr, int len, int offs) {
 	int i;
-	unsigned char* ptr = (unsigned char*)ip;
+	//~ unsigned char* ptr = (unsigned char*)ip;
+	bcde ip = (bcde)ptr;
 	if (len > 1 && len < opc_tbl[ip->opc].size) {
 		for (i = 0; i < len - 2; i++) {
 			if (i < opc_tbl[ip->opc].size) fprintf(fout, "%02x ", ptr[i]);
@@ -964,7 +1130,7 @@ void fputopc(FILE *fout, bcde ip, int len, int offs) {
 		case opc_ldcF: fputfmt(fout, " %F", ip->arg.f8); break;
 		case opc_ldcr: fputfmt(fout, " %x", ip->arg.u4); break;
 		//~ case opc_libc: fputfmt(fout, " %s", libcfnc[ip->idx].proto); break;
-		case opc_libc: fputfmt(fout, " %+T", libcfnc[ip->idx].sym); break;
+		case opc_libc: fputfmt(fout, " %-T", libcfnc[ip->idx].sym); break;
 		case opc_sysc: switch (ip->arg.u1) {
 			case  0: fprintf(fout, ".stop"); break;
 			default: fprintf(fout, ".unknown"); break;
@@ -980,7 +1146,7 @@ void fputopc(FILE *fout, bcde ip, int len, int offs) {
 }
 
 void fputasm(FILE *fout, unsigned char* beg, int len, int mode) {
-	unsigned is = 12345, ss = 0, i;
+	int is = 12345, ss = 0, i;
 	for (i = 0; i < len; i += is) {
 		bcde ip = (bcde)(beg + i);
 
@@ -988,7 +1154,7 @@ void fputasm(FILE *fout, unsigned char* beg, int len, int mode) {
 			error_opc: error(NULL, 0, "invalid opcode: %02x '%A'", ip->opc, ip); return;
 			#define NEXT(__IP, __CHK, __SP) {is = (__IP); ss += (__SP);}
 			#define STOP(__ERR, __CHK) if (__CHK) goto __ERR
-			#include "incl/exec.c"
+			#include "code.h"
 		}
 
 		if (mode & 0x10)		// offset
@@ -997,7 +1163,7 @@ void fputasm(FILE *fout, unsigned char* beg, int len, int mode) {
 		if (mode & 0x20)		// TODO: remove stack
 			fputfmt(fout, "ss(%03d): ", ss);
 
-		fputopc(fout, ip, mode & 0xf, mode & 0x10 ? i : -1);
+		fputopc(fout, (void*)ip, mode & 0xf, mode & 0x10 ? i : -1);
 
 		fputc('\n', fout);
 	}
