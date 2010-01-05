@@ -1,15 +1,113 @@
-#include <windows.h>
-#include <winuser.h>
 #include "g2_surf.h"
 
-static HDC wDC = 0;
-static HWND hWnd = 0;
-static HINSTANCE  mainhins = 0;
-static char *class_name = "GFX(2/3)D_GDI_Window";
-
-static BITMAPINFO BMP;
+// TODO
 static int (*kbdH)(int,int) = 0;
 static void (*ratH)(int,int,int) = 0;
+static int do_quit = 0;
+
+static void *event_thread(void *arg) {
+	static int is_first = 1;
+	arg = arg;
+
+	while (1) {
+
+		XEvent x_event;
+
+		XNextEvent(g_p_display, &x_event);
+
+		switch (x_event.type) {
+			case Expose:
+				if (!is_first) {
+					cwn_driver_flush_fb(g_p_fb, x_event.xexpose.x, x_event.xexpose.y, x_event.xexpose.width, x_event.xexpose.height);
+				}
+				else {
+					is_first = 0;
+				}
+				break;
+
+			case ButtonPress:
+				cwn_driver_usr_touch_proc(x_event.xbutton.x, x_event.xbutton.y, CWN_TOUCH_DOWN);
+				break;
+
+			case ButtonRelease:
+				cwn_driver_usr_touch_proc(x_event.xbutton.x, x_event.xbutton.y, CWN_TOUCH_UP);
+				break;
+
+			case MotionNotify:
+				cwn_driver_usr_touch_proc(x_event.xbutton.x, x_event.xbutton.y, CWN_TOUCH_DOWN_LONG);
+				break;
+
+			default:
+				break;
+		}
+
+		//~ cwn_driver_touch_proc();
+
+		if (do_quit) break;
+	}
+
+	pthread_exit(NULL);
+	return NULL;
+}
+
+static int create_window(int width, int height) {
+	if (g_i_is_win_closed) {
+
+		g_p_display = XOpenDisplay(NULL);
+
+		g_root_window = XDefaultRootWindow(g_p_display);
+
+		g_window = XCreateSimpleWindow(g_p_display, g_root_window, 100, 100, width, height, 2, BlackPixel(g_p_display, 0), WhitePixel(g_p_display, 0));
+
+		// register events
+		XSelectInput(g_p_display, g_window, ExposureMask | ButtonPressMask | ButtonReleaseMask | ButtonMotionMask);
+
+		XMapWindow(g_p_display, g_window);
+
+		XFlush(g_p_display);
+
+		g_image_fb = XCreateImage(g_p_display, DefaultVisual(g_p_display, DefaultScreen(g_p_display)), DefaultDepth(g_p_display, DefaultScreen(g_p_display)), ZPixmap, 0, (char*)g_p_fb32, CWN_FB_WIDTH, CWN_FB_HEIGHT, 32, CWN_FB_WIDTH*4);
+
+		g_i_is_win_closed = 0;
+	}
+
+	return 1;
+}
+
+static int close_window(void) {
+
+	if (!g_i_is_win_closed) {
+
+		//~ g_image_fb->data = NULL; // static data must not be freed.
+		//~ XDestroyImage(g_image_fb);
+
+		XDestroyWindow(g_p_display, g_window);
+
+		XFlush(g_p_display);
+
+		XCloseDisplay(g_p_display);
+
+		g_i_is_win_closed = 1;
+	}
+
+	return 1;
+}
+
+int gx_wincopy(gx_Surf src, int unused) {
+	//~ if(hWnd != 0) {
+		//~ SetDIBitsToDevice( wDC,
+			//~ 0, 0, src->width, src->height,
+			//~ 0, 0, 0, src->height,
+			//~ src->basePtr, &BMP, DIB_RGB_COLORS);
+		XPutImage(g_p_display, g_window, g_gc, g_image_fb, x, y, x, y, w, h);
+		XFlush(g_p_display);
+	//~ }
+	return 0;
+}
+
+
+
+
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) {
 	switch (message) {
@@ -28,15 +126,14 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 	return 0;
 }
 
-void ClientResize(HWND hWnd, int nWidth, int nHeight)
-{
-  POINT ptDiff;
-  RECT rcClient, rcWindow;
-  GetClientRect(hWnd, &rcClient);
-  GetWindowRect(hWnd, &rcWindow);
-  ptDiff.x = (rcWindow.right - rcWindow.left) - rcClient.right;
-  ptDiff.y = (rcWindow.bottom - rcWindow.top) - rcClient.bottom;
-  MoveWindow(hWnd,rcWindow.left, rcWindow.top, nWidth + ptDiff.x, nHeight + ptDiff.y, TRUE);
+void ClientResize(HWND hWnd, int nWidth, int nHeight) {
+	POINT ptDiff;
+	RECT rcClient, rcWindow;
+	GetClientRect(hWnd, &rcClient);
+	GetWindowRect(hWnd, &rcWindow);
+	ptDiff.x = (rcWindow.right - rcWindow.left) - rcClient.right;
+	ptDiff.y = (rcWindow.bottom - rcWindow.top) - rcClient.bottom;
+	MoveWindow(hWnd,rcWindow.left, rcWindow.top, nWidth + ptDiff.x, nHeight + ptDiff.y, TRUE);
 }
 
 int initWIN(int w, int h, int (*kbd)(int,int), void (*rat)(int,int,int)) {
@@ -99,16 +196,6 @@ void setCaption(char* str) {
 
 void doneWin(void) {
 	printf("done\n");
-}
-
-int gx_wincopy(gx_Surf src, int unused) {
-	if(hWnd != 0) {
-		SetDIBitsToDevice( wDC,
-			0, 0, src->width, src->height,
-			0, 0, 0, src->height,
-			src->basePtr, &BMP, DIB_RGB_COLORS);
-	}
-	return 0;
 }
 
 int winmsg(int a) {

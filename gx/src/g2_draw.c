@@ -13,32 +13,31 @@ void gx_drawrect(gx_Surf dst, int x0, int y0, int x1, int y1, long col) {
 	gx_setblock(dst, x1, y0, x1 + 1, y1, col);
 }
 
-void gx_drawoval(gx_Surf dst, int x0, int y0, int x1, int y1, long col) {
-	/*
-	int dx,dy,sx,sy,r;
-	if(x0 > x1)xchg(x0,x1);
-	if(y0 > y1)xchg(y0,y1);
+void g2_drawoval(gx_Surf s, int x0, int y0, int x1, int y1, long c/* , long fg */) {
+	int dx, dy, sx, sy, r;
+	if (x0 > x1) {x0 ^= x1; x1 ^= x0; x0 ^= x1;}
+	if (y0 > y1) {y0 ^= y1; y1 ^= y0; y0 ^= y1;}
 	dx = x1 - x0; dy = y1 - y0;
 	x1 = x0 += dx >> 1; x0 +=dx & 1;
 	dx += dx & 1; dy += dy & 1;
 	sx = dx * dx; sy = dy * dy;
 	r = sx * dy >> 2;
 	dx = 0; dy = r << 1;
-	putpixel(s,x0,y0,c);putpixel(s,x0,y1,c);
-	putpixel(s,x1,y0,c);putpixel(s,x1,y1,c);
-	while(y0 < y1){
-		if(r >= 0){
+	while (y0 < y1) {
+		gx_setpixel(s, x0, y0, c); gx_setpixel(s, x0, y1, c);
+		gx_setpixel(s, x1, y0, c); gx_setpixel(s, x1, y1, c);
+		if (r >= 0) {
 			x0--; x1++;
 			r -= dx += sy;
 		}
-		if(r < 0){
+		if (r < 0) {
 			y0++; y1--;
 			r += dy -= sx;
 		}
-		putpixel(s,x0,y0,c);putpixel(s,x0,y1,c);
-		putpixel(s,x1,y0,c);putpixel(s,x1,y1,c);
 	}
-	*/
+	gx_setpixel(s, x0, y0, c); gx_setpixel(s, x0, y1, c);
+	gx_setpixel(s, x1, y0, c); gx_setpixel(s, x1, y1, c);
+	//~ */
 }
 
 static void g2_drawlineA(gx_Surf surf, int x0, int y0, int x1, int y1, long col) {
@@ -481,7 +480,7 @@ typedef struct gradient_data {
 	int	sx, sy, x, y;
 	double	dx, dy, l, a;
 	double (*gf)(struct gradient_data*);
-};
+}gradient_data;
 
 static double gradient_lin_factor(struct gradient_data* g) {
 	int x = g->x - g->sx;

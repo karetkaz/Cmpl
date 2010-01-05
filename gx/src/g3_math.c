@@ -105,16 +105,6 @@ typedef enum {				// swizzle
 	xzww = 0xf8, yzww = 0xf9, zzww = 0xfa, wzww = 0xfb, xwww = 0xfc, ywww = 0xfd, zwww = 0xfe, wwww = 0xff
 } vswzop;
 
-typedef enum {				// compare
-	vcmpEQ = 0,
-	vcmpLT = 1,
-	vcmpLE = 2,
-	//~ GX_CMP_SD = 3,
-	vcmpNE = 4,
-	vcmpGE = 5,
-	vcmpGT = 6
-} vcmpop;
-
 //#################################  COLOR8  ###################################
 /*//{
 argb rgbneg(argb rhs) {
@@ -427,8 +417,6 @@ inline vector vecnrm(vector dst, vector src) {
 
 //~ inline vector vecLIT(vector dst, ???);
 
-//~ inline vector vecMAX(vector dst, vector lhs, vector rhs);	// dst.* = lhs.* >= rhs.* ? lhs.* : rhs.*
-//~ inline vector vecMIN(vector dst, vector lhs, vector rhs);	// dst.* = lhs.* < rhs.* ? lhs.* : rhs.*
 //~ inline vector vecSGE(vector dst, vector lhs, vector rhs);	// dst.* = lhs.* >= rhs.* ? 0 : 1
 //~ inline vector vecSLT(vector dst, vector lhs, vector rhs);	// dst.* = lhs.* < rhs.* ? 0 : 1
 
@@ -463,32 +451,6 @@ inline scalar vecdst(vector lhs, vector rhs) {
 //~ inline vector vecrfr(vector dst, vector dir, vector nrm);	// refract
 
 /*
-inline long veccmp(vector lhs, vector rhs, vec_cmp cmp) {
-	union {
-		long val;
-		struct {
-			char x;
-			char y;
-			char z;
-			char w;
-		};
-	} res;
-	if (cmp) return -1;
-	res.x = (char)(lhs->x < rhs->x ? -1 : lhs->x == rhs->x ? 0 : 1);
-	res.y = (char)(lhs->y < rhs->y ? -1 : lhs->y == rhs->y ? 0 : 1);
-	res.z = (char)(lhs->z < rhs->z ? -1 : lhs->z == rhs->z ? 0 : 1);
-	res.w = (char)(lhs->w < rhs->w ? -1 : lhs->w == rhs->w ? 0 : 1);
-	return res.val;
-}
-
-long vecequ(vector lhs, vector rhs, scalar eps) {
-	if ((lhs->x > rhs->x) ? (lhs->x - rhs->x) : (rhs->x - lhs->x) > eps) return 0;
-	if ((lhs->y > rhs->y) ? (lhs->y - rhs->y) : (rhs->y - lhs->y) > eps) return 0;
-	if ((lhs->z > rhs->z) ? (lhs->z - rhs->z) : (rhs->z - lhs->z) > eps) return 0;
-	//~ if ((lhs->w > rhs->w) ? (lhs->w - rhs->w) : (rhs->w - lhs->w) > eps) return 0;
-	return 1;
-}
-
 #pragma aux (parm [edi] [eax] [edx] value [edi] modify exact []) vecmul =\
 	".686"\
 	"movups	xmm0, [eax]"\
@@ -772,7 +734,7 @@ matrix matran(matrix dst, matrix src) {
 	union matrix tmp;
 	int row, col;
 	if (src == dst)
-		src = matcpy(&tmp, src);//{*tmp = src; rsc = &tmp;}
+		src = matcpy(&tmp, src);//~ {*tmp = src; rsc = &tmp;}
 	for(row = 0; row < 4; ++row)
 		for(col = 0; col < 4; ++col)
 			tmp.m[col][row] = src->m[row][col];
@@ -873,21 +835,5 @@ matrix cammat(matrix mat, camera cam) {
 	vecld4(&mat->y, &cam->dirU, -vecdp3(&cam->dirU, &cam->pos));
 	vecld4(&mat->z, &cam->dirF, -vecdp3(&cam->dirF, &cam->pos));
 	vecldf(&mat->w, 0., 0., 0., 1.);
-	//~ mat->x.x = cam->dirR.x;
-	//~ mat->x.y = cam->dirR.y;
-	//~ mat->x.z = cam->dirR.z;
-	//~ mat->x.w = -vecdp3(&cam->dirR, &cam->pos);
-	//~ mat->y.x = cam->dirU.x;
-	//~ mat->y.y = cam->dirU.y;
-	//~ mat->y.z = cam->dirU.z;
-	//~ mat->y.w = -vecdp3(&cam->dirU, &cam->pos);
-	//~ mat->z.x = cam->dirF.x;
-	//~ mat->z.y = cam->dirF.y;
-	//~ mat->z.z = cam->dirF.z;
-	//~ mat->z.w = -vecdp3(&cam->dirF, &cam->pos);
-	//~ mat->w.x = 0;
-	//~ mat->w.y = 0;
-	//~ mat->w.z = 0;
-	//~ mat->w.w = 1;
 	return mat;
 }

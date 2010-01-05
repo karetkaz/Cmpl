@@ -1,23 +1,20 @@
 #include <math.h>
 #include <time.h>
 #include <stdio.h>
-#include <conio.h>
+//~ #include <conio.h>
 #include <string.h>
 #include <stdlib.h>
 #include "g2_surf.h"
 #include "g2_argb.h"
 
 #define __WIN_DRV
-//~ #define __VBE_DRV
-
+//~ #define __X11_DRV
 #include "g3_draw.c"
 
 double O = 2;
 double N = 1;
 double epsilon = 1e-10;
-//~ scalar S = 8;			// eye(zpos)
 
-//~ #define guispeed (.5)
 double speed = .5;
 #define d speed
 #define D (10 * speed)
@@ -33,11 +30,8 @@ int resx = 800;
 int resy = 600;
 
 union vector eye, tgt, up;
-//~ union matrix proj, view, world;
-//~ struct camera Camera, *cam = &Camera;
 struct camera cam[1];
 
-//~ struct gx_Surf envt[6];
 struct lght *rm = 0;
 struct gx_Surf offs;		// offscreen
 struct mesh msh;
@@ -53,127 +47,290 @@ vector getobjvec(int Normal) {
 
 int osdProgress(float);
 
+char* readVec(char *str, vector dst, scalar defw) {
+	char *sep = ",";
+
+	char *ptr;
+
+	str = readF32(str, &dst->x);
+
+	if (!(ptr = readCmd(str, sep)))
+		return str;
+
+	str = readF32(ptr, &dst->y);
+
+	if (!(ptr = readCmd(str, sep)))
+		return str;
+
+	str = readF32(ptr, &dst->z);
+
+	if (*str)
+		str = readF32(str, &dst->w);
+	else dst->w = defw;
+	return str;
+
+	//~ int n = sscanf(str, "%f%f%f%f", &dst->x, &dst->y, &dst->z, &dst->w);
+	//~ if (n == 3) dst->w = defw;
+	//~ return n >= 3 ? "" : "x";
+}
+
 void readIni() {
+	enum {
+		skip = 1,
+		//~ global,
+		screen,
+		object,			// 
+		objmtl,			// 
+		objfun,			// 
+		//~ scene,			// 
+		light0 = 0x100,
+		light1,
+		light2,
+		light3,
+		light4,
+		light5,
+		light6,
+		light7,
+		//~ record = 0x200,		// Flag: record the section
+	} section = 0;
+
 	char *is = " ";
-	//~ static char sect[1024];		// section;
+
+	char *file = "gx.ini";
+	int line = 0, eof = 0;
+
+	static char sect[1024];
 	static char temp[65536];
+
 	char *ptr = temp, *arg;
-	FILE* fin = fopen("gx.ini", "rt");
+	FILE* fin = fopen(file, "rt");
+
+	char *mtl = NULL;
+
 	obj = 0;
 	tex = 0;
 	fnt = 0;
-	if (fin) for ( ; ; ) {
+
+	if (fin) while (!eof) {
 		int cnt = temp + sizeof(temp) - ptr;
 
+		line += 1;
 		fgets(ptr, cnt, fin);
-		if (feof(fin)) break;
-		ptr[strlen(ptr) - 1] = 0;
-
-		if (*ptr == '#') continue;				// Comment
-		if (*ptr == '\0') continue;				// Empty line
-		if ((arg = readKVP(ptr, "screen.font", "=", is))) {
-			int len = strlen(arg);
-			strcpy(ptr, arg);
-			fnt = ptr;
-			ptr += len + 1;
-			continue;
-		}
-		if ((arg = readKVP(ptr, "screen.width", "=", is))) {
-			if (*readNum(arg, &resx))
-				debug("invalid number: %s", arg);
-			continue;
-		}
-		if ((arg = readKVP(ptr, "screen.height", "=", is))) {
-			if (*readNum(arg, &resy))
-				debug("invalid number: %s", arg);
-			continue;
-		}
-		if ((arg = readKVP(ptr, "screen.speed", "=", is))) {
-			if (*readFlt(arg, &speed))
-				debug("invalid number: %s", arg);
-			continue;
+		if (feof(fin)) {
+			strncpy(ptr, "[eof]\n", cnt);
+			eof = 1;
 		}
 
-		if ((arg = readKVP(ptr, "material", "=", is))) {
-			int num;
-			if (*readNum(arg, &num) == '\0') {
-				if (num > sizeof(defmtl)/sizeof(*defmtl)) {
-					debug("invalid material: %s", arg);
-					num = 0;
-				}
-				debug("using material: %d", num);
-				msh.mtl = defmtl[num];
+		if (*ptr == '[' && (arg = strchr(ptr, ']'))) {
+			int funend = section == objfun;
+
+			/* debug
+			if (section == objmtl) {
+				vector c;
+				c = &msh.mtl.ambi; debug("%f %f %f %f", c->x, c->y, c->z, c->w);
+				c = &msh.mtl.diff; debug("%f %f %f %f", c->x, c->y, c->z, c->w);
+				c = &msh.mtl.spec; debug("%f %f %f %f", c->x, c->y, c->z, c->w);
+			}// */
+
+			section = skip;
+			*arg = 0; arg = ptr + 1;
+
+			if (strcmp(arg, "screen") == 0) {
+				section = screen;
 			}
-			else debug("invalid number: %s", ptr);
-			continue;
-		}
-		if ((arg = readKVP(ptr, "texture", "=", is))) {
-			int len = strlen(arg);
-			strcpy(ptr, arg);
-			tex = ptr;
-			ptr += len + 1;
-			continue;
-		}
-		if ((arg = readKVP(ptr, "object.size", "=", is))) {
-			if (*readFlt(arg, &O))
-				debug("invalid number: %s", arg);
-			continue;
-		}
-		if ((arg = readKVP(ptr, "normal.size", "=", is))) {
-			if (*readFlt(arg, &N))
-				debug("invalid number: %s", arg);
-			continue;
-		}
-		if ((arg = readKVP(ptr, "epsilon", "=", is))) {
-			if (*readFlt(arg, &epsilon))
-				debug("invalid number: %s", arg);
-			continue;
-		}
-		if ((arg = readKVP(ptr, "object", "=", is))) {
-			int len = strlen(arg);
-			strcpy(ptr, arg);
-			obj = ptr;
-			ptr += len + 1;
-			continue;
-		}
-		if ((arg = readKVP(ptr, "object", "{", is))) {
-			obj = ptr;
-			strncpy(ptr,
-			"!\n"
-			"flt64 s = st(1);\n"
-			"flt64 t = st(2);\n"
-			"flt64 x = s;\n"
-			"flt64 y = t;\n"
-			"flt64 z = 0;\n"
-			"\n", cnt);
-			ptr += strlen(ptr);
-			while (1) {
-				cnt = temp + sizeof(temp) - ptr;
-				fgets(ptr, cnt, fin);
-				if (feof(fin)) break;
-				if (*ptr == '}') break;				// Comment
-				if (*ptr == '#') continue;			// Comment
-				if (*ptr == '\n') continue;			// Empty line
+			else if (strcmp(arg, "object") == 0) {
+				section = object;
+			}
+			else if (strcmp(arg, "light0") == 0) {
+				section = light0;
+			}
+			else if (mtl && strcmp(mtl, arg) == 0) {			// object.material
+				section = objmtl;
+			}
+			else if (obj && strcmp(obj, arg) == 0) {			// object.function
+				obj = ptr;
+				strncpy(ptr, "!\n"			// first char is a ! so is not a file
+					"flt64 s = st(1);\n"
+					"flt64 t = st(2);\n"
+					"flt64 x = s;\n"
+					"flt64 y = t;\n"
+					"flt64 z = 0;\n"
+					"\n", cnt);
 				ptr += strlen(ptr);
+				section = objfun;//record + object;
 			}
-			strncpy(ptr, "\nsetPos(x, y, z);\n", cnt);
-			ptr += strlen(ptr) + 1;
-		}
-		/*if ((ptr = readKVP(buff, "skybox", "=", is))) {
-			int len = strlen(ptr);
-			if (str + len < temp + sizeof(temp)) {
-				strcpy(sky = str, ptr);
-				str += len + 1;
+
+			if (funend) {
+				strncpy(ptr, "setPos(x, y, z);\n", cnt);
+				ptr += strlen(ptr) + 1;
 			}
+
+			//~ debug("%s", arg);
 			continue;
-		}//*/
+		}
+
+		if (*ptr == '\n') continue;								// Empty line
+		if (*ptr == '#' || *ptr == ';') continue;				// Comment
+
+		if (section == objfun) {		// record function body into buffer
+			ptr += strlen(ptr);
+			continue;
+		}
+		ptr[strlen(ptr) - 1] = 0;		// cler '\n' from end of string
+
+		if (section == objmtl) {
+			if ((arg = readKVP(ptr, "Ka", "=", is))) {
+				if (*readVec(arg, &msh.mtl.ambi, 1))
+					debug("invalid format: %s(%d): %s", file, line, arg);
+				continue;
+			}
+			if ((arg = readKVP(ptr, "Kd", "=", is))) {
+				if (*readVec(arg, &msh.mtl.diff, 1))
+					debug("invalid format: %s(%d): %s", file, line, arg);
+				continue;
+			}
+			if ((arg = readKVP(ptr, "Ks", "=", is))) {
+				if (*readVec(arg, &msh.mtl.spec, 1))
+					debug("invalid format: %s(%d): %s", file, line, arg);
+				continue;
+			}
+			if ((arg = readKVP(ptr, "KS", "=", is))) {
+				if (*readF32(arg, &msh.mtl.spow))
+					debug("invalid format: %s(%d): %s", file, line, arg);
+				continue;
+			}
+			//~ union vector ambi;		// Ambient
+			//~ union vector diff;		// Diffuse
+			//~ union vector spec;		// Specular
+			//~ scalar spow;		// Shin...
+			//~ union vector emis;		// Emissive
+		}
+		if (section == screen) {
+			if ((arg = readKVP(ptr, "screen.font", "=", is))) {
+				int len = strlen(arg);
+				strcpy(ptr, arg);
+				fnt = ptr;
+				ptr += len + 1;
+				continue;
+			}
+			if ((arg = readKVP(ptr, "screen.width", "=", is))) {
+				if (*readNum(arg, &resx))
+					debug("invalid number: %s", arg);
+				continue;
+			}
+			if ((arg = readKVP(ptr, "screen.height", "=", is))) {
+				if (*readNum(arg, &resy))
+					debug("invalid number: %s", arg);
+				continue;
+			}
+			if ((arg = readKVP(ptr, "screen.speed", "=", is))) {
+				if (*readFlt(arg, &speed))
+					debug("invalid number: %s", arg);
+				continue;
+			}
+		}
+		if (section == object) {
+			if ((arg = readKVP(ptr, "material", "=", is))) {
+				int num;
+				if (*readNum(arg, &num) == '\0') {
+					if (num >= sizeof(defmtl) / sizeof(*defmtl)) {
+						debug("invalid material: %s", arg);
+						num = 0;
+					}
+					debug("using material: %d", num);
+					msh.mtl = defmtl[num];
+				}
+				else {
+					mtl = strcpy(ptr, arg);
+					ptr += strlen(ptr) + 1;
+				}
+				continue;
+			}
+			if ((arg = readKVP(ptr, "texture", "=", is))) {
+				tex = strcpy(ptr, arg);
+				ptr += strlen(ptr) + 1;
+				continue;
+			}
+			if ((arg = readKVP(ptr, "object", "=", is))) {
+				obj = strcpy(ptr, arg);
+				ptr += strlen(ptr) + 1;
+				continue;
+			}
+
+			// temporary
+			if ((arg = readKVP(ptr, "object.size", "=", is))) {
+				if (*readFlt(arg, &O))
+					debug("invalid number: %s", arg);
+				continue;
+			}
+			if ((arg = readKVP(ptr, "normal.size", "=", is))) {
+				if (*readFlt(arg, &N))
+					debug("invalid number: %s", arg);
+				continue;
+			}
+			if ((arg = readKVP(ptr, "epsilon", "=", is))) {
+				if (*readFlt(arg, &epsilon))
+					debug("invalid number: %s", arg);
+				continue;
+			}
+		}
+
+		if ((section & ~0xff) == light0) {
+			int light = section & 0xff;
+			if (light >= 4) return;
+			if ((arg = readKVP(ptr, "Ka", "=", is))) {
+				if (*readVec(arg, &Lights[light].ambi, 1))
+					debug("invalid format: %s(%d): %s", file, line, arg);
+				continue;
+			}
+			if ((arg = readKVP(ptr, "Kd", "=", is))) {
+				if (*readVec(arg, &Lights[light].diff, 1))
+					debug("invalid format: %s(%d): %s", file, line, arg);
+				continue;
+			}
+			if ((arg = readKVP(ptr, "Ks", "=", is))) {
+				if (*readVec(arg, &Lights[light].spec, 1))
+					debug("invalid format: %s(%d): %s", file, line, arg);
+				continue;
+			}
+			if ((arg = readKVP(ptr, "KS", "=", is))) {
+				if (*readF32(arg, &Lights[light].spec.w))
+					debug("invalid format: %s(%d): %s", file, line, arg);
+				continue;
+			}
+			if ((arg = readKVP(ptr, "pos", "=", is))) {
+				if (*readVec(arg, &Lights[light].pos, 1))
+					debug("invalid format: %s(%d): %s", file, line, arg);
+				continue;
+			}
+			if ((arg = readKVP(ptr, "dir", "=", is))) {
+				if (*readVec(arg, &Lights[light].dir, 0))
+					debug("invalid format: %s(%d): %s", file, line, arg);
+				continue;
+			}
+			if ((arg = readKVP(ptr, "attn", "=", is))) {
+				if (*readVec(arg, &Lights[light].attn, 0))
+					debug("invalid format: %s(%d): %s", file, line, arg);
+				continue;
+			}
+			if ((arg = readKVP(ptr, "spot", "=", is))) {
+				if (!*(arg = readF32(arg, &Lights[light].sCos)))
+					continue;
+				if (!*(arg = readF32(arg, &Lights[light].sExp)))
+					continue;
+				debug("invalid format: %s(%d): %s", file, line, arg);
+				continue;
+			}
+		}
 	}
+	//~ debug("ini size: %d", ptr - temp);
 	//~ debug("%s", obj);
 }
 
 void reload() {
 	char *ext;
 	int res;
+	time_t ticks = clock();
 	if (tex && (ext = fext(tex))) {
 		res = -2;
 		if (stricmp(ext, "bmp") == 0)
@@ -183,42 +340,12 @@ void reload() {
 		debug("ReadText('%s'): %d", tex, res);
 	}
 	if (obj && *obj == '!') {
+		ticks = clock();
 		debug("EvalMesh('%s'): %d", "!", evalMesh(&msh, obj + 1, 64, 64));
 	}
 	else if (obj) {
 		debug("ReadMesh('%s'): %d", obj, readMesh(&msh, obj));
 	}
-	/*else if (obj) {
-		double* (*evalP)(double [3], double [3], double s, double t) = 0;
-		int div = 64;
-		char *val = obj + 1;
-		char *fun = readNum(val, &div);
-		if (stricmp(fun, "Sphere") == 0)
-			evalP = evalP_sphere;
-		if (stricmp(fun, "tours") == 0)
-			evalP = evalP_tours;
-		if (stricmp(fun, "cone") == 0)
-			evalP = evalP_cone;
-		if (stricmp(fun, "apple") == 0)
-			evalP = evalP_apple;
-		if (stricmp(fun, "plane") == 0)
-			evalP = evalP_plane;
-		if (stricmp(fun, "_001") == 0)
-			evalP = evalP_001;
-		if (stricmp(fun, "_002") == 0)
-			evalP = evalP_002;
-		if (stricmp(fun, "_003") == 0)
-			evalP = evalP_003;
-		if (stricmp(fun, "_004") == 0)
-			evalP = evalP_004;
-		if (stricmp(fun, "_005") == 0)
-			evalP = evalP_005;
-		if (stricmp(fun, "_006") == 0)
-			evalP = evalP_006;
-		if (stricmp(fun, "_007") == 0)
-			evalP = evalP_007;
-		printf("EvalMesh('%s'): %d\n", fun, evalMesh(&msh, evalP, div, div, 0));
-	}*/
 	else {
 		msh.vtxcnt = msh.tricnt = msh.segcnt = 0;
 		setvtxD(&msh, 0, 'p', 0, 0, -1);
@@ -229,6 +356,8 @@ void reload() {
 		setvtxD(&msh, 2, 'n', -1, 0, 0);
 		addtri(&msh, 0, 1, 2);
 	}
+	ticks = clock() - ticks;
+	debug("ticks := %d", (int)ticks);
 }
 
 void ratHND(int btn, int mx, int my) {
@@ -313,10 +442,9 @@ int kbdHND(int lkey, int key) {
 		case '\t': draw = (draw & ~draw_mode) | ((draw + LOBIT(draw_mode)) & draw_mode); break;
 		case '/' : draw = (draw & ~cull_mode) | ((draw + LOBIT(cull_mode)) & cull_mode); break;
 		case '?' : draw = (draw & ~cull_mode) | ((draw - LOBIT(cull_mode)) & cull_mode); break;
-		//~ case ']' : draw = (draw & ~pcol_mode) | ((draw + LOBIT(pcol_mode)) & pcol_mode); break;
+
 		case '^' : {
 			g3_drawline = (g3_drawline == g3_drawlineA ? g3_drawlineB : g3_drawlineA);
-			//~ draw ^= text_afine;
 		} break;
 
 		case '~' : draw ^= disp_info; break;
@@ -344,12 +472,6 @@ int kbdHND(int lkey, int key) {
 		case '.' : vtx += 1; break;
 		case '>' : vtx -= 1; break;
 
-
-		case '[': if (rm) rm->sCos -= 1.; break;
-		case ']': if (rm) rm->sCos += 1.; break;
-		case '{': if (rm) rm->sExp -= 1.1; break;
-		case '}': if (rm) rm->sExp += 1.1; break;
-
 		case '\b' : {
 			optiMesh(&msh, 1e-15, osdProgress);
 			printf("vtx cnt : %d / %d\n", msh.vtxcnt, msh.maxvtx);
@@ -373,7 +495,6 @@ int kbdHND(int lkey, int key) {
 			centMesh(&msh, O);
 			//~ printf("done\n");
 		} break;
-		case '\'' : 
 		case '"' : {
 			printf("subdivide Mesh ...");
 			sdivMesh(&msh, 1);
@@ -414,8 +535,16 @@ int osdProgress(float prec) {
 	return peekMsg(0);
 }
 
+//~ #define cubemap "media/text/dots/"
+//~ #define cubemap "media/text/mars/"
+//~ #define cubemap "media/text/mars/"
+
 int main(int argc, char* argv[]) {
-	struct gx_Surf font;		// font
+	struct gx_Surf font;	// font
+	struct mesh lmsh;		// mesh for lights
+	#ifdef cubemap
+	struct gx_Surf envt[6];
+	#endif
 
 	struct {
 		time_t	sec;
@@ -429,6 +558,8 @@ int main(int argc, char* argv[]) {
 	int e;
 
 	initMesh(&msh, 1024);
+	initMesh(&lmsh, 1024);
+	evalSphere(&lmsh, 10, 10);
 	setbuf(stdout, NULL);
 	msh.mtl = defmtl[12];
 
@@ -491,9 +622,8 @@ int main(int argc, char* argv[]) {
 
 	if ((e = gx_loadFNT(&font, fnt))) {
 		debug("Cannot open font '%s': %d\n", fnt, e);
-		gx_doneSurf(&font);
-		freeMesh(&msh);
-		return -2;
+		//~ freeMesh(&msh);
+		//~ return -2;
 	}
 
 	if ((e = g3_init(&offs, resx, resy))) {
@@ -504,7 +634,7 @@ int main(int argc, char* argv[]) {
 		return -2;
 	}
 
-	projv_mat(&cam->proj, 10, (double)resx / resy, 5, 100);
+	projv_mat(&cam->proj, 10 * .25, (double)resx / resy, .25, 100);
 
 	if (init_WIN(&offs, &flip, &peekMsg, &done, ratHND, kbdHND)) {
 		printf("Cannot init surface\n");
@@ -519,11 +649,12 @@ int main(int argc, char* argv[]) {
 		union vector v[6];
 		#define nextln ((ln += box.h) - box.h)
 		int tris = 0, ln = 0;
+		int *cBuff = offs.basePtr;
+		int *zBuff = offs.tempPtr;
 
-		for (e = 0; e < scrw * scrh; e += 1) {		// clear
+		for (e = 0; e < offs.width * offs.height; e += 1) {		// clear
 			cBuff[e] = 0x00000000;
-			//~ zBuff[e] = 0x3fffffff;
-			zBuff[e] = 0x00ffffff;
+			zBuff[e] = 0x3fffffff;
 		}
 		if (fps.sec != time(NULL)) {				// fps
 			fps.col = fps.cnt < 30 ? 0xff0000 : fps.cnt < 50 ? 0xffff00 : 0x00ff00;
@@ -533,14 +664,14 @@ int main(int argc, char* argv[]) {
 		}
 
 		#ifdef cubemap
-		matmul(&proj, &projM, cammat(&view, cam));
-		g3_drawenvc(envt, &cam->dirF, &proj, 1000);
+		matmul(proj, &cam->proj, cammat(view, cam));
+		g3_drawenvc(envt, &cam->dirF, proj, 10);
 		#endif
 
 		if (draw & disp_mesh) {
 			matidn(view);
 			msh.hlplt = vtx;
-			tris += g3_drawmesh(&msh, view, cam);
+			tris += g3_drawmesh(&offs, &msh, view, cam);
 			//~ view.zt += 2*O;
 			//~ tris += g3_drawmesh(&msh, &view, cam);
 			//~ view.zt -= 4*O;
@@ -549,18 +680,22 @@ int main(int argc, char* argv[]) {
 			//~ tris += g3_drawmesh(&msh, &view, cam);
 		}
 		if (draw & disp_zbuf) {
-			for(e = 0; e < scrw*scrh; e += 1) {
+			for(e = 0; e < offs.width * offs.height; e += 1) {
 				long z = zBuff[e];
 				z = (z >> 15) & 0x1ff;
 				if (z < 256) z = ~z & 0xff;
 				cBuff[e] = ~(z << 16 | z << 8 | z);
 			}
 		}
-		if (draw & disp_lght) {
+		/*if (draw & disp_lght) {
 			int i = 0;
 			cammat(view, cam);
 			matmul(proj, &cam->proj, view);
 			for (i = 0; i < lights; i += 1) {
+				matidn(view);
+				matmov(view, &Lights[i].pos);
+				g3_drawmesh(&lght, view, cam);
+
 				scalar lsize = .5;
 				mappos(v, proj, &Lights[i].pos);
 				if (Lights[i].attr & L_on)
@@ -571,27 +706,46 @@ int main(int argc, char* argv[]) {
 					g3_drawline(v + 0, v + 1, vecrgb(&Lights[i].diff).col);
 				}
 			}
+		} */
+		if (draw & disp_lght) {
+			int i = 0;
+			cammat(view, cam);
+			matmul(proj, &cam->proj, view);
+			for (i = 0; i < lights; i += 1) {
+				if (Lights[i].attr & L_on) {
+					matidn(view);
+					view->x.x = .2;
+					view->y.y = .2;
+					view->z.z = .2;
+					view->x.w = Lights[i].pos.x;
+					view->y.w = Lights[i].pos.y;
+					view->z.w = Lights[i].pos.z;
+					//~ lmsh.mtl = defmtl[9];
+					lmsh.mtl.emis = Lights[i].ambi;
+					g3_drawmesh(&offs, &lmsh, view, cam);
+				}
+			}
 		}
 		if (draw & disp_info) {
 			sprintf(str, "Object size: %g, tvx:%d, tri:%d, seg:%d%s%s", O, msh.vtxcnt, msh.tricnt, msh.segcnt, msh.hasTex ? ", tex" : "", msh.hasNrm ? ", nrm" : "");
-			gx_clipText(&box, &font, str); gx_drawText(&offs, scrw - box.w - 10, nextln, &font, str, 0xffffffff);
+			gx_clipText(&box, &font, str); gx_drawText(&offs, offs.width - box.w - 10, nextln, &font, str, 0xffffffff);
 
 			sprintf(str, "camera(%g, %g, %g)", cam->pos.x, cam->pos.y, cam->pos.z);
-			gx_clipText(&box, &font, str); gx_drawText(&offs, scrw - box.w - 10, nextln, &font, str, 0xffffffff);
+			gx_clipText(&box, &font, str); gx_drawText(&offs, offs.width - box.w - 10, nextln, &font, str, 0xffffffff);
 
 			if (getobjvec(0)) {
 				vector P = getobjvec(0);
 				vector N = getobjvec(1);
 				//~ sprintf(str, "light[%d].pos(%g, %g, %g); cos(%g), exp(%g)", rm-Lights, rm->pos.x, rm->pos.y, rm->pos.z, rm->sCos, rm->sExp);
 				sprintf(str, "object: P(%.3f, %.3f, %.3f), N(%.3f, %.3f, %.3f)", P->x, P->y, P->z, N->x, N->y, N->z);
-				gx_clipText(&box, &font, str); gx_drawText(&offs, scrw - box.w - 10, nextln, &font, str, 0xffffffff);
+				gx_clipText(&box, &font, str); gx_drawText(&offs, offs.width - box.w - 10, nextln, &font, str, 0xffffffff);
 				//~ sprintf(str, "camera1(%g, %g, %g)", cam1.pos.x, cam1.pos.y, cam1.pos.z);
 				//~ gx_drawText(&offs, SCRW - 8*strlen(str)-10, nextln, &font, str, 0xffffffff);
 			}
 			for (e = 0; e < lights; e += 1) {
 				argb lcol = vecrgb(&Lights[e].ambi);
 				sprintf(str, "light %d : %s", e, Lights[e].attr & L_on ? "On" : "Off");
-				gx_clipText(&box, &font, str); gx_drawText(&offs, scrw - box.w - 10, nextln, &font, str, lcol.val);
+				gx_clipText(&box, &font, str); gx_drawText(&offs, offs.width - box.w - 10, nextln, &font, str, lcol.val);
 			}
 
 		}

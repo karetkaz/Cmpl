@@ -6,6 +6,7 @@
 #define BMP_RLE 0x01
 #define BMP_OS2 0x02
 
+#pragma pack ( push, 1 )
 typedef struct {	// BMP_HDR
 	unsigned short	manfact;
 	unsigned long	filesize;
@@ -71,7 +72,7 @@ typedef struct {	// CUR_BMP		BITMAPINFOHEADER
 	unsigned long	impcol;
 } CUR_BMP;
 
-#pragma pack(1)
+#pragma pack(pop)
 
 typedef int (*bmplnreader)(unsigned char*, FILE*, unsigned);
 typedef int (*bmplnwriter)(FILE*, unsigned char*, unsigned);
@@ -201,19 +202,6 @@ static int bmpwln_04rle(FILE* dst, unsigned char* src, unsigned cnt) {return -1;
 static int bmpwln_08rle(FILE* dst, unsigned char* src, unsigned cnt) {return -1;} // TODO
 
 //	open / save image formats
-
-char* gx_readBMP_errors[] = {
-	/* 0 */"OK",
-	/* 1 */"can not open FILE",
-	/* 2 */"Invalid Bitmap Format",
-	/* 3 */"Invalid Header Size",
-	/* 4 */"Invalid Bitmap Depth",
-	/* 5 */"Invalid Bitmap Encoding(Compression)",
-	/* 6 */"Invalid Surface color converter",
-	/* 7 */"Invalid Surface destination color depth",
-	/* 8 */"can not init surface",
-	/* 9 */"Invalid"
-};
 
 int gx_readBMP(gx_Surf dst, FILE* fin, int depth) {
 	struct gx_Clut bmppal;			// bitmap palette
@@ -509,9 +497,9 @@ int gx_loadCUR(gx_Surf dst, const char* src, int flags) {
 }
 
 #if 1
-#pragma pack(8)
-#include "../lib/include/jpeglib.h"
-//~ #pragma library (libjpeg);
+#pragma pack(push, 8)
+#include "../lib/libjpeg/jpeglib.h"
+#pragma pack ( pop )
 
 int gx_loadJPG(gx_Surf dst, const char* src, int depth) {
 	FILE*		fin;

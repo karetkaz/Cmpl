@@ -44,10 +44,10 @@ typedef void colcpy(argb*, argb*, unsigned);
 #define gx_extern extern
 #endif
 
-inline long rgblum(argb col) {
+static inline long rgblum(argb col) {
 	return (col.r * 76 + col.g * 150 + col.b * 29) >> 8;
 }
-inline argb rgbrgb(int r, int g, int b) {
+static inline argb rgbrgb(int r, int g, int b) {
 	argb res;
 	//~ res.a = 0xff;
 	res.r = r & 0xff;
@@ -55,12 +55,12 @@ inline argb rgbrgb(int r, int g, int b) {
 	res.b = b & 0xff;
 	return res;
 }
-inline argb rgbval(int val) {
+static inline argb rgbval(int val) {
 	argb res;
 	res.val = val;
 	return res;
 }
-inline argb rgbset(int a, int r, int g, int b) {
+static inline argb rgbset(int a, int r, int g, int b) {
 	argb res;
 	res.a = a & 0xff;
 	res.r = r & 0xff;

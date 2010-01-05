@@ -574,7 +574,7 @@ static char* readFlt(char *str, double *outVal) {
 
 	//~ ('.'[0-9]*)?
 	if (*ptr == '.') {
-		double tmp = 0;
+		//~ double tmp = 0;
 		ptr++;
 		while (*ptr >= '0' && *ptr <= '9') {
 			val = val * 10 + (*ptr - '0');
@@ -592,6 +592,13 @@ static char* readFlt(char *str, double *outVal) {
 
 	if (outVal) *outVal = sgn * val * pow(10, exp);
 	return ptr;
+}
+
+static char* readF32(char *str, float *outVal) {
+	double f64;
+	str = readFlt(str, &f64);
+	if (outVal) *outVal = f64;
+	return str;
 }
 
 struct growBuffer {
@@ -1539,100 +1546,9 @@ void sdivvtx(vertex *res, vertex *v1, vertex *v2) {
 	//~ vecsub(&tmp, &v1->nrm, &v2->nrm);
 	//~ vecadd(&res->pos, &res->pos, vecsca(&tmp, &res->nrm, vecdp3(&tmp, &tmp)/2));
 }
-
-int readf(mesh *msh, char* name) {
-	FILE *f = fopen(name, "r");
-	int cnt, n;
-	if (f == NULL) return -1;
-
-	fscanf(f, "%d", &cnt);
-	if (fgetc(f) != ';') return 1;
-	n = cnt;
-	for (n = 0; n < cnt; n += 1) {
-		double pos[3];
-		fscanf(f, "%lf", &pos[0]);
-		if (fgetc(f) != ';') return 1;
-		fscanf(f, "%lf", &pos[1]);
-		if (fgetc(f) != ';') return 1;
-		fscanf(f, "%lf", &pos[2]);
-		if (fgetc(f) != ';') return 1;
-		switch (fgetc(f)) {
-			default  : return -4;
-			case ';' : if (n != cnt-1) {printf("pos: n != cnt : %d != %d\n", n, cnt); return -2;}
-			case ',' : break;
-		}
-		if (n != addvtxdv(msh, pos, NULL, NULL, 0)) return -99;
-	}
-	for (n = 0; n < cnt; n += 1) {
-		double nrm[3];
-		fscanf(f, "%lf", &nrm[0]);
-		if (fgetc(f) != ';') return 1;
-		fscanf(f, "%lf", &nrm[1]);
-		if (fgetc(f) != ';') return 1;
-		fscanf(f, "%lf", &nrm[2]);
-		if (fgetc(f) != ';') return 1;
-		switch (fgetc(f)) {
-			default  : return -4;
-			case ';' : if (n != cnt-1) {printf("pos: n != cnt : %d != %d\n", n, cnt); return -2;}
-			case ',' : break;
-		}
-		vecldf(&msh->vtxptr[n].nrm, nrm[0], nrm[1], nrm[2], 0);
-		//setvtx(n, NULL, nrm);
-	}
-	fscanf(f, "%d", &cnt);
-	if (fgetc(f) != ';') return 1;
-	while (cnt--) {
-		unsigned n, tri[3];
-		fscanf(f, "%d", &n);
-		if (fgetc(f) != ';') return 1;
-		if (n == 3) {
-			fscanf(f, "%d", &tri[0]);
-			if (fgetc(f) != ',') return 2;
-			fscanf(f, "%d", &tri[1]);
-			if (fgetc(f) != ',') return 2;
-			fscanf(f, "%d", &tri[2]);
-			if (fgetc(f) != ';') return 2;
-			switch (fgetc(f)) {
-				default  : return -5;
-				case ',' : break;
-				case ';' : if (cnt) return -3;
-			}
-			addtri(msh, tri[0], tri[1], tri[2]);
-		}
-		else 
-			fprintf(stdout, "tri : cnt:%d n:%d\n", cnt, n);
-	}
-	return 0;
-}
-
-int readf1(mesh *msh, char* name) {
-	FILE *f = fopen(name, "r");
-	int cnt, n;
-	if (f == NULL) return -1;
-
-	fscanf(f, "%d", &cnt);
-	//~ if (fgetc(f) != '\n') return 1;
-
-	for (n = 0; n < cnt; n += 1) {
-		double pos[3], nrm[3];//, tex[2];
-		fscanf(f, "%lf%lf%lf", &pos[0], &pos[1], &pos[2]);
-		fscanf(f, "%lf%lf%lf", &nrm[0], &nrm[1], &nrm[2]);
-		if (n != addvtxdv(msh, pos, nrm, NULL, 0)) return -99;
-	}
-	for ( ; ; ) {
-		unsigned tri[3];
-		fscanf(f, "%d%d%d", &tri[0], &tri[1], &tri[2]);
-		if (feof(f)) break;
-		addtri(msh, tri[0], tri[1], tri[2]);
-	}
-	fclose(f);
-	return 0;
-}
-
-
 */
 
-#include "../lib/include/pvmc.h"
+#include "../lib/libpvmc/pvmc.h"
 typedef struct userData {
 	double s, smin, smax;
 	double t, tmin, tmax;
@@ -1646,7 +1562,7 @@ static inline double lerp(double a, double b, double t) {
 
 static void getST(state args) {
 	userData d = args->data;
-	int32t c = popi64(args);
+	int32t c = popi32(args);
 	switch (c) {
 		case   1: retf64(args, lerp(d->smin, d->smax, d->s)); break;
 		case   2: retf64(args, lerp(d->tmin, d->tmax, d->t)); break;
@@ -1664,7 +1580,7 @@ static void setPos(state args) {
 	d->pos[1] = popf64(args);
 	d->pos[2] = popf64(args);
 	//~ d->pos = 1;
-	//~ debug("setNrm(%f, %f, %f)", x, y, z);
+	//~ debug("setNrm(%g, %g, %g)", d->pos[0], d->pos[1], d->pos[2]);
 }
 static void setNrm(state args) {
 	userData d = args->data;
@@ -1740,17 +1656,22 @@ inline double* dv3crs(double dst[3], double lhs[3], double rhs[3]) {
 }
 inline double* dv3nrm(double dst[3], double src[3]) {
 	double len = dv3dot(src, src);
-	if (len > H) {
-		len = 1. / sqrt(len);
-		dst[0] = src[0] * len;
-		dst[1] = src[1] * len;
-		dst[2] = src[2] * len;
+	if (len > 0) {
+		//~ len = 1. / sqrt(len);
+		//~ dst[0] = src[0] * len;
+		//~ dst[1] = src[1] * len;
+		//~ dst[2] = src[2] * len;
+		len = sqrt(len);
+		dst[0] = src[0] / len;
+		dst[1] = src[1] / len;
+		dst[2] = src[2] / len;
 	}
 	return dst;
 }
 
 int evalMesh(mesh msh, char *obj, int sdiv, int tdiv) {
-	static struct state env[1];
+	static char mem[64 << 10];		// 64K memory ???
+	state env = gsInit(mem, sizeof(mem));
 	struct userData ud;
 
 	char *logf = "debug.out";
@@ -1761,13 +1682,10 @@ int evalMesh(mesh msh, char *obj, int sdiv, int tdiv) {
 	//~ double smin = 0, smax = 1;
 	//~ double tmin = 0, tmax = 1;
 
-	memset(env, 0, sizeof(env) - sizeof(env->_mem));
-	env->_cnt = sizeof(env->_mem);
-	env->_ptr = env->_mem;
-
-	if (!ccInit(env))
-		return 1;
-
+	if (!ccInit(env)) {
+		debug("Internal error\n", env->_cnt, env->cc);
+		return -9;
+	}
 	if (logfile(env, logf) != 0) {
 		debug("can not open file `%s`\n", logf);
 		return -1;
@@ -1781,16 +1699,13 @@ int evalMesh(mesh msh, char *obj, int sdiv, int tdiv) {
 	installlibc(env, f64sqrt, "flt64 sqrt(flt64 x)");
 	installlibc(env, f64pow, "flt64 pow(flt64 x, flt64 y)");
 
-	// todo if libc pushes error
-	installlibc(env, getST, "flt64 st(int64 arg)");
+	installlibc(env, getST, "flt64 st(int32 arg)");
 	installlibc(env, setPos, "void setPos(flt64 x, flt64 y, flt64 z)");
 	//~ installlibc(env, setNrm, "void setNrm(flt64 x, flt64 y, flt64 z)");
-	//~ installlibc(env, superShape, "flt64 r(flt64 o, flt64 n1, flt64 n2, flt64 n3, flt64 m, flt64 a, flt64 b)");
-	//~ installlibc(env, getArg, "flt32 getArg(int32 arg, flt64 min, flt64 max)");
 
 	if (!ccOpen(env, 0, obj)) {
 		debug("can not open %s", obj);
-		return -1;
+		return -8;
 	}
 	if (compile(env, 0) != 0) {
 		debug("compile failed");
@@ -1804,7 +1719,6 @@ int evalMesh(mesh msh, char *obj, int sdiv, int tdiv) {
 	dump(env, logf, dump_sym | 0x01, "\ntags:\n");
 	dump(env, logf, dump_ast | 0x00, "\ncode:\n");
 	dump(env, logf, dump_asm | 0x39, "\ndasm:\n");
-
 
 	env->data = &ud;
 	ud.smin = ud.tmin = 0;
@@ -1837,33 +1751,41 @@ int evalMesh(mesh msh, char *obj, int sdiv, int tdiv) {
 		for (s = 0, i = 0; i < sdiv; s += ds, ++i) {
 			double pos[3], nrm[3], tex[2];
 			double ds[3], dt[3];
-			tex[0] = s;
-			tex[1] = t;
+			tex[0] = t;
+			tex[1] = s;
 
 			ud.s = s; ud.t = t;
-			if (exec(env->vm, 1, 4096, NULL) != 0) {
+			if (exec(env->vm, 4096, NULL) != 0) {
 				debug("error");
-				return -1;
+				return -4;
 			}
 			dv3cpy(pos, ud.pos);
 
 			ud.s = s + H; ud.t = t;
-			if (exec(env->vm, 1, 4096, NULL) != 0) {
+			if (exec(env->vm, 4096, NULL) != 0) {
 				debug("error");
-				return -1;
+				return -3;
 			}
 			dv3cpy(ds, ud.pos);
 
 			ud.s = s; ud.t = t + H;
-			if (exec(env->vm, 1, 4096, NULL) != 0) {
+			if (exec(env->vm, 4096, NULL) != 0) {
 				debug("error");
-				return -1;
+				return -2;
 			}
 			dv3cpy(dt, ud.pos);
 
-			dv3sca(ds, dv3sub(ds, pos, ds), 1. / H);
-			dv3sca(dt, dv3sub(dt, pos, dt), 1. / H);
+			ds[0] = (pos[0] - ds[0]) / H;
+			ds[1] = (pos[1] - ds[1]) / H;
+			ds[2] = (pos[2] - ds[2]) / H;
+			dt[0] = (pos[0] - dt[0]) / H;
+			dt[1] = (pos[1] - dt[1]) / H;
+			dt[2] = (pos[2] - dt[2]) / H;
+			//~ dv3sca(ds, dv3sub(ds, pos, ds), 1. / H);
+			//~ dv3sca(dt, dv3sub(dt, pos, dt), 1. / H);
 			dv3nrm(nrm, dv3crs(nrm, ds, dt));
+
+			//~ debug("setNrm(%lg, %lg, %lg)", nrm[0], nrm[1], nrm[2]);
 
 			addvtxDV(msh, pos, nrm, tex);
 		}
@@ -1879,3 +1801,49 @@ int evalMesh(mesh msh, char *obj, int sdiv, int tdiv) {
 	}
 	return 0;
 }// */
+
+static inline void sphere(double dst[3], double nrm[3], double tex[2], double s, double t) {
+	const double s_min = 0.0, s_max = 1 * M_PI;
+	const double t_min = 0.0, t_max = 2 * M_PI;
+
+	double S = lerp(s_min, s_max, s);
+	double T = lerp(t_min, t_max, t);
+
+	dst[0] = cos(T) * sin(S);
+	dst[1] = sin(T) * sin(S);
+	dst[2] = cos(S);
+
+	dv3nrm(nrm, dst);
+
+	tex[0] = s;
+	tex[1] = t;
+}
+
+int evalSphere(mesh msh, int sdiv, int tdiv) {
+	double s, t, ds, dt;	// 0 .. 1
+	int i, j;
+
+	ds = 1. / (sdiv - 1);
+	dt = 1. / (tdiv - 1);
+	msh->hasTex = msh->hasNrm = 1;
+	msh->tricnt = msh->vtxcnt = 0;
+
+	for (t = 0, j = 0; j < tdiv; t += dt, ++j) {
+		for (s = 0, i = 0; i < sdiv; s += ds, ++i) {
+			double pos[3], nrm[3], tex[2];
+			sphere(pos, nrm, tex, s, t);
+			addvtxDV(msh, pos, nrm, tex);
+		}
+	}
+	for (j = 0; j < tdiv - 1; ++j) {
+		int l1 = j * sdiv;
+		int l2 = l1 + sdiv;
+		for (i = 0; i < sdiv - 1; ++i) {
+			int v1 = l1 + i, v2 = v1 + 1;
+			int v4 = l2 + i, v3 = v4 + 1;
+			addquad(msh, v1, v2, v3, v4);
+		}
+	}
+	return 0;
+}
+// */

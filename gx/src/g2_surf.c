@@ -266,6 +266,8 @@ int gx_loadFNT(gx_Surf dst, const char* fontfile) {
 	char tmp[4096], *ptr;
 	FILE *fin = fopen(fontfile, "rb");
 
+	dst->basePtr = NULL;
+
 	if (fin == 0) return -1;
 	fread(tmp, 4096, 1, fin);
 	fsize = ftell(fin);
@@ -312,10 +314,15 @@ int gx_loadFNT(gx_Surf dst, const char* fontfile) {
 }
 
 void gx_drawChar(gx_Surf dst, int x, int y, gx_Surf fnt, unsigned chr, long col) {
-	struct gx_FDIR face = fnt->lutLPtr->data[chr & 255];
+	struct gx_FDIR face;// = fnt->lutLPtr->data[chr & 255];
 	struct gx_Rect clip;
 	void (*cblt)() = 0;
 	char *dptr, *sptr;
+
+	if (!fnt->basePtr)
+		return;
+
+	face = fnt->lutLPtr->data[chr & 255];
 
 	clip.x = x + face.pad_x;
 	clip.y = y + face.pad_y;
@@ -344,6 +351,10 @@ void gx_drawChar(gx_Surf dst, int x, int y, gx_Surf fnt, unsigned chr, long col)
 
 void gx_drawText(gx_Surf dst, int x, int y, gx_Surf fnt, const char *str, long col) {
 	int x0 = x;
+
+	if (!fnt->basePtr)
+		return;
+
 	while (*str) {
 		unsigned chr = *str++;
 		switch (chr) {
