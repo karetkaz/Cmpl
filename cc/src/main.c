@@ -1,10 +1,13 @@
-#include "ccvm.h"
-#include <math.h>
+
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
+
+#include "../../util.c"
+#include "ccvm.h"
 
 // default values
-static const int wl = 3;		// warning level
+static const int wl = 9;		// warning level
 static const int ol = 0;		// optimize level
 
 static const int cc = 1;			// execution cores
@@ -21,7 +24,7 @@ void usage(char* prog, char* cmd) {
 		fputfmt(stdout, "\t-e: execute\n");
 		fputfmt(stdout, "\t-d: diassemble\n");
 		fputfmt(stdout, "\t-h: help\n");
-		fputfmt(stdout, "\t=<expression>: eval\n");
+		//~ fputfmt(stdout, "\t=<expression>: eval\n");
 		//~ fputfmt(stdout, "\t-d: dump\n");
 	}
 	else if (strcmp(cmd, "-c") == 0) {
@@ -68,7 +71,7 @@ int vmHelp(char *cmd) {
 	int i, k = 0, n = 0;
 	for (i = 0; i < opc_last; ++i) {
 		char *opc = (char*)opc_tbl[i].name;
-		if (opc && strfindstr(opc, cmd, 1)) {
+		if (opc && matchstr(opc, cmd, 1)) {
 			fputfmt(out, "Instruction: %s\n", opc);
 			n += 1;
 			k = i;
@@ -101,9 +104,10 @@ int evalexp(ccEnv s, char* text) {
 	int tid;
 
 	source(s, 0, text);
+
 	ast = expr(s, 0);
-	typ = lookup(s, 0, ast);
-	tid = eval(&res, ast, TYPE_flt);
+	typ = typecheck(s, 0, ast);
+	tid = eval(&res, ast, TYPE_any);
 
 	if (peek(s))
 		error(s->s, 0, "unexpected: `%k`", peek(s));
@@ -125,7 +129,7 @@ int program(int argc, char *argv[]) {
 	static char mem[64 << 10];	// 128K
 	state s = gsInit(mem, sizeof(mem));
 
-	char *prg, *cmd, hexc = '#';
+	char *prg, *cmd;//, hexc = '#';
 	dbgf dbg = NULL;//nodbg;//Info;
 
 	prg = argv[0];
@@ -138,10 +142,10 @@ int program(int argc, char *argv[]) {
 			return evalexp(ccInit(s), cmd + 1);
 		}
 		else if (strcmp(cmd, "-api") == 0) {
-			dumpsym(stdout, leave(ccInit(s)), 1);
+			dumpsym(stdout, leave(ccInit(s), NULL), 1);
 		}
 		else if (strcmp(cmd, "-syms") == 0) {
-			symn sym = leave(ccInit(s));
+			symn sym = leave(ccInit(s), NULL);
 			while (sym) {
 				dumpsym(stdout, sym, 0);
 				sym = sym->defs;
@@ -201,7 +205,7 @@ int program(int argc, char *argv[]) {
 					fputfmt(stderr, "multiple sources not suported\n");
 					return -1;
 				}
-				srcf = arg;
+				srcf = argv[argi];
 			}
 
 			// output file
@@ -210,57 +214,58 @@ int program(int argc, char *argv[]) {
 					fputfmt(stderr, "logger error\n");
 					return -1;
 				}
-				logf = arg;
+				logf = argv[argi];
 			}
 			else if (strcmp(arg, "-o") == 0) {		// out
 				if (++argi >= argc || outf) {
 					fputfmt(stderr, "output error\n");
 					return -1;
 				}
-				outf = arg;
+				outf = argv[argi];
 			}
 
 			// output what
-			else if (strncmp(arg, "-x", 2) == 0) {		// exec(DelMe)
-				char *str = arg + 2;
-				outc = run_code;
-				if (*str == 'd') {
-					dbg = dbgInfo;
-					str += 1;
-				}
-				else if (*str == 'D') {
-					dbg = dbgCon;
-					str += 1;
-				}
-				if (!parseInt(str, &level, 0)) {
-					fputfmt(stderr, "invalid level '%s'\n", arg + 2);
-					debug("invalid level '%s'\n", arg + 2);
-					return 0;
-				}
-			}
 			else if (strncmp(arg, "-t", 2) == 0) {		// tags
-				if (!parseInt(arg + 2, &level, hexc)) {
-					fputfmt(stderr, "invalid level '%s'\n", arg + 2);
-					debug("invalid level '%s'\n", arg + 2);
+				char *str = arg + 2;
+				if (*parsei32(str, &level, 0)) {
+					fputfmt(stderr, "invalid level '%s'\n", str);
+					debug("invalid level '%s'", str);
 					return 0;
 				}
 				outc = out_tags;
 			}
-			else if (strncmp(arg, "-s", 2) == 0) {		// dasm
-				if (!parseInt(arg + 2, &level, hexc)) {
-					fputfmt(stderr, "invalid level '%s'\n", arg + 2);
-					debug("invalid level '%s'\n", arg + 2);
+
+			else if (strncmp(arg, "-c", 2) == 0) {		// ast
+				if (*parsei32(arg + 2, &level, 16)) {
+					fputfmt(stderr, "invalid argument '%s'\n", arg);
+					return 0;
+				}
+				outc = out_tree;
+			}
+			else if (strncmp(arg, "-s", 2) == 0) {		// asm
+				if (*parsei32(arg + 2, &level, 16)) {
+					fputfmt(stderr, "invalid argument '%s'\n", arg);
 					return 0;
 				}
 				outc = out_dasm;
 			}
-			else if (strncmp(arg, "-c", 2) == 0) {		// tree
-				if (!parseInt(arg + 2, &level, hexc)) {
-					fputfmt(stderr, "invalid level '%s'\n", arg + 2);
-					debug("invalid level '%s'\n", arg + 2);
+
+			else if (strncmp(arg, "-x", 2) == 0) {		// exec(&| debug)
+				char *str = arg + 2;
+				outc = run_code;
+
+				if (*str == 'd' || *str == 'D') {
+					dbg = *str == 'd' ? dbgInfo : dbgCon;
+					str += 1;
+				}
+
+				level = 1;
+
+				if (*str && *parsei32(str, &level, 16)) {
+					fputfmt(stderr, "invalid level '%s'\n", str);
+					debug("invalid level '%s'", str);
 					return 0;
 				}
-				outc = out_tree;
 			}
 
 			// Override settings
@@ -269,24 +274,23 @@ int program(int argc, char *argv[]) {
 					warn = -1;
 				else if (strcmp(arg, "-wa") == 0)
 					warn = 9;
-				else if (!parseInt(arg + 2, &warn, 0)) {
+				else if (!parsei32(arg + 2, &warn, 10)) {
 					fputfmt(stderr, "invalid level '%s'\n", arg + 2);
 					debug("invalid level '%s'\n", arg + 2);
 					return 0;
 				}
 			}
 			else if (strncmp(arg, "-O", 2) == 0) {		// optimize level
-				if (strcmp(arg, "-Oa") == 0)
+				if (strcmp(arg, "-O") == 0)
+					opti = 1;
+				else if (strcmp(arg, "-Oa") == 0)
 					opti = 3;
-				else if (!parseInt(arg + 2, &opti, 0)) {
+				else if (!parsei32(arg + 2, &opti, 10)) {
 					fputfmt(stderr, "invalid level '%s'\n", arg + 2);
 					debug("invalid level '%s'\n", arg + 2);
 					return 0;
 				}
 			}
-			/*else if (strncmp(arg, "-d", 2) == 0) {		// optimize/debug level
-				return -1;
-			}*/
 
 			else {
 				fputfmt(stderr, "invalid option '%s' for -compile\n", arg);
@@ -301,16 +305,17 @@ int program(int argc, char *argv[]) {
 			return -1;
 		}
 
+		debug("compiler.info:%d Tokens", tok_last);
 		if (srcfile(s, srcf) != 0) {
 			fputfmt(stderr, "can not open file `%s`\n", srcf);
 			return -1;
 		}
-		debug("compiler.init:%d Bytes", s->cc->_ptr - s->_mem);
+		debug("compiler.init:%.2F KBytes", (s->cc->_ptr - s->_mem) / 1024.);
 
 		if (compile(s, warn) != 0) {
 			return s->errc;
 		}
-		debug("compiler.scan:%d Bytes", s->cc->_ptr - s->_mem);
+		debug("compiler.scan:%.2F KBytes", (s->cc->_ptr - s->_mem) / 1024.);
 
 		if (gencode(s, opti) != 0) {
 			return s->errc;
@@ -319,10 +324,10 @@ int program(int argc, char *argv[]) {
 		//~ debug("data:%d Bytes", s->vm->ds);
 
 		if (outc) switch (outc) {
-			default: fatal("no Ip here");
-			case out_tree: dump(s, outf, dump_ast | (level & 0xff), NULL); break;
-			case out_dasm: dump(s, outf, dump_asm | (level & 0xff), NULL); break;
-			case out_tags: dump(s, outf, dump_sym | (1), NULL); break;
+			default: fatal("NoIpHere");
+			case out_tree: dump(s, outf, dump_new | dump_ast | (level & 0xff), NULL); break;
+			case out_dasm: dump(s, outf, dump_new | dump_asm | (level & 0xff), NULL); break;
+			case out_tags: dump(s, outf, dump_new | dump_sym | (1), NULL); break;
 			case run_code: exec(s->vm, ss, dbg); break;
 		}
 
@@ -381,4 +386,5 @@ int main(int argc, char *argv[]) {
 	setbuf(stdout, NULL);
 	setbuf(stderr, NULL);
 	return program(argc, argv);
+	//~ return vmTest();
 }

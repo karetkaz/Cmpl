@@ -15,8 +15,8 @@ typedef uint64_t uns64t;
 typedef float    flt32t;
 typedef double   flt64t;
 
-typedef struct astn *astn;
-typedef struct symn *symn;		// symbols
+//~ typedef struct astn *astn;
+//~ typedef struct symn *symn;		// symbols
 typedef struct ccEnv *ccEnv;
 typedef struct vmEnv *vmEnv;
 
@@ -38,7 +38,6 @@ typedef struct state {
 	//~ char _mem[4 << 20];
 	char _mem[];
 } *state;
-
 typedef enum {
 	srcFile = 0x10,		// file / buffer
 	//~ srcAuto = -1,		// first token: 'unit' ...
@@ -59,7 +58,10 @@ typedef enum {
 	dump_ast = 0x0000400,
 	dumpMask = 0x0000f00,
 	dump_new = 0x0001000,		// do not append (!stdout)
-
+	/* symbol flags
+	call = 0x0001,
+	load = 0x0002,
+	// */
 } srcType, dumpMode;
 
 state gsInit(void* mem, unsigned size);
@@ -87,14 +89,12 @@ ccEnv ccOpen(state, srcType, char* source);
 //~ int ccScan(ccEnv, srcType);		// scan the source file into ast
 int ccDone(state);
 
-//~ gencode()
-
 vmEnv vmInit(state s);
 //~ int vmOpen(state, char* source);
 void vmInfo(FILE*, vmEnv s);
 int vmDone(state s);
 
-int installlibc(state, void call(state), const char* proto);
+int install_libc(state, void call(state), const char* proto);
 
 #define poparg(__ARGV, __TYPE) ((__TYPE*)((__ARGV)->argv += ((sizeof(__TYPE) | 3) & ~3)))[-1]
 #define setret(__TYPE, __ARGV, __VAL) (*((__TYPE*)(__ARGV->retv)) = (__TYPE)(__VAL))
@@ -120,4 +120,13 @@ static inline int64t popi64(state s) { return poparg(s, int64t); }
  * 	dump(s, "tags.txt", dump_new | dump_sym, NULL);
  * 	return 0;
  * }
+**/
+
+/* emit
+ * seg: text: RO initialized data
+ * seg: data: RW initialized data
+ * seg: code: RO executable code
+ * seg: .sym: load if (import || debug || rtti)
+ * seg: .doc: documentation
+ * 
 **/

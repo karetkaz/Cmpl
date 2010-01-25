@@ -28,7 +28,7 @@
 #define fatal(msg, ...)  {pdbg("fatal", msg, ##__VA_ARGS__); /* exit(-2); */}
 #define dieif(__EXP, msg, ...) {if (__EXP) fatal(msg, ##__VA_ARGS__)}
 
-#if 1
+#if 0
 // debug information
 #define error(__ENV, __LINE, msg, ...) perr(__ENV, -1, __FILE__, __LINE__, msg, ##__VA_ARGS__)
 #define warn(__ENV, __LEVEL, __FILE, __LINE, msg, ...) perr(__ENV, __LEVEL, __FILE__, __LINE__, msg, ##__VA_ARGS__)
@@ -42,15 +42,16 @@
 
 // Symbols - CC
 enum {
-	OP = 0, ID = 1, TY = 2, XX = -1,
-	#define TOKDEF(NAME, PREC, ARGC, KIND, STR) NAME,
+	//~ OP = 0, ID = 1, TY = 2, XX = -1,
+	#define TOKDEF(NAME, TYPE, SIZE, KEYW, STR) NAME,
 	#include "incl/defs.h"
 	tok_last,
+	TOKN_err = TYPE_any,
 };
 typedef struct {
-	int const	kind;
 	int const	type;
 	int const	argc;
+	char const	*keyw;
 	char const	*name;
 } tok_inf;
 extern const tok_inf tok_tbl[255];
@@ -86,7 +87,8 @@ enum {
 	opc_sti,
 
 	get_ip,		// instruction pointer
-	get_sp,		// get stack pointer
+	get_sp,		// get stack position
+	//~ get_ss,		// get stack size = -4 * get_sp
 	set_sp,		// set stack pointer
 	// TODO: remove
 	seg_code,	// pc = ptr - beg; ptr += code->cs;
@@ -110,29 +112,6 @@ typedef struct {
 } opc_inf;
 extern const opc_inf opc_tbl[255];
 
-//[ TODO: remove these types
-typedef struct {	// i32x4
-	uns32t x;
-	uns32t y;
-	uns32t z;
-	uns32t w;
-} u32x4t;
-typedef struct {	// i64x2: rational
-	uns64t x;
-	uns64t y;
-} u32x2t;
-typedef struct {	// f64x2: complex
-	flt64t x;
-	flt64t y;
-} f64x2t;
-typedef struct {	// f32x4: vector
-	flt32t x;
-	flt32t y;
-	flt32t z;
-	flt32t w;
-} f32x4t;
-//]
-
 typedef union {		// stack value type
 	int08t	i1;
 	uns08t	u1;
@@ -144,26 +123,26 @@ typedef union {		// stack value type
 	uns64t	u8;
 	flt32t	f4;
 	flt64t	f8;
-	//TODO: remove pf, pd, x4
-	f32x4t	pf;
-	f64x2t	pd;
-	u32x4t	x4;
+	struct {flt32t x, y, z, w;} pf;
+
 } stkval;
 
-typedef struct listn_t *list, **strt;
+//~ typedef struct listn_t *list, **strt;
 typedef struct symn **symt;
+typedef struct symn *symn;		// symbols
+typedef struct astn *astn;
 
-struct listn_t {			// linked list astn
-	struct listn_t	*next;
+typedef struct list {			// linked list astn
+	struct list		*next;
 	unsigned char	*data;
 	//~ unsigned int	size;	// sizeOf(list node) := ((char*)&node) - data;
-};
+} *list, **strt;
 
 struct astn {				// ast astn
 	uns32t		line;				// token on line / code offset
 	uns08t		kind;				// code: TYPE_ref, OPER_???, CNST_???
 	uns08t		cast;				// cast lhs and rhs to
-	uns16t		XXXX;				// OPER: (priority level / dupplicate of)
+	uns16t		XXXX;				// OPER: (priority level / dupplicate of, on stack)
 	union {
 		union  {					// CNST_xxx: constant
 			int64t	cint;			// cnst: integer
@@ -211,22 +190,22 @@ struct symn {				// symbol
 	int32t	size;	// sizeof(TYPE_xxx)
 	int32t	offs;	// addrof(TYPE_ref)
 	};
-	//~ symn	decl;		// declared in
+	symn	decl;		// declared in
 	symn	type;		// base type of TYPE_ref (void, int, float, struct, ...)
 	symn	args;		// REC fields / FUN args
-	// reflection ends here
+	symn	next;		// symbols on table/args
 
 	uns08t	kind;		// TYPE_ref || TYPE_xxx
+	uns08t	call:1;		// function
+	//~ uns08t	load:1;		// indirect
+
 	//~ uns08t	priv:1;		// private
 	//~ uns08t	stat:1;		// static
 	//~ uns08t	read:1;		// const
-	//~ uns08t	used:1;		// used(ref/def)
+	//~ uns08t	used:1;		// used
 
-	uns08t	call:1;		// is function
-	//~ uns08t	load:1;		// is indirect (TYPE_ref)
-
-	//~ uns08t	onst:1;		// stack  (val): replaced with (offs < 0 or: offs < 255)
-	//~ uns08t	libc:1;		// native (fun): replaced with (offs < 0 or: offs < 255)
+	//~ uns08t	onst:1;		// stack  (val): replaced with (offs < 0) ?(offs < 255)
+	//~ uns08t	libc:1;		// native (fun): replaced with (offs < 0) ?(offs < 255)
 	//~ uns08t	temp:1;		// no lookup: set name to null
 
 	uns08t	xxxx:7;		// -Wpadded
@@ -235,20 +214,8 @@ struct symn {				// symbol
 	astn	init;		// VAR init / FUN body
 
 	// list(scoping)
-	symn	defs;		// simbols on stack/all
-	symn	next;		// simbols on table/args
+	symn	defs;		// symbols on stack/all
 };
-
-/* struct typeinf {
- * 	string	file;
- * 	int32t	line;
- * 	string	name;
- * 	int32t	size;
- * 	typeinf	decl;		// declared type
- * 	typeinf	type;		// fun: return type / cls:inherited type / def: type / var: type
- * 	typeinf	args[];		// fun: arguments / cls: members / def: null / var: null
- * }
- */
 
 struct ccEnv {
 	state	s;
@@ -331,9 +298,8 @@ extern symn type_f32x4;
 extern symn type_f64x2;
 
 //~ util
-int parseInt(const char *str, int *res, int hexchr);
+//~ int parseInt(const char *str, int *res, int hexchr);
 char* parsecmd(char *ptr, char *cmd, char *sws);
-char *strfindstr(const char *t, const char *p, int flags);
 
 //~ clog
 void fputfmt(FILE *fout, const char *msg, ...);
@@ -367,8 +333,9 @@ symn newdefn(ccEnv s, int kind);
 symn installex(ccEnv s, int kind, const char* name, unsigned size, symn type, astn init);
 symn install(ccEnv s, int kind, const char* name, unsigned size);
 symn declare(ccEnv s, int kind, astn tag, symn rtyp);
-symn lookin(ccEnv s, symn sym, astn ast, astn args);
-symn lookup(ccEnv s, symn loc, astn ast);
+symn lookup(ccEnv s, symn sym, astn ast, astn args);
+symn typecheck(ccEnv s, symn loc, astn ast);
+int castTo(astn ast, symn type);
 
 int32t constbol(astn ast);
 //~ int64t constint(astn ast);
@@ -386,15 +353,14 @@ astn expr(ccEnv, int mode);		// parse expression	(mode: lookup)
 int scan(ccEnv, int mode);		// parse program	(mode: script mode)
 
 void enter(ccEnv s, symn def);
-symn leave(ccEnv s);
+symn leave(ccEnv s, symn def);
 
 /** try to evaluate an expression
- * @return CNST_xxx if expression can be folded 0 otherwise
- * @param ast: tree to be evaluated
  * @param res: where to put the result
- * @param get: one of TYPE_xxx
+ * @param ast: tree to be evaluated
+ * @param get: one of [TYPE_any, TYPE_bit, TYPE_int, TYPE_flt]
+ * @return get if expression can be folded 0 otherwise
  */
-
 int eval(astn res, astn ast, int get);
 int cgen(state s, astn ast, int get);		// ret: typeId(ast)
 
@@ -408,25 +374,21 @@ int emiti32(vmEnv, int32t arg);
 int emiti64(vmEnv, int64t arg);
 int emitf32(vmEnv, flt32t arg);
 int emitf64(vmEnv, flt64t arg);
-int emitidx(vmEnv, int opc, int stpos);
+int emitidx(vmEnv, int opc, int pos);
 int emitint(vmEnv, int opc, int64t arg);
 int fixjump(vmEnv s, int src, int dst, int stc);
 
 int isType(symn sym);
 int istype(astn ast);
 
-int isemit(astn ast);
+//~ int isemit(astn ast);
 //~ int islval(astn ast);
 symn linkOf(astn ast, int notjustrefs);
 
 int castId(symn ast);
 int castOp(symn lhs, symn rhs, int uns);
-int castTo(astn ast, int tid);
-//~ int castTo(astn ast, symn typ);
 
 int source(ccEnv, srcType mode, char* text);		// mode: file/text
-
-//~ void installlibc(state, void call(state), const char* proto);
 
 int rehash(const char* str, unsigned size);
 //~ int align(int offs, int pack, int size);

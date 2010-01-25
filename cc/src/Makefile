@@ -1,5 +1,4 @@
 include incl/Makefile.gcc
-#~ include incl/Makefile.wcc
 LIB=WLIB -q
 
 SRCDIR=
@@ -22,6 +21,14 @@ main: clean $(OBJS) $(OBJDIR)main.o
 lib:$(OBJS)
 	$(LIB) $(LIBNAME) $(OBJS)
 
+clean:
+	rm -f $(OBJS) $(OBJDIR)main.o
+
+debug:
+	$(DBG) '$(BINDIR)main'
+
+#~ build:main clean
+
 $(OBJDIR)main.o:
 	$(CCC) $(COPTS) $(CFLAGS) $(SRCDIR)main.c $(OUTOBJ)$(OBJDIR)main.o
 $(OBJDIR)ccvm.o:
@@ -40,16 +47,3 @@ $(OBJDIR)scan.o:
 	$(CCC) $(COPTS) $(CFLAGS) $(SRCDIR)scan.c $(OUTOBJ)$(OBJDIR)scan.o
 $(OBJDIR)code.o:
 	$(CCC) $(COPTS) $(CFLAGS) $(SRCDIR)code.c $(OUTOBJ)$(OBJDIR)code.o
-
-clean:
-	rm -f $(OBJS) $(OBJDIR)main.o
-#~ del -f $(OBJS) $(OBJDIR)main.o
-#~ rm -f $(OBJDIR)main.o
-
-debug:
-	#~ xterm -e gdb $(BINDIR)main
-	#~ $(DBG) "$(BINDIR)main"
-	wdw "..\main"
-
-build:clean main
-

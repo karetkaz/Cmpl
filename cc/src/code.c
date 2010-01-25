@@ -137,7 +137,7 @@ typedef struct cell {			// processor
 
 } *cell; // */
 
-#define useBuiltInFuncs
+//~ #define useBuiltInFuncs
 //{ libc.c ---------------------------------------------------------------------
 //~ #pragma intrinsic(log,cos,sin,tan,sqrt,fabs,pow,atan2,fmod)
 //~ #pragma intrinsic(acos,asin,atan,cosh,exp,log10,sinh,tanh)
@@ -336,7 +336,7 @@ libcfnc[256] = {
 	{NULL},
 };
 
-int installlibc(state s, void libc(state), const char* proto) {
+int install_libc(state s, void libc(state), const char* proto) {
 	static int libccnt = 0;
 	int stdiff = 0;
 	symn arg, sym;
@@ -345,15 +345,14 @@ int installlibc(state s, void libc(state), const char* proto) {
 		int i;
 		for (i = 0; libcfnc[i].proto; ++i) {
 			fputfmt(stdout, "%s\n", libcfnc[i].proto);
-			//~ installlibc(s, libcfnc[i].call, libcfnc[i].proto);
 		}
 	}
 
-	if (!libccnt && !libc) {
+	if (!libccnt && !libc/*  && strcmp(proto, "defaults") == 0 */) {
 		libccnt = 1;
 		if (!libc) while (libcfnc[libccnt].proto) {
 			int i = libccnt;
-			installlibc(s, libcfnc[i].call, libcfnc[i].proto);
+			install_libc(s, libcfnc[i].call, libcfnc[i].proto);
 		}
 		return libccnt;
 	}
@@ -568,10 +567,6 @@ int emit(vmEnv s, int opc, ...) {
 	}
 
 	else if (opc == opc_ldi) switch (arg.i4) {
-		//~ case TYPE_i32:
-		//~ case TYPE_u32:
-		//~ case TYPE_f32: opc = opc_ldi4; break;
-
 		case  1: opc = opc_ldi1; break;
 		case  2: opc = opc_ldi2; break;
 		case  4: opc = opc_ldi4; break;
@@ -579,14 +574,14 @@ int emit(vmEnv s, int opc, ...) {
 		case 16: opc = opc_ldiq; break;
 		default: return 0;
 	}
-	/*else if (opc == opc_sti) switch (arg.i4) {
+	else if (opc == opc_sti) switch (arg.i4) {
 		case  1: opc = opc_sti1; break;
 		case  2: opc = opc_sti2; break;
 		case  4: opc = opc_sti4; break;
 		case  8: opc = opc_sti8; break;
 		case 16: opc = opc_stiq; break;
 		default: return 0;
-	}*/
+	}
 
 	/*~:)) ?? rollbacks
 	if (opc == opc_ldz1) {
@@ -664,7 +659,7 @@ int emit(vmEnv s, int opc, ...) {
 	ip->arg = arg;
 
 	s->pc = s->cs;
-	//~ debug("@%04x[ss:%03d]: %01A", s->pc, s->ss, ip);
+	//~ debug("@%04x[ss:%03d]: %09A", s->pc, s->ss, ip);
 	switch (opc) {		//#exec.c
 		error_opc: error(s->s, 0, "invalid opcode: [%02x] %A", ip->opc, ip); return 0;
 		error_stc: error(s->s, 0, "stack underflow(%d): near opcode %A", s->ss, ip); return 0;
@@ -709,6 +704,13 @@ int emitf64(vmEnv s, flt64t arg) {
 int emitidx(vmEnv s, int opc, int arg) {
 	stkval tmp;
 	tmp.i4 = s->ss + arg;
+	if (opc == opc_ldsp) {
+		if (!emit(s, opc))
+			return 0;
+		if (!emiti32(s, 4*tmp.i4))
+			return 0;
+		return emit(s, i32_add);
+	}
 	if (tmp.u4 > 255) {
 		error(s->s, 0, "0x%02x(%d)", opc, tmp.u4);
 		fputasm(stdout, s->_ptr, s->cs, 0x31);
@@ -729,7 +731,7 @@ int fixjump(vmEnv s, int src, int dst, int stc) {
 	bcde ip = getip(s, src);
 
 	if (src >= 0) switch (ip->opc) {
-		default: fatal("no Ip here");
+		default: fatal("NoIpHere");
 		case opc_jmp:
 		case opc_jnz:
 		case opc_jz: ip->jmp = dst - src; break;
@@ -766,15 +768,28 @@ void vm_fputval(FILE *fout, symn typ, stkval* sp, int flgs) {
 	} flagbits;
 	switch(typ ? typ->kind : 0) {
 		case TYPE_p4x: {
-			if (typ == type_f32x4)
-				fputfmt(fout, "f32x4(%g, %g, %g, %g)", sp->pf.x, sp->pf.y, sp->pf.z, sp->pf.w);
-			if (typ == type_f64x2)
-				fputfmt(fout, "f64x2(%G, %G)", sp->pd.x, sp->pd.y);
+			if (typ == type_f32x4) {
+				flt32t *val = (flt32t*)sp;
+				fputfmt(fout, "f32x4(%g, %g, %g, %g)", val[0], val[1], val[2], val[3]);
+				//~ fputfmt(fout, "f32x4(%g, %g, %g, %g)", sp->pf.x, sp->pf.y, sp->pf.z, sp->pf.w);
+			}
+			else if (typ == type_f64x2) {
+				flt64t *val = (flt64t*)sp;
+				fputfmt(fout, "f64x2(%G, %G)", val[0], val[1]);
+				//~ fputfmt(fout, "f64x2(%G, %G)", sp->pd.x, sp->pd.y);
+			}
 		} break;
 		case TYPE_bit: switch (typ->size) {
-			case 1: case 2:
-			//~ case 4: fputfmt(fout, "u32[%008x](%u)", sp->i4, sp->i4); break;
-			//~ case 8: fputfmt(fout, "u64[%016X](%U)", sp->i8, sp->i8); break;
+			case 1:
+				if (flgs & flg_type) fputfmt(fout, "u32");
+				if (flgs & flg_hex) fputfmt(fout, "[%008x]", sp->i1);
+				fputfmt(fout, "(%u)", sp->i1);
+				break;
+			case 2:
+				if (flgs & flg_type) fputfmt(fout, "u32");
+				if (flgs & flg_hex) fputfmt(fout, "[%008x]", sp->i2);
+				fputfmt(fout, "(%u)", sp->i2);
+				break;
 			case 4: 
 				if (flgs & flg_type) fputfmt(fout, "u32");
 				if (flgs & flg_hex) fputfmt(fout, "[%008x]", sp->i4);
@@ -788,9 +803,16 @@ void vm_fputval(FILE *fout, symn typ, stkval* sp, int flgs) {
 			default: goto TYPE_XXX;
 		} break;
 		case TYPE_int: switch (typ->size) {
-			case 1: case 2:
-			//~ case 4: fputfmt(fout, "i32[%008x](%d)", sp->i4, sp->i4); break;
-			//~ case 8: fputfmt(fout, "i64[%016X](%D)", sp->i8, sp->i8); break;
+			case 1:
+				if (flgs & flg_type) fputfmt(fout, "i32");
+				if (flgs & flg_hex) fputfmt(fout, "[%008x]", sp->i1);
+				fputfmt(fout, "(%d)", sp->i1);
+				break;
+			case 2:
+				if (flgs & flg_type) fputfmt(fout, "i32");
+				if (flgs & flg_hex) fputfmt(fout, "[%008x]", sp->i2);
+				fputfmt(fout, "(%d)", sp->i2);
+				break;
 			case 4: 
 				if (flgs & flg_type) fputfmt(fout, "i32");
 				if (flgs & flg_hex) fputfmt(fout, "[%008x]", sp->i4);
@@ -816,8 +838,35 @@ void vm_fputval(FILE *fout, symn typ, stkval* sp, int flgs) {
 				break;
 			default: goto TYPE_XXX;
 		} break;
-		//~ case TYPE_rec: fputfmt(fout, "struct{}"); break;
-		//~ case TYPE_arr: fputfmt(fout, "array[]"); break;
+		case TYPE_rec: {
+			symn tmp;
+			fputfmt(fout, "rec{");
+			for (tmp = typ->args; tmp; tmp = tmp->next) {
+				fputfmt(fout, "%T:", tmp);
+				vm_fputval(fout, tmp->type, sp, 1);
+				if (tmp->next)
+					fputfmt(fout, ", ");
+				sp = (void*)((char*)sp + tmp->type->size);
+			}
+			fputfmt(fout, "}");
+		} break;
+		case TYPE_ar3: {
+			int i = 0;
+			struct astn tmp;
+			if (!eval(&tmp, typ->init, TYPE_int)) {
+				fputfmt(fout, ":array = error");
+				break;
+			}
+			fputfmt(fout, "arr[");
+			while (i < tmp.con.cint) {
+				vm_fputval(fout, typ->type, sp, 1);
+				if (++i < tmp.con.cint)
+					fputfmt(fout, ", ");
+				sp = (void*)((char*)sp + typ->type->size);
+			}
+			fputfmt(fout, "]");
+			//~ fputfmt(fout, "array[]");
+		} break;
 		default:
 		TYPE_XXX:
 			fputfmt(fout, "error", typ);
@@ -865,7 +914,11 @@ void vmTags(ccEnv s, char *sptr, int slen) {
 				fputfmt(fout, "%s:%d:", ptr->file, ptr->line);
 			fputfmt(fout, "sp(%d):%s", spos, ptr->name);
 			switch(typ ? typ->kind : 0) {
-				case TYPE_rec: fputfmt(fout, ":struct\n"); break;
+				/*case TYPE_rec: {
+					symn ttt;
+					while()
+					fputfmt(fout, ":struct");
+				} break;
 				case TYPE_ar3: {
 					int i = 0;
 					struct astn ns;
@@ -881,7 +934,7 @@ void vmTags(ccEnv s, char *sptr, int slen) {
 						sp = (void*)((char*)sp + typ->type->size);
 					}
 					fputfmt(fout, "]");
-				} break;
+				} break;*/
 
 				default:
 					fputs(" = ", fout);
@@ -1117,6 +1170,7 @@ void fputopc(FILE *fout, unsigned char* ptr, int len, int offs) {
 				// swp, neg, cmt, 
 			} break;
 		} break;*/
+		case opc_loc:
 		case opc_pop: fprintf(fout, " %d", ip->idx); break;
 		case opc_dup1: case opc_dup2:
 		case opc_dup4: fprintf(fout, " sp(%d)", ip->idx); break;

@@ -24,19 +24,19 @@ astn newnode(ccEnv s, int kind) {
 }
 
 astn fltnode(ccEnv s, flt64t v) {
-	astn ast = newnode(s, CNST_flt);
+	astn ast = newnode(s, TYPE_flt);
 	//~ ast->type = type_f64;
 	ast->con.cflt = v;
 	return ast;
 }
 astn intnode(ccEnv s, int64t v) {
-	astn ast = newnode(s, CNST_int);
+	astn ast = newnode(s, TYPE_int);
 	//~ ast->type = type_i32;
 	ast->con.cint = v;
 	return ast;
 }
 astn fh8node(ccEnv s, uns64t v) {
-	astn ast = newnode(s, CNST_flt);
+	astn ast = newnode(s, TYPE_flt);
 	//~ ast->type = type_f64;
 	ast->con.cint = v;
 	return ast;
@@ -60,24 +60,25 @@ void eatnode(ccEnv s, astn ast) {
 
 signed constbol(astn ast) {
 	if (ast) switch (ast->kind) {
-		case CNST_int: return ast->con.cint != 0;
-		case CNST_flt: return ast->con.cflt != 0;
+		case TYPE_bit: //return ast->con.cint != 0;
+		case TYPE_int: return ast->con.cint != 0;
+		case TYPE_flt: return ast->con.cflt != 0;
 	}
 	fatal("not a constant %+k", ast);
 	return 0;
 }
 int64t constint(astn ast) {
 	if (ast) switch (ast->kind) {
-		case CNST_int: return (int64t)ast->con.cint;
-		case CNST_flt: return (int64t)ast->con.cflt;
+		case TYPE_int: return (int64t)ast->con.cint;
+		case TYPE_flt: return (int64t)ast->con.cflt;
 	}
 	fatal("not a constant %+k", ast);
 	return 0;
 }
 flt64t constflt(astn ast) {
 	if (ast) switch (ast->kind) {
-		case CNST_int: return (flt64t)ast->con.cint;
-		case CNST_flt: return (flt64t)ast->con.cflt;
+		case TYPE_int: return (flt64t)ast->con.cint;
+		case TYPE_flt: return (flt64t)ast->con.cflt;
 	}
 	fatal("not a constant %+k", ast);
 	return 0;
@@ -95,30 +96,20 @@ int eval(astn res, astn ast, int get) {
 	}
 
 	switch (ast->kind) {
-		default: fatal("no Ip here");
+		default: fatal("NoIpHere");
 
-		// TODO: 
-		case OPER_dot: return eval(res, ast->op.rhso, get);
+		case OPER_dot: {
+			if (!istype(ast->op.lhso)) return 0;
+			return eval(res, ast->op.rhso, get);
+		} break;
 
 		case OPER_idx:
 		case OPER_fnc:
 			return 0;
 
-		case CNST_int:
-		case CNST_flt:
+		case TYPE_int:
+		case TYPE_flt:
 		case CNST_str: *res = *ast; break;
-		/*case TYPE_ref: {
-			if (istype(ast->rhso)) return 0;
-			ret = eval(res, ast->rhso, get);
-		} break;
-		case OPER_dot: {
-			if (!istype(ast->lhso)) return 0;
-			return eval(res, ast->rhso, get);
-		} break;
-		case OPER_fnc: {
-			if (ast->lhso && !istype(ast->lhso)) return 0;
-			ret = eval(res, ast->rhso, castcon(0, ast->lhso));
-		} break;*/
 		case TYPE_ref: {
 			symn var = ast->id.link;		// link
 			if (var && var->kind == TYPE_def && var->init) {
@@ -136,8 +127,8 @@ int eval(astn res, astn ast, int get) {
 				return 0;
 			switch (res->kind) {
 				default: return 0;
-				case CNST_int: res->con.cint = -res->con.cint; break;
-				case CNST_flt: res->con.cflt = -res->con.cflt; break;
+				case TYPE_int: res->con.cint = -res->con.cint; break;
+				case TYPE_flt: res->con.cflt = -res->con.cflt; break;
 			}
 		} break;
 		case OPER_cmt: {		// '~'
@@ -145,8 +136,8 @@ int eval(astn res, astn ast, int get) {
 				return 0;
 			switch (res->kind) {
 				default: return 0;
-				case CNST_int: res->con.cint = ~res->con.cint; break;
-				//~ case CNST_flt: res->con.cflt = 1. / res->con.cflt; break;
+				case TYPE_int: res->con.cint = ~res->con.cint; break;
+				//~ case TYPE_flt: res->con.cflt = 1. / res->con.cflt; break;
 			}
 		} break;
 
@@ -158,8 +149,8 @@ int eval(astn res, astn ast, int get) {
 
 			switch (res->kind) {
 				default: return 0;
-				case CNST_int: res->kind = CNST_int; res->con.cint = !res->con.cint; break;
-				case CNST_flt: res->kind = CNST_int; res->con.cint = !res->con.cflt; break;
+				case TYPE_int: res->kind = TYPE_int; res->con.cint = !res->con.cint; break;
+				case TYPE_flt: res->kind = TYPE_int; res->con.cint = !res->con.cflt; break;
 			}
 		} break;
 
@@ -177,21 +168,32 @@ int eval(astn res, astn ast, int get) {
 
 			switch (rhs.kind) {
 				default: return 0;
-				case CNST_int: {
-					res->kind = CNST_int;
+				case TYPE_int: {
+					res->kind = TYPE_int;
 					switch (ast->kind) {
-						default: fatal("no Ip here");
+						default: fatal("NoIpHere");
 						case OPER_add: res->con.cint = lhs.con.cint + rhs.con.cint; break;		// '+'
 						case OPER_sub: res->con.cint = lhs.con.cint - rhs.con.cint; break;		// '-'
 						case OPER_mul: res->con.cint = lhs.con.cint * rhs.con.cint; break;		// '*'
-						case OPER_div: res->con.cint = lhs.con.cint / rhs.con.cint; break;		// '/'
-						case OPER_mod: res->con.cint = lhs.con.cint % rhs.con.cint; break;		// '%'
+						//~ case OPER_div: res->con.cint = lhs.con.cint / rhs.con.cint; break;		// '/'
+						//~ case OPER_mod: res->con.cint = lhs.con.cint % rhs.con.cint; break;		// '%'
+						case OPER_div: 
+						case OPER_mod: {
+							if (rhs.con.cint) switch (ast->kind) {
+								case OPER_div: res->con.cint = lhs.con.cint / rhs.con.cint; break;		// '/'
+								case OPER_mod: res->con.cint = lhs.con.cint % rhs.con.cint; break;		// '%'
+							}
+							else {
+								error(NULL, 0, "Division by zero");
+								res->con.cint = 0;
+							}
+						}
 					}
 				} break;
-				case CNST_flt: {
-					res->kind = CNST_flt;
+				case TYPE_flt: {
+					res->kind = TYPE_flt;
 					switch (ast->kind) {
-						default: fatal("no Ip here");
+						default: fatal("NoIpHere");
 						case OPER_add: res->con.cflt = lhs.con.cflt + rhs.con.cflt; break;		// '+'
 						case OPER_sub: res->con.cflt = lhs.con.cflt - rhs.con.cflt; break;		// '-'
 						case OPER_mul: res->con.cflt = lhs.con.cflt * rhs.con.cflt; break;		// '*'
@@ -213,31 +215,26 @@ int eval(astn res, astn ast, int get) {
 			if (!eval(&rhs, ast->op.rhso, cast))
 				return 0;
 			dieif(lhs.kind != rhs.kind, "eval operator %k (%t, %t): %t", ast, lhs.kind, rhs.kind, get);
+			res->kind = TYPE_bit;
 			switch (rhs.kind) {
 				default: return 0;
-				case CNST_int: {
-					res->kind = CNST_int;
-					switch (ast->kind) {
-						default: fatal("no Ip here");
-						case OPER_neq: res->con.cint = lhs.con.cint != rhs.con.cint; break;
-						case OPER_equ: res->con.cint = lhs.con.cint == rhs.con.cint; break;
-						case OPER_gte: res->con.cint = lhs.con.cint  > rhs.con.cint; break;
-						case OPER_geq: res->con.cint = lhs.con.cint >= rhs.con.cint; break;
-						case OPER_lte: res->con.cint = lhs.con.cint  < rhs.con.cint; break;
-						case OPER_leq: res->con.cint = lhs.con.cint <= rhs.con.cint; break;
-					}
+				case TYPE_int: switch (ast->kind) {
+					default: fatal("NoIpHere");
+					case OPER_neq: res->con.cint = lhs.con.cint != rhs.con.cint; break;
+					case OPER_equ: res->con.cint = lhs.con.cint == rhs.con.cint; break;
+					case OPER_gte: res->con.cint = lhs.con.cint  > rhs.con.cint; break;
+					case OPER_geq: res->con.cint = lhs.con.cint >= rhs.con.cint; break;
+					case OPER_lte: res->con.cint = lhs.con.cint  < rhs.con.cint; break;
+					case OPER_leq: res->con.cint = lhs.con.cint <= rhs.con.cint; break;
 				} break;
-				case CNST_flt: {
-					res->kind = CNST_int;
-					switch (ast->kind) {
-						default: fatal("no Ip here");
-						case OPER_neq: res->con.cint = lhs.con.cflt != rhs.con.cflt; break;
-						case OPER_equ: res->con.cint = lhs.con.cflt == rhs.con.cflt; break;
-						case OPER_gte: res->con.cint = lhs.con.cflt  > rhs.con.cflt; break;
-						case OPER_geq: res->con.cint = lhs.con.cflt >= rhs.con.cflt; break;
-						case OPER_lte: res->con.cint = lhs.con.cflt  < rhs.con.cflt; break;
-						case OPER_leq: res->con.cint = lhs.con.cflt <= rhs.con.cflt; break;
-					}
+				case TYPE_flt: switch (ast->kind) {
+					default: fatal("NoIpHere");
+					case OPER_neq: res->con.cint = lhs.con.cflt != rhs.con.cflt; break;
+					case OPER_equ: res->con.cint = lhs.con.cflt == rhs.con.cflt; break;
+					case OPER_gte: res->con.cint = lhs.con.cflt  > rhs.con.cflt; break;
+					case OPER_geq: res->con.cint = lhs.con.cflt >= rhs.con.cflt; break;
+					case OPER_lte: res->con.cint = lhs.con.cflt  < rhs.con.cflt; break;
+					case OPER_leq: res->con.cint = lhs.con.cflt <= rhs.con.cflt; break;
 				} break;
 			}
 		} break;
@@ -257,10 +254,10 @@ int eval(astn res, astn ast, int get) {
 				default:
 					debug("eval(%+k) : %t", ast->op.rhso, rhs.kind);
 					return 0;
-				case CNST_int: {
-					res->kind = CNST_int;
+				case TYPE_int: {
+					res->kind = TYPE_int;
 					switch (ast->kind) {
-						default: fatal("no Ip here");
+						default: fatal("NoIpHere");
 						case OPER_shr: res->con.cint = lhs.con.cint >> rhs.con.cint; break;
 						case OPER_shl: res->con.cint = lhs.con.cint << rhs.con.cint; break;
 						case OPER_and: res->con.cint = lhs.con.cint  & rhs.con.cint; break;
@@ -273,50 +270,50 @@ int eval(astn res, astn ast, int get) {
 
 		case OPER_lnd:
 		case OPER_lor: {
-			dieif(get != TYPE_bit, " fault");
-			if (!eval(&lhs, ast->op.lhso, cast))
+			dieif(get != TYPE_bit, "fault");
+			if (!eval(&lhs, ast->op.lhso, TYPE_bit))
 				return 0;
-			if (!eval(&rhs, ast->op.rhso, cast))
+			if (!eval(&rhs, ast->op.rhso, TYPE_bit))
 				return 0;
 			dieif(lhs.kind != rhs.kind, "eval operator %k (%t, %t): %t", ast, lhs.kind, rhs.kind, get);
 
-			res->kind = CNST_int;
+			res->kind = TYPE_bit;
 			switch (ast->kind) {
 				case OPER_lor: res->con.cint = lhs.con.cint || rhs.con.cint; break;
 				case OPER_lnd: res->con.cint = lhs.con.cint && rhs.con.cint; break;
 			}
 		} break;
-		case OPER_sel: {		// '?:'
+		case OPER_sel: {		// '?:' TODO: do not return
 			if (!eval(&lhs, ast->op.test, TYPE_bit))
 				return 0;
 			return eval(res, lhs.con.cint ? ast->op.lhso : ast->op.rhso, cast);
 		} break;
 	}
 	if (get != res->kind) switch (get) {
-		default: fatal("no Ip here");
+		default: fatal("NoIpHere");
 
 		case TYPE_any:		// no cast
 			break;
 
 		case TYPE_bit:
 			res->con.cint = constbol(res);
-			res->kind = CNST_int;
+			res->kind = TYPE_int;
 			break;
 
 		case TYPE_int:
 			res->con.cint = constint(res);
-			res->kind = CNST_int;
+			res->kind = TYPE_int;
 			break;
 
 		case TYPE_flt:
 			res->con.cflt = constflt(res);
-			res->kind = CNST_flt;
+			res->kind = TYPE_flt;
 			break;
 	}
 
 	switch (res->kind) {
-		case CNST_flt: res->type = type_f64; break;
-		case CNST_int: res->type = type_i32; break;
+		case TYPE_flt: res->type = type_f64; break;
+		case TYPE_int: res->type = type_i32; break;
 	}
 
 	return res->kind;
