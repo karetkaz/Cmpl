@@ -9,50 +9,50 @@
  * Tick: ticks for executing instruction;
  */
 //~ sys ========================================================================
-OPCDEF(opc_nop,  0x00, 1, 0, +0, 1,	"nop")		// ;					[…, a, b, c => […, a, b, c;
-OPCDEF(opc_loc,  0x01, 2, 0, +9, 1,	"loc")		// sp += 4*arg.1;		[…, a, b, c => […, a, b, c, …;
-OPCDEF(opc_pop,  0x02, 2, 9, +9, 1,	"pop")		// sp -= 4*arg.1;		[…, a, b, c => […, a, b;
+OPCDEF(opc_nop,  0x00, 1, 0, +0, 1,	"nop")		// ;					[â€¦, a, b, c => [â€¦, a, b, c;
+OPCDEF(opc_loc,  0x01, 2, 0, +9, 1,	"loc")		// sp += 4*arg.1;		[â€¦, a, b, c => [â€¦, a, b, c, â€¦;
+OPCDEF(opc_pop,  0x02, 2, 9, +9, 1,	"pop")		// sp -= 4*arg.1;		[â€¦, a, b, c => [â€¦, a, b;
 OPCDEF(opc___3,  0x03, 0, 0, +0, 1,	NULL)		// 
 OPCDEF(opc___4,  0x04, 0, 0, +0, 1,	NULL)		// 
-OPCDEF(opc_ldsp, 0x05, 1, 0, +1, 1,	"ldsp")		// push(SP + arg.3);	[…, a, b, c => […, a, b, c, SP;
-OPCDEF(opc_call, 0x06, 4, 0, +1, 1,	"call")		// push(IP); ip += arg.3;	[…, a, b, c => […, a, b, c, IP;
-OPCDEF(opc_jmpi, 0x07, 1, 1, -1, 1,	"jmpi")		// IP = pop();				[…, a, b, c => […, a, b;
-OPCDEF(opc_jmp,  0x08, 4, 0, +0, 1,	"jmp")		// IP += arg.3;			[…, a, b, c => […, a, b, c;
-OPCDEF(opc_jnz,  0x09, 4, 1, -1, 1,	"jnz")		// if pop(0)!=0 IP += arg.3;	[…, a, b, c => […, a, b;
-OPCDEF(opc_jz,   0x0a, 4, 1, -1, 1,	"jz")		// if pop(0)==0 IP += arg.3;	[…, a, b, c => […, a, b;
-OPCDEF(opc___0b, 0x0b, 0, 0,  0, 1,	NULL)		// if pop(0) <0 IP += arg.3;	[…, a, b, c => […, a, b;
+OPCDEF(opc_ldsp, 0x05, 4, 0, +1, 1,	"ldsp")		// push(SP + arg.3);	[â€¦, a, b, c => [â€¦, a, b, c, SP;
+OPCDEF(opc_call, 0x06, 4, 0, +1, 1,	"call")		// push(IP); ip += arg.3;	[â€¦, a, b, c => [â€¦, a, b, c, IP;
+OPCDEF(opc_jmpi, 0x07, 1, 1, -1, 1,	"jmpi")		// IP = pop();				[â€¦, a, b, c => [â€¦, a, b;
+OPCDEF(opc_jmp,  0x08, 4, 0, +0, 1,	"jmp")		// IP += arg.3;			[â€¦, a, b, c => [â€¦, a, b, c;
+OPCDEF(opc_jnz,  0x09, 4, 1, -1, 1,	"jnz")		// if pop(0)!=0 IP += arg.3;	[â€¦, a, b, c => [â€¦, a, b;
+OPCDEF(opc_jz,   0x0a, 4, 1, -1, 1,	"jz")		// if pop(0)==0 IP += arg.3;	[â€¦, a, b, c => [â€¦, a, b;
+OPCDEF(opc___0b, 0x0b, 0, 0,  0, 1,	NULL)		// if pop(0) <0 IP += arg.3;	[â€¦, a, b, c => [â€¦, a, b;
 OPCDEF(opc_not,  0x0c, 1, 1, +0, 1,	"not")		// sp(0) = !sp(0);
 OPCDEF(opc_libc, 0x0d, 2, 0, +9, 1,	"libc")		//-lib call
 OPCDEF(opc_task, 0x0e, 4, 0, +0, 1,	"task")		// arg.3: [code:16][data:8] task, [?fork if (arg.code == 0)]
 OPCDEF(opc_sysc, 0x0f, 2, 0, +0, 1,	"sysc")		// arg.1: [type:8](exit, halt, wait?join?sync) (alloc, free, copy, init) ...
 //~ stk ========================================================================
-OPCDEF(opc_ldc1, 0x10, 2, 0, +1, 1,	"ldc.b08")	// push(arg.1);			:2[…, a, b, c => […, a, b, c, 2;
-OPCDEF(opc_ldc2, 0x11, 3, 0, +1, 1,	"ldc.b16")	// push(arg.2);			:2[…, a, b, c => […, a, b, c, 2;
-OPCDEF(opc_ldc4, 0x12, 5, 0, +1, 1,	"ldc.b32")	// push(arg.4);			:2[…, a, b, c => […, a, b, c, 2;
-OPCDEF(opc_ldc8, 0x13, 9, 0, +2, 1,	"ldc.b64")	// push(arg.8);			:2[…, a, b, c => […, a, b, c, 2;
-OPCDEF(opc_dup1, 0x14, 2, 9, +1, 1,	"dup.x1")	// push(sp(n));			:2[…, a, b, c => […, a, b, c, a;
-OPCDEF(opc_dup2, 0x15, 2, 9, +2, 1,	"dup.x2")	// push(sp(n))x2;		:2[…, a, b, c => […, a, b, c, a, b;
-OPCDEF(opc_dup4, 0x16, 2, 9, +4, 1,	"dup.x4")	// push(sp(n))x4;		:3[…, a, b, c, d => […, a, b, c, d, a, b, c, d;
+OPCDEF(opc_ldc1, 0x10, 2, 0, +1, 1,	"ldc.b08")	// push(arg.1);			:2[â€¦, a, b, c => [â€¦, a, b, c, 2;
+OPCDEF(opc_ldc2, 0x11, 3, 0, +1, 1,	"ldc.b16")	// push(arg.2);			:2[â€¦, a, b, c => [â€¦, a, b, c, 2;
+OPCDEF(opc_ldc4, 0x12, 5, 0, +1, 1,	"ldc.b32")	// push(arg.4);			:2[â€¦, a, b, c => [â€¦, a, b, c, 2;
+OPCDEF(opc_ldc8, 0x13, 9, 0, +2, 1,	"ldc.b64")	// push(arg.8);			:2[â€¦, a, b, c => [â€¦, a, b, c, 2;
+OPCDEF(opc_dup1, 0x14, 2, 9, +1, 1,	"dup.x1")	// push(sp(n));			:2[â€¦, a, b, c => [â€¦, a, b, c, a;
+OPCDEF(opc_dup2, 0x15, 2, 9, +2, 1,	"dup.x2")	// push(sp(n))x2;		:2[â€¦, a, b, c => [â€¦, a, b, c, a, b;
+OPCDEF(opc_dup4, 0x16, 2, 9, +4, 1,	"dup.x4")	// push(sp(n))x4;		:3[â€¦, a, b, c, d => [â€¦, a, b, c, d, a, b, c, d;
 OPCDEF(opc_set1, 0x17, 2, 9, -1, 1,	"set.x1")	// 
 OPCDEF(opc_set2, 0x18, 2, 9, -2, 1,	"set.x2")	// 
 OPCDEF(opc_set4, 0x19, 2, 9, -4, 1,	"set.x4")	// 
-OPCDEF(opc_ldz1, 0x1a, 1, 0, +1, 1,	"ldz.x1")	// push(0);			[…, a, b, c => […, a, b, c, 0;
-OPCDEF(opc_ldz2, 0x1b, 1, 0, +2, 1,	"ldz.x2")	// push(0, 0);			[…, a, b, c => […, a, b, c, 0, 0;
-OPCDEF(opc_ldz4, 0x1c, 1, 0, +4, 1,	"ldz.x4")	// push(0, 0, 0, 0);		[…, a, b, c => […, a, b, c, 0, 0, 0, 0;
+OPCDEF(opc_ldz1, 0x1a, 1, 0, +1, 1,	"ldz.x1")	// push(0);			[â€¦, a, b, c => [â€¦, a, b, c, 0;
+OPCDEF(opc_ldz2, 0x1b, 1, 0, +2, 1,	"ldz.x2")	// push(0, 0);			[â€¦, a, b, c => [â€¦, a, b, c, 0, 0;
+OPCDEF(opc_ldz4, 0x1c, 1, 0, +4, 1,	"ldz.x4")	// push(0, 0, 0, 0);		[â€¦, a, b, c => [â€¦, a, b, c, 0, 0, 0, 0;
 OPCDEF(opc_ldcr, 0x1d, 5, 0, +1, 1,	"ldc.ref")	// TEMP/dup.4.swz
 OPCDEF(opc_ldcf, 0x1e, 5, 0, +1, 1,	"ldc.f32")	// TEMP/set.4.msk
 OPCDEF(opc_ldcF, 0x1f, 9, 0, +2, 1,	"ldc.f64")	// TEMP/?
 //~ mem ========================================================================
-OPCDEF(opc_ldi1, 0x20, 1, 1, +0, 1,	"ldi.8")	// copy(sp, sp(0) 1);		[…, a, b, c => […, a, b, *c;
-OPCDEF(opc_ldi2, 0x21, 1, 1, +0, 1,	"ldi.16")	// copy(sp, sp(0) 2);		[…, a, b, c => […, a, b, *c;
-OPCDEF(opc_ldi4, 0x22, 1, 1, +0, 1,	"ldi.32")	// copy(sp, sp(0) 4);		[…, a, b, c => […, a, b, *c;
-OPCDEF(opc_ldi8, 0x23, 1, 1, +1, 1,	"ldi.64")	// copy(sp, sp(0) 8);		[…, a, b, c => […, a, b, *c:1, *c:2;
-OPCDEF(opc_ldiq, 0x24, 1, 1, +3, 1,	"ldi.128")	// copy(sp, sp(0) 16);		[…, a, b, c => […, a, b, *c;
-OPCDEF(opc_sti1, 0x25, 1, 2, -2, 1,	"sti.8")	// copy(sp(1) sp(0) 1);pop2;	[…, a, b, c => […, a
-OPCDEF(opc_sti2, 0x26, 1, 2, -2, 1,	"sti.16")	// copy(sp(1) sp(0) 2);pop2;	[…, a, b, c => […, a
-OPCDEF(opc_sti4, 0x27, 1, 2, -2, 1,	"sti.32")	// copy(sp(1) sp(0) 4);pop2;	[…, a, b, c => […, a
-OPCDEF(opc_sti8, 0x28, 1, 3, -3, 1,	"sti.64")	// copy(sp(1) sp(0) 8);pop3;	[…, a, b, c => […, a
-OPCDEF(opc_stiq, 0x29, 1, 5, -5, 1,	"sti.128")	// copy(sp(1) sp(0) 16);pop5;	[…, a, b, c => […, a
+OPCDEF(opc_ldi1, 0x20, 1, 1, +0, 1,	"ldi.8")	// copy(sp, sp(0) 1);		[â€¦, a, b, c => [â€¦, a, b, *c;
+OPCDEF(opc_ldi2, 0x21, 1, 1, +0, 1,	"ldi.16")	// copy(sp, sp(0) 2);		[â€¦, a, b, c => [â€¦, a, b, *c;
+OPCDEF(opc_ldi4, 0x22, 1, 1, +0, 1,	"ldi.32")	// copy(sp, sp(0) 4);		[â€¦, a, b, c => [â€¦, a, b, *c;
+OPCDEF(opc_ldi8, 0x23, 1, 1, +1, 1,	"ldi.64")	// copy(sp, sp(0) 8);		[â€¦, a, b, c => [â€¦, a, b, *c:1, *c:2;
+OPCDEF(opc_ldiq, 0x24, 1, 1, +3, 1,	"ldi.128")	// copy(sp, sp(0) 16);		[â€¦, a, b, c => [â€¦, a, b, *c;
+OPCDEF(opc_sti1, 0x25, 1, 2, -2, 1,	"sti.8")	// copy(sp(1) sp(0) 1);pop2;	[â€¦, a, b, c => [â€¦, a
+OPCDEF(opc_sti2, 0x26, 1, 2, -2, 1,	"sti.16")	// copy(sp(1) sp(0) 2);pop2;	[â€¦, a, b, c => [â€¦, a
+OPCDEF(opc_sti4, 0x27, 1, 2, -2, 1,	"sti.32")	// copy(sp(1) sp(0) 4);pop2;	[â€¦, a, b, c => [â€¦, a
+OPCDEF(opc_sti8, 0x28, 1, 3, -3, 1,	"sti.64")	// copy(sp(1) sp(0) 8);pop3;	[â€¦, a, b, c => [â€¦, a
+OPCDEF(opc_stiq, 0x29, 1, 5, -5, 1,	"sti.128")	// copy(sp(1) sp(0) 16);pop5;	[â€¦, a, b, c => [â€¦, a
 OPCDEF(opc___a,  0x2a, 5, 0,  0, 1,	"ldm.w")	// (32)
 OPCDEF(opc___b,  0x2b, 5, 0,  0, 1,	"ldm.d")	// (64)
 OPCDEF(opc___c,  0x2c, 5, 0,  0, 1,	"ldm.q")	// (128)
@@ -79,7 +79,7 @@ OPCDEF(b32_sar,  0x3f, 1, 2, -1, 1,	"b32.sar")	// sp(1).i32 >>= sp(0).i32; pop;
 //~ OPCDEF(opc_rot,  0x3x, 1, 2, -1, 1,	"rot")	 	//?rotate
 //~ OPCDEF(opc_zxt,  0x3x, 1, 2, -0, 1,	"zxt")		//!zero.extend arg:[offs:3][size:5]
 //~ OPCDEF(opc_sxt,  0x3x, 1, 2, -0, 1,	"sxt")		//!sign.extend arg:[offs:3][size:5]
-//~ OPCDEF(u32_mad,  0x3x, 1, 3, -2, 1,	"u32.mad")	// sp(2) += sp(1)*sp(0); pop2;	[…, a, b, c => […, a + b * c;
+//~ OPCDEF(u32_mad,  0x3x, 1, 3, -2, 1,	"u32.mad")	// sp(2) += sp(1)*sp(0); pop2;	[â€¦, a, b, c => [â€¦, a + b * c;
 //~ i32[ 32] ===================================================================
 OPCDEF(i32_neg,  0x40, 1, 1, -0, 1,	"i32.neg")	// sp(0).i32 = -sp(0).i32;
 OPCDEF(i32_add,  0x41, 1, 2, -1, 1,	"i32.add")	// sp(1).i32 += sp(0).i32; pop;
@@ -390,19 +390,19 @@ case opc_pop:  NEXT(2, ip->idx, -ip->idx) {
 } break;
 case opc_jmp:  NEXT(4, 0, -0) {
 #ifdef EXEC
-	pu->ip += ip->jmp - 4;
+	pu->ip += ip->rel - 4;
 #endif
 } break;
 case opc_jnz:  NEXT(4, 1, -1) {
 #ifdef EXEC
 	if (SP(0, i4) != 0)
-		pu->ip += ip->jmp - 4;
+		pu->ip += ip->rel - 4;
 #endif
 } break;
 case opc_jz:   NEXT(4, 1, -1) {
 #ifdef EXEC
 	if (SP(0, i4) == 0)
-		pu->ip += ip->jmp - 4;
+		pu->ip += ip->rel - 4;
 #endif
 } break;
 case opc_not:  NEXT(1, 1, -0) {
@@ -410,10 +410,10 @@ case opc_not:  NEXT(1, 1, -0) {
 	SP(0, u4) = !SP(0, u4);
 #endif
 } break;
-case opc_ldsp: NEXT(1, 0, +1) {
+case opc_ldsp: NEXT(4, 0, +1) {
 #ifdef EXEC
 	STOP(error_ovf, pu->sp < pu->bp);
-	SP(-1, i4) = st - mp;
+	SP(-1, i4) = st - mp + ip->rel;
 #endif
 } break;
 case opc_jmpi: NEXT(1, 1, -1) {
@@ -425,7 +425,7 @@ case opc_task: NEXT(4, 0, -0) {
 #ifdef EXEC
 	//~ if (task(pu, ip->cl, ip->dl, ss))
 	if (mtt(vm, doTask, pu, 0))
-		pu->ip += ip->jmp - 4;
+		pu->ip += ip->rel - 4;
 	STOP(error_opc, 1);
 #endif
 } break;
@@ -458,7 +458,7 @@ case opc_call: NEXT(4, 0, +1) {
 #ifdef EXEC
 	STOP(error_ovf, pu->sp < pu->bp);
 	//~ SP(0, i4) = ip - mp;
-	pu->ip += ip->jmp - 4;
+	pu->ip += ip->rel - 4;
 #endif
 } break;
 //}
@@ -561,6 +561,11 @@ case opc_ldi4: NEXT(1, 1, -0);{
 case opc_sti4: NEXT(1, 2, -2);{
 #ifdef EXEC
 	MP(SP(0, i4), i4) = SP(1, i4);
+#endif
+} break;
+case opc_sti8: NEXT(1, 3, -3);{
+#ifdef EXEC
+	MP(SP(0, i8), i8) = SP(1, i8);
 #endif
 } break;
 //}*/
@@ -966,7 +971,7 @@ case f64_f32: NEXT(1, 2, -1) {
 } break;
 case f64_i64: NEXT(1, 2, -0) {
 #ifdef EXEC
-	SP(1, i8) = SP(0, f8);
+	SP(0, i8) = SP(0, f8);
 #endif
 } break;
 case f64_bol: NEXT(1, 2, -1) {

@@ -38,7 +38,7 @@ symn newdefn(ccEnv s, int kind) {
 symn instlibc(ccEnv s, const char* name);
 
 symn installex(ccEnv s, int kind, const char* name, unsigned size, symn type, astn init) {
-	symn def = newdefn(s, kind);
+	symn def = newdefn(s, kind & 0xff);
 	unsigned hash = 0;
 	if (def != NULL) {
 		def->nest = s->nest;
@@ -50,6 +50,11 @@ symn installex(ccEnv s, int kind, const char* name, unsigned size, symn type, as
 			if (init->type == 0)
 				init->type = type;
 		}
+		if (kind & symn_call)
+			def->call = 1;
+
+		if (kind & symn_read)
+			def->read = 1;
 
 		hash = rehash(name, strlen(name)) % TBLS;
 		def->next = s->deft[hash];
@@ -62,22 +67,20 @@ symn installex(ccEnv s, int kind, const char* name, unsigned size, symn type, as
 }
 symn install(ccEnv s, int kind, const char* name, unsigned size) {
 	symn typ = NULL;
-	switch (kind) {
+
+	// declare
+	if (kind == -1)
+		return instlibc(s, name);
+
+	switch (kind & 0xff) {
 		default: fatal("NoIpHere");
-
-		// declare
-		case -1: {
-			return instlibc(s, name);
-		} break;
-
-		// constant
-		//TODO: case CNST_str: typ = type_str; kind = TYPE_def; break;
 
 		// basetype
 		case TYPE_vid:
 		case TYPE_bit:
 		case TYPE_int:
 		case TYPE_flt:
+		case TYPE_p4x:
 		//~ case TYPE_arr:
 
 		//~ case TYPE_u32:
@@ -85,7 +88,6 @@ symn install(ccEnv s, int kind, const char* name, unsigned size) {
 		//~ case TYPE_i64:
 		//~ case TYPE_f32:
 		//~ case TYPE_f64:
-		case TYPE_p4x:
 		//~ case TYPE_ptr:
 
 		// usertype
@@ -234,11 +236,13 @@ symn linkTo(astn ast, symn sym) {
 symn linkOf(astn ast, int njr) {
 	if (!ast) return 0;
 
+	// TODO: in case of static variables
 	if (ast->kind == OPER_dot)
-		return linkOf(ast->op.rhso, njr);
+		return njr ? linkOf(ast->op.rhso, njr) : NULL;
 
+	// get base
 	if (ast->kind == OPER_idx)
-		return NULL;//linkOf(ast->op.lhso, njr);
+		return njr ? linkOf(ast->op.lhso, njr) : NULL;
 
 	if (ast->kind == OPER_fnc)
 		return linkOf(ast->op.lhso, njr);

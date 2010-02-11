@@ -11,7 +11,7 @@
 **/
 /* TODOS:
  * static if (true) does not enter new scope
- * static if else part
+ ? static if else part
  * nameless enum does not enter new scope
  ? nameless struct does not enter new scope
  * .
@@ -19,6 +19,11 @@
  *	in case of structures create a new constructor with all members; fix padding on stack.
  ?	in case of unions create a constructors with all members? or with the bigger.
 
+ * default ctor from: 
+ *  	(basic types): ptr, basic types			// int(ptr), float(prt), int(float), float(int)
+ *  	(struct types): ptr, fields as param	// struct X{int a; float b;} => X(int a, float b)
+ *  	(class types): box,
+ * 
  * Double parsing precision loss (Tokenizer): use parsef64 from util
  ~ function argument cast bugs
  * TODO: int fact(int n) = (n * fact(n - 1)); : castId(NULL) ??? why ?
@@ -30,7 +35,7 @@
  * enable emit as param in emit: define mad(a, b, c) = emit(f32.add, f32.mul, f32(a), f32(b), f32(c));
  * 
 **/
-//~ int fact(int n) = (n * fact(n - 1));
+//~ define fact(int64 n) = (n * fact(n - 1));
 /*
 static if (0) {
 	int a = 1 + 2 * 3 + 4;
@@ -38,7 +43,7 @@ static if (0) {
 }
 static if (0) {
 
-	define usefloat = 0;
+	define usefloat = 1;
 
 	static if (usefloat) {
 		flt64 bcc;
@@ -50,6 +55,7 @@ static if (0) {
 
 	bcc = 99;
 }
+//~ else int static_if_else_part = 1;
 
 //~ define scalar flt32; struct xyz:4{...}
 
@@ -74,10 +80,14 @@ enum alma2:int8 {
 	b = 3476;// = M.Phi;		// problems
 	c;
 }
-int a = alma2.b;
+//~ int a = alma2.b;
 
-double a1 = M.Ln2;
-double a2 = M.Log2E;
+if (.9) {
+	int a = 0.8;
+	
+}
+//~ double a1 = M.Ln2;
+//~ double a2 = M.Log2E;
 
 //~ define add(xx flt32 x, xx flt32 y) = emit(f32.add, f32(y), f32(x));
 //~ operator .add(xx flt32 x, xx flt32 y) = emit(f32.add, f32(y), f32(x));
@@ -277,14 +287,6 @@ bool c2 = Math.isNan(math.nan);
 bool c3 = math.isNan(Math.nan);
 
 //~ bool xxx = Math.nan != Math.nan;
-//~ +/
-/+	alias
-define myint uns16;
-int64 min = myint.min;
-int64 max = myint.max;
-int64 msk = myint.mask;
-int64 bts = myint.bits;
-int64 size = myint.size;
 //~ +/
 /+X	struct
 struct vec4d {
@@ -571,9 +573,21 @@ define UnBoxType(TypeInfo obj) = TypeBox(obj, obj.class);
 // +/
 
 //~ +/
-
 //~ define isNan(flt32 a) = (a != a);
 //~ define isNan(flt64 a) = (a != a);
+flt64 nan = emit(void, i64(0x7ff8000000000000));
+int a = int32(1.) + 9;
+//~ int a = isNan(nan);
+//~ double a = 345.41 + 18.18 -1e-14;//363.59;
+//~ flt64 a1 = 1.e-1;
+//~ flt64 a0 = emit(void, i64(0x3fb999999999999a));		//%08x
+//~ double a2 = .0;
+//~ double a3 = .0e1;
+//~ double a = 9223372036854775807.;
+//~ int64 max = 0x7fffffffffffffff;
+//~ int64 max = 9223372036854775807;
+//~ emit(void, i32(0xffffffff), i32(0x7fffffff));
+/*
 
 define add(flt32 a, flt32 b) = emit(f32.add, f32(b), f32(a));		// := a + b
 define sub(flt32 a, flt32 b) = emit(f32.sub, f32(b), f32(a));
@@ -594,29 +608,41 @@ flt32 X1 = mad(2, 3, 4000);
 //~ flt32 X2 = emit(f32.add, f32(3), f32.mul, f32(2), f32(1));
 //~ flt32 X3 = emit(f32.add, f32(emit(f32.mul)), f32(4), f32(3), f32(2));
 
-//~ /*
-struct intabc {
-	int32 a;		//! @format %04x
-	int32 b;		//! @format %04x
-	int32 c;		//! @format %04x
-}
-
-emit(void, i32(10), i32(20), i32(30));
-intabc xx1 = emit(void);
-int xx2[3] = emit(void);
-
-xx1.b = 2;
-//~ xx2[0] = 2;
-
+/*
 //~ define .idx(flt32 a, flt32 b) = emit(f32.sub, f32(b), f32(a));
 //~ define .idx(flt32 a, flt32 b) = emit(f32.sub, f32(b), f32(a));
 //~ operator (flt32 a) - (flt32 b) = emit(f32.sub);
 //~ flt32 a = emit(f32.sub, f32(1), f32(2));
 //~ */
 
+//~ int a = isNan(1);
+
+/* try some stupid things
+//~ define float flt64;
+//~ define double flt32;
+double res = 31.749 + .35;
+//~ double res = 21.073 + .34;
+//~ double res = 29.700 + .34;
+// */
+
+/* struct and arrays
+struct intabc {
+	int32 a;		//! @format %04x
+	int32 b;		//! @format %04x
+	int32 c;		//! @format %04x
+}// * /
+//~ int intABC(int32 a, int32 b, int32 c) ;
+emit(void, i32(0));
+emit(void, f32(math.Snan));
+emit(void, i32(0));
+int32 c[3] = emit(void);
+flt32 d[3] = emit(void);
+d[2] = 9;
+// */
+
 /* calc e
 //~ define double float;
-define eps = 1e-20;
+define eps = 1e-50;
 double res = 1;
 double tmp = 1;
 for (int i = 1; tmp > eps; i += 1) {
@@ -624,29 +650,35 @@ for (int i = 1; tmp > eps; i += 1) {
 }
 // */
 /* factorial
-define n = 29;
+define n = 5;
 int64 res = 1;
 for (int i = 1; i <= n; i += 1)
 	res *= i;
 
 // */
 /* static test
-enum use {
+enum use: int8 {
 	none = 0;
 	_int = 1;
 	_flt = 2;
 };
 
+//~ use ab;// = use._int;
 define u = use._flt;
+int u1 = 0;
+
+static if (u) ;		// is u const ?
 
 static if (u == use._int) {
 	int32 a = 9;
 }
+
 static if (u == use._flt) {
 	flt32 a = 9;
 }
-int64 a2 = a;
-*/
+
+int64 a = 0;//a;
+//~ */
 
 /* test if:
 int i = 3;
@@ -700,236 +732,7 @@ bool isNan1 = isNan(val);
 //~ bool isNan2 = val != val;
 // */
 
-/* RayTrace
-define rgb int32;
-define qual = 1;
-define width = 320 << qual;
-define height = 240 << qual;
-
-rgb cBuff[width * height];
-
-define cBuff(int x, int y) = (Buff[y * width + x]);
-
-/+
-for (int i = 0; i < height; i += 1)
-	for (int j = 0; j < width; j += 1)
-		cBuff(i, j) := i ^ j;
-// +/
-
-class vec4f {
-	flt32 x;
-	flt32 y;
-	flt32 z;
-	flt32 w;
-	//~ static this() {}
-	this() {x = y = z = w = 0;}
-	this(flt32 x) {this.x = this.y = this.z = x; this.w = 1;}
-	this(flt32 x, flt32 y, flt32 z) {this.x = x; this.y = y; this.z = z; this.w = 0;}
-	this(flt32 x, flt32 y, flt32 z, flt32 w) {this.x = x; this.y = y; this.z = z; this.w = w;}
-
-	vec4f operator +(vec4f lhs, vec4f rhs) {return add(lhs, rhs);}
-	vec4f operator +(vec4f lhs, flt32 rhs) {return add(lhs, vec4f(rhs));}
-	vec4f operator +(flt32 lhs, vec4f rhs) {return add(vec4f(lhs), rhs);}
-	vec4f operator +=(out vec4f lhs, vec4f rhs) {return lhs = add(lhs, rhs);}
-	vec4f operator +=(out vec4f lhs, flt32 rhs) {return lhs = add(lhs, vec4f(rhs));}
-
-	static vec4f neg(vec4f rhs) {emit(pf4.neg, p4f(rhs));}
-	static vec4f add(vec4f lhs, vec4f rhs) {return emit(add.pf4, v4f(lhs), v4f(rhs));}
-	static vec4f sub(vec4f lhs, vec4f rhs) {return emit(sub.pf4, v4f(lhs), v4f(rhs));}
-	static vec4f mul(vec4f lhs, vec4f rhs) {return emit(mul.pf4, v4f(lhs), v4f(rhs));}
-	static vec4f div(vec4f lhs, vec4f rhs) {return emit(div.pf4, v4f(lhs), v4f(rhs));}
-
-	static flt32 dp3(vec4f lhs, vec4f rhs) {return flt32(emit(dp3.pf4, v4f(lhs), v4f(rhs)));}
-	static flt32 dp4(vec4f lhs, vec4f rhs) {return flt32(emit(dp4.pf4, v4f(lhs), v4f(rhs)));}
-	static flt32 dph(vec4f lhs, vec4f rhs) {return flt32(emit(dph.pf4, v4f(lhs), v4f(rhs)));}
-	static flt32 len(vec4f lhs) {return sqrt(flt32(emit(dph.pf4, v4f(lhs), v4f(lhs))));}
-
-	static flt32 eval(float val) {return (((w * val + z) * val + y) * val) + x;}
-
-	flt32 dp3(vec4f rhs) {return dp3(this, rhs);}
-	flt32 dph(vec4f rhs) {return dph(this, rhs);}
-	flt32 dp4(vec4f rhs) {return dp4(this, rhs);}
-	flt32 len() {return len(this);}
-
-	static vec4f mul(ref vec4f res, ref vec4f lhs, ref vec4f rhs) {
-		res.x = lhs.x * rhs.x;
-		res.y = lhs.y * rhs.y;
-		res.z = lhs.z * rhs.z;
-		res.w = lhs.w * rhs.w;
-		return res;
-	}
-
-	operator vec *= (vec rhs) {return mul(this, this, rhs);}
-	static operator vec * (vec lhs, vec rhs) {return mul(this, lhs, rhs);}
-
-	flt32 operator () (flt32 val) {return this.eval(val);}
-
-	flt32 operator (v4f32 lhs) [int32 idx] {
-		if (idx == 0 || idx == 'x')
-			return lhs.x;
-		if (idx == 1 || idx == 'y')
-			return lhs.y;
-		if (idx == 2 || idx == 'z')
-			return lhs.z;
-		if (idx == 3 || idx == 'w')
-			return lhs.w;
-		return 0.0;
-	}
-
-};
-
-class Light {
-	vector	ambi;		// Ambient
-	vector	diff;		// Diffuse
-	vector	spec;		// Specular
-	vector	attn;		// Attenuation
-
-	vector	pos;		// position
-	vector	dir;		// direction
-	scalar	sCos;
-	scalar	sExp;
-	short	attr;		// typeof(on/off)
-}
-
-vec4f lit(out vec4f ambi, out vec4f diff, out vec4f spec, vec4f pos, vec4f nrm, vec4f eye, Light l[]) {}
-
-struct Material {
-	vec4f emis;
-	vec4f ambi;
-	vec4f diff;
-	vec4f spec;
-	flt32 spow;
-}
-
-enum Materials : Material {	// material
-
-	Brass = Material(
-		vec4f(0.329410, 0.223529, 0.027451, 1),
-		vec4f(0.780392, 0.568627, 0.113725, 1),
-		vec4f(0.992157, 0.941176, 0.807843, 1),
-		flt32(27.8974));
-
-	Bronze = Material(
-		vec4f(0.2125, 0.1275, 0.054, 1.0),
-		vec4f(0.714, 0.4284, 0.18144, 1.0), 
-		vec4f(0.393548, 0.271906, 0.166721),
-		flt32(25.6));
-
-	Chrome = Material(
-		vec4f(0.25, 0.25, 0.25, 1.0),
-		vec4f(0.4, 0.4, 0.4, 1.0),
-		vec4f(0.774597, 0.774597, 0.774597, 1.0),
-		flt32(76.8));
-
-	Silver = Material(
-		vec4f(0.19225, 0.19225, 0.19225, 1.0),
-		vec4f(0.50754, 0.50754, 0.50754, 1.0),
-		vec4f(0.508273, 0.508273, 0.508273, 1.0),
-		flt32(51.2));
-
-	Gold = Material(
-		vec4f(0.24725, 0.1995, 0.0745, 1.0),
-		vec4f(0.75164, 0.60648, 0.22648, 1.0),
-		vec4f(0.628281, 0.555802, 0.366065, 1.0),
-		flt32(51.2));
-
-	Jade = Material(
-		vec4f(0.135,0.2225,0.1575,0.95),
-		vec4f(0.54, 0.89, 0.63, 0.95),
-		vec4f(0.316228, 0.316228, 0.316228, 0.95),
-		flt32(12.8));
-
-	Ruby = Material(
-		vec4f(0.1745,0.01175 ,0.01175,0.55),
-		vec4f(0.61424,0.04136, 0.04136,0.55),
-		vec4f(0.727811, 0.626959, 0.626959,0.55),
-		flt32(76.8));
-}
-
-lights[] = {
-	Light(...),
-	new lghtsrc(...),
-};
-
-scene[] = {
-	new prim(new sphere(...), mtl.gold),
-	new prim(new tours(...), mtl.gold),
-	new mesh(mtl.gold),
-};
-
-struct hitinfo {
-	vec4f pos;
-	vec4f nrm;
-	flt32 len;
-}
-
-vec4f traceRay(const vec4f dir, int depth) {
-	vec4f pos, N, col;
-	flt32 d = math.inf;
-	prim p = null;
-	hitinfo hit;
-
-	for (prim ps : scene) {
-		if (ps.hit(hit, dir)) {
-			if (hit.len > d) {
-				pos = hit.pos;
-				N = hit.nrm;
-				d = hit.len;
-				p = ps;
-			}
-		}
-	}
-	if (p != null) {
-		for (Light l : lights) {
-			bool inShadow = false;
-			vec4f p2l = nrm(p.pos - l.pos);		// direction to light
-			for (prim ps : scene) {
-				if (ps.hit(hit, dir)) {
-					inShadow = true;
-				}
-			}
-			if (!inShadow) {
-				col = p.mtl.lit(l, N, pos, vec4f(0, 0, 1));
-			}
-		}
-		if (depth > 0 && p.mtl.reflect) {
-			col += traceRay(rfl(nrm, pos), depth - 1);
-		}
-		if (depth > 0 && p.mtl.refract) {
-			col += traceRay(rfr(nrm, pos), depth - 1);
-		}
-	}
-	return col;
-}
-
-main() {
-	for (int y = 0; y < height; y += 1) {
-		for (int x = 0; x < width; x += 1) {
-			flt32 s = x - width / 2.;
-			flt32 t = y - height / 2.;
-			vec4f dir = vec4f(s, t, 100, 0);
-			cBuff(x, y, traceRay(dir.nrm()));
-		}
-	}
-	bmp.save("raytr1.bmp", cBuff, width, height, 24);
-}
-
-class lights {
-	Light[] l;
-	uns32 it;
-
-	Light first() {return l[it = 0];}
-	Light next() {return l[it = 0];}
-	bool has() {return it < l.length;}
-}
-
-for (Light l : lights) => for (Light l = lights.first(); lights.has(); l = lights.next())
-//~ for (Light l : lights) => for (Light l = lights.first(); lights.first(); l = lights.next())
-
-
-//~ */
-
-/*
+/*+-
 struct vec4f {
 	flt32 x;
 	flt32 y;
@@ -938,7 +741,7 @@ struct vec4f {
 }
 
 static if (useEmit) {
-	operator + (vec4f rhs) = vec4f(emit(void, rhs));
+	operator + (vec4f rhs) = emit(vec4f, rhs);
 	operator - (vec4f rhs) = vec4f(emit(v4f.neg, rhs));
 	operator ~ (vec4f rhs) = vec4f(emit(v4f.rcp, rhs));
 	operator (vec4f lhs) + (vec4f rhs) = vec4f(emit(v4f.add, lhs, rhs));
@@ -946,10 +749,8 @@ static if (useEmit) {
 	define dp3(vec4f lhs, vec4f rhs) = flt32(emit(v4f.dp3, lhs, rhs));
 	define dp4(vec4f lhs, vec4f rhs) = flt32(emit(v4f.dp4, lhs, rhs));
 	define dph(vec4f lhs, vec4f rhs) = flt32(emit(v4f.dph, lhs, rhs));
-	operator vec4f(flt32 x, flt32 y, flt32 z, flt32 w) = vec4f(emit(void, f32(x), f32(y), f32(z), f32(w)));
 }
 else {
-	//! vec4f(flt32 x, flt32 y, flt32 z, flt32 w) is defined / ablt
 	operator + (vec4f rhs) = vec4f(+rhs.x, +rhs.y, +rhs.z, +rhs.w);
 	operator - (vec4f rhs) = vec4f(-rhs.x, -rhs.y, -rhs.z, -rhs.w);
 	operator ~ (vec4f rhs) = vec4f(1. / rhs.x, 1. / rhs.y, 1. / rhs.z, 1. / rhs.w);
@@ -1000,20 +801,12 @@ operator Complex(flt64 re, flt64 im) = emit(v2d, f64(re), f64(im));
 operator -(Complex rhs) = Complex(-rhs.re, -rhs.im);
 operator (Complex lhs) + (Complex rhs) = Complex(lhs.re + rhs.re, lhs.im + rhs.im);
 operator (Complex lhs) - (Complex rhs) = Complex(lhs.re - rhs.re, lhs.im - rhs.im);
-operator (Complex lhs) * (Complex rhs) = Complex(0, 0);
 
 operator -(Complex rhs) = emit(v2d.neg);
-operator (Complex lhs) + (Complex rhs) = emit(v2d.add);
-operator (Complex lhs) - (Complex rhs) = emit(v2d.sub);
+operator (Complex lhs) + (Complex rhs) = emit(v2d.add, p4x(rhs), p4x(lhs));
+operator (Complex lhs) - (Complex rhs) = emit(v2d.sub, p4x(rhs), p4x(lhs));
 
-operator (int a) + (int b) = osszead();
-operator + (int b) = osszead();
 operator (Complex b) [int a] = double(a ? b.im : b.re);
-
-operator ()(Polinom b, float val);
-
-operator (Polinom b) (float val) = float(0);
-b(3);
 
 operator sub(Complex lhs, Complex rhs) = emit(f64x2.sub, v2d(rhs), v2d(lhs));
 

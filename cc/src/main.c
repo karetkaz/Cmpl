@@ -80,7 +80,7 @@ int vmHelp(char *cmd) {
 	if (n == 1 && strcmp(cmd, opc_tbl[k].name) == 0) {
 		fputfmt(out, "Opcode: 0x%02x\n", opc_tbl[k].code);
 		fputfmt(out, "Length: %d\n", opc_tbl[k].size);
-		fputfmt(out, "Stack min: %d\n", opc_tbl[k].chck);
+		fputfmt(out, "Stack check: %d\n", opc_tbl[k].chck);
 		fputfmt(out, "Stack diff: %d\n", opc_tbl[k].diff);
 		//~ fputfmt(out, "0x%02x	%d		\n", opc_tbl[k].code, opc_tbl[k].size-1);
 		//~ fputfmt(out, "\nDescription\n");
@@ -97,9 +97,9 @@ int vmHelp(char *cmd) {
 	return n;
 }
 
-int evalexp(ccEnv s, char* text) {
+int evalexp(ccEnv s, char* text/* , int opts */) {
 	struct astn res;
-	astn ast;
+	astn ast, tmp;
 	symn typ;
 	int tid;
 
@@ -111,6 +111,13 @@ int evalexp(ccEnv s, char* text) {
 
 	if (peek(s))
 		error(s->s, 0, "unexpected: `%k`", peek(s));
+
+	for (tmp = ast; tmp; tmp = tmp->next) {
+		if (tmp != ast)
+			fputc(' ', stdout);
+		fputfmt(stdout, "%k", tmp);
+	}
+	fputc('\n', stdout);
 
 	fputfmt(stdout, "eval(`%+k`) = ", ast);
 
@@ -126,7 +133,7 @@ int evalexp(ccEnv s, char* text) {
 }
 
 int program(int argc, char *argv[]) {
-	static char mem[64 << 10];	// 128K
+	static char mem[64 << 20];	// 128K
 	state s = gsInit(mem, sizeof(mem));
 
 	char *prg, *cmd;//, hexc = '#';
@@ -305,17 +312,17 @@ int program(int argc, char *argv[]) {
 			return -1;
 		}
 
-		debug("compiler.info:%d Tokens", tok_last);
+		//~ debug("compiler.info:%d Tokens", tok_last);
 		if (srcfile(s, srcf) != 0) {
 			fputfmt(stderr, "can not open file `%s`\n", srcf);
 			return -1;
 		}
-		debug("compiler.init:%.2F KBytes", (s->cc->_ptr - s->_mem) / 1024.);
+		//~ debug("compiler.init:%.2F KBytes", (s->cc->_ptr - s->_mem) / 1024.);
 
 		if (compile(s, warn) != 0) {
 			return s->errc;
 		}
-		debug("compiler.scan:%.2F KBytes", (s->cc->_ptr - s->_mem) / 1024.);
+		//~ debug("compiler.scan:%.2F KBytes", (s->cc->_ptr - s->_mem) / 1024.);
 
 		if (gencode(s, opti) != 0) {
 			return s->errc;
@@ -354,7 +361,7 @@ int program(int argc, char *argv[]) {
 		else if (strcmp(t, "-s") == 0) {
 			int i = 3;
 			if (argc == 3) {
-				vmHelp("?");
+				vmHelp("*");
 			}
 			else while (i < argc) {
 				vmHelp(argv[i++]);
@@ -382,9 +389,13 @@ int main(int argc, char *argv[]) {
 		argc = sizeof(args) / sizeof(*args);
 		argv = args;
 	}
+	
+	//~ static char x[1] = {0};
 
 	setbuf(stdout, NULL);
 	setbuf(stderr, NULL);
+	//~ fputfmt(stdout, "%d", rehash(x, sizeof(x)));
+	//~ return 0;
 	return program(argc, argv);
 	//~ return vmTest();
 }

@@ -1,4 +1,3 @@
-//~ gcc -save-temps -m32 -o../main -Wall -O2 -g0 clog.c scan.c tree.c type.c code.c ccvm.c main.c
 /*******************************************************************************
  *   File: main.c
  *   Date: 2007/04/20
@@ -42,16 +41,16 @@
 
 // Symbols - CC
 enum {
-	//~ OP = 0, ID = 1, TY = 2, XX = -1,
-	#define TOKDEF(NAME, TYPE, SIZE, KEYW, STR) NAME,
+	#define TOKDEF(NAME, TYPE, SIZE, STR) NAME,
 	#include "incl/defs.h"
 	tok_last,
 	TOKN_err = TYPE_any,
+	symn_call = 0x100,
+	symn_read = 0x200,
 };
 typedef struct {
 	int const	type;
 	int const	argc;
-	char const	*keyw;
 	char const	*name;
 } tok_inf;
 extern const tok_inf tok_tbl[255];
@@ -132,10 +131,10 @@ typedef struct symn **symt;
 typedef struct symn *symn;		// symbols
 typedef struct astn *astn;
 
-typedef struct list {			// linked list astn
+typedef struct list {			// linked list
 	struct list		*next;
 	unsigned char	*data;
-	//~ unsigned int	size;	// sizeOf(list node) := ((char*)&node) - data;
+	//~ unsigned int	size;	// := ((char*)&node) - data;
 } *list, **strt;
 
 struct astn {				// ast astn
@@ -171,15 +170,9 @@ struct astn {				// ast astn
 			uns32t	hash;			// hash code for 'name'
 			symn	link;			// func body / replacement
 		} id;
-		/*struct {					// list of next-linked nodes
-			astn	next;
-			astn	tail;
-			uns32t	count;
-			uns32t	extra;
-		} list;// */
 	};
 	symn		type;				// typeof() return type of operator ... base type of IDTF
-	astn		next;				// 
+	astn		next;				// next statement, next preorder I think
 };
 struct symn {				// symbol
 	char*	file;
@@ -195,26 +188,28 @@ struct symn {				// symbol
 	symn	args;		// REC fields / FUN args
 	symn	next;		// symbols on table/args
 
+	//~ uns08t	algn;		// align
 	uns08t	kind;		// TYPE_ref || TYPE_xxx
 	uns08t	call:1;		// function
 	//~ uns08t	load:1;		// indirect
 
 	//~ uns08t	priv:1;		// private
 	//~ uns08t	stat:1;		// static
-	//~ uns08t	read:1;		// const
+	uns08t	read:1;		// const / no override
 	//~ uns08t	used:1;		// used
 
 	//~ uns08t	onst:1;		// stack  (val): replaced with (offs < 0) ?(offs < 255)
 	//~ uns08t	libc:1;		// native (fun): replaced with (offs < 0) ?(offs < 255)
 	//~ uns08t	temp:1;		// no lookup: set name to null
 
-	uns08t	xxxx:7;		// -Wpadded
+	uns08t	xxxx:6;		// -Wpadded
 	uns16t	nest;		// declaration level
 	//~ uns32t	used;		//TODO: times used
 	astn	init;		// VAR init / FUN body
 
 	// list(scoping)
 	symn	defs;		// symbols on stack/all
+	//~ char*	pfmt;		// print format
 };
 
 struct ccEnv {
@@ -259,8 +254,6 @@ struct ccEnv {
 
 	char	*_ptr;					// TODO: remove this
 	long	_cnt;					// TODO: remove this
-	//~ char	*_ptr;					// TODO: remove this
-	//~ char	*_cnt;					// TODO: remove this
 };
 struct vmEnv {
 	state	s;

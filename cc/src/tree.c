@@ -91,8 +91,17 @@ int eval(astn res, astn ast, int get) {
 	if (!ast) return 0;
 	if (!res) res = &rhs;
 
-	if ((cast = ast->cast) < TYPE_enu) {
-		cast = tok_tbl[cast].type;
+	switch ((cast = ast->cast)) {
+		case TYPE_u32: cast = TYPE_bit; break;
+		//~ case TYPE_u64: cast = TYPE; break;
+		case TYPE_i32: cast = TYPE_int; break;
+		case TYPE_i64: cast = TYPE_int; break;
+		case TYPE_f32: cast = TYPE_flt; break;
+		case TYPE_f64: cast = TYPE_flt; break;
+		//~ case TYPE_p4f: cast = TYPE; break;
+		//~ case TYPE_p2d: cast = TYPE; break;
+		default:
+			cast = ast->cast;
 	}
 
 	switch (ast->kind) {
@@ -102,9 +111,13 @@ int eval(astn res, astn ast, int get) {
 			if (!istype(ast->op.lhso)) return 0;
 			return eval(res, ast->op.rhso, get);
 		} break;
+		case OPER_fnc: {
+			astn lhs = ast->op.lhso;
+			if (lhs && !istype(lhs)) return 0;
+			return eval(res, ast->op.rhso, get);
+		} break;
 
 		case OPER_idx:
-		case OPER_fnc:
 			return 0;
 
 		case TYPE_int:
@@ -290,7 +303,7 @@ int eval(astn res, astn ast, int get) {
 		} break;
 	}
 	if (get != res->kind) switch (get) {
-		default: fatal("NoIpHere");
+		default: fatal("NoIpHere:%t", get);
 
 		case TYPE_any:		// no cast
 			break;

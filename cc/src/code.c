@@ -12,7 +12,7 @@ typedef struct bcde {			// byte code decoder
 	union {
 		stkval arg;		// argument (load const)
 		uns08t idx;		// usualy index for stack
-		int32t jmp:24;		// jump relative
+		int32t rel:24;		// jump relative
 		struct {		// when starting a task
 			uns08t	dl;	// data to copy to stack
 			uns16t	cl;	// code to exec paralel
@@ -600,7 +600,7 @@ int emit(vmEnv s, int opc, ...) {
 			s->ss -= 2;
 		}
 	}
-	else if (opc == opc_dup1) {			// TODO 
+	else if (opc == opc_dup1) {			// TODO
 		ip = getip(s, s->pc);
 		if (ip->opc == opc_dup1 && ip->idx == arg.u4) {
 			ip->opc = opc_dup2;
@@ -705,19 +705,23 @@ int emitidx(vmEnv s, int opc, int arg) {
 	stkval tmp;
 	tmp.i4 = s->ss + arg;
 	if (opc == opc_ldsp) {
+		/*
 		if (!emit(s, opc))
 			return 0;
-		if (!emiti32(s, 4*tmp.i4))
+		if (!emiti32(s, 4 * tmp.i4))
 			return 0;
 		return emit(s, i32_add);
+		//~ */
+		tmp.i4 *= 4;
+		return emit(s, opc, tmp);
 	}
 	if (tmp.u4 > 255) {
-		error(s->s, 0, "0x%02x(%d)", opc, tmp.u4);
+		fatal("0x%02x(%d)", opc, tmp.u4);
 		fputasm(stdout, s->_ptr, s->cs, 0x31);
 		return 0;
 	}
 	if (tmp.u4 > s->ss) {
-		error(s->s, 0, "%d", tmp.u4);
+		fatal("%d", tmp.u4);
 		return 0;
 	}
 	return emit(s, opc, tmp);
@@ -734,7 +738,7 @@ int fixjump(vmEnv s, int src, int dst, int stc) {
 		default: fatal("NoIpHere");
 		case opc_jmp:
 		case opc_jnz:
-		case opc_jz: ip->jmp = dst - src; break;
+		case opc_jz: ip->rel = dst - src; break;
 	}
 	return 0;
 }
@@ -833,7 +837,7 @@ void vm_fputval(FILE *fout, symn typ, stkval* sp, int flgs) {
 				break;
 			case 8:
 				if (flgs & flg_type) fputfmt(fout, "f64");
-				if (flgs & flg_hex) fputfmt(fout, "[%016X]", sp->i8);
+				if (flgs & flg_hex) fputfmt(fout, "[%016B]", sp->i8);
 				fputfmt(fout, "(%.30G)", sp->f8);
 				break;
 			default: goto TYPE_XXX;
@@ -914,28 +918,6 @@ void vmTags(ccEnv s, char *sptr, int slen) {
 				fputfmt(fout, "%s:%d:", ptr->file, ptr->line);
 			fputfmt(fout, "sp(%d):%s", spos, ptr->name);
 			switch(typ ? typ->kind : 0) {
-				/*case TYPE_rec: {
-					symn ttt;
-					while()
-					fputfmt(fout, ":struct");
-				} break;
-				case TYPE_ar3: {
-					int i = 0;
-					struct astn ns;
-					if (!eval(&ns, typ->init, TYPE_int)) {
-						fputfmt(fout, ":array = error");
-						break;
-					}
-					fputfmt(fout, ":array [");
-					while (i < ns.con.cint) {
-						vm_fputval(fout, typ->type, sp, 1);
-						if (++i < ns.con.cint)
-							fputfmt(fout, ", ");
-						sp = (void*)((char*)sp + typ->type->size);
-					}
-					fputfmt(fout, "]");
-				} break;*/
-
 				default:
 					fputs(" = ", fout);
 					vm_fputval(fout, typ, sp, -1);
@@ -998,7 +980,7 @@ static int mtt(vmEnv ee, doWhat cmd, cell pu, int n) {
 **/
 static int execpu(vmEnv vm, cell pu) {
 	//~ unsigned char *bp = pu->sp;
-	unsigned char *mp = NULL;//vm->_mem;
+	unsigned char *mp = NULL;//TODO: vm->_mem;
 
 	while (pu->ip) {
 
@@ -1061,64 +1043,6 @@ int exec(vmEnv vm, unsigned ss, dbgf dbg) {
 	return dbg ? dbugpu(vm, pu, dbg) : execpu(vm, pu);
 }
 
-/*int execute_emu(vmEnv vm, unsigned cc, unsigned ss, dbgf dbg) {
-	struct cell procs[32], *pu = procs;
-
-	register bcde ip;
-	register void *mp = NULL;
-	register unsigned char *st;
-
-	if (cc > sizeof(procs) / sizeof(*procs)) {
-		debug("cells overrun");
-		return -1;
-	}
-	/ *if (ss < env->sm) {
-		debug("stack overrun(%d, %d)", ss, env->sm);
-		return -1;
-	}
-	/ *if ((env->cs + ss * cc) >= ?) {
-		debug("memory overrun");
-		return -1;
-	}
-	* /
-
-	pu->ip = vm->_mem + vm->pc;
-	pu->bp = vm->_end - ss;
-	pu->sp = vm->_end;
-
-	if (!mtt(vm, doInit, pu, cc)) {
-		debug("thread creation failed");
-		return -1;
-	}
-
-	while (pu->ip) {
-
-		//~ vm->ic += 1;
-		st = pu->sp;			// stack
-		ip = (bcde)pu->ip;
-
-		if (dbg && dbg(vm, 0, ip, (long*)st, (vm->_end - st) / 4))
-			return -9;
-
-		switch (ip->opc) {		// exec
-			error_opc: error(vm->s, 0, "invalid opcode: [%02x]", ip->opc); return -1;
-			error_ovf: error(vm->s, 0, "stack overflow: op[%A]", ip); return -2;
-			error_div: error(vm->s, 0, "division by zero: op[%A]", ip); return -3;
-			//~ error_mem: error(vm->s, 0, "segmentation fault: op[%A]", ip); return -5;
-			#define NEXT(__IP, __CHK, __SP) {pu->sp -= 4*(__SP); pu->ip += (__IP);}
-			#define STOP(__ERR, __CHK) if (__CHK) goto __ERR
-			#define EXEC
-			//~ #define FLGS
-			#include "code.h"
-		}
-
-		//~ pu = procs + mtt(vm, getNext, procs, pu - procs);
-	}
-
-	if (dbg) dbg(vm, 0, NULL, (long*)pu->sp, (vm->_end - pu->sp) / 4);
-	return 0;
-}*/
-
 void fputopc(FILE *fout, unsigned char* ptr, int len, int offs) {
 	int i;
 	//~ unsigned char* ptr = (unsigned char*)ip;
@@ -1140,11 +1064,12 @@ void fputopc(FILE *fout, unsigned char* ptr, int len, int offs) {
 		fputs(opc_tbl[ip->opc].name, fout);
 	else fputfmt(fout, "opc%02x", ip->opc);
 	switch (ip->opc) {
+		case opc_ldsp:
 		case opc_jmp:
 		case opc_jnz:
 		case opc_jz: {
-			if (offs < 0) fprintf(fout, " %+d", ip->jmp);
-			else fprintf(fout, " .%04x", offs + ip->jmp);
+			if (offs < 0) fprintf(fout, " %+d", ip->rel);
+			else fprintf(fout, " .%04x", offs + ip->rel);
 		} break;
 		/*case opc_bit: switch (ip->arg.u1 >> 5) {
 			default: fprintf(fout, "bit.???"); break;
@@ -1214,7 +1139,7 @@ void fputasm(FILE *fout, unsigned char* beg, int len, int mode) {
 		if (mode & 0x10)		// offset
 			fputfmt(fout, ".%04x: ", i);
 
-		if (mode & 0x20)		// TODO: remove stack
+		if (mode & 0x20)		// TODO: remove stack size
 			fputfmt(fout, "ss(%03d): ", ss);
 
 		fputopc(fout, (void*)ip, mode & 0xf, mode & 0x10 ? i : -1);
