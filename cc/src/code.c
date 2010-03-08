@@ -137,7 +137,7 @@ typedef struct cell {			// processor
 
 } *cell; // */
 
-//~ #define useBuiltInFuncs
+#define useBuiltInFuncs
 //{ libc.c ---------------------------------------------------------------------
 //~ #pragma intrinsic(log,cos,sin,tan,sqrt,fabs,pow,atan2,fmod)
 //~ #pragma intrinsic(acos,asin,atan,cosh,exp,log10,sinh,tanh)
@@ -336,11 +336,14 @@ libcfnc[256] = {
 	{NULL},
 };
 
-int install_libc(state s, void libc(state), const char* proto) {
+int libcall(state s, void libc(state), const char* proto) {
 	static int libccnt = 0;
 	int stdiff = 0;
 	symn arg, sym;
 
+	if(!s->cc) {
+	}
+	
 	if (!libc && proto && strcmp(proto, "print") == 0) {
 		int i;
 		for (i = 0; libcfnc[i].proto; ++i) {
@@ -352,7 +355,7 @@ int install_libc(state s, void libc(state), const char* proto) {
 		libccnt = 1;
 		if (!libc) while (libcfnc[libccnt].proto) {
 			int i = libccnt;
-			install_libc(s, libcfnc[i].call, libcfnc[i].proto);
+			libcall(s, libcfnc[i].call, libcfnc[i].proto);
 		}
 		return libccnt;
 	}
@@ -404,8 +407,10 @@ int emit(vmEnv s, int opc, ...) {
 	if (opc == get_sp) {
 		return -s->ss;
 	}
+
 	if (opc == set_sp) {
-		return s->ss = arg.i4;
+		s->ss = arg.i4;
+		return s->cs;
 	}
 	/*if (opc == seg_data) {
 		return s->ss;
@@ -432,13 +437,6 @@ int emit(vmEnv s, int opc, ...) {
 		debug("memory overrun");
 		return 0;
 	}
-	/*else if (opc == opc_ldc) {
-		if (arg.u8 == 0) opc = opc_ldz;
-		else if (arg.u8 <= 0xff) opc = opc_ldc1;
-		else if (arg.u8 <= 0xffff) opc = opc_ldc2;
-		else if (arg.u8 <= 0xffffffff) opc = opc_ldc4;
-		else opc = opc_ldc8;
-	}*/
 
 	else if (opc == opc_neg) switch (arg.i4) {
 		case TYPE_u32:
@@ -566,6 +564,14 @@ int emit(vmEnv s, int opc, ...) {
 		default: return 0;
 	}
 
+	// load/store
+	/*else if (opc == opc_ldc) {
+		if (arg.u8 == 0) opc = opc_ldz;
+		else if (arg.u8 <= 0xff) opc = opc_ldc1;
+		else if (arg.u8 <= 0xffff) opc = opc_ldc2;
+		else if (arg.u8 <= 0xffffffff) opc = opc_ldc4;
+		else opc = opc_ldc8;
+	}// */
 	else if (opc == opc_ldi) switch (arg.i4) {
 		case  1: opc = opc_ldi1; break;
 		case  2: opc = opc_ldi2; break;
@@ -583,93 +589,179 @@ int emit(vmEnv s, int opc, ...) {
 		default: return 0;
 	}
 
-	/*~:)) ?? rollbacks
-	if (opc == opc_ldz1) {
+	else if (opc == opc_inc) {		// TODO: DelMe!
+		if (!s->opti)
+			return 0;
 		ip = getip(s, s->pc);
-		if (ip->opc == opc_ldz1) {
-			opc = opc_ldz2;
-			s->cs = s->pc;
-			s->ss -= 1;
+		switch (ip->opc) {
+			case opc_ldsp:
+				if (arg.i4 < 0)
+					return 0;
+				ip->rel += arg.i4;
+				return s->pc;
 		}
+		return 0;
 	}
-	else if (opc == opc_ldz2) {
-		ip = getip(s, s->pc);
-		if (ip->opc == opc_ldz2) {
-			opc = opc_ldz4;
-			s->cs = s->pc;
-			s->ss -= 2;
+
+	if (s->opti > 1) {
+		if (0) ;
+		else if (opc == opc_ldi4) {
+			ip = getip(s, s->pc);
+			if (ip->opc == opc_ldsp && ((ip->rel & 3) == 0) && ((ip->rel / 4) < 256)) {
+				arg.i4 = ip->rel / 4;
+				opc = opc_dup1;
+				s->cs = s->pc;
+				s->ss -= 1;
+			}
 		}
+		else if (opc == opc_sti4) {
+			ip = getip(s, s->pc);
+			if (ip->opc == opc_ldsp && ((ip->rel & 3) == 0) && ((ip->rel / 4) < 256)) {
+				arg.i4 = ip->rel / 4;
+				opc = opc_set1;
+				s->cs = s->pc;
+				s->ss -= 1;
+			}
+		}
+
+		else if (opc == opc_ldi8) {
+			ip = getip(s, s->pc);
+			if (ip->opc == opc_ldsp && ((ip->rel & 3) == 0) && ((ip->rel / 4) < 256)) {
+				arg.i4 = ip->rel / 4;
+				opc = opc_dup2;
+				s->cs = s->pc;
+				s->ss -= 1;
+			}
+		}
+		else if (opc == opc_sti8) {
+			ip = getip(s, s->pc);
+			if (ip->opc == opc_ldsp && ((ip->rel & 3) == 0) && ((ip->rel / 4) < 256)) {
+				arg.i4 = ip->rel / 4;
+				opc = opc_set2;
+				s->cs = s->pc;
+				s->ss -= 1;
+			}
+		}
+
+		else if (opc == opc_ldiq) {
+			ip = getip(s, s->pc);
+			if (ip->opc == opc_ldsp && ((ip->rel & 3) == 0) && ((ip->rel / 4) < 256)) {
+				arg.i4 = ip->rel / 4;
+				opc = opc_dup4;
+				s->cs = s->pc;
+				s->ss -= 1;
+			}
+		}
+		else if (opc == opc_stiq) {
+			ip = getip(s, s->pc);
+			if (ip->opc == opc_ldsp && ((ip->rel & 3) == 0) && ((ip->rel / 4) < 256)) {
+				arg.i4 = ip->rel / 4;
+				opc = opc_set4;
+				s->cs = s->pc;
+				s->ss -= 1;
+			}
+		}
+
+		// conditional jumps
+		else if (opc == opc_not) {
+			ip = getip(s, s->pc);
+			if (ip->opc == opc_not) {
+				s->cs = s->pc;
+				return s->pc;
+			}
+		}
+		else if (opc == opc_jnz) {
+			ip = getip(s, s->pc);
+			if (ip->opc == opc_not) {
+				s->cs = s->pc;
+				opc = opc_jz;
+			}
+		}
+		else if (opc == opc_jz) {
+			ip = getip(s, s->pc);
+			if (ip->opc == opc_not) {
+				s->cs = s->pc;
+				opc = opc_jnz;
+			}
+		}
+
+		/*~:)) ?? others
+		if (opc == opc_ldz1) {
+			ip = getip(s, s->pc);
+			if (ip->opc == opc_ldz1) {
+				opc = opc_ldz2;
+				s->cs = s->pc;
+				s->ss -= 1;
+			}
+		}
+		else if (opc == opc_ldz2) {
+			ip = getip(s, s->pc);
+			if (ip->opc == opc_ldz2) {
+				opc = opc_ldz4;
+				s->cs = s->pc;
+				s->ss -= 2;
+			}
+		}
+		else if (opc == opc_dup1) {			// TODO
+			ip = getip(s, s->pc);
+			if (ip->opc == opc_dup1 && ip->idx == arg.u4) {
+				ip->opc = opc_dup2;
+				ip->idx -= 1;
+				s->sm += 1;
+				return s->pc;
+			}
+		}
+		else if (opc == opc_dup2) {
+			ip = getip(s, s->pc);
+			if (ip->opc == opc_dup2 && ip->idx == arg.u4) {
+				ip->opc = opc_dup4;
+				ip->idx -= 2;
+				s->sm += 2;
+				return s->pc;
+			}
+		}
+		/ *else if (opc == opc_shl || opc == opc_shr || opc == opc_sar) {
+			ip = getip(s, s->pc);
+			if (ip->opc == opc_ldc4) {
+				if (opc == opc_shl) arg.i1 = 1 << 5;
+				if (opc == opc_shr) arg.i1 = 2 << 5;
+				if (opc == opc_sar) arg.i1 = 3 << 5;
+				s->rets -= 1;
+				opc = opc_bit;
+				arg.i1 |= ip->arg.u1 & 0x1F;
+				s->cs = s->pc;
+			}
+		}// */
+
 	}
-	else if (opc == opc_dup1) {			// TODO
-		ip = getip(s, s->pc);
-		if (ip->opc == opc_dup1 && ip->idx == arg.u4) {
-			ip->opc = opc_dup2;
-			ip->idx -= 1;
-			s->sm += 1;
-			return s->pc;
-		}
-	}
-	else if (opc == opc_dup2) {
-		ip = getip(s, s->pc);
-		if (ip->opc == opc_dup2 && ip->idx == arg.u4) {
-			ip->opc = opc_dup4;
-			ip->idx -= 2;
-			s->sm += 2;
-			return s->pc;
-		}
-	}
-	/ *
-	else if (opc == b32_not) {
-		ip = getip(s, s->pc);
-		if (ip->opc == b32_not) {
-			s->cs = s->pc;
-			return s->pc;
-		}
-	}
-	else if (opc == opc_jnz || opc == opc_jz) {
-		ip = getip(s, s->pc);
-		if (ip->opc == b32_not && ip->arg.u1 == 1) {
-			opc = (opc == opc_jnz) ? opc_jz : opc_jnz;
-			s->cs = s->pc;
-		}
-	}// * /
-	/ *else if (opc == opc_shl || opc == opc_shr || opc == opc_sar) {
-		ip = getip(s, s->pc);
-		if (ip->opc == opc_ldc4) {
-			if (opc == opc_shl) arg.i1 = 1 << 5;
-			if (opc == opc_shr) arg.i1 = 2 << 5;
-			if (opc == opc_sar) arg.i1 = 3 << 5;
-			s->rets -= 1;
-			opc = opc_bit;
-			arg.i1 |= ip->arg.u1 & 0x1F;
-			s->cs = s->pc;
-		}
-	}// */
 
 	if (opc > opc_last) {
 		fatal("invalid opc_0x%x", opc);
 		return 0;
 	}
 
-	if (opc  == opc_pop && !arg.i4)
+	if (opc == opc_pop && !arg.i4)
 		return s->pc;
 
 	ip = getip(s, s->cs);
+
+	s->pc = s->cs;
+
 	ip->opc = opc;
 	ip->arg = arg;
 
-	s->pc = s->cs;
-	//~ debug("@%04x[ss:%03d]: %09A", s->pc, s->ss, ip);
+	//~ debug("@%04x[ss:%03d]: %09.*A", s->pc, s->ss, s->pc, ip);
+	//~ debug("%09.*A", s->cs, ip);
+
 	switch (opc) {		//#exec.c
-		error_opc: error(s->s, 0, "invalid opcode: [%02x] %A", ip->opc, ip); return 0;
-		error_stc: error(s->s, 0, "stack underflow(%d): near opcode %A", s->ss, ip); return 0;
+		error_opc: error(s->s, 0, "invalid opcode: [%02x] %01.*A", ip->opc, s->cs, ip); return 0;
+		error_stc: error(s->s, 0, "stack underflow(%d): near opcode %A", s->ss, ip); s->ss = -1; return 0;
 		#define STOP(__ERR, __CHK) if (__CHK) goto __ERR
 		#define NEXT(__IP, __CHK, __SP)\
 			STOP(error_stc, s->ss < (__CHK));\
 			s->ss += (__SP);\
 			s->cs += (__IP);
 		//~ #define EXEC(__STMT)
-		//~ #define MEMP(__MPTR)
 		//~ #define CHECK()
 		#include "code.h"
 	}
@@ -735,13 +827,50 @@ int fixjump(vmEnv s, int src, int dst, int stc) {
 	bcde ip = getip(s, src);
 
 	if (src >= 0) switch (ip->opc) {
-		default: fatal("NoIpHere");
+		default: fatal("FixMe!");
 		case opc_jmp:
 		case opc_jnz:
 		case opc_jz: ip->rel = dst - src; break;
 	}
 	return 0;
 }
+/*int testopc(vmEnv s, int opc) {
+	bcde ip = getip(s, s->pc);
+	return ip->opc == opc;
+}
+
+int loadind(vmEnv vm, int offs, int size) {
+	while (size > 0) {
+		int len = size;
+		int opc = -1;
+
+		if (size > 8) {
+			opc = opc_ldiq;
+			len = 16;
+		}
+		else if (size > 4) {
+			opc = opc_ldi8;
+			len = 8;
+		}
+		else if (size > 2) {
+			opc = opc_ldi4;
+			len = 4;
+		}
+		else switch (size) {
+			case 2: opc = opc_ldi2; break;
+			case 1: opc = opc_ldi1; break;
+		}
+
+		if (!emitint(vm, opc_ldcr, offs))
+			return 0;
+		if (!emit(vm, opc))
+			return 0;
+
+		size -= len;
+		offs += len;
+	}
+	return 1;
+}*/
 
 /*static cell task(vmEnv ee, cell pu, int cc, int n, int cl, int dl) {
 	// find an empty cpu
@@ -764,81 +893,79 @@ int fixjump(vmEnv s, int src, int dst, int stc) {
 	sigsnd(pp->pp, SIG_quit);
 }// */
 
-void vm_fputval(FILE *fout, symn typ, stkval* sp, int flgs) {
+void vm_fputval(FILE *fout, symn sym, stkval* val, int flgs) {
 	typedef enum {
 		flg_type = 0x01,
 		flg_hex = 0x02,
 		flg_offs = 0x04,
 	} flagbits;
+	char *fmt = 0;
+	symn typ = sym->type;
+	if (sym->pfmt) {
+		fmt = sym->pfmt;
+		if (strncmp(fmt, "@format", 7) == 0)
+			fmt += 7;
+		else
+			fmt = 0;
+	}
+	//~ dieif(typ != sym->type, "FixMe");
 	switch(typ ? typ->kind : 0) {
-		case TYPE_p4x: {
-			if (typ == type_f32x4) {
-				flt32t *val = (flt32t*)sp;
-				fputfmt(fout, "f32x4(%g, %g, %g, %g)", val[0], val[1], val[2], val[3]);
-				//~ fputfmt(fout, "f32x4(%g, %g, %g, %g)", sp->pf.x, sp->pf.y, sp->pf.z, sp->pf.w);
-			}
-			else if (typ == type_f64x2) {
-				flt64t *val = (flt64t*)sp;
-				fputfmt(fout, "f64x2(%G, %G)", val[0], val[1]);
-				//~ fputfmt(fout, "f64x2(%G, %G)", sp->pd.x, sp->pd.y);
-			}
-		} break;
 		case TYPE_bit: switch (typ->size) {
 			case 1:
 				if (flgs & flg_type) fputfmt(fout, "u32");
-				if (flgs & flg_hex) fputfmt(fout, "[%008x]", sp->i1);
-				fputfmt(fout, "(%u)", sp->i1);
+				if (flgs & flg_hex) fputfmt(fout, "[%008x]", val->i1);
+				fputfmt(fout, fmt ? fmt : "(%u)", val->i1);
 				break;
 			case 2:
 				if (flgs & flg_type) fputfmt(fout, "u32");
-				if (flgs & flg_hex) fputfmt(fout, "[%008x]", sp->i2);
-				fputfmt(fout, "(%u)", sp->i2);
+				if (flgs & flg_hex) fputfmt(fout, "[%008x]", val->i2);
+				fputfmt(fout, fmt ? fmt : "(%u)", val->i2);
 				break;
 			case 4: 
 				if (flgs & flg_type) fputfmt(fout, "u32");
-				if (flgs & flg_hex) fputfmt(fout, "[%008x]", sp->i4);
-				fputfmt(fout, "(%u)", sp->i4);
+				if (flgs & flg_hex) fputfmt(fout, "[%008x]", val->i4);
+				fputfmt(fout, fmt ? fmt : "(%u)", val->i4);
 				break;
 			case 8:
 				if (flgs & flg_type) fputfmt(fout, "u64");
-				if (flgs & flg_hex) fputfmt(fout, "[%016X]", sp->i8);
-				fputfmt(fout, "(%U)", sp->i8);
+				if (flgs & flg_hex) fputfmt(fout, "[%016X]", val->i8);
+				fputfmt(fout, fmt ? fmt : "(%U)", val->i8);
 				break;
 			default: goto TYPE_XXX;
 		} break;
 		case TYPE_int: switch (typ->size) {
 			case 1:
 				if (flgs & flg_type) fputfmt(fout, "i32");
-				if (flgs & flg_hex) fputfmt(fout, "[%008x]", sp->i1);
-				fputfmt(fout, "(%d)", sp->i1);
+				if (flgs & flg_hex) fputfmt(fout, "[%008x]", val->i1);
+				fputfmt(fout, fmt ? fmt : "(%d)", val->i1);
 				break;
 			case 2:
 				if (flgs & flg_type) fputfmt(fout, "i32");
-				if (flgs & flg_hex) fputfmt(fout, "[%008x]", sp->i2);
-				fputfmt(fout, "(%d)", sp->i2);
+				if (flgs & flg_hex) fputfmt(fout, "[%008x]", val->i2);
+				fputfmt(fout, fmt ? fmt : "(%d)", val->i2);
 				break;
 			case 4: 
 				if (flgs & flg_type) fputfmt(fout, "i32");
-				if (flgs & flg_hex) fputfmt(fout, "[%008x]", sp->i4);
-				fputfmt(fout, "(%d)", sp->i4);
+				if (flgs & flg_hex) fputfmt(fout, "[%008x]", val->i4);
+				fputfmt(fout, fmt ? fmt : "(%d)", val->i4);
 				break;
 			case 8:
 				if (flgs & flg_type) fputfmt(fout, "i64");
-				if (flgs & flg_hex) fputfmt(fout, "[%016X]", sp->i8);
-				fputfmt(fout, "(%D)", sp->i8);
+				if (flgs & flg_hex) fputfmt(fout, "[%016X]", val->i8);
+				fputfmt(fout, fmt ? fmt : "(%D)", val->i8);
 				break;
 			default: goto TYPE_XXX;
 		} break;
 		case TYPE_flt: switch (typ->size) {
 			case 4: 
 				if (flgs & flg_type) fputfmt(fout, "f32");
-				if (flgs & flg_hex) fputfmt(fout, "[%008x]", sp->i4);
-				fputfmt(fout, "(%.30g)", sp->f4);
+				if (flgs & flg_hex) fputfmt(fout, "[%008x]", val->i4);
+				fputfmt(fout, fmt ? fmt : "(%.30g)", val->f4);
 				break;
 			case 8:
 				if (flgs & flg_type) fputfmt(fout, "f64");
-				if (flgs & flg_hex) fputfmt(fout, "[%016B]", sp->i8);
-				fputfmt(fout, "(%.30G)", sp->f8);
+				if (flgs & flg_hex) fputfmt(fout, "[%016X]", val->i8);
+				fputfmt(fout, fmt ? fmt : "(%.30G)", val->f8);
 				break;
 			default: goto TYPE_XXX;
 		} break;
@@ -847,26 +974,26 @@ void vm_fputval(FILE *fout, symn typ, stkval* sp, int flgs) {
 			fputfmt(fout, "rec{");
 			for (tmp = typ->args; tmp; tmp = tmp->next) {
 				fputfmt(fout, "%T:", tmp);
-				vm_fputval(fout, tmp->type, sp, 1);
+				vm_fputval(fout, tmp, val, 1);
 				if (tmp->next)
 					fputfmt(fout, ", ");
-				sp = (void*)((char*)sp + tmp->type->size);
+				val = (void*)((char*)val + tmp->type->size);
 			}
 			fputfmt(fout, "}");
 		} break;
-		case TYPE_ar3: {
+		case TYPE_arr: {
 			int i = 0;
 			struct astn tmp;
-			if (!eval(&tmp, typ->init, TYPE_int)) {
+			if (eval(&tmp, typ->init) != TYPE_int) {
 				fputfmt(fout, ":array = error");
 				break;
 			}
 			fputfmt(fout, "arr[");
 			while (i < tmp.con.cint) {
-				vm_fputval(fout, typ->type, sp, 1);
+				vm_fputval(fout, typ, val, 1);
 				if (++i < tmp.con.cint)
 					fputfmt(fout, ", ");
-				sp = (void*)((char*)sp + typ->type->size);
+				val = (void*)((char*)val + typ->type->size);
 			}
 			fputfmt(fout, "]");
 			//~ fputfmt(fout, "array[]");
@@ -907,8 +1034,8 @@ int vmTest() {
 }
 
 void vmTags(ccEnv s, char *sptr, int slen) {
-	FILE *fout = stdout;
 	symn ptr;
+	FILE *fout = stdout;
 	for (ptr = s->defs; ptr; ptr = ptr->next) {
 		if (ptr->kind == TYPE_ref && ptr->offs < 0) {
 			int spos = slen + ptr->offs;
@@ -917,10 +1044,17 @@ void vmTags(ccEnv s, char *sptr, int slen) {
 			if (ptr->file && ptr->line)
 				fputfmt(fout, "%s:%d:", ptr->file, ptr->line);
 			fputfmt(fout, "sp(%d):%s", spos, ptr->name);
-			switch(typ ? typ->kind : 0) {
+			if (spos < 0) {
+				fputs(": cannot evaluate", fout);
+			}
+			else switch(typ ? typ->kind : 0) {
+				case TYPE_enu:
+					fputs(" = ", fout);
+					vm_fputval(fout, /* typ->type,  */ptr, sp, -1);
+					break;
 				default:
 					fputs(" = ", fout);
-					vm_fputval(fout, typ, sp, -1);
+					vm_fputval(fout, /* typ,  */ptr, sp, -1);
 					break;
 			}
 			fputc('\n', fout);
@@ -1047,6 +1181,10 @@ void fputopc(FILE *fout, unsigned char* ptr, int len, int offs) {
 	int i;
 	//~ unsigned char* ptr = (unsigned char*)ip;
 	bcde ip = (bcde)ptr;
+
+	if (offs >= 0)
+		fputfmt(fout, ".%04x: ", offs);
+
 	if (len > 1 && len < opc_tbl[ip->opc].size) {
 		for (i = 0; i < len - 2; i++) {
 			if (i < opc_tbl[ip->opc].size) fprintf(fout, "%02x ", ptr[i]);
@@ -1136,8 +1274,8 @@ void fputasm(FILE *fout, unsigned char* beg, int len, int mode) {
 			#include "code.h"
 		}
 
-		if (mode & 0x10)		// offset
-			fputfmt(fout, ".%04x: ", i);
+		//~ if (mode & 0x10)		// offset
+			//~ fputfmt(fout, ".%04x: ", i);
 
 		if (mode & 0x20)		// TODO: remove stack size
 			fputfmt(fout, "ss(%03d): ", ss);

@@ -1,4 +1,4 @@
-include incl/Makefile.gcc
+include incl/Makefile.wcc
 LIB=WLIB -q
 
 SRCDIR=
@@ -25,7 +25,7 @@ clean:
 	rm -f $(OBJS) $(OBJDIR)main.o
 
 debug:
-	$(DBG) '$(BINDIR)main'
+	$(DBG) "$(BINDIR)main"
 
 #~ build:main clean
 

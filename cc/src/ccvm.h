@@ -22,18 +22,16 @@
 //~ #define pdbg(__DBG, msg, ...) {fputfmt(stderr, "%s:%d:"__DBG": "msg"\n", __FILE__, __LINE__, ##__VA_ARGS__); fflush(stderr);}
 #define pdbg(__DBG, msg, ...) {fputfmt(stderr, "%s:%d:"__DBG":%s: "msg"\n", __FILE__, __LINE__, __func__, ##__VA_ARGS__); fflush(stderr);}
 
-#define trace(__LEV, msg, ...) //pdbg("trace", ##__VA_ARGS__)
+#define trace(__LEV, msg, ...) //pdbg("trace", msg, ##__VA_ARGS__)
 #define debug(msg, ...) pdbg("debug", msg, ##__VA_ARGS__)
 #define fatal(msg, ...)  {pdbg("fatal", msg, ##__VA_ARGS__); /* exit(-2); */}
 #define dieif(__EXP, msg, ...) {if (__EXP) fatal(msg, ##__VA_ARGS__)}
 
-#if 0
-// debug information
+#if 1
 #define error(__ENV, __LINE, msg, ...) perr(__ENV, -1, __FILE__, __LINE__, msg, ##__VA_ARGS__)
 #define warn(__ENV, __LEVEL, __FILE, __LINE, msg, ...) perr(__ENV, __LEVEL, __FILE__, __LINE__, msg, ##__VA_ARGS__)
 #define info(__ENV, __FILE, __LINE, msg, ...) perr(__ENV, 0, __FILE__, __LINE__, msg, ##__VA_ARGS__)
-#else
-// this will be the normal case
+#else // catch the position error raised 
 #define error(__ENV, __LINE, msg, ...) perr(__ENV, -1, NULL, __LINE, msg, ##__VA_ARGS__)
 #define warn(__ENV, __LEVEL, __FILE, __LINE, msg, ...) perr(__ENV, __LEVEL, __FILE, __LINE, msg, ##__VA_ARGS__)
 #define info(__ENV, __FILE, __LINE, msg, ...) perr(__ENV, 0, __FILE, __LINE, msg, ##__VA_ARGS__)
@@ -84,10 +82,10 @@ enum {
 	//~ opc_ldc,
 	opc_ldi,
 	opc_sti,
+	opc_inc,	// increment
 
 	get_ip,		// instruction pointer
 	get_sp,		// get stack position
-	//~ get_ss,		// get stack size = -4 * get_sp
 	set_sp,		// set stack pointer
 	// TODO: remove
 	seg_code,	// pc = ptr - beg; ptr += code->cs;
@@ -140,7 +138,7 @@ typedef struct list {			// linked list
 struct astn {				// ast astn
 	uns32t		line;				// token on line / code offset
 	uns08t		kind;				// code: TYPE_ref, OPER_???, CNST_???
-	uns08t		cast;				// cast lhs and rhs to
+	uns08t		cst2;				// cast to
 	uns16t		XXXX;				// OPER: (priority level / dupplicate of, on stack)
 	union {
 		union  {					// CNST_xxx: constant
@@ -188,10 +186,10 @@ struct symn {				// symbol
 	symn	args;		// REC fields / FUN args
 	symn	next;		// symbols on table/args
 
-	//~ uns08t	algn;		// align
 	uns08t	kind;		// TYPE_ref || TYPE_xxx
 	uns08t	call:1;		// function
 	//~ uns08t	load:1;		// indirect
+	//~ uns08t	algn;		// align
 
 	//~ uns08t	priv:1;		// private
 	//~ uns08t	stat:1;		// static
@@ -209,7 +207,7 @@ struct symn {				// symbol
 
 	// list(scoping)
 	symn	defs;		// symbols on stack/all
-	//~ char*	pfmt;		// print format
+	char*	pfmt;		// print format
 };
 
 struct ccEnv {
@@ -218,6 +216,7 @@ struct ccEnv {
 	astn	root;		// statements
 	symn	defs;		// definitions
 
+	astn	err;		// error
 	symn	all;		// all symbols TODO:Temp
 	strt	strt;		// string table
 	symt	deft;		// definitions: hashStack;
@@ -226,7 +225,9 @@ struct ccEnv {
 
 	char*	file;	// current file name
 	int		line;	// current line number
-	//~ struct astn line;
+
+	// Warning set to -1 to record.
+	char	*doc;
 
 	struct {
 		struct {			// Lexer
@@ -252,11 +253,13 @@ struct ccEnv {
 		} scope[TOKS];// */
 	};
 
-	char	*_ptr;					// TODO: remove this
-	long	_cnt;					// TODO: remove this
+	long	_cnt;
+	char	*_ptr;
 };
 struct vmEnv {
 	state	s;
+	int		opti;			// optimization levevel
+
 	unsigned int	pc;			// entry point / prev program counter
 	unsigned int	ic;			// ?executed? / instruction count
 	unsigned int	cs;			// code size
@@ -287,8 +290,8 @@ extern symn type_str;
 
 extern symn emit_opc;
 
-extern symn type_f32x4;
-extern symn type_f64x2;
+extern symn type_v4f;
+extern symn type_v2d;
 
 //~ util
 //~ int parseInt(const char *str, int *res, int hexchr);
@@ -328,11 +331,12 @@ symn install(ccEnv s, int kind, const char* name, unsigned size);
 symn declare(ccEnv s, int kind, astn tag, symn rtyp);
 symn lookup(ccEnv s, symn sym, astn ast, astn args);
 symn typecheck(ccEnv s, symn loc, astn ast);
-int castTo(astn ast, symn type);
+int castId(symn typ);
+int castTo(astn ast, int tyId);
 
 int32t constbol(astn ast);
-//~ int64t constint(astn ast);
-//~ flt64t constflt(astn ast);
+int64t constint(astn ast);
+flt64t constflt(astn ast);
 
 astn peek(ccEnv);
 //~ astn next(ccEnv, int kind);
@@ -354,7 +358,7 @@ symn leave(ccEnv s, symn def);
  * @param get: one of [TYPE_any, TYPE_bit, TYPE_int, TYPE_flt]
  * @return get if expression can be folded 0 otherwise
  */
-int eval(astn res, astn ast, int get);
+int eval(astn res, astn ast);
 int cgen(state s, astn ast, int get);		// ret: typeId(ast)
 
 /** generate byte code for tree
@@ -370,6 +374,7 @@ int emitf64(vmEnv, flt64t arg);
 int emitidx(vmEnv, int opc, int pos);
 int emitint(vmEnv, int opc, int64t arg);
 int fixjump(vmEnv s, int src, int dst, int stc);
+int testopc(vmEnv s, int opc);
 
 int isType(symn sym);
 int istype(astn ast);

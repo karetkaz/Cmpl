@@ -23,23 +23,20 @@ typedef struct vmEnv *vmEnv;
 typedef struct state {
 	FILE*	logf;			// log file (errors + warnings)
 	int		errc;			// error count
-	int		opti;			// optimization levevel
 
-	ccEnv cc;		// compiler enviroment
-	vmEnv vm;		// execution enviroment
-
-	// lib call data
 	void* data;		// user data
 	void* retv;		// retval
 	char* argv;		// first arg
 
+	ccEnv cc;		// compiler enviroment
+	vmEnv vm;		// execution enviroment
 	long _cnt;
 	char *_ptr;
-	//~ char _mem[4 << 20];
 	char _mem[];
 } *state;
 typedef enum {
 	srcFile = 0x10,		// file / buffer
+
 	//~ srcAuto = -1,		// first token: 'unit' ...
 	//~ srcUnit = 0x01,		// unit / script (ask the file what is it ? (: first tokens : 'package' 'name'))
 	//~ srcScript =  0,		// !srcUnit
@@ -58,10 +55,6 @@ typedef enum {
 	dump_ast = 0x0000400,
 	dumpMask = 0x0000f00,
 	dump_new = 0x0001000,		// do not append (!stdout)
-	/* symbol flags
-	call = 0x0001,
-	load = 0x0002,
-	// */
 } srcType, dumpMode;
 
 state gsInit(void* mem, unsigned size);
@@ -69,7 +62,7 @@ state gsInit(void* mem, unsigned size);
 // compile
 int logfile(state, char *file);				// logger
 int srcfile(state, char *file);				// source
-int srctext(state, char *file, int line, char *src);				// source
+//~ int srctext(state, char *file, int line, char *src);				// source
 int compile(state, int level);				// warning level
 int gencode(state, int level);				// optimize level
 //~ int execute(state, int cc, int ss, dbgf dbg);
@@ -94,7 +87,7 @@ vmEnv vmInit(state s);
 void vmInfo(FILE*, vmEnv s);
 int vmDone(state s);
 
-int install_libc(state, void call(state), const char* proto);
+int libcall(state, void call(state), const char* proto);
 
 #define poparg(__ARGV, __TYPE) ((__TYPE*)((__ARGV)->argv += ((sizeof(__TYPE) | 3) & ~3)))[-1]
 #define setret(__TYPE, __ARGV, __VAL) (*((__TYPE*)(__ARGV->retv)) = (__TYPE)(__VAL))

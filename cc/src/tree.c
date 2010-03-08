@@ -84,14 +84,17 @@ flt64t constflt(astn ast) {
 	return 0;
 }
 
-int eval(astn res, astn ast, int get) {
+int eval(astn res, astn ast) {
 	struct astn lhs, rhs;
 	int cast;
 
-	if (!ast) return 0;
-	if (!res) res = &rhs;
+	if (!ast)
+		return 0;
 
-	switch ((cast = ast->cast)) {
+	if (!res)
+		res = &rhs;
+
+	switch ((cast = ast->cst2)) {
 		case TYPE_u32: cast = TYPE_bit; break;
 		//~ case TYPE_u64: cast = TYPE; break;
 		case TYPE_i32: cast = TYPE_int; break;
@@ -101,20 +104,20 @@ int eval(astn res, astn ast, int get) {
 		//~ case TYPE_p4f: cast = TYPE; break;
 		//~ case TYPE_p2d: cast = TYPE; break;
 		default:
-			cast = ast->cast;
+			cast = ast->cst2;
 	}
 
 	switch (ast->kind) {
-		default: fatal("NoIpHere");
+		default: fatal("FixMe!");
 
 		case OPER_dot: {
 			if (!istype(ast->op.lhso)) return 0;
-			return eval(res, ast->op.rhso, get);
+			return eval(res, ast->op.rhso);
 		} break;
 		case OPER_fnc: {
 			astn lhs = ast->op.lhso;
 			if (lhs && !istype(lhs)) return 0;
-			return eval(res, ast->op.rhso, get);
+			return eval(res, ast->op.rhso);
 		} break;
 
 		case OPER_idx:
@@ -126,17 +129,17 @@ int eval(astn res, astn ast, int get) {
 		case TYPE_ref: {
 			symn var = ast->id.link;		// link
 			if (var && var->kind == TYPE_def && var->init) {
-				return eval(res, var->init, get);
+				return eval(res, var->init);
 			}
 			return 0;
 		} break;
 
 		case OPER_pls: {		// '+'
-			if (!eval(res, ast->op.rhso, get))
+			if (!eval(res, ast->op.rhso))
 				return 0;
 		} break;
 		case OPER_mns: {		// '-'
-			if (!eval(res, ast->op.rhso, get))
+			if (!eval(res, ast->op.rhso))
 				return 0;
 			switch (res->kind) {
 				default: return 0;
@@ -145,7 +148,7 @@ int eval(astn res, astn ast, int get) {
 			}
 		} break;
 		case OPER_cmt: {		// '~'
-			if (!eval(res, ast->op.rhso, get))
+			if (!eval(res, ast->op.rhso))
 				return 0;
 			switch (res->kind) {
 				default: return 0;
@@ -156,8 +159,8 @@ int eval(astn res, astn ast, int get) {
 
 		case OPER_not: {		// '!'
 
-			dieif(get != TYPE_bit, " fault");
-			if (!eval(res, ast->op.rhso, get))
+			dieif(ast->cst2 != TYPE_bit, "FixMe!\n%3K", ast);
+			if (!eval(res, ast->op.rhso))
 				return 0;
 
 			switch (res->kind) {
@@ -173,18 +176,18 @@ int eval(astn res, astn ast, int get) {
 		case OPER_mul:			// '*'
 		case OPER_div:			// '/'
 		case OPER_mod: {		// '%'
-			if (!eval(&lhs, ast->op.lhso, cast))
+			if (!eval(&lhs, ast->op.lhso))
 				return 0;
-			if (!eval(&rhs, ast->op.rhso, cast))
+			if (!eval(&rhs, ast->op.rhso))
 				return 0;
-			dieif(lhs.kind != rhs.kind, "eval operator %k (%t, %t): %t", ast, lhs.kind, rhs.kind, get);
+			dieif(lhs.kind != rhs.kind, "eval operator %k (%t, %t): %t", ast, lhs.kind, rhs.kind, ast->cst2);
 
 			switch (rhs.kind) {
 				default: return 0;
 				case TYPE_int: {
 					res->kind = TYPE_int;
 					switch (ast->kind) {
-						default: fatal("NoIpHere");
+						default: fatal("FixMe!");
 						case OPER_add: res->con.cint = lhs.con.cint + rhs.con.cint; break;		// '+'
 						case OPER_sub: res->con.cint = lhs.con.cint - rhs.con.cint; break;		// '-'
 						case OPER_mul: res->con.cint = lhs.con.cint * rhs.con.cint; break;		// '*'
@@ -206,7 +209,7 @@ int eval(astn res, astn ast, int get) {
 				case TYPE_flt: {
 					res->kind = TYPE_flt;
 					switch (ast->kind) {
-						default: fatal("NoIpHere");
+						default: fatal("FixMe!");
 						case OPER_add: res->con.cflt = lhs.con.cflt + rhs.con.cflt; break;		// '+'
 						case OPER_sub: res->con.cflt = lhs.con.cflt - rhs.con.cflt; break;		// '-'
 						case OPER_mul: res->con.cflt = lhs.con.cflt * rhs.con.cflt; break;		// '*'
@@ -223,16 +226,16 @@ int eval(astn res, astn ast, int get) {
 		case OPER_geq:			// '>='
 		case OPER_lte:			// '<'
 		case OPER_leq: {		// '<='
-			if (!eval(&lhs, ast->op.lhso, cast))
+			if (!eval(&lhs, ast->op.lhso))
 				return 0;
-			if (!eval(&rhs, ast->op.rhso, cast))
+			if (!eval(&rhs, ast->op.rhso))
 				return 0;
-			dieif(lhs.kind != rhs.kind, "eval operator %k (%t, %t): %t", ast, lhs.kind, rhs.kind, get);
+			dieif(lhs.kind != rhs.kind, "eval operator %k (%t, %t): %t", ast, lhs.kind, rhs.kind, ast->cst2);
 			res->kind = TYPE_bit;
 			switch (rhs.kind) {
 				default: return 0;
 				case TYPE_int: switch (ast->kind) {
-					default: fatal("NoIpHere");
+					default: fatal("FixMe!");
 					case OPER_neq: res->con.cint = lhs.con.cint != rhs.con.cint; break;
 					case OPER_equ: res->con.cint = lhs.con.cint == rhs.con.cint; break;
 					case OPER_gte: res->con.cint = lhs.con.cint  > rhs.con.cint; break;
@@ -241,7 +244,7 @@ int eval(astn res, astn ast, int get) {
 					case OPER_leq: res->con.cint = lhs.con.cint <= rhs.con.cint; break;
 				} break;
 				case TYPE_flt: switch (ast->kind) {
-					default: fatal("NoIpHere");
+					default: fatal("FixMe!");
 					case OPER_neq: res->con.cint = lhs.con.cflt != rhs.con.cflt; break;
 					case OPER_equ: res->con.cint = lhs.con.cflt == rhs.con.cflt; break;
 					case OPER_gte: res->con.cint = lhs.con.cflt  > rhs.con.cflt; break;
@@ -257,11 +260,11 @@ int eval(astn res, astn ast, int get) {
 		case OPER_and:			// '&'
 		case OPER_ior:			// '|'
 		case OPER_xor: {		// '^'
-			if (!eval(&lhs, ast->op.lhso, cast))
+			if (!eval(&lhs, ast->op.lhso))
 				return 0;
-			if (!eval(&rhs, ast->op.rhso, cast))
+			if (!eval(&rhs, ast->op.rhso))
 				return 0;
-			dieif(lhs.kind != rhs.kind, "eval operator %k (%t, %t): %t", ast, lhs.kind, rhs.kind, get);
+			dieif(lhs.kind != rhs.kind, "eval operator %k (%t, %t): %t", ast, lhs.kind, rhs.kind, ast->cst2);
 
 			switch (rhs.kind) {
 				default:
@@ -270,7 +273,7 @@ int eval(astn res, astn ast, int get) {
 				case TYPE_int: {
 					res->kind = TYPE_int;
 					switch (ast->kind) {
-						default: fatal("NoIpHere");
+						default: fatal("FixMe!");
 						case OPER_shr: res->con.cint = lhs.con.cint >> rhs.con.cint; break;
 						case OPER_shl: res->con.cint = lhs.con.cint << rhs.con.cint; break;
 						case OPER_and: res->con.cint = lhs.con.cint  & rhs.con.cint; break;
@@ -283,12 +286,11 @@ int eval(astn res, astn ast, int get) {
 
 		case OPER_lnd:
 		case OPER_lor: {
-			dieif(get != TYPE_bit, "fault");
-			if (!eval(&lhs, ast->op.lhso, TYPE_bit))
+			if (!eval(&lhs, ast->op.lhso))
 				return 0;
-			if (!eval(&rhs, ast->op.rhso, TYPE_bit))
+			if (!eval(&rhs, ast->op.rhso))
 				return 0;
-			dieif(lhs.kind != rhs.kind, "eval operator %k (%t, %t): %t", ast, lhs.kind, rhs.kind, get);
+			dieif(lhs.kind != rhs.kind, "eval operator %k (%t, %t): %t", ast, lhs.kind, rhs.kind, ast->cst2);
 
 			res->kind = TYPE_bit;
 			switch (ast->kind) {
@@ -297,19 +299,22 @@ int eval(astn res, astn ast, int get) {
 			}
 		} break;
 		case OPER_sel: {		// '?:' TODO: do not return
-			if (!eval(&lhs, ast->op.test, TYPE_bit))
+			if (!eval(&lhs, ast->op.test))
 				return 0;
-			return eval(res, lhs.con.cint ? ast->op.lhso : ast->op.rhso, cast);
+			return eval(res, lhs.con.cint ? ast->op.lhso : ast->op.rhso);
 		} break;
 	}
-	if (get != res->kind) switch (get) {
-		default: fatal("NoIpHere:%t", get);
+
+	if (cast != res->kind) switch (cast) {
+		default: fatal("FixMe!");
 
 		case TYPE_any:		// no cast
 			break;
 
 		case TYPE_bit:
-			res->con.cint = constbol(res);
+			//~ TODO: this sucks
+			if (res->kind != TYPE_int)
+				res->con.cint = constbol(res);
 			res->kind = TYPE_int;
 			break;
 

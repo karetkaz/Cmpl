@@ -11,7 +11,7 @@ static const int wl = 9;		// warning level
 static const int ol = 0;		// optimize level
 
 static const int cc = 1;			// execution cores
-static const int ss = 1 << 10;		// execution stack(256K)
+static const int ss = 32 << 10;		// execution stack(32K)
 //~ static const int hs = 128 << 20;	// execution heap(128M)
 
 extern int vmTest();
@@ -32,18 +32,19 @@ void usage(char* prog, char* cmd) {
 		fputfmt(stdout, "Options:\n");
 
 		fputfmt(stdout, "\t[Output]\n");
-		fputfmt(stdout, "\t-o <file> set file for output. [default=stdout]\n");
-		fputfmt(stdout, "\t-t tags\n");
-		fputfmt(stdout, "\t-s assembled code\n");
+		fputfmt(stdout, "\t-t Output is tags\n");
+		fputfmt(stdout, "\t-c Output is ast code\n");
+		fputfmt(stdout, "\t-s Output is asm code\n");
+		fputfmt(stdout, "\telse output is binary code\n");
+		fputfmt(stdout, "\t-o <file> Put output into <file>. [default=stdout]\n");
 
 		fputfmt(stdout, "\t[Loging]\n");
-		fputfmt(stdout, "\t-l <file> set file for errors. [default=stderr]\n");
-		fputfmt(stdout, "\t-w<num> set warning level to <num> [default=%d]\n", wl);
 		fputfmt(stdout, "\t-wa all warnings\n");
 		fputfmt(stdout, "\t-wx treat warnings as errors\n");
+		fputfmt(stdout, "\t-w<num> set warning level to <num> [default=%d]\n", wl);
+		fputfmt(stdout, "\t-l <file> Put errors into <file>. [default=stderr]\n");
 
-		fputfmt(stdout, "\t[Debuging]\n");
-		fputfmt(stdout, "\t-(ast|xml) output format\n");
+		fputfmt(stdout, "\t[Execute and Debug]\n");
 		fputfmt(stdout, "\t-x<n> execute on <n> procs [default=%d]\n", cc);
 		fputfmt(stdout, "\t-xd<n> debug on <n> procs [default=%d]\n", cc);
 
@@ -81,7 +82,7 @@ int vmHelp(char *cmd) {
 		fputfmt(out, "Opcode: 0x%02x\n", opc_tbl[k].code);
 		fputfmt(out, "Length: %d\n", opc_tbl[k].size);
 		fputfmt(out, "Stack check: %d\n", opc_tbl[k].chck);
-		fputfmt(out, "Stack diff: %d\n", opc_tbl[k].diff);
+		fputfmt(out, "Stack diff: %+d\n", opc_tbl[k].diff);
 		//~ fputfmt(out, "0x%02x	%d		\n", opc_tbl[k].code, opc_tbl[k].size-1);
 		//~ fputfmt(out, "\nDescription\n");
 		//~ fputfmt(out, "The '%s' instruction %s\n", opc_tbl[k].name, "#");
@@ -107,7 +108,7 @@ int evalexp(ccEnv s, char* text/* , int opts */) {
 
 	ast = expr(s, 0);
 	typ = typecheck(s, 0, ast);
-	tid = eval(&res, ast, TYPE_any);
+	tid = eval(&res, ast);
 
 	if (peek(s))
 		error(s->s, 0, "unexpected: `%k`", peek(s));
@@ -133,11 +134,11 @@ int evalexp(ccEnv s, char* text/* , int opts */) {
 }
 
 int program(int argc, char *argv[]) {
-	static char mem[64 << 20];	// 128K
+	static char mem[512 << 10];	// 128K
 	state s = gsInit(mem, sizeof(mem));
 
-	char *prg, *cmd;//, hexc = '#';
-	dbgf dbg = NULL;//nodbg;//Info;
+	char *prg, *cmd;
+	dbgf dbg = NULL;//Info;
 
 	prg = argv[0];
 	cmd = argv[1];
@@ -150,6 +151,7 @@ int program(int argc, char *argv[]) {
 		}
 		else if (strcmp(cmd, "-api") == 0) {
 			dumpsym(stdout, leave(ccInit(s), NULL), 1);
+			ccDone(s);
 		}
 		else if (strcmp(cmd, "-syms") == 0) {
 			symn sym = leave(ccInit(s), NULL);
@@ -164,28 +166,15 @@ int program(int argc, char *argv[]) {
 			ccInit(s);
 			if (emit_opc)
 				dumpsym(stdout, emit_opc->args, 1);
-		}
-		else if (strcmp(cmd, "-test") == 0) {
-			ccInit(s);
-			if (emit_opc)
-				dumpsym(stdout, emit_opc->args, 1);
 			ccDone(s);
+		}
+		else if (strcmp(cmd, "-help") == 0) {
+			usage(prg, "-c");
 		}
 		else usage(prg, cmd);
 	}
-	else if (strcmp(cmd, "-vm") == 0) {	//
-		cmd = argv[2];
-		if (!cmd || !*cmd)
-			cmd = "test";
-
-		if (strcmp(cmd, "test") == 0)
-			return vmTest();
-
-		if (strcmp(cmd, "help") == 0)
-			return vmHelp("*");
-	}
 	else if (strcmp(cmd, "-c") == 0) {	// compile
-		int level = -1, argi = 2;
+		int level = -1, argi;
 		int warn = wl;
 		int opti = ol;
 		int outc = 0;			// output
@@ -203,13 +192,13 @@ int program(int argc, char *argv[]) {
 		};
 
 		// options
-		while (argi < argc) {
+		for (argi = 2; argi < argc; ++argi) {
 			char *arg = argv[argi];
 
 			// source file
 			if (*arg != '-') {
 				if (srcf) {
-					fputfmt(stderr, "multiple sources not suported\n");
+					fputfmt(stderr, "multiple source files are not suported\n");
 					return -1;
 				}
 				srcf = argv[argi];
@@ -303,8 +292,13 @@ int program(int argc, char *argv[]) {
 				fputfmt(stderr, "invalid option '%s' for -compile\n", arg);
 				return -1;
 			}
-			++argi;
+
 			//~ debug("level :0x%02x: arg[%d]: '%s'", level, argi - 2, arg);
+		}
+
+		if (!srcf) {
+			fputfmt(stderr, "no input file\n");
+			return -1;
 		}
 
 		if (logfile(s, logf) != 0) {
@@ -312,17 +306,16 @@ int program(int argc, char *argv[]) {
 			return -1;
 		}
 
-		//~ debug("compiler.info:%d Tokens", tok_last);
 		if (srcfile(s, srcf) != 0) {
 			fputfmt(stderr, "can not open file `%s`\n", srcf);
 			return -1;
 		}
-		//~ debug("compiler.init:%.2F KBytes", (s->cc->_ptr - s->_mem) / 1024.);
+		debug("compiler.init:%.2F KBytes", (s->cc->_ptr - s->_mem) / 1024.);
 
 		if (compile(s, warn) != 0) {
 			return s->errc;
 		}
-		//~ debug("compiler.scan:%.2F KBytes", (s->cc->_ptr - s->_mem) / 1024.);
+		debug("compiler.scan:%.2F KBytes", (s->cc->_ptr - s->_mem) / 1024.);
 
 		if (gencode(s, opti) != 0) {
 			return s->errc;
@@ -331,7 +324,7 @@ int program(int argc, char *argv[]) {
 		//~ debug("data:%d Bytes", s->vm->ds);
 
 		if (outc) switch (outc) {
-			default: fatal("NoIpHere");
+			default: fatal("FixMe!");
 			case out_tree: dump(s, outf, dump_new | dump_ast | (level & 0xff), NULL); break;
 			case out_dasm: dump(s, outf, dump_new | dump_asm | (level & 0xff), NULL); break;
 			case out_tags: dump(s, outf, dump_new | dump_sym | (1), NULL); break;
@@ -372,7 +365,7 @@ int program(int argc, char *argv[]) {
 	else if (argc == 2 && *cmd != '-') {	// try to eval
 		return evalexp(ccInit(s), cmd);
 	}
-	else fputfmt(stderr, "invalid option '%s'", cmd);
+	else fputfmt(stderr, "invalid option '%s'\n", cmd);
 	return 0;
 }
 
@@ -380,10 +373,10 @@ int main(int argc, char *argv[]) {
 	if (1 && argc == 1) {
 		char *args[] = {
 			"psvm",		// program name
-			//~ "-emit",
+			//~ "-h", "-s", "dup.x1", "set.x1",
 			//~ "-api",
 			"-c",		// compile command
-			"-xd",		// execute & show symbols command
+			//~ "-xd",		// execute & show symbols command
 			"../test.cvx",
 		};
 		argc = sizeof(args) / sizeof(*args);

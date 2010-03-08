@@ -22,7 +22,7 @@ OPCDEF(opc_jnz,  0x09, 4, 1, -1, 1,	"jnz")		// if pop(0)!=0 IP += arg.3;	[…, a
 OPCDEF(opc_jz,   0x0a, 4, 1, -1, 1,	"jz")		// if pop(0)==0 IP += arg.3;	[…, a, b, c => […, a, b;
 OPCDEF(opc___0b, 0x0b, 0, 0,  0, 1,	NULL)		// if pop(0) <0 IP += arg.3;	[…, a, b, c => […, a, b;
 OPCDEF(opc_not,  0x0c, 1, 1, +0, 1,	"not")		// sp(0) = !sp(0);
-OPCDEF(opc_libc, 0x0d, 2, 0, +9, 1,	"libc")		//-lib call
+OPCDEF(opc_libc, 0x0d, 2, 0, +9, 1,	"libc")		//-lib call :)
 OPCDEF(opc_task, 0x0e, 4, 0, +0, 1,	"task")		// arg.3: [code:16][data:8] task, [?fork if (arg.code == 0)]
 OPCDEF(opc_sysc, 0x0f, 2, 0, +0, 1,	"sysc")		// arg.1: [type:8](exit, halt, wait?join?sync) (alloc, free, copy, init) ...
 //~ stk ========================================================================
@@ -447,8 +447,6 @@ case opc_sysc: NEXT(2, 0, -0) {
 } break;
 case opc_libc: NEXT(2, libcfnc[ip->idx].chk, -libcfnc[ip->idx].pop) {
 #ifdef EXEC
-	//struct libcarg args;
-	//~ args.data = ud;
 	vm->s->argv = (char *)st;
 	vm->s->retv = st + libcfnc[ip->idx].pop * 4;
 	libcfnc[ip->idx].call(vm->s);
@@ -551,19 +549,19 @@ case opc_ldz4: NEXT(1, 0, +4) {
 } break;
 //}
 //{ 0x2?: MEM		// Memory
-case opc_ldi4: NEXT(1, 1, -0);{
+case opc_ldi4: NEXT(1, 1, -0) {
 #ifdef EXEC
 	//~ STOP(error_seg, SP(0, i4) > mp + ms);
 	//~ STOP(error_seg, SP(0, i4) < mp);
 	SP(0, i4) = MP(SP(0, i4), i4);
 #endif
 } break;
-case opc_sti4: NEXT(1, 2, -2);{
+case opc_sti4: NEXT(1, 2, -2) {
 #ifdef EXEC
 	MP(SP(0, i4), i4) = SP(1, i4);
 #endif
 } break;
-case opc_sti8: NEXT(1, 3, -3);{
+case opc_sti8: NEXT(1, 3, -3) {
 #ifdef EXEC
 	MP(SP(0, i8), i8) = SP(1, i8);
 #endif
@@ -1024,8 +1022,8 @@ case v4f_div: NEXT(1, 8, -4) {
 } break;
 /*case v4f_crs: NEXT(1, 8, -4) {//???
 #ifdef EXEC
-	f32x4 lhs = (f32x4)SPTR(0);
-	f32x4 rhs = (f32x4)SPTR(4);
+	vec4f lhs = (vec4f)SPTR(0);
+	vec4f rhs = (vec4f)SPTR(4);
 	float x = lhs->y * rhs->z - lhs->z * rhs->y;
 	float y = lhs->z * rhs->x - lhs->x * rhs->z;
 	float z = lhs->x * rhs->y - lhs->y * rhs->x;
@@ -1063,14 +1061,6 @@ case v4f_div: NEXT(1, 8, -4) {
 } break;*/
 case v4f_min: NEXT(1, 8, -4) {
 #ifdef EXEC
-	//~ if (SP(4, pf).x > SP(0, pf).x)
-		//~ SP(4, pf).x = SP(0, pf).x;
-	//~ if (SP(4, pf).y > SP(0, pf).y)
-		//~ SP(4, pf).y = SP(0, pf).y;
-	//~ if (SP(4, pf).z > SP(0, pf).z)
-		//~ SP(4, pf).z = SP(0, pf).z;
-	//~ if (SP(4, pf).w > SP(0, pf).w)
-		//~ SP(4, pf).w = SP(0, pf).w;
 	if (SP(4, f4) > SP(0, f4))
 		SP(4, f4) = SP(0, f4);
 	if (SP(5, f4) > SP(1, f4))
@@ -1200,7 +1190,6 @@ default: STOP(error_opc, 1);
 #undef SP
 #undef MP
 
-#undef MEMP
 #undef EXEC
 //~ #undef SETF
 #undef STOP

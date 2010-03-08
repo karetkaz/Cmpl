@@ -1,0 +1,362 @@
+/* Standard library
+
+	The contents of this file will be automatically included in a special global
+scope before every input file
+//~ */
+
+class cpl64 {
+	flt64 re;
+	flt64 im;
+	this(flt64 re) {
+		this.re = re;
+		this.im = 0;
+	}
+	this(flt64 re, flt64 im) {
+		this.re = re;
+		this.im = im;
+	}
+
+	cpl64 operator mul(cpl64 a, cpl64 b) const {
+		emit(pf2.mul, f64(b.im), b.re, a.im, a.re);		// a.re * b.re, a.im * b.im
+		emit(pf2.mul, f64(b.re), b.im, a.im, a.re);		// a.re * b.im, a.im * b.re
+		a.im = emit(f64.add);						//>im = a.re * b.im + a.im * b.re
+		a.re = emit(f64.sub);						//>re = a.re * b.re - a.im * b.im
+		return a;
+	}
+	cpl64 operator div(cpl64 a, cpl64 b) const {
+		flt64 oos = 1.0 / (fabs(b.re) + fabs(b.im));
+		flt64 ars = a.re * oos;
+		flt64 ais = a.im * oos;
+		flt64 brs = b.re * oos;
+		flt64 bis = b.im * oos;
+		oos = 1.0 / (brs * brs + bis * bis);
+		return cpl64((ars * brs + ais * bis) * oos,
+					 (ais * brs - ars * bis) * oos);
+	}
+	cpl64 operator mul(out cpl64 a, cpl64 b) { return a = a + b;}
+
+	cpl64 operator mul(cpl64 a, flt64 b) {
+		return emit(pf2.mul, b, b, a.im, a.re);
+	}
+	cpl64 class operator mul(flt64 a, cpl64 b) {
+		return emit(pf2.mul, b, b, a.im, a.re);
+	}
+	cpl64 class operator mul(cpl64 &a, flt64 b) {return a = mul(a, b);}
+
+	cpl64 operator add(cpl64 a, cpl64 b) {
+		return emit(pf2.add, b.im, b.re, a.im, a.re);
+	}
+	cpl64 operator add(cpl64 &a, flt64 b) {return a = add(a, b);}
+	cpl64 operator sub(cpl64 a, cpl64 b) {
+		return emit(v4f.sub, b.im, b.re, a.im, a.re);
+	}
+	cpl64 operator neg(cpl64 a) {
+		return emit(pf2.neg, a.im, a.re);
+	}
+	cpl64 operator rcp(cpl64 a) {
+		//~ return new Complex(
+			//~ +a.re / (a.re * a.re + a.im * a.im),
+			//~ -a.im / (a.re * a.re + a.im * a.im));
+		emit(neg.f64, a);	// a.re, -a.im
+		emit(mul.pd2, a, a);	// a.re ** 2, a.im ** 2
+		emit(dupp, 0);		// a.re ** 2, a.im ** 2
+		emit(add.pd2);
+		emit(div.pd2);
+	}
+}
+class vec4f {
+	flt32 x;
+	flt32 y;
+	flt32 z;
+	flt32 w;
+	//~ static this() {}
+	this() {x = y = z = w = 0;}
+	this(flt32 x) {this.x = this.y = this.z = x; this.w = 1;}
+	this(flt32 x, flt32 y, flt32 z) {this.x = x; this.y = y; this.z = z; this.w = 0;}
+	this(flt32 x, flt32 y, flt32 z, flt32 w) {this.x = x; this.y = y; this.z = z; this.w = w;}
+
+	vec4f operator +(vec4f lhs, vec4f rhs) {return add(lhs, rhs);}
+	vec4f operator +(vec4f lhs, flt32 rhs) {return add(lhs, vec4f(rhs));}
+	vec4f operator +(flt32 lhs, vec4f rhs) {return add(vec4f(lhs), rhs);}
+	vec4f operator +=(out vec4f lhs, vec4f rhs) {return lhs = add(lhs, rhs);}
+	vec4f operator +=(out vec4f lhs, flt32 rhs) {return lhs = add(lhs, vec4f(rhs));}
+
+	static vec4f neg(vec4f rhs) {emit(pf4.neg, p4f(rhs));}
+	static vec4f add(vec4f lhs, vec4f rhs) {return emit(add.pf4, v4f(lhs), v4f(rhs));}
+	static vec4f sub(vec4f lhs, vec4f rhs) {return emit(sub.pf4, v4f(lhs), v4f(rhs));}
+	static vec4f mul(vec4f lhs, vec4f rhs) {return emit(mul.pf4, v4f(lhs), v4f(rhs));}
+	static vec4f div(vec4f lhs, vec4f rhs) {return emit(div.pf4, v4f(lhs), v4f(rhs));}
+
+	static flt32 dp3(vec4f lhs, vec4f rhs) {return flt32(emit(dp3.pf4, v4f(lhs), v4f(rhs)));}
+	static flt32 dp4(vec4f lhs, vec4f rhs) {return flt32(emit(dp4.pf4, v4f(lhs), v4f(rhs)));}
+	static flt32 dph(vec4f lhs, vec4f rhs) {return flt32(emit(dph.pf4, v4f(lhs), v4f(rhs)));}
+	static flt32 len(vec4f lhs) {return sqrt(flt32(emit(dph.pf4, v4f(lhs), v4f(lhs))));}
+
+	static flt32 eval(float val) {return (((w * val + z) * val + y) * val) + x;}
+
+	flt32 dp3(vec4f rhs) {return dp3(this, rhs);}
+	flt32 dph(vec4f rhs) {return dph(this, rhs);}
+	flt32 dp4(vec4f rhs) {return dp4(this, rhs);}
+	flt32 len() {return len(this);}
+
+	static vec4f mul(out vec4f res, ref vec4f lhs, ref vec4f rhs) {
+		res.x = lhs.x * rhs.x;
+		res.y = lhs.y * rhs.y;
+		res.z = lhs.z * rhs.z;
+		res.w = lhs.w * rhs.w;
+		return res;
+	}
+
+	operator vec *= (vec rhs) {return mul(this, this, rhs);}
+	static operator vec * (vec lhs, vec rhs) {return mul(this, lhs, rhs);}
+
+	flt32 operator () (flt32 val) {return this.eval(val);}
+	flt32 operator [] (uns32 idx) {return idx == 0 ? x : idx == 1 ? y : idx == 2 ? z : w;}
+};
+class mat4f {
+	union {
+		struct {
+			vector x;
+			vector y;
+			vector z;
+			vector w;
+		}
+	}
+	//~ static this() {}
+	this() {}
+	this(flt32 x) {
+		this.x = vec4f(x, 0, 0, 0);
+		this.y = vec4f(0, x, 0, 0);
+		this.z = vec4f(0, 0, x, 0);
+		this.w = vec4f(0, 0, 0, x);
+	}
+
+	mat4f operator +(ref mat4f lhs, ref mat4f rhs) {return add(new, lhs, rhs);}
+	mat4f operator +=(out mat4f lhs, ref mat4f rhs) {return add(lhs, lhs, rhs);}
+
+	static vec4f dp3(ref mat4f mat, vec4f vec) {
+		return vec4f(
+			vec4f.dp3(mat.x, vec),
+			vec4f.dp3(mat.y, vec),
+			vec4f.dp3(mat.z, vec),
+			1);
+	}
+	static vec4f dp4(ref mat4f mat, vec4f vec) {
+		return vec4f(
+			vec4f.dp4(mat.x, src),
+			vec4f.dp4(mat.y, src),
+			vec4f.dp4(mat.z, src),
+			vec4f.dp4(mat.w, src));
+	}
+	static vec4f dph(ref mat4f mat, vec4f vec) {
+		return vec4f(
+			vec4f.dph(mat.x, src),
+			vec4f.dph(mat.y, src),
+			vec4f.dph(mat.z, src),
+			vec4f.dph(mat.w, src));
+	}
+
+	vec4f dp3(vec4f rhs) {return dp3(this, rhs);}
+	vec4f dph(vec4f rhs) {return dph(this, rhs);}
+	vec4f dp4(vec4f rhs) {return dp4(this, rhs);}
+
+	vec4f operator mul(ref mat4f mat, vec4f vec) {return dp4(mat, rhs);}
+
+	static mat4f add(out mat4f res, ref mat4f lhs, ref mat4f rhs) {
+		res.x = lhs.x + rhs.x;
+		res.y = lhs.y + rhs.y;
+		res.z = lhs.z + rhs.z;
+		res.w = lhs.w + rhs.w;
+		return dst;
+	}
+	static mat4f sub(out mat4f res, ref mat4f lhs, ref mat4f rhs) {
+		res.x = lhs.x - rhs.x;
+		res.y = lhs.y - rhs.y;
+		res.z = lhs.z - rhs.z;
+		res.w = lhs.w - rhs.w;
+		return dst;
+	}
+
+	flt32 this[](uns32 i, uns32 j) {
+		switch (i) {
+			case 0: return x[j];
+			case 1: return y[j];
+			case 2: return z[j];
+			case 3: return w[j];
+		}
+		return 0.;
+	}
+}
+
+static if (1) {	// ops
+define .neg(int32 b) = emit(i32.neg, i32(b));
+define .neg(flt32 b) = emit(f32.neg, f32(b));
+define .neg(int64 b) = emit(i64.neg, i64(b));
+define .neg(flt64 b) = emit(f64.neg, f64(b));
+
+define .add(int32 a, int32 b) = emit(i32.add, i32(b), i32(a));
+define .add(flt32 a, flt32 b) = emit(f32.add, f32(b), f32(a));
+define .add(int64 a, int64 b) = emit(i64.add, i64(b), i64(a));
+define .add(flt64 a, flt64 b) = emit(f64.add, f64(b), f64(a));
+
+define .sub(int32 a, int32 b) = emit(i32.sub, i32(b), i32(a));
+define .sub(flt32 a, flt32 b) = emit(f32.sub, f32(b), f32(a));
+define .sub(int64 a, int64 b) = emit(i64.sub, i64(b), i64(a));
+define .sub(flt64 a, flt64 b) = emit(f64.sub, f64(b), f64(a));
+
+define .mul(int32 a, int32 b) = emit(i32.mul, i32(b), i32(a));
+define .mul(flt32 a, flt32 b) = emit(f32.mul, f32(b), f32(a));
+define .mul(int64 a, int64 b) = emit(i64.mul, i64(b), i64(a));
+define .mul(flt64 a, flt64 b) = emit(f64.mul, f64(b), f64(a));
+
+define .div(int32 a, int32 b) = emit(i32.div, i32(b), i32(a));
+define .div(flt32 a, flt32 b) = emit(f32.div, f32(b), f32(a));
+define .div(int64 a, int64 b) = emit(i64.div, i64(b), i64(a));
+define .div(flt64 a, flt64 b) = emit(f64.div, f64(b), f64(a));
+
+define .mod(int32 a, int32 b) = emit(i32.mod, i32(b), i32(a));
+define .mod(flt32 a, flt32 b) = emit(f32.mod, f32(b), f32(a));
+define .mod(int64 a, int64 b) = emit(i64.mod, i64(b), i64(a));
+define .mod(flt64 a, flt64 b) = emit(f64.mod, f64(b), f64(a));
+
+define .cmt(int32 b) = emit(i32.cmt, i32(b));
+define .cmt(uns32 b) = emit(u32.cmt, u32(b));
+define .and(int32 a, int32 b) = emit(i32.and, i32(b), i32(a));
+define .and(uns32 a, uns32 b) = emit(u32.and, i32(b), i32(a));
+define  .or(int32 a, int32 b) = emit( i32.or, i32(b), i32(a));
+define  .or(uns32 a, uns32 b) = emit( u32.or, i32(b), i32(a));
+define .xor(int32 a, int32 b) = emit(i32.xor, i32(b), i32(a));
+define .xor(uns32 a, uns32 b) = emit(u32.xor, i32(b), i32(a));
+define .shl(int32 a, int32 b) = emit(i32.shl, i32(b), i32(a));
+define .shl(uns32 a, int32 b) = emit(u32.shl, i32(b), i32(a));
+define .shr(int32 a, int32 b) = emit(i32.sar, i32(b), i32(a));
+define .shr(uns32 a, int32 b) = emit(u32.shr, i32(b), i32(a));
+}
+static if (1) {	// cmp
+	// !a := !bool(a)
+	//? define .not(int32 b) = emit(i32.ceq, i32(b));
+	//? define .not(flt32 b) = emit(f32.ceq, f32(b));
+	//? define .not(int64 b) = emit(i64.ceq, i64(b));
+	//? define .not(flt64 b) = emit(f64.ceq, f64(b));
+
+	define .ceq(int32 a, int32 b) = emit(i32.ceq, i32(b), i32(a));
+	define .ceq(flt32 a, flt32 b) = emit(f32.ceq, f32(b), f32(a));
+	define .ceq(int64 a, int64 b) = emit(i64.ceq, i64(b), i64(a));
+	define .ceq(flt64 a, flt64 b) = emit(f64.ceq, f64(b), f64(a));
+
+	define .clt(uns32 a, uns32 b) = emit(u32.clt, i32(b), i32(a));
+	define .clt(int32 a, int32 b) = emit(i32.clt, i32(b), i32(a));
+	define .clt(flt32 a, flt32 b) = emit(f32.clt, f32(b), f32(a));
+	define .clt(int64 a, int64 b) = emit(i64.clt, i64(b), i64(a));
+	define .clt(flt64 a, flt64 b) = emit(f64.clt, f64(b), f64(a));
+
+	define .cgt(uns32 a, uns32 b) = emit(u32.cgt, i32(b), i32(a));
+	define .cgt(int32 a, int32 b) = emit(i32.cgt, i32(b), i32(a));
+	define .cgt(flt32 a, flt32 b) = emit(f32.cgt, f32(b), f32(a));
+	define .cgt(int64 a, int64 b) = emit(i64.cgt, i64(b), i64(a));
+	define .cgt(flt64 a, flt64 b) = emit(f64.cgt, f64(b), f64(a));
+
+	define .cne(int32 a, int32 b) = emit(b32.not, emit(i32.ceq, i32(b), i32(a)));
+	define .cne(flt32 a, flt32 b) = emit(b32.not, emit(f32.ceq, f32(b), f32(a)));
+	define .cne(int64 a, int64 b) = emit(b32.not, emit(i64.ceq, i64(b), i64(a)));
+	define .cne(flt64 a, flt64 b) = emit(b32.not, emit(f64.ceq, f64(b), f64(a)));
+
+	define .cge(uns32 a, uns32 b) = emit(b32.not, emit(u32.clt, i32(b), i32(a)));
+	define .cge(int32 a, int32 b) = emit(b32.not, emit(i32.clt, i32(b), i32(a)));
+	define .cge(flt32 a, flt32 b) = emit(b32.not, emit(f32.clt, f32(b), f32(a)));
+	define .cge(int64 a, int64 b) = emit(b32.not, emit(i64.clt, i64(b), i64(a)));
+	define .cge(flt64 a, flt64 b) = emit(b32.not, emit(f64.clt, f64(b), f64(a)));
+
+	define .cle(int32 a, int32 b) = emit(b32.not, emit(i32.clt, i32(b), i32(a)));
+	define .cle(flt32 a, flt32 b) = emit(b32.not, emit(f32.clt, f32(b), f32(a)));
+	define .cle(int64 a, int64 b) = emit(b32.not, emit(i64.clt, i64(b), i64(a)));
+	define .cle(flt64 a, flt64 b) = emit(b32.not, emit(f64.clt, f64(b), f64(a)));
+}
+
+static if (0) {	// intAP
+	struct intAP {
+		uns32 size;
+		uns32 data[];
+
+		uns32[] add(uns32[] res, uns32[] lhs, uns32[] rhs, uns32 llen, uns32 rlen) {
+			int c = 0, i = 0;
+			while (i < llen && i < rlen) {
+				res[i] = lhs[i] + rhs[i] + c;
+				c = res[i] < rhs[i];
+				i += 1;
+			}
+			for (;i < llen;) {
+				res[i] = lhs[i] + c;
+				i += 1;
+				c = 0;
+			}
+			for (;i < rlen;) {
+				res[i] = lhs[i] + c;
+				i += 1;
+				c = 0;
+			}
+			return res;
+		}
+	}
+	define intAP(uns32 size) = intAP(size, new uns32[size]);
+	define .add(intAP a, intAP b) = intAP.add(a, b);
+	define .sub(intAP a, intAP b) = intAP.sub(a, b);
+	define .mul(intAP a, intAP b) = intAP.mul(a, b);
+	define .div(intAP a, intAP b) = intAP.divrem(a, b, 0);
+	define .mod(intAP a, intAP b) = intAP.divrem(a, b, 1);
+}
+
+/+ class intAP {
+	uns32 size;
+	uns32 data[];
+
+	this() {bits = null;}
+	this(uns32 size) {
+		this.size = size;
+		this.data = new uns32[size];
+	}
+	uns32 add(uns32[] res, uns32[] lhs, uns32[] rhs, uns32 llen, uns32 rlen) {
+		int c = 0, i = 0;
+		while (i < llen && i < rlen) {
+			res[i] = lhs[i] + rhs[i] + c;
+			c = res[i] < rhs[i];
+			i += 1;
+		}
+		while (i < llen) {
+			res[i] = lhs[i] + c;
+			i += 1;
+			c = 0;
+		}
+		while (i < rlen) {
+			res[i] = lhs[i] + c;
+			i += 1;
+			c = 0;
+		}
+	}
+
+	intAP operator add(intAP a, intAP b) {
+		uns32 i = 0, c = 0, n = min(a.size, b.size);
+		intAP result = intAP(n);
+		add(result.data, a.data, a.size, b.data, b.size)
+		return result;
+	}
+	intAP operator add(intAP &a, intAP b) {
+		if (a.size < b.size) {
+			uns32 data[] = new uns32[b.size];
+			for (int i = 0; i < a.size; i += 1)
+				a.data[i] = b.data[i];
+			a.size = b.size;
+		}
+		add(a.data, a.data, a.size, b.data, b.size);
+		for (int i = 0; i < b.size; i += 1)
+			a[i] += b[i];
+		return a;
+	}
+}
+
+class poly {
+	uns32 size;
+	flt32 data[];
+
+} // +/
+// */

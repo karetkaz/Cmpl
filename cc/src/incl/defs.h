@@ -3,13 +3,12 @@
 TOKDEF(TYPE_any, 0x00, 0, ".err")	// error
 TOKDEF(TYPE_vid, 0x00, 0, ".vid")	// void
 TOKDEF(TYPE_bit, 0x00, 0, ".bit")	// bool, uns32, uns16, uns8
-TOKDEF(TYPE_int, 0x00, 0, ".con")	// int64, int32, int16, int8
-TOKDEF(TYPE_flt, 0x00, 0, ".con")	// flt64, flt32
-TOKDEF(TYPE_p4x, 0x00, 0, ".vec")	// (p2f64, p4f32), (p4f64, p8f32) (p2i64, p4i32, p8i16, p16i8), (p2u64, p4u32, p8u16, p16u8), ...
-TOKDEF(TYPE_ar3, 0x00, 0, ".arr")	// pointer, string, array, ..., ???
+TOKDEF(TYPE_int, 0x00, 0, ".int")	// int64, int32, int16, int8
+TOKDEF(TYPE_flt, 0x00, 0, ".flt")	// flt64, flt32
+TOKDEF(TYPE_arr, 0x00, 0, ".arr")	// pointer, string, array, ..., ???
 TOKDEF(TYPE_def, 0xff, 0, "define")	// struct, union, class?
 TOKDEF(TYPE_enu, 0xff, 0, "enum")
-TOKDEF(TYPE_rec, 0xff, 0, "struct") // unions := struct:0
+TOKDEF(TYPE_rec, 0xff, 0, "struct") // union := struct:0
 //~ TOKDEF(TYPE_cls, 0xff, 0, "class")
 
 TOKDEF(CNST_str, 0x00, 0, ".str")	// TODO: replace with TYPE_str
@@ -21,24 +20,23 @@ TOKDEF(QUAL_par, 0xff, 0, "parralel")
 //~ TOKDEF(QUAL_syn, 0xff, 0, "synchronized")
 
 //~ vmInterface ================================================================
-TOKDEF(EMIT_opc, 0xff, 0, "emit")		// opcodes in emit(opcode, args...)
-TOKDEF(TYPE_u32, 0x00, 32, ".u32")
-//~ TOKDEF(TYPE_u64, 0x00, 64, ".u64")		// no vm support
-TOKDEF(TYPE_i32, 0x00, 32, ".i32")
-TOKDEF(TYPE_i64, 0x00, 64, ".i64")
-TOKDEF(TYPE_f32, 0x00, 32, ".f32")
-TOKDEF(TYPE_f64, 0x00, 64, ".f64")
-//~ TOKDEF(TYPE_p4f, 0x00, 128, ".v4f")
-//~ TOKDEF(TYPE_p2d, 0x00, 128, ".v2d")
+TOKDEF(EMIT_opc, 0xff,   0, "emit")		// opcodes in emit(opcode, args...)
+TOKDEF(TYPE_u32, 0x00,  32, ".u32")
+//~ TOKDEF(TYPE_u64, 0x00,  64, ".u64")		// no vm support
+TOKDEF(TYPE_i32, 0x00,  32, ".i32")
+TOKDEF(TYPE_i64, 0x00,  64, ".i64")
+TOKDEF(TYPE_f32, 0x00,  32, ".f32")
+TOKDEF(TYPE_f64, 0x00,  64, ".f64")
+//~ TOKDEF(TYPE_p4x, 0x00, 128, ".p4x")
 
 //~ Statements =================================================================
-TOKDEF(OPER_nop, 0x00, 0, ".cmd")		// stmt: stmt
-TOKDEF(STMT_beg, 0x00, 0, ".beg")		// stmt: list {...}
 TOKDEF(STMT_for, 0xff, 0, "for")	// stmt: for, while, repeat
 TOKDEF(STMT_if,  0xff, 0, "if")		// stmt: if then else | break | continue | goto
 TOKDEF(STMT_els, 0xff, 0, "else")	// ????
 //~ TOKDEF(STMT_ret, 0xff, 0, "return")	// stmt
 TOKDEF(STMT_end, 0x00, 0, ".end")		// destruct calls ?
+TOKDEF(OPER_nop, 0x00, 0, ".cmd")		// stmt: stmt
+TOKDEF(STMT_beg, 0x00, 0, ".beg")		// stmt: list {...}
 
 //~ Operators ==================================================================
 TOKDEF(OPER_idx, 0x0f, 2, ".idx")		// a[i]		index
