@@ -2,16 +2,16 @@
 #include <string.h>
 
 symn type_vid = NULL;
-symn type_bol = NULL;
+symn type_bol = NULL;		// ==
 symn type_u32 = NULL;
-symn type_i32 = NULL;
+symn type_i32 = NULL;		// emit
 symn type_i64 = NULL;
 symn type_f32 = NULL;
 symn type_f64 = NULL;
-symn type_str = NULL;
-
 symn type_v4f = NULL;
 symn type_v2d = NULL;
+
+symn type_str = NULL;
 
 //~ symn type_ptr = 0;
 
@@ -37,7 +37,7 @@ symn newdefn(ccEnv s, int kind) {
 
 symn instlibc(ccEnv s, const char* name);
 
-symn installex(ccEnv s, int kind, const char* name, unsigned size, symn type, astn init) {
+symn installex(ccEnv s, const char* name, int kind, unsigned size, symn type, astn init) {
 	symn def = newdefn(s, kind & 0xff);
 	unsigned hash = 0;
 	if (def != NULL) {
@@ -66,7 +66,7 @@ symn installex(ccEnv s, int kind, const char* name, unsigned size, symn type, as
 	}
 	return def;
 }
-symn install(ccEnv s, int kind, const char* name, unsigned size) {
+symn install(ccEnv s, const char* name, int kind, int cast, unsigned size) {
 	symn typ = NULL;
 
 	// declare
@@ -102,7 +102,7 @@ symn install(ccEnv s, int kind, const char* name, unsigned size) {
 
 	}
 
-	return installex(s, kind, name, size, typ, 0);
+	return installex(s, name, kind, size, typ, 0);
 }
 
 // TODO: this is define, not declare
@@ -114,7 +114,7 @@ symn declare(ccEnv s, int kind, astn tag, symn typ) {
 		return 0;
 	}
 
-	def = installex(s, kind, tag->id.name, 0, typ, NULL);
+	def = installex(s, tag->id.name, kind, 0, typ, NULL);
 	if (!def) return NULL;
 
 	def->line = tag->line;
@@ -225,10 +225,12 @@ symn linkOf(astn ast, int njr) {
 /** Cast
  * returns one of (u32, i32, i64, f32, f64, p4x, TYPE_bit)
 **/
-int castId(symn typ) {
+int castId(symn typ) {// return typ->cast;
 
 	if (typ == type_bol)
 		return TYPE_bit;
+
+	dieif(!isType(typ), "FixMe");
 
 	if (typ) switch (typ->kind) {
 		//~ default: fatal("FixMe");
@@ -410,7 +412,7 @@ symn lookup(ccEnv s, symn sym, astn ref, astn args) {
 
 	if (sym == NULL && best) {
 		if (found > 1)
-			warn(s->s, 1, s->file, ref->line, "best of %d overload is `%-T`", found, best);
+			warn(s->s, 2, s->file, ref->line, "using overload `%-T`", best, found);
 		sym = best;
 	}
 
@@ -875,6 +877,10 @@ symn typecheck(ccEnv s, symn loc, astn ast) {
 		s->err = 0;
 
 	return ast->type;
+}
+
+int padded(int offs, int align) {
+	return align + ((offs - 1) & ~(align - 1));
 }
 
 int align(int offs, int pack, int size) {

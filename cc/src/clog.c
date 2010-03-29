@@ -325,7 +325,7 @@ static void fputast(FILE *fout, astn ast, int mode, int level) {
 		//}
 		//{ TVAL
 		case EMIT_opc: fputfmt(fout, "emit"); break;
-		case TYPE_bit: fputfmt(fout, "%D", ast->con.cint); break;
+		case TYPE_bit: fputfmt(fout, "%U", ast->con.cint); break;
 		case TYPE_int: fputfmt(fout, "%U", ast->con.cint); break;
 		case TYPE_flt: fputfmt(fout, "%F", ast->con.cflt); break;
 		case CNST_str: fputfmt(fout, "'%s'", ast->con.cstr); break;
@@ -345,7 +345,7 @@ static void fputast(FILE *fout, astn ast, int mode, int level) {
 
 void fputopc(FILE *fout, unsigned char* ptr, int len, int offset);
 
-static char* fmtuns(char *dst, int max, int prc, int radix, int64t num) {
+static char* fmtuns(char *dst, int max, int prc, int radix, uns64t num) {
 	char *ptr = dst + max;
 	int p = 0, plc = ',';
 	*--ptr = 0;
@@ -356,6 +356,7 @@ static char* fmtuns(char *dst, int max, int prc, int radix, int64t num) {
 		}
 		*--ptr = "0123456789abcdef"[num % radix];
 	} while (num /= radix);
+	//*/
 	return ptr;
 }
 
@@ -661,6 +662,8 @@ void dumpsym(FILE *fout, symn sym, int alma) {
 		if (ptr->file && ptr->line)
 			fputfmt(fout, "%s:%d:", ptr->file, ptr->line);
 
+		//~ fputfmt(fout, "%d:", ptr->size);
+
 		fputs(tch, fout);
 
 		// size or offset
@@ -862,8 +865,11 @@ void perr(state s, int level, const char *file, int line, const char *msg, ...) 
 	if (file && line)
 		fprintf(fout, "%s:%u:", file, line);
 
-	if (level)
-		fprintf(fout, "%s:", level < 0 ? "error" : "warning");
+	//~ if (level) fprintf(fout, "%s:", level < 0 ? "error" : "warning");
+	if (level > 0)
+		fputs("warning:", fout);
+	else if (level)
+		fputs("error:", fout);
 
 	va_start(argp, msg);
 	FPUTFMT(fout, msg, argp);

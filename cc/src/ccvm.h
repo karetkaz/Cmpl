@@ -22,12 +22,12 @@
 //~ #define pdbg(__DBG, msg, ...) {fputfmt(stderr, "%s:%d:"__DBG": "msg"\n", __FILE__, __LINE__, ##__VA_ARGS__); fflush(stderr);}
 #define pdbg(__DBG, msg, ...) {fputfmt(stderr, "%s:%d:"__DBG":%s: "msg"\n", __FILE__, __LINE__, __func__, ##__VA_ARGS__); fflush(stderr);}
 
-#define trace(__LEV, msg, ...) //pdbg("trace", msg, ##__VA_ARGS__)
+#define trace(msg, ...) pdbg("trace", msg, ##__VA_ARGS__)
 #define debug(msg, ...) pdbg("debug", msg, ##__VA_ARGS__)
-#define fatal(msg, ...)  {pdbg("fatal", msg, ##__VA_ARGS__); /* exit(-2); */}
+#define fatal(msg, ...)  {pdbg("fatal", msg, ##__VA_ARGS__); abort(); }
 #define dieif(__EXP, msg, ...) {if (__EXP) fatal(msg, ##__VA_ARGS__)}
 
-#if 1
+#if 0
 #define error(__ENV, __LINE, msg, ...) perr(__ENV, -1, __FILE__, __LINE__, msg, ##__VA_ARGS__)
 #define warn(__ENV, __LEVEL, __FILE, __LINE, msg, ...) perr(__ENV, __LEVEL, __FILE__, __LINE__, msg, ##__VA_ARGS__)
 #define info(__ENV, __FILE, __LINE, msg, ...) perr(__ENV, 0, __FILE__, __LINE__, msg, ##__VA_ARGS__)
@@ -135,7 +135,7 @@ typedef struct list {			// linked list
 	//~ unsigned int	size;	// := ((char*)&node) - data;
 } *list, **strt;
 
-struct astn {				// ast astn
+struct astn {				// tree
 	uns32t		line;				// token on line / code offset
 	uns08t		kind;				// code: TYPE_ref, OPER_???, CNST_???
 	uns08t		cst2;				// cast to
@@ -172,7 +172,7 @@ struct astn {				// ast astn
 	symn		type;				// typeof() return type of operator ... base type of IDTF
 	astn		next;				// next statement, next preorder I think
 };
-struct symn {				// symbol
+struct symn {				// type
 	char*	file;
 	int		line;
 
@@ -186,10 +186,10 @@ struct symn {				// symbol
 	symn	args;		// REC fields / FUN args
 	symn	next;		// symbols on table/args
 
+	//~ uns08t	cast;		// casts to type(TYPE_(u32, i32, i64, f32, f64, p4x)).
 	uns08t	kind;		// TYPE_ref || TYPE_xxx
 	uns08t	call:1;		// function
 	//~ uns08t	load:1;		// indirect
-	//~ uns08t	algn;		// align
 
 	//~ uns08t	priv:1;		// private
 	//~ uns08t	stat:1;		// static
@@ -204,6 +204,7 @@ struct symn {				// symbol
 	uns16t	nest;		// declaration level
 	//~ uns32t	used;		//TODO: times used
 	astn	init;		// VAR init / FUN body
+	//~ uns32t	algn;		// align
 
 	// list(scoping)
 	symn	defs;		// symbols on stack/all
@@ -326,8 +327,8 @@ astn strnode(ccEnv s, char *v);
 astn fh8node(ccEnv s, uns64t v);
 
 symn newdefn(ccEnv s, int kind);
-symn installex(ccEnv s, int kind, const char* name, unsigned size, symn type, astn init);
-symn install(ccEnv s, int kind, const char* name, unsigned size);
+symn installex(ccEnv s, const char* name, int kind, unsigned size, symn type, astn init);
+symn install(ccEnv s, const char* name, int kind, int cast, unsigned size);
 symn declare(ccEnv s, int kind, astn tag, symn rtyp);
 symn lookup(ccEnv s, symn sym, astn ast, astn args);
 symn typecheck(ccEnv s, symn loc, astn ast);

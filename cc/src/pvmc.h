@@ -5,13 +5,17 @@
 #include <stdint.h>
 
 typedef int8_t   int08t;
-typedef int16_t  int16t;
-typedef int32_t  int32t;
-typedef int64_t  int64t;
 typedef uint8_t  uns08t;
+
+typedef int16_t  int16t;
 typedef uint16_t uns16t;
+
+typedef int32_t  int32t;
 typedef uint32_t uns32t;
+
+typedef int64_t  int64t;
 typedef uint64_t uns64t;
+
 typedef float    flt32t;
 typedef double   flt64t;
 
@@ -76,18 +80,17 @@ int exec(vmEnv, unsigned ss, dbgf dbg);
 // output
 void dump(state, char*, dumpMode, char* text);
 
-// use less these
+// Level 1 Functions: use less these
 ccEnv ccInit(state);
 ccEnv ccOpen(state, srcType, char* source);
-//~ int ccScan(ccEnv, srcType);		// scan the source file into ast
 int ccDone(state);
 
-vmEnv vmInit(state s);
+vmEnv vmInit(state);
 //~ int vmOpen(state, char* source);
 void vmInfo(FILE*, vmEnv s);
-int vmDone(state s);
+//~ int vmDone(state s);		// what should do this
 
-int libcall(state, void call(state), const char* proto);
+int libcall(state, int call(state), const char* proto);
 
 #define poparg(__ARGV, __TYPE) ((__TYPE*)((__ARGV)->argv += ((sizeof(__TYPE) | 3) & ~3)))[-1]
 #define setret(__TYPE, __ARGV, __VAL) (*((__TYPE*)(__ARGV->retv)) = (__TYPE)(__VAL))

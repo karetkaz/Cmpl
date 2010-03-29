@@ -1,4 +1,4 @@
-include incl/Makefile.wcc
+include incl/Makefile.gcc
 LIB=WLIB -q
 
 SRCDIR=

@@ -26,8 +26,8 @@ OPCDEF(opc_libc, 0x0d, 2, 0, +9, 1,	"libc")		//-lib call :)
 OPCDEF(opc_task, 0x0e, 4, 0, +0, 1,	"task")		// arg.3: [code:16][data:8] task, [?fork if (arg.code == 0)]
 OPCDEF(opc_sysc, 0x0f, 2, 0, +0, 1,	"sysc")		// arg.1: [type:8](exit, halt, wait?join?sync) (alloc, free, copy, init) ...
 //~ stk ========================================================================
-OPCDEF(opc_ldc1, 0x10, 2, 0, +1, 1,	"ldc.b08")	// push(arg.1);			:2[…, a, b, c => […, a, b, c, 2;
-OPCDEF(opc_ldc2, 0x11, 3, 0, +1, 1,	"ldc.b16")	// push(arg.2);			:2[…, a, b, c => […, a, b, c, 2;
+OPCDEF(opc_ldc1, 0x10, 2, 0, +1, 1,	"ldc.i08")	// push(arg.1);			:2[…, a, b, c => […, a, b, c, 2;
+OPCDEF(opc_ldc2, 0x11, 3, 0, +1, 1,	"ldc.i16")	// push(arg.2);			:2[…, a, b, c => […, a, b, c, 2;
 OPCDEF(opc_ldc4, 0x12, 5, 0, +1, 1,	"ldc.b32")	// push(arg.4);			:2[…, a, b, c => […, a, b, c, 2;
 OPCDEF(opc_ldc8, 0x13, 9, 0, +2, 1,	"ldc.b64")	// push(arg.8);			:2[…, a, b, c => […, a, b, c, 2;
 OPCDEF(opc_dup1, 0x14, 2, 9, +1, 1,	"dup.x1")	// push(sp(n));			:2[…, a, b, c => […, a, b, c, a;
@@ -43,11 +43,11 @@ OPCDEF(opc_ldcr, 0x1d, 5, 0, +1, 1,	"ldc.ref")	// TEMP/dup.4.swz
 OPCDEF(opc_ldcf, 0x1e, 5, 0, +1, 1,	"ldc.f32")	// TEMP/set.4.msk
 OPCDEF(opc_ldcF, 0x1f, 9, 0, +2, 1,	"ldc.f64")	// TEMP/?
 //~ mem ========================================================================
-OPCDEF(opc_ldi1, 0x20, 1, 1, +0, 1,	"ldi.8")	// copy(sp, sp(0) 1);		[…, a, b, c => […, a, b, *c;
-OPCDEF(opc_ldi2, 0x21, 1, 1, +0, 1,	"ldi.16")	// copy(sp, sp(0) 2);		[…, a, b, c => […, a, b, *c;
-OPCDEF(opc_ldi4, 0x22, 1, 1, +0, 1,	"ldi.32")	// copy(sp, sp(0) 4);		[…, a, b, c => […, a, b, *c;
-OPCDEF(opc_ldi8, 0x23, 1, 1, +1, 1,	"ldi.64")	// copy(sp, sp(0) 8);		[…, a, b, c => […, a, b, *c:1, *c:2;
-OPCDEF(opc_ldiq, 0x24, 1, 1, +3, 1,	"ldi.128")	// copy(sp, sp(0) 16);		[…, a, b, c => […, a, b, *c;
+OPCDEF(opc_ldi1, 0x20, 1, 1, +0, 1,	"ldi.8")	// copy(sp, sp(0) 1);			[…, a, b, c => […, a, b, *c;
+OPCDEF(opc_ldi2, 0x21, 1, 1, +0, 1,	"ldi.16")	// copy(sp, sp(0) 2);			[…, a, b, c => […, a, b, *c;
+OPCDEF(opc_ldi4, 0x22, 1, 1, +0, 1,	"ldi.32")	// copy(sp, sp(0) 4);			[…, a, b, c => […, a, b, *c;
+OPCDEF(opc_ldi8, 0x23, 1, 1, +1, 1,	"ldi.64")	// copy(sp, sp(0) 8);			[…, a, b, c => […, a, b, *c:1, *c:2;
+OPCDEF(opc_ldiq, 0x24, 1, 1, +3, 1,	"ldi.128")	// copy(sp, sp(0) 16);			[…, a, b, c => […, a, b, *c;
 OPCDEF(opc_sti1, 0x25, 1, 2, -2, 1,	"sti.8")	// copy(sp(1) sp(0) 1);pop2;	[…, a, b, c => […, a
 OPCDEF(opc_sti2, 0x26, 1, 2, -2, 1,	"sti.16")	// copy(sp(1) sp(0) 2);pop2;	[…, a, b, c => […, a
 OPCDEF(opc_sti4, 0x27, 1, 2, -2, 1,	"sti.32")	// copy(sp(1) sp(0) 4);pop2;	[…, a, b, c => […, a
@@ -65,8 +65,8 @@ OPCDEF(b32___1,  0x31, 0, 2, -1, 1,	"b32.adc")	// sp(1) += sp(0); pop;
 OPCDEF(b32___2,  0x32, 0, 2, -1, 1,	"b32.sbb")	// sp(1) -= sp(0); pop;
 OPCDEF(u32_mul,  0x33, 1, 2, -1, 1,	"u32.mul")	// sp(1) *= sp(0); pop;
 OPCDEF(u32_div,  0x34, 1, 2, -1, 1,	"u32.div")	// sp(1) /= sp(0); pop;
-OPCDEF(u32_mad,  0x35, 1, 3, -2, 1,	"u32.mad")	// mul; add; //sp(2) += sp(1) * sp(0); pop2;	[..., a, b, c => [..., a + (b * c);
-OPCDEF(b32___6,  0x36, 2, 1, -0, 1,	"bit.")		// sp(0) = {any, all, ...}[opc.arg.i1](sp(0));
+OPCDEF(u32_mod,  0x35, 1, 2, -1, 1,	"u32.mod")	// sp(1) %= sp(0); pop;
+OPCDEF(u32_mad,  0x36, 1, 3, -2, 1,	"u32.mad")	// mul; add;
 OPCDEF(b32___7,  0x37, 1, 1, -0, 1,	"b32.")		// 
 OPCDEF(u32_clt,  0x38, 1, 2, -1, 1,	"u32.clt")	// sp(1).b32 = sp(1).u32 < sp(0).u32; pop;
 OPCDEF(u32_cgt,  0x39, 1, 2, -1, 1,	"u32.cgt")	// sp(1).b32 = sp(1).u32 > sp(0).u32; pop;
@@ -370,7 +370,6 @@ opc_sxt argc = 1: [offs:3][size:5]
 //~ */
 #undef OPCDEF
 #endif
-
 #ifdef NEXT
 //~ #define NEXT(__IP, __CHK, __SP) {checkstack(__CHK); ip += _IP; sp += _SP;}
 
@@ -666,12 +665,12 @@ case u32_div: NEXT(1, 2, -1) {
 	SP(1, u4) /= SP(0, u4);
 #endif
 } break;
-/*case u32_mod: NEXT(1, 2, -1) {
+case u32_mod: NEXT(1, 2, -1) {
 #ifdef EXEC
 	STOP(error_div, SP(0, u4) == 0);
 	SP(1, u4) %= SP(0, u4);
 #endif
-} break;*/
+} break;
 case u32_mad: NEXT(1, 3, -2) {
 #ifdef EXEC
 	SP(2, u4) += SP(1, u4) * SP(0, u4);

@@ -1,14 +1,7 @@
 //~ src/ccvm.c
-//~ ./main ="3 + 3 -4 + -2"
 //~ src/pvmc.h
+//~ ./main ="3 + 3 -4 + -2"
 
-/* HEX-Editors:
-	Hackman Suite
-	http://www.fairdell.com/hextemplate/
-	http://www.1000files.com/free/hex-editor.html
-	http://www.x-ways.net/winhex/templates/index.html
-
-**/
 /* TODOS:
  * static if (true) does not enter new scope
  ? static if else part
@@ -39,43 +32,15 @@
  * 
 **/
 //~ define fact(int64 n) = (n * fact(n - 1));
+//~ flt32 a = -math.nan;
+//~ /*
+/*enum vec4F: vec4f {
+	X = vec4f(1, 0, 0, 1);
+	Y = vec4f(0, 1, 0, 1);
+	Z = vec4f(0, 0, 1, 1);
+}*/
+//~ vec4f a = int.X;
 /*
-static if (0) {
-	int a = 1 + 2 * 3 + 4;
-	int c = 1 * 2 + 3 * 4;
-}
-static if (0) {
-
-	define usefloat = 1;
-
-	static if (usefloat) {
-		flt64 bcc;
-	}
-
-	static if (!usefloat) {
-		int64 bcc;
-	}
-
-	bcc = 99;
-}
-//~ else int static_if_else_part = 1;
-
-//~ define scalar flt32; struct xyz:4{...}
-
-enum M: flt64 {
-	E		= 2.71828182845904523536028747135266249775724709369995957496696763;	// A001113
-	Pi		= 3.14159265358979323846264338327950288419716939937510582097494459;	// A000796
-	Phi		= 1.61803398874989484820458683436563811772030917980576286213544862;	// A001622
-	Sqrt2	= 1.41421356237309504880168872420969807856967187537694807317667974;	// A002193
-	SqrtE	= 1.64872127070012814684865078781416357165377610071014801157507931;	// A019774
-	SqrtPi	= 1.77245385090551602729816748334114518279754945612238712821380779;	// A002161
-	SqrtPhi	= 1.27201964951406896425242246173749149171560804184009624861664038;	// A139339
-	Ln2		= 0.693147180559945309417232121458176568075500134360255254120680009;	// A002162
-	Log2E	= 1. / Ln2;
-	Ln10	= 2.30258509299404568401799145468436420760110148862877297603332790;	// A002392
-	Log10E	= 1. / Ln10;
-}
-
 enum alma2:int8 {
 	//~ X = xyz(1, 0, 0);
 	//~ Y = xyz(0, 1, 0);
@@ -87,54 +52,28 @@ enum alma2:int8 {
 
 if (.9) {
 	int a = 0.8;
-	
 }
 //~ double a1 = M.Ln2;
 //~ double a2 = M.Log2E;
 
-//~ define add(xx flt32 x, xx flt32 y) = emit(f32.add, f32(y), f32(x));
-//~ operator .add(xx flt32 x, xx flt32 y) = emit(f32.add, f32(y), f32(x));
+//~ define  .add(flt32 x, flt32 y) = emit(f32.add, f32(y), f32(x));
+//~ operator add(flt32 x, flt32 y) = emit(f32.add, f32(y), f32(x));
 
-//~ operator .clt(string x, string y) = bool(strcmp(x, y) < 0);
-//~ operator .cgt(string x, string y) = bool(strcmp(x, y) > 0);
-//~ operator .cle(string x, string y) = bool(strcmp(x, y) <= 0);
-//~ operator .cge(string x, string y) = bool(strcmp(x, y) >= 0);
-//~ operator .ceq(string x, string y) = bool(strcmp(x, y) == 0);
-//~ operator .cne(string x, string y) = bool(strcmp(x, y) != 0);
-//~ operator .idx(string x, string y) = bool(strcmp(x, y) != 0);
+//~ operator clt(string x, string y) = bool(strcmp(x, y) < 0);
+//~ operator cgt(string x, string y) = bool(strcmp(x, y) > 0);
+//~ operator cle(string x, string y) = bool(strcmp(x, y) <= 0);
+//~ operator cge(string x, string y) = bool(strcmp(x, y) >= 0);
+//~ operator ceq(string x, string y) = bool(strcmp(x, y) == 0);
+//~ operator cne(string x, string y) = bool(strcmp(x, y) != 0);
 //~ */
 
-//~ /* Emit Test K
-//! int32 a = emit(void, f32(3.14));
-//! int32 st[2] = emit(void);			// see the top of stack as int[2]
-//! see program -emit
-
-/+	Basic emits 1
-define shl(int32 value, int count) = emit(i32.shl, i32(count), i32(value));
-define sar(int32 value, int count) = emit(i32.sar, i32(count), i32(value));
-define shr(int32 value, int count) = emit(i32.shr, i32(count), i32(value));
-
-define add(flt32 a, flt32 b) = emit(f32.add, f32(b), f32(a));		// := a + b
-define sub(flt32 a, flt32 b) = emit(f32.sub, f32(b), f32(a));
-define mul(flt32 a, flt32 b) = emit(f32.mul, f32(b), f32(a));
-define div(flt32 a, flt32 b) = emit(f32.div, f32(b), f32(a));
-define mod(flt32 a, flt32 b) = emit(f32.mod, f32(b), f32(a));
-
-define mad(flt32 a, flt32 b, flt32 c) = emit(f32.add, f32(c), f32(emit(f32.mul, f32(b), f32(a))));
-define mad(flt64 a, flt64 b, flt64 c) = emit(f64.add, f64(c), f64(emit(f64.mul, f64(b), f64(a))));
-define mad(int32 size, int32 index, int32 offset) = emit(u32.mad, i32(size), i32(index), i32(offset));
-//~ define mad(flt32 a, flt32 b, flt32 c) = (a * b + c);
-
-flt32 X1 = mad(2, 3, 4000);
-flt32 X2 = mad(float(2), float(3), float(4000));
-flt32 X3 = mad(2., 3., 4000.);
-//~ flt32 X2 = emit(u32.mad, i32(4), i32(3), i32(2));
-//~ flt32 X3 = emit(f32.add, f32(3), f32.mul, f32(2), f32(1));
-//~ flt32 X4 = emit(f32.add, f32(emit(f32.mul, f32(4), f32(3), f32(2))));
-
-//~ int a2 = shr(-1, 8);
-//~ +/
-/+	Basic emits
+/*enum Test {
+	Emit = 8;
+	Libc = 0;
+	Type = 0;
+} // */
+/*static if (Test.Emit) {
+static if (Test.Emit & 0x01) {
 //~ flt32 res1 = emit(f32.div, f32(2), f32(math.pi));	// ok
 //~ flt64 res2 = emit(f64.neg, f64(math.pi));			// ok
 //~ flt32 res3 = emit(void, f32(math.pi));				// ok
@@ -146,41 +85,31 @@ flt32 f32 = emit(void);
 int64 i64 = emit(void);
 flt64 f64 = emit(void);
 
-//~ +/
-//~ /+	vector 4xf32 test
+}
+static if (Test.Emit & 0x02) {
+define shl(int32 value, int count) = emit(i32.shl, i32(count), i32(value));
+define shr(int32 value, int count) = emit(i32.shr, i32(count), i32(value));
+define shr(uns32 value, int count) = emit(u32.shr, i32(count), i32(value));
 
-vec4f v1 = emit(void, f32(11), f32(12), f32(13), f32(14));
-//~ vec4f v2 = emit(void, f32(21), f32(22), f32(23), f32(24));
+define add(flt32 a, flt32 b) = emit(f32.add, f32(b), f32(a));		// := a + b
+define sub(flt32 a, flt32 b) = emit(f32.sub, f32(b), f32(a));
+define mul(flt32 a, flt32 b) = emit(f32.mul, f32(b), f32(a));
+define div(flt32 a, flt32 b) = emit(f32.div, f32(b), f32(a));
+define mod(flt32 a, flt32 b) = emit(f32.mod, f32(b), f32(a));
 
-//~ emit(swz.xywz);
-//~ emit(v4f.add, f32(v1.x), f32(v1.y), f32(v1.z), f32(v1.w));
-//~ emit(v4f.add);
-//~ emit(v4f.dp3);
-//~ 1+emit(v4f.dp3);
+define mad(flt32 a, flt32 b, flt32 c) = emit(f32.add, f32(c), f32(emit(f32.mul, f32(b), f32(a))));
+define mad(flt64 a, flt64 b, flt64 c) = emit(f64.add, f64(c), f64(emit(f64.mul, f64(b), f64(a))));
+define mad(int32 size, int32 index, int32 offset) = emit(u32.mad, i32(size), i32(index), i32(offset));
 
-//~ vec4f fv = emit(void);
-flt32 sp[4] = emit(void);
+int a1 = shr(uns32(-1), 8);
+int a2 = shr(int32(-1), 8);
 
-//~ flt32 x0 = fv.x;
-//~ flt32 y0 = fv.y;
-//~ flt32 z0 = fv.z;
-//~ flt32 w0 = fv.w;
-//~ flt32 x = sp[0];
-//~ flt32 y = sp[1];
-//~ flt32 z = sp[2];
-//~ flt32 w = sp[3];
-for (int i = 0; i < 4; i += 1)
-	sp[i] = i < 0;
+//~ flt32 X1 = mad(2, 3, 4000);
+flt32 X2 = mad(float(2), float(3), float(4000));
+flt32 X3 = mad(2., 3., 4000.);
 
-//~ int32 i32 = emit(void);
-//~ flt32 f32 = emit(void);
-//~ int64 i64 = emit(void);
-//~ flt64 f64 = emit(void);
-
-//~ flt32 stop[4] = new flt32[4];
-//~ f64x2 res5 = emit(void, f64(1), f64(2));
-//~ +/
-/+	Complex mul
+}
+static if (Test.Emit & 0x04) {
 define a_re = 3.;
 define a_im = 4.;
 define b_re = 2.;
@@ -225,18 +154,51 @@ static if (times2exec > 0) {
 		}
 	}
 }
+}
+static if (Test.Emit & 0x08) {
 
-//~ +/
+vec4f v1 = emit(void, f32(11), f32(12), f32(13), f32(14));
+vec4f v2 = emit(void, f32(21), f32(22), f32(23), f32(24));
 
-//~ */
-/* Libc Test K
-int32 var = 0x00001080;
+//~ emit(swz.xywz);
+//~ emit(v4f.add, f32(v1.x), f32(v1.y), f32(v1.z), f32(v1.w));
+//~ emit(v4f.add);
+//~ emit(v4f.dp3);
+//~ 1+emit(v4f.dp3);
+
+vec4f fv = emit(void);
+flt32 sp[4] = emit(void);
+
+//~ flt32 x0 = fv.x;
+//~ flt32 y0 = fv.y;
+//~ flt32 z0 = fv.z;
+//~ flt32 w0 = fv.w;
+//~ flt32 x = sp[0];
+//~ flt32 y = sp[1];
+//~ flt32 z = sp[2];
+//~ flt32 w = sp[3];
+//~ for (int i = 0; i < 4; i += 1)
+	//~ sp[i] = i < 0;
+
+//~ int32 i32 = emit(void);
+//~ flt32 f32 = emit(void);
+//~ int64 i64 = emit(void);
+//~ flt64 f64 = emit(void);
+
+//~ flt32 stop[] = new flt32[4];
+//~ f64x2 res5 = emit(void, f64(1), f64(2));
+
+}
+} // */
+/*static if (Test.Libc) {
+int32 var = 0x00001080;		// input
 int32 res = -1;
-/+	// public static int bsr(int i)
-int32 lib = bsr(var);
+static if (Test.Libc == 1) {
+int32 BSR = bsr(var);
 if (var != 0) {
 	uns32 ans = 0;
 	uns32 x = var;
+	//~ if (x & 0xffffffff00000000) { ans += 32; x >>= 32; }
 	if (x & 0xffff0000) { ans += 16; x >>= 16; }
 	if (x & 0x0000ff00) { ans +=  8; x >>=  8; }
 	if (x & 0x000000f0) { ans +=  4; x >>=  4; }
@@ -244,9 +206,9 @@ if (var != 0) {
 	if (x & 0x00000002) { ans +=  1; }
 	res = ans;
 }
-//~+/
-/+	// public static int hi1(int i)
-int32 lib = bhi(var);
+}
+static if (Test.Libc == 2) {
+int32 BHI = bhi(var);
 if (var) {
 	uns32 u = var;
 	u |= u >> 1;
@@ -256,12 +218,9 @@ if (var) {
 	u |= u >> 16;
 	res = u - (u >> 1);
 }
-//~+/
-/+	// public static int lo1(int i)
-	res = var & -var;
-//~+/
-/+	// public static int bitswap(uns i)
-int32 lib = swp(var);
+}
+static if (Test.Libc == 3) {
+int32 SWP = swp(var);
 if (var) {
 	uns32 x = var;
 	x = ((x >> 1) & 0x55555555) | ((x & 0x55555555) << 1);
@@ -271,7 +230,39 @@ if (var) {
 	res = (x >> 16) | (x << 16);
 }
 //~+/
-//~*/
+}
+} // */
+/*static if (Test.Type) {
+static if (Test.Type == 1) {
+enum M: flt64 {
+	E		= 2.71828182845904523536028747135266249775724709369995957496696763;	// A001113
+	Pi		= 3.14159265358979323846264338327950288419716939937510582097494459;	// A000796
+	Phi		= 1.61803398874989484820458683436563811772030917980576286213544862;	// A001622
+	Sqrt2	= 1.41421356237309504880168872420969807856967187537694807317667974;	// A002193
+	SqrtE	= 1.64872127070012814684865078781416357165377610071014801157507931;	// A019774
+	SqrtPi	= 1.77245385090551602729816748334114518279754945612238712821380779;	// A002161
+	SqrtPhi	= 1.27201964951406896425242246173749149171560804184009624861664038;	// A139339
+	Ln2		= 0.693147180559945309417232121458176568075500134360255254120680009;	// A002162
+	Log2E	= 1. / Ln2;
+	Ln10	= 2.30258509299404568401799145468436420760110148862877297603332790;	// A002392
+	Log10E	= 1. / Ln10;
+	Nan		= 0. / 0;
+	Inf		= 1. / 0;
+	//~ define isNan(flt64 a) = bool(a == a);
+	//~ define isNan(flt32 a) = bool(a == a);
+}
+
+flt64 a = math.pi;
+flt64 b = M.Pi;
+
+}
+static if (Test.Type == 2) {
+}
+static if (Test.Type == 3) {
+}
+static if (Test.Type == 4) {
+}
+} // */
 /* Call Test X
 /+	Basic functions
 //~ define sqr(double a) = double(a * a);
@@ -410,7 +401,6 @@ flt32 f322 = f64;
 
 //~ define v4f32(flt32 xyz) = emit(v4f, f32(xyz), f32(xyz), f32(xyz), f32(xyz));
 //~ define v4f32(flt32 x, flt32 y, flt32 z) = emit(v4f, f32(x), f32(y), f32(z), f32(1));
-//~ define v4f32(flt32 x, flt32 y, flt32 z, flt32 w) = emit(v4f, f32(x), f32(y), f32(z), f32(w));
 
 // class
 v4f32 operator(flt32 x, flt32 y, flt32 z, flt32 w) = emit(v4f, f32(x), f32(y), f32(z), f32(w));
@@ -628,6 +618,22 @@ define UnBoxType(TypeInfo obj) = TypeBox(obj, obj.class);
 //~ emit(void, i32(0xffffffff), i32(0x7fffffff));
 //~ */
 
+/*
+int64 var = 0x00001080;		// input
+int64 res = -1;
+int64 BSR = bsr(var);
+if (var != 0) {
+	int64 ans = 0;
+	int64 x = var;
+	if (x & 0xffffffff00000000) { ans += 32; x >>= 32; }
+	if (x & 0xffff0000) { ans += 16; x >>= 16; }
+	if (x & 0x0000ff00) { ans +=  8; x >>=  8; }
+	if (x & 0x000000f0) { ans +=  4; x >>=  4; }
+	if (x & 0x0000000c) { ans +=  2; x >>=  2; }
+	if (x & 0x00000002) { ans +=  1; }
+	res = ans;
+}//*/
+
 /* try some stupid things
 //~ define float flt64;
 //~ define double flt32;
@@ -636,12 +642,15 @@ double res = 31.749 + .35;
 //~ double res = 29.700 + .34;
 // */
 
-/* struct and arrays
-struct intabc {
-	int32 a;		//!@format(%d)
-	int32 b;		//!@format(%d)
-	int32 c;		//!@format(%d)
-}// * /
+//~ /* struct and arrays
+struct intabc: 8 {
+	int8  X;		//!%?08x
+	int8  Y;		//!%?08x
+	int8  Z;		//!%?08x
+	int32 a;		//!%?08x
+	int32 b;		//!%08x
+	int32 c;		//!%08x
+}// */
 //~ int intABC(int32 a, int32 b, int32 c) ;
 //~ emit(void, i32(0));
 //~ emit(void, f32(math.Snan));
@@ -650,13 +659,17 @@ struct intabc {
 //~ flt32 d[3] = emit(void);
 //~ d[2] = 9;
 //~ intabc alma;// = emit(void, i32(7), i32(1), i32(2));
-intabc alma;
-alma.a = 9;
+
+//~ intabc alma;
+//~ alma.a = 9;
+//~ int32 c[3] = emit(void);
+//~ int i = 2;			//!%d
+
+//~ int j;
 // */
 
 /* calc e
-//~ define double float;
-define eps = 1e-50;
+define eps = 1e-100;
 double res = 1;
 double tmp = 1;
 for (int i = 1; tmp > eps; i += 1) {
@@ -670,25 +683,6 @@ for (int i = 1; i <= n; i += 1)
 	res *= i;
 
 // */
-/* static test
-enum use {
-	none = 0;
-	_int = 1;
-	_flt = 2;
-};
-define u = use._flt;
-
-//~ static if (u) ;		// is u const ?
-
-static if (u == use._int) {
-	int32 a = 9;
-}
-static if (u == use._flt) {
-	flt32 a = 9;
-}
-
-int64 a2 = a;//a;
-//~ */
 
 /* test if:
 int i = 3;
@@ -735,12 +729,6 @@ if (1)
 else
 	{{;};;{;}}
 //*/
-/* test if: isNan(val)
-double isNan(flt32 x) = bool(x != x);
-flt64 val = math.nan;
-bool isNan1 = isNan(val);
-//~ bool isNan2 = val != val;
-// */
 
 /*+-
 struct vec4f {

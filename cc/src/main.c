@@ -310,12 +310,12 @@ int program(int argc, char *argv[]) {
 			fputfmt(stderr, "can not open file `%s`\n", srcf);
 			return -1;
 		}
-		debug("compiler.init:%.2F KBytes", (s->cc->_ptr - s->_mem) / 1024.);
+		//~ debug("compiler.init:%.2F KBytes", (s->cc->_ptr - s->_mem) / 1024.);
 
 		if (compile(s, warn) != 0) {
 			return s->errc;
 		}
-		debug("compiler.scan:%.2F KBytes", (s->cc->_ptr - s->_mem) / 1024.);
+		//~ debug("compiler.scan:%.2F KBytes", (s->cc->_ptr - s->_mem) / 1024.);
 
 		if (gencode(s, opti) != 0) {
 			return s->errc;
@@ -376,19 +376,16 @@ int main(int argc, char *argv[]) {
 			//~ "-h", "-s", "dup.x1", "set.x1",
 			//~ "-api",
 			"-c",		// compile command
-			//~ "-xd",		// execute & show symbols command
+			"-xd",		// execute & show symbols command
 			"../test.cvx",
 		};
 		argc = sizeof(args) / sizeof(*args);
 		argv = args;
 	}
-	
-	//~ static char x[1] = {0};
 
 	setbuf(stdout, NULL);
 	setbuf(stderr, NULL);
-	//~ fputfmt(stdout, "%d", rehash(x, sizeof(x)));
-	//~ return 0;
 	return program(argc, argv);
+	//~ fatal("FixMe!");
 	//~ return vmTest();
 }
