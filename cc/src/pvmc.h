@@ -25,7 +25,7 @@ typedef struct ccEnv *ccEnv;
 typedef struct vmEnv *vmEnv;
 
 typedef struct state {
-	FILE*	logf;			// log file (errors + warnings)
+	FILE*	logf;			// log file
 	int		errc;			// error count
 
 	void* data;		// user data
@@ -34,6 +34,7 @@ typedef struct state {
 
 	ccEnv cc;		// compiler enviroment
 	vmEnv vm;		// execution enviroment
+
 	long _cnt;
 	char *_ptr;
 	char _mem[];
@@ -41,19 +42,14 @@ typedef struct state {
 typedef enum {
 	srcFile = 0x10,		// file / buffer
 
-	//~ srcAuto = -1,		// first token: 'unit' ...
-	//~ srcUnit = 0x01,		// unit / script (ask the file what is it ? (: first tokens : 'package' 'name'))
-	//~ srcScript =  0,		// !srcUnit
-	//~ srcDefs, srcMake;
+	//~ srcAuto = -1,		// first token ?
+	//~ srcUnit = 0x01,		// unit / script
+	// unit / script (ask the file what is it ? (: first tokens : 'package' 'name'))
 
-	//~ skipCgen = 0x02,		// gen Code
+	//~ srcDefs, srcMake;	???
 
 	// dump()
 	//~ dump_bin = 0x0000100,
-	//~ outTags = 0x0000200,
-	//~ outDasm = 0x0000300,
-	//~ outCode = 0x0000300,
-	//~ outMask = 0x0000f00,
 	dump_sym = 0x0000200,
 	dump_asm = 0x0000300,
 	dump_ast = 0x0000400,

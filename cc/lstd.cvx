@@ -7,15 +7,22 @@ scope before every input file
 define UnitTest = true;
 
 enum Operators {
+	Neg = 0;
 	Add = 1;
 	Sub = 0;
 	Mul = 0;
 	Div = 0;
 	Mod = 0;	// Rem = Mod;
+	//~ cmt(uns32 b) = emit(u32.cmt, u32(b));
+	//~ and(uns32 a, uns32 b) = emit(u32.and, i32(b), i32(a));
+	//~ or(uns32 a, uns32 b) = emit( u32.or, i32(b), i32(a));
+	//~ xor(uns32 a, uns32 b) = emit(u32.xor, i32(b), i32(a));
+	//~ shl(uns32 a, int32 b) = emit(u32.shl, i32(b), i32(a));
+	//~ shr(uns32 a, int32 b) = emit(u32.shr, i32(b), i32(a));
 }
 
 static if (Operators.Add) {
-define .adD(uns32 a, uns32 b) = emit(i32.add, i32(b), i32(a));
+define .add(uns32 a, uns32 b) = emit(i32.add, i32(b), i32(a));
 define .add(uns32 a, int32 b) = emit(i32.add, i32(b), i32(a));
 define .add(uns32 a, int64 b) = emit(i64.add, i64(b), i64(a));
 define .add(uns32 a, flt32 b) = emit(f32.add, f32(b), f32(a));
@@ -48,6 +55,8 @@ static if (UnitTest) {
 	int a = 2 + 3;
 }
 }
+
+//~ define print(string x...) = print(x)
 
 /*
 static if (0) {	// ops

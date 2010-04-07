@@ -7,11 +7,11 @@ OBJDIR=
 #~ ../tmp/
 BINDIR=../
 OBJS=\
+	$(OBJDIR)code.o\
 	$(OBJDIR)clog.o\
 	$(OBJDIR)scan.o\
 	$(OBJDIR)tree.o\
 	$(OBJDIR)type.o\
-	$(OBJDIR)code.o\
 	$(OBJDIR)ccvm.o
 	#~ $(OBJDIR)main.o
 

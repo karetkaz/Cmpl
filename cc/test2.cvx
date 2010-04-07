@@ -1,6 +1,6 @@
 for (int i = 0; i < 20; i += 1) {int i2 = 9;}	// OK
 //~ for (int i = 0; i < 20; i += 1) {int i = 9;}	// ERR: i redefined
-//~ for (int i = 0; i < 20; i += 1) int i2 = 9;		// ERR: i unexpected
+//~ for (int i = 0; i < 20; i += 1) int i2 = 9;		// ERR: i2 unexpected
 
 static if (1) {int a = 99;}
 

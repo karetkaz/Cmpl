@@ -373,8 +373,8 @@ opc_sxt argc = 1: [offs:3][size:5]
 #ifdef NEXT
 //~ #define NEXT(__IP, __CHK, __SP) {checkstack(__CHK); ip += _IP; sp += _SP;}
 
-#define SP(__POS, __TYP) (((stkval*)(((char*)st)+(4*(__POS))))->__TYP)
-#define MP(__POS, __TYP) (((stkval*)(((char*)mp)+(1*(__POS))))->__TYP)
+#define SP(__POS, __TYP) (((stkval*)((stkptr)sp + (__POS)))->__TYP)
+#define MP(__POS, __TYP) (((stkval*)((memptr)mp + (__POS)))->__TYP)
 
 // { switch (ip->opc)------------------------------------------------------------
 //{ 0x0?: SYS		// System
@@ -412,7 +412,7 @@ case opc_not:  NEXT(1, 1, -0) {
 case opc_ldsp: NEXT(4, 0, +1) {
 #ifdef EXEC
 	STOP(error_ovf, pu->sp < pu->bp);
-	SP(-1, i4) = st - mp + ip->rel;
+	SP(-1, i4) = (memptr)sp - mp + ip->rel;
 #endif
 } break;
 case opc_jmpi: NEXT(1, 1, -1) {
@@ -430,7 +430,7 @@ case opc_task: NEXT(4, 0, -0) {
 } break;
 case opc_sysc: NEXT(2, 0, -0) {
 #ifdef EXEC
-	switch (ip->arg.u1) {
+	switch (ip->idx) {
 		//~ case: exit, halt, wait, join, sync, trap), (alloc, free), (copy, init)
 		default: STOP(error_opc, 1);
 		case 0x00: {		// exit
@@ -446,8 +446,8 @@ case opc_sysc: NEXT(2, 0, -0) {
 } break;
 case opc_libc: NEXT(2, libcfnc[ip->idx].chk, -libcfnc[ip->idx].pop) {
 #ifdef EXEC
-	vm->s->argv = (char *)st;
-	vm->s->retv = st + libcfnc[ip->idx].pop * 4;
+	vm->s->argv = (char *)sp;
+	vm->s->retv = sp + libcfnc[ip->idx].pop * 4;
 	libcfnc[ip->idx].call(vm->s);
 #endif
 } break;
@@ -496,7 +496,7 @@ case opc_dup1: NEXT(2, ip->idx, +1) {
 case opc_dup2: NEXT(2, ip->idx, +2) {
 #ifdef EXEC
 	STOP(error_ovf, pu->sp < pu->bp);
-	SP(-2, u8) = SP(ip->idx, u8);
+	SP(-2, i8) = SP(ip->idx, i8);
 #endif
 } break;
 case opc_dup4: NEXT(2, ip->idx, +4) {
@@ -516,7 +516,7 @@ case opc_set1: NEXT(2, ip->idx, -1) {
 } break;
 case opc_set2: NEXT(2, ip->idx, -2) {
 #ifdef EXEC
-	SP(ip->idx, u8) = SP(0, u8);
+	SP(ip->idx, i8) = SP(0, i8);
 #endif
 } break;
 case opc_set4: NEXT(2, ip->idx, -4) {
@@ -548,21 +548,59 @@ case opc_ldz4: NEXT(1, 0, +4) {
 } break;
 //}
 //{ 0x2?: MEM		// Memory
+case opc_ldi1: NEXT(1, 1, -0) {
+#ifdef EXEC
+	//~ STOP(error_seg, SP(0, i4) < mp);
+	//~ STOP(error_seg, SP(0, i4) > mp + ms);
+	SP(0, i4) = MP(SP(0, i4), i1);
+#endif
+} break;
+case opc_ldi2: NEXT(1, 1, -0) {
+#ifdef EXEC
+	//~ STOP(error_seg, SP(0, i4) < mp);
+	//~ STOP(error_seg, SP(0, i4) > mp + ms);
+	SP(0, i4) = MP(SP(0, i4), i2);
+#endif
+} break;
 case opc_ldi4: NEXT(1, 1, -0) {
 #ifdef EXEC
-	//~ STOP(error_seg, SP(0, i4) > mp + ms);
 	//~ STOP(error_seg, SP(0, i4) < mp);
+	//~ STOP(error_seg, SP(0, i4) > mp + ms);
 	SP(0, i4) = MP(SP(0, i4), i4);
+#endif
+} break;
+case opc_ldi8: NEXT(1, 1, +1) {
+#ifdef EXEC
+	STOP(error_ovf, pu->sp < pu->bp);
+	//~ STOP(error_seg, SP(0, i4) < mp);
+	//~ STOP(error_seg, SP(0, i4) > mp + ms);
+	SP(-1, i8) = MP(SP(0, i4), i8);
+#endif
+} break;
+case opc_sti1: NEXT(1, 2, -2) {
+#ifdef EXEC
+	STOP(error_mem, mp + SP(0, i4) > (memptr)st);
+	MP(SP(0, i4), i1) = SP(1, i4);
+#endif
+} break;
+case opc_sti2: NEXT(1, 2, -2) {
+#ifdef EXEC
+	//~ STOP(error_seg, SP(0, i4) < mp);
+	//~ STOP(error_seg, SP(0, i4) > mp + ms);
+	MP(SP(0, i4), i2) = SP(1, i4);
 #endif
 } break;
 case opc_sti4: NEXT(1, 2, -2) {
 #ifdef EXEC
+	//~ STOP(error_seg, SP(0, i4) > mp + ms);
 	MP(SP(0, i4), i4) = SP(1, i4);
 #endif
 } break;
 case opc_sti8: NEXT(1, 3, -3) {
 #ifdef EXEC
-	MP(SP(0, i8), i8) = SP(1, i8);
+	//~ STOP(error_seg, (unsigned)(SP(0, i4) - ds) < ms);
+	//~ STOP(error_seg, SP(0, i4) > mp + ms);
+	MP(SP(0, i4), i8) = SP(1, i8);
 #endif
 } break;
 //}*/
@@ -1142,15 +1180,15 @@ case v2d_div: NEXT(1, 8, -4) {
 } break;
 case p4d_swz: NEXT(2, 4, -0) {
 #ifdef EXEC
-	uns32t swz = ip->arg.u1;
-	uns32t d0 = SP((swz >> 0) & 3, u4);
-	uns32t d1 = SP((swz >> 2) & 3, u4);
-	uns32t d2 = SP((swz >> 4) & 3, u4);
-	uns32t d3 = SP((swz >> 6) & 3, u4);
-	SP(0, u4) = d0;
-	SP(1, u4) = d1;
-	SP(2, u4) = d2;
-	SP(3, u4) = d3;
+	uns32t swz = ip->idx;
+	uns32t d0 = SP((swz >> 0) & 3, i4);
+	uns32t d1 = SP((swz >> 2) & 3, i4);
+	uns32t d2 = SP((swz >> 4) & 3, i4);
+	uns32t d3 = SP((swz >> 6) & 3, i4);
+	SP(0, i4) = d0;
+	SP(1, i4) = d1;
+	SP(2, i4) = d2;
+	SP(3, i4) = d3;
 #endif
 } break;
 case v2d_ceq: NEXT(1, 8, -7) {

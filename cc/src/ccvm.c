@@ -14,7 +14,7 @@
 const tok_inf tok_tbl[255] = {
 	#define TOKDEF(NAME, TYPE, SIZE, STR) {TYPE, SIZE, STR},
 	#include "incl/defs.h"
-	{0},	// hope it will fill whit 0
+	{0},
 };
 const opc_inf opc_tbl[255] = {
 	#define OPCDEF(Name, Code, Size, Args, Push, Time, Mnem) \
@@ -85,7 +85,7 @@ static int push(state s, astn ast) {
 	return cgen(s, ast, cast);
 }
 int cgen(state s, astn ast, int get) {
-	int ipdbg = emit(s->vm, get_ip);
+	//~ int ipdbg = emit(s->vm, get_ip);
 	struct astn tmp;
 	int ret = 0;
 
@@ -111,7 +111,7 @@ int cgen(state s, astn ast, int get) {
 			emit(s->vm, opc_line, ast->line);
 			if (!cgen(s, ast->stmt.stmt, TYPE_vid)) {
 				dbg_ast(ast->stmt.stmt);
-				dumpasmdbg(stderr, s->vm, 0, 0x10);
+				//~ dumpasmdbg(stderr, s->vm, ipdbg, 0x10);
 				return 0;
 			}
 			if (stpos < emit(s->vm, get_sp))
@@ -386,7 +386,7 @@ int cgen(state s, astn ast, int get) {
 						}
 						if (spbc <= emit(s->vm, get_sp)) {
 							error(s, ast->line, "invalid stack size %+k", ast);
-							dumpasmdbg(stderr, s->vm, ipdbg, 0x10);
+							//~ dumpasmdbg(stderr, s->vm, ipdbg, 0x10);
 							return 0;
 						}
 						switch (ret) {
@@ -841,7 +841,7 @@ int cgen(state s, astn ast, int get) {
 						var->offs = emit(s->vm, get_sp);
 					} break;// */
 					case TYPE_rec: {
-						if (!(val ? cgen(s, val, ret) : emit(s->vm, opc_loc, typ->size))) {
+						if (!(val ? cgen(s, val, ret) : emit(s->vm, opc_loc, ((typ->size + 3) / 4)))) {
 							dbg_arg(val);
 							return 0;
 						}
@@ -852,7 +852,7 @@ int cgen(state s, astn ast, int get) {
 						}
 					} break;//*/
 					case TYPE_arr: {
-						if (!(val ? cgen(s, val, ret) : emit(s->vm, opc_loc, typ->size))) {
+						if (!(val ? cgen(s, val, ret) : emit(s->vm, opc_loc, ((typ->size + 3) / 4)))) {
 							dbg_arg(val);
 							return 0;
 						}
@@ -888,7 +888,7 @@ int cgen(state s, astn ast, int get) {
 			case TYPE_i64: if (!emit(s->vm, i64_i32)) return 0; break;
 			case TYPE_f32: if (!emit(s->vm, f32_i32)) return 0; break;
 			case TYPE_f64: if (!emit(s->vm, f64_i32)) return 0; break;
-			case TYPE_ref: if (!emit(s->vm, opc_ldi, 4)) return 0; break;
+			//~ case TYPE_ref: if (!emit(s->vm, opc_ldi, 4)) return 0; break;
 			default: goto errorcast2;
 		} break;
 		case TYPE_i32: switch (ret) {
@@ -898,7 +898,7 @@ int cgen(state s, astn ast, int get) {
 			case TYPE_i64: if (!emit(s->vm, i64_i32)) return 0; break;
 			case TYPE_f32: if (!emit(s->vm, f32_i32)) return 0; break;
 			case TYPE_f64: if (!emit(s->vm, f64_i32)) return 0; break;
-			case TYPE_ref: if (!emit(s->vm, opc_ldi, 4)) return 0; break;
+			//~ case TYPE_ref: if (!emit(s->vm, opc_ldi, 4)) return 0; break;
 			default: goto errorcast2;
 		} break;
 		case TYPE_i64: switch (ret) {
@@ -907,7 +907,7 @@ int cgen(state s, astn ast, int get) {
 			case TYPE_i32: if (!emit(s->vm, i32_i64)) return 0; break;
 			case TYPE_f32: if (!emit(s->vm, f32_i64)) return 0; break;
 			case TYPE_f64: if (!emit(s->vm, f64_i64)) return 0; break;
-			case TYPE_ref: if (!emit(s->vm, opc_ldi, 8)) return 0; break;
+			//~ case TYPE_ref: if (!emit(s->vm, opc_ldi, 8)) return 0; break;
 			default: goto errorcast2;
 		} break;
 		case TYPE_f32: switch (ret) {
@@ -916,7 +916,7 @@ int cgen(state s, astn ast, int get) {
 			case TYPE_i32: if (!emit(s->vm, i32_f32)) return 0; break;
 			case TYPE_i64: if (!emit(s->vm, i64_f32)) return 0; break;
 			case TYPE_f64: if (!emit(s->vm, f64_f32)) return 0; break;
-			case TYPE_ref: if (!emit(s->vm, opc_ldi, 4)) return 0; break;
+			//~ case TYPE_ref: if (!emit(s->vm, opc_ldi, 4)) return 0; break;
 			default: goto errorcast2;
 		} break;
 		case TYPE_f64: switch (ret) {
@@ -925,7 +925,7 @@ int cgen(state s, astn ast, int get) {
 			case TYPE_i32: if (!emit(s->vm, i32_f64)) return 0; break;
 			case TYPE_i64: if (!emit(s->vm, i64_f64)) return 0; break;
 			case TYPE_f32: if (!emit(s->vm, f32_f64)) return 0; break;
-			case TYPE_ref: if (!emit(s->vm, opc_ldi, 8)) return 0; break;
+			//~ case TYPE_ref: if (!emit(s->vm, opc_ldi, 8)) return 0; break;
 			default: goto errorcast2;
 		} break;
 		case TYPE_bit: switch (ret) {		// to boolean
@@ -945,8 +945,10 @@ int cgen(state s, astn ast, int get) {
 }
 
 int logfile(state s, char* file) {
-	if (s->logf)
-		fclose(s->logf);
+	if (s->logf == NULL);
+	else if (s->logf == stderr);
+	else if (s->logf == stdout);
+	else fclose(s->logf);
 	s->logf = 0;
 	if (file) {
 		s->logf = fopen(file, "wb");
@@ -1306,6 +1308,8 @@ ccEnv ccInit(state s) {
 	installex(cc, "float", TYPE_def, 0, type_f32, NULL);
 	installex(cc, "double", TYPE_def, 0, type_f64, NULL);
 
+	installex(cc, "null", TYPE_def, 0, type_vid, intnode(cc, 0));
+
 	installex(cc, "true", TYPE_def, 0, type_bol, intnode(cc, 1));
 	installex(cc, "false", TYPE_def, 0, type_bol, intnode(cc, 0));
 
@@ -1335,12 +1339,13 @@ ccEnv ccInit(state s) {
 }
 vmEnv vmInit(state s) {
 	int size = s->_cnt;
-	vmEnv vm = getmem(s, size, -1);
+	vmEnv vm = getmem(s, size, sizeof(struct vmEnv));
 	if (vm != NULL) {
 		vm->s = s;
+		//~ done by getmem
 		//~ vm->ds = vm->ic = 0;
-		vm->cs = vm->pc = 0;
-		vm->ss = vm->sm = 0;
+		//~ vm->cs = vm->pc = 0;
+		//~ vm->ss = vm->sm = 0;
 		vm->_ptr = vm->_mem;
 		vm->_end = vm->_mem + size - sizeof(struct vmEnv);
 	}
@@ -1356,23 +1361,22 @@ ccEnv ccOpen(state s, srcType mode, char *src) {
 }
 
 int ccDone(state s) {
+	ccEnv cc = s->cc;
+
 	// if not initialized
-	if (s->cc == NULL)
+	if (cc == NULL)
 		return -1;
 
-	//~ if (s->cc->nest)
-		//~ error(s->cc, s->cc->line, "premature end of file");
-
 	// close input
-	source(s->cc, 0, 0);
+	source(cc, 0, 0);
 
 	// set used memory
-	s->_cnt -= s->cc->_ptr - s->_ptr;
-	s->_ptr = s->cc->_ptr;
+	s->_cnt -= cc->_ptr - s->_ptr;
+	s->_ptr = cc->_ptr;
 
-	dieif(s->_cnt != s->cc->_cnt, "FixMe!(%d)", s->_cnt - s->cc->_cnt);
-	//~ s->cc->_ptr = 0;
-	s->cc->_cnt = 0;
+	dieif(s->_cnt != cc->_cnt, "FixMe!(%d)", s->_cnt - cc->_cnt);
+	//~ cc->_ptr = 0;
+	cc->_cnt = 0;
 
 	return s->errc;
 }

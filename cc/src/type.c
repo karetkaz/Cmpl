@@ -56,8 +56,32 @@ symn installex(ccEnv s, const char* name, int kind, unsigned size, symn type, as
 		if (kind & symn_read)
 			def->read = 1;
 
-		if (name)
+		switch (kind & 0xff) {
+			default: fatal("FixMe!");
+
+			// basetype
+			case TYPE_vid:
+			case TYPE_bit:
+			case TYPE_int:
+			case TYPE_flt:
+			//~ case TYPE_arr:
+				def->algn = size;
+
+			// usertype
+			case TYPE_def:
+			case TYPE_enu:
+			case TYPE_rec:
+
+			// variable
+			case TYPE_ref:
+			case EMIT_opc:
+				break;
+
+		}
+
+			if (name)
 			hash = rehash(name, strlen(name)) % TBLS;
+
 		def->next = s->deft[hash];
 		s->deft[hash] = def;
 
@@ -72,7 +96,7 @@ symn install(ccEnv s, const char* name, int kind, int cast, unsigned size) {
 	// declare
 	if (kind == -1)
 		return instlibc(s, name);
-
+/*
 	switch (kind & 0xff) {
 		default: fatal("FixMe!");
 
@@ -101,7 +125,7 @@ symn install(ccEnv s, const char* name, int kind, int cast, unsigned size) {
 			break;
 
 	}
-
+// */
 	return installex(s, name, kind, size, typ, 0);
 }
 

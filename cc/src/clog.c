@@ -678,7 +678,7 @@ void dumpsym(FILE *fout, symn sym, int alma) {
 			fputfmt(fout, "[@%02xh]: ", ptr->size);
 		}
 		else if (ptr->kind != TYPE_def) {
-			fputfmt(fout, "[size: %2d]: ", ptr->size);
+			fputfmt(fout, "[size: %2d:%02d]: ", ptr->size, ptr->algn);
 		}
 
 		//~ prType+prQual+prArgs+prInit
@@ -821,6 +821,10 @@ void dumpast(FILE *fout, astn ast, int level) {
 		//~ fputast(fout, ast, 2, -1);
 		fputast(fout, ast, level | 2, 0);
 }
+void dumpasm(FILE *fout, vmEnv s, int mode) {
+	vmInfo(fout, s);
+	fputasm(fout, s->_mem + s->pc, s->cs, mode);
+}
 
 void dump(state s, char *file, dumpMode mode, char *text) {
 	FILE *fout = stdout;
@@ -845,9 +849,13 @@ void dump(state s, char *file, dumpMode mode, char *text) {
 }
 
 void perr(state s, int level, const char *file, int line, const char *msg, ...) {
-	FILE *fout = (s && s->logf) ? s->logf : stderr;
+	//~ FILE *logf = s ? s->logf : stderr;
+	FILE *logf = s && s->logf ? s->logf : stderr;
 	int warnl = s && s->cc ? s->cc->warn : 9;
 	va_list argp;
+
+	if (!logf)
+		return;
 
 	if (level > 0) {
 		if (warnl < 0)
@@ -863,18 +871,18 @@ void perr(state s, int level, const char *file, int line, const char *msg, ...) 
 		file = s->cc->file;
 
 	if (file && line)
-		fprintf(fout, "%s:%u:", file, line);
+		fprintf(logf, "%s:%u:", file, line);
 
 	//~ if (level) fprintf(fout, "%s:", level < 0 ? "error" : "warning");
 	if (level > 0)
-		fputs("warning:", fout);
+		fputs("warning:", logf);
 	else if (level)
-		fputs("error:", fout);
+		fputs("error:", logf);
 
 	va_start(argp, msg);
-	FPUTFMT(fout, msg, argp);
-	fputc('\n', fout);
+	FPUTFMT(logf, msg, argp);
+	fputc('\n', logf);
 	va_end(argp);
 
-	fflush(fout);
+	fflush(logf);
 }

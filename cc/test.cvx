@@ -643,13 +643,15 @@ double res = 31.749 + .35;
 // */
 
 //~ /* struct and arrays
-struct intabc: 8 {
-	int8  X;		//!%?08x
-	int8  Y;		//!%?08x
-	int8  Z;		//!%?08x
-	int32 a;		//!%?08x
-	int32 b;		//!%08x
-	int32 c;		//!%08x
+struct intflt32:0 {int32 i;flt32 f;}
+struct intflt64:0 {int64 i;flt64 f;}
+define intTY int8;
+struct intabc: 4 {
+	intTY X;		//~!%=(%?08b)
+	intTY Y;		//~!%=(%?08b)
+	intTY Z;		//~!%=(%?08b)
+	//~ intTY W;		//!X%?03x
+	intflt32 U;
 }// */
 //~ int intABC(int32 a, int32 b, int32 c) ;
 //~ emit(void, i32(0));
@@ -658,8 +660,11 @@ struct intabc: 8 {
 //~ int32 c[3] = emit(void);
 //~ flt32 d[3] = emit(void);
 //~ d[2] = 9;
-//~ intabc alma;// = emit(void, i32(7), i32(1), i32(2));
 
+intabc alma;
+//~ alma.U.f = 9;
+alma.X = 8;
+alma.Z = alma.X;
 //~ intabc alma;
 //~ alma.a = 9;
 //~ int32 c[3] = emit(void);

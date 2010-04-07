@@ -17,10 +17,10 @@
 #define TOKS 2048
 
 // symbol & hash table size
-#define TBLS 1024
+#define TBLS 2048
 
 //~ #define pdbg(__DBG, msg, ...) {fputfmt(stderr, "%s:%d:"__DBG": "msg"\n", __FILE__, __LINE__, ##__VA_ARGS__); fflush(stderr);}
-#define pdbg(__DBG, msg, ...) {fputfmt(stderr, "%s:%d:"__DBG":%s: "msg"\n", __FILE__, __LINE__, __func__, ##__VA_ARGS__); fflush(stderr);}
+#define pdbg(__DBG, msg, ...) do{fputfmt(stderr, "%s:%d:"__DBG":%s: "msg"\n", __FILE__, __LINE__, __func__, ##__VA_ARGS__); fflush(stderr);}while(0)
 
 #define trace(msg, ...) pdbg("trace", msg, ##__VA_ARGS__)
 #define debug(msg, ...) pdbg("debug", msg, ##__VA_ARGS__)
@@ -111,13 +111,13 @@ extern const opc_inf opc_tbl[255];
 
 typedef union {		// stack value type
 	int08t	i1;
-	uns08t	u1;
+	//~ uns08t	u1;
 	int16t	i2;
-	uns16t	u2;
+	//~ uns16t	u2;
 	int32t	i4;
 	uns32t	u4;
 	int64t	i8;
-	uns64t	u8;
+	//~ uns64t	u8;
 	flt32t	f4;
 	flt64t	f8;
 	struct {flt32t x, y, z, w;} pf;
@@ -188,7 +188,7 @@ struct symn {				// type
 
 	//~ uns08t	cast;		// casts to type(TYPE_(u32, i32, i64, f32, f64, p4x)).
 	uns08t	kind;		// TYPE_ref || TYPE_xxx
-	uns08t	call:1;		// function
+	uns08t	call:1;		// function / callable
 	//~ uns08t	load:1;		// indirect
 
 	//~ uns08t	priv:1;		// private
@@ -204,7 +204,9 @@ struct symn {				// type
 	uns16t	nest;		// declaration level
 	//~ uns32t	used;		//TODO: times used
 	astn	init;		// VAR init / FUN body
-	//~ uns32t	algn;		// align
+	uns08t	algn;		// align
+	uns08t	xx_1;		// align
+	uns16t	xx_2;		// align
 
 	// list(scoping)
 	symn	defs;		// symbols on stack/all
@@ -310,7 +312,7 @@ void fputasm(FILE *fout, unsigned char *beg, int len, int mode);
 // program error
 void perr(state s, int level, const char *file, int line, const char *msg, ...);
 
-void dumpasm(FILE *fout, vmEnv s, int offs);
+//~ void dumpasm(FILE *fout, vmEnv s, int offs);
 void dumpsym(FILE *fout, symn sym, int mode);
 void dumpast(FILE *fout, astn ast, int mode);
 void dumpxml(FILE *fout, astn ast, int lev, const char* text, int level);

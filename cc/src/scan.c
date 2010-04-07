@@ -1058,12 +1058,12 @@ static int skiptok(ccEnv s, int kind, int skp) {
 	if (!skip(s, kind)) {
 		error(s->s, s->line, "`%t` excepted, got `%k`", kind, peek(s));
 		while (!skip(s, kind)) {
-			debug("skipping('%k')", peek(s));
 			if (!peek(s)) return 0;
-			else if (skip(s, OPER_nop)) return 0;
-			else if (skip(s, STMT_end)) return 0;
-			else if (skip(s, PNCT_rp)) return 0;
-			else if (skip(s, PNCT_rc)) return 0;
+			//~ debug("skipping('%k')", peek(s));
+			if (skip(s, OPER_nop)) return 0;
+			if (skip(s, STMT_end)) return 0;
+			if (skip(s, PNCT_rp)) return 0;
+			if (skip(s, PNCT_rc)) return 0;
 			skp = skip(s, 0);// == kind;
 		}
 		return 0;
@@ -1076,6 +1076,9 @@ static int skiptok(ccEnv s, int kind, int skp) {
 //{~~~~~~~~~ Parser ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 static void redefine(ccEnv s, symn sym) {
 	symn ptr;
+
+	if (!sym)
+		return;
 
 	for (ptr = sym->next; ptr; ptr = ptr->next) {
 		symn arg1 = ptr->args;
@@ -1971,17 +1974,20 @@ static astn spec(ccEnv s/* , int qual */) {
 		}// */
 		if (skip(s, STMT_beg)) {			// body
 			int qual = 0;
+			int salign = -1;
 			def = declare(s, TYPE_rec, tag, 0);
 			enter(s, NULL);
 			while (!skip(s, STMT_end)) {
 				symn ref = 0, typ = type(s, qual);
 				if (typ && (tok = next(s, TYPE_ref))) {
-					int align = pack < typ->size ? pack : typ->size;
+					int align = (typ->algn && (pack < typ->algn)) ? pack : typ->algn;
 					offs = padded(offs, align);
 					ref = declare(s, TYPE_ref, tok, typ);
 					ref->offs = offs;
 					offs += typ->size;
 					if (size < offs) size = offs;
+					if (salign < align)
+						salign = align;
 				}
 				s->doc = (char*)-1;
 				skiptok(s, OPER_nop, 1);
@@ -1992,6 +1998,12 @@ static astn spec(ccEnv s/* , int qual */) {
 			}
 			def->size = size;
 			def->args = leave(s, def);
+
+			if (def->args) {
+				def->algn = salign;
+				//~ debug("Align(%T): %d", def, def->algn);
+			}
+
 			if (!def->args && !def->type)
 				warn(s->s, 2, s->file, s->line, "empty declaration");
 		}

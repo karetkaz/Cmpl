@@ -8,7 +8,7 @@
 
 // default values
 static const int wl = 9;		// warning level
-static const int ol = 0;		// optimize level
+static const int ol = 2;		// optimize level
 
 static const int cc = 1;			// execution cores
 static const int ss = 32 << 10;		// execution stack(32K)
@@ -134,7 +134,7 @@ int evalexp(ccEnv s, char* text/* , int opts */) {
 }
 
 int program(int argc, char *argv[]) {
-	static char mem[512 << 10];	// 128K
+	static char mem[128 << 10];	// 128K
 	state s = gsInit(mem, sizeof(mem));
 
 	char *prg, *cmd;
@@ -183,12 +183,11 @@ int program(int argc, char *argv[]) {
 		char *outf = 0;			// output
 
 		enum {
-			gen_code = 0x0010,
-			out_tags = 0x0011,	// tags	// ?offs?
+			//~ gen_code = 0x0010,
+			out_tags = 0x0001,	// tags	// ?offs?
 			out_tree = 0x0002,	// walk
-
-			out_dasm = 0x0013,	// dasm
-			run_code = 0x0014,	// exec
+			out_dasm = 0x0003,	// dasm
+			run_code = 0x0004,	// exec
 		};
 
 		// options
@@ -296,32 +295,37 @@ int program(int argc, char *argv[]) {
 			//~ debug("level :0x%02x: arg[%d]: '%s'", level, argi - 2, arg);
 		}
 
-		if (!srcf) {
+		if (logf == NULL) {
+			s->logf = stderr;
+		}
+		else if (logfile(s, logf) != 0) {
+			fputfmt(stderr, "can not open file `%s`\n", srcf);
+			return -1;
+		}
+
+		if (srcf == NULL) {
 			fputfmt(stderr, "no input file\n");
 			return -1;
 		}
-
-		if (logfile(s, logf) != 0) {
+		else if (srcfile(s, srcf) != 0) {
 			fputfmt(stderr, "can not open file `%s`\n", srcf);
+			logfile(s, NULL);
 			return -1;
 		}
-
-		if (srcfile(s, srcf) != 0) {
-			fputfmt(stderr, "can not open file `%s`\n", srcf);
-			return -1;
-		}
-		//~ debug("compiler.init:%.2F KBytes", (s->cc->_ptr - s->_mem) / 1024.);
+		debug("compiler.init:%.2F KBytes", (s->cc->_ptr - s->_mem) / 1024.);
 
 		if (compile(s, warn) != 0) {
+			logfile(s, NULL);
 			return s->errc;
 		}
-		//~ debug("compiler.scan:%.2F KBytes", (s->cc->_ptr - s->_mem) / 1024.);
+		debug("compiler.scan:%.2F KBytes", (s->cc->_ptr - s->_mem) / 1024.);
 
 		if (gencode(s, opti) != 0) {
+			logfile(s, NULL);
 			return s->errc;
 		}
-		//~ debug("code:%d Bytes", s->vm->cs);
-		//~ debug("data:%d Bytes", s->vm->ds);
+		debug("code:%d Bytes", s->vm->cs);
+		debug("data:%d Bytes", s->vm->ds);
 
 		if (outc) switch (outc) {
 			default: fatal("FixMe!");
@@ -331,14 +335,15 @@ int program(int argc, char *argv[]) {
 			case run_code: exec(s->vm, ss, dbg); break;
 		}
 
+		logfile(s, NULL);
 		return 0;
 	}
-	else if (strcmp(cmd, "-e") == 0) {	// exec
+	else if (strcmp(cmd, "-e") == 0) {	// execute
 		fatal("unimplemented");
 		//~ objfile(s, ...);
 		//~ return execute(s, cc, ss, dbgl);
 	}
-	else if (strcmp(cmd, "-d") == 0) {	// dasm
+	else if (strcmp(cmd, "-d") == 0) {	// disasm
 		fatal("unimplemented");
 		//~ objfile(s, ...);
 		//~ return dumpasm(s, cc, ss, dbgl);
@@ -369,6 +374,36 @@ int program(int argc, char *argv[]) {
 	return 0;
 }
 
+int mk_test(char *file, int size) {
+	//~ char test[] = "signed _000000000000000001 = 8;\n";
+	char test[] = "int _0000001=6;\n";
+	FILE* f = fopen(file, "wb");
+	int n, sp = sizeof(test) - 6;
+
+	if (f == NULL) {
+		debug("cann not open file");
+		return -1;
+	}
+
+	if (size <= (128 << 20)) {
+		for (n = 0; n < size; n += sizeof(test)-1) {
+			fputs(test, f);
+			while (++test[sp] > '9') {
+				test[sp--] = '0';
+				if (test[sp] == '_') {
+					fclose(f);
+					return -2;
+				}
+			}
+			sp = sizeof(test) - 6;
+		}
+	}
+	else debug("file is too large (128M max)");
+
+	fclose(f);
+	return 0;
+}
+
 int main(int argc, char *argv[]) {
 	if (1 && argc == 1) {
 		char *args[] = {
@@ -386,6 +421,7 @@ int main(int argc, char *argv[]) {
 	setbuf(stdout, NULL);
 	setbuf(stderr, NULL);
 	return program(argc, argv);
+	//~ return mk_test("xxxx.cvx", 8 << 20);	// 512 M
 	//~ fatal("FixMe!");
 	//~ return vmTest();
 }
