@@ -1,10 +1,11 @@
 #include <math.h>
 #include <string.h>
 #include "ccvm.h"
-#include "code.h"
+//~ #include "code.h"
 
 #ifdef __WATCOMC__
 #pragma disable_message(124);
+//~ Warning! W124: Comparison result always 0
 #endif
 
 #pragma pack(push, 1)
@@ -13,7 +14,7 @@ typedef struct bcde {			// byte code decoder
 	union {
 		stkval arg;		// argument (load const)
 		uns08t idx;		// usualy index for stack
-		int32t rel:24;	// relative offset (ip, sp)
+		int32t rel:24;	// relative offset (ip, sp) +- 7MB
 		struct {		// when starting a task
 			uns08t	dl;	// data to copy to stack
 			uns16t	cl;	// code to exec paralel
@@ -25,7 +26,7 @@ typedef struct bcde {			// byte code decoder
 			uns32t res:6;		// res
 			uns32t lhs:6;		// lhs
 			uns32t rhs:6;		// rhs
-			//{ --8<-------------------------------------------
+			/ * --8<-------------------------------------------
 			void *res = sp + ip->ext.res;
 			void *lhs = sp + ip->ext.lhs;
 			void *rhs = sp + ip->ext.rhs;
@@ -35,88 +36,11 @@ typedef struct bcde {			// byte code decoder
 				case 3: rhs = *(void**)rhs; break;
 			}
 			switch (ip->ext.opc) {
-				case ext_add: ...add(res, lhs, rhs); break;
-				case ext_...:
+				case ext_add: add(res, lhs, rhs); break;
+				case ext_...: ...(res, lhs, rhs); break;
 			}
-			//} --8<-------------------------------------------
+			// * / --8<----------------------------------------
 		}ext;// */
-		/*struct {				// extended3: 5 - 8 bytes
-			uns32t opc:4;		// 0 ... 15
-
-			uns32t imm:1;		// 
-			uns32t tmp:1;		// 
-			uns32t mem:2;		// ???
-			union {
-				struct {				// indexed: sp[res] := sp[lhs] OP sp[rhs]
-					uns32t res:8;		// res
-					uns32t lhs:8;		// lhs
-					uns32t rhs:8;		// rhs
-					//~ uns32t xxx:8;		// ???
-				};
-				struct {				// immediate sp(0) := sp(0) OP (val | [val])
-					uns32t val:32;		// imm
-				};
-			};
-			/ *{ --8<-------------------------------------------
-			void *res, *lhs, *rhs;
-			if (imm) {
-				res = sp + ip->ext.res;
-				rhs = ip->ext.val;
-				switch (ip->ext.mem) {
-					case 1: res = memAt(s, res); break;
-					case 2: 
-					case 3: rhs = memAt(s, rhs); break;
-				}
-				lhs = res;
-			}
-			else {
-				res = sp + ip->ext.res;
-				lhs = sp + ip->ext.lhs;
-				rhs = sp + ip->ext.rhs;
-				switch (ip->ext.mem) {
-					case 1: res = memAt(s, res); break;
-					case 2: lhs = memAt(s, lhs); break;
-					case 3: rhs = memAt(s, rhs); break;
-				}
-			}
-			switch (ip->ext.opc) {
-				case ext_add: ...add(res, lhs, rhs); break;
-				case ext_...:
-			}
-			// * /
-		}ext;// */
-		/*struct {				// extended ?(x86 style)?
-			uint8_t opc:4;		// 0 ... 15
-			uint8_t opt:2;		// idx(3) / rev(3) / imm(6) / mem(6)
-			uint8_t mem:2;		// mem size
-			union {
-				uint8_t si[4];
-				val32t	arg;
-			};
-		/+extended opcodes ???argc = 1: [size:2][type:2][code:4]
-			type:
-			ext_set = 0,		// 3 / sp(n) = opr(sp(n), sp(0)); pop(size & 1)				// a += b
-			ext_dup = 1,		// 3 / sp(0) = opr(sp(0), sp(n)); loc((1<<size)>>1[0, 1, 2, 4])		// (a+a) < c
-			ext_sto = 2,		// 6 / mp[n] = opr(mp[n], sp(0)); pop(size & 1)				// a += b
-			ext_lod = 3,		// 6 / sp(0) = opr(sp(0), mp[n]); loc((1<<size)>>1[0, 1, 2, 4])		// (a+a) < c
-
-			switch (type) {
-				case ext_idx : ip += 3; {
-					lhs = sp + u1[ip + 2];
-					rhs = sp + 0;
-					switch (size) {
-						case 0 : dst = (sp -= 1);	// new result	push(opr(sp(n) sp(0)))
-						case 1 : 					sp(0) = opr(sp(0) sp(n))
-						case 2 : dst = (sp -= 1);	// get result	sp(n) = opr(sp(n) sp(0))
-						case 3 : dst = (lhs);		// set result	sp(n) = opr(sp(n) sp(0)); pop
-					}
-				}
-				dst = ip + 2
-				lhs = sp(ip[2])
-				rhs = ip(0)
-			}
-
-		}ext;*/
 	};
 } *bcde;
 #pragma pack(pop)
@@ -143,6 +67,9 @@ typedef struct cell {			// processor
 //~ #pragma intrinsic(log,cos,sin,tan,sqrt,fabs,pow,atan2,fmod)
 //~ #pragma intrinsic(acos,asin,atan,cosh,exp,log10,sinh,tanh)
 
+static int libHalt(state s) {
+	return 0;
+}
 #ifdef useBuiltInFuncs
 static int f64abs(state s) {
 	flt64t x = poparg(s, flt64t);
@@ -330,6 +257,19 @@ static int b64sxt(state s) {
 	return 0;
 }
 
+static int putchr(state s) {
+	fputfmt(stdout, "%c", poparg(s, int32t));
+	return 0;
+}
+static int puti64(state s) {
+	fputfmt(stdout, "%D", poparg(s, int64t));
+	return 0;
+}
+static int putf64(state s) {
+	fputfmt(stdout, "%F", poparg(s, flt64t));
+	return 0;
+}
+
 #endif
 
 static struct lfun {
@@ -340,8 +280,9 @@ static struct lfun {
 	int08t chk, pop, pad[2];
 }
 libcfnc[256] = {
-	{NULL},
+	{libHalt, "Halt", NULL, 0, 0},
 #ifdef useBuiltInFuncs
+	//{ MATH
 	{f64abs, "flt64 abs(flt64 x)"},
 	{f64sin, "flt64 sin(flt64 x)"},
 	{f64cos, "flt64 cos(flt64 x)"},
@@ -354,7 +295,9 @@ libcfnc[256] = {
 
 	//~ {f64lg2, "flt64 log2(flt64 x)"},
 	//~ {f64xp2, "flt64 exp2(flt64 x)"},
+	//}
 
+	//{ BITS
 	{b32btc, "int32 btc(int32 x)"},		// bitcount
 	{b32bsf, "int32 bsf(int32 x)"},
 	{b32bsr, "int32 bsr(int32 x)"},
@@ -371,6 +314,20 @@ libcfnc[256] = {
 	{b64xor, "int64 xor(int64 x, int64 y)"},
 	{b64zxt, "int64 zxt(int64 val, int offs, int bits)"},
 	{b64sxt, "int64 sxt(int64 val, int offs, int bits)"},
+	//}
+
+	//{ IO/MEM/EXIT
+	//~ {memmgr, "pointer memmgr(pointer old, int32 cnt, int allign)"},		// allocate, reallocate, free
+	//~ {memset, "pointer memset(pointer dst, byte src, int32 cnt)"},
+	//~ {memcpy, "pointer memcpy(pointer dst, pointer src, int32 cnt)"},
+	{putchr, "void putchr(int32 val)"},
+	{puti64, "void puti64(int64 val)"},
+	{putf64, "void putf64(flt64 val)"},
+	//}
+
+	// include some of the compiler functions
+	// for reflection. (lookup, logger, exec as (ccinit, compile, execute))
+
 #endif
 	{NULL},
 };
@@ -380,16 +337,17 @@ int libcall(state s, int libc(state), const char* proto) {
 	int stdiff = 0;
 	symn arg, sym;
 
+	// TODO: can skip this
 	if (!s->cc && !ccInit(s)) {
 		return -1;
 	}
 
-	if (!libc && proto && strcmp(proto, "print") == 0) {
+	/*if (!libc && proto && strcmp(proto, "print") == 0) {
 		int i;
 		for (i = 0; libcfnc[i].proto; ++i) {
 			fputfmt(stdout, "%s\n", libcfnc[i].proto);
 		}
-	}
+	}// */
 
 	if (!libccnt && !libc/*  && strcmp(proto, "defaults") == 0 */) {
 		libccnt = 1;
@@ -419,9 +377,9 @@ int libcall(state s, int libc(state), const char* proto) {
 	}
 
 	for (arg = sym->args; arg; arg = arg->next)
-		stdiff += arg->type->size;
+		stdiff += sizeOf(arg->type);
 	libcfnc[libccnt].chk = stdiff / 4;
-	stdiff -= sym->type->size;
+	stdiff -= sizeOf(sym->type);
 	libcfnc[libccnt].pop = stdiff / 4;
 
 	libcfnc[libccnt].sym = sym;
@@ -572,22 +530,37 @@ int emit(vmEnv s, int opc, ...) {
 	else if (opc == opc_shl) switch (arg.i4) {
 		case TYPE_u32:
 		case TYPE_i32: opc = b32_shl; break;
+		case TYPE_i64:
+		case TYPE_f32:
+		case TYPE_f64: return 0;
 	}
 	else if (opc == opc_shr) switch (arg.i4) {
 		case TYPE_i32: opc = b32_sar; break;
 		case TYPE_u32: opc = b32_shr; break;
+		case TYPE_i64:
+		case TYPE_f32:
+		case TYPE_f64: return 0;
 	}
 	else if (opc == opc_and) switch (arg.i4) {
 		case TYPE_u32:
 		case TYPE_i32: opc = b32_and; break;
+		case TYPE_i64:
+		case TYPE_f32:
+		case TYPE_f64: return 0;
 	}
 	else if (opc == opc_ior) switch (arg.i4) {
 		case TYPE_u32:
 		case TYPE_i32: opc = b32_ior; break;
+		case TYPE_i64:
+		case TYPE_f32:
+		case TYPE_f64: return 0;
 	}
 	else if (opc == opc_xor) switch (arg.i4) {
 		case TYPE_u32:
 		case TYPE_i32: opc = b32_xor; break;
+		case TYPE_i64:
+		case TYPE_f32:
+		case TYPE_f64: return 0;
 	}
 
 	// load/store
@@ -613,7 +586,7 @@ int emit(vmEnv s, int opc, ...) {
 		case 16: opc = opc_stiq; break;
 	}
 
-	else if (opc == opc_pop) {		// pop nothing
+	else if (opc == opc_drop) {		// pop nothing
 		if (arg.i4 == 0)
 			return s->pc;
 	}
@@ -633,11 +606,30 @@ int emit(vmEnv s, int opc, ...) {
 	}
 
 	if (opc > opc_last) {
-		fatal("invalid opc_0x%x", opc);
+		//~ fatal("invalid opc_0x%x", opc);
 		return 0;
 	}
 	if (s->opti > 1) {
 		if (0) ;
+		else if (opc == opc_ldi1) {
+			ip = getip(s, s->pc);
+			if (ip->opc == opc_ldsp && ((ip->rel & 3) == 0) && ((ip->rel / 4) < 256)) {
+				arg.i4 = ip->rel / 4;
+				opc = opc_dup1;
+				s->cs = s->pc;
+				s->ss -= 1;
+			}
+		}
+		else if (opc == opc_ldi2) {
+			ip = getip(s, s->pc);
+			if (ip->opc == opc_ldsp && ((ip->rel & 3) == 0) && ((ip->rel / 4) < 256)) {
+				arg.i4 = ip->rel / 4;
+				opc = opc_dup1;
+				s->cs = s->pc;
+				s->ss -= 1;
+			}
+		}
+
 		else if (opc == opc_ldi4) {
 			ip = getip(s, s->pc);
 			if (ip->opc == opc_ldsp && ((ip->rel & 3) == 0) && ((ip->rel / 4) < 256)) {
@@ -735,7 +727,7 @@ int emit(vmEnv s, int opc, ...) {
 				s->ss -= 2;
 			}
 		}
-		else if (opc == opc_dup1) {			// TODO
+		else if (opc == opc_dup1) {
 			ip = getip(s, s->pc);
 			if (ip->opc == opc_dup1 && ip->idx == arg.u4) {
 				ip->opc = opc_dup2;
@@ -775,19 +767,27 @@ int emit(vmEnv s, int opc, ...) {
 	ip->opc = opc;
 	ip->arg = arg;
 
+	if (opc == opc_ldsp) {
+		if (ip->rel != arg.i8)
+			return 0;
+	}
+	else if (opc == opc_spc) {
+		if (ip->rel != arg.i8)
+			return 0;
+	}
 	//~ debug("@%04x[ss:%03d]: %09.*A", s->pc, s->ss, s->pc, ip);
 	//~ debug("%09.*A", s->pc, ip);
 
 	switch (opc) {		//#exec.c
-		error_opc: error(s->s, 0, "invalid opcode: [%02x] %01.*A", ip->opc, s->cs, ip); return 0;
-		error_stc: error(s->s, 0, "stack underflow(%d): near opcode %A", s->ss, ip); s->ss = -1; return 0;
+		//~ error_opc: error(s->s, 0, "invalid opcode: [%02x] %01.*A", ip->opc, s->cs, ip); return 0;
+		//~ error_stc: error(s->s, 0, "stack underflow(%d): near opcode %A", s->ss, ip); s->ss = -1; return 0;
+		error_opc: error(s->s, 0, "invalid opcode: op[%.*A]", s->pc, ip); return 0;
+		error_stc: error(s->s, 0, "stack underflow: op[%.*A]", s->pc, ip); return 0;
 		#define STOP(__ERR, __CHK) if (__CHK) goto __ERR
 		#define NEXT(__IP, __CHK, __SP)\
 			STOP(error_stc, s->ss < (__CHK));\
 			s->ss += (__SP);\
 			s->cs += (__IP);
-		//~ #define EXEC(__STMT)
-		//~ #define CHECK()
 		#include "code.h"
 	}
 
@@ -820,7 +820,7 @@ int emitf64(vmEnv s, flt64t arg) {
 }
 int emitidx(vmEnv s, int opc, int arg) {
 	stkval tmp;
-	tmp.i4 = s->ss + arg;
+	tmp.i8 = s->ss + arg;
 	if (opc == opc_ldsp) {
 		/*
 		if (!emit(s, opc))
@@ -829,7 +829,7 @@ int emitidx(vmEnv s, int opc, int arg) {
 			return 0;
 		return emit(s, i32_add);
 		//~ */
-		tmp.i4 *= 4;
+		tmp.i8 *= 4;
 		return emit(s, opc, tmp);
 	}
 	if (tmp.u4 > 255) {
@@ -848,54 +848,35 @@ int emitint(vmEnv s, int opc, int64t arg) {
 	tmp.i8 = arg;
 	return emit(s, opc, tmp);
 }
+int emitref(vmEnv s, int opc, int offset) {
+	switch (opc) {
+		case opc_ldcr:
+			if (offset < 0)
+				return emitidx(s, opc_ldsp, offset);
+			return emitint(s, opc_ldcr, offset);
+		case opc_call:
+			if (offset < 0)
+				return emitint(s, opc_libc, -offset);
+			return emitint(s, opc_call, s->pc - offset);
+		// */
+	}
+	debug("FixMe");
+	return 0;
+}
+
 int fixjump(vmEnv s, int src, int dst, int stc) {
 	bcde ip = getip(s, src);
 
 	if (src >= 0) switch (ip->opc) {
-		default: fatal("FixMe!");
+		default: fatal("FixMe");
+		//~ case opc_ldsp:
+		//~ case opc_call:
 		case opc_jmp:
 		case opc_jnz:
 		case opc_jz: ip->rel = dst - src; break;
 	}
 	return 0;
 }
-/*int testopc(vmEnv s, int opc) {
-	bcde ip = getip(s, s->pc);
-	return ip->opc == opc;
-}
-
-int loadind(vmEnv vm, int offs, int size) {
-	while (size > 0) {
-		int len = size;
-		int opc = -1;
-
-		if (size > 8) {
-			opc = opc_ldiq;
-			len = 16;
-		}
-		else if (size > 4) {
-			opc = opc_ldi8;
-			len = 8;
-		}
-		else if (size > 2) {
-			opc = opc_ldi4;
-			len = 4;
-		}
-		else switch (size) {
-			case 2: opc = opc_ldi2; break;
-			case 1: opc = opc_ldi1; break;
-		}
-
-		if (!emitint(vm, opc_ldcr, offs))
-			return 0;
-		if (!emit(vm, opc))
-			return 0;
-
-		size -= len;
-		offs += len;
-	}
-	return 1;
-}*/
 
 /*static cell task(vmEnv ee, cell pu, int cc, int n, int cl, int dl) {
 	// find an empty cpu
@@ -926,7 +907,6 @@ typedef enum {
 	//~ getNext,	// get next working cell
 	//~ doSync = 1;		// syncronize
 } doWhat;
-
 static int lobit(int a) {return a & -a;}
 static int mtt(vmEnv ee, doWhat cmd, cell pu, int n) {
 	static int workers = 0;
@@ -961,51 +941,27 @@ static int mtt(vmEnv ee, doWhat cmd, cell pu, int n) {
  * @arg ss: stack size
  * @return: error code
 **/
-/*static int execpu(vmEnv vm, cell pu) {
-	//~ unsigned char *bp = pu->sp;
-	unsigned char *mp = NULL;//TODO: vm->_mem;
-
-	while (pu->ip) {
-
-		register bcde ip = (bcde)pu->ip;
-		register unsigned char *st = pu->sp;
-
-		switch (ip->opc) {		// exec
-			error_opc: error(vm->s, 0, "invalid opcode: [%02x]", ip->opc); return -1;
-			error_ovf: error(vm->s, 0, "stack overflow: op[%A]", ip); return -2;
-			error_div: error(vm->s, 0, "division by zero: op[%09.*A]", (char*)ip - (char*)(vm->_mem), ip); break;//return -3;
-			//~ error_mem: error(vm->s, 0, "segmentation fault: op[%A]", ip); return -4;
-			#define NEXT(__IP, __CHK, __SP) {pu->sp -= 4*(__SP); pu->ip += (__IP);}
-			#define STOP(__ERR, __CHK) if (__CHK) goto __ERR
-			#define EXEC
-			//~ #define FLGS
-			#include "code.h"
-		}
-	}
-
-	return 0;
-}*/
-
 static int dbugpu(vmEnv vm, cell pu, dbgf dbg) {
 	typedef uns32t *stkptr;
 	typedef uns08t *memptr;
 
+	register bcde ip;
 	stkptr st = (void*)pu->sp;
 	memptr mp = (void*)vm->_mem;
 
-	while (pu->ip) {
+	while ((ip = (void*)pu->ip) != 0) {
 
-		register bcde ip = (void*)pu->ip;
 		register stkptr sp = (void*)pu->sp;
 
 		if (dbg && dbg(vm, 0, ip, (long*)sp, st - sp))
 			return -9;
 
 		switch (ip->opc) {		// exec
-			error_opc: error(vm->s, 0, "invalid opcode: [%02x]", ip->opc); return -1;
-			error_ovf: error(vm->s, 0, "stack overflow: op[%.*A]", (char*)ip - (char*)(vm->_mem), ip); return -2;
+			//~ error_opc: error(vm->s, 0, "invalid opcode: .%04x: %02x", (char*)ip - (char*)(vm->_mem), ip->opc); return -1;
+			error_opc: error(vm->s, 0, "invalid opcode: op[%.*A]", (char*)ip - (char*)(vm->_mem), ip); return -2;
+			error_ovf: error(vm->s, 0, "stack overflow: op[%.*A] / %d", (char*)ip - (char*)(vm->_mem), ip, (pu->sp - pu->bp)/4); return -2;
+			error_mem: error(vm->s, 0, "segmentation fault: op[%.*A]", (char*)ip - (char*)(vm->_mem), ip); return -2;
 			error_div: error(vm->s, 0, "division by zero: op[%.*A]", (char*)ip - (char*)(vm->_mem), ip); return -3;
-			error_mem: error(vm->s, 0, "segmentation fault: op[%.*A]", (char*)ip - (char*)(vm->_mem), ip); return -4;
 			#define NEXT(__IP, __CHK, __SP) {pu->sp -= 4*(__SP); pu->ip += (__IP);}
 			#define STOP(__ERR, __CHK) if (__CHK) goto __ERR
 			#define EXEC
@@ -1014,7 +970,8 @@ static int dbugpu(vmEnv vm, cell pu, dbgf dbg) {
 		}
 	}
 
-	dbg(vm, 0, NULL, (long*)pu->sp, (vm->_end - pu->sp) / 4);
+	if (dbg)
+		dbg(vm, 0, NULL, (long*)pu->sp, (vm->_end - pu->sp) / 4);
 	return 0;
 }
 
@@ -1024,6 +981,16 @@ int exec(vmEnv vm, unsigned ss, dbgf dbg) {
 	pu->ip = vm->_mem + vm->pc;
 	pu->bp = vm->_end - ss;
 	pu->sp = vm->_end;
+
+	if ((((int)pu->sp) & 3)) {
+		error(vm->s, 0, "invalid statck size");
+		return -99;
+	}
+
+	if (pu->bp < pu->ip) {
+		error(vm->s, 0, "invalid statck size");
+		return -99;
+	}
 
 	return dbugpu(vm, pu, dbg);
 }
@@ -1051,15 +1018,23 @@ void fputopc(FILE *fout, unsigned char* ptr, int len, int offs) {
 	//~ if (!opc) return;
 	if (opc_tbl[ip->opc].name)
 		fputs(opc_tbl[ip->opc].name, fout);
-	else fputfmt(fout, "opc%02x", ip->opc);
+	else
+		fputfmt(fout, "opc%02x", ip->opc);
+
 	switch (ip->opc) {
 		case opc_ldsp:
+		case opc_spc:
+			fprintf(fout, " %+d", ip->rel);
+			break;
+
 		case opc_jmp:
 		case opc_jnz:
-		case opc_jz: {
-			if (offs < 0) fprintf(fout, " %+d", ip->rel);
-			else fprintf(fout, " .%04x", offs + ip->rel);
-		} break;
+		case opc_jz:
+			if (offs < 0)
+				fprintf(fout, " %+d", ip->rel);
+			else
+				fprintf(fout, " .%04x", offs + ip->rel);
+			break;
 		/*case opc_bit: switch (ip->arg.u1 >> 5) {
 			default: fprintf(fout, "bit.???"); break;
 			case  1: fprintf(fout, "shl %d", ip->arg.u1 & 0x1F); break;
@@ -1085,11 +1060,19 @@ void fputopc(FILE *fout, unsigned char* ptr, int len, int offs) {
 			} break;
 		} break;*/
 		case opc_loc:
-		case opc_pop: fprintf(fout, " %d", ip->idx); break;
-		case opc_dup1: case opc_dup2:
-		case opc_dup4: fprintf(fout, " sp(%d)", ip->idx); break;
-		case opc_set1: case opc_set2:
-		case opc_set4: fputfmt(fout, " sp(%d)", ip->idx); break;
+		case opc_drop:
+			fprintf(fout, " %d", ip->idx);
+			break;
+
+		case opc_dup1:
+		case opc_dup2:
+		case opc_dup4:
+		case opc_set1:
+		case opc_set2:
+		case opc_set4:
+			fputfmt(fout, " sp(%d)", ip->idx);
+			break;
+
 		case opc_ldc1: fputfmt(fout, " %d", ip->arg.i1); break;
 		case opc_ldc2: fputfmt(fout, " %d", ip->arg.i2); break;
 		case opc_ldc4: fputfmt(fout, " %d", ip->arg.i4); break;
@@ -1097,12 +1080,14 @@ void fputopc(FILE *fout, unsigned char* ptr, int len, int offs) {
 		case opc_ldcf: fputfmt(fout, " %f", ip->arg.f4); break;
 		case opc_ldcF: fputfmt(fout, " %F", ip->arg.f8); break;
 		case opc_ldcr: fputfmt(fout, " %x", ip->arg.u4); break;
-		//~ case opc_libc: fputfmt(fout, " %s", libcfnc[ip->idx].proto); break;
-		case opc_libc: fputfmt(fout, " %-T", libcfnc[ip->idx].sym); break;
-		case opc_sysc: switch (ip->idx) {
-			case  0: fprintf(fout, ".stop"); break;
-			default: fprintf(fout, ".unknown"); break;
-		} break;
+
+		case opc_libc:
+			if (libcfnc[ip->idx].sym)
+				fputfmt(fout, " %-T", libcfnc[ip->idx].sym);
+			else
+				fputfmt(fout, " %s", libcfnc[ip->idx].proto);
+			break;
+
 		case p4d_swz: {
 			char c1 = "xyzw"[ip->idx >> 0 & 3];
 			char c2 = "xyzw"[ip->idx >> 2 & 3];
@@ -1112,7 +1097,6 @@ void fputopc(FILE *fout, unsigned char* ptr, int len, int offs) {
 		} break;
 	}
 }
-
 void fputasm(FILE *fout, unsigned char* beg, int len, int mode) {
 	int i, is = 12345;//, ss = 0;
 	for (i = 0; i < len; i += is) {
@@ -1120,7 +1104,7 @@ void fputasm(FILE *fout, unsigned char* beg, int len, int mode) {
 
 		switch (ip->opc) {
 			error_opc: error(NULL, 0, "invalid opcode: %02x '%A'", ip->opc, ip); return;
-			#define NEXT(__IP, __CHK, __SP) {is = (__IP);}// ss += (__SP);}
+			#define NEXT(__IP, __CHK, __SP) {if (__IP) is = (__IP);}// ss += (__SP);}
 			#define STOP(__ERR, __CHK) if (__CHK) goto __ERR
 			#include "code.h"
 		}
@@ -1138,90 +1122,112 @@ void fputasm(FILE *fout, unsigned char* beg, int len, int mode) {
 }
 
 void dumpasmdbg(FILE *fout, vmEnv s, int mark, int mode) {
-	fputasm(fout, (unsigned char*)getip(s, mark), s->cs, mode);
+	fputasm(fout, (unsigned char*)getip(s, mark), s->cs - mark, mode);
 }
 
 
-void vm_fputval(FILE *fout, symn sym, stkval* val, int flgs) {
+void vm_fputval(FILE *fout, symn var, stkval* ref, int flgs) {
 	typedef enum {
-		flg_type = 0x01,
-		flg_hex = 0x02,
-		flg_offs = 0x04,
+		//~ flg_type = 0x010000,
+		flg_hex  = 0x020000,
+		//~ flg_offs = 0x040000,
 	} flagbits;
-	symn typ = sym->type;
-	char *fmt = sym->pfmt;
-	if (!fmt || *fmt != '%')
-		fmt = NULL;
+
+	//~ int type
+	symn typ = var->type;
+
+	if (typ && typ->kind == TYPE_enu)
+		typ = typ->type;
+
 	switch(typ ? typ->kind : 0) {
-		case TYPE_int: switch (typ->size) {
-			case 1:
-				if (flgs & flg_type) fputfmt(fout, "i32");
-				if (flgs & flg_hex) fputfmt(fout, "[%008x]", val->i1);
-				fputfmt(fout, fmt ? fmt : "(%d)", val->i1);
-				break;
-			case 2:
-				if (flgs & flg_type) fputfmt(fout, "i32");
-				if (flgs & flg_hex) fputfmt(fout, "[%008x]", val->i2);
-				fputfmt(fout, fmt ? fmt : "(%d)", val->i2);
-				break;
-			case 4: 
-				if (flgs & flg_type) fputfmt(fout, "i32");
-				if (flgs & flg_hex) fputfmt(fout, "[%008x]", val->i4);
-				fputfmt(fout, fmt ? fmt : "(%d)", val->i4);
-				break;
-			case 8:
-				if (flgs & flg_type) fputfmt(fout, "i64");
-				if (flgs & flg_hex) fputfmt(fout, "[%016X]", val->i8);
-				fputfmt(fout, fmt ? fmt : "(%D)", val->i8);
-				break;
-			default: goto TYPE_XXX;
+		case TYPE_bit:
+		case TYPE_int: {
+			int64t val;
+			switch (castId(typ)) {
+				case TYPE_bit:
+				case TYPE_u32: switch (typ->size) {
+					case 1: val = ref->u1; break;
+					case 2: val = ref->u2; break;
+					case 4: val = ref->u4; break;
+				} break;
+				case TYPE_i32: switch (typ->size) {
+					case 1: val = ref->i1; break;
+					case 2: val = ref->i2; break;
+					case 4: val = ref->i4; break;
+				} break;
+				case TYPE_i64: val = ref->i8; break;
+				default: goto TYPE_XXX;
+			}
+			if (!var->pfmt || *var->pfmt != '%') {
+				if (var->kind == TYPE_ref)
+					fputfmt(fout, "%T:", var);
+				if (flgs & flg_hex)
+					fputfmt(fout, "%T[%08X](%D)", typ, val, val);
+				else
+					fputfmt(fout, "%T(%D)", typ, val);
+			}
+			else
+				fputfmt(fout, var->pfmt + 1, val);
 		} break;
-		case TYPE_flt: switch (typ->size) {
-			case 4:
-				if (flgs & flg_type) fputfmt(fout, "f32");
-				if (flgs & flg_hex) fputfmt(fout, "[%008x]", val->i4);
-				fputfmt(fout, fmt ? fmt : "(%.30g)", val->f4);
-				break;
-			case 8:
-				if (flgs & flg_type) fputfmt(fout, "f64");
-				if (flgs & flg_hex) fputfmt(fout, "[%016X]", val->f8);
-				fputfmt(fout, fmt ? fmt : "(%.30G)", val->f8);
-				break;
-			default: goto TYPE_XXX;
+		case TYPE_flt: {
+			flt64t val = 0;
+			switch (typ->size) {
+				case 4: val = ref->f4; break;
+				case 8: val = ref->f8; break;
+			}
+			if (!var->pfmt || *var->pfmt != '%') {
+				if (var->kind == TYPE_ref)
+					fputfmt(fout, "%T:", var);
+				if (flgs & flg_hex)
+					fputfmt(fout, "%T[%08X](%F)", typ, val, val);
+				else
+					fputfmt(fout, "%T(%F)", typ, val);
+			}
+			else
+				fputfmt(fout, var->pfmt + 1, val);
 		} break;
 		case TYPE_rec: {
 			symn tmp;
-			//~ fputfmt(fout, "rec{");
-			fputfmt(fout, "%T{", typ);
+			fputfmt(fout, "%T:%T {", var, typ);
 			for (tmp = typ->args; tmp; tmp = tmp->next) {
-				fputfmt(fout, "%T:", tmp);
-				vm_fputval(fout, tmp, (void*)((char*)val + tmp->offs), 0);
-				if (tmp->next)
+				if (tmp->kind != TYPE_ref)
+					continue;
+
+				if (tmp->pfmt && strcmp(tmp->pfmt, "%") == 0)
+					continue;
+
+				if (tmp != typ->args)
 					fputfmt(fout, ", ");
+				vm_fputval(fout, tmp, (void*)((char*)ref + tmp->offs), 0);
 			}
 			fputfmt(fout, "}");
 		} break;
 		case TYPE_arr: {
 			int i = 0;
 			struct astn tmp;
+			symn base = typ->type;
+			fputfmt(fout, "%I%T[", flgs & 0xff, var);
 			if (eval(&tmp, typ->init) != TYPE_int) {
-				//~ tmp.con.cint = val->i4;
-				//~ val = (void*)((char*)val + 4);
-				fputfmt(fout, ":array = error");
+				fputfmt(fout, "Unknown Dimension]");
 				break;
 			}
-			fputfmt(fout, "array[");
+			if (tmp.con.cint > 10)
+				tmp.con.cint = 10;
 			while (i < tmp.con.cint) {
-				vm_fputval(fout, typ, val, 1);
+				if (base->kind == TYPE_arr)
+					fputfmt(fout, "\n");
+
+				vm_fputval(fout, typ, (stkval*)((char*)ref + i * sizeOf(base)), ((flgs + 1) & 0xff));
 				if (++i < tmp.con.cint)
-					fputfmt(fout, ", ");
-				val = (void*)((char*)val + typ->type->size);
+					fputfmt(fout, ", ");//, isType(var) ? '\n': ' ');
 			}
+			if (base->kind == TYPE_arr)
+				fputfmt(fout, "\n%I", flgs & 0xff);
 			fputfmt(fout, "]");
 		} break;
 		default:
 		TYPE_XXX:
-			fputfmt(fout, "error(%t)", typ->kind);
+			fputfmt(fout, "%T(error):%t, %t", typ, typ->kind, castId(typ));
 			break;
 	}
 }
@@ -1236,18 +1242,17 @@ void vmTags(ccEnv s, char *sptr, int slen) {
 			symn typ = ptr->type;
 			if (ptr->file && ptr->line)
 				fputfmt(fout, "%s:%d:", ptr->file, ptr->line);
-			fputfmt(fout, "sp(%d):%s", spos, ptr->name);
+			fputfmt(fout, "sp(%d)", spos);
 			if (spos < 0) {
 				fputs(": cannot evaluate", fout);
 			}
 			else switch(typ ? typ->kind : 0) {
 				case TYPE_enu:
-					fputs(" = ", fout);
-					vm_fputval(fout, /* typ->type,  */ptr, sp, -1);
+					vm_fputval(fout, ptr, sp, 0);
 					break;
 				default:
 					fputs(" = ", fout);
-					vm_fputval(fout, /* typ,  */ptr, sp, -1);
+					vm_fputval(fout, ptr, sp, 0);
 					break;
 			}
 			fputc('\n', fout);
@@ -1274,10 +1279,10 @@ int vmTest() {
 			e += err = 1;
 		}
 		else switch (opc.opc) {
-			error_len: e += 1; debug("opcode size 0x%02x: '%A'", opc.opc, ip); break;
-			error_chk: e += 1; debug("stack check 0x%02x: '%A'", opc.opc, ip); break;
-			error_dif: e += 1; debug("stack difference 0x%02x: '%A'", opc.opc, ip); break;
-			error_opc: e += 1; debug("unimplemented opcode 0x%02x: '%A'", opc.opc, ip); break;
+			error_len: e += 1; fputfmt(stderr, "opcode size 0x%02x: '%A'\n", opc.opc, ip); break;
+			error_chk: e += 1; fputfmt(stderr, "stack check 0x%02x: '%A'\n", opc.opc, ip); break;
+			error_dif: e += 1; fputfmt(stderr, "stack difference 0x%02x: '%A'\n", opc.opc, ip); break;
+			error_opc: e += 1; fputfmt(stderr, "unimplemented opcode 0x%02x: '%A'\n", opc.opc, ip); break;
 			#define NEXT(__IP, __CHK, __DIF) {\
 				if (opc_tbl[opc.opc].size != 0 && opc_tbl[opc.opc].size != (__IP)) goto error_len;\
 				if (opc_tbl[opc.opc].chck != 9 && opc_tbl[opc.opc].chck != (__CHK)) goto error_chk;\

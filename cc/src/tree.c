@@ -1,4 +1,3 @@
-// { #include "tree.c"
 //~ tree.c - tree related stuff ------------------------------------------------
 #include <string.h>
 #include <math.h>
@@ -60,7 +59,7 @@ void eatnode(ccEnv s, astn ast) {
 
 signed constbol(astn ast) {
 	if (ast) switch (ast->kind) {
-		case TYPE_bit: //return ast->con.cint != 0;
+		case TYPE_bit:
 		case TYPE_int: return ast->con.cint != 0;
 		case TYPE_flt: return ast->con.cflt != 0;
 	}
@@ -84,6 +83,7 @@ flt64t constflt(astn ast) {
 	return 0;
 }
 
+// TODO: use cgen and exec;
 int eval(astn res, astn ast) {
 	struct astn lhs, rhs;
 	int cast;
@@ -94,21 +94,34 @@ int eval(astn res, astn ast) {
 	if (!res)
 		res = &rhs;
 
-	switch ((cast = ast->cst2)) {
-		case TYPE_u32: cast = TYPE_bit; break;
-		//~ case TYPE_u64: cast = TYPE; break;
+	switch (ast->cst2) {
+		case TYPE_bit: cast = TYPE_bit; break;
+
+		case TYPE_int: // TODO: define a = 9;
+		case TYPE_u32: cast = TYPE_int; break;
 		case TYPE_i32: cast = TYPE_int; break;
+
+		//~ case TYPE_u64: cast = TYPE_int; break;
 		case TYPE_i64: cast = TYPE_int; break;
+
 		case TYPE_f32: cast = TYPE_flt; break;
 		case TYPE_f64: cast = TYPE_flt; break;
-		//~ case TYPE_p4f: cast = TYPE; break;
-		//~ case TYPE_p2d: cast = TYPE; break;
+
+		//~ case TYPE_rec: return 0;
+
 		default:
+			debug("(%+k):%t / %d", ast, ast->cst2, ast->line);
+
+		case 0:
+		//~ case TYPE_def:
+			//~ return 0;
 			cast = ast->cst2;
 	}
 
 	switch (ast->kind) {
-		default: fatal("FixMe!");
+		default:
+			fatal("FixMe");
+			break;
 
 		case OPER_dot: {
 			if (!istype(ast->op.lhso)) return 0;
@@ -125,7 +138,10 @@ int eval(astn res, astn ast) {
 
 		case TYPE_int:
 		case TYPE_flt:
-		case CNST_str: *res = *ast; break;
+		case CNST_str:
+			*res = *ast;
+			break;
+
 		case TYPE_ref: {
 			symn var = ast->id.link;		// link
 			if (var && var->kind == TYPE_def && var->init) {
@@ -159,7 +175,7 @@ int eval(astn res, astn ast) {
 
 		case OPER_not: {		// '!'
 
-			dieif(ast->cst2 != TYPE_bit, "FixMe!\n%3K", ast);
+			dieif(ast->cst2 != TYPE_bit, "FixMe", ast);
 			if (!eval(res, ast->op.rhso))
 				return 0;
 
@@ -187,12 +203,10 @@ int eval(astn res, astn ast) {
 				case TYPE_int: {
 					res->kind = TYPE_int;
 					switch (ast->kind) {
-						default: fatal("FixMe!");
+						default: fatal("FixMe");
 						case OPER_add: res->con.cint = lhs.con.cint + rhs.con.cint; break;		// '+'
 						case OPER_sub: res->con.cint = lhs.con.cint - rhs.con.cint; break;		// '-'
 						case OPER_mul: res->con.cint = lhs.con.cint * rhs.con.cint; break;		// '*'
-						//~ case OPER_div: res->con.cint = lhs.con.cint / rhs.con.cint; break;		// '/'
-						//~ case OPER_mod: res->con.cint = lhs.con.cint % rhs.con.cint; break;		// '%'
 						case OPER_div: 
 						case OPER_mod: {
 							if (rhs.con.cint) switch (ast->kind) {
@@ -209,7 +223,7 @@ int eval(astn res, astn ast) {
 				case TYPE_flt: {
 					res->kind = TYPE_flt;
 					switch (ast->kind) {
-						default: fatal("FixMe!");
+						default: fatal("FixMe");
 						case OPER_add: res->con.cflt = lhs.con.cflt + rhs.con.cflt; break;		// '+'
 						case OPER_sub: res->con.cflt = lhs.con.cflt - rhs.con.cflt; break;		// '-'
 						case OPER_mul: res->con.cflt = lhs.con.cflt * rhs.con.cflt; break;		// '*'
@@ -235,7 +249,7 @@ int eval(astn res, astn ast) {
 			switch (rhs.kind) {
 				default: return 0;
 				case TYPE_int: switch (ast->kind) {
-					default: fatal("FixMe!");
+					default: fatal("FixMe");
 					case OPER_neq: res->con.cint = lhs.con.cint != rhs.con.cint; break;
 					case OPER_equ: res->con.cint = lhs.con.cint == rhs.con.cint; break;
 					case OPER_gte: res->con.cint = lhs.con.cint  > rhs.con.cint; break;
@@ -244,7 +258,7 @@ int eval(astn res, astn ast) {
 					case OPER_leq: res->con.cint = lhs.con.cint <= rhs.con.cint; break;
 				} break;
 				case TYPE_flt: switch (ast->kind) {
-					default: fatal("FixMe!");
+					default: fatal("FixMe");
 					case OPER_neq: res->con.cint = lhs.con.cflt != rhs.con.cflt; break;
 					case OPER_equ: res->con.cint = lhs.con.cflt == rhs.con.cflt; break;
 					case OPER_gte: res->con.cint = lhs.con.cflt  > rhs.con.cflt; break;
@@ -273,7 +287,7 @@ int eval(astn res, astn ast) {
 				case TYPE_int: {
 					res->kind = TYPE_int;
 					switch (ast->kind) {
-						default: fatal("FixMe!");
+						default: fatal("FixMe");
 						case OPER_shr: res->con.cint = lhs.con.cint >> rhs.con.cint; break;
 						case OPER_shl: res->con.cint = lhs.con.cint << rhs.con.cint; break;
 						case OPER_and: res->con.cint = lhs.con.cint  & rhs.con.cint; break;
@@ -282,7 +296,7 @@ int eval(astn res, astn ast) {
 					}
 				} break;
 			}
-		} break;// */
+		} break;
 
 		case OPER_lnd:
 		case OPER_lor: {
@@ -298,7 +312,7 @@ int eval(astn res, astn ast) {
 				case OPER_lnd: res->con.cint = lhs.con.cint && rhs.con.cint; break;
 			}
 		} break;
-		case OPER_sel: {		// '?:' TODO: do not return
+		case OPER_sel: {
 			if (!eval(&lhs, ast->op.test))
 				return 0;
 			return eval(res, lhs.con.cint ? ast->op.lhso : ast->op.rhso);
@@ -306,15 +320,13 @@ int eval(astn res, astn ast) {
 	}
 
 	if (cast != res->kind) switch (cast) {
-		default: fatal("FixMe!");
+		default: fatal("FixMe");
 
-		case TYPE_any:		// no cast
+		case TYPE_any:
 			break;
 
 		case TYPE_bit:
-			//~ TODO: this sucks
-			if (res->kind != TYPE_int)
-				res->con.cint = constbol(res);
+			res->con.cint = constbol(res);
 			res->kind = TYPE_int;
 			break;
 
@@ -362,4 +374,4 @@ int eval(astn res, astn ast) {
 				&& samenode(lhs->rhso, rhs->rhso);
 	}
 	return 0;
-}// */
+} // */

@@ -7,5 +7,5 @@ COPTS=-c -Wall -Wpadded
 LIBS=-lm
 CCC=gcc -m32
 LNK=gcc -m32
-DBG=gdb
+DBG=gdb --args
 LIBNAME=libpvmc.a

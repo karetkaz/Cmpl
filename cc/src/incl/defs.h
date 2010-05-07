@@ -6,17 +6,17 @@ TOKDEF(TYPE_bit, 0x00, 0, ".bit")	// bool, uns32, uns16, uns8
 TOKDEF(TYPE_int, 0x00, 0, ".int")	// int64, int32, int16, int8
 TOKDEF(TYPE_flt, 0x00, 0, ".flt")	// flt64, flt32
 TOKDEF(TYPE_arr, 0x00, 0, ".arr")	// pointer, string, array, ..., ???
+TOKDEF(TYPE_enu, 0xff, 0, "enum")	// const usually
 TOKDEF(TYPE_def, 0xff, 0, "define")	// struct, union, class?
-TOKDEF(TYPE_enu, 0xff, 0, "enum")
 TOKDEF(TYPE_rec, 0xff, 0, "struct") // union := struct:0
 //~ TOKDEF(TYPE_cls, 0xff, 0, "class")
 
-TOKDEF(CNST_str, 0x00, 0, ".str")	// TODO: replace with TYPE_str
+TOKDEF(CNST_str, 0x00, 0, ".str")	// TODO: replace with TYPE_str or array ?
 TOKDEF(TYPE_ref, 0x00, 0, ".ref")		// variable/function
 
+//~ TOKDEF(QUAL_con, 0xff, 0, "const")	// constant
 TOKDEF(QUAL_sta, 0xff, 0, "static")
 TOKDEF(QUAL_par, 0xff, 0, "parralel")
-//~ TOKDEF(QUAL_con, 0xff, 0, "const")	// constant
 //~ TOKDEF(QUAL_syn, 0xff, 0, "synchronized")
 
 //~ vmInterface ================================================================
@@ -27,11 +27,11 @@ TOKDEF(TYPE_i32, 0x00,  32, ".i32")
 TOKDEF(TYPE_i64, 0x00,  64, ".i64")
 TOKDEF(TYPE_f32, 0x00,  32, ".f32")
 TOKDEF(TYPE_f64, 0x00,  64, ".f64")
-//~ TOKDEF(TYPE_p4x, 0x00, 128, ".p4x")
+TOKDEF(TYPE_p4x, 0x00, 128, ".p4x")
 
 //~ Statements =================================================================
 TOKDEF(STMT_for, 0xff, 0, "for")	// stmt: for, while, repeat
-TOKDEF(STMT_if,  0xff, 0, "if")		// stmt: if then else | break | continue | goto
+TOKDEF(STMT_if,  0xff, 0, "if")		// stmt: if then else
 TOKDEF(STMT_els, 0xff, 0, "else")	// ????
 //~ TOKDEF(STMT_ret, 0xff, 0, "return")	// stmt
 TOKDEF(STMT_end, 0x00, 0, ".end")		// destruct calls ?
@@ -121,7 +121,7 @@ TOKDEF(ASGN_pow, 0x0a, 2, OP, ">")		// a **= b
 
 //~ TOKDEF(OPER_swi, 0xff, 0, 2, "switch")
 //~ TOKDEF(OPER_cas, 0xff, 0, 2, "case")
-//? TOKDEF(OPER_def, 0xff, 0, 2, "default")		// use else
+//? TOKDEF(OPER_def, 0xff, 0, 2, "default")		// or use else
 
 //~ TOKDEF(OPER_wht, 0xff, 0, 2, "while")		// while '(' <expr>')' <stmt>
 //~ TOKDEF(OPER_whf, 0xff, 0, 2, "until")		// until '(' <expr>')' <stmt>

@@ -22,6 +22,7 @@ enum Format {
 	prInit = 0x0080,
 	prLine = 0x0080,// xml
 };
+static void fputast(FILE *fout, astn ast, int mode, int level);
 static void fputsym(FILE *fout, symn sym, int mode, int level) {
 	//~ int rlev = mode & 0xf;
 
@@ -52,14 +53,20 @@ static void fputsym(FILE *fout, symn sym, int mode, int level) {
 		fputc('.', fout);
 	}
 
-	if (sym->kind == TYPE_arr)
-		fputs("[]", fout);
+	if (sym->kind == TYPE_arr) {
+		fputs("[", fout);
+		if (sym->init)
+			fputast(fout, sym->init, 0, 0);
+		fputs("]", fout);
+		return;
+	}
+
 	else if (!sym->name)
 		fputs("(null)", fout);
 	else
 		fputs(sym->name, fout);
 
-	if ((mode & prType) && sym->call) {
+	if ((mode & prArgs) && sym->call) {
 		symn arg = sym->args;
 		fputc('(', fout);
 		while (arg) {
@@ -76,8 +83,13 @@ static void fputsym(FILE *fout, symn sym, int mode, int level) {
 	}
 
 	if (mode & prInit) {
-		if (sym->init)
-			fputfmt(fout, " = %+k", sym->init);
+		if (sym->init) {
+			if ((mode & prType) && sym->type && sym->kind == TYPE_def) {
+				fputfmt(fout, " = %+T(%+k)", sym->type, sym->init);
+			}
+			else
+				fputfmt(fout, " = %+k", sym->init);
+		}
 		else if (sym->kind == TYPE_def)
 			fputfmt(fout, ": %-T", sym->type);
 	}
@@ -272,7 +284,7 @@ static void fputast(FILE *fout, astn ast, int mode, int level) {
 				if (putlrp) fputc(')', fout);
 			}
 			else switch (ast->kind) {
-				default: fatal("FixMe!");
+				default: fatal("FixMe");
 				case OPER_pls: fputs("+", fout); break;		// '+'
 				case OPER_mns: fputs("-", fout); break;		// '-'
 				case OPER_cmt: fputs("~", fout); break;		// '~'
@@ -326,7 +338,7 @@ static void fputast(FILE *fout, astn ast, int mode, int level) {
 		//{ TVAL
 		case EMIT_opc: fputfmt(fout, "emit"); break;
 		case TYPE_bit: fputfmt(fout, "%U", ast->con.cint); break;
-		case TYPE_int: fputfmt(fout, "%U", ast->con.cint); break;
+		case TYPE_int: fputfmt(fout, "%D", ast->con.cint); break;
 		case TYPE_flt: fputfmt(fout, "%F", ast->con.cflt); break;
 		case CNST_str: fputfmt(fout, "'%s'", ast->con.cstr); break;
 		case TYPE_ref: fputfmt(fout, "%s", ast->id.name); break;
@@ -368,19 +380,19 @@ static void FPUTFMT(FILE *fout, const char *msg, va_list ap) {
 			char	nil = 0;	// [?]? skip on null || zero value
 			char	sgn = 0;	// [+-]?
 			long	len = 0;	// ([0-9]*)?
+			char	pad = 0;	// 0?
 			long	prc = -1;	// (.('*')|([0-9])*)? precision
-			char	pad = ' ';	// 0?
-			char*	str = 0;	// the string to be printed
-			//~ %(\?)?[+-]?0?([1-9][0-9]*)?(.[1-9][0-9]*)?[tTkKAIbBoOxXuUdDfFeEsScC]
+			char*	str = NULL;	// the string to be printed
+			//~ %(\?)?[+-]?[0 ]?([1-9][0-9]*)?(.[1-9][0-9]*)?[tTkKAIbBoOxXuUdDfFeEsScC]
 			const char*	fmt = msg - 1;		// start of format string
 
 			if (*msg == '?') {
 				nil = *msg++;
 			}
-			if (*msg == '+' || *msg == '-') {
+			if (*msg == '-' || *msg == '+') {
 				sgn = *msg++;
 			}
-			if (*msg == '0') {
+			if (*msg == '0' || *msg == ' ') {
 				pad = *msg++;
 			}
 
@@ -391,12 +403,12 @@ static void FPUTFMT(FILE *fout, const char *msg, va_list ap) {
 
 			if (*msg == '.') {
 				msg++;
-				prc = 0;
 				if (*msg == '*') {
 					prc = va_arg(ap, uns32t);
 					msg++;
 				}
 				else {
+					prc = 0;
 					while (*msg >= '0' && *msg <= '9') {
 						prc = (prc * 10) + (*msg - '0');
 						msg++;
@@ -405,14 +417,20 @@ static void FPUTFMT(FILE *fout, const char *msg, va_list ap) {
 			}
 
 			switch (chr = *msg++) {
-				case 0: return;//--msg; break;
-				default: fputc(chr, fout); continue;
+				case 0:
+					//--msg; break;
+					return;
+
+				default:
+					fputc(chr, fout);
+					continue;
+
 				case 'T': {		// type
 					symn sym = va_arg(ap, symn);
 					if (!sym && nil)
 						continue;
 					switch (sgn) {
-						case '+': fputsym(fout, sym, 2, 0); break;
+						case '+': fputsym(fout, sym, prQual, 0); break;
 						case '-': fputsym(fout, sym, prType|prQual, 0); break;
 						default:  fputsym(fout, sym, 0, 0); break;
 					}
@@ -454,7 +472,8 @@ static void FPUTFMT(FILE *fout, const char *msg, va_list ap) {
 				case 'I': {		// ident
 					unsigned arg = va_arg(ap, unsigned);
 					len = len ? len * arg : arg;
-					if (!pad) pad = '\t';
+					if (!pad)
+						pad = '\t';
 					str = (char*)"";
 				} break;
 
@@ -610,11 +629,6 @@ void dumpsym(FILE *fout, symn sym, int alma) {
 
 		switch (ptr->kind) {
 
-			// constant: TYPE_def
-			//~ case CNST_int:
-			//~ case CNST_flt:
-			//~ case CNST_str: tch = '#'; break;
-
 			// variable/function
 			case TYPE_ref:
 				tch = chrtyp ? "$" : "var: ";
@@ -628,28 +642,20 @@ void dumpsym(FILE *fout, symn sym, int alma) {
 			// BaseType
 			case TYPE_vid:
 			case TYPE_bit:
-			//~ case TYPE_u32:
 			case TYPE_int:
-			//~ case TYPE_i32:
-			//~ case TYPE_i64:
 			case TYPE_flt:
-			//~ case TYPE_f32:
-			//~ case TYPE_f64:
 
 			//~ case TYPE_arr:
 			case TYPE_rec:
 				tch = chrtyp ? "^" : "typ: ";
-				*++sp = ptr->args;
 				break;
 
 			case TYPE_enu:
 				tch = chrtyp ? "#" : "enu: ";
-				*++sp = ptr->args;
 				break;
 
 			case EMIT_opc:
 				tch = chrtyp ? "@" : "opc: ";
-				*++sp = ptr->args;
 				break;
 
 			default:
@@ -657,6 +663,20 @@ void dumpsym(FILE *fout, symn sym, int alma) {
 				tch = chrtyp ? "?" : "err: ";
 				break;
 		}
+		switch (ptr->kind) {
+			//~ case TYPE_vid:
+			//~ case TYPE_bit:
+			//~ case TYPE_int:
+			//~ case TYPE_flt:
+
+			case TYPE_def:
+			case TYPE_ref:
+				break;
+
+			default:
+				*++sp = ptr->args;
+		}
+
 
 		//~ *++sp = ptr->args;
 		if (ptr->file && ptr->line)
@@ -672,19 +692,28 @@ void dumpsym(FILE *fout, symn sym, int alma) {
 				fputfmt(fout, "[@%s(%d)]: ", ptr->call ? "lc" : "st", -ptr->offs);
 			}
 			else
-				fputfmt(fout, "[@%xh]: ", ptr->offs);
+				fputfmt(fout, "[@%04xh]: ", ptr->offs);
 		}
 		else if (ptr->kind == EMIT_opc) {
 			fputfmt(fout, "[@%02xh]: ", ptr->size);
 		}
 		else if (ptr->kind != TYPE_def) {
-			fputfmt(fout, "[size: %2d:%02d]: ", ptr->size, ptr->algn);
+			fputfmt(fout, "[size: %d:%d]: ", ptr->size, ptr->algn);
 		}
 
 		//~ prType+prQual+prArgs+prInit
 		fputsym(fout, ptr, prType|prQual|prArgs|prInit, 0);
 
 		fputc('\n', fout);
+
+		if (1 && ptr->used) {	// global usese
+			astn ast = ptr->used;
+			while (ast != NULL) {
+				//~ fputfmt(fout, "%s:%d:using `%T` here\n", ptr->file, ast->line, ptr);
+				ast = ast->id.nuse;
+			}
+		}
+
 		fflush(fout);
 		if (!alma)
 			break;
@@ -702,7 +731,7 @@ void dumpxml(FILE *fout, astn ast, int lev, const char* text, int level) {
 	if (level & prLine) fputfmt(fout, " line='%d'", ast->line);
 	if (level & prArgs) fputfmt(fout, " stmt='%?+k'", ast);
 	switch (ast->kind) {
-		default: fatal("FixMe!");
+		default: fatal("FixMe");
 		//{ STMT
 		case OPER_nop: {
 			fputfmt(fout, ">\n");
@@ -736,11 +765,13 @@ void dumpxml(FILE *fout, astn ast, int lev, const char* text, int level) {
 		case OPER_fnc: {		// '()'
 			astn arg = ast->op.rhso;
 			fputfmt(fout, ">\n");
-			while (arg && arg->kind == OPER_com) {
-				dumpxml(fout, arg->op.rhso, lev + 1, "push", level);
-				arg = arg->op.lhso;
+			if (arg) {
+				while (arg && arg->kind == OPER_com) {
+					dumpxml(fout, arg->op.rhso, lev + 1, "push", level);
+					arg = arg->op.lhso;
+				}
+				dumpxml(fout, arg, lev + 1, "push", level);
 			}
-			dumpxml(fout, arg, lev + 1, "push", level);
 			dumpxml(fout, ast->op.lhso, lev + 1, "call", level);
 			fputfmt(fout, "%I</%s>\n", lev, text);
 		} break;
@@ -801,10 +832,34 @@ void dumpxml(FILE *fout, astn ast, int lev, const char* text, int level) {
 
 		//~ case TYPE_ref: fputfmt(fout, ">%t[%T]</%s>\n", ast->id.link ? ast->id.link->kind : 0, ast->id.link, text); break;
 		case TYPE_ref: fputfmt(fout, ">%-T</%s>\n", ast->id.link, text); break;
-		case TYPE_def: {
+		/*case TYPE_def: {
 			symn var = ast->id.link;
 			if (var && var->init) {
 				fputfmt(fout, ">\n");
+				dumpxml(fout, var->init, lev + 1, "init", level);
+				fputfmt(fout, "%I</%s>\n", lev, text);
+			}
+			else
+				fputfmt(fout, "/>\n");
+		} break;*/
+		case TYPE_def: {
+			symn var = ast->id.link;
+			if (var && var->args) {
+				fputfmt(fout, ">\n");
+				symn def = var->args;
+				for (def = var->args; def; def = def->next) {
+					fputfmt(fout, "%I<def id='%t' name='%+T'", lev+1, def->kind, def);
+					if (level & prType) fputfmt(fout, " type='%?T'", def->type);
+					//~ if (level & prCast) fputfmt(fout, " cast='%?t'", ast->cst2);
+					if (level & prLine) fputfmt(fout, " line='%d'", def->line);
+					if (level & prArgs && def->init) fputfmt(fout, " stmt='%T = %?+k'", def, def->init);
+					fputfmt(fout, ">\n");
+					dumpxml(fout, def->init, lev + 2, "init", level);
+				}
+			}
+			if (var && var->init) {
+				if (!var->args)
+					fputfmt(fout, ">\n");
 				dumpxml(fout, var->init, lev + 1, "init", level);
 				fputfmt(fout, "%I</%s>\n", lev, text);
 			}
@@ -839,7 +894,7 @@ void dump(state s, char *file, dumpMode mode, char *text) {
 		fputs(text, fout);
 
 	switch (mode & dumpMask) {
-		default: fatal("FixMe!");
+		default: fatal("FixMe");
 		case dump_sym: dumpsym(fout, s->cc->defs, level); break;
 		case dump_ast: dumpast(fout, s->cc->root, level); break;
 		case dump_asm: dumpasm(fout, s->vm, level); break;

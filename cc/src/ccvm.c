@@ -17,13 +17,14 @@ const tok_inf tok_tbl[255] = {
 	{0},
 };
 const opc_inf opc_tbl[255] = {
-	#define OPCDEF(Name, Code, Size, Args, Push, Time, Mnem) \
-			{Code, Size, Args, Push, Mnem},
+	//#define OPCDEF(Name, Code, Size, Args, Push, Time, Mnem)
+	#define OPCDEF(Name, Code, Size, Chck, Diff, Time, Mnem)\
+		{Code, Size, Chck, Diff, Mnem},
 	#include "code.h"
 	{0},
 };
 
-int fixargs2(symn fun, int sp) {
+static int fixargs2(symn fun, int sp) {
 	symn arg;
 	for (arg = fun->args; arg; arg = arg->next) {
 		sp += arg->type->size / 4;
@@ -33,7 +34,7 @@ int fixargs2(symn fun, int sp) {
 		sp -= arg->type->size / 4;
 
 		switch (castId(arg->type)) {
-			default: fatal("FixMe!");
+			default: fatal("FixMe");
 			case TYPE_u32:
 			case TYPE_i32:
 			case TYPE_f32:
@@ -46,7 +47,7 @@ int fixargs2(symn fun, int sp) {
 	return sp;
 }
 
-void fixargs(symn fun, astn argn) {
+/*void fixargs(symn fun, astn argn) {
 	symn args = fun->args;
 	if (argn) while (args && argn) {
 		args->offs = argn->XXXX;
@@ -54,10 +55,12 @@ void fixargs(symn fun, astn argn) {
 		argn = argn->next;
 	}
 	else while (args) {
+		args->kind = TYPE_ref;
 		args->offs = 1;
+
 		args = args->next;
 	}
-}
+}// */
 
 #define dbg_ast(__AST) debug("cgen(err, %+k)\n%3K", __AST, __AST)
 #define dbg_arg(__AST) debug("cgen(arg, %+k)\n%3K", __AST, __AST)
@@ -76,7 +79,8 @@ static int push(state s, astn ast) {
 
 	cast = ast->cst2;
 
-	//~ debug("push(arg, %+k, %t)", ast, cast);
+	//~ if (opcgen(s, ast))
+		//~ return EMIT_opc;
 
 	if (s->vm->opti && eval(&tmp, ast)) {
 		ast = &tmp;
@@ -85,27 +89,31 @@ static int push(state s, astn ast) {
 	return cgen(s, ast, cast);
 }
 int cgen(state s, astn ast, int get) {
-	//~ int ipdbg = emit(s->vm, get_ip);
+	int ipdbg = emit(s->vm, get_ip);
 	struct astn tmp;
 	int ret = 0;
 
 	if (!ast) {
-		if (get == TYPE_vid)
-			return TYPE_vid;
-		debug("null ast");
+		//~ if (get == TYPE_vid)
+			//~ return TYPE_vid;
+		fatal("FixMe");
 		return 0;
 	}
 
-	dieif(!ast->type, "untyped ast: %t(%+k)", ast->kind, ast);
+	if (!ast->type) {
+		dieif(!ast->type, "FixMe %d: %t: %+k", ast->line, ast->kind, ast);
+	}
 
 	if (get == 0)
 		get = ast->cst2;
-
-	ret = castId(ast->type);
+	ret = ast->type->cast;
 
 	switch (ast->kind) {
-		default: fatal("FixMe!: %t(%k)", ast->kind, ast);
-		//{ STMT; TODO: catch and print errors here
+		default:
+			fatal("FixMe");
+			return 0;
+
+		//{ STMT
 		case OPER_nop: {	// expr statement or decl
 			int stpos = emit(s->vm, get_sp);
 			emit(s->vm, opc_line, ast->line);
@@ -128,7 +136,7 @@ int cgen(state s, astn ast, int get) {
 			}
 			//~ for (sym = ast->type; sym; sym = sym->next);	// destruct?
 			if (get == TYPE_vid && stpos != emit(s->vm, get_sp)) {
-				if (!emitidx(s->vm, opc_pop, stpos)) {
+				if (!emitidx(s->vm, opc_drop, stpos)) {
 					debug("%+k", ast);
 					return 0;
 				}
@@ -138,7 +146,7 @@ int cgen(state s, astn ast, int get) {
 			int jmpt = 0, jmpf = 0;
 			int tt = eval(&tmp, ast->stmt.test);
 
-			dieif(get != TYPE_vid, "FixMe!");
+			dieif(get != TYPE_vid, "FixMe");
 			emitint(s->vm, opc_line, ast->line);
 
 			if (ast->cst2 == QUAL_sta && (ast->stmt.step || !tt)) {
@@ -273,7 +281,7 @@ int cgen(state s, astn ast, int get) {
 
 			//~ TODO: if (init is decl) destruct;
 			if (stpos != emit(s->vm, get_sp))
-				dieif(!emitidx(s->vm, opc_pop, stpos), "FixMe!");
+				dieif(!emitidx(s->vm, opc_drop, stpos), "FixMe");
 		} return TYPE_vid;
 		//}
 		//{ OPER
@@ -317,55 +325,34 @@ int cgen(state s, astn ast, int get) {
 						as = as->next;
 					}
 				}
-				//~ return ret;
 				break;
 			}
 
-			// push args except the first
-			while (argv && argv->kind == OPER_com) {
-				astn arg = argv->op.rhso;
-				if (!push(s, arg)) {
-					dbg_arg(arg);
-					return 0;
-				}
-				arg->XXXX = emit(s->vm, get_sp);
-				arg->next = argl;
-				argl = arg;
-				argv = argv->op.lhso;
-			}
-
-			if (var == emit_opc) {			// emit()
-				symn opc = linkOf(argv, 1);	// refs & types
-
-				if (opc && opc->kind == EMIT_opc) {
-					ret = castId(opc->type);
-					if (ret == TYPE_vid) {
-						// in case of nop 4ex
-						//~ debug("emit(%+k): %T(%T)", ast->op.rhso, ast->type, opc);
-						ret = get;
-					}
-					//~ only this emit can err
-					if (!emitint(s->vm, opc->offs, opc->init ? opc->init->con.cint : 0)) {
-						error(s, ast->line, "error emiting opcode: %+k", argv);
-						if (emit(s->vm, get_sp) > 0)
-							info(s, s->cc->file, ast->line, "%+k underflows stack.", ast);
-							//~ debug("opcode expected, not %k : %T", argv, opc);
+			// push args
+			if (argv) {
+				while (argv->kind == OPER_com) {
+					astn arg = argv->op.rhso;
+					if (!push(s, arg)) {
+						dbg_arg(arg);
 						return 0;
 					}
+					//~ arg->XXXX = emit(s->vm, get_sp);
+					arg->next = argl;
+					argl = arg;
+					argv = argv->op.lhso;
 				}
-				else if (opc == type_vid) {
-					ret = get;
-				}
-				else {
-					error(s, ast->line, "opcode expected, and or arguments, got `%T`", opc);
-					return 0;
-				}
-			}
-			else if (var) {					// call()
-				if (argv && !push(s, argv)) {
+				if (!push(s, argv)) {
 					dbg_arg(argv);
 					return 0;
 				}
+			}
+
+			if (var == emit_opc) {			// emit()
+				//~ if (var->type == type_vid)
+				//~ if (!argv)
+					ret = get;
+			}
+			else if (var) {					// call()
 				argv->next = argl;
 				argl = argv;
 				if (var->call) {
@@ -376,9 +363,7 @@ int cgen(state s, astn ast, int get) {
 							info(s, var->file, var->line, "defined here");
 							return 0;
 						}
-						trace("call.inl(%+k: %+T): %+T@", ast, var, ast->type);
 						fixargs2(var, -stargs);
-						//~ fixargs2(var, argl);
 
 						if (!cgen(s, var->init, ret)) {
 							debug("%+k:%+T", var->init, ast->type);
@@ -389,8 +374,9 @@ int cgen(state s, astn ast, int get) {
 							//~ dumpasmdbg(stderr, s->vm, ipdbg, 0x10);
 							return 0;
 						}
+						// TODO: cgen.call: fix this, result should be a reference
 						switch (ret) {
-							default: fatal("FixMe!");
+							default: fatal("FixMe");
 							case TYPE_u32:
 							case TYPE_i32:
 							case TYPE_f32: if (!emitidx(s->vm, opc_set1, stargs -= 1)) return 0; break;
@@ -398,24 +384,20 @@ int cgen(state s, astn ast, int get) {
 							case TYPE_f64: if (!emitidx(s->vm, opc_set2, stargs -= 2)) return 0; break;
 							//~ case TYPE_p4x: if (!emitidx(s->vm, opc_set4, stargs -= 4)) return 0; break;
 						}
-						if (!emitidx(s->vm, opc_pop, stargs))
+						if (!emitidx(s->vm, opc_drop, stargs))
 							return 0;
 					}
 					else {
-						if (var->offs < 0) {
-							trace("call.lib(%+k: %+T): %+T@", ast, var, ast->type);
-							if (!emit(s->vm, opc_libc, -var->offs)) {
-								debug("%+k", ast);
-								return 0;
-							}
+						if (!emitref(s->vm, opc_call, var->offs)) {
+							debug("%+k", ast);
+							return 0;
 						}
-						else {
-							trace("call.fun(%+k: %+T): %+T@", ast, var, ast->type);
-							if (!emit(s->vm, opc_call, var->offs)) {
-								debug("%+k", ast);
-								return 0;
-							}
-						}
+						/*
+						if (var->offs < 0)
+							debug("call.lib(%+k: %+T): %+T@", ast, var, ast->type);
+						else
+							debug("call.fun(%+k: %+T): %+T@", ast, var, ast->type);
+						*/
 					}
 				}
 				else {
@@ -428,7 +410,7 @@ int cgen(state s, astn ast, int get) {
 				if (!argv || argv != ast->op.rhso /* && cast*/)
 					warn(s, 5, s->cc->file, ast->line, "multiple values: '%+k'", ast);
 
-				if (!(push(s, argv))) {
+				/*if (!(push(s, argv))) {
 					dbg_arg(argv);
 					return 0;
 				}// */
@@ -439,8 +421,11 @@ int cgen(state s, astn ast, int get) {
 				dbg_lhs(ast);
 				return 0;
 			}
-			if (eval(&tmp, ast->op.rhso)) {
-				int offs = ast->type->size * constint(&tmp);
+			if (s->vm->opti && eval(&tmp, ast->op.rhso)) {
+				int offs = sizeOf(ast->type) * constint(&tmp);
+				if (constint(&tmp) >= ast->op.lhso->type->size) {
+					error(s, ast->line, " indes out of bounds: %+k", ast);
+				}
 				if (!emit(s->vm, opc_inc, offs)) {
 					if (!emit(s->vm, opc_ldc4, offs)) {
 						dbg_opc(opc_ldc4, ast);
@@ -453,7 +438,7 @@ int cgen(state s, astn ast, int get) {
 				}
 			}
 			else {
-				if (!emit(s->vm, opc_ldc4, ast->type->size)) {
+				if (!emit(s->vm, opc_ldc4, sizeOf(ast->type))) {
 					dbg_opc(opc_ldc4, ast);
 					return 0;
 				}
@@ -466,9 +451,10 @@ int cgen(state s, astn ast, int get) {
 					return 0;
 				}
 			}
+			///TODO: what the fuck ?
 			if ((ret = get) != TYPE_ref) {
 				ret = castId(ast->type);
-				if (!emit(s->vm, opc_ldi, ast->type->size)) {
+				if (!emit(s->vm, opc_ldi, sizeOf(ast->type))) {
 					debug("emit(opc_x%02x, %t, %+k, %t)", opc_ldi, ret, ast, ast->cst2);
 					return 0;
 				}
@@ -504,7 +490,7 @@ int cgen(state s, astn ast, int get) {
 			if (get == TYPE_ref)
 				return TYPE_ref;
 
-			if (!emit(s->vm, opc_ldi, ast->type->size)) {
+			if (!emit(s->vm, opc_ldi, sizeOf(ast->type))) {
 				dbg_opc(opc_ldi, ast);
 				return 0;
 			}
@@ -516,7 +502,7 @@ int cgen(state s, astn ast, int get) {
 		case OPER_cmt: {	// '~'
 			int opc = -1;
 			switch (ast->kind) {
-				default: fatal("FixMe!");
+				default: fatal("FixMe");
 				case OPER_pls: return cgen(s, ast->op.rhso, get);
 				case OPER_mns: opc = opc_neg; break;
 				case OPER_not: opc = opc_not; break;
@@ -552,7 +538,7 @@ int cgen(state s, astn ast, int get) {
 		case OPER_mod: {	// '%'
 			int opc = -1;
 			switch (ast->kind) {
-				default: fatal("FixMe!");
+				default: fatal("FixMe");
 				case OPER_add: opc = opc_add; break;
 				case OPER_sub: opc = opc_sub; break;
 				case OPER_mul: opc = opc_mul; break;
@@ -584,30 +570,33 @@ int cgen(state s, astn ast, int get) {
 				dbg_opc(opc, ast);
 				return 0;
 			}
-			switch (ast->kind) {
-				default:
-					ret = castId(ast->type);
-					break;
 
+			#if DEBUGGING
+			// these things must be this way
+			dieif(ret != castId(ast->type), "RemMe");
+			switch (ast->kind) {
 				case OPER_neq:
 				case OPER_equ:
 				case OPER_geq:
 				case OPER_lte:
 				case OPER_leq:
 				case OPER_gte:
-					ret = TYPE_bit;
+					dieif(ret != TYPE_bit, "RemMe");
 					break;
 			}
-			//~ debug("OP(%+k: %t, %t): %t", ast, ast->cast, get, ret);
+			#endif
 		} break;
 
-		//~ case OPER_lnd:		// &&
-		//~ case OPER_lor:		// ||
-		case OPER_sel: {		// ?:
+		//~ case OPER_lnd:		// '&&'
+		//~ case OPER_lor:		// '||'
+		case OPER_sel: {		// '?:'
 			int jmpt, jmpf;
-			int tt = eval(&tmp, ast->op.test);
-			if (s->vm->opti && tt) {
-				ret = cgen(s, constbol(&tmp) ? ast->op.lhso : ast->op.rhso, get);
+			if (s->vm->opti && eval(&tmp, ast->op.test)) {
+				// TODO: old: ret = cgen(s, constbol(&tmp) ? ast->op.lhso : ast->op.rhso, get);
+				if (!cgen(s, constbol(&tmp) ? ast->op.lhso : ast->op.rhso, ret)) {
+					debug("cgen(%+k)", ast);
+					return 0;
+				}
 			}
 			else {
 				int stpos = emit(s->vm, get_sp);
@@ -640,89 +629,40 @@ int cgen(state s, astn ast, int get) {
 				}
 				fixjump(s->vm, jmpf, emit(s->vm, get_ip), 0);
 			}
-			ret = castId(ast->type);
 		} break;
 
-		case ASGN_set: {		// '='
-			// TODO: lhs should be evaluated first !!!
-			//~ lhs in (TYPE_ref, OPER_dot, OPER_fnc, OPER_idx)
-			int opc = -1;
-
-			symn var = linkOf(ast->op.lhso, 0);
-			ret = castId(ast->type);
+		case ASGN_set: {		// ':='
+			// TODO: lhs should be evaluated first ??? or not
 
 			if (!cgen(s, ast->op.rhso, ret)) {
 				dbg_rhs(ast);
 				return 0;
 			}
 			if (get != TYPE_vid) {
-				switch (ast->type->size) {
-					default: fatal("FixMe!");
-					case 1:
-					case 2:
-					case 4:
-						opc = opc_dup1;
-						break;
-
-					case 8:
-						opc = opc_dup2;
-						break;
-
-					case 16:
-						opc = opc_dup4;
-						break;
+				// in case a = b = sum(2, 700);
+				// dupplicate the result
+				if (!emitint(s->vm, opc_ldsp, 0)) {
+					debug("emit(%+k)", ast);
+					return 0;
 				}
-				if (!emit(s->vm, opc, 0)) {
+				if (!emit(s->vm, opc_ldi, sizeOf(ast->type))) {
 					debug("emit(%+k)", ast);
 					return 0;
 				}
 			}
 
-			if (var) {
-				if (var->offs < 0) {
-					switch (ast->type->size) {
-						default: fatal("FixMe!");
-						case 1:
-						case 2:
-						case 4:
-							opc = opc_set1;
-							break;
-
-						case 8:
-							opc = opc_set2;
-							break;
-
-						case 16:
-							opc = opc_set4;
-							break;
-					}
-					if (!emitidx(s->vm, opc, var->offs)) {
-						debug("emit(%+k, %d)", ast);
-						return 0;
-					}
-				}
-				else {
-					debug("%+k", ast);
-					if (!cgen(s, ast->op.lhso, TYPE_ref)) {
-						debug("cgen(lhs, %+k)", ast->op.lhso);
-						return 0;
-					}
-				}
-				//~ if (var->load) {}
+			if (!cgen(s, ast->op.lhso, TYPE_ref)) {
+				dbg_lhs(ast);
+				return 0;
 			}
-			else {
-				if (!cgen(s, ast->op.lhso, TYPE_ref)) {
-					dbg_rhs(ast);
-					return 0;
-				}
-				if (!emit(s->vm, opc_sti, ast->type->size)) {
-					debug("emit(%+k, %d)", ast);
-					return 0;
-				}
+			if (!emit(s->vm, opc_sti, sizeOf(ast->type))) {
+				dbg_opc(opc_ldc4, ast);
+				return 0;
 			}
 		} break;
 		//}
 		//{ TVAL
+		case TYPE_bit:
 		case TYPE_int: switch (get) {
 			//~ TODO: check overflows
 			case TYPE_vid: return TYPE_vid;
@@ -748,75 +688,67 @@ int cgen(state s, astn ast, int get) {
 		//~ case CNST_str: return 0;	// unimpl yet(ref)
 
 		case TYPE_ref: {					// use (var, func, define)
-			symn typ = ast->type;			// type
+			//~ symn typ = ast->type;			// type
 			symn var = ast->id.link;		// link
-			dieif(!var, "FixMe!");
+			dieif(!var, "FixMe");
 
-			if (var->kind == TYPE_ref) {
-				if (get == TYPE_ref) {
-					if (var->offs < 0) {
-						return emitidx(s->vm, opc_ldsp, var->offs) ? TYPE_ref : 0;
-					}
-					else {
-						return emitint(s->vm, opc_ldcr, var->offs) ? TYPE_ref : 0;
-					}
-				}
-
-				//~ TODO: Indirection
-				else if (var->offs < 0) {	// on stack
-					switch (ret = castId(typ)) {
-						default: fatal("FixMe!: (%t, %t):%+k:%T", get, ret, ast, typ);
-						case TYPE_u32:
-						case TYPE_i32:
-						case TYPE_f32: if (!emitidx(s->vm, opc_dup1, var->offs)) return 0; break;
-						case TYPE_i64:
-						case TYPE_f64: if (!emitidx(s->vm, opc_dup2, var->offs)) return 0; break;
-						//~ case TYPE_p4x: if (!emitidx(s->vm, opc_dup4, var->offs)) return 0; break;
-					}
-				}
-				else {						// in memory
-					if (!emit(s->vm, opc_ldc4, var->offs)) {
+			switch (var->kind) {
+				case TYPE_ref:
+					if (!emitref(s->vm, opc_ldcr, var->offs)) {
 						dbg_opc(opc_ldc4, ast);
 						return 0;
 					}
-					if (!emit(s->vm, opc_ldi, ast->type->size)) {
-						dbg_opc(opc_ldc4, ast);
+					if (get != TYPE_ref) {				// value needed
+						// TODO: (Sign-Zero) extend
+						if (!emit(s->vm, opc_ldi, sizeOf(ast->type))) {
+							dbg_opc(opc_ldi, ast);
+							return 0;
+						}
+					}
+					else	// TODO: why?
+						ret = TYPE_ref;
+					break;
+				case EMIT_opc:
+					// TODO: what if get = TYPE_ref ?
+					if (!emitint(s->vm, var->offs, var->init ? constint(var->init) : 0)) {
+						error(s, ast->line, "error emiting opcode: %+k", ast);
+						if (emit(s->vm, get_sp) > 0)
+							info(s, s->cc->file, ast->line, "%+k underflows stack.", ast);
 						return 0;
 					}
-				}
-			}
-			else {
-				if (var->kind == TYPE_def && var->init)
-					return cgen(s, var->init, get);
+					return TYPE_vid;
 
-				error(s, ast->line, "invalid rvalue `%+k`", ast);
-				return 0;
+				case TYPE_def:
+					// TODO: this sucks
+					if (var->init)
+						return cgen(s, var->init, get);
+				default:
+					error(s, ast->line, "invalid rvalue `%+k`", ast);
+					return 0;
 			}
 		} break;
 		case TYPE_def: {					// new (var, func, define)
-			symn typ = ast->type;			// type
-			symn var = ast->id.link;		// TODO: ?link?
+			symn var = ast->id.link;
+			symn typ = ast->type;
 
-			dieif(!var, "FixMe!");
+			dieif(!var, "FixMe");
 
-			if (var->call) {
-				// assert that if not inline fun, then offset > 0
-				//~ fixargs(var, NULL);
-				//~ debug("function: %+k", ast);
+			if (var->call)
 				return TYPE_vid;
-			}// */
+
 			if (var->kind == TYPE_ref) {
 				astn val = var->init;
-				//~ debug("cgen(var): %+k:%T", ast, ast->type);
-				dieif(ast->type != var->type, "FixMe!");
+
 				if (s->vm->opti && eval(&tmp, val)) {
 					val = &tmp;
 				}
-				switch (ret = castId(typ)) {
-					default: fatal("FixMe!");
+
+				// TODO: I don't like this
+				dieif(ast->type != var->type, "FixMe");
+				switch (ret) {
+					default: fatal("FixMe: %t", ret);
 					case TYPE_bit:
 					case TYPE_u32:
-					//~ case TYPE_int:
 					case TYPE_i32:
 					case TYPE_f32: {
 						if (!(val ? cgen(s, val, ret) : emit(s->vm, opc_ldz1))) {
@@ -833,43 +765,34 @@ int cgen(state s, astn ast, int get) {
 						}
 						var->offs = emit(s->vm, get_sp);
 					} break;
-					/*case TYPE_p4x: {
+					case TYPE_p4x: {
 						if (!(val ? cgen(s, val, ret) : emit(s->vm, opc_ldz4))) {
-							dbg_arg(val);
+							dbg_ast(val);
 							return 0;
 						}
 						var->offs = emit(s->vm, get_sp);
-					} break;// */
-					case TYPE_rec: {
-						if (!(val ? cgen(s, val, ret) : emit(s->vm, opc_loc, ((typ->size + 3) / 4)))) {
-							dbg_arg(val);
-							return 0;
-						}
-						var->offs = emit(s->vm, get_sp);
-						if (-4 * var->offs < typ->size) {
-							error(s, ast->line, "stack underflow", -4*var->offs, typ->size);
-							return 0;
-						}
-					} break;//*/
-					case TYPE_arr: {
-						if (!(val ? cgen(s, val, ret) : emit(s->vm, opc_loc, ((typ->size + 3) / 4)))) {
-							dbg_arg(val);
-							return 0;
-						}
-						var->offs = emit(s->vm, get_sp);
-						if (!emit(s->vm, opc_ldc4, var->offs)) {
-							dbg_opc(opc_ldc4, ast);
-							return 0;
-						}
-						if (-4 * var->offs < typ->size) {
-							error(s, ast->line, "stack underflow", -4*var->offs, typ->size);
-							return 0;
-						}
+					} break;
+
+					case 0: switch (ret = typ->kind) {
+						default: fatal("FixMe: %t", ret);
+						case TYPE_rec:
+						case TYPE_arr: {
+							if (!(val ? cgen(s, val, ret) : emitint(s->vm, opc_spc, sizeOf(typ)))) {
+								dbg_arg(ast);
+								return 0;
+							}
+							var->offs = emit(s->vm, get_sp);
+							if (-4 * var->offs < sizeOf(typ)) {
+								error(s, ast->line, "stack underflow", -4*var->offs, typ->size);
+								dumpasmdbg(stderr, s->vm, ipdbg, 0x10);
+								return 0;
+							}
+						} break;
 					} break;
 				}
 				return ret;
 			}
-
+			// else [enum, struct, define]
 		} break;
 
 		//~ case TYPE_rec:
@@ -881,7 +804,7 @@ int cgen(state s, astn ast, int get) {
 	//~ if (ret != castId(ast->type))	//? emit(void, ...);
 		//~ debug("gen(%t, %t, %t, '%+k')", get, castId(ast->type), ret, ast);
 	if (get != ret) switch (get) {
-		case TYPE_vid: return TYPE_vid;		// TODO: FixMe!
+		case TYPE_vid: return TYPE_vid;
 		case TYPE_u32: switch (ret) {
 			case TYPE_bit:
 			case TYPE_i32: break;
@@ -993,19 +916,17 @@ int gencode(state s, int level) {
 	for (sym = cc->all; sym; sym = sym->defs) {
 		if (sym->kind == TYPE_ref && !sym->call) {
 			sym->offs = vm->ds;
-			vm->ds += sym->type->size;
+			vm->ds += sizeOf(sym->type);
 			//~ mem[code->ds] = sym->init;
 		}
-		//~ TODO: alloc and other stuff
 	}
 	// emit global functions
 	for (sym = cc->defs; sym; sym = sym->next) {
 		if (sym->kind == TYPE_ref && sym->call) {
-			debug("TODO(%T)", sym);
+			debug("(%T)", sym);
 			//~ cgen(s, sym->init, TYPE_vid);
 			continue;
 		}
-		//~ TODO: alloc and other stuff
 	}
 	// */
 
@@ -1019,7 +940,7 @@ int gencode(state s, int level) {
 	emit(s->vm, opc_nop);
 	if (s->cc->root)
 		cgen(s, cc->root, 0);			// TODO: TYPE_vid: to clear the stack
-	emit(s->vm, opc_sysc, 0);
+	emit(s->vm, opc_libc, 0);
 	emit(s->vm, seg_code);
 	//~ emit debug symbols
 
@@ -1194,8 +1115,9 @@ state gsInit(void* mem, unsigned size) {
 	state s = mem;
 	s->_cnt = size - sizeof(struct state);
 	s->_ptr = s->_mem;
-	s->cc = 0;
-	s->vm = 0;
+	s->logf = stderr;
+	s->cc = NULL;
+	s->vm = NULL;
 	return s;
 }
 ccEnv ccInit(state s) {
@@ -1204,7 +1126,6 @@ ccEnv ccInit(state s) {
 	symn type_i08 = 0, type_i16 = 0;
 	symn type_u08 = 0, type_u16 = 0;
 	//~ symn type_u64 = 0, type_f16 = 0;
-	const int TYPE_p4x = 0;
 
 	if (cc == NULL)
 		return NULL;
@@ -1248,7 +1169,7 @@ ccEnv ccInit(state s) {
 
 	type_vid = install(cc,  "void", TYPE_vid | symn_read, TYPE_vid, 0);
 
-	type_bol = install(cc,  "bool", TYPE_bit | symn_read, TYPE_u32, 1);
+	type_bol = install(cc,  "bool", TYPE_bit | symn_read, TYPE_bit, 1);
 
 	type_u08 = install(cc,  "uns8", TYPE_int | symn_read, TYPE_u32, 1);
 	type_u16 = install(cc, "uns16", TYPE_int | symn_read, TYPE_u32, 2);
@@ -1374,7 +1295,7 @@ int ccDone(state s) {
 	s->_cnt -= cc->_ptr - s->_ptr;
 	s->_ptr = cc->_ptr;
 
-	dieif(s->_cnt != cc->_cnt, "FixMe!(%d)", s->_cnt - cc->_cnt);
+	dieif(s->_cnt != cc->_cnt, "FixMe", s->_cnt - cc->_cnt);
 	//~ cc->_ptr = 0;
 	cc->_cnt = 0;
 
@@ -1384,7 +1305,7 @@ int ccDone(state s) {
 	// if not initialized
 	if (s->vm == NULL)
 		return 0;
-	//TODO:...
+	// flush and release files
 	debug("code:%d Bytes", (s->_ptr - s->_mem) + s->vm->_ptr);
 	return 0;
 }// */
@@ -1471,18 +1392,6 @@ int mk_test(char *file, int size) {
 	fclose(f);
 	return 0;
 }
-void fputsymlst(FILE* fout, symn sym) {
-	while (sym) {
-		fputfmt(fout, "%+T\n", sym);
-		sym = sym->next;
-	}
-}
-void fputsymtbl(FILE* fout, ccEnv s) {
-	int i;
-	for (i = 0; i < TBLS; i++) {
-		fputsymlst(fout, s->deft[i]);
-	}
-}
 #endif
 
 // lookup a value
@@ -1511,7 +1420,7 @@ int findflt(ccEnv s, char *name, double* res) {
 	}
 	return 0;
 }
-int lookup_nz(ccEnv s, char *name) {
+int findnzv(ccEnv s, char *name) {
 	struct astn ast;
 	symn sym = findsym(s, name);
 	if (sym && eval(&ast, sym->init)) {
@@ -1519,123 +1428,45 @@ int lookup_nz(ccEnv s, char *name) {
 	}
 	return 0;
 }
+
+#if 0
+struct arrBuffer {
+	char *ptr;
+	int max;
+	int esz;
+	//~ int cnt;
+};
+static void* getBuff(struct arrBuffer* buff, int idx) {
+	int pos = idx * buff->esz;
+	if (pos >= buff->max) {
+		buff->max = pos << 1;		//TODO: max(pos + buff->esz, pos * 2)
+		buff->ptr = realloc(buff->ptr, buff->max);
+	}
+	return buff->ptr ? buff->ptr + pos : NULL;
+}
+static void* setBuff(struct arrBuffer* buff, int idx, void* data) {
+	void* ptr;
+	if ((ptr = getBuff(buff, idx)))
+		memcpy(ptr, data, buff->esz);
+	return ptr;
+}
+/*static int addBuff(struct arrBuffer* buff, void* data) {
+	if (setBuff(buff, buff->cnt, data))
+		return buff->cnt ++;
+	return -1;
+}*/
+static void newBuff(struct arrBuffer* buff, int initsize, int elemsize) {
+	buff->ptr = 0;
+	buff->max = initsize;
+	buff->esz = elemsize;
+	getBuff(buff, initsize);
+}
+static void delBuff(struct arrBuffer* buff) {
+	free(buff->ptr);
+	buff->ptr = 0;
+	buff->max = 0;
+}
+
+#endif
 //} */
 
-int dbgInfo(vmEnv vm, int pu, void *ip, long* sptr, int sc) {
-	if (ip == NULL) {
-		if (vm->s && vm->s->cc)
-			vmTags(vm->s->cc, (char*)sptr, sc);
-		else if (!vm->s->cc) {
-			debug("!s->cc");
-		}
-		else if (!vm->s) {
-			debug("!vm->s");
-		}
-		vmInfo(stdout, vm);
-		return 0;
-	}
-	return 0;
-}
-int dbgCon(vmEnv vm, int pu, void *ip, long* sptr, int sc) {
-	static char buff[1024];
-	static char cmd = 'N';
-	char *arg;
-
-	if (ip == NULL) {
-		return dbgInfo(vm, pu, ip, sptr, sc);
-	}
-
-	if (cmd == 'r') {	// && !breakpoint(vm, ip)
-		return 0;
-	}
-
-	fputfmt(stdout, ">exec:pu%02d@.%04x[ss:%03d]x[0x%016X]: %A\n", pu, ((char*)ip) - ((char*)vm->_mem), sc, *(int64t*)sptr, ip);
-
-	if (cmd == 'N') return 0;
-
-	for ( ; ; ) {
-		if (fgets(buff, 1024, stdin) == NULL) {
-			//~ chr = 'r'; // dont try next time to read
-			return 0;
-		}
-
-		if ((arg = strchr(buff, '\n'))) {
-			*arg = 0;		// remove new line char
-		}
-
-		if (*buff == 0);		// no command, use last
-		else if ((arg = parsecmd(buff, "print", " "))) {
-			cmd = 'p';
-		}
-		else if ((arg = parsecmd(buff, "step", " "))) {
-			if (!*arg) cmd = 'n';
-			else if ((arg = parsecmd(buff, "over", " ")) && !*arg) {
-				cmd = 'n';
-			}
-			else if ((arg = parsecmd(buff, "into", " ")) && !*arg) {
-				cmd = 'n';
-			}
-		}
-		else if ((arg = parsecmd(buff, "sp", " "))) {
-			cmd = 's';
-		}
-		else if ((arg = parsecmd(buff, "st", " "))) {
-			cmd = 'S';
-		}
-		else if (buff[1] == 0) {
-			cmd = buff[0];
-			arg = "";
-		}
-		else {
-			debug("invalid command %s", buff);
-			arg = "";
-			cmd = 0;
-		}
-		if (!arg) arg = "";
-		switch (cmd) {
-			default:
-				debug("invalid command '%c'", cmd);
-			case 0 :
-				break;
-
-			case 'r' :		// resume
-			//~ case 'c' :		// step in
-			//~ case 'C' :		// step out
-			case 'n' :		// step over
-				return 0;
-			case 'p' : if (vm->s && vm->s->cc) {		// print
-				symn sym = findsym(vm->s->cc, arg);
-				debug("arg:%T", sym);
-				if (sym && sym->offs < 0) {
-					int i = sc - sym->offs;
-					stkval* sp = (stkval*)(sptr + i);
-					fputfmt(stdout, "\tsp(%d): {i32(%d), f32(%g), i64(%D), f64(%G)}\n", i, sp->i4, sp->f4, sp->i8, sp->f8);
-				}
-			} break;
-			case 's' : {
-				stkval* sp = (stkval*)sptr;
-				//~ if (strcmp(arg, "all") == 0) fputfmt(stdout, "\tsp: {i32(%d), i64(%D), f32(%g), f64(%G), p4f(%g, %g, %g, %g), p2d(%G, %G)}\n", sp->i4, sp->i8, sp->f4, sp->f8, sp->pf.x, sp->pf.y, sp->pf.z, sp->pf.w, sp->pd.x, sp->pd.y);
-				if (strcmp(arg, "all") == 0);
-				else if (strcmp(arg, "i32") == 0) fputfmt(stdout, "\tsp: i32(%d)\n", sp->i4);
-				else if (strcmp(arg, "f32") == 0) fputfmt(stdout, "\tsp: f32(%d)\n", sp->i8);
-				else if (strcmp(arg, "i64") == 0) fputfmt(stdout, "\tsp: i64(%d)\n", sp->f4);
-				else if (strcmp(arg, "f64") == 0) fputfmt(stdout, "\tsp: f64(%d)\n", sp->f8);
-				else fputfmt(stdout, "\tsp: {i32(%d), f32(%g), i64(%D), f64(%G)}\n", sp->i4, sp->f4, sp->i8, sp->f8);
-			} break;
-			case 'S' : {
-				int i;
-				for (i = 0; i < sc; i++) {
-					stkval* sp = (stkval*)(sptr + i);
-					//~ if (strcmp(arg, "all") == 0) fputfmt(stdout, "\tsp(%d): {i32(%d), i64(%D), f32(%g), f64(%G), p4f(%g, %g, %g, %g), p2d(%G, %G)}\n", i, sp->i4, sp->i8, sp->f4, sp->f8, sp->pf.x, sp->pf.y, sp->pf.z, sp->pf.w, sp->pd.x, sp->pd.y);
-					if (strcmp(arg, "") == 0);
-					else if (strcmp(arg, "i32") == 0) fputfmt(stdout, "\tsp(%d): i32(%d)\n", i, sp->i4);
-					else if (strcmp(arg, "f32") == 0) fputfmt(stdout, "\tsp(%d): f32(%d)\n", i, sp->i8);
-					else if (strcmp(arg, "i64") == 0) fputfmt(stdout, "\tsp(%d): i64(%d)\n", i, sp->f4);
-					else if (strcmp(arg, "f64") == 0) fputfmt(stdout, "\tsp(%d): f64(%d)\n", i, sp->f8);
-					else fputfmt(stdout, "\tsp(%d): {i32(%d), f32(%g), i64(%D), f64(%G)}\n", i, sp->i4, sp->f4, sp->i8, sp->f8);
-				}
-			} break;
-		}
-	}
-	return 0;
-}

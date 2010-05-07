@@ -11,7 +11,7 @@
 #include "pvmc.h"
 #include <stdlib.h>
 
-#define TODO_REM_TEMP
+#define DEBUGGING 1
 
 // maximum tokens in expressions & nest level
 #define TOKS 2048
@@ -19,18 +19,17 @@
 // symbol & hash table size
 #define TBLS 2048
 
-//~ #define pdbg(__DBG, msg, ...) {fputfmt(stderr, "%s:%d:"__DBG": "msg"\n", __FILE__, __LINE__, ##__VA_ARGS__); fflush(stderr);}
-#define pdbg(__DBG, msg, ...) do{fputfmt(stderr, "%s:%d:"__DBG":%s: "msg"\n", __FILE__, __LINE__, __func__, ##__VA_ARGS__); fflush(stderr);}while(0)
+#define pdbg(__DBG, msg, ...) do{fputfmt(stderr, "%s:%d:"__DBG":%s: "msg"\n", __FILE__, __LINE__, __func__, ##__VA_ARGS__); fflush(stdout); fflush(stderr);}while(0)
 
-#define trace(msg, ...) pdbg("trace", msg, ##__VA_ARGS__)
 #define debug(msg, ...) pdbg("debug", msg, ##__VA_ARGS__)
-#define fatal(msg, ...)  {pdbg("fatal", msg, ##__VA_ARGS__); abort(); }
+#define fatal(msg, ...) {pdbg("fatal", msg, ##__VA_ARGS__); /* abort(); */ }
 #define dieif(__EXP, msg, ...) {if (__EXP) fatal(msg, ##__VA_ARGS__)}
 
-#if 0
-#define error(__ENV, __LINE, msg, ...) perr(__ENV, -1, __FILE__, __LINE__, msg, ##__VA_ARGS__)
-#define warn(__ENV, __LEVEL, __FILE, __LINE, msg, ...) perr(__ENV, __LEVEL, __FILE__, __LINE__, msg, ##__VA_ARGS__)
-#define info(__ENV, __FILE, __LINE, msg, ...) perr(__ENV, 0, __FILE__, __LINE__, msg, ##__VA_ARGS__)
+#if 1
+#define PERR(__ENV, __LEVEL, __FILE, __LINE, msg, ...) do { perr(__ENV, __LEVEL, __FILE, __LINE, msg, ##__VA_ARGS__); perr(__ENV, __LEVEL, __FILE__, __LINE__, msg, ##__VA_ARGS__); }while(0)
+#define error(__ENV, __LINE, msg, ...) PERR(__ENV, -1, NULL, __LINE, msg, ##__VA_ARGS__)
+#define warn(__ENV, __LEVEL, __FILE, __LINE, msg, ...) PERR(__ENV, __LEVEL, __FILE, __LINE, msg, ##__VA_ARGS__)
+#define info(__ENV, __FILE, __LINE, msg, ...) PERR(__ENV, 0, __FILE, __LINE, msg, ##__VA_ARGS__)
 #else // catch the position error raised 
 #define error(__ENV, __LINE, msg, ...) perr(__ENV, -1, NULL, __LINE, msg, ##__VA_ARGS__)
 #define warn(__ENV, __LEVEL, __FILE, __LINE, msg, ...) perr(__ENV, __LEVEL, __FILE, __LINE, msg, ##__VA_ARGS__)
@@ -111,9 +110,9 @@ extern const opc_inf opc_tbl[255];
 
 typedef union {		// stack value type
 	int08t	i1;
-	//~ uns08t	u1;
+	uns08t	u1;
 	int16t	i2;
-	//~ uns16t	u2;
+	uns16t	u2;
 	int32t	i4;
 	uns32t	u4;
 	int64t	i8;
@@ -163,7 +162,7 @@ struct astn {				// tree
 			astn	init;			// for statement init
 		} stmt;
 		struct {					// TYPE_xxx: identifyer
-			//~ symn	decl;			// link to reference
+			astn	nuse;			// next used
 			char*	name;			// name of identifyer
 			uns32t	hash;			// hash code for 'name'
 			symn	link;			// func body / replacement
@@ -198,17 +197,18 @@ struct symn {				// type
 
 	//~ uns08t	onst:1;		// stack  (val): replaced with (offs < 0) ?(offs < 255)
 	//~ uns08t	libc:1;		// native (fun): replaced with (offs < 0) ?(offs < 255)
-	//~ uns08t	temp:1;		// no lookup: set name to null
+	//~ uns08t	temp:1;		// no lookup: replaced with (name == null)
 
 	uns08t	xxxx:6;		// -Wpadded
 	uns16t	nest;		// declaration level
 	//~ uns32t	used;		//TODO: times used
 	astn	init;		// VAR init / FUN body
 	uns08t	algn;		// align
-	uns08t	xx_1;		// align
+	uns08t	cast;		// align
 	uns16t	xx_2;		// align
 
 	// list(scoping)
+	astn	used;
 	symn	defs;		// symbols on stack/all
 	char*	pfmt;		// print format
 };
@@ -266,6 +266,7 @@ struct vmEnv {
 	unsigned int	pc;			// entry point / prev program counter
 	unsigned int	ic;			// ?executed? / instruction count
 	unsigned int	cs;			// code size
+	//~ unsigned int	pi[2];		// previous instructions
 
 	unsigned int	ss;			// stack size / current stack size
 	unsigned int	sm;			// stack minimum size
@@ -280,7 +281,7 @@ struct vmEnv {
 };
 
 //~ static inline int canscan(ccEnv env) {return env && env->_cnt > 0;}
-static inline int kindOf(astn ast) {return ast ? ast->kind : 0;}
+//~ static inline int kindOf(astn ast) {return ast ? ast->kind : 0;}
 
 extern symn type_vid;
 extern symn type_bol;
@@ -320,19 +321,26 @@ void dumpxml(FILE *fout, astn ast, int lev, const char* text, int level);
 // ccvm
 void* getmem(state s, int size, unsigned clear);
 
+symn newdefn(ccEnv s, int kind);
+
 astn newnode(ccEnv s, int kind);
-astn cpynode(ccEnv s, astn src);
-void eatnode(ccEnv s, astn ast);
 astn intnode(ccEnv s, int64t v);
 //~ astn fltnode(ccEnv s, flt64t v);
 astn strnode(ccEnv s, char *v);
 astn fh8node(ccEnv s, uns64t v);
+astn cpynode(ccEnv s, astn src);
+void eatnode(ccEnv s, astn ast);
 
-symn newdefn(ccEnv s, int kind);
 symn installex(ccEnv s, const char* name, int kind, unsigned size, symn type, astn init);
 symn install(ccEnv s, const char* name, int kind, int cast, unsigned size);
 symn declare(ccEnv s, int kind, astn tag, symn rtyp);
 symn lookup(ccEnv s, symn sym, astn ast, astn args);
+
+symn findsym(ccEnv s, char *name);
+int findnzv(ccEnv s, char *name);
+int findint(ccEnv s, char *name, int* res);
+int findflt(ccEnv s, char *name, double* res);
+
 symn typecheck(ccEnv s, symn loc, astn ast);
 int castId(symn typ);
 int castTo(astn ast, int tyId);
@@ -352,32 +360,41 @@ astn expr(ccEnv, int mode);		// parse expression	(mode: lookup)
 //~ astn stmt(ccEnv, int mode);		// parse statement	(mode: enable decl)
 int scan(ccEnv, int mode);		// parse program	(mode: script mode)
 
+// scoping ...
 void enter(ccEnv s, symn def);
 symn leave(ccEnv s, symn def);
 
 /** try to evaluate an expression
  * @param res: where to put the result
  * @param ast: tree to be evaluated
- * @param get: one of [TYPE_any, TYPE_bit, TYPE_int, TYPE_flt]
- * @return get if expression can be folded 0 otherwise
+ * @return one of [TYPE_err, TYPE_bit, TYPE_int, TYPE_flt]
  */
 int eval(astn res, astn ast);
-int cgen(state s, astn ast, int get);		// ret: typeId(ast)
 
 /** generate byte code for tree
- * @return TYPE_xxx, 0 on error
  * @param ast: tree to be generated
  * @param get: one of TYPE_xxx
+ * @return TYPE_xxx, 0 on error
  */
-int emit(vmEnv, int opc, ...);			// ret: program counter
+int cgen(state s, astn ast, int get);
+
+/** emit an opcode with args
+ * @param opc: opcode
+ * @param ...: argument
+ * @return: program counter
+ */
+int emit(vmEnv, int opc, ...);
 int emiti32(vmEnv, int32t arg);
 int emiti64(vmEnv, int64t arg);
 int emitf32(vmEnv, flt32t arg);
 int emitf64(vmEnv, flt64t arg);
+int emitref(vmEnv, int opc, int offset);
+//int emitref(vmEnv, int offset);
+
 int emitidx(vmEnv, int opc, int pos);
 int emitint(vmEnv, int opc, int64t arg);
 int fixjump(vmEnv s, int src, int dst, int stc);
-int testopc(vmEnv s, int opc);
+//int testopc(vmEnv s, int opc);
 
 int isType(symn sym);
 int istype(astn ast);
@@ -385,6 +402,7 @@ int istype(astn ast);
 //~ int isemit(astn ast);
 //~ int islval(astn ast);
 symn linkOf(astn ast, int notjustrefs);
+long sizeOf(symn typ);
 
 int castId(symn ast);
 int castOp(symn lhs, symn rhs, int uns);

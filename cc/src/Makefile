@@ -2,10 +2,8 @@ include incl/Makefile.gcc
 LIB=WLIB -q
 
 SRCDIR=
-OBJDIR=
-#~ ../tmp/obj/
-#~ ../tmp/
-BINDIR=../
+OBJDIR=../Debug/src/
+BINDIR=../Debug/
 OBJS=\
 	$(OBJDIR)code.o\
 	$(OBJDIR)clog.o\
@@ -13,10 +11,9 @@ OBJS=\
 	$(OBJDIR)tree.o\
 	$(OBJDIR)type.o\
 	$(OBJDIR)ccvm.o
-	#~ $(OBJDIR)main.o
 
-main: clean $(OBJS) $(OBJDIR)main.o
-	$(LNK) $(OUTEXE)$(BINDIR)main $(OBJS) main.o $(LIBS)
+all:clean $(OBJS) $(OBJDIR)main.o
+	$(LNK) $(OUTEXE)$(BINDIR)main $(OBJS) $(OBJDIR)main.o $(LIBS)
 
 lib:$(OBJS)
 	$(LIB) $(LIBNAME) $(OBJS)
@@ -26,8 +23,6 @@ clean:
 
 debug:
 	$(DBG) "$(BINDIR)main"
-
-#~ build:main clean
 
 $(OBJDIR)main.o:
 	$(CCC) $(COPTS) $(CFLAGS) $(SRCDIR)main.c $(OUTOBJ)$(OBJDIR)main.o

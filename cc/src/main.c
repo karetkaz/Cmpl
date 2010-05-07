@@ -1,9 +1,7 @@
-
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 #include <math.h>
-
-#include "../../util.c"
 #include "ccvm.h"
 
 // default values
@@ -11,10 +9,112 @@ static const int wl = 9;		// warning level
 static const int ol = 2;		// optimize level
 
 static const int cc = 1;			// execution cores
-static const int ss = 32 << 10;		// execution stack(32K)
-//~ static const int hs = 128 << 20;	// execution heap(128M)
+#define ss (4 << 20)		// execution stack(32K)
+#define hs (128 << 20)	// execution heap(128M)
 
 extern int vmTest();
+
+const char *parsei32(const char *str, int32_t *res, int radix) {
+	int64_t result = 0;
+	int sign = 1;
+
+	//~ ('+' | '-')?
+	switch (*str) {
+		case '-':
+			sign = -1;
+		case '+':
+			str += 1;
+	}
+
+	if (radix == 0) {		// detect
+		radix = 10;
+		if (*str == '0') {
+			str += 1;
+
+			switch (*str) {
+
+				default:
+					radix = 8;
+					break;
+
+				case 'b':
+				case 'B':
+					radix = 2;
+					str += 1;
+					break;
+
+				case 'o':
+				case 'O':
+					radix = 8;
+					str += 1;
+					break;
+
+				case 'x':
+				case 'X':
+					radix = 16;
+					str += 1;
+					break;
+
+			}
+		}
+	}
+
+	//~ ([0-9])*
+	while (*str) {
+		int value = *str;
+		if (value >= '0' && value <= '9')
+			value -= '0';
+		else if (value >= 'a' && value <= 'z')
+			value -= 'a' - 10;
+		else if (value >= 'A' && value <= 'Z')
+			value -= 'A' - 10;
+		else break;
+
+		if (value > radix)
+			break;
+
+		result *= radix;
+		result += value;
+		str += 1;
+	}
+
+	*res = sign * result;
+
+	return str;
+}
+
+const char *matchstr(const char *t, const char *p, int ic) {
+	int i;//, ic = flgs & 1;
+
+	for (i = 0; *t && p[i]; ++t, ++i) {
+		if (p[i] == '*') {
+			if (matchstr(t, p + i + 1, ic))
+				return t - i;
+			return 0;
+		}
+
+		if (p[i] == '?' || p[i] == *t)		// skip | match
+			continue;
+
+		if (ic && p[i] == tolower(*t))		// ignore case
+			continue;
+
+		t -= i;
+		i = -1;
+	}
+
+	while (p[i] == '*')			// "a***" is "a"
+		++p;					// keep i for return
+
+	return p[i] ? 0 : t - i;
+}
+
+char* parsecmd(char *ptr, char *cmd, char *sws) {
+	while (*cmd && *cmd == *ptr) cmd++, ptr++;
+	if (sws && !strchr(sws, *ptr)) return 0;
+	if (sws) while (strchr(sws, *ptr)) ++ptr;
+	return ptr;
+}
 
 void usage(char* prog, char* cmd) {
 	if (cmd == NULL) {
@@ -134,7 +234,7 @@ int evalexp(ccEnv s, char* text/* , int opts */) {
 }
 
 int program(int argc, char *argv[]) {
-	static char mem[128 << 10];	// 128K
+	static char mem[hs];
 	state s = gsInit(mem, sizeof(mem));
 
 	char *prg, *cmd;
@@ -167,9 +267,6 @@ int program(int argc, char *argv[]) {
 			if (emit_opc)
 				dumpsym(stdout, emit_opc->args, 1);
 			ccDone(s);
-		}
-		else if (strcmp(cmd, "-help") == 0) {
-			usage(prg, "-c");
 		}
 		else usage(prg, cmd);
 	}
@@ -295,43 +392,36 @@ int program(int argc, char *argv[]) {
 			//~ debug("level :0x%02x: arg[%d]: '%s'", level, argi - 2, arg);
 		}
 
-		if (logf == NULL) {
-			s->logf = stderr;
-		}
-		else if (logfile(s, logf) != 0) {
+		if (logf && logfile(s, logf) != 0) {
 			fputfmt(stderr, "can not open file `%s`\n", srcf);
 			return -1;
 		}
 
-		if (srcf == NULL) {
-			fputfmt(stderr, "no input file\n");
-			return -1;
-		}
-		else if (srcfile(s, srcf) != 0) {
-			fputfmt(stderr, "can not open file `%s`\n", srcf);
+		if (srcfile(s, srcf) != 0) {
+			fputfmt(stderr, "can not open file `%?s`\n", srcf);
 			logfile(s, NULL);
 			return -1;
 		}
-		debug("compiler.init:%.2F KBytes", (s->cc->_ptr - s->_mem) / 1024.);
+		//~ debug("compiler.init:%.2F KBytes", (s->cc->_ptr - s->_mem) / 1024.);
 
 		if (compile(s, warn) != 0) {
 			logfile(s, NULL);
 			return s->errc;
 		}
-		debug("compiler.scan:%.2F KBytes", (s->cc->_ptr - s->_mem) / 1024.);
+		//~ debug("compiler.scan:%.2F KBytes", (s->cc->_ptr - s->_mem) / 1024.);
 
 		if (gencode(s, opti) != 0) {
 			logfile(s, NULL);
 			return s->errc;
 		}
-		debug("code:%d Bytes", s->vm->cs);
-		debug("data:%d Bytes", s->vm->ds);
+		//~ debug("code:%d Bytes", s->vm->cs);
+		//~ debug("data:%d Bytes", s->vm->ds);
 
 		if (outc) switch (outc) {
-			default: fatal("FixMe!");
-			case out_tree: dump(s, outf, dump_new | dump_ast | (level & 0xff), NULL); break;
-			case out_dasm: dump(s, outf, dump_new | dump_asm | (level & 0xff), NULL); break;
+			default: fatal("FixMe");
 			case out_tags: dump(s, outf, dump_new | dump_sym | (1), NULL); break;
+			case out_dasm: dump(s, outf, dump_new | dump_asm | (level & 0xff), NULL); break;
+			case out_tree: dump(s, outf, dump_new | dump_ast | (level & 0xff), NULL); break;
 			case run_code: exec(s->vm, ss, dbg); break;
 		}
 
@@ -366,9 +456,6 @@ int program(int argc, char *argv[]) {
 			}
 		}
 		//~ else if (strcmp(t, "-x") == 0) ;
-	}
-	else if (argc == 2 && *cmd != '-') {	// try to eval
-		return evalexp(ccInit(s), cmd);
 	}
 	else fputfmt(stderr, "invalid option '%s'\n", cmd);
 	return 0;
@@ -412,7 +499,7 @@ int main(int argc, char *argv[]) {
 			//~ "-api",
 			"-c",		// compile command
 			"-xd",		// execute & show symbols command
-			"../test.cvx",
+			"test.cvx",
 		};
 		argc = sizeof(args) / sizeof(*args);
 		argv = args;
@@ -420,8 +507,131 @@ int main(int argc, char *argv[]) {
 
 	setbuf(stdout, NULL);
 	setbuf(stderr, NULL);
-	return program(argc, argv);
-	//~ return mk_test("xxxx.cvx", 8 << 20);	// 512 M
-	//~ fatal("FixMe!");
+	//~ return mk_test("xxxx.cvx", 8 << 20);	// 8M
+	//~ fatal("Fix!Me!");
 	//~ return vmTest();
+	return program(argc, argv);
+}
+
+int dbgInfo(vmEnv vm, int pu, void *ip, long* sptr, int sc) {
+	if (ip == NULL) {
+		if (vm->s && vm->s->cc)
+			vmTags(vm->s->cc, (char*)sptr, sc);
+		else if (!vm->s->cc) {
+			debug("!s->cc");
+		}
+		else if (!vm->s) {
+			debug("!vm->s");
+		}
+		vmInfo(stdout, vm);
+		return 0;
+	}
+	return 0;
+}
+int dbgCon(vmEnv vm, int pu, void *ip, long* sptr, int sc) {
+	static char buff[1024];
+	static char cmd = 'N';
+	int IP, SP;
+	char *arg;
+
+	if (ip == NULL) {
+		return dbgInfo(vm, pu, ip, sptr, sc);
+	}
+
+	if (cmd == 'r') {	// && !breakpoint(vm, ip)
+		return 0;
+	}
+
+	IP = ((char*)ip) - ((char*)vm->_mem);
+	SP = ((char*)vm->_end) - ((char*)sptr);
+
+	fputfmt(stdout, ">exec:pu%02d@.%04x:%04x[ss:%03d]x[0x%016X]: %A\n", pu, IP, SP, sc, *(int64t*)sptr, ip);
+
+	if (cmd == 'N') return 0;
+
+	for ( ; ; ) {
+		if (fgets(buff, 1024, stdin) == NULL) {
+			//~ chr = 'r'; // dont try next time to read
+			return 0;
+		}
+
+		if ((arg = strchr(buff, '\n'))) {
+			*arg = 0;		// remove new line char
+		}
+
+		if (*buff == 0);		// no command, use last
+		else if ((arg = parsecmd(buff, "print", " "))) {
+			cmd = 'p';
+		}
+		else if ((arg = parsecmd(buff, "step", " "))) {
+			if (!*arg) cmd = 'n';
+			else if ((arg = parsecmd(buff, "over", " ")) && !*arg) {
+				cmd = 'n';
+			}
+			else if ((arg = parsecmd(buff, "into", " ")) && !*arg) {
+				cmd = 'n';
+			}
+		}
+		else if ((arg = parsecmd(buff, "sp", " "))) {
+			cmd = 's';
+		}
+		else if ((arg = parsecmd(buff, "st", " "))) {
+			cmd = 'S';
+		}
+		else if (buff[1] == 0) {
+			cmd = buff[0];
+			arg = "";
+		}
+		else {
+			debug("invalid command %s", buff);
+			arg = "";
+			cmd = 0;
+		}
+		if (!arg) arg = "";
+		switch (cmd) {
+			default:
+				debug("invalid command '%c'", cmd);
+			case 0 :
+				break;
+
+			case 'r' :		// resume
+			//~ case 'c' :		// step in
+			//~ case 'C' :		// step out
+			case 'n' :		// step over
+				return 0;
+			case 'p' : if (vm->s && vm->s->cc) {		// print
+				symn sym = findsym(vm->s->cc, arg);
+				debug("arg:%T", sym);
+				if (sym && sym->offs < 0) {
+					int i = sc - sym->offs;
+					stkval* sp = (stkval*)(sptr + i);
+					fputfmt(stdout, "\tsp(%d): {i32(%d), f32(%g), i64(%D), f64(%G)}\n", i, sp->i4, sp->f4, sp->i8, sp->f8);
+				}
+			} break;
+			case 's' : {
+				stkval* sp = (stkval*)sptr;
+				//~ if (strcmp(arg, "all") == 0) fputfmt(stdout, "\tsp: {i32(%d), i64(%D), f32(%g), f64(%G), p4f(%g, %g, %g, %g), p2d(%G, %G)}\n", sp->i4, sp->i8, sp->f4, sp->f8, sp->pf.x, sp->pf.y, sp->pf.z, sp->pf.w, sp->pd.x, sp->pd.y);
+				if (strcmp(arg, "all") == 0);
+				else if (strcmp(arg, "i32") == 0) fputfmt(stdout, "\tsp: i32(%d)\n", sp->i4);
+				else if (strcmp(arg, "f32") == 0) fputfmt(stdout, "\tsp: f32(%d)\n", sp->i8);
+				else if (strcmp(arg, "i64") == 0) fputfmt(stdout, "\tsp: i64(%d)\n", sp->f4);
+				else if (strcmp(arg, "f64") == 0) fputfmt(stdout, "\tsp: f64(%d)\n", sp->f8);
+				else fputfmt(stdout, "\tsp: {i32(%d), f32(%g), i64(%D), f64(%G)}\n", sp->i4, sp->f4, sp->i8, sp->f8);
+			} break;
+			case 'S' : {
+				int i;
+				for (i = 0; i < sc; i++) {
+					stkval* sp = (stkval*)(sptr + i);
+					//~ if (strcmp(arg, "all") == 0) fputfmt(stdout, "\tsp(%d): {i32(%d), i64(%D), f32(%g), f64(%G), p4f(%g, %g, %g, %g), p2d(%G, %G)}\n", i, sp->i4, sp->i8, sp->f4, sp->f8, sp->pf.x, sp->pf.y, sp->pf.z, sp->pf.w, sp->pd.x, sp->pd.y);
+					if (strcmp(arg, "") == 0);
+					else if (strcmp(arg, "i32") == 0) fputfmt(stdout, "\tsp(%d): i32(%d)\n", i, sp->i4);
+					else if (strcmp(arg, "f32") == 0) fputfmt(stdout, "\tsp(%d): f32(%d)\n", i, sp->i8);
+					else if (strcmp(arg, "i64") == 0) fputfmt(stdout, "\tsp(%d): i64(%d)\n", i, sp->f4);
+					else if (strcmp(arg, "f64") == 0) fputfmt(stdout, "\tsp(%d): f64(%d)\n", i, sp->f8);
+					else fputfmt(stdout, "\tsp(%d): {i32(%d), f32(%g), i64(%D), f64(%G)}\n", i, sp->i4, sp->f4, sp->i8, sp->f8);
+				}
+			} break;
+		}
+	}
+	return 0;
 }
