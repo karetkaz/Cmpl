@@ -60,11 +60,10 @@ static void fputsym(FILE *fout, symn sym, int mode, int level) {
 		fputs("]", fout);
 		return;
 	}
-
-	else if (!sym->name)
-		fputs("(null)", fout);
-	else
+	else if (sym->name)
 		fputs(sym->name, fout);
+	else
+		fputs("__", fout);
 
 	if ((mode & prArgs) && sym->call) {
 		symn arg = sym->args;
@@ -102,7 +101,7 @@ static void fputast(FILE *fout, astn ast, int mode, int level) {
 
 	if (ast) switch (ast->kind) {
 		//{ STMT
-		case OPER_nop: {
+		case STMT_do: {
 			if (rlev < 2) {
 				if (rlev > 0) {
 					fputast(fout, ast->stmt.stmt, mode, 0xf);
@@ -340,7 +339,7 @@ static void fputast(FILE *fout, astn ast, int mode, int level) {
 		case TYPE_bit: fputfmt(fout, "%U", ast->con.cint); break;
 		case TYPE_int: fputfmt(fout, "%D", ast->con.cint); break;
 		case TYPE_flt: fputfmt(fout, "%F", ast->con.cflt); break;
-		case CNST_str: fputfmt(fout, "'%s'", ast->con.cstr); break;
+		case TYPE_str: fputfmt(fout, "'%s'", ast->con.cstr); break;
 		case TYPE_ref: fputfmt(fout, "%s", ast->id.name); break;
 		case TYPE_def: {
 			fputsym(fout, ast->id.link, rlev ? -1 : 0, level);
@@ -357,7 +356,7 @@ static void fputast(FILE *fout, astn ast, int mode, int level) {
 
 void fputopc(FILE *fout, unsigned char* ptr, int len, int offset);
 
-static char* fmtuns(char *dst, int max, int prc, int radix, uns64t num) {
+static char* fmtuns(char *dst, int max, int prc, int radix, uint64_t num) {
 	char *ptr = dst + max;
 	int p = 0, plc = ',';
 	*--ptr = 0;
@@ -374,7 +373,6 @@ static char* fmtuns(char *dst, int max, int prc, int radix, uns64t num) {
 
 static void FPUTFMT(FILE *fout, const char *msg, va_list ap) {
 	char buff[1024], chr;
-	//~ int p = 0;
 	while ((chr = *msg++)) {
 		if (chr == '%') {
 			char	nil = 0;	// [?]? skip on null || zero value
@@ -404,7 +402,7 @@ static void FPUTFMT(FILE *fout, const char *msg, va_list ap) {
 			if (*msg == '.') {
 				msg++;
 				if (*msg == '*') {
-					prc = va_arg(ap, uns32t);
+					prc = va_arg(ap, int32_t);
 					msg++;
 				}
 				else {
@@ -431,7 +429,7 @@ static void FPUTFMT(FILE *fout, const char *msg, va_list ap) {
 						continue;
 					switch (sgn) {
 						case '+': fputsym(fout, sym, prQual, 0); break;
-						case '-': fputsym(fout, sym, prType|prQual, 0); break;
+						case '-': fputsym(fout, sym, prType|prQual|prArgs, 0); break;
 						default:  fputsym(fout, sym, 0, 0); break;
 					}
 				} continue;
@@ -449,6 +447,11 @@ static void FPUTFMT(FILE *fout, const char *msg, va_list ap) {
 					astn ast = va_arg(ap, astn);
 					if (!ast && nil)
 						continue;
+					/*switch (sgn) {
+						case '-': fputast(fout, ast, noIden | 2, 0xf0); break;	// walk
+						case '+': fputast(fout, ast, noIden | 1, 0xff); break;	// tree
+						default:  fputast(fout, ast, noIden | 0, 0xf0); break;	// astn
+					}*/
 					dumpxml(fout, ast, 0, "node", len<<4);
 					//~ fputxml(fout, ast, 2, len);
 				} continue;
@@ -478,36 +481,36 @@ static void FPUTFMT(FILE *fout, const char *msg, va_list ap) {
 				} break;
 
 				case 'b': {		// bin32
-					uns32t num = va_arg(ap, uns32t);
+					uint32_t num = va_arg(ap, int32_t);
 					str = fmtuns(buff, sizeof(buff), prc, 2, num);
 				} break;
 				case 'B': {		// bin64
-					uns64t num = va_arg(ap, uns64t);
+					uint64_t num = va_arg(ap, int64_t);
 					str = fmtuns(buff, sizeof(buff), prc, 2, num);
 				} break;
 				case 'o': {		// oct32
-					uns32t num = va_arg(ap, uns32t);
+					uint32_t num = va_arg(ap, int32_t);
 					str = fmtuns(buff, sizeof(buff), prc, 8, num);
 				} break;
 				case 'O': {		// oct64
-					uns64t num = va_arg(ap, uns64t);
+					uint64_t num = va_arg(ap, int64_t);
 					str = fmtuns(buff, sizeof(buff), prc, 8, num);
 				} break;
 				case 'x': {		// hex32
-					uns32t num = va_arg(ap, uns32t);
+					uint32_t num = va_arg(ap, int32_t);
 					str = fmtuns(buff, sizeof(buff), prc, 16, num);
 				} break;
 				case 'X': {		// hex64
-					uns64t num = va_arg(ap, uns64t);
+					uint64_t num = va_arg(ap, int64_t);
 					str = fmtuns(buff, sizeof(buff), prc, 16, num);
 				} break;
 
-				case 'u': 		// uns32
+				case 'u':		// uns32
 				case 'd': {		// dec32
 					int neg = 0;
-					uns32t num = va_arg(ap, uns32t);
-					if (chr == 'd' && (int32t)num < 0) {
-						num = -(int32t)num;
+					uint32_t num = va_arg(ap, int32_t);
+					if (chr == 'd' && (int32_t)num < 0) {
+						num = -(int32_t)num;
 						neg = -1;
 					}
 					str = fmtuns(buff, sizeof(buff), prc, 10, num);
@@ -517,12 +520,12 @@ static void FPUTFMT(FILE *fout, const char *msg, va_list ap) {
 						*--str = '+';
 				} break;
 
-				case 'U': 		// uns64
+				case 'U':		// uns64
 				case 'D': {		// dec64
 					int neg = 0;
-					uns64t num = va_arg(ap, uns64t);
-					if (chr == 'D' && (int64t)num < 0) {
-						num = -(int64t)num;
+					uint64_t num = va_arg(ap, int64_t);
+					if (chr == 'D' && (int64_t)num < 0) {
+						num = -(int64_t)num;
 						neg = -1;
 					}
 					str = fmtuns(buff, sizeof(buff), prc, 10, num);
@@ -531,12 +534,17 @@ static void FPUTFMT(FILE *fout, const char *msg, va_list ap) {
 					else if (sgn == '+')
 						*--str = '+';
 				} break;
+
+				case 'E':		// flt64
+				case 'F':		// flt64
+				case 'G':		// flt64: TODO: replace fprintf
+					chr -= 'A' - 'a';
 
 				case 'e':		// flt32
 				case 'f':		// flt32
-				case 'g': {		// flt32: TODO: replace fprintf
-					flt32t num = (flt32t)va_arg(ap, flt64t);
-					if ((len =  msg - fmt - 1) < 1020) {
+				case 'g': {		// flt32
+					flt64_t num = va_arg(ap, flt64_t);
+					if ((len = msg - fmt - 1) < 1020) {
 						memcpy(buff, fmt, len);
 						buff[len++] = chr;
 						buff[len++] = 0;
@@ -544,27 +552,14 @@ static void FPUTFMT(FILE *fout, const char *msg, va_list ap) {
 					}
 				} continue;
 
-				case 'E':		// flt64
-				case 'F':		// flt64
-				case 'G': {		// flt64: TODO: replace fprintf
-					flt64t num = va_arg(ap, flt64t);
-					if ((len = msg - fmt - 1) < 1020) {
-						memcpy(buff, fmt, len);
-						buff[len++] = 'l';
-						buff[len++] = chr - ('A' - 'a');
-						buff[len++] = 0;
-						fprintf(fout, buff, num);
-					}
-				} continue;
-
-				//~ case 'S': 		// wstr
+				//~ case 'S':		// wstr
 				case 's': {		// cstr
 					str = va_arg(ap, char*);
 					//~ if (!str) continue;
 					//~ if (str) len -= strlen(str);
 				} break;
 
-				//~ case 'C': 		// wchr
+				//~ case 'C':		// wchr  // passed as int
 				case 'c': {		// cchr
 					str = buff;
 					str[0] = va_arg(ap, int);
@@ -610,11 +605,6 @@ void fputfmt(FILE *fout, const char *msg, ...) {
  *	'$': variable(ref)
  *	'$': function?
  *+	'*': operator?
- *+prot: protection level
- *	'+': public
- *	'-': private
- *	'=': protected?
- * 
 **/
 void dumpsym(FILE *fout, symn sym, int alma) {
 	symn ptr, bp[TOKS], *sp = bp;
@@ -644,6 +634,7 @@ void dumpsym(FILE *fout, symn sym, int alma) {
 			case TYPE_bit:
 			case TYPE_int:
 			case TYPE_flt:
+			case TYPE_str:
 
 			//~ case TYPE_arr:
 			case TYPE_rec:
@@ -663,12 +654,17 @@ void dumpsym(FILE *fout, symn sym, int alma) {
 				tch = chrtyp ? "?" : "err: ";
 				break;
 		}
+
+		//~ if (ptr == emit_opc)
+			//~ continue;
+
 		switch (ptr->kind) {
 			//~ case TYPE_vid:
 			//~ case TYPE_bit:
 			//~ case TYPE_int:
 			//~ case TYPE_flt:
 
+			case EMIT_opc:
 			case TYPE_def:
 			case TYPE_ref:
 				break;
@@ -676,7 +672,6 @@ void dumpsym(FILE *fout, symn sym, int alma) {
 			default:
 				*++sp = ptr->args;
 		}
-
 
 		//~ *++sp = ptr->args;
 		if (ptr->file && ptr->line)
@@ -701,9 +696,8 @@ void dumpsym(FILE *fout, symn sym, int alma) {
 			fputfmt(fout, "[size: %d:%d]: ", ptr->size, ptr->algn);
 		}
 
-		//~ prType+prQual+prArgs+prInit
+		//~ fputfmt(fout, "%-T\n", ptr);
 		fputsym(fout, ptr, prType|prQual|prArgs|prInit, 0);
-
 		fputc('\n', fout);
 
 		if (1 && ptr->used) {	// global usese
@@ -733,7 +727,7 @@ void dumpxml(FILE *fout, astn ast, int lev, const char* text, int level) {
 	switch (ast->kind) {
 		default: fatal("FixMe");
 		//{ STMT
-		case OPER_nop: {
+		case STMT_do: {
 			fputfmt(fout, ">\n");
 			dumpxml(fout, ast->stmt.stmt, lev+1, "expr", level);
 			fputfmt(fout, "%I</%s>\n", lev, text);
@@ -826,7 +820,7 @@ void dumpxml(FILE *fout, astn ast, int lev, const char* text, int level) {
 
 		case TYPE_int:
 		case TYPE_flt:
-		//~ case CNST_str:
+		case TYPE_str:
 			fputfmt(fout, ">%k</%s>\n", ast, text);
 			break;
 
@@ -844,27 +838,37 @@ void dumpxml(FILE *fout, astn ast, int lev, const char* text, int level) {
 		} break;*/
 		case TYPE_def: {
 			symn var = ast->id.link;
-			if (var && var->args) {
+			if (var && (var->args || var->init))
 				fputfmt(fout, ">\n");
+			else
+				fputfmt(fout, "/>\n");
+
+			if (var && var->args) {
 				symn def = var->args;
 				for (def = var->args; def; def = def->next) {
-					fputfmt(fout, "%I<def id='%t' name='%+T'", lev+1, def->kind, def);
+					fputfmt(fout, "%I<def id='%t' name='%+T'", lev + 1, def->kind, def);
 					if (level & prType) fputfmt(fout, " type='%?T'", def->type);
 					//~ if (level & prCast) fputfmt(fout, " cast='%?t'", ast->cst2);
 					if (level & prLine) fputfmt(fout, " line='%d'", def->line);
 					if (level & prArgs && def->init) fputfmt(fout, " stmt='%T = %?+k'", def, def->init);
-					fputfmt(fout, ">\n");
-					dumpxml(fout, def->init, lev + 2, "init", level);
+					if (def->init) {
+						fputfmt(fout, ">\n");
+						dumpxml(fout, def->init, lev + 2, "init", level);
+						fputfmt(fout, "%I</def>\n", lev + 1);
+					}
+					else
+						fputfmt(fout, "/>\n");
 				}
-			}
+			}// */
+
 			if (var && var->init) {
-				if (!var->args)
-					fputfmt(fout, ">\n");
+				//~ fputfmt(fout, ">\n");
 				dumpxml(fout, var->init, lev + 1, "init", level);
-				fputfmt(fout, "%I</%s>\n", lev, text);
 			}
-			else
-				fputfmt(fout, "/>\n");
+
+			if (var && (var->args || var->init))
+				fputfmt(fout, "%I</%s>\n", lev, text);
+
 		} break;
 		//}
 	}
@@ -878,15 +882,15 @@ void dumpast(FILE *fout, astn ast, int level) {
 }
 void dumpasm(FILE *fout, vmEnv s, int mode) {
 	vmInfo(fout, s);
-	fputasm(fout, s->_mem + s->pc, s->cs, mode);
+	fputasm(fout, s->_mem + s->pc, s->cs, s->pc, mode);
 }
 
-void dump(state s, char *file, dumpMode mode, char *text) {
+void dump2file(state s, char *file, dumpMode mode, char *text) {
 	FILE *fout = stdout;
 	int level = mode & 0xff;
 
 	if (file)
-		fout = fopen(file, (mode & dump_new) ? "w" : "a");
+		fout = fopen(file, "w");
 
 	dieif(!fout, "cannot open file '%s'", file);
 
@@ -903,14 +907,29 @@ void dump(state s, char *file, dumpMode mode, char *text) {
 		fclose(fout);
 }
 
-void perr(state s, int level, const char *file, int line, const char *msg, ...) {
-	//~ FILE *logf = s ? s->logf : stderr;
-	FILE *logf = s && s->logf ? s->logf : stderr;
-	int warnl = s && s->cc ? s->cc->warn : 9;
-	va_list argp;
+void dump(state s, dumpMode mode, char *text) {
+	FILE *logf = s ? s->logf : stdout;
+	int level = mode & 0xff;
 
 	if (!logf)
 		return;
+
+	if (text != NULL)
+		fputs(text, logf);
+
+	switch (mode & dumpMask) {
+		default: fatal("FixMe");
+		case dump_sym: dumpsym(logf, s->cc->defs, level); break;
+		case dump_ast: dumpast(logf, s->cc->root, level); break;
+		case dump_asm: dumpasm(logf, s->vm, level); break;
+	}
+}
+
+void perr(state s, int level, const char *file, int line, const char *msg, ...) {
+	//~ FILE *logf = s && s->logf ? s->logf : stderr;
+	FILE *logf = s ? s->logf : stderr;
+	int warnl = s && s->cc ? s->cc->warn : 0;
+	va_list argp;
 
 	if (level > 0) {
 		if (warnl < 0)
@@ -922,13 +941,15 @@ void perr(state s, int level, const char *file, int line, const char *msg, ...) 
 		s->errc += 1;
 	}
 
+	if (!logf)
+		return;
+
 	if (s && s->cc && !file)
 		file = s->cc->file;
 
 	if (file && line)
 		fprintf(logf, "%s:%u:", file, line);
 
-	//~ if (level) fprintf(fout, "%s:", level < 0 ? "error" : "warning");
 	if (level > 0)
 		fputs("warning:", logf);
 	else if (level)
@@ -937,7 +958,6 @@ void perr(state s, int level, const char *file, int line, const char *msg, ...) 
 	va_start(argp, msg);
 	FPUTFMT(logf, msg, argp);
 	fputc('\n', logf);
-	va_end(argp);
-
 	fflush(logf);
+	va_end(argp);
 }

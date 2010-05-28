@@ -1,0 +1,16 @@
+emit(); Emit without arguments gets the top of stack.
+emit((opc | arg) [(, arg) | (, opc)]*); Emit instruction or push values to stack; Returns the top of the stack.
+emit(opc, ...); If the first argument is a typed opcode ex i32.add the result is type of this.
+
+math
+math.nan
+math.Snan
+math.inf
+math.l2e
+math.l2t
+math.lg2
+math.ln2
+math.pi
+math.e
+math.isNan(flt64 x)
+math.isNan(flt32 x)

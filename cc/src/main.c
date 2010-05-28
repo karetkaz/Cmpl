@@ -14,7 +14,7 @@ static const int cc = 1;			// execution cores
 
 extern int vmTest();
 
-const char *parsei32(const char *str, int32_t *res, int radix) {
+char *parsei32(const char *str, int32_t *res, int radix) {
 	int64_t result = 0;
 	int sign = 1;
 
@@ -80,16 +80,15 @@ const char *parsei32(const char *str, int32_t *res, int radix) {
 
 	*res = sign * result;
 
-	return str;
+	return (char *)str;
 }
-
-const char *matchstr(const char *t, const char *p, int ic) {
+char *matchstr(const char *t, const char *p, int ic) {
 	int i;//, ic = flgs & 1;
 
 	for (i = 0; *t && p[i]; ++t, ++i) {
 		if (p[i] == '*') {
 			if (matchstr(t, p + i + 1, ic))
-				return t - i;
+				return (char *)(t - i);
 			return 0;
 		}
 
@@ -106,13 +105,21 @@ const char *matchstr(const char *t, const char *p, int ic) {
 	while (p[i] == '*')			// "a***" is "a"
 		++p;					// keep i for return
 
-	return p[i] ? 0 : t - i;
+	return (char *)(p[i] ? 0 : t - i);
 }
-
 char* parsecmd(char *ptr, char *cmd, char *sws) {
-	while (*cmd && *cmd == *ptr) cmd++, ptr++;
-	if (sws && !strchr(sws, *ptr)) return 0;
-	if (sws) while (strchr(sws, *ptr)) ++ptr;
+	while (*cmd && *cmd == *ptr)
+		cmd++, ptr++;
+
+	if (*cmd != 0)
+		return 0;
+
+	if (*ptr == 0)
+		return ptr;
+
+	while (strchr(sws, *ptr))
+		++ptr;
+
 	return ptr;
 }
 
@@ -410,18 +417,21 @@ int program(int argc, char *argv[]) {
 		}
 		//~ debug("compiler.scan:%.2F KBytes", (s->cc->_ptr - s->_mem) / 1024.);
 
-		if (gencode(s, opti) != 0) {
+		if (outc == out_tags || outc == out_tree) {
+		}
+		else if (gencode(s, opti) != 0) {
 			logfile(s, NULL);
 			return s->errc;
 		}
 		//~ debug("code:%d Bytes", s->vm->cs);
 		//~ debug("data:%d Bytes", s->vm->ds);
 
+		//~ logfile(s, outf);
 		if (outc) switch (outc) {
 			default: fatal("FixMe");
-			case out_tags: dump(s, outf, dump_new | dump_sym | (1), NULL); break;
-			case out_dasm: dump(s, outf, dump_new | dump_asm | (level & 0xff), NULL); break;
-			case out_tree: dump(s, outf, dump_new | dump_ast | (level & 0xff), NULL); break;
+			case out_tags: dump2file(s, outf, dump_sym | (1), NULL); break;
+			case out_dasm: dump2file(s, outf, dump_asm | (level & 0xff), NULL); break;
+			case out_tree: dump2file(s, outf, dump_ast | (level & 0xff), NULL); break;
 			case run_code: exec(s->vm, ss, dbg); break;
 		}
 
@@ -513,29 +523,28 @@ int main(int argc, char *argv[]) {
 	return program(argc, argv);
 }
 
-int dbgInfo(vmEnv vm, int pu, void *ip, long* sptr, int sc) {
+int dbgInfo(state s, int pu, void *ip, long* sptr, int slen) {
+	vmEnv vm = s->vm;
 	if (ip == NULL) {
-		if (vm->s && vm->s->cc)
-			vmTags(vm->s->cc, (char*)sptr, sc);
-		else if (!vm->s->cc) {
+		if (s->cc)
+			vmTags(s->cc, (char*)sptr, slen, 0);
+		else {
 			debug("!s->cc");
-		}
-		else if (!vm->s) {
-			debug("!vm->s");
 		}
 		vmInfo(stdout, vm);
 		return 0;
 	}
 	return 0;
 }
-int dbgCon(vmEnv vm, int pu, void *ip, long* sptr, int sc) {
+int dbgCon(state s, int pu, void *ip, long* sptr, int slen) {
 	static char buff[1024];
 	static char cmd = 'N';
+	vmEnv vm = s->vm;
 	int IP, SP;
 	char *arg;
 
 	if (ip == NULL) {
-		return dbgInfo(vm, pu, ip, sptr, sc);
+		return dbgInfo(s, pu, ip, sptr, slen);
 	}
 
 	if (cmd == 'r') {	// && !breakpoint(vm, ip)
@@ -545,11 +554,9 @@ int dbgCon(vmEnv vm, int pu, void *ip, long* sptr, int sc) {
 	IP = ((char*)ip) - ((char*)vm->_mem);
 	SP = ((char*)vm->_end) - ((char*)sptr);
 
-	fputfmt(stdout, ">exec:pu%02d@.%04x:%04x[ss:%03d]x[0x%016X]: %A\n", pu, IP, SP, sc, *(int64t*)sptr, ip);
+	fputfmt(stdout, ">exec:pu%02d@.%04x:%04x[ss:%03d]x[0x%016X]: %A\n", pu, IP, SP, slen, *(int64_t*)sptr, ip);
 
-	if (cmd == 'N') return 0;
-
-	for ( ; ; ) {
+	if (cmd != 'N') for ( ; ; ) {
 		if (fgets(buff, 1024, stdin) == NULL) {
 			//~ chr = 'r'; // dont try next time to read
 			return 0;
@@ -564,30 +571,36 @@ int dbgCon(vmEnv vm, int pu, void *ip, long* sptr, int sc) {
 			cmd = 'p';
 		}
 		else if ((arg = parsecmd(buff, "step", " "))) {
-			if (!*arg) cmd = 'n';
-			else if ((arg = parsecmd(buff, "over", " ")) && !*arg) {
+			if (*arg == 0)
+				cmd = 'n';
+			else if (strcmp(arg, "over") == 0) {
 				cmd = 'n';
 			}
-			else if ((arg = parsecmd(buff, "into", " ")) && !*arg) {
+			else if (strcmp(arg, "into") == 0) {
 				cmd = 'n';
 			}
 		}
 		else if ((arg = parsecmd(buff, "sp", " "))) {
 			cmd = 's';
 		}
-		else if ((arg = parsecmd(buff, "st", " "))) {
-			cmd = 'S';
-		}
 		else if (buff[1] == 0) {
+			arg = buff + 1;
 			cmd = buff[0];
-			arg = "";
 		}
 		else {
 			debug("invalid command %s", buff);
-			arg = "";
-			cmd = 0;
+			arg = buff + 1;
+			cmd = buff[0];
+			buff[1] = 0;
+			continue;
 		}
-		if (!arg) arg = "";
+		if (!arg) {
+			debug("invalid command %s", buff);
+			arg = NULL;
+			//cmd = 0;
+			continue;
+		}
+
 		switch (cmd) {
 			default:
 				debug("invalid command '%c'", cmd);
@@ -600,36 +613,38 @@ int dbgCon(vmEnv vm, int pu, void *ip, long* sptr, int sc) {
 			case 'n' :		// step over
 				return 0;
 			case 'p' : if (vm->s && vm->s->cc) {		// print
-				symn sym = findsym(vm->s->cc, arg);
-				debug("arg:%T", sym);
-				if (sym && sym->offs < 0) {
-					int i = sc - sym->offs;
-					stkval* sp = (stkval*)(sptr + i);
-					fputfmt(stdout, "\tsp(%d): {i32(%d), f32(%g), i64(%D), f64(%G)}\n", i, sp->i4, sp->f4, sp->i8, sp->f8);
+				if (!*arg) {
+					vmTags(vm->s->cc, (void*)sptr, slen, 0);
+				}
+				else {
+					symn sym = findsym(vm->s->cc, NULL, arg);
+					debug("arg:%T", sym);
+					if (sym && sym->kind == TYPE_ref && sym->offs < 0) {
+						stkval* sp = (stkval*)(sptr + slen + sym->offs);
+						void vm_fputval(FILE *fout, symn var, stkval* ref, int flgs);
+						vm_fputval(stdout, sym, sp, 0);
+					}
 				}
 			} break;
 			case 's' : {
-				stkval* sp = (stkval*)sptr;
-				//~ if (strcmp(arg, "all") == 0) fputfmt(stdout, "\tsp: {i32(%d), i64(%D), f32(%g), f64(%G), p4f(%g, %g, %g, %g), p2d(%G, %G)}\n", sp->i4, sp->i8, sp->f4, sp->f8, sp->pf.x, sp->pf.y, sp->pf.z, sp->pf.w, sp->pd.x, sp->pd.y);
-				if (strcmp(arg, "all") == 0);
-				else if (strcmp(arg, "i32") == 0) fputfmt(stdout, "\tsp: i32(%d)\n", sp->i4);
-				else if (strcmp(arg, "f32") == 0) fputfmt(stdout, "\tsp: f32(%d)\n", sp->i8);
-				else if (strcmp(arg, "i64") == 0) fputfmt(stdout, "\tsp: i64(%d)\n", sp->f4);
-				else if (strcmp(arg, "f64") == 0) fputfmt(stdout, "\tsp: f64(%d)\n", sp->f8);
-				else fputfmt(stdout, "\tsp: {i32(%d), f32(%g), i64(%D), f64(%G)}\n", sp->i4, sp->f4, sp->i8, sp->f8);
-			} break;
-			case 'S' : {
 				int i;
-				for (i = 0; i < sc; i++) {
-					stkval* sp = (stkval*)(sptr + i);
-					//~ if (strcmp(arg, "all") == 0) fputfmt(stdout, "\tsp(%d): {i32(%d), i64(%D), f32(%g), f64(%G), p4f(%g, %g, %g, %g), p2d(%G, %G)}\n", i, sp->i4, sp->i8, sp->f4, sp->f8, sp->pf.x, sp->pf.y, sp->pf.z, sp->pf.w, sp->pd.x, sp->pd.y);
-					if (strcmp(arg, "") == 0);
-					else if (strcmp(arg, "i32") == 0) fputfmt(stdout, "\tsp(%d): i32(%d)\n", i, sp->i4);
-					else if (strcmp(arg, "f32") == 0) fputfmt(stdout, "\tsp(%d): f32(%d)\n", i, sp->i8);
-					else if (strcmp(arg, "i64") == 0) fputfmt(stdout, "\tsp(%d): i64(%d)\n", i, sp->f4);
-					else if (strcmp(arg, "f64") == 0) fputfmt(stdout, "\tsp(%d): f64(%d)\n", i, sp->f8);
-					else fputfmt(stdout, "\tsp(%d): {i32(%d), f32(%g), i64(%D), f64(%G)}\n", i, sp->i4, sp->f4, sp->i8, sp->f8);
+				stkval* sp = (stkval*)sptr;
+				if (*arg == 0) for (i = 0; i < slen; i++) {
+					fputfmt(stdout, "\tsp(%d): {i32(%d), f32(%g), i64(%D), f64(%G)}\n", i, sp[i].i4, sp[i].f4, sp[i].i8, sp[i].f8);
 				}
+				else if (*parsei32(arg, &i, 10) == '\0') {
+					if (i < slen)
+						fputfmt(stdout, "\tsp(%d): {i32(%d), f32(%g), i64(%D), f64(%G)}\n", i, sp[i].i4, sp[i].f4, sp[i].i8, sp[i].f8);
+					//~ fputfmt(stdout, "\tsp: {i32(%d), i64(%D), f32(%g), f64(%G), p4f(%g, %g, %g, %g), p2d(%G, %G)}\n", sp->i4, sp->i8, sp->f4, sp->f8, sp->pf.x, sp->pf.y, sp->pf.z, sp->pf.w, sp->pd.x, sp->pd.y);
+				}
+				else if (strcmp(arg, "i32") == 0)
+					fputfmt(stdout, "\tsp: i32(%d)\n", sp->i4);
+				else if (strcmp(arg, "f32") == 0)
+					fputfmt(stdout, "\tsp: f32(%d)\n", sp->i8);
+				else if (strcmp(arg, "i64") == 0)
+					fputfmt(stdout, "\tsp: i64(%d)\n", sp->f4);
+				else if (strcmp(arg, "f64") == 0)
+					fputfmt(stdout, "\tsp: f64(%d)\n", sp->f8);
 			} break;
 		}
 	}

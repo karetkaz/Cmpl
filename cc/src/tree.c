@@ -4,7 +4,7 @@
 #include "ccvm.h"
 
 astn newnode(ccEnv s, int kind) {
-	astn ast;
+	astn ast = 0;
 	if (s->tokp) {
 		ast = s->tokp;
 		s->tokp = ast->next;
@@ -22,26 +22,26 @@ astn newnode(ccEnv s, int kind) {
 	return ast;
 }
 
-astn fltnode(ccEnv s, flt64t v) {
+astn fltnode(ccEnv s, flt64_t v) {
 	astn ast = newnode(s, TYPE_flt);
 	//~ ast->type = type_f64;
 	ast->con.cflt = v;
 	return ast;
 }
-astn intnode(ccEnv s, int64t v) {
+astn intnode(ccEnv s, int64_t v) {
 	astn ast = newnode(s, TYPE_int);
 	//~ ast->type = type_i32;
 	ast->con.cint = v;
 	return ast;
 }
-astn fh8node(ccEnv s, uns64t v) {
+astn fh8node(ccEnv s, uint64_t v) {
 	astn ast = newnode(s, TYPE_flt);
 	//~ ast->type = type_f64;
 	ast->con.cint = v;
 	return ast;
 }
 astn strnode(ccEnv s, char * v) {
-	astn ast = newnode(s, CNST_str);
+	astn ast = newnode(s, TYPE_str);
 	//~ ast->type = type_str;
 	ast->con.cstr = v;
 	return ast;
@@ -66,18 +66,18 @@ signed constbol(astn ast) {
 	fatal("not a constant %+k", ast);
 	return 0;
 }
-int64t constint(astn ast) {
+int64_t constint(astn ast) {
 	if (ast) switch (ast->kind) {
-		case TYPE_int: return (int64t)ast->con.cint;
-		case TYPE_flt: return (int64t)ast->con.cflt;
+		case TYPE_int: return (int64_t)ast->con.cint;
+		case TYPE_flt: return (int64_t)ast->con.cflt;
 	}
 	fatal("not a constant %+k", ast);
 	return 0;
 }
-flt64t constflt(astn ast) {
+flt64_t constflt(astn ast) {
 	if (ast) switch (ast->kind) {
-		case TYPE_int: return (flt64t)ast->con.cint;
-		case TYPE_flt: return (flt64t)ast->con.cflt;
+		case TYPE_int: return (flt64_t)ast->con.cint;
+		case TYPE_flt: return (flt64_t)ast->con.cflt;
 	}
 	fatal("not a constant %+k", ast);
 	return 0;
@@ -120,8 +120,8 @@ int eval(astn res, astn ast) {
 
 	switch (ast->kind) {
 		default:
-			fatal("FixMe");
-			break;
+			fatal("FixMe %t", ast->kind);
+			return 0;
 
 		case OPER_dot: {
 			if (!istype(ast->op.lhso)) return 0;
@@ -138,7 +138,7 @@ int eval(astn res, astn ast) {
 
 		case TYPE_int:
 		case TYPE_flt:
-		case CNST_str:
+		case TYPE_str:
 			*res = *ast;
 			break;
 
@@ -317,11 +317,25 @@ int eval(astn res, astn ast) {
 				return 0;
 			return eval(res, lhs.con.cint ? ast->op.lhso : ast->op.rhso);
 		} break;
+
+		case ASGN_set:
+		//~ case ASGN_add:
+		//~ case ASGN_sub:
+		//~ case ASGN_mul:
+		//~ case ASGN_div:
+		//~ case ASGN_mod:
+		//~ case ASGN_shl:
+		//~ case ASGN_shr:
+		//~ case ASGN_and:
+		//~ case ASGN_ior:
+		//~ case ASGN_xor:
+			return 0;
 	}
 
 	if (cast != res->kind) switch (cast) {
 		default: fatal("FixMe");
 
+		case TYPE_vid:
 		case TYPE_any:
 			break;
 
@@ -358,9 +372,9 @@ int eval(astn res, astn ast) {
 	if (lhs->kind != rhs->kind)
 		return 0;
 	switch (rhs->kind) {
-		case CNST_int: return lhs->cint == rhs->cint;
-		case CNST_flt: return lhs->cflt == rhs->cflt;
-		case CNST_str: return lhs->name == rhs->name;
+		case TYPE_int: return lhs->cint == rhs->cint;
+		case TYPE_flt: return lhs->cflt == rhs->cflt;
+		case TYPE_str: return lhs->name == rhs->name;
 		//~ case TYPE_ref: return lhs->link == rhs->link;
 
 		case OPER_add:

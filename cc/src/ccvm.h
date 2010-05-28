@@ -11,7 +11,7 @@
 #include "pvmc.h"
 #include <stdlib.h>
 
-#define DEBUGGING 1
+#define DEBUGGING 2
 
 // maximum tokens in expressions & nest level
 #define TOKS 2048
@@ -22,7 +22,7 @@
 #define pdbg(__DBG, msg, ...) do{fputfmt(stderr, "%s:%d:"__DBG":%s: "msg"\n", __FILE__, __LINE__, __func__, ##__VA_ARGS__); fflush(stdout); fflush(stderr);}while(0)
 
 #define debug(msg, ...) pdbg("debug", msg, ##__VA_ARGS__)
-#define fatal(msg, ...) {pdbg("fatal", msg, ##__VA_ARGS__); /* abort(); */ }
+#define fatal(msg, ...) {pdbg("fatal", msg, ##__VA_ARGS__); abort(); }
 #define dieif(__EXP, msg, ...) {if (__EXP) fatal(msg, ##__VA_ARGS__)}
 
 #if 1
@@ -41,6 +41,15 @@ enum {
 	#define TOKDEF(NAME, TYPE, SIZE, STR) NAME,
 	#include "incl/defs.h"
 	tok_last,
+	// vm part
+	// xml dump needs these
+	//~ TYPE_u32,
+	//~ TYPE_i32,
+	//~ TYPE_f32,
+	//~ TYPE_i64,
+	//~ TYPE_f64,
+	//~ TYPE_p4x,
+
 	TOKN_err = TYPE_any,
 	symn_call = 0x100,
 	symn_read = 0x200,
@@ -65,6 +74,7 @@ enum {
 	opc_div,
 	opc_mod,
 
+	opc_cmt,
 	opc_shl,
 	opc_shr,
 	opc_and,
@@ -109,18 +119,20 @@ typedef struct {
 extern const opc_inf opc_tbl[255];
 
 typedef union {		// stack value type
-	int08t	i1;
-	uns08t	u1;
-	int16t	i2;
-	uns16t	u2;
-	int32t	i4;
-	uns32t	u4;
-	int64t	i8;
-	//~ uns64t	u8;
-	flt32t	f4;
-	flt64t	f8;
-	struct {flt32t x, y, z, w;} pf;
-
+	int8_t		i1;
+	uint8_t		u1;
+	int16_t		i2;
+	uint16_t	u2;
+	int32_t		i4;
+	uint32_t	u4;
+	int64_t		i8;
+	//uint64_t	u8;
+	flt32_t		f4;
+	flt64_t		f8;
+	//~ flt32_t		pf[4];
+	//~ flt32_t		pd[2];
+	//~ struct {flt32_t x, y, z, w;} pf;
+	//~ struct {flt64_t x, y;} pd;
 } stkval;
 
 //~ typedef struct listn_t *list, **strt;
@@ -135,19 +147,19 @@ typedef struct list {			// linked list
 } *list, **strt;
 
 struct astn {				// tree
-	uns32t		line;				// token on line / code offset
-	uns08t		kind;				// code: TYPE_ref, OPER_???, CNST_???
-	uns08t		cst2;				// cast to
-	uns16t		XXXX;				// OPER: (priority level / dupplicate of, on stack)
+	uint32_t	line;				// token on line / code offset
+	uint8_t		kind;				// code: TYPE_ref, OPER_???, CNST_???
+	uint8_t		cst2;				// casts to
+	uint16_t	XXXX;				// OPER: (priority level / dupplicate of, on stack)
 	union {
 		union  {					// CNST_xxx: constant
-			int64t	cint;			// cnst: integer
-			flt64t	cflt;			// cnst: float
+			int64_t	cint;			// cnst: integer
+			flt64_t	cflt;			// cnst: float
 			char*	cstr;			// cnst: string
-			//~ int32t	cpi4[4];		// rgb
-			//~ int64t	cpi2[2];		// rat
-			//~ flt32t	cpf4[4];		// vec
-			//~ flt64t	cpf2[2];		// cpl
+			//~ int32_t	cpi4[4];		// rgb
+			//~ int64_t	cpi2[2];		// rat
+			//~ flt32_t	cpf4[4];		// vec
+			//~ flt64_t	cpf2[2];		// cpl
 		} con;
 		struct {					// OPER_xxx: operator
 			astn	rhso;			// right hand side operand
@@ -164,12 +176,12 @@ struct astn {				// tree
 		struct {					// TYPE_xxx: identifyer
 			astn	nuse;			// next used
 			char*	name;			// name of identifyer
-			uns32t	hash;			// hash code for 'name'
+			uint32_t	hash;			// hash code for 'name'
 			symn	link;			// func body / replacement
 		} id;
 	};
 	symn		type;				// typeof() return type of operator ... base type of IDTF
-	astn		next;				// next statement, next preorder I think
+	astn		next;				// next statement, do not use for preorder
 };
 struct symn {				// type
 	char*	file;
@@ -177,35 +189,32 @@ struct symn {				// type
 
 	char*	name;
 	union {
-	int32t	size;	// sizeof(TYPE_xxx)
-	int32t	offs;	// addrof(TYPE_ref)
+	int32_t	size;	// sizeof(TYPE_xxx)
+	int32_t	offs;	// addrof(TYPE_ref)
 	};
 	symn	decl;		// declared in
 	symn	type;		// base type of TYPE_ref (void, int, float, struct, ...)
 	symn	args;		// REC fields / FUN args
 	symn	next;		// symbols on table/args
 
-	//~ uns08t	cast;		// casts to type(TYPE_(u32, i32, i64, f32, f64, p4x)).
-	uns08t	kind;		// TYPE_ref || TYPE_xxx
-	uns08t	call:1;		// function / callable
-	//~ uns08t	load:1;		// indirect
+	uint8_t	cast;		// casts to type(TYPE_(u32, i32, i64, f32, f64, p4x)).
+	uint8_t	algn;		// alignment
+	uint8_t	kind;		// TYPE_ref || TYPE_xxx
 
-	//~ uns08t	priv:1;		// private
-	//~ uns08t	stat:1;		// static
-	uns08t	read:1;		// const / no override
-	//~ uns08t	used:1;		// used
+	uint8_t	call:1;		// function / callable
+	//~ uint8_t	iref:1;		// indirect reference: "&"
 
-	//~ uns08t	onst:1;		// stack  (val): replaced with (offs < 0) ?(offs < 255)
-	//~ uns08t	libc:1;		// native (fun): replaced with (offs < 0) ?(offs < 255)
-	//~ uns08t	temp:1;		// no lookup: replaced with (name == null)
+	//~ uint8_t	priv:1;		// private
+	//~ uint8_t	stat:1;		// static ?
+	uint8_t	read:1;		// const / no override
 
-	uns08t	xxxx:6;		// -Wpadded
-	uns16t	nest;		// declaration level
-	//~ uns32t	used;		//TODO: times used
+	//~ uint8_t	onst:1;		// stack  (val): replaced with (offs < 0) ?(offs < 255)
+	//~ uint8_t	libc:1;		// native (fun): replaced with (offs < 0) ?(offs < 255)
+
+	uint32_t	xx_1:6;		// -Wpadded
+	uint16_t	xx_2;		// align
+	uint16_t	nest;		// declaration level
 	astn	init;		// VAR init / FUN body
-	uns08t	algn;		// align
-	uns08t	cast;		// align
-	uns16t	xx_2;		// align
 
 	// list(scoping)
 	astn	used;
@@ -219,7 +228,6 @@ struct ccEnv {
 	astn	root;		// statements
 	symn	defs;		// definitions
 
-	astn	err;		// error
 	symn	all;		// all symbols TODO:Temp
 	strt	strt;		// string table
 	symt	deft;		// definitions: hashStack;
@@ -239,7 +247,7 @@ struct ccEnv {
 				int		_fin;		// file handle (-1) for cc_buff()
 				int		_cnt;		// chars left in buffer
 				char*	_ptr;		// pointer parsing trough source
-				uns08t	_buf[1024];	// cache
+				uint8_t	_buf[1024];	// cache
 			}fin;
 			astn	tokp;		// token pool
 			astn	_tok;		// next token
@@ -256,6 +264,7 @@ struct ccEnv {
 		} scope[TOKS];// */
 	};
 
+	astn	argz;		// no parameter of type void
 	long	_cnt;
 	char	*_ptr;
 };
@@ -292,14 +301,14 @@ extern symn type_f32;
 extern symn type_f64;
 extern symn type_str;
 
-extern symn emit_opc;
-
 extern symn type_v4f;
 extern symn type_v2d;
 
+extern symn emit_opc;
+
 //~ util
 //~ int parseInt(const char *str, int *res, int hexchr);
-char* parsecmd(char *ptr, char *cmd, char *sws);
+//~ char* parsecmd(char *ptr, char *cmd, char *sws);
 
 //~ clog
 void fputfmt(FILE *fout, const char *msg, ...);
@@ -307,7 +316,7 @@ void fputfmt(FILE *fout, const char *msg, ...);
 //~ void fputsym(FILE *fout, symn sym, int mode, int level);
 //~ void fputast(FILE *fout, astn ast, int mode, int level);
 //~ void fputopc(FILE *fout, bcde opc, int len, int offset);
-void fputasm(FILE *fout, unsigned char *beg, int len, int mode);
+void fputasm(FILE *fout, unsigned char *beg, int len, int rel, int mode);
 //~ void fputasm(FILE *fout, void *ip, int len, int length);
 
 // program error
@@ -318,16 +327,18 @@ void dumpsym(FILE *fout, symn sym, int mode);
 void dumpast(FILE *fout, astn ast, int mode);
 void dumpxml(FILE *fout, astn ast, int lev, const char* text, int level);
 
+void dump2file(state s, char *file, dumpMode mode, char *text);
+
 // ccvm
 void* getmem(state s, int size, unsigned clear);
 
 symn newdefn(ccEnv s, int kind);
 
 astn newnode(ccEnv s, int kind);
-astn intnode(ccEnv s, int64t v);
-//~ astn fltnode(ccEnv s, flt64t v);
+astn intnode(ccEnv s, int64_t v);
+//~ astn fltnode(ccEnv s, flt64_t v);
 astn strnode(ccEnv s, char *v);
-astn fh8node(ccEnv s, uns64t v);
+astn fh8node(ccEnv s, uint64_t v);
 astn cpynode(ccEnv s, astn src);
 void eatnode(ccEnv s, astn ast);
 
@@ -336,7 +347,7 @@ symn install(ccEnv s, const char* name, int kind, int cast, unsigned size);
 symn declare(ccEnv s, int kind, astn tag, symn rtyp);
 symn lookup(ccEnv s, symn sym, astn ast, astn args);
 
-symn findsym(ccEnv s, char *name);
+symn findsym(ccEnv s, symn in, char *name);
 int findnzv(ccEnv s, char *name);
 int findint(ccEnv s, char *name, int* res);
 int findflt(ccEnv s, char *name, double* res);
@@ -345,9 +356,9 @@ symn typecheck(ccEnv s, symn loc, astn ast);
 int castId(symn typ);
 int castTo(astn ast, int tyId);
 
-int32t constbol(astn ast);
-int64t constint(astn ast);
-flt64t constflt(astn ast);
+int32_t constbol(astn ast);
+int64_t constint(astn ast);
+flt64_t constflt(astn ast);
 
 astn peek(ccEnv);
 //~ astn next(ccEnv, int kind);
@@ -384,15 +395,16 @@ int cgen(state s, astn ast, int get);
  * @return: program counter
  */
 int emit(vmEnv, int opc, ...);
-int emiti32(vmEnv, int32t arg);
-int emiti64(vmEnv, int64t arg);
-int emitf32(vmEnv, flt32t arg);
-int emitf64(vmEnv, flt64t arg);
+int emiti32(vmEnv, int32_t arg);
+int emiti64(vmEnv, int64_t arg);
+int emitf32(vmEnv, flt32_t arg);
+int emitf64(vmEnv, flt64_t arg);
 int emitref(vmEnv, int opc, int offset);
+int emitptr(vmEnv, int opc, void* arg);
 //int emitref(vmEnv, int offset);
 
 int emitidx(vmEnv, int opc, int pos);
-int emitint(vmEnv, int opc, int64t arg);
+int emitint(vmEnv, int opc, int64_t arg);
 int fixjump(vmEnv s, int src, int dst, int stc);
 //int testopc(vmEnv s, int opc);
 
@@ -413,9 +425,13 @@ int rehash(const char* str, unsigned size);
 //~ int align(int offs, int pack, int size);
 char *mapstr(ccEnv s, char *name, unsigned size/* = -1U*/, unsigned hash/* = -1U*/);
 
+/**
+ * param flags:
+ * bit 1: skip errors;
+ * TODO: bit 2: print hex values;
+**/
+void vmTags(ccEnv s, char *sptr, int slen, int flags);
 
-void vmTags(ccEnv s, char *sptr, int slen);
-
-void dumpasmdbg(FILE *fout, vmEnv s, int mark, int mode);
+void dumpasmdbg(FILE *fout, vmEnv s, int mark, int len, int mode);
 
 #endif

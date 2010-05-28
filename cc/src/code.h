@@ -66,8 +66,8 @@ OPCDEF(b32___2,  0x32, 0, 2, -1, 1,	"b32.sbb")	// sp(1) -= sp(0); pop;
 OPCDEF(u32_mul,  0x33, 1, 2, -1, 1,	"u32.mul")	// sp(1) *= sp(0); pop;
 OPCDEF(u32_div,  0x34, 1, 2, -1, 1,	"u32.div")	// sp(1) /= sp(0); pop;
 OPCDEF(u32_mod,  0x35, 1, 2, -1, 1,	"u32.mod")	// sp(1) %= sp(0); pop;
-OPCDEF(u32_mad,  0x36, 1, 3, -2, 1,	"u32.mad")	// mul; add;
-OPCDEF(b32___7,  0x37, 0, 1, -0, 1,	"b32.")		// 
+OPCDEF(u32_mad,  0x36, 1, 3, -2, 1,	"u32.mad")	// sp(2) += sp(1)*sp(0); pop2;	[…, a, b, c => […, a + b * c;
+OPCDEF(b32___7,  0x37, 0, 1, -0, 1,	"b32.")		// ?bit.any?
 OPCDEF(u32_clt,  0x38, 1, 2, -1, 1,	"u32.clt")	// sp(1).b32 = sp(1).u32 < sp(0).u32; pop;
 OPCDEF(u32_cgt,  0x39, 1, 2, -1, 1,	"u32.cgt")	// sp(1).b32 = sp(1).u32 > sp(0).u32; pop;
 OPCDEF(b32_and,  0x3a, 1, 2, -1, 1,	"b32.and")	// sp(1).u32 &= sp(0).u32; pop;
@@ -76,10 +76,8 @@ OPCDEF(b32_xor,  0x3c, 1, 2, -1, 1,	"b32.xor")	// sp(1).u32 ^= sp(0).u32; pop;
 OPCDEF(b32_shl,  0x3d, 1, 2, -1, 1,	"b32.shl")	// sp(1).u32 <<= sp(0).u32; pop;
 OPCDEF(b32_shr,  0x3e, 1, 2, -1, 1,	"b32.shr")	// sp(1).u32 >>= sp(0).u32; pop;
 OPCDEF(b32_sar,  0x3f, 1, 2, -1, 1,	"b32.sar")	// sp(1).i32 >>= sp(0).i32; pop;
-//~ OPCDEF(opc_rot,  0x3x, 1, 2, -1, 1,	"rot")	 	//?rotate
 //~ OPCDEF(opc_zxt,  0x3x, 1, 2, -0, 1,	"zxt")		//!zero.extend arg:[offs:3][size:5]
 //~ OPCDEF(opc_sxt,  0x3x, 1, 2, -0, 1,	"sxt")		//!sign.extend arg:[offs:3][size:5]
-//~ OPCDEF(u32_mad,  0x3x, 1, 3, -2, 1,	"u32.mad")	// sp(2) += sp(1)*sp(0); pop2;	[…, a, b, c => […, a + b * c;
 //~ i32[ 32] ===================================================================
 OPCDEF(i32_neg,  0x40, 1, 1, -0, 1,	"i32.neg")	// sp(0).i32 = -sp(0).i32;
 OPCDEF(i32_add,  0x41, 1, 2, -1, 1,	"i32.add")	// sp(1).i32 += sp(0).i32; pop;
@@ -309,6 +307,9 @@ OPCDEF(p4d___f,  0x9f, 0, 0, -0, 1,	NULL)		//-Extended ops: idx, rev, imm, mem
 	//~ opx == 001: shl		// shift left
 	//~ opx == 010: shr		// shift right
 	//~ opx == 011: sar		// shift arithm right
+	//~ opx == 100: inc		// increment (0 ... 31) + 1
+	//~ opx == 110: dec		// decrement (0 ... 31) + 1
+	
 
 	//~ opx == 100: get		// get bit
 	//~ opx == 110: set		// set bit
@@ -354,6 +355,8 @@ opc_sxt argc = 1: [offs:3][size:5]
 		mul = 0x03,	sat: hi / lo
 		div = 0x04,	sat: quo/rem
 		mod = 0x05,	// avg
+
+		??? = 0x06,	???
 
 		ceq = 0x07,	???
 		min = 0x08,	sat: ??
@@ -430,7 +433,9 @@ case opc_ldsp: NEXT(4, 0, +1) {
 } break;
 case opc_jmpi: NEXT(1, 1, -1) {
 #ifdef EXEC
-	pu->ip = (void*)SP(0, u4);
+	// TODO: FixMe
+	pu->ip = mp + SP(0, u4);
+	//pu->ip = (void*)SP(0, u4);
 #endif
 } break;
 case opc_task: NEXT(4, 0, -0) {
@@ -441,26 +446,11 @@ case opc_task: NEXT(4, 0, -0) {
 	STOP(error_opc, 1);
 #endif
 } break;
-/*case opc_sysc: NEXT(2, 0, -0) {
-#ifdef EXEC
-	switch (ip->idx) {
-		//~ case: exit, halt, wait, join, sync, trap), (alloc, free), (copy, init)
-		default: STOP(error_opc, 1);
-		case 0x00: {		// exit
-			pu->ip = 0;
-			//~ return 0;
-		} break;
-		case 0x01: {		// halt
-			pu->ip = 0;
-			//~ return 0;
-		} break;
-	}
-#endif
-} break;// */
 case opc_libc: NEXT(2, libcfnc[ip->idx].chk, -libcfnc[ip->idx].pop) {
 #ifdef EXEC
+	// TODO: FixMe
 	vm->s->argv = (char *)sp;
-	vm->s->retv = sp + libcfnc[ip->idx].pop * 4;
+	vm->s->retv = (char *)sp + libcfnc[ip->idx].pop * 4;
 	libcfnc[ip->idx].call(vm->s);
 	if (!ip->idx)
 		pu->ip = 0;
@@ -469,7 +459,7 @@ case opc_libc: NEXT(2, libcfnc[ip->idx].chk, -libcfnc[ip->idx].pop) {
 case opc_call: NEXT(4, 0, +1) {
 #ifdef EXEC
 	STOP(error_ovf, pu->sp < pu->bp);
-	//~ SP(0, i4) = ip - mp;
+	SP(-1, i4) = (memptr)sp - mp + ip->rel;
 	pu->ip += ip->rel - 4;
 #endif
 } break;
@@ -517,11 +507,11 @@ case opc_dup2: NEXT(2, ip->idx, +2) {
 case opc_dup4: NEXT(2, ip->idx, +4) {
 #ifdef EXEC
 	STOP(error_ovf, pu->sp < pu->bp);
-	//~ SP(-1, u4) = SP(ip->idx + 3, u4);
-	//~ SP(-2, u4) = SP(ip->idx + 2, u4);
-	//~ SP(-3, u4) = SP(ip->idx + 1, u4);
-	//~ SP(-4, u4) = SP(ip->idx + 0, u4);
-	SP(-4, pf) = SP(ip->idx + 0, pf);
+	//~ SP(-4, pf) = SP(ip->idx + 0, pf);
+	SP(-4, u4) = SP(ip->idx + 0, u4);
+	SP(-3, u4) = SP(ip->idx + 1, u4);
+	SP(-2, u4) = SP(ip->idx + 2, u4);
+	SP(-1, u4) = SP(ip->idx + 3, u4);
 #endif
 } break;
 case opc_set1: NEXT(2, ip->idx, -1) {
@@ -536,7 +526,12 @@ case opc_set2: NEXT(2, ip->idx, -2) {
 } break;
 case opc_set4: NEXT(2, ip->idx, -4) {
 #ifdef EXEC
-	SP(ip->idx, pf) = SP(0, pf);
+	//~ SP(ip->idx, pf) = SP(0, pf);
+	SP(ip->idx - 1, u4) = SP(0, u4);
+	SP(ip->idx - 2, u4) = SP(1, u4);
+	SP(ip->idx - 3, u4) = SP(2, u4);
+	SP(ip->idx - 4, u4) = SP(3, u4);
+
 #endif
 } break;
 case opc_ldz1: NEXT(1, 0, +1) {
@@ -1138,27 +1133,31 @@ case v4f_max: NEXT(1, 8, -4) {
 } break;
 case v4f_dp3: NEXT(1, 8, -7) {
 #ifdef EXEC
+	//~ SP(7, f4) = 
+	//~ SP(4, pf).x * SP(0, pf).x +
+	//~ SP(4, pf).y * SP(0, pf).y +
+	//~ SP(4, pf).z * SP(0, pf).z ;
 	SP(7, f4) = 
-	SP(4, pf).x * SP(0, pf).x +
-	SP(4, pf).y * SP(0, pf).y +
-	SP(4, pf).z * SP(0, pf).z ;
+	SP(4, f4) * SP(0, f4) +
+	SP(5, f4) * SP(1, f4) +
+	SP(6, f4) * SP(2, f4);
 #endif
 } break;
 case v4f_dph: NEXT(1, 8, -7) {
 #ifdef EXEC
-	SP(7, f4) = SP(4, pf).w +
-	SP(4, pf).x * SP(0, pf).x +
-	SP(4, pf).y * SP(0, pf).y +
-	SP(4, pf).z * SP(0, pf).z ;
+	SP(7, f4) += 
+	SP(4, f4) * SP(0, f4) +
+	SP(5, f4) * SP(1, f4) +
+	SP(6, f4) * SP(2, f4);
 #endif
 } break;
 case v4f_dp4: NEXT(1, 8, -7) {
 #ifdef EXEC
 	SP(7, f4) = 
-	SP(4, pf).w * SP(0, pf).w +
-	SP(4, pf).x * SP(0, pf).x +
-	SP(4, pf).y * SP(0, pf).y +
-	SP(4, pf).z * SP(0, pf).z ;
+	SP(4, f4) * SP(0, f4) +
+	SP(5, f4) * SP(1, f4) +
+	SP(6, f4) * SP(2, f4) +
+	SP(7, f4) * SP(3, f4);
 #endif
 } break;
 //}*/
@@ -1196,11 +1195,11 @@ case v2d_div: NEXT(1, 8, -4) {
 } break;
 case p4d_swz: NEXT(2, 4, -0) {
 #ifdef EXEC
-	uns32t swz = ip->idx;
-	uns32t d0 = SP((swz >> 0) & 3, i4);
-	uns32t d1 = SP((swz >> 2) & 3, i4);
-	uns32t d2 = SP((swz >> 4) & 3, i4);
-	uns32t d3 = SP((swz >> 6) & 3, i4);
+	uint32_t swz = ip->idx;
+	uint32_t d0 = SP((swz >> 0) & 3, i4);
+	uint32_t d1 = SP((swz >> 2) & 3, i4);
+	uint32_t d2 = SP((swz >> 4) & 3, i4);
+	uint32_t d3 = SP((swz >> 6) & 3, i4);
 	SP(0, i4) = d0;
 	SP(1, i4) = d1;
 	SP(2, i4) = d2;

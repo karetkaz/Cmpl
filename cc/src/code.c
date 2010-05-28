@@ -10,22 +10,21 @@
 
 #pragma pack(push, 1)
 typedef struct bcde {			// byte code decoder
-	uns08t opc;
+	uint8_t opc;
 	union {
 		stkval arg;		// argument (load const)
-		uns08t idx;		// usualy index for stack
-		int32t rel:24;	// relative offset (ip, sp) +- 7MB
+		uint8_t idx;		// usualy index for stack
+		int32_t rel:24;	// relative offset (ip, sp) +- 7MB
 		struct {		// when starting a task
-			uns08t	dl;	// data to copy to stack
-			uns16t	cl;	// code to exec paralel
+			uint8_t  dl;	// data to copy to stack
+			uint16_t cl;	// code to exec paralel
 		};
 		/*struct {				// extended3: 4 bytes `res := lhs OP rhs`
-			uns32t opc:4;		// 0 ... 15
-
-			uns32t mem:2;		// mem
-			uns32t res:6;		// res
-			uns32t lhs:6;		// lhs
-			uns32t rhs:6;		// rhs
+			uint32_t opc:4;		// 0 ... 15
+			uint32_t mem:2;		// mem
+			uint32_t res:6;		// res
+			uint32_t lhs:6;		// lhs
+			uint32_t rhs:6;		// rhs
 			/ * --8<-------------------------------------------
 			void *res = sp + ip->ext.res;
 			void *lhs = sp + ip->ext.lhs;
@@ -62,225 +61,275 @@ typedef struct cell {			// processor
 
 } *cell;
 
-#define useBuiltInFuncs
 //{ libc.c ---------------------------------------------------------------------
+
 //~ #pragma intrinsic(log,cos,sin,tan,sqrt,fabs,pow,atan2,fmod)
 //~ #pragma intrinsic(acos,asin,atan,cosh,exp,log10,sinh,tanh)
 
 static int libHalt(state s) {
+	//~ if (s->onHalt) s->onHalt();
 	return 0;
 }
 #ifdef useBuiltInFuncs
 static int f64abs(state s) {
-	flt64t x = poparg(s, flt64t);
-	setret(flt64t, s, abs(x));
+	flt64_t x = poparg(s, flt64_t);
+	setret(flt64_t, s, abs(x));
 	return 0;
 }
 static int f64sin(state s) {
-	flt64t x = poparg(s, flt64t);
-	setret(flt64t, s, sin(x));
+	flt64_t x = poparg(s, flt64_t);
+	setret(flt64_t, s, sin(x));
 	return 0;
 }
 static int f64cos(state s) {
-	flt64t x = poparg(s, flt64t);
-	setret(flt64t, s, cos(x));
+	flt64_t x = poparg(s, flt64_t);
+	setret(flt64_t, s, cos(x));
 	return 0;
 }
 static int f64tan(state s) {
-	flt64t x = poparg(s, flt64t);
-	setret(flt64t, s, tan(x));
+	flt64_t x = poparg(s, flt64_t);
+	setret(flt64_t, s, tan(x));
 	return 0;
 }
 
 static int f64log(state s) {
-	flt64t x = poparg(s, flt64t);
-	setret(flt64t, s, log(x));
+	flt64_t x = poparg(s, flt64_t);
+	setret(flt64_t, s, log(x));
 	return 0;
 }
 static int f64exp(state s) {
-	flt64t x = poparg(s, flt64t);
-	setret(flt64t, s, exp(x));
+	flt64_t x = poparg(s, flt64_t);
+	setret(flt64_t, s, exp(x));
 	return 0;
 }
 static int f64pow(state s) {
-	flt64t x = poparg(s, flt64t);
-	flt64t y = poparg(s, flt64t);
-	setret(flt64t, s, pow(x, y));
+	flt64_t x = poparg(s, flt64_t);
+	flt64_t y = poparg(s, flt64_t);
+	setret(flt64_t, s, pow(x, y));
 	return 0;
 }
 static int f64sqrt(state s) {
-	flt64t x = poparg(s, flt64t);
-	setret(flt64t, s, sqrt(x));
+	flt64_t x = poparg(s, flt64_t);
+	setret(flt64_t, s, sqrt(x));
 	return 0;
 }
 
 static int f64atan2(state s) {
-	flt64t x = poparg(s, flt64t);
-	flt64t y = poparg(s, flt64t);
-	setret(flt64t, s, atan2(x, y));
+	flt64_t x = poparg(s, flt64_t);
+	flt64_t y = poparg(s, flt64_t);
+	setret(flt64_t, s, atan2(x, y));
 	return 0;
 }
 
 /*static int f64lg2(state s) {
 	double log2(double);
-	flt64t *sp = stk;
+	flt64_t *sp = stk;
 	*sp = log2(*sp);
 	return 0;
 }
 static int f64_xp2(state s) {
 	double exp2(double);
-	flt64t *sp = stk;
+	flt64_t *sp = stk;
 	*sp = exp2(*sp);
 	return 0;
 }*/
 
 static int b32btc(state s) {
-	uns32t x = poparg(s, uns32t);
+	uint32_t x = poparg(s, int32_t);
 	x -= ((x >> 1) & 0x55555555);
 	x = (((x >> 2) & 0x33333333) + (x & 0x33333333));
 	x = (((x >> 4) + x) & 0x0f0f0f0f);
 	x += (x >> 8) + (x >> 16);
-	setret(uns32t, s, x & 0x3f);
+	setret(uint32_t, s, x & 0x3f);
 	return 0;
 }
 static int b32bsf(state s) {
-	uns32t x = poparg(s, uns32t);
+	uint32_t x = poparg(s, int32_t);
 	int ans = 0;
-	if ((x & 0x0000ffff) == 0) { ans += 16; x >>= 16; }
-	if ((x & 0x000000ff) == 0) { ans +=  8; x >>=  8; }
-	if ((x & 0x0000000f) == 0) { ans +=  4; x >>=  4; }
-	if ((x & 0x00000003) == 0) { ans +=  2; x >>=  2; }
-	if ((x & 0x00000001) == 0) { ans +=  1; }
-	setret(uns32t, s, x ? ans : -1);
+	//~ if ((x & 0x00000000ffffffff) == 0) { ans += 32; x >>= 32; }
+	if ((x & 0x000000000000ffff) == 0) { ans += 16; x >>= 16; }
+	if ((x & 0x00000000000000ff) == 0) { ans +=  8; x >>=  8; }
+	if ((x & 0x000000000000000f) == 0) { ans +=  4; x >>=  4; }
+	if ((x & 0x0000000000000003) == 0) { ans +=  2; x >>=  2; }
+	if ((x & 0x0000000000000001) == 0) { ans +=  1; }
+	setret(uint32_t, s, x ? ans : -1);
 	return 0;
 }
 static int b32bsr(state s) {
-	uns32t x = poparg(s, uns32t);
+	uint32_t x = poparg(s, int32_t);
 	unsigned ans = 0;
-	if ((x & 0xffff0000) != 0) { ans += 16; x >>= 16; }
-	if ((x & 0x0000ff00) != 0) { ans +=  8; x >>=  8; }
-	if ((x & 0x000000f0) != 0) { ans +=  4; x >>=  4; }
-	if ((x & 0x0000000c) != 0) { ans +=  2; x >>=  2; }
-	if ((x & 0x00000002) != 0) { ans +=  1; }
-	setret(uns32t, s, x ? ans : -1);
-	return 0;
-}
-static int b32swp(state s) {
-	uns32t x = poparg(s, uns32t);
-	x = ((x >> 1) & 0x55555555) | ((x & 0x55555555) << 1);
-	x = ((x >> 2) & 0x33333333) | ((x & 0x33333333) << 2);
-	x = ((x >> 4) & 0x0F0F0F0F) | ((x & 0x0F0F0F0F) << 4);
-	x = ((x >> 8) & 0x00FF00FF) | ((x & 0x00FF00FF) << 8);
-	setret(uns32t, s, (x >> 16) | (x << 16));
+	//~ if ((x & 0xffffffff00000000) != 0) { ans += 32; x >>= 32; }
+	if ((x & 0x00000000ffff0000) != 0) { ans += 16; x >>= 16; }
+	if ((x & 0x000000000000ff00) != 0) { ans +=  8; x >>=  8; }
+	if ((x & 0x00000000000000f0) != 0) { ans +=  4; x >>=  4; }
+	if ((x & 0x000000000000000c) != 0) { ans +=  2; x >>=  2; }
+	if ((x & 0x0000000000000002) != 0) { ans +=  1; }
+	setret(uint32_t, s, x ? ans : -1);
 	return 0;
 }
 static int b32hib(state s) {
-	uns32t x = poparg(s, uns32t);
+	uint32_t x = poparg(s, uint32_t);
 	x |= x >> 1;
 	x |= x >> 2;
 	x |= x >> 4;
 	x |= x >> 8;
 	x |= x >> 16;
-	setret(uns32t, s, x - (x >> 1));
+	setret(uint32_t, s, x - (x >> 1));
 	return 0;
 }
 //~ static int b32lob(state s) := x & -x;
-
+static int b32swp(state s) {
+	uint32_t x = poparg(s, int32_t);
+	x = ((x >> 1) & 0x55555555) | ((x & 0x55555555) << 1);
+	x = ((x >> 2) & 0x33333333) | ((x & 0x33333333) << 2);
+	x = ((x >> 4) & 0x0F0F0F0F) | ((x & 0x0F0F0F0F) << 4);
+	x = ((x >> 8) & 0x00FF00FF) | ((x & 0x00FF00FF) << 8);
+	setret(uint32_t, s, (x >> 16) | (x << 16));
+	return 0;
+}
+/* removed, and do the same with 32 bit functions
 static int b32zxt(state s) {
-	uns32t val = poparg(s, int32t);
-	int32t ofs = poparg(s, int32t);
-	int32t cnt = poparg(s, int32t);
+	uint32_t val = poparg(s, int32_t);
+	int32_t ofs = poparg(s, int32_t);
+	int32_t cnt = poparg(s, int32_t);
 	val <<= 32 - (ofs + cnt);
-	setret(int32t, s, val >> (32 - cnt));
+	setret(int32_t, s, val >> (32 - cnt));
 	return 0;
 }
 static int b32sxt(state s) {
-	int32t val = poparg(s, int32t);
-	int32t ofs = poparg(s, int32t);
-	int32t cnt = poparg(s, int32t);
+	int32_t val = poparg(s, int32_t);
+	int32_t ofs = poparg(s, int32_t);
+	int32_t cnt = poparg(s, int32_t);
 	val <<= 32 - (ofs + cnt);
-	setret(int32t, s, val >> (32 - cnt));
+	setret(int32_t, s, val >> (32 - cnt));
 	return 0;
 }
+*/
 
 static int b64shl(state s) {
-	uns64t x = poparg(s, uns64t);
-	int32t y = poparg(s, int32t);
-	setret(uns64t, s, x << y);
+	uint64_t x = poparg(s, int64_t);
+	int32_t y = poparg(s, int32_t);
+	setret(uint64_t, s, x << y);
 	return 0;
 }
 static int b64shr(state s) {
-	uns64t x = poparg(s, uns64t);
-	int32t y = poparg(s, int32t);
-	setret(uns64t, s, x >> y);
+	uint64_t x = poparg(s, int64_t);
+	int32_t y = poparg(s, int32_t);
+	setret(uint64_t, s, x >> y);
 	return 0;
 }
 static int b64sar(state s) {
-	int64t x = poparg(s, uns64t);
-	int32t y = poparg(s, int32t);
-	setret(uns64t, s, x >> y);
+	int64_t x = poparg(s, int64_t);
+	int32_t y = poparg(s, int32_t);
+	setret(uint64_t, s, x >> y);
 	return 0;
 }
 static int b64and(state s) {
-	uns64t x = poparg(s, uns64t);
-	uns64t y = poparg(s, uns64t);
-	setret(uns64t, s, x & y);
+	uint64_t x = poparg(s, uint64_t);
+	uint64_t y = poparg(s, uint64_t);
+	setret(uint64_t, s, x & y);
 	return 0;
 }
 static int b64ior(state s) {
-	uns64t x = poparg(s, uns64t);
-	uns64t y = poparg(s, uns64t);
-	setret(uns64t, s, x | y);
+	uint64_t x = poparg(s, uint64_t);
+	uint64_t y = poparg(s, uint64_t);
+	setret(uint64_t, s, x | y);
 	return 0;
 }
 static int b64xor(state s) {
-	uns64t x = poparg(s, uns64t);
-	uns64t y = poparg(s, uns64t);
-	setret(uns64t, s, x ^ y);
+	uint64_t x = poparg(s, uint64_t);
+	uint64_t y = poparg(s, uint64_t);
+	setret(uint64_t, s, x ^ y);
+	return 0;
+}
+
+static int b64bsf(state s) {
+	uint64_t x = poparg(s, int64_t);
+	int ans = -1;
+	if (x != 0) {
+		ans = 0;
+		if ((x & 0x00000000ffffffffULL) == 0) { ans += 32; x >>= 32; }
+		if ((x & 0x000000000000ffffULL) == 0) { ans += 16; x >>= 16; }
+		if ((x & 0x00000000000000ffULL) == 0) { ans +=  8; x >>=  8; }
+		if ((x & 0x000000000000000fULL) == 0) { ans +=  4; x >>=  4; }
+		if ((x & 0x0000000000000003ULL) == 0) { ans +=  2; x >>=  2; }
+		if ((x & 0x0000000000000001ULL) == 0) { ans +=  1; }
+	}
+	setret(int32_t, s, ans);
+	return 0;
+}
+static int b64bsr(state s) {
+	uint64_t x = poparg(s, int64_t);
+	int ans = -1;
+	if (x != 0) {
+		ans = 0;
+		if ((x & 0xffffffff00000000ULL) != 0) { ans += 32; x >>= 32; }
+		if ((x & 0x00000000ffff0000ULL) != 0) { ans += 16; x >>= 16; }
+		if ((x & 0x000000000000ff00ULL) != 0) { ans +=  8; x >>=  8; }
+		if ((x & 0x00000000000000f0ULL) != 0) { ans +=  4; x >>=  4; }
+		if ((x & 0x000000000000000cULL) != 0) { ans +=  2; x >>=  2; }
+		if ((x & 0x0000000000000002ULL) != 0) { ans +=  1; }
+	}
+	setret(int32_t, s, ans);
+	return 0;
+}
+static int b64hib(state s) {
+	uint64_t x = poparg(s, int64_t);
+	x |= x >> 1;
+	x |= x >> 2;
+	x |= x >> 4;
+	x |= x >> 8;
+	x |= x >> 16;
+	x |= x >> 32;
+	setret(uint64_t, s, x - (x >> 1));
+	return 0;
+}
+static int b64lob(state s) {
+	uint64_t x = poparg(s, int64_t);
+	setret(uint64_t, s, x & -x);
 	return 0;
 }
 
 static int b64zxt(state s) {
-	uns64t val = poparg(s, int64t);
-	int32t ofs = poparg(s, int32t);
-	int32t cnt = poparg(s, int32t);
+	uint64_t val = poparg(s, int64_t);
+	int32_t ofs = poparg(s, int32_t);
+	int32_t cnt = poparg(s, int32_t);
 	val <<= 64 - (ofs + cnt);
-	setret(int64t, s, val >> (64 - cnt));
+	setret(int64_t, s, val >> (64 - cnt));
 	return 0;
 }
 static int b64sxt(state s) {
-	int64t val = poparg(s, int64t);
-	int32t ofs = poparg(s, int32t);
-	int32t cnt = poparg(s, int32t);
+	int64_t val = poparg(s, int64_t);
+	int32_t ofs = poparg(s, int32_t);
+	int32_t cnt = poparg(s, int32_t);
 	val <<= 64 - (ofs + cnt);
-	setret(int64t, s, val >> (64 - cnt));
+	setret(int64_t, s, val >> (64 - cnt));
 	return 0;
 }
 
 static int putchr(state s) {
-	fputfmt(stdout, "%c", poparg(s, int32t));
+	fputfmt(stdout, "%c", poparg(s, int32_t));
 	return 0;
 }
 static int puti64(state s) {
-	fputfmt(stdout, "%D", poparg(s, int64t));
+	fputfmt(stdout, "%D", poparg(s, int64_t));
 	return 0;
 }
 static int putf64(state s) {
-	fputfmt(stdout, "%F", poparg(s, flt64t));
+	fputfmt(stdout, "%F", poparg(s, flt64_t));
 	return 0;
 }
 
 #endif
-
 static struct lfun {
 	int (*call)(state);
 	const char* proto;
 	symn sym;
 	// TODO: check these values
-	int08t chk, pop, pad[2];
+	int8_t chk, pop, pad[2];
 }
 libcfnc[256] = {
-	{libHalt, "Halt", NULL, 0, 0},
+	{libHalt, "Halt()", NULL, 0, 0},
 #ifdef useBuiltInFuncs
 	//{ MATH
 	{f64abs, "flt64 abs(flt64 x)"},
@@ -303,9 +352,11 @@ libcfnc[256] = {
 	{b32bsr, "int32 bsr(int32 x)"},
 	{b32swp, "int32 swp(int32 x)"},
 	{b32hib, "int32 bhi(int32 x)"},
-	{b32zxt, "int32 zxt(int32 val, int offs, int bits)"},
-	{b32sxt, "int32 sxt(int32 val, int offs, int bits)"},
 
+	{b64bsf, "int32 bsf(int64 x)"},
+	{b64bsr, "int32 bsr(int64 x)"},
+	{b64lob, "int64 lobit(int64 x)"},
+	{b64hib, "int64 hibit(int64 x)"},
 	{b64shl, "int64 shl(int64 x, int32 y)"},
 	{b64shr, "int64 shr(int64 x, int32 y)"},
 	{b64sar, "int64 sar(int64 x, int32 y)"},
@@ -323,6 +374,7 @@ libcfnc[256] = {
 	{putchr, "void putchr(int32 val)"},
 	{puti64, "void puti64(int64 val)"},
 	{putf64, "void putf64(flt64 val)"},
+	//~ {putstr, "void putstr(string val)"},
 	//}
 
 	// include some of the compiler functions
@@ -333,7 +385,7 @@ libcfnc[256] = {
 };
 
 int libcall(state s, int libc(state), const char* proto) {
-	static int libccnt = 0;
+	static int libccnt = 0;//1
 	int stdiff = 0;
 	symn arg, sym;
 
@@ -371,6 +423,11 @@ int libcall(state s, int libc(state), const char* proto) {
 
 	sym = install(s->cc, libcfnc[libccnt].proto, -1, 0, 0);
 
+	if (sym != NULL) {
+		//~ int64 zxt(int64 val, int offs, int bits)
+		//~ define zxt(int64 val, int offs, int bits) = emit(libc(3), int64 val, int offs, int bits);
+	}
+
 	if (sym == NULL) {
 		error(s, 0, "install('%s')", proto);
 		return -2;
@@ -384,7 +441,6 @@ int libcall(state s, int libc(state), const char* proto) {
 
 	libcfnc[libccnt].sym = sym;
 	sym->offs = -libccnt;
-
 	libccnt += 1;
 
 	return libccnt - 1;
@@ -395,6 +451,7 @@ static inline bcde getip(vmEnv s, int pos) {
 	return (bcde)(s->_ptr + pos);
 }
 
+// TODO: exchange this with emitarg(vmEnv s, int opc, stkval arg);
 int emit(vmEnv s, int opc, ...) {
 	bcde ip = 0;
 	stkval arg = *(stkval*)(&opc + 1);
@@ -527,6 +584,15 @@ int emit(vmEnv s, int opc, ...) {
 	}
 
 	// bit
+	else if (opc == opc_cmt) switch (arg.i4) {
+		case TYPE_u32:
+		case TYPE_i32: opc = b32_cmt; break;
+		//~ case TYPE_i64: opc = i64_neg; break;
+		//~ case TYPE_f32: opc = f32_neg; break;
+		//~ case TYPE_f64: opc = f64_neg; break;
+		//~ case TYPE_pf2: opc = p4d_neg; break;
+		//~ case TYPE_pf4: opc = p4f_neg; break;
+	}
 	else if (opc == opc_shl) switch (arg.i4) {
 		case TYPE_u32:
 		case TYPE_i32: opc = b32_shl; break;
@@ -762,6 +828,8 @@ int emit(vmEnv s, int opc, ...) {
 
 	ip = getip(s, s->cs);
 
+	s->ic += s->pc != s->cs;
+
 	s->pc = s->cs;
 
 	ip->opc = opc;
@@ -791,29 +859,27 @@ int emit(vmEnv s, int opc, ...) {
 		#include "code.h"
 	}
 
-	s->ic += s->pc != s->cs;
-
 	if (s->sm < s->ss)
 		s->sm = s->ss;
 
 	return s->pc;
 }
-int emiti32(vmEnv s, int32t arg) {
+int emiti32(vmEnv s, int32_t arg) {
 	stkval tmp;
 	tmp.i4 = arg;
 	return emit(s, opc_ldc4, tmp);
 }
-int emiti64(vmEnv s, int64t arg) {
+int emiti64(vmEnv s, int64_t arg) {
 	stkval tmp;
 	tmp.i8 = arg;
 	return emit(s, opc_ldc8, tmp);
 }
-int emitf32(vmEnv s, flt32t arg) {
+int emitf32(vmEnv s, flt32_t arg) {
 	stkval tmp;
 	tmp.f4 = arg;
 	return emit(s, opc_ldcf, tmp);
 }
-int emitf64(vmEnv s, flt64t arg) {
+int emitf64(vmEnv s, flt64_t arg) {
 	stkval tmp;
 	tmp.f8 = arg;
 	return emit(s, opc_ldcF, tmp);
@@ -834,7 +900,7 @@ int emitidx(vmEnv s, int opc, int arg) {
 	}
 	if (tmp.u4 > 255) {
 		fatal("0x%02x(%d)", opc, tmp.u4);
-		fputasm(stdout, s->_ptr, s->cs, 0x31);
+		fputasm(stdout, s->_ptr, s->cs, s->cs, 0x31);
 		return 0;
 	}
 	if (tmp.u4 > s->ss) {
@@ -843,9 +909,16 @@ int emitidx(vmEnv s, int opc, int arg) {
 	}
 	return emit(s, opc, tmp);
 }
-int emitint(vmEnv s, int opc, int64t arg) {
+int emitint(vmEnv s, int opc, int64_t arg) {
 	stkval tmp;
 	tmp.i8 = arg;
+	return emit(s, opc, tmp);
+}
+int emitptr(vmEnv s, int opc, void* arg) {
+	stkval tmp;
+	unsigned char* ptr = (unsigned char*)arg;
+	dieif(ptr < s->_mem || ptr > s->_ptr, "invalid reference");
+	tmp.i8 = (ptr - s->_mem);
 	return emit(s, opc, tmp);
 }
 int emitref(vmEnv s, int opc, int offset) {
@@ -855,6 +928,7 @@ int emitref(vmEnv s, int opc, int offset) {
 				return emitidx(s, opc_ldsp, offset);
 			return emitint(s, opc_ldcr, offset);
 		case opc_call:
+			// TODO: RemMe!
 			if (offset < 0)
 				return emitint(s, opc_libc, -offset);
 			return emitint(s, opc_call, s->pc - offset);
@@ -942,8 +1016,8 @@ static int mtt(vmEnv ee, doWhat cmd, cell pu, int n) {
  * @return: error code
 **/
 static int dbugpu(vmEnv vm, cell pu, dbgf dbg) {
-	typedef uns32t *stkptr;
-	typedef uns08t *memptr;
+	typedef uint32_t *stkptr;
+	typedef uint8_t *memptr;
 
 	register bcde ip;
 	stkptr st = (void*)pu->sp;
@@ -953,7 +1027,7 @@ static int dbugpu(vmEnv vm, cell pu, dbgf dbg) {
 
 		register stkptr sp = (void*)pu->sp;
 
-		if (dbg && dbg(vm, 0, ip, (long*)sp, st - sp))
+		if (dbg && dbg(vm->s, 0, ip, (long*)sp, st - sp))
 			return -9;
 
 		switch (ip->opc) {		// exec
@@ -971,7 +1045,7 @@ static int dbugpu(vmEnv vm, cell pu, dbgf dbg) {
 	}
 
 	if (dbg)
-		dbg(vm, 0, NULL, (long*)pu->sp, (vm->_end - pu->sp) / 4);
+		dbg(vm->s, 0, NULL, (long*)pu->sp, (vm->_end - pu->sp) / 4);
 	return 0;
 }
 
@@ -1097,34 +1171,40 @@ void fputopc(FILE *fout, unsigned char* ptr, int len, int offs) {
 		} break;
 	}
 }
-void fputasm(FILE *fout, unsigned char* beg, int len, int mode) {
-	int i, is = 12345;//, ss = 0;
+void fputasm(FILE *fout, unsigned char* beg, int len, int rel, int mode) {
+	int i, is = 12345, ss = 0;
 	for (i = 0; i < len; i += is) {
 		bcde ip = (bcde)(beg + i);
 
 		switch (ip->opc) {
 			error_opc: error(NULL, 0, "invalid opcode: %02x '%A'", ip->opc, ip); return;
-			#define NEXT(__IP, __CHK, __SP) {if (__IP) is = (__IP);}// ss += (__SP);}
+			#define NEXT(__IP, __CHK, __SP) {if (__IP) is = (__IP); ss += (__SP);}
 			#define STOP(__ERR, __CHK) if (__CHK) goto __ERR
 			#include "code.h"
 		}
 
+		if (mode & 0xf00)		// offset
+			fputfmt(fout, "%I", (mode & 0xf00) >> 8);
+
 		//~ if (mode & 0x10)		// offset
 			//~ fputfmt(fout, ".%04x: ", i);
 
-		//~ if (mode & 0x20)		// TODO: remove stack size
-			//~ fputfmt(fout, "ss(%03d): ", ss);
+		if (mode & 0x20)		// TODO: remove stack size
+			fputfmt(fout, "ss(%03d): ", ss);
 
-		fputopc(fout, (void*)ip, mode & 0xf, mode & 0x10 ? i : -1);
+		fputopc(fout, (void*)ip, mode & 0xf, mode & 0x10 ? (i + rel) : -1);
 
 		fputc('\n', fout);
 	}
 }
 
-void dumpasmdbg(FILE *fout, vmEnv s, int mark, int mode) {
-	fputasm(fout, (unsigned char*)getip(s, mark), s->cs - mark, mode);
+void dumpasmdbg(FILE *fout, vmEnv s, int mark, int len, int mode) {
+	if (len == -1)
+		len = s->cs - mark;
+	
+	//~ fputasm(fout, (unsigned char*)getip(s, mark), s->cs - mark, mode);
+	fputasm(fout, (unsigned char*)getip(s, mark), len, mark, mode);
 }
-
 
 void vm_fputval(FILE *fout, symn var, stkval* ref, int flgs) {
 	typedef enum {
@@ -1139,10 +1219,10 @@ void vm_fputval(FILE *fout, symn var, stkval* ref, int flgs) {
 	if (typ && typ->kind == TYPE_enu)
 		typ = typ->type;
 
-	switch(typ ? typ->kind : 0) {
+	if (typ) switch (typ->kind) {
 		case TYPE_bit:
 		case TYPE_int: {
-			int64t val;
+			int64_t val = 0;
 			switch (castId(typ)) {
 				case TYPE_bit:
 				case TYPE_u32: switch (typ->size) {
@@ -1159,36 +1239,53 @@ void vm_fputval(FILE *fout, symn var, stkval* ref, int flgs) {
 				default: goto TYPE_XXX;
 			}
 			if (!var->pfmt || *var->pfmt != '%') {
+
 				if (var->kind == TYPE_ref)
-					fputfmt(fout, "%T:", var);
+					fputfmt(fout, "%T", var);
+
+				if (typ->name)
+					fputfmt(fout, ":%T", typ);
+
 				if (flgs & flg_hex)
-					fputfmt(fout, "%T[%08X](%D)", typ, val, val);
+					fputfmt(fout, "[%08X](%D)", val, val);
 				else
-					fputfmt(fout, "%T(%D)", typ, val);
+					fputfmt(fout, "(%D)", val);
 			}
 			else
 				fputfmt(fout, var->pfmt + 1, val);
 		} break;
 		case TYPE_flt: {
-			flt64t val = 0;
+			flt64_t val = 0;
 			switch (typ->size) {
 				case 4: val = ref->f4; break;
 				case 8: val = ref->f8; break;
 			}
 			if (!var->pfmt || *var->pfmt != '%') {
+
 				if (var->kind == TYPE_ref)
-					fputfmt(fout, "%T:", var);
+					fputfmt(fout, "%T", var);
+
+				if (typ->name)
+					fputfmt(fout, ":%T", typ);
+
 				if (flgs & flg_hex)
-					fputfmt(fout, "%T[%08X](%F)", typ, val, val);
+					fputfmt(fout, "[%08X](%F)", val, val);
 				else
-					fputfmt(fout, "%T(%F)", typ, val);
+					fputfmt(fout, "%T(%F)", val);
 			}
 			else
 				fputfmt(fout, var->pfmt + 1, val);
 		} break;
 		case TYPE_rec: {
 			symn tmp;
-			fputfmt(fout, "%T:%T {", var, typ);
+			int n = 0;
+			if (var && var->name)
+				fputfmt(fout, "%T", var);
+			if (typ->name)
+				fputfmt(fout, ":%T", typ);
+			fputfmt(fout, "{");
+
+
 			for (tmp = typ->args; tmp; tmp = tmp->next) {
 				if (tmp->kind != TYPE_ref)
 					continue;
@@ -1196,9 +1293,10 @@ void vm_fputval(FILE *fout, symn var, stkval* ref, int flgs) {
 				if (tmp->pfmt && strcmp(tmp->pfmt, "%") == 0)
 					continue;
 
-				if (tmp != typ->args)
+				if (n > 0)
 					fputfmt(fout, ", ");
 				vm_fputval(fout, tmp, (void*)((char*)ref + tmp->offs), 0);
+				n += 1;
 			}
 			fputfmt(fout, "}");
 		} break;
@@ -1232,7 +1330,7 @@ void vm_fputval(FILE *fout, symn var, stkval* ref, int flgs) {
 	}
 }
 
-void vmTags(ccEnv s, char *sptr, int slen) {
+void vmTags(ccEnv s, char *sptr, int slen, int flags) {
 	symn ptr;
 	FILE *fout = stdout;
 	for (ptr = s->defs; ptr; ptr = ptr->next) {
@@ -1240,19 +1338,23 @@ void vmTags(ccEnv s, char *sptr, int slen) {
 			int spos = slen + ptr->offs;
 			stkval* sp = (stkval*)(sptr + 4 * spos);
 			symn typ = ptr->type;
+			if (spos < 0 && flags & 1)
+				continue;
 			if (ptr->file && ptr->line)
 				fputfmt(fout, "%s:%d:", ptr->file, ptr->line);
 			fputfmt(fout, "sp(%d)", spos);
 			if (spos < 0) {
+				if (flags & 1)
+					return;
 				fputs(": cannot evaluate", fout);
 			}
 			else switch(typ ? typ->kind : 0) {
 				case TYPE_enu:
-					vm_fputval(fout, ptr, sp, 0);
+					vm_fputval(fout, ptr, sp, 0x020000);
 					break;
 				default:
 					fputs(" = ", fout);
-					vm_fputval(fout, ptr, sp, 0);
+					vm_fputval(fout, ptr, sp, 0x020000);
 					break;
 			}
 			fputc('\n', fout);

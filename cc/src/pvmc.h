@@ -3,21 +3,10 @@
 
 #include <stdio.h>
 #include <stdint.h>
+typedef float flt32_t;
+typedef double flt64_t;
 
-typedef int8_t   int08t;
-typedef uint8_t  uns08t;
-
-typedef int16_t  int16t;
-typedef uint16_t uns16t;
-
-typedef int32_t  int32t;
-typedef uint32_t uns32t;
-
-typedef int64_t  int64t;
-typedef uint64_t uns64t;
-
-typedef float    flt32t;
-typedef double   flt64t;
+#define useBuiltInFuncs
 
 //~ typedef struct astn *astn;
 //~ typedef struct symn *symn;		// symbols
@@ -25,12 +14,12 @@ typedef struct ccEnv *ccEnv;
 typedef struct vmEnv *vmEnv;
 
 typedef struct state {
-	FILE*	logf;			// log file
-	int		errc;			// error count
+	FILE* logf;			// log file
+	int   errc;			// error count
 
 	void* data;		// user data
-	void* retv;		// retval
 	char* argv;		// first arg
+	void* retv;		// TODO: RemMe: retval
 
 	ccEnv cc;		// compiler enviroment
 	vmEnv vm;		// execution enviroment
@@ -54,7 +43,9 @@ typedef enum {
 	dump_asm = 0x0000300,
 	dump_ast = 0x0000400,
 	dumpMask = 0x0000f00,
-	dump_new = 0x0001000,		// do not append (!stdout)
+
+	//~ cc_Emit = 0x000001,
+
 } srcType, dumpMode;
 
 state gsInit(void* mem, unsigned size);
@@ -67,14 +58,16 @@ int compile(state, int level);				// warning level
 int gencode(state, int level);				// optimize level
 //~ int execute(state, int cc, int ss, dbgf dbg);
 
+int libcall(state, int call(state), const char* proto);
+
 // execute
-typedef int (*dbgf)(vmEnv vm, int pu, void *ip, long* sptr, int scnt);
-int dbgInfo(vmEnv, int, void*, long*, int);				// if compiled file will print results at the end
-int dbgCon(vmEnv, int, void*, long*, int);				// 
+typedef int (*dbgf)(state s, int pu, void *ip, long* sptr, int scnt);
+int dbgInfo(state, int, void*, long*, int);				// if compiled file will print results at the end
+int dbgCon(state, int, void*, long*, int);				// 
 int exec(vmEnv, unsigned ss, dbgf dbg);
 
 // output
-void dump(state, char*, dumpMode, char* text);
+void dump(state, dumpMode, char* text);
 
 // Level 1 Functions: use less these
 ccEnv ccInit(state);
@@ -86,19 +79,18 @@ vmEnv vmInit(state);
 void vmInfo(FILE*, vmEnv s);
 //~ int vmDone(state s);		// what should do this
 
-int libcall(state, int call(state), const char* proto);
-
+#define retptr(__TYPE, __ARGV) ((__TYPE*)(__ARGV->retv))
+#define setret(__TYPE, __ARGV, __VAL) (*retptr(__TYPE, __ARGV) = (__TYPE)(__VAL))
 #define poparg(__ARGV, __TYPE) ((__TYPE*)((__ARGV)->argv += ((sizeof(__TYPE) | 3) & ~3)))[-1]
-#define setret(__TYPE, __ARGV, __VAL) (*((__TYPE*)(__ARGV->retv)) = (__TYPE)(__VAL))
 
-static inline void reti32(state s, int32t val) { setret(int32t, s, val); }
-static inline void reti64(state s, int64t val) { setret(int64t, s, val); }
-static inline void retf32(state s, flt32t val) { setret(flt32t, s, val); }
-static inline void retf64(state s, flt64t val) { setret(flt64t, s, val); }
-static inline flt32t popf32(state s) { return poparg(s, flt32t); }
-static inline int32t popi32(state s) { return poparg(s, int32t); }
-static inline flt64t popf64(state s) { return poparg(s, flt64t); }
-static inline int64t popi64(state s) { return poparg(s, int64t); }
+static inline void reti32(state s, int32_t val) { setret(int32_t, s, val); }
+static inline void reti64(state s, int64_t val) { setret(int64_t, s, val); }
+static inline void retf32(state s, flt32_t val) { setret(flt32_t, s, val); }
+static inline void retf64(state s, flt64_t val) { setret(flt64_t, s, val); }
+static inline flt32_t popf32(state s) { return poparg(s, flt32_t); }
+static inline int32_t popi32(state s) { return poparg(s, int32_t); }
+static inline flt64_t popf64(state s) { return poparg(s, flt64_t); }
+static inline int64_t popi64(state s) { return poparg(s, int64_t); }
 
 #endif
 
@@ -106,7 +98,7 @@ static inline int64t popi64(state s) { return poparg(s, int64t); }
  * int ccTags(state s, char *srcfile) {
  * 	if (!ccOpen(s, srcFile, srcfile))	// will cal ccInit
  * 		return ccDone(s);
- * 	if (compile(s, wl) != 0)
+ * 	if (compile(s, warnLevel) != 0)
  * 		return ccDone(s);
  * 	ccDone(s);		// here returns 0
  * 	dump(s, "tags.txt", dump_new | dump_sym, NULL);
