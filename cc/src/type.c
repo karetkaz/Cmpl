@@ -499,6 +499,7 @@ symn typecheck(ccEnv s, symn loc, astn ast) {
 						ast->type = opc->type;
 					else
 						ast->type = type_vid;
+					//~ fun->type = ast->type;
 					return ast->type;
 				} break;
 				case TYPE_ref:

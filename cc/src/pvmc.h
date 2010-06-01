@@ -8,7 +8,7 @@ typedef double flt64_t;
 
 #define useBuiltInFuncs
 
-//~ typedef struct astn *astn;
+//~ typedef struct astn *astn;		// tree
 //~ typedef struct symn *symn;		// symbols
 typedef struct ccEnv *ccEnv;
 typedef struct vmEnv *vmEnv;
@@ -17,7 +17,7 @@ typedef struct state {
 	FILE* logf;			// log file
 	int   errc;			// error count
 
-	void* data;		// user data
+	void* data;		// user data for execution
 	char* argv;		// first arg
 	void* retv;		// TODO: RemMe: retval
 
@@ -25,7 +25,8 @@ typedef struct state {
 	vmEnv vm;		// execution enviroment
 
 	long _cnt;
-	char *_ptr;
+	char *_ptr;		// write here symbols and string constants
+	char *_end;		// space for ast and list nodes, temporary
 	char _mem[];
 } *state;
 typedef enum {
@@ -95,22 +96,27 @@ static inline int64_t popi64(state s) { return poparg(s, int64_t); }
 #endif
 
 /* example ccTags
- * int ccTags(state s, char *srcfile) {
- * 	if (!ccOpen(s, srcFile, srcfile))	// will cal ccInit
- * 		return ccDone(s);
- * 	if (compile(s, warnLevel) != 0)
- * 		return ccDone(s);
- * 	ccDone(s);		// here returns 0
- * 	dump(s, "tags.txt", dump_new | dump_sym, NULL);
- * 	return 0;
- * }
+ *int ccTags(state s, char *srcfile) {
+ *	if (!ccOpen(s, srcFile, srcfile)) {	// will cal ccInit
+ *		return ccDone(s);
+ *	}
+ *	if (logfile(s, "tags.out") != 0) {	// log in file instead of stderr
+ *		return ccDone(s);
+ *	}
+ *	if (compile(s, warnLevel) != 0) {
+ *		logfile(s, NULL);
+ *		return ccDone(s);
+ *	}
+ *	ccDone(s);
+ *	logdump(s, dump_sym, NULL);
+ *	logfile(s, NULL);
+ *	return 0;
+ *}
 **/
 
 /* emit
- * seg: text: RO initialized data
- * seg: data: RW initialized data
- * seg: code: RO executable code
- * seg: .sym: load if (import || debug || rtti)
- * seg: .doc: documentation
+ * seg.text: RO initialized data: enums, definitions, as text on new lines.
+ * seg.data: RO initialized data: initializers, meta data?
+ * seg.code: RO executable code: functions, main
  * 
 **/

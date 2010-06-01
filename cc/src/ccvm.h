@@ -42,7 +42,7 @@ enum {
 	#include "incl/defs.h"
 	tok_last,
 	// vm part
-	// xml dump needs these
+	// xml dump cast needs STR 
 	//~ TYPE_u32,
 	//~ TYPE_i32,
 	//~ TYPE_f32,
@@ -140,17 +140,17 @@ typedef struct symn **symt;
 typedef struct symn *symn;		// symbols
 typedef struct astn *astn;
 
-typedef struct list {			// linked list
+typedef struct list {			// linked list, usually of strings
 	struct list		*next;
 	unsigned char	*data;
 	//~ unsigned int	size;	// := ((char*)&node) - data;
 } *list, **strt;
 
 struct astn {				// tree
-	uint32_t	line;				// token on line / code offset
-	uint8_t		kind;				// code: TYPE_ref, OPER_???, CNST_???
-	uint8_t		cst2;				// casts to
-	uint16_t	XXXX;				// OPER: (priority level / dupplicate of, on stack)
+	uint32_t	line;				// token on line (* file offset or what *)
+	uint8_t		kind;				// code: TYPE_ref, OPER_???
+	uint8_t		cst2;				// casts to basic type: (i32, f32, i64, f64)
+	uint16_t	_XXX;				// unused
 	union {
 		union  {					// CNST_xxx: constant
 			int64_t	cint;			// cnst: integer
@@ -165,6 +165,7 @@ struct astn {				// tree
 			astn	rhso;			// right hand side operand
 			astn	lhso;			// left hand side operand
 			astn	test;			// ?: operator condition
+			uint32_t prec;			// precedence
 			//~ symn	link;			// assigned operator convert to function call
 		} op;
 		struct {					// STMT_xxx: statement
@@ -176,7 +177,7 @@ struct astn {				// tree
 		struct {					// TYPE_xxx: identifyer
 			astn	nuse;			// next used
 			char*	name;			// name of identifyer
-			uint32_t	hash;			// hash code for 'name'
+			uint32_t hash;			// hash code for 'name'
 			symn	link;			// func body / replacement
 		} id;
 	};

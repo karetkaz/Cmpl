@@ -1271,10 +1271,24 @@ void vm_fputval(FILE *fout, symn var, stkval* ref, int flgs) {
 				if (flgs & flg_hex)
 					fputfmt(fout, "[%08X](%F)", val, val);
 				else
-					fputfmt(fout, "%T(%F)", val);
+					fputfmt(fout, "(%F)", val);
 			}
 			else
 				fputfmt(fout, var->pfmt + 1, val);
+		} break;
+		case TYPE_str: {
+			// TODO: get the reference
+			char *val = "this is a string";
+			if (var->kind == TYPE_ref)
+				fputfmt(fout, "%T", var);
+
+			if (typ->name)
+				fputfmt(fout, ":%T", typ);
+
+			if (flgs & flg_hex)
+				fputfmt(fout, "[%08X](%F)", val, val);
+			else
+				fputfmt(fout, "('%s')", val);
 		} break;
 		case TYPE_rec: {
 			symn tmp;

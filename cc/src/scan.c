@@ -1387,11 +1387,11 @@ static astn stmt(ccEnv s, int mode) {
 static astn args(ccEnv s, int mode) {
 	astn root = 0;
 
-	if (test(s, PNCT_rp)) {
-		//~ installex(s, ".",  TYPE_ref, 0, type_vid, NULL);
-		//~ installex(cc, "_", TYPE_ref, type_vid, NULL);
-	}
-	else while (peek(s)) {
+	if (test(s, PNCT_rp))
+		return s->argz;
+		//~ return NULL;	// or return s->argz;
+
+	while (peek(s)) {
 		astn atag = 0;
 		symn atyp = 0;
 		symn arg = 0;
@@ -1430,7 +1430,7 @@ static astn decl(ccEnv s, int qual) {
 
 	if ((tag = spec(s))) ;
 	else if ((typ = type(s, qual))) {
-		astn argv = NULL;
+		//~ astn argv = NULL;
 		symn ref = NULL;
 
 		if (!(tag = next(s, TYPE_ref))) {
@@ -1442,7 +1442,7 @@ static astn decl(ccEnv s, int qual) {
 
 		if (skip(s, PNCT_lp)) {				// int a(...) (';' | '=' | '{')
 			enter(s, NULL);
-			argv = args(s, 0);
+			args(s, 0);
 			skiptok(s, PNCT_rp, 1);
 			if (skip(s, STMT_do)) {			// int sqr(int a);
 				fatal("FixMe");
@@ -1551,14 +1551,14 @@ astn expr(ccEnv s, int mode) {
 			} break;
 			tok_op: {
 				int oppri = tok_tbl[tok->kind].type;
-				tok->XXXX = pri | (oppri & 0x0f);
+				tok->op.prec = pri | (oppri & 0x0f);
 				if (oppri & 0x10) while (prec < buff + TOKS) {
-					if ((*prec)->XXXX <= tok->XXXX)
+					if ((*prec)->op.prec <= tok->op.prec)
 						break;
 					*post++ = *prec++;
 				}
 				else while (prec < buff + TOKS) {
-					if ((*prec)->XXXX < tok->XXXX)
+					if ((*prec)->op.prec < tok->op.prec)
 						break;
 					*post++ = *prec++;
 				}
@@ -1845,7 +1845,7 @@ static astn spec(ccEnv s/* , int qual */) {
 
 	if (skip(s, TYPE_def)) {			// define
 		symn typ = 0;
-		int op = skip(s, OPER_dot);
+		//~ int op = skip(s, OPER_dot);
 		if (!(tag = next(s, TYPE_ref))) {
 			error(s->s, s->line, "Identifyer expected");
 			skiptok(s, STMT_do, 1);
@@ -1867,13 +1867,13 @@ static astn spec(ccEnv s/* , int qual */) {
 			}
 		}
 		else if (skip(s, PNCT_lp)) {			// define isNan(flt64 x) = (x != x);
-			astn argv;
+			//~ astn argv;
 			int warnfun = 0;
 
 			def = declare(s, TYPE_def, tag, NULL);
 
 			enter(s, NULL);
-			argv = args(s, 0);
+			args(s, 0);
 			skiptok(s, PNCT_rp, 1);
 
 			if (def && skip(s, ASGN_set)) {		// define sqr(int a) = (a * a);
@@ -1903,7 +1903,7 @@ static astn spec(ccEnv s/* , int qual */) {
 			if (def->args == NULL)
 				def->args = s->argz->id.link;
 
-			if (op && def->name) {
+			/*if (op && def->name) {
 				int argc = 0;
 				for (tmp = def->args; tmp; tmp = tmp->next) {
 					argc += 1;
@@ -1912,7 +1912,7 @@ static astn spec(ccEnv s/* , int qual */) {
 					def->name = ".add";
 					op = 0;
 				}
-			}
+			}// */
 
 			if (warnfun) {
 				warn(s->s, 8, s->file, tag->line, "%+k should be a function", tag);
@@ -1923,9 +1923,9 @@ static astn spec(ccEnv s/* , int qual */) {
 			def = declare(s, TYPE_def, tag, typ);
 		}
 		else error(s->s, tag->line, "typename excepted");
-		if (op) {
+		/*if (op) {
 			error(s->s, tag->line, "invalid operator");
-		}
+		}// */
 		skiptok(s, STMT_do, 1);
 
 		tag->kind = TYPE_def;

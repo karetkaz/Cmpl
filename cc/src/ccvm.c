@@ -4,13 +4,6 @@
 #include <time.h>
 #include "ccvm.h"
 
-//~ #include "clog.c"
-//~ #include "scan.c"
-//~ #include "code.c"
-//~ #include "tree.c"
-//~ #include "type.c"
-//~ #include "main.c"
-
 const tok_inf tok_tbl[255] = {
 	#define TOKDEF(NAME, TYPE, SIZE, STR) {TYPE, SIZE, STR},
 	#include "incl/defs.h"
@@ -993,9 +986,8 @@ int gencode(state s, int level) {
 	// */
 
 	//~ header:
-	//~ seg:Data ro: initialized
+	//~ seg:Data ro: initialized, meta, strings.
 	//~ seg:Code rx
-	//~ seg:dbg  ro(s->cc->defs || all->debug)
 
 	//~ emit(s->vm, loc_data, 256 * 4);
 	emit(s->vm, seg_code);

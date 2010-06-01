@@ -624,12 +624,12 @@ void dumpsym(FILE *fout, symn sym, int alma) {
 				tch = chrtyp ? "$" : "var: ";
 				break;
 
-			// typedef/constant
+			// constant/typedef
 			case TYPE_def:
 				tch = chrtyp ? "#" : "def: ";
 				break;
 
-			// BaseType
+			// typename
 			case TYPE_vid:
 			case TYPE_bit:
 			case TYPE_int:
@@ -655,9 +655,6 @@ void dumpsym(FILE *fout, symn sym, int alma) {
 				break;
 		}
 
-		//~ if (ptr == emit_opc)
-			//~ continue;
-
 		switch (ptr->kind) {
 			//~ case TYPE_vid:
 			//~ case TYPE_bit:
@@ -673,15 +670,12 @@ void dumpsym(FILE *fout, symn sym, int alma) {
 				*++sp = ptr->args;
 		}
 
-		//~ *++sp = ptr->args;
 		if (ptr->file && ptr->line)
 			fputfmt(fout, "%s:%d:", ptr->file, ptr->line);
 
-		//~ fputfmt(fout, "%d:", ptr->size);
-
 		fputs(tch, fout);
 
-		// size or offset
+		/*/ size or offset
 		if (ptr->kind == TYPE_ref) {
 			if (ptr->offs < 0) {
 				fputfmt(fout, "[@%s(%d)]: ", ptr->call ? "lc" : "st", -ptr->offs);
@@ -695,6 +689,7 @@ void dumpsym(FILE *fout, symn sym, int alma) {
 		else if (ptr->kind != TYPE_def) {
 			fputfmt(fout, "[size: %d:%d]: ", ptr->size, ptr->algn);
 		}
+		// */
 
 		//~ fputfmt(fout, "%-T\n", ptr);
 		fputsym(fout, ptr, prType|prQual|prArgs|prInit, 0);

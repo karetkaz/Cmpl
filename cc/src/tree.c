@@ -129,8 +129,14 @@ int eval(astn res, astn ast) {
 		} break;
 		case OPER_fnc: {
 			astn lhs = ast->op.lhso;
-			if (lhs && !istype(lhs)) return 0;
-			return eval(res, ast->op.rhso);
+
+			if (lhs && !istype(lhs))
+				return 0;
+
+			if (!eval(res, ast->op.rhso))
+				return 0;
+
+			//~ return eval(res, ast->op.rhso); // cast to ? not done
 		} break;
 
 		case OPER_idx:
@@ -356,6 +362,11 @@ int eval(astn res, astn ast) {
 	}
 
 	switch (res->kind) {
+		default: 
+			fatal("FixMe %t", res->kind);
+			res->type = NULL;
+			return 0;
+		case TYPE_bit: res->type = type_u32; break;
 		case TYPE_flt: res->type = type_f64; break;
 		case TYPE_int: res->type = type_i32; break;
 	}

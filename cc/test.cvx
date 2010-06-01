@@ -1,10 +1,20 @@
-//~ src/ccvm.c
-//~ src/pvmc.h
-//~ ./main ="3 + 3 -4 + -2"
+//~ #open src/pvmc.h
+//~ #open src/ccvm.h
 
-/* TODOS:
- K static if (true) does not enter new scope
+//~ #open src/ccvm.c
+//~ #open src/code.c
+//~ #open src/clog.c
+//~ #open src/type.c
+
+//~ #open src/tree.c
+//~ #open src/scan.c
+//~ #open src/main.c
+
+//~ arg: ="math.pi * (3 + 3 -4 + -1)"
+
+/* TODO:
  ? static if else part
+ K static if (true) does not enter new scope
  K nameless enum does not enter new scope
  * .
  ? separate struct and unoin declaration.
@@ -30,58 +40,36 @@
  * 
  * 
  ~ function argument cast bugs
- * TODO: define fact(int64 n) = (n * fact(n - 1));
- * define read(typename typ, pointer &ptr) = typ((ptr += sizeof(typ)) - sizeof(typ));
- * define write(typename typ, pointer &ptr, typ value) = memcpy((ptr += sizeof(typ)) - sizeof(typ), value);
+ * define next(typename typ, pointer &ptr) = typ&((ptr += sizeof(typ)) - sizeof(typ));
+ * define pointer(typename typ, pointer &ptr) = typ&((ptr += sizeof(typ)) - sizeof(typ));
  * 
  * int32 a = int(pointer(0xB8000));
  * pointer(0xB8000) := int32(9);
 **/
-/* TODOS(emit)
+/* TODO: emit
  * some emit opcodes should have const params:
  *	emit(libc(0));  // this is halt
  *	emit(libc(2), f64(math.pi));  // sin(math.pi)
- * enable type as first param: emit(i32, f32(1)); see f32 as i32;
- * fix type of emit
+ ? enable type as first param: emit(i32, f32(1)); see f32 as i32;
+ * fix type of emit. emit->type ?= null
  * 
 **/
-//~ define fact(int64 n) = (n * fact(n - 1));
-//~ flt32 a = -math.nan;
-/*
-/+enum vec4F: vec4f {
-	X = vec4f(1, 0, 0, 1);
-	Y = vec4f(0, 1, 0, 1);
-	Z = vec4f(0, 0, 1, 1);
-}
-
-vec4f a;// = vec4F.X;
-a = vec4F.X;
-//~ +/
-
-enum alma2: bool {
-	//~ X = xyz(1, 0, 0);
-	//~ Y = xyz(0, 1, 0);
-	//~ Z = xyz(0, 0, 1);
-	b = 3476;// = M.Phi;		// problems
-	c = 9;
-	x = true;
-	y = !true;
-	z = false;
-}
-alma2 XX = alma2.y;
-int a = alma2.z;
-
-//~ */
+/* TODO: errors
+define isNan(flt64 x) = bool(x != x);
+int isNan1 = isNan(math.nan);
+int isNan2 = math.isNan(math.nan);
+define fact(int64 n) = (n * fact(n - 1));
+// */
 
 enum Test {
 	Emit = -1;
 	Bits = -1;
-	Type = 2;
+	Type = -1;
 	Misc = -1;
 	//~ Libc = -1;
 	//~ Call = 0;
 } // */
-/*static if (Test.Emit) {
+static if (Test.Emit) {
 static if (Test.Emit & 0x01) {
 flt32 res1 = emit(f32.div, f32(2), f32(math.pi));	// ok
 flt64 res2 = emit(f64.neg, f64(math.pi));			// ok
@@ -156,10 +144,12 @@ static if (times2exec > 0) {
 	}
 	static if (test2exec == prog.simd) {	// 26.072(10000000)
 		for (int i = 0; i < times2exec; i += 1) {
-			emit(v2d.mul, f64(b_im), f64(b_re), f64(a_im), f64(a_re));		// a.re * b.re, a.im * b.im
-			flt64 re = emit(f64.sub);										//>re = a.re * b.re - a.im * b.im
-			emit(v2d.mul, f64(b_re), f64(b_im), f64(a_im), f64(a_re));		// a.re * b.im, a.im * b.re
-			flt64 im = emit(f64.add);										//>im = a.re * b.im + a.im * b.re
+			flt64 re = emit(f64.sub, v2d.mul, f64(b_im), f64(b_re), f64(a_im), f64(a_re));		// re = a.re * b.re - a.im * b.im
+			flt64 im = emit(f64.add, v2d.mul, f64(b_re), f64(b_im), f64(a_im), f64(a_re));		// im = a.re * b.im + a.im * b.re
+			//~ emit(v2d.mul, f64(b_im), f64(b_re), f64(a_im), f64(a_re));		// a.re * b.re, a.im * b.im
+			//~ flt64 re = emit(f64.sub);										//>re = a.re * b.re - a.im * b.im
+			//~ emit(v2d.mul, f64(b_re), f64(b_im), f64(a_im), f64(a_re));		// a.re * b.im, a.im * b.re
+			//~ flt64 im = emit(f64.add);										//>im = a.re * b.im + a.im * b.re
 		}
 	}
 }
@@ -199,7 +189,7 @@ flt32 sp[4] = emit();
 
 }
 } // */
-/*static if (Test.Bits) {
+static if (Test.Bits) {
 int32 var = 0x00001080;		// input
 //~ int32 err = emit();			// ref to var
 static if (Test.Bits & 1) {
@@ -244,7 +234,7 @@ if (var) {
 //~ +/
 }
 } // */
-/*static if (Test.Type) {
+static if (Test.Type) {
 static if (Test.Type & 0x01) {
 enum M: flt64 {
 	E		= 2.71828182845904523536028747135266249775724709369995957496696763;	// A001113
@@ -340,7 +330,7 @@ enum colors: color {
 static if (Test.Type & 0x10) {
 }
 } // */
-/*static if (Test.Misc) {
+static if (Test.Misc) {
 static if (Test.Misc & 1) {
 // Matrix Multiply
 //~ define WIDTH = 4;
@@ -409,11 +399,12 @@ void operator(v4f32 &lhs) (flt32 x, flt32 y, flt32 z, flt32 w) {
 
 flt32 operator (v4f32 lhs) (flt32 val) {
 	//~ usage:
-	//~ v4f32 polyv4f = v4f32(1,2,3,4);
+	//~ v4f32 polyv4f = v4f32(1, 2, 3, 4);
 	//~ flt32 polyval = polyv4f(8);
 
 	return ((((lhs.w) * val + lhs.z) * val + lhs.y) * val) + lhs.x;
 }
+
 flt32 operator (v4f32 lhs) [int32 idx] {
 	if (idx == 0 || idx == 'x')
 		return lhs.x;
@@ -459,9 +450,10 @@ operator (Complex a) * (Complex b) = Complex {
 	im = emit(f64.add, v2d.mul, f64(b.re), f64(b.im), f64(a.im), f64(a.re));		// im = a.re * b.im + a.im * b.re
 }
 //~ +/
-/+ ?reflect?
+//~ */
+/* ?reflect?
 enum TypeCode:int8 {
-	TYPE_any = 0x00;		// error
+	TYPE_any = 0x00;		// invalid
 	TYPE_vid = 0x01;		// void;
 	TYPE_bit = 0x02;		// bool;
 	TYPE_int = 0x03;		// int64, int32, int16, int8, uns32, uns16, uns8;
@@ -471,8 +463,9 @@ enum TypeCode:int8 {
 	TYPE_def = 0x07;		// struct, union, class, enum, 
 	TYPE_fun = 0x08;		// function
 	TYPE_ref = 0x08;		// variable
-	TYPE_obj = 0x0f;		// variant
+
 	ATTR_ind = 0x10;		// indirect(pointer to)
+	ATTR_con = 0x10;		// constant
 }
 
 struct TypeInfo {
@@ -485,7 +478,7 @@ struct TypeInfo {
 	TypeInfo &base;			// base type of TYPE_ref (void, int, float, struct, ...), return type of func
 	TypeInfo &args;			// record fields / function args
 	TypeInfo &next;			// next type, arg, 
-	TypeCode code;			// TypeCode
+	TypeCode code;			// what am i ? ref(var / fun), type,
 	//~ define indirect = ((this.code & ATTR_ind) != 0);
 }
 
@@ -637,17 +630,7 @@ struct Variant {
 
 define variant(ref obj) = TypeBox(class[typeid(obj)], obj);
 define UnBoxType(TypeInfo obj) = TypeBox(obj, obj.class);
-
-//~ +/
 //~ */
-
-/* errors:
-//~ define isNan(flt64 x) = bool(x != x);
-//~ int isNan1 = isNan(math.nan);
-//~ int isNan2 = math.isNan(math.nan);
-//~ define fact(int64 n) = (n * fact(n - 1));
-
-// */
 
 /*
 flt64 s = .3;
@@ -742,8 +725,8 @@ flt64 im = emit(f64.add, v2d.mul, f64(b_re), f64(b_im), f64(a_im), f64(a_re));		
 //~ define color int32;
 //~ define string int32;
 
-define isNan(flt64 x) = emit(f64.ceq, f64(x), f64(x));
-define isNan(flt32 x) = emit(f32.ceq, f32(x), f32(x));
+//~ define isNan(flt64 x) = emit(f64.ceq, f64(x), f64(x));
+//~ define isNan(flt32 x) = emit(f32.ceq, f32(x), f32(x));
 
 struct color: 0 {
 	//~ int32 val;	//!%
@@ -758,7 +741,6 @@ struct color: 0 {
 
 struct Font {
 	string face;
-	//~ int style;
 	style: enum {
 		normal;
 		italic;
@@ -768,13 +750,13 @@ struct Font {
 	color fore;
 	int size;
 }
-
+int XXX[2000];
 Font a;
-//~ a.face = 2009;
+//~ a.face = "2009";
 a.fore.val = 0xadadad;
-a.back.val = 0xff00ff;
+a.back.val = 0x7f00ff;
 a.style = Font.oblique;
-//~ a.size = 5;
+a.size = 5;
 
 /+ TODO:
 Font init1 = Font(-1, 2, 3, 4, 5, 6);
