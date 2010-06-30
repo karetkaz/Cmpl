@@ -395,13 +395,12 @@ case opc_spc:  NEXT(4, 0, 0) {
 	if (sm > 0) {
 		NEXT(0, 0, sm);
 #ifdef EXEC
-	//~ STOP(error_ovf, pu->sp < pu->bp);
+	STOP(error_ovf, pu->sp < pu->bp);
 #endif
 	}
 	else {
 		NEXT(0, -sm, sm);
 	}
-	//~ (void)sm;*/
 } break;
 case opc_jmp:  NEXT(4, 0, -0) {
 #ifdef EXEC
@@ -526,11 +525,11 @@ case opc_set2: NEXT(2, ip->idx, -2) {
 } break;
 case opc_set4: NEXT(2, ip->idx, -4) {
 #ifdef EXEC
-	//~ SP(ip->idx, pf) = SP(0, pf);
-	SP(ip->idx - 1, u4) = SP(0, u4);
-	SP(ip->idx - 2, u4) = SP(1, u4);
-	SP(ip->idx - 3, u4) = SP(2, u4);
-	SP(ip->idx - 4, u4) = SP(3, u4);
+	SP(ip->idx, x16) = SP(0, x16);
+	//~ SP(ip->idx - 1, u4) = SP(0, u4);
+	//~ SP(ip->idx - 2, u4) = SP(1, u4);
+	//~ SP(ip->idx - 3, u4) = SP(2, u4);
+	//~ SP(ip->idx - 4, u4) = SP(3, u4);
 
 #endif
 } break;

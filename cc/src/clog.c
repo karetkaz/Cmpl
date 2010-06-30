@@ -4,6 +4,10 @@
 #include <string.h>
 
 enum Format {
+	//~ alNone = 0x0000,	// %k
+	//~ alLess = 0x0001,	// %-k
+	//~ alMore = 0x0002,	// %+k
+
 	// ast
 	noIden = 0x0100,
 
@@ -24,17 +28,37 @@ enum Format {
 };
 static void fputast(FILE *fout, astn ast, int mode, int level);
 static void fputsym(FILE *fout, symn sym, int mode, int level) {
-	//~ int rlev = mode & 0xf;
+	int rlev = mode & 0xf;
 
 	if (!sym) {
 		fputs("(null)", fout);
 		return;
 	}
 
+	if (sym->kind == TYPE_arr) {
+		fputsym(fout, sym->type, mode, level);
+		fputs("[", fout);
+		if (sym->init)
+			fputast(fout, sym->init, 0, 0);
+		fputs("]", fout);
+		return;
+	}
+
+	if (sym->kind == EMIT_opc) {
+		if (sym->name)
+			fputs(sym->name, fout);
+		if (sym->init) {
+			fputs("(", fout);
+			fputast(fout, sym->init, 0, 0);
+			fputs(")", fout);
+		}
+		return;
+	}
+
 	if ((mode & prType) && sym->type) {
 		switch (sym->kind) {
 			case TYPE_def:
-				fputs("define ", fout);
+				//~ fputs("define ", fout);
 				break;
 			case TYPE_rec:
 				fputs("struct ", fout);
@@ -53,24 +77,17 @@ static void fputsym(FILE *fout, symn sym, int mode, int level) {
 		fputc('.', fout);
 	}
 
-	if (sym->kind == TYPE_arr) {
-		fputs("[", fout);
-		if (sym->init)
-			fputast(fout, sym->init, 0, 0);
-		fputs("]", fout);
-		return;
-	}
-	else if (sym->name)
+	if (sym->name)
 		fputs(sym->name, fout);
 	else
-		fputs("__", fout);
+		fputs("_", fout);
 
 	if ((mode & prArgs) && sym->call) {
 		symn arg = sym->args;
 		fputc('(', fout);
 		while (arg) {
 			fputsym(fout, arg->type, mode, 0);
-			if (mode & prInit) {
+			if (mode && rlev > 0) {
 				fputc(' ', fout);
 				fputs(arg->name, fout);
 			}
@@ -340,11 +357,20 @@ static void fputast(FILE *fout, astn ast, int mode, int level) {
 		case TYPE_int: fputfmt(fout, "%D", ast->con.cint); break;
 		case TYPE_flt: fputfmt(fout, "%F", ast->con.cflt); break;
 		case TYPE_str: fputfmt(fout, "'%s'", ast->con.cstr); break;
-		case TYPE_ref: fputfmt(fout, "%s", ast->id.name); break;
+		case TYPE_ref: fputsym(fout, ast->id.link, 0, level); break;
+		//~ case TYPE_ref: fputfmt(fout, "%s", ast->id.name); break;
+
 		case TYPE_def: {
+			//~ fputsym(fout, ast->id.link, prArgs, level);
+			symn val = ast->id.link;
+			switch (val->kind) {
+				case TYPE_def: fputfmt(fout, "define "); break;
+				case TYPE_enu: fputfmt(fout, "enum "); break;
+				case TYPE_rec: fputfmt(fout, "struct "); break;
+			}
 			fputsym(fout, ast->id.link, rlev ? -1 : 0, level);
 			//~ fputsym(fout, ast->id.link, rlev, level);
-		} break;
+		} break;// */
 		//}
 
 		default:
@@ -606,7 +632,7 @@ void fputfmt(FILE *fout, const char *msg, ...) {
  *	'$': function?
  *+	'*': operator?
 **/
-void dumpsym(FILE *fout, symn sym, int alma) {
+void dumpsym_XXX(FILE *fout, symn sym, int alma) {
 	symn ptr, bp[TOKS], *sp = bp;
 	const int chrtyp = 0;
 	for (*sp = sym; sp >= bp;) {
@@ -702,6 +728,128 @@ void dumpsym(FILE *fout, symn sym, int alma) {
 				ast = ast->id.nuse;
 			}
 		}
+
+		fflush(fout);
+		if (!alma)
+			break;
+	}
+}
+void dumpsym(FILE *fout, symn sym, int alma) {
+	symn ptr, bp[TOKS], *sp = bp;
+	const int chrtyp = 0;
+	for (*sp = sym; sp >= bp;) {
+		char* tch = NULL;
+		if (!(ptr = *sp)) {
+			--sp;
+			continue;
+		}
+		*sp = ptr->next;
+
+		switch (ptr->kind) {
+
+			// variable/function
+			case TYPE_ref:
+				tch = chrtyp ? "$" : "var: ";
+				break;
+
+			// constant/typedef
+			case TYPE_def:
+				tch = chrtyp ? "#" : "def: ";
+				break;
+
+			// typename
+			case TYPE_vid:
+			case TYPE_bit:
+			case TYPE_int:
+			case TYPE_flt:
+			case TYPE_str:
+
+			//~ case TYPE_arr:
+			case TYPE_rec:
+				tch = chrtyp ? "^" : "typ: ";
+				break;
+
+			case TYPE_enu:
+				tch = chrtyp ? "#" : "enu: ";
+				break;
+
+			case EMIT_opc:
+				tch = chrtyp ? "@" : "opc: ";
+				break;
+
+			default:
+				debug("psym:%d:%T['%t']", ptr->kind, ptr, ptr->kind);
+				tch = chrtyp ? "?" : "err: ";
+				break;
+		}
+
+		switch (ptr->kind) {
+			//~ case TYPE_vid:
+			//~ case TYPE_bit:
+			//~ case TYPE_int:
+			//~ case TYPE_flt:
+
+			case EMIT_opc:
+			case TYPE_def:
+			case TYPE_ref:
+				break;
+
+			default:
+				if (alma > 1)
+					*++sp = ptr->args;
+		}
+
+		if (ptr->file && ptr->line)
+			fputfmt(fout, "%s:%d:", ptr->file, ptr->line);
+
+		fputs(tch, fout);
+
+		// qualified name
+		fputsym(fout, ptr, prQual|prArgs | 1, 20);
+
+		// qualified type
+		if (ptr->type) {
+			fputs(": ", fout);
+			fputsym(fout, ptr->type, prQual, 0);
+		}
+
+		// initializer
+		if (ptr->init && ptr->kind != TYPE_ref) {
+			fputs(" = ", fout);
+			fputast(fout, ptr->init, noIden | 1, 0xf0);
+		}// */
+
+		/*/ size or offset
+		if (ptr->kind == TYPE_ref) {
+			if (ptr->offs < 0) {
+				fputfmt(fout, "[@%s(%d)]: ", ptr->call ? "lc" : "st", -ptr->offs);
+			}
+			else
+				fputfmt(fout, "[@%04xh]: ", ptr->offs);
+		}
+		else if (ptr->kind == EMIT_opc) {
+			fputfmt(fout, "[@%02xh]: ", ptr->size);
+		}
+		else if (ptr->kind != TYPE_def) {
+			fputfmt(fout, "[size: %d:%d]: ", ptr->size, ptr->algn);
+		}
+		// */
+
+		fputc('\n', fout);
+
+		//~ /* Debug: used where ?
+		if (alma & 0x30 && ptr->used) {
+			int used = 0;
+			astn ast = ptr->used;
+			while (ast != NULL) {
+				if (alma & 0x20)
+					fputfmt(fout, "%s:%d:using `%T` here\n", ptr->file, ast->line, ptr);
+				ast = ast->id.nuse;
+				used += 1;
+			}
+			if (alma & 0x10)
+				fputfmt(fout, "%s:%d: `%-T` used %d times\n", ptr->file, ptr->line, ptr, used);
+		}// */
 
 		fflush(fout);
 		if (!alma)

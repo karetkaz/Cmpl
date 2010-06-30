@@ -13,6 +13,14 @@
 
 #define DEBUGGING 2
 
+/*~ COMPILER_LEVEL
+	0: types only					: compiler.init:18.34 KBytes
+	1: +packed types, emit fields	: compiler.init:39.08 KBytes
+	2: +emit.swizzles				: compiler.init:79.27 KBytes
+	3: +integer.bits				: compiler.init:82.27 KBytes
+// */
+#define COMPILER_LEVEL 2
+
 // maximum tokens in expressions & nest level
 #define TOKS 2048
 
@@ -22,10 +30,10 @@
 #define pdbg(__DBG, msg, ...) do{fputfmt(stderr, "%s:%d:"__DBG":%s: "msg"\n", __FILE__, __LINE__, __func__, ##__VA_ARGS__); fflush(stdout); fflush(stderr);}while(0)
 
 #define debug(msg, ...) pdbg("debug", msg, ##__VA_ARGS__)
-#define fatal(msg, ...) {pdbg("fatal", msg, ##__VA_ARGS__); abort(); }
-#define dieif(__EXP, msg, ...) {if (__EXP) fatal(msg, ##__VA_ARGS__)}
+#define fatal(msg, ...) do{pdbg("fatal", msg, ##__VA_ARGS__); abort();}while(0)
+#define dieif(__EXP, msg, ...) do{if (__EXP) fatal(msg, ##__VA_ARGS__);}while(0)
 
-#if 1
+#if DEBUGGING > 1
 #define PERR(__ENV, __LEVEL, __FILE, __LINE, msg, ...) do { perr(__ENV, __LEVEL, __FILE, __LINE, msg, ##__VA_ARGS__); perr(__ENV, __LEVEL, __FILE__, __LINE__, msg, ##__VA_ARGS__); }while(0)
 #define error(__ENV, __LINE, msg, ...) PERR(__ENV, -1, NULL, __LINE, msg, ##__VA_ARGS__)
 #define warn(__ENV, __LEVEL, __FILE, __LINE, msg, ...) PERR(__ENV, __LEVEL, __FILE, __LINE, msg, ##__VA_ARGS__)
@@ -42,7 +50,7 @@ enum {
 	#include "incl/defs.h"
 	tok_last,
 	// vm part
-	// xml dump cast needs STR 
+	// xml dump cast needs STR
 	//~ TYPE_u32,
 	//~ TYPE_i32,
 	//~ TYPE_f32,
@@ -118,7 +126,7 @@ typedef struct {
 } opc_inf;
 extern const opc_inf opc_tbl[255];
 
-typedef union {		// stack value type
+typedef union {		// value type
 	int8_t		i1;
 	uint8_t		u1;
 	int16_t		i2;
@@ -133,18 +141,18 @@ typedef union {		// stack value type
 	//~ flt32_t		pd[2];
 	//~ struct {flt32_t x, y, z, w;} pf;
 	//~ struct {flt64_t x, y;} pd;
+	struct {int64_t lo, hi;} x16;
 } stkval;
 
-//~ typedef struct listn_t *list, **strt;
-typedef struct symn **symt;
-typedef struct symn *symn;		// symbols
-typedef struct astn *astn;
+typedef struct symn *symn;		// Symbol Node
+typedef struct astn *astn;		// Abstract Syntax Tree Node
 
 typedef struct list {			// linked list, usually of strings
 	struct list		*next;
 	unsigned char	*data;
 	//~ unsigned int	size;	// := ((char*)&node) - data;
-} *list, **strt;
+	//~ unsigned int	offs;	// offset in file ?
+} *list;
 
 struct astn {				// tree
 	uint32_t	line;				// token on line (* file offset or what *)
@@ -152,7 +160,7 @@ struct astn {				// tree
 	uint8_t		cst2;				// casts to basic type: (i32, f32, i64, f64)
 	uint16_t	_XXX;				// unused
 	union {
-		union  {					// CNST_xxx: constant
+		union  {					// TYPE_xxx: constant
 			int64_t	cint;			// cnst: integer
 			flt64_t	cflt;			// cnst: float
 			char*	cstr;			// cnst: string
@@ -171,14 +179,17 @@ struct astn {				// tree
 		struct {					// STMT_xxx: statement
 			astn	stmt;			// statement / then block
 			astn	step;			// increment / else block
-			astn	test;			// condition: if, for
+			union {
+				astn	test;			// condition: if, for
+				//~ symn	link;			// operator function
+			};
 			astn	init;			// for statement init
 		} stmt;
-		struct {					// TYPE_xxx: identifyer
+		struct {					// TYPE_ref: identifyer
 			astn	nuse;			// next used
 			char*	name;			// name of identifyer
-			uint32_t hash;			// hash code for 'name'
 			symn	link;			// func body / replacement
+			uint32_t hash;			// hash code for 'name'
 		} id;
 	};
 	symn		type;				// typeof() return type of operator ... base type of IDTF
@@ -230,8 +241,10 @@ struct ccEnv {
 	symn	defs;		// definitions
 
 	symn	all;		// all symbols TODO:Temp
-	strt	strt;		// string table
-	symt	deft;		// definitions: hashStack;
+	//~ strt	strt;		// string table
+	//~ symt	deft;		// definitions: hashStack;
+	list	strt[TBLS];		// string table
+	symn	deft[TBLS];		// definitions: hashStack;
 
 	int		nest;		// nest level: modified by (enterblock/leaveblock)
 
@@ -354,7 +367,7 @@ int findint(ccEnv s, char *name, int* res);
 int findflt(ccEnv s, char *name, double* res);
 
 symn typecheck(ccEnv s, symn loc, astn ast);
-int castId(symn typ);
+int castTy(symn typ);
 int castTo(astn ast, int tyId);
 
 int32_t constbol(astn ast);
@@ -379,7 +392,7 @@ symn leave(ccEnv s, symn def);
 /** try to evaluate an expression
  * @param res: where to put the result
  * @param ast: tree to be evaluated
- * @return one of [TYPE_err, TYPE_bit, TYPE_int, TYPE_flt]
+ * @return one of [TYPE_err, TYPE_bit, TYPE_int, TYPE_flt, ?TYPE_str]
  */
 int eval(astn res, astn ast);
 
@@ -412,18 +425,13 @@ int fixjump(vmEnv s, int src, int dst, int stc);
 int isType(symn sym);
 int istype(astn ast);
 
-//~ int isemit(astn ast);
 //~ int islval(astn ast);
 symn linkOf(astn ast, int notjustrefs);
 long sizeOf(symn typ);
 
-int castId(symn ast);
-int castOp(symn lhs, symn rhs, int uns);
-
 int source(ccEnv, srcType mode, char* text);		// mode: file/text
 
 int rehash(const char* str, unsigned size);
-//~ int align(int offs, int pack, int size);
 char *mapstr(ccEnv s, char *name, unsigned size/* = -1U*/, unsigned hash/* = -1U*/);
 
 /**
@@ -432,7 +440,6 @@ char *mapstr(ccEnv s, char *name, unsigned size/* = -1U*/, unsigned hash/* = -1U
  * TODO: bit 2: print hex values;
 **/
 void vmTags(ccEnv s, char *sptr, int slen, int flags);
-
 void dumpasmdbg(FILE *fout, vmEnv s, int mark, int len, int mode);
 
 #endif

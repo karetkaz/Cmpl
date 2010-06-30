@@ -9,8 +9,8 @@ static const int wl = 9;		// warning level
 static const int ol = 2;		// optimize level
 
 static const int cc = 1;			// execution cores
-#define ss (4 << 20)		// execution stack(32K)
-#define hs (128 << 20)	// execution heap(128M)
+#define ss (32 << 10)		// execution stack(32K)
+#define hs (512 << 10)	// execution heap(128K)
 
 extern int vmTest();
 
@@ -207,7 +207,7 @@ int vmHelp(char *cmd) {
 
 int evalexp(ccEnv s, char* text/* , int opts */) {
 	struct astn res;
-	astn ast, tmp;
+	astn ast;
 	symn typ;
 	int tid;
 
@@ -219,13 +219,6 @@ int evalexp(ccEnv s, char* text/* , int opts */) {
 
 	if (peek(s))
 		error(s->s, 0, "unexpected: `%k`", peek(s));
-
-	for (tmp = ast; tmp; tmp = tmp->next) {
-		if (tmp != ast)
-			fputc(' ', stdout);
-		fputfmt(stdout, "%k", tmp);
-	}
-	fputc('\n', stdout);
 
 	fputfmt(stdout, "eval(`%+k`) = ", ast);
 
@@ -257,10 +250,14 @@ int program(int argc, char *argv[]) {
 			return evalexp(ccInit(s), cmd + 1);
 		}
 		else if (strcmp(cmd, "-api") == 0) {
-			dumpsym(stdout, leave(ccInit(s), NULL), 1);
+			symn api = leave(ccInit(s), NULL);
+			//~ debug("compiler.env:%d Bytes", sizeof(struct ccEnv));
+			//~ debug("compiler.init:%d Bytes", (s->cc->_ptr - s->_mem) - sizeof(struct ccEnv));
+			debug("compiler.init:%.2F KBytes", (s->cc->_ptr - s->_mem) / 1024.);
+			dumpsym(stdout, api, 2);
 			ccDone(s);
 		}
-		else if (strcmp(cmd, "-syms") == 0) {
+		else if (strcmp(cmd, "-sym") == 0) {
 			symn sym = leave(ccInit(s), NULL);
 			while (sym) {
 				dumpsym(stdout, sym, 0);
@@ -268,11 +265,11 @@ int program(int argc, char *argv[]) {
 			}
 			ccDone(s);
 			//~ dumpsym(stdout, leave(s), 1);
-		}
+		}// */
 		else if (strcmp(cmd, "-emit") == 0) {
 			ccInit(s);
 			if (emit_opc)
-				dumpsym(stdout, emit_opc->args, 1);
+				dumpsym(stdout, emit_opc->args, 2);
 			ccDone(s);
 		}
 		else usage(prg, cmd);
@@ -325,24 +322,25 @@ int program(int argc, char *argv[]) {
 
 			// output what
 			else if (strncmp(arg, "-t", 2) == 0) {		// tags
-				char *str = arg + 2;
-				if (*parsei32(str, &level, 0)) {
-					fputfmt(stderr, "invalid level '%s'\n", str);
-					debug("invalid level '%s'", str);
+				level = 1;
+				if (arg[2] && *parsei32(arg + 2, &level, 16)) {
+					fputfmt(stderr, "invalid argument '%s'\n", arg);
 					return 0;
 				}
 				outc = out_tags;
 			}
 
 			else if (strncmp(arg, "-c", 2) == 0) {		// ast
-				if (*parsei32(arg + 2, &level, 16)) {
+				//~ level = 0;
+				if (arg[2] && *parsei32(arg + 2, &level, 16)) {
 					fputfmt(stderr, "invalid argument '%s'\n", arg);
 					return 0;
 				}
 				outc = out_tree;
 			}
 			else if (strncmp(arg, "-s", 2) == 0) {		// asm
-				if (*parsei32(arg + 2, &level, 16)) {
+				//~ level = 0;
+				if (arg[2] && *parsei32(arg + 2, &level, 16)) {
 					fputfmt(stderr, "invalid argument '%s'\n", arg);
 					return 0;
 				}
@@ -373,7 +371,7 @@ int program(int argc, char *argv[]) {
 					warn = -1;
 				else if (strcmp(arg, "-wa") == 0)
 					warn = 9;
-				else if (!parsei32(arg + 2, &warn, 10)) {
+				else if (*parsei32(arg + 2, &warn, 10)) {
 					fputfmt(stderr, "invalid level '%s'\n", arg + 2);
 					debug("invalid level '%s'\n", arg + 2);
 					return 0;
@@ -395,8 +393,6 @@ int program(int argc, char *argv[]) {
 				fputfmt(stderr, "invalid option '%s' for -compile\n", arg);
 				return -1;
 			}
-
-			//~ debug("level :0x%02x: arg[%d]: '%s'", level, argi - 2, arg);
 		}
 
 		if (logf && logfile(s, logf) != 0) {
@@ -409,17 +405,17 @@ int program(int argc, char *argv[]) {
 			logfile(s, NULL);
 			return -1;
 		}
-		//~ debug("compiler.init:%.2F KBytes", (s->cc->_ptr - s->_mem) / 1024.);
+		debug("compiler.init:%.2F KBytes", (s->cc->_ptr - s->_mem) / 1024.);
 
 		if (compile(s, warn) != 0) {
 			logfile(s, NULL);
 			return s->errc;
 		}
-		//~ debug("compiler.scan:%.2F KBytes", (s->cc->_ptr - s->_mem) / 1024.);
+		debug("compiler.scan:%.2F KBytes", (s->cc->_ptr - s->_mem) / 1024.);
 
-		if (outc == out_tags || outc == out_tree) {
-		}
-		else if (gencode(s, opti) != 0) {
+		if (outc == out_tags || outc == out_tree) {} else
+
+		if (gencode(s, opti) != 0) {
 			logfile(s, NULL);
 			return s->errc;
 		}
@@ -429,7 +425,7 @@ int program(int argc, char *argv[]) {
 		//~ logfile(s, outf);
 		if (outc) switch (outc) {
 			default: fatal("FixMe");
-			case out_tags: dump2file(s, outf, dump_sym | (1), NULL); break;
+			case out_tags: dump2file(s, outf, dump_sym | (level & 0xff), NULL); break;
 			case out_dasm: dump2file(s, outf, dump_asm | (level & 0xff), NULL); break;
 			case out_tree: dump2file(s, outf, dump_ast | (level & 0xff), NULL); break;
 			case run_code: exec(s->vm, ss, dbg); break;

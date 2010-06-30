@@ -26,7 +26,7 @@ typedef struct state {
 
 	long _cnt;
 	char *_ptr;		// write here symbols and string constants
-	char *_end;		// space for ast and list nodes, temporary
+	//~ char *_end;		// space for ast and list nodes, temporary
 	char _mem[];
 } *state;
 typedef enum {

@@ -1407,6 +1407,7 @@ static astn args(ccEnv s, int mode) {
 		}
 
 		arg = declare(s, TYPE_ref, atag, atyp);
+		atag->cst2 = atyp->cast;
 
 		if (root) {
 			astn tmp = newnode(s, OPER_com);
@@ -1447,10 +1448,12 @@ static astn decl(ccEnv s, int qual) {
 			if (skip(s, STMT_do)) {			// int sqr(int a);
 				fatal("FixMe");
 			}
-			else if (skip(s, STMT_beg)) {		// int sqr(int a) {return a * a;}
-				fatal("FixMe");
+			else if (test(s, STMT_beg)) {		// int sqr(int a) {return a * a;}
+				enter(s, NULL);
+				installex(s, "result", TYPE_ref, 0, typ, NULL);
 				ref->init = stmt(s, 1);
-				skiptok(s, STMT_end, 1);
+				leave(s, NULL);
+				//~ if (s->nest != 2) error;
 			}
 			/*else if (skip(s, ASGN_set)) {		// int sqr(int a) = a * a;
 				char* name = ref->name;
@@ -1525,6 +1528,10 @@ static astn decl(ccEnv s, int qual) {
 		}
 
 		redefine(s, ref);
+		if (ref->init && !castTo(ref->init, castTy(ref->type))) {
+			error(s->s, s->line, "integer constant expected");
+			return 0;
+		}
 		tag->kind = TYPE_def;
 	}
 	return tag;
@@ -1785,27 +1792,10 @@ astn expr(ccEnv s, int mode) {
 		}
 	}
 	if (mode && tok) {
-		//~ symn typ = typecheck(s, 0, tok);
-		if (typecheck(s, 0, tok) == 0) {
-			//~ astn *ptr;
+
+		if (typecheck(s, 0, tok) == 0)
 			error(s->s, tok->line, "invalid expression: %+k", tok);
-			// why does this not work
-			/*TODO: for (ptr = buff; ptr < post; ptr += 1) {
-				astn err = *ptr;
-				if (err == NULL)
-					continue;
-				/ *switch (err->kind) {
-					case TYPE_ref:
-					case TYPE_def:
-						break;
-					//~ default:
-						//~ continue;
-				}// * /
-				if (err->type)
-					continue;
-				info(s->s, s->file, err->line, "undeclared: %t(%+k):%T", err->kind, err, err->type);
-			}// */
-		}
+
 		if (mode != TYPE_def && !castTo(tok, mode))
 			error(s->s, tok->line, "invalid expression: %+k", tok);
 	}
@@ -1845,7 +1835,7 @@ static astn spec(ccEnv s/* , int qual */) {
 
 	if (skip(s, TYPE_def)) {			// define
 		symn typ = 0;
-		//~ int op = skip(s, OPER_dot);
+		int op = skip(s, OPER_dot);
 		if (!(tag = next(s, TYPE_ref))) {
 			error(s->s, s->line, "Identifyer expected");
 			skiptok(s, STMT_do, 1);
@@ -1899,18 +1889,31 @@ static astn spec(ccEnv s/* , int qual */) {
 
 			def->args = leave(s, NULL);
 			def->type = typ;
+			//~ def->cast = typ->cast;
 			def->call = 1;
 			if (def->args == NULL)
 				def->args = s->argz->id.link;
 
-			/*if (op && def->name) {
-				int argc = 0;
+			if (op && def->name) {
+				int oper, argc = 0;
 				for (tmp = def->args; tmp; tmp = tmp->next) {
 					argc += 1;
 				}
-				if (strcmp(def->name, "add") == 0 && argc == 2) {
-					def->name = ".add";
+				for (oper = OPER_idx; oper < OPER_com; ++oper) {
+					const char* cmpTo = tok_tbl[oper].name;
+
+					if (!cmpTo || cmpTo[0] != '.')
+						continue;
+
+					if (argc != tok_tbl[oper].argc)
+						continue;
+
+					if (strcmp(def->name, cmpTo + 1) != 0)
+						continue;
+
+					def->name = (char*)cmpTo;
 					op = 0;
+					break;
 				}
 			}// */
 
@@ -1923,7 +1926,7 @@ static astn spec(ccEnv s/* , int qual */) {
 			def = declare(s, TYPE_def, tag, typ);
 		}
 		else error(s->s, tag->line, "typename excepted");
-		/*if (op) {
+		if (op) {
 			error(s->s, tag->line, "invalid operator");
 		}// */
 		skiptok(s, STMT_do, 1);
@@ -1956,10 +1959,12 @@ static astn spec(ccEnv s/* , int qual */) {
 			}
 		}// */
 		if (skip(s, STMT_beg)) {			// body
+			symn sdef;
 			int qual = 0;
 			int salign = -1;
 			def = declare(s, TYPE_rec, tag, type_vid);
 			enter(s, NULL);
+			sdef = installex(s, "size", TYPE_def, 0, type_i64, NULL);
 			while (!skip(s, STMT_end)) {
 				symn typ = type(s, qual);
 				tok = next(s, TYPE_ref);
@@ -1981,6 +1986,7 @@ static astn spec(ccEnv s/* , int qual */) {
 					int align = (typ->algn && (pack < typ->algn)) ? pack : typ->algn;
 					offs = padded(offs, align);
 					ref = declare(s, TYPE_ref, tok, typ);
+					redefine(s, ref);
 					ref->offs = offs;
 					offs += typ->size;
 					if (size < offs) size = offs;
@@ -2001,6 +2007,9 @@ static astn spec(ccEnv s/* , int qual */) {
 				}
 			}
 			def->size = size;
+			def->cast = TYPE_rec;	// TODO: RemMe
+			//~ installex(s, "size", TYPE_def, TYPE_def, type_i32, intnode(s, size));
+			sdef->init = intnode(s, size);
 			def->args = leave(s, def);
 
 			if (def->args) {
@@ -2049,7 +2058,7 @@ static astn spec(ccEnv s/* , int qual */) {
 				tmp = declare(s, TYPE_def, tok, base);
 				if (skip(s, ASGN_set)) {
 					tmp->init = expr(s, TYPE_def);
-					if (!castTo(tmp->init, castId(base)))
+					if (!castTo(tmp->init, castTy(base)))
 						error(s->s, tmp->init->line, "%T constant expected, got %T", base, tmp->init->type);
 				}
 				else if (base->kind == TYPE_int) {		// if casts to TYPE_i32
@@ -2072,23 +2081,55 @@ static astn spec(ccEnv s/* , int qual */) {
 	return tag;
 }
 
-symn instlibc(ccEnv c, const char* name) {
-	astn tag;
-	if (c->fin._ptr) {
-		perr(c->s, -1, __FILE__, __LINE__, "install");
+symn installref(ccEnv cc, const char *prot, astn *argv) {
+	symn ref = NULL;
+
+	if (cc->fin._ptr) {
+		perr(cc->s, -1, __FILE__, __LINE__, "install");
 		return 0;
 	}
-	c->fin._ptr = (char*)name;
-	c->fin._cnt = strlen(name);
-	c->_tok = 0;
-	tag = decl(c, 0);
-	if (peek(c)) {
-		debug("unexpected: `%k` in '%s'", peek(c), name);
-		tag = 0;
+
+	cc->fin._ptr = (char*)prot;
+	cc->fin._cnt = strlen(prot);
+	cc->_tok = 0;
+
+	if ((ref = type(cc, 0))) {
+		astn tag = NULL;
+		if ((tag = next(cc, TYPE_ref))) {
+			astn arg = NULL;
+			symn typ = ref;
+			ref = declare(cc, TYPE_ref, tag, typ);
+
+			if (skip(cc, PNCT_lp)) {				// int a(...) (';' | '=' | '{')
+				enter(cc, NULL);
+				arg = args(cc, 0);
+				if (!skiptok(cc, PNCT_rp, 1)) {
+					ref = NULL;
+				}
+				ref->args = leave(cc, ref);
+				ref->call = 1;
+				if (ref->args == NULL)
+					ref->args = cc->argz->id.link;
+			}
+			if (peek(cc) && !skiptok(cc, STMT_do, 1)) {
+				debug("unexpected: `%k` in '%s'", peek(cc), prot);
+				ref = NULL;
+			}
+
+			redefine(cc, ref);
+			tag->kind = TYPE_def;
+			if (argv)
+				*argv = arg;
+		}
 	}
-	c->fin._ptr = NULL;
-	c->fin._cnt = 0;
-	return tag ? tag->id.link : 0;
+	//~ debug("%-T", ref);
+	if (peek(cc)) {
+		debug("unexpected: `%k` in '%s'", peek(cc), prot);
+		ref = NULL;
+	}
+	cc->fin._ptr = NULL;
+	cc->fin._cnt = 0;
+	return ref;
 }// */
 
 //}
@@ -2117,21 +2158,26 @@ symn instlibc(ccEnv c, const char* name) {
  * scan a declaration, add to ast tree
  * @param mode: enable or not <expr>.
  * decl := <type> ';'
- *  # variable
+ * # variable
  *	| <type> <name> ('['<expr>?']')? (= <expr>)? ';'
- *  # function
+ * # function
  *	| <type> <name> '(' <args> ')' (('{' <stmt>* '}') | ('=' <expr> ';') | (';'))
- *  # operator
- *	| <type> 'operator' '(' <args> :lhs: ')' (('{' <stmt>* '}') | ('=' <expr> ';') | (';'))
- *	| <type> 'operator' <unop> '(' <args> :rhs: ')' (('{' <stmt>* '}') | ('=' <expr> ';') | (';'))
- *	| <type> 'operator' '(' <args> :lhs: ')' <binop> '(' <args> :rhs: ')' (('{' <stmt>* '}') | ('=' <expr> ';') | (';'))
- *	| <type> 'operator' '(' <args> :lhs: ')' '(' <args> :rhs: ')' (('{' <stmt>* '}') | ('=' <expr> ';') | (';'))
- *	| <type> 'operator' '(' <args> :lhs: ')' '[' <args> :rhs: ']' (('{' <stmt>* '}') | ('=' <expr> ';') | (';'))
+ * # operator
+ *	| 'operator' <OP> ('(' <type> rhs ')') '=' <expr> ';'
+      operator - (Complex x) = Complex(-x.re, -x.im);
+ *	| 'operator' ('(' <type> lhs ')') <OP> ('(' <type> rhs ')') '=' <expr> ';'
+      operator (Complex x) - (Complex y) = Complex(x.re - y.re, x.im - y.im);
 
- *	| 'define' <name> <type>;					// typedef
- *	| 'define' <name> '=' <expr>;				// constant
- *	| 'define' <name> '(' <args> ')'= <expr>;	// inline
- *	| 'struct' <name>? '{' <decl>* '}'
+ *	| 'operator' '(' <args> :lhs: ')' '=' <expr> ';'
+ ?	| <type> 'operator' '(' <args> :lhs: ')' (('{' <stmt>* '}') | ('=' <expr> ';'))
+ ?	| <type> 'operator' <unop> '(' <args> :rhs: ')' (('{' <stmt>* '}') | ('=' <expr> ';'))
+ ?	| <type> 'operator' '(' <args> :lhs: ')' <binop> '(' <args> :rhs: ')' (('{' <stmt>* '}') | ('=' <expr> ';'))
+ ?	| <type> 'operator' '(' <args> :lhs: ')' '(' <args> :rhs: ')' (('{' <stmt>* '}') | ('=' <expr> ';'))
+ ?	| <type> 'operator' '(' <args> :lhs: ')' '[' <args> :rhs: ']' (('{' <stmt>* '}') | ('=' <expr> ';'))
+
+ *	| 'define' <name> <type>;						// typedef
+ *	| 'define' <name> ('(' <args> ')')? = <expr>;	// inline
+ !	| 'struct' <name>? '{' <decl>* '}'
  *	| 'enum' <name>? (':' <type>)? '{' (<name> (= <expr>)?;)+ '}'
  *	;
  * 

@@ -1,12 +1,10 @@
 OUTOBJ=-fo=
 OUTEXE=-fe=
+CFLAGS=-zq -ei -6s -d2
 #~ CFLAGS=-zq -ei -6s -d0 -oa
-#~ CFLAGS=-zq -d3 -od -zpw -zw
-CFLAGS=-zq -ei -6s -d3
-#-d3 -oa -hd
 COPTS=-wx
 LIBS=
-LNK=wcl386 $(CFLAGS) 
 CCC=wcc386
+LNK=wcl386 $(CFLAGS) 
+LIB=WLIB -q libpvmc.lib
 DBG=wdw
-LIBNAME=libpvmc.lib

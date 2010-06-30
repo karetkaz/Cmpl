@@ -1,9 +1,12 @@
-include incl/Makefile.gcc
-LIB=WLIB -q
+include incl/Makefile.wcc
 
 SRCDIR=
-OBJDIR=../Debug/src/
-BINDIR=../Debug/
+OBJDIR=
+BINDIR=../
+#~ OBJDIR=..\Debug\src\\
+#~ BINDIR=..\Debug\\
+#~ OBJDIR=../Debug/src/
+#~ BINDIR=../Debug/
 OBJS=\
 	$(OBJDIR)code.o\
 	$(OBJDIR)clog.o\
@@ -16,7 +19,7 @@ all:clean $(OBJS) $(OBJDIR)main.o
 	$(LNK) $(OUTEXE)$(BINDIR)main $(OBJS) $(OBJDIR)main.o $(LIBS)
 
 lib:$(OBJS)
-	$(LIB) $(LIBNAME) $(OBJS)
+	$(LIB) $(OBJS)
 
 clean:
 	rm -f $(OBJS) $(OBJDIR)main.o

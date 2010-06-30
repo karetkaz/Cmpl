@@ -107,7 +107,9 @@ int eval(astn res, astn ast) {
 		case TYPE_f32: cast = TYPE_flt; break;
 		case TYPE_f64: cast = TYPE_flt; break;
 
-		//~ case TYPE_rec: return 0;
+		case TYPE_arr:
+		case TYPE_rec:
+			return 0;
 
 		default:
 			debug("(%+k):%t / %d", ast, ast->cst2, ast->line);

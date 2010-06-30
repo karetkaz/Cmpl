@@ -73,7 +73,7 @@ static int libHalt(state s) {
 #ifdef useBuiltInFuncs
 static int f64abs(state s) {
 	flt64_t x = poparg(s, flt64_t);
-	setret(flt64_t, s, abs(x));
+	setret(flt64_t, s, fabs(x));
 	return 0;
 }
 static int f64sin(state s) {
@@ -384,28 +384,25 @@ libcfnc[256] = {
 	{NULL},
 };
 
+symn installref(ccEnv cc, const char *prot, astn *argv);
+
 int libcall(state s, int libc(state), const char* proto) {
 	static int libccnt = 0;//1
 	int stdiff = 0;
 	symn arg, sym;
+	astn args;
 
 	// TODO: can skip this
 	if (!s->cc && !ccInit(s)) {
 		return -1;
 	}
 
-	/*if (!libc && proto && strcmp(proto, "print") == 0) {
-		int i;
-		for (i = 0; libcfnc[i].proto; ++i) {
-			fputfmt(stdout, "%s\n", libcfnc[i].proto);
-		}
-	}// */
-
-	if (!libccnt && !libc/*  && strcmp(proto, "defaults") == 0 */) {
+	if (!libccnt && !libc) {
 		libccnt = 1;
 		if (!libc) while (libcfnc[libccnt].proto) {
 			int i = libccnt;
-			libcall(s, libcfnc[i].call, libcfnc[i].proto);
+			if (libcall(s, libcfnc[i].call, libcfnc[i].proto) < 0)
+				return -1;
 		}
 		return libccnt;
 	}
@@ -421,16 +418,67 @@ int libcall(state s, int libc(state), const char* proto) {
 	if (!libc || !proto)
 		return 0;
 
-	sym = install(s->cc, libcfnc[libccnt].proto, -1, 0, 0);
+	sym = installref(s->cc, libcfnc[libccnt].proto, &args);
+	//~ from: int64 zxt(int64 val, int offs, int bits)
+	//~ make: define zxt(int64 val, int offs, int bits) = int64(emit(libc(25), int64 val, int offs, int bits));
 
-	if (sym != NULL) {
-		//~ int64 zxt(int64 val, int offs, int bits)
-		//~ define zxt(int64 val, int offs, int bits) = emit(libc(3), int64 val, int offs, int bits);
+	if (sym) {
+
+		// TODO: replace this section
+		symn link = newdefn(s->cc, EMIT_opc);
+		astn libc = newnode(s->cc, TYPE_ref);
+		//~ astn call = newnode(s->cc, OPER_fnc);
+
+		link->name = "libc";
+		link->type = sym->type;
+		link->offs = opc_libc;
+		link->init = intnode(s->cc, libccnt);
+
+		libc->id.name = link->name;
+		libc->id.hash = -1;
+		libc->id.link = link;
+		libc->type = link->type;
+		// TODO: end
+
+		// glue the new libc argument
+		if (args != NULL) {
+			astn arg = args;
+			astn narg = newnode(s->cc, OPER_com);
+			narg->op.lhso = libc;
+
+			if (arg->kind == OPER_com) {
+				while (arg->op.lhso->kind == OPER_com)
+					arg = arg->op.lhso;
+				narg->op.rhso = arg->op.lhso;
+				arg->op.lhso = narg;
+			}
+			else {
+				narg->op.rhso = args;
+				args = narg;
+			}
+		}
+		else {
+			args = libc;
+		}
+
+		// TODO: make a function for this
+		libc = newnode(s->cc, OPER_fnc);
+
+		libc->op.lhso = newnode(s->cc, TYPE_ref);
+		libc->op.lhso->id.link = emit_opc;
+		libc->op.lhso->id.name = "emit";
+		libc->op.lhso->id.hash = -1;
+
+		libc->type = sym->type;
+		libc->op.rhso = args;
+
+		sym->kind = TYPE_def;
+		sym->init = libc;
+		sym->offs = 0;
 	}
-
-	if (sym == NULL) {
+	else {
 		error(s, 0, "install('%s')", proto);
-		return -2;
+		return -1;
 	}
 
 	for (arg = sym->args; arg; arg = arg->next)
@@ -438,9 +486,8 @@ int libcall(state s, int libc(state), const char* proto) {
 	libcfnc[libccnt].chk = stdiff / 4;
 	stdiff -= sizeOf(sym->type);
 	libcfnc[libccnt].pop = stdiff / 4;
-
 	libcfnc[libccnt].sym = sym;
-	sym->offs = -libccnt;
+
 	libccnt += 1;
 
 	return libccnt - 1;
@@ -549,7 +596,7 @@ int emit(vmEnv s, int opc, ...) {
 	}
 
 	// cmp
-	else if (opc == opc_ceq) switch (arg.i4) {
+	else if (opc == opc_ceq) switch (arg.i4) { 
 		case TYPE_u32: //opc = u32_ceq; break;
 		case TYPE_i32: opc = i32_ceq; break;
 		case TYPE_f32: opc = f32_ceq; break;
@@ -751,7 +798,7 @@ int emit(vmEnv s, int opc, ...) {
 				s->cs = s->pc;
 				s->ss -= 1;
 			}
-		}
+		}// */
 
 		// conditional jumps
 		else if (opc == opc_not) {
@@ -791,24 +838,6 @@ int emit(vmEnv s, int opc, ...) {
 				opc = opc_ldz4;
 				s->cs = s->pc;
 				s->ss -= 2;
-			}
-		}
-		else if (opc == opc_dup1) {
-			ip = getip(s, s->pc);
-			if (ip->opc == opc_dup1 && ip->idx == arg.u4) {
-				ip->opc = opc_dup2;
-				ip->idx -= 1;
-				s->sm += 1;
-				return s->pc;
-			}
-		}
-		else if (opc == opc_dup2) {
-			ip = getip(s, s->pc);
-			if (ip->opc == opc_dup2 && ip->idx == arg.u4) {
-				ip->opc = opc_dup4;
-				ip->idx -= 2;
-				s->sm += 2;
-				return s->pc;
 			}
 		}
 		/ *else if (opc == opc_shl || opc == opc_shr || opc == opc_sar) {
@@ -927,11 +956,11 @@ int emitref(vmEnv s, int opc, int offset) {
 			if (offset < 0)
 				return emitidx(s, opc_ldsp, offset);
 			return emitint(s, opc_ldcr, offset);
-		case opc_call:
+		//~ case opc_call:
 			// TODO: RemMe!
-			if (offset < 0)
-				return emitint(s, opc_libc, -offset);
-			return emitint(s, opc_call, s->pc - offset);
+			//~ if (offset < 0)
+				//~ return emitint(s, opc_libc, -offset);
+			//~ return emitint(s, opc_call, s->pc - offset);
 		// */
 	}
 	debug("FixMe");
@@ -1209,7 +1238,8 @@ void dumpasmdbg(FILE *fout, vmEnv s, int mark, int len, int mode) {
 void vm_fputval(FILE *fout, symn var, stkval* ref, int flgs) {
 	typedef enum {
 		//~ flg_type = 0x010000,
-		flg_hex  = 0x020000,
+		//~ flg_hex  = 0x020000,
+		flg_hex  = 0x000000,
 		//~ flg_offs = 0x040000,
 	} flagbits;
 
@@ -1223,7 +1253,7 @@ void vm_fputval(FILE *fout, symn var, stkval* ref, int flgs) {
 		case TYPE_bit:
 		case TYPE_int: {
 			int64_t val = 0;
-			switch (castId(typ)) {
+			switch (castTy(typ)) {
 				case TYPE_bit:
 				case TYPE_u32: switch (typ->size) {
 					case 1: val = ref->u1; break;
@@ -1323,8 +1353,7 @@ void vm_fputval(FILE *fout, symn var, stkval* ref, int flgs) {
 				fputfmt(fout, "Unknown Dimension]");
 				break;
 			}
-			if (tmp.con.cint > 10)
-				tmp.con.cint = 10;
+			//~ if (tmp.con.cint > 10) tmp.con.cint = 10; // restrict
 			while (i < tmp.con.cint) {
 				if (base->kind == TYPE_arr)
 					fputfmt(fout, "\n");
@@ -1339,7 +1368,7 @@ void vm_fputval(FILE *fout, symn var, stkval* ref, int flgs) {
 		} break;
 		default:
 		TYPE_XXX:
-			fputfmt(fout, "%T(error):%t, %t", typ, typ->kind, castId(typ));
+			fputfmt(fout, "%T(error):%t, %t", typ, typ->kind, castTy(typ));
 			break;
 	}
 }

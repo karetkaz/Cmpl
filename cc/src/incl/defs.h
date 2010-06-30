@@ -21,8 +21,8 @@ TOKDEF(QUAL_par, 0xff, 0, "parralel")
 
 //~ vmInterface ================================================================
 TOKDEF(EMIT_opc, 0xff,   0, "emit")		// opcodes in emit(opcode, args...)
-//~ TOKDEF(SIZE_get, 0xff,   0, "sizeof")		//
-//~ TOKDEF(TYPE_get, 0xff,   0, "typeof")		//
+//~ TOKDEF(SIZE_get, 0xff,   0, "sizeof")		// typename.size?
+//~ TOKDEF(TYPE_get, 0xff,   0, "typeof")		// typename.class
 
 //~ Statements =================================================================
 //! keep beg the first and end the last statement token

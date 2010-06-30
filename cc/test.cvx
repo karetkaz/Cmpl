@@ -10,6 +10,29 @@
 //~ #open src/scan.c
 //~ #open src/main.c
 
+define fogyasztas(double km, double benzin, double atlag) = double(benzin * km * atlag / 100.);
+
+double km = 4. * 5 * 16;
+double atlag = 7.0;
+double benzin = 4.55;
+double Result = fogyasztas(km, benzin, atlag);
+
+/*
+define X = 60;
+define Y = 60;
+double array[X][Y];
+for (int x = 0; x < X; x += 1)
+	for (int y = 0; y < Y; y += 1)
+			array[x][y] = x == y;
+// */
+
+//~ int Result = 1;// + (12653 % 3);
+
+//~ int32 i32 = emit();
+//~ flt32 f32 = emit();
+//~ int64 i64 = emit();
+//~ flt64 f64 = emit();
+
 //~ arg: ="math.pi * (3 + 3 -4 + -1)"
 
 /* TODO:
@@ -50,31 +73,39 @@
  * some emit opcodes should have const params:
  *	emit(libc(0));  // this is halt
  *	emit(libc(2), f64(math.pi));  // sin(math.pi)
- ? enable type as first param: emit(i32, f32(1)); see f32 as i32;
- * fix type of emit. emit->type ?= null
  * 
 **/
 /* TODO: errors
 define isNan(flt64 x) = bool(x != x);
 int isNan1 = isNan(math.nan);
-int isNan2 = math.isNan(math.nan);
-define fact(int64 n) = (n * fact(n - 1));
+//~ int isNan2 = math.isNan(math.nan);
+//~ define fact(int64 n) = (n * fact(n - 1));
 // */
 
 enum Test {
-	Emit = -1;
-	Bits = -1;
-	Type = -1;
-	Misc = -1;
-	//~ Libc = -1;
+	Emit = -0;
+	Bits = -0;
+	Type = +4;
+	Misc = -0;
+	Libc = -0;
+	//~ Math = -1;
 	//~ Call = 0;
 } // */
 static if (Test.Emit) {
+/+
+emit is something like:
+#pragma aux (parm [edi] [eax] [edx] value [edi] modify exact [xmm0]) vecmul =\
+	".686"\
+	"movps	xmm0, [eax]"\
+	"mulps	xmm0, [edx]"\
+	"movups	[edi], xmm0"
++/
+
 static if (Test.Emit & 0x01) {
 flt32 res1 = emit(f32.div, f32(2), f32(math.pi));	// ok
 flt64 res2 = emit(f64.neg, f64(math.pi));			// ok
-flt32 res3 = emit(f32(math.pi));				// ok
-int32 res4 = emit(f32(math.pi));				// ok
+flt32 res3 = emit(flt32, f32(math.pi));				// ok
+int32 res4 = emit(int32, f32(math.pi));				// ok
 
 emit(f64(math.pi));
 int32 i32 = emit();
@@ -88,11 +119,11 @@ define shl(int32 value, int count) = emit(i32.shl, i32(count), i32(value));
 define shr(int32 value, int count) = emit(i32.shr, i32(count), i32(value));
 define shr(uns32 value, int count) = emit(u32.shr, i32(count), i32(value));
 
-define add(flt32 a, flt32 b) = flt32(emit(f32.add, f32(b), f32(a)));		// := a + b
-define sub(flt32 a, flt32 b) = flt32(emit(f32.sub, f32(b), f32(a)));
-define mul(flt32 a, flt32 b) = flt32(emit(f32.mul, f32(b), f32(a)));
-define div(flt32 a, flt32 b) = flt32(emit(f32.div, f32(b), f32(a)));
-define mod(flt32 a, flt32 b) = flt32(emit(f32.mod, f32(b), f32(a)));
+define add(flt32 a, flt32 b) = emit(f32.add, f32(b), f32(a));		// := a + b
+define sub(flt32 a, flt32 b) = emit(f32.sub, f32(b), f32(a));
+define mul(flt32 a, flt32 b) = emit(f32.mul, f32(b), f32(a));
+define div(flt32 a, flt32 b) = emit(f32.div, f32(b), f32(a));
+define mod(flt32 a, flt32 b) = emit(f32.mod, f32(b), f32(a));
 
 define mad(flt32 a, flt32 b, flt32 c) = emit(f32.add, f32.mul, f32(a), f32(b), f32(c));	// a * b + c
 define mad(flt64 a, flt64 b, flt64 c) = emit(f64.add, f64.mul, f64(a), f64(b), f64(c));	// a * b + c
@@ -100,8 +131,8 @@ define mad(int32 size, int32 index, int32 offset) = emit(u32.mad, i32(size), i32
 
 int a = -0x8989;
 
-int32 a1 = shr(uns32(a), 8);
-int64 a2 = shr(int32(a), 8);
+//! int32 a1 = shr(uns32(a), 8);
+//! int64 a2 = shr(int32(a), 8);
 
 //~ flt32 X1 = mad(2, 3, 4000);
 //~ flt32 X2 = mad(float(2), float(3), float(4000));
@@ -156,12 +187,12 @@ static if (times2exec > 0) {
 }
 static if (Test.Emit & 0x08) {
 
-vec4f v1 = emit(f32(11), f32(12), f32(13), f32(14));
-vec4f v2 = emit(f32(21), f32(22), f32(23), f32(24));
+vec4f v1 = emit(vec4f, f32(11), f32(12), f32(13), f32(14));
+vec4f v2 = emit(vec4f, f32(21), f32(22), f32(23), f32(24));
 
 //~ emit(swz.xywz);
-//~ emit(v4f.add, f32(v1.x), f32(v1.y), f32(v1.z), f32(v1.w));
-emit(v4f.add);		// (Error | Warn)? statement underflows stack
+emit(v4f.add, f32(v1.x), f32(v1.y), f32(v1.z), f32(v1.w));
+//~ emit(v4f.add);		// (Error | Warn)? statement underflows stack
 //~ emit(v4f.dp3);
 //~ 1+emit(v4f.dp3);
 
@@ -191,13 +222,13 @@ flt32 sp[4] = emit();
 } // */
 static if (Test.Bits) {
 int32 var = 0x00001080;		// input
-//~ int32 err = emit();			// ref to var
+//~ int32 err = emit();			// another ref to var
 static if (Test.Bits & 1) {
 int32 BSR_lib = bsr(var);
 int32 BSR_res = -1;
 if (var != 0) {
-	uns32 ans = 0;
-	uns32 x = var;
+	uns32 ans = uns32(0);
+	uns32 x = uns32(var);
 	//~ if (x & 0xffffffff00000000) { ans += 32; x >>= 32; }
 	if (x & 0xffff0000) { ans += 16; x >>= 16; }
 	if (x & 0x0000ff00) { ans +=  8; x >>=  8; }
@@ -211,7 +242,7 @@ static if (Test.Bits & 2) {
 int32 BHI_lib = bhi(var);
 int32 BHI_res = -1;
 if (var) {
-	uns32 u = var;
+	uns32 u = uns32(var);
 	u |= u >> 1;
 	u |= u >> 2;
 	u |= u >> 4;
@@ -224,7 +255,7 @@ static if (Test.Bits & 4) {
 int32 SWP_lib = swp(var);
 int32 SWP_res = -1;
 if (var) {
-	uns32 x = var;
+	uns32 x = uns32(var);
 	x = ((x >> 1) & 0x55555555) | ((x & 0x55555555) << 1);
 	x = ((x >> 2) & 0x33333333) | ((x & 0x33333333) << 2);
 	x = ((x >> 4) & 0x0F0F0F0F) | ((x & 0x0F0F0F0F) << 4);
@@ -267,13 +298,13 @@ flt64 TT2_1 = lerp(0., 5., .5);
 define isNan(flt64 x) = bool(x != x);
 define isNan(flt32 x) = bool(x != x);
 flt64 NAN = math.nan;
-int isNan1 = isNan(NAN);
-int isNan2 = isNan(math.nan);
+int isNan1 = int(isNan(NAN));
+int isNan2 = int(isNan(math.nan));
 }
 static if (Test.Type & 0x04) {
 //~ struct and arrays
-struct fit32:0 {int32 i;flt32 f;}
-struct fit64:0 {int64 i;flt64 f;}
+struct fiu32:0 {int32 i;flt32 f;}
+struct fiu64:0 {int64 i;flt64 f;}
 define intTY int32;
 
 struct intabc: 8 {
@@ -281,7 +312,7 @@ struct intabc: 8 {
 	intTY Y;		//~!%=(%?08b)
 	intTY Z;		//~!%=(%?08b)
 	//~ intTY W;		//!X%?03x
-	fit64 U;
+	fiu64 U;
 }
 
 intabc alma;
@@ -305,8 +336,8 @@ struct bgra: 1 {
 //~ define argb(uns8 a, uns8 r, uns8 g, uns8 b) = bgra(b, g, r, a);
 
 struct color: 0 {
-	int32 val;	//!%rgb(#%08x)
-	bgra col;	//!%
+	int32 val;	//!%
+	bgra col;	//! %
 }
 //~ define color(uns8 a, uns8 r, uns8 g, uns8 b) = int32(a << 24 | r << 16 | g << 8 | b);
 //~ define color(uns8 r, uns8 g, uns8 b) = int32(r << 16 | g << 8 | b);
@@ -324,7 +355,7 @@ uns32 u32[4] = emit();
 
 enum colors: color {
 	none = int32(-1);
-	pink = color(2,3,4);
+	//~ pink = color(2,3,4);
 }
 }
 static if (Test.Type & 0x10) {
@@ -342,7 +373,7 @@ scalar m1[dim][dim];
 scalar m2[dim][dim];
 scalar m3[dim][dim];
 
-/+ Initialize
+//~ /+ Initialize
 for (int i = 0; i < dim; i += 1) {
 	for (int j = 0; j < dim; j += 1) {
 		m1[i][j] = m2[i][j] = (i == j) + 2;
@@ -359,7 +390,7 @@ for (int i = 0; i < dim; i += 1) {
 	}
 }
 
-/+ Print
+//~ /+ Print
 for (int i = 0; i < dim; i += 1) {
 	for (int j = 0; j < dim; j += 1) {
 		if (j != 0)
@@ -370,13 +401,31 @@ for (int i = 0; i < dim; i += 1) {
 } // +/
 }
 } // */
+static if (Test.Libc) {
+	define x = -math.pi / 4;
+	double absx = abs(x);
+	double sinx = sin(x);
+	double cosx = cos(x);
+	double tanx = tan(x);
+	double logx = log(absx);
+	double expx = exp(x);
+	double powx8 = pow(x, 7);
+	//~ double ___x = ___(x);
+
+	//~ int xxl = sxt(0xff0070, 3, 7);
+
+} // */
+
 /* Type Test X
 /+	function
 int sum(int n) {result = 0; for (int i = 1; i < n; i += 1) result += i;}
 int prd(int n) {result = 0; for (int i = 1; i < n; i += 1) result *= i;}
 
+int i = sum(200);
+//~ int k = 9;//sum(200);
+//~ int l = 9;//sum(200);
 // +/
-/+X	operators
+/+	operators
 
 //~ define v4f32(flt32 xyz) = emit(v4f, f32(xyz), f32(xyz), f32(xyz), f32(xyz));
 //~ define v4f32(flt32 x, flt32 y, flt32 z) = emit(v4f, f32(x), f32(y), f32(z), f32(1));
@@ -390,7 +439,7 @@ void operator(v4f32 &lhs) (flt32 x, flt32 y, flt32 z, flt32 w) {
 	//~ v4f32 a;
 	//~ a(1,2,3,4);
 	//~ a(1,2,9,4);
-	
+
 	lhs.x = x;
 	lhs.y = y;
 	lhs.z = z;
@@ -431,55 +480,39 @@ flt32 operator (v4f32 lhs) ^ (v4f32 rhs) {	// length
 //~ operator (int lhs) + (int rhs) = emit(i32.add, i32(rhs), i32(lhs));
 
 //~ +/
-/+ Complex: X
-struct Complex {
-	flt64 re;
-	flt64 im;
-}
-
-//~ operator -(Complex rhs) = Complex(-rhs.re, -rhs.im);
-//~ operator (Complex lhs) + (Complex rhs) = Complex(lhs.re + rhs.re, lhs.im + rhs.im);
-//~ operator (Complex lhs) - (Complex rhs) = Complex(lhs.re - rhs.re, lhs.im - rhs.im);
-//~ operator (Complex lhs) * (Complex rhs) = Complex(a.re * b.re - a.im * b.im, a.re * b.im + a.im * b.re);
-
-operator -(Complex rhs) = emit(v2d.neg);
-operator (Complex lhs) + (Complex rhs) = emit(v2d.add, v2d(rhs), v2d(lhs));
-operator (Complex lhs) - (Complex rhs) = emit(v2d.sub, v2d(rhs), v2d(lhs));
-operator (Complex a) * (Complex b) = Complex {
-	re = emit(f64.sub, v2d.mul, f64(b.im), f64(b.re), f64(a.im), f64(a.re));		// re = a.re * b.re - a.im * b.im
-	im = emit(f64.add, v2d.mul, f64(b.re), f64(b.im), f64(a.im), f64(a.re));		// im = a.re * b.im + a.im * b.re
-}
-//~ +/
 //~ */
 /* ?reflect?
-enum TypeCode:int8 {
-	TYPE_any = 0x00;		// invalid
-	TYPE_vid = 0x01;		// void;
-	TYPE_bit = 0x02;		// bool;
-	TYPE_int = 0x03;		// int64, int32, int16, int8, uns32, uns16, uns8;
-	TYPE_flt = 0x04;		// flt64, flt32;
-	TYPE_p4x = 0x05;		// (p2f64, p4f32), (p4f64, p8f32) (p2i64, p4i32, p8i16, p16i8), (p2u64, p4u32, p8u16, p16u8), ...
-	TYPE_arr = 0x06;		// pointer, string, array, ..., ???
-	TYPE_def = 0x07;		// struct, union, class, enum, 
-	TYPE_fun = 0x08;		// function
-	TYPE_ref = 0x08;		// variable
+enum TypeCode:int32 {
+	TYPE_any = 0x00000000;		// invalid
+	TYPE_vid = 0x00000001;		// void;
+	TYPE_bit = 0x00000002;		// bool;
+	TYPE_int = 0x00000003;		// int64, int32, int16, int8, uns32, uns16, uns8;
+	TYPE_flt = 0x00000004;		// flt64, flt32;
+	TYPE_p4x = 0x00000005;		// (p2f64, p4f32), (p4f64, p8f32) (p2i64, p4i32, p8i16, p16i8), (p2u64, p4u32, p8u16, p16u8), ...
+	TYPE_var = 0x00000006;		// variant: struct{int typeid; int reference;}
+	TYPE_arr = 0x00000006;		// pointer, string, array, ..., ???
+	TYPE_def = 0x00000007;		// struct, union, class, enum, operator, getter, setter
+	TYPE_fun = 0x0000000f;		// function
+	TYPE_ref = 0x0000000f;		// variable
 
-	ATTR_ind = 0x10;		// indirect(pointer to)
-	ATTR_con = 0x10;		// constant
+	ATTR_ind = 0x00000010;		// indirect(pointer to)
+	ATTR_con = 0x00000020;		// constant
 }
 
 struct TypeInfo {
-	char file[];
-	int32 line;
+	pointer file;		// declared in file
+	int32 line;			// declared on line
 
-	char name[];
-	int32 size;				// size / offset
+	pointer name;		// typename
+	int32 size;			// size / offset:if type_ref
 
 	TypeInfo &base;			// base type of TYPE_ref (void, int, float, struct, ...), return type of func
 	TypeInfo &args;			// record fields / function args
-	TypeInfo &next;			// next type, arg, 
+	TypeInfo &next;			// next type, arg, field
 	TypeCode code;			// what am i ? ref(var / fun), type,
 	//~ define indirect = ((this.code & ATTR_ind) != 0);
+	get indirect = ((this.code & ATTR_ind) != 0);
+	//~ set indirect(bool val) {if (val) this.code |= ATTR_ind; else this.code &= ~ATTR_ind;}
 }
 
 bool instanceof(TypeInfo &ty, ref obj) {
@@ -492,14 +525,17 @@ bool instanceof(TypeInfo &ty, ref obj) {
 bool callMethod(TypeInfo &type, string name, var &result, var ...args) {
 	TypeInfo Method = null;
 
+	// check if type is type or variable;
+	// in case of var push to args
+
 	while (type && type.code != TYPE_ref) {
 
 		for (TypeInfo method : type.args) {
 
-			if (!method.call)
+			if (method.code != TYPE_ref)
 				continue;
 
-			if (method.code != TYPE_ref)
+			if (!method.call)
 				continue;
 
 			if (method.name != name)
@@ -525,7 +561,7 @@ bool callMethod(TypeInfo &type, string name, var &result, var ...args) {
 		if (Method != null)
 			break;
 
-		type = type.base;
+		type = type.base;	// inherited class has this member
 	}
 
 	if (Method != null) {
@@ -535,9 +571,6 @@ bool callMethod(TypeInfo &type, string name, var &result, var ...args) {
 			return false;
 
 		emit(call, u32(Method.offset));
-
-		result = result.dupp();		// or something like this
-
 		return true;
 	}
 
@@ -592,11 +625,11 @@ TypeInfo[] GetMembers(TypeInfo ty, string name) {
 	return result;
 }
 TypeInfo[] GetNestedTypes(TypeInfo ty, string name) {
-	TypeInfo *result[], *it;
+	TypeInfo &result[];
 
 	while (ty && ty.code != TYPE_ref) {
 
-		for (it = ty.args; it; it = it.next) {
+		for (TypeInfo &it = ty.args; it; it = it.next) {
 
 			if (it.code == TYPE_ref)
 				continue;
@@ -612,59 +645,88 @@ TypeInfo[] GetNestedTypes(TypeInfo ty, string name) {
 
 	return result;
 }
-//~ define arguments(TypeInfo ty) = ty.args;
 
-struct Variant {
-	TypeInfo &class;
-	//~ pointer &value;
-	value: union {
-		uns32 ptr;
-		int32 i32;
-		int64 i64;
-		flt32 f32;
-		flt64 f64;
-		vec4f v4f;
-		vec2d v2d;
-	}
-}
-
-define variant(ref obj) = TypeBox(class[typeid(obj)], obj);
-define UnBoxType(TypeInfo obj) = TypeBox(obj, obj.class);
+//? define variant(ref obj) = TypeBox(class[typeid(obj)], obj);
+//? define UnBoxType(TypeInfo obj) = TypeBox(obj, obj.class);
 //~ */
 
-/*
-flt64 s = .3;
-flt64 t = .7;
+/*/{ std.lib
+define dp3(vec4f lhs, vec4f rhs) = emit(v4f.dp3, v4f(lhs), v4f(rhs));
+define dp4(vec4f lhs, vec4f rhs) = emit(v4f.dp4, v4f(lhs), v4f(rhs));
+define dph(vec4f lhs, vec4f rhs) = emit(v4f.dph, v4f(lhs), v4f(rhs));
 
-define m = 5;
-define a = 1;
-define b = 1;
-define n1 = .1;
-define n2 = 1.7;
-define n3 = 1.7;
+//} // */
 
-define cos(flt64 x) = flt64(x);
-define abs(flt64 x) = flt64(x);
-define sin(flt64 x) = flt64(x);
-define pow(flt64 x, flt64 y) = flt64(x);
+/* Operator.Test(int32)
+define .add(int32 a, int32 b) = emit(i32.add, i32(b), i32(a));
+define .sub(int32 a, int32 b) = emit(i32.sub, i32(b), i32(a));
+define .mul(int32 a, int32 b) = emit(i32.mul, i32(b), i32(a));
+define .div(int32 a, int32 b) = emit(i32.div, i32(b), i32(a));
 
-define r(flt64 O) = pow(pow(abs(cos(m * O / 4.) / a), n2) + pow(abs(sin(m * O / 4.) / b), n3), 1. / n1);
-flt64 r1 = r(s);
-flt64 r2 = r(t);
-// */
-
-/+ Compare:
-define ty flt64;
-ty x = 5;
-ty y = 5;
-bool eq = x == y;
-bool lt = x < y;
-bool gt = x > y;
-
-//~ bool ne = x != y;
-//~ bool le = x <= y;
-//~ bool ge = x >= y;
+/+
+define .add(flt32 a, flt32 b) = emit(f32.add, f32(b), f32(a));
+define .sub(flt32 a, flt32 b) = emit(f32.sub, f32(b), f32(a));
+define .mul(flt32 a, flt32 b) = emit(f32.mul, f32(b), f32(a));
+define .div(flt32 a, flt32 b) = emit(f32.div, f32(b), f32(a));
+define .add(int64 a, int64 b) = emit(i64.add, i64(b), i64(a));
+define .sub(int64 a, int64 b) = emit(i64.sub, i64(b), i64(a));
+define .mul(int64 a, int64 b) = emit(i64.mul, i64(b), i64(a));
+define .div(int64 a, int64 b) = emit(i64.div, i64(b), i64(a));
+define .add(flt64 a, flt64 b) = emit(f64.add, f64(b), f64(a));
+define .sub(flt64 a, flt64 b) = emit(f64.sub, f64(b), f64(a));
+define .mul(flt64 a, flt64 b) = emit(f64.mul, f64(b), f64(a));
+define .div(flt64 a, flt64 b) = emit(f64.div, f64(b), f64(a));
 //~ +/
+
+int a = 2;
+int b = 4;
+int c = 4;
+int d = a * b + c;
+// */
+/* Operator.Test(Complex)
+struct Complex {
+	flt64 re;
+	flt64 im;
+}
+
+define Complex(flt64 re) = emit(Complex, f64(re), f64(0));
+define Complex(flt64 re, flt64 im) = emit(Complex, f64(re), f64(im));
+
+define .add(Complex a, Complex b) = Complex(a.re + b.re, a.im + b.im);
+define .sub(Complex a, Complex b) = Complex(a.re - b.re, a.im - b.im);
+//~ define .mul(Complex a, Complex b) = Complex(a.re * b.re - a.im * b.im, a.re * b.im + a.im * b.re);
+
+//~ define .add(Complex a, Complex b) = emit(Complex, v2d.add, f64(b.re), f64(b.im), f64(a.re), f64(a.im));
+//~ define .sub(Complex a, Complex b) = emit(Complex, v2d.sub, f64(b.re), f64(b.im), f64(a.re), f64(a.im));
+
+//~ define .add(Complex a, flt64 b) = emit(Complex, v2d.add, f64(b), f64(0), f64(a.re), f64(a.im));
+//~ define .add(flt64 a, Complex b) = emit(Complex, v2d.add, f64(b.re), f64(b.im), f64(a), f64(0));
+//~ define .sub(Complex a, flt64 b) = emit(Complex, v2d.sub, f64(b), f64(0), f64(a.re), f64(a.im));
+//~ define .sub(flt64 a, Complex b) = emit(Complex, v2d.sub, f64(b.re), f64(b.im), f64(a), f64(0));
+
+define .mul(Complex a, Complex b) = emit(Complex,
+	//re = a.re * b.re - a.im * b.im;
+	f64.sub, v2d.mul, f64(b.im), f64(b.re), f64(a.im), f64(a.re),
+	//im = a.re * b.im + a.im * b.re;
+	f64.add, v2d.mul, f64(b.re), f64(b.im), f64(a.im), f64(a.re));
+
+//~ define .mul(Complex a, double b) = emit(Complex, v2d.mul, f64(b), f64(b), f64(a.im), f64(a.re));
+//~ define .mul(double a, Complex b) = emit(Complex, v2d.mul, f64(b.im), f64(b.re), f64(a), f64(a));
+
+Complex a = Complex(3, 4);
+Complex b = Complex(2, 5);
+Complex c = Complex(1, 6);
+//~ a = b = c = a * b;
+
+//~ Complex c1 = a * b + c; // add(mul(a, b), c);
+Complex c1 = a * b;
+//~ Complex c1 = a + b;
+//~ Complex c2 = a = b;// + c;
+//~ Complex c1 = mul(a, b)
+//~ flt64 re = a.re * b.re - a.im * b.im;
+//~ flt64 im = a.re * b.im + a.im * b.re;
+
+// */
 
 /* this is interesting
 define int1 = int(1990);
@@ -680,44 +742,7 @@ int32 a3 = int1(0);
 int32 a4 = int1(0.0);
 
 // */
-
-/*libc.f64 to f32
-//~ define abs(flt32 x) = abs(flt64(x));
-//~ define sin(flt32 x) = sin(flt64(x));
-//~ define cos(flt32 x) = cos(flt64(x));
-//~ define tan(flt32 x) = tan(flt64(x));
-
-//~ define abs_(flt32 x) = flt32(abs(flt64(x)));
-//~ define sin_(flt32 x) = flt32(sin(flt64(x)));
-//~ define cos_(flt32 x) = flt32(cos(flt64(x)));
-//~ define tan_(flt32 x) = flt32(tan(flt64(x)));
-
-//~ flt32 x0 = -2;
-//~ flt64 x4 = abs(x0);
-*/
-
-/*
-define a = 1;
-define b = 2;
-define c = 3;
-
-flt32 a22 = emit(f32.add, f32.mul, f32(a), f32(b), f32(c));
-flt32 top = emit();
-flt32 a23 = top;
-
-double a_re = 3.;
-double a_im = 4.;
-double b_re = 2.;
-double b_im = 5.;
-flt64 re = emit(f64.sub, v2d.mul, f64(b_im), f64(b_re), f64(a_im), f64(a_re));		// re = a.re * b.re - a.im * b.im
-flt64 im = emit(f64.add, v2d.mul, f64(b_re), f64(b_im), f64(a_im), f64(a_re));		// im = a.re * b.im + a.im * b.re
-//~ flt64 re = a_re * b_re - a_im * b_im;
-//~ flt64 im = a_re * b_im + a_im * b_re;
-// */
-
-//~ string a = "alma";
-
-/* i22
+/* Type?Decl
 
 //~ struct FontStyle {int32 value;}
 //~ FontStyle xxl = FontStyle('xxl');
@@ -748,15 +773,18 @@ struct Font {
 	}// +/
 	color back;
 	color fore;
-	int size;
+	int Size;
+	//~ int size;
 }
-int XXX[2000];
+
+//~ int XXX[2000];
 Font a;
 //~ a.face = "2009";
 a.fore.val = 0xadadad;
 a.back.val = 0x7f00ff;
 a.style = Font.oblique;
-a.size = 5;
+//~ a.size = Font.size;
+//~ int a = Font.size;
 
 /+ TODO:
 Font init1 = Font(-1, 2, 3, 4, 5, 6);
@@ -933,63 +961,36 @@ this.lexer = {
 }
 // +/
 //~ */
-
 /* factorial
 define n = 6;
-int64 res = 1;
+int64 res = int64(1);
 for (int i = 1; i <= n; i += 1)
 	res *= i;
 
 // */
 /* calc E
-define eps = 1e-100;
-double res = 1;
-double tmp = 1;
-for (int i = 1; tmp > eps; i += 1) {
-	res = res + (tmp = tmp / i);
-	//~ res += tmp /= i;
+double res = 1.;
+{
+	// hide these
+	double tmp = 1.;
+	define eps = 1e-100;
+	for (int i = 1; tmp > eps; i += 1) {
+		//~ res = res + (tmp = tmp / i);
+		res += tmp /= i;
+	}
 }
 // */
 
 /* test scope:
 for (int i = 0; i < 20; i += 1) {int i2 = 9;}	// OK
 for (int i = 0; i < 20; i += 1) {int i = 9;}	// ERR: i redefined
-for (int i = 0; i < 20; i += 1) int i2 = 9;		// ERR: i2 unexpected
+for (int i = 0; i < 20; i += 1) int i1 = 9;		// ERR: i2 unexpected
 
 static if (0) {int a = 99;}
 
 int a2 = a;						// ERR: a undeclared if static if(0)
 
-//~ int arr[] = int{1,2,3,4,5,6,7,8};
 //~ */
-/* test if-else:
-int i = 3;
-float a = 4;
-if (i) {
-	a = 0;
-	if (i == 1) a = 1.1; else a = 2.1;
-	if (i == 1) a = 1.2; else ;
-	if (i == 1) ;else a = 2.2;
-	if (i == 1) a = 3;
-
-	else if (i == 2) a = 1.42;
-	else if (i == 3) a = 1.43;
-	else if (i == 4) a = 1.44;
-	else if (i == 5) a = 1.45;
-	else if (i == 6) a = 1.46;
-}
-else {
-	if (a <= 5) {
-		if (a < 2.5) i = 1;
-		else i = 2;
-	}
-	else {
-		if (a < 7.5) i = 3;
-		else i = 4;
-	}
-}
-
-// */
 /* stupid things
 /+ swap typedefs
 define float flt64;
@@ -1004,7 +1005,7 @@ else
 //~ +/
 //~ */
 
-/*+-
+/* ???
 struct vec4f {
 	flt32 x;
 	flt32 y;
@@ -1017,10 +1018,8 @@ static if (useEmit) {
 	operator - (vec4f rhs) = vec4f(emit(v4f.neg, rhs));
 	operator ~ (vec4f rhs) = vec4f(emit(v4f.rcp, rhs));
 	operator (vec4f lhs) + (vec4f rhs) = vec4f(emit(v4f.add, lhs, rhs));
-
-	define dp3(vec4f lhs, vec4f rhs) = flt32(emit(v4f.dp3, lhs, rhs));
-	define dp4(vec4f lhs, vec4f rhs) = flt32(emit(v4f.dp4, lhs, rhs));
-	define dph(vec4f lhs, vec4f rhs) = flt32(emit(v4f.dph, lhs, rhs));
+	//~ operator + (vec4f lhs, vec4f rhs) = ?;
+	//~ operator += (vec4f &lhs, vec4f rhs) = ?;
 }
 else {
 	operator + (vec4f rhs) = vec4f(+rhs.x, +rhs.y, +rhs.z, +rhs.w);
@@ -1056,38 +1055,11 @@ define peval(vec4f vec, flt32 val) = flt32((((vec.w * val + vec.z) * val + vec.y
 
 define len(vec4f lhs) = sqrt(dp3(lhs, lhs));
 
-operator (ref vec4f lhs) += (vec4f rhs) = (lhs = lhs + rhs);
+operator (vec4f &lhs) += (vec4f rhs) = (lhs = lhs + rhs);
 
 // operator() d:"opCall"; cpp: "flt32 vec4f::operator () (flt32 val) {...}"
-operator (vec4f vec) (flt32 val) = peval(vec, val);
-
 // operator() d:"opIndex"; cpp: "flt32 vec4f::operator [] (int32 val) {...}"
+operator (vec4f vec) (flt32 val) = peval(vec, val);
 operator (vec4f vec) [int32 idx] = index(vec, val);
-
-struct Complex {
-	flt64 re;
-	flt64 im;
-}
-operator Complex(flt64 re, flt64 im) = emit(v2d, f64(re), f64(im));
-
-operator -(Complex rhs) = Complex(-rhs.re, -rhs.im);
-operator (Complex lhs) + (Complex rhs) = Complex(lhs.re + rhs.re, lhs.im + rhs.im);
-operator (Complex lhs) - (Complex rhs) = Complex(lhs.re - rhs.re, lhs.im - rhs.im);
-
-operator -(Complex rhs) = emit(v2d.neg);
-operator (Complex lhs) + (Complex rhs) = emit(v2d.add, p4x(rhs), p4x(lhs));
-operator (Complex lhs) - (Complex rhs) = emit(v2d.sub, p4x(rhs), p4x(lhs));
-
-operator (Complex b) [int a] = double(a ? b.im : b.re);
-
-operator sub(Complex lhs, Complex rhs) = emit(f64x2.sub, v2d(rhs), v2d(lhs));
-
-Complex operator (Complex a) * (Complex b) {
-	emit(v2d.mul, f64(b.im), f64(b.re), f64(a.im), f64(a.re));		// a.re * b.re, a.im * b.im
-	flt64 re = emit(f64.sub);										//>re = a.re * b.re - a.im * b.im
-	emit(v2d.mul, f64(b.re), f64(b.im), f64(a.im), f64(a.re));		// a.re * b.im, a.im * b.re
-	flt64 im = emit(f64.add);										//>im = a.re * b.im + a.im * b.re
-	return Complex(re, im);
-}
 
 // */
