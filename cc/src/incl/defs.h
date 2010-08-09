@@ -132,7 +132,7 @@ TOKDEF(TYPE_i32, 0x00,  32, ".i32")
 TOKDEF(TYPE_i64, 0x00,  64, ".i64")
 TOKDEF(TYPE_f32, 0x00,  32, ".f32")
 TOKDEF(TYPE_f64, 0x00,  64, ".f64")
-TOKDEF(TYPE_p4x, 0x00, 128, ".p4x")
+//~ TOKDEF(TYPE_p4x, 0x00, 128, ".p4x")
 //}
 
 #undef TOKDEF

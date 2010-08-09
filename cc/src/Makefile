@@ -1,4 +1,4 @@
-include incl/Makefile.wcc
+include incl/Makefile.gcc
 
 SRCDIR=
 OBJDIR=
@@ -10,7 +10,7 @@ BINDIR=../
 OBJS=\
 	$(OBJDIR)code.o\
 	$(OBJDIR)clog.o\
-	$(OBJDIR)scan.o\
+	$(OBJDIR)parse.o\
 	$(OBJDIR)tree.o\
 	$(OBJDIR)type.o\
 	$(OBJDIR)ccvm.o
@@ -41,7 +41,7 @@ $(OBJDIR)type.o:
 	$(CCC) $(COPTS) $(CFLAGS) $(SRCDIR)type.c $(OUTOBJ)$(OBJDIR)type.o
 $(OBJDIR)clex.o:
 	$(CCC) $(COPTS) $(CFLAGS) $(SRCDIR)clex.c $(OUTOBJ)$(OBJDIR)clex.o
-$(OBJDIR)scan.o:
-	$(CCC) $(COPTS) $(CFLAGS) $(SRCDIR)scan.c $(OUTOBJ)$(OBJDIR)scan.o
+$(OBJDIR)parse.o:
+	$(CCC) $(COPTS) $(CFLAGS) $(SRCDIR)parse.c $(OUTOBJ)$(OBJDIR)parse.o
 $(OBJDIR)code.o:
 	$(CCC) $(COPTS) $(CFLAGS) $(SRCDIR)code.c $(OUTOBJ)$(OBJDIR)code.o

@@ -26,14 +26,13 @@ const opc_inf opc_tbl[255] = {
 		arg->offs = -sp;
 		sp -= arg->type->size / 4;
 
-		switch (castTy(arg->type)) {
+		switch (castOf(arg->type)) {
 			default: fatal("FixMe");
 			case TYPE_u32:
 			case TYPE_i32:
 			case TYPE_f32:
 			case TYPE_i64:
 			case TYPE_f64:
-			//~ case TYPE_p4x:
 				break;
 		}
 	}
@@ -57,13 +56,14 @@ void fixargs(symn fun, astn argn, int sp) {
 	}
 }// */
 
-#define dbg_ast(__AST) debug("cgen(err, %+k)\n%3K", __AST, __AST)
-#define dbg_arg(__AST) debug("cgen(arg, %+k)\n%3K", __AST, __AST)
-#define dbg_rhs(__AST) debug("cgen(rhs, %+k)\n%3K", (__AST)->op.rhso, __AST)
-#define dbg_lhs(__AST) debug("cgen(rhs, %+k)\n%3K", (__AST)->op.lhso, __AST)
+#define dbg_ast(__AST) debug("cgen[%t->%t](err, %+k)\n%3K", get, ret, __AST, __AST)
+#define dbg_arg(__AST) debug("cgen[%t->%t](arg, %+k)\n%3K", get, ret, __AST, __AST)
+#define dbg_rhs(__AST) debug("cgen[%t->%t](rhs, %+k)\n%3K", get, ret, (__AST)->op.rhso, __AST)
+#define dbg_lhs(__AST) debug("cgen[%t->%t](rhs, %+k)\n%3K", get, ret, (__AST)->op.lhso, __AST)
 #define internalerror error(s, ast->line, "internal error : %+k", ast)
 
 static int push(state s, astn ast) {
+	int cgen(state s, astn ast, int get);
 	struct astn tmp;
 	int cast;
 
@@ -80,6 +80,13 @@ static int push(state s, astn ast) {
 
 	return cgen(s, ast, cast);
 }
+//! TODO: RemMe
+int genRef(vmEnv s, int offset) {
+	if (offset < 0)
+		return emitidx(s, opc_ldsp, offset);
+	return emitint(s, opc_ldcr, offset);
+}
+
 int cgen(state s, astn ast, int get) {
 	#if DEBUGGING
 	#if DEBUGGING > 2
@@ -101,7 +108,10 @@ int cgen(state s, astn ast, int get) {
 
 	if (get == 0)
 		get = ast->cst2;
+
 	ret = ast->type->cast;
+	if (ret == 0)
+		ret = ast->type->kind;
 
 	switch (ast->kind) {
 		default:
@@ -304,24 +314,19 @@ int cgen(state s, astn ast, int get) {
 			// pop(list_jmp);
 
 
-			//~ TODO: if (init is decl) destruct;
+			//! TODO: if (init is decl) destruct;
 			if (stpos != emit(s->vm, get_sp))
 				dieif(!emitidx(s->vm, opc_drop, stpos), "FixMe");
 		} return TYPE_vid;
 		//}
 		//{ OPER
 		case OPER_fnc: {	// '()' emit/call/cast
-			//~ int stargs = emit(s->vm, get_sp);
+			int stkret = stkoffs(s->vm, sizeOf(ast->type));
 			astn argv = ast->op.rhso;
 			symn var = linkOf(ast, 0);	// refs only
-			//~ symn typ = ast->type;
 
-			// TODO: dieif(!var || var->kind != TYPE_def, "FixMe");
-
-			//~ debug("call %+k", ast);
 			if (var && var->kind == TYPE_def) {
 				symn as = var->args;
-				// also no matter in case of varargs
 				if (argv) {
 					astn an = NULL;
 
@@ -336,12 +341,34 @@ int cgen(state s, astn ast, int get) {
 					argv->next = an;
 					an = argv;
 
-					// this should be more complicated
-					// TODO: inline arg only if TYPE_(ref, int, flt OR str)
 					while (an && as) {
-						//~ symn aty = as->type;
-						as->kind = TYPE_def;
-						as->init = an;
+						astn arg = an;
+
+						if (s->vm->opti && eval(&tmp, arg)) {
+							arg = &tmp;
+						}
+
+						switch (arg->kind) {
+							case TYPE_def:
+							case TYPE_ref:
+							case TYPE_int:
+							case TYPE_flt:
+							case TYPE_str: {
+								as->kind = TYPE_def;
+								as->init = an;
+							} break;
+
+							default: {
+								debug("arg(%+k): %t", arg, arg->kind);
+								if (!cgen(s, arg, TYPE_any)) {
+									dbg_arg(an);
+									return 0;
+								}
+								as->offs = emit(s->vm, get_sp);
+								as->kind = TYPE_ref;
+							} break;
+						}
+
 						an = an->next;
 						as = as->next;
 					}
@@ -350,6 +377,27 @@ int cgen(state s, astn ast, int get) {
 				if (!(ret = cgen(s, var->init, ret))) {
 					dbg_arg(var->init);
 				}
+
+				if (stkret != stkoffs(s->vm, 0)) {
+					debug("freestack(%d)", -stkoffs(s->vm, 0));
+					if (!emitidx(s->vm, opc_ldsp, stkret)) {	// get stack
+						dbg_ast(ast);
+						internalerror;
+						return 0;
+					}
+					if (get != TYPE_vid && !emit(s->vm, opc_sti, sizeOf(ast->type))) {
+						debug("store indirect: %T:%d", ast->type, sizeOf(ast->type));
+						dbg_ast(ast);
+						internalerror;
+						return 0;
+					}
+					if (!emitidx(s->vm, opc_drop, stkret)) {
+						dbg_ast(ast);
+						internalerror;
+						return 0;
+					}
+				}// */
+
 				for (as = var->args; as; as = as->next) {
 					as->kind = TYPE_ref;
 					as->init = NULL;
@@ -379,7 +427,7 @@ int cgen(state s, astn ast, int get) {
 					argv = argv->op.lhso;
 				}
 				if (var == emit_opc && istype(argv))
-					return castTy(argv->type);
+					return castOf(argv->type);
 				else if (!push(s, argv)) {
 					dbg_arg(argv);
 					return 0;
@@ -392,49 +440,6 @@ int cgen(state s, astn ast, int get) {
 				if (var == emit_opc) {	// emit()
 				}
 				else if (var->call) {
-					/*int spbc = emit(s->vm, get_sp);
-					if (var->offs == 0) {			// inline or error
-						if (!var->init || var->init->kind != OPER_fnc) {
-							error(s, ast->line, "invalid function call: %+T", var);
-							if (var->file && var->line)
-								info(s, var->file, var->line, "defined here");
-							return 0;
-						}
-						fixargs2(var, -stargs);
-
-						if (!cgen(s, var->init, ret)) {
-							debug("%+k:%+T", var->init, ast->type);
-							return 0;
-						}
-						if (spbc <= emit(s->vm, get_sp)) {
-							error(s, ast->line, "invalid stack size %+k", ast);
-							//~ dumpasmdbg(stderr, s->vm, ipdbg, 0x10);
-							return 0;
-						}
-						// TODO: cgen.call: fix this, result should be a reference
-						switch (ret) {
-							default: fatal("FixMe");
-							case TYPE_u32:
-							case TYPE_i32:
-							case TYPE_f32: if (!emitidx(s->vm, opc_set1, stargs -= 1)) return 0; break;
-							case TYPE_i64:
-							case TYPE_f64: if (!emitidx(s->vm, opc_set2, stargs -= 2)) return 0; break;
-							case TYPE_p4x: if (!emitidx(s->vm, opc_set4, stargs -= 4)) return 0; break;
-						}
-						if (!emitidx(s->vm, opc_drop, stargs)) {
-							internalerror;
-							return 0;
-						}
-					}
-					else {
-						fatal("FixMe");
-						/ * TODO: implement function calls
-						if (!emit(s->vm, opc_call, var->offs)) {
-							debug("%+k", ast);
-							internalerror;
-							return 0;
-						}// * /
-					}*/
 					fatal("FixMe");
 				}
 				else {
@@ -458,7 +463,7 @@ int cgen(state s, astn ast, int get) {
 			if (s->vm->opti && eval(&tmp, ast->op.rhso)) {
 				int offs = sizeOf(ast->type) * constint(&tmp);
 				if (constint(&tmp) >= ast->op.lhso->type->size) {
-					error(s, ast->line, " indes out of bounds: %+k", ast);
+					error(s, ast->line, " index out of bounds: %+k", ast);
 				}
 				if (!emit(s->vm, opc_inc, offs)) {
 					if (!emit(s->vm, opc_ldc4, offs)) {
@@ -628,8 +633,8 @@ int cgen(state s, astn ast, int get) {
 
 			#if DEBUGGING
 			// these things must be this way
-			dieif(ast->op.lhso->cst2 != ast->op.rhso->cst2, "RemMe");
-			dieif(ret != castTy(ast->type), "RemMe");
+			dieif(ast->op.lhso->cst2 != ast->op.rhso->cst2, "RemMe %+k", ast);
+			dieif(ret != castOf(ast->type), "RemMe");
 			switch (ast->kind) {
 				case OPER_neq:
 				case OPER_equ:
@@ -751,7 +756,7 @@ int cgen(state s, astn ast, int get) {
 		} return 0;
 		case TYPE_str: switch (get) {
 			case TYPE_vid: return TYPE_vid;
-			case TYPE_ref: return emitptr(s->vm, opc_ldcr, ast->id.name) ? TYPE_ref : 0;
+			case TYPE_ref: return emitptr(s->vm, ast->id.name) ? TYPE_ref : 0;
 			default: debug("invalid cast: to (%t) '%+k'", get, ast);
 		} return 0;
 		//~ case CNST_str: return 0;	// unimpl yet(ref)
@@ -763,19 +768,18 @@ int cgen(state s, astn ast, int get) {
 
 			switch (var->kind) {
 				case TYPE_ref:
-					if (!emitref(s->vm, opc_ldcr, var->offs)) {
+					if (!genRef(s->vm, var->offs)) {
 						dbg_ast(ast);
 						return 0;
 					}
-					if (get != TYPE_ref) {				// value needed
+					if (get != TYPE_ref) {
 						// TODO: (Sign-Zero) extend
 						if (!emit(s->vm, opc_ldi, sizeOf(ast->type))) {
 							dbg_ast(ast);
 							return 0;
 						}
 					}
-					else	// TODO: why?
-						ret = TYPE_ref;
+					else ret = TYPE_ref;
 					break;
 				case EMIT_opc:
 					dieif(get == TYPE_ref, "FixMe");
@@ -803,7 +807,7 @@ int cgen(state s, astn ast, int get) {
 
 
 			dieif(!var, "FixMe");
-			dieif(typ != var->type, "FixMe(%T / %T)", typ, var->type);	//
+			//~ dieif(typ != var->type, "FixMe(%T / %T)", typ, var->type);	//
 
 			if (var->kind == TYPE_ref) {
 
@@ -815,11 +819,9 @@ int cgen(state s, astn ast, int get) {
 
 					if (val->type == emit_opc) {
 						ret = get;//var->type->cast;
-						//~ ret = castTy(typ);//get;// = 0;
+						//~ ret = castOf(typ);//get;// = 0;
 					}
 					else if (val->type != typ) {
-					//~ else if (val->type != var->type) {
-						//~ TODO: this typecheck should be fixed elsewere
 						error(s, ast->line, "incompatible types in initialization(%-T := %-T)", typ, val->type);
 					}
 
@@ -828,14 +830,16 @@ int cgen(state s, astn ast, int get) {
 					}// * /
 
 					//~ debug("cast(`%+k`, %t):%t", ast, get, ret);
-					
+
 					if (!cgen(s, val, ret)) {
 						dbg_arg(val);
 						return 0;
 					}
 					var->offs = emit(s->vm, get_sp);
+					//~ if (stktop - var->offs && 4 * (stktop - var->offs) != sizeOf(typ)) {
 					if (4 * (stktop - var->offs) != sizeOf(typ) && val->type != emit_opc) {
-						error(s, ast->line, "invalid initializer size: %d <> %d",stktop - var->offs, sizeOf(typ));
+						error(s, ast->line, "invalid initializer size: %d <> %d", 4 * (stktop - var->offs), sizeOf(typ));
+						debug("%T:%T", ast->type, val->type);
 					}
 				}
 				else {		// static alloc a block of the size of the type;
@@ -956,6 +960,8 @@ int srcfile(state s, char* file) {
 		return -1;
 	return 0;
 }
+
+//~ TODO: this is parse only
 int compile(state s, int level) {
 	if (s->cc == NULL)
 		return -1;
@@ -1048,6 +1054,9 @@ static void install_emit(ccEnv cc, unsigned level) {
 	enter(cc, NULL);
 
 	installex(cc, "nop", EMIT_opc, opc_nop, type_vid, NULL);
+	installex(cc, "dupp_x1", EMIT_opc, opc_dup1, type_vid, intnode(cc, 0));
+	installex(cc, "dupp_x2", EMIT_opc, opc_dup2, type_vid, intnode(cc, 0));
+
 	if ((typ = install(cc, "u32", TYPE_int, TYPE_u32, 4))) {
 		enter(cc, typ);
 		installex(cc, "cmt", EMIT_opc, b32_cmt, type_u32, NULL);
@@ -1199,8 +1208,9 @@ static void install_emit(ccEnv cc, unsigned level) {
 	}
 	emit_opc->args = leave(cc, emit_opc);
 }
+//~ static void install_rtti(ccEnv cc, unsigned level) ;		// req emit: libc(lookup, define, import, ...)
 
-static void install_math(ccEnv cc, unsigned level) {
+static void install_math(ccEnv cc, unsigned level) {		// req emit: libc(sin, ...)
 	symn def = install(cc, "math", TYPE_enu, 0, 0);
 
 	if (def == NULL)
@@ -1223,6 +1233,31 @@ static void install_math(ccEnv cc, unsigned level) {
 	def->args = leave(cc, def);
 }
 
+
+/*static void install_Lang(ccEnv cc, unsigned level) {
+	if (install(cc, "Math", TYPE_enu, 0, 0)) {
+		installex(cc, "pi", TYPE_def, 0, type_f64, fh8node(cc, 0x400921fb54442d18LL));
+	}
+	if (install(cc, "Compiler", TYPE_enu, 0, 0)) {
+		install(cc, "version", VERS_get, 0, 0);	// type int
+		install(cc, "file", LINE_get, 0, 0);	// type string
+		install(cc, "line", FILE_get, 0, 0);	// type int
+		install(cc, "date", DATE_get, 0, 0);	// type ???
+		//~ install(cc, "emit", DATE_get, 0, 0);	// type ???
+		//~ __define?
+		//~ __lookup?
+	}
+	if (install(cc, "Runtime", TYPE_enu, 0, 0)) {
+		install(cc, "Env", TYPE_enu, 0, 0);	// map<String, String> Enviroment;
+		install(cc, "Args", TYPE_arr, 0, 0);// string Args[int];
+		install(cc, "assert(...)", TYPE_def, 0, 0);
+	}
+	if (install(cc, "Reflection", TYPE_enu, 0, 0)) {
+		install(cc, "symbol", TYPE_rec, 0, 0);
+		install(cc, "invoke(...)", TYPE_def, 0, 0);
+	}
+}// */
+
 state gsInit(void* mem, unsigned size) {
 	state s = mem;
 	s->_cnt = size - sizeof(struct state);
@@ -1232,6 +1267,7 @@ state gsInit(void* mem, unsigned size) {
 	s->vm = NULL;
 	return s;
 }
+
 ccEnv ccInit(state s) {
 	ccEnv cc = getmem(s, sizeof(struct ccEnv), -1);
 	//~ symn def;//, type_chr = 0;
@@ -1260,7 +1296,7 @@ ccEnv ccInit(state s) {
 	cc->fin._cnt = 0;
 
 	cc->root = 0;
-	cc->defs = 0;
+	//~ cc->defs = 0;
 
 	cc->_chr = -1;
 	cc->_tok = 0;
@@ -1292,7 +1328,7 @@ ccEnv ccInit(state s) {
 	type_f64 = install(cc, "flt64", TYPE_flt | symn_read, TYPE_f64, 8);
 
 	if (COMPILER_LEVEL >= 1) {		// Packed types are be optional
-		type_v4f = install(cc, "vec4f", TYPE_rec | symn_read, TYPE_p4x, 16);
+		type_v4f = install(cc, "vec4f", TYPE_rec | symn_read, 0, 16);
 		if (type_v4f) {
 			enter(cc, type_v4f);
 			installex(cc, "x", TYPE_ref,  0, type_f32, NULL);
@@ -1302,7 +1338,7 @@ ccEnv ccInit(state s) {
 			type_v4f->args = leave(cc, type_v4f);
 		}
 
-		type_v2d = install(cc, "vec2d", TYPE_rec | symn_read, TYPE_p4x, 16);
+		type_v2d = install(cc, "vec2d", TYPE_rec | symn_read, 0, 16);
 		if (type_v2d) {
 			enter(cc, type_v2d);
 			installex(cc, "x", TYPE_ref,  0, type_f64, NULL);
@@ -1310,15 +1346,15 @@ ccEnv ccInit(state s) {
 			type_v2d->args = leave(cc, type_v2d);
 		}
 
-		//~ type_xxx = install(cc, "i8x16", TYPE_rec | symn_read, TYPE_p4x, 16);
-		//~ type_xxx = install(cc, "i16x8", TYPE_rec | symn_read, TYPE_p4x, 16);
-		//~ type_xxx = install(cc, "i32x4", TYPE_rec | symn_read, TYPE_p4x, 16);
-		//~ type_xxx = install(cc, "i64x2", TYPE_rec | symn_read, TYPE_p4x, 16);
-		//~ type_xxx = install(cc, "u8x16", TYPE_rec | symn_read, TYPE_p4x, 16);
-		//~ type_xxx = install(cc, "u16x8", TYPE_rec | symn_read, TYPE_p4x, 16);
-		//~ type_xxx = install(cc, "u32x4", TYPE_rec | symn_read, TYPE_p4x, 16);
-		//~ type_xxx = install(cc, "u64x2", TYPE_rec | symn_read, TYPE_p4x, 16);
-		//~ type_xxx = install(cc, "f16x8", TYPE_rec | symn_read, TYPE_p4x, 16);
+		//~ type_xxx = install(cc, "i8x16", TYPE_rec | symn_read, TYPE_p4y, 16);
+		//~ type_xxx = install(cc, "i16x8", TYPE_rec | symn_read, TYPE_p4y, 16);
+		//~ type_xxx = install(cc, "i32x4", TYPE_rec | symn_read, TYPE_p4y, 16);
+		//~ type_xxx = install(cc, "i64x2", TYPE_rec | symn_read, TYPE_p4y, 16);
+		//~ type_xxx = install(cc, "u8x16", TYPE_rec | symn_read, TYPE_p4y, 16);
+		//~ type_xxx = install(cc, "u16x8", TYPE_rec | symn_read, TYPE_p4y, 16);
+		//~ type_xxx = install(cc, "u32x4", TYPE_rec | symn_read, TYPE_p4y, 16);
+		//~ type_xxx = install(cc, "u64x2", TYPE_rec | symn_read, TYPE_p4y, 16);
+		//~ type_xxx = install(cc, "f16x8", TYPE_rec | symn_read, TYPE_p4y, 16);
 	}
 
 	//~ type_arr = install(cc, "array", TYPE_ptr, 0, 0);
@@ -1340,10 +1376,10 @@ ccEnv ccInit(state s) {
 	installex(cc, "float", TYPE_def, 0, type_f32, NULL);
 	installex(cc, "double", TYPE_def, 0, type_f64, NULL);
 
+	installex(cc, "null", TYPE_def, 0, type_vid, intnode(cc, 0));
+
 	installex(cc, "true", TYPE_def, 0, type_bol, intnode(cc, 1));
 	installex(cc, "false", TYPE_def, 0, type_bol, intnode(cc, 0));
-
-	installex(cc, "null", TYPE_def, 0, type_vid, intnode(cc, 0));
 
 	//} */// types
 	// install a void arg for functions with no arguments
@@ -1354,7 +1390,6 @@ ccEnv ccInit(state s) {
 		leave(cc, NULL);
 	}
 	emit_opc = install(cc, "emit", EMIT_opc | symn_read, 0, 0);
-	//~ emit_opc->call = 1;
 
 	if (COMPILER_LEVEL) {
 		install_math(cc, COMPILER_LEVEL);
@@ -1364,21 +1399,6 @@ ccEnv ccInit(state s) {
 
 	return cc;
 }
-vmEnv vmInit(state s) {
-	int size = s->_cnt;
-	vmEnv vm = getmem(s, size, sizeof(struct vmEnv));
-	if (vm != NULL) {
-		vm->s = s;
-		//~ done by getmem
-		//~ vm->ds = vm->ic = 0;
-		//~ vm->cs = vm->pc = 0;
-		//~ vm->ss = vm->sm = 0;
-		vm->_ptr = vm->_mem;
-		vm->_end = vm->_mem + size - sizeof(struct vmEnv);
-	}
-	return s->vm = vm;
-}
-
 ccEnv ccOpen(state s, srcType mode, char *src) {
 	if (s->cc || ccInit(s)) {
 		if (source(s->cc, mode & srcFile, src) != 0)
@@ -1386,7 +1406,6 @@ ccEnv ccOpen(state s, srcType mode, char *src) {
 	}
 	return s->cc;
 }
-
 int ccDone(state s) {
 	ccEnv cc = s->cc;
 
@@ -1406,6 +1425,21 @@ int ccDone(state s) {
 	cc->_cnt = 0;
 
 	return s->errc;
+}
+
+vmEnv vmInit(state s) {
+	int size = s->_cnt;
+	vmEnv vm = getmem(s, size, sizeof(struct vmEnv));
+	if (vm != NULL) {
+		vm->s = s;
+		//~ done by getmem
+		//~ vm->ds = vm->ic = 0;
+		//~ vm->cs = vm->pc = 0;
+		//~ vm->ss = vm->sm = 0;
+		vm->_ptr = vm->_mem;
+		vm->_end = vm->_mem + size - sizeof(struct vmEnv);
+	}
+	return s->vm = vm;
 }
 /*int vmDone(state s) {
 	// if not initialized
@@ -1506,25 +1540,8 @@ symn findsym(ccEnv s, symn in, char *name) {
 	memset(&ast, 0, sizeof(struct astn));
 	ast.kind = TYPE_ref;
 	ast.id.name = name;
-	return lookup(s, in ? in : s->defs, &ast, NULL);
+	return lookup(s, in ? in : s->s->defs, &ast, NULL);
 }
-
-/*int finddef(ccEnv s, char *name, stkval* data, int TYPE) {
-	int t;
-	symn sym;
-	struct astn ast;
-	if ((sym = findsym(s, name)) {
-		if (TYPE == TYPE_any)
-			return 1;
-
-		t = eval(&ast, sym->init);
-		switch (t) {
-			case TYPE_int: return 1;
-			case TYPE_flt: return 1;
-			//~ case TYPE_str: return 1;
-		}
-	return 0;
-}// */
 
 int findint(ccEnv s, char *name, int* res) {
 	struct astn ast;

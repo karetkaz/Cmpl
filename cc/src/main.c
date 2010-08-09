@@ -9,8 +9,8 @@ static const int wl = 9;		// warning level
 static const int ol = 2;		// optimize level
 
 static const int cc = 1;			// execution cores
-#define ss (32 << 10)		// execution stack(32K)
-#define hs (512 << 10)	// execution heap(128K)
+#define ss (32 << 10)				// execution stack(32K)
+#define memsize (512 << 10)			// runtime size(128K)
 
 extern int vmTest();
 
@@ -135,7 +135,7 @@ void usage(char* prog, char* cmd) {
 		//~ fputfmt(stdout, "\t-d: dump\n");
 	}
 	else if (strcmp(cmd, "-c") == 0) {
-		fputfmt(stdout, "compile: %s -c [options] files...\n", prog);
+		fputfmt(stdout, "compile: %s -c [options] file ...args\n", prog);
 		fputfmt(stdout, "Options:\n");
 
 		fputfmt(stdout, "\t[Output]\n");
@@ -156,15 +156,6 @@ void usage(char* prog, char* cmd) {
 		fputfmt(stdout, "\t-xd<n> debug on <n> procs [default=%d]\n", cc);
 
 		//~ fputfmt(stdout, "\t[Debug & Optimization]\n");
-	}
-	else if (strcmp(cmd, "-e") == 0) {
-		fputfmt(stdout, "command: '-e': execute\n");
-	}
-	else if (strcmp(cmd, "-d") == 0) {
-		fputfmt(stdout, "command: '-d': disassemble\n");
-	}
-	else if (strcmp(cmd, "-m") == 0) {
-		fputfmt(stdout, "command: '-m': make\n");
 	}
 	else if (strcmp(cmd, "-h") == 0) {
 		fputfmt(stdout, "command: '-h': help\n");
@@ -234,7 +225,7 @@ int evalexp(ccEnv s, char* text/* , int opts */) {
 }
 
 int program(int argc, char *argv[]) {
-	static char mem[hs];
+	static char mem[memsize];
 	state s = gsInit(mem, sizeof(mem));
 
 	char *prg, *cmd;
@@ -242,39 +233,45 @@ int program(int argc, char *argv[]) {
 
 	prg = argv[0];
 	cmd = argv[1];
-	if (argc <= 2) {
-		if (argc < 2) {
-			usage(prg, NULL);
+	if (argc < 2) {
+		usage(prg, NULL);
+	}
+	else if (argc == 2 && *cmd == '=') {	// eval
+		return evalexp(ccInit(s), cmd + 1);
+	}
+	else if (strcmp(cmd, "-api") == 0) {
+		ccEnv env = ccInit(s);
+		const int level = 2;
+		symn glob;
+		int i;
+
+		if (!env)
+			return -33;
+
+		glob = leave(env, NULL);
+		if (argc == 2) {
+			dumpsym(stdout, glob, level);
 		}
-		else if (*cmd == '=') {
-			return evalexp(ccInit(s), cmd + 1);
-		}
-		else if (strcmp(cmd, "-api") == 0) {
-			symn api = leave(ccInit(s), NULL);
-			//~ debug("compiler.env:%d Bytes", sizeof(struct ccEnv));
-			//~ debug("compiler.init:%d Bytes", (s->cc->_ptr - s->_mem) - sizeof(struct ccEnv));
-			debug("compiler.init:%.2F KBytes", (s->cc->_ptr - s->_mem) / 1024.);
-			dumpsym(stdout, api, 2);
-			ccDone(s);
-		}
-		else if (strcmp(cmd, "-sym") == 0) {
-			symn sym = leave(ccInit(s), NULL);
-			while (sym) {
-				dumpsym(stdout, sym, 0);
-				sym = sym->defs;
+		else if (argc == 3 && strcmp(argv[2], ".") == 0) {
+			while (glob) {
+				dumpsym(stdout, glob, 0);
+				glob = glob->defs;
 			}
 			ccDone(s);
-			//~ dumpsym(stdout, leave(s), 1);
-		}// */
-		else if (strcmp(cmd, "-emit") == 0) {
-			ccInit(s);
-			if (emit_opc)
-				dumpsym(stdout, emit_opc->args, 2);
-			ccDone(s);
+			return 0;
 		}
-		else usage(prg, cmd);
+		else for (i = 2; i < argc; i += 1) {
+			symn sym = findsym(env, glob, argv[i]);
+			if (sym) {
+				dumpsym(stdout, sym, 0);
+				dumpsym(stdout, sym->args, level);
+			}
+			else
+				fputfmt(stderr, "symbol not found `%s`\n", argv[i]);
+		}
+		ccDone(s);
 	}
-	else if (strcmp(cmd, "-c") == 0) {	// compile
+	else if (strcmp(cmd, "-c") == 0) {		// compile
 		int level = -1, argi;
 		int warn = wl;
 		int opti = ol;
@@ -322,7 +319,7 @@ int program(int argc, char *argv[]) {
 
 			// output what
 			else if (strncmp(arg, "-t", 2) == 0) {		// tags
-				level = 1;
+				level = 2;
 				if (arg[2] && *parsei32(arg + 2, &level, 16)) {
 					fputfmt(stderr, "invalid argument '%s'\n", arg);
 					return 0;
@@ -413,8 +410,10 @@ int program(int argc, char *argv[]) {
 		}
 		debug("compiler.scan:%.2F KBytes", (s->cc->_ptr - s->_mem) / 1024.);
 
+		//! TODO: do not skip code generation, here are also checkings for lvalues and casts
 		if (outc == out_tags || outc == out_tree) {} else
 
+		//! TODO: rename gencode to something else like assemble or something similar
 		if (gencode(s, opti) != 0) {
 			logfile(s, NULL);
 			return s->errc;
@@ -434,20 +433,7 @@ int program(int argc, char *argv[]) {
 		logfile(s, NULL);
 		return 0;
 	}
-	else if (strcmp(cmd, "-e") == 0) {	// execute
-		fatal("unimplemented");
-		//~ objfile(s, ...);
-		//~ return execute(s, cc, ss, dbgl);
-	}
-	else if (strcmp(cmd, "-d") == 0) {	// disasm
-		fatal("unimplemented");
-		//~ objfile(s, ...);
-		//~ return dumpasm(s, cc, ss, dbgl);
-	}
-	else if (strcmp(cmd, "-m") == 0) {	// make
-		fatal("unimplemented");
-	}
-	else if (strcmp(cmd, "-h") == 0) {	// help
+	else if (strcmp(cmd, "-h") == 0) {		// help
 		char *t = argv[2];
 		if (argc < 3) {
 			usage(argv[0], argc < 4 ? argv[3] : NULL);
@@ -463,7 +449,18 @@ int program(int argc, char *argv[]) {
 		}
 		//~ else if (strcmp(t, "-x") == 0) ;
 	}
-	else fputfmt(stderr, "invalid option '%s'\n", cmd);
+	/*unused stuff
+	else if (strcmp(cmd, "-e") == 0) {	// execute
+		fatal("unimplemented");
+	}
+	else if (strcmp(cmd, "-d") == 0) {		// dasm
+		fatal("unimplemented");
+	}
+	else if (strcmp(cmd, "-m") == 0) {		// make
+		fatal("unimplemented");
+	}
+	*/
+	else fputfmt(stderr, "invalid option: '%s'\n", cmd);
 	return 0;
 }
 
@@ -502,7 +499,9 @@ int main(int argc, char *argv[]) {
 		char *args[] = {
 			"psvm",		// program name
 			//~ "-h", "-s", "dup.x1", "set.x1",
-			//~ "-api",
+
+			//"-api",
+			
 			"-c",		// compile command
 			"-xd",		// execute & show symbols command
 			"test.cvx",
@@ -514,7 +513,6 @@ int main(int argc, char *argv[]) {
 	setbuf(stdout, NULL);
 	setbuf(stderr, NULL);
 	//~ return mk_test("xxxx.cvx", 8 << 20);	// 8M
-	//~ fatal("Fix!Me!");
 	//~ return vmTest();
 	return program(argc, argv);
 }
@@ -523,7 +521,7 @@ int dbgInfo(state s, int pu, void *ip, long* sptr, int slen) {
 	vmEnv vm = s->vm;
 	if (ip == NULL) {
 		if (s->cc)
-			vmTags(s->cc, (char*)sptr, slen, 0);
+			vmTags(s, (char*)sptr, slen, 0);
 		else {
 			debug("!s->cc");
 		}
@@ -575,6 +573,9 @@ int dbgCon(state s, int pu, void *ip, long* sptr, int slen) {
 			else if (strcmp(arg, "into") == 0) {
 				cmd = 'n';
 			}
+			else if (strcmp(arg, "return") == 0) {
+				cmd = 'n';
+			}
 		}
 		else if ((arg = parsecmd(buff, "sp", " "))) {
 			cmd = 's';
@@ -610,7 +611,7 @@ int dbgCon(state s, int pu, void *ip, long* sptr, int slen) {
 				return 0;
 			case 'p' : if (vm->s && vm->s->cc) {		// print
 				if (!*arg) {
-					vmTags(vm->s->cc, (void*)sptr, slen, 0);
+					vmTags(vm->s, (void*)sptr, slen, 0);
 				}
 				else {
 					symn sym = findsym(vm->s->cc, NULL, arg);

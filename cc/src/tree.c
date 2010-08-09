@@ -57,6 +57,8 @@ void eatnode(ccEnv s, astn ast) {
 	s->tokp = ast;
 }
 
+
+
 signed constbol(astn ast) {
 	if (ast) switch (ast->kind) {
 		case TYPE_bit:
@@ -140,7 +142,6 @@ int eval(astn res, astn ast) {
 
 			//~ return eval(res, ast->op.rhso); // cast to ? not done
 		} break;
-
 		case OPER_idx:
 			return 0;
 
@@ -153,9 +154,11 @@ int eval(astn res, astn ast) {
 		case TYPE_ref: {
 			symn var = ast->id.link;		// link
 			if (var && var->kind == TYPE_def && var->init) {
-				return eval(res, var->init);
+				if (!eval(res, var->init))
+					return 0;
 			}
-			return 0;
+			else
+				return 0;
 		} break;
 
 		case OPER_pls: {		// '+'

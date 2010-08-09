@@ -13,13 +13,13 @@
 
 #define DEBUGGING 2
 
-/*~ COMPILER_LEVEL
+/* COMPILER_LEVEL
 	0: types only					: compiler.init:18.34 KBytes
 	1: +packed types, emit fields	: compiler.init:39.08 KBytes
 	2: +emit.swizzles				: compiler.init:79.27 KBytes
 	3: +integer.bits				: compiler.init:82.27 KBytes
 // */
-#define COMPILER_LEVEL 2
+#define COMPILER_LEVEL 1
 
 // maximum tokens in expressions & nest level
 #define TOKS 2048
@@ -56,7 +56,6 @@ enum {
 	//~ TYPE_f32,
 	//~ TYPE_i64,
 	//~ TYPE_f64,
-	//~ TYPE_p4x,
 
 	TOKN_err = TYPE_any,
 	symn_call = 0x100,
@@ -112,7 +111,6 @@ enum {
 	//~ opc_file,		// file info
 	//~ opc_docc,		// doc comment
 
-	//~ opc_ldcr = opc_ldc4,
 	//~ opc_ldcf = opc_ldc4,
 	//~ opc_ldcF = opc_ldc8,
 };
@@ -144,7 +142,7 @@ typedef union {		// value type
 	struct {int64_t lo, hi;} x16;
 } stkval;
 
-typedef struct symn *symn;		// Symbol Node
+//~ typedef struct symn *symn;		// Symbol Node
 typedef struct astn *astn;		// Abstract Syntax Tree Node
 
 typedef struct list {			// linked list, usually of strings
@@ -154,7 +152,7 @@ typedef struct list {			// linked list, usually of strings
 	//~ unsigned int	offs;	// offset in file ?
 } *list;
 
-struct astn {				// tree
+struct astn {				// tree node
 	uint32_t	line;				// token on line (* file offset or what *)
 	uint8_t		kind;				// code: TYPE_ref, OPER_???
 	uint8_t		cst2;				// casts to basic type: (i32, f32, i64, f64)
@@ -195,7 +193,7 @@ struct astn {				// tree
 	symn		type;				// typeof() return type of operator ... base type of IDTF
 	astn		next;				// next statement, do not use for preorder
 };
-struct symn {				// type
+struct symn {				// type node
 	char*	file;
 	int		line;
 
@@ -213,7 +211,7 @@ struct symn {				// type
 	uint8_t	algn;		// alignment
 	uint8_t	kind;		// TYPE_ref || TYPE_xxx
 
-	uint8_t	call:1;		// function / callable
+	uint8_t	call:1;		// function / callable => (kind == TYPE_ref && args)
 	//~ uint8_t	iref:1;		// indirect reference: "&"
 
 	//~ uint8_t	priv:1;		// private
@@ -313,6 +311,7 @@ extern symn type_i32;
 extern symn type_i64;
 extern symn type_f32;
 extern symn type_f64;
+//~ extern symn type_chr;		// should be for printing only
 extern symn type_str;
 
 extern symn type_v4f;
@@ -320,9 +319,6 @@ extern symn type_v2d;
 
 extern symn emit_opc;
 
-//~ util
-//~ int parseInt(const char *str, int *res, int hexchr);
-//~ char* parsecmd(char *ptr, char *cmd, char *sws);
 
 //~ clog
 void fputfmt(FILE *fout, const char *msg, ...);
@@ -331,7 +327,6 @@ void fputfmt(FILE *fout, const char *msg, ...);
 //~ void fputast(FILE *fout, astn ast, int mode, int level);
 //~ void fputopc(FILE *fout, bcde opc, int len, int offset);
 void fputasm(FILE *fout, unsigned char *beg, int len, int rel, int mode);
-//~ void fputasm(FILE *fout, void *ip, int len, int length);
 
 // program error
 void perr(state s, int level, const char *file, int line, const char *msg, ...);
@@ -343,11 +338,10 @@ void dumpxml(FILE *fout, astn ast, int lev, const char* text, int level);
 
 void dump2file(state s, char *file, dumpMode mode, char *text);
 
-// ccvm
+// Runtime / global state
 void* getmem(state s, int size, unsigned clear);
 
 symn newdefn(ccEnv s, int kind);
-
 astn newnode(ccEnv s, int kind);
 astn intnode(ccEnv s, int64_t v);
 //~ astn fltnode(ccEnv s, flt64_t v);
@@ -367,8 +361,11 @@ int findint(ccEnv s, char *name, int* res);
 int findflt(ccEnv s, char *name, double* res);
 
 symn typecheck(ccEnv s, symn loc, astn ast);
-int castTy(symn typ);
+
+int castOf(symn typ);
 int castTo(astn ast, int tyId);
+//~ int castTy(astn ast, symn type);
+symn promote(symn lht, symn rht);
 
 int32_t constbol(astn ast);
 int64_t constint(astn ast);
@@ -382,7 +379,7 @@ astn peek(ccEnv);
 
 astn expr(ccEnv, int mode);		// parse expression	(mode: lookup)
 //~ astn decl(ccEnv, int mode);		// parse declaration	(mode: enable expr)
-//~ astn stmt(ccEnv, int mode);		// parse statement	(mode: enable decl)
+//~ astn stmt(ccEnv, int mode);		// parse statement	(mode: enable decl/enter new scope)
 int scan(ccEnv, int mode);		// parse program	(mode: script mode)
 
 // scoping ...
@@ -400,8 +397,8 @@ int eval(astn res, astn ast);
  * @param ast: tree to be generated
  * @param get: one of TYPE_xxx
  * @return TYPE_xxx, 0 on error
- */
 int cgen(state s, astn ast, int get);
+ */
 
 /** emit an opcode with args
  * @param opc: opcode
@@ -413,33 +410,30 @@ int emiti32(vmEnv, int32_t arg);
 int emiti64(vmEnv, int64_t arg);
 int emitf32(vmEnv, flt32_t arg);
 int emitf64(vmEnv, flt64_t arg);
-int emitref(vmEnv, int opc, int offset);
-int emitptr(vmEnv, int opc, void* arg);
-//int emitref(vmEnv, int offset);
+int emitptr(vmEnv, void* arg);
 
 int emitidx(vmEnv, int opc, int pos);
 int emitint(vmEnv, int opc, int64_t arg);
 int fixjump(vmEnv s, int src, int dst, int stc);
+
+// returns the stack size
+int stkoffs(vmEnv s, int size);
 //int testopc(vmEnv s, int opc);
 
 int isType(symn sym);
 int istype(astn ast);
 
-//~ int islval(astn ast);
 symn linkOf(astn ast, int notjustrefs);
 long sizeOf(symn typ);
 
 int source(ccEnv, srcType mode, char* text);		// mode: file/text
 
 int rehash(const char* str, unsigned size);
+
+//TODO: Rename: reg str
 char *mapstr(ccEnv s, char *name, unsigned size/* = -1U*/, unsigned hash/* = -1U*/);
 
-/**
- * param flags:
- * bit 1: skip errors;
- * TODO: bit 2: print hex values;
-**/
-void vmTags(ccEnv s, char *sptr, int slen, int flags);
+void vmTags(state, char *sptr, int slen, int flags);
 void dumpasmdbg(FILE *fout, vmEnv s, int mark, int len, int mode);
 
 #endif

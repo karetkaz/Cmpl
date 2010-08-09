@@ -14,13 +14,42 @@ symn type_v2d = NULL;
 symn type_str = NULL;
 //~ symn type_ptr = 0;
 
-extern int rehash(register const char* str, unsigned size);
+//~ symn __define(ccEnv cc, symn type, astn ref, astn init);
+//~ symn __lookup(ccEnv cc, symn syms, astn ref, astn args);
+
+/** define
+	symn math = define(cc, type_vid, refnode(cc, "math", TYPE_enu), NULL);
+	if (math) {
+		symn def = math;
+		enter(cc, NULL);
+		//~ if (def && def = install(cc, TYPE_def, "define pi = 3.14", 0, 0));	// or use code below(no parsing)
+		if (def && def = define(cc, type_f32, refnode(cc, "pi", TYPE_def), fltnode(cc, 3.14)));
+		if (def && def = define(cc, type_f32, refnode(cc, "pi_2", TYPE_def), fltnode(cc, 3.14 / 2)));
+		...
+		if (def && def = install(cc, -1, "define isNan(double x) = bool(x == x)"));
+
+		symn install(ccEnv, int kind, char* str, int sizeoffset);
+		if ((typ = install(cc, TYPE_int, "i32", TYPE_i32, 4))) {
+			symn def = typ;
+			enter(cc, NULL);
+			if (def && def = install(cc, EMIT_opc, "mul", u32_mul, type_u32)) {
+				def->type = type_u32;
+			}
+			typ->args = leave(ss, typ);
+		}
+	}
+**/
+/** lookup
+	symn def = lookup(cc, cc->glob, refnode(cc, "math"), NULL);
+	if (def && isType(def) && def = lookup(cc, def->args, refnode(cc, "pi"), NULL));
+	fputfmt("%-T", def) => "math.pi";
+**/
 
 //~ Install
 symn newdefn(ccEnv s, int kind) {
 	symn def = NULL;
 
-	if (s->_cnt > sizeof(struct symn)){
+	if (s->_cnt > sizeof(struct symn)) {
 		def = (symn)s->_ptr;
 		s->_ptr += sizeof(struct symn);
 		s->_cnt -= sizeof(struct symn);
@@ -44,10 +73,8 @@ symn installex(ccEnv s, const char* name, int kind, unsigned size, symn type, as
 		def->init = init;
 		def->size = size;
 
-		if (init) {
-			if (init->type == 0)
-				init->type = type;
-		}
+		//~ if (init && !init->type)
+			//~ init->type = type;
 
 		def->cast = (kind >> 16) & 0xff;
 
@@ -83,7 +110,7 @@ symn installex(ccEnv s, const char* name, int kind, unsigned size, symn type, as
 		}
 
 		if (name)
-			hash = rehash(name, strlen(name)) % TBLS;
+			hash = rehash(name, -1);
 
 		def->next = s->deft[hash];
 		s->deft[hash] = def;
@@ -104,7 +131,100 @@ symn install(ccEnv s, const char* name, int kind, int cast, unsigned size) {
 
 	return installex(s, name, kind, size, typ, 0);
 }
-//~ symn regsym
+
+// promote
+symn promote(symn lht, symn rht) {
+	symn pro = 0;
+	if (lht && rht) {
+		switch (rht->kind) {
+			case TYPE_bit:
+			case TYPE_int: switch (lht->kind) {
+				case TYPE_bit:
+				case TYPE_int:
+					pro = lht->size >= rht->size ? lht : rht;
+					break;
+
+				case TYPE_flt:
+					pro = lht;
+					break;
+
+			} break;
+			case TYPE_flt: switch (lht->kind) {
+				case TYPE_bit:
+				case TYPE_int:
+					pro = rht;
+					break;
+
+				case TYPE_flt:
+					pro = lht->size >= rht->size ? lht : rht;
+					break;
+			} break;
+		}
+	}
+	else if (rht) {
+		pro = rht;
+	}
+	return pro;
+}
+symn lookup(ccEnv s, symn sym, astn ref, astn args) {
+	symn best = 0;
+	int found = 0;
+
+	dieif(!ref || ref->kind != TYPE_ref, "FixMe");
+
+	for (; sym; sym = sym->next) {
+		int hascast = 0;
+		astn arg = args;
+		symn par = sym->args;		// caller arguments
+
+		if (!sym->name)
+			continue;
+
+		if (strcmp(sym->name, ref->id.name) != 0)
+			continue;
+
+		if (args && !(sym->call || sym->cast)) {
+			//~ debug("here");
+			continue;
+		}
+
+		while (arg && par) {
+			symn typ = par->type;
+
+			if (!typ || typ == arg->type || promote(typ, arg->type)) {	// TODO: this was better
+			//~ if (!typ || typ == arg->type || (typ->cast && typ->cast == arg->type->cast)) {
+				hascast += typ != arg->type;
+				arg = arg->next;
+				par = par->next;
+				continue;
+			}
+			break;
+		}
+
+		if ((arg || par) && sym->call)
+			continue;
+
+		if (hascast == 0)
+			break;
+
+		// keep first match
+		if (!best)
+			best = sym;
+
+		found += 1;
+		// if we are here then sym is found, but it has implicit cast in it
+		//~ debug("%+k is probably %-T", ref, sym);
+	}
+
+	if (sym == NULL && best) {
+		if (found > 1)
+			warn(s->s, 2, s->file, ref->line, "using overload `%-T`", best, found);
+		sym = best;
+	}
+
+	return sym;
+}
+
 
 // TODO: this is define, not declare
 symn declare(ccEnv s, int kind, astn tag, symn typ) {
@@ -145,7 +265,6 @@ symn declare(ccEnv s, int kind, astn tag, symn typ) {
 }
 
 int isType(symn sym) {
-
 	if (sym) switch(sym->kind) {
 		case TYPE_vid:
 		case TYPE_bit:
@@ -176,7 +295,7 @@ int istype(astn ast) {
 	if (ast->kind == TYPE_ref)
 		return isType(ast->id.link);
 
-	debug("%t(%+k)", ast->kind, ast);
+	debug("%t(%+k):(%d)", ast->kind, ast, ast->line);
 	return 0;
 }// */
 
@@ -208,29 +327,31 @@ symn linkOf(astn ast, int njr) {
 
 long sizeOf(symn typ) {
 	if (typ) switch (typ->kind) {
-		case TYPE_vid: return typ->size;
-		case TYPE_bit: return typ->size;
-		case TYPE_int: return typ->size;
-		case TYPE_flt: return typ->size;
+		//~ default: fatal("FixMe");
+		case TYPE_vid:
+		case TYPE_bit:
+		case TYPE_int:
+		case TYPE_flt:
+		case TYPE_rec:
+			return typ->size;
 
-		case TYPE_rec: return typ->size;
-		case TYPE_arr: return typ->size * sizeOf(typ->type);
+		case TYPE_arr:
+			return typ->size * sizeOf(typ->type);
 
-		//~ case TYPE_enu: return sizeOf(typ->type);
-		//~ case TYPE_def: return sizeOf(typ->type);
-		default: fatal("FixMe %T", typ);
+		//~ case TYPE_enu:
+		//~ case TYPE_def:
+			//~ return sizeOf(typ->type);
 	}
+	fatal("failed(%t): %-T", typ ? typ->kind : 0, typ);
 	return 0;
 }
 
 /** Cast
  * returns one of (u32, i32, i64, f32, f64, p4x, TYPE_bit)
 **/
-int castTy(symn typ) { // TODO: this should be castTy
-	dieif(typ && !isType(typ), "FixMe %T", typ);
-
+int castOf(symn typ) {
 	if (typ) switch (typ->kind) {
-		default: fatal("FixMe");
+		//~ default: fatal("FixMe");
 
 		case TYPE_bit:
 		case TYPE_int:
@@ -240,9 +361,11 @@ int castTy(symn typ) { // TODO: this should be castTy
 
 		case TYPE_def:
 		case TYPE_enu:
-			return castTy(typ->type);
+			return castOf(typ->type);
 
 		case TYPE_vid:
+			return typ->kind;
+
 		case TYPE_arr:
 		case TYPE_rec:
 			return typ->kind;
@@ -257,142 +380,15 @@ int castTo(astn ast, int cast) {
 	return ast->cst2 = cast;
 }
 
-// promote
-static int castTT(symn lht, symn rht) {
-	symn pro = 0;
-	if (lht && rht) {
-		switch (rht->kind) {
-			case TYPE_bit:
-			case TYPE_int: switch (lht->kind) {
-				case TYPE_bit:
-				case TYPE_int:
-					pro = lht->size >= rht->size ? lht : rht;
-					break;
+int castTy(astn ast, symn type) {
+	if (!ast) return 0;
+	// TODO: check validity / Remove function
+	//~ if (ast->type == emit_opc)
+		//~ return EMIT_opc;
 
-				case TYPE_flt:
-					pro = lht;
-					break;
-
-			} break;
-			case TYPE_flt: switch (lht->kind) {
-				case TYPE_bit:
-				case TYPE_int:
-					pro = rht;
-					break;
-
-				case TYPE_flt:
-					pro = lht->size >= rht->size ? lht : rht;
-					break;
-			} break;
-		}
-	}
-	else if (rht) {
-		pro = rht;
-	}
-	return pro ? castTy(pro) : 0;
-}
-static int typeOp(astn ast, symn lht, symn rht) {
-	switch (castTT(lht, rht)) {
-		case TYPE_u32:
-			ast->type = type_u32;
-			return TYPE_u32;
-
-		case TYPE_i32:
-			ast->type = type_i32;
-			return TYPE_i32;
-
-		case TYPE_i64:
-			ast->type = type_i64;
-			return TYPE_i64;
-
-		case TYPE_f32:
-			ast->type = type_f32;
-			return TYPE_f32;
-
-		case TYPE_f64:
-			ast->type = type_f64;
-			return TYPE_f64;
-
-		case 0:
-			return 0;
-
-		default:
-			fatal("FixMe");
-			return 0;
-	}
+	return castTo(ast, castOf(ast->type = type));
 }
 
-symn lookup(ccEnv s, symn sym, astn ref, astn args) {
-	symn best = 0;
-	int found = 0;
-
-	dieif(!ref || ref->kind != TYPE_ref, "FixMe");
-
-	for (; sym; sym = sym->next) {
-		int hascast = 0;
-		astn arg = args;// && args->kind ? args : 0;			// callee arguments
-		symn par = sym->args;		// caller arguments
-
-		if (!sym->name)
-			continue;
-
-		if (strcmp(sym->name, ref->id.name) != 0)
-			continue;
-
-		while (arg && par) {
-			symn typ = par->type;
-
-			if (!typ || typ == arg->type || castTT(typ, arg->type)) {
-				hascast += typ != arg->type;
-				arg = arg->next;
-				par = par->next;
-				continue;
-			}
-			break;
-		}
-
-		if ((arg || par) && sym->call)
-			continue;
-
-		if (!args && sym->call)
-			continue;
-
-		/*if (args) switch (sym->kind) {
-			case TYPE_ref:
-			case TYPE_def:
-			case EMIT_opc:
-				break;
-			default:
-				continue;
-		}// */
-
-		if (args && sym->cast == TYPE_rec)		// TODO: RemMe
-			continue;
-
-		//~ if (args && !sym->call && !sym->cast)
-			//~ debug("%k: %T", ref, sym);
-			//~ because we cast this way
-
-		if (hascast == 0)
-			break;
-
-		// keep first match
-		if (!best)
-			best = sym;
-
-		found += 1;
-		// if we are here then sym is found, but it has implicit cast in it
-		//~ debug("%+k is probably %T", ref, sym);
-	}
-
-	if (sym == NULL && best) {
-		if (found > 1)
-			warn(s->s, 2, s->file, ref->line, "using overload `%-T`", best, found);
-		sym = best;
-	}
-
-	return sym;
-}
 symn typecheck(ccEnv s, symn loc, astn ast) {
 	astn ref = 0, args = 0;
 	symn sym = 0;
@@ -406,27 +402,17 @@ symn typecheck(ccEnv s, symn loc, astn ast) {
 	switch (ast->kind) {
 		default: fatal("FixMe: %t(%+k)", ast->kind, ast);
 
-		case OPER_dot: {
-			sym = typecheck(s, loc, ast->op.lhso);
-			if (sym == NULL) {
-				debug("lookup %+k in %T", ast->op.lhso, loc);
-				return 0;
-			}
-			loc = sym;
-			ref = ast->op.rhso;
-		} break;
 		case OPER_fnc: {
 			astn fun = ast->op.lhso;
 
 			if (fun == NULL) {
 				symn rht = typecheck(s, 0, ast->op.rhso);
-				if (!rht || !castTo(ast->op.rhso, castTy(rht))) {
-					debug("%T('%k', %+k): %t", rht, ast, ast, castTy(rht));
+				if (!rht || !castTo(ast->op.rhso, castOf(rht))) {
+					debug("%T('%k', %+k): %t", rht, ast, ast, castOf(rht));
 					return 0;
 				}
 				return ast->type = rht;
 			}
-
 			if ((args = ast->op.rhso)) {
 				astn next = 0;
 				symn lin = NULL;
@@ -456,7 +442,6 @@ symn typecheck(ccEnv s, symn loc, astn ast) {
 				}
 				args->next = next;
 			}
-
 			if (fun) switch (fun->kind) {
 				/*case OPER_dot: {	// math.isNan ???
 					if (!typecheck(s, loc, ast->op.lhso->op.lhso)) {
@@ -467,14 +452,7 @@ symn typecheck(ccEnv s, symn loc, astn ast) {
 					ref = ast->op.lhso->op.rhso;
 				} break;// */
 				case EMIT_opc: {
-					//~ symn opc = linkOf(args, 1);
-					//~ debug("emit: %T(%+k)", opc, args);
-					//~ if (opc && opc->kind == EMIT_opc)
-						//~ ast->type = opc->type;
-					//~ else
-						//~ ast->type = type_vid;
-					//~ fun->type = ast->type;
-					//~ return ast->type = args ? args->type : type_vid;
+					// TODO: type of emit will be emit, to math all types
 					return ast->type = args ? args->type : emit_opc;
 				} break;
 				case TYPE_ref:
@@ -483,22 +461,41 @@ symn typecheck(ccEnv s, symn loc, astn ast) {
 				default:
 					fatal("FixMe: %t(%+k)", ast->kind, ast);
 			}// */
+
 			if (args == NULL)
 				args = s->argz;
+
+		} break;
+		case OPER_dot: {
+			sym = typecheck(s, loc, ast->op.lhso);
+			if (sym == NULL) {
+				debug("lookup %+k in %T", ast->op.lhso, loc);
+				return 0;
+			}
+			if (!castTo(ast->op.lhso, TYPE_ref)) {
+				debug("%T('%k', %+k): %t", sym, ast, ast, TYPE_ref);
+				return 0;
+			}
+			/*if (!castTo(ast->op.lhso, castOf(sym))) {
+				debug("%T('%k', %+k): %t", sym, ast, ast, TYPE_ref);
+				return 0;
+			}// */
+			loc = sym;
+			ref = ast->op.rhso;
 		} break;
 		case OPER_idx: {
 			symn lht = typecheck(s, 0, ast->op.lhso);
 			symn rht = typecheck(s, 0, ast->op.rhso);
 
 			if (!lht || !rht) {
-				debug("cast(%T, %T): %T", lht, rht, 0);
+				debug("cast(%T, %T): %+k", lht, rht, ast);
 				return NULL;
 			}
 			if (!castTo(ast->op.lhso, TYPE_ref)) {
 				debug("%T('%k', %+k): %t", rht, ast, ast, TYPE_ref);
 				return 0;
 			}
-			if (!castTo(ast->op.lhso, TYPE_int)) {
+			if (!castTo(ast->op.rhso, TYPE_int)) {
 				debug("%T('%k', %+k): %t", lht, ast, ast, TYPE_int);
 				return 0;
 			}
@@ -511,16 +508,15 @@ symn typecheck(ccEnv s, symn loc, astn ast) {
 		case OPER_mns:		// '-'
 		case OPER_cmt:		// '~'
 		case OPER_not: {	// '!'
-			symn rht = typecheck(s, 0, ast->op.rhso);
 			int cast;
+			symn rht = typecheck(s, 0, ast->op.rhso);
 
 			if (!rht || loc) {
 				debug("cast(%T)[%k]: %+k", rht, ast, ast);
 				return NULL;
 			}
-
-			ast->type = rht;
-			if ((cast = castTy(rht))) {
+			if ((cast = castTy(ast, rht))) {
+				ast->type = rht;
 				if (ast->kind == OPER_not) {
 					ast->type = type_bol;
 					ast->cst2 = TYPE_bit;
@@ -546,6 +542,7 @@ symn typecheck(ccEnv s, symn loc, astn ast) {
 				}
 				return ast->type;
 			}
+			fatal("operator %k (%T): %+k", ast, rht, ast);
 		} break;
 
 		case OPER_add:		// '+'
@@ -553,17 +550,15 @@ symn typecheck(ccEnv s, symn loc, astn ast) {
 		case OPER_mul:		// '*'
 		case OPER_div:		// '/'
 		case OPER_mod: {	// '%'
+			int cast;
 			symn lht = typecheck(s, 0, ast->op.lhso);
 			symn rht = typecheck(s, 0, ast->op.rhso);
-			int cast;
 
 			if (!lht || !rht || loc) {
 				debug("cast(%T, %T)[%k]: %+k", lht, rht, ast, ast);
 				return NULL;
 			}
-
-			//~ /*
-			if ((cast = typeOp(ast, lht, rht))) {
+			if ((cast = castTy(ast, promote(lht, rht)))) {
 				if (!castTo(ast->op.lhso, cast)) {
 					debug("%T('%k', %+k): %t", lht, ast, ast, cast);
 					return 0;
@@ -574,8 +569,7 @@ symn typecheck(ccEnv s, symn loc, astn ast) {
 				}
 				return ast->type;
 			}// */
-
-			//~ fatal("operator %k (%T %T): %+k", ast, lht, rht, ast);
+			fatal("operator %k (%T %T): %+k", ast, lht, rht, ast);
 		} break;
 
 		case OPER_shl:		// '>>'
@@ -583,16 +577,15 @@ symn typecheck(ccEnv s, symn loc, astn ast) {
 		case OPER_and:		// '&'
 		case OPER_ior:		// '|'
 		case OPER_xor: {	// '^'
+			int cast;
 			symn lht = typecheck(s, 0, ast->op.lhso);
 			symn rht = typecheck(s, 0, ast->op.rhso);
-			int cast;
 
 			if (!lht || !rht || loc) {
 				debug("cast(%T, %T): %T", lht, rht, 0);
 				return NULL;
 			}
-
-			if ((cast = typeOp(ast, lht, rht))) {
+			if ((cast = castTy(ast, promote(lht, rht)))) {
 				if (!castTo(ast->op.lhso, cast)) {
 					debug("%T('%k', %+k): %t", lht, ast, ast, cast);
 					return 0;
@@ -614,7 +607,6 @@ symn typecheck(ccEnv s, symn loc, astn ast) {
 						return 0;
 				}
 			}
-
 			fatal("operator %k (%T %T): %+k", ast, lht, rht, ast);
 		} break;
 
@@ -624,17 +616,20 @@ symn typecheck(ccEnv s, symn loc, astn ast) {
 		case OPER_leq:		// '<='
 		case OPER_gte:		// '>'
 		case OPER_geq: {	// '>='
+			int cast;
 			symn lht = typecheck(s, 0, ast->op.lhso);
 			symn rht = typecheck(s, 0, ast->op.rhso);
-			int cast;
 
 			if (!lht || !rht || loc) {
 				debug("cast(%T, %T)", lht, rht);
 				return NULL;
 			}
-
-			if ((cast = typeOp(ast, lht, rht))) {
-				ast->type = type_bol;
+			//~ if (lht->cast && rht->cast) {
+			if ((cast = castOf(promote(lht, rht)))) {
+				if (!castTy(ast, type_bol)) {
+					debug("%T('%k', %+k): %t", lht, ast, ast, cast);
+					return 0;
+				}
 				if (!castTo(ast->op.lhso, cast)) {
 					debug("%T('%k', %+k): %t", lht, ast, ast, cast);
 					return 0;
@@ -645,22 +640,20 @@ symn typecheck(ccEnv s, symn loc, astn ast) {
 				}
 				return ast->type;
 			}
-
 			fatal("operator %k (%T %T): %+k", ast, lht, rht, ast);
 		} break;
 
 		case OPER_lor:		// '&&'
 		case OPER_lnd: {	// '||'
+			int cast;
 			symn lht = typecheck(s, 0, ast->op.lhso);
 			symn rht = typecheck(s, 0, ast->op.rhso);
-			int cast;
 
 			if (!lht || !rht || loc) {
 				debug("cast(%T, %T)", lht, rht);
 				return NULL;
 			}
-
-			if ((cast = typeOp(ast, lht, rht))) {
+			if ((cast = castTy(ast, promote(lht, rht)))) {
 				if (!castTo(ast->op.lhso, TYPE_bit)) {
 					debug("%T('%k', %+k): %t", lht, ast, ast, cast);
 					return 0;
@@ -672,22 +665,20 @@ symn typecheck(ccEnv s, symn loc, astn ast) {
 				ast->type = type_bol;
 				return ast->type;
 			}
-
 			fatal("operator %k (%T %T): %+k", ast, lht, rht, ast);
 		} break;
 
 		case OPER_sel: {	// '?:'
+			int cast;
 			symn cmp = typecheck(s, 0, ast->op.test);
 			symn lht = typecheck(s, 0, ast->op.lhso);
 			symn rht = typecheck(s, 0, ast->op.rhso);
-			int cast;
 
 			if (!cmp || !lht || !rht || loc) {
 				debug("cast(%T, %T)[%k]", lht, rht, ast);
 				return NULL;
 			}
-
-			if ((cast = typeOp(ast, lht, rht))) {
+			if ((cast = castTy(ast, promote(lht, rht)))) {
 				if (!castTo(ast->op.test, TYPE_bit)) {
 					debug("%T('%k', %+k): %t", cmp, ast, ast, TYPE_bit);
 					return 0;
@@ -709,33 +700,30 @@ symn typecheck(ccEnv s, symn loc, astn ast) {
 		case ASGN_set: {	// ':='
 			symn lht = typecheck(s, 0, ast->op.lhso);
 			symn rht = typecheck(s, 0, ast->op.rhso);
-			int cast;
 
 			if (!lht || !rht || loc) {
 				debug("cast(%T, %T)", lht, rht);
 				return NULL;
 			}
 
-			if ((cast = typeOp(ast, lht, rht))) {
-				if (!castTo(ast->op.rhso, cast)) {
-					debug("%T('%k', %+k): %t", rht, ast, ast, cast);
-					return 0;
-				}
-				ast->type = lht;
-				return ast->type;
+			/* this didn't work with i += 1; same ast for i
+			if (!castTo(ast->op.lhso, TYPE_ref)) {
+				debug("%T('%k', %+k): %t", rht, ast, ast, TYPE_ref);
+				return 0;
+			}// */
+			if (!castTo(ast->op.rhso, castOf(lht))) {
+				debug("%T('%k', %+k): %t", rht, ast, ast, castOf(lht));
+				return 0;
 			}
-
-			if (lht == rht)
-				return ast->type = lht;
-
-			if (lht != rht)
-				fatal("operator `%k` (`%T`, `%T`): %+k", ast, lht, rht, ast);
+			ast->type = lht;
+			return ast->type;
 		} break;
 
 		// operator get
 		case TYPE_ref:
 			ref = ast;
 			break;
+
 		//~ case EMIT_opc: return 0;
 
 		case TYPE_int:
@@ -753,14 +741,14 @@ symn typecheck(ccEnv s, symn loc, astn ast) {
 		} break;
 	}
 
-	//~ TODO: ther are also unary and binary operators
+	/*/~ TODO: ther are also unary and binary operators
 	//~ It works only because can get here only from binary operators
 	if (ast->kind >= OPER_pls && ast->kind <= OPER_com) {
 		astn arg = newnode(s, OPER_com);
 		ref = newnode(s, TYPE_ref);
 		ref->line = -1;
 		ref->id.name = (char *)tok_tbl[ast->kind].name;
-		ref->id.hash = rehash(ref->id.name + 1, strlen(ref->id.name) - 1);
+		ref->id.hash = rehash(ref->id.name + 1, -1);
 		arg->op.lhso = ast->op.lhso;
 		arg->op.rhso = ast->op.rhso;
 		ast->kind = OPER_fnc;
@@ -774,7 +762,6 @@ symn typecheck(ccEnv s, symn loc, astn ast) {
 
 	if (ref != NULL) {
 		sym = loc ? loc->args : s->deft[ref->id.hash];
-
 		if ((sym = lookup(s, sym, ref, args))) {
 			symn typ = NULL;
 
@@ -809,13 +796,13 @@ symn typecheck(ccEnv s, symn loc, astn ast) {
 
 			//~ /*
 			if (ast->kind == OPER_fnc && isType(sym)) {
-				if (!castTo(args, castTy(sym))) {
-					debug("%k:%t %+k", args, castTy(sym), args);
+				if (!castTo(args, castOf(sym))) {
+					debug("%k:%t %+k", args, castOf(sym), args);
 					return 0;
 				}
 				//~ /* TODO: fix this calling fixargs ?
-				if (!castTo(ast, castTy(sym))) {
-					debug("%k:%t %+k", args, castTy(sym), args);
+				if (!castTo(ast, castOf(sym))) {
+					debug("%k:%t %+k", args, castOf(sym), args);
 					return 0;
 				}// */
 				ast->op.lhso = NULL; 
@@ -823,14 +810,11 @@ symn typecheck(ccEnv s, symn loc, astn ast) {
 			else if (ast->kind == OPER_fnc) {
 				symn arg = sym->call ? sym->args : NULL;
 				while (args && arg) {
-					int cast = castTy(arg->type);
-					//~ debug("arg(arg: %+k, %t)", args, cast);
+					//~ TODO: if byref: arg->load ? TYPE_ref : argty
+					//~ TODO: if function: arg->call
 
-					//~ if (arg->load)
-						//~ cast = TYPE_ref;
-
-					if (!castTo(args, cast)) {
-						debug("%k:%t %+k", args, cast, args);
+					if (!castTo(args, castOf(arg->type))) {
+						debug("%k:%t %+k", args, castOf(arg->type), args);
 						return 0;
 					}
 					args = args->next;
@@ -854,26 +838,7 @@ symn typecheck(ccEnv s, symn loc, astn ast) {
 
 			//~ debug("%k: %T", ref, sym);
 		}
-		/*if (ref->line == -1 && args) {
-			int n = 0;
-			astn ptr = args;
-			while (ptr) {
-				//~ debug("arg(%d, %+k): %-T", n += 1, ptr, ptr->type);
-				ptr = ptr->next;
-			}
-			//~ debug("%k: %-T: in %T", ref, sym, loc);
-			if (sym == NULL) {
-				sym = loc ? loc->args : s->deft[ref->id.hash];
-				while (sym) {
-					debug("is?(%-T)", sym);
-					sym = sym->next;
-				}
-
-			}
-		}// */
 	}
-
-	if (ast->line == -1) debug("%k('%+k'): %T.%T", ref, ast, loc, ast->type);
 
 	return ast->type;
 }

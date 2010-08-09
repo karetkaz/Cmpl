@@ -9,7 +9,7 @@ typedef double flt64_t;
 #define useBuiltInFuncs
 
 //~ typedef struct astn *astn;		// tree
-//~ typedef struct symn *symn;		// symbols
+typedef struct symn *symn;		// symbols
 typedef struct ccEnv *ccEnv;
 typedef struct vmEnv *vmEnv;
 
@@ -17,6 +17,7 @@ typedef struct state {
 	FILE* logf;			// log file
 	int   errc;			// error count
 
+	symn  defs;		// definitions
 	void* data;		// user data for execution
 	char* argv;		// first arg
 	void* retv;		// TODO: RemMe: retval
@@ -112,11 +113,4 @@ static inline int64_t popi64(state s) { return poparg(s, int64_t); }
  *	logfile(s, NULL);
  *	return 0;
  *}
-**/
-
-/* emit
- * seg.text: RO initialized data: enums, definitions, as text on new lines.
- * seg.data: RO initialized data: initializers, meta data?
- * seg.code: RO executable code: functions, main
- * 
 **/

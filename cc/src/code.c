@@ -869,7 +869,8 @@ int emit(vmEnv s, int opc, ...) {
 			return 0;
 	}
 	else if (opc == opc_spc) {
-		if (ip->rel != arg.i8)
+		ip->rel = arg.i8 / 4;
+		if (ip->rel * 4 != arg.i8)
 			return 0;
 	}
 	//~ debug("@%04x[ss:%03d]: %09.*A", s->pc, s->ss, s->pc, ip);
@@ -913,6 +914,14 @@ int emitf64(vmEnv s, flt64_t arg) {
 	tmp.f8 = arg;
 	return emit(s, opc_ldcF, tmp);
 }
+int emitptr(vmEnv s, void* arg) {
+	stkval tmp;
+	unsigned char* ptr = (unsigned char*)arg;
+	dieif(ptr < s->_mem || ptr > s->_ptr, "invalid reference");
+	tmp.i8 = (ptr - s->_mem);
+	return emit(s, opc_ldcr, tmp);
+}
+
 int emitidx(vmEnv s, int opc, int arg) {
 	stkval tmp;
 	tmp.i8 = s->ss + arg;
@@ -928,8 +937,8 @@ int emitidx(vmEnv s, int opc, int arg) {
 		return emit(s, opc, tmp);
 	}
 	if (tmp.u4 > 255) {
+		fputasm(stdout, s->_ptr, s->cs, 0, 0xf0);
 		fatal("0x%02x(%d)", opc, tmp.u4);
-		fputasm(stdout, s->_ptr, s->cs, s->cs, 0x31);
 		return 0;
 	}
 	if (tmp.u4 > s->ss) {
@@ -943,30 +952,6 @@ int emitint(vmEnv s, int opc, int64_t arg) {
 	tmp.i8 = arg;
 	return emit(s, opc, tmp);
 }
-int emitptr(vmEnv s, int opc, void* arg) {
-	stkval tmp;
-	unsigned char* ptr = (unsigned char*)arg;
-	dieif(ptr < s->_mem || ptr > s->_ptr, "invalid reference");
-	tmp.i8 = (ptr - s->_mem);
-	return emit(s, opc, tmp);
-}
-int emitref(vmEnv s, int opc, int offset) {
-	switch (opc) {
-		case opc_ldcr:
-			if (offset < 0)
-				return emitidx(s, opc_ldsp, offset);
-			return emitint(s, opc_ldcr, offset);
-		//~ case opc_call:
-			// TODO: RemMe!
-			//~ if (offset < 0)
-				//~ return emitint(s, opc_libc, -offset);
-			//~ return emitint(s, opc_call, s->pc - offset);
-		// */
-	}
-	debug("FixMe");
-	return 0;
-}
-
 int fixjump(vmEnv s, int src, int dst, int stc) {
 	bcde ip = getip(s, src);
 
@@ -979,6 +964,10 @@ int fixjump(vmEnv s, int src, int dst, int stc) {
 		case opc_jz: ip->rel = dst - src; break;
 	}
 	return 0;
+}
+
+int stkoffs(vmEnv s, int size) {
+	return -(s->ss + ((size + 0) / 4));
 }
 
 /*static cell task(vmEnv ee, cell pu, int cc, int n, int cl, int dl) {
@@ -1060,7 +1049,6 @@ static int dbugpu(vmEnv vm, cell pu, dbgf dbg) {
 			return -9;
 
 		switch (ip->opc) {		// exec
-			//~ error_opc: error(vm->s, 0, "invalid opcode: .%04x: %02x", (char*)ip - (char*)(vm->_mem), ip->opc); return -1;
 			error_opc: error(vm->s, 0, "invalid opcode: op[%.*A]", (char*)ip - (char*)(vm->_mem), ip); return -2;
 			error_ovf: error(vm->s, 0, "stack overflow: op[%.*A] / %d", (char*)ip - (char*)(vm->_mem), ip, (pu->sp - pu->bp)/4); return -2;
 			error_mem: error(vm->s, 0, "segmentation fault: op[%.*A]", (char*)ip - (char*)(vm->_mem), ip); return -2;
@@ -1215,8 +1203,8 @@ void fputasm(FILE *fout, unsigned char* beg, int len, int rel, int mode) {
 		if (mode & 0xf00)		// offset
 			fputfmt(fout, "%I", (mode & 0xf00) >> 8);
 
-		//~ if (mode & 0x10)		// offset
-			//~ fputfmt(fout, ".%04x: ", i);
+		if (mode & 0x10)		// offset
+			fputfmt(fout, ".%04x: ", i);
 
 		if (mode & 0x20)		// TODO: remove stack size
 			fputfmt(fout, "ss(%03d): ", ss);
@@ -1236,15 +1224,7 @@ void dumpasmdbg(FILE *fout, vmEnv s, int mark, int len, int mode) {
 }
 
 void vm_fputval(FILE *fout, symn var, stkval* ref, int flgs) {
-	typedef enum {
-		//~ flg_type = 0x010000,
-		//~ flg_hex  = 0x020000,
-		flg_hex  = 0x000000,
-		//~ flg_offs = 0x040000,
-	} flagbits;
-
-	//~ int type
-	symn typ = var->type;
+	symn typ = var->kind == TYPE_ref ? var->type : var;
 
 	if (typ && typ->kind == TYPE_enu)
 		typ = typ->type;
@@ -1253,7 +1233,7 @@ void vm_fputval(FILE *fout, symn var, stkval* ref, int flgs) {
 		case TYPE_bit:
 		case TYPE_int: {
 			int64_t val = 0;
-			switch (castTy(typ)) {
+			switch (castOf(typ)) {
 				case TYPE_bit:
 				case TYPE_u32: switch (typ->size) {
 					case 1: val = ref->u1; break;
@@ -1268,21 +1248,14 @@ void vm_fputval(FILE *fout, symn var, stkval* ref, int flgs) {
 				case TYPE_i64: val = ref->i8; break;
 				default: goto TYPE_XXX;
 			}
-			if (!var->pfmt || *var->pfmt != '%') {
-
-				if (var->kind == TYPE_ref)
-					fputfmt(fout, "%T", var);
-
-				if (typ->name)
-					fputfmt(fout, ":%T", typ);
-
-				if (flgs & flg_hex)
-					fputfmt(fout, "[%08X](%D)", val, val);
-				else
-					fputfmt(fout, "(%D)", val);
-			}
-			else
+			if (var->pfmt && *var->pfmt == '%') {
 				fputfmt(fout, var->pfmt + 1, val);
+			}
+			else {
+				if (var != typ)
+					fputfmt(fout, "%T:", var);
+				fputfmt(fout, "%T(%D)", typ, val);
+			}
 		} break;
 		case TYPE_flt: {
 			flt64_t val = 0;
@@ -1291,17 +1264,9 @@ void vm_fputval(FILE *fout, symn var, stkval* ref, int flgs) {
 				case 8: val = ref->f8; break;
 			}
 			if (!var->pfmt || *var->pfmt != '%') {
-
-				if (var->kind == TYPE_ref)
-					fputfmt(fout, "%T", var);
-
-				if (typ->name)
-					fputfmt(fout, ":%T", typ);
-
-				if (flgs & flg_hex)
-					fputfmt(fout, "[%08X](%F)", val, val);
-				else
-					fputfmt(fout, "(%F)", val);
+				if (var != typ)
+					fputfmt(fout, "%T:", var);
+				fputfmt(fout, "%T(%F)", typ, val);
 			}
 			else
 				fputfmt(fout, var->pfmt + 1, val);
@@ -1309,26 +1274,16 @@ void vm_fputval(FILE *fout, symn var, stkval* ref, int flgs) {
 		case TYPE_str: {
 			// TODO: get the reference
 			char *val = "this is a string";
-			if (var->kind == TYPE_ref)
-				fputfmt(fout, "%T", var);
-
-			if (typ->name)
-				fputfmt(fout, ":%T", typ);
-
-			if (flgs & flg_hex)
-				fputfmt(fout, "[%08X](%F)", val, val);
-			else
-				fputfmt(fout, "('%s')", val);
+			if (var != typ)
+				fputfmt(fout, "%T:", var);
+			fputfmt(fout, "%T(%s)", typ, val);
 		} break;
 		case TYPE_rec: {
 			symn tmp;
 			int n = 0;
-			if (var && var->name)
-				fputfmt(fout, "%T", var);
-			if (typ->name)
-				fputfmt(fout, ":%T", typ);
-			fputfmt(fout, "{");
-
+			if (var != typ)
+				fputfmt(fout, "%T:", var);
+			fputfmt(fout, "%T{", typ);
 
 			for (tmp = typ->args; tmp; tmp = tmp->next) {
 				if (tmp->kind != TYPE_ref)
@@ -1348,32 +1303,39 @@ void vm_fputval(FILE *fout, symn var, stkval* ref, int flgs) {
 			int i = 0;
 			struct astn tmp;
 			symn base = typ->type;
-			fputfmt(fout, "%I%T[", flgs & 0xff, var);
+
+			fputfmt(fout, "%I", flgs & 0xff);
+			if (var != typ)
+				fputfmt(fout, "%T:", var);
+			fputfmt(fout, "%T{", typ);
+
 			if (eval(&tmp, typ->init) != TYPE_int) {
 				fputfmt(fout, "Unknown Dimension]");
 				break;
 			}
-			//~ if (tmp.con.cint > 10) tmp.con.cint = 10; // restrict
+
 			while (i < tmp.con.cint) {
 				if (base->kind == TYPE_arr)
 					fputfmt(fout, "\n");
 
-				vm_fputval(fout, typ, (stkval*)((char*)ref + i * sizeOf(base)), ((flgs + 1) & 0xff));
+				vm_fputval(fout, base, (stkval*)((char*)ref + i * sizeOf(base)), ((flgs + 1) & 0xff));
 				if (++i < tmp.con.cint)
-					fputfmt(fout, ", ");//, isType(var) ? '\n': ' ');
+					fputfmt(fout, ", ");
 			}
 			if (base->kind == TYPE_arr)
 				fputfmt(fout, "\n%I", flgs & 0xff);
-			fputfmt(fout, "]");
+			fputfmt(fout, "}");
 		} break;
 		default:
-		TYPE_XXX:
-			fputfmt(fout, "%T(error):%t, %t", typ, typ->kind, castTy(typ));
-			break;
+		TYPE_XXX: {
+			if (var != typ)
+				fputfmt(fout, "%T:", var);
+			fputfmt(fout, "%T [ERROR]", typ);
+		} break;
 	}
 }
 
-void vmTags(ccEnv s, char *sptr, int slen, int flags) {
+void vmTags(state s, char *sptr, int slen, int flags) {
 	symn ptr;
 	FILE *fout = stdout;
 	for (ptr = s->defs; ptr; ptr = ptr->next) {
@@ -1428,10 +1390,10 @@ int vmTest() {
 			error_chk: e += 1; fputfmt(stderr, "stack check 0x%02x: '%A'\n", opc.opc, ip); break;
 			error_dif: e += 1; fputfmt(stderr, "stack difference 0x%02x: '%A'\n", opc.opc, ip); break;
 			error_opc: e += 1; fputfmt(stderr, "unimplemented opcode 0x%02x: '%A'\n", opc.opc, ip); break;
-			#define NEXT(__IP, __CHK, __DIF) {\
-				if (opc_tbl[opc.opc].size != 0 && opc_tbl[opc.opc].size != (__IP)) goto error_len;\
+			#define NEXT(__IP, __CHK, __DIFF) {\
+				if (opc_tbl[opc.opc].size && (__IP) && opc_tbl[opc.opc].size != (__IP)) goto error_len;\
 				if (opc_tbl[opc.opc].chck != 9 && opc_tbl[opc.opc].chck != (__CHK)) goto error_chk;\
-				if (opc_tbl[opc.opc].diff != 9 && opc_tbl[opc.opc].diff != (__DIF)) goto error_dif;\
+				if (opc_tbl[opc.opc].diff != 9 && opc_tbl[opc.opc].diff != (__DIFF)) goto error_dif;\
 			}
 			#define STOP(__ERR, __CHK) if (__CHK) goto __ERR
 			#include "code.h"
