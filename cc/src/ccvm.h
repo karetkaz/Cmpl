@@ -11,34 +11,45 @@
 #include "pvmc.h"
 #include <stdlib.h>
 
-#define DEBUGGING 2
+#define DEBUGGING 1
 
 /* COMPILER_LEVEL
 	0: types only					: compiler.init:18.34 KBytes
-	1: +packed types, emit fields	: compiler.init:39.08 KBytes
-	2: +emit.swizzles				: compiler.init:79.27 KBytes
-	3: +integer.bits				: compiler.init:82.27 KBytes
+	1: + emit						: compiler.init:39.08 KBytes
+	2: + libc						: compiler.init:79.27 KBytes
+	3: + emit.swizzles				: compiler.init:79.27 KBytes
+	4: + integer.bits				: compiler.init:82.27 KBytes
 // */
-#define COMPILER_LEVEL 1
+enum {
+	creg_base = 0x0000,				// type system only
+	creg_emit = 0x0100,
+	creg_libc = 0x0001 | creg_emit,	// dependency
+	creg_swiz = 0x0002 | creg_emit,	// dependency
+
+	//~ creg_rtty = 0x000?,
+	//~ creg_math = 0x000?,
+	//~ creg_bits = 0x000?,
+};
+#define COMPILER_LEVEL creg_libc
 
 // maximum tokens in expressions & nest level
 #define TOKS 2048
 
 // symbol & hash table size
-#define TBLS 2048
+#define TBLS 32
 
-#define pdbg(__DBG, msg, ...) do{fputfmt(stderr, "%s:%d:"__DBG":%s: "msg"\n", __FILE__, __LINE__, __func__, ##__VA_ARGS__); fflush(stdout); fflush(stderr);}while(0)
-
-#define debug(msg, ...) pdbg("debug", msg, ##__VA_ARGS__)
-#define fatal(msg, ...) do{pdbg("fatal", msg, ##__VA_ARGS__); abort();}while(0)
+#define pdbg(__DBG, __FILE, __LINE, msg, ...) do{fputfmt(stderr, "%s:%d:"__DBG":%s: "msg"\n", __FILE, __LINE, __func__, ##__VA_ARGS__); fflush(stdout); fflush(stderr);}while(0)
+#define fatal(msg, ...) do{pdbg("fatal", __FILE__, __LINE__, msg, ##__VA_ARGS__); abort();}while(0)
 #define dieif(__EXP, msg, ...) do{if (__EXP) fatal(msg, ##__VA_ARGS__);}while(0)
 
 #if DEBUGGING > 1
-#define PERR(__ENV, __LEVEL, __FILE, __LINE, msg, ...) do { perr(__ENV, __LEVEL, __FILE, __LINE, msg, ##__VA_ARGS__); perr(__ENV, __LEVEL, __FILE__, __LINE__, msg, ##__VA_ARGS__); }while(0)
+#define debug(msg, ...) pdbg("debug", __FILE__, __LINE__, msg, ##__VA_ARGS__)
+#define PERR(__ENV, __LEVEL, __FILE, __LINE, msg, ...) do { perr(__ENV, __LEVEL, __FILE, __LINE, msg, ##__VA_ARGS__); debug(msg, ##__VA_ARGS__); }while(0)
 #define error(__ENV, __LINE, msg, ...) PERR(__ENV, -1, NULL, __LINE, msg, ##__VA_ARGS__)
 #define warn(__ENV, __LEVEL, __FILE, __LINE, msg, ...) PERR(__ENV, __LEVEL, __FILE, __LINE, msg, ##__VA_ARGS__)
 #define info(__ENV, __FILE, __LINE, msg, ...) PERR(__ENV, 0, __FILE, __LINE, msg, ##__VA_ARGS__)
 #else // catch the position error raised 
+#define debug(msg, ...) 
 #define error(__ENV, __LINE, msg, ...) perr(__ENV, -1, NULL, __LINE, msg, ##__VA_ARGS__)
 #define warn(__ENV, __LEVEL, __FILE, __LINE, msg, ...) perr(__ENV, __LEVEL, __FILE, __LINE, msg, ##__VA_ARGS__)
 #define info(__ENV, __FILE, __LINE, msg, ...) perr(__ENV, 0, __FILE, __LINE, msg, ##__VA_ARGS__)
@@ -49,15 +60,12 @@ enum {
 	#define TOKDEF(NAME, TYPE, SIZE, STR) NAME,
 	#include "incl/defs.h"
 	tok_last,
-	// vm part
 	// xml dump cast needs STR
-	//~ TYPE_u32,
-	//~ TYPE_i32,
-	//~ TYPE_f32,
-	//~ TYPE_i64,
-	//~ TYPE_f64,
 
 	TOKN_err = TYPE_any,
+	//~ ATTR_fun = 0x0100,		// callable
+	//~ ATTR_ind = 0x0200,		// indirect
+
 	symn_call = 0x100,
 	symn_read = 0x200,
 };
@@ -71,7 +79,7 @@ extern const tok_inf tok_tbl[255];
 // Opcodes - VM
 enum {
 	#define OPCDEF(Name, Code, Size, Args, Push, Time, Mnem) Name = Code,
-	#include "code.h"
+	#include "incl/defs.h"
 	opc_last,
 
 	opc_neg,
@@ -100,12 +108,12 @@ enum {
 	opc_sti,
 	opc_inc,	// increment
 
-	get_ip,		// instruction pointer
-	get_sp,		// get stack position
-	set_sp,		// set stack pointer
+	//~ get_ip,		// instruction pointer
+	markIP,
+
 	// TODO: remove
-	seg_code,	// pc = ptr - beg; ptr += code->cs;
-	loc_data,
+	//~ seg_code,	// pc = ptr - beg; ptr += code->cs;
+	//~ loc_data,
 
 	opc_line,		// line info
 	//~ opc_file,		// file info
@@ -161,19 +169,12 @@ struct astn {				// tree node
 		union  {					// TYPE_xxx: constant
 			int64_t	cint;			// cnst: integer
 			flt64_t	cflt;			// cnst: float
-			char*	cstr;			// cnst: string
+			//~ char*	cstr;			// cnst: use: '.id.name'
 			//~ int32_t	cpi4[4];		// rgb
 			//~ int64_t	cpi2[2];		// rat
 			//~ flt32_t	cpf4[4];		// vec
 			//~ flt64_t	cpf2[2];		// cpl
 		} con;
-		struct {					// OPER_xxx: operator
-			astn	rhso;			// right hand side operand
-			astn	lhso;			// left hand side operand
-			astn	test;			// ?: operator condition
-			uint32_t prec;			// precedence
-			//~ symn	link;			// assigned operator convert to function call
-		} op;
 		struct {					// STMT_xxx: statement
 			astn	stmt;			// statement / then block
 			astn	step;			// increment / else block
@@ -183,6 +184,13 @@ struct astn {				// tree node
 			};
 			astn	init;			// for statement init
 		} stmt;
+		struct {					// OPER_xxx: operator
+			astn	rhso;			// right hand side operand
+			astn	lhso;			// left hand side operand
+			astn	test;			// ?: operator condition
+			uint32_t prec;			// precedence
+			//~ symn	link;			// assigned operator convert to function call
+		} op;
 		struct {					// TYPE_ref: identifyer
 			astn	nuse;			// next used
 			char*	name;			// name of identifyer
@@ -207,12 +215,12 @@ struct symn {				// type node
 	symn	args;		// REC fields / FUN args
 	symn	next;		// symbols on table/args
 
-	uint8_t	cast;		// casts to type(TYPE_(u32, i32, i64, f32, f64, p4x)).
-	uint8_t	algn;		// alignment
+	uint8_t	cast;		// casts to type(TYPE_(ref, u32, i32, i64, f32, f64, p4x)).
+	uint8_t	algn;		// alignment / TODO: pack
 	uint8_t	kind;		// TYPE_ref || TYPE_xxx
 
 	uint8_t	call:1;		// function / callable => (kind == TYPE_ref && args)
-	//~ uint8_t	iref:1;		// indirect reference: "&"
+	//~ uint8_t	load:1;		// indirect reference / eval param: "&": cast == TYPE_ref
 
 	//~ uint8_t	priv:1;		// private
 	//~ uint8_t	stat:1;		// static ?
@@ -277,28 +285,31 @@ struct ccEnv {
 	};
 
 	astn	argz;		// no parameter of type void
-	long	_cnt;
-	char	*_ptr;
+	//~ long	_cnt;
+	char	*_beg;
+	char	*_end;
 };
 struct vmEnv {
 	state	s;
 	int		opti;			// optimization levevel
 
 	unsigned int	pc;			// entry point / prev program counter
-	unsigned int	ic;			// ?executed? / instruction count
 	unsigned int	cs;			// code size
+	unsigned int	ds;			// data size
+
+	unsigned int	ic;			// ?executed? / instruction count
 	//~ unsigned int	pi[2];		// previous instructions
 
 	unsigned int	ss;			// stack size / current stack size
 	unsigned int	sm;			// stack minimum size
 
-	unsigned int	ds;			// data size
-
+	unsigned int	mark;
 	//~ unsigned long _cnt; // return (_end - _ptr);
 	//~ unsigned long _len; // return (_ptr - _mem);
-	unsigned char *_ptr;
+	//~ unsigned char *_ptr;
 	unsigned char *_end;
-	unsigned char _mem[];
+	unsigned char *_mem;
+	unsigned char _beg[];
 };
 
 //~ static inline int canscan(ccEnv env) {return env && env->_cnt > 0;}
@@ -315,8 +326,9 @@ extern symn type_f64;
 extern symn type_str;
 
 extern symn type_v4f;
-extern symn type_v2d;
+//~ extern symn type_v2d;
 
+extern symn void_arg;
 extern symn emit_opc;
 
 
@@ -325,8 +337,7 @@ void fputfmt(FILE *fout, const char *msg, ...);
 
 //~ void fputsym(FILE *fout, symn sym, int mode, int level);
 //~ void fputast(FILE *fout, astn ast, int mode, int level);
-//~ void fputopc(FILE *fout, bcde opc, int len, int offset);
-void fputasm(FILE *fout, unsigned char *beg, int len, int rel, int mode);
+//~ void fputopc(FILE *fout, struct bcde* opc, int len, int offset);
 
 // program error
 void perr(state s, int level, const char *file, int line, const char *msg, ...);
@@ -353,14 +364,14 @@ void eatnode(ccEnv s, astn ast);
 symn installex(ccEnv s, const char* name, int kind, unsigned size, symn type, astn init);
 symn install(ccEnv s, const char* name, int kind, int cast, unsigned size);
 symn declare(ccEnv s, int kind, astn tag, symn rtyp);
-symn lookup(ccEnv s, symn sym, astn ast, astn args);
+symn lookup(ccEnv s, symn sym, astn ast, int deep, astn args);
 
 symn findsym(ccEnv s, symn in, char *name);
 int findnzv(ccEnv s, char *name);
 int findint(ccEnv s, char *name, int* res);
 int findflt(ccEnv s, char *name, double* res);
 
-symn typecheck(ccEnv s, symn loc, astn ast);
+symn typecheck(ccEnv, symn loc, astn ast);
 
 int castOf(symn typ);
 int castTo(astn ast, int tyId);
@@ -372,7 +383,7 @@ int64_t constint(astn ast);
 flt64_t constflt(astn ast);
 
 astn peek(ccEnv);
-//~ astn next(ccEnv, int kind);
+astn next(ccEnv, int kind);
 //~ void back(ccEnv, astn ast);
 //~ int  skip(ccEnv, int kind);
 //~ int  test(ccEnv, int kind);
@@ -428,12 +439,12 @@ long sizeOf(symn typ);
 
 int source(ccEnv, srcType mode, char* text);		// mode: file/text
 
-int rehash(const char* str, unsigned size);
+unsigned rehash(const char* str, unsigned size);
 
 //TODO: Rename: reg str
 char *mapstr(ccEnv s, char *name, unsigned size/* = -1U*/, unsigned hash/* = -1U*/);
 
 void vmTags(state, char *sptr, int slen, int flags);
-void dumpasmdbg(FILE *fout, vmEnv s, int mark, int len, int mode);
+void fputasm(FILE *fout, vmEnv s, int mark, int len, int mode);
 
 #endif

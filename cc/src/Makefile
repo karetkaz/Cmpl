@@ -18,11 +18,15 @@ OBJS=\
 all:clean $(OBJS) $(OBJDIR)main.o
 	$(LNK) $(OUTEXE)$(BINDIR)main $(OBJS) $(OBJDIR)main.o $(LIBS)
 
+rebuild:clean $(OBJS) $(OBJDIR)main.o
+	$(LNK) $(OUTEXE)$(BINDIR)main $(OBJS) $(OBJDIR)main.o $(LIBS)
+
 lib:$(OBJS)
 	$(LIB) $(OBJS)
 
 clean:
 	rm -f $(OBJS) $(OBJDIR)main.o
+	rm -f $(OBJDIR)*.obj
 
 debug:
 	$(DBG) "$(BINDIR)main"

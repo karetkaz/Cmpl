@@ -7,10 +7,11 @@
 // default values
 static const int wl = 9;		// warning level
 static const int ol = 2;		// optimize level
-
-static const int cc = 1;			// execution cores
-#define ss (32 << 10)				// execution stack(32K)
-#define memsize (512 << 10)			// runtime size(128K)
+static const int cc = 1;		// execution cores
+#define MKB 20					// size of shift
+#define memsize (128 << MKB)		// runtime size(128K)
+//~ #define ss (32 << MKB)			// execution stack(32K)
+static char mem[memsize];
 
 extern int vmTest();
 
@@ -107,7 +108,7 @@ char *matchstr(const char *t, const char *p, int ic) {
 
 	return (char *)(p[i] ? 0 : t - i);
 }
-char* parsecmd(char *ptr, char *cmd, char *sws) {
+char *parsecmd(char *ptr, char *cmd, char *sws) {
 	while (*cmd && *cmd == *ptr)
 		cmd++, ptr++;
 
@@ -225,8 +226,7 @@ int evalexp(ccEnv s, char* text/* , int opts */) {
 }
 
 int program(int argc, char *argv[]) {
-	static char mem[memsize];
-	state s = gsInit(mem, sizeof(mem));
+	state s = rtInit(mem, sizeof(mem));
 
 	char *prg, *cmd;
 	dbgf dbg = NULL;//Info;
@@ -269,6 +269,17 @@ int program(int argc, char *argv[]) {
 			else
 				fputfmt(stderr, "symbol not found `%s`\n", argv[i]);
 		}
+		/*for (i = 0; i < TBLS; i += 1) {
+			list l, head = env->strt[i];
+			fprintf(stdout, "[%d] ", i);
+			for (l = head; l; l = l->next) {
+				fputs((const char *)l->data, stdout);
+				if (l->next)
+					fputs(", ", stdout);
+			}
+			//~ if (head)
+			fputs("\n", stdout);
+		}// */
 		ccDone(s);
 	}
 	else if (strcmp(cmd, "-c") == 0) {		// compile
@@ -326,7 +337,6 @@ int program(int argc, char *argv[]) {
 				}
 				outc = out_tags;
 			}
-
 			else if (strncmp(arg, "-c", 2) == 0) {		// ast
 				//~ level = 0;
 				if (arg[2] && *parsei32(arg + 2, &level, 16)) {
@@ -393,22 +403,21 @@ int program(int argc, char *argv[]) {
 		}
 
 		if (logf && logfile(s, logf) != 0) {
-			fputfmt(stderr, "can not open file `%s`\n", srcf);
+			fputfmt(stderr, "can not open file `%s`\n", logf);
 			return -1;
 		}
 
 		if (srcfile(s, srcf) != 0) {
-			fputfmt(stderr, "can not open file `%?s`\n", srcf);
+			//~ fputfmt(stderr, "can not open file `%?s`\n", srcf);
+			error(s, -1, "can not open file `%s`", srcf);
 			logfile(s, NULL);
 			return -1;
 		}
-		debug("compiler.init:%.2F KBytes", (s->cc->_ptr - s->_mem) / 1024.);
 
 		if (compile(s, warn) != 0) {
 			logfile(s, NULL);
 			return s->errc;
 		}
-		debug("compiler.scan:%.2F KBytes", (s->cc->_ptr - s->_mem) / 1024.);
 
 		//! TODO: do not skip code generation, here are also checkings for lvalues and casts
 		if (outc == out_tags || outc == out_tree) {} else
@@ -418,16 +427,14 @@ int program(int argc, char *argv[]) {
 			logfile(s, NULL);
 			return s->errc;
 		}
-		//~ debug("code:%d Bytes", s->vm->cs);
-		//~ debug("data:%d Bytes", s->vm->ds);
 
 		//~ logfile(s, outf);
 		if (outc) switch (outc) {
 			default: fatal("FixMe");
-			case out_tags: dump2file(s, outf, dump_sym | (level & 0xff), NULL); break;
-			case out_dasm: dump2file(s, outf, dump_asm | (level & 0xff), NULL); break;
-			case out_tree: dump2file(s, outf, dump_ast | (level & 0xff), NULL); break;
-			case run_code: exec(s->vm, ss, dbg); break;
+			case out_tags: dump2file(s, outf, dump_sym | (level & 0x0ff), NULL); break;
+			case out_dasm: dump2file(s, outf, dump_asm | (level & 0xfff), NULL); break;
+			case out_tree: dump2file(s, outf, dump_ast | (level & 0x0ff), NULL); break;
+			case run_code: exec(s->vm, dbg); break;
 		}
 
 		logfile(s, NULL);
@@ -461,6 +468,45 @@ int program(int argc, char *argv[]) {
 	}
 	*/
 	else fputfmt(stderr, "invalid option: '%s'\n", cmd);
+
+	return 0;
+}
+
+int bitmap(int argc, char *argv[]) {
+	state s = rtInit(mem, sizeof(mem));
+
+	//~ char *prg, *cmd;
+	//~ dbgf dbg = NULL;//Info;
+
+	int warn = wl;
+	int opti = ol;
+	char *logf = 0;
+	char *srcf = "test2.cvx";
+
+	if (logf && logfile(s, logf) != 0) {
+		fputfmt(stderr, "can not open file `%s`\n", logf);
+		return -1;
+	}
+
+	if (srcfile(s, srcf) != 0) {
+		error(s, -1, "can not open file `%s`", srcf);
+		logfile(s, NULL);
+		return -1;
+	}
+
+	if (compile(s, warn) != 0) {
+		logfile(s, NULL);
+		return s->errc;
+	}
+
+	if (gencode(s, opti) != 0) {
+		logfile(s, NULL);
+		return s->errc;
+	}
+
+	
+
+	logfile(s, NULL);
 	return 0;
 }
 
@@ -494,6 +540,25 @@ int mk_test(char *file, int size) {
 	return 0;
 }
 
+/*int test1() {
+	astn tmp;
+	ccEnv cc;
+	char *file = "C:\\Documents and Settings\\kmz\\Desktop\\bible.txt";
+	static char mem[memsize];
+	state s = rtInit(mem, sizeof(mem));
+
+	if (!(cc = ccInit(s)))
+		return -1;
+	if (srcfile(s, file) != 0)
+		return -2;
+
+	while ((tmp = next(cc, 0))) {
+		//~ if (tmp->kind != TYPE_ref)debug("%k", tmp);
+	}
+
+	return 0;
+}// */
+
 int main(int argc, char *argv[]) {
 	if (1 && argc == 1) {
 		char *args[] = {
@@ -514,19 +579,14 @@ int main(int argc, char *argv[]) {
 	setbuf(stderr, NULL);
 	//~ return mk_test("xxxx.cvx", 8 << 20);	// 8M
 	//~ return vmTest();
+	//~ return test1();
 	return program(argc, argv);
 }
 
 int dbgInfo(state s, int pu, void *ip, long* sptr, int slen) {
-	vmEnv vm = s->vm;
 	if (ip == NULL) {
-		if (s->cc)
-			vmTags(s, (char*)sptr, slen, 0);
-		else {
-			debug("!s->cc");
-		}
-		vmInfo(stdout, vm);
-		return 0;
+		vmTags(s, (char*)sptr, slen, 0);
+		//~ vmInfo(stdout, vm);
 	}
 	return 0;
 }
@@ -545,10 +605,10 @@ int dbgCon(state s, int pu, void *ip, long* sptr, int slen) {
 		return 0;
 	}
 
-	IP = ((char*)ip) - ((char*)vm->_mem);
+	IP = ((char*)ip) - ((char*)vm->_beg);
 	SP = ((char*)vm->_end) - ((char*)sptr);
 
-	fputfmt(stdout, ">exec:pu%02d@.%04x:%04x[ss:%03d]x[0x%016X]: %A\n", pu, IP, SP, slen, *(int64_t*)sptr, ip);
+	fputfmt(stdout, ">exec:[pu%02d][sp%02d]@%9.*A\n", pu, slen, IP, ip);
 
 	if (cmd != 'N') for ( ; ; ) {
 		if (fgets(buff, 1024, stdin) == NULL) {

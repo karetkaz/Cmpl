@@ -10,233 +10,304 @@
 //~ #open src/parse.c
 //~ #open src/main.c
 
-static if (true) {	// sdt.lib
-define print(int32 arg) = puti64(int64(arg));
-define print(flt32 arg) = putf64(flt64(arg));
-define print(int64 arg) = puti64(int64(arg));
-define print(flt64 arg) = putf64(flt64(arg));
+//~ /*	use.sdt.lib
+static if (true) {
 
-define vec4f(int32 x, int32 y, int32 z, int32 w) = emit(vec4f, f32(x), f32(y), f32(z), f32(w));
-define vec4f(flt32 x, flt32 y, flt32 z, flt32 w) = emit(vec4f, f32(x), f32(y), f32(z), f32(w));
+enum math: flt64 {
+	pi		= 3.14159265358979323846264338327950288419716939937510582097494459;
+	nan		= 0. / 0;
+	inf		= 1. / 0;
+	//~ define isNan(flt64 a) = bool(a == a);
+	//~ define isNan(flt32 a) = bool(a == a);
+	//~ define isInf(flt64 a) = bool(a && a == 2 * a);
+	//~ define isInf(flt32 a) = bool(a && a == 2 * a);
+}
+
+enum use: bool {
+	print = true;
+	vec4f = true;
+	vec2d = true;
+}
+
+static if (use.print) {
+define print(int32 arg) = puti64(arg);
+define print(flt32 arg) = putf64(arg);
+define print(int64 arg) = puti64(arg);
+define print(flt64 arg) = putf64(arg);
+define print(string arg) = putstr(arg);
+
+define println() = emit(void, void(putchr('\n')));
+define println(int32 arg) = emit(void, void(putchr('\n')), void(puti64(arg)));
+define println(flt32 arg) = emit(void, void(putchr('\n')), void(putf64(arg)));
+define println(int64 arg) = emit(void, void(putchr('\n')), void(puti64(arg)));
+define println(flt64 arg) = emit(void, void(putchr('\n')), void(putf64(arg)));
+define println(string arg) = emit(void, void(putchr('\n')), void(putstr(arg)));
+}
+static if (use.vec4f) {
+struct vec4f: 4 {
+	flt32 x;
+	flt32 y;
+	flt32 z;
+	flt32 w;
+}
+
 define vec4f(flt64 x, flt64 y, flt64 z, flt64 w) = emit(vec4f, f32(x), f32(y), f32(z), f32(w));
-//~ define vec4f(int32 x, int32 y, int32 z) = emit(vec4f, f32(x), f32(y), f32(z), f32(0));
-//~ define vec4f(flt32 x, flt32 y, flt32 z) = emit(vec4f, f32(x), f32(y), f32(z), f32(0));
 define vec4f(flt64 x, flt64 y, flt64 z) = emit(vec4f, f32(x), f32(y), f32(z), f32(0));
-//~ define vec4f(int32 val) = emit(vec4f, dupp_x2, dupp_x1, f32(val));
-//~ define vec4f(flt32 val) = emit(vec4f, dupp_x2, dupp_x1, f32(val));
 define vec4f(flt64 val) = emit(vec4f, dupp_x2, dupp_x1, f32(val));
 
 //~ define dp3(vec4f lhs, vec4f rhs) = emit(v4f.dp3, v4f(lhs), v4f(rhs));
 //~ define dp4(vec4f lhs, vec4f rhs) = emit(v4f.dp4, v4f(lhs), v4f(rhs));
 //~ define dph(vec4f lhs, vec4f rhs) = emit(v4f.dph, v4f(lhs), v4f(rhs));
 
+}
+static if (use.vec2d) {
+struct vec2d: 4 {
+	flt64 x;
+	flt64 y;
+}
+
+define vec2d(flt64 x, flt64 y) = emit(vec2d, f64(x), f64(y));
+define add(vec2d x, vec2d y) = emit(vec2d, v2d.add, val(y), val(x));
+define sub(vec2d x, vec2d y) = emit(vec2d, v2d.sub, val(y), val(x));
+define mul(vec2d x, vec2d y) = emit(vec2d, v2d.mul, val(y), val(x));
+define div(vec2d x, vec2d y) = emit(vec2d, v2d.div, val(y), val(x));
+//~ define mod(vec2d x, vec2d y) = emit(vec2d, v2d.rem, val(y), val(x));
+define min(vec2d x, vec2d y) = emit(vec2d, v2d.min, val(y), val(x));
+define max(vec2d x, vec2d y) = emit(vec2d, v2d.max, val(y), val(x));
+define cmp(vec2d x, vec2d y) = emit(v2d.equ, val(y), val(x));
+
+//~ vec2d v2x = vec2d(2., 6.);
+//~ vec2d v2y = vec2d(4., 3.);
+//~ vec2d v2z = div(v2x, v2y);
+//~ bool eq = cmp(x, y);
+
+}
+
+//~ define sqr1(flt64 val) = (val * val);
+//~ define sqr2(flt64 &val) = (val * val);
+define sqr(flt64 val) = emit(f64.mul, dupp_x2, f64(val));
+
+/*enum Gl {
+	enum Polygons {		// Polygons
+		GL_POINT                               = 0x1B00,
+		GL_LINE                                = 0x1B01,
+		GL_FILL                                = 0x1B02,
+		GL_CW                                  = 0x0900,
+		GL_CCW                                 = 0x0901,
+		GL_FRONT                               = 0x0404,
+		GL_BACK                                = 0x0405,
+		GL_POLYGON_MODE                        = 0x0B40,
+		GL_POLYGON_SMOOTH                      = 0x0B41,
+		GL_POLYGON_STIPPLE                     = 0x0B42,
+		GL_EDGE_FLAG                           = 0x0B43,
+		GL_CULL_FACE                           = 0x0B44,
+		GL_CULL_FACE_MODE                      = 0x0B45,
+		GL_FRONT_FACE                          = 0x0B46,
+		GL_POLYGON_OFFSET_FACTOR               = 0x8038,
+		GL_POLYGON_OFFSET_UNITS                = 0x2A00,
+		GL_POLYGON_OFFSET_POINT                = 0x2A01,
+		GL_POLYGON_OFFSET_LINE                 = 0x2A02,
+		GL_POLYGON_OFFSET_FILL                 = 0x8037,
+	}
+	define glBegin(Polygons value) = emit(libc(1), i32(0), i32(value));
+	define glEnd(Polygons value) = emit(libc(1), i32(1), i32(value));
 }// */
 
-//~ int a = int(9);
-//~ vec4f a = vec4f(1., 2., 3., .0);
-//~ vec4f b = vec4f(5.8 / 9);
-/*
-//~ flt32 res3 = emit(f32, f32(math.pi));
-//~ class RoundingModeType: int32 {};
-enum RoundingMode {
-	ROUND_UP = 0;
-	ROUND_DOWN = 1;
-	ROUND_CEILING = 2;
-	ROUND_FLOOR = 3;
-	ROUND_HALF_UP = 4;
-	ROUND_HALF_DOWN = 5;
-	ROUND_HALF_EVEN = 6;
-	ROUND_UNNECESSARY = 7;
-}
+//~ define int08(pointer ptr) = emit(vec4f, ldi.b01, ref(ptr));
+//~ define int16(pointer ptr) = emit(vec4f, ldi.b02, ref(ptr));
+//~ define int32(pointer ptr) = emit(vec4f, ldi.b04, ref(ptr));
+//~ define int64(pointer ptr) = emit(vec4f, ldi.b08, ref(ptr));
+//~ define vec4f(pointer ptr) = emit(vec4f, ldi.b16, ref(ptr));
 
-define sqr(flt64 value) = flt64(value * value);
-define round(flt64 value, flt64 mode) = flt64(value + mode);
-define round(flt64 value) = round(value, RoundingMode.ROUND_FLOOR);
+/+ TODO:
+ +  int min(int first, int ...rest) {
+ +  	for (int n : rest)
+ +  		if (first > n)
+ +  			first = n;
+ +  	return first;
+ +  }
+ +/
+}// */
 
-define a = 6;
-//~ double a1 = round(2.998);
-double a2 = round(sqr(6), sqr(a));
+/* fogyasztas
+define fogyasztas(double _km, double _benzin, double _atlag) = double(_benzin * _km * _atlag / 100.);
 
-struct Font {
-	string Name;
-	type: enum Type {
-		Bold;
-		Italic;
-		Underline;
-	};
+double km = 4. * 5 * 16;
+double atlag = 9.0;
+double benzin = 4.75;
+double fogyasztas = fogyasztas(km, benzin, atlag);
+// */
 
-	alma: struct Alma{
-		int a;
-		int b;
-	}
-
-}
-
-define f2 : Font[200];
-
-f2 a;
-
-x.type = Font.Type.Italic;
-//~ x.type = Font.Italic;
-*/
-
+/+ big integer math
 static if (1) {
 struct i32x8 {
-	//~ int32 i0[8];
-	// optimized for print layout
-	int32 i8;	//!%%08x
-	int32 i7;	//!%%08x
-	int32 i6;	//!%%08x
-	int32 i5;	//!%%08x
-	int32 i4;	//!%%08x
-	int32 i3;	//!%%08x
-	int32 i2;	//!%%08x
-	int32 i1;	//!%%08x
-}
-define i32x8(int i1, int i2, int i3, int i4, int i5, int i6, int i7, int i8) = emit(i32x8, i32(i1), i32(i2), i32(i3), i32(i4), i32(i5), i32(i6), i32(i7), i32(i8));
-
-//~ i32x8 a = i32x8(0x00000000, 0xffffffff, 0x00000000, 0x8fffffff, 0x00000000, 0xffffffff, 0x00000000, 0x8fffffff);
-//~ i32x8 b = i32x8(0x00000000, 0xffffffff, 0xffffffff, 0x7fffffff, 0x00000000, 0xffffffff, 0xffffffff, 0x7fffffff);
-//~ i32x8 a = i32x8(0, 0, 0, 0, 0, 0, 0, 0);
-i32x8 b = i32x8(0, 0, 0, 0, 0, 0, 0, 1);
-//~ i32x8 a = i32x8(0x0fffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff);
-i32x8 a = i32x8(0x0f1f2f3f, 0x4f5f6f7f, 0x8f9fffff, 0xffffffff, 0x0efffffff, 0xffffffff, 0xffffffff, 0xffffffff);
-i32x8 c;
-
-enum TestType {
-	cmt;
-	neg;
-	add;	// done
-	sub;
-	mul;
-	div;
-	mod;
-	shl;
-	shr;
-	sar;
-}
-
-define test = TestType.add;
-/*i32x8 add(i32x8 a, i32x8 b) {
-	result.i1 = int32(a.i1 + b.i1);
-	result.i2 = int32(a.i2 + b.i2 + (uns32(result.i1) < (a.i1 | b.i1)));
-	result.i3 = int32(a.i3 + b.i3 + (uns32(result.i2) < (a.i2 | b.i2)));
-	result.i4 = int32(a.i4 + b.i4 + (uns32(result.i3) < (a.i3 | b.i3)));
-	result.i5 = int32(a.i5 + b.i5 + (uns32(result.i4) < (a.i4 | b.i4)));
-	result.i6 = int32(a.i6 + b.i6 + (uns32(result.i5) < (a.i5 | b.i5)));
-	result.i7 = int32(a.i7 + b.i7 + (uns32(result.i6) < (a.i6 | b.i6)));
-	result.i8 = int32(a.i8 + b.i8 + (uns32(result.i7) < (a.i7 | b.i7)));
+	int32 i8;	//%%08x
+	int32 i7;	//%%08x
+	int32 i6;	//%%08x
+	int32 i5;	//%%08x
+	int32 i4;	//%%08x
+	int32 i3;	//%%08x
+	int32 i2;	//%%08x
+	int32 i1;	//%%08x
 } // */
 
-static if (test == TestType.cmt) {
-c.i1 = ~b.i1;
-c.i2 = ~b.i2;
-c.i3 = ~b.i3;
-c.i4 = ~b.i4;
-c.i5 = ~b.i5;
-c.i6 = ~b.i6;
-c.i7 = ~b.i7;
-c.i8 = ~b.i8;
-}
-static if (test == TestType.neg) {
-c.i1 = int32(-b.i1);
-c.i2 = int32(-b.i2 - (uns32(c.i1) > b.i1));
-c.i3 = int32(-b.i3 - (uns32(c.i2) > b.i2));
-c.i4 = int32(-b.i4 - (uns32(c.i3) > b.i3));
-c.i5 = int32(-b.i5 - (uns32(c.i4) > b.i4));
-c.i6 = int32(-b.i6 - (uns32(c.i5) > b.i5));
-c.i7 = int32(-b.i7 - (uns32(c.i6) > b.i6));
-c.i8 = int32(-b.i8 - (uns32(c.i7) > b.i7));
-}
-static if (test == TestType.add) {
-c.i1 = int32(a.i1 + b.i1);
-c.i2 = int32(a.i2 + b.i2 + (uns32(c.i1) < (a.i1 | b.i1)));
-c.i3 = int32(a.i3 + b.i3 + (uns32(c.i2) < (a.i2 | b.i2)));
-c.i4 = int32(a.i4 + b.i4 + (uns32(c.i3) < (a.i3 | b.i3)));
-c.i5 = int32(a.i5 + b.i5 + (uns32(c.i4) < (a.i4 | b.i4)));
-c.i6 = int32(a.i6 + b.i6 + (uns32(c.i5) < (a.i5 | b.i5)));
-c.i7 = int32(a.i7 + b.i7 + (uns32(c.i6) < (a.i6 | b.i6)));
-c.i8 = int32(a.i8 + b.i8 + (uns32(c.i7) < (a.i7 | b.i7)));
-}
-static if (test == TestType.sub) {
-c.i1 = int32(a.i1 - b.i1);
-c.i2 = int32(a.i2 - b.i2 - (uns32(c.i1) > (a.i1 | b.i1)));
-c.i3 = int32(a.i3 - b.i3 - (uns32(c.i2) > (a.i2 | b.i2)));
-c.i4 = int32(a.i4 - b.i4 - (uns32(c.i3) > (a.i3 | b.i3)));
-c.i5 = int32(a.i5 - b.i5 - (uns32(c.i4) > (a.i4 | b.i4)));
-c.i6 = int32(a.i6 - b.i6 - (uns32(c.i5) > (a.i5 | b.i5)));
-c.i7 = int32(a.i7 - b.i7 - (uns32(c.i6) > (a.i6 | b.i6)));
-c.i8 = int32(a.i8 - b.i8 - (uns32(c.i7) > (a.i7 | b.i7)));
-}
-static if (test == TestType.mul) {
-// This needs shift ops
-c.i1 = int32(a.i1 * b.i1);
-c.i2 = 0;
-c.i3 = 0;
-c.i4 = 0;
-c.i5 = 0;
-c.i6 = 0;
-c.i7 = 0;
-c.i8 = 0;
-}
+define i32x8(int i1, int i2, int i3, int i4, int i5, int i6, int i7, int i8) = emit(i32x8, i32(i1), i32(i2), i32(i3), i32(i4), i32(i5), i32(i6), i32(i7), i32(i8));
+define i32x8(int32 i0) = emit(i32x8, dupp.x1, dupp.x2, dupp.x2, dupp.x1, i32.shr, i32(31), dupp.x1, i32(i0));
+define i32x8(uns32 i0) = emit(i32x8, dupp.x1, dupp.x2, dupp.x2, dupp.x1, i32(0), i32(i0));
 
-static if (test == TestType.shl) {
-c.i1 = int32((uns32(a.i1) >> b.i1) | (uns32(a.i2) << (32 - b.i1)));
-//~ c.i2 = int32((uns32(a.i2) >> b.i1) | (uns32(a.i3) << (32 - b.i1)));
-//~ c.i3 = int32((uns32(a.i3) >> b.i1) | (uns32(a.i4) << (32 - b.i1)));
-//~ c.i4 = int32((uns32(a.i4) >> b.i1) | (uns32(a.i5) << (32 - b.i1)));
-//~ c.i5 = int32((uns32(a.i5) >> b.i1) | (uns32(a.i6) << (32 - b.i1)));
-//~ c.i6 = int32((uns32(a.i6) >> b.i1) | (uns32(a.i7) << (32 - b.i1)));
-//~ c.i7 = int32((uns32(a.i7) >> b.i1) | (uns32(a.i8) << (32 - b.i1)));
-//~ c.i8 = int32(uns32(a.i8) >> b.i1);
-}
-}
-static if (0) {
-struct i32x4 {
-	// optimized for print layout
-	int32 i4;	//!%%08x
-	int32 i3;	//!%%08x
-	int32 i2;	//!%%08x
-	int32 i1;	//!%%08x
-}
-define i32x4(int i1, int i2, int i3, int i4) = emit(i32x4, i32(i1), i32(i2), i32(i3), i32(i4));
+//~ i32x8 a = i32x8(0x0f1f2f3f, 0x4f5f6f7f, 0x8f9fffff, 0xffffffff, 0x0efffffff, 0xffffffff, 0xffffffff, 0xffffffff);
+//~ i32x8 b = i32x8(0x0fffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff);
 
-//~ i32x4 a = i32x4(0x00000000, 0xffffffff, 0x00000000, 0x8fffffff);
-//~ i32x4 b = i32x4(0x00000000, 0xffffffff, 0xffffffff, 0x7fffffff);
-//~ i32x4 a = i32x4(0, 0, 0, 0);
-//~ i32x4 b = i32x4(0, 0, 0, 0);
-i32x4 b = i32x4(0, 0, 0, 1);
-i32x4 a = i32x4(0x00000000, 0xffffffff, 0xffffffff, 0xffffffff);
+i32x8 a = i32x8(int32(0x0fffffff), int32(0xffffffff), int32(0xffffffff), int32(0xffffffff), int32(0xffffffff), int32(0xffffffff), int32(0xffffffff), int32(0xffffffff));
+i32x8 b = i32x8(1);
 
-i32x4 c;
-c.i1 = int32(a.i1 + b.i1);
-c.i2 = int32(a.i2 + b.i2 + (uns32(c.i1) < (a.i1 | b.i1)));
-c.i3 = int32(a.i3 + b.i3 + (uns32(c.i2) < (a.i2 | b.i2)));
-c.i4 = int32(a.i4 + b.i4 + (uns32(c.i3) < (a.i3 | b.i3)));
+//~ i32x8 a = i32x8(0);
+//~ i32x8 b = i32x8(15);
+
+i32x8 c;
+
+/*TODO: no functions
+i32x8 add(i32x8 a, i32x8 b) {}
+
+i32x8 add(i32x8 a, int32 b) {}
+
+i32x8 cmt(i32x8 b) {
+	result.i1 = ~b.i1;
+	result.i2 = ~b.i2;
+	result.i3 = ~b.i3;
+	result.i4 = ~b.i4;
+	result.i5 = ~b.i5;
+	result.i6 = ~b.i6;
+	result.i7 = ~b.i7;
+	result.i8 = ~b.i8;
 }
+i32x8 neg(i32x8 b) {}
 
-//~ flt32 dp3(vec4f a, vec4f b) {result = a.x * b.x + a.y * b.y + a.z * b.z;}
-//~ flt32 dph(vec4f a, vec4f b) {result = a.x * b.x + a.y * b.y + a.z * b.z + a.w;}
-//~ flt32 dp4(vec4f a, vec4f b) {result = a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w;}
-//~ flt32 dot(vec4f a, vec4f b) = dp3;
+i32x8 add(i32x8 a, i32x8 b, int32 &c = null);
+i32x8 add(i32x8 a, int32 b, int32 &c = null);
+i32x8 sub(i32x8 a, i32x8 b, int32 &c = null);
+i32x8 sub(i32x8 a, int32 b, int32 &c = null);
+i32x8 mul(i32x8 a, i32x8 b, i32x8 &hi = null);
+i32x8 mul(i32x8 a, int32 b, i32x8 &hi = null);
+i32x8 div(i32x8 a, i32x8 b, i32x8 &rem = null);
+i32x8 div(i32x8 a, int32 b, i32x8 &rem = null);
+i32x8 mod(i32x8 a, i32x8 b) {div(a, b, result);}
+i32x8 mod(i32x8 a, int32 b) {div(a, b, result);}
+
+i32x8 sub(i32x8 a, i32x8 b) {}
+
+// */
+//~ /*
+
+define zxt64(int32 a) = int64(uns32(a));		// zero extend
+define sxt64(int32 a) = int64(int32(a));		// sign extend
+static if (true) {		// add
+	hex64 ovf = 0xffffffff;
+	hex64 sum;
+	int64 carry = 0;
+	c.i1 = int32(sum = zxt64(a.i1) + b.i1 + carry);
+	carry = sum > ovf;
+	c.i2 = int32(sum = zxt64(a.i2) + b.i2 + carry);
+	carry = sum > ovf;
+	c.i3 = int32(sum = zxt64(a.i3) + b.i3 + carry);
+	carry = sum > ovf;
+	c.i4 = int32(sum = zxt64(a.i4) + b.i4 + carry);
+	carry = sum > ovf;
+	c.i5 = int32(sum = zxt64(a.i5) + b.i5 + carry);
+	carry = sum > ovf;
+	c.i6 = int32(sum = zxt64(a.i6) + b.i6 + carry);
+	carry = sum > ovf;
+	c.i7 = int32(sum = zxt64(a.i7) + b.i7 + carry);
+	carry = sum > ovf;
+	c.i8 = int32(sum = zxt64(a.i8) + b.i8 + carry);
+	//~ carry = sum > ovf;
+} // */
+static if (!true) {		// sub
+	hex64 ovf = 0;//xffffffff;
+	hex64 sum;
+	int64 borrow = 0;
+	c.i1 = int32(sum = zxt64(a.i1) - b.i1 - borrow);
+	borrow = sum < ovf;
+	c.i2 = int32(sum = zxt64(a.i2) - b.i2 - borrow);
+	borrow = sum < ovf;
+	c.i3 = int32(sum = zxt64(a.i3) - b.i3 - borrow);
+	borrow = sum < ovf;
+	c.i4 = int32(sum = zxt64(a.i4) - b.i4 - borrow);
+	borrow = sum < ovf;
+	c.i5 = int32(sum = zxt64(a.i5) - b.i5 - borrow);
+	borrow = sum < ovf;
+	c.i6 = int32(sum = zxt64(a.i6) - b.i6 - borrow);
+	borrow = sum < ovf;
+	c.i7 = int32(sum = zxt64(a.i7) - b.i7 - borrow);
+	borrow = sum < ovf;
+	c.i8 = int32(sum = zxt64(a.i8) - b.i8 - borrow);
+	//~ borrow = sum < ovf;
+} // */
+} // +/
+
+/* using emit; and emit();
+//~ string alma = "alma a fa alatt";
+//~ println(1 + 4);
+
+flt32 t1 = 3.14;
+hex32 t2 = emit();
+int32 t3 = emit;
+//~ println(t3);
+
+t3 = 90;
+//~ println(t3);
+// */
+
+/* using strings
+
+long cikkId = 165;
+long raktar = 3;
+long btetelId = 6398;
+double mennyiseg = 1;
+
+define strlen = 25;
+
+int8 val[strlen + 1];
+val[strlen] = 0;
+
+string str = string(val);
+
+println("INSERT INTO gyariszam(cikk_id, mennyiseg, b_tetel_id, raktar_id, gyariszam) VALUES");
+for (int i = 0; i < 40; i += 1) {
+
+	for (int j = 0; j < strlen; j += 1)
+		val[j] = 'a' + (random() % ('z' - 'a'));
+
+	print("("); print(cikkId);
+	print(", "); print(mennyiseg);
+	print(", "); print(btetelId);
+	print(", "); print(raktar);
+	print(", '"); print(str);
+	println("'),");
+}
+// */
+
+/+ hex view
+int64 x = 0x84444444ffffffff;
+hex64 xhex64[1] = emit();
+hex32 xhex32[2] = emit();
+hex16 xhex16[4] = emit();
+hex8  xhex08[8] = emit();
+// +/
 
 /* factorial
-define n = 6;
-int64 res = int64(1);
-for (int i = 1; i <= n; i += 1)
+define n = 7;
+int64 res = 1;
+for (int i = 1; i <= n; i += 1) {
 	res *= i;
-
+}
 // */
 /* calc E
 double res = 1.;
-{
-	// hide these
-	double tmp = 1.;
-	define eps = 1e-100;
-	for (int i = 1; tmp > eps; i += 1) {
-		//~ res = res + (tmp = tmp / i);
-		res += tmp /= i;
-	}
+double tmp = 1.;
+define eps = 1e-200;
+for (int i = 1; tmp > eps; i += 1) {
+	res += tmp /= i;
 }
 // */
 
@@ -252,50 +323,76 @@ int a2 = a;						// ERR: a undeclared if static if(0)
 
 //~ */
 
-//~ /+ TODO: error
-define dim = 20;
-define scalar flt32;
-scalar M[dim][dim][dim];
-//~ scalar m1[dim][dim];
-//~ scalar m2[dim][dim];
-//~ scalar m3[dim][dim];
+/*
+struct token {
+	int kind;
+	int prec;
+	//~ NAME, TYPE, SIZE, KEYW, STR
+}
 
-/+ Initialize
-for (int i = 0; i < dim; i += 1) {
-	for (int j = 0; j < dim; j += 1) {
-		m1[i][j] = m2[i][j] = (i == j) + 1;
-	}
-} // +/
-/*/~ Compute
-for (int i = 0; i < dim; i += 1) {
-	print(i);
-	putchr('\n');
-	for (int j = 0; j < dim; j += 1) {
-		m3[i][j] = 0;
-		for (int k = 0; k < dim; k += 1) {
-			m3[i][j] += m1[i][k] * m2[k][j];
-		}
-	}
-}// */
-/+ Print
-for (int i = 0; i < dim; i += 1) {
-	for (int j = 0; j < dim; j += 1) {
-		if (j != 0)
-			putchr(' ');
-		print(m1[i][j]);
-	}
-	putchr('\n');
-} // +/
-for (int i = 0; i < dim; i += 1) {
-	for (int j = 0; j < dim; j += 1) {
-		putchr('\t');
-		for (int k = 0; k < dim; k += 1) {
-			if (k != 0)
-				putchr(' ');
-			print(M[i][j][k]);
-		}
-		putchr('\n');
-	}
-	putchr('\n');
-} // +/
-// +/
+define token(int kind, int prec, int str) = emit(token, i32(kind), i32(prec), null);
+
+enum tokens: token {
+	TYPE_any = token(0x00, 0, 0);
+	//~ TYPE_vid = token(0x00, 0, ".void");	// void
+	//~ TYPE_bit = token(0x00, 0, ".bool");	// bool, uns32, uns16, uns8
+	//~ TYPE_int = token(0x00, 0, ".int");	// int64, int32, int16, int8
+	//~ TYPE_flt = token(0x00, 0, ".float");	// flt64, flt32
+	//~ TYPE_str = token(0x00, 0, ".string");	// TODO: replace with TYPE_str or TYPE_arr ?
+	//~ TYPE_arr = token(0x00, 0, ".array");	// pointer, string, array, ..., ???
+	//~ TYPE_enu = token(0xff, 0, "enum");	// const usually
+	//~ TYPE_def = token(0xff, 0, "define");	// type or const or inline definition
+	//~ TYPE_rec = token(0xff, 0, "struct");	// union := struct:0
+	//~ TYPE_ref = token(0x00, 0, ".ref");		// variable/function
+	// EMIT_opc = token(0xff, 0, "emit");
+
+	//~ STMT_beg = token(0x00, 0, ".beg");		// stmt: list {...}
+	//~ STMT_do, = token(0x00, 0, ".do");		// stmt: decl / expr
+	//~ STMT_for = token(0xff, 0, "for");		// stmt: for, while, repeat
+	//~ STMT_if, = token(0xff, 0, "if");		// stmt: if then else
+	//~ STMT_els = token(0xff, 0, "else");		// ????
+	//~ STMT_end = token(0x00, 0, ".end");		// destruct calls ?
+
+	//~ OPER_idx = token(0x0f, 2, ".idx")		// a[i]		index
+	//~ OPER_fnc = token(0x0f, 2, ".fnc")		// a(x)		function call, cast, ctor, dtor = cast(void, var &), emit, ...
+	//~ OPER_dot = token(0x0f, 2, ".dot")		// a.b		member
+	//~ OPER_pls = token(0x1e, 1, ".pls")		// + a		unary plus
+	//~ OPER_mns = token(0x1e, 1, ".neg")		// - a		unary minus
+	//~ OPER_cmt = token(0x1e, 1, ".cmt")		// ~ a		complement / ?reciprocal
+	//~ OPER_not = token(0x1e, 1, ".not")		// ! a		logical not
+	//~ OPER_mul = token(0x0d, 2, ".mul")		// a * b
+	//~ OPER_div = token(0x0d, 2, ".div")		// a / b
+	//~ OPER_mod = token(0x0d, 2, ".mod")		// a % b
+	//~ OPER_add = token(0x0c, 2, ".add")		// a + b
+	//~ OPER_sub = token(0x0c, 2, ".sub")		// a - b
+	//~ OPER_shr = token(0x0b, 2, ".shr")		// a >> b
+	//~ OPER_shl = token(0x0b, 2, ".shl")		// a << b
+	//~ OPER_gte = token(0x0a, 2, ".cgt")		// a > b
+	//~ OPER_geq = token(0x0a, 2, ".cge")		// a >= b
+	//~ OPER_lte = token(0x0a, 2, ".clt")		// a < b
+	//~ OPER_leq = token(0x0a, 2, ".cle")		// a <= b
+	//~ OPER_equ = token(0x09, 2, ".ceq")		// a == b
+	//~ OPER_neq = token(0x09, 2, ".cne")		// a != b
+	//~ OPER_and = token(0x08, 2, ".and")		// a & b
+	//~ OPER_xor = token(0x07, 2, ".xor")		// a ^ b
+	//~ OPER_ior = token(0x06, 2, ".ior")		// a | b
+	//~ OPER_lnd = token(0x05, 2, "&&")			// a && b
+	//~ OPER_lor = token(0x04, 2, "||")			// a || b
+	//~ OPER_sel = token(0x13, 3, "?:")			// a ? b : c
+	//~ ASGN_set = token(0x12, 2, ":=")			// a := b
+	//~ ASGN_mul = token(0x12, 2, "*=")			// a *= b
+	//~ ASGN_div = token(0x12, 2, "/=")			// a /= b
+	//~ ASGN_mod = token(0x12, 2, "%=")			// a %= b
+	//~ ASGN_add = token(0x12, 2, "+=")			// a += b
+	//~ ASGN_sub = token(0x12, 2, "-=")			// a -= b
+	//~ ASGN_shl = token(0x12, 2, "<<=")		// a <<= b
+	//~ ASGN_shr = token(0x12, 2, ">>=")		// a >>= b
+	//~ ASGN_and = token(0x12, 2, "&=")			// a &= b
+	//~ ASGN_xor = token(0x12, 2, "^=")			// a ^= b
+	//~ ASGN_ior = token(0x12, 2, "|=")			// a |= b
+	//~ OPER_com = token(0x01, 2, ",")			// a, b
+
+	//~ QUAL_sta = token(0xff, 0, "static");
+	//~ QUAL_par = token(0xff, 0, "parralel");
+}
+// */

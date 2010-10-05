@@ -4,10 +4,6 @@
 #include <string.h>
 
 enum Format {
-	//~ alNone = 0x0000,	// %k
-	//~ alLess = 0x0001,	// %-k
-	//~ alMore = 0x0002,	// %+k
-
 	// ast
 	noIden = 0x0100,
 
@@ -17,16 +13,14 @@ enum Format {
 
 	// sym
 	prType = 0x0010,
-
 	prQual = 0x0020,
-	prCast = 0x0020,
-
 	prArgs = 0x0040,
 
-	prInit = 0x0080,// TODO: RemMe
-	prLine = 0x0080,// xml
+	// xml
+	prCast = 0x0020,
+	prLine = 0x0080,
 };
-static void fputast(FILE *fout, astn ast, int mode, int level);
+
 static void fputsym(FILE *fout, symn sym, int mode, int level) {
 	int rlev = mode & 0xf;
 
@@ -37,10 +31,7 @@ static void fputsym(FILE *fout, symn sym, int mode, int level) {
 
 	if (sym->kind == TYPE_arr) {
 		fputsym(fout, sym->type, mode, level);
-		fputs("[", fout);
-		if (sym->init)
-			fputast(fout, sym->init, 0, 0);
-		fputs("]", fout);
+		fputfmt(fout, "[%?d]", sym->size);
 		return;
 	}
 
@@ -51,11 +42,8 @@ static void fputsym(FILE *fout, symn sym, int mode, int level) {
 		}
 		if (sym->name)
 			fputs(sym->name, fout);
-		if (sym->init) {
-			fputs("(", fout);
-			fputast(fout, sym->init, 0, 0);
-			fputs(")", fout);
-		}
+		if (sym->init)
+			fputfmt(fout, "(%d)", constint(sym->init));
 		return;
 	}
 
@@ -65,10 +53,10 @@ static void fputsym(FILE *fout, symn sym, int mode, int level) {
 				//~ fputs("define ", fout);
 				break;
 			case TYPE_rec:
-				fputs("struct ", fout);
+				//~ fputs("struct ", fout);
 				break;
 			case TYPE_enu:
-				fputs("enum ", fout);
+				//~ fputs("enum ", fout);
 				break;
 			default:
 				fputsym(fout, sym->type, mode, level);
@@ -89,7 +77,7 @@ static void fputsym(FILE *fout, symn sym, int mode, int level) {
 	if ((mode & prArgs) && sym->call) {
 		symn arg = sym->args;
 		fputc('(', fout);
-		while (arg) {
+		if (arg != void_arg) while (arg) {
 			fputsym(fout, arg->type, mode, 0);
 			if (mode && rlev > 0) {
 				fputc(' ', fout);
@@ -100,18 +88,6 @@ static void fputsym(FILE *fout, symn sym, int mode, int level) {
 				fputs(", ", fout);
 		}
 		fputc(')', fout);
-	}
-
-	if (mode & prInit) {
-		if (sym->init) {
-			if ((mode & prType) && sym->type && sym->kind == TYPE_def) {
-				fputfmt(fout, " = %+T(%+k)", sym->type, sym->init);
-			}
-			else
-				fputfmt(fout, " = %+k", sym->init);
-		}
-		else if (sym->kind == TYPE_def)
-			fputfmt(fout, ": %-T", sym->type);
 	}
 }
 static void fputast(FILE *fout, astn ast, int mode, int level) {
@@ -211,7 +187,7 @@ static void fputast(FILE *fout, astn ast, int mode, int level) {
 					debug("error");
 					break;
 			}
-			fputfmt(fout, "for (%+k; %+k; %+k)", ast->stmt.init, ast->stmt.test, ast->stmt.step);
+			fputfmt(fout, "for (%?+k; %?+k; %?+k)", ast->stmt.init, ast->stmt.test, ast->stmt.step);
 			if (ast->stmt.stmt) {
 				int kind = ast->stmt.stmt->kind;
 				if (!nlbody && kind == STMT_beg) {
@@ -360,8 +336,8 @@ static void fputast(FILE *fout, astn ast, int mode, int level) {
 		case TYPE_bit: fputfmt(fout, "%U", ast->con.cint); break;
 		case TYPE_int: fputfmt(fout, "%D", ast->con.cint); break;
 		case TYPE_flt: fputfmt(fout, "%F", ast->con.cflt); break;
-		case TYPE_str: fputfmt(fout, "'%s'", ast->con.cstr); break;
-		//~ case TYPE_ref: fputfmt(fout, "%s", ast->id.name); break;
+		//~ case TYPE_str: fputfmt(fout, "'%s'", ast->con.cstr); break;
+		case TYPE_str: fputfmt(fout, "\"%s\"", ast->id.name); break;
 		case TYPE_ref: {
 			if (ast->id.link)
 				fputsym(fout, ast->id.link, 0, level);
@@ -370,16 +346,18 @@ static void fputast(FILE *fout, astn ast, int mode, int level) {
 		} break;
 
 		case TYPE_def: {
-			//~ fputsym(fout, ast->id.link, prArgs, level);
 			symn val = ast->id.link;
 			if (val) switch (val->kind) {
-				case TYPE_def: fputfmt(fout, "define "); break;
 				case TYPE_enu: fputfmt(fout, "enum "); break;
 				case TYPE_rec: fputfmt(fout, "struct "); break;
+				case TYPE_def: fputfmt(fout, "define "); break;
 			}
-			fputsym(fout, ast->id.link, rlev ? -1 : 0, level);
-			//~ fputsym(fout, ast->id.link, rlev, level);
-		} break;// */
+			fputsym(fout, val, rlev ? -1 : 0, level);
+			if (rlev && val && val->init) {
+				fputfmt(fout, " = %+k", val->init);
+			}
+
+		} break;
 		//}
 
 		default:
@@ -402,7 +380,6 @@ static char* fmtuns(char *dst, int max, int prc, int radix, uint64_t num) {
 		}
 		*--ptr = "0123456789abcdef"[num % radix];
 	} while (num /= radix);
-	//*/
 	return ptr;
 }
 
@@ -638,8 +615,6 @@ void fputfmt(FILE *fout, const char *msg, ...) {
  *	'^': typename(dcl)
  *	'#': constant(def)
  *	'$': variable(ref)
- *	'$': function?
- *+	'*': operator?
 **/
 void dumpsym(FILE *fout, symn sym, int alma) {
 	symn ptr, bp[TOKS], *sp = bp;
@@ -654,32 +629,24 @@ void dumpsym(FILE *fout, symn sym, int alma) {
 
 		switch (ptr->kind) {
 
-			// variable/function
-			case TYPE_ref:
-				tch = chrtyp ? "$" : "var: ";
+			// constant/enum
+			case TYPE_enu:
+				tch = chrtyp ? "#" : "enu: ";
 				break;
-
-			// constant/typedef
 			case TYPE_def:
 				tch = chrtyp ? "#" : "def: ";
 				break;
 
-			// typename
-			case TYPE_vid:
-			case TYPE_bit:
-			case TYPE_int:
-			case TYPE_flt:
-			case TYPE_str:
-
-			//~ case TYPE_arr:
+			// typename/array
+			case TYPE_arr:
 			case TYPE_rec:
 				tch = chrtyp ? "^" : "typ: ";
 				break;
 
-			case TYPE_enu:
-				tch = chrtyp ? "#" : "enu: ";
+			// variable/function
+			case TYPE_ref:
+				tch = chrtyp ? "$" : "var: ";
 				break;
-
 			case EMIT_opc:
 				tch = chrtyp ? "@" : "opc: ";
 				break;
@@ -707,7 +674,7 @@ void dumpsym(FILE *fout, symn sym, int alma) {
 
 		fputs(tch, fout);
 
-		// qualified name
+		// qualified name with arguments
 		fputsym(fout, ptr, prQual|prArgs | 1, 20);
 
 		// qualified type
@@ -716,16 +683,19 @@ void dumpsym(FILE *fout, symn sym, int alma) {
 			fputsym(fout, ptr->type, prQual, 0);
 		}
 
+		if (ptr->cast)
+			fputfmt(fout, ":[%t]", ptr->cast);
+
 		// initializer
 		if (ptr->init && ptr->kind != TYPE_ref) {
 			fputs(" = ", fout);
 			fputast(fout, ptr->init, noIden | 1, 0xf0);
-		}// */
+		}
 
 		/*/ size or offset
 		if (ptr->kind == TYPE_ref) {
 			if (ptr->offs < 0) {
-				fputfmt(fout, "[@%s(%d)]: ", ptr->call ? "lc" : "st", -ptr->offs);
+				fputfmt(fout, "[@st(%d)]: ", -ptr->offs);
 			}
 			else
 				fputfmt(fout, "[@%04xh]: ", ptr->offs);
@@ -872,7 +842,13 @@ void dumpxml(FILE *fout, astn ast, int lev, const char* text, int level) {
 			break;
 
 		//~ case TYPE_ref: fputfmt(fout, ">%t[%T]</%s>\n", ast->id.link ? ast->id.link->kind : 0, ast->id.link, text); break;
-		case TYPE_ref: fputfmt(fout, ">%-T</%s>\n", ast->id.link, text); break;
+		case TYPE_ref: {
+			symn ref = ast->id.link;
+			fputfmt(fout, ">%-T</%s>\n", ast->id.link, text);
+			if (ref && ref->kind == TYPE_def && ref->init) {
+				dumpxml(fout, ref->init, lev + 1, "init", level);
+			}
+		} break;
 		/*case TYPE_def: {
 			symn var = ast->id.link;
 			if (var && var->init) {
@@ -928,8 +904,7 @@ void dumpast(FILE *fout, astn ast, int level) {
 		fputast(fout, ast, level | 2, 0);
 }
 void dumpasm(FILE *fout, vmEnv s, int mode) {
-	vmInfo(fout, s);
-	fputasm(fout, s->_mem + s->pc, s->cs, s->pc, mode);
+	fputasm(fout, s, s->pc, s->cs, mode);
 }
 
 void dump2file(state s, char *file, dumpMode mode, char *text) {

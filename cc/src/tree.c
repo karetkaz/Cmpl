@@ -9,10 +9,11 @@ astn newnode(ccEnv s, int kind) {
 		ast = s->tokp;
 		s->tokp = ast->next;
 	}
-	else if (s->_cnt > sizeof(struct astn)){
-		ast = (astn)s->_ptr;
-		s->_ptr += sizeof(struct astn);
-		s->_cnt -= sizeof(struct astn);
+	else if (s->_end - s->_beg > sizeof(struct astn)){
+		//~ ast = (astn)s->_beg;
+		//~ s->_beg += sizeof(struct astn);
+		s->_end -= sizeof(struct astn);
+		ast = (astn)s->_end;
 	}
 	else {
 		fatal("memory overrun");
@@ -42,8 +43,8 @@ astn fh8node(ccEnv s, uint64_t v) {
 }
 astn strnode(ccEnv s, char * v) {
 	astn ast = newnode(s, TYPE_str);
-	//~ ast->type = type_str;
-	ast->con.cstr = v;
+	ast->id.hash = -1;
+	ast->id.name = v;
 	return ast;
 }
 astn cpynode(ccEnv s, astn src) {
@@ -56,8 +57,6 @@ void eatnode(ccEnv s, astn ast) {
 	ast->next = s->tokp;
 	s->tokp = ast;
 }
-
-
 
 signed constbol(astn ast) {
 	if (ast) switch (ast->kind) {
@@ -99,7 +98,7 @@ int eval(astn res, astn ast) {
 	switch (ast->cst2) {
 		case TYPE_bit: cast = TYPE_bit; break;
 
-		case TYPE_int: // TODO: define a = 9;
+		case TYPE_int: // TODO: define a = 9;	// what casts to int ? index ?
 		case TYPE_u32: cast = TYPE_int; break;
 		case TYPE_i32: cast = TYPE_int; break;
 
@@ -109,13 +108,16 @@ int eval(astn res, astn ast) {
 		case TYPE_f32: cast = TYPE_flt; break;
 		case TYPE_f64: cast = TYPE_flt; break;
 
-		case TYPE_arr:
+		//~ case TYPE_arr:
 		case TYPE_rec:
 			return 0;
 
 		default:
 			debug("(%+k):%t / %d", ast, ast->cst2, ast->line);
 
+		case TYPE_ref:
+		case TYPE_vid:
+			return 0;
 		case 0:
 		//~ case TYPE_def:
 			//~ return 0;
@@ -124,7 +126,8 @@ int eval(astn res, astn ast) {
 
 	switch (ast->kind) {
 		default:
-			fatal("FixMe %t", ast->kind);
+			//~ fatal("FixMe %t: %+k", ast->kind, ast);
+			debug("FixMe %+k", ast);
 			return 0;
 
 		case OPER_dot: {
@@ -197,7 +200,7 @@ int eval(astn res, astn ast) {
 			}
 		} break;
 
-		//~ /*
+		//~ / *
 		case OPER_add:			// '+'
 		case OPER_sub:			// '-'
 		case OPER_mul:			// '*'
@@ -330,6 +333,7 @@ int eval(astn res, astn ast) {
 		} break;
 
 		case ASGN_set:
+		case EMIT_opc:
 		//~ case ASGN_add:
 		//~ case ASGN_sub:
 		//~ case ASGN_mul:
@@ -374,6 +378,8 @@ int eval(astn res, astn ast) {
 		case TYPE_bit: res->type = type_u32; break;
 		case TYPE_flt: res->type = type_f64; break;
 		case TYPE_int: res->type = type_i32; break;
+		case TYPE_str: res->type = type_str; break;
+		//~ case EMIT_opc: ast->type = emit_opc; break;
 	}
 
 	return res->kind;

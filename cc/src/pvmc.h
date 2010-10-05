@@ -7,6 +7,7 @@ typedef float flt32_t;
 typedef double flt64_t;
 
 #define useBuiltInFuncs
+#define LIBCALLS 256
 
 //~ typedef struct astn *astn;		// tree
 typedef struct symn *symn;		// symbols
@@ -33,11 +34,7 @@ typedef struct state {
 typedef enum {
 	srcFile = 0x10,		// file / buffer
 
-	//~ srcAuto = -1,		// first token ?
-	//~ srcUnit = 0x01,		// unit / script
 	// unit / script (ask the file what is it ? (: first tokens : 'package' 'name'))
-
-	//~ srcDefs, srcMake;	???
 
 	// dump()
 	//~ dump_bin = 0x0000100,
@@ -45,15 +42,14 @@ typedef enum {
 	dump_asm = 0x0000300,
 	dump_ast = 0x0000400,
 	dumpMask = 0x0000f00,
-
-	//~ cc_Emit = 0x000001,
-
 } srcType, dumpMode;
 
-state gsInit(void* mem, unsigned size);
+// run-time
+state rtInit(void* mem, unsigned size);
+
+int logfile(state, char *file);				// logger
 
 // compile
-int logfile(state, char *file);				// logger
 int srcfile(state, char *file);				// source
 //~ int srctext(state, char *file, int line, char *src);				// source
 int compile(state, int level);				// warning level
@@ -66,7 +62,8 @@ int libcall(state, int call(state), const char* proto);
 typedef int (*dbgf)(state s, int pu, void *ip, long* sptr, int scnt);
 int dbgInfo(state, int, void*, long*, int);				// if compiled file will print results at the end
 int dbgCon(state, int, void*, long*, int);				// 
-int exec(vmEnv, unsigned ss, dbgf dbg);
+//~ int exec(vmEnv, unsigned cc, dbgf dbg);
+int exec(vmEnv, dbgf dbg);
 
 // output
 void dump(state, dumpMode, char* text);
