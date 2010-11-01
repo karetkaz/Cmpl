@@ -1,3 +1,4 @@
+//~ #debug xterm -e gdb -args 
 //~ #open src/pvmc.h
 //~ #open src/ccvm.h
 
@@ -10,40 +11,77 @@
 //~ #open src/parse.c
 //~ #open src/main.c
 
-//~ /*	use.sdt.lib
+//~ module alma;
+
+/*	use.sdt.lib
 static if (true) {
 
 enum math: flt64 {
-	pi		= 3.14159265358979323846264338327950288419716939937510582097494459;
-	nan		= 0. / 0;
-	inf		= 1. / 0;
-	//~ define isNan(flt64 a) = bool(a == a);
+
+	define i64_as_f64(int64 x) = emit(flt64, i64(x));
+
+	//~ nan = 0. / 0;
+	//~ nan = -0. / 0;
+	nan = i64_as_f64(0x7FFFFFFFFFFFFFFF);
+	snan = i64_as_f64(0xFFF8000000000000);
+
+	//~ inf = 1. / 0;
+	inf  = i64_as_f64(0x7FF0000000000000);
+
+	//~ ln2 = 0.693147180559945309417232121458176568075500134360255254120680009;	// A002162
+	ln2  = i64_as_f64(0x3FE62E42FEFA39EF);
+
+	//~ log2E = 1. / ln2;
+	log2e = i64_as_f64(0x3FF71547652B82FE);
+
+	//~ ln10 = 2.30258509299404568401799145468436420760110148862877297603332790;	// A002392
+	//~ log10E = 1. / ln10;
+
+	log2t = i64_as_f64(0x400A934F0979A371);			// lg2(10);
+	logt2 = i64_as_f64(0x3FD34413509F79FF);			// lg10(2);
+
+
+	//~ pi = 3.14159265358979323846264338327950288419716939937510582097494459;	// A000796
+	pi   = i64_as_f64(0x400921FB54442D18);
+
+	//~ e = 2.71828182845904523536028747135266249775724709369995957496696763;	// A001113
+	e    = i64_as_f64(0x4005BF0A8B145769);
+
+	//~ phi = 1.61803398874989484820458683436563811772030917980576286213544862;	// A001622
+
+	//~ sqrt2	= 1.41421356237309504880168872420969807856967187537694807317667974;	// A002193
+	//~ sqrtE	= 1.64872127070012814684865078781416357165377610071014801157507931;	// A019774
+	//~ sqrtPi	= 1.77245385090551602729816748334114518279754945612238712821380779;	// A002161
+	//~ sqrtPhi	= 1.27201964951406896425242246173749149171560804184009624861664038;	// A139339
+
+	define isNan(flt64 a) = emit(not, f64.ceq, dupp.x2, f64(a));// bool(a == a);		// emit(flt64, ,f64(a));
+	//~ define isNan(flt32 a) = emit(bool, not, f32.ceq, dupp.x1, f32(a));// bool(a == a);		// emit(flt64, ,f64(a));
+	//~ define isNan(flt64 a) = bool(a == a);		// emit(flt64, ,f64(a));
 	//~ define isNan(flt32 a) = bool(a == a);
 	//~ define isInf(flt64 a) = bool(a && a == 2 * a);
 	//~ define isInf(flt32 a) = bool(a && a == 2 * a);
 }
 
-enum use: bool {
+enum import: bool {
 	print = true;
 	vec4f = true;
 	vec2d = true;
 }
 
-static if (use.print) {
+static if (import.print) {
+define println() = putchr('\n');
 define print(int32 arg) = puti64(arg);
 define print(flt32 arg) = putf64(arg);
 define print(int64 arg) = puti64(arg);
 define print(flt64 arg) = putf64(arg);
 define print(string arg) = putstr(arg);
-
-define println() = emit(void, void(putchr('\n')));
-define println(int32 arg) = emit(void, void(putchr('\n')), void(puti64(arg)));
-define println(flt32 arg) = emit(void, void(putchr('\n')), void(putf64(arg)));
-define println(int64 arg) = emit(void, void(putchr('\n')), void(puti64(arg)));
-define println(flt64 arg) = emit(void, void(putchr('\n')), void(putf64(arg)));
-define println(string arg) = emit(void, void(putchr('\n')), void(putstr(arg)));
+define println(int32 arg) = emit(void(println()), void(puti64(arg)));
+define println(flt32 arg) = emit(void(println()), void(putf64(arg)));
+define println(int64 arg) = emit(void(println()), void(puti64(arg)));
+define println(flt64 arg) = emit(void(println()), void(putf64(arg)));
+define println(string arg)= emit(void(println()), void(putstr(arg)));
 }
-static if (use.vec4f) {
+static if (import.vec4f) {
 struct vec4f: 4 {
 	flt32 x;
 	flt32 y;
@@ -53,41 +91,62 @@ struct vec4f: 4 {
 
 define vec4f(flt64 x, flt64 y, flt64 z, flt64 w) = emit(vec4f, f32(x), f32(y), f32(z), f32(w));
 define vec4f(flt64 x, flt64 y, flt64 z) = emit(vec4f, f32(x), f32(y), f32(z), f32(0));
-define vec4f(flt64 val) = emit(vec4f, dupp_x2, dupp_x1, f32(val));
+define vec4f(flt64 val) = emit(vec4f, dupp.x2, dupp.x1, f32(val));
 
 //~ define dp3(vec4f lhs, vec4f rhs) = emit(v4f.dp3, v4f(lhs), v4f(rhs));
 //~ define dp4(vec4f lhs, vec4f rhs) = emit(v4f.dp4, v4f(lhs), v4f(rhs));
 //~ define dph(vec4f lhs, vec4f rhs) = emit(v4f.dph, v4f(lhs), v4f(rhs));
+//~ define eval(vec4f &v, flt32 &x) = flt32((((v.w * x + v.z) * x + v.y) * x) + v.x);
+
+//~ operator - (vec4f x) = emit(vec4f, v4f.neg, val(x));
+//~ operator (vec4f x) + (vec4f y) = emit(vec4f, v4f.add, val(y), val(x));
+//~ operator (vec4f x) - (vec4f y) = emit(vec4f, v4f.sub, val(y), val(x));
+//~ operator (vec4f x) * (vec4f y) = emit(vec4f, v4f.mul, val(y), val(x));
+//~ operator (vec4f x) / (vec4f y) = emit(vec4f, v4f.div, val(y), val(x));
+//~ operator (vec4f x) % (vec4f y) = emit(vec4f, v4f.mod, val(y), val(x));
+
+//~ operator (vec4f x) = (vec4f y) = vec4f(x = y);
+
+//~ operator flt32(vec4f vec) = vec.w;
+//~ operator bool(vec4f vec) = bool(vec.x && vec.y && vec.z && vec.w);
+
+//~ operator (vec4f v)[int i] = flt32(i == 0 ? v.x : i == 1 ? v.y : i == 2 ? v.z : i == 3 ? v.w : math.nan);
+//~ operator (vec4f v)[char c] = flt32(c == 'x' ? v.x : c == 'y' ? v.y : c == 'z' ? v.z : c == 'w' ? v.w : math.nan);
+
+//~ operator (vec4f v)(flt32 x) = eval(v, x);
 
 }
-static if (use.vec2d) {
+static if (import.vec2d) {
 struct vec2d: 4 {
 	flt64 x;
 	flt64 y;
 }
 
 define vec2d(flt64 x, flt64 y) = emit(vec2d, f64(x), f64(y));
+
 define add(vec2d x, vec2d y) = emit(vec2d, v2d.add, val(y), val(x));
 define sub(vec2d x, vec2d y) = emit(vec2d, v2d.sub, val(y), val(x));
 define mul(vec2d x, vec2d y) = emit(vec2d, v2d.mul, val(y), val(x));
 define div(vec2d x, vec2d y) = emit(vec2d, v2d.div, val(y), val(x));
+
 //~ define mod(vec2d x, vec2d y) = emit(vec2d, v2d.rem, val(y), val(x));
 define min(vec2d x, vec2d y) = emit(vec2d, v2d.min, val(y), val(x));
 define max(vec2d x, vec2d y) = emit(vec2d, v2d.max, val(y), val(x));
 define cmp(vec2d x, vec2d y) = emit(v2d.equ, val(y), val(x));
 
-//~ vec2d v2x = vec2d(2., 6.);
-//~ vec2d v2y = vec2d(4., 3.);
-//~ vec2d v2z = div(v2x, v2y);
-//~ bool eq = cmp(x, y);
-
 }
 
-//~ define sqr1(flt64 val) = (val * val);
-//~ define sqr2(flt64 &val) = (val * val);
-define sqr(flt64 val) = emit(f64.mul, dupp_x2, f64(val));
+define sqr(flt64 val) = emit(f64.mul, dupp.x2, f64(val));
 
-/*enum Gl {
+define random(int32 max) = int32(random() % max);
+define random(flt64 max) = flt64(max * (random(32768) / 32768.));
+define random(int32 &min, int32 max) = int32(min + random(max - min));
+define random(flt64 &min, flt64 max) = flt64(min + random(max - min));
+
+define zxt64(int32 a) = int64(uns32(a));		// zero extend
+define sxt64(int32 a) = int64(int32(a));		// sign extend
+
+/+enum Gl {
 	enum Polygons {		// Polygons
 		GL_POINT                               = 0x1B00,
 		GL_LINE                                = 0x1B01,
@@ -110,8 +169,8 @@ define sqr(flt64 val) = emit(f64.mul, dupp_x2, f64(val));
 		GL_POLYGON_OFFSET_FILL                 = 0x8037,
 	}
 	define glBegin(Polygons value) = emit(libc(1), i32(0), i32(value));
-	define glEnd(Polygons value) = emit(libc(1), i32(1), i32(value));
-}// */
+	define glEnd() = emit(libc(1), i32(1), i32(value));
+}// +/
 
 //~ define int08(pointer ptr) = emit(vec4f, ldi.b01, ref(ptr));
 //~ define int16(pointer ptr) = emit(vec4f, ldi.b02, ref(ptr));
@@ -128,6 +187,27 @@ define sqr(flt64 val) = emit(f64.mul, dupp_x2, f64(val));
  +  }
  +/
 }// */
+
+//~ define print(int32 arg) = void(0);
+//~ int a = 0;
+//~ define print(int32 arg) = int32(arg);
+//~ double x = 13 * 9;
+//~ double y = 125 - x;
+bool x = math.isNan(math.nan);
+
+/*
+//~ bool x = math.isNan(math.nan);
+for (int i = 0; i < 60; i += 1) {
+	//~ println(random(1.));
+	println((1 + i) * 2);
+}
+// */
+
+//~ emit(void, call, i32(0x51e0));		// stack overflow
+//~ operator ;
+//~ int sum(int a, int b) {
+	//~ result = a + b;
+//~ }
 
 /* fogyasztas
 define fogyasztas(double _km, double _benzin, double _atlag) = double(_benzin * _km * _atlag / 100.);
@@ -167,7 +247,28 @@ i32x8 b = i32x8(1);
 i32x8 c;
 
 /*TODO: no functions
-i32x8 add(i32x8 a, i32x8 b) {}
+i32x8 add(i32x8 a, i32x8 b) {
+	//~ i32x8 c;
+	hex64 ovf = 0xffffffff;
+	hex64 sum;
+	int64 carry = 0;
+	c.i1 = int32(sum = zxt64(a.i1) + b.i1 + carry);
+	carry = sum > ovf;
+	c.i2 = int32(sum = zxt64(a.i2) + b.i2 + carry);
+	carry = sum > ovf;
+	c.i3 = int32(sum = zxt64(a.i3) + b.i3 + carry);
+	carry = sum > ovf;
+	c.i4 = int32(sum = zxt64(a.i4) + b.i4 + carry);
+	carry = sum > ovf;
+	c.i5 = int32(sum = zxt64(a.i5) + b.i5 + carry);
+	carry = sum > ovf;
+	c.i6 = int32(sum = zxt64(a.i6) + b.i6 + carry);
+	carry = sum > ovf;
+	c.i7 = int32(sum = zxt64(a.i7) + b.i7 + carry);
+	carry = sum > ovf;
+	c.i8 = int32(sum = zxt64(a.i8) + b.i8 + carry);
+	//~ carry = sum > ovf;
+}
 
 i32x8 add(i32x8 a, int32 b) {}
 
@@ -199,9 +300,7 @@ i32x8 sub(i32x8 a, i32x8 b) {}
 // */
 //~ /*
 
-define zxt64(int32 a) = int64(uns32(a));		// zero extend
-define sxt64(int32 a) = int64(int32(a));		// sign extend
-static if (true) {		// add
+static if (!true) {		// add
 	hex64 ovf = 0xffffffff;
 	hex64 sum;
 	int64 carry = 0;
@@ -276,7 +375,7 @@ println("INSERT INTO gyariszam(cikk_id, mennyiseg, b_tetel_id, raktar_id, gyaris
 for (int i = 0; i < 40; i += 1) {
 
 	for (int j = 0; j < strlen; j += 1)
-		val[j] = 'a' + (random() % ('z' - 'a'));
+		val[j] = random('a', 'z');
 
 	print("("); print(cikkId);
 	print(", "); print(mennyiseg);
@@ -323,17 +422,38 @@ int a2 = a;						// ERR: a undeclared if static if(0)
 
 //~ */
 
+/* test lookup:
+
+define int1 = int(1990);
+define int1() = int(1995);
+define int1(int32 _) = int(2010);
+define int1(flt64 _) = int(2015);
+
+int32 a1 = int1;			// 1990
+int32 a2 = int1();			// 1995
+int32 a3 = int1(0);			// 2010
+int32 a4 = int1(0.);		// 2015
+
+//~ */
+
 /*
 struct token {
 	int kind;
 	int prec;
+	string name;
 	//~ NAME, TYPE, SIZE, KEYW, STR
 }
 
-define token(int kind, int prec, int str) = emit(token, i32(kind), i32(prec), null);
 
+string err = "Error or not";
+
+define token(int kind, int prec, string str) = emit(token, i32(kind), i32(prec), ref(str));
+
+token TYPE_any = token(0x00, 0, "Error or not");
+
+/*
 enum tokens: token {
-	TYPE_any = token(0x00, 0, 0);
+	TYPE_any = token(0x00, 0, "Error");
 	//~ TYPE_vid = token(0x00, 0, ".void");	// void
 	//~ TYPE_bit = token(0x00, 0, ".bool");	// bool, uns32, uns16, uns8
 	//~ TYPE_int = token(0x00, 0, ".int");	// int64, int32, int16, int8

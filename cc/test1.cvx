@@ -66,7 +66,7 @@ operator (int lhs) + (int rhs) = emit(i32.add, i32(rhs), i32(lhs));
 operator (string lhs) [int rhs] = emit(int, ldi.byte, i32.mad, i32(1), i32(rhs), ref(lhs));
 // */
 
-//~ /*	use.sdt.lib
+/*	use.sdt.lib
 static if (true) {
 
 enum math: flt64 {
@@ -109,7 +109,7 @@ struct vec4f: 4 {
 
 define vec4f(flt64 x, flt64 y, flt64 z, flt64 w) = emit(vec4f, f32(x), f32(y), f32(z), f32(w));
 define vec4f(flt64 x, flt64 y, flt64 z) = emit(vec4f, f32(x), f32(y), f32(z), f32(0));
-define vec4f(flt64 val) = emit(vec4f, dupp_x2, dupp_x1, f32(val));
+define vec4f(flt64 val) = emit(vec4f, dupp.x2, dupp.x1, f32(val));
 
 //~ define dp3(vec4f lhs, vec4f rhs) = emit(v4f.dp3, v4f(lhs), v4f(rhs));
 //~ define dp4(vec4f lhs, vec4f rhs) = emit(v4f.dp4, v4f(lhs), v4f(rhs));
@@ -133,16 +133,16 @@ define max(vec2d x, vec2d y) = emit(vec2d, v2d.max, val(y), val(x));
 define cmp(vec2d x, vec2d y) = emit(v2d.equ, val(y), val(x));
 }
 
-define sqr(flt64 val) = emit(f64.mul, dupp_x2, f64(val));	// 12 bytes
+define sqr(flt64 val) = emit(f64.mul, dupp.x2, f64(val));	// 12 bytes
 
 }// */
 
 enum Test {
-	Emit = ~0;
-	Bits = ~0;
-	Type = ~0;
-	Misc = ~0;
-	Libc = ~0;
+	Emit = +0;
+	Bits = +0;
+	Type = +0;
+	Misc = +0;
+	Libc = +0;
 	//~ Math = -1;
 	//~ Call = 0;
 } // */
@@ -159,7 +159,7 @@ static if (Test.Emit & 0x01) {
 flt32 res1 = emit(f32.div, f32(2), f32(math.pi));
 flt64 res2 = emit(f64.neg, f64(math.pi));
 flt32 res3 = emit(flt32, f32(math.pi));
-int32 res4 = emit(int32, f32(math.pi));
+hex32 res4 = emit(int32, f32(math.pi));
 
 emit(f64(math.pi));
 int32 i32 = emit();

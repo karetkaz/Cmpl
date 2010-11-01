@@ -406,10 +406,11 @@ libcfnc[LIBCALLS] = {
 
 symn installref(ccEnv cc, const char *prot, astn *argv);
 
-int libcall(state s, int libc(state), const char* proto) {
-	static int libccnt = 0;//1
+int libcall(state s, int libc(state), const char* proto, astn firstarg) {
+	static int libccnt = 0;
+	//~ int makenew = 1;
 	int stdiff = 0;
-	symn arg, sym;
+	symn arg, sym = NULL;
 	astn args;
 
 	// TODO: can skip this
@@ -421,7 +422,7 @@ int libcall(state s, int libc(state), const char* proto) {
 		libccnt = 0;
 		if (!libc) while (libcfnc[libccnt].proto) {
 			int i = libccnt;
-			if (libcall(s, libcfnc[i].call, libcfnc[i].proto) < 0)
+			if (libcall(s, libcfnc[i].call, libcfnc[i].proto, NULL) < 0)
 				return -1;
 		}
 		return libccnt;
@@ -432,13 +433,26 @@ int libcall(state s, int libc(state), const char* proto) {
 		return -1;
 	}
 
-	libcfnc[libccnt].call = libc;
-	libcfnc[libccnt].proto = proto;
+	if (libccnt > 0 && firstarg != NULL) {
+		if (libcfnc[libccnt - 1].call == libc)
+			libccnt -= 1;
+		//~ makenew = libcfnc[libccnt-1].call != libc;
+		//~ debug("%s: new=%d", proto, makenew);
+	}
+
+	/*if (libccnt > 0 && libcfnc[libccnt-1].call == libc) {
+		makenew = firstarg != NULL;
+		debug("%s: new=%d", proto, makenew);
+	}*/
 
 	if (!libc || !proto)
 		return 0;
 
+	libcfnc[libccnt].call = libc;
+	libcfnc[libccnt].proto = proto;
+
 	sym = installref(s->cc, libcfnc[libccnt].proto, &args);
+
 	//~ from: int64 zxt(int64 val, int offs, int bits)
 	//~ make: define zxt(int64 val, int offs, int bits) = int64(emit(libc(25), int64 val, int offs, int bits));
 
@@ -447,7 +461,6 @@ int libcall(state s, int libc(state), const char* proto) {
 		// TODO: replace this section
 		symn link = newdefn(s->cc, EMIT_opc);
 		astn libc = newnode(s->cc, TYPE_ref);
-		//~ astn call = newnode(s->cc, OPER_fnc);
 
 		link->name = "libc";
 		link->type = sym->type;
@@ -460,10 +473,27 @@ int libcall(state s, int libc(state), const char* proto) {
 		libc->type = link->type;
 		// TODO: end
 
+		if (firstarg) {
+			astn narg = newnode(s->cc, OPER_com);
+			astn arg = args;
+
+			narg->op.lhso = firstarg;
+			if (arg->kind == OPER_com) {
+				while (arg->op.lhso->kind == OPER_com)
+					arg = arg->op.lhso;
+				narg->op.rhso = arg->op.lhso;
+				arg->op.lhso = narg;
+			}
+			else {
+				narg->op.rhso = args;
+				args = narg;
+			}
+		}
+
 		// glue the new libc argument
 		if (args != s->cc->argz) {
-			astn arg = args;
 			astn narg = newnode(s->cc, OPER_com);
+			astn arg = args;
 			narg->op.lhso = libc;
 
 			if (arg->kind == OPER_com) {
@@ -617,7 +647,7 @@ int emit(vmEnv s, int opc, ...) {
 	}
 
 	// cmp
-	else if (opc == opc_ceq) switch (arg.i4) { 
+	else if (opc == opc_ceq) switch (arg.i4) {
 		case TYPE_u32: //opc = u32_ceq; break;
 		case TYPE_i32: opc = i32_ceq; break;
 		case TYPE_f32: opc = f32_ceq; break;
@@ -736,13 +766,14 @@ int emit(vmEnv s, int opc, ...) {
 
 	if (opc > opc_last) {
 		//~ fatal("invalid opc_0x%x", opc);
+		debug("invalid opc_0x%x", opc);
 		return 0;
 	}
 	if (s->opti > 1) {
 		if (0) ;
 		else if (opc == opc_ldi1) {
 			ip = getip(s, s->pc);
-			if (ip->opc == opc_ldsp && ((ip->rel & 3) == 0) && ((ip->rel / 4) < 256)) {
+			if (ip->opc == opc_ldsp && ((ip->rel & 3) == 0) && ((ip->rel / 4) <= max_reg)) {
 				arg.i4 = ip->rel / 4;
 				opc = opc_dup1;
 				s->cs = s->pc;
@@ -751,7 +782,7 @@ int emit(vmEnv s, int opc, ...) {
 		}
 		else if (opc == opc_ldi2) {
 			ip = getip(s, s->pc);
-			if (ip->opc == opc_ldsp && ((ip->rel & 3) == 0) && ((ip->rel / 4) < 256)) {
+			if (ip->opc == opc_ldsp && ((ip->rel & 3) == 0) && ((ip->rel / 4) <= max_reg)) {
 				arg.i4 = ip->rel / 4;
 				opc = opc_dup1;
 				s->cs = s->pc;
@@ -761,7 +792,7 @@ int emit(vmEnv s, int opc, ...) {
 
 		else if (opc == opc_ldi4) {
 			ip = getip(s, s->pc);
-			if (ip->opc == opc_ldsp && ((ip->rel & 3) == 0) && ((ip->rel / 4) < 256)) {
+			if (ip->opc == opc_ldsp && ((ip->rel & 3) == 0) && ((ip->rel / 4) <= max_reg)) {
 				arg.i4 = ip->rel / 4;
 				opc = opc_dup1;
 				s->cs = s->pc;
@@ -770,7 +801,7 @@ int emit(vmEnv s, int opc, ...) {
 		}
 		else if (opc == opc_sti4) {
 			ip = getip(s, s->pc);
-			if (ip->opc == opc_ldsp && ((ip->rel & 3) == 0) && ((ip->rel / 4) < 256)) {
+			if (ip->opc == opc_ldsp && ((ip->rel & 3) == 0) && ((ip->rel / 4) <= max_reg)) {
 				arg.i4 = ip->rel / 4;
 				opc = opc_set1;
 				s->cs = s->pc;
@@ -780,7 +811,7 @@ int emit(vmEnv s, int opc, ...) {
 
 		else if (opc == opc_ldi8) {
 			ip = getip(s, s->pc);
-			if (ip->opc == opc_ldsp && ((ip->rel & 3) == 0) && ((ip->rel / 4) < 256)) {
+			if (ip->opc == opc_ldsp && ((ip->rel & 3) == 0) && ((ip->rel / 4) <= max_reg)) {
 				arg.i4 = ip->rel / 4;
 				opc = opc_dup2;
 				s->cs = s->pc;
@@ -789,7 +820,7 @@ int emit(vmEnv s, int opc, ...) {
 		}
 		else if (opc == opc_sti8) {
 			ip = getip(s, s->pc);
-			if (ip->opc == opc_ldsp && ((ip->rel & 3) == 0) && ((ip->rel / 4) < 256)) {
+			if (ip->opc == opc_ldsp && ((ip->rel & 3) == 0) && ((ip->rel / 4) <= max_reg)) {
 				arg.i4 = ip->rel / 4;
 				opc = opc_set2;
 				s->cs = s->pc;
@@ -799,7 +830,7 @@ int emit(vmEnv s, int opc, ...) {
 
 		else if (opc == opc_ldiq) {
 			ip = getip(s, s->pc);
-			if (ip->opc == opc_ldsp && ((ip->rel & 3) == 0) && ((ip->rel / 4) < 256)) {
+			if (ip->opc == opc_ldsp && ((ip->rel & 3) == 0) && ((ip->rel / 4) <= max_reg)) {
 				arg.i4 = ip->rel / 4;
 				opc = opc_dup4;
 				s->cs = s->pc;
@@ -808,7 +839,7 @@ int emit(vmEnv s, int opc, ...) {
 		}
 		else if (opc == opc_stiq) {
 			ip = getip(s, s->pc);
-			if (ip->opc == opc_ldsp && ((ip->rel & 3) == 0) && ((ip->rel / 4) < 256)) {
+			if (ip->opc == opc_ldsp && ((ip->rel & 3) == 0) && ((ip->rel / 4) <= max_reg)) {
 				arg.i4 = ip->rel / 4;
 				opc = opc_set4;
 				s->cs = s->pc;
@@ -885,6 +916,12 @@ int emit(vmEnv s, int opc, ...) {
 			return 0;
 	}
 	else if (opc == opc_spc) {
+		/*TODO: int max = 0x7fffff;
+		while (arg.i8 > max) {
+			if (!emit(s, opc, max))
+				return 0;
+			arg.i8 -= max;
+		}// */
 		ip->rel = arg.i8;// / 4;
 		if (ip->rel != arg.i8)
 			return 0;
@@ -1071,7 +1108,7 @@ static int dbugpu(vmEnv vm, cell pu, dbgf dbg) {
 
 		switch (ip->opc) {		// exec
 			error_opc: error(vm->s, 0, "invalid opcode: op[%.*A]", (char*)ip - (char*)(vm->_mem), ip); return -2;
-			error_ovf: error(vm->s, 0, "stack overflow: op[%.*A] / %d", (char*)ip - (char*)(vm->_mem), ip, (pu->sp - pu->bp)/4); return -2;
+			error_ovf: error(vm->s, 0, "stack overflow: op[%.*A] / %d", (char*)ip - (char*)(vm->_mem), ip, (vm->_end - pu->sp) / 4); return -2;
 			error_mem: error(vm->s, 0, "segmentation fault: op[%.*A]", (char*)ip - (char*)(vm->_mem), ip); return -2;
 			error_div: error(vm->s, 0, "division by zero: op[%.*A]", (char*)ip - (char*)(vm->_mem), ip); return -3;
 			#define NEXT(__IP, __CHK, __SP) {pu->sp -= 4*(__SP); pu->ip += (__IP);}
@@ -1135,9 +1172,14 @@ void fputopc(FILE *fout, unsigned char* ptr, int len, int offs) {
 		fputfmt(fout, "opc%02x", ip->opc);
 
 	switch (ip->opc) {
-		case opc_ldsp:
 		case opc_spc:
+		case opc_ldsp:
 			fprintf(fout, " %+d", ip->rel);
+			break;
+
+		case opc_loc:
+		case opc_drop:
+			fprintf(fout, " %d", ip->idx);
 			break;
 
 		case opc_jmp:
@@ -1172,10 +1214,6 @@ void fputopc(FILE *fout, unsigned char* ptr, int len, int offs) {
 				// swp, neg, cmt, 
 			} break;
 		} break;*/
-		case opc_loc:
-		case opc_drop:
-			fprintf(fout, " %d", ip->idx);
-			break;
 
 		case opc_dup1:
 		case opc_dup2:
@@ -1188,7 +1226,7 @@ void fputopc(FILE *fout, unsigned char* ptr, int len, int offs) {
 
 		case opc_ldc1: fputfmt(fout, " %d", ip->arg.i1); break;
 		case opc_ldc2: fputfmt(fout, " %d", ip->arg.i2); break;
-		case opc_ldc4: fputfmt(fout, " %d", ip->arg.i4); break;
+		case opc_ldc4: fputfmt(fout, " %x", ip->arg.i4); break;
 		case opc_ldc8: fputfmt(fout, " %D", ip->arg.i8); break;
 		case opc_ldcf: fputfmt(fout, " %f", ip->arg.f4); break;
 		case opc_ldcF: fputfmt(fout, " %F", ip->arg.f8); break;
@@ -1212,7 +1250,7 @@ void fputopc(FILE *fout, unsigned char* ptr, int len, int offs) {
 }
 void fputasm(FILE *fout, vmEnv s, int mark, int end, int mode) {
 	unsigned char* beg = getip(s, mark);
-	int rel = mode & 0x10 ? 0 : -1;
+	int rel = mode & 0x10;// ? 0 : -1;
 	int i, is = 12345;
 	//~ int ss = 0;
 	if (end == -1)
@@ -1234,7 +1272,8 @@ void fputasm(FILE *fout, vmEnv s, int mark, int end, int mode) {
 		//~ if (mode & 0x20)		// TODO: remove stack size
 			//~ fputfmt(fout, "ss(%03d): ", ss);
 
-		fputopc(fout, (void*)ip, mode & 0xf, rel >= 0 ? (rel + i) : -1);
+		//~ fputopc(fout, (void*)ip, mode & 0xf, rel >= 0 ? (rel + i) : -1);
+		fputopc(fout, (void*)ip, mode & 0xf, rel ? (beg - s->_mem) : -1);
 
 		fputc('\n', fout);
 	}
@@ -1261,9 +1300,9 @@ void vm_fputval(state s, FILE *fout, symn var, stkval* ref, int flgs) {
 			int n = 0;
 
 			if (var != typ && !var->pfmt)
-				fputfmt(fout, "%T: ", var);
+				fputfmt(fout, "%T = ", var);
 
-			if (var->cast == TYPE_ref) {
+			if (var->cast == TYPE_ref || typ->cast == TYPE_ref) {		// arrays, strings, functions
 				ref = (stkval*)(s->_mem + ref->u4);
 			}
 
@@ -1383,14 +1422,14 @@ void vmTags(state s, char *sptr, int slen, int flags) {
 			if (spos < 0) {
 				if (flags & 1)
 					return;
-				fputs("= Invalid", fout);
+				fputs(": Invalid", fout);
 			}
 			else switch(typ ? typ->kind : 0) {
-				case TYPE_enu:
-					vm_fputval(s, fout, ptr, sp, 0x020000);
-					break;
+				//~ case TYPE_enu:
+					//~ vm_fputval(s, fout, ptr, sp, 0x020000);
+					//~ break;
 				default:
-					fputs("= ", fout);
+					fputs(": ", fout);
 					vm_fputval(s, fout, ptr, sp, 0x020000);
 					break;
 			}
@@ -1405,6 +1444,7 @@ void vmInfo(FILE* out, vmEnv vm) {
 	i = vm->cs; fprintf(out, "code(@.%04x) size: %dM, %dK, %dB, %d instructions\n", vm->pc, i >> 20, i >> 10, i, vm->ic + 1);
 }
 
+#if 0
 int vmTest() {
 	int e = 0;
 	struct bcde opc, *ip = &opc;
@@ -1432,4 +1472,4 @@ int vmTest() {
 	}
 	return e;
 }
-
+#endif

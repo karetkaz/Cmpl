@@ -56,6 +56,13 @@ case opc_ldsp: NEXT(4, 0, +1) {
 	SP(-1, i4) = (memptr)sp - mp + ip->rel;
 #endif
 } break;
+case opc_call: NEXT(1, 1, -0) {
+#ifdef EXEC
+	int retip = pu->ip - mp;
+	pu->ip = mp + SP(0, u4);
+	SP(0, u4) = retip;
+#endif
+} break;
 case opc_jmpi: NEXT(1, 1, -1) {
 #ifdef EXEC
 	pu->ip = mp + SP(0, u4);

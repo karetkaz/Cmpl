@@ -11,7 +11,7 @@
 #include "pvmc.h"
 #include <stdlib.h>
 
-#define DEBUGGING 1
+#define DEBUGGING 15
 
 /* COMPILER_LEVEL
 	0: types only					: compiler.init:18.34 KBytes
@@ -38,9 +38,9 @@ enum {
 // symbol & hash table size
 #define TBLS 32
 
-#define pdbg(__DBG, __FILE, __LINE, msg, ...) do{fputfmt(stderr, "%s:%d:"__DBG":%s: "msg"\n", __FILE, __LINE, __func__, ##__VA_ARGS__); fflush(stdout); fflush(stderr);}while(0)
-#define fatal(msg, ...) do{pdbg("fatal", __FILE__, __LINE__, msg, ##__VA_ARGS__); abort();}while(0)
-#define dieif(__EXP, msg, ...) do{if (__EXP) fatal(msg, ##__VA_ARGS__);}while(0)
+#define pdbg(__DBG, __FILE, __LINE, msg, ...) do {fputfmt(stderr, "%s:%d:"__DBG":%s: "msg"\n", __FILE, __LINE, __func__, ##__VA_ARGS__); fflush(stdout); fflush(stderr);} while(0)
+#define fatal(msg, ...) do {pdbg("fatal", __FILE__, __LINE__, msg, ##__VA_ARGS__); /* abort(); */} while(0)
+#define dieif(__EXP, msg, ...) do {if (__EXP) fatal(msg, ##__VA_ARGS__);} while(0)
 
 #if DEBUGGING > 1
 #define debug(msg, ...) pdbg("debug", __FILE__, __LINE__, msg, ##__VA_ARGS__)
@@ -48,7 +48,7 @@ enum {
 #define error(__ENV, __LINE, msg, ...) PERR(__ENV, -1, NULL, __LINE, msg, ##__VA_ARGS__)
 #define warn(__ENV, __LEVEL, __FILE, __LINE, msg, ...) PERR(__ENV, __LEVEL, __FILE, __LINE, msg, ##__VA_ARGS__)
 #define info(__ENV, __FILE, __LINE, msg, ...) PERR(__ENV, 0, __FILE, __LINE, msg, ##__VA_ARGS__)
-#else // catch the position error raised 
+#else // catch the position error raised
 #define debug(msg, ...) 
 #define error(__ENV, __LINE, msg, ...) perr(__ENV, -1, NULL, __LINE, msg, ##__VA_ARGS__)
 #define warn(__ENV, __LEVEL, __FILE, __LINE, msg, ...) perr(__ENV, __LEVEL, __FILE, __LINE, msg, ##__VA_ARGS__)
@@ -82,7 +82,7 @@ enum {
 	#include "incl/defs.h"
 	opc_last,
 
-	opc_neg,
+	opc_neg,		// argument is the type
 	opc_add,
 	opc_sub,
 	opc_mul,
@@ -101,26 +101,22 @@ enum {
 	opc_clt,
 	opc_cle,
 	opc_cgt,
-	opc_cge,
+	opc_cge,		// argument is the type
 
-	//~ opc_ldc,
-	opc_ldi,
-	opc_sti,
-	opc_inc,	// increment
 
-	//~ get_ip,		// instruction pointer
+	opc_ldi,		// argument is the size
+	opc_sti,		// argument is the size
+
+
 	markIP,
 
 	// TODO: remove
-	//~ seg_code,	// pc = ptr - beg; ptr += code->cs;
-	//~ loc_data,
-
+	opc_inc,		// increment
 	opc_line,		// line info
-	//~ opc_file,		// file info
-	//~ opc_docc,		// doc comment
 
 	//~ opc_ldcf = opc_ldc4,
 	//~ opc_ldcF = opc_ldc8,
+	max_reg = 10,	// maximum dup, set, pop, ...
 };
 typedef struct {
 	int const	code;
@@ -151,7 +147,7 @@ typedef union {		// value type
 } stkval;
 
 //~ typedef struct symn *symn;		// Symbol Node
-typedef struct astn *astn;		// Abstract Syntax Tree Node
+//~ typedef struct astn *astn;		// Abstract Syntax Tree Node
 
 typedef struct list {			// linked list, usually of strings
 	struct list		*next;
@@ -167,21 +163,14 @@ struct astn {				// tree node
 	uint16_t	_XXX;				// unused
 	union {
 		union  {					// TYPE_xxx: constant
-			int64_t	cint;			// cnst: integer
-			flt64_t	cflt;			// cnst: float
-			//~ char*	cstr;			// cnst: use: '.id.name'
-			//~ int32_t	cpi4[4];		// rgb
-			//~ int64_t	cpi2[2];		// rat
-			//~ flt32_t	cpf4[4];		// vec
-			//~ flt64_t	cpf2[2];		// cpl
+			int64_t	cint;			// const: integer
+			flt64_t	cflt;			// const: float
+			//~ char*	cstr;		// const: use: '.id.name'
 		} con;
 		struct {					// STMT_xxx: statement
 			astn	stmt;			// statement / then block
 			astn	step;			// increment / else block
-			union {
-				astn	test;			// condition: if, for
-				//~ symn	link;			// operator function
-			};
+			astn	test;			// condition: if, for
 			astn	init;			// for statement init
 		} stmt;
 		struct {					// OPER_xxx: operator
@@ -189,13 +178,12 @@ struct astn {				// tree node
 			astn	lhso;			// left hand side operand
 			astn	test;			// ?: operator condition
 			uint32_t prec;			// precedence
-			//~ symn	link;			// assigned operator convert to function call
 		} op;
 		struct {					// TYPE_ref: identifyer
-			astn	nuse;			// next used
 			char*	name;			// name of identifyer
+			int32_t hash;			// hash code for 'name'
 			symn	link;			// func body / replacement
-			uint32_t hash;			// hash code for 'name'
+			astn	nuse;			// next used
 		} id;
 	};
 	symn		type;				// typeof() return type of operator ... base type of IDTF
@@ -216,7 +204,7 @@ struct symn {				// type node
 	symn	next;		// symbols on table/args
 
 	uint8_t	cast;		// casts to type(TYPE_(ref, u32, i32, i64, f32, f64, p4x)).
-	uint8_t	algn;		// alignment / TODO: pack
+	uint8_t	pack;		// alignment
 	uint8_t	kind;		// TYPE_ref || TYPE_xxx
 
 	uint8_t	call:1;		// function / callable => (kind == TYPE_ref && args)
@@ -312,7 +300,6 @@ struct vmEnv {
 	unsigned char _beg[];
 };
 
-//~ static inline int canscan(ccEnv env) {return env && env->_cnt > 0;}
 //~ static inline int kindOf(astn ast) {return ast ? ast->kind : 0;}
 
 extern symn type_vid;
@@ -391,7 +378,7 @@ astn next(ccEnv, int kind);
 astn expr(ccEnv, int mode);		// parse expression	(mode: lookup)
 //~ astn decl(ccEnv, int mode);		// parse declaration	(mode: enable expr)
 //~ astn stmt(ccEnv, int mode);		// parse statement	(mode: enable decl/enter new scope)
-int scan(ccEnv, int mode);		// parse program	(mode: script mode)
+astn unit(ccEnv, int mode);		// parse program	(mode: script mode)
 
 // scoping ...
 void enter(ccEnv s, symn def);

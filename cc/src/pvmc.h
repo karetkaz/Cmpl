@@ -9,7 +9,7 @@ typedef double flt64_t;
 #define useBuiltInFuncs
 #define LIBCALLS 256
 
-//~ typedef struct astn *astn;		// tree
+typedef struct astn *astn;		// tree
 typedef struct symn *symn;		// symbols
 typedef struct ccEnv *ccEnv;
 typedef struct vmEnv *vmEnv;
@@ -23,12 +23,11 @@ typedef struct state {
 	char* argv;		// first arg
 	void* retv;		// TODO: RemMe: retval
 
-	ccEnv cc;		// compiler enviroment
-	vmEnv vm;		// execution enviroment
+	ccEnv cc;		// compiler enviroment	// TODO: RemMe cc has the state
+	vmEnv vm;		// execution enviroment	// TODO: RemMe vm has the state
 
 	long _cnt;
 	char *_ptr;		// write here symbols and string constants
-	//~ char *_end;		// space for ast and list nodes, temporary
 	char _mem[];
 } *state;
 typedef enum {
@@ -50,13 +49,13 @@ state rtInit(void* mem, unsigned size);
 int logfile(state, char *file);				// logger
 
 // compile
-int srcfile(state, char *file);				// source
+//~ int srcfile(state, char *file);				// source
 //~ int srctext(state, char *file, int line, char *src);				// source
-int compile(state, int level);				// warning level
+//~ int compile(state, int level);				// warning level
 int gencode(state, int level);				// optimize level
 //~ int execute(state, int cc, int ss, dbgf dbg);
 
-int libcall(state, int call(state), const char* proto);
+int libcall(state, int libc(state), const char* proto, astn firstarg);
 
 // execute
 typedef int (*dbgf)(state s, int pu, void *ip, long* sptr, int scnt);
@@ -95,17 +94,17 @@ static inline int64_t popi64(state s) { return poparg(s, int64_t); }
 
 /* example ccTags
  *int ccTags(state s, char *srcfile) {
- *	if (!ccOpen(s, srcFile, srcfile)) {	// will cal ccInit
+ *	if (logfile(s, "tags.out") != 0) {	// log in file instead of stderr
  *		return ccDone(s);
  *	}
- *	if (logfile(s, "tags.out") != 0) {	// log in file instead of stderr
+ *	if (!ccOpen(s, srcFile, srcfile)) {	// will cal ccInit
+ *		logfile(s, NULL);
  *		return ccDone(s);
  *	}
  *	if (compile(s, warnLevel) != 0) {
  *		logfile(s, NULL);
- *		return ccDone(s);
+ *		return s->errc;
  *	}
- *	ccDone(s);
  *	logdump(s, dump_sym, NULL);
  *	logfile(s, NULL);
  *	return 0;

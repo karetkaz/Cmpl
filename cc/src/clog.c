@@ -692,7 +692,7 @@ void dumpsym(FILE *fout, symn sym, int alma) {
 			fputast(fout, ptr->init, noIden | 1, 0xf0);
 		}
 
-		/*/ size or offset
+		//~ /*/ size or offset
 		if (ptr->kind == TYPE_ref) {
 			if (ptr->offs < 0) {
 				fputfmt(fout, "[@st(%d)]: ", -ptr->offs);
@@ -704,7 +704,7 @@ void dumpsym(FILE *fout, symn sym, int alma) {
 			fputfmt(fout, "[@%02xh]: ", ptr->size);
 		}
 		else if (ptr->kind != TYPE_def) {
-			fputfmt(fout, "[size: %d:%d]: ", ptr->size, ptr->algn);
+			fputfmt(fout, "[size: %d:%d]: ", ptr->size, 0);
 		}
 		// */
 

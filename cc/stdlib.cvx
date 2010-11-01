@@ -1,0 +1,146 @@
+//~ #debug xterm -e gdb -args 
+//~ #open src/pvmc.h
+//~ #open src/ccvm.h
+
+//~ #open src/ccvm.c
+//~ #open src/code.c
+//~ #open src/clog.c
+//~ #open src/type.c
+
+//~ #open src/tree.c
+//~ #open src/parse.c
+//~ #open src/main.c
+//~ /*
+//~ module std;
+
+enum math: flt64 {
+
+	define i64_as_f64(int64 x) = emit(flt64, i64(x));
+
+	//~ nan = 0. / 0;
+	//~ nan = -0. / 0;
+	nan = i64_as_f64(0x7FFFFFFFFFFFFFFF);
+	snan = i64_as_f64(0xFFF8000000000000);
+
+	//~ inf = 1. / 0;
+	inf  = i64_as_f64(0x7FF0000000000000);
+
+	//~ ln2 = 0.693147180559945309417232121458176568075500134360255254120680009;	// A002162
+	ln2  = i64_as_f64(0x3FE62E42FEFA39EF);
+
+	//~ log2E = 1. / ln2;
+	log2e = i64_as_f64(0x3FF71547652B82FE);
+
+	//~ ln10 = 2.30258509299404568401799145468436420760110148862877297603332790;	// A002392
+	//~ log10E = 1. / ln10;
+
+	log2t = i64_as_f64(0x400A934F0979A371);			// lg2(10);
+	logt2 = i64_as_f64(0x3FD34413509F79FF);			// lg10(2);
+
+
+	//~ pi = 3.14159265358979323846264338327950288419716939937510582097494459;	// A000796
+	pi   = i64_as_f64(0x400921FB54442D18);
+
+	//~ e = 2.71828182845904523536028747135266249775724709369995957496696763;	// A001113
+	e    = i64_as_f64(0x4005BF0A8B145769);
+
+	//~ phi = 1.61803398874989484820458683436563811772030917980576286213544862;	// A001622
+
+	//~ sqrt2	= 1.41421356237309504880168872420969807856967187537694807317667974;	// A002193
+	//~ sqrtE	= 1.64872127070012814684865078781416357165377610071014801157507931;	// A019774
+	//~ sqrtPi	= 1.77245385090551602729816748334114518279754945612238712821380779;	// A002161
+	//~ sqrtPhi	= 1.27201964951406896425242246173749149171560804184009624861664038;	// A139339
+
+	define isNan(flt64 a) = emit(not, f64.ceq, dupp.x2, f64(a));// bool(a == a);		// emit(flt64, ,f64(a));
+	//~ define isNan(flt32 a) = emit(bool, not, f32.ceq, dupp.x1, f32(a));// bool(a == a);		// emit(flt64, ,f64(a));
+	//~ define isNan(flt64 a) = bool(a == a);		// emit(flt64, ,f64(a));
+	//~ define isNan(flt32 a) = bool(a == a);
+	//~ define isInf(flt64 a) = bool(a && a == 2 * a);
+	//~ define isInf(flt32 a) = bool(a && a == 2 * a);
+}
+
+enum import: bool {
+	print = true;
+	vec4f = true;
+	vec2d = true;
+}
+
+static if (import.print) {
+define println() = putchr('\n');
+define print(int32 arg) = puti64(arg);
+define print(flt32 arg) = putf64(arg);
+define print(int64 arg) = puti64(arg);
+define print(flt64 arg) = putf64(arg);
+define print(string arg) = putstr(arg);
+define println(int32 arg) = emit(void(println()), void(puti64(arg)));
+define println(flt32 arg) = emit(void(println()), void(putf64(arg)));
+define println(int64 arg) = emit(void(println()), void(puti64(arg)));
+define println(flt64 arg) = emit(void(println()), void(putf64(arg)));
+define println(string arg)= emit(void(println()), void(putstr(arg)));
+}
+static if (import.vec4f) {
+struct vec4f: 4 {
+	flt32 x;
+	flt32 y;
+	flt32 z;
+	flt32 w;
+}
+
+define vec4f(flt64 x, flt64 y, flt64 z, flt64 w) = emit(vec4f, f32(x), f32(y), f32(z), f32(w));
+define vec4f(flt64 x, flt64 y, flt64 z) = emit(vec4f, f32(x), f32(y), f32(z), f32(0));
+define vec4f(flt64 val) = emit(vec4f, dupp.x2, dupp.x1, f32(val));
+
+//~ define dp3(vec4f lhs, vec4f rhs) = emit(v4f.dp3, v4f(lhs), v4f(rhs));
+//~ define dp4(vec4f lhs, vec4f rhs) = emit(v4f.dp4, v4f(lhs), v4f(rhs));
+//~ define dph(vec4f lhs, vec4f rhs) = emit(v4f.dph, v4f(lhs), v4f(rhs));
+//~ define eval(vec4f &v, flt32 &x) = flt32((((v.w * x + v.z) * x + v.y) * x) + v.x);
+
+//~ operator - (vec4f x) = emit(vec4f, v4f.neg, val(x));
+//~ operator (vec4f x) + (vec4f y) = emit(vec4f, v4f.add, val(y), val(x));
+//~ operator (vec4f x) - (vec4f y) = emit(vec4f, v4f.sub, val(y), val(x));
+//~ operator (vec4f x) * (vec4f y) = emit(vec4f, v4f.mul, val(y), val(x));
+//~ operator (vec4f x) / (vec4f y) = emit(vec4f, v4f.div, val(y), val(x));
+//~ operator (vec4f x) % (vec4f y) = emit(vec4f, v4f.mod, val(y), val(x));
+
+//~ operator (vec4f x) = (vec4f y) = vec4f(x = y);
+
+//~ operator flt32(vec4f vec) = vec.w;
+//~ operator bool(vec4f vec) = bool(vec.x && vec.y && vec.z && vec.w);
+
+//~ operator (vec4f v)[int i] = flt32(i == 0 ? v.x : i == 1 ? v.y : i == 2 ? v.z : i == 3 ? v.w : math.nan);
+//~ operator (vec4f v)[char c] = flt32(c == 'x' ? v.x : c == 'y' ? v.y : c == 'z' ? v.z : c == 'w' ? v.w : math.nan);
+
+//~ operator (vec4f v)(flt32 x) = eval(v, x);
+
+}
+static if (import.vec2d) {
+struct vec2d: 4 {
+	flt64 x;
+	flt64 y;
+}
+
+define vec2d(flt64 x, flt64 y) = emit(vec2d, f64(x), f64(y));
+
+define add(vec2d x, vec2d y) = emit(vec2d, v2d.add, val(y), val(x));
+define sub(vec2d x, vec2d y) = emit(vec2d, v2d.sub, val(y), val(x));
+define mul(vec2d x, vec2d y) = emit(vec2d, v2d.mul, val(y), val(x));
+define div(vec2d x, vec2d y) = emit(vec2d, v2d.div, val(y), val(x));
+
+//~ define mod(vec2d x, vec2d y) = emit(vec2d, v2d.rem, val(y), val(x));
+define min(vec2d x, vec2d y) = emit(vec2d, v2d.min, val(y), val(x));
+define max(vec2d x, vec2d y) = emit(vec2d, v2d.max, val(y), val(x));
+define cmp(vec2d x, vec2d y) = emit(v2d.equ, val(y), val(x));
+
+}
+
+define sqr(flt64 val) = emit(f64.mul, dupp.x2, f64(val));
+
+define random(int32 max) = int32(random() % max);
+define random(flt64 max) = flt64(max * (random(32768) / 32768.));
+define random(int32 &min, int32 max) = int32(min + random(max - min));
+define random(flt64 &min, flt64 max) = flt64(min + random(max - min));
+
+define zxt64(int32 a) = int64(uns32(a));		// zero extend
+define sxt64(int32 a) = int64(int32(a));		// sign extend
+
+// */

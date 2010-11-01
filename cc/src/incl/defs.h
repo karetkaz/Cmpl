@@ -90,6 +90,8 @@ TOKDEF(PNCT_lp , 0x00, 0, "(par")		// parentheses
 TOKDEF(PNCT_rp , 0x00, 0, ")par")
 TOKDEF(PNCT_qst, 0x00, 0, "?")			// question mark
 TOKDEF(PNCT_cln, 0x00, 0, ":")			// colon
+TOKDEF(OPER_op , 0xff, 0, "operator")
+TOKDEF(UNIT_def, 0xff, 0, "module")
 
 /*
 //~ Operators ==================================================================
@@ -153,8 +155,8 @@ OPCDEF(opc_drop, 0x02, 2, 9, +9, 1,	"drop")		// sp -= 4*arg.u1;		[…, a, b, c =
 OPCDEF(opc__x03, 0x03, 0, 0, +0, 1,	NULL)		// 
 OPCDEF(opc_spc,  0x04, 4, 0, +0, 1,	"spc")		// sp += 4*arg.rel;
 OPCDEF(opc_ldsp, 0x05, 4, 0, +1, 1,	"ldsp")		// push(SP + arg.rel);		[…, a, b, c  => […, a, b, c, SP;
-OPCDEF(opc__x06, 0x06, 1, 1, +0, 1,	"call")		// swap(IP, *sp);			[…, a, b, IP => […, a, b, IP;
-OPCDEF(opc_jsub, 0x07, 1, 1, -1, 1,	"jsub")		// push(IP); ip += arg.rel;	[…, a, b, c  => […, a, b, c, IP;
+OPCDEF(opc__x06, 0x06, 1, 1, +0, 1,	"jsub")		// push(IP); ip += arg.rel;	[…, a, b, c  => […, a, b, c, IP;
+OPCDEF(opc_call, 0x07, 1, 1, -1, 1,	"call")		// swap(IP, *sp);			[…, a, b, IP => […, a, b, IP;
 OPCDEF(opc_jmpi, 0x08, 1, 1, -1, 1,	"jmpi")		// IP = pop();				[…, a, b, c  => […, a, b;
 OPCDEF(opc_jmp,  0x09, 4, 0, +0, 1,	"jmp")		// IP += arg.rel;			[…, a, b, c  => […, a, b, c;
 OPCDEF(opc_jnz,  0x0a, 4, 1, -1, 1,	"jnz")		// if pop(0)!=0 IP += arg.rel;	[…, a, b, c => […, a, b;

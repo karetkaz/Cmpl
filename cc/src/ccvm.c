@@ -26,7 +26,7 @@ const opc_inf opc_tbl[255] = {
 #endif
 
 #if DEBUGGING > 3
-#define dbg_ast(__AST) debug("cgen[%t->%t](err, %+k)\n%3K", get, ret, __AST, __AST)
+#define dbg_ast(__AST) debug("cgen[%t->%t](err, %+k)\n%7K", get, ret, __AST, __AST)
 #define dbg_arg(__AST) debug("cgen[%t->%t](arg, %+k)\n%3K", get, ret, __AST, __AST)
 #define dbg_rhs(__AST) debug("cgen[%t->%t](rhs, %+k)\n%3K", get, ret, (__AST)->op.rhso, __AST)
 #define dbg_lhs(__AST) debug("cgen[%t->%t](rhs, %+k)\n%3K", get, ret, (__AST)->op.lhso, __AST)
@@ -83,6 +83,8 @@ int cgen(state s, astn ast, int get) {
 	ret = ast->type->cast;
 	if (ret == 0)
 		ret = ast->type->kind;
+
+	//~ debug("%+k", ast);
 
 	switch (ast->kind) {
 		default:
@@ -280,8 +282,9 @@ int cgen(state s, astn ast, int get) {
 			//~ int stkret = stkoffs(s->vm, sizeOf(ast->type));
 			//~ int mark1 = emit(s->vm, markIP);
 			astn argv = ast->op.rhso;
-			symn var = linkOf(ast, 0);	// refs only
+			symn var = linkOf(ast->op.lhso, 1);	// not refs only
 
+			dieif(!var && ast->op.lhso, "FixMe", ast);
 			//~ dieif(!var || !var->call, "FixMe[%+k]", ast);
 
 			if (var && var->kind == TYPE_def) {
@@ -331,6 +334,7 @@ int cgen(state s, astn ast, int get) {
 				//~ debug("inline %+k = %+k", ast, var->init); fputasm(stdout, s->vm, ipdbg, -1, 0x119);
 
 				if (!(ret = cgen(s, var->init, ret))) {
+					debug("%+T", var);
 					dbg_arg(var->init);
 					return 0;
 				}
@@ -380,7 +384,6 @@ int cgen(state s, astn ast, int get) {
 						dbg_arg(arg);
 						return 0;
 					}
-					//~ arg->XXXX = emit(s->vm, get_sp);
 					arg->next = argl;
 					argl = arg;
 					argv = argv->op.lhso;
@@ -398,8 +401,15 @@ int cgen(state s, astn ast, int get) {
 				argl = argv;
 			}
 
-			if (var) {					// call()
-				// switch(var->kind) 
+			if (var == ast->type) {			// cast()
+				//~ debug("cast: %+k", ast);
+				if (var == emit_opc) {	// emit()
+				}
+				else if (!argv || argv != ast->op.rhso /* && cast*/)
+					warn(s, 1, s->cc->file, ast->line, "multiple values, array ?: '%+k'", ast);
+			}
+			else if (var) {					// call()
+				//~ debug("call: %+k", ast);
 				if (var == emit_opc) {	// emit()
 				}
 				else if (var->call) {
@@ -411,8 +421,8 @@ int cgen(state s, astn ast, int get) {
 					return 0;
 				}
 			}
-			else {						// cast()
-				//~ debug("cast(%+k):%t", ast, ast->cst2);
+			else {							// ()
+				dieif(ast->op.lhso, "FixMe %+k:%+k", ast, ast->op.lhso);
 				if (!argv || argv != ast->op.rhso /* && cast*/)
 					warn(s, 1, s->cc->file, ast->line, "multiple values, array ?: '%+k'", ast);
 			}
@@ -423,7 +433,7 @@ int cgen(state s, astn ast, int get) {
 				return 0;
 			}
 
-			if (s->vm->opti && eval(&tmp, ast->op.rhso)) {
+			if (s->vm->opti && eval(&tmp, ast->op.rhso) == TYPE_int) {
 				int offs = sizeOf(ast->type) * constint(&tmp);
 				if (constint(&tmp) >= ast->op.lhso->type->size) {
 					error(s, ast->line, " index out of bounds: %+k", ast);
@@ -729,8 +739,8 @@ int cgen(state s, astn ast, int get) {
 						return 0;
 					}
 
-					//~ dieif(var->cast == TYPE_ref && (typ->cast != TYPE_ref || typ->cast != TYPE_ref), "Fixme");
-					//~ dieif(typ->cast == TYPE_ref && (var->cast != TYPE_ref || var->cast != TYPE_def), "Fixme %k", ast);
+					//~ dieif(var->cast == TYPE_ref && (typ->cast != TYPE_ref || typ->cast != TYPE_ref), "FixMe");
+					//~ dieif(typ->cast == TYPE_ref && (var->cast != TYPE_ref || var->cast != TYPE_def), "FixMe %k", ast);
 					//~ if (var->load && !emit(s->vm, opc_ldi4)) {
 					if ((var->cast == TYPE_ref) && !emit(s->vm, opc_ldi4)) {
 						dbg_ast(ast);
@@ -819,7 +829,8 @@ int cgen(state s, astn ast, int get) {
 					}
 
 					if (stktop != var->offs && val->type != emit_opc) {
-						error(s, ast->line, "invalid initializer size: %d <> %d", 4 * (stktop - var->offs), sizeOf(typ));
+						//~ error(s, ast->line, "invalid initializer size: %d <> %d", 4 * (stktop - var->offs), sizeOf(typ));
+						error(s, ast->line, "invalid initializer size: %d <> got(%d): %+k", -stktop, -var->offs, val);
 
 						//~ warn(s, 1, s->cc->file, ast->line, "invalid initializer size: %d <> %d", 4 * (stktop - var->offs), sizeOf(typ));
 						return 0;
@@ -940,32 +951,8 @@ int logfile(state s, char* file) {
 	}
 	return 0;
 }
-int srcfile(state s, char* file) {
-	if (!ccOpen(s, srcFile, file))
-		return -1;
-	return 0;
-}
 
 //~ TODO: this is parse only
-int compile(state s, int level) {
-	if (s->cc == NULL)
-		return -1;
-
-	#if DEBUGGING > 1
-	//~ debug("after init:%d Bytes", s->cc->_beg - s->_mem);
-	debug("after init:%.2F KBytes", (s->cc->_beg - s->_mem) / 1024.);
-	#endif
-
-	s->cc->warn = level;
-	if (scan(s->cc, -1) != 0) {
-		return -2;
-	}
-	#if DEBUGGING > 1
-	debug("after scan:%.2F KBytes", (s->cc->_beg - s->_mem) / 1024.);
-	#endif
-
-	return ccDone(s);
-}
 int gencode(state s, int level) {
 	ccEnv cc = s->cc;
 	vmEnv vm = s->vm;
@@ -1021,17 +1008,17 @@ static void install_emit(ccEnv cc) {
 	enter(cc, NULL);
 
 	installex(cc, "nop", EMIT_opc, opc_nop, type_vid, NULL);
-	installex(cc, "dupp_x1", EMIT_opc, opc_dup1, type_vid, intnode(cc, 0));
-	installex(cc, "dupp_x2", EMIT_opc, opc_dup2, type_vid, intnode(cc, 0));
+	installex(cc, "not", EMIT_opc, opc_not, type_bol, NULL);
 	//~ installex(cc, "set", EMIT_opc, opc_set1, type_vid, intnode(cc, 1));
 	//~ installex(cc, "pop", EMIT_opc, opc_drop, type_vid, intnode(cc, 1));
 	installex(cc, "ldz", EMIT_opc, opc_ldz1, type_vid, NULL);
+	installex(cc, "call", EMIT_opc, opc_call, type_vid, NULL);
 
 	if ((typ = install(cc, "dupp", TYPE_enu, TYPE_vid, 0))) {
 		enter(cc, typ);
 		installex(cc, "x1", EMIT_opc, opc_dup1, type_i32, intnode(cc, 0));
 		installex(cc, "x2", EMIT_opc, opc_dup2, type_i64, intnode(cc, 0));
-		installex(cc, "x4", EMIT_opc, opc_dup4, type_v4f, intnode(cc, 0));
+		//~ installex(cc, "x4", EMIT_opc, opc_dup4, type_vid, intnode(cc, 0));
 		typ->args = leave(cc, typ);
 	}
 
@@ -1197,6 +1184,226 @@ static void install_emit(ccEnv cc) {
 	emit_opc->args = leave(cc, emit_opc);
 }
 
+/*
+static int b32btc(state s) {
+	uint32_t x = poparg(s, int32_t);
+	x -= ((x >> 1) & 0x55555555);
+	x = (((x >> 2) & 0x33333333) + (x & 0x33333333));
+	x = (((x >> 4) + x) & 0x0f0f0f0f);
+	x += (x >> 8) + (x >> 16);
+	setret(uint32_t, s, x & 0x3f);
+	return 0;
+}
+static int b32bsf(state s) {
+	uint32_t x = poparg(s, int32_t);
+	int ans = 0;
+	//~ if ((x & 0x00000000ffffffff) == 0) { ans += 32; x >>= 32; }
+	if ((x & 0x000000000000ffff) == 0) { ans += 16; x >>= 16; }
+	if ((x & 0x00000000000000ff) == 0) { ans +=  8; x >>=  8; }
+	if ((x & 0x000000000000000f) == 0) { ans +=  4; x >>=  4; }
+	if ((x & 0x0000000000000003) == 0) { ans +=  2; x >>=  2; }
+	if ((x & 0x0000000000000001) == 0) { ans +=  1; }
+	setret(uint32_t, s, x ? ans : -1);
+	return 0;
+}
+static int b32bsr(state s) {
+	uint32_t x = poparg(s, int32_t);
+	unsigned ans = 0;
+	//~ if ((x & 0xffffffff00000000) != 0) { ans += 32; x >>= 32; }
+	if ((x & 0x00000000ffff0000) != 0) { ans += 16; x >>= 16; }
+	if ((x & 0x000000000000ff00) != 0) { ans +=  8; x >>=  8; }
+	if ((x & 0x00000000000000f0) != 0) { ans +=  4; x >>=  4; }
+	if ((x & 0x000000000000000c) != 0) { ans +=  2; x >>=  2; }
+	if ((x & 0x0000000000000002) != 0) { ans +=  1; }
+	setret(uint32_t, s, x ? ans : -1);
+	return 0;
+}
+static int b32hib(state s) {
+	uint32_t x = poparg(s, uint32_t);
+	x |= x >> 1;
+	x |= x >> 2;
+	x |= x >> 4;
+	x |= x >> 8;
+	x |= x >> 16;
+	setret(uint32_t, s, x - (x >> 1));
+	return 0;
+}
+//~ static int b32lob(state s) := x & -x;
+static int b32swp(state s) {
+	uint32_t x = poparg(s, int32_t);
+	x = ((x >> 1) & 0x55555555) | ((x & 0x55555555) << 1);
+	x = ((x >> 2) & 0x33333333) | ((x & 0x33333333) << 2);
+	x = ((x >> 4) & 0x0F0F0F0F) | ((x & 0x0F0F0F0F) << 4);
+	x = ((x >> 8) & 0x00FF00FF) | ((x & 0x00FF00FF) << 8);
+	setret(uint32_t, s, (x >> 16) | (x << 16));
+	return 0;
+}
+/ * removed, and do the same with 32 bit functions
+static int b32zxt(state s) {
+	uint32_t val = poparg(s, int32_t);
+	int32_t ofs = poparg(s, int32_t);
+	int32_t cnt = poparg(s, int32_t);
+	val <<= 32 - (ofs + cnt);
+	setret(int32_t, s, val >> (32 - cnt));
+	return 0;
+}
+static int b32sxt(state s) {
+	int32_t val = poparg(s, int32_t);
+	int32_t ofs = poparg(s, int32_t);
+	int32_t cnt = poparg(s, int32_t);
+	val <<= 32 - (ofs + cnt);
+	setret(int32_t, s, val >> (32 - cnt));
+	return 0;
+}
+* /
+
+static int b64shl(state s) {
+	uint64_t x = poparg(s, int64_t);
+	int32_t y = poparg(s, int32_t);
+	setret(uint64_t, s, x << y);
+	return 0;
+}
+static int b64shr(state s) {
+	uint64_t x = poparg(s, int64_t);
+	int32_t y = poparg(s, int32_t);
+	setret(uint64_t, s, x >> y);
+	return 0;
+}
+static int b64sar(state s) {
+	int64_t x = poparg(s, int64_t);
+	int32_t y = poparg(s, int32_t);
+	setret(uint64_t, s, x >> y);
+	return 0;
+}
+static int b64and(state s) {
+	uint64_t x = poparg(s, uint64_t);
+	uint64_t y = poparg(s, uint64_t);
+	setret(uint64_t, s, x & y);
+	return 0;
+}
+static int b64ior(state s) {
+	uint64_t x = poparg(s, uint64_t);
+	uint64_t y = poparg(s, uint64_t);
+	setret(uint64_t, s, x | y);
+	return 0;
+}
+static int b64xor(state s) {
+	uint64_t x = poparg(s, uint64_t);
+	uint64_t y = poparg(s, uint64_t);
+	setret(uint64_t, s, x ^ y);
+	return 0;
+}
+
+static int b64bsf(state s) {
+	uint64_t x = poparg(s, int64_t);
+	int ans = -1;
+	if (x != 0) {
+		ans = 0;
+		if ((x & 0x00000000ffffffffULL) == 0) { ans += 32; x >>= 32; }
+		if ((x & 0x000000000000ffffULL) == 0) { ans += 16; x >>= 16; }
+		if ((x & 0x00000000000000ffULL) == 0) { ans +=  8; x >>=  8; }
+		if ((x & 0x000000000000000fULL) == 0) { ans +=  4; x >>=  4; }
+		if ((x & 0x0000000000000003ULL) == 0) { ans +=  2; x >>=  2; }
+		if ((x & 0x0000000000000001ULL) == 0) { ans +=  1; }
+	}
+	setret(int32_t, s, ans);
+	return 0;
+}
+static int b64bsr(state s) {
+	uint64_t x = poparg(s, int64_t);
+	int ans = -1;
+	if (x != 0) {
+		ans = 0;
+		if ((x & 0xffffffff00000000ULL) != 0) { ans += 32; x >>= 32; }
+		if ((x & 0x00000000ffff0000ULL) != 0) { ans += 16; x >>= 16; }
+		if ((x & 0x000000000000ff00ULL) != 0) { ans +=  8; x >>=  8; }
+		if ((x & 0x00000000000000f0ULL) != 0) { ans +=  4; x >>=  4; }
+		if ((x & 0x000000000000000cULL) != 0) { ans +=  2; x >>=  2; }
+		if ((x & 0x0000000000000002ULL) != 0) { ans +=  1; }
+	}
+	setret(int32_t, s, ans);
+	return 0;
+}
+static int b64hib(state s) {
+	uint64_t x = poparg(s, int64_t);
+	x |= x >> 1;
+	x |= x >> 2;
+	x |= x >> 4;
+	x |= x >> 8;
+	x |= x >> 16;
+	x |= x >> 32;
+	setret(uint64_t, s, x - (x >> 1));
+	return 0;
+}
+static int b64lob(state s) {
+	uint64_t x = poparg(s, int64_t);
+	setret(uint64_t, s, x & -x);
+	return 0;
+}
+
+static int b64zxt(state s) {
+	uint64_t val = poparg(s, int64_t);
+	int32_t ofs = poparg(s, int32_t);
+	int32_t cnt = poparg(s, int32_t);
+	val <<= 64 - (ofs + cnt);
+	setret(int64_t, s, val >> (64 - cnt));
+	return 0;
+}
+static int b64sxt(state s) {
+	int64_t val = poparg(s, int64_t);
+	int32_t ofs = poparg(s, int32_t);
+	int32_t cnt = poparg(s, int32_t);
+	val <<= 64 - (ofs + cnt);
+	setret(int64_t, s, val >> (64 - cnt));
+	return 0;
+}
+// */
+
+enum bits_funs {
+	bits_cmt,
+	bits_and,
+	bits_or,
+	bits_xor,
+};
+static int bits_call(state s) {
+	//~ uint32_t fun = poparg(s, uint32_t);
+	switch (poparg(s, uint32_t)) {
+		case bits_cmt: {
+			uint64_t x = poparg(s, int64_t);
+			setret(uint64_t, s, ~x);
+		} return 0;
+		case bits_and: {
+			uint64_t x = poparg(s, int64_t);
+			uint64_t y = poparg(s, int64_t);
+			setret(uint64_t, s, x & y);
+		} return 0;
+		case bits_or: {
+			uint64_t x = poparg(s, int64_t);
+			uint64_t y = poparg(s, int64_t);
+			setret(uint64_t, s, x | y);
+		} return 0;
+		case bits_xor: {
+			uint64_t x = poparg(s, int64_t);
+			uint64_t y = poparg(s, int64_t);
+			setret(uint64_t, s, x ^ y);
+		} return 0;
+	}
+	return -1;
+}
+static void bits_init(ccEnv cc) {
+	symn module = install(cc, "bits64", TYPE_enu, 0, 0);
+	if (module != NULL) {
+		enter(cc, module);
+		//~ installex(cc, "Snan", TYPE_def, 0, type_f64, fh8node(cc, 0xfff8000000000000LL));	// Snan
+		//~ installex(cc,  "nan", TYPE_def, 0, type_f64, fh8node(cc, 0x7FFFFFFFFFFFFFFFLL));	// Qnan
+		libcall(cc->s, bits_call, "int64 cmt(int64 x)", intnode(cc, bits_cmt));
+		libcall(cc->s, bits_call, "int64 and(int64 x, int64 y)", intnode(cc, bits_and));
+		libcall(cc->s, bits_call, "int64  or(int64 x, int64 y)", intnode(cc, bits_or));
+		libcall(cc->s, bits_call, "int64 xor(int64 x, int64 y)", intnode(cc, bits_xor));
+		module->args = leave(cc, module);
+	}
+}
+
 //static void install_rtti(ccEnv cc, unsigned level) ;		// req emit: libc(import, define, lookup, ...)
 /*static void install_bits(ccEnv cc, symn it, int64_t sgn) {
 	int size = it->size;
@@ -1275,10 +1482,8 @@ state rtInit(void* mem, unsigned size) {
 
 ccEnv ccInit(state s) {
 	ccEnv cc = getmem(s, sizeof(struct ccEnv), -1);
-	//~ symn def;//, type_chr = 0;
-	symn type_i08 = 0, type_i16 = 0;
-	symn type_u08 = 0, type_u16 = 0;
-	//~ symn type_u64 = 0, type_f16 = 0;
+	symn type_i08 = NULL, type_i16 = NULL;
+	symn type_u08 = NULL, type_u16 = NULL;
 
 	if (cc == NULL)
 		return NULL;
@@ -1388,7 +1593,7 @@ ccEnv ccInit(state s) {
 	installex(cc, "true", TYPE_def, 0, type_bol, intnode(cc, 1));
 	installex(cc, "false", TYPE_def, 0, type_bol, intnode(cc, 0));
 
-	if (1) {	// bigendian
+	if (0) {	// bigendian
 		union {
 			int32_t value;
 			struct {
@@ -1413,16 +1618,22 @@ ccEnv ccInit(state s) {
 	}
 
 	if (COMPILER_LEVEL & creg_emit) install_emit(cc);
-	if (COMPILER_LEVEL & creg_libc & 0xff) libcall(s, NULL, "defaults");
+	if (COMPILER_LEVEL & creg_libc & 0xff) libcall(s, NULL, "defaults", NULL);
+	bits_init(cc);
 	//~ if (COMPILER_LEVEL & creg_math & 0xff) install_math(cc);
 
-	debug("Copiler hashcode: 0x%08x, %d", rehash(s->_mem, cc->_beg - s->_mem), cc->_beg - s->_mem);
-	/* if (1) {
+	// TODO: DelMe: symbols points to tree nodes, wich offset depends on the size of the vm.
+	//~ debug("Copiler hashcode: 0x%08x, %d", rehash(s->_mem, cc->_beg - s->_mem), cc->_beg - s->_mem);
+
+	/*if (1) {
 		FILE* out;
-		if ((out = fopen("cc.hex", "wb"))) {
-			char* ptr;
-			for (ptr = s->_mem; ptr < cc->_beg; ptr += 1)
+		if ((out = fopen("cc.obj", "wb"))) {
+			char* ptr = s->_mem;
+			while (ptr < cc->_beg) {
 				fputc(*ptr, out);
+				ptr += 1;
+			}
+			fclose(out);
 		}
 	} // */
 	return cc;
@@ -1445,17 +1656,10 @@ int ccDone(state s) {
 	source(cc, 0, 0);
 
 	// set used memory
-	//~ s->_cnt -= cc->_ptr - s->_ptr;
-	//~ s->_ptr = cc->_ptr;
-
 	s->_cnt -= cc->_beg - s->_ptr;
 	s->_ptr = cc->_beg;
-	//~ cc->root = NULL;
 
-	//~ dieif(s->_cnt != cc->_cnt, "FixMe", s->_cnt - cc->_cnt);
-	//~ cc->_ptr = 0;
-	//~ cc->_cnt = 0;
-
+	// return errors
 	return s->errc;
 }
 

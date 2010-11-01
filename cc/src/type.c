@@ -97,7 +97,7 @@ symn installex(ccEnv s, const char* name, int kind, unsigned size, symn type, as
 			case TYPE_enu:
 			case TYPE_rec:
 				if (def->cast)
-					def->algn = size;
+					def->pack = size;
 
 			// variable
 			case TYPE_ref:
@@ -125,6 +125,7 @@ symn install(ccEnv s, const char* name, int kind, int cast, unsigned size) {
 // promote
 static inline int castkind(int cast) {
 	switch (cast) {
+		case TYPE_vid: return TYPE_vid;
 		case TYPE_bit: return TYPE_bit;
 		case TYPE_u32:
 		case TYPE_i32:
@@ -342,27 +343,42 @@ int istype(astn ast) {
 	return 0;
 }// */
 
-symn linkOf(astn ast, int njr) {
+symn linkOf(astn ast, int njr2) {
 	if (!ast) return 0;
+
+	if (ast->kind == OPER_fnc)
+		return linkOf(ast->op.lhso, njr2);
 
 	// TODO: static variables ?
 	if (ast->kind == OPER_dot)		// i32.mad
-		return njr ? linkOf(ast->op.rhso, njr) : NULL;
+		return linkOf(ast->op.rhso, njr2);
+		//~ return njr ? linkOf(ast->op.rhso, njr) : NULL;
 
 	// get base
 	if (ast->kind == OPER_idx)
-		return njr ? linkOf(ast->op.lhso, njr) : NULL;
-
-	if (ast->kind == OPER_fnc)
-		return linkOf(ast->op.lhso, njr);
+		return linkOf(ast->op.lhso, njr2);
+		//~ return njr ? linkOf(ast->op.lhso, njr) : NULL;
 
 	if (ast->kind == EMIT_opc)
 		return emit_opc;
 
 	dieif(ast->kind != TYPE_ref, "unexpected kind: %t(%+k)", ast->kind, ast);
 
-	if (!njr && isType(ast->id.link))
-		return NULL;
+	//~ if (!njr && isType(ast->id.link))
+		//~ return NULL;
+
+	/*if (isType(ast->id.link)) {
+		if (ast->id.link->kind == TYPE_def)
+			return linkOf(ast->id.link->init, njr2);
+		//~ if (!njr)
+			//~ return NULL;
+	}// */
+
+	if (isType(ast->id.link))
+		return ast->type;
+
+	//~ if (ast->id.link->kind == TYPE_def)
+		//~ return linkOf(ast->id.link->init, njr2);
 
 	return ast->id.link;
 }// */
@@ -428,6 +444,7 @@ int castTy(astn ast, symn type) {
 
 symn typecheck(ccEnv cc, symn loc, astn ast) {
 	astn ref = 0, args = 0;
+	astn dot = NULL;	// temp
 	symn sym = 0;
 
 	if (!ast) {
@@ -481,14 +498,17 @@ symn typecheck(ccEnv cc, symn loc, astn ast) {
 				}
 				args->next = next;
 			}
+
 			if (fun) switch (fun->kind) {
-				/*case OPER_dot: {	// math.isNan ???
-					if (!typecheck(s, loc, ast->op.lhso->op.lhso)) {
+				case OPER_dot: {	// math.isNan ???
+					astn call = ast->op.lhso;
+					if (!(loc = typecheck(cc, loc, call->op.lhso))) {
 						debug("%+k:%T", ast, loc);
 						return 0;
 					}
-					loc = ast->op.lhso->op.lhso->type;
-					ref = ast->op.lhso->op.rhso;
+					dot = call;
+					//~ loc = call->op.lhso->type;
+					ref = call->op.rhso;
 				} break;// */
 				case EMIT_opc: {
 					// TODO: type of 'emit()' will be emit, to match all types
@@ -509,6 +529,7 @@ symn typecheck(ccEnv cc, symn loc, astn ast) {
 
 		} break;
 		case OPER_dot: {
+			//~ debug("%+k", ast);
 			sym = typecheck(cc, loc, ast->op.lhso);
 			if (sym == NULL) {
 				debug("lookup %+k in %T", ast->op.lhso, loc);
@@ -832,7 +853,7 @@ symn typecheck(ccEnv cc, symn loc, astn ast) {
 					debug("%k:%t %+k", args, castOf(sym), args);
 					return 0;
 				}// */
-				ast->op.lhso = NULL; 
+				//~ ast->op.lhso = NULL; 
 			}
 			else if (ast->kind == OPER_fnc) {
 				symn arg = sym->call ? sym->args : NULL;
@@ -861,6 +882,8 @@ symn typecheck(ccEnv cc, symn loc, astn ast) {
 			ref->id.link = sym;
 			ref->type = typ;
 			ast->type = typ;
+			if (dot)
+				dot->type = typ;
 
 			//~ TODO: review this: functions, arrays and strings are passed by reference
 

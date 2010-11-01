@@ -26,7 +26,6 @@ lib:$(OBJS)
 
 clean:
 	rm -f $(OBJS) $(OBJDIR)main.o
-	rm -f $(OBJDIR)*.obj
 
 debug:
 	$(DBG) "$(BINDIR)main"

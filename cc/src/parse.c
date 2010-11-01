@@ -235,7 +235,7 @@ static int escchr(ccEnv s) {
 		}
 
 		default:
-			error(s->s, s->line, "unknown escape sequence '\\%c'", chr);
+			error(s->s, s->line, "invalid escape sequence '\\%c'", chr);
 			return -1;
 	}
 	return 0;
@@ -446,9 +446,8 @@ static int readTok(ccEnv s, astn tok) {
 	};
 	int chr = readChr(s);
 
-	// TODO: this is max len
-	int max = s->_end - s->_beg;
-	char *beg, *ptr;
+	char *end = s->_end;
+	char *beg = 0, *ptr = 0;
 
 	// skip white spaces and comments
 	while (chr != -1) {
@@ -460,12 +459,11 @@ static int readTok(ccEnv s, astn tok) {
 
 				chr = readChr(s);
 				ptr = beg = s->_beg;
-				while (max > 0 && chr != -1) {
+				while (ptr < end && chr != -1) {
 					if (chr == '\n')
 						break;
 
 					*ptr++ = chr;
-					max -= 1;
 					chr = readChr(s);
 				}
 				if (chr == -1) warn(s->s, 9, s->file, line, "no newline at end of file");
@@ -703,7 +701,7 @@ static int readTok(ccEnv s, astn tok) {
 		} break;
 		case '\'': {		// \'[^\'\n]*
 			int val = 0;
-			while (max > 0 && (chr = readChr(s)) != -1) {
+			while (ptr < end && (chr = readChr(s)) != -1) {
 
 				if (chr == '\'')
 					break;
@@ -716,7 +714,6 @@ static int readTok(ccEnv s, astn tok) {
 
 				val = val << 8 | chr;
 				*ptr++ = chr;
-				max -= 1;
 			}
 			*ptr = 0;
 
@@ -739,12 +736,11 @@ static int readTok(ccEnv s, astn tok) {
 			tok->con.cint = val;
 		} break;
 		case '\"': {		// \"[^\"\n]*
-			while (max > 0 && (chr = readChr(s)) != -1) {
+			while (ptr < end && (chr = readChr(s)) != -1) {
 				if (chr == '\"') break;
 				else if (chr == '\n') break;
 				else if (chr == '\\') chr = escchr(s);
 				*ptr++ = chr;
-				max -= 1;
 			}
 			*ptr++ = 0;
 			if (chr != '\"') {					// error
@@ -758,10 +754,9 @@ static int readTok(ccEnv s, astn tok) {
 			tok->id.name = mapstr(s, beg, ptr - beg, tok->id.hash);
 		} break;
 		read_idf: {			// [a-zA-Z_][a-zA-Z0-9_]*
-			while (max > 0 && chr != -1) {
+			while (ptr < end && chr != -1) {
 				if (!(chr_map[chr & 0xff] & CWORD))
 					break;
-				max -= 1;
 				*ptr++ = chr;
 				chr = readChr(s);
 			}
@@ -769,17 +764,21 @@ static int readTok(ccEnv s, astn tok) {
 			*ptr++ = 0;
 
 			if (1) {
+				static int test = 1;		// TODO: DelMe: test keywords
 				static struct {
 					char *name;
-					int kind;
+					int type;
 				}
 				keywords[] = {
+					// my SciTe can sort these lines !!!
 					{"define", TYPE_def},
 					{"else", STMT_els},
 					{"emit", EMIT_opc},
 					{"enum", TYPE_enu},
 					{"for", STMT_for},
 					{"if", STMT_if},
+					{"module", UNIT_def},
+					{"operator", OPER_op},
 					{"parralel", QUAL_par},
 					{"static", QUAL_sta},
 					{"struct", TYPE_rec},
@@ -789,6 +788,23 @@ static int readTok(ccEnv s, astn tok) {
 				int hi = sizeof(keywords) / sizeof(*keywords);
 				int cmp = -1;
 
+				if (test != 0) {
+					int i, j, n = 0;
+					for (i = 0; i < tok_last; ++i) {
+						if (tok_tbl[i].type == 0xff) {
+							for (j = 0; j < hi; ++j) {
+								if (i == keywords[j].type)
+									break;
+							}
+							//~ debug("keyword: %t", i);
+							dieif(j > hi, "FixMe: %t", i);
+							dieif(strcmp(tok_tbl[i].name, keywords[j].name) != 0, "FixMe: %t", i);
+							n += 1;
+						}
+					}
+					dieif(n != hi, "FixMe %d/%d", n, hi);
+					test = 0;
+				}
 				while (cmp != 0 && lo < hi) {
 					int mid = lo + ((hi - lo) / 2);
 					cmp = strcmp(keywords[mid].name, beg);
@@ -798,7 +814,7 @@ static int readTok(ccEnv s, astn tok) {
 						hi = mid;
 				}
 				if (cmp == 0) {
-					tok->kind = keywords[hi].kind;
+					tok->kind = keywords[hi].type;
 					//~ debug("kwd: %k, %s", tok, beg);
 				}
 				else {
@@ -996,6 +1012,11 @@ static int readTok(ccEnv s, astn tok) {
 			}
 		} break;
 	}
+	if (ptr >= end) {
+		//~ debug("mem overrun %t", tok->kind);
+		fatal("mem overrun %t", tok->kind);
+		return 0;
+	}
 	return tok->kind;
 }
 
@@ -1083,65 +1104,9 @@ static int skiptok(ccEnv s, int kind, int report) {
 	}
 	return kind;
 }
-
-#ifdef SORT_KEYWORDS_MAIN
-#include <string.h>
-#include <math.h>
-#include "ccvm.h"
-
-static struct KW {
-	char *name;
-	int kind;
-} keywords[] = {
-	{"if", STMT_if},
-	{"for", STMT_for},
-	{"else", STMT_els},
-
-	//~ "synchronized", QUAL_syn, 
-	//~ "const",  QUAL_con,
-	{"emit", EMIT_opc},
-
-	//~ {"new", OPER_new},
-	//~ {"delete", OPER_del},
-	//~ {"try", STMT_try},
-	//~ {"throw", STMT_thr},
-	//~ {"catch", STMT_cth},
-	//~ {"finally", STMT_fin},
-	//~ {"goto", STMT_go2},
-	//~ {"break", STMT_brk},
-	//~ {"continue", STMT_con},
-	//~ {"switch", OPER_swi},
-	//~ {"case", OPER_cas},
-	//~ {"default", OPER_def},
-	//~ {"while", OPER_wht},
-	//~ {"until", OPER_whf},
-	//~ {"repeat", OPER_rep},
-
-	{"parralel", QUAL_par},
-	{"enum", TYPE_enu},
-	{"define", TYPE_def},
-	{"struct", TYPE_rec},
-	{"static", QUAL_sta},
-};
-
-int cmpstr(const void* _a, const void* _b) {
-	const struct KW *a = _a;
-	const struct KW *b = _b;
-	return strcmp(a->name, b->name);
-}
-
-int main() {
-	int i, n = sizeof(keywords) / sizeof(struct KW);
-	qsort(keywords, n, sizeof(struct KW), cmpstr);
-	for (i = 0; i < n; i += 1)
-		fprintf(stdout, "%s\n", keywords[i].name);
-	return 0;
-}
-#endif
-
 //}
 
-//{~~~~~~~~~ Parser ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//{~~~~~~~~~ Parser ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 //~ TODO: this should go to type.c
 static void redefine(ccEnv s, symn sym) {
@@ -1187,10 +1152,11 @@ static void redefine(ccEnv s, symn sym) {
 	}
 }
 
+//~    astn unit(ccEnv, int mode);		// parse unit			(mode: script/unit)
 static astn stmt(ccEnv, int mode);		// parse statement		(mode: enable decl)
 static astn decl(ccEnv, int mode);		// parse declaration	(mode: enable expr)
 static astn spec(ccEnv s/* , int qual */);
-static symn type(ccEnv s/* , int qual */);
+static symn type(ccEnv s/* , int qual */);	// TODO: this should also return an ast node
 
 astn expr(ccEnv s, int mode) {
 	astn buff[TOKS], *base = buff + TOKS;
@@ -1452,7 +1418,7 @@ astn expr(ccEnv s, int mode) {
 	return tok;
 }
 
-static symn type(ccEnv s/* , int qual */) {
+static symn type(ccEnv s) {
 	symn def = 0;
 	astn tok;
 	while ((tok = peekTok(s, TYPE_ref))) {		// type(.type)*
@@ -1513,19 +1479,36 @@ static astn args(ccEnv s, int mode) {
 	return ast;
 }
 
-int scan(ccEnv s, int mode) {
+astn unit(ccEnv cc, int mode) {
+	symn def = NULL;
+
+	if (skip(cc, UNIT_def)) {
+		astn tag = next(cc, TYPE_ref);
+		if (tag == NULL) {
+			error(cc->s, cc->line, "Identifyer expected");
+			skiptok(cc, STMT_do, 1);
+			return NULL;
+		}
+		def = declare(cc, TYPE_enu, tag, type_vid);
+		def->cast = TYPE_enu;
+	}// */
 
 	// we want a new scope and scan a list of statement
-	backTok(s, newnode(s, STMT_beg));
-	s->root = stmt(s, 0);
-	s->s->defs = leave(s, NULL);
+	backTok(cc, newnode(cc, STMT_beg));
+	cc->root = stmt(cc, def == NULL);//def ? 0 : 1);
 
-	if (peekTok(s, 0))
-		error(s->s, s->line, "unexpected token: %k", peekTok(s, 0));
-	else if (s->nest)
-		error(s->s, s->line, "premature end of file: %d", s->nest);
+	if (peekTok(cc, 0)) {
+		error(cc->s, cc->line, "unexpected token: %k", peekTok(cc, 0));
+		return NULL;
+	}
+	if (def) {
+		def->args = leave(cc, def);
+	}
 
-	return s->s && s->s->errc;
+	if (cc->nest)
+		error(cc->s, cc->line, "premature end of file: %d", cc->nest);
+
+	return cc->root;
 }
 
 static astn stmt(ccEnv s, int mode) {
@@ -1729,22 +1712,6 @@ static astn decl(ccEnv s, int qual) {
 				leave(s, NULL);
 			}
 			/*else if (skip(s, ASGN_set)) {		// int sqr(int a) = sqr_int_fast;
-				char* name = ref->name;
-				//~ ref->name = 0;		// exclude recursive inlineing
-				ref->init = expr(s, TYPE_def);
-				if (ref->init && ref->init->kind != OPER_fnc) {
-					astn tmp = newnode(s, OPER_fnc);
-					tmp->type = ref->init->type;
-					tmp->cast = ref->init->cast;
-					tmp->line = ref->init->line;
-					tmp->op.rhso = ref->init;
-					ref->init = tmp;
-					if (!typecheck(s, 0, tmp)) {	//TODO: find a nother way to do this
-						error(s->s, tmp->line, "invalid expression: %+k", tmp);
-					}
-				}
-				ref->name = name;
-				skiptok(s, STMT_do, 1);
 			}// */
 			ref->args = leave(s, ref);
 			ref->call = 1;
@@ -1801,7 +1768,10 @@ static astn decl(ccEnv s, int qual) {
 		}
 
 		redefine(s, ref);
-		if (ref->init && (ref->init->type != emit_opc && ref->init->type != ref->type && !promote(ref->init->type, ref->type))) {
+		//~ debug("%+k", ref->init);
+		if (ref->init && (ref->init->kind == STMT_beg)) {
+		}
+		else if (ref->init && (ref->init->type != emit_opc && ref->init->type != ref->type && !promote(ref->init->type, ref->type))) {
 			debug("%-T := %T(%+k)", ref->type, ref->init->type, ref->init);
 			error(s->s, s->line, "invalid initializer: %-T(%+k)", ref->type, ref->init);
 			//return 0;
@@ -1820,8 +1790,10 @@ static astn spec(ccEnv s/* , int qual */) {
 
 	int offs = 0;
 	int size = 0;
-	int pack = 4;
 
+	if (skip(s, OPER_op)) {			// operator
+		skiptok(s, STMT_do, 1);
+	}// */
 	if (skip(s, TYPE_def)) {			// define
 		symn typ = 0;
 		//~ int op = skip(s, OPER_dot);
@@ -1858,20 +1830,21 @@ static astn spec(ccEnv s/* , int qual */) {
 			if (def && skip(s, ASGN_set)) {		// define sqr(int a) = (a * a);
 				char* name = def->name;
 				def->name = 0;					// exclude recursive inlineing
-				def->init = expr(s, TYPE_def);
-				if (def->init && def->init->kind != OPER_fnc) {
-					astn tmp = newnode(s, OPER_fnc);
-					warnfun = 1;
-					tmp->type = def->init->type;
-					tmp->cst2 = def->init->cst2;
-					tmp->line = def->init->line;
-					tmp->op.rhso = def->init;
-					def->init = tmp;
-					if (!typecheck(s, 0, tmp)) {	//TODO: find a nother way to do this
-						error(s->s, tmp->line, "invalid expression: %+k", tmp);
+				if ((def->init = expr(s, TYPE_def))) {
+					if (def->init->kind != OPER_fnc) {
+						astn tmp = newnode(s, OPER_fnc);
+						warnfun = 1;
+						tmp->type = def->init->type;
+						tmp->cst2 = def->init->cst2;
+						tmp->line = def->init->line;
+						tmp->op.rhso = def->init;
+						def->init = tmp;
+						if (!typecheck(s, 0, tmp)) {	//TODO: find a nother way to do this
+							error(s->s, tmp->line, "invalid expression: %+k", tmp);
+						}
 					}
+					typ = def->init->type;
 				}
-				typ = def->init->type;
 				def->name = name;
 			}
 
@@ -1931,6 +1904,7 @@ static astn spec(ccEnv s/* , int qual */) {
 		redefine(s, def);
 	}// */
 	else if (skip(s, TYPE_rec)) {		// struct
+		int pack = 4;
 		if (!(tag = next(s, TYPE_ref))) {	// name?
 			tag = newnode(s, TYPE_ref);
 			//~ tag->type = type_vid;
@@ -1957,11 +1931,14 @@ static astn spec(ccEnv s/* , int qual */) {
 			redefine(s, def);
 			enter(s, NULL);
 			while (!skip(s, STMT_end)) {
-				symn typ = type(s/* , qual */);
+				symn typ = type(s);
 				tok = next(s, TYPE_ref);
 
+				/* this is optional:
+				// id ':' typename | struct | enum '{' ... '}'
+
 				if (typ) {
-					skiptok(s, STMT_do, 1);
+					//~ skiptok(s, STMT_do, 1);
 				}
 				else if (tok && skip(s, PNCT_cln)) {		// var: typename | struct | enum {...}
 					astn nn = spec(s);
@@ -1975,22 +1952,24 @@ static astn spec(ccEnv s/* , int qual */) {
 						dieif(nn->kind == TYPE_ref, "FixMe");
 						typ = nn->type;//id.link;
 					}
-					skip(s, STMT_do);
+					//~ skip(s, STMT_do);
 				}
 				else {
 					error(s->s, s->line, "declaration expected ");
-				}
+				} // */
+
 				if (tok && typ) {
 					symn ref = 0;
-					int align = (typ->algn && (pack < typ->algn)) ? pack : typ->algn;
+					int align = (typ->pack && (pack < typ->pack)) ? pack : typ->pack;
 					offs = padded(offs, align);
 					ref = declare(s, TYPE_ref, tok, typ);
+					skiptok(s, STMT_do, 1);
 					redefine(s, ref);
 					ref->offs = offs;
 					offs += typ->size;
 					if (size < offs) size = offs;
-					if (salign < typ->algn)
-						salign = typ->algn;
+					if (salign < typ->pack)
+						salign = typ->pack;
 
 					s->doc = (char*)-1;
 					if (peek(s) && (int)s->doc > 0) {
@@ -2002,7 +1981,6 @@ static astn spec(ccEnv s/* , int qual */) {
 					error(s->s, s->line, "declaration expected in[%T]", def);
 					if (!skiptok(s, STMT_do, 0))
 						break;
-						//~ return 0;
 				}
 			}
 			def->size = size;
@@ -2010,7 +1988,7 @@ static astn spec(ccEnv s/* , int qual */) {
 			def->args = leave(s, def);
 
 			if (def->args) {
-				def->algn = salign;
+				def->pack = salign;
 				//~ debug("Align(%T): %d", def, def->algn);
 			}
 
@@ -2051,6 +2029,10 @@ static astn spec(ccEnv s/* , int qual */) {
 		}
 
 		while (!skip(s, STMT_end)) {
+			if (test(s, TYPE_def)) {
+				spec(s);
+				continue;
+			}
 			if ((tok = next(s, TYPE_ref))) {
 				tmp = declare(s, TYPE_def, tok, base);
 				if (skip(s, ASGN_set)) {
