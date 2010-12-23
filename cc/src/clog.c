@@ -77,9 +77,10 @@ static void fputsym(FILE *fout, symn sym, int mode, int level) {
 	if ((mode & prArgs) && sym->call) {
 		symn arg = sym->args;
 		fputc('(', fout);
-		if (arg != void_arg) while (arg) {
+		//~ if (arg != void_arg) 
+		while (arg) {
 			fputsym(fout, arg->type, mode, 0);
-			if (mode && rlev > 0) {
+			if (mode && arg->name && *arg->name && rlev > 0) {
 				fputc(' ', fout);
 				fputs(arg->name, fout);
 			}
@@ -129,7 +130,7 @@ static void fputast(FILE *fout, astn ast, int mode, int level) {
 				break;
 			}
 			fputfmt(fout, "%I", noiden ? 0 : level);
-			switch (ast->cst2) {
+			switch (ast->csts) {
 				case 0: break;
 				case QUAL_sta:
 					fputfmt(fout, "static ");
@@ -175,7 +176,7 @@ static void fputast(FILE *fout, astn ast, int mode, int level) {
 				break;
 			}
 			fputfmt(fout, "%I", noiden ? 0 : level);
-			switch (ast->cst2) {
+			switch (ast->csts) {
 				case 0: break;
 				case QUAL_sta:
 					fputfmt(fout, "static ");
@@ -347,27 +348,33 @@ static void fputast(FILE *fout, astn ast, int mode, int level) {
 
 		case TYPE_def: {
 			symn val = ast->id.link;
-			if (val) switch (val->kind) {
-				case TYPE_enu: fputfmt(fout, "enum "); break;
-				case TYPE_rec: fputfmt(fout, "struct "); break;
-				case TYPE_def: fputfmt(fout, "define "); break;
+			if (val) {
+				switch (val->kind) {
+					case TYPE_enu: fputfmt(fout, "enum "); break;
+					case TYPE_rec: fputfmt(fout, "struct "); break;
+					case TYPE_def: fputfmt(fout, "define "); break;
+				}
+				fputsym(fout, val, rlev ? -1 : 0, level);
+				if (rlev && val && val->init) {
+					fputfmt(fout, " = %+k", val->init);
+				}
 			}
-			fputsym(fout, val, rlev ? -1 : 0, level);
-			if (rlev && val && val->init) {
-				fputfmt(fout, " = %+k", val->init);
-			}
+			else
+				fputfmt(fout, "define ");
 
 		} break;
 		//}
 
+		case PNCT_lc: fputfmt(fout, "%c", '['); break;
+		case PNCT_rc: fputfmt(fout, "%c", ']'); break;
+		case PNCT_lp: fputfmt(fout, "%c", '('); break;
+		case PNCT_rp: fputfmt(fout, "%c", ')'); break;
 		default:
 			fputfmt(fout, "%t(0x%02x)", ast->kind, ast->kind);
 			break;
 	}
 	else fputs("(null)", fout);
 }
-
-void fputopc(FILE *fout, unsigned char* ptr, int len, int offset);
 
 static char* fmtuns(char *dst, int max, int prc, int radix, uint64_t num) {
 	char *ptr = dst + max;
@@ -382,6 +389,8 @@ static char* fmtuns(char *dst, int max, int prc, int radix, uint64_t num) {
 	} while (num /= radix);
 	return ptr;
 }
+
+void fputopc(FILE *fout, unsigned char* ptr, int len, int offset);
 
 static void FPUTFMT(FILE *fout, const char *msg, va_list ap) {
 	char buff[1024], chr;
@@ -517,7 +526,7 @@ static void FPUTFMT(FILE *fout, const char *msg, va_list ap) {
 					str = fmtuns(buff, sizeof(buff), prc, 16, num);
 				} break;
 
-				case 'u':		// uns32
+				case 'u':		// uint32
 				case 'd': {		// dec32
 					int neg = 0;
 					uint32_t num = va_arg(ap, int32_t);
@@ -547,15 +556,15 @@ static void FPUTFMT(FILE *fout, const char *msg, va_list ap) {
 						*--str = '+';
 				} break;
 
-				case 'E':		// flt64
-				case 'F':		// flt64
-				case 'G':		// flt64: TODO: replace fprintf
+				case 'E':		// float64
+				case 'F':		// float64
+				case 'G':		// float64: TODO: replace fprintf
 					chr -= 'A' - 'a';
 
-				case 'e':		// flt32
-				case 'f':		// flt32
-				case 'g': {		// flt32
-					flt64_t num = va_arg(ap, flt64_t);
+				case 'e':		// float32
+				case 'f':		// float32
+				case 'g': {		// float32
+					float64_t num = va_arg(ap, float64_t);
 					if ((len = msg - fmt - 1) < 1020) {
 						memcpy(buff, fmt, len);
 						buff[len++] = chr;
@@ -692,7 +701,7 @@ void dumpsym(FILE *fout, symn sym, int alma) {
 			fputast(fout, ptr->init, noIden | 1, 0xf0);
 		}
 
-		//~ /*/ size or offset
+		/*/ size or offset
 		if (ptr->kind == TYPE_ref) {
 			if (ptr->offs < 0) {
 				fputfmt(fout, "[@st(%d)]: ", -ptr->offs);
@@ -710,13 +719,12 @@ void dumpsym(FILE *fout, symn sym, int alma) {
 
 		fputc('\n', fout);
 
-		//~ /* Debug: used where ?
+		/* Debug: where is used
 		if (alma & 0x30 && ptr->used) {
 			int used = 0;
 			astn ast = ptr->used;
-			while (ast != NULL) {
-				if (alma & 0x20)
-					fputfmt(fout, "%s:%d:using `%T` here\n", ptr->file, ast->line, ptr);
+			if (alma & 0x20) while (ast != NULL) {
+				fputfmt(fout, "%s:%d:using `%T` here\n", ptr->file, ast->line, ptr);
 				ast = ast->id.nuse;
 				used += 1;
 			}
@@ -730,6 +738,93 @@ void dumpsym(FILE *fout, symn sym, int alma) {
 	}
 }
 
+void perr(state s, int level, const char *file, int line, const char *msg, ...) {
+	FILE *logf = s ? s->logf : stderr;
+	int warnl = s && s->cc ? s->cc->warn : 0;
+	va_list argp;
+
+	if (level > 0) {
+		if (warnl < 0)
+			level = warnl;
+		if (level > warnl)
+			return;
+	}
+	else if (s) {
+		s->errc += 1;
+	}
+
+	if (!logf)
+		return;
+
+	if (s && s->cc && !file)
+		file = s->cc->file;
+
+	if (file && line)
+		fprintf(logf, "%s:%u:", file, line);
+
+	if (level > 0)
+		fputs("warning:", logf);
+	else if (level)
+		fputs("error:", logf);
+
+	va_start(argp, msg);
+	FPUTFMT(logf, msg, argp);
+	fputc('\n', logf);
+	fflush(logf);
+	va_end(argp);
+}
+
+//{ temp & debug ---------------------------------------------------------------
+void dumpast(FILE *fout, astn ast, int level) {
+	if ((level & 0x0f) == 0x0f)
+		dumpxml(fout, ast, 0, "root", level);
+	else
+		//~ fputast(fout, ast, 2, -1);
+		fputast(fout, ast, level | 2, 0);
+}
+void dumpasm(FILE *fout, vmEnv s, int mode) {
+	fputasm(fout, s, s->pc, s->cs, mode);
+}
+
+void dump2file(state s, char *file, dumpMode mode, char *text) {
+	FILE *fout = stdout;
+	int level = mode & 0xff;
+
+	if (file)
+		fout = fopen(file, "w");
+
+	dieif(!fout, "cannot open file '%s'", file);
+
+	if (text != NULL)
+		fputs(text, fout);
+
+	switch (mode & dumpMask) {
+		default: fatal("FixMe");
+		case dump_ast: dumpast(fout, s->cc->root, level); break;
+		case dump_sym: dumpsym(fout, s->defs, level); break;
+		case dump_asm: dumpasm(fout, s->vm, level); break;
+	}
+	if (file)
+		fclose(fout);
+}
+void dump(state s, dumpMode mode, char *text) {
+	FILE *logf = s ? s->logf : stdout;
+	int level = mode & 0xff;
+
+	if (!logf)
+		return;
+
+	if (text != NULL)
+		fputs(text, logf);
+
+	switch (mode & dumpMask) {
+		default: fatal("FixMe");
+		case dump_ast: dumpast(logf, s->cc->root, level); break;
+		case dump_sym: dumpsym(logf, s->defs, level); break;
+		case dump_asm: dumpasm(logf, s->vm, level); break;
+	}
+}
+
 void dumpxml(FILE *fout, astn ast, int lev, const char* text, int level) {
 	if (!ast) {
 		return;
@@ -738,7 +833,7 @@ void dumpxml(FILE *fout, astn ast, int lev, const char* text, int level) {
 	//~ fputfmt(fout, "%I<%s id='%d' oper='%?k'", lev, text, ast->kind, ast);
 	fputfmt(fout, "%I<%s id='%t' oper='%?k'", lev, text, ast->kind, ast);
 	if (level & prType) fputfmt(fout, " type='%?T'", ast->type);
-	if (level & prCast) fputfmt(fout, " cast='%?t'", ast->cst2);
+	if (level & prCast) fputfmt(fout, " cast='%?t'", ast->csts);
 	if (level & prLine) fputfmt(fout, " line='%d'", ast->line);
 	if (level & prArgs) fputfmt(fout, " stmt='%?+k'", ast);
 	switch (ast->kind) {
@@ -896,90 +991,4 @@ void dumpxml(FILE *fout, astn ast, int lev, const char* text, int level) {
 		//}
 	}
 }
-void dumpast(FILE *fout, astn ast, int level) {
-	if ((level & 0x0f) == 0x0f)
-		dumpxml(fout, ast, 0, "root", level);
-	else
-		//~ fputast(fout, ast, 2, -1);
-		fputast(fout, ast, level | 2, 0);
-}
-void dumpasm(FILE *fout, vmEnv s, int mode) {
-	fputasm(fout, s, s->pc, s->cs, mode);
-}
-
-void dump2file(state s, char *file, dumpMode mode, char *text) {
-	FILE *fout = stdout;
-	int level = mode & 0xff;
-
-	if (file)
-		fout = fopen(file, "w");
-
-	dieif(!fout, "cannot open file '%s'", file);
-
-	if (text != NULL)
-		fputs(text, fout);
-
-	switch (mode & dumpMask) {
-		default: fatal("FixMe");
-		case dump_ast: dumpast(fout, s->cc->root, level); break;
-		case dump_sym: dumpsym(fout, s->defs, level); break;
-		case dump_asm: dumpasm(fout, s->vm, level); break;
-	}
-	if (file)
-		fclose(fout);
-}
-
-void dump(state s, dumpMode mode, char *text) {
-	FILE *logf = s ? s->logf : stdout;
-	int level = mode & 0xff;
-
-	if (!logf)
-		return;
-
-	if (text != NULL)
-		fputs(text, logf);
-
-	switch (mode & dumpMask) {
-		default: fatal("FixMe");
-		case dump_ast: dumpast(logf, s->cc->root, level); break;
-		case dump_sym: dumpsym(logf, s->defs, level); break;
-		case dump_asm: dumpasm(logf, s->vm, level); break;
-	}
-}
-
-void perr(state s, int level, const char *file, int line, const char *msg, ...) {
-	//~ FILE *logf = s && s->logf ? s->logf : stderr;
-	FILE *logf = s ? s->logf : stderr;
-	int warnl = s && s->cc ? s->cc->warn : 0;
-	va_list argp;
-
-	if (level > 0) {
-		if (warnl < 0)
-			level = warnl;
-		if (level > warnl)
-			return;
-	}
-	else if (s) {
-		s->errc += 1;
-	}
-
-	if (!logf)
-		return;
-
-	if (s && s->cc && !file)
-		file = s->cc->file;
-
-	if (file && line)
-		fprintf(logf, "%s:%u:", file, line);
-
-	if (level > 0)
-		fputs("warning:", logf);
-	else if (level)
-		fputs("error:", logf);
-
-	va_start(argp, msg);
-	FPUTFMT(logf, msg, argp);
-	fputc('\n', logf);
-	fflush(logf);
-	va_end(argp);
-}
+//}

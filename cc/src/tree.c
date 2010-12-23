@@ -23,28 +23,34 @@ astn newnode(ccEnv s, int kind) {
 	return ast;
 }
 
-astn fltnode(ccEnv s, flt64_t v) {
-	astn ast = newnode(s, TYPE_flt);
-	//~ ast->type = type_f64;
-	ast->con.cflt = v;
-	return ast;
-}
-astn intnode(ccEnv s, int64_t v) {
-	astn ast = newnode(s, TYPE_int);
-	//~ ast->type = type_i32;
-	ast->con.cint = v;
-	return ast;
-}
+/*
 astn fh8node(ccEnv s, uint64_t v) {
 	astn ast = newnode(s, TYPE_flt);
 	//~ ast->type = type_f64;
 	ast->con.cint = v;
 	return ast;
 }
+
+astn fltnode(ccEnv s, float64_t v) {
+	astn ast = newnode(s, TYPE_flt);
+	//~ ast->type = type_f64;
+	ast->con.cflt = v;
+	return ast;
+}
+
 astn strnode(ccEnv s, char * v) {
 	astn ast = newnode(s, TYPE_str);
 	ast->id.hash = -1;
 	ast->id.name = v;
+	return ast;
+}
+
+// */
+
+astn intnode(ccEnv s, int64_t v) {
+	astn ast = newnode(s, TYPE_int);
+	ast->type = type_i32;
+	ast->con.cint = v;
 	return ast;
 }
 astn cpynode(ccEnv s, astn src) {
@@ -75,10 +81,10 @@ int64_t constint(astn ast) {
 	fatal("not a constant %+k", ast);
 	return 0;
 }
-flt64_t constflt(astn ast) {
+float64_t constflt(astn ast) {
 	if (ast) switch (ast->kind) {
-		case TYPE_int: return (flt64_t)ast->con.cint;
-		case TYPE_flt: return (flt64_t)ast->con.cflt;
+		case TYPE_int: return (float64_t)ast->con.cint;
+		case TYPE_flt: return (float64_t)ast->con.cflt;
 	}
 	fatal("not a constant %+k", ast);
 	return 0;
@@ -95,7 +101,7 @@ int eval(astn res, astn ast) {
 	if (!res)
 		res = &rhs;
 
-	switch (ast->cst2) {
+	switch (ast->csts) {
 		case TYPE_bit: cast = TYPE_bit; break;
 
 		case TYPE_int: // TODO: define a = 9;	// what casts to int ? index ?
@@ -113,7 +119,7 @@ int eval(astn res, astn ast) {
 			return 0;
 
 		default:
-			debug("(%+k):%t / %d", ast, ast->cst2, ast->line);
+			debug("(%+k):%t / %d", ast, ast->csts, ast->line);
 
 		case TYPE_ref:
 		case TYPE_vid:
@@ -121,7 +127,7 @@ int eval(astn res, astn ast) {
 		case 0:
 		//~ case TYPE_def:
 			//~ return 0;
-			cast = ast->cst2;
+			cast = ast->csts;
 	}
 
 	switch (ast->kind) {
@@ -189,7 +195,7 @@ int eval(astn res, astn ast) {
 
 		case OPER_not: {		// '!'
 
-			dieif(ast->cst2 != TYPE_bit, "FixMe", ast);
+			dieif(ast->csts != TYPE_bit, "FixMe", ast);
 			if (!eval(res, ast->op.rhso))
 				return 0;
 
@@ -210,7 +216,7 @@ int eval(astn res, astn ast) {
 				return 0;
 			if (!eval(&rhs, ast->op.rhso))
 				return 0;
-			dieif(lhs.kind != rhs.kind, "eval operator %k (%t, %t): %t", ast, lhs.kind, rhs.kind, ast->cst2);
+			dieif(lhs.kind != rhs.kind, "eval operator %k (%t, %t): %t", ast, lhs.kind, rhs.kind, ast->csts);
 
 			switch (rhs.kind) {
 				default: return 0;
@@ -258,7 +264,7 @@ int eval(astn res, astn ast) {
 				return 0;
 			if (!eval(&rhs, ast->op.rhso))
 				return 0;
-			dieif(lhs.kind != rhs.kind, "eval operator %k (%t, %t): %t", ast, lhs.kind, rhs.kind, ast->cst2);
+			dieif(lhs.kind != rhs.kind, "eval operator %k (%t, %t): %t", ast, lhs.kind, rhs.kind, ast->csts);
 			res->kind = TYPE_bit;
 			switch (rhs.kind) {
 				default: return 0;
@@ -292,7 +298,7 @@ int eval(astn res, astn ast) {
 				return 0;
 			if (!eval(&rhs, ast->op.rhso))
 				return 0;
-			dieif(lhs.kind != rhs.kind, "eval operator %k (%t, %t): %t", ast, lhs.kind, rhs.kind, ast->cst2);
+			dieif(lhs.kind != rhs.kind, "eval operator %k (%t, %t): %t", ast, lhs.kind, rhs.kind, ast->csts);
 
 			switch (rhs.kind) {
 				default:
@@ -318,7 +324,7 @@ int eval(astn res, astn ast) {
 				return 0;
 			if (!eval(&rhs, ast->op.rhso))
 				return 0;
-			dieif(lhs.kind != rhs.kind, "eval operator %k (%t, %t): %t", ast, lhs.kind, rhs.kind, ast->cst2);
+			dieif(lhs.kind != rhs.kind, "eval operator %k (%t, %t): %t", ast, lhs.kind, rhs.kind, ast->csts);
 
 			res->kind = TYPE_bit;
 			switch (ast->kind) {

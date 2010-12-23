@@ -78,10 +78,17 @@ case opc_task: NEXT(4, 0, -0) {
 case opc_libc: NEXT(2, libcfnc[ip->idx].chk, -libcfnc[ip->idx].pop) {
 #ifdef EXEC
 	vm->s->argv = (char *)sp;
-	vm->s->retv = (char *)sp + libcfnc[ip->idx].pop * 4;
+	vm->s->retv = (char*)((stkptr)sp + libcfnc[ip->idx].pop);
+	vm->s->args = libcfnc[ip->idx].sym->args;
+	vm->s->func = libcfnc[ip->idx].sym->offs;
+	vm->s->libc = libcfnc[ip->idx].sym;
+	if (ip->idx == 0) {
+		//~ vm->s->argc = st - sp;
+		vm->s->retv = (char *)st;
+		vm->s->args = vm->s->defs;
+	}
 	libcfnc[ip->idx].call(vm->s);
-	if (!ip->idx)
-		pu->ip = 0;
+	STOP(stop_vm, ip->idx == 0);		// Halt();
 #endif
 } break;
 /*case opc_jsub: NEXT(4, 0, +1) {
@@ -215,6 +222,15 @@ case opc_ldi8: NEXT(1, 1, +1) {
 	SP(-1, i8) = MP(SP(0, i4), i8);
 #endif
 } break;
+case opc_ldiq: NEXT(1, 1, +3) {
+#ifdef EXEC
+	STOP(error_ovf, ovf(pu));
+	//~ STOP(error_seg, SP(0, i4) < mp);
+	//~ STOP(error_seg, SP(0, i4) > mp + ms);
+	SP(-1, i8) = MP(SP(0, i4), i8);
+#endif
+} break;
+
 case opc_sti1: NEXT(1, 2, -2) {
 #ifdef EXEC
 	STOP(error_mem, mp + SP(0, i4) > (memptr)st);
@@ -240,6 +256,13 @@ case opc_sti8: NEXT(1, 3, -3) {
 	//~ STOP(error_seg, (unsigned)(SP(0, i4) - ds) < ms);
 	//~ STOP(error_seg, SP(0, i4) > mp + ms);
 	MP(SP(0, i4), i8) = SP(1, i8);
+#endif
+} break;
+case opc_stiq: NEXT(1, 5, -5) {
+#ifdef EXEC
+	//~ STOP(error_seg, (unsigned)(SP(0, i4) - ds) < ms);
+	//~ STOP(error_seg, SP(0, i4) > mp + ms);
+	MP(SP(0, i4), x16) = SP(1, x16);
 #endif
 } break;
 //}*/

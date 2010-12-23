@@ -9,12 +9,12 @@ symn type_i32 = NULL;
 symn type_i64 = NULL;
 symn type_f32 = NULL;
 symn type_f64 = NULL;
-symn type_v4f = NULL;
+//~ symn type_v4f = NULL;
 //~ symn type_v2d = NULL;
 symn type_str = NULL;
 
 // the void argument
-symn void_arg = NULL;
+//~ symn void_arg = NULL;
 
 //~ symn type_ptr = 0;
 
@@ -75,7 +75,7 @@ symn installex(ccEnv s, const char* name, int kind, unsigned size, symn type, as
 		def->size = size;
 
 		if (init && !init->type) {
-			//~ debug("FixMe '%s'", name); // null, true, false
+			debug("FixMe '%s'", name); // null, true, false
 			init->type = type;
 		}
 
@@ -172,39 +172,6 @@ symn promote(symn lht, symn rht) {
 	return pro;
 }
 
-symn define(ccEnv s, symn typ, astn tag, int kind, astn init) {
-	symn def;
-
-	dieif(!tag || tag->kind != TYPE_ref, "FixMe");
-
-	if ((def = newdefn(s, TYPE_ref))) {
-		char *name = tag->id.name;
-		int hash = tag->id.hash;
-
-		def->line = tag->line;
-		def->file = s->file;
-		def->name = name;
-
-		def->cast = tag->cst2;
-		def->nest = s->nest;
-
-		def->type = typ;
-		def->init = init;
-
-		if (init && !init->type) {
-			init->type = typ;
-			fatal("FixMe");
-		}
-
-		def->next = s->deft[hash];
-		s->deft[hash] = def;
-
-		def->defs = s->defs;
-		s->defs = def;
-	}
-
-	return def;
-}
 symn lookup(ccEnv s, symn sym, astn ref, int back, astn args) {
 	symn best = 0;
 	int found = 0;
@@ -216,7 +183,7 @@ symn lookup(ccEnv s, symn sym, astn ref, int back, astn args) {
 		astn arg = args;
 		symn par = sym->args;		// caller arguments
 
-		// array types dont have names
+		// array types dont have names, 
 		if (!sym->name)
 			continue;
 
@@ -430,8 +397,8 @@ int castOf(symn typ) {
 int castTo(astn ast, int cast) {
 	if (!ast) return 0;
 	// TODO: check validity / Remove function
-
-	return ast->cst2 = cast;
+	//~ debug("cast to (%d)", cast);
+	return ast->csts = cast;
 }
 int castTy(astn ast, symn type) {
 	if (!ast) return 0;
@@ -451,7 +418,7 @@ symn typecheck(ccEnv cc, symn loc, astn ast) {
 		return 0;
 	}
 
-	ast->cst2 = 0;
+	ast->csts = 0;
 
 	switch (ast->kind) {
 		default:
@@ -582,7 +549,7 @@ symn typecheck(ccEnv cc, symn loc, astn ast) {
 				ast->type = rht;
 				if (ast->kind == OPER_not) {
 					ast->type = type_bol;
-					ast->cst2 = TYPE_bit;
+					ast->csts = TYPE_bit;
 				}
 				if (!castTo(ast->op.rhso, cast)) {
 					debug("%T('%k', %+k): %t", rht, ast, ast, cast);
@@ -837,10 +804,10 @@ symn typecheck(ccEnv cc, symn loc, astn ast) {
 			}
 
 			//~ debug("call: %+k(%+k)", ref, args);
-			if (ast->line) {
-				//~ debug("%T:%T in `%+k` (%d)", sym, typ, ast, ast->line);
+			/*if (ast->line) {
+				debug("%T:%T in `%+k` (%d)", sym, typ, ast, ast->line);
 				//~ info(s->s, s->file, ast->line, "%T:%T in `%+k` (%d)", sym, typ, ast, ast->line);
-			}
+			}// */
 
 			//~ /*
 			if (ast->kind == OPER_fnc && isType(sym)) {
@@ -873,10 +840,10 @@ symn typecheck(ccEnv cc, symn loc, astn ast) {
 				}
 			}// */
 
-			if (sym->used != ref) {
+			/*if (sym->used != ref) {
 				ref->id.nuse = sym->used;
 				sym->used = ref;
-			}
+			}// */
 
 			ref->kind = TYPE_ref;
 			ref->id.link = sym;
@@ -900,7 +867,21 @@ symn typecheck(ccEnv cc, symn loc, astn ast) {
 }
 
 int padded(int offs, int align) {
+	dieif(align != (align & -align), "FixMe");
 	return align + ((offs - 1) & ~(align - 1));
+}
+int fixargs(symn sym, int align, int stbeg) {
+	symn arg;
+	int stdiff = 0;
+	for (arg = sym->args; arg; arg = arg->next) {
+		arg->offs = stbeg + stdiff;
+		stdiff += padded(sizeOf(arg->type), align);
+	}
+	for (arg = sym->args; arg; arg = arg->next) {
+		arg->offs = -(stdiff - arg->offs);
+	}
+	return stdiff;
+
 }
 
 //~ scoping
@@ -929,9 +910,11 @@ symn leave(ccEnv s, symn dcl) {
 	}
 
 	// clear from stack
+	//~ debug("%d:%+T", s->nest, s->defs);
 	while (s->defs && s->nest < s->defs->nest) {
 		symn sym = s->defs;
 
+		//~ debug("%d:%?T.%+T", s->nest, dcl, sym);
 		sym->decl = dcl;
 
 		s->defs = sym->defs;

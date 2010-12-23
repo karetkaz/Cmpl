@@ -11,35 +11,29 @@
 #include "pvmc.h"
 #include <stdlib.h>
 
-#define DEBUGGING 15
-
-/* COMPILER_LEVEL
-	0: types only					: compiler.init:18.34 KBytes
-	1: + emit						: compiler.init:39.08 KBytes
-	2: + libc						: compiler.init:79.27 KBytes
-	3: + emit.swizzles				: compiler.init:79.27 KBytes
-	4: + integer.bits				: compiler.init:82.27 KBytes
-// */
-enum {
+enum COMPILER_LEVELS {
 	creg_base = 0x0000,				// type system only
-	creg_emit = 0x0100,
-	creg_libc = 0x0001 | creg_emit,	// dependency
-	creg_swiz = 0x0002 | creg_emit,	// dependency
-
-	//~ creg_rtty = 0x000?,
+	creg_emit = 0x0100,				// the emit thingie  : emit(...)
+	// this are in main
+	creg_swiz = 0x0001 | creg_emit,	// swizzle constants : emit.swz.(xxxx ... xyzw ... wwww)
+	creg_stdc = 0x0002 | creg_emit,	// std library calls : sin(float64 x) = emit(float64, libc(3), f64(x));
+	creg_bits = 0x0004 | creg_emit,	// bitwize operations: bits.shr(int64 x, int32 cnt)
 	//~ creg_math = 0x000?,
-	//~ creg_bits = 0x000?,
+	//~ creg_rtty = 0x000?,
+	creg_all  = creg_emit | creg_stdc | creg_bits,
 };
-#define COMPILER_LEVEL creg_libc
+
+#define COMPILER_LEVEL creg_all
+#define DEBUGGING 15
 
 // maximum tokens in expressions & nest level
 #define TOKS 2048
 
 // symbol & hash table size
-#define TBLS 32
+#define TBLS 512
 
-#define pdbg(__DBG, __FILE, __LINE, msg, ...) do {fputfmt(stderr, "%s:%d:"__DBG":%s: "msg"\n", __FILE, __LINE, __func__, ##__VA_ARGS__); fflush(stdout); fflush(stderr);} while(0)
-#define fatal(msg, ...) do {pdbg("fatal", __FILE__, __LINE__, msg, ##__VA_ARGS__); /* abort(); */} while(0)
+#define pdbg(__DBG, __FILE, __LINE, msg, ...) do {fputfmt(stderr, "%s:%d: "__DBG": %s: "msg"\n", __FILE, __LINE, __func__, ##__VA_ARGS__); fflush(stdout); fflush(stderr);} while(0)
+#define fatal(msg, ...) do {pdbg("fatal", __FILE__, __LINE__, msg, ##__VA_ARGS__); abort();} while(0)
 #define dieif(__EXP, msg, ...) do {if (__EXP) fatal(msg, ##__VA_ARGS__);} while(0)
 
 #if DEBUGGING > 1
@@ -116,7 +110,7 @@ enum {
 
 	//~ opc_ldcf = opc_ldc4,
 	//~ opc_ldcF = opc_ldc8,
-	max_reg = 10,	// maximum dup, set, pop, ...
+	max_reg = 255,	// maximum dup, set, pop, ...
 };
 typedef struct {
 	int const	code;
@@ -137,12 +131,12 @@ typedef union {		// value type
 	uint32_t	u4;
 	int64_t		i8;
 	//uint64_t	u8;
-	flt32_t		f4;
-	flt64_t		f8;
-	//~ flt32_t		pf[4];
-	//~ flt32_t		pd[2];
-	//~ struct {flt32_t x, y, z, w;} pf;
-	//~ struct {flt64_t x, y;} pd;
+	float32_t		f4;
+	float64_t		f8;
+	//~ float32_t		pf[4];
+	//~ float32_t		pd[2];
+	//~ struct {float32_t x, y, z, w;} pf;
+	//~ struct {float64_t x, y;} pd;
 	struct {int64_t lo, hi;} x16;
 } stkval;
 
@@ -159,12 +153,12 @@ typedef struct list {			// linked list, usually of strings
 struct astn {				// tree node
 	uint32_t	line;				// token on line (* file offset or what *)
 	uint8_t		kind;				// code: TYPE_ref, OPER_???
-	uint8_t		cst2;				// casts to basic type: (i32, f32, i64, f64)
+	uint8_t		csts;				// casts to basic type: (i32, f32, i64, f64)
 	uint16_t	_XXX;				// unused
 	union {
 		union  {					// TYPE_xxx: constant
 			int64_t	cint;			// const: integer
-			flt64_t	cflt;			// const: float
+			float64_t	cflt;			// const: float
 			//~ char*	cstr;		// const: use: '.id.name'
 		} con;
 		struct {					// STMT_xxx: statement
@@ -178,22 +172,24 @@ struct astn {				// tree node
 			astn	lhso;			// left hand side operand
 			astn	test;			// ?: operator condition
 			uint32_t prec;			// precedence
+			//~ uint32_t _pad;
 		} op;
 		struct {					// TYPE_ref: identifyer
 			char*	name;			// name of identifyer
 			int32_t hash;			// hash code for 'name'
-			symn	link;			// func body / replacement
-			astn	nuse;			// next used
+			//int32_t _pad;
+			symn	link;			// variable
+			astn	args;			// next used
+			//~ astn	nuse;			// next used
 		} id;
 	};
 	symn		type;				// typeof() return type of operator ... base type of IDTF
 	astn		next;				// next statement, do not use for preorder
 };
 struct symn {				// type node
+	char*	name;
 	char*	file;
 	int		line;
-
-	char*	name;
 	union {
 	int32_t	size;	// sizeof(TYPE_xxx)
 	int32_t	offs;	// addrof(TYPE_ref)
@@ -230,20 +226,19 @@ struct symn {				// type node
 
 struct ccEnv {
 	state	s;
-	int		warn;		// warning level
-	astn	root;		// statements
 	symn	defs;		// definitions
+	astn	root;		// statements
 
 	symn	all;		// all symbols TODO:Temp
-	//~ strt	strt;		// string table
-	//~ symt	deft;		// definitions: hashStack;
 	list	strt[TBLS];		// string table
 	symn	deft[TBLS];		// definitions: hashStack;
 
+	int		warn;		// warning level
 	int		nest;		// nest level: modified by (enterblock/leaveblock)
 
 	char*	file;	// current file name
 	int		line;	// current line number
+	//~ int		_pad;
 
 	// Warning set to -1 to record.
 	char	*doc;
@@ -260,6 +255,7 @@ struct ccEnv {
 			astn	tokp;		// token pool
 			astn	_tok;		// next token
 			int		_chr;		// next char
+			//~ int		_pad;		// next char
 		};// file[TOKS];
 
 		/*struct {		// current decl
@@ -273,7 +269,6 @@ struct ccEnv {
 	};
 
 	astn	argz;		// no parameter of type void
-	//~ long	_cnt;
 	char	*_beg;
 	char	*_end;
 };
@@ -291,7 +286,9 @@ struct vmEnv {
 	unsigned int	ss;			// stack size / current stack size
 	unsigned int	sm;			// stack minimum size
 
+	unsigned int	seg;
 	unsigned int	mark;
+	//~ unsigned int	_pad;
 	//~ unsigned long _cnt; // return (_end - _ptr);
 	//~ unsigned long _len; // return (_ptr - _mem);
 	//~ unsigned char *_ptr;
@@ -300,7 +297,7 @@ struct vmEnv {
 	unsigned char _beg[];
 };
 
-//~ static inline int kindOf(astn ast) {return ast ? ast->kind : 0;}
+static inline int kindOf(astn ast) {return ast ? ast->kind : 0;}
 
 extern symn type_vid;
 extern symn type_bol;
@@ -312,10 +309,10 @@ extern symn type_f64;
 //~ extern symn type_chr;		// should be for printing only
 extern symn type_str;
 
-extern symn type_v4f;
+//~ extern symn type_v4f;
 //~ extern symn type_v2d;
 
-extern symn void_arg;
+//~ extern symn void_arg;
 extern symn emit_opc;
 
 
@@ -342,7 +339,7 @@ void* getmem(state s, int size, unsigned clear);
 symn newdefn(ccEnv s, int kind);
 astn newnode(ccEnv s, int kind);
 astn intnode(ccEnv s, int64_t v);
-//~ astn fltnode(ccEnv s, flt64_t v);
+//~ astn fltnode(ccEnv s, float64_t v);
 astn strnode(ccEnv s, char *v);
 astn fh8node(ccEnv s, uint64_t v);
 astn cpynode(ccEnv s, astn src);
@@ -360,6 +357,8 @@ int findflt(ccEnv s, char *name, double* res);
 
 symn typecheck(ccEnv, symn loc, astn ast);
 
+int fixargs(symn sym, int align, int spos);
+
 int castOf(symn typ);
 int castTo(astn ast, int tyId);
 //~ int castTy(astn ast, symn type);
@@ -367,7 +366,7 @@ symn promote(symn lht, symn rht);
 
 int32_t constbol(astn ast);
 int64_t constint(astn ast);
-flt64_t constflt(astn ast);
+float64_t constflt(astn ast);
 
 astn peek(ccEnv);
 astn next(ccEnv, int kind);
@@ -376,7 +375,7 @@ astn next(ccEnv, int kind);
 //~ int  test(ccEnv, int kind);
 
 astn expr(ccEnv, int mode);		// parse expression	(mode: lookup)
-//~ astn decl(ccEnv, int mode);		// parse declaration	(mode: enable expr)
+astn decl(ccEnv, int mode);		// parse declaration	(mode: enable defs(: struct, define, ...))
 //~ astn stmt(ccEnv, int mode);		// parse statement	(mode: enable decl/enter new scope)
 astn unit(ccEnv, int mode);		// parse program	(mode: script mode)
 
@@ -403,11 +402,12 @@ int cgen(state s, astn ast, int get);
  * @param ...: argument
  * @return: program counter
  */
-int emit(vmEnv, int opc, ...);
+int emit(vmEnv, int opc, stkval arg);
+int emitopc(vmEnv, int opc);
 int emiti32(vmEnv, int32_t arg);
 int emiti64(vmEnv, int64_t arg);
-int emitf32(vmEnv, flt32_t arg);
-int emitf64(vmEnv, flt64_t arg);
+int emitf32(vmEnv, float32_t arg);
+int emitf64(vmEnv, float64_t arg);
 int emitptr(vmEnv, void* arg);
 
 int emitidx(vmEnv, int opc, int pos);
@@ -431,7 +431,6 @@ unsigned rehash(const char* str, unsigned size);
 //TODO: Rename: reg str
 char *mapstr(ccEnv s, char *name, unsigned size/* = -1U*/, unsigned hash/* = -1U*/);
 
-void vmTags(state, char *sptr, int slen, int flags);
 void fputasm(FILE *fout, vmEnv s, int mark, int len, int mode);
 
 #endif

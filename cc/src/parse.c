@@ -768,6 +768,7 @@ static int readTok(ccEnv s, astn tok) {
 				static struct {
 					char *name;
 					int type;
+					//~ int _pad;
 				}
 				keywords[] = {
 					// my SciTe can sort these lines !!!
@@ -837,7 +838,7 @@ static int readTok(ccEnv s, astn tok) {
 			int ovrf = 0;			// overflow
 			int radix = 10;
 			int64_t i64v = 0;
-			flt64_t f64v = 0;
+			float64_t f64v = 0;
 			char *suffix = 0;
 
 			//~ 0[.oObBxX]?
@@ -1043,7 +1044,8 @@ astn peekTok(ccEnv s, int kind) {
 astn peek(ccEnv s) {return peekTok(s, 0);}
 int line(ccEnv s) {return peekTok(s, 0) ? s->_tok->line : s->line;}
 
-/* static  */astn next(ccEnv s, int kind) {
+// static
+astn next(ccEnv s, int kind) {
 	if (peekTok(s, kind)) {
 		astn ast = s->_tok;
 		s->_tok = ast->next;
@@ -1154,7 +1156,7 @@ static void redefine(ccEnv s, symn sym) {
 
 //~    astn unit(ccEnv, int mode);		// parse unit			(mode: script/unit)
 static astn stmt(ccEnv, int mode);		// parse statement		(mode: enable decl)
-static astn decl(ccEnv, int mode);		// parse declaration	(mode: enable expr)
+//~    astn decl(ccEnv, int mode);		// parse declaration	(mode: enable spec)
 static astn spec(ccEnv s/* , int qual */);
 static symn type(ccEnv s/* , int qual */);	// TODO: this should also return an ast node
 
@@ -1408,8 +1410,11 @@ astn expr(ccEnv s, int mode) {
 	if (mode && tok) {								// check
 
 		s->root = NULL;
-		if (typecheck(s, 0, tok) == 0)
-			error(s->s, tok->line, "invalid expression: %+k in statement %+k", s->root, tok);
+		if (typecheck(s, 0, tok) == 0) {
+			//~ error(s->s, tok->line, "invalid expression: %+k in statement %+k\n%7K", s->root, tok, tok);
+			error(s->s, tok->line, "invalid expression: `%+k` in `%+k`", s->root, tok);
+			debug("%7K", tok);
+		}
 
 		// usually mode in [TYPE_bit, TYPE_int, TYPE_vid]
 		if (mode != TYPE_def && !castTo(tok, mode))
@@ -1461,7 +1466,7 @@ static astn args(ccEnv s, int mode) {
 
 		arg = declare(s, TYPE_ref, atag, atyp);
 		arg->cast = byref ? TYPE_ref : 0;
-		atag->cst2 = atyp->cast;
+		atag->csts = atyp->cast;
 		//~ arg->load = ref != 0;
 
 		if (ast) {
@@ -1479,23 +1484,25 @@ static astn args(ccEnv s, int mode) {
 	return ast;
 }
 
-astn unit(ccEnv cc, int mode) {
+astn unit(ccEnv cc, int mode1) {
 	symn def = NULL;
 
 	if (skip(cc, UNIT_def)) {
 		astn tag = next(cc, TYPE_ref);
+
 		if (tag == NULL) {
 			error(cc->s, cc->line, "Identifyer expected");
 			skiptok(cc, STMT_do, 1);
 			return NULL;
 		}
+
 		def = declare(cc, TYPE_enu, tag, type_vid);
-		def->cast = TYPE_enu;
+		//~ def->cast = TYPE_enu;
 	}// */
 
 	// we want a new scope and scan a list of statement
 	backTok(cc, newnode(cc, STMT_beg));
-	cc->root = stmt(cc, def == NULL);//def ? 0 : 1);
+	cc->root = stmt(cc, def == NULL);
 
 	if (peekTok(cc, 0)) {
 		error(cc->s, cc->line, "unexpected token: %k", peekTok(cc, 0));
@@ -1619,7 +1626,7 @@ static astn stmt(ccEnv s, int mode) {
 			ast->stmt.step = stmt(s, 1);
 
 		ast->type = type_vid;
-		ast->cst2 = qual;
+		ast->csts = qual;
 
 		if (newscope)
 			leave(s, NULL);			// TODO: destruct
@@ -1645,11 +1652,11 @@ static astn stmt(ccEnv s, int mode) {
 		}
 		ast->stmt.stmt = stmt(s, 1);	// no new scope & disable decl
 		ast->type = type_vid;
-		ast->cst2 = qual;
+		ast->csts = qual;
 		leave(s, NULL);
 	}
 
-	else if ((ast = decl(s, TYPE_any))) {
+	else if ((ast = decl(s, 1))) {
 		astn tmp = newnode(s, STMT_do);
 		tmp->line = ast->line;
 		tmp->type = ast->type;
@@ -1681,13 +1688,15 @@ static astn stmt(ccEnv s, int mode) {
 	return ast;
 }
 
-static astn decl(ccEnv s, int qual) {
+astn decl(ccEnv s, int mode) {
 	symn typ;
 	astn tag = NULL;
+	//~ astn arg = NULL;
 
-	if ((tag = spec(s)))
+	if (mode && (tag = spec(s)))
 		return tag;
 
+	//~ type ID ('('args')')? ('['expr']')* init?
 	if ((typ = type(s))) {
 		symn ref = NULL;
 
@@ -1698,26 +1707,27 @@ static astn decl(ccEnv s, int qual) {
 
 		ref = declare(s, TYPE_ref, tag, typ);
 
-		if (skip(s, PNCT_lp)) {				// int a(...) (';' | '=' | '{')
+		if (skip(s, PNCT_lp)) {				// int a(...)
+
 			enter(s, NULL);
-			args(s, 0);
+			tag->id.args = args(s, 0);
 			skiptok(s, PNCT_rp, 1);
-			if (skip(s, STMT_do)) {				// int sqr(int a);
-				fatal("FixMe");
-			}
-			else if (test(s, STMT_beg)) {		// int sqr(int a) {return a * a;}
+
+			if (test(s, STMT_beg)) {		// int sqr(int a) {return a * a;}
 				enter(s, NULL);
-				installex(s, "result", TYPE_ref, 0, typ, NULL);
+				installex(s, "result", TYPE_ref, 0, typ, NULL);		// TODO: this should be the first argument
 				ref->init = stmt(s, 1);
 				leave(s, NULL);
+				backTok(s, newnode(s, STMT_do));
 			}
-			/*else if (skip(s, ASGN_set)) {		// int sqr(int a) = sqr_int_fast;
-			}// */
 			ref->args = leave(s, ref);
 			ref->call = 1;
-			if (ref->args == NULL)
+			if (ref->args == NULL) {
+				tag->id.args = s->argz;
 				ref->args = s->argz->id.link;
+			}
 		}
+
 		else if (skip(s, PNCT_lc)) {		// int a[...]
 			symn tmp = newdefn(s, TYPE_arr);
 			tmp->type = typ;
@@ -1732,7 +1742,8 @@ static astn decl(ccEnv s, int qual) {
 				typ->init = expr(s, TYPE_def);
 				if (eval(&val, tmp->init) != TYPE_int)
 					error(s->s, s->line, "integer constant expected");
-				typ->size = val.con.cint;
+				else
+					typ->size = val.con.cint;
 			}
 			skiptok(s, PNCT_rc, 1);
 
@@ -1749,27 +1760,23 @@ static astn decl(ccEnv s, int qual) {
 					typ->init = expr(s, TYPE_def);
 					if (eval(&val, tmp->init) != TYPE_int)
 						error(s->s, s->line, "integer constant expected");
-					typ->size = val.con.cint;
+					else
+						typ->size = val.con.cint;
 				}
 				skiptok(s, PNCT_rc, 1);
 
 			} // */
-
-			if (skip(s, ASGN_set))
-				ref->init = expr(s, TYPE_def);
-
-			skiptok(s, STMT_do, 1);
 		}
-		else {
-			if (skip(s, ASGN_set)) {		// int a[ = init];
-				ref->init = expr(s, TYPE_def);
-			}
-			skiptok(s, STMT_do, 1);
+
+		if (skip(s, ASGN_set)) {
+			ref->init = expr(s, TYPE_def);
 		}
+
+		skiptok(s, STMT_do, 1);
 
 		redefine(s, ref);
 		//~ debug("%+k", ref->init);
-		if (ref->init && (ref->init->kind == STMT_beg)) {
+		if (kindOf(ref->init) == STMT_beg) {
 		}
 		else if (ref->init && (ref->init->type != emit_opc && ref->init->type != ref->type && !promote(ref->init->type, ref->type))) {
 			debug("%-T := %T(%+k)", ref->type, ref->init->type, ref->init);
@@ -1783,6 +1790,12 @@ static astn decl(ccEnv s, int qual) {
 }
 
 extern int padded(int offs, int align);
+
+#if __WORDSIZE == 64
+#define ptrgtz(__PTR) ((long long)(__PTR) > 0)
+#else //if __WORDSIZE == 32
+#define ptrgtz(__PTR) ((long)(__PTR) > 0)
+#endif
 
 static astn spec(ccEnv s/* , int qual */) {
 	astn tok, tag = 0;
@@ -1817,15 +1830,17 @@ static astn spec(ccEnv s/* , int qual */) {
 				def->init = val;
 			}
 		}
-		else if (skip(s, PNCT_lp)) {			// define isNan(flt64 x) = (x != x);
+		else if (skip(s, PNCT_lp)) {			// define isNan(float64 x) = (x != x);
 			symn arg;
 			int warnfun = 0;
 
 			def = declare(s, TYPE_def, tag, NULL);
+			def->name = NULL;
 
 			enter(s, NULL);
 			args(s, 0);
 			skiptok(s, PNCT_rp, 1);
+			def->name = tag->id.name;
 
 			if (def && skip(s, ASGN_set)) {		// define sqr(int a) = (a * a);
 				char* name = def->name;
@@ -1835,7 +1850,7 @@ static astn spec(ccEnv s/* , int qual */) {
 						astn tmp = newnode(s, OPER_fnc);
 						warnfun = 1;
 						tmp->type = def->init->type;
-						tmp->cst2 = def->init->cst2;
+						tmp->csts = def->init->csts;
 						tmp->line = def->init->line;
 						tmp->op.rhso = def->init;
 						def->init = tmp;
@@ -1911,7 +1926,16 @@ static astn spec(ccEnv s/* , int qual */) {
 			tag->line = s->line;
 		}
 		if (skip(s, PNCT_cln)) {			// pack?
-			if ((tok = next(s, TYPE_int))) {
+			tok = NULL; //next(s, TYPE_int);
+			if (1) {
+				struct astn ift;
+				tok = expr(s, TYPE_int);
+				if (eval(&ift, tok) == TYPE_int) {
+					tok = &ift;
+				}
+			}
+
+			if (tok && tok->kind == TYPE_int) {
 				switch ((int)constint(tok)) {
 					default:
 						error(s->s, s->line, "alignment must be a small power of two, not %k", tok);
@@ -1924,7 +1948,11 @@ static astn spec(ccEnv s/* , int qual */) {
 					case 16: pack = 16; break;
 				}
 			}
-		}// */
+			else {
+				error(s->s, s->line, "alignment must be an integer constant", tok);
+				//~ return 0;
+			}
+		}
 		if (skip(s, STMT_beg)) {			// body
 			int salign = -1;
 			def = declare(s, TYPE_rec, tag, type_vid);
@@ -1934,7 +1962,7 @@ static astn spec(ccEnv s/* , int qual */) {
 				symn typ = type(s);
 				tok = next(s, TYPE_ref);
 
-				/* this is optional:
+				//~ /* this is optional:
 				// id ':' typename | struct | enum '{' ... '}'
 
 				if (typ) {
@@ -1972,7 +2000,8 @@ static astn spec(ccEnv s/* , int qual */) {
 						salign = typ->pack;
 
 					s->doc = (char*)-1;
-					if (peek(s) && (int)s->doc > 0) {
+					//if (peek(s) && (itn)s->doc > 0) {
+					if (peek(s) && ptrgtz(s->doc)) {
 						ref->pfmt = s->doc;
 						s->doc = 0;
 					}
@@ -2060,103 +2089,78 @@ static astn spec(ccEnv s/* , int qual */) {
 	return tag;
 }
 
-symn installref(ccEnv cc, const char *prot, astn *argv) {
-	symn ref = NULL;
-	int level = cc->nest;
-
-	if (cc->fin._ptr) {
-		perr(cc->s, -1, __FILE__, __LINE__, "install");
-		return 0;
-	}
-
-	cc->fin._ptr = (char*)prot;
-	cc->fin._cnt = strlen(prot);
-	cc->_tok = 0;
-
-	if ((ref = type(cc))) {
-		astn tag = NULL;
-		if ((tag = next(cc, TYPE_ref))) {
-			astn arg = NULL;
-			symn typ = ref;
-
-			ref = declare(cc, TYPE_ref, tag, typ);
-
-			if (ref && skip(cc, PNCT_lp)) {				// int a(...) (';' | '=' | '{')
-				enter(cc, NULL);
-				arg = args(cc, 0);
-				skiptok(cc, PNCT_rp, 1);
-
-				ref->call = 1;
-				ref->args = leave(cc, ref);
-				if (ref->args == NULL)
-					ref->args = cc->argz->id.link;
-
-			}
-
-			redefine(cc, ref);
-			tag->kind = TYPE_def;
-
-			if (argv)
-				*argv = arg;
-			//~ skiptok(cc, STMT_do, 1);
-		}
-	}
-	//~ debug("%-T", ref);
-	if (peek(cc) || level != cc->nest) {
-		debug("unexpected: `%k` in '%s'", peek(cc), prot);
-		cc->nest = level;
-		ref = NULL;
-	}
-	cc->fin._ptr = NULL;
-	cc->fin._cnt = 0;
-	return ref;
-}// */
-
 //}
+
+int parse(ccEnv cc, srcType mode) {
+
+	//~ astn ast;
+
+	if (mode)
+		return -1;
+
+	unit(cc, 0);
+	//~ while ((ast = next(cc, 0))) {fputfmt(stdout,"%k", ast);if (ast->kind == STMT_do) fputfmt(stdout,"\n"); }
+	//~ while ((ast = next(cc, 0))) {info(cc->s, cc->file, ast->line, "%k", ast);}
+
+	/*switch (mode) {
+		case srcUnit: unit(cc, 0); break;
+		case srcDecl: decl(cc, 0); break;
+		case srcExpr: expr(cc, TYPE_vid); break;
+	}//*/
+	return ccDone(cc->s);
+}
 
 /** unit -----------------------------------------------------------------------
  * scan a source
  * @param mode: script mode (enable non declaration statements)
+ *
+ * unit:
+ *	| ('module' <name> ';') <stmt>*
+ *	| <stmt>*
+ *	;
 **/
 /** stmt -----------------------------------------------------------------------
  * scan a statement (mode ? enable decl : do not)
- * @param mode: enable or not <decl>.
- *	ex: "for( ; ; ) int a;", if (mode == 0) then error
+ * @param mode: enable or not <decl>, enetr new scope
 
  * stmt: ';'
  *	| '{' <stmt>* '}'
  *	| ('static')? 'if' '(' <decl> | <expr> ')' <stmt> ('else' <stmt>)?
  *	| ('static' | 'parallel')? 'for' '(' (<decl> | <expr>)?; <expr>?; <expr>? ')' <stmt>
-+*	| 'return' <expr>? ';'
-+*	| 'continue' ';'
-+*	| 'break' ';'
- *	| <decl>
+ *	| mode && <decl>
  *	| <expr> ';'
+ *	;
+
+ TODO:
+ +	| 'return' <expr>? ';'
+ +	| 'continue' ';'
+ +	| 'break' ';'
 **/
 /** decl -----------------------------------------------------------------------
- * scan a declaration, add to ast tree
- * @param mode: enable or not <expr>.
- * decl := <type> ';'
- * # variable
+ * declarations
+ * @param mode: enable or not <spec>.
+ * decl := (mode && <spec>)
+
+ * # variable or array
  * | <type> <name> ('['<expr>?']')? (= <expr>)? ';'
+ 
  * # function
- * | <type> <name> '(' <args> ')' (('{' <stmt>* '}') | ('=' <expr> ';') | (';'))
+ * | <type> <name> '(' <args> ')' (('{' <stmt>* '}') | ('=' <name> ';') | (';'))
+ * ;
+
+ * spec :=
  * # operator
  * | 'operator' <OP> ('(' <type> rhs ')') '=' <expr> ';'
-      operator - (Complex x) = Complex(-x.re, -x.im);
  * | 'operator' ('(' <type> lhs ')') <OP> ('(' <type> rhs ')') '=' <expr> ';'
-      operator (Complex x) - (Complex y) = Complex(x.re - y.re, x.im - y.im);
+   // operator - (Complex x) = Complex(-x.re, -x.im);
+   // operator (Complex x) - (Complex y) = Complex(x.re - y.re, x.im - y.im);
 
- *	| 'operator' '(' <args> :lhs: ')' '=' <expr> ';'
- ?	| <type> 'operator' '(' <args> :lhs: ')' (('{' <stmt>* '}') | ('=' <expr> ';'))
- ?	| <type> 'operator' <unop> '(' <args> :rhs: ')' (('{' <stmt>* '}') | ('=' <expr> ';'))
- ?	| <type> 'operator' '(' <args> :lhs: ')' <binop> '(' <args> :rhs: ')' (('{' <stmt>* '}') | ('=' <expr> ';'))
- ?	| <type> 'operator' '(' <args> :lhs: ')' '(' <args> :rhs: ')' (('{' <stmt>* '}') | ('=' <expr> ';'))
- ?	| <type> 'operator' '(' <args> :lhs: ')' '[' <args> :rhs: ']' (('{' <stmt>* '}') | ('=' <expr> ';'))
-
+ * # define
  *	| 'define' <name> <type>;						// typedef
  *	| 'define' <name> ('(' <args> ')')? = <expr>;	// inline
- !	| 'struct' <name>? '{' <decl>* '}'
+
+ * # struct, union enum
+ *	| 'struct' <name>? '{' <decl>* '}'
  *	| 'enum' <name>? (':' <type>)? '{' (<name> (= <expr>)?;)+ '}'
  *	;
  * 
@@ -2165,15 +2169,14 @@ symn installref(ccEnv cc, const char *prot, astn *argv) {
  * spec := define | struct | enum | ...
 **/
 /** expr -----------------------------------------------------------------------
- * scan an expression
- * if mode then exit on ','
- * expr: ID
- * 	 | expr '[' expr ']'		// \arr	array
-?* 	 | '[' expr ']'				// \ptr	pointer
- * 	 | expr '(' expr? ')'		// \fnc	function
- * 	 | '(' expr ')'				// \pri	precedence
- * 	 | ['+', '-', '~', '!'] expr	// \uop	unary
- * 	 | expr ['+', '*', ...] expr	// \bop	binary
-?* 	 | expr '?' expr ':' expr	// \top	ternary
- * 	 ;
+ * expression
+ * expr := ID
+ *	| expr '[' expr ']'		// \arr	array
+ ?	| '[' expr ']'				// \ptr	pointer
+ *	| expr '(' expr? ')'		// \fnc	function
+ *	| '(' expr ')'				// \pri	precedence
+ *	| ['+', '-', '~', '!'] expr	// \uop	unary
+ *	| expr ['+', '*', ...] expr	// \bop	binary
+ *	| expr '?' expr ':' expr	// \top	ternary
+ *	;
 **/

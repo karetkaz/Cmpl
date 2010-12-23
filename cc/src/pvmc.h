@@ -3,11 +3,8 @@
 
 #include <stdio.h>
 #include <stdint.h>
-typedef float flt32_t;
-typedef double flt64_t;
-
-#define useBuiltInFuncs
-#define LIBCALLS 256
+typedef float float32_t;
+typedef double float64_t;
 
 typedef struct astn *astn;		// tree
 typedef struct symn *symn;		// symbols
@@ -16,12 +13,17 @@ typedef struct vmEnv *vmEnv;
 
 typedef struct state {
 	FILE* logf;			// log file
-	int   errc;			// error count
 
 	symn  defs;		// definitions
+
+	int   errc;			// error count
+
+	int   func;		// library call function
 	void* data;		// user data for execution
-	char* argv;		// first arg
+	symn  libc;		// library call symbol
+	symn  args;		// argument symbols
 	void* retv;		// TODO: RemMe: retval
+	char* argv;		// first arg
 
 	ccEnv cc;		// compiler enviroment	// TODO: RemMe cc has the state
 	vmEnv vm;		// execution enviroment	// TODO: RemMe vm has the state
@@ -31,7 +33,12 @@ typedef struct state {
 	char _mem[];
 } *state;
 typedef enum {
+	srcText = 0x00,		// file / buffer
 	srcFile = 0x10,		// file / buffer
+
+	//~ srcUnit = 0x01,
+	//~ srcDecl = 0x02,
+	//~ srcExpr = 0x03,
 
 	// unit / script (ask the file what is it ? (: first tokens : 'package' 'name'))
 
@@ -54,13 +61,13 @@ int logfile(state, char *file);				// logger
 //~ int compile(state, int level);				// warning level
 int gencode(state, int level);				// optimize level
 //~ int execute(state, int cc, int ss, dbgf dbg);
-
-int libcall(state, int libc(state), const char* proto, astn firstarg);
+int parse(ccEnv, srcType);
+symn libcall(state, int libc(state), int pass, const char* proto);
 
 // execute
 typedef int (*dbgf)(state s, int pu, void *ip, long* sptr, int scnt);
-int dbgInfo(state, int, void*, long*, int);				// if compiled file will print results at the end
 int dbgCon(state, int, void*, long*, int);				// 
+
 //~ int exec(vmEnv, unsigned cc, dbgf dbg);
 int exec(vmEnv, dbgf dbg);
 
@@ -70,6 +77,7 @@ void dump(state, dumpMode, char* text);
 // Level 1 Functions: use less these
 ccEnv ccInit(state);
 ccEnv ccOpen(state, srcType, char* source);
+
 int ccDone(state);
 
 vmEnv vmInit(state);
@@ -77,19 +85,30 @@ vmEnv vmInit(state);
 void vmInfo(FILE*, vmEnv s);
 //~ int vmDone(state s);		// what should do this
 
+void ccSource(ccEnv, char *file, int line);
+
+#define popargsize(__ARGV, __SIZE) ((void*)(((__ARGV)->argv += (((__SIZE) | 3) & ~3)) - (__SIZE)))
+#define popargtype(__ARGV, __TYPE) ((__TYPE*)((__ARGV)->argv += ((sizeof(__TYPE) | 3) & ~3)))[-1]
+
 #define retptr(__TYPE, __ARGV) ((__TYPE*)(__ARGV->retv))
 #define setret(__TYPE, __ARGV, __VAL) (*retptr(__TYPE, __ARGV) = (__TYPE)(__VAL))
-#define poparg(__ARGV, __TYPE) ((__TYPE*)((__ARGV)->argv += ((sizeof(__TYPE) | 3) & ~3)))[-1]
+#define poparg(__ARGV, __TYPE) popargtype(__ARGV, __TYPE)
+//~ #define poparg(__ARGV, __TYPE) ((__TYPE*)((__ARGV)->argv += ((sizeof(__TYPE) | 3) & ~3)))[-1]
+
+static inline float32_t popf32(state s) { return popargtype(s, float32_t); }
+static inline int32_t popi32(state s) { return popargtype(s, int32_t); }
+static inline float64_t popf64(state s) { return popargtype(s, float64_t); }
+static inline int64_t popi64(state s) { return popargtype(s, int64_t); }
+
+static inline void* popref(state s) { return s->_mem + popi32(s); }
+static inline char* popstr(state s) { return s->_mem + popi32(s); }
+
+static inline void* poprecord(state s, int size) { return popargsize(s, size); }
 
 static inline void reti32(state s, int32_t val) { setret(int32_t, s, val); }
 static inline void reti64(state s, int64_t val) { setret(int64_t, s, val); }
-static inline void retf32(state s, flt32_t val) { setret(flt32_t, s, val); }
-static inline void retf64(state s, flt64_t val) { setret(flt64_t, s, val); }
-static inline flt32_t popf32(state s) { return poparg(s, flt32_t); }
-static inline int32_t popi32(state s) { return poparg(s, int32_t); }
-static inline flt64_t popf64(state s) { return poparg(s, flt64_t); }
-static inline int64_t popi64(state s) { return poparg(s, int64_t); }
-
+static inline void retf32(state s, float32_t val) { setret(float32_t, s, val); }
+static inline void retf64(state s, float64_t val) { setret(float64_t, s, val); }
 #endif
 
 /* example ccTags

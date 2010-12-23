@@ -1,4 +1,3 @@
-//~ #debug xterm -e gdb -args 
 //~ #open src/pvmc.h
 //~ #open src/ccvm.h
 
@@ -10,12 +9,13 @@
 //~ #open src/tree.c
 //~ #open src/parse.c
 //~ #open src/main.c
+
 //~ /*
 //~ module std;
 
-enum math: flt64 {
+enum math: float64 {
 
-	define i64_as_f64(int64 x) = emit(flt64, i64(x));
+	define i64_as_f64(int64 x) = emit(float64, i64(x));
 
 	//~ nan = 0. / 0;
 	//~ nan = -0. / 0;
@@ -38,8 +38,8 @@ enum math: flt64 {
 	logt2 = i64_as_f64(0x3FD34413509F79FF);			// lg10(2);
 
 
-	//~ pi = 3.14159265358979323846264338327950288419716939937510582097494459;	// A000796
-	pi   = i64_as_f64(0x400921FB54442D18);
+	pi = 3.14159265358979323846264338327950288419716939937510582097494459;	// A000796
+	//~ pi   = i64_as_f64(0x400921FB54442D18);
 
 	//~ e = 2.71828182845904523536028747135266249775724709369995957496696763;	// A001113
 	e    = i64_as_f64(0x4005BF0A8B145769);
@@ -51,49 +51,62 @@ enum math: flt64 {
 	//~ sqrtPi	= 1.77245385090551602729816748334114518279754945612238712821380779;	// A002161
 	//~ sqrtPhi	= 1.27201964951406896425242246173749149171560804184009624861664038;	// A139339
 
-	define isNan(flt64 a) = emit(not, f64.ceq, dupp.x2, f64(a));// bool(a == a);		// emit(flt64, ,f64(a));
-	//~ define isNan(flt32 a) = emit(bool, not, f32.ceq, dupp.x1, f32(a));// bool(a == a);		// emit(flt64, ,f64(a));
-	//~ define isNan(flt64 a) = bool(a == a);		// emit(flt64, ,f64(a));
-	//~ define isNan(flt32 a) = bool(a == a);
-	//~ define isInf(flt64 a) = bool(a && a == 2 * a);
-	//~ define isInf(flt32 a) = bool(a && a == 2 * a);
+	define isNan(float64 a) = emit(not, f64.ceq, dupp.x2, f64(a));// bool(a == a);
+	//~ define isNan(float32 a) = emit(bool, not, f32.ceq, dupp.x1, f32(a));// bool(a == a);
+	//~ define isNan(float64 a) = bool(a == a);
+	//~ define isNan(float32 a) = bool(a == a);
+	//~ define isInf(float64 a) = bool(a && a == 2 * a);
 }
 
-enum import: bool {
+enum imports: bool {
 	print = true;
 	vec4f = true;
 	vec2d = true;
 }
 
-static if (import.print) {
+static if (imports.print) {
 define println() = putchr('\n');
 define print(int32 arg) = puti64(arg);
-define print(flt32 arg) = putf64(arg);
+define print(float32 arg) = putf64(arg);
 define print(int64 arg) = puti64(arg);
-define print(flt64 arg) = putf64(arg);
+define print(float64 arg) = putf64(arg);
 define print(string arg) = putstr(arg);
 define println(int32 arg) = emit(void(println()), void(puti64(arg)));
-define println(flt32 arg) = emit(void(println()), void(putf64(arg)));
+define println(float32 arg) = emit(void(println()), void(putf64(arg)));
 define println(int64 arg) = emit(void(println()), void(puti64(arg)));
-define println(flt64 arg) = emit(void(println()), void(putf64(arg)));
+define println(float64 arg) = emit(void(println()), void(putf64(arg)));
 define println(string arg)= emit(void(println()), void(putstr(arg)));
 }
-static if (import.vec4f) {
-struct vec4f: 4 {
-	flt32 x;
-	flt32 y;
-	flt32 z;
-	flt32 w;
+static if (imports.vec4f) {
+struct vec4f {
+	float32 x;
+	float32 y;
+	float32 z;
+	float32 w;
 }
 
-define vec4f(flt64 x, flt64 y, flt64 z, flt64 w) = emit(vec4f, f32(x), f32(y), f32(z), f32(w));
-define vec4f(flt64 x, flt64 y, flt64 z) = emit(vec4f, f32(x), f32(y), f32(z), f32(0));
-define vec4f(flt64 val) = emit(vec4f, dupp.x2, dupp.x1, f32(val));
+define vec4f(float64 x, float64 y, float64 z, float64 w) = emit(vec4f, f32(x), f32(y), f32(z), f32(w));
+define vec4f(float32 x, float32 y, float32 z, float32 w) = emit(vec4f, f32(x), f32(y), f32(z), f32(w));
+define vec4f(float64 x, float64 y, float64 z) = emit(vec4f, f32(x), f32(y), f32(z), f32(0));
+define vec4f(float32 x, float32 y, float32 z) = emit(vec4f, f32(x), f32(y), f32(z), f32(0));
+define vec4f(float64 val) = emit(vec4f, dupp.x2, dupp.x1, f32(val));
+define vec4f(float32 val) = emit(vec4f, dupp.x2, dupp.x1, f32(val));
 
-//~ define dp3(vec4f lhs, vec4f rhs) = emit(v4f.dp3, v4f(lhs), v4f(rhs));
-//~ define dp4(vec4f lhs, vec4f rhs) = emit(v4f.dp4, v4f(lhs), v4f(rhs));
-//~ define dph(vec4f lhs, vec4f rhs) = emit(v4f.dph, v4f(lhs), v4f(rhs));
-//~ define eval(vec4f &v, flt32 &x) = flt32((((v.w * x + v.z) * x + v.y) * x) + v.x);
+define neg(vec4f rhs) = emit(vec4f, v4f.neg, val(rhs));
+define add(vec4f lhs, vec4f rhs) = emit(vec4f, v4f.add, val(rhs), val(lhs));
+define sub(vec4f lhs, vec4f rhs) = emit(vec4f, v4f.sub, val(rhs), val(lhs));
+define mul(vec4f lhs, vec4f rhs) = emit(vec4f, v4f.mul, val(rhs), val(lhs));
+define div(vec4f lhs, vec4f rhs) = emit(vec4f, v4f.div, val(rhs), val(lhs));
+
+define mad(vec4f a, vec4f b, vec4f c) = emit(vec4f, v4f.add, v4f.mul, val(a), val(b), val(c));	// a * b + c
+
+define dp3(vec4f lhs, vec4f rhs) = emit(v4f.dp3, val(rhs), val(lhs));
+define dp4(vec4f lhs, vec4f rhs) = emit(v4f.dp4, val(rhs), val(lhs));
+define dph(vec4f lhs, vec4f rhs) = emit(v4f.dph, val(rhs), val(lhs));
+define eval(vec4f &v, float32 &x) = float32((((v.w * x + v.z) * x + v.y) * x) + v.x);
+define cross(vec4f &a, vec4f &b) = vec4f(a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x);
+define normalize(vec4f a) = emit(vec4f, v4f.div, dupp.x2, dupp.x1, v4f.dp3, dupp.x4, dupp.x4, val(a));
+//~ define normalize(vec4f &a) = div(a, vec4f(dp3(a, a)));
 
 //~ operator - (vec4f x) = emit(vec4f, v4f.neg, val(x));
 //~ operator (vec4f x) + (vec4f y) = emit(vec4f, v4f.add, val(y), val(x));
@@ -102,24 +115,50 @@ define vec4f(flt64 val) = emit(vec4f, dupp.x2, dupp.x1, f32(val));
 //~ operator (vec4f x) / (vec4f y) = emit(vec4f, v4f.div, val(y), val(x));
 //~ operator (vec4f x) % (vec4f y) = emit(vec4f, v4f.mod, val(y), val(x));
 
-//~ operator (vec4f x) = (vec4f y) = vec4f(x = y);
-
-//~ operator flt32(vec4f vec) = vec.w;
+//~ operator float32(vec4f vec) = vec.w;
 //~ operator bool(vec4f vec) = bool(vec.x && vec.y && vec.z && vec.w);
 
-//~ operator (vec4f v)[int i] = flt32(i == 0 ? v.x : i == 1 ? v.y : i == 2 ? v.z : i == 3 ? v.w : math.nan);
-//~ operator (vec4f v)[char c] = flt32(c == 'x' ? v.x : c == 'y' ? v.y : c == 'z' ? v.z : c == 'w' ? v.w : math.nan);
+//~ operator (vec4f v)[int i] = float32(i == 0 ? v.x : i == 1 ? v.y : i == 2 ? v.z : i == 3 ? v.w : math.nan);
+//~ operator (vec4f v)[char c] = float32(c == 'x' ? v.x : c == 'y' ? v.y : c == 'z' ? v.z : c == 'w' ? v.w : math.nan);
 
-//~ operator (vec4f v)(flt32 x) = eval(v, x);
+//~ operator (vec4f v)(float32 x) = eval(v, x);
 
+/* advanced
+operator float32(vec4f vec) = vec.w;
+operator bool(vec4f vec) = bool(vec.x && vec.y && vec.z && vec.w);
+
+float32 index(v4f32 vec, int32 idx) {
+	if (idx == 0 || idx == 'x')
+		return lhs.x;
+	if (idx == 1 || idx == 'y')
+		return lhs.y;
+	if (idx == 2 || idx == 'z')
+		return lhs.z;
+	if (idx == 3 || idx == 'w')
+		return lhs.w;
+	return 0.0;
 }
-static if (import.vec2d) {
-struct vec2d: 4 {
-	flt64 x;
-	flt64 y;
+
+define peval(vec4f vec, float32 val) = float32((((vec.w * val + vec.z) * val + vec.y) * val) + vec.x);
+
+define len(vec4f lhs) = sqrt(dp3(lhs, lhs));
+
+operator (vec4f &lhs) += (vec4f rhs) = (lhs = lhs + rhs);
+
+// operator() d:"opCall"; cpp: "float32 vec4f::operator () (float32 val) {...}"
+// operator() d:"opIndex"; cpp: "float32 vec4f::operator [] (int32 val) {...}"
+operator (vec4f vec) (float32 val) = peval(vec, val);
+operator (vec4f vec) [int32 idx] = index(vec, val);
+
+// */
+}
+static if (imports.vec2d) {
+struct vec2d {
+	float64 x;
+	float64 y;
 }
 
-define vec2d(flt64 x, flt64 y) = emit(vec2d, f64(x), f64(y));
+define vec2d(float64 x, float64 y) = emit(vec2d, f64(x), f64(y));
 
 define add(vec2d x, vec2d y) = emit(vec2d, v2d.add, val(y), val(x));
 define sub(vec2d x, vec2d y) = emit(vec2d, v2d.sub, val(y), val(x));
@@ -133,14 +172,33 @@ define cmp(vec2d x, vec2d y) = emit(v2d.equ, val(y), val(x));
 
 }
 
-define sqr(flt64 val) = emit(f64.mul, dupp.x2, f64(val));
+define max(int32 &a, int32 &b) = int32(a > b ? a : b);
+define max(int64 &a, int64 &b) = int64(a > b ? a : b);
+define max(uint32 &a, uint32 &b) = uint32(a > b ? a : b);
+define max(float32 &a, float32 &b) = float32(a > b ? a : b);
+define max(float64 &a, float64 &b) = float64(a > b ? a : b);
+
+define min(int32 &a, int32 &b) = int32(a < b ? a : b);
+define min(int64 &a, int64 &b) = int64(a < b ? a : b);
+define min(uint32 &a, uint32 &b) = uint32(a < b ? a : b);
+define min(float32 &a, float32 &b) = float32(a < b ? a : b);
+define min(float64 &a, float64 &b) = float64(a < b ? a : b);
+
+define clamp(float x, float min, float max) = min(max(x, min), max);
+define clamp(double x, double min, double max) = min(max(x, min), max);
+
+define lerp(float t, float &a, float b) = float(a + t * (b - a));
+define lerp(double t, double &a, double b) = double(a + t * (b - a));
+
+define smooth(float &x) = float(x * x * (3 - 2 * x));
+define smooth(float x, float &a, float b) = smooth(clamp((x - a) / (b - a), float(0), float(1)));
+
+define sqr(float64 x) = emit(f64.mul, dupp.x2, f64(x));
 
 define random(int32 max) = int32(random() % max);
-define random(flt64 max) = flt64(max * (random(32768) / 32768.));
+define random(float64 max) = float64(max * (random(32768) / 32768.));
 define random(int32 &min, int32 max) = int32(min + random(max - min));
-define random(flt64 &min, flt64 max) = flt64(min + random(max - min));
-
-define zxt64(int32 a) = int64(uns32(a));		// zero extend
-define sxt64(int32 a) = int64(int32(a));		// sign extend
+define random(float64 &min, float64 max) = float64(min + random(max - min));
 
 // */
+

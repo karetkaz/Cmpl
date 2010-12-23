@@ -17,21 +17,22 @@ typedef struct bcde {			// byte code decoder
 		stkval arg;		// argument (load const)
 		uint8_t idx;		// usualy index for stack
 		int32_t rel:24;	// relative offset (ip, sp) +- 7MB
-		struct {		// when starting a task
-			uint8_t  dl;	// data to copy to stack
-			uint16_t cl;	// code to exec paralel
-		};
+		/*struct {		// when starting a task
+			uint8_t  dl;	// data to to be copied to stack
+			uint16_t cl;	// code to to be executed paralel: 0 means fork
+		};// */
 		/*struct {				// extended3: 4 bytes `res := lhs OP rhs`
 			uint32_t opc:4;		// 0 ... 15
 			uint32_t mem:2;		// mem
 			uint32_t res:6;		// res
 			uint32_t lhs:6;		// lhs
 			uint32_t rhs:6;		// rhs
-			/ * --8<-------------------------------------------
+			/+ --8<-------------------------------------------
 			void *res = sp + ip->ext.res;
 			void *lhs = sp + ip->ext.lhs;
 			void *rhs = sp + ip->ext.rhs;
 			switch (ip->ext.mem) {
+				case 0: break;
 				case 1: res = *(void**)res; break;
 				case 2: lhs = *(void**)lhs; break;
 				case 3: rhs = *(void**)rhs; break;
@@ -40,20 +41,20 @@ typedef struct bcde {			// byte code decoder
 				case ext_add: add(res, lhs, rhs); break;
 				case ext_...: ...(res, lhs, rhs); break;
 			}
-			// * / --8<----------------------------------------
+			// +/ --8<----------------------------------------
 		}ext;// */
 	};
 } *bcde;
 #pragma pack(pop)
 
 typedef struct cell {			// processor
-	//~ unsigned int	cs;			// child start(==0 join) / code size (pc)
-	//~ unsigned int	pp;			// parent proc(==0 main) / ???
-
 	unsigned char	*ip;			// Instruction pointer
 	unsigned char	*sp;			// Stack pointer(bp + ss)
 	unsigned char	*bp;			// Stack base
-	//~ unsigned char	*hp;			// Stack base
+
+	// multiproc
+	//~ unsigned int	cs;			// child start(==0 join) / code size (pc)
+	//~ unsigned int	pp;			// parent proc(==0 main) / ???
 
 	// flags ?
 	//~ unsigned	zf:1;			// zero flag
@@ -68,397 +69,115 @@ typedef struct cell {			// processor
 //~ #pragma intrinsic(log,cos,sin,tan,sqrt,fabs,pow,atan2,fmod)
 //~ #pragma intrinsic(acos,asin,atan,cosh,exp,log10,sinh,tanh)
 
+#define LIBCALLS 256
+
+void* vmOffset(state s, symn arg) {
+	if (arg->offs < 0)
+		return (char*)s->retv + arg->offs;
+	return s->_mem + arg->offs;
+}
 static int libHalt(state s) {
-	//~ if (s->onHalt) s->onHalt();
-	return 0;
-}
-#ifdef useBuiltInFuncs
-static int f64abs(state s) {
-	flt64_t x = poparg(s, flt64_t);
-	setret(flt64_t, s, fabs(x));
-	return 0;
-}
-static int f64sin(state s) {
-	flt64_t x = poparg(s, flt64_t);
-	setret(flt64_t, s, sin(x));
-	return 0;
-}
-static int f64cos(state s) {
-	flt64_t x = poparg(s, flt64_t);
-	setret(flt64_t, s, cos(x));
-	return 0;
-}
-static int f64tan(state s) {
-	flt64_t x = poparg(s, flt64_t);
-	setret(flt64_t, s, tan(x));
-	return 0;
-}
+	symn arg = s->args;
+	//~ debug("calling %-T", s->libc);
+	for ( ;arg; arg = arg->next) {
+		char *ofs = vmOffset(s, arg);
+		void vm_fputval(state, FILE *fout, symn var, stkval* ref, int flgs);
 
-static int f64log(state s) {
-	flt64_t x = poparg(s, flt64_t);
-	setret(flt64_t, s, log(x));
-	return 0;
-}
-static int f64exp(state s) {
-	flt64_t x = poparg(s, flt64_t);
-	setret(flt64_t, s, exp(x));
-	return 0;
-}
-static int f64pow(state s) {
-	flt64_t x = poparg(s, flt64_t);
-	flt64_t y = poparg(s, flt64_t);
-	setret(flt64_t, s, pow(x, y));
-	return 0;
-}
-static int f64sqrt(state s) {
-	flt64_t x = poparg(s, flt64_t);
-	setret(flt64_t, s, sqrt(x));
-	return 0;
-}
+		if (arg->kind != TYPE_ref && s->args == s->defs) continue;
+		if (arg->kind != TYPE_ref) continue;
 
-static int f64atan2(state s) {
-	flt64_t x = poparg(s, flt64_t);
-	flt64_t y = poparg(s, flt64_t);
-	setret(flt64_t, s, atan2(x, y));
-	return 0;
-}
+		if (arg->file && arg->line)
+			fputfmt(stdout, "%s:%d:",arg->file, arg->line);
+		else
+			fputfmt(stdout, "var: ",arg->file, arg->line);
 
-/*static int f64lg2(state s) {
-	double log2(double);
-	flt64_t *sp = stk;
-	*sp = log2(*sp);
-	return 0;
-}
-static int f64_xp2(state s) {
-	double exp2(double);
-	flt64_t *sp = stk;
-	*sp = exp2(*sp);
-	return 0;
-}*/
-
-static int b32btc(state s) {
-	uint32_t x = poparg(s, int32_t);
-	x -= ((x >> 1) & 0x55555555);
-	x = (((x >> 2) & 0x33333333) + (x & 0x33333333));
-	x = (((x >> 4) + x) & 0x0f0f0f0f);
-	x += (x >> 8) + (x >> 16);
-	setret(uint32_t, s, x & 0x3f);
-	return 0;
-}
-static int b32bsf(state s) {
-	uint32_t x = poparg(s, int32_t);
-	int ans = 0;
-	//~ if ((x & 0x00000000ffffffff) == 0) { ans += 32; x >>= 32; }
-	if ((x & 0x000000000000ffff) == 0) { ans += 16; x >>= 16; }
-	if ((x & 0x00000000000000ff) == 0) { ans +=  8; x >>=  8; }
-	if ((x & 0x000000000000000f) == 0) { ans +=  4; x >>=  4; }
-	if ((x & 0x0000000000000003) == 0) { ans +=  2; x >>=  2; }
-	if ((x & 0x0000000000000001) == 0) { ans +=  1; }
-	setret(uint32_t, s, x ? ans : -1);
-	return 0;
-}
-static int b32bsr(state s) {
-	uint32_t x = poparg(s, int32_t);
-	unsigned ans = 0;
-	//~ if ((x & 0xffffffff00000000) != 0) { ans += 32; x >>= 32; }
-	if ((x & 0x00000000ffff0000) != 0) { ans += 16; x >>= 16; }
-	if ((x & 0x000000000000ff00) != 0) { ans +=  8; x >>=  8; }
-	if ((x & 0x00000000000000f0) != 0) { ans +=  4; x >>=  4; }
-	if ((x & 0x000000000000000c) != 0) { ans +=  2; x >>=  2; }
-	if ((x & 0x0000000000000002) != 0) { ans +=  1; }
-	setret(uint32_t, s, x ? ans : -1);
-	return 0;
-}
-static int b32hib(state s) {
-	uint32_t x = poparg(s, uint32_t);
-	x |= x >> 1;
-	x |= x >> 2;
-	x |= x >> 4;
-	x |= x >> 8;
-	x |= x >> 16;
-	setret(uint32_t, s, x - (x >> 1));
-	return 0;
-}
-//~ static int b32lob(state s) := x & -x;
-static int b32swp(state s) {
-	uint32_t x = poparg(s, int32_t);
-	x = ((x >> 1) & 0x55555555) | ((x & 0x55555555) << 1);
-	x = ((x >> 2) & 0x33333333) | ((x & 0x33333333) << 2);
-	x = ((x >> 4) & 0x0F0F0F0F) | ((x & 0x0F0F0F0F) << 4);
-	x = ((x >> 8) & 0x00FF00FF) | ((x & 0x00FF00FF) << 8);
-	setret(uint32_t, s, (x >> 16) | (x << 16));
-	return 0;
-}
-/* removed, and do the same with 32 bit functions
-static int b32zxt(state s) {
-	uint32_t val = poparg(s, int32_t);
-	int32_t ofs = poparg(s, int32_t);
-	int32_t cnt = poparg(s, int32_t);
-	val <<= 32 - (ofs + cnt);
-	setret(int32_t, s, val >> (32 - cnt));
-	return 0;
-}
-static int b32sxt(state s) {
-	int32_t val = poparg(s, int32_t);
-	int32_t ofs = poparg(s, int32_t);
-	int32_t cnt = poparg(s, int32_t);
-	val <<= 32 - (ofs + cnt);
-	setret(int32_t, s, val >> (32 - cnt));
-	return 0;
-}
-*/
-
-static int b64shl(state s) {
-	uint64_t x = poparg(s, int64_t);
-	int32_t y = poparg(s, int32_t);
-	setret(uint64_t, s, x << y);
-	return 0;
-}
-static int b64shr(state s) {
-	uint64_t x = poparg(s, int64_t);
-	int32_t y = poparg(s, int32_t);
-	setret(uint64_t, s, x >> y);
-	return 0;
-}
-static int b64sar(state s) {
-	int64_t x = poparg(s, int64_t);
-	int32_t y = poparg(s, int32_t);
-	setret(uint64_t, s, x >> y);
-	return 0;
-}
-static int b64and(state s) {
-	uint64_t x = poparg(s, uint64_t);
-	uint64_t y = poparg(s, uint64_t);
-	setret(uint64_t, s, x & y);
-	return 0;
-}
-static int b64ior(state s) {
-	uint64_t x = poparg(s, uint64_t);
-	uint64_t y = poparg(s, uint64_t);
-	setret(uint64_t, s, x | y);
-	return 0;
-}
-static int b64xor(state s) {
-	uint64_t x = poparg(s, uint64_t);
-	uint64_t y = poparg(s, uint64_t);
-	setret(uint64_t, s, x ^ y);
-	return 0;
-}
-
-static int b64bsf(state s) {
-	uint64_t x = poparg(s, int64_t);
-	int ans = -1;
-	if (x != 0) {
-		ans = 0;
-		if ((x & 0x00000000ffffffffULL) == 0) { ans += 32; x >>= 32; }
-		if ((x & 0x000000000000ffffULL) == 0) { ans += 16; x >>= 16; }
-		if ((x & 0x00000000000000ffULL) == 0) { ans +=  8; x >>=  8; }
-		if ((x & 0x000000000000000fULL) == 0) { ans +=  4; x >>=  4; }
-		if ((x & 0x0000000000000003ULL) == 0) { ans +=  2; x >>=  2; }
-		if ((x & 0x0000000000000001ULL) == 0) { ans +=  1; }
+		fputfmt(stdout, "@%d\t: ", arg->offs < 0 ? -sizeOf(arg->type) - arg->offs : arg->offs);
+		vm_fputval(s, stdout, arg, (stkval*)ofs, 0);
+		fputc('\n', stdout);
+		//~ ofs += sizeOf(arg->type);
 	}
-	setret(int32_t, s, ans);
 	return 0;
 }
-static int b64bsr(state s) {
-	uint64_t x = poparg(s, int64_t);
-	int ans = -1;
-	if (x != 0) {
-		ans = 0;
-		if ((x & 0xffffffff00000000ULL) != 0) { ans += 32; x >>= 32; }
-		if ((x & 0x00000000ffff0000ULL) != 0) { ans += 16; x >>= 16; }
-		if ((x & 0x000000000000ff00ULL) != 0) { ans +=  8; x >>=  8; }
-		if ((x & 0x00000000000000f0ULL) != 0) { ans +=  4; x >>=  4; }
-		if ((x & 0x000000000000000cULL) != 0) { ans +=  2; x >>=  2; }
-		if ((x & 0x0000000000000002ULL) != 0) { ans +=  1; }
-	}
-	setret(int32_t, s, ans);
-	return 0;
-}
-static int b64hib(state s) {
-	uint64_t x = poparg(s, int64_t);
-	x |= x >> 1;
-	x |= x >> 2;
-	x |= x >> 4;
-	x |= x >> 8;
-	x |= x >> 16;
-	x |= x >> 32;
-	setret(uint64_t, s, x - (x >> 1));
-	return 0;
-}
-static int b64lob(state s) {
-	uint64_t x = poparg(s, int64_t);
-	setret(uint64_t, s, x & -x);
-	return 0;
-}
-
-static int b64zxt(state s) {
-	uint64_t val = poparg(s, int64_t);
-	int32_t ofs = poparg(s, int32_t);
-	int32_t cnt = poparg(s, int32_t);
-	val <<= 64 - (ofs + cnt);
-	setret(int64_t, s, val >> (64 - cnt));
-	return 0;
-}
-static int b64sxt(state s) {
-	int64_t val = poparg(s, int64_t);
-	int32_t ofs = poparg(s, int32_t);
-	int32_t cnt = poparg(s, int32_t);
-	val <<= 64 - (ofs + cnt);
-	setret(int64_t, s, val >> (64 - cnt));
-	return 0;
-}
-
-#include <time.h>
-#include <stdlib.h>
-static int rand32(state s) {
-	static int initialized = 0;
-	if (!initialized) {
-		srand(time(NULL));
-		initialized = 1;
-	}
-	setret(int32_t, s, rand());
-	return 0;
-}
-
-static int puti64(state s) {
-	fputfmt(stdout, "%D", poparg(s, int64_t));
-	return 0;
-}
-static int putf64(state s) {
-	fputfmt(stdout, "%F", poparg(s, flt64_t));
-	return 0;
-}
-static int putchr(state s) {
-	fputfmt(stdout, "%c", poparg(s, int32_t));
-	return 0;
-}
-static int putstr(state s) {
-	// TODO: check bounds
-	fputfmt(stdout, "%s", s->_mem + poparg(s, int32_t));
-	return 0;
-}
-//~ #else #define LIBCALLS 1
-#endif
 static struct lfun {
 	int (*call)(state);
 	const char* proto;
 	symn sym;
-	// TODO: check these values
+	//~ int16_t fun;	// sym->offs
 	int8_t chk, pop, pad[2];
+	//~ int32_t _pad;
 }
 libcfnc[LIBCALLS] = {
-	{libHalt, "void Halt()", NULL, 0, 0},
-#ifdef useBuiltInFuncs
-	//{ MATH
-	{f64abs, "flt64 abs(flt64 x)"},
-	{f64sin, "flt64 sin(flt64 x)"},
-	{f64cos, "flt64 cos(flt64 x)"},
-	{f64tan, "flt64 tan(flt64 x)"},
-	{f64log, "flt64 log(flt64 x)"},
-	{f64exp, "flt64 exp(flt64 x)"},
-	{f64pow, "flt64 pow(flt64 x, flt64 y)"},
-	{f64sqrt, "flt64 sqrt(flt64 x)"},
-	{f64atan2, "flt64 atan2(flt64 x, flt64 y)"},
-
-	//~ {f64lg2, "flt64 log2(flt64 x)"},
-	//~ {f64xp2, "flt64 exp2(flt64 x)"},
-	//}
-
-	//{ BITS
-	{b32btc, "int32 btc(int32 x)"},		// bitcount
-	{b32bsf, "int32 bsf(int32 x)"},
-	{b32bsr, "int32 bsr(int32 x)"},
-	{b32swp, "int32 swp(int32 x)"},
-	{b32hib, "int32 bhi(int32 x)"},
-
-	{b64bsf, "int32 bsf(int64 x)"},
-	{b64bsr, "int32 bsr(int64 x)"},
-	{b64lob, "int64 lobit(int64 x)"},
-	{b64hib, "int64 hibit(int64 x)"},
-	{b64shl, "int64 shl(int64 x, int32 y)"},
-	{b64shr, "int64 shr(int64 x, int32 y)"},
-	{b64sar, "int64 sar(int64 x, int32 y)"},
-	{b64and, "int64 and(int64 x, int64 y)"},
-	{b64ior, "int64  or(int64 x, int64 y)"},
-	{b64xor, "int64 xor(int64 x, int64 y)"},
-	{b64zxt, "int64 zxt(int64 val, int offs, int bits)"},
-	{b64sxt, "int64 sxt(int64 val, int offs, int bits)"},
-	//}
-
-	//{ IO/MEM/EXIT
-	//~ {memmgr, "pointer memmgr(pointer old, int32 cnt, int allign)"},		// allocate, reallocate, free
-	//~ {memset, "pointer memset(pointer dst, byte src, int32 cnt)"},
-	//~ {memcpy, "pointer memcpy(pointer dst, pointer src, int32 cnt)"},
-	{rand32, "int random()"},
-	{putchr, "void putchr(int32 val)"},
-	{putstr, "void putstr(string val)"},
-	{puti64, "void puti64(int64 val)"},
-	{putf64, "void putf64(flt64 val)"},
-	//}
-
-	// include some of the compiler functions
-	// for reflection. (lookup, import, logger, exec)
-
-#endif
+	{libHalt, "void Halt();", NULL, 0, 0},
+	//~ {libHalt, "void Exit(int Code);", NULL, 0, 0},
+	//~ {libHalt, "void Test(int x, int y, int z);", NULL, 0, 0},
 	{NULL},
 };
 
-symn installref(ccEnv cc, const char *prot, astn *argv);
+symn installref(state s, const char *prot, astn *argv){
+	astn root;
+	symn result = NULL;
+	int level;
+	int errc = s->errc;
 
-int libcall(state s, int libc(state), const char* proto, astn firstarg) {
+	//~ prot = "int alma;";
+
+	// TODO: this should look something like: `astn root = parse(s, TYPE_ref);`
+	if (!ccOpen(s, srcText, (char *)prot)) {
+		//~ TODO: error()
+		return NULL;
+	}
+
+	s->cc->warn = 9;
+	level = s->cc->nest;
+	if ((root = decl(s->cc, 0))) {
+
+		dieif(level != s->cc->nest, "FixMe");
+		dieif(root->kind != TYPE_def, "FixMe");
+
+		result = root->id.link;
+		if ((result = root->id.link)) {
+			dieif(result->kind != TYPE_ref, "FixMe");
+			*argv = root->id.args;
+		}
+	}
+
+	return errc == s->errc ? result : NULL;
+}//*/
+
+symn libcall(state s, int libc(state), int pos, const char* proto) {
 	static int libccnt = 0;
-	//~ int makenew = 1;
-	int stdiff = 0;
 	symn arg, sym = NULL;
+	int stdiff = 0;
 	astn args;
 
-	// TODO: can skip this
-	if (!s->cc && !ccInit(s)) {
-		return -1;
-	}
+	//~ if (!s->cc && !ccInit(s)) {return NULL;}
 
 	if (!libccnt && !libc) {
 		libccnt = 0;
 		if (!libc) while (libcfnc[libccnt].proto) {
 			int i = libccnt;
-			if (libcall(s, libcfnc[i].call, libcfnc[i].proto, NULL) < 0)
-				return -1;
+			if (!libcall(s, libcfnc[i].call, 0, libcfnc[i].proto))
+				return NULL;
 		}
-		return libccnt;
+		return NULL;
 	}
 
 	if (libccnt >= (sizeof(libcfnc) / sizeof(*libcfnc))) {
 		error(s, 0, "to many functions on install('%s')", proto);
-		return -1;
+		return NULL;
 	}
-
-	if (libccnt > 0 && firstarg != NULL) {
-		if (libcfnc[libccnt - 1].call == libc)
-			libccnt -= 1;
-		//~ makenew = libcfnc[libccnt-1].call != libc;
-		//~ debug("%s: new=%d", proto, makenew);
-	}
-
-	/*if (libccnt > 0 && libcfnc[libccnt-1].call == libc) {
-		makenew = firstarg != NULL;
-		debug("%s: new=%d", proto, makenew);
-	}*/
 
 	if (!libc || !proto)
 		return 0;
 
 	libcfnc[libccnt].call = libc;
 	libcfnc[libccnt].proto = proto;
-
-	sym = installref(s->cc, libcfnc[libccnt].proto, &args);
+	sym = installref(s, libcfnc[libccnt].proto, &args);
 
 	//~ from: int64 zxt(int64 val, int offs, int bits)
 	//~ make: define zxt(int64 val, int offs, int bits) = int64(emit(libc(25), int64 val, int offs, int bits));
 
 	if (sym) {
-
-		// TODO: replace this section
 		symn link = newdefn(s->cc, EMIT_opc);
 		astn libc = newnode(s->cc, TYPE_ref);
 
@@ -473,25 +192,8 @@ int libcall(state s, int libc(state), const char* proto, astn firstarg) {
 		libc->type = link->type;
 		// TODO: end
 
-		if (firstarg) {
-			astn narg = newnode(s->cc, OPER_com);
-			astn arg = args;
-
-			narg->op.lhso = firstarg;
-			if (arg->kind == OPER_com) {
-				while (arg->op.lhso->kind == OPER_com)
-					arg = arg->op.lhso;
-				narg->op.rhso = arg->op.lhso;
-				arg->op.lhso = narg;
-			}
-			else {
-				narg->op.rhso = args;
-				args = narg;
-			}
-		}
-
 		// glue the new libc argument
-		if (args != s->cc->argz) {
+		if (args && args != s->cc->argz) {
 			astn narg = newnode(s->cc, OPER_com);
 			astn arg = args;
 			narg->op.lhso = libc;
@@ -513,40 +215,46 @@ int libcall(state s, int libc(state), const char* proto, astn firstarg) {
 
 		// make arguments symbolic by default
 		for (arg = sym->args; arg; arg = arg->next) {
+			//~ stdiff += sizeOf(arg->type);
 			arg->cast = TYPE_def;
 			//~ arg->load = 0;
 		}// */
 
-		// TODO: make a function for this
 		libc = newnode(s->cc, OPER_fnc);
-
 		libc->op.lhso = newnode(s->cc, TYPE_ref);
 		libc->op.lhso->id.link = emit_opc;
 		libc->op.lhso->id.name = "emit";
 		libc->op.lhso->id.hash = -1;
-
 		libc->type = sym->type;
 		libc->op.rhso = args;
 
 		sym->kind = TYPE_def;
 		sym->init = libc;
-		sym->offs = 0;
+		sym->offs = pos;
+
+		stdiff = fixargs(sym, 4, sizeOf(sym->type));
+		libcfnc[libccnt].chk = stdiff / 4;
+
+		stdiff -= sizeOf(sym->type);
+		libcfnc[libccnt].pop = stdiff / 4;
+
+		libcfnc[libccnt].sym = sym;
+
+		for (arg = sym->args; arg; arg = arg->next) {
+			dieif(arg->offs != -stdiff, "FixMe: %+T(%d, %d)", arg, arg->offs, -stdiff);
+			//~ debug("FixMe: %+T(%d, %d)", arg, arg->offs, -stdiff);
+			stdiff -= sizeOf(arg->type);
+		}// */
+
 	}
 	else {
 		error(s, 0, "install('%s')", proto);
-		return -1;
+		//~ return NULL;
 	}
-
-	for (arg = sym->args; arg; arg = arg->next)
-		stdiff += sizeOf(arg->type);
-	libcfnc[libccnt].chk = stdiff / 4;
-	stdiff -= sizeOf(sym->type);
-	libcfnc[libccnt].pop = stdiff / 4;
-	libcfnc[libccnt].sym = sym;
 
 	libccnt += 1;
 
-	return libccnt - 1;
+	return sym;
 }
 //}
 
@@ -555,9 +263,11 @@ static inline void* getip(vmEnv s, int pos) {
 }
 
 // TODO: exchange this with emitarg(vmEnv s, int opc, stkval arg);
-int emit(vmEnv s, int opc, ...) {
+//~ int emit(vmEnv s, int opc, ...) {
+
+int emitarg(vmEnv s, int opc, stkval arg) {
 	bcde ip = getip(s, s->cs);
-	stkval arg = *(stkval*)(&opc + 1);
+	//~ stkval arg = *(stkval*)(&opc + 1);
 
 	/*if (opc == get_ip) {
 		return s->cs;
@@ -669,15 +379,15 @@ int emit(vmEnv s, int opc, ...) {
 		case TYPE_f64: opc = f64_cgt; break;
 	}
 	else if (opc == opc_cne) {
-		if (emit(s, opc_ceq, arg))
+		if (emitarg(s, opc_ceq, arg))
 			opc = opc_not;
 	}
 	else if (opc == opc_cle) {
-		if (emit(s, opc_cgt, arg))
+		if (emitarg(s, opc_cgt, arg))
 			opc = opc_not;
 	}
 	else if (opc == opc_cge) {
-		if (emit(s, opc_clt, arg))
+		if (emitarg(s, opc_clt, arg))
 			opc = opc_not;
 	}
 
@@ -748,6 +458,9 @@ int emit(vmEnv s, int opc, ...) {
 	else if (opc == opc_drop) {		// pop nothing
 		if (arg.i4 == 0)
 			return s->pc;
+
+		dieif(arg.i4 & 3, "FixMe");
+		arg.i4 /= 4;
 	}
 
 	else if (opc == opc_inc) {		// TODO: DelMe!
@@ -766,14 +479,15 @@ int emit(vmEnv s, int opc, ...) {
 
 	if (opc > opc_last) {
 		//~ fatal("invalid opc_0x%x", opc);
-		debug("invalid opc_0x%x", opc);
+		debug("invalid opc(0x%x, 0x%X)", opc, arg.i8);
+		debug("invalid arg(0x%X)", arg.i8);
 		return 0;
 	}
 	if (s->opti > 1) {
 		if (0) ;
 		else if (opc == opc_ldi1) {
 			ip = getip(s, s->pc);
-			if (ip->opc == opc_ldsp && ((ip->rel & 3) == 0) && ((ip->rel / 4) <= max_reg)) {
+			if (ip->opc == opc_ldsp && ((ip->rel & 3) == 0) && ((ip->rel / 4) < max_reg)) {
 				arg.i4 = ip->rel / 4;
 				opc = opc_dup1;
 				s->cs = s->pc;
@@ -782,7 +496,7 @@ int emit(vmEnv s, int opc, ...) {
 		}
 		else if (opc == opc_ldi2) {
 			ip = getip(s, s->pc);
-			if (ip->opc == opc_ldsp && ((ip->rel & 3) == 0) && ((ip->rel / 4) <= max_reg)) {
+			if (ip->opc == opc_ldsp && ((ip->rel & 3) == 0) && ((ip->rel / 4) < max_reg)) {
 				arg.i4 = ip->rel / 4;
 				opc = opc_dup1;
 				s->cs = s->pc;
@@ -792,7 +506,7 @@ int emit(vmEnv s, int opc, ...) {
 
 		else if (opc == opc_ldi4) {
 			ip = getip(s, s->pc);
-			if (ip->opc == opc_ldsp && ((ip->rel & 3) == 0) && ((ip->rel / 4) <= max_reg)) {
+			if (ip->opc == opc_ldsp && ((ip->rel & 3) == 0) && ((ip->rel / 4) < max_reg)) {
 				arg.i4 = ip->rel / 4;
 				opc = opc_dup1;
 				s->cs = s->pc;
@@ -801,7 +515,7 @@ int emit(vmEnv s, int opc, ...) {
 		}
 		else if (opc == opc_sti4) {
 			ip = getip(s, s->pc);
-			if (ip->opc == opc_ldsp && ((ip->rel & 3) == 0) && ((ip->rel / 4) <= max_reg)) {
+			if (ip->opc == opc_ldsp && ((ip->rel & 3) == 0) && ((ip->rel / 4) < max_reg)) {
 				arg.i4 = ip->rel / 4;
 				opc = opc_set1;
 				s->cs = s->pc;
@@ -811,7 +525,7 @@ int emit(vmEnv s, int opc, ...) {
 
 		else if (opc == opc_ldi8) {
 			ip = getip(s, s->pc);
-			if (ip->opc == opc_ldsp && ((ip->rel & 3) == 0) && ((ip->rel / 4) <= max_reg)) {
+			if (ip->opc == opc_ldsp && ((ip->rel & 3) == 0) && ((ip->rel / 4) < max_reg)) {
 				arg.i4 = ip->rel / 4;
 				opc = opc_dup2;
 				s->cs = s->pc;
@@ -820,7 +534,7 @@ int emit(vmEnv s, int opc, ...) {
 		}
 		else if (opc == opc_sti8) {
 			ip = getip(s, s->pc);
-			if (ip->opc == opc_ldsp && ((ip->rel & 3) == 0) && ((ip->rel / 4) <= max_reg)) {
+			if (ip->opc == opc_ldsp && ((ip->rel & 3) == 0) && ((ip->rel / 4) < max_reg)) {
 				arg.i4 = ip->rel / 4;
 				opc = opc_set2;
 				s->cs = s->pc;
@@ -926,12 +640,21 @@ int emit(vmEnv s, int opc, ...) {
 		if (ip->rel != arg.i8)
 			return 0;
 	}
+	//~ debug("opc_x%0x(0x%0X)%09.*A", opc, arg.i8, s->pc, ip);
 	//~ debug("@%04x[ss:%03d]: %09.*A", s->pc, s->ss, s->pc, ip);
 	//~ debug("ss(%d): %09.*A", s->ss, s->pc, ip);
 
 	switch (opc) {
-		error_opc: error(s->s, 0, "invalid opcode: op[%.*A]", s->pc, ip); return 0;
-		error_stc: error(s->s, 0, "stack underflow: op[%.*A]", s->pc, ip); return 0;
+		error_opc:
+			error(s->s, 0, "invalid opcode: op[%.*A]", s->pc, ip);
+			fputasm(stderr, s, s->seg, -1, 0x10);
+			return 0;
+
+		error_stc:
+			error(s->s, 0, "stack underflow: op[%.*A]", s->pc, ip);
+			fputasm(stderr, s, s->seg, -1, 0x10);
+			return 0;
+
 		#define STOP(__ERR, __CHK) if (__CHK) goto __ERR
 		#define NEXT(__IP, __CHK, __SP)\
 			STOP(error_stc, s->ss < (__CHK));\
@@ -950,22 +673,22 @@ int emit(vmEnv s, int opc, ...) {
 int emiti32(vmEnv s, int32_t arg) {
 	stkval tmp;
 	tmp.i4 = arg;
-	return emit(s, opc_ldc4, tmp);
+	return emitarg(s, opc_ldc4, tmp);
 }
 int emiti64(vmEnv s, int64_t arg) {
 	stkval tmp;
 	tmp.i8 = arg;
-	return emit(s, opc_ldc8, tmp);
+	return emitarg(s, opc_ldc8, tmp);
 }
-int emitf32(vmEnv s, flt32_t arg) {
+int emitf32(vmEnv s, float32_t arg) {
 	stkval tmp;
 	tmp.f4 = arg;
-	return emit(s, opc_ldcf, tmp);
+	return emitarg(s, opc_ldcf, tmp);
 }
-int emitf64(vmEnv s, flt64_t arg) {
+int emitf64(vmEnv s, float64_t arg) {
 	stkval tmp;
 	tmp.f8 = arg;
-	return emit(s, opc_ldcF, tmp);
+	return emitarg(s, opc_ldcF, tmp);
 }
 int emitptr(vmEnv s, void* arg) {
 	stkval tmp;
@@ -973,39 +696,40 @@ int emitptr(vmEnv s, void* arg) {
 	//~ dieif(ptr < s->_mem, "invalid reference");
 	dieif(ptr < s->_mem || ptr > (s->_mem + s->ds), "FixMe");
 	tmp.i8 = (ptr - s->_mem);
-	return emit(s, opc_ldcr, tmp);
+	return emitarg(s, opc_ldcr, tmp);
 }
 
+int emitopc(vmEnv s, int opc) {
+	stkval arg;
+	arg.i8 = 0;
+	return emitarg(s, opc, arg);
+}
 int emitidx(vmEnv s, int opc, int arg) {
 	stkval tmp;
-	tmp.i8 = (int32_t)s->ss + arg;
-	if (opc == opc_ldsp) {
-		tmp.i8 *= 4;
-		return emit(s, opc, tmp);
-	}
-	/*if (opc == opc_drop) {
-		tmp.i8 = -tmp.i4;
-		debug("drop(%d): %D", -arg, tmp.i8);
-		//~ return emit(s, opc, tmp);
-	}// */
+	tmp.i8 = (int32_t)s->ss * 4 + arg;
+
+	if (opc == opc_ldsp)
+		return emitarg(s, opc, tmp);
+
 	if (tmp.u4 > 255) {
-		debug("0x%02x(%d)[opc_x%1A]", opc, tmp.u4, getip(s, s->pc));
+		debug("opc_x%02x(%d)[%1A]", opc, tmp.u4, getip(s, s->pc));
 		return 0;
 	}
-	if (tmp.u4 > s->ss) {
+	if (tmp.u4 > s->ss * 4) {
 		fatal("%d", tmp.u4);
 		return 0;
 	}
-	return emit(s, opc, tmp);
+	return emitarg(s, opc, tmp);
 }
 int emitint(vmEnv s, int opc, int64_t arg) {
 	stkval tmp;
 	tmp.i8 = arg;
-	return emit(s, opc, tmp);
+	return emitarg(s, opc, tmp);
 }
 int fixjump(vmEnv s, int src, int dst, int stc) {
 	bcde ip = getip(s, src);
 
+	dieif(stc & 3, "FixMe");
 	if (src >= 0) switch (ip->opc) {
 		default: fatal("FixMe");
 		//~ case opc_ldsp:
@@ -1015,14 +739,14 @@ int fixjump(vmEnv s, int src, int dst, int stc) {
 		case opc_jz:
 			ip->rel = dst - src;
 			if (stc < 0)
-				s->ss = -stc;
+				s->ss = -stc / 4;
 			break;
 	}
 	return 0;
 }
 
 int stkoffs(vmEnv s, int size) {
-	return -(s->ss + ((size + 0) / 4));
+	return -(s->ss * 4 + size);
 }
 
 /*static cell task(vmEnv ee, cell pu, int cc, int n, int cl, int dl) {
@@ -1095,32 +819,46 @@ static int dbugpu(vmEnv vm, cell pu, dbgf dbg) {
 	typedef uint32_t *stkptr;
 	typedef uint8_t *memptr;
 
-	register bcde ip;
-	stkptr st = (void*)pu->sp;
 	memptr mp = (void*)vm->_mem;
+	stkptr st = (void*)pu->sp;
 
-	while ((ip = (void*)pu->ip) != 0) {
+	for ( ; ; ) {
 
+		register bcde ip = (void*)pu->ip;
 		register stkptr sp = (void*)pu->sp;
 
 		if (dbg && dbg(vm->s, 0, ip, (long*)sp, st - sp))
 			return -9;
 
 		switch (ip->opc) {		// exec
-			error_opc: error(vm->s, 0, "invalid opcode: op[%.*A]", (char*)ip - (char*)(vm->_mem), ip); return -2;
-			error_ovf: error(vm->s, 0, "stack overflow: op[%.*A] / %d", (char*)ip - (char*)(vm->_mem), ip, (vm->_end - pu->sp) / 4); return -2;
-			error_mem: error(vm->s, 0, "segmentation fault: op[%.*A]", (char*)ip - (char*)(vm->_mem), ip); return -2;
-			error_div: error(vm->s, 0, "division by zero: op[%.*A]", (char*)ip - (char*)(vm->_mem), ip); return -3;
+
+			stop_vm:
+				//~ if (dbg) dbg(vm->s, 0, NULL, (long*)sp, st - sp);
+				return 0;
+
+			error_opc:
+				error(vm->s, 0, "invalid opcode: op[%.*A]", (char*)ip - (char*)(vm->_mem), ip);
+				return -1;
+
+			error_ovf:
+				error(vm->s, 0, "stack overflow: op[%.*A] / %d", (char*)ip - (char*)(vm->_mem), ip, (vm->_end - pu->sp) / 4);
+				return -2;
+
+			error_mem:
+				error(vm->s, 0, "segmentation fault: op[%.*A]", (char*)ip - (char*)(vm->_mem), ip);
+				return -3;
+
+			error_div:
+				error(vm->s, 0, "division by zero: op[%.*A]", (char*)ip - (char*)(vm->_mem), ip);
+				return -4;
+
 			#define NEXT(__IP, __CHK, __SP) {pu->sp -= 4*(__SP); pu->ip += (__IP);}
 			#define STOP(__ERR, __CHK) if (__CHK) goto __ERR
 			#define EXEC
-			//~ #define FLGS
 			#include "incl/vm.h"
 		}
 	}
 
-	if (dbg)
-		dbg(vm->s, 0, NULL, (long*)pu->sp, (vm->_end - pu->sp) / 4);
 	return 0;
 }
 
@@ -1255,6 +993,14 @@ void fputasm(FILE *fout, vmEnv s, int mark, int end, int mode) {
 	//~ int ss = 0;
 	if (end == -1)
 		end = s->cs - mark;
+
+	switch (mode & 0x30) {
+		case 0x00: rel = -1; break;
+		case 0x10: rel = 0; break;
+		case 0x20: rel = mark; break;
+		case 0x30: rel = beg - s->_mem; break;
+	}
+
 	for (i = 0; i < end; i += is) {
 		bcde ip = (bcde)(beg + i);
 
@@ -1272,8 +1018,8 @@ void fputasm(FILE *fout, vmEnv s, int mark, int end, int mode) {
 		//~ if (mode & 0x20)		// TODO: remove stack size
 			//~ fputfmt(fout, "ss(%03d): ", ss);
 
-		//~ fputopc(fout, (void*)ip, mode & 0xf, rel >= 0 ? (rel + i) : -1);
-		fputopc(fout, (void*)ip, mode & 0xf, rel ? (beg - s->_mem) : -1);
+		fputopc(fout, (void*)ip, mode & 0xf, rel >= 0 ? (rel + i) : -1);
+		//~ fputopc(fout, (void*)ip, mode & 0xf, rel ? (beg - s->_mem) : -1);
 
 		fputc('\n', fout);
 	}
@@ -1286,8 +1032,7 @@ void vm_fputval(state s, FILE *fout, symn var, stkval* ref, int flgs) {
 		//~ typ = typ->type;
 
 	if (typ) switch (typ->kind) {
-		/*
-		case TYPE_enu:
+		/*case TYPE_enu:
 			typ = typ->type;
 			// fall
 		case TYPE_def:
@@ -1406,14 +1151,14 @@ void vm_fputval(state s, FILE *fout, symn var, stkval* ref, int flgs) {
 	}
 }
 
-void vmTags(state s, char *sptr, int slen, int flags) {
+/*void vmTags(state s, char *sptr, int slen, int flags) {
 	symn ptr;
 	FILE *fout = s->logf;
 	for (ptr = s->defs; ptr; ptr = ptr->next) {
 		if (ptr->kind == TYPE_ref && ptr->offs < 0) {
 			int spos = slen + ptr->offs;
-			stkval* sp = (stkval*)(sptr + 4 * spos);
-			symn typ = ptr->type;
+			stkval* sp = (stkval*)(sptr + spos);
+			//~ symn typ = ptr->type;
 			if (spos < 0 && flags & 1)
 				continue;
 			if (ptr->file && ptr->line)
@@ -1424,19 +1169,14 @@ void vmTags(state s, char *sptr, int slen, int flags) {
 					return;
 				fputs(": Invalid", fout);
 			}
-			else switch(typ ? typ->kind : 0) {
-				//~ case TYPE_enu:
-					//~ vm_fputval(s, fout, ptr, sp, 0x020000);
-					//~ break;
-				default:
-					fputs(": ", fout);
-					vm_fputval(s, fout, ptr, sp, 0x020000);
-					break;
+			else {
+				fputs(": ", fout);
+				vm_fputval(s, fout, ptr, sp, 0x020000);
 			}
 			fputc('\n', fout);
 		}
 	}
-}
+}// */
 void vmInfo(FILE* out, vmEnv vm) {
 	int i;
 	fprintf(out, "stack minimum size: %d\n", vm->sm);

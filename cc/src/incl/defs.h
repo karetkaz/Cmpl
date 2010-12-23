@@ -2,9 +2,9 @@
 //~ #define TOKDEF(NAME, TYPE, SIZE, KEYW, STR) {KIND, TYPE, SIZE, STR},
 TOKDEF(TYPE_any, 0x00, 0, ".err")	// error
 TOKDEF(TYPE_vid, 0x00, 0, ".vid")	// void
-TOKDEF(TYPE_bit, 0x00, 0, ".bit")	// bool, uns32, uns16, uns8
+TOKDEF(TYPE_bit, 0x00, 0, ".bit")	// bool, uint32, uint16, uint8
 TOKDEF(TYPE_int, 0x00, 0, ".int")	// int64, int32, int16, int8
-TOKDEF(TYPE_flt, 0x00, 0, ".flt")	// flt64, flt32
+TOKDEF(TYPE_flt, 0x00, 0, ".flt")	// float64, float32
 TOKDEF(TYPE_str, 0x00, 0, ".str")	// TODO: replace with TYPE_str or TYPE_arr ?
 TOKDEF(TYPE_arr, 0x00, 0, ".arr")	// pointer, string, array, ..., ???
 TOKDEF(TYPE_enu, 0xff, 0, "enum")	// const usually

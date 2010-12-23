@@ -12,8 +12,8 @@ const tok_inf tok_tbl[255] = {
 };
 const opc_inf opc_tbl[255] = {
 	//#define OPCDEF(Name, Code, Size, Args, Push, Time, Mnem)
-	#define OPCDEF(Name, Code, Size, Chck, Diff, Time, Mnem)\
-		{Code, Size, Chck, Diff, Mnem},
+	#define OPCDEF(NAME, CODE, SIZE, CHCK, DIFF, TIME, MNEM)\
+		{CODE, SIZE, CHCK, DIFF, MNEM},
 	#include "incl/defs.h"
 	{0},
 };
@@ -30,11 +30,17 @@ const opc_inf opc_tbl[255] = {
 #define dbg_arg(__AST) debug("cgen[%t->%t](arg, %+k)\n%3K", get, ret, __AST, __AST)
 #define dbg_rhs(__AST) debug("cgen[%t->%t](rhs, %+k)\n%3K", get, ret, (__AST)->op.rhso, __AST)
 #define dbg_lhs(__AST) debug("cgen[%t->%t](rhs, %+k)\n%3K", get, ret, (__AST)->op.lhso, __AST)
+//~ #define dbgstmt(__AST) debug("cgen[%t->%t](err, %+k)\n%7K", get, ret, __AST, __AST)
 #else
 #define dbg_ast(__AST) debug("cgen[%t->%t](err, %+k)", get, ret, __AST, __AST)
 #define dbg_arg(__AST) debug("cgen[%t->%t](arg, %+k)", get, ret, __AST, __AST)
 #define dbg_rhs(__AST) debug("cgen[%t->%t](rhs, %+k)", get, ret, (__AST)->op.rhso, __AST)
 #define dbg_lhs(__AST) debug("cgen[%t->%t](rhs, %+k)", get, ret, (__AST)->op.lhso, __AST)
+//~ #else
+//~ #define dbg_ast(__AST) 
+//~ #define dbg_arg(__AST) 
+//~ #define dbg_rhs(__AST) 
+//~ #define dbg_lhs(__AST) 
 #endif
 #define internalerror error(s, ast->line, "internal error : %+k", ast)
 
@@ -53,7 +59,7 @@ static inline int genVal(state s, astn ast) {
 		return 0;
 	}
 
-	cast = ast->cst2;
+	cast = ast->csts;
 
 	if (s->vm->opti && eval(&tmp, ast)) {
 		ast = &tmp;
@@ -63,25 +69,17 @@ static inline int genVal(state s, astn ast) {
 }
 int cgen(state s, astn ast, int get) {
 	#if DEBUGGING
-	int ipdbg = emit(s->vm, markIP);
+	int ipdbg = emitopc(s->vm, markIP);
 	#endif
 	struct astn tmp;
 	int ret = 0;
 
-	if (!ast) {
-		//~ if (get == TYPE_vid)
-			//~ return TYPE_vid;
-		fatal("FixMe");
-		return 0;
-	}
+	dieif(!ast || !ast->type, "FixMe", ast);
 
-	dieif(!ast->type, "FixMe %d: %t: %+k", ast->line, ast->kind, ast);
+	if (get == TYPE_any)
+		get = ast->csts;
 
-	if (get == 0)
-		get = ast->cst2;
-
-	ret = ast->type->cast;
-	if (ret == 0)
+	if (!(ret = ast->type->cast))
 		ret = ast->type->kind;
 
 	//~ debug("%+k", ast);
@@ -94,7 +92,7 @@ int cgen(state s, astn ast, int get) {
 		//{ STMT
 		case STMT_do: {	// expr statement or decl
 			int stpos = stkoffs(s->vm, 0);
-			emit(s->vm, opc_line, ast->line);
+			emitint(s->vm, opc_line, ast->line);
 			if (!cgen(s, ast->stmt.stmt, TYPE_vid)) {
 				//~ fputasm(stderr, s->vm, ipdbg, 0x119);
 				dbg_ast(ast->stmt.stmt);
@@ -109,6 +107,10 @@ int cgen(state s, astn ast, int get) {
 				fputasm(stdout, s->vm, ipdbg, -1, 0x119);
 				#endif
 			}
+			#if DEBUGGING == 15
+			//~ fputfmt(stdout, "%+k", ast->stmt.stmt);
+			//~ debug("%+k", ast->stmt.stmt); fputasm(stdout, s->vm, ipdbg, -1, 0x119);
+			#endif
 		} return TYPE_vid;
 		case STMT_beg: {	// {}
 			astn ptr;
@@ -137,11 +139,11 @@ int cgen(state s, astn ast, int get) {
 			dieif(get != TYPE_vid, "FixMe");
 			emitint(s->vm, opc_line, ast->line);
 
-			if (ast->cst2 == QUAL_sta && (ast->stmt.step || !tt)) {
+			if (ast->csts == QUAL_sta && (ast->stmt.step || !tt)) {
 				error(s, ast->line, "invalid static if construct: %s", !tt ? "can not evaluate" : "else part is invalid");
 				return 0;
 			}
-			if (tt && (s->vm->opti || ast->cst2 == QUAL_sta)) {
+			if (tt && (s->vm->opti || ast->csts == QUAL_sta)) {
 				astn gen = constbol(&tmp) ? ast->stmt.stmt : ast->stmt.step;
 				//~ debug("bool(%+k) = %k = %d", ast->stmt.test, &tmp, constbol(&tmp));
 				if (gen && !cgen(s, gen, TYPE_any)) {	// leave the stack
@@ -154,7 +156,7 @@ int cgen(state s, astn ast, int get) {
 					debug("%+k", ast);
 					return 0;
 				}
-				if (!(jmpt = emit(s->vm, opc_jz))) {
+				if (!(jmpt = emitopc(s->vm, opc_jz))) {
 					debug("%+k", ast);
 					internalerror;
 					return 0;
@@ -163,17 +165,17 @@ int cgen(state s, astn ast, int get) {
 					debug("%+k", ast);
 					return 0;
 				}
-				if (!(jmpf = emit(s->vm, opc_jmp))) {
+				if (!(jmpf = emitopc(s->vm, opc_jmp))) {
 					debug("%+k", ast);
 					internalerror;
 					return 0;
 				}
-				fixjump(s->vm, jmpt, emit(s->vm, markIP), 0);
+				fixjump(s->vm, jmpt, emitopc(s->vm, markIP), 0);
 				if (!cgen(s, ast->stmt.step, TYPE_vid)) {
 					debug("%+k", ast);
 					return 0;
 				}
-				fixjump(s->vm, jmpf, emit(s->vm, markIP), 0);
+				fixjump(s->vm, jmpf, emitopc(s->vm, markIP), 0);
 			}
 			else if (ast->stmt.stmt) {					// if then
 				if (!cgen(s, ast->stmt.test, TYPE_bit)) {
@@ -181,7 +183,7 @@ int cgen(state s, astn ast, int get) {
 					return 0;
 				}
 				//~ if false skip THEN block
-				if (!(jmpt = emit(s->vm, opc_jz))) {
+				if (!(jmpt = emitopc(s->vm, opc_jz))) {
 					debug("%+k", ast);
 					internalerror;
 					return 0;
@@ -190,7 +192,7 @@ int cgen(state s, astn ast, int get) {
 					debug("%+k", ast);
 					return 0;
 				}
-				fixjump(s->vm, jmpt, emit(s->vm, markIP), 0);
+				fixjump(s->vm, jmpt, emitopc(s->vm, markIP), 0);
 			}
 			else if (ast->stmt.step) {					// if else
 				if (!cgen(s, ast->stmt.test, TYPE_bit)) {
@@ -198,7 +200,7 @@ int cgen(state s, astn ast, int get) {
 					return 0;
 				}
 				//~ if true skip ELSE block
-				if (!(jmpt = emit(s->vm, opc_jnz))) {
+				if (!(jmpt = emitopc(s->vm, opc_jnz))) {
 					debug("%+k", ast);
 					internalerror;
 					return 0;
@@ -207,7 +209,7 @@ int cgen(state s, astn ast, int get) {
 					debug("%+k", ast);
 					return 0;
 				}
-				fixjump(s->vm, jmpt, emit(s->vm, markIP), 0);
+				fixjump(s->vm, jmpt, emitopc(s->vm, markIP), 0);
 			}
 		} return TYPE_vid;
 		case STMT_for: {
@@ -222,13 +224,13 @@ int cgen(state s, astn ast, int get) {
 
 			//~ if (ast->cast == QUAL_par) ;		// 'parallel for'
 			//~ else if (ast->cast == QUAL_sta) ;	// 'static for'
-			beg = emit(s->vm, markIP);
+			beg = emitopc(s->vm, markIP);
 			if (ast->stmt.step) {
 				int tmp = beg;
 				if (ast->stmt.init)
-					emit(s->vm, opc_jmp, 0);
+					emitint(s->vm, opc_jmp, 0);
 
-				if (!(beg = emit(s->vm, markIP))) {
+				if (!(beg = emitopc(s->vm, markIP))) {
 					fatal("FixMe");
 					return 0;
 				}
@@ -238,14 +240,14 @@ int cgen(state s, astn ast, int get) {
 				}
 
 				if (ast->stmt.init)
-					fixjump(s->vm, tmp, emit(s->vm, markIP), 0);
+					fixjump(s->vm, tmp, emitopc(s->vm, markIP), 0);
 			}
 			if (ast->stmt.test) {
 				if (!cgen(s, ast->stmt.test, TYPE_bit)) {
 					debug("%+k", ast);
 					return 0;
 				}
-				cmp = emit(s->vm, opc_jz, 0);		// if (!test) break;
+				cmp = emitint(s->vm, opc_jz, 0);		// if (!test) break;
 			}
 
 			// push(list_jmp, 0);
@@ -253,13 +255,13 @@ int cgen(state s, astn ast, int get) {
 				debug("%+k", ast);
 				return 0;
 			}
-			if (!(end = emit(s->vm, opc_jmp, beg))) {		// continue;
+			if (!(end = emitint(s->vm, opc_jmp, beg))) {		// continue;
 				debug("%+k", ast);
 				internalerror;
 				return 0;
 			}
 			fixjump(s->vm, end, beg, 0);
-			end = emit(s->vm, markIP);
+			end = emitopc(s->vm, markIP);
 			fixjump(s->vm, cmp, end, 0);			// break;
 
 			//~ while (list_jmp) {
@@ -273,8 +275,9 @@ int cgen(state s, astn ast, int get) {
 
 
 			//! TODO: if (init is decl) destruct;
-			if (stpos != stkoffs(s->vm, 0))
+			if (stpos != stkoffs(s->vm, 0)) {
 				dieif(!emitidx(s->vm, opc_drop, stpos), "FixMe");
+			}
 		} return TYPE_vid;
 		//}
 		//{ OPER
@@ -284,12 +287,12 @@ int cgen(state s, astn ast, int get) {
 			astn argv = ast->op.rhso;
 			symn var = linkOf(ast->op.lhso, 1);	// not refs only
 
-			dieif(!var && ast->op.lhso, "FixMe", ast);
+			dieif(!var && ast->op.lhso, "FixMe[%+k]", ast);
 			//~ dieif(!var || !var->call, "FixMe[%+k]", ast);
 
 			if (var && var->kind == TYPE_def) {
 				int stkret = stkoffs(s->vm, sizeOf(ast->type));
-				int mark1 = emit(s->vm, markIP);
+				int mark1 = emitopc(s->vm, markIP);
 				symn as = var->args;
 				if (argv) {
 					astn an = NULL;
@@ -340,14 +343,14 @@ int cgen(state s, astn ast, int get) {
 				}
 
 				if (stkret != stkoffs(s->vm, 0)) {
-					mark1 = emit(s->vm, markIP);
+					mark1 = emitopc(s->vm, markIP);
 					//~ debug("stack(%d)%d", -stkoffs(s->vm, 0), -stkret);
 					if (!emitidx(s->vm, opc_ldsp, stkret)) {	// get stack
 						dbg_ast(ast);
 						internalerror;
 						return 0;
 					}
-					if (get != TYPE_vid && !emit(s->vm, opc_sti, sizeOf(ast->type))) {
+					if (get != TYPE_vid && !emitint(s->vm, opc_sti, sizeOf(ast->type))) {
 						error(s, ast->line, "store indirect: %T:%d of `%+k`", ast->type, sizeOf(ast->type), ast);
 						//~ internalerror;
 						dbg_ast(ast);
@@ -438,13 +441,13 @@ int cgen(state s, astn ast, int get) {
 				if (constint(&tmp) >= ast->op.lhso->type->size) {
 					error(s, ast->line, " index out of bounds: %+k", ast);
 				}
-				if (!emit(s->vm, opc_inc, offs)) {
-					if (!emit(s->vm, opc_ldc4, offs)) {
+				if (!emitint(s->vm, opc_inc, offs)) {
+					if (!emitint(s->vm, opc_ldc4, offs)) {
 						dbg_ast(ast);
 						internalerror;
 						return 0;
 					}
-					if (!emit(s->vm, i32_add)) {
+					if (!emitopc(s->vm, i32_add)) {
 						dbg_ast(ast);
 						internalerror;
 						return 0;
@@ -456,12 +459,12 @@ int cgen(state s, astn ast, int get) {
 					dbg_rhs(ast);
 					return 0;
 				}
-				if (!emit(s->vm, opc_ldc4, sizeOf(ast->type))) {
+				if (!emitint(s->vm, opc_ldc4, sizeOf(ast->type))) {
 					dbg_ast(ast);
 					internalerror;
 					return 0;
 				}
-				if (!emit(s->vm, u32_mad)) {
+				if (!emitopc(s->vm, u32_mad)) {
 					dbg_ast(ast);
 					internalerror;
 					return 0;
@@ -471,7 +474,7 @@ int cgen(state s, astn ast, int get) {
 			if (get == TYPE_ref)
 				return TYPE_ref;
 
-			if (!emit(s->vm, opc_ldi, sizeOf(ast->type))) {
+			if (!emitint(s->vm, opc_ldi, sizeOf(ast->type))) {
 				dbg_ast(ast);
 				internalerror;
 				return 0;
@@ -504,13 +507,13 @@ int cgen(state s, astn ast, int get) {
 				return 0;
 			}
 
-			if (!emit(s->vm, opc_inc, var->offs)) {
-				if (!emit(s->vm, opc_ldc4, var->offs)) {
+			if (!emitint(s->vm, opc_inc, var->offs)) {
+				if (!emitint(s->vm, opc_ldc4, var->offs)) {
 					dbg_ast(ast);
 					internalerror;
 					return 0;
 				}
-				if (!emit(s->vm, i32_add)) {
+				if (!emitopc(s->vm, i32_add)) {
 					dbg_ast(ast);
 					internalerror;
 					return 0;
@@ -520,7 +523,7 @@ int cgen(state s, astn ast, int get) {
 			if (get == TYPE_ref)
 				return TYPE_ref;
 
-			if (!emit(s->vm, opc_ldi, sizeOf(ast->type))) {
+			if (!emitint(s->vm, opc_ldi, sizeOf(ast->type))) {
 				dbg_ast(ast);
 				internalerror;
 				return 0;
@@ -543,7 +546,7 @@ int cgen(state s, astn ast, int get) {
 				dbg_rhs(ast);
 				return 0;
 			}
-			if (!emit(s->vm, opc, ast->op.rhso->cst2)) {
+			if (!emitint(s->vm, opc, ast->op.rhso->csts)) {
 				internalerror;
 				dbg_ast(ast);
 				return 0;
@@ -598,7 +601,7 @@ int cgen(state s, astn ast, int get) {
 				dbg_rhs(ast);
 				return 0;
 			}
-			if (!emit(s->vm, opc, ast->op.rhso->cst2)) {
+			if (!emitint(s->vm, opc, ast->op.rhso->csts)) {
 				dbg_ast(ast);
 				internalerror;
 				return 0;
@@ -606,7 +609,7 @@ int cgen(state s, astn ast, int get) {
 
 			#if DEBUGGING
 			// these must be true
-			dieif(ast->op.lhso->cst2 != ast->op.rhso->cst2, "RemMe", ast);
+			dieif(ast->op.lhso->csts != ast->op.rhso->csts, "RemMe", ast);
 			dieif(ret != castOf(ast->type), "RemMe");
 			switch (ast->kind) {
 				case OPER_neq:
@@ -625,19 +628,22 @@ int cgen(state s, astn ast, int get) {
 		//~ case OPER_lor:		// '||'
 		case OPER_sel: {		// '?:'
 			int jmpt, jmpf;
-			if (s->vm->opti && eval(&tmp, ast->op.test)) {
+			if (0 && s->vm->opti && eval(&tmp, ast->op.test)) {
 				if (!cgen(s, constbol(&tmp) ? ast->op.lhso : ast->op.rhso, 0)) {
 					dbg_ast(ast);
 					return 0;
 				}
 			}
 			else {
+				int bppos = stkoffs(s->vm, 0);
 				int stpos = stkoffs(s->vm, +sizeOf(ast->type));
+
 				if (!cgen(s, ast->op.test, TYPE_bit)) {
 					dbg_ast(ast);
 					return 0;
 				}
-				if (!(jmpt = emit(s->vm, opc_jz))) {
+
+				if (!(jmpt = emitopc(s->vm, opc_jz))) {
 					dbg_ast(ast);
 					internalerror;
 					return 0;
@@ -647,18 +653,21 @@ int cgen(state s, astn ast, int get) {
 					dbg_ast(ast);
 					return 0;
 				}
-				if (!(jmpf = emit(s->vm, opc_jmp))) {
+
+				if (!(jmpf = emitopc(s->vm, opc_jmp))) {
 					dbg_ast(ast);
 					internalerror;
 					return 0;
 				}
 
-				fixjump(s->vm, jmpt, emit(s->vm, markIP), stpos);
+				fixjump(s->vm, jmpt, emitopc(s->vm, markIP), bppos);
+
 				if (!cgen(s, ast->op.rhso, 0)) {
 					dbg_ast(ast);
 					return 0;
 				}
-				fixjump(s->vm, jmpf, emit(s->vm, markIP), stpos);
+
+				fixjump(s->vm, jmpf, emitopc(s->vm, markIP), stpos);
 			}
 		} break;
 
@@ -677,7 +686,7 @@ int cgen(state s, astn ast, int get) {
 					internalerror;
 					return 0;
 				}
-				if (!emit(s->vm, opc_ldi, sizeOf(ast->type))) {
+				if (!emitint(s->vm, opc_ldi, sizeOf(ast->type))) {
 					dbg_ast(ast);
 					internalerror;
 					return 0;
@@ -690,7 +699,7 @@ int cgen(state s, astn ast, int get) {
 				dbg_lhs(ast);
 				return 0;
 			}
-			if (!emit(s->vm, opc_sti, sizeOf(ast->type))) {
+			if (!emitint(s->vm, opc_sti, sizeOf(ast->type))) {
 				dbg_ast(ast);
 				internalerror;
 				return 0;
@@ -742,13 +751,13 @@ int cgen(state s, astn ast, int get) {
 					//~ dieif(var->cast == TYPE_ref && (typ->cast != TYPE_ref || typ->cast != TYPE_ref), "FixMe");
 					//~ dieif(typ->cast == TYPE_ref && (var->cast != TYPE_ref || var->cast != TYPE_def), "FixMe %k", ast);
 					//~ if (var->load && !emit(s->vm, opc_ldi4)) {
-					if ((var->cast == TYPE_ref) && !emit(s->vm, opc_ldi4)) {
+					if ((var->cast == TYPE_ref) && !emitopc(s->vm, opc_ldi4)) {
 						dbg_ast(ast);
 						return 0;
 					}
 					if (get != TYPE_ref) {
-						// TODO: (Sign-Zero) extend
-						if (!emit(s->vm, opc_ldi, sizeOf(ast->type))) {
+						// TODO: (Sign / Zero) extend
+						if (!emitint(s->vm, opc_ldi, sizeOf(ast->type))) {
 							dbg_ast(ast);
 							return 0;
 						}
@@ -785,6 +794,22 @@ int cgen(state s, astn ast, int get) {
 				if (var->call)		// TODO: this should be in an other pass or not
 					return var->offs ? TYPE_vid : 0;
 
+				if (var->offs) {
+					struct astn id, op;
+					op.kind = ASGN_set;
+					op.csts = TYPE_vid;
+					op.type = var->type;
+					op.op.lhso = &id;
+					op.op.rhso = var->init;
+
+					id.kind = TYPE_ref;
+					id.csts = TYPE_ref;		// wee need a reference here
+					id.type = var->type;
+					id.id.link = var;
+
+					return cgen(s, &op, 0);
+				}
+
 				if (typ->cast == TYPE_ref) {
 					var->cast = TYPE_ref;
 					//~ var->load = 1;
@@ -792,7 +817,6 @@ int cgen(state s, astn ast, int get) {
 
 				if (var->init) {
 					astn val = var->init;
-					//~ int spos = 0;
 
 					if (val->type == emit_opc) {
 						ret = get;
@@ -821,7 +845,8 @@ int cgen(state s, astn ast, int get) {
 						return 0;
 					}
 
-					var->offs = stkoffs(s->vm, 0);
+					if (var->offs == 0)
+						var->offs = stkoffs(s->vm, 0);
 
 					if (!var->offs) {
 						error(s, ast->line, "invalid variable offset: ");
@@ -829,10 +854,9 @@ int cgen(state s, astn ast, int get) {
 					}
 
 					if (stktop != var->offs && val->type != emit_opc) {
-						//~ error(s, ast->line, "invalid initializer size: %d <> %d", 4 * (stktop - var->offs), sizeOf(typ));
 						error(s, ast->line, "invalid initializer size: %d <> got(%d): %+k", -stktop, -var->offs, val);
 
-						//~ warn(s, 1, s->cc->file, ast->line, "invalid initializer size: %d <> %d", 4 * (stktop - var->offs), sizeOf(typ));
+						//~ warn(s, 1, s->cc->file, ast->line, "invalid initializer size: %d <> %d", (stktop - var->offs), sizeOf(typ));
 						return 0;
 					}
 				}
@@ -843,8 +867,8 @@ int cgen(state s, astn ast, int get) {
 						return 0;
 					}
 					var->offs = stkoffs(s->vm, 0);
-					if (-4 * var->offs < size) {
-						error(s, ast->line, "stack underflow", -4 * var->offs, size);
+					if (-var->offs < size) {
+						error(s, ast->line, "stack underflow", -var->offs, size);
 						#if DEBUGGING
 						fputasm(stderr, s->vm, ipdbg, -1, 0x10);
 						#endif
@@ -873,55 +897,55 @@ int cgen(state s, astn ast, int get) {
 		case TYPE_u32: switch (ret) {
 			case TYPE_bit:
 			case TYPE_i32: break;
-			case TYPE_i64: if (!emit(s->vm, i64_i32)) return 0; break;
-			//~ case TYPE_f32: if (!emit(s->vm, f32_i32)) return 0; break;
-			//~ case TYPE_f64: if (!emit(s->vm, f64_i32)) return 0; break;
+			case TYPE_i64: if (!emitopc(s->vm, i64_i32)) return 0; break;
+			//~ case TYPE_f32: if (!emitopc(s->vm, f32_i32)) return 0; break;
+			//~ case TYPE_f64: if (!emitopc(s->vm, f64_i32)) return 0; break;
 			default: goto errorcast2;
 		} break;// */
 		case TYPE_i32: switch (ret) {
 			case TYPE_bit:
 			//~ case TYPE_any:
 			case TYPE_u32: break;
-			case TYPE_i64: if (!emit(s->vm, i64_i32)) return 0; break;
-			case TYPE_f32: if (!emit(s->vm, f32_i32)) return 0; break;
-			case TYPE_f64: if (!emit(s->vm, f64_i32)) return 0; break;
-			//~ case TYPE_ref: if (!emit(s->vm, opc_ldi, 4)) return 0; break;
+			case TYPE_i64: if (!emitopc(s->vm, i64_i32)) return 0; break;
+			case TYPE_f32: if (!emitopc(s->vm, f32_i32)) return 0; break;
+			case TYPE_f64: if (!emitopc(s->vm, f64_i32)) return 0; break;
+			//~ case TYPE_ref: if (!emitopc(s->vm, opc_ldi, 4)) return 0; break;
 			default: goto errorcast2;
 		} break;
 		case TYPE_i64: switch (ret) {
 			case TYPE_bit:
 			//~ case TYPE_u32:	// TODO: zero extend, but how ?
-			case TYPE_u32: if (!emit(s->vm, u32_i64)) return 0; break;
-			case TYPE_i32: if (!emit(s->vm, i32_i64)) return 0; break;
-			case TYPE_f32: if (!emit(s->vm, f32_i64)) return 0; break;
-			case TYPE_f64: if (!emit(s->vm, f64_i64)) return 0; break;
-			//~ case TYPE_ref: if (!emit(s->vm, opc_ldi, 8)) return 0; break;
+			case TYPE_u32: if (!emitopc(s->vm, u32_i64)) return 0; break;
+			case TYPE_i32: if (!emitopc(s->vm, i32_i64)) return 0; break;
+			case TYPE_f32: if (!emitopc(s->vm, f32_i64)) return 0; break;
+			case TYPE_f64: if (!emitopc(s->vm, f64_i64)) return 0; break;
+			//~ case TYPE_ref: if (!emitopc(s->vm, opc_ldi, 8)) return 0; break;
 			default: goto errorcast2;
 		} break;
 		case TYPE_f32: switch (ret) {
 			case TYPE_bit:
 			//~ case TYPE_u32:
-			case TYPE_i32: if (!emit(s->vm, i32_f32)) return 0; break;
-			case TYPE_i64: if (!emit(s->vm, i64_f32)) return 0; break;
-			case TYPE_f64: if (!emit(s->vm, f64_f32)) return 0; break;
-			//~ case TYPE_ref: if (!emit(s->vm, opc_ldi, 4)) return 0; break;
+			case TYPE_i32: if (!emitopc(s->vm, i32_f32)) return 0; break;
+			case TYPE_i64: if (!emitopc(s->vm, i64_f32)) return 0; break;
+			case TYPE_f64: if (!emitopc(s->vm, f64_f32)) return 0; break;
+			//~ case TYPE_ref: if (!emitopc(s->vm, opc_ldi, 4)) return 0; break;
 			default: goto errorcast2;
 		} break;
 		case TYPE_f64: switch (ret) {
 			case TYPE_bit:
 			//~ case TYPE_u32:
-			case TYPE_i32: if (!emit(s->vm, i32_f64)) return 0; break;
-			case TYPE_i64: if (!emit(s->vm, i64_f64)) return 0; break;
-			case TYPE_f32: if (!emit(s->vm, f32_f64)) return 0; break;
-			//~ case TYPE_ref: if (!emit(s->vm, opc_ldi, 8)) return 0; break;
+			case TYPE_i32: if (!emitopc(s->vm, i32_f64)) return 0; break;
+			case TYPE_i64: if (!emitopc(s->vm, i64_f64)) return 0; break;
+			case TYPE_f32: if (!emitopc(s->vm, f32_f64)) return 0; break;
+			//~ case TYPE_ref: if (!emitopc(s->vm, opc_ldi, 8)) return 0; break;
 			default: goto errorcast2;
 		} break;
 		case TYPE_bit: switch (ret) {		// to boolean
-			case TYPE_u32: /*emit(s, i32_bol);*/ break;
-			case TYPE_i32: /*emit(s, i32_bol);*/ break;
-			case TYPE_i64: if (!emit(s->vm, i64_bol)) return 0; break;
-			case TYPE_f32: if (!emit(s->vm, f32_bol)) return 0; break;
-			case TYPE_f64: if (!emit(s->vm, f64_bol)) return 0; break;
+			case TYPE_u32: /*emitopc(s, i32_bol);*/ break;
+			case TYPE_i32: /*emitopc(s, i32_bol);*/ break;
+			case TYPE_i64: if (!emitopc(s->vm, i64_bol)) return 0; break;
+			case TYPE_f32: if (!emitopc(s->vm, f32_bol)) return 0; break;
+			case TYPE_f64: if (!emitopc(s->vm, f64_bol)) return 0; break;
 			default: goto errorcast2;
 		} break;
 		case TYPE_ref:
@@ -952,7 +976,11 @@ int logfile(state s, char* file) {
 	return 0;
 }
 
-//~ TODO: this is parse only
+void ccSource(ccEnv cc, char *file, int line) {
+	cc->file = file;
+	cc->line = line;
+}
+
 int gencode(state s, int level) {
 	ccEnv cc = s->cc;
 	vmEnv vm = s->vm;
@@ -975,12 +1003,35 @@ int gencode(state s, int level) {
 	//~ DONE: Data[RO]: meta, strings.
 	//~ TODO: Data[RO]: constants, enums.	//~ if (s->defs) dgen(s->defs);
 
-	vm->pc = seg;
+	s->defs = leave(s->cc, NULL);
+
+	if (0 && s->defs) {
+		symn glob = s->defs;
+		for (; glob; glob = glob->next) {
+
+			if (glob->kind != TYPE_ref)
+				continue;
+
+			//~ if (glob->type->kind != TYPE_arr)
+				//~ continue;
+
+			glob->offs = seg;
+			seg += sizeOf(glob->type);
+
+			debug("global variable: %+T", glob);
+		}
+	}
+	vm->ds = seg;
+
 	vm->cs = seg;
 	//~ DONE: CODE[RO]: meta, strings.
 
-	if (cc->root)
-		cgen(s, cc->root, 0);			// TODO: TYPE_vid: to clear the stack
+	if (cc->root) {
+		vm->pc = vm->seg = seg;
+		// TODO: TYPE_vid: to clear the stack
+		if (!cgen(s, cc->root, 0))
+			fputasm(stderr, vm, seg, -1, 0x10);
+	}
 	emitint(s->vm, opc_libc, 0);		// TODO: Halt only in case of scripts
 
 	vm->pc = seg;
@@ -997,6 +1048,7 @@ int gencode(state s, int level) {
 symn emit_opc = NULL;
 static void install_emit(ccEnv cc) {
 	symn typ;
+	symn type_v4f = NULL;
 
 	emit_opc = install(cc, "emit", EMIT_opc | symn_read, 0, 0);
 	//~ emit_opc->type = 0;
@@ -1005,27 +1057,36 @@ static void install_emit(ccEnv cc) {
 	if (!emit_opc)
 		return;
 
-	enter(cc, NULL);
+	enter(cc, emit_opc);
 
 	installex(cc, "nop", EMIT_opc, opc_nop, type_vid, NULL);
 	installex(cc, "not", EMIT_opc, opc_not, type_bol, NULL);
-	//~ installex(cc, "set", EMIT_opc, opc_set1, type_vid, intnode(cc, 1));
-	//~ installex(cc, "pop", EMIT_opc, opc_drop, type_vid, intnode(cc, 1));
-	installex(cc, "ldz", EMIT_opc, opc_ldz1, type_vid, NULL);
+	installex(cc, "set", EMIT_opc, opc_set1, type_vid, intnode(cc, 1));
+	installex(cc, "pop", EMIT_opc, opc_drop, type_vid, intnode(cc, 4));
 	installex(cc, "call", EMIT_opc, opc_call, type_vid, NULL);
 
-	if ((typ = install(cc, "dupp", TYPE_enu, TYPE_vid, 0))) {
-		enter(cc, typ);
-		installex(cc, "x1", EMIT_opc, opc_dup1, type_i32, intnode(cc, 0));
-		installex(cc, "x2", EMIT_opc, opc_dup2, type_i64, intnode(cc, 0));
-		//~ installex(cc, "x4", EMIT_opc, opc_dup4, type_vid, intnode(cc, 0));
-		typ->args = leave(cc, typ);
-	}
+	installex(cc, "set0", EMIT_opc, opc_set1, type_vid, intnode(cc, 0));
+	installex(cc, "set1", EMIT_opc, opc_set1, type_vid, intnode(cc, 1));
 
 	if ((typ = install(cc, "void", TYPE_rec, TYPE_vid, 0))) ;
 
 	if ((typ = install(cc, "val", TYPE_rec, TYPE_rec, -1))) ;
 	if ((typ = install(cc, "ref", TYPE_rec, TYPE_ref, 4))) ;
+
+	if ((typ = install(cc, "ldz", TYPE_enu, TYPE_vid, 0))) {
+		enter(cc, typ);
+		installex(cc, "x1", EMIT_opc, opc_ldz1, type_vid, intnode(cc, 0));
+		installex(cc, "x2", EMIT_opc, opc_ldz2, type_vid, intnode(cc, 0));
+		installex(cc, "x4", EMIT_opc, opc_ldz4, type_vid, intnode(cc, 0));
+		typ->args = leave(cc, typ);
+	}
+	if ((typ = install(cc, "dupp", TYPE_enu, TYPE_vid, 0))) {
+		enter(cc, typ);
+		installex(cc, "x1", EMIT_opc, opc_dup1, type_i32, intnode(cc, 0));
+		installex(cc, "x2", EMIT_opc, opc_dup2, type_i64, intnode(cc, 0));
+		installex(cc, "x4", EMIT_opc, opc_dup4, type_vid, intnode(cc, 0));
+		typ->args = leave(cc, typ);
+	}
 
 	if ((typ = install(cc, "u32", TYPE_rec, TYPE_u32, 4))) {
 		enter(cc, typ);
@@ -1112,6 +1173,7 @@ static void install_emit(ccEnv cc) {
 	}
 
 	if ((typ = install(cc, "v4f", TYPE_rec, 0, 16))) {
+		type_v4f = typ;
 		enter(cc, typ);
 		installex(cc, "neg", EMIT_opc, v4f_neg, type_v4f, NULL);
 		installex(cc, "add", EMIT_opc, v4f_add, type_v4f, NULL);
@@ -1139,7 +1201,7 @@ static void install_emit(ccEnv cc) {
 		typ->args = leave(cc, typ);
 	}
 
-	if (COMPILER_LEVEL & creg_swiz & 0xff) {
+	if ((COMPILER_LEVEL & creg_swiz) == creg_swiz) {
 		int i;
 		struct {
 			char *name;
@@ -1184,292 +1246,6 @@ static void install_emit(ccEnv cc) {
 	emit_opc->args = leave(cc, emit_opc);
 }
 
-/*
-static int b32btc(state s) {
-	uint32_t x = poparg(s, int32_t);
-	x -= ((x >> 1) & 0x55555555);
-	x = (((x >> 2) & 0x33333333) + (x & 0x33333333));
-	x = (((x >> 4) + x) & 0x0f0f0f0f);
-	x += (x >> 8) + (x >> 16);
-	setret(uint32_t, s, x & 0x3f);
-	return 0;
-}
-static int b32bsf(state s) {
-	uint32_t x = poparg(s, int32_t);
-	int ans = 0;
-	//~ if ((x & 0x00000000ffffffff) == 0) { ans += 32; x >>= 32; }
-	if ((x & 0x000000000000ffff) == 0) { ans += 16; x >>= 16; }
-	if ((x & 0x00000000000000ff) == 0) { ans +=  8; x >>=  8; }
-	if ((x & 0x000000000000000f) == 0) { ans +=  4; x >>=  4; }
-	if ((x & 0x0000000000000003) == 0) { ans +=  2; x >>=  2; }
-	if ((x & 0x0000000000000001) == 0) { ans +=  1; }
-	setret(uint32_t, s, x ? ans : -1);
-	return 0;
-}
-static int b32bsr(state s) {
-	uint32_t x = poparg(s, int32_t);
-	unsigned ans = 0;
-	//~ if ((x & 0xffffffff00000000) != 0) { ans += 32; x >>= 32; }
-	if ((x & 0x00000000ffff0000) != 0) { ans += 16; x >>= 16; }
-	if ((x & 0x000000000000ff00) != 0) { ans +=  8; x >>=  8; }
-	if ((x & 0x00000000000000f0) != 0) { ans +=  4; x >>=  4; }
-	if ((x & 0x000000000000000c) != 0) { ans +=  2; x >>=  2; }
-	if ((x & 0x0000000000000002) != 0) { ans +=  1; }
-	setret(uint32_t, s, x ? ans : -1);
-	return 0;
-}
-static int b32hib(state s) {
-	uint32_t x = poparg(s, uint32_t);
-	x |= x >> 1;
-	x |= x >> 2;
-	x |= x >> 4;
-	x |= x >> 8;
-	x |= x >> 16;
-	setret(uint32_t, s, x - (x >> 1));
-	return 0;
-}
-//~ static int b32lob(state s) := x & -x;
-static int b32swp(state s) {
-	uint32_t x = poparg(s, int32_t);
-	x = ((x >> 1) & 0x55555555) | ((x & 0x55555555) << 1);
-	x = ((x >> 2) & 0x33333333) | ((x & 0x33333333) << 2);
-	x = ((x >> 4) & 0x0F0F0F0F) | ((x & 0x0F0F0F0F) << 4);
-	x = ((x >> 8) & 0x00FF00FF) | ((x & 0x00FF00FF) << 8);
-	setret(uint32_t, s, (x >> 16) | (x << 16));
-	return 0;
-}
-/ * removed, and do the same with 32 bit functions
-static int b32zxt(state s) {
-	uint32_t val = poparg(s, int32_t);
-	int32_t ofs = poparg(s, int32_t);
-	int32_t cnt = poparg(s, int32_t);
-	val <<= 32 - (ofs + cnt);
-	setret(int32_t, s, val >> (32 - cnt));
-	return 0;
-}
-static int b32sxt(state s) {
-	int32_t val = poparg(s, int32_t);
-	int32_t ofs = poparg(s, int32_t);
-	int32_t cnt = poparg(s, int32_t);
-	val <<= 32 - (ofs + cnt);
-	setret(int32_t, s, val >> (32 - cnt));
-	return 0;
-}
-* /
-
-static int b64shl(state s) {
-	uint64_t x = poparg(s, int64_t);
-	int32_t y = poparg(s, int32_t);
-	setret(uint64_t, s, x << y);
-	return 0;
-}
-static int b64shr(state s) {
-	uint64_t x = poparg(s, int64_t);
-	int32_t y = poparg(s, int32_t);
-	setret(uint64_t, s, x >> y);
-	return 0;
-}
-static int b64sar(state s) {
-	int64_t x = poparg(s, int64_t);
-	int32_t y = poparg(s, int32_t);
-	setret(uint64_t, s, x >> y);
-	return 0;
-}
-static int b64and(state s) {
-	uint64_t x = poparg(s, uint64_t);
-	uint64_t y = poparg(s, uint64_t);
-	setret(uint64_t, s, x & y);
-	return 0;
-}
-static int b64ior(state s) {
-	uint64_t x = poparg(s, uint64_t);
-	uint64_t y = poparg(s, uint64_t);
-	setret(uint64_t, s, x | y);
-	return 0;
-}
-static int b64xor(state s) {
-	uint64_t x = poparg(s, uint64_t);
-	uint64_t y = poparg(s, uint64_t);
-	setret(uint64_t, s, x ^ y);
-	return 0;
-}
-
-static int b64bsf(state s) {
-	uint64_t x = poparg(s, int64_t);
-	int ans = -1;
-	if (x != 0) {
-		ans = 0;
-		if ((x & 0x00000000ffffffffULL) == 0) { ans += 32; x >>= 32; }
-		if ((x & 0x000000000000ffffULL) == 0) { ans += 16; x >>= 16; }
-		if ((x & 0x00000000000000ffULL) == 0) { ans +=  8; x >>=  8; }
-		if ((x & 0x000000000000000fULL) == 0) { ans +=  4; x >>=  4; }
-		if ((x & 0x0000000000000003ULL) == 0) { ans +=  2; x >>=  2; }
-		if ((x & 0x0000000000000001ULL) == 0) { ans +=  1; }
-	}
-	setret(int32_t, s, ans);
-	return 0;
-}
-static int b64bsr(state s) {
-	uint64_t x = poparg(s, int64_t);
-	int ans = -1;
-	if (x != 0) {
-		ans = 0;
-		if ((x & 0xffffffff00000000ULL) != 0) { ans += 32; x >>= 32; }
-		if ((x & 0x00000000ffff0000ULL) != 0) { ans += 16; x >>= 16; }
-		if ((x & 0x000000000000ff00ULL) != 0) { ans +=  8; x >>=  8; }
-		if ((x & 0x00000000000000f0ULL) != 0) { ans +=  4; x >>=  4; }
-		if ((x & 0x000000000000000cULL) != 0) { ans +=  2; x >>=  2; }
-		if ((x & 0x0000000000000002ULL) != 0) { ans +=  1; }
-	}
-	setret(int32_t, s, ans);
-	return 0;
-}
-static int b64hib(state s) {
-	uint64_t x = poparg(s, int64_t);
-	x |= x >> 1;
-	x |= x >> 2;
-	x |= x >> 4;
-	x |= x >> 8;
-	x |= x >> 16;
-	x |= x >> 32;
-	setret(uint64_t, s, x - (x >> 1));
-	return 0;
-}
-static int b64lob(state s) {
-	uint64_t x = poparg(s, int64_t);
-	setret(uint64_t, s, x & -x);
-	return 0;
-}
-
-static int b64zxt(state s) {
-	uint64_t val = poparg(s, int64_t);
-	int32_t ofs = poparg(s, int32_t);
-	int32_t cnt = poparg(s, int32_t);
-	val <<= 64 - (ofs + cnt);
-	setret(int64_t, s, val >> (64 - cnt));
-	return 0;
-}
-static int b64sxt(state s) {
-	int64_t val = poparg(s, int64_t);
-	int32_t ofs = poparg(s, int32_t);
-	int32_t cnt = poparg(s, int32_t);
-	val <<= 64 - (ofs + cnt);
-	setret(int64_t, s, val >> (64 - cnt));
-	return 0;
-}
-// */
-
-enum bits_funs {
-	bits_cmt,
-	bits_and,
-	bits_or,
-	bits_xor,
-};
-static int bits_call(state s) {
-	//~ uint32_t fun = poparg(s, uint32_t);
-	switch (poparg(s, uint32_t)) {
-		case bits_cmt: {
-			uint64_t x = poparg(s, int64_t);
-			setret(uint64_t, s, ~x);
-		} return 0;
-		case bits_and: {
-			uint64_t x = poparg(s, int64_t);
-			uint64_t y = poparg(s, int64_t);
-			setret(uint64_t, s, x & y);
-		} return 0;
-		case bits_or: {
-			uint64_t x = poparg(s, int64_t);
-			uint64_t y = poparg(s, int64_t);
-			setret(uint64_t, s, x | y);
-		} return 0;
-		case bits_xor: {
-			uint64_t x = poparg(s, int64_t);
-			uint64_t y = poparg(s, int64_t);
-			setret(uint64_t, s, x ^ y);
-		} return 0;
-	}
-	return -1;
-}
-static void bits_init(ccEnv cc) {
-	symn module = install(cc, "bits64", TYPE_enu, 0, 0);
-	if (module != NULL) {
-		enter(cc, module);
-		//~ installex(cc, "Snan", TYPE_def, 0, type_f64, fh8node(cc, 0xfff8000000000000LL));	// Snan
-		//~ installex(cc,  "nan", TYPE_def, 0, type_f64, fh8node(cc, 0x7FFFFFFFFFFFFFFFLL));	// Qnan
-		libcall(cc->s, bits_call, "int64 cmt(int64 x)", intnode(cc, bits_cmt));
-		libcall(cc->s, bits_call, "int64 and(int64 x, int64 y)", intnode(cc, bits_and));
-		libcall(cc->s, bits_call, "int64  or(int64 x, int64 y)", intnode(cc, bits_or));
-		libcall(cc->s, bits_call, "int64 xor(int64 x, int64 y)", intnode(cc, bits_xor));
-		module->args = leave(cc, module);
-	}
-}
-
-//static void install_rtti(ccEnv cc, unsigned level) ;		// req emit: libc(import, define, lookup, ...)
-/*static void install_bits(ccEnv cc, symn it, int64_t sgn) {
-	int size = it->size;
-	int bits = 8 * size;
-	int64_t mask = (-1LLU >> -bits);
-	int64_t minv = sgn << (bits - 1);
-	int64_t maxv = (minv - 1) & mask;
-	enter(cc, it);
-	installex(cc, "min",  TYPE_def, 0, type_i64, intnode(cc, minv));
-	installex(cc, "max",  TYPE_def, 0, type_i64, intnode(cc, maxv));
-	installex(cc, "mask", TYPE_def, 0, type_i64, intnode(cc, mask));
-	installex(cc, "bits", TYPE_def, 0, type_i64, intnode(cc, bits));
-	installex(cc, "size", TYPE_def, 0, type_i64, intnode(cc, size));
-	//~ installex(cc, "nop", EMIT_opc, opc_nop, type_vid, NULL);
-	it->args = leave(cc, it);
-}//~ */
-/*static void install_math(ccEnv cc) {
-	symn def = install(cc, "math", TYPE_enu, 0, 0);
-
-	if (def != NULL) {
-		enter(cc, def);
-		installex(cc, "Snan", TYPE_def, 0, type_f64, fh8node(cc, 0xfff8000000000000LL));	// Snan
-		installex(cc,  "nan", TYPE_def, 0, type_f64, fh8node(cc, 0x7FFFFFFFFFFFFFFFLL));	// Qnan
-		installex(cc,  "inf", TYPE_def, 0, type_f64, fh8node(cc, 0x7ff0000000000000LL));	// Infinity
-		installex(cc,  "l2e", TYPE_def, 0, type_f64, fh8node(cc, 0x3FF71547652B82FELL));	// log_2(e)
-		installex(cc,  "l2t", TYPE_def, 0, type_f64, fh8node(cc, 0x400A934F0979A371LL));	// log_2(10)
-		installex(cc,  "lg2", TYPE_def, 0, type_f64, fh8node(cc, 0x3FD34413509F79FFLL));	// log_10(2)
-		installex(cc,  "ln2", TYPE_def, 0, type_f64, fh8node(cc, 0x3FE62E42FEFA39EFLL));	// log_e(2)
-		installex(cc,   "pi", TYPE_def, 0, type_f64, fh8node(cc, 0x400921fb54442d18LL));	// 3.1415...
-		installex(cc,    "e", TYPE_def, 0, type_f64, fh8node(cc, 0x4005bf0a8b145769LL));	// 2.7182...
-		//~ if (def) def = install(cc, "Bigint", TYPE_rec, 0, 0);
-		//~ if (def) def = install(cc, "Int128", TYPE_rec, 0, 0);
-		//~ if (def) def = install(cc, "Int256", TYPE_rec, 0, 0);
-		//~ if (def) def = install(cc, "Complex", TYPE_enu, 0, 0);
-		/ *if (level >= 1) {
-			TODO: install(cc, "define isNan(flt64 x) = (x != x);", -1, 0, 0);
-			TODO: install(cc, "define isNan(flt32 x) = (x != x);", -1, 0, 0);
-			TODO: install(cc, "define ln(flt32 x) = flt32(l2e * lg2(x));");
-			TODO: install(cc, "define lg10(flt32 x) = flt32(l2t * lg2(x));");
-			TODO: install(cc, "define log(flt32 base, flt32 x) = flt32("");", -1, 0, 0);
-		} // * /
-		def->args = leave(cc, def);
-	}
-}// */
-/*static void install_Lang(ccEnv cc, unsigned level) {
-	if (install(cc, "Math", TYPE_enu, 0, 0)) {
-		installex(cc, "pi", TYPE_def, 0, type_f64, fh8node(cc, 0x400921fb54442d18LL));
-	}
-	if (install(cc, "Compiler", TYPE_enu, 0, 0)) {
-		install(cc, "version", VERS_get, 0, 0);	// type int
-		install(cc, "file", LINE_get, 0, 0);	// type string
-		install(cc, "line", FILE_get, 0, 0);	// type int
-		install(cc, "date", DATE_get, 0, 0);	// type ???
-		//~ install(cc, "emit", DATE_get, 0, 0);	// type ???
-	}
-	if (install(cc, "Runtime", TYPE_enu, 0, 0)) {
-		install(cc, "Env", TYPE_enu, 0, 0);	// map<String, String> Enviroment;
-		install(cc, "Args", TYPE_arr, 0, 0);// string Args[int];
-		install(cc, "assert(...)", TYPE_def, 0, 0);
-	}
-	if (install(cc, "Reflection", TYPE_enu, 0, 0)) {
-		install(cc, "symbol", TYPE_rec, 0, 0);
-		install(cc, "invoke(...)", TYPE_def, 0, 0);
-	}
-}// */
-
 state rtInit(void* mem, unsigned size) {
 	state s = mem;
 	s->_cnt = size - sizeof(struct state);
@@ -1488,26 +1264,26 @@ ccEnv ccInit(state s) {
 	if (cc == NULL)
 		return NULL;
 
-	s->cc = cc;
 	cc->s = s;
+	s->cc = cc;
 
-	s->errc = 0;
+	//~ s->errc = 0;
 
-	cc->file = 0;
-	cc->line = 0;
-	cc->nest = 0;
+	//~ cc->file = 0;
+	//~ cc->line = 0;
+	//~ cc->nest = 0;
 
 	cc->fin._fin = -1;
 	cc->fin._ptr = 0;
 	cc->fin._cnt = 0;
 
 	cc->_chr = -1;
-	cc->_tok = 0;
+	//~ cc->_tok = 0;
 
-	cc->root = 0;
+	//~ cc->root = 0;
 
-	cc->tokp = 0;
-	cc->all = 0;
+	//~ cc->tokp = 0;
+	//~ cc->all = 0;
 
 	cc->_beg = s->_ptr;
 	cc->_end = s->_ptr + s->_cnt;
@@ -1517,25 +1293,29 @@ ccEnv ccInit(state s) {
 
 	type_bol = install(cc,  "bool", TYPE_rec | symn_read, TYPE_bit, 4);
 
-	type_u08 = install(cc,  "uns8", TYPE_rec | symn_read, TYPE_u32, 1);
-	type_u16 = install(cc, "uns16", TYPE_rec | symn_read, TYPE_u32, 2);
-	type_u32 = install(cc, "uns32", TYPE_rec | symn_read, TYPE_u32, 4);
-	//~ type_u64 = install(cc, "uns64", TYPE_rec | symn_read, TYPE_i64, 8);
-
 	type_i08 = install(cc,  "int8", TYPE_rec | symn_read, TYPE_i32, 1);
 	type_i16 = install(cc, "int16", TYPE_rec | symn_read, TYPE_i32, 2);
 	type_i32 = install(cc, "int32", TYPE_rec | symn_read, TYPE_i32, 4);
 	type_i64 = install(cc, "int64", TYPE_rec | symn_read, TYPE_i64, 8);
 
-	//~ type_f16 = install(cc, "flt16", TYPE_rec | symn_read, TYPE_f32, 2);
-	type_f32 = install(cc, "flt32", TYPE_rec | symn_read, TYPE_f32, 4);
-	type_f64 = install(cc, "flt64", TYPE_rec | symn_read, TYPE_f64, 8);
+	type_u08 = install(cc,  "uint8", TYPE_rec | symn_read, TYPE_u32, 1);
+	type_u16 = install(cc, "uint16", TYPE_rec | symn_read, TYPE_u32, 2);
+	type_u32 = install(cc, "uint32", TYPE_rec | symn_read, TYPE_u32, 4);
+	//~ type_u64 = install(cc, "uint64", TYPE_rec | symn_read, TYPE_i64, 8);
 
-	//~ TODO: RemMe: temporary types for debug
+	//~ type_f16 = install(cc, "float16", TYPE_rec | symn_read, TYPE_f32, 2);
+	type_f32 = install(cc, "float32", TYPE_rec | symn_read, TYPE_f32, 4);
+	type_f64 = install(cc, "float64", TYPE_rec | symn_read, TYPE_f64, 8);
+
+	#if DEBUGGING > 0
 	install(cc,  "hex8", TYPE_rec | symn_read, TYPE_i32, 1)->pfmt = "0x%02x";
 	install(cc, "hex16", TYPE_rec | symn_read, TYPE_i32, 2)->pfmt = "0x%04x";
 	install(cc, "hex32", TYPE_rec | symn_read, TYPE_i32, 4)->pfmt = "0x%08x";
 	install(cc, "hex64", TYPE_rec | symn_read, TYPE_i64, 8)->pfmt = "0x%016X";
+	#endif
+
+	if (COMPILER_LEVEL & creg_emit)
+		install_emit(cc);
 
 	/*if (COMPILER_LEVEL != creg_base) {		// Packed types are optional
 		if ((type_v4f = install(cc, "vec4f", TYPE_rec | symn_read, 0, 16))) {
@@ -1593,39 +1373,20 @@ ccEnv ccInit(state s) {
 	installex(cc, "true", TYPE_def, 0, type_bol, intnode(cc, 1));
 	installex(cc, "false", TYPE_def, 0, type_bol, intnode(cc, 0));
 
-	if (0) {	// bigendian
-		union {
-			int32_t value;
-			struct {
-				int16_t lo;
-				int16_t hi;
-			};
-		} Ediantest;
-
-		Ediantest.value = 1;
-
-		installex(cc, "bigendian", TYPE_def, 0, type_bol, intnode(cc, Ediantest.hi));
-	}
-
 	//} */// types
 
 	// install a void arg for functions with no arguments
 	if ((cc->argz = newnode(cc, TYPE_ref))) {
 		enter(cc, NULL);
-		cc->argz->id.name = "";
-		void_arg = declare(cc, TYPE_ref, cc->argz, type_vid);
+		cc->argz->id.name = "`VoId`";
+		//~ cc->argz->next = NULL;
+		declare(cc, TYPE_ref, cc->argz, type_vid);
 		leave(cc, NULL);
 	}
 
-	if (COMPILER_LEVEL & creg_emit) install_emit(cc);
-	if (COMPILER_LEVEL & creg_libc & 0xff) libcall(s, NULL, "defaults", NULL);
-	bits_init(cc);
-	//~ if (COMPILER_LEVEL & creg_math & 0xff) install_math(cc);
-
-	// TODO: DelMe: symbols points to tree nodes, wich offset depends on the size of the vm.
-	//~ debug("Copiler hashcode: 0x%08x, %d", rehash(s->_mem, cc->_beg - s->_mem), cc->_beg - s->_mem);
-
 	/*if (1) {
+		// DONE: symbols points to tree nodes, wich offset depends on the size of the vm.
+		//~ debug("Copiler hashcode: 0x%08x, %d", rehash(s->_mem, cc->_beg - s->_mem), cc->_beg - s->_mem);
 		FILE* out;
 		if ((out = fopen("cc.obj", "wb"))) {
 			char* ptr = s->_mem;
@@ -1652,6 +1413,11 @@ int ccDone(state s) {
 	if (cc == NULL)
 		return -1;
 
+	if (peek(s->cc)) {
+		astn ast = peek(s->cc);
+		error(s, ast->line, "unexpected: `%k`", ast);
+		return -1;
+	}
 	// close input
 	source(cc, 0, 0);
 
@@ -1704,7 +1470,86 @@ void* getmem(state s, int size, unsigned clear) {
 }
 
 //{ temp.c ---------------------------------------------------------------------
-#if 0
+// lookup a value
+symn findsym(ccEnv s, symn in, char *name) {
+	struct astn ast;
+	memset(&ast, 0, sizeof(struct astn));
+	ast.kind = TYPE_ref;
+	//ast.id.hash = rehash(name);
+	ast.id.name = name;
+	return lookup(s, in ? in : s->s->defs, &ast, 1, NULL);
+}
+
+int findint(ccEnv s, char *name, int* res) {
+	struct astn ast;
+	symn sym = findsym(s, NULL, name);
+	if (sym && eval(&ast, sym->init)) {
+		*res = constint(&ast);
+		return 1;
+	}
+	return 0;
+}
+int findflt(ccEnv s, char *name, double* res) {
+	struct astn ast;
+	symn sym = findsym(s, NULL, name);
+	if (sym && eval(&ast, sym->init)) {
+		*res = constflt(&ast);
+		return 1;
+	}
+	return 0;
+}
+int findnzv(ccEnv s, char *name) {
+	struct astn ast;
+	symn sym = findsym(s, NULL, name);
+	if (sym && eval(&ast, sym->init)) {
+		return constbol(&ast);
+	}
+	return 0;
+}
+
+#if 0	// install_...
+
+//static void install_rtti(ccEnv cc, unsigned level) ;		// req emit: libc(import, define, lookup, ...)
+
+static void install_bits(ccEnv cc, symn it, int64_t sgn) {
+	int size = it->size;
+	int bits = 8 * size;
+	int64_t mask = (-1LLU >> -bits);
+	int64_t minv = sgn << (bits - 1);
+	int64_t maxv = (minv - 1) & mask;
+	enter(cc, it);
+	installex(cc, "min",  TYPE_def, 0, type_i64, intnode(cc, minv));
+	installex(cc, "max",  TYPE_def, 0, type_i64, intnode(cc, maxv));
+	installex(cc, "mask", TYPE_def, 0, type_i64, intnode(cc, mask));
+	installex(cc, "bits", TYPE_def, 0, type_i64, intnode(cc, bits));
+	installex(cc, "size", TYPE_def, 0, type_i64, intnode(cc, size));
+	//~ installex(cc, "nop", EMIT_opc, opc_nop, type_vid, NULL);
+	it->args = leave(cc, it);
+}
+
+static void install_Lang(ccEnv cc, unsigned level) {
+	if (install(cc, "Math", TYPE_enu, 0, 0)) {
+		installex(cc, "pi", TYPE_def, 0, type_f64, fh8node(cc, 0x400921fb54442d18LL));
+	}
+	if (install(cc, "Compiler", TYPE_enu, 0, 0)) {
+		//~ install(cc, "version", VERS_get, 0, 0);	// type int
+		//~ install(cc, "file", LINE_get, 0, 0);	// type string
+		//~ install(cc, "line", FILE_get, 0, 0);	// type int
+		//~ install(cc, "date", DATE_get, 0, 0);	// type ???
+		//~ install(cc, "emit", DATE_get, 0, 0);	// type ???
+	}
+	if (install(cc, "Runtime", TYPE_enu, 0, 0)) {
+		install(cc, "Env", TYPE_enu, 0, 0);	// map<String, String> Enviroment;
+		install(cc, "Args", TYPE_arr, 0, 0);// string Args[int];
+		install(cc, "assert(...)", TYPE_def, 0, 0);
+	}
+	if (install(cc, "Reflection", TYPE_enu, 0, 0)) {
+		install(cc, "symbol", TYPE_rec, 0, 0);
+		install(cc, "invoke(...)", TYPE_def, 0, 0);
+	}
+}// */
+#endif
+#if 0	// vm test&help
 int vm_hgen() {
 	int i, e = 0;
 	FILE *out = stdout;
@@ -1771,45 +1616,7 @@ int mk_test(char *file, int size) {
 	return 0;
 }
 #endif
-
-// lookup a value
-symn findsym(ccEnv s, symn in, char *name) {
-	struct astn ast;
-	memset(&ast, 0, sizeof(struct astn));
-	ast.kind = TYPE_ref;
-	//ast.id.hash = rehash(name);
-	ast.id.name = name;
-	return lookup(s, in ? in : s->s->defs, &ast, 1, NULL);
-}
-
-int findint(ccEnv s, char *name, int* res) {
-	struct astn ast;
-	symn sym = findsym(s, NULL, name);
-	if (sym && eval(&ast, sym->init)) {
-		*res = constint(&ast);
-		return 1;
-	}
-	return 0;
-}
-int findflt(ccEnv s, char *name, double* res) {
-	struct astn ast;
-	symn sym = findsym(s, NULL, name);
-	if (sym && eval(&ast, sym->init)) {
-		*res = constflt(&ast);
-		return 1;
-	}
-	return 0;
-}
-int findnzv(ccEnv s, char *name) {
-	struct astn ast;
-	symn sym = findsym(s, NULL, name);
-	if (sym && eval(&ast, sym->init)) {
-		return constbol(&ast);
-	}
-	return 0;
-}
-
-#if 0
+#if 0	// arrBuffer
 struct arrBuffer {
 	char *ptr;
 	int max;
