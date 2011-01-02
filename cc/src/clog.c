@@ -459,9 +459,9 @@ static void FPUTFMT(FILE *fout, const char *msg, va_list ap) {
 					if (!ast && nil)
 						continue;
 					switch (sgn) {
-						case '-': fputast(fout, ast, noIden | 2, 0xf0); break;	// walk
-						case '+': fputast(fout, ast, noIden | 1, 0xff); break;	// tree
-						default:  fputast(fout, ast, noIden | 0, 0xf0); break;	// astn
+						case '-': fputast(fout, ast, noIden | 2, prc); break;	// walk
+						case '+': fputast(fout, ast, noIden | 1, 0); break;		// tree
+						default:  fputast(fout, ast, noIden | 0, 0); break;		// astn
 					}
 				} continue;
 				case 'K': {		// node
@@ -782,7 +782,7 @@ void dumpast(FILE *fout, astn ast, int level) {
 		//~ fputast(fout, ast, 2, -1);
 		fputast(fout, ast, level | 2, 0);
 }
-void dumpasm(FILE *fout, vmEnv s, int mode) {
+void dumpasm(FILE *fout, vmState s, int mode) {
 	fputasm(fout, s, s->pc, s->cs, mode);
 }
 

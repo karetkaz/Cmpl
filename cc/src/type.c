@@ -1,7 +1,7 @@
 #include "ccvm.h"
 #include <string.h>
 
-//~ TODO: this should be in ccEnv
+//~ TODO: this should be in ccState
 symn type_vid = NULL;
 symn type_bol = NULL;
 symn type_u32 = NULL;
@@ -29,7 +29,7 @@ symn type_str = NULL;
 		...
 		if (def && def = install(cc, -1, "define isNan(double x) = bool(x == x)"));
 
-		symn install(ccEnv, int kind, char* str, int sizeoffset);
+		symn install(ccState, int kind, char* str, int sizeoffset);
 		if ((typ = install(cc, TYPE_int, "i32", TYPE_i32, 4))) {
 			symn def = typ;
 			enter(cc, NULL);
@@ -47,7 +47,7 @@ symn type_str = NULL;
 **/
 
 //~ Install
-symn newdefn(ccEnv s, int kind) {
+symn newdefn(ccState s, int kind) {
 	symn def = NULL;
 
 	if (s->_end - s->_beg > sizeof(struct symn)) {
@@ -63,7 +63,7 @@ symn newdefn(ccEnv s, int kind) {
 	return def;
 }
 
-symn installex(ccEnv s, const char* name, int kind, unsigned size, symn type, astn init) {
+symn installex(ccState s, const char* name, int kind, unsigned size, symn type, astn init) {
 	symn def = newdefn(s, kind & 0xff);
 	unsigned hash = 0;
 	dieif(!s || !name || !kind, "FixMe(s, %s, %t)", name, kind);
@@ -114,7 +114,7 @@ symn installex(ccEnv s, const char* name, int kind, unsigned size, symn type, as
 	}
 	return def;
 }
-symn install(ccEnv s, const char* name, int kind, int cast, unsigned size) {
+symn install(ccState s, const char* name, int kind, int cast, unsigned size) {
 	symn typ = NULL;
 
 	kind |= cast << 16;
@@ -172,7 +172,7 @@ symn promote(symn lht, symn rht) {
 	return pro;
 }
 
-symn lookup(ccEnv s, symn sym, astn ref, int back, astn args) {
+symn lookup(ccState s, symn sym, astn ref, int back, astn args) {
 	symn best = 0;
 	int found = 0;
 
@@ -239,7 +239,7 @@ symn lookup(ccEnv s, symn sym, astn ref, int back, astn args) {
 }
 
 // TODO: this is define, not declare
-symn declare(ccEnv s, int kind, astn tag, symn typ) {
+symn declare(ccState s, int kind, astn tag, symn typ) {
 	symn def;
 
 	if (!tag || tag->kind != TYPE_ref) {
@@ -409,7 +409,7 @@ int castTy(astn ast, symn type) {
 	return castTo(ast, castOf(ast->type = type));
 }
 
-symn typecheck(ccEnv cc, symn loc, astn ast) {
+symn typecheck(ccState cc, symn loc, astn ast) {
 	astn ref = 0, args = 0;
 	astn dot = NULL;	// temp
 	symn sym = 0;
@@ -870,6 +870,16 @@ int padded(int offs, int align) {
 	dieif(align != (align & -align), "FixMe");
 	return align + ((offs - 1) & ~(align - 1));
 }
+
+int argsize(symn sym, int align) {
+	symn arg;
+	int stdiff = 0;
+	for (arg = sym->args; arg; arg = arg->next) {
+		stdiff += padded(sizeOf(arg->type), align);
+	}
+	return stdiff;
+}
+
 int fixargs(symn sym, int align, int stbeg) {
 	symn arg;
 	int stdiff = 0;
@@ -877,6 +887,7 @@ int fixargs(symn sym, int align, int stbeg) {
 		arg->offs = stbeg + stdiff;
 		stdiff += padded(sizeOf(arg->type), align);
 	}
+	// TODO: relative should be flagged
 	for (arg = sym->args; arg; arg = arg->next) {
 		arg->offs = -(stdiff - arg->offs);
 	}
@@ -885,17 +896,17 @@ int fixargs(symn sym, int align, int stbeg) {
 }
 
 //~ scoping
-void enter(ccEnv s, symn def) {
-	//~ dieif(!s->_cnt, "FixMe: invalid ccEnv");
+void enter(ccState s, astn ast) {
+	//~ dieif(!s->_cnt, "FixMe: invalid ccState");
 	s->nest += 1;
 	//~ debug("enter(%d, %?T)", s->nest, def);
 	//~ s->scope[s->nest].csym = def;
 	//~ s->scope[s->nest].stmt = NULL;
 }
-symn leave(ccEnv s, symn dcl) {
+symn leave(ccState s, symn dcl) {
 	int i;
 	symn arg = 0;
-	//~ dieif(s->_cnt <= 0, "FixMe: invalid ccEnv");
+	//~ dieif(s->_cnt <= 0, "FixMe: invalid ccState");
 	s->nest -= 1;
 
 	// clear from table

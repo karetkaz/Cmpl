@@ -204,16 +204,15 @@ struct symn {				// type node
 	uint8_t	kind;		// TYPE_ref || TYPE_xxx
 
 	uint8_t	call:1;		// function / callable => (kind == TYPE_ref && args)
+	uint8_t	stat:1;		// static ?
 	//~ uint8_t	load:1;		// indirect reference / eval param: "&": cast == TYPE_ref
 
 	//~ uint8_t	priv:1;		// private
-	//~ uint8_t	stat:1;		// static ?
 	uint8_t	read:1;		// const / no override
 
-	//~ uint8_t	onst:1;		// stack  (val): replaced with (offs < 0) ?(offs < 255)
-	//~ uint8_t	libc:1;		// native (fun): replaced with (offs < 0) ?(offs < 255)
+	//~ uint8_t	onst:1;		// stack  (val): replaced with (offs <= 0) ?(!stat)
 
-	uint32_t	xx_1:6;		// -Wpadded
+	uint32_t	xx_1:5;		// -Wpadded
 	uint16_t	xx_2;		// align
 	uint16_t	nest;		// declaration level
 	astn	init;		// VAR init / FUN body
@@ -224,7 +223,7 @@ struct symn {				// type node
 	char*	pfmt;		// print format
 };
 
-struct ccEnv {
+struct ccState {
 	state	s;
 	symn	defs;		// definitions
 	astn	root;		// statements
@@ -234,7 +233,7 @@ struct ccEnv {
 	symn	deft[TBLS];		// definitions: hashStack;
 
 	int		warn;		// warning level
-	int		nest;		// nest level: modified by (enterblock/leaveblock)
+	int		nest;		// nest level: modified by (enter/leave)
 
 	char*	file;	// current file name
 	int		line;	// current line number
@@ -272,7 +271,7 @@ struct ccEnv {
 	char	*_beg;
 	char	*_end;
 };
-struct vmEnv {
+struct vmState {
 	state	s;
 	int		opti;			// optimization levevel
 
@@ -326,7 +325,7 @@ void fputfmt(FILE *fout, const char *msg, ...);
 // program error
 void perr(state s, int level, const char *file, int line, const char *msg, ...);
 
-//~ void dumpasm(FILE *fout, vmEnv s, int offs);
+//~ void dumpasm(FILE *fout, vmState s, int offs);
 void dumpsym(FILE *fout, symn sym, int mode);
 void dumpast(FILE *fout, astn ast, int mode);
 void dumpxml(FILE *fout, astn ast, int lev, const char* text, int level);
@@ -336,27 +335,28 @@ void dump2file(state s, char *file, dumpMode mode, char *text);
 // Runtime / global state
 void* getmem(state s, int size, unsigned clear);
 
-symn newdefn(ccEnv s, int kind);
-astn newnode(ccEnv s, int kind);
-astn intnode(ccEnv s, int64_t v);
-//~ astn fltnode(ccEnv s, float64_t v);
-astn strnode(ccEnv s, char *v);
-astn fh8node(ccEnv s, uint64_t v);
-astn cpynode(ccEnv s, astn src);
-void eatnode(ccEnv s, astn ast);
+symn newdefn(ccState s, int kind);
+astn newnode(ccState s, int kind);
+astn intnode(ccState s, int64_t v);
+//~ astn fltnode(ccState s, float64_t v);
+astn strnode(ccState s, char *v);
+astn fh8node(ccState s, uint64_t v);
+astn cpynode(ccState s, astn src);
+void eatnode(ccState s, astn ast);
 
-symn installex(ccEnv s, const char* name, int kind, unsigned size, symn type, astn init);
-symn install(ccEnv s, const char* name, int kind, int cast, unsigned size);
-symn declare(ccEnv s, int kind, astn tag, symn rtyp);
-symn lookup(ccEnv s, symn sym, astn ast, int deep, astn args);
+symn installex(ccState s, const char* name, int kind, unsigned size, symn type, astn init);
+symn install(ccState s, const char* name, int kind, int cast, unsigned size);
+symn declare(ccState s, int kind, astn tag, symn rtyp);
+symn lookup(ccState s, symn sym, astn ast, int deep, astn args);
 
-symn findsym(ccEnv s, symn in, char *name);
-int findnzv(ccEnv s, char *name);
-int findint(ccEnv s, char *name, int* res);
-int findflt(ccEnv s, char *name, double* res);
+symn findsym(ccState s, symn in, char *name);
+int findnzv(ccState s, char *name);
+int findint(ccState s, char *name, int* res);
+int findflt(ccState s, char *name, double* res);
 
-symn typecheck(ccEnv, symn loc, astn ast);
+symn typecheck(ccState, symn loc, astn ast);
 
+int argsize(symn sym, int align);
 int fixargs(symn sym, int align, int spos);
 
 int castOf(symn typ);
@@ -368,20 +368,20 @@ int32_t constbol(astn ast);
 int64_t constint(astn ast);
 float64_t constflt(astn ast);
 
-astn peek(ccEnv);
-astn next(ccEnv, int kind);
-//~ void back(ccEnv, astn ast);
-//~ int  skip(ccEnv, int kind);
-//~ int  test(ccEnv, int kind);
+astn peek(ccState);
+astn next(ccState, int kind);
+//~ void back(ccState, astn ast);
+//~ int  skip(ccState, int kind);
+//~ int  test(ccState, int kind);
 
-astn expr(ccEnv, int mode);		// parse expression	(mode: lookup)
-astn decl(ccEnv, int mode);		// parse declaration	(mode: enable defs(: struct, define, ...))
-//~ astn stmt(ccEnv, int mode);		// parse statement	(mode: enable decl/enter new scope)
-astn unit(ccEnv, int mode);		// parse program	(mode: script mode)
+astn expr(ccState, int mode);		// parse expression	(mode: lookup)
+astn decl(ccState, int mode);		// parse declaration	(mode: enable defs(: struct, define, ...))
+//~ astn stmt(ccState, int mode);		// parse statement	(mode: enable decl/enter new scope)
+astn unit(ccState, int mode);		// parse program	(mode: script mode)
 
 // scoping ...
-void enter(ccEnv s, symn def);
-symn leave(ccEnv s, symn def);
+void enter(ccState s, astn ast);
+symn leave(ccState s, symn def);
 
 /** try to evaluate an expression
  * @param res: where to put the result
@@ -402,21 +402,21 @@ int cgen(state s, astn ast, int get);
  * @param ...: argument
  * @return: program counter
  */
-int emit(vmEnv, int opc, stkval arg);
-int emitopc(vmEnv, int opc);
-int emiti32(vmEnv, int32_t arg);
-int emiti64(vmEnv, int64_t arg);
-int emitf32(vmEnv, float32_t arg);
-int emitf64(vmEnv, float64_t arg);
-int emitptr(vmEnv, void* arg);
+int emit(vmState, int opc, stkval arg);
+int emitopc(vmState, int opc);
+int emiti32(vmState, int32_t arg);
+int emiti64(vmState, int64_t arg);
+int emitf32(vmState, float32_t arg);
+int emitf64(vmState, float64_t arg);
+int emitptr(vmState, void* arg);
 
-int emitidx(vmEnv, int opc, int pos);
-int emitint(vmEnv, int opc, int64_t arg);
-int fixjump(vmEnv s, int src, int dst, int stc);
+int emitidx(vmState, int opc, int pos);
+int emitint(vmState, int opc, int64_t arg);
+int fixjump(vmState s, int src, int dst, int stc);
 
 // returns the stack size
-int stkoffs(vmEnv s, int size);
-//int testopc(vmEnv s, int opc);
+int stkoffs(vmState s, int size);
+//int testopc(vmState s, int opc);
 
 int isType(symn sym);
 int istype(astn ast);
@@ -424,13 +424,13 @@ int istype(astn ast);
 symn linkOf(astn ast, int notjustrefs);
 long sizeOf(symn typ);
 
-int source(ccEnv, srcType mode, char* text);		// mode: file/text
+int source(ccState, srcType mode, char* text);		// mode: file/text
 
 unsigned rehash(const char* str, unsigned size);
 
 //TODO: Rename: reg str
-char *mapstr(ccEnv s, char *name, unsigned size/* = -1U*/, unsigned hash/* = -1U*/);
+char *mapstr(ccState s, char *name, unsigned size/* = -1U*/, unsigned hash/* = -1U*/);
 
-void fputasm(FILE *fout, vmEnv s, int mark, int len, int mode);
+void fputasm(FILE *fout, vmState s, int mark, int len, int mode);
 
 #endif

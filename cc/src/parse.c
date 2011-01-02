@@ -87,7 +87,7 @@ unsigned rehash(const char* str, unsigned len) {
 	return (hs ^ 0xffffffff);// % TBLS;
 }
 
-int source(ccEnv s, srcType mode, char* file) {
+int source(ccState s, srcType mode, char* file) {
 	if (s->fin._fin > 3)
 		close(s->fin._fin);
 	s->fin._fin = -1;
@@ -112,7 +112,7 @@ int source(ccEnv s, srcType mode, char* file) {
 	return 0;
 }
 
-static int fillBuf(ccEnv s) {
+static int fillBuf(ccState s) {
 	if (s->fin._fin >= 0) {
 		unsigned char* base = s->fin._buf + s->fin._cnt;
 		int l, size = sizeof(s->fin._buf) - s->fin._cnt;
@@ -128,7 +128,7 @@ static int fillBuf(ccEnv s) {
 	return s->fin._cnt;
 }
 
-static int readChr(ccEnv s) {
+static int readChr(ccState s) {
 	if (s->_chr != -1) {
 		int chr = s->_chr;
 		s->_chr = -1;
@@ -161,24 +161,24 @@ static int readChr(ccEnv s) {
 	return *(--s->fin._cnt, s->fin._ptr++);
 }
 
-static int peekChr(ccEnv s) {
+static int peekChr(ccState s) {
 	if (s->_chr == -1)
 		s->_chr = readChr(s);
 	return s->_chr;
 }
 
-static int skipChr(ccEnv s, int chr) {
+static int skipChr(ccState s, int chr) {
 	if (!chr || chr == peekChr(s))
 		return readChr(s);
 	return 0;
 }
 
-static int backChr(ccEnv s, int chr) {
+static int backChr(ccState s, int chr) {
 	dieif (s->_chr != -1, "");
 	return s->_chr = chr;
 }
 
-static int escchr(ccEnv s) {
+static int escchr(ccState s) {
 	int chr;
 	switch (chr = readChr(s)) {
 		case  'a': return '\a';
@@ -245,7 +245,7 @@ static int escchr(ccEnv s) {
 
 //{~~~~~~~~~ Lexer ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-char *mapstr(ccEnv s, char *name, unsigned size/* = -1U*/, unsigned hash/* = -1U*/) {
+char *mapstr(ccState s, char *name, unsigned size/* = -1U*/, unsigned hash/* = -1U*/) {
 
 	list newn, next, prev = 0;
 
@@ -294,7 +294,7 @@ char *mapstr(ccEnv s, char *name, unsigned size/* = -1U*/, unsigned hash/* = -1U
 	return name;
 }
 
-static int readTok(ccEnv s, astn tok) {
+static int readTok(ccState s, astn tok) {
 	enum {
 		OTHER = 0x00000000,
 
@@ -1021,8 +1021,8 @@ static int readTok(ccEnv s, astn tok) {
 	return tok->kind;
 }
 
-astn peekTok(ccEnv s, int kind) {
-	//~ dieif(!s->_cnt, "FixMe: invalid ccEnv");
+astn peekTok(ccState s, int kind) {
+	//~ dieif(!s->_cnt, "FixMe: invalid ccState");
 	if (s->_tok == 0) {
 		s->_tok = newnode(s, 0);
 		if (!readTok(s, s->_tok)) {
@@ -1041,11 +1041,11 @@ astn peekTok(ccEnv s, int kind) {
 }
 
 //~ TODO: remove these
-astn peek(ccEnv s) {return peekTok(s, 0);}
-int line(ccEnv s) {return peekTok(s, 0) ? s->_tok->line : s->line;}
+astn peek(ccState s) {return peekTok(s, 0);}
+int line(ccState s) {return peekTok(s, 0) ? s->_tok->line : s->line;}
 
 // static
-astn next(ccEnv s, int kind) {
+astn next(ccState s, int kind) {
 	if (peekTok(s, kind)) {
 		astn ast = s->_tok;
 		s->_tok = ast->next;
@@ -1055,20 +1055,20 @@ astn next(ccEnv s, int kind) {
 	return 0;
 }
 
-static void backTok(ccEnv s, astn ast) {
-	//~ dieif(!s->_cnt, "FixMe: invalid ccEnv");
+static void backTok(ccState s, astn ast) {
+	//~ dieif(!s->_cnt, "FixMe: invalid ccState");
 	ast->next = s->_tok;
 	s->_tok = ast;
 }
 
 //~ TODO: remove one of these (test preferably)
-static int test(ccEnv s, int kind) {
+static int test(ccState s, int kind) {
 	astn ast = peek(s);
 	if (!ast || (kind && ast->kind != kind))
 		return 0;
 	return ast->kind;
 }// */
-static int skip(ccEnv s, int kind) {
+static int skip(ccState s, int kind) {
 	astn ast = peekTok(s, 0);
 	if (!ast || (kind && ast->kind != kind))
 		return 0;
@@ -1077,7 +1077,7 @@ static int skip(ccEnv s, int kind) {
 	return 1;
 }
 
-static int skiptok(ccEnv s, int kind, int report) {
+static int skiptok(ccState s, int kind, int report) {
 	if (!skip(s, kind)) {
 		//~ int report = 0;
 		if (report)
@@ -1111,7 +1111,7 @@ static int skiptok(ccEnv s, int kind, int report) {
 //{~~~~~~~~~ Parser ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 //~ TODO: this should go to type.c
-static void redefine(ccEnv s, symn sym) {
+static void redefine(ccState s, symn sym) {
 	symn ptr;
 
 	if (!sym)
@@ -1154,13 +1154,13 @@ static void redefine(ccEnv s, symn sym) {
 	}
 }
 
-//~    astn unit(ccEnv, int mode);		// parse unit			(mode: script/unit)
-static astn stmt(ccEnv, int mode);		// parse statement		(mode: enable decl)
-//~    astn decl(ccEnv, int mode);		// parse declaration	(mode: enable spec)
-static astn spec(ccEnv s/* , int qual */);
-static symn type(ccEnv s/* , int qual */);	// TODO: this should also return an ast node
+//~    astn unit(ccState, int mode);		// parse unit			(mode: script/unit)
+static astn stmt(ccState, int mode);		// parse statement		(mode: enable decl)
+//~    astn decl(ccState, int mode);		// parse declaration	(mode: enable spec)
+static astn spec(ccState s/* , int qual */);
+static symn type(ccState s/* , int qual */);	// TODO: this should also return an ast node
 
-astn expr(ccEnv s, int mode) {
+astn expr(ccState s, int mode) {
 	astn buff[TOKS], *base = buff + TOKS;
 	astn *post = buff, *prec = base, tok;
 	char sym[TOKS];							// symbol stack {, [, (, ?
@@ -1423,7 +1423,7 @@ astn expr(ccEnv s, int mode) {
 	return tok;
 }
 
-static symn type(ccEnv s) {
+static symn type(ccState s) {
 	symn def = 0;
 	astn tok;
 	while ((tok = peekTok(s, TYPE_ref))) {		// type(.type)*
@@ -1440,7 +1440,7 @@ static symn type(ccEnv s) {
 	}// */
 	return def;
 }
-static astn args(ccEnv s, int mode) {
+static astn args(ccState s, int mode) {
 	astn ast = NULL;
 
 	if (test(s, PNCT_rp))
@@ -1484,7 +1484,7 @@ static astn args(ccEnv s, int mode) {
 	return ast;
 }
 
-astn unit(ccEnv cc, int mode1) {
+astn unit(ccState cc, int mode1) {
 	symn def = NULL;
 
 	if (skip(cc, UNIT_def)) {
@@ -1518,7 +1518,7 @@ astn unit(ccEnv cc, int mode1) {
 	return cc->root;
 }
 
-static astn stmt(ccEnv s, int mode) {
+static astn stmt(ccState s, int mode) {
 	//~ int newscope = mode >= 0;
 	astn ast = 0, tmp;
 	int qual = 0;			// static | parallel
@@ -1564,7 +1564,7 @@ static astn stmt(ccEnv s, int mode) {
 		astn end = 0;
 
 		if (newscope)
-			enter(s, 0);
+			enter(s, ast);
 
 		while (!skip(s, STMT_end)) {
 			if (!peek(s)) {
@@ -1618,7 +1618,7 @@ static astn stmt(ccEnv s, int mode) {
 		}
 
 		if (newscope)
-			enter(s, 0);
+			enter(s, ast);
 
 		ast->stmt.stmt = stmt(s, 1);	// no new scope / no decl
 
@@ -1632,7 +1632,7 @@ static astn stmt(ccEnv s, int mode) {
 			leave(s, NULL);			// TODO: destruct
 	}
 	else if ((ast = next(s, STMT_for))) {	// for (...)
-		enter(s, 0);
+		enter(s, ast);
 		skiptok(s, PNCT_lp, 1);
 		if (!skip(s, STMT_do)) {		// init
 			// TODO: enable var decl only	// TYPE_ref
@@ -1688,7 +1688,7 @@ static astn stmt(ccEnv s, int mode) {
 	return ast;
 }
 
-astn decl(ccEnv s, int mode) {
+astn decl(ccState s, int mode) {
 	symn typ;
 	astn tag = NULL;
 	//~ astn arg = NULL;
@@ -1708,14 +1708,15 @@ astn decl(ccEnv s, int mode) {
 		ref = declare(s, TYPE_ref, tag, typ);
 
 		if (skip(s, PNCT_lp)) {				// int a(...)
+			symn res = NULL;
 
 			enter(s, NULL);
 			tag->id.args = args(s, 0);
 			skiptok(s, PNCT_rp, 1);
 
 			if (test(s, STMT_beg)) {		// int sqr(int a) {return a * a;}
-				enter(s, NULL);
-				installex(s, "result", TYPE_ref, 0, typ, NULL);		// TODO: this should be the first argument
+				enter(s, tag);
+				res = installex(s, "result", TYPE_ref, 0, typ, NULL);
 				ref->init = stmt(s, 1);
 				leave(s, NULL);
 				backTok(s, newnode(s, STMT_do));
@@ -1725,6 +1726,19 @@ astn decl(ccEnv s, int mode) {
 			if (ref->args == NULL) {
 				tag->id.args = s->argz;
 				ref->args = s->argz->id.link;
+			}
+			if (res) {
+				symn tmp;
+				int spc = sizeOf(res->type) + fixargs(ref, 4, -sizeOf(res->type));
+				ref->offs = -spc;
+				res->offs = -sizeOf(res->type);
+
+				//~ /*
+				debug("argsize(%+T): %d", ref, ref->offs);
+				debug("res:%T@sp[%d]", res, res->offs / -1);
+				for (tmp = ref->args; tmp; tmp = tmp->next) {
+					debug("arg:%+T@sp[%d]", tmp, tmp->offs / -1);
+				}// */
 			}
 		}
 
@@ -1797,7 +1811,7 @@ extern int padded(int offs, int align);
 #define ptrgtz(__PTR) ((long)(__PTR) > 0)
 #endif
 
-static astn spec(ccEnv s/* , int qual */) {
+static astn spec(ccState s/* , int qual */) {
 	astn tok, tag = 0;
 	symn tmp, def = 0;
 
@@ -1957,7 +1971,7 @@ static astn spec(ccEnv s/* , int qual */) {
 			int salign = -1;
 			def = declare(s, TYPE_rec, tag, type_vid);
 			redefine(s, def);
-			enter(s, NULL);
+			enter(s, tag);
 			while (!skip(s, STMT_end)) {
 				symn typ = type(s);
 				tok = next(s, TYPE_ref);
@@ -2050,7 +2064,7 @@ static astn spec(ccEnv s/* , int qual */) {
 		skiptok(s, STMT_beg, 1);
 		if (tag) {
 			def = declare(s, TYPE_enu, tag, base);
-			enter(s, NULL);
+			enter(s, tag);
 		}
 		else {
 			tag = newnode(s, TYPE_enu);
@@ -2091,7 +2105,7 @@ static astn spec(ccEnv s/* , int qual */) {
 
 //}
 
-int parse(ccEnv cc, srcType mode) {
+int parse(ccState cc, srcType mode) {
 
 	//~ astn ast;
 

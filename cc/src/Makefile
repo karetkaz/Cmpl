@@ -15,10 +15,11 @@ OBJS=\
 	$(OBJDIR)type.o\
 	$(OBJDIR)ccvm.o
 
-all:clean $(OBJS) $(OBJDIR)main.o
-	$(LNK) $(OUTEXE)$(BINDIR)main $(OBJS) $(OBJDIR)main.o $(LIBS)
+#~ all:build
 
-rebuild:clean $(OBJS) $(OBJDIR)main.o
+rebuild:clean build
+
+build:$(OBJS) $(OBJDIR)main.o
 	$(LNK) $(OUTEXE)$(BINDIR)main $(OBJS) $(OBJDIR)main.o $(LIBS)
 
 lib:$(OBJS)

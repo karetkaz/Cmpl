@@ -229,7 +229,7 @@ static int putstr(state s) {
 	return 0;
 }// */
 
-static void install_stdc(ccEnv cc) {
+static void install_stdc(ccState cc) {
 	int i;
 	struct {
 		int (*fun)(state s);
@@ -495,11 +495,11 @@ static int bits_call(state s) {
 	}
 	return -1;
 }
-static void install_bits(ccEnv cc) {
+static void install_bits(ccState cc) {
 	int err = 0;
 	symn module;
 	if ((module = install(cc, "bits", TYPE_enu, 0, 0))) {
-		enter(cc, module);
+		enter(cc, NULL);
 		// libcall will return 0 on failure, 
 		// 'err = err || !libcall...' <=> 'if (!err) err = !libcall...'
 		// will skip forward libcalls if an error ocurred
@@ -578,7 +578,7 @@ void usage(char* prog, char* cmd) {
 	}
 }
 
-int evalexp(ccEnv s, char* text/* , int opts */) {
+int evalexp(ccState s, char* text/* , int opts */) {
 	struct astn res;
 	astn ast;
 	symn typ;
@@ -657,7 +657,7 @@ int program(int argc, char *argv[]) {
 		return evalexp(ccInit(s), cmd + 1);
 	}
 	else if (strcmp(cmd, "-api") == 0) {
-		ccEnv env = ccInit(s);
+		ccState env = ccInit(s);
 		const int level = 2;
 		symn glob;
 		int i;
@@ -1001,7 +1001,7 @@ int main(int argc, char *argv[]) {
 int dbgCon(state s, int pu, void *ip, long* bp, int ss) {
 	static char buff[1024];
 	static char cmd = 'N';
-	vmEnv vm = s->vm;
+	vmState vm = s->vm;
 	int IP, SP;
 	char *arg;
 
@@ -1223,7 +1223,7 @@ int bitmap(int argc, char *argv[]) {
 
 int test1() {
 	astn tmp;
-	ccEnv cc;
+	ccState cc;
 	char *file = "C:\\Documents and Settings\\kmz\\Desktop\\bible.txt";
 	static char mem[memsize];
 	state s = rtInit(mem, sizeof(mem));

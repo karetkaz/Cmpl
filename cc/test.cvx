@@ -12,19 +12,25 @@
 
 //~ module test;
 
+//~ int x = 5;
+//~ int a = pow(2, x);
+//~ int b = 1 << x;
+
 //~ int alma(int h)[10];
 
+/* Bits: hi, lo, extend
+define sxt64(int32 a) = int64(int32(a));			// sign extend
+define zxt64(int32 a) = int64(uint32(a));			// zero extend
+define Lo64(int64 a) = emit(int32, set, i64(a));	// Lo32 part
+define Hi64(int64 a) = emit(int32, pop, i64(a));	// Hi32 part
+//~ define Lo32(int32 a) = int32(a & 0xffff);			// Lo16 part
+//~ define Hi32(int32 a) = Lo32(a >> 16);				// Hi16 part
+//~ define Lo16(int32 a) = int32(a & 0xff);				// Lo16 part
+//~ define Hi16(int32 a) = Lo16(a >> 8);				// Hi16 part
 
-
-/* Bits
-//~ define zxt64(int32 a) = int64(uint32(a));			// zero extend
-//~ define sxt64(int32 a) = int64(int32(a));			// sign extend
-//~ define Lo64(int64 a) = emit(int32, set, i64(a));	// Lo32 part
-//~ define Hi64(int64 a) = emit(int32, pop, i64(a));	// Hi32 part
-
-//~ hex64 val = 0xff00ff00ff0f0f0f9;
-//~ hex32 lo = Lo64(val);
-//~ hex32 hi = Hi64(val);
+hex64 val = 0xff00ff00ff0f0f0f9;
+hex32 lo = Lo64(val);
+hex32 hi = Hi64(val);
 // */
 
 /* fixed point math
@@ -73,39 +79,74 @@ for (float x = e1; x < e2; x += s) {	// x in [e1, e2]
 }
 // */
 
-//~ vec4f a = vec4f(1., 2., 3., 5.);
-//~ vec4f b = vec4f(0., 2., 0., 5.);
-//~ vec4f e = cross(a, b);
-//~ vec4f E = normalize(cross(vec4f(1., 2., 3.), vec4f(10., 20., 3.)));
+/* cross, normalize
+vec4f a = vec4f(1., 2., 3., 5.);
+vec4f b = vec4f(0., 2., 0., 5.);
+vec4f e = cross(a, b);
+vec4f E = normalize(cross(vec4f(1., 2., 3.), vec4f(10., 20., 3.)));
+// */
 
+/* float compare
 define __eps = 1e-15;
-define eq(float32 &a, float32 &b, float32 eps) = bool(abs(a - b) < eps);
-define eq(float64 &a, float64 &b, float64 eps) = bool(abs(a - b) < eps);
+//~ define eq(float32 a, float32 b, float32 eps) = bool(abs(a - b) < eps);
+define eq(float64 a, float64 b, float64 eps) = bool(abs(a - b) < eps);
 
-define eq(float32 &a, float32 &b) = eq(a, b, float32(__eps));
-define eq(float64 &a, float64 &b) = eq(a, b, __eps);
+//~ define eq(float32 a, float32 b) = eq(a, b, float32(__eps));
+define eq(float64 a, float64 b) = eq(a, b, __eps);
 
 double a = 0.1;
 double b = 0.2;
 double c = 0.3;
 bool x = (a + b) + c == a + (b + c);
-bool x1 = eq((a + b) + c, a + (b + c), 1e-15);
+bool x1 = eq((a + b) + c, a + (b + c));
 
 // */
 
 /* random numbers
 for (int i = 0; i < 60; i += 1) {
-	println(random(2.));
-	//~ println((1 + i) * 2);
+	println(random(0.001));
 }
 // */
 
 //~ emit(void, call, i32(0x));		// stack overflow
 
-/* function
-int sum(int a, int b) {
+//~ /* function
+define test = 1;
+define rty int64;
+static if (test == 1) {
+rty Result;
+int A = 9;
+string ptr = "";
+Result = A + A;
+
+rty sum(int a) {
+	result = a + a;
+}
+}// +/
+static if (test == 2) {
+rty Result;
+int B = 5;
+int A = 9;
+string ptr = "";
+Result = A + B;
+
+rty sum(int a, int b) {
 	result = a + b;
-}// */
+}
+}// +/
+static if (test == 3) {
+rty Result;
+int C = 5;
+int B = 7;
+int A = 9;
+string ptr = "";
+Result = A + B;
+rty sum(int a, int b, int c) {
+	result = a + b;
+}
+}// +/
+
+// */
 
 /* fogyasztas
 define fogyasztas(double _km, double _benzin, double _atlag) = double(_benzin * _km * _atlag / 100.);
@@ -133,14 +174,8 @@ define i32x8(int i1, int i2, int i3, int i4, int i5, int i6, int i7, int i8) = e
 define i32x8(int32 i0) = emit(i32x8, dupp.x1, dupp.x2, dupp.x2, dupp.x1, i32.shr, i32(31), dupp.x1, i32(i0));
 define i32x8(uint32 i0) = emit(i32x8, dupp.x1, dupp.x2, dupp.x2, dupp.x1, i32(0), i32(i0));
 
-//~ i32x8 a = i32x8(0x0f1f2f3f, 0x4f5f6f7f, 0x8f9fffff, 0xffffffff, 0x0efffffff, 0xffffffff, 0xffffffff, 0xffffffff);
-//~ i32x8 b = i32x8(0x0fffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff);
-
 i32x8 a = i32x8(int32(0x0fffffff), int32(0xffffffff), int32(0xffffffff), int32(0xffffffff), int32(0xffffffff), int32(0xffffffff), int32(0xffffffff), int32(0xffffffff));
 i32x8 b = i32x8(1);
-
-//~ i32x8 a = i32x8(0);
-//~ i32x8 b = i32x8(15);
 
 i32x8 c;
 
@@ -198,7 +233,9 @@ i32x8 sub(i32x8 a, i32x8 b) {}
 // */
 //~ /*
 
-static if (!true) {		// add
+define sxt64(int32 a) = int64(int32(a));			// sign extend
+define zxt64(int32 a) = int64(uint32(a));			// zero extend
+static if (true) {		// add
 	hex64 ovf = 0xffffffff;
 	hex64 sum;
 	int64 carry = 0;
@@ -219,7 +256,7 @@ static if (!true) {		// add
 	c.i8 = int32(sum = zxt64(a.i8) + b.i8 + carry);
 	//~ carry = sum > ovf;
 } // */
-static if (!true) {		// sub
+static if (!true) {		// sub.xxx
 	hex64 ovf = 0;//xffffffff;
 	hex64 sum;
 	int64 borrow = 0;
@@ -246,12 +283,13 @@ static if (!true) {		// sub
 //~ string alma = "alma a fa alatt";
 //~ println(1 + 4);
 
-float32 t1 = 3.14;
-hex32 t2 = emit();
-int32 t3 = emit;
-//~ println(t3);
+int64 t1 = 314;
+int64 t2 = emit();
+int64 t3 = emit;
+print(t2);
+print(t3);
 
-t3 = 90;
+//~ t3 = 90;
 //~ println(t3);
 // */
 
@@ -293,18 +331,21 @@ hex8  xhex08[8] = emit();
 // +/
 
 /* factorial
-define n = 7;
+define n = 10;
 int64 res = 1;
 for (int i = 1; i <= n; i += 1) {
 	res *= i;
 }
 // */
 /* calc E
-double res = 1.;
+define eps = 1e-50;
 double tmp = 1.;
-define eps = 1e-200;
+double res = 1.;
+//~ hex64 Res = emit();
 for (int i = 1; tmp > eps; i += 1) {
+	//~ double old = res;
 	res += tmp /= i;
+	//~ if (old == res) tmp = 0;
 }
 // */
 
@@ -314,7 +355,7 @@ for (int i = 0; i < 20; i += 1) {int i2 = 9;}	// OK
 for (int i = 0; i < 20; i += 1) {int i = 9;}	// ERR: i redefined
 for (int i = 0; i < 20; i += 1) int i1 = 9;		// ERR: i2 unexpected
 
-static if (1) {int a = 99;}
+static if (0) {int a = 99;}
 
 int a2 = a;						// ERR: a undeclared if static if(0)
 

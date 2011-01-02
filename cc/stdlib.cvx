@@ -1,18 +1,6 @@
-//~ #open src/pvmc.h
-//~ #open src/ccvm.h
-
-//~ #open src/ccvm.c
-//~ #open src/code.c
-//~ #open src/clog.c
-//~ #open src/type.c
-
-//~ #open src/tree.c
-//~ #open src/parse.c
-//~ #open src/main.c
-
-//~ /*
 //~ module std;
 
+//~ /*
 enum math: float64 {
 
 	define i64_as_f64(int64 x) = emit(float64, i64(x));
@@ -123,7 +111,7 @@ define normalize(vec4f a) = emit(vec4f, v4f.div, dupp.x2, dupp.x1, v4f.dp3, dupp
 
 //~ operator (vec4f v)(float32 x) = eval(v, x);
 
-/* advanced
+/+ advanced
 operator float32(vec4f vec) = vec.w;
 operator bool(vec4f vec) = bool(vec.x && vec.y && vec.z && vec.w);
 
@@ -150,7 +138,7 @@ operator (vec4f &lhs) += (vec4f rhs) = (lhs = lhs + rhs);
 operator (vec4f vec) (float32 val) = peval(vec, val);
 operator (vec4f vec) [int32 idx] = index(vec, val);
 
-// */
+// +/
 }
 static if (imports.vec2d) {
 struct vec2d {

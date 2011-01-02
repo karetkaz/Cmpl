@@ -8,15 +8,15 @@ typedef double float64_t;
 
 typedef struct astn *astn;		// tree
 typedef struct symn *symn;		// symbols
-typedef struct ccEnv *ccEnv;
-typedef struct vmEnv *vmEnv;
+typedef struct ccState *ccState;
+typedef struct vmState *vmState;
 
 typedef struct state {
-	FILE* logf;			// log file
+	FILE* logf;		// log file
 
 	symn  defs;		// definitions
 
-	int   errc;			// error count
+	int   errc;		// error count
 
 	int   func;		// library call function
 	void* data;		// user data for execution
@@ -25,8 +25,8 @@ typedef struct state {
 	void* retv;		// TODO: RemMe: retval
 	char* argv;		// first arg
 
-	ccEnv cc;		// compiler enviroment	// TODO: RemMe cc has the state
-	vmEnv vm;		// execution enviroment	// TODO: RemMe vm has the state
+	ccState cc;		// compiler enviroment	// TODO: RemMe cc has the state
+	vmState vm;		// execution enviroment	// TODO: RemMe vm has the state
 
 	long _cnt;
 	char *_ptr;		// write here symbols and string constants
@@ -61,31 +61,31 @@ int logfile(state, char *file);				// logger
 //~ int compile(state, int level);				// warning level
 int gencode(state, int level);				// optimize level
 //~ int execute(state, int cc, int ss, dbgf dbg);
-int parse(ccEnv, srcType);
+int parse(ccState, srcType);
 symn libcall(state, int libc(state), int pass, const char* proto);
 
 // execute
 typedef int (*dbgf)(state s, int pu, void *ip, long* sptr, int scnt);
 int dbgCon(state, int, void*, long*, int);				// 
 
-//~ int exec(vmEnv, unsigned cc, dbgf dbg);
-int exec(vmEnv, dbgf dbg);
+//~ int exec(vmState, unsigned cc, dbgf dbg);
+int exec(vmState, dbgf dbg);
 
 // output
 void dump(state, dumpMode, char* text);
 
 // Level 1 Functions: use less these
-ccEnv ccInit(state);
-ccEnv ccOpen(state, srcType, char* source);
+ccState ccInit(state);
+ccState ccOpen(state, srcType, char* source);
 
 int ccDone(state);
 
-vmEnv vmInit(state);
+vmState vmInit(state);
 //~ int vmOpen(state, char* source);
-void vmInfo(FILE*, vmEnv s);
+void vmInfo(FILE*, vmState s);
 //~ int vmDone(state s);		// what should do this
 
-void ccSource(ccEnv, char *file, int line);
+void ccSource(ccState, char *file, int line);
 
 #define popargsize(__ARGV, __SIZE) ((void*)(((__ARGV)->argv += (((__SIZE) | 3) & ~3)) - (__SIZE)))
 #define popargtype(__ARGV, __TYPE) ((__TYPE*)((__ARGV)->argv += ((sizeof(__TYPE) | 3) & ~3)))[-1]

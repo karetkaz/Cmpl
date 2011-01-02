@@ -1,10 +1,11 @@
 OUTOBJ=-o
 OUTEXE=-o
-#~ CFLAGS=
-CFLAGS=-g3 -ggdb
+CFLAGS=-g0 -O2
+#~ CFLAGS=-g3 -ggdb
 COPTS=-c -Wall -Wpadded
 LIBS=-lm
 CCC=gcc -m32
-LNK=gcc -m32 -g3 -ggdb
+LNK=gcc -m32
+#~ -g3 -ggdb
 LIB=ar rcs ../../gx/lib/libpvmc/libpvmc.a
 DBG=nemiver

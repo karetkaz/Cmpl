@@ -398,7 +398,7 @@ for (int i = 0; i < dim; i += 1) {
 }
 } // */
 static if (Test.Libc) {
-	define x = -math.pi / 4;
+	define x = -math.pi / 2;
 	double absx = abs(x);
 	double sinx = sin(x);
 	double cosx = cos(x);

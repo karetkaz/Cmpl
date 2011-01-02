@@ -3,7 +3,7 @@
 #include <math.h>
 #include "ccvm.h"
 
-astn newnode(ccEnv s, int kind) {
+astn newnode(ccState s, int kind) {
 	astn ast = 0;
 	if (s->tokp) {
 		ast = s->tokp;
@@ -24,21 +24,21 @@ astn newnode(ccEnv s, int kind) {
 }
 
 /*
-astn fh8node(ccEnv s, uint64_t v) {
+astn fh8node(ccState s, uint64_t v) {
 	astn ast = newnode(s, TYPE_flt);
 	//~ ast->type = type_f64;
 	ast->con.cint = v;
 	return ast;
 }
 
-astn fltnode(ccEnv s, float64_t v) {
+astn fltnode(ccState s, float64_t v) {
 	astn ast = newnode(s, TYPE_flt);
 	//~ ast->type = type_f64;
 	ast->con.cflt = v;
 	return ast;
 }
 
-astn strnode(ccEnv s, char * v) {
+astn strnode(ccState s, char * v) {
 	astn ast = newnode(s, TYPE_str);
 	ast->id.hash = -1;
 	ast->id.name = v;
@@ -47,18 +47,18 @@ astn strnode(ccEnv s, char * v) {
 
 // */
 
-astn intnode(ccEnv s, int64_t v) {
+astn intnode(ccState s, int64_t v) {
 	astn ast = newnode(s, TYPE_int);
 	ast->type = type_i32;
 	ast->con.cint = v;
 	return ast;
 }
-astn cpynode(ccEnv s, astn src) {
+astn cpynode(ccState s, astn src) {
 	astn ast = newnode(s, 0);
 	*ast = *src;
 	return ast;
 }
-void eatnode(ccEnv s, astn ast) {
+void eatnode(ccState s, astn ast) {
 	if (!ast) return;
 	ast->next = s->tokp;
 	s->tokp = ast;

@@ -83,7 +83,7 @@ static int libHalt(state s) {
 		char *ofs = vmOffset(s, arg);
 		void vm_fputval(state, FILE *fout, symn var, stkval* ref, int flgs);
 
-		if (arg->kind != TYPE_ref && s->args == s->defs) continue;
+		//~ if (arg->kind != TYPE_ref && s->args == s->defs) continue;
 		if (arg->kind != TYPE_ref) continue;
 
 		if (arg->file && arg->line)
@@ -102,7 +102,6 @@ static struct lfun {
 	int (*call)(state);
 	const char* proto;
 	symn sym;
-	//~ int16_t fun;	// sym->offs
 	int8_t chk, pop, pad[2];
 	//~ int32_t _pad;
 }
@@ -258,14 +257,14 @@ symn libcall(state s, int libc(state), int pos, const char* proto) {
 }
 //}
 
-static inline void* getip(vmEnv s, int pos) {
+static inline void* getip(vmState s, int pos) {
 	return (void *)(s->_mem + pos);
 }
 
-// TODO: exchange this with emitarg(vmEnv s, int opc, stkval arg);
-//~ int emit(vmEnv s, int opc, ...) {
+// TODO: exchange this with emitarg(vmState s, int opc, stkval arg);
+//~ int emit(vmState s, int opc, ...) {
 
-int emitarg(vmEnv s, int opc, stkval arg) {
+int emitarg(vmState s, int opc, stkval arg) {
 	bcde ip = getip(s, s->cs);
 	//~ stkval arg = *(stkval*)(&opc + 1);
 
@@ -670,27 +669,27 @@ int emitarg(vmEnv s, int opc, stkval arg) {
 
 	return s->pc;
 }
-int emiti32(vmEnv s, int32_t arg) {
+int emiti32(vmState s, int32_t arg) {
 	stkval tmp;
 	tmp.i4 = arg;
 	return emitarg(s, opc_ldc4, tmp);
 }
-int emiti64(vmEnv s, int64_t arg) {
+int emiti64(vmState s, int64_t arg) {
 	stkval tmp;
 	tmp.i8 = arg;
 	return emitarg(s, opc_ldc8, tmp);
 }
-int emitf32(vmEnv s, float32_t arg) {
+int emitf32(vmState s, float32_t arg) {
 	stkval tmp;
 	tmp.f4 = arg;
 	return emitarg(s, opc_ldcf, tmp);
 }
-int emitf64(vmEnv s, float64_t arg) {
+int emitf64(vmState s, float64_t arg) {
 	stkval tmp;
 	tmp.f8 = arg;
 	return emitarg(s, opc_ldcF, tmp);
 }
-int emitptr(vmEnv s, void* arg) {
+int emitptr(vmState s, void* arg) {
 	stkval tmp;
 	unsigned char* ptr = (unsigned char*)arg;
 	//~ dieif(ptr < s->_mem, "invalid reference");
@@ -699,12 +698,12 @@ int emitptr(vmEnv s, void* arg) {
 	return emitarg(s, opc_ldcr, tmp);
 }
 
-int emitopc(vmEnv s, int opc) {
+int emitopc(vmState s, int opc) {
 	stkval arg;
 	arg.i8 = 0;
 	return emitarg(s, opc, arg);
 }
-int emitidx(vmEnv s, int opc, int arg) {
+int emitidx(vmState s, int opc, int arg) {
 	stkval tmp;
 	tmp.i8 = (int32_t)s->ss * 4 + arg;
 
@@ -721,35 +720,41 @@ int emitidx(vmEnv s, int opc, int arg) {
 	}
 	return emitarg(s, opc, tmp);
 }
-int emitint(vmEnv s, int opc, int64_t arg) {
+int emitint(vmState s, int opc, int64_t arg) {
 	stkval tmp;
 	tmp.i8 = arg;
 	return emitarg(s, opc, tmp);
 }
-int fixjump(vmEnv s, int src, int dst, int stc) {
-	bcde ip = getip(s, src);
-
+int fixjump(vmState s, int src, int dst, int stc) {
 	dieif(stc & 3, "FixMe");
-	if (src >= 0) switch (ip->opc) {
-		default: fatal("FixMe");
-		//~ case opc_ldsp:
-		//~ case opc_call:
-		case opc_jmp:
-		case opc_jnz:
-		case opc_jz:
-			ip->rel = dst - src;
-			if (stc < 0)
-				s->ss = -stc / 4;
-			break;
+	if (src >= 0) {
+		bcde ip = getip(s, src);
+		if (src) switch (ip->opc) {
+			default: fatal("FixMe");
+			//~ case opc_ldsp:
+			//~ case opc_call:
+			case opc_jmp:
+			case opc_jnz:
+			case opc_jz:
+				ip->rel = dst - src;
+				break;
+		}
+		if (!src && !dst)
+			s->ss = -stc / 4;
+		else if (stc < 0)
+			s->ss = -stc / 4;
+		return 1;
 	}
+
+	fatal("FixMe");
 	return 0;
 }
 
-int stkoffs(vmEnv s, int size) {
+int stkoffs(vmState s, int size) {
 	return -(s->ss * 4 + size);
 }
 
-/*static cell task(vmEnv ee, cell pu, int cc, int n, int cl, int dl) {
+/*static cell task(vmState ee, cell pu, int cc, int n, int cl, int dl) {
 	// find an empty cpu
 	cell pu = 0;//pp;
 	while (pu && pu->ip)
@@ -765,7 +770,7 @@ int stkoffs(vmEnv s, int size) {
 	return pu + n;
 }// */
 
-/*static int done(vmEnv ee, int cp) {
+/*static int done(vmState ee, int cp) {
 	pu[pu[cp].pp].cp -= 1;
 	sigsnd(pp->pp, SIG_quit);
 }// */
@@ -779,7 +784,7 @@ typedef enum {
 	//~ doSync = 1;		// syncronize
 } doWhat;
 static int lobit(int a) {return a & -a;}
-static int mtt(vmEnv ee, doWhat cmd, cell pu, int n) {
+static int mtt(vmState ee, doWhat cmd, cell pu, int n) {
 	static int workers = 0;
 	switch (cmd) {
 		case doInit: {			// master thread is running
@@ -815,7 +820,7 @@ static inline int ovf(cell pu) {
  * @arg ss: stack size
  * @return: error code
 **/
-static int dbugpu(vmEnv vm, cell pu, dbgf dbg) {
+static int dbugpu(vmState vm, cell pu, dbgf dbg) {
 	typedef uint32_t *stkptr;
 	typedef uint8_t *memptr;
 
@@ -862,7 +867,7 @@ static int dbugpu(vmEnv vm, cell pu, dbgf dbg) {
 	return 0;
 }
 
-int exec(vmEnv vm, dbgf dbg) {
+int exec(vmState vm, dbgf dbg) {
 	struct cell pu[1];
 
 	pu->ip = vm->_mem + vm->pc;
@@ -986,7 +991,7 @@ void fputopc(FILE *fout, unsigned char* ptr, int len, int offs) {
 		} break;
 	}
 }
-void fputasm(FILE *fout, vmEnv s, int mark, int end, int mode) {
+void fputasm(FILE *fout, vmState s, int mark, int end, int mode) {
 	unsigned char* beg = getip(s, mark);
 	int rel = mode & 0x10;// ? 0 : -1;
 	int i, is = 12345;
@@ -1177,7 +1182,7 @@ void vm_fputval(state s, FILE *fout, symn var, stkval* ref, int flgs) {
 		}
 	}
 }// */
-void vmInfo(FILE* out, vmEnv vm) {
+void vmInfo(FILE* out, vmState vm) {
 	int i;
 	fprintf(out, "stack minimum size: %d\n", vm->sm);
 	i = vm->ds; fprintf(out, "data(@.%04x) size: %dM, %dK, %dB\n", 0, i >> 20, i >> 10, i);
