@@ -16,7 +16,86 @@
 //~ int a = pow(2, x);
 //~ int b = 1 << x;
 
-//~ int alma(int h)[10];
+//~ double x = 9*13;
+
+//~ int alma(int h)[10];	???
+
+/* gfx2d
+module gfx2d;
+/+libc {
+const gxBlit {
+	copy
+	and
+	or
+	xor
+	key
+	//~ Blt32lum;		// extract
+	//~ Blt32rch;		// Red Channel
+	//~ Blt32gch;		// Green Channel
+	//~ Blt32bch;		// Blue Channel
+
+	//~ Blt32_15;
+	//~ Blt32_16;
+	//~ Blt32_24;
+	//~ Blt32cpy;
+	//~ Blt32and;
+	//~ Blt32ior;
+	//~ Blt32xor;
+	//~ Blt32mix;		// alpha mix
+	//~ Blt32add;		// Add
+	//~ Blt32sub;		// Subtract
+	//~ Blt32dif;		// Difference
+	//~ Blt32mul;		// Multiply
+	//~ Blt32div;		// Divide
+	//~ Blt32min;		// Darken
+	//~ Blt32max;		// Lighten
+	//~ Blt32scr;		// Screen
+	//~ Blt32ovr;		// Overlay
+	//~ Blt32rch;		// Red Channel
+	//~ Blt32gch;		// Green Channel
+	//~ Blt32bch;		// Blue Channel
+}
+struct gxRect {}
+struct gxClip {}
+struct gxSurf {}
+
+pointer gx_cliprect(gxSurf& src, gxRect);
+
+pointer getpaddr(gxSurf, int, int);
+xrgb getpixel(gxSurf &src, int x, int y);
+xrgb getpix16(gxSurf &src, fix x, fix y, xrgb c);
+void setpixel(gxSurf &dst, int x, int y, xrgb c);
+void setblock(gxSurf &dst, int x0, int y0, int x1, int y1, xrgb c);
+
+define sethline(gxSurf, int x0, int &y0, int x1, xrgb col) = setblock(x0, y0, x1, y0, col);
+define setvline(gxSurf, int &x0, int y0, int y1, xrgb col) = setblock(x0, y0, x0, y1, col);
+
+int fillsurf(gxSurf dst, gxRect roi, gxBlit mode, long col);
+int copysurf(gxSurf dst, int x, int y, gxSurf src, gxRect roi, gxBlit mode);
+int zoomsurf(gxSurf dst, gxRect rect, gxSurf src, gxRect roi, int lin);
+
+
+void drawline(gxSurf dst, int x0, int y0, int x1, int y1, xrgb col);
+void drawrect(gxSurf dst, int x0, int y0, int x1, int y1, xrgb col);
+void drawoval(gxSurf dst, int x0, int y0, int x1, int y1, xrgb col);
+void drawbez2(gxSurf dst, int x0, int y0, int x1, int y1, int x2, int y2, xrgb col);
+void drawbez3(gxSurf dst, int x0, int y0, int x1, int y1, int x2, int y2, int x3, int y3, xrgb col);
+
+void clipText(gxRect roi, gxSurf fnt, string str);
+void drawChar(gxSurf dst, int x, int y, gxSurf fnt, char chr, xrgb col);
+void drawText(gxSurf dst, int x, int y, gxSurf fnt, string str, xrgb col);
+
+//~ define gx_getclip(gxSurf s) {return s.clipPtr ? s.clipPtr : gxClip(pointer(&s));}
+
+//~ int loadCUR(gx_Surf, const char*, int);
+int loadBMP(gx_Surf dst, string fileName, int depth);
+int loadJPG(gx_Surf dst, string fileName, int depth);
+int saveBMP(string fileName, gxSurf src, int depth);
+
+int loadFNT(gxSurf, string fileName);
+
+}// +/
+// */
 
 /* Bits: hi, lo, extend
 define sxt64(int32 a) = int64(int32(a));			// sign extend
@@ -110,38 +189,39 @@ for (int i = 0; i < 60; i += 1) {
 
 //~ emit(void, call, i32(0x));		// stack overflow
 
-//~ /* function
-define test = 1;
+/* function
+define test = 3;
 define rty int64;
-static if (test == 1) {
+define aty int64;
+/+static if (test == 1) {
 rty Result;
-int A = 9;
+aty A = 9;
 string ptr = "";
 Result = A + A;
 
-rty sum(int a) {
+rty sum(aty a) {
 	result = a + a;
 }
 }// +/
-static if (test == 2) {
+/+static if (test == 2) {
 rty Result;
-int B = 5;
-int A = 9;
+aty B = 5;
+aty A = 9;
 string ptr = "";
 Result = A + B;
 
-rty sum(int a, int b) {
+rty sum(aty a, aty b) {
 	result = a + b;
 }
 }// +/
 static if (test == 3) {
 rty Result;
-int C = 5;
-int B = 7;
-int A = 9;
+aty C = 5;
+aty B = 7;
+aty A = 9;
 string ptr = "";
 Result = A + B;
-rty sum(int a, int b, int c) {
+rty sum(aty a, aty b, aty c) {
 	result = a + b;
 }
 }// +/

@@ -24,7 +24,8 @@ enum COMPILER_LEVELS {
 };
 
 #define COMPILER_LEVEL creg_all
-#define DEBUGGING 15
+#define DEBUGGING 1
+//~ 5
 
 // maximum tokens in expressions & nest level
 #define TOKS 2048
@@ -142,18 +143,20 @@ typedef union {		// value type
 
 //~ typedef struct symn *symn;		// Symbol Node
 //~ typedef struct astn *astn;		// Abstract Syntax Tree Node
+typedef struct list *list;
 
-typedef struct list {			// linked list, usually of strings
+struct list {				// linked list
 	struct list		*next;
 	unsigned char	*data;
+	//~ long	offs;
+	//~ void	*data;
 	//~ unsigned int	size;	// := ((char*)&node) - data;
 	//~ unsigned int	offs;	// offset in file ?
-} *list;
-
+};
 struct astn {				// tree node
 	uint32_t	line;				// token on line (* file offset or what *)
 	uint8_t		kind;				// code: TYPE_ref, OPER_???
-	uint8_t		csts;				// casts to basic type: (i32, f32, i64, f64)
+	uint8_t		cst2;				// casts to basic type: (i32, f32, i64, f64)
 	uint16_t	_XXX;				// unused
 	union {
 		union  {					// TYPE_xxx: constant
@@ -182,6 +185,10 @@ struct astn {				// tree node
 			astn	args;			// next used
 			//~ astn	nuse;			// next used
 		} id;
+		struct {					// STMT_brk
+			long offs;
+			long stks;				// stack size
+		} go2;
 	};
 	symn		type;				// typeof() return type of operator ... base type of IDTF
 	astn		next;				// next statement, do not use for preorder
@@ -227,6 +234,7 @@ struct ccState {
 	state	s;
 	symn	defs;		// definitions
 	astn	root;		// statements
+	astn	jmps;		// jumps
 
 	symn	all;		// all symbols TODO:Temp
 	list	strt[TBLS];		// string table
@@ -349,10 +357,10 @@ symn install(ccState s, const char* name, int kind, int cast, unsigned size);
 symn declare(ccState s, int kind, astn tag, symn rtyp);
 symn lookup(ccState s, symn sym, astn ast, int deep, astn args);
 
-symn findsym(ccState s, symn in, char *name);
-int findnzv(ccState s, char *name);
-int findint(ccState s, char *name, int* res);
-int findflt(ccState s, char *name, double* res);
+//~ symn findsym(ccState s, symn in, char *name);
+//~ int findnzv(ccState s, char *name);
+//~ int findint(ccState s, char *name, int* res);
+//~ int findflt(ccState s, char *name, double* res);
 
 symn typecheck(ccState, symn loc, astn ast);
 
@@ -387,6 +395,7 @@ symn leave(ccState s, symn def);
  * @param res: where to put the result
  * @param ast: tree to be evaluated
  * @return one of [TYPE_err, TYPE_bit, TYPE_int, TYPE_flt, ?TYPE_str]
+ * @todo should use the exec funtion, for the generated code.
  */
 int eval(astn res, astn ast);
 

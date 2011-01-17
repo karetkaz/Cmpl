@@ -639,6 +639,9 @@ int emitarg(vmState s, int opc, stkval arg) {
 		if (ip->rel != arg.i8)
 			return 0;
 	}
+	else if (opc == opc_jmp || opc == opc_jnz || opc == opc_jz) {
+		ip->rel -= s->pc;
+	}
 	//~ debug("opc_x%0x(0x%0X)%09.*A", opc, arg.i8, s->pc, ip);
 	//~ debug("@%04x[ss:%03d]: %09.*A", s->pc, s->ss, s->pc, ip);
 	//~ debug("ss(%d): %09.*A", s->ss, s->pc, ip);
@@ -820,10 +823,24 @@ static inline int ovf(cell pu) {
  * @arg ss: stack size
  * @return: error code
 **/
+
+static void dbugerr(state s, int pu, void *ip, long* bp, int ss, char *text) {
+	vmState vm = s->vm;
+	int IP, SP;
+
+
+	IP = ((char*)ip) - ((char*)vm->_mem) - vm->pc;
+	SP = ((char*)vm->_end) - ((char*)bp);
+
+	error(vm->s, 0, ">exec:%s:[pu%02d][sp%02d]@%9.*A", text, pu, ss, IP, ip);
+	//~ fputfmt(stdout, ">exec:[pu%02d][sp%02d]@%9.*A\n", pu, ss, IP, ip);
+}
+
 static int dbugpu(vmState vm, cell pu, dbgf dbg) {
 	typedef uint32_t *stkptr;
 	typedef uint8_t *memptr;
 
+	long ms = vm->_end - vm->_mem;
 	memptr mp = (void*)vm->_mem;
 	stkptr st = (void*)pu->sp;
 
@@ -842,19 +859,23 @@ static int dbugpu(vmState vm, cell pu, dbgf dbg) {
 				return 0;
 
 			error_opc:
-				error(vm->s, 0, "invalid opcode: op[%.*A]", (char*)ip - (char*)(vm->_mem), ip);
+				dbugerr(vm->s, 0, ip, (long*)sp, st - sp, "invalid opcode");
+				//~ error(vm->s, 0, "invalid opcode: op[%.*A]", (char*)ip - (char*)(vm->_mem), ip);
 				return -1;
 
 			error_ovf:
-				error(vm->s, 0, "stack overflow: op[%.*A] / %d", (char*)ip - (char*)(vm->_mem), ip, (vm->_end - pu->sp) / 4);
+				dbugerr(vm->s, 0, ip, (long*)sp, st - sp, "stack overflow");
+				//~ error(vm->s, 0, "stack overflow: op[%.*A] / %d", (char*)ip - (char*)(vm->_mem), ip, (vm->_end - pu->sp) / 4);
 				return -2;
 
 			error_mem:
-				error(vm->s, 0, "segmentation fault: op[%.*A]", (char*)ip - (char*)(vm->_mem), ip);
+				dbugerr(vm->s, 0, ip, (long*)sp, st - sp, "segmentation fault");
+				//~ error(vm->s, 0, "segmentation fault: op[%.*A]", (char*)ip - (char*)(vm->_mem), ip);
 				return -3;
 
 			error_div:
-				error(vm->s, 0, "division by zero: op[%.*A]", (char*)ip - (char*)(vm->_mem), ip);
+				dbugerr(vm->s, 0, ip, (long*)sp, st - sp, "division by zero");
+				//~ error(vm->s, 0, "division by zero: op[%.*A]", (char*)ip - (char*)(vm->_mem), ip);
 				return -4;
 
 			#define NEXT(__IP, __CHK, __SP) {pu->sp -= 4*(__SP); pu->ip += (__IP);}

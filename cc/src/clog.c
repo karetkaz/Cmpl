@@ -130,7 +130,7 @@ static void fputast(FILE *fout, astn ast, int mode, int level) {
 				break;
 			}
 			fputfmt(fout, "%I", noiden ? 0 : level);
-			switch (ast->csts) {
+			switch (ast->cst2) {
 				case 0: break;
 				case QUAL_sta:
 					fputfmt(fout, "static ");
@@ -176,7 +176,7 @@ static void fputast(FILE *fout, astn ast, int mode, int level) {
 				break;
 			}
 			fputfmt(fout, "%I", noiden ? 0 : level);
-			switch (ast->csts) {
+			switch (ast->cst2) {
 				case 0: break;
 				case QUAL_sta:
 					fputfmt(fout, "static ");
@@ -201,6 +201,20 @@ static void fputast(FILE *fout, astn ast, int mode, int level) {
 				}
 			}
 			else fputfmt(fout, ";\n");
+		} break;
+		case STMT_brk: {
+			if (rlev < 2) {
+				fputs("break", fout);
+				break;
+			}
+			fputfmt(fout, "%I", noiden ? 0 : level);
+			switch (ast->cst2) {
+				case 0: break;
+				default:
+					debug("error");
+					break;
+			}
+			fputfmt(fout, "break;\n");
 		} break;
 		//} */ // STMT
 		//{ OPER
@@ -822,6 +836,7 @@ void dump(state s, dumpMode mode, char *text) {
 		case dump_ast: dumpast(logf, s->cc->root, level); break;
 		case dump_sym: dumpsym(logf, s->defs, level); break;
 		case dump_asm: dumpasm(logf, s->vm, level); break;
+		case dump_txt: fputs("\n", logf); break;
 	}
 }
 
@@ -833,7 +848,7 @@ void dumpxml(FILE *fout, astn ast, int lev, const char* text, int level) {
 	//~ fputfmt(fout, "%I<%s id='%d' oper='%?k'", lev, text, ast->kind, ast);
 	fputfmt(fout, "%I<%s id='%t' oper='%?k'", lev, text, ast->kind, ast);
 	if (level & prType) fputfmt(fout, " type='%?T'", ast->type);
-	if (level & prCast) fputfmt(fout, " cast='%?t'", ast->csts);
+	if (level & prCast) fputfmt(fout, " cast='%?t'", ast->cst2);
 	if (level & prLine) fputfmt(fout, " line='%d'", ast->line);
 	if (level & prArgs) fputfmt(fout, " stmt='%?+k'", ast);
 	switch (ast->kind) {
@@ -866,6 +881,9 @@ void dumpxml(FILE *fout, astn ast, int lev, const char* text, int level) {
 			dumpxml(fout, ast->stmt.stmt, lev + 1, "stmt", level);
 			fputfmt(fout, "%I</stmt>\n", lev);
 		} break;
+		case STMT_brk:
+			fputfmt(fout, " />\n");
+			break;
 		//}
 		//{ OPER
 		case OPER_fnc: {		// '()'
@@ -923,7 +941,7 @@ void dumpxml(FILE *fout, astn ast, int lev, const char* text, int level) {
 		//}*/
 		//{ TVAL
 		case EMIT_opc:
-			fputfmt(fout, "/>\n", text);
+			fputfmt(fout, " />\n", text);
 			break;
 		case TYPE_rec:
 		case TYPE_enu:
@@ -959,7 +977,7 @@ void dumpxml(FILE *fout, astn ast, int lev, const char* text, int level) {
 			if (var && (var->args || var->init))
 				fputfmt(fout, ">\n");
 			else
-				fputfmt(fout, "/>\n");
+				fputfmt(fout, " />\n");
 
 			if (var && var->args) {
 				symn def = var->args;

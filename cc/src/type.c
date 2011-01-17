@@ -398,7 +398,7 @@ int castTo(astn ast, int cast) {
 	if (!ast) return 0;
 	// TODO: check validity / Remove function
 	//~ debug("cast to (%d)", cast);
-	return ast->csts = cast;
+	return ast->cst2 = cast;
 }
 int castTy(astn ast, symn type) {
 	if (!ast) return 0;
@@ -418,7 +418,7 @@ symn typecheck(ccState cc, symn loc, astn ast) {
 		return 0;
 	}
 
-	ast->csts = 0;
+	ast->cst2 = 0;
 
 	switch (ast->kind) {
 		default:
@@ -549,7 +549,7 @@ symn typecheck(ccState cc, symn loc, astn ast) {
 				ast->type = rht;
 				if (ast->kind == OPER_not) {
 					ast->type = type_bol;
-					ast->csts = TYPE_bit;
+					ast->cst2 = TYPE_bit;
 				}
 				if (!castTo(ast->op.rhso, cast)) {
 					debug("%T('%k', %+k): %t", rht, ast, ast, cast);
@@ -883,6 +883,7 @@ int argsize(symn sym, int align) {
 int fixargs(symn sym, int align, int stbeg) {
 	symn arg;
 	int stdiff = 0;
+	//~ int stbeg = sizeOf(sym->type);
 	for (arg = sym->args; arg; arg = arg->next) {
 		arg->offs = stbeg + stdiff;
 		stdiff += padded(sizeOf(arg->type), align);

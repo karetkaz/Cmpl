@@ -30,6 +30,7 @@ TOKDEF(STMT_do,  0x00, 0, ".do")		// stmt: decl / expr
 TOKDEF(STMT_for, 0xff, 0, "for")		// stmt: for, while, repeat
 TOKDEF(STMT_if,  0xff, 0, "if")			// stmt: if then else
 TOKDEF(STMT_els, 0xff, 0, "else")		// ????
+TOKDEF(STMT_brk, 0xff, 0, "break")		// stmt: break
 //~ TOKDEF(STMT_ret, 0xff, 0, "return")	// stmt: return
 TOKDEF(STMT_end, 0x00, 0, ".end")		// destruct calls ?
 

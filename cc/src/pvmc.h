@@ -44,6 +44,7 @@ typedef enum {
 
 	// dump()
 	//~ dump_bin = 0x0000100,
+	dump_txt = 0x0000800,
 	dump_sym = 0x0000200,
 	dump_asm = 0x0000300,
 	dump_ast = 0x0000400,
@@ -86,6 +87,11 @@ void vmInfo(FILE*, vmState s);
 //~ int vmDone(state s);		// what should do this
 
 void ccSource(ccState, char *file, int line);
+
+symn findsym(ccState s, symn in, char *name);
+int findnzv(ccState s, char *name);
+int findint(ccState s, char *name, int* res);
+int findflt(ccState s, char *name, double* res);
 
 #define popargsize(__ARGV, __SIZE) ((void*)(((__ARGV)->argv += (((__SIZE) | 3) & ~3)) - (__SIZE)))
 #define popargtype(__ARGV, __TYPE) ((__TYPE*)((__ARGV)->argv += ((sizeof(__TYPE) | 3) & ~3)))[-1]

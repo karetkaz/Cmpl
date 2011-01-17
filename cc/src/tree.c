@@ -101,7 +101,7 @@ int eval(astn res, astn ast) {
 	if (!res)
 		res = &rhs;
 
-	switch (ast->csts) {
+	switch (ast->cst2) {
 		case TYPE_bit: cast = TYPE_bit; break;
 
 		case TYPE_int: // TODO: define a = 9;	// what casts to int ? index ?
@@ -119,7 +119,7 @@ int eval(astn res, astn ast) {
 			return 0;
 
 		default:
-			debug("(%+k):%t / %d", ast, ast->csts, ast->line);
+			debug("(%+k):%t / %d", ast, ast->cst2, ast->line);
 
 		case TYPE_ref:
 		case TYPE_vid:
@@ -127,7 +127,7 @@ int eval(astn res, astn ast) {
 		case 0:
 		//~ case TYPE_def:
 			//~ return 0;
-			cast = ast->csts;
+			cast = ast->cst2;
 	}
 
 	switch (ast->kind) {
@@ -195,7 +195,7 @@ int eval(astn res, astn ast) {
 
 		case OPER_not: {		// '!'
 
-			dieif(ast->csts != TYPE_bit, "FixMe", ast);
+			dieif(ast->cst2 != TYPE_bit, "FixMe", ast);
 			if (!eval(res, ast->op.rhso))
 				return 0;
 
@@ -216,7 +216,7 @@ int eval(astn res, astn ast) {
 				return 0;
 			if (!eval(&rhs, ast->op.rhso))
 				return 0;
-			dieif(lhs.kind != rhs.kind, "eval operator %k (%t, %t): %t", ast, lhs.kind, rhs.kind, ast->csts);
+			dieif(lhs.kind != rhs.kind, "eval operator %k (%t, %t): %t", ast, lhs.kind, rhs.kind, ast->cst2);
 
 			switch (rhs.kind) {
 				default: return 0;
@@ -264,7 +264,7 @@ int eval(astn res, astn ast) {
 				return 0;
 			if (!eval(&rhs, ast->op.rhso))
 				return 0;
-			dieif(lhs.kind != rhs.kind, "eval operator %k (%t, %t): %t", ast, lhs.kind, rhs.kind, ast->csts);
+			dieif(lhs.kind != rhs.kind, "eval operator %k (%t, %t): %t", ast, lhs.kind, rhs.kind, ast->cst2);
 			res->kind = TYPE_bit;
 			switch (rhs.kind) {
 				default: return 0;
@@ -298,7 +298,7 @@ int eval(astn res, astn ast) {
 				return 0;
 			if (!eval(&rhs, ast->op.rhso))
 				return 0;
-			dieif(lhs.kind != rhs.kind, "eval operator %k (%t, %t): %t", ast, lhs.kind, rhs.kind, ast->csts);
+			dieif(lhs.kind != rhs.kind, "eval operator %k (%t, %t): %t", ast, lhs.kind, rhs.kind, ast->cst2);
 
 			switch (rhs.kind) {
 				default:
@@ -324,7 +324,7 @@ int eval(astn res, astn ast) {
 				return 0;
 			if (!eval(&rhs, ast->op.rhso))
 				return 0;
-			dieif(lhs.kind != rhs.kind, "eval operator %k (%t, %t): %t", ast, lhs.kind, rhs.kind, ast->csts);
+			dieif(lhs.kind != rhs.kind, "eval operator %k (%t, %t): %t", ast, lhs.kind, rhs.kind, ast->cst2);
 
 			res->kind = TYPE_bit;
 			switch (ast->kind) {

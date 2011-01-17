@@ -83,7 +83,6 @@ case opc_libc: NEXT(2, libcfnc[ip->idx].chk, -libcfnc[ip->idx].pop) {
 	vm->s->func = libcfnc[ip->idx].sym->offs;
 	vm->s->libc = libcfnc[ip->idx].sym;
 	if (ip->idx == 0) {
-		//~ vm->s->argc = st - sp;
 		vm->s->retv = (char *)st;
 		vm->s->args = vm->s->defs;
 	}
@@ -209,8 +208,8 @@ case opc_ldi2: NEXT(1, 1, -0) {
 } break;
 case opc_ldi4: NEXT(1, 1, -0) {
 #ifdef EXEC
-	//~ STOP(error_seg, SP(0, i4) < mp);
-	//~ STOP(error_seg, SP(0, i4) > mp + ms);
+	STOP(error_mem, SP(0, i4) < vm->pc);
+	STOP(error_mem, SP(0, i4) > ms);
 	SP(0, i4) = MP(SP(0, i4), i4);
 #endif
 } break;

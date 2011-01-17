@@ -59,7 +59,7 @@ static inline int genVal(state s, astn ast) {
 		return 0;
 	}
 
-	cast = ast->csts;
+	cast = ast->cst2;
 
 	if (s->vm->opti && eval(&tmp, ast)) {
 		ast = &tmp;
@@ -77,7 +77,7 @@ int cgen(state s, astn ast, int get) {
 	dieif(!ast || !ast->type, "FixMe", ast);
 
 	if (get == TYPE_any)
-		get = ast->csts;
+		get = ast->cst2;
 
 	if (!(ret = ast->type->cast))
 		ret = ast->type->kind;
@@ -112,7 +112,7 @@ int cgen(state s, astn ast, int get) {
 			//~ fputfmt(stdout, "%+k", ast->stmt.stmt);
 			//~ debug("%+k", ast->stmt.stmt); fputasm(stdout, s->vm, ipdbg, -1, 0x119);
 			#endif
-		} return TYPE_vid;
+		} break;
 		case STMT_beg: {	// {}
 			astn ptr;
 			int stpos = stkoffs(s->vm, 0);
@@ -132,7 +132,7 @@ int cgen(state s, astn ast, int get) {
 					return 0;
 				}
 			}
-		} return TYPE_vid;
+		} break;
 		case STMT_if:  {
 			int jmpt = 0, jmpf = 0;
 			int tt = eval(&tmp, ast->stmt.test);
@@ -140,11 +140,11 @@ int cgen(state s, astn ast, int get) {
 			dieif(get != TYPE_vid, "FixMe");
 			emitint(s->vm, opc_line, ast->line);
 
-			if (ast->csts == QUAL_sta && (ast->stmt.step || !tt)) {
+			if (ast->cst2 == QUAL_sta && (ast->stmt.step || !tt)) {
 				error(s, ast->line, "invalid static if construct: %s", !tt ? "can not evaluate" : "else part is invalid");
 				return 0;
 			}
-			if (tt && (s->vm->opti || ast->csts == QUAL_sta)) {
+			if (tt && (s->vm->opti || ast->cst2 == QUAL_sta)) {
 				astn gen = constbol(&tmp) ? ast->stmt.stmt : ast->stmt.step;
 				//~ debug("bool(%+k) = %k = %d", ast->stmt.test, &tmp, constbol(&tmp));
 				if (gen && !cgen(s, gen, TYPE_any)) {	// leave the stack
@@ -212,11 +212,13 @@ int cgen(state s, astn ast, int get) {
 				}
 				fixjump(s->vm, jmpt, emitopc(s->vm, markIP), 0);
 			}
-		} return TYPE_vid;
+		} break;
 		case STMT_for: {
-			int beg, end, cmp = -1;
+			astn jl = s->cc->jmps;
+			int jstep, lcont, lbody, lbreak;
 			int stpos = stkoffs(s->vm, 0);
 
+			dieif(get != TYPE_vid, "FixMe");
 			emitint(s->vm, opc_line, ast->line);
 			if (ast->stmt.init && !cgen(s, ast->stmt.init, TYPE_vid)) {
 				debug("%+k", ast);
@@ -225,61 +227,82 @@ int cgen(state s, astn ast, int get) {
 
 			//~ if (ast->cast == QUAL_par) ;		// 'parallel for'
 			//~ else if (ast->cast == QUAL_sta) ;	// 'static for'
-			beg = emitopc(s->vm, markIP);
-			if (ast->stmt.step) {
-				int tmp = beg;
-				if (ast->stmt.init)
-					emitint(s->vm, opc_jmp, 0);
 
-				if (!(beg = emitopc(s->vm, markIP))) {
-					fatal("FixMe");
-					return 0;
-				}
-				if (!cgen(s, ast->stmt.step, TYPE_vid)) {
-					debug("%+k", ast);
-					return 0;
-				}
-
-				if (ast->stmt.init)
-					fixjump(s->vm, tmp, emitopc(s->vm, markIP), 0);
+			if (!(jstep = emitint(s->vm, opc_jmp, 0))) {		// continue;
+				debug("%+k", ast);
+				internalerror;
+				return 0;
 			}
+
+			lbody = emitopc(s->vm, markIP);
+			if (ast->stmt.stmt && !cgen(s, ast->stmt.stmt, TYPE_vid)) {
+				debug("%+k", ast);
+				return 0;
+			}
+
+			lcont = emitopc(s->vm, markIP);
+			if (ast->stmt.step && !cgen(s, ast->stmt.step, TYPE_vid)) {
+				debug("%+k", ast);
+				return 0;
+			}
+
+			fixjump(s->vm, jstep, emitopc(s->vm, markIP), 0);
 			if (ast->stmt.test) {
 				if (!cgen(s, ast->stmt.test, TYPE_bit)) {
 					debug("%+k", ast);
 					return 0;
 				}
-				cmp = emitint(s->vm, opc_jz, 0);		// if (!test) break;
+				if (!emitint(s->vm, opc_jnz, lbody)) {		// continue;
+					debug("%+k", ast);
+					internalerror;
+					return 0;
+				}
+			}
+			else {
+				if (!emitint(s->vm, opc_jmp, lbody)) {		// continue;
+					debug("%+k", ast);
+					internalerror;
+					return 0;
+				}
 			}
 
-			// push(list_jmp, 0);
-			if (ast->stmt.stmt && !cgen(s, ast->stmt.stmt, TYPE_vid)) {		// this will leave the stack clean
-				debug("%+k", ast);
-				return 0;
-			}
-			if (!(end = emitint(s->vm, opc_jmp, beg))) {		// continue;
-				debug("%+k", ast);
-				internalerror;
-				return 0;
-			}
-			fixjump(s->vm, end, beg, 0);
-			end = emitopc(s->vm, markIP);
-			fixjump(s->vm, cmp, end, 0);			// break;
+			// TODO: fix all breaks here
+			lbreak = emitopc(s->vm, markIP);
+			while (s->cc->jmps != jl) {
+				astn jmp = s->cc->jmps;
+				s->cc->jmps = jmp->next;
 
-			//~ while (list_jmp) {
-			//~ if (list_jmp->kind == break)
-			//~ 	fixj(s, list_jmp->offs, end, 0);
-			//~ if (list_jmp->kind == continue)
-			//~ 	fixj(s, list_jmp->offs, beg, 0);
-			//~ list_jmp = list_jmp->next;
-			//~ }
-			// pop(list_jmp);
-
+				switch (jmp->kind) {
+					case STMT_brk:
+						fixjump(s->vm, jmp->go2.offs, lbreak, ast->go2.stks);
+						break;
+				}
+			}
 
 			//! TODO: if (init is decl) destruct;
 			if (stpos != stkoffs(s->vm, 0)) {
 				dieif(!emitidx(s->vm, opc_drop, stpos), "FixMe");
 			}
-		} return TYPE_vid;
+		} break;
+		case STMT_brk: {
+			int offs;
+			dieif(get != TYPE_vid, "FixMe");
+			emitint(s->vm, opc_line, ast->line);
+			if (!(offs = emitint(s->vm, opc_jmp, 0))) {
+				debug("%+k", ast);
+				internalerror;
+				return 0;
+			}
+
+			ast->go2.offs = offs;
+			ast->go2.stks = stkoffs(s->vm, 0);
+
+			if (s->cc->jmps)
+				s->cc->jmps->next = ast;
+			ast->next = s->cc->jmps;
+			s->cc->jmps = ast;
+
+		} break;
 		//}
 		//{ OPER
 		case OPER_fnc: {	// '()' emit/call/cast
@@ -546,7 +569,7 @@ int cgen(state s, astn ast, int get) {
 				dbg_rhs(ast);
 				return 0;
 			}
-			if (!emitint(s->vm, opc, ast->op.rhso->csts)) {
+			if (!emitint(s->vm, opc, ast->op.rhso->cst2)) {
 				internalerror;
 				dbg_ast(ast);
 				return 0;
@@ -601,7 +624,7 @@ int cgen(state s, astn ast, int get) {
 				dbg_rhs(ast);
 				return 0;
 			}
-			if (!emitint(s->vm, opc, ast->op.rhso->csts)) {
+			if (!emitint(s->vm, opc, ast->op.rhso->cst2)) {
 				dbg_ast(ast);
 				internalerror;
 				return 0;
@@ -609,7 +632,7 @@ int cgen(state s, astn ast, int get) {
 
 			#if DEBUGGING
 			// these must be true
-			dieif(ast->op.lhso->csts != ast->op.rhso->csts, "RemMe", ast);
+			dieif(ast->op.lhso->cst2 != ast->op.rhso->cst2, "RemMe", ast);
 			dieif(ret != castOf(ast->type), "RemMe");
 			switch (ast->kind) {
 				case OPER_neq:
@@ -796,17 +819,17 @@ int cgen(state s, astn ast, int get) {
 					debug("FixMe[%-.1k]", var->init);
 
 					stktop = stkoffs(s->vm, 0);
-					stkcnt = var->offs - 4;
+					stkcnt = var->offs;
 
 					var->offs = emitopc(s->vm, markIP);
 
-					//~ debug("ss: %d", stkoffs(s->vm, 0));
+					debug("ss: %d", stkoffs(s->vm, 0));
 					fixjump(s->vm, 0, 0, stkcnt);
-					//~ debug("ss: %d", stkoffs(s->vm, 0));
+					debug("ss: %d", stkoffs(s->vm, 0));
 					ret = cgen(s, var->init, get);
-					//~ debug("ss: %d", stkoffs(s->vm, 0));
+					debug("ss: %d", stkoffs(s->vm, 0));
 					fixjump(s->vm, 0, 0, stktop);
-					//~ debug("ss: %d", stkoffs(s->vm, 0));
+					debug("ss: %d", stkoffs(s->vm, 0));
 
 					return ret;
 					//~ return var->offs ? TYPE_vid : 0;
@@ -815,13 +838,13 @@ int cgen(state s, astn ast, int get) {
 				if (var->offs) {
 					struct astn id, op;
 					op.kind = ASGN_set;
-					op.csts = TYPE_vid;
+					op.cst2 = TYPE_vid;
 					op.type = var->type;
 					op.op.lhso = &id;
 					op.op.rhso = var->init;
 
 					id.kind = TYPE_ref;
-					id.csts = TYPE_ref;		// wee need a reference here
+					id.cst2 = TYPE_ref;		// wee need a reference here
 					id.type = var->type;
 					id.id.link = var;
 
@@ -911,6 +934,10 @@ int cgen(state s, astn ast, int get) {
 	}
 
 	if (get != ret) switch (get) {
+		case TYPE_any: switch (ret) {
+			case TYPE_vid: break;
+			default: goto errorcast2;
+		} break;// */
 		case TYPE_vid: return TYPE_vid;
 		case TYPE_u32: switch (ret) {
 			case TYPE_bit:
@@ -1049,6 +1076,10 @@ int gencode(state s, int level) {
 		// TODO: TYPE_vid: to clear the stack
 		if (!cgen(s, cc->root, 0))
 			fputasm(stderr, vm, seg, -1, 0x10);
+		while (cc->jmps) {
+			error(s, 0, "invalid jump: `%k`", cc->jmps);
+			cc->jmps = cc->jmps->next;
+		}
 	}
 	emitint(s->vm, opc_libc, 0);		// TODO: Halt only in case of scripts
 

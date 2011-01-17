@@ -771,7 +771,8 @@ static int readTok(ccState s, astn tok) {
 					//~ int _pad;
 				}
 				keywords[] = {
-					// my SciTe can sort these lines !!!
+					// sort these lines (SciTE knows with lua ext)!!!
+					{"break", STMT_brk},
 					{"define", TYPE_def},
 					{"else", STMT_els},
 					{"emit", EMIT_opc},
@@ -1466,7 +1467,7 @@ static astn args(ccState s, int mode) {
 
 		arg = declare(s, TYPE_ref, atag, atyp);
 		arg->cast = byref ? TYPE_ref : 0;
-		atag->csts = atyp->cast;
+		atag->cst2 = atyp->cast;
 		//~ arg->load = ref != 0;
 
 		if (ast) {
@@ -1587,7 +1588,7 @@ static astn stmt(ccState s, int mode) {
 		if (newscope)
 			leave(s, NULL);	// TODO: ???
 	}
-	else if ((ast = next(s, STMT_if))) {	// if (...)
+	else if ((ast = next(s,  STMT_if))) {	// if (...)
 		int newscope = 1;
 		skiptok(s, PNCT_lp, 1);
 		ast->stmt.test = expr(s, TYPE_bit);
@@ -1626,7 +1627,7 @@ static astn stmt(ccState s, int mode) {
 			ast->stmt.step = stmt(s, 1);
 
 		ast->type = type_vid;
-		ast->csts = qual;
+		ast->cst2 = qual;
 
 		if (newscope)
 			leave(s, NULL);			// TODO: destruct
@@ -1652,9 +1653,14 @@ static astn stmt(ccState s, int mode) {
 		}
 		ast->stmt.stmt = stmt(s, 1);	// no new scope & disable decl
 		ast->type = type_vid;
-		ast->csts = qual;
+		ast->cst2 = qual;
 		leave(s, NULL);
 	}
+	else if ((ast = next(s, STMT_brk))) {	// break;
+		ast->type = type_vid;
+		ast->cst2 = qual;
+	}
+
 
 	else if ((ast = decl(s, 1))) {
 		astn tmp = newnode(s, STMT_do);
@@ -1708,7 +1714,7 @@ astn decl(ccState s, int mode) {
 		ref = declare(s, TYPE_ref, tag, typ);
 
 		if (skip(s, PNCT_lp)) {				// int a(...)
-			symn res = NULL;
+			symn result = NULL;
 
 			enter(s, NULL);
 			tag->id.args = args(s, 0);
@@ -1716,7 +1722,7 @@ astn decl(ccState s, int mode) {
 
 			if (test(s, STMT_beg)) {		// int sqr(int a) {return a * a;}
 				enter(s, tag);
-				res = installex(s, "result", TYPE_ref, 0, typ, NULL);
+				result = installex(s, "result", TYPE_ref, 0, typ, NULL);
 				ref->init = stmt(s, 1);
 				leave(s, NULL);
 				backTok(s, newnode(s, STMT_do));
@@ -1727,15 +1733,15 @@ astn decl(ccState s, int mode) {
 				tag->id.args = s->argz;
 				ref->args = s->argz->id.link;
 			}
-			if (res) {
+			if (result) {
 				symn tmp;
-				int spc = sizeOf(res->type) + fixargs(ref, 4, -sizeOf(res->type));
-				ref->offs = -spc;
-				res->offs = -sizeOf(res->type);
+				int spc = sizeOf(result->type) + fixargs(ref, 4, -sizeOf(ref->type));
+				result->offs = -sizeOf(result->type);
+				ref->offs = -spc - 4;
 
 				//~ /*
-				debug("argsize(%+T): %d", ref, ref->offs);
-				debug("res:%T@sp[%d]", res, res->offs / -1);
+				debug("argsize(%-T): %d", ref, ref->offs);
+				debug("res:%T@sp[%d]", result, result->offs / -1);
 				for (tmp = ref->args; tmp; tmp = tmp->next) {
 					debug("arg:%+T@sp[%d]", tmp, tmp->offs / -1);
 				}// */
@@ -1864,7 +1870,7 @@ static astn spec(ccState s/* , int qual */) {
 						astn tmp = newnode(s, OPER_fnc);
 						warnfun = 1;
 						tmp->type = def->init->type;
-						tmp->csts = def->init->csts;
+						tmp->cst2 = def->init->cst2;
 						tmp->line = def->init->line;
 						tmp->op.rhso = def->init;
 						def->init = tmp;
