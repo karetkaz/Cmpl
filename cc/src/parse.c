@@ -773,6 +773,7 @@ static int readTok(ccState s, astn tok) {
 				keywords[] = {
 					// sort these lines (SciTE knows with lua ext)!!!
 					{"break", STMT_brk},
+					{"continue", STMT_con},
 					{"define", TYPE_def},
 					{"else", STMT_els},
 					{"emit", EMIT_opc},
@@ -781,7 +782,7 @@ static int readTok(ccState s, astn tok) {
 					{"if", STMT_if},
 					{"module", UNIT_def},
 					{"operator", OPER_op},
-					{"parralel", QUAL_par},
+					{"parallel", QUAL_par},
 					{"static", QUAL_sta},
 					{"struct", TYPE_rec},
 				};
@@ -1412,7 +1413,6 @@ astn expr(ccState s, int mode) {
 
 		s->root = NULL;
 		if (typecheck(s, 0, tok) == 0) {
-			//~ error(s->s, tok->line, "invalid expression: %+k in statement %+k\n%7K", s->root, tok, tok);
 			error(s->s, tok->line, "invalid expression: `%+k` in `%+k`", s->root, tok);
 			debug("%7K", tok);
 		}
@@ -1535,10 +1535,10 @@ static astn stmt(ccState s, int mode) {
 	}// */
 
 	// check statement construct
-	if ((ast = next(s, QUAL_par))) {		// 'parralel' ('for' | '{')
+	if ((ast = next(s, QUAL_par))) {		// 'parallel' ('for' | '{')
 		switch (test(s, 0)) {
-			//~ case STMT_beg:	// parralel task
-			case STMT_for:		// parralel loop
+			//~ case STMT_beg:	// parallel task
+			case STMT_for:		// parallel loop
 				qual = QUAL_par;
 				break;
 			default:
@@ -1546,9 +1546,9 @@ static astn stmt(ccState s, int mode) {
 		}
 		ast = 0;
 	}
-	if ((ast = next(s, QUAL_sta))) {		// 'static' ('if' | 'for')
+	else if ((ast = next(s, QUAL_sta))) {		// 'static' ('if' | 'for')
 		switch (test(s, 0)) {
-			//~ case STMT_for:	// loop unroll
+			case STMT_for:		// loop unroll
 			case STMT_if:		// compile time if
 				qual = QUAL_sta;
 				break;
@@ -1660,7 +1660,10 @@ static astn stmt(ccState s, int mode) {
 		ast->type = type_vid;
 		ast->cst2 = qual;
 	}
-
+	else if ((ast = next(s, STMT_con))) {	// continue;
+		ast->type = type_vid;
+		ast->cst2 = qual;
+	}
 
 	else if ((ast = decl(s, 1))) {
 		astn tmp = newnode(s, STMT_do);
@@ -1703,6 +1706,7 @@ astn decl(ccState s, int mode) {
 		return tag;
 
 	//~ type ID ('('args')')? ('['expr']')* init?
+	mode = skip(s, QUAL_sta) ? QUAL_sta : 0;
 	if ((typ = type(s))) {
 		symn ref = NULL;
 
@@ -1724,6 +1728,10 @@ astn decl(ccState s, int mode) {
 				enter(s, tag);
 				result = installex(s, "result", TYPE_ref, 0, typ, NULL);
 				ref->init = stmt(s, 1);
+				if (ref->init == NULL) {
+					ref->init = newnode(s, STMT_beg);
+					ref->init->type = type_vid;
+				}
 				leave(s, NULL);
 				backTok(s, newnode(s, STMT_do));
 			}
@@ -1734,19 +1742,72 @@ astn decl(ccState s, int mode) {
 				ref->args = s->argz->id.link;
 			}
 			if (result) {
-				symn tmp;
-				int spc = sizeOf(result->type) + fixargs(ref, 4, -sizeOf(ref->type));
-				result->offs = -sizeOf(result->type);
-				ref->offs = -spc - 4;
+				//~ symn tmp;
 
-				//~ /*
+				mode = QUAL_sta;
+
+				// result is the first argument
+				result->offs = sizeOf(result->type);
+
+				ref->offs = result->offs + fixargs(ref, 4, -result->offs);
+				//~ ref->offs = result->offs + fixargs(ref, 4, 0);
+
+				/*
 				debug("argsize(%-T): %d", ref, ref->offs);
-				debug("res:%T@sp[%d]", result, result->offs / -1);
 				for (tmp = ref->args; tmp; tmp = tmp->next) {
-					debug("arg:%+T@sp[%d]", tmp, tmp->offs / -1);
-				}// */
+					debug("arg:%+T@sp[%d]", tmp, ref->offs - tmp->offs);
+				}
+				debug("res:%T@sp[%d]", result, ref->offs - result->offs);
+				// */
 			}
-		}
+		}// */
+		/* 
+		wi will need to reinstall the arguments.
+		if (skip(s, PNCT_lp)) {				// int a(...)
+			symn result = NULL;
+
+			enter(s, NULL);
+			tag->id.args = args(s, 0);
+			skiptok(s, PNCT_rp, 1);
+			ref->args = leave(s, ref);
+			ref->call = 1;
+			if (ref->args == NULL) {
+				tag->id.args = s->argz;
+				ref->args = s->argz->id.link;
+			}
+
+			if (test(s, STMT_beg)) {		// int sqr(int a) {return a * a;}
+				enter(s, tag);
+				// TODO: reinstall copy args
+				result = installex(s, "result", TYPE_ref, 0, typ, NULL);
+				ref->init = stmt(s, 1);
+				if (ref->init == NULL) {
+					ref->init = newnode(s, STMT_beg);
+					ref->init->type = type_vid;
+				}
+				leave(s, NULL);
+				backTok(s, newnode(s, STMT_do));
+			}
+			if (result) {
+				//~ symn tmp;
+
+				mode = QUAL_sta;
+
+				// result is the first argument
+				result->offs = sizeOf(result->type);
+
+				ref->offs = result->offs + fixargs(ref, 4, -result->offs);
+				//~ ref->offs = result->offs + fixargs(ref, 4, 0);
+
+				/ *
+				debug("argsize(%-T): %d", ref, ref->offs);
+				for (tmp = ref->args; tmp; tmp = tmp->next) {
+					debug("arg:%+T@sp[%d]", tmp, ref->offs - tmp->offs);
+				}
+				debug("res:%T@sp[%d]", result, ref->offs - result->offs);
+				// * /
+			}
+		}// */
 
 		else if (skip(s, PNCT_lc)) {		// int a[...]
 			symn tmp = newdefn(s, TYPE_arr);
@@ -1793,6 +1854,8 @@ astn decl(ccState s, int mode) {
 		}
 
 		skiptok(s, STMT_do, 1);
+
+		ref->cast = mode;
 
 		redefine(s, ref);
 		//~ debug("%+k", ref->init);
@@ -2191,7 +2254,7 @@ int parse(ccState cc, srcType mode) {
 /** expr -----------------------------------------------------------------------
  * expression
  * expr := ID
- *	| expr '[' expr ']'		// \arr	array
+ *	| expr '[' expr ']'			// \arr	array
  ?	| '[' expr ']'				// \ptr	pointer
  *	| expr '(' expr? ')'		// \fnc	function
  *	| '(' expr ')'				// \pri	precedence

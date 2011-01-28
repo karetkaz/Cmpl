@@ -16,7 +16,7 @@ TOKDEF(TYPE_ref, 0x00, 0, ".ref")		// variable / function
 
 //~ TOKDEF(QUAL_con, 0xff, 0, "const")	// constant
 TOKDEF(QUAL_sta, 0xff, 0, "static")
-TOKDEF(QUAL_par, 0xff, 0, "parralel")
+TOKDEF(QUAL_par, 0xff, 0, "parallel")
 //~ TOKDEF(QUAL_syn, 0xff, 0, "synchronized")
 
 //~ vmInterface ================================================================
@@ -31,6 +31,7 @@ TOKDEF(STMT_for, 0xff, 0, "for")		// stmt: for, while, repeat
 TOKDEF(STMT_if,  0xff, 0, "if")			// stmt: if then else
 TOKDEF(STMT_els, 0xff, 0, "else")		// ????
 TOKDEF(STMT_brk, 0xff, 0, "break")		// stmt: break
+TOKDEF(STMT_con, 0xff, 0, "continue")	// stmt: continue
 //~ TOKDEF(STMT_ret, 0xff, 0, "return")	// stmt: return
 TOKDEF(STMT_end, 0x00, 0, ".end")		// destruct calls ?
 
@@ -187,8 +188,8 @@ OPCDEF(opc_ldcr, 0x1f, 5, 0, +1, 1,	"ldc.ref")	//
 OPCDEF(opc_ldi1, 0x20, 1, 1, +0, 1,	"ldi.8")	// copy(sp, sp(0) 1);			[…, a, b, c => […, a, b, *c;
 OPCDEF(opc_ldi2, 0x21, 1, 1, +0, 1,	"ldi.16")	// copy(sp, sp(0) 2);			[…, a, b, c => […, a, b, *c;
 OPCDEF(opc_ldi4, 0x22, 1, 1, +0, 1,	"ldi.32")	// copy(sp, sp(0) 4);			[…, a, b, c => […, a, b, *c;
-OPCDEF(opc_ldi8, 0x23, 1, 1, +1, 1,	"ldi.64")	// copy(sp, sp(0) 8);			[…, a, b, c => […, a, b, *c:1, *c:2;
-OPCDEF(opc_ldiq, 0x24, 0, 1, +3, 1,	"ldi.128")	// copy(sp, sp(0) 16);			[…, a, b, c => […, a, b, *c;
+OPCDEF(opc_ldi8, 0x23, 1, 1, +1, 1,	"ldi.64")	// copy(sp, sp(0) 8);			[…, a, b, c => […, a, b, *c12;
+OPCDEF(opc_ldiq, 0x24, 0, 1, +3, 1,	"ldi.128")	// copy(sp, sp(0) 16);			[…, a, b, c => […, a, b, *c1234;
 OPCDEF(opc_sti1, 0x25, 1, 2, -2, 1,	"sti.8")	// copy(sp(1) sp(0) 1);pop2;	[…, a, b, c => […, a
 OPCDEF(opc_sti2, 0x26, 1, 2, -2, 1,	"sti.16")	// copy(sp(1) sp(0) 2);pop2;	[…, a, b, c => […, a
 OPCDEF(opc_sti4, 0x27, 1, 2, -2, 1,	"sti.32")	// copy(sp(1) sp(0) 4);pop2;	[…, a, b, c => […, a

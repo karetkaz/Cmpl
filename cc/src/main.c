@@ -159,6 +159,7 @@ static int f64pow(state s) {
 	float64_t x = poparg(s, float64_t);
 	float64_t y = poparg(s, float64_t);
 	setret(float64_t, s, pow(x, y));
+	//~ debug("pow(%g, %g) := %g", x, y, pow(x, y));
 	return 0;
 }
 static int f64sqrt(state s) {
@@ -199,6 +200,10 @@ static int rand32(state s) {
 	return 0;
 }
 
+static int putx64(state s) {
+	fputfmt(stdout, "0x%X", poparg(s, int64_t));
+	return 0;
+}
 static int puti64(state s) {
 	fputfmt(stdout, "%D", poparg(s, int64_t));
 	return 0;
@@ -279,6 +284,7 @@ static void install_stdc(ccState cc) {
 		{rand32, "int random();"},
 		{putchr, "void putchr(int32 val);"},
 		{putstr, "void putstr(string val);"},
+		{putx64, "void putx64(int64 val);"},
 		{puti64, "void puti64(int64 val);"},
 		{putf64, "void putf64(float64 val);"},
 		//}
@@ -432,6 +438,7 @@ static int bits_call(state s) {
 			x |= x >> 4;
 			x |= x >> 8;
 			x |= x >> 16;
+			setret(uint32_t, s, x - (x >> 1));
 		} return 0;
 		case b64_bhi: {
 			uint64_t x = poparg(s, int64_t);
@@ -642,6 +649,7 @@ int compile(state s, int wl, char *file) {
 	return ccDone(s);
 }
 
+static int dbgCon(state s, int pu, void *ip, long* bp, int ss);
 int program(int argc, char *argv[]) {
 	state s = rtInit(mem, sizeof(mem));
 
@@ -998,7 +1006,7 @@ int main(int argc, char *argv[]) {
 	return program(argc, argv);
 }
 
-int dbgCon(state s, int pu, void *ip, long* bp, int ss) {
+static int dbgCon(state s, int pu, void *ip, long* bp, int ss) {
 	static char buff[1024];
 	static char cmd = 'N';
 	vmState vm = s->vm;
@@ -1013,7 +1021,7 @@ int dbgCon(state s, int pu, void *ip, long* bp, int ss) {
 		return 0;
 	}
 
-	IP = ((char*)ip) - ((char*)vm->_mem) - vm->pc;
+	IP = ((char*)ip) - ((char*)vm->_mem);// - vm->pc;
 	SP = ((char*)vm->_end) - ((char*)bp);
 
 	fputfmt(stdout, ">exec:[pu%02d][sp%02d]@%9.*A\n", pu, ss, IP, ip);
@@ -1088,7 +1096,7 @@ int dbgCon(state s, int pu, void *ip, long* bp, int ss) {
 				else {
 					symn sym = findsym(vm->s->cc, NULL, arg);
 					debug("arg:%T", sym);
-					if (sym && sym->kind == TYPE_ref && sym->offs < 0) {
+					if (sym && sym->kind == TYPE_ref && sym->offs >= 0) {
 						stkval* sp = (stkval*)((char*)bp + ss + sym->offs);
 						void vm_fputval(state s, FILE *fout, symn var, stkval* ref, int flgs);
 						vm_fputval(vm->s, stdout, sym, sp, 0);
@@ -1119,6 +1127,30 @@ int dbgCon(state s, int pu, void *ip, long* bp, int ss) {
 	}
 	return 0;
 }
+/*static int libHalt(state s) {
+	symn arg = s->args;
+	//~ debug("calling %-T", s->libc);
+	//~ debug("argv: %08x", s->argv);
+	for ( ;arg; arg = arg->next) {
+		char *ofs = NULL;//vmOffset(s, arg, s->argc);
+		void vm_fputval(state, FILE *fout, symn var, stkval* ref, int flgs);
+
+		//~ debug("argv: %08x", s->argv);
+		//~ if (arg->kind != TYPE_ref && s->args == s->defs) continue;
+		if (arg->kind != TYPE_ref) continue;
+
+		if (arg->file && arg->line)
+			fputfmt(stdout, "%s:%d:",arg->file, arg->line);
+		else
+			fputfmt(stdout, "var: ",arg->file, arg->line);
+
+		fputfmt(stdout, "@%d[0x%08x]\t: ", arg->offs < 0 ? -arg->offs : arg->offs, ofs);
+		//~ fputfmt(stdout, "@%d[0x%08x]\t: ", s->argc - arg->offs, ofs);
+		vm_fputval(s, stdout, arg, (stkval*)ofs, 0);
+		fputc('\n', stdout);
+	}
+	return 0;
+}// */
 
 /* temp
 

@@ -182,7 +182,7 @@ static void fputast(FILE *fout, astn ast, int mode, int level) {
 					fputfmt(fout, "static ");
 					break;
 				case QUAL_par:
-					fputfmt(fout, "parralel ");
+					fputfmt(fout, "parallel ");
 					break;
 				default:
 					debug("error");
@@ -202,7 +202,7 @@ static void fputast(FILE *fout, astn ast, int mode, int level) {
 			}
 			else fputfmt(fout, ";\n");
 		} break;
-		case STMT_brk: {
+		/*case STMT_brk: {
 			if (rlev < 2) {
 				fputs("break", fout);
 				break;
@@ -215,6 +215,27 @@ static void fputast(FILE *fout, astn ast, int mode, int level) {
 					break;
 			}
 			fputfmt(fout, "break;\n");
+		} break;// */
+		case STMT_con:
+		case STMT_brk: {
+			if (rlev < 2) {
+				switch (ast->kind) {
+					case STMT_con: fputs("continue", fout); break;
+					case STMT_brk: fputs("break", fout); break;
+				}
+				break;
+			}
+			fputfmt(fout, "%I", noiden ? 0 : level);
+			switch (ast->cst2) {
+				case 0: break;
+				default:
+					debug("error");
+					break;
+			}
+			switch (ast->kind) {
+				case STMT_con: fputs("continue;\n", fout); break;
+				case STMT_brk: fputs("break;\n", fout); break;
+			}
 		} break;
 		//} */ // STMT
 		//{ OPER
@@ -718,10 +739,10 @@ void dumpsym(FILE *fout, symn sym, int alma) {
 		/*/ size or offset
 		if (ptr->kind == TYPE_ref) {
 			if (ptr->offs < 0) {
-				fputfmt(fout, "[@st(%d)]: ", -ptr->offs);
+				fputfmt(fout, "[@%04xh]: ", -ptr->offs);
 			}
 			else
-				fputfmt(fout, "[@%04xh]: ", ptr->offs);
+				fputfmt(fout, "[@st(%d)]: ", ptr->offs);
 		}
 		else if (ptr->kind == EMIT_opc) {
 			fputfmt(fout, "[@%02xh]: ", ptr->size);

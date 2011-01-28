@@ -54,11 +54,13 @@ enum imports: bool {
 
 static if (imports.print) {
 define println() = putchr('\n');
+define print(hex32 arg) = putx64(arg);
 define print(int32 arg) = puti64(arg);
 define print(float32 arg) = putf64(arg);
 define print(int64 arg) = puti64(arg);
 define print(float64 arg) = putf64(arg);
 define print(string arg) = putstr(arg);
+define println(hex32 arg) = emit(void(println()), void(putx64(arg)));
 define println(int32 arg) = emit(void(println()), void(puti64(arg)));
 define println(float32 arg) = emit(void(println()), void(putf64(arg)));
 define println(int64 arg) = emit(void(println()), void(puti64(arg)));

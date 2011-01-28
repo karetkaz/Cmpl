@@ -65,10 +65,10 @@ enum Test {
 	Emit = ~0;
 	Bits = ~0;
 	Type = ~0;
+	Call = 0;
 	Misc = ~0;
-	Libc = ~0;
+	Math = ~0;
 	//~ Math = -1;
-	//~ Call = 0;
 } // */
 static if (Test.Emit) {
 /+
@@ -124,7 +124,7 @@ enum prog {
 	simd = 2;
 }
 
-define test2exec = prog.simd;
+define test2exec = prog.sisd;
 define times2exec = -1000000;
 
 struct Complex {
@@ -216,8 +216,7 @@ float32 sp[4] = emit();
 } // */
 static if (Test.Bits) {
 int32 var = 0x00001080;		// input
-hex32 hex = emit();			// another sym to var
-static if (Test.Bits & 1) {
+static if (Test.Bits & 1) {		// bit scan reverse
 int32 BSR_lib = bits.bsr(var);
 int32 BSR_res = -1;
 if (var != 0) {
@@ -232,8 +231,8 @@ if (var != 0) {
 	BSR_res = ans;
 }
 }
-static if (Test.Bits & 2) {
-hex32 BLO_res = var & -var;
+static if (Test.Bits & 2) {		// highest bit
+//~ hex32 BLO_res = var & -var;
 hex32 BHI_lib = bits.bhi(var);
 hex32 BHI_res = -1;
 if (var) {
@@ -246,7 +245,7 @@ if (var) {
 	BHI_res = u - (u >> 1);
 }
 }
-static if (Test.Bits & 4) {
+static if (Test.Bits & 4) {		// swap bits
 hex32 SWP_lib = bits.swp(var);
 hex32 SWP_res = -1;
 if (var) {
@@ -261,7 +260,7 @@ if (var) {
 }
 } // */
 static if (Test.Type) {
-static if (Test.Type & 0x01) {
+static if (Test.Type & 0x01) {		// lookup test
 
 define int1 = int(1990);
 define int1() = int(1995);
@@ -291,7 +290,7 @@ float64 NAN = math.nan;
 //~ int isNan1 = int(isNan(NAN));
 //~ int isNan2 = int(isNan(math.nan));
 }
-static if (Test.Type & 0x04) {
+static if (Test.Type & 0x04) {		// enum
 //~ struct and arrays
 struct fiu32:0 {int32 i;float32 f;}
 struct fiu64:0 {int64 i;float64 f;}
@@ -315,7 +314,7 @@ c[1] |= 1;
 
 //~ intabc alma1 = alma;
 }
-static if (Test.Type & 0x08) {
+static if (Test.Type & 0x08) {		// color
 struct bgra: 1 {
 	uint8 b; 	//%blue(%d)
 	uint8 g; 	//%green(%d)
@@ -359,7 +358,7 @@ static if (Test.Type & 0x10) {
 }
 } // */
 static if (Test.Misc) {
-static if (Test.Misc & 1) {
+static if (Test.Misc & 1) {			// matrix multiply
 // Matrix Multiply
 
 define dim = 20;
@@ -372,7 +371,7 @@ scalar m3[dim][dim];
 for (int i = 0; i < dim; i += 1) {
 	for (int j = 0; j < dim; j += 1) {
 		//~TODO: error: m1[i][j] = m2[i][j] = (i == j) + 2;
-		m1[i][j] = m2[i][j] = (i == j) + 2.;
+		m1[i][j] = m2[i][j] = (i == j) * 2. + 1;
 	}
 } // +/
 
@@ -397,21 +396,160 @@ for (int i = 0; i < dim; i += 1) {
 } // +/
 }
 } // */
-static if (Test.Libc) {
-	define x = -math.pi / 2;
+static if (Test.Math) {
+	double x = -math.pi / 2;
 	double absx = abs(x);
 	double sinx = sin(x);
 	double cosx = cos(x);
 	double tanx = tan(x);
 	double logx = log(absx);
 	double expx = exp(x);
-	double powx = pow(x, 7);
+	double powx = pow(2, 8);
 	//~ double ___x = ___(x);
 
-	hex64 xxl = bits.sxt(0xff0070, 3, 22);
+	//~ hex64 xxl = bits.sxt(0xff0070, 3, 22);
 
 } // */
+static if (Test.Call) {
+static if (Test.Call & 1) {			// 256 bit integer
+struct i32x8 {
+	int32 i8;	//%%08x
+	int32 i7;	//%%08x
+	int32 i6;	//%%08x
+	int32 i5;	//%%08x
+	int32 i4;	//%%08x
+	int32 i3;	//%%08x
+	int32 i2;	//%%08x
+	int32 i1;	//%%08x
+	//~ int32 i1;	//%%08x
+	//~ int32 i2;	//%%08x
+	//~ int32 i3;	//%%08x
+	//~ int32 i4;	//%%08x
+	//~ int32 i5;	//%%08x
+	//~ int32 i6;	//%%08x
+	//~ int32 i7;	//%%08x
+	//~ int32 i8;	//%%08x
+} // */
 
+define i32x8(int i1, int i2, int i3, int i4, int i5, int i6, int i7, int i8) = emit(i32x8, i32(i1), i32(i2), i32(i3), i32(i4), i32(i5), i32(i6), i32(i7), i32(i8));
+define i32x8(int32 i0) = emit(i32x8, dupp.x1, dupp.x2, dupp.x2, dupp.x1, i32.shr, i32(31), dupp.x1, i32(i0));
+define i32x8(uint32 i0) = emit(i32x8, dupp.x1, dupp.x2, dupp.x2, dupp.x1, i32(0), i32(i0));
+
+define println(i32x8 &x) = emit(
+	void(println()),   void(puti64(x.i1)),
+	void(putchr(',')), void(puti64(x.i2)),
+	void(putchr(',')), void(puti64(x.i3)),
+	void(putchr(',')), void(puti64(x.i4)),
+	void(putchr(',')), void(puti64(x.i5)),
+	void(putchr(',')), void(puti64(x.i6)),
+	void(putchr(',')), void(puti64(x.i7)),
+	void(putchr(',')), void(puti64(x.i8))
+);
+
+//~ define sxt64(int32 a) = int64(int32(a));			// sign extend
+define zxt64(int32 a) = int64(uint32(a));			// zero extend
+
+i32x8 cmt(i32x8 &b) {
+	result.i1 = ~b.i1;
+	result.i2 = ~b.i2;
+	result.i3 = ~b.i3;
+	result.i4 = ~b.i4;
+	result.i5 = ~b.i5;
+	result.i6 = ~b.i6;
+	result.i7 = ~b.i7;
+	result.i8 = ~b.i8;
+}
+i32x8 neg(i32x8 &b) {
+	int64 sum;
+	int64 ovf = 0;
+	int64 carry = 0;
+
+	define op(int &b) = int32(sum = ovf - zxt64(b) - carry);
+	result.i1 = op(b.i1);
+	carry = sum < ovf;
+	result.i2 = op(b.i2);
+	carry = sum < ovf;
+	result.i3 = op(b.i3);
+	carry = sum < ovf;
+	result.i4 = op(b.i4);
+	carry = sum < ovf;
+	result.i5 = op(b.i5);
+	carry = sum < ovf;
+	result.i6 = op(b.i6);
+	carry = sum < ovf;
+	result.i7 = op(b.i7);
+	carry = sum < ovf;
+	result.i8 = op(b.i8);
+}
+i32x8 add(i32x8 &a, i32x8 &b) {
+	int64 sum;
+	int64 ovf = 0xffffffff;
+	int64 carry = 0;
+
+	define op(int &a, int &b) = int32(sum = zxt64(a) + zxt64(b) + carry);
+	result.i1 = op(a.i1, b.i1);
+	carry = sum > ovf;
+	result.i2 = op(a.i2, b.i2);
+	carry = sum > ovf;
+	result.i3 = op(a.i3, b.i3);
+	carry = sum > ovf;
+	result.i4 = op(a.i4, b.i4);
+	carry = sum > ovf;
+	result.i5 = op(a.i5, b.i5);
+	carry = sum > ovf;
+	result.i6 = op(a.i6, b.i6);
+	carry = sum > ovf;
+	result.i7 = op(a.i7, b.i7);
+	carry = sum > ovf;
+	result.i8 = op(a.i8, b.i8);
+}
+i32x8 sub(i32x8 &a, i32x8 &b) {
+	int64 sum;
+	int64 ovf = 0;
+	int64 carry = 0;
+
+	define op(int &a, int &b) = int32(sum = zxt64(a) - zxt64(b) - carry);
+	result.i1 = op(a.i1, b.i1);
+	carry = sum < ovf;
+	result.i2 = op(a.i2, b.i2);
+	carry = sum < ovf;
+	result.i3 = op(a.i3, b.i3);
+	carry = sum < ovf;
+	result.i4 = op(a.i4, b.i4);
+	carry = sum < ovf;
+	result.i5 = op(a.i5, b.i5);
+	carry = sum < ovf;
+	result.i6 = op(a.i6, b.i6);
+	carry = sum < ovf;
+	result.i7 = op(a.i7, b.i7);
+	carry = sum < ovf;
+	result.i8 = op(a.i8, b.i8);
+}
+
+//~ i32x8 add(i32x8 &a, int32  b) {}
+//~ i32x8 sub(i32x8 &a, i32x8 &b) {}
+//~ i32x8 add(i32x8 &a, i32x8 &b, int32 &ovf = null);
+//~ i32x8 add(i32x8 &a, int32  b, int32 &ovf = null);
+//~ i32x8 sub(i32x8 &a, i32x8 &b, int32 &ovf = null);
+//~ i32x8 sub(i32x8 &a, int32  b, int32 &ovf = null);
+//~ i32x8 mul(i32x8 &a, i32x8 &b, i32x8 &ovf) {}
+//~ i32x8 mul(i32x8 &a, i32x8 &b, i32x8 &ovf = null);
+//~ i32x8 mul(i32x8 &a, int32  b, i32x8 &ovf = null);
+
+//~ i32x8 div(i32x8 &a, i32x8 &b, i32x8 &rem) {}
+//~ i32x8 div(i32x8 &a, i32x8 &b, i32x8 &rem = null);
+//~ i32x8 div(i32x8 &a, int32  b, i32x8 &rem = null);
+//~ i32x8 mod(i32x8 &a, i32x8 &b) {div(a, b, result);}
+//~ i32x8 mod(i32x8 &a, int32  b) {div(a, b, result);}
+
+i32x8 a = i32x8(int32(0x0fffffff), int32(0xffffffff), int32(0xffffffff), int32(0xffffffff), int32(0xffffffff), int32(0xffffffff), int32(0xffffffff), int32(0xffffffff));
+i32x8 b = i32x8(1);
+i32x8 c = add(a, b);
+
+} // +/
+} // */
+
+int xkfdhvs = 32 * 8;
 /* Reflect
 enum TypeCode:int32 {
 	TYPE_any = 0x00000000;		// invalid, error, ...

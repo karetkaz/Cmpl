@@ -24,6 +24,7 @@ typedef struct state {
 	symn  args;		// argument symbols
 	void* retv;		// TODO: RemMe: retval
 	char* argv;		// first arg
+	int   argc;		// number of args in bytes
 
 	ccState cc;		// compiler enviroment	// TODO: RemMe cc has the state
 	vmState vm;		// execution enviroment	// TODO: RemMe vm has the state
@@ -67,7 +68,7 @@ symn libcall(state, int libc(state), int pass, const char* proto);
 
 // execute
 typedef int (*dbgf)(state s, int pu, void *ip, long* sptr, int scnt);
-int dbgCon(state, int, void*, long*, int);				// 
+//~ int dbgCon(state, int, void*, long*, int);				// 
 
 //~ int exec(vmState, unsigned cc, dbgf dbg);
 int exec(vmState, dbgf dbg);
@@ -94,12 +95,14 @@ int findint(ccState s, char *name, int* res);
 int findflt(ccState s, char *name, double* res);
 
 #define popargsize(__ARGV, __SIZE) ((void*)(((__ARGV)->argv += (((__SIZE) | 3) & ~3)) - (__SIZE)))
-#define popargtype(__ARGV, __TYPE) ((__TYPE*)((__ARGV)->argv += ((sizeof(__TYPE) | 3) & ~3)))[-1]
+//~ #define popargtype(__ARGV, __TYPE) ((__TYPE*)((__ARGV)->argv += ((sizeof(__TYPE) | 3) & ~3)))[-1]
+#define popargtype(__ARGV, __TYPE) ((__TYPE*)(popargsize((__ARGV), sizeof(__TYPE))))[0]
 
 #define retptr(__TYPE, __ARGV) ((__TYPE*)(__ARGV->retv))
+//~ #define setret(__TYPE, __ARGV, __VAL) (retptr(__TYPE, __ARGV)[-1] = (__TYPE)(__VAL))
 #define setret(__TYPE, __ARGV, __VAL) (*retptr(__TYPE, __ARGV) = (__TYPE)(__VAL))
+
 #define poparg(__ARGV, __TYPE) popargtype(__ARGV, __TYPE)
-//~ #define poparg(__ARGV, __TYPE) ((__TYPE*)((__ARGV)->argv += ((sizeof(__TYPE) | 3) & ~3)))[-1]
 
 static inline float32_t popf32(state s) { return popargtype(s, float32_t); }
 static inline int32_t popi32(state s) { return popargtype(s, int32_t); }

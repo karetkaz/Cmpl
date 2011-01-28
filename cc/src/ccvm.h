@@ -24,8 +24,7 @@ enum COMPILER_LEVELS {
 };
 
 #define COMPILER_LEVEL creg_all
-#define DEBUGGING 1
-//~ 5
+#define DEBUGGING 15
 
 // maximum tokens in expressions & nest level
 #define TOKS 2048
@@ -185,7 +184,7 @@ struct astn {				// tree node
 			astn	args;			// next used
 			//~ astn	nuse;			// next used
 		} id;
-		struct {					// STMT_brk
+		struct {					// STMT_brk, STMT_con
 			long offs;
 			long stks;				// stack size
 		} go2;
@@ -240,6 +239,7 @@ struct ccState {
 	list	strt[TBLS];		// string table
 	symn	deft[TBLS];		// definitions: hashStack;
 
+	int		verb;		// verbosity
 	int		warn;		// warning level
 	int		nest;		// nest level: modified by (enter/leave)
 
@@ -287,14 +287,14 @@ struct vmState {
 	unsigned int	cs;			// code size
 	unsigned int	ds;			// data size
 
-	unsigned int	ic;			// ?executed? / instruction count
+	//~ unsigned int	ic;			// ?executed? / instruction count
 	//~ unsigned int	pi[2];		// previous instructions
 
 	unsigned int	ss;			// stack size / current stack size
 	unsigned int	sm;			// stack minimum size
 
-	unsigned int	seg;
-	unsigned int	mark;
+	unsigned int	pos;		// current positin in buffer
+	//~ unsigned int	mark;
 	//~ unsigned int	_pad;
 	//~ unsigned long _cnt; // return (_end - _ptr);
 	//~ unsigned long _len; // return (_ptr - _mem);

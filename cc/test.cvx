@@ -12,13 +12,22 @@
 
 //~ module test;
 
-//~ int x = 5;
-//~ int a = pow(2, x);
-//~ int b = 1 << x;
-
-//~ double x = 9*13;
-
 //~ int alma(int h)[10];	???
+
+/*
+//~ define resx = 23170;
+//~ define resy = 23170;
+//~ define lineOffs(int y) = int(resy * 4 * y) ;
+//~ hex32 lineoffs = lineOffs(resy);
+//~ hex32 maxpix = resx * resy * 4;
+println("alma");
+static for (int i = 0; i < 200; i += 1) {
+	if (i > 100) break;
+	if (i & 1) continue;
+	int a = 0;
+	println(i);
+}
+// */
 
 /* gfx2d
 module gfx2d;
@@ -187,177 +196,17 @@ for (int i = 0; i < 60; i += 1) {
 }
 // */
 
-//~ emit(void, call, i32(0x));		// stack overflow
-
-/* function
-define test = 3;
-define rty int64;
-define aty int64;
-/+static if (test == 1) {
-rty Result;
-aty A = 9;
-string ptr = "";
-Result = A + A;
-
-rty sum(aty a) {
-	result = a + a;
+/*functions
+void stackOwerflow() {
+	emit(call, ref(stackOwerflow));
+	//~ stackOwerflow();
 }
-}// +/
-/+static if (test == 2) {
-rty Result;
-aty B = 5;
-aty A = 9;
-string ptr = "";
-Result = A + B;
 
-rty sum(aty a, aty b) {
-	result = a + b;
-}
-}// +/
-static if (test == 3) {
-rty Result;
-aty C = 5;
-aty B = 7;
-aty A = 9;
-string ptr = "";
-Result = A + B;
-rty sum(aty a, aty b, aty c) {
-	result = a + b;
-}
-}// +/
+//~ stackOwerflow();
 
 // */
-
-/* fogyasztas
-define fogyasztas(double _km, double _benzin, double _atlag) = double(_benzin * _km * _atlag / 100.);
-
-double km = 4. * 5 * 16;
-double atlag = 9.0;
-double benzin = 4.90;
-double fogyasztas = fogyasztas(km, benzin, atlag);
-// */
-
-/+ big integer math
-static if (1) {
-struct i32x8 {
-	int32 i8;	//%%08x
-	int32 i7;	//%%08x
-	int32 i6;	//%%08x
-	int32 i5;	//%%08x
-	int32 i4;	//%%08x
-	int32 i3;	//%%08x
-	int32 i2;	//%%08x
-	int32 i1;	//%%08x
-} // */
-
-define i32x8(int i1, int i2, int i3, int i4, int i5, int i6, int i7, int i8) = emit(i32x8, i32(i1), i32(i2), i32(i3), i32(i4), i32(i5), i32(i6), i32(i7), i32(i8));
-define i32x8(int32 i0) = emit(i32x8, dupp.x1, dupp.x2, dupp.x2, dupp.x1, i32.shr, i32(31), dupp.x1, i32(i0));
-define i32x8(uint32 i0) = emit(i32x8, dupp.x1, dupp.x2, dupp.x2, dupp.x1, i32(0), i32(i0));
-
-i32x8 a = i32x8(int32(0x0fffffff), int32(0xffffffff), int32(0xffffffff), int32(0xffffffff), int32(0xffffffff), int32(0xffffffff), int32(0xffffffff), int32(0xffffffff));
-i32x8 b = i32x8(1);
-
-i32x8 c;
-
-/*TODO: no functions
-i32x8 add(i32x8 a, i32x8 b) {
-	//~ i32x8 c;
-	hex64 ovf = 0xffffffff;
-	hex64 sum;
-	int64 carry = 0;
-	c.i1 = int32(sum = zxt64(a.i1) + b.i1 + carry);
-	carry = sum > ovf;
-	c.i2 = int32(sum = zxt64(a.i2) + b.i2 + carry);
-	carry = sum > ovf;
-	c.i3 = int32(sum = zxt64(a.i3) + b.i3 + carry);
-	carry = sum > ovf;
-	c.i4 = int32(sum = zxt64(a.i4) + b.i4 + carry);
-	carry = sum > ovf;
-	c.i5 = int32(sum = zxt64(a.i5) + b.i5 + carry);
-	carry = sum > ovf;
-	c.i6 = int32(sum = zxt64(a.i6) + b.i6 + carry);
-	carry = sum > ovf;
-	c.i7 = int32(sum = zxt64(a.i7) + b.i7 + carry);
-	carry = sum > ovf;
-	c.i8 = int32(sum = zxt64(a.i8) + b.i8 + carry);
-	//~ carry = sum > ovf;
-}
-
-i32x8 add(i32x8 a, int32 b) {}
-
-i32x8 cmt(i32x8 b) {
-	result.i1 = ~b.i1;
-	result.i2 = ~b.i2;
-	result.i3 = ~b.i3;
-	result.i4 = ~b.i4;
-	result.i5 = ~b.i5;
-	result.i6 = ~b.i6;
-	result.i7 = ~b.i7;
-	result.i8 = ~b.i8;
-}
-i32x8 neg(i32x8 b) {}
-
-i32x8 add(i32x8 a, i32x8 b, int32 &c = null);
-i32x8 add(i32x8 a, int32 b, int32 &c = null);
-i32x8 sub(i32x8 a, i32x8 b, int32 &c = null);
-i32x8 sub(i32x8 a, int32 b, int32 &c = null);
-i32x8 mul(i32x8 a, i32x8 b, i32x8 &hi = null);
-i32x8 mul(i32x8 a, int32 b, i32x8 &hi = null);
-i32x8 div(i32x8 a, i32x8 b, i32x8 &rem = null);
-i32x8 div(i32x8 a, int32 b, i32x8 &rem = null);
-i32x8 mod(i32x8 a, i32x8 b) {div(a, b, result);}
-i32x8 mod(i32x8 a, int32 b) {div(a, b, result);}
-
-i32x8 sub(i32x8 a, i32x8 b) {}
-
-// */
-//~ /*
-
-define sxt64(int32 a) = int64(int32(a));			// sign extend
-define zxt64(int32 a) = int64(uint32(a));			// zero extend
-static if (true) {		// add
-	hex64 ovf = 0xffffffff;
-	hex64 sum;
-	int64 carry = 0;
-	c.i1 = int32(sum = zxt64(a.i1) + b.i1 + carry);
-	carry = sum > ovf;
-	c.i2 = int32(sum = zxt64(a.i2) + b.i2 + carry);
-	carry = sum > ovf;
-	c.i3 = int32(sum = zxt64(a.i3) + b.i3 + carry);
-	carry = sum > ovf;
-	c.i4 = int32(sum = zxt64(a.i4) + b.i4 + carry);
-	carry = sum > ovf;
-	c.i5 = int32(sum = zxt64(a.i5) + b.i5 + carry);
-	carry = sum > ovf;
-	c.i6 = int32(sum = zxt64(a.i6) + b.i6 + carry);
-	carry = sum > ovf;
-	c.i7 = int32(sum = zxt64(a.i7) + b.i7 + carry);
-	carry = sum > ovf;
-	c.i8 = int32(sum = zxt64(a.i8) + b.i8 + carry);
-	//~ carry = sum > ovf;
-} // */
-static if (!true) {		// sub.xxx
-	hex64 ovf = 0;//xffffffff;
-	hex64 sum;
-	int64 borrow = 0;
-	c.i1 = int32(sum = zxt64(a.i1) - b.i1 - borrow);
-	borrow = sum < ovf;
-	c.i2 = int32(sum = zxt64(a.i2) - b.i2 - borrow);
-	borrow = sum < ovf;
-	c.i3 = int32(sum = zxt64(a.i3) - b.i3 - borrow);
-	borrow = sum < ovf;
-	c.i4 = int32(sum = zxt64(a.i4) - b.i4 - borrow);
-	borrow = sum < ovf;
-	c.i5 = int32(sum = zxt64(a.i5) - b.i5 - borrow);
-	borrow = sum < ovf;
-	c.i6 = int32(sum = zxt64(a.i6) - b.i6 - borrow);
-	borrow = sum < ovf;
-	c.i7 = int32(sum = zxt64(a.i7) - b.i7 - borrow);
-	borrow = sum < ovf;
-	c.i8 = int32(sum = zxt64(a.i8) - b.i8 - borrow);
-	//~ borrow = sum < ovf;
-} // */
-} // +/
+//~ define println1() = emit(void, void(int64(int32(30))));
+//~ println1();
 
 /* using emit; and emit();
 //~ string alma = "alma a fa alatt";

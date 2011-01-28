@@ -133,7 +133,7 @@ static inline int castkind(int cast) {
 		case TYPE_f32:
 		case TYPE_f64: return TYPE_flt;
 		case TYPE_ref: return TYPE_ref;
-		case 0: return 0;
+		//~ case 0: return 0;
 	}
 	debug("failed: %t", cast);
 	return 0;
@@ -831,6 +831,9 @@ symn typecheck(ccState cc, symn loc, astn ast) {
 						debug("%k:%t %+k", args, castOf(arg->type), args);
 						return 0;
 					}
+					if (arg->cast == TYPE_ref) {
+						args->cst2 = TYPE_ref;
+					}
 					args = args->next;
 					arg = arg->next;
 				}
@@ -871,14 +874,14 @@ int padded(int offs, int align) {
 	return align + ((offs - 1) & ~(align - 1));
 }
 
-int argsize(symn sym, int align) {
+/*int argsize(symn sym, int align) {
 	symn arg;
 	int stdiff = 0;
 	for (arg = sym->args; arg; arg = arg->next) {
 		stdiff += padded(sizeOf(arg->type), align);
 	}
 	return stdiff;
-}
+}// */
 
 int fixargs(symn sym, int align, int stbeg) {
 	symn arg;
@@ -886,11 +889,14 @@ int fixargs(symn sym, int align, int stbeg) {
 	//~ int stbeg = sizeOf(sym->type);
 	for (arg = sym->args; arg; arg = arg->next) {
 		arg->offs = stbeg + stdiff;
-		stdiff += padded(sizeOf(arg->type), align);
+		if (arg->cast != TYPE_ref)
+			stdiff += padded(sizeOf(arg->type), align);
+		else
+			stdiff += padded(4, align);
 	}
-	// TODO: relative should be flagged
+	//~ because args are evaluated from right to left
 	for (arg = sym->args; arg; arg = arg->next) {
-		arg->offs = -(stdiff - arg->offs);
+		arg->offs = stdiff - arg->offs;
 	}
 	return stdiff;
 
