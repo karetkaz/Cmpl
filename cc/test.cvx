@@ -14,20 +14,41 @@
 
 //~ int alma(int h)[10];	???
 
+//~ /*
 /*
-//~ define resx = 23170;
-//~ define resy = 23170;
-//~ define lineOffs(int y) = int(resy * 4 * y) ;
-//~ hex32 lineoffs = lineOffs(resy);
-//~ hex32 maxpix = resx * resy * 4;
-println("alma");
-static for (int i = 0; i < 200; i += 1) {
-	if (i > 100) break;
-	if (i & 1) continue;
-	int a = 0;
-	println(i);
+void bitsget(bool signed, int size, int64 &min, int64 &max) {
+	int64 mask = bits.shr(int64(-1), -size);
+
+	min = bits.shl(-int64(signed), size - 1);
+	max = bits.and(min - 1, mask);
 }
-// */
+
+int bits = 24;
+hex64 min;
+hex64 max;
+
+hex64 umin;
+hex64 umax;
+
+bitsget(true, bits, min, max);
+bitsget(!true, bits, umin, umax);
+//~ */
+
+void recurse(int x) {
+	recurse(0);
+	/*if (x > 0) {
+		print("pre:"); println(x);
+		recurse(x - 1);
+		print("post:"); println(x);
+	}*/
+}
+
+recurse(200);
+
+/* TODO
+if (int32 == int32) {
+	println("alma");
+}// */
 
 /* gfx2d
 module gfx2d;
@@ -96,12 +117,9 @@ void drawText(gxSurf dst, int x, int y, gxSurf fnt, string str, xrgb col);
 
 //~ define gx_getclip(gxSurf s) {return s.clipPtr ? s.clipPtr : gxClip(pointer(&s));}
 
-//~ int loadCUR(gx_Surf, const char*, int);
 int loadBMP(gx_Surf dst, string fileName, int depth);
 int loadJPG(gx_Surf dst, string fileName, int depth);
 int saveBMP(string fileName, gxSurf src, int depth);
-
-int loadFNT(gxSurf, string fileName);
 
 }// +/
 // */
@@ -150,7 +168,6 @@ define int(fixed val) = int(val, __fix);
 define double(fixed val) = double(val, __fix);
 
 double fixed_test = double(add(fixed(2.5), fixed(3)));
-//~ println(fixed_test);
 // */
 
 /* clamp, lerp, smooth
@@ -182,9 +199,11 @@ define eq(float64 a, float64 b, float64 eps) = bool(abs(a - b) < eps);
 //~ define eq(float32 a, float32 b) = eq(a, b, float32(__eps));
 define eq(float64 a, float64 b) = eq(a, b, __eps);
 
-double a = 0.1;
-double b = 0.2;
-double c = 0.3;
+define double1 float64;//%%2.10F
+
+double1 a = 0.1; //%hexaban 0x%016X
+double1 b = 0.2;
+double1 c = 0.3;
 bool x = (a + b) + c == a + (b + c);
 bool x1 = eq((a + b) + c, a + (b + c));
 

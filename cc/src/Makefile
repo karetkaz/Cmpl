@@ -1,4 +1,21 @@
-include incl/Makefile.gcc
+OUTOBJ=-o
+OUTEXE=-o
+#~ CFLAGS=-g0 -O0
+CFLAGS=-g3 -ggdb
+COPTS=-c -Wall -Wpadded
+LIBS=-lm
+CCC=gcc -m32
+LNK=gcc -m32
+#~ -g3 -ggdb
+LIB=ar rcs ../../gx/lib/libpvmc/libpvmc.linux.a
+DBG=nemiver
+
+ifeq "$(OS)" "Windows_NT"
+LIB=ar rcs ../../gx/lib/libpvmc/libpvmc.windows.a
+DBG=
+endif
+
+#~ include incl/Makefile.wcc
 
 SRCDIR=
 OBJDIR=
@@ -20,7 +37,7 @@ OBJS=\
 rebuild:clean build
 
 build:$(OBJS) $(OBJDIR)main.o
-	$(LNK) $(OUTEXE)$(BINDIR)main $(OBJS) $(OBJDIR)main.o $(LIBS)
+	$(LNK) $(OUTEXE)$(BINDIR)ccvm $(OBJS) $(OBJDIR)main.o $(LIBS)
 
 lib:$(OBJS)
 	$(LIB) $(OBJS)

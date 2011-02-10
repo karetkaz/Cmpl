@@ -11,20 +11,7 @@
 #include "pvmc.h"
 #include <stdlib.h>
 
-enum COMPILER_LEVELS {
-	creg_base = 0x0000,				// type system only
-	creg_emit = 0x0100,				// the emit thingie  : emit(...)
-	// this are in main
-	creg_swiz = 0x0001 | creg_emit,	// swizzle constants : emit.swz.(xxxx ... xyzw ... wwww)
-	creg_stdc = 0x0002 | creg_emit,	// std library calls : sin(float64 x) = emit(float64, libc(3), f64(x));
-	creg_bits = 0x0004 | creg_emit,	// bitwize operations: bits.shr(int64 x, int32 cnt)
-	//~ creg_math = 0x000?,
-	//~ creg_rtty = 0x000?,
-	creg_all  = creg_emit | creg_stdc | creg_bits,
-};
-
-#define COMPILER_LEVEL creg_all
-#define DEBUGGING 15
+#define DEBUGGING 1
 
 // maximum tokens in expressions & nest level
 #define TOKS 2048
@@ -33,20 +20,20 @@ enum COMPILER_LEVELS {
 #define TBLS 512
 
 #define pdbg(__DBG, __FILE, __LINE, msg, ...) do {fputfmt(stderr, "%s:%d: "__DBG": %s: "msg"\n", __FILE, __LINE, __func__, ##__VA_ARGS__); fflush(stdout); fflush(stderr);} while(0)
-#define fatal(msg, ...) do {pdbg("fatal", __FILE__, __LINE__, msg, ##__VA_ARGS__); abort();} while(0)
-#define dieif(__EXP, msg, ...) do {if (__EXP) fatal(msg, ##__VA_ARGS__);} while(0)
+#define fatal(msg...) do {pdbg("fatal", __FILE__, __LINE__, msg); abort();} while(0)
+#define dieif(__EXP, msg...) do {if (__EXP) fatal(msg);} while(0)
 
 #if DEBUGGING > 1
-#define debug(msg, ...) pdbg("debug", __FILE__, __LINE__, msg, ##__VA_ARGS__)
-#define PERR(__ENV, __LEVEL, __FILE, __LINE, msg, ...) do { perr(__ENV, __LEVEL, __FILE, __LINE, msg, ##__VA_ARGS__); debug(msg, ##__VA_ARGS__); }while(0)
-#define error(__ENV, __LINE, msg, ...) PERR(__ENV, -1, NULL, __LINE, msg, ##__VA_ARGS__)
-#define warn(__ENV, __LEVEL, __FILE, __LINE, msg, ...) PERR(__ENV, __LEVEL, __FILE, __LINE, msg, ##__VA_ARGS__)
-#define info(__ENV, __FILE, __LINE, msg, ...) PERR(__ENV, 0, __FILE, __LINE, msg, ##__VA_ARGS__)
+#define debug(msg...) pdbg("debug", __FILE__, __LINE__, msg)
+#define PERR(__ENV, __LEVEL, __FILE, __LINE, msg...) do { perr(__ENV, __LEVEL, __FILE, __LINE, msg); debug(msg); } while(0)
+#define error(__ENV, __LINE, msg...) PERR(__ENV, -1, NULL, __LINE, msg)
+#define warn(__ENV, __LEVEL, __FILE, __LINE, msg...) PERR(__ENV, __LEVEL, __FILE, __LINE, msg)
+#define info(__ENV, __FILE, __LINE, msg...) PERR(__ENV, 0, __FILE, __LINE, msg)
 #else // catch the position error raised
 #define debug(msg, ...) 
-#define error(__ENV, __LINE, msg, ...) perr(__ENV, -1, NULL, __LINE, msg, ##__VA_ARGS__)
-#define warn(__ENV, __LEVEL, __FILE, __LINE, msg, ...) perr(__ENV, __LEVEL, __FILE, __LINE, msg, ##__VA_ARGS__)
-#define info(__ENV, __FILE, __LINE, msg, ...) perr(__ENV, 0, __FILE, __LINE, msg, ##__VA_ARGS__)
+#define error(__ENV, __LINE, msg...) perr(__ENV, -1, NULL, __LINE, msg)
+#define warn(__ENV, __LEVEL, __FILE, __LINE, msg...) perr(__ENV, __LEVEL, __FILE, __LINE, msg)
+#define info(__ENV, __FILE, __LINE, msg...) perr(__ENV, 0, __FILE, __LINE, msg)
 #endif
 
 // Symbols - CC
@@ -59,6 +46,10 @@ enum {
 	TOKN_err = TYPE_any,
 	//~ ATTR_fun = 0x0100,		// callable
 	//~ ATTR_ind = 0x0200,		// indirect
+
+	decl_NoDefs = 0x100,		// disable type defs in decl.
+	decl_NoInit = 0x200,		// disable initialization. (disable)
+	decl_Ref = decl_NoDefs|decl_NoInit,
 
 	symn_call = 0x100,
 	symn_read = 0x200,
@@ -226,6 +217,7 @@ struct symn {				// type node
 	// list(scoping)
 	astn	used;
 	symn	defs;		// symbols on stack/all
+	//~ symn	uses;		// declared in
 	char*	pfmt;		// print format
 };
 
@@ -248,7 +240,8 @@ struct ccState {
 	//~ int		_pad;
 
 	// Warning set to -1 to record.
-	char	*doc;
+	symn	pfmt;
+	//~ char	*doc;
 
 	struct {
 		struct {			// Lexer
@@ -315,6 +308,7 @@ extern symn type_f32;
 extern symn type_f64;
 //~ extern symn type_chr;		// should be for printing only
 extern symn type_str;
+extern symn null_ref;
 
 //~ extern symn type_v4f;
 //~ extern symn type_v2d;
@@ -355,7 +349,7 @@ void eatnode(ccState s, astn ast);
 symn installex(ccState s, const char* name, int kind, unsigned size, symn type, astn init);
 symn install(ccState s, const char* name, int kind, int cast, unsigned size);
 symn declare(ccState s, int kind, astn tag, symn rtyp);
-symn lookup(ccState s, symn sym, astn ast, int deep, astn args);
+symn lookup(ccState s, symn sym, astn ast/*, int deep*/, astn args);
 
 //~ symn findsym(ccState s, symn in, char *name);
 //~ int findnzv(ccState s, char *name);
@@ -385,7 +379,7 @@ astn next(ccState, int kind);
 astn expr(ccState, int mode);		// parse expression	(mode: lookup)
 astn decl(ccState, int mode);		// parse declaration	(mode: enable defs(: struct, define, ...))
 //~ astn stmt(ccState, int mode);		// parse statement	(mode: enable decl/enter new scope)
-astn unit(ccState, int mode);		// parse program	(mode: script mode)
+//~ astn unit(ccState, int mode);		// parse program	(mode: script mode)
 
 // scoping ...
 void enter(ccState s, astn ast);
@@ -441,5 +435,7 @@ unsigned rehash(const char* str, unsigned size);
 char *mapstr(ccState s, char *name, unsigned size/* = -1U*/, unsigned hash/* = -1U*/);
 
 void fputasm(FILE *fout, vmState s, int mark, int len, int mode);
+
+void printargcast(astn arg);
 
 #endif

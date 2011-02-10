@@ -7,7 +7,6 @@ TOKDEF(TYPE_int, 0x00, 0, ".int")	// int64, int32, int16, int8
 TOKDEF(TYPE_flt, 0x00, 0, ".flt")	// float64, float32
 TOKDEF(TYPE_str, 0x00, 0, ".str")	// TODO: replace with TYPE_str or TYPE_arr ?
 TOKDEF(TYPE_arr, 0x00, 0, ".arr")	// pointer, string, array, ..., ???
-TOKDEF(TYPE_enu, 0xff, 0, "enum")	// const usually
 TOKDEF(TYPE_def, 0xff, 0, "define")	// type or const or inline definition
 TOKDEF(TYPE_rec, 0xff, 0, "struct") // union := struct:0
 //~ TOKDEF(TYPE_cls, 0xff, 0, "class")
@@ -92,8 +91,10 @@ TOKDEF(PNCT_lp , 0x00, 0, "(par")		// parentheses
 TOKDEF(PNCT_rp , 0x00, 0, ")par")
 TOKDEF(PNCT_qst, 0x00, 0, "?")			// question mark
 TOKDEF(PNCT_cln, 0x00, 0, ":")			// colon
-TOKDEF(OPER_op , 0xff, 0, "operator")
+
 TOKDEF(UNIT_def, 0xff, 0, "module")
+//~ TOKDEF(OPER_kwd, 0xff, 0, "operator")
+TOKDEF(ENUM_kwd, 0xff, 0, "enum")		// keyword onlyd
 
 /*
 //~ Operators ==================================================================
@@ -168,13 +169,15 @@ OPCDEF(opc_task, 0x0d, 4, 0, +0, 1,	"task")		// arg.3: [code:16][data:8] task, [
 OPCDEF(opc_x0f,  0x0e, 0, 0, +0, 1,	"sync")		// wait, join, sync
 OPCDEF(opc_libc, 0x0f, 2, 0, +9, 1,	"libc")		// lib call
 //~ stk ========================================================================
-OPCDEF(opc_ldc1, 0x10, 2, 0, +1, 1,	"ldc.i08")	// push(arg.1);			:2[…, a, b, c => […, a, b, c, 2;
-OPCDEF(opc_ldc2, 0x11, 3, 0, +1, 1,	"ldc.i16")	// push(arg.2);			:2[…, a, b, c => […, a, b, c, 2;
+//~ OPCDEF(opc_ldc1, 0x10, 2, 0, +1, 1,	"ldc.i08")	// push(arg.1);			:2[…, a, b, c => […, a, b, c, 2;
+//~ OPCDEF(opc_ldc2, 0x11, 3, 0, +1, 1,	"ldc.i16")	// push(arg.2);			:2[…, a, b, c => […, a, b, c, 2;
+OPCDEF(opc__x10, 0x10, 5, 0, +1, 1,	NULL)
+OPCDEF(opc__x11, 0x11, 5, 0, +1, 1,	NULL)
 OPCDEF(opc_ldc4, 0x12, 5, 0, +1, 1,	"ldc.b32")	// push(arg.4);			:2[…, a, b, c => […, a, b, c, 2;
 OPCDEF(opc_ldc8, 0x13, 9, 0, +2, 1,	"ldc.b64")	// push(arg.8);			:2[…, a, b, c => […, a, b, c, 2;
 OPCDEF(opc_dup1, 0x14, 2, 9, +1, 1,	"dup.x1")	// push(sp(n));			:2[…, a, b, c => […, a, b, c, a;
-OPCDEF(opc_dup2, 0x15, 2, 9, +2, 1,	"dup.x2")	// push(sp(n))x2;		:2[…, a, b, c => […, a, b, c, a, b;
-OPCDEF(opc_dup4, 0x16, 2, 9, +4, 1,	"dup.x4")	// push(sp(n))x4;		:3[…, a, b, c, d => […, a, b, c, d, a, b, c, d;
+OPCDEF(opc_dup2, 0x15, 2, 9, +2, 1,	"dup.x2")	// push(sp(n)) x 2;		:2[…, a, b, c => […, a, b, c, a, b;
+OPCDEF(opc_dup4, 0x16, 2, 9, +4, 1,	"dup.x4")	// push(sp(n)) x 4;		:3[…, a, b, c, d => […, a, b, c, d, a, b, c, d;
 OPCDEF(opc_set1, 0x17, 2, 9, -1, 1,	"set.x1")	// 
 OPCDEF(opc_set2, 0x18, 2, 9, -2, 1,	"set.x2")	// 
 OPCDEF(opc_set4, 0x19, 2, 9, -4, 1,	"set.x4")	// 

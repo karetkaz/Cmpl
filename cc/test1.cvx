@@ -65,7 +65,7 @@ enum Test {
 	Emit = ~0;
 	Bits = ~0;
 	Type = ~0;
-	Call = 0;
+	Call = ~0;
 	Misc = ~0;
 	Math = ~0;
 	//~ Math = -1;
@@ -177,7 +177,7 @@ static if (times2exec > 0) {
 		Complex C1 = mul(Ca, Cb);
 	}
 }
-}
+}// +/
 static if (Test.Emit & 0x08) {	// Vector4
 
 //~ vec4f v1 = emit(vec4f, f32(11), f32(12), f32(13), f32(14));
@@ -212,7 +212,7 @@ float32 sp[4] = emit();
 //~ int64 i64 = emit(void);
 //~ float64 f64 = emit(void);
 
-}
+}// +/
 } // */
 static if (Test.Bits) {
 int32 var = 0x00001080;		// input
@@ -256,6 +256,27 @@ if (var) {
 	x = ((x >> 8) & 0x00FF00FF) | ((x & 0x00FF00FF) << 8);
 	SWP_res = (x >> 16) | (x << 16);
 }
+//~ +/
+}
+static if (Test.Bits & 8) {		// compute bits
+void bitsget(bool signed, int size, int64 &min, int64 &max/+ , int64 &mask +/) {
+	int64 mask = bits.shr(int64(-1), -size);
+
+	min = bits.shl(-int64(signed), size - 1);
+	max = bits.and(min - 1, mask);
+}
+
+int bits = 24;
+hex64 min;
+hex64 max;
+//hex64 mask;
+
+hex64 umin;
+hex64 umax;
+//hex64 umask;
+
+bitsget(true, bits, min, max);
+bitsget(!true, bits, umin, umax);
 //~ +/
 }
 } // */
@@ -411,7 +432,7 @@ static if (Test.Math) {
 
 } // */
 static if (Test.Call) {
-static if (Test.Call & 1) {			// 256 bit integer
+static if (Test.Call & 1) {			// 256 bit(8x32bit) integer
 struct i32x8 {
 	int32 i8;	//%%08x
 	int32 i7;	//%%08x
@@ -464,66 +485,66 @@ i32x8 neg(i32x8 &b) {
 	int64 ovf = 0;
 	int64 carry = 0;
 
-	define op(int &b) = int32(sum = ovf - zxt64(b) - carry);
-	result.i1 = op(b.i1);
+	define opNeg(int b) = int32(sum = ovf - zxt64(b) - carry);
+	result.i1 = opNeg(b.i1);
 	carry = sum < ovf;
-	result.i2 = op(b.i2);
+	result.i2 = opNeg(b.i2);
 	carry = sum < ovf;
-	result.i3 = op(b.i3);
+	result.i3 = opNeg(b.i3);
 	carry = sum < ovf;
-	result.i4 = op(b.i4);
+	result.i4 = opNeg(b.i4);
 	carry = sum < ovf;
-	result.i5 = op(b.i5);
+	result.i5 = opNeg(b.i5);
 	carry = sum < ovf;
-	result.i6 = op(b.i6);
+	result.i6 = opNeg(b.i6);
 	carry = sum < ovf;
-	result.i7 = op(b.i7);
+	result.i7 = opNeg(b.i7);
 	carry = sum < ovf;
-	result.i8 = op(b.i8);
+	result.i8 = opNeg(b.i8);
 }
 i32x8 add(i32x8 &a, i32x8 &b) {
 	int64 sum;
 	int64 ovf = 0xffffffff;
 	int64 carry = 0;
 
-	define op(int &a, int &b) = int32(sum = zxt64(a) + zxt64(b) + carry);
-	result.i1 = op(a.i1, b.i1);
+	define opAdd(int a, int b) = int32(sum = zxt64(a) + zxt64(b) + carry);
+	result.i1 = opAdd(a.i1, b.i1);
 	carry = sum > ovf;
-	result.i2 = op(a.i2, b.i2);
+	result.i2 = opAdd(a.i2, b.i2);
 	carry = sum > ovf;
-	result.i3 = op(a.i3, b.i3);
+	result.i3 = opAdd(a.i3, b.i3);
 	carry = sum > ovf;
-	result.i4 = op(a.i4, b.i4);
+	result.i4 = opAdd(a.i4, b.i4);
 	carry = sum > ovf;
-	result.i5 = op(a.i5, b.i5);
+	result.i5 = opAdd(a.i5, b.i5);
 	carry = sum > ovf;
-	result.i6 = op(a.i6, b.i6);
+	result.i6 = opAdd(a.i6, b.i6);
 	carry = sum > ovf;
-	result.i7 = op(a.i7, b.i7);
+	result.i7 = opAdd(a.i7, b.i7);
 	carry = sum > ovf;
-	result.i8 = op(a.i8, b.i8);
+	result.i8 = opAdd(a.i8, b.i8);
 }
 i32x8 sub(i32x8 &a, i32x8 &b) {
 	int64 sum;
 	int64 ovf = 0;
 	int64 carry = 0;
 
-	define op(int &a, int &b) = int32(sum = zxt64(a) - zxt64(b) - carry);
-	result.i1 = op(a.i1, b.i1);
+	define opSub(int a, int b) = int32(sum = zxt64(a) - zxt64(b) - carry);
+	result.i1 = opSub(a.i1, b.i1);
 	carry = sum < ovf;
-	result.i2 = op(a.i2, b.i2);
+	result.i2 = opSub(a.i2, b.i2);
 	carry = sum < ovf;
-	result.i3 = op(a.i3, b.i3);
+	result.i3 = opSub(a.i3, b.i3);
 	carry = sum < ovf;
-	result.i4 = op(a.i4, b.i4);
+	result.i4 = opSub(a.i4, b.i4);
 	carry = sum < ovf;
-	result.i5 = op(a.i5, b.i5);
+	result.i5 = opSub(a.i5, b.i5);
 	carry = sum < ovf;
-	result.i6 = op(a.i6, b.i6);
+	result.i6 = opSub(a.i6, b.i6);
 	carry = sum < ovf;
-	result.i7 = op(a.i7, b.i7);
+	result.i7 = opSub(a.i7, b.i7);
 	carry = sum < ovf;
-	result.i8 = op(a.i8, b.i8);
+	result.i8 = opSub(a.i8, b.i8);
 }
 
 //~ i32x8 add(i32x8 &a, int32  b) {}
@@ -542,14 +563,13 @@ i32x8 sub(i32x8 &a, i32x8 &b) {
 //~ i32x8 mod(i32x8 &a, i32x8 &b) {div(a, b, result);}
 //~ i32x8 mod(i32x8 &a, int32  b) {div(a, b, result);}
 
-i32x8 a = i32x8(int32(0x0fffffff), int32(0xffffffff), int32(0xffffffff), int32(0xffffffff), int32(0xffffffff), int32(0xffffffff), int32(0xffffffff), int32(0xffffffff));
-i32x8 b = i32x8(1);
-i32x8 c = add(a, b);
+i32x8 i32x8_a = i32x8(int32(0x0fffffff), int32(0xffffffff), int32(0xffffffff), int32(0xffffffff), int32(0xffffffff), int32(0xffffffff), int32(0xffffffff), int32(0xffffffff));
+i32x8 i32x8_b = i32x8(1);
+i32x8 i32x8_c = add(i32x8_a, i32x8_b);
 
 } // +/
 } // */
 
-int xkfdhvs = 32 * 8;
 /* Reflect
 enum TypeCode:int32 {
 	TYPE_any = 0x00000000;		// invalid, error, ...
@@ -586,6 +606,9 @@ struct TypeInfo {
 	//~ get indirect = (!!(this.code & ATTR_ind));
 	//~ get function = (!!(this.code & ATTR_fun));
 }
+
+//~ class type: TypeInfo {}
+//~ class reference: TypeInfo {}
 
 bool instanceof(TypeInfo &ty, ref obj) {
 	for ( ; ty; ty = ty.base)

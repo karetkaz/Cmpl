@@ -75,19 +75,19 @@ case opc_task: NEXT(4, 0, -0) {
 	STOP(error_opc, 1);
 #endif
 } break;
-case opc_libc: NEXT(2, libcfnc[ip->idx].chk, -libcfnc[ip->idx].pop) {
+case opc_libc: NEXT(2, libcvec[ip->idx].chk, -libcvec[ip->idx].pop) {
 #ifdef EXEC
 	vm->s->argv = (char *)sp;
-	vm->s->argc = libcfnc[ip->idx].pop * 4;
-	vm->s->retv = (char*)((stkptr)sp + libcfnc[ip->idx].pop);
-	vm->s->args = libcfnc[ip->idx].sym->args;
-	vm->s->func = libcfnc[ip->idx].sym->offs;
-	vm->s->libc = libcfnc[ip->idx].sym;
+        vm->s->argc = libcvec[ip->idx].pop * 4;
+        vm->s->retv = (char*)((stkptr)sp + libcvec[ip->idx].pop);
+        vm->s->args = libcvec[ip->idx].sym->args;
+        vm->s->func = libcvec[ip->idx].sym->offs;
+        vm->s->libc = libcvec[ip->idx].sym;
 	if (ip->idx == 0) {
 		vm->s->argc = (char *)st - (char *)sp;
 		vm->s->args = vm->s->defs;
 	}
-	libcfnc[ip->idx].call(vm->s);
+        libcvec[ip->idx].call(vm->s);
 	STOP(stop_vm, ip->idx == 0);		// Halt();
 #endif
 } break;
@@ -100,7 +100,7 @@ case opc_libc: NEXT(2, libcfnc[ip->idx].chk, -libcfnc[ip->idx].pop) {
 } break;*/
 //}
 //{ 0x1?: STK		// Stack
-case opc_ldc1: NEXT(2, 0, +1) {
+/*case opc_ldc1: NEXT(2, 0, +1) {
 #ifdef EXEC
 	STOP(error_ovf, ovf(pu));
 	SP(-1, i4) = ip->arg.i1;
@@ -111,7 +111,7 @@ case opc_ldc2: NEXT(3, 0, +1) {
 	STOP(error_ovf, ovf(pu));
 	SP(-1, i4) = ip->arg.i2;
 #endif
-} break;
+} break;// */
 case opc_ldcf: // temporary opc
 case opc_ldcr:
 case opc_ldc4: NEXT(5, 0, +1) {

@@ -24,13 +24,6 @@ astn newnode(ccState s, int kind) {
 }
 
 /*
-astn fh8node(ccState s, uint64_t v) {
-	astn ast = newnode(s, TYPE_flt);
-	//~ ast->type = type_f64;
-	ast->con.cint = v;
-	return ast;
-}
-
 astn fltnode(ccState s, float64_t v) {
 	astn ast = newnode(s, TYPE_flt);
 	//~ ast->type = type_f64;
@@ -45,17 +38,17 @@ astn strnode(ccState s, char * v) {
 	return ast;
 }
 
+astn cpynode(ccState s, astn src) {
+	astn ast = newnode(s, 0);
+	*ast = *src;
+	return ast;
+}
 // */
 
 astn intnode(ccState s, int64_t v) {
 	astn ast = newnode(s, TYPE_int);
 	ast->type = type_i32;
 	ast->con.cint = v;
-	return ast;
-}
-astn cpynode(ccState s, astn src) {
-	astn ast = newnode(s, 0);
-	*ast = *src;
 	return ast;
 }
 void eatnode(ccState s, astn ast) {
@@ -390,30 +383,3 @@ int eval(astn res, astn ast) {
 
 	return res->kind;
 }
-
-/*int cmptree(astn lhs, astn rhs) {
-	if (lhs == rhs) return 1;
-
-	if (!lhs && rhs) return 0;
-	if (lhs && !rhs) return 0;
-
-	if (lhs->kind != rhs->kind)
-		return 0;
-	switch (rhs->kind) {
-		case TYPE_int: return lhs->cint == rhs->cint;
-		case TYPE_flt: return lhs->cflt == rhs->cflt;
-		case TYPE_str: return lhs->name == rhs->name;
-		//~ case TYPE_ref: return lhs->link == rhs->link;
-
-		case OPER_add:
-		case OPER_sub:
-		case OPER_mul:
-		case OPER_div:
-		case OPER_mod:
-		case OPER_idx:
-		case OPER_fnc:
-			return samenode(lhs->lhso, rhs->lhso)
-				&& samenode(lhs->rhso, rhs->rhso);
-	}
-	return 0;
-} // */

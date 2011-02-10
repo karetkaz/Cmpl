@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 #include <stdint.h>
+#include <string.h>
 typedef float float32_t;
 typedef double float64_t;
 
@@ -10,6 +11,23 @@ typedef struct astn *astn;		// tree
 typedef struct symn *symn;		// symbols
 typedef struct ccState *ccState;
 typedef struct vmState *vmState;
+
+enum CompilerRegister {
+	creg_base = 0x0000,				// type system only
+	creg_emit = 0x0008,				// the emit thingie : emit(...)
+	//~ creg_etyp = 0x0001 | creg_emit,	// emit types : emit.i32
+	creg_eopc = 0x0002 | creg_emit,	// emit opcodes : emit.i32.add
+	creg_swiz = 0x0004 | creg_eopc,	// swizzle constants : emit.swz.(xxxx ... xyzw ... wwww)
+
+	// this are in main
+	//~ creg_stdc = 0x0010 | creg_emit,	// std library calls : sin(float64 x) = emit(float64, libc(3), f64(x));
+	//~ creg_bits = 0x0020 | creg_emit,	// bitwize operations: bits.shr(int64 x, int32 cnt)
+
+	//~ creg_math = 0x000?,
+	//~ creg_rtty = 0x000?,
+	creg_all  = -1,
+	creg_def = creg_all,
+};
 
 typedef struct state {
 	FILE* logf;		// log file
@@ -64,9 +82,13 @@ int logfile(state, char *file);				// logger
 int gencode(state, int level);				// optimize level
 //~ int execute(state, int cc, int ss, dbgf dbg);
 int parse(ccState, srcType);
+
 symn libcall(state, int libc(state), int pass, const char* proto);
+//~ symn install(state, int libc(state), int pass, const char* proto);
+symn installtyp(state s, const char* name, unsigned size);
 
 // execute
+int (*libcSwapExit(state s, int libc(state)))(state);
 typedef int (*dbgf)(state s, int pu, void *ip, long* sptr, int scnt);
 //~ int dbgCon(state, int, void*, long*, int);				// 
 
@@ -74,10 +96,10 @@ typedef int (*dbgf)(state s, int pu, void *ip, long* sptr, int scnt);
 int exec(vmState, dbgf dbg);
 
 // output
-void dump(state, dumpMode, char* text);
+void dump(state, dumpMode, char* text, ...);
 
 // Level 1 Functions: use less these
-ccState ccInit(state);
+ccState ccInit(state, int mode);
 ccState ccOpen(state, srcType, char* source);
 
 int ccDone(state);
@@ -109,10 +131,11 @@ static inline int32_t popi32(state s) { return popargtype(s, int32_t); }
 static inline float64_t popf64(state s) { return popargtype(s, float64_t); }
 static inline int64_t popi64(state s) { return popargtype(s, int64_t); }
 
-static inline void* popref(state s) { return s->_mem + popi32(s); }
+static inline void* popref(state s) { int32_t p = popi32(s); return p ? s->_mem + p : NULL; }
 static inline char* popstr(state s) { return s->_mem + popi32(s); }
 
-static inline void* poprecord(state s, int size) { return popargsize(s, size); }
+static inline void* popval(state s, void* dst, int size) { return memcpy(dst, popargsize(s, size), size); }
+//~ static inline void* poprecord(state s, int size) { return popargsize(s, size); }
 
 static inline void reti32(state s, int32_t val) { setret(int32_t, s, val); }
 static inline void reti64(state s, int64_t val) { setret(int64_t, s, val); }

@@ -77,7 +77,7 @@ void* vmOffset(state s, symn arg, int ss) {
 	//~ return ((char*)s->argv) + (ss ? ss - arg->offs : arg->offs);
 	return ((char*)s->argv) + ss - arg->offs;
 }
-static int libHalt(state s) {
+static int libCallExit(state s) {
 	symn arg = s->args;
 	//~ debug("calling %-T", s->libc);
 	//~ debug("argv: %08x", s->argv);
@@ -110,14 +110,29 @@ static struct lfun {
 	int8_t chk, pop, pad[2];
 	//~ int32_t _pad;
 }
-libcfnc[LIBCALLS] = {
-	{libHalt, "void Halt();", NULL, 0, 0},
+libcvec[LIBCALLS];/* = {
+	//~ {libHalt, "void Halt();", NULL, 0, 0},
 	//~ {libHalt, "void Exit(int Code);", NULL, 0, 0},
 	//~ {libHalt, "void Test(int x, int y, int z);", NULL, 0, 0},
 	{NULL},
-};
+};// */
 
-symn installref(state s, const char *prot, astn *argv){
+void printargcast(astn arg) {
+	if (arg) {
+		if (arg->kind == OPER_com) {
+			while (arg->kind == OPER_com) {
+				//~ debug("arg:%t: %+k", arg->op.rhso->cst2, arg->op.rhso);
+				arg = arg->op.lhso;
+			}
+		}
+		//~ debug("arg:%t: %+k", arg->cst2, arg);
+		if (arg->kind == TYPE_ref) {
+			debug("arg:%t: %+T(arg:%t: %+k)", arg->id.link->cast, arg->id.link, arg->cst2, arg);
+		}
+	}
+}
+
+static symn installref(state s, const char *prot, astn *argv) {
 	astn root;
 	symn result = NULL;
 	int level;
@@ -133,7 +148,7 @@ symn installref(state s, const char *prot, astn *argv){
 
 	s->cc->warn = 9;
 	level = s->cc->nest;
-	if ((root = decl(s->cc, 0))) {
+	if ((root = decl(s->cc, decl_Ref))) {
 
 		dieif(level != s->cc->nest, "FixMe");
 		dieif(root->kind != TYPE_def, "FixMe");
@@ -145,8 +160,22 @@ symn installref(state s, const char *prot, astn *argv){
 		}
 	}
 
+	//~ printargcast(root->id.args);
+
 	return errc == s->errc ? result : NULL;
 }//*/
+
+/*
+ * install a library call
+ * @arg s: the runtime state.
+ * @arg libc: the function to call.
+ * @arg proto: prototype of function.
+ */
+int (*libcSwapExit(state s, int libc(state)))(state) {
+        int (*result)(state) = libcvec[0].call;
+        libcvec[0].call = libc;
+	return result;
+}
 
 symn libcall(state s, int libc(state), int pos, const char* proto) {
 	static int libccnt = 0;
@@ -155,18 +184,27 @@ symn libcall(state s, int libc(state), int pos, const char* proto) {
 	astn args;
 
 	//~ if (!s->cc && !ccInit(s)) {return NULL;}
+	if (!libc && strcmp(proto, "reset") == 0) {
+		debug("resetting lib calls");
+
+		memset(libcvec, 0, sizeof(libcvec));
+		libcvec[0].proto = "void Halt();";
+		libcvec[0].call = libCallExit;
+		libcvec[0].sym = NULL;
+		libccnt = 0;
+	}
 
 	if (!libccnt && !libc) {
 		libccnt = 0;
-		if (!libc) while (libcfnc[libccnt].proto) {
+                if (!libc) while (libcvec[libccnt].proto) {
 			int i = libccnt;
-			if (!libcall(s, libcfnc[i].call, 0, libcfnc[i].proto))
+                        if (!libcall(s, libcvec[i].call, 0, libcvec[i].proto))
 				return NULL;
 		}
 		return NULL;
-	}
+	}// */
 
-	if (libccnt >= (sizeof(libcfnc) / sizeof(*libcfnc))) {
+	if (libccnt >= (sizeof(libcvec) / sizeof(*libcvec))) {
 		error(s, 0, "to many functions on install('%s')", proto);
 		return NULL;
 	}
@@ -174,9 +212,9 @@ symn libcall(state s, int libc(state), int pos, const char* proto) {
 	if (!libc || !proto)
 		return 0;
 
-	libcfnc[libccnt].call = libc;
-	libcfnc[libccnt].proto = proto;
-	sym = installref(s, libcfnc[libccnt].proto, &args);
+	libcvec[libccnt].call = libc;
+	libcvec[libccnt].proto = proto;
+	sym = installref(s, libcvec[libccnt].proto, &args);
 
 	//~ from: int64 zxt(int64 val, int offs, int bits)
 	//~ make: define zxt(int64 val, int offs, int bits) = int64(emit(libc(25), int64 val, int offs, int bits));
@@ -217,14 +255,8 @@ symn libcall(state s, int libc(state), int pos, const char* proto) {
 			args = libc;
 		}
 
-		// make arguments symbolic by default
-		for (arg = sym->args; arg; arg = arg->next) {
-			//~ stdiff += sizeOf(arg->type);
-			arg->cast = TYPE_def;
-			//~ arg->load = 0;
-		}// */
-
 		libc = newnode(s->cc, OPER_fnc);
+		//~ libc->op.lhso = emit_opc->tag;
 		libc->op.lhso = newnode(s->cc, TYPE_ref);
 		libc->op.lhso->id.link = emit_opc;
 		libc->op.lhso->id.name = "emit";
@@ -237,15 +269,23 @@ symn libcall(state s, int libc(state), int pos, const char* proto) {
 		sym->offs = pos;
 
 		stdiff = fixargs(sym, 4, 0);
-		libcfnc[libccnt].chk = stdiff / 4;
+                libcvec[libccnt].chk = stdiff / 4;
 
 		stdiff -= sizeOf(sym->type);
-		libcfnc[libccnt].pop = stdiff / 4;
+                libcvec[libccnt].pop = stdiff / 4;
 
-		libcfnc[libccnt].sym = sym;
+                libcvec[libccnt].sym = sym;
 
 		//~ debug("FixMe: %-T(chk: %d, pop: %d)", sym, libcfnc[libccnt].chk, libcfnc[libccnt].pop);
+		// make arguments symbolic by default
 		for (arg = sym->args; arg; arg = arg->next) {
+			//~ stdiff += sizeOf(arg->type);
+			//~ if (arg->cast != TYPE_ref)
+				arg->cast = TYPE_def;
+			//~ arg->load = 0;
+		}// */
+
+		/*for (arg = sym->args; arg; arg = arg->next) {
 			//~ dieif(arg->offs != stdiff, "FixMe: %+T(%d, %d)", arg, arg->offs, stdiff);
 			//~ debug("FixMe: %+T(%d, %d)", arg, arg->offs, stdiff);
 			stdiff += sizeOf(arg->type);
@@ -1076,8 +1116,8 @@ void fputopc(FILE *fout, unsigned char* ptr, int len, int offs) {
 			fputfmt(fout, " sp(%d)", ip->idx);
 			break;
 
-		case opc_ldc1: fputfmt(fout, " %d", ip->arg.i1); break;
-		case opc_ldc2: fputfmt(fout, " %d", ip->arg.i2); break;
+		//~ case opc_ldc1: fputfmt(fout, " %d", ip->arg.i1); break;
+		//~ case opc_ldc2: fputfmt(fout, " %d", ip->arg.i2); break;
 		case opc_ldc4: fputfmt(fout, " %x", ip->arg.i4); break;
 		case opc_ldc8: fputfmt(fout, " %D", ip->arg.i8); break;
 		case opc_ldcf: fputfmt(fout, " %f", ip->arg.f4); break;
@@ -1085,10 +1125,10 @@ void fputopc(FILE *fout, unsigned char* ptr, int len, int offs) {
 		case opc_ldcr: fputfmt(fout, " %x", ip->arg.u4); break;
 
 		case opc_libc:
-			if (libcfnc[ip->idx].sym)
-				fputfmt(fout, " %-T", libcfnc[ip->idx].sym);
+                        if (libcvec[ip->idx].sym)
+                                fputfmt(fout, " %-T", libcvec[ip->idx].sym);
 			else
-				fputfmt(fout, " %s", libcfnc[ip->idx].proto);
+                                fputfmt(fout, " %s", libcvec[ip->idx].proto);
 			break;
 
 		case p4d_swz: {
@@ -1142,13 +1182,8 @@ void fputasm(FILE *fout, vmState s, int mark, int end, int mode) {
 void vm_fputval(state s, FILE *fout, symn var, stkval* ref, int flgs) {
 	symn typ = var->kind == TYPE_ref ? var->type : var;
 
-	//~ if (typ && typ->kind == TYPE_enu)
-		//~ typ = typ->type;
-
 	if (typ) switch (typ->kind) {
-		/*case TYPE_enu:
-			typ = typ->type;
-			// fall
+		/*
 		case TYPE_def:
 			vm_fputval(s, fout, typ, ref, flgs);
 			break;

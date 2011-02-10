@@ -1,3 +1,4 @@
+//~ wcl386 -zq -ei -6s -d2  -fe=../main code.c clog.c parse.c tree.c type.c ccvm.c main.c
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
@@ -364,6 +365,7 @@ static int bits_call(state s) {
 			uint64_t x = poparg(s, int64_t);
 			uint32_t y = poparg(s, int32_t);
 			setret(uint64_t, s, x >> y);
+			//~ debug("%D >> %d = %D", x, y, x >> y);
 		} return 0;
 		case b64_sar: {
 			int64_t x = poparg(s, int64_t);
@@ -505,7 +507,7 @@ static int bits_call(state s) {
 static void install_bits(ccState cc) {
 	int err = 0;
 	symn module;
-	if ((module = install(cc, "bits", TYPE_enu, 0, 0))) {
+	if ((module = install(cc, "bits", TYPE_rec, 0, 0))) {
 		enter(cc, NULL);
 		// libcall will return 0 on failure, 
 		// 'err = err || !libcall...' <=> 'if (!err) err = !libcall...'
@@ -615,13 +617,11 @@ int evalexp(ccState s, char* text/* , int opts */) {
 
 int reglibc(state s) {
 
-	libcall(s, NULL, 0, "defaults");	// exit
+	libcall(s, NULL, 0, "reset");
 
-	if ((COMPILER_LEVEL & creg_stdc) == creg_stdc)
-		install_stdc(s->cc);
+	install_stdc(s->cc);
 
-	if ((COMPILER_LEVEL & creg_bits) == creg_bits)
-		install_bits(s->cc);
+	install_bits(s->cc);
 
 	return 0;
 }
@@ -640,7 +640,8 @@ int compile(state s, int wl, char *file) {
 	#endif
 
 	s->cc->warn = wl;
-	unit(s->cc, -1);
+	parse(s->cc, 0);
+	//unit(s->cc, -1);
 
 	#if DEBUGGING > 1
 	debug("%s: init(%.2F); scan(%.2F) KBytes", file, size / 1024., (s->cc->_beg - s->_mem) / 1024.);
@@ -662,10 +663,10 @@ int program(int argc, char *argv[]) {
 		usage(prg, NULL);
 	}
 	else if (argc == 2 && *cmd == '=') {	// eval
-		return evalexp(ccInit(s), cmd + 1);
+		return evalexp(ccInit(s, creg_def), cmd + 1);
 	}
 	else if (strcmp(cmd, "-api") == 0) {
-		ccState env = ccInit(s);
+		ccState env = ccInit(s, creg_def);
 		const int level = 2;
 		symn glob;
 		int i;
@@ -693,17 +694,6 @@ int program(int argc, char *argv[]) {
 			else
 				fputfmt(stderr, "symbol not found `%s`\n", argv[i]);
 		}
-		/*for (i = 0; i < TBLS; i += 1) {
-			list l, head = env->strt[i];
-			fprintf(stdout, "[%d] ", i);
-			for (l = head; l; l = l->next) {
-				fputs((const char *)l->data, stdout);
-				if (l->next)
-					fputs(", ", stdout);
-			}
-			//~ if (head)
-			fputs("\n", stdout);
-		}// */
 		return ccDone(s);
 	}
 	else if (strcmp(cmd, "-t") == 0) {		// tags
@@ -956,6 +946,22 @@ int program(int argc, char *argv[]) {
 			return s->errc;
 		}
 
+		if (1) {
+			symn glob = s->defs;//leave(s->cc, NULL);
+			while (glob) {
+				char* ty = ".err";
+				switch (glob->kind) {
+					case EMIT_opc: ty = "emit"; break;
+					case TYPE_ref: ty = ".ref"; break;
+					case TYPE_rec: ty = ".typ"; break;
+					case TYPE_def: ty = ".def"; break;
+				}
+				//~ debug("%s: %-15.15T", ty, glob);
+				//~ dumpsym(stdout, glob, 0);
+				glob = glob->defs;
+			}
+		}
+
 		//~ logfile(s, outf);
 		//~ s->defs = leave(s->cc, NULL);
 		if (outc) switch (outc) {
@@ -991,8 +997,8 @@ int main(int argc, char *argv[]) {
 			//"-api",
 			
 			"-c",		// compile command
-			"-xd",		// execute & show symbols command
-			"test.cvx",
+                        "-x",		// execute & show symbols command
+                        "test1.cvx",
 		};
 		argc = sizeof(args) / sizeof(*args);
 		argv = args;
@@ -1127,30 +1133,6 @@ static int dbgCon(state s, int pu, void *ip, long* bp, int ss) {
 	}
 	return 0;
 }
-/*static int libHalt(state s) {
-	symn arg = s->args;
-	//~ debug("calling %-T", s->libc);
-	//~ debug("argv: %08x", s->argv);
-	for ( ;arg; arg = arg->next) {
-		char *ofs = NULL;//vmOffset(s, arg, s->argc);
-		void vm_fputval(state, FILE *fout, symn var, stkval* ref, int flgs);
-
-		//~ debug("argv: %08x", s->argv);
-		//~ if (arg->kind != TYPE_ref && s->args == s->defs) continue;
-		if (arg->kind != TYPE_ref) continue;
-
-		if (arg->file && arg->line)
-			fputfmt(stdout, "%s:%d:",arg->file, arg->line);
-		else
-			fputfmt(stdout, "var: ",arg->file, arg->line);
-
-		fputfmt(stdout, "@%d[0x%08x]\t: ", arg->offs < 0 ? -arg->offs : arg->offs, ofs);
-		//~ fputfmt(stdout, "@%d[0x%08x]\t: ", s->argc - arg->offs, ofs);
-		vm_fputval(s, stdout, arg, (stkval*)ofs, 0);
-		fputc('\n', stdout);
-	}
-	return 0;
-}// */
 
 /* temp
 
@@ -1212,44 +1194,6 @@ int mk_test(char *file, int size) {
 	else debug("file is too large (128M max)");
 
 	fclose(f);
-	return 0;
-}
-
-int bitmap(int argc, char *argv[]) {
-	state s = rtInit(mem, sizeof(mem));
-
-	//~ char *prg, *cmd;
-	//~ dbgf dbg = NULL;//Info;
-
-	int warn = wl;
-	int opti = ol;
-	char *logf = 0;
-	char *srcf = "test2.cvx";
-
-	if (logf && logfile(s, logf) != 0) {
-		fputfmt(stderr, "can not open file `%s`\n", logf);
-		return -1;
-	}
-
-	if (srcfile(s, srcf) != 0) {
-		error(s, -1, "can not open file `%s`", srcf);
-		logfile(s, NULL);
-		return -1;
-	}
-
-	if (compile(s, warn) != 0) {
-		logfile(s, NULL);
-		return s->errc;
-	}
-
-	if (gencode(s, opti) != 0) {
-		logfile(s, NULL);
-		return s->errc;
-	}
-
-	
-
-	logfile(s, NULL);
 	return 0;
 }
 

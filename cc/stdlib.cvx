@@ -3,7 +3,7 @@
 //~ /*
 enum math: float64 {
 
-	define i64_as_f64(int64 x) = emit(float64, i64(x));
+	define i64_as_f64(int64 x) = emit(float64, int64(x));
 
 	//~ nan = 0. / 0;
 	//~ nan = -0. / 0;
@@ -54,18 +54,17 @@ enum imports: bool {
 
 static if (imports.print) {
 define println() = putchr('\n');
-define print(hex32 arg) = putx64(arg);
 define print(int32 arg) = puti64(arg);
 define print(float32 arg) = putf64(arg);
 define print(int64 arg) = puti64(arg);
 define print(float64 arg) = putf64(arg);
 define print(string arg) = putstr(arg);
-define println(hex32 arg) = emit(void(println()), void(putx64(arg)));
 define println(int32 arg) = emit(void(println()), void(puti64(arg)));
 define println(float32 arg) = emit(void(println()), void(putf64(arg)));
 define println(int64 arg) = emit(void(println()), void(puti64(arg)));
 define println(float64 arg) = emit(void(println()), void(putf64(arg)));
 define println(string arg)= emit(void(println()), void(putstr(arg)));
+
 }
 static if (imports.vec4f) {
 struct vec4f {
@@ -174,8 +173,8 @@ define min(uint32 &a, uint32 &b) = uint32(a < b ? a : b);
 define min(float32 &a, float32 &b) = float32(a < b ? a : b);
 define min(float64 &a, float64 &b) = float64(a < b ? a : b);
 
-define clamp(float x, float min, float max) = min(max(x, min), max);
-define clamp(double x, double min, double max) = min(max(x, min), max);
+define clamp(float x, float _min, float _max) = min(max(x, _min), _max);
+define clamp(double x, double _min, double _max) = min(max(x, _min), _max);
 
 define lerp(float t, float &a, float b) = float(a + t * (b - a));
 define lerp(double t, double &a, double b) = double(a + t * (b - a));
@@ -190,5 +189,12 @@ define random(float64 max) = float64(max * (random(32768) / 32768.));
 define random(int32 &min, int32 max) = int32(min + random(max - min));
 define random(float64 &min, float64 max) = float64(min + random(max - min));
 
-// */
+// debug ???
+define hex8  int8;		//%hex8(0x%02x)
+define hex16 int16;		//%hex16(0x%04x)
+define hex32 int32;		//%hex32(0x%08x)
+define hex64 int64;		//%hex64(0x%016X)
 
+define print(hex32 arg) = putx64(arg);
+define println(hex32 arg) = emit(void(println()), void(putx64(arg)));
+// */
