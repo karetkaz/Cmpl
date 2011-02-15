@@ -18,6 +18,7 @@ enum Format {
 	prType = 0x0010,
 	prQual = 0x0020,
 	prArgs = 0x0040,
+	noName = 0x0080,
 
 	// xml
 	prCast = 0x0020,
@@ -25,12 +26,15 @@ enum Format {
 };
 
 static void fputsym(FILE *fout, symn sym, int mode, int level) {
-	int rlev = mode & 0xf;
+	//~ int rlev = mode & 0xf;
+	int prName = 1;//!(mode & noName);
 
 	if (!sym) {
 		fputstr(fout, "(null)");
 		return;
 	}
+
+	//~ prName = !(mode & noName) && sym->name;
 
 	if (sym->kind == TYPE_arr) {
 		symn bp[512], *sp = bp, *p;// + sizeof(bp) / sizeof(*bp);
@@ -66,39 +70,53 @@ static void fputsym(FILE *fout, symn sym, int mode, int level) {
 
 	if ((mode & prType) && sym->type) {
 		switch (sym->kind) {
-			case TYPE_def:
+			//~ case TYPE_def:
 				//~ fputstr(fout, "define ");
-				break;
-			case TYPE_rec:
+				//~ break;
+			//~ case TYPE_rec:
 				//~ fputstr(fout, "struct ");
-				break;
+				//~ break;
 
 			default:
 				fputsym(fout, sym->type, mode, level);
-				fputchr(fout, ' ');
+				//~ debug("%T: %t, %t", sym, sym->kind, sym->cast);
+
+				if (prName)
+					fputchr(fout, ' ');
+
+				if (sym->kind == TYPE_ref) {
+					switch (sym->cast) {
+						case TYPE_ref: fputchr(fout, '&'); break;
+						case TYPE_def: fputchr(fout, '$'); break;
+					}
+				}
 		}
 	}
 
-	if ((mode & prQual) && sym->decl) {
-		fputsym(fout, sym->decl, mode & prQual, 0);
-		fputchr(fout, '.');
-	}
+	if (prName && sym->name) {
+		if ((mode & prQual) && sym->decl) {
+			fputsym(fout, sym->decl, mode & prQual, 0);
+			fputchr(fout, '.');
+		}
 
-	if (sym->name)
 		fputstr(fout, sym->name);
-	else
-		fputchr(fout, '_');
+		//~ else fputchr(fout, '_');
+	}
 
 	if ((mode & prArgs) && sym->call) {
 		symn arg = sym->args;
 		fputchr(fout, '(');
 		//~ if (arg != void_arg) 
 		while (arg) {
-			fputsym(fout, arg->type, mode, 0);
+			/*fputsym(fout, arg->type, mode, 0);
+
 			if (mode && arg->name && *arg->name && rlev > 0) {
 				fputchr(fout, ' ');
 				fputstr(fout, arg->name);
-			}
+			}*/
+
+			//~ fputsym(fout, arg, mode&~prQual, 0);
+			fputsym(fout, arg, prType, 0);
 
 			if ((arg = arg->next))
 				fputstr(fout, ", ");
@@ -281,17 +299,19 @@ static void fputast(FILE *fout, astn ast, int mode, int level) {
 				fputast(fout, ast->op.lhso, mode, 0);
 				fputchr(fout, '(');
 				if (rlev && ast->op.rhso)
-					fputast(fout, ast->op.rhso, mode, 0);
+					fputast(fout, ast->op.rhso, mode, 0x0f);
 				fputchr(fout, ')');
 			}
 			else if (rlev) {
+				fputchr(fout, '(');
 				if (rlev && ast->op.rhso)
-					fputast(fout, ast->op.rhso, mode, 0);
+					fputast(fout, ast->op.rhso, mode, 0x0f);
+				fputchr(fout, ')');
 			}
 			else {
 				fputchr(fout, '(');
 				if (rlev && ast->op.rhso)
-					fputast(fout, ast->op.rhso, mode, 0);
+					fputast(fout, ast->op.rhso, mode, 0x0f);
 				fputchr(fout, ')');
 			}
 		} break;
@@ -412,7 +432,6 @@ static void fputast(FILE *fout, astn ast, int mode, int level) {
 		case TYPE_bit: fputfmt(fout, "%U", ast->con.cint); break;
 		case TYPE_int: fputfmt(fout, "%D", ast->con.cint); break;
 		case TYPE_flt: fputfmt(fout, "%F", ast->con.cflt); break;
-		//~ case TYPE_str: fputfmt(fout, "'%s'", ast->con.cstr); break;
 		case TYPE_str: fputfmt(fout, "\"%s\"", ast->id.name); break;
 		case TYPE_ref: {
 			if (ast->id.link)
@@ -425,12 +444,29 @@ static void fputast(FILE *fout, astn ast, int mode, int level) {
 			symn val = ast->id.link;
 			if (val) {
 				switch (val->kind) {
-					case TYPE_rec: fputstr(fout, "struct "); break;
-					case TYPE_def: fputstr(fout, "define "); break;
-				}
-				fputsym(fout, val, rlev ? -1 : 0, level);
-				if (rlev && val && val->init) {
-					fputfmt(fout, " = %+k", val->init);
+					case TYPE_rec:
+						fputstr(fout, "struct ");
+						break;
+
+					case TYPE_def:
+						fputstr(fout, "define ");
+						//~ break;
+					default:
+						fputsym(fout, val, rlev ? -1 : 0, level);
+						if (rlev && val && val->init) {
+							if (val->init->kind == STMT_beg) {
+								/*if (nlbody) {
+									fputchr(fout, '\n');
+									fputfmt(fout, "\n%I", level + 1);
+								}*/
+								fputfmt(fout, " {...}", noiden ? 0 : level);
+								//~ fputast(fout, val->init, mode | noIden, level + 1);
+								//~ fputstr(fout, ";\n");
+							}
+							else
+								fputfmt(fout, " = %-k", val->init);
+						}
+						break;
 				}
 			}
 			else
@@ -534,7 +570,7 @@ static void FPUTFMT(FILE *fout, const char *msg, va_list ap) {
 						continue;
 					switch (sgn) {
 						case '-': fputast(fout, ast, noIden | 2, prc); break;	// walk
-						case '+': fputast(fout, ast, noIden | 1, 0); break;		// tree
+						case '+': fputast(fout, ast, noIden | 1, 0x0f); break;	// tree
 						default:  fputast(fout, ast, noIden | 0, 0); break;		// astn
 					}
 				} continue;
@@ -558,7 +594,7 @@ static void FPUTFMT(FILE *fout, const char *msg, va_list ap) {
 				} continue;
 				case 't': {		// token
 					unsigned arg = va_arg(ap, unsigned);
-					dieif (arg > tok_last, "%d", arg);
+					//~ dieif (arg > tok_last, "%d", arg);
 					if (!arg && nil)
 						continue;
 					if (arg < tok_last)

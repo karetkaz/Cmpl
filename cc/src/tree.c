@@ -9,7 +9,7 @@ astn newnode(ccState s, int kind) {
 		ast = s->tokp;
 		s->tokp = ast->next;
 	}
-	else if (s->_end - s->_beg > sizeof(struct astn)){
+	else if (s->_end - s->_beg > (int)sizeof(struct astn)){
 		//~ ast = (astn)s->_beg;
 		//~ s->_beg += sizeof(struct astn);
 		s->_end -= sizeof(struct astn);
@@ -142,7 +142,6 @@ int eval(astn res, astn ast) {
 			if (!eval(res, ast->op.rhso))
 				return 0;
 
-			//~ return eval(res, ast->op.rhso); // cast to ? not done
 		} break;
 		case OPER_idx:
 			return 0;

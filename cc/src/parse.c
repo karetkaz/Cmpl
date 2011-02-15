@@ -78,7 +78,7 @@ unsigned rehash(const char* str, unsigned len) {
 	register unsigned hs = 0xffffffff;
 
 	if (str) {
-		if (len == -1)
+		if (len == -1U)
 			len = strlen(str) + 1;
 		while (len-- > 0)
 			hs = (hs >> 8) ^ crc_tab[(hs ^ (*str++)) & 0xff];
@@ -269,7 +269,7 @@ char *mapstr(ccState s, char *name, unsigned size/* = -1U*/, unsigned hash/* = -
 		prev = next;
 	}
 
-	dieif(s->_end - s->_beg <= (sizeof(struct list) + size + 1), "memory overrun");
+	dieif(s->_end - s->_beg <= (int)(sizeof(struct list) + size + 1), "memory overrun");
 
 	if (name != s->_beg) {
 		debug("lookupstr(%s)", name);
@@ -500,7 +500,6 @@ static int readTok(ccState s, astn tok) {
 				//~ else debug("\n!!!comment.block:}\n");
 				chr = readChr(s);
 			}
-			s->pfmt = NULL;
 		}
 		if (chr == 0) {
 			warn(s->s, 5, s->file, s->line, "null character(s) ignored");
@@ -514,6 +513,7 @@ static int readTok(ccState s, astn tok) {
 	memset(tok, 0, sizeof(*tok));
 	tok->line = s->line;
 	ptr = beg = s->_beg;
+	s->pfmt = NULL;
 
 	// scan
 	if (chr != -1) switch (chr) {
@@ -895,7 +895,7 @@ static int readTok(ccState s, astn tok) {
 				if (value > radix)
 					break;
 
-				if (i64v > 0x7fffffffffffffffULL / 10) {
+				if (i64v > (int64_t)(0x7fffffffffffffffULL / 10)) {
 					ovrf = radix == 10;
 				}
 
@@ -1164,6 +1164,7 @@ static void redefine(ccState s, symn sym) {
 
 extern int padded(int offs, int align);
 static inline int ptrgtz(void* ptr) {return (long)ptr > 0;}
+static astn args(ccState s, int mode);
 
 static symn type(ccState s) {
 	symn def = 0;
@@ -1182,7 +1183,137 @@ static symn type(ccState s) {
 	}// */
 	return def;
 }
+
+static astn reft(ccState s, int mode) {
+	astn tag = NULL;
+	symn typ;
+	if ((typ = type(s))) {
+		symn ref = NULL;
+
+		int byref = skip(s, OPER_and);
+
+		if (!(tag = next(s, TYPE_ref))) {
+			debug("id expected, not %k", peek(s));
+			return 0;
+		}
+
+		ref = declare(s, TYPE_ref, tag, typ);
+
+		if (skip(s, PNCT_lp)) {				// int a(...)
+			enter(s, tag);
+			tag->id.args = args(s, 0);
+			skiptok(s, PNCT_rp, 1);
+
+			ref->args = leave(s, ref);
+			ref->cast = TYPE_ref;
+			ref->call = 1;
+
+			if (ref->args == NULL) {
+				tag->id.args = s->argz;
+				ref->args = s->argz->id.link;
+			}
+
+			if (byref) {
+				warn(s->s, 1, s->file, tag->line, "functions are by reference types: `%+T`", ref);
+			}
+			byref = 1;
+			//~ if (test(s, STMT_beg))
+				//~ backTok(s, newnode(s, ASGN_set));
+
+		}// */
+
+		else if (skip(s, PNCT_lc)) {		// int a[...]
+			symn tmp = newdefn(s, TYPE_arr);
+			tmp->type = typ;
+			tmp->size = -1;
+			typ = tmp;
+
+			ref->type = typ;
+			tag->type = typ;
+
+			if (!test(s, PNCT_rc)) {
+				struct astn val;
+				typ->init = expr(s, TYPE_def);
+				if (eval(&val, tmp->init) != TYPE_int)
+					error(s->s, s->line, "integer constant expected");
+				else
+					typ->size = val.con.cint;
+			}
+			skiptok(s, PNCT_rc, 1);
+
+			//~ /* Multi dimensional arrays
+			while (skip(s, PNCT_lc)) {
+				symn tmp = newdefn(s, TYPE_arr);
+				tmp->type = typ->type;
+				typ->type = tmp;
+				tmp->size = -1;
+				typ = tmp;
+
+				if (!test(s, PNCT_rc)) {
+					struct astn val;
+					typ->init = expr(s, TYPE_def);
+					if (eval(&val, tmp->init) != TYPE_int)
+						error(s->s, s->line, "integer constant expected");
+					else
+						typ->size = val.con.cint;
+				}
+				skiptok(s, PNCT_rc, 1);
+
+			} // */
+
+			if (byref) {
+				warn(s->s, 1, s->file, tag->line, "arrays are by reference types: `%+T`", ref);
+			}
+			byref = 1;
+		}
+
+		if (byref) {
+			ref->cast = TYPE_ref;
+			tag->cst2 = TYPE_ref;
+		}
+		else {
+			ref->cast = typ->cast;
+			tag->cst2 = typ->cast;
+		}
+
+	}
+	(void)mode;
+	return tag;
+}
+
 static astn args(ccState s, int mode) {
+	astn root = NULL;
+
+	if (test(s, PNCT_rp))
+		return s->argz;
+
+	while (peek(s)) {
+
+		astn atag = reft(s, decl_Ref);
+
+		/*symn ref = linkOf(atag);
+		if (ref) {
+			// TODO: others.
+			if (ref->call || ref->kind == TYPE_arr)
+				atag->cst2 = TYPE_ref;
+		}*/
+
+		if (root) {
+			astn tmp = newnode(s, OPER_com);
+			tmp->op.lhso = root;
+			tmp->op.rhso = atag;
+			atag = tmp;
+		}
+		root = atag;
+
+		if (!skip(s, OPER_com))
+			break;
+	}
+
+	(void)mode;
+	return root;
+}
+/*static astn args1(ccState s, int mode) {
 	astn ast = NULL;
 
 	if (test(s, PNCT_rp))
@@ -1210,11 +1341,11 @@ static astn args(ccState s, int mode) {
 		arg->cast = byref ? TYPE_ref : 0;
 		atag->cst2 = byref ? TYPE_ref : atyp->cast;
 		//~ arg->load = ref != 0;
-		/*if (byref) {
+		/ *if (byref) {
 			debug("arg:%t: %+T(arg:%t: %+k)", atag->id.link->cast, atag->id.link, atag->cst2, atag);
 			//~ debug("arg:%t: %+T(arg:%t: %+k)", arg->id.link->cast, arg->id.link, arg->cst2, arg);
 			//~ printargcast(atag);
-		}*/
+		}* /
 
 		if (ast) {
 			astn tmp = newnode(s, OPER_com);
@@ -1229,7 +1360,7 @@ static astn args(ccState s, int mode) {
 	}
 
 	return ast;
-}
+}// */
 //~ static astn varg(ccState s, int mode) ; // varargs: int min(int v1, int rest...)
 // varargs.def: define min(int v1, int rest...) = min(v1, rest);
 // varargs.def: define print(var rest...) = print(rest);
@@ -1266,6 +1397,13 @@ static astn spec(ccState s/* , int qual */) {
 				def->init = val;
 			}
 		}
+		/*else if (skip(s, ASGN_set)) {			// define PI = 3.14...;
+			//~ struct astn tmp;
+			astn val = expr(s, TYPE_def);
+			def = declare(s, TYPE_def, tag, val->type);
+			def->init = val;
+			typ = def->type;
+		}*/
 		else if (skip(s, PNCT_lp)) {			// define isNan(float64 x) = (x != x);
 			symn arg;
 			int warnfun = 0;
@@ -1648,7 +1786,7 @@ static astn stmt(ccState s, int mode) {
 		skiptok(s, PNCT_lp, 1);
 		if (!skip(s, STMT_do)) {		// init
 			// TODO: enable var decl only	// TYPE_ref
-			ast->stmt.init = decl(s, decl_Ref);
+			ast->stmt.init = decl(s, decl_NoDefs);
 			if (!ast->stmt.init) {
 				ast->stmt.init = expr(s, TYPE_vid);
 				skiptok(s, STMT_do, 1);
@@ -1969,87 +2107,25 @@ astn expr(ccState s, int mode) {
 	return tok;
 }
 
-astn decl(ccState s, int mode) {
-	symn typ;
+astn decl(ccState s, int Rmode) {
+	//~ symn typ;
+	int mode = 0;
 	astn tag = NULL;
-	//~ astn arg = NULL;
 
-	if ((mode & decl_NoDefs) == 0) {
+	if ((Rmode & decl_NoDefs) == 0) {
 		if ((tag = spec(s)))
 			return tag;
 		mode = skip(s, QUAL_sta) ? QUAL_sta : 0;
 	}
 
-	//~ type ID ('('args')')? ('['expr']')* init?
-	if ((typ = type(s))) {
-		symn ref = NULL;
+	if ((tag = reft(s, 0))) {
 
-		if (!(tag = next(s, TYPE_ref))) {
-			debug("id expected, not %k", peek(s));
-			return 0;
-		}
+		symn typ = tag->type;
+		symn ref = tag->id.link;
 
-		ref = declare(s, TYPE_ref, tag, typ);
+		//~ debug("%-T: %-T / %+k", typ, ref, tag);
 
-		if (skip(s, PNCT_lp)) {				// int a(...)
-			enter(s, tag);
-			tag->id.args = args(s, 0);
-			skiptok(s, PNCT_rp, 1);
-
-			ref->args = leave(s, ref);
-			ref->call = 1;
-
-			if (ref->args == NULL) {
-				tag->id.args = s->argz;
-				ref->args = s->argz->id.link;
-			}
-
-			//~ if (test(s, STMT_beg))
-				//~ backTok(s, newnode(s, ASGN_set));
-
-		}// */
-
-		else if (skip(s, PNCT_lc)) {		// int a[...]
-			symn tmp = newdefn(s, TYPE_arr);
-			tmp->type = typ;
-			tmp->size = -1;
-			typ = tmp;
-
-			ref->type = typ;
-			tag->type = typ;
-
-			if (!test(s, PNCT_rc)) {
-				struct astn val;
-				typ->init = expr(s, TYPE_def);
-				if (eval(&val, tmp->init) != TYPE_int)
-					error(s->s, s->line, "integer constant expected");
-				else
-					typ->size = val.con.cint;
-			}
-			skiptok(s, PNCT_rc, 1);
-
-			//~ /* Multi dimensional arrays
-			while (skip(s, PNCT_lc)) {
-				symn tmp = newdefn(s, TYPE_arr);
-				tmp->type = typ->type;
-				typ->type = tmp;
-				tmp->size = -1;
-				typ = tmp;
-
-				if (!test(s, PNCT_rc)) {
-					struct astn val;
-					typ->init = expr(s, TYPE_def);
-					if (eval(&val, tmp->init) != TYPE_int)
-						error(s->s, s->line, "integer constant expected");
-					else
-						typ->size = val.con.cint;
-				}
-				skiptok(s, PNCT_rc, 1);
-
-			} // */
-		}
-
-		if ((mode & decl_NoDefs) == 0) {
+		if ((Rmode & decl_NoInit) == 0) {
 			if (ref->call && test(s, STMT_beg)) {		// int sqr(int a) {return a * a;}
 				symn tmp, result = NULL;
 
@@ -2057,8 +2133,8 @@ astn decl(ccState s, int mode) {
 
 				enter(s, tag);
 				for (tmp = ref->args; tmp; tmp = tmp->next)
-					installex(s, tmp->name, TYPE_def, 0, tmp, NULL);
-				result = installex(s, "result", TYPE_ref, 0, typ, NULL);
+					installex2(s, tmp->name, TYPE_def, 0, tmp, NULL);
+				result = installex2(s, "result", TYPE_ref, 0, typ, NULL);
 
 				ref->init = stmt(s, 1);
 
@@ -2105,196 +2181,15 @@ astn decl(ccState s, int mode) {
 
 		redefine(s, ref);
 		//~ debug("%+k", ref->init);
-		if (kindOf(ref->init) == STMT_beg) {
+		/*if (kindOf(ref->init) == STMT_beg) {
+			//~ fatal("Error");
 		}
 		else if (ref->init && (ref->init->type != emit_opc && ref->init->type != ref->type && !promote(ref->init->type, ref->type))) {
+			fatal("Error");
 			debug("%-T := %T(%+k)", ref->type, ref->init->type, ref->init);
 			error(s->s, s->line, "invalid initializer: %-T(%+k)", ref->type, ref->init);
 			//return 0;
-		}
-		tag->kind = TYPE_def;
-	}
-
-	return tag;
-}
-
-astn decl2(ccState s, int mode) {
-	symn typ;
-	astn tag = NULL;
-	//~ astn arg = NULL;
-
-	//~ if (mode && (tag = spec(s)))
-		//~ return tag;
-	if ((mode & decl_NoDefs) == 0) {
-		if ((tag = spec(s)))
-			return tag;
-		mode = skip(s, QUAL_sta) ? QUAL_sta : 0;
-	}
-
-	//~ type ID ('('args')')? ('['expr']')* init?
-	if ((typ = type(s))) {
-		symn ref = NULL;
-
-		if (!(tag = next(s, TYPE_ref))) {
-			debug("id expected, not %k", peek(s));
-			return 0;
-		}
-
-		ref = declare(s, TYPE_ref, tag, typ);
-
-		if (skip(s, PNCT_lp)) {				// int a(...)
-			symn result = NULL;
-
-			enter(s, NULL);
-			tag->id.args = args(s, 0);
-			skiptok(s, PNCT_rp, 1);
-
-			if (test(s, STMT_beg)) {		// int sqr(int a) {return a * a;}
-				enter(s, tag);
-				result = installex(s, "result", TYPE_ref, 0, typ, NULL);
-				ref->init = stmt(s, 1);
-				if (ref->init == NULL) {
-					ref->init = newnode(s, STMT_beg);
-					ref->init->type = type_vid;
-				}
-				leave(s, NULL);
-				backTok(s, newnode(s, STMT_do));
-			}
-			ref->args = leave(s, ref);
-			ref->call = 1;
-			if (ref->args == NULL) {
-				tag->id.args = s->argz;
-				ref->args = s->argz->id.link;
-			}
-			if (result) {
-				//~ symn tmp;
-
-				mode = QUAL_sta;
-
-				result->decl = ref;
-
-				// result is the first argument
-				result->offs = sizeOf(result->type);
-
-				ref->offs = result->offs + fixargs(ref, 4, -result->offs);
-				//~ ref->offs = result->offs + fixargs(ref, 4, 0);
-
-				/*
-				debug("argsize(%-T): %d", ref, ref->offs);
-				for (tmp = ref->args; tmp; tmp = tmp->next) {
-					debug("arg:%+T@sp[%d]", tmp, ref->offs - tmp->offs);
-				}
-				debug("res:%T@sp[%d]", result, ref->offs - result->offs);
-				// */
-			}
 		}// */
-		/* TODO:
-		wi will need to reinstall the arguments.
-		if (skip(s, PNCT_lp)) {				// int a(...)
-			symn result = NULL;
-
-			enter(s, NULL);
-			tag->id.args = args(s, 0);
-			skiptok(s, PNCT_rp, 1);
-			ref->args = leave(s, ref);
-			ref->call = 1;
-			if (ref->args == NULL) {
-				tag->id.args = s->argz;
-				ref->args = s->argz->id.link;
-			}
-
-			if (test(s, STMT_beg)) {		// int sqr(int a) {return a * a;}
-				enter(s, tag);
-				// TODO: reinstall copy args
-				result = installex(s, "result", TYPE_ref, 0, typ, NULL);
-				ref->init = stmt(s, 1);
-				if (ref->init == NULL) {
-					ref->init = newnode(s, STMT_beg);
-					ref->init->type = type_vid;
-				}
-				leave(s, NULL);
-				backTok(s, newnode(s, STMT_do));
-			}
-			if (result) {
-				//~ symn tmp;
-
-				mode = QUAL_sta;
-
-				// result is the first argument
-				result->offs = sizeOf(result->type);
-
-				ref->offs = result->offs + fixargs(ref, 4, -result->offs);
-				//~ ref->offs = result->offs + fixargs(ref, 4, 0);
-
-				/ *
-				debug("argsize(%-T): %d", ref, ref->offs);
-				for (tmp = ref->args; tmp; tmp = tmp->next) {
-					debug("arg:%+T@sp[%d]", tmp, ref->offs - tmp->offs);
-				}
-				debug("res:%T@sp[%d]", result, ref->offs - result->offs);
-				// * /
-			}
-		}// */
-
-		else if (skip(s, PNCT_lc)) {		// int a[...]
-			symn tmp = newdefn(s, TYPE_arr);
-			tmp->type = typ;
-			tmp->size = -1;
-			typ = tmp;
-
-			ref->type = typ;
-			tag->type = typ;
-
-			if (!test(s, PNCT_rc)) {
-				struct astn val;
-				typ->init = expr(s, TYPE_def);
-				if (eval(&val, tmp->init) != TYPE_int)
-					error(s->s, s->line, "integer constant expected");
-				else
-					typ->size = val.con.cint;
-			}
-			skiptok(s, PNCT_rc, 1);
-
-			//~ /* Multi dimensional arrays
-			while (skip(s, PNCT_lc)) {
-				symn tmp = newdefn(s, TYPE_arr);
-				tmp->type = typ->type;
-				typ->type = tmp;
-				tmp->size = -1;
-				typ = tmp;
-
-				if (!test(s, PNCT_rc)) {
-					struct astn val;
-					typ->init = expr(s, TYPE_def);
-					if (eval(&val, tmp->init) != TYPE_int)
-						error(s->s, s->line, "integer constant expected");
-					else
-						typ->size = val.con.cint;
-				}
-				skiptok(s, PNCT_rc, 1);
-
-			} // */
-		}
-
-		if (skip(s, ASGN_set)) {
-			ref->init = expr(s, TYPE_def);
-		}
-
-		skiptok(s, STMT_do, 1);
-
-		s->pfmt = ref;
-
-		ref->cast = mode;
-
-		redefine(s, ref);
-		//~ debug("%+k", ref->init);
-		if (kindOf(ref->init) == STMT_beg) {
-		}
-		else if (ref->init && (ref->init->type != emit_opc && ref->init->type != ref->type && !promote(ref->init->type, ref->type))) {
-			debug("%-T := %T(%+k)", ref->type, ref->init->type, ref->init);
-			error(s->s, s->line, "invalid initializer: %-T(%+k)", ref->type, ref->init);
-			//return 0;
-		}
 		tag->kind = TYPE_def;
 	}
 
@@ -2303,6 +2198,7 @@ astn decl2(ccState s, int mode) {
 
 astn unit(ccState cc, int mode) {
 	astn root = NULL;
+	astn tmp = NULL;
 	symn def = NULL;
 
 	if (skip(cc, UNIT_def)) {
@@ -2318,8 +2214,14 @@ astn unit(ccState cc, int mode) {
 	}// */
 
 	// we want a new scope and scan a list of statement
-	backTok(cc, newnode(cc, STMT_beg));
+	backTok(cc, tmp = newnode(cc, STMT_beg));
 	root = stmt(cc, def == NULL);
+
+	/*if (root == tmp) {
+		dieif(root->next, "FixMe");
+		root = root->stmt.stmt;
+		eatnode(cc, tmp);
+	}*/
 
 	if (peekTok(cc, 0)) {
 		error(cc->s, cc->line, "unexpected token: %k", peekTok(cc, 0));
@@ -2332,12 +2234,14 @@ astn unit(ccState cc, int mode) {
 	if (cc->nest)
 		error(cc->s, cc->line, "premature end of file: %d", cc->nest);
 
+	(void)mode;
 	return root;
 }
 
 //}
 
 int parse(ccState cc, srcType mode) {
+	astn newRoot, oldRoot = cc->root;
 
 	dieif(mode != 0, "FixMe");
 
@@ -2357,11 +2261,41 @@ int parse(ccState cc, srcType mode) {
 		backTok(root);
 	}
 	switch (mode) {
-		case srcUnit: cc->root = unit(cc, TYPE_any); break;
-		case srcDecl: cc->root = decl(cc, 0); break;
-		case srcExpr: cc->root = expr(cc, TYPE_vid); break;
+		case srcUnit: root = unit(cc, TYPE_any); break;
+		case srcDecl: root = decl(cc, 0); break;
+		case srcExpr: root = expr(cc, TYPE_vid); break;
 	}//*/
-	cc->root = unit(cc, 0);
+
+	if ((newRoot = unit(cc, 0))) {
+		//~ debug("%-k", oldRoot);
+		/*if (oldRoot) {
+
+			dieif(oldRoot->next, "FixMe");
+			//~ dieif(cc->root->kind != STMT_beg, "FixMe(%+k)", cc->root);
+
+			oldRoot->next = newRoot;
+
+			newRoot = newnode(cc, STMT_beg);
+			newRoot->stmt.stmt = oldRoot;
+			newRoot->type = type_vid;
+		}*/
+
+		if (oldRoot && oldRoot->kind == STMT_beg && oldRoot->stmt.stmt) {
+			astn end = oldRoot->stmt.stmt;
+			if (1 && (newRoot->kind == STMT_beg && newRoot->stmt.stmt)) {
+				dieif(newRoot->next, "FixMe");
+				newRoot = newRoot->stmt.stmt;
+			}
+
+			while (end->next)
+				end = end->next;
+
+			end->next = newRoot;
+
+			newRoot = oldRoot;
+		}
+		cc->root = newRoot;
+	}
 	return ccDone(cc->s);
 }
 

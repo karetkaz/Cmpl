@@ -78,16 +78,16 @@ case opc_task: NEXT(4, 0, -0) {
 case opc_libc: NEXT(2, libcvec[ip->idx].chk, -libcvec[ip->idx].pop) {
 #ifdef EXEC
 	vm->s->argv = (char *)sp;
-        vm->s->argc = libcvec[ip->idx].pop * 4;
-        vm->s->retv = (char*)((stkptr)sp + libcvec[ip->idx].pop);
-        vm->s->args = libcvec[ip->idx].sym->args;
-        vm->s->func = libcvec[ip->idx].sym->offs;
-        vm->s->libc = libcvec[ip->idx].sym;
+	vm->s->retv = (char*)((stkptr)sp + libcvec[ip->idx].pop);
+	vm->s->func = libcvec[ip->idx].sym->offs;
+	vm->s->libc = libcvec[ip->idx].sym;
 	if (ip->idx == 0) {
-		vm->s->argc = (char *)st - (char *)sp;
-		vm->s->args = vm->s->defs;
+		struct symn module = {0};
+		module.args = vm->s->defs;
+		vm->s->retv = (char *)st;
+		vm->s->libc = &module;
 	}
-        libcvec[ip->idx].call(vm->s);
+	libcvec[ip->idx].call(vm->s);
 	STOP(stop_vm, ip->idx == 0);		// Halt();
 #endif
 } break;

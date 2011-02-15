@@ -13,46 +13,117 @@
 //~ module test;
 
 //~ int alma(int h)[10];	???
+//~ void fun(int x) = true ? null : void(int x){print(x);});
+//~ addEventListener(MouseEvent.CLICK, function() {System.exit(0);});
+//~ float a = lerp(.6, 0, 1);
 
-//~ /*
-/*
-void bitsget(bool signed, int size, int64 &min, int64 &max) {
-	int64 mask = bits.shr(int64(-1), -size);
+//~ type pointer;
 
-	min = bits.shl(-int64(signed), size - 1);
-	max = bits.and(min - 1, mask);
+//~ define int(pointer p) = *(int*)p;
+//~ define int(pointer p) = emit(i32.ldi, ref(p));
+
+void method() = null;
+
+void method2() {
+	println("2");
 }
 
-int bits = 24;
-hex64 min;
-hex64 max;
+void methodCall(void method()) {
+	method();
+}
 
-hex64 umin;
-hex64 umax;
+//~ method = method2;
+methodCall(method2);
+//~ println("2");
+//~ method();
 
-bitsget(true, bits, min, max);
-bitsget(!true, bits, umin, umax);
+/*
+debug1(1, 2, 3);
+
+static int X = 1;
+static int Y = 2;
+static int Z = 3;
+
+int x = 1;
+int y = 2;
+int z = 3;
 //~ */
 
-void recurse(int x) {
-	recurse(0);
-	/*if (x > 0) {
-		print("pre:"); println(x);
-		recurse(x - 1);
-		print("post:"); println(x);
-	}*/
+/* Test external Calls
+static int X = 912;
+void testCallBack0(int n) {
+	print("X = ");
+	println(X);
+	X += 0;
+}
+void testCallBack1(int n) {
+	print("X = ");
+	println(X);
+	X += 1;
+}
+void testCallBackn(int n) {
+	print("X = ");
+	println(X);
+	X += n;
+}
+setCallBack(testCallBack1);
+//~ */
+
+/* Test functions
+
+struct gxRect {
+	int32 x;	//%x: %d
+	int32 y;	//%y: %d
+	int32 w;	//%width: %d
+	int32 h;	//%height: %d
 }
 
-recurse(200);
+enum gxBlit {
+	copy;
+	and;
+	or;
+	xor;
+	add;
+	sub;
+	mul;
+	div;
+}
+
+define println2(int x) = void(println(), print(x));
+
+void almaref(int &x) = null;
+void alma(int &x) {print("alma:");println(x);}
+void korte(int &x) {print("korte:");println(x);}
+
+void setCallBack(int mode, void handler(int &Event)) {
+	//~ if (handler != null)
+	handler(mode);
+}
+
+//~ setCallBack(100, null);
+setCallBack(101, alma);
+setCallBack(106, korte);
+
+// */
+
+/* recursive
+void recurse(int x) {
+	if (x > 0) {
+		print("pre: "); println(x);
+		recurse(x - 1);
+		print("post: "); println(x);
+	}
+}
+
+recurse(20);
+// */
 
 /* TODO
 if (int32 == int32) {
 	println("alma");
 }// */
 
-/* gfx2d
-module gfx2d;
-/+libc {
+/* module gfx2d;
 const gxBlit {
 	copy
 	and
@@ -143,7 +214,7 @@ hex32 hi = Hi64(val);
 define fixed int32;
 define __fix = 16;
 
-define fixed_fix(int64 &val, int &__fix) = fixed(bits.shr(val + (bits.shr(val, __fix) + 1), __fix));
+define fixed_fix(int64 &val, int &__fix) = fixed(bits.shr(val + bits.shr(val, __fix) + 1, __fix));
 define add(fixed lhs, fixed rhs, int __fix) = fixed(lhs + rhs);
 define sub(fixed lhs, fixed rhs, int __fix) = fixed(lhs - rhs);
 define mul(fixed lhs, fixed rhs, int __fix) = fixed_fix(int64(lhs) * rhs, __fix);
@@ -211,21 +282,19 @@ bool x1 = eq((a + b) + c, a + (b + c));
 
 /* random numbers
 for (int i = 0; i < 60; i += 1) {
-	println(random(0.001));
+	println(random(1.001));
 }
 // */
 
 /*functions
 void stackOwerflow() {
-	emit(call, ref(stackOwerflow));
-	//~ stackOwerflow();
+	//~ emit(ref, ref(stackOwerflow));
+	stackOwerflow();
 }
 
-//~ stackOwerflow();
+stackOwerflow();
 
 // */
-//~ define println1() = emit(void, void(int64(int32(30))));
-//~ println1();
 
 /* using emit; and emit();
 //~ string alma = "alma a fa alatt";

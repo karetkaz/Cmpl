@@ -39,10 +39,10 @@ typedef struct state {
 	int   func;		// library call function
 	void* data;		// user data for execution
 	symn  libc;		// library call symbol
-	symn  args;		// argument symbols
 	void* retv;		// TODO: RemMe: retval
 	char* argv;		// first arg
-	int   argc;		// number of args in bytes
+	//~ symn  args;		// argument symbols
+	//~ int   argc;		// number of args in bytes
 
 	ccState cc;		// compiler enviroment	// TODO: RemMe cc has the state
 	vmState vm;		// execution enviroment	// TODO: RemMe vm has the state
@@ -60,6 +60,10 @@ typedef enum {
 	//~ srcExpr = 0x03,
 
 	// unit / script (ask the file what is it ? (: first tokens : 'package' 'name'))
+
+	//~ copt_eval = 1;
+	//~ copt_memstack = 2;
+	//~ copt_noGlobaStatic = 0x100,
 
 	// dump()
 	//~ dump_bin = 0x0000100,
@@ -86,6 +90,7 @@ int parse(ccState, srcType);
 symn libcall(state, int libc(state), int pass, const char* proto);
 //~ symn install(state, int libc(state), int pass, const char* proto);
 symn installtyp(state s, const char* name, unsigned size);
+symn installvar(state s, const char* name, symn type, unsigned offset);
 
 // execute
 int (*libcSwapExit(state s, int libc(state)))(state);
@@ -105,13 +110,16 @@ ccState ccOpen(state, srcType, char* source);
 int ccDone(state);
 
 vmState vmInit(state);
+int vmCall(state, symn fun, ...);
 //~ int vmOpen(state, char* source);
 void vmInfo(FILE*, vmState s);
 //~ int vmDone(state s);		// what should do this
 
 void ccSource(ccState, char *file, int line);
 
+symn findref(state s, void *ptr);
 symn findsym(ccState s, symn in, char *name);
+
 int findnzv(ccState s, char *name);
 int findint(ccState s, char *name, int* res);
 int findflt(ccState s, char *name, double* res);

@@ -59,11 +59,17 @@ define print(float32 arg) = putf64(arg);
 define print(int64 arg) = puti64(arg);
 define print(float64 arg) = putf64(arg);
 define print(string arg) = putstr(arg);
-define println(int32 arg) = emit(void(println()), void(puti64(arg)));
-define println(float32 arg) = emit(void(println()), void(putf64(arg)));
-define println(int64 arg) = emit(void(println()), void(puti64(arg)));
-define println(float64 arg) = emit(void(println()), void(putf64(arg)));
-define println(string arg)= emit(void(println()), void(putstr(arg)));
+
+define println(int32 arg) =   void(putchr('\n'), puti64(arg));
+define println(float32 arg) = void(putchr('\n'), putf64(arg));
+define println(int64 arg) =   void(putchr('\n'), puti64(arg));
+define println(float64 arg) = void(putchr('\n'), putf64(arg));
+define println(string arg) =  void(putchr('\n'), putstr(arg));
+//~ define println(int32 arg) = emit(void(println()), void(puti64(arg)));
+//~ define println(float32 arg) = emit(void(println()), void(putf64(arg)));
+//~ define println(int64 arg) = emit(void(println()), void(puti64(arg)));
+//~ define println(float64 arg) = emit(void(println()), void(putf64(arg)));
+//~ define println(string arg)= emit(void(println()), void(putstr(arg)));
 
 }
 static if (imports.vec4f) {
@@ -197,4 +203,6 @@ define hex64 int64;		//%hex64(0x%016X)
 
 define print(hex32 arg) = putx64(arg);
 define println(hex32 arg) = emit(void(println()), void(putx64(arg)));
+define print(hex64 arg) = putx64(arg);
+define println(hex64 arg) = emit(void(println()), void(putx64(arg)));
 // */

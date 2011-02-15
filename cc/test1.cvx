@@ -85,12 +85,14 @@ float64 res2 = emit(f64.neg, f64(math.pi));
 float32 res3 = emit(float32, f32(math.pi));
 hex32 res4 = emit(int32, f32(math.pi));
 
-emit(f64(math.pi));
-int32 i32 = emit();
-int64 i64 = emit();
-uint32 u32 = emit();
-float32 f32 = emit();
-float64 f64 = emit();
+//~ emit(f64(math.pi));
+//~ int32 i32 = emit();
+//~ hex32 x32 = emit();
+//~ int64 i64 = emit();
+//~ hex64 x64 = emit();
+//~ uint32 u32 = emit();
+//~ float32 f32 = emit();
+//~ float64 f64 = emit();
 
 }
 static if (Test.Emit & 0x02) {
@@ -124,7 +126,7 @@ enum prog {
 	simd = 2;
 }
 
-define test2exec = prog.sisd;
+define test2exec = prog.simd;
 define times2exec = -1000000;
 
 struct Complex {
@@ -191,8 +193,8 @@ vec4f v2 = vec4f(21., 22., 23., 24.);
 //~ emit(v4f.dp3);
 //~ 1+emit(v4f.dp3);
 
-vec4f fv = emit();
-float32 sp[4] = emit();
+//~ vec4f fv = emit();
+//~ float32 sp[4] = emit();
 
 //~ float32 x0 = fv.x;
 //~ float32 y0 = fv.y;
@@ -259,21 +261,20 @@ if (var) {
 //~ +/
 }
 static if (Test.Bits & 8) {		// compute bits
-void bitsget(bool signed, int size, int64 &min, int64 &max/+ , int64 &mask +/) {
+//~ /+
+void bitsget(bool signed, int size, int64 &min, int64 &max) {
 	int64 mask = bits.shr(int64(-1), -size);
 
 	min = bits.shl(-int64(signed), size - 1);
 	max = bits.and(min - 1, mask);
 }
 
-int bits = 24;
+int bits = 14;
 hex64 min;
 hex64 max;
-//hex64 mask;
 
 hex64 umin;
 hex64 umax;
-//hex64 umask;
 
 bitsget(true, bits, min, max);
 bitsget(!true, bits, umin, umax);
@@ -330,8 +331,8 @@ alma.U.f = 9;
 alma.X = 8;
 //~ alma.Z = alma.Y = alma.X = 7;
 
-intTY c[3] = emit();
-c[1] |= 1;
+//~ intTY c[3] = emit();
+//~ c[1] |= 1;
 
 //~ intabc alma1 = alma;
 }
@@ -563,9 +564,10 @@ i32x8 sub(i32x8 &a, i32x8 &b) {
 //~ i32x8 mod(i32x8 &a, i32x8 &b) {div(a, b, result);}
 //~ i32x8 mod(i32x8 &a, int32  b) {div(a, b, result);}
 
-i32x8 i32x8_a = i32x8(int32(0x0fffffff), int32(0xffffffff), int32(0xffffffff), int32(0xffffffff), int32(0xffffffff), int32(0xffffffff), int32(0xffffffff), int32(0xffffffff));
-i32x8 i32x8_b = i32x8(1);
-i32x8 i32x8_c = add(i32x8_a, i32x8_b);
+//~ TODO: no indirect store, if global variables are enabled will fail
+//~ i32x8 i32x8_a = i32x8(int32(0x0fffffff), int32(0xffffffff), int32(0xffffffff), int32(0xffffffff), int32(0xffffffff), int32(0xffffffff), int32(0xffffffff), int32(0xffffffff));
+//~ i32x8 i32x8_b = i32x8(1);
+//~ i32x8 i32x8_c = add(i32x8_a, i32x8_b);
 
 } // +/
 } // */

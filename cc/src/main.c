@@ -124,7 +124,7 @@ char *parsecmd(char *ptr, char *cmd, char *sws) {
 	return ptr;
 }
 
-//{#if ((COMPILER_LEVEL & creg_stdc) == creg_stdc)
+//{#region std calls
 static int f64abs(state s) {
 	float64_t x = poparg(s, float64_t);
 	setret(float64_t, s, fabs(x));
@@ -201,25 +201,39 @@ static int rand32(state s) {
 	return 0;
 }
 
-static int putx64(state s) {
-	fputfmt(stdout, "0x%X", poparg(s, int64_t));
-	return 0;
-}
-static int puti64(state s) {
-	fputfmt(stdout, "%D", poparg(s, int64_t));
-	return 0;
-}
-static int putf64(state s) {
-	fputfmt(stdout, "%F", poparg(s, float64_t));
-	return 0;
-}
-static int putchr(state s) {
-	fputfmt(stdout, "%c", poparg(s, int32_t));
-	return 0;
-}
-static int putstr(state s) {
-	// TODO: check bounds
-	fputfmt(stdout, "%s", s->_mem + poparg(s, int32_t));
+enum printEnum {
+	putx64,
+	puti64,
+	putf64,
+	putchr,
+	putstr,
+};
+
+static int printCall(state s) {
+	switch (s->func) {
+		case putx64:
+			fputfmt(stdout, "0x%X", poparg(s, uint64_t));
+			break;
+
+		case puti64:
+			fputfmt(stdout, "%D", poparg(s, int64_t));
+			break;
+
+		case putf64:
+			fputfmt(stdout, "%F", poparg(s, float64_t));
+			break;
+
+		case putchr:
+			fputfmt(stdout, "%c", poparg(s, int32_t));
+			break;
+
+		case putstr:
+			fputfmt(stdout, "%s", popstr(s));
+			break;
+
+		default:
+			return -1;
+	}
 	return 0;
 }
 
@@ -235,23 +249,24 @@ static int putstr(state s) {
 	return 0;
 }// */
 
-static void install_stdc(ccState cc) {
-	int i;
+static int install_stdc(ccState cc) {
+	int i, err = 0;
 	struct {
 		int (*fun)(state s);
+		int n;
 		char *def;
 	}
 	defs[] = {
 		//{ MATH
-		{f64abs, "float64 abs(float64 x);"},
-		{f64sin, "float64 sin(float64 x);"},
-		{f64cos, "float64 cos(float64 x);"},
-		{f64tan, "float64 tan(float64 x);"},
-		{f64log, "float64 log(float64 x);"},
-		{f64exp, "float64 exp(float64 x);"},
-		{f64pow, "float64 pow(float64 x, float64 y);"},
-		{f64sqrt, "float64 sqrt(float64 x);"},
-		{f64atan2, "float64 atan2(float64 x, float64 y);"},
+		{f64abs, 0, "float64 abs(float64 x);"},
+		{f64sin, 0, "float64 sin(float64 x);"},
+		{f64cos, 0, "float64 cos(float64 x);"},
+		{f64tan, 0, "float64 tan(float64 x);"},
+		{f64log, 0, "float64 log(float64 x);"},
+		{f64exp, 0, "float64 exp(float64 x);"},
+		{f64pow, 0, "float64 pow(float64 x, float64 y);"},
+		{f64sqrt, 0, "float64 sqrt(float64 x);"},
+		{f64atan2, 0, "float64 atan2(float64 x, float64 y);"},
 
 		//~ {f64lg2, "float64 log2(float64 x);"},
 		//~ {f64xp2, "float64 exp2(float64 x);"},
@@ -277,17 +292,18 @@ static void install_stdc(ccState cc) {
 		{b64zxt, "int64 zxt(int64 val, int offs, int bits);"},
 		{b64sxt, "int64 sxt(int64 val, int offs, int bits);"},
 		//} */
-
+	},
+	misc[] = {
 		//{ IO/MEM/EXIT
 		//~ {memmgr, "pointer memmgr(pointer old, int32 cnt, int allign);"},		// allocate, reallocate, free
 		//~ {memset, "pointer memset(pointer dst, byte src, int32 cnt);"},
 		//~ {memcpy, "pointer memcpy(pointer dst, pointer src, int32 cnt);"},
-		{rand32, "int random();"},
-		{putchr, "void putchr(int32 val);"},
-		{putstr, "void putstr(string val);"},
-		{putx64, "void putx64(int64 val);"},
-		{puti64, "void puti64(int64 val);"},
-		{putf64, "void putf64(float64 val);"},
+		{rand32, 0, "int random();"},
+		{printCall, putchr, "void putchr(int32 val);"},
+		{printCall, putstr, "void putstr(string val);"},
+		{printCall, putx64, "void putx64(int64 val);"},
+		{printCall, puti64, "void puti64(int64 val);"},
+		{printCall, putf64, "void putf64(float64 val);"},
 		//}
 
 		// include some of the compiler functions
@@ -295,13 +311,20 @@ static void install_stdc(ccState cc) {
 
 	};
 	for (i = 0; i < sizeof(defs) / sizeof(*defs); i += 1) {
-		if (!libcall(cc->s, defs[i].fun, 0, defs[i].def))
-			break;
+		if (!libcall(cc->s, defs[i].fun, defs[i].n, defs[i].def)) {
+			err = 1;
+		}
 	}
+	for (i = 0; i < sizeof(misc) / sizeof(*misc); i += 1) {
+		if (!libcall(cc->s, misc[i].fun, misc[i].n, misc[i].def)) {
+			err = 1;
+		}
+	}
+	return err;
 }
-//}
+//}#endregion
 
-//{#if ((COMPILER_LEVEL & creg_bits) == creg_bits)
+//{#region bit operations
 enum bits_funs {
 	b64_cmt,
 	b64_and,
@@ -504,7 +527,7 @@ static int bits_call(state s) {
 	}
 	return -1;
 }
-static void install_bits(ccState cc) {
+static int install_bits(ccState cc) {
 	int err = 0;
 	symn module;
 	if ((module = install(cc, "bits", TYPE_rec, 0, 0))) {
@@ -541,9 +564,9 @@ static void install_bits(ccState cc) {
 		err = err || !libcall(cc->s, bits_call, b32_sxt, "int32 sxt(int32 val, int offs, int bits);");
 		module->args = leave(cc, module);
 	}
-	//~ return -ok;
+	return err;
 }
-//}
+//}#endregion
 
 void usage(char* prog, char* cmd) {
 	if (cmd == NULL) {
@@ -587,7 +610,7 @@ void usage(char* prog, char* cmd) {
 	}
 }
 
-int evalexp(ccState s, char* text/* , int opts */) {
+int evalexp(ccState s, char* text) {
 	struct astn res;
 	astn ast;
 	symn typ;
@@ -615,18 +638,35 @@ int evalexp(ccState s, char* text/* , int opts */) {
 	return -1;
 }
 
+//~ enum callBackType {};
+symn callBack = NULL;
+static int setCallBack(state s) {
+	void* ref = popref(s);
+	callBack = findref(s, ref);
+	trace("setCallBack(%-T)", callBack);
+	return callBack != NULL;
+}
+
 int reglibc(state s) {
+	int err = 0;
 
 	libcall(s, NULL, 0, "reset");
 
-	install_stdc(s->cc);
+	if (!libcall(s, libCallExitDebug, 0, "void debug1(int x, int y, int z);"))
+		err = 1;
 
-	install_bits(s->cc);
+	err = install_stdc(s->cc) || err;
 
-	return 0;
+	err = install_bits(s->cc) || err;
+
+	if (!libcall(s, setCallBack, 0, "void setCallBack(void callBack(int x));"))
+		err = 1;
+
+	return err;
 }
 
 int compile(state s, int wl, char *file) {
+	int result;
 	#if DEBUGGING > 1
 	int size = 0;
 	#endif
@@ -640,14 +680,13 @@ int compile(state s, int wl, char *file) {
 	#endif
 
 	s->cc->warn = wl;
-	parse(s->cc, 0);
-	//unit(s->cc, -1);
+	result = parse(s->cc, 0);
 
 	#if DEBUGGING > 1
-	debug("%s: init(%.2F); scan(%.2F) KBytes", file, size / 1024., (s->cc->_beg - s->_mem) / 1024.);
+	//~ debug("%s: init(%.2F); scan(%.2F) KBytes", file, size / 1024., (s->cc->_beg - s->_mem) / 1024.);
 	#endif
 
-	return ccDone(s);
+	return result;
 }
 
 static int dbgCon(state s, int pu, void *ip, long* bp, int ss);
@@ -663,6 +702,8 @@ int program(int argc, char *argv[]) {
 		usage(prg, NULL);
 	}
 	else if (argc == 2 && *cmd == '=') {	// eval
+		if (reglibc(s))
+			return -1;
 		return evalexp(ccInit(s, creg_def), cmd + 1);
 	}
 	else if (strcmp(cmd, "-api") == 0) {
@@ -695,106 +736,6 @@ int program(int argc, char *argv[]) {
 				fputfmt(stderr, "symbol not found `%s`\n", argv[i]);
 		}
 		return ccDone(s);
-	}
-	else if (strcmp(cmd, "-t") == 0) {		// tags
-		int argi, level = 2;
-		int warn = wl;
-		char *logf = 0;			// logger
-		//~ char *outf = 0;			// output
-
-		if (cmd[2] && *parsei32(cmd + 2, &level, 16)) {
-			fputfmt(stderr, "invalid hex argument '%s'\n", cmd);
-			return 0;
-		}
-
-		// options
-		for (argi = 2; argi < argc; ++argi) {
-			char *arg = argv[argi];
-
-			if (*arg != '-')
-				break;
-
-			else if (strcmp(arg, "-l") == 0) {		// log
-				if (++argi >= argc || logf) {
-					fputfmt(stderr, "logger error\n");
-					return -1;
-				}
-				logf = argv[argi];
-			}
-			/*else if (strcmp(arg, "-o") == 0) {		// out
-				if (++argi >= argc || outf) {
-					fputfmt(stderr, "output error\n");
-					return -1;
-				}
-				outf = argv[argi];
-			}// */
-
-			// Override settings
-			else if (strncmp(arg, "-w", 2) == 0) {		// warning level
-				if (strcmp(arg, "-wx") == 0)
-					warn = -1;
-				else if (strcmp(arg, "-wa") == 0)
-					warn = 9;
-				else if (*parsei32(arg + 2, &warn, 10)) {
-					fputfmt(stderr, "invalid level '%s'\n", arg + 2);
-					debug("invalid level '%s'\n", arg + 2);
-					return 0;
-				}
-			}
-			/*else if (strncmp(arg, "-O", 2) == 0) {		// optimize level
-				if (strcmp(arg, "-O") == 0)
-					opti = 1;
-				else if (strcmp(arg, "-Oa") == 0)
-					opti = 3;
-				else if (!parsei32(arg + 2, &opti, 10)) {
-					fputfmt(stderr, "invalid level '%s'\n", arg + 2);
-					debug("invalid level '%s'\n", arg + 2);
-					return 0;
-				}
-			}// */
-
-			else {
-				fputfmt(stderr, "invalid option '%s' for -compile\n", arg);
-				return -1;
-			}
-		}
-
-		if (logf && logfile(s, logf) != 0) {
-			fputfmt(stderr, "can not open file `%s`\n", logf);
-			return -1;
-		}
-
-		if (reglibc(s) != 0) {
-			error(s, 0, "error compiling `%s`", "stdlib.cvx");
-			logfile(s, NULL);
-			return -6;
-		}
-
-		if (compile(s, warn, "stdlib.cvx") != 0) {
-			error(s, 0, "error compiling `%s`", "stdlib.cvx");
-			logfile(s, NULL);
-			return -9;
-		}
-
-		for ( ; argi < argc; argi += 1) {
-			char *srcf = argv[argi];
-			if (compile(s, warn, srcf) != 0) {
-				error(s, -1, "error compiling `%s`", srcf);
-				logfile(s, NULL);
-				return s->errc;
-			}
-		}
-
-		s->defs = leave(s->cc, NULL);
-		if (logf && logfile(s, logf) != 0) {
-			fputfmt(stderr, "can not open file `%s`\n", logf);
-			return -1;
-		}
-		dump(s, dump_sym | (level & 0x0ff), NULL);
-
-		logfile(s, NULL);
-		//~ vmDone(s);
-		return 0;
 	}
 	else if (strcmp(cmd, "-c") == 0) {		// compile
 		int level = -1, argi;
@@ -922,7 +863,7 @@ int program(int argc, char *argv[]) {
 		}
 
 		if (reglibc(s) != 0) {
-			error(s, 0, "error compiling `%s`", "stdlib.cvx");
+			error(s, 0, "error compiling `%s`", "stdlib");
 			logfile(s, NULL);
 			return -6;
 		}
@@ -931,7 +872,7 @@ int program(int argc, char *argv[]) {
 			error(s, 0, "error compiling `%s`", "stdlib.cvx");
 			logfile(s, NULL);
 			return -9;
-		}
+		}// */
 
 		if (compile(s, warn, srcf) != 0) {
 			error(s, -1, "error compiling `%s`", srcf);
@@ -946,8 +887,8 @@ int program(int argc, char *argv[]) {
 			return s->errc;
 		}
 
-		if (1) {
-			symn glob = s->defs;//leave(s->cc, NULL);
+		if (0) {
+			symn glob = s->defs;
 			while (glob) {
 				char* ty = ".err";
 				switch (glob->kind) {
@@ -957,7 +898,7 @@ int program(int argc, char *argv[]) {
 					case TYPE_def: ty = ".def"; break;
 				}
 				//~ debug("%s: %-15.15T", ty, glob);
-				//~ dumpsym(stdout, glob, 0);
+				dumpsym(stdout, glob, 0);
 				glob = glob->defs;
 			}
 		}
@@ -972,6 +913,17 @@ int program(int argc, char *argv[]) {
 			case run_code: exec(s->vm, dbg); break;
 		}
 
+		if (1 && outc == run_code) {
+			//~ libcSwapExit(s, NULL);
+			//~ vmCall(s, findsym(s->cc, NULL, "testCallBack"), 1, 2, 3, 6);
+			//~ vmCall(s, findsym(s->cc, NULL, "testCallBack"), 2, 3, 4, 6);
+			//~ vmCall(s, findsym(s->cc, NULL, "testCallBack"), 3, 4, 5, 6);
+			//~ vmCall(s, findsym(s->cc, NULL, "testCallBack3"));
+			if (callBack) {
+				vmCall(s, callBack, 4);
+			}
+			//~ vmCall(s, findsym(s->cc, NULL, "testCallBack"), 4, 5, 6);
+		}
 		logfile(s, NULL);
 		//~ vmDone(s);
 		return 0;
@@ -997,8 +949,8 @@ int main(int argc, char *argv[]) {
 			//"-api",
 			
 			"-c",		// compile command
-                        "-x",		// execute & show symbols command
-                        "test1.cvx",
+			"-x",		// execute & show symbols command
+			"test.cvx",
 		};
 		argc = sizeof(args) / sizeof(*args);
 		argv = args;
@@ -1166,52 +1118,4 @@ int vmHelp(char *cmd) {
 	}
 	return n;
 }
-
-int mk_test(char *file, int size) {
-	//~ char test[] = "signed _000000000000000001 = 8;\n";
-	char test[] = "int _0000001=6;\n";
-	FILE* f = fopen(file, "wb");
-	int n, sp = sizeof(test) - 6;
-
-	if (f == NULL) {
-		debug("cann not open file");
-		return -1;
-	}
-
-	if (size <= (128 << 20)) {
-		for (n = 0; n < size; n += sizeof(test)-1) {
-			fputs(test, f);
-			while (++test[sp] > '9') {
-				test[sp--] = '0';
-				if (test[sp] == '_') {
-					fclose(f);
-					return -2;
-				}
-			}
-			sp = sizeof(test) - 6;
-		}
-	}
-	else debug("file is too large (128M max)");
-
-	fclose(f);
-	return 0;
-}
-
-int test1() {
-	astn tmp;
-	ccState cc;
-	char *file = "C:\\Documents and Settings\\kmz\\Desktop\\bible.txt";
-	static char mem[memsize];
-	state s = rtInit(mem, sizeof(mem));
-
-	if (!(cc = ccInit(s)))
-		return -1;
-	if (srcfile(s, file) != 0)
-		return -2;
-
-	while ((tmp = next(cc, 0))) {
-		//~ if (tmp->kind != TYPE_ref)debug("%k", tmp);
-	}
-
-	return 0;
-}// */
+// */

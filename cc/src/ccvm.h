@@ -11,7 +11,7 @@
 #include "pvmc.h"
 #include <stdlib.h>
 
-#define DEBUGGING 1
+#define DEBUGGING 15
 
 // maximum tokens in expressions & nest level
 #define TOKS 2048
@@ -25,12 +25,14 @@
 
 #if DEBUGGING > 1
 #define debug(msg...) pdbg("debug", __FILE__, __LINE__, msg)
+#define trace(msg...) pdbg("trace", __FILE__, __LINE__, msg)
 #define PERR(__ENV, __LEVEL, __FILE, __LINE, msg...) do { perr(__ENV, __LEVEL, __FILE, __LINE, msg); debug(msg); } while(0)
 #define error(__ENV, __LINE, msg...) PERR(__ENV, -1, NULL, __LINE, msg)
 #define warn(__ENV, __LEVEL, __FILE, __LINE, msg...) PERR(__ENV, __LEVEL, __FILE, __LINE, msg)
 #define info(__ENV, __FILE, __LINE, msg...) PERR(__ENV, 0, __FILE, __LINE, msg)
 #else // catch the position error raised
-#define debug(msg, ...) 
+#define debug(msg...)
+#define trace(msg...)
 #define error(__ENV, __LINE, msg...) perr(__ENV, -1, NULL, __LINE, msg)
 #define warn(__ENV, __LEVEL, __FILE, __LINE, msg...) perr(__ENV, __LEVEL, __FILE, __LINE, msg)
 #define info(__ENV, __FILE, __LINE, msg...) perr(__ENV, 0, __FILE, __LINE, msg)
@@ -223,7 +225,7 @@ struct symn {				// type node
 
 struct ccState {
 	state	s;
-	symn	defs;		// definitions
+	//~ symn	defs;		// definitions
 	astn	root;		// statements
 	astn	jmps;		// jumps
 
@@ -276,6 +278,7 @@ struct vmState {
 	state	s;
 	int		opti;			// optimization levevel
 
+	unsigned int	px;			// exit point
 	unsigned int	pc;			// entry point / prev program counter
 	unsigned int	cs;			// code size
 	unsigned int	ds;			// data size
@@ -308,6 +311,7 @@ extern symn type_f32;
 extern symn type_f64;
 //~ extern symn type_chr;		// should be for printing only
 extern symn type_str;
+extern symn type_ref;
 extern symn null_ref;
 
 //~ extern symn type_v4f;
@@ -346,9 +350,13 @@ astn fh8node(ccState s, uint64_t v);
 astn cpynode(ccState s, astn src);
 void eatnode(ccState s, astn ast);
 
-symn installex(ccState s, const char* name, int kind, unsigned size, symn type, astn init);
+//~ symn installex(ccState s, const char* name, int kind, unsigned size, symn type, astn init);
+symn installex2(ccState s, const char* name, int kind, unsigned size, symn type, astn init);
+symn installex(ccState s, const char* name, int kind, symn type, int cast, unsigned size, astn init);
 symn install(ccState s, const char* name, int kind, int cast, unsigned size);
 symn declare(ccState s, int kind, astn tag, symn rtyp);
+
+//~ TODO: !!! args are linked in a list by next !!??
 symn lookup(ccState s, symn sym, astn ast/*, int deep*/, astn args);
 
 //~ symn findsym(ccState s, symn in, char *name);
@@ -424,7 +432,7 @@ int stkoffs(vmState s, int size);
 int isType(symn sym);
 int istype(astn ast);
 
-symn linkOf(astn ast, int notjustrefs);
+symn linkOf(astn ast);
 long sizeOf(symn typ);
 
 int source(ccState, srcType mode, char* text);		// mode: file/text
@@ -436,6 +444,8 @@ char *mapstr(ccState s, char *name, unsigned size/* = -1U*/, unsigned hash/* = -
 
 void fputasm(FILE *fout, vmState s, int mark, int len, int mode);
 
-void printargcast(astn arg);
+//~ void printargcast(astn arg);
+
+int libCallExitDebug(state s);
 
 #endif
