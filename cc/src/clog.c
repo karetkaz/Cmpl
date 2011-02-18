@@ -25,6 +25,19 @@ enum Format {
 	prLine = 0x0080,
 };
 
+static void fputesc(FILE *fout, char* str) {
+	int c;
+	fputchr(fout, '"');
+	while ((c = *str++)) {
+		switch (c) {
+			default : fputchr(fout, c); break;
+			case '\n': fputstr(fout, "\\n"); break;
+			case '\t': fputstr(fout, "\\t"); break;
+		}
+	}
+	fputchr(fout, '"');
+}
+
 static void fputsym(FILE *fout, symn sym, int mode, int level) {
 	//~ int rlev = mode & 0xf;
 	int prName = 1;//!(mode & noName);
@@ -432,7 +445,7 @@ static void fputast(FILE *fout, astn ast, int mode, int level) {
 		case TYPE_bit: fputfmt(fout, "%U", ast->con.cint); break;
 		case TYPE_int: fputfmt(fout, "%D", ast->con.cint); break;
 		case TYPE_flt: fputfmt(fout, "%F", ast->con.cflt); break;
-		case TYPE_str: fputfmt(fout, "\"%s\"", ast->id.name); break;
+		case TYPE_str: fputesc(fout, ast->id.name); break;
 		case TYPE_ref: {
 			if (ast->id.link)
 				fputsym(fout, ast->id.link, 0, level);

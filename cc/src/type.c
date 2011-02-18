@@ -9,9 +9,8 @@ symn type_i32 = NULL;
 symn type_i64 = NULL;
 symn type_f32 = NULL;
 symn type_f64 = NULL;
-//~ symn type_ptr = 0;
 symn type_str = NULL;
-symn type_ref = NULL;
+symn type_ptr = NULL;
 symn null_ref = NULL;
 
 //~ Install
@@ -31,7 +30,8 @@ symn newdefn(ccState s, int kind) {
 	return def;
 }
 
-symn installex(ccState s, const char* name, int kind, symn type, int cast, unsigned size, astn init) {
+symn installex(ccState s, const char* name, int kind, unsigned size, symn type, astn init) {
+//~ symn installex(ccState s, const char* name, int kind, symn type, int cast, unsigned size, astn init) {
 	symn def = newdefn(s, kind & 0xff);
 	unsigned hash = 0;
 	dieif(!s || !name || !kind, "FixMe(s, %s, %t)", name, kind);
@@ -47,10 +47,13 @@ symn installex(ccState s, const char* name, int kind, symn type, int cast, unsig
 			init->type = type;
 		}
 
-		def->cast = cast;
+		//~ def->cast = cast;
 
 		if (kind & symn_call)
 			def->call = 1;
+
+		if (kind & symn_stat)
+			def->stat = 1;
 
 		if (kind & symn_read)
 			def->read = 1;
@@ -63,12 +66,15 @@ symn installex(ccState s, const char* name, int kind, symn type, int cast, unsig
 			// usertype
 			case TYPE_def:
 			case TYPE_rec:
-				if (def->cast)
-					def->pack = size;
+				//~ if (def->cast)
+				def->pack = size;
 
 			// variable
 			case TYPE_ref:
+				break;
 			case EMIT_opc:
+				def->size = 0;
+				def->offs = size;
 				break;
 		}
 
@@ -82,25 +88,27 @@ symn installex(ccState s, const char* name, int kind, symn type, int cast, unsig
 	return def;
 }
 
-symn installex2(ccState s, const char* name, int kind, unsigned size, symn type, astn init) {
-	int cast = 0;
-	return installex(s, name, kind, type, cast, size, init);
-}
-
 symn install(ccState s, const char* name, int kind, int cast, unsigned size) {
-	symn typ = NULL;
-	return installex(s, name, kind, typ, cast, size, 0);
-}
-
-symn installvar(state s, const char* name, symn type, unsigned offset) {
-	//~ null_ref = installex(cc, "null", TYPE_ref | symn_read, 0, type_ref, NULL);
-	return installex2(s->cc, name, TYPE_ref | symn_read, offset, type, NULL);
+	symn ref = installex(s, name, kind, size, NULL, NULL);
+	if (ref != NULL) {
+		ref->cast = cast;
+	}
+	return ref;
 }
 
 symn installtyp(state s, const char* name, unsigned size) {
 	//~ type_i64 = install(cc, "int64", TYPE_rec | symn_read, TYPE_i64, 8);
 	return install(s->cc, name, TYPE_rec | symn_read, TYPE_rec, size);
 }
+
+/*symn installvar(state s, const char* name, symn type, unsigned offset) {
+	//~ return installex2(s->cc, name, TYPE_ref | symn_read, offset, type, NULL);
+	symn ref = installex(s->cc, name, TYPE_ref | symn_read, type->size, type, 0);
+	if (ref != NULL) {
+		ref->offs = offset;
+	}
+	return ref;
+}// */
 
 // promote
 static inline int castkind(int cast) {
@@ -190,27 +198,6 @@ int check(astn arg, symn ref) {
 			return 0;
 		}
 	}
-
-	/*
-	if (ref->cast == TYPE_ref) {
-		//~ debug("variable byref: %+k", arg);
-		if (arg->type != ref->type) {
-			if (arg->type->cast != ref->type->cast
-			||  arg->type->size != ref->type->size) {
-				debug("%+k: %+T", arg, ref);
-				return 0;
-			}
-		}
-	}
-	else {
-		if (arg->type != ref->type) {
-			if (!promote(arg->type, ref->type)) {
-				debug("%+k: %+T", arg, ref);
-				return 0;
-			}
-		}
-	}
-	*/
 
 	//~ debug("%-T == %-T", arg->type, ref->type);
 	return 1;
@@ -348,11 +335,6 @@ symn lookup(ccState s, symn sym, astn ref, astn args) {
 
 	}
 
-	/*if (sym && sym->kind == TYPE_def && sym->init == NULL) {
-		//~ if ()
-		sym = sym->type;
-	}// */
-
 	return sym;
 }
 
@@ -365,7 +347,7 @@ symn declare(ccState s, int kind, astn tag, symn typ) {
 		return 0;
 	}
 
-	def = installex2(s, tag->id.name, kind, 0, typ, NULL);
+	def = installex(s, tag->id.name, kind, 0, typ, NULL);
 
 	if (def != NULL) {
 
@@ -483,6 +465,10 @@ long sizeOf(symn typ) {
 		case TYPE_arr:
 			return typ->size * sizeOf(typ->type);
 
+		case TYPE_ref:
+			if (typ->cast == TYPE_ref)
+				return 4;
+			return sizeOf(typ->type);
 		//~ case TYPE_def:
 			//~ return sizeOf(typ->type);
 	}
@@ -772,7 +758,7 @@ symn typecheck(ccState cc, symn loc, astn ast) {
 		case OPER_leq:		// '<='
 		case OPER_gte:		// '>'
 		case OPER_geq: {	// '>='
-			int cast;
+			int cast = 0;
 			symn lht = typecheck(cc, loc, ast->op.lhso);
 			symn rht = typecheck(cc, loc, ast->op.rhso);
 
@@ -781,7 +767,13 @@ symn typecheck(ccState cc, symn loc, astn ast) {
 				return NULL;
 			}
 			//~ if (lht->cast && rht->cast) {
-			if ((cast = castOf(promote(lht, rht)))) {
+			if (lht == rht && lht == type_ptr) {
+				// TODO: here should be a nother check
+				if (ast->kind == OPER_equ || ast->kind == OPER_neq) {
+					cast = TYPE_ref;
+				}
+			}
+			if (cast || (cast = castOf(promote(lht, rht)))) {
 				if (!castTy(ast, type_bol)) {
 					debug("%T('%k', %+k): %t", lht, ast, ast, cast);
 					return 0;
@@ -796,6 +788,7 @@ symn typecheck(ccState cc, symn loc, astn ast) {
 				}
 				return ast->type;
 			}
+
 			fatal("operator %k (%-T %-T): %+k", ast, lht, rht, ast);
 		} break;
 
@@ -936,25 +929,26 @@ symn typecheck(ccState cc, symn loc, astn ast) {
 			}
 
 			if (sym->call) {
-				symn arg = sym->args;
+				astn argval = args;
+				symn argsym = sym->args;
 
-				while (args && arg) {
-					if (!castTy(args, arg->type)) {
-						debug("%k:%t %+k", args, castOf(arg->type), args);
+				while (argsym && argval) {
+					if (!castTy(argval, argval->type)) {
+						debug("%k:%t %+k", argval, castOf(argval->type), argval);
 						return 0;
 					}
 
-					if (arg->cast == TYPE_ref || arg->type->cast == TYPE_ref) {
-						if (!castTo(args, TYPE_ref)) {
-							debug("%k:%t", args, TYPE_ref);
+					if (argsym->cast == TYPE_ref || argval->type->cast == TYPE_ref) {
+						if (!castTo(argval, TYPE_ref)) {
+							debug("%k:%t", argval, TYPE_ref);
 							return 0;
 						}
 					}
 
 					//~ debug("cast Arg(%+k): %t", args, args->cst2);
 
-					args = args->next;
-					arg = arg->next;
+					argsym = argsym->next;
+					argval = argval->next;
 				}
 			}
 
@@ -963,20 +957,17 @@ symn typecheck(ccState cc, symn loc, astn ast) {
 			ref->type = result;
 			ast->type = result;
 
-			/*if (!castTy(ast, result)) {
-				debug("%k:%-T", ast, result);
-				//~ return 0;
-			}*/
-
 			if (dot)
 				dot->type = result;
 
-			//~ TODO: review this: functions, arrays and strings are passed by reference
+			if (sym->call && !args) {
+				result = type_ptr;
+			}
 
 			//~ if (typ != sym)
 				//~ sym->cast = typ->cast;
 
-			//~ debug("%k: %T", ref, sym);
+			//~ if (sym->line) debug("%k: %-T: %-T", ref, sym, result);
 		}
 		else
 			cc->root = ref;
@@ -984,10 +975,6 @@ symn typecheck(ccState cc, symn loc, astn ast) {
 
 	//~ if (!result) debug("%k in %T", ref, loc);
 
-	/*if (sym && sym->cast == TYPE_ref) {
-		if (sym->call)
-			return type_ref;
-	}// */
 	return result;
 }
 
@@ -1010,11 +997,11 @@ int fixargs(symn sym, int align, int stbeg) {
 	int stdiff = 0;
 	//~ int stbeg = sizeOf(sym->type);
 	for (arg = sym->args; arg; arg = arg->next) {
+		arg->size = sizeOf(arg);
+		//~ arg->size = arg->type->size;
 		arg->offs = stbeg + stdiff;
-		if (arg->cast != TYPE_ref)
-			stdiff += padded(sizeOf(arg->type), align);
-		else
-			stdiff += padded(4, align);
+		stdiff += padded(arg->size, align);
+		//~ debug("sizeof(%-T):%d", arg, arg->offs);
 	}
 	//~ because args are evaluated from right to left
 	for (arg = sym->args; arg; arg = arg->next) {

@@ -280,7 +280,7 @@ symn libcall(state s, int libc(state), int pos, const char* proto) {
 		// make arguments symbolic by default
 		for (arg = sym->args; arg; arg = arg->next) {
 			//~ stdiff += sizeOf(arg->type);
-			//~ if (arg->cast != TYPE_ref)
+			if (arg->cast != TYPE_ref)
 				arg->cast = TYPE_def;
 			//~ arg->load = 0;
 		}// */
@@ -403,6 +403,7 @@ int emitarg(vmState s, int opc, stkval arg) {
 
 	// cmp
 	else if (opc == opc_ceq) switch (arg.i4) {
+		case TYPE_ref: //opc = u32_ceq; break;
 		case TYPE_u32: //opc = u32_ceq; break;
 		case TYPE_i32: opc = i32_ceq; break;
 		case TYPE_f32: opc = f32_ceq; break;
@@ -576,7 +577,7 @@ int emitarg(vmState s, int opc, stkval arg) {
 		if (arg.i4 == 0)
 			return s->pc;
 
-		dieif(arg.i4 & 3, "FixMe");
+		dieif(arg.i4 & 3, "FixMe: %d", arg.i4);
 		arg.i4 /= 4;
 	}
 
@@ -1087,7 +1088,7 @@ int vmCall(state s, symn fun, ...) {
 			return -2;
 		}
 		pu->sp -= size;
-		memcpy(s->retv - arg->offs, ap, size);
+		memcpy((char*)s->retv - arg->offs, ap, size);
 		ap += size;
 	}
 
@@ -1195,7 +1196,7 @@ void fputopc(FILE *fout, unsigned char* ptr, int len, int offs) {
 
 		case opc_libc:
 			if (libcvec[ip->idx].sym)
-				fputfmt(fout, " %-T", libcvec[ip->idx].sym);
+				fputfmt(fout, "(pop %d, check %d) %-T", libcvec[ip->idx].pop, libcvec[ip->idx].chk, libcvec[ip->idx].sym);
 			else
 				fputfmt(fout, " %s", libcvec[ip->idx].proto);
 			break;

@@ -19,6 +19,28 @@
 // symbol & hash table size
 #define TBLS 512
 
+#ifdef __WATCOMC__
+
+#define pdbg(__DBG, __FILE, __LINE, msg, ...) do {fputfmt(stderr, "%s:%d: "__DBG": %s: "msg"\n", __FILE, __LINE, __func__, ##__VA_ARGS__); fflush(stdout); fflush(stderr);} while(0)
+#define fatal(msg, ...) do {pdbg("fatal", __FILE__, __LINE__, msg, ##__VA_ARGS__); abort();} while(0)
+#define dieif(__EXP, msg, ...) do {if (__EXP) fatal(msg, ##__VA_ARGS__);} while(0)
+
+#if DEBUGGING > 1
+#define debug(msg, ...) pdbg("debug", __FILE__, __LINE__, msg, ##__VA_ARGS__)
+#define trace(msg, ...) pdbg("trace", __FILE__, __LINE__, msg, ##__VA_ARGS__)
+#define PERR(__ENV, __LEVEL, __FILE, __LINE, msg, ...) do { perr(__ENV, __LEVEL, __FILE, __LINE, msg); debug(msg, ##__VA_ARGS__); } while(0)
+#define error(__ENV, __LINE, msg, ...) PERR(__ENV, -1, NULL, __LINE, msg, ##__VA_ARGS__)
+#define warn(__ENV, __LEVEL, __FILE, __LINE, msg, ...) PERR(__ENV, __LEVEL, __FILE, __LINE, msg, ##__VA_ARGS__)
+#define info(__ENV, __FILE, __LINE, msg, ...) PERR(__ENV, 0, __FILE, __LINE, msg, ##__VA_ARGS__)
+#else // catch the position error raised
+#define debug(msg, ...)
+#define trace(msg, ...)
+#define error(__ENV, __LINE, msg, ...) perr(__ENV, -1, NULL, __LINE, msg, ##__VA_ARGS__)
+#define warn(__ENV, __LEVEL, __FILE, __LINE, msg, ...) perr(__ENV, __LEVEL, __FILE, __LINE, msg, ##__VA_ARGS__)
+#define info(__ENV, __FILE, __LINE, msg, ...) perr(__ENV, 0, __FILE, __LINE, msg, ##__VA_ARGS__)
+#endif
+
+#else
 #define pdbg(__DBG, __FILE, __LINE, msg, ...) do {fputfmt(stderr, "%s:%d: "__DBG": %s: "msg"\n", __FILE, __LINE, __func__, ##__VA_ARGS__); fflush(stdout); fflush(stderr);} while(0)
 #define fatal(msg...) do {pdbg("fatal", __FILE__, __LINE__, msg); abort();} while(0)
 #define dieif(__EXP, msg...) do {if (__EXP) fatal(msg);} while(0)
@@ -36,6 +58,7 @@
 #define error(__ENV, __LINE, msg...) perr(__ENV, -1, NULL, __LINE, msg)
 #define warn(__ENV, __LEVEL, __FILE, __LINE, msg...) perr(__ENV, __LEVEL, __FILE, __LINE, msg)
 #define info(__ENV, __FILE, __LINE, msg...) perr(__ENV, 0, __FILE, __LINE, msg)
+#endif
 #endif
 
 // Symbols - CC
@@ -55,6 +78,7 @@ enum {
 
 	symn_call = 0x100,
 	symn_read = 0x200,
+	symn_stat = 0x400,
 };
 typedef struct {
 	int const	type;
@@ -189,10 +213,8 @@ struct symn {				// type node
 	char*	name;
 	char*	file;
 	int		line;
-	union {
-	int32_t	size;	// sizeof(TYPE_xxx)
-	int32_t	offs;	// addrof(TYPE_ref)
-	};
+	int32_t	size;		// sizeof(TYPE_xxx)
+	int32_t	offs;		// addrof(TYPE_ref)
 	symn	decl;		// declared in
 	symn	type;		// base type of TYPE_ref (void, int, float, struct, ...)
 	symn	args;		// REC fields / FUN args
@@ -309,9 +331,9 @@ extern symn type_i32;
 extern symn type_i64;
 extern symn type_f32;
 extern symn type_f64;
-//~ extern symn type_chr;		// should be for printing only
+
 extern symn type_str;
-extern symn type_ref;
+extern symn type_ptr;
 extern symn null_ref;
 
 //~ extern symn type_v4f;
@@ -351,8 +373,8 @@ astn cpynode(ccState s, astn src);
 void eatnode(ccState s, astn ast);
 
 //~ symn installex(ccState s, const char* name, int kind, unsigned size, symn type, astn init);
-symn installex2(ccState s, const char* name, int kind, unsigned size, symn type, astn init);
-symn installex(ccState s, const char* name, int kind, symn type, int cast, unsigned size, astn init);
+symn installex(ccState s, const char* name, int kind, unsigned size, symn type, astn init);
+//~ symn installex(ccState s, const char* name, int kind, symn type, int cast, unsigned size, astn init);
 symn install(ccState s, const char* name, int kind, int cast, unsigned size);
 symn declare(ccState s, int kind, astn tag, symn rtyp);
 

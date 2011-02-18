@@ -943,12 +943,11 @@ int program(int argc, char *argv[]) {
 int main(int argc, char *argv[]) {
 	if (1 && argc == 1) {
 		char *args[] = {
-			"psvm",		// program name
-			//~ "-h", "-s", "dup.x1", "set.x1",
-
+			"Program Name",
 			//"-api",
 			
 			"-c",		// compile command
+			"-O2",		// optimize code
 			"-x",		// execute & show symbols command
 			"test.cvx",
 		};
@@ -956,8 +955,8 @@ int main(int argc, char *argv[]) {
 		argv = args;
 	}
 
-	setbuf(stdout, NULL);
-	setbuf(stderr, NULL);
+	//~ setbuf(stdout, NULL);
+	//~ setbuf(stderr, NULL);
 	//~ return mk_test("xxxx.cvx", 8 << 20);	// 8M
 	//~ return vmTest();
 	//~ return test1();

@@ -269,15 +269,15 @@ void bitsget(bool signed, int size, int64 &min, int64 &max) {
 	max = bits.and(min - 1, mask);
 }
 
-int bits = 14;
+int bitsize = 14;
 hex64 min;
 hex64 max;
 
 hex64 umin;
 hex64 umax;
 
-bitsget(true, bits, min, max);
-bitsget(!true, bits, umin, umax);
+bitsget(true, bitsize, min, max);
+bitsget(!true, bitsize, umin, umax);
 //~ +/
 }
 } // */
@@ -419,6 +419,7 @@ for (int i = 0; i < dim; i += 1) {
 }
 } // */
 static if (Test.Math) {
+static if (Test.Math & 1) {
 	double x = -math.pi / 2;
 	double absx = abs(x);
 	double sinx = sin(x);
@@ -428,8 +429,38 @@ static if (Test.Math) {
 	double expx = exp(x);
 	double powx = pow(2, 8);
 	//~ double ___x = ___(x);
-
 	//~ hex64 xxl = bits.sxt(0xff0070, 3, 22);
+}
+static if (Test.Math & 2) {		// fixed point
+define fixed int32;
+define __fix = 16;
+
+define fixed_fix(int64 &val, int &__fix) = fixed(bits.shr(val + bits.shr(val, __fix) + 1, __fix));
+define add(fixed lhs, fixed rhs, int __fix) = fixed(lhs + rhs);
+define sub(fixed lhs, fixed rhs, int __fix) = fixed(lhs - rhs);
+define mul(fixed lhs, fixed rhs, int __fix) = fixed_fix(int64(lhs) * rhs, __fix);
+
+define fixed(int32 val, int __fix) = fixed(val << __fix);
+define fixed(float32 val, int __fix) = fixed(val * (1 << __fix));
+define fixed(float64 val, int __fix) = fixed(val * (1 << __fix));
+
+define int(fixed val, int __fix) = int(val >> __fix);
+define double(fixed val, int __fix) = double(val / double(1 << __fix));
+
+define fixed_fix(int64 val) = fixed_fix(val, __fix);
+define add(fixed lhs, fixed rhs) = add(lhs, rhs, __fix);
+define sub(fixed lhs, fixed rhs) = sub(lhs, rhs, __fix);
+define mul(fixed lhs, fixed rhs) = mul(lhs, rhs, __fix);
+
+define fixed(int val)   = fixed(val, __fix);
+define fixed(float32 val) = fixed(val, __fix);
+define fixed(float64 val) = fixed(val, __fix);
+
+define int(fixed val) = int(val, __fix);
+define double(fixed val) = double(val, __fix);
+
+double fixed_test = double(add(fixed(2.5), fixed(3)));
+}
 
 } // */
 static if (Test.Call) {

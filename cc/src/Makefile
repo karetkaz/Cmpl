@@ -7,11 +7,11 @@ LIBS=-lm
 CCC=gcc -m32
 LNK=gcc -m32
 #~ -g3 -ggdb
-LIB=ar rcs ../../gx/lib/libpvmc/libpvmc.linux.a
+LIB=ar rcs ../gx/lib/libpvmc/libpvmc.linux.a
 DBG=nemiver
 
 ifeq "$(OS)" "Windows_NT"
-LIB=ar rcs ../../gx/lib/libpvmc/libpvmc.windows.a
+LIB=ar rcs ../../lib/libpvmc/libpvmc.windows.a
 DBG=
 endif
 
@@ -44,6 +44,7 @@ lib:$(OBJS)
 
 clean:
 	rm -f $(OBJS) $(OBJDIR)main.o
+	rm -f *.obj
 
 debug:
 	$(DBG) "$(BINDIR)main"

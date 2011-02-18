@@ -17,27 +17,68 @@
 //~ addEventListener(MouseEvent.CLICK, function() {System.exit(0);});
 //~ float a = lerp(.6, 0, 1);
 
-//~ type pointer;
+float32 res1 = emit(f32.div, f32(2), f32(math.pi));
+float64 res2 = emit(f64.neg, f64(math.pi));
+float32 res3 = emit(float32, f32(math.pi));
 
-//~ define int(pointer p) = *(int*)p;
-//~ define int(pointer p) = emit(i32.ldi, ref(p));
-
-void method() = null;
-
-void method2() {
-	println("2");
-}
-
-void methodCall(void method()) {
-	method();
-}
-
-//~ method = method2;
-methodCall(method2);
-//~ println("2");
-//~ method();
 
 /*
+void bitsget(bool signed, int size, int64 &min, int64 &max) {
+	int64 mask = bits.shr(int64(-1), -size);
+	min = bits.shl(-int64(signed), size - 1);
+	max = bits.and(min - 1, mask);
+}
+
+int bits = 24;
+hex64 min;
+hex64 max;
+
+hex64 umin;
+hex64 umax;
+
+bitsget(true, bits, min, max);
+bitsget(!true, bits, umin, umax);
+// */
+
+/* 
+//~ void method() = null;
+
+void method2() {
+	static int i = 9;
+	//~ println( i += 2);
+	puti64( i += 2);
+	putchr('\n');
+	//~ putstr("!alma a fa alatt nyári piros alma\n");
+}// +/
+static if (true) {
+	method2();
+	method2();
+	method2();
+}// +/
+/+static if (true) {		// TODO: without static
+	void method() = method2;
+
+	//~ void method() = null;
+	//~ method = method2;
+
+	method();
+	method();
+	method();
+}// +/
+
+//~ /+
+void methodCall(void method()) {
+	//~ putstr("!alma a fa alatt nyári piros alma\n");
+	if (method != null)
+		method();
+}
+methodCall(method2);
+methodCall(null);
+//~ +/
+
+//~ */
+
+/* use: ./ccvm -c -x -O-2 test.cvx
 debug1(1, 2, 3);
 
 static int X = 1;
@@ -66,44 +107,58 @@ void testCallBackn(int n) {
 	println(X);
 	X += n;
 }
-setCallBack(testCallBack1);
+setCallBack(testCallBackn);
 //~ */
 
 /* Test functions
 
-struct gxRect {
-	int32 x;	//%x: %d
-	int32 y;	//%y: %d
-	int32 w;	//%width: %d
-	int32 h;	//%height: %d
-}
-
-enum gxBlit {
-	copy;
-	and;
-	or;
-	xor;
-	add;
-	sub;
-	mul;
-	div;
-}
-
-define println2(int x) = void(println(), print(x));
-
-void almaref(int &x) = null;
 void alma(int &x) {print("alma:");println(x);}
 void korte(int &x) {print("korte:");println(x);}
 
+// this wont work if not static
+//~ void almaref(int &x) = alma;
+
 void setCallBack(int mode, void handler(int &Event)) {
-	//~ if (handler != null)
-	handler(mode);
+	if (handler != null)
+		handler(mode);
 }
 
-//~ setCallBack(100, null);
+setCallBack(100, null);
 setCallBack(101, alma);
 setCallBack(106, korte);
+//~ setCallBack(106, almaref);
 
+// */
+
+
+/* using strings
+
+long cikkId = 165;
+long raktar = 3;
+long btetelId = 6398;
+double mennyiseg = 1;
+
+define strlen = 25;
+int8 val[strlen + 1];
+val[strlen] = 0;
+
+println("INSERT INTO gyariszam(cikk_id, mennyiseg, b_tetel_id, raktar_id, gyariszam) VALUES");
+for (int i = 0; i < 40; i += 1) {
+
+	for (int j = 0; j < strlen; j += 1) {
+		int c = random('a', 'z');
+		val[j] = c;
+	}
+		//~ val[j] = 'a' + random('z');
+		//~ val[j] = c;//random('a', 'z');
+
+	print("("); print(cikkId);
+	print(", "); print(mennyiseg);
+	print(", "); print(btetelId);
+	print(", "); print(raktar);
+	print(", '"); print(emit(string, ref(val)));
+	println("'),");
+}
 // */
 
 /* recursive
@@ -116,83 +171,6 @@ void recurse(int x) {
 }
 
 recurse(20);
-// */
-
-/* TODO
-if (int32 == int32) {
-	println("alma");
-}// */
-
-/* module gfx2d;
-const gxBlit {
-	copy
-	and
-	or
-	xor
-	key
-	//~ Blt32lum;		// extract
-	//~ Blt32rch;		// Red Channel
-	//~ Blt32gch;		// Green Channel
-	//~ Blt32bch;		// Blue Channel
-
-	//~ Blt32_15;
-	//~ Blt32_16;
-	//~ Blt32_24;
-	//~ Blt32cpy;
-	//~ Blt32and;
-	//~ Blt32ior;
-	//~ Blt32xor;
-	//~ Blt32mix;		// alpha mix
-	//~ Blt32add;		// Add
-	//~ Blt32sub;		// Subtract
-	//~ Blt32dif;		// Difference
-	//~ Blt32mul;		// Multiply
-	//~ Blt32div;		// Divide
-	//~ Blt32min;		// Darken
-	//~ Blt32max;		// Lighten
-	//~ Blt32scr;		// Screen
-	//~ Blt32ovr;		// Overlay
-	//~ Blt32rch;		// Red Channel
-	//~ Blt32gch;		// Green Channel
-	//~ Blt32bch;		// Blue Channel
-}
-struct gxRect {}
-struct gxClip {}
-struct gxSurf {}
-
-pointer gx_cliprect(gxSurf& src, gxRect);
-
-pointer getpaddr(gxSurf, int, int);
-xrgb getpixel(gxSurf &src, int x, int y);
-xrgb getpix16(gxSurf &src, fix x, fix y, xrgb c);
-void setpixel(gxSurf &dst, int x, int y, xrgb c);
-void setblock(gxSurf &dst, int x0, int y0, int x1, int y1, xrgb c);
-
-define sethline(gxSurf, int x0, int &y0, int x1, xrgb col) = setblock(x0, y0, x1, y0, col);
-define setvline(gxSurf, int &x0, int y0, int y1, xrgb col) = setblock(x0, y0, x0, y1, col);
-
-int fillsurf(gxSurf dst, gxRect roi, gxBlit mode, long col);
-int copysurf(gxSurf dst, int x, int y, gxSurf src, gxRect roi, gxBlit mode);
-int zoomsurf(gxSurf dst, gxRect rect, gxSurf src, gxRect roi, int lin);
-
-
-void drawline(gxSurf dst, int x0, int y0, int x1, int y1, xrgb col);
-void drawrect(gxSurf dst, int x0, int y0, int x1, int y1, xrgb col);
-void drawoval(gxSurf dst, int x0, int y0, int x1, int y1, xrgb col);
-void drawbez2(gxSurf dst, int x0, int y0, int x1, int y1, int x2, int y2, xrgb col);
-void drawbez3(gxSurf dst, int x0, int y0, int x1, int y1, int x2, int y2, int x3, int y3, xrgb col);
-
-void clipText(gxRect roi, gxSurf fnt, string str);
-void drawChar(gxSurf dst, int x, int y, gxSurf fnt, char chr, xrgb col);
-void drawText(gxSurf dst, int x, int y, gxSurf fnt, string str, xrgb col);
-
-//~ define gx_getclip(gxSurf s) {return s.clipPtr ? s.clipPtr : gxClip(pointer(&s));}
-
-int loadBMP(gx_Surf dst, string fileName, int depth);
-int loadJPG(gx_Surf dst, string fileName, int depth);
-int saveBMP(string fileName, gxSurf src, int depth);
-
-}// +/
 // */
 
 /* Bits: hi, lo, extend
@@ -208,37 +186,11 @@ define Hi64(int64 a) = emit(int32, pop, i64(a));	// Hi32 part
 hex64 val = 0xff00ff00ff0f0f0f9;
 hex32 lo = Lo64(val);
 hex32 hi = Hi64(val);
-// */
 
-/* fixed point math
-define fixed int32;
-define __fix = 16;
+void xx() {
+	static int xx1 = 0;
+}
 
-define fixed_fix(int64 &val, int &__fix) = fixed(bits.shr(val + bits.shr(val, __fix) + 1, __fix));
-define add(fixed lhs, fixed rhs, int __fix) = fixed(lhs + rhs);
-define sub(fixed lhs, fixed rhs, int __fix) = fixed(lhs - rhs);
-define mul(fixed lhs, fixed rhs, int __fix) = fixed_fix(int64(lhs) * rhs, __fix);
-
-define fixed(int32 val, int __fix) = fixed(val << __fix);
-define fixed(float32 val, int __fix) = fixed(val * (1 << __fix));
-define fixed(float64 val, int __fix) = fixed(val * (1 << __fix));
-
-define int(fixed val, int __fix) = int(val >> __fix);
-define double(fixed val, int __fix) = double(val / double(1 << __fix));
-
-define fixed_fix(int64 val) = fixed_fix(val, __fix);
-define add(fixed lhs, fixed rhs) = add(lhs, rhs, __fix);
-define sub(fixed lhs, fixed rhs) = sub(lhs, rhs, __fix);
-define mul(fixed lhs, fixed rhs) = mul(lhs, rhs, __fix);
-
-define fixed(int val)   = fixed(val, __fix);
-define fixed(float32 val) = fixed(val, __fix);
-define fixed(float64 val) = fixed(val, __fix);
-
-define int(fixed val) = int(val, __fix);
-define double(fixed val) = double(val, __fix);
-
-double fixed_test = double(add(fixed(2.5), fixed(3)));
 // */
 
 /* clamp, lerp, smooth
@@ -286,16 +238,6 @@ for (int i = 0; i < 60; i += 1) {
 }
 // */
 
-/*functions
-void stackOwerflow() {
-	//~ emit(ref, ref(stackOwerflow));
-	stackOwerflow();
-}
-
-stackOwerflow();
-
-// */
-
 /* using emit; and emit();
 //~ string alma = "alma a fa alatt";
 //~ println(1 + 4);
@@ -310,36 +252,8 @@ print(t3);
 //~ println(t3);
 // */
 
-/* using strings
+/+ hex view: use: ./ccvm -c -x -O-2 test.cvx
 
-long cikkId = 165;
-long raktar = 3;
-long btetelId = 6398;
-double mennyiseg = 1;
-
-define strlen = 25;
-
-int8 val[strlen + 1];
-val[strlen] = 0;
-
-string str = string(val);
-
-println("INSERT INTO gyariszam(cikk_id, mennyiseg, b_tetel_id, raktar_id, gyariszam) VALUES");
-for (int i = 0; i < 40; i += 1) {
-
-	for (int j = 0; j < strlen; j += 1)
-		val[j] = random('a', 'z');
-
-	print("("); print(cikkId);
-	print(", "); print(mennyiseg);
-	print(", "); print(btetelId);
-	print(", "); print(raktar);
-	print(", '"); print(str);
-	println("'),");
-}
-// */
-
-/+ hex view
 int64 x = 0x84444444ffffffff;
 hex64 xhex64[1] = emit();
 hex32 xhex32[2] = emit();
@@ -348,9 +262,11 @@ hex8  xhex08[8] = emit();
 // +/
 
 /* factorial
-define n = 10;
+define n = 6;
 int64 res = 1;
 for (int i = 1; i <= n; i += 1) {
+//~ {
+	//~ int i = 1;
 	res *= i;
 }
 // */

@@ -1313,54 +1313,6 @@ static astn args(ccState s, int mode) {
 	(void)mode;
 	return root;
 }
-/*static astn args1(ccState s, int mode) {
-	astn ast = NULL;
-
-	if (test(s, PNCT_rp))
-		return s->argz;
-
-	while (peek(s)) {
-		astn atag = 0;
-		symn atyp = 0;
-		symn arg = 0;
-		int byref = 0;
-
-		if (!(atyp = type(s)) && !mode) {
-			error(s->s, s->line, "typename expected `%k`", peek(s));
-			break;
-		}
-
-		byref = skip(s, OPER_and);
-
-		if (!(atag = next(s, TYPE_ref))) {
-			error(s->s, s->line, "unexpected `%k`", peek(s));
-			break;
-		}
-
-		arg = declare(s, TYPE_ref, atag, atyp);
-		arg->cast = byref ? TYPE_ref : 0;
-		atag->cst2 = byref ? TYPE_ref : atyp->cast;
-		//~ arg->load = ref != 0;
-		/ *if (byref) {
-			debug("arg:%t: %+T(arg:%t: %+k)", atag->id.link->cast, atag->id.link, atag->cst2, atag);
-			//~ debug("arg:%t: %+T(arg:%t: %+k)", arg->id.link->cast, arg->id.link, arg->cst2, arg);
-			//~ printargcast(atag);
-		}* /
-
-		if (ast) {
-			astn tmp = newnode(s, OPER_com);
-			tmp->op.lhso = ast;
-			tmp->op.rhso = atag;
-			atag = tmp;
-		}
-		ast = atag;
-
-		if (!skip(s, OPER_com))
-			break;
-	}
-
-	return ast;
-}// */
 //~ static astn varg(ccState s, int mode) ; // varargs: int min(int v1, int rest...)
 // varargs.def: define min(int v1, int rest...) = min(v1, rest);
 // varargs.def: define print(var rest...) = print(rest);
@@ -2109,13 +2061,15 @@ astn expr(ccState s, int mode) {
 
 astn decl(ccState s, int Rmode) {
 	//~ symn typ;
-	int mode = 0;
+	//~ int mode = 0;
+	int byref = 0;
+	int stat = 0;
 	astn tag = NULL;
 
 	if ((Rmode & decl_NoDefs) == 0) {
 		if ((tag = spec(s)))
 			return tag;
-		mode = skip(s, QUAL_sta) ? QUAL_sta : 0;
+		stat = skip(s, QUAL_sta);
 	}
 
 	if ((tag = reft(s, 0))) {
@@ -2133,8 +2087,8 @@ astn decl(ccState s, int Rmode) {
 
 				enter(s, tag);
 				for (tmp = ref->args; tmp; tmp = tmp->next)
-					installex2(s, tmp->name, TYPE_def, 0, tmp, NULL);
-				result = installex2(s, "result", TYPE_ref, 0, typ, NULL);
+					installex(s, tmp->name, TYPE_def, 0, tmp, NULL);
+				result = installex(s, "result", TYPE_ref, 0, typ, NULL);
 
 				ref->init = stmt(s, 1);
 
@@ -2149,15 +2103,12 @@ astn decl(ccState s, int Rmode) {
 				if (result) {
 					//~ symn tmp;
 
-					mode = QUAL_sta;
-
 					result->decl = ref;
 
 					// result is the first argument
-					result->offs = sizeOf(result->type);
+					result->offs = sizeOf(result);
 
 					ref->offs = result->offs + fixargs(ref, 4, -result->offs);
-					//~ ref->offs = result->offs + fixargs(ref, 4, 0);
 
 					/*
 					debug("argsize(%-T): %d", ref, ref->offs);
@@ -2167,9 +2118,12 @@ astn decl(ccState s, int Rmode) {
 					debug("res:%T@sp[%d]", result, ref->offs - result->offs);
 					// */
 				}
+				stat = 1;
 			}
 			else if (skip(s, ASGN_set)) {
 				ref->init = expr(s, TYPE_def);
+				if (ref->call)
+					byref = TYPE_ref;
 			}
 		}
 
@@ -2177,7 +2131,11 @@ astn decl(ccState s, int Rmode) {
 
 		s->pfmt = ref;
 
-		ref->cast = mode;
+		if (stat)
+			ref->stat = 1;
+
+		//~ if (byref)
+		ref->cast = byref;
 
 		redefine(s, ref);
 		//~ debug("%+k", ref->init);
@@ -2241,7 +2199,7 @@ astn unit(ccState cc, int mode) {
 //}
 
 int parse(ccState cc, srcType mode) {
-	astn newRoot, oldRoot = cc->root;
+	astn newRoot, oldRoot = NULL;//cc->root;
 
 	dieif(mode != 0, "FixMe");
 

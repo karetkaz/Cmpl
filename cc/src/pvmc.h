@@ -31,6 +31,7 @@ enum CompilerRegister {
 
 typedef struct state {
 	FILE* logf;		// log file
+	int   closelog;	// close log file
 
 	symn  defs;		// definitions
 
@@ -78,6 +79,7 @@ typedef enum {
 state rtInit(void* mem, unsigned size);
 
 int logfile(state, char *file);				// logger
+int logFILE(state, FILE *file);				// logger
 
 // compile
 //~ int srcfile(state, char *file);				// source
@@ -90,7 +92,7 @@ int parse(ccState, srcType);
 symn libcall(state, int libc(state), int pass, const char* proto);
 //~ symn install(state, int libc(state), int pass, const char* proto);
 symn installtyp(state s, const char* name, unsigned size);
-symn installvar(state s, const char* name, symn type, unsigned offset);
+//~ symn installvar(state s, const char* name, symn type, unsigned offset);
 
 // execute
 int (*libcSwapExit(state s, int libc(state)))(state);
