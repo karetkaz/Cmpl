@@ -31,6 +31,11 @@ typedef struct bcde {			// byte code decoder
 			void *res = sp + ip->ext.res;
 			void *lhs = sp + ip->ext.lhs;
 			void *rhs = sp + ip->ext.rhs;
+
+			chkstk(ip->ext.res);
+			chkstk(ip->ext.lhs);
+			chkstk(ip->ext.rhs);
+
 			switch (ip->ext.mem) {
 				case 0: break;
 				case 1: res = *(void**)res; break;
@@ -307,28 +312,10 @@ static inline void* getip(vmState s, int pos) {
 	return (void *)(s->_mem + pos);
 }
 
-// TODO: exchange this with emitarg(vmState s, int opc, stkval arg);
-//~ int emit(vmState s, int opc, ...) {
-
 int emitarg(vmState s, int opc, stkval arg) {
 	bcde ip = getip(s, s->pos);
 	//~ stkval arg = *(stkval*)(&opc + 1);
 
-	/*if (opc == get_ip) {
-		return s->cs;
-	}
-	/ *if (opc == get_sp) {
-		return -s->ss;
-	}
-	if (opc == loc_data) {
-		s->_ptr += arg.i4;
-		return 0;
-	}*/
-	/*if (opc == seg_code) {
-		s->pc = s->_ptr - s->_mem;
-		s->_ptr += s->cs;
-		return s->ss;
-	}*/
 	if (opc == markIP) {
 		return s->pos;
 	}
@@ -403,6 +390,7 @@ int emitarg(vmState s, int opc, stkval arg) {
 
 	// cmp
 	else if (opc == opc_ceq) switch (arg.i4) {
+		case TYPE_bit: //opc = u32_ceq; break;
 		case TYPE_ref: //opc = u32_ceq; break;
 		case TYPE_u32: //opc = u32_ceq; break;
 		case TYPE_i32: opc = i32_ceq; break;
@@ -628,6 +616,12 @@ int emitarg(vmState s, int opc, stkval arg) {
 
 		else if (opc == opc_ldi4) {
 			ip = getip(s, s->pc);
+			if (ip->opc == opc_ldcr && ip->arg.u4 < 0x00ffffff) {
+				arg.i8 = ip->arg.u4;
+				opc = opc_ld32;
+				s->pos = s->pc;
+				s->ss -= 1;
+			}
 			if (ip->opc == opc_ldsp && ((ip->rel & 3) == 0) && ((ip->rel / 4) < max_reg)) {
 				arg.i4 = ip->rel / 4;
 				opc = opc_dup1;
@@ -637,6 +631,12 @@ int emitarg(vmState s, int opc, stkval arg) {
 		}
 		else if (opc == opc_sti4) {
 			ip = getip(s, s->pc);
+			if (ip->opc == opc_ldcr && ip->arg.u4 < 0x00ffffff) {
+				arg.i8 = ip->arg.u4;
+				opc = opc_st32;
+				s->pos = s->pc;
+				s->ss -= 1;
+			}
 			if (ip->opc == opc_ldsp && ((ip->rel & 3) == 0) && ((ip->rel / 4) < max_reg)) {
 				arg.i4 = ip->rel / 4;
 				opc = opc_set1;
@@ -647,6 +647,12 @@ int emitarg(vmState s, int opc, stkval arg) {
 
 		else if (opc == opc_ldi8) {
 			ip = getip(s, s->pc);
+			if (ip->opc == opc_ldcr && ip->arg.u4 < 0x00ffffff) {
+				arg.i8 = ip->arg.u4;
+				opc = opc_ld64;
+				s->pos = s->pc;
+				s->ss -= 1;
+			}
 			if (ip->opc == opc_ldsp && ((ip->rel & 3) == 0) && ((ip->rel / 4) < max_reg)) {
 				arg.i4 = ip->rel / 4;
 				opc = opc_dup2;
@@ -656,6 +662,12 @@ int emitarg(vmState s, int opc, stkval arg) {
 		}
 		else if (opc == opc_sti8) {
 			ip = getip(s, s->pc);
+			if (ip->opc == opc_ldcr && ip->arg.u4 < 0x00ffffff) {
+				arg.i8 = ip->arg.u4;
+				opc = opc_st64;
+				s->pos = s->pc;
+				s->ss -= 1;
+			}
 			if (ip->opc == opc_ldsp && ((ip->rel & 3) == 0) && ((ip->rel / 4) < max_reg)) {
 				arg.i4 = ip->rel / 4;
 				opc = opc_set2;
@@ -824,8 +836,10 @@ int emitf64(vmState s, float64_t arg) {
 int emitptr(vmState s, void* arg) {
 	stkval tmp;
 	unsigned char* ptr = (unsigned char*)arg;
-	//~ dieif(ptr < s->_mem, "invalid reference");
-	dieif(ptr < s->_mem || ptr > (s->_mem + s->ds), "FixMe");
+
+	dieif(ptr < s->_mem, "invalid reference");
+	dieif(ptr > s->_mem + s->ro, "invalid reference");
+
 	tmp.i8 = (ptr - s->_mem);
 	return emitarg(s, opc_ldcr, tmp);
 }
@@ -883,7 +897,7 @@ int fixjump(vmState s, int src, int dst, int stc) {
 }
 
 int stkoffs(vmState s, int size) {
-	return +(s->ss * 4 + size);
+	return size + s->ss * 4;
 }
 
 /*static cell task(vmState ee, cell pu, int cc, int n, int cl, int dl) {
@@ -1022,8 +1036,7 @@ int exec(vmState vm, dbgf dbg) {
 	struct cell pu[1];
 
 	pu->ip = vm->_mem + vm->pc;
-	pu->bp = pu->ip + vm->cs;
-	//~ pu->bp = vm->_end - ss;
+	pu->bp = pu->ip + vm->pos;		// the last emited instruction
 	pu->sp = vm->_end;
 
 	/*if ((((int)pu->sp) & 3)) {
@@ -1042,9 +1055,12 @@ int exec(vmState vm, dbgf dbg) {
 int vmCall(state s, symn fun, ...) {
 
 	symn arg;
+	int result;
 	struct cell pu[1];
 	vmState vm = s->vm;
 	char *ap = (char*)&fun + sizeof(fun);
+	unsigned char *resp = NULL;
+	char *argp = NULL;
 
 	if (vm == NULL) {
 		trace("null");
@@ -1072,15 +1088,15 @@ int vmCall(state s, symn fun, ...) {
 	}
 
 	pu->ip = vm->_mem - fun->offs;
-	pu->bp = pu->ip + vm->cs;
+	pu->bp = pu->ip + vm->pos;
 	pu->sp = vm->_end;
 
 	// push Result;
 	pu->sp -= sizeOf(fun->type);
-	s->retv = pu->sp;
+	resp = pu->sp;
 
-	//~ va_start(ap, fun);
 	// push Arguments;
+	//~ va_start(ap, fun);
 	for(arg = fun->args; arg; arg = arg->next) {
 		int size = sizeOf(arg->type);
 		if (arg->cast == TYPE_ref || arg->type->cast == TYPE_ref) {
@@ -1088,28 +1104,30 @@ int vmCall(state s, symn fun, ...) {
 			return -2;
 		}
 		pu->sp -= size;
-		memcpy((char*)s->retv - arg->offs, ap, size);
+		memcpy((char*)vm->_end - arg->offs, ap, size);
 		ap += size;
 	}
+	//~ va_end(ap);
 
-	s->argv = (void*)pu->sp;
+	argp = (void*)pu->sp;
 
+	// return here: vm->px: program exit
 	pu->sp -= 4;
 	*(int*)(pu->sp) = vm->px;
-
-	//~ va_end(ap);
 
 	if (pu->bp < pu->ip) {
 		error(vm->s, 0, "invalid statck size");
 		return -99;
 	}
 
-	return dbugpu(vm, pu, NULL);
+	result = dbugpu(vm, pu, NULL);
+	s->retv = resp;
+	s->argv = argp;
+	return result;
 }
 
 void fputopc(FILE *fout, unsigned char* ptr, int len, int offs) {
 	int i;
-	//~ unsigned char* ptr = (unsigned char*)ip;
 	bcde ip = (bcde)ptr;
 
 	if (offs >= 0)
@@ -1137,6 +1155,13 @@ void fputopc(FILE *fout, unsigned char* ptr, int len, int offs) {
 		case opc_spc:
 		case opc_ldsp:
 			fprintf(fout, " %+d", ip->rel);
+			break;
+
+		case opc_ld32:
+		case opc_st32:
+		case opc_ld64:
+		case opc_st64:
+			fprintf(fout, " %x", ip->rel);
 			break;
 
 		case opc_loc:
@@ -1351,8 +1376,8 @@ void vm_fputval(state s, FILE *fout, symn var, stkval* ref, int flgs) {
 				fputfmt(fout, "Unknown Dimension}");
 				break;
 			}
-			else if (n > 100) {
-				n = 10;
+			else if (n > 20) {
+				n = 0;
 			}
 
 			while (i < n) {
@@ -1363,8 +1388,13 @@ void vm_fputval(state s, FILE *fout, symn var, stkval* ref, int flgs) {
 				if (++i < n)
 					fputfmt(fout, ", ");
 			}
-			if (base->kind == TYPE_arr)
-				fputfmt(fout, "\n%I", flgs & 0xff);
+			if (n > 0) {
+				if (base->kind == TYPE_arr)
+					fputfmt(fout, "\n%I", flgs & 0xff);
+			}
+			else {
+				fputfmt(fout, "...");
+			}
 			fputfmt(fout, "}");
 		} break;
 		default: {
@@ -1376,10 +1406,10 @@ void vm_fputval(state s, FILE *fout, symn var, stkval* ref, int flgs) {
 }
 
 void vmInfo(FILE* out, vmState vm) {
-	int i;
-	fprintf(out, "stack minimum size: %d\n", vm->sm);
-	i = vm->ds; fprintf(out, "data(@.%04x) size: %dM, %dK, %dB\n", 0, i >> 20, i >> 10, i);
-	i = vm->cs; fprintf(out, "code(@.%04x) size: %dM, %dK, %dB\n", vm->pc, i >> 20, i >> 10, i);
+	//~ int i;
+	//~ fprintf(out, "stack minimum size: %d\n", vm->sm);
+	//~ i = vm->ds; fprintf(out, "data(@.%04x) size: %dM, %dK, %dB\n", 0, i >> 20, i >> 10, i);
+	//~ i = vm->cs; fprintf(out, "code(@.%04x) size: %dM, %dK, %dB\n", vm->pc, i >> 20, i >> 10, i);
 	//~ i = vm->cs; fprintf(out, "code(@.%04x) size: %dM, %dK, %dB, %d instructions\n", vm->pc, i >> 20, i >> 10, i, vm->ic + 1);
 }
 

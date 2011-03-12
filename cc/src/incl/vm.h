@@ -91,13 +91,6 @@ case opc_libc: NEXT(2, libcvec[ip->idx].chk, -libcvec[ip->idx].pop) {
 	STOP(stop_vm, ip->idx == 0);		// Halt();
 #endif
 } break;
-/*case opc_jsub: NEXT(4, 0, +1) {
-#ifdef EXEC
-	STOP(error_ovf, ovf(pu));
-	SP(-1, i4) = (memptr)sp - mp + ip->rel;
-	pu->ip += ip->rel - 4;
-#endif
-} break;*/
 //}
 //{ 0x1?: STK		// Stack
 /*case opc_ldc1: NEXT(2, 0, +1) {
@@ -227,44 +220,73 @@ case opc_ldiq: NEXT(1, 1, +3) {
 	STOP(error_ovf, ovf(pu));
 	STOP(error_mem, SP(0, i4) <= 0);
 	STOP(error_mem, SP(0, i4) > ms);
-	SP(-1, x16) = MP(SP(0, i4), x16);
+	SP(-3, x16) = MP(SP(0, i4), x16);
 #endif
 } break;
 
 case opc_sti1: NEXT(1, 2, -2) {
 #ifdef EXEC
 	//~ STOP(error_mem, mp + SP(0, i4) > (memptr)st);
-	STOP(error_mem, SP(0, i4) <= vm->cs);
+	STOP(error_mem, SP(0, i4) < vm->ro);
 	STOP(error_mem, SP(0, i4) > ms);
 	MP(SP(0, i4), i1) = SP(1, i4);
 #endif
 } break;
 case opc_sti2: NEXT(1, 2, -2) {
 #ifdef EXEC
-	STOP(error_mem, SP(0, i4) <= vm->cs);
+	STOP(error_mem, SP(0, i4) < vm->ro);
 	STOP(error_mem, SP(0, i4) > ms);
 	MP(SP(0, i4), i2) = SP(1, i4);
 #endif
 } break;
 case opc_sti4: NEXT(1, 2, -2) {
 #ifdef EXEC
-	STOP(error_mem, SP(0, i4) <= vm->cs);
+	STOP(error_mem, SP(0, i4) < vm->ro);
 	STOP(error_mem, SP(0, i4) > ms);
 	MP(SP(0, i4), i4) = SP(1, i4);
 #endif
 } break;
 case opc_sti8: NEXT(1, 3, -3) {
 #ifdef EXEC
-	STOP(error_mem, SP(0, i4) <= vm->cs);
+	STOP(error_mem, SP(0, i4) < vm->ro);
 	STOP(error_mem, SP(0, i4) > ms);
 	MP(SP(0, i4), i8) = SP(1, i8);
 #endif
 } break;
 case opc_stiq: NEXT(1, 5, -5) {
 #ifdef EXEC
-	STOP(error_mem, SP(0, i4) <= vm->cs);
+	STOP(error_mem, SP(0, i4) < vm->ro);
 	STOP(error_mem, SP(0, i4) > ms);
 	MP(SP(0, i4), x16) = SP(1, x16);
+#endif
+} break;
+
+case opc_ld32: NEXT(4, 0, +1) {
+#ifdef EXEC
+	STOP(error_mem, ip->rel <= 0);
+	STOP(error_mem, ip->rel > ms);
+	SP(-1, i4) = MP(ip->rel, i4);
+#endif
+} break;
+case opc_ld64: NEXT(4, 0, +2) {
+#ifdef EXEC
+	STOP(error_mem, ip->rel <= 0);
+	STOP(error_mem, ip->rel > ms);
+	SP(-2, i8) = MP(ip->rel, i8);
+#endif
+} break;
+case opc_st32: NEXT(4, 1, -1) {
+#ifdef EXEC
+	STOP(error_mem, ip->rel < vm->ro);
+	STOP(error_mem, ip->rel > ms);
+	MP(ip->rel, i4) = SP(0, i4);
+#endif
+} break;
+case opc_st64: NEXT(4, 2, -2) {
+#ifdef EXEC
+	STOP(error_mem, ip->rel < vm->ro);
+	STOP(error_mem, ip->rel > ms);
+	MP(ip->rel, i8) = SP(0, i8);
 #endif
 } break;
 //}*/

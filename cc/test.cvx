@@ -14,13 +14,57 @@
 
 //~ int alma(int h)[10];	???
 //~ void fun(int x) = true ? null : void(int x){print(x);});
+
+/*
+struct slice {
+	int length;
+	ptr data;
+}
+
+struct variant {
+	typeInfo &typeref;
+	pointer  data;
+}
+*/
+//~ hex32 xxx = 0;
+struct gxRect: 4 {
+	int x;
+	int y;
+	int w;
+	int h;
+}
+
+define gxRect(int x, int y, int w, int h) = emit(gxRect, i32(x), i32(y), i32(w), i32(h));
+
+gxRect x = gxRect(1,2,3,4);
+gxRect y = gxRect(1,2,3,4);
+gxRect z = gxRect(1,2,3,4);
+
+//~ vec4f vvv = vec4f(1,2,3,4);
+println(vec4f(1.,2.,3.,4.));
+
+/*
 //~ addEventListener(MouseEvent.CLICK, function() {System.exit(0);});
 //~ float a = lerp(.6, 0, 1);
 
-float32 res1 = emit(f32.div, f32(2), f32(math.pi));
-float64 res2 = emit(f64.neg, f64(math.pi));
-float32 res3 = emit(float32, f32(math.pi));
+struct gxRect {
+	int x;
+	int y;
+	int w;
+	int h;
+}
+void tileSurf(int dst, int src, gxRect &roi) {
+	int dstw = 0;//width(dst);
+	int dsth = 0;//height(dst);
+	int srcw = 0;//width(src);
+	int srch = 0;//height(src);
 
+	if (roi == null) {
+		srcw = roi.w;
+		srch = roi.h;
+	}
+}
+// */
 
 /*
 void bitsget(bool signed, int size, int64 &min, int64 &max) {
@@ -29,52 +73,82 @@ void bitsget(bool signed, int size, int64 &min, int64 &max) {
 	max = bits.and(min - 1, mask);
 }
 
-int bits = 24;
 hex64 min;
 hex64 max;
 
 hex64 umin;
 hex64 umax;
 
-bitsget(true, bits, min, max);
-bitsget(!true, bits, umin, umax);
+int bitsize = 18;
+bitsget(true, bitsize, min, max);
+bitsget(!true, bitsize, umin, umax);
 // */
 
-/* 
+/* call functions passed as argument to function
 //~ void method() = null;
 
-void method2() {
-	static int i = 9;
-	//~ println( i += 2);
-	puti64( i += 2);
-	putchr('\n');
+//~ /+
+
+/+int postInc(int &a, int inc) {
+	result = a;
+	a += inc;
+}
+define postInc(int a) = postInc(a, 1);
+
+//~ int x = 0;
+//~ int x1 = postInc(x);
+//~ int x2 = postInc(x);
+//~ int x3 = postInc(x);
+// +/
+
+int method4() {}
+int method5(int x) {}
+
+//~ /+	the methods
+int method2(int x) {
 	//~ putstr("!alma a fa alatt nyári piros alma\n");
-}// +/
+	static int i = 0;
+	result = i += x;
+	println(result);
+}
+int method2() {result = method2(3);}
+int method3() {result = method2(2);}
+// +/
+
+/+	just call it
 static if (true) {
 	method2();
 	method2();
 	method2();
 }// +/
-/+static if (true) {		// TODO: without static
-	void method() = method2;
 
-	//~ void method() = null;
-	//~ method = method2;
-
-	method();
-	method();
-	method();
-}// +/
-
-//~ /+
-void methodCall(void method()) {
-	//~ putstr("!alma a fa alatt nyári piros alma\n");
-	if (method != null)
-		method();
+/+	call passed to another fun
+void methodCall(int method()) {
+	if (method != null) {
+		int n = method();
+	}
+	else println("(null)");
 }
-methodCall(method2);
+methodCall(method3);
+methodCall(method3);
 methodCall(null);
+
 //~ +/
+
+//~ /+	call as a reference
+void methodV() {method2(2);}
+//~ int method3() {}
+//~ static 
+if (true) {
+
+void method() = methodV;
+
+if (method != null) {
+	method();
+}
+//~ else println("(null)");
+}
+// +/
 
 //~ */
 
@@ -88,26 +162,6 @@ static int Z = 3;
 int x = 1;
 int y = 2;
 int z = 3;
-//~ */
-
-/* Test external Calls
-static int X = 912;
-void testCallBack0(int n) {
-	print("X = ");
-	println(X);
-	X += 0;
-}
-void testCallBack1(int n) {
-	print("X = ");
-	println(X);
-	X += 1;
-}
-void testCallBackn(int n) {
-	print("X = ");
-	println(X);
-	X += n;
-}
-setCallBack(testCallBackn);
 //~ */
 
 /* Test functions
@@ -130,7 +184,6 @@ setCallBack(106, korte);
 
 // */
 
-
 /* using strings
 
 long cikkId = 165;
@@ -139,18 +192,15 @@ long btetelId = 6398;
 double mennyiseg = 1;
 
 define strlen = 25;
-int8 val[strlen + 1];
+define char uint8; //%'%c'
+char val[strlen + 1];
 val[strlen] = 0;
 
 println("INSERT INTO gyariszam(cikk_id, mennyiseg, b_tetel_id, raktar_id, gyariszam) VALUES");
 for (int i = 0; i < 40; i += 1) {
 
-	for (int j = 0; j < strlen; j += 1) {
-		int c = random('a', 'z');
-		val[j] = c;
-	}
-		//~ val[j] = 'a' + random('z');
-		//~ val[j] = c;//random('a', 'z');
+	for (int j = 0; j < strlen; j += 1)
+		val[j] = random('a', 'z');
 
 	print("("); print(cikkId);
 	print(", "); print(mennyiseg);

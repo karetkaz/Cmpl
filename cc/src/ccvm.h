@@ -11,8 +11,6 @@
 #include "pvmc.h"
 #include <stdlib.h>
 
-#define DEBUGGING 15
-
 // maximum tokens in expressions & nest level
 #define TOKS 2048
 
@@ -75,6 +73,9 @@ enum {
 	decl_NoDefs = 0x100,		// disable type defs in decl.
 	decl_NoInit = 0x200,		// disable initialization. (disable)
 	decl_Ref = decl_NoDefs|decl_NoInit,
+
+	//~ decl_Var = decl_NoInit,					// parse variable declaration
+	//~ decl_Arg = decl_NoDefs|decl_NoInit,		// parse function argument / struct member
 
 	symn_call = 0x100,
 	symn_read = 0x200,
@@ -226,6 +227,7 @@ struct symn {				// type node
 
 	uint8_t	call:1;		// function / callable => (kind == TYPE_ref && args)
 	uint8_t	stat:1;		// static ?
+	uint8_t	glob:1;		// global
 	//~ uint8_t	load:1;		// indirect reference / eval param: "&": cast == TYPE_ref
 
 	//~ uint8_t	priv:1;		// private
@@ -233,7 +235,7 @@ struct symn {				// type node
 
 	//~ uint8_t	onst:1;		// stack  (val): replaced with (offs <= 0) ?(!stat)
 
-	uint32_t	xx_1:5;		// -Wpadded
+	uint32_t	xx_1:4;		// -Wpadded
 	uint16_t	xx_2;		// align
 	uint16_t	nest;		// declaration level
 	astn	init;		// VAR init / FUN body
@@ -248,16 +250,18 @@ struct symn {				// type node
 struct ccState {
 	state	s;
 	//~ symn	defs;		// definitions
+	symn	all;		// all symbols TODO:Temp
 	astn	root;		// statements
 	astn	jmps;		// jumps
 
-	symn	all;		// all symbols TODO:Temp
 	list	strt[TBLS];		// string table
 	symn	deft[TBLS];		// definitions: hashStack;
 
-	int		verb;		// verbosity
+	//~ int		verb;		// verbosity
 	int		warn;		// warning level
 	int		nest;		// nest level: modified by (enter/leave)
+	int		siff:1;		// inside a static if false
+	int		_pad:31;	// 
 
 	char*	file;	// current file name
 	int		line;	// current line number
@@ -300,26 +304,18 @@ struct vmState {
 	state	s;
 	int		opti;			// optimization levevel
 
-	unsigned int	px;			// exit point
 	unsigned int	pc;			// entry point / prev program counter
-	unsigned int	cs;			// code size
-	unsigned int	ds;			// data size
-
-	//~ unsigned int	ic;			// ?executed? / instruction count
-	//~ unsigned int	pi[2];		// previous instructions
+	unsigned int	px;			// exit point / program counter
 
 	unsigned int	ss;			// stack size / current stack size
 	unsigned int	sm;			// stack minimum size
 
+	unsigned int	ro;			// <= ro : read only region(meta data)
 	unsigned int	pos;		// current positin in buffer
-	//~ unsigned int	mark;
-	//~ unsigned int	_pad;
-	//~ unsigned long _cnt; // return (_end - _ptr);
-	//~ unsigned long _len; // return (_ptr - _mem);
-	//~ unsigned char *_ptr;
+
 	unsigned char *_end;
 	unsigned char *_mem;
-	unsigned char _beg[];
+	//~ unsigned char _beg[];
 };
 
 static inline int kindOf(astn ast) {return ast ? ast->kind : 0;}
@@ -379,7 +375,7 @@ symn install(ccState s, const char* name, int kind, int cast, unsigned size);
 symn declare(ccState s, int kind, astn tag, symn rtyp);
 
 //~ TODO: !!! args are linked in a list by next !!??
-symn lookup(ccState s, symn sym, astn ast/*, int deep*/, astn args);
+symn lookup(ccState s, symn sym, astn ast/*, int deep*/, astn args, int raise);
 
 //~ symn findsym(ccState s, symn in, char *name);
 //~ int findnzv(ccState s, char *name);

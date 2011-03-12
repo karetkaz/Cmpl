@@ -129,7 +129,7 @@ static void fputsym(FILE *fout, symn sym, int mode, int level) {
 			}*/
 
 			//~ fputsym(fout, arg, mode&~prQual, 0);
-			fputsym(fout, arg, prType, 0);
+			fputsym(fout, arg, prType|prArgs, 0);
 
 			if ((arg = arg->next))
 				fputstr(fout, ", ");
@@ -813,6 +813,9 @@ void dumpsym(FILE *fout, symn sym, int alma) {
 			fputsym(fout, ptr->type, prQual, 0);
 		}
 
+		if (ptr->kind != TYPE_def)
+			fputfmt(fout, ": %d[%c%d]", ptr->size, ptr->offs <= 0 ? '@' : '+', ptr->offs < 0 ? -ptr->offs : ptr->offs);
+
 		if (ptr->cast)
 			fputfmt(fout, ":[%t]", ptr->cast);
 
@@ -822,13 +825,16 @@ void dumpsym(FILE *fout, symn sym, int alma) {
 			fputast(fout, ptr->init, noIden | 1, 0xf0);
 		}
 
-		/*/ size or offset
+		/*/ size or/and offset
 		if (ptr->kind == TYPE_ref) {
 			if (ptr->offs < 0) {
 				fputfmt(fout, "[@%04xh]: ", -ptr->offs);
 			}
 			else
 				fputfmt(fout, "[@st(%d)]: ", ptr->offs);
+		}
+		else if (ptr->kind == TYPE_rec) {
+			fputfmt(fout, "%d[@%04xh]: ", ptr->size, ptr->offs < 0 ? -ptr->offs : ptr->offs);
 		}
 		else if (ptr->kind == EMIT_opc) {
 			fputfmt(fout, "[@%02xh]: ", ptr->size);
@@ -904,7 +910,7 @@ void dumpast(FILE *fout, astn ast, int level) {
 		fputast(fout, ast, level | 2, 0);
 }
 void dumpasm(FILE *fout, vmState s, int mode) {
-	fputasm(fout, s, s->pc, s->cs, mode);
+	fputasm(fout, s, s->pc, s->px, mode);
 }
 
 void dump2file(state s, char *file, dumpMode mode, char *text) {

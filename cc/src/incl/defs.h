@@ -169,8 +169,6 @@ OPCDEF(opc_task, 0x0d, 4, 0, +0, 1,	"task")		// arg.3: [code:16][data:8] task, [
 OPCDEF(opc_x0f,  0x0e, 0, 0, +0, 1,	"sync")		// wait, join, sync
 OPCDEF(opc_libc, 0x0f, 2, 0, +9, 1,	"libc")		// lib call
 //~ stk ========================================================================
-//~ OPCDEF(opc_ldc1, 0x10, 2, 0, +1, 1,	"ldc.i08")	// push(arg.1);			:2[…, a, b, c => […, a, b, c, 2;
-//~ OPCDEF(opc_ldc2, 0x11, 3, 0, +1, 1,	"ldc.i16")	// push(arg.2);			:2[…, a, b, c => […, a, b, c, 2;
 OPCDEF(opc__x10, 0x10, 5, 0, +1, 1,	NULL)
 OPCDEF(opc__x11, 0x11, 5, 0, +1, 1,	NULL)
 OPCDEF(opc_ldc4, 0x12, 5, 0, +1, 1,	"ldc.b32")	// push(arg.4);			:2[…, a, b, c => […, a, b, c, 2;
@@ -198,12 +196,12 @@ OPCDEF(opc_sti2, 0x26, 1, 2, -2, 1,	"sti.16")	// copy(sp(1) sp(0) 2);pop2;	[…,
 OPCDEF(opc_sti4, 0x27, 1, 2, -2, 1,	"sti.32")	// copy(sp(1) sp(0) 4);pop2;	[…, a, b, c => […, a
 OPCDEF(opc_sti8, 0x28, 1, 3, -3, 1,	"sti.64")	// copy(sp(1) sp(0) 8);pop3;	[…, a, b, c => […, a
 OPCDEF(opc_stiq, 0x29, 0, 5, -5, 1,	"sti.128")	// copy(sp(1) sp(0) 16);pop5;	[…, a, b, c => […, a
-OPCDEF(opc__2a,  0x2a, 0, 0,  0, 1,	"ldm.w")	// (32)
-OPCDEF(opc__2b,  0x2b, 0, 0,  0, 1,	"ldm.d")	// (64)
-OPCDEF(opc__2c,  0x2c, 0, 0,  0, 1,	"ldm.q")	// (128)
-OPCDEF(opc__2d,  0x2d, 0, 0,  0, 1,	"stm.w")	// 
-OPCDEF(opc__2e,  0x2e, 0, 0,  0, 1,	"stm.d")	// 
-OPCDEF(opc__2f,  0x2f, 0, 0,  0, 1,	"stm.q")	// 
+OPCDEF(opc_ld32, 0x2a, 4, 0, +1, 1,	"ldm.b32")	// (32)
+OPCDEF(opc_ld64, 0x2b, 4, 0, +2, 1,	"ldm.b64")	// (64)
+OPCDEF(opc__2c,  0x2c, 0, 0,  0, 1,	NULL)		//
+OPCDEF(opc_st32, 0x2d, 4, 1, -1, 1,	"stm.b32")	//
+OPCDEF(opc_st64, 0x2e, 4, 2, -2, 1,	"stm.b64")	//
+OPCDEF(opc__2f,  0x2f, 0, 0,  0, 1,	NULL)		//
 //~ bit[ 32] ===================================================================
 OPCDEF(b32_cmt,  0x30, 1, 1, -0, 1,	"b32.cmt")	// sp(0) = ~sp(0);
 OPCDEF(b32_and,  0x31, 1, 2, -1, 1,	"b32.and")	// sp(1).u32 &= sp(0).u32; pop;
@@ -212,7 +210,7 @@ OPCDEF(b32_xor,  0x33, 1, 2, -1, 1,	"b32.xor")	// sp(1).u32 ^= sp(0).u32; pop;
 OPCDEF(b32_shl,  0x34, 1, 2, -1, 1,	"b32.shl")	// sp(1).u32 <<= sp(0).u32; pop;
 OPCDEF(b32_shr,  0x35, 1, 2, -1, 1,	"b32.shr")	// sp(1).u32 >>= sp(0).u32; pop;
 OPCDEF(b32_sar,  0x36, 1, 2, -1, 1,	"b32.sar")	// sp(1).i32 >>= sp(0).i32; pop;
-OPCDEF(u32_i64,  0x37, 0, 1, -0, 1,	"u32.cvt2i64")
+OPCDEF(u32_i64,  0x37, 1, 1, -0, 1,	"u32.cvt2i64")
 OPCDEF(u32_clt,  0x38, 1, 2, -1, 1,	"u32.clt")	// sp(1).b32 = sp(1).u32 < sp(0).u32; pop;
 OPCDEF(u32_cgt,  0x39, 1, 2, -1, 1,	"u32.cgt")	// sp(1).b32 = sp(1).u32 > sp(0).u32; pop;
 OPCDEF(u32_mul,  0x3a, 1, 2, -1, 1,	"u32.mul")	// sp(1) *= sp(0); pop;
@@ -371,7 +369,7 @@ OPCDEF(p4d___f,  0x9f, 0, 0, -0, 1,	NULL)		//-Extended ops: idx, rev, imm, mem
 //~ bit, sxt, zxt, 
 //~ adc, sbb, mul, div, mod, rot, 
 
-/* opcode table
+/* opcodes
 	bit: b32
 	num: i32/i64/f32/f64
 	vec: .../p4i/p2l/p4f/p2d
@@ -432,13 +430,7 @@ OPCDEF(p4d___f,  0x9f, 0, 0, -0, 1,	NULL)		//-Extended ops: idx, rev, imm, mem
 	ext_sto = 2,		// 6 / mp[n] = opr(mp[n], sp(0)); pop(size & 1)				// a += b
 	ext_lod = 3,		// 6 / sp(0) = opr(sp(0), mp[n]); loc((1<<size)>>1[0, 1, 2, 4])		// (a+a) < c
 //~ */
-/* opc_ext argc = 1: [offs:3][size:5]		// extend (zero/sign)
-opc_zxt argc = 1: [offs:3][size:5]
-		((unsigned)val << (32 - (offs + size))) >> (32 - size);
 
-opc_sxt argc = 1: [offs:3][size:5]
-		((signed)val << (32 - (offs + size))) >> (32 - size);
-//~ */
 /* opc_p4i argc = 1: [sat:1][uns:1][typ:2][opc:4]
 	bit:[0-1, 2: type, unsigned]
 		00:	i8[16]

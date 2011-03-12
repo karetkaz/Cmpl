@@ -48,7 +48,7 @@ static inline int genVal(state s, astn ast) {
 	return cgen(s, ast, cast);
 }
 int cgen(state s, astn ast, int get) {
-	#if DEBUGGING
+	#if DEBUGGING > 1
 	int ipdbg = emitopc(s->vm, markIP);
 	#endif
 	struct astn tmp;
@@ -85,10 +85,16 @@ int cgen(state s, astn ast, int get) {
 				trace("%+k", ast);
 				return 0;
 			}
-			if (stpos > stkoffs(s->vm, 0)) {
-				warn(s, 1, s->cc->file, ast->line, "statement underflows stack: %+k", ast->stmt.stmt);
+			if (stpos != stkoffs(s->vm, 0)) {
+				if (stpos > stkoffs(s->vm, 0)) {
+					warn(s, 1, s->cc->file, ast->line, "statement underflows stack: %+k", ast->stmt.stmt);
+				}
+				/*if (get == TYPE_vid && !emitidx(s->vm, opc_drop, stpos)) {
+					trace("error");
+					return 0;
+				}// */
 			}
-			#if 0 && DEBUGGING
+			#if 0 && DEBUGGING > 1
 			debug("cgen[%t->%t](err, %+k)\n%7K", get, ret, ast, ast);
 			fputasm(stdout, s->vm, ipdbg, -1, 0x119);
 			#endif
@@ -98,12 +104,12 @@ int cgen(state s, astn ast, int get) {
 			int stpos = stkoffs(s->vm, 0);
 			emitint(s->vm, opc_line, ast->line);
 			for (ptr = ast->stmt.stmt; ptr; ptr = ptr->next) {
-				#if DEBUGGING
+				#if DEBUGGING > 1
 				ipdbg = emitopc(s->vm, markIP);
 				#endif
-				if (!cgen(s, ptr, TYPE_vid)) {
+				if (!cgen(s, ptr, TYPE_vid)) {		// we will free stack on scope close
 					error(s, ptr->line, "emmiting statement `%+k`", ptr);
-					#if DEBUGGING
+					#if DEBUGGING > 1
 					debug("cgen[%t->%t](err, %+k)\n%7K", get, ret, ptr, ptr);
 					fputasm(stdout, s->vm, ipdbg, -1, 0x119);
 					#endif
@@ -121,7 +127,7 @@ int cgen(state s, astn ast, int get) {
 			int jmpt = 0, jmpf = 0;
 			int tt = eval(&tmp, ast->stmt.test);
 
-			dieif(get != TYPE_vid, "FixMe");
+			//~ dieif(get != TYPE_any && get != TYPE_vid, "FixMe");
 			emitint(s->vm, opc_line, ast->line);
 
 			if (qual == QUAL_sta) {
@@ -289,7 +295,6 @@ int cgen(state s, astn ast, int get) {
 		//}
 		//{ OPER
 		case OPER_fnc: {	// '()' emit/call/cast
-			//~ TODO: we have some problems here
 			int stkret = stkoffs(s->vm, sizeOf(ast->type));
 			astn argv = ast->op.rhso;
 			symn var = linkOf(ast->op.lhso);
@@ -299,6 +304,7 @@ int cgen(state s, astn ast, int get) {
 			// inline
 			if (var && var->kind == TYPE_def) {
 				symn as = var->args;
+
 				if (argv) {
 					astn an = NULL;
 
@@ -314,20 +320,30 @@ int cgen(state s, astn ast, int get) {
 					an = argv;
 
 					while (an && as) {
+						int inlineArg = 0;
 						astn arg = an;
 
 						if (s->vm->opti && eval(&tmp, arg)) {
 							arg = &tmp;
 						}
 
-						if (an->kind == TYPE_ref || as->cast == TYPE_def) {
-						//~ if (an->kind == TYPE_ref || as->load) {
+						if (as->cast == TYPE_def) {
+							inlineArg = 1;
+						}
+						else if (an->kind == TYPE_ref) {
+							// static variables should not be inlined ?
+							// what about indirect references ?
+							//~ if (!an->id.link->stat)
+								inlineArg = 1;
+						}
+
+						if (inlineArg) {
 							as->kind = TYPE_def;
 							as->init = an;
 						}
 						else {
-							debug("arg(%k:[%t])", arg, as->type->cast);
-							if (!cgen(s, arg, TYPE_any)) {
+							trace("arg(%k:[%t]): %+k", arg, as->type->cast, ast);
+							if (!cgen(s, arg, as->cast)) {
 								trace("%+k", arg);
 								return 0;
 							}
@@ -337,6 +353,7 @@ int cgen(state s, astn ast, int get) {
 						an = an->next;
 						as = as->next;
 					}
+					dieif(an || as, "Error");
 				}
 
 				//~ debug("inline(%t):%t %+k = %+k", get, ret, ast, var->init);
@@ -346,12 +363,9 @@ int cgen(state s, astn ast, int get) {
 					trace("%+T", var);
 					return 0;
 				}
-				//~ debug("inline(%t):%t %+k = %+k", get, ret, ast, var->init);
-				//~ fputasm(stdout, s->vm, ipdbg, -1, 0x119);
-
 
 				if (stkret != stkoffs(s->vm, 0)) {
-					debug("%+T: (%d - %d): %+k", ast->type, stkoffs(s->vm, 0), stkret, ast);
+					trace("%+T: (%d - %d): %+k", ast->type, stkoffs(s->vm, 0), stkret, ast);
 					if (!emitidx(s->vm, opc_ldsp, stkret)) {	// get stack
 						trace("error");
 						return 0;
@@ -364,7 +378,7 @@ int cgen(state s, astn ast, int get) {
 						trace("%+k", ast);
 						return 0;
 					}
-				}// */
+				}
 
 				for (as = var->args; as; as = as->next) {
 					as->kind = TYPE_ref;
@@ -378,9 +392,12 @@ int cgen(state s, astn ast, int get) {
 			}
 
 			// push Result
-			if (var && var != ast->type && var != emit_opc && var->size && !emitint(s->vm, opc_spc, sizeOf(ast->type))) {
-				trace("%+k", ast);
-				return 0;
+			if (var && !isType(var) && var != emit_opc && var->call) {
+				//~ trace("call %-T: %-T: %d", var, ast->type, var->type->size);
+				if (sizeOf(var->type) && !emitint(s->vm, opc_spc, sizeOf(var->type))) {
+					trace("%+k", ast);
+					return 0;
+				}
 			}
 			// push args
 			if (argv) {
@@ -415,7 +432,7 @@ int cgen(state s, astn ast, int get) {
 				if (var == emit_opc) {	// emit()
 					debug("emit: %+k", ast);
 				}
-				if (var == type_vid) {	// void( ...)
+				if (var == type_vid) {	// void(...)
 					//~ debug("emit: %+k", ast);
 				}
 				else if (!argv || argv != ast->op.rhso)
@@ -494,8 +511,7 @@ int cgen(state s, astn ast, int get) {
 		} break; // */
 		case OPER_dot: {	// '.'
 			// TODO: this should work as indexing
-			//~ symn var = linkOf(ast->op.rhso, 0);
-			symn var = ast->op.rhso->id.link;
+			symn var = linkOf(ast->op.rhso);
 
 			if (istype(ast->op.lhso)) {
 				return cgen(s, ast->op.rhso, get);
@@ -602,7 +618,7 @@ int cgen(state s, astn ast, int get) {
 				return 0;
 			}
 			if (!emitint(s->vm, opc, ast->op.lhso->cst2)) {	// uint % int => u32.mod
-				trace("%+k", ast);
+				trace("opc__%02x:%+k", opc, ast);
 				return 0;
 			}
 
@@ -697,41 +713,6 @@ int cgen(state s, astn ast, int get) {
 				return 0;
 			}
 		} break;// */
-		/*case ASGN_set: {		// ':='
-			symn var = linkOf(ast->op.lhso);
-			int byref = 0;
-
-			if (var && (var->call || var->cast == TYPE_ref)) {
-				byref = 1;
-			}
-			if (!cgen(s, ast->op.rhso, byref ? TYPE_ref : ret)) {
-				trace("%+k", ast);
-				return 0;
-			}
-			if (get != TYPE_vid) {
-				// in case a = b = sum(2, 700);
-				// dupplicate the result
-				if (!emitint(s->vm, opc_ldsp, 0)) {
-					trace("%+k", ast);
-					return 0;
-				}
-				if (!emitint(s->vm, opc_ldi, sizeOf(var))) {
-					trace("%+k", ast);
-					return 0;
-				}
-			}
-			else
-				ret = get;
-
-			if (!cgen(s, ast->op.lhso, ASGN_set)) {
-				trace("%+k", ast);
-				return 0;
-			}
-			if (!emitint(s->vm, opc_sti, sizeOf(ast->type))) {
-				trace("%+k", ast);
-				return 0;
-			}
-		} break;// */
 		//}
 		//{ TVAL
 		//~ case TYPE_bit:	// no constant of this kind
@@ -774,12 +755,15 @@ int cgen(state s, astn ast, int get) {
 						return 0;
 					}
 
-					if (var->cast == TYPE_ref && !var->stat) {
+					if (var->cast == TYPE_ref && ast->cst2 != ASGN_set) {
 						if (!emitint(s->vm, opc_ldi, 4)) {
 							trace("%+k", ast);
 							return 0;
 						}
 					}
+
+					if (get == ASGN_set)
+						get = TYPE_ref;
 
 					if (get != TYPE_ref) {
 						if (!emitint(s->vm, opc_ldi, sizeOf(typ))) {
@@ -815,13 +799,13 @@ int cgen(state s, astn ast, int get) {
 		case TYPE_def: {					// new (var, func, define)
 			symn typ = ast->type;
 			symn var = ast->id.link;
-			int stktop = stkoffs(s->vm, sizeOf(typ));
+			int stktop = stkoffs(s->vm, sizeOf(var));
 			dieif(!typ || !var, "FixMe");
 
 			if (var->kind == TYPE_ref) {
 
 				// static variable or function.
-				if (var->offs < 0) {
+				if (0 && var->offs < 0) {
 					//~ trace("%-T", var);
 
 					/*// function
@@ -854,16 +838,19 @@ int cgen(state s, astn ast, int get) {
 					return ret;
 				}
 
-				if (typ->cast == TYPE_ref) {
+				/*if (typ->cast == TYPE_ref) {	// this should be not here
 					var->cast = TYPE_ref;
 					//~ var->load = 1;
-				}
+				}*/
 
 				if (var->init) {
 					astn val = var->init;
 
-					debug("new %T, %d", var, var->line);
-					if (val->type == emit_opc) {
+					//~ debug("new %T, %d", var, var->line);
+					if (var->call) {
+						ret = TYPE_ref;
+					}
+					else if (val->type == emit_opc) {
 						ret = get;
 					}
 					else if (val->type != typ && !promote(val->type, typ)) {
@@ -876,6 +863,7 @@ int cgen(state s, astn ast, int get) {
 
 					//~ debug("cast(`%+k`, %t):%t", ast, get, ret);
 
+					/*/ TEMP: get a pointer to the stack top: `pointer sp = emit;`
 					if (val->kind == EMIT_opc) {
 						if (!emitint(s->vm, opc_ldsp, 0)) {
 							trace("%+k", ast);
@@ -883,19 +871,32 @@ int cgen(state s, astn ast, int get) {
 						}
 						var->cast = TYPE_ref;
 					}
-					else if (!cgen(s, val, ret)) {
+					else // */
+					if (!cgen(s, val, ret)) {
 						trace("%+k", ast);
 						return 0;
 					}
 
-					var->offs = stkoffs(s->vm, 0);
-
-					if (stktop != var->offs && val->type != emit_opc) {
-						error(s, ast->line, "invalid initializer size: %d <> got(%d): `%+k`", stktop, var->offs, val);
-						return 0;
+					if (!var->offs) {
+						var->offs = stkoffs(s->vm, 0);
+						if (stktop != var->offs && val->type != emit_opc) {
+							error(s, ast->line, "invalid initializer size: %d <> got(%d): `%+k`", stktop, var->offs, val);
+							return 0;
+						}
+					}
+					else {
+						if (!genRef(s->vm, var->offs)) {
+							trace("%+k", ast);
+							return 0;
+						}
+						if (!emitint(s->vm, opc_sti, sizeOf(ast->type))) {
+							trace("%+k", ast);
+							return 0;
+						}
+						return ret;
 					}
 				}
-				else {		// static alloc a block of the size of the type;
+				else if (!var->offs) {		// static alloc a block of the size of the type;
 					int size = sizeOf(typ);
 					if (!emitint(s->vm, opc_spc, size)) {
 						trace("%+k", ast);
@@ -906,6 +907,9 @@ int cgen(state s, astn ast, int get) {
 						error(s, ast->line, "stack underflow", var->offs, size);
 						return 0;
 					}
+				}
+				else {
+					// static uninitialized variable
 				}
 				//~ return get;
 			}
@@ -1068,14 +1072,14 @@ int cgen(state s, astn ast, int get) {
 			default: goto errorcast2;
 		} break;
 		case TYPE_ref:
-			debug("cgen[%t->%t](%+k)\n%7K", ret, get, ast, ast);
+			trace("cgen[%t->%t](%+k)\n%7K", ret, get, ast, ast);
 			error(s, ast->line, "invalid rvalue: %+k", ast);
 			return 0;
 		default:
-			debug("invalid cast: [%d->%d](%t to %t) %k: '%+k'\n%+7K", ret, get, ret, get, ast, ast, ast);
+			trace("cgen[%t->%t](%+k)\n%7K", ret, get, ast, ast);
 			fatal("%d: unimplemented(cast for `%+k`, %t):%t", ast->line, ast, get, ret);
 		errorcast2:
-			debug("invalid cast(%d): [%d->%d](%t to %t) %k: '%+k'\n%+K", ast->line, ret, get, ret, get, ast, ast, ast);
+			trace("cgen[%t->%t](%+k)\n%7K", ret, get, ast, ast);
 			return 0;
 	}
 
@@ -1084,10 +1088,9 @@ int cgen(state s, astn ast, int get) {
 }
 
 int logfile(state s, char* file) {
-	if (s->closelog)
-		fclose(s->logf);
 
-	s->logf = 0;
+	logFILE(s, NULL);
+
 	if (file) {
 		s->logf = fopen(file, "wb");
 		if (!s->logf) return -1;
@@ -1112,7 +1115,7 @@ void ccSource(ccState cc, char *file, int line) {
 int gencode(state s, int level) {
 	ccState cc = s->cc;
 	vmState vm = s->vm;
-	int Lmain;//, Lfunc;
+	int Lmain;
 
 	if (s->errc)
 		return -2;
@@ -1132,8 +1135,7 @@ int gencode(state s, int level) {
 
 	//~ DONE: Data[RO]: metadata, strings
 	//~ TODO: Data[RO]: constants, functions, enums ...
-	vm->ds = vm->pos;
-
+	vm->ro = vm->pos;
 
 	// static vars & functions
 	if (1 && s->defs) {
@@ -1146,18 +1148,19 @@ int gencode(state s, int level) {
 		if (level >= 0) {
 			for (var = s->defs; var; var = var->next) {
 
+				if (var->stat)		// skip already static variables
+					continue;
+
 				if (var->kind != TYPE_ref)
 					continue;
 
-				debug("static global: %+T@%x", var, var->offs);
-				//~ if (var->stat)		// skip already static variables
-					//~ continue;
-
+				//~ debug("static global: %+T@%x", var, var->offs);
 				var->stat = 1;
+				var->glob = 1;
 			}
 		}// */
 
-		// loop through all symbols generate variables
+		// loop through all symbols generate static non global variables
 		for (var = s->defs; var; var = var->defs) {
 
 			if (!var->stat)
@@ -1174,15 +1177,15 @@ int gencode(state s, int level) {
 			if (var->call && var->cast != TYPE_ref)
 				continue;
 
-			debug("static variable: %+T@%x", var, -var->offs);
 			dieif(var->offs, "FixMe %-T@%d", var, var->offs);
 
 			var->offs = -vm->pos;
 			vm->pos += sizeOf(var);
 
-			if (var->init) {
+			if (var->init && !var->glob) {
 				//~ if variable was allocated
 				//~ make assigment from initializer
+				//~ TODO: do not create assigment !!!
 				astn st = newnode(cc, STMT_do);
 				astn id = newnode(cc, TYPE_ref);
 				astn op = newnode(cc, ASGN_set);
@@ -1205,16 +1208,14 @@ int gencode(state s, int level) {
 
 				op->cst2 = TYPE_vid;
 				//~ op->type = type_vid;
-				/*if (var->cast == TYPE_ref) {
+				//~ /*
+				if (var->cast == TYPE_ref) {
 					op->cst2 = TYPE_vid;
 					op->type = type_ptr;
 					id->type = type_ptr;
-					var->init->cst2 = id->cst2 = TYPE_ref;
-				}// */
-				//~ debug("%+7K", op);
-				/*if (!typecheck(cc, NULL, op)) {
-					debug("%+3K", op);
-					fatal("FixMe");
+					var->init->cst2 = TYPE_ref;
+					if (var->call)
+						id->cst2 = ASGN_set;
 				}// */
 
 				dieif(!cc->root || cc->root->kind != STMT_beg, "FixMe");
@@ -1231,7 +1232,7 @@ int gencode(state s, int level) {
 				var->init = NULL;
 				lend = st;
 			}// */
-
+			trace("static variable: %+T@%x:%d", var, -var->offs, sizeOf(var));
 		}
 
 		if (lbeg && lend) {
@@ -1246,13 +1247,13 @@ int gencode(state s, int level) {
 		// loop through all symbols generate functions
 		for (var = s->defs; var; var = var->defs) {
 
-			if (!var->stat)// || var->offs)	//here we set the length of arguments.
-				continue;
-
-			if (var == null_ref)
+			if (!var->stat)
 				continue;
 
 			if (!var->call)
+				continue;
+
+			if (var == null_ref)
 				continue;
 
 			if (var->kind != TYPE_ref) {
@@ -1260,8 +1261,6 @@ int gencode(state s, int level) {
 				continue;
 			}
 
-			//~ debug("`%T` code", var);
-			debug("static function: %+T@%x", var, -var->offs);
 			if (var->call && var->cast != TYPE_ref) {
 				//~ int seg = emitopc(s->vm, markIP);
 
@@ -1285,7 +1284,13 @@ int gencode(state s, int level) {
 					error(s, 0, "invalid jump: `%k`", cc->jmps);
 					cc->jmps = cc->jmps->next;
 				}
+
+				//~ debug("function @%d: %+T\n%7K", -var->offs, var, var->init);
+				//~ debug("function @%d: %-T", -var->offs, var, var->init);
 				//~ fputasm(stderr, vm, seg, -1, 0x129);
+
+				//~ trace("static function: %+T@%x", var, -var->offs);
+				var->init = NULL;
 			}
 		}
 	}
@@ -1306,8 +1311,8 @@ int gencode(state s, int level) {
 
 	//~ dumpast(stdout, cc->root, 0x7f);
 
+	// program entry point
 	vm->pc = Lmain;
-	vm->cs = vm->pos - Lmain;
 
 	#if DEBUGGING > 1
 	vmInfo(stdout, s->vm);
@@ -1344,16 +1349,22 @@ static void install_emit(ccState cc, int mode) {
 		v2d = install(cc, "v2d", TYPE_rec, TYPE_rec, 16);		// TODO: ???
 		ref = install(cc, "ref", TYPE_rec, TYPE_ref, 4);
 		val = install(cc, "val", TYPE_rec, TYPE_rec, -1);
-		//~ symn vid = install(cc, "void", TYPE_rec, TYPE_vid, 0))) ;
 
 		installex(cc, "nop", EMIT_opc, opc_nop, type_vid, NULL);
 		installex(cc, "not", EMIT_opc, opc_not, type_bol, NULL);
-		installex(cc, "set", EMIT_opc, opc_set1, type_vid, intnode(cc, 1));
 		installex(cc, "pop", EMIT_opc, opc_drop, type_vid, intnode(cc, 4));
-		installex(cc, "call", EMIT_opc, opc_call, type_vid, NULL);
 
+		installex(cc, "set", EMIT_opc, opc_set1, type_vid, intnode(cc, 1));
 		installex(cc, "set0", EMIT_opc, opc_set1, type_vid, intnode(cc, 0));
 		installex(cc, "set1", EMIT_opc, opc_set1, type_vid, intnode(cc, 1));
+
+		if ((typ = install(cc, "dupp", TYPE_rec, TYPE_vid, 0))) {
+			enter(cc, NULL);
+			installex(cc, "x1", EMIT_opc, opc_dup1, type_i32, intnode(cc, 0));
+			installex(cc, "x2", EMIT_opc, opc_dup2, type_i64, intnode(cc, 0));
+			installex(cc, "x4", EMIT_opc, opc_dup4, type_vid, intnode(cc, 0));
+			typ->args = leave(cc, typ);
+		}
 
 		if ((typ = install(cc, "ldz", TYPE_rec, TYPE_vid, 0))) {
 			enter(cc, NULL);
@@ -1362,13 +1373,26 @@ static void install_emit(ccState cc, int mode) {
 			installex(cc, "x4", EMIT_opc, opc_ldz4, type_vid, intnode(cc, 0));
 			typ->args = leave(cc, typ);
 		}
-		if ((typ = install(cc, "dupp", TYPE_rec, TYPE_vid, 0))) {
+		if ((typ = install(cc, "load", TYPE_rec, TYPE_vid, 0))) {
 			enter(cc, NULL);
-			installex(cc, "x1", EMIT_opc, opc_dup1, type_i32, intnode(cc, 0));
-			installex(cc, "x2", EMIT_opc, opc_dup2, type_i64, intnode(cc, 0));
-			installex(cc, "x4", EMIT_opc, opc_dup4, type_vid, intnode(cc, 0));
+			installex(cc, "b8",   EMIT_opc, opc_ldi1, type_vid, NULL);
+			installex(cc, "b16",  EMIT_opc, opc_ldi2, type_vid, NULL);
+			installex(cc, "b32",  EMIT_opc, opc_ldi4, type_vid, NULL);
+			installex(cc, "b64",  EMIT_opc, opc_ldi8, type_vid, NULL);
+			installex(cc, "b128", EMIT_opc, opc_ldiq, type_vid, NULL);
 			typ->args = leave(cc, typ);
 		}
+		if ((typ = install(cc, "store", TYPE_rec, TYPE_vid, 0))) {
+			enter(cc, NULL);
+			installex(cc, "b8",   EMIT_opc, opc_sti1, type_vid, NULL);
+			installex(cc, "b16",  EMIT_opc, opc_sti2, type_vid, NULL);
+			installex(cc, "b32",  EMIT_opc, opc_sti4, type_vid, NULL);
+			installex(cc, "b64",  EMIT_opc, opc_sti8, type_vid, NULL);
+			installex(cc, "b128", EMIT_opc, opc_stiq, type_vid, NULL);
+			typ->args = leave(cc, typ);
+		}// */
+
+		installex(cc, "call", EMIT_opc, opc_call, type_vid, NULL);
 
 		if ((typ = u32) != NULL) {
 			enter(cc, NULL);
@@ -1389,7 +1413,7 @@ static void install_emit(ccState cc, int mode) {
 			installex(cc, "xor", EMIT_opc, b32_xor, type_u32, NULL);
 			installex(cc, "shl", EMIT_opc, b32_shl, type_u32, NULL);
 			installex(cc, "shr", EMIT_opc, b32_shr, type_u32, NULL);
-			installex(cc, "toi64", EMIT_opc, u32_i64, type_i64, NULL);
+			//~ installex(cc, "toi64", EMIT_opc, u32_i64, type_i64, NULL);
 			u32->args = leave(cc, u32);
 		}
 		if ((typ = i32) != NULL) {
@@ -1590,10 +1614,8 @@ ccState ccInit(state s, int mode) {
 	if (mode & creg_emit)
 		install_emit(cc, mode);
 
-	//~ type_arr = install(cc, "array", TYPE_ptr, 0, 0);
-
-	type_ptr = installtyp(s, ".ref", 4);
-	//~ type_ptr = install(cc, "pointer", TYPE_ptr, 0, 0);
+	//~ type_arr = install(cc, ".array", TYPE_rec | symn_read, TYPE_ref, 4);
+	type_ptr = install(cc, ".pointer", TYPE_rec | symn_read, TYPE_ref, 4);
 	type_str = install(cc, "string", TYPE_rec | symn_read, TYPE_ref, 4);
 
 	//~ type_chr = installex(cc, "char", TYPE_def, 0, type_i08, NULL);
@@ -1607,7 +1629,6 @@ ccState ccInit(state s, int mode) {
 	installex(cc, "false",  TYPE_def, 0, type_bol, intnode(cc, 0));
 
 	null_ref = installex(cc, "null", TYPE_ref | symn_read | symn_stat, 0, type_ptr, NULL);
-	//~ null_ref = installvar(s, "null", type_ref, 0);
 
 	//} */// types
 
@@ -1669,8 +1690,10 @@ vmState vmInit(state s) {
 		//~ vm->cs = vm->pc = 0;
 		//~ vm->ss = vm->sm = 0;
 		vm->_mem = (unsigned char *)s->_mem;
-		vm->pos = vm->_beg - vm->_mem;
-		vm->_end = vm->_beg + size - sizeof(struct vmState);
+		//~ vm->pos = vm->_beg - vm->_mem;
+		//~ vm->_end = vm->_beg + size - sizeof(struct vmState);
+		vm->pos = ((unsigned char*)vm + sizeof(struct vmState)) - vm->_mem;
+		vm->_end = (unsigned char*)vm + size;
 	}
 	return s->vm = vm;
 }
@@ -1699,7 +1722,7 @@ symn findsym(ccState s, symn in, char *name) {
 	ast.kind = TYPE_ref;
 	//ast.id.hash = rehash(name);
 	ast.id.name = name;
-	return lookup(s, in ? in : s->s->defs, &ast, NULL);
+	return lookup(s, in ? in : s->s->defs, &ast, NULL, 1);
 }
 symn findref(state s, void *ptr) {
 	int offs;

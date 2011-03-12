@@ -23,15 +23,14 @@
  * .
  ? separate struct and unoin declaration.
  *	in case of structures create a new constructor with all members; fix padding on stack.
- ?	in case of unions create a constructors with all members? or with the bigger.
+ ?	in case of unions create a constructors with the bigger member.
 
  * default ctor from:
- *  	(basic types): ptr, basic types			// int(ptr), float(ptr), int(float), float(int)
+ *  	(basic types): ptr, basic types			// int32(ptr) := emit(int32, ldi.b32, ref(ptr));, float(ptr), int(float), float(int)
  *  	(struct types): ptr, fields as param	// struct X{int a; float b;} => X(int a, float b) = push(this.a = a, this.b = b)
- *  	(class types): box,
- * define var struct variant {u32 Typeid || This || delegate; ptr Offset;};
- * define var struct variant {const TypeInfo &Class; const pointer Value;};
- * arr: arr{uint Length; type *Values;}
+
+ * define var: struct var {typename typeRef; pointer dataRef;};
+ * Array: Array {uint Length; type *Values;}
  * 
  * define void(var &a) = var.invoke(a.class, ".dtor", a);
  * define void(uint32 &a) = void(0); // try to do nothing
@@ -59,6 +58,7 @@ int a = emit;	// top of stack by ref
 operator -(int rhs) = emit(i32.neg, i32(rhs));
 operator (int lhs) + (int rhs) = emit(i32.add, i32(rhs), i32(lhs));
 operator (string lhs) [int rhs] = emit(int, ldi.byte, i32.mad, i32(1), i32(rhs), ref(lhs));
+operator (string lhs) [int rhs] (int setValue) = emit(int, ldi.byte, i32.mad, i32(1), i32(rhs), ref(lhs));
 // */
 
 enum Test {
@@ -68,13 +68,10 @@ enum Test {
 	Call = ~0;
 	Misc = ~0;
 	Math = ~0;
-	//~ Math = -1;
-} // */
+}
 static if (Test.Emit) {
-/+
-emit is something like:
+/+ emit is something like:
 #pragma aux (parm [edi] [eax] [edx] value [edi] modify exact [xmm0]) vecmul =\
-	".686"\
 	"movps	xmm0, [eax]"\
 	"mulps	xmm0, [edx]"\
 	"movups	[edi], xmm0"
@@ -85,6 +82,7 @@ float64 res2 = emit(f64.neg, f64(math.pi));
 float32 res3 = emit(float32, f32(math.pi));
 hex32 res4 = emit(int32, f32(math.pi));
 
+//~ these won't work because of global vars, use option: -O-2
 //~ emit(f64(math.pi));
 //~ int32 i32 = emit();
 //~ hex32 x32 = emit();
@@ -173,6 +171,7 @@ define mul(Complex &a, Complex &b) = emit(Complex,
 Complex Ca = Complex(3., 4.);
 Complex Cb = Complex(2., 5.);
 Complex Cc = mul(Ca, Cb);
+//~ Complex Cc = mul(Complex(3., 4.), Complex(2., 5.));
 
 static if (times2exec > 0) {
 	for (int i = 0; i < times2exec; i += 1) {
@@ -261,7 +260,7 @@ if (var) {
 //~ +/
 }
 static if (Test.Bits & 8) {		// compute bits
-//~ /+
+/+
 void bitsget(bool signed, int size, int64 &min, int64 &max) {
 	int64 mask = bits.shr(int64(-1), -size);
 
@@ -272,7 +271,6 @@ void bitsget(bool signed, int size, int64 &min, int64 &max) {
 int bitsize = 14;
 hex64 min;
 hex64 max;
-
 hex64 umin;
 hex64 umax;
 
@@ -349,7 +347,8 @@ struct color: 0 {
 }
 
 define color(int32 c) = emit(color, i32(c));
-//~ define color(int32 a, int32 r, int32 g, int32 b) = emit(color, i32((a << 24) | (r << 16) | (g << 8) | (b)));
+//~ define cxff(int32 c) = int32(c & 0xff);
+//~ define color(int32 a, int32 r, int32 g, int32 b) = emit(color, i32((cxff(a) << 24) | (cxff(r) << 16) | (cxff(g) << 8) | cxff(b)));
 
 define color(int32 a, int32 r, int32 g, int32 b) = color(int32(((a & 0xff) << 24) | ((r & 0xff) << 16) | ((g & 0xff) << 8) | ((b & 0xff) << 0)));
 define color(float64 a, float64 r, float64 g, float64 b) = color(int32(a*255), int32(r*255), int32(g*255), int32(b*255));
@@ -384,7 +383,7 @@ static if (Test.Misc & 1) {			// matrix multiply
 // Matrix Multiply
 
 define dim = 20;
-define scalar float32;
+define scalar float32;		// %%f
 scalar m1[dim][dim];
 scalar m2[dim][dim];
 scalar m3[dim][dim];

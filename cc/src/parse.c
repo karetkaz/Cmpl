@@ -1079,10 +1079,10 @@ static int skip(ccState s, int kind) {
 	return 1;
 }
 
-static int skiptok(ccState s, int kind, int report) {
+static int skiptok(ccState s, int kind, int raise) {
 	if (!skip(s, kind)) {
 		//~ int report = 0;
-		if (report)
+		if (raise)
 			error(s->s, s->line, "`%t` excepted, got `%k`", kind, peek(s));
 
 		switch (kind) {
@@ -1167,11 +1167,12 @@ static inline int ptrgtz(void* ptr) {return (long)ptr > 0;}
 static astn args(ccState s, int mode);
 
 static symn type(ccState s) {
-	symn def = 0;
+	symn def = NULL;
 	astn tok;
 	while ((tok = peekTok(s, TYPE_ref))) {		// type(.type)*
-		symn sym = typecheck(s, def, tok);	// TODO: use: lookup
-		if (!istype(tok)) {
+		symn loc = def ? def->args : s->deft[tok->id.hash];
+		symn sym = lookup(s, loc, tok, NULL, 0);
+		if (!isType(sym)) {
 			def = NULL;
 			break;
 		}
@@ -1320,8 +1321,8 @@ static astn spec(ccState s/* , int qual */) {
 	astn tok, tag = 0;
 	symn def = 0;
 
-	int offs = 0;
-	int size = 0;
+	//~ int offs = 0;
+	//~ int size = 0;
 
 	/*if (skip(s, OPER_kwd)) {			// operator
 		skiptok(s, STMT_do, 1);
@@ -1484,73 +1485,108 @@ static astn spec(ccState s/* , int qual */) {
 				//~ return 0;
 			}
 		}
-		if (skip(s, STMT_beg)) {			// body
+		if (skiptok(s, STMT_beg, 1)) {		// body
 			int salign = -1;
+			astn args = NULL;
 			def = declare(s, TYPE_rec, tag, type_vid);
 			redefine(s, def);
 			enter(s, tag);
+
 			while (!skip(s, STMT_end)) {
-				symn typ = type(s);
-				tok = next(s, TYPE_ref);
-
-				//~ /* this is optional:
-				// id ':' typename | struct | enum '{' ... '}'
-
-				if (typ) {
-					//~ skiptok(s, STMT_do, 1);
+				if (0 && test(s, TYPE_rec)) {		// nested structs
+					spec(s);
+					continue;
 				}
-				else if (tok && skip(s, PNCT_cln)) {		// var: typename | struct | enum {...}
-					astn nn = spec(s);
-					if (nn == NULL) {
-						typ = type(s);
-						if (typ == NULL) {
-							return 0;
+				else {
+
+					symn typ = type(s);
+					tok = next(s, TYPE_ref);
+
+					/* this is optional:
+					// id ':' typename | struct | enum '{' ... '}'
+
+					if (typ) {
+						//~ skiptok(s, STMT_do, 1);
+					}
+					else if (tok && skip(s, PNCT_cln)) {		// var: typename | struct | enum {...}
+						astn nn = spec(s);
+						if (nn == NULL) {
+							typ = type(s);
+							if (typ == NULL) {
+								return 0;
+							}
 						}
+						else {
+							dieif(nn->kind == TYPE_ref, "FixMe");
+							typ = nn->type;//id.link;
+						}
+						//~ skip(s, STMT_do);
 					}
 					else {
-						dieif(nn->kind == TYPE_ref, "FixMe");
-						typ = nn->type;//id.link;
+						error(s->s, s->line, "declaration expected ");
+					} // */
+
+					if (tok && typ) {
+						symn ref = declare(s, TYPE_ref, tok, typ);
+						skiptok(s, STMT_do, 1);
+						redefine(s, ref);
+
+						if (salign < typ->pack)
+							salign = typ->pack;
+
+						s->pfmt = ref;
+
+						if (args != NULL) {
+							astn lhs = args;
+							args = newnode(s, OPER_com);
+							args->op.lhso = lhs;
+							args->op.rhso = tok;
+						}
+						else {
+							args = tok;
+						}
+						tok->type = typ;
+						tok->id.link = ref;
+						tok->cst2 = typ->cast;
 					}
-					//~ skip(s, STMT_do);
-				}
-				else {
-					error(s->s, s->line, "declaration expected ");
-				} // */
-
-				if (tok && typ) {
-					symn ref = 0;
-					int align = (typ->pack && (pack < typ->pack)) ? pack : typ->pack;
-					offs = padded(offs, align);
-					ref = declare(s, TYPE_ref, tok, typ);
-					skiptok(s, STMT_do, 1);
-					redefine(s, ref);
-					ref->offs = offs;
-					offs += typ->size;
-					if (size < offs) size = offs;
-					if (salign < typ->pack)
-						salign = typ->pack;
-
-					s->pfmt = ref;
-					/*s->doc = (char*)-1;
-					//if (peek(s) && (itn)s->doc > 0) {
-					if (peek(s) && ptrgtz(s->doc)) {
-						ref->pfmt = s->doc;
-						s->doc = 0;
-					}*/
-				}
-				else {
-					error(s->s, s->line, "declaration expected in[%T]", def);
-					if (!skiptok(s, STMT_do, 0))
-						break;
+					else {
+						error(s->s, s->line, "declaration expected in[%T]", def);
+						if (!skiptok(s, STMT_do, 0))
+							break;
+					}
 				}
 			}
-			def->size = size;
+
 			def->cast = TYPE_rec;	// TODO: RemMe
 			def->args = leave(s, def);
+			def->size = fixargs(def, pack, 0);
 
 			if (def->args) {
+				//~ if (salign == -1)
+					//~ salign = pack;
 				def->pack = salign;
-				//~ debug("Align(%T): %d", def, def->algn);
+				if (0 && pack == 4 && args) {		// create default ctor
+					symn sym = install(s, def->name, TYPE_ref, TYPE_def, 0);
+					astn init = newnode(s, OPER_fnc);
+					//~ libc->op.lhso = emit_opc->tag;
+					init->op.lhso = newnode(s, TYPE_ref);
+					init->op.lhso->id.link = emit_opc;
+					init->op.lhso->id.name = "emit";
+					init->op.lhso->id.hash = -1;
+					init->type = def;
+					//~ init->cst2 = def->cast;
+					init->op.rhso = args;
+
+					sym->kind = TYPE_def;
+					sym->init = init;
+					sym->type = def;
+					sym->call = 1;
+					sym->args = def->args;
+					
+					for(sym = def->args; sym; sym = sym->next) {
+						sym->cast = TYPE_def;
+					}
+				}// */
 			}
 
 			if (!def->args && !def->type)
@@ -1559,7 +1595,8 @@ static astn spec(ccState s/* , int qual */) {
 		tag->type = def;
 	}
 	//else if (skip(s, TYPE_cls));		// class
-	else if (skip(s, ENUM_kwd)) {		// enum
+	else if (skip(s, ENUM_kwd)) {		// enum: TODO: this si WRONG
+		int offs = 0;
 		symn base = type_i32;			// bydef
 
 		tag = next(s, TYPE_ref);
@@ -1638,7 +1675,7 @@ static astn stmt(ccState s, int mode) {
 	// check statement construct
 	if ((ast = next(s, QUAL_par))) {		// 'parallel' ('for' | '{')
 		switch (test(s, 0)) {
-			//~ case STMT_beg:	// parallel task
+			case STMT_beg:		// parallel task
 			case STMT_for:		// parallel loop
 				qual = QUAL_par;
 				break;
@@ -1647,7 +1684,7 @@ static astn stmt(ccState s, int mode) {
 		}
 		ast = 0;
 	}
-	else if ((ast = next(s, QUAL_sta))) {		// 'static' ('if' | 'for')
+	else if ((ast = next(s, QUAL_sta))) {	// 'static' ('if' | 'for')
 		switch (test(s, 0)) {
 			case STMT_for:		// loop unroll
 			case STMT_if:		// compile time if
@@ -1691,6 +1728,7 @@ static astn stmt(ccState s, int mode) {
 	}
 	else if ((ast = next(s,  STMT_if))) {	// if (...)
 		int newscope = 1;
+		int siffalse = s->siff;
 		skiptok(s, PNCT_lp, 1);
 		ast->stmt.test = expr(s, TYPE_bit);
 		skiptok(s, PNCT_rp, 1);
@@ -1702,6 +1740,8 @@ static astn stmt(ccState s, int mode) {
 			}
 			if (constbol(&ift))
 				newscope = 0;
+
+			s->siff = newscope;
 			/* skip syntax checking ?
 			else if (skip(s, STMT_beg)) {
 				int lb = 1;
@@ -1732,6 +1772,8 @@ static astn stmt(ccState s, int mode) {
 
 		if (newscope)
 			leave(s, NULL);			// TODO: destruct
+
+		s->siff = siffalse;
 	}
 	else if ((ast = next(s, STMT_for))) {	// for (...)
 		enter(s, ast);
@@ -2086,20 +2128,7 @@ astn decl(ccState s, int Rmode) {
 				// create a def for each argument, and a result
 
 				enter(s, tag);
-				for (tmp = ref->args; tmp; tmp = tmp->next)
-					installex(s, tmp->name, TYPE_def, 0, tmp, NULL);
 				result = installex(s, "result", TYPE_ref, 0, typ, NULL);
-
-				ref->init = stmt(s, 1);
-
-				if (ref->init == NULL) {
-					ref->init = newnode(s, STMT_beg);
-					ref->init->type = type_vid;
-				}
-
-				leave(s, NULL);
-				backTok(s, newnode(s, STMT_do));
-
 				if (result) {
 					//~ symn tmp;
 
@@ -2118,12 +2147,60 @@ astn decl(ccState s, int Rmode) {
 					debug("res:%T@sp[%d]", result, ref->offs - result->offs);
 					// */
 				}
+				for (tmp = ref->args; tmp; tmp = tmp->next) {
+					symn ref = installex(s, tmp->name, TYPE_ref, 0, NULL, NULL);
+					if (ref != NULL) {
+
+						//~ symn	decl;		// declared in
+						//~ symn	next;		// symbols on table/args
+
+						//~ uint8_t	pack;		// alignment
+						//~ uint8_t	kind;		// TYPE_ref || TYPE_xxx
+
+						//~ uint8_t	read:1;		// const / no override
+
+						//~ uint32_t	xx_1:5;		// -Wpadded
+						//~ uint16_t	xx_2;		// align
+						//~ uint16_t	nest;		// declaration level
+						//~ astn	init;		// VAR init / FUN body
+
+						//~ // list(scoping)
+						//~ astn	used;
+						//~ symn	defs;		// symbols on stack/all
+						//~ char*	pfmt;		// print format
+
+
+						ref->type = tmp->type;
+						ref->args = tmp->args;
+						ref->cast = tmp->cast;
+						ref->call = tmp->call;
+						ref->size = tmp->size;
+						ref->offs = tmp->offs;
+						ref->stat = 0;
+						if (ref->call) {
+							ref->cast = TYPE_ref;
+						}
+					}// */
+				}
+
+				ref->init = stmt(s, 1);
+
+				if (ref->init == NULL) {
+					ref->init = newnode(s, STMT_beg);
+					ref->init->type = type_vid;
+				}
+
+				leave(s, NULL);
+				backTok(s, newnode(s, STMT_do));
+
 				stat = 1;
+
 			}
 			else if (skip(s, ASGN_set)) {
 				ref->init = expr(s, TYPE_def);
-				if (ref->call)
+				if (ref->call) {
 					byref = TYPE_ref;
+				}
 			}
 		}
 
@@ -2199,7 +2276,7 @@ astn unit(ccState cc, int mode) {
 //}
 
 int parse(ccState cc, srcType mode) {
-	astn newRoot, oldRoot = NULL;//cc->root;
+	astn newRoot, oldRoot = cc->root;
 
 	dieif(mode != 0, "FixMe");
 
@@ -2225,8 +2302,8 @@ int parse(ccState cc, srcType mode) {
 	}//*/
 
 	if ((newRoot = unit(cc, 0))) {
-		//~ debug("%-k", oldRoot);
 		/*if (oldRoot) {
+			// this one makes a lot of {}'s
 
 			dieif(oldRoot->next, "FixMe");
 			//~ dieif(cc->root->kind != STMT_beg, "FixMe(%+k)", cc->root);
@@ -2238,11 +2315,17 @@ int parse(ccState cc, srcType mode) {
 			newRoot->type = type_vid;
 		}*/
 
-		if (oldRoot && oldRoot->kind == STMT_beg && oldRoot->stmt.stmt) {
+		if (oldRoot) {
+
 			astn end = oldRoot->stmt.stmt;
-			if (1 && (newRoot->kind == STMT_beg && newRoot->stmt.stmt)) {
+
+			dieif(oldRoot->kind != STMT_beg || !oldRoot->stmt.stmt, "FixMe");
+
+			if (newRoot->kind == STMT_beg && newRoot->stmt.stmt) {
+				astn beg = newRoot;
 				dieif(newRoot->next, "FixMe");
-				newRoot = newRoot->stmt.stmt;
+				newRoot = beg->stmt.stmt;
+				eatnode(cc, beg);
 			}
 
 			while (end->next)
