@@ -39,7 +39,7 @@
 #endif
 
 #else
-#define pdbg(__DBG, __FILE, __LINE, msg, ...) do {fputfmt(stderr, "%s:%d: "__DBG": %s: "msg"\n", __FILE, __LINE, __func__, ##__VA_ARGS__); fflush(stdout); fflush(stderr);} while(0)
+#define pdbg(__DBG, __FILE, __LINE, msg, ...) do {fputfmt(stderr, "%s:%d: "__DBG": %s: "msg"\n", __FILE, __LINE, __PRETTY_FUNCTION__, ##__VA_ARGS__); fflush(stdout); fflush(stderr);} while(0)
 #define fatal(msg...) do {pdbg("fatal", __FILE__, __LINE__, msg); abort();} while(0)
 #define dieif(__EXP, msg...) do {if (__EXP) fatal(msg);} while(0)
 
@@ -300,24 +300,6 @@ struct ccState {
 	char	*_beg;
 	char	*_end;
 };
-struct vmState {
-	state	s;
-	int		opti;			// optimization levevel
-
-	unsigned int	pc;			// entry point / prev program counter
-	unsigned int	px;			// exit point / program counter
-
-	unsigned int	ss;			// stack size / current stack size
-	unsigned int	sm;			// stack minimum size
-
-	unsigned int	ro;			// <= ro : read only region(meta data)
-	unsigned int	pos;		// current positin in buffer
-
-	unsigned char *_end;
-	unsigned char *_mem;
-	//~ unsigned char _beg[];
-};
-
 static inline int kindOf(astn ast) {return ast ? ast->kind : 0;}
 
 extern symn type_vid;
@@ -349,12 +331,9 @@ void fputfmt(FILE *fout, const char *msg, ...);
 // program error
 void perr(state s, int level, const char *file, int line, const char *msg, ...);
 
-//~ void dumpasm(FILE *fout, vmState s, int offs);
 void dumpsym(FILE *fout, symn sym, int mode);
-void dumpast(FILE *fout, astn ast, int mode);
-void dumpxml(FILE *fout, astn ast, int lev, const char* text, int level);
-
-void dump2file(state s, char *file, dumpMode mode, char *text);
+//~ void dumpast(FILE *fout, astn ast, int mode);
+//~ void dumpxml(FILE *fout, astn ast, int lev, const char* text, int level);
 
 // Runtime / global state
 void* getmem(state s, int size, unsigned clear);
@@ -389,7 +368,7 @@ int fixargs(symn sym, int align, int spos);
 
 int castOf(symn typ);
 int castTo(astn ast, int tyId);
-//~ int castTy(astn ast, symn type);
+int castTy(astn ast, symn type);
 symn promote(symn lht, symn rht);
 
 int32_t constbol(astn ast);
@@ -418,6 +397,7 @@ symn leave(ccState s, symn def);
  * @todo should use the exec funtion, for the generated code.
  */
 int eval(astn res, astn ast);
+int mkcon(astn ast, symn type);
 
 /** generate byte code for tree
  * @param ast: tree to be generated
@@ -431,21 +411,20 @@ int cgen(state s, astn ast, int get);
  * @param ...: argument
  * @return: program counter
  */
-int emit(vmState, int opc, stkval arg);
-int emitopc(vmState, int opc);
-int emiti32(vmState, int32_t arg);
-int emiti64(vmState, int64_t arg);
-int emitf32(vmState, float32_t arg);
-int emitf64(vmState, float64_t arg);
-int emitptr(vmState, void* arg);
+int emit(state, int opc, stkval arg);
+int emitopc(state, int opc);
+int emiti32(state, int32_t arg);
+int emiti64(state, int64_t arg);
+int emitf32(state, float32_t arg);
+int emitf64(state, float64_t arg);
+int emitptr(state, void* arg);
 
-int emitidx(vmState, int opc, int pos);
-int emitint(vmState, int opc, int64_t arg);
-int fixjump(vmState s, int src, int dst, int stc);
+int emitidx(state, int opc, int pos);
+int emitint(state, int opc, int64_t arg);
+int fixjump(state, int src, int dst, int stc);
 
 // returns the stack size
-int stkoffs(vmState s, int size);
-//int testopc(vmState s, int opc);
+int stkoffs(state s, int size);
 
 int isType(symn sym);
 int istype(astn ast);
@@ -460,7 +439,7 @@ unsigned rehash(const char* str, unsigned size);
 //TODO: Rename: reg str
 char *mapstr(ccState s, char *name, unsigned size/* = -1U*/, unsigned hash/* = -1U*/);
 
-void fputasm(FILE *fout, vmState s, int mark, int len, int mode);
+void fputasm(FILE *fout, state s, int beg, int end, int mode);
 
 //~ void printargcast(astn arg);
 

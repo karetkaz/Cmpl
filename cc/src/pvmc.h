@@ -10,7 +10,6 @@ typedef double float64_t;
 typedef struct astn *astn;		// tree
 typedef struct symn *symn;		// symbols
 typedef struct ccState *ccState;
-typedef struct vmState *vmState;
 
 enum CompilerRegister {
 	creg_base = 0x0000,				// type system only
@@ -44,13 +43,27 @@ typedef struct state {
 	void* data;		// user data for execution
 
 	ccState cc;		// compiler enviroment
-	vmState vm;		// execution enviroment	// TODO: RemMe vm has the state
+	struct {
+		int		opti;			// optimization levevel
 
+		unsigned int	pc;			// entry point / prev program counter
+		unsigned int	px;			// exit point / program counter
+
+		unsigned int	ss;			// stack size / current stack size
+		unsigned int	sm;			// stack minimum size
+
+		unsigned int	ro;			// <= ro : read only region(meta data)
+		unsigned int	pos;		// current positin in buffer
+
+		unsigned char *_end;
+	}vm;
+
+	// todo a memory manager
 	long _cnt;
-	//~ unsigned char *_end;
-	//~ unsigned char *_mem;
-	char *_ptr;
-	char _mem[];
+	unsigned char *_ptr;
+	unsigned char _mem[];
+	//~ void *_free;	// list of free memory
+	//~ void *_used;	// list of used memory
 } *state;
 typedef enum {
 	srcText = 0x00,		// file / buffer
@@ -95,12 +108,14 @@ symn installtyp(state s, const char* name, unsigned size);
 //~ symn installvar(state s, const char* name, symn type, unsigned offset);
 
 // execute
+int libCallExitDebug(state s);
+int libCallExitQuiet(state s);
 int (*libcSwapExit(state s, int libc(state)))(state);
 typedef int (*dbgf)(state s, int pu, void *ip, long* sptr, int scnt);
 //~ int dbgCon(state, int, void*, long*, int);				// 
 
-//~ int exec(vmState, unsigned cc, dbgf dbg);
-int exec(vmState, dbgf dbg);
+int exec(state, dbgf dbg);
+int vmCall(state, symn fun, ...);
 
 // output
 void dump(state, dumpMode, char* text, ...);
@@ -111,10 +126,8 @@ ccState ccOpen(state, srcType, char* source);
 
 int ccDone(state);
 
-vmState vmInit(state);
-int vmCall(state, symn fun, ...);
+state vmInit(state);
 //~ int vmOpen(state, char* source);
-void vmInfo(FILE*, vmState s);
 //~ int vmDone(state s);		// what should do this
 
 void ccSource(ccState, char *file, int line);
@@ -148,4 +161,4 @@ static inline void* popval(state s, void* dst, int size) { return memcpy(dst, po
 //~ static inline void retf64(state s, float64_t val) { setret(float64_t, s, val); }
 #endif
 
-#define DEBUGGING 1
+#define DEBUGGING 15

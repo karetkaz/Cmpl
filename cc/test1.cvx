@@ -61,7 +61,7 @@ operator (string lhs) [int rhs] = emit(int, ldi.byte, i32.mad, i32(1), i32(rhs),
 operator (string lhs) [int rhs] (int setValue) = emit(int, ldi.byte, i32.mad, i32(1), i32(rhs), ref(lhs));
 // */
 
-enum Test {
+const Test {
 	Emit = ~0;
 	Bits = ~0;
 	Type = ~0;
@@ -70,7 +70,7 @@ enum Test {
 	Math = ~0;
 }
 static if (Test.Emit) {
-/+ emit is something like:
+/+ emit should be such as:
 #pragma aux (parm [edi] [eax] [edx] value [edi] modify exact [xmm0]) vecmul =\
 	"movps	xmm0, [eax]"\
 	"mulps	xmm0, [edx]"\
@@ -119,13 +119,13 @@ define mad(int32 size, int32 index, int32 offset) = emit(u32.mad, i32(size), i32
 }
 static if (Test.Emit & 0x04) {	// Complex
 
-enum prog {
+const prog {
 	sisd = 1;
 	simd = 2;
 }
 
-define test2exec = prog.simd;
-define times2exec = -1000000;
+const test2exec = prog.simd;
+const times2exec = -1000000;
 
 struct Complex {
 	float64 re;
@@ -419,7 +419,7 @@ for (int i = 0; i < dim; i += 1) {
 } // */
 static if (Test.Math) {
 static if (Test.Math & 1) {
-	double x = -math.pi / 2;
+	double x = -math.pi / 4;
 	double absx = abs(x);
 	double sinx = sin(x);
 	double cosx = cos(x);

@@ -1,7 +1,7 @@
 OUTOBJ=-o
 OUTEXE=-o
 CFLAGS=-g3 -ggdb
-#~ CFLAGS=-g0 -O2
+CFLAGS=-g0 -O2
 COPTS=-c -Wall -Wpadded
 LIBS=-lm
 CCC=gcc -m32
@@ -32,8 +32,6 @@ OBJS=\
 	$(OBJDIR)tree.o\
 	$(OBJDIR)type.o\
 	$(OBJDIR)ccvm.o
-
-#~ all:build
 
 rebuild:clean build
 

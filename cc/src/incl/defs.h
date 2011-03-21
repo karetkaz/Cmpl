@@ -13,7 +13,7 @@ TOKDEF(TYPE_rec, 0xff, 0, "struct") // union := struct:0
 
 TOKDEF(TYPE_ref, 0x00, 0, ".ref")		// variable / function
 
-//~ TOKDEF(QUAL_con, 0xff, 0, "const")	// constant
+TOKDEF(QUAL_con, 0xff, 0, "const")	// constant
 TOKDEF(QUAL_sta, 0xff, 0, "static")
 TOKDEF(QUAL_par, 0xff, 0, "parallel")
 //~ TOKDEF(QUAL_syn, 0xff, 0, "synchronized")
@@ -94,7 +94,7 @@ TOKDEF(PNCT_cln, 0x00, 0, ":")			// colon
 
 TOKDEF(UNIT_def, 0xff, 0, "module")
 //~ TOKDEF(OPER_kwd, 0xff, 0, "operator")
-TOKDEF(ENUM_kwd, 0xff, 0, "enum")		// keyword onlyd
+//~ TOKDEF(ENUM_kwd, 0xff, 0, "enum")		// keyword onlyd
 
 /*
 //~ Operators ==================================================================

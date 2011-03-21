@@ -70,25 +70,33 @@ case opc_jmpi: NEXT(1, 1, -1) {
 } break;
 case opc_task: NEXT(4, 0, -0) {
 #ifdef EXEC
-	if (mtt(vm, doTask, pu, 0))
+	if (mtt(s, doTask, pu, 0))
 		pu->ip += ip->rel - 4;
 	STOP(error_opc, 1);
 #endif
 } break;
 case opc_libc: NEXT(2, libcvec[ip->idx].chk, -libcvec[ip->idx].pop) {
 #ifdef EXEC
-	vm->s->argv = (char *)sp;
-	vm->s->retv = (char*)((stkptr)sp + libcvec[ip->idx].pop);
-	vm->s->func = libcvec[ip->idx].sym->offs;
-	vm->s->libc = libcvec[ip->idx].sym;
+	int exitCode;
+	unsigned char *s_vm_end = s->vm._end;
+	s->argv = (char *)sp;
+	s->retv = (char*)((stkptr)sp + libcvec[ip->idx].pop);
+	s->func = libcvec[ip->idx].sym->offs;
+	s->libc = libcvec[ip->idx].sym;
 	if (ip->idx == 0) {
 		struct symn module = {0};
-		module.args = vm->s->defs;
-		vm->s->retv = (char *)st;
-		vm->s->libc = &module;
+		module.args = s->defs;
+		s->retv = (char *)st;
+		s->libc = &module;
 	}
-	libcvec[ip->idx].call(vm->s);
-	STOP(stop_vm, ip->idx == 0);		// Halt();
+
+	// if a libcall calls a vmCall keep the stack
+	s->vm._end = (unsigned char *)sp;
+	exitCode = libcvec[ip->idx].call(s);
+	s->vm._end = s_vm_end;
+
+	STOP(error_opc, exitCode != 0);
+	STOP(stop_vm, ip->idx == 0);			// Halt();
 #endif
 } break;
 //}
@@ -227,35 +235,35 @@ case opc_ldiq: NEXT(1, 1, +3) {
 case opc_sti1: NEXT(1, 2, -2) {
 #ifdef EXEC
 	//~ STOP(error_mem, mp + SP(0, i4) > (memptr)st);
-	STOP(error_mem, SP(0, i4) < vm->ro);
+	STOP(error_mem, SP(0, i4) < s->vm.ro);
 	STOP(error_mem, SP(0, i4) > ms);
 	MP(SP(0, i4), i1) = SP(1, i4);
 #endif
 } break;
 case opc_sti2: NEXT(1, 2, -2) {
 #ifdef EXEC
-	STOP(error_mem, SP(0, i4) < vm->ro);
+	STOP(error_mem, SP(0, i4) < s->vm.ro);
 	STOP(error_mem, SP(0, i4) > ms);
 	MP(SP(0, i4), i2) = SP(1, i4);
 #endif
 } break;
 case opc_sti4: NEXT(1, 2, -2) {
 #ifdef EXEC
-	STOP(error_mem, SP(0, i4) < vm->ro);
+	STOP(error_mem, SP(0, i4) < s->vm.ro);
 	STOP(error_mem, SP(0, i4) > ms);
 	MP(SP(0, i4), i4) = SP(1, i4);
 #endif
 } break;
 case opc_sti8: NEXT(1, 3, -3) {
 #ifdef EXEC
-	STOP(error_mem, SP(0, i4) < vm->ro);
+	STOP(error_mem, SP(0, i4) < s->vm.ro);
 	STOP(error_mem, SP(0, i4) > ms);
 	MP(SP(0, i4), i8) = SP(1, i8);
 #endif
 } break;
 case opc_stiq: NEXT(1, 5, -5) {
 #ifdef EXEC
-	STOP(error_mem, SP(0, i4) < vm->ro);
+	STOP(error_mem, SP(0, i4) < s->vm.ro);
 	STOP(error_mem, SP(0, i4) > ms);
 	MP(SP(0, i4), x16) = SP(1, x16);
 #endif
@@ -277,14 +285,14 @@ case opc_ld64: NEXT(4, 0, +2) {
 } break;
 case opc_st32: NEXT(4, 1, -1) {
 #ifdef EXEC
-	STOP(error_mem, ip->rel < vm->ro);
+	STOP(error_mem, ip->rel < s->vm.ro);
 	STOP(error_mem, ip->rel > ms);
 	MP(ip->rel, i4) = SP(0, i4);
 #endif
 } break;
 case opc_st64: NEXT(4, 2, -2) {
 #ifdef EXEC
-	STOP(error_mem, ip->rel < vm->ro);
+	STOP(error_mem, ip->rel < s->vm.ro);
 	STOP(error_mem, ip->rel > ms);
 	MP(ip->rel, i8) = SP(0, i8);
 #endif

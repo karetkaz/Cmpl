@@ -498,6 +498,174 @@ static void fputast(FILE *fout, astn ast, int mode, int level) {
 	}
 	else fputstr(fout, "(null)");
 }
+static void dumpxml(FILE *fout, astn ast, int lev, const char* text, int level) {
+	if (!ast) {
+		return;
+	}
+
+	//~ fputfmt(fout, "%I<%s id='%d' oper='%?k'", lev, text, ast->kind, ast);
+	fputfmt(fout, "%I<%s id='%t' oper='%?k'", lev, text, ast->kind, ast);
+	if (level & prType) fputfmt(fout, " type='%?T'", ast->type);
+	if (level & prCast) fputfmt(fout, " cast='%?t'", ast->cst2);
+	if (level & prLine) fputfmt(fout, " line='%d'", ast->line);
+	if (level & prArgs) fputfmt(fout, " stmt='%?+k'", ast);
+	switch (ast->kind) {
+		default: fatal("FixMe");
+		//{ STMT
+		case STMT_do: {
+			fputfmt(fout, ">\n");
+			dumpxml(fout, ast->stmt.stmt, lev+1, "expr", level);
+			fputfmt(fout, "%I</%s>\n", lev, text);
+		} break;
+		case STMT_beg: {
+			astn l = ast->stmt.stmt;
+			fputfmt(fout, ">\n");
+			for (l = ast->stmt.stmt; l; l = l->next)
+				dumpxml(fout, l, lev + 1, "stmt", level);
+			fputfmt(fout, "%I</%s>\n", lev, text);
+		} break;
+		case STMT_if: {
+			fputfmt(fout, ">\n");
+			dumpxml(fout, ast->stmt.test, lev + 1, "test", level);
+			dumpxml(fout, ast->stmt.stmt, lev + 1, "then", level);
+			dumpxml(fout, ast->stmt.step, lev + 1, "else", level);
+			fputfmt(fout, "%I</%s>\n", lev, text);
+		} break;
+		case STMT_for: {
+			fputfmt(fout, ">\n");
+			dumpxml(fout, ast->stmt.init, lev + 1, "init", level);
+			dumpxml(fout, ast->stmt.test, lev + 1, "test", level);
+			dumpxml(fout, ast->stmt.step, lev + 1, "step", level);
+			dumpxml(fout, ast->stmt.stmt, lev + 1, "stmt", level);
+			fputfmt(fout, "%I</stmt>\n", lev);
+		} break;
+		case STMT_brk:
+			fputfmt(fout, " />\n");
+			break;
+		//}
+		//{ OPER
+		case OPER_fnc: {		// '()'
+			astn arg = ast->op.rhso;
+			fputfmt(fout, ">\n");
+			if (arg) {
+				while (arg && arg->kind == OPER_com) {
+					dumpxml(fout, arg->op.rhso, lev + 1, "push", level);
+					arg = arg->op.lhso;
+				}
+				dumpxml(fout, arg, lev + 1, "push", level);
+			}
+			dumpxml(fout, ast->op.lhso, lev + 1, "call", level);
+			fputfmt(fout, "%I</%s>\n", lev, text);
+		} break;
+		case OPER_dot:		// '.'
+		case OPER_idx:		// '[]'
+
+		case OPER_pls:		// '+'
+		case OPER_mns:		// '-'
+		case OPER_cmt:		// '~'
+		case OPER_not:		// '!'
+
+		case OPER_add:		// '+'
+		case OPER_sub:		// '-'
+		case OPER_mul:		// '*'
+		case OPER_div:		// '/'
+		case OPER_mod:		// '%'
+
+		case OPER_shl:		// '>>'
+		case OPER_shr:		// '<<'
+		case OPER_and:		// '&'
+		case OPER_ior:		// '|'
+		case OPER_xor:		// '^'
+
+		case OPER_equ:		// '=='
+		case OPER_neq:		// '!='
+		case OPER_lte:		// '<'
+		case OPER_leq:		// '<='
+		case OPER_gte:		// '>'
+		case OPER_geq:		// '>='
+
+		case OPER_lnd:		// '&&'
+		case OPER_lor:		// '||'
+		case OPER_sel:		// '?:'
+
+		case ASGN_set: {		// '='
+			fputfmt(fout, ">\n");
+			//~ if (ast->kind == OPER_sel)
+			dumpxml(fout, ast->op.test, lev + 1, "test", level);
+			dumpxml(fout, ast->op.lhso, lev + 1, "lval", level);
+			dumpxml(fout, ast->op.rhso, lev + 1, "rval", level);
+			fputfmt(fout, "%I</%s>\n", lev, text, ast->kind, ast->type, ast);
+		} break;
+		//}*/
+		//{ TVAL
+		case EMIT_opc:
+			fputfmt(fout, " />\n", text);
+			break;
+		case TYPE_rec:
+			fputfmt(fout, ">ERROR</%s>\n", text);
+			break;
+
+		case TYPE_int:
+		case TYPE_flt:
+		case TYPE_str:
+			fputfmt(fout, ">%k</%s>\n", ast, text);
+			break;
+
+		//~ case TYPE_ref: fputfmt(fout, ">%t[%T]</%s>\n", ast->id.link ? ast->id.link->kind : 0, ast->id.link, text); break;
+		case TYPE_ref: {
+			symn ref = ast->id.link;
+			fputfmt(fout, ">%-T</%s>\n", ast->id.link, text);
+			if (ref && ref->kind == TYPE_def && ref->init) {
+				dumpxml(fout, ref->init, lev + 1, "init", level);
+			}
+		} break;
+		/*case TYPE_def: {
+			symn var = ast->id.link;
+			if (var && var->init) {
+				fputfmt(fout, ">\n");
+				dumpxml(fout, var->init, lev + 1, "init", level);
+				fputfmt(fout, "%I</%s>\n", lev, text);
+			}
+			else
+				fputfmt(fout, "/>\n");
+		} break;*/
+		case TYPE_def: {
+			symn var = ast->id.link;
+			if (var && (var->args || var->init))
+				fputfmt(fout, ">\n");
+			else
+				fputfmt(fout, " />\n");
+
+			if (var && var->args) {
+				symn def = var->args;
+				for (def = var->args; def; def = def->next) {
+					fputfmt(fout, "%I<def id='%t' name='%+T'", lev + 1, def->kind, def);
+					if (level & prType) fputfmt(fout, " type='%?T'", def->type);
+					//~ if (level & prCast) fputfmt(fout, " cast='%?t'", ast->cst2);
+					if (level & prLine) fputfmt(fout, " line='%d'", def->line);
+					if (level & prArgs && def->init) fputfmt(fout, " stmt='%T = %?+k'", def, def->init);
+					if (def->init) {
+						fputfmt(fout, ">\n");
+						dumpxml(fout, def->init, lev + 2, "init", level);
+						fputfmt(fout, "%I</def>\n", lev + 1);
+					}
+					else
+						fputfmt(fout, "/>\n");
+				}
+			}// */
+
+			if (var && var->init) {
+				//~ fputfmt(fout, ">\n");
+				dumpxml(fout, var->init, lev + 1, "init", level);
+			}
+
+			if (var && (var->args || var->init))
+				fputfmt(fout, "%I</%s>\n", lev, text);
+
+		} break;
+		//}
+	}
+}
 
 static char* fmtuns(char *dst, int max, int prc, int radix, uint64_t num) {
 	char *ptr = dst + max;
@@ -902,38 +1070,6 @@ void perr(state s, int level, const char *file, int line, const char *msg, ...) 
 }
 
 //{ temp & debug ---------------------------------------------------------------
-void dumpast(FILE *fout, astn ast, int level) {
-	if ((level & 0x0f) == 0x0f)
-		dumpxml(fout, ast, 0, "root", level);
-	else
-		//~ fputast(fout, ast, 2, -1);
-		fputast(fout, ast, level | 2, 0);
-}
-void dumpasm(FILE *fout, vmState s, int mode) {
-	fputasm(fout, s, s->pc, s->px, mode);
-}
-
-void dump2file(state s, char *file, dumpMode mode, char *text) {
-	FILE *fout = stdout;
-	int level = mode & 0xff;
-
-	if (file)
-		fout = fopen(file, "w");
-
-	dieif(!fout, "cannot open file '%s'", file);
-
-	if (text != NULL)
-		fputfmt(fout, text);
-
-	switch (mode & dumpMask) {
-		default: fatal("FixMe");
-		case dump_ast: dumpast(fout, s->cc->root, level); break;
-		case dump_sym: dumpsym(fout, s->defs, level); break;
-		case dump_asm: dumpasm(fout, s->vm, level); break;
-	}
-	if (file)
-		fclose(fout);
-}
 void dump(state s, dumpMode mode, char *text, ...) {
 	FILE *logf = s ? s->logf : stdout;
 	int level = mode & 0xff;
@@ -943,22 +1079,47 @@ void dump(state s, dumpMode mode, char *text, ...) {
 
 	switch (mode & dumpMask) {
 		default: fatal("FixMe");
-		case dump_ast:
+		case dump_ast: {
 			if (text != NULL)
 				fputfmt(logf, text);
-			dumpast(logf, s->cc->root, level);
-			break;
+			if ((level & 0x0f) == 0x0f)
+				dumpxml(logf, s->cc->root, 0, "root", level);
+			else
+				fputast(logf, s->cc->root, level | 2, 0);
+		} break;
 
-		case dump_sym:
+		case dump_sym: {
+			symn glob = s->defs;
+
 			if (text != NULL)
 				fputfmt(logf, text);
-			dumpsym(logf, s->defs, level);
-			break;
+
+			if ((level & 0x0f) == 0x0f) {
+				while (glob) {
+					dumpsym(logf, glob, 0);
+					glob = glob->defs;
+				}
+			}
+			else {
+				dumpsym(logf, glob, level & 0x0ff);
+			}
+		} break;
 
 		case dump_asm:
 			if (text != NULL)
 				fputfmt(logf, text);
-			dumpasm(logf, s->vm, level);
+			if (mode & 0x80) {
+				symn var;
+				for (var = s->defs; var; var = var->next) {
+					if (var->kind == TYPE_ref && var->call) {
+						fputfmt(logf, "%-T\n", var);
+						fputasm(logf, s, -var->offs, -var->offs + var->size, mode);
+					}
+				}
+			}
+			fputfmt(logf, "init:\n");
+			fputasm(logf, s, s->vm.pc, s->vm.px, mode);
+			//~ dumpasm(logf, s, level);
 			break;
 
 		case dump_txt: {
@@ -971,172 +1132,4 @@ void dump(state s, dumpMode mode, char *text, ...) {
 	}
 }
 
-void dumpxml(FILE *fout, astn ast, int lev, const char* text, int level) {
-	if (!ast) {
-		return;
-	}
-
-	//~ fputfmt(fout, "%I<%s id='%d' oper='%?k'", lev, text, ast->kind, ast);
-	fputfmt(fout, "%I<%s id='%t' oper='%?k'", lev, text, ast->kind, ast);
-	if (level & prType) fputfmt(fout, " type='%?T'", ast->type);
-	if (level & prCast) fputfmt(fout, " cast='%?t'", ast->cst2);
-	if (level & prLine) fputfmt(fout, " line='%d'", ast->line);
-	if (level & prArgs) fputfmt(fout, " stmt='%?+k'", ast);
-	switch (ast->kind) {
-		default: fatal("FixMe");
-		//{ STMT
-		case STMT_do: {
-			fputfmt(fout, ">\n");
-			dumpxml(fout, ast->stmt.stmt, lev+1, "expr", level);
-			fputfmt(fout, "%I</%s>\n", lev, text);
-		} break;
-		case STMT_beg: {
-			astn l = ast->stmt.stmt;
-			fputfmt(fout, ">\n");
-			for (l = ast->stmt.stmt; l; l = l->next)
-				dumpxml(fout, l, lev + 1, "stmt", level);
-			fputfmt(fout, "%I</%s>\n", lev, text);
-		} break;
-		case STMT_if: {
-			fputfmt(fout, ">\n");
-			dumpxml(fout, ast->stmt.test, lev + 1, "test", level);
-			dumpxml(fout, ast->stmt.stmt, lev + 1, "then", level);
-			dumpxml(fout, ast->stmt.step, lev + 1, "else", level);
-			fputfmt(fout, "%I</%s>\n", lev, text);
-		} break;
-		case STMT_for: {
-			fputfmt(fout, ">\n");
-			dumpxml(fout, ast->stmt.init, lev + 1, "init", level);
-			dumpxml(fout, ast->stmt.test, lev + 1, "test", level);
-			dumpxml(fout, ast->stmt.step, lev + 1, "step", level);
-			dumpxml(fout, ast->stmt.stmt, lev + 1, "stmt", level);
-			fputfmt(fout, "%I</stmt>\n", lev);
-		} break;
-		case STMT_brk:
-			fputfmt(fout, " />\n");
-			break;
-		//}
-		//{ OPER
-		case OPER_fnc: {		// '()'
-			astn arg = ast->op.rhso;
-			fputfmt(fout, ">\n");
-			if (arg) {
-				while (arg && arg->kind == OPER_com) {
-					dumpxml(fout, arg->op.rhso, lev + 1, "push", level);
-					arg = arg->op.lhso;
-				}
-				dumpxml(fout, arg, lev + 1, "push", level);
-			}
-			dumpxml(fout, ast->op.lhso, lev + 1, "call", level);
-			fputfmt(fout, "%I</%s>\n", lev, text);
-		} break;
-		case OPER_dot:		// '.'
-		case OPER_idx:		// '[]'
-
-		case OPER_pls:		// '+'
-		case OPER_mns:		// '-'
-		case OPER_cmt:		// '~'
-		case OPER_not:		// '!'
-
-		case OPER_add:		// '+'
-		case OPER_sub:		// '-'
-		case OPER_mul:		// '*'
-		case OPER_div:		// '/'
-		case OPER_mod:		// '%'
-
-		case OPER_shl:		// '>>'
-		case OPER_shr:		// '<<'
-		case OPER_and:		// '&'
-		case OPER_ior:		// '|'
-		case OPER_xor:		// '^'
-
-		case OPER_equ:		// '=='
-		case OPER_neq:		// '!='
-		case OPER_lte:		// '<'
-		case OPER_leq:		// '<='
-		case OPER_gte:		// '>'
-		case OPER_geq:		// '>='
-
-		case OPER_lnd:		// '&&'
-		case OPER_lor:		// '||'
-		case OPER_sel:		// '?:'
-
-		case ASGN_set: {		// '='
-			fputfmt(fout, ">\n");
-			//~ if (ast->kind == OPER_sel)
-			dumpxml(fout, ast->op.test, lev + 1, "test", level);
-			dumpxml(fout, ast->op.lhso, lev + 1, "lval", level);
-			dumpxml(fout, ast->op.rhso, lev + 1, "rval", level);
-			fputfmt(fout, "%I</%s>\n", lev, text, ast->kind, ast->type, ast);
-		} break;
-		//}*/
-		//{ TVAL
-		case EMIT_opc:
-			fputfmt(fout, " />\n", text);
-			break;
-		case TYPE_rec:
-			fputfmt(fout, ">ERROR</%s>\n", text);
-			break;
-
-		case TYPE_int:
-		case TYPE_flt:
-		case TYPE_str:
-			fputfmt(fout, ">%k</%s>\n", ast, text);
-			break;
-
-		//~ case TYPE_ref: fputfmt(fout, ">%t[%T]</%s>\n", ast->id.link ? ast->id.link->kind : 0, ast->id.link, text); break;
-		case TYPE_ref: {
-			symn ref = ast->id.link;
-			fputfmt(fout, ">%-T</%s>\n", ast->id.link, text);
-			if (ref && ref->kind == TYPE_def && ref->init) {
-				dumpxml(fout, ref->init, lev + 1, "init", level);
-			}
-		} break;
-		/*case TYPE_def: {
-			symn var = ast->id.link;
-			if (var && var->init) {
-				fputfmt(fout, ">\n");
-				dumpxml(fout, var->init, lev + 1, "init", level);
-				fputfmt(fout, "%I</%s>\n", lev, text);
-			}
-			else
-				fputfmt(fout, "/>\n");
-		} break;*/
-		case TYPE_def: {
-			symn var = ast->id.link;
-			if (var && (var->args || var->init))
-				fputfmt(fout, ">\n");
-			else
-				fputfmt(fout, " />\n");
-
-			if (var && var->args) {
-				symn def = var->args;
-				for (def = var->args; def; def = def->next) {
-					fputfmt(fout, "%I<def id='%t' name='%+T'", lev + 1, def->kind, def);
-					if (level & prType) fputfmt(fout, " type='%?T'", def->type);
-					//~ if (level & prCast) fputfmt(fout, " cast='%?t'", ast->cst2);
-					if (level & prLine) fputfmt(fout, " line='%d'", def->line);
-					if (level & prArgs && def->init) fputfmt(fout, " stmt='%T = %?+k'", def, def->init);
-					if (def->init) {
-						fputfmt(fout, ">\n");
-						dumpxml(fout, def->init, lev + 2, "init", level);
-						fputfmt(fout, "%I</def>\n", lev + 1);
-					}
-					else
-						fputfmt(fout, "/>\n");
-				}
-			}// */
-
-			if (var && var->init) {
-				//~ fputfmt(fout, ">\n");
-				dumpxml(fout, var->init, lev + 1, "init", level);
-			}
-
-			if (var && (var->args || var->init))
-				fputfmt(fout, "%I</%s>\n", lev, text);
-
-		} break;
-		//}
-	}
-}
 //}

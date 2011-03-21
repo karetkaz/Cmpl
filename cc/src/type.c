@@ -59,10 +59,11 @@ symn installex(ccState s, const char* name, int kind, unsigned size, symn type, 
 
 		switch (kind & 0xff) {
 			default:
-				fatal("FixMe (%+k)", init);
+				fatal("FixMe (%t)", kind& 0xff);
 				return NULL;
 
 			// user type
+			case TYPE_arr:
 			case TYPE_rec:
 				def->offs = (char*)def - (char*)s->s->_mem;
 				//~ def->offs = (char*)def - (char*)s->_beg;
@@ -168,7 +169,8 @@ symn promote(symn lht, symn rht) {
 }
 
 static symn argsOf(astn arg) {
-	symn func = linkOf(arg);
+	symn func = arg->kind == TYPE_ref ? linkOf(arg) : NULL;
+	//~ symn func = linkOf(arg);
 	if (func && func->call)
 		return func->args;
 	return NULL;
@@ -522,8 +524,10 @@ int castOf(symn typ) {
 		//~ case TYPE_vid:
 			//~ return typ->kind;
 
-		case EMIT_opc:
 		case TYPE_arr:
+			return TYPE_ref;
+
+		case EMIT_opc:
 		case TYPE_rec:
 			return typ->cast;
 	}
@@ -1041,6 +1045,7 @@ int padded(int offs, int align) {
 int fixargs(symn sym, int align, int stbeg) {
 	symn arg;
 	int stdiff = 0;
+	int isCall = sym->call;
 	//~ int stbeg = sizeOf(sym->type);
 	for (arg = sym->args; arg; arg = arg->next) {
 		arg->size = sizeOf(arg);
@@ -1054,7 +1059,7 @@ int fixargs(symn sym, int align, int stbeg) {
 		//~ debug("sizeof(%-T):%d", arg, arg->offs);
 	}
 	//~ because args are evaluated from right to left
-	if (sym->call) {
+	if (isCall) {
 		for (arg = sym->args; arg; arg = arg->next) {
 			arg->offs = stdiff - arg->offs;
 		}

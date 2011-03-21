@@ -4,6 +4,12 @@
 #include <time.h>
 #include "ccvm.h"
 
+#ifdef __WATCOMC__
+//~ Warning! W124: Comparison result always 0
+//~ Warning! W201: Unreachable code
+//~ #pragma disable_message(124);
+#pragma disable_message(201);
+#endif
 const tok_inf tok_tbl[255] = {
 	#define TOKDEF(NAME, TYPE, SIZE, STR) {TYPE, SIZE, STR},
 	#include "incl/defs.h"
@@ -11,20 +17,12 @@ const tok_inf tok_tbl[255] = {
 };
 const opc_inf opc_tbl[255] = {
 	//#define OPCDEF(Name, Code, Size, Args, Push, Time, Mnem)
-	#define OPCDEF(NAME, CODE, SIZE, CHCK, DIFF, TIME, MNEM)\
-		{CODE, SIZE, CHCK, DIFF, MNEM},
+	#define OPCDEF(NAME, CODE, SIZE, CHCK, DIFF, TIME, MNEM) {CODE, SIZE, CHCK, DIFF, MNEM},
 	#include "incl/defs.h"
 	{0},
 };
 
-#ifdef __WATCOMC__
-//~ Warning! W124: Comparison result always 0
-//~ Warning! W201: Unreachable code
-//~ #pragma disable_message(124);
-#pragma disable_message(201);
-#endif
-
-static inline int genRef(vmState s, int offset) {
+static inline int genRef(state s, int offset) {
 	if (offset > 0)
 		return emitidx(s, opc_ldsp, offset);
 	return emitint(s, opc_ldcr, -offset);
@@ -41,7 +39,7 @@ static inline int genVal(state s, astn ast) {
 
 	cast = ast->cst2;
 
-	if (s->vm->opti && eval(&tmp, ast)) {
+	if (s->vm.opti && eval(&tmp, ast)) {
 		ast = &tmp;
 	}
 
@@ -49,7 +47,7 @@ static inline int genVal(state s, astn ast) {
 }
 int cgen(state s, astn ast, int get) {
 	#if DEBUGGING > 1
-	int ipdbg = emitopc(s->vm, markIP);
+	int ipdbg = emitopc(s, markIP);
 	#endif
 	struct astn tmp;
 	int ret = 0;
@@ -79,14 +77,14 @@ int cgen(state s, astn ast, int get) {
 
 		//{ STMT
 		case STMT_do:  {	// expr statement or decl or function body
-			int stpos = stkoffs(s->vm, 0);
-			emitint(s->vm, opc_line, ast->line);
+			int stpos = stkoffs(s, 0);
+			emitint(s, opc_line, ast->line);
 			if (!cgen(s, ast->stmt.stmt, TYPE_vid)) {
 				trace("%+k", ast);
 				return 0;
 			}
-			if (stpos != stkoffs(s->vm, 0)) {
-				if (stpos > stkoffs(s->vm, 0)) {
+			if (stpos != stkoffs(s, 0)) {
+				if (stpos > stkoffs(s, 0)) {
 					warn(s, 1, s->cc->file, ast->line, "statement underflows stack: %+k", ast->stmt.stmt);
 				}
 				/*if (get == TYPE_vid && !emitidx(s->vm, opc_drop, stpos)) {
@@ -101,23 +99,23 @@ int cgen(state s, astn ast, int get) {
 		} break;
 		case STMT_beg: {	// {}
 			astn ptr;
-			int stpos = stkoffs(s->vm, 0);
-			emitint(s->vm, opc_line, ast->line);
+			int stpos = stkoffs(s, 0);
+			emitint(s, opc_line, ast->line);
 			for (ptr = ast->stmt.stmt; ptr; ptr = ptr->next) {
 				#if DEBUGGING > 1
-				ipdbg = emitopc(s->vm, markIP);
+				ipdbg = emitopc(s, markIP);
 				#endif
 				if (!cgen(s, ptr, TYPE_vid)) {		// we will free stack on scope close
 					error(s, ptr->line, "emmiting statement `%+k`", ptr);
 					#if DEBUGGING > 1
 					debug("cgen[%t->%t](err, %+k)\n%7K", get, ret, ptr, ptr);
-					fputasm(stdout, s->vm, ipdbg, -1, 0x119);
+					fputasm(stdout, s, ipdbg, -1, 0x119);
 					#endif
 				}
 			}
 			//~ for (sym = ast->type; sym; sym = sym->next);	// destruct?
-			if (get == TYPE_vid && stpos != stkoffs(s->vm, 0)) {
-				if (!emitidx(s->vm, opc_drop, stpos)) {
+			if (get == TYPE_vid && stpos != stkoffs(s, 0)) {
+				if (!emitidx(s, opc_drop, stpos)) {
 					trace("error");
 					return 0;
 				}
@@ -128,7 +126,7 @@ int cgen(state s, astn ast, int get) {
 			int tt = eval(&tmp, ast->stmt.test);
 
 			//~ dieif(get != TYPE_any && get != TYPE_vid, "FixMe");
-			emitint(s->vm, opc_line, ast->line);
+			emitint(s, opc_line, ast->line);
 
 			if (qual == QUAL_sta) {
 				//~ debug("static if: `%k`: ", ast);
@@ -139,7 +137,7 @@ int cgen(state s, astn ast, int get) {
 				qual = 0;
 			}
 
-			if (tt && (s->vm->opti || ast->cst2 == QUAL_sta)) {	// static if then else
+			if (tt && (s->vm.opti || ast->cst2 == QUAL_sta)) {	// static if then else
 				astn gen = constbol(&tmp) ? ast->stmt.stmt : ast->stmt.step;
 				if (gen && !cgen(s, gen, TYPE_any)) {	// leave the stack
 					trace("%+k", gen);
@@ -151,7 +149,7 @@ int cgen(state s, astn ast, int get) {
 					trace("%+k", ast);
 					return 0;
 				}
-				if (!(jmpt = emitopc(s->vm, opc_jz))) {
+				if (!(jmpt = emitopc(s, opc_jz))) {
 					trace("%+k", ast);
 					return 0;
 				}
@@ -159,16 +157,16 @@ int cgen(state s, astn ast, int get) {
 					trace("%+k", ast);
 					return 0;
 				}
-				if (!(jmpf = emitopc(s->vm, opc_jmp))) {
+				if (!(jmpf = emitopc(s, opc_jmp))) {
 					trace("%+k", ast);
 					return 0;
 				}
-				fixjump(s->vm, jmpt, emitopc(s->vm, markIP), 0);
+				fixjump(s, jmpt, emitopc(s, markIP), 0);
 				if (!cgen(s, ast->stmt.step, TYPE_vid)) {
 					trace("%+k", ast);
 					return 0;
 				}
-				fixjump(s->vm, jmpf, emitopc(s->vm, markIP), 0);
+				fixjump(s, jmpf, emitopc(s, markIP), 0);
 			}
 			else if (ast->stmt.stmt) {							// if then
 				if (!cgen(s, ast->stmt.test, TYPE_bit)) {
@@ -176,7 +174,7 @@ int cgen(state s, astn ast, int get) {
 					return 0;
 				}
 				//~ if false skip THEN block
-				if (!(jmpt = emitopc(s->vm, opc_jz))) {
+				if (!(jmpt = emitopc(s, opc_jz))) {
 					trace("%+k", ast);
 					return 0;
 				}
@@ -184,7 +182,7 @@ int cgen(state s, astn ast, int get) {
 					trace("%+k", ast);
 					return 0;
 				}
-				fixjump(s->vm, jmpt, emitopc(s->vm, markIP), 0);
+				fixjump(s, jmpt, emitopc(s, markIP), 0);
 			}
 			else if (ast->stmt.step) {							// if else
 				if (!cgen(s, ast->stmt.test, TYPE_bit)) {
@@ -192,7 +190,7 @@ int cgen(state s, astn ast, int get) {
 					return 0;
 				}
 				//~ if true skip ELSE block
-				if (!(jmpt = emitopc(s->vm, opc_jnz))) {
+				if (!(jmpt = emitopc(s, opc_jnz))) {
 					trace("%+k", ast);
 					return 0;
 				}
@@ -200,59 +198,59 @@ int cgen(state s, astn ast, int get) {
 					trace("%+k", ast);
 					return 0;
 				}
-				fixjump(s->vm, jmpt, emitopc(s->vm, markIP), 0);
+				fixjump(s, jmpt, emitopc(s, markIP), 0);
 			}
 		} break;
 		case STMT_for: {
 			astn jl = s->cc->jmps;
 			int jstep, lcont, lbody, lbreak;
-			int stbreak, stpos = stkoffs(s->vm, 0);
+			int stbreak, stpos = stkoffs(s, 0);
 
 			dieif(get != TYPE_vid, "FixMe");
-			emitint(s->vm, opc_line, ast->line);
+			emitint(s, opc_line, ast->line);
 			if (ast->stmt.init && !cgen(s, ast->stmt.init, TYPE_vid)) {
 				trace("%+k", ast);
 				return 0;
 			}
 
-			if (!(jstep = emitint(s->vm, opc_jmp, 0))) {		// continue;
+			if (!(jstep = emitint(s, opc_jmp, 0))) {		// continue;
 				trace("%+k", ast);
 				return 0;
 			}
 
-			lbody = emitopc(s->vm, markIP);
+			lbody = emitopc(s, markIP);
 			if (ast->stmt.stmt && !cgen(s, ast->stmt.stmt, TYPE_vid)) {
 				trace("%+k", ast);
 				return 0;
 			}
 
-			lcont = emitopc(s->vm, markIP);
+			lcont = emitopc(s, markIP);
 			if (ast->stmt.step && !cgen(s, ast->stmt.step, TYPE_vid)) {
 				trace("%+k", ast);
 				return 0;
 			}
 
-			fixjump(s->vm, jstep, emitopc(s->vm, markIP), 0);
+			fixjump(s, jstep, emitopc(s, markIP), 0);
 			if (ast->stmt.test) {
 				if (!cgen(s, ast->stmt.test, TYPE_bit)) {
 					trace("%+k", ast);
 					return 0;
 				}
-				if (!emitint(s->vm, opc_jnz, lbody)) {		// continue;
+				if (!emitint(s, opc_jnz, lbody)) {		// continue;
 					trace("%+k", ast);
 					return 0;
 				}
 			}
 			else {
-				if (!emitint(s->vm, opc_jmp, lbody)) {		// continue;
+				if (!emitint(s, opc_jmp, lbody)) {		// continue;
 					trace("%+k", ast);
 					return 0;
 				}
 			}
 
 			// TODO: fix all breaks here
-			lbreak = emitopc(s->vm, markIP);
-			stbreak = stkoffs(s->vm, 0);
+			lbreak = emitopc(s, markIP);
+			stbreak = stkoffs(s, 0);
 
 			while (s->cc->jmps != jl) {
 				astn jmp = s->cc->jmps;
@@ -265,28 +263,28 @@ int cgen(state s, astn ast, int get) {
 
 				switch (jmp->kind) {
 					default : error(s, jmp->line, "invalid goto statement: %k", jmp); return 0;
-					case STMT_brk: fixjump(s->vm, jmp->go2.offs, lbreak, jmp->go2.stks); break;
-					case STMT_con: fixjump(s->vm, jmp->go2.offs, lcont, jmp->go2.stks); break;
+					case STMT_brk: fixjump(s, jmp->go2.offs, lbreak, jmp->go2.stks); break;
+					case STMT_con: fixjump(s, jmp->go2.offs, lcont, jmp->go2.stks); break;
 				}
 			}
 
 			//! TODO: if (init is decl) destruct;
-			if (stpos != stkoffs(s->vm, 0)) {
-				dieif(!emitidx(s->vm, opc_drop, stpos), "FixMe");
+			if (stpos != stkoffs(s, 0)) {
+				dieif(!emitidx(s, opc_drop, stpos), "FixMe");
 			}
 		} break;
 		case STMT_con:
 		case STMT_brk: {
 			int offs;
 			dieif(get != TYPE_vid, "FixMe");
-			emitint(s->vm, opc_line, ast->line);
-			if (!(offs = emitint(s->vm, opc_jmp, 0))) {
+			emitint(s, opc_line, ast->line);
+			if (!(offs = emitint(s, opc_jmp, 0))) {
 				trace("%+k", ast);
 				return 0;
 			}
 
 			ast->go2.offs = offs;
-			ast->go2.stks = stkoffs(s->vm, 0);
+			ast->go2.stks = stkoffs(s, 0);
 
 			ast->next = s->cc->jmps;
 			s->cc->jmps = ast;
@@ -295,7 +293,7 @@ int cgen(state s, astn ast, int get) {
 		//}
 		//{ OPER
 		case OPER_fnc: {	// '()' emit/call/cast
-			int stkret = stkoffs(s->vm, sizeOf(ast->type));
+			int stkret = stkoffs(s, sizeOf(ast->type));
 			astn argv = ast->op.rhso;
 			symn var = linkOf(ast->op.lhso);
 
@@ -323,7 +321,7 @@ int cgen(state s, astn ast, int get) {
 						int inlineArg = 0;
 						astn arg = an;
 
-						if (s->vm->opti && eval(&tmp, arg)) {
+						if (s->vm.opti && eval(&tmp, arg)) {
 							arg = &tmp;
 						}
 
@@ -347,7 +345,7 @@ int cgen(state s, astn ast, int get) {
 								trace("%+k", arg);
 								return 0;
 							}
-							as->offs = stkoffs(s->vm, 0);
+							as->offs = stkoffs(s, 0);
 							as->kind = TYPE_ref;
 						}
 						an = an->next;
@@ -364,17 +362,17 @@ int cgen(state s, astn ast, int get) {
 					return 0;
 				}
 
-				if (stkret != stkoffs(s->vm, 0)) {
-					trace("%+T: (%d - %d): %+k", ast->type, stkoffs(s->vm, 0), stkret, ast);
-					if (!emitidx(s->vm, opc_ldsp, stkret)) {	// get stack
+				if (stkret != stkoffs(s, 0)) {
+					trace("%+T: (%d - %d): %+k", ast->type, stkoffs(s, 0), stkret, ast);
+					if (!emitidx(s, opc_ldsp, stkret)) {	// get stack
 						trace("error");
 						return 0;
 					}
-					if (get != TYPE_vid && !emitint(s->vm, opc_sti, sizeOf(ast->type))) {
+					if (get != TYPE_vid && !emitint(s, opc_sti, sizeOf(ast->type))) {
 						error(s, ast->line, "store indirect: %T:%d of `%+k`", ast->type, sizeOf(ast->type), ast);
 						return 0;
 					}
-					if (stkret < stkoffs(s->vm, 0) && !emitidx(s->vm, opc_drop, stkret)) {
+					if (stkret < stkoffs(s, 0) && !emitidx(s, opc_drop, stkret)) {
 						trace("%+k", ast);
 						return 0;
 					}
@@ -394,7 +392,7 @@ int cgen(state s, astn ast, int get) {
 			// push Result
 			if (var && !isType(var) && var != emit_opc && var->call) {
 				//~ trace("call %-T: %-T: %d", var, ast->type, var->type->size);
-				if (sizeOf(var->type) && !emitint(s->vm, opc_spc, sizeOf(var->type))) {
+				if (sizeOf(var->type) && !emitint(s, opc_spc, sizeOf(var->type))) {
 					trace("%+k", ast);
 					return 0;
 				}
@@ -447,12 +445,12 @@ int cgen(state s, astn ast, int get) {
 						trace("%+k", ast);
 						return 0;
 					}
-					if (!emitopc(s->vm, opc_call)) {
+					if (!emitopc(s, opc_call)) {
 						trace("%+k", ast);
 						return 0;
 					}
 					// clean the stack
-					if (stkret != stkoffs(s->vm, 0) && !emitidx(s->vm, opc_drop, stkret)) {
+					if (stkret != stkoffs(s, 0) && !emitidx(s, opc_drop, stkret)) {
 						trace("%+k", ast);
 						return 0;
 					}
@@ -476,12 +474,12 @@ int cgen(state s, astn ast, int get) {
 				return 0;
 			}
 
-			if (s->vm->opti && eval(&tmp, ast->op.rhso) == TYPE_int) {
+			if (s->vm.opti && eval(&tmp, ast->op.rhso) == TYPE_int) {
 				int offs = sizeOf(ast->type) * constint(&tmp);
 				if (constint(&tmp) >= ast->op.lhso->type->size) {
 					error(s, ast->line, " index out of bounds: %+k", ast);
 				}
-				if (!emitint(s->vm, opc_inc, offs)) {
+				if (!emitint(s, opc_inc, offs)) {
 					trace("%+k", ast);
 					return 0;
 				}
@@ -491,11 +489,11 @@ int cgen(state s, astn ast, int get) {
 					trace("%+k", ast);
 					return 0;
 				}
-				if (!emitint(s->vm, opc_ldc4, sizeOf(ast->type))) {
+				if (!emitint(s, opc_ldc4, sizeOf(ast->type))) {
 					trace("%+k", ast);
 					return 0;
 				}
-				if (!emitopc(s->vm, u32_mad)) {
+				if (!emitopc(s, u32_mad)) {
 					trace("%+k", ast);
 					return 0;
 				}
@@ -504,7 +502,7 @@ int cgen(state s, astn ast, int get) {
 			if (get == TYPE_ref)
 				return TYPE_ref;
 
-			if (!emitint(s->vm, opc_ldi, sizeOf(ast->type))) {
+			if (!emitint(s, opc_ldi, sizeOf(ast->type))) {
 				trace("%+k", ast);
 				return 0;
 			}
@@ -533,7 +531,7 @@ int cgen(state s, astn ast, int get) {
 				return 0;
 			}
 
-			if (!emitint(s->vm, opc_inc, var->offs)) {
+			if (!emitint(s, opc_inc, var->offs)) {
 				trace("%+k", ast);
 				return 0;
 			}
@@ -541,7 +539,7 @@ int cgen(state s, astn ast, int get) {
 			if (get == TYPE_ref)
 				return TYPE_ref;
 
-			if (!emitint(s->vm, opc_ldi, sizeOf(ast->type))) {
+			if (!emitint(s, opc_ldi, sizeOf(ast->type))) {
 				trace("%+k", ast);
 				return 0;
 			}
@@ -563,7 +561,7 @@ int cgen(state s, astn ast, int get) {
 				trace("%+k", ast);
 				return 0;
 			}
-			if (!emitint(s->vm, opc, ret)) {
+			if (!emitint(s, opc, ret)) {
 				trace("%+k", ast);
 				return 0;
 			}
@@ -617,7 +615,7 @@ int cgen(state s, astn ast, int get) {
 				trace("%+k", ast);
 				return 0;
 			}
-			if (!emitint(s->vm, opc, ast->op.lhso->cst2)) {	// uint % int => u32.mod
+			if (!emitint(s, opc, ast->op.lhso->cst2)) {	// uint % int => u32.mod
 				trace("opc__%02x:%+k", opc, ast);
 				return 0;
 			}
@@ -643,21 +641,21 @@ int cgen(state s, astn ast, int get) {
 		//~ case OPER_lor:		// '||'
 		case OPER_sel: {		// '?:'
 			int jmpt, jmpf;
-			if (0 && s->vm->opti && eval(&tmp, ast->op.test)) {
+			if (0 && s->vm.opti && eval(&tmp, ast->op.test)) {
 				if (!cgen(s, constbol(&tmp) ? ast->op.lhso : ast->op.rhso, 0)) {
 					trace("%+k", ast);
 					return 0;
 				}
 			}
 			else {
-				int bppos = stkoffs(s->vm, 0);
+				int bppos = stkoffs(s, 0);
 
 				if (!cgen(s, ast->op.test, TYPE_bit)) {
 					trace("%+k", ast);
 					return 0;
 				}
 
-				if (!(jmpt = emitopc(s->vm, opc_jz))) {
+				if (!(jmpt = emitopc(s, opc_jz))) {
 					trace("%+k", ast);
 					return 0;
 				}
@@ -667,19 +665,19 @@ int cgen(state s, astn ast, int get) {
 					return 0;
 				}
 
-				if (!(jmpf = emitopc(s->vm, opc_jmp))) {
+				if (!(jmpf = emitopc(s, opc_jmp))) {
 					trace("%+k", ast);
 					return 0;
 				}
 
-				fixjump(s->vm, jmpt, emitopc(s->vm, markIP), bppos);
+				fixjump(s, jmpt, emitopc(s, markIP), bppos);
 
 				if (!cgen(s, ast->op.rhso, 0)) {
 					trace("%+k", ast);
 					return 0;
 				}
 
-				fixjump(s->vm, jmpf, emitopc(s->vm, markIP), -sizeOf(ast->type));
+				fixjump(s, jmpf, emitopc(s, markIP), -sizeOf(ast->type));
 			}
 		} break;
 
@@ -692,11 +690,11 @@ int cgen(state s, astn ast, int get) {
 			if (get != TYPE_vid) {
 				// in case a = b = sum(2, 700);
 				// dupplicate the result
-				if (!emitint(s->vm, opc_ldsp, 0)) {
+				if (!emitint(s, opc_ldsp, 0)) {
 					trace("%+k", ast);
 					return 0;
 				}
-				if (!emitint(s->vm, opc_ldi, sizeOf(ast->type))) {
+				if (!emitint(s, opc_ldi, sizeOf(ast->type))) {
 					trace("%+k", ast);
 					return 0;
 				}
@@ -708,7 +706,7 @@ int cgen(state s, astn ast, int get) {
 				trace("%+k", ast);
 				return 0;
 			}
-			if (!emitint(s->vm, opc_sti, sizeOf(ast->type))) {
+			if (!emitint(s, opc_sti, sizeOf(ast->type))) {
 				trace("%+k", ast);
 				return 0;
 			}
@@ -718,27 +716,27 @@ int cgen(state s, astn ast, int get) {
 		//~ case TYPE_bit:	// no constant of this kind
 		case TYPE_int: switch (get) {
 			case TYPE_vid: return TYPE_vid;
-			case TYPE_bit: return emiti32(s->vm, constbol(ast)) ? TYPE_u32 : 0;
-			case TYPE_u32: return emiti32(s->vm, ast->con.cint) ? TYPE_u32 : 0;
-			case TYPE_i32: return emiti32(s->vm, ast->con.cint) ? TYPE_i32 : 0;
-			case TYPE_i64: return emiti64(s->vm, ast->con.cint) ? TYPE_i64 : 0;
-			case TYPE_f32: return emitf32(s->vm, ast->con.cint) ? TYPE_f32 : 0;
-			case TYPE_f64: return emitf64(s->vm, ast->con.cint) ? TYPE_f64 : 0;
+			case TYPE_bit: return emiti32(s, constbol(ast)) ? TYPE_u32 : 0;
+			case TYPE_u32: return emiti32(s, ast->con.cint) ? TYPE_u32 : 0;
+			case TYPE_i32: return emiti32(s, ast->con.cint) ? TYPE_i32 : 0;
+			case TYPE_i64: return emiti64(s, ast->con.cint) ? TYPE_i64 : 0;
+			case TYPE_f32: return emitf32(s, ast->con.cint) ? TYPE_f32 : 0;
+			case TYPE_f64: return emitf64(s, ast->con.cint) ? TYPE_f64 : 0;
 			default: debug("invalid cast: to (%t) '%+k'", get, ast); return 0;
 		} break;
 		case TYPE_flt: switch (get) {
 			case TYPE_vid: return TYPE_vid;
-			case TYPE_bit: return emiti32(s->vm, constbol(ast)) ? TYPE_u32 : 0;
-			case TYPE_u32: return emiti32(s->vm, ast->con.cflt) ? TYPE_u32 : 0;
-			case TYPE_i32: return emiti32(s->vm, ast->con.cflt) ? TYPE_i32 : 0;
-			case TYPE_i64: return emiti64(s->vm, ast->con.cflt) ? TYPE_i64 : 0;
-			case TYPE_f32: return emitf32(s->vm, ast->con.cflt) ? TYPE_f32 : 0;
-			case TYPE_f64: return emitf64(s->vm, ast->con.cflt) ? TYPE_f64 : 0;
+			case TYPE_bit: return emiti32(s, constbol(ast)) ? TYPE_u32 : 0;
+			case TYPE_u32: return emiti32(s, ast->con.cflt) ? TYPE_u32 : 0;
+			case TYPE_i32: return emiti32(s, ast->con.cflt) ? TYPE_i32 : 0;
+			case TYPE_i64: return emiti64(s, ast->con.cflt) ? TYPE_i64 : 0;
+			case TYPE_f32: return emitf32(s, ast->con.cflt) ? TYPE_f32 : 0;
+			case TYPE_f64: return emitf64(s, ast->con.cflt) ? TYPE_f64 : 0;
 			default: debug("invalid cast: to (%t) '%+k'", get, ast); return 0;
 		} break;
 		case TYPE_str: switch (get) {
 			case TYPE_vid: return TYPE_vid;
-			case TYPE_ref: return emitptr(s->vm, ast->id.name) ? TYPE_ref : 0;
+			case TYPE_ref: return emitptr(s, ast->id.name) ? TYPE_ref : 0;
 			default: debug("invalid cast: to (%t) '%+k'", get, ast); return 0;
 		} break;
 
@@ -750,13 +748,13 @@ int cgen(state s, astn ast, int get) {
 			switch (var->kind) {
 				case TYPE_ref: {
 
-					if (!genRef(s->vm, var->offs)) {
+					if (!genRef(s, var->offs)) {
 						trace("%+k", ast);
 						return 0;
 					}
 
 					if (var->cast == TYPE_ref && ast->cst2 != ASGN_set) {
-						if (!emitint(s->vm, opc_ldi, 4)) {
+						if (!emitint(s, opc_ldi, 4)) {
 							trace("%+k", ast);
 							return 0;
 						}
@@ -766,7 +764,7 @@ int cgen(state s, astn ast, int get) {
 						get = TYPE_ref;
 
 					if (get != TYPE_ref) {
-						if (!emitint(s->vm, opc_ldi, sizeOf(typ))) {
+						if (!emitint(s, opc_ldi, sizeOf(typ))) {
 							trace("%+k", ast);
 							return 0;
 						}
@@ -779,9 +777,9 @@ int cgen(state s, astn ast, int get) {
 				} break;
 				case EMIT_opc:
 					dieif(get == TYPE_ref, "FixMe");
-					if (!emitint(s->vm, var->offs, var->init ? constint(var->init) : 0)) {
+					if (!emitint(s, var->offs, var->init ? constint(var->init) : 0)) {
 						error(s, ast->line, "error emiting opcode: %+k", ast);
-						if (stkoffs(s->vm, 0) > 0)
+						if (stkoffs(s, 0) > 0)
 							info(s, s->cc->file, ast->line, "%+k underflows stack.", ast);
 						return 0;
 					}
@@ -799,7 +797,7 @@ int cgen(state s, astn ast, int get) {
 		case TYPE_def: {					// new (var, func, define)
 			symn typ = ast->type;
 			symn var = ast->id.link;
-			int stktop = stkoffs(s->vm, sizeOf(var));
+			int stktop = stkoffs(s, sizeOf(var));
 			dieif(!typ || !var, "FixMe");
 
 			if (var->kind == TYPE_ref) {
@@ -857,7 +855,7 @@ int cgen(state s, astn ast, int get) {
 						error(s, ast->line, "incompatible types in initialization(%-T := %-T)", typ, val->type);
 					}
 
-					if (s->vm->opti && eval(&tmp, val)) {
+					if (s->vm.opti && eval(&tmp, val)) {
 						val = &tmp;
 					}// * /
 
@@ -878,18 +876,18 @@ int cgen(state s, astn ast, int get) {
 					}
 
 					if (!var->offs) {
-						var->offs = stkoffs(s->vm, 0);
+						var->offs = stkoffs(s, 0);
 						if (stktop != var->offs && val->type != emit_opc) {
 							error(s, ast->line, "invalid initializer size: %d <> got(%d): `%+k`", stktop, var->offs, val);
 							return 0;
 						}
 					}
 					else {
-						if (!genRef(s->vm, var->offs)) {
+						if (!genRef(s, var->offs)) {
 							trace("%+k", ast);
 							return 0;
 						}
-						if (!emitint(s->vm, opc_sti, sizeOf(ast->type))) {
+						if (!emitint(s, opc_sti, sizeOf(ast->type))) {
 							trace("%+k", ast);
 							return 0;
 						}
@@ -898,11 +896,11 @@ int cgen(state s, astn ast, int get) {
 				}
 				else if (!var->offs) {		// static alloc a block of the size of the type;
 					int size = sizeOf(typ);
-					if (!emitint(s->vm, opc_spc, size)) {
+					if (!emitint(s, opc_spc, size)) {
 						trace("%+k", ast);
 						return 0;
 					}
-					var->offs = stkoffs(s->vm, 0);
+					var->offs = stkoffs(s, 0);
 					if (var->offs < size) {
 						error(s, ast->line, "stack underflow", var->offs, size);
 						return 0;
@@ -927,22 +925,47 @@ int cgen(state s, astn ast, int get) {
 	}
 
 	if (get != ret) switch (get) {
+		case TYPE_vid: return TYPE_vid;
 		case TYPE_any: switch (ret) {
 			case TYPE_vid: break;
 			default: goto errorcast2;
 		} break;// */
-		case TYPE_vid: return TYPE_vid;
+
+		case TYPE_bit: switch (ret) {		// to boolean
+			case TYPE_u32: /*emitopc(s, i32_bol);*/ break;
+			case TYPE_i32: /*emitopc(s, i32_bol);*/ break;
+			case TYPE_i64:
+				if (!emitopc(s, i64_bol)) {
+					trace("%+k", ast);
+					return 0;
+				}
+				break;
+			case TYPE_f32:
+				if (!emitopc(s, f32_bol)) {
+					trace("%+k", ast);
+					return 0;
+				}
+				break;
+			case TYPE_f64:
+				if (!emitopc(s, f64_bol)) {
+					trace("%+k", ast);
+					return 0;
+				}
+				break;
+			default: goto errorcast2;
+		} break;
+
 		case TYPE_u32: switch (ret) {
 			case TYPE_bit:
 			case TYPE_i32: break;
 			case TYPE_i64: {
-				if (!emitopc(s->vm, i64_i32)) {
+				if (!emitopc(s, i64_i32)) {
 					trace("%+k", ast);
 					return 0;
 				}
 			} break;
-			//~ case TYPE_f32: if (!emitopc(s->vm, f32_i32)) return 0; break;
-			//~ case TYPE_f64: if (!emitopc(s->vm, f64_i32)) return 0; break;
+			//~ case TYPE_f32: if (!emitopc(s, f32_i32)) return 0; break;
+			//~ case TYPE_f64: if (!emitopc(s, f64_i32)) return 0; break;
 			default: goto errorcast2;
 		} break;
 		case TYPE_i32: switch (ret) {
@@ -950,127 +973,106 @@ int cgen(state s, astn ast, int get) {
 			//~ case TYPE_any:
 			case TYPE_u32: break;
 			case TYPE_i64:
-				if (!emitopc(s->vm, i64_i32)) {
+				if (!emitopc(s, i64_i32)) {
 					trace("%+k", ast);
 					return 0;
 				}
 				break;
 			case TYPE_f32:
-				if (!emitopc(s->vm, f32_i32)) {
+				if (!emitopc(s, f32_i32)) {
 					trace("%+k", ast);
 					return 0;
 				}
 				break;
 			case TYPE_f64:
-				if (!emitopc(s->vm, f64_i32)) {
+				if (!emitopc(s, f64_i32)) {
 					trace("%+k", ast);
 					return 0;
 				}
 				break;
-			//~ case TYPE_ref: if (!emitopc(s->vm, opc_ldi, 4)) return 0; break;
+			//~ case TYPE_ref: if (!emitopc(s, opc_ldi, 4)) return 0; break;
 			default: goto errorcast2;
 		} break;
 		case TYPE_i64: switch (ret) {
 			case TYPE_bit:
 			//~ case TYPE_u32:	// TODO: zero extend, but how ?
 			case TYPE_u32:
-				if (!emitopc(s->vm, u32_i64)) {
+				if (!emitopc(s, u32_i64)) {
 					trace("%+k", ast);
 					return 0; 
 				}
 				break;
 			case TYPE_i32:
-				if (!emitopc(s->vm, i32_i64)) {
+				if (!emitopc(s, i32_i64)) {
 					trace("%+k", ast);
 					return 0;
 				}
 				break;
 			case TYPE_f32:
-				if (!emitopc(s->vm, f32_i64)) {
+				if (!emitopc(s, f32_i64)) {
 					trace("%+k", ast);
 					return 0;
 				}
 				break;
 			case TYPE_f64:
-				if (!emitopc(s->vm, f64_i64)) {
+				if (!emitopc(s, f64_i64)) {
 					trace("%+k", ast);
 					return 0;
 				}
 				break;
-			//~ case TYPE_ref: if (!emitopc(s->vm, opc_ldi, 8)) return 0; break;
+			//~ case TYPE_ref: if (!emitopc(s, opc_ldi, 8)) return 0; break;
 			default: goto errorcast2;
 		} break;
+
 		case TYPE_f32: switch (ret) {
 			case TYPE_bit:
 			//~ case TYPE_u32:
 			case TYPE_i32: 
-				if (!emitopc(s->vm, i32_f32)) {
+				if (!emitopc(s, i32_f32)) {
 					trace("%+k", ast);
 					return 0;
 				}
 				break;
 			case TYPE_i64: 
-				if (!emitopc(s->vm, i64_f32)) {
+				if (!emitopc(s, i64_f32)) {
 					trace("%+k", ast);
 					return 0;
 				}
 				break;
 			case TYPE_f64:
-				if (!emitopc(s->vm, f64_f32)) {
+				if (!emitopc(s, f64_f32)) {
 					trace("%+k", ast);
 					return 0;
 				}
 				break;
-			//~ case TYPE_ref: if (!emitopc(s->vm, opc_ldi, 4)) return 0; break;
+			//~ case TYPE_ref: if (!emitopc(s, opc_ldi, 4)) return 0; break;
 			default: goto errorcast2;
 		} break;
 		case TYPE_f64: switch (ret) {
 			case TYPE_bit:
 			//~ case TYPE_u32:
 			case TYPE_i32:
-				if (!emitopc(s->vm, i32_f64)) {
+				if (!emitopc(s, i32_f64)) {
 					trace("%+k", ast);
 					return 0;
 				}
 				break;
 			case TYPE_i64: 
-				if (!emitopc(s->vm, i64_f64)) {
+				if (!emitopc(s, i64_f64)) {
 					trace("%+k", ast);
 					return 0;
 				}
 				break;
 			case TYPE_f32:
-				if (!emitopc(s->vm, f32_f64)) {
+				if (!emitopc(s, f32_f64)) {
 					trace("%+k", ast);
 					return 0;
 				}
 				break;
-			//~ case TYPE_ref: if (!emitopc(s->vm, opc_ldi, 8)) return 0; break;
+			//~ case TYPE_ref: if (!emitopc(s, opc_ldi, 8)) return 0; break;
 			default: goto errorcast2;
 		} break;
-		case TYPE_bit: switch (ret) {		// to boolean
-			case TYPE_u32: /*emitopc(s, i32_bol);*/ break;
-			case TYPE_i32: /*emitopc(s, i32_bol);*/ break;
-			case TYPE_i64:
-				if (!emitopc(s->vm, i64_bol)) {
-					trace("%+k", ast);
-					return 0;
-				}
-				break;
-			case TYPE_f32:
-				if (!emitopc(s->vm, f32_bol)) {
-					trace("%+k", ast);
-					return 0;
-				}
-				break;
-			case TYPE_f64: 
-				if (!emitopc(s->vm, f64_bol)) {
-					trace("%+k", ast);
-					return 0;
-				}
-				break;
-			default: goto errorcast2;
-		} break;
+
 		case TYPE_ref:
 			trace("cgen[%t->%t](%+k)\n%7K", ret, get, ast, ast);
 			error(s, ast->line, "invalid rvalue: %+k", ast);
@@ -1087,6 +1089,13 @@ int cgen(state s, astn ast, int get) {
 	return ret;
 }
 
+int logFILE(state s, FILE* file) {
+	if (s->closelog)
+		fclose(s->logf);
+	s->logf = file;
+	s->closelog = 0;
+	return 0;
+}
 int logfile(state s, char* file) {
 
 	logFILE(s, NULL);
@@ -1099,14 +1108,6 @@ int logfile(state s, char* file) {
 	return 0;
 }
 
-int logFILE(state s, FILE* file) {
-	if (s->closelog)
-		fclose(s->logf);
-	s->logf = file;
-	s->closelog = 0;
-	return 0;
-}
-
 void ccSource(ccState cc, char *file, int line) {
 	cc->file = file;
 	cc->line = line;
@@ -1114,28 +1115,27 @@ void ccSource(ccState cc, char *file, int line) {
 
 int gencode(state s, int level) {
 	ccState cc = s->cc;
-	vmState vm = s->vm;
 	int Lmain;
 
 	if (s->errc)
 		return -2;
 
-	if (!s->cc || s->vm) {
-		fatal("invalid enviroment: cc:%x, vm:%x, er:%d", cc, vm, s->errc);
+	if (!s->cc) {
+		fatal("invalid enviroment: cc:%x, er:%d", cc, s->errc);
 		return -2;
 	}
 
 	s->defs = leave(s->cc, NULL);
 
-	if (!(vm = vmInit(s)))
+	if (!vmInit(s))
 		return -1;
 
 	//~ level = -2;
-	vm->opti = level < 0 ? -level : level;	// 
+	s->vm.opti = level < 0 ? -level : level;	// 
 
 	//~ DONE: Data[RO]: metadata, strings
 	//~ TODO: Data[RO]: constants, functions, enums ...
-	vm->ro = vm->pos;
+	s->vm.ro = s->vm.pos;
 
 	// static vars & functions
 	if (1 && s->defs) {
@@ -1179,8 +1179,8 @@ int gencode(state s, int level) {
 
 			dieif(var->offs, "FixMe %-T@%d", var, var->offs);
 
-			var->offs = -vm->pos;
-			vm->pos += sizeOf(var);
+			var->offs = -s->vm.pos;
+			s->vm.pos += sizeOf(var);
 
 			if (var->init && !var->glob) {
 				//~ if variable was allocated
@@ -1243,7 +1243,7 @@ int gencode(state s, int level) {
 			}
 		}
 
-		Lmain = vm->pos;
+		Lmain = s->vm.pos;
 		// loop through all symbols generate functions
 		for (var = s->defs; var; var = var->defs) {
 
@@ -1262,21 +1262,21 @@ int gencode(state s, int level) {
 			}
 
 			if (var->call && var->cast != TYPE_ref) {
-				//~ int seg = emitopc(s->vm, markIP);
+				int seg = emitopc(s, markIP);
 
 				if (!var->init) {
 					debug("`%T` will be skipped", var);
 					return 0;
 				}
 
-				vm->sm = 0;
-				fixjump(s->vm, 0, 0, 4 + var->offs);
-				var->offs = -emitopc(s->vm, markIP);
+				s->vm.sm = 0;
+				fixjump(s, 0, 0, 4 + var->offs);
+				var->offs = -emitopc(s, markIP);
 
 				if (!cgen(s, var->init, TYPE_vid)) {
 					return 0;
 				}
-				if (!emitopc(vm, opc_jmpi)) {
+				if (!emitopc(s, opc_jmpi)) {
 					error(s, var->line, "error emiting function: %-T", var);
 					return 0;
 				}
@@ -1284,6 +1284,7 @@ int gencode(state s, int level) {
 					error(s, 0, "invalid jump: `%k`", cc->jmps);
 					cc->jmps = cc->jmps->next;
 				}
+				var->size = emitopc(s, markIP) - seg;
 
 				//~ debug("function @%d: %+T\n%7K", -var->offs, var, var->init);
 				//~ debug("function @%d: %-T", -var->offs, var, var->init);
@@ -1295,28 +1296,22 @@ int gencode(state s, int level) {
 		}
 	}
 
-	Lmain = vm->pos;
+	Lmain = s->vm.pos;
 	if (1 && cc->root) {
 		// TODO: TYPE_vid: to clear the stack
-		int seg = vm->pos;
-		vm->ss = vm->sm = 0;
+		int seg = s->vm.pos;
+		s->vm.ss = s->vm.sm = 0;
 		if (!cgen(s, cc->root, 0))
-			fputasm(stderr, vm, seg, -1, 0x10);
+			fputasm(stderr, s, seg, -1, 0x10);
 		while (cc->jmps) {
 			error(s, 0, "invalid jump: `%k`", cc->jmps);
 			cc->jmps = cc->jmps->next;
 		}
 	}
-	vm->px = emitint(s->vm, opc_libc, 0);		// TODO: Halt only in case of scripts
-
-	//~ dumpast(stdout, cc->root, 0x7f);
+	s->vm.px = emitint(s, opc_libc, 0);		// TODO: Halt only in case of scripts
 
 	// program entry point
-	vm->pc = Lmain;
-
-	#if DEBUGGING > 1
-	vmInfo(stdout, s->vm);
-	#endif
+	s->vm.pc = Lmain;
 
 	return s->errc;
 }
@@ -1564,9 +1559,7 @@ state rtInit(void* mem, unsigned size) {
 	s->_cnt = size - sizeof(struct state);
 	s->_ptr = s->_mem;
 	logFILE(s, stderr);
-	//~ s->logf = stderr;
 	s->cc = NULL;
-	s->vm = NULL;
 	return s;
 }
 
@@ -1589,8 +1582,8 @@ ccState ccInit(state s, int mode) {
 	cc->fin._cnt = 0;
 	cc->fin._fin = -1;
 
-	cc->_beg = s->_ptr;
-	cc->_end = s->_ptr + s->_cnt;
+	cc->_beg = (char*)s->_ptr;
+	cc->_end = cc->_beg + s->_cnt;
 
 	//{ install Type
 	type_vid = install(cc,  "void", TYPE_rec | symn_read, TYPE_vid, 0);
@@ -1617,9 +1610,10 @@ ccState ccInit(state s, int mode) {
 	//~ type_arr = install(cc, ".array", TYPE_rec | symn_read, TYPE_ref, 4);
 	type_ptr = install(cc, ".pointer", TYPE_rec | symn_read, TYPE_ref, 4);
 	type_str = install(cc, "string", TYPE_rec | symn_read, TYPE_ref, 4);
+	//~ type_str = install(cc, "string", TYPE_arr | symn_read, TYPE_ref, 4);
 
 	//~ type_chr = installex(cc, "char", TYPE_def, 0, type_i08, NULL);
-	//~ type_str = installex(cc, "string", TYPE_arr, 0, type_chr, NULL);
+	//~ type_str = installex(cc, "string", TYPE_arr | symn_read | symn_stat, TYPE_ref, type_i08, NULL);
 
 	installex(cc, "int",    TYPE_def, 0, type_i32, NULL);
 	installex(cc, "long",   TYPE_def, 0, type_i64, NULL);
@@ -1673,29 +1667,17 @@ int ccDone(state s) {
 	source(cc, 0, 0);
 
 	// set used memory
-	s->_cnt -= cc->_beg - s->_ptr;
-	s->_ptr = cc->_beg;
+	s->_cnt -= cc->_beg - (char*)s->_ptr;
+	s->_ptr = (unsigned char*)cc->_beg;
 
 	// return errors
 	return s->errc;
 }
 
-vmState vmInit(state s) {
-	int size = s->_cnt;
-	vmState vm = getmem(s, size, sizeof(struct vmState));
-	if (vm != NULL) {
-		vm->s = s;
-		//~ cleared by getmem
-		//~ vm->ds = vm->ic = 0;
-		//~ vm->cs = vm->pc = 0;
-		//~ vm->ss = vm->sm = 0;
-		vm->_mem = (unsigned char *)s->_mem;
-		//~ vm->pos = vm->_beg - vm->_mem;
-		//~ vm->_end = vm->_beg + size - sizeof(struct vmState);
-		vm->pos = ((unsigned char*)vm + sizeof(struct vmState)) - vm->_mem;
-		vm->_end = (unsigned char*)vm + size;
-	}
-	return s->vm = vm;
+state vmInit(state s) {
+	s->vm.pos = s->_ptr - s->_mem;
+	s->vm._end = s->_mem + s->_cnt;
+	return s;
 }
 
 void* getmem(state s, int size, unsigned clear) {
@@ -1738,12 +1720,12 @@ symn findref(state s, void *ptr) {
 		return NULL;
 	}
 
-	if (ptr > (void*)s->_ptr) {
+	if (ptr > (void*)s->_mem + s->vm.pc) {		// pc 
 		fatal("Error");
 		return NULL;
 	}
 
-	offs = (char*)ptr - s->_mem;
+	offs = (unsigned char*)ptr - s->_mem;
 	for (; sym; sym = sym->next) {
 		if (sym->offs == -offs)
 			return sym;

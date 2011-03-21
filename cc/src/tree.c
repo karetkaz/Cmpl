@@ -187,7 +187,7 @@ int eval(astn res, astn ast) {
 
 		case OPER_not: {		// '!'
 
-			dieif(ast->cst2 != TYPE_bit, "FixMe", ast);
+			dieif(ast->cst2 != TYPE_bit, "FixMe %+d", ast->line);
 			if (!eval(res, ast->op.rhso))
 				return 0;
 
@@ -226,7 +226,7 @@ int eval(astn res, astn ast) {
 								case OPER_mod: res->con.cint = lhs.con.cint % rhs.con.cint; break;		// '%'
 							}
 							else {
-								error(NULL, 0, "Division by zero");
+								error(NULL, 0, "Division by zero: %+k", ast);
 								res->con.cint = 0;
 							}
 						}
@@ -235,7 +235,7 @@ int eval(astn res, astn ast) {
 				case TYPE_flt: {
 					res->kind = TYPE_flt;
 					switch (ast->kind) {
-						default: fatal("FixMe");
+						default: fatal("FixMe: %+k", ast);
 						case OPER_add: res->con.cflt = lhs.con.cflt + rhs.con.cflt; break;		// '+'
 						case OPER_sub: res->con.cflt = lhs.con.cflt - rhs.con.cflt; break;		// '-'
 						case OPER_mul: res->con.cflt = lhs.con.cflt * rhs.con.cflt; break;		// '*'
@@ -381,4 +381,52 @@ int eval(astn res, astn ast) {
 	}
 
 	return res->kind;
+}
+
+int mkcon(astn ast, symn type) {
+	dieif(!ast || !type, "FixMe");
+	struct astn tmp;
+
+	if (!promote(ast->type, type))
+		return 0;
+
+	//~ if (!castTy(ast, type))
+		//~ return 0;
+
+	if (!eval(&tmp, ast))
+		return 0;
+
+	ast->kind = tmp.kind;
+	ast->con = tmp.con;
+	ast->type = type;
+
+	switch (type->cast) {
+		default: fatal("FixMe");
+
+		case TYPE_vid:
+		case TYPE_any:
+			break;
+
+		case TYPE_bit:
+			ast->con.cint = constbol(ast);
+			ast->kind = TYPE_int;
+			break;
+
+		case TYPE_u32:
+		case TYPE_i32:
+		case TYPE_i64:
+		//~ case TYPE_int:
+			ast->con.cint = constint(ast);
+			ast->kind = TYPE_int;
+			break;
+
+		case TYPE_f32:
+		case TYPE_f64:
+		//~ case TYPE_flt:
+			ast->con.cflt = constflt(ast);
+			ast->kind = TYPE_flt;
+			break;
+	}
+
+	return ast->kind;
 }

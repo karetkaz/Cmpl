@@ -620,7 +620,6 @@ int evalexp(ccState s, char* text) {
 	}
 
 	fputfmt(stdout, "ERROR(typ:`%T`, tid:%d)\n", typ, tid);
-	//~ dumpast(stdout, ast, 15);
 
 	return -1;
 }
@@ -651,7 +650,7 @@ int compile(state s, int wl, char *file) {
 
 	#if DEBUGGING > 1
 	//~ debug("after init:%d Bytes", s->cc->_beg - s->_mem);
-	size = (s->cc->_beg - s->_mem);
+	size = (s->cc->_beg - (char*)s->_mem);
 	#endif
 
 	s->cc->warn = wl;
@@ -878,30 +877,20 @@ int program(int argc, char *argv[]) {
 			}
 		}
 
-		//~ logfile(s, outf);
-		//~ s->defs = leave(s->cc, NULL);
+		if (outf)
+			logfile(s, outf);
+		else
+			logFILE(s, stdout);
+
 		if (outc) switch (outc) {
 			default: fatal("FixMe");
-			case out_tags: {
-				if ((level & 0x0f) == 0x0f) {
-					symn glob = s->defs;
-					while (glob) {
-						dumpsym(stdout, glob, 0);
-						glob = glob->defs;
-					}
-				}
-				else {
-					dump2file(s, outf, dump_sym | (level & 0x0ff), NULL);
-				}
-				break;
-			}
-			case out_dasm: dump2file(s, outf, dump_asm | (level & 0xfff), NULL); break;
-			case out_tree: dump2file(s, outf, dump_ast | (level & 0x0ff), NULL); break;
-			case run_code: exec(s->vm, dbg); break;
+			case out_tags: dump(s, dump_sym | (level & 0x0ff), NULL); break;
+			case out_dasm: dump(s, dump_asm | (level & 0xfff), NULL); break;
+			case out_tree: dump(s, dump_ast | (level & 0x0ff), NULL); break;
+			case run_code: exec(s, dbg); break;
 		}
 
 		logfile(s, NULL);
-		//~ vmDone(s);
 		return 0;
 	}
 	else if (strcmp(cmd, "-h") == 0) {		// help
@@ -919,7 +908,7 @@ int program(int argc, char *argv[]) {
 int main(int argc, char *argv[]) {
 	if (1 && argc == 1) {
 		char *args[] = {
-			"Program Name",
+			*argv,	// Program Name
 			//"-api",
 			
 			"-c",		// compile command
@@ -942,7 +931,6 @@ int main(int argc, char *argv[]) {
 static int dbgCon(state s, int pu, void *ip, long* bp, int ss) {
 	static char buff[1024];
 	static char cmd = 'N';
-	vmState vm = s->vm;
 	int IP, SP;
 	char *arg;
 
@@ -954,8 +942,8 @@ static int dbgCon(state s, int pu, void *ip, long* bp, int ss) {
 		return 0;
 	}
 
-	IP = ((char*)ip) - ((char*)vm->_mem);// - vm->pc;
-	SP = ((char*)vm->_end) - ((char*)bp);
+	IP = ((char*)ip) - ((char*)s->_mem);
+	SP = ((char*)s->vm._end) - ((char*)bp);
 
 	fputfmt(stdout, ">exec:[pu%02d][sp%02d]@%9.*A\n", pu, ss, IP, ip);
 
@@ -1022,17 +1010,17 @@ static int dbgCon(state s, int pu, void *ip, long* bp, int ss) {
 			//~ case 'C' :		// step out
 			case 'n' :		// step over
 				return 0;
-			case 'p' : if (vm->s && vm->s->cc) {		// print
+			case 'p' : if (s->cc) {		// print
 				if (!*arg) {
-					// vmTags(vm->s, (void*)sptr, slen, 0);
+					// vmTags(s, (void*)sptr, slen, 0);
 				}
 				else {
-					symn sym = findsym(vm->s->cc, NULL, arg);
+					symn sym = findsym(s->cc, NULL, arg);
 					debug("arg:%T", sym);
 					if (sym && sym->kind == TYPE_ref && sym->offs >= 0) {
 						stkval* sp = (stkval*)((char*)bp + ss + sym->offs);
 						void vm_fputval(state s, FILE *fout, symn var, stkval* ref, int flgs);
-						vm_fputval(vm->s, stdout, sym, sp, 0);
+						vm_fputval(s, stdout, sym, sp, 0);
 					}
 				}
 			} break;

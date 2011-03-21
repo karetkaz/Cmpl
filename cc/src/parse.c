@@ -772,13 +772,14 @@ static int readTok(ccState s, astn tok) {
 					//~ int _pad;
 				}
 				keywords[] = {
-					// sort these lines (SciTE knows with lua ext)!!!
+					// sort these lines (SciTE knows using lua extension)!!!
 					{"break", STMT_brk},
+					{"const", QUAL_con},
 					{"continue", STMT_con},
 					{"define", TYPE_def},
 					{"else", STMT_els},
 					{"emit", EMIT_opc},
-					{"enum", ENUM_kwd},
+					//~ {"enum", ENUM_kwd},
 					{"for", STMT_for},
 					{"if", STMT_if},
 					{"module", UNIT_def},
@@ -1139,6 +1140,8 @@ static void redefine(ccState s, symn sym) {
 		while (arg1 && arg2) {
 			if (arg1->type != arg2->type)
 				break;
+			if (arg1->call != arg2->call)
+				break;
 			arg1 = arg1->next;
 			arg2 = arg2->next;
 		}
@@ -1321,9 +1324,6 @@ static astn spec(ccState s/* , int qual */) {
 	astn tok, tag = 0;
 	symn def = 0;
 
-	//~ int offs = 0;
-	//~ int size = 0;
-
 	/*if (skip(s, OPER_kwd)) {			// operator
 		skiptok(s, STMT_do, 1);
 	}// */
@@ -1335,7 +1335,7 @@ static astn spec(ccState s/* , int qual */) {
 			skiptok(s, STMT_do, 1);
 			return NULL;
 		}
-		else if (skip(s, ASGN_set)) {			// define PI = 3.14...;
+		/*else if (skip(s, ASGN_set)) {			// define PI = 3.14...;
 			struct astn tmp;
 			astn val = expr(s, TYPE_def);
 			if (eval(&tmp, val)) {
@@ -1349,14 +1349,19 @@ static astn spec(ccState s/* , int qual */) {
 				def = declare(s, TYPE_def, tag, 0);
 				def->init = val;
 			}
-		}
-		/*else if (skip(s, ASGN_set)) {			// define PI = 3.14...;
-			//~ struct astn tmp;
+		}// */
+		else if (skip(s, ASGN_set)) {			// define PI = 3.14...;
 			astn val = expr(s, TYPE_def);
-			def = declare(s, TYPE_def, tag, val->type);
-			def->init = val;
-			typ = def->type;
-		}*/
+			if (val != NULL) {
+				def = declare(s, TYPE_def, tag, val->type);
+				def->init = val;
+				typ = def->type;
+			}
+			else {
+				error(s->s, s->line, "expression expected");
+				//~ return NULL;
+			}
+		}// */
 		else if (skip(s, PNCT_lp)) {			// define isNan(float64 x) = (x != x);
 			symn arg;
 			int warnfun = 0;
@@ -1498,11 +1503,22 @@ static astn spec(ccState s/* , int qual */) {
 					continue;
 				}
 				else {
+					tok = reft(s, decl_Ref);
+					if (tok->type->kind == TYPE_arr) {
+						symn ref = tok->id.link;
+						dieif(!ref, "FixMe");
+						ref->cast = 0;
+						//~ ref->type->cast = 0;
+					}
+					if (!skiptok(s, STMT_do, 1))
+						break;
+				}
+				/*else {
 
 					symn typ = type(s);
 					tok = next(s, TYPE_ref);
 
-					/* this is optional:
+					/ * this is optional:
 					// id ':' typename | struct | enum '{' ... '}'
 
 					if (typ) {
@@ -1524,7 +1540,7 @@ static astn spec(ccState s/* , int qual */) {
 					}
 					else {
 						error(s->s, s->line, "declaration expected ");
-					} // */
+					} // * /
 
 					if (tok && typ) {
 						symn ref = declare(s, TYPE_ref, tok, typ);
@@ -1554,7 +1570,7 @@ static astn spec(ccState s/* , int qual */) {
 						if (!skiptok(s, STMT_do, 0))
 							break;
 					}
-				}
+				}*/
 			}
 
 			def->cast = TYPE_rec;	// TODO: RemMe
@@ -1595,7 +1611,103 @@ static astn spec(ccState s/* , int qual */) {
 		tag->type = def;
 	}
 	//else if (skip(s, TYPE_cls));		// class
-	else if (skip(s, ENUM_kwd)) {		// enum: TODO: this si WRONG
+	else if (skip(s, QUAL_con)) {		// const
+		/**
+		 * const tag (':' base)? ('{' <constant enumeration>|<define ...> '}') | ('=' value)
+		 * 
+		 * 
+		**/
+		//~ int offs = 0;
+		symn base = NULL;				// bydef
+
+		tag = next(s, TYPE_ref);
+		//~ trace("const: %k", tag);
+
+		if (skip(s, PNCT_cln)) {			// type of constant is
+			tok = next(s, TYPE_ref);
+			if (tok != NULL) {
+				// TODO: what's this ?
+				base = typecheck(s, NULL, tok);	// TODO: lookup
+				if (base != tok->id.link) {		// it is not a type, or typedef
+					base = NULL;
+				}
+			}
+
+			if (!base) {
+				error(s->s, s->line, "typename expected");
+				base = type_i32;
+			}
+		}
+
+		if (tag && skip(s, ASGN_set)) {
+			astn init = expr(s, TYPE_def);
+
+			if (!base && init) {
+				base = init->type;
+			}
+
+			def = declare(s, TYPE_def, tag, base);
+			def->init = init;
+
+			if (!init || !mkcon(def->init, base))
+				error(s->s, def->init->line, "%T constant expected, got %T", base, def->init->type);
+		}
+		else {
+			skiptok(s, STMT_beg, 1);
+
+			if (!base) {
+				base = type_i32;
+			}
+
+			if (tag) {
+				def = declare(s, TYPE_rec, tag, base);
+				enter(s, tag);
+			}
+			else {
+				tag = newnode(s, TYPE_def);
+				tag->type = base;
+				tag->id.link = base;
+				def = NULL;
+			}
+
+			while (!skip(s, STMT_end)) {
+				if (test(s, TYPE_def)) {
+					spec(s);
+					continue;
+				}
+				if ((tok = next(s, TYPE_ref))) {
+					symn tmp = declare(s, TYPE_def, tok, base);
+
+					if (skip(s, ASGN_set)) {
+						tmp->init = expr(s, TYPE_def);
+						if (!mkcon(tmp->init, base))
+							error(s->s, tmp->init->line, "%T constant expected, got %T", base, tmp->init->type);
+						//~ trace("const: %k.%k = %+k", tag, tok, tmp->init);
+
+					}
+
+					/*else if (base->cast == TYPE_i32) {		// if casts to TYPE_i32
+						tmp->init = newnode(s, TYPE_int);
+						tmp->init->con.cint = offs;
+						tmp->init->type = base;
+						offs += 1;
+					}*/
+					else
+						error(s->s, tmp->line, "%T constant expected", base);
+					redefine(s, tmp);
+				}
+				skiptok(s, STMT_do, 1);
+			}
+
+			if (def) {
+				def->args = leave(s, def);
+			}
+		}
+		if (def) {
+			redefine(s, def);
+		}
+	}// */
+	/*else if (skip(s, ENUM_kwd)) {		// enum: TODO: this si WRONG
 		int offs = 0;
 		symn base = type_i32;			// bydef
 
@@ -2014,7 +2126,7 @@ astn expr(ccState s, int mode) {
 			case '?': missing = "':'"; break;
 			default : fatal("FixMe");
 		}
-		error(s->s, s->line, "missing %s", missing);
+		error(s->s, s->line, "missing %s, %k", missing, peek(s));
 	}
 	else if (prec > buff) {							// build
 		astn *ptr, *lhs;

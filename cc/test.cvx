@@ -16,6 +16,72 @@
 //~ void fun(int x) = true ? null : void(int x){print(x);});
 
 /*
+const M:double {
+	pi = 3.14159265358979323846264338327950288419716939937510582097494459;		// A000796
+	e = 2.71828182845904523536028747135266249775724709369995957496696763;		// A001113
+	ln2 = 0.693147180559945309417232121458176568075500134360255254120680009;		// A002162
+	log2E = 1 / ln2;
+	ln10 = 2.30258509299404568401799145468436420760110148862877297603332790;		// A002392
+	log10E = 1 / ln10;
+	phi = 1.61803398874989484820458683436563811772030917980576286213544862;		// A001622
+	sqrt2 = 1.41421356237309504880168872420969807856967187537694807317667974;	// A002193
+	sqrtE = 1.64872127070012814684865078781416357165377610071014801157507931;	// A019774
+	sqrtPi = 1.77245385090551602729816748334114518279754945612238712821380779;	// A002161
+	sqrtPhi = 1.27201964951406896425242246173749149171560804184009624861664038;	// A139339
+}// */
+
+//~ const Pi1 = 3.14159265358979323846264338327950288419716939937510582097494459;
+//~ const Pi2 :int = 3.14159265358979323846264338327950288419716939937510582097494459;
+//~ const Pi3 :float64 = 3.14159265358979323846264338327950288419716939937510582097494459;
+
+//~ struct gxClut:1 {			// Color Look Up Table (Palette) structure
+	//~ int16	count;
+	//~ uint8	flags;
+	//~ uint8	trans;
+	//~ int32	data[256];
+//~ }
+
+
+
+
+void openImg(string file) {
+	//~ string fileName = file;//emit(string, load.b32, ref(file));//emit(string, string(file));
+	//~ int8 alma[0] = emit();
+	//~ int len;
+	//~ for (len = 0; file[len] != 0; len += 1) {}
+	//~ print("len = "); 
+	println(file);
+	/+if (int(len > 4) & int(alma[len - 4] == '.')) {
+		int chr = alma[len - 3];
+		if (int(chr == 'j') | int(chr == 'J')) {
+			int chr = alma[len - 2];
+			if (int(chr == 'p') | int(chr == 'P')) {
+				int chr = alma[len - 1];
+				if (int(chr == 'g') | int(chr == 'G')) {
+					println("jpg");
+					//~ result = readJpg(file);
+				}
+			}
+		}
+		if (int(chr == 'b') | int(chr == 'B')) {
+			int chr = alma[len - 2];
+			if (int(chr == 'm') | int(chr == 'M')) {
+				int chr = alma[len - 1];
+				if (int(chr == 'p') | int(chr == 'P')) {
+					println("bmp");
+					//~ result = readBmp(file);
+				}
+			}
+		}
+	}// +/
+}
+
+string fileName = "alma.bmp";
+
+//~ openImg("alma");
+
+//~ println(fileName);
+/*
 struct slice {
 	int length;
 	ptr data;
@@ -27,6 +93,7 @@ struct variant {
 }
 */
 //~ hex32 xxx = 0;
+/*
 struct gxRect: 4 {
 	int x;
 	int y;
@@ -42,7 +109,7 @@ gxRect z = gxRect(1,2,3,4);
 
 //~ vec4f vvv = vec4f(1,2,3,4);
 println(vec4f(1.,2.,3.,4.));
-
+*/
 /*
 //~ addEventListener(MouseEvent.CLICK, function() {System.exit(0);});
 //~ float a = lerp(.6, 0, 1);
