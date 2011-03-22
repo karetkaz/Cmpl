@@ -797,7 +797,7 @@ int emitarg(state s, int opc, stkval arg) {
 			STOP(error_stc, s->vm.ss < (__CHK));\
 			s->vm.ss += (__SP);\
 			s->vm.pos += (__IP);
-		#include "incl/vm.h"
+		#include "code.i"
 	}
 
 	if (opc == opc_call) {
@@ -960,7 +960,7 @@ static inline int ovf(cell pu) {
 	return (pu->sp - pu->bp) < 0;
 }
 
-/** exec
+/** vmExec
  * executes on a single thread
  * @arg env: enviroment
  * @arg cc: cell count
@@ -972,7 +972,7 @@ static void dbugerr(state s, int pu, void *ip, long* bp, int ss, char *text) {
 	//~ int SP = ((char*)s->vm._end) - ((char*)bp);
 	int IP = ((unsigned char*)ip) - s->_mem - s->vm.pc;
 	error(s, 0, ">exec:%s:[pu%02d][sp%02d]@%9.*A", text, pu, ss, IP, ip);
-	//~ fputfmt(stdout, ">exec:[pu%02d][sp%02d]@%9.*A\n", pu, ss, IP, ip);
+	//~ fputfmt(stdout, ">vmExec:[pu%02d][sp%02d]@%9.*A\n", pu, ss, IP, ip);
 }
 
 static int dbugpu(state s, cell pu, dbgf dbg) {
@@ -991,7 +991,7 @@ static int dbugpu(state s, cell pu, dbgf dbg) {
 		if (dbg && dbg(s, 0, ip, (long*)sp, st - sp))
 			return -9;
 
-		switch (ip->opc) {		// exec
+		switch (ip->opc) {		// vmExec
 
 			stop_vm:
 				//~ if (dbg) dbg(vm->s, 0, NULL, (long*)sp, st - sp);
@@ -1020,14 +1020,14 @@ static int dbugpu(state s, cell pu, dbgf dbg) {
 			#define NEXT(__IP, __CHK, __SP) {pu->sp -= 4*(__SP); pu->ip += (__IP);}
 			#define STOP(__ERR, __CHK) if (__CHK) goto __ERR
 			#define EXEC
-			#include "incl/vm.h"
+			#include "code.i"
 		}
 	}
 
 	return 0;
 }
 
-int exec(state s, dbgf dbg) {
+int vmExec(state s, dbgf dbg) {
 	struct cell pu[1];
 
 	pu->ip = (unsigned char *)s->_mem + s->vm.pc;
@@ -1254,7 +1254,7 @@ void fputasm(FILE *fout, state s, int beg, int end, int mode) {
 			//~ #define NEXT(__IP, __CHK, __SP) {if (__IP) is = (__IP);/*  ss += (__SP); */}
 			#define NEXT(__IP, __CHK, __SP) {if (__IP) is = (__IP);}
 			#define STOP(__ERR, __CHK) if (__CHK) goto __ERR
-			#include "incl/vm.h"
+			#include "code.i"
 		}
 
 		if (mode & 0xf00)

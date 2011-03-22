@@ -83,7 +83,7 @@ float64_t constflt(astn ast) {
 	return 0;
 }
 
-// TODO: use cgen and exec;
+// TODO: use cgen and vmExec;
 int eval(astn res, astn ast) {
 	struct astn lhs, rhs;
 	int cast;
@@ -384,8 +384,9 @@ int eval(astn res, astn ast) {
 }
 
 int mkcon(astn ast, symn type) {
-	dieif(!ast || !type, "FixMe");
 	struct astn tmp;
+
+	dieif(!ast || !type, "FixMe");
 
 	if (!promote(ast->type, type))
 		return 0;

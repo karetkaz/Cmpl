@@ -62,7 +62,7 @@
 // Symbols - CC
 enum {
 	#define TOKDEF(NAME, TYPE, SIZE, STR) NAME,
-	#include "incl/defs.h"
+	#include "defs.i"
 	tok_last,
 	// xml dump cast needs STR
 
@@ -91,7 +91,7 @@ extern const tok_inf tok_tbl[255];
 // Opcodes - VM
 enum {
 	#define OPCDEF(Name, Code, Size, Args, Push, Time, Mnem) Name = Code,
-	#include "incl/defs.h"
+	#include "defs.i"
 	opc_last,
 
 	opc_neg,		// argument is the type
@@ -394,7 +394,7 @@ symn leave(ccState s, symn def);
  * @param res: where to put the result
  * @param ast: tree to be evaluated
  * @return one of [TYPE_err, TYPE_bit, TYPE_int, TYPE_flt, ?TYPE_str]
- * @todo should use the exec funtion, for the generated code.
+ * @todo should use the vmExec funtion, for the generated code.
  */
 int eval(astn res, astn ast);
 int mkcon(astn ast, symn type);

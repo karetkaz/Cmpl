@@ -887,7 +887,7 @@ int program(int argc, char *argv[]) {
 			case out_tags: dump(s, dump_sym | (level & 0x0ff), NULL); break;
 			case out_dasm: dump(s, dump_asm | (level & 0xfff), NULL); break;
 			case out_tree: dump(s, dump_ast | (level & 0x0ff), NULL); break;
-			case run_code: exec(s, dbg); break;
+			case run_code: vmExec(s, dbg); break;
 		}
 
 		logfile(s, NULL);
@@ -908,7 +908,7 @@ int program(int argc, char *argv[]) {
 int main(int argc, char *argv[]) {
 	if (1 && argc == 1) {
 		char *args[] = {
-			*argv,	// Program Name
+			"*argv",	// Program Name
 			//"-api",
 			
 			"-c",		// compile command

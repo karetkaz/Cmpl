@@ -76,7 +76,15 @@ void openImg(string file) {
 	}// +/
 }
 
-string fileName = "alma.bmp";
+//~ string fileName = "alma.bmp";
+{
+int a = 8;
+//~ int b = 1;
+
+if (a > 0 && false) {
+	println("alma");
+}
+}
 
 //~ openImg("alma");
 

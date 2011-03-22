@@ -361,6 +361,9 @@ static void fputast(FILE *fout, astn ast, int mode, int level) {
 		case OPER_gte:		// '>'
 		case OPER_geq:		// '>='
 
+		case OPER_lnd:		// '&&'
+		case OPER_lor:		// '||'
+
 		case ASGN_set: {	// '='
 			int pre = ast->kind & 0xf;
 			//~ int putlrp = mode & alPars;
@@ -413,6 +416,9 @@ static void fputast(FILE *fout, astn ast, int mode, int level) {
 				case OPER_mul: fputstr(fout, "*"); break;		// '*'
 				case OPER_div: fputstr(fout, "/"); break;		// '/'
 				case OPER_mod: fputstr(fout, "%"); break;		// '%'
+
+				case OPER_lnd: fputstr(fout, "&&"); break;		// '&'
+				case OPER_lor: fputstr(fout, "||"); break;		// '|'
 
 				case ASGN_set: fputstr(fout, "="); break;		// ':='
 			}

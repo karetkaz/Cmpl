@@ -114,7 +114,7 @@ int (*libcSwapExit(state s, int libc(state)))(state);
 typedef int (*dbgf)(state s, int pu, void *ip, long* sptr, int scnt);
 //~ int dbgCon(state, int, void*, long*, int);				// 
 
-int exec(state, dbgf dbg);
+int vmExec(state, dbgf dbg);
 int vmCall(state, symn fun, ...);
 
 // output
@@ -161,4 +161,4 @@ static inline void* popval(state s, void* dst, int size) { return memcpy(dst, po
 //~ static inline void retf64(state s, float64_t val) { setret(float64_t, s, val); }
 #endif
 
-#define DEBUGGING 15
+#define DEBUGGING 1

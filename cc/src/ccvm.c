@@ -12,13 +12,13 @@
 #endif
 const tok_inf tok_tbl[255] = {
 	#define TOKDEF(NAME, TYPE, SIZE, STR) {TYPE, SIZE, STR},
-	#include "incl/defs.h"
+	#include "defs.i"
 	{0},
 };
 const opc_inf opc_tbl[255] = {
 	//#define OPCDEF(Name, Code, Size, Args, Push, Time, Mnem)
 	#define OPCDEF(NAME, CODE, SIZE, CHCK, DIFF, TIME, MNEM) {CODE, SIZE, CHCK, DIFF, MNEM},
-	#include "incl/defs.h"
+	#include "defs.i"
 	{0},
 };
 
@@ -637,8 +637,37 @@ int cgen(state s, astn ast, int get) {
 			#endif
 		} break;
 
-		//~ case OPER_lnd:		// '&&'
-		//~ case OPER_lor:		// '||'
+		case OPER_lnd:		// '&&'
+		case OPER_lor: {	// '||'
+			int opc = -1;
+			switch (ast->kind) {
+				default: fatal("FixMe"); return 0;
+				case OPER_lnd: opc = opc_and; break;
+				case OPER_lor: opc = opc_ior; break;
+			}
+			if (!cgen(s, ast->op.lhso, TYPE_bit)) {
+				trace("%+k", ast);
+				return 0;
+			}
+			if (!cgen(s, ast->op.rhso, TYPE_bit)) {
+				trace("%+k", ast);
+				return 0;
+			}
+			if (!emitint(s, opc, TYPE_u32)) {
+				trace("opc__%02x:%+k", opc, ast);
+				return 0;
+			}
+
+			warn(s, 4, s->cc->file, ast->line, "operator `%k` does not Short-circuit yet", ast);
+			#if DEBUGGING
+			// these must be true
+			//~ dieif(ast->op.lhso->cst2 != ast->op.rhso->cst2, "RemMe", ast);
+			dieif(ast->op.lhso->cst2 != TYPE_bit, "RemMe", ast);
+			dieif(ast->op.lhso->cst2 != TYPE_bit, "RemMe", ast);
+			dieif(ret != castOf(ast->type), "RemMe");
+			dieif(ret != TYPE_bit, "RemMe");
+			#endif
+		} break;
 		case OPER_sel: {		// '?:'
 			int jmpt, jmpf;
 			if (0 && s->vm.opti && eval(&tmp, ast->op.test)) {
@@ -932,8 +961,13 @@ int cgen(state s, astn ast, int get) {
 		} break;// */
 
 		case TYPE_bit: switch (ret) {		// to boolean
-			case TYPE_u32: /*emitopc(s, i32_bol);*/ break;
-			case TYPE_i32: /*emitopc(s, i32_bol);*/ break;
+			case TYPE_u32:
+			case TYPE_i32:
+				if (!emitopc(s, i32_bol)) {
+					trace("%+k", ast);
+					return 0;
+				}
+				break;
 			case TYPE_i64:
 				if (!emitopc(s, i64_bol)) {
 					trace("%+k", ast);
@@ -1190,6 +1224,7 @@ int gencode(state s, int level) {
 				astn id = newnode(cc, TYPE_ref);
 				astn op = newnode(cc, ASGN_set);
 
+				//fatal("FixMe %T", var);
 				op->kind = ASGN_set;
 				op->cst2 = var->cast;
 				op->type = var->type;
@@ -1720,7 +1755,7 @@ symn findref(state s, void *ptr) {
 		return NULL;
 	}
 
-	if (ptr > (void*)s->_mem + s->vm.pc) {		// pc 
+	if ((char*)ptr > s->_mem + s->vm.pc) {		// pc 
 		fatal("Error");
 		return NULL;
 	}
