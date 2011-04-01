@@ -13,29 +13,56 @@
 /* Todo: Compiler
 	state: rtEnv: run time class
 	ccEnv: Compiler class
-	vmEnv: Virtual machine
 // */
 
 /* TODO:
  ? static if else part
  K static if (true) does not enter new scope
- K nameless enum does not enter new scope
+ K nameless const does not enter new scope
  * .
  ? separate struct and unoin declaration.
  *	in case of structures create a new constructor with all members; fix padding on stack.
  ?	in case of unions create a constructors with the bigger member.
-
- * default ctor from:
- *  	(basic types): ptr, basic types			// int32(ptr) := emit(int32, ldi.b32, ref(ptr));, float(ptr), int(float), float(int)
- *  	(struct types): ptr, fields as param	// struct X{int a; float b;} => X(int a, float b) = push(this.a = a, this.b = b)
-
- * define var: struct var {typename typeRef; pointer dataRef;};
- * Array: Array {uint Length; type *Values;}
  * 
- * define void(var &a) = var.invoke(a.class, ".dtor", a);
- * define void(uint32 &a) = void(0); // try to do nothing
- * define void(int32 &a) = void(0);
- * define void(int64 &a) = void(0);
+ * define-s are implicit
+ * operator-s are explicit
+ * 
+ * struct float3{float x; float y; float z;}
+ * define float3(float x, float y, float z) = emit(float3, f32(x), f32(y), f32(z));
+ * 
+ * struct float4{float x; float y; float z; float w;}
+ * define float4(float x, float y, float z, float w) = emit(float4, f32(x), f32(y), f32(z), f32(w));
+ * 
+ * define float3(float4 x) = float3(x.x, x.y, x.z);			// this works
+ * operator float4(float3 x) = float4(x.x, x.y, x.z, 0.);
+ * float4 a = float4(1., 2., 3., 4.);
+ * float3 b = float3(a);
+ * float4 c = b;				// this will call `operator float4(float3 x)`
+ * float3 B = a;				// Error: no operator float3(float4 x)
+ * 
+ * 
+ * 
+ * 
+ * default ctor from:
+ *  	(basic types): ptr, basic types			// int32(ptr) := emit(int32, ldi.b32, ref(ptr));, float32(ptr), int32(float32), float32(int32), ...
+ *  	(struct types): ptr, fields as param	// struct X{int a; float b;} => define X(int a, float b) = emit(int(a), float(b)); , ...
+ * 
+ * struct variant {type &Class; pointer Data;}
+ * struct array   {uint Length; pointer Data;}
+ * 
+ * sysdef var: variant;
+ * sysdef array: variant[];
+ * sysdef string: char[];
+ * 
+ * define void(var &a) = var.tryInvoke(a.Class, ".dtor", a.Data);
+ * 
+ * define void(int8 &a)    = void(0);
+ * define void(int16 &a)   = void(0);
+ * define void(int32 &a)   = void(0);
+ * define void(int64 &a)   = void(0);
+ * define void(uint8 &a)   = void(0);
+ * define void(uint16 &a)  = void(0);
+ * define void(uint32 &a)  = void(0);
  * define void(float32 &a) = void(0);
  * define void(float64 &a) = void(0);
  * 
@@ -45,12 +72,8 @@
  * define exit(int code) = emit(void, libc(0), i32(code));
  * define exit() = exit(0);
 **/
-/* DONE: emit
-int a = emit(); // top of stack
-int a = emit;	// top of stack by ref
-// */
 /* TODO: errors
-//~ define fact(int64 n) = (n * fact(n - 1));
+define fact(int64 n) = (n * fact(n - 1));
 // */
 /* TODO: operators
 'operator (int lhs) + (int rhs)' := 'define .add(int lhs, int rhs)'
@@ -606,13 +629,26 @@ i32x8 sub(i32x8 &a, i32x8 &b) {
 enum TypeCode:int32 {
 	TYPE_any = 0x00000000;		// invalid, error, ...
 	TYPE_vid = 0x00000001;		// void;
-	TYPE_bit = 0x00000002;		// bool;
+
+	TYPE_bit = 0x00000002;		// bool
+
+	TYPE_i32 = 0x00000004;
+	TYPE_i64 = 0x00000005;
+
+	TYPE_u32 = 0x00000003;		// ???
+	//~ TYPE_u64 = 0x00000003;		// ???
+
+	//~ TYPE_f16 = 0x00000006;
+	TYPE_f32 = 0x00000006;
+	TYPE_f64 = 0x00000007;
+
+	TYPE_p4x = 0x00000008;		// vec4f, vec2d / (p2f64, p4f32), (p4f64, p8f32) (p2i64, p4i32, p8i16, p16i8), (p2u64, p4u32, p8u16, p16u8), ...
+	TYPE_arr = 0x00000009;		// string, array, pointer
+
 	//~ TYPE_int = 0x00000003;		// int64, int32, int16, int8, uint32, uint16, uint8;
 	//~ TYPE_flt = 0x00000004;		// float64, float32;
-	//~ TYPE_p4x = 0x00000005;		// (p2f64, p4f32), (p4f64, p8f32) (p2i64, p4i32, p8i16, p16i8), (p2u64, p4u32, p8u16, p16u8), ...
-	//~ TYPE_var = 0x00000006;		// variant: struct{int typeCode; int reference;}
-	TYPE_val = 0x00000006;		// struct, float, int
-	TYPE_arr = 0x00000006;		// string, array, pointer
+
+	//~ TYPE_val = 0x00000006;		// struct, float, int
 
 	TYPE_def = 0x0000000e;		// struct, union, class, enum, operator, getter, setter
 	TYPE_ref = 0x0000000f;		// variable
@@ -620,23 +656,27 @@ enum TypeCode:int32 {
 	ATTR_con = 0x00000010;		// constant
 	ATTR_ind = 0x00000020;		// indirect
 	ATTR_cal = 0x00000040;		// function
+	ATTR_glb = 0x00000xx0;		// global
 }
 
-struct TypeInfo {
+struct class {
 	string file;		// declared in file
 	int32 line;			// declared on line
 
 	string name;		// typename
-	int32 size;			// size / offset:if type_ref
+	int32 offs;			// offset
+	int32 size;			// size
 
-	TypeInfo &base;			// base type of TYPE_ref (void, int, float, struct, ...), return type of func
-	TypeInfo &args;			// record fields / function args
-	TypeInfo &next;			// next type, arg, field
-	TypeCode code;			// ref(var / fun), type,
+	class &base;			// base type of TYPE_ref (void, int, float, struct, ...), return type of func
+	class &args;			// record fields / function args
+	class &next;			// next type, arg, field
 
-	//~ get constant = (!!(this.code & ATTR_con));
-	//~ get indirect = (!!(this.code & ATTR_ind));
-	//~ get function = (!!(this.code & ATTR_fun));
+	int32 kind;			// ref(var / fun), type,
+
+	//~ get typename = bool((this.kind & 0xf) != TYPE_ref);
+	//~ get constant = bool(this.kind & ATTR_con);
+	//~ get indirect = bool(this.kind & ATTR_ind);
+	//~ get function = bool(this.kind & ATTR_fun);
 }
 
 //~ class type: TypeInfo {}
@@ -651,11 +691,11 @@ bool instanceof(TypeInfo &ty, ref obj) {
 
 define lookUp(TypeInfo &type, int level, string name) = lookUp(type, level, name, null);
 
-TypeInfo lookUp(TypeInfo &type, int level, string name, variant ...args) {
+TypeInfo lookUp(TypeInfo &type, int level, string name, variant args...) {
 
 	bool func = args != null;
 
-	while (type && level && type.code != TYPE_ref) {
+	while (type && level > 0 && type.code != TYPE_ref) {
 
 		for (TypeInfo arg : type.args) {
 
@@ -678,6 +718,9 @@ TypeInfo lookUp(TypeInfo &type, int level, string name, variant ...args) {
 					if (param.load) ...		// by ref
 					if (param.call) ...		// argument is a funtion: (byref must be set)
 
+					if (!canAssign(param, args[i]))
+						break;
+
 					if (param.type != args[i].type)		// check return types
 						break;
 
@@ -691,16 +734,16 @@ TypeInfo lookUp(TypeInfo &type, int level, string name, variant ...args) {
 			return arg;
 		}
 
-		// inherited class has this member ?
+		// base class has this member ?
 		type = type.base;
 		level -= 1;
 	}
 	return null;
 }
 
-bool invoke(TypeInfo &type, string name, var &result, var ...args) {
+bool invoke(TypeInfo &type, string name, var &result, var args...) {
 
-	TypeInfo Method = lookUp(type, name, -1, args == null ? var[]{null}, args);
+	TypeInfo Method = lookUp(type, -1, name, args);
 
 	if (Method != null && Method.offset > 0) {
 		uint32 stop[256];		// this is on top of stack
@@ -718,64 +761,6 @@ bool invoke(TypeInfo &type, string name, var &result, var ...args) {
 
 	return false;
 }
-
-//~ */
-/* TypeDecl
-
-struct Color: 0 {
-	val: int32;	//%%rgb(#%08x)
-	col: struct x: 1 {
-		uint8 b;		//%blue(%d)
-		uint8 g;		//%green(%d)
-		uint8 r;		//%red(%d)
-		uint8 a;		//%alpha(%d)
-	};//%
-}
-
-define Color(int a, int r, int g, int b) = emit(Color, i32((a << 24) | (r << 16) | (g << 8) | b));
-define Color(int r, int g, int b) = Color(255, r, g, b);
-define Color(int32 val) = emit(Color, i32(val));
-
-/+ TODO: fixme
-enum Colors: Color {
-	White   = Color(0xffffff);
-	Black   = Color(0x000000);
-	Red     = Color(0xff0000);
-	Green   = Color(0x00ff00);
-	Blue    = Color(0x0000ff);
-	//~ Cian    = color(0x??????);
-	Magenta = Color(0xff00ff);
-	//~ Yellow  = color(0x??????);
-	//~ ...
-}// +/
-
-struct Font {
-	string face;
-	style: enum {
-		normal;
-		italic;
-		oblique;
-	};// +/
-	Color back;
-	Color fore;
-	int size;
-}
-
-Font a;
-a.face = "verdana";
-a.fore = Color(0xadadad);
-a.back = Color(0x7f00ff);
-a.style = Font.oblique;
-a.size = 12;
-
-//~ a.fore = Color(0,0,0);
-
-//~ // TODO: this is an error!
-//~ int Font_size = Font.size;
-
-// TODO: this is an error!
-//~ string aa = a.face;//"alma";
-//~ println(aa);
 
 //~ */
 /* stupid things

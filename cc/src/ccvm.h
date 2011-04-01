@@ -27,13 +27,13 @@
 #define debug(msg, ...) pdbg("debug", __FILE__, __LINE__, msg, ##__VA_ARGS__)
 #define trace(msg, ...) pdbg("trace", __FILE__, __LINE__, msg, ##__VA_ARGS__)
 #define PERR(__ENV, __LEVEL, __FILE, __LINE, msg, ...) do { perr(__ENV, __LEVEL, __FILE, __LINE, msg); debug(msg, ##__VA_ARGS__); } while(0)
-#define error(__ENV, __LINE, msg, ...) PERR(__ENV, -1, NULL, __LINE, msg, ##__VA_ARGS__)
+#define error(__ENV, __FILE, __LINE, msg, ...) PERR(__ENV, -1, __FILE, __LINE, msg, ##__VA_ARGS__)
 #define warn(__ENV, __LEVEL, __FILE, __LINE, msg, ...) PERR(__ENV, __LEVEL, __FILE, __LINE, msg, ##__VA_ARGS__)
 #define info(__ENV, __FILE, __LINE, msg, ...) PERR(__ENV, 0, __FILE, __LINE, msg, ##__VA_ARGS__)
 #else // catch the position error raised
 #define debug(msg, ...)
 #define trace(msg, ...)
-#define error(__ENV, __LINE, msg, ...) perr(__ENV, -1, NULL, __LINE, msg, ##__VA_ARGS__)
+#define error(__ENV, __FILE, __LINE, msg, ...) perr(__ENV, -1, __FILE, __LINE, msg, ##__VA_ARGS__)
 #define warn(__ENV, __LEVEL, __FILE, __LINE, msg, ...) perr(__ENV, __LEVEL, __FILE, __LINE, msg, ##__VA_ARGS__)
 #define info(__ENV, __FILE, __LINE, msg, ...) perr(__ENV, 0, __FILE, __LINE, msg, ##__VA_ARGS__)
 #endif
@@ -47,13 +47,13 @@
 #define debug(msg...) pdbg("debug", __FILE__, __LINE__, msg)
 #define trace(msg...) pdbg("trace", __FILE__, __LINE__, msg)
 #define PERR(__ENV, __LEVEL, __FILE, __LINE, msg...) do { perr(__ENV, __LEVEL, __FILE, __LINE, msg); debug(msg); } while(0)
-#define error(__ENV, __LINE, msg...) PERR(__ENV, -1, NULL, __LINE, msg)
+#define error(__ENV, __FILE, __LINE, msg...) PERR(__ENV, -1, __FILE, __LINE, msg)
 #define warn(__ENV, __LEVEL, __FILE, __LINE, msg...) PERR(__ENV, __LEVEL, __FILE, __LINE, msg)
 #define info(__ENV, __FILE, __LINE, msg...) PERR(__ENV, 0, __FILE, __LINE, msg)
 #else // catch the position error raised
 #define debug(msg...)
 #define trace(msg...)
-#define error(__ENV, __LINE, msg...) perr(__ENV, -1, NULL, __LINE, msg)
+#define error(__ENV, __FILE, __LINE, msg...) perr(__ENV, -1, __FILE, __LINE, msg)
 #define warn(__ENV, __LEVEL, __FILE, __LINE, msg...) perr(__ENV, __LEVEL, __FILE, __LINE, msg)
 #define info(__ENV, __FILE, __LINE, msg...) perr(__ENV, 0, __FILE, __LINE, msg)
 #endif
@@ -171,9 +171,9 @@ struct list {				// linked list
 	//~ unsigned int	offs;	// offset in file ?
 };
 struct astn {				// tree node
-	uint32_t	line;				// token on line (* file offset or what *)
+	symn		type;				// typeof() return type of operator ... base type of IDTF
 	uint8_t		kind;				// code: TYPE_ref, OPER_???
-	uint8_t		cst2;				// casts to basic type: (i32, f32, i64, f64)
+	uint8_t		cst2;				// casts to basic type: (i32, f32, i64, f64, ref, bool, void)
 	uint16_t	_XXX;				// unused
 	union {
 		union  {					// TYPE_xxx: constant
@@ -207,8 +207,11 @@ struct astn {				// tree node
 			long stks;				// stack size
 		} go2;
 	};
-	symn		type;				// typeof() return type of operator ... base type of IDTF
 	astn		next;				// next statement, do not use for preorder
+
+	char*		file;				// token in file
+	uint32_t	line;				// token on line
+	uint32_t	temp;				// token on line
 };
 struct symn {				// type node
 	char*	name;

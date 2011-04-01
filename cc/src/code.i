@@ -14,10 +14,11 @@ case opc_loc:  NEXT(2, 0, +ip->idx) {
 	STOP(error_ovf, ovf(pu));
 #endif
 } break;
-case opc_drop: NEXT(2, ip->idx, -ip->idx) {
-} break;
+case opc_drop: NEXT(2, ip->idx, -ip->idx) {} break;
 case opc_spc:  NEXT(4, 0, 0) {
-	int sm = (ip->rel + 3) / 4;
+	//~ int sm = (ip->rel + 3) / 4;
+	int sm = ip->rel / 4;
+	dieif(ip->rel & 3, "FixMe");
 	if (sm > 0) {
 		NEXT(0, 0, sm);
 #ifdef EXEC
@@ -820,8 +821,9 @@ case v2d_div: NEXT(1, 8, -4) {
 	SP(6, f8) /= SP(2, f8);
 #endif
 } break;
-case p4d_swz: NEXT(2, 4, -0) {
+case p4x_swz: NEXT(2, 4, -0) {
 #if defined(EXEC) || defined(EVAL)
+	//~ asm("shufps ....");
 	uint32_t swz = ip->idx;
 	uint32_t d0 = SP((swz >> 0) & 3, i4);
 	uint32_t d1 = SP((swz >> 2) & 3, i4);

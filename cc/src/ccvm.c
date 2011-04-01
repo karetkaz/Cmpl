@@ -85,7 +85,7 @@ int cgen(state s, astn ast, int get) {
 			}
 			if (stpos != stkoffs(s, 0)) {
 				if (stpos > stkoffs(s, 0)) {
-					warn(s, 1, s->cc->file, ast->line, "statement underflows stack: %+k", ast->stmt.stmt);
+					warn(s, 1, ast->file, ast->line, "statement underflows stack: %+k", ast->stmt.stmt);
 				}
 				/*if (get == TYPE_vid && !emitidx(s->vm, opc_drop, stpos)) {
 					trace("error");
@@ -106,7 +106,7 @@ int cgen(state s, astn ast, int get) {
 				ipdbg = emitopc(s, markIP);
 				#endif
 				if (!cgen(s, ptr, TYPE_vid)) {		// we will free stack on scope close
-					error(s, ptr->line, "emmiting statement `%+k`", ptr);
+					error(s, ptr->file, ptr->line, "emmiting statement `%+k`", ptr);
 					#if DEBUGGING > 1
 					debug("cgen[%t->%t](err, %+k)\n%7K", get, ret, ptr, ptr);
 					fputasm(stdout, s, ipdbg, -1, 0x119);
@@ -131,7 +131,7 @@ int cgen(state s, astn ast, int get) {
 			if (qual == QUAL_sta) {
 				//~ debug("static if: `%k`: ", ast);
 				if (ast->stmt.step || !tt) {
-					error(s, ast->line, "invalid static if construct: %s", !tt ? "can not evaluate" : "else part is invalid");
+					error(s, ast->file, ast->line, "invalid static if construct: %s", !tt ? "can not evaluate" : "else part is invalid");
 					return 0;
 				}
 				qual = 0;
@@ -257,12 +257,12 @@ int cgen(state s, astn ast, int get) {
 				s->cc->jmps = jmp->next;
 
 				if (jmp->go2.stks != stbreak) {
-					error(s, jmp->line, "`%k` statement is invalid due to previous variable declaration within loop", jmp);
+					error(s, jmp->file, jmp->line, "`%k` statement is invalid due to previous variable declaration within loop", jmp);
 					return 0;
 				}
 
 				switch (jmp->kind) {
-					default : error(s, jmp->line, "invalid goto statement: %k", jmp); return 0;
+					default : error(s, jmp->file, jmp->line, "invalid goto statement: %k", jmp); return 0;
 					case STMT_brk: fixjump(s, jmp->go2.offs, lbreak, jmp->go2.stks); break;
 					case STMT_con: fixjump(s, jmp->go2.offs, lcont, jmp->go2.stks); break;
 				}
@@ -369,7 +369,7 @@ int cgen(state s, astn ast, int get) {
 						return 0;
 					}
 					if (get != TYPE_vid && !emitint(s, opc_sti, sizeOf(ast->type))) {
-						error(s, ast->line, "store indirect: %T:%d of `%+k`", ast->type, sizeOf(ast->type), ast);
+						error(s, ast->file, ast->line, "store indirect: %T:%d of `%+k`", ast->type, sizeOf(ast->type), ast);
 						return 0;
 					}
 					if (stkret < stkoffs(s, 0) && !emitidx(s, opc_drop, stkret)) {
@@ -434,7 +434,7 @@ int cgen(state s, astn ast, int get) {
 					//~ debug("emit: %+k", ast);
 				}
 				else if (!argv || argv != ast->op.rhso)
-					warn(s, 1, s->cc->file, ast->line, "multiple values, array ?: '%+k'", ast);
+					warn(s, 1, ast->file, ast->line, "multiple values, array ?: '%+k'", ast);
 			}
 			else if (var) {					// call()
 				//~ debug("call: %+k", ast);
@@ -457,14 +457,14 @@ int cgen(state s, astn ast, int get) {
 				}
 				else {
 					//? can have an operator: call() with this args
-					error(s, ast->line, "called object is not a function: %+T", var);
+					error(s, ast->file, ast->line, "called object is not a function: %+T", var);
 					return 0;
 				}
 			}
 			else {							// ()
 				dieif(ast->op.lhso, "FixMe %+k:%+k", ast, ast->op.lhso);
 				if (!argv || argv != ast->op.rhso /* && cast*/)
-					warn(s, 1, s->cc->file, ast->line, "multiple values, array ?: '%+k'", ast);
+					warn(s, 1, ast->file, ast->line, "multiple values, array ?: '%+k'", ast);
 			}
 		} break;
 		case OPER_idx: {	// '[]'
@@ -475,9 +475,10 @@ int cgen(state s, astn ast, int get) {
 			}
 
 			if (s->vm.opti && eval(&tmp, ast->op.rhso) == TYPE_int) {
+				symn arr = ast->op.lhso->type;
 				int offs = sizeOf(ast->type) * constint(&tmp);
-				if (constint(&tmp) >= ast->op.lhso->type->size) {
-					error(s, ast->line, " index out of bounds: %+k", ast);
+				if (arr && arr->init && constint(&tmp) >= arr->size) {
+					error(s, ast->file, ast->line, "index out of bounds: %+k", ast);
 				}
 				if (!emitint(s, opc_inc, offs)) {
 					trace("%+k", ast);
@@ -658,7 +659,7 @@ int cgen(state s, astn ast, int get) {
 				return 0;
 			}
 
-			warn(s, 4, s->cc->file, ast->line, "operator `%k` does not Short-circuit yet", ast);
+			warn(s, 4, ast->file, ast->line, "operator `%k` does not short-circuit yet", ast);
 			#if DEBUGGING
 			// these must be true
 			//~ dieif(ast->op.lhso->cst2 != ast->op.rhso->cst2, "RemMe", ast);
@@ -807,9 +808,9 @@ int cgen(state s, astn ast, int get) {
 				case EMIT_opc:
 					dieif(get == TYPE_ref, "FixMe");
 					if (!emitint(s, var->offs, var->init ? constint(var->init) : 0)) {
-						error(s, ast->line, "error emiting opcode: %+k", ast);
+						error(s, ast->file, ast->line, "error emiting opcode: %+k", ast);
 						if (stkoffs(s, 0) > 0)
-							info(s, s->cc->file, ast->line, "%+k underflows stack.", ast);
+							info(s, ast->file, ast->line, "%+k underflows stack.", ast);
 						return 0;
 					}
 					return TYPE_vid;
@@ -819,7 +820,7 @@ int cgen(state s, astn ast, int get) {
 					if (var->init)
 						return cgen(s, var->init, get);
 				default:
-					error(s, ast->line, "invalid rvalue `%+k:` %t", ast, var->kind);
+					error(s, ast->file, ast->line, "invalid rvalue `%+k:` %t", ast, var->kind);
 					return 0;
 			}
 		} break;
@@ -881,7 +882,7 @@ int cgen(state s, astn ast, int get) {
 						ret = get;
 					}
 					else if (val->type != typ && !promote(val->type, typ)) {
-						error(s, ast->line, "incompatible types in initialization(%-T := %-T)", typ, val->type);
+						error(s, ast->file, ast->line, "incompatible types in initialization(%-T := %-T)", typ, val->type);
 					}
 
 					if (s->vm.opti && eval(&tmp, val)) {
@@ -907,7 +908,7 @@ int cgen(state s, astn ast, int get) {
 					if (!var->offs) {
 						var->offs = stkoffs(s, 0);
 						if (stktop != var->offs && val->type != emit_opc) {
-							error(s, ast->line, "invalid initializer size: %d <> got(%d): `%+k`", stktop, var->offs, val);
+							error(s, ast->file, ast->line, "invalid initializer size: %d <> got(%d): `%+k`", stktop, var->offs, val);
 							return 0;
 						}
 					}
@@ -931,7 +932,7 @@ int cgen(state s, astn ast, int get) {
 					}
 					var->offs = stkoffs(s, 0);
 					if (var->offs < size) {
-						error(s, ast->line, "stack underflow", var->offs, size);
+						error(s, ast->file, ast->line, "stack underflow", var->offs, size);
 						return 0;
 					}
 				}
@@ -1109,7 +1110,7 @@ int cgen(state s, astn ast, int get) {
 
 		case TYPE_ref:
 			trace("cgen[%t->%t](%+k)\n%7K", ret, get, ast, ast);
-			error(s, ast->line, "invalid rvalue: %+k", ast);
+			error(s, ast->file, ast->line, "invalid rvalue: %+k", ast);
 			return 0;
 		default:
 			trace("cgen[%t->%t](%+k)\n%7K", ret, get, ast, ast);
@@ -1312,11 +1313,11 @@ int gencode(state s, int level) {
 					return 0;
 				}
 				if (!emitopc(s, opc_jmpi)) {
-					error(s, var->line, "error emiting function: %-T", var);
+					error(s, var->file, var->line, "error emiting function: %-T", var);
 					return 0;
 				}
 				while (cc->jmps) {
-					error(s, 0, "invalid jump: `%k`", cc->jmps);
+					error(s, NULL, 0, "invalid jump: `%k`", cc->jmps);
 					cc->jmps = cc->jmps->next;
 				}
 				var->size = emitopc(s, markIP) - seg;
@@ -1339,7 +1340,7 @@ int gencode(state s, int level) {
 		if (!cgen(s, cc->root, 0))
 			fputasm(stderr, s, seg, -1, 0x10);
 		while (cc->jmps) {
-			error(s, 0, "invalid jump: `%k`", cc->jmps);
+			error(s, NULL, 0, "invalid jump: `%k`", cc->jmps);
 			cc->jmps = cc->jmps->next;
 		}
 	}
@@ -1382,11 +1383,11 @@ static void install_emit(ccState cc, int mode) {
 
 		installex(cc, "nop", EMIT_opc, opc_nop, type_vid, NULL);
 		installex(cc, "not", EMIT_opc, opc_not, type_bol, NULL);
-		installex(cc, "pop", EMIT_opc, opc_drop, type_vid, intnode(cc, 4));
 
+		installex(cc, "pop", EMIT_opc, opc_drop, type_vid, intnode(cc, 1));
 		installex(cc, "set", EMIT_opc, opc_set1, type_vid, intnode(cc, 1));
-		installex(cc, "set0", EMIT_opc, opc_set1, type_vid, intnode(cc, 0));
-		installex(cc, "set1", EMIT_opc, opc_set1, type_vid, intnode(cc, 1));
+		//~ installex(cc, "set0", EMIT_opc, opc_set1, type_vid, intnode(cc, 0));
+		//~ installex(cc, "set1", EMIT_opc, opc_set1, type_vid, intnode(cc, 1));
 
 		if ((typ = install(cc, "dupp", TYPE_rec, TYPE_vid, 0))) {
 			enter(cc, NULL);
@@ -1542,7 +1543,6 @@ static void install_emit(ccState cc, int mode) {
 			struct {
 				char *name;
 				astn node;
-				//~ char *swz, *msk;	// swizzle and mask
 			} swz[256];
 			for (i = 0; i < 256; i += 1) {
 				dieif(cc->_end - cc->_beg < 5, "memory overrun");
@@ -1555,33 +1555,32 @@ static void install_emit(ccState cc, int mode) {
 				swz[i].name = mapstr(cc, cc->_beg, -1, -1);
 				swz[i].node = intnode(cc, i);
 			}
-
-			if ((typ = install(cc, "swz", TYPE_def, 0, 0))) {
+			if ((typ = install(cc, "swz", TYPE_rec, 0, 0))) {
 				enter(cc, NULL);
 				for (i = 0; i < 256; i += 1)
-					installex(cc, swz[i].name, EMIT_opc, p4d_swz, type_v4f, swz[i].node);
+					installex(cc, swz[i].name, EMIT_opc, p4x_swz, type_v4f, swz[i].node);
 				typ->args = leave(cc, typ);
 			}
-			if ((typ = install(cc, "dup", TYPE_def, 0, 0))) {
+			/*if ((typ = install(cc, "dup", TYPE_rec, 0, 0))) {
 				//~ extended set(masked) and dup(swizzle): p4d.dup.xyxy / p4d.set.xyz0
 				enter(cc, NULL);
 				for (i = 0; i < 256; i += 1)
-					installex(cc, swz[i].name, EMIT_opc, 0x1d, type_v4f, swz[i].node);
+					installex(cc, swz[i].name, EMIT_opc, p4x_dup, type_v4f, swz[i].node);
 				typ->args = leave(cc, typ);
-			}
-			if ((typ = install(cc, "set", TYPE_def, 0, 0))) {
+			}// */
+			/*if ((typ = install(cc, "set", TYPE_rec, 0, 0))) {
 				enter(cc, NULL);
-				installex(cc,    "x", EMIT_opc, 0x1e, type_v4f, intnode(cc, 0));
-				installex(cc,    "y", EMIT_opc, 0x1e, type_v4f, intnode(cc, 0));
-				installex(cc,    "z", EMIT_opc, 0x1e, type_v4f, intnode(cc, 0));
-				installex(cc,    "w", EMIT_opc, 0x1e, type_v4f, intnode(cc, 0));
-				installex(cc,  "xyz", EMIT_opc, 0x1e, type_v4f, intnode(cc, 0));
-				installex(cc, "xyzw", EMIT_opc, 0x1e, type_v4f, intnode(cc, 0));
-				installex(cc, "xyz0", EMIT_opc, 0x1e, type_v4f, intnode(cc, 0));
-				installex(cc, "xyz1", EMIT_opc, 0x1e, type_v4f, intnode(cc, 0));
-				installex(cc, "xyz_", EMIT_opc, 0x1e, type_v4f, intnode(cc, 0));
+				installex(cc,    "x", EMIT_opc, p4x_set, type_v4f, intnode(cc, 0));
+				installex(cc,    "y", EMIT_opc, p4x_set, type_v4f, intnode(cc, 0));
+				installex(cc,    "z", EMIT_opc, p4x_set, type_v4f, intnode(cc, 0));
+				installex(cc,    "w", EMIT_opc, p4x_set, type_v4f, intnode(cc, 0));
+				installex(cc,  "xyz", EMIT_opc, p4x_set, type_v4f, intnode(cc, 0));
+				installex(cc, "xyzw", EMIT_opc, p4x_set, type_v4f, intnode(cc, 0));
+				installex(cc, "xyz0", EMIT_opc, p4x_set, type_v4f, intnode(cc, 0));
+				installex(cc, "xyz1", EMIT_opc, p4x_set, type_v4f, intnode(cc, 0));
+				installex(cc, "xyz_", EMIT_opc, p4x_set, type_v4f, intnode(cc, 0));
 				typ->args = leave(cc, typ);
-			}
+			}// */
 		}
 		emit_opc->args = leave(cc, emit_opc);
 		(void)val;
@@ -1620,7 +1619,7 @@ ccState ccInit(state s, int mode) {
 	cc->_beg = (char*)s->_ptr;
 	cc->_end = cc->_beg + s->_cnt;
 
-	//{ install Type
+	//{ install Type System
 	type_vid = install(cc,  "void", TYPE_rec | symn_read, TYPE_vid, 0);
 
 	type_bol = install(cc,  "bool", TYPE_rec | symn_read, TYPE_bit, 4);
@@ -1633,9 +1632,9 @@ ccState ccInit(state s, int mode) {
 	type_u08 = install(cc,  "uint8", TYPE_rec | symn_read, TYPE_u32, 1);
 	type_u16 = install(cc, "uint16", TYPE_rec | symn_read, TYPE_u32, 2);
 	type_u32 = install(cc, "uint32", TYPE_rec | symn_read, TYPE_u32, 4);
-	//~ type_u64 = install(cc, "uint64", TYPE_rec | symn_read, TYPE_i64, 8);
+	//~ type_u64 = install(cc, "uint64", TYPE_rec | symn_read, TYPE_u64, 8);
 
-	//~ type_f16 = install(cc, "float16", TYPE_rec | symn_read, TYPE_f32, 2);
+	//~ type_f16 = install(cc, "float16", TYPE_rec | symn_read, TYPE_f16, 2);
 	type_f32 = install(cc, "float32", TYPE_rec | symn_read, TYPE_f32, 4);
 	type_f64 = install(cc, "float64", TYPE_rec | symn_read, TYPE_f64, 8);
 
@@ -1644,11 +1643,13 @@ ccState ccInit(state s, int mode) {
 
 	//~ type_arr = install(cc, ".array", TYPE_rec | symn_read, TYPE_ref, 4);
 	type_ptr = install(cc, ".pointer", TYPE_rec | symn_read, TYPE_ref, 4);
-	type_str = install(cc, "string", TYPE_rec | symn_read, TYPE_ref, 4);
-	//~ type_str = install(cc, "string", TYPE_arr | symn_read, TYPE_ref, 4);
+	//~ type_str = install(cc, "string", TYPE_rec | symn_read, TYPE_ref, 4);
 
 	//~ type_chr = installex(cc, "char", TYPE_def, 0, type_i08, NULL);
-	//~ type_str = installex(cc, "string", TYPE_arr | symn_read | symn_stat, TYPE_ref, type_i08, NULL);
+	if ((type_str = installex(cc, "string", TYPE_arr | symn_read, TYPE_ref, type_u08, NULL))) {
+		type_str->cast = TYPE_ref;
+		type_str->size = 4;
+	}
 
 	installex(cc, "int",    TYPE_def, 0, type_i32, NULL);
 	installex(cc, "long",   TYPE_def, 0, type_i64, NULL);
@@ -1695,7 +1696,7 @@ int ccDone(state s) {
 
 	if (peek(s->cc)) {
 		astn ast = peek(s->cc);
-		error(s, ast->line, "unexpected: `%k`", ast);
+		error(s, ast->file, ast->line, "unexpected: `%k`", ast);
 		return -1;
 	}
 	// close input
@@ -1755,7 +1756,7 @@ symn findref(state s, void *ptr) {
 		return NULL;
 	}
 
-	if ((char*)ptr > s->_mem + s->vm.pc) {		// pc 
+	if ((unsigned char*)ptr > s->_mem + s->vm.pc) {		// pc 
 		fatal("Error");
 		return NULL;
 	}
@@ -1802,23 +1803,31 @@ int findnzv(ccState s, char *name) {
 
 static void install_lang(ccState cc, unsigned level) {
 	if (install(cc, "Math", TYPE_def, 0, 0)) {
+		enter();
 		installex(cc, "pi", TYPE_def, 0, type_f64, fh8node(cc, 0x400921fb54442d18LL));
+		leave();
 	}
 	if (install(cc, "Compiler", TYPE_def, 0, 0)) {
+		//~ enter();
 		//~ install(cc, "version", VERS_get, 0, 0);	// type int
 		//~ install(cc, "file", LINE_get, 0, 0);	// type string
 		//~ install(cc, "line", FILE_get, 0, 0);	// type int
 		//~ install(cc, "date", DATE_get, 0, 0);	// type ???
 		//~ install(cc, "emit", DATE_get, 0, 0);	// type ???
+		//~ leave();
 	}
 	if (install(cc, "Runtime", TYPE_def, 0, 0)) {
+		enter();
 		install(cc, "Env", TYPE_def, 0, 0);	// map<String, String> Enviroment;
 		install(cc, "Args", TYPE_arr, 0, 0);// string Args[int];
 		install(cc, "assert(bool test, string error, var args...)", TYPE_def, 0, 0);
+		leave();
 	}
 	if (install(cc, "Reflection", TYPE_def, 0, 0)) {
+		enter();
 		install(cc, "symbol", TYPE_rec, 0, 0);
 		install(cc, "invoke(type t, string fun, var args...)", TYPE_def, 0, 0);
+		leave();
 	}
 }// */
 #endif

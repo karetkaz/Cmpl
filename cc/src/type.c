@@ -65,8 +65,7 @@ symn installex(ccState s, const char* name, int kind, unsigned size, symn type, 
 			// user type
 			case TYPE_arr:
 			case TYPE_rec:
-				def->offs = (char*)def - (char*)s->s->_mem;
-				//~ def->offs = (char*)def - (char*)s->_beg;
+				def->offs = (char*)s->s->_mem - (char*)def;
 				def->pack = size;
 
 			// variable
@@ -326,7 +325,7 @@ symn lookup(ccState s, symn sym, astn ref, astn args, int raise) {
 
 	if (sym == NULL && best) {
 		if (found > 1)
-			warn(s->s, 2, s->file, ref->line, "using overload `%-T` of %d", best, found);
+			warn(s->s, 2, ref->file, ref->line, "using overload `%-T` of %d", best, found);
 		sym = best;
 	}
 
@@ -336,7 +335,7 @@ symn lookup(ccState s, symn sym, astn ref, astn args, int raise) {
 			sym = asref;
 		}
 		else if (raise) {
-			error(s->s, ref->line, "there are %d overloads for `%T`", found, asref);
+			error(s->s, ref->file, ref->line, "there are %d overloads for `%T`", found, asref);
 		}
 	}
 
@@ -593,7 +592,7 @@ symn typecheck(ccState cc, symn loc, astn ast) {
 						}
 						if (!(arg->kind == OPER_fnc && isType(linkOf(arg->op.lhso)))) {
 							debug("%T", linkOf(arg->op.lhso));
-							warn(cc->s, 2, cc->file, arg->line, "emit type cast expected: '%+k'", arg);
+							warn(cc->s, 2, arg->file, arg->line, "emit type cast expected: '%+k'", arg);
 						}
 					}
 					if (lin)
@@ -609,7 +608,7 @@ symn typecheck(ccState cc, symn loc, astn ast) {
 					}
 					if (!istype(args) && !(args->kind == OPER_fnc && isType(linkOf(args)))) {
 						debug("%T", linkOf(args));
-						warn(cc->s, 2, cc->file, args->line, "emit type cast expected: '%+k'", args);
+						warn(cc->s, 2, args->file, args->line, "emit type cast expected: '%+k'", args);
 					}
 				}
 				if (lin)
@@ -718,7 +717,7 @@ symn typecheck(ccState cc, symn loc, astn ast) {
 							return ast->type;
 
 						ast->type = 0;
-						error(cc->s, ast->line, "invalid cast(%+k)", ast);
+						error(cc->s, ast->file, ast->line, "invalid cast(%+k)", ast);
 						return 0;
 				}
 				return ast->type;
@@ -785,7 +784,7 @@ symn typecheck(ccState cc, symn loc, astn ast) {
 					case TYPE_f32:
 					case TYPE_f64:
 						ast->type = 0;
-						error(cc->s, ast->line, "invalid cast(%+k)", ast);
+						error(cc->s, ast->file, ast->line, "invalid cast(%+k)", ast);
 						return 0;
 				}
 			}
@@ -964,7 +963,7 @@ symn typecheck(ccState cc, symn loc, astn ast) {
 					result = sym->type;
 					break;
 
-				//~ case TYPE_arr:
+				case TYPE_arr:
 				case TYPE_rec:
 					result = sym;
 					break;

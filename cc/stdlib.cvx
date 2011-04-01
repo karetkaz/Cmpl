@@ -109,7 +109,7 @@ define dph(vec4f lhs, vec4f rhs) = emit(v4f.dph, val(rhs), val(lhs));
 define cross(vec4f &a, vec4f &b) = vec4f(a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x);
 
 define len(vec4f &v) = sqrt(dp3(v, v));
-define eval(vec4f &v, float32 &x) = float32((((v.w * x + v.z) * x + v.y) * x) + v.x);
+define eval(vec4f &v, float32 &x) = float32(((v.w * x + v.z) * x + v.y) * x + v.x);
 define normalize(vec4f a) = emit(vec4f, v4f.div, dupp.x2, dupp.x1, v4f.dp3, dupp.x4, dupp.x4, val(a));
 //~ define normalize(vec4f &a) = div(a, vec4f(dp3(a, a)));
 

@@ -220,7 +220,7 @@ static int escchr(ccState s) {
 			else if (h1 >= 'a' && h1 <= 'f') h1 -= 'a' - 10;
 			else if (h1 >= 'A' && h1 <= 'F') h1 -= 'A' - 10;
 			else {
-				error(s->s, s->line, "hex escape sequence invalid");
+				error(s->s, s->file, s->line, "hex escape sequence invalid");
 				return 0;
 			}
 
@@ -228,14 +228,14 @@ static int escchr(ccState s) {
 			else if (h2 >= 'a' && h2 <= 'f') h2 -= 'a' - 10;
 			else if (h2 >= 'A' && h2 <= 'F') h2 -= 'A' - 10;
 			else {
-				error(s->s, s->line, "hex escape sequence invalid");
+				error(s->s, s->file, s->line, "hex escape sequence invalid");
 				return 0;
 			}
 			return h1 << 4 | h2;
 		}
 
 		default:
-			error(s->s, s->line, "invalid escape sequence '\\%c'", chr);
+			error(s->s, s->file, s->line, "invalid escape sequence '\\%c'", chr);
 			return -1;
 	}
 	return 0;
@@ -466,8 +466,10 @@ static int readTok(ccState s, astn tok) {
 					*ptr++ = chr;
 					chr = readChr(s);
 				}
-				if (chr == -1) warn(s->s, 9, s->file, line, "no newline at end of file");
-				else if (s->line != line+1) warn(s->s, 9, s->file, line, "multi-line comment");
+				if (chr == -1)
+					warn(s->s, 9, s->file, line, "no newline at end of file");
+				else if (s->line != line + 1)
+					warn(s->s, 9, s->file, line, "multi-line comment");
 				if (fmt && s->pfmt && s->pfmt->line == line) {
 					*ptr++ = 0;
 					s->pfmt->pfmt = mapstr(s, beg, ptr - beg, -1);
@@ -483,7 +485,7 @@ static int readTok(ccState s, astn tok) {
 						warn(s->s, 8, s->file, s->line, "\"/*\" within comment(%d)", c - 1);
 					prev_chr = chr;
 				}
-				if (chr == -1) error(s->s, line, "unterminated comment2");
+				if (chr == -1) error(s->s, s->file, line, "unterminated comment2");
 				//~ else debug("\n!!!comment.box:}\n");
 				chr = readChr(s);
 			}
@@ -496,7 +498,7 @@ static int readTok(ccState s, astn tok) {
 					if (prev_chr == '+' && chr == '/' && !--l) break;
 					prev_chr = chr;
 				}
-				if (chr == -1) error(s->s, line, "unterminated comment1");
+				if (chr == -1) error(s->s, s->file, line, "unterminated comment1");
 				//~ else debug("\n!!!comment.block:}\n");
 				chr = readChr(s);
 			}
@@ -511,6 +513,7 @@ static int readTok(ccState s, astn tok) {
 	}
 
 	memset(tok, 0, sizeof(*tok));
+	tok->file = s->file;
 	tok->line = s->line;
 	ptr = beg = s->_beg;
 	s->pfmt = NULL;
@@ -525,7 +528,7 @@ static int readTok(ccState s, astn tok) {
 				goto read_num;
 
 			// control(<32) or non ascii character(>127) ?
-			error(s->s, s->line, "Invalid character: '%c'", chr);
+			error(s->s, s->file, s->line, "Invalid character: '%c'", chr);
 			tok->kind = TOKN_err;
 		} break;
 		case '.': {
@@ -719,11 +722,11 @@ static int readTok(ccState s, astn tok) {
 			*ptr = 0;
 
 			if (chr != '\'') {
-				error(s->s, s->line, "unclosed character constant ('\'' missing)");
+				error(s->s, s->file, s->line, "unclosed character constant ('\'' missing)");
 				return tok->kind = TOKN_err;
 			}
 			if (ptr == beg) {
-				error(s->s, s->line, "empty character constant");
+				error(s->s, s->file, s->line, "empty character constant");
 				return tok->kind = TOKN_err;
 			}
 
@@ -745,7 +748,7 @@ static int readTok(ccState s, astn tok) {
 			}
 			*ptr++ = 0;
 			if (chr != '\"') {					// error
-				error(s->s, s->line, "unclosed string constant ('\"' missing)");
+				error(s->s, s->file, s->line, "unclosed string constant ('\"' missing)");
 				return tok->kind = TOKN_err;
 			}
 
@@ -969,7 +972,7 @@ static int readTok(ccState s, astn tok) {
 				}
 
 				if (suffix == ptr) {
-					error(s->s, tok->line, "no exponent in numeric constant");
+					error(s->s, tok->file, tok->line, "no exponent in numeric constant");
 				}
 				else if (ovrf || val > 1024) {
 					warn(s->s, 4, s->file, s->line, "exponent overflow");
@@ -1002,7 +1005,7 @@ static int readTok(ccState s, astn tok) {
 			backChr(s, chr);
 
 			if (*suffix) {	// error
-				error(s->s, tok->line, "invalid suffix in numeric constant '%s'", suffix);
+				error(s->s, tok->file, tok->line, "invalid suffix in numeric constant '%s'", suffix);
 				tok->kind = TYPE_any;
 			}
 			if (flt) {		// float
@@ -1084,7 +1087,7 @@ static int skiptok(ccState s, int kind, int raise) {
 	if (!skip(s, kind)) {
 		//~ int report = 0;
 		if (raise)
-			error(s->s, s->line, "`%t` excepted, got `%k`", kind, peek(s));
+			error(s->s, s->file, s->line, "`%t` excepted, got `%k`", kind, peek(s));
 
 		switch (kind) {
 			case STMT_do:
@@ -1153,7 +1156,7 @@ static void redefine(ccState s, symn sym) {
 	}
 
 	if (ptr && (ptr->nest >= sym->nest/*  || ptr->read */)) {
-		error(s->s, sym->line, "redefinition of `%-T`", sym);
+		error(s->s, sym->file, sym->line, "redefinition of `%-T`", sym);
 		if (ptr->file && ptr->line)
 			info(s->s, ptr->file, ptr->line, "first defined here as `%-T`", ptr);
 	}
@@ -1218,9 +1221,9 @@ static astn reft(ccState s, int mode) {
 			}
 
 			if (byref) {
-				warn(s->s, 1, s->file, tag->line, "functions are by reference types: `%+T`", ref);
+				warn(s->s, 1, tag->file, tag->line, "functions are by reference types: `%+T`", ref);
 			}
-			byref = 1;
+			//~ byref = 1;
 			//~ if (test(s, STMT_beg))
 				//~ backTok(s, newnode(s, ASGN_set));
 
@@ -1237,11 +1240,13 @@ static astn reft(ccState s, int mode) {
 
 			if (!test(s, PNCT_rc)) {
 				struct astn val;
-				typ->init = expr(s, TYPE_def);
-				if (eval(&val, tmp->init) != TYPE_int)
-					error(s->s, s->line, "integer constant expected");
-				else
+				astn init = expr(s, TYPE_def);
+				if (eval(&val, init) == TYPE_int) {
 					typ->size = val.con.cint;
+					typ->init = init;
+				}
+				else
+					error(s->s, init->file, init->line, "integer constant expected");
 			}
 			skiptok(s, PNCT_rc, 1);
 
@@ -1255,20 +1260,22 @@ static astn reft(ccState s, int mode) {
 
 				if (!test(s, PNCT_rc)) {
 					struct astn val;
-					typ->init = expr(s, TYPE_def);
-					if (eval(&val, tmp->init) != TYPE_int)
-						error(s->s, s->line, "integer constant expected");
-					else
+					astn init = expr(s, TYPE_def);
+					if (eval(&val, init) == TYPE_int) {
 						typ->size = val.con.cint;
+						typ->init = init;
+					}
+					else
+						error(s->s, init->file, init->line, "integer constant expected");
 				}
 				skiptok(s, PNCT_rc, 1);
 
 			} // */
 
 			if (byref) {
-				warn(s->s, 1, s->file, tag->line, "arrays are by reference types: `%+T`", ref);
+				warn(s->s, 1, tag->file, tag->line, "arrays are by reference types: `%+T`", ref);
 			}
-			byref = 1;
+			//~ byref = 0;
 		}
 
 		if (byref) {
@@ -1279,6 +1286,10 @@ static astn reft(ccState s, int mode) {
 			ref->cast = typ->cast;
 			tag->cst2 = typ->cast;
 		}
+		/*if (typ->kind == TYPE_arr) {
+			ref->cast = TYPE_ref;
+			tag->cst2 = TYPE_ref;
+		}*/
 
 	}
 	(void)mode;
@@ -1295,12 +1306,17 @@ static astn args(ccState s, int mode) {
 
 		astn atag = reft(s, decl_Ref);
 
-		/*symn ref = linkOf(atag);
+		symn ref = linkOf(atag);
 		if (ref) {
 			// TODO: others.
-			if (ref->call || ref->kind == TYPE_arr)
-				atag->cst2 = TYPE_ref;
-		}*/
+			//~ if (ref->kind == TYPE_ref && ref->call) {
+				//~ ref->cast = atag->cst2 = TYPE_ref;
+			//~ }
+			if (ref->call || ref->kind == TYPE_arr) {
+				debug("Byref: %+T", ref);
+				ref->cast = atag->cst2 = TYPE_ref;
+			}
+		}
 
 		if (root) {
 			astn tmp = newnode(s, OPER_com);
@@ -1331,25 +1347,10 @@ static astn spec(ccState s/* , int qual */) {
 		symn typ = 0;
 		//~ int op = skip(s, OPER_dot);
 		if (!(tag = next(s, TYPE_ref))) {
-			error(s->s, s->line, "Identifyer expected");
+			error(s->s, s->file, s->line, "Identifyer expected");
 			skiptok(s, STMT_do, 1);
 			return NULL;
 		}
-		/*else if (skip(s, ASGN_set)) {			// define PI = 3.14...;
-			struct astn tmp;
-			astn val = expr(s, TYPE_def);
-			if (eval(&tmp, val)) {
-				def = declare(s, TYPE_def, tag, val->type);
-				//~ val = cpynode(s, &tmp);
-				def->init = val;
-				typ = def->type;
-			}
-			else {
-				error(s->s, val->line, "Constant expression expected, got: '%+k'", val);
-				def = declare(s, TYPE_def, tag, 0);
-				def->init = val;
-			}
-		}// */
 		else if (skip(s, ASGN_set)) {			// define PI = 3.14...;
 			astn val = expr(s, TYPE_def);
 			if (val != NULL) {
@@ -1358,7 +1359,7 @@ static astn spec(ccState s/* , int qual */) {
 				typ = def->type;
 			}
 			else {
-				error(s->s, s->line, "expression expected");
+				error(s->s, s->file, s->line, "expression expected");
 				//~ return NULL;
 			}
 		}// */
@@ -1387,7 +1388,7 @@ static astn spec(ccState s/* , int qual */) {
 						tmp->op.rhso = def->init;
 						def->init = tmp;
 						if (!typecheck(s, 0, tmp)) {	//TODO: find a nother way to do this
-							error(s->s, tmp->line, "invalid expression: %+k", tmp);
+							error(s->s, tmp->file, tmp->line, "invalid expression: %+k", tmp);
 						}
 					}
 					typ = def->init->type;
@@ -1433,8 +1434,8 @@ static astn spec(ccState s/* , int qual */) {
 			}// */
 
 			if (warnfun) {
-				warn(s->s, 8, s->file, tag->line, "%+k should be a function", tag);
-				info(s->s, s->file, tag->line, "defined as: %-T", def);
+				warn(s->s, 8, tag->file, tag->line, "%+k should be a function", tag);
+				info(s->s, tag->file, tag->line, "defined as: %-T", def);
 			}
 		}
 		else if ((typ = type(s))) {				// define hex16 int16;	???
@@ -1445,8 +1446,9 @@ static astn spec(ccState s/* , int qual */) {
 			def->type = typ->type;
 			s->pfmt = def;
 		}
-		else error(s->s, tag->line, "typename excepted");
-		//~ if (op) error(s->s, tag->line, "invalid operator");
+		else
+			error(s->s, tag->file, tag->line, "typename excepted");
+		//~ if (op) error(s->s, tag->file, tag->line, "invalid operator");
 		skiptok(s, STMT_do, 1);
 
 		tag->kind = TYPE_def;
@@ -1475,7 +1477,7 @@ static astn spec(ccState s/* , int qual */) {
 			if (tok && tok->kind == TYPE_int) {
 				switch ((int)constint(tok)) {
 					default:
-						error(s->s, s->line, "alignment must be a small power of two, not %k", tok);
+						error(s->s, tok->file, tok->line, "alignment must be a small power of two, not %k", tok);
 						break;
 					case  0: pack =  0; break;
 					case  1: pack =  1; break;
@@ -1486,14 +1488,14 @@ static astn spec(ccState s/* , int qual */) {
 				}
 			}
 			else {
-				error(s->s, s->line, "alignment must be an integer constant", tok);
+				error(s->s, s->file, s->line, "alignment must be an integer constant");
 				//~ return 0;
 			}
 		}
 		if (skiptok(s, STMT_beg, 1)) {		// body
 			int salign = -1;
 			astn args = NULL;
-			def = declare(s, TYPE_rec, tag, type_vid);
+			def = declare(s, TYPE_rec, tag, NULL);
 			redefine(s, def);
 			enter(s, tag);
 
@@ -1634,7 +1636,7 @@ static astn spec(ccState s/* , int qual */) {
 			}
 
 			if (!base) {
-				error(s->s, s->line, "typename expected");
+				error(s->s, s->file, s->line, "typename expected");
 				base = type_i32;
 			}
 		}
@@ -1650,7 +1652,7 @@ static astn spec(ccState s/* , int qual */) {
 			def->init = init;
 
 			if (!init || !mkcon(def->init, base))
-				error(s->s, def->init->line, "%T constant expected, got %T", base, def->init->type);
+				error(s->s, init->file, init->line, "%T constant expected, got %T", base, def->init->type);
 		}
 		else {
 			skiptok(s, STMT_beg, 1);
@@ -1681,7 +1683,7 @@ static astn spec(ccState s/* , int qual */) {
 					if (skip(s, ASGN_set)) {
 						tmp->init = expr(s, TYPE_def);
 						if (!mkcon(tmp->init, base))
-							error(s->s, tmp->init->line, "%T constant expected, got %T", base, tmp->init->type);
+							error(s->s, tmp->init->file, tmp->init->line, "%T constant expected, got %T", base, tmp->init->type);
 						//~ trace("const: %k.%k = %+k", tag, tok, tmp->init);
 
 					}
@@ -1693,7 +1695,7 @@ static astn spec(ccState s/* , int qual */) {
 						offs += 1;
 					}*/
 					else
-						error(s->s, tmp->line, "%T constant expected", base);
+						error(s->s, tmp->file, tmp->line, "%T constant expected", base);
 					redefine(s, tmp);
 				}
 				skiptok(s, STMT_do, 1);
@@ -1779,7 +1781,7 @@ static astn stmt(ccState s, int mode) {
 		case STMT_end:		// '}' TODO: in case of errors
 		case PNCT_rp :		// ')' TODO: in case of errors
 		case PNCT_rc :		// ']' TODO: in case of errors
-			error(s->s, s->line, "unexpected token '%k'", peek(s));
+			error(s->s, s->file, s->line, "unexpected token '%k'", peek(s));
 			skip(s, 0);
 			return 0;
 	}// */
@@ -1847,7 +1849,7 @@ static astn stmt(ccState s, int mode) {
 		if (qual == QUAL_sta) {
 			struct astn ift;
 			if (!eval(&ift, ast->stmt.test) || (!test(s, STMT_beg) && !test(s, STMT_do))) {
-				error(s->s, ast->line, "invalid static if construct");
+				error(s->s, ast->file, ast->line, "invalid static if construct");
 				return 0;
 			}
 			if (constbol(&ift))
@@ -1927,7 +1929,7 @@ static astn stmt(ccState s, int mode) {
 		tmp->stmt.stmt = ast;
 
 		if (mode)
-			error(s->s, s->line, "unexpected declaration %+k", ast);
+			error(s->s, ast->file, ast->line, "unexpected declaration %+k", ast);
 
 		ast = tmp;
 	}
@@ -1941,11 +1943,11 @@ static astn stmt(ccState s, int mode) {
 	}
 
 	else if ((ast = peek(s))) {
-		error(s->s, ast->line, "unexpected token: %k", ast);
+		error(s->s, ast->file, ast->line, "unexpected token: %k", ast);
 		skiptok(s, STMT_do, 1);
 	}
 	else {
-		error(s->s, s->line, "unexpected end of file");
+		error(s->s, s->file, s->line, "unexpected end of file");
 	}
 
 	//~ dieif(qual, "FixMe");
@@ -1993,14 +1995,14 @@ astn expr(ccState s, int mode) {
 				if (tok_tbl[tok->kind].argc) {			// operator
 					if (unary) {
 						*post++ = 0;
-						error(s->s, tok->line, "syntax error before '%k'", tok);
+						error(s->s, tok->file, tok->line, "syntax error before '%k'", tok);
 					}
 					unary = 1;
 					goto tok_op;
 				}
 				else {
 					if (!unary)
-						error(s->s, tok->line, "syntax error before '%k'", tok);
+						error(s->s, tok->file, tok->line, "syntax error before '%k'", tok);
 					unary = 0;
 					goto tok_id;
 				}
@@ -2029,7 +2031,7 @@ astn expr(ccState s, int mode) {
 					break;
 				}
 				else {
-					error(s->s, tok->line, "syntax error before '%k'", tok);
+					error(s->s, tok->file, tok->line, "syntax error before '%k'", tok);
 					break;
 				}
 				unary = 0;
@@ -2038,7 +2040,7 @@ astn expr(ccState s, int mode) {
 				if (!unary)
 					tok->kind = OPER_idx;
 				else {
-					error(s->s, tok->line, "syntax error before '%k'", tok);
+					error(s->s, tok->file, tok->line, "syntax error before '%k'", tok);
 					//~ break?;
 				}
 				sym[++level] = '[';
@@ -2055,7 +2057,7 @@ astn expr(ccState s, int mode) {
 					break;
 				}
 				else {
-					error(s->s, tok->line, "syntax error before '%k'", tok);
+					error(s->s, tok->file, tok->line, "syntax error before '%k'", tok);
 					break;
 				}
 				unary = 0;
@@ -2063,7 +2065,7 @@ astn expr(ccState s, int mode) {
 			case PNCT_qst: {		// '?'
 				if (unary) {
 					*post++ = 0;		// ???
-					error(s->s, tok->line, "syntax error before '%k'", tok);
+					error(s->s, tok->file, tok->line, "syntax error before '%k'", tok);
 				}
 				tok->kind = OPER_sel;
 				sym[++level] = '?';
@@ -2080,7 +2082,7 @@ astn expr(ccState s, int mode) {
 					break;
 				}
 				else {
-					error(s->s, tok->line, "syntax error before '%k'", tok);
+					error(s->s, tok->file, tok->line, "syntax error before '%k'", tok);
 					break;
 				}
 				unary = 1;
@@ -2097,22 +2099,22 @@ astn expr(ccState s, int mode) {
 			} goto tok_op;
 			case OPER_not: {		// '!'
 				if (!unary)
-					error(s->s, tok->line, "syntax error before '%k'", tok);
+					error(s->s, tok->file, tok->line, "syntax error before '%k'", tok);
 				unary = 1;
 			} goto tok_op;
 			case OPER_cmt: {		// '~'
 				if (!unary)
-					error(s->s, tok->line, "syntax error before '%k'", tok);
+					error(s->s, tok->file, tok->line, "syntax error before '%k'", tok);
 				unary = 1;
 			} goto tok_op;
 			case OPER_com: {		// ','
 				if (unary)
-					error(s->s, tok->line, "syntax error before '%k'", tok);
+					error(s->s, tok->file, tok->line, "syntax error before '%k'", tok);
 				unary = 1;
 			} goto tok_op;
 		}
 		if (post >= prec) {
-			error(s->s, s->line, "Expression too complex");
+			error(s->s, s->file, s->line, "Expression too complex");
 			return 0;
 		}
 		if (!tok)
@@ -2126,7 +2128,7 @@ astn expr(ccState s, int mode) {
 			case '?': missing = "':'"; break;
 			default : fatal("FixMe");
 		}
-		error(s->s, s->line, "missing %s, %k", missing, peek(s));
+		error(s->s, s->file, s->line, "missing %s, %k", missing, peek(s));
 	}
 	else if (prec > buff) {							// build
 		astn *ptr, *lhs;
@@ -2202,21 +2204,18 @@ astn expr(ccState s, int mode) {
 
 		s->root = NULL;
 		if (typecheck(s, 0, tok) == 0) {
-			error(s->s, tok->line, "invalid expression: `%+k` in `%+k`", s->root, tok);
+			error(s->s, tok->file, tok->line, "invalid expression: `%+k` in `%+k`", s->root, tok);
 			debug("%7K", tok);
 		}
 
 		// usually mode in [TYPE_bit, TYPE_int, TYPE_vid]
 		if (mode != TYPE_def && !castTo(tok, mode))
-			error(s->s, tok->line, "invalid expression: %+k", tok);
+			error(s->s, tok->file, tok->line, "invalid expression: %+k", tok);
 	}
 	return tok;
 }
 
 astn decl(ccState s, int Rmode) {
-	//~ symn typ;
-	//~ int mode = 0;
-	int byref = 0;
 	int stat = 0;
 	astn tag = NULL;
 
@@ -2310,9 +2309,7 @@ astn decl(ccState s, int Rmode) {
 			}
 			else if (skip(s, ASGN_set)) {
 				ref->init = expr(s, TYPE_def);
-				if (ref->call) {
-					byref = TYPE_ref;
-				}
+				//~ if (ref->call) {byref = TYPE_ref;}
 			}
 		}
 
@@ -2324,19 +2321,9 @@ astn decl(ccState s, int Rmode) {
 			ref->stat = 1;
 
 		//~ if (byref)
-		ref->cast = byref;
+		//~ ref->cast = byref;
 
 		redefine(s, ref);
-		//~ debug("%+k", ref->init);
-		/*if (kindOf(ref->init) == STMT_beg) {
-			//~ fatal("Error");
-		}
-		else if (ref->init && (ref->init->type != emit_opc && ref->init->type != ref->type && !promote(ref->init->type, ref->type))) {
-			fatal("Error");
-			debug("%-T := %T(%+k)", ref->type, ref->init->type, ref->init);
-			error(s->s, s->line, "invalid initializer: %-T(%+k)", ref->type, ref->init);
-			//return 0;
-		}// */
 		tag->kind = TYPE_def;
 	}
 
@@ -2352,7 +2339,7 @@ astn unit(ccState cc, int mode) {
 		astn tag = next(cc, TYPE_ref);
 
 		if (tag == NULL) {
-			error(cc->s, cc->line, "Identifyer expected");
+			error(cc->s, cc->file, cc->line, "Identifyer expected");
 			skiptok(cc, STMT_do, 1);
 			return NULL;
 		}
@@ -2371,7 +2358,7 @@ astn unit(ccState cc, int mode) {
 	}*/
 
 	if (peekTok(cc, 0)) {
-		error(cc->s, cc->line, "unexpected token: %k", peekTok(cc, 0));
+		error(cc->s, cc->file, cc->line, "unexpected token: %k", peekTok(cc, 0));
 		return NULL;
 	}
 	if (def) {
@@ -2379,7 +2366,7 @@ astn unit(ccState cc, int mode) {
 	}
 
 	if (cc->nest)
-		error(cc->s, cc->line, "premature end of file: %d", cc->nest);
+		error(cc->s, cc->file, cc->line, "premature end of file: %d", cc->nest);
 
 	(void)mode;
 	return root;
@@ -2403,7 +2390,7 @@ int parse(ccState cc, srcType mode) {
 			else
 				prev->next = ast;
 			prev = ast;
-			//~ info(cc->s, cc->file, ast->line, "%k", ast);
+			//~ info(cc->s, ast->file, ast->line, "%k", ast);
 		}
 		backTok(root);
 	}

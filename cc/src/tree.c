@@ -129,6 +129,9 @@ int eval(astn res, astn ast) {
 			debug("FixMe %+k", ast);
 			return 0;
 
+		case STMT_beg:
+			return 0;
+
 		case OPER_dot: {
 			if (!istype(ast->op.lhso)) return 0;
 			return eval(res, ast->op.rhso);
@@ -226,7 +229,7 @@ int eval(astn res, astn ast) {
 								case OPER_mod: res->con.cint = lhs.con.cint % rhs.con.cint; break;		// '%'
 							}
 							else {
-								error(NULL, 0, "Division by zero: %+k", ast);
+								error(NULL, NULL, 0, "Division by zero: %+k", ast);
 								res->con.cint = 0;
 							}
 						}

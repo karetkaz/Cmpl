@@ -139,21 +139,21 @@ int findnzv(ccState s, char *name);
 int findint(ccState s, char *name, int* res);
 int findflt(ccState s, char *name, double* res);
 
-#define poparg1(__ARGV, __SIZE) ((void*)(((__ARGV)->argv += (((__SIZE) | 3) & ~3)) - (__SIZE)))
-//~ #define poparg(__ARGV, __TYPE) (*(__TYPE*)(poparg1((__ARGV), sizeof(__TYPE))))
+#define poparg(__ARGV, __SIZE) ((void*)(((__ARGV)->argv += (((__SIZE) | 3) & ~3)) - (__SIZE)))
+#define popaty(__ARGV, __TYPE) (*(__TYPE*)(poparg((__ARGV), sizeof(__TYPE))))
 
 #define retptr(__ARGV, __TYPE) ((__TYPE*)(__ARGV->retv))
 #define getret(__ARGV, __TYPE) (*retptr(__ARGV, __TYPE))
 #define setret(__ARGV, __TYPE, __VAL) (*retptr(__ARGV, __TYPE) = (__TYPE)(__VAL))
 
-static inline int32_t popi32(state s) { return *(int32_t*)poparg1(s, sizeof(int32_t)); }
-static inline int64_t popi64(state s) { return *(int64_t*)poparg1(s, sizeof(int64_t)); }
-static inline float32_t popf32(state s) { return *(float32_t*)poparg1(s, sizeof(float32_t)); }
-static inline float64_t popf64(state s) { return *(float64_t*)poparg1(s, sizeof(float64_t)); }
+static inline int32_t popi32(state s) { return *(int32_t*)poparg(s, sizeof(int32_t)); }
+static inline int64_t popi64(state s) { return *(int64_t*)poparg(s, sizeof(int64_t)); }
+static inline float32_t popf32(state s) { return *(float32_t*)poparg(s, sizeof(float32_t)); }
+static inline float64_t popf64(state s) { return *(float64_t*)poparg(s, sizeof(float64_t)); }
 static inline void* popref(state s) { int32_t p = popi32(s); return p ? s->_mem + p : NULL; }
 static inline char* popstr(state s) { return popref(s); }
 
-static inline void* popval(state s, void* dst, int size) { return memcpy(dst, poparg1(s, size), size); }
+static inline void* popval(state s, void* dst, int size) { return memcpy(dst, poparg(s, size), size); }
 
 //~ static inline void reti32(state s, int32_t val) { setret(int32_t, s, val); }
 //~ static inline void reti64(state s, int64_t val) { setret(int64_t, s, val); }
@@ -161,4 +161,4 @@ static inline void* popval(state s, void* dst, int size) { return memcpy(dst, po
 //~ static inline void retf64(state s, float64_t val) { setret(float64_t, s, val); }
 #endif
 
-#define DEBUGGING 1
+#define DEBUGGING 15

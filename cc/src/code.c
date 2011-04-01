@@ -157,10 +157,11 @@ static symn installref(state s, const char *prot, astn *argv) {
 		dieif(level != s->cc->nest, "FixMe");
 		dieif(root->kind != TYPE_def, "FixMe");
 
-		result = root->id.link;
+		//~ result = root->id.link;
 		if ((result = root->id.link)) {
 			dieif(result->kind != TYPE_ref, "FixMe");
 			*argv = root->id.args;
+			result->cast = 0;//TYPE_def;
 		}
 	}
 
@@ -210,7 +211,7 @@ symn libcall(state s, int libc(state), int pos, const char* proto) {
 	}// */
 
 	if (libccnt >= (sizeof(libcvec) / sizeof(*libcvec))) {
-		error(s, 0, "to many functions on install('%s')", proto);
+		error(s, NULL, 0, "to many functions on install('%s')", proto);
 		return NULL;
 	}
 
@@ -298,7 +299,7 @@ symn libcall(state s, int libc(state), int pos, const char* proto) {
 
 	}
 	else {
-		error(s, 0, "install('%s')", proto);
+		error(s, NULL, 0, "install('%s')", proto);
 		//~ return NULL;
 	}
 
@@ -561,13 +562,22 @@ int emitarg(state s, int opc, stkval arg) {
 		case 16: opc = opc_stiq; break;
 	}
 
-	else if (opc == opc_drop) {		// pop nothing
-		if (arg.i4 == 0)
-			return s->vm.pc;
-
-		dieif(arg.i4 & 3, "FixMe: %d", arg.i4);
-		arg.i4 /= 4;
-	}
+	/*else if (opc == opc_spc) {
+		dieif (arg.i8 & 3, "FixMe");
+		if (arg.i8 < 0) {
+			if (-arg.i8 < max_reg * 4) {
+				opc = opc_drop;
+				arg.i8 /= -4;
+			}
+		}
+		else {
+			if (+arg.i8 < max_reg * 4) {
+				opc = opc_loc;
+				arg.i8 /= 4;
+			}
+		}
+			//~ return 0;
+	}// */
 
 	else if (opc == opc_inc) {		// TODO: DelMe!
 		ip = getip(s, s->vm.pc);
@@ -763,6 +773,14 @@ int emitarg(state s, int opc, stkval arg) {
 		if (ip->rel != arg.i8)
 			return 0;
 	}
+	else if (opc == opc_drop) {
+		if (ip->idx != arg.i8)
+			return 0;
+	}
+	else if (opc == opc_loc) {
+		if (ip->idx != arg.i8)
+			return 0;
+	}
 	else if (opc == opc_spc) {
 		/*TODO: int max = 0x7fffff;
 		while (arg.i8 > max) {
@@ -783,12 +801,12 @@ int emitarg(state s, int opc, stkval arg) {
 
 	switch (opc) {
 		error_opc:
-			error(s, 0, "invalid opcode: op[%.*A]", s->vm.pc, ip);
+			error(s, NULL, 0, "invalid opcode: op[%.*A]", s->vm.pc, ip);
 			//~ fputasm(stderr, s, s->seg, -1, 0x10);
 			return 0;
 
 		error_stc:
-			error(s, 0, "stack underflow: op[%.*A]", s->vm.pc, ip);
+			error(s, NULL, 0, "stack underflow: op[%.*A](%d)", s->vm.pc, ip, s->vm.ss);
 			//~ fputasm(stderr, s, s->seg, -1, 0x10);
 			return 0;
 
@@ -853,15 +871,20 @@ int emitidx(state s, int opc, int arg) {
 	stkval tmp;
 	tmp.i8 = (int32_t)s->vm.ss * 4 - arg;
 
-	if (opc == opc_ldsp || opc == opc_drop)
-		return emitarg(s, opc, tmp);
+	switch (opc) {
+		case opc_drop:
+			opc = opc_spc;
+			tmp.i8 = -tmp.i8;
+		case opc_ldsp:
+			return emitarg(s, opc, tmp);
+	}
 
-	if (tmp.u4 > 255) {
+	if (tmp.i8 > 255) {
 		debug("opc_x%02x(%D(%d))", opc, tmp.i8, arg);
 		return 0;
 	}
-	if (tmp.u4 > s->vm.ss * 4) {
-		fatal("%d", tmp.u4);
+	if (tmp.i8 > s->vm.ss * 4) {
+		debug("opc_x%02x(%D(%d))", opc, tmp.i8, arg);
 		return 0;
 	}
 	return emitarg(s, opc, tmp);
@@ -971,7 +994,7 @@ static inline int ovf(cell pu) {
 static void dbugerr(state s, int pu, void *ip, long* bp, int ss, char *text) {
 	//~ int SP = ((char*)s->vm._end) - ((char*)bp);
 	int IP = ((unsigned char*)ip) - s->_mem - s->vm.pc;
-	error(s, 0, ">exec:%s:[pu%02d][sp%02d]@%9.*A", text, pu, ss, IP, ip);
+	error(s, NULL, 0, ">exec:%s:[pu%02d][sp%02d]@%9.*A", text, pu, ss, IP, ip);
 	//~ fputfmt(stdout, ">vmExec:[pu%02d][sp%02d]@%9.*A\n", pu, ss, IP, ip);
 }
 
@@ -1040,12 +1063,34 @@ int vmExec(state s, dbgf dbg) {
 	}// */
 
 	if (pu->bp < pu->ip) {
-		error(s, 0, "invalid statck size");
+		error(s, NULL, 0, "invalid statck size");
 		return -99;
 	}
 
 	return dbugpu(s, pu, dbg);
 }
+
+/*int setVar(state s, symn arg, void* argRef) {
+	int size = sizeOf(arg->type);
+	void* ref = vmOffset(arg);
+
+	switch (size) {
+
+		case 1:
+		case 2:
+		case 4:
+			*(int32_t*)ref = *(int32_t*)argRef;
+			break;
+
+		case 8:
+			*(int64_t*)ref = *(int64_t*)argRef;
+			break;
+
+		default:
+			memcpy(ref, argRef, size);
+			break;
+	}
+}// */
 
 int vmCall(state s, symn fun, ...) {
 
@@ -1054,9 +1099,9 @@ int vmCall(state s, symn fun, ...) {
 	int result = 0;
 	struct cell pu[1];
 
-	char *ap = (char*)&fun + sizeof(fun);
 	char *resp = NULL;
 	char *argp = NULL;
+	char *ap = (char*)&fun + sizeof(fun);
 
 	/*if (!s) {
 		trace("null");
@@ -1087,16 +1132,19 @@ int vmCall(state s, symn fun, ...) {
 	// push Arguments;
 	//~ va_start(ap, fun);
 	for(arg = fun->args; arg; arg = arg->next) {
-		unsigned char *offs = pu->sp - arg->offs;
+
 		int size = sizeOf(arg->type);
+		unsigned char *offs = pu->sp - arg->offs;
+
 		if (arg->cast == TYPE_ref || arg->type->cast == TYPE_ref) {
 			trace("by reference");
 			return -2;
 		}
-		if (pu->sp < pu->bp) {
+		if (offs < pu->bp) {
 			trace("stack overflow");
 			return -3;
 		}
+		//~ TODO: setVar(s, arg, ap + argsize);
 		memcpy(offs, ap + argsize, size);
 		argsize += size;
 	}
@@ -1113,7 +1161,7 @@ int vmCall(state s, symn fun, ...) {
 	*(int*)(pu->sp) = s->vm.px;
 
 	if (pu->bp < pu->ip) {
-		error(s, 0, "invalid statck size");
+		error(s, NULL, 0, "invalid statck size");
 		return -99;
 	}
 
@@ -1223,7 +1271,7 @@ void fputopc(FILE *fout, unsigned char* ptr, int len, int offs) {
 				fputfmt(fout, " %s", libcvec[ip->idx].proto);
 			break;
 
-		case p4d_swz: {
+		case p4x_swz: {
 			char c1 = "xyzw"[ip->idx >> 0 & 3];
 			char c2 = "xyzw"[ip->idx >> 2 & 3];
 			char c3 = "xyzw"[ip->idx >> 4 & 3];
@@ -1250,7 +1298,7 @@ void fputasm(FILE *fout, state s, int beg, int end, int mode) {
 		bcde ip = getip(s, i);
 
 		switch (ip->opc) {
-			error_opc: error(NULL, 0, "invalid opcode: %02x '%A'", ip->opc, ip); return;
+			error_opc: error(s, NULL, 0, "invalid opcode: %02x '%A'", ip->opc, ip); return;
 			//~ #define NEXT(__IP, __CHK, __SP) {if (__IP) is = (__IP);/*  ss += (__SP); */}
 			#define NEXT(__IP, __CHK, __SP) {if (__IP) is = (__IP);}
 			#define STOP(__ERR, __CHK) if (__CHK) goto __ERR
@@ -1330,11 +1378,8 @@ void vm_fputval(state s, FILE *fout, symn var, stkval* ref, int flgs) {
 						case 8: fputfmt(fout, "%F", ref->f8); break;
 					} break;
 
-					case TYPE_ref: {
-						if (typ == type_str) {
-							//~ ref = (stkval*)(s->_mem + ref->u4);
-							fputfmt(fout, "\"%s\"", ref);
-						}
+					/*case TYPE_ref: {
+						fputfmt(fout, ".ERROR.", );
 						break;
 					}// */
 					default: {
@@ -1366,32 +1411,38 @@ void vm_fputval(state s, FILE *fout, symn var, stkval* ref, int flgs) {
 			fputfmt(fout, "%I", flgs & 0xff);
 			if (var != typ)
 				fputfmt(fout, "%T: ", var);
-			fputfmt(fout, "%T{", typ);
 
-			if ((n = typ->size) < 0) {
-				fputfmt(fout, "Unknown Dimension}");
-				break;
-			}
-			else if (n > 20) {
-				//~ n = 0;
-			}
-
-			while (i < n) {
-				if (base->kind == TYPE_arr)
-					fputfmt(fout, "\n");
-
-				vm_fputval(s, fout, base, (stkval*)((char*)ref + i * sizeOf(base)), ((flgs + 1) & 0xff));
-				if (++i < n)
-					fputfmt(fout, ", ");
-			}
-			if (n > 0) {
-				if (base->kind == TYPE_arr)
-					fputfmt(fout, "\n%I", flgs & 0xff);
+			if (typ == type_str) {
+				ref = (stkval*)(s->_mem + ref->u4);
+				fputfmt(fout, "(\"%s\")", ref);
 			}
 			else {
-				fputfmt(fout, "...");
+				fputfmt(fout, "%T{", typ);
+				if ((n = typ->size) < 0) {
+					fputfmt(fout, "Unknown Dimension}");
+					break;
+				}
+				else if (n > 20) {
+					//~ n = 0;
+				}
+
+				while (i < n) {
+					if (base->kind == TYPE_arr)
+						fputfmt(fout, "\n");
+
+					vm_fputval(s, fout, base, (stkval*)((char*)ref + i * sizeOf(base)), ((flgs + 1) & 0xff));
+					if (++i < n)
+						fputfmt(fout, ", ");
+				}
+				if (n > 0) {
+					if (base->kind == TYPE_arr)
+						fputfmt(fout, "\n%I", flgs & 0xff);
+				}
+				else {
+					fputfmt(fout, "...");
+				}
+				fputfmt(fout, "}");
 			}
-			fputfmt(fout, "}");
 		} break;
 		default: {
 			if (var != typ)

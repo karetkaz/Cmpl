@@ -12,83 +12,11 @@
 
 //~ module test;
 
+//~ vec4f Alma = vec4f(1., 2., 3., 4.);
+//~ vec4f alma = emit(vec4f, swz.xzwy, val(Alma));
+
 //~ int alma(int h)[10];	???
 //~ void fun(int x) = true ? null : void(int x){print(x);});
-
-/*
-const M:double {
-	pi = 3.14159265358979323846264338327950288419716939937510582097494459;		// A000796
-	e = 2.71828182845904523536028747135266249775724709369995957496696763;		// A001113
-	ln2 = 0.693147180559945309417232121458176568075500134360255254120680009;		// A002162
-	log2E = 1 / ln2;
-	ln10 = 2.30258509299404568401799145468436420760110148862877297603332790;		// A002392
-	log10E = 1 / ln10;
-	phi = 1.61803398874989484820458683436563811772030917980576286213544862;		// A001622
-	sqrt2 = 1.41421356237309504880168872420969807856967187537694807317667974;	// A002193
-	sqrtE = 1.64872127070012814684865078781416357165377610071014801157507931;	// A019774
-	sqrtPi = 1.77245385090551602729816748334114518279754945612238712821380779;	// A002161
-	sqrtPhi = 1.27201964951406896425242246173749149171560804184009624861664038;	// A139339
-}// */
-
-//~ const Pi1 = 3.14159265358979323846264338327950288419716939937510582097494459;
-//~ const Pi2 :int = 3.14159265358979323846264338327950288419716939937510582097494459;
-//~ const Pi3 :float64 = 3.14159265358979323846264338327950288419716939937510582097494459;
-
-//~ struct gxClut:1 {			// Color Look Up Table (Palette) structure
-	//~ int16	count;
-	//~ uint8	flags;
-	//~ uint8	trans;
-	//~ int32	data[256];
-//~ }
-
-
-
-
-void openImg(string file) {
-	//~ string fileName = file;//emit(string, load.b32, ref(file));//emit(string, string(file));
-	//~ int8 alma[0] = emit();
-	//~ int len;
-	//~ for (len = 0; file[len] != 0; len += 1) {}
-	//~ print("len = "); 
-	println(file);
-	/+if (int(len > 4) & int(alma[len - 4] == '.')) {
-		int chr = alma[len - 3];
-		if (int(chr == 'j') | int(chr == 'J')) {
-			int chr = alma[len - 2];
-			if (int(chr == 'p') | int(chr == 'P')) {
-				int chr = alma[len - 1];
-				if (int(chr == 'g') | int(chr == 'G')) {
-					println("jpg");
-					//~ result = readJpg(file);
-				}
-			}
-		}
-		if (int(chr == 'b') | int(chr == 'B')) {
-			int chr = alma[len - 2];
-			if (int(chr == 'm') | int(chr == 'M')) {
-				int chr = alma[len - 1];
-				if (int(chr == 'p') | int(chr == 'P')) {
-					println("bmp");
-					//~ result = readBmp(file);
-				}
-			}
-		}
-	}// +/
-}
-
-//~ string fileName = "alma.bmp";
-{
-int a = 8;
-//~ int b = 1;
-
-if (a > 0 && false) {
-	println("alma");
-}
-}
-
-//~ openImg("alma");
-
-//~ println(fileName);
 /*
 struct slice {
 	int length;
@@ -99,49 +27,29 @@ struct variant {
 	typeInfo &typeref;
 	pointer  data;
 }
+
 */
-//~ hex32 xxx = 0;
-/*
-struct gxRect: 4 {
-	int x;
-	int y;
-	int w;
-	int h;
-}
 
-define gxRect(int x, int y, int w, int h) = emit(gxRect, i32(x), i32(y), i32(w), i32(h));
+/* Bits: hi, lo, extend
+define sxt64(int32 a) = int64(int32(a));			// sign extend
+define zxt64(int32 a) = int64(uint32(a));			// zero extend
+define Lo64(int64 a) = emit(int32, set, i64(a));	// Lo32 part
+define Hi64(int64 a) = emit(int32, pop, i64(a));	// Hi32 part
+//~ define Lo32(int32 a) = int32(a & 0xffff);			// Lo16 part
+//~ define Hi32(int32 a) = Lo32(a >> 16);				// Hi16 part
+//~ define Lo16(int32 a) = int32(a & 0xff);				// Lo16 part
+//~ define Hi16(int32 a) = Lo16(a >> 8);				// Hi16 part
 
-gxRect x = gxRect(1,2,3,4);
-gxRect y = gxRect(1,2,3,4);
-gxRect z = gxRect(1,2,3,4);
+//~ struct HL32{int32 lo; int32 hi;}
+//~ define Lo64(int64 &a) = int32(emit(HL32, ref(a)).lo);	// Lo32 part
+//~ define Hi64(int64 &a) = int32(emit(HL32, ref(a)).hi);	// Hi32 part
 
-//~ vec4f vvv = vec4f(1,2,3,4);
-println(vec4f(1.,2.,3.,4.));
-*/
-/*
-//~ addEventListener(MouseEvent.CLICK, function() {System.exit(0);});
-//~ float a = lerp(.6, 0, 1);
+hex64 val = 0xff00ff00ff0f0f0f9;
+hex32 lo = Lo64(val);
+hex32 hi = Hi64(val);
 
-struct gxRect {
-	int x;
-	int y;
-	int w;
-	int h;
-}
-void tileSurf(int dst, int src, gxRect &roi) {
-	int dstw = 0;//width(dst);
-	int dsth = 0;//height(dst);
-	int srcw = 0;//width(src);
-	int srch = 0;//height(src);
-
-	if (roi == null) {
-		srcw = roi.w;
-		srch = roi.h;
-	}
-}
 // */
-
-/*
+/* get 0 < n <= 64 bit minimum / maximum (signed/unsigned) values
 void bitsget(bool signed, int size, int64 &min, int64 &max) {
 	int64 mask = bits.shr(int64(-1), -size);
 	min = bits.shl(-int64(signed), size - 1);
@@ -154,11 +62,35 @@ hex64 max;
 hex64 umin;
 hex64 umax;
 
-int bitsize = 18;
+int bitsize = 64;
 bitsget(true, bitsize, min, max);
 bitsget(!true, bitsize, umin, umax);
 // */
 
+//~ int i = 9;
+//~ int8 arr[6];
+//~ println(int(arr[9]));
+
+void puthex(int32 num) {
+	/*void puthex_(int32 num) {
+		if (num >= 16) {
+			puthex_(num / 16);
+		}
+		putchr("0123456789ABCDEF"[num % 16]);
+	}
+	puthex_(num);
+	// */
+	if (num >= 16) {
+		puthex(num / 16);
+	}
+	putchr("0123456789ABCDEF"[num % 16]);
+}
+
+int x = 0x0f00ff98;
+
+puthex(x);
+putchr('\n');
+//~ println(int("0123456789ABCDEF"[9]));
 /* call functions passed as argument to function
 //~ void method() = null;
 
@@ -190,14 +122,14 @@ int method2() {result = method2(3);}
 int method3() {result = method2(2);}
 // +/
 
-/+	just call it
+//~ /+	just call it
 static if (true) {
 	method2();
 	method2();
 	method2();
 }// +/
 
-/+	call passed to another fun
+//~ /+	call passed to another fun
 void methodCall(int method()) {
 	if (method != null) {
 		int n = method();
@@ -206,11 +138,13 @@ void methodCall(int method()) {
 }
 methodCall(method3);
 methodCall(method3);
+methodCall(method3);
+methodCall(method3);
+methodCall(method3);
 methodCall(null);
-
 //~ +/
 
-//~ /+	call as a reference
+/+	call as a reference
 void methodV() {method2(2);}
 //~ int method3() {}
 //~ static 
@@ -239,26 +173,6 @@ int y = 2;
 int z = 3;
 //~ */
 
-/* Test functions
-
-void alma(int &x) {print("alma:");println(x);}
-void korte(int &x) {print("korte:");println(x);}
-
-// this wont work if not static
-//~ void almaref(int &x) = alma;
-
-void setCallBack(int mode, void handler(int &Event)) {
-	if (handler != null)
-		handler(mode);
-}
-
-setCallBack(100, null);
-setCallBack(101, alma);
-setCallBack(106, korte);
-//~ setCallBack(106, almaref);
-
-// */
-
 /* using strings
 
 long cikkId = 165;
@@ -267,7 +181,7 @@ long btetelId = 6398;
 double mennyiseg = 1;
 
 define strlen = 25;
-define char uint8; //%'%c'
+define char uint8;
 char val[strlen + 1];
 val[strlen] = 0;
 
@@ -296,26 +210,6 @@ void recurse(int x) {
 }
 
 recurse(20);
-// */
-
-/* Bits: hi, lo, extend
-define sxt64(int32 a) = int64(int32(a));			// sign extend
-define zxt64(int32 a) = int64(uint32(a));			// zero extend
-define Lo64(int64 a) = emit(int32, set, i64(a));	// Lo32 part
-define Hi64(int64 a) = emit(int32, pop, i64(a));	// Hi32 part
-//~ define Lo32(int32 a) = int32(a & 0xffff);			// Lo16 part
-//~ define Hi32(int32 a) = Lo32(a >> 16);				// Hi16 part
-//~ define Lo16(int32 a) = int32(a & 0xff);				// Lo16 part
-//~ define Hi16(int32 a) = Lo16(a >> 8);				// Hi16 part
-
-hex64 val = 0xff00ff00ff0f0f0f9;
-hex32 lo = Lo64(val);
-hex32 hi = Hi64(val);
-
-void xx() {
-	static int xx1 = 0;
-}
-
 // */
 
 /* clamp, lerp, smooth
@@ -349,9 +243,11 @@ define eq(float64 a, float64 b) = eq(a, b, __eps);
 
 define double1 float64;//%%2.10F
 
-double1 a = 0.1; //%hexaban 0x%016X
-double1 b = 0.2;
-double1 c = 0.3;
+double1 a = .1; //%hexaban 0x%016X
+double1 b = .2;
+double1 c = .3;
+double1 d = (a + b) + c; //%%.20f
+double1 e = a + (b + c); //%%.20f
 bool x = (a + b) + c == a + (b + c);
 bool x1 = eq((a + b) + c, a + (b + c));
 
@@ -359,22 +255,15 @@ bool x1 = eq((a + b) + c, a + (b + c));
 
 /* random numbers
 for (int i = 0; i < 60; i += 1) {
-	println(random(1.001));
+	println(random(1., 1.001));
 }
 // */
 
-/* using emit; and emit();
-//~ string alma = "alma a fa alatt";
-//~ println(1 + 4);
-
+/* using emit(); ./ccvm -c -x -O-2 test.cvx
 int64 t1 = 314;
 int64 t2 = emit();
-int64 t3 = emit;
 print(t2);
-print(t3);
 
-//~ t3 = 90;
-//~ println(t3);
 // */
 
 /+ hex view: use: ./ccvm -c -x -O-2 test.cvx
@@ -387,23 +276,18 @@ hex8  xhex08[8] = emit();
 // +/
 
 /* factorial
-define n = 6;
+const n = 6;
 int64 res = 1;
 for (int i = 1; i <= n; i += 1) {
-//~ {
-	//~ int i = 1;
 	res *= i;
 }
 // */
 /* calc E
-define eps = 1e-50;
+const eps = 1e-50;
 double tmp = 1.;
 double res = 1.;
-//~ hex64 Res = emit();
 for (int i = 1; tmp > eps; i += 1) {
-	//~ double old = res;
 	res += tmp /= i;
-	//~ if (old == res) tmp = 0;
 }
 // */
 

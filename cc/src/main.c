@@ -610,7 +610,7 @@ int evalexp(ccState s, char* text) {
 	tid = eval(&res, ast);
 
 	if (peek(s))
-		error(s->s, 0, "unexpected: `%k`", peek(s));
+		error(s->s, s->file, s->line, "unexpected: `%k`", peek(s));
 
 	fputfmt(stdout, "eval(`%+k`) = ", ast);
 
@@ -837,19 +837,19 @@ int program(int argc, char *argv[]) {
 		}
 
 		if (reglibc(s) != 0) {
-			error(s, 0, "error compiling `%s`", "stdlib");
+			error(s, NULL, 0, "error registering lib calls");
 			logfile(s, NULL);
 			return -6;
 		}
 
 		if (compile(s, warn, "stdlib.cvx") != 0) {
-			error(s, 0, "error compiling `%s`", "stdlib.cvx");
-			logfile(s, NULL);
-			return -9;
+			warn(s, 1, NULL, 0, "compiling `%s`", "stdlib.cvx");
+			//~ logfile(s, NULL);
+			//~ return -9;
 		}// */
 
 		if (compile(s, warn, srcf) != 0) {
-			error(s, -1, "error compiling `%s`", srcf);
+			error(s, NULL, 0, "error compiling `%s`", srcf);
 			logfile(s, NULL);
 			return s->errc;
 		}

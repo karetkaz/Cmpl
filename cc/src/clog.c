@@ -49,24 +49,25 @@ static void fputsym(FILE *fout, symn sym, int mode, int level) {
 
 	//~ prName = !(mode & noName) && sym->name;
 
-	if (sym->kind == TYPE_arr) {
-		symn bp[512], *sp = bp, *p;// + sizeof(bp) / sizeof(*bp);
+	if (sym->kind == TYPE_arr && sym->size) {
+		if (sym->name == NULL) {
+			symn bp[512], *sp = bp, *p;// + sizeof(bp) / sizeof(*bp);
 
-		symn typ = sym;
-		while (typ->kind == TYPE_arr) {
-			*sp++ = typ;
-			typ = typ->type;
+			symn typ = sym;
+			while (typ->kind == TYPE_arr) {
+				*sp++ = typ;
+				typ = typ->type;
+			}
+			fputsym(fout, typ, mode, level);
+
+			for (p = bp; p < sp; ++p) {
+				typ = *p;
+				fputfmt(fout, "[%?d]", typ->size);
+			}
+			return;
+			//~ fputfmt(fout, "[%?d]", sym->size);
+			//~ fputsym(fout, sym->type, mode, level);
 		}
-		fputsym(fout, typ, mode, level);
-
-		for (p = bp; p < sp; ++p) {
-			typ = *p;
-			fputfmt(fout, "[%?d]", typ->size);
-		}
-
-		//~ fputfmt(fout, "[%?d]", sym->size);
-		//~ fputsym(fout, sym->type, mode, level);
-		return;
 	}
 
 	if (sym->kind == EMIT_opc) {
@@ -89,6 +90,9 @@ static void fputsym(FILE *fout, symn sym, int mode, int level) {
 			//~ case TYPE_rec:
 				//~ fputstr(fout, "struct ");
 				//~ break;
+
+			case TYPE_arr:
+				break;
 
 			default:
 				fputsym(fout, sym->type, mode, level);
@@ -981,17 +985,24 @@ void dumpsym(FILE *fout, symn sym, int alma) {
 		// qualified name with arguments
 		fputsym(fout, ptr, prQual|prArgs | 1, 20);
 
-		// qualified type
+		// qualified base type(s)
 		if (ptr->type) {
 			fputstr(fout, ": ");
 			fputsym(fout, ptr->type, prQual, 0);
 		}
 
-		if (ptr->kind != TYPE_def)
+		/*if (ptr->kind != TYPE_def)
 			fputfmt(fout, ": %d[%c%d]", ptr->size, ptr->offs <= 0 ? '@' : '+', ptr->offs < 0 ? -ptr->offs : ptr->offs);
-
 		if (ptr->cast)
-			fputfmt(fout, ":[%t]", ptr->cast);
+			fputfmt(fout, ":[casts: %t]", ptr->cast);
+		*/
+
+		if (ptr->kind != TYPE_def) {
+			fputfmt(fout, ":%c%d", ptr->offs <= 0 ? '@' : '+', ptr->offs < 0 ? -ptr->offs : ptr->offs);
+			fputfmt(fout, ":[size: %d]", ptr->size);
+		}
+		if (ptr->cast)		// TYPE_def should not cast to anything
+			fputfmt(fout, ":[cast: %t]", ptr->cast);
 
 		// initializer
 		if (ptr->init && ptr->kind != TYPE_ref) {
@@ -1061,12 +1072,12 @@ void perr(state s, int level, const char *file, int line, const char *msg, ...) 
 		file = s->cc->file;
 
 	if (file && line)
-		fputfmt(logf, "%s:%u:", file, line);
+		fputfmt(logf, "%s:%u: ", file, line);
 
 	if (level > 0)
-		fputstr(logf, "warning:");
+		fputstr(logf, "warning: ");
 	else if (level)
-		fputstr(logf, "error:");
+		fputstr(logf, "error: ");
 
 	va_start(argp, msg);
 	FPUTFMT(logf, msg, argp);
