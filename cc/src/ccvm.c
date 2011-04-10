@@ -53,9 +53,7 @@ int cgen(state s, astn ast, int get) {
 	int ret = 0;
 	int qual = 0;
 
-	if (!ast || !ast->type) {
-		dieif(!ast || !ast->type, "FixMe %k", ast);
-	}
+	dieif(!ast || !ast->type, "FixMe %k", ast);
 
 	// TODO: this sucks
 	if (get == TYPE_any)
@@ -76,7 +74,7 @@ int cgen(state s, astn ast, int get) {
 			return 0;
 
 		//{ STMT
-		case STMT_do:  {	// expr statement or decl or function body
+		case STMT_do:  {	// expr or decl statement
 			int stpos = stkoffs(s, 0);
 			emitint(s, opc_line, ast->line);
 			if (!cgen(s, ast->stmt.stmt, TYPE_vid)) {
@@ -97,7 +95,7 @@ int cgen(state s, astn ast, int get) {
 			fputasm(stdout, s->vm, ipdbg, -1, 0x119);
 			#endif
 		} break;
-		case STMT_beg: {	// {}
+		case STMT_beg: {	// {} or function body
 			astn ptr;
 			int stpos = stkoffs(s, 0);
 			emitint(s, opc_line, ast->line);
@@ -125,7 +123,7 @@ int cgen(state s, astn ast, int get) {
 			int jmpt = 0, jmpf = 0;
 			int tt = eval(&tmp, ast->stmt.test);
 
-			//~ dieif(get != TYPE_any && get != TYPE_vid, "FixMe");
+			dieif(get != TYPE_vid, "FixMe");
 			emitint(s, opc_line, ast->line);
 
 			if (qual == QUAL_sta) {
@@ -213,7 +211,7 @@ int cgen(state s, astn ast, int get) {
 				return 0;
 			}
 
-			if (!(jstep = emitint(s, opc_jmp, 0))) {		// continue;
+			if (!(jstep = emitopc(s, opc_jmp))) {		// continue;
 				trace("%+k", ast);
 				return 0;
 			}
@@ -523,6 +521,7 @@ int cgen(state s, astn ast, int get) {
 			}
 
 			if (var->kind == TYPE_def) {
+				fatal("FixMe");			// can not be here
 				debug("%+T", var);
 				return cgen(s, ast->op.rhso, get);
 			}
@@ -537,8 +536,17 @@ int cgen(state s, astn ast, int get) {
 				return 0;
 			}
 
-			if (get == TYPE_ref)
+			// what if var is by ref ?
+			if (var->cast == TYPE_ref) {
+				if (!emitint(s, opc_ldi, 4)) {
+					trace("%+k", ast);
+					return 0;
+				}
+			}
+
+			if (get == TYPE_ref) {
 				return TYPE_ref;
+			}
 
 			if (!emitint(s, opc_ldi, sizeOf(ast->type))) {
 				trace("%+k", ast);
@@ -669,7 +677,7 @@ int cgen(state s, astn ast, int get) {
 			dieif(ret != TYPE_bit, "RemMe");
 			#endif
 		} break;
-		case OPER_sel: {		// '?:'
+		case OPER_sel: {	// '?:'
 			int jmpt, jmpf;
 			if (0 && s->vm.opti && eval(&tmp, ast->op.test)) {
 				if (!cgen(s, constbol(&tmp) ? ast->op.lhso : ast->op.rhso, 0)) {
@@ -871,7 +879,7 @@ int cgen(state s, astn ast, int get) {
 					//~ var->load = 1;
 				}*/
 
-				if (var->init) {
+				if (var->init/*  && !var->call */) {
 					astn val = var->init;
 
 					//~ debug("new %T, %d", var, var->line);
@@ -1143,10 +1151,22 @@ int logfile(state s, char* file) {
 	return 0;
 }
 
-void ccSource(ccState cc, char *file, int line) {
-	cc->file = file;
-	cc->line = line;
+symn ccBegin(state rt, char *cls) {
+	symn result = NULL;
+	if (rt->cc) {
+		result = install(rt->cc, cls, TYPE_rec, TYPE_vid, 0);
+		if (result) {
+			enter(rt->cc, NULL);
+		}
+	}
+	return result;
 }
+void ccEnd(state rt, symn cls) {
+	if (cls) {
+		cls->args = leave(rt->cc, cls);
+	}
+}
+
 
 int gencode(state s, int level) {
 	ccState cc = s->cc;
@@ -1162,11 +1182,11 @@ int gencode(state s, int level) {
 
 	s->defs = leave(s->cc, NULL);
 
-	if (!vmInit(s))
-		return -1;
-
-	//~ level = -2;
-	s->vm.opti = level < 0 ? -level : level;	// 
+	// allocate used memeory
+	// rtAlloc(s, s->_mem, s->_ptr - s->_mem);
+	s->vm.pos = s->_ptr - s->_mem;
+	s->vm._end = s->_mem + s->_cnt;
+	s->vm.opti = level < 0 ? -level : level;
 
 	//~ DONE: Data[RO]: metadata, strings
 	//~ TODO: Data[RO]: constants, functions, enums ...
@@ -1177,132 +1197,42 @@ int gencode(state s, int level) {
 		symn var = s->defs;
 		astn lend = NULL, lbeg = NULL;
 
-		dieif(s->defs != s->cc->all, "FixMe");
+		dieif(s->defs != s->cc->defs, "FixMe");
 
 		// make global symbols static ?
 		if (level >= 0) {
 			for (var = s->defs; var; var = var->next) {
 
-				if (var->stat)		// skip already static variables
-					continue;
-
 				if (var->kind != TYPE_ref)
 					continue;
 
 				//~ debug("static global: %+T@%x", var, var->offs);
+				//~ warn(s, 0, var->file, var->line, "global symbol: %+T@%x", var, -var->offs);
+
 				var->stat = 1;
 				var->glob = 1;
 			}
 		}// */
 
-		// loop through all symbols generate static non global variables
+		// generate non global static variables & functions
 		for (var = s->defs; var; var = var->defs) {
-
-			if (!var->stat)
-				continue;
 
 			if (var == null_ref)
 				continue;
 
-			if (var->kind != TYPE_ref) {
-				debug("%-T", var);	// static what ?
-				continue;
-			}
-
-			if (var->call && var->cast != TYPE_ref)
+			if (var->glob || !var->stat)
 				continue;
 
-			dieif(var->offs, "FixMe %-T@%d", var, var->offs);
+			dieif(var->kind != TYPE_ref, "FixMe");
 
-			var->offs = -s->vm.pos;
-			s->vm.pos += sizeOf(var);
-
-			if (var->init && !var->glob) {
-				//~ if variable was allocated
-				//~ make assigment from initializer
-				//~ TODO: do not create assigment !!!
-				astn st = newnode(cc, STMT_do);
-				astn id = newnode(cc, TYPE_ref);
-				astn op = newnode(cc, ASGN_set);
-
-				//fatal("FixMe %T", var);
-				op->kind = ASGN_set;
-				op->cst2 = var->cast;
-				op->type = var->type;
-				op->op.lhso = id;
-				op->op.rhso = var->init;
-
-				id->kind = TYPE_ref;
-				id->cst2 = TYPE_ref;		// wee need a reference here
-				id->type = var->type;
-				id->id.link = var;
-
-				st->kind = STMT_do;
-				st->cst2 = TYPE_any;
-				st->type = type_vid;
-				st->stmt.stmt = op;
-
-				op->cst2 = TYPE_vid;
-				//~ op->type = type_vid;
-				//~ /*
-				if (var->cast == TYPE_ref) {
-					op->cst2 = TYPE_vid;
-					op->type = type_ptr;
-					id->type = type_ptr;
-					var->init->cst2 = TYPE_ref;
-					if (var->call)
-						id->cst2 = ASGN_set;
-				}// */
-
-				dieif(!cc->root || cc->root->kind != STMT_beg, "FixMe");
-
-				if (lend == NULL) {
-					lbeg = st;
-					//~ cc->root->stmt.stmt = st;
-				}
-				else {
-					lend->next = st;
-				}
-
-				st->next = NULL;
-				var->init = NULL;
-				lend = st;
-			}// */
-			trace("static variable: %+T@%x:%d", var, -var->offs, sizeOf(var));
-		}
-
-		if (lbeg && lend) {
-			if (cc->root) {
-				dieif(cc->root->kind != STMT_beg, "FixMe");
-				lend->next = cc->root->stmt.stmt;
-				cc->root->stmt.stmt = lbeg;
-			}
-		}
-
-		Lmain = s->vm.pos;
-		// loop through all symbols generate functions
-		for (var = s->defs; var; var = var->defs) {
-
-			if (!var->stat)
-				continue;
-
-			if (!var->call)
-				continue;
-
-			if (var == null_ref)
-				continue;
-
-			if (var->kind != TYPE_ref) {
-				debug("%-T", var);	// static what ?
-				continue;
-			}
-
+			//~ warn(s, 0, var->file, var->line, "static func/var: %+T@%x", var, -var->offs);
 			if (var->call && var->cast != TYPE_ref) {
 				int seg = emitopc(s, markIP);
 
 				if (!var->init) {
 					debug("`%T` will be skipped", var);
-					return 0;
+					continue;
+					//~ return 0;
 				}
 
 				s->vm.sm = 0;
@@ -1326,8 +1256,179 @@ int gencode(state s, int level) {
 				//~ debug("function @%d: %-T", -var->offs, var, var->init);
 				//~ fputasm(stderr, vm, seg, -1, 0x129);
 
-				//~ trace("static function: %+T@%x", var, -var->offs);
+				trace("static function: %+T@%x", var, -var->offs);
 				var->init = NULL;
+			}
+			else if (!var->call) {
+				dieif(var->offs, "FixMe %-T@%d", var, var->offs);
+				var->offs = -s->vm.pos;
+				s->vm.pos += sizeOf(var);
+
+				if (var->init && !var->glob) {
+					//~ if variable was allocated
+					//~ make assigment from initializer
+					//~ TODO: do not create assigment !!!
+					astn st = newnode(cc, STMT_do);
+					astn id = newnode(cc, TYPE_ref);
+					astn op = newnode(cc, ASGN_set);
+
+					//fatal("FixMe %T", var);
+					op->kind = ASGN_set;
+					op->cst2 = var->cast;
+					op->type = var->type;
+					op->op.lhso = id;
+					op->op.rhso = var->init;
+
+					id->kind = TYPE_ref;
+					id->cst2 = TYPE_ref;		// wee need a reference here
+					id->type = var->type;
+					id->id.link = var;
+
+					st->kind = STMT_do;
+					st->cst2 = TYPE_any;
+					st->type = type_vid;
+					st->stmt.stmt = op;
+
+					op->cst2 = TYPE_vid;
+					//~ op->type = type_vid;
+					//~ /*
+					if (var->cast == TYPE_ref) {
+						op->cst2 = TYPE_vid;
+						op->type = type_ptr;
+						id->type = type_ptr;
+						var->init->cst2 = TYPE_ref;
+						if (var->call)
+							id->cst2 = ASGN_set;
+					}// */
+
+					dieif(!cc->root || cc->root->kind != STMT_beg, "FixMe");
+
+					if (lend == NULL) {
+						lbeg = st;
+						//~ cc->root->stmt.stmt = st;
+					}
+					else {
+						lend->next = st;
+					}
+
+					st->next = NULL;
+					var->init = NULL;
+					lend = st;
+				}// */
+				trace("static variable: %+T@%x:%d", var, -var->offs, sizeOf(var));
+			}
+		}
+
+		// initialize static non global variables
+		if (lbeg && lend && cc->root) {
+			dieif(cc->root->kind != STMT_beg, "FixMe");
+			lend->next = cc->root->stmt.stmt;
+			cc->root->stmt.stmt = lbeg;
+		}
+
+		// generate global static variables & functions
+		for (var = s->defs; var; var = var->defs) {
+
+			if (!var->glob || !var->stat)
+				continue;
+
+			if (var == null_ref)
+				continue;
+
+			if (var->kind != TYPE_ref) {
+				debug("%-T", var);	// static what ?
+				continue;
+			}
+
+			if (var->call && var->cast != TYPE_ref) {
+				int seg = emitopc(s, markIP);
+
+				if (!var->init) {
+					//~ debug("`%T` will be skipped", var);
+					continue;
+				}
+
+				s->vm.sm = 0;
+				fixjump(s, 0, 0, 4 + var->offs);
+				var->offs = -emitopc(s, markIP);
+
+				if (!cgen(s, var->init, TYPE_vid)) {
+					return 0;
+				}
+				if (!emitopc(s, opc_jmpi)) {
+					error(s, var->file, var->line, "error emiting function: %-T", var);
+					return 0;
+				}
+				while (cc->jmps) {
+					error(s, NULL, 0, "invalid jump: `%k`", cc->jmps);
+					cc->jmps = cc->jmps->next;
+				}
+				var->size = emitopc(s, markIP) - seg;
+
+				//~ debug("function @%d: %+T\n%7K", -var->offs, var, var->init);
+				//~ debug("function @%d: %-T", -var->offs, var, var->init);
+				//~ fputasm(stderr, vm, seg, -1, 0x129);
+
+				trace("static function: %+T@%x", var, -var->offs);
+				var->init = NULL;
+			}
+			else if (!var->call) {
+				dieif(var->offs, "FixMe %-T@%d", var, var->offs);
+				var->offs = -s->vm.pos;
+				s->vm.pos += sizeOf(var);
+
+				if (var->init && !var->glob) {
+					//~ if variable was allocated
+					//~ make assigment from initializer
+					//~ TODO: do not create assigment !!!
+					astn st = newnode(cc, STMT_do);
+					astn id = newnode(cc, TYPE_ref);
+					astn op = newnode(cc, ASGN_set);
+
+					//fatal("FixMe %T", var);
+					op->kind = ASGN_set;
+					op->cst2 = var->cast;
+					op->type = var->type;
+					op->op.lhso = id;
+					op->op.rhso = var->init;
+
+					id->kind = TYPE_ref;
+					id->cst2 = TYPE_ref;		// wee need a reference here
+					id->type = var->type;
+					id->id.link = var;
+
+					st->kind = STMT_do;
+					st->cst2 = TYPE_any;
+					st->type = type_vid;
+					st->stmt.stmt = op;
+
+					op->cst2 = TYPE_vid;
+					//~ op->type = type_vid;
+					//~ /*
+					if (var->cast == TYPE_ref) {
+						op->cst2 = TYPE_vid;
+						op->type = type_ptr;
+						id->type = type_ptr;
+						var->init->cst2 = TYPE_ref;
+						if (var->call)
+							id->cst2 = ASGN_set;
+					}// */
+
+					dieif(!cc->root || cc->root->kind != STMT_beg, "FixMe");
+
+					if (lend == NULL) {
+						lbeg = st;
+						//~ cc->root->stmt.stmt = st;
+					}
+					else {
+						lend->next = st;
+					}
+
+					st->next = NULL;
+					var->init = NULL;
+					lend = st;
+				}// */
+				trace("static variable: %+T@%x:%d", var, -var->offs, sizeOf(var));
 			}
 		}
 	}
@@ -1352,6 +1453,15 @@ int gencode(state s, int level) {
 	return s->errc;
 }
 //~ int execute(state s, int stack) ;
+
+state rtInit(void* mem, unsigned size) {
+	state s = mem;
+	s->_cnt = size - sizeof(struct state);
+	s->_ptr = s->_mem;
+	logFILE(s, stderr);
+	s->cc = NULL;
+	return s;
+}
 
 symn emit_opc = NULL;
 static void install_emit(ccState cc, int mode) {
@@ -1431,10 +1541,9 @@ static void install_emit(ccState cc, int mode) {
 			//~ installex(cc, "adc", EMIT_opc, b32_adc, type_u32, NULL);
 			//~ installex(cc, "sub", EMIT_opc, b32_sbb, type_u32, NULL);5
 
-			//~ type_muldiv
-			//~ installex(cc, "mul", EMIT_opc, u32_mul, type_u32, NULL);
-			//~ installex(cc, "div", EMIT_opc, u32_div, type_u32, NULL);
-			//~ installex(cc, "mod", EMIT_opc, u32_mod, type_u32, NULL);
+			installex(cc, "mul", EMIT_opc, u32_mul, type_u32, NULL);
+			installex(cc, "div", EMIT_opc, u32_div, type_u32, NULL);
+			installex(cc, "mod", EMIT_opc, u32_mod, type_u32, NULL);
 
 			installex(cc, "mad", EMIT_opc, u32_mad, type_u32, NULL);
 			installex(cc, "clt", EMIT_opc, u32_clt, type_bol, NULL);
@@ -1588,15 +1697,6 @@ static void install_emit(ccState cc, int mode) {
 	}
 }
 
-state rtInit(void* mem, unsigned size) {
-	state s = mem;
-	s->_cnt = size - sizeof(struct state);
-	s->_ptr = s->_mem;
-	logFILE(s, stderr);
-	s->cc = NULL;
-	return s;
-}
-
 ccState ccInit(state s, int mode) {
 	ccState cc = getmem(s, sizeof(struct ccState), -1);
 
@@ -1687,6 +1787,10 @@ ccState ccOpen(state s, srcType mode, char *src) {
 	}
 	return s->cc;
 }
+void ccSource(ccState cc, char *file, int line) {
+	cc->file = file;
+	cc->line = line;
+}
 int ccDone(state s) {
 	ccState cc = s->cc;
 
@@ -1710,12 +1814,6 @@ int ccDone(state s) {
 	return s->errc;
 }
 
-state vmInit(state s) {
-	s->vm.pos = s->_ptr - s->_mem;
-	s->vm._end = s->_mem + s->_cnt;
-	return s;
-}
-
 void* getmem(state s, int size, unsigned clear) {
 	if (size <= s->_cnt) {
 		void *mem = s->_ptr;
@@ -1729,6 +1827,22 @@ void* getmem(state s, int size, unsigned clear) {
 
 		return mem;
 	}
+	return NULL;
+}
+
+void* rtAlloc(state s, void* ptr, int size)
+/**
+ * allocate memory in the runtime state.
+ * if (size != 0 && ptr != NULL): realloc
+ * if (size != 0 && ptr == NULL): alloc
+ * if (size == 0 && ptr != NULL): free
+ * if (size == 0 && ptr == NULL): nothing
+ * return NULL if cannot allocate, or size == 0
+// */
+{
+	//~ s->free;
+	//~ s->used;
+	fatal("TODO");
 	return NULL;
 }
 

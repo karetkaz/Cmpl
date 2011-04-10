@@ -159,8 +159,9 @@ typedef union {		// value type
 } stkval;
 
 //~ typedef struct symn *symn;		// Symbol Node
-//~ typedef struct astn *astn;		// Abstract Syntax Tree Node
+typedef struct astn *astn;		// Abstract Syntax Tree Node
 typedef struct list *list;
+typedef unsigned int uint;
 
 struct list {				// linked list
 	struct list		*next;
@@ -224,19 +225,17 @@ struct symn {				// type node
 	symn	args;		// REC fields / FUN args
 	symn	next;		// symbols on table/args
 
-	uint8_t	cast;		// casts to type(TYPE_(ref, u32, i32, i64, f32, f64, p4x)).
+	uint8_t	kind;		// TYPE_ref || TYPE_def || TYPE_rec || TYPE_arr
+	uint8_t	cast;		// casts to type(TYPE_(bit, vid, ref, u32, i32, i64, f32, f64, p4x)).
 	uint8_t	pack;		// alignment
-	uint8_t	kind;		// TYPE_ref || TYPE_xxx
 
 	uint8_t	call:1;		// function / callable => (kind == TYPE_ref && args)
 	uint8_t	stat:1;		// static ?
 	uint8_t	glob:1;		// global
-	//~ uint8_t	load:1;		// indirect reference / eval param: "&": cast == TYPE_ref
+	//~ uint8_t	load:1;		// indirect reference: cast == TYPE_ref
 
 	//~ uint8_t	priv:1;		// private
 	uint8_t	read:1;		// const / no override
-
-	//~ uint8_t	onst:1;		// stack  (val): replaced with (offs <= 0) ?(!stat)
 
 	uint32_t	xx_1:4;		// -Wpadded
 	uint16_t	xx_2;		// align
@@ -252,8 +251,7 @@ struct symn {				// type node
 
 struct ccState {
 	state	s;
-	//~ symn	defs;		// definitions
-	symn	all;		// all symbols TODO:Temp
+	symn	defs;		// all definitions
 	astn	root;		// statements
 	astn	jmps;		// jumps
 
@@ -262,7 +260,9 @@ struct ccState {
 
 	//~ int		verb;		// verbosity
 	int		warn;		// warning level
+	int		maxlevel;		// max nest level: modified by ?
 	int		nest;		// nest level: modified by (enter/leave)
+	int		funl;		// function nest
 	int		siff:1;		// inside a static if false
 	int		_pad:31;	// 
 

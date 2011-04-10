@@ -7,7 +7,7 @@
 typedef float float32_t;
 typedef double float64_t;
 
-typedef struct astn *astn;		// tree
+//~ typedef struct astn *astn;		// tree
 typedef struct symn *symn;		// symbols
 typedef struct ccState *ccState;
 
@@ -57,6 +57,11 @@ typedef struct state {
 
 		unsigned char *_end;
 	}vm;
+
+	struct {
+		int argc;
+		char* argv[];
+	}pe;
 
 	// todo a memory manager
 	long _cnt;
@@ -126,11 +131,14 @@ ccState ccOpen(state, srcType, char* source);
 
 int ccDone(state);
 
-state vmInit(state);
+//~ state vmInit(state);
 //~ int vmOpen(state, char* source);
 //~ int vmDone(state s);		// what should do this
 
 void ccSource(ccState, char *file, int line);
+
+symn ccBegin(state rt, char *cls);
+void ccEnd(state rt, symn cls);
 
 symn findref(state s, void *ptr);
 symn findsym(ccState s, symn in, char *name);
@@ -154,6 +162,7 @@ static inline void* popref(state s) { int32_t p = popi32(s); return p ? s->_mem 
 static inline char* popstr(state s) { return popref(s); }
 
 static inline void* popval(state s, void* dst, int size) { return memcpy(dst, poparg(s, size), size); }
+static inline void* popvar(state s, void* dst, int size) { return memcpy(dst, popref(s), size); }
 
 //~ static inline void reti32(state s, int32_t val) { setret(int32_t, s, val); }
 //~ static inline void reti64(state s, int64_t val) { setret(int64_t, s, val); }
@@ -161,4 +170,4 @@ static inline void* popval(state s, void* dst, int size) { return memcpy(dst, po
 //~ static inline void retf64(state s, float64_t val) { setret(float64_t, s, val); }
 #endif
 
-#define DEBUGGING 15
+#define DEBUGGING 1

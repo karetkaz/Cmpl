@@ -50,6 +50,7 @@ hex32 hi = Hi64(val);
 
 // */
 /* get 0 < n <= 64 bit minimum / maximum (signed/unsigned) values
+//~ define hex64 int64;	//%%016X
 void bitsget(bool signed, int size, int64 &min, int64 &max) {
 	int64 mask = bits.shr(int64(-1), -size);
 	min = bits.shl(-int64(signed), size - 1);
@@ -66,20 +67,95 @@ int bitsize = 64;
 bitsget(true, bitsize, min, max);
 bitsget(!true, bitsize, umin, umax);
 // */
+/*
+define min(int32 ^a, int32 ^b) = int32(a < b ? a : b);
 
+int x = 9;
+int& a = x;
+//~ int& b[9];
+//~ int& c(int x);
+// */
+/*
 //~ int i = 9;
 //~ int8 arr[6];
 //~ println(int(arr[9]));
 
+//~ uint32 x = 30;
+//~ uint32 y = x % 32;
+
+int fn1(int64 a) {
+	//~ static int xxx = 99;
+	//~ int fn2(int b) {
+		//~ result = b + xxx;
+	//~ }
+	//~ result = fn2(a);
+}
+
+int a = fn1(4);
+// */
+
+/* returning a function
+
+//~ struct fnWrap {var call(var data); var &data;}
+//~ define fnWrap(var data, var call(var data)) = emit(fnWrap, ref(fun), var(data));
+/+
+struct fnWrap {int call(int data); int data;}
+define fnWrap(int call(int data), int data) = emit(fnWrap, ref(call), int(data));
+define fnCall(fnWrap &wcd) = wcd.call(wcd.data);
+//~ operator (fnWrap &wcd)() = wcd.call(wcd.data);
+	// fnWrap test = fnWrap(fun1, 70);
+	// int a = test();
+
+//~ fnWrap test = fnWrap(70, int function(int a) {result = a * 8;});
+//~ fnWrap test = fnWrap(70, new int[] {1, 2, 3, 4});
+
+int fun1(int a) {result = a + 10;}
+int fun2(int a) {result = a * 10;}
+
+fnWrap test = fnWrap(fun1, 70);
+int a = fnCall(test);
+int b = fnCall(fnWrap(fun1, 50));
+//~ +/
+
+/+ count down
+struct fnWrap {int call(fnWrap &data); int data;}
+define fnWrap(int call(fnWrap &data), int data) = emit(fnWrap, ref(call), i32(data));
+define fnCall(fnWrap &wcd) = wcd.call(wcd);
+
+int countdown(fnWrap &a) {result = a.data; a.data -= 1;}
+
+fnWrap a = fnWrap(countdown, 3);
+println(fnCall(a));
+println(fnCall(a));
+println(fnCall(a));
+println(fnCall(a));
+// +/
+
+//~ /+ count down
+struct fnWrap {int call(fnWrap &data); int &data;}
+define fnWrap(int call(fnWrap &data), int &data) = emit(fnWrap, ref(call), ref(data));
+define fnCall(fnWrap &wcd) = wcd.call(wcd);
+
+int countdown(fnWrap &a) {
+	static int a2 = 99;
+	result = a.data;
+	a.data -= 1;
+}
+
+int n = 7;
+
+fnWrap a = fnWrap(countdown, n);
+println(fnCall(a));
+println(fnCall(a));
+println(fnCall(a));
+println(fnCall(a));
+//~ println(n);
+//~ println(n);
+// +/
+//~ */
+
+/* puthex
 void puthex(int32 num) {
-	/*void puthex_(int32 num) {
-		if (num >= 16) {
-			puthex_(num / 16);
-		}
-		putchr("0123456789ABCDEF"[num % 16]);
-	}
-	puthex_(num);
-	// */
 	if (num >= 16) {
 		puthex(num / 16);
 	}
@@ -90,7 +166,8 @@ int x = 0x0f00ff98;
 
 puthex(x);
 putchr('\n');
-//~ println(int("0123456789ABCDEF"[9]));
+// */
+
 /* call functions passed as argument to function
 //~ void method() = null;
 
@@ -136,7 +213,7 @@ void methodCall(int method()) {
 	}
 	else println("(null)");
 }
-methodCall(method3);
+methodCall(null);
 methodCall(method3);
 methodCall(method3);
 methodCall(method3);

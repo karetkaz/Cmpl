@@ -3,15 +3,26 @@
 TOKDEF(TYPE_any, 0x00, 0, ".err")	// error
 TOKDEF(TYPE_vid, 0x00, 0, ".vid")	// void
 TOKDEF(TYPE_bit, 0x00, 0, ".bit")	// bool, uint32, uint16, uint8
+TOKDEF(TYPE_u32, 0x00,  32, ".u32")
+//~ TOKDEF(TYPE_u64, 0x00,  64, ".u64")		// no vm support
+
 TOKDEF(TYPE_int, 0x00, 0, ".int")	// int64, int32, int16, int8
-TOKDEF(TYPE_flt, 0x00, 0, ".flt")	// float64, float32
+TOKDEF(TYPE_i32, 0x00,  32, ".i32")
+TOKDEF(TYPE_i64, 0x00,  64, ".i64")
+
+TOKDEF(TYPE_flt, 0x00, 0, ".flt")	// float32, float64
+TOKDEF(TYPE_f32, 0x00,  32, ".f32")
+TOKDEF(TYPE_f64, 0x00,  64, ".f64")
+
+TOKDEF(TYPE_rec, 0xff, 0, "struct") // union := struct:0
+
 TOKDEF(TYPE_str, 0x00, 0, ".str")	// TODO: replace with TYPE_str or TYPE_arr ?
 TOKDEF(TYPE_arr, 0x00, 0, ".arr")	// pointer, string, array, ..., ???
-TOKDEF(TYPE_def, 0xff, 0, "define")	// type or const or inline definition
-TOKDEF(TYPE_rec, 0xff, 0, "struct") // union := struct:0
-//~ TOKDEF(TYPE_cls, 0xff, 0, "class")
 
+TOKDEF(TYPE_def, 0xff, 0, "define")		// type or inline definition
 TOKDEF(TYPE_ref, 0x00, 0, ".ref")		// variable / function
+
+//~ TOKDEF(TYPE_p4x, 0x00, 128, ".p4x")
 
 TOKDEF(QUAL_con, 0xff, 0, "const")	// constant
 TOKDEF(QUAL_sta, 0xff, 0, "static")
@@ -92,7 +103,7 @@ TOKDEF(PNCT_rp , 0x00, 0, ")par")
 TOKDEF(PNCT_qst, 0x00, 0, "?")			// question mark
 TOKDEF(PNCT_cln, 0x00, 0, ":")			// colon
 
-TOKDEF(UNIT_def, 0xff, 0, "module")
+//~ TOKDEF(UNIT_def, 0xff, 0, "module")
 //~ TOKDEF(OPER_kwd, 0xff, 0, "operator")
 //~ TOKDEF(ENUM_kwd, 0xff, 0, "enum")		// keyword onlyd
 
@@ -100,44 +111,31 @@ TOKDEF(UNIT_def, 0xff, 0, "module")
 //~ Operators ==================================================================
 TOKDEF(OPER_min, 0x09, 2, OP, "<?")		// a <? b
 TOKDEF(OPER_max, 0x09, 2, OP, ">?")		// a >? b
-TOKDEF(OPER_pow, 0x0a, 2, OP, ">")		// a ** b
-TOKDEF(ASGN_min, 0x09, 2, OP, "<?")		// a <?= b
-TOKDEF(ASGN_max, 0x09, 2, OP, ">?")		// a >?= b
-TOKDEF(ASGN_pow, 0x0a, 2, OP, ">")		// a **= b
+TOKDEF(OPER_pow, 0x0a, 2, OP, "**")		// a ** b
+TOKDEF(ASGN_min, 0x09, 2, OP, "<?=")	// a <?= b
+TOKDEF(ASGN_max, 0x09, 2, OP, ">?=")	// a >?= b
+TOKDEF(ASGN_pow, 0x0a, 2, OP, "**=")		// a **= b
 
 //{ ============================================================================
 //~ TOKDEF(OPER_new, 0xff, 2, 2, "new")
 //~ TOKDEF(OPER_del, 0xff, 0, 2, "delete")
 
-// these are statements
-//? TOKDEF(OPER_try, 0xff, 0, 2, "try")		//
-//? TOKDEF(OPER_thr, 0xff, 0, 2, "throw")		//
-//? TOKDEF(OPER_cth, 0xff, 0, 2, "catch")		//
-//? TOKDEF(OPER_fin, 0xff, 0, 2, "finally")		//
+//? TOKDEF(STMT_try, 0xff, 0, 2, "try")			//
+//? TOKDEF(STMT_thr, 0xff, 0, 2, "throw")		//
+//? TOKDEF(STMT_cth, 0xff, 0, 2, "catch")		//
+//? TOKDEF(STMT_fin, 0xff, 0, 2, "finally")		//
 
 //~ TOKDEF(OPER_go2, 0xff, 0, 2, "goto")
-//~ TOKDEF(OPER_brk, 0xff, 0, 2, "break")
-//~ TOKDEF(OPER_con, 0xff, 0, 2, "continue")
 
 //~ TOKDEF(OPER_swi, 0xff, 0, 2, "switch")
 //~ TOKDEF(OPER_cas, 0xff, 0, 2, "case")
 //? TOKDEF(OPER_def, 0xff, 0, 2, "default")		// or use else
 
-//~ TOKDEF(OPER_wht, 0xff, 0, 2, "while")		// while '(' <expr>')' <stmt>
-//~ TOKDEF(OPER_whf, 0xff, 0, 2, "until")		// until '(' <expr>')' <stmt>
+//~ TOKDEF(OPER_wht, 0xff, 0, 2, "while")		// while '(' <expr>')' <stmt> => for(;<expr>;) <stmt>
+//~ TOKDEF(OPER_whf, 0xff, 0, 2, "until")		// until '(' <expr>')' <stmt> => for(;!<expr>;) <stmt>
 //~ TOKDEF(OPER_rep, 0xff, 0, 2, "repeat")		// repeat <stmt> ((until '(' <expr> ')' ) | (while '(' <expr> ')' ))?
 
 //} */
-
-//{ for the xml_dump function to print casts
-TOKDEF(TYPE_u32, 0x00,  32, ".u32")
-//~ TOKDEF(TYPE_u64, 0x00,  64, ".u64")		// no vm support
-TOKDEF(TYPE_i32, 0x00,  32, ".i32")
-TOKDEF(TYPE_i64, 0x00,  64, ".i64")
-TOKDEF(TYPE_f32, 0x00,  32, ".f32")
-TOKDEF(TYPE_f64, 0x00,  64, ".f64")
-//~ TOKDEF(TYPE_p4x, 0x00, 128, ".p4x")
-//}
 
 #undef TOKDEF
 #endif
@@ -215,28 +213,15 @@ OPCDEF(u32_clt,  0x38, 1, 2, -1, 1, "u32.clt")	// sp(1).b32 = sp(1).u32 < sp(0).
 OPCDEF(u32_cgt,  0x39, 1, 2, -1, 1, "u32.cgt")	// sp(1).b32 = sp(1).u32 > sp(0).u32; pop;
 OPCDEF(u32_mul,  0x3a, 1, 2, -1, 1, "u32.mul")	// sp(1) *= sp(0); pop;
 OPCDEF(u32_div,  0x3b, 1, 2, -1, 1, "u32.div")	// sp(1) /= sp(0); pop;
-OPCDEF(u32__3c,  0x3c, 1, 2, -1, 1, "u32.mod")	// sp(1) %= sp(0); pop;
+OPCDEF(u32_mod,  0x3c, 1, 2, -1, 1, "u32.mod")	// sp(1) %= sp(0); pop;
 OPCDEF(opc__3d,  0x3d, 1, 2, -0, 1, "b32.zxt")	//!zero.extend arg:[offs:3][size:5]
 OPCDEF(opc__3e,  0x3e, 1, 2, -0, 1, "b32.sxt")	//!sign.extend arg:[offs:3][size:5]
 OPCDEF(u32_mad,  0x3f, 1, 3, -2, 1, "u32.mad")	// sp(2) += sp(1)*sp(0); pop2;	[…, a, b, c => […, a + b * c;
 
 //~ OPCDEF(b32___1,  0x31, 0, 2, -1, 1, "b32.adc")	// sp(1) += sp(0); pop;
 //~ OPCDEF(b32___2,  0x32, 0, 2, -1, 1, "b32.sbb")	// sp(1) -= sp(0); pop;
-//~ OPCDEF(u32_mul,  0x33, 1, 2, -1, 1, "u32.mul")	// sp(1) *= sp(0); pop;
-//~ OPCDEF(u32_div,  0x34, 1, 2, -1, 1, "u32.div")	// sp(1) /= sp(0); pop;
-//~ OPCDEF(u32_mod,  0x35, 1, 2, -1, 1, "u32.mod")	// sp(1) %= sp(0); pop;
-//~ OPCDEF(u32_mad,  0x36, 1, 3, -2, 1, "u32.mad")	// sp(2) += sp(1)*sp(0); pop2;	[…, a, b, c => […, a + b * c;
-//~ OPCDEF(b32___7,  0x37, 0, 1, -0, 1, "u32.cvt2i64")		// ?bit.any?
-//~ OPCDEF(u32_clt,  0x38, 1, 2, -1, 1, "u32.clt")	// sp(1).b32 = sp(1).u32 < sp(0).u32; pop;
-//~ OPCDEF(u32_cgt,  0x39, 1, 2, -1, 1, "u32.cgt")	// sp(1).b32 = sp(1).u32 > sp(0).u32; pop;
-//~ OPCDEF(b32_and,  0x3a, 1, 2, -1, 1, "b32.and")	// sp(1).u32 &= sp(0).u32; pop;
-//~ OPCDEF(b32_ior,  0x3b, 1, 2, -1, 1, "b32.ior")	// sp(1).u32 |= sp(0).u32; pop;
-//~ OPCDEF(b32_xor,  0x3c, 1, 2, -1, 1, "b32.xor")	// sp(1).u32 ^= sp(0).u32; pop;
-//~ OPCDEF(b32_shl,  0x3d, 1, 2, -1, 1, "b32.shl")	// sp(1).u32 <<= sp(0).u32; pop;
-//~ OPCDEF(b32_shr,  0x3e, 1, 2, -1, 1, "b32.shr")	// sp(1).u32 >>= sp(0).u32; pop;
-//~ OPCDEF(b32_sar,  0x3f, 1, 2, -1, 1, "b32.sar")	// sp(1).i32 >>= sp(0).i32; pop;
-//~ OPCDEF(opc_zxt,  0x3x, 1, 2, -0, 1, "zxt")		//!zero.extend arg:[offs:3][size:5]
-//~ OPCDEF(opc_sxt,  0x3x, 1, 2, -0, 1, "sxt")		//!sign.extend arg:[offs:3][size:5]
+//~ OPCDEF(opc_zxt,  0x3x, 1, 2, -0, 1, "b32.zxt")	//!zero.extend arg:[offs:3][size:5]
+//~ OPCDEF(opc_sxt,  0x3x, 1, 2, -0, 1, "b32.sxt")	//!sign.extend arg:[offs:3][size:5]
 //~ i32[ 32] ===================================================================
 OPCDEF(i32_neg,  0x40, 1, 1, -0, 1, "i32.neg")	// sp(0).i32 = -sp(0).i32;
 OPCDEF(i32_add,  0x41, 1, 2, -1, 1, "i32.add")	// sp(1).i32 += sp(0).i32; pop;
@@ -389,13 +374,32 @@ OPCDEF(p4d___f,  0x9f, 0, 0, -0, 1, NULL)		//-Extended ops: idx, rev, imm, mem
 
 	??? = 0x?a,		// umul		 ? 			 ?
 	cvt = 0x?b,		// udiv		2i32|bool	 ?
-	cvt = 0x?c,		// ?		2f32|bool	dp3/?
-	cvt = 0x?d,		// ?		2i64|bool	dph/?
-	cvt = 0x?e,		// ?		2f64|bool	dp4/?
+	cvt = 0x?c,		// umod		2f32|bool	dp3/?
+	cvt = 0x?d,		// 2i64		2i64|bool	dph/?
+	cvt = 0x?e,		// ext		2f64|bool	dp4/?
 	cvt = 0x?f,		// mad		ext			ext
-	// umul folow by a pop1 or set1(mullo / mulhi)
-	// udiv folow by a pop1 or set1(div   /   rem)
 //~ */
+/*
+	neg = 0x?0,		// cmt		neg			neg
+	add = 0x?1,		// and		add			add
+	sub = 0x?2,		// or		sub			sub
+	mul = 0x?3,		// xor		mul			mul
+	div = 0x?4,		// shl		div			div
+	mod = 0x?5,		// shr		rem			crs/?
+	fun = 0x?6,		// sar		abs, sin, pow, ...
+
+	ceq = 0x?7,		// not		ceq			ceq
+	clt = 0x?8,		// ult		clt			min
+	cge = 0x?9,		// ugt		cgt			max
+
+	??? = 0x?a,		// umul		 ? 			 ?
+	cvt = 0x?b,		// udiv		2i32|bool	 ?
+	cvt = 0x?c,		// umod		2f32|bool	dp3/?
+	cvt = 0x?d,		// 2i64		2i64|bool	dph/?
+	cvt = 0x?e,		// ext		2f64|bool	dp4/?
+	cvt = 0x?f,		// mad		ext			ext
+*/
+
 /* opc_ext argc = 3: [OP:4][ind:2][res:6][lhs:6][rhs:6]
 	switch (ind) {
 		case 0: sp[res] = sp[lhs] OP sp[rhs];

@@ -612,6 +612,7 @@ int evalexp(ccState s, char* text) {
 	if (peek(s))
 		error(s->s, s->file, s->line, "unexpected: `%k`", peek(s));
 
+	fputfmt(stdout, "expr: %+K", ast);
 	fputfmt(stdout, "eval(`%+k`) = ", ast);
 
 	if (ast && typ && tid) {
@@ -909,12 +910,11 @@ int main(int argc, char *argv[]) {
 	if (1 && argc == 1) {
 		char *args[] = {
 			"*argv",	// Program Name
-			//"-api",
-			
-			"-c",		// compile command
-			"-O2",		// optimize code
-			"-x",		// execute & show symbols command
-			"test.cvx",
+			"-api",
+			//~ "-c",		// compile command
+			//~ "-O2",		// optimize code
+			//~ "-x",		// execute & show symbols command
+			//~ "test.cvx",
 		};
 		argc = sizeof(args) / sizeof(*args);
 		argv = args;

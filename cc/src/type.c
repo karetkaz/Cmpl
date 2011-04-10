@@ -167,14 +167,6 @@ symn promote(symn lht, symn rht) {
 	return pro;
 }
 
-static symn argsOf(astn arg) {
-	symn func = arg->kind == TYPE_ref ? linkOf(arg) : NULL;
-	//~ symn func = linkOf(arg);
-	if (func && func->call)
-		return func->args;
-	return NULL;
-}
-
 //~ TODO: another function is required to check recursively the arguments.
 int check(astn arg, symn ref) {
 	symn typ = arg->type;
@@ -196,12 +188,16 @@ int check(astn arg, symn ref) {
 	}
 
 	if (ref->call) {
+		symn fun = linkOf(arg);
 		symn arg1 = ref->args;
-		symn arg2 = argsOf(arg);
+		symn arg2 = fun ? fun->args : NULL;
+		typ = fun ? fun->type : NULL;
 		trace("function byref: %+k", arg);
 
+		// TODO: this check is not good
 		if (typ != ref->type) {
-			debug("%-T != %-T", arg->type, ref->type);
+			debug("%-T != %-T", ref, fun);
+			//~ debug("%-T != %-T", typ, ref->type);
 			//~ debug("%+k: %+T", arg, ref);
 			return 0;
 		}
@@ -217,6 +213,7 @@ int check(astn arg, symn ref) {
 			arg2 = arg2->next;
 		}
 		if (arg1 || arg2) {
+			trace("%?-T != %?-T", arg1, arg2);
 			debug("FixMe");
 			return 0;
 		}
@@ -265,7 +262,7 @@ symn lookup(ccState s, symn sym, astn ref, astn args, int raise) {
 		astn argval = args;				// arg values
 		symn argsym = sym->args;		// arg symbols
 
-		// array types dont have names.
+		// there are nameless symbols, like array types.
 		if (!sym->name)
 			continue;
 
@@ -308,6 +305,11 @@ symn lookup(ccState s, symn sym, astn ref, astn args, int raise) {
 
 		if (sym->call && (argval || argsym)) {
 			continue;
+		}
+
+		if (s->funl > 1 && sym->nest && !sym->stat && sym->nest < s->maxlevel) {
+			error(s->s, ref->file, ref->line, "invalid use of local symbol `%k`.", ref);
+			//~ continue;
 		}
 
 		// rerfect match
@@ -942,7 +944,7 @@ symn typecheck(ccState cc, symn loc, astn ast) {
 		} break;
 	}
 
-	if (ref != NULL) {
+	if (ref && ref != cc->argz) {
 		sym = loc ? loc->args : cc->deft[ref->id.hash];
 
 		if ((sym = lookup(cc, sym, ref, args, 1))) {
@@ -981,8 +983,8 @@ symn typecheck(ccState cc, symn loc, astn ast) {
 				symn argsym = sym->args;
 
 				while (argsym && argval) {
-					if (!castTy(argval, argval->type)) {
-						debug("%k:%t %+k", argval, castOf(argval->type), argval);
+					if (!castTo(argval, castOf(argsym->type))) {
+						debug("%k:%t %+k", argval, castOf(argsym->type), argval);
 						return 0;
 					}
 
@@ -1047,6 +1049,15 @@ int fixargs(symn sym, int align, int stbeg) {
 	int isCall = sym->call;
 	//~ int stbeg = sizeOf(sym->type);
 	for (arg = sym->args; arg; arg = arg->next) {
+
+		// functions are byRef in structs and params
+		if (arg->call) {
+			arg->cast = TYPE_ref;
+		}
+
+		// arrays params are slices
+		// TODO: if (arg->type->kind == TYPE_arr) ...
+
 		arg->size = sizeOf(arg);
 		//~ arg->size = arg->type->size;
 		arg->offs = stbeg + stdiff;
@@ -1119,13 +1130,16 @@ symn leave(ccState s, symn dcl) {
 		symn sym = rt->defs;
 
 		//~ debug("%d:%?T.%+T", s->nest, dcl, sym);
+		// declared in: (module, structure, function or wathever)
 		sym->decl = dcl;
 
+		// pop from stack
 		rt->defs = sym->defs;
 
+		// if not inside a static if, link to all
 		if (!s->siff) {
-			sym->defs = s->all;
-			s->all = sym;
+			sym->defs = s->defs;
+			s->defs = sym;
 		}
 
 		sym->next = arg;

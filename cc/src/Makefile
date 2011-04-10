@@ -6,7 +6,6 @@ COPTS=-c -Wall -Wpadded
 LIBS=-lm
 CCC=gcc -m32
 LNK=gcc -m32
-#~ -g3 -ggdb
 LIB=ar rcs ../../gx/lib/libpvmc/libpvmc.linux.a
 DBG=nemiver
 

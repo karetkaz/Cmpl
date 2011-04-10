@@ -785,7 +785,7 @@ static int readTok(ccState s, astn tok) {
 					//~ {"enum", ENUM_kwd},
 					{"for", STMT_for},
 					{"if", STMT_if},
-					{"module", UNIT_def},
+					//~ {"module", UNIT_def},
 					//~ {"operator", OPER_kwd},
 					{"parallel", QUAL_par},
 					{"static", QUAL_sta},
@@ -1172,32 +1172,98 @@ extern int padded(int offs, int align);
 static inline int ptrgtz(void* ptr) {return (long)ptr > 0;}
 static astn args(ccState s, int mode);
 
-static symn type(ccState s) {
+static astn type(ccState s) {	// type(.type)*
 	symn def = NULL;
-	astn tok;
-	while ((tok = peekTok(s, TYPE_ref))) {		// type(.type)*
+	astn tok, list = NULL;
+	while ((tok = next(s, TYPE_ref))) {
+
 		symn loc = def ? def->args : s->deft[tok->id.hash];
 		symn sym = lookup(s, loc, tok, NULL, 0);
+
+		tok->next = list;
+		list = tok;
+
+		def = sym;
+
 		if (!isType(sym)) {
 			def = NULL;
 			break;
 		}
-		next(s, 0);
-		def = sym;
 
-		if (!skip(s, OPER_dot)) break;
-		// TODO: build tree and push back if not a typename ?
-	}// */
-	return def;
+		if ((tok = next(s, OPER_dot))) {
+			tok->next = list;
+			list = tok;
+		}
+		else
+			break;
+
+	}
+	if (!def && list) {
+		while (list) {
+			astn back = list;
+			list = list->next;
+			backTok(s, back);
+			//~ trace("not a type `%k`", back);
+		}
+		list = NULL;
+	}
+	else if (list) {
+		list->type = def;
+	}
+	//info(s->s, root->file, root->line, "`%+k` is a type", root);
+	return list;
 }
 
+/*static astn type(ccState s) {	// type(.type)*
+	symn def = NULL;
+	astn tok, root = NULL;
+	while ((tok = next(s, TYPE_ref))) {
+		//astn tmp = NULL;
+		symn loc = def ? def->args : s->deft[tok->id.hash];
+		symn sym = lookup(s, loc, tok, NULL, 0);
+
+		if (root) {
+			astn tmp = newnode(s, OPER_dot);
+			tmp->op.lhso = root;
+			tmp->op.rhso = tok;
+			tok = tmp;
+		}
+		root = tok;
+		def = sym;
+
+		if (!isType(sym)) {
+			//~ root = tok;
+			def = NULL;
+			break;
+		}
+
+		if (!skip(s, OPER_dot))
+			break;
+
+	}
+	if (!def && root) {
+		trace("not a type `%+k`", root);
+		backTok(s, root);
+		root = NULL;
+	}
+	else if (root) {
+		root->type = def;
+	}
+	//info(s->s, root->file, root->line, "`%+k` is a type", root);
+	return root;
+}// */
 static astn reft(ccState s, int mode) {
 	astn tag = NULL;
-	symn typ;
-	if ((typ = type(s))) {
+	if ((tag = type(s))) {
 		symn ref = NULL;
+		symn typ = tag->type;
 
+		int argeval = 0;
 		int byref = skip(s, OPER_and);
+
+		if (!byref && mode == TYPE_def) {
+			byref = argeval = skip(s, OPER_xor);
+		}
 
 		if (!(tag = next(s, TYPE_ref))) {
 			debug("id expected, not %k", peek(s));
@@ -1208,8 +1274,14 @@ static astn reft(ccState s, int mode) {
 
 		if (skip(s, PNCT_lp)) {				// int a(...)
 			enter(s, tag);
-			tag->id.args = args(s, 0);
+			tag->id.args = args(s, TYPE_ref);
 			skiptok(s, PNCT_rp, 1);
+
+			if (byref) {
+				//~ error(s->s, tag->file, tag->line, "function `%+T` returning reference [TODO]", ref);
+				error(s->s, tag->file, tag->line, "declaration of `%+T` as returning a reference [TODO]", ref);
+				byref = 0;
+			}
 
 			ref->args = leave(s, ref);
 			ref->cast = TYPE_ref;
@@ -1220,20 +1292,22 @@ static astn reft(ccState s, int mode) {
 				ref->args = s->argz->id.link;
 			}
 
-			if (byref) {
-				warn(s->s, 1, tag->file, tag->line, "functions are by reference types: `%+T`", ref);
-			}
-			//~ byref = 1;
-			//~ if (test(s, STMT_beg))
-				//~ backTok(s, newnode(s, ASGN_set));
+		}
 
-		}// */
-
+		/* TODO: probably some day without an else ... 
+		 * int rgbCopy(int a, int b)[] = {rgbCpy, rgbAnd, ...}
+		 */
 		else if (skip(s, PNCT_lc)) {		// int a[...]
 			symn tmp = newdefn(s, TYPE_arr);
 			tmp->type = typ;
 			tmp->size = -1;
 			typ = tmp;
+
+			if (byref) {					// int& a[200] a contains 200 references to integers
+				error(s->s, tag->file, tag->line, "declaration of `%+T` as array of references [TODO]", ref);
+				//~ error(s->s, tag->file, tag->line, "array of references are not implemented yet: `%+T`", ref);
+				byref = 0;
+			}
 
 			ref->type = typ;
 			tag->type = typ;
@@ -1272,10 +1346,6 @@ static astn reft(ccState s, int mode) {
 
 			} // */
 
-			if (byref) {
-				warn(s->s, 1, tag->file, tag->line, "arrays are by reference types: `%+T`", ref);
-			}
-			//~ byref = 0;
 		}
 
 		if (byref) {
@@ -1292,7 +1362,6 @@ static astn reft(ccState s, int mode) {
 		}*/
 
 	}
-	(void)mode;
 	return tag;
 }
 
@@ -1304,7 +1373,7 @@ static astn args(ccState s, int mode) {
 
 	while (peek(s)) {
 
-		astn atag = reft(s, decl_Ref);
+		astn atag = reft(s, mode);
 
 		symn ref = linkOf(atag);
 		if (ref) {
@@ -1329,8 +1398,6 @@ static astn args(ccState s, int mode) {
 		if (!skip(s, OPER_com))
 			break;
 	}
-
-	(void)mode;
 	return root;
 }
 //~ static astn varg(ccState s, int mode) ; // varargs: int min(int v1, int rest...)
@@ -1371,7 +1438,7 @@ static astn spec(ccState s/* , int qual */) {
 			def->name = NULL;
 
 			enter(s, NULL);
-			args(s, 0);
+			args(s, TYPE_def);
 			skiptok(s, PNCT_rp, 1);
 			def->name = tag->id.name;
 
@@ -1438,7 +1505,8 @@ static astn spec(ccState s/* , int qual */) {
 				info(s->s, tag->file, tag->line, "defined as: %-T", def);
 			}
 		}
-		else if ((typ = type(s))) {				// define hex16 int16;	???
+		else if ((tok = type(s))) {				// define hex16 int16;	???
+			typ = tok->type;
 			//~ def = declare(s, TYPE_def, tag, typ);
 			def = declare(s, TYPE_rec, tag, typ);
 			def->kind = typ->kind;
@@ -1506,7 +1574,7 @@ static astn spec(ccState s/* , int qual */) {
 				}
 				else {
 					tok = reft(s, decl_Ref);
-					if (tok->type->kind == TYPE_arr) {
+					if (tok && tok->type->kind == TYPE_arr) {
 						symn ref = tok->id.link;
 						dieif(!ref, "FixMe");
 						ref->cast = 0;
@@ -2010,18 +2078,25 @@ astn expr(ccState s, int mode) {
 			case PNCT_lp: {			// '('
 				if (unary)			// a + (3*b)
 					*post++ = 0;
-				else if (skip(s, PNCT_rp)) {	// a()
-					*post++ = 0;
-					tok->kind = OPER_fnc;
-					goto tok_op;
+				else if (test(s, PNCT_rp)) {	// a()
+					unary = 2;
 				}
-				//~ else			// a(...)
+
+				else {
+					unary = 1;
+				}
+
 				tok->kind = OPER_fnc;
 				sym[++level] = '(';
-				unary = 1;
+
 			} goto tok_op;
 			case PNCT_rp: {			// ')'
-				if (!unary && sym[level] == '(') {
+				if (unary == 2 && sym[level] == '(') {
+					tok->kind = STMT_do;
+					*post++ = 0;
+					level -= 1;
+				}
+				else if (!unary && sym[level] == '(') {
 					tok->kind = STMT_do;
 					level -= 1;
 				}
@@ -2235,10 +2310,13 @@ astn decl(ccState s, int Rmode) {
 		if ((Rmode & decl_NoInit) == 0) {
 			if (ref->call && test(s, STMT_beg)) {		// int sqr(int a) {return a * a;}
 				symn tmp, result = NULL;
+				int maxlevel = s->maxlevel;
 
 				// create a def for each argument, and a result
 
 				enter(s, tag);
+				s->funl += 1;
+				s->maxlevel = s->nest;
 				result = installex(s, "result", TYPE_ref, 0, typ, NULL);
 				if (result) {
 					//~ symn tmp;
@@ -2301,6 +2379,8 @@ astn decl(ccState s, int Rmode) {
 					ref->init->type = type_vid;
 				}
 
+				s->funl -= 1;
+				s->maxlevel = maxlevel;
 				leave(s, NULL);
 				backTok(s, newnode(s, STMT_do));
 
@@ -2335,7 +2415,7 @@ astn unit(ccState cc, int mode) {
 	astn tmp = NULL;
 	symn def = NULL;
 
-	if (skip(cc, UNIT_def)) {
+	/*if (skip(cc, UNIT_def)) {
 		astn tag = next(cc, TYPE_ref);
 
 		if (tag == NULL) {
@@ -2361,9 +2441,9 @@ astn unit(ccState cc, int mode) {
 		error(cc->s, cc->file, cc->line, "unexpected token: %k", peekTok(cc, 0));
 		return NULL;
 	}
-	if (def) {
+	/*if (def) {
 		def->args = leave(cc, def);
-	}
+	}// */
 
 	if (cc->nest)
 		error(cc->s, cc->file, cc->line, "premature end of file: %d", cc->nest);
@@ -2401,19 +2481,6 @@ int parse(ccState cc, srcType mode) {
 	}//*/
 
 	if ((newRoot = unit(cc, 0))) {
-		/*if (oldRoot) {
-			// this one makes a lot of {}'s
-
-			dieif(oldRoot->next, "FixMe");
-			//~ dieif(cc->root->kind != STMT_beg, "FixMe(%+k)", cc->root);
-
-			oldRoot->next = newRoot;
-
-			newRoot = newnode(cc, STMT_beg);
-			newRoot->stmt.stmt = oldRoot;
-			newRoot->type = type_vid;
-		}*/
-
 		if (oldRoot) {
 
 			astn end = oldRoot->stmt.stmt;

@@ -15,6 +15,25 @@ case opc_loc:  NEXT(2, 0, +ip->idx) {
 #endif
 } break;
 case opc_drop: NEXT(2, ip->idx, -ip->idx) {} break;
+/*case opc_cpy:  NEXT(4, 1, -1) {
+	int sm = (ip->rel + (ip->rel > 0 ? +3 : -3)) / 4;
+	void *offs = mp + SP(0, i4);
+	STOP(error_mem, SP(0, i4) < s->vm.ro);
+	STOP(error_mem, SP(0, i4) > ms);
+	if (sm > 0) {
+		NEXT(0, 0, sm);
+#ifdef EXEC
+		STOP(error_ovf, ovf(pu));
+		memcpy(sp - ip->rel, offs, ip->rel);
+#endif
+	}
+	else {
+		NEXT(0, -sm, sm);
+#ifdef EXEC
+		memcpy(offs, sp, ip->rel);
+#endif
+	}
+} break;// */
 case opc_spc:  NEXT(4, 0, 0) {
 	//~ int sm = (ip->rel + 3) / 4;
 	int sm = ip->rel / 4;
@@ -373,12 +392,12 @@ case u32_div: NEXT(1, 2, -1) {
 	SP(1, u4) /= SP(0, u4);
 #endif
 } break;
-/*case u32_mod: NEXT(1, 2, -1) {
+case u32_mod: NEXT(1, 2, -1) {
 #if defined(EXEC) || defined(EVAL)
 	STOP(error_div, SP(0, u4) == 0);
 	SP(1, u4) %= SP(0, u4);
 #endif
-} break;// */
+} break;
 case u32_mad: NEXT(1, 3, -2) {
 #if defined(EXEC) || defined(EVAL)
 	SP(2, u4) += SP(1, u4) * SP(0, u4);
@@ -865,6 +884,26 @@ case v2d_max: NEXT(1, 8, -4) {
 //~ 0xf?: ???		//
 default: STOP(error_opc, 1);
 //}-----------------------------------------------------------------------------
+
+/*
+ldi:
+	pop ref(offs)
+	memcpy(sp, offs, size)
+	sp -= size;
+sti:
+	pop ref(offs)
+	memcpy(offs, sp, size)
+	sp += size;
+
+ldst:
+	pop ref(offs)
+	pop i32(size)
+	if (size < 0)
+		memcpy(offs, sp, size)
+	else
+		memcpy(sp, offs, size)
+	opc_spc(size);
+*/
 
 #undef SP
 #undef MP

@@ -302,7 +302,7 @@ static void fputast(FILE *fout, astn ast, int mode, int level) {
 		} break;
 		//} */ // STMT
 		//{ OPER
-		case OPER_dot: {	// '.'
+		/*case OPER_dot: {	// '.'
 			if (rlev) {
 				fputast(fout, ast->op.lhso, mode, 0);
 				fputchr(fout, '.');
@@ -310,7 +310,7 @@ static void fputast(FILE *fout, astn ast, int mode, int level) {
 			}
 			else
 				fputchr(fout, '.');
-		} break;
+		} break;// */
 		case OPER_fnc: {	// '()'
 			if (rlev && ast->op.lhso) {
 				fputast(fout, ast->op.lhso, mode, 0);
@@ -340,6 +340,7 @@ static void fputast(FILE *fout, astn ast, int mode, int level) {
 				fputast(fout, ast->op.rhso, mode, 0);
 			fputchr(fout, ']');
 		} break;
+		case OPER_dot:
 
 		case OPER_pls:		// '+'
 		case OPER_mns:		// '-'
@@ -397,6 +398,7 @@ static void fputast(FILE *fout, astn ast, int mode, int level) {
 			}
 			else switch (ast->kind) {
 				default: fatal("FixMe");
+				case OPER_dot: fputstr(fout, "."); break;		// '.'
 				case OPER_pls: fputstr(fout, "+"); break;		// '+'
 				case OPER_mns: fputstr(fout, "-"); break;		// '-'
 				case OPER_cmt: fputstr(fout, "~"); break;		// '~'
@@ -985,6 +987,9 @@ void dumpsym(FILE *fout, symn sym, int alma) {
 		// qualified name with arguments
 		fputsym(fout, ptr, prQual|prArgs | 1, 20);
 
+		if (ptr->cast)		// TYPE_def should not cast to anything
+			fputfmt(fout, "[%t]", ptr->cast);
+
 		// qualified base type(s)
 		if (ptr->type) {
 			fputstr(fout, ": ");
@@ -1001,8 +1006,6 @@ void dumpsym(FILE *fout, symn sym, int alma) {
 			fputfmt(fout, ":%c%d", ptr->offs <= 0 ? '@' : '+', ptr->offs < 0 ? -ptr->offs : ptr->offs);
 			fputfmt(fout, ":[size: %d]", ptr->size);
 		}
-		if (ptr->cast)		// TYPE_def should not cast to anything
-			fputfmt(fout, ":[cast: %t]", ptr->cast);
 
 		// initializer
 		if (ptr->init && ptr->kind != TYPE_ref) {

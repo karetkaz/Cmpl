@@ -79,20 +79,29 @@ typedef struct cell {			// processor
 void* vmOffset(state s, symn arg, int ss) {
 	if (arg->offs <= 0)
 		return s->_mem - arg->offs;
-	//~ return ((char*)s->argv) + (ss ? ss - arg->offs : arg->offs);
 	return ((char*)s->argv) + ss - arg->offs;
 }
 int libCallExitQuiet(state s) {
 	return 0;
 }
+
+void vm_fputval(state, FILE *fout, symn var, stkval* ref, int flgs);
 int libCallExitDebug(state s) {
 	symn arg = s->libc->args;
 	int argc = (char*)s->retv - (char*)s->argv;
 	//~ debug("calling %-T", s->libc);
 	//~ debug("CallDebugArgs(%-T): argc:(%d / %d)", s->libc, s->argc, argc);
 	for ( ;arg; arg = arg->next) {
-		char *ofs = vmOffset(s, arg, argc);
-		void vm_fputval(state, FILE *fout, symn var, stkval* ref, int flgs);
+		char *ofs;
+
+		if (arg->offs <= 0) {
+			// global variable.
+			ofs = (void*)(s->_mem - arg->offs);
+		}
+		else {
+			// argument or local variable.
+			ofs = ((char*)s->argv) + argc - arg->offs;
+		}
 
 		//~ debug("argv: %08x", s->argv);
 		//~ if (arg->kind != TYPE_ref && s->args == s->defs) continue;
@@ -309,6 +318,7 @@ symn libcall(state s, int libc(state), int pos, const char* proto) {
 }
 //}
 
+static int lobit(int a) {return a & -a;}
 static inline void* getip(state s, int pos) {
 	return (void *)(s->_mem + pos);
 }
@@ -380,7 +390,7 @@ int emitarg(state s, int opc, stkval arg) {
 		//~ case TYPE_pf4: opc = p4f_div; break;
 	}
 	else if (opc == opc_mod) switch (arg.i4) {
-		//~ case TYPE_u32: opc = u32_mod; break;
+		case TYPE_u32: opc = u32_mod; break;
 		case TYPE_i32: opc = i32_mod; break;
 		case TYPE_i64: opc = i64_mod; break;
 		case TYPE_f32: opc = f32_mod; break;
@@ -475,7 +485,7 @@ int emitarg(state s, int opc, stkval arg) {
 		else if (arg.u8 <= 0xffffffff) opc = opc_ldc4;
 		else opc = opc_ldc8;
 	}// */
-	else if (opc == opc_ldi) {
+	/*else if (opc == opc_ldi) {
 
 		const int bms = 4;		// the minimum moveable size in bytes
 
@@ -516,43 +526,18 @@ int emitarg(state s, int opc, stkval arg) {
 				}
 			}
 		}
-		/*switch (arg.i4) {
-			case  1: opc = opc_ldi1; break;
-			case  2: opc = opc_ldi2; break;
-			case  4: opc = opc_ldi4; break;
-			case  8: opc = opc_ldi8; break;
-			case 16: opc = opc_ldiq; break;
-			default: while (arg.i4 > 4) {
-				if (arg.i4 > bms) {
-					ip = getip(s, s->pc);
-
-					switch (ip->opc) {
-						case opc_ldsp: {
-							int rel2 = ip->rel;
-
-							ip->rel += size;
-
-							if (!emitint(s, opc_ldi, bms)) {
-								debug("FixMe(%d/%d)", arg.i4, size);
-								return 0;
-							}
-							debug("%A", ip);
-
-							if (!emitint(s, opc_ldsp, rel2)) {
-								debug("FixMe");
-								return 0;
-							}
-						} break;
-
-						default:
-							debug("FixMe");
-							return 0;
-					}
-					arg.i4 -= bms;
-					continue;
-				}
-			}
-		}// */
+	}*/
+	else if (opc == opc_ldi) switch (arg.i4) {
+		case  1: opc = opc_ldi1; break;
+		case  2: opc = opc_ldi2; break;
+		case  4: opc = opc_ldi4; break;
+		case  8: opc = opc_ldi8; break;
+		case 16: opc = opc_ldiq; break;
+		default: 
+			//~ arg.i4 = +arg.i4;
+			//~ opc = opc_cpy;
+			fatal("FixMe");
+			break;
 	}
 	else if (opc == opc_sti) switch (arg.i4) {
 		case  1: opc = opc_sti1; break;
@@ -560,6 +545,11 @@ int emitarg(state s, int opc, stkval arg) {
 		case  4: opc = opc_sti4; break;
 		case  8: opc = opc_sti8; break;
 		case 16: opc = opc_stiq; break;
+		default: 
+			//~ arg.i4 = -arg.i4;
+			//~ opc = opc_cpy;
+			fatal("FixMe");
+			break;
 	}
 
 	/*else if (opc == opc_spc) {
@@ -598,11 +588,12 @@ int emitarg(state s, int opc, stkval arg) {
 	}
 
 	if (opc > opc_last) {
-		//~ fatal("invalid opc_0x%x", opc);
-		debug("invalid opc(0x%x, 0x%X)", opc, arg.i8);
-		debug("invalid arg(0x%X)", arg.i8);
+		fatal("invalid opc(0x%x, 0x%X)", opc, arg.i8);
+		//~ debug("invalid opc(0x%x, 0x%X)", opc, arg.i8);
+		//~ debug("invalid arg(0x%X)", arg.i8);
 		return 0;
 	}
+	// Optimize
 	if (s->vm.opti > 1) {
 		if (0) ;
 		else if (opc == opc_ldi1) {
@@ -713,6 +704,7 @@ int emitarg(state s, int opc, stkval arg) {
 				return s->vm.pc;
 			}
 		}
+
 		else if (opc == opc_jnz) {
 			ip = getip(s, s->vm.pc);
 			if (ip->opc == opc_not) {
@@ -727,6 +719,30 @@ int emitarg(state s, int opc, stkval arg) {
 				opc = opc_jnz;
 			}
 		}
+
+		// mul, div, mod
+		/*else if (opc == u32_mod) {
+			ip = getip(s, s->vm.pc);
+			if (ip->opc == opc_ldc4) {
+				int x = ip->arg.i4;
+				// if constant contains only one bit
+				if (x > 0 && lobit(x) == x) {
+					ip->arg.i4 -= 1;
+					opc = b32_and;
+				}
+			}
+		}
+		else if (opc == u32_div) {
+			ip = getip(s, s->vm.pc);
+			if (ip->opc == opc_ldc4) {
+				int x = ip->arg.i4;
+				// if constant contains only one bit
+				if (x > 0 && lobit(x) == x) {
+					ip->arg.i4 ?= 1;
+					opc = b32_shr;
+				}
+			}
+		}*/
 
 		/*~:)) ?? others
 		if (opc == opc_ldz1) {
@@ -762,24 +778,13 @@ int emitarg(state s, int opc, stkval arg) {
 
 	ip = getip(s, s->vm.pos);
 
-	//~ s->ic += s->pc != s->pos;
-
-	s->vm.pc = s->vm.pos;
-
 	ip->opc = opc;
 	ip->arg = arg;
+	s->vm.pc = s->vm.pos;	// previous program pointer is here
 
-	if (opc == opc_ldsp) {
-		if (ip->rel != arg.i8)
-			return 0;
-	}
-	else if (opc == opc_drop) {
-		if (ip->idx != arg.i8)
-			return 0;
-	}
-	else if (opc == opc_loc) {
-		if (ip->idx != arg.i8)
-			return 0;
+	if (opc == opc_jmp || opc == opc_jnz || opc == opc_jz) {
+		ip->rel -= s->vm.pc;
+		dieif((ip->rel + s->vm.pc) != arg.i8, "FixMe");
 	}
 	else if (opc == opc_spc) {
 		/*TODO: int max = 0x7fffff;
@@ -788,13 +793,22 @@ int emitarg(state s, int opc, stkval arg) {
 				return 0;
 			arg.i8 -= max;
 		}// */
-		ip->rel = arg.i8;// / 4;
-		if (ip->rel != arg.i8)
-			return 0;
+		//~ ip->rel = arg.i8 / 4;
+		dieif(ip->rel != arg.i8, "FixMe");
 	}
-	else if (opc == opc_jmp || opc == opc_jnz || opc == opc_jz) {
-		ip->rel -= s->vm.pc;
+	else switch (opc) {
+		case opc_ldsp:
+			dieif(ip->rel != arg.i8, "FixMe");
+			break;
+		case opc_drop:
+			dieif(ip->idx != arg.i8, "FixMe");
+			break;
+		case opc_loc:
+			dieif(ip->idx != arg.i8, "FixMe");
+			break;
+		// TODO: check other opcodes too
 	}
+
 	//~ debug("opc_x%0x(0x%0X)%09.*A", opc, arg.i8, s->pc, ip);
 	//~ debug("@%04x[ss:%03d]: %09.*A", s->pc, s->ss, s->pc, ip);
 	//~ debug("ss(%d): %09.*A", s->ss, s->pc, ip);
@@ -820,7 +834,7 @@ int emitarg(state s, int opc, stkval arg) {
 
 	if (opc == opc_call) {
 		//~ after a call ends with a return,
-		//~ wich drops 1 item from the stack.
+		//~ wich drops ip from the stack.
 		s->vm.ss -= 1;
 	}
 
@@ -952,7 +966,6 @@ typedef enum {
 	//~ getNext,	// get next working cell
 	//~ doSync = 1;		// syncronize
 } doWhat;
-static int lobit(int a) {return a & -a;}
 static int mtt(state ee, doWhat cmd, cell pu, int n) {
 	static int workers = 0;
 	switch (cmd) {
@@ -1070,28 +1083,6 @@ int vmExec(state s, dbgf dbg) {
 	return dbugpu(s, pu, dbg);
 }
 
-/*int setVar(state s, symn arg, void* argRef) {
-	int size = sizeOf(arg->type);
-	void* ref = vmOffset(arg);
-
-	switch (size) {
-
-		case 1:
-		case 2:
-		case 4:
-			*(int32_t*)ref = *(int32_t*)argRef;
-			break;
-
-		case 8:
-			*(int64_t*)ref = *(int64_t*)argRef;
-			break;
-
-		default:
-			memcpy(ref, argRef, size);
-			break;
-	}
-}// */
-
 int vmCall(state s, symn fun, ...) {
 
 	symn arg;
@@ -1170,6 +1161,28 @@ int vmCall(state s, symn fun, ...) {
 	s->argv = argp;
 	return result;
 }
+
+/*int setVar(state s, symn arg, void* argRef) {
+	int size = sizeOf(arg->type);
+	void* ref = vmOffset(arg);
+
+	switch (size) {
+
+		case 1:
+		case 2:
+		case 4:
+			*(int32_t*)ref = *(int32_t*)argRef;
+			break;
+
+		case 8:
+			*(int64_t*)ref = *(int64_t*)argRef;
+			break;
+
+		default:
+			memcpy(ref, argRef, size);
+			break;
+	}
+}// */
 
 void fputopc(FILE *fout, unsigned char* ptr, int len, int offs) {
 	int i;
