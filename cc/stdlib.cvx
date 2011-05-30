@@ -1,3 +1,4 @@
+//~ #!./main -c -O2 -x
 //~ module std;
 
 //~ /*
@@ -207,6 +208,12 @@ define random(int32 &min, int32 max) = int32(min + random(max - min));
 define random2FloatValue = 0xffffff;
 define random(float64 max) = float64((max * random(random2FloatValue)) / random2FloatValue);
 define random(float64 &min, float64 max) = float64(min + random(max - min));
+
+define eval(float64 ^x, float64 a0, float64 a1) = (a0 + x * a1);
+define eval(float64 ^x, float64 a0, float64 a1, float64 a2) = (a0 + x * eval(x, a2, a1));
+define eval(float64 ^x, float64 a0, float64 a1, float64 a2, float64 a3) = (a0 + x * eval(x, a3, a2, a1));
+define eval(float64 ^x, float64 a0, float64 a1, float64 a2, float64 a3, float64 a4) = (a0 + x * eval(x, a4, a3, a2, a1));
+
 }
 
 static if (imports.hexTY) {

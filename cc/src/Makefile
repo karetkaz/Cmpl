@@ -2,6 +2,7 @@ OUTOBJ=-o
 OUTEXE=-o
 CFLAGS=-g3 -ggdb
 CFLAGS=-g0 -O2
+CFLAGS=-g0 -O0
 COPTS=-c -Wall -Wpadded
 LIBS=-lm
 CCC=gcc -m32

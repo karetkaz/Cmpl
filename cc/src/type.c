@@ -1,7 +1,7 @@
 #include "ccvm.h"
 #include <string.h>
 
-//~ TODO: this should be in ccState
+//~ TODO: this should be in ccState ?
 symn type_vid = NULL;
 symn type_bol = NULL;
 symn type_u32 = NULL;

@@ -163,11 +163,15 @@ case opc_dup2: NEXT(2, ip->idx, +2) {
 case opc_dup4: NEXT(2, ip->idx, +4) {
 #ifdef EXEC
 	STOP(error_ovf, ovf(pu));
-	SP(-4, x16) = SP(ip->idx, x16);
+	//~ SP(-4, x16) = SP(ip->idx, x16);
 	//~ SP(-4, u4) = SP(ip->idx + 0, u4);
 	//~ SP(-3, u4) = SP(ip->idx + 1, u4);
 	//~ SP(-2, u4) = SP(ip->idx + 2, u4);
 	//~ SP(-1, u4) = SP(ip->idx + 3, u4);
+	SP(-4, u4) = SP(ip->idx + 0, u4);
+	SP(-3, u4) = SP(ip->idx + 1, u4);
+	SP(-2, u4) = SP(ip->idx + 2, u4);
+	SP(-1, u4) = SP(ip->idx + 3, u4);
 #endif
 } break;
 case opc_set1: NEXT(2, ip->idx, ip->idx <= 1 ? -ip->idx : -1) {
@@ -182,12 +186,19 @@ case opc_set2: NEXT(2, ip->idx, ip->idx <= 2 ? -ip->idx : -2) {
 } break;
 case opc_set4: NEXT(2, ip->idx, ip->idx <= 4 ? -ip->idx : -4) {
 #ifdef EXEC
-	SP(ip->idx, x16) = SP(0, x16);
-	//~ SP(ip->idx - 1, u4) = SP(0, u4);
-	//~ SP(ip->idx - 2, u4) = SP(1, u4);
-	//~ SP(ip->idx - 3, u4) = SP(2, u4);
-	//~ SP(ip->idx - 4, u4) = SP(3, u4);
+	//~ int64_t lo = SP(0, x16).lo;
+	//~ int64_t hi = SP(0, x16).hi;
+	//~ SP(ip->idx, x16).lo = lo;
+	//~ SP(ip->idx, x16).hi = hi;
 
+	// this does not work !!!
+	// will overwrite values
+	//~ SP(ip->idx, x16) = SP(0, x16);
+
+	SP(ip->idx + 3, u4) = SP(3, u4);
+	SP(ip->idx + 2, u4) = SP(2, u4);
+	SP(ip->idx + 1, u4) = SP(1, u4);
+	SP(ip->idx + 0, u4) = SP(0, u4);
 #endif
 } break;
 case opc_ldz1: NEXT(1, 0, +1) {
@@ -248,7 +259,8 @@ case opc_ldiq: NEXT(1, 1, +3) {
 	STOP(error_ovf, ovf(pu));
 	STOP(error_mem, SP(0, i4) <= 0);
 	STOP(error_mem, SP(0, i4) > ms);
-	SP(-3, x16) = MP(SP(0, i4), x16);
+	//~ SP(-3, x16) = MP(SP(0, i4), x16);
+	memcpy(&SP(-3, u4), &MP(SP(0, i4), u4), 16);
 #endif
 } break;
 
@@ -285,7 +297,8 @@ case opc_stiq: NEXT(1, 5, -5) {
 #ifdef EXEC
 	STOP(error_mem, SP(0, i4) < s->vm.ro);
 	STOP(error_mem, SP(0, i4) > ms);
-	MP(SP(0, i4), x16) = SP(1, x16);
+	memcpy(&MP(SP(0, i4), u4), &SP(1, u4), 16);
+	//~ MP(SP(0, i4), x16) = SP(1, x16);
 #endif
 } break;
 

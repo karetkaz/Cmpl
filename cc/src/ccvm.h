@@ -72,6 +72,7 @@ enum {
 
 	decl_NoDefs = 0x100,		// disable type defs in decl.
 	decl_NoInit = 0x200,		// disable initialization. (disable)
+	decl_Iterator = 0x400,		// int a : range(0, 12);
 	decl_Ref = decl_NoDefs|decl_NoInit,
 
 	//~ decl_Var = decl_NoInit,					// parse variable declaration
@@ -155,7 +156,7 @@ typedef union {		// value type
 	//~ float32_t		pd[2];
 	//~ struct {float32_t x, y, z, w;} pf;
 	//~ struct {float64_t x, y;} pd;
-	struct {int64_t lo, hi;} x16;
+	//~ struct {int64_t lo, hi;} x16;
 } stkval;
 
 //~ typedef struct symn *symn;		// Symbol Node
@@ -240,10 +241,11 @@ struct symn {				// type node
 	uint32_t	xx_1:4;		// -Wpadded
 	uint16_t	xx_2;		// align
 	uint16_t	nest;		// declaration level
+	uint32_t	refc;		// referenced count
 	astn	init;		// VAR init / FUN body
 
 	// list(scoping)
-	astn	used;
+	//~ astn	used;
 	symn	defs;		// symbols on stack/all
 	//~ symn	uses;		// declared in
 	char*	pfmt;		// print format
@@ -343,6 +345,7 @@ void* getmem(state s, int size, unsigned clear);
 
 symn newdefn(ccState s, int kind);
 astn newnode(ccState s, int kind);
+astn newIden(ccState s, char* id);
 astn intnode(ccState s, int64_t v);
 //~ astn fltnode(ccState s, float64_t v);
 astn strnode(ccState s, char *v);

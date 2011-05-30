@@ -1,3 +1,4 @@
+//~ #!/home/kmz/Desktop/Build/cc/main
 //~ #open src/pvmc.h
 //~ #open src/ccvm.h
 
@@ -24,11 +25,51 @@ struct slice {
 }
 
 struct variant {
-	typeInfo &typeref;
-	pointer  data;
+	const typeInfo &type;
+	const pointer  value;
 }
 
+define variant(typeInfo &type, pointer value) = emit(variant, ref(type), ptr(value));
+define variant(int x) = variant(int, new int(x));
+define variant(doubkle x) = variant(int, new double(x));
+
+define var: variant;
+
+var a = variant(10);
+
 */
+
+/* error correcting
+define lerp(float32 ^t, vec4f ^a, vec4f ^b) = vec4f(lerp(t, a.x, b.x), lerp(t, a.y, b.y), lerp(t, a.z, b.z), lerp(t, a.w, b.w));
+
+vec4f rgbLerpFp(vec4f c1, vec4f c2) {
+	float32 t = .5;
+	result = lerp(t, c1, c2);
+	//~ result = vec4f(
+		//~ lerp(.5, c1.x, c2.x),
+		//~ lerp(.5, c1.y, c2.y),
+		//~ lerp(.5, c1.z, c2.z),
+		//~ 1);
+}
+
+vec4f rgbLerpFp2(vec4f c1, vec4f c2) {
+	result = lerp(.5, c1, c2);
+}
+
+vec4f rgbLerpFp3(vec4f c1, vec4f c2) {
+	vec4f res = lerp(.5, c1, c2);
+	result = res;
+}
+
+//~ b = vec4f(x = float32(0.550000), y = float32(1.100000), z = float32(1.650000), w = float32(0.000000))
+
+vec4f c1 = vec4f(.1, .2, .3);
+vec4f c2 = vec4f(1., 2., 3.);
+
+//~ vec4f a = rgbLerpFp(c1, c2);
+vec4f b = rgbLerpFp2(c1, c2);
+
+//~ */
 
 /* Bits: hi, lo, extend
 define sxt64(int32 a) = int64(int32(a));			// sign extend
@@ -95,6 +136,9 @@ int a = fn1(4);
 // */
 
 /* returning a function
+
+//~ struct vardata {byte data...;}
+//~ struct delegate {var call(vardata data...); vardata data...;}
 
 //~ struct fnWrap {var call(var data); var &data;}
 //~ define fnWrap(var data, var call(var data)) = emit(fnWrap, ref(fun), var(data));
@@ -250,7 +294,7 @@ int y = 2;
 int z = 3;
 //~ */
 
-/* using strings
+//~ /* using strings
 
 long cikkId = 165;
 long raktar = 3;
@@ -336,6 +380,34 @@ for (int i = 0; i < 60; i += 1) {
 }
 // */
 
+/* atoi
+//~ string args[2];
+//~ args[0] = "alma";
+//~ args[1] = "alma2";
+
+void putrad(int32 num, int rad) {
+	if (num >= rad) {
+		putrad(num / rad, rad);
+	}
+	putchr("0123456789abcdefghijklmnopqrstuvwxyz"[num % rad]);
+}
+
+putrad(13, 7);println();
+putrad(13, 2);println();
+
+//~ println(args[0]);
+//~ println(args[1]);
+//~ println(args[2]);
+
+/+for (int i = 0; i < 200; i += 1) {
+	putrad(i, 10);
+	putstr(" = ");
+	putrad(i, 20);
+	println();
+}// +/
+
+// */
+
 /* using emit(); ./ccvm -c -x -O-2 test.cvx
 int64 t1 = 314;
 int64 t2 = emit();
@@ -377,5 +449,57 @@ for (int i = 0; i < 20; i += 1) int i1 = 9;		// ERR: i2 unexpected
 static if (0) {int a = 99;}
 
 int a2 = a;						// ERR: a undeclared if static if(0)
+
+//~ */
+
+/* iterating
+
+/+struct array_iterator {
+	int arr[];
+	int pos;
+	int max;	// arr.length
+}
+array_iterator iterator(int a[]) {
+	result.pos = 0;
+	result.arr = a;
+	result.max = a.length;
+}
+bool next(array_iterator &it, int &val) {
+	if (result = it.pos < it.max) {
+		val = it.arr[it.pos];
+		it.pos += 1;
+	}
+}// +/
+
+/+define iterator(file &f) = emit(file, ref(f));
+bool next(file &it, int &chr) {
+	chr = fgetc(it);
+	result = chr != -1;
+}// +/
+
+/+for (int a : range(0, 8)){/+...+/} => {
+	iterator .it = iterator(range(0, 8));
+	for (int a; next(.it, &a); ) {/+...+/}
+}// +/
+
+struct range {int min; int max;}
+define range(int min, int max) = emit(range, i32(min), i32(max));
+
+// iterate
+struct range_iterator {int pos; int max;}
+define range_iterator(int pos, int max) = emit(range_iterator, i32(pos), i32(max));
+
+define iterator(range ^r) = range_iterator(r.min, r.max);	// start at min, and end at max
+bool next(range_iterator &it, int &val) {
+	result = it.pos < it.max;
+	if (result) {
+		val = it.pos;
+		it.pos += 1;
+	}
+}
+
+for (int a : range(10, 16)) {
+	println(a);
+}
 
 //~ */

@@ -87,31 +87,6 @@ unsigned rehash(const char* str, unsigned len) {
 	return (hs ^ 0xffffffff);// % TBLS;
 }
 
-int source(ccState s, srcType mode, char* file) {
-	if (s->fin._fin > 3)
-		close(s->fin._fin);
-	s->fin._fin = -1;
-	s->fin._ptr = 0;
-	s->fin._cnt = 0;
-	s->_chr = -1;
-	s->_tok = 0;
-	//~ s->file = 0;
-	s->line = 0;
-	//~ s->nest = 0;
-
-	if (mode & srcFile) {
-		if ((s->fin._fin = open(file, O_RDONLY)) <= 0)
-			return -1;
-		s->file = file;
-		s->line = 1;
-	}
-	else if (file) {
-		s->fin._ptr = file;
-		s->fin._cnt = strlen(file);
-	}
-	return 0;
-}
-
 static int fillBuf(ccState s) {
 	if (s->fin._fin >= 0) {
 		unsigned char* base = s->fin._buf + s->fin._cnt;
@@ -237,6 +212,41 @@ static int escchr(ccState s) {
 		default:
 			error(s->s, s->file, s->line, "invalid escape sequence '\\%c'", chr);
 			return -1;
+	}
+	return 0;
+}
+
+int source(ccState s, srcType mode, char* file) {
+	if (s->fin._fin > 3)
+		close(s->fin._fin);
+	s->fin._fin = -1;
+	s->fin._ptr = 0;
+	s->fin._cnt = 0;
+	s->_chr = -1;
+	s->_tok = 0;
+	//~ s->file = 0;
+	s->line = 0;
+	//~ s->nest = 0;
+
+	if (mode & srcFile) {
+		if ((s->fin._fin = open(file, O_RDONLY)) <= 0)
+			return -1;
+		s->file = file;
+		s->line = 1;
+		if (fillBuf(s) > 2) {
+			if (s->fin._ptr[0] == '#' && s->fin._ptr[1] == '!') {
+				int chr = readChr(s);
+				while (chr != -1) {
+					if (chr == '\n')
+						break;
+					chr = readChr(s);
+				}
+			}
+		}
+	}
+	else if (file) {
+		s->fin._ptr = file;
+		s->fin._cnt = strlen(file);
 	}
 	return 0;
 }
@@ -476,29 +486,63 @@ static int readTok(ccState s, astn tok) {
 				}
 			}
 			else if (next == '*') {
-				int c = 0, prev_chr = 0;
-				//~ debug("!!!comment.stream: {\n/*");
-				for (readChr(s); chr != -1; chr = readChr(s)) {
-					//~ if (prev_chr) debug("%c", chr);
-					if (prev_chr == '*' && chr == '/') break;
-					if (prev_chr == '/' && chr == '*' && c++)
-						warn(s->s, 8, s->file, s->line, "\"/*\" within comment(%d)", c - 1);
-					prev_chr = chr;
+				int level = 0;
+
+				//~ debug("!!!comment.block:{\n/+");
+				//* /* */
+
+				while (chr != -1) {
+
+					int prev_chr = chr;
+					chr = readChr(s);
+
+					//~ debug("[%d]: '%c'", l, prev_chr);
+
+					if (prev_chr == '/' && chr == '*') {
+						level += 1;
+						chr = 0;	// disable /+/
+						if (level > 1)
+							warn(s->s, 9, s->file, s->line, "\"/*\" within comment");
+					}
+
+					if (prev_chr == '*' && chr == '/') {
+						level -= 1;
+						//~ if (!level)
+						break;
+					}
+
 				}
-				if (chr == -1) error(s->s, s->file, line, "unterminated comment2");
+				if (chr == -1)
+					error(s->s, s->file, line, "unterminated comment");
+
 				//~ else debug("\n!!!comment.box:}\n");
 				chr = readChr(s);
 			}
 			else if (next == '+') {
-				int l = 1, c = 0, prev_chr = 0;
+				int level = 0;
+
 				//~ debug("!!!comment.block:{\n/+");
-				for (readChr(s); chr != -1; chr = readChr(s)) {
-					//~ if (prev_chr) debug("%c", chr);
-					if (prev_chr == '/' && chr == '+' && c++) l++;
-					if (prev_chr == '+' && chr == '/' && !--l) break;
-					prev_chr = chr;
+				while (chr != -1) {
+
+					int prev_chr = chr;
+					chr = readChr(s);
+
+					//~ debug("[%d]: '%c'", l, prev_chr);
+
+					if (prev_chr == '/' && chr == '+') {
+						level += 1;
+						chr = 0;	// disable /+/
+					}
+
+					if (prev_chr == '+' && chr == '/') {
+						level -= 1;
+						if (!level)
+							break;
+					}
+
 				}
-				if (chr == -1) error(s->s, s->file, line, "unterminated comment1");
+				if (chr == -1)
+					error(s->s, s->file, line, "unterminated comment1");
 				//~ else debug("\n!!!comment.block:}\n");
 				chr = readChr(s);
 			}
@@ -994,10 +1038,10 @@ static int readTok(ccState s, astn tok) {
 
 			suffix = ptr;
 			while (chr != -1) {
-				if (chr == '.' || chr == '_') ;
-				else if (chr >= '0' && chr <= '9') ;
-				else if (chr >= 'a' && chr <= 'z') ;
-				else if (chr >= 'A' && chr <= 'Z') ;
+				if (chr == '.' || chr == '_') {}
+				else if (chr >= '0' && chr <= '9') {}
+				else if (chr >= 'a' && chr <= 'z') {}
+				else if (chr >= 'A' && chr <= 'Z') {}
 				else {*ptr = 0; break;}
 				*ptr++ = chr;
 				chr = readChr(s);
@@ -1112,6 +1156,39 @@ static int skiptok(ccState s, int kind, int raise) {
 	}
 	return kind;
 }
+
+/* called from
+static int skiptok1(ccState s, int kind, int raise, char *file, int line) {
+	if (!skip(s, kind)) {
+		//~ int report = 0;
+		if (raise)
+			error(s->s, file, line, "`%t` excepted, got `%k`", kind, peek(s));
+
+		switch (kind) {
+			case STMT_do:
+			case STMT_end:
+			case PNCT_rp:
+			case PNCT_rc:
+				break;
+
+			default:
+				return 0;//!peek(s);
+		}
+		while (!skip(s, kind)) {
+			//~ if (!peek(s)) return 0;
+			//~ debug("skipping('%k')", peek(s));
+			if (skip(s, STMT_do)) return 0;
+			if (skip(s, STMT_end)) return 0;
+			if (skip(s, PNCT_rp)) return 0;
+			if (skip(s, PNCT_rc)) return 0;
+			if (!skip(s, 0)) return 0;		// eof?
+		}
+		return 0;
+	}
+	return kind;
+}
+#define skiptok(__S, __KIND, __RAISE) skiptok1(__S, __KIND, __RAISE, __FILE__, __LINE__)
+// */
 //}
 
 //{~~~~~~~~~ Parser ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1168,11 +1245,10 @@ static void redefine(ccState s, symn sym) {
 //~ astn spec(ccState s/* , int qual */);
 //~ symn type(ccState s/* , int qual */);	// TODO: this should also return an ast node
 
-extern int padded(int offs, int align);
-static inline int ptrgtz(void* ptr) {return (long)ptr > 0;}
+//extern int padded(int offs, int align);
 static astn args(ccState s, int mode);
 
-static astn type(ccState s) {	// type(.type)*
+static astn type(ccState s/* , int mode */) {	// type(.type)* ('&' | '[]')mode?
 	symn def = NULL;
 	astn tok, list = NULL;
 	while ((tok = next(s, TYPE_ref))) {
@@ -1211,47 +1287,12 @@ static astn type(ccState s) {	// type(.type)*
 		list->type = def;
 	}
 	//info(s->s, root->file, root->line, "`%+k` is a type", root);
+	/*if (list && mode && skip(s, OPER_and)) {
+		//~ list = newsy
+	}*/
 	return list;
 }
 
-/*static astn type(ccState s) {	// type(.type)*
-	symn def = NULL;
-	astn tok, root = NULL;
-	while ((tok = next(s, TYPE_ref))) {
-		//astn tmp = NULL;
-		symn loc = def ? def->args : s->deft[tok->id.hash];
-		symn sym = lookup(s, loc, tok, NULL, 0);
-
-		if (root) {
-			astn tmp = newnode(s, OPER_dot);
-			tmp->op.lhso = root;
-			tmp->op.rhso = tok;
-			tok = tmp;
-		}
-		root = tok;
-		def = sym;
-
-		if (!isType(sym)) {
-			//~ root = tok;
-			def = NULL;
-			break;
-		}
-
-		if (!skip(s, OPER_dot))
-			break;
-
-	}
-	if (!def && root) {
-		trace("not a type `%+k`", root);
-		backTok(s, root);
-		root = NULL;
-	}
-	else if (root) {
-		root->type = def;
-	}
-	//info(s->s, root->file, root->line, "`%+k` is a type", root);
-	return root;
-}// */
 static astn reft(ccState s, int mode) {
 	astn tag = NULL;
 	if ((tag = type(s))) {
@@ -1401,8 +1442,7 @@ static astn args(ccState s, int mode) {
 	return root;
 }
 //~ static astn varg(ccState s, int mode) ; // varargs: int min(int v1, int rest...)
-// varargs.def: define min(int v1, int rest...) = min(v1, rest);
-// varargs.def: define print(var rest...) = print(rest);
+
 static astn spec(ccState s/* , int qual */) {
 	astn tok, tag = 0;
 	symn def = 0;
@@ -1572,6 +1612,10 @@ static astn spec(ccState s/* , int qual */) {
 					spec(s);
 					continue;
 				}
+				else if (test(s, TYPE_def)) {		// define ...
+					spec(s);
+					continue;
+				}
 				else {
 					tok = reft(s, decl_Ref);
 					if (tok && tok->type->kind == TYPE_arr) {
@@ -1680,14 +1724,12 @@ static astn spec(ccState s/* , int qual */) {
 		}
 		tag->type = def;
 	}
-	//else if (skip(s, TYPE_cls));		// class
 	else if (skip(s, QUAL_con)) {		// const
 		/**
 		 * const tag (':' base)? ('{' <constant enumeration>|<define ...> '}') | ('=' value)
 		 * 
 		 * 
 		**/
-		//~ int offs = 0;
 		symn base = NULL;				// bydef
 
 		tag = next(s, TYPE_ref);
@@ -1777,66 +1819,10 @@ static astn spec(ccState s/* , int qual */) {
 			redefine(s, def);
 		}
 	}// */
-	/*else if (skip(s, ENUM_kwd)) {		// enum: TODO: this si WRONG
-		int offs = 0;
-		symn base = type_i32;			// bydef
 
-		tag = next(s, TYPE_ref);
-		if (skip(s, PNCT_cln)) {			// inherit, typeof enumerations
-			tok = next(s, TYPE_ref);
-			if (tok != NULL) {
-				// TODO: what's this ?
-				base = typecheck(s, NULL, tok);
-				if (base != tok->id.link) {		// it is not a type, or typedef
-					base = NULL;
-				}
-			}
+	//else if (skip(s, TYPE_cls));		// class
+	//else if (skip(s, ENUM_kwd));		// enum
 
-			if (!base) {
-				error(s->s, s->line, "typename expected");
-				base = type_i32;
-			}
-		}
-
-		skiptok(s, STMT_beg, 1);
-		if (tag) {
-			def = declare(s, TYPE_rec, tag, base);
-			enter(s, tag);
-		}
-		else {
-			tag = newnode(s, TYPE_def);
-			tag->type = base;
-		}
-
-		while (!skip(s, STMT_end)) {
-			if (test(s, TYPE_def)) {
-				spec(s);
-				continue;
-			}
-			if ((tok = next(s, TYPE_ref))) {
-				symn tmp = declare(s, TYPE_def, tok, base);
-				if (skip(s, ASGN_set)) {
-					tmp->init = expr(s, TYPE_def);
-					if (!promote(tmp->init->type, base))
-						error(s->s, tmp->init->line, "%T constant expected, got %T", base, tmp->init->type);
-				}
-				else if (base->cast == TYPE_i32) {		// if casts to TYPE_i32
-					tmp->init = newnode(s, TYPE_int);
-					tmp->init->con.cint = offs;
-					tmp->init->type = base;
-					offs += 1;
-				}
-				else
-					error(s->s, tmp->line, "%T constant expected", base);
-				redefine(s, tmp);
-			}
-			skiptok(s, STMT_do, 1);
-		}
-		if (def) {
-			def->args = leave(s, def);
-			redefine(s, def);
-		}
-	}// */
 	return tag;
 }
 static astn stmt(ccState s, int mode) {
@@ -1909,14 +1895,16 @@ static astn stmt(ccState s, int mode) {
 			leave(s, NULL);	// TODO: ???
 	}
 	else if ((ast = next(s,  STMT_if))) {	// if (...)
-		int newscope = 1;
 		int siffalse = s->siff;
+		int newscope = 1;
+
 		skiptok(s, PNCT_lp, 1);
 		ast->stmt.test = expr(s, TYPE_bit);
 		skiptok(s, PNCT_rp, 1);
+
 		if (qual == QUAL_sta) {
 			struct astn ift;
-			if (!eval(&ift, ast->stmt.test) || (!test(s, STMT_beg) && !test(s, STMT_do))) {
+			if (!eval(&ift, ast->stmt.test) || (!test(s, STMT_beg) /*&& !test(s, STMT_do)*/)) {
 				error(s->s, ast->file, ast->line, "invalid static if construct");
 				return 0;
 			}
@@ -1946,8 +1934,13 @@ static astn stmt(ccState s, int mode) {
 
 		ast->stmt.stmt = stmt(s, 1);	// no new scope / no decl
 
-		if (skip(s, STMT_els))
+		if (skip(s, STMT_els)) {
+			if (newscope) {
+				leave(s, NULL);
+				enter(s, ast);
+			}
 			ast->stmt.step = stmt(s, 1);
+		}
 
 		ast->type = type_vid;
 		ast->cst2 = qual;
@@ -1962,11 +1955,63 @@ static astn stmt(ccState s, int mode) {
 		skiptok(s, PNCT_lp, 1);
 		if (!skip(s, STMT_do)) {		// init
 			// TODO: enable var decl only	// TYPE_ref
-			ast->stmt.init = decl(s, decl_NoDefs);
+			ast->stmt.init = decl(s, decl_NoDefs|decl_Iterator);
 			if (!ast->stmt.init) {
 				ast->stmt.init = expr(s, TYPE_vid);
 				skiptok(s, STMT_do, 1);
 			}
+			//~ /* for (int a : range(0, 60)) {...}
+			else if (skip(s, PNCT_cln)) {		// iterate
+				astn itin = expr(s, TYPE_vid);
+
+				if (itin && itin->type) {
+					// auto .it = iterator(range);
+					// next(.it, a);
+					astn tok = newIden(s, "iterator");
+					symn loc = s->deft[tok->id.hash];
+					symn sym = lookup(s, loc, tok, itin, 0);
+					astn dcl1 = ast->stmt.init;
+					astn dcl2 = newIden(s, ".it");
+
+					if (sym != NULL && dcl2 != NULL) {
+						symn x = declare(s, TYPE_ref, dcl2, sym->type);
+						x->init = newnode(s, OPER_fnc);
+						x->init->type = sym->type;
+						x->init->op.lhso = tok;
+						x->init->op.rhso = itin;
+
+						dcl2->kind = TYPE_def;
+						dcl2->next = NULL;
+						dcl1->next = dcl2;
+						sym = x;
+					}
+
+					ast->stmt.init = newnode(s, STMT_beg);
+					ast->stmt.init->stmt.stmt = dcl1;
+					ast->stmt.init->type = type_vid;
+					ast->stmt.init->cst2 = TYPE_rec;
+					//~ ast->stmt.init = dcl2;
+
+					// make the `next(it, a)` test
+					astn fun = newnode(s, OPER_fnc);
+					astn arg = newnode(s, OPER_com);
+					arg->op.lhso = newIden(s, dcl2->id.name);
+					arg->op.rhso = newIden(s, dcl1->id.name);
+					fun->op.lhso = newIden(s, "next");
+					fun->op.rhso = arg;
+
+					//~ arg->op.lhso->id.link = dcl2->id.link;
+					//~ arg->op.lhso->type = dcl2->type;
+					ast->stmt.test = fun;
+					if (!typecheck(s, NULL, fun) || !typecheck(s, NULL, sym->init)) {
+						error(s->s, ast->file, ast->line, "invalid iterator for `%+k`", itin);
+						debug("%7K", ast);
+					}
+
+					fun->cst2 = TYPE_bit;
+				}
+				backTok(s, newnode(s, STMT_do));
+			}// */
 		}
 		if (!skip(s, STMT_do)) {		// test
 			ast->stmt.test = expr(s, TYPE_bit);
@@ -1980,6 +2025,9 @@ static astn stmt(ccState s, int mode) {
 		ast->type = type_vid;
 		ast->cst2 = qual;
 		leave(s, NULL);
+
+		//~ info(s->s, ast->file, ast->line, "for: `%-k`", ast);
+
 	}
 	else if ((ast = next(s, STMT_brk))) {	// break;
 		ast->type = type_vid;
@@ -2213,7 +2261,7 @@ astn expr(ccState s, int mode) {
 		*post = NULL;
 
 		for (lhs = ptr = buff; ptr < post; ptr += 1) {
-			if ((tok = *ptr) == NULL) ;				// skip
+			if ((tok = *ptr) == NULL) {}			// skip
 			else if (tok_tbl[tok->kind].argc) {		// oper
 				int argc = tok_tbl[tok->kind].argc;
 				if ((lhs -= argc) < buff) {
@@ -2393,6 +2441,10 @@ astn decl(ccState s, int Rmode) {
 			}
 		}
 
+		if (Rmode & decl_Iterator)
+			if (test(s, PNCT_cln))
+				backTok(s, newnode(s, STMT_do));
+
 		skiptok(s, STMT_do, 1);
 
 		s->pfmt = ref;
@@ -2454,8 +2506,10 @@ astn unit(ccState cc, int mode) {
 
 //}
 
-int parse(ccState cc, srcType mode) {
+int parse(ccState cc, srcType mode, int wl) {
 	astn newRoot, oldRoot = cc->root;
+
+	cc->warn = wl;
 
 	dieif(mode != 0, "FixMe");
 
@@ -2476,8 +2530,8 @@ int parse(ccState cc, srcType mode) {
 	}
 	switch (mode) {
 		case srcUnit: root = unit(cc, TYPE_any); break;
-		case srcDecl: root = decl(cc, 0); break;
-		case srcExpr: root = expr(cc, TYPE_vid); break;
+		case srcDecl: root = decl(cc, TYPE_any); break;
+		case srcExpr: root = expr(cc, TYPE_any); break;
 	}//*/
 
 	if ((newRoot = unit(cc, 0))) {
@@ -2523,56 +2577,81 @@ int parse(ccState cc, srcType mode) {
  *	| '{' <stmt>* '}'
  *	| ('static')? 'if' '(' <decl> | <expr> ')' <stmt> ('else' <stmt>)?
  *	| ('static' | 'parallel')? 'for' '(' (<decl> | <expr>)?; <expr>?; <expr>? ')' <stmt>
+ *	| 'continue' ';'
+ *	| 'break' ';'
  *	| mode && <decl>
  *	| <expr> ';'
  *	;
 
  TODO:
  +	| 'return' <expr>? ';'
- +	| 'continue' ';'
- +	| 'break' ';'
 **/
 /** decl -----------------------------------------------------------------------
- * declarations
- * @param mode: enable or not <spec>.
- * decl := (mode && <spec>)
+declarations
+@param mode: enable or not <spec>.
+decl := (mode && <spec>)
+	# variable
+	| <type> <name> (= <expr>)? ';'
+	| <type> <name> '['<expr>?']' (= <expr>)? ';'
+	| <type> <name> '(' <args> ')' (('{' <stmt>* '}') | ('=' <name> ';') | (';'))
+	;
 
- * # variable or array
- * | <type> <name> ('['<expr>?']')? (= <expr>)? ';'
- 
- * # function
- * | <type> <name> '(' <args> ')' (('{' <stmt>* '}') | ('=' <name> ';') | (';'))
- * ;
+spec :=
+	//~ # operator: operators are explicit, defines are implicit
+	//~ | 'operator' <OP> ('(' <type> rhs ')') '=' <expr> ';'
+	//~ | 'operator' <type> ('(' <type> rhs ')') '=' <expr> ';'
+	//~ | 'operator' ('(' <type> lhs ')') <OP> ('(' <type> rhs ')') '=' <expr> ';'
+	//~ #ex
+	//~ @ operator Complex(float64 re) = Complex(re, 0);
+	//~ @ operator - (Complex ^x) = Complex(-x.re, -x.im);
+	//~ @ operator (Complex ^x) + (Complex ^y) = Complex(x.re + y.re, x.im + y.im);
+	//~ @ Complex x1 = 3.1;
+	//~ @ Complex y1 = -x1;
+	//~ @ Complex z1 = x1 + y1;
+	//~ @ define Complex(float64 re) = Complex(re, 0);
+	//~ @ define neg(Complex ^x) = Complex(-x.re, -x.im);
+	//~ @ define add(Complex ^x, Complex ^y) = Complex(x.re + y.re, x.im + y.im);
+	//~ @ Complex x2 = Complex(3.1);
+	//~ @ Complex y2 = neg(x2);
+	//~ @ Complex z2 = add(x2, y2);
 
- * spec :=
- * # operator
- * | 'operator' <OP> ('(' <type> rhs ')') '=' <expr> ';'
- * | 'operator' ('(' <type> lhs ')') <OP> ('(' <type> rhs ')') '=' <expr> ';'
-   // operator - (Complex x) = Complex(-x.re, -x.im);
-   // operator (Complex x) - (Complex y) = Complex(x.re - y.re, x.im - y.im);
+	# define
+	| 'define' <name> <type>;						// alias
+	| 'define' <name> ('(' <args> ')')? = <expr>;	// inline
+	@ define string : char[];
+	@ define pi = 3.1415;
+	@ define sqr(int ^a) = int(a * a);
 
- * # define
- *	| 'define' <name> <type>;						// typedef
- *	| 'define' <name> ('(' <args> ')')? = <expr>;	// inline
+	# struct
+	| 'struct' <name>? (':' <pack>)? '{' <decl>+ '}'
 
- * # struct, union enum
- *	| 'struct' <name>? '{' <decl>* '}'
- *	| 'enum' <name>? (':' <type>)? '{' (<name> (= <expr>)?;)+ '}'
- *	;
- * 
- * type := typename ('.' typename)*
- * args := <type>? <name> (',' <type>? <name>)*
- * spec := define | struct | enum | ...
+	# const
+	| 'const' <name>? (':' <type>)? '{' <decl>+ '}'
+	@ const n = 320;
+	@ const math: float64 {pi = 3.14...; e = 2.71...; ...}
+	;
+
+type := 
+	| typename ('.' typename)*
+	;
+
+tref :=
+	| <type> ('^' | '&')? <name>
+	;
+
+args :=
+	| <tref> (',' <tref>)*
+	;
+
 **/
 /** expr -----------------------------------------------------------------------
- * expression
- * expr := ID
- *	| expr '[' expr ']'			// \arr	array
- ?	| '[' expr ']'				// \ptr	pointer
- *	| expr '(' expr? ')'		// \fnc	function
- *	| '(' expr ')'				// \pri	precedence
- *	| ['+', '-', '~', '!'] expr	// \uop	unary
- *	| expr ['+', '*', ...] expr	// \bop	binary
- *	| expr '?' expr ':' expr	// \top	ternary
- *	;
+ expression
+ expr := ID
+	| expr '[' expr ']'			// \arr	array
+	| expr '.' expr				// \arr	member
+	| <expr>? '(' <expr>? ')'	// \fnc	function | grouping
+	| ['+', '-', '~', '!'] expr	// \uop	unary
+	| expr ['+', '*', ...] expr	// \bop	binary
+	| expr '?' expr ':' expr	// \top	ternary
+	;
 **/

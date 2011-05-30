@@ -11,8 +11,6 @@
 //~ #open src/main.c
 
 /* Todo: Compiler
-	state: rtEnv: run time class
-	ccEnv: Compiler class
 // */
 
 /* TODO:
@@ -174,17 +172,18 @@ define mul(Complex &a, float64 &b) = Complex(a.re * b, a.im * b);
 define mul(float64 &a, Complex &b) = Complex(a * b.re, a * b.im);
 }
 static if (test2exec == prog.simd) {
-define add(Complex &a, Complex &b) = emit(Complex, v2d.add, f64(b.re), f64(b.im), f64(a.re), f64(a.im));
-define add(Complex &a, float64 b) = emit(Complex, v2d.add, f64(b), f64(0), f64(a.re), f64(a.im));
-define add(float64 a, Complex &b) = emit(Complex, v2d.add, f64(b.re), f64(b.im), f64(a), f64(0));
+//~ define add(Complex &a, Complex &b) = emit(Complex, v2d.add, f64(b.re), f64(b.im), f64(a.re), f64(a.im));
+define add(Complex a, Complex b) = emit(Complex, v2d.add, val(b), val(a));
+define add(Complex &a, float64 b) = emit(Complex, v2d.add, f64(b), f64(0), val(a));
+define add(float64 a, Complex &b) = emit(Complex, v2d.add, val(b), f64(a), f64(0));
 
-define sub(Complex &a, Complex &b) = emit(Complex, v2d.sub, f64(b.re), f64(b.im), f64(a.re), f64(a.im));
-define sub(Complex &a, float64 b) = emit(Complex, v2d.sub, f64(b), f64(0), f64(a.re), f64(a.im));
-define sub(float64 a, Complex &b) = emit(Complex, v2d.sub, f64(b.re), f64(b.im), f64(a), f64(0));
+define sub(Complex a, Complex b) = emit(Complex, v2d.sub, val(b), val(a));
+define sub(Complex &a, float64 b) = emit(Complex, v2d.sub, f64(b), f64(0), val(a));
+define sub(float64 a, Complex &b) = emit(Complex, v2d.sub, val(b), f64(a), f64(0));
 
 define mul(Complex &a, Complex &b) = emit(Complex,
 	f64.sub, v2d.mul, f64(b.im), f64(b.re), f64(a.im), f64(a.re),	// re = a.re * b.re - a.im * b.im
-	f64.add, v2d.mul, f64(b.re), f64(b.im), f64(a.im), f64(a.re)	// im = a.re * b.im + a.im * b.re;
+	f64.add, v2d.mul, val(b), f64(a.im), f64(a.re)	// im = a.re * b.im + a.im * b.re;
 );
 //~ define mul(Complex &a, double b) = emit(Complex, v2d.mul, f64(b), f64(b), f64(a.im), f64(a.re));
 //~ define mul(double a, Complex &b) = emit(Complex, v2d.mul, f64(b.im), f64(b.re), f64(a), f64(a));

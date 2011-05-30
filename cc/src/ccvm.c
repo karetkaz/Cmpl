@@ -112,6 +112,11 @@ int cgen(state s, astn ast, int get) {
 				}
 			}
 			//~ for (sym = ast->type; sym; sym = sym->next);	// destruct?
+			if (ast->cst2 == TYPE_rec) {
+				debug("%t", get);
+				qual = 0;
+				get = 0;
+			}
 			if (get == TYPE_vid && stpos != stkoffs(s, 0)) {
 				if (!emitidx(s, opc_drop, stpos)) {
 					trace("error");
@@ -142,6 +147,80 @@ int cgen(state s, astn ast, int get) {
 					return 0;
 				}
 			}
+			/*else if (ast->stmt.stmt || ast->stmt.step) {
+				int stbreak;
+				astn jl = s->cc->jmps;
+				if (!cgen(s, ast->stmt.test, TYPE_bit)) {
+					trace("%+k", ast);
+					return 0;
+				}
+				stbreak = stkoffs(s, 0);
+				if (ast->stmt.stmt && ast->stmt.step) {		// if then else
+					if (!(jmpt = emitopc(s, opc_jz))) {
+						trace("%+k", ast);
+						return 0;
+					}
+					if (!cgen(s, ast->stmt.stmt, TYPE_vid)) {
+						trace("%+k", ast);
+						return 0;
+					}
+					if (!(jmpf = emitopc(s, opc_jmp))) {
+						trace("%+k", ast);
+						return 0;
+					}
+					fixjump(s, jmpt, emitopc(s, markIP), 0);
+					if (!cgen(s, ast->stmt.step, TYPE_vid)) {
+						trace("%+k", ast);
+						return 0;
+					}
+					fixjump(s, jmpf, emitopc(s, markIP), 0);
+				}
+				else if (ast->stmt.stmt) {					// if then
+					//~ if false skip THEN block
+					if (!(jmpt = emitopc(s, opc_jz))) {
+						trace("%+k", ast);
+						return 0;
+					}
+					if (!cgen(s, ast->stmt.stmt, TYPE_vid)) {
+						trace("%+k", ast);
+						return 0;
+					}
+					fixjump(s, jmpt, emitopc(s, markIP), 0);
+				}
+				else if (ast->stmt.step) {					// if else
+					//~ if true skip ELSE block
+					if (!(jmpf = emitopc(s, opc_jnz))) {
+						trace("%+k", ast);
+						return 0;
+					}
+					if (!cgen(s, ast->stmt.step, TYPE_vid)) {
+						trace("%+k", ast);
+						return 0;
+					}
+					fixjump(s, jmpf, emitopc(s, markIP), 0);
+				}
+				while (s->cc->jmps != jl) {
+					astn jmp = s->cc->jmps;
+					s->cc->jmps = jmp->next;
+
+					if (jmp->go2.stks != stbreak) {
+						error(s, jmp->file, jmp->line, "`%k` statement is invalid due to previous variable declaration within loop", jmp);
+						return 0;
+					}
+
+					switch (jmp->kind) {
+						default : error(s, jmp->file, jmp->line, "invalid goto statement: %k", jmp); return 0;
+						case STMT_brk: fixjump(s, jmp->go2.offs, jmpt, jmp->go2.stks); break;
+						case STMT_con: fixjump(s, jmp->go2.offs, jmpf, jmp->go2.stks); break;
+					}
+				}
+			}
+			else {
+				if (!cgen(s, ast->stmt.test, TYPE_vid)) {
+					trace("%+k", ast);
+					return 0;
+				}
+			}// */
 			else if (ast->stmt.stmt && ast->stmt.step) {		// if then else
 				if (!cgen(s, ast->stmt.test, TYPE_bit)) {
 					trace("%+k", ast);
@@ -197,7 +276,12 @@ int cgen(state s, astn ast, int get) {
 					return 0;
 				}
 				fixjump(s, jmpt, emitopc(s, markIP), 0);
-			}
+			}// */
+
+			/*/! TODO: if (test is decl) destruct;
+			if (stpos != stkoffs(s, 0)) {
+				dieif(!emitidx(s, opc_drop, stpos), "FixMe");
+			}// */
 		} break;
 		case STMT_for: {
 			astn jl = s->cc->jmps;
@@ -276,7 +360,7 @@ int cgen(state s, astn ast, int get) {
 			int offs;
 			dieif(get != TYPE_vid, "FixMe");
 			emitint(s, opc_line, ast->line);
-			if (!(offs = emitint(s, opc_jmp, 0))) {
+			if (!(offs = emitopc(s, opc_jmp))) {
 				trace("%+k", ast);
 				return 0;
 			}
@@ -286,7 +370,6 @@ int cgen(state s, astn ast, int get) {
 
 			ast->next = s->cc->jmps;
 			s->cc->jmps = ast;
-
 		} break;
 		//}
 		//{ OPER
@@ -338,13 +421,19 @@ int cgen(state s, astn ast, int get) {
 							as->init = an;
 						}
 						else {
+							int stktop = stkoffs(s, sizeOf(as));
 							trace("arg(%k:[%t]): %+k", arg, as->type->cast, ast);
+							warn(s, 1, ast->file, ast->line, "caching argument: %-T = %+k", as, arg);
 							if (!cgen(s, arg, as->cast)) {
 								trace("%+k", arg);
 								return 0;
 							}
 							as->offs = stkoffs(s, 0);
 							as->kind = TYPE_ref;
+							if (stktop != as->offs) {
+								error(s, ast->file, ast->line, "invalid initializer size: %d <> got(%d): `%+k`", stktop, as->offs, as);
+								return 0;
+							}
 						}
 						an = an->next;
 						as = as->next;
@@ -647,7 +736,57 @@ int cgen(state s, astn ast, int get) {
 		} break;
 
 		case OPER_lnd:		// '&&'
-		case OPER_lor: {	// '||'
+		case OPER_lor: 
+		/*{	// '||'
+			int offs;
+			int tok = -1;
+			int opc = -1;
+			dieif(get != TYPE_bit, "FixMe");
+			if (!cgen(s, ast->op.lhso, TYPE_bit)) {
+				trace("%+k", ast);
+				return 0;
+			}
+
+			switch (ast->kind) {
+				default: fatal("FixMe"); return 0;
+				case OPER_lnd: opc = opc_jz; tok = STMT_con; break;
+				case OPER_lor: opc = opc_jnz; tok = STMT_brk; break;
+			}
+
+			if (!(offs = emitopc(s, opc))) {
+				trace("%+k", ast);
+				return 0;
+			}
+
+			if (1) {
+				astn jmp = newnode(s->cc, tok);
+				jmp->go2.offs = offs;
+				jmp->go2.stks = stkoffs(s, 0);
+
+				jmp->next = s->cc->jmps;
+				s->cc->jmps = jmp;
+			}
+
+			if (!cgen(s, ast->op.rhso, TYPE_bit)) {
+				trace("%+k", ast);
+				return 0;
+			}
+			switch (ast->kind) {
+				default: fatal("FixMe"); return 0;
+				case OPER_lnd: opc = opc_and; break;
+				case OPER_lor: opc = opc_ior; break;
+			}
+			//~ warn(s, 4, ast->file, ast->line, "operator `%k` does not short-circuit yet", ast);
+			#if DEBUGGING
+			// these must be true
+			//~ dieif(ast->op.lhso->cst2 != ast->op.rhso->cst2, "RemMe", ast);
+			dieif(ast->op.lhso->cst2 != TYPE_bit, "RemMe", ast);
+			dieif(ast->op.lhso->cst2 != TYPE_bit, "RemMe", ast);
+			dieif(ret != castOf(ast->type), "RemMe");
+			dieif(ret != TYPE_bit, "RemMe");
+			#endif
+		} break;// */
+		{
 			int opc = -1;
 			switch (ast->kind) {
 				default: fatal("FixMe"); return 0;
@@ -667,7 +806,13 @@ int cgen(state s, astn ast, int get) {
 				return 0;
 			}
 
-			warn(s, 4, ast->file, ast->line, "operator `%k` does not short-circuit yet", ast);
+			if (DEBUGGING) {
+				static int firstTimeShowOnly = 1;
+				if (firstTimeShowOnly) {
+					warn(s, 4, ast->file, ast->line, "operators `&&` and `||` does not short-circuit yet", ast);
+					firstTimeShowOnly = 0;
+				}
+			}
 			#if DEBUGGING
 			// these must be true
 			//~ dieif(ast->op.lhso->cst2 != ast->op.rhso->cst2, "RemMe", ast);
@@ -676,7 +821,7 @@ int cgen(state s, astn ast, int get) {
 			dieif(ret != castOf(ast->type), "RemMe");
 			dieif(ret != TYPE_bit, "RemMe");
 			#endif
-		} break;
+		} break;// */
 		case OPER_sel: {	// '?:'
 			int jmpt, jmpf;
 			if (0 && s->vm.opti && eval(&tmp, ast->op.test)) {
@@ -840,44 +985,7 @@ int cgen(state s, astn ast, int get) {
 
 			if (var->kind == TYPE_ref) {
 
-				// static variable or function.
-				if (0 && var->offs < 0) {
-					//~ trace("%-T", var);
-
-					/*// function
-					if (var->call) {
-						return ret;
-					}
-
-					// initialize
-					if (var->init) {
-						//~ if variable was allocated
-						//~ make assigment from initializer
-						struct astn id = {0}; //~ memset(&id, 0, sizeof(struct astn));
-						struct astn op = {0}; //~ memset(&op, 0, sizeof(struct astn));
-						op.kind = ASGN_set;
-						op.cst2 = TYPE_vid;
-						op.type = var->type;
-						op.op.lhso = &id;
-						op.op.rhso = var->init;
-
-						id.kind = TYPE_ref;
-						id.cst2 = TYPE_ref;		// wee need a reference here
-						id.type = var->type;
-						id.id.link = var;
-
-						//~ fatal("FixMe");
-
-						return cgen(s, &op, 0);
-					}*/
-
-					return ret;
-				}
-
-				/*if (typ->cast == TYPE_ref) {	// this should be not here
-					var->cast = TYPE_ref;
-					//~ var->load = 1;
-				}*/
+				//~ trace("local: `%+T`", var);
 
 				if (var->init/*  && !var->call */) {
 					astn val = var->init;
@@ -1166,7 +1274,6 @@ void ccEnd(state rt, symn cls) {
 		cls->args = leave(rt->cc, cls);
 	}
 }
-
 
 int gencode(state s, int level) {
 	ccState cc = s->cc;
@@ -1710,6 +1817,9 @@ ccState ccInit(state s, int mode) {
 	cc->s = s;
 	s->cc = cc;
 
+	s->defs = NULL;
+	cc->defs = NULL;
+
 	cc->_chr = -1;
 
 	cc->fin._ptr = 0;
@@ -1765,13 +1875,6 @@ ccState ccInit(state s, int mode) {
 	// install a void arg for functions with no arguments
 	if ((cc->argz = newnode(cc, TYPE_ref))) {
 		enter(cc, NULL);
-		//~ cc->argz->type = type_vid;
-		//~ cc->argz->cst2 = TYPE_vid;
-		//~ cc->argz->id.name = NULL;
-		//~ cc->argz->id.hash = 0;
-		//~ cc->argz->id.link = installex(cc, "", TYPE_ref | symn_read, type_vid, TYPE_ref, 0, NULL);;
-		//~ cc->argz->next = NULL;
-
 		cc->argz->id.name = "";
 		cc->argz->next = NULL;
 		declare(cc, TYPE_ref, cc->argz, type_vid);

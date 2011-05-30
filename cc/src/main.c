@@ -654,8 +654,7 @@ int compile(state s, int wl, char *file) {
 	size = (s->cc->_beg - (char*)s->_mem);
 	#endif
 
-	s->cc->warn = wl;
-	result = parse(s->cc, 0);
+	result = parse(s->cc, 0, wl);
 
 	#if DEBUGGING > 1
 	//~ debug("%s: init(%.2F); scan(%.2F) KBytes", file, size / 1024., (s->cc->_beg - s->_mem) / 1024.);
@@ -945,7 +944,16 @@ static int dbgCon(state s, int pu, void *ip, long* bp, int ss) {
 	IP = ((char*)ip) - ((char*)s->_mem);
 	SP = ((char*)s->vm._end) - ((char*)bp);
 
-	fputfmt(stdout, ">exec:[pu%02d][sp%02d]@%9.*A\n", pu, ss, IP, ip);
+	//~ fputfmt(stdout, ">exec:[pu%02d][sp%02d]@%9.*A\n", pu, ss, IP, ip);
+	if (1) {
+		typedef struct {double x, y;} vec2d;
+		typedef struct {float x, y, z, w;} vec4f;
+		stkval* sp = (stkval*)((char*)bp);
+		vec4f* v4 = (vec4f*)sp;
+		vec2d* v2 = (vec2d*)sp;
+		fputfmt(stdout, "\tsp(%d): {i32(%d), i64(%D), f32(%g), f64(%G), vec4f(%g, %g, %g, %g), vec2d(%G, %G)}\n", ss, sp->i4, sp->f4, sp->i8, sp->f8, v4->x, v4->y, v4->z, v4->w, v2->x, v2->y);
+	}
+	fputfmt(stdout, ">exec:[sp%02d]@%9.*A\n", ss, IP, ip);
 
 	if (cmd != 'N') for ( ; ; ) {
 		if (fgets(buff, 1024, stdin) == NULL) {

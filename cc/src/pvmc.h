@@ -105,7 +105,7 @@ int logFILE(state, FILE *file);				// logger
 //~ int compile(state, int level);				// warning level
 int gencode(state, int level);				// optimize level
 //~ int execute(state, int cc, int ss, dbgf dbg);
-int parse(ccState, srcType);
+int parse(ccState, srcType, int wl);
 
 symn libcall(state, int libc(state), int pass, const char* proto);
 //~ symn install(state, int libc(state), int pass, const char* proto);

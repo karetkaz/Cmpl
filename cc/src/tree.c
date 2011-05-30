@@ -23,6 +23,18 @@ astn newnode(ccState s, int kind) {
 	return ast;
 }
 
+astn newIden(ccState s, char* id) {
+	int slen = strlen(id);
+	astn ast = newnode(s, TYPE_ref);
+	if (ast != NULL) {
+		ast->kind = TYPE_ref;
+		ast->type = ast->id.link = 0;
+		ast->id.hash = rehash(id, slen + 1) % TBLS;
+		ast->id.name = mapstr(s, id, slen + 1, ast->id.hash);
+	}
+	return ast;
+}
+
 /*
 astn fltnode(ccState s, float64_t v) {
 	astn ast = newnode(s, TYPE_flt);

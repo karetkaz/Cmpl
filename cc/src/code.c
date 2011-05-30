@@ -536,7 +536,7 @@ int emitarg(state s, int opc, stkval arg) {
 		default: 
 			//~ arg.i4 = +arg.i4;
 			//~ opc = opc_cpy;
-			fatal("FixMe");
+			fatal("FixMe: operand size(%d) on load", arg.i4);
 			break;
 	}
 	else if (opc == opc_sti) switch (arg.i4) {
@@ -548,7 +548,7 @@ int emitarg(state s, int opc, stkval arg) {
 		default: 
 			//~ arg.i4 = -arg.i4;
 			//~ opc = opc_cpy;
-			fatal("FixMe");
+			fatal("FixMe: operand size(%d) on store", arg.i4);
 			break;
 	}
 
@@ -595,7 +595,7 @@ int emitarg(state s, int opc, stkval arg) {
 	}
 	// Optimize
 	if (s->vm.opti > 1) {
-		if (0) ;
+		if (0) {}
 		else if (opc == opc_ldi1) {
 			ip = getip(s, s->vm.pc);
 			if (ip->opc == opc_ldsp && ((ip->rel & 3) == 0) && ((ip->rel / 4) < max_reg)) {

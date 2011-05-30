@@ -1034,19 +1034,6 @@ void dumpsym(FILE *fout, symn sym, int alma) {
 
 		fputchr(fout, '\n');
 
-		/* Debug: where is used
-		if (alma & 0x30 && ptr->used) {
-			int used = 0;
-			astn ast = ptr->used;
-			if (alma & 0x20) while (ast != NULL) {
-				fputfmt(fout, "%s:%d:using `%T` here\n", ptr->file, ast->line, ptr);
-				ast = ast->id.nuse;
-				used += 1;
-			}
-			if (alma & 0x10)
-				fputfmt(fout, "%s:%d: `%-T` used %d times\n", ptr->file, ptr->line, ptr, used);
-		}// */
-
 		fflush(fout);
 		if (!alma)
 			break;
@@ -1132,7 +1119,7 @@ void dump(state s, dumpMode mode, char *text, ...) {
 				symn var;
 				for (var = s->defs; var; var = var->next) {
 					if (var->kind == TYPE_ref && var->call) {
-						fputfmt(logf, "%-T\n", var);
+						fputfmt(logf, "%-T [@%d: %d]\n", var, -var->offs, var->size);
 						fputasm(logf, s, -var->offs, -var->offs + var->size, mode);
 					}
 				}
