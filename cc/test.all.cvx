@@ -31,15 +31,15 @@
  * struct float4{float x; float y; float z; float w;}
  * define float4(float x, float y, float z, float w) = emit(float4, f32(x), f32(y), f32(z), f32(w));
  * 
+ * and:
  * define float3(float4 x) = float3(x.x, x.y, x.z);			// this works
  * operator float4(float3 x) = float4(x.x, x.y, x.z, 0.);
+ *
+ * then:
  * float4 a = float4(1., 2., 3., 4.);
  * float3 b = float3(a);
  * float4 c = b;				// this will call `operator float4(float3 x)`
  * float3 B = a;				// Error: no operator float3(float4 x)
- * 
- * 
- * 
  * 
  * default ctor from:
  *  	(basic types): ptr, basic types			// int32(ptr) := emit(int32, ldi.b32, ref(ptr));, float32(ptr), int32(float32), float32(int32), ...
@@ -80,6 +80,7 @@ operator -(int rhs) = emit(i32.neg, i32(rhs));
 operator (int lhs) + (int rhs) = emit(i32.add, i32(rhs), i32(lhs));
 operator (string lhs) [int rhs] = emit(int, ldi.byte, i32.mad, i32(1), i32(rhs), ref(lhs));
 operator (string lhs) [int rhs] (int setValue) = emit(int, ldi.byte, i32.mad, i32(1), i32(rhs), ref(lhs));
+operator int(string value) = atoi(value, 10);
 // */
 
 const Test {
@@ -441,7 +442,7 @@ for (int i = 0; i < dim; i += 1) {
 } // */
 static if (Test.Math) {
 static if (Test.Math & 1) {
-	double x = -math.pi / 4;
+	double x = -math.pi/2.0;
 	double absx = abs(x);
 	double sinx = sin(x);
 	double cosx = cos(x);

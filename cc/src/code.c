@@ -323,7 +323,7 @@ static inline void* getip(state s, int pos) {
 	return (void *)(s->_mem + pos);
 }
 
-int emitarg(state s, int opc, stkval arg) {
+int emitarg(state s, vmOpcodes opc, stkval arg) {
 	bcde ip = getip(s, s->vm.pos);
 	//~ stkval arg = *(stkval*)(&opc + 1);
 
@@ -569,24 +569,6 @@ int emitarg(state s, int opc, stkval arg) {
 			//~ return 0;
 	}// */
 
-	else if (opc == opc_inc) {		// TODO: DelMe!
-		ip = getip(s, s->vm.pc);
-		switch (ip->opc) {
-			case opc_ldsp:
-				if (s->vm.opti) {
-						//~ return 0;
-					if (arg.i4 < 0)
-						return 0;
-					ip->rel += arg.i4;
-					return s->vm.pc;
-				}// fall
-			default:
-				if (emitint(s, opc_ldc4, arg.i4))
-					return emitopc(s, i32_add);
-		}
-		return 0;
-	}
-
 	if (opc > opc_last) {
 		fatal("invalid opc(0x%x, 0x%X)", opc, arg.i8);
 		//~ debug("invalid opc(0x%x, 0x%X)", opc, arg.i8);
@@ -806,7 +788,9 @@ int emitarg(state s, int opc, stkval arg) {
 		case opc_loc:
 			dieif(ip->idx != arg.i8, "FixMe");
 			break;
-		// TODO: check other opcodes too
+		default:
+			// TODO: check other opcodes too
+			break;
 	}
 
 	//~ debug("opc_x%0x(0x%0X)%09.*A", opc, arg.i8, s->pc, ip);
@@ -845,6 +829,11 @@ int emitarg(state s, int opc, stkval arg) {
 
 	return s->vm.pc;
 }
+int emitopc(state s, vmOpcodes opc) {
+	stkval arg;
+	arg.i8 = 0;
+	return emitarg(s, opc, arg);
+}
 int emiti32(state s, int32_t arg) {
 	stkval tmp;
 	tmp.i4 = arg;
@@ -876,16 +865,33 @@ int emitptr(state s, void* arg) {
 	return emitarg(s, opc_ldcr, tmp);
 }
 
-int emitopc(state s, int opc) {
-	stkval arg;
-	arg.i8 = 0;
-	return emitarg(s, opc, arg);
+int emitinc(state s, int arg) {
+	bcde ip = getip(s, s->vm.pc); // get previous ip
+
+	if (arg == 0)
+		return s->vm.pc;
+
+	switch (ip->opc) {
+		case opc_ldsp:
+			if (s->vm.opti) {
+				if (arg < 0)
+					return 0;
+				ip->rel += arg;
+				return s->vm.pc;
+			}// fall
+		default:
+			if (emitint(s, opc_ldc4, arg))
+				return emitopc(s, i32_add);
+	}
+	return 0;
 }
-int emitidx(state s, int opc, int arg) {
+int emitidx(state s, vmOpcodes opc, int arg) {
 	stkval tmp;
 	tmp.i8 = (int32_t)s->vm.ss * 4 - arg;
 
 	switch (opc) {
+		default:
+			break;
 		case opc_drop:
 			opc = opc_spc;
 			tmp.i8 = -tmp.i8;
@@ -903,7 +909,7 @@ int emitidx(state s, int opc, int arg) {
 	}
 	return emitarg(s, opc, tmp);
 }
-int emitint(state s, int opc, int64_t arg) {
+int emitint(state s, vmOpcodes opc, int64_t arg) {
 	stkval tmp;
 	tmp.i8 = arg;
 	return emitarg(s, opc, tmp);
@@ -1006,7 +1012,7 @@ static inline int ovf(cell pu) {
 
 static void dbugerr(state s, int pu, void *ip, long* bp, int ss, char *text) {
 	//~ int SP = ((char*)s->vm._end) - ((char*)bp);
-	int IP = ((unsigned char*)ip) - s->_mem - s->vm.pc;
+	int IP = ((unsigned char*)ip) - s->_mem;// - s->vm.pc;
 	error(s, NULL, 0, ">exec:%s:[pu%02d][sp%02d]@%9.*A", text, pu, ss, IP, ip);
 	//~ fputfmt(stdout, ">vmExec:[pu%02d][sp%02d]@%9.*A\n", pu, ss, IP, ip);
 }
@@ -1052,6 +1058,11 @@ static int dbugpu(state s, cell pu, dbgf dbg) {
 				dbugerr(s, 0, ip, (long*)sp, st - sp, "division by zero");
 				//~ error(s, 0, "division by zero: op[%.*A]", (char*)ip - (char*)(vm->_mem), ip);
 				return -4;
+
+			error_libc:
+				dbugerr(s, 0, ip, (long*)sp, st - sp, "libcall error");
+				//~ info(s, NULL, 0, ">libc:[pu%02d][sp%02d]@%9.A : %-T", pu, st - sp, ip, libcvec[ip->idx].sym);
+				return -5;
 
 			#define NEXT(__IP, __CHK, __SP) {pu->sp -= 4*(__SP); pu->ip += (__IP);}
 			#define STOP(__ERR, __CHK) if (__CHK) goto __ERR
@@ -1122,7 +1133,7 @@ int vmCall(state s, symn fun, ...) {
 
 	// push Arguments;
 	//~ va_start(ap, fun);
-	for(arg = fun->args; arg; arg = arg->next) {
+	for (arg = fun->args; arg; arg = arg->next) {
 
 		int size = sizeOf(arg->type);
 		unsigned char *offs = pu->sp - arg->offs;
@@ -1191,6 +1202,7 @@ void fputopc(FILE *fout, unsigned char* ptr, int len, int offs) {
 	if (offs >= 0)
 		fputfmt(fout, ".%04x: ", offs);
 
+	// TODO: toFunction
 	if (len > 1 && len < opc_tbl[ip->opc].size) {
 		for (i = 0; i < len - 2; i++) {
 			if (i < opc_tbl[ip->opc].size) fprintf(fout, "%02x ", ptr[i]);
@@ -1203,6 +1215,7 @@ void fputopc(FILE *fout, unsigned char* ptr, int len, int offs) {
 		if (i < opc_tbl[ip->opc].size) fprintf(fout, "%02x ", ptr[i]);
 		else fprintf(fout, "   ");
 	}
+
 	//~ if (!opc) return;
 	if (opc_tbl[ip->opc].name)
 		fputs(opc_tbl[ip->opc].name, fout);
@@ -1279,7 +1292,8 @@ void fputopc(FILE *fout, unsigned char* ptr, int len, int offs) {
 
 		case opc_libc:
 			if (libcvec[ip->idx].sym)
-				fputfmt(fout, "(pop %d, check %d) %-T", libcvec[ip->idx].pop, libcvec[ip->idx].chk, libcvec[ip->idx].sym);
+				//~ fputfmt(fout, "(pop %d, check %d) %-T", libcvec[ip->idx].pop, libcvec[ip->idx].chk, libcvec[ip->idx].sym);
+				fputfmt(fout, "(%d): %-T", ip->idx, libcvec[ip->idx].sym);
 			else
 				fputfmt(fout, " %s", libcvec[ip->idx].proto);
 			break;

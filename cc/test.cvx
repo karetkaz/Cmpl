@@ -21,11 +21,16 @@
 /*
 struct slice {
 	int length;
-	ptr data;
+	pointer value;
 }
 
 struct variant {
 	const typeInfo &type;
+	const pointer  value;
+}
+
+struct delegate {
+	const int call(variant this, int param1, ...);
 	const pointer  value;
 }
 
@@ -38,36 +43,28 @@ define var: variant;
 var a = variant(10);
 
 */
+/*
+void printstr1(string a) {putstr(a);println();}
+void printstr2(string &a) {putstr(a);println();}
 
-/* error correcting
-define lerp(float32 ^t, vec4f ^a, vec4f ^b) = vec4f(lerp(t, a.x, b.x), lerp(t, a.y, b.y), lerp(t, a.z, b.z), lerp(t, a.w, b.w));
+int ttt(string s) {s = "alma33";}
+int preinc(int &i) {result = i += 1;}
+int postinc(int &i) {result = i; i += 1;}
 
-vec4f rgbLerpFp(vec4f c1, vec4f c2) {
-	float32 t = .5;
-	result = lerp(t, c1, c2);
-	//~ result = vec4f(
-		//~ lerp(.5, c1.x, c2.x),
-		//~ lerp(.5, c1.y, c2.y),
-		//~ lerp(.5, c1.z, c2.z),
-		//~ 1);
-}
+string args[2];
+args[0] = "alma";
+args[1] = "korte";
 
-vec4f rgbLerpFp2(vec4f c1, vec4f c2) {
-	result = lerp(.5, c1, c2);
-}
+println(args[0]);
+printstr1(args[0]);
+printstr2(args[0]);
+//~ ttt(args[1]);
 
-vec4f rgbLerpFp3(vec4f c1, vec4f c2) {
-	vec4f res = lerp(.5, c1, c2);
-	result = res;
-}
+int i = 9;
+int j = preinc(i);
 
-//~ b = vec4f(x = float32(0.550000), y = float32(1.100000), z = float32(1.650000), w = float32(0.000000))
-
-vec4f c1 = vec4f(.1, .2, .3);
-vec4f c2 = vec4f(1., 2., 3.);
-
-//~ vec4f a = rgbLerpFp(c1, c2);
-vec4f b = rgbLerpFp2(c1, c2);
+string s = "korte";
+//~ ttt(s);
 
 //~ */
 
@@ -96,6 +93,7 @@ void bitsget(bool signed, int size, int64 &min, int64 &max) {
 	int64 mask = bits.shr(int64(-1), -size);
 	min = bits.shl(-int64(signed), size - 1);
 	max = bits.and(min - 1, mask);
+	//~ max = min;
 }
 
 hex64 min;
@@ -105,16 +103,9 @@ hex64 umin;
 hex64 umax;
 
 int bitsize = 64;
+
 bitsget(true, bitsize, min, max);
 bitsget(!true, bitsize, umin, umax);
-// */
-/*
-define min(int32 ^a, int32 ^b) = int32(a < b ? a : b);
-
-int x = 9;
-int& a = x;
-//~ int& b[9];
-//~ int& c(int x);
 // */
 /*
 //~ int i = 9;
@@ -125,11 +116,11 @@ int& a = x;
 //~ uint32 y = x % 32;
 
 int fn1(int64 a) {
-	//~ static int xxx = 99;
-	//~ int fn2(int b) {
-		//~ result = b + xxx;
-	//~ }
-	//~ result = fn2(a);
+	static int xxx = 99;
+	static int fn2(int b) {
+		result = b + xxx;
+	}
+	result = fn2(a);
 }
 
 int a = fn1(4);
@@ -161,7 +152,7 @@ int a = fnCall(test);
 int b = fnCall(fnWrap(fun1, 50));
 //~ +/
 
-/+ count down
+//~ /+ count down
 struct fnWrap {int call(fnWrap &data); int data;}
 define fnWrap(int call(fnWrap &data), int data) = emit(fnWrap, ref(call), i32(data));
 define fnCall(fnWrap &wcd) = wcd.call(wcd);
@@ -175,7 +166,7 @@ println(fnCall(a));
 println(fnCall(a));
 // +/
 
-//~ /+ count down
+/+ count down
 struct fnWrap {int call(fnWrap &data); int &data;}
 define fnWrap(int call(fnWrap &data), int &data) = emit(fnWrap, ref(call), ref(data));
 define fnCall(fnWrap &wcd) = wcd.call(wcd);
@@ -294,7 +285,7 @@ int y = 2;
 int z = 3;
 //~ */
 
-//~ /* using strings
+/* using strings
 
 long cikkId = 165;
 long raktar = 3;
@@ -310,7 +301,7 @@ println("INSERT INTO gyariszam(cikk_id, mennyiseg, b_tetel_id, raktar_id, gyaris
 for (int i = 0; i < 40; i += 1) {
 
 	for (int j = 0; j < strlen; j += 1)
-		val[j] = random('a', 'z');
+		val[j] = rand('a', 'z');
 
 	print("("); print(cikkId);
 	print(", "); print(mennyiseg);
@@ -376,14 +367,36 @@ bool x1 = eq((a + b) + c, a + (b + c));
 
 /* random numbers
 for (int i = 0; i < 60; i += 1) {
-	println(random(1., 1.001));
+	println(rand(1., 1.001));
 }
 // */
 
-/* atoi
-//~ string args[2];
-//~ args[0] = "alma";
-//~ args[1] = "alma2";
+/* itoa
+
+void itoa(string dst, int val, int rad, int prc) {
+	// the recursive one
+	int _itoa(string dst, int32 num, int rad, int pad, int pos) {
+		if (num > 0) {
+			pos = _itoa(dst, num / rad, rad, pad - 1, pos + 1);
+			dst[pos - 1] = "0123456789abcdefghijklmnopqrstuvwxyz"[num % rad];
+		}
+		else if (pad > 0) {
+			pos = _itoa(dst, 0, rad, pad - 1, pos + 1);
+			dst[pos - 1] = '0';
+		}
+		else {
+			dst[pos] = '\0';
+			pos = 0;
+		}
+		result = pos + 1;
+	}
+	if (rad < 36) {
+		_itoa(dst, val, rad, prc, 0);
+	}
+	else {
+		dst[0] = 0;
+	}
+}
 
 void putrad(int32 num, int rad) {
 	if (num >= rad) {
@@ -405,13 +418,6 @@ putrad(13, 2);println();
 	putrad(i, 20);
 	println();
 }// +/
-
-// */
-
-/* using emit(); ./ccvm -c -x -O-2 test.cvx
-int64 t1 = 314;
-int64 t2 = emit();
-print(t2);
 
 // */
 
@@ -446,9 +452,9 @@ for (int i = 0; i < 20; i += 1) {int i2 = 9;}	// OK
 for (int i = 0; i < 20; i += 1) {int i = 9;}	// ERR: i redefined
 for (int i = 0; i < 20; i += 1) int i1 = 9;		// ERR: i2 unexpected
 
-static if (0) {int a = 99;}
+static if (!true) {int a = 99;}
 
-int a2 = a;						// ERR: a undeclared if static if(0)
+int a2 = a;						// ERR: a undeclared if static if(false)
 
 //~ */
 
@@ -503,3 +509,7 @@ for (int a : range(10, 16)) {
 }
 
 //~ */
+
+//~ double a = emit(float64, i64(0x7FF0009000000000));
+double XXXa = emit(float64, i64(0b0111111111110000000000000000000000000000000000000000000000000000));
+double XXXb = emit(float64, i64(0b0011111111110000000000000000000000000000000000000000000000000000));

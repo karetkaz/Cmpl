@@ -1318,12 +1318,6 @@ static astn reft(ccState s, int mode) {
 			tag->id.args = args(s, TYPE_ref);
 			skiptok(s, PNCT_rp, 1);
 
-			if (byref) {
-				//~ error(s->s, tag->file, tag->line, "function `%+T` returning reference [TODO]", ref);
-				error(s->s, tag->file, tag->line, "declaration of `%+T` as returning a reference [TODO]", ref);
-				byref = 0;
-			}
-
 			ref->args = leave(s, ref);
 			ref->cast = TYPE_ref;
 			ref->call = 1;
@@ -1333,6 +1327,12 @@ static astn reft(ccState s, int mode) {
 				ref->args = s->argz->id.link;
 			}
 
+			if (byref) {
+				//~ error(s->s, tag->file, tag->line, "function `%+T` returning reference is not implemented yet", ref);
+				error(s->s, tag->file, tag->line, "declaration of `%+T` as returning a reference [TODO]", ref);
+			}
+
+			byref = 0;
 		}
 
 		/* TODO: probably some day without an else ... 
@@ -1345,9 +1345,8 @@ static astn reft(ccState s, int mode) {
 			typ = tmp;
 
 			if (byref) {					// int& a[200] a contains 200 references to integers
-				error(s->s, tag->file, tag->line, "declaration of `%+T` as array of references [TODO]", ref);
 				//~ error(s->s, tag->file, tag->line, "array of references are not implemented yet: `%+T`", ref);
-				byref = 0;
+				error(s->s, tag->file, tag->line, "declaration of `%+T` as array of references [TODO]", ref);
 			}
 
 			ref->type = typ;
@@ -1387,21 +1386,21 @@ static astn reft(ccState s, int mode) {
 
 			} // */
 
+			byref = 0;
 		}
 
+		// TODO: these should go to fixargs
 		if (byref) {
-			ref->cast = TYPE_ref;
-			tag->cst2 = TYPE_ref;
+			debug("variable %-T is by ref", ref);
+			ref->cast = tag->cst2 = TYPE_ref;
 		}
 		else {
-			ref->cast = typ->cast;
-			tag->cst2 = typ->cast;
+			ref->cast = tag->cst2 = typ->cast;
 		}
-		/*if (typ->kind == TYPE_arr) {
-			ref->cast = TYPE_ref;
+		if (ref->call) {
+			//~ ref->cast = tag->cst2 = TYPE_ref;
 			tag->cst2 = TYPE_ref;
-		}*/
-
+		}// */
 	}
 	return tag;
 }
@@ -1416,17 +1415,26 @@ static astn args(ccState s, int mode) {
 
 		astn atag = reft(s, mode);
 
+		/*
 		symn ref = linkOf(atag);
 		if (ref) {
 			// TODO: others.
 			//~ if (ref->kind == TYPE_ref && ref->call) {
 				//~ ref->cast = atag->cst2 = TYPE_ref;
 			//~ }
-			if (ref->call || ref->kind == TYPE_arr) {
+			if (ref->call) {
 				debug("Byref: %+T", ref);
 				ref->cast = atag->cst2 = TYPE_ref;
 			}
-		}
+			//~ if (ref->call || ref->kind == TYPE_arr) {
+				//~ debug("Byref: %+T", ref);
+				//~ ref->cast = atag->cst2 = TYPE_ref;
+			//~ }
+			//~ if (ref->kind == TYPE_arr) {
+				//~ debug("Byref: %+T", ref);
+				//~ ref->cast = atag->cst2 = TYPE_arr;
+			//~ }
+		}// */
 
 		if (root) {
 			astn tmp = newnode(s, OPER_com);
@@ -1618,12 +1626,12 @@ static astn spec(ccState s/* , int qual */) {
 				}
 				else {
 					tok = reft(s, decl_Ref);
-					if (tok && tok->type->kind == TYPE_arr) {
+					/*if (tok && tok->type->kind == TYPE_arr) {
 						symn ref = tok->id.link;
 						dieif(!ref, "FixMe");
 						ref->cast = 0;
 						//~ ref->type->cast = 0;
-					}
+					}*/
 					if (!skiptok(s, STMT_do, 1))
 						break;
 				}
@@ -1825,6 +1833,17 @@ static astn spec(ccState s/* , int qual */) {
 
 	return tag;
 }
+static void destruct(astn ast, symn sym) {
+	while (sym) {
+		//~ astn dtor = newnode(s, OPER_fnc);
+		//~ dtor.oper.lhso = s->argz;
+		//~ dtor.oper.rhso = locals->tag;
+		if (sym->kind == TYPE_ref) {// && !locals->stat && locals->cast == TYPE_ref) {
+			trace("todo: void(%T) in %+k", sym, ast);
+		}
+		sym = sym->next;
+	}
+}
 static astn stmt(ccState s, int mode) {
 	//~ int newscope = mode >= 0;
 	astn ast = 0, tmp;
@@ -1891,8 +1910,9 @@ static astn stmt(ccState s, int mode) {
 			ast = 0;
 		}
 
-		if (newscope)
-			leave(s, NULL);	// TODO: ???
+		if (newscope) {
+			destruct(ast, leave(s, NULL));
+		}
 	}
 	else if ((ast = next(s,  STMT_if))) {	// if (...)
 		int siffalse = s->siff;
@@ -1904,7 +1924,7 @@ static astn stmt(ccState s, int mode) {
 
 		if (qual == QUAL_sta) {
 			struct astn ift;
-			if (!eval(&ift, ast->stmt.test) || (!test(s, STMT_beg) /*&& !test(s, STMT_do)*/)) {
+			if (!eval(&ift, ast->stmt.test) || !test(s, STMT_beg)) {
 				error(s->s, ast->file, ast->line, "invalid static if construct");
 				return 0;
 			}
@@ -1945,8 +1965,9 @@ static astn stmt(ccState s, int mode) {
 		ast->type = type_vid;
 		ast->cst2 = qual;
 
-		if (newscope)
-			leave(s, NULL);			// TODO: destruct
+		if (newscope) {
+			destruct(ast, leave(s, NULL));
+		}
 
 		s->siff = siffalse;
 	}
@@ -2024,7 +2045,7 @@ static astn stmt(ccState s, int mode) {
 		ast->stmt.stmt = stmt(s, 1);	// no new scope & disable decl
 		ast->type = type_vid;
 		ast->cst2 = qual;
-		leave(s, NULL);
+		destruct(ast, leave(s, NULL));
 
 		//~ info(s->s, ast->file, ast->line, "for: `%-k`", ast);
 
@@ -2366,8 +2387,12 @@ astn decl(ccState s, int Rmode) {
 				s->funl += 1;
 				s->maxlevel = s->nest;
 				result = installex(s, "result", TYPE_ref, 0, typ, NULL);
+
 				if (result) {
 					//~ symn tmp;
+
+					//~ if (typ->cast == TYPE_ref)
+						//~ result->cast = TYPE_ref;
 
 					result->decl = ref;
 
@@ -2375,6 +2400,8 @@ astn decl(ccState s, int Rmode) {
 					result->offs = sizeOf(result);
 
 					ref->offs = result->offs + fixargs(ref, 4, -result->offs);
+
+					//~ ref->nest = s->nest + 1;
 
 					/*
 					debug("argsize(%-T): %d", ref, ref->offs);
@@ -2385,41 +2412,23 @@ astn decl(ccState s, int Rmode) {
 					// */
 				}
 				for (tmp = ref->args; tmp; tmp = tmp->next) {
-					symn ref = installex(s, tmp->name, TYPE_ref, 0, NULL, NULL);
-					if (ref != NULL) {
-
-						//~ symn	decl;		// declared in
-						//~ symn	next;		// symbols on table/args
-
-						//~ uint8_t	pack;		// alignment
-						//~ uint8_t	kind;		// TYPE_ref || TYPE_xxx
-
-						//~ uint8_t	read:1;		// const / no override
-
-						//~ uint32_t	xx_1:5;		// -Wpadded
-						//~ uint16_t	xx_2;		// align
-						//~ uint16_t	nest;		// declaration level
-						//~ astn	init;		// VAR init / FUN body
-
-						//~ // list(scoping)
-						//~ astn	used;
-						//~ symn	defs;		// symbols on stack/all
-						//~ char*	pfmt;		// print format
-
-
-						ref->type = tmp->type;
-						ref->args = tmp->args;
-						ref->cast = tmp->cast;
-						ref->call = tmp->call;
-						ref->size = tmp->size;
-						ref->offs = tmp->offs;
-						ref->stat = 0;
-						if (ref->call) {
-							ref->cast = TYPE_ref;
-						}
-					}// */
+					symn arg = installex(s, tmp->name, TYPE_ref, 0, NULL, NULL);
+					if (arg != NULL) {
+						arg->type = tmp->type;
+						arg->args = tmp->args;
+						arg->cast = tmp->cast;
+						arg->call = tmp->call;
+						arg->size = tmp->size;
+						arg->offs = tmp->offs;
+						arg->stat = 0;
+						//~ arg->nest = s->maxlevel;
+						//~ if (ref->call) {
+							//~ ref->cast = TYPE_ref;
+						//~ }
+					}
 				}
 
+				ref->stat = 1;
 				ref->init = stmt(s, 1);
 
 				if (ref->init == NULL) {

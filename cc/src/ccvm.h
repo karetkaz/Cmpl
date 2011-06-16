@@ -1,5 +1,5 @@
 /*******************************************************************************
- *   File: main.c
+ *   File: ccvm.h
  *   Date: 2007/04/20
  *   Desc: main header
  *******************************************************************************
@@ -59,7 +59,7 @@
 #endif
 #endif
 
-// Symbols - CC
+// Symbols - CC(tokens)
 enum {
 	#define TOKDEF(NAME, TYPE, SIZE, STR) NAME,
 	#include "defs.i"
@@ -89,8 +89,8 @@ typedef struct {
 } tok_inf;
 extern const tok_inf tok_tbl[255];
 
-// Opcodes - VM
-enum {
+// Opcodes - VM(opcodes)
+typedef enum {
 	#define OPCDEF(Name, Code, Size, Args, Push, Time, Mnem) Name = Code,
 	#include "defs.i"
 	opc_last,
@@ -123,14 +123,12 @@ enum {
 
 	markIP,
 
-	// TODO: remove
-	opc_inc,		// increment
 	opc_line,		// line info
 
 	//~ opc_ldcf = opc_ldc4,
 	//~ opc_ldcF = opc_ldc8,
 	max_reg = 255,	// maximum dup, set, pop, ...
-};
+} vmOpcodes;
 typedef struct {
 	int const	code;
 	int const	size;
@@ -164,12 +162,13 @@ typedef struct astn *astn;		// Abstract Syntax Tree Node
 typedef struct list *list;
 typedef unsigned int uint;
 
-struct list {				// linked list
+struct list {				// linked list: stringlist, memgr, ...
 	struct list		*next;
 	unsigned char	*data;
+	unsigned int	size;	// := ((char*)&node) - data;
+	unsigned int	_pad;
 	//~ long	offs;
 	//~ void	*data;
-	//~ unsigned int	size;	// := ((char*)&node) - data;
 	//~ unsigned int	offs;	// offset in file ?
 };
 struct astn {				// tree node
@@ -208,6 +207,10 @@ struct astn {				// tree node
 			long offs;
 			long stks;				// stack size
 		} go2;
+		struct {					// STMT_brk, STMT_con
+			astn head;
+			astn tail;
+		} list;
 	};
 	astn		next;				// next statement, do not use for preorder
 
@@ -216,9 +219,16 @@ struct astn {				// tree node
 	uint32_t	temp;				// token on line
 };
 struct symn {				// type node
+	//~ TODO: 4 types of syms:
+	//~ 	00: TYPE_def
+	//~ 	01: TYPE_rec
+	//~ 	10: TYPE_ref
+	//~ 	11: TYPE_fun
+
 	char*	name;
 	char*	file;
 	int		line;
+
 	int32_t	size;		// sizeof(TYPE_xxx)
 	int32_t	offs;		// addrof(TYPE_ref)
 	symn	decl;		// declared in
@@ -246,6 +256,7 @@ struct symn {				// type node
 
 	// list(scoping)
 	//~ astn	used;
+	symn	gdef;
 	symn	defs;		// symbols on stack/all
 	//~ symn	uses;		// declared in
 	char*	pfmt;		// print format
@@ -327,7 +338,7 @@ extern symn emit_opc;
 
 
 //~ clog
-void fputfmt(FILE *fout, const char *msg, ...);
+//~ void fputfmt(FILE *fout, const char *msg, ...);
 
 //~ void fputsym(FILE *fout, symn sym, int mode, int level);
 //~ void fputast(FILE *fout, astn ast, int mode, int level);
@@ -417,16 +428,17 @@ int cgen(state s, astn ast, int get);
  * @param ...: argument
  * @return: program counter
  */
-int emit(state, int opc, stkval arg);
-int emitopc(state, int opc);
+int emit(state, vmOpcodes opc, stkval arg);
+int emitopc(state, vmOpcodes opc);
 int emiti32(state, int32_t arg);
 int emiti64(state, int64_t arg);
 int emitf32(state, float32_t arg);
 int emitf64(state, float64_t arg);
 int emitptr(state, void* arg);
 
-int emitidx(state, int opc, int pos);
-int emitint(state, int opc, int64_t arg);
+int emitinc(state, int val);		// increment the top of stack by ...
+int emitidx(state, vmOpcodes opc, int pos);
+int emitint(state, vmOpcodes opc, int64_t arg);
 int fixjump(state, int src, int dst, int stc);
 
 // returns the stack size

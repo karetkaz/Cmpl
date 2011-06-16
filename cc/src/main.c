@@ -9,8 +9,7 @@
 static const int wl = 9;		// warning level
 static const int ol = 2;		// optimize level
 static const int cc = 1;		// execution cores
-#define MKB 20					// size of shift
-#define memsize (32 << MKB)		// runtime size(128K)
+#define memsize (4 << 20)		// runtime size(4M)
 static char mem[memsize];
 
 extern int vmTest();
@@ -285,7 +284,7 @@ static int install_stdc(ccState cc) {
 		//~ {memmgr, "pointer memmgr(pointer old, int32 cnt, int allign);"},		// allocate, reallocate, free
 		//~ {memset, "pointer memset(pointer dst, byte src, int32 cnt);"},
 		//~ {memcpy, "pointer memcpy(pointer dst, pointer src, int32 cnt);"},
-		{rand32, 0, "int random();"},
+		{rand32, 0, "int rand();"},
 		{printCall, putchr, "void putchr(int32 val);"},
 		{printCall, putstr, "void putstr(string val);"},
 		{printCall, putx64, "void putx64(int64 val);"},
@@ -663,6 +662,7 @@ int compile(state s, int wl, char *file) {
 	return result;
 }
 
+static int printvars = 0;
 static int dbgCon(state s, int pu, void *ip, long* bp, int ss);
 int program(int argc, char *argv[]) {
 	state s = rtInit(mem, sizeof(mem));
@@ -789,6 +789,7 @@ int program(int argc, char *argv[]) {
 
 				if (*str == 'd' || *str == 'D') {
 					dbg = dbgCon;
+					printvars = *str == 'D';
 					str += 1;
 				}
 
@@ -884,9 +885,9 @@ int program(int argc, char *argv[]) {
 
 		if (outc) switch (outc) {
 			default: fatal("FixMe");
-			case out_tags: dump(s, dump_sym | (level & 0x0ff), NULL); break;
-			case out_dasm: dump(s, dump_asm | (level & 0xfff), NULL); break;
-			case out_tree: dump(s, dump_ast | (level & 0x0ff), NULL); break;
+			case out_tags: dump(s, dump_sym | (level & 0x0ff), NULL, NULL); break;
+			case out_dasm: dump(s, dump_asm | (level & 0xfff), NULL, NULL); break;
+			case out_tree: dump(s, dump_ast | (level & 0x0ff), NULL, NULL); break;
 			case run_code: vmExec(s, dbg); break;
 		}
 
@@ -945,7 +946,7 @@ static int dbgCon(state s, int pu, void *ip, long* bp, int ss) {
 	SP = ((char*)s->vm._end) - ((char*)bp);
 
 	//~ fputfmt(stdout, ">exec:[pu%02d][sp%02d]@%9.*A\n", pu, ss, IP, ip);
-	if (1) {
+	if (printvars) {
 		typedef struct {double x, y;} vec2d;
 		typedef struct {float x, y, z, w;} vec4f;
 		stkval* sp = (stkval*)((char*)bp);

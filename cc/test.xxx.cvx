@@ -1,0 +1,85 @@
+//~ #open src/ccvm.c
+//~ #open src/pvmc.h
+
+//~ module test;
+
+//~ int alma(int h)[10];	???
+//~ void fun(int x) = true ? null : void(int x){print(x);});
+
+/* swap test
+void swap(int32 &a, int32 &b) {
+	int32 tmp = a;
+	a = b;
+	b = tmp;
+}
+void swap(int64 &a, int64 &b) {
+	int64 tmp = a;
+	a = b;
+	b = tmp;
+}
+void swap(float32 &a, float32 &b) {
+	float32 tmp = a;
+	a = b;
+	b = tmp;
+}
+void swap(float64 &a, float64 &b) {
+	float64 tmp = a;
+	a = b;
+	b = tmp;
+}
+
+struct floatxy{
+	float32 x;
+	float32 y;
+}
+floatxy rec;
+float32 arr[2];
+swap(rec.x, rec.y);
+swap(arr[0], arr[1]);
+//~ */
+
+/* string test
+void write(string str) {
+	for (int i = 0; str[i]; i += 1)
+		putchr(str[i]);
+}
+void writeln(string str) {
+	for (int i = 0; str[i]; i += 1)
+		putchr(str[i]);
+	putchr('\n');
+}
+void writeno(string str) {}
+//~ void writeln2(string &a) {putstr(a); putchr('\n');}
+//~ int &a = 2;
+
+//~ int ttt(string s) {s = "alma33";}
+//~ int preinc(int &i) {result = i += 1;}
+//~ int postinc(int &i) {result = i; i += 1;}
+
+string args[2];
+string s = "korte";
+args[0] = "alma";
+args[1] = s;
+string s2 = args[1];
+
+writeln(s);
+writeln(s2);
+writeln(args[1]);
+//~ ttt(s);
+//~ */
+
+void itoa(string dst, int val, int rad, int prc) {
+	static int _itoa(string dst, int32 num, int rad, int pad, int pos) {
+		if (num > 0 || pad > 0) {
+			pos = _itoa(dst, num / rad, rad, pad - 1, pos + 1);
+			dst[pos - 1] = "0123456789abcdefghijklmnopqrstuvwxyz"[num % rad];
+		}
+		else {
+			dst[pos] = '\0';
+			pos = 0;
+		}
+		result = pos + 1;
+	}
+	_itoa(dst, val, rad, prc, 0);
+}
+

@@ -115,7 +115,7 @@ case opc_libc: NEXT(2, libcvec[ip->idx].chk, -libcvec[ip->idx].pop) {
 	exitCode = libcvec[ip->idx].call(s);
 	s->vm._end = s_vm_end;
 
-	STOP(error_opc, exitCode != 0);
+	STOP(error_libc, exitCode != 0);
 	STOP(stop_vm, ip->idx == 0);			// Halt();
 #endif
 } break;

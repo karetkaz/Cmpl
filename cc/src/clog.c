@@ -987,7 +987,7 @@ void dumpsym(FILE *fout, symn sym, int alma) {
 		// qualified name with arguments
 		fputsym(fout, ptr, prQual|prArgs | 1, 20);
 
-		if (ptr->cast)		// TYPE_def should not cast to anything
+		//~ if (ptr->cast)		// TYPE_def should not cast to anything
 			fputfmt(fout, "[%t]", ptr->cast);
 
 		// qualified base type(s)
@@ -1077,14 +1077,37 @@ void perr(state s, int level, const char *file, int line, const char *msg, ...) 
 }
 
 //{ temp & debug ---------------------------------------------------------------
-void dump(state s, dumpMode mode, char *text, ...) {
+void dump(state s, dumpMode mode, symn sym, char *text, ...) {
 	FILE *logf = s ? s->logf : stdout;
 	int level = mode & 0xff;
 
 	if (!logf)
 		return;
 
-	switch (mode & dumpMask) {
+	if (sym) {
+		if (mode & dump_sym) {
+			dumpsym(logf, sym, level);
+		}
+		if (mode & dump_ast) {
+			if (sym->kind == TYPE_ref && sym->call) {
+				//~ fputfmt(logf, "%-T [@%d: %d]\n", var, -var->offs, var->size);
+				if ((level & 0x0f) == 0x0f)
+					dumpxml(logf, sym->init, 0, "root", level);
+				else
+					fputast(logf, sym->init, level | 2, 0);
+			}
+		}
+		if (mode & dump_asm) {
+			if (sym->kind == TYPE_ref && sym->call) {
+				//~ fputfmt(logf, "%-T [@%d: %d]\n", var, -var->offs, var->size);
+				fputasm(logf, s, -sym->offs, -sym->offs + sym->size, 0x119);
+			}
+			else {
+				//~ fputasm(fout, s, -sym->offs, -sym->offs + sym->size, 0x119);
+			}
+		}
+	}
+	else switch (mode & dumpMask) {
 		default: fatal("FixMe");
 		case dump_ast: {
 			if (text != NULL)
@@ -1095,7 +1118,7 @@ void dump(state s, dumpMode mode, char *text, ...) {
 				fputast(logf, s->cc->root, level | 2, 0);
 		} break;
 
-		case dump_sym: {
+		/*case dump_sym: {
 			symn glob = s->defs;
 
 			if (text != NULL)
@@ -1108,7 +1131,26 @@ void dump(state s, dumpMode mode, char *text, ...) {
 				}
 			}
 			else {
-				dumpsym(logf, glob, level & 0x0ff);
+				dumpsym(logf, glob, level);
+			}
+		} break;
+		// */
+
+		case dump_sym: {
+			symn glob = s->gdef;
+
+			if (text != NULL)
+				fputfmt(logf, text);
+
+			if ((level & 0x0f) == 0x0f) {
+				while (glob) {
+					if (glob->kind == TYPE_ref)
+						dumpsym(logf, glob, 0);
+					glob = glob->gdef;
+				}
+			}
+			else {
+				dumpsym(logf, glob, level);
 			}
 		} break;
 

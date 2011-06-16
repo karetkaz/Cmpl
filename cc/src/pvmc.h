@@ -33,6 +33,7 @@ typedef struct state {
 	int   closelog;	// close log file
 
 	symn  defs;		// definitions
+	symn  gdef;		// definitions
 
 	int   errc;		// error count
 
@@ -64,11 +65,13 @@ typedef struct state {
 	}pe;
 
 	// todo a memory manager
+
 	long _cnt;
 	unsigned char *_ptr;
-	unsigned char _mem[];
+
 	//~ void *_free;	// list of free memory
 	//~ void *_used;	// list of used memory
+	unsigned char _mem[];
 } *state;
 typedef enum {
 	srcText = 0x00,		// file / buffer
@@ -87,8 +90,8 @@ typedef enum {
 	// dump()
 	//~ dump_bin = 0x0000100,
 	dump_txt = 0x0000800,
-	dump_sym = 0x0000200,
-	dump_asm = 0x0000300,
+	dump_sym = 0x0000100,
+	dump_asm = 0x0000200,
 	dump_ast = 0x0000400,
 	dumpMask = 0x0000f00,
 } srcType, dumpMode;
@@ -123,7 +126,9 @@ int vmExec(state, dbgf dbg);
 int vmCall(state, symn fun, ...);
 
 // output
-void dump(state, dumpMode, char* text, ...);
+void fputfmt(FILE *fout, const char *msg, ...);
+
+void dump(state, dumpMode, symn, char* text, ...);
 
 // Level 1 Functions: use less these
 ccState ccInit(state, int mode);
@@ -170,4 +175,4 @@ static inline void* popvar(state s, void* dst, int size) { return memcpy(dst, po
 //~ static inline void retf64(state s, float64_t val) { setret(float64_t, s, val); }
 #endif
 
-#define DEBUGGING 1
+#define DEBUGGING 15

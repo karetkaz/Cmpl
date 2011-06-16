@@ -333,7 +333,7 @@ symn lookup(ccState s, symn sym, astn ref, astn args, int raise) {
 
 	if (sym == NULL && asref) {
 		if (found == 1 || s->siff) {
-			trace("as ref `%-T`(%+k)(%d)", asref, args, ref->line);
+			trace("as ref `%-T`(%?+k)(%d)", asref, args, ref->line);
 			sym = asref;
 		}
 		else if (raise) {
@@ -526,7 +526,7 @@ int castOf(symn typ) {
 			//~ return typ->kind;
 
 		case TYPE_arr:
-			return TYPE_ref;
+			//~ return TYPE_ref;
 
 		case EMIT_opc:
 		case TYPE_rec:
@@ -1053,11 +1053,14 @@ int fixargs(symn sym, int align, int stbeg) {
 		// functions are byRef in structs and params
 		if (arg->call) {
 			arg->cast = TYPE_ref;
-		}
+		}// */
 
-		// arrays params are slices
-		// TODO: if (arg->type->kind == TYPE_arr) ...
+		/*/ TODO: array params are slices
+		if (isCall && arg->type->kind == TYPE_arr) {
+			arg->cast = TYPE_arr;
+		}// */
 
+		arg->nest = 0;
 		arg->size = sizeOf(arg);
 		//~ arg->size = arg->type->size;
 		arg->offs = stbeg + stdiff;
@@ -1140,6 +1143,11 @@ symn leave(ccState s, symn dcl) {
 		if (!s->siff) {
 			sym->defs = s->defs;
 			s->defs = sym;
+		}
+
+		if (sym->stat || sym->glob) {
+			sym->gdef = rt->gdef;
+			rt->gdef = sym;
 		}
 
 		sym->next = arg;
