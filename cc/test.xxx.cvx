@@ -6,7 +6,7 @@
 //~ int alma(int h)[10];	???
 //~ void fun(int x) = true ? null : void(int x){print(x);});
 
-/* swap test
+//~ /* swap test
 void swap(int32 &a, int32 &b) {
 	int32 tmp = a;
 	a = b;
@@ -28,12 +28,17 @@ void swap(float64 &a, float64 &b) {
 	b = tmp;
 }
 
-struct floatxy{
+struct floatxy {
 	float32 x;
 	float32 y;
 }
-floatxy rec;
+
+define floatxy(float32 x, float32 y) = emit(floatxy, float32(x), float32(y));
+floatxy rec = floatxy(1, 2);
 float32 arr[2];
+arr[0] = 1;
+arr[1] = 2;
+
 swap(rec.x, rec.y);
 swap(arr[0], arr[1]);
 //~ */
@@ -68,7 +73,7 @@ writeln(args[1]);
 //~ ttt(s);
 //~ */
 
-void itoa(string dst, int val, int rad, int prc) {
+/+string itoa(string dst, int val, int rad, int prc) {
 	static int _itoa(string dst, int32 num, int rad, int pad, int pos) {
 		if (num > 0 || pad > 0) {
 			pos = _itoa(dst, num / rad, rad, pad - 1, pos + 1);
@@ -81,5 +86,9 @@ void itoa(string dst, int val, int rad, int prc) {
 		result = pos + 1;
 	}
 	_itoa(dst, val, rad, prc, 0);
-}
+	result = dst;
+}+/
 
+//~ {pointer a = null;}
+//~ pointer a = null;
+//~ int b;

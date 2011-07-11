@@ -57,6 +57,27 @@ astn cpynode(ccState s, astn src) {
 }
 // */
 
+astn opnode(ccState s, int kind, astn lhs, astn rhs) {
+	astn result = newnode(s, kind);
+	if (result) {
+		result->op.lhso = lhs;
+		result->op.rhso = rhs;
+	}
+	return result;
+}
+
+astn lnknode(ccState s, symn ref) {
+	astn result = newnode(s, TYPE_ref);
+	if (result) {
+		result->type = ref->type;//typeOf(ref);
+		result->id.name = ref->name;
+		result->id.link = ref;
+		result->id.hash = -1;
+		result->cst2 = ref->cast;
+	}
+	return result;
+}
+
 astn intnode(ccState s, int64_t v) {
 	astn ast = newnode(s, TYPE_int);
 	ast->type = type_i32;
@@ -74,6 +95,7 @@ signed constbol(astn ast) {
 		case TYPE_bit:
 		case TYPE_int: return ast->con.cint != 0;
 		case TYPE_flt: return ast->con.cflt != 0;
+		default: break;
 	}
 	fatal("not a constant %+k", ast);
 	return 0;
@@ -82,6 +104,7 @@ int64_t constint(astn ast) {
 	if (ast) switch (ast->kind) {
 		case TYPE_int: return (int64_t)ast->con.cint;
 		case TYPE_flt: return (int64_t)ast->con.cflt;
+		default: break;
 	}
 	fatal("not a constant %+k", ast);
 	return 0;
@@ -90,12 +113,13 @@ float64_t constflt(astn ast) {
 	if (ast) switch (ast->kind) {
 		case TYPE_int: return (float64_t)ast->con.cint;
 		case TYPE_flt: return (float64_t)ast->con.cflt;
+		default: break;
 	}
 	fatal("not a constant %+k", ast);
 	return 0;
 }
 
-// TODO: use cgen and vmExec;
+TODO(eval should use cgen and vmExec)
 int eval(astn res, astn ast) {
 	struct astn lhs, rhs;
 	int cast;
@@ -109,7 +133,7 @@ int eval(astn res, astn ast) {
 	switch (ast->cst2) {
 		case TYPE_bit: cast = TYPE_bit; break;
 
-		case TYPE_int: // TODO: define a = 9;	// what casts to int ? index ?
+		case TYPE_int:
 		case TYPE_u32: cast = TYPE_int; break;
 		case TYPE_i32: cast = TYPE_int; break;
 
@@ -235,6 +259,7 @@ int eval(astn res, astn ast) {
 						case OPER_div: 
 						case OPER_mod: {
 							if (rhs.con.cint) switch (ast->kind) {
+								default: fatal("FixMe");
 								case OPER_div: res->con.cint = lhs.con.cint / rhs.con.cint; break;		// '/'
 								case OPER_mod: res->con.cint = lhs.con.cint % rhs.con.cint; break;		// '%'
 							}
@@ -333,6 +358,7 @@ int eval(astn res, astn ast) {
 
 			res->kind = TYPE_bit;
 			switch (ast->kind) {
+				default: fatal("FixMe");
 				case OPER_lor: res->con.cint = lhs.con.cint || rhs.con.cint; break;
 				case OPER_lnd: res->con.cint = lhs.con.cint && rhs.con.cint; break;
 			}

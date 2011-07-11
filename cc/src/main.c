@@ -12,7 +12,7 @@ static const int cc = 1;		// execution cores
 #define memsize (4 << 20)		// runtime size(4M)
 static char mem[memsize];
 
-extern int vmTest();
+//~ extern int vmTest();
 
 char *parsei32(const char *str, int32_t *res, int radix) {
 	int64_t result = 0;
@@ -548,7 +548,7 @@ static int install_bits(ccState cc) {
 		err = err || !libcall(cc->s, bits_call, b32_swp, "int32 swp(int32 x);");
 		err = err || !libcall(cc->s, bits_call, b32_zxt, "int32 zxt(int32 val, int offs, int bits);");
 		err = err || !libcall(cc->s, bits_call, b32_sxt, "int32 sxt(int32 val, int offs, int bits);");
-		module->args = leave(cc, module);
+		module->args = leave(cc, module, 1);
 	}
 	return err;
 }
@@ -629,12 +629,12 @@ int reglibc(state s) {
 
 	libcall(s, NULL, 0, "reset");
 
-	if (!libcall(s, libCallExitDebug, 0, "void debug1(int x, int y, int z);")) err = 1;
-	if (!libcall(s, libCallExitDebug, 0, "void debug1(int x, int y, int z, int u, int v, int w);")) err = 1;
+	//~ if (!libcall(s, libCallExitDebug, 0, "void debug1(int x, int y, int z);")) err = 1;
+	//~ if (!libcall(s, libCallExitDebug, 0, "void debug1(int x, int y, int z, int u, int v, int w);")) err = 1;
 
-	err = install_stdc(s->cc) || err;
+	//~ err = install_stdc(s->cc) || err;
 
-	err = install_bits(s->cc) || err;
+	//~ err = install_bits(s->cc) || err;
 
 	return err;
 }
@@ -690,7 +690,7 @@ int program(int argc, char *argv[]) {
 			return -33;
 
 		reglibc(s);
-		glob = leave(env, NULL);
+		glob = leave(env, NULL, 1);
 		if (argc == 2) {
 			dumpsym(stdout, glob, level);
 		}
@@ -837,11 +837,16 @@ int program(int argc, char *argv[]) {
 			return -1;
 		}
 
+		if (!ccInit(s, creg_def)) {
+			error(s, NULL, 0, "error registering types");
+			logfile(s, NULL);
+			return -6;
+		}
 		if (reglibc(s) != 0) {
 			error(s, NULL, 0, "error registering lib calls");
 			logfile(s, NULL);
 			return -6;
-		}
+		}// */
 
 		if (compile(s, warn, "stdlib.cvx") != 0) {
 			warn(s, 1, NULL, 0, "compiling `%s`", "stdlib.cvx");
@@ -857,7 +862,6 @@ int program(int argc, char *argv[]) {
 
 		//~ if (outc == out_tags || outc == out_tree) {} else
 		if (gencode(s, opti) != 0) {
-			//! TODO: rename gencode to something else like assemble or something similar
 			logfile(s, NULL);
 			return s->errc;
 		}
@@ -943,7 +947,7 @@ static int dbgCon(state s, int pu, void *ip, long* bp, int ss) {
 	}
 
 	IP = ((char*)ip) - ((char*)s->_mem);
-	SP = ((char*)s->vm._end) - ((char*)bp);
+	SP = ((char*)s->_ptr) - ((char*)bp);
 
 	//~ fputfmt(stdout, ">exec:[pu%02d][sp%02d]@%9.*A\n", pu, ss, IP, ip);
 	if (printvars) {

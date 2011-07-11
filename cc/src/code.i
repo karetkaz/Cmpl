@@ -98,7 +98,8 @@ case opc_task: NEXT(4, 0, -0) {
 case opc_libc: NEXT(2, libcvec[ip->idx].chk, -libcvec[ip->idx].pop) {
 #ifdef EXEC
 	int exitCode;
-	unsigned char *s_vm_end = s->vm._end;
+	unsigned char *s_vm_end = s->_ptr;
+	STOP(error_libc, libcvec[ip->idx].sym == NULL);
 	s->argv = (char *)sp;
 	s->retv = (char*)((stkptr)sp + libcvec[ip->idx].pop);
 	s->func = libcvec[ip->idx].sym->offs;
@@ -111,9 +112,9 @@ case opc_libc: NEXT(2, libcvec[ip->idx].chk, -libcvec[ip->idx].pop) {
 	}
 
 	// if a libcall calls a vmCall keep the stack
-	s->vm._end = (unsigned char *)sp;
+	s->_ptr = (unsigned char *)sp;
 	exitCode = libcvec[ip->idx].call(s);
-	s->vm._end = s_vm_end;
+	s->_ptr = s_vm_end;
 
 	STOP(error_libc, exitCode != 0);
 	STOP(stop_vm, ip->idx == 0);			// Halt();
@@ -365,6 +366,16 @@ case b32_shr: NEXT(1, 2, -1) {
 case b32_sar: NEXT(1, 2, -1) {
 #if defined(EXEC) || defined(EVAL)
 	SP(1, i4) >>= SP(0, i4);
+#endif
+} break;
+case b32_bit: NEXT(2, 1, -0) {
+#if defined(EXEC) || defined(EVAL)
+	switch ((ip->idx >> 6) & 0x03) {
+		case 0: STOP(error_opc, 1);	// todo: count bits, highest bit, ...
+		case 1: SP(0, i4) <<= ip->idx & 0x3f; break;
+		case 2: SP(0, i4) >>= ip->idx & 0x3f; break;
+		case 3: SP(0, i4) &= (1 << (ip->idx & 0x3f)) - 1; break;
+	}
 #endif
 } break;
 

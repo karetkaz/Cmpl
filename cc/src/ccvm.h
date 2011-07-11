@@ -17,58 +17,52 @@
 // symbol & hash table size
 #define TBLS 512
 
-#ifdef __WATCOMC__
+#define DO_PRAGMA(x) _Pragma (#x)
+#define TODO(x) //DO_PRAGMA(message ("TODO: " #x))
 
 #define pdbg(__DBG, __FILE, __LINE, msg, ...) do {fputfmt(stderr, "%s:%d: "__DBG": %s: "msg"\n", __FILE, __LINE, __func__, ##__VA_ARGS__); fflush(stdout); fflush(stderr);} while(0)
+#define prerr(msg, ...) do {pdbg("fatal", __FILE__, __LINE__, msg, ##__VA_ARGS__); } while(0)
 #define fatal(msg, ...) do {pdbg("fatal", __FILE__, __LINE__, msg, ##__VA_ARGS__); abort();} while(0)
 #define dieif(__EXP, msg, ...) do {if (__EXP) fatal(msg, ##__VA_ARGS__);} while(0)
+
+#ifdef __WATCOMC__
 
 #if DEBUGGING > 1
 #define debug(msg, ...) pdbg("debug", __FILE__, __LINE__, msg, ##__VA_ARGS__)
 #define trace(msg, ...) pdbg("trace", __FILE__, __LINE__, msg, ##__VA_ARGS__)
-#define PERR(__ENV, __LEVEL, __FILE, __LINE, msg, ...) do { perr(__ENV, __LEVEL, __FILE, __LINE, msg); debug(msg, ##__VA_ARGS__); } while(0)
-#define error(__ENV, __FILE, __LINE, msg, ...) PERR(__ENV, -1, __FILE, __LINE, msg, ##__VA_ARGS__)
-#define warn(__ENV, __LEVEL, __FILE, __LINE, msg, ...) PERR(__ENV, __LEVEL, __FILE, __LINE, msg, ##__VA_ARGS__)
-#define info(__ENV, __FILE, __LINE, msg, ...) PERR(__ENV, 0, __FILE, __LINE, msg, ##__VA_ARGS__)
+#define PERR(__ENV, __LEVEL, __FILE, __LINE, msg, ...) do { perr(__ENV, __LEVEL, __FILE, __LINE, msg, ##__VA_ARGS__); debug(msg, ##__VA_ARGS__); } while(0)
 #else // catch the position error raised
 #define debug(msg, ...)
 #define trace(msg, ...)
-#define error(__ENV, __FILE, __LINE, msg, ...) perr(__ENV, -1, __FILE, __LINE, msg, ##__VA_ARGS__)
-#define warn(__ENV, __LEVEL, __FILE, __LINE, msg, ...) perr(__ENV, __LEVEL, __FILE, __LINE, msg, ##__VA_ARGS__)
-#define info(__ENV, __FILE, __LINE, msg, ...) perr(__ENV, 0, __FILE, __LINE, msg, ##__VA_ARGS__)
+#define PERR(__ENV, __LEVEL, __FILE, __LINE, msg, ...) do { perr(__ENV, __LEVEL, __FILE, __LINE, msg, ##__VA_ARGS__); } while(0)
 #endif
+#define error(__ENV, __FILE, __LINE, msg, ...) PERR(__ENV, -1, __FILE, __LINE, msg, ##__VA_ARGS__)
+#define warn(__ENV, __LEVEL, __FILE, __LINE, msg, ...) PERR(__ENV, __LEVEL, __FILE, __LINE, msg, ##__VA_ARGS__)
+#define info(__ENV, __FILE, __LINE, msg, ...) PERR(__ENV, 0, __FILE, __LINE, msg, ##__VA_ARGS__)
 
 #else
-#define pdbg(__DBG, __FILE, __LINE, msg, ...) do {fputfmt(stderr, "%s:%d: "__DBG": %s: "msg"\n", __FILE, __LINE, __PRETTY_FUNCTION__, ##__VA_ARGS__); fflush(stdout); fflush(stderr);} while(0)
-#define fatal(msg...) do {pdbg("fatal", __FILE__, __LINE__, msg); abort();} while(0)
-#define dieif(__EXP, msg...) do {if (__EXP) fatal(msg);} while(0)
 
 #if DEBUGGING > 1
 #define debug(msg...) pdbg("debug", __FILE__, __LINE__, msg)
 #define trace(msg...) pdbg("trace", __FILE__, __LINE__, msg)
 #define PERR(__ENV, __LEVEL, __FILE, __LINE, msg...) do { perr(__ENV, __LEVEL, __FILE, __LINE, msg); debug(msg); } while(0)
-#define error(__ENV, __FILE, __LINE, msg...) PERR(__ENV, -1, __FILE, __LINE, msg)
-#define warn(__ENV, __LEVEL, __FILE, __LINE, msg...) PERR(__ENV, __LEVEL, __FILE, __LINE, msg)
-#define info(__ENV, __FILE, __LINE, msg...) PERR(__ENV, 0, __FILE, __LINE, msg)
 #else // catch the position error raised
 #define debug(msg...)
 #define trace(msg...)
-#define error(__ENV, __FILE, __LINE, msg...) perr(__ENV, -1, __FILE, __LINE, msg)
-#define warn(__ENV, __LEVEL, __FILE, __LINE, msg...) perr(__ENV, __LEVEL, __FILE, __LINE, msg)
-#define info(__ENV, __FILE, __LINE, msg...) perr(__ENV, 0, __FILE, __LINE, msg)
+#define PERR(__ENV, __LEVEL, __FILE, __LINE, msg...) do { perr(__ENV, __LEVEL, __FILE, __LINE, msg); debug(msg); } while(0)
 #endif
+#define error(__ENV, __FILE, __LINE, msg...) PERR(__ENV, -1, __FILE, __LINE, msg)
+#define warn(__ENV, __LEVEL, __FILE, __LINE, msg...) PERR(__ENV, __LEVEL, __FILE, __LINE, msg)
+#define info(__ENV, __FILE, __LINE, msg...) PERR(__ENV, 0, __FILE, __LINE, msg)
 #endif
 
 // Symbols - CC(tokens)
-enum {
+typedef enum {
 	#define TOKDEF(NAME, TYPE, SIZE, STR) NAME,
 	#include "defs.i"
 	tok_last,
-	// xml dump cast needs STR
 
 	TOKN_err = TYPE_any,
-	//~ ATTR_fun = 0x0100,		// callable
-	//~ ATTR_ind = 0x0200,		// indirect
 
 	decl_NoDefs = 0x100,		// disable type defs in decl.
 	decl_NoInit = 0x200,		// disable initialization. (disable)
@@ -78,10 +72,9 @@ enum {
 	//~ decl_Var = decl_NoInit,					// parse variable declaration
 	//~ decl_Arg = decl_NoDefs|decl_NoInit,		// parse function argument / struct member
 
-	symn_call = 0x100,
-	symn_read = 0x200,
+	symn_const = 0x200,
 	symn_stat = 0x400,
-};
+} ccToken;
 typedef struct {
 	int const	type;
 	int const	argc;
@@ -128,7 +121,7 @@ typedef enum {
 	//~ opc_ldcf = opc_ldc4,
 	//~ opc_ldcF = opc_ldc8,
 	max_reg = 255,	// maximum dup, set, pop, ...
-} vmOpcodes;
+} vmOpcode;
 typedef struct {
 	int const	code;
 	int const	size;
@@ -173,9 +166,10 @@ struct list {				// linked list: stringlist, memgr, ...
 };
 struct astn {				// tree node
 	symn		type;				// typeof() return type of operator ... base type of IDTF
-	uint8_t		kind;				// code: TYPE_ref, OPER_???
-	uint8_t		cst2;				// casts to basic type: (i32, f32, i64, f64, ref, bool, void)
-	uint16_t	_XXX;				// unused
+	ccToken		kind;				// code: TYPE_ref, OPER_???
+	ccToken		cst2;				// casts to basic type: (i32, f32, i64, f64, ref, bool, void)
+	int32_t		_pad;
+	//~ uint16_t	_pad;				// unused
 	union {
 		union  {					// TYPE_xxx: constant
 			int64_t	cint;			// const: integer
@@ -219,12 +213,6 @@ struct astn {				// tree node
 	uint32_t	temp;				// token on line
 };
 struct symn {				// type node
-	//~ TODO: 4 types of syms:
-	//~ 	00: TYPE_def
-	//~ 	01: TYPE_rec
-	//~ 	10: TYPE_ref
-	//~ 	11: TYPE_fun
-
 	char*	name;
 	char*	file;
 	int		line;
@@ -233,11 +221,24 @@ struct symn {				// type node
 	int32_t	offs;		// addrof(TYPE_ref)
 	symn	decl;		// declared in
 	symn	type;		// base type of TYPE_ref (void, int, float, struct, ...)
-	symn	args;		// REC fields / FUN args
+	symn	args;		// REC fields / FUN params
+	//~ symn	stat;		// static members / variables
 	symn	next;		// symbols on table/args
+
+	TODO(4 types of symbols)
+	//~ TYPE_def = 0x00,	// alias (symlink)
+	//~ TYPE_rec = 0x01,	// typename
+	//~ TYPE_ref = 0x02,	// variable
+	//~ TYPE_fun = 0x03,	// function (variable and typename too)
+
+	//~ ATTR_const = 0x00000010;		// constant
+	//~ ATTR_byref = 0x00000020;		// indirect
+	//~ ATTR_stat  = 0x00000040;		// static
+	//~ ATTR_used  = 0x00000080;		// used
 
 	uint8_t	kind;		// TYPE_ref || TYPE_def || TYPE_rec || TYPE_arr
 	uint8_t	cast;		// casts to type(TYPE_(bit, vid, ref, u32, i32, i64, f32, f64, p4x)).
+	//~ uint8_t	attr;		// attributes (const static /+ private, ... +/).
 	uint8_t	pack;		// alignment
 
 	uint8_t	call:1;		// function / callable => (kind == TYPE_ref && args)
@@ -247,9 +248,10 @@ struct symn {				// type node
 
 	//~ uint8_t	priv:1;		// private
 	uint8_t	read:1;		// const / no override
+	//~ uint8_t	used:1;		// const / no override
 
 	uint32_t	xx_1:4;		// -Wpadded
-	uint16_t	xx_2;		// align
+	uint16_t	_pad;		// used
 	uint16_t	nest;		// declaration level
 	uint32_t	refc;		// referenced count
 	astn	init;		// VAR init / FUN body
@@ -265,6 +267,8 @@ struct symn {				// type node
 struct ccState {
 	state	s;
 	symn	defs;		// all definitions
+	symn	func;		// functions level stack
+	//~ symn	gdef;		// definitions
 	astn	root;		// statements
 	astn	jmps;		// jumps
 
@@ -275,7 +279,7 @@ struct ccState {
 	int		warn;		// warning level
 	int		maxlevel;		// max nest level: modified by ?
 	int		nest;		// nest level: modified by (enter/leave)
-	int		funl;		// function nest
+	//~ int		funl;		// function nest
 	int		siff:1;		// inside a static if false
 	int		_pad:31;	// 
 
@@ -312,7 +316,8 @@ struct ccState {
 		} scope[TOKS];// */
 	};
 
-	astn	argz;		// no parameter of type void
+	astn	void_tag;		// no parameter of type void
+	astn	emit_tag;		// "emit"
 	char	*_beg;
 	char	*_end;
 };
@@ -352,10 +357,13 @@ void dumpsym(FILE *fout, symn sym, int mode);
 //~ void dumpxml(FILE *fout, astn ast, int lev, const char* text, int level);
 
 // Runtime / global state
-void* getmem(state s, int size, unsigned clear);
+void* rtAlloc(state rt, void* ptr, int size);	// realloc/alloc/free
+//~ void* getmem(state s, int size, unsigned clear);
 
 symn newdefn(ccState s, int kind);
 astn newnode(ccState s, int kind);
+astn opnode(ccState s, int kind, astn lhs, astn rhs);
+astn lnknode(ccState s, symn ref);
 astn newIden(ccState s, char* id);
 astn intnode(ccState s, int64_t v);
 //~ astn fltnode(ccState s, float64_t v);
@@ -364,13 +372,12 @@ astn fh8node(ccState s, uint64_t v);
 astn cpynode(ccState s, astn src);
 void eatnode(ccState s, astn ast);
 
-//~ symn installex(ccState s, const char* name, int kind, unsigned size, symn type, astn init);
 symn installex(ccState s, const char* name, int kind, unsigned size, symn type, astn init);
 //~ symn installex(ccState s, const char* name, int kind, symn type, int cast, unsigned size, astn init);
 symn install(ccState s, const char* name, int kind, int cast, unsigned size);
 symn declare(ccState s, int kind, astn tag, symn rtyp);
+symn addarg(ccState cc, symn sym, const char* name, int kind, symn type, astn init);
 
-//~ TODO: !!! args are linked in a list by next !!??
 symn lookup(ccState s, symn sym, astn ast/*, int deep*/, astn args, int raise);
 
 //~ symn findsym(ccState s, symn in, char *name);
@@ -405,7 +412,7 @@ astn decl(ccState, int mode);		// parse declaration	(mode: enable defs(: struct,
 
 // scoping ...
 void enter(ccState s, astn ast);
-symn leave(ccState s, symn def);
+symn leave(ccState s, symn def, int mkstatic);
 
 /** try to evaluate an expression
  * @param res: where to put the result
@@ -428,17 +435,17 @@ int cgen(state s, astn ast, int get);
  * @param ...: argument
  * @return: program counter
  */
-int emit(state, vmOpcodes opc, stkval arg);
-int emitopc(state, vmOpcodes opc);
+int emit(state, vmOpcode opc, stkval arg);
+int emitopc(state, vmOpcode opc);
 int emiti32(state, int32_t arg);
 int emiti64(state, int64_t arg);
 int emitf32(state, float32_t arg);
 int emitf64(state, float64_t arg);
-int emitptr(state, void* arg);
+int emitref(state, void* arg);
 
 int emitinc(state, int val);		// increment the top of stack by ...
-int emitidx(state, vmOpcodes opc, int pos);
-int emitint(state, vmOpcodes opc, int64_t arg);
+int emitidx(state, vmOpcode opc, int pos);
+int emitint(state, vmOpcode opc, int64_t arg);
 int fixjump(state, int src, int dst, int stc);
 
 // returns the stack size
@@ -454,7 +461,6 @@ int source(ccState, srcType mode, char* text);		// mode: file/text
 
 unsigned rehash(const char* str, unsigned size);
 
-//TODO: Rename: reg str
 char *mapstr(ccState s, char *name, unsigned size/* = -1U*/, unsigned hash/* = -1U*/);
 
 void fputasm(FILE *fout, state s, int beg, int end, int mode);

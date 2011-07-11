@@ -2,21 +2,19 @@
 //~ #define TOKDEF(NAME, TYPE, SIZE, KEYW, STR) {KIND, TYPE, SIZE, STR},
 TOKDEF(TYPE_any, 0x00, 0, ".err")	// error
 TOKDEF(TYPE_vid, 0x00, 0, ".vid")	// void
-TOKDEF(TYPE_bit, 0x00, 0, ".bit")	// bool, uint32, uint16, uint8
-TOKDEF(TYPE_u32, 0x00,  32, ".u32")
-//~ TOKDEF(TYPE_u64, 0x00,  64, ".u64")		// no vm support
-
+TOKDEF(TYPE_bit, 0x00, 0, ".bit")	// bool
 TOKDEF(TYPE_int, 0x00, 0, ".int")	// int64, int32, int16, int8
+TOKDEF(TYPE_flt, 0x00, 0, ".flt")	// float32, float64
 TOKDEF(TYPE_i32, 0x00,  32, ".i32")
 TOKDEF(TYPE_i64, 0x00,  64, ".i64")
-
-TOKDEF(TYPE_flt, 0x00, 0, ".flt")	// float32, float64
+TOKDEF(TYPE_u32, 0x00,  32, ".u32")
+//~ TOKDEF(TYPE_u64, 0x00,  64, ".u64")		// no vm support
 TOKDEF(TYPE_f32, 0x00,  32, ".f32")
 TOKDEF(TYPE_f64, 0x00,  64, ".f64")
 
 TOKDEF(TYPE_rec, 0xff, 0, "struct") // union := struct:0
 
-TOKDEF(TYPE_str, 0x00, 0, ".str")	// TODO: replace with TYPE_str or TYPE_arr ?
+TOKDEF(TYPE_str, 0x00, 0, ".str")
 TOKDEF(TYPE_arr, 0x00, 0, ".arr")	// pointer, string, array, ..., ???
 
 TOKDEF(TYPE_def, 0xff, 0, "define")		// type or inline definition
@@ -201,27 +199,25 @@ OPCDEF(opc_st32, 0x2d, 4, 1, -1, 1, "stm.b32")	//
 OPCDEF(opc_st64, 0x2e, 4, 2, -2, 1, "stm.b64")	//
 OPCDEF(opc__2f,  0x2f, 0, 0,  0, 1, NULL)		//
 //~ bit[ 32] ===================================================================
-OPCDEF(b32_cmt,  0x30, 1, 1, -0, 1, "b32.cmt")	// sp(0) = ~sp(0);
+OPCDEF(b32_cmt,  0x30, 1, 1,  0, 1, "b32.cmt")	// sp(0) = ~sp(0);
 OPCDEF(b32_and,  0x31, 1, 2, -1, 1, "b32.and")	// sp(1).u32 &= sp(0).u32; pop;
 OPCDEF(b32_ior,  0x32, 1, 2, -1, 1, "b32.ior")	// sp(1).u32 |= sp(0).u32; pop;
 OPCDEF(b32_xor,  0x33, 1, 2, -1, 1, "b32.xor")	// sp(1).u32 ^= sp(0).u32; pop;
 OPCDEF(b32_shl,  0x34, 1, 2, -1, 1, "b32.shl")	// sp(1).u32 <<= sp(0).u32; pop;
 OPCDEF(b32_shr,  0x35, 1, 2, -1, 1, "b32.shr")	// sp(1).u32 >>= sp(0).u32; pop;
 OPCDEF(b32_sar,  0x36, 1, 2, -1, 1, "b32.sar")	// sp(1).i32 >>= sp(0).i32; pop;
-OPCDEF(u32_i64,  0x37, 1, 1, -0, 1, "u32.cvt2i64")
+OPCDEF(b32_bit,  0x37, 2, 2,  0, 1, "b32.")		//
 OPCDEF(u32_clt,  0x38, 1, 2, -1, 1, "u32.clt")	// sp(1).b32 = sp(1).u32 < sp(0).u32; pop;
 OPCDEF(u32_cgt,  0x39, 1, 2, -1, 1, "u32.cgt")	// sp(1).b32 = sp(1).u32 > sp(0).u32; pop;
 OPCDEF(u32_mul,  0x3a, 1, 2, -1, 1, "u32.mul")	// sp(1) *= sp(0); pop;
 OPCDEF(u32_div,  0x3b, 1, 2, -1, 1, "u32.div")	// sp(1) /= sp(0); pop;
 OPCDEF(u32_mod,  0x3c, 1, 2, -1, 1, "u32.mod")	// sp(1) %= sp(0); pop;
-OPCDEF(opc__3d,  0x3d, 1, 2, -0, 1, "b32.zxt")	//!zero.extend arg:[offs:3][size:5]
-OPCDEF(opc__3e,  0x3e, 1, 2, -0, 1, "b32.sxt")	//!sign.extend arg:[offs:3][size:5]
-OPCDEF(u32_mad,  0x3f, 1, 3, -2, 1, "u32.mad")	// sp(2) += sp(1)*sp(0); pop2;	[…, a, b, c => […, a + b * c;
+OPCDEF(u32_mad,  0x3d, 1, 3, -2, 1, "u32.mad")	// sp(2) += sp(1)*sp(0); pop2;	[…, a, b, c => […, a + b * c;
+OPCDEF(u32_i64,  0x3e, 1, 1,  0, 1, "u32.cvt2i64")
+OPCDEF(u32__3f,  0x3f, 0, 0,  0, 1, "u32.ext")	// 
 
 //~ OPCDEF(b32___1,  0x31, 0, 2, -1, 1, "b32.adc")	// sp(1) += sp(0); pop;
 //~ OPCDEF(b32___2,  0x32, 0, 2, -1, 1, "b32.sbb")	// sp(1) -= sp(0); pop;
-//~ OPCDEF(opc_zxt,  0x3x, 1, 2, -0, 1, "b32.zxt")	//!zero.extend arg:[offs:3][size:5]
-//~ OPCDEF(opc_sxt,  0x3x, 1, 2, -0, 1, "b32.sxt")	//!sign.extend arg:[offs:3][size:5]
 //~ i32[ 32] ===================================================================
 OPCDEF(i32_neg,  0x40, 1, 1, -0, 1, "i32.neg")	// sp(0).i32 = -sp(0).i32;
 OPCDEF(i32_add,  0x41, 1, 2, -1, 1, "i32.add")	// sp(1).i32 += sp(0).i32; pop;

@@ -11,17 +11,44 @@
 //~ #open src/parse.c
 //~ #open src/main.c
 
+
 //~ module test;
 
-//~ vec4f Alma = vec4f(1., 2., 3., 4.);
-//~ vec4f alma = emit(vec4f, swz.xzwy, val(Alma));
+//~ uint8 s[4];
+//~ string s = "alma a fa alatt";
+//~ int a = s.length;
+
+/*
+struct f4x {
+	float32 x;
+	float32 y;
+	float32 z;
+	float32 w;
+}
+
+f4x yyy = f4x(1,2,3,4);
+
+void testbyref(f4x &a) {}
+//~ void testbyref(int &a) {}
+
+//~ testbyref(yyy);
+//~ testbyref(f4x(null));
+
+//~ f4x &nullf4x = f4x(null);
+*/
+//~ int a='\x7fCCCx';
+
+//~ struct range {int min; int max;}
+//~ define range1(int min, int max) = emit(range, int32(min), int32(max));
+//~ range r = range(1., 2);
+//~ r.max = 99;
 
 //~ int alma(int h)[10];	???
 //~ void fun(int x) = true ? null : void(int x){print(x);});
 /*
 struct slice {
-	int length;
-	pointer value;
+	const int length;
+	const pointer value;
 }
 
 struct variant {
@@ -34,39 +61,7 @@ struct delegate {
 	const pointer  value;
 }
 
-define variant(typeInfo &type, pointer value) = emit(variant, ref(type), ptr(value));
-define variant(int x) = variant(int, new int(x));
-define variant(doubkle x) = variant(int, new double(x));
-
-define var: variant;
-
-var a = variant(10);
-
 */
-/*
-void printstr1(string a) {putstr(a);println();}
-void printstr2(string &a) {putstr(a);println();}
-
-int ttt(string s) {s = "alma33";}
-int preinc(int &i) {result = i += 1;}
-int postinc(int &i) {result = i; i += 1;}
-
-string args[2];
-args[0] = "alma";
-args[1] = "korte";
-
-println(args[0]);
-printstr1(args[0]);
-printstr2(args[0]);
-//~ ttt(args[1]);
-
-int i = 9;
-int j = preinc(i);
-
-string s = "korte";
-//~ ttt(s);
-
-//~ */
 
 /* Bits: hi, lo, extend
 define sxt64(int32 a) = int64(int32(a));			// sign extend
@@ -107,51 +102,7 @@ int bitsize = 64;
 bitsget(true, bitsize, min, max);
 bitsget(!true, bitsize, umin, umax);
 // */
-/*
-//~ int i = 9;
-//~ int8 arr[6];
-//~ println(int(arr[9]));
-
-//~ uint32 x = 30;
-//~ uint32 y = x % 32;
-
-int fn1(int64 a) {
-	static int xxx = 99;
-	static int fn2(int b) {
-		result = b + xxx;
-	}
-	result = fn2(a);
-}
-
-int a = fn1(4);
-// */
-
 /* returning a function
-
-//~ struct vardata {byte data...;}
-//~ struct delegate {var call(vardata data...); vardata data...;}
-
-//~ struct fnWrap {var call(var data); var &data;}
-//~ define fnWrap(var data, var call(var data)) = emit(fnWrap, ref(fun), var(data));
-/+
-struct fnWrap {int call(int data); int data;}
-define fnWrap(int call(int data), int data) = emit(fnWrap, ref(call), int(data));
-define fnCall(fnWrap &wcd) = wcd.call(wcd.data);
-//~ operator (fnWrap &wcd)() = wcd.call(wcd.data);
-	// fnWrap test = fnWrap(fun1, 70);
-	// int a = test();
-
-//~ fnWrap test = fnWrap(70, int function(int a) {result = a * 8;});
-//~ fnWrap test = fnWrap(70, new int[] {1, 2, 3, 4});
-
-int fun1(int a) {result = a + 10;}
-int fun2(int a) {result = a * 10;}
-
-fnWrap test = fnWrap(fun1, 70);
-int a = fnCall(test);
-int b = fnCall(fnWrap(fun1, 50));
-//~ +/
-
 //~ /+ count down
 struct fnWrap {int call(fnWrap &data); int data;}
 define fnWrap(int call(fnWrap &data), int data) = emit(fnWrap, ref(call), i32(data));
@@ -166,13 +117,13 @@ println(fnCall(a));
 println(fnCall(a));
 // +/
 
-/+ count down
+/+ count down by ref
 struct fnWrap {int call(fnWrap &data); int &data;}
 define fnWrap(int call(fnWrap &data), int &data) = emit(fnWrap, ref(call), ref(data));
 define fnCall(fnWrap &wcd) = wcd.call(wcd);
 
 int countdown(fnWrap &a) {
-	static int a2 = 99;
+	//~ static int a2 = 99;
 	result = a.data;
 	a.data -= 1;
 }
@@ -204,26 +155,7 @@ putchr('\n');
 // */
 
 /* call functions passed as argument to function
-//~ void method() = null;
 
-//~ /+
-
-/+int postInc(int &a, int inc) {
-	result = a;
-	a += inc;
-}
-define postInc(int a) = postInc(a, 1);
-
-//~ int x = 0;
-//~ int x1 = postInc(x);
-//~ int x2 = postInc(x);
-//~ int x3 = postInc(x);
-// +/
-
-int method4() {}
-int method5(int x) {}
-
-//~ /+	the methods
 int method2(int x) {
 	//~ putstr("!alma a fa alatt nyári piros alma\n");
 	static int i = 0;
@@ -232,7 +164,6 @@ int method2(int x) {
 }
 int method2() {result = method2(3);}
 int method3() {result = method2(2);}
-// +/
 
 //~ /+	just call it
 static if (true) {
@@ -257,32 +188,15 @@ methodCall(null);
 //~ +/
 
 /+	call as a reference
-void methodV() {method2(2);}
-//~ int method3() {}
-//~ static 
-if (true) {
-
-void method() = methodV;
+TODO
+void method() = method3;
 
 if (method != null) {
 	method();
 }
-//~ else println("(null)");
 }
 // +/
 
-//~ */
-
-/* use: ./ccvm -c -x -O-2 test.cvx
-debug1(1, 2, 3);
-
-static int X = 1;
-static int Y = 2;
-static int Z = 3;
-
-int x = 1;
-int y = 2;
-int z = 3;
 //~ */
 
 /* using strings
@@ -324,27 +238,6 @@ void recurse(int x) {
 recurse(20);
 // */
 
-/* clamp, lerp, smooth
-//~ define e1 = double(2);
-//~ define e1 = float(2);
-float e1 = 0;
-float e2 = 6;
-float s = (e2 - e1) / 100;
-for (float x = e1; x < e2; x += s) {	// x in [e1, e2]
-	float t = (x - e1) / (e2 - e1);		// t in [0., 1.]
-	//~ println(lerp(t, e1, e2));
-	println(smooth(x, e1, e2));
-	//~ println(clamp(t, .2, .6));
-}
-// */
-
-/* cross, normalize
-vec4f a = vec4f(1., 2., 3., 5.);
-vec4f b = vec4f(0., 2., 0., 5.);
-vec4f e = cross(a, b);
-vec4f E = normalize(cross(vec4f(1., 2., 3.), vec4f(10., 20., 3.)));
-// */
-
 /* float compare
 define __eps = 1e-15;
 //~ define eq(float32 a, float32 b, float32 eps) = bool(abs(a - b) < eps);
@@ -372,7 +265,6 @@ for (int i = 0; i < 60; i += 1) {
 // */
 
 /* itoa
-
 void itoa(string dst, int val, int rad, int prc) {
 	// the recursive one
 	int _itoa(string dst, int32 num, int rad, int pad, int pos) {
@@ -390,13 +282,16 @@ void itoa(string dst, int val, int rad, int prc) {
 		}
 		result = pos + 1;
 	}
-	if (rad < 36) {
+	if (rad > 1 && rad < 36) {
 		_itoa(dst, val, rad, prc, 0);
 	}
 	else {
 		dst[0] = 0;
 	}
+	//~ TODO: result = dst;
 }
+define itoa(string dst, int val, int rad) = itoa(dst, val, rad, 1);
+define itoa(string dst, int val) = itoa(dst, val, 10, 1);
 
 void putrad(int32 num, int rad) {
 	if (num >= rad) {
@@ -407,6 +302,12 @@ void putrad(int32 num, int rad) {
 
 putrad(13, 7);println();
 putrad(13, 2);println();
+
+uint8 buff[256];
+string str = emit(string, ref(buff));
+
+itoa(str, 139245896, 30);
+println(str);
 
 //~ println(args[0]);
 //~ println(args[1]);
@@ -460,7 +361,8 @@ int a2 = a;						// ERR: a undeclared if static if(false)
 
 /* iterating
 
-/+struct array_iterator {
+/+
+struct array_iterator {
 	int arr[];
 	int pos;
 	int max;	// arr.length
@@ -477,25 +379,17 @@ bool next(array_iterator &it, int &val) {
 	}
 }// +/
 
-/+define iterator(file &f) = emit(file, ref(f));
+/+
+define iterator(file &f) = emit(file, ref(f));
 bool next(file &it, int &chr) {
 	chr = fgetc(it);
 	result = chr != -1;
 }// +/
 
-/+for (int a : range(0, 8)){/+...+/} => {
-	iterator .it = iterator(range(0, 8));
-	for (int a; next(.it, &a); ) {/+...+/}
-}// +/
-
 struct range {int min; int max;}
-define range(int min, int max) = emit(range, i32(min), i32(max));
-
-// iterate
 struct range_iterator {int pos; int max;}
-define range_iterator(int pos, int max) = emit(range_iterator, i32(pos), i32(max));
-
 define iterator(range ^r) = range_iterator(r.min, r.max);	// start at min, and end at max
+
 bool next(range_iterator &it, int &val) {
 	result = it.pos < it.max;
 	if (result) {
@@ -511,5 +405,32 @@ for (int a : range(10, 16)) {
 //~ */
 
 //~ double a = emit(float64, i64(0x7FF0009000000000));
-double XXXa = emit(float64, i64(0b0111111111110000000000000000000000000000000000000000000000000000));
-double XXXb = emit(float64, i64(0b0011111111110000000000000000000000000000000000000000000000000000));
+//~ double XXXa = emit(float64, i64(0b0111111111110000000000000000000000000000000000000000000000000000));
+//~ double XXXb = emit(float64, i64(0b0011111111110000000000000000000000000000000000000000000000000000));
+
+//~ /* global variables cgen order
+	struct alma {
+		//~ static int a1;
+		//~ static int a2;
+		int a3;
+	}
+static bool a;
+static bool b() {
+
+	//~ static alma dd;
+	static bool c;
+	static bool d() {
+		if (1) {
+			static bool e;
+			static bool f;
+		}
+	}
+	//~ static bool g;
+	static bool h() {
+		static bool i;
+		static bool j;
+	}
+}
+static bool k;
+static bool l;
+//~ */

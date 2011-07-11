@@ -33,10 +33,10 @@ OBJS=\
 	$(OBJDIR)type.o\
 	$(OBJDIR)ccvm.o
 
-rebuild:clean build
+#~ rebuild:clean build
 
 build:$(OBJS) $(OBJDIR)main.o
-	$(LNK) $(OUTEXE)$(BINDIR)ccvm $(OBJS) $(OBJDIR)main.o $(LIBS)
+	$(LNK) $(OUTEXE)$(BINDIR)main $(OBJS) $(OBJDIR)main.o $(LIBS)
 
 lib:$(OBJS)
 	$(LIB) $(OBJS)

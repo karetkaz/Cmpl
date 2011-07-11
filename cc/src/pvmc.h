@@ -25,7 +25,7 @@ enum CompilerRegister {
 	//~ creg_math = 0x000?,
 	//~ creg_rtty = 0x000?,
 	creg_all  = -1,
-	creg_def = creg_all,
+	creg_def = creg_eopc,
 };
 
 typedef struct state {
@@ -55,22 +55,17 @@ typedef struct state {
 
 		unsigned int	ro;			// <= ro : read only region(meta data)
 		unsigned int	pos;		// current positin in buffer
-
-		unsigned char *_end;
 	}vm;
-
 	struct {
 		int argc;
 		char* argv[];
 	}pe;
 
-	// todo a memory manager
+	long _size;		// size of total memory
+	void *_free;	// list of free memory
+	void *_used;	// list of used memory
 
-	long _cnt;
-	unsigned char *_ptr;
-
-	//~ void *_free;	// list of free memory
-	//~ void *_used;	// list of used memory
+	unsigned char *_ptr;	// cc: used memory; vm: max stack when calling vmCall from a libcall
 	unsigned char _mem[];
 } *state;
 typedef enum {
@@ -98,6 +93,11 @@ typedef enum {
 
 // run-time
 state rtInit(void* mem, unsigned size);
+
+/** return the internal offset of a reference
+ *  aborts if ptr not inside the context.
+ */
+int vmOffset(state s, void *ptr);
 
 int logfile(state, char *file);				// logger
 int logFILE(state, FILE *file);				// logger
@@ -175,4 +175,4 @@ static inline void* popvar(state s, void* dst, int size) { return memcpy(dst, po
 //~ static inline void retf64(state s, float64_t val) { setret(float64_t, s, val); }
 #endif
 
-#define DEBUGGING 15
+#define DEBUGGING 1

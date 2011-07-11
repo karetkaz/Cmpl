@@ -47,6 +47,7 @@ static inline int genVal(state s, astn ast, int cast) {
 	return cgen(s, ast, cast == TYPE_ref ? 0 : cast);
 	//~ return cgen(s, ast, cast);
 }
+
 int cgen(state s, astn ast, int get) {
 	#if DEBUGGING > 1
 	int ipdbg = emitopc(s, markIP);
@@ -56,9 +57,9 @@ int cgen(state s, astn ast, int get) {
 	int qual = 0;
 	//~ int byref = get == TYPE_ref;
 
-	dieif(!ast || !ast->type, "FixMe %k", ast);
+	dieif(!ast || !ast->type, "FixMe %+k", ast);
 
-	// TODO: this sucks
+	TODO(this sucks)
 	if (get == TYPE_any)
 		get = ast->cst2;
 
@@ -80,6 +81,7 @@ int cgen(state s, astn ast, int get) {
 		case STMT_do:  {	// expr or decl statement
 			int stpos = stkoffs(s, 0);
 			emitint(s, opc_line, ast->line);
+			//~ trace("%+k", ast);
 			if (!cgen(s, ast->stmt.stmt, TYPE_vid)) {
 				trace("%+k", ast);
 				return 0;
@@ -129,6 +131,7 @@ int cgen(state s, astn ast, int get) {
 		} break;
 		case STMT_if:  {
 			int jmpt = 0, jmpf = 0;
+			int stpos = stkoffs(s, 0);
 			int tt = eval(&tmp, ast->stmt.test);
 
 			dieif(get != TYPE_vid, "FixMe");
@@ -207,9 +210,11 @@ int cgen(state s, astn ast, int get) {
 				fixjump(s, jmpt, emitopc(s, markIP), 0);
 			}// */
 
-			/*/! TODO: if (test is decl) destruct;
-			if (stpos != stkoffs(s, 0)) {
-				dieif(!emitidx(s, opc_drop, stpos), "FixMe");
+			TODO(destruct(ast->stmt.test))
+			if (ast->cst2 != QUAL_sta) {
+				if (stpos != stkoffs(s, 0)) {
+					prerr("FixMe: invalid stacksize(%d:%d) in statement %+k", stkoffs(s, 0), stpos, ast);
+				}
 			}// */
 		} break;
 		case STMT_for: {
@@ -259,7 +264,6 @@ int cgen(state s, astn ast, int get) {
 				}
 			}
 
-			// TODO: fix all breaks here
 			lbreak = emitopc(s, markIP);
 			stbreak = stkoffs(s, 0);
 
@@ -279,7 +283,7 @@ int cgen(state s, astn ast, int get) {
 				}
 			}
 
-			//! TODO: if (init is decl) destruct;
+			TODO(destruct(ast->stmt.test))
 			if (stpos != stkoffs(s, 0)) {
 				dieif(!emitidx(s, opc_drop, stpos), "FixMe");
 			}
@@ -440,6 +444,7 @@ int cgen(state s, astn ast, int get) {
 				argl = argv;
 			}
 
+			//~ /*
 			if (isType(var)) {				// cast()
 				//~ debug("cast: %+k", ast);
 				if (var == emit_opc) {	// emit()
@@ -451,7 +456,8 @@ int cgen(state s, astn ast, int get) {
 				else if (!argv || argv != ast->op.rhso)
 					warn(s, 1, ast->file, ast->line, "multiple values, array ?: '%+k'", ast);
 			}
-			else if (var) {					// call()
+			else // */
+			if (var) {					// call()
 				//~ debug("call: %+k", ast);
 				if (var == emit_opc) {	// emit()
 				}
@@ -544,13 +550,13 @@ int cgen(state s, astn ast, int get) {
 			} // */
 
 			if (!var) {
-				//~ TODO: review
 				trace("%+k", ast);
 				return 0;
 			}
 
 			if (var->kind == TYPE_def) {
-				fatal("FixMe");			// can not be here
+				//~ fatal("FixMe");			// can not be here
+				// static array length is this type
 				debug("%+T", var);
 				return cgen(s, ast->op.rhso, get);
 			}
@@ -623,7 +629,6 @@ int cgen(state s, astn ast, int get) {
 		case OPER_mod: {	// '%'
 			int opc = -1;
 			switch (ast->kind) {
-				default: fatal("FixMe"); return 0;
 				case OPER_add: opc = opc_add; break;
 				case OPER_sub: opc = opc_sub; break;
 				case OPER_mul: opc = opc_mul; break;
@@ -642,6 +647,7 @@ int cgen(state s, astn ast, int get) {
 				case OPER_and: opc = opc_and; break;
 				case OPER_ior: opc = opc_ior; break;
 				case OPER_xor: opc = opc_xor; break;
+				default: fatal("FixMe");
 			}
 			if (!cgen(s, ast->op.lhso, TYPE_any)) {
 				trace("%+k", ast);
@@ -668,6 +674,7 @@ int cgen(state s, astn ast, int get) {
 				case OPER_leq:
 				case OPER_gte:
 					dieif(ret != TYPE_bit, "RemMe(%t): %+7K", ret, ast);
+				default:
 					break;
 			}
 			#endif
@@ -675,55 +682,6 @@ int cgen(state s, astn ast, int get) {
 
 		case OPER_lnd:		// '&&'
 		case OPER_lor: {	// '||'
-			/*
-			int offs;
-			int tok = -1;
-			int opc = -1;
-			dieif(get != TYPE_bit, "FixMe");
-			if (!cgen(s, ast->op.lhso, TYPE_bit)) {
-				trace("%+k", ast);
-				return 0;
-			}
-
-			switch (ast->kind) {
-				default: fatal("FixMe"); return 0;
-				case OPER_lnd: opc = opc_jz; tok = STMT_con; break;
-				case OPER_lor: opc = opc_jnz; tok = STMT_brk; break;
-			}
-
-			if (!(offs = emitopc(s, opc))) {
-				trace("%+k", ast);
-				return 0;
-			}
-
-			if (1) {
-				astn jmp = newnode(s->cc, tok);
-				jmp->go2.offs = offs;
-				jmp->go2.stks = stkoffs(s, 0);
-
-				jmp->next = s->cc->jmps;
-				s->cc->jmps = jmp;
-			}
-
-			if (!cgen(s, ast->op.rhso, TYPE_bit)) {
-				trace("%+k", ast);
-				return 0;
-			}
-			switch (ast->kind) {
-				default: fatal("FixMe"); return 0;
-				case OPER_lnd: opc = opc_and; break;
-				case OPER_lor: opc = opc_ior; break;
-			}
-			//~ warn(s, 4, ast->file, ast->line, "operator `%k` does not short-circuit yet", ast);
-			#if DEBUGGING
-			// these must be true
-			//~ dieif(ast->op.lhso->cst2 != ast->op.rhso->cst2, "RemMe", ast);
-			dieif(ast->op.lhso->cst2 != TYPE_bit, "RemMe", ast);
-			dieif(ast->op.lhso->cst2 != TYPE_bit, "RemMe", ast);
-			dieif(ret != castOf(ast->type), "RemMe");
-			dieif(ret != TYPE_bit, "RemMe");
-			#endif
-		} break;// */
 			int opc = -1;
 			switch (ast->kind) {
 				default: fatal("FixMe"); return 0;
@@ -802,7 +760,6 @@ int cgen(state s, astn ast, int get) {
 		} break;
 
 		case ASGN_set: {		// ':='
-			// TODO: lhs should be evaluated first ??? or not
 
 			//~ if (ast->op.rhso->cst2 == TYPE_ref)
 				//~ ast->op.lhso->cst2 = ASGN_set;
@@ -839,6 +796,7 @@ int cgen(state s, astn ast, int get) {
 		//{ TVAL
 		//~ case TYPE_bit:	// no constant of this kind
 		case TYPE_int: switch (get) {
+			//~ case TYPE_rec: return emiti32(s, ast->con.cint) ? TYPE_i32 : 0;
 			case TYPE_vid: return TYPE_vid;
 			case TYPE_bit: return emiti32(s, constbol(ast)) ? TYPE_u32 : 0;
 			case TYPE_u32: return emiti32(s, ast->con.cint) ? TYPE_u32 : 0;
@@ -860,8 +818,8 @@ int cgen(state s, astn ast, int get) {
 		} break;
 		case TYPE_str: switch (get) {
 			case TYPE_vid: return TYPE_vid;
-			case TYPE_arr: return emitptr(s, ast->id.name) ? TYPE_arr : 0;
-			case TYPE_ref: return emitptr(s, ast->id.name) ? TYPE_ref : 0;
+			case TYPE_arr: return emitref(s, ast->id.name) ? TYPE_arr : 0;
+			case TYPE_ref: return emitref(s, ast->id.name) ? TYPE_ref : 0;
 			default: debug("invalid cast: to (%t) '%+k'", get, ast); return 0;
 		} break;
 
@@ -893,9 +851,7 @@ int cgen(state s, astn ast, int get) {
 					}
 					else {
 						ret = TYPE_ref;
-					}// */
-					//~ debug("cgen[%t->%t](%+k)\n%7K", get, ret, ast, ast);
-					//~ fputasm(stderr, s->vm, ipdbg, -1, 0x119);
+					}
 				} break;
 				case EMIT_opc:
 					dieif(get == TYPE_ref, "FixMe");
@@ -908,7 +864,7 @@ int cgen(state s, astn ast, int get) {
 					return TYPE_vid;
 
 				case TYPE_def:
-					// TODO: this sucks, but it works
+					TODO("this sucks, but it works")
 					if (var->init)
 						return cgen(s, var->init, get);
 				default:
@@ -933,17 +889,49 @@ int cgen(state s, astn ast, int get) {
 					if (var->call) {
 						ret = TYPE_ref;
 					}
+					// var a = emit(...);
 					else if (val->type == emit_opc) {
 						ret = get;
 					}
+					// var a = null;
+					else if (var->cast == TYPE_ref && val->id.link == null_ref) {
+						debug("assigning null");
+						val->cst2 = ret = TYPE_ref;
+					}
+					// int64 a[256] = int64(32)
+					/*else if (typ->kind == TYPE_arr && typ->size > 0 && typ->type == val->type) {
+						int i, asize = sizeOf(typ), esize = sizeOf(typ->type);
+						if (!emitint(s, opc_spc, asize)) {
+							trace("%+k", ast);
+							return 0;
+						}
+						var->offs = stkoffs(s, 0);
+						if (var->offs < asize) {
+							error(s, ast->file, ast->line, "stack underflow", var->offs, asize);
+							return 0;
+						}
+						for (i = 0; i < typ->size; ++i) {
+							if (!genVal(s, val, 0)) {
+								trace("%+k", ast);
+								return 0;
+							}
+							if (!genRef(s, var->offs - i * esize)) {
+								trace("%+k", ast);
+								return 0;
+							}
+							if (!emitint(s, opc_sti, esize)) {
+								trace("%+k", ast);
+								return 0;
+							}
+						}
+						info(s, ast->file, ast->line, "array initialization(%d)", typ->size);
+						return get;
+					}// */
 					else if (val->type != typ && !promote(val->type, typ)) {
 						error(s, ast->file, ast->line, "incompatible types in initialization(%-T := %-T)", typ, val->type);
 					}
 
-					if (s->vm.opti && eval(&tmp, val)) {
-						val = &tmp;
-					}// * /
-
+					//~ if (s->vm.opti && eval(&tmp, val)) {val = &tmp;}
 					//~ debug("cast(`%+k`, %t):%t", ast, get, ret);
 
 					if (!genVal(s, val, ret)) {
@@ -1076,7 +1064,6 @@ int cgen(state s, astn ast, int get) {
 		} break;
 		case TYPE_i64: switch (ret) {
 			case TYPE_bit:
-			//~ case TYPE_u32:	// TODO: zero extend, but how ?
 			case TYPE_u32:
 				if (!emitopc(s, u32_i64)) {
 					trace("%+k", ast);
@@ -1159,7 +1146,6 @@ int cgen(state s, astn ast, int get) {
 			error(s, ast->file, ast->line, "invalid rvalue: %+k", ast);
 			return 0;
 		default:
-			trace("cgen[%t->%t](%+k)\n%7K", ret, get, ast, ast);
 			fatal("%d: unimplemented(cast for `%+k`, %t):%t", ast->line, ast, get, ret);
 		errorcast2:
 			trace("cgen[%t->%t](%+k)\n%7K", ret, get, ast, ast);
@@ -1169,7 +1155,7 @@ int cgen(state s, astn ast, int get) {
 	dieif (qual, "unimplemented `%+k`: %t", ast, qual);
 	return ret;
 }
-int ggen(state s, symn var, astn add) {
+static int ggen(state s, symn var, astn add) {
 	ccState cc = s->cc;
 	if (var->call && var->cast != TYPE_ref) {
 		int seg = emitopc(s, markIP);
@@ -1201,7 +1187,7 @@ int ggen(state s, symn var, astn add) {
 		//~ debug("function @%d: %-T", -var->offs, var, var->init);
 		//~ fputasm(stderr, vm, seg, -1, 0x129);
 
-		trace("static function: %+T@%x", var, -var->offs);
+		//~ trace("static function: %-T@%x", var, -var->offs);
 		var->init = NULL;
 	}
 	else if (!var->call) {
@@ -1212,7 +1198,7 @@ int ggen(state s, symn var, astn add) {
 		if (var->init && !var->glob) {
 			//~ if variable was allocated
 			//~ make assigment from initializer
-			//~ TODO: do not create assigment !!!
+			TODO(review this code)
 			astn st = newnode(cc, STMT_do);
 			astn id = newnode(cc, TYPE_ref);
 			astn op = newnode(cc, ASGN_set);
@@ -1262,7 +1248,7 @@ int ggen(state s, symn var, astn add) {
 
 			var->init = NULL;
 		}// */
-		trace("static variable: %+T@%x:%d", var, -var->offs, sizeOf(var));
+		//~ trace("static variable: %+T@%x:%d", var, -var->offs, sizeOf(var));
 	}
 	return 1;
 }
@@ -1298,10 +1284,11 @@ symn ccBegin(state rt, char *cls) {
 }
 void ccEnd(state rt, symn cls) {
 	if (cls) {
-		cls->args = leave(rt->cc, cls);
+		cls->args = leave(rt->cc, cls, 1);
 	}
 }
 
+TODO(this should be called assemble or something similar)
 int gencode(state s, int level) {
 	ccState cc = s->cc;
 	int Lmain;
@@ -1311,17 +1298,14 @@ int gencode(state s, int level) {
 
 	dieif(s->cc == NULL, "invalid enviroment: erors: %d", s->errc);
 
-	s->defs = leave(s->cc, NULL);
+	// leave global + static
+	s->defs = leave(s->cc, NULL, level >= 0);
 
 	// allocate used memeory
-	//~ rtAlloc(s, s->_mem, s->_ptr - s->_mem);
-	//~ dieif()
 	s->vm.pos = s->_ptr - s->_mem;
-	s->vm._end = s->_mem + s->_cnt;
 	s->vm.opti = level < 0 ? -level : level;
 
-	//~ DONE: Data[RO]: metadata, strings
-	//~ TODO: Data[RO]: constants, functions, enums ...
+	TODO("Data[RO]: strings, typeinfos, constants, functions, ?")
 	s->vm.ro = s->vm.pos;
 
 	// static vars & functions
@@ -1332,35 +1316,26 @@ int gencode(state s, int level) {
 
 		dieif(s->defs != s->cc->defs, "FixMe");
 
-		// make global symbols static ?
-		if (level >= 0) {
-			for (var = s->defs; var; var = var->next) {
-
-				if (var->kind != TYPE_ref)
-					continue;
-
-				//~ debug("static global: %+T@%x", var, var->offs);
-				//~ warn(s, 0, var->file, var->line, "global symbol: %+T@%x", var, -var->offs);
-
-				var->stat = 1;
-				var->glob = 1;
-			}
-		}// */
-
-		// generate non global static variables & functions
-		for (var = s->defs; var; var = var->defs) {
+		// generate global static variables & functions
+		for (var = s->gdef; var; var = var->gdef) {
 
 			if (var == null_ref)
 				continue;
 
-			if (var->glob || !var->stat)
+			if (var->kind != TYPE_ref)
 				continue;
 
+			if (!var->glob && !var->stat)
+				continue;
+
+			debug("global variable: %-T[%d]", var, var->nest);
 			dieif(var->kind != TYPE_ref, "FixMe");
 
+			//~ /*
 			if (!ggen(s, var, init)) {
+				trace("FixMe");
 				return 0;
-			}
+			}// */
 		}
 
 		// initialize static non global variables
@@ -1369,48 +1344,30 @@ int gencode(state s, int level) {
 			init->list.tail->next = cc->root->stmt.stmt;
 			cc->root->stmt.stmt = init->list.head;
 		}
-		/*if (lbeg && lend && cc->root) {
-			dieif(cc->root->kind != STMT_beg, "FixMe");
-			lend->next = cc->root->stmt.stmt;
-			cc->root->stmt.stmt = lbeg;
-		}// */
 
-		// generate global static variables & functions
-		for (var = s->defs; var; var = var->defs) {
-
-			if (!var->glob || !var->stat)
-				continue;
-
-			if (var == null_ref)
-				continue;
-
-			if (var->kind != TYPE_ref) {
-				debug("%-T", var);	// static what ?
-				continue;
-			}
-
-			if (!ggen(s, var, NULL)) {
-				return 0;
-			}
-		}
 	}
 
 	Lmain = s->vm.pos;
 	if (1 && cc->root) {
-		// TODO: TYPE_vid: to clear the stack
 		int seg = s->vm.pos;
 		s->vm.ss = s->vm.sm = 0;
+
+		// pass TYPE_vid to clear the stack
 		if (!cgen(s, cc->root, TYPE_any))
 			fputasm(stderr, s, seg, -1, 0x10);
+
 		while (cc->jmps) {
 			error(s, NULL, 0, "invalid jump: `%k`", cc->jmps);
 			cc->jmps = cc->jmps->next;
 		}
 	}
-	s->vm.px = emitint(s, opc_libc, 0);		// TODO: Halt only in case of scripts
+	s->vm.px = emitint(s, opc_libc, 0);
 
 	// program entry point
 	s->vm.pc = Lmain;
+	// 
+	s->_ptr = NULL;//s->_mem + s->_size;
+	//~ s->cc = NULL;	// invalidate compiler
 
 	return s->errc;
 }
@@ -1418,9 +1375,8 @@ int gencode(state s, int level) {
 
 state rtInit(void* mem, unsigned size) {
 	state s = mem;
-	//~ list freemem = (void*)s->_mem;
 
-	s->_cnt = size - sizeof(struct state);
+	s->_size = size - sizeof(struct state);
 	s->_ptr = s->_mem;
 
 	/*
@@ -1444,7 +1400,7 @@ static void install_emit(ccState cc, int mode) {
 	if (!(mode & creg_emit))
 		return;
 
-	emit_opc = install(cc, "emit", EMIT_opc | symn_read, 0, 0);
+	emit_opc = install(cc, "emit", symn_const | EMIT_opc, 0, 0);
 
 	if (!emit_opc)
 		return;
@@ -1454,14 +1410,16 @@ static void install_emit(ccState cc, int mode) {
 		symn u32, i32, i64, f32, f64, v4f, v2d, ref, val;
 		enter(cc, NULL);
 
+		ref = install(cc, "ref", TYPE_rec, TYPE_ref, 4);
+
 		u32 = install(cc, "u32", TYPE_rec, TYPE_u32, 4);
 		i32 = install(cc, "i32", TYPE_rec, TYPE_i32, 4);
 		i64 = install(cc, "i64", TYPE_rec, TYPE_i64, 8);
 		f32 = install(cc, "f32", TYPE_rec, TYPE_f32, 4);
 		f64 = install(cc, "f64", TYPE_rec, TYPE_f64, 8);
-		v4f = install(cc, "v4f", TYPE_rec, TYPE_rec, 16);		// TODO: ???
-		v2d = install(cc, "v2d", TYPE_rec, TYPE_rec, 16);		// TODO: ???
-		ref = install(cc, "ref", TYPE_rec, TYPE_ref, 4);
+
+		v4f = install(cc, "v4f", TYPE_rec, TYPE_rec, 16);
+		v2d = install(cc, "v2d", TYPE_rec, TYPE_rec, 16);
 		val = install(cc, "val", TYPE_rec, TYPE_rec, -1);
 
 		installex(cc, "nop", EMIT_opc, opc_nop, type_vid, NULL);
@@ -1477,7 +1435,7 @@ static void install_emit(ccState cc, int mode) {
 			installex(cc, "x1", EMIT_opc, opc_dup1, type_i32, intnode(cc, 0));
 			installex(cc, "x2", EMIT_opc, opc_dup2, type_i64, intnode(cc, 0));
 			installex(cc, "x4", EMIT_opc, opc_dup4, type_vid, intnode(cc, 0));
-			typ->args = leave(cc, typ);
+			typ->args = leave(cc, typ, 0);
 		}
 
 		if ((typ = install(cc, "ldz", TYPE_rec, TYPE_vid, 0))) {
@@ -1485,7 +1443,7 @@ static void install_emit(ccState cc, int mode) {
 			installex(cc, "x1", EMIT_opc, opc_ldz1, type_vid, intnode(cc, 0));
 			installex(cc, "x2", EMIT_opc, opc_ldz2, type_vid, intnode(cc, 0));
 			installex(cc, "x4", EMIT_opc, opc_ldz4, type_vid, intnode(cc, 0));
-			typ->args = leave(cc, typ);
+			typ->args = leave(cc, typ, 0);
 		}
 		if ((typ = install(cc, "load", TYPE_rec, TYPE_vid, 0))) {
 			enter(cc, NULL);
@@ -1494,7 +1452,7 @@ static void install_emit(ccState cc, int mode) {
 			installex(cc, "b32",  EMIT_opc, opc_ldi4, type_vid, NULL);
 			installex(cc, "b64",  EMIT_opc, opc_ldi8, type_vid, NULL);
 			installex(cc, "b128", EMIT_opc, opc_ldiq, type_vid, NULL);
-			typ->args = leave(cc, typ);
+			typ->args = leave(cc, typ, 0);
 		}
 		if ((typ = install(cc, "store", TYPE_rec, TYPE_vid, 0))) {
 			enter(cc, NULL);
@@ -1503,7 +1461,7 @@ static void install_emit(ccState cc, int mode) {
 			installex(cc, "b32",  EMIT_opc, opc_sti4, type_vid, NULL);
 			installex(cc, "b64",  EMIT_opc, opc_sti8, type_vid, NULL);
 			installex(cc, "b128", EMIT_opc, opc_stiq, type_vid, NULL);
-			typ->args = leave(cc, typ);
+			typ->args = leave(cc, typ, 0);
 		}// */
 
 		installex(cc, "call", EMIT_opc, opc_call, type_vid, NULL);
@@ -1527,7 +1485,7 @@ static void install_emit(ccState cc, int mode) {
 			installex(cc, "shl", EMIT_opc, b32_shl, type_u32, NULL);
 			installex(cc, "shr", EMIT_opc, b32_shr, type_u32, NULL);
 			//~ installex(cc, "toi64", EMIT_opc, u32_i64, type_i64, NULL);
-			u32->args = leave(cc, u32);
+			u32->args = leave(cc, u32, 0);
 		}
 		if ((typ = i32) != NULL) {
 			enter(cc, NULL);
@@ -1548,7 +1506,7 @@ static void install_emit(ccState cc, int mode) {
 			installex(cc, "xor", EMIT_opc, b32_xor, type_i32, NULL);
 			installex(cc, "shl", EMIT_opc, b32_shl, type_i32, NULL);
 			installex(cc, "shr", EMIT_opc, b32_sar, type_i32, NULL);
-			typ->args = leave(cc, typ);
+			typ->args = leave(cc, typ, 0);
 		}
 		if ((typ = i64) != NULL) {
 			enter(cc, NULL);
@@ -1561,7 +1519,7 @@ static void install_emit(ccState cc, int mode) {
 			installex(cc, "ceq", EMIT_opc, i64_ceq, type_bol, NULL);
 			installex(cc, "clt", EMIT_opc, i64_clt, type_bol, NULL);
 			installex(cc, "cgt", EMIT_opc, i64_cgt, type_bol, NULL);
-			typ->args = leave(cc, typ);
+			typ->args = leave(cc, typ, 0);
 		}
 		if ((typ = f32) != NULL) {
 			enter(cc, NULL);
@@ -1574,7 +1532,7 @@ static void install_emit(ccState cc, int mode) {
 			installex(cc, "ceq", EMIT_opc, f32_ceq, type_bol, NULL);
 			installex(cc, "clt", EMIT_opc, f32_clt, type_bol, NULL);
 			installex(cc, "cgt", EMIT_opc, f32_cgt, type_bol, NULL);
-			typ->args = leave(cc, typ);
+			typ->args = leave(cc, typ, 0);
 		}
 		if ((typ = f64) != NULL) {
 			enter(cc, NULL);
@@ -1587,7 +1545,7 @@ static void install_emit(ccState cc, int mode) {
 			installex(cc, "ceq", EMIT_opc, f64_ceq, type_bol, NULL);
 			installex(cc, "clt", EMIT_opc, f64_clt, type_bol, NULL);
 			installex(cc, "cgt", EMIT_opc, f64_cgt, type_bol, NULL);
-			typ->args = leave(cc, typ);
+			typ->args = leave(cc, typ, 0);
 			//~ typ->call = 1;
 		}
 
@@ -1605,7 +1563,7 @@ static void install_emit(ccState cc, int mode) {
 			installex(cc, "dp3", EMIT_opc, v4f_dp3, type_f32, NULL);
 			installex(cc, "dp4", EMIT_opc, v4f_dp4, type_f32, NULL);
 			installex(cc, "dph", EMIT_opc, v4f_dph, type_f32, NULL);
-			typ->args = leave(cc, typ);
+			typ->args = leave(cc, typ, 0);
 		}
 		if ((typ = v2d) != NULL) {
 			enter(cc, NULL);
@@ -1617,7 +1575,7 @@ static void install_emit(ccState cc, int mode) {
 			installex(cc, "equ", EMIT_opc, v2d_ceq, type_bol, NULL);
 			installex(cc, "min", EMIT_opc, v2d_min, typ, NULL);
 			installex(cc, "max", EMIT_opc, v2d_max, typ, NULL);
-			typ->args = leave(cc, typ);
+			typ->args = leave(cc, typ, 0);
 		}
 
 		if ((mode & creg_swiz) == creg_swiz) {
@@ -1641,7 +1599,7 @@ static void install_emit(ccState cc, int mode) {
 				enter(cc, NULL);
 				for (i = 0; i < 256; i += 1)
 					installex(cc, swz[i].name, EMIT_opc, p4x_swz, type_v4f, swz[i].node);
-				typ->args = leave(cc, typ);
+				typ->args = leave(cc, typ, 0);
 			}
 			/*if ((typ = install(cc, "dup", TYPE_rec, 0, 0))) {
 				//~ extended set(masked) and dup(swizzle): p4d.dup.xyxy / p4d.set.xyz0
@@ -1664,18 +1622,81 @@ static void install_emit(ccState cc, int mode) {
 				typ->args = leave(cc, typ);
 			}// */
 		}
-		emit_opc->args = leave(cc, emit_opc);
+		emit_opc->args = leave(cc, emit_opc, 0);
 		(void)val;
 		(void)ref;
 	}
 }
+static void install_type(ccState cc, int mode) {
+
+	symn type_i08 = NULL, type_i16 = NULL;
+	symn type_u08 = NULL, type_u16 = NULL;
+	symn type_chr = NULL, type_tmp = NULL;
+
+	type_vid = install(cc,    "void", symn_const | TYPE_rec, TYPE_vid, 0);
+	type_bol = install(cc,    "bool", symn_const | TYPE_rec, TYPE_bit, 4);
+	type_i08 = install(cc,    "int8", symn_const | TYPE_rec, TYPE_i32, 1);
+	type_i16 = install(cc,   "int16", symn_const | TYPE_rec, TYPE_i32, 2);
+	type_i32 = install(cc,   "int32", symn_const | TYPE_rec, TYPE_i32, 4);
+	type_i64 = install(cc,   "int64", symn_const | TYPE_rec, TYPE_i64, 8);
+	type_u08 = install(cc,   "uint8", symn_const | TYPE_rec, TYPE_u32, 1);
+	type_u16 = install(cc,  "uint16", symn_const | TYPE_rec, TYPE_u32, 2);
+	type_u32 = install(cc,  "uint32", symn_const | TYPE_rec, TYPE_u32, 4);
+	type_f32 = install(cc, "float32", symn_const | TYPE_rec, TYPE_f32, 4);
+	type_f64 = install(cc, "float64", symn_const | TYPE_rec, TYPE_f64, 8);
+
+	//~ type_u64 = install(cc,  "uint64", symn_const | TYPE_rec, TYPE_u64, 8);
+	//~ type_f16 = install(cc,  "float16", symn_const | TYPE_rec, TYPE_f64, 2);
+
+	if (1) {	// if pointer is needed.
+		if ((type_ptr = installex(cc, "pointer", symn_const | TYPE_rec, TYPE_ref, NULL, NULL))) {
+			type_ptr->cast = TYPE_ref;
+			type_ptr->size = 4;
+		}
+		null_ref = installex(cc, "null",   symn_stat | symn_const | TYPE_ref, 0, type_ptr, NULL);
+	}
+	if (1) {	// if variant is needed.
+		//~ type_var = install(cc, "variant", symn_const | TYPE_rec, TYPE_rec, 8);
+	}
+
+	if (1) {	// if aliases are needed.
+		type_chr = type_u08;
+		//~ type_chr = installex(cc, "char", symn_const | TYPE_def, 0, type_i08, NULL);
+		if ((type_str = installex(cc, "string", symn_const | TYPE_arr, TYPE_ref, type_chr, NULL))) {// string is alias for char[]
+			type_str->cast = TYPE_ref;
+			type_str->size = 4;
+		}
+
+		//~ installex(cc, "array",  symn_const | TYPE_arr, 0, type_var, NULL);		// array is alias for variant[]
+		//~ installex(cc, "var",    symn_const | TYPE_def, 0, type_var, NULL);		// var is alias for variant
+
+		type_tmp = installex(cc, "int",    TYPE_def, 0, type_i32, NULL);
+		type_tmp = installex(cc, "long",   TYPE_def, 0, type_i64, NULL);
+		type_tmp = installex(cc, "float",  TYPE_def, 0, type_f32, NULL);
+		type_tmp = installex(cc, "double", TYPE_def, 0, type_f64, NULL);
+		type_tmp = installex(cc, "true",   TYPE_def, 0, type_bol, intnode(cc, 1));
+		type_tmp = installex(cc, "false",  TYPE_def, 0, type_bol, intnode(cc, 0));
+	}
+}
+
+static void* getmem(state s, int size, unsigned clear) {
+	if (size <= s->_mem + s->_size - s->_ptr) {
+		void *mem = s->_ptr;
+
+		if (clear > size)
+			clear = size;
+
+		memset(mem, 0, clear);
+
+		s->_ptr += size;
+
+		return mem;
+	}
+	return NULL;
+}
 
 ccState ccInit(state s, int mode) {
 	ccState cc = getmem(s, sizeof(struct ccState), -1);
-
-	//~ symn type_tmp;
-	symn type_i08 = NULL, type_i16 = NULL;
-	symn type_u08 = NULL, type_u16 = NULL;
 
 	if (cc == NULL)
 		return NULL;
@@ -1694,58 +1715,26 @@ ccState ccInit(state s, int mode) {
 	cc->fin._fin = -1;
 
 	cc->_beg = (char*)s->_ptr;
-	cc->_end = cc->_beg + s->_cnt;
+	cc->_end = (char*)s->_mem + s->_size;
 
-	//{ install Type System
-	type_vid = install(cc,  "void", TYPE_rec | symn_read, TYPE_vid, 0);
-
-	type_bol = install(cc,  "bool", TYPE_rec | symn_read, TYPE_bit, 4);
-
-	type_i08 = install(cc,  "int8", TYPE_rec | symn_read, TYPE_i32, 1);
-	type_i16 = install(cc, "int16", TYPE_rec | symn_read, TYPE_i32, 2);
-	type_i32 = install(cc, "int32", TYPE_rec | symn_read, TYPE_i32, 4);
-	type_i64 = install(cc, "int64", TYPE_rec | symn_read, TYPE_i64, 8);
-
-	type_u08 = install(cc,  "uint8", TYPE_rec | symn_read, TYPE_u32, 1);
-	type_u16 = install(cc, "uint16", TYPE_rec | symn_read, TYPE_u32, 2);
-	type_u32 = install(cc, "uint32", TYPE_rec | symn_read, TYPE_u32, 4);
-	//~ type_u64 = install(cc, "uint64", TYPE_rec | symn_read, TYPE_u64, 8);
-
-	//~ type_f16 = install(cc, "float16", TYPE_rec | symn_read, TYPE_f16, 2);
-	type_f32 = install(cc, "float32", TYPE_rec | symn_read, TYPE_f32, 4);
-	type_f64 = install(cc, "float64", TYPE_rec | symn_read, TYPE_f64, 8);
+	install_type(cc, 1);
 
 	if (mode & creg_emit)
 		install_emit(cc, mode);
 
-	//~ type_arr = install(cc, ".array", TYPE_rec | symn_read, TYPE_ref, 4);
-	type_ptr = install(cc, ".pointer", TYPE_rec | symn_read, TYPE_ref, 4);
-	//~ type_str = install(cc, "string", TYPE_rec | symn_read, TYPE_ref, 4);
-
-	//~ type_chr = installex(cc, "char", TYPE_def, 0, type_i08, NULL);
-	if ((type_str = installex(cc, "string", TYPE_arr | symn_read, TYPE_ref, type_u08, NULL))) {
-		type_str->cast = TYPE_ref;
-		type_str->size = 4;
+	// install a void arg for functions with no arguments
+	if ((cc->void_tag = newnode(cc, TYPE_ref))) {
+		enter(cc, NULL);
+		cc->void_tag->id.name = "";
+		cc->void_tag->next = NULL;
+		declare(cc, TYPE_ref, cc->void_tag, type_vid);
+		leave(cc, NULL, 0);
 	}
 
-	installex(cc, "int",    TYPE_def, 0, type_i32, NULL);
-	installex(cc, "long",   TYPE_def, 0, type_i64, NULL);
-	installex(cc, "float",  TYPE_def, 0, type_f32, NULL);
-	installex(cc, "double", TYPE_def, 0, type_f64, NULL);
-	installex(cc, "true",   TYPE_def, 0, type_bol, intnode(cc, 1));
-	installex(cc, "false",  TYPE_def, 0, type_bol, intnode(cc, 0));
-
-	null_ref = installex(cc, "null", TYPE_ref | symn_read | symn_stat, 0, type_ptr, NULL);
-
-	//} */// types
-
-	// install a void arg for functions with no arguments
-	if ((cc->argz = newnode(cc, TYPE_ref))) {
-		enter(cc, NULL);
-		cc->argz->id.name = "";
-		cc->argz->next = NULL;
-		declare(cc, TYPE_ref, cc->argz, type_vid);
-		leave(cc, NULL);
+	if (emit_opc && (cc->emit_tag = newnode(cc, TYPE_ref))) {
+		cc->emit_tag->id.link = emit_opc;
+		cc->emit_tag->id.name = "emit";
+		cc->emit_tag->id.hash = -1;
 	}
 
 	return cc;
@@ -1777,50 +1766,31 @@ int ccDone(state s) {
 	source(cc, 0, 0);
 
 	// set used memory
-	s->_cnt -= cc->_beg - (char*)s->_ptr;
 	s->_ptr = (unsigned char*)cc->_beg;
 
 	// return errors
 	return s->errc;
 }
 
-void* getmem(state s, int size, unsigned clear) {
-	if (size <= s->_cnt) {
-		void *mem = s->_ptr;
-		s->_cnt -= size;
-		s->_ptr += size;
-
-		if (clear > size)
-			clear = size;
-
-		memset(mem, 0, clear);
-
-		return mem;
-	}
-	return NULL;
-}
-
-/*static list memdcheck(list meml, list memd) {
+/** allocate memory in the runtime state.
+ * if (size != 0 && ptr != NULL): realloc
+ * if (size != 0 && ptr == NULL): alloc
+ * if (size == 0 && ptr != NULL): free
+ * if (size == 0 && ptr == NULL): nothing
+ * return NULL if cannot allocate, or size == 0
+**/
+static list memdcheck(list meml, list memd) {
 	while (meml && meml != memd) {
 		meml = meml->next;
 	}
 	return meml;
 }
 
-void* rtAlloc(state rt, void* ptr, int size)
-/ **
- * allocate memory in the runtime state.
- * if (size != 0 && ptr != NULL): realloc
- * if (size != 0 && ptr == NULL): alloc
- * if (size == 0 && ptr != NULL): free
- * if (size == 0 && ptr == NULL): nothing
- * return NULL if cannot allocate, or size == 0
-// * /
-{
+void* rtAlloc(state rt, void* ptr, int size) {
 	list memd = NULL;
 	if (ptr) {	// realloc
 
-		memd = ptr - sizeof(struct list);
+		memd = (list)((char*)ptr - sizeof(struct list));
 		dieif(!memdcheck(rt->_used, memd), "FixMe");
 
 		if (size > memd->size) {	// grow
@@ -1899,9 +1869,9 @@ void* rtAlloc(state rt, void* ptr, int size)
 		}
 	}
 
-	debug("memmgr(%x, %d): (%x, %d)", ptr - (void*)rt->_mem, size, memd ? memd->data - rt->_mem : 0, memd ? memd->size : -1);
+	debug("memmgr(%x, %d): (%x, %d)", (unsigned char*)ptr - rt->_mem, size, memd ? memd->data - rt->_mem : 0, memd ? memd->size : -1);
 	return memd ? memd->data : NULL;
-}*/
+}
 
 //{ temp.c ---------------------------------------------------------------------
 // lookup a value
@@ -1933,12 +1903,12 @@ symn findref(state s, void *ptr) {
 	}
 
 	offs = (unsigned char*)ptr - s->_mem;
-	for (sym = s->defs; sym; sym = sym->next) {
+	for (sym = s->gdef; sym; sym = sym->gdef) {
 		if (sym->offs == -offs)
 			return sym;
 	}
 
-	//~ /* search all
+	/* search all (s->cc == null)
 	for (sym = s->cc->defs; sym; sym = sym->defs) {
 		if (sym->offs == -offs)
 			return sym;
@@ -1990,7 +1960,6 @@ static void install_lang(ccState cc, unsigned level) {
 		//~ install(cc, "file", LINE_get, 0, 0);	// type string
 		//~ install(cc, "line", FILE_get, 0, 0);	// type int
 		//~ install(cc, "date", DATE_get, 0, 0);	// type ???
-		//~ install(cc, "emit", DATE_get, 0, 0);	// type ???
 		//~ leave();
 	}
 	if (install(cc, "Runtime", TYPE_def, 0, 0)) {
@@ -2087,7 +2056,7 @@ struct arrBuffer {
 static void* getBuff(struct arrBuffer* buff, int idx) {
 	int pos = idx * buff->esz;
 	if (pos >= buff->max) {
-		buff->max = pos << 1;		//TODO: max(pos + buff->esz, pos * 2)
+		buff->max = pos << 1;
 		buff->ptr = realloc(buff->ptr, buff->max);
 	}
 	return buff->ptr ? buff->ptr + pos : NULL;
