@@ -1,46 +1,49 @@
 #ifdef TOKDEF
-//~ #define TOKDEF(NAME, TYPE, SIZE, KEYW, STR) {KIND, TYPE, SIZE, STR},
+/* #define TOKDEF(NAME, TYPE, opArgs, STR) {KIND, TYPE, SIZE, STR},
+	NAME: enum name
+
+	TYPE:	oprator priority
+			typename size, if == ff then keyword
+
+	opArgs: if != 0 then operator
+// */
 TOKDEF(TYPE_any, 0x00, 0, ".err")	// error
 TOKDEF(TYPE_vid, 0x00, 0, ".vid")	// void
-TOKDEF(TYPE_bit, 0x00, 0, ".bit")	// bool
-TOKDEF(TYPE_int, 0x00, 0, ".int")	// int64, int32, int16, int8
-TOKDEF(TYPE_flt, 0x00, 0, ".flt")	// float32, float64
-TOKDEF(TYPE_i32, 0x00,  32, ".i32")
-TOKDEF(TYPE_i64, 0x00,  64, ".i64")
-TOKDEF(TYPE_u32, 0x00,  32, ".u32")
-//~ TOKDEF(TYPE_u64, 0x00,  64, ".u64")		// no vm support
-TOKDEF(TYPE_f32, 0x00,  32, ".f32")
-TOKDEF(TYPE_f64, 0x00,  64, ".f64")
+TOKDEF(TYPE_bit, 0x04, 0, ".bit")	// bool
+TOKDEF(TYPE_i32, 0x04, 0, ".i32")	// int8, int16, int32
+TOKDEF(TYPE_i64, 0x08, 0, ".i64")	// int64
+TOKDEF(TYPE_u32, 0x04, 0, ".u32")	// uint8, uint16, uint32
+//~ TOKDEF(TYPE_u64, 0x08, 0, ".u64")		// uint64: no vm support
+TOKDEF(TYPE_f32, 0x04, 0, ".f32")	// float32
+TOKDEF(TYPE_f64, 0x08, 0, ".f64")	// float64
+TOKDEF(TYPE_ptr, 0x04, 0, ".ptr")	// pointer
 
-TOKDEF(TYPE_rec, 0xff, 0, "struct") // union := struct:0
-
-TOKDEF(TYPE_str, 0x00, 0, ".str")
-TOKDEF(TYPE_arr, 0x00, 0, ".arr")	// pointer, string, array, ..., ???
-
-TOKDEF(TYPE_def, 0xff, 0, "define")		// type or inline definition
+TOKDEF(TYPE_def, 0x00, 0, "define")		// typedef or inline expression
+TOKDEF(TYPE_rec, 0x00, 0, "struct")		// union := struct:0
 TOKDEF(TYPE_ref, 0x00, 0, ".ref")		// variable / function
+TOKDEF(TYPE_arr, 0x00, 0, ".arr")		// pointer, string, array, ..., ???
 
 //~ TOKDEF(TYPE_p4x, 0x00, 128, ".p4x")
 
-TOKDEF(QUAL_con, 0xff, 0, "const")	// constant
-TOKDEF(QUAL_sta, 0xff, 0, "static")
-TOKDEF(QUAL_par, 0xff, 0, "parallel")
-//~ TOKDEF(QUAL_syn, 0xff, 0, "synchronized")
+TOKDEF(QUAL_con, 0x00, 0, "const")	// constant
+TOKDEF(QUAL_sta, 0x00, 0, "static")
+TOKDEF(QUAL_par, 0x00, 0, "parallel")
+//~ TOKDEF(QUAL_syn, 0x00, 0, "synchronized")
 
 //~ vmInterface ================================================================
-TOKDEF(EMIT_opc, 0xff,   0, "emit")		// opcodes in emit(opcode, args...)
+TOKDEF(EMIT_opc, 0x00,   0, "emit")		// opcodes in emit(opcode, args...)
 // typeof and sizeof  : `var`.class / `var`.class.size
 
 //~ Statements =================================================================
 //! keep beg the first and end the last statement token
 TOKDEF(STMT_beg, 0x00, 0, ".beg")		// stmt: list {...}
 TOKDEF(STMT_do,  0x00, 0, ".do")		// stmt: decl / expr
-TOKDEF(STMT_for, 0xff, 0, "for")		// stmt: for, while, repeat
-TOKDEF(STMT_if,  0xff, 0, "if")			// stmt: if then else
-TOKDEF(STMT_els, 0xff, 0, "else")		// ????
-TOKDEF(STMT_brk, 0xff, 0, "break")		// stmt: break
-TOKDEF(STMT_con, 0xff, 0, "continue")	// stmt: continue
-//~ TOKDEF(STMT_ret, 0xff, 0, "return")	// stmt: return
+TOKDEF(STMT_for, 0x00, 0, "for")		// stmt: for, while, repeat
+TOKDEF(STMT_if,  0x00, 0, "if")			// stmt: if then else
+TOKDEF(STMT_els, 0x00, 0, "else")		// ????
+TOKDEF(STMT_brk, 0x00, 0, "break")		// stmt: break
+TOKDEF(STMT_con, 0x00, 0, "continue")	// stmt: continue
+//~ TOKDEF(STMT_ret, 0x00, 0, "return")	// stmt: return
 TOKDEF(STMT_end, 0x00, 0, ".end")		// destruct calls ?
 
 //~ Operators ==================================================================
@@ -48,6 +51,7 @@ TOKDEF(OPER_idx, 0x0f, 2, ".idx")		// a[i]		index
 TOKDEF(OPER_fnc, 0x0f, 2, ".fnc")		// a(x)		function call, cast, ctor, dtor = cast(void, var &), emit, ...
 TOKDEF(OPER_dot, 0x0f, 2, ".dot")		// a.b		member
 
+TOKDEF(OPER_adr, 0x1e, 1, ".adr")		// & a		address of
 TOKDEF(OPER_pls, 0x1e, 1, ".pls")		// + a		unary plus
 TOKDEF(OPER_mns, 0x1e, 1, ".neg")		// - a		unary minus
 TOKDEF(OPER_cmt, 0x1e, 1, ".cmt")		// ~ a		complement / ?reciprocal
@@ -101,9 +105,9 @@ TOKDEF(PNCT_rp , 0x00, 0, ")par")
 TOKDEF(PNCT_qst, 0x00, 0, "?")			// question mark
 TOKDEF(PNCT_cln, 0x00, 0, ":")			// colon
 
-//~ TOKDEF(UNIT_def, 0xff, 0, "module")
-//~ TOKDEF(OPER_kwd, 0xff, 0, "operator")
-//~ TOKDEF(ENUM_kwd, 0xff, 0, "enum")		// keyword onlyd
+//~ TOKDEF(UNIT_def, 0x00, 0, "module")
+//~ TOKDEF(OPER_kwd, 0x00, 0, "operator")
+//~ TOKDEF(ENUM_kwd, 0x00, 0, "enum")		// keyword onlyd
 
 /*
 //~ Operators ==================================================================
@@ -115,23 +119,23 @@ TOKDEF(ASGN_max, 0x09, 2, OP, ">?=")	// a >?= b
 TOKDEF(ASGN_pow, 0x0a, 2, OP, "**=")		// a **= b
 
 //{ ============================================================================
-//~ TOKDEF(OPER_new, 0xff, 2, 2, "new")
-//~ TOKDEF(OPER_del, 0xff, 0, 2, "delete")
+//~ TOKDEF(OPER_new, 0x00, 2, 2, "new")
+//~ TOKDEF(OPER_del, 0x00, 0, 2, "delete")
 
-//? TOKDEF(STMT_try, 0xff, 0, 2, "try")			//
-//? TOKDEF(STMT_thr, 0xff, 0, 2, "throw")		//
-//? TOKDEF(STMT_cth, 0xff, 0, 2, "catch")		//
-//? TOKDEF(STMT_fin, 0xff, 0, 2, "finally")		//
+//? TOKDEF(STMT_try, 0x00, 0, 2, "try")			//
+//? TOKDEF(STMT_thr, 0x00, 0, 2, "throw")		//
+//? TOKDEF(STMT_cth, 0x00, 0, 2, "catch")		//
+//? TOKDEF(STMT_fin, 0x00, 0, 2, "finally")		//
 
-//~ TOKDEF(OPER_go2, 0xff, 0, 2, "goto")
+//~ TOKDEF(OPER_go2, 0x00, 0, 2, "goto")
 
-//~ TOKDEF(OPER_swi, 0xff, 0, 2, "switch")
-//~ TOKDEF(OPER_cas, 0xff, 0, 2, "case")
-//? TOKDEF(OPER_def, 0xff, 0, 2, "default")		// or use else
+//~ TOKDEF(OPER_swi, 0x00, 0, 2, "switch")
+//~ TOKDEF(OPER_cas, 0x00, 0, 2, "case")
+//? TOKDEF(OPER_def, 0x00, 0, 2, "default")		// or use else
 
-//~ TOKDEF(OPER_wht, 0xff, 0, 2, "while")		// while '(' <expr>')' <stmt> => for(;<expr>;) <stmt>
-//~ TOKDEF(OPER_whf, 0xff, 0, 2, "until")		// until '(' <expr>')' <stmt> => for(;!<expr>;) <stmt>
-//~ TOKDEF(OPER_rep, 0xff, 0, 2, "repeat")		// repeat <stmt> ((until '(' <expr> ')' ) | (while '(' <expr> ')' ))?
+//~ TOKDEF(OPER_wht, 0x00, 0, 2, "while")		// while '(' <expr>')' <stmt> => for(;<expr>;) <stmt>
+//~ TOKDEF(OPER_whf, 0x00, 0, 2, "until")		// until '(' <expr>')' <stmt> => for(;!<expr>;) <stmt>
+//~ TOKDEF(OPER_rep, 0x00, 0, 2, "repeat")		// repeat <stmt> ((until '(' <expr> ')' ) | (while '(' <expr> ')' ))?
 
 //} */
 
@@ -151,7 +155,7 @@ TOKDEF(ASGN_pow, 0x0a, 2, OP, "**=")		// a **= b
 OPCDEF(opc_nop,  0x00, 1, 0, +0, 1, "nop")		// ;					[…, a, b, c => […, a, b, c;
 OPCDEF(opc_loc,  0x01, 2, 0, +9, 1, "loc")		// sp += 4*arg.u1;		[…, a, b, c => […, a, b, c, …;
 OPCDEF(opc_drop, 0x02, 2, 9, +9, 1, "drop")		// sp -= 4*arg.u1;		[…, a, b, c => […, a, b;
-OPCDEF(opc__x03, 0x03, 0, 0, +0, 1, NULL)		//
+OPCDEF(opc_inc,  0x03, 4, 1, +0, 1, "inc")		// push(popi32(n) + arg.rel);
 OPCDEF(opc_spc,  0x04, 4, 0, +0, 1, "spc")		// sp += 4*arg.rel;
 OPCDEF(opc_ldsp, 0x05, 4, 0, +1, 1, "ldsp")		// push(SP + arg.rel);		[…, a, b, c  => […, a, b, c, SP;
 OPCDEF(opc__x06, 0x06, 1, 1, +0, 1, NULL)		// push(IP); ip += arg.rel;	[…, a, b, c  => […, a, b, c, IP;
@@ -162,7 +166,7 @@ OPCDEF(opc_jnz,  0x0a, 4, 1, -1, 1, "jnz")		// if pop(0)!=0 IP += arg.rel;	[…,
 OPCDEF(opc_jz,   0x0b, 4, 1, -1, 1, "jz")		// if pop(0)==0 IP += arg.rel;	[…, a, b, c => […, a, b;
 OPCDEF(opc_not,  0x0c, 1, 1, +0, 1, "not")		// sp(0) = !sp(0);
 OPCDEF(opc_task, 0x0d, 4, 0, +0, 1, "task")		// arg.3: [code:16][data:8] task, [?fork if (arg.code == 0)]
-OPCDEF(opc_x0f,  0x0e, 0, 0, +0, 1, "sync")		// wait, join, sync
+OPCDEF(opc__x0f, 0x0e, 0, 0, +0, 1, "sync")		// wait, join, sync
 OPCDEF(opc_libc, 0x0f, 2, 0, +9, 1, "libc")		// lib call
 //~ stk ========================================================================
 OPCDEF(opc__x10, 0x10, 5, 0, +1, 1, NULL)
@@ -194,10 +198,10 @@ OPCDEF(opc_sti8, 0x28, 1, 3, -3, 1, "sti.64")	// copy(sp(1) sp(0) 8);pop3;	[…,
 OPCDEF(opc_stiq, 0x29, 0, 5, -5, 1, "sti.128")	// copy(sp(1) sp(0) 16);pop5;	[…, a, b, c => […, a
 OPCDEF(opc_ld32, 0x2a, 4, 0, +1, 1, "ldm.b32")	// (32)
 OPCDEF(opc_ld64, 0x2b, 4, 0, +2, 1, "ldm.b64")	// (64)
-OPCDEF(opc__2c,  0x2c, 0, 0,  0, 1, NULL)		//
+OPCDEF(opc___2c, 0x2c, 0, 0,  0, 1, NULL)		//
 OPCDEF(opc_st32, 0x2d, 4, 1, -1, 1, "stm.b32")	//
 OPCDEF(opc_st64, 0x2e, 4, 2, -2, 1, "stm.b64")	//
-OPCDEF(opc__2f,  0x2f, 0, 0,  0, 1, NULL)		//
+OPCDEF(opc_cpy,  0x2f, 4, 2, -2, 1, "mem.cpy")	//
 //~ bit[ 32] ===================================================================
 OPCDEF(b32_cmt,  0x30, 1, 1,  0, 1, "b32.cmt")	// sp(0) = ~sp(0);
 OPCDEF(b32_and,  0x31, 1, 2, -1, 1, "b32.and")	// sp(1).u32 &= sp(0).u32; pop;
@@ -206,7 +210,7 @@ OPCDEF(b32_xor,  0x33, 1, 2, -1, 1, "b32.xor")	// sp(1).u32 ^= sp(0).u32; pop;
 OPCDEF(b32_shl,  0x34, 1, 2, -1, 1, "b32.shl")	// sp(1).u32 <<= sp(0).u32; pop;
 OPCDEF(b32_shr,  0x35, 1, 2, -1, 1, "b32.shr")	// sp(1).u32 >>= sp(0).u32; pop;
 OPCDEF(b32_sar,  0x36, 1, 2, -1, 1, "b32.sar")	// sp(1).i32 >>= sp(0).i32; pop;
-OPCDEF(b32_bit,  0x37, 2, 2,  0, 1, "b32.")		//
+OPCDEF(b32_bit,  0x37, 2, 2,  0, 1, "b32.")		// and, shl, shr, sar
 OPCDEF(u32_clt,  0x38, 1, 2, -1, 1, "u32.clt")	// sp(1).b32 = sp(1).u32 < sp(0).u32; pop;
 OPCDEF(u32_cgt,  0x39, 1, 2, -1, 1, "u32.cgt")	// sp(1).b32 = sp(1).u32 > sp(0).u32; pop;
 OPCDEF(u32_mul,  0x3a, 1, 2, -1, 1, "u32.mul")	// sp(1) *= sp(0); pop;
@@ -214,7 +218,7 @@ OPCDEF(u32_div,  0x3b, 1, 2, -1, 1, "u32.div")	// sp(1) /= sp(0); pop;
 OPCDEF(u32_mod,  0x3c, 1, 2, -1, 1, "u32.mod")	// sp(1) %= sp(0); pop;
 OPCDEF(u32_mad,  0x3d, 1, 3, -2, 1, "u32.mad")	// sp(2) += sp(1)*sp(0); pop2;	[…, a, b, c => […, a + b * c;
 OPCDEF(u32_i64,  0x3e, 1, 1,  0, 1, "u32.cvt2i64")
-OPCDEF(u32__3f,  0x3f, 0, 0,  0, 1, "u32.ext")	// 
+OPCDEF(u32___3f, 0x3f, 0, 0,  0, 1, "u32.ext")	// 
 
 //~ OPCDEF(b32___1,  0x31, 0, 2, -1, 1, "b32.adc")	// sp(1) += sp(0); pop;
 //~ OPCDEF(b32___2,  0x32, 0, 2, -1, 1, "b32.sbb")	// sp(1) -= sp(0); pop;

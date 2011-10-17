@@ -10,41 +10,122 @@
 //~ #open src/tree.c
 //~ #open src/parse.c
 //~ #open src/main.c
+//~ int a = 9;
+//~ int &b = a;
 
+define hex64 int64;	//%%016X
+define hex32 int32;	//%%08x
+void test(int test2(int test3)) {
+}
+/*
+pointer p1 = realloc(null, 100);
+pointer p2 = realloc(null, 200);
+pointer p3 = realloc(null, 300);
 
-//~ module test;
+//~ pointer p4 = realloc(p3, 200);
 
-//~ uint8 s[4];
-//~ string s = "alma a fa alatt";
-//~ int a = s.length;
+//~ realloc(null, 100);
+//~ realloc(null, 200);
+//~ realloc(null, 300);
+
+realloc(null, 0);
+*/
 
 /*
-struct f4x {
-	float32 x;
-	float32 y;
-	float32 z;
-	float32 w;
+int a[3][3];
+//~ a[2][1] = 55;
+
+{
+	int i = 2;
+	int j = 1;
+	a[i][j] = 99;
 }
-
-f4x yyy = f4x(1,2,3,4);
-
-void testbyref(f4x &a) {}
-//~ void testbyref(int &a) {}
-
-//~ testbyref(yyy);
-//~ testbyref(f4x(null));
-
-//~ f4x &nullf4x = f4x(null);
 */
-//~ int a='\x7fCCCx';
+/*
+//~ int a[2, 3, 4];
+//~ float64 a[4, 4] = 0;
+	//~ 1, 2, 3, 4,
+	//~ 5, 6, 7, 8,
+	//~ 1, 2, 3, 4,
+	//~ 9, 0, 1, 2;
 
-//~ struct range {int min; int max;}
-//~ define range1(int min, int max) = emit(range, int32(min), int32(max));
-//~ range r = range(1., 2);
-//~ r.max = 99;
+//~ string s = "alma a fa alatt";		// this should be dynamic.
+//~ uint8 ss[4];
+//~ int a = ss.length;
+string x = "almax a fa alatt";
+string ss[3];
+ss[0] = x;//"alma1 a fa alatt";
+ss[1] = "alma2 a fa alatt";
+ss[2] = "alma3 a fa alatt";
+string y = ss[1];
+
+//~ ss[0][3] = 'A';
+
+//~ println(y);
+//~ println(ss[2]);
+
+//~ string c = ss[0];
+//~ putstr(c);
+
+//~ int a = 9;
+//~ int &b = null;
+//~ &b = a;
+
+//~ b = 88;
+// */
 
 //~ int alma(int h)[10];	???
-//~ void fun(int x) = true ? null : void(int x){print(x);});
+//~ void fun(int x) = true ? null : void(int x){print(x);};
+//~ void fun(int x) = null;
+
+//~ mat4f a = mat4f( 1,  2,  3,  4,
+				 //~ 5,  6,  7,  8,
+				 //~ 9, 10, 11, 12,
+				//~ 13, 14, 15, 16);
+
+
+/*
+struct Vec2{double x; double y;}
+struct Vec3{double x; double y; double z;}
+//~ struct Vec3{double x; double y; double z; double x1; double y1; double z1; double x2; double y2; double z2;}
+//~ define Vec3(double x, double y, double z) = Vec3(x,y,z,x+1,y+1,z+1,x+2,y+2,z+2);
+
+define ldv3(Vec3 ^a) = emit(Vec3, val(a));
+
+//~ define add(Vec3 &a, Vec3 &b) = Vec3(a.x + b.x, a.y + b.y, a.z + b.z);
+define sub(Vec3 ^a, Vec3 ^b) = Vec3(a.x - b.x, a.y - b.y, a.z - b.z);
+//~ define mul(Vec3 &a, Vec3 &b) = Vec3(a.x * b.x, a.y * b.y, a.z * b.z);
+//~ define div(Vec3 &a, Vec3 &b) = Vec3(a.x / b.x, a.y / b.y, a.z / b.z);
+define div(Vec3 ^a, double ^b) = Vec3(a.x / b, a.y / b, a.z / b);
+
+define dot(Vec3 ^a, Vec3 ^b) = double(a.x * b.x + a.y * b.y + a.z * b.z);
+define cross(Vec3 ^a, Vec3 ^b) = Vec3(a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x);
+define divnz(Vec3 ^a, double ^b) = (b ? div(a, b) : a);
+define normalize(Vec3 ^a) = divnz(a, sqrt(dot(a, a)));
+
+int x1l;
+Vec3 x3 = Vec3(1, 2, 3);
+x3 = normalize(x3);
+//~ */
+
+/* static and nonstatic members.
+struct alma {
+	static int a0 = 9;
+	const int a1;
+	int a2;
+}
+
+int a = App.width;
+string x = App.Xxx.width2;
+
+//~ alma a = alma(12, 13);
+//~ alma.a0 = 99;
+//~ a = alma(a.a1, 0);
+
+//~ int alma_a0 = alma.a0;
+
+// */
+
 /*
 struct slice {
 	const int length;
@@ -57,13 +138,58 @@ struct variant {
 }
 
 struct delegate {
-	const int call(variant this, int param1, ...);
-	const pointer  value;
+	const int call(pointer value, int param1, ...);
+	const pointer value;
 }
 
 */
+//~ int x = 179;
+//~ int n = 2;
+//~ const r = 3;
+//~ int res = (x / pow(r, n)) % r;
+
+//~ double aaa = .0e44;
+
+hex32 x = 3 << 6;
+/* iota
+uint8 tmp[1024];
+string str = emit(string, ref(tmp));
+itoa(str, 1024, 10, 1, true, "");
+//~ */
+/*
+struct:1 xrgb {
+	uint8 b;
+	uint8 g;
+	uint8 r;
+	uint8 x;
+}
+struct:0 xrgbi32 {
+	xrgb rgb;
+	int32 val;
+}
+//~ xrgb res = result;
+//~ define min(int ^a, int ^b) = (a < b ? a : b);
+//~ define clamp(int t, int a, int b) = min(max(t, a), b);
+
+xrgb a = emit(xrgb, i32(0x801f008f));
+
+//~ int structSize = xrgb.class.size;
+//~ int objectSize = a.class.size;
+//~ xrgb b = emit(a.typeOf, i32(0x1f002f));
+
+//~ xrgb b = emit(xrgb, i32(0x2f3f1f));
+//~ int r = a.r + b.r;
+
+//~ xrgbi32 r;
+//~ r.val = 0;
+
+//~ r.rgb.r = min(a.r + b.r, 255);
+//~ r.rgb.g = min(a.g + b.g, 255);
+//~ r.rgb.b = min(a.b + b.b, 255);
+// */
 
 /* Bits: hi, lo, extend
+
 define sxt64(int32 a) = int64(int32(a));			// sign extend
 define zxt64(int32 a) = int64(uint32(a));			// zero extend
 define Lo64(int64 a) = emit(int32, set, i64(a));	// Lo32 part
@@ -83,7 +209,7 @@ hex32 hi = Hi64(val);
 
 // */
 /* get 0 < n <= 64 bit minimum / maximum (signed/unsigned) values
-//~ define hex64 int64;	//%%016X
+define hex64 int64;	//%%016X
 void bitsget(bool signed, int size, int64 &min, int64 &max) {
 	int64 mask = bits.shr(int64(-1), -size);
 	min = bits.shl(-int64(signed), size - 1);
@@ -93,65 +219,13 @@ void bitsget(bool signed, int size, int64 &min, int64 &max) {
 
 hex64 min;
 hex64 max;
-
 hex64 umin;
 hex64 umax;
 
-int bitsize = 64;
+int bitsize = 60;
 
 bitsget(true, bitsize, min, max);
 bitsget(!true, bitsize, umin, umax);
-// */
-/* returning a function
-//~ /+ count down
-struct fnWrap {int call(fnWrap &data); int data;}
-define fnWrap(int call(fnWrap &data), int data) = emit(fnWrap, ref(call), i32(data));
-define fnCall(fnWrap &wcd) = wcd.call(wcd);
-
-int countdown(fnWrap &a) {result = a.data; a.data -= 1;}
-
-fnWrap a = fnWrap(countdown, 3);
-println(fnCall(a));
-println(fnCall(a));
-println(fnCall(a));
-println(fnCall(a));
-// +/
-
-/+ count down by ref
-struct fnWrap {int call(fnWrap &data); int &data;}
-define fnWrap(int call(fnWrap &data), int &data) = emit(fnWrap, ref(call), ref(data));
-define fnCall(fnWrap &wcd) = wcd.call(wcd);
-
-int countdown(fnWrap &a) {
-	//~ static int a2 = 99;
-	result = a.data;
-	a.data -= 1;
-}
-
-int n = 7;
-
-fnWrap a = fnWrap(countdown, n);
-println(fnCall(a));
-println(fnCall(a));
-println(fnCall(a));
-println(fnCall(a));
-//~ println(n);
-//~ println(n);
-// +/
-//~ */
-
-/* puthex
-void puthex(int32 num) {
-	if (num >= 16) {
-		puthex(num / 16);
-	}
-	putchr("0123456789ABCDEF"[num % 16]);
-}
-
-int x = 0x0f00ff98;
-
-puthex(x);
-putchr('\n');
 // */
 
 /* call functions passed as argument to function
@@ -198,129 +272,92 @@ if (method != null) {
 // +/
 
 //~ */
+/* return fun
 
-/* using strings
+/+ count down
+struct Closure {int call(Closure &data); int data;}
+define Invoke(Closure &wcd) = wcd.call(wcd);
+//~ operator (Closure &wdc)() = wcd.call(wcd);
 
-long cikkId = 165;
-long raktar = 3;
-long btetelId = 6398;
-double mennyiseg = 1;
+int countdown(Closure &a) {result = a.data; a.data -= 1;}
 
-define strlen = 25;
-define char uint8;
-char val[strlen + 1];
-val[strlen] = 0;
+Closure a = Closure(countdown, 3);
+Closure b = Closure(countdown, 30);
 
-println("INSERT INTO gyariszam(cikk_id, mennyiseg, b_tetel_id, raktar_id, gyariszam) VALUES");
-for (int i = 0; i < 40; i += 1) {
+println(Invoke(a));
+println(Invoke(b));
+println(Invoke(a));
+println(Invoke(a));
+println(Invoke(a));
+println(Invoke(b));
+println(Invoke(b));
+println(Invoke(b));
+println(Invoke(b));
+println(Invoke(b));
+println(Invoke(b));
+println(Invoke(b));
+// +/
 
-	for (int j = 0; j < strlen; j += 1)
-		val[j] = rand('a', 'z');
 
-	print("("); print(cikkId);
-	print(", "); print(mennyiseg);
-	print(", "); print(btetelId);
-	print(", "); print(raktar);
-	print(", '"); print(emit(string, ref(val)));
-	println("'),");
-}
-// */
+/+var a = int delegate{int a = 3}(int n) {
+	result = a;
+	a -= n;
+});
 
-/* recursive
-void recurse(int x) {
-	if (x > 0) {
-		print("pre: "); println(x);
-		recurse(x - 1);
-		print("post: "); println(x);
-	}
-}
+//~ sort_function(int array[0, 3, 4, 2, 5, 1], int function(int a, int b){return a.compareTo(b);})
+//~ sort_delegate(int array[0, 3, 4, 2, 5, 1], int delegate{int xxx}(int a, int b){return a == b ? 0 : a > b ? 1 : -1;});
 
-recurse(20);
-// */
+//~ int delegate(int) alma = null;		// 
+//~ int function(int) alma = null;		// indirect reference to function
+// +/
 
-/* float compare
-define __eps = 1e-15;
-//~ define eq(float32 a, float32 b, float32 eps) = bool(abs(a - b) < eps);
-define eq(float64 a, float64 b, float64 eps) = bool(abs(a - b) < eps);
+//~ /+ count down (2) with args
+struct Closure {int64 call(Closure &c, int64 n); int64 data; int32 calls; /+...+/ }
+define Closure(int64 call(Closure &c, int64 n), int64 data) = Closure(call, data, 0);
 
-//~ define eq(float32 a, float32 b) = eq(a, b, float32(__eps));
-define eq(float64 a, float64 b) = eq(a, b, __eps);
+define Invoke(Closure &c, int64 n) = c.call(c, n);
+//~ operator (Closure &c)(int64 n) = c.call(c, n);
 
-define double1 float64;//%%2.10F
+int64 countdown(Closure &c, int64 n) {result = c.data; c.data -= n; c.calls += 1; }
 
-double1 a = .1; //%hexaban 0x%016X
-double1 b = .2;
-double1 c = .3;
-double1 d = (a + b) + c; //%%.20f
-double1 e = a + (b + c); //%%.20f
-bool x = (a + b) + c == a + (b + c);
-bool x1 = eq((a + b) + c, a + (b + c));
+Closure a = Closure(countdown, 90);
 
-// */
+println(Invoke(a, 9));
+println(Invoke(a, 2));
+println(Invoke(a, 2));
+println(Invoke(a, 2));
 
-/* random numbers
-for (int i = 0; i < 60; i += 1) {
-	println(rand(1., 1.001));
-}
-// */
+/+todo: 
+	//~ var a = struct {data: int64(90), calls: int(0)};
 
-/* itoa
-void itoa(string dst, int val, int rad, int prc) {
-	// the recursive one
-	int _itoa(string dst, int32 num, int rad, int pad, int pos) {
-		if (num > 0) {
-			pos = _itoa(dst, num / rad, rad, pad - 1, pos + 1);
-			dst[pos - 1] = "0123456789abcdefghijklmnopqrstuvwxyz"[num % rad];
-		}
-		else if (pad > 0) {
-			pos = _itoa(dst, 0, rad, pad - 1, pos + 1);
-			dst[pos - 1] = '0';
-		}
-		else {
-			dst[pos] = '\0';
-			pos = 0;
-		}
-		result = pos + 1;
-	}
-	if (rad > 1 && rad < 36) {
-		_itoa(dst, val, rad, prc, 0);
-	}
-	else {
-		dst[0] = 0;
-	}
-	//~ TODO: result = dst;
-}
-define itoa(string dst, int val, int rad) = itoa(dst, val, rad, 1);
-define itoa(string dst, int val) = itoa(dst, val, 10, 1);
+	function a = function{data: int64(90), calls: int(0)} int(int64 n) {
+		result = c.data;
+		c.data -= n;
+		c.calls += 1;
+	};
 
-void putrad(int32 num, int rad) {
-	if (num >= rad) {
-		putrad(num / rad, rad);
-	}
-	putchr("0123456789abcdefghijklmnopqrstuvwxyz"[num % rad]);
+	println(Invoke(a, 9));
+	println(Invoke(a, 2));
+	println(Invoke(a, 2));
+	println(Invoke(a, 2));
+		
+// +/
+
+// +/
+
+//~ */
+/* assignment by reference
+struct ByRef {
+	int a;
+	int b;
 }
 
-putrad(13, 7);println();
-putrad(13, 2);println();
-
-uint8 buff[256];
-string str = emit(string, ref(buff));
-
-itoa(str, 139245896, 30);
-println(str);
-
-//~ println(args[0]);
-//~ println(args[1]);
-//~ println(args[2]);
-
-/+for (int i = 0; i < 200; i += 1) {
-	putrad(i, 10);
-	putstr(" = ");
-	putrad(i, 20);
-	println();
-}// +/
-
-// */
+ByRef a = ByRef(1, 2);
+ByRef &b = a;
+&b = null;
+//~ int x = b.typeOf.sizeOf;
+int size = int.sizeOf;
+//~ */
 
 /+ hex view: use: ./ccvm -c -x -O-2 test.cvx
 
@@ -332,7 +369,7 @@ hex8  xhex08[8] = emit();
 // +/
 
 /* factorial
-const n = 6;
+const n = 9;
 int64 res = 1;
 for (int i = 1; i <= n; i += 1) {
 	res *= i;
@@ -347,7 +384,7 @@ for (int i = 1; tmp > eps; i += 1) {
 }
 // */
 
-/* test scope:
+/* scope test:
 
 for (int i = 0; i < 20; i += 1) {int i2 = 9;}	// OK
 for (int i = 0; i < 20; i += 1) {int i = 9;}	// ERR: i redefined
@@ -408,11 +445,11 @@ for (int a : range(10, 16)) {
 //~ double XXXa = emit(float64, i64(0b0111111111110000000000000000000000000000000000000000000000000000));
 //~ double XXXb = emit(float64, i64(0b0011111111110000000000000000000000000000000000000000000000000000));
 
-//~ /* global variables cgen order
+/* global variables cgen order
 	struct alma {
-		//~ static int a1;
-		//~ static int a2;
-		int a3;
+		static int a1;
+		static int a2;
+		const int a3;
 	}
 static bool a;
 static bool b() {
@@ -433,4 +470,34 @@ static bool b() {
 }
 static bool k;
 static bool l;
+//~ */
+/*
+struct individual {
+	bool gene[2][10];
+	double xreal[2];
+	double objectives[2];
+	double constraints[2];
+
+	const int rank;
+	double constr_violation;
+	const double xbin[10];
+	//~ double crowd_dist;
+}
+
+struct population {
+	double min;
+	double max;
+	individual ind[3];
+}
+/+
+int fitness(individual &ind) {
+	ind.objectives[0]= -pi1M(xbin[0],xbin[1]);
+	ind.objectives[1]= -pi2M(xbin[0],xbin[1]); 
+
+}
+
+// +/
+
+population pop;
+
 //~ */

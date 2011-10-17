@@ -89,6 +89,33 @@ const Test {
 	Misc = ~0;
 	Math = ~0;
 }
+const math:double {
+	pi = 3.14159265358979323846264338327950288419716939937510582097494459;		// A000796
+	e = 2.71828182845904523536028747135266249775724709369995957496696763;		// A001113
+	ln2 = 0.693147180559945309417232121458176568075500134360255254120680009;	// A002162
+	log2E = 1. / ln2;
+	ln10 = 2.30258509299404568401799145468436420760110148862877297603332790;	// A002392
+	log10E = 1. / ln10;
+	phi = 1.61803398874989484820458683436563811772030917980576286213544862;		// A001622
+	sqrt2 = 1.41421356237309504880168872420969807856967187537694807317667974;	// A002193
+	sqrtE = 1.64872127070012814684865078781416357165377610071014801157507931;	// A019774
+	sqrtPi = 1.77245385090551602729816748334114518279754945612238712821380779;	// A002161
+	sqrtPhi = 1.27201964951406896425242246173749149171560804184009624861664038;	// A139339
+	nan = 0. / 0;
+}
+static if (true) {
+	define hex8  int8;		//%hex8(0x%02x)
+	define hex16 int16;		//%hex16(0x%04x)
+	define hex32 int32;		//%hex32(0x%08x)
+	define hex64 int64;		//%hex64(0x%016X)
+
+	define print(hex32 arg) = print("%08x", int64(arg));
+	define println(hex32 arg) = print("%08x\n", int64(arg));
+	define print(hex64 arg) = print("%08X", int64(arg));
+	define println(hex64 arg) = print("%08X\n", int64(arg));
+}
+
+
 static if (Test.Emit) {
 /+ emit should be such as:
 #pragma aux (parm [edi] [eax] [edx] value [edi] modify exact [xmm0]) vecmul =\
@@ -99,7 +126,7 @@ static if (Test.Emit) {
 static if (Test.Emit & 0x01) {
 float32 res1 = emit(f32.div, float32(2), float32(math.pi));
 float64 res2 = emit(f64.neg, f64(math.pi));
-float32 res3 = emit(float32, f32(math.pi));
+float32 res3 = emit(int32, f32(math.pi));
 hex32 res4 = emit(int32, f32(math.pi));
 
 //~ these won't work because of global vars, use option: -O-2
@@ -153,7 +180,7 @@ struct Complex {
 }
 
 //~ define Complex(float64 re, float64 im) = emit(Complex, f64(re), f64(im));
-define Complex(float64 re) = Complex(re, float64(0));
+//~ define Complex(float64 re) = Complex(re, float64(0));
 
 static if (test2exec) {
 static if (test2exec == prog.sisd) {
@@ -207,11 +234,7 @@ static if (Test.Emit & 0x08) {	// Vector4
 vec4f v1 = vec4f(11., 12., 13., 14.);
 vec4f v2 = vec4f(21., 22., 23., 24.);
 
-//~ emit(swz.xywz);
-//~ emit(v4f.add, f32(v1.x), f32(v1.y), f32(v1.z), f32(v1.w));
-//~ emit(v4f.add);		// (Error | Warn)? statement underflows stack
-//~ emit(v4f.dp3);
-//~ 1+emit(v4f.dp3);
+//~ vec4f v3 = emit(vec4f, swz.xywz, val(v1));
 
 //~ vec4f fv = emit();
 //~ float32 sp[4] = emit();
@@ -281,7 +304,7 @@ if (var) {
 //~ +/
 }
 static if (Test.Bits & 8) {		// compute bits
-/+
+//~ /+
 void bitsget(bool signed, int size, int64 &min, int64 &max) {
 	int64 mask = bits.shr(int64(-1), -size);
 
@@ -333,11 +356,11 @@ float64 NAN = math.nan;
 }
 static if (Test.Type & 0x04) {		// enum
 //~ struct and arrays
-struct fiu32:0 {int32 i;float32 f;}
-struct fiu64:0 {int64 i;float64 f;}
+struct:0 fiu32 {int32 i;float32 f;}
+struct:0 fiu64 {int64 i;float64 f;}
 define intTY int32;
 
-struct intabc: 8 {
+struct:8 intabc {
 	intTY X;		//%%?08b
 	intTY Y;		//%%?08b
 	intTY Z;		//%%?08b
@@ -356,13 +379,13 @@ alma.X = 8;
 //~ intabc alma1 = alma;
 }
 static if (Test.Type & 0x08) {		// color
-struct bgra: 1 {
+struct:1 bgra {
 	uint8 b; 	//%blue(%d)
 	uint8 g; 	//%green(%d)
 	uint8 r; 	//%red(%d)
 	uint8 a; 	//%alpha(%d)
 }
-struct color: 0 {
+struct:0 color {
 	int32 val;	//%#%08x
 	bgra col;	//%
 }
@@ -404,12 +427,12 @@ static if (Test.Misc & 1) {			// matrix multiply
 // Matrix Multiply
 
 define dim = 3;
-define scalar float32;		// %%f
+define scalar float64;		//%%f
 scalar m1[dim][dim];
 scalar m2[dim][dim];
 scalar m3[dim][dim];
 
-/+ Initialize
+//~ /+ Initialize
 for (int i = 0; i < dim; i += 1) {
 	for (int j = 0; j < dim; j += 1) {
 		//~TODO: error: m1[i][j] = m2[i][j] = (i == j) + 2;
@@ -417,7 +440,7 @@ for (int i = 0; i < dim; i += 1) {
 	}
 } // +/
 
-/+ Compute
+//~ /+ Compute
 for (int i = 0; i < dim; i += 1) {
 	for (int j = 0; j < dim; j += 1) {
 		m3[i][j] = 0;
@@ -427,12 +450,12 @@ for (int i = 0; i < dim; i += 1) {
 	}
 } // +/
 
-/+ Print
+//~ /+ Print
 for (int i = 0; i < dim; i += 1) {
 	for (int j = 0; j < dim; j += 1) {
 		if (j != 0)
 			putchr(' ');
-		print(m1[i][j]);
+		print(float64(m1[i][j]));
 	}
 	putchr('\n');
 } // +/
@@ -448,7 +471,7 @@ static if (Test.Math & 1) {
 	double sinx = sin(x);
 	double cosx = cos(x);
 	double tanx = tan(x);
-	double logx = log(absx);
+	double logx = log(x);
 	double expx = exp(x);
 	double powx = pow(2, 8);
 	//~ double ___x = ___(x);
@@ -458,7 +481,7 @@ static if (Test.Math & 2) {		// fixed point
 define fixed int32;
 define __fix = 16;
 
-define fixed_fix(int64 &val, int &__fix) = fixed(bits.shr(val + bits.shr(val, __fix) + 1, __fix));
+define fixed_fix(int64 ^val, int ^__fix) = fixed(bits.shr(val + bits.shr(val, __fix) + 1, __fix));
 define add(fixed lhs, fixed rhs, int __fix) = fixed(lhs + rhs);
 define sub(fixed lhs, fixed rhs, int __fix) = fixed(lhs - rhs);
 define mul(fixed lhs, fixed rhs, int __fix) = fixed_fix(int64(lhs) * rhs, __fix);
@@ -511,16 +534,16 @@ struct i32x8 {
 define i32x8(int32 i0) = emit(i32x8, dupp.x1, dupp.x2, dupp.x2, dupp.x1, i32.shr, i32(31), dupp.x1, i32(i0));
 define i32x8(uint32 i0) = emit(i32x8, dupp.x1, dupp.x2, dupp.x2, dupp.x1, i32(0), i32(i0));
 
-define println(i32x8 &x) = emit(
-	void(println()),   void(puti64(x.i1)),
-	void(putchr(',')), void(puti64(x.i2)),
-	void(putchr(',')), void(puti64(x.i3)),
-	void(putchr(',')), void(puti64(x.i4)),
-	void(putchr(',')), void(puti64(x.i5)),
-	void(putchr(',')), void(puti64(x.i6)),
-	void(putchr(',')), void(puti64(x.i7)),
-	void(putchr(',')), void(puti64(x.i8))
-);
+void println(i32x8 &x) {
+	print("%d, ", x.i1);
+	print("%d, ", x.i2);
+	print("%d, ", x.i3);
+	print("%d, ", x.i4);
+	print("%d, ", x.i5);
+	print("%d, ", x.i6);
+	print("%d, ", x.i7);
+	print("%d\n", x.i8);
+}
 
 //~ define sxt64(int32 a) = int64(int32(a));			// sign extend
 define zxt64(int32 a) = int64(uint32(a));			// zero extend
@@ -631,58 +654,54 @@ const TypeCode: int32 {
 	CAST_any = 0x00000000;		// invalid, error, ...
 	CAST_vid = 0x00000001;		// void;
 	CAST_bit = 0x00000002;		// bool;
-	CAST_i32 = 0x00000003;
-	CAST_i64 = 0x00000004;
-	CAST_u32 = 0x00000005;
-	CAST_u64 = 0x00000006;
-	CAST_f32 = 0x00000007;
-	CAST_f64 = 0x00000008;
-	CAST_p4x = 0x00000009;		// vec4f, vec2d / (p2f64, p4f32), (p4f64, p8f32) (p2i64, p4i32, p8i16, p16i8), (p2u64, p4u32, p8u16, p16u8), ...
-	CAST_ptr = 0x0000000a;		// pointer, static array
-	CAST_var = 0x0000000b;		// variant
-	CAST_arr = 0x0000000c;		// slice
-	-CAST_fun = 0x0000000d;		// function
-	-CAST_dlg = 0x0000000e;		// delegate
-	-CAST_err = 0x0000000f;		// ???
+	CAST_i32 = 0x00000003;		// int8, int16, int32
+	CAST_u32 = 0x00000004;		// uint8, uint16, uint32
+	CAST_i64 = 0x00000005;		// int64
+	CAST_u64 = 0x00000006;		// uint64
+	CAST_f32 = 0x00000007;		// float32
+	CAST_f64 = 0x00000008;		// float64
+	CAST_ptr = 0x00000009;		// pointer
+
+	CAST_arr = 0x0000000a;		// slice(size, data)
+	CAST_var = 0x0000000b;		// variant(type, data)
+	CAST_p4x = 0x0000000c;		// 
+	CAST_rec = 0x0000000d;		// typename
+	CAST_ref = 0x0000000e;		// variable
+	CAST_fnc = 0x0000000f;		// function (variable and typename too)
 
 	TYPE_def = 0x00000000;		// alias (or error)
 	TYPE_rec = 0x00000010;		// typename
 	TYPE_ref = 0x00000020;		// variable
 	TYPE_fun = 0x00000030;		// function (variable and typename too)
 
-	ATTR_con = 0x00000010;		// constant
-	ATTR_ref = 0x00000020;		// indirect
-	ATTR_sta = 0x00000040;		// static
-	ATTR_usd = 0x00000080;		// used
-
-
+	ATTR_con = 0x00000001;		// constant
+	ATTR_sta = 0x00000002;		// static
+	ATTR_par = 0x00000004;		// parrallel
+	ATTR_snc = 0x00000008;		// synchronized
+	ATTR_ref = 0x00000010;		// indirect
+	ATTR_pub = 0x00000010;		// public
 }
 
 struct TypeInfo {
-	string file;		// declared in file
+	pointer file;		// declared in file (cstr)
 	int32 line;			// declared on line
 
-	string name;		// typename
+	pointer name;		// typename (cstr)
 	int32 offs;			// offset
 	int32 size;			// size
 
-	class &base;			// base type of TYPE_ref (void, int, float, struct, ...), return type of func
-	class &args;			// record fields / function args
-	class &next;			// next type, arg, field
+	TypeInfo &base;		// function return type, typename base, variable type
+	TypeInfo &args;		// function arguments, typename fields, ?
+	TypeInfo &next;		// next type, argument, field
 
-	int32 kind;			// ref(var / fun), type,
+	int8  kind;			// ref(var / fun), type,
+	int8  cast;			// casts to ...
+	int16 attr;			// attributes
 
 	//~ get typename = bool((this.kind & 0xf) != TYPE_ref);
 	//~ get constant = bool(this.kind & ATTR_con);
 	//~ get indirect = bool(this.kind & ATTR_ind);
 	//~ get function = bool(this.kind & ATTR_fun);
-}
-
-bool typeinfois(TypeInfo ti, TypeCode tc) {
-	if (ty.kind & 255 == tc & 255) {
-		return ty.kind & tc != 0;
-	}
-	return false;
 }
 
 //~ class type: TypeInfo {}
@@ -748,6 +767,26 @@ TypeInfo& lookUp(TypeInfo &type, int level, string name, variant args...) {
 	return null;
 }
 
+bool invoke(variant typename, string name, var args...) { ... }
+bool getValue(variant typename, string name, var value) { ... }
+bool setValue(variant typename, string name, var value) { ... }
+
+struct testcls {
+	static int32 c;
+	int32 a;
+	int32 b;
+}
+
+int t1;
+
+setValue(testcls, "c", var(34));
+t1 = int(getValue(testcls, "c"));
+
+testcls t2;
+
+setValue(t2, "a", var(34));
+t1 = int(getValue(t2, "a"));
+
 bool invoke(TypeInfo &type, string name, var &result, var args...) {
 
 	TypeInfo Method = lookUp(type, -1, name, args);
@@ -777,6 +816,24 @@ bool invoke(TypeInfo &type, string name, var &result, var args...) {
 	}
 
 	return false;
+}
+
+assert(true);
+static struct assert {
+	const Flags {
+		abort = 0x0001;
+		print = 0x0008;
+	}
+	flags = Flags.print | Flags.abort;
+	static void callback(string file, int line, string message, string stacktrace[]) = function() {
+		if (assert.flags & Flags.print) {
+			libc(log, file, line, 0, message);
+		}
+		if (assert.flags & Flags.abort) {
+			exit(-1);
+		}
+	}
+	static void trace(string message);
 }
 
 //~ */

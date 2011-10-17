@@ -63,6 +63,15 @@ typedef enum {
 	tok_last,
 
 	TOKN_err = TYPE_any,
+	TYPE_int = TYPE_i64,
+	TYPE_flt = TYPE_f64,
+	TYPE_str = TYPE_ptr,
+
+	ATTR_const = 0x00000001,		// constant
+	ATTR_byref = 0x00000002,		// indirect
+	ATTR_stat  = 0x00000004,		// static
+	ATTR_glob  = 0x00000008,		// global
+	//~ ATTR_used  = 0x00000080,		// used
 
 	decl_NoDefs = 0x100,		// disable type defs in decl.
 	decl_NoInit = 0x200,		// disable initialization. (disable)
@@ -116,11 +125,17 @@ typedef enum {
 
 	markIP,
 
-	opc_line,		// line info
+	//~ opc_line,		// line info
+
+	b32_bit_and = 0 << 6,
+	b32_bit_shl = 1 << 6,
+	b32_bit_shr = 2 << 6,
+	b32_bit_sar = 3 << 6,
 
 	//~ opc_ldcf = opc_ldc4,
 	//~ opc_ldcF = opc_ldc8,
-	max_reg = 255,	// maximum dup, set, pop, ...
+	max_reg = 255,	// maximum registers for dup, set, pop, ...
+	//~ data_size = 4,	// 
 } vmOpcode;
 typedef struct {
 	int const	code;
@@ -160,11 +175,9 @@ struct list {				// linked list: stringlist, memgr, ...
 	unsigned char	*data;
 	unsigned int	size;	// := ((char*)&node) - data;
 	unsigned int	_pad;
-	//~ long	offs;
-	//~ void	*data;
 	//~ unsigned int	offs;	// offset in file ?
 };
-struct astn {				// tree node
+struct astn {				// tree node (code)
 	symn		type;				// typeof() return type of operator ... base type of IDTF
 	ccToken		kind;				// code: TYPE_ref, OPER_???
 	ccToken		cst2;				// casts to basic type: (i32, f32, i64, f64, ref, bool, void)
@@ -212,7 +225,7 @@ struct astn {				// tree node
 	uint32_t	line;				// token on line
 	uint32_t	temp;				// token on line
 };
-struct symn {				// type node
+struct symn {				// type node (data)
 	char*	name;
 	char*	file;
 	int		line;
@@ -222,7 +235,7 @@ struct symn {				// type node
 	symn	decl;		// declared in
 	symn	type;		// base type of TYPE_ref (void, int, float, struct, ...)
 	symn	args;		// REC fields / FUN params
-	//~ symn	stat;		// static members / variables
+	symn	stat;		// static members / variables
 	symn	next;		// symbols on table/args
 
 	TODO(4 types of symbols)
@@ -238,22 +251,21 @@ struct symn {				// type node
 
 	uint8_t	kind;		// TYPE_ref || TYPE_def || TYPE_rec || TYPE_arr
 	uint8_t	cast;		// casts to type(TYPE_(bit, vid, ref, u32, i32, i64, f32, f64, p4x)).
-	//~ uint8_t	attr;		// attributes (const static /+ private, ... +/).
-	uint8_t	pack;		// alignment
+	uint8_t	attr;		// attributes (const static /+ private, ... +/).
+	uint8_t	____pack;		// alignment unused
 
 	uint8_t	call:1;		// function / callable => (kind == TYPE_ref && args)
-	uint8_t	stat:1;		// static ?
-	uint8_t	glob:1;		// global
+	//~ uint8_t	stat:1;		// static ?
+	//~ uint8_t	glob:1;		// global
 	//~ uint8_t	load:1;		// indirect reference: cast == TYPE_ref
 
 	//~ uint8_t	priv:1;		// private
-	uint8_t	read:1;		// const / no override
+	//~ uint8_t	read:1;		// const / no override
 	//~ uint8_t	used:1;		// const / no override
 
-	uint32_t	xx_1:4;		// -Wpadded
-	uint16_t	_pad;		// used
+	uint16_t	_pad1:15;		// used
 	uint16_t	nest;		// declaration level
-	uint32_t	refc;		// referenced count
+	//~ uint32_t	refc;		// referenced count
 	astn	init;		// VAR init / FUN body
 
 	// list(scoping)
@@ -263,6 +275,19 @@ struct symn {				// type node
 	//~ symn	uses;		// declared in
 	char*	pfmt;		// print format
 };
+
+typedef struct arrBuffer {
+	char *ptr;
+	int esz;		// element size
+	int cap;		// capacity
+	int cnt;		// length
+} arrBuffer;
+
+void* getBuff(struct arrBuffer* buff, int idx);
+void* setBuff(struct arrBuffer* buff, int idx, void* data);
+void* addBuff(arrBuffer* buff, void* data);
+void initBuff(struct arrBuffer* buff, int initsize, int elemsize);
+void freeBuff(struct arrBuffer* buff);
 
 struct ccState {
 	state	s;
@@ -303,26 +328,33 @@ struct ccState {
 			astn	tokp;		// token pool
 			astn	_tok;		// next token
 			int		_chr;		// next char
-			//~ int		_pad;		// next char
-		};// file[TOKS];
-
-		/*struct {		// current decl
-			symn	csym;
-			//~ symn	cref;
-			//~ astn	stmt;
-
-			//~ astn	_brk;	// list: break
-			//~ astn	_con;	// list: continue
-		} scope[TOKS];// */
+			//~ int		_pad;		//
+		};
 	};
 
 	astn	void_tag;		// no parameter of type void
 	astn	emit_tag;		// "emit"
+
+	//~ symn	type_vid;
+	//~ symn	type_bol;
+	//~ symn	type_u32;
+	//~ symn	type_i32;
+	//~ symn	type_i64;
+	//~ symn	type_f32;
+	//~ symn	type_f64;
+	//~ symn	type_str;
+	//~ symn	type_ptr;
+
+	//~ symn	null_ref;
+	//~ symn	emit_opc;
+
 	char	*_beg;
 	char	*_end;
+	arrBuffer dbg;
 };
 static inline int kindOf(astn ast) {return ast ? ast->kind : 0;}
 
+TODO("these should go to ccState or runtime state")
 extern symn type_vid;
 extern symn type_bol;
 extern symn type_u32;
@@ -335,10 +367,6 @@ extern symn type_str;
 extern symn type_ptr;
 extern symn null_ref;
 
-//~ extern symn type_v4f;
-//~ extern symn type_v2d;
-
-//~ extern symn void_arg;
 extern symn emit_opc;
 
 
@@ -356,19 +384,17 @@ void dumpsym(FILE *fout, symn sym, int mode);
 //~ void dumpast(FILE *fout, astn ast, int mode);
 //~ void dumpxml(FILE *fout, astn ast, int lev, const char* text, int level);
 
-// Runtime / global state
-void* rtAlloc(state rt, void* ptr, int size);	// realloc/alloc/free
-//~ void* getmem(state s, int size, unsigned clear);
-
 symn newdefn(ccState s, int kind);
 astn newnode(ccState s, int kind);
 astn opnode(ccState s, int kind, astn lhs, astn rhs);
 astn lnknode(ccState s, symn ref);
 astn newIden(ccState s, char* id);
+
 astn intnode(ccState s, int64_t v);
-//~ astn fltnode(ccState s, float64_t v);
+astn fltnode(ccState s, float64_t v);
 astn strnode(ccState s, char *v);
-astn fh8node(ccState s, uint64_t v);
+//~ astn fh8node(ccState s, uint64_t v);
+
 astn cpynode(ccState s, astn src);
 void eatnode(ccState s, astn ast);
 
@@ -392,7 +418,7 @@ int fixargs(symn sym, int align, int spos);
 
 int castOf(symn typ);
 int castTo(astn ast, int tyId);
-int castTy(astn ast, symn type);
+//~ int typeTo(astn ast, symn type);
 symn promote(symn lht, symn rht);
 
 int32_t constbol(astn ast);
@@ -450,6 +476,7 @@ int fixjump(state, int src, int dst, int stc);
 
 // returns the stack size
 int stkoffs(state s, int size);
+int padded(int offs, int align);
 
 int isType(symn sym);
 int istype(astn ast);

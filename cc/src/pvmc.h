@@ -25,7 +25,7 @@ enum CompilerRegister {
 	//~ creg_math = 0x000?,
 	//~ creg_rtty = 0x000?,
 	creg_all  = -1,
-	creg_def = creg_eopc,
+	creg_def = creg_eopc,// | creg_swiz,
 };
 
 typedef struct state {
@@ -82,25 +82,31 @@ typedef enum {
 	//~ copt_memstack = 2;
 	//~ copt_noGlobaStatic = 0x100,
 
-	// dump()
 	//~ dump_bin = 0x0000100,
-	dump_txt = 0x0000800,
 	dump_sym = 0x0000100,
 	dump_asm = 0x0000200,
 	dump_ast = 0x0000400,
+	dump_txt = 0x0000800,
 	dumpMask = 0x0000f00,
 } srcType, dumpMode;
 
 // run-time
+// Runtime / global state
 state rtInit(void* mem, unsigned size);
+void* rtAlloc(state rt, void* ptr, unsigned size);	// realloc/alloc/free
 
 /** return the internal offset of a reference
  *  aborts if ptr not inside the context.
  */
 int vmOffset(state s, void *ptr);
 
-int logfile(state, char *file);				// logger
-int logFILE(state, FILE *file);				// logger
+// output
+void fputfmt(FILE *fout, const char *msg, ...);
+void dump(state, dumpMode, symn, char* text, ...);
+
+// logging
+int logfile(state, char *file);				// set logger
+int logFILE(state, FILE *file);				// set logger
 
 // compile
 //~ int srcfile(state, char *file);				// source
@@ -110,12 +116,45 @@ int gencode(state, int level);				// optimize level
 //~ int execute(state, int cc, int ss, dbgf dbg);
 int parse(ccState, srcType, int wl);
 
+// instal io, mem, math and parse optionaly the given file
+int install_stdc(state rt, char* file, int level);
+
 symn libcall(state, int libc(state), int pass, const char* proto);
 //~ symn install(state, int libc(state), int pass, const char* proto);
 symn installtyp(state s, const char* name, unsigned size);
 //~ symn installvar(state s, const char* name, symn type, unsigned offset);
 
-// execute
+// Level 1 Functions: use less these
+ccState ccInit(state, int mode);
+ccState ccOpen(state, srcType, char* source);
+int ccDone(state);
+
+//~ state vmInit(state);
+//~ int vmOpen(state, char* binary);
+//~ int vmDone(state s);				// call onexit()
+
+void ccSource(ccState, char *file, int line);
+
+// declaring constants and namespaces
+symn ccBegin(state rt, char *cls);
+symn ccDefineInt(state rt, char *name, int32_t value);
+symn ccDefineFlt(state rt, char *name, double value);
+symn ccDefineStr(state rt, char *name, char* value);
+void ccEnd(state rt, symn cls);
+
+// searching for symbols ...
+symn findref(state s, void *ptr);
+symn findsym(ccState s, symn in, char *name);
+
+int symvalint(symn sym, int* res);
+int symvalflt(symn sym, double* res);
+//~ int symistrue(symn sym);
+
+//~ int findnzv(ccState s, char *name);
+//~ int findint(ccState s, char *name, int* res);
+//~ int findflt(ccState s, char *name, double* res);
+
+// executing code ...
 int libCallExitDebug(state s);
 int libCallExitQuiet(state s);
 int (*libcSwapExit(state s, int libc(state)))(state);
@@ -125,34 +164,9 @@ typedef int (*dbgf)(state s, int pu, void *ip, long* sptr, int scnt);
 int vmExec(state, dbgf dbg);
 int vmCall(state, symn fun, ...);
 
-// output
-void fputfmt(FILE *fout, const char *msg, ...);
 
-void dump(state, dumpMode, symn, char* text, ...);
-
-// Level 1 Functions: use less these
-ccState ccInit(state, int mode);
-ccState ccOpen(state, srcType, char* source);
-
-int ccDone(state);
-
-//~ state vmInit(state);
-//~ int vmOpen(state, char* source);
-//~ int vmDone(state s);		// what should do this
-
-void ccSource(ccState, char *file, int line);
-
-symn ccBegin(state rt, char *cls);
-void ccEnd(state rt, symn cls);
-
-symn findref(state s, void *ptr);
-symn findsym(ccState s, symn in, char *name);
-
-int findnzv(ccState s, char *name);
-int findint(ccState s, char *name, int* res);
-int findflt(ccState s, char *name, double* res);
-
-#define poparg(__ARGV, __SIZE) ((void*)(((__ARGV)->argv += (((__SIZE) | 3) & ~3)) - (__SIZE)))
+//~ #define poparg(__ARGV, __SIZE) ((void*)(((__ARGV)->argv += (((__SIZE) + 3) & ~3)) - (((__SIZE) + 3) & ~3))))
+#define poparg(__ARGV, __SIZE) ((void*)(((__ARGV)->argv += (__SIZE)) - (__SIZE)))
 #define popaty(__ARGV, __TYPE) (*(__TYPE*)(poparg((__ARGV), sizeof(__TYPE))))
 
 #define retptr(__ARGV, __TYPE) ((__TYPE*)(__ARGV->retv))
@@ -173,6 +187,7 @@ static inline void* popvar(state s, void* dst, int size) { return memcpy(dst, po
 //~ static inline void reti64(state s, int64_t val) { setret(int64_t, s, val); }
 //~ static inline void retf32(state s, float32_t val) { setret(float32_t, s, val); }
 //~ static inline void retf64(state s, float64_t val) { setret(float64_t, s, val); }
+//~ static inline void retref(state s, float64_t val) { setret(float64_t, s, vmOffset(s, val)); }
 #endif
 
 #define DEBUGGING 1

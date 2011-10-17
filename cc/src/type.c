@@ -53,11 +53,12 @@
 arrays:
 	trhere are 2 kind of arrays.
 
-		static size arrays:
+		Fixed-size arrays:
 			int a[2]
 
-		pass by reference,
+		are passed by reference,
 
+		Dinamic-size arrays:
 		slices:
 			int a[]
 		this is actually a struct {const int length; const pointer data}, where type of data is known by the compiler.
@@ -73,7 +74,7 @@ structures:
 		ex: struct Complex {double re; double im};
 		will define:
 			define Complex(double re; double im) = emit(Complex, f64(re), f64(im));
-			define Complex(pointer ptr) = emit(Complex&, ref(ptr));
+			define Complex(pointer ptr) = emit(Complex&, ptr(ptr));
 			define implicit operator variant(Complex &var) = emit(variant, ref(Complex), ref(var));
 
 			// this should throw an exception
@@ -84,7 +85,7 @@ structures:
 #include "ccvm.h"
 #include <string.h>
 
-TODO(this should go to ccState !)
+TODO("this should go to ccState !")
 symn type_vid = NULL;
 symn type_bol = NULL;
 symn type_u32 = NULL;
@@ -138,10 +139,10 @@ symn installex(ccState s, const char* name, int kind, unsigned size, symn type, 
 			//~ def->call = 1;
 
 		if (kind & symn_stat)
-			def->stat = 1;
+			def->attr |= ATTR_stat;
 
 		if (kind & symn_const)
-			def->read = 1;
+			def->attr |= ATTR_const;
 
 		switch (kind & 0xff) {
 			default:
@@ -152,7 +153,7 @@ symn installex(ccState s, const char* name, int kind, unsigned size, symn type, 
 			case TYPE_arr:
 			case TYPE_rec:
 				def->offs = vmOffset(s->s, def);
-				def->pack = size;
+				//~ def->pack = size;
 
 			// variable
 			case TYPE_def:
@@ -194,7 +195,12 @@ symn addarg(ccState cc, symn sym, const char* name, int kind, symn typ, astn ini
 	enter(cc, NULL);
 	installex(cc, name, kind, 0, typ, init);
 	sym->args = leave(cc, sym, 0);
-	sym->args->next = args;
+	if (sym->args) {	// non static member
+		sym->args->next = args;
+	}
+	else {
+		sym->args = args;
+	}
 	return sym->args;
 }
 
@@ -314,7 +320,7 @@ int check(astn arg, symn ref) {
 		if (ref->type == arg->type)
 			return 1;
 
-		/*TODO(TEMP)
+		//~ /*TODO(TEMP)
 		if (ref->type->cast == arg->type->cast) {
 			if (ref->type->size == arg->type->size) {
 				switch (ref->type->cast) {
@@ -349,7 +355,7 @@ symn lookup(ccState s, symn sym, astn ref, astn args, int raise) {
 	dieif(!ref || ref->kind != TYPE_ref, "FixMe");
 
 	// linearize args
-	/*if (args) {
+	/*if (args && args->kind == OPER_com) {
 		astn next = NULL;
 
 		//~ if (args->kind == OPER_com)
@@ -448,7 +454,7 @@ symn lookup(ccState s, symn sym, astn ref, astn args, int raise) {
 			}
 		}
 
-		if (s->func && s->func->gdef && sym->nest && !sym->stat && sym->nest < s->maxlevel) {
+		if (s->func && s->func->gdef && sym->nest && !(sym->attr & ATTR_stat) && sym->nest < s->maxlevel) {
 			error(s->s, ref->file, ref->line, "invalid use of local symbol `%k`.", ref);
 			//~ continue;
 		}
@@ -592,26 +598,37 @@ symn linkOf(astn ast) {
 	if (ast->kind == OPER_fnc)
 		return linkOf(ast->op.lhso);
 
-	TODO(static variables ?)
+	TODO("static variables ?")
 	if (ast->kind == OPER_dot)		// i32.mad
 		return linkOf(ast->op.rhso);
-		//~ return njr ? linkOf(ast->op.rhso, njr) : NULL;
 
 	// get base
 	if (ast->kind == OPER_idx)
 		return linkOf(ast->op.lhso);
-		//~ return njr ? linkOf(ast->op.lhso, njr) : NULL;
 
 	if (ast->kind == EMIT_opc)
 		return emit_opc;
 
-	dieif(ast->kind != TYPE_ref, "unexpected kind: %t(%+k)", ast->kind, ast);
+	if (ast->kind != TYPE_ref)
+		dieif(ast->kind != TYPE_ref, "unexpected kind: %t(%+k)", ast->kind, ast);
 
-	if (isType(ast->id.link))
-		return ast->type;
+	//~ if (isType(ast->id.link))
+		//~ return ast->type;
 
-	//~ if (ast->id.link->kind == TYPE_def)
-		//~ return linkOf(ast->id.link->init, njr2);
+	//~ if (ast->id.link->kind == TYPE_def && !ast->id.link->init)
+		//~ return linkOf(ast->type);
+
+	if (ast->id.link) {
+		// skip type defs
+		symn lnk = ast->id.link;
+		if (lnk && lnk->kind == TYPE_def && lnk->init->kind == TYPE_ref) {
+			//~ if (lnk->init)
+				//~ break;
+			lnk = linkOf(lnk->init);
+		}// */
+		return lnk;
+		//~ debug("%T: %t: %+k", lnk, lnk->kind, lnk);
+	}// */
 
 	return ast->id.link;
 }// */
@@ -623,22 +640,20 @@ long sizeOf(symn typ) {
 		//~ case TYPE_bit:
 		//~ case TYPE_int:
 		//~ case TYPE_flt:
-		case TYPE_rec:
-		case EMIT_opc:
-			return typ->size;
 
 		case TYPE_arr:
 			return typ->size * sizeOf(typ->type);
 
+		case EMIT_opc:
+		case TYPE_rec:
+			if (typ->cast == TYPE_ref)
+				return 4;
+			return typ->size;
 		case TYPE_def:
 		case TYPE_ref:
-			//~ if (typ->call)
-				//~ return 4;
 			if (typ->cast == TYPE_ref)
 				return 4;
 			return sizeOf(typ->type);
-		//~ case TYPE_def:
-			//~ return sizeOf(typ->type);
 	}
 	fatal("failed(%t): %-T", typ ? typ->kind : 0, typ);
 	return 0;
@@ -666,22 +681,62 @@ int castOf(symn typ) {
 	debug("failed(%t): %?-T", typ ? typ->kind : 0, typ);
 	return 0;
 }
-int castTo(astn ast, int cast) {
+int castTo(astn ast, int cto) {
+	int atc = 0;
 	if (!ast) return 0;
-	TODO(check validity / Remove function)
+	TODO("check validity / Remove function");
+
+	atc = ast->type ? ast->type->cast : 0;
+	if (cto != atc) switch (cto) {
+		case TYPE_vid:		// void(true): can cast 2 to void !!!
+		case TYPE_bit:
+		case TYPE_u32:
+		case TYPE_i32:
+		case TYPE_i64:
+		case TYPE_f32:
+		case TYPE_f64: switch (atc) {
+			//~ case TYPE_vid:
+			case TYPE_bit:
+			case TYPE_u32:
+			case TYPE_i32:
+			case TYPE_i64:
+			case TYPE_f32:
+			case TYPE_f64:
+				break;
+
+			default:
+				goto error;
+		} break;
+		//~ case TYPE_ref:
+		default:
+		error:
+			trace("cast(%+k) to %t/%t", ast, cto, atc);
+			//~ return 0;
+	}
 	//~ debug("cast `%+k` to (%t)", ast, cast);
-	return ast->cst2 = cast;
+	return ast->cst2 = cto;
 }
-int castTy(astn ast, symn type) {
+static int typeTo(astn ast, symn type) {
 	if (!ast) return 0;
-	TODO(check validity / Remove function)
+
+	TODO("check validity / Remove function");
+
 	//~ if (ast->type == emit_opc)
 		//~ return EMIT_opc;
+
+	while (ast->kind == OPER_com) {
+		if (!typeTo(ast->op.rhso, type)) {
+			trace("%k", ast);
+			return 0;
+		}
+		ast = ast->op.lhso;
+	}
 
 	return castTo(ast, castOf(ast->type = type));
 }
 
 symn typecheck(ccState cc, symn loc, astn ast) {
+	int checkStaticMembers = 0;
 	astn ref = 0, args = 0;
 	symn result = NULL;
 	astn dot = NULL;
@@ -796,7 +851,10 @@ symn typecheck(ccState cc, symn loc, astn ast) {
 
 			loc = sym;
 			ref = ast->op.rhso;
-			//~ debug("lookup %+k in %T", ref, loc);
+			debug("%T", linkOf(ast->op.lhso));
+			if (isType(linkOf(ast->op.lhso)))
+				checkStaticMembers = 1;
+			debug("lookup %+k in %T / %d", ref, loc, checkStaticMembers);
 		} break;
 		case OPER_idx: {
 			symn lht = typecheck(cc, loc, ast->op.lhso);
@@ -822,6 +880,7 @@ symn typecheck(ccState cc, symn loc, astn ast) {
 		case OPER_pls:		// '+'
 		case OPER_mns:		// '-'
 		case OPER_cmt:		// '~'
+		case OPER_adr:		// '&'
 		case OPER_not: {	// '!'
 			int cast;
 			symn rht = typecheck(cc, loc, ast->op.rhso);
@@ -830,11 +889,15 @@ symn typecheck(ccState cc, symn loc, astn ast) {
 				debug("cast(%T)[%k]: %+k", rht, ast, ast);
 				return NULL;
 			}
-			if ((cast = castTy(ast, rht))) {
+			if ((cast = typeTo(ast, rht))) {
 				ast->type = rht;
 				if (ast->kind == OPER_not) {
 					ast->type = type_bol;
 					ast->cst2 = TYPE_bit;
+				}
+				else if (ast->kind == OPER_adr) {
+					//~ ast->type = type_ptr;
+					cast = ast->cst2 = ASGN_set;
 				}
 				if (!castTo(ast->op.rhso, cast)) {
 					debug("%T('%k', %+k): %t", rht, ast, ast, cast);
@@ -901,7 +964,7 @@ symn typecheck(ccState cc, symn loc, astn ast) {
 				debug("cast(%T, %T): %T", lht, rht, 0);
 				return NULL;
 			}
-			if ((cast = castTy(ast, promote(lht, rht)))) {
+			if ((cast = typeTo(ast, promote(lht, rht)))) {
 				if (!castTo(ast->op.lhso, cast)) {
 					debug("%T('%k', %+k): %t", lht, ast, ast, cast);
 					return 0;
@@ -953,7 +1016,7 @@ symn typecheck(ccState cc, symn loc, astn ast) {
 			}
 
 			if (cast || (cast = castOf(promote(lht, rht)))) {
-				if (!castTy(ast, type_bol)) {
+				if (!typeTo(ast, type_bol)) {
 					debug("%T('%k', %+k): %t", lht, ast, ast, cast);
 					return 0;
 				}
@@ -981,7 +1044,7 @@ symn typecheck(ccState cc, symn loc, astn ast) {
 				debug("cast(%T, %T)", lht, rht);
 				return NULL;
 			}
-			if ((cast = castTy(ast, promote(lht, rht)))) {
+			if ((cast = typeTo(ast, promote(lht, rht)))) {
 				if (!castTo(ast->op.lhso, TYPE_bit)) {
 					debug("%T('%k', %+k): %t", lht, ast, ast, cast);
 					return 0;
@@ -1006,7 +1069,7 @@ symn typecheck(ccState cc, symn loc, astn ast) {
 				debug("cast(%T, %T)[%k]", lht, rht, ast);
 				return NULL;
 			}
-			if ((cast = castTy(ast, promote(lht, rht)))) {
+			if ((cast = typeTo(ast, promote(lht, rht)))) {
 				if (!castTo(ast->op.test, TYPE_bit)) {
 					debug("%T('%k', %+k): %t", cmp, ast, ast, TYPE_bit);
 					return 0;
@@ -1024,8 +1087,35 @@ symn typecheck(ccState cc, symn loc, astn ast) {
 			fatal("operator %k (%T %T): %+k", ast, lht, rht, ast);
 		} break;
 
+		TODO("FixMe");
+		case OPER_com: {	// ''
+			symn lht = typecheck(cc, loc, ast->op.lhso);
+			symn rht = typecheck(cc, loc, ast->op.rhso);
+
+			if (!lht || !rht || loc) {
+				debug("cast(%T, %T)[%k]: %+k", lht, rht, ast, ast);
+				return NULL;
+			}
+			if (lht->cast && rht->cast) {
+				symn typ = promote(lht, rht);
+				int cast = castOf(typ);
+				if (!castTo(ast->op.lhso, cast)) {
+					debug("%T('%k', %+k): %-T", lht, ast, ast, typ);
+					return 0;
+				}
+				if (!castTo(ast->op.rhso, cast)) {
+					debug("%T('%k', %+k): %t", rht, ast, ast, cast);
+					return 0;
+				}
+				return ast->type = typ;
+			}
+			fatal("operator %k (%T, %T): %+k", ast, lht, rht, ast);
+		}
+		// */
+
 		// operator set
 		case ASGN_set: {	// ':='
+			int byVal;
 			symn lht = typecheck(cc, loc, ast->op.lhso);
 			symn rht = typecheck(cc, loc, ast->op.rhso);
 
@@ -1034,19 +1124,27 @@ symn typecheck(ccState cc, symn loc, astn ast) {
 				return NULL;
 			}
 
+			byVal = !(ast->op.lhso->kind == OPER_adr || lht->cast == TYPE_ref);
 			/* this didn't work with i += 1; same ast for i
 			if (!castTo(ast->op.lhso, TYPE_ref)) {
 				debug("%T('%k', %+k): %t", rht, ast, ast, TYPE_ref);
 				return 0;
 			}// */
-			if (!promote(lht, rht)) {
-				trace("Here");
+			if (byVal && !promote(lht, rht)) {
+				trace("promote(%-T, %-T)", lht, rht);
+				trace("%+k", ast);
 				return 0;
 			}
 			if (!castTo(ast->op.rhso, castOf(lht))) {
 				debug("%T('%k', %+k): %t", rht, ast, ast, castOf(lht));
 				return 0;
 			}
+			// assignment by reference
+			//~ /*
+			if (!byVal) {
+				ast->op.rhso->cst2 = TYPE_ref;
+				ast->op.lhso->cst2 = ASGN_set;
+			}// */
 			ast->type = lht;
 			return ast->type;
 		} break;
@@ -1067,11 +1165,11 @@ symn typecheck(ccState cc, symn loc, astn ast) {
 			switch (ast->kind) {
 				/*case TYPE_int: {
 					int is32 = ast->con.cint != (int32_t)ast->con.cint;
-					return castTy(ast, is32 ? type_i32 : type_i64);
+					return typeTo(ast, is32 ? type_i32 : type_i64);
 				}*/
-				case TYPE_int: return castTy(ast, type_i32) ? type_i32 : NULL;
-				case TYPE_flt: return castTy(ast, type_f64) ? type_f64 : NULL;
-				case TYPE_str: return castTy(ast, type_str) ? type_str : NULL;
+				case TYPE_int: return typeTo(ast, type_i32) ? type_i32 : NULL;
+				case TYPE_flt: return typeTo(ast, type_f64) ? type_f64 : NULL;
+				case TYPE_str: return typeTo(ast, type_str) ? type_str : NULL;
 				case EMIT_opc: return ast->type = emit_opc;
 				default: break;
 			}
@@ -1079,7 +1177,16 @@ symn typecheck(ccState cc, symn loc, astn ast) {
 	}
 
 	if (ref && ref != cc->void_tag) {
-		sym = loc ? loc->args : cc->deft[ref->id.hash];
+		sym = cc->deft[ref->id.hash];
+
+		if (loc != NULL) {
+			if (checkStaticMembers)
+				sym = loc->stat;
+			else
+				sym = loc->args;
+		}
+		//~ else
+		//~ sym = loc ? loc->args : cc->deft[ref->id.hash];
 
 		if ((sym = lookup(cc, sym, ref, args, 1))) {
 
@@ -1164,15 +1271,6 @@ int padded(int offs, int align) {
 	return align + ((offs - 1) & ~(align - 1));
 }
 
-/*int argsize(symn sym, int align) {
-	symn arg;
-	int stdiff = 0;
-	for (arg = sym->args; arg; arg = arg->next) {
-		stdiff += padded(sizeOf(arg->type), align);
-	}
-	return stdiff;
-}// */
-
 int fixargs(symn sym, int align, int stbeg) {
 	symn arg;
 	int stdiff = 0;
@@ -1192,7 +1290,7 @@ int fixargs(symn sym, int align, int stbeg) {
 		arg->nest = 0;
 		arg->size = sizeOf(arg);
 		//~ arg->size = arg->type->size;
-		arg->offs = stbeg + stdiff;
+		arg->offs = align ? stbeg + stdiff : stbeg;
 		stdiff += padded(arg->size, align);
 
 		if (align == 0 && stdiff < arg->size)
@@ -1209,6 +1307,8 @@ int fixargs(symn sym, int align, int stbeg) {
 	return stdiff;
 
 }
+
+//~ static int fixstat(symn sym)
 
 //~ scoping
 void enter(ccState s, astn ast) {
@@ -1240,7 +1340,8 @@ void enter(ccState s, astn ast) {
 }
 symn leave(ccState cc, symn dcl, int mkstatic) {
 	state rt = cc->s;
-	symn arg = NULL;
+	symn loc = NULL;
+	symn sta = NULL;
 	int i;
 
 	cc->nest -= 1;
@@ -1269,102 +1370,55 @@ symn leave(ccState cc, symn dcl, int mkstatic) {
 		rt->defs = sym->defs;
 
 		if (mkstatic) {
-			sym->stat = 1;
+			sym->attr |= ATTR_stat;
 		}
 
 		// if not inside a static if, link to all
 		if (!cc->siff) {
 			sym->defs = cc->defs;
 			cc->defs = sym;
-			if (sym->stat) {
-				/*//~ symn pg = NULL;
-				//~ symn ng = rt->gdef;
-
-				// the order of global variable/function creation.
-				// 1. find the previous and next declared global variable.
-				// 2. find the first symbol on the same level.
-					// if found and the posititon is smaller then the previous(deeper) var
-					// then this is the parent of these variables, so generate on its place.
-					// else this will be the father of larger nesting variables.
-
-				while (ng && ng->nths < sym->nths) {
-					pg = ng;
-					ng = ng->gdef;
-				}
-
-				if (ng) {
-					symn og = NULL;
-					while (ng && ng->nest > sym->nest) {
-						og = ng;
-						ng = ng->gdef;
-					}
-					if (ng && ng->nest == sym->nest && og && og->nths > ng->nths) {
-					}
-					else if (og) {
-						pg = og;
-					}
-				}
-
-				if (pg) {
-					sym->gdef = pg->gdef;
-					pg->gdef = sym;
-				}
-				else {
-					sym->gdef = rt->gdef;
-					rt->gdef = sym;
-				}// */
-
-				/*trace("sym: %-T%-T", dcl, sym);
-				while (cc->gdef) {
-					symn pop = cc->gdef;
-
-					if (pop->nest > sym->nest)
-						break;
-
-					cc->gdef = cc->gdef->gdef;
-					pop->gdef = rt->gdef;
-					rt->gdef = pop;
-
-				}*/
-
+			if (sym->attr & ATTR_stat) {
 				sym->gdef = rt->gdef;
 				rt->gdef = sym;
-				/*symn ng, pg = NULL;
-
-				for (ng = sym; ng; ng = ng->gdef) {
-					if (ng->decl == sym)
-						break;
-					pg = ng;
-				}
-
-				if (pg) {
-					symn del = pg;
-					symn sub = ng;
-					while (ng && ng->decl == sym) {
-						pg = ng;
-						ng = ng->gdef;
-					}
-					trace("insert %-T...%-T before %-T", sub, pg, sym);
-
-					if (sub) {
-					del->gdef = ng;	// remove
-
-					// this is the last item to remove
-					pg->gdef = sym;
-					rt->gdef = sub;
-					}
-				}*/
 			}
 		}
 
-		sym->next = arg;
-		arg = sym;
+		if (sym->attr & ATTR_stat) {
+			sym->next = sta;
+			sta = sym;
+		}
+		else {
+			sym->next = loc;
+			loc = sym;
+		}
 	}
-	//~ /*
+
+	if (sta) {
+		if (dcl) {
+			dcl->stat = sta;
+		}
+		else if (cc->func) {
+			cc->func->stat = sta;
+		}
+	}
+
+	if (mkstatic) {
+		loc = sta;
+	}
+
+	/* when last called this function reorder the
+	 * creation/initialization of static variables.
+	 * ex: g must be generated before f
+	 *	int f() {
+	 *		static int g = 9;
+	 *		// ...
+	 *	}
+	 */
 	if (cc->nest == -1) {
 		symn ng, pg = NULL;
 		for (ng = rt->gdef; ng; ng = ng->gdef) {
 			symn Ng, Pg = NULL;
+
 			//~ trace("checking symbol %-T", ng);
 			for (Ng = ng; Ng; Ng = Ng->gdef) {
 				if (Ng->decl == ng) {
@@ -1372,12 +1426,13 @@ symn leave(ccState cc, symn dcl, int mkstatic) {
 				}
 				Pg = Ng;
 			}
+
 			//~ this must be generated before sym;
 			if (Ng) {
 				//~ trace("symbol %-T before %-T", Ng, ng);
 				Pg->gdef = Ng->gdef;	// remove
 
-				Ng->gdef = ng;			// 
+				Ng->gdef = ng;
 				if (pg)
 					pg->gdef = Ng;
 				else
@@ -1385,13 +1440,13 @@ symn leave(ccState cc, symn dcl, int mkstatic) {
 
 				ng = pg;
 
-			}// * /
+			}
 
 			pg = ng;
 		}
 	}// */
 
-	return arg;
+	return loc;
 }
 
 // }

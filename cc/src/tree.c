@@ -36,20 +36,6 @@ astn newIden(ccState s, char* id) {
 }
 
 /*
-astn fltnode(ccState s, float64_t v) {
-	astn ast = newnode(s, TYPE_flt);
-	//~ ast->type = type_f64;
-	ast->con.cflt = v;
-	return ast;
-}
-
-astn strnode(ccState s, char * v) {
-	astn ast = newnode(s, TYPE_str);
-	ast->id.hash = -1;
-	ast->id.name = v;
-	return ast;
-}
-
 astn cpynode(ccState s, astn src) {
 	astn ast = newnode(s, 0);
 	*ast = *src;
@@ -84,6 +70,19 @@ astn intnode(ccState s, int64_t v) {
 	ast->con.cint = v;
 	return ast;
 }
+astn fltnode(ccState s, float64_t v) {
+	astn ast = newnode(s, TYPE_flt);
+	ast->type = type_f64;
+	ast->con.cflt = v;
+	return ast;
+}
+astn strnode(ccState s, char * v) {
+	astn ast = newnode(s, TYPE_str);
+	ast->id.hash = -1;
+	ast->id.name = v;
+	return ast;
+}
+
 void eatnode(ccState s, astn ast) {
 	if (!ast) return;
 	ast->next = s->tokp;
@@ -133,19 +132,20 @@ int eval(astn res, astn ast) {
 	switch (ast->cst2) {
 		case TYPE_bit: cast = TYPE_bit; break;
 
-		case TYPE_int:
-		case TYPE_u32: cast = TYPE_int; break;
+		//~ case TYPE_int:
 		case TYPE_i32: cast = TYPE_int; break;
-
-		//~ case TYPE_u64: cast = TYPE_int; break;
+		case TYPE_u32: cast = TYPE_int; break;
 		case TYPE_i64: cast = TYPE_int; break;
+		//~ case TYPE_u64: cast = TYPE_int; break;
 
+		//~ case TYPE_flt:
 		case TYPE_f32: cast = TYPE_flt; break;
 		case TYPE_f64: cast = TYPE_flt; break;
 
 		default:
 			debug("(%+k):%t / %d", ast, ast->cst2, ast->line);
 
+		case ASGN_set:
 		case TYPE_arr:
 		case TYPE_rec:
 		case TYPE_ref:
@@ -180,6 +180,7 @@ int eval(astn res, astn ast) {
 				return 0;
 
 		} break;
+		case OPER_adr:
 		case OPER_idx:
 			return 0;
 

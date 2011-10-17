@@ -21,8 +21,17 @@ enum Format {
 	noName = 0x0080,
 
 	// xml
+	//~ prType = 0x0010,
 	prCast = 0x0020,
+	//~ prArgs = 0x0040,
 	prLine = 0x0080,
+
+	// dump
+	//~ prType = 0x0010,
+	//~ prCast = 0x0020,
+	prInit = 0x0040,
+	//~ prLine = 0x0080,
+
 };
 
 static void fputesc(FILE *fout, char* str) {
@@ -334,6 +343,7 @@ static void fputast(FILE *fout, astn ast, int mode, int level) {
 		} break;// */
 	//~ case OPER_dot:
 
+		case OPER_adr:		// '&'
 		case OPER_pls:		// '+'
 		case OPER_mns:		// '-'
 		case OPER_cmt:		// '~'
@@ -390,6 +400,7 @@ static void fputast(FILE *fout, astn ast, int mode, int level) {
 			}
 			else switch (ast->kind) {
 				default: fatal("FixMe");
+				case OPER_adr: fputstr(fout, "&"); break;		// '.'
 				case OPER_dot: fputstr(fout, "."); break;		// '.'
 				case OPER_pls: fputstr(fout, "+"); break;		// '+'
 				case OPER_mns: fputstr(fout, "-"); break;		// '-'
@@ -564,6 +575,7 @@ static void dumpxml(FILE *fout, astn ast, int lev, const char* text, int level) 
 		case OPER_dot:		// '.'
 		case OPER_idx:		// '[]'
 
+		case OPER_adr:		// '&'
 		case OPER_pls:		// '+'
 		case OPER_mns:		// '-'
 		case OPER_cmt:		// '~'
@@ -922,9 +934,22 @@ void fputfmt(FILE *fout, const char *msg, ...) {
  *	'#': constant(def)
  *	'$': variable(ref)
 **/
-void dumpsym(FILE *fout, symn sym, int alma) {
+void dumpsym(FILE *fout, symn sym, int mode) {
 	symn ptr, bp[TOKS], *sp = bp;
 	const int chrtyp = 0;
+
+	//~ prType = 0x0010,
+	//~ prQual = 0x0020,
+	//~ prArgs = 0x0040,
+	//~ noName = 0x0080,
+	int print_line = mode & prLine;		// print file and location
+	int print_type = mode & prType;
+	int print_cast = mode & prCast;
+	int print_init = mode & prInit;
+	int print_info = 0;
+
+	mode &= 0x0f;
+
 	for (*sp = sym; sp >= bp;) {
 		char* tch = NULL;
 		if (!(ptr = *sp)) {
@@ -962,40 +987,50 @@ void dumpsym(FILE *fout, symn sym, int alma) {
 
 		switch (ptr->kind) {
 
-			case EMIT_opc:
 			case TYPE_def:
+				break;
+
 			case TYPE_ref:
+				if (mode > 3)
+					*++sp = ptr->args;
+				break;
+
+			case EMIT_opc:
+				if (mode > 2)
+					*++sp = ptr->args;
 				break;
 
 			default:
-				if (alma > 1)
+				if (mode > 1)
 					*++sp = ptr->args;
+				break;
 		}
 
-		if (ptr->file && ptr->line)
+		if (print_line && ptr->file && ptr->line)
 			fputfmt(fout, "%s:%d:", ptr->file, ptr->line);
 
-		fputstr(fout, tch);
+		if (print_cast)
+			fputstr(fout, tch);
 
 		// qualified name with arguments
 		fputsym(fout, ptr, prQual|prArgs | 1, 20);
 
-		//~ if (ptr->cast)		// TYPE_def should not cast to anything
+		if (print_cast && ptr->cast)
 			fputfmt(fout, "[%t]", ptr->cast);
 
 		// qualified base type(s)
-		if (ptr->type) {
+		if (print_type && ptr->type) {
 			fputstr(fout, ": ");
 			fputsym(fout, ptr->type, prQual, 0);
 		}
 
-		if (ptr->kind != TYPE_def) {
+		if (print_info && ptr->kind != TYPE_def) {
 			fputfmt(fout, ":%c%d", ptr->offs <= 0 ? '@' : '+', ptr->offs < 0 ? -ptr->offs : ptr->offs);
 			fputfmt(fout, ":[size: %d]", ptr->size);
 		}
 
 		// initializer
-		if (ptr->init && ptr->kind != TYPE_ref) {
+		if (print_init && ptr->init && ptr->kind != TYPE_ref) {
 			fputstr(fout, " = ");
 			fputast(fout, ptr->init, noIden | 1, 0xf0);
 		}
@@ -1003,7 +1038,7 @@ void dumpsym(FILE *fout, symn sym, int alma) {
 		fputchr(fout, '\n');
 
 		fflush(fout);
-		if (!alma)
+		if (!mode)
 			break;
 	}
 }
@@ -1077,6 +1112,15 @@ void dump(state s, dumpMode mode, symn sym, char *text, ...) {
 	}
 	else switch (mode & dumpMask) {
 		default: fatal("FixMe");
+
+		case dump_txt: {
+			va_list ap;
+			va_start(ap, text);
+			FPUTFMT(logf, text, ap);
+			va_end(ap);
+			fputfmt(logf, "\n");
+		} break;
+
 		case dump_ast: {
 			if (text != NULL)
 				fputfmt(logf, text);
@@ -1103,7 +1147,7 @@ void dump(state s, dumpMode mode, symn sym, char *text, ...) {
 			}
 		} break;
 
-		case dump_asm:
+		case dump_asm: {
 			if (text != NULL)
 				fputfmt(logf, text);
 			if (mode & 0x80) {
@@ -1118,15 +1162,8 @@ void dump(state s, dumpMode mode, symn sym, char *text, ...) {
 			fputfmt(logf, "init:\n");
 			fputasm(logf, s, s->vm.pc, s->vm.px, mode);
 			//~ dumpasm(logf, s, level);
-			break;
-
-		case dump_txt: {
-			va_list ap;
-			va_start(ap, text);
-			FPUTFMT(logf, text, ap);
-			va_end(ap);
-			fputfmt(logf, "\n");
 		} break;
+
 	}
 }
 
