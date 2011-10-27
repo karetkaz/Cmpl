@@ -170,6 +170,15 @@ typedef struct astn *astn;		// Abstract Syntax Tree Node
 typedef struct list *list;
 typedef unsigned int uint;
 
+typedef struct libc {				// linked list: 
+	struct libc		*next;	// next 
+	unsigned int pos;
+	int (*call)(state);
+	const char* proto;
+	symn sym;
+	int8_t chk, pop;
+	int8_t __pad[2];
+} *libc;
 struct list {				// linked list: stringlist, memgr, ...
 	struct list		*next;
 	unsigned char	*data;
@@ -234,7 +243,7 @@ struct symn {				// type node (data)
 	int32_t	offs;		// addrof(TYPE_ref)
 	symn	decl;		// declared in
 	symn	type;		// base type of TYPE_ref (void, int, float, struct, ...)
-	symn	args;		// REC fields / FUN params
+	symn	args;		// REC fields / FUN params / ARR base type
 	symn	stat;		// static members / variables
 	symn	next;		// symbols on table/args
 
@@ -244,17 +253,14 @@ struct symn {				// type node (data)
 	//~ TYPE_ref = 0x02,	// variable
 	//~ TYPE_fun = 0x03,	// function (variable and typename too)
 
-	//~ ATTR_const = 0x00000010;		// constant
-	//~ ATTR_byref = 0x00000020;		// indirect
-	//~ ATTR_stat  = 0x00000040;		// static
-	//~ ATTR_used  = 0x00000080;		// used
-
 	uint8_t	kind;		// TYPE_ref || TYPE_def || TYPE_rec || TYPE_arr
-	uint8_t	cast;		// casts to type(TYPE_(bit, vid, ref, u32, i32, i64, f32, f64, p4x)).
-	uint8_t	attr;		// attributes (const static /+ private, ... +/).
-	uint8_t	____pack;		// alignment unused
+	//~ uint8_t	____padkind:6;
 
-	uint8_t	call:1;		// function / callable => (kind == TYPE_ref && args)
+	uint8_t	cast;		// casts to type(TYPE_(bit, vid, ref, u32, i32, i64, f32, f64, p4x)).
+	uint16_t attr;		// attributes (const static /+ private, ... +/).
+	//~ uint8_t	____pack;		// alignment unused
+
+	uint8_t	call:1;		// function / callable <=> (kind == TYPE_ref && args)
 	//~ uint8_t	stat:1;		// static ?
 	//~ uint8_t	glob:1;		// global
 	//~ uint8_t	load:1;		// indirect reference: cast == TYPE_ref
@@ -268,7 +274,6 @@ struct symn {				// type node (data)
 	//~ uint32_t	refc;		// referenced count
 	astn	init;		// VAR init / FUN body
 
-	// list(scoping)
 	//~ astn	used;
 	symn	gdef;
 	symn	defs;		// symbols on stack/all
@@ -292,6 +297,7 @@ void freeBuff(struct arrBuffer* buff);
 struct ccState {
 	state	s;
 	symn	defs;		// all definitions
+	libc	libc;		// installed libcalls
 	symn	func;		// functions level stack
 	//~ symn	gdef;		// definitions
 	astn	root;		// statements
@@ -411,6 +417,7 @@ symn lookup(ccState s, symn sym, astn ast/*, int deep*/, astn args, int raise);
 //~ int findint(ccState s, char *name, int* res);
 //~ int findflt(ccState s, char *name, double* res);
 
+int canAssign(symn rhs, astn val, int strict);
 symn typecheck(ccState, symn loc, astn ast);
 
 int argsize(symn sym, int align);
@@ -491,9 +498,5 @@ unsigned rehash(const char* str, unsigned size);
 char *mapstr(ccState s, char *name, unsigned size/* = -1U*/, unsigned hash/* = -1U*/);
 
 void fputasm(FILE *fout, state s, int beg, int end, int mode);
-
-//~ void printargcast(astn arg);
-
-int libCallExitDebug(state s);
 
 #endif

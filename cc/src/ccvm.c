@@ -8,7 +8,7 @@
 //~ Warning! W124: Comparison result always 0
 //~ Warning! W201: Unreachable code
 //~ #pragma disable_message(124);
-#pragma disable_message(201);
+//~ #pragma disable_message(201);
 #endif
 const tok_inf tok_tbl[255] = {
 	#define TOKDEF(NAME, TYPE, SIZE, STR) {TYPE, SIZE, STR},
@@ -27,26 +27,6 @@ static inline int genRef(state s, int offset) {
 		return emitidx(s, opc_ldsp, offset);
 	return emitint(s, opc_ldcr, -offset);
 } // */
-static inline int genVal(state s, astn ast, int cast) {
-	int cgen(state s, astn ast, int get);
-	struct astn tmp;
-	//~ int cast;
-
-	if (!ast) {
-		fatal("null ast");
-		return 0;
-	}
-
-	if (!cast)
-		cast = ast->cst2;
-
-	if (s->vm.opti && eval(&tmp, ast)) {
-		ast = &tmp;
-	}
-
-	return cgen(s, ast, cast == TYPE_ref ? 0 : cast);
-	//~ return cgen(s, ast, cast);
-}
 
 int cgen(state s, astn ast, int get) {
 	#if DEBUGGING > 1
@@ -79,7 +59,7 @@ int cgen(state s, astn ast, int get) {
 
 	switch (ast->kind) {
 		default:
-			fatal("FixMe");
+			fatal("FixMe(%t)", ast->kind);
 			return 0;
 
 		//{ STMT
@@ -94,10 +74,6 @@ int cgen(state s, astn ast, int get) {
 				if (stpos > stkoffs(s, 0)) {
 					warn(s, 1, ast->file, ast->line, "statement underflows stack: %+k", ast->stmt.stmt);
 				}
-				/*if (get == TYPE_vid && !emitidx(s->vm, opc_drop, stpos)) {
-					trace("error");
-					return 0;
-				}// */
 			}
 			#if 0 && DEBUGGING > 1
 			debug("cgen[%t->%t](err, %+k)\n%7K", get, ret, ast, ast);
@@ -318,6 +294,7 @@ int cgen(state s, astn ast, int get) {
 
 			// inline
 			if (var && var->kind == TYPE_def) {
+				int chachedArgSize = 0;
 				symn as = var->args;
 
 				if (argv) {
@@ -358,8 +335,9 @@ int cgen(state s, astn ast, int get) {
 						}
 						else {
 							int stktop = stkoffs(s, sizeOf(as));
-							warn(s, 1, ast->file, ast->line, "caching argument: %-T = %+k", as, arg);
-							if (!genVal(s, arg, as->cast)) {
+							chachedArgSize += sizeOf(as);
+							//~ warn(s, 9, ast->file, ast->line, "caching argument: %-T = %+k", as, arg);
+							if (!cgen(s, arg, as->cast)) {
 								trace("%+k", arg);
 								return 0;
 							}
@@ -376,16 +354,13 @@ int cgen(state s, astn ast, int get) {
 					dieif(an || as, "Error");
 				}
 
-				//~ debug("inline(%t):%t %+k = %+k", get, ret, ast, var->init);
-				//~ fputasm(stdout, s->vm, ipdbg, -1, 0x119);
-
-				if (!(ret = genVal(s, var->init, ret))) {
+				if (!(ret = cgen(s, var->init, ret))) {
 					trace("%+k", ast);
 					return 0;
 				}
 
 				if (stkret != stkoffs(s, 0)) {
-					trace("%+T: (%d - %d): %+k", ast->type, stkoffs(s, 0), stkret, ast);
+					dieif(chachedArgSize != stkoffs(s, 0) - stkret, "%+T(%d%+d): %+k", ast->type, stkret, stkoffs(s, 0)-stkret, ast);
 					if (get != TYPE_vid) {
 						if (!emitidx(s, opc_ldsp, stkret)) {	// get stack
 							trace("error");
@@ -795,14 +770,14 @@ int cgen(state s, astn ast, int get) {
 			}
 		} break;
 
-		case ASGN_set: {		// ':='
+		case ASGN_set: {	// ':='
 			int byRef = ast->op.lhso->kind == OPER_adr || ast->type->cast == TYPE_ref;
 
 			if (byRef) {
 				ret = TYPE_ref;
 			}
 
-			if (!genVal(s, ast->op.rhso, ret)) {
+			if (!cgen(s, ast->op.rhso, ret)) {
 				trace("%+k", ast);
 				return 0;
 			}
@@ -927,7 +902,7 @@ int cgen(state s, astn ast, int get) {
 
 			if (var->kind == TYPE_ref) {
 
-				//~ trace("local: `%+T`", var);
+				//~ trace("new variable: `%-T`", var);
 
 				if (var->init) {
 					astn val = var->init;
@@ -1015,7 +990,7 @@ int cgen(state s, astn ast, int get) {
 								return 0;
 							}
 							if (ninit < nelem) {
-								warn(s, 4, ast->file, ast->line, "Only the %d of %d elements will be initialized", ninit, nelem);
+								warn(s, 4, ast->file, ast->line, "Only the first %d of %d elements will be initialized", ninit, nelem);
 							}
 
 							for (i = 0; val; val = val->next, ++i) {
@@ -1082,6 +1057,7 @@ int cgen(state s, astn ast, int get) {
 							trace("%+k:sizeof(%-T) = %d", ast, var, sizeOf(var));
 							return 0;
 						}
+						var->init = NULL;
 						return ret;
 					}
 				}
@@ -1310,7 +1286,9 @@ int cgen(state s, astn ast, int get) {
 	dieif (qual, "unimplemented `%+k`: %t", ast, qual);
 	return ret;
 }
-static int ggen(state s, symn var, astn add) {
+
+TODO("ggen shold go to cgen")
+int ggen(state s, symn var, astn add) {
 	ccState cc = s->cc;
 	if (var->call && var->cast != TYPE_ref) {
 		int seg = emitopc(s, markIP);
@@ -1345,88 +1323,81 @@ static int ggen(state s, symn var, astn add) {
 		//~ trace("static function: %-T@%x", var, -var->offs);
 		var->init = NULL;
 	}
-	else if (!var->call) {
+	else /* if (!var->call) */ {
 		dieif(var->offs, "FixMe %-T@%d", var, var->offs);
 		var->offs = -s->vm.pos;
 		s->vm.pos += sizeOf(var);
 
-		if (var->init && !(var->attr & ATTR_glob)) {
+		if (var->init /*&& !(var->attr & ATTR_glob)*/) {
 			//~ if variable was allocated
 			//~ make assigment from initializer
-			TODO(review this code)
-			astn st = newnode(cc, STMT_do);
-			astn id = newnode(cc, TYPE_ref);
-			astn op = newnode(cc, ASGN_set);
 
-			//fatal("FixMe %T", var);
-			op->kind = ASGN_set;
-			op->cst2 = var->cast;
-			op->type = var->type;
-			op->op.lhso = id;
-			op->op.rhso = var->init;
+			astn init = newnode(cc, ASGN_set);
 
-			id->kind = TYPE_ref;
-			id->cst2 = TYPE_ref;		// wee need a reference here
-			id->type = var->type;
-			id->id.link = var;
+			init->op.lhso = lnknode(cc, var);
+			init->op.rhso = var->init;
+			init->type = var->type;
+			init->cst2 = TYPE_vid;
 
-			st->kind = STMT_do;
-			st->cst2 = TYPE_any;
-			st->type = type_vid;
-			st->stmt.stmt = op;
-
-			op->cst2 = TYPE_vid;
-			//~ op->type = type_vid;
-			//~ /*
 			if (var->cast == TYPE_ref) {
-				op->cst2 = TYPE_vid;
-				op->type = type_ptr;
-				id->type = type_ptr;
-				var->init->cst2 = TYPE_ref;
-				if (var->call)
-					id->cst2 = ASGN_set;
-			}// */
+				init->op.lhso->cst2 = ASGN_set;
+				init->op.lhso = opnode(cc, OPER_adr, NULL, init->op.lhso);
+				init->op.lhso->type = type_ptr;
+			}
 
-			dieif(!cc->root || cc->root->kind != STMT_beg, "FixMe");
+			init = opnode(cc, STMT_do, NULL, init);
+			init->type = type_vid;
+			init->file = var->file;
+			init->line = var->line;
 
 			dieif(add == NULL, "FixMe");
 			if (add->list.head == NULL) {
-				add->list.head = st;
-				//~ cc->root->stmt.stmt = st;
+				add->list.head = init;
 			}
 			else {
-				add->list.tail->next = st;
+				add->list.tail->next = init;
 			}
-			add->list.tail = st;
+			add->list.tail = init;
 
-			st->next = NULL;
+			//~ st->next = NULL;
 
 			var->init = NULL;
 		}// */
+
+		/* igy kellene menjen
+		if (var->init && !(var->attr & ATTR_glob)) {
+
+			// make initialization
+			astn ast = newnode(cc, TYPE_def);
+			ast->type = var->type;
+			ast->id.link = var;
+			//~ ast->next = NULL;
+			//~ var->init = NULL;
+
+			// link to list
+			ast = opnode(cc, STMT_do, NULL, ast);
+			ast->type = type_vid;
+
+			ast->file = var->file;
+			ast->line = var->line;
+			if (add->list.head == NULL) {
+				add->list.head = ast;
+			}
+			else {
+				add->list.tail->next = ast;
+			}
+			add->list.tail = ast;
+
+		}// */
+
 		//~ trace("static variable: %+T@%x:%d", var, -var->offs, sizeOf(var));
 	}
+
+	//~ trace("static variable: %-T@%x:%d", var, -var->offs, sizeOf(var));
 	return 1;
 }
 
-int logFILE(state s, FILE* file) {
-	if (s->closelog)
-		fclose(s->logf);
-	s->logf = file;
-	s->closelog = 0;
-	return 0;
-}
-int logfile(state s, char* file) {
-
-	logFILE(s, NULL);
-
-	if (file) {
-		s->logf = fopen(file, "wb");
-		if (!s->logf) return -1;
-		s->closelog = 1;
-	}
-	return 0;
-}
-
+//{ symbols: install and query
 symn ccBegin(state rt, char *cls) {
 	symn result = NULL;
 	if (rt->cc) {
@@ -1457,16 +1428,71 @@ symn ccDefineStr(state rt, char *name, char* value) {
 	return installex(rt->cc, name, TYPE_def, 0, type_str, strnode(rt->cc, value));
 }
 
+symn findsym(ccState s, symn in, char *name) {
+	struct astn ast;
+	memset(&ast, 0, sizeof(struct astn));
+	ast.kind = TYPE_ref;
+	//ast.id.hash = rehash(name);
+	ast.id.name = name;
+	return lookup(s, in ? in->args : s->s->defs, &ast, NULL, 1);
+}
+symn findref(state s, void *ptr) {
+	int offs;
+	symn sym = NULL;
+
+	if (ptr == NULL) {
+		trace("null");
+		return NULL;
+	}
+
+	if (ptr < (void*)s->_mem) {
+		fatal("Error");
+		return NULL;
+	}
+
+	if ((unsigned char*)ptr > s->_mem + s->vm.pc) {		// pc 
+		fatal("Error");
+		return NULL;
+	}
+
+	offs = -((unsigned char*)ptr - s->_mem);
+	for (sym = s->gdef; sym; sym = sym->gdef) {
+		if (sym->offs == offs)
+			return sym;
+	}
+
+	return NULL;
+}
+
+int symvalint(symn sym, int* res) {
+	struct astn ast;
+	if (sym && eval(&ast, sym->init)) {
+		*res = constint(&ast);
+		return 1;
+	}
+	return 0;
+}
+int symvalflt(symn sym, double* res) {
+	struct astn ast;
+	if (sym && eval(&ast, sym->init)) {
+		*res = constflt(&ast);
+		return 1;
+	}
+	return 0;
+}
+//}
+
 TODO("this should be called assemble or something similar")
 int gencode(state s, int level) {
 	list freemem = NULL;
+	libc lc = NULL;
 	ccState cc = s->cc;
 	int Lmain;
 
 	if (s->errc)
 		return -2;
 
-	dieif(s->cc == NULL, "invalid enviroment: erors: %d", s->errc);
+	dieif(cc == NULL, "invalid enviroment: erors: %d", s->errc);
 
 	// leave global + static
 	s->defs = leave(s->cc, NULL, level >= 0);
@@ -1480,11 +1506,21 @@ int gencode(state s, int level) {
 	TODO("Data[RO]: strings, typeinfos, constants, functions, ?")
 	s->vm.ro = s->vm.pos;
 
+	// libcalls
+	if (cc->libc) {
+		s->libv = s->_mem + s->vm.pos;
+		s->vm.pos += sizeof(struct libc) * cc->libc->pos;
+		for (lc = cc->libc; lc; lc = lc->next) {
+			((struct libc*)s->libv)[lc->pos] = *lc;
+		}
+	}
+
 	// static vars & functions
 	if (1 && s->defs) {
 		symn var = s->defs;
+
+		// we will append the list of declarations here.
 		astn init = newnode(cc, STMT_beg);
-		//~ astn lend = NULL, lbeg = NULL;
 
 		dieif(s->defs != s->cc->defs, "FixMe");
 
@@ -1495,14 +1531,11 @@ int gencode(state s, int level) {
 				if (var->kind != TYPE_ref)
 					continue;
 
-				//~ debug("static global: %+T@%x", var, var->offs);
-				//~ warn(s, 0, var->file, var->line, "global symbol: %+T@%x", var, -var->offs);
-
 				var->attr |= ATTR_glob | ATTR_stat;
 			}
-		}// */
+		}
 
-		// generate global static variables & functions
+		// generate global and static variables & functions
 		for (var = s->gdef; var; var = var->gdef) {
 
 			if (var == null_ref)
@@ -1514,23 +1547,51 @@ int gencode(state s, int level) {
 			if (!(var->attr & (ATTR_glob | ATTR_stat)))
 				continue;
 
-			//~ debug("global variable: %-T[%d]", var, var->nest);
 			dieif(var->kind != TYPE_ref, "FixMe");
 
-			//~ /*
+			/* FixMe: this is wrong.
+
+			//{
+			int64 a = 32;
+			a = 33;
+			void setup() {
+				static int b = a;
+				print("%d\n", int64(b));
+			}
+			setup();
+			//} => {
+				gen: a = 32;
+				gen: setup.b = 32;
+				gen: setup = {...};
+				gen: a = 33;
+				gen: setup();
+			}
+
+			will print 32 !!!
+			//~ */
 			if (!ggen(s, var, init)) {
 				trace("FixMe");
 				return 0;
 			}// */
-			debug("global variable: %-T @%06x", var, -var->offs);
 		}
 
 		// initialize static non global variables
-		if (init && init->list.head && cc->root) {
-			dieif(cc->root->kind != STMT_beg, "FixMe");
+		if (init && init->list.tail/*  && cc->root */) {
+			dieif(!cc->root || cc->root->kind != STMT_beg, "FixMe");
 			init->list.tail->next = cc->root->stmt.stmt;
 			cc->root->stmt.stmt = init->list.head;
 		}
+
+		/*
+		if (1) {
+			astn x = init->list.head;
+			while (x) {
+				trace("%+k", x);
+				x = x->next;
+			}
+			//~ dump(s, dump_ast | (level & 0x0ff), NULL, NULL);
+			//~ exit(0);
+		}// */
 
 	}
 
@@ -1564,17 +1625,6 @@ int gencode(state s, int level) {
 	s->_ptr = NULL;
 
 	return s->errc;
-}
-
-state rtInit(void* mem, unsigned size) {
-	state s = mem;
-
-	s->_size = size - sizeof(struct state);
-	s->_ptr = s->_mem;
-
-	logFILE(s, stderr);
-	s->cc = NULL;
-	return s;
 }
 
 symn emit_opc = NULL;
@@ -1729,7 +1779,6 @@ static void install_emit(ccState cc, int mode) {
 			installex(cc, "clt", EMIT_opc, f64_clt, type_bol, NULL);
 			installex(cc, "cgt", EMIT_opc, f64_cgt, type_bol, NULL);
 			typ->args = leave(cc, typ, 1);
-			//~ typ->call = 1;
 		}
 
 		if ((typ = v4f) != NULL) {
@@ -1874,7 +1923,10 @@ static void install_type(ccState cc, int mode) {
 	}
 }
 
-ccState ccInit(state s, int mode) {
+static int libCallExitQuiet(state s) {
+	return 0;
+}
+ccState ccInit(state s, int mode, int libcExit(state)) {
 	//~ ccState cc = getmem(s, sizeof(struct ccState), -1);
 	ccState cc = (void*)s->_ptr;
 
@@ -1924,10 +1976,11 @@ ccState ccInit(state s, int mode) {
 		cc->emit_tag->id.hash = -1;
 	}
 
+	libcall(s, libcExit ? libcExit : libCallExitQuiet, 0, "void Halt();");
 	return cc;
 }
 ccState ccOpen(state s, srcType mode, char *src) {
-	if (s->cc || ccInit(s, creg_def)) {
+	if (s->cc || ccInit(s, creg_def, NULL)) {
 		if (source(s->cc, mode & srcFile, src) != 0)
 			return NULL;
 	}
@@ -1961,6 +2014,17 @@ int ccDone(state s) {
 	return s->errc;
 }
 
+state rtInit(void* mem, unsigned size) {
+	state s = mem;
+
+	s->_size = size - sizeof(struct state);
+	s->_ptr = s->_mem;
+
+	logFILE(s, stderr);
+	s->cc = NULL;
+	return s;
+}
+
 /** allocate memory in the runtime state.
  * if (size != 0 && ptr != NULL): realloc
  * if (size != 0 && ptr == NULL): alloc
@@ -1974,8 +2038,7 @@ static list memdcheck(list meml, list memd) {
 	}
 	return meml;
 }
-
-void* rtAlloc(state rt, void* ptr, unsigned size) {
+void* rtAlloc(state rt, void *ptr, unsigned size) {
 	list memd = NULL;
 
 	/*if (ptr && size > 0) {	// realloc
@@ -2116,74 +2179,6 @@ void* rtAlloc(state rt, void* ptr, unsigned size) {
 }
 
 //{ temp.c ---------------------------------------------------------------------
-// lookup a value
-symn findsym(ccState s, symn in, char *name) {
-	struct astn ast;
-	memset(&ast, 0, sizeof(struct astn));
-	ast.kind = TYPE_ref;
-	//ast.id.hash = rehash(name);
-	ast.id.name = name;
-	return lookup(s, in ? in->args : s->s->defs, &ast, NULL, 1);
-}
-symn findref(state s, void *ptr) {
-	int offs;
-	symn sym = NULL;
-
-	if (ptr == NULL) {
-		trace("null");
-		return NULL;
-	}
-
-	if (ptr < (void*)s->_mem) {
-		fatal("Error");
-		return NULL;
-	}
-
-	if ((unsigned char*)ptr > s->_mem + s->vm.pc) {		// pc 
-		fatal("Error");
-		return NULL;
-	}
-
-	offs = (unsigned char*)ptr - s->_mem;
-	for (sym = s->gdef; sym; sym = sym->gdef) {
-		if (sym->offs == -offs)
-			return sym;
-	}
-
-	/* search all (s->cc == null)
-	for (sym = s->cc->defs; sym; sym = sym->defs) {
-		if (sym->offs == -offs)
-			return sym;
-	} // */
-
-	return NULL;
-}
-
-int symvalint(symn sym, int* res) {
-	struct astn ast;
-	if (sym && eval(&ast, sym->init)) {
-		*res = constint(&ast);
-		return 1;
-	}
-	return 0;
-}
-int symvalflt(symn sym, double* res) {
-	struct astn ast;
-	if (sym && eval(&ast, sym->init)) {
-		*res = constflt(&ast);
-		return 1;
-	}
-	return 0;
-}
-/* TODO: rename me
-int symistrue(symn sym) {
-	struct astn ast;
-	if (sym && eval(&ast, sym->init)) {
-		return constbol(&ast);
-	}
-	return 0;
-}*/
-
 #if 0
 
 //static void install_rtti(ccState cc, unsigned level) ;		// req emit: libc(import, define, lookup, ...)

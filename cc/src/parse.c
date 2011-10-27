@@ -1298,7 +1298,7 @@ static symn ctorArg(ccState cc, symn rec) {
 	return ctor;
 }
 static symn ctorPtr(ccState cc, symn rec) {
-	symn ctor = install(cc, rec->name, TYPE_def, 0, 0);
+	symn ctor = NULL;//install(cc, rec->name, TYPE_def, 0, 0);
 	if (ctor != NULL) {
 		astn argtag = NULL;
 		symn argptr, retref;
@@ -1331,7 +1331,7 @@ static symn ctorPtr(ccState cc, symn rec) {
 	return ctor;
 }
 static void destruct(astn ast, symn sym) {
-	while (sym) {
+	/*while (sym) {
 		//~ astn dtor = newnode(s, OPER_fnc);
 		//~ dtor.oper.lhso = s->argz;
 		//~ dtor.oper.rhso = locals->tag;
@@ -1340,7 +1340,7 @@ static void destruct(astn ast, symn sym) {
 			trace("void(%T) in %+k", sym, ast);
 		}
 		sym = sym->next;
-	}
+	}// */
 }
 
 //~ astn unit(ccState, int mode);		// parse unit			(mode: script/unit)
@@ -1401,9 +1401,11 @@ static astn init(ccState s, symn ref) {
 		symn typ = ref->type;
 		ref->init = expr(s, TYPE_def);
 		if (ref->cast == TYPE_ref) {
-			if (!castTo(ref->init, TYPE_ref)) {
-				trace("%t", TYPE_ref);
-				return NULL;
+			if (canAssign(ref, ref->init, 1)) {
+				if (!castTo(ref->init, TYPE_ref)) {
+					trace("%t", TYPE_ref);
+					return NULL;
+				}
 			}
 		}
 		else if (typ->kind == TYPE_arr) {
@@ -1412,6 +1414,7 @@ static astn init(ccState s, symn ref) {
 			symn base = typ;
 			int cast = 0;
 
+			/* old 
 			while (base->kind == TYPE_arr) {
 
 				if (base->size <= 0)
@@ -1439,27 +1442,36 @@ static astn init(ccState s, symn ref) {
 					trace("%-T", ref);
 					return NULL;
 				}
-			}
+			}// */
+
+			base = ref->args;
+			cast = base ? base->cast : 0;
 
 			while (init->kind == OPER_com) {
-				if (!castTo(init->op.rhso, cast)) {
+				if (!canAssign(base, init->op.rhso, 0) && !castTo(init->op.rhso, cast)) {
+				//~ if (!castTo(init->op.rhso, cast)) {
+					trace("canAssign(%-T, %+k)", base, init->op.rhso);
 					trace("castto(%+k, %t)", init->op.rhso, cast);
 					return NULL;
 				}
 				init = init->op.lhso;
 			}
-			if (!castTo(init, cast)) {
+			if (!canAssign(base, init, 0) && !castTo(init, cast)) {
+			//~ if (!castTo(init, cast)) {
+				trace("canAssign(%-T, %+k)", base, init);
 				trace("castto(%+k, %t)", init, cast);
 				return NULL;
 			}
-
 		}
-		else {
+		else if (canAssign(ref, ref->init, 0)) {
 			//~ int cast = ref->cast == TYPE_ref ? TYPE_ref : typ->cast;
 			if (!castTo(ref->init, typ->cast)) {
 				trace("%t", typ->cast);
 				return NULL;
 			}
+		}
+		else {
+			error(s->s, ref->file, ref->line, "error invalid initialization `%+k`", ref->init);
 		}
 	}
 	return ref->init;
@@ -1513,12 +1525,12 @@ static astn reft(ccState s, int mode) {
 			byref = 0;
 		}
 
-		/* TODO: probably some day without an else ... 
+		/* TODO: probably some day without an else ...
 		 * int rgbCopy(int a, int b)[] = {rgbCpy, rgbAnd, ...}
 		 */
 		else if (skip(s, PNCT_lc)) {		// int a[...]
 			symn tmp = newdefn(s, TYPE_arr);
-			//~ symn base = typ;
+			symn base = typ;
 			tmp->type = typ;
 			tmp->size = -1;
 			typ = tmp;
@@ -1536,7 +1548,7 @@ static astn reft(ccState s, int mode) {
 				struct astn val;
 				astn init = expr(s, TYPE_def);
 
-				// enable multi array declaration in pascal style: int a[1, 2, 3, 4];
+				/*/ enable multi array declaration in pascal style: int a[1, 2, 3, 4];
 				while (init && init->kind == OPER_com) {
 					symn tmp = newdefn(s, TYPE_arr);
 					tmp->type = typ->type;
@@ -1553,6 +1565,7 @@ static astn reft(ccState s, int mode) {
 				}// */
 
 				if (eval(&val, init) == TYPE_int) {
+					debug("length of %-T = %+k", ref, init);
 					addarg(s, typ, "length", TYPE_def, type_i32, init);
 					typ->size = val.con.cint;
 					typ->init = init;
@@ -1563,7 +1576,7 @@ static astn reft(ccState s, int mode) {
 
 			skiptok(s, PNCT_rc, 1);
 
-			//~ /* Multi dimensional arrays
+			//~ /* Multi dimensional arrays / c style
 			while (skip(s, PNCT_lc)) {
 				symn tmp = newdefn(s, TYPE_arr);
 				tmp->type = typ->type;
@@ -1586,6 +1599,7 @@ static astn reft(ccState s, int mode) {
 
 			} // */
 
+			ref->args = base;	// fixme
 			byref = 0;
 		}
 
@@ -1868,21 +1882,9 @@ static astn spec(ccState s/* , int qual */) {
 			def->cast = byref ? TYPE_ref : TYPE_rec;
 			//~ sizeOfArg->init = intnode(s, sizeOf(def));
 
-			addarg(s, def, "typeOf", TYPE_def, def, lnknode(s, def));
+			//~ addarg(s, def, "typeOf", TYPE_def, def, lnknode(s, def));
 			//~ addarg(s, def, "sizeOf", symn_stat | TYPE_def, type_i32, intnode(s, sizeOf(def)));
 
-			/* create initializer for records
-				with all members if:
-					- packing is equal with stack padding, or resolve with(shifts)
-					- does not contain fixed length arrays, or resolve with(copy)
-				from pointer to recor&
-				from record to variant
-				example:
-					struct complex{double re; double im;}
-					define complex(double re, double im) = ...
-					define complex(pointer ptr) = (complex&)ptr;
-					define variant(complex &z) = variant(complex, (pointer)z);
-			*/
 			ctorPtr(s, def);
 			//~ ctorVar(s, def);
 			if (def->args && pack == 4) {
@@ -2552,7 +2554,6 @@ astn decl(ccState s, int Rmode) {
 				result = installex(s, "result", TYPE_ref, 0, typ, NULL);
 
 				if (result) {
-					//~ symn tmp;
 
 					//~ if (typ->cast == TYPE_ref)
 						//~ result->cast = TYPE_ref;
@@ -2566,14 +2567,8 @@ astn decl(ccState s, int Rmode) {
 
 					//~ ref->nest = s->nest + 1;
 
-					/*
-					debug("argsize(%-T): %d", ref, ref->offs);
-					for (tmp = ref->args; tmp; tmp = tmp->next) {
-						debug("arg:%+T@sp[%d]", tmp, ref->offs - tmp->offs);
-					}
-					debug("res:%T@sp[%d]", result, ref->offs - result->offs);
-					// */
 				}
+				// reinstall all args and TODO:(closure variables)
 				for (tmp = ref->args; tmp; tmp = tmp->next) {
 					symn arg = installex(s, tmp->name, TYPE_ref, 0, NULL, NULL);
 					if (arg != NULL) {
@@ -2604,75 +2599,14 @@ astn decl(ccState s, int Rmode) {
 
 			}
 			else if (test(s, ASGN_set)) {
+				if (ref->call) {
+					ref->cast = TYPE_ref;
+				}
 				if (!init(s, ref)) {
 					trace("FixMe");
 					return NULL;
 				}
 			}
-			/*else if (skip(s, ASGN_set)) {
-				ref->init = expr(s, TYPE_def);
-				if (ref->cast == TYPE_ref) {
-					if (!castTo(ref->init, TYPE_ref)) {
-						trace("%t", TYPE_ref);
-						return 0;
-					}
-				}
-				else if (typ->kind == TYPE_arr) {
-
-					astn init = ref->init;
-					symn base = typ;
-					int cast = 0;
-
-					while (base->kind == TYPE_arr) {
-
-						if (base->size <= 0)
-							break;
-
-						base = base->type;
-					}
-
-					if (base->kind != TYPE_arr) {
-						switch (base->cast) {
-							//~ case TYPE_vid:
-							case TYPE_bit:
-							case TYPE_u32:
-							case TYPE_i32:
-							case TYPE_i64:
-							case TYPE_f32:
-							case TYPE_f64:
-							//~ case TYPE_rec:
-							//~ case TYPE_ref:
-								cast = base->cast;
-								break;
-						}
-						if (!cast) {
-							error(s->s, ref->file, ref->line, "invalid array initialization");
-							trace("%+k", tag);
-							return 0;
-						}
-					}
-
-					while (init->kind == OPER_com) {
-						if (!castTo(init->op.rhso, cast)) {
-							trace("castto(%+k, %t)", init->op.rhso, cast);
-							return 0;
-						}
-						init = init->op.lhso;
-					}
-					if (!castTo(init, cast)) {
-						trace("castto(%+k, %t)", init, cast);
-						return 0;
-					}
-
-				}
-				else {
-					//~ int cast = ref->cast == TYPE_ref ? TYPE_ref : typ->cast;
-					if (!castTo(ref->init, typ->cast)) {
-						trace("%t", typ->cast);
-						return 0;
-					}
-				}
-			}// */
 		}
 
 		if (Rmode & decl_Iterator)

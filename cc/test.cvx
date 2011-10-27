@@ -10,14 +10,21 @@
 //~ #open src/tree.c
 //~ #open src/parse.c
 //~ #open src/main.c
-//~ int a = 9;
-//~ int &b = a;
 
-define hex64 int64;	//%%016X
-define hex32 int32;	//%%08x
-void test(int test2(int test3)) {
-}
-/*
+//~ define hex64 int64;	//%0x%016X
+//~ define hex32 int32;	//%0x%08x
+
+//~ define zxt64(int32 a) = int64(uint32(a));			// zero extend
+//~ define sxt64(int32 a) = int64(a);					// sign extend
+
+//~ define Lo64(int64 a) = emit(int32, set, i64(a));	// Lo32 part
+//~ define Hi64(int64 a) = emit(int32, pop, i64(a));	// Hi32 part
+//~ define Lo32(int32 a) = int32(a & 0xffff);			// Lo16 part
+//~ define Hi32(int32 a) = Lo32(a >> 16);				// Hi16 part
+//~ define Lo16(int32 a) = int32(a & 0xff);				// Lo16 part
+//~ define Hi16(int32 a) = Lo16(a >> 8);				// Hi16 part
+
+/* alloc / realloc / free
 pointer p1 = realloc(null, 100);
 pointer p2 = realloc(null, 200);
 pointer p3 = realloc(null, 300);
@@ -28,36 +35,22 @@ pointer p3 = realloc(null, 300);
 //~ realloc(null, 200);
 //~ realloc(null, 300);
 
-realloc(null, 0);
-*/
+//~ realloc(null, 0);
+//~ */
 
 /*
-int a[3][3];
-//~ a[2][1] = 55;
-
-{
-	int i = 2;
-	int j = 1;
-	a[i][j] = 99;
-}
-*/
-/*
-//~ int a[2, 3, 4];
-//~ float64 a[4, 4] = 0;
-	//~ 1, 2, 3, 4,
-	//~ 5, 6, 7, 8,
-	//~ 1, 2, 3, 4,
-	//~ 9, 0, 1, 2;
-
 //~ string s = "alma a fa alatt";		// this should be dynamic.
 //~ uint8 ss[4];
 //~ int a = ss.length;
 string x = "almax a fa alatt";
-string ss[3];
-ss[0] = x;//"alma1 a fa alatt";
-ss[1] = "alma2 a fa alatt";
-ss[2] = "alma3 a fa alatt";
-string y = ss[1];
+//~ string ss[3];
+//~ ss[0] = x;//"alma1 a fa alatt";
+//~ ss[1] = "alma2 a fa alatt";
+//~ ss[2] = "alma3 a fa alatt";
+//~ string y = ss[1];
+
+int iii[3] = 1, 2, 3;
+string sss[3] = x, "a2", "a3";
 
 //~ ss[0][3] = 'A';
 
@@ -74,39 +67,34 @@ string y = ss[1];
 //~ b = 88;
 // */
 
-//~ int alma(int h)[10];	???
-//~ void fun(int x) = true ? null : void(int x){print(x);};
-//~ void fun(int x) = null;
+//~ main.exe -C -ilbit.dll -O2 -xd test.cvx
+//~ int i = bitops.btc(0x1ff);
 
-//~ mat4f a = mat4f( 1,  2,  3,  4,
-				 //~ 5,  6,  7,  8,
-				 //~ 9, 10, 11, 12,
-				//~ 13, 14, 15, 16);
+//~ /* random floats
+float32 frand() {
+	uint32 randnum = rand() * rand();
+	float32 tmp = emit(float32, i32((randnum >> 9 ) | 0x3f800000));
+	result = tmp - 1;
+}
 
+float64 drand() {
+	uint32 randnum1 = rand() * rand();
+	uint32 randnum2 = rand() * rand();
+	float64 tmp = emit(float64, i32(randnum1), i32((randnum2 >> 12) | 0x3ff00000));
+	result = tmp - 1;
+}
 
-/*
-struct Vec2{double x; double y;}
-struct Vec3{double x; double y; double z;}
-//~ struct Vec3{double x; double y; double z; double x1; double y1; double z1; double x2; double y2; double z2;}
-//~ define Vec3(double x, double y, double z) = Vec3(x,y,z,x+1,y+1,z+1,x+2,y+2,z+2);
+float maxrand = -1;
+for(int i = 0; i < 30; i += 1) {
+	float64 currand = drand();
 
-define ldv3(Vec3 ^a) = emit(Vec3, val(a));
+	if (maxrand < currand)
+		maxrand = currand;
 
-//~ define add(Vec3 &a, Vec3 &b) = Vec3(a.x + b.x, a.y + b.y, a.z + b.z);
-define sub(Vec3 ^a, Vec3 ^b) = Vec3(a.x - b.x, a.y - b.y, a.z - b.z);
-//~ define mul(Vec3 &a, Vec3 &b) = Vec3(a.x * b.x, a.y * b.y, a.z * b.z);
-//~ define div(Vec3 &a, Vec3 &b) = Vec3(a.x / b.x, a.y / b.y, a.z / b.z);
-define div(Vec3 ^a, double ^b) = Vec3(a.x / b, a.y / b, a.z / b);
+	print("%f\n", currand);
+}
 
-define dot(Vec3 ^a, Vec3 ^b) = double(a.x * b.x + a.y * b.y + a.z * b.z);
-define cross(Vec3 ^a, Vec3 ^b) = Vec3(a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x);
-define divnz(Vec3 ^a, double ^b) = (b ? div(a, b) : a);
-define normalize(Vec3 ^a) = divnz(a, sqrt(dot(a, a)));
-
-int x1l;
-Vec3 x3 = Vec3(1, 2, 3);
-x3 = normalize(x3);
-//~ */
+// */
 
 /* static and nonstatic members.
 struct alma {
@@ -115,48 +103,15 @@ struct alma {
 	int a2;
 }
 
-int a = App.width;
-string x = App.Xxx.width2;
+alma a = alma(12, 13);
+alma.a0 = 99;
+a = alma(a.a1, 0);
 
-//~ alma a = alma(12, 13);
-//~ alma.a0 = 99;
-//~ a = alma(a.a1, 0);
-
-//~ int alma_a0 = alma.a0;
+int alma_a0 = alma.a0;
 
 // */
 
-/*
-struct slice {
-	const int length;
-	const pointer value;
-}
-
-struct variant {
-	const typeInfo &type;
-	const pointer  value;
-}
-
-struct delegate {
-	const int call(pointer value, int param1, ...);
-	const pointer value;
-}
-
-*/
-//~ int x = 179;
-//~ int n = 2;
-//~ const r = 3;
-//~ int res = (x / pow(r, n)) % r;
-
-//~ double aaa = .0e44;
-
-hex32 x = 3 << 6;
-/* iota
-uint8 tmp[1024];
-string str = emit(string, ref(tmp));
-itoa(str, 1024, 10, 1, true, "");
-//~ */
-/*
+/* xrgb
 struct:1 xrgb {
 	uint8 b;
 	uint8 g;
@@ -190,18 +145,6 @@ xrgb a = emit(xrgb, i32(0x801f008f));
 
 /* Bits: hi, lo, extend
 
-define sxt64(int32 a) = int64(int32(a));			// sign extend
-define zxt64(int32 a) = int64(uint32(a));			// zero extend
-define Lo64(int64 a) = emit(int32, set, i64(a));	// Lo32 part
-define Hi64(int64 a) = emit(int32, pop, i64(a));	// Hi32 part
-//~ define Lo32(int32 a) = int32(a & 0xffff);			// Lo16 part
-//~ define Hi32(int32 a) = Lo32(a >> 16);				// Hi16 part
-//~ define Lo16(int32 a) = int32(a & 0xff);				// Lo16 part
-//~ define Hi16(int32 a) = Lo16(a >> 8);				// Hi16 part
-
-//~ struct HL32{int32 lo; int32 hi;}
-//~ define Lo64(int64 &a) = int32(emit(HL32, ref(a)).lo);	// Lo32 part
-//~ define Hi64(int64 &a) = int32(emit(HL32, ref(a)).hi);	// Hi32 part
 
 hex64 val = 0xff00ff00ff0f0f0f9;
 hex32 lo = Lo64(val);
@@ -209,12 +152,10 @@ hex32 hi = Hi64(val);
 
 // */
 /* get 0 < n <= 64 bit minimum / maximum (signed/unsigned) values
-define hex64 int64;	//%%016X
 void bitsget(bool signed, int size, int64 &min, int64 &max) {
 	int64 mask = bits.shr(int64(-1), -size);
 	min = bits.shl(-int64(signed), size - 1);
 	max = bits.and(min - 1, mask);
-	//~ max = min;
 }
 
 hex64 min;
@@ -228,51 +169,50 @@ bitsget(true, bitsize, min, max);
 bitsget(!true, bitsize, umin, umax);
 // */
 
-/* call functions passed as argument to function
-
-int method2(int x) {
-	//~ putstr("!alma a fa alatt nyári piros alma\n");
+/* call functions ...
+int method0() {}
+int method1(int x) {
+	//~ print("!alma a fa alatt nyári piros alma\n");
 	static int i = 0;
 	result = i += x;
-	println(result);
+	print("%D\n", int64(result));
 }
-int method2() {result = method2(3);}
-int method3() {result = method2(2);}
-
-//~ /+	just call it
-static if (true) {
-	method2();
-	method2();
-	method2();
-}// +/
-
-//~ /+	call passed to another fun
+int method1() {result = method1(1);}
+int method2() {result = method1(2);}
 void methodCall(int method()) {
 	if (method != null) {
 		int n = method();
 	}
-	else println("(null)");
+	else print("(null)\n");
 }
+
+//~ /+	just call it
+static if (true) {
+	method1();
+	method2();
+}// +/
+
+//~ /+	call passed to another fun
+//~ methodCall(method1);	// this will not work because there are 2 method1 named functions
 methodCall(null);
-methodCall(method3);
-methodCall(method3);
-methodCall(method3);
-methodCall(method3);
-methodCall(null);
+methodCall(method2);
 //~ +/
 
-/+	call as a reference
-TODO
-void method() = method3;
+//~ /+	call as a reference
+int method() = null;//method2;
+
+//~ method = null;
 
 if (method != null) {
 	method();
 }
-}
+
+methodCall(method);
+
 // +/
 
 //~ */
-/* return fun
+/* return function ...
 
 /+ count down
 struct Closure {int call(Closure &data); int data;}
@@ -298,19 +238,6 @@ println(Invoke(b));
 println(Invoke(b));
 // +/
 
-
-/+var a = int delegate{int a = 3}(int n) {
-	result = a;
-	a -= n;
-});
-
-//~ sort_function(int array[0, 3, 4, 2, 5, 1], int function(int a, int b){return a.compareTo(b);})
-//~ sort_delegate(int array[0, 3, 4, 2, 5, 1], int delegate{int xxx}(int a, int b){return a == b ? 0 : a > b ? 1 : -1;});
-
-//~ int delegate(int) alma = null;		// 
-//~ int function(int) alma = null;		// indirect reference to function
-// +/
-
 //~ /+ count down (2) with args
 struct Closure {int64 call(Closure &c, int64 n); int64 data; int32 calls; /+...+/ }
 define Closure(int64 call(Closure &c, int64 n), int64 data) = Closure(call, data, 0);
@@ -322,14 +249,12 @@ int64 countdown(Closure &c, int64 n) {result = c.data; c.data -= n; c.calls += 1
 
 Closure a = Closure(countdown, 90);
 
-println(Invoke(a, 9));
-println(Invoke(a, 2));
-println(Invoke(a, 2));
-println(Invoke(a, 2));
+print("%d\n", int64(Invoke(a, 9)));
+print("%d\n", int64(Invoke(a, 2)));
+print("%d\n", int64(Invoke(a, 2)));
+print("%d\n", int64(Invoke(a, 2)));
 
-/+todo: 
-	//~ var a = struct {data: int64(90), calls: int(0)};
-
+/+todo:
 	function a = function{data: int64(90), calls: int(0)} int(int64 n) {
 		result = c.data;
 		c.data -= n;
@@ -340,23 +265,24 @@ println(Invoke(a, 2));
 	println(Invoke(a, 2));
 	println(Invoke(a, 2));
 	println(Invoke(a, 2));
-		
-// +/
+
+
+//~ sort_function(int array[0, 3, 4, 2, 5, 1], int function(int a, int b){return a.compareTo(b);})
+//~ sort_delegate(int array[0, 3, 4, 2, 5, 1], int delegate{int xxx}(int a, int b){return a == b ? 0 : a > b ? 1 : -1;});
 
 // +/
 
 //~ */
 /* assignment by reference
-struct ByRef {
-	int a;
-	int b;
-}
 
-ByRef a = ByRef(1, 2);
-ByRef &b = a;
-&b = null;
-//~ int x = b.typeOf.sizeOf;
-int size = int.sizeOf;
+int64 a = 32;
+a = 33;
+void setup() {
+	static int &b = a;
+	print("%d\n", int64(b));
+}
+setup();
+
 //~ */
 
 /+ hex view: use: ./ccvm -c -x -O-2 test.cvx

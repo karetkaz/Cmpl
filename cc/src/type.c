@@ -25,11 +25,12 @@
 	float64
 
 	pointer
-	variant: alias struct {const typename type; const pointer data;}
-
-	.slice: alias struct {const int length; const pointer data;}
 	.function: alias pointer
-	.delegate: alias struct {const pointer closure; const pointer call;}
+
+	variant: alias struct {const pointer data; const typename type;}
+
+	.slice: alias struct {const pointer data; const int length;}
+	.delegate: alias struct {const pointer call; const pointer closure;}
 
 	#aliases
 	@int: int32
@@ -61,21 +62,23 @@ arrays:
 		Dinamic-size arrays:
 		slices:
 			int a[]
-		this is actually a struct {const int length; const pointer data}, where type of data is known by the compiler.
+		this is actually a struct {const pointer data; const int length;},
+		where type of data is known by the compiler.
 
 variants:
-		this is actually a struct {const typeinfo type; const pointer data}.
+		this is actually a struct {const pointer data; const typeinfo type;}.
 
 structures:
 		when declaring a struct there will be declared the folowing:
-		initializer with all members, in case packing is default.
+		initializer with all members, in case packing is default,
+			and fixed size arrays are not contained by the structure.
 		initializer from pointer:
 		variant initializer.
 		ex: struct Complex {double re; double im};
 		will define:
-			define Complex(double re; double im) = emit(Complex, f64(re), f64(im));
-			define Complex(pointer ptr) = emit(Complex&, ptr(ptr));
-			define implicit operator variant(Complex &var) = emit(variant, ref(Complex), ref(var));
+			define Complex(double re, double im) = emit(Complex, re, im);
+			define Complex(pointer ptr) = emit(Complex&, ptr);
+			operator variant(Complex &var) = emit(variant, ref(Complex), ref(var));
 
 			// this should throw an exception
 			define Complex(variant var) = emit(Complex&, ref(variant2Type(var, complex));
@@ -85,7 +88,7 @@ structures:
 #include "ccvm.h"
 #include <string.h>
 
-TODO("this should go to ccState !")
+TODO("these should go to ccState !")
 symn type_vid = NULL;
 symn type_bol = NULL;
 symn type_u32 = NULL;
@@ -99,7 +102,6 @@ symn null_ref = NULL;
 
 //~ Install
 symn newdefn(ccState s, int kind) {
-	//~ static int id = 0;
 	symn def = NULL;
 
 	if (s->_end - s->_beg > (int)sizeof(struct symn)) {
@@ -112,7 +114,6 @@ symn newdefn(ccState s, int kind) {
 
 	memset(def, 0, sizeof(struct symn));
 	def->kind = kind;
-	//~ def->nths = ++id;
 	return def;
 }
 
@@ -133,11 +134,6 @@ symn installex(ccState s, const char* name, int kind, unsigned size, symn type, 
 			init->type = type;
 		}
 
-		//~ def->cast = cast;
-
-		//~ if (kind & symn_call)
-			//~ def->call = 1;
-
 		if (kind & symn_stat)
 			def->attr |= ATTR_stat;
 
@@ -154,6 +150,7 @@ symn installex(ccState s, const char* name, int kind, unsigned size, symn type, 
 			case TYPE_rec:
 				def->offs = vmOffset(s->s, def);
 				//~ def->pack = size;
+				break;
 
 			// variable
 			case TYPE_def:
@@ -204,7 +201,6 @@ symn addarg(ccState cc, symn sym, const char* name, int kind, symn typ, astn ini
 	return sym->args;
 }
 
-
 // promote
 static inline int castkind(int cast) {
 	switch (cast) {
@@ -232,7 +228,7 @@ symn promote(symn lht, symn rht) {
 			case TYPE_int: switch (castkind(lht->cast)) {
 				case TYPE_bit:
 				case TYPE_int:
-					TODO(bool + int == bool; if sizeof(bool) == 4)
+					TODO("bool + int is bool; if sizeof(bool) == 4")
 					if (lht->cast == TYPE_bit && lht->size == rht->size)
 						pro = rht;
 					else
@@ -261,88 +257,91 @@ symn promote(symn lht, symn rht) {
 	}
 	return pro;
 }
+int canAssign(symn rhs, astn val, int strict) {
+	symn typ = rhs;
 
-TODO(another function is required to check recursively the arguments.)
-TODO(`check` should be `canAssign`)
-int check(astn arg, symn ref) {
-	symn typ = arg->type;
+	dieif(!rhs, "FixMe");
+	dieif(!val, "FixMe");
 
-	dieif(!arg, "FixMe");
-	dieif(!ref, "FixMe");
-	dieif(!ref->type, "FixMe");
-
-	if (arg->kind == TYPE_ref) {
-		if (arg->id.link == null_ref) {		// null can be passed as a reference
-			if (ref->cast == TYPE_ref || ref->cast == TYPE_def) {
-				trace("null byref: %-T", ref);
-				return 1;
-			}
-		}
-		else if (arg->id.link) {
-			typ = arg->id.link->type;
-		}
-	}
-
-	if (ref->call) {
-		symn fun = linkOf(arg);
-		symn arg1 = ref->args;
-		symn arg2 = fun ? fun->args : NULL;
-		typ = fun ? fun->type : NULL;
-		trace("function byref: %+k", arg);
-
-		TODO(this check is wrong)
-		if (typ != ref->type) {
-			debug("%-T != %-T", ref, fun);
-			//~ debug("%-T != %-T", typ, ref->type);
-			//~ debug("%+k: %+T", arg, ref);
-			return 0;
-		}
-		while (arg1 && arg2) {
-
-			if (arg1->type != arg2->type)
-				break;
-
-			if (arg1->cast != arg2->cast)
-				break;
-
-			arg1 = arg1->next;
-			arg2 = arg2->next;
-		}
-		if (arg1 || arg2) {
-			trace("%?-T != %?-T", arg1, arg2);
-			debug("FixMe");
-			return 0;
-		}
-		return 1;
-	}
-	else if (ref->cast == TYPE_ref) {
-
-		if (ref->type == arg->type)
+	// assigning null or pass by reference
+	if (val->kind == TYPE_ref && val->id.link == null_ref) {
+		// if parameter is byRef or type is byRef
+		if (rhs->cast == TYPE_ref || typ->cast == TYPE_ref) {
+			//~ trace("null byref: %-T", rhs);
 			return 1;
+		}
+	}// */
 
-		//~ /*TODO(TEMP)
-		if (ref->type->cast == arg->type->cast) {
-			if (ref->type->size == arg->type->size) {
-				switch (ref->type->cast) {
-					case TYPE_u32:
-					case TYPE_i32:
-					case TYPE_i64:
-					case TYPE_f32:
-					case TYPE_f64:
-						return 1;
+	if (rhs->kind == TYPE_ref) {
+
+		typ = rhs->type;
+
+		// assigning a function
+		if (rhs->call) {
+			symn arg1 = rhs->args;
+			symn arg2 = NULL;
+
+			if (val->kind == TYPE_ref) {
+				symn fun = linkOf(val);
+				struct astn atag;
+
+				atag.kind = TYPE_ref;
+				atag.type = typ;
+				atag.cst2 = rhs->cast;
+				atag.id.link = rhs;
+
+				if (canAssign(fun->type, &atag, 1)) {
+					arg2 = fun->args;
+					while (arg1 && arg2) {
+
+						atag.type = arg2->type;
+						atag.cst2 = arg2->cast;
+						atag.id.link = arg2;
+
+						if (!canAssign(arg1, &atag, 1)) {
+							trace("%-T != %-T", arg1, arg2);
+							break;
+						}
+
+						arg1 = arg1->next;
+						arg2 = arg2->next;
+					}
+				}
+				else {
+					trace("%-T != %-T", typ, fun);
 				}
 			}
-		}// */
-	}
-	else {
-		if (ref->type == arg->type)
+			if (arg1 || arg2) {
+				trace("%-T != %-T", arg1, arg2);
+				return 0;
+			}
 			return 1;
-		if (promote(ref->type, arg->type))
-			return 1;
+		}
+		else if (!strict) {
+			strict = rhs->cast == TYPE_ref;
+		}
 	}
 
-	//~ debug("%-T != %-T", arg->type, ref->type);
-	debug("%-T != %-T", arg->type, ref->type);
+	if (typ == val->type)
+		return 1;
+
+	if (!strict && promote(typ, val->type))
+		return 1;
+
+	//~ /*TODO(hex32 can be passed as int32 by ref)
+	if (val->type && typ->cast == val->type->cast) {
+		if (typ->size == val->type->size) {
+			switch (typ->cast) {
+				case TYPE_u32:
+				case TYPE_i32:
+				case TYPE_i64:
+				case TYPE_f32:
+				case TYPE_f64:
+					return 1;
+			}
+		}
+	}// */
+
 	return 0;
 }
 
@@ -492,10 +491,10 @@ symn lookup(ccState s, symn sym, astn ref, astn args, int raise) {
 		astn argval = args;
 		symn argsym = sym->args;
 
-		while (argsym && argval) {
+		if (sym->call) while (argsym && argval) {
 
-			if (!check(argval, argsym)) {
-				debug("check(%+k, %-T): %+k", argval, argsym, ref);
+			if (!canAssign(argsym, argval, 0)) {
+				debug("canAssign(%+k to %-T)", argval, argsym);
 				return 0;
 			}
 
@@ -560,12 +559,6 @@ symn declare(ccState s, int kind, astn tag, symn typ) {
 
 int isType(symn sym) {
 	if (sym) switch(sym->kind) {
-		//~ case TYPE_vid:
-		//~ case TYPE_bit:
-		//~ case CNST_int:
-		//~ case CNST_flt:
-		//~ case TYPE_str:
-
 		case TYPE_arr:
 		case TYPE_rec:
 			return 1;
@@ -707,7 +700,8 @@ int castTo(astn ast, int cto) {
 			default:
 				goto error;
 		} break;
-		//~ case TYPE_ref:
+		case TYPE_ref:
+			break;
 		default:
 		error:
 			trace("cast(%+k) to %t/%t", ast, cto, atc);
@@ -743,6 +737,7 @@ symn typecheck(ccState cc, symn loc, astn ast) {
 	symn sym = 0;
 
 	if (!ast) {
+		trace("FixMe");
 		return 0;
 	}
 
@@ -851,10 +846,10 @@ symn typecheck(ccState cc, symn loc, astn ast) {
 
 			loc = sym;
 			ref = ast->op.rhso;
-			debug("%T", linkOf(ast->op.lhso));
+			//~ debug("%T", linkOf(ast->op.lhso));
 			if (isType(linkOf(ast->op.lhso)))
 				checkStaticMembers = 1;
-			debug("lookup %+k in %T / %d", ref, loc, checkStaticMembers);
+			//~ debug("lookup %+k in %T / %d", ref, loc, checkStaticMembers);
 		} break;
 		case OPER_idx: {
 			symn lht = typecheck(cc, loc, ast->op.lhso);
@@ -1185,9 +1180,8 @@ symn typecheck(ccState cc, symn loc, astn ast) {
 			else
 				sym = loc->args;
 		}
-		//~ else
-		//~ sym = loc ? loc->args : cc->deft[ref->id.hash];
 
+		//~ debug("%+k(%d)", ast, ast->line);
 		if ((sym = lookup(cc, sym, ref, args, 1))) {
 
 			//~ debug("%k(%d)", ref, ast->line);
@@ -1261,7 +1255,7 @@ symn typecheck(ccState cc, symn loc, astn ast) {
 	}
 
 	//~ if (ast->kind == OPER_fnc) {debug("%k is %-T: %-T", ref, sym, result);}
-	//~ if (!result) debug("%k in %T", ref, loc);
+	//~ if (!result) debug("%+k in %-T", ast, loc);
 
 	return result;
 }
@@ -1307,8 +1301,6 @@ int fixargs(symn sym, int align, int stbeg) {
 	return stdiff;
 
 }
-
-//~ static int fixstat(symn sym)
 
 //~ scoping
 void enter(ccState s, astn ast) {
@@ -1448,21 +1440,3 @@ symn leave(ccState cc, symn dcl, int mkstatic) {
 
 	return loc;
 }
-
-// }
-
-/**
-bool canCast2(type to, type from) {
-	if (to.size > from.size)
-		return false;
-}
-
-pointer variant2Type(variant var, TypeName type) {
-	if (var.type == type)
-		return var.data;
-	if (canCast2(type, var.type)) {
-		return var.data;
-	}
-	throw castException(/+ from +/ var->type, /+ to +/ type);
-}
-**/

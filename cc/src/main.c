@@ -16,8 +16,6 @@ static char mem[memsize];
 #define stricmp(__STR1, __STR2) strcasecmp(__STR1, __STR2)
 #endif
 
-//~ extern int vmTest();
-
 char *parsei32(const char *str, int32_t *res, int radix) {
 	int64_t result = 0;
 	int sign = 1;
@@ -386,8 +384,7 @@ void usage(char* prog, char* cmd) {
 		fputfmt(stdout, "\t-e: execute\n");
 		fputfmt(stdout, "\t-d: diassemble\n");
 		fputfmt(stdout, "\t-h: help\n");
-		//~ fputfmt(stdout, "\t=<expression>: eval\n");
-		//~ fputfmt(stdout, "\t-d: dump\n");
+		fputfmt(stdout, "\t=<expression>: eval\n");
 	}
 	else if (strcmp(cmd, "-c") == 0) {
 		fputfmt(stdout, "compile: %s -c [options] file ...args\n", prog);
@@ -448,16 +445,14 @@ int evalexp(ccState s, char* text) {
 	return -1;
 }
 
-int reglibc(state s) {
+int reglibs(state s, char *stdlib) {
 	int err = 0;
-	symn App;
-
-	libcall(s, NULL, 0, "reset");
+	//~ symn App;
 
 	//~ if (!libcall(s, libCallExitDebug, 0, "void debug1(int x, int y, int z);")) err = 1;
 	//~ if (!libcall(s, libCallExitDebug, 0, "void debug1(int x, int y, int z, int u, int v, int w);")) err = 1;
 
-	//~ /*
+	/*
 	if ((App = ccBegin(s, "App"))) {
 		symn App_xxx;
 		if ((App_xxx = ccBegin(s, "Xxx"))) {
@@ -470,9 +465,8 @@ int reglibc(state s) {
 		ccEnd(s, App);
 	}// */
 
-	//~ err = install_stdc(s) || err;
-
-	err = install_bits(s) || err;
+	err = err || install_stdc(s, stdlib, wl);
+	err = err || install_bits(s);
 
 	return err;
 }
@@ -500,10 +494,117 @@ int compile(state s, int wl, char *file) {
 	return result;
 }
 
+int installDll(state s, int ccApiMain(state s, stateApi api)) {
+	struct stateApi api;
+	api.ccBegin = ccBegin;
+	api.ccEnd = ccEnd;
+	api.libcall = libcall;
+	api.install = installtyp;
+	return ccApiMain(s, &api);
+
+}
+
+#if __linux__
+#include <dlfcn.h>
+static int importLib(state s, const char *path, const char *init) {
+	int result = 0;
+	void *lib = dlopen(path, RTLD_NOW);
+	if (lib != NULL) {
+		void *sym = dlsym(lib, init);
+		if (sym != NULL) {
+			result = installDll(s, sym);
+		}
+		else {
+			result = -2;
+		}
+		dlclose(lib);
+	}
+	else {
+		result = -1;
+	}
+	return result;
+}
+
+#else
+
+#include <windows.h>
+static int importLib(state s, const char *path, const char *init) {
+	int result = 0;
+	typedef int (*ccApiMain)(state s, stateApi api);
+	HANDLE lib = LoadLibrary(path);
+	if (lib != NULL) {
+		ccApiMain sym = (ccApiMain)GetProcAddress(lib, init);
+		if (sym != NULL) {
+			result = installDll(s, sym);
+		}
+		else {
+			result = -2;
+		}
+		//~ FreeLibrary((HINSTANCE)lib);
+	}
+	else {
+		result = -1;
+	}
+	return result;
+}
+
+#endif
+
 static int printvars = 0;
 static int dbgCon(state s, int pu, void *ip, long* bp, int ss);
+void vm_fputval(state, FILE *fout, symn var, stkval* ref, int flgs);
+static int libCallExitDebug(state rt) {
+	symn arg = rt->libc->args;
+	int argc = (char*)rt->retv - (char*)rt->argv;
+
+	for ( ;arg; arg = arg->next) {
+		char *ofs;
+
+		if (arg->offs <= 0) {
+			// global variable.
+			ofs = (void*)(rt->_mem - arg->offs);
+		}
+		else {
+			// argument or local variable.
+			ofs = ((char*)rt->argv) + argc - arg->offs;
+		}
+
+		//~ debug("argv: %08x", rt->argv);
+		//~ if (arg->kind != TYPE_ref && rt->args == rt->defs) continue;
+		if (arg->kind != TYPE_ref) continue;
+
+		if (arg->file && arg->line)
+			fputfmt(stdout, "%s:%d:",arg->file, arg->line);
+		else
+			fputfmt(stdout, "var: ",arg->file, arg->line);
+
+		fputfmt(stdout, "@%d[0x%08x]\t: ", arg->offs < 0 ? -1 : arg->offs, ofs);
+
+		//~ fputfmt(stdout, "@%d[0x%08x]\t: ", arg->offs, ofs);
+		//~ fputfmt(stdout, "@%d[0x%08x]\t: ", rt->argc - arg->offs, ofs);
+		vm_fputval(rt, stdout, arg, (stkval*)ofs, 0);
+		fputc('\n', stdout);
+	}
+	if (1) {	// memory info
+		list mem;
+
+		perr(rt, 0, NULL, 0, "memory info");
+		for (mem = rt->_free; mem; mem = mem->next) {
+			perr(rt, 0, NULL, 0, "free mem@%06x[%d]", mem->data - rt->_mem, mem->size);
+		}
+		for (mem = rt->_used; mem; mem = mem->next) {
+			perr(rt, 0, NULL, 0, "used mem@%06x[%d]", mem->data - rt->_mem, mem->size);
+		}
+		//~ fatal("FixMe: %s", "try to defrag free memory");
+	}
+
+	return 0;
+}
+
 int program(int argc, char *argv[]) {
 	state s = rtInit(mem, sizeof(mem));
+
+	char *stdl = "../stdlib.cvx";		// standard library
 
 	char *prg, *cmd;
 	dbgf dbg = NULL;
@@ -514,12 +615,10 @@ int program(int argc, char *argv[]) {
 		usage(prg, NULL);
 	}
 	else if (argc == 2 && *cmd == '=') {	// eval
-		if (reglibc(s))
-			return -1;
-		return evalexp(ccInit(s, creg_def), cmd + 1);
+		return evalexp(ccInit(s, creg_def, NULL), cmd + 1);
 	}
 	else if (strcmp(cmd, "-api") == 0) {
-		ccState env = ccInit(s, creg_def);
+		ccState env = ccInit(s, creg_def, NULL);
 		const int level = 2;
 		symn glob;
 		int i;
@@ -527,7 +626,12 @@ int program(int argc, char *argv[]) {
 		if (!env)
 			return -33;
 
-		reglibc(s);
+		if (reglibs(s, stdl) != 0) {
+			error(s, NULL, 0, "error registering lib calls");
+			logfile(s, NULL);
+			return -6;
+		}
+
 		glob = leave(env, NULL, 1);
 		if (argc == 2) {
 			dumpsym(stdout, glob, level);
@@ -554,7 +658,6 @@ int program(int argc, char *argv[]) {
 		int warn = wl;
 		int opti = ol;
 		int outc = 0;			// output
-		char *stdl = "../stdlib.cvx";		// standard
 		char *srcf = 0;			// source
 		char *logf = 0;			// logger
 		char *outf = 0;			// output
@@ -662,6 +765,7 @@ int program(int argc, char *argv[]) {
 			}
 
 			// Override settings
+			else if (strncmp(arg, "-i", 2) == 0) {}		// import library
 			else if (strncmp(arg, "-w", 2) == 0) {		// warning level
 				if (strcmp(arg, "-wx") == 0)
 					warn = -1;
@@ -691,55 +795,49 @@ int program(int argc, char *argv[]) {
 			}
 		}
 
+		// open logger
 		if (logf && logfile(s, logf) != 0) {
 			fputfmt(stderr, "can not open file `%s`\n", logf);
 			return -1;
 		}
 
-		if (!ccInit(s, creg_def)) {
+		// initialize compiler: type sysyem, emit, ...
+		if (!ccInit(s, creg_def, libCallExitDebug)) {
 			error(s, NULL, 0, "error registering types");
 			logfile(s, NULL);
 			return -6;
 		}
-		if (reglibc(s) != 0) {
+
+		// intstall standard library and others.
+		if (reglibs(s, stdl) != 0) {
 			error(s, NULL, 0, "error registering lib calls");
 			logfile(s, NULL);
 			return -6;
 		}// */
 
-		if (!install_stdc(s, stdl, warn)) {
-			warn(s, 1, NULL, 0, "compiling `%s`", "stdlib.cvx");
-			//~ logfile(s, NULL);
-			//~ return -9;
-		}// */
+		// iomports
+		for (argi = 2; argi < argc; ++argi) {
+			char *arg = argv[argi];
+			if (strncmp(arg, "-i", 2) == 0) {		// import library
+				char *str = arg + 2;
+				importLib(s, str, "apiMain");
+			}
+		}
 
+		// compile the given source code.
 		if (compile(s, warn, srcf) != 0) {
 			error(s, NULL, 0, "error compiling `%s`", srcf);
 			logfile(s, NULL);
 			return s->errc;
 		}
 
+		// generate variables and vm code.
 		if ((outc & gen_code) && gencode(s, opti) != 0) {
 			logfile(s, NULL);
 			return s->errc;
 		}
 
-		if (0) {
-			symn glob = s->defs;
-			while (glob) {
-				char* ty = ".err";
-				switch (glob->kind) {
-					case EMIT_opc: ty = "emit"; break;
-					case TYPE_ref: ty = ".ref"; break;
-					case TYPE_rec: ty = ".typ"; break;
-					case TYPE_def: ty = ".def"; break;
-				}
-				//~ debug("%s: %-15.15T", ty, glob);
-				dumpsym(stdout, glob, 0);
-				glob = glob->defs;
-			}
-		}
-
+		// dump to log or execute
 		if (outf)
 			logfile(s, outf);
 		else
@@ -764,10 +862,7 @@ int program(int argc, char *argv[]) {
 		return 0;
 	}
 	else if (strcmp(cmd, "-h") == 0) {		// help
-		//~ char *t = argv[2];
-		if (argc < 3) {
-			usage(argv[0], argc < 4 ? argv[3] : NULL);
-		}
+		usage(prg, argc >= 2 ? argv[2] : NULL);
 		//~ else if (strcmp(t, "compile") == 0) {}
 	}
 	else fputfmt(stderr, "invalid option: '%s'\n", cmd);
@@ -775,25 +870,12 @@ int program(int argc, char *argv[]) {
 	return 0;
 }
 
-int main(int argc, char *argv[]) {
-	if (1 && argc == 1) {
-		char *args[] = {
-			"*argv",	// Program Name
-			"-api",
-			//~ "-c",		// compile command
-			//~ "-O2",		// optimize code
-			//~ "-x",		// execute & show symbols command
-			//~ "test.cvx",
-		};
-		argc = sizeof(args) / sizeof(*args);
-		argv = args;
-	}
+extern int vmTest();
 
-	//~ setbuf(stdout, NULL);
-	//~ setbuf(stderr, NULL);
-	//~ return mk_test("xxxx.cvx", 8 << 20);	// 8M
+int main(int argc, char *argv[]) {
+	setbuf(stdout, NULL);
+	setbuf(stderr, NULL);
 	//~ return vmTest();
-	//~ return test1();
 	return program(argc, argv);
 }
 
@@ -823,7 +905,8 @@ static int dbgCon(state s, int pu, void *ip, long* bp, int ss) {
 		vec2d* v2 = (vec2d*)sp;
 		fputfmt(stdout, "\tsp(%d): {i32(%d), i64(%D), f32(%g), f64(%G), vec4f(%g, %g, %g, %g), vec2d(%G, %G)}\n", ss, sp->i4, sp->f4, sp->i8, sp->f8, v4->x, v4->y, v4->z, v4->w, v2->x, v2->y);
 	}
-	fputfmt(stdout, ">exec:[sp%02d]@%9.*A\n", ss, IP, ip);
+	//~ fputfmt(stdout, ">exec:[sp%02d]@%9.*A\n", ss, IP, ip);
+	fputfmt(stdout, ">exec:[sp%02d:%008x]@%9.*A\n", ss, bp + ss, IP, ip);
 
 	if (cmd != 'N') for ( ; ; ) {
 		if (fgets(buff, 1024, stdin) == NULL) {
@@ -926,6 +1009,7 @@ static int dbgCon(state s, int pu, void *ip, long* bp, int ss) {
 	}
 	return 0;
 }
+
 
 /* temp
 

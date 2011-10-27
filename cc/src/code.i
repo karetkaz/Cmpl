@@ -16,46 +16,17 @@ case opc_loc:  NEXT(2, 0, +ip->idx) {
 } break;
 case opc_drop: NEXT(2, ip->idx, -ip->idx) {} break;
 case opc_inc:  NEXT(4, 1, -0) {
-#if defined(EXEC) || defined(EVAL)
+#if defined(EXEC)
 	SP(0, u4) += ip->rel;
 #endif
 } break;
-
-case opc_cpy:  NEXT(4, 2, -2) {
-#ifdef EXEC
-	void *src, *dst;
-	int cnt = ip->rel;
-
-	if (cnt < 0) {
-		cnt = -cnt;
-		src = mp + SP(1, i4);
-		dst = mp + SP(0, i4);
-		STOP(error_mem, SP(1, i4) <= 0, SP(1, i4));
-		STOP(error_mem, SP(1, i4) > ms, SP(1, i4));
-		STOP(error_mem, SP(0, i4) < ro, SP(0, i4));
-		STOP(error_mem, SP(0, i4) > ms, SP(0, i4));
-	}
-	else {
-		src = mp + SP(0, i4);
-		dst = mp + SP(1, i4);
-		STOP(error_mem, SP(0, i4) <= 0, SP(0, i4));
-		STOP(error_mem, SP(0, i4) > ms, SP(0, i4));
-		STOP(error_mem, SP(1, i4) < ro, SP(1, i4));
-		STOP(error_mem, SP(1, i4) > ms, SP(1, i4));
-	}
-
-	memmove(dst, src, cnt);
-#endif
-} break;// */
-
 case opc_spc:  NEXT(4, 0, 0) {
-	//~ int sm = (ip->rel + 3) / 4;
 	int sm = ip->rel / 4;
 	dieif(ip->rel & 3, "FixMe");
 	if (sm > 0) {
 		NEXT(0, 0, sm);
 #ifdef EXEC
-	STOP(error_ovf, ovf(pu), -1);
+		STOP(error_ovf, ovf(pu), -1);
 #endif
 	}
 	else {
@@ -80,7 +51,7 @@ case opc_jz:   NEXT(4, 1, -1) {
 #endif
 } break;
 case opc_not:  NEXT(1, 1, -0) {
-#if defined(EXEC) || defined(EVAL)
+#if defined(EXEC)
 	SP(0, u4) = !SP(0, u4);
 #endif
 } break;
@@ -347,45 +318,71 @@ case opc_st64: NEXT(4, 2, -2) {
 	MP(ip->rel, i8) = SP(0, i8);
 #endif
 } break;
+
+case opc_move: NEXT(4, 2, -2) {
+#ifdef EXEC
+	int si, di;
+	int cnt = ip->rel;
+
+	if (cnt < 0) {
+		cnt = -cnt;
+		si = SP(1, i4);
+		di = SP(0, i4);
+	}
+	else {
+		si = SP(0, i4);
+		di = SP(1, i4);
+	}
+
+	STOP(error_mem, si <= 0, si);
+	STOP(error_mem, si > ms, si);
+	STOP(error_mem, di < ro, di);
+	STOP(error_mem, di > ms, di);
+
+	memmove(mp + di, mp + si, cnt);
+
+#endif
+} break;
 //}*/
 //{ 0x3?: B32		// Unsigned
 case b32_cmt: NEXT(1, 1, -0) {
-#if defined(EXEC) || defined(EVAL)
+#if defined(EXEC)
 	SP(0, u4) = ~SP(0, u4);
 #endif
 } break;
 case b32_and: NEXT(1, 2, -1) {
-#if defined(EXEC) || defined(EVAL)
+#if defined(EXEC)
 	SP(1, u4) &= SP(0, u4);
 #endif
 } break;
 case b32_ior: NEXT(1, 2, -1) {
-#if defined(EXEC) || defined(EVAL)
+#if defined(EXEC)
 	SP(1, u4) |= SP(0, u4);
 #endif
 } break;
 case b32_xor: NEXT(1, 2, -1) {
-#if defined(EXEC) || defined(EVAL)
+#if defined(EXEC)
 	SP(1, u4) ^= SP(0, u4);
 #endif
 } break;
 case b32_shl: NEXT(1, 2, -1) {
-#if defined(EXEC) || defined(EVAL)
+#if defined(EXEC)
 	SP(1, u4) <<= SP(0, u4);
 #endif
 } break;
 case b32_shr: NEXT(1, 2, -1) {
-#if defined(EXEC) || defined(EVAL)
+#if defined(EXEC)
 	SP(1, u4) >>= SP(0, u4);
 #endif
 } break;
 case b32_sar: NEXT(1, 2, -1) {
-#if defined(EXEC) || defined(EVAL)
+#if defined(EXEC)
 	SP(1, i4) >>= SP(0, i4);
 #endif
 } break;
+
 case b32_bit: NEXT(2, 1, -0) {
-#if defined(EXEC) || defined(EVAL)
+#if defined(EXEC)
 	switch (ip->idx & 0xC0) {
 		case b32_bit_and: SP(0, u4) &= (1 << (ip->idx & 0x3f)) - 1; break;
 		case b32_bit_shl: SP(0, u4) <<= ip->idx & 0x3f; break;
@@ -397,57 +394,57 @@ case b32_bit: NEXT(2, 1, -0) {
 } break;
 
 case u32_i64: NEXT(1, 1, +1) {
-#if defined(EXEC) || defined(EVAL)
+#if defined(EXEC)
 	SP(-1, i8) = SP(0, u4);
 #endif
 } break;
 case u32_clt: NEXT(1, 2, -1) {
-#if defined(EXEC) || defined(EVAL)
+#if defined(EXEC)
 	SP(1, u4) = SP(1, u4)  < SP(0, u4);
 #endif
 } break;
 case u32_cgt: NEXT(1, 2, -1) {
-#if defined(EXEC) || defined(EVAL)
+#if defined(EXEC)
 	SP(1, u4) = SP(1, u4)  > SP(0, u4);
 #endif
 } break;
 
 /*case b32_zxt: NEXT(2, 1, -0) {
-#if defined(EXEC) || defined(EVAL)
+#if defined(EXEC)
 	SP(0, u4) = zxt(SP(0, u4), ip->arg.u1 >> 5, ip->arg.u1 & 31);
 #endif
 } break;*/
 /*case b32_sxt: NEXT(2, 1, -0) {
-#if defined(EXEC) || defined(EVAL)
+#if defined(EXEC)
 	SP(0, i4) = sxt(SP(0, i4), ip->arg.u1 >> 5, ip->arg.u1 & 31);
 #endif
 } break;*/
 case u32_mul: NEXT(1, 2, -1) {
-#if defined(EXEC) || defined(EVAL)
+#if defined(EXEC)
 	SP(1, u4) *= SP(0, u4);
 #endif
 } break;
 case u32_div: NEXT(1, 2, -1) {
-#if defined(EXEC) || defined(EVAL)
+#if defined(EXEC)
 	STOP(error_div, SP(0, u4) == 0, -1);
 	SP(1, u4) /= SP(0, u4);
 #endif
 } break;
 case u32_mod: NEXT(1, 2, -1) {
-#if defined(EXEC) || defined(EVAL)
+#if defined(EXEC)
 	STOP(error_div, SP(0, u4) == 0, -1);
 	SP(1, u4) %= SP(0, u4);
 #endif
 } break;
 case u32_mad: NEXT(1, 3, -2) {
-#if defined(EXEC) || defined(EVAL)
+#if defined(EXEC)
 	SP(2, u4) += SP(1, u4) * SP(0, u4);
 #endif
 } break;
 //}
 //{ 0x4?: I32		// Integer
 case i32_neg: NEXT(1, 1, -0) {
-#if defined(EXEC) || defined(EVAL)
+#if defined(EXEC)
 	SP(0, i4) = -SP(0, i4);
 #ifdef SETF
 	pu->zf = SP(0, i4) == 0;
@@ -458,7 +455,7 @@ case i32_neg: NEXT(1, 1, -0) {
 #endif
 } break;
 case i32_add: NEXT(1, 2, -1) {
-#if defined(EXEC) || defined(EVAL)
+#if defined(EXEC)
 	SP(1, i4) += SP(0, i4);
 #ifdef SETF
 	pu->zf = SP(1, i4) == 0;
@@ -469,133 +466,133 @@ case i32_add: NEXT(1, 2, -1) {
 #endif
 } break;
 case i32_sub: NEXT(1, 2, -1) {
-#if defined(EXEC) || defined(EVAL)
+#if defined(EXEC)
 	SP(1, i4) -= SP(0, i4);
 #endif
 } break;
 case i32_mul: NEXT(1, 2, -1) {
-#if defined(EXEC) || defined(EVAL)
+#if defined(EXEC)
 	SP(1, i4) *= SP(0, i4);
 #endif
 } break;
 case i32_div: NEXT(1, 2, -1) {
-#if defined(EXEC) || defined(EVAL)
+#if defined(EXEC)
 	STOP(error_div, SP(0, i4) == 0, -1);
 	SP(1, i4) /= SP(0, i4);
 #endif
 } break;
 case i32_mod: NEXT(1, 2, -1) {
-#if defined(EXEC) || defined(EVAL)
+#if defined(EXEC)
 	STOP(error_div, SP(0, i4) == 0, -1);
 	SP(1, i4) %= SP(0, i4);
 #endif
 } break;
 
 case i32_ceq: NEXT(1, 2, -1) {
-#if defined(EXEC) || defined(EVAL)
+#if defined(EXEC)
 	SP(1, i4) = SP(1, i4) == SP(0, i4);
 #endif
 } break;
 case i32_clt: NEXT(1, 2, -1) {
-#if defined(EXEC) || defined(EVAL)
+#if defined(EXEC)
 	SP(1, i4) = SP(1, i4)  < SP(0, i4);
 #endif
 } break;
 case i32_cgt: NEXT(1, 2, -1) {
-#if defined(EXEC) || defined(EVAL)
+#if defined(EXEC)
 	SP(1, i4) = SP(1, i4)  > SP(0, i4);
 #endif
 } break;
 
 case i32_bol: NEXT(1, 1, -0) {
-#if defined(EXEC) || defined(EVAL)
+#if defined(EXEC)
 	SP(0, i4) = 0 != SP(0, i4);
 #endif
 } break;
 case i32_f32: NEXT(1, 1, -0) {
-#if defined(EXEC) || defined(EVAL)
+#if defined(EXEC)
 	SP(0, f4) = SP(0, i4);
 #endif
 } break;
 case i32_i64: NEXT(1, 1, +1) {
-#if defined(EXEC) || defined(EVAL)
+#if defined(EXEC)
 	SP(-1, i8) = SP(0, i4);
 #endif
 } break;
 case i32_f64: NEXT(1, 1, +1) {
-#if defined(EXEC) || defined(EVAL)
+#if defined(EXEC)
 	SP(-1, f8) = SP(0, i4);
 #endif
 } break;
 //}
 //{ 0x5?: F32		// Float
 case f32_neg: NEXT(1, 1, -0) {
-#if defined(EXEC) || defined(EVAL)
+#if defined(EXEC)
 	SP(0, f4) = -SP(0, f4);
 #endif
 } break;
 case f32_add: NEXT(1, 2, -1) {
-#if defined(EXEC) || defined(EVAL)
+#if defined(EXEC)
 	SP(1, f4) += SP(0, f4);
 #endif
 } break;
 case f32_sub: NEXT(1, 2, -1) {
-#if defined(EXEC) || defined(EVAL)
+#if defined(EXEC)
 	SP(1, f4) -= SP(0, f4);
 #endif
 } break;
 case f32_mul: NEXT(1, 2, -1) {
-#if defined(EXEC) || defined(EVAL)
+#if defined(EXEC)
 	SP(1, f4) *= SP(0, f4);
 #endif
 } break;
 case f32_div: NEXT(1, 2, -1) {
-#if defined(EXEC) || defined(EVAL)
+#if defined(EXEC)
 	SP(1, f4) /= SP(0, f4);
 	STOP(error_div, SP(0, f4) == 0, -1);
 #endif
 } break;
 case f32_mod: NEXT(1, 2, -1) {
-#if defined(EXEC) || defined(EVAL)
+#if defined(EXEC)
 	STOP(error_div, SP(0, f4) == 0, -1);
 	SP(1, f4) = fmod(SP(1, f4), SP(0, f4));
 #endif
 } break;
 
 case f32_ceq: NEXT(1, 2, -1) {
-#if defined(EXEC) || defined(EVAL)
+#if defined(EXEC)
 	SP(1, i4) = SP(1, f4) == SP(0, f4);
 #endif
 } break;
 case f32_clt: NEXT(1, 2, -1) {
-#if defined(EXEC) || defined(EVAL)
+#if defined(EXEC)
 	SP(1, i4) = SP(1, f4)  < SP(0, f4);
 #endif
 } break;
 case f32_cgt: NEXT(1, 2, -1) {
-#if defined(EXEC) || defined(EVAL)
+#if defined(EXEC)
 	SP(1, i4) = SP(1, f4)  > SP(0, f4);
 #endif
 } break;
 
 case f32_i32: NEXT(1, 1, -0) {
-#if defined(EXEC) || defined(EVAL)
+#if defined(EXEC)
 	SP(0, i4) = SP(0, f4);
 #endif
 } break;
 case f32_bol: NEXT(1, 1, -0) {
-#if defined(EXEC) || defined(EVAL)
+#if defined(EXEC)
 	SP(0, i4) = 0 != SP(0, f4);
 #endif
 } break;
 case f32_i64: NEXT(1, 1, +1) {
-#if defined(EXEC) || defined(EVAL)
+#if defined(EXEC)
 	STOP(error_ovf, ovf(pu), -1);
 	SP(-1, i8) = SP(0, f4);
 #endif
 } break;
 case f32_f64: NEXT(1, 1, +1) {
-#if defined(EXEC) || defined(EVAL)
+#if defined(EXEC)
 	STOP(error_ovf, ovf(pu), -1);
 	SP(-1, f8) = SP(0, f4);
 #endif
@@ -603,151 +600,151 @@ case f32_f64: NEXT(1, 1, +1) {
 //} */
 //{ 0x6?: I64		// Long
 case i64_neg: NEXT(1, 2, -0) {
-#if defined(EXEC) || defined(EVAL)
+#if defined(EXEC)
 	SP(0, i8) = -SP(0, i8);
 #endif
 } break;
 case i64_add: NEXT(1, 4, -2) {
-#if defined(EXEC) || defined(EVAL)
+#if defined(EXEC)
 	SP(2, i8) += SP(0, i8);
 #endif
 } break;
 case i64_sub: NEXT(1, 4, -2) {
-#if defined(EXEC) || defined(EVAL)
+#if defined(EXEC)
 	SP(2, i8) -= SP(0, i8);
 #endif
 } break;
 case i64_mul: NEXT(1, 4, -2) {
-#if defined(EXEC) || defined(EVAL)
+#if defined(EXEC)
 	SP(2, i8) *= SP(0, i8);
 #endif
 } break;
 case i64_div: NEXT(1, 4, -2) {
-#if defined(EXEC) || defined(EVAL)
+#if defined(EXEC)
 	STOP(error_div, SP(0, i8) == 0, -1);
 	SP(2, i8) /= SP(0, i8);
 #endif
 } break;
 case i64_mod: NEXT(1, 4, -2) {
-#if defined(EXEC) || defined(EVAL)
+#if defined(EXEC)
 	STOP(error_div, SP(0, i8) == 0, -1);
 	SP(2, i8) %= SP(0, i8);
 #endif
 } break;
 
 case i64_ceq: NEXT(1, 4, -3) {
-#if defined(EXEC) || defined(EVAL)
+#if defined(EXEC)
 	SP(3, i4) = SP(2, i8) == SP(0, i8);
 #endif
 } break;
 case i64_clt: NEXT(1, 4, -3) {
-#if defined(EXEC) || defined(EVAL)
+#if defined(EXEC)
 	SP(3, i4) = SP(2, i8)  < SP(0, i8);
 #endif
 } break;
 case i64_cgt: NEXT(1, 4, -3) {
-#if defined(EXEC) || defined(EVAL)
+#if defined(EXEC)
 	SP(3, i4) = SP(2, i8)  > SP(0, i8);
 #endif
 } break;
 
 case i64_i32: NEXT(1, 2, -1) {
-#if defined(EXEC) || defined(EVAL)
+#if defined(EXEC)
 	SP(1, i4) = SP(0, i8);
 #endif
 } break;
 case i64_f32: NEXT(1, 2, -1) {
-#if defined(EXEC) || defined(EVAL)
+#if defined(EXEC)
 	SP(1, f4) = SP(0, i8);
 #endif
 } break;
 case i64_bol: NEXT(1, 2, -1) {
-#if defined(EXEC) || defined(EVAL)
+#if defined(EXEC)
 	SP(1, i4) = 0 != SP(0, i8);
 #endif
 } break;
 case i64_f64: NEXT(1, 2, -0) {
-#if defined(EXEC) || defined(EVAL)
+#if defined(EXEC)
 	SP(0, f8) = SP(0, i8);
 #endif
 } break;
 //}
 //{ 0x7?: F64		// Double
 case f64_neg: NEXT(1, 2, -0) {
-#if defined(EXEC) || defined(EVAL)
+#if defined(EXEC)
 	//~ EXEC(f64neg, sp, 0,sp)
 	SP(0, f8) = -SP(0, f8);
 #endif
 } break;
 case f64_add: NEXT(1, 4, -2) {
-#if defined(EXEC) || defined(EVAL)
+#if defined(EXEC)
 	//~ EXEC(f64neg, sp + 2, sp + 2, sp)
 	SP(2, f8) += SP(0, f8);
 #endif
 } break;
 case f64_sub: NEXT(1, 4, -2) {
-#if defined(EXEC) || defined(EVAL)
+#if defined(EXEC)
 	SP(2, f8) -= SP(0, f8);
 #endif
 } break;
 case f64_mul: NEXT(1, 4, -2) {
-#if defined(EXEC) || defined(EVAL)
+#if defined(EXEC)
 	SP(2, f8) *= SP(0, f8);
 #endif
 } break;
 case f64_div: NEXT(1, 4, -2) {
-#if defined(EXEC) || defined(EVAL)
+#if defined(EXEC)
 	SP(2, f8) /= SP(0, f8);
 	STOP(error_div, SP(0, f8) == 0, -1);
 #endif
 } break;
 case f64_mod: NEXT(1, 4, -2) {
-#if defined(EXEC) || defined(EVAL)
+#if defined(EXEC)
 	STOP(error_div, SP(0, f8) == 0, -1);
 	SP(2, f8) = fmod(SP(2, f8), SP(0, f8));
 #endif
 } break;
 
 case f64_ceq: NEXT(1, 4, -3) {
-#if defined(EXEC) || defined(EVAL)
+#if defined(EXEC)
 	SP(3, i4) = SP(2, f8) == SP(0, f8);
 #endif
 } break;
 case f64_clt: NEXT(1, 4, -3) {
-#if defined(EXEC) || defined(EVAL)
+#if defined(EXEC)
 	SP(3, i4) = SP(2, f8)  < SP(0, f8);
 #endif
 } break;
 case f64_cgt: NEXT(1, 4, -3) {
-#if defined(EXEC) || defined(EVAL)
+#if defined(EXEC)
 	SP(3, i4) = SP(2, f8)  > SP(0, f8);
 #endif
 } break;
 
 case f64_i32: NEXT(1, 2, -1) {
-#if defined(EXEC) || defined(EVAL)
+#if defined(EXEC)
 	SP(1, i4) = SP(0, f8);
 #endif
 } break;
 case f64_f32: NEXT(1, 2, -1) {
-#if defined(EXEC) || defined(EVAL)
+#if defined(EXEC)
 	SP(1, f4) = SP(0, f8);
 #endif
 } break;
 case f64_i64: NEXT(1, 2, -0) {
-#if defined(EXEC) || defined(EVAL)
+#if defined(EXEC)
 	SP(0, i8) = SP(0, f8);
 #endif
 } break;
 case f64_bol: NEXT(1, 2, -1) {
-#if defined(EXEC) || defined(EVAL)
+#if defined(EXEC)
 	SP(1, i4) = 0 != SP(0, f8);
 #endif
 } break;
 //}
 //{ 0x8?: PF4		// Vector
 case v4f_neg: NEXT(1, 4, -0) {
-#if defined(EXEC) || defined(EVAL)
+#if defined(EXEC)
 	SP(0, f4) = -SP(0, f4);
 	SP(1, f4) = -SP(1, f4);
 	SP(2, f4) = -SP(2, f4);
@@ -755,7 +752,7 @@ case v4f_neg: NEXT(1, 4, -0) {
 #endif
 } break;
 case v4f_add: NEXT(1, 8, -4) {
-#if defined(EXEC) || defined(EVAL)
+#if defined(EXEC)
 	SP(4, f4) += SP(0, f4);
 	SP(5, f4) += SP(1, f4);
 	SP(6, f4) += SP(2, f4);
@@ -763,7 +760,7 @@ case v4f_add: NEXT(1, 8, -4) {
 #endif
 } break;
 case v4f_sub: NEXT(1, 8, -4) {
-#if defined(EXEC) || defined(EVAL)
+#if defined(EXEC)
 	SP(4, f4) -= SP(0, f4);
 	SP(5, f4) -= SP(1, f4);
 	SP(6, f4) -= SP(2, f4);
@@ -771,7 +768,7 @@ case v4f_sub: NEXT(1, 8, -4) {
 #endif
 } break;
 case v4f_mul: NEXT(1, 8, -4) {
-#if defined(EXEC) || defined(EVAL)
+#if defined(EXEC)
 	SP(4, f4) *= SP(0, f4);
 	SP(5, f4) *= SP(1, f4);
 	SP(6, f4) *= SP(2, f4);
@@ -779,7 +776,7 @@ case v4f_mul: NEXT(1, 8, -4) {
 #endif
 } break;
 case v4f_div: NEXT(1, 8, -4) {
-#if defined(EXEC) || defined(EVAL)
+#if defined(EXEC)
 	//~ STOP(error_div, !SP(0, f4) || !SP(1, f4) || !SP(2, f4) || !SP(3, f4));
 	SP(4, f4) /= SP(0, f4);
 	SP(5, f4) /= SP(1, f4);
@@ -796,7 +793,7 @@ case v4f_ceq: NEXT(1, 8, -7) {
 #endif
 }
 case v4f_min: NEXT(1, 8, -4) {
-#if defined(EXEC) || defined(EVAL)
+#if defined(EXEC)
 	if (SP(4, f4) > SP(0, f4))
 		SP(4, f4) = SP(0, f4);
 	if (SP(5, f4) > SP(1, f4))
@@ -808,7 +805,7 @@ case v4f_min: NEXT(1, 8, -4) {
 #endif
 } break;
 case v4f_max: NEXT(1, 8, -4) {
-#if defined(EXEC) || defined(EVAL)
+#if defined(EXEC)
 	if (SP(4, f4) < SP(0, f4))
 		SP(4, f4) = SP(0, f4);
 	if (SP(5, f4) < SP(1, f4))
@@ -820,7 +817,7 @@ case v4f_max: NEXT(1, 8, -4) {
 #endif
 } break;
 case v4f_dp3: NEXT(1, 8, -7) {
-#if defined(EXEC) || defined(EVAL)
+#if defined(EXEC)
 	//~ SP(7, f4) = 
 	//~ SP(4, pf).x * SP(0, pf).x +
 	//~ SP(4, pf).y * SP(0, pf).y +
@@ -832,7 +829,7 @@ case v4f_dp3: NEXT(1, 8, -7) {
 #endif
 } break;
 case v4f_dph: NEXT(1, 8, -7) {
-#if defined(EXEC) || defined(EVAL)
+#if defined(EXEC)
 	SP(7, f4) += 
 	SP(4, f4) * SP(0, f4) +
 	SP(5, f4) * SP(1, f4) +
@@ -840,7 +837,7 @@ case v4f_dph: NEXT(1, 8, -7) {
 #endif
 } break;
 case v4f_dp4: NEXT(1, 8, -7) {
-#if defined(EXEC) || defined(EVAL)
+#if defined(EXEC)
 	SP(7, f4) = 
 	SP(4, f4) * SP(0, f4) +
 	SP(5, f4) * SP(1, f4) +
@@ -851,38 +848,38 @@ case v4f_dp4: NEXT(1, 8, -7) {
 //}*/
 //{ 0x9?: PD2		// Complex
 case v2d_neg: NEXT(1, 4, -0) {
-#if defined(EXEC) || defined(EVAL)
+#if defined(EXEC)
 	SP(0, f8) = -SP(0, f8);
 	SP(2, f8) = -SP(2, f8);
 #endif
 } break;
 case v2d_add: NEXT(1, 8, -4) {
-#if defined(EXEC) || defined(EVAL)
+#if defined(EXEC)
 	SP(4, f8) += SP(0, f8);
 	SP(6, f8) += SP(2, f8);
 #endif
 } break;
 case v2d_sub: NEXT(1, 8, -4) {
-#if defined(EXEC) || defined(EVAL)
+#if defined(EXEC)
 	SP(4, f8) -= SP(0, f8);
 	SP(6, f8) -= SP(2, f8);
 #endif
 } break;
 case v2d_mul: NEXT(1, 8, -4) {
-#if defined(EXEC) || defined(EVAL)
+#if defined(EXEC)
 	SP(4, f8) *= SP(0, f8);
 	SP(6, f8) *= SP(2, f8);
 #endif
 } break;
 case v2d_div: NEXT(1, 8, -4) {
-#if defined(EXEC) || defined(EVAL)
+#if defined(EXEC)
 	//~ STOP(error_div, SP(0, f8) || SP(2, f8));
 	SP(4, f8) /= SP(0, f8);
 	SP(6, f8) /= SP(2, f8);
 #endif
 } break;
 case p4x_swz: NEXT(2, 4, -0) {
-#if defined(EXEC) || defined(EVAL)
+#if defined(EXEC)
 	//~ asm("shufps ....");
 	uint32_t swz = ip->idx;
 	uint32_t d0 = SP((swz >> 0) & 3, i4);
@@ -901,7 +898,7 @@ case v2d_ceq: NEXT(1, 8, -7) {
 #endif
 } break;
 case v2d_min: NEXT(1, 8, -4) {
-#if defined(EXEC) || defined(EVAL)
+#if defined(EXEC)
 	if (SP(4, f8) > SP(0, f8))
 		SP(4, f8) = SP(0, f8);
 	if (SP(6, f8) > SP(2, f8))
@@ -909,7 +906,7 @@ case v2d_min: NEXT(1, 8, -4) {
 #endif
 } break;
 case v2d_max: NEXT(1, 8, -4) {
-#if defined(EXEC) || defined(EVAL)
+#if defined(EXEC)
 	if (SP(4, f8) < SP(0, f8))
 		SP(4, f8) = SP(0, f8);
 	if (SP(6, f8) < SP(2, f8))
@@ -940,16 +937,15 @@ ldst:
 	pop ref(offs)
 	pop i32(size)
 	if (size < 0)
-		memcpy(offs, sp, size)
+		memcpy(offs, sp, -size)
 	else
-		memcpy(sp, offs, size)
+		memcpy(sp, offs, +size)
 	opc_spc(size);
 */
 
 #undef SP
 #undef MP
 
-#undef EVAL
 #undef EXEC
 #undef STOP
 #undef NEXT

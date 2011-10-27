@@ -37,6 +37,7 @@ typedef struct state {
 
 	int   errc;		// error count
 
+	void* libv;		// libcall vector
 	symn  libc;		// library call symbol
 	int   func;		// library call function
 	void* retv;		// return value
@@ -56,10 +57,21 @@ typedef struct state {
 		unsigned int	ro;			// <= ro : read only region(meta data)
 		unsigned int	pos;		// current positin in buffer
 	}vm;
-	struct {
+
+	/*struct {
+
+		// arguments
 		int argc;
 		char* argv[];
-	}pe;
+
+		// environment
+		int envc;
+		char* envv[];
+
+		// system
+		char* os;		// linux / windows
+		char* user;
+	}pe;*/
 
 	long _size;		// size of total memory
 	void *_free;	// list of free memory
@@ -78,10 +90,6 @@ typedef enum {
 
 	// unit / script (ask the file what is it ? (: first tokens : 'package' 'name'))
 
-	//~ copt_eval = 1;
-	//~ copt_memstack = 2;
-	//~ copt_noGlobaStatic = 0x100,
-
 	//~ dump_bin = 0x0000100,
 	dump_sym = 0x0000100,
 	dump_asm = 0x0000200,
@@ -89,6 +97,27 @@ typedef enum {
 	dump_txt = 0x0000800,
 	dumpMask = 0x0000f00,
 } srcType, dumpMode;
+
+typedef struct stateApi {
+	/* dll should contain the folowing entry:
+		int apiMain(state rt, stateApi api) {}
+	**/
+
+	//~ int vmOffset(state s, void *ptr);
+	//~ void* rtAlloc(state rt, void* ptr, unsigned size);
+
+	symn (*ccBegin)(state rt, char *cls);
+
+	//~ symn ccDefineInt(state rt, char *name, int32_t value);
+	//~ symn ccDefineFlt(state rt, char *name, double value);
+	//~ symn ccDefineStr(state rt, char *name, char* value);
+
+	symn (*libcall)(state s, int libc(state), int pass, const char* proto);
+	symn (*install)(state s, const char* name, unsigned size);
+
+	void (*ccEnd)(state rt, symn cls);
+
+}* stateApi; // */
 
 // run-time
 // Runtime / global state
@@ -105,8 +134,8 @@ void fputfmt(FILE *fout, const char *msg, ...);
 void dump(state, dumpMode, symn, char* text, ...);
 
 // logging
-int logfile(state, char *file);				// set logger
 int logFILE(state, FILE *file);				// set logger
+int logfile(state, char *file);				// set logger
 
 // compile
 //~ int srcfile(state, char *file);				// source
@@ -125,7 +154,7 @@ symn installtyp(state s, const char* name, unsigned size);
 //~ symn installvar(state s, const char* name, symn type, unsigned offset);
 
 // Level 1 Functions: use less these
-ccState ccInit(state, int mode);
+ccState ccInit(state, int mode, int libcExit(state));
 ccState ccOpen(state, srcType, char* source);
 int ccDone(state);
 
@@ -133,7 +162,7 @@ int ccDone(state);
 //~ int vmOpen(state, char* binary);
 //~ int vmDone(state s);				// call onexit()
 
-void ccSource(ccState, char *file, int line);
+void ccSource(ccState, char *file, int line);		// set source position
 
 // declaring constants and namespaces
 symn ccBegin(state rt, char *cls);
@@ -148,40 +177,37 @@ symn findsym(ccState s, symn in, char *name);
 
 int symvalint(symn sym, int* res);
 int symvalflt(symn sym, double* res);
-//~ int symistrue(symn sym);
-
-//~ int findnzv(ccState s, char *name);
-//~ int findint(ccState s, char *name, int* res);
-//~ int findflt(ccState s, char *name, double* res);
 
 // executing code ...
-int libCallExitDebug(state s);
-int libCallExitQuiet(state s);
-int (*libcSwapExit(state s, int libc(state)))(state);
 typedef int (*dbgf)(state s, int pu, void *ip, long* sptr, int scnt);
-//~ int dbgCon(state, int, void*, long*, int);				// 
 
 int vmExec(state, dbgf dbg);
 int vmCall(state, symn fun, ...);
 
-
 //~ #define poparg(__ARGV, __SIZE) ((void*)(((__ARGV)->argv += (((__SIZE) + 3) & ~3)) - (((__SIZE) + 3) & ~3))))
-#define poparg(__ARGV, __SIZE) ((void*)(((__ARGV)->argv += (__SIZE)) - (__SIZE)))
-#define popaty(__ARGV, __TYPE) (*(__TYPE*)(poparg((__ARGV), sizeof(__TYPE))))
+//~ #define popaty(__ARGV, __TYPE) (*(__TYPE*)(poparg((__ARGV), sizeof(__TYPE))))
+//~ #define poparg(__ARGV, __SIZE) ((void*)(((__ARGV)->argv += (__SIZE)) - (__SIZE)))
+//~ #define getret(__ARGV, __TYPE) (*retptr(__ARGV, __TYPE))
 
-#define retptr(__ARGV, __TYPE) ((__TYPE*)(__ARGV->retv))
-#define getret(__ARGV, __TYPE) (*retptr(__ARGV, __TYPE))
-#define setret(__ARGV, __TYPE, __VAL) (*retptr(__ARGV, __TYPE) = (__TYPE)(__VAL))
+//~ #define retptr(__ARGV, __TYPE) ((__TYPE*)(__ARGV->retv))
+#define setret(__ARGV, __TYPE, __VAL) (*((__TYPE*)(__ARGV->retv)) = (__TYPE)(__VAL))
 
-static inline int32_t popi32(state s) { return *(int32_t*)poparg(s, sizeof(int32_t)); }
-static inline int64_t popi64(state s) { return *(int64_t*)poparg(s, sizeof(int64_t)); }
-static inline float32_t popf32(state s) { return *(float32_t*)poparg(s, sizeof(float32_t)); }
-static inline float64_t popf64(state s) { return *(float64_t*)poparg(s, sizeof(float64_t)); }
+static inline void* poparg(state s, void *res, int size) {
+	// if result is not null copy 
+	if (res != NULL) {
+		memcpy(res, s->argv, size);
+	}
+	else {
+		res = s->argv;
+	}
+	s->argv += size;
+	return res;
+}
+static inline int32_t popi32(state s) { return *(int32_t*)poparg(s, NULL, sizeof(int32_t)); }
+static inline int64_t popi64(state s) { return *(int64_t*)poparg(s, NULL, sizeof(int64_t)); }
+static inline float32_t popf32(state s) { return *(float32_t*)poparg(s, NULL, sizeof(float32_t)); }
+static inline float64_t popf64(state s) { return *(float64_t*)poparg(s, NULL, sizeof(float64_t)); }
 static inline void* popref(state s) { int32_t p = popi32(s); return p ? s->_mem + p : NULL; }
-static inline char* popstr(state s) { return popref(s); }
-
-static inline void* popval(state s, void* dst, int size) { return memcpy(dst, poparg(s, size), size); }
-static inline void* popvar(state s, void* dst, int size) { return memcpy(dst, popref(s), size); }
 
 //~ static inline void reti32(state s, int32_t val) { setret(int32_t, s, val); }
 //~ static inline void reti64(state s, int64_t val) { setret(int64_t, s, val); }
@@ -190,4 +216,4 @@ static inline void* popvar(state s, void* dst, int size) { return memcpy(dst, po
 //~ static inline void retref(state s, float64_t val) { setret(float64_t, s, vmOffset(s, val)); }
 #endif
 
-#define DEBUGGING 1
+#define DEBUGGING 15

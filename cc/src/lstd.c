@@ -2,7 +2,6 @@
 #include <math.h>
 #include <time.h>
 #include <stdlib.h>
-#include <sys/time.h>
 
 static int f64abs(state s) {
 	float64_t x = popf64(s);
@@ -144,6 +143,12 @@ static inline int64_t clockCpu() {
 	//~ return (now / CLOCKS_PER_SEC) << 32;
 }
 
+#ifdef __WATCOMC__
+static inline int64_t clockNow() {
+	return clockCpu();
+}
+#else
+#include <sys/time.h>
 static inline int64_t clockNow() {
 	int64_t now;
 	struct timeval tv_now;
@@ -159,7 +164,7 @@ static inline int64_t clockNow() {
 
 	return now;// - progbeg;
 }
-
+#endif
 
 static int miscCall(state s) {
 	switch (s->func) {
@@ -195,10 +200,10 @@ static int miscCall(state s) {
 
 		case miscOpPutStr: {
 			// TODO: check bounds
-			fputfmt(stdout, "%s", popstr(s));
+			fputfmt(stdout, "%s", popref(s));
 		} break;
 		case miscOpPutFmt: {
-			char *fmt = popstr(s);
+			char *fmt = popref(s);
 			int64_t arg = popi64(s);
 			fputfmt(stdout, fmt, arg);
 		} break;
@@ -284,33 +289,30 @@ int install_stdc(state rt, char* file, int level) {
 		{miscCall, miscOpPutFmt,		"void print(string fmt, float64 val);"},
 
 		{miscCall, miscOpMemMgr,		"pointer realloc(pointer ptr, int32 size);"},		// reallocate, allocate, free
+		//~ {NULL, miscOpMemMgr,		"define alloc(int32 size) = realloc(null, size);"},
+		//~ {NULL, miscOpMemMgr,		"define free(pointer ptr) = realloc(ptr, 0);"},
 		//~ {miscCall, miscOpMemMgr,		"int reallocInt(int ptr, int32 size);"},		// reallocate, allocate, free
 
 		//}
 
-		// include some of the compiler functions
+		// TODO: include some of the compiler functions
 		// for reflection. (lookup, import, logger, exec?)
 
 	};
 	for (i = 0; i < sizeof(defs) / sizeof(*defs); i += 1) {
 		if (!libcall(rt, defs[i].fun, defs[i].n, defs[i].def)) {
-			return 0;
+			return -1;
 		}
 	}
 	for (i = 0; i < sizeof(misc) / sizeof(*misc); i += 1) {
 		if (!libcall(rt, misc[i].fun, misc[i].n, misc[i].def)) {
-			return 0;
+			return -1;
 		}
 	}
-	//~ err = err || cctext(cc->s, 0, __FILE__, __LINE__, "define alloc(int size) = realloc(null, size);");
-	//~ err = err || cctext(cc->s, 0, __FILE__, __LINE__, "define free(pointer ptr) = void(realloc(ptr, 0));");
+
 	if (file && ccOpen(rt, srcFile, file)) {
 		return parse(rt->cc, 0, level) != 0;
 	}
-	//~ if (file && ccfile(rt, level, file) != 0) {
-		//~ warn(rt, 1, NULL, 0, "compiling `%s`", "stdlib.cvx");
-		//~ return 0;
-	//~ }
 
-	return 1;
+	return 0;
 }

@@ -472,9 +472,9 @@ static void fputast(FILE *fout, astn ast, int mode, int level) {
 			symn val = ast->id.link;
 			if (val) {
 				switch (val->kind) {
-					case TYPE_rec:
-						fputstr(fout, "struct ");
-						break;
+					//~ case TYPE_rec:
+						//~ fputstr(fout, "struct ");
+						//~ break;
 
 					case TYPE_def:
 						fputstr(fout, "define ");
@@ -492,7 +492,7 @@ static void fputast(FILE *fout, astn ast, int mode, int level) {
 								//~ fputstr(fout, ";\n");
 							}
 							else
-								fputfmt(fout, " = %-k", val->init);
+								fputfmt(fout, " = %+k", val->init);
 						}
 						break;
 				}
@@ -916,6 +916,26 @@ static void FPUTFMT(FILE *fout, const char *msg, va_list ap) {
 	}
 }
 
+int logFILE(state s, FILE* file) {
+	if (s->closelog)
+		fclose(s->logf);
+	s->logf = file;
+	s->closelog = 0;
+	return 0;
+}
+int logfile(state s, char* file) {
+
+	logFILE(s, NULL);
+
+	if (file) {
+		s->logf = fopen(file, "wb");
+		if (!s->logf) return -1;
+		s->closelog = 1;
+	}
+	return 0;
+}
+
+
 void fputfmt(FILE *fout, const char *msg, ...) {
 	va_list ap;
 	va_start(ap, msg);
@@ -946,7 +966,7 @@ void dumpsym(FILE *fout, symn sym, int mode) {
 	int print_type = mode & prType;
 	int print_cast = mode & prCast;
 	int print_init = mode & prInit;
-	int print_info = 0;
+	int print_info = 1;
 
 	mode &= 0x0f;
 
@@ -1025,7 +1045,7 @@ void dumpsym(FILE *fout, symn sym, int mode) {
 		}
 
 		if (print_info && ptr->kind != TYPE_def) {
-			fputfmt(fout, ":%c%d", ptr->offs <= 0 ? '@' : '+', ptr->offs < 0 ? -ptr->offs : ptr->offs);
+			fputfmt(fout, ":%c%06x", ptr->offs <= 0 ? '@' : '+', ptr->offs < 0 ? -ptr->offs : ptr->offs);
 			fputfmt(fout, ":[size: %d]", ptr->size);
 		}
 
@@ -1043,43 +1063,6 @@ void dumpsym(FILE *fout, symn sym, int mode) {
 	}
 }
 
-void perr(state s, int level, const char *file, int line, const char *msg, ...) {
-	FILE *logf = s ? s->logf : stderr;
-	int warnl = s && s->cc ? s->cc->warn : 0;
-	va_list argp;
-
-	if (level >= 0) {
-		if (warnl < 0)
-			level = warnl;
-		if (level > warnl)
-			return;
-	}
-	else if (s) {
-		s->errc += 1;
-	}
-
-	if (!logf)
-		return;
-
-	if (s && s->cc && !file)
-		file = s->cc->file;
-
-	if (file && line)
-		fputfmt(logf, "%s:%u: ", file, line);
-
-	if (level > 0)
-		fputstr(logf, "warning: ");
-	else if (level)
-		fputstr(logf, "error: ");
-
-	va_start(argp, msg);
-	FPUTFMT(logf, msg, argp);
-	fputchr(logf, '\n');
-	fflush(logf);
-	va_end(argp);
-}
-
-//{ temp & debug ---------------------------------------------------------------
 void dump(state s, dumpMode mode, symn sym, char *text, ...) {
 	FILE *logf = s ? s->logf : stdout;
 	int level = mode & 0xff;
@@ -1167,4 +1150,38 @@ void dump(state s, dumpMode mode, symn sym, char *text, ...) {
 	}
 }
 
-//}
+void perr(state s, int level, const char *file, int line, const char *msg, ...) {
+	FILE *logf = s ? s->logf : stderr;
+	int warnl = s && s->cc ? s->cc->warn : 0;
+	va_list argp;
+
+	if (level >= 0) {
+		if (warnl < 0)
+			level = warnl;
+		if (level > warnl)
+			return;
+	}
+	else if (s) {
+		s->errc += 1;
+	}
+
+	if (!logf)
+		return;
+
+	if (s && s->cc && !file)
+		file = s->cc->file;
+
+	if (file && line)
+		fputfmt(logf, "%s:%u: ", file, line);
+
+	if (level > 0)
+		fputstr(logf, "warning: ");
+	else if (level)
+		fputstr(logf, "error: ");
+
+	va_start(argp, msg);
+	FPUTFMT(logf, msg, argp);
+	fputchr(logf, '\n');
+	fflush(logf);
+	va_end(argp);
+}

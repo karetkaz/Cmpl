@@ -81,6 +81,8 @@ operator (string lhs) [int rhs] (int setValue) = emit(int, ldi.byte, i32.mad, i3
 operator int(string value) = atoi(value, 10);
 // */
 
+const nan = 0./0;
+
 const Test {
 	Emit = ~0;
 	Bits = ~0;
@@ -89,32 +91,17 @@ const Test {
 	Misc = ~0;
 	Math = ~0;
 }
-const math:double {
-	pi = 3.14159265358979323846264338327950288419716939937510582097494459;		// A000796
-	e = 2.71828182845904523536028747135266249775724709369995957496696763;		// A001113
-	ln2 = 0.693147180559945309417232121458176568075500134360255254120680009;	// A002162
-	log2E = 1. / ln2;
-	ln10 = 2.30258509299404568401799145468436420760110148862877297603332790;	// A002392
-	log10E = 1. / ln10;
-	phi = 1.61803398874989484820458683436563811772030917980576286213544862;		// A001622
-	sqrt2 = 1.41421356237309504880168872420969807856967187537694807317667974;	// A002193
-	sqrtE = 1.64872127070012814684865078781416357165377610071014801157507931;	// A019774
-	sqrtPi = 1.77245385090551602729816748334114518279754945612238712821380779;	// A002161
-	sqrtPhi = 1.27201964951406896425242246173749149171560804184009624861664038;	// A139339
-	nan = 0. / 0;
-}
 static if (true) {
-	define hex8  int8;		//%hex8(0x%02x)
-	define hex16 int16;		//%hex16(0x%04x)
-	define hex32 int32;		//%hex32(0x%08x)
-	define hex64 int64;		//%hex64(0x%016X)
+define hex8  int8;		//%hex8(0x%02x)
+define hex16 int16;		//%hex16(0x%04x)
+define hex32 int32;		//%hex32(0x%08x)
+define hex64 int64;		//%hex64(0x%016X)
 
-	define print(hex32 arg) = print("%08x", int64(arg));
-	define println(hex32 arg) = print("%08x\n", int64(arg));
-	define print(hex64 arg) = print("%08X", int64(arg));
-	define println(hex64 arg) = print("%08X\n", int64(arg));
+define print(hex32 arg) = print("%08x", int64(arg));
+define println(hex32 arg) = print("%08x\n", int64(arg));
+define print(hex64 arg) = print("%08X", int64(arg));
+define println(hex64 arg) = print("%08X\n", int64(arg));
 }
-
 
 static if (Test.Emit) {
 /+ emit should be such as:
@@ -124,10 +111,10 @@ static if (Test.Emit) {
 	"movups	[edi], xmm0"
 +/
 static if (Test.Emit & 0x01) {
-float32 res1 = emit(f32.div, float32(2), float32(math.pi));
-float64 res2 = emit(f64.neg, f64(math.pi));
-float32 res3 = emit(int32, f32(math.pi));
-hex32 res4 = emit(int32, f32(math.pi));
+float32 res1 = emit(f32.div, float32(2), float32(Math.pi));
+float64 res2 = emit(f64.neg, f64(Math.pi));
+float32 res3 = emit(int32, f32(Math.pi));
+hex32 res4 = emit(hex32, f32(Math.pi));
 
 //~ these won't work because of global vars, use option: -O-2
 //~ emit(f64(math.pi));
@@ -350,9 +337,9 @@ static if (Test.Type & 0x02) {
 
 define isNan(float64 x) = bool(x != x);
 define isNan(float32 x) = bool(x != x);
-float64 NAN = math.nan;
+float64 NAN = nan;//Math.nan;
 //~ int isNan1 = int(isNan(NAN));
-//~ int isNan2 = int(isNan(math.nan));
+//~ int isNan2 = int(isNan(Math.nan));
 }
 static if (Test.Type & 0x04) {		// enum
 //~ struct and arrays
@@ -466,7 +453,7 @@ static if (Test.Math & 1) {
 
 	//~ for (int i = 0; i < 0; i += 1) ;
 
-	double x = math.pi / 2;
+	double x = Math.pi / 2;
 	double absx = abs(x);
 	double sinx = sin(x);
 	double cosx = cos(x);
@@ -649,6 +636,12 @@ i32x8 sub(i32x8 &a, i32x8 &b) {
 } // +/
 } // */
 
+/* iota
+uint8 tmp[1024];
+string str = emit(string, ref(tmp));
+itoa(str, 1024, 10, 1, true, "");
+//~ */
+
 /* Reflect
 const TypeCode: int32 {
 	CAST_any = 0x00000000;		// invalid, error, ...
@@ -665,9 +658,9 @@ const TypeCode: int32 {
 	CAST_arr = 0x0000000a;		// slice(size, data)
 	CAST_var = 0x0000000b;		// variant(type, data)
 	CAST_p4x = 0x0000000c;		// 
-	CAST_rec = 0x0000000d;		// typename
-	CAST_ref = 0x0000000e;		// variable
-	CAST_fnc = 0x0000000f;		// function (variable and typename too)
+	CAST____ = 0x0000000d;		// typename
+	CAST____ = 0x0000000e;		// variable
+	CAST____ = 0x0000000f;		// function
 
 	TYPE_def = 0x00000000;		// alias (or error)
 	TYPE_rec = 0x00000010;		// typename

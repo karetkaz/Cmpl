@@ -22,7 +22,7 @@ typedef struct bcde {			// byte code decoder
 			uint8_t  dl;	// data to to be copied to stack
 			uint16_t cl;	// code to to be executed paralel: 0 means fork
 		};// */
-		/*struct {				// extended3: 4 bytes `res := lhs OP rhs`
+		/*struct {				// extended: 4 bytes `res := lhs OP rhs`
 			uint32_t opc:4;		// 0 ... 15
 			uint32_t mem:2;		// mem
 			uint32_t res:6;		// res
@@ -33,9 +33,9 @@ typedef struct bcde {			// byte code decoder
 			void *lhs = sp + ip->ext.lhs;
 			void *rhs = sp + ip->ext.rhs;
 
-			chkstk(ip->ext.res);
-			chkstk(ip->ext.lhs);
-			chkstk(ip->ext.rhs);
+			CHKSTK(ip->ext.res);
+			CHKSTK(ip->ext.lhs);
+			CHKSTK(ip->ext.rhs);
 
 			switch (ip->ext.mem) {
 				case 0: break;
@@ -43,9 +43,15 @@ typedef struct bcde {			// byte code decoder
 				case 2: lhs = *(void**)lhs; break;
 				case 3: rhs = *(void**)rhs; break;
 			}
+
 			switch (ip->ext.opc) {
-				case ext_add: add(res, lhs, rhs); break;
-				case ext_...: ...(res, lhs, rhs); break;
+				case ext_neg: *(type*)res = -(*(type*)rhs); break;
+				case ext_add: *(type*)res = (*(type*)lhs) + (*(type*)rhs); break;
+				case ext_sub: *(type*)res = (*(type*)lhs) - (*(type*)rhs); break;
+				case ext_mul: *(type*)res = (*(type*)lhs) * (*(type*)rhs); break;
+				case ext_div: *(type*)res = (*(type*)lhs) / (*(type*)rhs); break;
+				case ext_mod: *(type*)res = (*(type*)lhs) % (*(type*)rhs); break;
+				case ext_...: res = lhs OP rhs; break;
 			}
 			// +/ --8<----------------------------------------
 		}ext;// */
@@ -82,54 +88,6 @@ int vmOffset(state s, void *ptr) {
 	dieif(ptr && (unsigned char*)ptr < s->_mem, "invalid reference");
 	return ptr ? (unsigned char*)ptr - s->_mem : 0;
 }
-int libCallExitQuiet(state s) {
-	return 0;
-}
-
-void vm_fputval(state, FILE *fout, symn var, stkval* ref, int flgs);
-int libCallExitDebug(state s) {
-	symn arg = s->libc->args;
-	int argc = (char*)s->retv - (char*)s->argv;
-	//~ debug("calling %-T", s->libc);
-	//~ debug("CallDebugArgs(%-T): argc:(%d / %d)", s->libc, s->argc, argc);
-	for ( ;arg; arg = arg->next) {
-		char *ofs;
-
-		if (arg->offs <= 0) {
-			// global variable.
-			ofs = (void*)(s->_mem - arg->offs);
-		}
-		else {
-			// argument or local variable.
-			ofs = ((char*)s->argv) + argc - arg->offs;
-		}
-
-		//~ debug("argv: %08x", s->argv);
-		//~ if (arg->kind != TYPE_ref && s->args == s->defs) continue;
-		if (arg->kind != TYPE_ref) continue;
-
-		if (arg->file && arg->line)
-			fputfmt(stdout, "%s:%d:",arg->file, arg->line);
-		else
-			fputfmt(stdout, "var: ",arg->file, arg->line);
-
-		fputfmt(stdout, "@%d[0x%08x]\t: ", arg->offs < 0 ? -1 : arg->offs, ofs);
-
-		//~ fputfmt(stdout, "@%d[0x%08x]\t: ", arg->offs, ofs);
-		//~ fputfmt(stdout, "@%d[0x%08x]\t: ", s->argc - arg->offs, ofs);
-		vm_fputval(s, stdout, arg, (stkval*)ofs, 0);
-		fputc('\n', stdout);
-	}
-	return 0;
-}
-static struct lfun {
-	int (*call)(state);
-	const char* proto;
-	symn sym;
-	int8_t chk, pop, pad[2];
-	//~ int32_t _pad;
-}
-libcvec[LIBCALLS];
 
 static symn installref(state s, const char *prot, astn *argv) {
 	astn root;
@@ -166,30 +124,27 @@ static symn installref(state s, const char *prot, astn *argv) {
  * @arg s: the runtime state.
  * @arg libc: the function to call.
  * @arg proto: prototype of function.
- */
+ * /
 int (*libcSwapExit(state s, int libc(state)))(state) {
 	int (*result)(state) = libcvec[0].call;
 	libcvec[0].call = libc ? libc : libCallExitQuiet;
 	(void)s;
 	return result;
-}
+}// */
 
 symn libcall(state s, int libc(state), int pos, const char* proto) {
-	static int libccnt = 0;
 	symn arg, sym = NULL;
 	int stdiff = 0;
 	astn args = NULL;
 
-	if (!libc && strcmp(proto, "reset") == 0) {
-		//~ debug("resetting lib calls");
-
-		memset(libcvec, 0, sizeof(libcvec));
+	/*if (!libc && strcmp(proto, "reset") == 0) {
+		//~ memset(libcvec, 0, sizeof(libcvec));
 		libcvec[0].proto = "void Halt();";
 		libcvec[0].call = libCallExitDebug;
 		libccnt = 0;
-	}
+	}*/
 
-	if (!libccnt && !libc) {
+	/*if (!libccnt && !libc) {
 		libccnt = 0;
 		if (!libc) while (libcvec[libccnt].proto) {
 			int i = libccnt;
@@ -199,41 +154,42 @@ symn libcall(state s, int libc(state), int pos, const char* proto) {
 		return NULL;
 	}// */
 
-	if (libccnt >= (sizeof(libcvec) / sizeof(*libcvec))) {
+	/*if (libccnt >= (sizeof(libcvec) / sizeof(*libcvec))) {
 		error(s, NULL, 0, "to many functions on install('%s')", proto);
 		return NULL;
-	}
+	}*/
 
 	if (!libc || !proto)
-		return 0;
-
-	libcvec[libccnt].call = libc;
-	libcvec[libccnt].proto = proto;
-	sym = installref(s, libcvec[libccnt].proto, &args);
+		return NULL;
 
 	//~ from: int64 zxt(int64 val, int offs, int bits)
-	//~ make: define zxt(int64 val, int offs, int bits) = int64(emit(libc(25), int64 val, int offs, int bits));
+	//~ make: define zxt(int64 val, int offs, int bits) = int64(emit(libc(25), int64(val), int(offs), int(bits)));
 
-	if (sym) {
+	if ((sym = installref(s, proto, &args))) {
+		struct libc *lc = NULL;
 		symn link = newdefn(s->cc, EMIT_opc);
-		astn libc;// = newnode(s->cc, TYPE_ref);
+		astn libcinit;// = newnode(s->cc, TYPE_ref);
+		int libcpos = s->cc->libc ? s->cc->libc->pos + 1 : 0;
+
+		dieif(s->cc->_end - s->cc->_beg < sizeof(struct libc), "FixMe");
+
+		s->cc->_end -= sizeof(struct libc);
+		lc = (struct libc *)s->cc->_end;
+		lc->next = s->cc->libc;
+		s->cc->libc = lc;
 
 		link->name = "libc";
 		link->type = sym->type;
 		link->offs = opc_libc;
-		link->init = intnode(s->cc, libccnt);
+		link->init = intnode(s->cc, libcpos);
 
-		//~ libc->id.name = link->name;
-		//~ libc->id.hash = -1;
-		//~ libc->id.link = link;
-		//~ libc->type = link->type;
-		libc = lnknode(s->cc, link);
+		libcinit = lnknode(s->cc, link);
 
-		// glue the new libc argument
+		// glue the new libcinit argument
 		if (args && args != s->cc->void_tag) {
 			astn narg = newnode(s->cc, OPER_com);
 			astn arg = args;
-			narg->op.lhso = libc;
+			narg->op.lhso = libcinit;
 
 			if (arg->kind == OPER_com) {
 				while (arg->op.lhso->kind == OPER_com)
@@ -247,25 +203,29 @@ symn libcall(state s, int libc(state), int pos, const char* proto) {
 			}
 		}
 		else {
-			args = libc;
+			args = libcinit;
 		}
 
-		libc = newnode(s->cc, OPER_fnc);
-		libc->op.lhso = s->cc->emit_tag;
-		libc->type = sym->type;
-		libc->op.rhso = args;
+		libcinit = newnode(s->cc, OPER_fnc);
+		libcinit->op.lhso = s->cc->emit_tag;
+		libcinit->type = sym->type;
+		libcinit->op.rhso = args;
 
 		sym->kind = TYPE_def;
-		sym->init = libc;
+		sym->init = libcinit;
 		sym->offs = pos;
 
+		lc->proto = proto;
+		lc->call = libc;
+		lc->pos = libcpos;
+		lc->sym = sym;
+
 		stdiff = fixargs(sym, 4, 0);
-		libcvec[libccnt].chk = stdiff / 4;
+		lc->chk = stdiff / 4;
 
 		stdiff -= sizeOf(sym->type);
-		libcvec[libccnt].pop = stdiff / 4;
+		lc->pop = stdiff / 4;
 
-		libcvec[libccnt].sym = sym;
 
 		//~ debug("FixMe: %-T(chk: %d, pop: %d)", sym, libcfnc[libccnt].chk, libcfnc[libccnt].pop);
 		// make arguments symbolic by default
@@ -281,13 +241,14 @@ symn libcall(state s, int libc(state), int pos, const char* proto) {
 			stdiff += sizeOf(arg->type);
 		}// */
 
+
 	}
 	else {
 		error(s, NULL, 0, "install('%s')", proto);
 		//~ return NULL;
 	}
 
-	libccnt += 1;
+	//~ libccnt += 1;
 
 	return sym;
 }
@@ -308,6 +269,7 @@ static inline void* getip(state s, int pos) {
 }
 
 int emitarg(state s, vmOpcode opc, stkval arg) {
+	libc libcvec = s->libv;
 	bcde ip = getip(s, s->vm.pos);
 
 	if (opc == markIP) {
@@ -518,7 +480,7 @@ int emitarg(state s, vmOpcode opc, stkval arg) {
 			}
 
 			// copy
-			if (!emitint(s, opc_cpy, -arg.i4)) {
+			if (!emitint(s, opc_move, -arg.i4)) {
 				trace("FixMe");
 				return 0;
 			}
@@ -540,6 +502,8 @@ int emitarg(state s, vmOpcode opc, stkval arg) {
 		default:
 			// we have dst on the stack
 
+			ip = getip(s, s->vm.pc);
+
 			// push dst
 			if (!emitint(s, opc_ldsp, 4)) {
 				trace("FixMe");
@@ -547,7 +511,7 @@ int emitarg(state s, vmOpcode opc, stkval arg) {
 			}
 
 			// copy
-			if (!emitint(s, opc_cpy, arg.i4)) {
+			if (!emitint(s, opc_move, arg.i4)) {
 				trace("FixMe");
 				return 0;
 			}
@@ -555,6 +519,14 @@ int emitarg(state s, vmOpcode opc, stkval arg) {
 			//~ arg.i4 = arg.i4 / 4;
 			//~ opc = opc_drop;
 
+			if (ip->opc == opc_ldsp) {
+				//~ if we copy from the stack to the stack
+				//~ do not remove more elements than
+				//~ we copy to
+				if (arg.i8 > ip->rel) {
+					arg.i8 = ip->rel;
+				}
+			}
 			// remove n bytes from stack
 			arg.i8 = -arg.i8;
 			opc = opc_spc;
@@ -844,18 +816,19 @@ int emitarg(state s, vmOpcode opc, stkval arg) {
 	}
 	else switch (opc) {
 		case opc_inc:
-		case opc_cpy:
 			dieif(ip->rel != arg.i8, "FixMe");
 			break;
+
 		case opc_ldsp:
+		case opc_move:
 			dieif(ip->rel != arg.i8, "FixMe");
 			break;
+
 		case opc_drop:
-			dieif(ip->idx != arg.i8, "FixMe");
-			break;
 		case opc_loc:
 			dieif(ip->idx != arg.i8, "FixMe");
 			break;
+
 		default:
 			TODO("check other opcodes too");
 			break;
@@ -1076,21 +1049,14 @@ static inline int ovf(cell pu) {
  * @return: error code
 **/
 
-/*static void dbugerr(state s, int pu, void *ip, long* bp, int ss, int mp, char *text) {
-	//~ int SP = ((char*)s->vm._end) - ((char*)bp);
-	int IP = ((unsigned char*)ip) - s->_mem;// - s->vm.pc;
-	error(s, NULL, 0, ">exec:%s:[pu%02d][sp%02d]@%9.*A rw@%06x", text, pu, ss, IP, ip, mp);
-	//~ fputfmt(stdout, ">vmExec:[pu%02d][sp%02d]@%9.*A\n", pu, ss, IP, ip);
-}// */
-
 static void dbugerr(state s, char *file, int line, int pu, void *ip, long* bp, int ss, char *text, int xxx) {
 	int IP = ((unsigned char*)ip) - s->_mem;
 	error(s, file, line, "exec:%s(%?d):[pu%02d][sp%02d]@%9.*A rw@%06x", text, xxx, pu, ss, IP, ip);
 }
-
 static int dbugpu(state s, cell pu, dbgf dbg) {
 	typedef uint32_t *stkptr;
 	typedef uint8_t *memptr;
+	libc libcvec = s->libv;
 
 	long ms = s->_size;
 	memptr mp = (void*)s->_mem;
@@ -1148,7 +1114,6 @@ static int dbugpu(state s, cell pu, dbgf dbg) {
 		}
 
 	}
-	
 
 	return 0;
 }
@@ -1267,13 +1232,14 @@ static astn infoAt(state s, int pos) {
 }
 
 void fputopc(FILE *fout, unsigned char* ptr, int len, int offs) {
-	int i;
+	//~ struct libc libcvec[0];		// this variable will be indexed out of bounds
 	bcde ip = (bcde)ptr;
+	int i;
 
 	if (offs >= 0)
 		fputfmt(fout, ".%04x: ", offs);
 
-	TODO(writing data shold be a function)
+	TODO("writing data shold be a function")
 	if (len > 1 && len < opc_tbl[ip->opc].size) {
 		for (i = 0; i < len - 2; i++) {
 			if (i < opc_tbl[ip->opc].size) fprintf(fout, "%02x ", ptr[i]);
@@ -1287,17 +1253,16 @@ void fputopc(FILE *fout, unsigned char* ptr, int len, int offs) {
 		else fprintf(fout, "   ");
 	}
 
-	//~ if (!opc) return;
 	if (opc_tbl[ip->opc].name)
 		fputs(opc_tbl[ip->opc].name, fout);
 	else
 		fputfmt(fout, "opc%02x", ip->opc);
 
 	switch (ip->opc) {
-		case opc_cpy:
 		case opc_inc:
 		case opc_spc:
 		case opc_ldsp:
+		case opc_move:
 			fprintf(fout, " %+d", ip->rel);
 			break;
 
@@ -1321,30 +1286,6 @@ void fputopc(FILE *fout, unsigned char* ptr, int len, int offs) {
 			else
 				fprintf(fout, " .%04x", offs + ip->rel);
 			break;
-		/*case opc_bit: switch (ip->arg.u1 >> 5) {
-			default: fprintf(fout, "bit.???"); break;
-			case  1: fprintf(fout, "shl %d", ip->arg.u1 & 0x1F); break;
-			case  2: fprintf(fout, "shr %d", ip->arg.u1 & 0x1F); break;
-			case  3: fprintf(fout, "sar %d", ip->arg.u1 & 0x1F); break;
-			case  4: fprintf(fout, "rot %d", ip->arg.u1 & 0x1F); break;
-			case  5: fprintf(fout, "get %d", ip->arg.u1 & 0x1F); break;
-			case  6: fprintf(fout, "set %d", ip->arg.u1 & 0x1F); break;
-			case  7: fprintf(fout, "cmt %d", ip->arg.u1 & 0x1F); break;
-			case  0: switch (ip->arg.u1) {
-				default: fprintf(fout, "bit.???"); break;
-				case  1: fprintf(fout, "bit.any"); break;
-				case  2: fprintf(fout, "bit.all"); break;
-				case  3: fprintf(fout, "bit.sgn"); break;
-				case  4: fprintf(fout, "bit.par"); break;
-				case  5: fprintf(fout, "bit.cnt"); break;
-				case  6: fprintf(fout, "bit.bsf"); break;		// most significant bit index
-				case  7: fprintf(fout, "bit.bsr"); break;
-				case  8: fprintf(fout, "bit.msb"); break;		// use most significant bit only
-				case  9: fprintf(fout, "bit.lsb"); break;
-				case 10: fprintf(fout, "bit.rev"); break;		// reverse bits
-				// swp, neg, cmt, 
-			} break;
-		} break;*/
 
 		case b32_bit: switch (ip->idx & 0xc0) {
 			case b32_bit_and: fprintf(fout, "and 0x%03x", (1 << (ip->idx & 0x3f)) - 1); break;
@@ -1370,11 +1311,13 @@ void fputopc(FILE *fout, unsigned char* ptr, int len, int offs) {
 		case opc_ldcr: fputfmt(fout, " %x", ip->arg.u4); break;
 
 		case opc_libc:
-			if (libcvec[ip->idx].sym)
+			fputfmt(fout, "(%d)", ip->idx);
+			/*if (libcvec[ip->idx].sym)
 				//~ fputfmt(fout, "(pop %d, check %d) %-T", libcvec[ip->idx].pop, libcvec[ip->idx].chk, libcvec[ip->idx].sym);
-				fputfmt(fout, "(%d): %-T", ip->idx, libcvec[ip->idx].sym);
+				fputfmt(fout, ": %-T", libcvec[ip->idx].sym);
 			else
-				fputfmt(fout, " %s", libcvec[ip->idx].proto);
+				fputfmt(fout, ": %s", libcvec[ip->idx].proto);
+			*/
 			break;
 
 		case p4x_swz: {
@@ -1390,9 +1333,9 @@ void fputasm(FILE *fout, state s, int beg, int end, int mode) {
 	int rel = 0;//mode & 0x10;// ? 0 : -1;
 	int i, is = 12345;
 	astn ast = NULL;
-	//~ int ss = 0;
+
 	if (end == -1)
-		end = s->vm.pos;// - mark;
+		end = s->vm.pos;
 
 	switch (mode & 0x30) {
 		case 0x00: rel = -1; break;
@@ -1602,9 +1545,10 @@ void vm_fputval(state s, FILE *fout, symn var, stkval* ref, int level) {
 	}
 }
 
-#if 0
+#ifdef DEBUGGING
 const int vmTest() {
 	int e = 0;
+	struct libc libcvec[0];
 	struct bcde opc, *ip = &opc;
 	opc.arg.i8 = 0;
 	for (opc.opc = 0; opc.opc < opc_last; opc.opc++) {
@@ -1624,7 +1568,7 @@ const int vmTest() {
 				if (opc_tbl[opc.opc].chck != 9 && opc_tbl[opc.opc].chck != (__CHK)) goto error_chk;\
 				if (opc_tbl[opc.opc].diff != 9 && opc_tbl[opc.opc].diff != (__DIFF)) goto error_dif;\
 			}
-			#define STOP(__ERR, __CHK, __ERR) if (__CHK) goto __ERR
+			#define STOP(__ERR, __CHK, __ERR1) if (__CHK) goto __ERR
 			#include "code.i"
 		}
 	}
