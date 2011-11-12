@@ -187,13 +187,15 @@ int vmCall(state, symn fun, ...);
 //~ #define poparg(__ARGV, __SIZE) ((void*)(((__ARGV)->argv += (((__SIZE) + 3) & ~3)) - (((__SIZE) + 3) & ~3))))
 //~ #define popaty(__ARGV, __TYPE) (*(__TYPE*)(poparg((__ARGV), sizeof(__TYPE))))
 //~ #define poparg(__ARGV, __SIZE) ((void*)(((__ARGV)->argv += (__SIZE)) - (__SIZE)))
-//~ #define getret(__ARGV, __TYPE) (*retptr(__ARGV, __TYPE))
 
-//~ #define retptr(__ARGV, __TYPE) ((__TYPE*)(__ARGV->retv))
-#define setret(__ARGV, __TYPE, __VAL) (*((__TYPE*)(__ARGV->retv)) = (__TYPE)(__VAL))
+//~ #define setret(__ARGV, __TYPE, __VAL) (*((__TYPE*)(__ARGV->retv)) = (__TYPE)(__VAL))
+
+#define retptr(__ARGV, __TYPE) ((__TYPE*)(__ARGV->retv))
+#define setret(__ARGV, __TYPE, __VAL) (*retptr(__ARGV, __TYPE) = (__TYPE)(__VAL))
+#define getret(__ARGV, __TYPE) (*retptr(__ARGV, __TYPE))
 
 static inline void* poparg(state s, void *res, int size) {
-	// if result is not null copy 
+	// if result is not null copy
 	if (res != NULL) {
 		memcpy(res, s->argv, size);
 	}
@@ -208,6 +210,7 @@ static inline int64_t popi64(state s) { return *(int64_t*)poparg(s, NULL, sizeof
 static inline float32_t popf32(state s) { return *(float32_t*)poparg(s, NULL, sizeof(float32_t)); }
 static inline float64_t popf64(state s) { return *(float64_t*)poparg(s, NULL, sizeof(float64_t)); }
 static inline void* popref(state s) { int32_t p = popi32(s); return p ? s->_mem + p : NULL; }
+static inline char* popstr(state s) { return popref(s); }
 
 //~ static inline void reti32(state s, int32_t val) { setret(int32_t, s, val); }
 //~ static inline void reti64(state s, int64_t val) { setret(int64_t, s, val); }

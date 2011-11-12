@@ -1,3 +1,12 @@
+/*******************************************************************************
+ *   File: ccvm.c
+ *   Date: 2011/06/23
+ *   Desc: type system
+ *******************************************************************************
+the core:
+	convert ast to vmcode
+	initializations, memory management
+*******************************************************************************/
 #include <string.h>
 #include <stdlib.h>
 #include <fcntl.h>
@@ -565,7 +574,7 @@ int cgen(state s, astn ast, int get) {
 			}
 
 			if (var->kind == TYPE_def) {
-				// static array length is this type
+				// static array length is of this type
 				debug("%+T", var);
 				return cgen(s, ast->op.rhso, get);
 			}
@@ -1272,7 +1281,9 @@ int cgen(state s, astn ast, int get) {
 				}
 				break;
 			case 4: break;
-			default: fatal("FixMe");
+			default:
+				fatal("FixMe");
+				break;
 		}
 	}
 
@@ -1484,7 +1495,7 @@ int symvalflt(symn sym, double* res) {
 
 TODO("this should be called assemble or something similar")
 int gencode(state s, int level) {
-	list freemem = NULL;
+	//list freemem = NULL;
 	libc lc = NULL;
 	ccState cc = s->cc;
 	int Lmain;
@@ -1509,7 +1520,7 @@ int gencode(state s, int level) {
 	// libcalls
 	if (cc->libc) {
 		s->libv = s->_mem + s->vm.pos;
-		s->vm.pos += sizeof(struct libc) * cc->libc->pos;
+		s->vm.pos += sizeof(struct libc) * (cc->libc->pos + 1);
 		for (lc = cc->libc; lc; lc = lc->next) {
 			((struct libc*)s->libv)[lc->pos] = *lc;
 		}
@@ -1582,17 +1593,6 @@ int gencode(state s, int level) {
 			cc->root->stmt.stmt = init->list.head;
 		}
 
-		/*
-		if (1) {
-			astn x = init->list.head;
-			while (x) {
-				trace("%+k", x);
-				x = x->next;
-			}
-			//~ dump(s, dump_ast | (level & 0x0ff), NULL, NULL);
-			//~ exit(0);
-		}// */
-
 	}
 
 	Lmain = s->vm.pos;
@@ -1609,18 +1609,23 @@ int gencode(state s, int level) {
 			cc->jmps = cc->jmps->next;
 		}
 	}
+
+	emiti32(s, 0);
 	s->vm.px = emitint(s, opc_libc, 0);
 
 	// program entry point
 	s->vm.pc = Lmain;
 
-	freemem = (void*)padded((int)(s->_mem + s->vm.px + 16), 16);
+	s->_used = s->_free = NULL;
+	rtAlloc(s, NULL, 0);
+	/*freemem = (void*)padded((int)(s->_mem + s->vm.px + 16), 16);
 	freemem->next = NULL;
 	freemem->data = (unsigned char*)freemem + sizeof(struct list);
 	freemem->size = s->_size - (freemem->data - s->_mem);
 
 	s->_used = NULL;
 	s->_free = freemem;
+	*/
 
 	s->_ptr = NULL;
 
@@ -1863,7 +1868,7 @@ static void install_type(ccState cc, int mode) {
 
 	symn type_i08 = NULL, type_i16 = NULL;
 	symn type_u08 = NULL, type_u16 = NULL;
-	symn type_chr = NULL, type_tmp = NULL;
+	//~ symn type_chr = NULL, type_tmp = NULL;
 
 	type_vid = install(cc,    "void", symn_const | TYPE_rec, TYPE_vid, 0);
 	type_bol = install(cc,    "bool", symn_const | TYPE_rec, TYPE_bit, 4);
@@ -1903,7 +1908,7 @@ static void install_type(ccState cc, int mode) {
 	}
 
 	if (1) {	// if aliases are needed.
-		type_chr = type_u08;
+		symn type_chr = type_u08;
 		//~ type_chr = installex(cc, "char", symn_const | TYPE_def, 0, type_i08, NULL);
 		if ((type_str = installex(cc, "string", symn_const | TYPE_arr, TYPE_ref, type_chr, NULL))) {// string is alias for char[]
 			//~ addarg(cc, type_str, "sizeOf", symn_stat | TYPE_def, type_i32, intnode(cc, 4));
@@ -1914,13 +1919,17 @@ static void install_type(ccState cc, int mode) {
 		//~ installex(cc, "array",  symn_const | TYPE_arr, 0, type_var, NULL);		// array is alias for variant[]
 		//~ installex(cc, "var",    symn_const | TYPE_def, 0, type_var, NULL);		// var is alias for variant
 
-		type_tmp = installex(cc, "int",    TYPE_def, 0, type_i32, NULL);
-		type_tmp = installex(cc, "long",   TYPE_def, 0, type_i64, NULL);
-		type_tmp = installex(cc, "float",  TYPE_def, 0, type_f32, NULL);
-		type_tmp = installex(cc, "double", TYPE_def, 0, type_f64, NULL);
-		type_tmp = installex(cc, "true",   TYPE_def, 0, type_bol, intnode(cc, 1));
-		type_tmp = installex(cc, "false",  TYPE_def, 0, type_bol, intnode(cc, 0));
+		installex(cc, "int",    TYPE_def, 0, type_i32, NULL);
+		installex(cc, "long",   TYPE_def, 0, type_i64, NULL);
+		installex(cc, "float",  TYPE_def, 0, type_f32, NULL);
+		installex(cc, "double", TYPE_def, 0, type_f64, NULL);
+		installex(cc, "true",   TYPE_def, 0, type_bol, intnode(cc, 1));
+		installex(cc, "false",  TYPE_def, 0, type_bol, intnode(cc, 0));
 	}
+	// TODO:
+	(void)type_i08;
+	(void)type_i16;
+	(void)type_u16;
 }
 
 static int libCallExitQuiet(state s) {
@@ -1976,7 +1985,7 @@ ccState ccInit(state s, int mode, int libcExit(state)) {
 		cc->emit_tag->id.hash = -1;
 	}
 
-	libcall(s, libcExit ? libcExit : libCallExitQuiet, 0, "void Halt();");
+	libcall(s, libcExit ? libcExit : libCallExitQuiet, 0, "void Exit(int code);");
 	return cc;
 }
 ccState ccOpen(state s, srcType mode, char *src) {
@@ -2032,146 +2041,177 @@ state rtInit(void* mem, unsigned size) {
  * if (size == 0 && ptr == NULL): nothing
  * return NULL if cannot allocate, or size == 0
 **/
-static list memdcheck(list meml, list memd) {
-	while (meml && meml != memd) {
-		meml = meml->next;
-	}
-	return meml;
-}
 void* rtAlloc(state rt, void *ptr, unsigned size) {
-	list memd = NULL;
+	//	memory manager for the vm.
+	/* memory map
+	 .
+	 :
+	>+--------------------------------+
+	 | next                           |
+	 +--------------------------------+
+	 | size                           |
+	 +--------------------------------+
+	 | 0                              |
+	 .                                .
+	 : ...                            :
+	 | size - 1 bytes                 |
+	>+--------------------------------+
+	 | next                           |
+	 +--------------------------------+
+	 | size                           |
+	 +--------------------------------+
+	 | 0                              |
+	 : ...                            :
+	 | size - 1 bytes                 |
+	 +--------------------------------+
+	 :
+	the lowest bit in size indicates 
+	*/
 
-	/*if (ptr && size > 0) {	// realloc
-		...
-	}
-	else if (size > 0) {	// alloc
-		...
-	}
-	else if (ptr) {			// free
-		...
-	}
-	else {
-		fatal("FixMe: %s", "alloc memory of size <= 0");
-	}// */
+	typedef struct memchunk {
+		struct memchunk *next;
+		struct memchunk *prev;	// free only
+		unsigned int size;
+		char data[0];
+	} *memchunk;
+
+	memchunk memd = NULL;
+	size = padded(size, sizeof(struct memchunk));
 
 	if (ptr) {	// realloc or free.
 
-		memd = (list)((char*)ptr - sizeof(struct list));
-		dieif(!memdcheck(rt->_used, memd), "FixMe");
+		memchunk prev = NULL;		// prevous free memory block
+		memchunk next = rt->_free;	// is there a mergeable free memory block ?
 
-		if (size > memd->size) {	// grow
+		memd = (memchunk)((char*)ptr - sizeof(struct memchunk));
+
+		void *find = (void*)(memd->data + memd->size);
+
+		while (next && ((char*)next <= (char*)find)) {
+			trace("find to merge %06x, %06x", vmOffset(rt, next), vmOffset(rt, find));
+			prev = next;
+			next = next->next;
+		}
+
+		if (size == 0) {							// free
+			//~ fatal("FixMe: %s", "free memory");
+			memchunk list = rt->_used;
+			while (list && list->next != memd) {
+				list = list->next;
+			}
+
+			if (list && list->next) {
+				list->next = list->next->next;
+			}
+
+			// merge blocks if possible
+			if (next && next->data == (char*)find) {
+				memd->size += next->size;
+				memd->next = next->next;
+			}
+
+			// link to free list
+			if (prev != NULL) {
+				prev->next = memd;
+			}
+			else {
+				rt->_free = memd;
+			}
+		}
+		else if (size > memd->size) {				// grow
 			fatal("FixMe: %s", "realloc memory to grow");
 		}
-		else if (size == 0) {		// free
-			//~ list fmem = NULL, prev = NULL;
-			fatal("unimplemented");
-			/*/~ find the memory blockwich can
-			//~ be merged with this one
-			for (fmem = rt->_free; fmem; fmem = fmem->next) {
-				//~ dieif(fmem == data, "FixMe: %s", "a memd is on this offset");
-				if ((void*)fmem->data > (void*)memd) {
-					fmem = NULL;
-					break;
-				}
-				if ((void*)(fmem->data + fmem->size) == (void*)memd)
-					break;
-				prev = fmem;
-			}// * /
-			if (fmem) { // merge with previous and with next
+		else if (size > sizeof(struct memchunk)) {	// shrink
+			fatal("FixMe: %s", "realloc memory to shrink");
+			//~ the new free memory block
+			memchunk fmem = (memchunk)(memd->data + size);
+
+			while (next && (char*)next->data <= (char*)fmem) {
+				dieif(next == fmem, "FixMe");
+				prev = next;
+				next = next->next;
+			}
+
+			fmem->size = memd->size - size;
+			fmem->next = next;
+
+			memd->size = size;
+
+			trace("merge %06x", vmOffset(rt, next ? next->data: NULL));
+
+			// merge blocks if possible
+			if (next && next->data == (char*)fmem) {
+				fmem->size += next->size;
+				fmem->next = next->next;
+			}
+
+			// link to free list
+			if (prev != NULL) {
+				prev->next = fmem;
 			}
 			else {
-				// find the previous node in the used list.
-				list used = NULL, prevUsed = NULL;
-				for (fmem = rt->_used; fmem; fmem = fmem->next) {
-				}
-				//~ for ()
-				//~ if (prev)
+				rt->_free = fmem;
 			}
-			// */
-
-		}
-		else {
-			void *data = memd->data + size;
-
-			//~ list prev = NULL;
-			list fmem = rt->_free;
-			while (fmem && fmem->data != data) {
-				dieif(fmem == data, "FixMe: %s", "a memd is on this offset");
-				//~ prev = fmem;
-				fmem = fmem->next;
-			}
-
-			if (fmem) {
-				int asize = memd->size;
-				if (size) {			// shrink
-					asize -= size;			// relase (memd->size - size)
-					memd->size -= size;		// new size
-					dieif(fmem->data != memd->data + size, "FixMe");
-				}
-				else {				// free
-					asize += sizeof(struct list);
-					memd = NULL;			// release
-					dieif(fmem->data != memd->data + size, "FixMe");
-				}
-				fmem->size += asize;
-				fmem->data -= asize;
-			}
-			else {
-				if (size == 0) {
-					list prev = NULL;
-					fmem = rt->_free;
-
-					while (fmem && (void*)fmem->data < data) {
-						prev = fmem;
-						fmem = fmem->next;
-					}
-
-					if (prev == NULL) {
-						rt->_free = memd;
-					}
-					else {
-						prev->next = memd;
-					}
-					memd->next = fmem;
-				}
-				else {
-					fatal("FixMe: %s", "try to defrag free memory");
-				}
-			}// */
 		}
 	}
-	else {		// alloc
+	else {		// alloc or init.
 		if (size > 0) {
-			list fmem = rt->_free;
-			int asize = sizeof(struct list) + size;
+			memchunk prev = NULL;
 
-			while (fmem && fmem->size < asize) {
-				fmem = fmem->next;
+			int asize = sizeof(struct memchunk) + size;
+
+			for (memd = rt->_free; memd; memd = memd->next) {
+				if (memd->size >= asize) {
+					break;
+				}
+				prev = memd;
 			}
 
-			if (fmem) {
-				memd = (list)fmem->data;
-				memd->size = size;
-				memd->data = fmem->data + sizeof(struct list);
+			// here we have the block
+			if (memd && memd->size - asize > sizeof(struct memchunk)) {
 
-				fmem->size -= asize;
-				fmem->data += asize;
+				// make a new free block
+				memchunk free = (memchunk)(memd->data + asize);
 
+				// link to free list
+				free->size = memd->size - asize;
+				free->next = prev;
+				if (prev != NULL) {
+					prev->next = free;
+				}
+				else {
+					rt->_free = free;
+				}
+
+				// todo link used block back ordered by size.
+				memd->size = size | 0;  //TODO: 1
 				memd->next = rt->_used;
 				rt->_used = memd;
+
 			}
 		}
-		else {
-			list mem;
+		else {	// init
+			if (rt->_free == NULL && rt->_used == NULL) {
+				memchunk freemem = (void*)padded((int)(rt->_mem + rt->vm.px + 16), 16);
+				freemem->next = NULL;
+				//freemem->data = (unsigned char*)freemem + sizeof(struct memchunk);
+				freemem->size = rt->_size - (freemem->data - (char*)rt->_mem);
 
-			perr(rt, 0, NULL, 0, "memory info");
-			for (mem = rt->_free; mem; mem = mem->next) {
-				perr(rt, 0, NULL, 0, "free mem@%06x[%d]", mem->data - rt->_mem, mem->size);
+				rt->_used = NULL;
+				rt->_free = freemem;
 			}
-			for (mem = rt->_used; mem; mem = mem->next) {
-				perr(rt, 0, NULL, 0, "used mem@%06x[%d]", mem->data - rt->_mem, mem->size);
+			else {
+				memchunk mem;
+
+				perr(rt, 0, NULL, 0, "memory info");
+				for (mem = rt->_free; mem; mem = mem->next) {
+					perr(rt, 0, NULL, 0, "free mem@%06x[%d]", mem->data - (char*)rt->_mem, mem->size);
+				}
+				for (mem = rt->_used; mem; mem = mem->next) {
+					perr(rt, 0, NULL, 0, "used mem@%06x[%d]", mem->data - (char*)rt->_mem, mem->size);
+				}
+				//fatal("FixMe: %s", "try to defrag free memory");
 			}
-			//~ fatal("FixMe: %s", "try to defrag free memory");
 		}
 	}
 	//~ debug("memmgr(%x, %d): (%x, %d)", vmOffset(rt, ptr), size, vmOffset(rt, memd ? memd->data : NULL), memd ? memd->size : -1);

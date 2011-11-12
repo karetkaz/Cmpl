@@ -1,7 +1,12 @@
-#include "ccvm.h"
-//~~~~~~~~~~ Output ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/*******************************************************************************
+ *   File: clog.c
+ *   Date: 2011/06/23
+ *   Desc: logging & dumping
+ *******************************************************************************
+*******************************************************************************/
 #include <stdarg.h>
 #include <string.h>
+#include "ccvm.h"
 
 #define fputstr(__OUT, __STR) fputs(__STR, __OUT)
 #define fputchr(__OUT, __CHR) fputc(__CHR, __OUT)
@@ -109,6 +114,7 @@ static void fputsym(FILE *fout, symn sym, int mode, int level) {
 						case TYPE_def: fputchr(fout, '$'); break;
 					}
 				}
+				break;
 		}
 	}
 
@@ -525,7 +531,9 @@ static void dumpxml(FILE *fout, astn ast, int lev, const char* text, int level) 
 	if (level & prLine) fputfmt(fout, " line='%d'", ast->line);
 	if (level & prArgs) fputfmt(fout, " stmt='%?+k'", ast);
 	switch (ast->kind) {
-		default: fatal("FixMe");
+		default:
+			fatal("FixMe");
+			break;
 		//{ STMT
 		case STMT_do: {
 			fputfmt(fout, ">\n");
@@ -659,7 +667,7 @@ static void dumpxml(FILE *fout, astn ast, int lev, const char* text, int level) 
 					if (level & prType) fputfmt(fout, " type='%?T'", def->type);
 					//~ if (level & prCast) fputfmt(fout, " cast='%?t'", ast->cst2);
 					if (level & prLine) fputfmt(fout, " line='%d'", def->line);
-					if (level & prArgs && def->init) fputfmt(fout, " stmt='%T = %?+k'", def, def->init);
+					if ((level & prArgs) && def->init) fputfmt(fout, " stmt='%T = %?+k'", def, def->init);
 					if (def->init) {
 						fputfmt(fout, ">\n");
 						dumpxml(fout, def->init, lev + 2, "init", level);
@@ -867,6 +875,7 @@ static void FPUTFMT(FILE *fout, const char *msg, va_list ap) {
 				case 'F':		// float64
 				case 'G':
 					chr -= 'A' - 'a';
+					// no break
 
 				case 'e':		// float32
 				case 'f':		// float32
@@ -1094,7 +1103,9 @@ void dump(state s, dumpMode mode, symn sym, char *text, ...) {
 		}
 	}
 	else switch (mode & dumpMask) {
-		default: fatal("FixMe");
+		default:
+			fatal("FixMe");
+			break;
 
 		case dump_txt: {
 			va_list ap;

@@ -1,3 +1,10 @@
+/*******************************************************************************
+ *   File: lstd.c
+ *   Date: 2011/06/23
+ *   Desc: standard library
+ *******************************************************************************
+math, print, time libcall functions
+*******************************************************************************/
 #include "ccvm.h"
 #include <math.h>
 #include <time.h>
@@ -73,69 +80,6 @@ enum miscCalls {
 
 	miscOpMemMgr,
 };
-
-/*static int miscCall(state s) {
-	switch (s->func) {
-		default: return -1;
-
-		//~ case miscOpArgc:
-			//~ setret(s, int32_t, s->ev.argc);
-			//~ break;
-
-		//~ case miscOpArgv: // returning a string ?
-			//~ setret(s, int32_t, s->ev.???);
-			//~ break;
-
-		case miscOpRand32: {
-			static int initialized = 0;
-			int result;
-			if (!initialized) {
-				srand(time(NULL));
-				initialized = 1;
-			}
-			result = rand() * rand();	// if it gives a 16 bit int
-			setret(s, int32_t, result & 0x7fffffff);
-		} break;
-		case miscOpTime32: {
-			setret(s, int32_t, time(NULL));
-		} break;
-		case miscOpClock32: {
-			setret(s, int32_t, clock());
-		} break;
-		case miscOpClocksPS: {
-			float64_t ticks = popi32(s);
-			setret(s, float64_t, ticks / CLOCKS_PER_SEC);
-		} break;
-
-		case miscOpPutX64: {
-			fputfmt(stdout, "%X", popi64(s));
-		} break;
-		case miscOpPutI64: {
-			fputfmt(stdout, "%D", popi64(s));
-		} break;
-		case miscOpPutF64: {
-			fputfmt(stdout, "%F", popf64(s));
-		} break;
-		case miscOpPutChr: {
-			fputfmt(stdout, "%c", popi32(s));
-		} break;
-		case miscOpPutStr: {
-			// TODO: check bounds
-			fputfmt(stdout, "%s", popstr(s));
-		} break;
-
-		case miscOpMemMgr: {
-			void *old = popref(s);
-			int size = popi32(s);
-			void *res = rtAlloc(s, old, size);
-			setret(s, int32_t, vmOffset(s, res));
-			//~ debug("memmgr(%06x, %d): %06x", vmOffset(s, old), size, vmOffset(s, res));
-		} break;
-	}
-
-	return 0;
-}
-// */
 
 static inline int64_t clockCpu() {
 	uint64_t now = clock();
@@ -266,9 +210,6 @@ int install_stdc(state rt, char* file, int level) {
 	},
 	misc[] = {
 		//{ IO/MEM/EXIT
-		//~ {memmgr, "pointer memmgr(pointer old, int32 cnt, int allign);"},		// allocate, reallocate, free
-		//~ {memset, "pointer memset(pointer dst, byte src, int32 cnt);"},
-		//~ {memcpy, "pointer memcpy(pointer dst, pointer src, int32 cnt);"},
 
 		//~ {miscCall, miscOpArgc,			"int32 argc();"},
 		//~ {miscCall, miscOpArgv,			"string arg(int arg);"},

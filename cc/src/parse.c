@@ -1,3 +1,45 @@
+/*******************************************************************************
+ *   File: parse.c
+ *   Date: 2011/06/23
+ *   Desc: lexer and parser
+ *******************************************************************************
+
+Lexical elements
+
+	Comments:
+		line comments: //
+		block comments: / * ... * / and nestable /+ ... +/
+
+	Tokens:
+		Identifiers: variable or type names.
+
+			identifier = (letter)+
+
+		Keywords:
+			break, const, continue, define, else, emit, enum, for,
+			if, module, operator, parallel, return, static, struct
+
+		Operators and Delimiters:
+			+ - * / % . ,
+			~ & | ^ >> <<
+			&& ||
+			! == != < <= > >=
+			= := += -= *= /= %= &= |= ^= >>= <<=
+			( ) [ ] { } ? : ;
+
+		Integer and Floating-point literals:
+			bin_lit = '0'[bB][01]+
+			oct_lit = '0'[oO][0-7]+
+			hex_lit = '0'[xX][0-9a-fA-F]+
+			decimal_lit = [1-9][0-9]*
+			floating_lit = decimal_lit (('.'[0-9]*) | ([eE]([+-]?)[0-9]+))
+
+		Character and String literals:
+			char_lit = \'[^\'\n]*
+			string_lit = \"[^\"\n]*
+
+			
+*/
 #include <unistd.h>
 
 #include <string.h>
@@ -1188,6 +1230,10 @@ static int skiptok1(ccState s, int kind, int raise, char *file, int line) {
 
 //{~~~~~~~~~ Parser ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+static astn argnode(ccState s, astn lhs, astn rhs) {
+	return lhs ? opnode(s, OPER_com, lhs, rhs) : rhs;
+}// TODO: RemMe*/
+
 TODO("these should go to type.c");
 static void redefine(ccState s, symn sym) {
 	symn ptr;
@@ -1232,15 +1278,6 @@ static void redefine(ccState s, symn sym) {
 		if (ptr->file && ptr->line)
 			info(s->s, ptr->file, ptr->line, "first defined here as `%-T`", ptr);
 	}
-}
-static astn argnode(ccState s, astn lhs, astn rhs) {
-	if (lhs) {
-		astn tmp = newnode(s, OPER_com);
-		tmp->op.lhso = lhs;
-		tmp->op.rhso = rhs;
-		rhs = tmp;
-	}
-	return rhs;
 }
 static symn copysym(ccState cc, symn sym) {
 	symn result = newdefn(cc, TYPE_ref);
@@ -1497,7 +1534,8 @@ static astn reft(ccState s, int mode) {
 		}
 
 		if (byref && typ->cast == TYPE_ref) {
-			warn(s->s, 3, tag->file, tag->line, "type of `%k` is a reference type", tag);
+			//~ warn(s->s, 3, tag->file, tag->line, "type of `%k` is a reference type", tag);
+			warn(s->s, 3, tag->file, tag->line, "the type `%-T` is a reference type", typ);
 		}
 
 		ref = declare(s, TYPE_ref, tag, typ);
@@ -1609,8 +1647,9 @@ static astn reft(ccState s, int mode) {
 			ref->cast = tag->cst2 = TYPE_ref;
 		}
 		else {
-			if (typ->cast == TYPE_ref)
-				trace("type `%-T` cast to ref declaring %-T", typ, ref);
+			//~ if (typ->cast == TYPE_ref) {
+				//~ trace("type `%-T` cast to ref declaring %-T", typ, ref);
+			//~ }
 			//~ dieif(typ->cast == TYPE_ref, "FixMe: %-T", typ);
 			ref->cast = tag->cst2 = typ->cast;
 		}
@@ -1859,7 +1898,7 @@ static astn spec(ccState s/* , int qual */) {
 					if (tag) {
 						symn ref = tag->id.link;
 
-						if (attr & ATTR_stat && test(s, ASGN_set)) {
+						if ((attr & ATTR_stat) && test(s, ASGN_set)) {
 							if (!init(s, ref)) {
 								trace("FixMe");
 								return 0;
@@ -2013,6 +2052,7 @@ static astn stmt(ccState s, int mode) {
 				break;
 			default:
 				backTok(s, ast);
+				break;
 		}
 		ast = 0;
 	}
@@ -2024,6 +2064,7 @@ static astn stmt(ccState s, int mode) {
 				break;
 			default:
 				backTok(s, ast);
+				break;
 		}
 		ast = 0;
 	}
@@ -2429,10 +2470,12 @@ astn expr(ccState s, int mode) {
 	if (unary || level) {							// error
 		char *missing = "expression";
 		if (level) switch (sym[level]) {
+			default:
+				fatal("FixMe");
+				break;
 			case '(': missing = "')'"; break;
 			case '[': missing = "']'"; break;
 			case '?': missing = "':'"; break;
-			default : fatal("FixMe");
 		}
 		error(s->s, s->file, s->line, "missing %s, %k", missing, peek(s));
 	}
@@ -2452,27 +2495,32 @@ astn expr(ccState s, int mode) {
 					return 0;
 				}
 				switch (argc) {
-					case 1: {
-						//~ tok->op.test = 0;
-						//~ tok->op.lhso = 0;
+					default:
+						fatal("FixMe");
+						break;
+
+					case 1:
+						//~ tok->op.test = NULL;
+						//~ tok->op.lhso = NULL;
 						tok->op.rhso = lhs[0];
-					} break;
-					case 2: {
-						//~ tok->op.test = 0;
+						break;
+
+					case 2:
+						//~ tok->op.test = NULL;
 						tok->op.lhso = lhs[0];
 						tok->op.rhso = lhs[1];
-					} break;
-					case 3: {
+						break;
+					case 3:
 						tok->op.test = lhs[0];
 						tok->op.lhso = lhs[1];
 						tok->op.rhso = lhs[2];
-					} break;
-					default: fatal("FixMe");
+						break;
 				}
 				#ifdef DEBUGGING
 				switch (tok->kind) {
-				default:
-					break;
+					default:
+						break;
+
 					case ASGN_add:
 					case ASGN_sub:
 					case ASGN_mul:

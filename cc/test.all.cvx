@@ -21,10 +21,7 @@
  * operator-s are explicit
  * 
  * struct float3{float x; float y; float z;}
- * define float3(float x, float y, float z) = emit(float3, f32(x), f32(y), f32(z));
- * 
  * struct float4{float x; float y; float z; float w;}
- * define float4(float x, float y, float z, float w) = emit(float4, f32(x), f32(y), f32(z), f32(w));
  * 
  * and:
  * define float3(float4 x) = float3(x.x, x.y, x.z);			// this works
@@ -34,14 +31,7 @@
  * float4 a = float4(1., 2., 3., 4.);
  * float3 b = float3(a);
  * float4 c = b;				// this will call `operator float4(float3 x)`
- * float3 B = a;				// Error: no operator float3(float4 x)
- * 
- * struct variant {type &Class; pointer Data;}
- * struct array   {uint Length; pointer Data;}
- * 
- * alias var: variant;
- * alias array: variant[];
- * alias string: char[];
+ * float3 d = a;				// Error: no operator float3(float4 x)
  * 
  * define void(var &a) = var.tryInvoke(a.Class, ".dtor", a.Data);
  * 
@@ -56,18 +46,10 @@
  * define void(float64 &a) = void(0);
  * 
  * 
- * 
- * 
- * define exit(int code) = emit(void, libc(0), i32(code));
- * define exit() = exit(0);
 **/
 //~ /+ TODO: errors
 /+ recursively define
 define fact(int64 n) = (n * fact(n - 1));
-//~ +/
-/+ if the for is before the decl it goes nuts
-for(int i = 0;false;);
-double x = math.pi/2;
 //~ +/
 //~ +/
 /* TODO: operators
@@ -294,7 +276,6 @@ static if (Test.Bits & 8) {		// compute bits
 //~ /+
 void bitsget(bool signed, int size, int64 &min, int64 &max) {
 	int64 mask = bits.shr(int64(-1), -size);
-
 	min = bits.shl(-int64(signed), size - 1);
 	max = bits.and(min - 1, mask);
 }
@@ -305,8 +286,8 @@ hex64 max;
 hex64 umin;
 hex64 umax;
 
-bitsget(true, bitsize, min, max);
-bitsget(!true, bitsize, umin, umax);
+bitsget(true, bitsize, &min, &max);
+bitsget(!true, bitsize, &umin, &umax);
 //~ +/
 }
 } // */

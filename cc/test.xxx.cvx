@@ -1,10 +1,6 @@
-//~ #open src/ccvm.c
-//~ #open src/pvmc.h
+//~ module test2;
 
-//~ module test;
-
-//~ int alma(int h)[10];	???
-//~ void fun(int x) = true ? null : void(int x){print(x);});
+//~ int alma(int h)[10];
 
 //~ /* swap test
 void swap(int32 &a, int32 &b) {
@@ -40,8 +36,6 @@ arr[1] = 2;
 
 swap(rec.x, rec.y);
 swap(arr[0], arr[1]);
-//~ */
 
-//~ {pointer a = null;}
-//~ pointer a = null;
-//~ int b;
+//~ int x = emit(int32, "er", 0.2);
+//~ */

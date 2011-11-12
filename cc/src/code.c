@@ -1,12 +1,16 @@
-#include <math.h>
+/*******************************************************************************
+ *   File: clog.c
+ *   Date: 2011/06/23
+ *   Desc: bytecode related stuff
+ *******************************************************************************
+code emmiting, executing and formatting
+*******************************************************************************/
 #include <string.h>
 #include <stdarg.h>
+#include <math.h>
 #include "ccvm.h"
 
 #ifdef __WATCOMC__
-//~ Warning! W124: Comparison result always 0
-//~ Warning! W201: Unreachable code
-
 #pragma disable_message(124);
 #pragma disable_message(201);
 #endif
@@ -78,11 +82,6 @@ typedef struct cell {			// processor
 
 //{ libc.c ---------------------------------------------------------------------
 
-//~ #pragma intrinsic(log,cos,sin,tan,sqrt,fabs,pow,atan2,fmod)
-//~ #pragma intrinsic(acos,asin,atan,cosh,exp,log10,sinh,tanh)
-
-#define LIBCALLS 256
-
 int vmOffset(state s, void *ptr) {
 	dieif((unsigned char*)ptr > s->_mem + s->_size, "invalid reference");
 	dieif(ptr && (unsigned char*)ptr < s->_mem, "invalid reference");
@@ -124,43 +123,15 @@ static symn installref(state s, const char *prot, astn *argv) {
  * @arg s: the runtime state.
  * @arg libc: the function to call.
  * @arg proto: prototype of function.
- * /
-int (*libcSwapExit(state s, int libc(state)))(state) {
-	int (*result)(state) = libcvec[0].call;
-	libcvec[0].call = libc ? libc : libCallExitQuiet;
-	(void)s;
-	return result;
-}// */
+ */
 
 symn libcall(state s, int libc(state), int pos, const char* proto) {
 	symn arg, sym = NULL;
 	int stdiff = 0;
 	astn args = NULL;
 
-	/*if (!libc && strcmp(proto, "reset") == 0) {
-		//~ memset(libcvec, 0, sizeof(libcvec));
-		libcvec[0].proto = "void Halt();";
-		libcvec[0].call = libCallExitDebug;
-		libccnt = 0;
-	}*/
-
-	/*if (!libccnt && !libc) {
-		libccnt = 0;
-		if (!libc) while (libcvec[libccnt].proto) {
-			int i = libccnt;
-			if (!libcall(s, libcvec[i].call, 0, libcvec[i].proto))
-				return NULL;
-		}
-		return NULL;
-	}// */
-
-	/*if (libccnt >= (sizeof(libcvec) / sizeof(*libcvec))) {
-		error(s, NULL, 0, "to many functions on install('%s')", proto);
-		return NULL;
-	}*/
-
-	if (!libc || !proto)
-		return NULL;
+	dieif (!libc || !proto, "FixMe");
+		//~ return NULL;
 
 	//~ from: int64 zxt(int64 val, int offs, int bits)
 	//~ make: define zxt(int64 val, int offs, int bits) = int64(emit(libc(25), int64(val), int(offs), int(bits)));
@@ -227,7 +198,6 @@ symn libcall(state s, int libc(state), int pos, const char* proto) {
 		lc->pop = stdiff / 4;
 
 
-		//~ debug("FixMe: %-T(chk: %d, pop: %d)", sym, libcfnc[libccnt].chk, libcfnc[libccnt].pop);
 		// make arguments symbolic by default
 		for (arg = sym->args; arg; arg = arg->next) {
 			//~ stdiff += sizeOf(arg->type);
@@ -247,8 +217,6 @@ symn libcall(state s, int libc(state), int pos, const char* proto) {
 		error(s, NULL, 0, "install('%s')", proto);
 		//~ return NULL;
 	}
-
-	//~ libccnt += 1;
 
 	return sym;
 }
@@ -915,7 +883,7 @@ int emitinc(state s, int arg) {
 				ip->rel += arg;
 				return s->vm.pc;
 			}
-			//~ goto default;
+			// no break
 		default:
 			return emitint(s, opc_inc, arg);
 		//~ ldcnadd:
@@ -934,6 +902,7 @@ int emitidx(state s, vmOpcode opc, int arg) {
 		case opc_drop:
 			opc = opc_spc;
 			tmp.i8 = -tmp.i8;
+			// no break
 		case opc_ldsp:
 			return emitarg(s, opc, tmp);
 	}
@@ -958,7 +927,9 @@ int fixjump(state s, int src, int dst, int stc) {
 	if (src >= 0) {
 		bcde ip = getip(s, src);
 		if (src) switch (ip->opc) {
-			default: fatal("FixMe");
+			default:
+				fatal("FixMe");
+				break;
 			//~ case opc_ldsp:
 			//~ case opc_call:
 			case opc_jmp:
@@ -1037,6 +1008,7 @@ static int mtt(state ee, doWhat cmd, cell pu, int n) {
 	(void)ee;
 	return 0;
 }
+
 static inline int ovf(cell pu) {
 	return (pu->sp - pu->bp) < 0;
 }
@@ -1048,7 +1020,6 @@ static inline int ovf(cell pu) {
  * @arg ss: stack size
  * @return: error code
 **/
-
 static void dbugerr(state s, char *file, int line, int pu, void *ip, long* bp, int ss, char *text, int xxx) {
 	int IP = ((unsigned char*)ip) - s->_mem;
 	error(s, file, line, "exec:%s(%?d):[pu%02d][sp%02d]@%9.*A rw@%06x", text, xxx, pu, ss, IP, ip);

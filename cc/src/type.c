@@ -3,10 +3,8 @@
  *   Date: 2011/06/23
  *   Desc: type system
  *******************************************************************************
- *
- ** basic types
 
-	typename		// compilers internal type reprezentatin structure
+Basic types
 
 	void
 
@@ -25,14 +23,22 @@
 	float64
 
 	pointer
-	.function: alias pointer
 
-	variant: alias struct {const pointer data; const typename type;}
+	!typename		// compilers internal type reprezentatin structure
+	!function
 
-	.slice: alias struct {const pointer data; const int length;}
-	.delegate: alias struct {const pointer call; const pointer closure;}
+Derived data types: [TODO]
+	slice: struct {const pointer data; const int length;}
+	variant: struct {const pointer data; const typename type;}
+	delegate: struct {const pointer function; const pointer data;}
 
-	#aliases
+User defined types:
+	array
+	struct
+	function
+	delegate
+
+	#typedefs
 	@int: int32
 	@long: int64
 	@float: float32
@@ -40,44 +46,39 @@
 
 	@var: variant
 
-	@char: uint8 | uint16
+	@char: uint8 / uint16
 	@string: char[]
 
 	@array: variant[]
 
-	#instances
-	@false: emit(bool, i32(0));
+	#constants
 	@true: emit(bool, i32(1));
-
+	@false: emit(bool, i32(0));
 	@null: emit(pointer, i32(0));
 
 arrays:
-	trhere are 2 kind of arrays.
+	2 kind of arrays:
 
 		Fixed-size arrays:
-			int a[2]
+			ex: int a[2]
 
-		are passed by reference,
+			are passed by reference,
 
-		Dinamic-size arrays:
-		slices:
-			int a[]
-		this is actually a struct {const pointer data; const int length;},
-		where type of data is known by the compiler.
-
-variants:
-		this is actually a struct {const pointer data; const typeinfo type;}.
+		Dinamic-size arrays / slices:
+			ex: int a[]
+			where type of data is known by the compiler.
 
 structures:
 		when declaring a struct there will be declared the folowing:
-		initializer with all members, in case packing is default,
-			and fixed size arrays are not contained by the structure.
-		initializer from pointer:
-		variant initializer.
-		ex: struct Complex {double re; double im};
-		will define:
+			initializer with all members, in case packing is default,
+				??? and fixed size arrays are not contained by the structure.
+			initializer from pointer
+			variant initializer.
+
+		ex: for struct Complex {double re; double im};
+		will be defined:
 			define Complex(double re, double im) = emit(Complex, re, im);
-			define Complex(pointer ptr) = emit(Complex&, ptr);
+			define Complex(pointer ptr) = emit(Complex &, ptr);
 			operator variant(Complex &var) = emit(variant, ref(Complex), ref(var));
 
 			// this should throw an exception
@@ -539,7 +540,9 @@ symn declare(ccState s, int kind, astn tag, symn typ) {
 
 		tag->kind = TYPE_def;
 		switch (kind) {
-			default: fatal("FixMe");
+			default:
+				fatal("FixMe");
+				break;
 
 			case TYPE_rec:			// typedefn struct
 				if (typ != NULL)
@@ -705,6 +708,7 @@ int castTo(astn ast, int cto) {
 		default:
 		error:
 			trace("cast(%+k) to %t/%t", ast, cto, atc);
+			break;
 			//~ return 0;
 	}
 	//~ debug("cast `%+k` to (%t)", ast, cast);
@@ -772,12 +776,17 @@ symn typecheck(ccState cc, symn loc, astn ast) {
 					astn arg = args->op.rhso;
 					if (!typecheck(cc, lin, arg)) {
 						if (!lin || !typecheck(cc, NULL, arg)) {
-							debug("arg(%+k)", arg);
-							return 0;
+							trace("arg(%+k)", arg);
+							return NULL;
 						}
 						if (!(arg->kind == OPER_fnc && isType(linkOf(arg->op.lhso)))) {
-							debug("%T", linkOf(arg->op.lhso));
-							warn(cc->s, 2, arg->file, arg->line, "emit type cast expected: '%+k'", arg);
+							if (arg->type->cast == TYPE_ref) {
+								warn(cc->s, 2, arg->file, arg->line, "argument `%+k` is passed by reference", arg);
+							}
+							else {
+								warn(cc->s, 2, arg->file, arg->line, "argument `%+k` is passed by value: %-T", arg, arg->type);
+							}
+							//~ warn(cc->s, 2, arg->file, arg->line, "emit type cast expected: '%+k'", arg);
 						}
 					}
 
@@ -787,13 +796,19 @@ symn typecheck(ccState cc, symn loc, astn ast) {
 				}
 
 				if (!typecheck(cc, lin, args)) {
-					if (!lin || !typecheck(cc, 0, args)) {
-						debug("arg(%+k)", args);
-						return 0;
+					if (!lin || !typecheck(cc, NULL, args)) {
+						trace("arg(%+k)", args);
+						return NULL;
 					}
+					// emit's first arg can be a type(to static cast)
 					if (!istype(args) && !(args->kind == OPER_fnc && isType(linkOf(args)))) {
-						debug("%T", linkOf(args));
-						warn(cc->s, 2, args->file, args->line, "emit type cast expected: '%+k'", args);
+						if (args->type->cast == TYPE_ref) {
+							warn(cc->s, 2, args->file, args->line, "argument `%+k` is passed by reference", args);
+						}
+						else {
+							warn(cc->s, 2, args->file, args->line, "argument `%+k` is passed by value: %-T", args, args->type);
+						}
+						//~ warn(cc->s, 2, args->file, args->line, "emit type cast expected: '%+k'", args);
 					}
 				}
 
@@ -1082,8 +1097,8 @@ symn typecheck(ccState cc, symn loc, astn ast) {
 			fatal("operator %k (%T %T): %+k", ast, lht, rht, ast);
 		} break;
 
-		TODO("FixMe");
 		case OPER_com: {	// ''
+			TODO("FixMe");
 			symn lht = typecheck(cc, loc, ast->op.lhso);
 			symn rht = typecheck(cc, loc, ast->op.rhso);
 
@@ -1105,7 +1120,7 @@ symn typecheck(ccState cc, symn loc, astn ast) {
 				return ast->type = typ;
 			}
 			fatal("operator %k (%T, %T): %+k", ast, lht, rht, ast);
-		}
+		} break;
 		// */
 
 		// operator set
@@ -1188,7 +1203,9 @@ symn typecheck(ccState cc, symn loc, astn ast) {
 			// using function args
 
 			if (sym) switch (sym->kind) {
-				default: fatal("FixMe");
+				default:
+					fatal("FixMe");
+					break;
 
 				case TYPE_def:
 					result = sym->type;
@@ -1215,8 +1232,8 @@ symn typecheck(ccState cc, symn loc, astn ast) {
 			}
 
 			if (sym->call) {
-				astn argval = args;
-				symn argsym = sym->args;
+				astn argval = args;			// argument
+				symn argsym = sym->args;	// parameter
 
 				while (argsym && argval) {
 					if (!castTo(argval, castOf(argsym->type))) {
@@ -1228,6 +1245,14 @@ symn typecheck(ccState cc, symn loc, astn ast) {
 						if (!castTo(argval, TYPE_ref)) {
 							debug("%k:%t", argval, TYPE_ref);
 							return 0;
+						}
+					}
+
+					// swap(a, b) is written instad of swap(&a, &b)
+					if (argsym->cast == TYPE_ref && argval->type->cast != TYPE_ref) {
+						if (argval->kind != OPER_adr) {
+							//~ warn(cc->s, 7, argval->file, argval->line, "argument `%+k` will be passed by reference", argval);
+							warn(cc->s, 7, argval->file, argval->line, "argument `%+k` is not explicitly passed by reference", argval);
 						}
 					}
 

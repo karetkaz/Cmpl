@@ -1,4 +1,10 @@
-//~ tree.c - tree related stuff ------------------------------------------------
+/*******************************************************************************
+ *   File: tree.c
+ *   Date: 2011/06/23
+ *   Desc: tree operations
+ *******************************************************************************
+the code representation with abstract syntax tree
+*******************************************************************************/
 #include <string.h>
 #include <math.h>
 #include "ccvm.h"
@@ -35,14 +41,6 @@ astn newIden(ccState s, char* id) {
 	return ast;
 }
 
-/*
-astn cpynode(ccState s, astn src) {
-	astn ast = newnode(s, 0);
-	*ast = *src;
-	return ast;
-}
-// */
-
 astn opnode(ccState s, int kind, astn lhs, astn rhs) {
 	astn result = newnode(s, kind);
 	if (result) {
@@ -52,6 +50,7 @@ astn opnode(ccState s, int kind, astn lhs, astn rhs) {
 	return result;
 }
 
+/// make a node witch si a link to a reference
 astn lnknode(ccState s, symn ref) {
 	astn result = newnode(s, TYPE_ref);
 	if (result) {
@@ -64,6 +63,7 @@ astn lnknode(ccState s, symn ref) {
 	return result;
 }
 
+/// make a constant valued node
 astn intnode(ccState s, int64_t v) {
 	astn ast = newnode(s, TYPE_int);
 	ast->type = type_i32;
@@ -118,7 +118,7 @@ float64_t constflt(astn ast) {
 	return 0;
 }
 
-TODO(eval should use cgen and vmExec)
+TODO("eval should use cgen and vmExec")
 int eval(astn res, astn ast) {
 	struct astn lhs, rhs;
 	int cast;

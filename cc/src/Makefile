@@ -3,7 +3,7 @@ OUTEXE=-o
 #~ CFLAGS=-g2 -ggdb
 #~ CFLAGS=-g0 -O2
 CFLAGS=-g2
-LIBS=-lm
+LIBS=-lm -ldl
 CCC=gcc -m32
 LNK=gcc -m32
 LIB=ar rcs ../../gx/lib/libpvmc/libpvmc.linux.a
@@ -12,6 +12,7 @@ DBG=nemiver
 ifeq "$(OS)" "Windows_NT"
 LIB=ar rcs ../../gx/lib/libpvmc/libpvmc.windows.a
 #~ LIB=ar rcs ../../lib/libpvmc/libpvmc.windows.a
+LIBS=-lm
 DBG=
 endif
 

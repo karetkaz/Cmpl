@@ -491,6 +491,7 @@ int compile(state s, int wl, char *file) {
 	//~ debug("%s: init(%.2F); scan(%.2F) KBytes", file, size / 1024., (s->cc->_beg - s->_mem) / 1024.);
 	#endif
 
+	(void)size;
 	return result;
 }
 
@@ -504,7 +505,7 @@ int installDll(state s, int ccApiMain(state s, stateApi api)) {
 
 }
 
-#if __linux__
+#if defined(__linux__)
 #include <dlfcn.h>
 static int importLib(state s, const char *path, const char *init) {
 	int result = 0;
@@ -585,18 +586,8 @@ static int libCallExitDebug(state rt) {
 		vm_fputval(rt, stdout, arg, (stkval*)ofs, 0);
 		fputc('\n', stdout);
 	}
-	if (1) {	// memory info
-		list mem;
 
-		perr(rt, 0, NULL, 0, "memory info");
-		for (mem = rt->_free; mem; mem = mem->next) {
-			perr(rt, 0, NULL, 0, "free mem@%06x[%d]", mem->data - rt->_mem, mem->size);
-		}
-		for (mem = rt->_used; mem; mem = mem->next) {
-			perr(rt, 0, NULL, 0, "used mem@%06x[%d]", mem->data - rt->_mem, mem->size);
-		}
-		//~ fatal("FixMe: %s", "try to defrag free memory");
-	}
+	rtAlloc(rt, NULL, 0);
 
 	return 0;
 }
@@ -855,7 +846,9 @@ int program(int argc, char *argv[]) {
 
 			case run_code: vmExec(s, dbg); break;
 
-			default: fatal("FixMe");
+			default:
+				fatal("FixMe");
+				break;
 		}
 
 		logfile(s, NULL);
@@ -882,7 +875,7 @@ int main(int argc, char *argv[]) {
 static int dbgCon(state s, int pu, void *ip, long* bp, int ss) {
 	static char buff[1024];
 	static char cmd = 'N';
-	int IP, SP;
+	int IP;//, SP;
 	char *arg;
 
 	if (ip == NULL) {
@@ -894,7 +887,7 @@ static int dbgCon(state s, int pu, void *ip, long* bp, int ss) {
 	}
 
 	IP = ((char*)ip) - ((char*)s->_mem);
-	SP = ((char*)s->_ptr) - ((char*)bp);
+	//~ SP = ((char*)s->_ptr) - ((char*)bp);
 
 	//~ fputfmt(stdout, ">exec:[pu%02d][sp%02d]@%9.*A\n", pu, ss, IP, ip);
 	if (printvars) {
@@ -920,7 +913,7 @@ static int dbgCon(state s, int pu, void *ip, long* bp, int ss) {
 			*arg = 0;		// remove new line char
 		}
 
-		if (*buff == 0);		// no command, use last
+		if (*buff == 0) {}		// no command, use last
 		else if ((arg = parsecmd(buff, "print", " "))) {
 			cmd = 'p';
 		}
@@ -963,6 +956,7 @@ static int dbgCon(state s, int pu, void *ip, long* bp, int ss) {
 		switch (cmd) {
 			default:
 				debug("invalid command '%c'", cmd);
+				break;
 			case 0 :
 				break;
 
@@ -1007,6 +1001,7 @@ static int dbgCon(state s, int pu, void *ip, long* bp, int ss) {
 			} break;
 		}
 	}
+	//~ (void)SP;
 	return 0;
 }
 
