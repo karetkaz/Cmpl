@@ -12,14 +12,25 @@
 
 /* alloc / realloc / free
 pointer p1;
-//~ pointer p2 = realloc(null, 200);
-//~ pointer p3 = realloc(null, 300);
+pointer p2;
+pointer p3;
 pointer p4;
+realloc(null, 0);
+p1 = realloc(null, 160);
+p2 = realloc(null, 160);
+p3 = realloc(null, 160);
+realloc(null, 0);
 
-//~ realloc(null, 0);
-p1 = realloc(null, 200);
-//~ realloc(null, 0);
-p4 = realloc(p1, 0);
+if (true) {
+	p3 = realloc(p3, 0);
+	p2 = realloc(p2, 0);
+	p1 = realloc(p1, 0);
+}
+else {
+	p1 = realloc(p1, 0);
+	p2 = realloc(p2, 0);
+	p3 = realloc(p3, 0);
+}
 
 //~ realloc(null, 100);
 //~ realloc(null, 200);
@@ -27,16 +38,6 @@ p4 = realloc(p1, 0);
 
 //~ realloc(null, 0);
 //~ */
-/* sum
-{
-int a[256];
-int result = 0;
-
-for (int i = 0; i < a.length; i += 1) {
-	result += a[i];
-}
-}
-// */
 /*
 //~ string s = "alma a fa alatt";		// this should be dynamic.
 //~ uint8 ss[4];
@@ -66,7 +67,7 @@ string sss[3] = x, "a2", "a3";
 //~ b = 88;
 // */
 
-//~ main.exe -C -ilbit.dll -O2 -xd test.cvx
+//~ ./main -C -i./lbit.dll -O2 -xd test.cvx
 //~ int i = bitops.btc(0x1ff);
 
 /* random floats
@@ -95,23 +96,29 @@ for(int i = 0; i < 30; i += 1) {
 
 // */
 
-/* array arguments
+/* array as arguments
 int arr1[20];
 int a;
 
-int maximum(int arr[]) {
+// 1. int maximum(int n, int arr[12])
+// 2. int maximum(int n, int arr[])
+// 3. int maximum(int n, int arr...)
+
+int maximum(int length, int arr[20]) {
 	result = arr[0];
-	for (int i = 0; i < arr1.length; i += 1) {
+	for (int i = 1; i < length; i += 1) {
 		if (result < arr[i]) {
 			result = arr[i];
 		}
 	}
 }
 
-a = maximum(arr1);
-*/
+a = maximum(arr1.length, arr1);
 
-/* static and nonstatic members.
+
+//~ */
+
+//~ /* static and nonstatic members.
 struct alma {
 	static int a0 = 9;
 	const int a1;
@@ -158,15 +165,8 @@ xrgb a = emit(xrgb, i32(0x801f008f));
 //~ r.rgb.b = min(a.b + b.b, 255);
 // */
 
-/* Bits: hi, lo, extend
-
-
-hex64 val = 0xff00ff00ff0f0f0f9;
-hex32 lo = Lo64(val);
-hex32 hi = Hi64(val);
-
-// */
 /* get 0 < n <= 64 bit minimum / maximum (signed/unsigned) values
+define hex64 int64;//%%016X
 void bitsget(bool signed, int size, int64 &min, int64 &max) {
 	int64 mask = bits.shr(int64(-1), -size);
 	min = bits.shl(-int64(signed), size - 1);
@@ -178,10 +178,10 @@ hex64 max;
 hex64 umin;
 hex64 umax;
 
-int bitsize = 60;
+int bitsize = 50;
 
-bitsget(true, bitsize, min, max);
-bitsget(!true, bitsize, umin, umax);
+bitsget(true, bitsize, &min, &max);
+bitsget(!true, bitsize, &umin, &umax);
 // */
 
 /* call functions ...
@@ -194,11 +194,15 @@ int method1(int x) {
 }
 int method1() {result = method1(1);}
 int method2() {result = method1(2);}
+
 void methodCall(int method()) {
-	if (method != null) {
-		int n = method();
+	if (method == null) {
+		print("(null)\n");
+		return;
 	}
-	else print("(null)\n");
+	//~ print("(xxxx)\n");
+	int n = method();
+	//~ print("%D\n", int64(n));
 }
 
 //~ /+	just call it
@@ -257,7 +261,7 @@ println(Invoke(b));
 struct Closure {int64 call(Closure &c, int64 n); int64 data; int32 calls; /+...+/ }
 define Closure(int64 call(Closure &c, int64 n), int64 data) = Closure(call, data, 0);
 
-define Invoke(Closure &c, int64 n) = c.call(c, n);
+define Invoke(Closure &c, int64 n) = c.call(&c, n);
 //~ operator (Closure &c)(int64 n) = c.call(c, n);
 
 int64 countdown(Closure &c, int64 n) {result = c.data; c.data -= n; c.calls += 1; }
@@ -364,34 +368,81 @@ bool next(file &it, int &chr) {
 	result = chr != -1;
 }// +/
 
-struct range {int min; int max;}
-struct range_iterator {int pos; int max;}
-define iterator(range ^r) = range_iterator(r.min, r.max);	// start at min, and end at max
+struct range {
+	int min;
+	int max;
+	bool exclusive;
+}
+
+struct range_iterator {
+	int pos;
+	int max;
+	bool exclusive;
+}
+
+define iterator(range ^r) = range_iterator(r.min, r.max, r.exclusive);	// start at min, and end at max
+
+void println(range_iterator ri) {
+	print("iterator {");
+	print("pos: "); print(ri.pos);
+	print(", max: "); print(ri.max);
+	print(", excl: "); print(ri.exclusive);
+	print("}\n");
+}
 
 bool next(range_iterator &it, int &val) {
-	result = it.pos < it.max;
-	if (result) {
+	if (result = it.pos - it.exclusive < it.max) {
 		val = it.pos;
 		it.pos += 1;
 	}
 }
+bool next(range_iterator &it, range_iterator &val) {
+	if (result = it.pos - it.exclusive < it.max) {
+		val = it;
+		it.pos += 1;
+	}
+}
 
-for (int a : range(10, 16)) {
+for (range_iterator a : range(10, 14, true)) {
 	println(a);
 }
 
 //~ */
 
-//~ double a = emit(float64, i64(0x7FF0009000000000));
-//~ double XXXa = emit(float64, i64(0b0111111111110000000000000000000000000000000000000000000000000000));
-//~ double XXXb = emit(float64, i64(0b0011111111110000000000000000000000000000000000000000000000000000));
+//~ const val = 0./0;
+//~ print("0b%064B\n", emit(int64, f64(val)));
+//~ print("0x%016X\n", emit(int64, f64(val)));
+//~ double f64_nan = emit(float64, i64(0b0111111111111000000000000000000000000000000000000000000000000000));
+//~ double f64_inf = emit(float64, i64(0b0111111111110000000000000000000000000000000000000000000000000000));
+//~ double f64_one = emit(float64, i64(0b0011111111110000000000000000000000000000000000000000000000000000));
+
+/+
+int O(int a) {
+	print("%d\n", int64(a));
+	result = a;
+}
+
+int A = 31;
+int b() {
+	static int B = O(A);
+	int c() {
+		static int C = O(A);
+		result = C;
+	}
+	result = c();
+}
+A = 33;
+int d = b();
+int e = b();
+
+// +/
 
 /* global variables cgen order
-	struct alma {
-		static int a1;
-		static int a2;
-		const int a3;
-	}
+struct alma {
+	static int a1;
+	static int a2;
+	const int a3;
+}
 static bool a;
 static bool b() {
 

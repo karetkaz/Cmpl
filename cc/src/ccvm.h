@@ -18,14 +18,35 @@
 #define TBLS 512
 
 #define DO_PRAGMA(x) _Pragma (#x)
-#define TODO(x) //DO_PRAGMA(message ("TODO: " #x))
+#define TODO(x) //DO_PRAGMA(message("TODO: " #x))
 
+#ifdef _MSC_VER
+#define pdbg(__DBG, __FILE, __LINE, msg, ...) do {fputfmt(stderr, "%s:%d: "__DBG": %s: "msg"\n", __FILE, __LINE, __FUNCTION__, ##__VA_ARGS__); fflush(stdout); fflush(stderr);} while(0)
+#else
 #define pdbg(__DBG, __FILE, __LINE, msg, ...) do {fputfmt(stderr, "%s:%d: "__DBG": %s: "msg"\n", __FILE, __LINE, __func__, ##__VA_ARGS__); fflush(stdout); fflush(stderr);} while(0)
-#define prerr(msg, ...) do {pdbg("fatal", __FILE__, __LINE__, msg, ##__VA_ARGS__); } while(0)
-#define fatal(msg, ...) do {pdbg("fatal", __FILE__, __LINE__, msg, ##__VA_ARGS__); abort();} while(0)
-#define dieif(__EXP, msg, ...) do {if (__EXP) fatal(msg, ##__VA_ARGS__);} while(0)
+#endif
 
-#ifdef __WATCOMC__
+#define prerr(msg, ...) do {pdbg("FixMe", __FILE__, __LINE__, msg, ##__VA_ARGS__); } while(0)
+#define fatal(msg, ...) do {prerr(msg, ##__VA_ARGS__); abort();} while(0)
+#define dieif(__EXP, msg, ...) do {if (__EXP) fatal(msg, ##__VA_ARGS__);} while(0)
+#define logif(__EXP, msg, ...) do {if (__EXP) prerr(msg, ##__VA_ARGS__);} while(0)
+
+#ifdef _MSC_VER
+
+#if DEBUGGING > 1
+#define debug(msg, ...) pdbg("debug", __FILE__, __LINE__, msg, ##__VA_ARGS__)
+#define trace(msg, ...) pdbg("trace", __FILE__, __LINE__, msg, ##__VA_ARGS__)
+#define PERR(__ENV, __LEVEL, __FILE, __LINE, msg, ...) do { perr(__ENV, __LEVEL, __FILE, __LINE, msg, ##__VA_ARGS__); debug(msg, ##__VA_ARGS__); } while(0)
+#else // catch the position error raised
+#define debug(msg, ...)
+#define trace(msg, ...)
+#define PERR(__ENV, __LEVEL, __FILE, __LINE, msg, ...) do { perr(__ENV, __LEVEL, __FILE, __LINE, msg, ##__VA_ARGS__); } while(0)
+#endif
+#define error(__ENV, __FILE, __LINE, msg, ...) PERR(__ENV, -1, __FILE, __LINE, msg, ##__VA_ARGS__)
+#define warn(__ENV, __LEVEL, __FILE, __LINE, msg, ...) PERR(__ENV, __LEVEL, __FILE, __LINE, msg, ##__VA_ARGS__)
+#define info(__ENV, __FILE, __LINE, msg, ...) PERR(__ENV, 0, __FILE, __LINE, msg, ##__VA_ARGS__)
+
+#elif defined __WATCOMC__
 
 #if DEBUGGING > 1
 #define debug(msg, ...) pdbg("debug", __FILE__, __LINE__, msg, ##__VA_ARGS__)
@@ -68,7 +89,7 @@ typedef enum {
 	TYPE_str = TYPE_ptr,
 
 	ATTR_const = 0x00000001,		// constant
-	ATTR_byref = 0x00000002,		// indirect
+	//~ ATTR_byref = 0x00000002,		// indirect
 	ATTR_stat  = 0x00000004,		// static
 	ATTR_glob  = 0x00000008,		// global
 	//~ ATTR_used  = 0x00000080,		// used
@@ -170,14 +191,14 @@ typedef struct astn *astn;		// Abstract Syntax Tree Node
 typedef struct list *list;
 typedef unsigned int uint;
 
-typedef struct libc {				// linked list: 
+typedef struct libc {
 	struct libc		*next;	// next 
-	unsigned int pos;
-	int (*call)(state);
+	//~ unsigned int pos;
+	int (*call)(state, int);
 	const char* proto;
 	symn sym;
 	int8_t chk, pop;
-	int8_t __pad[2];
+	int16_t pos;//__pad[2];
 } *libc;
 struct list {				// linked list: stringlist, memgr, ...
 	struct list		*next;
@@ -235,50 +256,43 @@ struct astn {				// tree node (code)
 	uint32_t	temp;				// token on line
 };
 struct symn {				// type node (data)
-	char*	name;
+	// 
+	char*	name;		// symbol name
 	char*	file;
 	int		line;
 
 	int32_t	size;		// sizeof(TYPE_xxx)
 	int32_t	offs;		// addrof(TYPE_ref)
-	symn	decl;		// declared in
+
+
 	symn	type;		// base type of TYPE_ref (void, int, float, struct, ...)
 	symn	args;		// REC fields / FUN params / ARR base type
 	symn	stat;		// static members / variables
-	symn	next;		// symbols on table/args
 
-	TODO(4 types of symbols)
-	//~ TYPE_def = 0x00,	// alias (symlink)
-	//~ TYPE_rec = 0x01,	// typename
-	//~ TYPE_ref = 0x02,	// variable
-	//~ TYPE_fun = 0x03,	// function (variable and typename too)
+	symn	next;		// symbols on table / next args / next symbol
 
 	uint8_t	kind;		// TYPE_ref || TYPE_def || TYPE_rec || TYPE_arr
-	//~ uint8_t	____padkind:6;
-
 	uint8_t	cast;		// casts to type(TYPE_(bit, vid, ref, u32, i32, i64, f32, f64, p4x)).
-	uint16_t attr;		// attributes (const static /+ private, ... +/).
-	//~ uint8_t	____pack;		// alignment unused
-
-	uint8_t	call:1;		// function / callable <=> (kind == TYPE_ref && args)
+	uint16_t	call:1;		// function / callable <=> (kind == TYPE_ref && args)
 	//~ uint8_t	stat:1;		// static ?
 	//~ uint8_t	glob:1;		// global
 	//~ uint8_t	load:1;		// indirect reference: cast == TYPE_ref
-
 	//~ uint8_t	priv:1;		// private
 	//~ uint8_t	read:1;		// const / no override
-	//~ uint8_t	used:1;		// const / no override
+	//~ uint8_t	used:1;		// 
+	uint16_t attr:15;		// attributes (const static /+ private, ... +/).
 
-	uint16_t	_pad1:15;		// used
-	uint16_t	nest;		// declaration level
 	//~ uint32_t	refc;		// referenced count
+
+	symn	decl;		// declared in namespace/struct/class, function, ...
+	//~ astn	dcls;		// declaring statement
 	astn	init;		// VAR init / FUN body
 
-	//~ astn	used;
+	int		nest;		// declaration level
 	symn	gdef;
 	symn	defs;		// symbols on stack/all
-	//~ symn	uses;		// declared in
-	char*	pfmt;		// print format
+
+	char*	pfmt;		// TEMP: print format
 };
 
 typedef struct arrBuffer {
@@ -312,7 +326,8 @@ struct ccState {
 	int		nest;		// nest level: modified by (enter/leave)
 	//~ int		funl;		// function nest
 	int		siff:1;		// inside a static if false
-	int		_pad:31;	// 
+	int		sini:1;		// initialize static variables ?
+	int		_pad:30;	// 
 
 	char*	file;	// current file name
 	int		line;	// current line number
@@ -358,7 +373,7 @@ struct ccState {
 	char	*_end;
 	arrBuffer dbg;
 };
-static inline int kindOf(astn ast) {return ast ? ast->kind : 0;}
+STINLINE int kindOf(astn ast) {return ast ? ast->kind : 0;}
 
 TODO("these should go to ccState or runtime state")
 extern symn type_vid;
@@ -384,40 +399,40 @@ extern symn emit_opc;
 //~ void fputopc(FILE *fout, struct bcde* opc, int len, int offset);
 
 // program error
-void perr(state s, int level, const char *file, int line, const char *msg, ...);
+void perr(state rt, int level, const char *file, int line, const char *msg, ...);
 
 void dumpsym(FILE *fout, symn sym, int mode);
 //~ void dumpast(FILE *fout, astn ast, int mode);
 //~ void dumpxml(FILE *fout, astn ast, int lev, const char* text, int level);
 
-symn newdefn(ccState s, int kind);
-astn newnode(ccState s, int kind);
-astn opnode(ccState s, int kind, astn lhs, astn rhs);
-astn lnknode(ccState s, symn ref);
-astn newIden(ccState s, char* id);
+symn newdefn(ccState, int kind);
+astn newnode(ccState, int kind);
+astn opnode(ccState, int kind, astn lhs, astn rhs);
+astn lnknode(ccState, symn ref);
+astn newIden(ccState, char* id);
 
-astn intnode(ccState s, int64_t v);
-astn fltnode(ccState s, float64_t v);
-astn strnode(ccState s, char *v);
-//~ astn fh8node(ccState s, uint64_t v);
+astn intnode(ccState, int64_t v);
+astn fltnode(ccState, float64_t v);
+astn strnode(ccState, char *v);
+//~ astn fh8node(ccState, uint64_t v);
 
-astn cpynode(ccState s, astn src);
-void eatnode(ccState s, astn ast);
+astn cpynode(ccState, astn src);
+void eatnode(ccState, astn ast);
 
-symn installex(ccState s, const char* name, int kind, unsigned size, symn type, astn init);
-//~ symn installex(ccState s, const char* name, int kind, symn type, int cast, unsigned size, astn init);
-symn install(ccState s, const char* name, int kind, int cast, unsigned size);
-symn declare(ccState s, int kind, astn tag, symn rtyp);
-symn addarg(ccState cc, symn sym, const char* name, int kind, symn type, astn init);
+symn installex(ccState, const char* name, int kind, unsigned size, symn type, astn init);
+//~ symn installex(ccState, const char* name, int kind, symn type, int cast, unsigned size, astn init);
+symn install(ccState, const char* name, int kind, int cast, unsigned size);
+symn declare(ccState, int kind, astn tag, symn rtyp);
+symn addarg(ccState, symn sym, const char* name, int kind, symn type, astn init);
 
-symn lookup(ccState s, symn sym, astn ast/*, int deep*/, astn args, int raise);
-
-//~ symn findsym(ccState s, symn in, char *name);
-//~ int findnzv(ccState s, char *name);
-//~ int findint(ccState s, char *name, int* res);
-//~ int findflt(ccState s, char *name, double* res);
+//~ symn findsym(ccState, symn in, char *name);
+//~ int findnzv(ccState, char *name);
+//~ int findint(ccState, char *name, int* res);
+//~ int findflt(ccState, char *name, double* res);
 
 int canAssign(symn rhs, astn val, int strict);
+symn lookup(ccState, symn sym, astn ast/*, int deep*/, astn args, int raise);
+// TODO: this is the semantic-analyzer, typecheck should be renamed.
 symn typecheck(ccState, symn loc, astn ast);
 
 int argsize(symn sym, int align);
@@ -456,13 +471,6 @@ symn leave(ccState s, symn def, int mkstatic);
 int eval(astn res, astn ast);
 int mkcon(astn ast, symn type);
 
-/** generate byte code for tree
- * @param ast: tree to be generated
- * @param get: one of TYPE_xxx
- * @return TYPE_xxx, 0 on error
-int cgen(state s, astn ast, int get);
- */
-
 /** emit an opcode with args
  * @param opc: opcode
  * @param ...: argument
@@ -474,7 +482,7 @@ int emiti32(state, int32_t arg);
 int emiti64(state, int64_t arg);
 int emitf32(state, float32_t arg);
 int emitf64(state, float64_t arg);
-int emitref(state, void* arg);
+int emitref(state, void* arg);		// arg should be a pointer inside the vm
 
 int emitinc(state, int val);		// increment the top of stack by ...
 int emitidx(state, vmOpcode opc, int pos);
@@ -482,14 +490,14 @@ int emitint(state, vmOpcode opc, int64_t arg);
 int fixjump(state, int src, int dst, int stc);
 
 // returns the stack size
-int stkoffs(state s, int size);
+int stkoffs(state rt, int size);
 int padded(int offs, int align);
 
 int isType(symn sym);
 int istype(astn ast);
 
 symn linkOf(astn ast);
-long sizeOf(symn typ);
+long sizeOf(symn typ);	// should be typ->size
 
 int source(ccState, srcType mode, char* text);		// mode: file/text
 
@@ -497,6 +505,6 @@ unsigned rehash(const char* str, unsigned size);
 
 char *mapstr(ccState s, char *name, unsigned size/* = -1U*/, unsigned hash/* = -1U*/);
 
-void fputasm(FILE *fout, state s, int beg, int end, int mode);
+void fputasm(FILE *fout, state rt, int beg, int end, int mode);
 
 #endif

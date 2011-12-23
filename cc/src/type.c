@@ -182,9 +182,9 @@ symn install(ccState s, const char* name, int kind, int cast, unsigned size) {
 	return ref;
 }
 
-symn installtyp(state s, const char* name, unsigned size) {
+symn installtyp(state rt, const char* name, unsigned size) {
 	//~ type_i64 = install(cc, "int64", TYPE_rec | symn_const, TYPE_i64, 8);
-	return install(s->cc, name, TYPE_rec | symn_const, TYPE_rec, size);
+	return install(rt->cc, name, TYPE_rec | symn_const, TYPE_rec, size);
 }
 
 symn addarg(ccState cc, symn sym, const char* name, int kind, symn typ, astn init) {
@@ -203,7 +203,7 @@ symn addarg(ccState cc, symn sym, const char* name, int kind, symn typ, astn ini
 }
 
 // promote
-static inline int castkind(int cast) {
+STINLINE int castkind(int cast) {
 	switch (cast) {
 		case TYPE_vid: return TYPE_vid;
 		case TYPE_bit: return TYPE_bit;
@@ -431,6 +431,23 @@ symn lookup(ccState s, symn sym, astn ref, astn args, int raise) {
 			}
 
 			while (argval && argsym) {
+
+				if (!canAssign(argsym, argval, 0))
+					break;
+
+				// if null is passed by ref it will be as a cast
+				if (argval->kind == TYPE_ref && argval->id.link == null_ref) {
+					hascast += 1;
+				}
+
+				else if (argsym->type != argval->type) {
+					hascast += 1;
+				}
+
+				argval = argval->next;
+				argsym = argsym->next;
+			}
+			/*while (argval && argsym) {
 				symn typ = argsym->type;
 
 				if (argsym->kind == TYPE_ref) {				// pass by reference
@@ -447,14 +464,16 @@ symn lookup(ccState s, symn sym, astn ref, astn args, int raise) {
 				}
 
 				break;
-			}
+			}*/
 
 			if (sym->call && (argval || argsym)) {
+				//~ debug("%-T(%+k, %-T)", sym, argval, argsym);
 				continue;
 			}
 		}
 
-		if (s->func && s->func->gdef && sym->nest && !(sym->attr & ATTR_stat) && sym->nest < s->maxlevel) {
+		dieif(s->func && s->func->nest != s->maxlevel - 1, "FIXME %d, %d", s->func->nest, s->maxlevel);
+		if (s->func && !s->siff && s->func->gdef && sym->nest && !(sym->attr & ATTR_stat) && sym->nest < s->maxlevel) {
 			error(s->s, ref->file, ref->line, "invalid use of local symbol `%k`.", ref);
 			//~ continue;
 		}
@@ -1098,7 +1117,7 @@ symn typecheck(ccState cc, symn loc, astn ast) {
 		} break;
 
 		case OPER_com: {	// ''
-			TODO("FixMe");
+			TODO("FixMe")
 			symn lht = typecheck(cc, loc, ast->op.lhso);
 			symn rht = typecheck(cc, loc, ast->op.rhso);
 
@@ -1176,7 +1195,20 @@ symn typecheck(ccState cc, symn loc, astn ast) {
 				/*case TYPE_int: {
 					int is32 = ast->con.cint != (int32_t)ast->con.cint;
 					return typeTo(ast, is32 ? type_i32 : type_i64);
-				}*/
+				}
+				case TYPE_int: switch (ast->cst2) {
+					default: fatal("FixMe"); break;
+					case TYPE_any:
+					case TYPE_i32: ast->type = type_i32; break;
+					case TYPE_i64: ast->type = type_i64; break;
+				} return ast->type;
+
+				case TYPE_flt: switch (ast->cst2) {
+					default: fatal("FixMe"); break;
+					case TYPE_f32: ast->type = type_f32; break;
+					case TYPE_any:
+					case TYPE_f64: ast->type = type_f64; break;
+				} return ast->type;*/
 				case TYPE_int: return typeTo(ast, type_i32) ? type_i32 : NULL;
 				case TYPE_flt: return typeTo(ast, type_f64) ? type_f64 : NULL;
 				case TYPE_str: return typeTo(ast, type_str) ? type_str : NULL;
@@ -1250,7 +1282,7 @@ symn typecheck(ccState cc, symn loc, astn ast) {
 
 					// swap(a, b) is written instad of swap(&a, &b)
 					if (argsym->cast == TYPE_ref && argval->type->cast != TYPE_ref) {
-						if (argval->kind != OPER_adr) {
+						if (argval->kind != OPER_adr && argval->file) {
 							//~ warn(cc->s, 7, argval->file, argval->line, "argument `%+k` will be passed by reference", argval);
 							warn(cc->s, 7, argval->file, argval->line, "argument `%+k` is not explicitly passed by reference", argval);
 						}
@@ -1422,46 +1454,6 @@ symn leave(ccState cc, symn dcl, int mkstatic) {
 	if (mkstatic) {
 		loc = sta;
 	}
-
-	/* when last called this function reorder the
-	 * creation/initialization of static variables.
-	 * ex: g must be generated before f
-	 *	int f() {
-	 *		static int g = 9;
-	 *		// ...
-	 *	}
-	 */
-	if (cc->nest == -1) {
-		symn ng, pg = NULL;
-		for (ng = rt->gdef; ng; ng = ng->gdef) {
-			symn Ng, Pg = NULL;
-
-			//~ trace("checking symbol %-T", ng);
-			for (Ng = ng; Ng; Ng = Ng->gdef) {
-				if (Ng->decl == ng) {
-					break;
-				}
-				Pg = Ng;
-			}
-
-			//~ this must be generated before sym;
-			if (Ng) {
-				//~ trace("symbol %-T before %-T", Ng, ng);
-				Pg->gdef = Ng->gdef;	// remove
-
-				Ng->gdef = ng;
-				if (pg)
-					pg->gdef = Ng;
-				else
-					rt->gdef = Ng;
-
-				ng = pg;
-
-			}
-
-			pg = ng;
-		}
-	}// */
 
 	return loc;
 }

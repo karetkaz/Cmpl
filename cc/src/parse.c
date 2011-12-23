@@ -40,12 +40,16 @@ Lexical elements
 
 			
 */
+#if !(defined __WATCOMC__) && !(defined _MSC_VER)
 #include <unistd.h>
+#endif
 
 #include <string.h>
 #include <fcntl.h>
 #include <math.h>
 #include "ccvm.h"
+
+//~ #include <io.h>
 
 //{~~~~~~~~~ Input ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -852,7 +856,7 @@ static int readTok(ccState s, astn tok) {
 			*ptr++ = 0;
 
 			if (1) {
-				TODO("delete keywords checking");
+				TODO("delete keywords checking")
 				//~ static int test = 1;
 				static struct {
 					char *name;
@@ -864,7 +868,6 @@ static int readTok(ccState s, astn tok) {
 					//~ {"enum", ENUM_def},
 					//~ {"module", UNIT_def},
 					//~ {"operator", OPER_def},
-					//~ {"return", STMT_ret},
 					{"break", STMT_brk},
 					{"const", QUAL_con},
 					{"continue", STMT_con},
@@ -874,6 +877,7 @@ static int readTok(ccState s, astn tok) {
 					{"for", STMT_for},
 					{"if", STMT_if},
 					{"parallel", QUAL_par},
+					{"return", STMT_ret},
 					{"static", QUAL_sta},
 					{"struct", TYPE_rec}
 				};
@@ -1086,6 +1090,7 @@ static int readTok(ccState s, astn tok) {
 
 			if (*suffix) {	// error
 				if (suffix[0] == 'f' && suffix[1] == 0) {
+					tok->cst2 = TYPE_f32;
 					flt = 1;
 				}
 				else {
@@ -1103,11 +1108,7 @@ static int readTok(ccState s, astn tok) {
 			}
 		} break;
 	}
-	if (ptr >= end) {
-		//~ debug("mem overrun %t", tok->kind);
-		fatal("mem overrun %t", tok->kind);
-		return 0;
-	}
+	dieif(ptr >= end, "mem overrun %t", tok->kind);
 	return tok->kind;
 }
 
@@ -1603,13 +1604,16 @@ static astn reft(ccState s, int mode) {
 				}// */
 
 				if (eval(&val, init) == TYPE_int) {
-					debug("length of %-T = %+k", ref, init);
 					addarg(s, typ, "length", TYPE_def, type_i32, init);
 					typ->size = val.con.cint;
 					typ->init = init;
+					//~ debug("length of %-T = %+k", ref, init);
 				}
 				else
 					error(s->s, init->file, init->line, "integer constant expected");
+			}
+			else {
+				ref->size = 4;
 			}
 
 			skiptok(s, PNCT_rc, 1);
@@ -2117,7 +2121,7 @@ static astn stmt(ccState s, int mode) {
 			if (constbol(&ift))
 				newscope = 0;
 
-			s->siff = newscope;
+			s->siff |= newscope;
 			/* skip syntax checking ?
 			else if (skip(s, STMT_beg)) {
 				int lb = 1;
@@ -2250,6 +2254,10 @@ static astn stmt(ccState s, int mode) {
 		ast->cst2 = qual;
 	}
 	else if ((ast = next(s, STMT_con))) {	// continue;
+		ast->type = type_vid;
+		ast->cst2 = qual;
+	}
+	else if ((ast = next(s, STMT_ret))) {	// return;
 		ast->type = type_vid;
 		ast->cst2 = qual;
 	}
@@ -2654,6 +2662,9 @@ astn decl(ccState s, int Rmode) {
 					trace("FixMe");
 					return NULL;
 				}
+				if (attr & ATTR_stat && s->func && s->func->gdef) {
+					warn(s->s, 1, ref->file, ref->line, "static variable `%T` will be reinitialized each time function `%T` is invoked", ref, s->func->gdef);
+				}
 			}
 		}
 
@@ -2679,6 +2690,7 @@ astn unit(ccState cc, int mode) {
 	astn root = NULL;
 	astn tmp = NULL;
 	symn def = NULL;
+	int level = cc->nest;
 
 	/*if (skip(cc, UNIT_def)) {
 		astn tag = next(cc, TYPE_ref);
@@ -2710,7 +2722,7 @@ astn unit(ccState cc, int mode) {
 		def->args = leave(cc, def);
 	}// */
 
-	if (cc->nest)
+	if (cc->nest != level)
 		error(cc->s, cc->file, cc->line, "premature end of file: %d", cc->nest);
 
 	(void)mode;

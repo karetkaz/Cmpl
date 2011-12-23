@@ -44,7 +44,7 @@ TOKDEF(STMT_if,  0x00, 0, "if")			// stmt: if then else
 TOKDEF(STMT_els, 0x00, 0, "else")		// ????
 TOKDEF(STMT_brk, 0x00, 0, "break")		// stmt: break
 TOKDEF(STMT_con, 0x00, 0, "continue")	// stmt: continue
-//~ TOKDEF(STMT_ret, 0x00, 0, "return")	// stmt: return
+TOKDEF(STMT_ret, 0x00, 0, "return")	// stmt: return
 TOKDEF(STMT_end, 0x00, 0, ".end")		// destruct calls ?
 
 //~ Operators ==================================================================
@@ -436,4 +436,3 @@ OPCDEF(p4d___f,  0x9f, 0, 0, -0, 1, NULL)		//-Extended ops: idx, rev, imm, mem
 //~ */
 #undef OPCDEF
 #endif
-

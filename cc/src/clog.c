@@ -307,6 +307,20 @@ static void fputast(FILE *fout, astn ast, int mode, int level) {
 				case STMT_brk: fputstr(fout, "break;\n"); break;
 			}
 		} break;
+		case STMT_ret: {
+			if (rlev < 2) {
+				fputstr(fout, "return");
+				break;
+			}
+			fputfmt(fout, "%I", noiden ? 0 : level);
+			switch (ast->cst2) {
+				case 0: break;
+				default:
+					debug("error");
+					break;
+			}
+			fputstr(fout, "return;\n");
+		} break;
 		//} */ // STMT
 		//{ OPER
 		case OPER_fnc: {	// '()'
@@ -563,6 +577,7 @@ static void dumpxml(FILE *fout, astn ast, int lev, const char* text, int level) 
 			fputfmt(fout, "%I</stmt>\n", lev);
 		} break;
 		case STMT_brk:
+		case STMT_ret:
 			fputfmt(fout, " />\n");
 			break;
 		//}
@@ -925,21 +940,21 @@ static void FPUTFMT(FILE *fout, const char *msg, va_list ap) {
 	}
 }
 
-int logFILE(state s, FILE* file) {
-	if (s->closelog)
-		fclose(s->logf);
-	s->logf = file;
-	s->closelog = 0;
+int logFILE(state rt, FILE* file) {
+	if (rt->closelog)
+		fclose(rt->logf);
+	rt->logf = file;
+	rt->closelog = 0;
 	return 0;
 }
-int logfile(state s, char* file) {
+int logfile(state rt, char* file) {
 
-	logFILE(s, NULL);
+	logFILE(rt, NULL);
 
 	if (file) {
-		s->logf = fopen(file, "wb");
-		if (!s->logf) return -1;
-		s->closelog = 1;
+		rt->logf = fopen(file, "wb");
+		if (!rt->logf) return -1;
+		rt->closelog = 1;
 	}
 	return 0;
 }
@@ -1072,8 +1087,8 @@ void dumpsym(FILE *fout, symn sym, int mode) {
 	}
 }
 
-void dump(state s, dumpMode mode, symn sym, char *text, ...) {
-	FILE *logf = s ? s->logf : stdout;
+void dump(state rt, dumpMode mode, symn sym, char *text, ...) {
+	FILE *logf = rt ? rt->logf : stdout;
 	int level = mode & 0xff;
 
 	if (!logf)
@@ -1095,7 +1110,7 @@ void dump(state s, dumpMode mode, symn sym, char *text, ...) {
 		if (mode & dump_asm) {
 			if (sym->kind == TYPE_ref && sym->call) {
 				//~ fputfmt(logf, "%-T [@%d: %d]\n", var, -var->offs, var->size);
-				fputasm(logf, s, -sym->offs, -sym->offs + sym->size, 0x119);
+				fputasm(logf, rt, -sym->offs, -sym->offs + sym->size, 0x119);
 			}
 			else {
 				//~ fputasm(fout, s, -sym->offs, -sym->offs + sym->size, 0x119);
@@ -1119,13 +1134,13 @@ void dump(state s, dumpMode mode, symn sym, char *text, ...) {
 			if (text != NULL)
 				fputfmt(logf, text);
 			if ((level & 0x0f) == 0x0f)
-				dumpxml(logf, s->cc->root, 0, "root", level);
+				dumpxml(logf, rt->cc->root, 0, "root", level);
 			else
-				fputast(logf, s->cc->root, level | 2, 0);
+				fputast(logf, rt->cc->root, level | 2, 0);
 		} break;
 
 		case dump_sym: {
-			symn glob = s->defs;
+			symn glob = rt->defs;
 
 			if (text != NULL)
 				fputfmt(logf, text);
@@ -1146,24 +1161,24 @@ void dump(state s, dumpMode mode, symn sym, char *text, ...) {
 				fputfmt(logf, text);
 			if (mode & 0x80) {
 				symn var;
-				for (var = s->defs; var; var = var->next) {
+				for (var = rt->defs; var; var = var->next) {
 					if (var->kind == TYPE_ref && var->call) {
 						fputfmt(logf, "%-T [@%d: %d]\n", var, -var->offs, var->size);
-						fputasm(logf, s, -var->offs, -var->offs + var->size, mode);
+						fputasm(logf, rt, -var->offs, -var->offs + var->size, mode);
 					}
 				}
 			}
 			fputfmt(logf, "init:\n");
-			fputasm(logf, s, s->vm.pc, s->vm.px, mode);
+			fputasm(logf, rt, rt->vm.pc, rt->vm.px, mode);
 			//~ dumpasm(logf, s, level);
 		} break;
 
 	}
 }
 
-void perr(state s, int level, const char *file, int line, const char *msg, ...) {
-	FILE *logf = s ? s->logf : stderr;
-	int warnl = s && s->cc ? s->cc->warn : 0;
+void perr(state rt, int level, const char *file, int line, const char *msg, ...) {
+	FILE *logf = rt ? rt->logf : stderr;
+	int warnl = rt && rt->cc ? rt->cc->warn : 0;
 	va_list argp;
 
 	if (level >= 0) {
@@ -1172,15 +1187,15 @@ void perr(state s, int level, const char *file, int line, const char *msg, ...) 
 		if (level > warnl)
 			return;
 	}
-	else if (s) {
-		s->errc += 1;
+	else if (rt) {
+		rt->errc += 1;
 	}
 
 	if (!logf)
 		return;
 
-	if (s && s->cc && !file)
-		file = s->cc->file;
+	if (rt && rt->cc && !file)
+		file = rt->cc->file;
 
 	if (file && line)
 		fputfmt(logf, "%s:%u: ", file, line);

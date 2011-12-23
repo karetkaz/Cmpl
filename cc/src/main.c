@@ -1,4 +1,4 @@
-//~ wcl386 -zq -ei -6s -d2  -fe=../main code.c clog.c parse.c tree.c type.c ccvm.c main.c
+//~ wcl386 -zq -ei -6s -d2  -fe=../main code.c clog.c parse.c tree.c type.c ccvm.c main.c lstd.c
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
@@ -11,6 +11,7 @@ static const int ol = 2;		// optimize level
 static const int cc = 1;		// execution cores
 #define memsize (4 << 20)		// runtime size(4M)
 static char mem[memsize];
+char *STDLIB = "../stdlib.cvx";		// standard library
 
 #ifdef __linux__
 #define stricmp(__STR1, __STR2) strcasecmp(__STR1, __STR2)
@@ -125,256 +126,13 @@ char *parsecmd(char *ptr, char *cmd, char *sws) {
 	return ptr;
 }
 
-/*static int cctext(state s, int wl, char *file, int line, char *buff) {
-	if (!ccOpen(s, srcText, buff))
+static int cctext(state rt, int wl, char *file, int line, char *buff) {
+	if (!ccOpen(rt, srcText, buff))
 		return -2;
 
-	ccSource(s->cc, file, line);
-	return parse(s->cc, 0, wl);
-}// */
-
-//{#region bit operations
-enum bits_funs {
-	b64_cmt,
-	b64_and,
-	b64_or,
-	b64_xor,
-	b64_shl,	// 
-	b64_shr,	// 
-	b64_sar,	// 
-
-	b32_btc,	// count ones
-	//~ b64_btc,
-
-	b32_bsf,	// scan forward
-	b64_bsf,
-
-	b32_bsr,	// scan reverse
-	b64_bsr,
-
-	b32_bhi,	// highes bit only
-	b64_bhi,
-
-	b32_blo,	// lowest bit only
-	b64_blo,
-
-	b32_swp,	// 
-	//~ b64_swp,
-
-	b32_zxt,	// zero extend
-	b64_zxt,
-
-	b32_sxt,	// sign extend
-	b64_sxt,
-};
-static int bits_call(state s) {
-	switch (s->libc->offs) {
-		case b64_cmt: {
-			uint64_t x = popi64(s);
-			setret(s, uint64_t, ~x);
-		} return 0;
-		case b64_and: {
-			uint64_t x = popi64(s);
-			uint64_t y = popi64(s);
-			setret(s, uint64_t, x & y);
-		} return 0;
-		case b64_or:  {
-			uint64_t x = popi64(s);
-			uint64_t y = popi64(s);
-			setret(s, uint64_t, x | y);
-		} return 0;
-		case b64_xor: {
-			uint64_t x = popi64(s);
-			uint64_t y = popi64(s);
-			setret(s, uint64_t, x ^ y);
-		} return 0;
-		case b64_shl: {
-			uint64_t x = popi64(s);
-			uint32_t y = popi32(s);
-			setret(s, uint64_t, x << y);
-		} return 0;
-		case b64_shr: {
-			uint64_t x = popi64(s);
-			uint32_t y = popi32(s);
-			setret(s, uint64_t, x >> y);
-			//~ debug("%D >> %d = %D", x, y, x >> y);
-		} return 0;
-		case b64_sar: {
-			int64_t x = popi64(s);
-			uint32_t y = popi32(s);
-			setret(s, uint64_t, x >> y);
-		} return 0;
-
-		case b32_btc: {
-			uint32_t x = popi32(s);
-			x -= ((x >> 1) & 0x55555555);
-			x = (((x >> 2) & 0x33333333) + (x & 0x33333333));
-			x = (((x >> 4) + x) & 0x0f0f0f0f);
-			x += (x >> 8) + (x >> 16);
-			setret(s, uint32_t, x & 0x3f);
-		} return 0;
-		//case b64_btc:
-
-		case b32_bsf: {
-			uint32_t x = popi32(s);
-			int ans = 0;
-			if ((x & 0x0000ffff) == 0) { ans += 16; x >>= 16; }
-			if ((x & 0x000000ff) == 0) { ans +=  8; x >>=  8; }
-			if ((x & 0x0000000f) == 0) { ans +=  4; x >>=  4; }
-			if ((x & 0x00000003) == 0) { ans +=  2; x >>=  2; }
-			if ((x & 0x00000001) == 0) { ans +=  1; }
-			setret(s, uint32_t, x ? ans : -1);
-		} return 0;
-		case b64_bsf: {
-			uint64_t x = popi64(s);
-			int ans = -1;
-			if (x != 0) {
-				ans = 0;
-				if ((x & 0x00000000ffffffffULL) == 0) { ans += 32; x >>= 32; }
-				if ((x & 0x000000000000ffffULL) == 0) { ans += 16; x >>= 16; }
-				if ((x & 0x00000000000000ffULL) == 0) { ans +=  8; x >>=  8; }
-				if ((x & 0x000000000000000fULL) == 0) { ans +=  4; x >>=  4; }
-				if ((x & 0x0000000000000003ULL) == 0) { ans +=  2; x >>=  2; }
-				if ((x & 0x0000000000000001ULL) == 0) { ans +=  1; }
-			}
-			setret(s, int32_t, ans);
-		} return 0;
-
-		case b32_bsr: {
-			uint32_t x = popi32(s);
-			unsigned ans = 0;
-			if ((x & 0xffff0000) != 0) { ans += 16; x >>= 16; }
-			if ((x & 0x0000ff00) != 0) { ans +=  8; x >>=  8; }
-			if ((x & 0x000000f0) != 0) { ans +=  4; x >>=  4; }
-			if ((x & 0x0000000c) != 0) { ans +=  2; x >>=  2; }
-			if ((x & 0x00000002) != 0) { ans +=  1; }
-			setret(s, uint32_t, x ? ans : -1);
-		} return 0;
-		case b64_bsr: {
-			uint64_t x = popi64(s);
-			int ans = -1;
-			if (x != 0) {
-				ans = 0;
-				if ((x & 0xffffffff00000000ULL) != 0) { ans += 32; x >>= 32; }
-				if ((x & 0x00000000ffff0000ULL) != 0) { ans += 16; x >>= 16; }
-				if ((x & 0x000000000000ff00ULL) != 0) { ans +=  8; x >>=  8; }
-				if ((x & 0x00000000000000f0ULL) != 0) { ans +=  4; x >>=  4; }
-				if ((x & 0x000000000000000cULL) != 0) { ans +=  2; x >>=  2; }
-				if ((x & 0x0000000000000002ULL) != 0) { ans +=  1; }
-			}
-			setret(s, int32_t, ans);
-		} return 0;
-
-		case b32_bhi: {
-			uint32_t x = popi32(s);
-			x |= x >> 1;
-			x |= x >> 2;
-			x |= x >> 4;
-			x |= x >> 8;
-			x |= x >> 16;
-			setret(s, uint32_t, x - (x >> 1));
-		} return 0;
-		case b64_bhi: {
-			uint64_t x = popi64(s);
-			x |= x >> 1;
-			x |= x >> 2;
-			x |= x >> 4;
-			x |= x >> 8;
-			x |= x >> 16;
-			x |= x >> 32;
-			setret(s, uint64_t, x - (x >> 1));
-		} return 0;
-
-		case b32_blo: {
-			uint32_t x = popi32(s);
-			setret(s, uint32_t, x & -x);
-		} return 0;
-		case b64_blo: {
-			uint64_t x = popi64(s);
-			setret(s, uint64_t, x & -x);
-		} return 0;
-
-		case b32_swp: {
-			uint32_t x = popi32(s);
-			x = ((x >> 1) & 0x55555555) | ((x & 0x55555555) << 1);
-			x = ((x >> 2) & 0x33333333) | ((x & 0x33333333) << 2);
-			x = ((x >> 4) & 0x0F0F0F0F) | ((x & 0x0F0F0F0F) << 4);
-			x = ((x >> 8) & 0x00FF00FF) | ((x & 0x00FF00FF) << 8);
-			setret(s, uint32_t, (x >> 16) | (x << 16));
-		} return 0;
-		//case b64_swp:
-
-		case b32_zxt: {
-			uint32_t val = popi32(s);
-			int32_t ofs = popi32(s);
-			int32_t cnt = popi32(s);
-			val <<= 32 - (ofs + cnt);
-			setret(s, int32_t, val >> (32 - cnt));
-		} return 0;
-		case b64_zxt: {
-			uint64_t val = popi64(s);
-			int32_t ofs = popi32(s);
-			int32_t cnt = popi32(s);
-			val <<= 64 - (ofs + cnt);
-			setret(s, int64_t, val >> (64 - cnt));
-		} return 0;
-
-		case b32_sxt: {
-			int32_t val = popi32(s);
-			int32_t ofs = popi32(s);
-			int32_t cnt = popi32(s);
-			val <<= 32 - (ofs + cnt);
-			setret(s, int32_t, val >> (32 - cnt));
-		} return 0;
-		case b64_sxt: {
-			int64_t val = popi64(s);
-			int32_t ofs = popi32(s);
-			int32_t cnt = popi32(s);
-			val <<= 64 - (ofs + cnt);
-			setret(s, int64_t, val >> (64 - cnt));
-		} return 0;
-	}
-	return -1;
+	ccSource(rt->cc, file, line);
+	return parse(rt->cc, 0, wl);
 }
-static int install_bits(state rt) {
-	int err = 0;
-	symn cls;
-	if ((cls = ccBegin(rt, "bits"))) {
-		// libcall will return 0 on failure, 
-		// 'err = err || !libcall...' <=> 'if (!err) err = !libcall...'
-		// will skip forward libcalls if an error ocurred
-
-		err = err || !libcall(rt, bits_call, b64_cmt, "int64 cmt(int64 x);");
-		err = err || !libcall(rt, bits_call, b64_and, "int64 and(int64 x, int64 y);");
-		err = err || !libcall(rt, bits_call, b64_or,  "int64 or(int64 x, int64 y);");
-		err = err || !libcall(rt, bits_call, b64_xor, "int64 xor(int64 x, int64 y);");
-		err = err || !libcall(rt, bits_call, b64_shl, "int64 shl(int64 x, int32 y);");
-		err = err || !libcall(rt, bits_call, b64_shr, "int64 shr(int64 x, int32 y);");
-		err = err || !libcall(rt, bits_call, b64_sar, "int64 sar(int64 x, int32 y);");
-
-		//~ err = err || !libcall(rt, bits_call, b64_btc, "int32 btc(int64 x);");
-		err = err || !libcall(rt, bits_call, b64_bsf, "int32 bsf(int64 x);");
-		err = err || !libcall(rt, bits_call, b64_bsr, "int32 bsr(int64 x);");
-		err = err || !libcall(rt, bits_call, b64_bhi, "int32 bhi(int64 x);");
-		err = err || !libcall(rt, bits_call, b64_blo, "int32 blo(int64 x);");
-		//~ err = err || !libcall(rt, bits_call, b64_swp, "int64 swp(int64 x);");
-		err = err || !libcall(rt, bits_call, b64_zxt, "int64 zxt(int64 val, int offs, int bits);");
-		err = err || !libcall(rt, bits_call, b64_sxt, "int64 sxt(int64 val, int offs, int bits);");
-
-		/// 32 bits
-		err = err || !libcall(rt, bits_call, b32_btc, "int32 btc(int32 x);");
-		err = err || !libcall(rt, bits_call, b32_bsf, "int32 bsf(int32 x);");
-		err = err || !libcall(rt, bits_call, b32_bsr, "int32 bsr(int32 x);");
-		err = err || !libcall(rt, bits_call, b32_bhi, "int32 bhi(int32 x);");
-		err = err || !libcall(rt, bits_call, b32_blo, "int32 blo(int32 x);");
-		err = err || !libcall(rt, bits_call, b32_swp, "int32 swp(int32 x);");
-		err = err || !libcall(rt, bits_call, b32_zxt, "int32 zxt(int32 val, int offs, int bits);");
-		err = err || !libcall(rt, bits_call, b32_sxt, "int32 sxt(int32 val, int offs, int bits);");
-		ccEnd(rt, cls);
-	}
-	return err;
-}
-//}#endregion
 
 void usage(char* prog, char* cmd) {
 	if (cmd == NULL) {
@@ -417,20 +175,20 @@ void usage(char* prog, char* cmd) {
 	}
 }
 
-int evalexp(ccState s, char* text) {
+int evalexp(ccState cc, char* text) {
 	struct astn res;
 	astn ast;
 	symn typ;
 	int tid;
 
-	source(s, 0, text);
+	source(cc, 0, text);
 
-	ast = expr(s, 0);
-	typ = typecheck(s, 0, ast);
+	ast = expr(cc, 0);
+	typ = typecheck(cc, 0, ast);
 	tid = eval(&res, ast);
 
-	if (peek(s))
-		error(s->s, s->file, s->line, "unexpected: `%k`", peek(s));
+	if (peek(cc))
+		error(cc->s, cc->file, cc->line, "unexpected: `%k`", peek(cc));
 
 	fputfmt(stdout, "expr: %+K", ast);
 	fputfmt(stdout, "eval(`%+k`) = ", ast);
@@ -445,98 +203,91 @@ int evalexp(ccState s, char* text) {
 	return -1;
 }
 
-int reglibs(state s, char *stdlib) {
+int reglibs(state rt, char *stdlib) {
 	int err = 0;
-	//~ symn App;
 
-	//~ if (!libcall(s, libCallExitDebug, 0, "void debug1(int x, int y, int z);")) err = 1;
-	//~ if (!libcall(s, libCallExitDebug, 0, "void debug1(int x, int y, int z, int u, int v, int w);")) err = 1;
-
-	/*
-	if ((App = ccBegin(s, "App"))) {
-		symn App_xxx;
-		if ((App_xxx = ccBegin(s, "Xxx"))) {
-			err = err || !ccDefineInt(s, "width", 2);
-			err = err || !ccDefineStr(s, "width2", "alma a fa melett");
-			ccEnd(s, App_xxx);
-		}
-		err = err || !ccDefineInt(s, "width", 2);
-		err = err || !ccDefineInt(s, "height", 8);
-		ccEnd(s, App);
-	}// */
-
-	err = err || install_stdc(s, stdlib, wl);
-	err = err || install_bits(s);
+	err = err || install_stdc(rt, stdlib, wl);
+	//~ err = err || install_bits(s);
 
 	return err;
 }
 
-int compile(state s, int wl, char *file) {
+int compile(state rt, int wl, char *file) {
 	int result;
 	#if DEBUGGING > 1
 	int size = 0;
 	#endif
 
-	if (!ccOpen(s, srcFile, file))
+	if (!ccOpen(rt, srcFile, file))
 		return -1;
 
 	#if DEBUGGING > 1
 	//~ debug("after init:%d Bytes", s->cc->_beg - s->_mem);
-	size = (s->cc->_beg - (char*)s->_mem);
+	size = (rt->cc->_beg - (char*)rt->_mem);
 	#endif
 
-	result = parse(s->cc, 0, wl);
+	result = parse(rt->cc, 0, wl);
 
 	#if DEBUGGING > 1
 	//~ debug("%s: init(%.2F); scan(%.2F) KBytes", file, size / 1024., (s->cc->_beg - s->_mem) / 1024.);
+	(void)size;
 	#endif
 
-	(void)size;
 	return result;
 }
 
-int installDll(state s, int ccApiMain(state s, stateApi api)) {
-	struct stateApi api;
+int installDll(state rt, int ccApiMain(stateApi api)) {
+	static struct stateApi api;
+
+	api.rt = rt;
 	api.ccBegin = ccBegin;
 	api.ccEnd = ccEnd;
 	api.libcall = libcall;
 	api.install = installtyp;
-	return ccApiMain(s, &api);
+	api.ccDefineInt = ccDefineInt;
+	api.ccAddText = cctext;
+	api.rtAlloc = rtAlloc;
+	api.invoke = vmCall;
+	api.findsym = findsym;
+	api.findref = findref;
+	return ccApiMain(&api);
 
 }
 
 #if defined(__linux__)
 #include <dlfcn.h>
-static int importLib(state s, const char *path, const char *init) {
+static int importLib(state rt, const char *path, const char *init) {
 	int result = 0;
 	void *lib = dlopen(path, RTLD_NOW);
 	if (lib != NULL) {
 		void *sym = dlsym(lib, init);
 		if (sym != NULL) {
-			result = installDll(s, sym);
+			result = installDll(rt, sym);
 		}
 		else {
 			result = -2;
 		}
-		dlclose(lib);
+		//~ dlclose(lib);
 	}
 	else {
 		result = -1;
 	}
+
+	fprintf(stdout, "imported: %s.%s(): %d `%s`\n", path, init, result, dlerror());
+	fflush(stdout);
+
 	return result;
 }
-
 #else
-
 #include <windows.h>
-static int importLib(state s, const char *path, const char *init) {
+static int importLib(state rt, const char *path, const char *init) {
 	int result = 0;
-	typedef int (*ccApiMain)(state s, stateApi api);
+	typedef int (*ccApiMain)(stateApi api);
 	HANDLE lib = LoadLibrary(path);
 	if (lib != NULL) {
 		ccApiMain sym = (ccApiMain)GetProcAddress(lib, init);
 		if (sym != NULL) {
-			result = installDll(s, sym);
+			result = installDll(rt, sym);
 		}
 		else {
 			result = -2;
@@ -546,19 +297,22 @@ static int importLib(state s, const char *path, const char *init) {
 	else {
 		result = -1;
 	}
+	fprintf(stdout, "imported: %s.%s(): %d\n", path, init, result);
+	fflush(stdout);
 	return result;
 }
 
 #endif
 
 static int printvars = 0;
-static int dbgCon(state s, int pu, void *ip, long* bp, int ss);
+static int dbgCon(state, int pu, void *ip, long* bp, int ss);
 void vm_fputval(state, FILE *fout, symn var, stkval* ref, int flgs);
-static int libCallExitDebug(state rt) {
+static int libCallExitDebug(state rt, int _) {
 	symn arg = rt->libc->args;
 	int argc = (char*)rt->retv - (char*)rt->argv;
 
-	for ( ;arg; arg = arg->next) {
+	for (arg = rt->gdef ;arg; arg = arg->gdef) {
+	//~ for ( ;arg; arg = arg->next) {
 		char *ofs;
 
 		if (arg->offs <= 0) {
@@ -572,7 +326,11 @@ static int libCallExitDebug(state rt) {
 
 		//~ debug("argv: %08x", rt->argv);
 		//~ if (arg->kind != TYPE_ref && rt->args == rt->defs) continue;
-		if (arg->kind != TYPE_ref) continue;
+		if (arg->call)
+			continue;
+
+		if (arg->kind != TYPE_ref)
+			continue;
 
 		if (arg->file && arg->line)
 			fputfmt(stdout, "%s:%d:",arg->file, arg->line);
@@ -593,9 +351,9 @@ static int libCallExitDebug(state rt) {
 }
 
 int program(int argc, char *argv[]) {
-	state s = rtInit(mem, sizeof(mem));
+	state rt = rtInit(mem, sizeof(mem));
 
-	char *stdl = "../stdlib.cvx";		// standard library
+	char *stdl = STDLIB;
 
 	char *prg, *cmd;
 	dbgf dbg = NULL;
@@ -606,10 +364,10 @@ int program(int argc, char *argv[]) {
 		usage(prg, NULL);
 	}
 	else if (argc == 2 && *cmd == '=') {	// eval
-		return evalexp(ccInit(s, creg_def, NULL), cmd + 1);
+		return evalexp(ccInit(rt, creg_def, NULL), cmd + 1);
 	}
 	else if (strcmp(cmd, "-api") == 0) {
-		ccState env = ccInit(s, creg_def, NULL);
+		ccState env = ccInit(rt, creg_def, NULL);
 		const int level = 2;
 		symn glob;
 		int i;
@@ -617,9 +375,9 @@ int program(int argc, char *argv[]) {
 		if (!env)
 			return -33;
 
-		if (reglibs(s, stdl) != 0) {
-			error(s, NULL, 0, "error registering lib calls");
-			logfile(s, NULL);
+		if (reglibs(rt, stdl) != 0) {
+			error(rt, NULL, 0, "error registering lib calls");
+			logfile(rt, NULL);
 			return -6;
 		}
 
@@ -642,24 +400,32 @@ int program(int argc, char *argv[]) {
 			else
 				fputfmt(stderr, "symbol not found `%s`\n", argv[i]);
 		}
-		return ccDone(s);
+		return ccDone(rt);
 	}
 	else if (stricmp(cmd, "-c") == 0) {		// compile
 		int level = -1, argi;
 		int warn = wl;
 		int opti = ol;
-		int outc = 0;			// output
+		//~ int outc = 0;			// output
+
+		int gen_code = 1;	// cgen: true/false
+		int run_code = 0;	// exec: true/false
+		int out_tags = -1;	// tags: level
+		int out_tree = -1;	// walk: level
+		int out_dasm = -1;	// dasm: level
+
 		char *srcf = 0;			// source
 		char *logf = 0;			// logger
 		char *outf = 0;			// output
+		int (*onExit)(state, int) = NULL;	// print variables and values on exit
 
-		enum {
+		/*enum {
 			gen_code = 0x0010,
 			out_tags = 0x0001,	// tags
 			out_tree = 0x0002,	// walk
 			out_dasm = 0x0013,	// dasm
 			run_code = 0x0014,	// exec
-		};
+		};*/
 
 		// no std lib
 		if (cmd[1] == 'C')
@@ -701,7 +467,8 @@ int program(int argc, char *argv[]) {
 					fputfmt(stderr, "invalid argument '%s'\n", arg);
 					return 0;
 				}
-				outc = gen_code | out_tags;
+				//~ outc = gen_code | out_tags;
+				out_tags = level;
 			}
 			else if (strncmp(arg, "-T", 2) == 0) {		// tags / no cgen
 				level = 2;
@@ -709,15 +476,18 @@ int program(int argc, char *argv[]) {
 					fputfmt(stderr, "invalid argument '%s'\n", arg);
 					return 0;
 				}
-				outc = out_tags;
+				//~ outc = out_tags;
+				out_tags = level;
+				gen_code = 0;
 			}
 			else if (strncmp(arg, "-c", 2) == 0) {		// ast
-				//~ level = 0;
+				level = 0;
 				if (arg[2] && *parsei32(arg + 2, &level, 16)) {
 					fputfmt(stderr, "invalid argument '%s'\n", arg);
 					return 0;
 				}
-				outc = gen_code | out_tree;
+				//~ outc = gen_code | out_tree;
+				out_tree = level;
 			}
 			else if (strncmp(arg, "-C", 2) == 0) {		// ast / no cgen
 				//~ level = 0;
@@ -725,34 +495,41 @@ int program(int argc, char *argv[]) {
 					fputfmt(stderr, "invalid argument '%s'\n", arg);
 					return 0;
 				}
-				outc = out_tree;
+				//~ outc = out_tree;
+				out_tree = level;
+				gen_code = 0;
 			}
 			else if (strncmp(arg, "-s", 2) == 0) {		// asm
-				//~ level = 0;
+				level = 0;
 				if (arg[2] && *parsei32(arg + 2, &level, 16)) {
 					fputfmt(stderr, "invalid argument '%s'\n", arg);
 					return 0;
 				}
-				outc = gen_code | out_dasm;
+				//~ outc = gen_code | out_dasm;
+				out_dasm = level;
 			}
 
 			else if (strncmp(arg, "-x", 2) == 0) {		// exec(&| debug)
 				char *str = arg + 2;
-				outc = gen_code | run_code;
 
+				if (*str == 'v') {
+					onExit = libCallExitDebug;
+					str += 1;
+				}
 				if (*str == 'd' || *str == 'D') {
-					dbg = dbgCon;
 					printvars = *str == 'D';
+					dbg = dbgCon;
 					str += 1;
 				}
 
 				level = 1;
-
 				if (*str && *parsei32(str, &level, 16)) {
 					fputfmt(stderr, "invalid level '%s'\n", str);
 					debug("invalid level '%s'", str);
 					return 0;
 				}
+				//~ outc = gen_code | run_code;
+				run_code = 1;
 			}
 
 			// Override settings
@@ -787,22 +564,22 @@ int program(int argc, char *argv[]) {
 		}
 
 		// open logger
-		if (logf && logfile(s, logf) != 0) {
+		if (logf && logfile(rt, logf) != 0) {
 			fputfmt(stderr, "can not open file `%s`\n", logf);
 			return -1;
 		}
 
 		// initialize compiler: type sysyem, emit, ...
-		if (!ccInit(s, creg_def, libCallExitDebug)) {
-			error(s, NULL, 0, "error registering types");
-			logfile(s, NULL);
+		if (!ccInit(rt, creg_def, onExit)) {
+			error(rt, NULL, 0, "error registering types");
+			logfile(rt, NULL);
 			return -6;
 		}
 
 		// intstall standard library and others.
-		if (reglibs(s, stdl) != 0) {
-			error(s, NULL, 0, "error registering lib calls");
-			logfile(s, NULL);
+		if (reglibs(rt, stdl) != 0) {
+			error(rt, NULL, 0, "error registering lib calls");
+			logfile(rt, NULL);
 			return -6;
 		}// */
 
@@ -811,30 +588,42 @@ int program(int argc, char *argv[]) {
 			char *arg = argv[argi];
 			if (strncmp(arg, "-i", 2) == 0) {		// import library
 				char *str = arg + 2;
-				importLib(s, str, "apiMain");
+				importLib(rt, str, "apiMain");
 			}
 		}
 
 		// compile the given source code.
-		if (compile(s, warn, srcf) != 0) {
-			error(s, NULL, 0, "error compiling `%s`", srcf);
-			logfile(s, NULL);
-			return s->errc;
+		if (compile(rt, warn, srcf) != 0) {
+			error(rt, NULL, 0, "error compiling `%s`", srcf);
+			logfile(rt, NULL);
+			return rt->errc;
 		}
 
 		// generate variables and vm code.
-		if ((outc & gen_code) && gencode(s, opti) != 0) {
-			logfile(s, NULL);
-			return s->errc;
+		if ((gen_code || run_code) && gencode(rt, opti) != 0) {
+			logfile(rt, NULL);
+			return rt->errc;
 		}
 
 		// dump to log or execute
 		if (outf)
-			logfile(s, outf);
+			logfile(rt, outf);
 		else
-			logFILE(s, stdout);
+			logFILE(rt, stdout);
 
-		if (outc) switch (outc) {
+		if (out_tags >= 0) {
+			dump(rt, dump_sym | (out_tags & 0x0ff), NULL, "\ntags:\n");
+		}
+		if (out_tree >= 0) {
+			dump(rt, dump_ast | (out_tree & 0x0ff), NULL, "\ncode:\n");
+		}
+		if (out_dasm >= 0) {
+			dump(rt, dump_asm | (out_dasm & 0x0ff), NULL, "\ndasm:\n");
+		}
+		if (run_code) {
+			vmExec(rt, dbg);
+		}
+		/*if (outc) switch (outc) {
 
 			case out_tags + gen_code:
 			case out_tags: dump(s, dump_sym | (level & 0x0ff), NULL, NULL); break;
@@ -849,9 +638,9 @@ int program(int argc, char *argv[]) {
 			default:
 				fatal("FixMe");
 				break;
-		}
+		}*/
 
-		logfile(s, NULL);
+		logfile(rt, NULL);
 		return 0;
 	}
 	else if (strcmp(cmd, "-h") == 0) {		// help
@@ -866,13 +655,15 @@ int program(int argc, char *argv[]) {
 extern int vmTest();
 
 int main(int argc, char *argv[]) {
+	int result = 0;
 	setbuf(stdout, NULL);
 	setbuf(stderr, NULL);
 	//~ return vmTest();
-	return program(argc, argv);
+	result = program(argc, argv);
+	return result;
 }
 
-static int dbgCon(state s, int pu, void *ip, long* bp, int ss) {
+static int dbgCon(state rt, int pu, void *ip, long* bp, int ss) {
 	static char buff[1024];
 	static char cmd = 'N';
 	int IP;//, SP;
@@ -886,8 +677,8 @@ static int dbgCon(state s, int pu, void *ip, long* bp, int ss) {
 		return 0;
 	}
 
-	IP = ((char*)ip) - ((char*)s->_mem);
-	//~ SP = ((char*)s->_ptr) - ((char*)bp);
+	IP = ((char*)ip) - ((char*)rt->_mem);
+	//~ SP = ((char*)rt->_ptr) - ((char*)bp);
 
 	//~ fputfmt(stdout, ">exec:[pu%02d][sp%02d]@%9.*A\n", pu, ss, IP, ip);
 	if (printvars) {
@@ -940,14 +731,14 @@ static int dbgCon(state s, int pu, void *ip, long* bp, int ss) {
 			cmd = buff[0];
 		}
 		else {
-			debug("invalid command %s", buff);
+			debug("invalid command %rt", buff);
 			arg = buff + 1;
 			cmd = buff[0];
 			buff[1] = 0;
 			continue;
 		}
 		if (!arg) {
-			debug("invalid command %s", buff);
+			debug("invalid command %rt", buff);
 			arg = NULL;
 			//cmd = 0;
 			continue;
@@ -965,17 +756,17 @@ static int dbgCon(state s, int pu, void *ip, long* bp, int ss) {
 			//~ case 'C' :		// step out
 			case 'n' :		// step over
 				return 0;
-			case 'p' : if (s->cc) {		// print
+			case 'p' : if (rt->cc) {		// print
 				if (!*arg) {
-					// vmTags(s, (void*)sptr, slen, 0);
+					// vmTags(rt, (void*)sptr, slen, 0);
 				}
 				else {
-					symn sym = findsym(s->cc, NULL, arg);
+					symn sym = findsym(rt->cc, NULL, arg);
 					debug("arg:%T", sym);
 					if (sym && sym->kind == TYPE_ref && sym->offs >= 0) {
 						stkval* sp = (stkval*)((char*)bp + ss + sym->offs);
-						void vm_fputval(state s, FILE *fout, symn var, stkval* ref, int flgs);
-						vm_fputval(s, stdout, sym, sp, 0);
+						void vm_fputval(state rt, FILE *fout, symn var, stkval* ref, int flgs);
+						vm_fputval(rt, stdout, sym, sp, 0);
 					}
 				}
 			} break;
@@ -1004,7 +795,6 @@ static int dbgCon(state s, int pu, void *ip, long* bp, int ss) {
 	//~ (void)SP;
 	return 0;
 }
-
 
 /* temp
 

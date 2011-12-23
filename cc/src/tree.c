@@ -3,7 +3,7 @@
  *   Date: 2011/06/23
  *   Desc: tree operations
  *******************************************************************************
-the code representation with abstract syntax tree
+source code representation using abstract syntax tree
 *******************************************************************************/
 #include <string.h>
 #include <math.h>

@@ -1,6 +1,7 @@
-#include "pvmc.h"
+#include "api.h"
 
-static int b32bsf(state s) {
+// bit scan forward
+static int b32bsf(state s, int _) {
 	uint32_t x = popi32(s);
 	int ans = 0;
 	//~ if ((x & 0x00000000ffffffff) == 0) { ans += 32; x >>= 32; }
@@ -12,7 +13,8 @@ static int b32bsf(state s) {
 	setret(s, uint32_t, x ? ans : -1);
 	return 0;
 }
-static int b32bsr(state s) {
+// bit scan reverse
+static int b32bsr(state s, int _) {
 	uint32_t x = popi32(s);
 	unsigned ans = 0;
 	//~ if ((x & 0xffffffff00000000) != 0) { ans += 32; x >>= 32; }
@@ -24,7 +26,8 @@ static int b32bsr(state s) {
 	setret(s, uint32_t, x ? ans : -1);
 	return 0;
 }
-static int b32hib(state s) {
+// extracts the highest set bit
+static int b32hib(state s, int _) {
 	uint32_t x = popi32(s);
 	x |= x >> 1;
 	x |= x >> 2;
@@ -34,13 +37,14 @@ static int b32hib(state s) {
 	setret(s, uint32_t, x - (x >> 1));
 	return 0;
 }
-static int b32lob(state s) {
+// extracts the lowest set bit
+static int b32lob(state s, int _) {
 	uint32_t x = popi32(s);
 	setret(s, uint32_t, x & -x);
 	return 0;
 }
-
-static int b32btc(state s) {
+// count bits
+static int b32btc(state s, int _) {
 	uint32_t x = popi32(s);
 	x -= ((x >> 1) & 0x55555555);
 	x = (((x >> 2) & 0x33333333) + (x & 0x33333333));
@@ -49,7 +53,8 @@ static int b32btc(state s) {
 	setret(s, uint32_t, x & 0x3f);
 	return 0;
 }
-static int b32swp(state s) {
+// swap bits
+static int b32swp(state s, int _) {
 	uint32_t x = popi32(s);
 	x = ((x >> 1) & 0x55555555) | ((x & 0x55555555) << 1);
 	x = ((x >> 2) & 0x33333333) | ((x & 0x33333333) << 2);
@@ -59,44 +64,44 @@ static int b32swp(state s) {
 	return 0;
 }
 
-static int b64shl(state s) {
+static int b64shl(state s, int _) {
 	uint64_t x = popi64(s);
 	int32_t y = popi32(s);
 	setret(s, uint64_t, x << y);
 	return 0;
 }
-static int b64shr(state s) {
+static int b64shr(state s, int _) {
 	uint64_t x = popi64(s);
 	int32_t y = popi32(s);
 	setret(s, uint64_t, x >> y);
 	return 0;
 }
-static int b64sar(state s) {
+static int b64sar(state s, int _) {
 	int64_t x = popi64(s);
 	int32_t y = popi32(s);
 	setret(s, uint64_t, x >> y);
 	return 0;
 }
-static int b64and(state s) {
+static int b64and(state s, int _) {
 	uint64_t x = popi64(s);
 	uint64_t y = popi64(s);
 	setret(s, uint64_t, x & y);
 	return 0;
 }
-static int b64ior(state s) {
+static int b64ior(state s, int _) {
 	uint64_t x = popi64(s);
 	uint64_t y = popi64(s);
 	setret(s, uint64_t, x | y);
 	return 0;
 }
-static int b64xor(state s) {
+static int b64xor(state s, int _) {
 	uint64_t x = popi64(s);
 	uint64_t y = popi64(s);
 	setret(s, uint64_t, x ^ y);
 	return 0;
 }
 
-static int b64bsf(state s) {
+static int b64bsf(state s, int _) {
 	uint64_t x = popi64(s);
 	int ans = -1;
 	if (x != 0) {
@@ -111,7 +116,7 @@ static int b64bsf(state s) {
 	setret(s, int32_t, ans);
 	return 0;
 }
-static int b64bsr(state s) {
+static int b64bsr(state s, int _) {
 	uint64_t x = popi64(s);
 	int ans = -1;
 	if (x != 0) {
@@ -126,7 +131,7 @@ static int b64bsr(state s) {
 	setret(s, int32_t, ans);
 	return 0;
 }
-static int b64hib(state s) {
+static int b64hib(state s, int _) {
 	uint64_t x = popi64(s);
 	x |= x >> 1;
 	x |= x >> 2;
@@ -137,13 +142,14 @@ static int b64hib(state s) {
 	setret(s, uint64_t, x - (x >> 1));
 	return 0;
 }
-static int b64lob(state s) {
+static int b64lob(state s, int _) {
 	uint64_t x = popi64(s);
 	setret(s, uint64_t, x & -x);
 	return 0;
 }
 
-static int b64zxt(state s) {
+// zero extend(value, offset, bits)
+static int b64zxt(state s, int _) {
 	uint64_t val = popi64(s);
 	int32_t ofs = popi32(s);
 	int32_t cnt = popi32(s);
@@ -151,7 +157,8 @@ static int b64zxt(state s) {
 	setret(s, int64_t, val >> (64 - cnt));
 	return 0;
 }
-static int b64sxt(state s) {
+// sign extend(value, offset, bits)
+static int b64sxt(state s, int _) {
 	int64_t val = popi64(s);
 	int32_t ofs = popi32(s);
 	int32_t cnt = popi32(s);
@@ -160,10 +167,10 @@ static int b64sxt(state s) {
 	return 0;
 }
 
-int apiMain(state rt, stateApi api) {
-	symn cls;
+int apiMain(stateApi api) {
+	symn nsp;
 	struct {
-		int (*fun)(state s);
+		int (*fun)(state, int);
 		int n;
 		char *def;
 	}
@@ -190,14 +197,14 @@ int apiMain(state rt, stateApi api) {
 		{b64zxt, 0, "int64 zxt(int64 val, int offs, int bits);"},
 		{b64sxt, 0, "int64 sxt(int64 val, int offs, int bits);"},
 	};
-	if ((cls = api->ccBegin(rt, "bitops"))) {
+	if ((nsp = api->ccBegin(api->rt, "bitops"))) {
 		int i;
 		for (i = 0; i < sizeof(defs) / sizeof(*defs); i += 1) {
-			if (!api->libcall(rt, defs[i].fun, defs[i].n, defs[i].def)) {
+			if (!api->libcall(api->rt, defs[i].fun, defs[i].n, defs[i].def)) {
 				return 0;
 			}
 		}
-		api->ccEnd(rt, cls);
+		api->ccEnd(api->rt, nsp);
 	}
 	return 1;
 }

@@ -22,7 +22,8 @@ case opc_inc:  NEXT(4, 1, -0) {
 } break;
 case opc_spc:  NEXT(4, 0, 0) {
 	int sm = ip->rel / 4;
-	dieif(ip->rel & 3, "FixMe");
+	//~ dieif(ip->rel & 3, "FixMe");
+	STOP(error_opc, ip->rel & 3, -1);
 	if (sm > 0) {
 		NEXT(0, 0, sm);
 #ifdef EXEC
@@ -75,7 +76,7 @@ case opc_jmpi: NEXT(1, 1, -1) {
 } break;
 case opc_task: NEXT(4, 0, -0) {
 #ifdef EXEC
-	if (mtt(s, doTask, pu, 0))
+	if (mtt(rt, doTask, pu, 0))
 		pu->ip += ip->rel - 4;
 	STOP(error_opc, 1, 1);
 #endif
@@ -83,23 +84,23 @@ case opc_task: NEXT(4, 0, -0) {
 case opc_libc: NEXT(2, libcvec[ip->idx].chk, -libcvec[ip->idx].pop) {
 #ifdef EXEC
 	int exitCode;
-	unsigned char *s_vm_end = s->_ptr;
-	STOP(error_libc, libcvec[ip->idx].sym == NULL, ip->idx);
-	s->argv = (char *)sp;
-	s->retv = (char*)((stkptr)sp + libcvec[ip->idx].pop);
-	s->func = libcvec[ip->idx].sym->offs;
-	s->libc = libcvec[ip->idx].sym;
+	unsigned char *s_vm_end = rt->_ptr;
+	symn sym = libcvec[ip->idx].sym;
+	STOP(error_libc, sym == NULL, ip->idx);
+	rt->argv = (char *)sp;
+	rt->retv = (char*)((stkptr)sp + libcvec[ip->idx].pop);
+	rt->libc = sym;
 	if (ip->idx == 0) {
 		struct symn module = {0};
-		module.args = s->defs;
-		s->retv = (char *)st;
-		s->libc = &module;
+		module.args = rt->defs;
+		rt->retv = (char *)st;
+		rt->libc = &module;
 	}
 
 	// if a libcall calls a vmCall keep the stack
-	s->_ptr = (unsigned char *)sp;
-	exitCode = libcvec[ip->idx].call(s);
-	s->_ptr = s_vm_end;
+	rt->_ptr = (unsigned char *)sp;
+	exitCode = libcvec[ip->idx].call(rt, sym->offs);
+	rt->_ptr = s_vm_end;
 
 	STOP(error_libc, exitCode != 0, exitCode);
 	STOP(stop_vm, ip->idx == 0, 0);			// Halt();
@@ -254,7 +255,7 @@ case opc_sti1: NEXT(1, 2, -2) {
 	//~ rw = SP(0, i4);
 	STOP(error_mem, SP(0, i4) < ro, SP(0, i4));
 	STOP(error_mem, SP(0, i4) > ms, SP(0, i4));
-	MP(SP(0, i4), i1) = SP(1, i4);
+	MP(SP(0, i4), i1) = SP(1, i1);
 #endif
 } break;
 case opc_sti2: NEXT(1, 2, -2) {
@@ -262,7 +263,7 @@ case opc_sti2: NEXT(1, 2, -2) {
 	//~ rw = SP(0, i4);
 	STOP(error_mem, SP(0, i4) < ro, SP(0, i4));
 	STOP(error_mem, SP(0, i4) > ms, SP(0, i4));
-	MP(SP(0, i4), i2) = SP(1, i4);
+	MP(SP(0, i4), i2) = SP(1, i2);
 #endif
 } break;
 case opc_sti4: NEXT(1, 2, -2) {
@@ -511,7 +512,7 @@ case i32_bol: NEXT(1, 1, -0) {
 } break;
 case i32_f32: NEXT(1, 1, -0) {
 #if defined(EXEC)
-	SP(0, f4) = SP(0, i4);
+	SP(0, f4) = (float32_t)SP(0, i4);
 #endif
 } break;
 case i32_i64: NEXT(1, 1, +1) {
@@ -577,7 +578,7 @@ case f32_cgt: NEXT(1, 2, -1) {
 
 case f32_i32: NEXT(1, 1, -0) {
 #if defined(EXEC)
-	SP(0, i4) = SP(0, f4);
+	SP(0, i4) = (int32_t)SP(0, f4);
 #endif
 } break;
 case f32_bol: NEXT(1, 1, -0) {
@@ -588,7 +589,7 @@ case f32_bol: NEXT(1, 1, -0) {
 case f32_i64: NEXT(1, 1, +1) {
 #if defined(EXEC)
 	STOP(error_ovf, ovf(pu), -1);
-	SP(-1, i8) = SP(0, f4);
+	SP(-1, i8) = (int64_t)SP(0, f4);
 #endif
 } break;
 case f32_f64: NEXT(1, 1, +1) {
@@ -650,12 +651,12 @@ case i64_cgt: NEXT(1, 4, -3) {
 
 case i64_i32: NEXT(1, 2, -1) {
 #if defined(EXEC)
-	SP(1, i4) = SP(0, i8);
+	SP(1, i4) = (int32_t)SP(0, i8);
 #endif
 } break;
 case i64_f32: NEXT(1, 2, -1) {
 #if defined(EXEC)
-	SP(1, f4) = SP(0, i8);
+	SP(1, f4) = (float32_t)SP(0, i8);
 #endif
 } break;
 case i64_bol: NEXT(1, 2, -1) {
@@ -665,7 +666,7 @@ case i64_bol: NEXT(1, 2, -1) {
 } break;
 case i64_f64: NEXT(1, 2, -0) {
 #if defined(EXEC)
-	SP(0, f8) = SP(0, i8);
+	SP(0, f8) = (float64_t)SP(0, i8);
 #endif
 } break;
 //}
@@ -694,8 +695,8 @@ case f64_mul: NEXT(1, 4, -2) {
 } break;
 case f64_div: NEXT(1, 4, -2) {
 #if defined(EXEC)
-	SP(2, f8) /= SP(0, f8);
 	STOP(error_div, SP(0, f8) == 0, -1);
+	SP(2, f8) /= SP(0, f8);
 #endif
 } break;
 case f64_mod: NEXT(1, 4, -2) {
@@ -723,17 +724,17 @@ case f64_cgt: NEXT(1, 4, -3) {
 
 case f64_i32: NEXT(1, 2, -1) {
 #if defined(EXEC)
-	SP(1, i4) = SP(0, f8);
+	SP(1, i4) = (int32_t)SP(0, f8);
 #endif
 } break;
 case f64_f32: NEXT(1, 2, -1) {
 #if defined(EXEC)
-	SP(1, f4) = SP(0, f8);
+	SP(1, f4) = (float32_t)SP(0, f8);
 #endif
 } break;
 case f64_i64: NEXT(1, 2, -0) {
 #if defined(EXEC)
-	SP(0, i8) = SP(0, f8);
+	SP(0, i8) = (int64_t)SP(0, f8);
 #endif
 } break;
 case f64_bol: NEXT(1, 2, -1) {

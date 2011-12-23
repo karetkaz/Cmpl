@@ -1,16 +1,18 @@
 OUTOBJ=-o
 OUTEXE=-o
-#~ CFLAGS=-g2 -ggdb
+CFLAGS=-g2 -ggdb
 #~ CFLAGS=-g0 -O2
-CFLAGS=-g2
+#~ CFLAGS=-g2
 LIBS=-lm -ldl
 CCC=gcc -m32
 LNK=gcc -m32
 LIB=ar rcs ../../gx/lib/libpvmc/libpvmc.linux.a
+LIBGL=-lGL -lglut
 DBG=nemiver
 
 ifeq "$(OS)" "Windows_NT"
 LIB=ar rcs ../../gx/lib/libpvmc/libpvmc.windows.a
+LIBGL=-lglut32 -lopengl32
 #~ LIB=ar rcs ../../lib/libpvmc/libpvmc.windows.a
 LIBS=-lm
 DBG=
@@ -33,8 +35,11 @@ OBJS=\
 
 #~ rebuild:clean build
 
-build:$(OBJS) $(OBJDIR)main.o
-	$(LNK) $(OUTEXE)$(BINDIR)main $(OBJS) $(OBJDIR)main.o $(LIBS)
+#~ buildgl:$(OBJS) gl.c
+#~ 	$(LNK) $(OUTEXE)$(BINDIR)main $(OBJS) gl.c $(LIBS) $(LIBGL)
+
+build:$(OBJS) main.c
+	$(LNK) $(OUTEXE)$(BINDIR)main $(OBJS) main.c $(LIBS)
 
 lib:$(OBJS)
 	$(LIB) $(OBJS)

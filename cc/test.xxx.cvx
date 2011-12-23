@@ -1,41 +1,13 @@
-//~ module test2;
+//~ module test_what_does_not_work;
 
 //~ int alma(int h)[10];
 
-//~ /* swap test
-void swap(int32 &a, int32 &b) {
-	int32 tmp = a;
-	a = b;
-	b = tmp;
-}
-void swap(int64 &a, int64 &b) {
-	int64 tmp = a;
-	a = b;
-	b = tmp;
-}
-void swap(float32 &a, float32 &b) {
-	float32 tmp = a;
-	a = b;
-	b = tmp;
-}
-void swap(float64 &a, float64 &b) {
-	float64 tmp = a;
-	a = b;
-	b = tmp;
-}
+/* cgen: int64(8+12): abs(n)
+define abs(int64 ^x) = (x < 0 ? -x : x);
 
-struct floatxy {
-	float32 x;
-	float32 y;
-}
+int n = -9;
+int z = abs(n);
+// */
 
-floatxy rec = floatxy(1, 2);
-float32 arr[2];
-arr[0] = 1;
-arr[1] = 2;
-
-swap(rec.x, rec.y);
-swap(arr[0], arr[1]);
-
-//~ int x = emit(int32, "er", 0.2);
-//~ */
+//~ pointer x = emit(pointer, "er");
+//~ string str = emit(string, ref(x));

@@ -435,7 +435,7 @@ static if (Test.Math & 1) {
 	//~ for (int i = 0; i < 0; i += 1) ;
 
 	double x = Math.pi / 2;
-	double absx = abs(x);
+	double absx = abs(-x);
 	double sinx = sin(x);
 	double cosx = cos(x);
 	double tanx = tan(x);
@@ -443,7 +443,6 @@ static if (Test.Math & 1) {
 	double expx = exp(x);
 	double powx = pow(2, 8);
 	//~ double ___x = ___(x);
-	//~ hex64 xxl = bits.sxt(0xff0070, 3, 22);
 }
 static if (Test.Math & 2) {		// fixed point
 define fixed int32;
@@ -617,7 +616,7 @@ i32x8 sub(i32x8 &a, i32x8 &b) {
 } // +/
 } // */
 
-/* iota
+/* itoa
 uint8 tmp[1024];
 string str = emit(string, ref(tmp));
 itoa(str, 1024, 10, 1, true, "");
@@ -699,9 +698,11 @@ TypeInfo& lookUp(TypeInfo &type, int level, string name, variant args...) {
 
 		for (TypeInfo arg : type.args) {
 
+			// skip defines, consts, ...
 			if (arg.code != TYPE_ref)
 				continue;
 
+			// lookup only variables or functions
 			if (arg.call != func)
 				continue;
 
