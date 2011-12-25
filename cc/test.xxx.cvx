@@ -11,3 +11,14 @@ int z = abs(n);
 
 //~ pointer x = emit(pointer, "er");
 //~ string str = emit(string, ref(x));
+struct ss {
+	int x;
+	int y;
+}
+
+void test1() {
+	void test2() {
+		static ss v = ss(1,2);
+		v.x = 8;
+	}
+}

@@ -42,6 +42,21 @@ void display() {
 		gl.Vertex(pos[2].x, pos[2].y, 0);
 	gl.End();
 	gl.Flush();
+
+	static if (true) {	// fps
+		static int clk = 0;
+		static int fps = 0;
+
+		fps += 1;
+		int now = Hi64(timeNow());
+		if (clk != now) {
+			print("fps: %d\n", int64(fps));
+			clk = now;
+			fps = 0;
+		}
+		glut.PostRedisplay();
+	}
+
 	//~ print("display\n");
 }
 
@@ -113,7 +128,7 @@ void display2() {
 	}
 	gl.Flush();
 
-	static if (!true) {	// fps
+	static if (true) {	// fps
 		static int clk = 0;
 		static int fps = 0;
 
@@ -140,7 +155,7 @@ glut.Mouse(mouse);
 glut.Motion(mouse);
 glut.Keyboard(keyboard);
 
-glut.Display(display2);
+glut.Display(display);
 glut.Reshape(reshape);
 
 // this wont let wmExec to exit.

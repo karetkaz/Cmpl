@@ -566,7 +566,7 @@ int cgen(state rt, astn ast, int get) {
 			}// */
 
 			if (get == ASGN_set) {
-				/*if (var->attr & ATTR_const)
+				/*if (var->cnst)
 					error(s, ast->file, ast->line, "constant field assignment %T", var);
 				//~ */
 				//~ get = TYPE_ref;
@@ -599,7 +599,7 @@ int cgen(state rt, astn ast, int get) {
 			}
 
 			if (get == ASGN_set) {
-				if (var->attr & ATTR_const)
+				if (var->cnst)
 					error(rt, ast->file, ast->line, "constant field assignment %T", var);
 				get = TYPE_ref;
 			}
@@ -900,7 +900,7 @@ int cgen(state rt, astn ast, int get) {
 					}// */
 
 					if (get == ASGN_set) {
-						if (var->attr & ATTR_const)
+						if (var->cnst)
 							error(rt, ast->file, ast->line, "constant field assignment %T", var);
 						get = TYPE_ref;
 					}
@@ -946,7 +946,7 @@ int cgen(state rt, astn ast, int get) {
 				init.kind = TYPE_def;
 				init.file = NULL;
 				init.line = 0;
-				for (sym = var->stat; sym; sym = sym->next) {
+				for (sym = var->sdef; sym; sym = sym->next) {
 					init.type = sym->type;
 					init.id.link = sym;
 					rt->cc->sini = 1;
@@ -1608,7 +1608,9 @@ int gencode(state rt, int level) {
 				if (var->kind != TYPE_ref)
 					continue;
 
-				var->attr |= ATTR_glob | ATTR_stat;
+				var->glob = var->stat = 1;
+
+				//~ var->attr |= ATTR_glob | ATTR_stat;
 			}
 		}
 
@@ -1621,7 +1623,7 @@ int gencode(state rt, int level) {
 			if (var->kind != TYPE_ref)
 				continue;
 
-			if (!(var->attr & (ATTR_glob | ATTR_stat)))
+			if (!(var->glob | var->stat))
 				continue;
 
 			dieif(var->kind != TYPE_ref, "FixMe");
@@ -1980,10 +1982,10 @@ static void install_type(ccState cc, int mode) {
 	(void)type_u16;
 }
 
-static int libCallExitQuiet(state rt, int _) {
+static int libCallExitQuiet(state rt) {
 	return 0;
 }
-ccState ccInit(state rt, int mode, int libcExit(state, int)) {
+ccState ccInit(state rt, int mode, int libcExit(state)) {
 	//~ ccState cc = getmem(s, sizeof(struct ccState), -1);
 	ccState cc = (void*)rt->_ptr;
 

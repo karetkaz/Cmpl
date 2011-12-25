@@ -70,13 +70,14 @@ int parse(ccState, srcType, int wl);
 // instal io, mem, math and parse optionaly the given file
 int install_stdc(state rt, char* file, int level);
 
-symn libcall(state, int libc(state, int), int pass, const char* proto);
+//~ symn libcall(state, int libc(state, int), int pass, const char* proto);
+symn libcall(state, int libc(state), int data, const char* proto);
 //~ symn install(state, int libc(state), int pass, const char* proto);
 symn installtyp(state, const char* name, unsigned size);
 //~ symn installvar(state s, const char* name, symn type, unsigned offset);
 
 // Level 1 Functions: use less these
-ccState ccInit(state, int mode, int libcExit(state, int));
+ccState ccInit(state, int mode, int libcExit(state));
 ccState ccOpen(state, srcType, char* source);
 int ccDone(state);
 

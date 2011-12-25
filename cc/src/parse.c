@@ -1256,7 +1256,7 @@ static void redefine(ccState s, symn sym) {
 			continue;
 
 		// if not redefineable
-		if (ptr->attr & ATTR_const)
+		if (ptr->cnst)
 			break;
 
 		while (arg1 && arg2) {
@@ -1374,7 +1374,7 @@ static void destruct(astn ast, symn sym) {
 		//~ dtor.oper.lhso = s->argz;
 		//~ dtor.oper.rhso = locals->tag;
 		TODO("destructor code")
-		if (sym->kind == TYPE_ref && !(sym->attr & ATTR_stat) && sym->cast == TYPE_ref) {
+		if (sym->kind == TYPE_ref && !(sym->stat) && sym->cast == TYPE_ref) {
 			trace("void(%T) in %+k", sym, ast);
 		}
 		sym = sym->next;
@@ -1694,7 +1694,7 @@ static int qual(ccState cc, int mode) {
 				if (!(mode & ATTR_const))
 					return result;
 				if (result & ATTR_const) {
-					//~ error()
+					error(cc->s, ast->file, ast->line, "qualifier `%t` declared more than once", ast);
 				}
 				result |= ATTR_const;
 				skip(cc, 0);
@@ -1703,7 +1703,7 @@ static int qual(ccState cc, int mode) {
 				if (!(mode & ATTR_stat))
 					return result;
 				if (result & ATTR_stat) {
-					//~ error()
+					error(cc->s, ast->file, ast->line, "qualifier `%t` declared more than once", ast);
 				}
 				result |= ATTR_stat;
 				skip(cc, 0);
@@ -1908,7 +1908,12 @@ static astn spec(ccState s/* , int qual */) {
 								return 0;
 							}
 						}
-						ref->attr = attr;
+
+						if (attr & ATTR_const)
+							ref->cnst = 1;
+
+						if (attr & ATTR_stat)
+							ref->stat = 1;
 
 					}
 
@@ -2631,14 +2636,13 @@ astn decl(ccState s, int Rmode) {
 						arg->type = tmp->type;
 						arg->args = tmp->args;
 						arg->cast = tmp->cast;
-						arg->call = tmp->call;
 						arg->size = tmp->size;
 						arg->offs = tmp->offs;
-						arg->attr = tmp->attr;
+						arg->Attr = tmp->Attr;
 					}
 				}
 
-				ref->attr |= ATTR_stat;
+				ref->stat = 1;
 				ref->init = stmt(s, 1);
 
 				if (ref->init == NULL) {
@@ -2674,7 +2678,11 @@ astn decl(ccState s, int Rmode) {
 
 		skiptok(s, STMT_do, 1);
 
-		ref->attr = attr;
+		if (attr & ATTR_const)
+			ref->cnst = 1;
+
+		if (attr & ATTR_stat)
+			ref->stat = 1;
 
 		//~ if (byref)
 		//~ ref->cast = byref;

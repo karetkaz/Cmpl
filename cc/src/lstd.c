@@ -12,51 +12,51 @@ math, print, time libcall functions
 
 //{#region math functions
 
-/*static int f64abs(state rt, int) {
+/*static int f64abs(state rt) {
 	float64_t x = popf64(rt);
 	setret(rt, float64_t, fabs(x));
 	return 0;
 }// */
-static int f64sin(state rt, int _) {
+static int f64sin(state rt) {
 	float64_t x = popf64(rt);
 	setret(rt, float64_t, sin(x));
 	return 0;
 }
-static int f64cos(state rt, int _) {
+static int f64cos(state rt) {
 	float64_t x = popf64(rt);
 	setret(rt, float64_t, cos(x));
 	return 0;
 }
-static int f64tan(state rt, int _) {
+static int f64tan(state rt) {
 	float64_t x = popf64(rt);
 	setret(rt, float64_t, tan(x));
 	return 0;
 }
 
-static int f64log(state rt, int _) {
+static int f64log(state rt) {
 	float64_t x = popf64(rt);
 	setret(rt, float64_t, log(x));
 	return 0;
 }
-static int f64exp(state rt, int _) {
+static int f64exp(state rt) {
 	float64_t x = popf64(rt);
 	setret(rt, float64_t, exp(x));
 	return 0;
 }
-static int f64pow(state rt, int _) {
+static int f64pow(state rt) {
 	float64_t x = popf64(rt);
 	float64_t y = popf64(rt);
 	setret(rt, float64_t, pow(x, y));
 	//~ debug("pow(%g, %g) := %g", x, y, pow(x, y));
 	return 0;
 }
-static int f64sqrt(state rt, int _) {
+static int f64sqrt(state rt) {
 	float64_t x = popf64(rt);
 	setret(rt, float64_t, sqrt(x));
 	return 0;
 }
 
-static int f64atan2(state rt, int _) {
+static int f64atan2(state rt) {
 	float64_t x = popf64(rt);
 	float64_t y = popf64(rt);
 	setret(rt, float64_t, atan2(x, y));
@@ -319,8 +319,8 @@ STINLINE int64_t clockNow() {
 }
 #endif
 
-static int miscCall(state rt, int funtion) {
-	switch (funtion) {
+static int miscCall(state rt) {
+	switch (rt->fdata) {
 		default: return -1;
 
 		case miscOpExit:
@@ -381,7 +381,7 @@ int install_stdc(state rt, char* file, int level) {
 	symn nsp = NULL;		// namespace
 	int i, err = 0;
 	struct {
-		int (*fun)(state, int);
+		int (*fun)(state);
 		int n;
 		char *def;
 	}

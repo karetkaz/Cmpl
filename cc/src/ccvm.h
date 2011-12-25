@@ -17,7 +17,7 @@
 // symbol & hash table size
 #define TBLS 512
 
-#define DO_PRAGMA(x) _Pragma (#x)
+#define DO_PRAGMA(x) _Pragma(#x)
 #define TODO(x) //DO_PRAGMA(message("TODO: " #x))
 
 #ifdef _MSC_VER
@@ -91,7 +91,7 @@ typedef enum {
 	ATTR_const = 0x00000001,		// constant
 	//~ ATTR_byref = 0x00000002,		// indirect
 	ATTR_stat  = 0x00000004,		// static
-	ATTR_glob  = 0x00000008,		// global
+	//~ ATTR_glob  = 0x00000008,		// global
 	//~ ATTR_used  = 0x00000080,		// used
 
 	decl_NoDefs = 0x100,		// disable type defs in decl.
@@ -194,7 +194,7 @@ typedef unsigned int uint;
 typedef struct libc {
 	struct libc		*next;	// next 
 	//~ unsigned int pos;
-	int (*call)(state, int);
+	int (*call)(state);
 	const char* proto;
 	symn sym;
 	int8_t chk, pop;
@@ -267,21 +267,27 @@ struct symn {				// type node (data)
 
 	symn	type;		// base type of TYPE_ref (void, int, float, struct, ...)
 	symn	args;		// REC fields / FUN params / ARR base type
-	symn	stat;		// static members / variables
+	symn	sdef;		// static members / variables
 
 	symn	next;		// symbols on table / next args / next symbol
 
 	uint8_t	kind;		// TYPE_ref || TYPE_def || TYPE_rec || TYPE_arr
 	uint8_t	cast;		// casts to type(TYPE_(bit, vid, ref, u32, i32, i64, f32, f64, p4x)).
-	uint16_t	call:1;		// function / callable <=> (kind == TYPE_ref && args)
-	//~ uint8_t	stat:1;		// static ?
-	//~ uint8_t	glob:1;		// global
+	union {
+	struct {
+	uint16_t	call:1;		// callable(function/definition) <=> (kind == TYPE_ref && args)
+	uint16_t	cnst:1;		// constant
+	uint16_t	stat:1;		// static ?
+	uint16_t	glob:1;		// global
+
 	//~ uint8_t	load:1;		// indirect reference: cast == TYPE_ref
 	//~ uint8_t	priv:1;		// private
 	//~ uint8_t	read:1;		// const / no override
 	//~ uint8_t	used:1;		// 
-	uint16_t attr:15;		// attributes (const static /+ private, ... +/).
-
+	uint16_t _atr:12;		// attributes (const static /+ private, ... +/).
+	};
+	uint16_t	Attr;
+	};
 	//~ uint32_t	refc;		// referenced count
 
 	symn	decl;		// declared in namespace/struct/class, function, ...
@@ -396,7 +402,7 @@ extern symn emit_opc;
 
 //~ void fputsym(FILE *fout, symn sym, int mode, int level);
 //~ void fputast(FILE *fout, astn ast, int mode, int level);
-//~ void fputopc(FILE *fout, struct bcde* opc, int len, int offset);
+void fputopc(FILE *fout, unsigned char* ptr, int len, int offs, state rt);
 
 // program error
 void perr(state rt, int level, const char *file, int line, const char *msg, ...);

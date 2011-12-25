@@ -136,10 +136,10 @@ symn installex(ccState s, const char* name, int kind, unsigned size, symn type, 
 		}
 
 		if (kind & symn_stat)
-			def->attr |= ATTR_stat;
+			def->stat = 1;
 
 		if (kind & symn_const)
-			def->attr |= ATTR_const;
+			def->cnst = 1;
 
 		switch (kind & 0xff) {
 			default:
@@ -473,7 +473,7 @@ symn lookup(ccState s, symn sym, astn ref, astn args, int raise) {
 		}
 
 		dieif(s->func && s->func->nest != s->maxlevel - 1, "FIXME %d, %d", s->func->nest, s->maxlevel);
-		if (s->func && !s->siff && s->func->gdef && sym->nest && !(sym->attr & ATTR_stat) && sym->nest < s->maxlevel) {
+		if (s->func && !s->siff && s->func->gdef && sym->nest && !sym->stat && sym->nest < s->maxlevel) {
 			error(s->s, ref->file, ref->line, "invalid use of local symbol `%k`.", ref);
 			//~ continue;
 		}
@@ -1223,7 +1223,7 @@ symn typecheck(ccState cc, symn loc, astn ast) {
 
 		if (loc != NULL) {
 			if (checkStaticMembers)
-				sym = loc->stat;
+				sym = loc->sdef;
 			else
 				sym = loc->args;
 		}
@@ -1419,20 +1419,20 @@ symn leave(ccState cc, symn dcl, int mkstatic) {
 		rt->defs = sym->defs;
 
 		if (mkstatic) {
-			sym->attr |= ATTR_stat;
+			sym->stat = 1;
 		}
 
 		// if not inside a static if, link to all
 		if (!cc->siff) {
 			sym->defs = cc->defs;
 			cc->defs = sym;
-			if (sym->attr & ATTR_stat) {
+			if (sym->stat) {
 				sym->gdef = rt->gdef;
 				rt->gdef = sym;
 			}
 		}
 
-		if (sym->attr & ATTR_stat) {
+		if (sym->stat) {
 			sym->next = sta;
 			sta = sym;
 		}
@@ -1444,10 +1444,10 @@ symn leave(ccState cc, symn dcl, int mkstatic) {
 
 	if (sta) {
 		if (dcl) {
-			dcl->stat = sta;
+			dcl->sdef = sta;
 		}
 		else if (cc->func) {
-			cc->func->stat = sta;
+			cc->func->sdef = sta;
 		}
 	}
 

@@ -72,8 +72,8 @@ enum glFuns {
 	glFun_Normal,
 	glFun_Color,
 };
-static int glCall(state rt, int function) {
-	switch (function) {
+static int glCall(state rt) {
+	switch (rt->fdata) {
 
 		case glFun_Viewport: {
 			int x = popi32(rt);
@@ -136,8 +136,8 @@ enum glutFuns {
 	glutFun_PostRedisplay,
 	glutFun_MainLoop,
 };
-static int glutCall(state rt, int function) {
-	switch (function) {
+static int glutCall(state rt) {
+	switch (rt->fdata) {
 
 		case glutFun_Display:
 			onDisplay = api->findref(rt, popref(rt));
@@ -182,7 +182,7 @@ static int glutCall(state rt, int function) {
 int apiMain(stateApi _api) {
 	symn nsp;	// namespace
 	struct {
-		int (*fun)(state, int);
+		int (*fun)(state);
 		int n;
 		char *def;
 	}

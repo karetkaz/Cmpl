@@ -1,3 +1,4 @@
+//~ ./main -c -O2 -xv test_all.cvx -i./lbit.so
 //~ #open src/pvmc.h
 //~ #open src/ccvm.h
 
@@ -247,7 +248,7 @@ if (var != 0) {
 }
 static if (Test.Bits & 2) {		// highest bit
 //~ hex32 BLO_res = var & -var;
-hex32 BHI_lib = bits.bhi(var);
+hex32 BHI_lib = bits.hibit(var);
 hex32 BHI_res = -1;
 if (var) {
 	uint32 u = uint32(var);

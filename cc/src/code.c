@@ -125,7 +125,7 @@ static symn installref(state rt, const char *prot, astn *argv) {
  * @arg proto: prototype of function.
  */
 
-symn libcall(state rt, int libc(state, int), int pos, const char* proto) {
+symn libcall(state rt, int libc(state), int pos, const char* proto) {
 	symn arg, sym = NULL;
 	int stdiff = 0;
 	astn args = NULL;
@@ -1202,7 +1202,7 @@ static astn infoAt(state rt, int pos) {
 	return NULL;
 }
 
-void fputopc(FILE *fout, unsigned char* ptr, int len, int offs) {
+void fputopc(FILE *fout, unsigned char* ptr, int len, int offs, state rt) {
 	//~ struct libc libcvec[0];		// this variable will be indexed out of bounds
 	bcde ip = (bcde)ptr;
 	int i;
@@ -1282,7 +1282,36 @@ void fputopc(FILE *fout, unsigned char* ptr, int len, int offs) {
 		case opc_ldcr: fputfmt(fout, " %x", ip->arg.u4); break;
 
 		case opc_libc:
-			fputfmt(fout, "(%d)", ip->idx);
+			if (rt != NULL) {
+				libc lc = NULL;
+				if (rt->cc && rt->cc->libc) {
+					lc = rt->cc->libc;
+					//~ int pos = 0;
+					while (lc) {
+						if (lc->pos == ip->idx) {
+							break;
+						}
+						lc = lc->next;
+						//~ pos += 1;
+					}
+				}
+				else if (rt->libv) {
+					lc = &((libc)rt->libv)[ip->idx];
+				}
+				if (lc) {
+					if (lc->sym)
+						//~ fputfmt(fout, "(pop %d, check %d) %-T", libcvec[ip->idx].pop, libcvec[ip->idx].chk, libcvec[ip->idx].sym);
+						fputfmt(fout, ": %-T", lc->sym);
+					else
+						fputfmt(fout, ": %s", lc->proto);
+				}
+				else {
+					fputfmt(fout, "(%d)", ip->idx);
+				}
+			}
+			else {
+				fputfmt(fout, "(%d)", ip->idx);
+			}
 			/*if (libcvec[ip->idx].sym)
 				//~ fputfmt(fout, "(pop %d, check %d) %-T", libcvec[ip->idx].pop, libcvec[ip->idx].chk, libcvec[ip->idx].sym);
 				fputfmt(fout, ": %-T", libcvec[ip->idx].sym);
@@ -1329,11 +1358,11 @@ void fputasm(FILE *fout, state rt, int beg, int end, int mode) {
 		if (1 && (ast = infoAt(rt, i))) {
 			fputfmt(fout, "%s:%d:%+k\n", ast->file, ast->line, ast);
 		}
+
 		if (mode & 0xf00)
 			fputfmt(fout, "%I", (mode & 0xf00) >> 8);
 
-		fputopc(fout, (void*)ip, mode & 0xf, rel >= 0 ? (rel + i) : -1);
-		//~ fputopc(fout, (void*)ip, mode & 0xf, rel ? (beg - s->_mem) : -1);
+		fputopc(fout, (void*)ip, mode & 0xf, rel >= 0 ? (rel + i) : -1, rt);
 
 		fputc('\n', fout);
 	}

@@ -1,5 +1,5 @@
-#include <stdio.h>		//4 logf in struct state
-#include <string.h>		//4 memcpy in poparg
+#include <stdio.h>		//for logf in struct state
+#include <string.h>		//for memcpy in poparg
 
 #ifdef _MSC_VER
 typedef signed char			int8_t;
@@ -31,10 +31,13 @@ struct state {
 
 	void* libv;		// libcall vector
 	symn  libc;		// library call symbol
-	//~ int   func;		// library call function
+
 	void* retv;		// return value
 	char* argv;		// first argument
-	void* data;		// user data for execution
+
+	//~ TODO("fdata should be void*")
+	int fdata;		// function data passed to libcall
+	void* udata;		// user data for execution passed to vmExec
 
 	ccState cc;		// compiler enviroment
 	struct {
@@ -88,7 +91,7 @@ typedef struct stateApi {
 	//~ symn ccDefineFlt(state, char *name, double value);
 	//~ symn ccDefineStr(state, char *name, char* value);
 
-	symn (*libcall)(state, int libc(state, int), int pass, const char* proto);
+	symn (*libcall)(state, int libc(state), int pass, const char* proto);
 	symn (*install)(state, const char* name, unsigned size);
 
 	void (*ccEnd)(state, symn cls);

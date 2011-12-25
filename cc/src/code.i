@@ -99,7 +99,8 @@ case opc_libc: NEXT(2, libcvec[ip->idx].chk, -libcvec[ip->idx].pop) {
 
 	// if a libcall calls a vmCall keep the stack
 	rt->_ptr = (unsigned char *)sp;
-	exitCode = libcvec[ip->idx].call(rt, sym->offs);
+	rt->fdata = sym->offs;
+	exitCode = libcvec[ip->idx].call(rt);
 	rt->_ptr = s_vm_end;
 
 	STOP(error_libc, exitCode != 0, exitCode);

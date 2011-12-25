@@ -307,7 +307,7 @@ static int importLib(state rt, const char *path, const char *init) {
 static int printvars = 0;
 static int dbgCon(state, int pu, void *ip, long* bp, int ss);
 void vm_fputval(state, FILE *fout, symn var, stkval* ref, int flgs);
-static int libCallExitDebug(state rt, int _) {
+static int libCallExitDebug(state rt) {
 	symn arg = rt->libc->args;
 	int argc = (char*)rt->retv - (char*)rt->argv;
 
@@ -417,7 +417,7 @@ int program(int argc, char *argv[]) {
 		char *srcf = 0;			// source
 		char *logf = 0;			// logger
 		char *outf = 0;			// output
-		int (*onExit)(state, int) = NULL;	// print variables and values on exit
+		int (*onExit)(state) = NULL;	// print variables and values on exit
 
 		/*enum {
 			gen_code = 0x0010,
@@ -690,7 +690,10 @@ static int dbgCon(state rt, int pu, void *ip, long* bp, int ss) {
 		fputfmt(stdout, "\tsp(%d): {i32(%d), i64(%D), f32(%g), f64(%G), vec4f(%g, %g, %g, %g), vec2d(%G, %G)}\n", ss, sp->i4, sp->f4, sp->i8, sp->f8, v4->x, v4->y, v4->z, v4->w, v2->x, v2->y);
 	}
 	//~ fputfmt(stdout, ">exec:[sp%02d]@%9.*A\n", ss, IP, ip);
-	fputfmt(stdout, ">exec:[sp%02d:%008x]@%9.*A\n", ss, bp + ss, IP, ip);
+	//~ fputfmt(stdout, ">exec:[sp%02d:%008x]@%9.*A\n", ss, bp + ss, IP, ip);
+	fputfmt(stdout, ">exec:[sp%02d:%008x]@", ss, bp + ss, IP, ip);
+	fputopc(stdout, ip, 0x09, IP, rt);
+	fputfmt(stdout, "\n");
 
 	if (cmd != 'N') for ( ; ; ) {
 		if (fgets(buff, 1024, stdin) == NULL) {

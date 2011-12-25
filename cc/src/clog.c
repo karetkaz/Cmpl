@@ -720,8 +720,6 @@ static char* fmtuns(char *dst, int max, int prc, int radix, uint64_t num) {
 	return ptr;
 }
 
-void fputopc(FILE *fout, unsigned char* ptr, int len, int offset);
-
 static void FPUTFMT(FILE *fout, const char *msg, va_list ap) {
 	char buff[1024], chr;
 	while ((chr = *msg++)) {
@@ -810,7 +808,7 @@ static void FPUTFMT(FILE *fout, const char *msg, va_list ap) {
 					void* opc = va_arg(ap, void*);
 					if (nil && !opc)
 						continue;
-					fputopc(fout, opc, len, prc);
+					fputopc(fout, opc, len, prc, NULL);
 				} continue;
 				case 't': {		// token
 					unsigned arg = va_arg(ap, unsigned);

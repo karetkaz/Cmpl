@@ -118,7 +118,7 @@ a = maximum(arr1.length, arr1);
 
 //~ */
 
-//~ /* static and nonstatic members.
+/* static and nonstatic members.
 struct alma {
 	static int a0 = 9;
 	const int a1;
