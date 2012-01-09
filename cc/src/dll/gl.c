@@ -248,7 +248,7 @@ int apiMain(stateApi _api) {
 				return -1;
 			}
 		}
-		api->ccAddText(api->rt, 0, __FILE__, __LINE__ + 1,
+		api->ccAddText(api->rt, __FILE__, __LINE__ + 1, 0,
 			"define Vertex(float32 x, float32 y, float32 z) = Vertex(x, y, z, 1);"
 			"define Color(float32 x, float32 y, float32 z) = Color(x, y, z, 1);"
 		);

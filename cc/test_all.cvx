@@ -229,6 +229,7 @@ vec4f v2 = vec4f(21., 22., 23., 24.);
 
 }// +/
 } // */
+/*
 static if (Test.Bits) {
 int32 var = 0x00001080;		// input
 static if (Test.Bits & 1) {		// bit scan reverse
@@ -445,7 +446,7 @@ static if (Test.Math & 1) {
 	double powx = pow(2, 8);
 	//~ double ___x = ___(x);
 }
-static if (Test.Math & 2) {		// fixed point
+/+static if (Test.Math & 2) {		// fixed point
 define fixed int32;
 define __fix = 16;
 
@@ -474,7 +475,7 @@ define int(fixed val) = int(val, __fix);
 define double(fixed val) = double(val, __fix);
 
 double fixed_test = double(add(fixed(2.5), fixed(3)));
-}
+}// +/
 
 } // */
 static if (Test.Call) {

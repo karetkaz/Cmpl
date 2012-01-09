@@ -17,8 +17,11 @@ struct ss {
 }
 
 void test1() {
+	static const int A = 7;
+	//~ A = 8;
 	void test2() {
-		static ss v = ss(1,2);
+		static const int B = int(A);
+		static ss v = ss(A, B);
 		v.x = 8;
 	}
 }

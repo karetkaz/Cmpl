@@ -76,7 +76,12 @@ static void fputsym(FILE *fout, symn sym, int mode, int level) {
 
 			for (p = bp; p < sp; ++p) {
 				typ = *p;
-				fputfmt(fout, "[%?d]", typ->size);
+				if (typ->size < 0) {
+					fputfmt(fout, "[]");
+				}
+				else {
+					fputfmt(fout, "[%d]", typ->size);
+				}
 			}
 			return;
 			//~ fputfmt(fout, "[%?d]", sym->size);
@@ -110,6 +115,7 @@ static void fputsym(FILE *fout, symn sym, int mode, int level) {
 
 				if (sym->kind == TYPE_ref) {
 					switch (sym->cast) {
+						default: break;
 						case TYPE_ref: fputchr(fout, '&'); break;
 						case TYPE_def: fputchr(fout, '$'); break;
 					}
@@ -1161,7 +1167,7 @@ void dump(state rt, dumpMode mode, symn sym, char *text, ...) {
 				symn var;
 				for (var = rt->defs; var; var = var->next) {
 					if (var->kind == TYPE_ref && var->call) {
-						fputfmt(logf, "%-T [@%d: %d]\n", var, -var->offs, var->size);
+						fputfmt(logf, "%-T [@%06x: %d]\n", var, -var->offs, var->size);
 						fputasm(logf, rt, -var->offs, -var->offs + var->size, mode);
 					}
 				}

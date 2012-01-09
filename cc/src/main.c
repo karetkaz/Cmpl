@@ -126,7 +126,7 @@ char *parsecmd(char *ptr, char *cmd, char *sws) {
 	return ptr;
 }
 
-static int cctext(state rt, int wl, char *file, int line, char *buff) {
+static int cctext(state rt, char *file, int line, int wl, char *buff) {
 	if (!ccOpen(rt, srcText, buff))
 		return -2;
 
@@ -203,10 +203,101 @@ int evalexp(ccState cc, char* text) {
 	return -1;
 }
 
+//{ int64 ext
+static int b64shl(state s) {
+	uint64_t x = popi64(s);
+	int32_t y = popi32(s);
+	setret(s, uint64_t, x << y);
+	return 0;
+}
+static int b64shr(state s) {
+	uint64_t x = popi64(s);
+	int32_t y = popi32(s);
+	setret(s, uint64_t, x >> y);
+	return 0;
+}
+static int b64sar(state s) {
+	int64_t x = popi64(s);
+	int32_t y = popi32(s);
+	setret(s, uint64_t, x >> y);
+	return 0;
+}
+static int b64and(state s) {
+	uint64_t x = popi64(s);
+	uint64_t y = popi64(s);
+	setret(s, uint64_t, x & y);
+	return 0;
+}
+static int b64ior(state s) {
+	uint64_t x = popi64(s);
+	uint64_t y = popi64(s);
+	setret(s, uint64_t, x | y);
+	return 0;
+}
+static int b64xor(state s) {
+	uint64_t x = popi64(s);
+	uint64_t y = popi64(s);
+	setret(s, uint64_t, x ^ y);
+	return 0;
+}
+
+static int b64bsf(state s) {
+	uint64_t x = popi64(s);
+	int ans = -1;
+	if (x != 0) {
+		ans = 0;
+		if ((x & 0x00000000ffffffffULL) == 0) { ans += 32; x >>= 32; }
+		if ((x & 0x000000000000ffffULL) == 0) { ans += 16; x >>= 16; }
+		if ((x & 0x00000000000000ffULL) == 0) { ans +=  8; x >>=  8; }
+		if ((x & 0x000000000000000fULL) == 0) { ans +=  4; x >>=  4; }
+		if ((x & 0x0000000000000003ULL) == 0) { ans +=  2; x >>=  2; }
+		if ((x & 0x0000000000000001ULL) == 0) { ans +=  1; }
+	}
+	setret(s, int32_t, ans);
+	return 0;
+}
+static int b64bsr(state s) {
+	uint64_t x = popi64(s);
+	int ans = -1;
+	if (x != 0) {
+		ans = 0;
+		if ((x & 0xffffffff00000000ULL) != 0) { ans += 32; x >>= 32; }
+		if ((x & 0x00000000ffff0000ULL) != 0) { ans += 16; x >>= 16; }
+		if ((x & 0x000000000000ff00ULL) != 0) { ans +=  8; x >>=  8; }
+		if ((x & 0x00000000000000f0ULL) != 0) { ans +=  4; x >>=  4; }
+		if ((x & 0x000000000000000cULL) != 0) { ans +=  2; x >>=  2; }
+		if ((x & 0x0000000000000002ULL) != 0) { ans +=  1; }
+	}
+	setret(s, int32_t, ans);
+	return 0;
+}
+static int b64hib(state s) {
+	uint64_t x = popi64(s);
+	x |= x >> 1;
+	x |= x >> 2;
+	x |= x >> 4;
+	x |= x >> 8;
+	x |= x >> 16;
+	x |= x >> 32;
+	setret(s, uint64_t, x - (x >> 1));
+	return 0;
+}
+static int b64lob(state s) {
+	uint64_t x = popi64(s);
+	setret(s, uint64_t, x & -x);
+	return 0;
+}
+//}
+
 int reglibs(state rt, char *stdlib) {
 	int err = 0;
 
 	err = err || install_stdc(rt, stdlib, wl);
+	//~ enter(rt->cc, NULL);
+		libcall(rt, b64shl, 0, "int64 Shl(int64 Value, int Count);");
+		libcall(rt, b64shr, 0, "int64 Shr(int64 Value, int Count);");
+		libcall(rt, b64sar, 0, "int64 Sar(int64 Value, int Count);");
+	//~ extend(type_i64, leave(rt->cc, type_i64, 1));
 	//~ err = err || install_bits(s);
 
 	return err;
@@ -243,12 +334,12 @@ int installDll(state rt, int ccApiMain(stateApi api)) {
 	api.ccBegin = ccBegin;
 	api.ccEnd = ccEnd;
 	api.libcall = libcall;
-	api.install = installtyp;
+	//~ api.install = installtyp;
 	api.ccDefineInt = ccDefineInt;
 	api.ccAddText = cctext;
 	api.rtAlloc = rtAlloc;
 	api.invoke = vmCall;
-	api.findsym = findsym;
+	//~ api.findsym = findsym;
 	api.findref = findref;
 	return ccApiMain(&api);
 
@@ -311,8 +402,8 @@ static int libCallExitDebug(state rt) {
 	symn arg = rt->libc->args;
 	int argc = (char*)rt->retv - (char*)rt->argv;
 
-	for (arg = rt->gdef ;arg; arg = arg->gdef) {
-	//~ for ( ;arg; arg = arg->next) {
+	//~ for (arg = rt->gdef ;arg; arg = arg->gdef) {
+	for ( ;arg; arg = arg->next) {
 		char *ofs;
 
 		if (arg->offs <= 0) {
@@ -623,23 +714,8 @@ int program(int argc, char *argv[]) {
 		if (run_code) {
 			vmExec(rt, dbg);
 		}
-		/*if (outc) switch (outc) {
 
-			case out_tags + gen_code:
-			case out_tags: dump(s, dump_sym | (level & 0x0ff), NULL, NULL); break;
-
-			case out_tree + gen_code:
-			case out_tree: dump(s, dump_ast | (level & 0x0ff), NULL, NULL); break;
-
-			case out_dasm: dump(s, dump_asm | (level & 0xfff), NULL, NULL); break;
-
-			case run_code: vmExec(s, dbg); break;
-
-			default:
-				fatal("FixMe");
-				break;
-		}*/
-
+		// close log file
 		logfile(rt, NULL);
 		return 0;
 	}
@@ -652,7 +728,7 @@ int program(int argc, char *argv[]) {
 	return 0;
 }
 
-extern int vmTest();
+//extern int vmTest();
 
 int main(int argc, char *argv[]) {
 	int result = 0;

@@ -214,7 +214,7 @@ symn libcall(state rt, int libc(state), int pos, const char* proto) {
 
 	}
 	else {
-		error(rt, NULL, 0, "install('%rt')", proto);
+		error(rt, NULL, 0, "install(`%s`)", proto);
 		//~ return NULL;
 	}
 
@@ -1208,7 +1208,7 @@ void fputopc(FILE *fout, unsigned char* ptr, int len, int offs, state rt) {
 	int i;
 
 	if (offs >= 0)
-		fputfmt(fout, ".%04x: ", offs);
+		fputfmt(fout, ".%06x: ", offs);
 
 	TODO("writing data shold be a function")
 	if (len > 1 && len < opc_tbl[ip->opc].size) {
@@ -1421,13 +1421,13 @@ void vm_fputval(state rt, FILE *fout, symn var, stkval* ref, int level) {
 					case TYPE_u32: 
 						switch (typ->size) {
 							case 1:
-								fputfmt(fout, "%u", ref->i1);
+								fputfmt(fout, "%u", ref->u1);
 								break;
 							case 2:
-								fputfmt(fout, "%u", ref->i2);
+								fputfmt(fout, "%u", ref->u2);
 								break;
 							case 4:
-								fputfmt(fout, "%u", ref->i4);
+								fputfmt(fout, "%u", ref->u4);
 								break;
 							case 8:
 								fputfmt(fout, "%U", ref->i8);
@@ -1512,12 +1512,16 @@ void vm_fputval(state rt, FILE *fout, symn var, stkval* ref, int level) {
 			else {
 				fputfmt(fout, "%T{", typ);
 				if ((n = typ->size) < 0) {
-					fputfmt(fout, "Unknown Dimension}");
-					break;
+					//~ fputfmt(fout, "Unknown Dimension}");
+					//~ break;
+					n = ref->dA.length;
+					ref = (stkval*)(rt->_mem + ref->u4);
 				}
-				else if (n > 20) {
-					//~ n = 0;
+				#ifdef MAX_ARR_PRINT
+				if (n > MAX_ARR_PRINT) {
+					n = MAX_ARR_PRINT;
 				}
+				#endif
 
 				while (i < n) {
 					if (base->kind == TYPE_arr)

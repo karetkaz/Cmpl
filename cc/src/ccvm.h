@@ -17,6 +17,9 @@
 // symbol & hash table size
 #define TBLS 512
 
+// maximum elements to print from an array
+#define MAX_ARR_PRINT 20
+
 #define DO_PRAGMA(x) _Pragma(#x)
 #define TODO(x) //DO_PRAGMA(message("TODO: " #x))
 
@@ -88,12 +91,6 @@ typedef enum {
 	TYPE_flt = TYPE_f64,
 	TYPE_str = TYPE_ptr,
 
-	ATTR_const = 0x00000001,		// constant
-	//~ ATTR_byref = 0x00000002,		// indirect
-	ATTR_stat  = 0x00000004,		// static
-	//~ ATTR_glob  = 0x00000008,		// global
-	//~ ATTR_used  = 0x00000080,		// used
-
 	decl_NoDefs = 0x100,		// disable type defs in decl.
 	decl_NoInit = 0x200,		// disable initialization. (disable)
 	decl_Iterator = 0x400,		// int a : range(0, 12);
@@ -102,8 +99,14 @@ typedef enum {
 	//~ decl_Var = decl_NoInit,					// parse variable declaration
 	//~ decl_Arg = decl_NoDefs|decl_NoInit,		// parse function argument / struct member
 
-	symn_const = 0x200,
-	symn_stat = 0x400,
+	symn_const = 0x200,				// constant
+	symn_stat = 0x400,				// static
+
+	ATTR_const = 0x00000001,		// constant
+	ATTR_stat  = 0x00000002,		// static
+	//~ ATTR_byref = 0x00000002,		// indirect
+	//~ ATTR_glob  = 0x00000008,		// global
+	//~ ATTR_used  = 0x00000080,		// used
 } ccToken;
 typedef struct {
 	int const	type;
@@ -184,6 +187,7 @@ typedef union {		// value type
 	//~ struct {float32_t x, y, z, w;} pf;
 	//~ struct {float64_t x, y;} pd;
 	//~ struct {int64_t lo, hi;} x16;
+	struct {void* data; int length;} dA;	// dinamic array
 } stkval;
 
 //~ typedef struct symn *symn;		// Symbol Node
@@ -192,7 +196,7 @@ typedef struct list *list;
 typedef unsigned int uint;
 
 typedef struct libc {
-	struct libc		*next;	// next 
+	struct libc		*next;	// next
 	//~ unsigned int pos;
 	int (*call)(state);
 	const char* proto;
@@ -265,13 +269,17 @@ struct symn {				// type node (data)
 	int32_t	offs;		// addrof(TYPE_ref)
 
 
-	symn	type;		// base type of TYPE_ref (void, int, float, struct, ...)
+	symn	type;		// base type of TYPE_ref/TYPE_arr/function (void, int, float, struct, ...)
 	symn	args;		// REC fields / FUN params / ARR base type
-	symn	sdef;		// static members / variables
+	symn	sdef;		// static members / variables, should be the tail of args
 
-	symn	next;		// symbols on table / next args / next symbol
+	symn	next;		// symbols on table / next param / next field / next symbol
 
-	uint8_t	kind;		// TYPE_ref || TYPE_def || TYPE_rec || TYPE_arr
+	//~ ccToken	kind;		// TYPE_ref / TYPE_def / TYPE_rec / TYPE_arr
+	//~ ccToken	cast;		// casts to type(TYPE_(bit, vid, ref, u32, i32, i64, f32, f64, p4x)).
+	//~ uint16_t __castkindpadd;
+
+	uint8_t	kind;		// TYPE_ref / TYPE_def / TYPE_rec / TYPE_arr
 	uint8_t	cast;		// casts to type(TYPE_(bit, vid, ref, u32, i32, i64, f32, f64, p4x)).
 	union {
 	struct {
@@ -291,13 +299,13 @@ struct symn {				// type node (data)
 	//~ uint32_t	refc;		// referenced count
 
 	symn	decl;		// declared in namespace/struct/class, function, ...
-	//~ astn	dcls;		// declaring statement
-	astn	init;		// VAR init / FUN body
 
 	int		nest;		// declaration level
-	symn	gdef;
-	symn	defs;		// symbols on stack/all
 
+	symn	defs;		// global variables and functions / while_compiling variables of the block in reverse order
+	symn	gdef;		// static variables and functions / while_compiling ?
+
+	astn	init;		// VAR init / FUN body
 	char*	pfmt;		// TEMP: print format
 };
 
@@ -395,6 +403,7 @@ extern symn type_ptr;
 extern symn null_ref;
 
 extern symn emit_opc;
+extern symn emit_val;
 
 
 //~ clog
@@ -429,6 +438,7 @@ symn installex(ccState, const char* name, int kind, unsigned size, symn type, as
 //~ symn installex(ccState, const char* name, int kind, symn type, int cast, unsigned size, astn init);
 symn install(ccState, const char* name, int kind, int cast, unsigned size);
 symn declare(ccState, int kind, astn tag, symn rtyp);
+void extend(symn type, symn args);
 symn addarg(ccState, symn sym, const char* name, int kind, symn type, astn init);
 
 //~ symn findsym(ccState, symn in, char *name);
@@ -476,6 +486,7 @@ symn leave(ccState s, symn def, int mkstatic);
  */
 int eval(astn res, astn ast);
 int mkcon(astn ast, symn type);
+int isConst(astn ast);
 
 /** emit an opcode with args
  * @param opc: opcode

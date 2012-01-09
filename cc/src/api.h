@@ -26,8 +26,8 @@ struct state {
 	FILE* logf;		// log file
 	int   closelog;	// close log file
 
-	symn  defs;		// definitions
-	symn  gdef;		// definitions
+	symn  defs;		// global variables and functions
+	symn  gdef;		// static variables and functions
 
 	void* libv;		// libcall vector
 	symn  libc;		// library call symbol
@@ -76,37 +76,139 @@ struct state {
 	unsigned char _mem[];
 };
 
-typedef struct stateApi {
+/*struct libcarg {
 	state rt;	// runtime
-	/* dll should contain the folowing entry:
+
+	symn  libc;		// library call symbol
+
+	void* retv;		// return value
+	char* argv;		// first argument
+
+	//~ TODO("fdata should be void*")
+	int fdata;		// function data passed to libcall
+	void* udata;		// user data for execution passed to vmExec
+
+}*/
+
+typedef struct stateApi {
+	/** dll should contain the folowing entry:
 		int apiMain(stateApi api) {}
+		this struct should be copied.
 	**/
 
+	state rt;	// runtime
+
+	// add a namespace. Return NULL if error occurs.
 	symn (*ccBegin)(state, char *cls);
-	//symn (*ccCompile)(state, char *cls);
 
-	int (*ccAddText)(state, int warn, char *__file, int __line, char *text);
+	/** Add a string fragment of source code.
+	 * @param the runtime state.
+	 * @param __file: filename the source is located (pass __FILE__ or NULL)
+	 * @param __line: linenumber of source (pass __LINE__)
+	 * @param warn: warning level.
+	 * @param code: source code to be compiled.
+	 * @return non zero on error.
+	 */
+	int (*ccAddText)(state, char *__file, int __line, int warn, char *code);
 
+	/** Add an integer constant.
+	 * @param the runtime state.
+	 * @param name: the name of the constant.
+	 * @return the symbol to the definition, null on error.
+	*/
 	symn (*ccDefineInt)(state, char *name, int32_t value);
-	//~ symn ccDefineFlt(state, char *name, double value);
-	//~ symn ccDefineStr(state, char *name, char* value);
 
-	symn (*libcall)(state, int libc(state), int pass, const char* proto);
-	symn (*install)(state, const char* name, unsigned size);
+	/** Add a floating point constant.
+	 * @param the runtime state.
+	 * @param name: the name of the constant.
+	 * @return the symbol to the definition, null on error.
+	symn ccAddFlt(state, char *name, double value);
+	*/
+	/** Add a string constant.
+	 * @param the runtime state.
+	 * @param name: the name of the constant.
+	 * @return the symbol to the definition, null on error.
+	symn ccAddStr(state, char *name, char* value);
+	*/
 
+	/** Add a libcall (native function) to the runtime.
+	 * @param the runtime state.
+	 * @param libc: the c function.
+	 * @param fdata: function data, accessible in the function as rt->fdata
+	 * @param proto: prototype of the function, do not forget the ending ';'
+	 * @return the symbol to the definition, null on error.
+	 * @usage:
+		static int f64sin(state rt) {
+			float64_t x = popf64(rt);		// pop one argument
+			setret(rt, float64_t, sin(x));	// set the return value
+			return 0;						// no error in this call
+		}
+		if (!api->libcall(api->rt, f64sin, 0, "float64 sin(float64 x);")) {
+			error...
+		}
+	*/
+	symn (*libcall)(state, int libc(state), int fdata, const char* proto);
+
+	/** Add a type.
+	 * @param the runtime state.
+	 * @param name: the name of the constant.
+	 * @return the symbol to the definition, null on error.
+	//~ symn (*install)(state, const char* name, unsigned size);
+	*/
+
+	/** End the namespace, makes all declared variables static.
+	 * @param the runtime state.
+	 * @param name: the name of the constant.
+	 * @return the symbol to the definition, null on error.
+	*/
 	void (*ccEnd)(state, symn cls);
 
+	/** Find a global symbol by offset.
+	 * usefull for callbacks
+	 * @usage:
+		static symn onMouse = null;
+		static int setMouseCb(state rt) {
+			onMouse = api->findref(api->rt, popref(rt));		// pop and find the functions symbol
+			if (onMouse) {
+				api->invoke(api->rt, onMouse, btn, x, y);		// invoke the callback
+			}
+			return 0;											// no error in this call
+		}
+		if (!api->libcall(api->rt, f64sin, 0, "void regMouse(void CB(int b, int x, int y);")) {
+			error...
+		}
+	 */
 	symn (*findref)(state rt, void *ptr);
-	symn (*findsym)(ccState cc, symn in, char *name);
 
-	// offset of a pointer in the vm
-	int (*vmOffset)(state rt, void *ptr);
+	/** Find a global symbol by name.
+	 * 
+	symn (*findsym)(ccState cc, symn in, char *name);
+	 */
+
+	/** offset of a pointer in the vm
+	int (*vmOffset)(state, void *ptr);
+	 */
+
+	/** Invoke a function inside the vm.
+	 * @param the runtime state.
+	 * @param fun: the symbol of the function.
+	 * @return non zero on error.
+	*/
 	int (*invoke)(state, symn fun, ...);
 
-	void* (*rtAlloc)(state rt, void* ptr, unsigned size);	// realloc/alloc/free
+	/** memory manager of the vm.
+	 * @param the runtime state.
+	 * @param ptr: an allocated memory address in the vm or null.
+	 * @param size: the new size to reallocate or 0.
+	 * @return non zero on error.
+		ptr == null && size == 0: nothing
+		ptr == null && size > 0: alloc
+		ptr != null && size == 0: free
+		ptr != null && size > 0: realloc
+	*/
+	void* (*rtAlloc)(state, void* ptr, unsigned size);
 
-
-}* stateApi; // */
+}* stateApi;
 
 #ifdef _MSC_VER
 #define STINLINE static __inline

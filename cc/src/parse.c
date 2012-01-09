@@ -846,6 +846,33 @@ static int readTok(ccState s, astn tok) {
 			}
 		} break;
 		read_idf: {			// [a-zA-Z_][a-zA-Z0-9_]*
+			static struct {
+				char *name;
+				int type;
+			}
+			keywords[] = {
+				// Warning: sort keywords (SciTE can do it)
+				//~ {"enum", ENUM_def},
+				//~ {"module", UNIT_def},
+				//~ {"operator", OPER_def},
+				{"break", STMT_brk},
+				{"const", QUAL_con},
+				{"continue", STMT_con},
+				{"define", TYPE_def},
+				{"else", STMT_els},
+				{"emit", EMIT_opc},
+				{"for", STMT_for},
+				{"if", STMT_if},
+				{"parallel", QUAL_par},
+				{"return", STMT_ret},
+				{"static", QUAL_sta},
+				{"struct", TYPE_rec}
+			};
+
+			int lo = 0;
+			int hi = sizeof(keywords) / sizeof(*keywords);
+			int cmp = -1;
+
 			while (ptr < end && chr != -1) {
 				if (!(chr_map[chr & 0xff] & CWORD))
 					break;
@@ -855,62 +882,25 @@ static int readTok(ccState s, astn tok) {
 			backChr(s, chr);
 			*ptr++ = 0;
 
-			if (1) {
-				TODO("delete keywords checking")
-				//~ static int test = 1;
-				static struct {
-					char *name;
-					int type;
-					//~ int _pad;
-				}
-				keywords[] = {
-					// sort these lines (SciTE knows using lua extension)!!!
-					//~ {"enum", ENUM_def},
-					//~ {"module", UNIT_def},
-					//~ {"operator", OPER_def},
-					{"break", STMT_brk},
-					{"const", QUAL_con},
-					{"continue", STMT_con},
-					{"define", TYPE_def},
-					{"else", STMT_els},
-					{"emit", EMIT_opc},
-					{"for", STMT_for},
-					{"if", STMT_if},
-					{"parallel", QUAL_par},
-					{"return", STMT_ret},
-					{"static", QUAL_sta},
-					{"struct", TYPE_rec}
-				};
-
-				int lo = 0;
-				int hi = sizeof(keywords) / sizeof(*keywords);
-				int cmp = -1;
-
-				while (cmp != 0 && lo < hi) {
-					int mid = lo + ((hi - lo) / 2);
-					cmp = strcmp(keywords[mid].name, beg);
-					if (cmp < 0)
-						lo = mid + 1;
-					else
-						hi = mid;
-				}
-				if (cmp == 0) {
-					tok->kind = keywords[hi].type;
-					//~ debug("kwd: %k, %s", tok, beg);
-				}
-				else {
-					tok->kind = TYPE_ref;
-					tok->type = tok->id.link = 0;
-					tok->id.hash = rehash(beg, ptr - beg) % TBLS;
-					tok->id.name = mapstr(s, beg, ptr - beg, tok->id.hash);
-					//~ debug("idf: %k", tok);
-				}
+			// binary search the keyword
+			while (cmp != 0 && lo < hi) {
+				int mid = lo + ((hi - lo) / 2);
+				cmp = strcmp(keywords[mid].name, beg);
+				if (cmp < 0)
+					lo = mid + 1;
+				else
+					hi = mid;
+			}
+			if (cmp == 0) {
+				tok->kind = keywords[hi].type;
+				//~ debug("kwd: %k, %s", tok, beg);
 			}
 			else {
 				tok->kind = TYPE_ref;
 				tok->type = tok->id.link = 0;
 				tok->id.hash = rehash(beg, ptr - beg) % TBLS;
 				tok->id.name = mapstr(s, beg, ptr - beg, tok->id.hash);
+				//~ debug("idf: %k", tok);
 			}
 		} break;
 		read_num: {			// int | ([0-9]+'.'[0-9]* | '.'[0-9]+)([eE][+-]?[0-9]+)?
@@ -1235,7 +1225,7 @@ static astn argnode(ccState s, astn lhs, astn rhs) {
 	return lhs ? opnode(s, OPER_com, lhs, rhs) : rhs;
 }// TODO: RemMe*/
 
-TODO("these should go to type.c");
+TODO("these should go to type.c")
 static void redefine(ccState s, symn sym) {
 	symn ptr;
 
@@ -1255,9 +1245,10 @@ static void redefine(ccState s, symn sym) {
 		if (strcmp(sym->name, ptr->name) != 0)
 			continue;
 
-		// if not redefineable
+		/*/ if not redefineable
 		if (ptr->cnst)
 			break;
+		// */
 
 		while (arg1 && arg2) {
 			if (arg1->type != arg2->type)
@@ -1325,6 +1316,7 @@ static symn ctorArg(ccState cc, symn rec) {
 		ctor->kind = TYPE_def;
 		ctor->type = rec;
 		ctor->call = 1;
+		ctor->cnst = 1;	// returns constant (params must be constants too)
 
 		//~ fixargs(ctor, 4, 0);
 
@@ -1434,85 +1426,63 @@ static astn type(ccState s/* , int mode */) {	// type(.type)* ('&' | '[]')mode?
 	return list;
 }
 
-static astn init(ccState s, symn ref) {
+static astn init(ccState s, symn var) {
 	if (skip(s, ASGN_set)) {
-		symn typ = ref->type;
-		ref->init = expr(s, TYPE_def);
-		if (ref->cast == TYPE_ref) {
-			if (canAssign(ref, ref->init, 1)) {
-				if (!castTo(ref->init, TYPE_ref)) {
-					trace("%t", TYPE_ref);
-					return NULL;
-				}
+		symn typ = var->type;
+		int cast = var->cast;
+
+		var->init = expr(s, TYPE_def);
+
+		if (var->init->type == emit_opc) {		// just in case of  = emit(val, ...)
+			var->init->type = var->type;
+			var->init->cst2 = cast;
+		}
+		if (canAssign(var, var->init, cast == TYPE_ref)) {
+			trace("canAssign(%-T, %+k)", typ, var->init);
+			if (!castTo(var->init, cast)) {
+				trace("%t", cast);
+				return NULL;
 			}
 		}
+		// try initialize an array with elements
 		else if (typ->kind == TYPE_arr) {
-
-			astn init = ref->init;
+			astn init = var->init;
 			symn base = typ;
-			int cast = 0;
+			int nelem = 1;
 
-			/* old 
-			while (base->kind == TYPE_arr) {
 
-				if (base->size <= 0)
-					break;
-
-				base = base->type;
-			}
-
-			if (base->kind != TYPE_arr) {
-				switch (base->cast) {
-					//~ case TYPE_vid:
-					case TYPE_bit:
-					case TYPE_u32:
-					case TYPE_i32:
-					case TYPE_i64:
-					case TYPE_f32:
-					case TYPE_f64:
-					//~ case TYPE_rec:
-					//~ case TYPE_ref:
-						cast = base->cast;
-						break;
-				}
-				if (!cast) {
-					error(s->s, ref->file, ref->line, "invalid array initialization");
-					trace("%-T", ref);
-					return NULL;
-				}
-			}// */
-
-			base = ref->args;
+			// TODO: base should not be stored in var->args !!!
+			base = var->args;
 			cast = base ? base->cast : 0;
 
 			while (init->kind == OPER_com) {
 				if (!canAssign(base, init->op.rhso, 0) && !castTo(init->op.rhso, cast)) {
-				//~ if (!castTo(init->op.rhso, cast)) {
-					trace("canAssign(%-T, %+k)", base, init->op.rhso);
-					trace("castto(%+k, %t)", init->op.rhso, cast);
+					trace("canAssignCast(%-T, %+k, %t)", base, init->op.rhso, cast);
 					return NULL;
 				}
 				init = init->op.lhso;
+				nelem += 1;
 			}
 			if (!canAssign(base, init, 0) && !castTo(init, cast)) {
-			//~ if (!castTo(init, cast)) {
-				trace("canAssign(%-T, %+k)", base, init);
-				trace("castto(%+k, %t)", init, cast);
+				trace("canAssignCast(%-T, %+k, %t)", base, init, cast);
 				return NULL;
 			}
-		}
-		else if (canAssign(ref, ref->init, 0)) {
-			//~ int cast = ref->cast == TYPE_ref ? TYPE_ref : typ->cast;
-			if (!castTo(ref->init, typ->cast)) {
-				trace("%t", typ->cast);
-				return NULL;
+
+			// int a[] = 1 / int a[] = 1,2,3,4,5,6 
+			if (base == typ->type && typ->init == NULL) {
+				typ->init = intnode(s, nelem);
+				//~ typ->size = nelem;
+			}
+			else if (typ->size < 0) {
+				error(s->s, var->file, var->line, "error invalid initialization `%+k`", var->init);
 			}
 		}
 		else {
-			error(s->s, ref->file, ref->line, "error invalid initialization `%+k`", ref->init);
+			error(s->s, var->file, var->line, "error invalid initialization `%+k`", var->init);
 		}
+
 	}
-	return ref->init;
+	return var->init;
 }
 
 static astn reft(ccState s, int mode) {
@@ -1557,7 +1527,6 @@ static astn reft(ccState s, int mode) {
 			}
 
 			if (byref) {
-				//~ error(s->s, tag->file, tag->line, "function `%+T` returning reference is not implemented yet", ref);
 				error(s->s, tag->file, tag->line, "declaration of `%+T` as returning a reference [TODO]", ref);
 			}
 
@@ -1565,17 +1534,18 @@ static astn reft(ccState s, int mode) {
 		}
 
 		/* TODO: probably some day without an else ...
-		 * int rgbCopy(int a, int b)[] = {rgbCpy, rgbAnd, ...}
+		 * int rgbCopy(int a, int b)[8] = rgbCpy, rgbAnd, ...
 		 */
 		else if (skip(s, PNCT_lc)) {		// int a[...]
 			symn tmp = newdefn(s, TYPE_arr);
 			symn base = typ;
+			int dynarr = 1;		// dynamic sized array
+
 			tmp->type = typ;
 			tmp->size = -1;
 			typ = tmp;
 
 			if (byref) {					// int& a[200] a contains 200 references to integers
-				//~ error(s->s, tag->file, tag->line, "array of references are not implemented yet: `%+T`", ref);
 				error(s->s, tag->file, tag->line, "declaration of `%+T` as array of references [TODO]", ref);
 			}
 
@@ -1583,9 +1553,9 @@ static astn reft(ccState s, int mode) {
 			tag->type = typ;
 
 			if (!test(s, PNCT_rc)) {
-				//~ symn nty = typ;
 				struct astn val;
-				astn init = expr(s, TYPE_def);
+				astn init = expr(s, TYPE_i32);
+				typ->init = init;
 
 				/*/ enable multi array declaration in pascal style: int a[1, 2, 3, 4];
 				while (init && init->kind == OPER_com) {
@@ -1598,8 +1568,9 @@ static astn reft(ccState s, int mode) {
 						tmp->size = val.con.cint;
 						tmp->init = init->op.rhso;
 					}
-					else
+					else {
 						error(s->s, init->file, init->line, "integer constant expected");
+					}
 					init = init->op.lhso;
 				}// */
 
@@ -1607,13 +1578,23 @@ static astn reft(ccState s, int mode) {
 					addarg(s, typ, "length", TYPE_def, type_i32, init);
 					typ->size = val.con.cint;
 					typ->init = init;
+					dynarr = 0;
 					//~ debug("length of %-T = %+k", ref, init);
+					if (typ->size < 0) {
+						error(s->s, init->file, init->line, "positive integer constant expected, got `%+k`", init);
+					}
 				}
-				else
-					error(s->s, init->file, init->line, "integer constant expected");
+				else {
+					error(s->s, init->file, init->line, "integer constant expected, got `%+k`", init);
+				}
 			}
-			else {
-				ref->size = 4;
+			if (dynarr) {
+				symn length = addarg(s, typ, "length", TYPE_ref, type_i32, NULL);
+				dieif(length == NULL, "FixMe");
+				length->offs = 4;
+
+				ref->cast = TYPE_arr;
+				ref->size = 8;
 			}
 
 			skiptok(s, PNCT_rc, 1);
@@ -1637,30 +1618,32 @@ static astn reft(ccState s, int mode) {
 					else
 						error(s->s, init->file, init->line, "integer constant expected");
 				}
+
+				if (dynarr || typ->size < 0) {
+					// invalid mixing of dynamic sized arrays
+					error(s->s, ref->file, ref->line, "invalid mixing of dynamic sized arrays");
+				}
+
 				skiptok(s, PNCT_rc, 1);
 
 			} // */
 
-			ref->args = base;	// fixme
+			ref->args = base;	// fixme (temporarly used)
 			byref = 0;
 		}
 
-		TODO("these should go to fixargs")
+		TODO("these should go to fixargs or to be deleted")
 		if (byref) {
 			//~ debug("variable %-T is by ref", ref);
-			ref->cast = tag->cst2 = TYPE_ref;
+			ref->cast = TYPE_ref;
+		}
+
+		if (ref->call) {
+			tag->cst2 = TYPE_ref;
 		}
 		else {
-			//~ if (typ->cast == TYPE_ref) {
-				//~ trace("type `%-T` cast to ref declaring %-T", typ, ref);
-			//~ }
-			//~ dieif(typ->cast == TYPE_ref, "FixMe: %-T", typ);
-			ref->cast = tag->cst2 = typ->cast;
+			tag->cst2 = ref->cast;
 		}
-		if (ref->call) {
-			//~ ref->cast = tag->cst2 = TYPE_ref;
-			tag->cst2 = TYPE_ref;
-		}// */
 	}
 
 	return tag;
@@ -1709,9 +1692,11 @@ static int qual(ccState cc, int mode) {
 				skip(cc, 0);
 				break;
 			default:
+				//~ trace("next %k", peek(cc));
 				return result;
 		}
 	}
+	//~ trace("next %t", peek(cc));
 	return result;
 }
 
@@ -2666,9 +2651,6 @@ astn decl(ccState s, int Rmode) {
 					trace("FixMe");
 					return NULL;
 				}
-				if (attr & ATTR_stat && s->func && s->func->gdef) {
-					warn(s->s, 1, ref->file, ref->line, "static variable `%T` will be reinitialized each time function `%T` is invoked", ref, s->func->gdef);
-				}
 			}
 		}
 
@@ -2679,7 +2661,8 @@ astn decl(ccState s, int Rmode) {
 		skiptok(s, STMT_do, 1);
 
 		if (attr & ATTR_const)
-			ref->cnst = 1;
+			// constant variables are also static
+			ref->cnst = ref->stat = 1;
 
 		if (attr & ATTR_stat)
 			ref->stat = 1;

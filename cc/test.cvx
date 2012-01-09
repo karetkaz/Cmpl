@@ -38,34 +38,6 @@ else {
 
 //~ realloc(null, 0);
 //~ */
-/*
-//~ string s = "alma a fa alatt";		// this should be dynamic.
-//~ uint8 ss[4];
-//~ int a = ss.length;
-string x = "almax a fa alatt";
-//~ string ss[3];
-//~ ss[0] = x;//"alma1 a fa alatt";
-//~ ss[1] = "alma2 a fa alatt";
-//~ ss[2] = "alma3 a fa alatt";
-//~ string y = ss[1];
-
-int iii[3] = 1, 2, 3;
-string sss[3] = x, "a2", "a3";
-
-//~ ss[0][3] = 'A';
-
-//~ println(y);
-//~ println(ss[2]);
-
-//~ string c = ss[0];
-//~ putstr(c);
-
-//~ int a = 9;
-//~ int &b = null;
-//~ &b = a;
-
-//~ b = 88;
-// */
 
 //~ ./main -C -i./lbit.dll -O2 -xd test.cvx
 //~ int i = bitops.btc(0x1ff);
@@ -96,27 +68,119 @@ for(int i = 0; i < 30; i += 1) {
 
 // */
 
-/* array as arguments
-int arr1[20];
-int a;
+//~ int n = emit(val, i32(0));;
+//~ int arr2[] = null;
+//~ int arr2[] = emit(val, ref(realloc(null, 4 * 300)), i32(300));//[3][3];
+define newArray(int ty, int ^n) = emit(val, ref(realloc(null, ty * n)), i32(n));
+int arr0[2] = 2, 3;
+//~ int arr9[] = newArray(4, 300);
+int arr2[] = emit(val, ref(null), i32(0));
+int arr3[] = emit(val, ref(arr0), i32(arr0.length));
 
-// 1. int maximum(int n, int arr[12])
-// 2. int maximum(int n, int arr[])
-// 3. int maximum(int n, int arr...)
 
-int maximum(int length, int arr[20]) {
+int arr4[] = emit(val, ref(realloc(null, 4 * 300)), i32(300));
+
+
+/* arrays
+
+// 1. int maximum(int arr[12])
+// 2. int maximum(int arr[])
+// 3. int maximum(int arr...)
+
+int arr2[] = 1,2;//, 2, 3, 4, 5, 6, 7, 8;
+//~ int arr3[] = arr2;
+//~ /+
+
+int maximum(int arr[]) {
 	result = arr[0];
-	for (int i = 1; i < length; i += 1) {
+	for (int i = 1; i < arr.length; i += 1) {
 		if (result < arr[i]) {
 			result = arr[i];
 		}
 	}
 }
 
-a = maximum(arr1.length, arr1);
+void sort(int arr[]) {
+	for (int i = 0; i < arr.length - 1; i += 1) {
+		for (int j = i + 1; j < arr.length; j += 1) {
+			if (arr[i] > arr[j]) {
+				int tmp = arr[i];
+				arr[i] = arr[j];
+				arr[j] = tmp;
+			}
+		}
+	}
+}
 
+int bsearch(int arr[], int elem) {
+	int lo = 0;
+	int hi = arr.length;
+
+	result = -1;
+	for (;lo < hi;) {
+		int mid = lo + ((hi - lo) / 2);
+		int val = arr[mid];
+
+		if (val < elem) {
+			lo = mid + 1;
+		}
+		else if (val > elem) {
+			hi = mid;
+		}
+		else {
+			result = mid;
+			//~ return;
+			lo = hi;
+		}
+	}
+}
+
+void randomize(int arr[]) {
+	for (int i = 0; i < arr.length; i += 1) {
+		arr[i] = rand() % 30;
+	}
+}
+
+//~ define hex32 int32;		// %hex32(0x%08x)
+
+randomize(arr2);
+int max = maximum(arr2);
+int toFind = arr2.length;
+//~ int toFind = arr2[arr2.length / 2];
+//~ sort(arr2);
+//~ int index = bsearch(arr2, toFind);
+// +/
 
 //~ */
+
+/* strings
+//~ string s = "alma a fa alatt";		// this should be dynamic.
+//~ uint8 ss[4];
+//~ int a = ss.length;
+string x = "almax a fa alatt";
+//~ string ss[3];
+//~ ss[0] = x;//"alma1 a fa alatt";
+//~ ss[1] = "alma2 a fa alatt";
+//~ ss[2] = "alma3 a fa alatt";
+//~ string y = ss[1];
+
+int iii[3] = 1, 2, 3;
+string sss[3] = x, "a2", "a3";
+
+//~ ss[0][3] = 'A';
+
+//~ println(y);
+//~ println(ss[2]);
+
+//~ string c = ss[0];
+//~ putstr(c);
+
+//~ int a = 9;
+//~ int &b = null;
+//~ &b = a;
+
+//~ b = 88;
+// */
 
 /* static and nonstatic members.
 struct alma {
