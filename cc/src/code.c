@@ -95,12 +95,13 @@ static symn installref(state rt, const char *prot, astn *argv) {
 	int errc = rt->errc;
 
 	if (!ccOpen(rt, srcText, (char *)prot)) {
+		trace("FixMe");
 		return NULL;
 	}
 
 	rt->cc->warn = 9;
 	level = rt->cc->nest;
-	if ((root = decl(rt->cc, decl_Ref))) {
+	if ((root = decl(rt->cc, decl_NoDefs | decl_NoInit))) {
 
 		dieif(level != rt->cc->nest, "FixMe");
 		dieif(root->kind != TYPE_def, "FixMe");
@@ -118,13 +119,11 @@ static symn installref(state rt, const char *prot, astn *argv) {
 	return errc == rt->errc ? result : NULL;
 }//*/
 
-/*
- * install a library call
+/* install a library call
  * @arg s: the runtime state.
  * @arg libc: the function to call.
  * @arg proto: prototype of function.
  */
-
 symn libcall(state rt, int libc(state), int pos, const char* proto) {
 	symn arg, sym = NULL;
 	int stdiff = 0;
@@ -953,7 +952,7 @@ int stkoffs(state rt, int size) {
 	return size + rt->vm.ss * 4;
 }
 
-/*static cell task(state ee, cell pu, int cc, int n, int cl, int dl) {
+/*static cell task(state rt, cell pu, int cc, int n, int cl, int dl) {
 	// find an empty cpu
 	cell pu = 0;//pp;
 	while (pu && pu->ip)
@@ -969,7 +968,7 @@ int stkoffs(state rt, int size) {
 	return pu + n;
 }// */
 
-/*static int done(state ee, int cp) {
+/*static int done(state rt, int cp) {
 	pu[pu[cp].pp].cp -= 1;
 	sigsnd(pp->pp, SIG_quit);
 }// */
@@ -985,7 +984,7 @@ typedef enum {
 static int mtt(state rt, doWhat cmd, cell pu, int n) {
 	static int workers = 0;
 	switch (cmd) {
-		case doInit: {			// master thread is running
+		case doInit: {					// master thread is running
 			int i;
 			workers = 1;
 			for (i = 0; i < n; ++i) {
@@ -998,11 +997,11 @@ static int mtt(state rt, doWhat cmd, cell pu, int n) {
 			workers |= fpu;
 			return fpu;
 		} break;
-		case doWait: {			// master thread is running
+		case doWait: {					// master thread is running
 			workers = 1;
 		} break;
-		/*case doBrk: if (ee->dbg) {
-			ee->dbg(ee, ....);
+		/*case doBrk: if (rt->dbg) {
+			rt->dbg(rt, ....);
 		} break;*/
 	}
 	(void)rt;
@@ -1022,7 +1021,8 @@ STINLINE int ovf(cell pu) {
 **/
 static void dbugerr(state rt, char *file, int line, int pu, void *ip, long* bp, int ss, char *text, int xxx) {
 	int IP = ((unsigned char*)ip) - rt->_mem;
-	error(rt, file, line, "exec:%s(%?d):[pu%02d][sp%02d]@%9.*A rw@%06x", text, xxx, pu, ss, IP, ip);
+	//~ error(rt, file, line, "exec:%s(%?d):[pu%02d][sp%02d]@%9.*A rw@%06x", text, xxx, pu, ss, IP, ip);
+	error(rt, file, line, "exec:%s(%?d):[sp%02d]@%9.*A rw@%06x", text, xxx, ss, IP, ip);
 }
 static int dbugpu(state rt, cell pu, dbgf dbg) {
 	typedef uint32_t *stkptr;
@@ -1108,6 +1108,7 @@ int vmExec(state rt, dbgf dbg) {
 
 	rt->cc = NULL;		// invalidate compiler
 	rt->_ptr = pu->sp;	// initiate stack position
+	//~ if (rt->args) {}	// init argc, argv
 	return dbugpu(rt, pu, dbg);
 }
 

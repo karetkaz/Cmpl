@@ -72,10 +72,12 @@ int isConst(astn ast) {
 }
 
 int cgen(state rt, astn ast, ccToken get) {
-	#if DEBUGGING > 1
 	int ipdbg = emitopc(rt, markIP);
+
+	#if DEBUGGING > 1
 	ccToken qual = 0;
 	#endif
+
 	struct astn tmp;
 	ccToken ret = 0;
 
@@ -89,14 +91,6 @@ int cgen(state rt, astn ast, ccToken get) {
 		ret = ast->type->kind;
 
 	//~ debug("%+k", ast);
-
-	// some extra info
-	if (ast->kind > STMT_beg && ast->kind < STMT_end) {
-		list l = setBuff(&rt->cc->dbg, rt->cc->dbg.cnt, NULL);
-		dieif (l == NULL, "Fatal Error allocating @%d", rt->cc->dbg.cnt);
-		l->size = emitopc(rt, markIP);
-		l->data = (void*)ast;
-	}
 
 	#if DEBUGGING > 1
 	// take care of qualifies statements `static if` ...
@@ -138,13 +132,9 @@ int cgen(state rt, astn ast, ccToken get) {
 		case STMT_beg: {	// {} or function body
 			astn ptr;
 			int stpos = stkoffs(rt, 0);
-			#if DEBUGGING > 1
-			ipdbg = emitopc(rt, markIP);
-			#endif
+			symn free = rt->cc->free;
+			rt->cc->free = NULL;
 			for (ptr = ast->stmt.stmt; ptr; ptr = ptr->next) {
-				//~ #if DEBUGGING > 1
-				//~ ipdbg = emitopc(s, markIP);
-				//~ #endif
 				if (!cgen(rt, ptr, TYPE_vid)) {		// we will free stack on scope close
 					error(rt, ptr->file, ptr->line, "emmiting statement `%+k`", ptr);
 					#if DEBUGGING > 1
@@ -153,17 +143,42 @@ int cgen(state rt, astn ast, ccToken get) {
 					#endif
 				}
 			}
-			//~ for (sym = ast->type; sym; sym = sym->next);	// destruct?
 			if (ast->cst2 == TYPE_rec) {
 				debug("%t", get);
 				get = 0;
 			}
 			if (get == TYPE_vid && stpos != stkoffs(rt, 0)) {
+				symn var;
+				// destruct
+				for (var = rt->cc->free; var; var = var->next) {
+					if (var->cast == TYPE_ref || var->cast == TYPE_arr) {
+						if (!emitopc(rt, opc_ldz1)) {
+							trace("%+k", ast);
+							return 0;
+						}
+
+						if (!genRef(rt, var->offs)) {
+							trace("%+k", ast);
+							return 0;
+						}
+						if (!emitint(rt, opc_ldi, 4)) {
+							trace("%+k", ast);
+							return 0;
+						}
+
+						if (!emitint(rt, opc_libc, rt->cc->libc_mem->offs)) {
+							trace("%+k", ast);
+							return 0;
+						}
+					}
+					logif(1, "%-T", var);
+				} // */
 				if (!emitidx(rt, opc_drop, stpos)) {
 					trace("error");
 					return 0;
 				}
 			}
+			rt->cc->free = free;
 		} break;
 		case STMT_if:  {
 			int jmpt = 0, jmpf = 0;
@@ -341,6 +356,10 @@ int cgen(state rt, astn ast, ccToken get) {
 			TODO("declared reference variables should be freed.")
 			int bppos = stkoffs(rt, 0);
 			//~ trace("ss: %d, sm: %d, ro: %d", rt->vm.ss, rt->vm.sm, rt->vm.ro);
+			if (rt->cc->free != NULL) {
+				symn var = rt->cc->free;
+				error(rt, var->file, var->line, "return will not free dynamically allocated variables `%-T`", var);
+			}
 			if (get == TYPE_vid && rt->vm.ro != stkoffs(rt, 0)) {
 				if (!emitidx(rt, opc_drop, rt->vm.ro)) {
 					trace("leve %d", rt->vm.ro);
@@ -1191,13 +1210,56 @@ int cgen(state rt, astn ast, ccToken get) {
 						error(rt, ast->file, ast->line, "invalid initializer size: %d diff(%d): `%+k`", stktop, stktop - var->offs, val);
 						return 0;
 					}
-
 				}
+				else if (var->cast == TYPE_arr && typ->init && !var->offs) {
+					//~ Warning: right to left parameter pushing
+					int size = sizeOf(typ);	// TODO: var->size;
+					// push n
+					if (!cgen(rt, typ->init, TYPE_i32)) {
+						trace("%+k", ast);
+						return 0;
+					}
+
+					// push n * sizeof(element size)
+					if (!emitint(rt, opc_dup1, 0)) {
+						trace("%+k", ast);
+						return 0;
+					}
+					if (!emiti32(rt, typ->type->size)) {
+						trace("%+k", ast);
+						return 0;
+					}
+					if (!emitopc(rt, i32_mul)) {
+						trace("%+k", ast);
+						return 0;
+					}
+
+					// push null
+					if (!emitint(rt, opc_ldcr, 0)) {
+						trace("%+k", ast);
+						return 0;
+					}
+
+					if (!emitint(rt, opc_libc, rt->cc->libc_mem->offs)) {
+						trace("%+k", ast);
+						return 0;
+					}
+
+					var->offs = stkoffs(rt, 0);
+					if (var->offs < size) {
+						error(rt, ast->file, ast->line, "stack underflow", var->offs, size);
+						return 0;
+					}
+
+					var->next = rt->cc->free;
+					rt->cc->free = var;
+
+					//~ debug("%-T", var);
+				}// */
 				else if (!var->offs) {		// alloc locally a block of the size of the type;
 					int size = sizeOf(typ);	// TODO: var->size;
-					logif(var->size != sizeOf(typ), "FixMe %T(%d, %d)", var, var->size, sizeOf(typ));
+					logif(var->size != sizeOf(typ) && typ->kind != TYPE_arr, "FixMe %T(%d, %d)", var, var->size, sizeOf(typ));
 					debug("%-T:%t", var, var->cast);
-					//~ dieif(typ->cast == TYPE_arr, "FixMe");
 					if (!emitint(rt, opc_spc, size)) {
 						trace("%+k", ast);
 						return 0;
@@ -1412,6 +1474,14 @@ int cgen(state rt, astn ast, ccToken get) {
 				fatal("FixMe");
 				break;
 		}
+	}
+
+	// debug info, invalid after first execution
+	if (ast->kind > STMT_beg && ast->kind < STMT_end && ipdbg < emitopc(rt, markIP)) {
+		list l = setBuff(&rt->cc->dbg, rt->cc->dbg.cnt, NULL);
+		dieif (l == NULL, "Fatal Error allocating @%d", rt->cc->dbg.cnt);
+		l->data = (void*)ast;
+		l->size = ipdbg;
 	}
 
 	#if DEBUGGING > 1
@@ -2079,9 +2149,58 @@ static void install_type(ccState cc, int mode) {
 	(void)type_u16;
 }
 
+enum runtimeCalls {
+
+	rtCallExit,			// system.exit
+	//~ rtCallRand,
+	//~ rtCallPutStr,
+	//~ rtCallPutFmt,
+	rtCallMemMgr,
+};
+static int libCallRuntime(state rt) {
+	switch (rt->fdata) {
+		default: return -1;
+
+		case rtCallExit:
+			exit(popi32(rt));
+			break;
+
+		/*case rtCallRand: {
+			static int initialized = 0;
+			int result;
+			if (!initialized) {
+				srand(time(NULL));
+				initialized = 1;
+			}
+			result = rand() * rand();	// if it gives a 16 bit int
+			setret(rt, int32_t, result & 0x7fffffff);
+		} break;
+
+		case rtCallPutStr: {
+			// TODO: check bounds
+			fputfmt(stdout, "%s", popref(rt));
+		} break;
+		case rtCallPutFmt: {
+			char *fmt = popref(rt);
+			int64_t arg = popi64(rt);
+			fputfmt(stdout, fmt, arg);
+		} break;*/
+
+		case rtCallMemMgr: {
+			void *old = popref(rt);
+			int size = popi32(rt);
+			void *res = rtAlloc(rt, old, size);
+			setret(rt, int32_t, vmOffset(rt, res));
+			//~ logif(1, "memmgr(%06x, %d): %06x", vmOffset(rt, old), size, vmOffset(rt, res));
+		} break;
+	}
+
+	return 0;
+}
 static int libCallExitQuiet(state rt) {
 	return 0;
 }
+
 ccState ccInit(state rt, int mode, int libcExit(state)) {
 
 	ccState cc = (void*)rt->_ptr;
@@ -2135,6 +2254,7 @@ ccState ccInit(state rt, int mode, int libcExit(state)) {
 	}
 
 	libcall(rt, libcExit ? libcExit : libCallExitQuiet, 0, "void Exit(int code);");
+	cc->libc_mem = libcall(rt, libCallRuntime, rtCallMemMgr, "pointer memmgr(pointer ptr, int32 size);");
 	return cc;
 }
 ccState ccOpen(state rt, srcType mode, char *src) {
@@ -2162,7 +2282,7 @@ int ccDone(state rt) {
 		return -1;
 	}
 
-	//TODO: check nesting level is 0
+	//TODO: check if nesting level is 0
 	/*if (cc->nest != 0) {
 		error(rt, cc->file, cc->line, "expected: `}`");
 		return -1;
@@ -2484,4 +2604,3 @@ void freeBuff(arrBuffer* buff) {
 
 #endif
 //} */
-

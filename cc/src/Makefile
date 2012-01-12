@@ -46,7 +46,7 @@ lib:$(OBJS)
 
 clean:
 	rm -f $(OBJS) $(OBJDIR)main.o
-	rm -f *.obj
+#~ rm -f *.obj
 
 debug:
 	$(DBG) "$(BINDIR)main"

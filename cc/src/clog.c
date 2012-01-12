@@ -963,7 +963,6 @@ int logfile(state rt, char* file) {
 	return 0;
 }
 
-
 void fputfmt(FILE *fout, const char *msg, ...) {
 	va_list ap;
 	va_start(ap, msg);
@@ -1106,7 +1105,7 @@ void dump(state rt, dumpMode mode, symn sym, char *text, ...) {
 			if (sym->kind == TYPE_ref && sym->call) {
 				//~ fputfmt(logf, "%-T [@%d: %d]\n", var, -var->offs, var->size);
 				if ((level & 0x0f) == 0x0f)
-					dumpxml(logf, sym->init, 0, "root", level);
+					dumpxml(logf, sym->init, 0, "code", level);
 				else
 					fputast(logf, sym->init, level | 2, 0);
 			}
@@ -1163,6 +1162,24 @@ void dump(state rt, dumpMode mode, symn sym, char *text, ...) {
 		case dump_asm: {
 			if (text != NULL)
 				fputfmt(logf, text);
+
+			//~ unsigned int	pc;			// entry point / prev program counter
+			//~ unsigned int	px;			// exit point / program counter
+
+			//~ unsigned int	ss;			// stack size / current stack size
+			//~ unsigned int	sm;			// stack minimum size
+
+			//~ unsigned int	ro;			// <= ro : read only region(meta data) / cgen:(function parameters)
+			//~ unsigned int	pos;		// current positin in buffer
+			fputfmt(logf, "vm {\n"
+				"\tpc: %d;\n"
+				"\tpx: %d;\n"
+				"\tss: %d;\n"
+				"\tsm: %d;\n"
+				"\tro: %d;\n"
+				//~ "\tpos: %d;\n"
+			"}\n", rt->vm.pc, rt->vm.px, rt->vm.ss, rt->vm.sm, rt->vm.ro);//, rt->vm.pos);
+
 			if (mode & 0x80) {
 				symn var;
 				for (var = rt->defs; var; var = var->next) {

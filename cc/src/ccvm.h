@@ -329,7 +329,10 @@ struct ccState {
 	symn	func;		// functions level stack
 	//~ symn	gdef;		// definitions
 	astn	root;		// statements
+
+	// lists
 	astn	jmps;		// jumps
+	symn	free;		// free these variables
 
 	list	strt[TBLS];		// string table
 	symn	deft[TBLS];		// definitions: hashStack;
@@ -370,6 +373,7 @@ struct ccState {
 	astn	void_tag;		// no parameter of type void
 	astn	emit_tag;		// "emit"
 
+
 	//~ symn	type_vid;
 	//~ symn	type_bol;
 	//~ symn	type_u32;
@@ -382,6 +386,9 @@ struct ccState {
 
 	//~ symn	null_ref;
 	//~ symn	emit_opc;
+	//~ symn	emit_val;
+
+	symn	libc_mem;		// memory manager libcall
 
 	char	*_beg;
 	char	*_end;
@@ -404,7 +411,6 @@ extern symn null_ref;
 
 extern symn emit_opc;
 extern symn emit_val;
-
 
 //~ clog
 //~ void fputfmt(FILE *fout, const char *msg, ...);

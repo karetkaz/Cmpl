@@ -109,4 +109,4 @@ int vmCall(state, symn fun, ...);
 
 #endif
 
-#define DEBUGGING 15
+#define DEBUGGING 1

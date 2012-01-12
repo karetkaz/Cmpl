@@ -118,6 +118,16 @@ typedef struct stateApi {
 	*/
 	symn (*ccDefineInt)(state, char *name, int32_t value);
 
+	//~ symn (*ccDefVar)(state, char *name, symn type, int array);
+	//XXX~ symn (*ccDefType)(state, char *name, symn type, int size); ???
+
+	//~ symn (*ccDefIntConst)(state, char *name, int32_t value);
+	//~ symn (*ccDefFltConst)(state, char *name, int32_t value);
+	//~ symn (*ccDefStrConst)(state, char *name, int32_t value);
+
+	//~ symn (*ccAddText)(state, char *name, int32_t value);
+	//~ symn (*ccAddFile)(state, char *name, int32_t value);
+
 	/** Add a floating point constant.
 	 * @param the runtime state.
 	 * @param name: the name of the constant.

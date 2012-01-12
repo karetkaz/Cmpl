@@ -287,7 +287,7 @@ enum miscCalls {
 	miscOpPutStr,
 	miscOpPutFmt,
 
-	miscOpMemMgr,
+	//~ miscOpMemMgr,
 };
 
 STINLINE int64_t clockCpu() {
@@ -365,13 +365,13 @@ static int miscCall(state rt) {
 			fputfmt(stdout, fmt, arg);
 		} break;
 
-		case miscOpMemMgr: {
+		/*case miscOpMemMgr: {
 			void *old = popref(rt);
 			int size = popi32(rt);
 			void *res = rtAlloc(rt, old, size);
 			setret(rt, int32_t, vmOffset(rt, res));
 			//~ debug("memmgr(%06x, %d): %06x", vmOffset(s, old), size, vmOffset(s, res));
-		} break;
+		} break;// */
 	}
 
 	return 0;
@@ -442,7 +442,7 @@ int install_stdc(state rt, char* file, int level) {
 		{miscCall, miscOpPutFmt,		"void print(string fmt, int64 val);"},
 		{miscCall, miscOpPutFmt,		"void print(string fmt, float64 val);"},
 
-		{miscCall, miscOpMemMgr,		"pointer realloc(pointer ptr, int32 size);"},		// reallocate, allocate, free
+		//~ {miscCall, miscOpMemMgr,		"pointer realloc(pointer ptr, int32 size);"},		// reallocate, allocate, free
 		//~ {NULL, miscOpMemMgr,		"define alloc(int32 size) = realloc(null, size);"},
 		//~ {NULL, miscOpMemMgr,		"define free(pointer ptr) = realloc(ptr, 0);"},
 

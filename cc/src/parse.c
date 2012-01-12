@@ -1510,6 +1510,7 @@ static astn reft(ccState s, int mode) {
 		}
 
 		ref = declare(s, TYPE_ref, tag, typ);
+		ref->size = byref ? 4 : sizeOf(typ);
 
 		if (skip(s, PNCT_lp)) {				// int a(...)
 			enter(s, tag);
@@ -1518,7 +1519,7 @@ static astn reft(ccState s, int mode) {
 
 
 			ref->args = leave(s, ref, 0);
-			ref->cast = TYPE_ref;
+			//~ ref->cast = TYPE_ref;
 			ref->call = 1;
 
 			if (ref->args == NULL) {
@@ -1578,15 +1579,18 @@ static astn reft(ccState s, int mode) {
 					addarg(s, typ, "length", TYPE_def, type_i32, init);
 					typ->size = val.con.cint;
 					typ->init = init;
+
+					ref->cast = 0;
+
 					dynarr = 0;
 					//~ debug("length of %-T = %+k", ref, init);
 					if (typ->size < 0) {
 						error(s->s, init->file, init->line, "positive integer constant expected, got `%+k`", init);
 					}
 				}
-				else {
+				/*else {
 					error(s->s, init->file, init->line, "integer constant expected, got `%+k`", init);
-				}
+				}// */
 			}
 			if (dynarr) {
 				symn length = addarg(s, typ, "length", TYPE_ref, type_i32, NULL);

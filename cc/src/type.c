@@ -615,7 +615,9 @@ symn declare(ccState s, int kind, astn tag, symn typ) {
 				tag->kind = kind;
 				break;
 		}
-		//~ def->cast = typ ? typ->cast : TYPE_any;
+		if (typ) {
+			def->cast = typ->cast;
+		}
 	}
 
 	return def;
