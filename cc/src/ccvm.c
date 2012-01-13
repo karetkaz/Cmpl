@@ -171,7 +171,7 @@ int cgen(state rt, astn ast, ccToken get) {
 							return 0;
 						}
 					}
-					logif(1, "%-T", var);
+					debug("delete var: %-T", var);
 				} // */
 				if (!emitidx(rt, opc_drop, stpos)) {
 					trace("error");
@@ -1491,7 +1491,6 @@ int cgen(state rt, astn ast, ccToken get) {
 	return ret;
 }
 
-TODO("ggen shold go to cgen")
 int ggen(state rt, symn var, astn add) {
 	ccState cc = rt->cc;
 	if (var->call && var->cast != TYPE_ref) {
@@ -1544,26 +1543,6 @@ int ggen(state rt, symn var, astn add) {
 				warn(rt, 1, var->file, var->line, "non constant initialization of static variable `%-T`", var);
 			}
 
-			/*/~ make assigment from initializer
-			astn init = newnode(cc, ASGN_set);
-
-			init->op.lhso = lnknode(cc, var);
-			init->op.rhso = var->init;
-			init->type = var->type;
-			init->cst2 = TYPE_vid;
-
-			if (var->cast == TYPE_ref) {
-				init->op.lhso->cst2 = ASGN_set;
-				init->op.lhso = opnode(cc, OPER_adr, NULL, init->op.lhso);
-				init->op.lhso->type = type_ptr;
-			}
-
-			init = opnode(cc, STMT_do, NULL, init);
-			init->type = type_vid;
-			init->file = var->file;
-			init->line = var->line;
-			// */
-
 			//~ make initialization from initializer
 			init->type = var->type;
 			init->file = var->file;
@@ -1584,17 +1563,12 @@ int ggen(state rt, symn var, astn add) {
 				add->list.tail->next = init;
 			}
 			add->list.tail = init;
-
-			//~ st->next = NULL;
-
-			//~ var->init = NULL;
 		}
 
 		//~ trace("static variable: %+T@%x:%d", var, -var->offs, sizeOf(var));
 	}
 
 	//~ trace("static variable: %-T@%x:%d", var, -var->offs, sizeOf(var));
-	//~ logif(1, "static variable: %-T@%x:%d = %+k", var, -var->offs, var->size, var->init);
 	return 1;
 }
 
@@ -1802,7 +1776,6 @@ int gencode(state rt, int level) {
 			init->list.tail->next = cc->root->stmt.stmt;
 			cc->root->stmt.stmt = init->list.head;
 		}
-
 	}
 
 	rt->cc->sini = 1;
@@ -1853,7 +1826,7 @@ static void install_emit(ccState cc, int mode) {
 	if (!(mode & creg_emit))
 		return;
 
-	emit_opc = install(cc, "emit", symn_const | EMIT_opc, 0, 0);
+	emit_opc = install(cc, "emit", ATTR_const | EMIT_opc, 0, 0);
 
 	if (!emit_opc)
 		return;
@@ -2082,47 +2055,47 @@ static void install_type(ccState cc, int mode) {
 	symn type_u08 = NULL, type_u16 = NULL;
 	//~ symn type_chr = NULL, type_tmp = NULL;
 
-	type_vid = install(cc,    "void", symn_const | TYPE_rec, TYPE_vid, 0);
-	type_bol = install(cc,    "bool", symn_const | TYPE_rec, TYPE_bit, 4);
-	type_i08 = install(cc,    "int8", symn_const | TYPE_rec, TYPE_i32, 1);
-	type_i16 = install(cc,   "int16", symn_const | TYPE_rec, TYPE_i32, 2);
-	type_i32 = install(cc,   "int32", symn_const | TYPE_rec, TYPE_i32, 4);
-	type_i64 = install(cc,   "int64", symn_const | TYPE_rec, TYPE_i64, 8);
-	type_u08 = install(cc,   "uint8", symn_const | TYPE_rec, TYPE_u32, 1);
-	type_u16 = install(cc,  "uint16", symn_const | TYPE_rec, TYPE_u32, 2);
-	type_u32 = install(cc,  "uint32", symn_const | TYPE_rec, TYPE_u32, 4);
-	// type_ = install(cc,  "uint64", symn_const | TYPE_rec, TYPE_u64, 8);
-	// type_ = install(cc, "float16", symn_const | TYPE_rec, TYPE_f64, 2);
-	type_f32 = install(cc, "float32", symn_const | TYPE_rec, TYPE_f32, 4);
-	type_f64 = install(cc, "float64", symn_const | TYPE_rec, TYPE_f64, 8);
+	type_vid = install(cc,    "void", ATTR_const | TYPE_rec, TYPE_vid, 0);
+	type_bol = install(cc,    "bool", ATTR_const | TYPE_rec, TYPE_bit, 4);
+	type_i08 = install(cc,    "int8", ATTR_const | TYPE_rec, TYPE_i32, 1);
+	type_i16 = install(cc,   "int16", ATTR_const | TYPE_rec, TYPE_i32, 2);
+	type_i32 = install(cc,   "int32", ATTR_const | TYPE_rec, TYPE_i32, 4);
+	type_i64 = install(cc,   "int64", ATTR_const | TYPE_rec, TYPE_i64, 8);
+	type_u08 = install(cc,   "uint8", ATTR_const | TYPE_rec, TYPE_u32, 1);
+	type_u16 = install(cc,  "uint16", ATTR_const | TYPE_rec, TYPE_u32, 2);
+	type_u32 = install(cc,  "uint32", ATTR_const | TYPE_rec, TYPE_u32, 4);
+	// type_ = install(cc,  "uint64", ATTR_const | TYPE_rec, TYPE_u64, 8);
+	// type_ = install(cc, "float16", ATTR_const | TYPE_rec, TYPE_f64, 2);
+	type_f32 = install(cc, "float32", ATTR_const | TYPE_rec, TYPE_f32, 4);
+	type_f64 = install(cc, "float64", ATTR_const | TYPE_rec, TYPE_f64, 8);
 
-	//~ addarg(cc, type_vid, "sizeOf", symn_stat | TYPE_def, type_i32, intnode(cc, sizeOf(type_vid)));
-	//~ addarg(cc, type_bol, "sizeOf", symn_stat | TYPE_def, type_i32, intnode(cc, sizeOf(type_bol)));
-	//~ addarg(cc, type_i08, "sizeOf", symn_stat | TYPE_def, type_i32, intnode(cc, sizeOf(type_i08)));
-	//~ addarg(cc, type_i16, "sizeOf", symn_stat | TYPE_def, type_i32, intnode(cc, sizeOf(type_i16)));
-	//~ addarg(cc, type_i32, "sizeOf", symn_stat | TYPE_def, type_i32, intnode(cc, sizeOf(type_i32)));
-	//~ addarg(cc, type_i64, "sizeOf", symn_stat | TYPE_def, type_i32, intnode(cc, sizeOf(type_i64)));
-	//~ addarg(cc, type_u08, "sizeOf", symn_stat | TYPE_def, type_i32, intnode(cc, sizeOf(type_u08)));
-	//~ addarg(cc, type_u16, "sizeOf", symn_stat | TYPE_def, type_i32, intnode(cc, sizeOf(type_u16)));
-	//~ addarg(cc, type_u32, "sizeOf", symn_stat | TYPE_def, type_i32, intnode(cc, sizeOf(type_u32)));
-	//~ addarg(cc, type_f32, "sizeOf", symn_stat | TYPE_def, type_i32, intnode(cc, sizeOf(type_f32)));
-	//~ addarg(cc, type_f64, "sizeOf", symn_stat | TYPE_def, type_i32, intnode(cc, sizeOf(type_f64)));
+	//~ addarg(cc, type_vid, "sizeOf", ATTR_stat | TYPE_def, type_i32, intnode(cc, sizeOf(type_vid)));
+	//~ addarg(cc, type_bol, "sizeOf", ATTR_stat | TYPE_def, type_i32, intnode(cc, sizeOf(type_bol)));
+	//~ addarg(cc, type_i08, "sizeOf", ATTR_stat | TYPE_def, type_i32, intnode(cc, sizeOf(type_i08)));
+	//~ addarg(cc, type_i16, "sizeOf", ATTR_stat | TYPE_def, type_i32, intnode(cc, sizeOf(type_i16)));
+	//~ addarg(cc, type_i32, "sizeOf", ATTR_stat | TYPE_def, type_i32, intnode(cc, sizeOf(type_i32)));
+	//~ addarg(cc, type_i64, "sizeOf", ATTR_stat | TYPE_def, type_i32, intnode(cc, sizeOf(type_i64)));
+	//~ addarg(cc, type_u08, "sizeOf", ATTR_stat | TYPE_def, type_i32, intnode(cc, sizeOf(type_u08)));
+	//~ addarg(cc, type_u16, "sizeOf", ATTR_stat | TYPE_def, type_i32, intnode(cc, sizeOf(type_u16)));
+	//~ addarg(cc, type_u32, "sizeOf", ATTR_stat | TYPE_def, type_i32, intnode(cc, sizeOf(type_u32)));
+	//~ addarg(cc, type_f32, "sizeOf", ATTR_stat | TYPE_def, type_i32, intnode(cc, sizeOf(type_f32)));
+	//~ addarg(cc, type_f64, "sizeOf", ATTR_stat | TYPE_def, type_i32, intnode(cc, sizeOf(type_f64)));
 
 	if (1) {	// if pointer is needed.
-		if ((type_ptr = installex(cc, "pointer", symn_const | TYPE_rec, 0, NULL, NULL))) {
+		if ((type_ptr = installex(cc, "pointer", ATTR_const | TYPE_rec, 0, NULL, NULL))) {
 			type_ptr->cast = TYPE_ref;
 			type_ptr->size = 0;
 		}
-		null_ref = installex(cc, "null",   symn_stat | symn_const | TYPE_ref, TYPE_ref, type_ptr, NULL);
+		null_ref = installex(cc, "null",   ATTR_stat | ATTR_const | TYPE_ref, TYPE_ref, type_ptr, NULL);
 	}
 	if (1) {	// if variant is needed.
-		//~ type_var = install(cc, "variant", symn_const | TYPE_rec, TYPE_rec, 8);
+		//~ type_var = install(cc, "variant", ATTR_const | TYPE_rec, TYPE_rec, 8);
 	}
 
 	if (1) {	// if aliases are needed.
 		symn type_chr = type_u08;
-		//~ type_chr = installex(cc, "char", symn_const | TYPE_def, 0, type_i08, NULL);
-		if ((type_str = installex(cc, "string", symn_const | TYPE_arr, TYPE_ref, type_chr, NULL))) {// string is alias for char[]
+		//~ type_chr = installex(cc, "char", ATTR_const | TYPE_def, 0, type_i08, NULL);
+		if ((type_str = installex(cc, "string", ATTR_const | TYPE_arr, TYPE_ref, type_chr, NULL))) {// string is alias for char[]
 			/* TODO:
 			symn length = addarg(cc, type_str, "length", TYPE_ref, type_i32, NULL);
 			dieif(length == NULL, "FixMe");
@@ -2133,8 +2106,8 @@ static void install_type(ccState cc, int mode) {
 			type_str->size = 4;
 		}
 
-		//~ installex(cc, "array",  symn_const | TYPE_arr, 0, type_var, NULL);		// array is alias for variant[]
-		//~ installex(cc, "var",    symn_const | TYPE_def, 0, type_var, NULL);		// var is alias for variant
+		//~ installex(cc, "array",  ATTR_const | TYPE_arr, 0, type_var, NULL);		// array is alias for variant[]
+		//~ installex(cc, "var",    ATTR_const | TYPE_def, 0, type_var, NULL);		// var is alias for variant
 
 		installex(cc, "int",    TYPE_def, 0, type_i32, NULL);
 		installex(cc, "long",   TYPE_def, 0, type_i64, NULL);

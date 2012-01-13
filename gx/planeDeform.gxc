@@ -1,0 +1,374 @@
+
+const Window {
+	draw = RenderMode.swap_buff;
+	//~ resx = 1024;
+	//~ resy = 1024;
+	resx = 512;
+	resy = 512;
+}
+
+gxSurf srcImg = gxSurf("media/images/download.jpg");
+
+define WIDTH  = 92;
+define HEIGHT = WIDTH;
+gxSurf dstImg = gxSurf(WIDTH, HEIGHT);
+
+int mouseX = Window.resx / 2;
+int mouseY = Window.resy / 2;
+
+int imgcoord(double val, int resolution) {
+	result = val * resolution;
+
+	if ((result %= resolution) < 0)
+		result += resolution;
+}
+
+int rgbscale(int col, double s) {
+	const fixp = 16;
+	int scale = s * (1 << fixp);
+	int r = clamp(rch(col) * scale >> fixp, 0, 255);
+	int g = clamp(gch(col) * scale >> fixp, 0, 255);
+	int b = clamp(bch(col) * scale >> fixp, 0, 255);
+	result = rgb(r, g, b);
+}
+
+define tex2d(gxSurf ^src, double x, double y) = getPixel(src, imgcoord(x, width(src)), imgcoord(y, height(src)));
+define tex2d(gxSurf src, double u, double v, double w) = rgbscale(tex2d(src, u, v), w);
+
+define nz(double x) = nz(x, 1e-200);
+define atan(double x, double y) = atan2(x, y);
+
+// mert a dogseg nagy betegseg.
+const pi = Math.pi;
+
+int64 begTime = timeNow();
+define getTime() = clocksPerSec(timeNow() - begTime);
+
+void plasma() {
+	double time = getTime();
+	for (int yi = 0; yi < HEIGHT; yi += 1) {
+		double y = double(yi);// / HEIGHT;
+		for (int xi = 0; xi < WIDTH; xi += 1) {
+			double x = double(xi);// / WIDTH;
+			double mov0 = x + y + cos(sin(time)*2.)*100.+sin(x/100.)*1000.;
+			double mov1 = y / HEIGHT / 0.2 + time;
+			double mov2 = x / WIDTH / 0.2;
+			double c1 = abs(sin(mov1+time)/2.+mov2/2.-mov1-mov2+time);
+			double c2 = abs(sin(c1+sin(mov0/1000.+time)+sin(y/40.+time)+sin((x+y)/100.)*3.));
+			double c3 = abs(sin(c2+cos(mov1+mov2+c2)+cos(mov2)+sin(x/1000.)));
+			c1 = clamp(c1, 0., 1.);
+			c2 = clamp(c2, 0., 1.);
+			c3 = clamp(c3, 0., 1.);
+			setPixel(dstImg, xi, yi, rgb(vec4f(c1, c2, c3)));
+		}
+	}
+	zoomSurf(offScreen, null, dstImg, null, 1);
+	Gui.Repaint();
+}
+
+void stereographic() {
+	double time = .05 * getTime();
+	double cx = (mouseX * WIDTH / Window.resx);
+	double cy = (mouseY * HEIGHT / Window.resy);
+	for (int yi = 0; yi < HEIGHT; yi += 1) {
+		double y = (yi - cy) / HEIGHT;
+		for (int xi = 0; xi < WIDTH; xi += 1) {
+			double x = (xi - cx) / WIDTH;
+
+			double a = atan(y, x);
+			double r = 50 * nz(hypot(x, y));
+
+			double u = time + cos(a) / r;
+			double v = time + sin(a) / r;
+
+			setPixel(dstImg, xi, yi, tex2d(srcImg, u, v));
+		}
+	}
+	zoomSurf(offScreen, null, dstImg, null, 1);
+	Gui.Repaint();
+}
+void stereographic2() {
+	double time = .05 * getTime();
+	double cx = (mouseX * WIDTH / Window.resx);
+	double cy = (mouseY * HEIGHT / Window.resy);
+	for (int yi = 0; yi < HEIGHT; yi += 1) {
+		double y = (yi - cy) / HEIGHT;
+		for (int xi = 0; xi < WIDTH; xi += 1) {
+			double x = (xi - cx) / WIDTH;
+
+			double a = atan(y, x);
+			double r = 100 * nz(hypot(x, y) - .4);
+
+			double u = time + cos(a) / r;
+			double v = time + sin(a) / r;
+
+			setPixel(dstImg, xi, yi, tex2d(srcImg, u, v));
+		}
+	}
+	zoomSurf(offScreen, null, dstImg, null, 1);
+	Gui.Repaint();
+	//~ time += .001;
+}
+
+void circles() {
+	double time = .05 * getTime();
+	double cx = (mouseX * WIDTH / Window.resx);
+	double cy = (mouseY * HEIGHT / Window.resy);
+	for (int yi = 0; yi < HEIGHT; yi += 1) {
+		for (int xi = 0; xi < WIDTH; xi += 1) {
+			double x = xi - cx;
+			double y = yi - cy;
+
+			double r = hypot(x, y);
+
+			double u = time + r / 200.;
+			double v = r / 200.;
+
+			setPixel(dstImg, xi, yi, tex2d(srcImg, v, u));
+
+		}
+	}
+	zoomSurf(offScreen, null, dstImg, null, 1);
+	Gui.Repaint();
+}
+void rays() {
+	double time = .05 * getTime();
+	double cx = (mouseX * WIDTH / Window.resx);
+	double cy = (mouseY * HEIGHT / Window.resy);
+	for (int yi = 0; yi < HEIGHT; yi += 1) {
+		for (int xi = 0; xi < WIDTH; xi += 1) {
+			double x = xi - cx;
+			double y = yi - cy;
+
+			double a = atan(y, x);
+			double r = hypot(x, y);
+
+			double u = time + a;
+			double v = a;
+			//~ double w = 16 / nz(pow( r, .5 ));
+
+			setPixel(dstImg, xi, yi, tex2d(srcImg, u, v));
+
+		}
+	}
+	zoomSurf(offScreen, null, dstImg, null, 1);
+	Gui.Repaint();
+}
+
+void tunnel0() {
+	double time = .1 * getTime();
+	double cx = (mouseX * WIDTH / Window.resx);
+	double cy = (mouseY * HEIGHT / Window.resy);
+	for (int yi = 0; yi < HEIGHT; yi += 1) {
+		double y = (yi - cy) / HEIGHT;
+		for (int xi = 0; xi < WIDTH; xi += 1) {
+			double x = (xi - cx) / WIDTH;
+
+			double a = atan(y, x);
+			double r = hypot(x, y);
+
+			double u = time + .1 / nz(r);
+			double v = a / pi;
+
+			setPixel(dstImg, xi, yi, tex2d(srcImg, u, v, 2 * r));
+		}
+	}
+	//~ println(secs(clkbeg));
+	zoomSurf(offScreen, null, dstImg, null, 1);
+	Gui.Repaint();
+}
+void tunnel1() {
+	double time = .1 * getTime();
+	double cx = (mouseX * WIDTH / Window.resx);
+	double cy = (mouseY * HEIGHT / Window.resy);
+	for (int yi = 0; yi < HEIGHT; yi += 1) {
+		double y = (yi - cy) / HEIGHT;
+		for (int xi = 0; xi < WIDTH; xi += 1) {
+			double x = (xi - cx) / WIDTH;
+
+			double r = pow(pow(x * x, 16) + pow(y * y, 16), 1. / 32);
+			double u = time + .1 / nz(r);
+			double v = atan(y, x) / pi;
+
+			setPixel(dstImg, xi, yi, tex2d(srcImg, v, u, 2 * r));
+		}
+	}
+	zoomSurf(offScreen, null, dstImg, null, 1);
+	Gui.Repaint();
+}
+
+void tunnel2() {
+	double time = .05 * getTime();
+	double cx = (mouseX * WIDTH / Window.resx);
+	double cy = (mouseY * HEIGHT / Window.resy);
+	for (int yi = 0; yi < HEIGHT; yi += 1) {
+		for (int xi = 0; xi < WIDTH; xi += 1) {
+			double x = xi - cx;
+			double y = yi - cy;
+
+			double a = atan( y, x );
+			double r = sqrt( x * x + y * y );
+
+			double u = time + 10 / nz(r + 10 + 50 * sin( 5 * a ));
+			double v = 0.5 * a / pi;
+			double w = 0.01 * ( r + 50 + 50 * sin( 5 * a ));
+
+			setPixel(dstImg, xi, yi, tex2d(srcImg, v, u, w));
+		}
+	}
+	zoomSurf(offScreen, null, dstImg, null, 1);
+	Gui.Repaint();
+}
+void tunnel3() {
+	double time = .05 * getTime();
+	double cx = (mouseX * WIDTH / Window.resx);
+	double cy = (mouseY * HEIGHT / Window.resy);
+	for (int yi = 0; yi < HEIGHT; yi += 1) {
+		for (int xi = 0; xi < WIDTH; xi += 1) {
+			double x = xi - cx;
+			double y = yi - cy;
+
+			double a = atan( y, x );
+			double r = nz(sqrt( x * x + y * y ));
+
+			double u = time + ( 40 / r ) + 0.1 * sin(8 * a);
+			double v = .5 + .5 * a / pi;
+			double w = r * 0.02;
+
+			setPixel(dstImg, xi, yi, tex2d(srcImg, v, u, w));
+		}
+	}
+	zoomSurf(offScreen, null, dstImg, null, 1);
+	Gui.Repaint();
+}
+void tunnel4() {
+	double time = .05 * getTime();
+	double cx = (mouseX * WIDTH / Window.resx);
+	double cy = (mouseY * HEIGHT / Window.resy);
+	for (int yi = 0; yi < HEIGHT; yi += 1) {
+		for (int xi = 0; xi < WIDTH; xi += 1) {
+			double x = xi - cx;
+			double y = yi - cy;
+
+			double a = atan( y, x );
+			double r = nz(hypot(x, y));
+
+			double u = time + 0.3 * a / pi;
+			double v = 10 * abs( cos( 1.5 * a ) / r );
+			double w = 0.2 + 100 * abs( cos( 1.5 * a ) / r );
+
+			setPixel(dstImg, xi, yi, tex2d(srcImg, v, u));
+		}
+	}
+	zoomSurf(offScreen, null, dstImg, null, 1);
+	Gui.Repaint();
+}
+
+void planes() {
+	double time = .1 * getTime();
+	double cx = (mouseX * WIDTH / Window.resx);
+	double cy = (mouseY * HEIGHT / Window.resy);
+	for (int yi = 0; yi < HEIGHT; yi += 1) {
+		double y = (yi - cy) / HEIGHT;
+		double Y = .2 / nz(abs(y));
+		for (int xi = 0; xi < WIDTH; xi += 1) {
+			double x = (xi - cx) / WIDTH;
+
+			double u = x * Y;
+			double v = time + Y;
+			//~ double w = 2 * abs(y);
+
+			setPixel(dstImg, xi, yi, tex2d(srcImg, v, u, 2 * abs(y)));
+		}
+	}
+	zoomSurf(offScreen, null, dstImg, null, 1);
+	Gui.Repaint();
+}
+void vortex() {
+	double time = .05 * getTime();
+	double cx = (mouseX * WIDTH / Window.resx);
+	double cy = (mouseY * HEIGHT / Window.resy);
+	for (int yi = 0; yi < HEIGHT; yi += 1) {
+		double y = (yi - cy) / HEIGHT;
+		for (int xi = 0; xi < WIDTH; xi += 1) {
+			double x = (xi - cx) / WIDTH;
+
+			double a = atan( y, x );
+			double r = hypot(x, y);
+			double u = 1 * a / pi + r;
+			double v = 2 * time + 40 * pow( r, 0.01 );
+			//~ double w = 2 * r;
+
+			setPixel(dstImg, xi, yi, tex2d(srcImg, u, v));
+		}
+	}
+	zoomSurf(offScreen, null, dstImg, null, 1);
+	Gui.Repaint();
+}
+void waves() {
+	double time = .05 * getTime();
+	double cx = (mouseX * WIDTH / Window.resx);
+	double cy = (mouseY * HEIGHT / Window.resy);
+	for (int yi = 0; yi < HEIGHT; yi += 1) {
+		double y = (yi - cy) / HEIGHT;
+		for (int xi = 0; xi < WIDTH; xi += 1) {
+			double x = (xi - cx) / WIDTH;
+
+			double a = atan(y, x);
+			double r = hypot(x, y);
+
+			double u = .5 * a / pi;
+			double v = time + sin(4 * r);
+
+			setPixel(dstImg, xi, yi, tex2d(srcImg, u, v));
+		}
+	}
+	zoomSurf(offScreen, null, dstImg, null, 1);
+	Gui.Repaint();
+}
+
+void testing() {
+	double time = .05 * getTime();
+	double cx = (mouseX * WIDTH / Window.resx);
+	double cy = (mouseY * HEIGHT / Window.resy);
+	for (int yi = 0; yi < HEIGHT; yi += 1) {
+		double y = (yi - cy) / HEIGHT;
+		for (int xi = 0; xi < WIDTH; xi += 1) {
+			double x = (xi - cx) / WIDTH;
+
+			double r = nz(sqrt( x*x + y*y ));
+			double a = atan2( y, x );
+
+			//~ // cloud like dream scroll
+			//~ double u = time + .1 * x / (.11 + r * .5);
+			//~ double v = time + .1 * y / (.11 + r * .5);
+
+			// hot magma liquid swirl
+			//~ double u = time + 0.5 * a / pi;
+			//~ double v = time + sin(2 * r);
+
+			//~ // clockwise flush down the toilet
+			//~ double v = time + pow(r, 0.1);
+			//~ double u = time + (a / pi) + r;
+
+			//~ // 3D ball
+			double v = time + x * (3 - sqrt(4 - 15 * r * r)) / (r * r + 1);
+			double u = time + y * (3 - sqrt(4 - 15 * r * r)) / (r * r + 1);
+
+			setPixel(dstImg, xi, yi, tex2d(srcImg, u, v));
+		}
+	}
+	zoomSurf(offScreen, null, dstImg, null, 1);
+	Gui.Repaint();
+}
+
+void mouseHandler(int btn, int x, int y) {
+	if (btn == 1) {
+		mouseX = x;
+		mouseY = y;
+	}
+}
+
+Gui.setDrawCallback(planes);
+Gui.setMouseHandler(mouseHandler);
+//~ Gui.exitLoop();

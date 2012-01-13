@@ -135,10 +135,10 @@ symn installex(ccState s, const char* name, int kind, unsigned size, symn type, 
 			init->type = type;
 		}
 
-		if (kind & symn_stat)
+		if (kind & ATTR_stat)
 			def->stat = 1;
 
-		if (kind & symn_const)
+		if (kind & ATTR_const)
 			def->cnst = 1;
 
 		switch (kind & 0xff) {
@@ -184,8 +184,8 @@ symn install(ccState s, const char* name, int kind, int cast, unsigned size) {
 }
 
 symn installtyp(state rt, const char* name, unsigned size) {
-	//~ type_i64 = install(cc, "int64", TYPE_rec | symn_const, TYPE_i64, 8);
-	return install(rt->cc, name, TYPE_rec | symn_const, TYPE_rec, size);
+	//~ type_i64 = install(cc, "int64", TYPE_rec | ATTR_const, TYPE_i64, 8);
+	return install(rt->cc, name, TYPE_rec | ATTR_const, TYPE_rec, size);
 }
 
 void extend(symn type, symn args) {
@@ -423,7 +423,6 @@ symn lookup(ccState s, symn sym, astn ref, astn args, int raise) {
 			continue;
 
 		if (!args && sym->call) {
-			//~ debug("%-T lookup as ref ?(%d)", sym, ref->line);
 			// keep the first match.
 			if (sym->kind == TYPE_ref) {
 				if (asref == NULL)
@@ -436,7 +435,7 @@ symn lookup(ccState s, symn sym, astn ref, astn args, int raise) {
 		if (args) {
 
 			if (!sym->call) {
-				TODO(basic type casts are enabled float32(1))
+				TODO("enable basic type casts: float32(1)")
 				int isBasicCast = 0;
 
 				symn sym2 = sym;
@@ -481,31 +480,16 @@ symn lookup(ccState s, symn sym, astn ref, astn args, int raise) {
 					hascast += 1;
 				}
 
-				else if (argsym->type != argval->type) {
+				else if (!canAssign(argsym, argval, 1)) {
+				//~ else if (!argsym->type != argval->type) {
 					hascast += 1;
 				}
+
+				// TODO: hascast += argval->cst2 != 0;
 
 				argval = argval->next;
 				argsym = argsym->next;
 			}
-			/*while (argval && argsym) {
-				symn typ = argsym->type;
-
-				if (argsym->kind == TYPE_ref) {				// pass by reference
-					if (argval->type == type_ptr) {			// arg is a pointer
-						typ = argval->type;
-					}
-				}
-
-				if (typ == argval->type || promote(typ, argval->type)) {
-					hascast += typ != argval->type;
-					argval = argval->next;
-					argsym = argsym->next;
-					continue;
-				}
-
-				break;
-			}*/
 
 			if (sym->call && (argval || argsym)) {
 				//~ debug("%-T(%+k, %-T)", sym, argval, argsym);
@@ -529,7 +513,7 @@ symn lookup(ccState s, symn sym, astn ref, astn args, int raise) {
 
 		found += 1;
 		// if we are here then sym is found, but it has implicit cast in it
-		//~ debug("%+k%s is probably %-T%s:%t", ref, args ? "()" : "", sym, sym->call ? "()" : "", sym->kind&0xff);
+		//~ debug("%+k%s is probably %-T%s:%t", ref, args ? "()" : "", sym, sym->call ? "()" : "", sym->kind);
 	}
 
 	if (sym == NULL && best) {
@@ -549,32 +533,9 @@ symn lookup(ccState s, symn sym, astn ref, astn args, int raise) {
 	}
 
 	if (sym != NULL) {
-		astn argval = args;
-		symn argsym = sym->args;
-
-		TODO("this is done once up")
-		if (sym->call) while (argsym && argval) {
-
-			if (!canAssign(argsym, argval, 0)) {
-				debug("canAssign(%+k to %-T)", argval, argsym);
-				return 0;
-			}
-
-			argval = argval->next;
-			argsym = argsym->next;
-		}
-
-		if (args && (argval || argsym)) {
-			if (!isType(sym)) {
-				debug("%k", ref);
-				return NULL;
-			}
-		}
-
 		if (sym->kind == TYPE_def && !sym->init) {
 			sym = sym->type;
 		}
-
 	}
 
 	return sym;

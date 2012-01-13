@@ -1,26 +1,37 @@
-typedef struct mesh {
-	material mtl;	// back, fore;
-	signed maxvtx, vtxcnt;	// vertices
-	signed maxtri, tricnt;	// triangles
-	signed maxseg, segcnt;	// triangles
-	union vector *pos;		// (x, y, z, 1) position
-	union vector *nrm;		// (x, y, z, 0) normal
-	union texcol *tex;		// (s, t, 0, 0) tetxure|color
-	struct tri {			// triangle list
-		// signed id;	// groupId
-		signed i1;
-		signed i2;
-		signed i3;
-	} *triptr;
-	struct seg {			// line list
-		// signed id;	// groupId & mtl
-		signed p1;
-		signed p2;
-	} *segptr;
-	signed hlplt;			// highlight
-	int hasTex:1;// := tex != null
-	int hasNrm:1;// := nrm != null
-} *mesh;
+#include <math.h>
+#include <time.h>
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include "g2_surf.h"
+#include "g3_draw.h"
+
+#ifdef __linux__
+#define stricmp(__STR1, __STR2) strcasecmp(__STR1, __STR2)
+#endif
+
+static inline int HIBIT(unsigned int x) {
+	int res = 0;
+	if (x != 0) {
+		x |= x >> 1;
+		x |= x >> 2;
+		x |= x >> 4;
+		x |= x >> 8;
+		x |= x >> 16;
+		res = x - (x >> 1);
+	}
+	return res;
+}
+
+scalar backface(vector N, vector p1, vector p2, vector p3) {
+	union vector e1, e2, tmp;
+	if (!N) N = &tmp;
+	vecsub(&e1, p2, p1);
+	vecsub(&e2, p3, p1);
+	vecnrm(N, veccrs(N, &e1, &e2));
+	N->w = 0;
+	return vecdp3(N, p1);
+}
 
 int freeMesh(mesh msh) {
 	msh->maxtri = msh->tricnt = 0;
@@ -35,30 +46,64 @@ int freeMesh(mesh msh) {
 		free(msh->tex);
 		msh->tex = 0;
 	}
+	if (msh->map && msh->freeTex) {
+		msh->freeTex = 0;
+		free(msh->map);
+		msh->map = 0;
+	}
 	free(msh->triptr);
 	msh->triptr = 0;
 	return 0;
 }
 int initMesh(mesh msh, int n) {
-	msh->maxtri = n <= 0 ? 16 : n; msh->tricnt = 0;
-	msh->maxseg = n <= 0 ? 16 : n; msh->segcnt = 0;
-	msh->maxvtx = n <= 0 ? 16 : n; msh->vtxcnt = 0;
+
+	msh->hlplt = -1;
+	msh->tricnt = 0;
+	msh->segcnt = 0;
+	msh->vtxcnt = 0;
+	//~ memset(&msh->map, 0, sizeof(struct gx_Surf));
+
+	if (n < 0) {
+		return 0;
+	}
+
+	msh->lit = NULL;
+	msh->map = NULL;
+	msh->maxtri = n <= 0 ? 16 : n;
+	msh->maxseg = n <= 0 ? 16 : n;
+	msh->maxvtx = n <= 0 ? 16 : n;
+
+	//msh->freeTex = 1;
+	//msh->map = gx_createSurf(0, 0, 0, 0);
+
 	msh->triptr = (struct tri*)malloc(sizeof(struct tri) * msh->maxtri);
 	msh->segptr = (struct seg*)malloc(sizeof(struct seg) * msh->maxseg);
 	msh->pos = malloc(sizeof(union vector) * msh->maxvtx);
 	msh->nrm = malloc(sizeof(union vector) * msh->maxvtx);
 	msh->tex = malloc(sizeof(union texcol) * msh->maxvtx);
+
 	if (!msh->triptr || !msh->pos || !msh->nrm || !msh->tex) {
-		freeMesh(msh);
+		//~ freeMesh(msh);
 		return -1;
 	}
+
 	return 0;
 }
 
+/*int setgrp(mesh msh, int idx) {
+	if (idx >= msh->maxgrp) {
+		msh->maxgrp = HIBIT(idx) * 2;
+		msh->grpptr = realloc(msh->pos, sizeof(struct grp*) * msh->maxgrp);
+		if (!msh->grpptr) return -1;
+	}
+	if (msh->grpcnt <= idx) {
+		msh->grpcnt = idx + 1;
+	}
+	return idx;
+}*/
 int getvtx(mesh msh, int idx) {
 	if (idx >= msh->maxvtx) {
-		//~ msh->maxvtx = HIBIT(idx) * 2;
-		while (idx >= msh->maxvtx) msh->maxvtx <<= 1;
+		msh->maxvtx = HIBIT(idx) * 2;
 		msh->pos = (vector)realloc(msh->pos, sizeof(union vector) * msh->maxvtx);
 		msh->nrm = (vector)realloc(msh->nrm, sizeof(union vector) * msh->maxvtx);
 		msh->tex = (texcol)realloc(msh->tex, sizeof(union texcol) * msh->maxvtx);
@@ -69,31 +114,6 @@ int getvtx(mesh msh, int idx) {
 	}
 	return idx;
 }
-/*int setvtx(mesh msh, int idx, vector pos, vector nrm, long tex) {
-	if (getvtx(msh, idx) < 0) 
-		return -1;
-	if (pos) msh->pos[idx] = *pos;
-	if (nrm) msh->pos[idx] = *nrm;
-	msh->tex[idx].val = tex;
-	/ *switch (what) {
-		case 0: break;
-		default:  debug("invalid to set '%c'", what); break;
-		case 'p': vecldf(msh->pos + idx, x, y, z, 1); break;
-		case 'n': vecldf(msh->nrm + idx, x, y, z, 0); break;
-		case 't': {
-			if (x < 0) x = -x; if (x > 1) x = 1;
-			if (y < 0) y = -y; if (y > 1) y = 1;
-			msh->tex[idx].s = x * 65535;
-			msh->tex[idx].t = y * 65535;
-		} break;
-	}* /
-	return idx;
-}
-int addvtx(mesh msh, vector pos, vector nrm, long tex) {
-	if (setvtx(msh, msh->vtxcnt, pos, nrm, tex) < 0)
-		return -1;
-	return msh->vtxcnt++;
-}*/
 int setvtxD(mesh msh, int idx, int atr, double x, double y, double z) {
 	union vector tmp[1];
 	if (getvtx(msh, idx) < 0)
@@ -106,7 +126,7 @@ int setvtxD(mesh msh, int idx, int atr, double x, double y, double z) {
 	return idx;
 }
 
-int setvtxDV(mesh msh, int idx, double pos[3], double nrm[3], double tex[2]) {
+int setvtxDV(mesh msh, int idx, double pos[3], double nrm[3], double tex[2], long col) {
 	if (getvtx(msh, idx) < 0)
 		return -1;
 	if (pos) vecldf(msh->pos + idx, pos[0], pos[1], pos[2], 1);
@@ -119,7 +139,7 @@ int setvtxDV(mesh msh, int idx, double pos[3], double nrm[3], double tex[2]) {
 }
 int addvtxDV(mesh msh, double pos[3], double nrm[3], double tex[2]) {
 	int idx = msh->vtxcnt;
-	if (setvtxDV(msh, idx, pos, nrm, tex) < 0)
+	if (setvtxDV(msh, idx, pos, nrm, tex, 0) < 0)
 		return -1;
 	return idx;
 }
@@ -142,6 +162,17 @@ int addvtxFV(mesh msh, float pos[3], float nrm[3], float tex[2]) {
 	return idx;
 }
 
+int addseg(mesh msh, int p1, int p2) {
+	if (p1 >= msh->vtxcnt || p2 >= msh->vtxcnt) return -1;
+	if (msh->segcnt >= msh->maxseg) {
+		if (msh->maxseg == 0) msh->maxseg = 16;
+		msh->segptr = (struct seg*)realloc(msh->segptr, sizeof(struct seg) * (msh->maxseg <<= 1));
+		if (!msh->segptr) return -2;
+	}
+	msh->segptr[msh->segcnt].p1 = p1;
+	msh->segptr[msh->segcnt].p2 = p2;
+	return msh->segcnt++;
+}
 int addtri(mesh msh, int p1, int p2, int p3) {
 	if (p1 >= msh->vtxcnt || p2 >= msh->vtxcnt || p3 >= msh->vtxcnt){
 		debug("addTri(%d, %d, %d)", p1, p2, p3);
@@ -162,27 +193,12 @@ int addtri(mesh msh, int p1, int p2, int p3) {
 	return msh->tricnt++;
 }
 int addquad(mesh msh, int p1, int p2, int p3, int p4) {
-	//~ int e;
-	//~ if (e = addtri(msh, p1, p2, p3) < 0)
-		//~ return e;
-	//~ return addtri(msh, p3, p4, p1);
-	addtri(msh, p1, p2, p3);
-	addtri(msh, p3, p4, p1);
-	return 0;
-}
-int addseg(mesh msh, int p1, int p2) {
-	if (p1 >= msh->vtxcnt || p2 >= msh->vtxcnt) return -1;
-	if (msh->segcnt >= msh->maxseg) {
-		if (msh->maxseg == 0) msh->maxseg = 16;
-		msh->segptr = (struct seg*)realloc(msh->segptr, sizeof(struct seg) * (msh->maxseg <<= 1));
-		if (!msh->segptr) return -2;
-	}
-	msh->segptr[msh->segcnt].p1 = p1;
-	msh->segptr[msh->segcnt].p2 = p2;
-	return msh->segcnt++;
+	if (addtri(msh, p1, p2, p3) >= 0)
+		return addtri(msh, p3, p4, p1);
+	return -1;
 }
 
-int vtxcmp(mesh msh, int i, int j, scalar tol) {
+static int vtxcmp(mesh msh, int i, int j, scalar tol) {
 	scalar dif;
 	dif = msh->pos[i].x - msh->pos[j].x;
 	if (tol < (dif < 0 ? -dif : dif)) return 2;
@@ -194,412 +210,11 @@ int vtxcmp(mesh msh, int i, int j, scalar tol) {
 	return !(msh->tex && msh->tex[i].val == msh->tex[j].val);
 }
 
-/*/{ param surf	// DONE: scripted
-//{ dv3opr
-inline double  dv3dot(double lhs[3], double rhs[3]) {
-	return lhs[0] * rhs[0] + lhs[1] * rhs[1] + lhs[2] * rhs[2];
-}
-inline double  dv3len(double rhs[3]) {
-	double len = dv3dot(rhs, rhs);
-	if (len > 0) len = sqrt(len);
-	return len;
-}
-inline double* dv3crs(double dst[3], double lhs[3], double rhs[3]) {
-	dst[0] = lhs[1] * rhs[2] - lhs[2] * rhs[1];
-	dst[1] = lhs[2] * rhs[0] - lhs[0] * rhs[2];
-	dst[2] = lhs[0] * rhs[1] - lhs[1] * rhs[0];
-	return dst;
-}
-inline double* dv3nrm(double dst[3], double src[3]) {
-	double len = sqrt(dv3dot(src, src));
-	if (len > 0) len = 1. / len;
-	dst[0] = src[0] * len;
-	dst[1] = src[1] * len;
-	dst[2] = src[2] * len;
-	return dst;
-}
-//}
-
-static const double H = 1e-10;
-static const double MPI = 3.14159265358979323846;
-
-double* evalN(double dst[3], double s, double t, double* evalP(double [3], double [3], double, double)) {
-	double pt[3], ds[3], dt[3];
-	evalP(pt, 0, s, t);
-	evalP(ds, 0, s + H, t);
-	evalP(dt, 0, s, t + H);
-	ds[0] = (pt[0] - ds[0]) / H;
-	ds[1] = (pt[1] - ds[1]) / H;
-	ds[2] = (pt[2] - ds[2]) / H;
-	dt[0] = (pt[0] - dt[0]) / H;
-	dt[1] = (pt[1] - dt[1]) / H;
-	dt[2] = (pt[2] - dt[2]) / H;
-	return dv3nrm(dst, dv3crs(dst, ds, dt));
-}
-double* evalP_plane(double dst[3], double nrm[3], double s, double t) {
-	const double s_min = -1.0, s_max = 1.0;
-	const double t_min = -1.0, t_max = 1.0;
-
-	double S = s * (s_max - s_min) + s_min;
-	double T = t * (t_max - t_min) + t_min;
-
-	dst[0] = S;
-	dst[1] = T;
-	dst[2] = 0;
-
-	if (nrm != NULL) {
-		nrm[0] = 0;
-		nrm[1] = 0;
-		nrm[2] = 1;
-	}
-	return dst;
-}
-double* evalP_sphere(double dst[3], double nrm[3], double s, double t) {
-	const double s_min = 0, s_max = 2 * MPI;
-	const double t_min = 0, t_max = MPI;
-	//~ const double t_min = -(MPI / 2), t_max = MPI / 2;
-
-	double S = s * (s_max - s_min) + s_min;
-	double T = t * (t_max - t_min) + t_min;
-
-	//~ x = a cos(theta) cos(phi)
-	//~ y = b cos(theta) sin(phi)
-	//~ z = c sin(phi)
-	//~ where -pi <= phi <= phi
-	//~ and 0 <= theta <= 2 pi
-	dst[0] = sin(T) * cos(S);
-	dst[1] = sin(T) * sin(S);
-	dst[2] = cos(T);
-
-	if (nrm != NULL) dv3nrm(nrm, dst);		// simple
-		//~ evalN(nrm, s, t, evalP_sphere);
-
-	return dst;
-}
-double* evalP_apple(double dst[3], double nrm[3], double s, double t) {
-	const double s_min =  0.0, s_max = 2 * MPI;
-	const double t_min = -MPI, t_max = 1 * MPI;
-
-	double S = s * (s_max - s_min) + s_min;
-	double T = t * (t_max - t_min) + t_min;
-	dst[0] = cos(S) * (4 + 3.8 * cos(T));
-	dst[1] = sin(S) * (4 + 3.8 * cos(T));
-	dst[2] = (cos(T) + sin(T) - 1) * (1 + sin(T)) * log(1 - 3.14159265358979323846 * T / 10) + 7.5 * sin(T);
-	if (nrm != NULL)
-		evalN(nrm, s, t, evalP_apple);
-	return dst;
-}
-double* evalP_tours(double dst[3], double nrm[3], double s, double t) {
-	const double s_min =  0.0, s_max =  2 * MPI;
-	const double t_min =  0.0, t_max =  2 * MPI;
-
-	const double R = 2;
-	const double r = 1;
-
-	double S = s * (s_max - s_min) + s_min;
-	double T = t * (t_max - t_min) + t_min;
-	dst[0] = (R + r * sin(S)) * cos(T);
-	dst[1] = (R + r * sin(S)) * sin(T);
-	dst[2] = r * cos(S);
-
-	if (nrm != NULL)
-		evalN(nrm, s, t, evalP_tours);
-	return dst;
-}
-double* evalP_cone(double dst[3], double nrm[3], double s, double t) {
-	const double s_min = 0.0, s_max = 1;
-	const double t_min = 0.0, t_max = 2*MPI;
-
-	const double l = 1;
-
-	double S = s * (s_max - s_min) + s_min;
-	double T = t * (t_max - t_min) + t_min;
-
-	dst[0] = S * sin(T);
-	dst[1] = S * cos(T);
-	dst[2] = l * S;
-
-	if (nrm != NULL)
-		evalN(nrm, s, t, evalP_cone);
-	return dst;
-}
-double* evalP_001(double dst[3], double nrm[3], double s, double t) {
-
-	const double s_min = -20.0, s_max = +20.0;
-	const double t_min = -20.0, t_max = +20.0;
-
-	double sst, HH = 10 / 20.;
-
-	const double Rx =  20.0;
-	const double Ry =  20.0;
-	const double Rz =  20.0;
-
-	double S = s * (s_max - s_min) + s_min;
-	double T = t * (t_max - t_min) + t_min;
-	if ((sst = sqrt(S*S+T*T)) == 0) sst = 1.;
-	dst[0] = Rx * S / 20;
-	dst[1] = Ry * T / 20;
-	dst[2] = Rz * HH * sin(sst) / sst;
-
-	if (nrm != NULL)
-		evalN(nrm, s, t, evalP_001);
-
-	return dst;
-}
-double* evalP_002(double dst[3], double nrm[3], double s, double t) {
-	const double Rx =  1.0;
-	const double Ry =  1.0;
-	const double Rz =  1.0;
-	const double s_min =  0.0, s_max =  2*3.14159265358979323846;
-	const double t_min =  0.0, t_max =  2*3.14159265358979323846;
-	double S = s * (s_max - s_min) + s_min;
-	double T = t * (t_max - t_min) + t_min;
-	dst[0] = Rx * cos(S) / (sqrt(2) + sin(T));
-	dst[1] = Ry * sin(S) / (sqrt(2) + sin(T));
-	dst[2] = -Rz / (sqrt(2) + cos(T));
-	if (nrm != NULL)
-		evalN(nrm, s, t, evalP_002);
-	return dst;
-}
-double* evalP_003(double dst[3], double nrm[3], double s, double t) {
-	dst[0] = s;
-	dst[1] = t;
-	dst[2] = (s-t)*(s-t);
-	if (nrm != NULL)
-		evalN(nrm, s, t, evalP_003);
-	return dst;
-}
-double* evalP_004(double dst[3], double nrm[3], double s, double t) {
-	const double a = .5;
-	const double s_min = -MPI, s_max = +MPI;
-	const double t_min = -MPI, t_max = +MPI;
-	double u = s * (s_max - s_min) + s_min;
-	double v = t * (t_max - t_min) + t_min;
-	dst[0] = cos(u)*(a + sin(v)*cos(u/2) - sin(2*v)*sin(u/2)/2);
-	dst[1] = sin(u)*(a + sin(v)*cos(u/2) - sin(2*v)*sin(u/2)/2);
-	dst[2] = sin(u/2)*sin(v) + cos(u/2)*sin(2*v)/2;
-	if (nrm != NULL)
-		evalN(nrm, s, t, evalP_004);
-	return dst;
-}
-double* evalP_005(double dst[3], double nrm[3], double s, double t) {
-	const double c = 1.5;
-	const double s_min = -MPI, s_max = +MPI;
-	const double t_min = -MPI, t_max = +MPI;
-	double u = s * (s_max - s_min) + s_min;
-	double v = t * (t_max - t_min) + t_min;
-	dst[0] = (c + cos(v)) * cos(u);
-	dst[1] = (c + cos(v)) * sin(u);
-	dst[2] = sin(v) + cos(v);
-	if (nrm != NULL)
-		evalN(nrm, s, t, evalP_005);
-	return dst;
-}
-double* evalP_006(double dst[3], double nrm[3], double s, double t) {
-	const double r1 = 0.5;
-	const double r2 = 0.5;
-	const double periodlength = 1.5;
-	const double s_min = 0, s_max = 4*MPI;
-	const double t_min = 0, t_max = 2*MPI;
-	double u = s * (s_max - s_min) + s_min;
-	double v = t * (t_max - t_min) + t_min;
-	dst[0] = (1 + r1 * cos(v)) * cos(u);
-	dst[1] = (1 + r1 * cos(v)) * sin(u);
-	dst[2] = r2 * (sin(v) + periodlength * u / MPI);
-	//~ dst[0] = (c + cos(v)) * cos(u);
-	//~ dst[1] = (c + cos(v)) * sin(u);
-	//~ dst[2] = sin(v) + cos(v);
-	if (nrm != NULL)
-		evalN(nrm, s, t, evalP_006);
-	return dst;
-}
-double* evalP_007(double dst[3], double nrm[3], double s, double t) {
-	const double s_min = -2*MPI, s_max = +2*MPI;
-	const double t_min = -2*MPI, t_max = +2*MPI;
-	//~ const double s_min = -MPI / 2, s_max = MPI / 2;
-	//~ const double t_min = 0, t_max = MPI;
-
-	double S = s * (s_max - s_min) + s_min;
-	double T = t * (t_max - t_min) + t_min;
-
-	dst[0] = S;
-	dst[1] = T;
-	dst[2] = 0;
-	if (S && T) {
-		dst[2] = cos(S) * sin(T);
-	}
-
-	if (nrm != NULL) {
-		//~ nrm[0] = 0;
-		//~ nrm[1] = 0;
-		//~ nrm[2] = 1;
-		evalN(nrm, s, t, evalP_007);
-	}
-	return dst;
-}
-
-int evalMesh(mesh msh, double* evalP(double [3], double [3], double s, double t), unsigned sdiv, unsigned tdiv, unsigned closed) {
-	unsigned si, ti;
-	static unsigned mp[256][256];
-	double pos[3], s, ds = 1. / (sdiv - ((closed & 2) == 0));
-	double nrm[3], t, dt = 1. / (tdiv - ((closed & 1) == 0));
-	if (sdiv > 256 || tdiv > 256) return -1;
-	msh->tricnt = msh->vtxcnt = 0;
-	msh->hasTex = 1;
-	msh->hasNrm = 1;
-	for (t = ti = 0; ti < tdiv; ti++, t += dt) {
-		for (s = si = 0; si < sdiv; si++, s += ds) {
-			double tex[2]; tex[0] = s; tex[1] = t;
-			evalP(pos, nrm, s, t);
-			mp[ti][si] = addvtxDV(msh, pos, nrm, tex);
-		}
-	}
-	for (ti = 0; ti < tdiv - 1; ti += 1) {
-		for (si = 0; si < sdiv - 1; si += 1) {
-			int v0 = mp[si+0][ti+0];		//	v0--v1
-			int v3 = mp[si+1][ti+0];		//	| \  |
-			int v2 = mp[si+1][ti+1];		//	|  \ |
-			int v1 = mp[si+0][ti+1];		//	v3--v2
-			addtri(msh, v0, v1, v2);
-			addtri(msh, v0, v2, v3);
-		}
-		if (closed & 1) {			// closed s
-			int v0 = mp[sdiv-1][ti+0];
-			int v1 = mp[0][ti + 0];
-			int v2 = mp[0][ti + 1];
-			int v3 = mp[sdiv-1][ti+1];
-			addtri(msh, v0, v1, v2);
-			addtri(msh, v0, v2, v3);
-		}
-	}
-	if (closed & 2) {				// closed t
-		for (si = 0; si < sdiv - 1; si += 1) {
-			int v0 = mp[si + 0][tdiv - 1];
-			int v3 = mp[si + 0][0];
-			int v1 = mp[si + 1][tdiv - 1];
-			int v2 = mp[si + 1][0];
-			addtri(msh, v0, v1, v2);
-			addtri(msh, v0, v2, v3);
-		}
-		if (closed & 1) {			// closed st
-			int v0 = mp[sdiv - 1][tdiv - 1];
-			int v1 = mp[0][tdiv - 1];
-			int v2 = mp[0][0];
-			int v3 = mp[sdiv-1][0];
-			addtri(msh, v0, v1, v2);
-			addtri(msh, v0, v2, v3);
-		}
-	}
-	return 0;
-}
-//}*/
-
 void normMesh(mesh msh, scalar tol);
 
-int prgDefCB(float prec) {return 0;}
-float precent(int i, int n) {
-	return 100. * i / n;
-}
-
-static char* readKVP(char *ptr, char *cmd, char *skp, char *sep) {	// key = value pair
-	if (skp == NULL) skp = "";
-	if (sep == NULL) sep = " \t\n\r";
-
-	while (*cmd && *cmd == *ptr) cmd++, ptr++;
-	while (strchr(sep, *ptr)) ptr++;
-
-	while (*skp && *skp == *ptr) skp++, ptr++;
-	while (strchr(sep, *ptr)) ptr++;
-
-	return (*cmd || *skp) ? 0 : ptr;
-}
-static char* readCmd(char *ptr, char *cmd) {
-	//~ return readKVP(ptr, cmd, " ", "");
-	while (*cmd && *cmd == *ptr) cmd++, ptr++;
-	if (!strchr(" \t\n\r", *ptr)) return 0;
-	while (strchr(" \t", *ptr)) ptr += 1;
-	return ptr;
-}
-static char* readNum(char *ptr, int *outVal) {
-	int sgn = 1, val = 0;
-	if (!strchr("+-0123456789",*ptr))
-		return ptr;
-	if (*ptr == '-' || *ptr == '+') {
-		sgn = *ptr == '-' ? -1 : +1;
-		ptr += 1;
-	}
-	while (*ptr >= '0' && *ptr <= '9') {
-		val = val * 10 + (*ptr - '0');
-		ptr += 1;
-	}
-	if (outVal) *outVal = sgn * val;
-	return ptr;
-}
-
-static char* readInt(char *ptr, int *outVal) {
-	int sgn = 1, val = 0;
-	if (!strchr("+-0123456789",*ptr))
-		return ptr;
-	if (*ptr == '-' || *ptr == '+') {
-		sgn = *ptr == '-' ? -1 : +1;
-		ptr += 1;
-	}
-	while (*ptr >= '0' && *ptr <= '9') {
-		val = val * 10 + (*ptr - '0');
-		ptr += 1;
-	}
-	if (outVal) *outVal = sgn * val;
-	return ptr;
-}
-
-static char* readFlt(char *str, double *outVal) {
-	char *ptr = str;//, *dot = 0, *exp = 0;
-	double val = 0;
-	int sgn = 1, exp = 0;
-
-	//~ ('+'|'-')?
-	if (*ptr == '-' || *ptr == '+') {
-		sgn = *ptr == '-' ? -1 : 1;
-		ptr += 1;
-	}
-
-	//~ (0 | ([1-9][0-9]+))?
-	if (*ptr == '0') {
-		ptr++;
-	}
-	else while (*ptr >= '0' && *ptr <= '9') {
-		val = val * 10 + (*ptr - '0');
-		ptr++;
-	}
-
-	//~ ('.'[0-9]*)?
-	if (*ptr == '.') {
-		//~ double tmp = 0;
-		ptr++;
-		while (*ptr >= '0' && *ptr <= '9') {
-			val = val * 10 + (*ptr - '0');
-			exp -= 1;
-			ptr++;
-		}
-	}
-
-	//~ ([eE]([+-]?)[0-9]+)?
-	if (*ptr == 'e' || *ptr == 'E') {
-		int tmp = 0;
-		ptr = readInt(ptr + 1, &tmp);
-		exp += tmp;
-	}// */
-
-	if (outVal) *outVal = sgn * val * pow(10, exp);
-	return ptr;
-}
-
-static char* readF32(char *str, float *outVal) {
-	double f64;
-	str = readFlt(str, &f64);
-	if (outVal) *outVal = f64;
-	return str;
-}
+static int prgDefCB(float prec) {return 0;}
+static float precent(int i, int n) {return 100. * i / n;}
+//~ static float roundto(float x, int n) {double muldiv = pow(10, n); return round(x * muldiv) / muldiv;}
 
 struct growBuffer {
 	char *ptr;
@@ -629,11 +244,7 @@ static void initBuff(struct growBuffer* buff, int initsize, int elemsize) {
 	growBuff(buff, initsize);
 }
 
-static float freadf32(FILE *fin) {
-	float result;
-	fread(&result, sizeof(result), 1, fin);
-	return result;
-}
+//~ static float freadf32(FILE *fin) {float result;fread(&result, sizeof(result), 1, fin);return result;}
 static char* freadstr(char buff[], int maxlen, FILE *fin) {
 	char *ptr = buff;
 	for ( ; ; ) {
@@ -657,16 +268,24 @@ static int read_obj(mesh msh, const char* file) {
 	struct growBuffer nrmb;
 	struct growBuffer texb;
 
-	if (!(fin = fopen(file, "rt"))) return -1;
+	if (!(fin = fopen(file, "rb"))) return -1;
 
 	initBuff(&nrmb, 64, 3 * sizeof(float));
 	initBuff(&texb, 64, 2 * sizeof(float));
 
 	for ( ; ; ) {
+		char *lnend;
 		line++;
-		fgets(ptr = buff, sizeof(buff), fin);
+		if (!fgets(ptr = buff, sizeof(buff), fin))
+			break;
 
 		if (feof(fin)) break;
+
+		if ((lnend = strchr(ptr, 13))) *lnend = 0;
+		if ((lnend = strchr(ptr, 10))) *lnend = 0;
+		buff[strlen(ptr) + 1] = 0;
+		buff[strlen(ptr)] = '\n';
+
 		if (*buff == '#') continue;				// Comment
 		if (*buff == '\n') continue;			// Empty line
 
@@ -735,17 +354,17 @@ static int read_obj(mesh msh, const char* file) {
 					break;
 				}
 
-				ptr = readNum(ptr, &v[i]);				// position index
+				ptr = readInt(ptr, &v[i]);				// position index
 				if (*ptr == '/') {						// texture index
 					ptr += 1;
 					if (strchr("+-0123456789", *ptr)) {
-						ptr = readNum(ptr, &vt[i]);
+						ptr = readInt(ptr, &vt[i]);
 					}
 				}
 				if (*ptr == '/') {						// normal index
 					ptr += 1;
 					if (strchr("+-0123456789", *ptr)) {
-						ptr = readNum(ptr, &vn[i]);
+						ptr = readInt(ptr, &vn[i]);
 						//~ break;
 					}
 				}
@@ -826,9 +445,12 @@ static int read_3ds(mesh msh, const char* file) {
 	if (!(fin = fopen (file, "rb"))) return -1;
 
 	for ( ; ; ) {
-		fread(&chunk_id, 2, 1, fin); //Read the chunk header
-		fread(&chunk_len, 4, 1, fin); //Read the lenght of the chunk
-		if (feof(fin)) break;
+		if (!fread(&chunk_id, 2, 1, fin)) //Read the chunk header
+			break;
+		if (!fread(&chunk_len, 4, 1, fin)) //Read the lenght of the chunk
+			break;
+		if (feof(fin))
+			break;
 		switch (chunk_id) {
 			//{ Color chunks
 				//~ 0x0010 : Rgb (float)
@@ -1021,15 +643,18 @@ static int read_3ds(mesh msh, const char* file) {
 					case 0x4000: {		// Object block
 						char *objName = freadstr(buff, sizeof(buff), fin);
 						vtxi = posi;
-						objName = objName;
+						//objName = objName;
+						(void)objName;
 						//~ debug("Object: '%s'", objName);
 					} break;
 					case 0x4100: break;	// Triangular mesh
 					case 0x4110: {		// Vertices list
 						float dat[3];
-						fread(&qty, sizeof(qty), 1, fin);
+						if (fread(&qty, sizeof(qty), 1, fin) != 1)
+							goto invChunk;
 						for (i = 0; i < qty; i++) {
-							fread(dat, sizeof(float), 3, fin);
+							if (fread(dat, sizeof(float), 3, fin) != 3)
+								goto invChunk;
 							if (setvtxFV(msh, vtxi + i, dat, NULL, NULL) < 0) return 1;
 							//~ debug("pos[%d](%f, %f, %f)", vtxi + i, dat[0], dat[1], dat[2]);
 						}
@@ -1037,9 +662,11 @@ static int read_3ds(mesh msh, const char* file) {
 					} break;
 					case 0x4120: {		// Faces description
 							unsigned short dat[4];
-							fread (&qty, sizeof(qty), 1, fin);
+							if (fread (&qty, sizeof(qty), 1, fin) != 1)
+								goto invChunk;
 							for (i = 0; i < qty; i++) {
-								fread(&dat, sizeof(unsigned short), 4, fin);
+								if (fread(&dat, sizeof(unsigned short), 4, fin) != 4)
+									goto invChunk;
 								addtri(msh, vtxi + dat[0], vtxi + dat[1], vtxi + dat[2]);
 							}
 							//~ debug("faces: %d, %d, %d", vtxi, posi, texi);
@@ -1048,9 +675,11 @@ static int read_3ds(mesh msh, const char* file) {
 						goto skipchunk;
 					case 0x4140: {		// Mapping coordinates list
 						float dat[3];
-						fread (&qty, sizeof(qty), 1, fin);
+						if (fread (&qty, sizeof(qty), 1, fin) != 1)
+							goto invChunk;
 						for (i = 0; i < qty; i++) {
-							fread(dat, sizeof(float), 2, fin);
+							if (fread(dat, sizeof(float), 2, fin) != 2)
+								goto invChunk;
 							dat[1] = 1 - dat[1];
 							if (setvtxFV(msh, vtxi + i, NULL, NULL, dat) < 0) return 2;
 						}
@@ -1063,10 +692,12 @@ static int read_3ds(mesh msh, const char* file) {
 					case 0x4182:		// External process parameters
 				case 0xB000:			// Keyframer chunk
 					goto skipchunk;
+			invChunk:
 			default:
-				debug("unknown Chunk: ID: 0x%04x; Len: %d", chunk_id, chunk_len); 
+				debug("unknown Chunk: ID: 0x%04x; Len: %d", chunk_id, chunk_len);
 			skipchunk:
 				fseek(fin, chunk_len - 6, SEEK_CUR);
+				break;
 		}
 	}
 
@@ -1080,6 +711,7 @@ static int read_3ds(mesh msh, const char* file) {
 static int save_obj(mesh msh, const char* file) {
 	FILE* out;
 	unsigned i;
+	//~ const int prec = 2;
 
 	if (!(out = fopen(file, "wt"))) {
 		debug("fopen(%s, 'wt')", file);
@@ -1093,7 +725,9 @@ static int save_obj(mesh msh, const char* file) {
 		scalar t = msh->tex[i].t / 65535.;
 		if (msh->hasTex && msh->hasNrm)
 			fprintf(out, "#vertex: %d\n", i);
-		fprintf(out, "v  %f %f %f\n", pos->x, pos->y, pos->z);
+		//~ fprintf(out, "v  %.*g %.*g %.*g\n", prec, pos->x, prec, pos->y, prec, pos->z);
+		//~ fprintf(out, "v  %g %g %g\n", roundto(pos->x, prec), roundto(pos->y, prec), roundto(pos->z, prec));
+		fprintf(out, "v  %g %g %g\n", pos->x, pos->y, pos->z);
 		if (msh->hasTex) fprintf(out, "vt %f %f\n", s, -t);
 		if (msh->hasNrm) fprintf(out, "vn %f %f %f\n", nrm->x, nrm->y, nrm->z);
 	}
@@ -1102,6 +736,19 @@ static int save_obj(mesh msh, const char* file) {
 		int i1 = msh->triptr[i].i1 + 1;
 		int i2 = msh->triptr[i].i2 + 1;
 		int i3 = msh->triptr[i].i3 + 1;
+		if (i + 1 < msh->tricnt) {
+			int I1 = msh->triptr[i+1].i1 + 1;
+			int i4 = msh->triptr[i+1].i2 + 1;
+			int I3 = msh->triptr[i+1].i3 + 1;
+			if (i1 == I3 && i3 == I1) {
+				if (msh->hasTex && msh->hasNrm) fprintf(out, "f  %d/%d/%d %d/%d/%d %d/%d/%d %d/%d/%d\n", i1, i1, i1, i2, i2, i2, i3, i3, i3, i4, i4, i4);
+				else if (msh->hasNrm) fprintf(out, "f  %d//%d %d//%d %d//%d %d//%d\n", i1, i1, i2, i2, i3, i3, i4, i4);
+				else if (msh->hasTex) fprintf(out, "f  %d/%d %d/%d %d/%d %d/%d\n", i1, i1, i2, i2, i3, i3, i4, i4);
+				else fprintf(out, "f  %d %d %d %d\n", i1, i2, i3, i4);
+				++i;
+				continue;
+			}
+		}
 		if (msh->hasTex && msh->hasNrm) fprintf(out, "f  %d/%d/%d %d/%d/%d %d/%d/%d\n", i1, i1, i1, i2, i2, i2, i3, i3, i3);
 		else if (msh->hasNrm) fprintf(out, "f  %d//%d %d//%d %d//%d\n", i1, i1, i2, i2, i3, i3);
 		else if (msh->hasTex) fprintf(out, "f  %d/%d %d/%d %d/%d\n", i1, i1, i2, i2, i3, i3);
@@ -1119,17 +766,6 @@ static int save_obj(mesh msh, const char* file) {
 	return 0;
 }
 
-static char* fext(const char* name) {
-	char *ext = "";
-	char *ptr = (char*)name;
-	if (ptr) while (*ptr) {
-		if (*ptr == '.')
-			ext = ptr + 1;
-		ptr += 1;
-	}
-	return ext;
-}
-
 int readMesh(mesh msh, const char* file) {
 	char *ext = file ? fext(file) : "";
 	msh->hasTex = msh->hasNrm = 0;
@@ -1141,13 +777,13 @@ int readMesh(mesh msh, const char* file) {
 	if (stricmp(ext, "3ds") == 0)
 		return read_3ds(msh, file);
 
-	debug("invalid extension");
+	//~ debug("mesh '%s' not found", file);
 	return -9;
 }
 int saveMesh(mesh msh, const char* file) {
 	char *ext = file ? fext(file) : "";
 
-	if (stricmp(ext, "obj") == 0)
+	if (strcmp(ext, "obj") == 0)
 		return save_obj(msh, file);
 
 	debug("invalid extension");
@@ -1192,7 +828,12 @@ void centMesh(mesh msh, scalar size) {
 		msh->pos[i].w = 1;
 	}
 }
-void normMesh(mesh msh, scalar tol) {
+
+void normMesh(mesh msh, scalar tolerance)
+/**
+ * recalculate mesh normals
+ */
+{
 	union vector tmp;
 	unsigned i, j;
 	for (i = 0; i < msh->vtxcnt; i += 1)
@@ -1209,9 +850,9 @@ void normMesh(mesh msh, scalar tol) {
 		vecadd(&msh->nrm[i3], &msh->nrm[i3], &nrm);
 	}
 
-	if (tol) for (i = 1; i < msh->vtxcnt; i += 1) {
+	if (tolerance) for (i = 1; i < msh->vtxcnt; i += 1) {
 		for (j = 0; j < i; j += 1) {
-			if (vtxcmp(msh, i, j, tol) < 2) {
+			if (vtxcmp(msh, i, j, tolerance) < 2) {
 				vecadd(&tmp, &msh->nrm[j], &msh->nrm[i]);
 				msh->nrm[i] = tmp;
 				msh->nrm[j] = tmp;
@@ -1247,15 +888,30 @@ static void pntri(union vector res[10], mesh msh, int i1, int i2, int i3) {
 	//~ vector b300 = veccpy(res + 0, P1);
 	//~ vector b030 = veccpy(res + 1, P2);
 	//~ vector b003 = veccpy(res + 2, P3);
+
 	vector b210 = vecsca(res + 3, vecsub(tmp, vecadd(tmp, vecsca(tmp, P1, 2), P2), vecsca(tmp + 1, N1, w12)), 1./3);
 	vector b120 = vecsca(res + 4, vecsub(tmp, vecadd(tmp, vecsca(tmp, P2, 2), P1), vecsca(tmp + 1, N2, w21)), 1./3);
 	vector b021 = vecsca(res + 5, vecsub(tmp, vecadd(tmp, vecsca(tmp, P2, 2), P3), vecsca(tmp + 1, N2, w23)), 1./3);
 	vector b012 = vecsca(res + 6, vecsub(tmp, vecadd(tmp, vecsca(tmp, P3, 2), P2), vecsca(tmp + 1, N3, w32)), 1./3);
 	vector b102 = vecsca(res + 7, vecsub(tmp, vecadd(tmp, vecsca(tmp, P3, 2), P1), vecsca(tmp + 1, N3, w31)), 1./3);
 	vector b201 = vecsca(res + 8, vecsub(tmp, vecadd(tmp, vecsca(tmp, P1, 2), P3), vecsca(tmp + 1, N1, w13)), 1./3);
+
 	//~ vector E = vecsca(tmp + 1, vecadd(tmp, vecadd(tmp, vecadd(tmp, vecadd(tmp, vecadd(tmp, b210, b120), b021), b012), b102), b201), 1./6);
 	//~ vector V = vecsca(tmp + 2, vecadd(tmp, vecadd(tmp, P1, P2), P3), 1./3);
 	//~ vector b111 = vecsca(res + 9, vecadd(tmp, E, vecsub(tmp, E, V)), 1./2);
+
+	(void)b210;
+	(void)b120;
+	(void)b021;
+	(void)b012;
+	(void)b102;
+	(void)b201;
+
+	//~ (void)b003;
+	//~ (void)b030;
+	//~ (void)b300;
+	//~ (void)b111;
+
 	#undef P1
 	#undef P2
 	#undef P3
@@ -1287,7 +943,7 @@ static vector bezevl(union vector res[1], union vector p[4], scalar t) {
 
 // subdivide using bezier
 int sdvtxBP(mesh msh, int a, int b, vector c1, vector c2) {
-	union vector tmp[6], res[3];
+	union vector tmp[6];//, res[3];
 	int r = getvtx(msh, msh->vtxcnt);
 	vecnrm(msh->nrm + r, vecadd(tmp, msh->nrm + a, msh->nrm + b));
 	bezevl(msh->pos + r, bezexp(tmp, msh->pos + a, c1, c2, msh->pos + b), .5);
@@ -1304,7 +960,7 @@ int sdvtx(mesh msh, int a, int b) {
 void sdivMesh(mesh msh, int smooth) {
 	unsigned i, n = msh->tricnt;
 	if (smooth) for (i = 0; i < n; i++) {
-		union vector tmp[1], pn[11];
+		union vector pn[11];
 		unsigned i1 = msh->triptr[i].i1;
 		unsigned i2 = msh->triptr[i].i2;
 		unsigned i3 = msh->triptr[i].i3;
@@ -1335,6 +991,7 @@ void sdivMesh(mesh msh, int smooth) {
 		addtri(msh, i4, i5, i6);
 	}
 }
+// */
 
 void optiMesh(mesh msh, scalar tol, int prgCB(float prec)) {
 	unsigned i, j, k, n;
@@ -1365,267 +1022,7 @@ void optiMesh(mesh msh, scalar tol, int prgCB(float prec)) {
 	//~ for (j = 0; j < n; j += 1) vecnrm(&msh->vtxptr[j].nrm, &msh->vtxptr[j].nrm);
 }// */
 
-/* Temp
-static int sdvtxX(mesh msh, int a, int b) {
-	union vector tmp[6];
-	//~ int r = getvtx(msh, msh->vtxcnt);
-	//~ scalar len = -1/veclen(vecsub(tmp, msh->pos + b, msh->pos + a));
-	//~ scalar len = -2./vecdp3(msh->pos + b, msh->pos + a);
-	vector p1 = msh->pos + b;
-	vector p2 = msh->pos + a;
-	vector T1 = veccrs(tmp + 4, msh->nrm + a, msh->nrm + b);
-	vector c1 = vecadd(tmp + 1, p1, vecsca(tmp, T1, vecdp3(T1, vecsub(tmp, p2, p1)) / 3));
-	vector T2 = veccrs(tmp + 5, msh->nrm + b, msh->nrm + a);
-	vector c2 = vecadd(tmp + 2, p2, vecsca(tmp, T2, vecdp3(T2, vecsub(tmp, p1, p2)) / 3));
-	//~ vector c1 = vecadd(tmp + 1, p1, vecsca(tmp, msh->nrm + a, len));
-	//~ vector c2 = vecadd(tmp + 2, p2, vecsca(tmp, msh->nrm + b, len));
-
-	//~ vecnrm(msh->nrm + r, vecadd(tmp + 1, msh->nrm + a, msh->nrm + b));		// nrm = normalize(n1 + n2);
-
-	//~ veccrs(tmp + 2, msh->nrm + a, msh->nrm + b);
-	//~ vecsub(tmp + 3, msh->pos + b, msh->pos + a);
-	//~ vecsca(tmp + 4, tmp + 2, vecdp3(tmp + 2, tmp + 3));
-	//~ vecadd(msh->pos + r, msh->pos + a, tmp + 4);
-	//~ vecadd(tmp + 4, msh->pos + a, vecdp3())
-	//~ vecsca(msh->pos + r, vecadd(tmp, msh->pos + a, msh->pos + b), .5);
-
-	//~ bezevl(msh->pos + r, bezexp(tmp, p1, c1, c2, p2), .5);
-	setvtxD(msh, a, 'n', -c1->x, -c1->y, -c1->z);
-	setvtxD(msh, b, 'n', -c2->x, -c2->y, -c2->z);
-
-	//~ msh->tex[r].s = (msh->tex[a].s + msh->tex[b].s) / 2;
-	//~ msh->tex[r].t = (msh->tex[a].t + msh->tex[b].t) / 2;
-	return 0;//r;
-}
-
-void sdivMesh(mesh msh, int smooth) {
-	unsigned i, n = msh->tricnt;
-	for (i = 0; i < n; i++) {
-		unsigned i1 = msh->triptr[i].i1;
-		unsigned i2 = msh->triptr[i].i2;
-		unsigned i3 = msh->triptr[i].i3;
-		unsigned i4 = sdvtx(msh, i1, i2);
-		unsigned i5 = sdvtx(msh, i2, i3);
-		unsigned i6 = sdvtx(msh, i3, i1);
-		//~ msh->triptr[i].i2 = i4;
-		//~ msh->triptr[i].i3 = i6;
-		//~ addtri(msh, i4, i2, i5);
-		//~ addtri(msh, i5, i3, i6);
-		//~ addtri(msh, i4, i5, i6);
-	}
-}// */
-/* Temp
-void cnrmMesh(mesh *msh) {
-	unsigned i;
-	for (i = 0; i < msh->tricnt; i++) {
-		vertex *v1 = &msh->vtxptr[msh->triptr[i].i1];
-		vertex *v2 = &msh->vtxptr[msh->triptr[i].i2];
-		vertex *v3 = &msh->vtxptr[msh->triptr[i].i3];
-		backface(&v1->nrm, &v1->pos, &v2->pos, &v3->pos);
-		v3->nrm = v2->nrm = v1->nrm;
-	}
-}
-
-void sdivMesh_2(mesh *msh) {
-	unsigned i4, i5, i6, i, n = msh->tricnt;
-	for (i = 0; i < n; i++) {
-		unsigned i1 = msh->triptr[i].i1;
-		unsigned i2 = msh->triptr[i].i2;
-		unsigned i3 = msh->triptr[i].i3;
-		vertex *v1 = &msh->vtxptr[i1];
-		vertex *v2 = &msh->vtxptr[i2];
-		vertex *v3 = &msh->vtxptr[i3];
-		double nrm[3][3], pos[3][3], tex[3][2], len[3];
-
-		nrm[0][0] = (v1->nrm.x + v2->nrm.x) * .5;
-		nrm[0][1] = (v1->nrm.y + v2->nrm.y) * .5;
-		nrm[0][2] = (v1->nrm.z + v2->nrm.z) * .5;
-		nrm[1][0] = (v2->nrm.x + v3->nrm.x) * .5;
-		nrm[1][1] = (v2->nrm.y + v3->nrm.y) * .5;
-		nrm[1][2] = (v2->nrm.z + v3->nrm.z) * .5;
-		nrm[2][0] = (v3->nrm.x + v1->nrm.x) * .5;
-		nrm[2][1] = (v3->nrm.y + v1->nrm.y) * .5;
-		nrm[2][2] = (v3->nrm.z + v1->nrm.z) * .5;
-
-		pos[0][0] = (v1->pos.x + v2->pos.x) * .5;
-		pos[0][1] = (v1->pos.y + v2->pos.y) * .5;
-		pos[0][2] = (v1->pos.z + v2->pos.z) * .5;
-		pos[1][0] = (v2->pos.x + v3->pos.x) * .5;
-		pos[1][1] = (v2->pos.y + v3->pos.y) * .5;
-		pos[1][2] = (v2->pos.z + v3->pos.z) * .5;
-		pos[2][0] = (v3->pos.x + v1->pos.x) * .5;
-		pos[2][1] = (v3->pos.y + v1->pos.y) * .5;
-		pos[2][2] = (v3->pos.z + v1->pos.z) * .5;
-
-		tex[0][0] = (v1->tex.s + v2->tex.s) * (.5 / 65535);
-		tex[0][1] = (v1->tex.t + v2->tex.t) * (.5 / 65535);
-		tex[1][0] = (v2->tex.s + v3->tex.s) * (.5 / 65535);
-		tex[1][1] = (v2->tex.t + v3->tex.t) * (.5 / 65535);
-		tex[2][0] = (v3->tex.s + v1->tex.s) * (.5 / 65535);
-		tex[2][1] = (v3->tex.t + v1->tex.t) * (.5 / 65535);
-
-		len[0] = dv3dot(nrm[0], nrm[0]);
-		if (len[0] != 0) len[0] = 1./ sqrt(len[0]);
-		len[1] = dv3dot(nrm[1], nrm[1]);
-		if (len[1] != 0) len[1] = 1./ sqrt(len[1]);
-		len[2] = dv3dot(nrm[2], nrm[2]);
-		if (len[2] != 0) len[2] = 1./ sqrt(len[2]);
-
-		pos[0][0] += nrm[0][0] * len[0] - nrm[0][0];
-		pos[0][1] += nrm[0][1] * len[0] - nrm[0][1];
-		pos[0][2] += nrm[0][2] * len[0] - nrm[0][2];
-		pos[1][0] += nrm[1][0] * len[1] - nrm[1][0];
-		pos[1][1] += nrm[1][1] * len[1] - nrm[1][1];
-		pos[1][2] += nrm[1][2] * len[1] - nrm[1][2];
-		pos[2][0] += nrm[2][0] * len[2] - nrm[2][0];
-		pos[2][1] += nrm[2][1] * len[2] - nrm[2][1];
-		pos[2][2] += nrm[2][2] * len[2] - nrm[2][2];
-
-		nrm[0][0] *= len[0];
-		nrm[0][1] *= len[0];
-		nrm[0][2] *= len[0];
-		nrm[1][0] *= len[1];
-		nrm[1][1] *= len[1];
-		nrm[1][2] *= len[1];
-		nrm[2][0] *= len[2];
-		nrm[2][1] *= len[2];
-		nrm[2][2] *= len[2];
-
-		//~ len[0] = dv3dot(pos[0], pos[0]);
-		//~ if (len[0] != 0) len[0] = sqrt(len[0]);
-		//~ len[1] = dv3dot(pos[1], pos[1]);
-		//~ if (len[1] != 0) len[1] = sqrt(len[1]);
-		//~ len[2] = dv3dot(pos[2], pos[2]);
-		//~ if (len[2] != 0) len[2] = sqrt(len[2]);
-
-		//~ pos[0][0] *= len[0];
-		//~ pos[0][1] *= len[0];
-		//~ pos[0][2] *= len[0];
-		//~ pos[1][0] *= len[1];
-		//~ pos[1][1] *= len[1];
-		//~ pos[1][2] *= len[1];
-		//~ pos[2][0] *= len[2];
-		//~ pos[2][1] *= len[2];
-		//~ pos[2][2] *= len[2];
-
-
-		i4 = addvtxdv(msh, pos[0], nrm[0], tex[0], 0);
-		i5 = addvtxdv(msh, pos[1], nrm[1], tex[1], 0);
-		i6 = addvtxdv(msh, pos[2], nrm[2], tex[2], 0);
-
-		msh->triptr[i].i2 = i4;
-		msh->triptr[i].i3 = i6;
-		addtri(msh, i4, i2, i5);
-		addtri(msh, i5, i3, i6);
-		addtri(msh, i4, i5, i6);
-	}
-}
-
-void sdivvtx2(vecptr pos, vecptr nrm, vecptr p1, vecptr p2, vecptr n1, vecptr n2) {
-	vector tmp;
-	vecsca(nrm, vecadd(&tmp, n1, n2), .5);		// nrm = (n1 + n2) / 2;
-	vecsca(pos, vecadd(&tmp, p1, p2), .5);		// pos = (p1 + p2) / 2;
-												// tex = (t1 + t2) / 2;
-	
-}
-
-void sdivvtx(vertex *res, vertex *v1, vertex *v2) {
-	vector tmp;//, p1, p2, p0, pc;
-	res->tex.s = (v1->tex.s + v2->tex.s) / 2;
-	res->tex.t = (v1->tex.t + v2->tex.t) / 2;
-	vecsca(&res->pos, vecadd(&tmp, &v1->pos, &v2->pos), .5);		// pos = (p1 + p2) / 2;
-	vecsca(&res->nrm, vecadd(&tmp, &v1->nrm, &v2->nrm), .5);		// nrm = (n1 + n2) / 2;
-	//~ vecnrm(&res->nrm, vecadd(&tmp, &v1->nrm, &v2->nrm));		// nrm = (n1 + n2) / 2;
-
-	//~ vecadd(&p1, &v1->pos, &v1->nrm);
-	//~ vecadd(&p2, &v2->pos, &v2->nrm);
-	//~ vecadd(&p0, &res->pos, &res->nrm);
-	//~ vecsca(&pc, vecadd(&tmp, &p1, &p2), .5);
-	//~ vecadd(&res->pos, &res->pos, vecsub(&tmp, &p0, &pc));
-
-	//~ vecsub(&tmp, &v1->nrm, &v2->nrm);
-	//~ vecadd(&res->pos, &res->pos, vecsca(&tmp, &res->nrm, vecdp3(&tmp, &tmp)/2));
-}
-*/
-
-#include "../lib/libpvmc/pvmc.h"
-typedef struct userData {
-	double s, smin, smax;
-	double t, tmin, tmax;
-	int iSpos, isNrm;
-	double pos[3], nrm[3];
-} *userData;
-
-static inline double lerp(double a, double b, double t) {
-	return a + t * (b - a);
-}
-
-static void getST(state args) {
-	userData d = args->data;
-	int32t c = popi32(args);
-	switch (c) {
-		case   1: retf64(args, lerp(d->smin, d->smax, d->s)); break;
-		case   2: retf64(args, lerp(d->tmin, d->tmax, d->t)); break;
-		case 's': retf64(args, lerp(d->smin, d->smax, d->s)); break;
-		case 't': retf64(args, lerp(d->tmin, d->tmax, d->t)); break;
-		case 'u': retf64(args, lerp(d->smin, d->smax, d->s)); break;
-		case 'v': retf64(args, lerp(d->tmin, d->tmax, d->t)); break;
-		default : debug("getArg: invalid argument"); break;
-	}
-	//~ debug("getArg('%c', %f, %f)", c, min, max);
-}
-static void setPos(state args) {
-	userData d = args->data;
-	d->pos[0] = popf64(args);
-	d->pos[1] = popf64(args);
-	d->pos[2] = popf64(args);
-	//~ d->pos = 1;
-	//~ debug("setNrm(%g, %g, %g)", d->pos[0], d->pos[1], d->pos[2]);
-}
-static void setNrm(state args) {
-	userData d = args->data;
-	d->nrm[0] = popf64(args);
-	d->nrm[1] = popf64(args);
-	d->nrm[2] = popf64(args);
-	d->isNrm = 1;
-	//~ debug("setNrm(%f, %f, %f)", x, y, z);
-}// */
-
-static void f64abs(state s) {
-	flt64t x = poparg(s, flt64t);
-	setret(flt64t, s, fabs(x));
-}
-static void f64sin(state s) {
-	flt64t x = poparg(s, flt64t);
-	setret(flt64t, s, sin(x));
-}
-static void f64cos(state s) {
-	flt64t x = poparg(s, flt64t);
-	setret(flt64t, s, cos(x));
-}
-static void f64log(state s) {
-	flt64t x = poparg(s, flt64t);
-	setret(flt64t, s, log(x));
-}
-static void f64exp(state s) {
-	flt64t x = poparg(s, flt64t);
-	setret(flt64t, s, exp(x));
-}
-static void f64pow(state s) {
-	flt64t x = poparg(s, flt64t);
-	flt64t y = poparg(s, flt64t);
-	setret(flt64t, s, pow(x, y));
-}
-static void f64sqrt(state s) {
-	flt64t x = poparg(s, flt64t);
-	setret(flt64t, s, sqrt(x));
-}
-
-extern int findflt(ccEnv s, char *name, double* res);
-extern int findint(ccEnv s, char *name, int* res);
-extern int lookup_nz(ccEnv s, char *name);
-
-#define H 1e-10
+static inline double lerp(double a, double b, double t) {return a + t * (b - a);}
 
 inline double  dv3dot(double lhs[3], double rhs[3]) {
 	return lhs[0] * rhs[0] + lhs[1] * rhs[1] + lhs[2] * rhs[2];
@@ -1669,84 +1066,206 @@ inline double* dv3nrm(double dst[3], double src[3]) {
 	return dst;
 }
 
-int evalMesh(mesh msh, char *obj, int sdiv, int tdiv) {
-	static char mem[64 << 10];		// 64K memory ???
-	state env = gsInit(mem, sizeof(mem));
+#if 1
+typedef struct userData {
+	double s, smin, smax;
+	double t, tmin, tmax;
+	int isPos, isNrm;
+	double pos[3], nrm[3];
+} *userData;
+
+#include "lib/libpvmc/pvmc.h"
+
+static int getS(state rt) {
+	userData d = rt->udata;
+	setret(rt, float64_t, lerp(d->smin, d->smax, d->s));
+	return 0;
+}
+static int getT(state rt) {
+	userData d = rt->udata;
+	setret(rt, float64_t, lerp(d->tmin, d->tmax, d->t));
+	return 0;
+}
+static int setPos(state rt) {
+	userData d = rt->udata;
+	d->pos[0] = popf64(rt);
+	d->pos[1] = popf64(rt);
+	d->pos[2] = popf64(rt);
+	d->isPos = 1;
+	return 0;
+}
+static int setNrm(state rt) {
+	userData d = rt->udata;
+	d->nrm[0] = popf64(rt);
+	d->nrm[1] = popf64(rt);
+	d->nrm[2] = popf64(rt);
+	d->isNrm = 1;
+	return 0;
+}
+
+static int f64abs(state rt) {
+	float64_t x = popf64(rt);
+	setret(rt, float64_t, fabs(x));
+	return 0;
+}
+static int f64sin(state rt) {
+	float64_t x = popf64(rt);
+	setret(rt, float64_t, sin(x));
+	return 0;
+}
+static int f64cos(state rt) {
+	float64_t x = popf64(rt);
+	setret(rt, float64_t, cos(x));
+	return 0;
+}
+static int f64tan(state rt) {
+	float64_t x = popf64(rt);
+	setret(rt, float64_t, tan(x));
+	return 0;
+}
+static int f64log(state rt) {
+	float64_t x = popf64(rt);
+	setret(rt, float64_t, log(x));
+	return 0;
+}
+static int f64exp(state rt) {
+	float64_t x = popf64(rt);
+	setret(rt, float64_t, exp(x));
+	return 0;
+}
+static int f64pow(state rt) {
+	float64_t x = popf64(rt);
+	float64_t y = popf64(rt);
+	setret(rt, float64_t, pow(x, y));
+	return 0;
+}
+static int f64sqrt(state rt) {
+	float64_t x = popf64(rt);
+	setret(rt, float64_t, sqrt(x));
+	return 0;
+}
+static int f64atan2(state rt) {
+	float64_t x = popf64(rt);
+	float64_t y = popf64(rt);
+	setret(rt, float64_t, atan2(x, y));
+	return 0;
+}
+
+static int addText(state rt, char *file, int line, char *buff) {
+	if (!ccOpen(rt, srcText, buff))
+		return -1;
+
+	//~ s->cc->warn = 0;
+	ccSource(rt->cc, file, line);
+	return parse(rt->cc, 0, 5);
+}
+
+int evalMesh(mesh msh, int sdiv, int tdiv, char *src, char *file, int line) {
+	static char mem[65536];		// 64K memory !!!
+	state rt = rtInit(mem, sizeof(mem));
 	struct userData ud;
 
-	char *logf = "debug.out";
+	char *logf = NULL;//"dump.evalMesh.txt";
 
-	int i, j;//, cs, ct;
+	int i, j, err = 0;
 
 	double s, t, ds, dt;	// 0 .. 1
-	//~ double smin = 0, smax = 1;
-	//~ double tmin = 0, tmax = 1;
 
-	if (!ccInit(env)) {
-		debug("Internal error\n", env->_cnt, env->cc);
-		return -9;
-	}
-	if (logfile(env, logf) != 0) {
+	/*if (logfile(rt, logf) != 0) {
 		debug("can not open file `%s`\n", logf);
+		return -2;
+	}// */
+
+	if (!ccInit(rt, creg_emit, NULL)) {
+		debug("Internal error\n");
 		return -1;
 	}
 
-	installlibc(env, f64abs, "flt64 abs(flt64 x)");
-	installlibc(env, f64sin, "flt64 sin(flt64 x)");
-	installlibc(env, f64cos, "flt64 cos(flt64 x)");
-	installlibc(env, f64log, "flt64 log(flt64 x)");
-	installlibc(env, f64exp, "flt64 exp(flt64 x)");
-	installlibc(env, f64sqrt, "flt64 sqrt(flt64 x)");
-	installlibc(env, f64pow, "flt64 pow(flt64 x, flt64 y)");
+	//~ ccDone(env);
+	err = err || !libcall(rt, getS,     0, "float64 gets();");
+	err = err || !libcall(rt, getT,     0, "float64 gett();");
+	err = err || !libcall(rt, setPos,   0, "void setPos(float64 x, float64 y, float64 z);");
+	err = err || !libcall(rt, setNrm,   0, "void setNrm(float64 x, float64 y, float64 z);");
 
-	installlibc(env, getST, "flt64 st(int32 arg)");
-	installlibc(env, setPos, "void setPos(flt64 x, flt64 y, flt64 z)");
-	//~ installlibc(env, setNrm, "void setNrm(flt64 x, flt64 y, flt64 z)");
+	err = err || !libcall(rt, f64abs,   0, "float64 abs(float64 x);");
+	err = err || !libcall(rt, f64sin,   0, "float64 sin(float64 x);");
+	err = err || !libcall(rt, f64cos,   0, "float64 cos(float64 x);");
+	err = err || !libcall(rt, f64tan,   0, "float64 tan(float64 x);");
+	err = err || !libcall(rt, f64log,   0, "float64 log(float64 x);");
+	err = err || !libcall(rt, f64exp,   0, "float64 exp(float64 x);");
+	err = err || !libcall(rt, f64sqrt,  0, "float64 sqrt(float64 x);");
+	err = err || !libcall(rt, f64atan2, 0, "float64 atan(float64 x, float64 y);");
+	err = err || !libcall(rt, f64pow,   0, "float64 pow(float64 x, float64 y);");
 
-	if (!ccOpen(env, 0, obj)) {
-		debug("can not open %s", obj);
-		return -8;
+	err = err || addText(rt, __FILE__, __LINE__,
+		//~ "const ln2 = 0.693147180559945309417232121458176568075500134360255254120680009;"	// A002162
+		//~ "const log2E = 1 / ln2;"
+		//~ "const ln10 = 2.30258509299404568401799145468436420760110148862877297603332790;"	// A002392
+		//~ "const log10E = 1 / ln10;"
+		"const pi = 3.14159265358979323846264338327950288419716939937510582097494459;"		// A000796
+		"const e = 2.71828182845904523536028747135266249775724709369995957496696763;"		// A001113
+		//~ "const phi = 1.61803398874989484820458683436563811772030917980576286213544862;"	// A001622
+		//~ "const sqrt2 = 1.41421356237309504880168872420969807856967187537694807317667974;"	// A002193
+		//~ "const sqrtE = 1.64872127070012814684865078781416357165377610071014801157507931;"	// A019774
+		//~ "const sqrtPi = 1.77245385090551602729816748334114518279754945612238712821380779;"	// A002161
+		//~ "const sqrtPhi = 1.27201964951406896425242246173749149171560804184009624861664038;"	// A139339
+	);
+
+	err = err || addText(rt, __FILE__, __LINE__,
+		"double s = gets();\n"
+		"double t = gett();\n"
+		"double x = s;\n"
+		"double y = t;\n"
+		"double z = 0;\n"
+	);
+	err = err || addText(rt, file, line, src);
+	err = err || addText(rt, __FILE__, __LINE__, "setPos(x, y, z);\n");
+
+	// optimize on level 3, and do not generate global variables as static variables
+	if (err || gencode(rt, -3) != 0) {
+		debug("error compiling(%d), see `%s`", err, logf);
+		//~ debug("error compiling(`%s`): %d", obj, err);
+		logfile(rt, NULL);
+		return -3;
 	}
-	if (compile(env, 0) != 0) {
-		debug("compile failed");
-		return env->errc;
-	}
-	if (gencode(env, 0) != 0) {
-		debug("gencode failed");
-		return env->errc;
-	}
-	logfile(env, NULL);	// close it
-	dump(env, logf, dump_sym | 0x01, "\ntags:\n");
-	dump(env, logf, dump_ast | 0x00, "\ncode:\n");
-	dump(env, logf, dump_asm | 0x39, "\ndasm:\n");
 
-	env->data = &ud;
-	ud.smin = ud.tmin = 0;
-	ud.smax = ud.tmax = 1;
+	dump(rt, dump_sym | 0x01, NULL, "\ntags:\n");
+	//~ dump(env, dump_ast | 0x00, NULL, "\ncode:\n");
+	//~ dump(env, dump_asm | 0x19, NULL, "\ndasm:\n");
+	logfile(rt, NULL);	// close log
 
-	if (findint(env->cc, "division", &tdiv)) {
+	// TODO: old styled
+	#define findint(__ENV, __NAME, _OUT_VAL) symvalint(findsym(__ENV, rt->gdef, __NAME), _OUT_VAL)
+	#define findflt(__ENV, __NAME, _OUT_VAL) symvalflt(findsym(__ENV, rt->gdef, __NAME), _OUT_VAL)
+
+	if (findint(rt->cc, "division", &tdiv)) {
 		sdiv = tdiv;
 	}
 
-	findflt(env->cc, "smin", &ud.smin);
-	findflt(env->cc, "smax", &ud.smax);
-	findint(env->cc, "sdiv", &sdiv);
+	ud.smin = ud.tmin = 0;
+	ud.smax = ud.tmax = 1;
 
-	findflt(env->cc, "tmin", &ud.tmin);
-	findflt(env->cc, "tmax", &ud.tmax);
-	findint(env->cc, "tdiv", &tdiv);
+	findflt(rt->cc, "smin", &ud.smin);
+	findflt(rt->cc, "smax", &ud.smax);
+	findint(rt->cc, "sdiv", &sdiv);
+
+	findflt(rt->cc, "tmin", &ud.tmin);
+	findflt(rt->cc, "tmax", &ud.tmax);
+	findint(rt->cc, "tdiv", &tdiv);
 
 	//~ cs = lookup_nz(env->cc, "closedS");
 	//~ ct = lookup_nz(env->cc, "closedT");
 
-	//~ debug("s(min:%lf, max:%lf, div:%d%s)", ud.smin, ud.smax, sdiv, /* cs ? ", closed" : */ "");
-	//~ debug("t(min:%lf, max:%lf, div:%d%s)", ud.tmin, ud.tmax, tdiv, /* ct ? ", closed" : */ "");
+	debug("s(min:%lf, max:%lf, div:%d%s)", ud.smin, ud.smax, sdiv, /* cs ? ", closed" : */ "");
+	debug("t(min:%lf, max:%lf, div:%d%s)", ud.tmin, ud.tmax, tdiv, /* ct ? ", closed" : */ "");
 	//~ vmInfo(env->vm);
 
 	ds = 1. / (sdiv - 1);
 	dt = 1. / (tdiv - 1);
 	msh->hasTex = msh->hasNrm = 1;
 	msh->tricnt = msh->vtxcnt = 0;
+
+	rt->udata = &ud;
 	for (t = 0, j = 0; j < tdiv; t += dt, ++j) {
 		for (s = 0, i = 0; i < sdiv; s += ds, ++i) {
 			double pos[3], nrm[3], tex[2];
@@ -1755,37 +1274,41 @@ int evalMesh(mesh msh, char *obj, int sdiv, int tdiv) {
 			tex[1] = s;
 
 			ud.s = s; ud.t = t;
-			if (exec(env->vm, 4096, NULL) != 0) {
+			ud.isNrm = 0;
+			if (vmExec(rt, NULL) != 0) {
 				debug("error");
 				return -4;
 			}
 			dv3cpy(pos, ud.pos);
 
-			ud.s = s + H; ud.t = t;
-			if (exec(env->vm, 4096, NULL) != 0) {
-				debug("error");
-				return -3;
+			if (ud.isNrm) {
+				dv3nrm(nrm, ud.nrm);
 			}
-			dv3cpy(ds, ud.pos);
+			else {
+				ud.s = s + epsilon; ud.t = t;
+				if (vmExec(rt, NULL) != 0) {
+					debug("error");
+					return -5;
+				}
+				dv3cpy(ds, ud.pos);
 
-			ud.s = s; ud.t = t + H;
-			if (exec(env->vm, 4096, NULL) != 0) {
-				debug("error");
-				return -2;
+				ud.s = s; ud.t = t + epsilon;
+				if (vmExec(rt, NULL) != 0) {
+					debug("error");
+					return -6;
+				}
+				dv3cpy(dt, ud.pos);
+
+				ds[0] = (pos[0] - ds[0]) / epsilon;
+				ds[1] = (pos[1] - ds[1]) / epsilon;
+				ds[2] = (pos[2] - ds[2]) / epsilon;
+				dt[0] = (pos[0] - dt[0]) / epsilon;
+				dt[1] = (pos[1] - dt[1]) / epsilon;
+				dt[2] = (pos[2] - dt[2]) / epsilon;
+				//~ dv3sca(ds, dv3sub(ds, pos, ds), 1. / epsilon);
+				//~ dv3sca(dt, dv3sub(dt, pos, dt), 1. / epsilon);
+				dv3nrm(nrm, dv3crs(nrm, ds, dt));
 			}
-			dv3cpy(dt, ud.pos);
-
-			ds[0] = (pos[0] - ds[0]) / H;
-			ds[1] = (pos[1] - ds[1]) / H;
-			ds[2] = (pos[2] - ds[2]) / H;
-			dt[0] = (pos[0] - dt[0]) / H;
-			dt[1] = (pos[1] - dt[1]) / H;
-			dt[2] = (pos[2] - dt[2]) / H;
-			//~ dv3sca(ds, dv3sub(ds, pos, ds), 1. / H);
-			//~ dv3sca(dt, dv3sub(dt, pos, dt), 1. / H);
-			dv3nrm(nrm, dv3crs(nrm, ds, dt));
-
-			//~ debug("setNrm(%lg, %lg, %lg)", nrm[0], nrm[1], nrm[2]);
 
 			addvtxDV(msh, pos, nrm, tex);
 		}
@@ -1800,11 +1323,13 @@ int evalMesh(mesh msh, char *obj, int sdiv, int tdiv) {
 		}
 	}
 	return 0;
-}// */
+}
+#endif
 
-static inline void sphere(double dst[3], double nrm[3], double tex[2], double s, double t) {
-	const double s_min = 0.0, s_max = 1 * M_PI;
-	const double t_min = 0.0, t_max = 2 * M_PI;
+/*static inline void sphere(double dst[3], double nrm[3], double tex[2], double s, double t) {
+	const double PI = 3.14159265358979323846264338327950288419716939937510582097494459;	// A000796
+	const double s_min = 0.0, s_max = 1 * PI;
+	const double t_min = 0.0, t_max = 2 * PI;
 
 	double S = lerp(s_min, s_max, s);
 	double T = lerp(t_min, t_max, t);
@@ -1828,6 +1353,7 @@ int evalSphere(mesh msh, int sdiv, int tdiv) {
 	msh->hasTex = msh->hasNrm = 1;
 	msh->tricnt = msh->vtxcnt = 0;
 
+	initMesh(msh, sdiv * tdiv);
 	for (t = 0, j = 0; j < tdiv; t += dt, ++j) {
 		for (s = 0, i = 0; i < sdiv; s += ds, ++i) {
 			double pos[3], nrm[3], tex[2];

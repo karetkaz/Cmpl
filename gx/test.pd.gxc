@@ -1,0 +1,442 @@
+// Procedural drawing
+const Window {
+	draw = RenderMode.swap_buff;
+	resx = 512;
+	resy = 512;
+}
+
+void zoomSurf2(gxSurf dst, gxRect &rect, gxSurf src, gxRect &roi, int mode) {
+	gxRect srec = gxRect(0, 0, width(src), height(src));
+	gxRect drec = gxRect(0, 0, width(dst), height(dst));
+
+	if (roi != null) {
+		if (roi.x > 0) {
+			srec.w -= roi.x;
+			srec.x = roi.x;
+		}
+		if (roi.y > 0) {
+			srec.h -= roi.y;
+			srec.y = roi.y;
+		}
+		if (roi.w < srec.w)
+			srec.w = roi.w;
+		if (roi.h < srec.h)
+			srec.h = roi.h;
+	}
+
+	if (rect != null) {
+		drec = rect;
+	}
+
+	if (drec.w <= 0 || drec.h <= 0)
+		return;
+
+	if (srec.w <= 0 || srec.h <= 0)
+		return;
+
+	double x0 = 0;
+	double y0 = 0;
+	double dx = double(srec.w - 0) / (drec.w - 0);
+	double dy = double(srec.h - 0) / (drec.h - 0);
+	if (drec.x < 0) {
+		x0 = -drec.x;
+	}
+
+	if (drec.y < 0) {
+		y0 = -drec.y;
+	}
+
+	if (clipRect(dst, &drec)) {
+
+		//~ if (dx & 0xfffe0000 || dy & 0xfffe0000) {	// if downsampling use nearest neigbor
+		//~ if (abs(dx) > 1 || abs(dy) > 1) {	// downsampling
+			//~ mode = 0;
+		//~ }
+
+		x0 = x0 * dx + srec.x;
+		y0 = y0 * dy + srec.y;
+
+		double sy = y0;
+		for (int y = 0; y < drec.h; y += 1) {
+			double sx = x0;
+			for (int x = 0; x < drec.w; x += 1) {
+				//~ setPixel(dst, drec.x + x, drec.y + y, getPixel(src, int(sx), int(sy)));
+				setPixel(dst, drec.x + x, drec.y + y, getPixel(src, sx, sy));
+				sx += dx;
+			}
+			sy += dy;
+		}
+	}
+}
+
+define atan2f(float x, float y) = atan2(x, y);
+define sqrtf(float x) = sqrt(x);
+define sinf(float x) = sin(x);
+define fabsf(float x) = abs(x);
+define cosf(float x) = cos(x);
+define colsca(vec4f &x, float s) = void(x = vec4f(x.x * s, x.y * s, x.z * s));
+//~ define collerp(vec4f &res, float t, vec4f ^a, vec4f ^b) = void(res = lerp(t, a, b));
+define pi = Math.pi;
+
+
+static if (true) {		// perlin noise
+const B = 0x100;
+const BM = 0xff;
+const N = 0x1000;
+const NP = 12;   /* 2^N */
+const NM = 0xfff;
+
+int p[B + B + 2];
+float g3[B + B + 2][3];
+float g2[B + B + 2][2];
+float g1[B + B + 2];
+bool start = true;
+
+static void init(void) {
+	int i;
+	define sqr(float ^x) = float(x * x);
+	for (i = 0 ; i < B ; i+=1) {
+		p[i] = i;
+
+		g1[i] = float((rand() % (B + B)) - B) / B;
+
+		for (int j = 0 ; j < 2 ; j+=1)
+			g2[i][j] = float((rand() % (B + B)) - B) / B;
+
+		//~ normalize2(g2[i]);
+		float n2 = sqrtf(sqr(g2[i][0]) + sqr(g2[i][1]));
+		if (n2 != 0) {
+			g2[i][0] /= n2;
+			g2[i][1] /= n2;
+		}
+
+		for (int j = 0 ; j < 3 ; j+=1)
+			g3[i][j] = float((rand() % (B + B)) - B) / B;
+
+		//~ normalize3(g3[i]);
+		float n3 = sqrtf(sqr(g3[i][0]) + sqr(g3[i][1]) + sqr(g3[i][1]));
+		if (n3 != 0) {
+			g3[i][0] /= n3;
+			g3[i][1] /= n3;
+			g3[i][2] /= n3;
+		}
+	}
+
+	for (;i -= 1;) {
+		int k = p[i];
+		int j = rand() % B;
+		p[i] = p[j];
+		p[j] = k;
+	}
+
+	for (i = 0 ; i < B + 2 ; i+=1) {
+		p[B + i] = p[i];
+		g1[B + i] = g1[i];
+		for (int j = 0 ; j < 2 ; j+=1)
+			g2[B + i][j] = g2[i][j];
+		for (int j = 0 ; j < 3 ; j+=1)
+			g3[B + i][j] = g3[i][j];
+	}
+}
+
+static void setup(float vec_i, int &b0, int &b1, float &r0,float &r1) {
+	float t = vec_i + N;
+	b0 = int(t) & BM;
+	b1 = (b0+1) & BM;
+	r0 = t - int(t);
+	r1 = r0 - 1.;
+}
+
+define s_curve(double t) = smooth(t);
+
+//~ define s_curve(double ^t) = double( t * t * (3. - 2. * t) );
+//~ define lerp(double t, double a, double b) = double ( a + t * (b - a) )
+
+float noise(float x) {
+	int bx0;
+	int bx1;
+	float rx0;
+	float rx1;
+	float sx;
+	float u;
+	float v;
+
+	if (start) {
+		start = false;
+		init();
+	}
+
+	setup(x, &bx0, &bx1, &rx0, &rx1);
+
+	sx = s_curve(rx0);
+
+	u = rx0 * g1[ p[ bx0 ] ];
+	v = rx1 * g1[ p[ bx1 ] ];
+
+	result = lerp(sx, u, v);
+}
+float noise(float x, float y) {
+	int bx0;
+	int bx1;
+	int by0;
+	int by1;
+	float rx0;
+	float rx1;
+	float ry0;
+	float ry1;
+
+	if (start) {
+		start = false;
+		init();
+	}
+
+	setup(x, &bx0, &bx1, &rx0, &rx1);
+	setup(y, &by0, &by1, &ry0, &ry1);
+
+	int i = p[ bx0 ];
+	int j = p[ bx1 ];
+
+	int b00 = p[ i + by0 ];
+	int b10 = p[ j + by0 ];
+	int b01 = p[ i + by1 ];
+	int b11 = p[ j + by1 ];
+
+	float sx = s_curve(rx0);
+	float sy = s_curve(ry0);
+
+	define at2(float rx, float ry, int i) = float( rx * g2[i][0] + ry * g2[i][1] );
+
+	float a = lerp(sx, at2(rx0,ry0, b00), at2(rx1,ry0, b10));
+	float b = lerp(sx, at2(rx0,ry1, b01), at2(rx1,ry1, b11));
+
+	result = lerp(sy, a, b);
+}
+float noise(float x, float y, float z) {
+
+	int bx0;
+	int bx1;
+	int by0;
+	int by1;
+	int bz0;
+	int bz1;
+	float rx0;
+	float rx1;
+	float ry0;
+	float ry1;
+	float rz0;
+	float rz1;
+
+	if (start) {
+		start = false;
+		init();
+	}
+
+	setup(x, &bx0, &bx1, &rx0, &rx1);
+	setup(y, &by0, &by1, &ry0, &ry1);
+	setup(z, &bz0, &bz1, &rz0, &rz1);
+
+	int i = p[ bx0 ];
+	int j = p[ bx1 ];
+
+	int b00 = p[ i + by0 ];
+	int b10 = p[ j + by0 ];
+	int b01 = p[ i + by1 ];
+	int b11 = p[ j + by1 ];
+
+	float sx = s_curve(rx0);
+	float sy = s_curve(ry0);
+	float sz = s_curve(rz0);
+
+	define at3(float rx, float ry, float rz, int i) = float( rx * g3[i][0] + ry * g3[i][1] + rz * g3[i][2] );
+
+	float a;
+	float b;
+	float c;
+	float d;
+	float u;
+	float v;
+
+	u = at3(rx0,ry0,rz0, b00 + bz0);
+	v = at3(rx1,ry0,rz0, b10 + bz0);
+	a = lerp(sx, u, v);
+
+	u = at3(rx0,ry1,rz0, b01 + bz0);
+	v = at3(rx1,ry1,rz0, b11 + bz0);
+	b = lerp(sx, u, v);
+
+	c = lerp(sy, a, b);
+
+	u = at3(rx0,ry0,rz1, b00 + bz1);
+	v = at3(rx1,ry0,rz1, b10 + bz1);
+	a = lerp(sx, u, v);
+
+	u = at3(rx0,ry1,rz1, b01 + bz1);
+	v = at3(rx1,ry1,rz1, b11 + bz1);
+	b = lerp(sx, u, v);
+
+	d = lerp(sy, a, b);
+
+	result = lerp(sz, c, d);
+}
+}
+
+void setup(double &timer, vec4f pixelCBr(double x, double y)) {
+
+	const WIDTH = 92;
+	const HEIGHT = WIDTH;
+	static gxSurf tmpImg = gxSurf(WIDTH, HEIGHT);
+
+	static bool snapshot = false;
+	static bool animate = true;
+
+	static double &time = null;
+	static vec4f pixelCB(double x, double y) = null;
+
+	// for each frame
+	void drawCB() {
+		if (snapshot && pixelCB != null) {
+			animate = false;
+			snapshot = false;
+			//~ bmpWrite(tmpImg, "out-0.bmp");
+			//~ bmpWrite(offScreen, "out-1.bmp");
+			evalSurf(offScreen, null, pixelCB);
+			//~ bmpWrite(offScreen, "out-2.bmp");
+		}
+		if (animate && pixelCB != null) {
+			// application time spent in processor
+			time = .5 * clocksPerSec(timeNow());
+			//~ evalSurf((offScreen, null, pixelCB);
+			zoomSurf2(offScreen, null, evalSurf(tmpImg, null, pixelCB), null, 1);
+			// post a redraw for animation
+			Gui.Repaint();
+		}
+	}
+	void mouseCB(int btn, int x, int y) {
+		static int omb = 0;
+		if (omb == 1 && btn == 0) { // onRelase(btn:1)
+			snapshot = true;
+		}
+		if (btn == 2) {
+			animate = true;
+			init();
+		}
+		omb = btn;
+	}
+
+	&time = timer;
+	pixelCB = pixelCBr;
+	Gui.setDrawCallback(drawCB);
+	Gui.setMouseHandler(mouseCB);
+}
+
+double aspect = 1.33;
+double time;
+
+vec4f blob2d(double x, double y) {
+
+	vec2d p = vec2d(2 * x - 1, 2 * y - 1);
+
+	//~ the centre point for each blob
+	vec2d move1 = vec2d(cos(time * 4.5) * 0.4, sin(time * 1.5) * 0.4);
+	vec2d move2 = vec2d(cos(time * 2.0) * 0.4, sin(time * 3.0) * 0.4);
+	//~ vec2d move3 = vec2d(cos(time * 7.0) * 0.4, sin(time * 2.0) * 0.4);
+	//~ vec2d move4 = vec2d(cos(time * 2.0) * 0.4, sin(time * 4.3) * 0.4);
+
+	//~ radius for each blob
+	double r1 = dot(sub(p, move1), sub(p, move1)) * 8;
+	double r2 = dot(sub(p, move2), sub(p, move2)) * 16;
+	//~ double r3 = dot(sub(p, move3), sub(p, move3)) * 32;
+	//~ double r4 = dot(sub(p, move4), sub(p, move4)) * 64;
+
+	//~ sum the meatballs
+	double metaball = (1.0 / max(r1, 1.)) + (1.0 / max(r2, 1.));
+	//~ metaball += 1.0 / max(r3, 1.);
+	//~ metaball += 1.0 / max(r4, 1.);
+
+	//~ alter the cut-off power
+	//~ set the output color
+	result = vec4f(clamp(pow(metaball, 8.0), 0., 1.));
+}
+
+vec4f yinyang(double x, double y) {
+	float64 nx = -1 + 2 * x;
+	float64 ny = -1 + 2 * y;
+	x = (nx*cos(time) - ny*sin(time));
+	y = (nx*sin(time) + ny*cos(time));
+	float64 h = x*x + y*y;
+	if (h < 1) {
+		float64 d = abs(y) - h;
+		float64 a = d - 0.23;
+		float64 b = h - 1.00;
+		float64 c = sign(a * b * (y + x + (y - x) * sign(d)));
+
+		c = mix(c, 0.0, smooth(0.98, 1.00, h));
+		c = mix(c, 1.0, smooth(1.00, 1.02, h));
+		result = vec4f(c);
+	}
+	else {
+		result = vec4f(1.);
+	}
+}
+
+vec4f eye(double x, double y) {
+	vec4f interior(float x, float y, float b) {
+		// ezt nem tudom mire jo
+		define noise2f(float32 x, float32 y, int xx, int yy) = noise(x, y);
+
+		x -= 0.10f; y += 0.05f;
+		float rx = 2.0f*(x-0.5f)*aspect;
+		float ry = 2.0f*(y-0.5f);
+		float a = atan2f(ry, rx);
+		float e = rx*rx + ry*ry;
+		float r = sqrtf(e);
+
+		vec4f fue = vec4f(1.0f, 1.0f, 1.0f);
+		// blood
+		float ven = noise2f(24.0f*x, 24.0f*y, 256, 256);
+		ven = smoothstep(ven,-.2f,.0f)-smoothstep(ven,.0f,.2f);
+		ven += x + x*x*x*x*x*x*7.0f;
+		fue.x = fue.x + 0.04f - 0.00f*ven;
+		fue.y = fue.y + 0.04f - 0.05f*ven;
+		fue.z = fue.z + 0.04f - 0.05f*ven;
+
+		vec4f den = vec4f(0.3f, 0.7f, 0.4f+e);
+		float no = 0.8f+0.2f*noise2f(4.0f*r, 32.0f*a/pi,32,32);
+		colsca(den, no);
+
+		float f2 = smoothstep(e, 0.025f, 0.035f);
+		colsca(den, f2);
+
+		// blend in/out
+		result = lerp(smoothstep(e, 0.35f, 0.36f), den, fue);
+
+		// ring
+		float ri=smoothstep(e,.31f,.35f)-smoothstep(e,.35f,.39f);
+		ri = 1.0f-0.35f*ri;
+		colsca(result, ri);
+
+		// reflecion
+		float r3 = sqrtf(r*r*r);
+		float re = noise2f(2.0f+4.0f*r3*cosf(a), 4.0f*r3*sinf(a), 256, 256);
+		re = 0.8f*smoothstep(re, 0.1f, 0.5f);
+		result.x += re*(1.0f-result.x);
+		result.y += re*(1.0f-result.y);
+		result.z += re*(1.0f-result.z);
+
+		// shadow
+		colsca(result, 0.85f+0.15f*smoothstep(-b, 0.0f, 0.2f) );
+
+	}
+
+	//~ float rx = 2.0f*(x - 0.5f)*aspect;
+	float ry = 2.0f*(y - 0.5f);
+	float h = 3.0f*sqrtf(x*x*x)*(1.0f-x);
+	float e = fabsf(ry) - h;
+	float f = smoothstep( e, 0.0f, 0.01f );
+	vec4f cOjo = interior(x, y, 0);
+	vec4f cPiel = vec4f(0.);//skin(x, y);
+	result = lerp(f, cOjo, cPiel);
+}
+
+setup(&time, yinyang);
+//~ Gui.exitLoop();

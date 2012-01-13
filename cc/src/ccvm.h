@@ -91,19 +91,16 @@ typedef enum {
 	TYPE_flt = TYPE_f64,
 	TYPE_str = TYPE_ptr,
 
+	stmt_NoDefs = 0x100,		// disable typedefs in stmt.
+	stmt_NoRefs = 0x200,		// disable variables in stmt.
+
 	decl_NoDefs = 0x100,		// disable type defs in decl.
-	decl_NoInit = 0x200,		// disable initialization. (disable)
-	decl_Iterator = 0x400,		// int a : range(0, 12);
-	decl_Ref = decl_NoDefs|decl_NoInit,
+	decl_NoInit = 0x200,		// disable initializer.
+	decl_Colon  = 0x400,		// enable ':' after variable name: for(int a : range(0, 12))
 
-	//~ decl_Var = decl_NoInit,					// parse variable declaration
-	//~ decl_Arg = decl_NoDefs|decl_NoInit,		// parse function argument / struct member
+	ATTR_const = 0x0100,		// constant
+	ATTR_stat  = 0x0200,		// static
 
-	symn_const = 0x200,				// constant
-	symn_stat = 0x400,				// static
-
-	ATTR_const = 0x00000001,		// constant
-	ATTR_stat  = 0x00000002,		// static
 	//~ ATTR_byref = 0x00000002,		// indirect
 	//~ ATTR_glob  = 0x00000008,		// global
 	//~ ATTR_used  = 0x00000080,		// used
@@ -213,15 +210,19 @@ struct list {				// linked list: stringlist, memgr, ...
 };
 struct astn {				// tree node (code)
 	symn		type;				// typeof() return type of operator ... base type of IDTF
-	ccToken		kind;				// code: TYPE_ref, OPER_???
-	ccToken		cst2;				// casts to basic type: (i32, f32, i64, f64, ref, bool, void)
-	int32_t		_pad;
-	//~ uint16_t	_pad;				// unused
+	//~ ccToken		kind;				// code: TYPE_ref, OPER_???
+	//~ ccToken		cst2;				// casts to basic type: (i32, f32, i64, f64, ref, bool, void)
+	//~ astn		next;				// next statement, do not use for preorder
+
+	uint8_t	kind;		// TYPE_ref / TYPE_def / TYPE_rec / TYPE_arr
+	uint8_t	cst2;		// casts to type(TYPE_(bit, vid, ref, u32, i32, i64, f32, f64, p4x)).
+	uint16_t	_pad;				// unused
+
 	union {
 		union  {					// TYPE_xxx: constant
 			int64_t	cint;			// const: integer
 			float64_t	cflt;			// const: float
-			//~ char*	cstr;		// const: use: '.id.name'
+			//~ char*	cstr;		// const: use instead: '.id.name'
 		} con;
 		struct {					// STMT_xxx: statement
 			astn	stmt;			// statement / then block
@@ -239,39 +240,45 @@ struct astn {				// tree node (code)
 		struct {					// TYPE_ref: identifyer
 			char*	name;			// name of identifyer
 			int32_t hash;			// hash code for 'name'
-			//int32_t _pad;
 			symn	link;			// variable
 			astn	args;			// next used
-			//~ astn	nuse;			// next used
 		} id;
 		struct {					// STMT_brk, STMT_con
 			long offs;
 			long stks;				// stack size
 		} go2;
-		struct {					// STMT_brk, STMT_con
+		struct {					// STMT_beg: list
 			astn head;
 			astn tail;
 		} list;
 	};
-	astn		next;				// next statement, do not use for preorder
 
 	char*		file;				// token in file
 	uint32_t	line;				// token on line
+
+	astn		next;				// next statement, do not use for preorder
 	uint32_t	temp;				// token on line
 };
 struct symn {				// type node (data)
-	// 
 	char*	name;		// symbol name
-	char*	file;
-	int		line;
+	char*	file;		// declared in file
+	int		line;		// declared on line
 
 	int32_t	size;		// sizeof(TYPE_xxx)
-	int32_t	offs;		// addrof(TYPE_ref)
+
+	//~ NOTE: negative offst means global
+	int32_t	offs;		// addrof(TYPE_xxx)
 
 
 	symn	type;		// base type of TYPE_ref/TYPE_arr/function (void, int, float, struct, ...)
-	symn	args;		// REC fields / FUN params / ARR base type
-	symn	sdef;		// static members / variables, should be the tail of args
+
+	//~ TODO: temporarly array variable base type
+	symn	args;		// struct members / function paramseters
+
+	//~ TODO: should be the tail of args
+	symn	sdef;		// static members 
+
+	symn	decl;		// declared in namespace/struct/class, function, ...
 
 	symn	next;		// symbols on table / next param / next field / next symbol
 
@@ -281,7 +288,7 @@ struct symn {				// type node (data)
 
 	uint8_t	kind;		// TYPE_ref / TYPE_def / TYPE_rec / TYPE_arr
 	uint8_t	cast;		// casts to type(TYPE_(bit, vid, ref, u32, i32, i64, f32, f64, p4x)).
-	union {
+	union {				// Attributes
 	struct {
 	uint16_t	call:1;		// callable(function/definition) <=> (kind == TYPE_ref && args)
 	uint16_t	cnst:1;		// constant
@@ -296,16 +303,14 @@ struct symn {				// type node (data)
 	};
 	uint16_t	Attr;
 	};
-	//~ uint32_t	refc;		// referenced count
-
-	symn	decl;		// declared in namespace/struct/class, function, ...
 
 	int		nest;		// declaration level
+	//~ int	refc;		// how many times was referenced
 
 	symn	defs;		// global variables and functions / while_compiling variables of the block in reverse order
 	symn	gdef;		// static variables and functions / while_compiling ?
 
-	astn	init;		// VAR init / FUN body
+	astn	init;		// VAR init / FUN body, this shuld be null after codegen
 	char*	pfmt;		// TEMP: print format
 };
 
@@ -457,12 +462,13 @@ symn lookup(ccState, symn sym, astn ast/*, int deep*/, astn args, int raise);
 // TODO: this is the semantic-analyzer, typecheck should be renamed.
 symn typecheck(ccState, symn loc, astn ast);
 
-int argsize(symn sym, int align);
+/* fix structure member offsets / function arguments
+ * returns the size of struct / functions param size.
+ */
 int fixargs(symn sym, int align, int spos);
 
 int castOf(symn typ);
 int castTo(astn ast, int tyId);
-//~ int typeTo(astn ast, symn type);
 symn promote(symn lht, symn rht);
 
 int32_t constbol(astn ast);

@@ -222,6 +222,7 @@ static int b64sar(state s) {
 	setret(s, uint64_t, x >> y);
 	return 0;
 }
+/* unused
 static int b64and(state s) {
 	uint64_t x = popi64(s);
 	uint64_t y = popi64(s);
@@ -286,7 +287,7 @@ static int b64lob(state s) {
 	uint64_t x = popi64(s);
 	setret(s, uint64_t, x & -x);
 	return 0;
-}
+}*/
 //}
 
 int reglibs(state rt, char *stdlib) {

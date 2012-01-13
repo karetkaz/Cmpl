@@ -1,4 +1,3 @@
-//~ ./main -c -O2 -xv test_all.cvx -i./lbit.so
 //~ #open src/pvmc.h
 //~ #open src/ccvm.h
 
@@ -48,7 +47,7 @@
  * 
  * 
 **/
-//~ /+ TODO: errors
+/+ TODO: errors
 /+ recursively define
 define fact(int64 n) = (n * fact(n - 1));
 //~ +/

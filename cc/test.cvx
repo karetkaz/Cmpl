@@ -41,7 +41,14 @@ else {
 
 //~ ./main -C -i./lbit.dll -O2 -xd test.cvx
 //~ int i = bitops.btc(0x1ff);
-int i = 0;
+void func1() {
+
+	const inertial_pan = 50;
+	void func1() {
+		if (inertial_pan) {
+		}
+	}
+}
 
 /* random floats
 float32 frand() {
