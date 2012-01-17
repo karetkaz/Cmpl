@@ -11,7 +11,7 @@ const Options {
 }
 
 // division of mesh and heightmap
-const division = 82;
+const division = 62;
 
 //~ do rain every dorain frame
 const dorain = 0;

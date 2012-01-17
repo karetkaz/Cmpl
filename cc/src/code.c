@@ -729,6 +729,69 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 			}
 		}*/
 
+		/*if (opc == opc_set) {
+			int ipp, rm = 0;
+			int op = 0, lhs, rhs;
+			ip = getip(rt, rt->vm.pc);
+			switch (ip->opc) {
+				case i32_add:
+				case i32_sub:
+				case i32_mul:
+				case i32_div:
+				case i32_mod:
+					op = i32_ext;
+					break;
+				case f32_add:
+				case f32_sub:
+				case f32_mul:
+				case f32_div:
+				case f32_mod:
+					op = f32_ext;
+					break;
+				case i64_add:
+				case i64_sub:
+				case i64_mul:
+				case i64_div:
+				case i64_mod:
+					op = i64_ext;
+					break;
+				case f64_add:
+				case f64_sub:
+				case f64_mul:
+				case f64_div:
+				case f64_mod:
+					op = f64_ext;
+					break;
+			}
+			if (op == i32_ext || op == f32_ext) {
+				ip = getip(rt, rt->vm.p[ipp = 1]);
+				if (ip->opc == opc_ldi4 && rm == 0) {
+					ip = getip(rt, rt->vm.p[ipp += 1]);
+					rm = 1;
+				}
+				if (ip->opc == opc_dup1) {
+					rhs = ip->idx;
+					ip = getip(rt, rt->vm.p[ipp += 1]);
+					if (ip->opc == opc_ldi4 && rm == 0) {
+						ip = getip(rt, rt->vm.p[ipp += 1]);
+						rm = 2;
+					}
+					if (ip->opc == opc_dup1) {
+						lhs = ip->idx;
+						opc = op;
+					}
+				}
+			}
+			if (op == i64_ext || op == f64_ext) {
+				...
+			}
+
+			if (opc == op) {
+				arg = extarg(arg, lhs, rhs, rm);
+				ip = pc = rt->vm.p[ipp];
+			}
+		}*/
+
 		/*~:)) ?? others
 		if (opc == opc_ldz1) {
 			ip = getip(s, s->pc);
@@ -1477,7 +1540,7 @@ void vm_fputval(state rt, FILE *fout, symn var, stkval* ref, int level) {
 						//~ fputfmt(fout, "%T{", typ);
 						//~ fputfmt(fout, "\n");
 						for (tmp = typ->args; tmp; tmp = tmp->next) {
-							if (tmp->kind != TYPE_ref)
+							if (tmp->stat || tmp->kind != TYPE_ref)
 								continue;
 
 							if (tmp->pfmt && !*tmp->pfmt)

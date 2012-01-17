@@ -41,14 +41,14 @@ else {
 
 //~ ./main -C -i./lbit.dll -O2 -xd test.cvx
 //~ int i = bitops.btc(0x1ff);
-void func1() {
+/*void func1() {
 
 	const inertial_pan = 50;
 	void func1() {
 		if (inertial_pan) {
 		}
 	}
-}
+}// */
 
 /* random floats
 float32 frand() {
@@ -76,9 +76,16 @@ for(int i = 0; i < 30; i += 1) {
 
 // */
 
-//~ static struct m {
-//~ int a = 9;
-//~ }
+static struct m {
+	int a = 9;
+	int b = 6;
+	int c = 8;
+	//~ c = 9;
+}
+
+m m1;
+
+int x = m1.a;
 
 //~ int n = emit(val, i32(0));
 //~ int arr2[] = null;
@@ -198,16 +205,21 @@ string sss[3] = x, "a2", "a3";
 /* static and nonstatic members.
 struct alma {
 	static int a0 = 9;
-	const int a1;
+	int a1;
 	int a2;
+	int a3;
 }
 
-alma a = alma(12, 13);
+alma a;// = alma(12, 13, 14);
 alma.a0 = 99;
-a = alma(a.a1, 0);
-
+//~ a = alma(a.a1, 0);
 int alma_a0 = alma.a0;
 
+a.a0 = 98;		// error: member accessed through an instance reference
+alma.a1 = 99;		// error: undefined 
+//~ alma &a2 = null;
+//~ int offsa2 = emit(int, ref(a2.a2));
+//~ int offsa2 = emit(int, ref(alma(null).a2));
 // */
 
 /* xrgb

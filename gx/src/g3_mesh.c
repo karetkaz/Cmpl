@@ -1229,14 +1229,14 @@ int evalMesh(mesh msh, int sdiv, int tdiv, char *src, char *file, int line) {
 		return -3;
 	}
 
-	dump(rt, dump_sym | 0x01, NULL, "\ntags:\n");
-	//~ dump(env, dump_ast | 0x00, NULL, "\ncode:\n");
-	//~ dump(env, dump_asm | 0x19, NULL, "\ndasm:\n");
+	//~ dump(rt, dump_sym | 0x01, NULL, "\ntags:\n");
+	//~ dump(rt, dump_ast | 0x00, NULL, "\ncode:\n");
+	//~ dump(rt, dump_asm | 0x19, NULL, "\ndasm:\n");
 	logfile(rt, NULL);	// close log
 
 	// TODO: old styled
-	#define findint(__ENV, __NAME, _OUT_VAL) symvalint(findsym(__ENV, rt->gdef, __NAME), _OUT_VAL)
-	#define findflt(__ENV, __NAME, _OUT_VAL) symvalflt(findsym(__ENV, rt->gdef, __NAME), _OUT_VAL)
+	#define findint(__ENV, __NAME, _OUT_VAL) symvalint(findsym(__ENV, NULL, __NAME), _OUT_VAL)
+	#define findflt(__ENV, __NAME, _OUT_VAL) symvalflt(findsym(__ENV, NULL, __NAME), _OUT_VAL)
 
 	if (findint(rt->cc, "division", &tdiv)) {
 		sdiv = tdiv;
@@ -1256,8 +1256,8 @@ int evalMesh(mesh msh, int sdiv, int tdiv, char *src, char *file, int line) {
 	//~ cs = lookup_nz(env->cc, "closedS");
 	//~ ct = lookup_nz(env->cc, "closedT");
 
-	debug("s(min:%lf, max:%lf, div:%d%s)", ud.smin, ud.smax, sdiv, /* cs ? ", closed" : */ "");
-	debug("t(min:%lf, max:%lf, div:%d%s)", ud.tmin, ud.tmax, tdiv, /* ct ? ", closed" : */ "");
+	//~ debug("s(min:%lf, max:%lf, div:%d%s)", ud.smin, ud.smax, sdiv, /* cs ? ", closed" : */ "");
+	//~ debug("t(min:%lf, max:%lf, div:%d%s)", ud.tmin, ud.tmax, tdiv, /* ct ? ", closed" : */ "");
 	//~ vmInfo(env->vm);
 
 	ds = 1. / (sdiv - 1);

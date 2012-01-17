@@ -292,6 +292,8 @@ void setup(double &timer, vec4f pixelCBr(double x, double y)) {
 	static double &time = null;
 	static vec4f pixelCB(double x, double y) = null;
 
+	static int64 begTime = timeNow();
+
 	// for each frame
 	void drawCB() {
 		if (snapshot && pixelCB != null) {
@@ -304,7 +306,7 @@ void setup(double &timer, vec4f pixelCBr(double x, double y)) {
 		}
 		if (animate && pixelCB != null) {
 			// application time spent in processor
-			time = .5 * clocksPerSec(timeNow());
+			time = .5 * clocksPerSec(timeNow() - begTime);
 			//~ evalSurf((offScreen, null, pixelCB);
 			zoomSurf2(offScreen, null, evalSurf(tmpImg, null, pixelCB), null, 1);
 			// post a redraw for animation
@@ -322,6 +324,7 @@ void setup(double &timer, vec4f pixelCBr(double x, double y)) {
 		}
 		omb = btn;
 	}
+
 
 	&time = timer;
 	pixelCB = pixelCBr;
@@ -438,5 +441,44 @@ vec4f eye(double x, double y) {
 	result = lerp(f, cOjo, cPiel);
 }
 
-setup(&time, yinyang);
+vec4f tunnel0(double x, double y) {
+
+	int rgbscale(int col, double s) {
+		const fixp = 16;
+		int scale = s * (1 << fixp);
+		int r = clamp(rch(col) * scale >> fixp, 0, 255);
+		int g = clamp(gch(col) * scale >> fixp, 0, 255);
+		int b = clamp(bch(col) * scale >> fixp, 0, 255);
+		result = rgb(r, g, b);
+	}
+
+	int imgcoord(double val, int resolution) {
+		result = val * resolution;
+
+		if ((result %= resolution) < 0)
+			result += resolution;
+	}
+
+	define tex2d(gxSurf ^src, double x, double y) = getPixel(src, imgcoord(x, width(src)), imgcoord(y, height(src)));
+	define tex2d(gxSurf src, double u, double v, double w) = rgbscale(tex2d(src, u, v), w);
+
+	define nz(double x) = nz(x, 1e-200);
+	define atan(double x, double y) = atan2(x, y);
+
+	static gxSurf srcImg = gxSurf("media/images/download.jpg");
+
+	x = 1. - x * 2;
+	y = 1. - y * 2;
+
+	double a = atan(y, x);
+	double r = hypot(x, y);
+
+	double u = .2 * time + .1 / nz(r);
+	double v = a / pi;
+
+	result = rgb2vec4f(tex2d(srcImg, u, v, 3 * r));
+}
+
+
+setup(&time, tunnel0);
 //~ Gui.exitLoop();

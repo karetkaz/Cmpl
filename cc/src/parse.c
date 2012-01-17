@@ -1285,19 +1285,6 @@ static symn copysym(ccState cc, symn sym) {
 	}
 	return result;
 }
-static symn linksym(ccState cc, symn sym) {
-	symn result = newdefn(cc, TYPE_ref);
-	if (result != NULL) {
-		result->type = sym->type;
-		result->args = sym->args;
-		result->cast = sym->cast;
-		result->call = sym->call;
-		result->size = sym->size;
-		result->offs = sym->offs;
-		result->next = NULL;
-	}
-	return result;
-}
 static symn ctorArg(ccState cc, symn rec) {
 	symn ctor = install(cc, rec->name, TYPE_def, 0, 0);
 	if (ctor != NULL) {
@@ -1307,6 +1294,9 @@ static symn ctorArg(ccState cc, symn rec) {
 		enter(cc, NULL);
 
 		for (arg = rec->args; arg; arg = arg->next) {
+
+			if (arg->stat)
+				break;
 
 			if (arg->kind != TYPE_ref)
 				continue;
@@ -1946,6 +1936,7 @@ static astn spec(ccState s/* , int qual */) {
 			def->args = leave(s, def, (Attr & ATTR_stat) != 0);
 			def->size = fixargs(def, pack, 0);
 			def->cast = byref ? TYPE_ref : TYPE_rec;
+			Attr &= ~ATTR_stat;
 
 			//~ addarg(s, def, "typeOf", TYPE_def, def, lnknode(s, def));
 

@@ -1643,7 +1643,7 @@ static int meshCall(state rt) {
 		case meshOpTexture: {
 			msh.map = getSurf(popi32(rt));
 			msh.freeTex = 0;
-			debug("msh.map = %p", msh.map);
+			//~ debug("msh.map = %p", msh.map);
 			//~ textureMesh(&msh, popstr(s));
 		} break;
 		case meshOpRead: {			// int meshRead(string file);
@@ -1957,7 +1957,7 @@ Mesh[] = {
 	{meshCall, meshOpGetFlags,		"int Flags;"},
 	{meshCall, meshOpSetFlags,		"int Flags(int Value);"},
 	//~ {meshCall, meshOpGetTex,		"gxSurf Texture;"},
-	{meshCall, meshOpTexture,		"int Texture(gxSurf file);"},
+	{meshCall, meshOpTexture,		"int Texture(gxSurf image);"},
 	{meshCall, meshOpInit,			"int Init(int Capacity);"},
 	{meshCall, meshOpRead,			"int Read(string file, string texture);"},
 	{meshCall, meshOpSave,			"int Save(string file);"},

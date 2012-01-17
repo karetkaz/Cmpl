@@ -656,15 +656,25 @@ int cgen(state rt, astn ast, ccToken get) {
 		case OPER_dot: {	// '.'
 			// TODO: this should work as indexing
 			symn var = linkOf(ast->op.rhso);
-
-			if (istype(ast->op.lhso)) {
-				return cgen(rt, ast->op.rhso, get);
-			} // */
+			int lhsstat = istype(ast->op.lhso);
 
 			if (!var) {
 				trace("%+k", ast);
 				return 0;
 			}
+
+			if (var->stat && !lhsstat) {
+				error(rt, ast->file, ast->line, "Member `%+T` cannot be accessed with an instance reference", var);
+				return 0;
+			}
+			if (!var->stat && lhsstat) {
+				error(rt, ast->file, ast->line, "An object reference is required to access the member `%+T`", var);
+				return 0;
+			}
+			if (lhsstat) {
+				return cgen(rt, ast->op.rhso, get);
+			} // */
+
 
 			if (get == ASGN_set) {
 				if (var->cnst && ast->file) {
@@ -1041,11 +1051,11 @@ int cgen(state rt, astn ast, ccToken get) {
 
 			if (var->kind == TYPE_ref) {
 
-				trace("new variable: `%-T:%d, %d`", var, var->size, sizeOf(typ));
-
 				if (var->init && var->offs && !rt->cc->sini) {
 					return TYPE_vid;
 				}
+
+				trace("new variable: `%-T:%d, %d`", var, var->size, sizeOf(typ));
 
 				if (var->init) {
 					astn val = var->init;
@@ -1476,6 +1486,10 @@ int cgen(state rt, astn ast, ccToken get) {
 		}
 	}
 
+	//~ if (match(rt, rs, ipdbg, "@:1@:2(+-*/%):0=:3"))
+	//~ == dup, dup, (add|sub|mul|div|mod), set
+	//~ => emitext(rt, rs[0], rs[3], rs[1], rs[2], 0)
+	
 	// debug info, invalid after first execution
 	if (ast->kind > STMT_beg && ast->kind < STMT_end && ipdbg < emitopc(rt, markIP)) {
 		list l = setBuff(&rt->cc->dbg, rt->cc->dbg.cnt, NULL);
@@ -1764,6 +1778,7 @@ int gencode(state rt, int level) {
 			dieif(var->kind != TYPE_ref, "FixMe");
 
 			rt->cc->sini = 0;
+			trace("ggen: %-T", var);
 			if (!ggen(rt, var, init)) {
 				trace("FixMe");
 				return 0;

@@ -43,6 +43,7 @@ build:$(LIBS) $(OBJS)
 
 clean:
 	rm -f $(OBJS)
+	$(MK) -C lib/libpvmc clean
 #	rm -f $(LIBDIR)libpvmc.win.a
 
 $(LIBDIR)libpvmc.a:

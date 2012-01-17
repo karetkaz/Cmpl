@@ -744,7 +744,7 @@ int castTo(astn ast, int cto) {
 			break;
 			//~ return 0;
 	}
-	debug("cast `%+k` to (%t)", ast, cto);
+	//~ debug("cast `%+k` to (%t)", ast, cto);
 	return ast->cst2 = cto;
 }
 static int typeTo(astn ast, symn type) {
@@ -767,7 +767,7 @@ static int typeTo(astn ast, symn type) {
 }
 
 symn typecheck(ccState cc, symn loc, astn ast) {
-	int checkStaticMembers = 0;
+	//~ int checkStaticMembers = 0;
 	astn ref = 0, args = 0;
 	symn result = NULL;
 	astn dot = NULL;
@@ -896,9 +896,11 @@ symn typecheck(ccState cc, symn loc, astn ast) {
 			loc = sym;
 			ref = ast->op.rhso;
 			//~ debug("%T", linkOf(ast->op.lhso));
-			if (isType(linkOf(ast->op.lhso)))
+			/*if (isType(linkOf(ast->op.lhso))) {
 				checkStaticMembers = 1;
+			}
 			//~ debug("lookup %+k in %T / %d", ref, loc, checkStaticMembers);
+			// */
 		} break;
 		case OPER_idx: {
 			symn lht = typecheck(cc, loc, ast->op.lhso);
@@ -1237,10 +1239,13 @@ symn typecheck(ccState cc, symn loc, astn ast) {
 		sym = cc->deft[ref->id.hash];
 
 		if (loc != NULL) {
+			sym = loc->args;
+			/* loc->args ends with loc->sdef
 			if (checkStaticMembers)
 				sym = loc->sdef;
 			else
 				sym = loc->args;
+			*/
 		}
 
 		//~ debug("%+k(%d)", ast, ast->line);
@@ -1344,6 +1349,9 @@ int fixargs(symn sym, int align, int stbeg) {
 	//~ int stbeg = sizeOf(sym->type);
 	for (arg = sym->args; arg; arg = arg->next) {
 
+		if (arg->stat)
+			continue;
+
 		// functions are byRef in structs and params
 		if (arg->call) {
 			arg->cast = TYPE_ref;
@@ -1418,8 +1426,13 @@ void enter(ccState s, astn ast) {
 }
 symn leave(ccState cc, symn dcl, int mkstatic) {
 	state rt = cc->s;
-	symn loc = NULL;
+
+	// nonstatic declarations
+	symn loc = NULL, lastloc = NULL;
+
+	// static declarations
 	symn sta = NULL;
+
 	int i;
 
 	cc->nest -= 1;
@@ -1468,6 +1481,9 @@ symn leave(ccState cc, symn dcl, int mkstatic) {
 		else {
 			sym->next = loc;
 			loc = sym;
+			if (!lastloc) {
+				lastloc = sym;
+			}
 		}
 	}
 
@@ -1482,6 +1498,9 @@ symn leave(ccState cc, symn dcl, int mkstatic) {
 
 	if (mkstatic) {
 		loc = sta;
+	}
+	else if (lastloc) {
+		lastloc->next = sta;
 	}
 
 	return loc;

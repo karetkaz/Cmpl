@@ -369,6 +369,6 @@ void mouseHandler(int btn, int x, int y) {
 	}
 }
 
-Gui.setDrawCallback(planes);
+Gui.setDrawCallback(tunnel0);
 Gui.setMouseHandler(mouseHandler);
 //~ Gui.exitLoop();

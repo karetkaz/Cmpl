@@ -1,4 +1,4 @@
-const test = 1;
+const test = -2;
 const Window {
 	draw = RenderMode.swap_buff;
 
@@ -422,7 +422,7 @@ static if (test == 7) {		// lens effect
 
 gxSurf bgImg = gxSurf("media/images/Earth.jpg");
 
-define magFactor = 3.4;
+define magFactor = 7.4;
 define magRadius = 62;
 
 int magx = Window.resx / 2;
@@ -548,7 +548,7 @@ void drawCB() {
 	double tempy;
 
 	//~ clear the screen
-	fillRect(offScreen, 0, 0, Window.resx, Window.resy, 0);
+	fillRect(offScreen, 0x000000);
 
 	//~ move and draw stars
 	for (int i = 0; i < stars.length; i += 1) {
