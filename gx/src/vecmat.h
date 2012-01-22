@@ -1,26 +1,7 @@
+/* tyni vector and matrix library */
 #include <math.h>
 
-//~ typedef float scalar;
-
-//~ #define inline inline
-/*
-typedef union color8_t {				// bool vect || byte vect || argb
-	unsigned long val;
-	unsigned char v[4];
-	struct {
-		unsigned char	b;
-		unsigned char	g;
-		unsigned char	r;
-		unsigned char	a;
-	};
-	struct {
-		signed char	x;
-		signed char	y;
-		signed char	z;
-		signed char	w;
-	};
-} bvec, argb;
-//~ */
+typedef float scalar;
 
 typedef union vector {
 	scalar v[4];
@@ -30,14 +11,13 @@ typedef union vector {
 		scalar z;
 		scalar w;
 	};
-	//~ /*
 	struct {
 		scalar r;
 		scalar g;
 		scalar b;
 		scalar a;
-	};// */
-} *vector;
+	};
+} *vector; //, *color, *position, *normal;
 
 typedef union matrix {
 	scalar d[16];
@@ -53,12 +33,6 @@ typedef union matrix {
 		scalar m21, m22, m23, m24;
 		scalar m31, m32, m33, m34;
 		scalar m41, m42, m43, m44;
-	};
-	struct {
-		scalar xx, xy, xz, xt;
-		scalar yx, yy, yz, yt;
-		scalar zx, zy, zz, zt;
-		scalar wx, wy, wz, wt;
 	};
 } *matrix;
 
@@ -108,7 +82,24 @@ typedef enum {				// swizzle
 } vswzop;
 
 //#################################  COLOR8  ###################################
-/*//{
+/*/{
+typedef union color8_t {				// bool vect || byte vect || argb
+	unsigned long val;
+	unsigned char v[4];
+	struct {
+		unsigned char	b;
+		unsigned char	g;
+		unsigned char	r;
+		unsigned char	a;
+	};
+	struct {
+		signed char	x;
+		signed char	y;
+		signed char	z;
+		signed char	w;
+	};
+} bvec, argb;
+
 argb rgbneg(argb rhs) {
 	argb res;
 	res.b = -rhs.b;
@@ -427,7 +418,6 @@ static inline scalar vecdst(vector lhs, vector rhs) {
 	return veclen(vecsub(tmp, lhs, rhs));
 }
 
-
 /* Temp
 inline vector vecHCS(vector dst, vector src) {
 	scalar len = src->w;
@@ -459,13 +449,21 @@ inline vector vecHCS(vector dst, vector src) {
 //~ inline vector vecSLT(vector dst, vector lhs, vector rhs);	// dst.* = lhs.* < rhs.* ? 0 : 1
 //~ inline vector vecMAD(vector dst, vector src, vector mul, vector add);
 
-Watcom compiler ?
-#pragma aux (parm [edi] [eax] [edx] value [edi] modify exact []) vecmul =\
+asm(
+	"movaps (%%eax), %%xmm0\n"
+	"addps (%%ecx), %%xmm0\n"
+	"movaps %%xmm0, (%%edx)\n"
+	: // output
+	: "a"(lhs), "c"(rhs), "d"(dst)// input
+	: "%xmm0"// no clobber-list
+);
+
+#pragma aux (parm [edi] [eax] [edx] value [edi] modify exact [xmm0]) vecadd =\
 	".686"\
-	"movups	xmm0, [eax]"\
-	"movups	xmm1, [edx]"\
-	"mulps	xmm0, xmm1"\
-	"movups	[edi], xmm0"// 
+	"movaps	xmm0, [eax]"\
+	"addps	xmm0, [edx]"\
+	"movaps	[edi], xmm0"// 
+
 */
 
 //#################################  MATRIX  ###################################
@@ -581,25 +579,25 @@ static inline matrix matldR(matrix dst, vector dir, scalar ang) {
 	xz = dir->x * dir->z;
 	yz = dir->y * dir->z;
 
-	dst->xx = one_c * xx + cos_t;
-	dst->xy = one_c * xy - tmp.z;
-	dst->xz = one_c * xz + tmp.y;
-	dst->xt = 0;
+	dst->m11 = one_c * xx + cos_t;
+	dst->m12 = one_c * xy - tmp.z;
+	dst->m13 = one_c * xz + tmp.y;
+	dst->m14 = 0;
 
-	dst->yx = one_c * xy + tmp.z;
-	dst->yy = one_c * yy + cos_t;
-	dst->yz = one_c * yz - tmp.x;
-	dst->yt = 0;
+	dst->m21 = one_c * xy + tmp.z;
+	dst->m22 = one_c * yy + cos_t;
+	dst->m23 = one_c * yz - tmp.x;
+	dst->m24 = 0;
 
-	dst->zx = one_c * xz - tmp.y;
-	dst->zy = one_c * yz + tmp.x;
-	dst->zz = one_c * zz + cos_t;
-	dst->zt = 0;
+	dst->m31 = one_c * xz - tmp.y;
+	dst->m32 = one_c * yz + tmp.x;
+	dst->m33 = one_c * zz + cos_t;
+	dst->m34 = 0;
 
-	dst->wx = 0;
-	dst->wy = 0;
-	dst->wz = 0;
-	dst->wt = 1;
+	dst->m41 = 0;
+	dst->m42 = 0;
+	dst->m43 = 0;
+	dst->m44 = 1;
 	return dst;
 }
 
@@ -607,10 +605,10 @@ static inline matrix matldS(matrix dst, vector dir, scalar cnt) {
 	union vector tmp;
 	matidn(dst, 1);
 	vecsca(&tmp, dir, cnt);
-	dst->xx = tmp.x;
-	dst->yy = tmp.y;
-	dst->zz = tmp.z;
-	//~ dst->ww = tmp.w;
+	dst->x.x = tmp.x;
+	dst->y.y = tmp.y;
+	dst->z.z = tmp.z;
+	//~ dst->w.w = tmp.w;
 	return dst;
 }
 
@@ -618,18 +616,29 @@ static inline matrix matldT(matrix dst, vector dir, scalar cnt) {
 	union vector tmp;
 	matidn(dst, 1);
 	vecsca(&tmp, dir, cnt);
-	dst->xt = tmp.x;
-	dst->yt = tmp.y;
-	dst->zt = tmp.z;
-	//~ dst->wt = tmp.w;
+	dst->x.w = tmp.x;
+	dst->y.w = tmp.y;
+	dst->z.w = tmp.z;
+	//~ dst->w.w = tmp.w;
 	return dst;
 }
 
 static inline void ortho_mat(matrix dst, scalar l, scalar r, scalar b, scalar t, scalar n, scalar f) {
-	//~ union matrix tmp;
-	scalar	rl = r - l, tb = t - b, nf = n - f;
-	if (rl == 0. || tb  == 0. || nf  == 0. ) return;
+	scalar rl = r - l;
+	scalar tb = t - b;
+	scalar nf = n - f;
+
+	if (rl == 0. || tb  == 0. || nf  == 0.)
+		return;
+
+	matldf(dst,			// Projection matrix - orthographic
+		2 / rl,			0.,				0.,				-(r+l) / rl,
+		0.,				2 / tb,			0.,				-(t+b) / tb,
+		0.,				0.,				2 / nf,			-(f+n) / nf,
+		0.,				0.,				0.,				1.);
+
 	/* step by step
+	//~ union matrix tmp;
 	matldf(dst,							// scale
 		2/(r-l),		0.,				0.,				0.,
 		0.,				2/(t-b),		0.,				0.,
@@ -641,21 +650,24 @@ static inline void ortho_mat(matrix dst, scalar l, scalar r, scalar b, scalar t,
 		0.,				0.,				1.,				-(n+f)/2,
 		0.,				0.,				0.,				1.));
 	// */
-
-	//~ /*
-	matldf(dst,			// Projection matrix - orthographic
-		2 / rl,			0.,				0.,				-(r+l) / rl,
-		0.,				2 / tb,			0.,				-(t+b) / tb,
-		0.,				0.,				2 / nf,			-(f+n) / nf,
-		0.,				0.,				0.,				1.);
-	// */
 }
 
 static inline void persp_mat(matrix dst, scalar l, scalar r, scalar b, scalar t, scalar n, scalar f) {
-	//~ union matrix tmp;
-	scalar	rl = r - l, tb = t - b, nf = n - f;
-	if (rl == 0. || tb  == 0. || nf  == 0. ) return;
+	scalar rl = r - l;
+	scalar tb = t - b;
+	scalar nf = n - f;
+
+	if (rl == 0. || tb  == 0. || nf  == 0.)
+		return;
+
+	matldf(dst,			// Projection matrix - perspective
+		2*n / rl,	0.,			-(r+l) / rl,	0.,
+		0.,			2*n / tb,	-(t+b) / tb,	0.,
+		0.,			0.,			+(n+f) / nf,	-2*n*f / nf,
+		0.,			0.,			1.,				0.);
+
 	/* step by step
+	//~ union matrix tmp;
 	matldf(dst,							// scale
 		2/(r-l),		0.,				0.,				0.,
 		0.,				2/(t-b),		0.,				0.,
@@ -673,37 +685,31 @@ static inline void persp_mat(matrix dst, scalar l, scalar r, scalar b, scalar t,
 		0.,				0.,				n+f,			-n*f,
 		0.,				0.,				1.,				0.));
 	// */
-	matldf(dst,			// Projection matrix - perspective
-		2*n / rl,	0.,			-(r+l) / rl,	0.,
-		0.,			2*n / tb,	-(t+b) / tb,	0.,
-		0.,			0.,			+(n+f) / nf,	-2*n*f / nf,
-		0.,			0.,			1.,				0.);
-	// */
 }
 
 static inline void projv_mat(matrix dst, scalar fovy, scalar asp, scalar n, scalar f) {
-	scalar bot = 1, nf = n-f;
-	if (fovy) {
+	scalar bot = 1;
+	scalar nf = n - f;
+	if (fovy) {		// perspective
 		bot = tan(fovy * ((3.14159265358979323846 / 180)));
 		asp *= bot;
-		matldf(dst,		// perspective
+
+		matldf(dst,
 			n / asp,	0.,		0.,		0,
 			0.,		n / bot,	0.,		0,
 			0.,		0.,		(n+f) / nf,	-2*n*f / nf,
 			0.,		0.,		1.,		0);
 	}
-	else {
-		//~ asp *= bot;
-		matldf(dst,		// orthographic
+	else {			// orthographic
+		matldf(dst,
 			1 / asp,	0.,		0.,		0,
 			0.,		1 / bot,	0.,		0,
 			0.,		0.,		2 / nf,		-(f+n) / nf,
 			0.,		0.,		0.,		1.);
 	}
-	// */
 }
 
-//~ /*
+
 static inline matrix matcpy(matrix dst, matrix src) {
 	*dst = *src;
 	return dst;
@@ -771,15 +777,6 @@ static inline scalar matinv(matrix dst, matrix src) {
 	}
 	return det;
 }
-
-/*
-argb matrgb(matrix mat, argb rgb) {
-	union vectortmp;
-	vecldc(&tmp, rgb);
-	matvp3(&tmp, mat, &tmp);
-	return vecrgb(&tmp);
-}
-//~ */
 
 //#################################  camera  ###################################
 

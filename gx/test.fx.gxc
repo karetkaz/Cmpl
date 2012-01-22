@@ -1,7 +1,7 @@
 // effects
-const test = 3;
+const test = 4;
 const Window {
-	draw = RenderMode.swap_buff;
+	//~ draw = RenderMode.swap_buff;
 	//~ resx = 1440;
 	//~ resy = 1012;
 	//~ resx = 1024;
@@ -25,8 +25,8 @@ void setupPicView(gxSurf vImg, bool vFit) {
 	static bool clear = false;
 	static bool fit = false;
 
-	const inertial_pan = 50;
-	const inertial_speed = 1.07;
+	const inertial_pan = 25;
+	const inertial_speed = 1.04;
 
 	static int64 inertial_time = 0;
 	static double inertial_pan_x = 0;
@@ -343,7 +343,7 @@ gxSurf dither(gxSurf img, bool grayscale, uint32 colors, int dithering) {
 		result = img;
 	}
 	else if (dithering == Dithering.Bayer) {
-		static uint8 Pattern[8][8] =
+		static uint8 Pattern[8, 8] =
 			 0,32, 8,40, 2,34,10,42,
 			48,16,56,24,50,18,58,26,
 			12,44, 4,36,14,46, 6,38,

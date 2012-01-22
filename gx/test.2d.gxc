@@ -1,4 +1,4 @@
-const test = -2;
+const test = 3;
 const Window {
 	draw = RenderMode.swap_buff;
 
@@ -272,11 +272,16 @@ void drawOval(gxSurf s, int x0, int y0, int x1, int y1, int size, long color) {
 	}
 }
 
+void drawLine2(gxSurf s, int x0, int y0, int x1, int y1, long color) {
+	drawLine(s, x0, y0, x1, y1, color);
+}
+
 void drawCB() {
 	define color = 0xff00ff;
 	tileSurf(offScreen, 0, 0, bgImg, null);
 
-	drawOval(offScreen, roi.x, roi.y, roi.x + roi.w, roi.y + roi.h, 30, color);
+	drawLine2(offScreen, roi.x, roi.y, roi.x + roi.w, roi.y + roi.h, color);
+	//~ drawOval(offScreen, roi.x, roi.y, roi.x + roi.w, roi.y + roi.h, 30, color);
 	//~ fillOval(offScreen, roi.x, roi.y, roi.x + roi.w, roi.y + roi.h, color);
 	//~ drawOval(offScreen, roi.x, roi.y, roi.x + roi.w, roi.y + roi.h, color);
 	//~ fillRect(offScreen, roi.x, roi.y, roi.x + roi.w, roi.y + roi.h, color);
@@ -429,7 +434,7 @@ int magx = Window.resx / 2;
 int magy = Window.resy / 2;
 int bgresx = width(bgImg);
 int bgresy = height(bgImg);
-vec2d magnCoeff[magRadius * 2][magRadius * 2];
+vec2d magnCoeff[magRadius * 2, magRadius * 2];
 
 void mouseCB(int btn, int x, int y) {
 	static int ox;

@@ -64,7 +64,7 @@ static int f64atan2(state rt) {
 }
 //}#endregion
 
-/*/{#region bit operations
+/*/{#region "bit operations"
 enum bits_funs {
 	b64_cmt,
 	b64_and,
@@ -280,29 +280,25 @@ enum miscCalls {
 	timeOpProc64,		// spent in cpu
 	timeOpClck64,		// spent 
 
-	//~ miscOpPutX64,
-	//~ miscOpPutI64,
-	//~ miscOpPutF64,
-	//~ miscOpPutChr,
 	miscOpPutStr,
 	miscOpPutFmt,
 
 	//~ miscOpMemMgr,
 };
 
-STINLINE int64_t clockCpu() {
+static inline int64_t clockCpu() {
 	uint64_t now = clock();
 	return (now << 32) / CLOCKS_PER_SEC;
 	//~ return (now / CLOCKS_PER_SEC) << 32;
 }
 
 #if (defined __WATCOMC__) || (defined _MSC_VER)
-STINLINE int64_t clockNow() {
+static inline int64_t clockNow() {
 	return clockCpu();
 }
 #else
 #include <sys/time.h>
-STINLINE int64_t clockNow() {
+static inline int64_t clockNow() {
 	int64_t now;
 	struct timeval tv_now;
 	//~ static int64_t progbeg = 0;

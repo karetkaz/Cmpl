@@ -1,8 +1,6 @@
 #include "g2_surf.h"
 
-extern double epsilon;
-typedef float scalar;
-#include "g3_math.i"
+#include "vecmat.h"
 #define toRad(__A) ((__A) * (3.14159265358979323846 / 180))
 
 enum {
@@ -63,7 +61,6 @@ typedef struct Material {		// material
 } *Material;
 
 typedef struct Light {		// lights
-	//~ int attr;
 	enum {						// Type
 		L_off  = 0x0000,		// light is off
 		L_on   = 0x0001,		// light is on
@@ -123,8 +120,8 @@ typedef struct mesh {
 
 	signed hlplt;			// highlight
 	int hasTex:1;// := map != null
-	int freeTex:1;
 	int hasNrm:1;// := nrm != null
+	int freeTex:1;
 	int padded:29;// padding
 } *mesh;
 

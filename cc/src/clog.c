@@ -1184,8 +1184,9 @@ void dump(state rt, dumpMode mode, symn sym, char *text, ...) {
 				symn var;
 				for (var = rt->defs; var; var = var->next) {
 					if (var->kind == TYPE_ref && var->call) {
-						fputfmt(logf, "%-T [@%06x: %d]\n", var, -var->offs, var->size);
+						fputfmt(logf, "%-T [@%06x: %d] {\n", var, -var->offs, var->size);
 						fputasm(logf, rt, -var->offs, -var->offs + var->size, mode);
+						fputfmt(logf, "}\n");
 					}
 				}
 			}

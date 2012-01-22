@@ -1,8 +1,8 @@
 // Procedural drawing
 const Window {
 	draw = RenderMode.swap_buff;
-	resx = 512;
-	resy = 512;
+	resx = 512/2;
+	resy = 512/2;
 }
 
 void zoomSurf2(gxSurf dst, gxRect &rect, gxSurf src, gxRect &roi, int mode) {
@@ -79,207 +79,6 @@ define colsca(vec4f &x, float s) = void(x = vec4f(x.x * s, x.y * s, x.z * s));
 define pi = Math.pi;
 
 
-static if (true) {		// perlin noise
-const B = 0x100;
-const BM = 0xff;
-const N = 0x1000;
-const NP = 12;   /* 2^N */
-const NM = 0xfff;
-
-int p[B + B + 2];
-float g3[B + B + 2][3];
-float g2[B + B + 2][2];
-float g1[B + B + 2];
-bool start = true;
-
-static void init(void) {
-	int i;
-	define sqr(float ^x) = float(x * x);
-	for (i = 0 ; i < B ; i+=1) {
-		p[i] = i;
-
-		g1[i] = float((rand() % (B + B)) - B) / B;
-
-		for (int j = 0 ; j < 2 ; j+=1)
-			g2[i][j] = float((rand() % (B + B)) - B) / B;
-
-		//~ normalize2(g2[i]);
-		float n2 = sqrtf(sqr(g2[i][0]) + sqr(g2[i][1]));
-		if (n2 != 0) {
-			g2[i][0] /= n2;
-			g2[i][1] /= n2;
-		}
-
-		for (int j = 0 ; j < 3 ; j+=1)
-			g3[i][j] = float((rand() % (B + B)) - B) / B;
-
-		//~ normalize3(g3[i]);
-		float n3 = sqrtf(sqr(g3[i][0]) + sqr(g3[i][1]) + sqr(g3[i][1]));
-		if (n3 != 0) {
-			g3[i][0] /= n3;
-			g3[i][1] /= n3;
-			g3[i][2] /= n3;
-		}
-	}
-
-	for (;i -= 1;) {
-		int k = p[i];
-		int j = rand() % B;
-		p[i] = p[j];
-		p[j] = k;
-	}
-
-	for (i = 0 ; i < B + 2 ; i+=1) {
-		p[B + i] = p[i];
-		g1[B + i] = g1[i];
-		for (int j = 0 ; j < 2 ; j+=1)
-			g2[B + i][j] = g2[i][j];
-		for (int j = 0 ; j < 3 ; j+=1)
-			g3[B + i][j] = g3[i][j];
-	}
-}
-
-static void setup(float vec_i, int &b0, int &b1, float &r0,float &r1) {
-	float t = vec_i + N;
-	b0 = int(t) & BM;
-	b1 = (b0+1) & BM;
-	r0 = t - int(t);
-	r1 = r0 - 1.;
-}
-
-define s_curve(double t) = smooth(t);
-
-//~ define s_curve(double ^t) = double( t * t * (3. - 2. * t) );
-//~ define lerp(double t, double a, double b) = double ( a + t * (b - a) )
-
-float noise(float x) {
-	int bx0;
-	int bx1;
-	float rx0;
-	float rx1;
-	float sx;
-	float u;
-	float v;
-
-	if (start) {
-		start = false;
-		init();
-	}
-
-	setup(x, &bx0, &bx1, &rx0, &rx1);
-
-	sx = s_curve(rx0);
-
-	u = rx0 * g1[ p[ bx0 ] ];
-	v = rx1 * g1[ p[ bx1 ] ];
-
-	result = lerp(sx, u, v);
-}
-float noise(float x, float y) {
-	int bx0;
-	int bx1;
-	int by0;
-	int by1;
-	float rx0;
-	float rx1;
-	float ry0;
-	float ry1;
-
-	if (start) {
-		start = false;
-		init();
-	}
-
-	setup(x, &bx0, &bx1, &rx0, &rx1);
-	setup(y, &by0, &by1, &ry0, &ry1);
-
-	int i = p[ bx0 ];
-	int j = p[ bx1 ];
-
-	int b00 = p[ i + by0 ];
-	int b10 = p[ j + by0 ];
-	int b01 = p[ i + by1 ];
-	int b11 = p[ j + by1 ];
-
-	float sx = s_curve(rx0);
-	float sy = s_curve(ry0);
-
-	define at2(float rx, float ry, int i) = float( rx * g2[i][0] + ry * g2[i][1] );
-
-	float a = lerp(sx, at2(rx0,ry0, b00), at2(rx1,ry0, b10));
-	float b = lerp(sx, at2(rx0,ry1, b01), at2(rx1,ry1, b11));
-
-	result = lerp(sy, a, b);
-}
-float noise(float x, float y, float z) {
-
-	int bx0;
-	int bx1;
-	int by0;
-	int by1;
-	int bz0;
-	int bz1;
-	float rx0;
-	float rx1;
-	float ry0;
-	float ry1;
-	float rz0;
-	float rz1;
-
-	if (start) {
-		start = false;
-		init();
-	}
-
-	setup(x, &bx0, &bx1, &rx0, &rx1);
-	setup(y, &by0, &by1, &ry0, &ry1);
-	setup(z, &bz0, &bz1, &rz0, &rz1);
-
-	int i = p[ bx0 ];
-	int j = p[ bx1 ];
-
-	int b00 = p[ i + by0 ];
-	int b10 = p[ j + by0 ];
-	int b01 = p[ i + by1 ];
-	int b11 = p[ j + by1 ];
-
-	float sx = s_curve(rx0);
-	float sy = s_curve(ry0);
-	float sz = s_curve(rz0);
-
-	define at3(float rx, float ry, float rz, int i) = float( rx * g3[i][0] + ry * g3[i][1] + rz * g3[i][2] );
-
-	float a;
-	float b;
-	float c;
-	float d;
-	float u;
-	float v;
-
-	u = at3(rx0,ry0,rz0, b00 + bz0);
-	v = at3(rx1,ry0,rz0, b10 + bz0);
-	a = lerp(sx, u, v);
-
-	u = at3(rx0,ry1,rz0, b01 + bz0);
-	v = at3(rx1,ry1,rz0, b11 + bz0);
-	b = lerp(sx, u, v);
-
-	c = lerp(sy, a, b);
-
-	u = at3(rx0,ry0,rz1, b00 + bz1);
-	v = at3(rx1,ry0,rz1, b10 + bz1);
-	a = lerp(sx, u, v);
-
-	u = at3(rx0,ry1,rz1, b01 + bz1);
-	v = at3(rx1,ry1,rz1, b11 + bz1);
-	b = lerp(sx, u, v);
-
-	d = lerp(sy, a, b);
-
-	result = lerp(sz, c, d);
-}
-}
-
 void setup(double &timer, vec4f pixelCBr(double x, double y)) {
 
 	const WIDTH = 92;
@@ -320,7 +119,58 @@ void setup(double &timer, vec4f pixelCBr(double x, double y)) {
 		}
 		if (btn == 2) {
 			animate = true;
-			init();
+			Perlin.init();
+		}
+		omb = btn;
+	}
+
+
+	&time = timer;
+	pixelCB = pixelCBr;
+	Gui.setDrawCallback(drawCB);
+	Gui.setMouseHandler(mouseCB);
+}
+void setup1(double &timer, float pixelCBr(float x, float y)) {
+
+	const WIDTH = 92;
+	const HEIGHT = WIDTH;
+	static gxSurf tmpImg = gxSurf(WIDTH, HEIGHT);
+
+	static bool snapshot = false;
+	static bool animate = true;
+
+	static double &time = null;
+	static vec4f pixelCB(double x, double y) = null;
+
+	static int64 begTime = timeNow();
+
+	// for each frame
+	void drawCB() {
+		if (snapshot && pixelCB != null) {
+			animate = false;
+			snapshot = false;
+			//~ bmpWrite(tmpImg, "out-0.bmp");
+			//~ bmpWrite(offScreen, "out-1.bmp");
+			evalSurf(offScreen, null, pixelCB);
+			//~ bmpWrite(offScreen, "out-2.bmp");
+		}
+		if (animate && pixelCB != null) {
+			// application time spent in processor
+			time = .5 * clocksPerSec(timeNow() - begTime);
+			//~ evalSurf((offScreen, null, pixelCB);
+			zoomSurf2(offScreen, null, evalSurf(tmpImg, null, pixelCB), null, 1);
+			// post a redraw for animation
+			Gui.Repaint();
+		}
+	}
+	void mouseCB(int btn, int x, int y) {
+		static int omb = 0;
+		if (omb == 1 && btn == 0) { // onRelase(btn:1)
+			snapshot = true;
+		}
+		if (btn == 2) {
+			animate = true;
+			Perlin.init();
 		}
 		omb = btn;
 	}
@@ -385,7 +235,7 @@ vec4f yinyang(double x, double y) {
 vec4f eye(double x, double y) {
 	vec4f interior(float x, float y, float b) {
 		// ezt nem tudom mire jo
-		define noise2f(float32 x, float32 y, int xx, int yy) = noise(x, y);
+		define noise2f(float32 x, float32 y, int xx, int yy) = Perlin.Noise(x, y);
 
 		x -= 0.10f; y += 0.05f;
 		float rx = 2.0f*(x-0.5f)*aspect;
@@ -479,6 +329,12 @@ vec4f tunnel0(double x, double y) {
 	result = rgb2vec4f(tex2d(srcImg, u, v, 3 * r));
 }
 
+//~ setup(&time, tunnel0);
 
-setup(&time, tunnel0);
+vec4f perlin2f(double x, double y) {
+	const mul = 4;
+	result = vec4f(Perlin.Noise(x*mul, y*mul));
+}
+//~ setup1(&time, Perlin.Noise2f);
+setup(&time, perlin2f);
 //~ Gui.exitLoop();

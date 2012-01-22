@@ -231,7 +231,7 @@ static int bitsf(unsigned int x) {
 	if ((x & 0x00000001) == 0) { ans +=  1; }
 	return x ? ans : -1;
 }
-STINLINE void* getip(state rt, int pos) {
+static inline void* getip(state rt, int pos) {
 	return (void *)(rt->_mem + pos);
 }
 
@@ -1071,7 +1071,7 @@ static int mtt(state rt, doWhat cmd, cell pu, int n) {
 	return 0;
 }
 
-STINLINE int ovf(cell pu) {
+static inline int ovf(cell pu) {
 	return (pu->sp - pu->bp) < 0;
 }
 

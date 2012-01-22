@@ -10,6 +10,7 @@ typedef unsigned char		uint8_t;
 typedef unsigned short		uint16_t;
 typedef unsigned long		uint32_t;
 typedef unsigned long long	uint64_t;
+#define inline __inline
 #else
 #include <stdint.h>
 #endif
@@ -220,12 +221,6 @@ typedef struct stateApi {
 
 }* stateApi;
 
-#ifdef _MSC_VER
-#define STINLINE static __inline
-#else
-#define STINLINE static inline
-#endif
-
 //~ #define poparg(__ARGV, __SIZE) ((void*)(((__ARGV)->argv += (((__SIZE) + 3) & ~3)) - (((__SIZE) + 3) & ~3))))
 //~ #define popaty(__ARGV, __TYPE) (*(__TYPE*)(poparg((__ARGV), sizeof(__TYPE))))
 //~ #define poparg(__ARGV, __SIZE) ((void*)(((__ARGV)->argv += (__SIZE)) - (__SIZE)))
@@ -236,7 +231,7 @@ typedef struct stateApi {
 #define setret(__ARGV, __TYPE, __VAL) (*retptr(__ARGV, __TYPE) = (__TYPE)(__VAL))
 #define getret(__ARGV, __TYPE) (*retptr(__ARGV, __TYPE))
 
-STINLINE void* poparg(state rt, void *res, int size) {
+static inline void* poparg(state rt, void *res, int size) {
 	// if result is not null copy
 	if (res != NULL) {
 		memcpy(res, rt->argv, size);
@@ -247,15 +242,15 @@ STINLINE void* poparg(state rt, void *res, int size) {
 	rt->argv += size;
 	return res;
 }
-STINLINE int32_t popi32(state rt) { return *(int32_t*)poparg(rt, NULL, sizeof(int32_t)); }
-STINLINE int64_t popi64(state rt) { return *(int64_t*)poparg(rt, NULL, sizeof(int64_t)); }
-STINLINE float32_t popf32(state rt) { return *(float32_t*)poparg(rt, NULL, sizeof(float32_t)); }
-STINLINE float64_t popf64(state rt) { return *(float64_t*)poparg(rt, NULL, sizeof(float64_t)); }
-STINLINE void* popref(state rt) { int32_t p = popi32(rt); return p ? rt->_mem + p : NULL; }
-STINLINE char* popstr(state rt) { return popref(rt); }
+static inline int32_t popi32(state rt) { return *(int32_t*)poparg(rt, NULL, sizeof(int32_t)); }
+static inline int64_t popi64(state rt) { return *(int64_t*)poparg(rt, NULL, sizeof(int64_t)); }
+static inline float32_t popf32(state rt) { return *(float32_t*)poparg(rt, NULL, sizeof(float32_t)); }
+static inline float64_t popf64(state rt) { return *(float64_t*)poparg(rt, NULL, sizeof(float64_t)); }
+static inline void* popref(state rt) { int32_t p = popi32(rt); return p ? rt->_mem + p : NULL; }
+static inline char* popstr(state rt) { return popref(rt); }
 
-//~ STINLINE void reti32(state rt, int32_t val) { setret(int32_t, rt, val); }
-//~ STINLINE void reti64(state rt, int64_t val) { setret(int64_t, rt, val); }
-//~ STINLINE void retf32(state rt, float32_t val) { setret(float32_t, rt, val); }
-//~ STINLINE void retf64(state rt, float64_t val) { setret(float64_t, rt, val); }
-//~ STINLINE void retref(state rt, float64_t val) { setret(float64_t, rt, vmOffset(s, val)); }
+//~ static inline void reti32(state rt, int32_t val) { setret(int32_t, rt, val); }
+//~ static inline void reti64(state rt, int64_t val) { setret(int64_t, rt, val); }
+//~ static inline void retf32(state rt, float32_t val) { setret(float32_t, rt, val); }
+//~ static inline void retf64(state rt, float64_t val) { setret(float64_t, rt, val); }
+//~ static inline void retref(state rt, float64_t val) { setret(float64_t, rt, vmOffset(s, val)); }

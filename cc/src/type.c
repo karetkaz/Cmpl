@@ -218,7 +218,7 @@ symn addarg(ccState cc, symn sym, const char* name, int kind, symn typ, astn ini
 }
 
 // promote
-STINLINE int castkind(int cast) {
+static inline int castkind(int cast) {
 	switch (cast) {
 		case TYPE_vid: return TYPE_vid;
 		case TYPE_bit: return TYPE_bit;

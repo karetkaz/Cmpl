@@ -1,0 +1,211 @@
+const renderType = RenderMode.swap_buff;
+
+//~ args[1] = "media/images/Earth.jpg";
+
+/* list arguments
+for (int i = 0; i < args.length; i += 1) {
+	print("argument[");
+	print(i);
+	print("] = ");
+	println(args[i]);
+}// */
+
+void setupPicView(gxSurf vImg, bool vFit) {
+
+	static bool reDraw = true;
+	static bool clear = false;
+	static bool fit = false;
+
+	static bool inertial_pan = true;
+	static int64 inertial_time = 0;
+	static double inertial_pan_x = 0;
+	static double inertial_pan_y = 0;
+
+	static gxRect roi;
+	static gxSurf img;
+
+	void DrawScreen() {
+		if (reDraw) {
+			if (fit) {
+				zoomSurf(offScreen, null, img, null, 1);
+			}
+			else {
+				//~ copy background image
+				if (clear) {
+					fillRect(offScreen, 0, 0, 32768, 32768, 0x000000);
+				}
+				copySurf(offScreen, 0, 0, img, &roi);
+			}
+			reDraw = false;
+		}
+		if (inertial_pan) {
+			int64 now = timeNow();
+			if (inertial_time < now) {
+				inertial_pan_x /= 1.09;
+				inertial_pan_y /= 1.09;
+				const inertial_pan = .9;
+				if ((abs(inertial_pan_x) > inertial_pan) || (abs(inertial_pan_y) > inertial_pan)) {
+					roi.x = clamp(roi.x + inertial_pan_x, 0., float64(width(img) - roi.w));
+					roi.y = clamp(roi.y + inertial_pan_y, 0., float64(height(img) - roi.h));
+					reDraw = true;
+				}
+				inertial_time = now + (int64(0x100000000) / 100);
+			}
+			Gui.Repaint();
+		}
+	}
+
+	void mouseHandler(int btn, int x, int y) {
+		static int ox = 0;
+		static int oy = 0;
+		static int ob = 0;
+
+		if (dblClick(btn, x, y)) {
+			dblClick(-1, 0, 0);		// prevent multi clicks
+			fit = !fit;
+			reDraw = true;
+		}
+
+		if (btn == 1 && !fit) {
+			roi.x = clamp(roi.x + ox - x, 0, width(img) - roi.w);
+			roi.y = clamp(roi.y + oy - y, 0, height(img) - roi.h);
+			reDraw = true;
+		}
+		if (inertial_pan) {
+			static int64 ot = 0;
+			static int32 oox = 0;
+			static int32 ooy = 0;
+			if (btn == 1 && ob == 0) {	// on press
+				ot = timeNow();
+				inertial_pan_x = 0;
+				inertial_pan_y = 0;
+				oox = x;
+				ooy = y;
+			}
+			if (btn == 0 && ob == 1) {	// on relase
+				int64 now = timeNow();
+				if (clocksPerSec(now - ot) < .5) {
+					inertial_time = 0;
+					inertial_pan_x = clamp(oox - x, -15, 15);
+					inertial_pan_y = clamp(ooy - y, -15, 15);
+					oox = x;
+					ooy = y;
+				}
+			}
+		}// */
+
+		ox = x;
+		oy = y;
+		ob = btn;
+	}
+
+	img = vImg;
+	fit = inertial_pan ? false : vFit;
+	roi = gxRect(0, 0, width(offScreen), height(offScreen));
+	clear = roi.w > width(img) || roi.h > height(img);
+	Gui.setMouseHandler(mouseHandler);
+	Gui.setDrawCallback(DrawScreen);
+}
+
+setupPicView(gxSurf(args[1]), true);
+
+/*gxRect roi = gxRect(width(offScreen), height(offScreen));
+
+gxSurf img;// = gxSurf(args[1]);
+double imw;// = width(img);
+double imh;// = height(img);
+
+// fixme
+img = gxSurf(args[1]);
+imw = width(img);
+imh = height(img);
+
+bool reDraw = true;
+
+const fitTo {
+	auto = -1;
+	none = 0;	// no fit
+	width = 1;
+	height = 2;
+	strech = 3;
+}
+
+int fit = fitTo.none;
+
+//~ int aspect = aspRatio.none;
+//~ bool zoom = !true;
+
+bool clear = roi.w > width(img) || roi.h > height(img);
+
+void DrawScreen() {
+	if (reDraw) {
+		//~ copy background image
+		if (fit) {
+			int w = width(offScreen);
+			int h = height(offScreen);
+
+			if (fit == fitTo.auto) {
+				if (imw > imh) {
+					fit = fitTo.width;
+				}
+				else {
+					fit = fitTo.height;
+				}
+			}
+
+			if (fit == fitTo.strech) {
+			}
+			else if (fit == fitTo.width) {
+				h *= imh / imw;
+			}
+			else if (fit == fitTo.height) {
+				w *= imw / imh;
+			}
+
+			gxRect dstRec = gxRect(w, h);
+			if (w < imw || h < imh) {
+				fillRect(offScreen, 0, 0, 32768, 32768, 0x000000);
+			}
+
+			//~ gxRect srcRec = gxRect(roi.x, roi.y, imw, imh);
+			//~ srcRec.x = clamp(srcRec.x, 0, dstRec.w - srcRec.w);
+			//~ srcRec.y = clamp(srcRec.y, 0, dstRec.h - srcRec.h);
+			//~ zoomSurf(offScreen, &dstRec, img, srcRec, 1);
+			zoomSurf(offScreen, &dstRec, img, null, 1);
+		}
+		else {
+			if (clear) {
+				fillRect(offScreen, 0, 0, 32768, 32768, 0x000000);
+			}
+			copySurf(offScreen, 0, 0, img, &roi);
+		}
+		reDraw = false;
+	}
+}
+
+void mouseHandler(int btn, int x, int y) {
+	static int ox;
+	static int oy;
+	static int ob;
+	if (dblClick(btn, x, y)) {
+		dblClick(-1, 0, 0);		// prevent multi clicks
+		fit += 1;
+		fit &= 3;
+		//~ zoom = !zoom;
+		reDraw = true;
+	}
+	if (btn == 1 && !fit) {
+		roi.x = clamp(roi.x + ox - x, 0, width(img) - roi.w);
+		roi.y = clamp(roi.y + oy - y, 0, height(img) - roi.h);
+		reDraw = true;
+	}
+	ox = x;
+	oy = y;
+	ob = btn;
+}
+
+//~ bmpWrite(img, "a.bmp");
+
+Gui.setMouseHandler(mouseHandler);
+Gui.setDrawCallback(DrawScreen);
+*/

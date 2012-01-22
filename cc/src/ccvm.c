@@ -31,7 +31,7 @@ const opc_inf opc_tbl[255] = {
 	{0},
 };
 
-STINLINE int genRef(state rt, int offset) {
+static inline int genRef(state rt, int offset) {
 	if (offset > 0)
 		return emitidx(rt, opc_ldsp, offset);
 	return emitint(rt, opc_ldcr, -offset);
@@ -108,7 +108,7 @@ int cgen(state rt, astn ast, ccToken get) {
 	// generate code
 	switch (ast->kind) {
 		default:
-			fatal("FixMe(%t)", ast->kind);
+			fatal("FixMe(%+k)", ast);
 			return 0;
 
 		//{ STMT

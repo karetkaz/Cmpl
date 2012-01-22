@@ -76,30 +76,17 @@ for(int i = 0; i < 30; i += 1) {
 
 // */
 
-static struct m {
+/*static struct m {
 	int a = 9;
 	int b = 6;
 	int c = 8;
-	//~ c = 9;
 }
 
 m m1;
 
-int x = m1.a;
+int x = m.a;
 
-//~ int n = emit(val, i32(0));
-//~ int arr2[] = null;
-//~ int arr2[] = emit(val, ref(realloc(null, 4 * 300)), i32(300));//[3][3];
-//~ define newArray(int ty, int ^n) = emit(val, ref(realloc(null, ty * n)), i32(n));
-//~ int arr0[2] = 2, 3;
-//~ int arr9[] = newArray(4, 300);
-//~ int arr2[] = emit(val, ref(null), i32(0));
-//~ int arr3[] = emit(val, ref(arr0), i32(arr0.length));
-
-//~ int n = 400;
-
-//~ int arr4[] = emit(val, ref(memmgr(null, 4 * n)), i32(n));
-//~ int arr5[n];
+// */
 
 /* arrays
 
@@ -107,7 +94,8 @@ int x = m1.a;
 // 2. int maximum(int arr[])
 // 3. int maximum(int arr...)
 
-int arr2[] = 1,2;//, 2, 3, 4, 5, 6, 7, 8;
+int arr2[2] = 1, 2;
+int arr3[2, 2] = 1, 2, 3, 4;
 //~ int arr3[] = arr2;
 //~ /+
 
@@ -165,12 +153,23 @@ void randomize(int arr[]) {
 
 randomize(arr2);
 int max = maximum(arr2);
-int toFind = arr2.length;
-//~ int toFind = arr2[arr2.length / 2];
-//~ sort(arr2);
-//~ int index = bsearch(arr2, toFind);
+int toFind = arr2[arr2.length / 2];
+sort(arr2);
+int index = bsearch(arr2, toFind);
 // +/
 
+//~ int arr2[] = null;
+//~ int arr2[] = emit(val, ref(realloc(null, 4 * 300)), i32(300));//[3][3];
+//~ define newArray(int ty, int ^n) = emit(val, ref(realloc(null, ty * n)), i32(n));
+//~ int arr0[2] = 2, 3;
+//~ int arr9[] = newArray(4, 300);
+//~ int arr2[] = emit(val, ref(null), i32(0));
+//~ int arr3[] = emit(val, ref(arr0), i32(arr0.length));
+
+//~ int n = 400;
+
+//~ int arr4[] = emit(val, ref(memmgr(null, 4 * n)), i32(n));
+//~ int arr5[n];
 //~ */
 
 /* strings
@@ -257,9 +256,9 @@ xrgb a = emit(xrgb, i32(0x801f008f));
 /* get 0 < n <= 64 bit minimum / maximum (signed/unsigned) values
 define hex64 int64;//%%016X
 void bitsget(bool signed, int size, int64 &min, int64 &max) {
-	int64 mask = bits.shr(int64(-1), -size);
-	min = bits.shl(-int64(signed), size - 1);
-	max = bits.and(min - 1, mask);
+	int64 mask = int64.Shr(int64(-1), -size);
+	min = int64.Shl(-int64(signed), size - 1);
+	max = int64.And(min - 1, mask);
 }
 
 hex64 min;
@@ -273,7 +272,7 @@ bitsget(true, bitsize, &min, &max);
 bitsget(!true, bitsize, &umin, &umax);
 // */
 
-/* call functions ...
+/* invoke functions ...
 int method0() {}
 int method1(int x) {
 	//~ print("!alma a fa alatt nyári piros alma\n");
@@ -386,7 +385,7 @@ print("%d\n", int64(Invoke(a, 2)));
 int64 a = 32;
 a = 33;
 void setup() {
-	static int &b = a;
+	static int64 &b = a;
 	print("%d\n", int64(b));
 }
 setup();
@@ -403,7 +402,7 @@ hex8  xhex08[8] = emit();
 // +/
 
 /* factorial
-const n = 9;
+const n = 6;
 int64 res = 1;
 for (int i = 1; i <= n; i += 1) {
 	res *= i;
@@ -581,4 +580,209 @@ int fitness(individual &ind) {
 
 population pop;
 
+//~ */
+
+//~ /*
+static struct Perlin {		// perlin noise
+	const B = 0x100;
+	const BM = 0xff;
+	const N = 0x1000;
+	const NP = 12;   // 2^N
+	const NM = 0xfff;
+
+	int p[B + B + 2];
+	float g3[B + B + 2, 3];
+	float g2[B + B + 2, 2];
+	float g1[B + B + 2];
+
+	bool start = true;
+
+	void init(void) {
+		int i;
+		define sqr(float ^x) = float(x * x);
+		for (i = 0 ; i < B ; i+=1) {
+			p[i] = i;
+
+			g1[i] = float((rand() % (B + B)) - B) / B;
+
+			for (int j = 0 ; j < 2 ; j+=1)
+				g2[i][j] = float((rand() % (B + B)) - B) / B;
+
+			//~ normalize2(g2[i]);
+			float n2 = sqrt(sqr(g2[i][0]) + sqr(g2[i][1]));
+			if (n2 != 0) {
+				g2[i][0] /= n2;
+				g2[i][1] /= n2;
+			}
+
+			for (int j = 0 ; j < 3 ; j+=1)
+				g3[i][j] = float((rand() % (B + B)) - B) / B;
+
+			//~ normalize3(g3[i]);
+			float n3 = sqrt(sqr(g3[i][0]) + sqr(g3[i][1]) + sqr(g3[i][1]));
+			if (n3 != 0) {
+				g3[i][0] /= n3;
+				g3[i][1] /= n3;
+				g3[i][2] /= n3;
+			}
+		}
+
+		for (;i -= 1;) {
+			int k = p[i];
+			int j = rand() % B;
+			p[i] = p[j];
+			p[j] = k;
+		}
+
+		for (i = 0 ; i < B + 2 ; i+=1) {
+			p[B + i] = p[i];
+			g1[B + i] = g1[i];
+			for (int j = 0 ; j < 2 ; j+=1)
+				g2[B + i][j] = g2[i][j];
+			for (int j = 0 ; j < 3 ; j+=1)
+				g3[B + i][j] = g3[i][j];
+		}
+	}
+
+	void setup(float vec_i, int &b0, int &b1, float &r0,float &r1) {
+		float t = vec_i + N;
+		b0 = int(t) & BM;
+		b1 = (b0+1) & BM;
+		r0 = t - int(t);
+		r1 = r0 - 1.;
+	}
+
+	define s_curve(double t) = smooth(t);
+	//~ define s_curve(double ^t) = double( t * t * (3. - 2. * t) );
+
+	float Noise(float x) {
+		int bx0;
+		int bx1;
+		float rx0;
+		float rx1;
+		float sx;
+		float u;
+		float v;
+
+		if (start) {
+			start = false;
+			init();
+		}
+
+		setup(x, &bx0, &bx1, &rx0, &rx1);
+
+		sx = s_curve(rx0);
+
+		u = rx0 * g1[ p[ bx0 ] ];
+		v = rx1 * g1[ p[ bx1 ] ];
+
+		result = lerp(sx, u, v);
+	}
+	float Noise(float x, float y) {
+		int bx0;
+		int bx1;
+		int by0;
+		int by1;
+		float rx0;
+		float rx1;
+		float ry0;
+		float ry1;
+
+		if (start) {
+			start = false;
+			init();
+		}
+
+		setup(x, &bx0, &bx1, &rx0, &rx1);
+		setup(y, &by0, &by1, &ry0, &ry1);
+
+		int i = p[ bx0 ];
+		int j = p[ bx1 ];
+
+		int b00 = p[ i + by0 ];
+		int b10 = p[ j + by0 ];
+		int b01 = p[ i + by1 ];
+		int b11 = p[ j + by1 ];
+
+		float sx = s_curve(rx0);
+		float sy = s_curve(ry0);
+
+		define at2(float rx, float ry, int i) = float( rx * g2[i][0] + ry * g2[i][1] );
+
+		float a = lerp(sx, at2(rx0,ry0, b00), at2(rx1,ry0, b10));
+		float b = lerp(sx, at2(rx0,ry1, b01), at2(rx1,ry1, b11));
+
+		result = lerp(sy, a, b);
+	}
+	float Noise(float x, float y, float z) {
+
+		int bx0;
+		int bx1;
+		int by0;
+		int by1;
+		int bz0;
+		int bz1;
+		float rx0;
+		float rx1;
+		float ry0;
+		float ry1;
+		float rz0;
+		float rz1;
+
+		if (start) {
+			start = false;
+			init();
+		}
+
+		setup(x, &bx0, &bx1, &rx0, &rx1);
+		setup(y, &by0, &by1, &ry0, &ry1);
+		setup(z, &bz0, &bz1, &rz0, &rz1);
+
+		int i = p[ bx0 ];
+		int j = p[ bx1 ];
+
+		int b00 = p[ i + by0 ];
+		int b10 = p[ j + by0 ];
+		int b01 = p[ i + by1 ];
+		int b11 = p[ j + by1 ];
+
+		float sx = s_curve(rx0);
+		float sy = s_curve(ry0);
+		float sz = s_curve(rz0);
+
+		define at3(float rx, float ry, float rz, int i) = float( rx * g3[i][0] + ry * g3[i][1] + rz * g3[i][2] );
+
+		float a;
+		float b;
+		float c;
+		float d;
+		float u;
+		float v;
+
+		u = at3(rx0,ry0,rz0, b00 + bz0);
+		v = at3(rx1,ry0,rz0, b10 + bz0);
+		a = lerp(sx, u, v);
+
+		u = at3(rx0,ry1,rz0, b01 + bz0);
+		v = at3(rx1,ry1,rz0, b11 + bz0);
+		b = lerp(sx, u, v);
+
+		c = lerp(sy, a, b);
+
+		u = at3(rx0,ry0,rz1, b00 + bz1);
+		v = at3(rx1,ry0,rz1, b10 + bz1);
+		a = lerp(sx, u, v);
+
+		u = at3(rx0,ry1,rz1, b01 + bz1);
+		v = at3(rx1,ry1,rz1, b11 + bz1);
+		b = lerp(sx, u, v);
+
+		d = lerp(sy, a, b);
+
+		result = lerp(sz, c, d);
+	}
+}
+
+//~ Perlin p;
+//~ float n1 = Perlin.Noise(.3, .9);
 //~ */

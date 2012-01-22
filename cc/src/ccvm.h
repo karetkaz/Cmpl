@@ -399,7 +399,7 @@ struct ccState {
 	char	*_end;
 	arrBuffer dbg;
 };
-STINLINE int kindOf(astn ast) {return ast ? ast->kind : 0;}
+static inline int kindOf(astn ast) {return ast ? ast->kind : 0;}
 
 TODO("these should go to ccState or runtime state")
 extern symn type_vid;

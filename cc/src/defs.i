@@ -26,6 +26,8 @@ TOKDEF(TYPE_arr, 0x00, 0, ".arr")		// pointer, string, array, ..., ???
 
 //~ TOKDEF(TYPE_p4x, 0x00, 128, ".p4x")
 
+//~ TOKDEF(WORD_nsp, 0x00, 0, "namespace")
+
 TOKDEF(QUAL_con, 0x00, 0, "const")	// constant
 TOKDEF(QUAL_sta, 0x00, 0, "static")
 TOKDEF(QUAL_par, 0x00, 0, "parallel")

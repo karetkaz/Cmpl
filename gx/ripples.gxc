@@ -1,7 +1,7 @@
 const Window { // window size, and render mode.
 	draw = RenderMode.drawFill|RenderMode.draw_lit;
-	resx = 512;
-	resy = 512;
+	resx = 512/1;
+	resy = 512/1;
 }
 
 const Options {
@@ -34,7 +34,8 @@ static if (Options.textured) {
 void drawCB() {
 	int i;
 	static int page = 0;
-	static int32 hmap[2][division * division] = 0;
+	static int32 hmap[2, division * division] = 0;
+	//~ static int32 hmap[2, division, division] = 0;
 
 	int p = page;
 
@@ -53,22 +54,26 @@ void drawCB() {
 		int px = mx * division / Window.resx;
 		int py = my * division / Window.resy;
 		if (px > 1 && px < division-2 && py > 1 && py < division-2) {
-			hmap[p][px + py * division] = pheight;
+			//~ hmap[p][px][py] = pheight;
+			hmap[p][px + division * py] = pheight;
 		}
 		mx = my = 0;
 	}
 
 	static int64 beg = -1;
 	int64 now = timeNow();
-	if (clocksPerSec(now - beg) > .05) {
+	if (clocksPerSec(now - beg) > .04)
+	{
 		beg = now;
 		// the effect
 		i = division;
 		int np = page ^= 1;
 		for (int y = 1; y < division - 1; y += 1) {
 			for (int x = 1; x < division - 1; x += 1) {
+				//~ int height = ((hmap[p][x-1][y-1] + hmap[p][x][y-1] + hmap[p][x+1][y-1] + hmap[p][x-1][y] + hmap[p][x+1][y] + hmap[p][x-1][y+1] + hmap[p][x][y+1] + hmap[p][x+1][y+1]) >> 2) - hmap[np][x][y];
 				int height = ((hmap[p][i-division-1] + hmap[p][i-division] + hmap[p][i-division+1] + hmap[p][i-1] + hmap[p][i+1] + hmap[p][i+division-1] + hmap[p][i+division] + hmap[p][i+division+1]) >> 2) - hmap[np][i];
 				//~ int height = ((hmap[p][i-division] + hmap[p][i-1] + hmap[p][i+1] + hmap[p][i+division]) >> 1) - hmap[np][i];
+				//~ hmap[np][x][y] = height - (height >> density);
 				hmap[np][i] = height - (height >> density);
 				i += 1;
 			}
@@ -89,6 +94,11 @@ void drawCB() {
 			int h01 = hmap[page][int(division * (posy + 0) + posx + 1)];
 			int h10 = hmap[page][int(division * (posy + 1) + posx + 0)];
 			int h11 = hmap[page][int(division * (posy + 1) + posx + 1)];
+
+			//~ int h00 = hmap[page][posx + 0][posy + 0];
+			//~ int h01 = hmap[page][posx + 0][posy + 1];
+			//~ int h10 = hmap[page][posx + 1][posy + 0];
+			//~ int h11 = hmap[page][posx + 1][posy + 1];
 
 			h00 += (fixx * (h01 - h00)) >> 16;
 			h10 += (fixx * (h11 - h10)) >> 16;
@@ -119,6 +129,9 @@ void drawCB() {
 					int Xoffset = hmap[p][i - 1] - hmap[p][i + 1];
 					int Yoffset = hmap[p][i - division] - hmap[p][i + division];
 
+					//~ int Xoffset = hmap[p][x - 1][y] - hmap[p][x + 1][y];
+					//~ int Yoffset = hmap[p][x][y - 1] - hmap[p][x][y + 1];
+
 					int Shading = clamp(Xoffset, 0, 126);
 
 					int t = getPixel(img, x + Xoffset, y + Yoffset);
@@ -127,6 +140,7 @@ void drawCB() {
 				}
 				static if (!Options.textured) {
 					setPixel(tmp, x, y, grayClamp(abs(hmap[p][i])));
+					//~ setPixel(tmp, x, y, grayClamp(abs(hmap[p][x][y])));
 				}
 				i += 1;
 			}

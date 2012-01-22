@@ -11,7 +11,7 @@ LIBS=-lm
 endif
 
 SRCDIR=./
-OBJDIR=../../obj/
+OBJDIR=./
 BINDIR=../
 #~ OBJDIR=../Debug/src/
 #~ BINDIR=../Debug/

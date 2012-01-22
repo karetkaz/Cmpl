@@ -1,215 +1,45 @@
-const test = 2;
+const test = 3;
 const Window {
 	draw = RenderMode.drawFill|RenderMode.draw_lit;// & ~RenderMode.zero_cbuf;
-	resx = 512/2;
-	resy = 512/2;
+	resx = 512;
+	resy = 512;
 }
 
 const pi = Math.pi;
 
-static if (true) {		// perlin noise
+void meshGen(bool sclosed, bool tclosed, gxSurf heihgtMap) {
+	//~ assert(depth(heihgtMap) == 32, "FixMe");
+	int vtx = 0;
+	int tdiv = width(heihgtMap);
+	int sdiv = height(heihgtMap);
 
-const B = 0x100;
-const BM = 0xff;
-const N = 0x1000;
-const NP = 12;   /* 2^N */
-const NM = 0xfff;
-
-int p[B + B + 2];
-float g3[B + B + 2][3];
-float g2[B + B + 2][2];
-float g1[B + B + 2];
-
-bool start = true;
-
-static void init(void) {
-	int i;
-	define sqr(float ^x) = float(x * x);
-	for (i = 0 ; i < B ; i+=1) {
-		p[i] = i;
-
-		g1[i] = float((rand() % (B + B)) - B) / B;
-
-		for (int j = 0 ; j < 2 ; j+=1)
-			g2[i][j] = float((rand() % (B + B)) - B) / B;
-
-		//~ normalize2(g2[i]);
-		float n2 = sqrt(sqr(g2[i][0]) + sqr(g2[i][1]));
-		if (n2 != 0) {
-			g2[i][0] /= n2;
-			g2[i][1] /= n2;
-		}
-
-		for (int j = 0 ; j < 3 ; j+=1)
-			g3[i][j] = float((rand() % (B + B)) - B) / B;
-
-		//~ normalize3(g3[i]);
-		float n3 = sqrt(sqr(g3[i][0]) + sqr(g3[i][1]) + sqr(g3[i][1]));
-		if (n3 != 0) {
-			g3[i][0] /= n3;
-			g3[i][1] /= n3;
-			g3[i][2] /= n3;
+	for (int i = 0; i < tdiv; i += 1) {
+		double t = i / double(tdiv - 1);
+		for (int j = 0; j < sdiv; j += 1) {
+			double s = j / double(sdiv - 1);
+			mesh.Pos(vtx, s, t, lum(getPixel(heihgtMap, i, j)) / (255. * 6));
+			mesh.Nrm(vtx, 0., 0., 1.);
+			mesh.Tex(vtx, s, t);
+			vtx += 1;
 		}
 	}
-
-	for (;i -= 1;) {
-		int k = p[i];
-		int j = rand() % B;
-		p[i] = p[j];
-		p[j] = k;
+	for (int j = 0; j < tdiv - 1; j += 1) {
+		int l1 = j * sdiv;
+		int l2 = l1 + sdiv;
+		for (int i = 0; i < sdiv - 1; i += 1) {
+			int v1 = l1 + i;		// v1 -- v2
+			int v2 = v1 + 1;		//  | \  |
+			int v4 = l2 + i;		//  |  \ |
+			int v3 = v4 + 1;		// v4 -- v3
+			mesh.AddFace(v1, v2, v3, v4);
+		}
 	}
-
-	for (i = 0 ; i < B + 2 ; i+=1) {
-		p[B + i] = p[i];
-		g1[B + i] = g1[i];
-		for (int j = 0 ; j < 2 ; j+=1)
-			g2[B + i][j] = g2[i][j];
-		for (int j = 0 ; j < 3 ; j+=1)
-			g3[B + i][j] = g3[i][j];
-	}
-}
-
-static void setup(float vec_i, int &b0, int &b1, float &r0,float &r1) {
-	float t = vec_i + N;
-	b0 = int(t) & BM;
-	b1 = (b0+1) & BM;
-	r0 = t - int(t);
-	r1 = r0 - 1.;
-}
-
-define s_curve(double t) = smooth(t);
-//~ define s_curve(double ^t) = double( t * t * (3. - 2. * t) );
-
-float noise(float x) {
-	int bx0;
-	int bx1;
-	float rx0;
-	float rx1;
-	float sx;
-	float u;
-	float v;
-
-	if (start) {
-		start = false;
-		init();
-	}
-
-	setup(x, &bx0, &bx1, &rx0, &rx1);
-
-	sx = s_curve(rx0);
-
-	u = rx0 * g1[ p[ bx0 ] ];
-	v = rx1 * g1[ p[ bx1 ] ];
-
-	result = lerp(sx, u, v);
-}
-float noise(float x, float y) {
-	int bx0;
-	int bx1;
-	int by0;
-	int by1;
-	float rx0;
-	float rx1;
-	float ry0;
-	float ry1;
-
-	if (start) {
-		start = false;
-		init();
-	}
-
-	setup(x, &bx0, &bx1, &rx0, &rx1);
-	setup(y, &by0, &by1, &ry0, &ry1);
-
-	int i = p[ bx0 ];
-	int j = p[ bx1 ];
-
-	int b00 = p[ i + by0 ];
-	int b10 = p[ j + by0 ];
-	int b01 = p[ i + by1 ];
-	int b11 = p[ j + by1 ];
-
-	float sx = s_curve(rx0);
-	float sy = s_curve(ry0);
-
-	define at2(float rx, float ry, int i) = float( rx * g2[i][0] + ry * g2[i][1] );
-
-	float a = lerp(sx, at2(rx0,ry0, b00), at2(rx1,ry0, b10));
-	float b = lerp(sx, at2(rx0,ry1, b01), at2(rx1,ry1, b11));
-
-	result = lerp(sy, a, b);
-}
-float noise(float x, float y, float z) {
-
-	int bx0;
-	int bx1;
-	int by0;
-	int by1;
-	int bz0;
-	int bz1;
-	float rx0;
-	float rx1;
-	float ry0;
-	float ry1;
-	float rz0;
-	float rz1;
-
-	if (start) {
-		start = false;
-		init();
-	}
-
-	setup(x, &bx0, &bx1, &rx0, &rx1);
-	setup(y, &by0, &by1, &ry0, &ry1);
-	setup(z, &bz0, &bz1, &rz0, &rz1);
-
-	int i = p[ bx0 ];
-	int j = p[ bx1 ];
-
-	int b00 = p[ i + by0 ];
-	int b10 = p[ j + by0 ];
-	int b01 = p[ i + by1 ];
-	int b11 = p[ j + by1 ];
-
-	float sx = s_curve(rx0);
-	float sy = s_curve(ry0);
-	float sz = s_curve(rz0);
-
-	define at3(float rx, float ry, float rz, int i) = float( rx * g3[i][0] + ry * g3[i][1] + rz * g3[i][2] );
-
-	float a;
-	float b;
-	float c;
-	float d;
-	float u;
-	float v;
-
-	u = at3(rx0,ry0,rz0, b00 + bz0);
-	v = at3(rx1,ry0,rz0, b10 + bz0);
-	a = lerp(sx, u, v);
-
-	u = at3(rx0,ry1,rz0, b01 + bz0);
-	v = at3(rx1,ry1,rz0, b11 + bz0);
-	b = lerp(sx, u, v);
-
-	c = lerp(sy, a, b);
-
-	u = at3(rx0,ry0,rz1, b00 + bz1);
-	v = at3(rx1,ry0,rz1, b10 + bz1);
-	a = lerp(sx, u, v);
-
-	u = at3(rx0,ry1,rz1, b01 + bz1);
-	v = at3(rx1,ry1,rz1, b11 + bz1);
-	b = lerp(sx, u, v);
-
-	d = lerp(sy, a, b);
-
-	result = lerp(sz, c, d);
-}
 }
 
 void meshGen2(int sdiv, bool sclosed, int tdiv, bool tclosed, void pos(double &x, double &y, double &z, double s, double t), double epsilon) {
 	int vtx = 0;
+
+	// set vertex and poly count to 0, but do not free memory
 	mesh.Init(-1);
 
 	if (pos != null) {
@@ -432,9 +262,13 @@ void meshGen2(int sdiv, bool sclosed, int tdiv, bool tclosed, void pos(double &x
 
 static if (test == 1) {		// load mesh with texture
 mesh.Read("media/meshes/ut2k4/FlackCannon.obj", "media/meshes/ut2k4/FlackCannon.png");
-mesh.Center(2);
 }
 static if (test == 2) {		// generate mesh
+define resize(gxSurf src, int width, int height) = zoomSurf(gxSurf(width, height), null, src, null, 1);
+
+meshGen(false, false, resize(gxSurf("media/images/hm.jpg"), 256, 256));
+}
+static if (test == 3) {		// generate mesh
 
 void peak(double &x, double &y, double &z, double s01, double t01) {
 	define H = 20.;
@@ -535,7 +369,7 @@ void OPPerlin(double &x, double &y, double &z, double s01, double t01) {
 	const M = float64(10);
 	x = lerp(1 - s01, -H, H);
 	y = lerp(1 - t01, -H, H);
-	z = noise(lerp(s01, 0., M), lerp(t01, 0., M));
+	z = Perlin.Noise(lerp(s01, 0., M), lerp(t01, 0., M));
 }
 
 const divisionM = 2;
@@ -545,7 +379,7 @@ const divisionT = divisionM * 64;
 //~ meshGen(divisionM*8, divisionM, shell);
 //~ meshGen(divisionS, true, divisionT, true, OPPerlin, 1e-10);
 mesh.Texture(gxSurf("media/images/download.jpg"));
-meshGen(divisionS, true, divisionT, true, OPPerlin, 1e-10); 
+meshGen2(divisionS, true, divisionT, true, shell, 1e-10); 
 
 /*void drawCB() {
 	if (start == true) {
@@ -558,6 +392,7 @@ Gui.setDrawCallback(drawCB);*/
 //~ mesh.Center(2);
 }
 mesh.Center(2);
+//~ mesh.Normalize(1e-10);
 
 static if (true) {			// use custom mouseHandler
 

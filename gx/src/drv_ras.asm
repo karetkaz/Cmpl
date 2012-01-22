@@ -15,38 +15,7 @@ global gx_fillrect		; void	gx_fillrect(gx_Surf, int x1, int y1, int x2, int y2, 
 global gx_getcbltf		; gx_cbltf gx_getcbltf(cbltf_type, int depth, int opbpp);
 global gx_callcbltf		; void gx_callcbltf(gx_cbltf, void*, void*, unsigned, void*);
 
-
-; global mixcol_32
-; global mixcol_24
-; global mixcol_16
-; global mixcol_08
-
-; global setpix_32
-; global setpix_24
-; global setpix_16
-; global setpix_08
-
-; color transfer function	: copy/ fill/ conv : set/ and/ or/ xor/ mix
-; clt(void *dst:edi, void *src:esi, unsigned cnt:ecx, void* pal||col||alpha:edx)
-
-; conv
-; edi : dst
-; esi : src
-; ecx : cnt
-; edx : unused / palette
-
-; copy
-; edi : dst
-; esi : src
-; ecx : cnt
-; edx : unused / alpha
-
-; fill
-; edi : dst
-; esi : unused / alpha map
-; ecx : cnt
-; edx : col
-
+;####################################################################################
 global colcpy_32_24
 global colcpy_32_16
 ; global colcpy_32_15
@@ -133,13 +102,6 @@ global colset_32mix	;[edi] += ([esi] * (edx - [edi])) >> 8
 ;#global colcpy_32lut	; [edi] := [edx[esi]]
 ;#global colcpy_32key	; if ([esi] != edx) {[edi] := [esi]}
 
-; gx_Rect struc				; Rectangle
-	; rectX			dd ?		; X
-	; rectY			dd ?		; Y
-	; rectW			dd ?		; width
-	; rectH			dd ?		; Height
-; gx_Rect ends
-
 struc gx_Clip				; Clip Region
 	.clipL:			resw 1		; Horizontal Start	(minX)
 	.clipT:			resw 1		; Vertical   Start	(minY)
@@ -151,14 +113,13 @@ struc gx_Surf				; Surface
 	.clipPtr:			resd 1		; + 04
 	.horzRes:			resw 1		; + 06
 	.vertRes:			resw 1		; + 08
-	.flags:		resw 1		; + 10
-	.depth:			resb 1		; + 11
+	.flags:				resw 1		; + 10
+	.depth:				resb 1		; + 11
 	.pixeLen:			resb 1		; + 12
 	.scanLen:			resd 1		; + 16
 	.basePtr:			resd 1		; + 20
 	.clutPtr:			resd 1		; + 24
-	; offsPtr			dd ?		; + 28
-	; movePtr			dd ?		; + 32
+	;...
 endstruc
 ;/--------------------------------------------------------------\  0
 ;|			     ClipPtr				|
@@ -214,14 +175,35 @@ gx_getpaddr:
 	cmp	ecx, eax
 	jae	gx_getpaddr_fail
 
-	movzx	eax, byte[ebx + gx_Surf.pixeLen]
-	call	[addr_dd + eax * 4]
 
-	pop	ebx
-	ret
+	movzx	eax, byte[ebx + gx_Surf.depth]
+	cmp		eax, 32
+	jz		gx_getpaddr_32
+	cmp		eax, 8
+	jz		gx_getpaddr_08
 
 	gx_getpaddr_fail:
 	xor	eax, eax
+	pop	ebx
+	ret
+
+	gx_getpaddr_08:
+	mov	eax, [ebx + gx_Surf.scanLen]
+	mul	dx
+	shl	edx, 16
+	mov	dx, ax
+	lea	eax, [edx + ecx*1]
+	add	eax, [ebx + gx_Surf.basePtr]
+	pop	ebx
+	ret
+
+	gx_getpaddr_32:
+	mov	eax, [ebx + gx_Surf.scanLen]
+	mul	dx
+	shl	edx, 16
+	mov	dx, ax
+	lea	eax, [edx + ecx*4]
+	add	eax, [ebx + gx_Surf.basePtr]
 	pop	ebx
 	ret
 
@@ -243,16 +225,37 @@ gx_getpixel:
 	cmp	ecx, eax
 	jae	gx_getpixel_fail
 
-	movzx	eax, byte[ebx + gx_Surf.pixeLen]
-	call	[addr_dd + eax * 4]
-
-	mov	eax, [eax]
-	pop	ebx
-	ret
+	movzx	eax, byte[ebx + gx_Surf.depth]
+	cmp		eax, 32
+	jz		gx_getpixel_32
+	cmp		eax, 8
+	jz		gx_getpixel_08
 
 	gx_getpixel_fail:
 	xor	eax, eax
 	pop	ebx
+	ret
+
+	gx_getpixel_08:
+	mov	eax, [ebx + gx_Surf.scanLen]
+	mul	dx
+	shl	edx, 16
+	mov	dx, ax
+	lea	eax, [edx + ecx*1]
+	add	eax, [ebx + gx_Surf.basePtr]
+	pop	ebx
+	movzx	eax, byte[eax]
+	ret
+
+	gx_getpixel_32:
+	mov	eax, [ebx + gx_Surf.scanLen]
+	mul	dx
+	shl	edx, 16
+	mov	dx, ax
+	lea	eax, [edx + ecx*4]
+	add	eax, [ebx + gx_Surf.basePtr]
+	pop	ebx
+	mov	eax, [eax]
 	ret
 
 ; gx_getpixel endp
@@ -417,7 +420,6 @@ gx_getpix16:
 	pop	esi
 	ret
 
-
 	gx_getpix16_fail:
 	xor	eax, eax
 	pop	ebx
@@ -459,16 +461,39 @@ gx_setpixel:
 	cmp	edx, eax
 	jae	gx_setpixel_fail
 
-	movzx	eax, byte[ebx + gx_Surf.pixeLen]
-	call	[addr_dd + eax * 4]
-	mov	edi, eax
-
-	mov	eax, param(4)			; col
-
-	movzx	ebx, byte[ebx + gx_Surf.pixeLen]
-	call	[spix_dd + ebx * 4]
+	movzx	eax, byte[ebx + gx_Surf.depth]
+	cmp		eax, 32
+	jz		gx_setpixel_32
+	cmp		eax, 8
+	jz		gx_setpixel_08
 
 	gx_setpixel_fail:
+	pop	edi
+	pop	ebx
+	ret
+
+	gx_setpixel_08:
+	mov	eax, [ebx + gx_Surf.scanLen]
+	mul	dx
+	shl	edx, 16
+	mov	dx, ax
+	lea	eax, [edx + ecx*1]
+	add	eax, [ebx + gx_Surf.basePtr]
+	mov edx, param(4)
+	mov [eax], dl
+	pop	edi
+	pop	ebx
+	ret
+
+	gx_setpixel_32:
+	mov	eax, [ebx + gx_Surf.scanLen]
+	mul	dx
+	shl	edx, 16
+	mov	dx, ax
+	lea	eax, [edx + ecx*4]
+	add	eax, [ebx + gx_Surf.basePtr]
+	mov edx, param(4)
+	mov [eax], edx
 	pop	edi
 	pop	ebx
 	ret
@@ -487,12 +512,12 @@ gx_fillrect:
 	mov	edx, param(3)			; y1
 
 	cmp	ecx, param(4)			; x2
-	jl	gx_fillrect_nosx				; x1 < x2
+	jl	gx_fillrect_nosx		; x1 < x2
 	xchg	ecx, param(4)
 	gx_fillrect_nosx:
 
 	cmp	edx, param(5)			; y2
-	jl	gx_fillrect_nosy				; y1 < y2
+	jl	gx_fillrect_nosy		; y1 < y2
 	xchg	edx, param(5)
 	gx_fillrect_nosy:
 
@@ -533,16 +558,19 @@ gx_fillrect:
 	; w: [esp + 8 + 4*4]
 	; h: [esp + 8 + 5*4]
 
-	movzx	eax, byte[ebx + gx_Surf.pixeLen]
-	cmp	eax, 4
-	je	gx_fillrect_4byte
+	movzx	eax, byte[ebx + gx_Surf.depth]
+	cmp	eax, 32
+	jz	gx_fillrect_4byte
 	; cmp	eax, 1
 	; je	gx_fillrect_8bpp
 	; cmp	eax, 2
 	; je	gx_fillrect_16bpp
 	; cmp	eax, 3
 	; je	gx_fillrect_24bpp
-	jmp	gx_fillrect_fail
+	gx_fillrect_fail:
+	pop	edi
+	pop	ebx
+	ret
 
 	gx_fillrect_4byte:
 	mov	eax, [ebx + gx_Surf.scanLen]
@@ -582,7 +610,6 @@ gx_fillrect:
 	mov	ecx, param(4)
 	rep stosd
 
-	gx_fillrect_fail:
 	gx_fillrect_done:
 	pop	edi
 	pop	ebx
@@ -590,68 +617,6 @@ gx_fillrect:
 
 ; gx_fillrect endp
 
-
-spix_dd	dd	proc_dummi,	setpix_08,	setpix_16,	setpix_24,	setpix_32
-addr_dd	dd	proc_dummi,	addr_get08,	addr_get16,	addr_get24,	addr_get32
-
-addr_get08:
-	mov	eax, [ebx + gx_Surf.scanLen]
-	mul	dx
-	shl	edx, 16
-	mov	dx, ax
-	lea	eax, [edx + ecx*1]
-	add	eax, [ebx + gx_Surf.basePtr]
-	ret
-
-addr_get15:
-addr_get16:
-	mov	eax, [ebx + gx_Surf.scanLen]
-	mul	dx
-	shl	edx, 16
-	mov	dx, ax
-	lea	eax, [edx + ecx*2]
-	add	eax, [ebx + gx_Surf.basePtr]
-	ret
-
-addr_get24:
-	mov	eax, [ebx + gx_Surf.scanLen]
-	mul	dx
-	shl	edx, 16
-	mov	dx, ax
-	add	edx, ecx
-	lea	eax, [edx + ecx*2]
-	add	eax, [ebx + gx_Surf.basePtr]
-	ret
-
-addr_get32:
-	mov	eax, [ebx + gx_Surf.scanLen]
-	mul	dx
-	shl	edx, 16
-	mov	dx, ax
-	lea	eax, [edx + ecx*4]
-	add	eax, [ebx + gx_Surf.basePtr]
-	ret
-
-setpix_32:
-	mov	[edi], eax
-	ret
-
-setpix_24:
-	mov	[edi+0], al
-	mov	edx, eax
-	mov	[edi+1], ah
-	shr	edx, 16
-	mov	[edi+2], dl
-	ret
-
-setpix_16:
-setpix_15:
-	mov	[edi], ax
-	ret
-
-setpix_08:
-	mov	[edi], al
-	ret
 
 colcvt_get:		; in ah dst, al src
 	cmp	ah, 8

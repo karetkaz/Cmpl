@@ -10,6 +10,8 @@
 #define stricmp(__STR1, __STR2) strcasecmp(__STR1, __STR2)
 #endif
 
+extern double epsilon;
+
 static inline int HIBIT(unsigned int x) {
 	int res = 0;
 	if (x != 0) {

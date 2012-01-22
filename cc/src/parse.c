@@ -1526,13 +1526,13 @@ static astn reft(ccState s, int mode) {
 			byref = 0;
 		}
 
-		/* TODO: probably some day without an else ...
+		/* TODO: arrays of functions: without else
 		 * int rgbCopy(int a, int b)[8] = rgbCpy, rgbAnd, ...
 		 */
 		else if (skip(s, PNCT_lc)) {		// int a[...]
 			symn tmp = newdefn(s, TYPE_arr);
 			symn base = typ;
-			int dynarr = 1;		// dynamic sized array
+			int dynarr = 1;		// dynamic sized array: slice
 
 			tmp->type = typ;
 			tmp->size = -1;
@@ -1547,37 +1547,40 @@ static astn reft(ccState s, int mode) {
 
 			if (!test(s, PNCT_rc)) {
 				struct astn val;
-				astn init = expr(s, TYPE_i32);
+				astn init = expr(s, TYPE_def);
 				typ->init = init;
 
-				/*/ enable multi array declaration in pascal style: int a[1, 2, 3, 4];
-				while (init && init->kind == OPER_com) {
-					symn tmp = newdefn(s, TYPE_arr);
-					tmp->type = typ->type;
-					typ->type = tmp;
+				//~ /*/ enable multi array declaration in pascal style: int a[1, 2, 3, 4];
+				if (init != NULL) {
+					astn dims = init;
+					while (dims->kind == OPER_com) {
+						symn tmp = newdefn(s, TYPE_arr);
+						tmp->type = typ->type;
+						typ->type = tmp;
 
-					if (eval(&val, init->op.rhso) == TYPE_int) {
-						addarg(s, tmp, "length", TYPE_def, type_i32, init->op.rhso);
-						tmp->size = val.con.cint;
-						tmp->init = init->op.rhso;
+						if (eval(&val, dims->op.rhso) == TYPE_int) {
+							addarg(s, tmp, "length", TYPE_def, type_i32, dims->op.rhso);
+							tmp->size = val.con.cint;
+							tmp->init = dims->op.rhso;
+						}
+						else {
+							error(s->s, dims->file, dims->line, "integer constant expected");
+						}
+						dims = dims->op.lhso;
 					}
-					else {
+					if (eval(&val, dims) == TYPE_int) {
+						addarg(s, typ, "length", TYPE_def, type_i32, dims);
+						typ->size = val.con.cint;
+						typ->init = init;
+						ref->cast = 0;
+
+						dynarr = 0;
+						if (typ->size < 0) {
+							error(s->s, dims->file, dims->line, "positive integer constant expected, got `%+k`", dims);
+						}
+					}
+					else if (init != dims) {	// same as: init->kind == OPER_com
 						error(s->s, init->file, init->line, "integer constant expected");
-					}
-					init = init->op.lhso;
-				}// */
-
-				if (eval(&val, init) == TYPE_int) {
-					addarg(s, typ, "length", TYPE_def, type_i32, init);
-					typ->size = val.con.cint;
-					typ->init = init;
-
-					ref->cast = 0;
-
-					dynarr = 0;
-					//~ debug("length of %-T = %+k", ref, init);
-					if (typ->size < 0) {
-						error(s->s, init->file, init->line, "positive integer constant expected, got `%+k`", init);
 					}
 				}
 				/*else {
@@ -1595,7 +1598,7 @@ static astn reft(ccState s, int mode) {
 
 			skiptok(s, PNCT_rc, 1);
 
-			//~ /* Multi dimensional arrays / c style
+			/* Multi dimensional arrays / c style
 			while (skip(s, PNCT_lc)) {
 				symn tmp = newdefn(s, TYPE_arr);
 				tmp->type = typ->type;
@@ -1848,10 +1851,8 @@ static astn spec(ccState s/* , int qual */) {
 	}// */
 	else if (skip(s, TYPE_rec)) {		// struct
 		int pack = 4;
-		int byref = 0;
-		if (Attr != QUAL_sta) {				// class(struct byref)
-			byref = skip(s, OPER_and);
-		}
+		int byref = skip(s, OPER_and);
+
 		if (skip(s, PNCT_cln)) {			// pack?
 			tok = next(s, TYPE_int);
 			/*tok = NULL;
@@ -1878,13 +1879,22 @@ static astn spec(ccState s/* , int qual */) {
 			else {
 				error(s->s, s->file, s->line, "alignment must be an integer constant");
 			}
+			if (Attr == ATTR_stat) {
+				error(s->s, s->file, s->line, "alignment can not be applied to static struct");
+			}
 		}
+
 		if (!(tag = next(s, TYPE_ref))) {	// name?
 			tag = newnode(s, TYPE_ref);
 			//~ tag->type = type_vid;
 			tag->file = s->file;
 			tag->line = s->line;
 		}
+
+		if (byref && Attr != ATTR_stat) {			// namespace: static struct
+			error(s->s, tag->file, tag->line, "alignment can not be applied to this struct");
+		}
+
 		if (skiptok(s, STMT_beg, 1)) {		// body
 
 			def = declare(s, TYPE_rec, tag, NULL);
@@ -1892,9 +1902,31 @@ static astn spec(ccState s/* , int qual */) {
 
 			enter(s, tag);
 			while (!skip(s, STMT_end)) {
+				if (!peek(s)) {
+					error(s->s, s->file, s->line, "invalid end of file:%+k", peek(s));
+					return NULL;
+				}
 				if (0 && test(s, TYPE_rec)) {		// nested structs
 					spec(s);
 					continue;
+				}
+				else if (Attr == ATTR_stat) {		// static struct
+					if (decl(s, 0)) {
+						if (skip(s, STMT_do)) {
+						}
+					}
+					/*if ((ast = decl(s, 0))) {
+						astn tmp = newnode(s, STMT_do);
+						tmp->file = ast->file;
+						tmp->line = ast->line;
+						tmp->type = ast->type;
+						tmp->stmt.stmt = ast;
+
+						if (mode)
+							error(s->s, ast->file, ast->line, "unexpected declaration %+k", ast);
+
+						ast = tmp;
+					}*/
 				}
 				else if (test(s, TYPE_def)) {		// define ...
 					spec(s);
@@ -1931,23 +1963,25 @@ static astn spec(ccState s/* , int qual */) {
 				}
 			}
 
-			//~ sizeOfArg = addarg(s, def, "sizeOf", symn_stat | TYPE_def, type_i32, NULL);
-
 			def->args = leave(s, def, (Attr & ATTR_stat) != 0);
 			def->size = fixargs(def, pack, 0);
 			def->cast = byref ? TYPE_ref : TYPE_rec;
-			Attr &= ~ATTR_stat;
 
-			//~ addarg(s, def, "typeOf", TYPE_def, def, lnknode(s, def));
+			//~ addarg(s, def, "Class", ATTR_stat | ATTR_const | TYPE_def, def, lnknode(s, def));
 
-			ctorPtr(s, def);
-			//~ ctorVar(s, def);
-			if (def->args && pack == 4) {
-				ctorArg(s, def);
+			if (Attr != ATTR_stat) {
+				ctorPtr(s, def);
+				//~ ctorVar(s, def);
+				if (def->args && pack == 4) {
+					ctorArg(s, def);
+				}
+
+				if (!def->args && !def->type)
+					warn(s->s, 2, s->file, s->line, "empty declaration");
 			}
-
-			if (!def->args && !def->type)
-				warn(s->s, 2, s->file, s->line, "empty declaration");
+			else {
+				Attr &= ~ATTR_stat;
+			}
 		}
 		tag->type = def;
 	}
@@ -2099,8 +2133,11 @@ static astn stmt(ccState s, int mode) {
 
 		while (!skip(s, STMT_end)) {
 			if (!peek(s)) {
-				newscope = 0;
-				break;
+				if (mode == -1) {
+					break;
+				}
+				error(s->s, s->file, s->line, "invalid end of file");
+				return NULL;
 			}
 			if ((tmp = stmt(s, 0))) {
 				if (!end) ast->stmt.stmt = tmp;
@@ -2269,7 +2306,7 @@ static astn stmt(ccState s, int mode) {
 		ast->type = type_vid;
 	}
 
-	else if ((ast = decl(s, 0))) {
+	else if ((ast = decl(s, TYPE_any))) {
 		astn tmp = newnode(s, STMT_do);
 		tmp->file = ast->file;
 		tmp->line = ast->line;
@@ -2281,6 +2318,7 @@ static astn stmt(ccState s, int mode) {
 
 		ast = tmp;
 	}
+
 	else if ((ast = expr(s, TYPE_vid))) {
 		astn tmp = newnode(s, STMT_do);
 		tmp->file = ast->file;
@@ -2697,7 +2735,7 @@ astn decl(ccState s, int Rmode) {
 astn unit(ccState cc, int mode) {
 	astn root = NULL;
 	astn tmp = NULL;
-	symn def = NULL;
+	//~ symn def = NULL;
 	int level = cc->nest;
 
 	/*if (skip(cc, UNIT_def)) {
@@ -2714,7 +2752,7 @@ astn unit(ccState cc, int mode) {
 
 	// we want a new scope and scan a list of statement
 	backTok(cc, tmp = newnode(cc, STMT_beg));
-	root = stmt(cc, def == NULL);
+	root = stmt(cc, -1);
 
 	/*if (root == tmp) {
 		dieif(root->next, "FixMe");
