@@ -1,8 +1,8 @@
 // Procedural drawing
-const Window {
-	draw = RenderMode.swap_buff;
-	resx = 512/2;
-	resy = 512/2;
+enum Window {
+	//~ draw = RenderMode.swap_buff;
+	resx = 512/4;
+	resy = 512/4;
 }
 
 void zoomSurf2(gxSurf dst, gxRect &rect, gxSurf src, gxRect &roi, int mode) {
@@ -81,8 +81,8 @@ define pi = Math.pi;
 
 void setup(double &timer, vec4f pixelCBr(double x, double y)) {
 
-	const WIDTH = 92;
-	const HEIGHT = WIDTH;
+	define WIDTH = 92;
+	define HEIGHT = WIDTH;
 	static gxSurf tmpImg = gxSurf(WIDTH, HEIGHT);
 
 	static bool snapshot = false;
@@ -107,58 +107,7 @@ void setup(double &timer, vec4f pixelCBr(double x, double y)) {
 			// application time spent in processor
 			time = .5 * clocksPerSec(timeNow() - begTime);
 			//~ evalSurf((offScreen, null, pixelCB);
-			zoomSurf2(offScreen, null, evalSurf(tmpImg, null, pixelCB), null, 1);
-			// post a redraw for animation
-			Gui.Repaint();
-		}
-	}
-	void mouseCB(int btn, int x, int y) {
-		static int omb = 0;
-		if (omb == 1 && btn == 0) { // onRelase(btn:1)
-			snapshot = true;
-		}
-		if (btn == 2) {
-			animate = true;
-			Perlin.init();
-		}
-		omb = btn;
-	}
-
-
-	&time = timer;
-	pixelCB = pixelCBr;
-	Gui.setDrawCallback(drawCB);
-	Gui.setMouseHandler(mouseCB);
-}
-void setup1(double &timer, float pixelCBr(float x, float y)) {
-
-	const WIDTH = 92;
-	const HEIGHT = WIDTH;
-	static gxSurf tmpImg = gxSurf(WIDTH, HEIGHT);
-
-	static bool snapshot = false;
-	static bool animate = true;
-
-	static double &time = null;
-	static vec4f pixelCB(double x, double y) = null;
-
-	static int64 begTime = timeNow();
-
-	// for each frame
-	void drawCB() {
-		if (snapshot && pixelCB != null) {
-			animate = false;
-			snapshot = false;
-			//~ bmpWrite(tmpImg, "out-0.bmp");
-			//~ bmpWrite(offScreen, "out-1.bmp");
-			evalSurf(offScreen, null, pixelCB);
-			//~ bmpWrite(offScreen, "out-2.bmp");
-		}
-		if (animate && pixelCB != null) {
-			// application time spent in processor
-			time = .5 * clocksPerSec(timeNow() - begTime);
-			//~ evalSurf((offScreen, null, pixelCB);
-			zoomSurf2(offScreen, null, evalSurf(tmpImg, null, pixelCB), null, 1);
+			zoomSurf(offScreen, null, evalSurf(tmpImg, null, pixelCB), null, 1);
 			// post a redraw for animation
 			Gui.Repaint();
 		}
@@ -208,7 +157,7 @@ vec4f blob2d(double x, double y) {
 
 	//~ alter the cut-off power
 	//~ set the output color
-	result = vec4f(clamp(pow(metaball, 8.0), 0., 1.));
+	result = vec4f(float32(clamp(pow(metaball, 8.0), 0., 1.)));
 }
 
 vec4f yinyang(double x, double y) {
@@ -225,10 +174,10 @@ vec4f yinyang(double x, double y) {
 
 		c = mix(c, 0.0, smooth(0.98, 1.00, h));
 		c = mix(c, 1.0, smooth(1.00, 1.02, h));
-		result = vec4f(c);
+		result = vec4f(float32(c));
 	}
 	else {
-		result = vec4f(1.);
+		result = vec4f(float32(1));
 	}
 }
 
@@ -287,14 +236,14 @@ vec4f eye(double x, double y) {
 	float e = fabsf(ry) - h;
 	float f = smoothstep( e, 0.0f, 0.01f );
 	vec4f cOjo = interior(x, y, 0);
-	vec4f cPiel = vec4f(0.);//skin(x, y);
+	vec4f cPiel = vec4f(float32(0));//skin(x, y);
 	result = lerp(f, cOjo, cPiel);
 }
 
 vec4f tunnel0(double x, double y) {
 
 	int rgbscale(int col, double s) {
-		const fixp = 16;
+		define fixp = 16;
 		int scale = s * (1 << fixp);
 		int r = clamp(rch(col) * scale >> fixp, 0, 255);
 		int g = clamp(gch(col) * scale >> fixp, 0, 255);
@@ -332,9 +281,9 @@ vec4f tunnel0(double x, double y) {
 //~ setup(&time, tunnel0);
 
 vec4f perlin2f(double x, double y) {
-	const mul = 4;
+	define mul = 4;
 	result = vec4f(Perlin.Noise(x*mul, y*mul));
 }
 //~ setup1(&time, Perlin.Noise2f);
-setup(&time, perlin2f);
+setup(&time, blob2d);
 //~ Gui.exitLoop();

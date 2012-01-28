@@ -1,9 +1,9 @@
-const Window {
+enum Window {
 	draw = RenderMode.swap_buff;
-	resx = 800;
-	resy = 800;
-	//~ resx = 512;
-	//~ resy = 512;
+	//~ resx = 800;
+	//~ resy = 800;
+	resx = 512;
+	resy = 512;
 }
 
 gxSurf srcImg = gxSurf("media/images/download.jpg");
@@ -23,7 +23,7 @@ int imgcoord(double val, int resolution) {
 }
 
 int rgbscale(int col, double s) {
-	const fixp = 16;
+	enum fixp = 16;
 	int scale = s * (1 << fixp);
 	int r = clamp(rch(col) * scale >> fixp, 0, 255);
 	int g = clamp(gch(col) * scale >> fixp, 0, 255);
@@ -38,7 +38,7 @@ define nz(double x) = nz(x, 1e-200);
 define atan(double x, double y) = atan2(x, y);
 
 // mert a dogseg nagy betegseg.
-const pi = Math.pi;
+enum pi = Math.pi;
 
 int64 begTime = timeNow();
 define getTime() = clocksPerSec(timeNow() - begTime);

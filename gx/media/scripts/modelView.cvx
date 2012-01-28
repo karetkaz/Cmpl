@@ -1,4 +1,6 @@
-const renderType = RenderMode.drawFill;// & ~RenderMode.zero_cbuf;
+enum {
+	renderType = RenderMode.drawFill;// & ~RenderMode.zero_cbuf;
+}
 
 //~ args[0] = "this script's filename";
 //~ args[1] = "mesh.obj";
@@ -17,15 +19,11 @@ if (args.length == 3) {
 	texture = args[2];
 }
 
-mesh.Read(args[1], texture);
-//~ mesh.Normalize(0);
-mesh.Center(2);
-
-//~ mesh.Info();
-//~ mesh.Save("mesh.obj");
+define objSize = 2;
+define eyePos = vec4f(0, 0, 2 * objSize);
 
 void mouseHandler(int btn, int x, int y) {
-	static vec4f orbit = vec4f(0., 0., 0., 0.);
+	static const vec4f orbit = vec4f(0, 0, 0, 0);
 	static int ox;
 	static int oy;
 	float dx = x - ox;
@@ -33,14 +31,14 @@ void mouseHandler(int btn, int x, int y) {
 	ox = x;
 	oy = y;
 
-	const moveSpeed = .08;
-	const rotateSpeed = moveSpeed * Math.pi / 180.;
-	const rotateSpeed2 = 10 * rotateSpeed;
+	define moveSpeed = .08;
+	define rotateSpeed = moveSpeed * Math.pi / 180.;
+	define rotateSpeed2 = 10 * rotateSpeed;
 
 	if (dblClick(btn, x, y)) {
 		dblClick(-1, 0, 0);
 		camera.LookAt(
-			vec4f(0., 0., 16.),		// eye
+			eyePos,		// eye
 			vec4f(0., 0., 0.),		// target
 			vec4f(0., 1., 0.)		// up
 		);
@@ -83,5 +81,17 @@ void mouseHandler(int btn, int x, int y) {
 		}
 	}
 }
+
+mesh.Read(args[1], texture);
+//~ mesh.Normalize(0);
+mesh.Center(objSize);
+mesh.Info();
+
+//~ mesh.Save("mesh.obj");
+
 Gui.setMouseHandler(mouseHandler);
-//~ Gui.exitLoop();
+camera.LookAt(
+	eyePos,		// eye
+	vec4f(0., 0., 0.),		// target
+	vec4f(0., 1., 0.)		// up
+);

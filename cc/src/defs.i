@@ -26,7 +26,10 @@ TOKDEF(TYPE_arr, 0x00, 0, ".arr")		// pointer, string, array, ..., ???
 
 //~ TOKDEF(TYPE_p4x, 0x00, 128, ".p4x")
 
-//~ TOKDEF(WORD_nsp, 0x00, 0, "namespace")
+TOKDEF(ENUM_kwd, 0x00, 0, "enum")
+//~ TOKDEF(UNIT_kwd, 0x00, 0, "module")
+//~ TOKDEF(OPER_kwd, 0x00, 0, "operator")
+//~ TOKDEF(NSPC_kwd, 0x00, 0, "namespace")
 
 TOKDEF(QUAL_con, 0x00, 0, "const")	// constant
 TOKDEF(QUAL_sta, 0x00, 0, "static")
@@ -51,7 +54,7 @@ TOKDEF(STMT_end, 0x00, 0, ".end")		// destruct calls ?
 
 //~ Operators ==================================================================
 TOKDEF(OPER_idx, 0x0f, 2, ".idx")		// a[i]		index
-TOKDEF(OPER_fnc, 0x0f, 2, ".fnc")		// a(x)		function call, cast, ctor, dtor = cast(void, var &), emit, ...
+TOKDEF(OPER_fnc, 0x0f, 2, ".call")		// a(x)		function call, cast, ctor, dtor = cast(void, var &), emit, ...
 TOKDEF(OPER_dot, 0x0f, 2, ".dot")		// a.b		member
 
 TOKDEF(OPER_adr, 0x1e, 1, ".adr")		// & a		address of
@@ -107,10 +110,6 @@ TOKDEF(PNCT_lp , 0x00, 0, "(par")		// parentheses
 TOKDEF(PNCT_rp , 0x00, 0, ")par")
 TOKDEF(PNCT_qst, 0x00, 0, "?")			// question mark
 TOKDEF(PNCT_cln, 0x00, 0, ":")			// colon
-
-//~ TOKDEF(UNIT_def, 0x00, 0, "module")
-//~ TOKDEF(OPER_kwd, 0x00, 0, "operator")
-//~ TOKDEF(ENUM_kwd, 0x00, 0, "enum")		// keyword onlyd
 
 /*
 //~ Operators ==================================================================

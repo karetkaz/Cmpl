@@ -1,4 +1,5 @@
-SRCDIR=./
+CCSRCDIR=../../cc/src/
+GXSRCDIR=./
 OBJDIR=../../obj/
 LIBDIR=$(OBJDIR)
 BINDIR=../
@@ -6,26 +7,33 @@ BINARY=main
 
 OUTOBJ=-o
 OUTEXE=-o
-#~ CFLAGS=-g3 -ggdb
+CFLAGS=-Wall -Wpadded -g3 -ggdb
 CFLAGS=-g0 -Os
-COPTS=-c -Wall -Wpadded
-#~ COPTS=-c -Wall
-CCC=gcc -m32 -msse
+
+CCC=gcc -m32
 LNK=gcc -m32
 DBG=nemiver
 AS=nasm -f elf
 MK=make
 
-LIBS=$(LIBDIR)libjpeg.a $(LIBDIR)libpng.a $(LIBDIR)libpvmc.a
+LIBS=$(LIBDIR)libjpeg.a $(LIBDIR)libpng.a
 SYSLIBS=-lm -lX11
 ifeq "$(OS)" "Windows_NT"
-LIBS=$(LIBDIR)libjpeg.win.a $(LIBDIR)libpng.win.a $(LIBDIR)libpvmc.win.a
+LIBS=$(LIBDIR)libjpeg.win.a $(LIBDIR)libpng.win.a
 SYSLIBS=-lm -lgdi32
 AS=nasm -f coff --prefix _
 MK=mingw32-make
 endif
 
 OBJS=\
+	$(OBJDIR)code.o\
+	$(OBJDIR)clog.o\
+	$(OBJDIR)parse.o\
+	$(OBJDIR)tree.o\
+	$(OBJDIR)type.o\
+	$(OBJDIR)ccvm.o\
+	$(OBJDIR)lstd.o\
+	\
 	$(OBJDIR)drv_ras.o\
 	$(OBJDIR)drv_win.o\
 	$(OBJDIR)g2_draw.o\
@@ -34,8 +42,6 @@ OBJS=\
 	$(OBJDIR)g3_mesh.o\
 	$(OBJDIR)main.o\
 
-#~ all:build
-
 #~ rebuild:clean build
 
 build:$(LIBS) $(OBJS)
@@ -43,13 +49,6 @@ build:$(LIBS) $(OBJS)
 
 clean:
 	rm -f $(OBJS)
-	$(MK) -C lib/libpvmc clean
-#	rm -f $(LIBDIR)libpvmc.win.a
-
-$(LIBDIR)libpvmc.a:
-	$(MK) -C lib/libpvmc
-$(LIBDIR)libpvmc.win.a:
-	$(MK) -C lib/libpvmc
 
 $(LIBDIR)libjpeg.a:
 	$(MK) -C lib/libjpeg
@@ -63,7 +62,14 @@ $(LIBDIR)libpng.win.a:
 
 
 $(OBJDIR)drv_ras.o:
-	$(AS) -o $(OBJDIR)drv_ras.o $(SRCDIR)drv_ras.asm
+	$(AS) -o $(OBJDIR)drv_ras.o $(GXSRCDIR)drv_ras.asm
 
-$(OBJDIR)%.o: $(SRCDIR)%.c
-	$(CCC) -c $(CFLAGS) -Wall -Wpadded $< -o $@
+# take main from gx, not cc
+$(OBJDIR)main.o: $(GXSRCDIR)main.c
+	$(CCC) -c $(CFLAGS) -I "$(GXSRCDIR)" -I "$(CCSRCDIR)" $< -o $@
+
+$(OBJDIR)%.o: $(CCSRCDIR)%.c
+	$(CCC) -c $(CFLAGS) -I "$(CCSRCDIR)" $< -o $@
+
+$(OBJDIR)%.o: $(GXSRCDIR)%.c
+	$(CCC) -c $(CFLAGS) -I "$(GXSRCDIR)" -I "$(CCSRCDIR)" $< -o $@

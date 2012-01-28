@@ -1,11 +1,11 @@
-const test = 3;
-const Window {
+define test = 3;
+enum Window {
 	draw = RenderMode.drawFill|RenderMode.draw_lit;// & ~RenderMode.zero_cbuf;
 	resx = 512;
 	resy = 512;
 }
 
-const pi = Math.pi;
+define pi = Math.pi;
 
 void meshGen(bool sclosed, bool tclosed, gxSurf heihgtMap) {
 	//~ assert(depth(heihgtMap) == 32, "FixMe");
@@ -50,7 +50,7 @@ void meshGen2(int sdiv, bool sclosed, int tdiv, bool tclosed, void pos(double &x
 			for (int j = 0; j < sdiv; j += 1) {
 				double s = j / sDiv;
 
-				const usev3 = true;
+				define usev3 = true;
 
 				static if (usev3) {
 
@@ -161,7 +161,7 @@ void meshGen2(int sdiv, bool sclosed, int tdiv, bool tclosed, void pos(double &x
 			for (int j = 0; j < sdiv; j += 1) {
 				double s = j / sDiv;
 
-				const usev3 = true;
+				define usev3 = true;
 
 				static if (usev3) {
 
@@ -358,23 +358,23 @@ void cilinder(double &x, double &y, double &z, double s01, double t01) {
 	z = s;
 }
 void OPXor(double &x, double &y, double &z, double s01, double t01) {
-	const H = float64(10);
+	define H = float64(10);
 	x = lerp(1 - s01, -H, H);
 	y = lerp(1 - t01, -H, H);
 	z = double(int(255 * s01) ^ int(255 * t01)) / (256 / (2*H));
 }
 
 void OPPerlin(double &x, double &y, double &z, double s01, double t01) {
-	const H = float64(10);
-	const M = float64(10);
+	define H = float64(10);
+	define M = float64(10);
 	x = lerp(1 - s01, -H, H);
 	y = lerp(1 - t01, -H, H);
 	z = Perlin.Noise(lerp(s01, 0., M), lerp(t01, 0., M));
 }
 
-const divisionM = 2;
-const divisionS = divisionM * 64;
-const divisionT = divisionM * 64;
+define divisionM = 2;
+define divisionS = divisionM * 64;
+define divisionT = divisionM * 64;
 
 //~ meshGen(divisionM*8, divisionM, shell);
 //~ meshGen(divisionS, true, divisionT, true, OPPerlin, 1e-10);
@@ -461,7 +461,7 @@ void camera_Rotate(vec4f &dir, vec4f &orbit, float ang) {
 		camera.Up(cross(camera.Forward, camera.Right));
 
 		if (orbit != null) {
-			const lookAtOrbit = !true;
+			define lookAtOrbit = !true;
 			vec4f dir2 = sub(orbit, camera.Pos);
 			float dist = sqrt(dp3(dir2, dir2));
 
@@ -492,9 +492,9 @@ void mouseHandler(int btn, int x, int y) {
 	oy = y;
 
 	//~ define toRadians(double x) = double(x * pi / 180.);
-	const moveSlow = .08;
-	const rotateSlow = moveSlow * pi / 180.;
-	const rotateFast = 10 * rotateSlow;
+	define moveSlow = .08;
+	define rotateSlow = moveSlow * pi / 180.;
+	define rotateFast = 10 * rotateSlow;
 
 	if (dblClick(btn, x, y)) {
 		dblClick(-1, 0, 0);

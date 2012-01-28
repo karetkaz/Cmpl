@@ -1,6 +1,6 @@
-const test = 3;
-const Window {
-	draw = RenderMode.swap_buff;
+define test = 7;
+enum Window {
+	//~ draw = RenderMode.swap_buff;
 
 	//~ resx = 1440;
 	//~ resy = 900;
@@ -10,10 +10,9 @@ const Window {
 
 	resx = 512;
 	resy = 512;
-
 }
 
-const pi = Math.pi;
+define pi = Math.pi;
 
 /* TODO:
 //~ ezeket jo volna megcsinalni
@@ -244,7 +243,7 @@ void drawOval(gxSurf s, int x0, int y0, int x1, int y1, int size, long color) {
 		//~ define pixels(gxSurf s, int &x, int &y, int &sdiv2, int c) = fillRect(s, x-sdiv2, y-sdiv2, x+sdiv2, y+sdiv2, c);
 		define pixels(gxSurf s, int &x, int &y, int &sdiv2, int c) = fillOval(s, x-sdiv2, y-sdiv2, x+sdiv2, y+sdiv2, c);
 		for (int n = 0; y0 < y1; n += 1) {
-			const step = 1;
+			define step = 1;
 
 			if (n % sdivstep == 0) {
 				pixels(s, x0, y0, sdiv2, color);
@@ -295,7 +294,7 @@ static if (test == 4) {		// the Complex plane: eval surface with callback
 
 vec4f rgbOp(double x, double y) {
 	define AbsMod(double ^val, double mod) = ((val < 0 ? -val : val) % mod);
-	const N = pi / 2;
+	define N = pi / 2;
 	x = lerp(x, -N, N);
 	y = lerp(y, -N, N);
 
@@ -509,15 +508,15 @@ struct Star {
 	double zpos;
 }
 
-const SPEED_OF_STARS = 5;
+define SPEED_OF_STARS = 5;
 
 Star stars[2 * 1024];
 
 void initStar(Star &star, int i) {
 	//~ randomly init stars, generate them around the center of the screen
 
-	//~ const scale = double(1 << 18);
-	const scale = double(Window.resx << 11);
+	//~ define scale = double(1 << 18);
+	define scale = double(Window.resx << 11);
 	star.xpos = rand(-scale, scale);
 	star.ypos = rand(-scale, scale);
 	star.zpos =  i;
@@ -574,7 +573,7 @@ void drawCB() {
 			continue;
 		}
 
-		const ps = 2;
+		define ps = 2;
 		fillRect(offScreen, tempx, tempy, tempx + ps, tempy + ps, -1);
 		//~ setPixel(tempx, tempy, -1);
 	}
@@ -677,7 +676,7 @@ void doLinearGradient() {
 	static double dy;
 
 	vec4f pixelCB(double x, double y) {
-		double c = l * (dx * (x - x0) + dy * (y - y0));
+		float c = l * (dx * (x - x0) + dy * (y - y0));
 		result = vec4f(c);
 	}
 
@@ -693,7 +692,7 @@ void doLinearGradient() {
 }
 
 void doConicalGradient() {
-	const useFp = true;		// true(using floating point) is faster
+	define useFp = true;		// true(using floating point) is faster
 	static double a;
 
 	static if (useFp) {
@@ -713,7 +712,7 @@ void doConicalGradient() {
 			//~ if (ang > pi)
 				//~ ang = 2 * pi - ang;
 
-			result = vec4f(.5 / pi * ang);
+			result = vec4f(float32(.5 / pi * ang));
 		}
 
 		double w = width(offScreen);
@@ -806,6 +805,6 @@ Gui.setDrawCallback(drawCB);
 
 }
 
-//~ const res = 20000;
+//~ define res = 20000;
 //~ bmpWrite(Mandel(gxSurf(res, res), mandelLut, QMin, QMax, PMin, PMax), "Mandel.bmp");
 //~ Gui.exitLoop();

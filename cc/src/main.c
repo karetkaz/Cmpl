@@ -1,4 +1,4 @@
-//~ wcl386 -zq -ei -6s -d2  -fe=../main code.c clog.c parse.c tree.c type.c ccvm.c main.c lstd.c
+//~ wcl386 -zq -ei -6s -d2  -fe=../main *.c
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>

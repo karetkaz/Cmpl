@@ -1012,7 +1012,10 @@ int fixjump(state rt, int src, int dst, int stc) {
 }
 
 int stkoffs(state rt, int size) {
-	return size + rt->vm.ss * 4;
+	if (size < 0) {
+		logif(size < 0, "FixMe");
+	}
+	return padded(size, 4) + rt->vm.ss * 4;
 }
 
 /*static cell task(state rt, cell pu, int cc, int n, int cl, int dl) {

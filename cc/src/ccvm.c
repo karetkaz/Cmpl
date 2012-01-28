@@ -37,10 +37,81 @@ static inline int genRef(state rt, int offset) {
 	return emitint(rt, opc_ldcr, -offset);
 } // */
 
+int isStatic(ccState cc, astn ast) {
+	//~ switch (ast->kind) {
+	switch (OPER_idx) {
+		default:
+			fatal("FixMe(%+k)", ast);
+			return 0;
+
+		//{ OPER
+		case OPER_fnc:		// '()' emit/call/cast
+		case OPER_idx:		// '[]'
+		case OPER_dot:		// '.'
+			return 0;
+
+		case OPER_adr:
+		case OPER_not:		// '!'
+		case OPER_pls:		// '+'
+		case OPER_mns:		// '-'
+		case OPER_cmt:		// '~'
+			return isStatic(cc, ast->op.rhso);
+
+		case OPER_shl:		// '>>'
+		case OPER_shr:		// '<<'
+		case OPER_and:		// '&'
+		case OPER_ior:		// '|'
+		case OPER_xor:		// '^'
+
+		case OPER_equ:		// '=='
+		case OPER_neq:		// '!='
+		case OPER_lte:		// '<'
+		case OPER_leq:		// '<='
+		case OPER_gte:		// '>'
+		case OPER_geq:		// '>='
+
+		case OPER_add:		// '+'
+		case OPER_sub:		// '-'
+		case OPER_mul:		// '*'
+		case OPER_div:		// '/'
+		case OPER_mod:		// '%'
+			return isStatic(cc, ast->op.lhso) && isStatic(cc, ast->op.rhso);
+
+		case OPER_lnd:		// '&&'
+		case OPER_lor:		// '||'
+			return isStatic(cc, ast->op.lhso) && isStatic(cc, ast->op.rhso);
+
+		case OPER_sel:		// '?:'
+			return isStatic(cc, ast->op.test) && isStatic(cc, ast->op.lhso) && isStatic(cc, ast->op.rhso);
+
+		case ASGN_set:		// ':='
+			return 0;
+		//}
+		//{ TVAL
+		case TYPE_int:
+		case TYPE_flt:
+		case TYPE_str:
+			return 1;
+
+		case TYPE_ref: {					// use (var, func, define)
+			symn typ = ast->type;			// type
+			symn var = ast->id.link;		// link
+			dieif(!typ || !var, "FixMe");
+			return var->stat || var->nest > cc->nest;
+		}
+
+		//~ case TYPE_def:					// new (var, func, define)
+		//~ case EMIT_opc:
+		//}
+	}
+	return 0;
+}
+
 int isConst(astn ast) {
 	struct astn tmp;
 
-	dieif(!ast || !ast->type, "FixMe %+k", ast);
+	dieif(!ast, "FixMe %+k", ast);
+	//~ dieif(!ast->type, "FixMe %+k", ast);
 
 	while (ast->kind == OPER_com) {
 		if (!isConst(ast->op.rhso)) {
@@ -99,7 +170,7 @@ int cgen(state rt, astn ast, ccToken get) {
 	}
 	#endif
 
-	/*
+	/*cgen(array length, type ref, ...)
 	switch (get) {
 		case TYPE_arr: cgen(array length)
 		case TYPE_var: cgen(ref to type)
@@ -835,7 +906,7 @@ int cgen(state rt, astn ast, ccToken get) {
 				static int firstTimeShowOnly = 1;
 				if (firstTimeShowOnly) {
 					warn(rt, 4, ast->file, ast->line, "operators `&&` and `||` does not short-circuit yet", ast);
-					firstTimeShowOnly = 0;
+					//~ firstTimeShowOnly = 0;
 				}
 			}
 			#if DEBUGGING
@@ -976,6 +1047,10 @@ int cgen(state rt, astn ast, ccToken get) {
 				case TYPE_ref: {
 
 					int retarr = 0;
+
+					if (var->size == 0) {
+						error(rt, ast->file, ast->line, "invalid use of variable: `%-T`", var);
+					}
 					if (get == TYPE_arr /* && typ->size >= 0 */) {
 						trace("#################################################################%+k", ast);
 						if (!emiti32(rt, typ->size)) {
@@ -1004,7 +1079,7 @@ int cgen(state rt, astn ast, ccToken get) {
 
 					if (get == ASGN_set) {
 						if (var->cnst && ast->file) {
-							error(rt, ast->file, ast->line, "constant field assignment %T", var);
+							error(rt, ast->file, ast->line, "constant assignment %T", var);
 						}
 						get = TYPE_ref;
 					}
@@ -1216,7 +1291,6 @@ int cgen(state rt, astn ast, ccToken get) {
 
 					// check size of variable
 					if (stktop != var->offs) {
-						//~ error(rt, ast->file, ast->line, "invalid initializer size: %d <> got(%d): `%+k`", stktop, var->offs, val);
 						error(rt, ast->file, ast->line, "invalid initializer size: %d diff(%d): `%+k`", stktop, stktop - var->offs, val);
 						return 0;
 					}
@@ -1852,7 +1926,7 @@ static void install_emit(ccState cc, int mode) {
 		enter(cc, NULL);
 
 		ref = install(cc, "ref", TYPE_rec, TYPE_ref, 4);
-		emit_val = install(cc, "val", TYPE_rec, TYPE_rec, -1);
+		emit_val = install(cc, "val", TYPE_rec, TYPE_rec, 0);
 
 		u32 = install(cc, "u32", TYPE_rec, TYPE_u32, 4);
 		i32 = install(cc, "i32", TYPE_rec, TYPE_i32, 4);

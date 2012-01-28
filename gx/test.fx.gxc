@@ -1,6 +1,6 @@
 // effects
-const test = 4;
-const Window {
+define test = 4;
+enum Window {
 	//~ draw = RenderMode.swap_buff;
 	//~ resx = 1440;
 	//~ resy = 1012;
@@ -25,8 +25,8 @@ void setupPicView(gxSurf vImg, bool vFit) {
 	static bool clear = false;
 	static bool fit = false;
 
-	const inertial_pan = 25;
-	const inertial_speed = 1.04;
+	define inertial_pan = 25;
+	enum inertial_speed = 1.04;
 
 	static int64 inertial_time = 0;
 	static double inertial_pan_x = 0;
@@ -121,7 +121,7 @@ void setupPicView(gxSurf vImg, bool vFit) {
 define resize(gxSurf src, int width, int height) = zoomSurf(gxSurf(width, height), null, src, null, 1);
 
 static if (true) {		// dithering
-const Dithering {
+enum Dithering {
 	None = 0;
 	SteinbergFalse = 1;
 	Steinberg = 2;
@@ -354,7 +354,7 @@ gxSurf dither(gxSurf img, bool grayscale, uint32 colors, int dithering) {
 			63,31,55,23,61,29,53,21;
 
 		static void bayer(int &num2, int &num3, int col, int levels) {
-			const d = 64;
+			define d = 64;
 			//~ num2 = col * ((levels * d) + 1) / 256;
 			//~ num3 = num2 / d;
 			//~ num2 -= num3 * d;
@@ -366,7 +366,7 @@ gxSurf dither(gxSurf img, bool grayscale, uint32 colors, int dithering) {
 		if (grayscale) {
 			for (int y = 0; y < height; y += 1) {
 				for (int x = 0; x < width; x += 1) {
-					const d = 64;
+					define d = 64;
 					int col = getPixel(img, x, y);
 					int num2;
 					int num3;
@@ -464,9 +464,11 @@ gxSurf histo(gxSurf dst, gxSurf src, bool rgb) {
 	fillRect(dst, 0, 0, 35536, 35536, 0);
 
 	for (int x = 0; x < 256; x += 1) {
-		const colR = 0xff0000;
-		const colG = 0x00ff00;
-		const colB = 0x0000ff;
+		enum {
+			colR = 0xff0000;
+			colG = 0x00ff00;
+			colB = 0x0000ff;
+		}
 
 		define histoHeight(int n, int max) = int((histoHeight * n) / max);
 		int rsize = histoHeight(histoR[x], maxRgb);
@@ -838,7 +840,7 @@ void drawCB() {
 
 		lutBrightnessContractGamma(&lut, brightness, contrast, gamma / 100.);
 
-		const useNativeImpl = !true;
+		define useNativeImpl = !true;
 		static if (useNativeImpl) {
 			clutSurf(offScreen, null, &lut);
 		}
@@ -857,7 +859,7 @@ void drawCB() {
 
 		static if (true) {
 			int y = 0;
-			const dy = 12;
+			define dy = 12;
 			uint8 txt[1024];
 			string str = emit(string, ref(txt));
 
@@ -977,7 +979,7 @@ void drawCB() {
 
 		mat = cmatHSL(hue, saturation, brightness);
 
-		const useNativeImpl = !true;
+		define useNativeImpl = !true;
 		static if (useNativeImpl) {
 			cmatSurf(offScreen, null, &mat);
 		}
@@ -991,7 +993,7 @@ void drawCB() {
 
 		static if (true) {
 			int y = 0;
-			const dy = 12;
+			define dy = 12;
 			uint8 txt[1024];
 			string str = emit(string, ref(txt));
 

@@ -1,5 +1,5 @@
-//~ #open src/pvmc.h
 //~ #open src/ccvm.h
+//~ #open src/pvmc.h
 
 //~ #open src/ccvm.c
 //~ #open src/code.c
@@ -504,6 +504,48 @@ for (range_iterator a : range(10, 14, true)) {
 //~ double f64_inf = emit(float64, i64(0b0111111111110000000000000000000000000000000000000000000000000000));
 //~ double f64_one = emit(float64, i64(0b0011111111110000000000000000000000000000000000000000000000000000));
 
+/*enum: vec4f {
+	O = vec4f(0, 0, 0, 0);
+	X = vec4f(1, 0, 0, 0);
+	Y = vec4f(0, 1, 0, 0);
+	Z = vec4f(0, 0, 1, 0);
+}// */
+
+//~ vec4f z = Z;
+//~ const float a = float(int(1.9));
+
+int a(const int x, const int y) {
+	int &X = x;
+	X = 0;
+	result = x;
+}
+
+int x = a(8, 3);
+
+
+//~ const vec4f Z = vec4f(0, 0, 1, 0);
+/*
+enum XXX {
+	a = -2;
+	b;
+	c;
+	d = 0;
+	e;
+	f;
+}
+
+struct aAAAA {
+	static int x = 9;
+	int y;
+}
+
+int8 X = 8;
+int8 Y = 9;
+int8 Z = 10;
+
+aAAAA.x = 88;
+
+// */
 /+
 int O(int a) {
 	print("%d\n", int64(a));
@@ -582,7 +624,7 @@ population pop;
 
 //~ */
 
-//~ /*
+/*
 static struct Perlin {		// perlin noise
 	const B = 0x100;
 	const BM = 0xff;

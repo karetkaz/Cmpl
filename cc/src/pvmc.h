@@ -96,7 +96,7 @@ void ccEnd(state, symn cls);
 
 // searching for symbols ...
 symn findref(state, void *ptr);
-symn findsym(ccState cc, symn in, char *name);
+symn findsym(ccState, symn in, char *name);
 
 int symvalint(symn sym, int* res);
 int symvalflt(symn sym, double* res);
@@ -108,5 +108,3 @@ int vmExec(state, dbgf dbg);
 int vmCall(state, symn fun, ...);
 
 #endif
-
-#define DEBUGGING 1

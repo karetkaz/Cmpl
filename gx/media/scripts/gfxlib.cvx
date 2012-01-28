@@ -1,4 +1,4 @@
-const RenderMode {
+enum RenderMode {
 
 	draw_plot = 0x00000001;		//
 	draw_wire = 0x00000002;		//
@@ -35,7 +35,7 @@ const RenderMode {
 	drawFill = zero_cbuf | zero_zbuf | cull_back | draw_fill | swap_buff;
 }
 
-const importgfx: bool {
+enum importgfx: bool {
 
 	rgbUtils = true;
 }
@@ -82,7 +82,6 @@ define lrpfix16(int ^x, int y, int t) = int(x + (t * (y - x) >> 16));
 //~ define lrprgbx16(int ^x, int ^y, int ^t) = rgb(lrpfix16(rch(x), rch(y), t), lrpfix16(gch(x), gch(y), t), lrpfix16(bch(x), bch(y), t));
 
 int lrprgbx16(int c1, int c2, int t) {
-	//~ const t = int(.5 * (1 << 16));
 	int r = lrpfix16(rch(c1), rch(c2), t);
 	int g = lrpfix16(gch(c1), gch(c2), t);
 	int b = lrpfix16(bch(c1), bch(c2), t);
@@ -356,10 +355,12 @@ void lutBrightnessContractGamma(gxClut &lut, int brg, int cntr, double gamma) {
 }
 
 gxSurf lut2Surf(gxSurf dst, gxClut &lut, int bg) {
-	const k = 0x000000;
-	const r = 0xff0000;
-	const g = 0x00ff00;
-	const b = 0x0000ff;
+	enum {
+		k = 0x000000;
+		r = 0xff0000;
+		g = 0x00ff00;
+		b = 0x0000ff;
+	}
 	result = dst;
 	if (width(dst) == 256) {
 		int imgheight = height(dst);

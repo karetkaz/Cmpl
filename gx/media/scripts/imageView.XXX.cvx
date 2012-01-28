@@ -1,4 +1,4 @@
-const renderType = RenderMode.swap_buff;
+enum renderType = RenderMode.swap_buff;
 
 //~ args[1] = "media/images/Earth.jpg";
 
@@ -17,7 +17,7 @@ double imw = width(img);
 double imh = height(img);
 bool reDraw = true;
 
-const fitTo {
+enum fitTo {
 	auto = -1;
 	none = 0;	// no fit
 	width = 1;

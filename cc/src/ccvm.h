@@ -11,6 +11,9 @@
 #include "pvmc.h"
 #include <stdlib.h>
 
+// debug level
+#define DEBUGGING 1
+
 // maximum tokens in expressions & nest level
 #define TOKS 2048
 
@@ -23,49 +26,36 @@
 #define DO_PRAGMA(x) _Pragma(#x)
 #define TODO(x) //DO_PRAGMA(message("TODO: " #x))
 
-#ifdef _MSC_VER
+//~ TODO("test") := _Pragma("message(\"TODO: \" \"\\\"test\\\"\")")
+
 #define pdbg(__DBG, __FILE, __LINE, msg, ...) do {fputfmt(stderr, "%s:%d: "__DBG": %s: "msg"\n", __FILE, __LINE, __FUNCTION__, ##__VA_ARGS__); fflush(stdout); fflush(stderr);} while(0)
-#else
-#define pdbg(__DBG, __FILE, __LINE, msg, ...) do {fputfmt(stderr, "%s:%d: "__DBG": %s: "msg"\n", __FILE, __LINE, __func__, ##__VA_ARGS__); fflush(stdout); fflush(stderr);} while(0)
+
+#if DEBUGGING > 1
+#define debug(msg, ...) pdbg("debug", __FILE__, __LINE__, msg, ##__VA_ARGS__)
+#define trace(msg, ...) pdbg("trace", __FILE__, __LINE__, msg, ##__VA_ARGS__)
+#define trloop(msg, ...) //pdbg("trace", __FILE__, __LINE__, msg, ##__VA_ARGS__)
+#define PERR(__ENV, __LEVEL, __FILE, __LINE, msg, ...) do { perr(__ENV, __LEVEL, __FILE, __LINE, msg, ##__VA_ARGS__); debug(msg, ##__VA_ARGS__); } while(0)
+
+#else // catch the position error raised
+
+#define debug(msg, ...)
+#define trace(msg, ...)
+#define trloop(msg, ...)
+#define PERR(__ENV, __LEVEL, __FILE, __LINE, msg, ...) do { perr(__ENV, __LEVEL, __FILE, __LINE, msg, ##__VA_ARGS__); } while(0)
 #endif
 
+// error
+#define error(__ENV, __FILE, __LINE, msg, ...) PERR(__ENV, -1, __FILE, __LINE, msg, ##__VA_ARGS__)
+#define warn(__ENV, __LEVEL, __FILE, __LINE, msg, ...) PERR(__ENV, __LEVEL, __FILE, __LINE, msg, ##__VA_ARGS__)
+#define info(__ENV, __FILE, __LINE, msg, ...) PERR(__ENV, 0, __FILE, __LINE, msg, ##__VA_ARGS__)
+
+// internal errors
 #define prerr(msg, ...) do {pdbg("FixMe", __FILE__, __LINE__, msg, ##__VA_ARGS__); } while(0)
 #define fatal(msg, ...) do {prerr(msg, ##__VA_ARGS__); abort();} while(0)
 #define dieif(__EXP, msg, ...) do {if (__EXP) fatal(msg, ##__VA_ARGS__);} while(0)
 #define logif(__EXP, msg, ...) do {if (__EXP) prerr(msg, ##__VA_ARGS__);} while(0)
 
-#ifdef _MSC_VER
-
-#if DEBUGGING > 1
-#define debug(msg, ...) pdbg("debug", __FILE__, __LINE__, msg, ##__VA_ARGS__)
-#define trace(msg, ...) pdbg("trace", __FILE__, __LINE__, msg, ##__VA_ARGS__)
-#define PERR(__ENV, __LEVEL, __FILE, __LINE, msg, ...) do { perr(__ENV, __LEVEL, __FILE, __LINE, msg, ##__VA_ARGS__); debug(msg, ##__VA_ARGS__); } while(0)
-#else // catch the position error raised
-#define debug(msg, ...)
-#define trace(msg, ...)
-#define PERR(__ENV, __LEVEL, __FILE, __LINE, msg, ...) do { perr(__ENV, __LEVEL, __FILE, __LINE, msg, ##__VA_ARGS__); } while(0)
-#endif
-#define error(__ENV, __FILE, __LINE, msg, ...) PERR(__ENV, -1, __FILE, __LINE, msg, ##__VA_ARGS__)
-#define warn(__ENV, __LEVEL, __FILE, __LINE, msg, ...) PERR(__ENV, __LEVEL, __FILE, __LINE, msg, ##__VA_ARGS__)
-#define info(__ENV, __FILE, __LINE, msg, ...) PERR(__ENV, 0, __FILE, __LINE, msg, ##__VA_ARGS__)
-
-#elif defined __WATCOMC__
-
-#if DEBUGGING > 1
-#define debug(msg, ...) pdbg("debug", __FILE__, __LINE__, msg, ##__VA_ARGS__)
-#define trace(msg, ...) pdbg("trace", __FILE__, __LINE__, msg, ##__VA_ARGS__)
-#define PERR(__ENV, __LEVEL, __FILE, __LINE, msg, ...) do { perr(__ENV, __LEVEL, __FILE, __LINE, msg, ##__VA_ARGS__); debug(msg, ##__VA_ARGS__); } while(0)
-#else // catch the position error raised
-#define debug(msg, ...)
-#define trace(msg, ...)
-#define PERR(__ENV, __LEVEL, __FILE, __LINE, msg, ...) do { perr(__ENV, __LEVEL, __FILE, __LINE, msg, ##__VA_ARGS__); } while(0)
-#endif
-#define error(__ENV, __FILE, __LINE, msg, ...) PERR(__ENV, -1, __FILE, __LINE, msg, ##__VA_ARGS__)
-#define warn(__ENV, __LEVEL, __FILE, __LINE, msg, ...) PERR(__ENV, __LEVEL, __FILE, __LINE, msg, ##__VA_ARGS__)
-#define info(__ENV, __FILE, __LINE, msg, ...) PERR(__ENV, 0, __FILE, __LINE, msg, ##__VA_ARGS__)
-
-#else
-
+/*#ifdef __gcc__
 #if DEBUGGING > 1
 #define debug(msg...) pdbg("debug", __FILE__, __LINE__, msg)
 #define trace(msg...) pdbg("trace", __FILE__, __LINE__, msg)
@@ -79,6 +69,7 @@
 #define warn(__ENV, __LEVEL, __FILE, __LINE, msg...) PERR(__ENV, __LEVEL, __FILE, __LINE, msg)
 #define info(__ENV, __FILE, __LINE, msg...) PERR(__ENV, 0, __FILE, __LINE, msg)
 #endif
+*/
 
 // Symbols - CC(tokens)
 typedef enum {
@@ -209,15 +200,10 @@ struct list {				// linked list: stringlist, memgr, ...
 	//~ unsigned int	offs;	// offset in file ?
 };
 struct astn {				// tree node (code)
+	ccToken		kind;				// code: TYPE_ref, OPER_???
 	symn		type;				// typeof() return type of operator ... base type of IDTF
-	//~ ccToken		kind;				// code: TYPE_ref, OPER_???
-	//~ ccToken		cst2;				// casts to basic type: (i32, f32, i64, f64, ref, bool, void)
-	//~ astn		next;				// next statement, do not use for preorder
-
-	uint8_t	kind;		// TYPE_ref / TYPE_def / TYPE_rec / TYPE_arr
-	uint8_t	cst2;		// casts to type(TYPE_(bit, vid, ref, u32, i32, i64, f32, f64, p4x)).
-	uint16_t	_pad;				// unused
-
+	ccToken		cst2;				// casts to basic type: (i32, f32, i64, f64, ref, bool, void)
+	astn		next;				// next statement, do not use for preorder
 	union {
 		union  {					// TYPE_xxx: constant
 			int64_t	cint;			// const: integer
@@ -252,12 +238,8 @@ struct astn {				// tree node (code)
 			astn tail;
 		} list;
 	};
-
 	char*		file;				// token in file
 	uint32_t	line;				// token on line
-
-	astn		next;				// next statement, do not use for preorder
-	uint32_t	temp;				// token on line
 };
 struct symn {				// type node (data)
 	char*	name;		// symbol name
@@ -274,20 +256,20 @@ struct symn {				// type node (data)
 
 	//~ TODO: temporarly array variable base type
 	symn	args;		// struct members / function paramseters
-
-	//~ TODO: should be the tail of args
-	symn	sdef;		// static members 
+	symn	sdef;		// static members (is the tail of args)
 
 	symn	decl;		// declared in namespace/struct/class, function, ...
-
 	symn	next;		// symbols on table / next param / next field / next symbol
 
-	//~ ccToken	kind;		// TYPE_ref / TYPE_def / TYPE_rec / TYPE_arr
-	//~ ccToken	cast;		// casts to type(TYPE_(bit, vid, ref, u32, i32, i64, f32, f64, p4x)).
-	//~ uint16_t __castkindpadd;
-
+	#if DEBUGGING < 0
+	ccToken	kind;		// TYPE_ref / TYPE_def / TYPE_rec / TYPE_arr
+	ccToken	cast;		// casts to type(TYPE_(bit, vid, ref, u32, i32, i64, f32, f64, p4x)).
+	uint16_t __castkindpadd;
+	#else
 	uint8_t	kind;		// TYPE_ref / TYPE_def / TYPE_rec / TYPE_arr
 	uint8_t	cast;		// casts to type(TYPE_(bit, vid, ref, u32, i32, i64, f32, f64, p4x)).
+	#endif
+
 	union {				// Attributes
 	struct {
 	uint16_t	call:1;		// callable(function/definition) <=> (kind == TYPE_ref && args)
@@ -481,7 +463,7 @@ astn next(ccState, int kind);
 //~ int  skip(ccState, int kind);
 //~ int  test(ccState, int kind);
 
-astn expr(ccState, int mode);		// parse expression	(mode: lookup)
+astn expr(ccState, int mode);		// parse expression	(mode: do typecheck)
 astn decl(ccState, int mode);		// parse declaration	(mode: enable defs(: struct, define, ...))
 //~ astn stmt(ccState, int mode);		// parse statement	(mode: enable decl/enter new scope)
 //~ astn unit(ccState, int mode);		// parse program	(mode: script mode)
@@ -497,8 +479,9 @@ symn leave(ccState s, symn def, int mkstatic);
  * @todo should use the vmExec funtion, for the generated code.
  */
 int eval(astn res, astn ast);
-int mkcon(astn ast, symn type);
+int isStatic(ccState,astn ast);
 int isConst(astn ast);
+//~ int mkConst(astn ast);
 
 /** emit an opcode with args
  * @param opc: opcode

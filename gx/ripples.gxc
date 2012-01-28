@@ -1,23 +1,23 @@
-const Window { // window size, and render mode.
-	draw = RenderMode.drawFill|RenderMode.draw_lit;
-	resx = 512/1;
-	resy = 512/1;
+enum Window { // window size, and render mode.
+	  draw = RenderMode.drawFill|RenderMode.draw_lit;
+	resx = 512/2;
+	resy = 512/2;
 }
 
-const Options {
+enum Options {
 	textured = true;
 	do2d = !true;
 	do3d = true;
 }
 
 // division of mesh and heightmap
-const division = 62;
+define division = 62;
 
 //~ do rain every dorain frame
-const dorain = 0;
+define dorain = 0;
 
-const pheight = -255;
-const density = 5;
+define pheight = -255;
+define density = 5;
 
 int mx = 0;
 int my = 0;
@@ -107,7 +107,7 @@ void drawCB() {
 			result = h00;
 		}
 		static void hmapfn(double &x, double &y, double &z, double s01, double t01) {
-			const H = float64(7);
+			define H = float64(7);
 			x = lerp(1 - s01, -H, H);
 			y = lerp(1 - t01, -H, H);
 
@@ -160,10 +160,13 @@ void mouseHandler(int btn, int x, int y) {
 	ox = x;
 	oy = y;
 
-	//~ define toRadians(double x) = double(x * pi / 180.);
-	const moveSpeed = .08;
-	const rotateSpeed = moveSpeed * Math.pi / 180.;
-	const rotateSpeed2 = 10 * rotateSpeed;
+	static const define toRadians(double x) = double(x * Math.pi / 180.);
+	enum: double {
+		moveSpeed = .08;
+		//~ rotateSpeed = moveSpeed * Math.pi / 180.;
+		rotateSpeed = toRadians(moveSpeed);
+		rotateSpeed2 = 10 * rotateSpeed;
+	}
 
 	/*if (dblClick(btn, x, y)) {
 		dblClick(-1, 0, 0);

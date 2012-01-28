@@ -1,4 +1,4 @@
-const renderType = RenderMode.swap_buff;
+enum renderType = RenderMode.swap_buff;
 
 //~ args[1] = "media/images/Earth.jpg";
 
@@ -43,7 +43,7 @@ void setupPicView(gxSurf vImg, bool vFit) {
 			if (inertial_time < now) {
 				inertial_pan_x /= 1.09;
 				inertial_pan_y /= 1.09;
-				const inertial_pan = .9;
+				enum inertial_pan = .9;
 				if ((abs(inertial_pan_x) > inertial_pan) || (abs(inertial_pan_y) > inertial_pan)) {
 					roi.x = clamp(roi.x + inertial_pan_x, 0., float64(width(img) - roi.w));
 					roi.y = clamp(roi.y + inertial_pan_y, 0., float64(height(img) - roi.h));
@@ -122,7 +122,7 @@ imh = height(img);
 
 bool reDraw = true;
 
-const fitTo {
+enum fitTo {
 	auto = -1;
 	none = 0;	// no fit
 	width = 1;

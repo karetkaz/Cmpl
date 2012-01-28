@@ -54,7 +54,7 @@ astn opnode(ccState s, int kind, astn lhs, astn rhs) {
 astn lnknode(ccState s, symn ref) {
 	astn result = newnode(s, TYPE_ref);
 	if (result) {
-		result->type = ref->type;//typeOf(ref);
+		result->type = ref->kind == TYPE_ref ? ref->type : ref;
 		result->id.name = ref->name;
 		result->id.link = ref;
 		result->id.hash = -1;
@@ -92,8 +92,10 @@ void eatnode(ccState s, astn ast) {
 signed constbol(astn ast) {
 	if (ast) switch (ast->kind) {
 		case TYPE_bit:
-		case TYPE_int: return ast->con.cint != 0;
-		case TYPE_flt: return ast->con.cflt != 0;
+		case TYPE_int:
+			return ast->con.cint != 0;
+		case TYPE_flt:
+			return ast->con.cflt != 0;
 		default: break;
 	}
 	fatal("not a constant %+k", ast);
@@ -101,8 +103,10 @@ signed constbol(astn ast) {
 }
 int64_t constint(astn ast) {
 	if (ast) switch (ast->kind) {
-		case TYPE_int: return (int64_t)ast->con.cint;
-		case TYPE_flt: return (int64_t)ast->con.cflt;
+		case TYPE_int:
+			return (int64_t)ast->con.cint;
+		case TYPE_flt:
+			return (int64_t)ast->con.cflt;
 		default: break;
 	}
 	fatal("not a constant %+k", ast);
@@ -110,8 +114,10 @@ int64_t constint(astn ast) {
 }
 float64_t constflt(astn ast) {
 	if (ast) switch (ast->kind) {
-		case TYPE_int: return (float64_t)ast->con.cint;
-		case TYPE_flt: return (float64_t)ast->con.cflt;
+		case TYPE_int:
+			return (float64_t)ast->con.cint;
+		case TYPE_flt:
+			return (float64_t)ast->con.cflt;
 		default: break;
 	}
 	fatal("not a constant %+k", ast);
@@ -225,7 +231,7 @@ int eval(astn res, astn ast) {
 
 		case OPER_not: {		// '!'
 
-			dieif(ast->cst2 != TYPE_bit, "FixMe %+d", ast->line);
+			logif(ast->cst2 != TYPE_bit, "FixMe %+k", ast);
 			if (!eval(res, ast->op.rhso))
 				return 0;
 
@@ -421,53 +427,4 @@ int eval(astn res, astn ast) {
 	}
 
 	return res->kind;
-}
-
-int mkcon(astn ast, symn type) {
-	struct astn tmp;
-
-	dieif(!ast || !type, "FixMe");
-
-	if (!promote(ast->type, type))
-		return 0;
-
-	//~ if (!castTy(ast, type))
-		//~ return 0;
-
-	if (!eval(&tmp, ast))
-		return 0;
-
-	ast->kind = tmp.kind;
-	ast->con = tmp.con;
-	ast->type = type;
-
-	switch (type->cast) {
-		default: fatal("FixMe");
-
-		case TYPE_vid:
-		case TYPE_any:
-			break;
-
-		case TYPE_bit:
-			ast->con.cint = constbol(ast);
-			ast->kind = TYPE_int;
-			break;
-
-		case TYPE_u32:
-		case TYPE_i32:
-		case TYPE_i64:
-		//~ case TYPE_int:
-			ast->con.cint = constint(ast);
-			ast->kind = TYPE_int;
-			break;
-
-		case TYPE_f32:
-		case TYPE_f64:
-		//~ case TYPE_flt:
-			ast->con.cflt = constflt(ast);
-			ast->kind = TYPE_flt;
-			break;
-	}
-
-	return ast->kind;
 }

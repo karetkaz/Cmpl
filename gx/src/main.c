@@ -777,7 +777,7 @@ static void meshInfo(mesh msh) {
 }
 
 #if 1	// compiler
-#include "lib/libpvmc/pvmc.h"
+#include "pvmc.h"
 
 //{#region Surfaces
 
@@ -2056,7 +2056,7 @@ static int ccCompile(char *src, int argc, char* argv[]) {
 		"\n"
 		"\n"
 		"// Color Look Up Table (Palette) structure\n"
-		"struct:1 gxClut {			// Color Look Up Table (Palette) structure\n"
+		"struct gxClut:1 {			// Color Look Up Table (Palette) structure\n"
 			"int16	count;\n"
 			"uint8	flags;\n"
 			"uint8	trans;\n"

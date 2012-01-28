@@ -63,9 +63,9 @@ operator (string lhs) [int rhs] (int setValue) = emit(int, ldi.byte, i32.mad, i3
 operator int(string value) = atoi(value, 10);
 // */
 
-const nan = 0./0;
+//~ const float64 nan = 0./0;
 
-const Test {
+enum Test {
 	Emit = ~0;
 	Bits = ~0;
 	Type = ~0;
@@ -135,13 +135,13 @@ define mad(int32 size, int32 index, int32 offset) = emit(u32.mad, i32(size), i32
 }
 static if (Test.Emit & 0x04) {	// Complex
 
-const prog {
+enum prog {
 	sisd = 1;
 	simd = 2;
 }
 
-const test2exec = prog.simd;
-const times2exec = -1000000;
+define test2exec = prog.simd;
+define times2exec = -1000000;
 
 struct Complex {
 	float64 re;
@@ -319,17 +319,17 @@ static if (Test.Type & 0x02) {
 
 define isNan(float64 x) = bool(x != x);
 define isNan(float32 x) = bool(x != x);
-float64 NAN = nan;//Math.nan;
+//~ float64 NAN = nan;//Math.nan;
 //~ int isNan1 = int(isNan(NAN));
 //~ int isNan2 = int(isNan(Math.nan));
 }
 static if (Test.Type & 0x04) {		// enum
 //~ struct and arrays
-struct:0 fiu32 {int32 i;float32 f;}
-struct:0 fiu64 {int64 i;float64 f;}
+struct fiu32:0 {int32 i;float32 f;}
+struct fiu64:0 {int64 i;float64 f;}
 define intTY int32;
 
-struct:8 intabc {
+struct intabc:8 {
 	intTY X;		//%%?08b
 	intTY Y;		//%%?08b
 	intTY Z;		//%%?08b
@@ -348,13 +348,13 @@ alma.X = 8;
 //~ intabc alma1 = alma;
 }
 static if (Test.Type & 0x08) {		// color
-struct:1 bgra {
+struct bgra:1 {
 	uint8 b; 	//%blue(%d)
 	uint8 g; 	//%green(%d)
 	uint8 r; 	//%red(%d)
 	uint8 a; 	//%alpha(%d)
 }
-struct:0 color {
+struct color:0 {
 	int32 val;	//%#%08x
 	bgra col;	//%
 }
@@ -397,9 +397,9 @@ static if (Test.Misc & 1) {			// matrix multiply
 
 define dim = 3;
 define scalar float64;		//%%f
-scalar m1[dim][dim];
-scalar m2[dim][dim];
-scalar m3[dim][dim];
+scalar m1[dim, dim];
+scalar m2[dim, dim];
+scalar m3[dim, dim];
 
 //~ /+ Initialize
 for (int i = 0; i < dim; i += 1) {
