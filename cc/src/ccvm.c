@@ -484,20 +484,23 @@ int cgen(state rt, astn ast, ccToken get) {
 							inlineArg = 1;
 						}
 						else if (an->kind == TYPE_ref) {
-							// static variables should not be inlined ?
-							// what about indirect references ?
-							//~ if (!an->id.link->stat)
-								inlineArg = 1;
+							if (an->type == as->type) {
+								// static variables should not be inlined ?
+								// what about indirect references ?
+								//~ if (!an->id.link->stat)
+									inlineArg = 1;
+							}
 						}
 
 						if (inlineArg) {
+							//~ warn(rt, 9, ast->file, ast->line, "inlined argument: %-T = %+k", as, arg);
 							as->kind = TYPE_def;
 							as->init = an;
 						}
 						else {
 							int stktop = stkoffs(rt, sizeOf(as));
 							chachedArgSize += sizeOf(as);
-							//~ warn(s, 9, ast->file, ast->line, "caching argument: %-T = %+k", as, arg);
+							warn(rt, 16, ast->file, ast->line, "caching argument: %-T = %+k", as, arg);
 							if (!cgen(rt, arg, as->cast)) {
 								trace("%+k", arg);
 								return 0;
@@ -800,11 +803,19 @@ int cgen(state rt, astn ast, ccToken get) {
 				case OPER_not: opc = opc_not; break;
 				case OPER_cmt: opc = opc_cmt; break;
 			}
-			if (!(ret = cgen(rt, ast->op.rhso, TYPE_any))) {
+			/*if (!(ret = cgen(rt, ast->op.rhso, TYPE_any))) {
 				trace("%+k", ast);
 				return 0;
 			}
 			if (!emitint(rt, opc, ret)) {
+				trace("%+k", ast);
+				return 0;
+			}*/
+			if (!cgen(rt, ast->op.rhso, TYPE_any)) {
+				trace("%+k", ast);
+				return 0;
+			}
+			if (!emitint(rt, opc, ast->op.rhso->cst2)) {
 				trace("%+k", ast);
 				return 0;
 			}
@@ -905,8 +916,8 @@ int cgen(state rt, astn ast, ccToken get) {
 			if (DEBUGGING) {
 				static int firstTimeShowOnly = 1;
 				if (firstTimeShowOnly) {
-					warn(rt, 4, ast->file, ast->line, "operators `&&` and `||` does not short-circuit yet", ast);
-					//~ firstTimeShowOnly = 0;
+					warn(rt, 1, ast->file, ast->line, "operators `&&` and `||` does not short-circuit yet", ast);
+					firstTimeShowOnly = 0;
 				}
 			}
 			#if DEBUGGING

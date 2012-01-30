@@ -2,26 +2,6 @@
 
 //~ int alma(int h)[10];
 
-/* cgen: int64(8+12): abs(n)
-define abs(int64 ^x) = (x < 0 ? -x : x);
-
-int n = -9;
-int z = abs(n);
-// */
-
-//~ pointer x = emit(pointer, "er");
+//~ pointer x = emit(pointer, ref("er"));
 //~ string str = emit(string, ref(x));
-struct ss {
-	int x;
-	int y;
-}
-
-void test1() {
-	static const int A = 7;
-	//~ A = 8;
-	void test2() {
-		static const int B = int(A);
-		static ss v = ss(A, B);
-		v.x = 8;
-	}
-}
+//~ println(emit(string, ref(x)));

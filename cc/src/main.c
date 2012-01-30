@@ -630,7 +630,7 @@ int program(int argc, char *argv[]) {
 				if (strcmp(arg, "-wx") == 0)
 					warn = -1;
 				else if (strcmp(arg, "-wa") == 0)
-					warn = 9;
+					warn = 32;
 				else if (*parsei32(arg + 2, &warn, 10)) {
 					fputfmt(stderr, "invalid level '%s'\n", arg + 2);
 					debug("invalid level '%s'\n", arg + 2);

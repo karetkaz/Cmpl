@@ -1,6 +1,6 @@
 define test = 7;
 enum Window {
-	//~ draw = RenderMode.swap_buff;
+	draw = RenderMode.swap_buff;
 
 	//~ resx = 1440;
 	//~ resy = 900;

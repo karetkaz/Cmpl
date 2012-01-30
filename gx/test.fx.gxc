@@ -1,7 +1,7 @@
 // effects
-define test = 4;
+define test = 3;
 enum Window {
-	//~ draw = RenderMode.swap_buff;
+	draw = RenderMode.swap_buff;
 	//~ resx = 1440;
 	//~ resy = 1012;
 	//~ resx = 1024;
@@ -11,9 +11,9 @@ enum Window {
 	resy = 512 / res;
 }
 
-//~ string fileName = "media/images/lenaRGB.png";
+string fileName = "media/images/lenaRGB.png";
 //~ string fileName = "media/images/download.jpg";
-string fileName = "media/images/Earth.jpg";
+//~ string fileName = "media/images/Earth.jpg";
 //~ string fileName = "media/images/nol.bmp";
 
 string fileBlend = "media/images/nol.bmp";
@@ -25,8 +25,10 @@ void setupPicView(gxSurf vImg, bool vFit) {
 	static bool clear = false;
 	static bool fit = false;
 
-	define inertial_pan = 25;
-	enum inertial_speed = 1.04;
+	enum inertial_pan = 25;
+	enum: double {
+		inertial_speed = 1.09;
+	}
 
 	static int64 inertial_time = 0;
 	static double inertial_pan_x = 0;
@@ -128,7 +130,7 @@ enum Dithering {
 	Stucki = 3;
 	Bayer = 8;
 }
-gxSurf dither(gxSurf img, bool grayscale, uint32 colors, int dithering) {
+gxSurf dither(gxSurf img, bool grayscale, uint32 colors, Dithering method) {
 
 	if (colors >= 256) {
 		//~ dithering = Dithering.None;
@@ -147,7 +149,7 @@ gxSurf dither(gxSurf img, bool grayscale, uint32 colors, int dithering) {
 
 	int width = width(img);
 	int height = height(img);
-	if (dithering == Dithering.None) {
+	if (method == Dithering.None) {
 		if (grayscale) {
 			for (int y = 0; y < height; y += 1) {
 				for (int x = 0; x < width; x += 1) {
@@ -170,7 +172,7 @@ gxSurf dither(gxSurf img, bool grayscale, uint32 colors, int dithering) {
 		}
 		result = img;
 	}
-	else if (dithering == Dithering.SteinbergFalse) {
+	else if (method == Dithering.SteinbergFalse) {
 		/** the kernel
 		 * 	*   3
 		 *	3   2
@@ -224,7 +226,7 @@ gxSurf dither(gxSurf img, bool grayscale, uint32 colors, int dithering) {
 		}
 		result = img;
 	}
-	else if (dithering == Dithering.Steinberg) {
+	else if (method == Dithering.Steinberg) {
 		/** the kernel
 		 * 		*   7
 		 *	3   5   1
@@ -275,7 +277,7 @@ gxSurf dither(gxSurf img, bool grayscale, uint32 colors, int dithering) {
 		}
 		result = img;
 	}
-	else if (dithering == Dithering.Stucki) {
+	else if (method == Dithering.Stucki) {
 		/** the kernel
 		 * 			*   8   4
 		 *	2   4   8   4   2
@@ -342,8 +344,8 @@ gxSurf dither(gxSurf img, bool grayscale, uint32 colors, int dithering) {
 		}
 		result = img;
 	}
-	else if (dithering == Dithering.Bayer) {
-		static uint8 Pattern[8, 8] =
+	else if (method == Dithering.Bayer) {
+		static const int Pattern[8, 8] =
 			 0,32, 8,40, 2,34,10,42,
 			48,16,56,24,50,18,58,26,
 			12,44, 4,36,14,46, 6,38,
@@ -682,9 +684,9 @@ copySurf(offScreen, 0, 0, image2, null, 1, rgbOpOverlay);		// atmasoljuk a fuggv
 }
 static if (test == 3) {		// Dithering
 
-int colors = 9;
-bool grayscale = !true;
-int method = Dithering.Steinberg;
+int colors = 2;
+bool grayscale = true;
+Dithering method = Dithering.Bayer;
 
 define hex(uint32 ^c) = int(c <= 9 ? (c + '0') : ((c - 10) + 'a'));
 uint8 filename[24];
@@ -713,7 +715,7 @@ blendLut(lut, 0, -1);
 gxSurf image = gxSurf(fileName);
 //~ gxSurf image = resize(gxSurf(fileName), Window.resx, Window.resx);
 
-//~ dither(image, grayscale, colors, method);
+dither(image, grayscale, colors, method);
 
 //~ bmpWrite(image, emit(string, ref(filename)));
 

@@ -60,16 +60,11 @@ $(LIBDIR)libpng.a:
 $(LIBDIR)libpng.win.a:
 	$(MK) -C lib/libpng
 
-
-$(OBJDIR)drv_ras.o:
-	$(AS) -o $(OBJDIR)drv_ras.o $(GXSRCDIR)drv_ras.asm
-
-# take main from gx, not cc
-$(OBJDIR)main.o: $(GXSRCDIR)main.c
-	$(CCC) -c $(CFLAGS) -I "$(GXSRCDIR)" -I "$(CCSRCDIR)" $< -o $@
+$(OBJDIR)%.o: $(GXSRCDIR)%.c
+	$(CCC) -c $(CFLAGS) -I '$(CCSRCDIR)' '$<' -o '$@'
 
 $(OBJDIR)%.o: $(CCSRCDIR)%.c
-	$(CCC) -c $(CFLAGS) -I "$(CCSRCDIR)" $< -o $@
+	$(CCC) -c $(CFLAGS) -I '$(CCSRCDIR)' '$<' -o '$@'
 
-$(OBJDIR)%.o: $(GXSRCDIR)%.c
-	$(CCC) -c $(CFLAGS) -I "$(GXSRCDIR)" -I "$(CCSRCDIR)" $< -o $@
+$(OBJDIR)%.o: $(GXSRCDIR)%.asm
+	$(AS) '$<' -o '$@'

@@ -1,8 +1,8 @@
 // Procedural drawing
 enum Window {
-	//~ draw = RenderMode.swap_buff;
-	resx = 512/4;
-	resy = 512/4;
+	draw = RenderMode.swap_buff;
+	resx = 512/1;
+	resy = 512/1;
 }
 
 void zoomSurf2(gxSurf dst, gxRect &rect, gxSurf src, gxRect &roi, int mode) {
@@ -285,5 +285,5 @@ vec4f perlin2f(double x, double y) {
 	result = vec4f(Perlin.Noise(x*mul, y*mul));
 }
 //~ setup1(&time, Perlin.Noise2f);
-setup(&time, blob2d);
+setup(&time, yinyang);
 //~ Gui.exitLoop();

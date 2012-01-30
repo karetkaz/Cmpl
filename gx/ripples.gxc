@@ -1,5 +1,5 @@
 enum Window { // window size, and render mode.
-	  draw = RenderMode.drawFill|RenderMode.draw_lit;
+	draw = RenderMode.drawFill|RenderMode.draw_lit;
 	resx = 512/2;
 	resy = 512/2;
 }
@@ -11,7 +11,7 @@ enum Options {
 }
 
 // division of mesh and heightmap
-define division = 62;
+define division = 52;
 
 //~ do rain every dorain frame
 define dorain = 0;

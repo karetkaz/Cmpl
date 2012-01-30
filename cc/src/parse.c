@@ -16,8 +16,21 @@ Lexical elements
 			identifier = (letter)+
 
 		Keywords:
-			break, const, continue, define, else, emit, enum, for,
-			if, module, operator, parallel, return, static, struct
+			break,
+			const,
+			continue,
+			define,
+			else,
+			emit,
+			enum,
+			for,
+			if,
+			module,
+			operator,
+			parallel,
+			return,
+			static,
+			struct
 
 		Operators and Delimiters:
 			+ - * / % . ,
@@ -32,7 +45,7 @@ Lexical elements
 			oct_lit = '0'[oO][0-7]+
 			hex_lit = '0'[xX][0-9a-fA-F]+
 			decimal_lit = [1-9][0-9]*
-			floating_lit = decimal_lit (('.'[0-9]*) | ([eE]([+-]?)[0-9]+))
+			floating_lit = decimal_lit (('.'[0-9]*) | )([eE]([+-]?)[0-9]+)
 
 		Character and String literals:
 			char_lit = \'[^\'\n]*
@@ -132,7 +145,7 @@ unsigned rehash(const char* str, unsigned len) {
 			hs = (hs >> 8) ^ crc_tab[(hs ^ (*str++)) & 0xff];
 	}
 
-	return (hs ^ 0xffffffff);// % TBLS;
+	return hs ^ 0xffffffff;
 }
 
 static int fillBuf(ccState s) {
@@ -251,13 +264,12 @@ char *mapstr(ccState s, char *name, unsigned size/* = -1U*/, unsigned hash/* = -
 		size = strlen(name) + 1;
 	}
 
-	dieif (name[size-1], "FixMe: %s[%d]", name, size);
-
 	if (hash == -1U) {
 		//~ debug("strcrc '%s'", name);
 		hash = rehash(name, size) % TBLS;
 	}
 
+	dieif (name[size-1], "FixMe: %s[%d]", name, size);
 	for (next = s->strt[hash]; next; next = next->next) {
 		//~ int slen = next->data - (unsigned char*)next;
 		register int c = memcmp(next->data, name, size);
@@ -1378,7 +1390,6 @@ static int mkConst(astn ast, int cast) {
 	return ast->kind;
 }
 
-
 //~ astn unit(ccState, int mode);		// parse unit			(mode: script/unit)
 static astn stmt(ccState, int mode);		// parse statement		(mode: enable decl)
 //~ astn decl(ccState, int mode);		// parse declaration	(mode: enable spec)
@@ -1748,7 +1759,6 @@ static astn args(ccState s, int mode) {
 	}
 	return root;
 }
-//~ static astn varg(ccState s, int mode) ; // varargs: int min(int v1, int rest...)
 
 /** read a list of statements.
  * @param mode: raise error if (decl / stmt) found
@@ -2007,10 +2017,20 @@ static astn stmt(ccState s, int mode) {
 
 	else if ((ast = decl(s, TYPE_any))) {	// declaration
 		astn tmp = newnode(s, STMT_do);
+		symn ref = ast->id.link;
 		tmp->file = ast->file;
 		tmp->line = ast->line;
 		tmp->type = ast->type;
 		tmp->stmt.stmt = ast;
+
+		// constant variables are static
+		if (ref->cnst && ref->kind == TYPE_ref) {
+			if (!ref->init) {
+				error(s->s, ref->file, ref->line, "uninitialized constant `%-T`", ref);
+			}
+			//~ ref->kind = TYPE_def;
+			ref->stat = 1;
+		}
 
 		if (mode)
 			error(s->s, ast->file, ast->line, "unexpected declaration %+k", ast);
@@ -2024,8 +2044,17 @@ static astn stmt(ccState s, int mode) {
 		tmp->line = ast->line;
 		tmp->type = type_vid;
 		tmp->stmt.stmt = ast;
-		ast = tmp;
 		skiptok(s, STMT_do, 1);
+		switch (ast->kind) {
+			default:
+				warn(s->s, 1, ast->file, ast->line, "statement expression expected");
+				break;
+
+			case OPER_fnc:
+			case ASGN_set:
+				break;
+		}
+		ast = tmp;
 	}
 
 	else if ((ast = peek(s))) {
@@ -2352,19 +2381,7 @@ astn decl(ccState s, int Rmode) {
 			}
 		}
 
-		if (tag && test(s, ASGN_set)) {	// simple constant
-			//~ HACK: declare as a variable to be assignable, then revert to def.
-			symn tmp = declare(s, TYPE_ref, tag, base);
-			tmp->stat = tmp->cnst = 1;
-			redefine(s, tmp);
-
-			if (!decl_init(s, tmp)) {
-				error(s->s, tmp->file, tmp->line, "constant expected");
-			}
-			skiptok(s, STMT_do, 1);
-			tmp->kind = TYPE_def;
-		}
-		else if (skip(s, STMT_beg)) {	// constant list
+		if (skip(s, STMT_beg)) {	// constant list
 			int enuminc = base && (base->cast == TYPE_i32 || base->cast == TYPE_i64);
 			int64_t lastval = -1;
 
@@ -2415,6 +2432,18 @@ astn decl(ccState s, int Rmode) {
 				def->args = leave(s, def, 1);
 			}
 		}
+		/*else if (tag && test(s, ASGN_set)) {	// simple constant: enum x:int = 9;
+			//~ HACK: declare as a variable to be assignable, then revert to def.
+			symn tmp = declare(s, TYPE_ref, tag, base);
+			tmp->stat = tmp->cnst = 1;
+			redefine(s, tmp);
+
+			if (!decl_init(s, tmp)) {
+				error(s->s, tmp->file, tmp->line, "constant expected");
+			}
+			skiptok(s, STMT_do, 1);
+			tmp->kind = TYPE_def;
+		}*/
 		else {
 			skiptok(s, STMT_do, 1);
 		}
@@ -2434,7 +2463,7 @@ astn decl(ccState s, int Rmode) {
 			tag->line = s->line;
 		}
 
-		if (skip(s, PNCT_cln)) {			// packing or inheritance
+		if (skip(s, PNCT_cln)) {			// basetype or packing
 			if ((tok = expr(s, TYPE_def))) {
 				if (tok->kind == TYPE_int) {
 
@@ -2474,6 +2503,7 @@ astn decl(ccState s, int Rmode) {
 				}
 				/*else if (istype(tok)) {
 					base = linkOf(tok);
+					pack = base->pack;
 				}// */
 				else {
 					error(s->s, s->file, s->line, "alignment must be an integer constant");
@@ -2490,6 +2520,8 @@ astn decl(ccState s, int Rmode) {
 			redefine(s, def);
 
 			enter(s, tag);
+
+			//~ installex(s, "class", ATTR_stat | ATTR_const | TYPE_def, 0, type_ptr, lnknode(s, def));
 			while (!skip(s, STMT_end)) {
 				trloop("%k", peek(s));
 				if (!peek(s)) {
@@ -2497,49 +2529,21 @@ astn decl(ccState s, int Rmode) {
 					return NULL;
 				}
 
-				// TODO: read: decl, then check if ok
-				if (0 && test(s, TYPE_rec)) {		// nested structs
-					decl(s, 0);
-					continue;
-				}
-				else if (test(s, TYPE_def)) {		// define ...
-					decl(s, 0);
-					continue;
-				}
-				else if (Attr == ATTR_stat) {		// static struct
-					if (decl(s, 0)) {
-						if (skip(s, STMT_do)) {
+				if ((tok = decl(s, 0))) {
+					symn ref = tok->id.link;
+					if (Attr == ATTR_stat) {
+						ref->stat = 1;
+					}
+					if (!ref->stat) {
+						if (ref->init) {
+							error(s->s, ref->file, ref->line, "non static member `%-T` can not be initialized", ref);
 						}
 					}
-				}
-				else {
-
-					int attr = Attr | qual(s, ATTR_const | ATTR_stat);
-
-					astn tag = decl_var(s, decl_NoDefs | decl_NoInit);
-
-					if (tag) {
-						symn ref = tag->id.link;
-
-						// static members can be initialized
-						if ((attr & ATTR_stat) && test(s, ASGN_set)) {
-							if (!decl_init(s, ref)) {
-								trace("FixMe");
-								return 0;
-							}
+					else {
+						if (ref->cnst && !ref->init) {
+							error(s->s, ref->file, ref->line, "uninitialized constant `%-T`", ref);
 						}
-
-						if (attr & ATTR_const)
-							ref->cnst = 1;
-
-						if (attr & ATTR_stat)
-							ref->stat = 1;
-
 					}
-
-					if (!skiptok(s, STMT_do, 1))
-						break;
-
 				}
 			}
 
@@ -2767,7 +2771,7 @@ astn decl(ccState s, int Rmode) {
 
 		if (Attr & ATTR_const) {
 			// constant variables are also static
-			ref->cnst = ref->stat = 1;
+			ref->cnst = 1;
 		}
 
 		if (Attr & ATTR_stat) {
