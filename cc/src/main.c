@@ -295,9 +295,9 @@ int reglibs(state rt, char *stdlib) {
 
 	err = err || install_stdc(rt, stdlib, wl);
 	//~ enter(rt->cc, NULL);
-		libcall(rt, b64shl, 0, "int64 Shl(int64 Value, int Count);");
-		libcall(rt, b64shr, 0, "int64 Shr(int64 Value, int Count);");
-		libcall(rt, b64sar, 0, "int64 Sar(int64 Value, int Count);");
+		libcall(rt, b64shl, "int64 Shl(int64 Value, int Count);");
+		libcall(rt, b64shr, "int64 Shr(int64 Value, int Count);");
+		libcall(rt, b64sar, "int64 Sar(int64 Value, int Count);");
 	//~ extend(type_i64, leave(rt->cc, type_i64, 1));
 	//~ err = err || install_bits(s);
 
@@ -399,7 +399,7 @@ static int importLib(state rt, const char *path, const char *init) {
 static int printvars = 0;
 static int dbgCon(state, int pu, void *ip, long* bp, int ss);
 void vm_fputval(state, FILE *fout, symn var, stkval* ref, int flgs);
-static int libCallExitDebug(state rt) {
+static int libCallHaltDebug(state rt) {
 	symn arg = rt->libc->args;
 	int argc = (char*)rt->retv - (char*)rt->argv;
 
@@ -498,7 +498,6 @@ int program(int argc, char *argv[]) {
 		int level = -1, argi;
 		int warn = wl;
 		int opti = ol;
-		//~ int outc = 0;			// output
 
 		int gen_code = 1;	// cgen: true/false
 		int run_code = 0;	// exec: true/false
@@ -509,15 +508,7 @@ int program(int argc, char *argv[]) {
 		char *srcf = 0;			// source
 		char *logf = 0;			// logger
 		char *outf = 0;			// output
-		int (*onExit)(state) = NULL;	// print variables and values on exit
-
-		/*enum {
-			gen_code = 0x0010,
-			out_tags = 0x0001,	// tags
-			out_tree = 0x0002,	// walk
-			out_dasm = 0x0013,	// dasm
-			run_code = 0x0014,	// exec
-		};*/
+		int (*onHalt)(state) = NULL;	// print variables and values on exit
 
 		// no std lib
 		if (cmd[1] == 'C')
@@ -605,7 +596,7 @@ int program(int argc, char *argv[]) {
 				char *str = arg + 2;
 
 				if (*str == 'v') {
-					onExit = libCallExitDebug;
+					onHalt = libCallHaltDebug;
 					str += 1;
 				}
 				if (*str == 'd' || *str == 'D') {
@@ -662,7 +653,7 @@ int program(int argc, char *argv[]) {
 		}
 
 		// initialize compiler: type sysyem, emit, ...
-		if (!ccInit(rt, creg_def, onExit)) {
+		if (!ccInit(rt, creg_def, onHalt)) {
 			error(rt, NULL, 0, "error registering types");
 			logfile(rt, NULL);
 			return -6;
@@ -712,6 +703,7 @@ int program(int argc, char *argv[]) {
 		if (out_dasm >= 0) {
 			dump(rt, dump_asm | (out_dasm & 0x0ff), NULL, "\ndasm:\n");
 		}
+		logFILE(rt, stderr);
 		if (run_code) {
 			vmExec(rt, dbg);
 		}
@@ -767,8 +759,8 @@ static int dbgCon(state rt, int pu, void *ip, long* bp, int ss) {
 		fputfmt(stdout, "\tsp(%d): {i32(%d), i64(%D), f32(%g), f64(%G), vec4f(%g, %g, %g, %g), vec2d(%G, %G)}\n", ss, sp->i4, sp->f4, sp->i8, sp->f8, v4->x, v4->y, v4->z, v4->w, v2->x, v2->y);
 	}
 	//~ fputfmt(stdout, ">exec:[sp%02d]@%9.*A\n", ss, IP, ip);
-	//~ fputfmt(stdout, ">exec:[sp%02d:%008x]@%9.*A\n", ss, bp + ss, IP, ip);
-	fputfmt(stdout, ">exec:[sp%02d:%008x]@", ss, bp + ss, IP, ip);
+	//~ fputfmt(stdout, ">exec:[sp%02d:%08x]@%9.*A\n", ss, bp + ss, IP, ip);
+	fputfmt(stdout, ">exec:[sp%02d:%08x]@", ss, bp[0], IP, ip);
 	fputopc(stdout, ip, 0x09, IP, rt);
 	fputfmt(stdout, "\n");
 

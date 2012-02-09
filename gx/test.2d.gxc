@@ -1,4 +1,5 @@
-define test = 7;
+// 2d
+define test = 1;
 enum Window {
 	draw = RenderMode.swap_buff;
 
@@ -427,7 +428,7 @@ static if (test == 7) {		// lens effect
 gxSurf bgImg = gxSurf("media/images/Earth.jpg");
 
 define magFactor = 7.4;
-define magRadius = 62;
+define magRadius = 162;
 
 int magx = Window.resx / 2;
 int magy = Window.resy / 2;
@@ -593,8 +594,8 @@ for (int i = 0; i < stars.length; i += 1) {
 static if (test == 9) {		// game of life
 
 gxSurf pop55 = gxSurf("media/images/gol.bmp");
-//~ int w = width(pop55);
-//~ int h = height(pop55);
+int w = width(pop55);
+int h = height(pop55);
 //~ gxSurf next = gxSurf(w, h);
 
 void nextGeneration(gxSurf population) {
@@ -634,7 +635,7 @@ void nextGeneration(gxSurf population) {
 void drawCB() {
 	static int gen = 0;
 	if (reDraw > 3) {
-		bmpWrite(pop55, "gol2.bmp");
+		//~ bmpWrite(pop55, "gol2.bmp");
 		reDraw = 0;
 	}
 
@@ -645,18 +646,23 @@ void drawCB() {
 		gen += 1;
 	}
 	zoomSurf(offScreen, null, pop55, null, 0);
-	//~ /*
 	if (1) {
 		uint8 txt[512];
-		string str = emit(string, ref(txt));
+		string str = emit(string, byRef(txt));
 		itoa(str, gen, 10, 1, "generation: ");
 		drawText(offScreen, 0, 0, str, -1);
-		//~ drawText(offScreen, 0, 0, "alma a fa alatt nyari piros alma", -1);
-	}// */
+	}
 	Gui.Repaint();
 }
 
 void mouseCB(int btn, int x, int y) {
+	if (btn == 1) {
+		int X = x * w / Window.resx;
+		int Y = y * h / Window.resy;
+		setPixel(pop55, X, Y, -1);
+		btn = 0;
+	}
+
 	if (btn) {
 		reDraw = btn;
 	}

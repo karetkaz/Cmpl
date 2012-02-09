@@ -1,6 +1,6 @@
 // Procedural drawing
 enum Window {
-	draw = RenderMode.swap_buff;
+	//~ draw = RenderMode.swap_buff;
 	resx = 512/1;
 	resy = 512/1;
 }

@@ -269,22 +269,16 @@ static int bits_call(state rt, int function) {
 }
 //}#endregion */
 
-enum miscCalls {
+static symn miscOpExit = NULL;
+static symn miscOpRand32 = NULL;
+static symn miscOpTime32 = NULL;
+static symn miscOpClock32 = NULL;
+static symn miscOpClocksPS = NULL;
+static symn timeOpProc64 = NULL;
+static symn timeOpClck64 = NULL;
+static symn miscOpPutStr = NULL;
+static symn miscOpPutFmt = NULL;
 
-	miscOpExit,			// system.exit
-	miscOpRand32,
-	miscOpTime32,
-	miscOpClock32,
-	miscOpClocksPS,
-
-	timeOpProc64,		// spent in cpu
-	timeOpClck64,		// spent 
-
-	miscOpPutStr,
-	miscOpPutFmt,
-
-	//~ miscOpMemMgr,
-};
 
 static inline int64_t clockCpu() {
 	uint64_t now = clock();
@@ -301,76 +295,66 @@ static inline int64_t clockNow() {
 static inline int64_t clockNow() {
 	int64_t now;
 	struct timeval tv_now;
-	//~ static int64_t progbeg = 0;
 	gettimeofday(&tv_now, NULL);
 
 	now = ((uint64_t)(tv_now.tv_sec)) << 32;
 	now |= ((uint64_t)tv_now.tv_usec << 32) / 1000000;
 
-	//~ if (progbeg == 0) {
-		//~ progbeg = now - timeproc();
-	//~ }
-
-	return now;// - progbeg;
+	return now;
 }
 #endif
 
 static int miscCall(state rt) {
-	switch (rt->fdata) {
-		default: return -1;
-
-		case miscOpExit:
-			exit(popi32(rt));
-			break;
-
-		case miscOpRand32: {
-			static int initialized = 0;
-			int result;
-			if (!initialized) {
-				srand(time(NULL));
-				initialized = 1;
-			}
-			result = rand() * rand();	// if it gives a 16 bit int
-			setret(rt, int32_t, result & 0x7fffffff);
-		} break;
-		case miscOpTime32: {
-			setret(rt, int32_t, time(NULL));
-		} break;
-		case miscOpClock32: {
-			setret(rt, int32_t, clock());
-		} break;
-		case miscOpClocksPS: {
-			float64_t ticks = popi32(rt);
-			setret(rt, float64_t, ticks / CLOCKS_PER_SEC);
-		} break;
-
-		case timeOpProc64: {
-			setret(rt, int64_t, clockCpu());
-		} break;
-		case timeOpClck64: {
-			setret(rt, int64_t, clockNow());
-		} break;
-
-		case miscOpPutStr: {
-			// TODO: check bounds
-			fputfmt(stdout, "%s", popref(rt));
-		} break;
-		case miscOpPutFmt: {
-			char *fmt = popref(rt);
-			int64_t arg = popi64(rt);
-			fputfmt(stdout, fmt, arg);
-		} break;
-
-		/*case miscOpMemMgr: {
-			void *old = popref(rt);
-			int size = popi32(rt);
-			void *res = rtAlloc(rt, old, size);
-			setret(rt, int32_t, vmOffset(rt, res));
-			//~ debug("memmgr(%06x, %d): %06x", vmOffset(s, old), size, vmOffset(s, res));
-		} break;// */
+	if (rt->libc == miscOpExit) {
+		exit(popi32(rt));
+	}
+	if (rt->libc == miscOpRand32) {
+		static int initialized = 0;
+		int result;
+		if (!initialized) {
+			srand(time(NULL));
+			initialized = 1;
+		}
+		result = rand() * rand();	// if it gives a 16 bit int
+		setret(rt, int32_t, result & 0x7fffffff);
+		return 0;
+	}
+	if (rt->libc == miscOpTime32) {
+		setret(rt, int32_t, time(NULL));
+		return 0;
+	}
+	if (rt->libc == miscOpClock32) {
+		setret(rt, int32_t, clock());
+		return 0;
+	}
+	if (rt->libc == miscOpClocksPS) {
+		float64_t ticks = popi32(rt);
+		setret(rt, float64_t, ticks / CLOCKS_PER_SEC);
+		return 0;
 	}
 
-	return 0;
+	if (rt->libc == timeOpProc64) {
+		setret(rt, int64_t, clockCpu());
+		return 0;
+	}
+	if (rt->libc == timeOpClck64) {
+		setret(rt, int64_t, clockNow());
+		return 0;
+	}
+
+	if (rt->libc == miscOpPutStr) {
+		// TODO: check bounds
+		fputfmt(stdout, "%s", popref(rt));
+		return 0;
+	}
+	if (rt->libc == miscOpPutFmt) {
+		char *fmt = popref(rt);
+		int64_t arg = popi64(rt);
+		fputfmt(stdout, fmt, arg);
+		return 0;
+	}
+
+	return -1;
 }
 
 int install_stdc(state rt, char* file, int level) {
@@ -378,19 +362,19 @@ int install_stdc(state rt, char* file, int level) {
 	int i, err = 0;
 	struct {
 		int (*fun)(state);
-		int n;
+		symn *fsym;
 		char *def;
 	}
 	math[] = {
 		//~ {f64abs, 0, "float64 abs(float64 x);"},
-		{f64sin, 0, "float64 sin(float64 x);"},
-		{f64cos, 0, "float64 cos(float64 x);"},
-		{f64tan, 0, "float64 tan(float64 x);"},
-		{f64log, 0, "float64 log(float64 x);"},
-		{f64exp, 0, "float64 exp(float64 x);"},
-		{f64pow, 0, "float64 pow(float64 x, float64 y);"},
-		{f64sqrt, 0, "float64 sqrt(float64 x);"},
-		{f64atan2, 0, "float64 atan2(float64 x, float64 y);"},
+		{f64sin,   NULL, "float64 sin(float64 x);"},
+		{f64cos,   NULL, "float64 cos(float64 x);"},
+		{f64tan,   NULL, "float64 tan(float64 x);"},
+		{f64log,   NULL, "float64 log(float64 x);"},
+		{f64exp,   NULL, "float64 exp(float64 x);"},
+		{f64pow,   NULL, "float64 pow(float64 x, float64 y);"},
+		{f64sqrt,  NULL, "float64 sqrt(float64 x);"},
+		{f64atan2, NULL, "float64 atan2(float64 x, float64 y);"},
 
 		//~ {f64lg2, "float64 log2(float64 x);"},
 		//~ {f64xp2, "float64 exp2(float64 x);"},
@@ -423,25 +407,19 @@ int install_stdc(state rt, char* file, int level) {
 	misc[] = {
 		//{ IO/MEM/EXIT
 
-		//~ {miscCall, miscOpArgc,			"int32 argc();"},
-		//~ {miscCall, miscOpArgv,			"string arg(int arg);"},
+		//~ {miscCall, &miscOpArgc,			"int32 argc();"},
+		//~ {miscCall, &miscOpArgv,			"string arg(int arg);"},
 
-		{miscCall, miscOpRand32,		"int32 rand();"},
-		//~ {miscCall, timeOpTime32,		"int32 time();"},
-		//~ {miscCall, timeOpClock32,		"int32 clock();"},
-		//~ {miscCall, timeOpClocksPS,		"float64 clocksPerSec(int32 ticks);"},
+		{miscCall, &miscOpRand32,		"int32 rand();"},
+		//~ {miscCall, &timeOpTime32,		"int32 time();"},
+		//~ {miscCall, &timeOpClock32,		"int32 clock();"},
+		//~ {miscCall, &timeOpClocksPS,		"float64 clocksPerSec(int32 ticks);"},
 
-		{miscCall, timeOpClck64,		"int64 timeNow();"},
-		{miscCall, timeOpProc64,		"int64 timeCpu();"},
+		{miscCall, &timeOpClck64,		"int64 timeNow();"},
+		{miscCall, &timeOpProc64,		"int64 timeCpu();"},
 
-		{miscCall, miscOpPutStr,		"void print(string val);"},
-		{miscCall, miscOpPutFmt,		"void print(string fmt, int64 val);"},
-		{miscCall, miscOpPutFmt,		"void print(string fmt, float64 val);"},
-
-		//~ {miscCall, miscOpMemMgr,		"pointer realloc(pointer ptr, int32 size);"},		// reallocate, allocate, free
-		//~ {NULL, miscOpMemMgr,		"define alloc(int32 size) = realloc(null, size);"},
-		//~ {NULL, miscOpMemMgr,		"define free(pointer ptr) = realloc(ptr, 0);"},
-
+		{miscCall, &miscOpPutStr,		"void print(string val);"},
+		{miscCall, &miscOpPutFmt,		"void print(string fmt, int64 val);"},
 		//}
 
 		// TODO: include some of the compiler functions
@@ -449,8 +427,12 @@ int install_stdc(state rt, char* file, int level) {
 
 	};
 	for (i = 0; i < sizeof(math) / sizeof(*math); i += 1) {
-		if (!libcall(rt, math[i].fun, math[i].n, math[i].def)) {
+		symn libc = libcall(rt, math[i].fun, math[i].def);
+		if (libc == NULL) {
 			return -1;
+		}
+		if (math[i].fsym != NULL) {
+			*math[i].fsym = libc;
 		}
 	}
 	/*if ((nsp = ccBegin(rt, "bits"))) {
@@ -462,8 +444,12 @@ int install_stdc(state rt, char* file, int level) {
 		ccEnd(rt, nsp);
 	}*/
 	for (i = 0; i < sizeof(misc) / sizeof(*misc); i += 1) {
-		if (!libcall(rt, misc[i].fun, misc[i].n, misc[i].def)) {
+		symn libc = libcall(rt, misc[i].fun, misc[i].def);
+		if (libc == NULL) {
 			return -1;
+		}
+		if (misc[i].fsym != NULL) {
+			*misc[i].fsym = libc;
 		}
 	}
 
@@ -472,7 +458,7 @@ int install_stdc(state rt, char* file, int level) {
 		// 'err = err || !libcall...' <=> 'if (!err) err = !libcall...'
 		// will skip forward libcalls if an error ocurred
 
-		err = err || !libcall(rt, miscCall, miscOpExit, "void Exit(int Code);");
+		err = err || !(miscOpExit = libcall(rt, miscCall, "void Exit(int Code);"));
 		ccEnd(rt, nsp);
 	}
 

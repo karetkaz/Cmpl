@@ -37,7 +37,7 @@ struct state {
 	char* argv;		// first argument
 
 	//~ TODO("fdata should be void*")
-	int fdata;		// function data passed to libcall
+	//~ int fdata;		// function data passed to libcall
 	void* udata;		// user data for execution passed to vmExec
 
 	ccState cc;		// compiler enviroment
@@ -85,8 +85,6 @@ struct state {
 	void* retv;		// return value
 	char* argv;		// first argument
 
-	//~ TODO("fdata should be void*")
-	int fdata;		// function data passed to libcall
 	void* udata;		// user data for execution passed to vmExec
 
 }*/
@@ -145,7 +143,6 @@ typedef struct stateApi {
 	/** Add a libcall (native function) to the runtime.
 	 * @param the runtime state.
 	 * @param libc: the c function.
-	 * @param fdata: function data, accessible in the function as rt->fdata
 	 * @param proto: prototype of the function, do not forget the ending ';'
 	 * @return the symbol to the definition, null on error.
 	 * @usage:
@@ -158,7 +155,7 @@ typedef struct stateApi {
 			error...
 		}
 	*/
-	symn (*libcall)(state, int libc(state), int fdata, const char* proto);
+	symn (*libcall)(state, int libc(state), const char* proto);
 
 	/** Add a type.
 	 * @param the runtime state.

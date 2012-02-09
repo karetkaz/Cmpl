@@ -10,45 +10,66 @@
 //~ #open src/parse.c
 //~ #open src/main.c
 
+/*
+int count = 19;
+define Array(typename type, int32 ^n) = emit(struct, byRef(memmgr(null, type.size * n)), i32(n));
+
+int32 arr2[] = Array(int32, count);
+
+//~ for (int i = 0; i < arr2.length; i += 1) {arr2[i] = i + 10;}
+
+//~ int size = sizeof(arr2);
+//~ */
+
+/* typename
+struct ss {
+	int32 x;
+	int32 y;
+	struct ss {
+		int64 x;
+		int64 y;
+	}
+}
+
+//~ ss A = ss(1, 2);
+//~ ss.ss a = ss.ss(1, 2);
+//~ ss.ss b = emit(ss.ss, f64(1), f64(2));
+
+int n1 = sizeof(ss.ss);
+
+//~ int size = sizeof(int64);
+
+//~ */
+
 /* alloc / realloc / free
-pointer p1;
-pointer p2;
-pointer p3;
-pointer p4;
-realloc(null, 0);
-p1 = realloc(null, 160);
-p2 = realloc(null, 160);
-p3 = realloc(null, 160);
-realloc(null, 0);
+//~ define realloc(pointer ptr, int size) = memmgr(ptr, size);
+define malloc(int size) = memmgr(null, size);
+define free(pointer ptr) = memmgr(ptr, 0);
+
+pointer p1 = null;
+pointer p2 = null;
+pointer p3 = null;
+pointer p4 = null;
+
+memmgr(null, 0);
+p1 = malloc(160);
+p2 = malloc(160);
+p3 = malloc(160);
+memmgr(null, 0);
 
 if (true) {
-	p3 = realloc(p3, 0);
-	p2 = realloc(p2, 0);
-	p1 = realloc(p1, 0);
+	p3 = free(p3);
+	p2 = free(p2);
+	p1 = free(p1);
 }
 else {
-	p1 = realloc(p1, 0);
-	p2 = realloc(p2, 0);
-	p3 = realloc(p3, 0);
+	p1 = free(p1);
+	p2 = free(p2);
+	p3 = free(p3);
 }
-
-//~ realloc(null, 100);
-//~ realloc(null, 200);
-//~ realloc(null, 300);
 
 //~ realloc(null, 0);
 //~ */
-
-//~ ./main -C -i./lbit.dll -O2 -xd test.cvx
-//~ int i = bitops.btc(0x1ff);
-/*void func1() {
-
-	const inertial_pan = 50;
-	void func1() {
-		if (inertial_pan) {
-		}
-	}
-}// */
 
 /* random floats
 float32 frand() {
@@ -99,7 +120,7 @@ int x = m1.a;
 // 3.X int maximum(int arr...)
 
 int arr2[2] = 1, 2;
-int arr3[2, 2] = 1, 2, 3, 4;
+//~ int16 arr3[2, 2] = 1, 2, 3, 4;
 //~ int arr3[] = arr2;
 //~ /+
 
@@ -207,32 +228,37 @@ string sss[3] = x, "a2", "a3";
 
 /* static and nonstatic members.
 struct alma {
-	static int a0 = 9;
+	//~ static int a0 = 9;
 	int a1;
 	int a2;
 	int a3;
 }
 
-alma a;// = alma(12, 13, 14);
-alma.a0 = 99;
-//~ a = alma(a.a1, 0);
-int alma_a0 = alma.a0;
+//~ alma &alma_a1 = null;
+//~ int offs = emit(int, byRef(alma_a1.a3));
+//~ int offs = emit(int, ref(alma(null).a2));
 
-a.a0 = 98;		// error: member accessed through an instance reference
-alma.a1 = 99;		// error: undefined 
-//~ alma &a2 = null;
-//~ int offsa2 = emit(int, ref(a2.a2));
-//~ int offsa2 = emit(int, ref(alma(null).a2));
+//~ pointer x = null;
+//~ alma a2 = alma(x);
+
+//~ alma a = alma(12, 13, 14);
+//~ alma.a0 = 99;
+//~ a = alma(a.a1, 0);
+
+//~ a.a0 = 98;			// warning: member is accessed through an instance reference
+//~ alma.a1 = 99;		// error: object reference is required to access the member `alma.a1`
+//~ alma &a2 = a;
+//~ int alma_a0 = alma.a0;
 // */
 
 /* xrgb
-struct:1 xrgb {
+struct xrgb:1 {
 	uint8 b;
 	uint8 g;
 	uint8 r;
 	uint8 x;
 }
-struct:0 xrgbi32 {
+struct xrgbi32:0 {
 	xrgb rgb;
 	int32 val;
 }
@@ -411,25 +437,38 @@ for (int i = 1; tmp > eps; i += 1) {
 }
 // */
 
-/* iterating
+//~ /* iterating
 
-/+
+void printIT(int ri) {
+	print("iterator {%d}\n", int64(ri));
+}
+
+//~ /+
 struct array_iterator {
-	int arr[];
 	int pos;
-	int max;	// arr.length
+	//~ int max;
+	int arr[];
 }
-array_iterator iterator(int a[]) {
-	result.pos = 0;
-	result.arr = a;
-	result.max = a.length;
+
+array_iterator iterator1(int a[]) {
+	result = array_iterator(0, a);
 }
+define iterator(int a[]) = array_iterator(0, a);
+
+
 bool next(array_iterator &it, int &val) {
-	if (result = it.pos < it.max) {
-		val = it.arr[it.pos];
+	if (result = it.pos < it.arr.length) {
+		//~ val = it.arr[it.pos];
+		val = it.pos;
 		it.pos += 1;
 	}
-}// +/
+}
+
+int a[2] = 1, 2;
+array_iterator it = iterator(a);
+for (int pos : a) {
+	printIT(pos);
+}
 
 /+
 define iterator(file &f) = emit(file, ref(f));
@@ -438,6 +477,7 @@ bool next(file &it, int &chr) {
 	result = chr != -1;
 }// +/
 
+/+
 struct range {
 	int min;
 	int max;
@@ -452,41 +492,68 @@ struct range_iterator {
 
 define iterator(range ^r) = range_iterator(r.min, r.max, r.exclusive);	// start at min, and end at max
 
-void println(range_iterator ri) {
+void printIT(range_iterator ri) {
 	print("iterator {");
-	print("pos: "); print(ri.pos);
-	print(", max: "); print(ri.max);
-	print(", excl: "); print(ri.exclusive);
+	print("pos: %d", int64(ri.pos));
+	print(", max: %d", int64(ri.max));
+	//~ print(", excl: %d", int64(ri.exclusive));
 	print("}\n");
 }
 
 bool next(range_iterator &it, int &val) {
-	if (result = it.pos - it.exclusive < it.max) {
+	result = it.pos - it.exclusive < it.max;
+	//~ result = it.pos < it.max;
+	if (result) {
 		val = it.pos;
 		it.pos += 1;
 	}
 }
 bool next(range_iterator &it, range_iterator &val) {
-	if (result = it.pos - it.exclusive < it.max) {
+	result = it.pos - it.exclusive < it.max;
+	//~ result = it.pos < it.max;
+	if (result) {
 		val = it;
 		it.pos += 1;
 	}
 }
 
-for (range_iterator a : range(10, 14, true)) {
-	println(a);
-}
+//~ /+
+for (range_iterator it : range(10, 13, true)) {
+	printIT(it);
+}// +/
+
+//~ /+
+for (int it : range(10, 13, true)) {
+	printIT(it);
+}// +/
+
+/+
+for (range_iterator it = iterator(range(10, 13, true)); next(it, it); ) {
+	printIT(it);
+}// +/
+//~ +/
 
 //~ */
+//~ main.exe -C -O-2 -sf0 -o ss1.cxx -xd test.cvx
+//~ double val = 9;//emit(float64, i64(0x7ff8000000000000));
+//~ print("0b%064B\n", val);
+//~ print("0x%016X\n", val);
 
-//~ double val = emit(float64, i64(0x7ff8000000000000));
-//~ print("0b%064B\n", emit(int64, f64(val)));
-//~ print("0x%016X\n", emit(int64, f64(val)));
+//~ println(int64(val));
+//~ println(float64(val));
 //~ double f64_nan = emit(float64, i64(0b0111111111111000000000000000000000000000000000000000000000000000));
 //~ double f64_inf = emit(float64, i64(0b0111111111110000000000000000000000000000000000000000000000000000));
 //~ double f64_one = emit(float64, i64(0b0011111111110000000000000000000000000000000000000000000000000000));
 
-/*enum: vec4f {
+/*
+/+struct vec4f {
+	float32 x;
+	float32 y;
+	float32 z;
+	float32 w;
+}// +/
+
+enum: vec4f {
 	O = vec4f(0, 0, 0, 0);
 	X = vec4f(1, 0, 0, 0);
 	Y = vec4f(0, 1, 0, 0);
@@ -541,7 +608,8 @@ population pop;
 //~ */
 
 /+ bugs:
-//~ static int8 x[4] = 0, 1, 2, 3;	// this should be left to right eval, and assigned after each value.
+int s = sizeof(pointer);		// pointer casts to ref
+int s = sizeof(Math);			// enum base type is not typename
 // +/
 /+ todo:
 - var type: variant, always by ref, struct variant {typename type; uint8 data[0]};
@@ -554,7 +622,35 @@ population pop;
 		c: vec4f(2,3,4,5);
 		ss: {
 			z:"alma";
-		};
+ 		};
 		f: function()
 	};
 // +/
+/+class string: char[] {
+	static format(string format, var args) {}
+	struct Builder {
+		
+	}
+	
+	prototype {
+		char charAt(int idx)					// Returns the character at the specified index.
+		//~ char charCodeAt(int idx)			// Returns a number indicating the Unicode value of the character at the given index.
+		string concat(string other)				// Combines the text of two strings and returns a new string.
+		int indexOf(char chr)					// Returns the index within the calling String object of the first occurrence of the specified value, or -1 if not found.
+		int lastIndexOf(char chr)				// Returns the index within the calling String object of the last occurrence of the specified value, or -1 if not found.
+		int localeCompare(string other)			// Returns a number indicating whether a reference string comes before or after or is the same as the given string in sort order.
+		Match[] match(regexp re)				// Used to match a regular expression against a string.
+		replace()								// Used to find a match between a regular expression and a string, and to replace the matched substring with a new substring.
+		search()								// Executes the search for a match between a regular expression and a specified string.
+		slice()									// Extracts a section of a string and returns a new string.
+		string[] split(string sep)				// Splits a String object into an array of strings by separating the string into substrings.
+		string substr(int offset, int length)	// Returns the characters in a string beginning at the specified location through the specified number of characters.
+		string substring(int start, int end)	// Returns the characters in a string between two indexes into the string.
+		string toLocaleLowerCase()				// The characters within a string are converted to lower case while respecting the current locale.
+		string toLocaleUpperCase()				// The characters within a string are converted to upper case while respecting the current locale.
+		string toLowerCase()					// Returns the calling string value converted to lower case.
+		string toUpperCase()					// Returns the calling string value converted to uppercase.
+		//~ toString()							// Returns a string representing the specified object.
+		//~ valueOf()							Returns the primitive value of the specified object.
+	}
+}// +/

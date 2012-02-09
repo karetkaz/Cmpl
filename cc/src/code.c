@@ -124,7 +124,7 @@ static symn installref(state rt, const char *prot, astn *argv) {
  * @arg libc: the function to call.
  * @arg proto: prototype of function.
  */
-symn libcall(state rt, int libc(state), int pos, const char* proto) {
+symn libcall(state rt, int libc(state), const char* proto) {
 	symn arg, sym = NULL;
 	int stdiff = 0;
 	astn args = NULL;
@@ -138,7 +138,7 @@ symn libcall(state rt, int libc(state), int pos, const char* proto) {
 	if ((sym = installref(rt, proto, &args))) {
 		struct libc *lc = NULL;
 		symn link = newdefn(rt->cc, EMIT_opc);
-		astn libcinit;// = newnode(s->cc, TYPE_ref);
+		astn libcinit;
 		int libcpos = rt->cc->libc ? rt->cc->libc->pos + 1 : 0;
 
 		dieif(rt->cc->_end - rt->cc->_beg < sizeof(struct libc), "FixMe");
@@ -183,7 +183,7 @@ symn libcall(state rt, int libc(state), int pos, const char* proto) {
 
 		sym->kind = TYPE_def;
 		sym->init = libcinit;
-		sym->offs = pos;
+		sym->offs = libcpos;
 
 		lc->proto = proto;
 		lc->call = libc;
@@ -209,7 +209,6 @@ symn libcall(state rt, int libc(state), int pos, const char* proto) {
 			//~ debug("FixMe: %+T(%d, %d)", arg, arg->offs, stdiff);
 			stdiff += sizeOf(arg->type);
 		}// */
-
 
 	}
 	else {
@@ -505,13 +504,13 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 	/*else if (opc == opc_spc) {
 		dieif (arg.i8 & 3, "FixMe");
 		if (arg.i8 < 0) {
-			if (-arg.i8 < max_reg * 4) {
+			if (-arg.i8 < vm_regs * 4) {
 				opc = opc_drop;
 				arg.i8 /= -4;
 			}
 		}
 		else {
-			if (+arg.i8 < max_reg * 4) {
+			if (+arg.i8 < vm_regs * 4) {
 				opc = opc_loc;
 				arg.i8 /= 4;
 			}
@@ -531,7 +530,7 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 		if (0) {}
 		else if (opc == opc_ldi1) {
 			ip = getip(rt, rt->vm.pc);
-			if (ip->opc == opc_ldsp && ((ip->rel & 3) == 0) && ((ip->rel / 4) < max_reg)) {
+			if (ip->opc == opc_ldsp && ((ip->rel & 3) == 0) && ((ip->rel / 4) < vm_regs)) {
 				arg.i4 = ip->rel / 4;
 				opc = opc_dup1;
 				rt->vm.pos = rt->vm.pc;
@@ -540,7 +539,7 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 		}
 		else if (opc == opc_ldi2) {
 			ip = getip(rt, rt->vm.pc);
-			if (ip->opc == opc_ldsp && ((ip->rel & 3) == 0) && ((ip->rel / 4) < max_reg)) {
+			if (ip->opc == opc_ldsp && ((ip->rel & 3) == 0) && ((ip->rel / 4) < vm_regs)) {
 				arg.i4 = ip->rel / 4;
 				opc = opc_dup1;
 				rt->vm.pos = rt->vm.pc;
@@ -556,7 +555,7 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 				rt->vm.pos = rt->vm.pc;
 				rt->vm.ss -= 1;
 			}
-			if (ip->opc == opc_ldsp && ((ip->rel & 3) == 0) && ((ip->rel / 4) < max_reg)) {
+			if (ip->opc == opc_ldsp && ((ip->rel & 3) == 0) && ((ip->rel / 4) < vm_regs)) {
 				arg.i4 = ip->rel / 4;
 				opc = opc_dup1;
 				rt->vm.pos = rt->vm.pc;
@@ -571,7 +570,7 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 				rt->vm.pos = rt->vm.pc;
 				rt->vm.ss -= 1;
 			}
-			if (ip->opc == opc_ldsp && ((ip->rel & 3) == 0) && ((ip->rel / 4) < max_reg)) {
+			if (ip->opc == opc_ldsp && ((ip->rel & 3) == 0) && ((ip->rel / 4) < vm_regs)) {
 				arg.i4 = ip->rel / 4;
 				opc = opc_set1;
 				rt->vm.pos = rt->vm.pc;
@@ -587,7 +586,7 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 				rt->vm.pos = rt->vm.pc;
 				rt->vm.ss -= 1;
 			}
-			if (ip->opc == opc_ldsp && ((ip->rel & 3) == 0) && ((ip->rel / 4) < max_reg)) {
+			if (ip->opc == opc_ldsp && ((ip->rel & 3) == 0) && ((ip->rel / 4) < vm_regs)) {
 				arg.i4 = ip->rel / 4;
 				opc = opc_dup2;
 				rt->vm.pos = rt->vm.pc;
@@ -602,7 +601,7 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 				rt->vm.pos = rt->vm.pc;
 				rt->vm.ss -= 1;
 			}
-			if (ip->opc == opc_ldsp && ((ip->rel & 3) == 0) && ((ip->rel / 4) < max_reg)) {
+			if (ip->opc == opc_ldsp && ((ip->rel & 3) == 0) && ((ip->rel / 4) < vm_regs)) {
 				arg.i4 = ip->rel / 4;
 				opc = opc_set2;
 				rt->vm.pos = rt->vm.pc;
@@ -612,7 +611,7 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 
 		else if (opc == opc_ldiq) {
 			ip = getip(rt, rt->vm.pc);
-			if (ip->opc == opc_ldsp && ((ip->rel & 3) == 0) && ((ip->rel / 4) <= max_reg)) {
+			if (ip->opc == opc_ldsp && ((ip->rel & 3) == 0) && ((ip->rel / 4) <= vm_regs)) {
 				arg.i4 = ip->rel / 4;
 				opc = opc_dup4;
 				rt->vm.pos = rt->vm.pc;
@@ -621,7 +620,7 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 		}
 		else if (opc == opc_stiq) {
 			ip = getip(rt, rt->vm.pc);
-			if (ip->opc == opc_ldsp && ((ip->rel & 3) == 0) && ((ip->rel / 4) <= max_reg)) {
+			if (ip->opc == opc_ldsp && ((ip->rel & 3) == 0) && ((ip->rel / 4) <= vm_regs)) {
 				arg.i4 = ip->rel / 4;
 				opc = opc_set4;
 				rt->vm.pos = rt->vm.pc;
@@ -932,27 +931,32 @@ int emitref(state rt, void* arg) {
 }
 
 int emitinc(state rt, int arg) {
-	bcde ip = getip(rt, rt->vm.pc); // get previous ip
 
-	if (arg == 0)
-		return rt->vm.pc;
+	if (rt->vm.opti > 0) {
+		bcde ip = getip(rt, rt->vm.pc);
 
-	switch (ip->opc) {
-		case opc_ldsp:
-			if (rt->vm.opti) {
+		if (arg == 0) {
+			return rt->vm.pc;
+		}
+
+		switch (ip->opc) {
+			default:
+				break;
+
+			case opc_ldsp:
 				if (arg < 0)
 					return 0;
 				ip->rel += arg;
 				return rt->vm.pc;
-			}
-			// no break
-		default:
-			return emitint(rt, opc_inc, arg);
-		//~ ldcnadd:
-			//~ if (emitint(rt, opc_ldc4, arg))
-				//~ return emitopc(rt, i32_add);
+
+			case opc_ldcr:
+				if (arg < 0)
+					return 0;
+				ip->rel += arg;
+				return rt->vm.pc;
+		}
 	}
-	return 0;
+	return emitint(rt, opc_inc, arg);
 }
 int emitidx(state rt, vmOpcode opc, int arg) {
 	stkval tmp;
@@ -1447,6 +1451,7 @@ void vm_fputval(state rt, FILE *fout, symn var, stkval* ref, int level) {
 
 			if (var != typ && !var->pfmt)
 				fputfmt(fout, "%T = ", var);
+				//~ fputfmt(fout, "%T{size:%d, offs:%06x} = ", var, var->size, var->offs);
 
 			if (var->cast == TYPE_ref || typ->cast == TYPE_ref) {		// arrays, strings, functions, references
 				if (var == null_ref) {
@@ -1570,7 +1575,8 @@ void vm_fputval(state rt, FILE *fout, symn var, stkval* ref, int level) {
 
 			fputfmt(fout, "%I", level);
 			if (var != typ)
-				fputfmt(fout, "%T: ", var);
+				fputfmt(fout, "%T = ", var);
+				//~ fputfmt(fout, "%T{size:%d, offs:%06x} = ", var, var->size, var->offs);
 
 			if (typ == type_str) {
 				ref = (stkval*)(rt->_mem + ref->u4);

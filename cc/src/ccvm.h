@@ -26,8 +26,6 @@
 #define DO_PRAGMA(x) _Pragma(#x)
 #define TODO(x) //DO_PRAGMA(message("TODO: " #x))
 
-//~ TODO("test") := _Pragma("message(\"TODO: \" \"\\\"test\\\"\")")
-
 #define pdbg(__DBG, __FILE, __LINE, msg, ...) do {fputfmt(stderr, "%s:%d: "__DBG": %s: "msg"\n", __FILE, __LINE, __FUNCTION__, ##__VA_ARGS__); fflush(stdout); fflush(stderr);} while(0)
 
 #if DEBUGGING > 1
@@ -55,21 +53,8 @@
 #define dieif(__EXP, msg, ...) do {if (__EXP) fatal(msg, ##__VA_ARGS__);} while(0)
 #define logif(__EXP, msg, ...) do {if (__EXP) prerr(msg, ##__VA_ARGS__);} while(0)
 
-/*#ifdef __gcc__
-#if DEBUGGING > 1
-#define debug(msg...) pdbg("debug", __FILE__, __LINE__, msg)
-#define trace(msg...) pdbg("trace", __FILE__, __LINE__, msg)
-#define PERR(__ENV, __LEVEL, __FILE, __LINE, msg...) do { perr(__ENV, __LEVEL, __FILE, __LINE, msg); debug(msg); } while(0)
-#else // catch the position error raised
-#define debug(msg...)
-#define trace(msg...)
-#define PERR(__ENV, __LEVEL, __FILE, __LINE, msg...) do { perr(__ENV, __LEVEL, __FILE, __LINE, msg); debug(msg); } while(0)
-#endif
-#define error(__ENV, __FILE, __LINE, msg...) PERR(__ENV, -1, __FILE, __LINE, msg)
-#define warn(__ENV, __LEVEL, __FILE, __LINE, msg...) PERR(__ENV, __LEVEL, __FILE, __LINE, msg)
-#define info(__ENV, __FILE, __LINE, msg...) PERR(__ENV, 0, __FILE, __LINE, msg)
-#endif
-*/
+//~ #define offsetof(__TYPE, __FIELD) ((size_t) &((__TYPE*)0)->__FIELD)
+//~ #define lengthof(__ARRAY) (sizeof(__ARRAY) / sizeof(*(__ARRAY)))
 
 // Symbols - CC(tokens)
 typedef enum {
@@ -134,10 +119,7 @@ typedef enum {
 	opc_ldi,		// argument is the size
 	opc_sti,		// argument is the size
 
-
 	markIP,
-
-	//~ opc_line,		// line info
 
 	b32_bit_and = 0 << 6,
 	b32_bit_shl = 1 << 6,
@@ -146,8 +128,9 @@ typedef enum {
 
 	//~ opc_ldcf = opc_ldc4,
 	//~ opc_ldcF = opc_ldc8,
-	max_reg = 255,	// maximum registers for dup, set, pop, ...
-	//~ data_size = 4,	// 
+
+	vm_size = sizeof(int),	// size of data on stack
+	vm_regs = 255,	// maximum registers for dup, set, pop, ...
 } vmOpcode;
 typedef struct {
 	int const	code;
@@ -185,7 +168,6 @@ typedef unsigned int uint;
 
 typedef struct libc {
 	struct libc		*next;	// next
-	//~ unsigned int pos;
 	int (*call)(state);
 	const char* proto;
 	symn sym;
@@ -251,12 +233,11 @@ struct symn {				// type node (data)
 	//~ NOTE: negative offst means global
 	int32_t	offs;		// addrof(TYPE_xxx)
 
-
 	symn	type;		// base type of TYPE_ref/TYPE_arr/function (void, int, float, struct, ...)
 
 	//~ TODO: temporarly array variable base type
 	symn	args;		// struct members / function paramseters
-	symn	sdef;		// static members (is the tail of args)
+	symn	sdef;		// static members (is the tail of args) / function return value(out value)
 
 	symn	decl;		// declared in namespace/struct/class, function, ...
 	symn	next;		// symbols on table / next param / next field / next symbol
@@ -272,6 +253,7 @@ struct symn {				// type node (data)
 
 	union {				// Attributes
 	struct {
+	// TODO: remove call
 	uint16_t	call:1;		// callable(function/definition) <=> (kind == TYPE_ref && args)
 	uint16_t	cnst:1;		// constant
 	uint16_t	stat:1;		// static ?
@@ -281,13 +263,13 @@ struct symn {				// type node (data)
 	//~ uint8_t	priv:1;		// private
 	//~ uint8_t	read:1;		// const / no override
 	//~ uint8_t	used:1;		// 
-	uint16_t _atr:12;		// attributes (const static /+ private, ... +/).
+	uint16_t _padd:12;		// attributes (const static /+ private, ... +/).
 	};
 	uint16_t	Attr;
 	};
 
 	int		nest;		// declaration level
-	//~ int	refc;		// how many times was referenced
+	//~ int	refc;		// how many times was referenced by lookup
 
 	symn	defs;		// global variables and functions / while_compiling variables of the block in reverse order
 	symn	gdef;		// static variables and functions / while_compiling ?
@@ -349,7 +331,7 @@ struct ccState {
 				int		_cnt;		// chars left in buffer
 				char*	_ptr;		// pointer parsing trough source
 				uint8_t	_buf[1024];	// cache
-			}fin;
+			} fin;
 			astn	tokp;		// token pool
 			astn	_tok;		// next token
 			int		_chr;		// next char
@@ -361,6 +343,7 @@ struct ccState {
 	astn	emit_tag;		// "emit"
 
 
+	symn	type_rec;		// typename
 	//~ symn	type_vid;
 	//~ symn	type_bol;
 	//~ symn	type_u32;
@@ -373,7 +356,6 @@ struct ccState {
 
 	//~ symn	null_ref;
 	//~ symn	emit_opc;
-	//~ symn	emit_val;
 
 	symn	libc_mem;		// memory manager libcall
 
@@ -397,7 +379,6 @@ extern symn type_ptr;
 extern symn null_ref;
 
 extern symn emit_opc;
-extern symn emit_val;
 
 //~ clog
 //~ void fputfmt(FILE *fout, const char *msg, ...);
@@ -427,9 +408,8 @@ astn strnode(ccState, char *v);
 astn cpynode(ccState, astn src);
 void eatnode(ccState, astn ast);
 
-symn installex(ccState, const char* name, int kind, unsigned size, symn type, astn init);
-//~ symn installex(ccState, const char* name, int kind, symn type, int cast, unsigned size, astn init);
-symn install(ccState, const char* name, int kind, int cast, unsigned size);
+symn installex(ccState, const char* name, int kind, int cast, unsigned size, symn type, astn init);
+symn install(ccState, const char* name, int kind, int cast, unsigned size, symn type);
 symn declare(ccState, int kind, astn tag, symn rtyp);
 void extend(symn type, symn args);
 symn addarg(ccState, symn sym, const char* name, int kind, symn type, astn init);
@@ -515,7 +495,7 @@ int source(ccState, srcType mode, char* text);		// mode: file/text
 
 unsigned rehash(const char* str, unsigned size);
 
-char *mapstr(ccState s, char *name, unsigned size/* = -1U*/, unsigned hash/* = -1U*/);
+char* mapstr(ccState s, char *name, unsigned size/* = -1U*/, unsigned hash/* = -1U*/);
 
 void fputasm(FILE *fout, state rt, int beg, int end, int mode);
 

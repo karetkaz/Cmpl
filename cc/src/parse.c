@@ -50,8 +50,8 @@ Lexical elements
 		Character and String literals:
 			char_lit = \'[^\'\n]*
 			string_lit = \"[^\"\n]*
-
 */
+
 #if !(defined __WATCOMC__) && !(defined _MSC_VER)
 #include <unistd.h>
 #endif
@@ -231,7 +231,7 @@ int source(ccState s, srcType mode, char* file) {
 	if (mode & srcFile) {
 		if ((s->fin._fin = open(file, O_RDONLY)) <= 0)
 			return -1;
-		s->file = file;
+		s->file = mapstr(s, file, -1, -1);
 		s->line = 1;
 		if (fillBuf(s) > 2) {
 			if (s->fin._ptr[0] == '#' && s->fin._ptr[1] == '!') {
@@ -1255,7 +1255,7 @@ static void redefine(ccState s, symn sym) {
 	}
 }
 
-static symn copysym(ccState s, symn sym) {
+/*static symn copysym(ccState s, symn sym) {
 	symn result = newdefn(s, TYPE_ref);
 	if (result != NULL) {
 		result->type = sym->type;
@@ -1267,9 +1267,9 @@ static symn copysym(ccState s, symn sym) {
 		result->next = NULL;
 	}
 	return result;
-}
+}*/
 static symn ctorArg(ccState s, symn rec) {
-	symn ctor = install(s, rec->name, TYPE_def, 0, 0);
+	symn ctor = install(s, rec->name, TYPE_def, 0, 0, rec);
 	if (ctor != NULL) {
 		astn root = NULL;
 		symn arg, newarg;
@@ -1284,11 +1284,11 @@ static symn ctorArg(ccState s, symn rec) {
 			if (arg->kind != TYPE_ref)
 				continue;
 
-			newarg = install(s, arg->name, TYPE_ref, 0, 0);
+			newarg = install(s, arg->name, TYPE_ref, 0, 0, arg->type);
 
 			if (newarg) {
 				astn tag;
-				newarg->type = arg->type;
+				//~ newarg->type = arg->type;
 				newarg->call = arg->call;
 				newarg->args = arg->args;
 				newarg->cast = TYPE_def;
@@ -1301,7 +1301,7 @@ static symn ctorArg(ccState s, symn rec) {
 
 		ctor->args = leave(s, ctor, 0);
 		ctor->kind = TYPE_def;
-		ctor->type = rec;
+		//~ ctor->type = rec;
 		ctor->call = 1;
 		ctor->cnst = 1;	// returns constant (params must be constants too)
 
@@ -1315,21 +1315,19 @@ static symn ctorArg(ccState s, symn rec) {
 	return ctor;
 }
 static symn ctorPtr(ccState s, symn rec) {
-	symn ctor = NULL;//install(s, rec->name, TYPE_def, 0, 0);
+	symn ctor = NULL;//install(s, rec->name, TYPE_def, TYPE_ref, 0, rec);
 	if (ctor != NULL) {
 		astn argtag = NULL;
-		symn argptr, retref;
+		symn rettyp = rec;//copysym(s, rec);
+		symn argptr = newdefn(s, TYPE_ref);
 
-		retref = copysym(s, rec);
-		argptr = newdefn(s, TYPE_ref);
-
-		if (retref && argptr) {
-			retref->cast = TYPE_ref;
+		if (rettyp && argptr) {
+			//~ rettyp->cast = TYPE_ref;
 
 			argptr->name = ".ptr";
 			argptr->next = NULL;
 			argptr->type = type_ptr;
-			argptr->cast = TYPE_ref;
+			argptr->cast = TYPE_def;
 
 			argtag = lnknode(s, argptr);
 			argtag->cst2 = TYPE_ref;
@@ -1338,10 +1336,11 @@ static symn ctorPtr(ccState s, symn rec) {
 		ctor->args = argptr;
 		ctor->kind = TYPE_def;
 		ctor->type = rec;
+		ctor->cast = TYPE_ref;
 		ctor->call = 1;
 
 		ctor->init = opnode(s, OPER_fnc, s->emit_tag, argtag);
-		ctor->init->type = ctor->type = retref;
+		ctor->init->type = ctor->type = rettyp;
 
 		//~ debug("constructor created: %-T ", ctor);
 	}
@@ -1391,7 +1390,7 @@ static int mkConst(astn ast, int cast) {
 }
 
 //~ astn unit(ccState, int mode);		// parse unit			(mode: script/unit)
-static astn stmt(ccState, int mode);		// parse statement		(mode: enable decl)
+static astn stmt(ccState, int mode);	// parse statement		(mode: enable decl)
 //~ astn decl(ccState, int mode);		// parse declaration	(mode: enable spec)
 //~ astn spec(ccState s/* , int qual */);
 //~ astn type(ccState s/* , int qual */);
@@ -1602,7 +1601,7 @@ static astn decl_var(ccState s, int mode) {
 				astn init = expr(s, TYPE_def);
 				typ->init = init;
 
-				//~ /*/ enable multi array declaration in pascal style: int a[1, 2, 3, 4];
+				//~ multi dimensional array declaration: int a[1, 2, 3, 4];
 				if (init != NULL) {
 					astn dims = init;
 					while (dims->kind == OPER_com) {
@@ -1631,13 +1630,13 @@ static astn decl_var(ccState s, int mode) {
 							error(s->s, dims->file, dims->line, "positive integer constant expected, got `%+k`", dims);
 						}
 					}
-					else if (init != dims) {	// same as: init->kind == OPER_com
-						error(s->s, init->file, init->line, "integer constant expected");
+					else if (init->kind == OPER_com) {
+						error(s->s, init->file, init->line, "integer constant expected declaring array `%T`", ref);
 					}
 				}
 				/*else {
 					error(s->s, init->file, init->line, "integer constant expected, got `%+k`", init);
-				}// */
+				}*/
 			}
 			if (dynarr) {
 				symn length = addarg(s, typ, "length", TYPE_ref, type_i32, NULL);
@@ -1949,11 +1948,10 @@ static astn stmt(ccState s, int mode) {
 
 					if (sym != NULL && dcl2 != NULL) {
 						symn x = declare(s, TYPE_ref, dcl2, sym->type);
-						x->init = newnode(s, OPER_fnc);
+						x->init = opnode(s, OPER_fnc, tok, itin);
 						x->init->type = sym->type;
-						x->init->op.lhso = tok;
-						x->init->op.rhso = itin;
 						x->cast = TYPE_rec;
+						x->size = sym->type->size;
 
 						dcl2->kind = TYPE_def;
 						dcl2->file = dcl1->file;
@@ -1966,22 +1964,17 @@ static astn stmt(ccState s, int mode) {
 					ast->stmt.init = newnode(s, STMT_beg);
 					ast->stmt.init->stmt.stmt = dcl1;
 					ast->stmt.init->type = type_vid;
-					ast->stmt.init->cst2 = TYPE_rec;
+					ast->stmt.init->cst2 = 0;
 
 					// make the `next(it, a)` test
-					arg = newnode(s, OPER_com);
-					arg->op.lhso = newIden(s, dcl2->id.name);
-					arg->op.rhso = newIden(s, dcl1->id.name);
-
-					fun = newnode(s, OPER_fnc);
-					fun->op.lhso = newIden(s, "next");
-					fun->op.rhso = arg;
+					arg = opnode(s, OPER_com, newIden(s, dcl2->id.name), newIden(s, dcl1->id.name));
+					fun = opnode(s, OPER_fnc, newIden(s, "next"), arg);
 
 					ast->stmt.test = fun;
-					if (fun->type != type_bol || !typecheck(s, NULL, fun) || !typecheck(s, NULL, sym->init)) {
+					if (!typecheck(s, NULL, fun) || !typecheck(s, NULL, sym->init)) {
 						error(s->s, ast->file, ast->line, "invalid iterator for `%+k`", itin);
 						debug("%7K", ast);
-						if (fun->type != type_bol) {
+						if (fun->type && fun->type != type_bol) {
 							error(s->s, ast->file, ast->line, "invalid iterator, next should return boolean `%+k`", fun);
 						}
 					}
@@ -2024,7 +2017,7 @@ static astn stmt(ccState s, int mode) {
 		tmp->stmt.stmt = ast;
 
 		// constant variables are static
-		if (ref->cnst && ref->kind == TYPE_ref) {
+		if (ref && ref->cnst && ref->kind == TYPE_ref) {
 			if (!ref->init) {
 				error(s->s, ref->file, ref->line, "uninitialized constant `%-T`", ref);
 			}
@@ -2381,7 +2374,7 @@ astn decl(ccState s, int Rmode) {
 			}
 		}
 
-		if (skip(s, STMT_beg)) {	// constant list
+		if (skip(s, STMT_beg)) {		// constant list
 			int enuminc = base && (base->cast == TYPE_i32 || base->cast == TYPE_i64);
 			int64_t lastval = -1;
 
@@ -2454,7 +2447,7 @@ astn decl(ccState s, int Rmode) {
 	}
 	else if (skip(s, TYPE_rec)) {		// struct
 		int byref = skip(s, OPER_and);
-		int pack = 4;
+		int pack = vm_size;
 
 		if (!(tag = next(s, TYPE_ref))) {	// name?
 			tag = newnode(s, TYPE_ref);
@@ -2516,7 +2509,7 @@ astn decl(ccState s, int Rmode) {
 
 		if (skip(s, STMT_beg)) {			// body
 
-			def = declare(s, TYPE_rec, tag, NULL);
+			def = declare(s, TYPE_rec, tag, s->type_rec);
 			redefine(s, def);
 
 			enter(s, tag);
@@ -2534,6 +2527,10 @@ astn decl(ccState s, int Rmode) {
 					if (Attr == ATTR_stat) {
 						ref->stat = 1;
 					}
+					if (ref->kind != TYPE_ref) {
+						ref->stat = 1;
+					}
+
 					if (!ref->stat) {
 						if (ref->init) {
 							error(s->s, ref->file, ref->line, "non static member `%-T` can not be initialized", ref);
@@ -2572,7 +2569,7 @@ astn decl(ccState s, int Rmode) {
 		}
 
 		// error handling
-		if (byref && Attr != ATTR_stat) {	// namespace: static struct
+		if (byref && Attr == ATTR_stat) {	// namespace: static struct
 			error(s->s, tag->file, tag->line, "alignment can not be applied to this struct");
 		}
 
@@ -2595,8 +2592,13 @@ astn decl(ccState s, int Rmode) {
 			astn val = expr(s, TYPE_def);
 			if (val != NULL) {
 				def = declare(s, TYPE_def, tag, val->type);
-				def->stat = isStatic(s, val);
-				def->cnst = isConst(val);
+				if (isConst(val)) {
+					def->stat = 1;
+					def->cnst = 1;
+				}
+				else if (isStatic(s, val)) {
+					def->stat = 1;
+				}
 				def->init = val;
 				typ = def->type;
 			}
@@ -2689,7 +2691,7 @@ astn decl(ccState s, int Rmode) {
 		skiptok(s, STMT_do, 1);
 	}// */
 
-	else if ((tag = decl_var(s, 0))) {
+	else if ((tag = decl_var(s, 0))) {	// variable, function, ...
 		symn typ = tag->type;
 		symn ref = tag->id.link;
 
@@ -2706,7 +2708,7 @@ astn decl(ccState s, int Rmode) {
 				ref->gdef = s->func;
 				s->func = ref;
 				s->maxlevel = s->nest;
-				result = installex(s, "result", TYPE_ref, ref->type->size, typ, NULL);
+				result = installex(s, "result", TYPE_ref, 0, ref->type->size, typ, NULL);
 
 				if (result) {
 
@@ -2725,7 +2727,7 @@ astn decl(ccState s, int Rmode) {
 				}
 				// reinstall all args and TODO:(closure variables)
 				for (tmp = ref->args; tmp; tmp = tmp->next) {
-					symn arg = installex(s, tmp->name, TYPE_ref, 0, NULL, NULL);
+					symn arg = installex(s, tmp->name, TYPE_ref, 0, 0, NULL, NULL);
 					if (arg != NULL) {
 						arg->type = tmp->type;
 						arg->args = tmp->args;

@@ -60,7 +60,18 @@ typedef struct Material {		// material
 	scalar spow;			// Shininess
 } *Material;
 
-typedef struct Light {		// lights
+typedef struct Light {			// lights
+	struct Material mtl;
+	struct Light	*next;
+	//
+	union vector	ambi;		// Ambient
+	union vector	diff;		// Diffuse
+	union vector	spec;		// Specular
+	union vector	attn;		// Attenuation
+	union vector	pos;		// position
+	union vector	dir;		// direction
+
+	scalar	sCos, sExp;			// spot light related
 	enum {						// Type
 		L_off  = 0x0000,		// light is off
 		L_on   = 0x0001,		// light is on
@@ -68,16 +79,6 @@ typedef struct Light {		// lights
 		//~ L_dir  = 0x0004,		// is directional
 		//~ L_spot = 0x0008,		// is directional
 	} attr;
-	union vector	ambi;		// Ambient
-	union vector	diff;		// Diffuse
-	union vector	spec;		// Specular
-	union vector	attn;		// Attenuation
-	union vector	pos;		// position
-	union vector	dir;		// direction
-	scalar	sCos;
-	scalar	sExp;
-	struct Light	*next;
-	struct Material mtl;
 } *Light;
 
 typedef struct mesh {
@@ -127,12 +128,11 @@ typedef struct mesh {
 
 // Utils
 char* fext(const char* name);
-char* readInt(char *ptr, int *outVal);
-char* readFlt(char *str, double *outVal);
+char* readI32(char *ptr, int *outVal);
 char* readF32(char *str, float *outVal);
-char* readKVP(char *ptr, char *cmd, char *skp, char *sep);
-char* readCmd(char *ptr, char *cmd) ;
 //~ char* readVec(char *str, vector dst, scalar defw);
+//~ read a (key = value) pair, return the value string
+char* readKVP(char *ptr, char *key, char *sep, char *wsp);
 
 extern int g3_init(gx_Surf offs, int w, int h);
 //~ extern void (*g3_drawline)(gx_Surf dst, vector p1, vector p2, long c);

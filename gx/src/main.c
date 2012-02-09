@@ -61,56 +61,7 @@ struct mesh msh;
 Light rm = 0;
 int vtx = 0;
 
-#include "utils.i"
-static struct Light userLights[32] = {
-#define lz 2
-#define lp 2
-#define lA 10
-	{	// light0(Gray)
-		L_on,
-		{{.6, .6, .6, 1}},	// ambi
-		{{.9, .9, .9, 1}},	// diff
-		{{1., 1., 1., 1}},	// spec
-		{{1., 0., 0., 0}},	// attn
-		//~ {{-2, +15, -15, 1}},	// pos
-		{{+lp, +lp, +lz, 1}},	// pos
-		{{0., 0., 0., 0}},	// dir
-		0, 32},
-		//~ &userLights[1]}, // */
-	{	// light1(RGB/R)
-		L_on,
-		{{.4, .0, .0, 1}},	// ambi
-		{{.8, .0, .0, 1}},	// diff
-		{{1., 1., 1., 1}},	// spec
-		{{1., 0., 0., 0}},	// attn
-		{{+lp, -lp, +lz, 1}},	// pos
-		{{-0., +0., -0., 0}},	// dir // is normalized in main()
-		lA, 32},
-		//~ &userLights[2]}, // */
-	{	// light2(RGB/G)
-		L_on,
-		{{0., .4, .0, 1}},	// ambi
-		{{.0, .8, .0, 1}},	// diff
-		{{1., 1., 1., 1}},	// spec
-		{{1., .0, 0., 0}},	// attn
-		{{-lp, -lp, +lz, 1}},	// pos
-		{{-0., +0., -0., 0}},	// dir // is normalized in main()
-		lA, 32},
-		//~ &userLights[3]}, // */
-	{	// light3(RGB/B)
-		L_on,
-		{{.0, .0, .4, 1}},	// ambi
-		{{.0, .0, .8, 1}},	// diff
-		{{1., 1., 1., 1}},	// spec
-		{{1., .0, 0., 0}},	// attn
-		{{-lp, +lp, +lz, 1}},	// pos
-		{{-0., +0., -0., 0}},	// dir // is normalized in main()
-		lA, 32},
-		//~ NULL},
-#undef lz
-#undef lp
-#undef lA
-};
+static struct Light userLights[32];
 vector getobjvec(int Normal) {
 	if (rm != NULL)
 		return Normal ? &rm->dir : &rm->pos;
@@ -140,6 +91,135 @@ char* findext(char* ext) {
 		exts = exts->next;
 	}
 	return NULL;
+}
+
+char* fext(const char* name) {
+	char *ext = "";
+	char *ptr = (char*)name;
+	if (ptr) while (*ptr) {
+		if (*ptr == '.')
+			ext = ptr + 1;
+		ptr += 1;
+	}
+	return ext;
+}
+
+char* readI32(char *ptr, int *outVal) {
+	int sgn = 1, val = 0;
+	if (!strchr("+-0123456789",*ptr))
+		return ptr;
+	if (*ptr == '-' || *ptr == '+') {
+		sgn = *ptr == '-' ? -1 : +1;
+		ptr += 1;
+	}
+	while (*ptr >= '0' && *ptr <= '9') {
+		val = val * 10 + (*ptr - '0');
+		ptr += 1;
+	}
+	if (outVal) *outVal = sgn * val;
+	return ptr;
+}
+char* readFlt(char *str, double *outVal) {
+	char *ptr = str;
+	double val = 0;
+	int sgn = 1, exp = 0;
+
+	//~ ('+'|'-')?
+	if (*ptr == '-' || *ptr == '+') {
+		sgn = *ptr == '-' ? -1 : 1;
+		ptr += 1;
+	}
+
+	//~ (0 | ([1-9][0-9]+))?
+	if (*ptr == '0') {
+		ptr++;
+	}
+	else while (*ptr >= '0' && *ptr <= '9') {
+		val = val * 10 + (*ptr - '0');
+		ptr++;
+	}
+
+	//~ ('.'[0-9]*)?
+	if (*ptr == '.') {
+		ptr++;
+		while (*ptr >= '0' && *ptr <= '9') {
+			val = val * 10 + (*ptr - '0');
+			exp -= 1;
+			ptr++;
+		}
+	}
+
+	//~ ([eE]([+-]?)[0-9]+)?
+	if (*ptr == 'e' || *ptr == 'E') {
+		int tmp = 0;
+		ptr = readI32(ptr + 1, &tmp);
+		exp += tmp;
+	}
+
+	if (outVal) {
+		*outVal = sgn * val * pow(10, exp);
+	}
+
+	return ptr;
+}
+char* readF32(char *str, float *outVal) {
+	double f64;
+	str = readFlt(str, &f64);
+	if (outVal) *outVal = f64;
+	return str;
+}
+char* readVec(char *str, vector dst, scalar defw) {
+	char *sep = ",";
+
+	char *ptr;
+
+	dst->w = defw;
+
+	str = readF32(str, &dst->x);
+
+	if (!*str) {
+		dst->z = dst->y = dst->x;
+		return str;
+	}
+
+	if (!(ptr = readKVP(str, sep, NULL, NULL)))
+		return str;
+
+	str = readF32(ptr, &dst->y);
+
+	if (!(ptr = readKVP(str, sep, NULL, NULL)))
+		return str;
+
+	str = readF32(ptr, &dst->z);
+
+	if (!*str) return str;
+
+	if (!(ptr = readKVP(str, sep, NULL, NULL)))
+		return str;
+
+	str = readF32(ptr, &dst->w);
+
+	return str;
+}
+
+char* readKVP(char *ptr, char *key, char *sep, char *wsp) {	// key = value pair
+	if (wsp == NULL) wsp = " \t";
+
+	// match key and skip white spaces
+	if (*key) {
+		while (*key && *key == *ptr) ++key, ++ptr;
+		if (!sep && !strchr(wsp, *ptr)) return 0;
+		while (*ptr && strchr(wsp, *ptr)) ++ptr;
+	}
+
+	// match sep and skip white spaces
+	if (sep && *sep) {
+		while (*sep && *sep == *ptr) ++sep, ++ptr;
+		while (*ptr && strchr(wsp, *ptr)) ++ptr;
+	}
+
+	// if key and separator were mached
+	return (*key || (sep && *sep)) ? NULL : ptr;
 }
 
 //}
@@ -328,11 +408,27 @@ void readIni(char *file) {
 			//~ union vector ambi;		// Ambient
 			//~ union vector diff;		// Diffuse
 			//~ union vector spec;		// Specular
-			//~ scalar spow;		// Shin...
 			//~ union vector emis;		// Emissive
 			debug("invalid light param: %s(%d): %s", file, line, ptr);
 		}
 		if (section == objlit) {
+
+			if (strcmp(ptr, "off") == 0) {
+				lit->attr = 0;
+				continue;
+			}
+
+			if ((arg = readKVP(ptr, "pos", "=", is))) {
+				if (*readVec(arg, &lit->pos, 1))
+					debug("invalid format: %s(%d): %s", file, line, arg);
+				continue;
+			}
+			if ((arg = readKVP(ptr, "dir", "=", is))) {
+				if (*readVec(arg, &lit->dir, 0))
+					debug("invalid format: %s(%d): %s", file, line, arg);
+				continue;
+			}
+
 			if ((arg = readKVP(ptr, "Ka", "=", is))) {
 				if (*readVec(arg, &lit->ambi, 1))
 					debug("invalid format: %s(%d): %s", file, line, arg);
@@ -344,20 +440,11 @@ void readIni(char *file) {
 				continue;
 			}
 			if ((arg = readKVP(ptr, "Ks", "=", is))) {
-				if (*readVec(arg, &lit->spec, 1))
+				if (*readVec(arg, &lit->spec, 0))
 					debug("invalid format: %s(%d): %s", file, line, arg);
 				continue;
 			}
-			if ((arg = readKVP(ptr, "pos", "=", is))) {
-				if (*readVec(arg, &lit->pos, 1))
-					debug("invalid format: %s(%d): %s", file, line, arg);
-				continue;
-			}
-			if ((arg = readKVP(ptr, "dir", "=", is))) {
-				if (*readVec(arg, &lit->dir, 0))
-					debug("invalid format: %s(%d): %s", file, line, arg);
-				continue;
-			}
+
 			if ((arg = readKVP(ptr, "attn", "=", is))) {
 				if (*readVec(arg, &lit->attn, 0))
 					debug("invalid format: %s(%d): %s", file, line, arg);
@@ -366,17 +453,14 @@ void readIni(char *file) {
 			if ((arg = readKVP(ptr, "spot", "=", is))) {
 				if (!*(arg = readF32(arg, &lit->sCos)))
 					continue;
-				if (!(arg = readCmd(arg, ",")))
+				if (!(arg = readKVP(arg, ",", "", is)))
 					continue;
 				if (!*(arg = readF32(arg, &lit->sExp)))
 					continue;
 				debug("invalid format: %s(%d): %s", file, line, arg);
 				continue;
 			}
-			if (strcmp(ptr, "off") == 0) {
-				lit->attr = 0;
-				continue;
-			}
+
 			debug("invalid light param: %s(%d): %s", file, line, ptr);
 		}
 
@@ -429,13 +513,13 @@ void readIni(char *file) {
 				continue;
 			}
 			if ((arg = readKVP(ptr, "screen.width", "=", is))) {
-				char *end = readInt(arg, &resx);
+				char *end = readI32(arg, &resx);
 				if (*end)
 					debug("invalid number: %s:%d", arg, *end);
 				continue;
 			}
 			if ((arg = readKVP(ptr, "screen.height", "=", is))) {
-				if (*readInt(arg, &resy))
+				if (*readI32(arg, &resy))
 					debug("invalid number: %s", arg);
 				continue;
 			}
@@ -463,14 +547,6 @@ void readIni(char *file) {
 				continue;
 			}
 
-			/*if ((arg = readKVP(ptr, "render.ondemand", "=", is))) {
-				int value;
-				if (*readInt(arg, &value))
-					debug("invalid number: %s", arg);
-				if (value != 0)
-					draw |= OnDemand;
-				continue;
-			}*/
 			if ((arg = readKVP(ptr, "epsilon", "=", is))) {
 				if (*readFlt(arg, &epsilon))
 					debug("invalid number: %s", arg);
@@ -781,51 +857,42 @@ static void meshInfo(mesh msh) {
 
 //{#region Surfaces
 
-enum surfCalls {
-	//~ surfOpGetDepth,
-	surfOpGetWidth,
-	surfOpGetHeight,
+//~ static symn surfOpGetDepth = NULL;
+static symn surfOpGetWidth = NULL;
+static symn surfOpGetHeight = NULL;
+//~ static symn surfOpGetPixel = NULL;
+//~ static symn surfOpGetPixfp = NULL;
+//~ static symn surfOpSetPixel = NULL;
+static symn surfOpClipRect = NULL;
 
-	surfOpGetPixel,
-	surfOpGetPixfp,
-	surfOpSetPixel,
+static symn surfOpDrawLine = NULL;
+static symn surfOpDrawRect = NULL;
+static symn surfOpFillRect = NULL;
+static symn surfOpDrawOval = NULL;
+static symn surfOpFillOval = NULL;
+static symn surfOpDrawText = NULL;
 
-	surfOpDrawLine,
+static symn surfOpCopySurf = NULL;
+static symn surfOpZoomSurf = NULL;
+static symn surfOpClutSurf = NULL;
+static symn surfOpCmatSurf = NULL;
+static symn surfOpGradSurf = NULL;
+static symn surfOpBlurSurf = NULL;
 
-	surfOpDrawRect,
-	surfOpFillRect,
-	surfOpDrawOval,
-	surfOpFillOval,
+static symn surfOpNewSurf  = NULL;
+static symn surfOpDelSurf  = NULL;
 
-	surfOpDrawText,
+static symn surfOpBmpRead  = NULL;
+static symn surfOpJpgRead  = NULL;
+static symn surfOpPngRead  = NULL;
+static symn surfOpBmpWrite = NULL;
 
-	surfOpCopySurf,
-	surfOpZoomSurf,
-	surfOpClutSurf,
-	surfOpCmatSurf,
-	surfOpGradSurf,
-	surfOpBlurSurf,
-
-	surfOpClipRect,
-
-	//~ surfOpGetRect,
-	//~ surfOpSetRect,
-	surfOpNewSurf,
-	surfOpDelSurf,
-
-	//~ surfOpSetRectV,
-	surfOpBmpWrite,
-	surfOpBmpRead,
-	surfOpJpgRead,
-	surfOpPngRead,
-
-	surfOpEvalPxCB,
-	surfOpFillPxCB,
-	surfOpCopyPxCB,
-	surfOpEvalFpCB,
-	surfOpFillFpCB,
-	surfOpCopyFpCB,
-};
+static symn surfOpEvalFpCB = NULL;
+static symn surfOpFillFpCB = NULL;
+static symn surfOpCopyFpCB = NULL;
+static symn surfOpEvalPxCB = NULL;
+static symn surfOpFillPxCB = NULL;
+static symn surfOpCopyPxCB = NULL;
 
 typedef uint32_t gxSurfHnd;
 static struct gx_Surf surfaces[256];
@@ -887,830 +954,914 @@ void surfDone() {
 	}
 }
 
+static int surfSetPixel(state rt) {
+	gx_Surf surf;
+	if ((surf = getSurf(popi32(rt)))) {
+		int x = popi32(rt);
+		int y = popi32(rt);
+		int col = popi32(rt);
+		//~ /* this way is faster
+		if ((unsigned)x >= (unsigned)surf->width || (unsigned)y >= (unsigned)surf->height) {
+			return 0;
+		}
+
+		unsigned rowy = y * (unsigned)surf->scanLen;
+		if (surf->depth == 32) {
+			uint32_t *ptr = (uint32_t*)((char*)surf->basePtr + rowy);
+			ptr[x] = col;
+			return 0;
+		}
+		else if (surf->depth == 8) {
+			uint8_t *ptr = (uint8_t*)((char*)surf->basePtr + rowy);
+			ptr[x] = col;
+			return 0;
+		}// */
+
+		//~ gx_setpixel(surf, x, y, col);
+		//~ return 0;
+	}
+	return -1;
+}
+static int surfGetPixel(state rt) {
+	gx_Surf surf;
+	if ((surf = getSurf(popi32(rt)))) {
+		int x = popi32(rt);
+		int y = popi32(rt);
+		//~ /* but this way is faster
+		if ((unsigned)x >= (unsigned)surf->width || (unsigned)y >= (unsigned)surf->height) {
+			setret(rt, int32_t, 0);
+			return 0;
+		}
+		int rowy = y * surf->scanLen;
+		if (surf->depth == 32) {
+			uint32_t *ptr = (uint32_t*)((char*)surf->basePtr + rowy);
+			setret(rt, int32_t, ptr[x]);
+			return 0;
+		}
+		else if (surf->depth == 8) {
+			uint8_t *ptr = (uint8_t*)((char*)surf->basePtr + rowy);
+			setret(rt, int32_t, ptr[x]);
+			return 0;
+		}// */
+		//~ setret(rt, int32_t, gx_getpixel(surf, x, y));
+		//~ return 0;
+	}
+	return -1;
+}
+static int surfGetPixfp(state rt) {
+	gx_Surf surf;
+	if ((surf = getSurf(popi32(rt)))) {
+		double x = popf64(rt);
+		double y = popf64(rt);
+		setret(rt, int32_t, gx_getpix16(surf, x * 65535, y * 65535, 1));
+		return 0;
+	}
+	return -1;
+}
 static int surfCall(state rt) {
-	switch (rt->fdata) {
-		default: return -1;
+	if (rt->libc == surfOpGetWidth) {
+		gx_Surf surf = getSurf(popi32(rt));
+		setret(rt, int32_t, surf->width);
+		return 0;
+	}
+	if (rt->libc == surfOpGetHeight) {
+		gx_Surf surf = getSurf(popi32(rt));
+		setret(rt, int32_t, surf->height);
+		return 0;
+	}
 
-		case surfOpGetWidth:
-		case surfOpGetHeight: {
-			gx_Surf surf = getSurf(popi32(rt));
-			if (surf) switch (rt->fdata) {
-				case surfOpGetWidth: setret(rt, int32_t, surf->width); break;
-				case surfOpGetHeight: setret(rt, int32_t, surf->height); break;
-				default: return -1;
-			}
+	if (rt->libc == surfOpClipRect) {
+		gx_Surf surf = getSurf(popi32(rt));
+		gx_Rect rect = popref(rt);
+		if (surf) {
+			void *ptr = gx_cliprect(surf, rect);
+			setret(rt, int32_t, ptr != NULL);
+		}
+		return 0;
+	}
+
+	/*if (rt->libc == surfOpGetPixfp) {
+		gx_Surf surf;
+		if ((surf = getSurf(popi32(rt)))) {
+			double x = popf64(rt);
+			double y = popf64(rt);
+			setret(rt, int32_t, gx_getpix16(surf, x * 65535, y * 65535, 1));
 			return 0;
-		} return -1;
-
-		case surfOpClipRect: {
-			gx_Surf surf = getSurf(popi32(rt));
-			gx_Rect rect = popref(rt);
-			if (surf) {
-				void *ptr = gx_cliprect(surf, rect);
-				setret(rt, int32_t, ptr != NULL);
-			}
-			return 0;
-		} return -1;
-
-		case surfOpGetPixfp: {
-			gx_Surf surf;
-			if ((surf = getSurf(popi32(rt)))) {
-				double x = popf64(rt);
-				double y = popf64(rt);
-				setret(rt, int32_t, gx_getpix16(surf, x * 65535, y * 65535, 1));
-				return 0;
-			}
-		} return -1;
-		case surfOpGetPixel: {
-			gx_Surf surf;
-			if ((surf = getSurf(popi32(rt)))) {
-				int x = popi32(rt);
-				int y = popi32(rt);
-				setret(rt, int32_t, gx_getpixel(surf, x, y));
-				return 0;
-				/* but this way is faster
-				if ((unsigned)x > (unsigned)surf->width || (unsigned)y > (unsigned)surf->height) {
-					setret(rt, int32_t, 0);
-					return 0;
-				}
-				int rowy = y * surf->scanLen;
-				if (surf->depth == 32) {
-					uint32_t *ptr = (uint32_t*)((char*)surf->basePtr + rowy);
-					setret(rt, int32_t, ptr[x]);
-					return 0;
-				}
-				else if (surf->depth == 8) {
-					uint8_t *ptr = (uint8_t*)((char*)surf->basePtr + rowy);
-					setret(rt, int32_t, ptr[x]);
-					return 0;
-				}// */
-			}
-		} return -1;
-		case surfOpSetPixel: {
-			gx_Surf surf;
-			if ((surf = getSurf(popi32(rt)))) {
-				int x = popi32(rt);
-				int y = popi32(rt);
-				int col = popi32(rt);
-				gx_setpixel(surf, x, y, col);
-				return 0;
-				/* but this way is faster, but it crashes memory
-				if ((unsigned)x > (unsigned)surf->width || (unsigned)y > (unsigned)surf->height) {
-					return -2;
-				}
-
-				unsigned rowy = y * (unsigned)surf->scanLen;
-				if (surf->depth == 32) {
-					uint32_t *ptr = (uint32_t*)((char*)surf->basePtr + rowy);
-					ptr[x] = col;
-					return 0;
-				}
-				else if (surf->depth == 8) {
-					uint8_t *ptr = (uint8_t*)((char*)surf->basePtr + rowy);
-					ptr[x] = col;
-					return 0;
-				}// */
-			}
-		} return -1;
-
-		case surfOpDrawLine: {
-			gx_Surf surf;
-			if ((surf = getSurf(popi32(rt)))) {
-				int x0 = popi32(rt);
-				int y0 = popi32(rt);
-				int x1 = popi32(rt);
-				int y1 = popi32(rt);
-				int col = popi32(rt);
-				g2_drawline(surf, x0, y0, x1, y1, col);
-				return 0;
-			}
-		} return -1;
-		case surfOpDrawRect: {
-			gx_Surf surf;
-			if ((surf = getSurf(popi32(rt)))) {
-				int x0 = popi32(rt);
-				int y0 = popi32(rt);
-				int x1 = popi32(rt);
-				int y1 = popi32(rt);
-				int col = popi32(rt);
-				gx_drawrect(surf, x0, y0, x1, y1, col);
-				return 0;
-			}
-		} return -1;
-		case surfOpFillRect: {
-			gx_Surf surf;
-			if ((surf = getSurf(popi32(rt)))) {
-				int x0 = popi32(rt);
-				int y0 = popi32(rt);
-				int x1 = popi32(rt);
-				int y1 = popi32(rt);
-				int col = popi32(rt);
-				gx_fillrect(surf, x0, y0, x1, y1, col);
-				return 0;
-			}
-		} return -1;
-		case surfOpDrawOval: {
-			gx_Surf surf;
-			if ((surf = getSurf(popi32(rt)))) {
-				int x0 = popi32(rt);
-				int y0 = popi32(rt);
-				int x1 = popi32(rt);
-				int y1 = popi32(rt);
-				int col = popi32(rt);
-				g2_drawoval(surf, x0, y0, x1, y1, col);
-				return 0;
-			}
-		} return -1;
-		case surfOpFillOval: {
-			gx_Surf surf;
-			if ((surf = getSurf(popi32(rt)))) {
-				int x0 = popi32(rt);
-				int y0 = popi32(rt);
-				int x1 = popi32(rt);
-				int y1 = popi32(rt);
-				int col = popi32(rt);
-				g2_filloval(surf, x0, y0, x1, y1, col);
-				return 0;
-			}
-		} return -1;
-		case surfOpDrawText: {
-			gx_Surf surf;
-			if ((surf = getSurf(popi32(rt)))) {
-				int x0 = popi32(rt);
-				int y0 = popi32(rt);
-				char *str = popstr(rt);
-				int col = popi32(rt);
-				gx_drawText(surf, x0, y0, &font, str, col);
-				return 0;
-			}
-		} return -1;
-
-		case surfOpCopySurf: {		// gxSurf copySurf(gxSurf dst, int x, int y, gxSurf src, gxRect &roi);
-			gxSurfHnd dst = popi32(rt);
+		}
+	}
+	if (rt->libc == surfOpGetPixel) {
+		gx_Surf surf;
+		if ((surf = getSurf(popi32(rt)))) {
 			int x = popi32(rt);
 			int y = popi32(rt);
-			gxSurfHnd src = popi32(rt);
-			gx_Rect roi = popref(rt);
-
-			gx_Surf sdst = getSurf(dst);
-			gx_Surf ssrc = getSurf(src);
-
-			if (sdst && ssrc) {
-				gx_copysurf(sdst, x, y, ssrc, roi, 0);
+			//~ setret(rt, int32_t, gx_getpixel(surf, x, y));
+			//~ return 0;
+			/ * but this way is faster
+			if ((unsigned)x >= (unsigned)surf->width || (unsigned)y >= (unsigned)surf->height) {
+				setret(rt, int32_t, 0);
+				return 0;
 			}
-			setret(rt, gxSurfHnd, dst);
+			int rowy = y * surf->scanLen;
+			if (surf->depth == 32) {
+				uint32_t *ptr = (uint32_t*)((char*)surf->basePtr + rowy);
+				setret(rt, int32_t, ptr[x]);
+				return 0;
+			}
+			else if (surf->depth == 8) {
+				uint8_t *ptr = (uint8_t*)((char*)surf->basePtr + rowy);
+				setret(rt, int32_t, ptr[x]);
+				return 0;
+			}// * /
+		}
+	}
+	if (rt->libc == surfOpSetPixel) {
+		gx_Surf surf;
+		if ((surf = getSurf(popi32(rt)))) {
+			int x = popi32(rt);
+			int y = popi32(rt);
+			int col = popi32(rt);
+			//~ / * this way is faster
+			if ((unsigned)x >= (unsigned)surf->width || (unsigned)y >= (unsigned)surf->height) {
+				return 0;
+			}
+
+			unsigned rowy = y * (unsigned)surf->scanLen;
+			if (surf->depth == 32) {
+				uint32_t *ptr = (uint32_t*)((char*)surf->basePtr + rowy);
+				ptr[x] = col;
+				return 0;
+			}
+			else if (surf->depth == 8) {
+				uint8_t *ptr = (uint8_t*)((char*)surf->basePtr + rowy);
+				ptr[x] = col;
+				return 0;
+			}// * /
+
+			//~ gx_setpixel(surf, x, y, col);
+			//~ return 0;
+		}
+	}*/
+
+	if (rt->libc == surfOpDrawLine) {
+		gx_Surf surf;
+		if ((surf = getSurf(popi32(rt)))) {
+			int x0 = popi32(rt);
+			int y0 = popi32(rt);
+			int x1 = popi32(rt);
+			int y1 = popi32(rt);
+			int col = popi32(rt);
+			g2_drawline(surf, x0, y0, x1, y1, col);
 			return 0;
-		} return -1;
-		case surfOpZoomSurf: {		// int gx_zoomsurf(gx_Surf dst, gx_Rect rect, gx_Surf src, gx_Rect roi, int lin)
-			gxSurfHnd dst = popi32(rt);
-			gx_Rect rect = popref(rt);
-			gxSurfHnd src = popi32(rt);
-			gx_Rect roi = popref(rt);
-			int mode = popi32(rt);
-			gx_Surf sdst = getSurf(dst);
-			gx_Surf ssrc = getSurf(src);
-
-			if (sdst && ssrc) {
-				gx_zoomsurf(sdst, rect, ssrc, roi, mode);
-			}
-			//~ else dst = 0;
-			setret(rt, gxSurfHnd, dst);
+		}
+	}
+	if (rt->libc == surfOpDrawRect) {
+		gx_Surf surf;
+		if ((surf = getSurf(popi32(rt)))) {
+			int x0 = popi32(rt);
+			int y0 = popi32(rt);
+			int x1 = popi32(rt);
+			int y1 = popi32(rt);
+			int col = popi32(rt);
+			gx_drawrect(surf, x0, y0, x1, y1, col);
 			return 0;
-		} return -1;
+		}
+	}
+	if (rt->libc == surfOpFillRect) {
+		gx_Surf surf;
+		if ((surf = getSurf(popi32(rt)))) {
+			int x0 = popi32(rt);
+			int y0 = popi32(rt);
+			int x1 = popi32(rt);
+			int y1 = popi32(rt);
+			int col = popi32(rt);
+			gx_fillrect(surf, x0, y0, x1, y1, col);
+			return 0;
+		}
+	}
+	if (rt->libc == surfOpDrawOval) {
+		gx_Surf surf;
+		if ((surf = getSurf(popi32(rt)))) {
+			int x0 = popi32(rt);
+			int y0 = popi32(rt);
+			int x1 = popi32(rt);
+			int y1 = popi32(rt);
+			int col = popi32(rt);
+			g2_drawoval(surf, x0, y0, x1, y1, col);
+			return 0;
+		}
+	}
+	if (rt->libc == surfOpFillOval) {
+		gx_Surf surf;
+		if ((surf = getSurf(popi32(rt)))) {
+			int x0 = popi32(rt);
+			int y0 = popi32(rt);
+			int x1 = popi32(rt);
+			int y1 = popi32(rt);
+			int col = popi32(rt);
+			g2_filloval(surf, x0, y0, x1, y1, col);
+			return 0;
+		}
+	}
+	if (rt->libc == surfOpDrawText) {
+		gx_Surf surf;
+		if ((surf = getSurf(popi32(rt)))) {
+			int x0 = popi32(rt);
+			int y0 = popi32(rt);
+			char *str = popstr(rt);
+			int col = popi32(rt);
+			gx_drawText(surf, x0, y0, &font, str, col);
+			return 0;
+		}
+	}
 
-		case surfOpEvalPxCB: {		// gxSurf evalSurfrgb(gxSurf dst, gxRect &roi, int callBack(int x, int y));
-			gxSurfHnd dst = popi32(rt);
-			gx_Rect roi = popref(rt);
-			symn callback = findref(rt, popref(rt));
-			//~ fputfmt(stdout, "callback is: %-T\n", callback);
+	if (rt->libc == surfOpCopySurf) {		// gxSurf copySurf(gxSurf dst, int x, int y, gxSurf src, gxRect &roi);
+		gxSurfHnd dst = popi32(rt);
+		int x = popi32(rt);
+		int y = popi32(rt);
+		gxSurfHnd src = popi32(rt);
+		gx_Rect roi = popref(rt);
 
-			gx_Surf sdst = getSurf(dst);
+		gx_Surf sdst = getSurf(dst);
+		gx_Surf ssrc = getSurf(src);
 
-			static int first = 1;
-			if (roi && first) {
-				first = 0;
-				debug("Unimplemented: evalSurf called with a roi");
+		if (sdst && ssrc) {
+			gx_copysurf(sdst, x, y, ssrc, roi, 0);
+		}
+		setret(rt, gxSurfHnd, dst);
+		return 0;
+	}
+	if (rt->libc == surfOpZoomSurf) {		// int gx_zoomsurf(gx_Surf dst, gx_Rect rect, gx_Surf src, gx_Rect roi, int lin)
+		gxSurfHnd dst = popi32(rt);
+		gx_Rect rect = popref(rt);
+		gxSurfHnd src = popi32(rt);
+		gx_Rect roi = popref(rt);
+		int mode = popi32(rt);
+		gx_Surf sdst = getSurf(dst);
+		gx_Surf ssrc = getSurf(src);
+
+		if (sdst && ssrc) {
+			gx_zoomsurf(sdst, rect, ssrc, roi, mode);
+		}
+		//~ else dst = 0;
+		setret(rt, gxSurfHnd, dst);
+		return 0;
+	}
+
+	if (rt->libc == surfOpEvalPxCB) {		// gxSurf evalSurfrgb(gxSurf dst, gxRect &roi, int callBack(int x, int y));
+		gxSurfHnd dst = popi32(rt);
+		gx_Rect roi = popref(rt);
+		symn callback = findref(rt, popref(rt));
+		//~ fputfmt(stdout, "callback is: %-T\n", callback);
+
+		gx_Surf sdst = getSurf(dst);
+
+		static int first = 1;
+		if (roi && first) {
+			first = 0;
+			debug("Unimplemented: evalSurf called with a roi");
+		}
+		if (sdst && callback) {
+			int sx, sy;
+			char *cBuffY = sdst->basePtr;
+			char *retptr = rt->retv;
+			char *argptr = rt->argv;
+			for (sy = 0; sy < sdst->height; sy += 1) {
+				long *cBuff = (long*)cBuffY;
+				cBuffY += sdst->scanLen;
+				for (sx = 0; sx < sdst->width; sx += 1) {
+					if (vmCall(rt, callback, sx, sy) != 0) {
+						//~ debug("error");
+						//~ dump(s, dump_sym | dump_asm, callback, "error:\n");
+						return -1;
+					}
+					cBuff[sx] = getret(rt, long);
+				}
 			}
-			if (sdst && callback) {
-				int sx, sy;
-				char *cBuffY = sdst->basePtr;
+			rt->retv = retptr;
+			rt->argv = argptr;
+		}
+
+		setret(rt, gxSurfHnd, dst);
+		return 0;
+	}
+	if (rt->libc == surfOpFillPxCB) {		// gxSurf fillSurfrgb(gxSurf dst, gxRect &roi, int callBack(int col));
+		gxSurfHnd dst = popi32(rt);
+		gx_Rect roi = popref(rt);
+		symn callback = findref(rt, popref(rt));
+
+		gx_Surf sdst = getSurf(dst);
+
+		static int first = 1;
+		if (roi && first) {
+			first = 0;
+			debug("Unimplemented: fillSurf called with a roi");
+		}
+		if (sdst && callback) {
+			int sx, sy;
+			char *cBuffY = sdst->basePtr;
+			char *retptr = rt->retv;
+			char *argptr = rt->argv;
+			for (sy = 0; sy < sdst->height; sy += 1) {
+				long *cBuff = (long*)cBuffY;
+				cBuffY += sdst->scanLen;
+				for (sx = 0; sx < sdst->width; sx += 1) {
+					if (vmCall(rt, callback, cBuff[sx]) != 0)
+						return -1;
+					cBuff[sx] = getret(rt, long);
+				}
+			}
+			rt->retv = retptr;
+			rt->argv = argptr;
+		}
+		setret(rt, gxSurfHnd, dst);
+		return 0;
+	}
+	if (rt->libc == surfOpCopyPxCB) {		// gxSurf copySurfrgb(gxSurf dst, int x, int y, gxSurf src, gxRect &roi, int callBack(int dst, int src));
+		gxSurfHnd dst = popi32(rt);
+		int x = popi32(rt);
+		int y = popi32(rt);
+		gxSurfHnd src = popi32(rt);
+		gx_Rect roi = popref(rt);
+		symn callback = findref(rt, popref(rt));
+
+		gx_Surf sdst = getSurf(dst);
+		gx_Surf ssrc = getSurf(src);
+
+		if (sdst && ssrc) {
+			register char *dptr, *sptr;
+			struct gx_Rect clip;
+			int x1, y1;
+
+			clip.x = roi ? roi->x : 0;
+			clip.y = roi ? roi->y : 0;
+			clip.w = roi ? roi->w : ssrc->width;
+			clip.h = roi ? roi->h : ssrc->height;
+
+			if(!(sptr = (char*)gx_cliprect(ssrc, &clip)))
+				return 0;
+
+			clip.x = x;
+			clip.y = y;
+			if (clip.x < 0)
+				clip.w -= clip.x;
+			if (clip.y < 0)
+				clip.h -= clip.y;
+
+			if(!(dptr = (char*)gx_cliprect(sdst, &clip)))
+				return 0;
+
+			if (callback) {
 				char *retptr = rt->retv;
 				char *argptr = rt->argv;
-				for (sy = 0; sy < sdst->height; sy += 1) {
-					long *cBuff = (long*)cBuffY;
-					cBuffY += sdst->scanLen;
-					for (sx = 0; sx < sdst->width; sx += 1) {
-						if (vmCall(rt, callback, sx, sy) != 0) {
-							//~ debug("error");
-							//~ dump(s, dump_sym | dump_asm, callback, "error:\n");
+				x1 = clip.x + clip.w;
+				y1 = clip.y + clip.h;
+				for (y = clip.y; y < y1; y += 1) {
+					long* cbdst = (long*)dptr;
+					long* cbsrc = (long*)sptr;
+					for (x = clip.x; x < x1; x += 1) {
+						if (vmCall(rt, callback, *cbdst, *cbsrc) != 0)
 							return -1;
-						}
-						cBuff[sx] = getret(rt, long);
+						*cbdst = getret(rt, long);
+						cbdst += 1;
+						cbsrc += 1;
 					}
+					dptr += sdst->scanLen;
+					sptr += ssrc->scanLen;
 				}
 				rt->retv = retptr;
 				rt->argv = argptr;
 			}
-			setret(rt, gxSurfHnd, dst);
-		} break;
-		case surfOpFillPxCB: {		// gxSurf fillSurfrgb(gxSurf dst, gxRect &roi, int callBack(int col));
-			gxSurfHnd dst = popi32(rt);
-			gx_Rect roi = popref(rt);
-			symn callback = findref(rt, popref(rt));
-
-			gx_Surf sdst = getSurf(dst);
-
-			static int first = 1;
-			if (roi && first) {
-				first = 0;
-				debug("Unimplemented: fillSurf called with a roi");
+			else {
+				x1 = clip.x + clip.w;
+				y1 = clip.y + clip.h;
+				for (y = clip.y; y < y1; y += 1) {
+					memcpy(dptr, sptr, 4 * clip.w);
+					dptr += sdst->scanLen;
+					sptr += ssrc->scanLen;
+				}
 			}
-			if (sdst && callback) {
-				int sx, sy;
-				char *cBuffY = sdst->basePtr;
+
+		}
+		setret(rt, gxSurfHnd, dst);
+		return 0;
+	}
+
+	if (rt->libc == surfOpEvalFpCB) {		// gxSurf evalSurf(gxSurf dst, gxRect &roi, vec4f callBack(double x, double y));
+		gxSurfHnd dst = popi32(rt);
+		gx_Rect roi = popref(rt);
+		symn callback = findref(rt, popref(rt));
+
+		gx_Surf sdst = getSurf(dst);
+
+		// step in x, and y direction
+		double dx01 = 1. / sdst->width;
+		double dy01 = 1. / sdst->height;
+
+		static int first = 1;
+		if (roi && first) {
+			first = 0;
+			debug("Unimplemented: evalSurf called with a roi");
+		}
+		if (sdst && callback) {
+			int sx, sy;
+			double x01, y01;			// x and y in [0, 1)
+			char *cBuffY = sdst->basePtr;
+			char *retptr = rt->retv;
+			char *argptr = rt->argv;
+			for (y01 = sy = 0; sy < sdst->height; sy += 1, y01 += dy01) {
+				long *cBuff = (long*)cBuffY;
+				cBuffY += sdst->scanLen;
+				for (x01 = sx = 0; sx < sdst->width; sx += 1, x01 += dx01) {
+					if (vmCall(rt, callback, x01, y01) != 0)
+						return -1;
+					cBuff[sx] = vecrgb(retptr(rt, union vector)).col;
+				}
+			}
+			rt->retv = retptr;
+			rt->argv = argptr;
+		}
+		setret(rt, gxSurfHnd, dst);
+		return 0;
+	}
+	if (rt->libc == surfOpFillFpCB) {		// gxSurf fillSurf(gxSurf dst, gxRect &roi, vec4f callBack(vec4f col));
+		gxSurfHnd dst = popi32(rt);
+		gx_Rect roi = popref(rt);
+		symn callback = findref(rt, popref(rt));
+
+		gx_Surf sdst = getSurf(dst);
+
+		static int first = 1;
+		if (roi && first) {
+			first = 0;
+			debug("Unimplemented: fillSurf called with a roi");
+		}
+		if (sdst && callback) {
+			int sx, sy;
+			char *cBuffY = sdst->basePtr;
+			char *retptr = rt->retv;
+			char *argptr = rt->argv;
+			for (sy = 0; sy < sdst->height; sy += 1) {
+				long *cBuff = (long*)cBuffY;
+				cBuffY += sdst->scanLen;
+				for (sx = 0; sx < sdst->width; sx += 1) {
+					if (vmCall(rt, callback, vecldc(rgbval(cBuff[sx]))) != 0)
+						return -1;
+					cBuff[sx] = vecrgb(retptr(rt, union vector)).col;
+				}
+			}
+			rt->retv = retptr;
+			rt->argv = argptr;
+		}
+		setret(rt, gxSurfHnd, dst);
+		return 0;
+	}
+	if (rt->libc == surfOpCopyFpCB) {		// gxSurf copySurf(gxSurf dst, int x, int y, gxSurf src, gxRect &roi, float64 alpha, vec4f callBack(vec4f dst, vec4f src));
+		gxSurfHnd dst = popi32(rt);
+		int x = popi32(rt);
+		int y = popi32(rt);
+		gxSurfHnd src = popi32(rt);
+		gx_Rect roi = popref(rt);
+		double alpha = popf64(rt);
+		symn callback = findref(rt, popref(rt));
+
+		gx_Surf sdst = getSurf(dst);
+		gx_Surf ssrc = getSurf(src);
+
+		if (sdst && ssrc) {
+			register char *dptr, *sptr;
+			//~ struct gx_Rect dclp, sclp;
+			struct gx_Rect clip;
+			int x1, y1;
+
+			clip.x = roi ? roi->x : 0;
+			clip.y = roi ? roi->y : 0;
+			clip.w = roi ? roi->w : ssrc->width;
+			clip.h = roi ? roi->h : ssrc->height;
+
+			if(!(sptr = (char*)gx_cliprect(ssrc, &clip)))
+				return 0;
+
+			clip.x = x;
+			clip.y = y;
+			if (clip.x < 0)
+				clip.w -= x;
+			if (clip.y < 0)
+				clip.h -= y;
+			if(!(dptr = (char*)gx_cliprect(sdst, &clip)))
+				return 0;
+
+			if (callback) {
 				char *retptr = rt->retv;
 				char *argptr = rt->argv;
-				for (sy = 0; sy < sdst->height; sy += 1) {
-					long *cBuff = (long*)cBuffY;
-					cBuffY += sdst->scanLen;
-					for (sx = 0; sx < sdst->width; sx += 1) {
-						if (vmCall(rt, callback, cBuff[sx]) != 0)
-							return -1;
-						cBuff[sx] = getret(rt, long);
-					}
-				}
-				rt->retv = retptr;
-				rt->argv = argptr;
-			}
-			setret(rt, gxSurfHnd, dst);
-		} break;
-		case surfOpCopyPxCB: {		// gxSurf copySurfrgb(gxSurf dst, int x, int y, gxSurf src, gxRect &roi, int callBack(int dst, int src));
-			gxSurfHnd dst = popi32(rt);
-			int x = popi32(rt);
-			int y = popi32(rt);
-			gxSurfHnd src = popi32(rt);
-			gx_Rect roi = popref(rt);
-			symn callback = findref(rt, popref(rt));
-
-			gx_Surf sdst = getSurf(dst);
-			gx_Surf ssrc = getSurf(src);
-
-			if (sdst && ssrc) {
-				register char *dptr, *sptr;
-				struct gx_Rect clip;
-				int x1, y1;
-
-				clip.x = roi ? roi->x : 0;
-				clip.y = roi ? roi->y : 0;
-				clip.w = roi ? roi->w : ssrc->width;
-				clip.h = roi ? roi->h : ssrc->height;
-
-				if(!(sptr = (char*)gx_cliprect(ssrc, &clip)))
-					return 0;
-
-				clip.x = x;
-				clip.y = y;
-				if (clip.x < 0)
-					clip.w -= clip.x;
-				if (clip.y < 0)
-					clip.h -= clip.y;
-
-				if(!(dptr = (char*)gx_cliprect(sdst, &clip)))
-					return 0;
-
-				if (callback) {
-					char *retptr = rt->retv;
-					char *argptr = rt->argv;
-					x1 = clip.x + clip.w;
-					y1 = clip.y + clip.h;
+				x1 = clip.x + clip.w;
+				y1 = clip.y + clip.h;
+				if (alpha > 0 && alpha < 1) {
+					int alpha16 = alpha * (1 << 16);
 					for (y = clip.y; y < y1; y += 1) {
 						long* cbdst = (long*)dptr;
 						long* cbsrc = (long*)sptr;
 						for (x = clip.x; x < x1; x += 1) {
-							if (vmCall(rt, callback, *cbdst, *cbsrc) != 0)
+							if (vmCall(rt, callback, vecldc(rgbval(*cbdst)), vecldc(rgbval(*cbsrc))) != 0)
 								return -1;
-							*cbdst = getret(rt, long);
+							*(argb*)cbdst = rgbmix16(*(argb*)cbdst, vecrgb(retptr(rt, union vector)), alpha16);
 							cbdst += 1;
 							cbsrc += 1;
 						}
 						dptr += sdst->scanLen;
 						sptr += ssrc->scanLen;
 					}
-					rt->retv = retptr;
-					rt->argv = argptr;
 				}
-				else {
-					x1 = clip.x + clip.w;
-					y1 = clip.y + clip.h;
+				else if (alpha >= 1){
+					for (y = clip.y; y < y1; y += 1) {
+						long* cbdst = (long*)dptr;
+						long* cbsrc = (long*)sptr;
+						for (x = clip.x; x < x1; x += 1) {
+							if (vmCall(rt, callback, vecldc(rgbval(*cbdst)), vecldc(rgbval(*cbsrc))) != 0)
+								return -1;
+							*cbdst = vecrgb(retptr(rt, union vector)).col;
+							cbdst += 1;
+							cbsrc += 1;
+						}
+						dptr += sdst->scanLen;
+						sptr += ssrc->scanLen;
+					}
+				}
+				rt->retv = retptr;
+				rt->argv = argptr;
+			}
+			else {
+				x1 = clip.x + clip.w;
+				y1 = clip.y + clip.h;
+				if (alpha > 0 && alpha < 1) {
+					int alpha16 = alpha * (1 << 16);
+					for (y = clip.y; y < y1; y += 1) {
+						long* cbdst = (long*)dptr;
+						long* cbsrc = (long*)sptr;
+						for (x = clip.x; x < x1; x += 1) {
+							*(argb*)cbdst = rgbmix16(*(argb*)cbdst, *(argb*)cbsrc, alpha16);
+							cbdst += 1;
+							cbsrc += 1;
+						}
+						dptr += sdst->scanLen;
+						sptr += ssrc->scanLen;
+					}
+				}
+				else if (alpha >= 1) {
 					for (y = clip.y; y < y1; y += 1) {
 						memcpy(dptr, sptr, 4 * clip.w);
 						dptr += sdst->scanLen;
 						sptr += ssrc->scanLen;
 					}
 				}
-
 			}
-			setret(rt, gxSurfHnd, dst);
-		} break;
 
-		case surfOpEvalFpCB: {		// gxSurf evalSurf(gxSurf dst, gxRect &roi, vec4f callBack(double x, double y));
-			gxSurfHnd dst = popi32(rt);
-			gx_Rect roi = popref(rt);
-			symn callback = findref(rt, popref(rt));
-
-			gx_Surf sdst = getSurf(dst);
-
-			// step in x, and y direction
-			double dx01 = 1. / sdst->width;
-			double dy01 = 1. / sdst->height;
-
-			static int first = 1;
-			if (roi && first) {
-				first = 0;
-				debug("Unimplemented: evalSurf called with a roi");
-			}
-			if (sdst && callback) {
-				int sx, sy;
-				double x01, y01;			// x and y in [0, 1)
-				char *cBuffY = sdst->basePtr;
-				char *retptr = rt->retv;
-				char *argptr = rt->argv;
-				for (y01 = sy = 0; sy < sdst->height; sy += 1, y01 += dy01) {
-					long *cBuff = (long*)cBuffY;
-					cBuffY += sdst->scanLen;
-					for (x01 = sx = 0; sx < sdst->width; sx += 1, x01 += dx01) {
-						if (vmCall(rt, callback, x01, y01) != 0)
-							return -1;
-						cBuff[sx] = vecrgb(retptr(rt, union vector)).col;
-					}
-				}
-				rt->retv = retptr;
-				rt->argv = argptr;
-			}
-			setret(rt, gxSurfHnd, dst);
-		} break;
-		case surfOpFillFpCB: {		// gxSurf fillSurf(gxSurf dst, gxRect &roi, vec4f callBack(vec4f col));
-			gxSurfHnd dst = popi32(rt);
-			gx_Rect roi = popref(rt);
-			symn callback = findref(rt, popref(rt));
-
-			gx_Surf sdst = getSurf(dst);
-
-			static int first = 1;
-			if (roi && first) {
-				first = 0;
-				debug("Unimplemented: fillSurf called with a roi");
-			}
-			if (sdst && callback) {
-				int sx, sy;
-				char *cBuffY = sdst->basePtr;
-				char *retptr = rt->retv;
-				char *argptr = rt->argv;
-				for (sy = 0; sy < sdst->height; sy += 1) {
-					long *cBuff = (long*)cBuffY;
-					cBuffY += sdst->scanLen;
-					for (sx = 0; sx < sdst->width; sx += 1) {
-						if (vmCall(rt, callback, vecldc(rgbval(cBuff[sx]))) != 0)
-							return -1;
-						cBuff[sx] = vecrgb(retptr(rt, union vector)).col;
-					}
-				}
-				rt->retv = retptr;
-				rt->argv = argptr;
-			}
-			setret(rt, gxSurfHnd, dst);
-		} break;
-		case surfOpCopyFpCB: {		// gxSurf copySurf(gxSurf dst, int x, int y, gxSurf src, gxRect &roi, float64 alpha, vec4f callBack(vec4f dst, vec4f src));
-			gxSurfHnd dst = popi32(rt);
-			int x = popi32(rt);
-			int y = popi32(rt);
-			gxSurfHnd src = popi32(rt);
-			gx_Rect roi = popref(rt);
-			double alpha = popf64(rt);
-			symn callback = findref(rt, popref(rt));
-
-			gx_Surf sdst = getSurf(dst);
-			gx_Surf ssrc = getSurf(src);
-
-			if (sdst && ssrc) {
-				register char *dptr, *sptr;
-				//~ struct gx_Rect dclp, sclp;
-				struct gx_Rect clip;
-				int x1, y1;
-
-				clip.x = roi ? roi->x : 0;
-				clip.y = roi ? roi->y : 0;
-				clip.w = roi ? roi->w : ssrc->width;
-				clip.h = roi ? roi->h : ssrc->height;
-
-				if(!(sptr = (char*)gx_cliprect(ssrc, &clip)))
-					return 0;
-
-				clip.x = x;
-				clip.y = y;
-				if (clip.x < 0)
-					clip.w -= x;
-				if (clip.y < 0)
-					clip.h -= y;
-				if(!(dptr = (char*)gx_cliprect(sdst, &clip)))
-					return 0;
-
-				if (callback) {
-					char *retptr = rt->retv;
-					char *argptr = rt->argv;
-					x1 = clip.x + clip.w;
-					y1 = clip.y + clip.h;
-					if (alpha > 0 && alpha < 1) {
-						int alpha16 = alpha * (1 << 16);
-						for (y = clip.y; y < y1; y += 1) {
-							long* cbdst = (long*)dptr;
-							long* cbsrc = (long*)sptr;
-							for (x = clip.x; x < x1; x += 1) {
-								if (vmCall(rt, callback, vecldc(rgbval(*cbdst)), vecldc(rgbval(*cbsrc))) != 0)
-									return -1;
-								*(argb*)cbdst = rgbmix16(*(argb*)cbdst, vecrgb(retptr(rt, union vector)), alpha16);
-								cbdst += 1;
-								cbsrc += 1;
-							}
-							dptr += sdst->scanLen;
-							sptr += ssrc->scanLen;
-						}
-					}
-					else if (alpha >= 1){
-						for (y = clip.y; y < y1; y += 1) {
-							long* cbdst = (long*)dptr;
-							long* cbsrc = (long*)sptr;
-							for (x = clip.x; x < x1; x += 1) {
-								if (vmCall(rt, callback, vecldc(rgbval(*cbdst)), vecldc(rgbval(*cbsrc))) != 0)
-									return -1;
-								*cbdst = vecrgb(retptr(rt, union vector)).col;
-								cbdst += 1;
-								cbsrc += 1;
-							}
-							dptr += sdst->scanLen;
-							sptr += ssrc->scanLen;
-						}
-					}
-					rt->retv = retptr;
-					rt->argv = argptr;
-				}
-				else {
-					x1 = clip.x + clip.w;
-					y1 = clip.y + clip.h;
-					if (alpha > 0 && alpha < 1) {
-						int alpha16 = alpha * (1 << 16);
-						for (y = clip.y; y < y1; y += 1) {
-							long* cbdst = (long*)dptr;
-							long* cbsrc = (long*)sptr;
-							for (x = clip.x; x < x1; x += 1) {
-								*(argb*)cbdst = rgbmix16(*(argb*)cbdst, *(argb*)cbsrc, alpha16);
-								cbdst += 1;
-								cbsrc += 1;
-							}
-							dptr += sdst->scanLen;
-							sptr += ssrc->scanLen;
-						}
-					}
-					else if (alpha >= 1) {
-						for (y = clip.y; y < y1; y += 1) {
-							memcpy(dptr, sptr, 4 * clip.w);
-							dptr += sdst->scanLen;
-							sptr += ssrc->scanLen;
-						}
-					}
-				}
-
-			}
-			setret(rt, gxSurfHnd, dst);
-		} break;
-
-		case surfOpNewSurf: {
-			int w = popi32(rt);
-			int h = popi32(rt);
-			gxSurfHnd hnd = newSurf(w, h);
-			setret(rt, gxSurfHnd, hnd);
-		} break;
-		case surfOpDelSurf: {
-			delSurf(popi32(rt));
-		} break;
-
-		case surfOpBmpRead: {
-			gx_Surf surf;
-			gxSurfHnd dst = popi32(rt);
-			if ((surf = getSurf(dst))) {
-				char *fileName = popstr(rt);
-				int result = gx_loadBMP(surf, fileName, 32);
-				setret(rt, gxSurfHnd, dst);
-				//~ debug("gx_readBMP(%s):%d;", fileName, result);
-				return result;
-			}
-		} return -1;
-		case surfOpJpgRead: {
-			gx_Surf surf;
-			gxSurfHnd dst = popi32(rt);
-			if ((surf = getSurf(dst))) {
-				char *fileName = popstr(rt);
-				int result = gx_loadJPG(surf, fileName, 32);
-				setret(rt, gxSurfHnd, dst);
-				//~ debug("readJpg(%s):%d;", fileName, result);
-				return result;
-			}
-		} return -1;
-		case surfOpPngRead: {
-			gx_Surf surf;
-			gxSurfHnd dst = popi32(rt);
-			if ((surf = getSurf(dst))) {
-				char *fileName = popstr(rt);
-				int result = gx_loadPNG(surf, fileName, 32);
-				setret(rt, gxSurfHnd, dst);
-				//~ debug("gx_readPng(%s):%d;", fileName, result);
-				return result;
-			}
-		} return -1;
-		case surfOpBmpWrite: {
-			gx_Surf surf;
-			if ((surf = getSurf(popi32(rt)))) {
-				char *fileName = popstr(rt);
-				return gx_saveBMP(fileName, surf, 0);
-			}
-		} return -1;
-
-		case surfOpClutSurf: {		// gxSurf clutSurf(gxSurf dst, gxRect &roi, gxClut &lut);
-			gxSurfHnd dst = popi32(rt);
-			gx_Rect roi = popref(rt);
-			gx_Clut lut = popref(rt);
-			gx_Surf sdst = getSurf(dst);
-
-			if (sdst && lut) {
-				gx_clutsurf(sdst, roi, lut);
-			}
-			setret(rt, gxSurfHnd, dst);
-			return 0;
-		} return -1;
-		case surfOpCmatSurf: {		// gxSurf cmatSurf(gxSurf dst, gxRect &roi, mat4f &mat);
-			gxSurfHnd dst = popi32(rt);
-			gx_Rect roi = popref(rt);
-			matrix mat = popref(rt);
-
-			gx_Surf sdst = getSurf(dst);
-
-			if (sdst && mat) {
-				int i, fxpmat[16];			// wee will do fixed point arithmetic with the matrix
-				struct gx_Rect rect;
-				char *dptr;
-
-				if (sdst->depth != 32)
-					return -1;
-
-				rect.x = roi ? roi->x : 0;
-				rect.y = roi ? roi->y : 0;
-				rect.w = roi ? roi->w : sdst->width;
-				rect.h = roi ? roi->h : sdst->height;
-
-				if(!(dptr = gx_cliprect(sdst, &rect)))
-					return -2;
-
-				for (i = 0; i < 16; i += 1) {
-					fxpmat[i] = mat->d[i] * (1 << 16);
-				}
-
-				while (rect.h--) {
-					int x;
-					argb *cBuff = (argb*)dptr;
-					for (x = 0; x < rect.w; x += 1) {
-						int r = cBuff->r & 0xff;
-						int g = cBuff->g & 0xff;
-						int b = cBuff->b & 0xff;
-						int ro = (r * fxpmat[ 0] + g * fxpmat[ 1] + b * fxpmat[ 2] + 256*fxpmat[ 3]) >> 16;
-						int go = (r * fxpmat[ 4] + g * fxpmat[ 5] + b * fxpmat[ 6] + 256*fxpmat[ 7]) >> 16;
-						int bo = (r * fxpmat[ 8] + g * fxpmat[ 9] + b * fxpmat[10] + 256*fxpmat[11]) >> 16;
-						//~ cBuff->a = (r * fxpmat[12] + g * fxpmat[13] + b * fxpmat[14] + a * fxpmat[15]) >> 16;
-						*cBuff = rgbclamp(ro, go, bo);
-						cBuff += 1;
-					}
-					dptr += sdst->scanLen;
-				}
-			}
-			setret(rt, gxSurfHnd, dst);
-			return 0;
-		} return -1;
-		case surfOpGradSurf: {		// gxSurf gradSurf(gxSurf dst, gxRect &roi, gxClut &lut, int mode)
-			gxSurfHnd dst = popi32(rt);
-			gx_Rect roi = popref(rt);
-			gx_Clut lut = popref(rt);
-			int mode = popi32(rt);
-			gx_Surf sdst = getSurf(dst);
-
-			if (sdst) {
-				gx_gradsurf(sdst, roi, lut, mode);
-				setret(rt, gxSurfHnd, dst);
-				return 0;
-			}
-		} return -1;
-
-		case surfOpBlurSurf: {		// gxSurf blurSurf(gxSurf dst, gxRect &roi, int radius)
-			gxSurfHnd dst = popi32(rt);
-			gx_Rect roi = popref(rt);
-			int radius = popi32(rt);
-
-			gx_Surf sdst = getSurf(dst);
-
-			if (sdst) {
-				gx_blursurf(sdst, roi, radius);
-				setret(rt, gxSurfHnd, dst);
-				return 0;
-			}
-		} return -1;
-
+		}
+		setret(rt, gxSurfHnd, dst);
+		return 0;
 	}
-	return 0;
+
+	if (rt->libc == surfOpNewSurf) {
+		int w = popi32(rt);
+		int h = popi32(rt);
+		gxSurfHnd hnd = newSurf(w, h);
+		setret(rt, gxSurfHnd, hnd);
+		return 0;
+	}
+	if (rt->libc == surfOpDelSurf) {
+		delSurf(popi32(rt));
+		return 0;
+	}
+
+	if (rt->libc == surfOpBmpRead) {
+		gx_Surf surf;
+		gxSurfHnd dst = popi32(rt);
+		if ((surf = getSurf(dst))) {
+			char *fileName = popstr(rt);
+			int error = gx_loadBMP(surf, fileName, 32);
+			setret(rt, gxSurfHnd, dst);
+			//~ debug("gx_readBMP(%s):%d;", fileName, error);
+			return error;
+		}
+	}
+	if (rt->libc == surfOpJpgRead) {
+		gx_Surf surf;
+		gxSurfHnd dst = popi32(rt);
+		if ((surf = getSurf(dst))) {
+			char *fileName = popstr(rt);
+			int error = gx_loadJPG(surf, fileName, 32);
+			setret(rt, gxSurfHnd, dst);
+			//~ debug("readJpg(%s):%d;", fileName, error);
+			return error;
+		}
+	}
+	if (rt->libc == surfOpPngRead) {
+		gx_Surf surf;
+		gxSurfHnd dst = popi32(rt);
+		if ((surf = getSurf(dst))) {
+			char *fileName = popstr(rt);
+			int result = gx_loadPNG(surf, fileName, 32);
+			setret(rt, gxSurfHnd, dst);
+			//~ debug("gx_readPng(%s):%d;", fileName, result);
+			return result;
+		}
+	}
+	if (rt->libc == surfOpBmpWrite) {
+		gx_Surf surf;
+		if ((surf = getSurf(popi32(rt)))) {
+			char *fileName = popstr(rt);
+			return gx_saveBMP(fileName, surf, 0);
+		}
+	}
+
+	if (rt->libc == surfOpClutSurf) {		// gxSurf clutSurf(gxSurf dst, gxRect &roi, gxClut &lut);
+		gxSurfHnd dst = popi32(rt);
+		gx_Rect roi = popref(rt);
+		gx_Clut lut = popref(rt);
+		gx_Surf sdst = getSurf(dst);
+
+		if (sdst && lut) {
+			gx_clutsurf(sdst, roi, lut);
+		}
+		setret(rt, gxSurfHnd, dst);
+		return 0;
+	}
+	if (rt->libc == surfOpCmatSurf) {		// gxSurf cmatSurf(gxSurf dst, gxRect &roi, mat4f &mat);
+		gxSurfHnd dst = popi32(rt);
+		gx_Rect roi = popref(rt);
+		matrix mat = popref(rt);
+
+		gx_Surf sdst = getSurf(dst);
+
+		if (sdst && mat) {
+			int i, fxpmat[16];			// wee will do fixed point arithmetic with the matrix
+			struct gx_Rect rect;
+			char *dptr;
+
+			if (sdst->depth != 32)
+				return -1;
+
+			rect.x = roi ? roi->x : 0;
+			rect.y = roi ? roi->y : 0;
+			rect.w = roi ? roi->w : sdst->width;
+			rect.h = roi ? roi->h : sdst->height;
+
+			if(!(dptr = gx_cliprect(sdst, &rect)))
+				return -2;
+
+			for (i = 0; i < 16; i += 1) {
+				fxpmat[i] = mat->d[i] * (1 << 16);
+			}
+
+			while (rect.h--) {
+				int x;
+				argb *cBuff = (argb*)dptr;
+				for (x = 0; x < rect.w; x += 1) {
+					int r = cBuff->r & 0xff;
+					int g = cBuff->g & 0xff;
+					int b = cBuff->b & 0xff;
+					int ro = (r * fxpmat[ 0] + g * fxpmat[ 1] + b * fxpmat[ 2] + 256*fxpmat[ 3]) >> 16;
+					int go = (r * fxpmat[ 4] + g * fxpmat[ 5] + b * fxpmat[ 6] + 256*fxpmat[ 7]) >> 16;
+					int bo = (r * fxpmat[ 8] + g * fxpmat[ 9] + b * fxpmat[10] + 256*fxpmat[11]) >> 16;
+					//~ cBuff->a = (r * fxpmat[12] + g * fxpmat[13] + b * fxpmat[14] + a * fxpmat[15]) >> 16;
+					*cBuff = rgbclamp(ro, go, bo);
+					cBuff += 1;
+				}
+				dptr += sdst->scanLen;
+			}
+		}
+		setret(rt, gxSurfHnd, dst);
+		return 0;
+	}
+	if (rt->libc == surfOpGradSurf) {		// gxSurf gradSurf(gxSurf dst, gxRect &roi, gxClut &lut, int mode)
+		gxSurfHnd dst = popi32(rt);
+		gx_Rect roi = popref(rt);
+		gx_Clut lut = popref(rt);
+		int mode = popi32(rt);
+		gx_Surf sdst = getSurf(dst);
+
+		if (sdst) {
+			gx_gradsurf(sdst, roi, lut, mode);
+			setret(rt, gxSurfHnd, dst);
+			return 0;
+		}
+	}
+
+	if (rt->libc == surfOpBlurSurf) {		// gxSurf blurSurf(gxSurf dst, gxRect &roi, int radius)
+		gxSurfHnd dst = popi32(rt);
+		gx_Rect roi = popref(rt);
+		int radius = popi32(rt);
+
+		gx_Surf sdst = getSurf(dst);
+
+		if (sdst) {
+			gx_blursurf(sdst, roi, radius);
+			setret(rt, gxSurfHnd, dst);
+			return 0;
+		}
+	}
+	return -1;
 }
 //}#endregion
 
 //{#region Mesh & Camera
-enum meshCalls {
-	//~ meshGet,		// vec3f meshGet(int index)
-	//~ meshOpAddVtx,		// void meshAddVertex(vec3f pos, vec3f nrm, vec2f tex)
 
-	meshOpSetPos,		// void meshPos(int Index, vec3f Value)
-	meshOpGetPos,		// vec3f meshPos(int Index)
-	meshOpSetNrm,		// void meshNrm(int Index, vec3f Value)
-	meshOpGetNrm,		// vec3f meshNrm(int Index)
-	meshOpSetTex,		// void meshTex(int Index, vec2f Value)
-	//~ meshOpGetTex,		// vec2f meshTex(int Index)
+static symn meshOpSetPos = NULL;		// void meshPos(int Index, vec3f Value)
+//~ static symn meshOpGetPos = NULL;		// vec3f meshPos(int Index)
+static symn meshOpSetNrm = NULL;		// void meshNrm(int Index, vec3f Value)
+//~ static symn meshOpGetNrm = NULL;		// vec3f meshNrm(int Index)
+static symn meshOpSetTex = NULL;		// void meshTex(int Index, vec2f Value)
+//~ static symn meshOpGetTex = NULL;		// vec2f meshTex(int Index)
+//~ static symn meshOpSetTri = NULL;		// int meshSetTri(int t, int p1, int p2, int p3)
+static symn meshOpAddTri = NULL;		// int meshAddTri(int p1, int p2, int p3)
+static symn meshOpAddQuad = NULL;		// int meshAddTri(int p1, int p2, int p3, int p4)
+static symn meshOpSetSeg = NULL;		// int meshSetSeg(int t, int p1, int p2)
+static symn meshOpAddSeg = NULL;		// int meshAddSeg(int p1, int p2)
 
-	meshOpSetTri,		// int meshSetTri(int t, int p1, int p2, int p3)
-	meshOpAddTri,		// int meshAddTri(int p1, int p2, int p3)
-	meshOpAddQuad,		// int meshAddTri(int p1, int p2, int p3, int p4)
-	meshOpSetSeg,		// int meshSetSeg(int t, int p1, int p2)
-	meshOpAddSeg,		// int meshAddSeg(int p1, int p2)
+static symn meshOpGetFlags = NULL;		// int meshFlags()
+static symn meshOpSetFlags = NULL;		// int meshFlags(int Value)
+static symn meshOpInit = NULL;			// int meshInit(int Capacity)
+static symn meshOpTexture = NULL;		// int meshTexture(gxSurf image)
 
-	meshOpGetFlags,		// int meshFlags()
-	meshOpSetFlags,		// int meshFlags(int Value)
+static symn meshOpRead = NULL;			// int meshRead(string file)
+static symn meshOpSave = NULL;			// int meshSave(string file)
 
-	meshOpInit,			// int meshInit(int Capacity)
-	meshOpTexture,		// int meshTexture(gxSurf image)
-	meshOpRead,			// int meshRead(string file)
-	meshOpSave,			// int meshSave(string file)
-	meshOpCenter,		// void Center()
-	meshOpNormalize,	// void Normalize()
+static symn meshOpCenter = NULL;		// void Center()
+static symn meshOpNormalize = NULL;		// void Normalize()
 
-	meshOpInfo,			// void meshInfo()
-
-	//~ meshOpGetCap,		// int meshCap()	// capacity
-	//~ meshOpGetLen,		// int meshLen()	// length
-
-};
-enum camCalls {
-	camOpMove,
-	camOpRotate,
-	camOpLookAt,
-
-	camGetPos,
-	camSetPos,
-
-	camGetUp,
-	camSetUp,
-
-	camGetRight,
-	camSetRight,
-
-	camGetForward,
-	camSetForward,
-};
-enum objCalls {
-	objOpMove,
-	objOpRotate,
-	objOpSelected,
-};
+static symn meshOpInfo = NULL;			// void meshInfo()
 
 static int meshCall(state rt) {
-	switch (rt->fdata) {
-		default: return -1;
-		case meshOpSetPos: {		// void meshPos(int Index, double x, double y, double z);
-			double pos[3];
-			int idx = popi32(rt);
-			pos[0] = popf64(rt);
-			pos[1] = popf64(rt);
-			pos[2] = popf64(rt);
-			setvtxDV(&msh, idx, pos, NULL, NULL, 0xff00ff);
-		} break;
-		case meshOpSetNrm: {		// void meshNrm(int Index, double x, double y, double z);
-			double nrm[3];
-			int idx = popi32(rt);
-			nrm[0] = popf64(rt);
-			nrm[1] = popf64(rt);
-			nrm[2] = popf64(rt);
-			setvtxDV(&msh, idx, NULL, nrm, NULL, 0xff00ff);
-		} break;
-		//~ case meshOpGetPos: {		// vec3f meshPos(int Index)
-		//~ case meshOpGetNrm: {		// vec3f meshNrm(int Index)
-		case meshOpSetTex: {			// void meshTex(int Index, vec2f Value)
-			double pos[2];
-			int idx = popi32(rt);
-			pos[0] = popf64(rt);
-			pos[1] = popf64(rt);
-			setvtxDV(&msh, idx, NULL, NULL, pos, 0xff00ff);
-		} break;
-		//~ case meshOpGetTex: {		// vec2f meshTex(int Index)
-		//~ case meshOpSetTri: {		// int meshSetTri(int t, int p1, int p2, int p3)
-		case meshOpAddTri: {			// int meshAddTri(int p1, int p2, int p3)
-			int p1 = popi32(rt);
-			int p2 = popi32(rt);
-			int p3 = popi32(rt);
-			addtri(&msh, p1, p2, p3);
-		} break;
-		case meshOpAddQuad: {			// int meshAddTri(int p1, int p2, int p3, p4)
-			int p1 = popi32(rt);
-			int p2 = popi32(rt);
-			int p3 = popi32(rt);
-			int p4 = popi32(rt);
-			//~ addtri(&msh, p1, p2, p3);
-			//~ addtri(&msh, p3, p4, p1);
-			addquad(&msh, p1, p2, p3, p4);
-		} break;
-		//~ case meshOpSetSeg: {		// int meshSetSeg(int t, int p1, int p2)
-		//~ case meshOpAddSeg: {		// int meshAddSeg(int p1, int p2)
-		//~ case meshOpGetFlags: {		// int meshFlags()
-		//~ case meshOpSetFlags: {		// int meshFlags(int Value)
+	if (rt->libc == meshOpSetPos) {		// void meshPos(int Index, double x, double y, double z);
+		double pos[3];
+		int idx = popi32(rt);
+		pos[0] = popf64(rt);
+		pos[1] = popf64(rt);
+		pos[2] = popf64(rt);
+		setvtxDV(&msh, idx, pos, NULL, NULL, 0xff00ff);
+		return 0;
+	}
+	if (rt->libc == meshOpSetNrm) {		// void meshNrm(int Index, double x, double y, double z);
+		double nrm[3];
+		int idx = popi32(rt);
+		nrm[0] = popf64(rt);
+		nrm[1] = popf64(rt);
+		nrm[2] = popf64(rt);
+		setvtxDV(&msh, idx, NULL, nrm, NULL, 0xff00ff);
+		return 0;
+	}
+	//~ case meshOpGetPos: {		// vec3f meshPos(int Index)
+	//~ case meshOpGetNrm: {		// vec3f meshNrm(int Index)
+	if (rt->libc == meshOpSetTex) {			// void meshTex(int Index, vec2f Value)
+		double pos[2];
+		int idx = popi32(rt);
+		pos[0] = popf64(rt);
+		pos[1] = popf64(rt);
+		setvtxDV(&msh, idx, NULL, NULL, pos, 0xff00ff);
+		return 0;
+	}
+	//~ case meshOpGetTex: {		// vec2f meshTex(int Index)
+	//~ case meshOpSetTri: {		// int meshSetTri(int t, int p1, int p2, int p3)
+	if (rt->libc == meshOpAddTri) {			// int meshAddTri(int p1, int p2, int p3)
+		int p1 = popi32(rt);
+		int p2 = popi32(rt);
+		int p3 = popi32(rt);
+		addtri(&msh, p1, p2, p3);
+		return 0;
+	}
+	if (rt->libc == meshOpAddQuad) {			// int meshAddTri(int p1, int p2, int p3, p4)
+		int p1 = popi32(rt);
+		int p2 = popi32(rt);
+		int p3 = popi32(rt);
+		int p4 = popi32(rt);
+		//~ addtri(&msh, p1, p2, p3);
+		//~ addtri(&msh, p3, p4, p1);
+		addquad(&msh, p1, p2, p3, p4);
+		return 0;
+	}
+	//~ case meshOpSetSeg: {		// int meshSetSeg(int t, int p1, int p2)
+	//~ case meshOpAddSeg: {		// int meshAddSeg(int p1, int p2)
+	//~ case meshOpGetFlags: {		// int meshFlags()
+	//~ case meshOpSetFlags: {		// int meshFlags(int Value)
 
-		case meshOpInfo: {				// void meshInfo();
-			meshInfo(&msh);
-		} break;
-		case meshOpInit: {			// int meshInit(int Capacity);
-			setret(rt, int32_t, initMesh(&msh, popi32(rt)));
-		} break;
-		case meshOpTexture: {
-			msh.map = getSurf(popi32(rt));
-			msh.freeTex = 0;
-			//~ debug("msh.map = %p", msh.map);
-			//~ textureMesh(&msh, popstr(s));
-		} break;
-		case meshOpRead: {			// int meshRead(string file);
-			char* mesh = popstr(rt);
-			char* tex = popstr(rt);
-			setret(rt, int32_t, readorevalMesh(&msh, mesh, 0, tex, 0));
-		} break;
-		case meshOpSave: {			// int meshSave(string file);
-			setret(rt, int32_t, saveMesh(&msh, popstr(rt)));
-		} break;
-		case meshOpCenter: {		// void Center(float size);
-			centMesh(&msh, popf32(rt));
-		} break;
-		case meshOpNormalize: {		// void Normalize(double epsilon);
-			normMesh(&msh, popf32(rt));
-		} break;
+	if (rt->libc == meshOpInfo) {				// void meshInfo();
+		meshInfo(&msh);
+		return 0;
+	}
+	if (rt->libc == meshOpInit) {			// int meshInit(int Capacity);
+		setret(rt, int32_t, initMesh(&msh, popi32(rt)));
+		return 0;
+	}
+	if (rt->libc == meshOpTexture) {
+		msh.map = getSurf(popi32(rt));
+		msh.freeTex = 0;
+		//~ debug("msh.map = %p", msh.map);
+		//~ textureMesh(&msh, popstr(s));
+		return 0;
+	}
+	if (rt->libc == meshOpRead) {			// int meshRead(string file);
+		char* mesh = popstr(rt);
+		char* tex = popstr(rt);
+		setret(rt, int32_t, readorevalMesh(&msh, mesh, 0, tex, 0));
+		return 0;
+	}
+	if (rt->libc == meshOpSave) {			// int meshSave(string file);
+		setret(rt, int32_t, saveMesh(&msh, popstr(rt)));
+		return 0;
+	}
+	if (rt->libc == meshOpCenter) {		// void Center(float size);
+		centMesh(&msh, popf32(rt));
+		return 0;
+	}
+	if (rt->libc == meshOpNormalize) {		// void Normalize(double epsilon);
+		normMesh(&msh, popf32(rt));
+		return 0;
 	}
 
-	return 0;
+	return -1;
 }
+
+static symn camGetPos = NULL;
+static symn camSetPos = NULL;
+static symn camGetUp = NULL;
+static symn camSetUp = NULL;
+static symn camGetRight = NULL;
+static symn camSetRight = NULL;
+static symn camGetForward = NULL;
+static symn camSetForward = NULL;
+static symn camOpMove = NULL;
+static symn camOpRotate = NULL;
+static symn camOpLookAt = NULL;
 static int camCall(state rt) {
-	switch (rt->fdata) {
-		default: return -1;
-
-		case camOpMove: {
-			vector dir = popref(rt);
-			float32_t cnt = popf32(rt);
-			cammov(cam, dir, cnt);
-		} break;
-		case camOpRotate: {
-			vector dir = popref(rt);
-			vector orb = popref(rt);
-			float32_t cnt = popf32(rt);
-			camrot(cam, dir, orb, cnt);
-		} break;
-
-		case camOpLookAt: {		// cam.lookAt(vec4f eye, vec4f at, vec4f up)
-			union vector campos, camat, camup;
-			vector camPos = poparg(rt, &campos, sizeof(union vector));	// eye
-			vector camAt = poparg(rt, &camat, sizeof(union vector));	// target
-			vector camUp = poparg(rt, &camup, sizeof(union vector));	// up
-			//~ vector camPos = popref(s);
-			//~ vector camAt = popref(s);
-			//~ vector camUp = popref(s);
-
-			camset(cam, camPos, camAt, camUp);
-			break;
-		}
-		//~ case camOpSet: break;			// cam.set(vec4f pos, vec4f up, vec4f right, vec4f forward)
-
-		case camGetPos: setret(rt, union vector, cam->pos); break;
-		case camSetPos: poparg(rt, &cam->pos, sizeof(union vector)); break;
-
-		case camGetUp: setret(rt, union vector, cam->dirU); break;
-		case camSetUp: poparg(rt, &cam->dirU, sizeof(union vector)); break;
-
-		case camGetRight: setret(rt, union vector, cam->dirR); break;
-		case camSetRight: poparg(rt, &cam->dirR, sizeof(union vector)); break;
-
-		case camGetForward: setret(rt, union vector, cam->dirF); break;
-		case camSetForward: poparg(rt, &cam->dirF, sizeof(union vector)); break;
+	if (rt->libc == camOpMove) {
+		vector dir = popref(rt);
+		float32_t cnt = popf32(rt);
+		cammov(cam, dir, cnt);
+		return 0;
+	}
+	if (rt->libc == camOpRotate) {
+		vector dir = popref(rt);
+		vector orb = popref(rt);
+		float32_t cnt = popf32(rt);
+		camrot(cam, dir, orb, cnt);
+		return 0;
 	}
 
-	return 0;
+	if (rt->libc == camOpLookAt) {		// cam.lookAt(vec4f eye, vec4f at, vec4f up)
+		union vector campos, camat, camup;
+		vector camPos = poparg(rt, &campos, sizeof(union vector));	// eye
+		vector camAt = poparg(rt, &camat, sizeof(union vector));	// target
+		vector camUp = poparg(rt, &camup, sizeof(union vector));	// up
+		//~ vector camPos = popref(s);
+		//~ vector camAt = popref(s);
+		//~ vector camUp = popref(s);
+		camset(cam, camPos, camAt, camUp);
+		return 0;
+	}
+
+	if (rt->libc == camGetPos) {
+		setret(rt, union vector, cam->pos);
+		return 0;
+	}
+	if (rt->libc == camSetPos) {
+		poparg(rt, &cam->pos, sizeof(union vector));
+		return 0;
+	}
+
+	if (rt->libc == camGetUp) {
+		setret(rt, union vector, cam->dirU);
+		return 0;
+	}
+	if (rt->libc == camSetUp) {
+		poparg(rt, &cam->dirU, sizeof(union vector));
+		return 0;
+	}
+
+	if (rt->libc == camGetRight) {
+		setret(rt, union vector, cam->dirR);
+		return 0;
+	}
+	if (rt->libc == camSetRight) {
+		poparg(rt, &cam->dirR, sizeof(union vector));
+		return 0;
+	}
+
+	if (rt->libc == camGetForward) {
+		setret(rt, union vector, cam->dirF);
+		return 0;
+	}
+	if (rt->libc == camSetForward) {
+		poparg(rt, &cam->dirF, sizeof(union vector));
+		return 0;
+	}
+
+	return -1;
 }
+
+static symn objOpMove = NULL;
+static symn objOpRotate = NULL;
+static symn objOpSelected = NULL;
 static int objCall(state rt) {
-	switch (rt->fdata) {
+	/*switch (rt->fdata) {
 		default: return -1;
 
 		case objOpMove: {
@@ -1741,7 +1892,7 @@ static int objCall(state rt) {
 			setret(rt, int, getobjvec(0) != NULL); break;
 		} break;
 
-	}
+	}*/
 
 	return 0;
 }
@@ -1769,78 +1920,45 @@ state rt = NULL;
 symn mouseCallBack = NULL;
 symn renderMethod = NULL;
 
-enum miscCalls {
-	miscSetExitLoop,
-	//~ miscSetAnimation,
-	miscOpSetCbMouse,
-	miscOpSetCbRender,
-	//~ miscOpInitScreen,
-	miscOpFlipScreen,
-	//~ miscOpConsumeEvents,
-};
+static symn miscSetExitLoop = NULL;
+static symn miscOpFlipScreen = NULL;
+static symn miscOpSetCbMouse = NULL;
+static symn miscOpSetCbRender = NULL;
 static int miscCall(state rt) {
-	symn cb = NULL;
-	switch (rt->fdata) {
-		default: return -1;
-
-		case miscSetExitLoop: {
-			draw = 0;
-			/*if (popi32(s)) {
-				draw &= ~OnDemand;
-			}
-			else {
-				draw |= OnDemand;
-			}*/
-		} break;
-
-		/*case miscSetAnimation: {
-			if (popi32(s)) {
-				draw &= ~OnDemand;
-			}
-			else {
-				draw |= OnDemand;
-			}
-		} break;*/
-
-		case miscOpFlipScreen: {
-			if (popi32(rt)) {
-				if (flip)
-					flip(&offs, 0);
-			}
-			else {
-				draw |= post_swap;
-			}
-		} break;
-
-		case miscOpSetCbMouse: {
-			cb = mouseCallBack = findref(rt, popref(rt));
-		} break;
-
-		case miscOpSetCbRender: {
-			cb = renderMethod = findref(rt, popref(rt));
-		} break;
-
-		/* unused stuff
-
-		case miscOpInitScreen: {
-			resx = popi32(s);
-			resy = popi32(s);
-			draw = popi32(s);
-			g3_init(&offs, resx, resy);
-		} break;
-
-		case miscOpConsumeEvents: {
-			if (peekMsg)
-				peekMsg(0);
-		} break;*/
-
-		//~ case miscOpShowWin: break;
+	if (rt->libc == miscSetExitLoop) {
+		draw = 0;
+		/*if (popi32(s)) {
+			draw &= ~OnDemand;
+		}
+		else {
+			draw |= OnDemand;
+		}*/
+		return 0;
 	}
 
-	//~ if (cb != NULL) fputfmt(stdout, "setCallBack(%-T)\n", cb);
-	(void)cb;
+	if (rt->libc == miscOpFlipScreen) {
+		if (popi32(rt)) {
+			if (flip)
+				flip(&offs, 0);
+		}
+		else {
+			draw |= post_swap;
+		}
+		return 0;
+	}
 
-	return 0;
+	if (rt->libc == miscOpSetCbMouse) {
+		mouseCallBack = findref(rt, popref(rt));
+		return 0;
+	}
+
+	if (rt->libc == miscOpSetCbRender) {
+		renderMethod = findref(rt, popref(rt));
+		return 0;
+	}
+
+
+	return -1;
 }
 
 /*static int setVar(state rt) {
@@ -1887,108 +2005,109 @@ static int ratHND(int btn, int mx, int my) {
 
 struct {
 	int (*fun)(state);
-	int offs;
+	symn *libc;
 	char *def;
 } *def,
 Gui[] = {
-	//~ {miscCall2, miscOpConsumeEvents,	"void consumeEvents();"},
-	//~ {miscCall, miscSetAnimation,	"void Animated(bool animate);"},
-	{miscCall, miscSetExitLoop,		"void exitLoop();"},
-	//~ {miscCall, miscOpInitScreen,	"void initScreen(int resx, int resy, int draw);"},
-	{miscCall, miscOpSetCbMouse,	"void setMouseHandler(void handler(int btn, int x, int y));"},
-	{miscCall, miscOpSetCbRender,	"void setDrawCallback(void callback());"},
-	//~ {miscCall, miscSetAnimation,	"void postRepaint(bool animate);"},
-	{miscCall, miscOpFlipScreen,	"void Repaint(bool forceNow);"},
+	{miscCall, &miscSetExitLoop,	"void exitLoop();"},
+	{miscCall, &miscOpFlipScreen,	"void Repaint(bool forceNow);"},
+	{miscCall, &miscOpSetCbMouse,	"void setMouseHandler(void handler(int btn, int x, int y));"},
+	{miscCall, &miscOpSetCbRender,	"void setDrawCallback(void callback());"},
 },
 Surf[] = {
-	{surfCall, surfOpGetWidth,		"int width(gxSurf dst);"},
-	{surfCall, surfOpGetHeight,		"int height(gxSurf dst);"},
-	{surfCall, surfOpClipRect,		"bool clipRect(gxSurf surf, gxRect &rect);"},
+	{surfCall, &surfOpGetWidth,		"int width(gxSurf dst);"},
+	{surfCall, &surfOpGetHeight,	"int height(gxSurf dst);"},
+	{surfCall, &surfOpClipRect,		"bool clipRect(gxSurf surf, gxRect &rect);"},
 
-	{surfCall, surfOpGetPixel,		"int getPixel(gxSurf dst, int x, int y);"},
-	{surfCall, surfOpGetPixfp,		"int getPixel(gxSurf dst, double x, double y);"},
-	{surfCall, surfOpSetPixel,		"void setPixel(gxSurf dst, int x, int y, int col);"},
+	{surfGetPixel, NULL,			"int getPixel(gxSurf dst, int x, int y);"},
+	{surfGetPixfp, NULL,			"int getPixel(gxSurf dst, double x, double y);"},
+	{surfSetPixel, NULL,			"void setPixel(gxSurf dst, int x, int y, int col);"},
+	//~ {surfCall, &surfOpGetPixel,		"int getPixel(gxSurf dst, int x, int y);"},
+	//~ {surfCall, &surfOpGetPixfp,		"int getPixel(gxSurf dst, double x, double y);"},
+	//~ {surfCall, &surfOpSetPixel,		"void setPixel(gxSurf dst, int x, int y, int col);"},
 
-	{surfCall, surfOpDrawLine,		"void drawLine(gxSurf dst, int x0, int y0, int x1, int y1, int col);"},
-	{surfCall, surfOpDrawRect,		"void drawRect(gxSurf dst, int x0, int y0, int x1, int y1, int col);"},
-	{surfCall, surfOpFillRect,		"void fillRect(gxSurf dst, int x0, int y0, int x1, int y1, int col);"},
-	{surfCall, surfOpDrawOval,		"void drawOval(gxSurf dst, int x0, int y0, int x1, int y1, int col);"},
-	{surfCall, surfOpFillOval,		"void fillOval(gxSurf dst, int x0, int y0, int x1, int y1, int col);"},
-	{surfCall, surfOpDrawText,		"void drawText(gxSurf dst, int x0, int y0, string text, int col);"},
+	{surfCall, &surfOpDrawLine,		"void drawLine(gxSurf dst, int x0, int y0, int x1, int y1, int col);"},
+	{surfCall, &surfOpDrawRect,		"void drawRect(gxSurf dst, int x0, int y0, int x1, int y1, int col);"},
+	{surfCall, &surfOpFillRect,		"void fillRect(gxSurf dst, int x0, int y0, int x1, int y1, int col);"},
+	{surfCall, &surfOpDrawOval,		"void drawOval(gxSurf dst, int x0, int y0, int x1, int y1, int col);"},
+	{surfCall, &surfOpFillOval,		"void fillOval(gxSurf dst, int x0, int y0, int x1, int y1, int col);"},
+	{surfCall, &surfOpDrawText,		"void drawText(gxSurf dst, int x0, int y0, string text, int col);"},
 
-	{surfCall, surfOpCopySurf,		"gxSurf copySurf(gxSurf dst, int x, int y, gxSurf src, gxRect &roi);"},
-	{surfCall, surfOpZoomSurf,		"gxSurf zoomSurf(gxSurf dst, gxRect &rect, gxSurf src, gxRect &roi, int mode);"},
+	{surfCall, &surfOpCopySurf,		"gxSurf copySurf(gxSurf dst, int x, int y, gxSurf src, gxRect &roi);"},
+	{surfCall, &surfOpZoomSurf,		"gxSurf zoomSurf(gxSurf dst, gxRect &rect, gxSurf src, gxRect &roi, int mode);"},
 
-	{surfCall, surfOpCmatSurf,		"gxSurf cmatSurf(gxSurf dst, gxRect &roi, mat4f &mat);"},
-	{surfCall, surfOpClutSurf,		"gxSurf clutSurf(gxSurf dst, gxRect &roi, gxClut &lut);"},
-	{surfCall, surfOpGradSurf,		"gxSurf gradSurf(gxSurf dst, gxRect &roi, gxClut &lut, int mode);"},
-	{surfCall, surfOpBlurSurf,		"gxSurf blurSurf(gxSurf dst, gxRect &roi, int radius);"},
+	{surfCall, &surfOpCmatSurf,		"gxSurf cmatSurf(gxSurf dst, gxRect &roi, mat4f &mat);"},
+	{surfCall, &surfOpClutSurf,		"gxSurf clutSurf(gxSurf dst, gxRect &roi, gxClut &lut);"},
+	{surfCall, &surfOpGradSurf,		"gxSurf gradSurf(gxSurf dst, gxRect &roi, gxClut &lut, int mode);"},
+	{surfCall, &surfOpBlurSurf,		"gxSurf blurSurf(gxSurf dst, gxRect &roi, int radius);"},
 
-	{surfCall, surfOpBmpRead,		"gxSurf readBmp(gxSurf dst, string fileName);"},
-	{surfCall, surfOpJpgRead,		"gxSurf readJpg(gxSurf dst, string fileName);"},
-	{surfCall, surfOpPngRead,		"gxSurf readPng(gxSurf dst, string fileName);"},
-	{surfCall, surfOpBmpWrite,		"void bmpWrite(gxSurf src, string fileName);"},
+	{surfCall, &surfOpBmpRead,		"gxSurf readBmp(gxSurf dst, string fileName);"},
+	{surfCall, &surfOpJpgRead,		"gxSurf readJpg(gxSurf dst, string fileName);"},
+	{surfCall, &surfOpPngRead,		"gxSurf readPng(gxSurf dst, string fileName);"},
+	{surfCall, &surfOpBmpWrite,		"void bmpWrite(gxSurf src, string fileName);"},
 
-	{surfCall, surfOpNewSurf,		"gxSurf newSurf(int width, int height);"},
-	{surfCall, surfOpDelSurf,		"void delSurf(gxSurf surf);"},
+	{surfCall, &surfOpNewSurf,		"gxSurf newSurf(int width, int height);"},
+	{surfCall, &surfOpDelSurf,		"void delSurf(gxSurf surf);"},
 
-	{surfCall, surfOpFillFpCB,		"gxSurf fillSurf(gxSurf dst, gxRect &roi, vec4f callBack(vec4f col));"},
-	{surfCall, surfOpEvalFpCB,		"gxSurf evalSurf(gxSurf dst, gxRect &roi, vec4f callBack(double x, double y));"},
-	{surfCall, surfOpCopyFpCB,		"gxSurf copySurf(gxSurf dst, int x, int y, gxSurf src, gxRect &roi, double alpha, vec4f callBack(vec4f dst, vec4f src));"},
+	{surfCall, &surfOpFillFpCB,		"gxSurf fillSurf(gxSurf dst, gxRect &roi, vec4f callBack(vec4f col));"},
+	{surfCall, &surfOpEvalFpCB,		"gxSurf evalSurf(gxSurf dst, gxRect &roi, vec4f callBack(double x, double y));"},
+	{surfCall, &surfOpCopyFpCB,		"gxSurf copySurf(gxSurf dst, int x, int y, gxSurf src, gxRect &roi, double alpha, vec4f callBack(vec4f dst, vec4f src));"},
 
-	{surfCall, surfOpFillPxCB,		"gxSurf fillSurfrgb(gxSurf dst, gxRect &roi, int callBack(int col));"},
-	{surfCall, surfOpEvalPxCB,		"gxSurf evalSurfrgb(gxSurf dst, gxRect &roi, int callBack(int x, int y));"},
-	{surfCall, surfOpCopyPxCB,		"gxSurf copySurfrgb(gxSurf dst, int x, int y, gxSurf src, gxRect &roi, int callBack(int dst, int src));"},
+	{surfCall, &surfOpFillPxCB,		"gxSurf fillSurfrgb(gxSurf dst, gxRect &roi, int callBack(int col));"},
+	{surfCall, &surfOpEvalPxCB,		"gxSurf evalSurfrgb(gxSurf dst, gxRect &roi, int callBack(int x, int y));"},
+	{surfCall, &surfOpCopyPxCB,		"gxSurf copySurfrgb(gxSurf dst, int x, int y, gxSurf src, gxRect &roi, int callBack(int dst, int src));"},
 
 },
 // 3d
 Mesh[] = {
-	{meshCall, meshOpSetPos,		"void Pos(int Index, double x, double y, double z);"},
-	{meshCall, meshOpSetNrm,		"void Nrm(int Index, double x, double y, double z);"},
-	{meshCall, meshOpSetTex,		"void Tex(int Index, double s, double t);"},
-	//~ {meshCall, meshOpGetPos,		"vec4f Pos(int Index);"},
-	//~ {meshCall, meshOpGetNrm,		"vec4f Nrm(int Index);"},
-	//~ {meshCall, meshOpGetTex,		"vec2f Tex(int Index);"},
-	//~ {meshCall, meshOpSetTri,		"int SetTri(int t, int p1, int p2, int p3);"},
-	{meshCall, meshOpAddTri,		"void AddFace(int p1, int p2, int p3);"},
-	{meshCall, meshOpAddQuad,		"void AddFace(int p1, int p2, int p3, int p4);"},
-	{meshCall, meshOpSetSeg,		"int SetSeg(int t, int p1, int p2);"},
-	{meshCall, meshOpAddSeg,		"int AddSeg(int p1, int p2);"},
-	{meshCall, meshOpGetFlags,		"int Flags;"},
-	{meshCall, meshOpSetFlags,		"int Flags(int Value);"},
-	//~ {meshCall, meshOpGetTex,		"gxSurf Texture;"},
-	{meshCall, meshOpTexture,		"int Texture(gxSurf image);"},
-	{meshCall, meshOpInit,			"int Init(int Capacity);"},
-	{meshCall, meshOpRead,			"int Read(string file, string texture);"},
-	{meshCall, meshOpSave,			"int Save(string file);"},
-	{meshCall, meshOpCenter,		"void Center(float32 Resize);"},
-	{meshCall, meshOpNormalize,		"void Normalize(float32 Epsilon);"},
-	{meshCall, meshOpInfo,			"void Info();"},
+	{meshCall, &meshOpSetPos,		"void Pos(int Index, double x, double y, double z);"},
+	{meshCall, &meshOpSetNrm,		"void Nrm(int Index, double x, double y, double z);"},
+	{meshCall, &meshOpSetTex,		"void Tex(int Index, double s, double t);"},
+	//~ {meshCall, &meshOpGetPos,		"vec4f Pos(int Index);"},
+	//~ {meshCall, &meshOpGetNrm,		"vec4f Nrm(int Index);"},
+	//~ {meshCall, &meshOpGetTex,		"vec2f Tex(int Index);"},
+	//~ {meshCall, &meshOpSetTri,		"int SetTri(int t, int p1, int p2, int p3);"},
+	{meshCall, &meshOpAddTri,		"void AddFace(int p1, int p2, int p3);"},
+	{meshCall, &meshOpAddQuad,		"void AddFace(int p1, int p2, int p3, int p4);"},
+	{meshCall, &meshOpSetSeg,		"int SetSeg(int t, int p1, int p2);"},
+	{meshCall, &meshOpAddSeg,		"int AddSeg(int p1, int p2);"},
+	{meshCall, &meshOpGetFlags,		"int Flags;"},
+	{meshCall, &meshOpSetFlags,		"int Flags(int Value);"},
+	//~ {meshCall, &meshOpGetTex,		"gxSurf Texture;"},
+	{meshCall, &meshOpTexture,		"int Texture(gxSurf image);"},
+	{meshCall, &meshOpInit,			"int Init(int Capacity);"},
+	{meshCall, &meshOpRead,			"int Read(string file, string texture);"},
+	{meshCall, &meshOpSave,			"int Save(string file);"},
+	{meshCall, &meshOpCenter,		"void Center(float32 Resize);"},
+	{meshCall, &meshOpNormalize,		"void Normalize(float32 Epsilon);"},
+	{meshCall, &meshOpInfo,			"void Info();"},
+	//~ */
 },
 Cam[] = {
-	{camCall, camGetPos,			"vec4f Pos;"},
-	{camCall, camGetUp,				"vec4f Up;"},
-	{camCall, camGetRight,			"vec4f Right;"},
-	{camCall, camGetForward,		"vec4f Forward;"},
+	{camCall, &camGetPos,			"vec4f Pos;"},
+	{camCall, &camGetUp,			"vec4f Up;"},
+	{camCall, &camGetRight,			"vec4f Right;"},
+	{camCall, &camGetForward,		"vec4f Forward;"},
 
-	{camCall, camSetPos,			"void Pos(vec4f v);"},
-	{camCall, camSetUp,				"void Up(vec4f v);"},
-	{camCall, camSetRight,			"void Right(vec4f v);"},
-	{camCall, camSetForward,		"void Forward(vec4f v);"},
+	{camCall, &camSetPos,			"void Pos(vec4f v);"},
+	{camCall, &camSetUp,			"void Up(vec4f v);"},
+	{camCall, &camSetRight,			"void Right(vec4f v);"},
+	{camCall, &camSetForward,		"void Forward(vec4f v);"},
 
-	{camCall, camOpMove,			"void Move(vec4f &direction, float32 cnt);"},
-	{camCall, camOpRotate,			"void Rotate(vec4f &direction, vec4f &orbit, float32 cnt);"},
-	//~ cam.lookAt(vec4f eye, vec4f at, vec4f up)
-	{camCall, camOpLookAt,			"void LookAt(vec4f eye, vec4f at, vec4f up);"},
+	{camCall, &camOpMove,			"void Move(vec4f &direction, float32 cnt);"},
+	{camCall, &camOpRotate,			"void Rotate(vec4f &direction, vec4f &orbit, float32 cnt);"},
+	{camCall, &camOpLookAt,			"void LookAt(vec4f eye, vec4f at, vec4f up);"},
+	// */
 },
 Obj[] = {
 	//~ {objCall, objGetPos,			"vec4f Pos();"},
 	//~ {objCall, objSetPos,			"void Pos(vec4f v);"},
 	//~ {objCall, objGetNrm,			"vec4f Nrm();"},
 	//~ {objCall, objSetNrm,			"void Nrm(vec4f v);"},
-	{objCall, objOpMove,			"void Move(float32 dx, float32 dy);"},
-	{objCall, objOpRotate,			"void Rotate(float32 dx, float32 dy);"},
-	{objCall, objOpSelected,		"bool object;"},
+	{objCall, &objOpMove,			"void Move(float32 dx, float32 dy);"},
+	{objCall, &objOpRotate,			"void Rotate(float32 dx, float32 dy);"},
+	{objCall, &objOpSelected,		"bool object;"},
+	// */
 };
 
 char* strnesc(char *dst, int max, char* src) {
@@ -2076,15 +2195,27 @@ static int ccCompile(char *src, int argc, char* argv[]) {
 
 	// install standard library calls
 	err = err || install_stdc(rt, ccStd, strwl);
-	err = err || !installtyp(rt, "gxSurf", sizeof(gxSurfHnd));
+	err = err || !installtyp(rt, "gxSurf", sizeof(gxSurfHnd), 0);
 
 	for (i = 0; i < sizeof(Surf) / sizeof(*Surf); i += 1) {
-		err = err || !libcall(rt, Surf[i].fun, Surf[i].offs, Surf[i].def);
+		symn libc = libcall(rt, Surf[i].fun, Surf[i].def);
+		if (libc == NULL) {
+			return -1;
+		}
+		if (Surf[i].libc != NULL) {
+			*(Surf[i].libc) = libc;
+		}
 	}
 
 	if ((cls = ccBegin(rt, "Gui"))) {
 		for (i = 0; i < sizeof(Gui) / sizeof(*Gui); i += 1) {
-			err = err || !libcall(rt, Gui[i].fun, Gui[i].offs, Gui[i].def);
+			symn libc = libcall(rt, Gui[i].fun, Gui[i].def);
+			if (libc == NULL) {
+				return -1;
+			}
+			if (Gui[i].libc != NULL) {
+				*(Gui[i].libc) = libc;
+			}
 		}
 		err = err || cctext(rt, strwl, __FILE__, __LINE__ + 1,
 			"define Repaint() = Repaint(false);\n"
@@ -2093,24 +2224,42 @@ static int ccCompile(char *src, int argc, char* argv[]) {
 	}
 	if ((cls = ccBegin(rt, "mesh"))) {
 		for (i = 0; i < sizeof(Mesh) / sizeof(*Mesh); i += 1) {
-			err = err || !libcall(rt, Mesh[i].fun, Mesh[i].offs, Mesh[i].def);
+			symn libc = libcall(rt, Mesh[i].fun, Mesh[i].def);
+			if (libc == NULL) {
+				return -1;
+			}
+			if (Mesh[i].libc != NULL) {
+				*(Mesh[i].libc) = libc;
+			}
 		}
 		ccEnd(rt, cls);
 	}
 	if ((cls = ccBegin(rt, "camera"))) {
 		for (i = 0; i < sizeof(Cam) / sizeof(*Cam); i += 1) {
-			err = err || !libcall(rt, Cam[i].fun, Cam[i].offs, Cam[i].def);
+			symn libc = libcall(rt, Cam[i].fun, Cam[i].def);
+			if (libc == NULL) {
+				return -1;
+			}
+			if (Cam[i].libc != NULL) {
+				*(Cam[i].libc) = libc;
+			}
 		}
 		ccEnd(rt, cls);
 	}
 	if ((cls = ccBegin(rt, "selection"))) {
 		for (i = 0; i < sizeof(Obj) / sizeof(*Obj); i += 1) {
-			err = err || !libcall(rt, Obj[i].fun, Obj[i].offs, Obj[i].def);
+			symn libc = libcall(rt, Obj[i].fun, Obj[i].def);
+			if (libc == NULL) {
+				return -1;
+			}
+			if (Obj[i].libc != NULL) {
+				*(Obj[i].libc) = libc;
+			}
 		}
 		ccEnd(rt, cls);
 	}
 
-	err = err || cctext(rt, strwl, __FILE__, __LINE__, "gxSurf offScreen = emit(gxSurf, i32(-1));\n");
+	err = err || cctext(rt, strwl, __FILE__, __LINE__, "gxSurf offScreen = emit(gxSurf, i32(-1));");
 
 	// it is not an error if library name is not set(NULL)
 	if (ccGfx && ccOpen(rt, srcFile, ccGfx)) {
@@ -2384,7 +2533,7 @@ int main(int argc, char* argv[]) {
 		int64_t ticks = timenow();
 		e = vmExec(rt, NULL);
 		debug("vmExecute(): %d\tTime: %f", e, ticksinsecs(ticks));
-		rtAlloc(rt, NULL, 0);
+		//~ rtAlloc(rt, NULL, 0);
 	}
 
 	// set the color of the mesh to normals
@@ -2398,8 +2547,7 @@ int main(int argc, char* argv[]) {
 
 	// the big main loop
 	if (draw) for (fps.cnt = fps.sec = 0; ; fps.cnt++) {
-		int msg, now, tris = 0, ln = 0;
-		#define nextln ((ln += box.h) - box.h)
+		int msg, now, tris = 0;
 
 		now = time(NULL);
 		if (fps.sec != now) {				// fps
@@ -2441,17 +2589,18 @@ int main(int argc, char* argv[]) {
 				zBuff[e] = 0x3fffffff;
 		}
 
-		#ifdef cubemap
-		matmul(proj, &cam->proj, cammat(view, cam));
-		g3_drawenvc(&offs, envt, &cam->dirF, proj, 1000);
-		#endif
-
 		// before render method
 		if (renderMethod != NULL) {
 			vmCall(rt, renderMethod);
 		}
 
 		if (draw & (draw_mode | disp_bbox | temp_lght | temp_zbuf | disp_info | disp_oxyz)) {
+
+			#ifdef cubemap
+			matmul(proj, &cam->proj, cammat(view, cam));
+			g3_drawenvc(&offs, envt, &cam->dirF, proj, 1000);
+			#endif
+
 			if (draw & draw_mode) {
 				msh.hlplt = vtx;
 				tris += g3_drawmesh(&offs, &msh, NULL, cam, draw, draw & disp_norm ? NormalSize : 0);
@@ -2487,29 +2636,31 @@ int main(int argc, char* argv[]) {
 				}
 			}
 			if (draw & disp_info) {
+				int ln;
 				struct gx_Rect box;
 				sprintf(str, "Object size: %g, tvx:%d, tri:%d, seg:%d%s%s", O, msh.vtxcnt, msh.tricnt, msh.segcnt, msh.hasTex ? ", tex" : "", msh.hasNrm ? ", nrm" : "");
 				gx_clipText(&box, &font, str);
-				gx_drawText(&offs, offs.width - box.w - 10, nextln, &font, str, 0xffffffff);
+				ln = -box.h;
+				gx_drawText(&offs, offs.width - box.w - 10, ln += box.h, &font, str, 0xffffffff);
 
 				sprintf(str, "camera(%g, %g, %g)", cam->pos.x, cam->pos.y, cam->pos.z);
 				gx_clipText(&box, &font, str);
-				gx_drawText(&offs, offs.width - box.w - 10, nextln, &font, str, 0xffffffff);
+				gx_drawText(&offs, offs.width - box.w - 10, ln += box.h, &font, str, 0xffffffff);
 
 				if (getobjvec(0)) {
 					vector P = getobjvec(0);
 					vector N = getobjvec(1);
 					//~ sprintf(str, "light[%d].pos(%g, %g, %g); cos(%g), exp(%g)", rm-Lights, rm->pos.x, rm->pos.y, rm->pos.z, rm->sCos, rm->sExp);
 					sprintf(str, "object: P(%.3f, %.3f, %.3f), N(%.3f, %.3f, %.3f)", P->x, P->y, P->z, N->x, N->y, N->z);
-					gx_clipText(&box, &font, str); gx_drawText(&offs, offs.width - box.w - 10, nextln, &font, str, 0xffffffff);
+					gx_clipText(&box, &font, str); gx_drawText(&offs, offs.width - box.w - 10, ln += box.h, &font, str, 0xffffffff);
 					//~ sprintf(str, "camera1(%g, %g, %g)", cam1.pos.x, cam1.pos.y, cam1.pos.z);
-					//~ gx_drawText(&offs, SCRW - 8*strlen(str)-10, nextln, &font, str, 0xffffffff);
+					//~ gx_drawText(&offs, SCRW - 8*strlen(str)-10, ln += box.h, &font, str, 0xffffffff);
 				}
 				for (l = userLights; l; l = l->next) {
 					argb lcol = vecrgb(&l->ambi);
 					sprintf(str, "light %d : %s", e, l->attr & L_on ? "On" : "Off");
 					gx_clipText(&box, &font, str);
-					gx_drawText(&offs, offs.width - box.w - 10, nextln, &font, str, lcol.val);
+					gx_drawText(&offs, offs.width - box.w - 10, ln += box.h, &font, str, lcol.val);
 				}
 			}
 			if (draw & disp_oxyz) {
@@ -2535,7 +2686,6 @@ int main(int argc, char* argv[]) {
 			flip(&offs, 0);
 		}
 
-		#undef nextln
 	}// */
 
 	gx_doneSurf(&font);

@@ -97,7 +97,6 @@ static inline long projx(gx_Surf dst, vector p, int sca) {return sca2fix((dst->w
 static inline long projy(gx_Surf dst, vector p) {return sca2fix((dst->height - 1) * (1 - p->y) / 2, 0);}
 static inline long projz(gx_Surf dst, vector p) {return sca2fix((1 - p->z) / 2, 24);}
 
-
 int g3_init(gx_Surf offs, int w, int h) {
 	static struct gx_Clip rec;
 	int memsize = 0;
@@ -294,7 +293,7 @@ void g3_putpixel(gx_Surf dst, vector p, int c) {
 	}
 }*/
 
-void g3_drawline(gx_Surf dst, vector p1, vector p2, long c) {		// BresenHam
+void g3_drawline(gx_Surf dst, vector p1, vector p2, long c) {		// Bresenham
 	long sx = 1, dx;
 	long sy = 1, dy;
 	long zs = 0, e;

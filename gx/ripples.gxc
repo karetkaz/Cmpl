@@ -1,23 +1,24 @@
-enum Window { // window size, and render mode.
-	draw = RenderMode.drawFill|RenderMode.draw_lit;
-	resx = 512/2;
-	resy = 512/2;
+// watter demo in 2d & 3d
+enum Window {
+	//~ draw = RenderMode.drawFill|RenderMode.draw_lit;
+	resx = 512;
+	resy = 512;
 }
 
 enum Options {
-	textured = true;
+	textured = !true;
 	do2d = !true;
 	do3d = true;
 }
 
 // division of mesh and heightmap
-define division = 52;
+define division = 64;
 
 //~ do rain every dorain frame
 define dorain = 0;
 
-define pheight = -255;
-define density = 5;
+define pheight = -512;
+define density = 7;
 
 int mx = 0;
 int my = 0;
@@ -70,12 +71,12 @@ void drawCB() {
 		int np = page ^= 1;
 		for (int y = 1; y < division - 1; y += 1) {
 			for (int x = 1; x < division - 1; x += 1) {
-				//~ int height = ((hmap[p][x-1][y-1] + hmap[p][x][y-1] + hmap[p][x+1][y-1] + hmap[p][x-1][y] + hmap[p][x+1][y] + hmap[p][x-1][y+1] + hmap[p][x][y+1] + hmap[p][x+1][y+1]) >> 2) - hmap[np][x][y];
-				int height = ((hmap[p][i-division-1] + hmap[p][i-division] + hmap[p][i-division+1] + hmap[p][i-1] + hmap[p][i+1] + hmap[p][i+division-1] + hmap[p][i+division] + hmap[p][i+division+1]) >> 2) - hmap[np][i];
-				//~ int height = ((hmap[p][i-division] + hmap[p][i-1] + hmap[p][i+1] + hmap[p][i+division]) >> 1) - hmap[np][i];
-				//~ hmap[np][x][y] = height - (height >> density);
+				//~ int height = ((hmap[p][i-division-1] + hmap[p][i-division] + hmap[p][i-division+1] + hmap[p][i-1] + hmap[p][i+1] + hmap[p][i+division-1] + hmap[p][i+division] + hmap[p][i+division+1]) >> 2) - hmap[np][i];
+				int height = ((hmap[p][i-division] + hmap[p][i-1] + hmap[p][i+1] + hmap[p][i+division]) >> 1) - hmap[np][i];
 				hmap[np][i] = height - (height >> density);
 				i += 1;
+				//~ int height = ((hmap[p][x-1][y-1] + hmap[p][x][y-1] + hmap[p][x+1][y-1] + hmap[p][x-1][y] + hmap[p][x+1][y] + hmap[p][x-1][y+1] + hmap[p][x][y+1] + hmap[p][x+1][y+1]) >> 2) - hmap[np][x][y];
+				//~ hmap[np][x][y] = height - (height >> density);
 			}
 			i += 2;
 		}
@@ -115,7 +116,7 @@ void drawCB() {
 			//~ int posy = lerp(t01, 0, resY - 1);
 			//~ z = double(hmap[page][int(resX * posy + posx)]) / pheight;
 
-			z = double(lerpHeight(s01, t01)) / pheight;
+			z = double(lerpHeight(s01, t01)) / 255;
 
 		}
 		meshGen(division, hmapfn, 1e-2);

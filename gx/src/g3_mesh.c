@@ -264,7 +264,8 @@ static char* freadstr(char buff[], int maxlen, FILE *fin) {
 static int read_obj(mesh msh, const char* file) {
 	FILE *fin;
 
-	char buff[65536], *ptr;
+	char *ws = " \t";
+	char buff[65536];
 	int posi = 0, texi = 0;
 	int nrmi = 0, line = 0;
 	struct growBuffer nrmb;
@@ -276,100 +277,106 @@ static int read_obj(mesh msh, const char* file) {
 	initBuff(&texb, 64, 2 * sizeof(float));
 
 	for ( ; ; ) {
-		char *lnend;
+		char *ptr = buff;
+
 		line++;
-		if (!fgets(ptr = buff, sizeof(buff), fin))
+		if (!fgets(buff, sizeof(buff), fin))
 			break;
 
 		if (feof(fin)) break;
 
-		if ((lnend = strchr(ptr, 13))) *lnend = 0;
-		if ((lnend = strchr(ptr, 10))) *lnend = 0;
-		buff[strlen(ptr) + 1] = 0;
-		buff[strlen(ptr)] = '\n';
+		// remove line end character
+		if ((ptr = strchr(buff, 13)))
+			*ptr = 0;
+		if ((ptr = strchr(buff, 10)))
+			*ptr = 0;
 
 		if (*buff == '#') continue;				// Comment
-		if (*buff == '\n') continue;			// Empty line
+		if (*buff == '\0') continue;			// Empty line
 
 		// Grouping:
-		if (readCmd(buff, "g")) continue;		// Group name
-		if (readCmd(buff, "s")) continue;		// Smoothing group
-		if (readCmd(buff, "o")) continue;		// Object name
-		//~ if (readCmd(buff, "mg")) continue;	// Merging group
+		if (readKVP(buff, "g", NULL, ws)) continue;		// Group name
+		if (readKVP(buff, "s", NULL, ws)) continue;		// Smoothing group
+		if (readKVP(buff, "o", NULL, ws)) continue;		// Object name
+		//~ if (readKVP(buff, "mg", NULL, ws)) continue;	// Merging group
 
 		// Display/render attributes:
-		if (readCmd(buff, "usemtl")) continue;		// Material name
-		if (readCmd(buff, "mtllib")) continue;		// Material library
-		//~ if (readCmd(buff, "bevel")) continue;	// Bevel interpolation
-		//~ if (readCmd(buff, "c_interp")) continue;	// Color interpolation
-		//~ if (readCmd(buff, "d_interp")) continue;	// Dissolve interpolation
-		//~ if (readCmd(buff, "lod")) continue;		// Level of detail
-		//~ if (readCmd(buff, "shadow_obj")) continue;	// Shadow casting
-		//~ if (readCmd(buff, "trace_obj")) continue;	// Ray tracing
-		//~ if (readCmd(buff, "ctech")) continue;	// Curve approximation technique
-		//~ if (readCmd(buff, "stech")) continue;	// Surface approximation technique
+		if (readKVP(buff, "usemtl", NULL, ws)) continue;		// Material name
+		if (readKVP(buff, "mtllib", NULL, ws)) continue;		// Material library
+		//~ if (readKVP(buff, "bevel", NULL, ws)) continue;	// Bevel interpolation
+		//~ if (readKVP(buff, "c_interp", NULL, ws)) continue;	// Color interpolation
+		//~ if (readKVP(buff, "d_interp", NULL, ws)) continue;	// Dissolve interpolation
+		//~ if (readKVP(buff, "lod", NULL, ws)) continue;		// Level of detail
+		//~ if (readKVP(buff, "shadow_obj", NULL, ws)) continue;	// Shadow casting
+		//~ if (readKVP(buff, "trace_obj", NULL, ws)) continue;	// Ray tracing
+		//~ if (readKVP(buff, "ctech", NULL, ws)) continue;	// Curve approximation technique
+		//~ if (readKVP(buff, "stech", NULL, ws)) continue;	// Surface approximation technique
 
 		// Vertex data:
-		if ((ptr = readCmd(buff, "v"))) {		// Geometric vertices
+		if ((ptr = readKVP(buff, "v", NULL, ws))) {		// Geometric vertices
 			float vtx[3];
 			sscanf(ptr, "%f%f%f", vtx + 0, vtx + 1, vtx + 2);
-			//~ debug("%d/%d", posi, texi);
 			setvtxFV(msh, posi, vtx, NULL, NULL);
 			posi += 1;
 			continue;
 		}
-		if ((ptr = readCmd(buff, "vt"))) {	// Texture vertices
+		if ((ptr = readKVP(buff, "vt", NULL, ws))) {	// Texture vertices
 			float *vtx = growBuff(&texb, texi);
 			if (!vtx) {debug("memory"); break;}
+
 			sscanf(ptr, "%f%f", vtx + 0, vtx + 1);
 			if (vtx[0] < 0) vtx[0] = -vtx[0];
 			if (vtx[1] < 0) vtx[1] = -vtx[1];
 			if (vtx[0] > 1) vtx[0] = 0;
 			if (vtx[1] > 1) vtx[1] = 0;
+
 			if (vtx[0] < 0 || vtx[0] > 1 || vtx[1] < 0 || vtx[1] > 1) {
-				fprintf(stderr, "%s:%d:%d: %s", file, line, ptr - buff, buff);
 				break;
 			}
+
 			texi += 1;
 			continue;
-		}// */
-		if ((ptr = readCmd(buff, "vn"))) {	// Vertex normals
+		}
+		if ((ptr = readKVP(buff, "vn", NULL, ws))) {	// Vertex normals
 			float *vtx = growBuff(&nrmb, nrmi);
 			if (!vtx) {debug("memory"); break;}
+
 			sscanf(ptr, "%f%f%f", vtx + 0, vtx + 1, vtx + 2);
 			nrmi += 1;
 			continue;
-		}// */
-		//~ if (readCmd(buff, "vp")) continue;		// Parameter space vertices
+		}
+		//~ if (readKVP(buff, "vp", NULL, ws)) continue;		// Parameter space vertices
 
 		// Elements:
-		if ((ptr = readCmd(buff, "f"))) {			// Face
-			int i, v[4];
-			for (i = 0; *ptr != 0; i++) {
-				int vn[4], vt[4];
-				while (strchr(" \t", *ptr)) ptr++;		// skip white spaces
-				if (*ptr == '\n') break;				// end of face
-				if (i > 4) break;						// error
+		if ((ptr = readKVP(buff, "f", NULL, ws))) {			// Face
+			int i, v[4], vn[4], vt[4];
 
-				v[i] = vn[i] = vt[i] = 0;
+			for (i = 0; *ptr != 0; i++) {
+
+				while (strchr(" \t", *ptr)) ptr++;		// skip white spaces
+				if (*ptr == '\0') break;				// end of line
+
+				if (i > 4) break;						// error
 				if (!strchr("+-0123456789", *ptr)) {	// error
 					break;
 				}
 
-				ptr = readInt(ptr, &v[i]);				// position index
+				v[i] = vn[i] = vt[i] = 0;
+				ptr = readI32(ptr, &v[i]);				// position index
 				if (*ptr == '/') {						// texture index
 					ptr += 1;
 					if (strchr("+-0123456789", *ptr)) {
-						ptr = readInt(ptr, &vt[i]);
+						ptr = readI32(ptr, &vt[i]);
 					}
 				}
 				if (*ptr == '/') {						// normal index
 					ptr += 1;
 					if (strchr("+-0123456789", *ptr)) {
-						ptr = readInt(ptr, &vn[i]);
-						//~ break;
+						ptr = readI32(ptr, &vn[i]);
 					}
 				}
+
+				//~ debug("face fragment: vtx(%d), nrm(%d), tex(%d) `%s`", v[i], vn[i], vt[i], ptr);
 
 				if (v[i]) v[i] += v[i] < 0 ? posi : -1;
 				if (vn[i]) vn[i] += vn[i] < 0 ? nrmi : -1;
@@ -380,38 +387,49 @@ static int read_obj(mesh msh, const char* file) {
 				//~ if (vt[i] > texi || vt[i] < 0) break;
 				if (vt[i] > texi || vt[i] < 0) vt[i] = 0;
 
-				if (texi) setvtxFV(msh, v[i], NULL, NULL, growBuff(&texb, vt[i]));
-				if (nrmi) setvtxFV(msh, v[i], NULL, growBuff(&nrmb, vn[i]), NULL);
+				if (texi) {
+					setvtxFV(msh, v[i], NULL, NULL, growBuff(&texb, vt[i]));
+				}
+				if (nrmi) {
+					setvtxFV(msh, v[i], NULL, growBuff(&nrmb, vn[i]), NULL);
+				}
 			}
-			if (*ptr != '\n') break;
-			//~ debug("alma1(%d, %d, %d) / %d", v[0], v[1], v[2], msh->vtxcnt);
-			if (i == 3) if (addtri(msh, v[0], v[1], v[2]) < 0) break;
-			if (i == 4) if (addquad(msh, v[0], v[1], v[2], v[3]) < 0) break;
+
+			if (*ptr != '\0')
+				break;
+
+			if (i == 3 && addtri(msh, v[0], v[1], v[2]) < 0)
+				break;
+
+			if (i == 4 && addquad(msh, v[0], v[1], v[2], v[3]) < 0)
+				break;
+
 			continue;
-		}// */
-		//~ if (readCmd(buff, "p")) continue;		// Point
-		//~ if (readCmd(buff, "l")) continue;		// Line
-		//~ if (readCmd(buff, "curv")) continue;		// Curve
-		//~ if (readCmd(buff, "curv2")) continue;		// 2D curve
-		//~ if (readCmd(buff, "surf")) continue;		// Surface
+		}
+
+		//~ if (readKVP(buff, "p", NULL, ws)) continue;		// Point
+		//~ if (readKVP(buff, "l", NULL, ws)) continue;		// Line
+		//~ if (readKVP(buff, "curv", NULL, ws)) continue;		// Curve
+		//~ if (readKVP(buff, "curv2", NULL, ws)) continue;		// 2D curve
+		//~ if (readKVP(buff, "surf", NULL, ws)) continue;		// Surface
 
 		// Connectivity between free-form surfaces:
-		//~ if (readCmd(buff, "con")) continue;		// Connect
+		//~ if (readKVP(buff, "con", NULL, ws)) continue;		// Connect
 
 		// Free-form curve/surface attributes:
-		//~ if (readCmd(buff, "deg")) continue;		// Degree
-		//~ if (readCmd(buff, "bmat")) continue;	// Basis matrix
-		//~ if (readCmd(buff, "step")) continue;	// Step size
-		//~ if (readCmd(buff, "cstype")) continue;	// Curve or surface type
+		//~ if (readKVP(buff, "deg", NULL, ws)) continue;		// Degree
+		//~ if (readKVP(buff, "bmat", NULL, ws)) continue;	// Basis matrix
+		//~ if (readKVP(buff, "step", NULL, ws)) continue;	// Step size
+		//~ if (readKVP(buff, "cstype", NULL, ws)) continue;	// Curve or surface type
 
 		// Free-form curve/surface body statements:
-		//~ if (readCmd(buff, "parm")) continue;	// Parameter values
-		//~ if (readCmd(buff, "trim")) continue;	// Outer trimming loop
-		//~ if (readCmd(buff, "hole")) continue;	// Inner trimming loop
-		//~ if (readCmd(buff, "scrv")) continue;	// Special curve
-		//~ if (readCmd(buff, "sp")) continue;		// Special point
-		//~ if (readCmd(buff, "end")) continue;		// End statement
-		fprintf(stderr, "unsuported line: %s", buff);
+		//~ if (readKVP(buff, "parm", NULL, ws)) continue;	// Parameter values
+		//~ if (readKVP(buff, "trim", NULL, ws)) continue;	// Outer trimming loop
+		//~ if (readKVP(buff, "hole", NULL, ws)) continue;	// Inner trimming loop
+		//~ if (readKVP(buff, "scrv", NULL, ws)) continue;	// Special curve
+		//~ if (readKVP(buff, "sp", NULL, ws)) continue;		// Special point
+		//~ if (readKVP(buff, "end", NULL, ws)) continue;		// End statement
+		fprintf(stderr, "unsuported line: `%s`\n", buff);
 		break;
 	}
 
@@ -419,18 +437,16 @@ static int read_obj(mesh msh, const char* file) {
 	freeBuff(&nrmb);
 
 	if (!feof(fin)) {
-		//~ fprintf(stderr, "%s:%d: %s", file, line, buff);
-		//~ fprintf(stderr, "%s:%d:%d: %s", file, line, ptr - buff, buff);
-		fprintf(stderr, "%s:%d: pos(%d), nrm(%d), tex(%d) %s", file, line, posi, nrmi, texi, buff);
+		fprintf(stderr, "%s:%d: pos(%d), nrm(%d), tex(%d) `%s`\n", file, line, posi, nrmi, texi, buff);
+		fclose(fin);
+		return -2;
 	}
 
-	if (nrmi == 0)
-		normMesh(msh, 0);
-	msh->hasNrm = 1;
+	msh->hasNrm = nrmi != 0;
 	msh->hasTex = texi != 0;
 
 	fclose(fin);
-	return ptr != buff;
+	return 0;
 }
 static int read_3ds(mesh msh, const char* file) {
 	FILE *fin;
@@ -831,11 +847,10 @@ void centMesh(mesh msh, scalar size) {
 	}
 }
 
-void normMesh(mesh msh, scalar tolerance)
 /**
  * recalculate mesh normals
  */
-{
+void normMesh(mesh msh, scalar tolerance) {
 	union vector tmp;
 	unsigned i, j;
 	for (i = 0; i < msh->vtxcnt; i += 1)
@@ -887,9 +902,10 @@ static void pntri(union vector res[10], mesh msh, int i1, int i2, int i3) {
 	scalar w23 = vecdp3(vecsub(tmp, P3, P2), N2);
 	scalar w31 = vecdp3(vecsub(tmp, P1, P3), N3);
 	scalar w32 = vecdp3(vecsub(tmp, P2, P3), N3);
-	//~ vector b300 = veccpy(res + 0, P1);
-	//~ vector b030 = veccpy(res + 1, P2);
-	//~ vector b003 = veccpy(res + 2, P3);
+
+	vector b300 = veccpy(res + 0, P1);
+	vector b030 = veccpy(res + 1, P2);
+	vector b003 = veccpy(res + 2, P3);
 
 	vector b210 = vecsca(res + 3, vecsub(tmp, vecadd(tmp, vecsca(tmp, P1, 2), P2), vecsca(tmp + 1, N1, w12)), 1./3);
 	vector b120 = vecsca(res + 4, vecsub(tmp, vecadd(tmp, vecsca(tmp, P2, 2), P1), vecsca(tmp + 1, N2, w21)), 1./3);
@@ -898,9 +914,13 @@ static void pntri(union vector res[10], mesh msh, int i1, int i2, int i3) {
 	vector b102 = vecsca(res + 7, vecsub(tmp, vecadd(tmp, vecsca(tmp, P3, 2), P1), vecsca(tmp + 1, N3, w31)), 1./3);
 	vector b201 = vecsca(res + 8, vecsub(tmp, vecadd(tmp, vecsca(tmp, P1, 2), P3), vecsca(tmp + 1, N1, w13)), 1./3);
 
-	//~ vector E = vecsca(tmp + 1, vecadd(tmp, vecadd(tmp, vecadd(tmp, vecadd(tmp, vecadd(tmp, b210, b120), b021), b012), b102), b201), 1./6);
-	//~ vector V = vecsca(tmp + 2, vecadd(tmp, vecadd(tmp, P1, P2), P3), 1./3);
-	//~ vector b111 = vecsca(res + 9, vecadd(tmp, E, vecsub(tmp, E, V)), 1./2);
+	vector E = vecsca(tmp + 1, vecadd(tmp, vecadd(tmp, vecadd(tmp, vecadd(tmp, vecadd(tmp, b210, b120), b021), b012), b102), b201), 1./6);
+	vector V = vecsca(tmp + 2, vecadd(tmp, vecadd(tmp, P1, P2), P3), 1./3);
+	vector b111 = vecsca(res + 9, vecadd(tmp, E, vecsub(tmp, E, V)), 1./2);
+
+	(void)b300;
+	(void)b030;
+	(void)b003;
 
 	(void)b210;
 	(void)b120;
@@ -909,10 +929,7 @@ static void pntri(union vector res[10], mesh msh, int i1, int i2, int i3) {
 	(void)b102;
 	(void)b201;
 
-	//~ (void)b003;
-	//~ (void)b030;
-	//~ (void)b300;
-	//~ (void)b111;
+	(void)b111;
 
 	#undef P1
 	#undef P2
@@ -1163,7 +1180,7 @@ static int addText(state rt, char *file, int line, char *buff) {
 }
 
 int evalMesh(mesh msh, int sdiv, int tdiv, char *src, char *file, int line) {
-	static char mem[65536];		// 64K memory !!!
+	static char mem[64 << 10];		// 64K memory !!!
 	state rt = rtInit(mem, sizeof(mem));
 	struct userData ud;
 
@@ -1184,21 +1201,19 @@ int evalMesh(mesh msh, int sdiv, int tdiv, char *src, char *file, int line) {
 	}
 
 	//~ ccDone(env);
-	err = err || !libcall(rt, getS,     0, "float64 gets();");
-	err = err || !libcall(rt, getT,     0, "float64 gett();");
-	err = err || !libcall(rt, setPos,   0, "void setPos(float64 x, float64 y, float64 z);");
-	err = err || !libcall(rt, setNrm,   0, "void setNrm(float64 x, float64 y, float64 z);");
-
-	err = err || !libcall(rt, f64abs,   0, "float64 abs(float64 x);");
-	err = err || !libcall(rt, f64sin,   0, "float64 sin(float64 x);");
-	err = err || !libcall(rt, f64cos,   0, "float64 cos(float64 x);");
-	err = err || !libcall(rt, f64tan,   0, "float64 tan(float64 x);");
-	err = err || !libcall(rt, f64log,   0, "float64 log(float64 x);");
-	err = err || !libcall(rt, f64exp,   0, "float64 exp(float64 x);");
-	err = err || !libcall(rt, f64sqrt,  0, "float64 sqrt(float64 x);");
-	err = err || !libcall(rt, f64atan2, 0, "float64 atan(float64 x, float64 y);");
-	err = err || !libcall(rt, f64pow,   0, "float64 pow(float64 x, float64 y);");
-
+	err = err || !libcall(rt, getS,     "float64 gets();");
+	err = err || !libcall(rt, getT,     "float64 gett();");
+	err = err || !libcall(rt, setPos,   "void setPos(float64 x, float64 y, float64 z);");
+	err = err || !libcall(rt, setNrm,   "void setNrm(float64 x, float64 y, float64 z);");
+	err = err || !libcall(rt, f64abs,   "float64 abs(float64 x);");
+	err = err || !libcall(rt, f64sin,   "float64 sin(float64 x);");
+	err = err || !libcall(rt, f64cos,   "float64 cos(float64 x);");
+	err = err || !libcall(rt, f64tan,   "float64 tan(float64 x);");
+	err = err || !libcall(rt, f64log,   "float64 log(float64 x);");
+	err = err || !libcall(rt, f64exp,   "float64 exp(float64 x);");
+	err = err || !libcall(rt, f64sqrt,  "float64 sqrt(float64 x);");
+	err = err || !libcall(rt, f64atan2, "float64 atan(float64 x, float64 y);");
+	err = err || !libcall(rt, f64pow,   "float64 pow(float64 x, float64 y);");
 	err = err || !ccDefineFlt(rt, "pi", 3.14159265358979323846264338327950288419716939937510582097494459);
 	err = err || !ccDefineFlt(rt, "e",  2.71828182845904523536028747135266249775724709369995957496696763);
 

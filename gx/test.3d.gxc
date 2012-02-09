@@ -1,6 +1,7 @@
+// 3d
 define test = 2;
 enum Window {
-	draw = RenderMode.drawFill|RenderMode.draw_lit;// & ~RenderMode.zero_cbuf;
+	//~ draw = RenderMode.drawFill|RenderMode.draw_lit;// & ~RenderMode.zero_cbuf;
 	resx = 512;
 	resy = 512;
 }
@@ -150,11 +151,12 @@ void meshGen2(int sdiv, bool sclosed, int tdiv, bool tclosed, void pos(double &x
 }
 
 static if (test == 1) {		// load mesh with texture
-mesh.Read("media/meshes/ut2k4/FlackCannon.obj", "media/meshes/ut2k4/FlackCannon.png");
+mesh.Read("media/meshes/ahstray.obj", "media/meshes/ut2k4/FlackCannon.png");
+//~ mesh.Read("media/meshes/ut2k4/FlackCannon.obj", "media/meshes/ut2k4/FlackCannon.png");
 }
 static if (test == 2) {		// generate mesh
 define resize(gxSurf src, int width, int height) = zoomSurf(gxSurf(width, height), null, src, null, 1);
-define division = 92;
+define division = 192;
 meshGen(false, false, resize(gxSurf("media/images/hm.jpg"), division, division));
 }
 static if (test == 3) {		// generate mesh

@@ -1,14 +1,9 @@
 // effects
 define test = 3;
 enum Window {
-	draw = RenderMode.swap_buff;
-	//~ resx = 1440;
-	//~ resy = 1012;
-	//~ resx = 1024;
-	//~ resy = 1024;
-	res = 1;
-	resx = 512 / res;
-	resy = 512 / res;
+	//~ draw = RenderMode.swap_buff;
+	resx = 512;
+	resy = 512;
 }
 
 string fileName = "media/images/lenaRGB.png";
@@ -25,10 +20,8 @@ void setupPicView(gxSurf vImg, bool vFit) {
 	static bool clear = false;
 	static bool fit = false;
 
-	enum inertial_pan = 25;
-	enum: double {
-		inertial_speed = 1.09;
-	}
+	define inertial_pan = 25;
+	define inertial_speed = 1.09;
 
 	static int64 inertial_time = 0;
 	static double inertial_pan_x = 0;
@@ -64,7 +57,9 @@ void setupPicView(gxSurf vImg, bool vFit) {
 				}
 				inertial_time = now + (int64(0x100000000) / 100);
 			}
-			Gui.Repaint();
+			if ((abs(inertial_pan_x) > .5) || (abs(inertial_pan_y) > .5)) {
+				Gui.Repaint();
+			}
 		}
 	}
 
@@ -122,7 +117,7 @@ void setupPicView(gxSurf vImg, bool vFit) {
 
 define resize(gxSurf src, int width, int height) = zoomSurf(gxSurf(width, height), null, src, null, 1);
 
-static if (true) {		// dithering
+static if (true) {			// dithering
 enum Dithering {
 	None = 0;
 	SteinbergFalse = 1;
@@ -290,7 +285,7 @@ gxSurf dither(gxSurf img, bool grayscale, uint32 colors, Dithering method) {
 					int gray = cols[(lum(col) * colors / 256) % colors];
 
 					int quant_error = lum(col) - gray;
-					define rgbError(int ^col, int ^s) = __gray(lum(col) + s * quant_error / 42);
+					define rgbError(int col, int s) = __gray(lum(col) + s * quant_error / 42);
 
 					setPixel(img, x, y, __gray(gray));
 					setPixel(img, x + 1, y + 0, rgbError(getPixel(img, x + 1, y + 0), 8));
@@ -345,7 +340,7 @@ gxSurf dither(gxSurf img, bool grayscale, uint32 colors, Dithering method) {
 		result = img;
 	}
 	else if (method == Dithering.Bayer) {
-		static const int Pattern[8, 8] =
+		static const int8 Pattern[8, 8] =
 			 0,32, 8,40, 2,34,10,42,
 			48,16,56,24,50,18,58,26,
 			12,44, 4,36,14,46, 6,38,
@@ -684,31 +679,11 @@ copySurf(offScreen, 0, 0, image2, null, 1, rgbOpOverlay);		// atmasoljuk a fuggv
 }
 static if (test == 3) {		// Dithering
 
-int colors = 2;
+int colors = 16;
 bool grayscale = true;
-Dithering method = Dithering.Bayer;
+Dithering method = Dithering.Stucki;
 
 define hex(uint32 ^c) = int(c <= 9 ? (c + '0') : ((c - 10) + 'a'));
-uint8 filename[24];
-{
-	int i = -1;
-	filename[i += 1] = 'o';
-	filename[i += 1] = 'u';
-	filename[i += 1] = 't';
-	filename[i += 1] = '[';
-	filename[i += 1] = grayscale ? 'g' : 'c';
-	filename[i += 1] = '_';
-	filename[i += 1] = hex(min(colors >> 4 & 0xf, 0xf));
-	filename[i += 1] = hex(min(colors >> 0 & 0xf, 0xf));
-	filename[i += 1] = '_';
-	filename[i += 1] = '0' + method;
-	filename[i += 1] = ']';
-	filename[i += 1] = '.';
-	filename[i += 1] = 'b';
-	filename[i += 1] = 'm';
-	filename[i += 1] = 'p';
-	filename[i += 1] = 0;
-}
 
 gxClut lut;
 blendLut(lut, 0, -1);
@@ -717,7 +692,8 @@ gxSurf image = gxSurf(fileName);
 
 dither(image, grayscale, colors, method);
 
-//~ bmpWrite(image, emit(string, ref(filename)));
+uint8 filename[24] = 'o','u','t','/','o','u','t','[', grayscale ? 'g' : 'c','_',hex(min(colors >> 4 & 0xf, 0xf)),hex(min(colors >> 0 & 0xf, 0xf)),'_','0' + method, ']','.','b','m','p',0;
+bmpWrite(image, emit(string, byRef(filename)));
 
 void drawCallback() {
 	copySurf(offScreen, 0, 0, image, null);
@@ -790,7 +766,7 @@ vec4f sepia2Fp(vec4f c) {
 	);
 }
 
-setupPicView(fillSurf(image, null, grayFp), true);
+setupPicView(fillSurf(image, null, sepiaFp), true);
 
 }
 static if (test == 5) {		// brightness contrast gamma
@@ -842,7 +818,7 @@ void drawCB() {
 
 		lutBrightnessContractGamma(&lut, brightness, contrast, gamma / 100.);
 
-		define useNativeImpl = !true;
+		define useNativeImpl = true;
 		static if (useNativeImpl) {
 			clutSurf(offScreen, null, &lut);
 		}
@@ -855,7 +831,7 @@ void drawCB() {
 				);
 			}
 			fillSurfrgb(offScreen, null, pixelCB);
-		}// */
+		}
 
 		copySurf(offScreen, Window.resx - 266, 10, lut2Surf(lui, &lut, -1), null);
 
@@ -863,7 +839,7 @@ void drawCB() {
 			int y = 0;
 			define dy = 12;
 			uint8 txt[1024];
-			string str = emit(string, ref(txt));
+			string str = emit(string, byRef(txt));
 
 			itoa(str, brightness, 10, 1, true, "brightness: ");
 			drawText(offScreen, 0, y, str, -1);
@@ -981,23 +957,22 @@ void drawCB() {
 
 		mat = cmatHSL(hue, saturation, brightness);
 
-		define useNativeImpl = !true;
+		define useNativeImpl = true;
 		static if (useNativeImpl) {
 			cmatSurf(offScreen, null, &mat);
 		}
-		//~ /*
 		static if (!useNativeImpl) {
 			vec4f pixelCB(vec4f col) {
 				result = dph(mat, col);
 			}
 			fillSurf(offScreen, null, pixelCB);
-		}// */
+		}
 
 		static if (true) {
 			int y = 0;
 			define dy = 12;
 			uint8 txt[1024];
-			string str = emit(string, ref(txt));
+			string str = emit(string, byRef(txt));
 
 			itoa(str, brightness, 10, 1, true, "brightness: ");
 			drawText(offScreen, 0, y, str, -1);
@@ -1140,7 +1115,7 @@ Gui.setMouseHandler(mouseCB);
 Gui.setDrawCallback(drawCB);
 zoomSurf(offScreen, null, img, null, 1);
 
-fastblur(offScreen, Window.resx);	// 38.483000 / 60 fps
+//~ fastblur(offScreen, Window.resx);	// 38.483000 / 60 fps
 
 /*
 for (int i = 0; i < 1; i += 1) {
