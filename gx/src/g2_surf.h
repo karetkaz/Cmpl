@@ -3,6 +3,11 @@
 
 #define LOBIT(__VAL) ((__VAL) & -(__VAL))
 #include <stdio.h>
+#ifdef _MSC_VER
+#define inline __inline
+#endif
+
+
 #define debug(msg, ...) fprintf(stdout, "%s:%d:debug:"msg"\n", __FILE__, __LINE__, ##__VA_ARGS__)
 
 #define SURF_NO_MEM	0X0004
@@ -158,12 +163,12 @@ typedef struct gx_Surf {			// surface structure
 	unsigned char	depth;
 	unsigned char	pixeLen;
 	unsigned long	scanLen;		// scanlen / offsPos / imagecount
-	void*			basePtr;		// always base of surface
+	char*			basePtr;		// always base of surface
 	union {
 		gx_Llut		lutLPtr;
 		//~ gx_Clut		CLUTPtr;
 		//~ gx_Llut		facePtr;
-		void*		tempPtr;		// clutPtr / cibgPtr (cursor BG data) / ...
+		char*		tempPtr;		// clutPtr / cibgPtr (cursor BG data) / ...
 		//~ void*		clutPtr;		// clutPtr / cibgPtr (cursor BG data) / ...
 	};
 	//~ void*		offsPtr;		// offsPtr(scanLen, x, y):(void*)	parm[eax, ecx, edx] value [edx]

@@ -1,14 +1,28 @@
 OUTOBJ=-o
 OUTEXE=-o
-CFLAGS=-g2 -ggdb
+CFLAGS=-Wall -Wpadded -g2 -ggdb
 CFLAGS=-g0 -O0
 LIBS=-lm -ldl
-CCC=gcc -m32
+CCC=gcc -m32 -c
 LNK=gcc -m32
 
 ifeq "$(OS)" "Windows_NT"
 LIBS=-lm
 endif
+
+#~ OUTOBJ=-fo=
+#~ OUTEXE=-fe=
+#~ CFLAGS=-ei -6s -d2
+#~ LIBS=
+#~ CCC=wcc386 -q
+#~ LNK=wcl386 -q
+
+#~ OUTOBJ=-o
+#~ OUTEXE=-o
+#~ CFLAGS=
+#~ LIBS=-lm -ldl
+#~ CCC=tcc -c
+#~ LNK=tcc
 
 SRCDIR=./
 OBJDIR=./
@@ -18,18 +32,18 @@ BINDIR=../
 
 OBJS=\
 	$(OBJDIR)code.o\
-	$(OBJDIR)clog.o\
-	$(OBJDIR)parse.o\
+	$(OBJDIR)parser.o\
+	$(OBJDIR)printer.o\
 	$(OBJDIR)tree.o\
 	$(OBJDIR)type.o\
-	$(OBJDIR)ccvm.o\
+	$(OBJDIR)core.o\
 	$(OBJDIR)lstd.o\
 	$(OBJDIR)main.o
 
 #~ rebuild:clean build
 
 build:$(OBJS) main.c
-	$(LNK) $(CFLAGS) $(OUTEXE)$(BINDIR)main $(OBJS) $(LIBS)
+	$(LNK) $(OUTEXE)$(BINDIR)main $(OBJS) $(LIBS)
 
 lib:$(OBJS)
 	$(LIB) $(OBJS)
@@ -39,4 +53,4 @@ clean:
 #	rm -f *.o *.obj *.err
 
 $(OBJDIR)%.o: $(SRCDIR)%.c
-	$(CCC) $(CFLAGS) -c -Wall -Wpadded $< -o $@
+	$(CCC) $(CFLAGS) $< $(OUTOBJ)$@

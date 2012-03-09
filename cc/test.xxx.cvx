@@ -2,6 +2,8 @@
 
 //~ int alma(int h)[10];
 
-//~ pointer x = emit(pointer, ref("er"));
-//~ string str = emit(string, ref(x));
-//~ println(emit(string, ref(x)));
+/+ static casting pointers
+pointer x = emit(pointer, byRef("er"));
+string str = emit(string, byRef(x));
+println(emit(string, byRef(x)));
+//~ +/

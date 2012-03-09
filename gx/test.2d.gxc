@@ -1,7 +1,7 @@
 // 2d
-define test = 1;
+define test = 2;
 enum Window {
-	draw = RenderMode.swap_buff;
+	//~ draw = RenderMode.swap_buff;
 
 	//~ resx = 1440;
 	//~ resy = 900;
@@ -32,13 +32,8 @@ string alma() {
 }
 // */
 
-static if (true) {		// lookupTable & utils
-
 define fillRect(gxSurf dst, int col) = fillRect(dst, 0, 0, 65535, 65535, col);
-define fillRect(gxSurf dst, gxRect ^gx, int col) = fillRect(dst, gx.x, gx.y, gx.x + gx.w, gx.y + gx.h, col);
-define drawRect(gxSurf dst, gxRect &rec, int col) = drawRect(dst, rec.x, rec.y, rec.x + rec.w, rec.y + rec.h, col);
 
-}
 static if (true) {		// mandelbrot
 
 gxSurf Mandel(gxSurf dst, gxClut &lut, double QMin, double QMax, double PMin, double PMax) {
@@ -87,14 +82,17 @@ gxSurf Mandel(gxSurf dst, gxClut &lut, double QMin, double QMax, double PMin, do
 	result = dst;
 }
 
-// used in 2 fragments
 gxClut mandelLut;
 double QMin = -1.5;
 double QMax = +1.5;
 double PMin = -2.25;
 double PMax = +0.75;
-blendLut(32, &mandelLut, 0xFFFFFF, 0x000000, 0xadadff);
-//~ blendLut(mandelLut, 0xff0000, 0x00ff00, 0x0000ff);
+//~ define zoom = 1.17187372574E-2;
+//~ double QMin = -1.25632982971-zoom;
+//~ double QMax = -1.25632982971+zoom;
+//~ double PMin = -0.02761733591558-zoom;
+//~ double PMax = -0.02761733591558+zoom;
+blendLut(32, &mandelLut, 0xFFFFFF, 0x000000, 0xadadff, 0x000000);
 
 }
 
@@ -142,6 +140,7 @@ Gui.setMouseHandler(mouseCB);
 Gui.setDrawCallback(drawCB);
 
 }
+
 static if (test == -2) {	// zoomSurf / tileSurf
 gxSurf image = gxSurf("media/images/dino-blue.jpg");
 gxSurf bgImg = gxSurf("media/images/nol.bmp");
@@ -172,7 +171,8 @@ Gui.setDrawCallback(drawCB);
 //~ reDraw = 0;
 }
 static if (test == 2) {		// zoomSurf / tileSurf
-gxSurf image = gxSurf("media/images/dino-blue.jpg");
+gxSurf image = gxSurf("media/images/dino-blue.jpg");		// xxx
+//~ gxSurf image = gxSurf("media/images/David.png");
 gxSurf bgImg = gxSurf("media/images/nol.bmp");
 
 void drawCB() {
@@ -189,12 +189,14 @@ void drawCB() {
 	else if (reDraw >= 4) {
 		tileSurf(offScreen, 0, 0, image, &roi);
 	}
-	reDraw = 0;
+	//~ reDraw = 1;
+	// */
 }
 
 Gui.setMouseHandler(mouseMoveSizeRoi);
 Gui.setDrawCallback(drawCB);
 }
+
 static if (test == 3) {		// fillRect, drawRect, fillOval, drawOval
 
 gxSurf bgImg = gxSurf("media/images/nol.bmp");
@@ -291,30 +293,8 @@ void drawCB() {
 Gui.setMouseHandler(mouseMoveSizeRoi);
 Gui.setDrawCallback(drawCB);
 }
-static if (test == 4) {		// the Complex plane: eval surface with callback
 
-vec4f rgbOp(double x, double y) {
-	define AbsMod(double ^val, double mod) = ((val < 0 ? -val : val) % mod);
-	define N = pi / 2;
-	x = lerp(x, -N, N);
-	y = lerp(y, -N, N);
-
-	Complex z = Complex(x, y);
-	//~ z = div(Complex(1), z);
-	//~ z = exp(z);
-	//~ z = pow(z, Complex(4.));
-	z = sin(pow(z, Complex(4., 0)));
-
-	//~ result = vec4f(AbsMod(re(z), 1));
-	result = Hsv2Rgb(vec4f(AbsMod(re(z), 1), 1., 1.));
-}
-
-evalSurf(offScreen, null, rgbOp);
-
-//~ bmpWrite(offScreen, "sin(z^4).xxx.bmp");
-
-}
-static if (test == 5) {		// copy surface with callback
+static if (test == 4) {		// copy surface with callback
 
 gxSurf back = gxSurf(Window.resx, Window.resy);
 gxSurf mand = gxSurf(Window.resx, Window.resy);
@@ -328,6 +308,7 @@ void drawCB() {
 
 	copySurf(offScreen, 0, 0, back, null);
 	copySurfrgb(offScreen, roi.x, roi.y, mand, &roi, rgbOp);
+	//~ copySurfrgb(offScreen, roi.x, roi.y, mand, &roi, new int(int dst, int src) {result = dst ^ src;});
 }
 
 Gui.setMouseHandler(mouseMoveSizeRoi);
@@ -336,479 +317,6 @@ Gui.setDrawCallback(drawCB);
 Mandel(mand, &mandelLut, QMin, QMax, PMin, PMax);
 //~ evalSurfrgb(mand, null, rgbAdd);
 evalSurfrgb(back, null, rgbXor);
-}
-static if (test == 6) {		// Mandelbrot
-
-gxSurf mand = gxSurf(Window.resx, Window.resy);
-
-void mouseCB(int btn, int x, int y) {
-	define scale = 1.4142;
-	static int omb = 0;
-
-	if (reDraw == false) {
-		int zoom = 0;
-
-		if (btn == 1 || (btn == 0 && omb == 1)) {
-			zoom = +1;
-		}
-		if (btn == 0 && omb == 2) {
-			zoom = -1;
-		}
-
-		if (zoom == +1) {
-
-			reDraw = 2;
-			double dx = (PMax - PMin);
-			double dy = (QMax - QMin);
-
-			double X = (2. * x / Window.resx - 1) * dx / 2;
-			double Y = (2. * y / Window.resy - 1) * dy / 2;
-
-			dx = dx / (2 * scale);
-			dy = dy / (2 * scale);
-
-			if (btn == 0) {
-				PMin += X + dx;
-				PMax += X - dx;
-				QMin += Y + dy;
-				QMax += Y - dy;
-				reDraw = 1;
-			}
-
-			if (true) {
-				int dx = Window.resx / 8;
-				int dy = Window.resy / 8;
-				roi = gxRect(x - dx, y - dy, dx * 2, dy * 2);
-			}
-		}
-		else if (zoom == -1) {
-			double dx = (PMax - PMin);
-			double dy = (QMax - QMin);
-			dx = dx / (2 * scale);
-			dy = dy / (2 * scale);
-
-			PMin -= dx;
-			PMax += dx;
-			QMin -= dy;
-			QMax += dy;
-			reDraw = true;
-		}
-		if (btn == 4 || btn == 16) {
-			reDraw = 1;
-			QMin = -1.5;
-			QMax = +1.5;
-			PMin = -2.25;
-			PMax = +0.75;
-		}
-	}
-	omb = btn;
-}
-void drawCB() {
-	if (reDraw == 2) {
-		copySurf(offScreen, 0, 0, mand, null);
-		drawRect(offScreen, roi, 0xff00ff);
-		reDraw = 0;
-	}
-	if (reDraw == 1) {
-		int64 start = clock(0);
-		Mandel(mand, &mandelLut, QMin, QMax, PMin, PMax);
-		copySurf(offScreen, 0, 0, mand, null);
-
-		print("Mandel time: %F\n", clocksPerSec(clock(start)));
-
-		reDraw = 0;
-	}
-}
-
-Gui.setMouseHandler(mouseCB);
-Gui.setDrawCallback(drawCB);
-}
-static if (test == 7) {		// lens effect
-
-gxSurf bgImg = gxSurf("media/images/Earth.jpg");
-
-define magFactor = 7.4;
-define magRadius = 162;
-
-int magx = Window.resx / 2;
-int magy = Window.resy / 2;
-int bgresx = width(bgImg);
-int bgresy = height(bgImg);
-vec2d magnCoeff[magRadius * 2, magRadius * 2];
-
-void mouseCB(int btn, int x, int y) {
-	static int ox;
-	static int oy;
-	if (btn & 1) {
-		reDraw := true;
-		magx = x;
-		magy = y;
-	}
-	if (btn & 2) {
-		reDraw := true;
-		roi.x = clamp(roi.x + ox - x, 0, bgresx - roi.w);
-		roi.y = clamp(roi.y + oy - y, 0, bgresy - roi.h);
-	}
-	ox = x;
-	oy = y;
-}
-void drawCB() {
-	if (reDraw) {
-		//~ copy background image
-		copySurf(offScreen, 0, 0, bgImg, &roi);
-		double maxx = bgresx;
-		double maxy = bgresy;
-
-		//~ draw lens
-		for (int y = -magRadius; y < magRadius; y += 1) {
-			for (int x = -magRadius ;x < magRadius; x += 1) {
-				vec2d p = magnCoeff[y + magRadius][x + magRadius];
-				double px = clamp(roi.x + magx + p.x, 0., maxx);
-				double py = clamp(roi.y + magy + p.y, 0., maxy);
-				int col = getPixel(bgImg, px, py);
-				setPixel(offScreen, x + magx, y + magy, col);
-			}
-		}// */
-		reDraw = false;
-	}
-}
-
-Gui.setMouseHandler(mouseCB);
-Gui.setDrawCallback(drawCB);
-
-roi = gxRect(0, 0, Window.resx, Window.resy);
-double s = sqrt(magRadius * magRadius - magFactor * magFactor);
-for (int y = -magRadius; y < magRadius; y += 1) {
-	for (int x = -magRadius ;x < magRadius; x += 1) {
-		double a = x;
-		double b = y;
-		if (x * x + y * y <= s * s) {
-			double z = sqrt(magRadius*magRadius - x*x - y*y);
-			if (z > 0) {
-				a = x * (magRadius / magFactor) / z;
-				if (abs(a) > abs(x))
-					a = x;
-
-				b = y * (magRadius / magFactor) / z;
-				if (abs(b) > abs(y))
-					b = y;
-			}
-		}
-		//~ magnCoeff[y + magRadius][x + magRadius].x = a;
-		//~ magnCoeff[y + magRadius][x + magRadius].y = b;
-		magnCoeff[y + magRadius][x + magRadius] = vec2d(a, b);
-	}
-}
-
-}
-static if (test == 8) {		// star field
-
-struct Star {
-	double xpos;
-	double ypos;
-	double zpos;
-}
-
-define SPEED_OF_STARS = 5;
-
-Star stars[2 * 1024];
-
-void initStar(Star &star, int i) {
-	//~ randomly init stars, generate them around the center of the screen
-
-	//~ define scale = double(1 << 18);
-	define scale = double(Window.resx << 11);
-	star.xpos = rand(-scale, scale);
-	star.ypos = rand(-scale, scale);
-	star.zpos =  i;
-
-	//~ the closer to the viewer the brighter
-	//~ star.color = i >> 2;
-}
-
-int centerx = Window.resx / 2;
-int centery = Window.resy / 2;
-
-void mouseCB(int btn, int x, int y) {
-
-	static int ox = 0;
-	static int oy = 0;
-
-	if (btn == 1) {
-		centerx = x;
-		centery = y;
-	}
-	if (btn == 2) {
-		int dx = x - ox;
-		int dy = y - oy;
-		centerx += dx;
-		centery += dy;
-	}
-	ox = x;
-	oy = y;
-}
-void drawCB() {
-
-	double tempx;
-	double tempy;
-
-	//~ clear the screen
-	fillRect(offScreen, 0x000000);
-
-	//~ move and draw stars
-	for (int i = 0; i < stars.length; i += 1) {
-
-		stars[i].zpos -= SPEED_OF_STARS;
-
-		if (stars[i].zpos <= 0) {
-			initStar(&stars[i], i + 1);
-		}
-
-		//~ compute 3D position
-		tempx = (stars[i].xpos / stars[i].zpos) + centerx;
-		tempy = (stars[i].ypos / stars[i].zpos) + centery;
-
-		//~ check if a star leaves the screen
-		if (tempx < 0 || tempx >= Window.resx || tempy < 0 || tempy >= Window.resy) {
-			initStar(&stars[i], i + 1);
-			continue;
-		}
-
-		define ps = 2;
-		fillRect(offScreen, tempx, tempy, tempx + ps, tempy + ps, -1);
-		//~ setPixel(tempx, tempy, -1);
-	}
-
-	// animate
-	Gui.Repaint();
-}
-
-Gui.setMouseHandler(mouseCB);
-Gui.setDrawCallback(drawCB);
-
-for (int i = 0; i < stars.length; i += 1) {
-	initStar(&stars[i], i + 1);
-}
-
-}
-static if (test == 9) {		// game of life
-
-gxSurf pop55 = gxSurf("media/images/gol.bmp");
-int w = width(pop55);
-int h = height(pop55);
-//~ gxSurf next = gxSurf(w, h);
-
-void nextGeneration(gxSurf population) {
-	int w = width(population);
-	int h = height(population);
-	gxSurf next = gxSurf(w, h);
-	fillRect(next, 0);
-	for (int y = 1; y < h - 1; y += 1) {
-		for (int x = 1; x < w - 1; x += 1) {
-			int n = 0;
-			int life = 0;
-			int c = getPixel(population, x, y);
-			n += (getPixel(population, x-1, y-1) & 0xffffff) != 0;
-			n += (getPixel(population, x-1, y+0) & 0xffffff) != 0;
-			n += (getPixel(population, x-1, y+1) & 0xffffff) != 0;
-			n += (getPixel(population, x+0, y-1) & 0xffffff) != 0;
-			n += (getPixel(population, x+0, y+1) & 0xffffff) != 0;
-			n += (getPixel(population, x+1, y-1) & 0xffffff) != 0;
-			n += (getPixel(population, x+1, y+0) & 0xffffff) != 0;
-			n += (getPixel(population, x+1, y+1) & 0xffffff) != 0;
-
-			if ((c & 0xffffff) != 0) {
-				if (n == 2 || n == 3) {
-					life = c & 0xffffff;
-				}
-			}
-			else if (n == 3) {
-				life = -1;
-			}
-			setPixel(next, x, y, life);
-		}
-	}
-	copySurf(population, 0, 0, next, null);
-	delSurf(next);
-}
-
-void drawCB() {
-	static int gen = 0;
-	if (reDraw > 3) {
-		//~ bmpWrite(pop55, "gol2.bmp");
-		reDraw = 0;
-	}
-
-	if (reDraw) {
-		nextGeneration(pop55);
-		if (reDraw == 1)
-			reDraw = 0;
-		gen += 1;
-	}
-	zoomSurf(offScreen, null, pop55, null, 0);
-	if (1) {
-		uint8 txt[512];
-		string str = emit(string, byRef(txt));
-		itoa(str, gen, 10, 1, "generation: ");
-		drawText(offScreen, 0, 0, str, -1);
-	}
-	Gui.Repaint();
-}
-
-void mouseCB(int btn, int x, int y) {
-	if (btn == 1) {
-		int X = x * w / Window.resx;
-		int Y = y * h / Window.resy;
-		setPixel(pop55, X, Y, -1);
-		btn = 0;
-	}
-
-	if (btn) {
-		reDraw = btn;
-	}
-}
-
-reDraw = 1;
-Gui.setDrawCallback(drawCB);
-Gui.setMouseHandler(mouseCB);
-}
-static if (test == 10) {	// gradients
-
-void doLinearGradient() {
-	static double l;
-	static double x0;
-	static double y0;
-	static double dx;
-	static double dy;
-
-	vec4f pixelCB(double x, double y) {
-		float c = l * (dx * (x - x0) + dy * (y - y0));
-		result = vec4f(c);
-	}
-
-	double w = width(offScreen);
-	double h = height(offScreen);
-
-	x0 = roi.x / w;
-	y0 = roi.y / h;
-	dx = roi.w / w;
-	dy = roi.h / h;
-	l = 1. / nz(dx * dx + dy * dy, 1e-20);
-	evalSurf(offScreen, null, pixelCB);
-}
-
-void doConicalGradient() {
-	define useFp = true;		// true(using floating point) is faster
-	static double a;
-
-	static if (useFp) {
-
-		static double rix;
-		static double riy;
-
-		static vec4f ColorCB1(double x, double y) {
-
-			double ang = a - atan2(x - rix, y - riy);
-
-			if (ang < 0)
-				ang += 2 * pi;
-
-			ang %= 2 * pi;
-
-			//~ if (ang > pi)
-				//~ ang = 2 * pi - ang;
-
-			result = vec4f(float32(.5 / pi * ang));
-		}
-
-		double w = width(offScreen);
-		double h = height(offScreen);
-
-		rix = roi.x / w;
-		riy = roi.y / h;
-		a = atan2(roi.w / w, roi.h / h);
-		evalSurf(offScreen, null, ColorCB1);
-	}
-
-	static if (!useFp) {
-		static int rix;
-		static int riy;
-
-		static int ColorCB(int x, int y) {
-
-			double ang = a - atan2(x - rix, y - riy);
-
-			if (ang < 0)
-				ang += 2 * pi;
-
-			ang %= 2 * pi;
-
-			//~ if (ang > pi)
-				//~ ang = 2 * pi - ang;
-
-			define color(int32 &c) = __rgb(c&255, c&255, c&255);
-
-			//~ int c = (255 / 2 / pi) * ang;
-			result = color((255 / 2 / pi) * ang);
-		}
-
-		rix = roi.x;
-		riy = roi.y;
-		a = atan2(roi.w, roi.h);
-		evalSurfrgb(offScreen, null, ColorCB);
-	}// */
-}
-
-gxClut lut;
-int Colors[10] = 0x000000, 0xffffff, 0x000000, 0xff0000, 0x00ff00, 0x0000ff, 0xff0000, 0x00ff00, 0x0000ff, 0xff0000;
-//~ int Colors[7] = 0xff0000, 0x00ff00, 0x0000ff, 0xff0000, 0x00ff00, 0x0000ff, 0xff0000;
-int type = Gradient.Linear;
-
-//~ blendLut(256, lut, Colors);
-blendLut(lut, 0x000000, 0xffffff, 0x000000);
-//~ blendLut(lut, 0xff0000, 0x00ff00, 0x0000ff);
-//~ blendLut(lut, 0xff0000, 0x00ff00, 0x0000ff, 0xff0000);
-//~ zoomSurf(offScreen, null, lutSurf(gxSurf(256, 256), lut, 0), null, 0);
-//~ saveLut(lut, "a.bmp");
-
-void mouseCB(int btn, int x, int y) {
-	if (dblClick(btn, x, y)) {
-		reDraw = true;
-		dblClick(-1, 0, 0);			// disable multi clicks
-		if (type == Gradient.Linear) {
-			type = Gradient.Radial;
-		}
-		else if (type == Gradient.Radial) {
-			type = Gradient.Square;
-		}
-		else if (type == Gradient.Square) {
-			type = Gradient.Conical;
-		}
-		else if (type == Gradient.Conical) {
-			type = Gradient.Spiral;
-		}
-		else if (type == Gradient.Spiral) {
-			type = Gradient.Linear;
-		}
-	}
-	else
-		mouseMoveSizeRoi(btn, x, y);
-}
-void drawCB() {
-	if (reDraw) {
-		//~ doLinearGradient();
-		//~ doConicalGradient();
-
-		gradSurf(offScreen, &roi, &lut, type | Gradient.Repeat);
-		drawRect(offScreen, &roi, 0xff00ff);
-		drawLine(offScreen, roi.x, roi.y, roi.x + roi.w, roi.y + roi.h, 0xff00ff);
-		reDraw = false;
-	}
-}
-
-Gui.setMouseHandler(mouseCB);
-Gui.setDrawCallback(drawCB);
-
 }
 
 //~ define res = 20000;

@@ -1,12 +1,12 @@
 // watter demo in 2d & 3d
 enum Window {
-	//~ draw = RenderMode.drawFill|RenderMode.draw_lit;
+	draw = RenderMode.drawFill|RenderMode.draw_lit;
 	resx = 512;
 	resy = 512;
 }
 
 enum Options {
-	textured = !true;
+	textured = true;
 	do2d = !true;
 	do3d = true;
 }
@@ -17,14 +17,15 @@ define division = 64;
 //~ do rain every dorain frame
 define dorain = 0;
 
-define pheight = -512;
-define density = 7;
+define pheight = -256;
+define density = 5;
 
 int mx = 0;
 int my = 0;
 
 gxSurf tmp = gxSurf(division, division);
 gxSurf img = gxSurf("media/images/download.jpg");
+//~ gxSurf img = gxSurf("media/images/nol.bmp");
 
 static if (Options.textured) {
 	static if (Options.do3d) {
@@ -35,7 +36,7 @@ static if (Options.textured) {
 void drawCB() {
 	int i;
 	static int page = 0;
-	static int32 hmap[2, division * division] = 0;
+	static int32 hmap[2][division * division] = 0;
 	//~ static int32 hmap[2, division, division] = 0;
 
 	int p = page;
@@ -71,8 +72,8 @@ void drawCB() {
 		int np = page ^= 1;
 		for (int y = 1; y < division - 1; y += 1) {
 			for (int x = 1; x < division - 1; x += 1) {
-				//~ int height = ((hmap[p][i-division-1] + hmap[p][i-division] + hmap[p][i-division+1] + hmap[p][i-1] + hmap[p][i+1] + hmap[p][i+division-1] + hmap[p][i+division] + hmap[p][i+division+1]) >> 2) - hmap[np][i];
-				int height = ((hmap[p][i-division] + hmap[p][i-1] + hmap[p][i+1] + hmap[p][i+division]) >> 1) - hmap[np][i];
+				int height = ((hmap[p][i-division-1] + hmap[p][i-division] + hmap[p][i-division+1] + hmap[p][i-1] + hmap[p][i+1] + hmap[p][i+division-1] + hmap[p][i+division] + hmap[p][i+division+1]) >> 2) - hmap[np][i];
+				//~ int height = ((hmap[p][i-division] + hmap[p][i-1] + hmap[p][i+1] + hmap[p][i+division]) >> 1) - hmap[np][i];
 				hmap[np][i] = height - (height >> density);
 				i += 1;
 				//~ int height = ((hmap[p][x-1][y-1] + hmap[p][x][y-1] + hmap[p][x+1][y-1] + hmap[p][x-1][y] + hmap[p][x+1][y] + hmap[p][x-1][y+1] + hmap[p][x][y+1] + hmap[p][x+1][y+1]) >> 2) - hmap[np][x][y];

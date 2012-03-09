@@ -1,6 +1,6 @@
 // Procedural drawing
 enum Window {
-	//~ draw = RenderMode.swap_buff;
+	draw = RenderMode.swap_buff;
 	resx = 512/1;
 	resy = 512/1;
 }
@@ -285,5 +285,5 @@ vec4f perlin2f(double x, double y) {
 	result = vec4f(Perlin.Noise(x*mul, y*mul));
 }
 //~ setup1(&time, Perlin.Noise2f);
-setup(&time, yinyang);
+setup(&time, eye);
 //~ Gui.exitLoop();

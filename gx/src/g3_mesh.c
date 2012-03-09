@@ -353,11 +353,12 @@ static int read_obj(mesh msh, const char* file) {
 
 			for (i = 0; *ptr != 0; i++) {
 
-				while (strchr(" \t", *ptr)) ptr++;		// skip white spaces
+				while (*ptr && strchr(" \t", *ptr)) ptr++;		// skip white spaces
 				if (*ptr == '\0') break;				// end of line
 
 				if (i > 4) break;						// error
 				if (!strchr("+-0123456789", *ptr)) {	// error
+					fprintf(stderr, "unsuported line: `%s`\n", ptr);
 					break;
 				}
 
@@ -365,13 +366,13 @@ static int read_obj(mesh msh, const char* file) {
 				ptr = readI32(ptr, &v[i]);				// position index
 				if (*ptr == '/') {						// texture index
 					ptr += 1;
-					if (strchr("+-0123456789", *ptr)) {
+					if (*ptr && strchr("+-0123456789", *ptr)) {
 						ptr = readI32(ptr, &vt[i]);
 					}
 				}
 				if (*ptr == '/') {						// normal index
 					ptr += 1;
-					if (strchr("+-0123456789", *ptr)) {
+					if (*ptr && strchr("+-0123456789", *ptr)) {
 						ptr = readI32(ptr, &vn[i]);
 					}
 				}
@@ -1214,8 +1215,8 @@ int evalMesh(mesh msh, int sdiv, int tdiv, char *src, char *file, int line) {
 	err = err || !libcall(rt, f64sqrt,  "float64 sqrt(float64 x);");
 	err = err || !libcall(rt, f64atan2, "float64 atan(float64 x, float64 y);");
 	err = err || !libcall(rt, f64pow,   "float64 pow(float64 x, float64 y);");
-	err = err || !ccDefineFlt(rt, "pi", 3.14159265358979323846264338327950288419716939937510582097494459);
-	err = err || !ccDefineFlt(rt, "e",  2.71828182845904523536028747135266249775724709369995957496696763);
+	err = err || !ccDefFlt(rt, "pi", 3.14159265358979323846264338327950288419716939937510582097494459);
+	err = err || !ccDefFlt(rt, "e",  2.71828182845904523536028747135266249775724709369995957496696763);
 
 	/*err = err || addText(rt, __FILE__, __LINE__ + 1,
 		"enum: double {\n"

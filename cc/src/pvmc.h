@@ -41,7 +41,6 @@ typedef enum {
 	dumpMask = 0x0000f00,
 } srcType, dumpMode;
 
-// run-time
 // Runtime / global state
 state rtInit(void* mem, unsigned size);
 void* rtAlloc(state rt, void* ptr, unsigned size);	// realloc/alloc/free
@@ -67,13 +66,12 @@ int gencode(state, int level);				// optimize level
 //~ int execute(state, int cc, int ss, dbgf dbg);
 int parse(ccState, srcType, int wl);
 
+symn libcall(state, int libc(state), const char* proto);
+symn installtyp(state, const char* name, unsigned size, int refType);
+//~ symn installvar(state s, const char* name, symn type, int refType);	// install a static variable.
+
 // instal io, mem, math and parse optionaly the given file
 int install_stdc(state rt, char* file, int level);
-
-symn libcall(state, int libc(state), const char* proto);
-//~ symn install(state, int libc(state), int pass, const char* proto);
-symn installtyp(state, const char* name, unsigned size, int refType);
-//~ symn installvar(state s, const char* name, symn type, unsigned offset);
 
 // Level 1 Functions: use less these
 ccState ccInit(state, int mode, int libcHalt(state));
@@ -86,11 +84,18 @@ int ccDone(state);
 
 void ccSource(ccState, char *file, int line);		// set source position
 
-// declaring constants and namespaces
+// declaring namespaces
 symn ccBegin(state, char *cls);
-symn ccDefineInt(state, char *name, int32_t value);
-symn ccDefineFlt(state, char *name, double value);
-symn ccDefineStr(state, char *name, char* value);
+
+//~ declaring constants
+symn ccDefInt(state, char *name, int64_t value);
+symn ccDefFlt(state, char *name, double value);
+symn ccDefStr(state, char *name, char* value);
+
+//~ declaring types and variables
+//~ symn ccDefVar(state, char *name, char* value);
+//~ symn ccDefType(state, char *name, char* value);
+
 void ccEnd(state, symn cls);
 
 // searching for symbols ...

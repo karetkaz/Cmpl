@@ -1,6 +1,5 @@
 //~ #define NEXT(__IP, __CHK, __SP) {checkstack(__CHK); ip += _IP; sp += _SP;}
-
-#ifdef NEXT
+//~ #ifdef NEXT
 
 #define SP(__POS, __TYP) (((stkval*)((stkptr)sp + (__POS)))->__TYP)
 #define MP(__POS, __TYP) (((stkval*)((memptr)mp + (__POS)))->__TYP)
@@ -22,7 +21,6 @@ case opc_inc:  NEXT(4, 1, -0) {
 } break;
 case opc_spc:  NEXT(4, 0, 0) {
 	int sm = ip->rel / 4;
-	//~ dieif(ip->rel & 3, "FixMe");
 	STOP(error_opc, ip->rel & 3, -1);
 	if (sm > 0) {
 		NEXT(0, 0, sm);
@@ -75,15 +73,16 @@ case opc_jmpi: NEXT(1, 1, -1) {
 #endif
 } break;
 case opc_task: NEXT(4, 0, -0) {
-#ifdef EXEC
-	if (mtt(rt, doTask, pu, 0))
-		pu->ip += ip->rel - 4;
 	STOP(error_opc, 1, 1);
+#ifdef EXEC
+	/*if (mtt(rt, doTask, pu, 0))
+		pu->ip += ip->rel - 4;*/
 #endif
 } break;
 case opc_libc: NEXT(2, libcvec[ip->idx].chk, -libcvec[ip->idx].pop) {
 #ifdef EXEC
 	int exitCode;
+	struct symn module;
 	unsigned char *s_vm_end = rt->_ptr;
 	symn sym = libcvec[ip->idx].sym;
 	STOP(error_libc, sym == NULL, ip->idx);
@@ -91,7 +90,8 @@ case opc_libc: NEXT(2, libcvec[ip->idx].chk, -libcvec[ip->idx].pop) {
 	rt->retv = (char*)((stkptr)sp + libcvec[ip->idx].pop);
 	rt->libc = sym;
 	if (ip->idx == 0) {
-		struct symn module = {0};
+		TODO("this should be not static")
+		memset(&module, 0, sizeof(struct symn));
 		module.args = rt->defs;
 		rt->retv = (char *)st;
 		rt->libc = &module;
@@ -550,13 +550,13 @@ case f32_mul: NEXT(1, 2, -1) {
 case f32_div: NEXT(1, 2, -1) {
 #if defined(EXEC)
 	SP(1, f4) /= SP(0, f4);
-	STOP(error_div, SP(0, f4) == 0, -1);
+	STOP(error_div_flt, SP(0, f4) == 0., -1);
 #endif
 } break;
 case f32_mod: NEXT(1, 2, -1) {
 #if defined(EXEC)
-	STOP(error_div, SP(0, f4) == 0, -1);
-	SP(1, f4) = fmod(SP(1, f4), SP(0, f4));
+	SP(1, f4) = fmodf(SP(1, f4), SP(0, f4));
+	STOP(error_div_flt, SP(0, f4) == 0, -1);
 #endif
 } break;
 
@@ -695,14 +695,14 @@ case f64_mul: NEXT(1, 4, -2) {
 } break;
 case f64_div: NEXT(1, 4, -2) {
 #if defined(EXEC)
-	STOP(error_div, SP(0, f8) == 0, -1);
 	SP(2, f8) /= SP(0, f8);
+	STOP(error_div_flt, SP(0, f8) == 0., -1);
 #endif
 } break;
 case f64_mod: NEXT(1, 4, -2) {
 #if defined(EXEC)
-	STOP(error_div, SP(0, f8) == 0, -1);
 	SP(2, f8) = fmod(SP(2, f8), SP(0, f8));
+	STOP(error_div_flt, SP(0, f8) == 0, -1);
 #endif
 } break;
 
@@ -950,4 +950,4 @@ ldst:
 #undef EXEC
 #undef STOP
 #undef NEXT
-#endif
+//~ #endif

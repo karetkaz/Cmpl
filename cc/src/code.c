@@ -1,5 +1,5 @@
 /*******************************************************************************
- *   File: clog.c
+ *   File: code.c
  *   Date: 2011/06/23
  *   Desc: bytecode related stuff
  *******************************************************************************
@@ -8,11 +8,14 @@ code emmiting, executing and formatting
 #include <string.h>
 #include <stdarg.h>
 #include <math.h>
-#include "ccvm.h"
+#include "core.h"
 
 #ifdef __WATCOMC__
 #pragma disable_message(124);
-#pragma disable_message(201);
+//~ #pragma disable_message(201);
+static inline double fmodf(float x, float y) {
+	return fmod(x, y);
+}
 #endif
 
 #pragma pack(push, 1)
@@ -41,11 +44,21 @@ typedef struct bcde {			// byte code decoder
 			CHKSTK(ip->ext.lhs);
 			CHKSTK(ip->ext.rhs);
 
+			// if there is an indirection
 			switch (ip->ext.mem) {
 				case 0: break;
-				case 1: res = *(void**)res; break;
-				case 2: lhs = *(void**)lhs; break;
-				case 3: rhs = *(void**)rhs; break;
+				case 1:
+					CHKMEM_W(*(int**)res);
+					res = *(void**)res;
+					break;
+				case 2:
+					CHKMEM_R(*(int**)lhs);
+					lhs = *(void**)lhs;
+					break;
+				case 3:
+					CHKMEM_R(*(int**)rhs);
+					rhs = *(void**)rhs;
+					break;
 			}
 
 			switch (ip->ext.opc) {
@@ -69,8 +82,8 @@ typedef struct cell {			// processor
 	unsigned char	*bp;			// Stack base
 
 	// multiproc
-	//~ unsigned int	cs;			// child start(==0 join) / code size (pc)
-	//~ unsigned int	pp;			// parent proc(==0 main) / ???
+	//~ unsigned int	cs;			// child start(==0 join)
+	//~ unsigned int	pp;			// parent proc(==0 main)
 
 	// flags ?
 	//~ unsigned	zf:1;			// zero flag
@@ -89,7 +102,7 @@ int vmOffset(state rt, void *ptr) {
 }
 
 static symn installref(state rt, const char *prot, astn *argv) {
-	astn root;
+	astn root, args;
 	symn result = NULL;
 	int level;
 	int errc = rt->errc;
@@ -101,26 +114,25 @@ static symn installref(state rt, const char *prot, astn *argv) {
 
 	rt->cc->warn = 9;
 	level = rt->cc->nest;
-	if ((root = decl(rt->cc, decl_NoDefs | decl_NoInit))) {
+	if ((root = decl_var(rt->cc, &args, decl_NoDefs | decl_NoInit))) {
 
+		logif(!skip(rt->cc, STMT_do), "`;` expected declaring: %s", prot);
+		dieif(peek(rt->cc), "FixMe");
 		dieif(level != rt->cc->nest, "FixMe");
-		dieif(root->kind != TYPE_def, "FixMe");
+		dieif(root->kind != TYPE_ref, "FixMe %+k", root);
 
-		//~ result = root->id.link;
-		if ((result = root->id.link)) {
+		if ((result = root->ref.link)) {
 			dieif(result->kind != TYPE_ref, "FixMe");
-			*argv = root->id.args;
+			*argv = args;
 			result->cast = 0;
 		}
 	}
-
-	//~ printargcast(root->id.args);
 
 	return errc == rt->errc ? result : NULL;
 }//*/
 
 /* install a library call
- * @arg s: the runtime state.
+ * @arg rt: the runtime state.
  * @arg libc: the function to call.
  * @arg proto: prototype of function.
  */
@@ -129,11 +141,10 @@ symn libcall(state rt, int libc(state), const char* proto) {
 	int stdiff = 0;
 	astn args = NULL;
 
-	dieif (!libc || !proto, "FixMe");
-		//~ return NULL;
+	dieif(libc == NULL || !proto, "FixMe");
 
 	//~ from: int64 zxt(int64 val, int offs, int bits)
-	//~ make: define zxt(int64 val, int offs, int bits) = int64(emit(libc(25), int64(val), int(offs), int(bits)));
+	//~ make: define zxt(int64 val, int offs, int bits) = int64(emit(libc(25), i64(val), i32(offs), i32(bits)));
 
 	if ((sym = installref(rt, proto, &args))) {
 		struct libc *lc = NULL;
@@ -196,31 +207,21 @@ symn libcall(state rt, int libc(state), const char* proto) {
 		stdiff -= sizeOf(sym->type);
 		lc->pop = stdiff / 4;
 
-
 		// make arguments symbolic by default
 		for (arg = sym->args; arg; arg = arg->next) {
-			//~ stdiff += sizeOf(arg->type);
 			if (arg->cast != TYPE_ref)
 				arg->cast = TYPE_def;
 		}
-
-		/*for (arg = sym->args; arg; arg = arg->next) {
-			//~ dieif(arg->offs != stdiff, "FixMe: %+T(%d, %d)", arg, arg->offs, stdiff);
-			//~ debug("FixMe: %+T(%d, %d)", arg, arg->offs, stdiff);
-			stdiff += sizeOf(arg->type);
-		}// */
-
 	}
 	else {
 		error(rt, NULL, 0, "install(`%s`)", proto);
-		//~ return NULL;
 	}
 
 	return sym;
 }
 //}
 
-static int lobit(int a) {return a & -a;}
+static inline int lobit(int a) {return a & -a;}
 static int bitsf(unsigned int x) {
 	int ans = 0;
 	if ((x & 0x0000ffff) == 0) { ans += 16; x >>= 16; }
@@ -528,6 +529,8 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 	// Optimize
 	if (rt->vm.opti > 1) {
 		if (0) {}
+
+		// memory access
 		else if (opc == opc_ldi1) {
 			ip = getip(rt, rt->vm.pc);
 			if (ip->opc == opc_ldsp && ((ip->rel & 3) == 0) && ((ip->rel / 4) < vm_regs)) {
@@ -628,7 +631,7 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 			}
 		}
 
-		// conditional jumps
+		// */ grouping 
 		else if (opc == opc_not) {
 			ip = getip(rt, rt->vm.pc);
 			if (ip->opc == opc_not) {
@@ -636,20 +639,60 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 				return rt->vm.pc;
 			}
 		}
-
-		//~ /*
+		else if (opc == i32_neg) {
+			ip = getip(rt, rt->vm.pc);
+			if (ip->opc == opc_ldc4) {
+				ip->arg.i4 = -ip->arg.i4;
+				return rt->vm.pc;
+			}
+		}
+		else if (opc == i64_neg) {
+			ip = getip(rt, rt->vm.pc);
+			if (ip->opc == opc_ldc8) {
+				ip->arg.i8 = -ip->arg.i8;
+				return rt->vm.pc;
+			}
+		}
+		else if (opc == f32_neg) {
+			ip = getip(rt, rt->vm.pc);
+			if (ip->opc == opc_ldc4) {
+				ip->arg.f4 = -ip->arg.f4;
+				return rt->vm.pc;
+			}
+		}
+		else if (opc == f64_neg) {
+			ip = getip(rt, rt->vm.pc);
+			if (ip->opc == opc_ldc8) {
+				ip->arg.f8 = -ip->arg.f8;
+				return rt->vm.pc;
+			}
+		}
 		else if (opc == opc_inc) {
 			ip = getip(rt, rt->vm.pc);
 			if (ip->opc == opc_inc) {
-				ip->rel = (int32_t)(arg.i8 += ip->rel);
-				if (ip->rel != arg.i8) {
-					trace("error");
-					return 0;
+				stkval tmp;
+				tmp.i8 = arg.i8 + ip->rel;
+				if (tmp.rel == tmp.i8) {
+					ip->rel = tmp.rel;
+					return rt->vm.pc;
 				}
-				return rt->vm.pc;
 			}
-		}// */
+		}
+		else if (opc == opc_spc) {
+			/* still not good
+			ip = getip(rt, rt->vm.pc);
+			if (ip->opc == opc_spc) {
+				stkval tmp;
+				tmp.i8 = arg.i8 + ip->rel;
+				if (tmp.rel == tmp.i8) {
+					rt->vm.pos = rt->vm.pc;
+					rt->vm.ss -= ip->rel / 4;
+					arg.i8 += ip->rel;
+				}
+			}// */
+		}
 
+		// */ conditional jumps
 		else if (opc == opc_jnz) {
 			ip = getip(rt, rt->vm.pc);
 			if (ip->opc == opc_not) {
@@ -665,7 +708,7 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 			}
 		}
 
-		//~ /* shl, shr, and
+		// */ shl, shr, and
 		else if (opc == b32_shl) {
 			ip = getip(rt, rt->vm.pc);
 			if (ip->opc == opc_ldc4) {
@@ -703,7 +746,32 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 					arg.i4 = b32_bit_and | (bitsf(ip->arg.i4 + 1) & 0x3f);
 				}
 			}
-		} // */
+		}
+
+		else if (opc == i32_add) {
+			ip = getip(rt, rt->vm.pc);
+			if (ip->opc == opc_ldc4) {
+				arg.i8 = ip->arg.i4;
+				if (arg.rel == arg.i8) {
+					rt->vm.pos = rt->vm.pc;
+					rt->vm.ss -= 1;
+					opc = opc_inc;
+				}
+			}
+		}
+		else if (opc == i32_sub) {
+			ip = getip(rt, rt->vm.pc);
+			if (ip->opc == opc_ldc4) {
+				arg.i8 = -ip->arg.i4;
+				if (arg.rel == arg.i8) {
+					rt->vm.pos = rt->vm.pc;
+					rt->vm.ss -= 1;
+					opc = opc_inc;
+				}
+			}
+		}
+
+		// */
 		// mul, div, mod
 		/*else if (opc == u32_mod) {
 			ip = getip(s, s->vm.pc);
@@ -829,22 +897,31 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 	ip->arg = arg;
 	rt->vm.pc = rt->vm.pos;	// previous program pointer is here
 
-	if (opc == opc_jmp || opc == opc_jnz || opc == opc_jz) {
+	if ((opc == opc_jmp || opc == opc_jnz || opc == opc_jz) && arg.i8 != 0) {
 		ip->rel -= rt->vm.pc;
-		dieif((ip->rel + rt->vm.pc) != arg.i8, "FixMe");
-	}
-	else if (opc == opc_spc) {
-		/*TODO: int max = 0x7fffff;
-		while (arg.i8 > max) {
-			if (!emit(s, opc, max))
-				return 0;
-			arg.i8 -= max;
-		}// */
-		//~ ip->rel = arg.i8 / 4;
-		dieif(ip->rel != arg.i8, "FixMe");
+		logif((ip->rel + rt->vm.pc) != arg.i8, "FixMe");
+		/*if ((ip->rel + rt->vm.pc) != arg.i8) {
+			fputasm(stdout, rt, rt->vm.seg, -1, 0x119);
+		}*/
 	}
 	else switch (opc) {
 		case opc_inc:
+			dieif(ip->rel != arg.i8, "FixMe");
+			break;
+
+		case opc_spc:
+			/*TODO: int max = 0x7fffff;
+			while (arg.i8 > max) {
+				if (!emit(s, opc, max))
+					return 0;
+				arg.i8 -= max;
+			}
+			//~ ip->rel = arg.i8 / 4;
+			// */
+			if (arg.i8 > 0x7fffff) {
+				trace("max 2 megs can be allocated on stack");
+				return 0;
+			}
 			dieif(ip->rel != arg.i8, "FixMe");
 			break;
 
@@ -883,7 +960,7 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 			STOP(error_stc, rt->vm.ss < (__CHK), -1);\
 			rt->vm.ss += (__SP);\
 			rt->vm.pos += (__IP);
-		#include "code.i"
+		#include "code.inl"
 	}
 
 	if (opc == opc_call) {
@@ -1022,7 +1099,16 @@ int stkoffs(state rt, int size) {
 	return padded(size, 4) + rt->vm.ss * 4;
 }
 
-/*static cell task(state rt, cell pu, int cc, int n, int cl, int dl) {
+/*typedef enum {
+	doInit,		// initialize, master is runing
+	doTask,		// start a new processor
+	doJoin,		// wait for childs
+	//~ doBrk,		// 
+	//~ getNext,	// get next working cell
+	//~ doSync = 1;		// syncronize
+} doWhat;
+
+static cell task(state rt, cell pu, int cc, int n, int cl, int dl) {
 	// find an empty cpu
 	cell pu = 0;//pp;
 	while (pu && pu->ip)
@@ -1036,21 +1122,13 @@ int stkoffs(state rt, int size) {
 		memcpy(pu->sp, pp->sp, cl * 4);
 	}
 	return pu + n;
-}// */
+}
 
-/*static int done(state rt, int cp) {
+static int done(state rt, int cp) {
 	pu[pu[cp].pp].cp -= 1;
 	sigsnd(pp->pp, SIG_quit);
-}// */
+}
 
-typedef enum {
-	doInit,		// initialize, master is runing
-	doTask,		// start a new processor
-	doWait,		// wait for childs
-	//~ doBrk,		// 
-	//~ getNext,	// get next working cell
-	//~ doSync = 1;		// syncronize
-} doWhat;
 static int mtt(state rt, doWhat cmd, cell pu, int n) {
 	static int workers = 0;
 	switch (cmd) {
@@ -1070,13 +1148,11 @@ static int mtt(state rt, doWhat cmd, cell pu, int n) {
 		case doWait: {					// master thread is running
 			workers = 1;
 		} break;
-		/*case doBrk: if (rt->dbg) {
-			rt->dbg(rt, ....);
-		} break;*/
 	}
 	(void)rt;
 	return 0;
 }
+// */
 
 static inline int ovf(cell pu) {
 	return (pu->sp - pu->bp) < 0;
@@ -1108,6 +1184,16 @@ static int dbugpu(state rt, cell pu, dbgf dbg) {
 	int err_line = 0;
 	int err_code = 0;
 
+	/*fputfmt(stderr, "pu: {ip: %d, sp: %d, bp: %d}\n", pu->ip - rt->_mem, pu->sp - rt->_mem, pu->bp - rt->_mem);
+	fputfmt(stderr, "init(ro: %d"
+		", ss: %d"
+		", sm: %d"
+		", pc: %d"
+		", px: %d"
+		", pos: %d"
+	") {\n", rt->vm.ro, rt->vm.ss, rt->vm.sm, rt->vm.pc, rt->vm.px, rt->vm.pos);
+	*/
+
 	for ( ; ; ) {
 
 		register bcde ip = (void*)pu->ip;
@@ -1129,6 +1215,7 @@ static int dbugpu(state rt, cell pu, dbgf dbg) {
 				return -1;
 
 			error_ovf:
+				//~ fputfmt(stderr, "pu: {ip: %d, sp: %d, bp: %d}\n", pu->ip - rt->_mem, pu->sp - rt->_mem, pu->bp - rt->_mem);
 				dbugerr(rt, err_file, err_line, 0, ip, (long*)sp, st - sp, "stack overflow", err_code);
 				//~ error(vm->s, 0, "stack overflow: op[%.*A] / %d", (char*)ip - (char*)(vm->_mem), ip, (vm->_end - pu->sp) / 4);
 				return -2;
@@ -1137,6 +1224,10 @@ static int dbugpu(state rt, cell pu, dbgf dbg) {
 				dbugerr(rt, err_file, err_line, 0, ip, (long*)sp, st - sp, "segmentation fault", err_code);
 				//~ error(vm->s, 0, "segmentation fault: op[%.*A]", (char*)ip - (char*)(vm->_mem), ip);
 				return -3;
+
+			error_div_flt:
+				dbugerr(rt, err_file, err_line, 0, ip, (long*)sp, st - sp, "division by zero", err_code);
+				break;
 
 			error_div:
 				dbugerr(rt, err_file, err_line, 0, ip, (long*)sp, st - sp, "division by zero", err_code);
@@ -1151,7 +1242,7 @@ static int dbugpu(state rt, cell pu, dbgf dbg) {
 			#define NEXT(__IP, __CHK, __SP) {pu->sp -= 4*(__SP); pu->ip += (__IP);}
 			#define STOP(__ERR, __CHK, __ERC) if (__CHK) {err_file = __FILE__; err_line = __LINE__; err_code = __ERC; goto __ERR;}
 			#define EXEC
-			#include "code.i"
+			#include "code.inl"
 		}
 
 	}
@@ -1163,7 +1254,7 @@ int vmExec(state rt, dbgf dbg) {
 	struct cell pu[1];
 
 	pu->ip = (unsigned char *)rt->_mem + rt->vm.pc;
-	pu->bp = pu->ip + rt->vm.pos;		// the last emited instruction
+	pu->bp = (unsigned char *)rt->_mem + rt->vm.pos;		// the last emited instruction
 	pu->sp = rt->_mem + rt->_size;
 
 	/*if ((((int)pu->sp) & 3)) {
@@ -1178,10 +1269,13 @@ int vmExec(state rt, dbgf dbg) {
 
 	rt->cc = NULL;		// invalidate compiler
 	rt->_ptr = pu->sp;	// initiate stack position
+
+	// reinitialize memory manager
+	rt->_free = rt->_used = NULL;
+
 	//~ if (rt->args) {}	// init argc, argv
 	return dbugpu(rt, pu, dbg);
 }
-
 int vmCall(state rt, symn fun, ...) {
 
 	symn arg;
@@ -1226,7 +1320,7 @@ int vmCall(state rt, symn fun, ...) {
 		int size = sizeOf(arg->type);
 		unsigned char *offs = pu->sp - arg->offs;
 
-		if (arg->cast == TYPE_ref || arg->type->cast == TYPE_ref) {
+		if (arg->cast == TYPE_ref/*  || arg->type->cast == TYPE_ref */) {
 			trace("by reference");
 			return -2;
 		}
@@ -1423,7 +1517,7 @@ void fputasm(FILE *fout, state rt, int beg, int end, int mode) {
 			//~ #define NEXT(__IP, __CHK, __SP) {if (__IP) is = (__IP);/*  ss += (__SP); */}
 			#define NEXT(__IP, __CHK, __SP) {if (__IP) is = (__IP);}
 			#define STOP(__ERR, __CHK, __ERC) if (__CHK) goto __ERR
-			#include "code.i"
+			#include "code.inl"
 		}
 
 		if (1 && (ast = infoAt(rt, i))) {
@@ -1441,103 +1535,94 @@ void fputasm(FILE *fout, state rt, int beg, int end, int mode) {
 
 void vm_fputval(state rt, FILE *fout, symn var, stkval* ref, int level) {
 	symn typ = var->kind == TYPE_ref ? var->type : var;
-	//~ level = flgs & 0xff;
-	//~ flgs &= ~0xff;
+	if (typ) {
+		fputfmt(fout, "%I", level);
+		if (var != typ)
+			fputfmt(fout, "%T: ", var);
 
-	if (typ) switch (typ->kind) {
-		case TYPE_rec: {
-			symn tmp;
-			int n = 0;
+		switch (typ->kind) {
+			case TYPE_rec: {
+				symn tmp;
+				int n = 0;
 
-			if (var != typ && !var->pfmt)
-				fputfmt(fout, "%T = ", var);
-				//~ fputfmt(fout, "%T{size:%d, offs:%06x} = ", var, var->size, var->offs);
-
-			if (var->cast == TYPE_ref || typ->cast == TYPE_ref) {		// arrays, strings, functions, references
 				if (var == null_ref) {
 					fputfmt(fout, "%T(null)", typ);
-					//~ fputfmt(fout, "null");
 					break;
 				}
-				else if (ref->u4 == 0) {
-					fputfmt(fout, "%T(null)", typ);
-					//~ fputfmt(fout, "null");
-					break;
+				else if (var->cast == TYPE_ref) {		// arrays, strings, functions, references
+					if (ref->u4 == 0) {
+						fputfmt(fout, "%T(null)", typ);
+						//~ fputfmt(fout, "null");
+						break;
+					}
+					else if (typ == type_ptr) {
+						fputfmt(fout, "%T(%08x)", typ, ref->u4);
+						break;
+					}
+					ref = (stkval*)(rt->_mem + ref->u4);
 				}
-				else if (typ == type_ptr) {
-					fputfmt(fout, "%T(%08x)", typ, ref->u4);
+
+				if (var && var->call) {
+					fputfmt(fout, "function @%d", -var->offs);
 					break;
 				}
 
-				ref = (stkval*)(rt->_mem + ref->u4);
-			}
-
-			if (var && var->call) {
-				fputfmt(fout, "function @%d", -var->offs);
-				break;
-			}
-
-			if (var->pfmt || typ->pfmt) {
-				char *fmt = var->pfmt ? var->pfmt : typ->pfmt;
-				switch (typ->size) {
-					case 1: fputfmt(fout, fmt, ref->u1); break;
-					case 2: fputfmt(fout, fmt, ref->u2); break;
-					case 4: fputfmt(fout, fmt, ref->u4); break;
-					case 8: fputfmt(fout, fmt, ref->i8); break;
+				if (var->pfmt || typ->pfmt) {
+					char *fmt = var->pfmt ? var->pfmt : typ->pfmt;
+					switch (typ->size) {
+						case 1: fputfmt(fout, fmt, ref->u1); break;
+						case 2: fputfmt(fout, fmt, ref->u2); break;
+						case 4: fputfmt(fout, fmt, ref->u4); break;
+						case 8: fputfmt(fout, fmt, ref->i8); break;
+					}
 				}
-			}
-			else {
-				fputfmt(fout, "%T(", typ);
-				switch (typ->cast) {
+				else switch (typ->cast) {
 					case TYPE_bit:
-					case TYPE_u32: 
+					case TYPE_u32:
 						switch (typ->size) {
 							case 1:
-								fputfmt(fout, "%u", ref->u1);
+								fputfmt(fout, "%T(%u)", typ, ref->u1);
 								break;
 							case 2:
-								fputfmt(fout, "%u", ref->u2);
+								fputfmt(fout, "%T(%u)", typ, ref->u2);
 								break;
 							case 4:
-								fputfmt(fout, "%u", ref->u4);
+								fputfmt(fout, "%T(%u)", typ, ref->u4);
 								break;
 							case 8:
-								fputfmt(fout, "%U", ref->i8);
+								fputfmt(fout, "%T(%U)", typ, ref->i8);
 								break;
 						}
-						level = 0;
 						break;
 
 					case TYPE_i32:
 					case TYPE_i64:
 						switch (typ->size) {
 							case 1:
-								fputfmt(fout, "%d", ref->i1);
+								fputfmt(fout, "%T(%d)", typ, ref->i1);
 								break;
 							case 2:
-								fputfmt(fout, "%d", ref->i2);
+								fputfmt(fout, "%T(%d)", typ, ref->i2);
 								break;
 							case 4:
-								fputfmt(fout, "%d", ref->i4);
+								fputfmt(fout, "%T(%d)", typ, ref->i4);
 								break;
 							case 8:
-								fputfmt(fout, "%D", ref->i8);
+								fputfmt(fout, "%T(%D)", typ, ref->i8);
 								break;
 						}
-						level = 0;
 						break;
 
 					case TYPE_f32:
 					case TYPE_f64:
 						switch (typ->size) {
 							case 4:
-								fputfmt(fout, "%f", ref->f4);
+								fputfmt(fout, "%T(%f)", typ, ref->f4);
 								break;
 							case 8:
-								fputfmt(fout, "%F", ref->f8);
+								fputfmt(fout, "%T(%F)", typ, ref->f8);
 								break;
 						}
-						level = 0;
 						break;
 
 					/*case TYPE_ref: {
@@ -1545,8 +1630,7 @@ void vm_fputval(state rt, FILE *fout, symn var, stkval* ref, int level) {
 						break;
 					}// */
 					default: {
-						//~ fputfmt(fout, "%T{", typ);
-						//~ fputfmt(fout, "\n");
+						fputfmt(fout, "%T {", typ);
 						for (tmp = typ->args; tmp; tmp = tmp->next) {
 							if (tmp->stat || tmp->kind != TYPE_ref)
 								continue;
@@ -1557,68 +1641,70 @@ void vm_fputval(state rt, FILE *fout, symn var, stkval* ref, int level) {
 							if (n > 0)
 								fputfmt(fout, ",");
 
-							fputfmt(fout, "\n%I", (tmp->args || tmp->type->kind == TYPE_arr) ? 0 : level + 1);
+							fputfmt(fout, "\n");
 							vm_fputval(rt, fout, tmp, (void*)((char*)ref + tmp->offs), level + 1);
 							n += 1;
 						}
 						if (typ->args)
 							fputfmt(fout, "\n");
+						fputfmt(fout, "%I}", level, typ);
 					} break;
 				}
-				fputfmt(fout, "%I)", level, typ);
-			}
-		} break;
-		case TYPE_arr: {
-			int i = 0, n = 0;
-			//~ struct astn tmp;
-			symn base = typ->type;
+			} break;
+			case TYPE_arr: {
+				int i = 0, n = 0;
+				symn base = typ->type;
 
-			fputfmt(fout, "%I", level);
-			if (var != typ)
-				fputfmt(fout, "%T = ", var);
-				//~ fputfmt(fout, "%T{size:%d, offs:%06x} = ", var, var->size, var->offs);
-
-			if (typ == type_str) {
-				ref = (stkval*)(rt->_mem + ref->u4);
-				fputfmt(fout, "(\"%s\")", ref);
-			}
-			else {
-				fputfmt(fout, "%T{", typ);
-				if ((n = typ->size) < 0) {
-					//~ fputfmt(fout, "Unknown Dimension}");
-					//~ break;
-					n = ref->dA.length;
+				if (typ == type_str) {
 					ref = (stkval*)(rt->_mem + ref->u4);
-				}
-				#ifdef MAX_ARR_PRINT
-				if (n > MAX_ARR_PRINT) {
-					n = MAX_ARR_PRINT;
-				}
-				#endif
-
-				while (i < n) {
-					if (base->kind == TYPE_arr)
-						fputfmt(fout, "\n");
-
-					vm_fputval(rt, fout, base, (stkval*)((char*)ref + i * sizeOf(base)), level + 1);
-					if (++i < n)
-						fputfmt(fout, ", ");
-				}
-				if (n > 0) {
-					if (base->kind == TYPE_arr)
-						fputfmt(fout, "\n%I", level);
+					fputfmt(fout, "(\"%s\")", ref);
 				}
 				else {
-					fputfmt(fout, "...");
+					int arronnln = 0;
+					int arrMoreElements = 0;
+					fputfmt(fout, "%T {", typ);
+					if ((n = typ->size) < 0) {	// if (var->cst2 == TYPE_arr)
+						n = ref->arr.length;
+						ref = (stkval*)(rt->_mem + ref->u4);
+					}
+					#ifdef MAX_ARR_PRINT
+					if (n > MAX_ARR_PRINT) {
+						n = MAX_ARR_PRINT;
+						arrMoreElements = 1;
+					}
+					#endif
+
+					if (base->kind == TYPE_arr)
+						arronnln = 1;
+					if (base->kind == TYPE_rec && base->args)
+						arronnln = 1;
+
+					while (i < n) {
+						if (arronnln)
+							fputfmt(fout, "\n");
+
+						vm_fputval(rt, fout, base, (stkval*)((char*)ref + i * sizeOf(base)), arronnln ? level + 1 : 0);
+						if (++i < n) {
+							fputfmt(fout, ",");
+							if (!arronnln)
+								fputfmt(fout, " ");
+						}
+					}
+					if (arrMoreElements) {
+						fputfmt(fout, ", ...");
+					}
+					if (arronnln) {
+						fputfmt(fout, "\n%I", level);
+					}
+					fputfmt(fout, "}");
 				}
-				fputfmt(fout, "}");
-			}
-		} break;
-		default: {
-			if (var != typ)
-				fputfmt(fout, "%T:", var);
-			fputfmt(fout, "%T[ERROR]", typ);
-		} break;
+			} break;
+			default: {
+				if (var != typ)
+					fputfmt(fout, "%T:", var);
+				fputfmt(fout, "%T[ERROR]", typ);
+			} break;
+	}
 	}
 }
 
@@ -1646,7 +1732,7 @@ const int vmTest() {
 				if (opc_tbl[opc.opc].diff != 9 && opc_tbl[opc.opc].diff != (__DIFF)) goto error_dif;\
 			}
 			#define STOP(__ERR, __CHK, __ERR1) if (__CHK) goto __ERR
-			#include "code.i"
+			#include "code.inl"
 		}
 	}
 	return e;

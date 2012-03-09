@@ -21,7 +21,7 @@
 #define TBLS 512
 
 // maximum elements to print from an array
-#define MAX_ARR_PRINT 20
+#define MAX_ARR_PRINT 100
 
 #define DO_PRAGMA(x) _Pragma(#x)
 #define TODO(x) //DO_PRAGMA(message("TODO: " #x))
@@ -59,7 +59,7 @@
 // Symbols - CC(tokens)
 typedef enum {
 	#define TOKDEF(NAME, TYPE, SIZE, STR) NAME,
-	#include "defs.i"
+	#include "defs.inl"
 	tok_last,
 
 	TOKN_err = TYPE_any,
@@ -81,17 +81,17 @@ typedef enum {
 	//~ ATTR_glob  = 0x00000008,		// global
 	//~ ATTR_used  = 0x00000080,		// used
 } ccToken;
-typedef struct {
+typedef struct tok_inf {
 	int const	type;
 	int const	argc;
-	char const	*name;
+	char *const	name;
 } tok_inf;
 extern const tok_inf tok_tbl[255];
 
 // Opcodes - VM(opcodes)
 typedef enum {
 	#define OPCDEF(Name, Code, Size, Args, Push, Time, Mnem) Name = Code,
-	#include "defs.i"
+	#include "defs.inl"
 	opc_last,
 
 	opc_neg,		// argument is the type
@@ -132,13 +132,13 @@ typedef enum {
 	vm_size = sizeof(int),	// size of data on stack
 	vm_regs = 255,	// maximum registers for dup, set, pop, ...
 } vmOpcode;
-typedef struct {
-	int const	code;
-	int const	size;
-	int const	chck;
-	int const	diff;
-	char const *name;
-	//~ char const *help;
+typedef struct opc_inf {
+	int const code;
+	int const size;
+	int const chck;
+	int const diff;
+	char *const name;
+	//~ const char *help;
 } opc_inf;
 extern const opc_inf opc_tbl[255];
 
@@ -158,7 +158,8 @@ typedef union {		// value type
 	//~ struct {float32_t x, y, z, w;} pf;
 	//~ struct {float64_t x, y;} pd;
 	//~ struct {int64_t lo, hi;} x16;
-	struct {void* data; int length;} dA;	// dinamic array
+	int32_t		rel:24;
+	struct {void* data; int length;} arr;	// dinamic array
 } stkval;
 
 //~ typedef struct symn *symn;		// Symbol Node
@@ -167,9 +168,9 @@ typedef struct list *list;
 typedef unsigned int uint;
 
 typedef struct libc {
-	struct libc		*next;	// next
-	int (*call)(state);
+	struct libc	*next;	// next
 	const char* proto;
+	int (*call)(state);
 	symn sym;
 	int8_t chk, pop;
 	int16_t pos;//__pad[2];
@@ -187,10 +188,10 @@ struct astn {				// tree node (code)
 	ccToken		cst2;				// casts to basic type: (i32, f32, i64, f64, ref, bool, void)
 	astn		next;				// next statement, do not use for preorder
 	union {
-		union  {					// TYPE_xxx: constant
+		union {						// TYPE_xxx: constant
 			int64_t	cint;			// const: integer
-			float64_t	cflt;			// const: float
-			//~ char*	cstr;		// const: use instead: '.id.name'
+			float64_t	cflt;		// const: float
+			//~ char*	cstr;		// const: use instead: '.ref.name'
 		} con;
 		struct {					// STMT_xxx: statement
 			astn	stmt;			// statement / then block
@@ -203,14 +204,13 @@ struct astn {				// tree node (code)
 			astn	lhso;			// left hand side operand
 			astn	test;			// ?: operator condition
 			uint32_t prec;			// precedence
-			//~ uint32_t _pad;
 		} op;
 		struct {					// TYPE_ref: identifyer
 			char*	name;			// name of identifyer
 			int32_t hash;			// hash code for 'name'
 			symn	link;			// variable
-			astn	args;			// next used
-		} id;
+			astn	args1;			// next used
+		} ref;
 		struct {					// STMT_brk, STMT_con
 			long offs;
 			long stks;				// stack size
@@ -365,7 +365,6 @@ struct ccState {
 };
 static inline int kindOf(astn ast) {return ast ? ast->kind : 0;}
 
-TODO("these should go to ccState or runtime state")
 extern symn type_vid;
 extern symn type_bol;
 extern symn type_u32;
@@ -408,16 +407,11 @@ astn strnode(ccState, char *v);
 astn cpynode(ccState, astn src);
 void eatnode(ccState, astn ast);
 
-symn installex(ccState, const char* name, int kind, int cast, unsigned size, symn type, astn init);
-symn install(ccState, const char* name, int kind, int cast, unsigned size, symn type);
+symn install(ccState, const char* name, int kind, int cast, unsigned size, symn type, astn init);
+
 symn declare(ccState, int kind, astn tag, symn rtyp);
 void extend(symn type, symn args);
 symn addarg(ccState, symn sym, const char* name, int kind, symn type, astn init);
-
-//~ symn findsym(ccState, symn in, char *name);
-//~ int findnzv(ccState, char *name);
-//~ int findint(ccState, char *name, int* res);
-//~ int findflt(ccState, char *name, double* res);
 
 int canAssign(symn rhs, astn val, int strict);
 symn lookup(ccState, symn sym, astn ast/*, int deep*/, astn args, int raise);
@@ -431,7 +425,6 @@ int fixargs(symn sym, int align, int spos);
 
 int castOf(symn typ);
 int castTo(astn ast, int tyId);
-symn promote(symn lht, symn rht);
 
 int32_t constbol(astn ast);
 int64_t constint(astn ast);
@@ -440,11 +433,12 @@ float64_t constflt(astn ast);
 astn peek(ccState);
 astn next(ccState, int kind);
 //~ void back(ccState, astn ast);
-//~ int  skip(ccState, int kind);
+int  skip(ccState, int kind);
 //~ int  test(ccState, int kind);
 
 astn expr(ccState, int mode);		// parse expression	(mode: do typecheck)
 astn decl(ccState, int mode);		// parse declaration	(mode: enable defs(: struct, define, ...))
+astn decl_var(ccState, astn *args, int mode);
 //~ astn stmt(ccState, int mode);		// parse statement	(mode: enable decl/enter new scope)
 //~ astn unit(ccState, int mode);		// parse program	(mode: script mode)
 
@@ -499,4 +493,8 @@ char* mapstr(ccState s, char *name, unsigned size/* = -1U*/, unsigned hash/* = -
 
 void fputasm(FILE *fout, state rt, int beg, int end, int mode);
 
+//~ disable warning messages
+#ifdef _MSC_VER
+#pragma warning(disable: 4996)
+#endif
 #endif

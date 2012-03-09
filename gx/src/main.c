@@ -106,7 +106,7 @@ char* fext(const char* name) {
 
 char* readI32(char *ptr, int *outVal) {
 	int sgn = 1, val = 0;
-	if (!strchr("+-0123456789",*ptr))
+	if (!strchr("+-0123456789", *ptr))
 		return ptr;
 	if (*ptr == '-' || *ptr == '+') {
 		sgn = *ptr == '-' ? -1 : +1;
@@ -957,6 +957,7 @@ void surfDone() {
 static int surfSetPixel(state rt) {
 	gx_Surf surf;
 	if ((surf = getSurf(popi32(rt)))) {
+		unsigned rowy;
 		int x = popi32(rt);
 		int y = popi32(rt);
 		int col = popi32(rt);
@@ -965,7 +966,7 @@ static int surfSetPixel(state rt) {
 			return 0;
 		}
 
-		unsigned rowy = y * (unsigned)surf->scanLen;
+		rowy = y * surf->scanLen;
 		if (surf->depth == 32) {
 			uint32_t *ptr = (uint32_t*)((char*)surf->basePtr + rowy);
 			ptr[x] = col;
@@ -985,6 +986,7 @@ static int surfSetPixel(state rt) {
 static int surfGetPixel(state rt) {
 	gx_Surf surf;
 	if ((surf = getSurf(popi32(rt)))) {
+		unsigned rowy;
 		int x = popi32(rt);
 		int y = popi32(rt);
 		//~ /* but this way is faster
@@ -992,7 +994,7 @@ static int surfGetPixel(state rt) {
 			setret(rt, int32_t, 0);
 			return 0;
 		}
-		int rowy = y * surf->scanLen;
+		rowy = y * surf->scanLen;
 		if (surf->depth == 32) {
 			uint32_t *ptr = (uint32_t*)((char*)surf->basePtr + rowy);
 			setret(rt, int32_t, ptr[x]);
@@ -1664,7 +1666,6 @@ static int surfCall(state rt) {
 //}#endregion
 
 //{#region Mesh & Camera
-
 static symn meshOpSetPos = NULL;		// void meshPos(int Index, vec3f Value)
 //~ static symn meshOpGetPos = NULL;		// vec3f meshPos(int Index)
 static symn meshOpSetNrm = NULL;		// void meshNrm(int Index, vec3f Value)
@@ -1674,11 +1675,11 @@ static symn meshOpSetTex = NULL;		// void meshTex(int Index, vec2f Value)
 //~ static symn meshOpSetTri = NULL;		// int meshSetTri(int t, int p1, int p2, int p3)
 static symn meshOpAddTri = NULL;		// int meshAddTri(int p1, int p2, int p3)
 static symn meshOpAddQuad = NULL;		// int meshAddTri(int p1, int p2, int p3, int p4)
-static symn meshOpSetSeg = NULL;		// int meshSetSeg(int t, int p1, int p2)
-static symn meshOpAddSeg = NULL;		// int meshAddSeg(int p1, int p2)
+//~ static symn meshOpSetSeg = NULL;		// int meshSetSeg(int t, int p1, int p2)
+//~ static symn meshOpAddSeg = NULL;		// int meshAddSeg(int p1, int p2)
 
-static symn meshOpGetFlags = NULL;		// int meshFlags()
-static symn meshOpSetFlags = NULL;		// int meshFlags(int Value)
+//~ static symn meshOpGetFlags = NULL;		// int meshFlags()
+//~ static symn meshOpSetFlags = NULL;		// int meshFlags(int Value)
 static symn meshOpInit = NULL;			// int meshInit(int Capacity)
 static symn meshOpTexture = NULL;		// int meshTexture(gxSurf image)
 
@@ -1689,6 +1690,7 @@ static symn meshOpCenter = NULL;		// void Center()
 static symn meshOpNormalize = NULL;		// void Normalize()
 
 static symn meshOpInfo = NULL;			// void meshInfo()
+static symn meshOphasNrm = NULL;		// bool hasNormals
 
 static int meshCall(state rt) {
 	if (rt->libc == meshOpSetPos) {		// void meshPos(int Index, double x, double y, double z);
@@ -1721,21 +1723,22 @@ static int meshCall(state rt) {
 	}
 	//~ case meshOpGetTex: {		// vec2f meshTex(int Index)
 	//~ case meshOpSetTri: {		// int meshSetTri(int t, int p1, int p2, int p3)
-	if (rt->libc == meshOpAddTri) {			// int meshAddTri(int p1, int p2, int p3)
+	if (rt->libc == meshOpAddTri) {
 		int p1 = popi32(rt);
 		int p2 = popi32(rt);
 		int p3 = popi32(rt);
 		addtri(&msh, p1, p2, p3);
 		return 0;
 	}
-	if (rt->libc == meshOpAddQuad) {			// int meshAddTri(int p1, int p2, int p3, p4)
+	if (rt->libc == meshOpAddQuad) {
 		int p1 = popi32(rt);
 		int p2 = popi32(rt);
 		int p3 = popi32(rt);
 		int p4 = popi32(rt);
 		//~ addtri(&msh, p1, p2, p3);
 		//~ addtri(&msh, p3, p4, p1);
-		addquad(&msh, p1, p2, p3, p4);
+		int res = addquad(&msh, p1, p2, p3, p4);
+		//~ setret(rt, int32_t, res);
 		return 0;
 	}
 	//~ case meshOpSetSeg: {		// int meshSetSeg(int t, int p1, int p2)
@@ -1747,11 +1750,18 @@ static int meshCall(state rt) {
 		meshInfo(&msh);
 		return 0;
 	}
+	if (rt->libc == meshOphasNrm) {				// bool hasNormals;
+		setret(rt, int32_t, msh.hasNrm);
+		return 0;
+	}
 	if (rt->libc == meshOpInit) {			// int meshInit(int Capacity);
 		setret(rt, int32_t, initMesh(&msh, popi32(rt)));
 		return 0;
 	}
 	if (rt->libc == meshOpTexture) {
+		if (msh.freeTex && msh.map) {
+			gx_destroySurf(msh.map);
+		}
 		msh.map = getSurf(popi32(rt));
 		msh.freeTex = 0;
 		//~ debug("msh.map = %p", msh.map);
@@ -1818,6 +1828,7 @@ static int camCall(state rt) {
 		return 0;
 	}
 
+	//#ifndef _MSC_VER
 	if (rt->libc == camGetPos) {
 		setret(rt, union vector, cam->pos);
 		return 0;
@@ -1849,6 +1860,8 @@ static int camCall(state rt) {
 		setret(rt, union vector, cam->dirF);
 		return 0;
 	}
+	//#endif
+
 	if (rt->libc == camSetForward) {
 		poparg(rt, &cam->dirF, sizeof(union vector));
 		return 0;
@@ -1861,40 +1874,40 @@ static symn objOpMove = NULL;
 static symn objOpRotate = NULL;
 static symn objOpSelected = NULL;
 static int objCall(state rt) {
-	/*switch (rt->fdata) {
-		default: return -1;
 
-		case objOpMove: {
-			vector P;		// position
-			float32_t mdx = popf32(rt);
-			float32_t mdy = popf32(rt);
-			if ((P = getobjvec(0))) {
-				union matrix tmp, tmp1, tmp2;
-				matldT(&tmp1, &cam->dirU, mdy);
-				matldT(&tmp2, &cam->dirR, mdx);
-				matmul(&tmp, &tmp1, &tmp2);
-				matvph(P, &tmp, P);
-			}
-		} break;
-		case objOpRotate: {
-			vector N;		// normal vector
-			float32_t mdx = popf32(rt);
-			float32_t mdy = popf32(rt);
-			if ((N = getobjvec(1))) {
-				union matrix tmp, tmp1, tmp2;
-				matldR(&tmp1, &cam->dirU, mdx);
-				matldR(&tmp2, &cam->dirR, mdy);
-				matmul(&tmp, &tmp1, &tmp2);
-				vecnrm(N, matvp3(N, &tmp, N));
-			}
-		} break;
-		case objOpSelected: {
-			setret(rt, int, getobjvec(0) != NULL); break;
-		} break;
+	if (rt->libc == objOpSelected) {
+		setret(rt, int, getobjvec(0) != NULL);
+		return 0;
+	}
 
-	}*/
+	if (rt->libc == objOpMove) {
+		vector P;		// position
+		float32_t mdx = popf32(rt);
+		float32_t mdy = popf32(rt);
+		if ((P = getobjvec(0))) {
+			union matrix tmp, tmp1, tmp2;
+			matldT(&tmp1, &cam->dirU, mdy);
+			matldT(&tmp2, &cam->dirR, mdx);
+			matmul(&tmp, &tmp1, &tmp2);
+			matvph(P, &tmp, P);
+		}
+		return 0;
+	}
+	if (rt->libc == objOpRotate) {
+		vector N;		// normal vector
+		float32_t mdx = popf32(rt);
+		float32_t mdy = popf32(rt);
+		if ((N = getobjvec(1))) {
+			union matrix tmp, tmp1, tmp2;
+			matldR(&tmp1, &cam->dirU, mdx);
+			matldR(&tmp2, &cam->dirR, mdy);
+			matmul(&tmp, &tmp1, &tmp2);
+			vecnrm(N, matvp3(N, &tmp, N));
+		}
+		return 0;
+	}
 
-	return 0;
+	return -1;
 }
 //}#endregion
 
@@ -2069,18 +2082,19 @@ Mesh[] = {
 	//~ {meshCall, &meshOpSetTri,		"int SetTri(int t, int p1, int p2, int p3);"},
 	{meshCall, &meshOpAddTri,		"void AddFace(int p1, int p2, int p3);"},
 	{meshCall, &meshOpAddQuad,		"void AddFace(int p1, int p2, int p3, int p4);"},
-	{meshCall, &meshOpSetSeg,		"int SetSeg(int t, int p1, int p2);"},
-	{meshCall, &meshOpAddSeg,		"int AddSeg(int p1, int p2);"},
-	{meshCall, &meshOpGetFlags,		"int Flags;"},
-	{meshCall, &meshOpSetFlags,		"int Flags(int Value);"},
+	//~ {meshCall, &meshOpSetSeg,		"int SetSeg(int t, int p1, int p2);"},
+	//~ {meshCall, &meshOpAddSeg,		"int AddSeg(int p1, int p2);"},
+	//~ {meshCall, &meshOpGetFlags,		"int Flags;"},
+	//~ {meshCall, &meshOpSetFlags,		"int Flags(int Value);"},
 	//~ {meshCall, &meshOpGetTex,		"gxSurf Texture;"},
 	{meshCall, &meshOpTexture,		"int Texture(gxSurf image);"},
 	{meshCall, &meshOpInit,			"int Init(int Capacity);"},
 	{meshCall, &meshOpRead,			"int Read(string file, string texture);"},
 	{meshCall, &meshOpSave,			"int Save(string file);"},
 	{meshCall, &meshOpCenter,		"void Center(float32 Resize);"},
-	{meshCall, &meshOpNormalize,		"void Normalize(float32 Epsilon);"},
+	{meshCall, &meshOpNormalize,	"void Normalize(float32 Epsilon);"},
 	{meshCall, &meshOpInfo,			"void Info();"},
+	{meshCall, &meshOphasNrm,		"bool hasNormals;"},
 	//~ */
 },
 Cam[] = {
@@ -2100,9 +2114,9 @@ Cam[] = {
 	// */
 },
 Obj[] = {
-	//~ {objCall, objGetPos,			"vec4f Pos();"},
+	//~ {objCall, objGetPos,			"vec4f Pos;"},
 	//~ {objCall, objSetPos,			"void Pos(vec4f v);"},
-	//~ {objCall, objGetNrm,			"vec4f Nrm();"},
+	//~ {objCall, objGetNrm,			"vec4f Nrm;"},
 	//~ {objCall, objSetNrm,			"void Nrm(vec4f v);"},
 	{objCall, &objOpMove,			"void Move(float32 dx, float32 dy);"},
 	{objCall, &objOpRotate,			"void Rotate(float32 dx, float32 dy);"},
@@ -2144,6 +2158,10 @@ char* strncatesc(char *dst, int max, char* src) {
 	return strnesc(dst + i, max - i, src);
 }
 
+#ifdef _MSC_VER
+static inline int snprintf(char* dst, int max, char *fmt, va_list _ArgList) {return sprintf_s(dst, max, fmt, _ArgList);}
+#endif
+
 static int ccCompile(char *src, int argc, char* argv[]) {
 	symn cls = NULL;
 	const int strwl = 9;
@@ -2184,12 +2202,12 @@ static int ccCompile(char *src, int argc, char* argv[]) {
 	);//} */
 
 	if ((cls = ccBegin(rt, "Gradient"))) {
-		err = err || !ccDefineInt(rt, "Linear", gradient_lin);
-		err = err || !ccDefineInt(rt, "Radial", gradient_rad);
-		err = err || !ccDefineInt(rt, "Square", gradient_sqr);
-		err = err || !ccDefineInt(rt, "Conical", gradient_con);
-		err = err || !ccDefineInt(rt, "Spiral", gradient_spr);
-		err = err || !ccDefineInt(rt, "Repeat", gradient_rep);
+		err = err || !ccDefInt(rt, "Linear", gradient_lin);
+		err = err || !ccDefInt(rt, "Radial", gradient_rad);
+		err = err || !ccDefInt(rt, "Square", gradient_sqr);
+		err = err || !ccDefInt(rt, "Conical", gradient_con);
+		err = err || !ccDefInt(rt, "Spiral", gradient_spr);
+		err = err || !ccDefInt(rt, "Repeat", gradient_rep);
 		ccEnd(rt, cls);
 	}
 
@@ -2280,12 +2298,12 @@ static int ccCompile(char *src, int argc, char* argv[]) {
 
 			symn subcls = NULL;
 			if ((subcls = ccBegin(rt, "screen"))) {
-				err = err || !ccDefineInt(rt, "width", resx);
-				err = err || !ccDefineInt(rt, "height", resy);
+				err = err || !ccDefInt(rt, "width", resx);
+				err = err || !ccDefInt(rt, "height", resy);
 				ccEnd(rt, subcls);
 			}// */
 
-			err = err || !ccDefineStr(rt, "texture", strnesc(tmpf, sizeof(tmpf), tex));
+			err = err || !ccDefStr(rt, "texture", strnesc(tmpf, sizeof(tmpf), tex));
 			//~ snprintf(tmp, sizeof(tmp), "static string texture = \"%s\";", strnesc(tmpf, sizeof(tmpf), tex));
 			//~ err = err || cctext(rt, strwl, __FILE__, __LINE__ , tmp);
 
@@ -2579,12 +2597,12 @@ int main(int argc, char* argv[]) {
 		}// */
 
 		if (draw & zero_cbuf) {
-			int *cBuff = offs.basePtr;
+			int *cBuff = (void*)offs.basePtr;
 			for (e = 0; e < offs.width * offs.height; e += 1)
 				cBuff[e] = 0x00000000;
 		}
 		if (draw & zero_zbuf) {
-			int *zBuff = offs.tempPtr;
+			int *zBuff = (void*)offs.tempPtr;
 			for (e = 0; e < offs.width * offs.height; e += 1)
 				zBuff[e] = 0x3fffffff;
 		}
@@ -2626,8 +2644,8 @@ int main(int argc, char* argv[]) {
 				}
 			}
 			if (draw & temp_zbuf) {
-				int *cBuff = offs.basePtr;
-				int *zBuff = offs.tempPtr;
+				int *cBuff = (void*)offs.basePtr;
+				int *zBuff = (void*)offs.tempPtr;
 				for(e = 0; e < offs.width * offs.height; e += 1) {
 					long z = zBuff[e];
 					z = (z >> 15) & 0x1ff;

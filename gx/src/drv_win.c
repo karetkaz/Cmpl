@@ -3,7 +3,7 @@
 static int (*kbdH)(int/* , int */) = 0;
 static int (*ratH)(int, int, int) = 0;
 
-#if defined WIN32
+#if defined(WIN32)
 #include <windows.h>
 #include <winuser.h>
 
@@ -171,7 +171,7 @@ void setCaption(char* str) {
 	SetWindowTextA(hWnd, str);
 }
 
-#elif defined __linux__
+#elif defined(__linux__)
 
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>

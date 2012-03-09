@@ -1,7 +1,7 @@
 // 3d
-define test = 2;
+define test = 1;
 enum Window {
-	//~ draw = RenderMode.drawFill|RenderMode.draw_lit;// & ~RenderMode.zero_cbuf;
+	draw = RenderMode.drawFill|RenderMode.draw_lit;// & ~RenderMode.zero_cbuf;
 	resx = 512;
 	resy = 512;
 }
@@ -151,7 +151,7 @@ void meshGen2(int sdiv, bool sclosed, int tdiv, bool tclosed, void pos(double &x
 }
 
 static if (test == 1) {		// load mesh with texture
-mesh.Read("media/meshes/ahstray.obj", "media/meshes/ut2k4/FlackCannon.png");
+mesh.Read("media/meshes/dchair.obj", "media/meshes/ut2k4/FlackCannon.png");
 //~ mesh.Read("media/meshes/ut2k4/FlackCannon.obj", "media/meshes/ut2k4/FlackCannon.png");
 }
 static if (test == 2) {		// generate mesh
@@ -283,7 +283,8 @@ Gui.setDrawCallback(drawCB);*/
 //~ mesh.Center(2);
 }
 mesh.Center(2);
-//~ mesh.Normalize(1e-10);
+//~ mesh.Normalize(0);
+mesh.Normalize(1e-10);
 
 static if (true) {			// use custom mouseHandler
 
@@ -387,8 +388,8 @@ void mouseHandler(int btn, int x, int y) {
 	define rotateSlow = moveSlow * pi / 180.;
 	define rotateFast = 10 * rotateSlow;
 
-	if (dblClick(btn, x, y)) {
-		dblClick(-1, 0, 0);
+	if (Mouse.dblClick(btn, x, y)) {
+		Mouse.dblClick(-1, 0, 0);
 		camera.LookAt(
 			vec4f(0., 0., 16.),		// eye
 			vec4f(0., 0., 0.),		// target
@@ -400,11 +401,11 @@ void mouseHandler(int btn, int x, int y) {
 		vec4f orbit = vec4f(0., 0., 0., 0.);
 		if (dx) {
 			vec4f direction = camera.Up;
-			camera_Rotate(&direction, &orbit, dx * rotateFast);
+			camera.Rotate(&direction, &orbit, dx * rotateFast);
 		}
 		if (dy) {
 			vec4f direction = camera.Right;
-			camera_Rotate(&direction, &orbit, dy * rotateFast);
+			camera.Rotate(&direction, &orbit, dy * rotateFast);
 		}
 	}
 	if (btn == 2) {	// rotate the camera
@@ -412,16 +413,16 @@ void mouseHandler(int btn, int x, int y) {
 		//~ static vec4f orbit = camera.Pos();
 		if (dx) {
 			vec4f direction = camera.Up;
-			camera_Rotate(&direction, null, dx * rotateSlow);
+			camera.Rotate(&direction, null, dx * rotateSlow);
 		}
 		if (dy) {
 			vec4f direction = camera.Right;
-			camera_Rotate(&direction, null, dy * rotateSlow);
+			camera.Rotate(&direction, null, dy * rotateSlow);
 		}
 	}
 	if (btn == 1+2) {	// move forward / back
 		vec4f direction = camera.Forward;
-		camera_Move(&direction, dy * moveSlow);
+		camera.Move(&direction, dy * moveSlow);
 	}
 }
 

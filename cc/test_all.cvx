@@ -1,15 +1,3 @@
-//~ #open src/pvmc.h
-//~ #open src/ccvm.h
-
-//~ #open src/ccvm.c
-//~ #open src/code.c
-//~ #open src/clog.c
-//~ #open src/type.c
-
-//~ #open src/tree.c
-//~ #open src/parse.c
-//~ #open src/main.c
-
 /* TODO:
  ? static if else part
  * .
@@ -54,13 +42,14 @@ define fact(int64 n) = (n * fact(n - 1));
 //~ +/
 /* TODO: operators
 
-'operator (int lhs) + (int rhs)' := 'define .add(int lhs, int rhs)'
+operator -(int32 rhs) = emit(i32.neg, i32(rhs));
+operator (int32 lhs) + (int32 rhs) = emit(i32.add, i32(rhs), i32(lhs));
 
-operator -(int rhs) = emit(i32.neg, i32(rhs));
-operator (int lhs) + (int rhs) = emit(i32.add, i32(rhs), i32(lhs));
-operator (string lhs) [int rhs] = emit(int, ldi.byte, i32.mad, i32(1), i32(rhs), ref(lhs));
-operator (string lhs) [int rhs] (int setValue) = emit(int, ldi.byte, i32.mad, i32(1), i32(rhs), ref(lhs));
-operator int(string value) = atoi(value, 10);
+operator (string lhs) [int32 rhs] = emit(int32, ldi.byte, i32.mad, i32(1), i32(rhs), ref(lhs));
+operator (string lhs) [int32 rhs] (int32 setValue) = emit(int32, ldi.byte, i32.mad, i32(1), i32(rhs), ref(lhs));
+
+operator int32(string value) = atoi(value, 10);
+
 // */
 
 //~ const float64 nan = 0./0;
@@ -168,17 +157,17 @@ define mul(float64 &a, Complex &b) = Complex(a * b.re, a * b.im);
 }
 static if (test2exec == prog.simd) {
 //~ define add(Complex &a, Complex &b) = emit(Complex, v2d.add, f64(b.re), f64(b.im), f64(a.re), f64(a.im));
-define add(Complex a, Complex b) = emit(Complex, v2d.add, val(b), val(a));
-define add(Complex &a, float64 b) = emit(Complex, v2d.add, f64(b), f64(0), val(a));
-define add(float64 a, Complex &b) = emit(Complex, v2d.add, val(b), f64(a), f64(0));
+define add(Complex a, Complex b) = emit(Complex, v2d.add, byVal(b), byVal(a));
+define add(Complex &a, float64 b) = emit(Complex, v2d.add, f64(b), f64(0), byVal(a));
+define add(float64 a, Complex &b) = emit(Complex, v2d.add, byVal(b), f64(a), f64(0));
 
-define sub(Complex a, Complex b) = emit(Complex, v2d.sub, val(b), val(a));
-define sub(Complex &a, float64 b) = emit(Complex, v2d.sub, f64(b), f64(0), val(a));
-define sub(float64 a, Complex &b) = emit(Complex, v2d.sub, val(b), f64(a), f64(0));
+define sub(Complex a, Complex b) = emit(Complex, v2d.sub, byVal(b), byVal(a));
+define sub(Complex &a, float64 b) = emit(Complex, v2d.sub, f64(b), f64(0), byVal(a));
+define sub(float64 a, Complex &b) = emit(Complex, v2d.sub, byVal(b), f64(a), f64(0));
 
 define mul(Complex &a, Complex &b) = emit(Complex,
 	f64.sub, v2d.mul, f64(b.im), f64(b.re), f64(a.im), f64(a.re),	// re = a.re * b.re - a.im * b.im
-	f64.add, v2d.mul, val(b), f64(a.im), f64(a.re)	// im = a.re * b.im + a.im * b.re;
+	f64.add, v2d.mul, byVal(b), f64(a.im), f64(a.re)	// im = a.re * b.im + a.im * b.re;
 );
 //~ define mul(Complex &a, double b) = emit(Complex, v2d.mul, f64(b), f64(b), f64(a.im), f64(a.re));
 //~ define mul(double a, Complex &b) = emit(Complex, v2d.mul, f64(b.im), f64(b.re), f64(a), f64(a));
@@ -203,34 +192,12 @@ static if (Test.Emit & 0x08) {	// Vector4
 vec4f v1 = vec4f(11., 12., 13., 14.);
 vec4f v2 = vec4f(21., 22., 23., 24.);
 
-//~ vec4f v3 = emit(vec4f, swz.xywz, val(v1));
-
-//~ vec4f fv = emit();
-//~ float32 sp[4] = emit();
-
-//~ float32 x0 = fv.x;
-//~ float32 y0 = fv.y;
-//~ float32 z0 = fv.z;
-//~ float32 w0 = fv.w;
-
-//~ float32 x = sp[0];
-//~ float32 y = sp[1];
-//~ float32 z = sp[2];
-//~ float32 w = sp[3];
-
-//~ for (int i = 0; i < 4; i += 1)
-	//~ sp[i] = i < 0;
-
-//~ int32 i32 = emit(void);
-//~ float32 f32 = emit(void);
-//~ int64 i64 = emit(void);
-//~ float64 f64 = emit(void);
-
+//~ vec4f v3 = emit(vec4f, swz.xywz, byVal(v1));
 }// +/
 } // */
-/*
 static if (Test.Bits) {
 int32 var = 0x00001080;		// input
+/+ bit operations moved to library
 static if (Test.Bits & 1) {		// bit scan reverse
 int32 BSR_lib = bits.bsr(var);
 int32 BSR_res = -1;
@@ -271,17 +238,16 @@ if (var) {
 	x = ((x >> 8) & 0x00FF00FF) | ((x & 0x00FF00FF) << 8);
 	SWP_res = (x >> 16) | (x << 16);
 }
-//~ +/
 }
+//~ +/
 static if (Test.Bits & 8) {		// compute bits
-//~ /+
 void bitsget(bool signed, int size, int64 &min, int64 &max) {
-	int64 mask = bits.shr(int64(-1), -size);
-	min = bits.shl(-int64(signed), size - 1);
-	max = bits.and(min - 1, mask);
+	int64 mask = int64.Shr(int64(-1), -size);
+	min = int64.Shl(-int64(signed), size - 1);
+	max = int64.And(min - 1, mask);
 }
 
-int bitsize = 14;
+int bitsize = 44;
 hex64 min;
 hex64 max;
 hex64 umin;
@@ -289,7 +255,6 @@ hex64 umax;
 
 bitsget(true, bitsize, &min, &max);
 bitsget(!true, bitsize, &umin, &umax);
-//~ +/
 }
 } // */
 static if (Test.Type) {
@@ -303,27 +268,18 @@ define int1(float64 _) = int(2015);
 int32 a1 = int1;			// 1990
 int32 a2 = int1();			// 1995
 int32 a3 = int1(0);			// 2010
-int32 a4 = int1(0.0);		// 2015
+int32 a4 = int1(0.);		// 2015
 
 }
 static if (Test.Type & 0x02) {
 
-//~ double TT2_1 = lerp(x, 0., 5.);
-//~ float e1 = 0;
-//~ float e2 = 1;
-//~ float s = (e2-e1) / 400;
-//~ for (float t = e1; t < e2; t += s) {
-	//~ println(smooth(t, e1, e2));
-	//~ println(clamp(t, .2, .5));
-//~ }
-
-define isNan(float64 x) = bool(x != x);
-define isNan(float32 x) = bool(x != x);
-//~ float64 NAN = nan;//Math.nan;
-//~ int isNan1 = int(isNan(NAN));
+define isNan(float64 ^x) = bool(x != x);
+define isNan(float32 ^x) = bool(x != x);
+float64 NAN = 0/0.;
+int isNan1 = int(isNan(NAN));
 //~ int isNan2 = int(isNan(Math.nan));
 }
-static if (Test.Type & 0x04) {		// enum
+static if (Test.Type & 0x04) {		// union
 //~ struct and arrays
 struct fiu32:0 {int32 i;float32 f;}
 struct fiu64:0 {int64 i;float64 f;}
@@ -376,17 +332,15 @@ define color(float64 r, float64 g, float64 b) = color(float64(1), r, g, b);
 color C5 = color(0.1, .5, 1.);
 //~ color C5 = color(1, 5, 205);
 
-//~ uint8  u08[4] = emit();
-//~ uint32 u32[4] = emit();
+//~ uint8 u08[4] = emit(struct, i32(0xcafebabe));
 
-/+ TODO: enums
 enum colors: color {
 	c5 = color(0.1, .5, 1.);
-	none = int32(-1);
+	none = color(-1);
 	//~ pink = color(2,3,4);
 }
 color c5 = colors.c5;
-// +/
+
 }
 static if (Test.Type & 0x10) {
 }
@@ -397,15 +351,15 @@ static if (Test.Misc & 1) {			// matrix multiply
 
 define dim = 3;
 define scalar float64;		//%%f
-scalar m1[dim, dim];
-scalar m2[dim, dim];
-scalar m3[dim, dim];
+scalar m1[dim][dim];
+scalar m2[dim][dim];
+scalar m3[dim][dim];
 
 //~ /+ Initialize
 for (int i = 0; i < dim; i += 1) {
 	for (int j = 0; j < dim; j += 1) {
 		//~TODO: error: m1[i][j] = m2[i][j] = (i == j) + 2;
-		m1[i][j] = m2[i][j] = (i == j) * 2. + 1;
+		m1[i][j] = m2[i][j] = (i == j) * 1. + 0;
 	}
 } // +/
 
@@ -424,7 +378,7 @@ for (int i = 0; i < dim; i += 1) {
 	for (int j = 0; j < dim; j += 1) {
 		if (j != 0)
 			putchr(' ');
-		print(float64(m1[i][j]));
+		print(float64(m3[i][j]));
 	}
 	putchr('\n');
 } // +/
@@ -432,9 +386,6 @@ for (int i = 0; i < dim; i += 1) {
 } // */
 static if (Test.Math) {
 static if (Test.Math & 1) {
-
-	//~ for (int i = 0; i < 0; i += 1) ;
-
 	double x = Math.pi / 2;
 	double absx = abs(-x);
 	double sinx = sin(x);
@@ -445,11 +396,12 @@ static if (Test.Math & 1) {
 	double powx = pow(2, 8);
 	//~ double ___x = ___(x);
 }
-/+static if (Test.Math & 2) {		// fixed point
+//~ /+
+static if (Test.Math & 2) {		// fixed point
 define fixed int32;
-define __fix = 16;
+define __fix = 3;
 
-define fixed_fix(int64 ^val, int ^__fix) = fixed(bits.shr(val + bits.shr(val, __fix) + 1, __fix));
+define fixed_fix(int64 ^val, int ^__fix) = fixed(int64.Shr(val + int64.Shr(val, __fix) + 1, __fix));
 define add(fixed lhs, fixed rhs, int __fix) = fixed(lhs + rhs);
 define sub(fixed lhs, fixed rhs, int __fix) = fixed(lhs - rhs);
 define mul(fixed lhs, fixed rhs, int __fix) = fixed_fix(int64(lhs) * rhs, __fix);
@@ -460,6 +412,7 @@ define fixed(float64 val, int __fix) = fixed(val * (1 << __fix));
 
 define int(fixed val, int __fix) = int(val >> __fix);
 define double(fixed val, int __fix) = double(val / double(1 << __fix));
+
 
 define fixed_fix(int64 val) = fixed_fix(val, __fix);
 define add(fixed lhs, fixed rhs) = add(lhs, rhs, __fix);
@@ -473,7 +426,7 @@ define fixed(float64 val) = fixed(val, __fix);
 define int(fixed val) = int(val, __fix);
 define double(fixed val) = double(val, __fix);
 
-double fixed_test = double(add(fixed(2.5), fixed(3)));
+double fixed_test = double(add(fixed(2.225), fixed(3)));
 }// +/
 
 } // */

@@ -1,13 +1,13 @@
 // old school demos
 enum Window {
-	//~ draw = RenderMode.swap_buff;
+	draw = RenderMode.swap_buff;
 	resx = 512;
 	resy = 512;
 }
 
 gxSurf srcImg = gxSurf("media/images/download.jpg");
 
-define WIDTH  = 92;
+define WIDTH  = 128;
 define HEIGHT = WIDTH;
 gxSurf dstImg = gxSurf(WIDTH, HEIGHT);
 
@@ -367,6 +367,6 @@ void mouseHandler(int btn, int x, int y) {
 	}
 }
 
-Gui.setDrawCallback(tunnel0);
+Gui.setDrawCallback(tunnel1);
 Gui.setMouseHandler(mouseHandler);
 //~ Gui.exitLoop();

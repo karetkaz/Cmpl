@@ -130,7 +130,7 @@ int g3_init(gx_Surf offs, int w, int h) {
 }
 
 static inline int testZ(gx_Surf dst, unsigned long z, int offs) {
-	unsigned long *zBuff = dst->tempPtr;
+	unsigned long *zBuff = (void*)dst->tempPtr;
 	if (zBuff[offs] > z) {
 		zBuff[offs] = z;
 		return 1;
@@ -143,7 +143,7 @@ static inline int getoffs(gx_Surf dst, int x, int y) {
 }
 
 void g3_setpixel(gx_Surf dst, int x, int y, unsigned z, long c) {
-	long *cBuff = dst->basePtr;
+	long *cBuff = (void*)dst->basePtr;
 	int offs = getoffs(dst, x, y);
 	const gx_Clip roi = gx_getclip(dst);
 	if (y < roi->ymin || y >= roi->ymax) return;
@@ -502,7 +502,7 @@ static void draw_tri_part(gx_Surf dst, gx_Clip roi, edge l, edge r, int swap, in
 
 			while (offs < rx) {
 				if (testZ(dst, v.z, offs)) {
-					argb *cBuff = dst->basePtr;
+					argb *cBuff = (void*)dst->basePtr;
 					if (img) {
 						//~ argb tex;tex.val = gx_getpixel(img, v.s >> 16, v.t >> 16);
 						argb tex;tex.val = gx_getpix16(img, v.s, v.t, 1);

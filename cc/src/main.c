@@ -1,15 +1,15 @@
-//~ wcl386 -zq -ei -6s -d2  -fe=../main *.c
+//~ (wcl386 -cc -q -ei -6s -d2  -fe=../main *.c) & (rm -f *.obj)
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
 #include <math.h>
-#include "ccvm.h"
+#include "core.h"
 
 // default values
 static const int wl = 9;		// warning level
 static const int ol = 2;		// optimize level
 static const int cc = 1;		// execution cores
-#define memsize (4 << 20)		// runtime size(4M)
+#define memsize (800 << 20)		// runtime size(4M)
 static char mem[memsize];
 char *STDLIB = "../stdlib.cvx";		// standard library
 
@@ -183,8 +183,8 @@ int evalexp(ccState cc, char* text) {
 
 	source(cc, 0, text);
 
-	ast = expr(cc, 0);
-	typ = typecheck(cc, 0, ast);
+	ast = expr(cc, TYPE_any);
+	typ = typecheck(cc, NULL, ast);
 	tid = eval(&res, ast);
 
 	if (peek(cc))
@@ -222,7 +222,6 @@ static int b64sar(state s) {
 	setret(s, uint64_t, x >> y);
 	return 0;
 }
-/* unused
 static int b64and(state s) {
 	uint64_t x = popi64(s);
 	uint64_t y = popi64(s);
@@ -241,7 +240,7 @@ static int b64xor(state s) {
 	setret(s, uint64_t, x ^ y);
 	return 0;
 }
-
+/* unused
 static int b64bsf(state s) {
 	uint64_t x = popi64(s);
 	int ans = -1;
@@ -294,11 +293,17 @@ int reglibs(state rt, char *stdlib) {
 	int err = 0;
 
 	err = err || install_stdc(rt, stdlib, wl);
-	//~ enter(rt->cc, NULL);
-		libcall(rt, b64shl, "int64 Shl(int64 Value, int Count);");
-		libcall(rt, b64shr, "int64 Shr(int64 Value, int Count);");
-		libcall(rt, b64sar, "int64 Sar(int64 Value, int Count);");
-	//~ extend(type_i64, leave(rt->cc, type_i64, 1));
+	if (type_i64 != NULL && type_i64->args == NULL) {
+		enter(rt->cc, NULL);
+		err = err || !libcall(rt, b64shl, "int64 Shl(int64 Value, int Count);");
+		err = err || !libcall(rt, b64shr, "int64 Shr(int64 Value, int Count);");
+		err = err || !libcall(rt, b64sar, "int64 Sar(int64 Value, int Count);");
+		err = err || !libcall(rt, b64and, "int64 And(int64 Lhs, int64 Rhs);");
+		err = err || !libcall(rt, b64ior, "int64  Or(int64 Lhs, int64 Rhs);");
+		err = err || !libcall(rt, b64xor, "int64 Xor(int64 Lhs, int64 Rhs);");
+		type_i64->args = leave(rt->cc, type_i64, 1);
+		//~ extend(type_i64, leave(rt->cc, type_i64, 1));
+	}
 	//~ err = err || install_bits(s);
 
 	return err;
@@ -328,73 +333,122 @@ int compile(state rt, int wl, char *file) {
 	return result;
 }
 
-int installDll(state rt, int ccApiMain(stateApi api)) {
-	static struct stateApi api;
+//{ plugins
 
-	api.rt = rt;
-	api.ccBegin = ccBegin;
-	api.ccEnd = ccEnd;
-	api.libcall = libcall;
-	//~ api.install = installtyp;
-	api.ccDefineInt = ccDefineInt;
-	api.ccAddText = cctext;
-	api.rtAlloc = rtAlloc;
-	api.invoke = vmCall;
-	//~ api.findsym = findsym;
-	api.findref = findref;
-	return ccApiMain(&api);
+static const char *pluginLibInstall = "apiMain";
 
+typedef struct pluginLib *pluginLib;
+static int installDll(state rt, stateApi api, int ccApiMain(stateApi api)) {
+
+	api->rt = rt;
+	api->onClose = NULL;
+
+	api->ccBegin = ccBegin;
+	api->ccDefInt = ccDefInt;
+	api->ccDefFlt = ccDefFlt;
+	api->ccDefStr = ccDefStr;
+	api->install = installtyp;
+	api->libcall = libcall;
+	api->ccEnd = ccEnd;
+
+	api->ccAddText = cctext;
+	//~ api->ccAddFile = ccfile;
+
+	api->rtAlloc = rtAlloc;
+	api->invoke = vmCall;
+	//~ api->findsym = findsym;
+	api->findref = findref;
+
+	return ccApiMain(api);
 }
 
-#if defined(__linux__)
-#include <dlfcn.h>
-static int importLib(state rt, const char *path, const char *init) {
-	int result = 0;
-	void *lib = dlopen(path, RTLD_NOW);
+#if defined(WIN32)
+#include <windows.h>
+static struct pluginLib {
+	struct stateApi api;	// each plugin will have its own api
+	pluginLib next;			// next plugin
+	HANDLE lib;				// 
+} *pluginLibs = NULL;
+static void closeLibs() {
+	while (pluginLibs != NULL) {
+		if (pluginLibs->api.onClose) {
+			pluginLibs->api.onClose();
+		}
+		if (pluginLibs->lib) {
+			FreeLibrary((HINSTANCE)pluginLibs->lib);
+		}
+		free(pluginLibs);
+		pluginLibs = pluginLibs->next;
+	}
+}
+static int importLib(state rt, const char *path) {
+	int result = -1;
+	HANDLE lib = LoadLibraryA(path);
 	if (lib != NULL) {
-		void *sym = dlsym(lib, init);
-		if (sym != NULL) {
-			result = installDll(rt, sym);
+		int (*install)(stateApi api) = (void*)GetProcAddress(lib, pluginLibInstall);
+		if (install != NULL) {
+			pluginLib lib = malloc(sizeof(struct pluginLib));
+			lib->next = pluginLibs;
+			pluginLibs = lib;
+
+			result = installDll(rt, &lib->api, install);
 		}
 		else {
 			result = -2;
 		}
-		//~ dlclose(lib);
 	}
-	else {
-		result = -1;
-	}
-
-	fprintf(stdout, "imported: %s.%s(): %d `%s`\n", path, init, result, dlerror());
+	fprintf(stdout, "imported: %s.%s(): %d\n", path, pluginLibInstall, result);
 	fflush(stdout);
+	return result;
+}
+#elif defined(__linux__)
+#include <dlfcn.h>
+static struct pluginLib {
+	struct stateApi api;	// each plugin will have its own api
+	pluginLib next;			// next plugin
+	void *lib;				// 
+} *pluginLibs = NULL;
+static void closeLibs() {
+	while (pluginLibs != NULL) {
+		if (pluginLibs->api.onClose) {
+			pluginLibs->api.onClose();
+		}
+		if (pluginLibs->lib) {
+			dlclose(pluginLibs->lib);
+		}
+		free(pluginLibs);
+		pluginLibs = pluginLibs->next;
+	}
+}
+static int importLib(state rt, const char *path) {
+	int result = -1;
+	void *lib = dlopen(path, RTLD_NOW);
+	if (lib != NULL) {
+		void *install = dlsym(lib, pluginLibInstall);
+		if (install != NULL) {
+			pluginLib lib = malloc(sizeof(struct pluginLib));
+			lib->next = pluginLibs;
+			pluginLibs = lib;
 
+			result = installDll(rt, &lib->api, install);
+		}
+		else {
+			result = -2;
+		}
+	}
+	fprintf(stdout, "imported: %s.%s(): %d `%s`\n", path, pluginLibInstall, result, dlerror());
+	fflush(stdout);
 	return result;
 }
 #else
-#include <windows.h>
-static int importLib(state rt, const char *path, const char *init) {
-	int result = 0;
-	typedef int (*ccApiMain)(stateApi api);
-	HANDLE lib = LoadLibrary(path);
-	if (lib != NULL) {
-		ccApiMain sym = (ccApiMain)GetProcAddress(lib, init);
-		if (sym != NULL) {
-			result = installDll(rt, sym);
-		}
-		else {
-			result = -2;
-		}
-		//~ FreeLibrary((HINSTANCE)lib);
-	}
-	else {
-		result = -1;
-	}
-	fprintf(stdout, "imported: %s.%s(): %d\n", path, init, result);
-	fflush(stdout);
-	return result;
+//#elif defined(__LINUX__) && defined(__WATCOMC__)
+static void closeLibs() {
 }
-
+static int importLib(state rt, const char *path) {
+	return -1;
+}
 #endif
+//} plugins
 
 static int printvars = 0;
 static int dbgCon(state, int pu, void *ip, long* bp, int ss);
@@ -407,17 +461,6 @@ static int libCallHaltDebug(state rt) {
 	for ( ;arg; arg = arg->next) {
 		char *ofs;
 
-		if (arg->offs <= 0) {
-			// global variable.
-			ofs = (void*)(rt->_mem - arg->offs);
-		}
-		else {
-			// argument or local variable.
-			ofs = ((char*)rt->argv) + argc - arg->offs;
-		}
-
-		//~ debug("argv: %08x", rt->argv);
-		//~ if (arg->kind != TYPE_ref && rt->args == rt->defs) continue;
 		if (arg->call)
 			continue;
 
@@ -425,14 +468,21 @@ static int libCallHaltDebug(state rt) {
 			continue;
 
 		if (arg->file && arg->line)
-			fputfmt(stdout, "%s:%d:",arg->file, arg->line);
+			fputfmt(stdout, "%s:%d:", arg->file, arg->line);
 		else
-			fputfmt(stdout, "var: ",arg->file, arg->line);
+			fputfmt(stdout, "var: ");
 
-		fputfmt(stdout, "@%d[0x%08x]\t: ", arg->offs < 0 ? -1 : arg->offs, ofs);
+		fputfmt(stdout, "@0x%06x[size: %d]: ", arg->offs < 0 ? -arg->offs : arg->offs, arg->size);
 
-		//~ fputfmt(stdout, "@%d[0x%08x]\t: ", arg->offs, ofs);
-		//~ fputfmt(stdout, "@%d[0x%08x]\t: ", rt->argc - arg->offs, ofs);
+		if (arg->offs <= 0) {
+			// static variable.
+			ofs = (void*)(rt->_mem - arg->offs);
+		}
+		else {
+			// argument or local variable.
+			ofs = ((char*)rt->argv) + argc - arg->offs;
+		}
+
 		vm_fputval(rt, stdout, arg, (stkval*)ofs, 0);
 		fputc('\n', stdout);
 	}
@@ -458,7 +508,7 @@ int program(int argc, char *argv[]) {
 	else if (argc == 2 && *cmd == '=') {	// eval
 		return evalexp(ccInit(rt, creg_def, NULL), cmd + 1);
 	}
-	else if (strcmp(cmd, "-api") == 0) {
+	else if (strcmp(cmd, "-api") == 0) {	// help
 		ccState env = ccInit(rt, creg_def, NULL);
 		const int level = 2;
 		symn glob;
@@ -484,8 +534,10 @@ int program(int argc, char *argv[]) {
 			}
 		}
 		else for (i = 2; i < argc; i += 1) {
-			symn sym = findsym(env, glob, argv[i]);
-			if (sym) {
+			symn sym;
+			struct symn nspc = {0};
+			nspc.args = glob;
+			if ((sym = findsym(env, &nspc, argv[i]))) {
 				dumpsym(stdout, sym, 0);
 				dumpsym(stdout, sym->args, level);
 			}
@@ -652,26 +704,26 @@ int program(int argc, char *argv[]) {
 			return -1;
 		}
 
-		// initialize compiler: type sysyem, emit, ...
+		// intstall basic type system.
 		if (!ccInit(rt, creg_def, onHalt)) {
 			error(rt, NULL, 0, "error registering types");
 			logfile(rt, NULL);
 			return -6;
 		}
 
-		// intstall standard library and others.
+		// intstall standard libraries.
 		if (reglibs(rt, stdl) != 0) {
 			error(rt, NULL, 0, "error registering lib calls");
 			logfile(rt, NULL);
 			return -6;
 		}// */
 
-		// iomports
+		// intstall dynamic libraries.
 		for (argi = 2; argi < argc; ++argi) {
 			char *arg = argv[argi];
 			if (strncmp(arg, "-i", 2) == 0) {		// import library
 				char *str = arg + 2;
-				importLib(rt, str, "apiMain");
+				importLib(rt, str);
 			}
 		}
 
@@ -679,12 +731,14 @@ int program(int argc, char *argv[]) {
 		if (compile(rt, warn, srcf) != 0) {
 			error(rt, NULL, 0, "error compiling `%s`", srcf);
 			logfile(rt, NULL);
+			closeLibs();
 			return rt->errc;
 		}
 
 		// generate variables and vm code.
 		if ((gen_code || run_code) && gencode(rt, opti) != 0) {
 			logfile(rt, NULL);
+			closeLibs();
 			return rt->errc;
 		}
 
@@ -703,13 +757,15 @@ int program(int argc, char *argv[]) {
 		if (out_dasm >= 0) {
 			dump(rt, dump_asm | (out_dasm & 0x0ff), NULL, "\ndasm:\n");
 		}
-		logFILE(rt, stderr);
+
 		if (run_code) {
+			logFILE(rt, stderr);
 			vmExec(rt, dbg);
 		}
 
 		// close log file
 		logfile(rt, NULL);
+		closeLibs();
 		return 0;
 	}
 	else if (strcmp(cmd, "-h") == 0) {		// help

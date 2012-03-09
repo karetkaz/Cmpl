@@ -1,0 +1,360 @@
+//~ #open src/ccvm.h
+//~ #open src/pvmc.h
+
+//~ #open src/ccvm.c			// 
+//~ #open src/tree.c
+
+//~ #open src/code.c			// virtual mashine
+//~ #open src/type.c			// type system
+//~ #open src/parser.c			// input, lexer, parser
+//~ #open src/printer.c			// pretty print, logger
+//~ #open src/main.c
+
+//~ /* redefinition does not work ...
+static struct Math {
+	pi = 3.14159265358979323846264338327950288419716939937510582097494459;		// A000796
+	e = 2.71828182845904523536028747135266249775724709369995957496696763;		// A001113
+	ln2 = 0.693147180559945309417232121458176568075500134360255254120680009;	// A002162
+	log2E = 1. / ln2;
+	ln10 = 2.30258509299404568401799145468436420760110148862877297603332790;	// A002392
+	log10E = 1. / ln10;
+	phi = 1.61803398874989484820458683436563811772030917980576286213544862;		// A001622
+	sqrt2 = 1.41421356237309504880168872420969807856967187537694807317667974;	// A002193
+	sqrtE = 1.64872127070012814684865078781416357165377610071014801157507931;	// A019774
+	sqrtPi = 1.77245385090551602729816748334114518279754945612238712821380779;	// A002161
+	sqrtPhi = 1.27201964951406896425242246173749149171560804184009624861664038;	// A139339
+	nan = 0/0.;//emit(float64, int64(0xfff8000000000000));
+	inf = 1/0.;//emit(float64, int64(0xfff8000000000000));
+	define isNan(float64 ^x) = bool(x != x);
+	define isNan(float32 ^x) = bool(x != x);
+}// */
+
+/*TODO: Array assignment
+define Array(int32 typesize, int32 ^n) = emit(struct, byRef(memmgr(null, typesize * n)), i32(n));
+define Array(typename ^type, int32 ^n) = emit(struct, byRef(memmgr(null, type.size * n)), i32(n));
+
+int a[][];
+a = Array(8, 10);
+for (int i = 0; i < a.length; i += 1) {
+	a[i] = Array(int, 10);
+}
+// */
+
+/*TODO: refs and ptrs
+int32 ival = 9;
+
+int32 &iref1 = null;
+int32 &iref2 = ival;
+
+int32ptr iptr1 = null;
+int32ptr iptr2 = ival;
+int32ptr iptr3 = iref2;
+
+//~ int32 x = iref2;
+
+//~ int32ptr aaa(int &a) {&result = &a;}
+//~ int32ptr t = aaa(null);
+//~ */
+
+/* typename
+struct ss {
+	int32 x;
+	int32 y;
+	struct ss {
+		int64 x;
+		int64 y;
+	}
+}
+
+ss A = ss(1, 2);
+ss.ss a = ss.ss(1, 2);
+
+int n1 = sizeof(ss);
+int n2 = sizeof(ss.ss);
+
+//~ */
+
+/* xxx
+struct m {
+	static const int X = 9;
+	const int a;
+	int b;
+	int c;// = 8;
+}
+
+m m1 = m(5, 9, 1);
+int &ref_m1_a = m1.a;	// hacked: warn if const/nonconst ref assignment.
+ref_m1_a = 666;
+
+int x = m1.a;
+
+// */
+
+/* arrays
+
+// 1.K int maximum(int arr[12])
+// 2.K int maximum(int arr[])
+// 3.X int maximum(int arr...)
+
+int arr2[3] = 1, 2, 3;
+//~ int arr3[] = arr2;
+//~ /+
+
+int maximum(int arr[]) {
+	result = arr[0];
+	for (int i = 1; i < arr.length; i += 1) {
+		if (result < arr[i]) {
+			result = arr[i];
+		}
+	}
+}
+
+void sort(int arr[]) {
+	for (int i = 0; i < arr.length - 1; i += 1) {
+		for (int j = i + 1; j < arr.length; j += 1) {
+			if (arr[i] > arr[j]) {
+				int tmp = arr[i];
+				arr[i] = arr[j];
+				arr[j] = tmp;
+			}
+		}
+	}
+}
+
+int bsearch(int arr[], int elem) {
+	int lo = 0;
+	int hi = arr.length;
+
+	result = -1;
+	for (;lo < hi;) {
+		int mid = lo + ((hi - lo) / 2);
+		int val = arr[mid];
+
+		if (val < elem) {
+			lo = mid + 1;
+		}
+		else if (val > elem) {
+			hi = mid;
+		}
+		else {
+			result = mid;
+			//~ return;
+			lo = hi;
+		}
+	}
+}
+
+void randomize(int arr[]) {
+	for (int i = 0; i < arr.length; i += 1) {
+		arr[i] = rand() % 30;
+	}
+}
+
+//~ define hex32 int32;		// %hex32(0x%08x)
+
+randomize(arr2);
+int max = maximum(arr2);
+int toFind = arr2[arr2.length / 2];
+sort(arr2);
+int index = bsearch(arr2, toFind);
+// +/
+
+//~ */
+
+/*DONE: assignment by reference
+int64 a = 32;
+a = 33;
+void setup() {
+	static int64 &b = a;
+	print("%d\n", int64(b));
+}
+setup();
+//~ */
+
+/* iterating
+
+void printIT(int ri) {
+	print("iterator {%d}\n", int64(ri));
+}
+
+/+
+struct array_iterator {
+	int pos;
+	int arr[];
+}
+
+array_iterator iterator1(int a[]) {
+	result = array_iterator(0, a);
+}
+define iterator(int a[]) = array_iterator(0, a);
+
+bool next(array_iterator &it, int &val) {
+	result = it.pos < it.arr.length;
+	if (result) {
+		//~ val = it.arr[it.pos];
+		val = it.pos;
+		it.pos += 1;
+	}
+}
+
+int a[2] = 1, 2;
+//~ array_iterator it = iterator(a);
+for (array_iterator pos : a) {
+	printIT(pos);
+}
+// +/
+/+
+define iterator(file &f) = emit(file, ref(f));
+bool next(file &it, int &chr) {
+	chr = fgetc(it);
+	result = chr != -1;
+}// +/
+
+//~ /+
+struct range {
+	int min;
+	int max;
+	bool exclusive;
+}
+
+struct range_iterator {
+	int pos;
+	int max;
+	bool exclusive;
+}
+
+define iterator(range ^r) = range_iterator(r.min, r.max, r.exclusive);	// start at min, and end at max
+
+void printIT(range_iterator ri) {
+	print("iterator {");
+	print("pos: %d", int64(ri.pos));
+	print(", max: %d", int64(ri.max));
+	print(", excl: %d", int64(ri.exclusive));
+	print("}\n");
+}
+
+bool next(range_iterator &it, int &val) {
+	result = it.pos - it.exclusive < it.max;
+	//~ result = it.pos < it.max;
+	if (result) {
+		val = it.pos;
+		it.pos += 1;
+	}
+}
+bool next(range_iterator &it, range_iterator &val) {
+	result = it.pos - it.exclusive < it.max;
+	//~ result = it.pos < it.max;
+	if (result) {
+		val = it;
+		it.pos += 1;
+	}
+}
+
+//~ /+
+for (range_iterator it : range(10, 13, true)) {
+	printIT(it);
+}// +/
+
+/+
+for (int it : range(10, 13, true)) {
+	printIT(it);
+}// +/
+
+/+
+for (range_iterator it = iterator(range(10, 13, true)); next(it, it); ) {
+	printIT(it);
+}// +/
+//~ +/
+
+//~ */
+
+/+ bugs:
+int s1 = sizeof(pointer);		// pointer casts to ref
+int s2 = sizeof(Math);			// enum base type is not typename
+//~ arrays in structures suck
+// +/
+/+ todo:
+- var type: variant, always by ref, struct variant {typename type; uint8 data[0]};
+	var x = new int(0);
+	var x = new vec4f(0, 1, 0, 1);
+	var x = new int[20];
+	var x = new {
+		x: "alma";
+		z: int(3);
+		c: vec4f(2,3,4,5);
+		ss: {
+			z:"alma";
+ 		};
+		f: function()
+	};
+
+	//~ sort_function(int array[0, 3, 4, 2, 5, 1], int function(int a, int b){return a.compareTo(b);})
+	//~ sort_delegate(int array[0, 3, 4, 2, 5, 1], int delegate{int xxx}(int a, int b){return a == b ? 0 : a > b ? 1 : -1;});
+
+// +/
+
+/* optimizing stackalloc
+	// spc -24
+		spc -16
+		spc -8
+
+{
+	int a[1<<10];
+	{
+		int a[1<<10];
+		{
+			int a[1<<10];
+			{
+				int a[1<<20];
+				{
+					int a[1<<10];
+					{
+						int a[1<<10];
+						a[0] = 9;
+					}
+					a[0] = 9;
+				}
+				a[0] = 9;
+			}
+			a[0] = 9;
+		}
+		a[0] = 9;
+	}
+}*/
+
+/+Optimize
+	// remove dup.x1 sp(0) and spc -4
+		ldc.ref 5ee1
+		dup.x1 sp(0)
+		libc: define print( &val)
+		spc -4
+
+//~ +/
+/+class string: char[] {
+	static format(string format, var args) {}
+	struct Builder {
+		
+	}
+	
+	prototype {
+		char charAt(int idx)					// Returns the character at the specified index.
+		//~ char charCodeAt(int idx)			// Returns a number indicating the Unicode value of the character at the given index.
+		string concat(string other)				// Combines the text of two strings and returns a new string.
+		int indexOf(char chr)					// Returns the index within the calling String object of the first occurrence of the specified value, or -1 if not found.
+		int lastIndexOf(char chr)				// Returns the index within the calling String object of the last occurrence of the specified value, or -1 if not found.
+		int localeCompare(string other)			// Returns a number indicating whether a reference string comes before or after or is the same as the given string in sort order.
+		Match[] match(regexp re)				// Used to match a regular expression against a string.
+		replace()								// Used to find a match between a regular expression and a string, and to replace the matched substring with a new substring.
+		search()								// Executes the search for a match between a regular expression and a specified string.
+		slice()									// Extracts a section of a string and returns a new string.
+		string[] split(string sep)				// Splits a String object into an array of strings by separating the string into substrings.
+		string substr(int offset, int length)	// Returns the characters in a string beginning at the specified location through the specified number of characters.
+		string substring(int start, int end)	// Returns the characters in a string between two indexes into the string.
+		string toLocaleLowerCase()				// The characters within a string are converted to lower case while respecting the current locale.
+		string toLocaleUpperCase()				// The characters within a string are converted to upper case while respecting the current locale.
+		string toLowerCase()					// Returns the calling string value converted to lower case.
+		string toUpperCase()					// Returns the calling string value converted to uppercase.
+		//~ toString()							// Returns a string representing the specified object.
+		//~ valueOf()							Returns the primitive value of the specified object.
+	}
+}// +/

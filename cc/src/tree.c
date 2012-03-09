@@ -7,7 +7,7 @@ source code representation using abstract syntax tree
 *******************************************************************************/
 #include <string.h>
 #include <math.h>
-#include "ccvm.h"
+#include "core.h"
 
 astn newnode(ccState s, int kind) {
 	astn ast = 0;
@@ -34,9 +34,9 @@ astn newIden(ccState s, char* id) {
 	astn ast = newnode(s, TYPE_ref);
 	if (ast != NULL) {
 		ast->kind = TYPE_ref;
-		ast->type = ast->id.link = 0;
-		ast->id.hash = rehash(id, slen + 1) % TBLS;
-		ast->id.name = mapstr(s, id, slen + 1, ast->id.hash);
+		ast->type = ast->ref.link = 0;
+		ast->ref.hash = rehash(id, slen + 1) % TBLS;
+		ast->ref.name = mapstr(s, id, slen + 1, ast->ref.hash);
 	}
 	return ast;
 }
@@ -55,9 +55,9 @@ astn lnknode(ccState s, symn ref) {
 	astn result = newnode(s, TYPE_ref);
 	if (result) {
 		result->type = ref->kind == TYPE_ref ? ref->type : ref;
-		result->id.name = ref->name;
-		result->id.link = ref;
-		result->id.hash = -1;
+		result->ref.name = ref->name;
+		result->ref.link = ref;
+		result->ref.hash = -1;
 		result->cst2 = ref->cast;
 	}
 	return result;
@@ -78,8 +78,8 @@ astn fltnode(ccState s, float64_t v) {
 }
 astn strnode(ccState s, char * v) {
 	astn ast = newnode(s, TYPE_str);
-	ast->id.hash = -1;
-	ast->id.name = v;
+	ast->ref.hash = -1;
+	ast->ref.name = v;
 	return ast;
 }
 
@@ -89,7 +89,7 @@ void eatnode(ccState s, astn ast) {
 	s->tokp = ast;
 }
 
-signed constbol(astn ast) {
+int32_t constbol(astn ast) {
 	if (ast) switch (ast->kind) {
 		case TYPE_bit:
 		case TYPE_int:
@@ -197,7 +197,7 @@ int eval(astn res, astn ast) {
 			break;
 
 		case TYPE_ref: {
-			symn var = ast->id.link;		// link
+			symn var = ast->ref.link;		// link
 			if (var && var->kind == TYPE_def && var->init) {
 				if (!eval(res, var->init))
 					return 0;

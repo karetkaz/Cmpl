@@ -1,4 +1,4 @@
-enum renderType = RenderMode.swap_buff;
+enum {renderType = RenderMode.swap_buff;}
 
 //~ args[1] = "media/images/Earth.jpg";
 
@@ -16,7 +16,10 @@ void setupPicView(gxSurf vImg, bool vFit) {
 	static bool clear = false;
 	static bool fit = false;
 
-	static bool inertial_pan = true;
+	//~ define inertial_pan = 25;
+	define inertial_pan = false;
+	define inertial_speed = 1.09;
+
 	static int64 inertial_time = 0;
 	static double inertial_pan_x = 0;
 	static double inertial_pan_y = 0;
@@ -38,20 +41,22 @@ void setupPicView(gxSurf vImg, bool vFit) {
 			}
 			reDraw = false;
 		}
-		if (inertial_pan) {
+		static if (inertial_pan) {
 			int64 now = timeNow();
 			if (inertial_time < now) {
-				inertial_pan_x /= 1.09;
-				inertial_pan_y /= 1.09;
-				enum inertial_pan = .9;
-				if ((abs(inertial_pan_x) > inertial_pan) || (abs(inertial_pan_y) > inertial_pan)) {
+				inertial_pan_x = clamp(inertial_pan_x, -inertial_pan, inertial_pan) / inertial_speed;
+				inertial_pan_y = clamp(inertial_pan_y, -inertial_pan, inertial_pan) / inertial_speed;
+
+				if ((abs(inertial_pan_x) > .5) || (abs(inertial_pan_y) > .5)) {
 					roi.x = clamp(roi.x + inertial_pan_x, 0., float64(width(img) - roi.w));
 					roi.y = clamp(roi.y + inertial_pan_y, 0., float64(height(img) - roi.h));
 					reDraw = true;
 				}
 				inertial_time = now + (int64(0x100000000) / 100);
 			}
-			Gui.Repaint();
+			if ((abs(inertial_pan_x) > .5) || (abs(inertial_pan_y) > .5)) {
+				Gui.Repaint();
+			}
 		}
 	}
 
@@ -60,8 +65,8 @@ void setupPicView(gxSurf vImg, bool vFit) {
 		static int oy = 0;
 		static int ob = 0;
 
-		if (dblClick(btn, x, y)) {
-			dblClick(-1, 0, 0);		// prevent multi clicks
+		if (Mouse.dblClick(btn, x, y)) {
+			Mouse.dblClick(-1, 0, 0);		// prevent multi clicks
 			fit = !fit;
 			reDraw = true;
 		}
@@ -71,7 +76,7 @@ void setupPicView(gxSurf vImg, bool vFit) {
 			roi.y = clamp(roi.y + oy - y, 0, height(img) - roi.h);
 			reDraw = true;
 		}
-		if (inertial_pan) {
+		static if (inertial_pan) {
 			static int64 ot = 0;
 			static int32 oox = 0;
 			static int32 ooy = 0;
@@ -86,13 +91,13 @@ void setupPicView(gxSurf vImg, bool vFit) {
 				int64 now = timeNow();
 				if (clocksPerSec(now - ot) < .5) {
 					inertial_time = 0;
-					inertial_pan_x = clamp(oox - x, -15, 15);
-					inertial_pan_y = clamp(ooy - y, -15, 15);
+					inertial_pan_x = oox - x;
+					inertial_pan_y = ooy - y;
 					oox = x;
 					ooy = y;
 				}
 			}
-		}// */
+		}
 
 		ox = x;
 		oy = y;
@@ -109,16 +114,12 @@ void setupPicView(gxSurf vImg, bool vFit) {
 
 setupPicView(gxSurf(args[1]), true);
 
-/*gxRect roi = gxRect(width(offScreen), height(offScreen));
+/*
+gxRect roi = gxRect(width(offScreen), height(offScreen));
 
-gxSurf img;// = gxSurf(args[1]);
-double imw;// = width(img);
-double imh;// = height(img);
-
-// fixme
-img = gxSurf(args[1]);
-imw = width(img);
-imh = height(img);
+gxSurf img = gxSurf(args[1]);
+double imw = width(img);
+double imh = height(img);
 
 bool reDraw = true;
 
@@ -187,8 +188,8 @@ void mouseHandler(int btn, int x, int y) {
 	static int ox;
 	static int oy;
 	static int ob;
-	if (dblClick(btn, x, y)) {
-		dblClick(-1, 0, 0);		// prevent multi clicks
+	if (Mouse.dblClick(btn, x, y)) {
+		Mouse.dblClick(-1, 0, 0);		// prevent multi clicks
 		fit += 1;
 		fit &= 3;
 		//~ zoom = !zoom;
@@ -208,4 +209,4 @@ void mouseHandler(int btn, int x, int y) {
 
 Gui.setMouseHandler(mouseHandler);
 Gui.setDrawCallback(DrawScreen);
-*/
+//~ */

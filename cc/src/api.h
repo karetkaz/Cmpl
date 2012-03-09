@@ -31,17 +31,14 @@ struct state {
 	symn  gdef;		// static variables and functions
 
 	void* libv;		// libcall vector
-	symn  libc;		// library call symbol
 
+	symn  libc;		// library call symbol
 	void* retv;		// return value
 	char* argv;		// first argument
-
-	//~ TODO("fdata should be void*")
-	//~ int fdata;		// function data passed to libcall
-	void* udata;		// user data for execution passed to vmExec
+	void* udata;	// user data for execution passed to vmExec
 
 	ccState cc;		// compiler enviroment
-	struct {
+	struct vm {
 		int		opti;			// optimization levevel
 
 		unsigned int	pc;			// entry point / prev program counter
@@ -51,23 +48,9 @@ struct state {
 		unsigned int	sm;			// stack minimum size
 
 		unsigned int	ro;			// <= ro : read only region(meta data) / cgen:(function parameters)
+		unsigned int	seg;		// current segment
 		unsigned int	pos;		// current positin in buffer
 	} vm;
-
-	/*struct {
-
-		// arguments
-		int argc;
-		char* argv[];
-
-		// environment
-		int envc;
-		char* envv[];
-
-		// system
-		char* os;		// linux / windows
-		char* user;
-	}pe;*/
 
 	long _size;		// size of total memory
 	void *_free;	// list of free memory
@@ -81,11 +64,9 @@ struct state {
 	state rt;	// runtime
 
 	symn  libc;		// library call symbol
-
 	void* retv;		// return value
-	char* argv;		// first argument
-
-	void* udata;		// user data for execution passed to vmExec
+	void* argv;		// first argument
+	void* data;		// user data for execution passed to vmExec
 
 }*/
 
@@ -97,48 +78,27 @@ typedef struct stateApi {
 
 	state rt;	// runtime
 
-	// add a namespace. Return NULL if error occurs.
+	void (*onClose)();	// callback: when the library is closed
+
+	// add a namespace. Returns NULL if error occurs.
 	symn (*ccBegin)(state, char *cls);
 
-	/** Add a string fragment of source code.
+	/** Add integer, floating point or string constant.
 	 * @param the runtime state.
-	 * @param __file: filename the source is located (pass __FILE__ or NULL)
-	 * @param __line: linenumber of source (pass __LINE__)
-	 * @param warn: warning level.
-	 * @param code: source code to be compiled.
-	 * @return non zero on error.
+	 * @param name: the name of the constant.
+	 * @param value: the value of the constant.
+	 * @return the symbol to the definition, null on error.
 	 */
-	int (*ccAddText)(state, char *__file, int __line, int warn, char *code);
+	symn (*ccDefInt)(state, char *name, int64_t value);
+	symn (*ccDefFlt)(state, char *name, float64_t value);
+	symn (*ccDefStr)(state, char *name, char* value);
 
-	/** Add an integer constant.
+	/** Add a type to the runtime.
 	 * @param the runtime state.
 	 * @param name: the name of the constant.
 	 * @return the symbol to the definition, null on error.
-	*/
-	symn (*ccDefineInt)(state, char *name, int32_t value);
-
-	//~ symn (*ccDefVar)(state, char *name, symn type, int array);
-	//XXX~ symn (*ccDefType)(state, char *name, symn type, int size); ???
-
-	//~ symn (*ccDefIntConst)(state, char *name, int32_t value);
-	//~ symn (*ccDefFltConst)(state, char *name, int32_t value);
-	//~ symn (*ccDefStrConst)(state, char *name, int32_t value);
-
-	//~ symn (*ccAddText)(state, char *name, int32_t value);
-	//~ symn (*ccAddFile)(state, char *name, int32_t value);
-
-	/** Add a floating point constant.
-	 * @param the runtime state.
-	 * @param name: the name of the constant.
-	 * @return the symbol to the definition, null on error.
-	symn ccAddFlt(state, char *name, double value);
-	*/
-	/** Add a string constant.
-	 * @param the runtime state.
-	 * @param name: the name of the constant.
-	 * @return the symbol to the definition, null on error.
-	symn ccAddStr(state, char *name, char* value);
-	*/
+	 */
+	symn (*install)(state, const char* name, unsigned size, int refType);
 
 	/** Add a libcall (native function) to the runtime.
 	 * @param the runtime state.
@@ -154,20 +114,30 @@ typedef struct stateApi {
 		if (!api->libcall(api->rt, f64sin, 0, "float64 sin(float64 x);")) {
 			error...
 		}
-	*/
+	 */
 	symn (*libcall)(state, int libc(state), const char* proto);
 
-	/** Add a type.
+	/** Add a type to the runtime.
 	 * @param the runtime state.
 	 * @param name: the name of the constant.
 	 * @return the symbol to the definition, null on error.
-	//~ symn (*install)(state, const char* name, unsigned size);
-	*/
+	//~ symn (*ccDefVar)(state, char *name, symn type, int array);
+	 */
+
+	/** Add a string fragment of source code.
+	 * @param the runtime state.
+	 * @param __file: filename the source is located (pass __FILE__ or NULL)
+	 * @param __line: linenumber of source (pass __LINE__)
+	 * @param warn: warning level.
+	 * @param code: source code to be compiled.
+	 * @return non zero on error.
+	 */
+	int (*ccAddText)(state, char *__file, int __line, int warn, char *code);
+	//~ int (*ccAddFile)(state, char *name, int warn);
 
 	/** End the namespace, makes all declared variables static.
 	 * @param the runtime state.
-	 * @param name: the name of the constant.
-	 * @return the symbol to the definition, null on error.
+	 * @param cls: the namespace, returned by ccBegin.
 	*/
 	void (*ccEnd)(state, symn cls);
 
@@ -192,7 +162,6 @@ typedef struct stateApi {
 	 * 
 	symn (*findsym)(ccState cc, symn in, char *name);
 	 */
-
 	/** offset of a pointer in the vm
 	int (*vmOffset)(state, void *ptr);
 	 */
@@ -228,16 +197,16 @@ typedef struct stateApi {
 #define setret(__ARGV, __TYPE, __VAL) (*retptr(__ARGV, __TYPE) = (__TYPE)(__VAL))
 #define getret(__ARGV, __TYPE) (*retptr(__ARGV, __TYPE))
 
-static inline void* poparg(state rt, void *res, int size) {
+static inline void* poparg(state rt, void *result, int size) {
 	// if result is not null copy
-	if (res != NULL) {
-		memcpy(res, rt->argv, size);
+	if (result != NULL) {
+		memcpy(result, rt->argv, size);
 	}
 	else {
-		res = rt->argv;
+		result = rt->argv;
 	}
 	rt->argv += size;
-	return res;
+	return result;
 }
 static inline int32_t popi32(state rt) { return *(int32_t*)poparg(rt, NULL, sizeof(int32_t)); }
 static inline int64_t popi64(state rt) { return *(int64_t*)poparg(rt, NULL, sizeof(int64_t)); }

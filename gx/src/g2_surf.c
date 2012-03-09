@@ -59,7 +59,7 @@ gx_Surf gx_createSurf(unsigned width, unsigned height, unsigned depth, int flags
 }
 
 int gx_asubSurf(gx_Surf dst, gx_Surf src, gx_Rect roi) {
-	void *basePtr;
+	char *basePtr;
 	struct gx_Rect clip;
 
 	if (roi == NULL) {
@@ -160,20 +160,14 @@ void* gx_cliprect(gx_Surf surf, gx_Rect roi) {
 
 
 
+static inline int min(int a, int b) {return a < b ? a : b;}
+static inline int max(int a, int b) {return a > b ? a : b;}
+static inline long rch(long xrgb) {return xrgb >> 16 & 0xff;}
+static inline long gch(long xrgb) {return xrgb >>  8 & 0xff;}
+static inline long bch(long xrgb) {return xrgb >>  0 & 0xff;}
+static inline long __rgb(int r, int g, int b) {return r << 16 | g << 8 | b;}
+
 int gx_blursurf(gx_Surf img, gx_Rect roi, int radius) {
-
-	inline int min(int a, int b) {return a < b ? a : b;}
-	inline int max(int a, int b) {return a > b ? a : b;}
-	inline long rch(long xrgb) {return xrgb >> 16 & 0xff;}
-	inline long gch(long xrgb) {return xrgb >>  8 & 0xff;}
-	inline long bch(long xrgb) {return xrgb >>  0 & 0xff;}
-	inline long __rgb(int r, int g, int b) {return r << 16 | g << 8 | b;}
-
-	if (radius < 1)
-		return -1;
-
-	if (roi != NULL)
-		return -2;
 
 	int w = img->width;
 	int h = img->height;
@@ -184,14 +178,22 @@ int gx_blursurf(gx_Surf img, gx_Rect roi, int radius) {
 	int maxwh = max(w, h);
 	int div = 2 * radius + 1;
 
-	int *r = malloc(sizeof(int) * wh);
-	int *g = malloc(sizeof(int) * wh);
-	int *b = malloc(sizeof(int) * wh);
-	int *vmin = malloc(sizeof(int) * maxwh);
-	int *vmax = malloc(sizeof(int) * maxwh);
-	int *dv = malloc(sizeof(int) * 256 * div);
-
 	int x, y, i, yi = 0;
+	int *r, *g, *b, *vmin, *vmax, *dv;
+
+	if (radius < 1)
+		return -1;
+
+	if (roi != NULL)
+		return -2;
+
+	r = malloc(sizeof(int) * wh);
+	g = malloc(sizeof(int) * wh);
+	b = malloc(sizeof(int) * wh);
+	vmin = malloc(sizeof(int) * maxwh);
+	vmax = malloc(sizeof(int) * maxwh);
+	dv = malloc(sizeof(int) * 256 * div);
+
 
 	for (i = 0; i < 256 * div; i += 1) {
 		dv[i] = i / div;
@@ -210,6 +212,7 @@ int gx_blursurf(gx_Surf img, gx_Rect roi, int radius) {
 		}
 
 		for (x = 0; x < w; x += 1) {
+			int p1, p2;
 			r[yi] = dv[rsum];
 			g[yi] = dv[gsum];
 			b[yi] = dv[bsum];
@@ -219,8 +222,8 @@ int gx_blursurf(gx_Surf img, gx_Rect roi, int radius) {
 				vmax[x] = max(x - radius, 0);
 			}
 
-			int p1 = gx_getpixel(img, vmin[x], y);
-			int p2 = gx_getpixel(img, vmax[x], y);
+			p1 = gx_getpixel(img, vmin[x], y);
+			p2 = gx_getpixel(img, vmax[x], y);
 
 			rsum += rch(p1) - rch(p2);
 			gsum += gch(p1) - gch(p2);
@@ -245,6 +248,7 @@ int gx_blursurf(gx_Surf img, gx_Rect roi, int radius) {
 		}
 
 		for (y = 0; y < h; y += 1) {
+			int p1, p2;
 			gx_setpixel(img, x, y, __rgb(dv[rsum], dv[gsum], dv[bsum]));
 
 			if (x == 0) {
@@ -252,8 +256,8 @@ int gx_blursurf(gx_Surf img, gx_Rect roi, int radius) {
 				vmax[y] = max(y - radius, 0) * w;
 			}
 
-			int p1 = x + vmin[y];
-			int p2 = x + vmax[y];
+			p1 = x + vmin[y];
+			p2 = x + vmax[y];
 
 			rsum += r[p1] - r[p2];
 			gsum += g[p1] - g[p2];

@@ -4,6 +4,9 @@
  *   Desc: type system
  *******************************************************************************
 
+Types are special kind of variables.
+
+
 Basic types
 
 	void
@@ -23,70 +26,76 @@ Basic types
 	float64
 
 	pointer
+	typename		// compilers internal type reprezentation structure
+	?function
 
-	!typename		// compilers internal type reprezentatin structure
-	!function
+#typedefs
+	@int: alias for int32
+	@long: alias for int64
+	@float: alias for float32
+	@double: alias for float64
 
-Derived data types: [TODO]
-	slice: struct {const pointer data; const int length;}
-	variant: struct {const pointer data; const typename type;}
-	delegate: struct {const pointer function; const pointer data;}
-
-User defined types:
-	array
-	struct
-	function
-	delegate
-
-	#typedefs
-	@int: int32
-	@long: int64
-	@float: float32
-	@double: float64
+	@char: alias for uint8 / uint16
+	@string: alias for char[]
 
 	@var: variant
-
-	@char: uint8 / uint16
-	@string: char[]
-
 	@array: variant[]
 
-	#constants
+#constants
 	@true: emit(bool, i32(1));
 	@false: emit(bool, i32(0));
 	@null: emit(pointer, i32(0));
 
-arrays:
-	2 kind of arrays:
+Derived data types:
+	slice: struct {const pointer data; const int length;}
+	[TODO] variant: struct &variant {const typename type; const void data[0];}
+	[TODO] delegate: struct {const pointer function; const pointer data;}
 
-		Fixed-size arrays:
-			ex: int a[2]
-
+User defined types:
+	pointers arrays and slices:
+		TODO:pointers are unsized
+			ex: int *a;
 			are passed by reference,
+		arrays are fixed-size:
+			ex: int a[2];
+			are passed by reference,
+		slices are Dinamic-size arrays:
+			ex: int a[];
+			is a combination of pointer and length.
+			where type of data is known by the compiler, the length by runtime.
 
-		Dinamic-size arrays / slices:
-			ex: int a[]
-			where type of data is known by the compiler.
-
-structures:
-		when declaring a struct there will be declared the folowing:
-			initializer with all members, in case packing is default,
+	struct:
+		when declaring a struct there will be declared the folowing initializer:
+			with all members, in case packing is default,
 				??? and fixed size arrays are not contained by the structure.
-			initializer from pointer
-			variant initializer.
-
+			from pointer: static cast
+			from variant: 
 		ex: for struct Complex {double re; double im};
 		will be defined:
-			define Complex(double re, double im) = emit(Complex, re, im);
-			define Complex(pointer ptr) = emit(Complex &, ptr);
-			operator variant(Complex &var) = emit(variant, ref(Complex), ref(var));
+			define Complex(double re, double im) = emit(Complex, double(re), double(im));
+			define Complex(pointer ptr) = emit(Complex&, byRef(ptr));
+			define Complex(variant var) = emit(Complex&, byRef(var.type == Complex ? &var.data : null));
 
-			// this should throw an exception
-			define Complex(variant var) = emit(Complex&, ref(variant2Type(var, complex));
+	function
+
+
+TODO's:
+	struct initialization:
+		struct alma {
+			int32 a;
+			int32 b;
+			int64 x;
+		}
+		alma a1 = {a: 12, x: 88};
+		alma a2 = alma(12, 0, 88);
+	array initialization:
+		alma a1[] = [alma(1,2,3), alma(2,2,3), ...]
+		alma a1[] = [alma(1,2,3), alma(2,2,3), ...]
+		alma a1[] = alma[]{alma(1,2,3), ...}
 
 *******************************************************************************/
 
-#include "ccvm.h"
+#include "core.h"
 #include <string.h>
 
 TODO("these should go to ccState !")
@@ -120,7 +129,7 @@ symn newdefn(ccState s, int kind) {
 	return def;
 }
 
-symn installex(ccState s, const char* name, int kind, int cast, unsigned size, symn type, astn init) {
+symn install(ccState s, const char* name, int kind, int cast, unsigned size, symn type, astn init) {
 	unsigned hash = 0;
 	symn def;
 
@@ -178,19 +187,15 @@ symn installex(ccState s, const char* name, int kind, int cast, unsigned size, s
 	}
 	return def;
 }
-
 symn installtyp(state rt, const char* name, unsigned size, int refType) {
-	return installex(rt->cc, name, ATTR_const | TYPE_rec, refType ? TYPE_ref : TYPE_rec, size, rt->cc->type_rec, NULL);
+	//~ dieif(!rt->cc, "FixMe");
+	return install(rt->cc, name, ATTR_const | TYPE_rec, refType ? TYPE_ref : TYPE_rec, size, rt->cc->type_rec, NULL);
 }
-
 /*symn installref(state rt, const char* name, symn type, int byRef, int attr) {
-	symn ref = installex(rt->cc, name, TYPE_ref, cast, byRef ? vm_size : type->size, type, NULL);
+	symn ref = install(rt->cc, name, TYPE_ref, cast, byRef ? vm_size : type->size, type, NULL);
 	
 }*/
 
-symn install(ccState s, const char* name, int kind, int cast, unsigned size, symn type) {
-	return installex(s, name, kind, cast, size, type, NULL);
-}
 
 void extend(symn type, symn args) {
 	symn arg = type->args;
@@ -210,9 +215,11 @@ symn addarg(ccState s, symn sym, const char* name, int kind, symn typ, astn init
 	symn args = sym->args;
 
 	enter(s, NULL);
-	installex(s, name, kind, 0, 0, typ, init);
+	install(s, name, kind, 0, 0, typ, init);
 	sym->args = leave(s, sym, 0);
-	if (sym->args) {	// non static member
+
+	// non static member
+	if (sym->args) {
 		sym->args->next = args;
 	}
 	else {
@@ -236,7 +243,7 @@ static inline int castkind(int cast) {
 	//~ debug("failed: %t", cast);
 	return 0;
 }
-symn promote(symn lht, symn rht) {
+static symn promote(symn lht, symn rht) {
 	symn pro = 0;
 	if (lht && rht) {
 		if (lht == rht) {
@@ -286,10 +293,11 @@ int canAssign(symn var, astn val, int strict) {
 	dieif(!val, "FixMe");
 
 	// assigning null or pass by reference
-	if (val->kind == TYPE_ref && val->id.link == null_ref) {
+	if (val->kind == TYPE_ref && val->ref.link == null_ref) {
+		trace("canAssign null to: %-T", var);
 		// if parameter is byRef or type is byRef
 		if (var->cast == TYPE_ref || typ->cast == TYPE_ref) {
-			//~ trace("null byref: %-T", rhs);
+			trace("canAssign null to: %-T", var);
 			return 1;
 		}
 	}
@@ -306,38 +314,35 @@ int canAssign(symn var, astn val, int strict) {
 
 		// assigning a function
 		if (var->call) {
+			symn fun = linkOf(val);
 			symn arg1 = var->args;
 			symn arg2 = NULL;
+			struct astn atag;
 
-			if (val->kind == TYPE_ref) {
-				symn fun = linkOf(val);
-				struct astn atag;
+			atag.kind = TYPE_ref;
+			atag.type = typ;
+			atag.cst2 = var->cast;
+			atag.ref.link = var;
 
-				atag.kind = TYPE_ref;
-				atag.type = typ;
-				atag.cst2 = var->cast;
-				atag.id.link = var;
+			if (canAssign(fun->type, &atag, 1)) {
+				arg2 = fun->args;
+				while (arg1 && arg2) {
 
-				if (canAssign(fun->type, &atag, 1)) {
-					arg2 = fun->args;
-					while (arg1 && arg2) {
+					atag.type = arg2->type;
+					atag.cst2 = arg2->cast;
+					atag.ref.link = arg2;
 
-						atag.type = arg2->type;
-						atag.cst2 = arg2->cast;
-						atag.id.link = arg2;
-
-						if (!canAssign(arg1, &atag, 1)) {
-							trace("%-T != %-T", arg1, arg2);
-							break;
-						}
-
-						arg1 = arg1->next;
-						arg2 = arg2->next;
+					if (!canAssign(arg1, &atag, 1)) {
+						trace("%-T != %-T", arg1, arg2);
+						break;
 					}
+
+					arg1 = arg1->next;
+					arg2 = arg2->next;
 				}
-				else {
-					trace("%-T != %-T", typ, fun);
-				}
+			}
+			else {
+				trace("%-T != %-T", typ, fun);
 			}
 			if (arg1 || arg2) {
 				trace("%-T != %-T", arg1, arg2);
@@ -359,8 +364,8 @@ int canAssign(symn var, astn val, int strict) {
 		atag.kind = TYPE_ref;
 		atag.type = vty ? vty->type : NULL;
 		atag.cst2 = atag.type ? atag.type->cast : 0;
-		atag.id.link = NULL;//val->type;
-		atag.id.name = "generated token";//val->type;
+		atag.ref.link = NULL;//val->type;
+		atag.ref.name = "generated token";//val->type;
 
 		if (canAssign(typ->type, &atag, strict)) {
 			// assign to dynamic array
@@ -429,7 +434,7 @@ symn lookup(ccState s, symn sym, astn ref, astn args, int raise) {
 			continue;
 
 		// check name
-		if (strcmp(sym->name, ref->id.name) != 0)
+		if (strcmp(sym->name, ref->ref.name) != 0)
 			continue;
 
 		if (!args && sym->call) {
@@ -488,7 +493,7 @@ symn lookup(ccState s, symn sym, astn ref, astn args, int raise) {
 				//~ debug("%+k%s is probably %-T%s:%t", ref, args ? "()" : "", sym, sym->call ? "()" : "", sym->kind);
 
 				// if null is passed by ref it will be as a cast
-				if (argval->kind == TYPE_ref && argval->id.link == null_ref) {
+				if (argval->kind == TYPE_ref && argval->ref.link == null_ref) {
 					hascast += 1;
 				}
 
@@ -562,7 +567,7 @@ symn declare(ccState s, int kind, astn tag, symn typ) {
 		return 0;
 	}
 
-	def = installex(s, tag->id.name, kind, 0, 0, typ, NULL);
+	def = install(s, tag->ref.name, kind, 0, 0, typ, NULL);
 
 	if (def != NULL) {
 
@@ -570,7 +575,7 @@ symn declare(ccState s, int kind, astn tag, symn typ) {
 		def->file = s->file;
 
 		tag->type = typ;
-		tag->id.link = def;
+		tag->ref.link = def;
 
 		tag->kind = TYPE_def;
 		switch (kind) {
@@ -619,7 +624,7 @@ int istype(astn ast) {
 		return istype(ast->op.lhso) && istype(ast->op.rhso);
 
 	if (ast->kind == TYPE_ref)
-		return isType(ast->id.link);
+		return isType(ast->ref.link);
 
 	//~ debug("%t(%+k):(%d)", ast->kind, ast, ast->line);
 	return 0;
@@ -640,9 +645,9 @@ symn linkOf(astn ast) {
 	if (ast->kind == OPER_idx)
 		return linkOf(ast->op.lhso);
 
-	if (ast->kind == TYPE_ref && ast->id.link) {
+	if (ast->kind == TYPE_ref && ast->ref.link) {
 		// skip type defs
-		symn lnk = ast->id.link;
+		symn lnk = ast->ref.link;
 		if (lnk->kind == TYPE_def && lnk->init->kind == TYPE_ref) {
 			lnk = linkOf(lnk->init);
 		}
@@ -752,9 +757,6 @@ static int typeTo(astn ast, symn type) {
 
 	TODO("check validity / Remove function");
 
-	//~ if (ast->type == emit_opc)
-		//~ return EMIT_opc;
-
 	while (ast->kind == OPER_com) {
 		if (!typeTo(ast->op.rhso, type)) {
 			trace("%k", ast);
@@ -767,7 +769,6 @@ static int typeTo(astn ast, symn type) {
 }
 
 symn typecheck(ccState s, symn loc, astn ast) {
-	//~ int checkStaticMembers = 0;
 	astn ref = 0, args = 0;
 	symn result = NULL;
 	astn dot = NULL;
@@ -829,7 +830,7 @@ symn typecheck(ccState s, symn loc, astn ast) {
 					//emit's first arg is 'struct'
 					args->kind = TYPE_ref;
 					args->type = emit_opc;
-					args->id.link = emit_opc;
+					args->ref.link = emit_opc;
 				}
 				else if (!typecheck(s, lin, args)) {
 					if (!lin || !typecheck(s, NULL, args)) {
@@ -861,22 +862,19 @@ symn typecheck(ccState s, symn loc, astn ast) {
 					dot = call;
 					//~ loc = call->op.lhso->type;
 					ref = call->op.rhso;
-				} break;// */
+				} break;
 				case EMIT_opc: {
 					astn arg = args;
-					TODO("type of 'emit()' will be emit, to match all types")
 					for (arg = args; arg; arg = arg->next)
 						arg->cst2 = arg->type->cast;
-					return ast->type = args ? args->type : emit_opc;
+					return ast->type = args ? args->type : NULL;
 				} break;
 				case TYPE_ref:
 					ref = ast->op.lhso;
 					break;
 				default:
 					fatal("FixMe: %t(%+k)", ast->kind, ast);
-			}// */
-
-			//~ args = args;
+			}
 
 			if (args == NULL) {
 				args = s->void_tag;
@@ -1053,8 +1051,8 @@ symn typecheck(ccState s, symn loc, astn ast) {
 			}
 
 			if (ast->kind == OPER_equ || ast->kind == OPER_neq) {
-				symn lhl = ast->op.lhso->kind == TYPE_ref ? ast->op.lhso->id.link : NULL;
-				symn rhl = ast->op.rhso->kind == TYPE_ref ? ast->op.rhso->id.link : NULL;
+				symn lhl = ast->op.lhso->kind == TYPE_ref ? ast->op.lhso->ref.link : NULL;
+				symn rhl = ast->op.rhso->kind == TYPE_ref ? ast->op.rhso->ref.link : NULL;
 				if (lhl == null_ref && rhl == null_ref)
 					cast = TYPE_ref;
 				else if (lhl == null_ref && rhl && rhl->cast == TYPE_ref)
@@ -1238,19 +1236,12 @@ symn typecheck(ccState s, symn loc, astn ast) {
 	}
 
 	if (ref && ref != s->void_tag) {
-		sym = s->deft[ref->id.hash];
+		sym = s->deft[ref->ref.hash];
 
 		if (loc != NULL) {
 			sym = loc->args;
-			/* loc->args ends with loc->sdef
-			if (checkStaticMembers)
-				sym = loc->sdef;
-			else
-				sym = loc->args;
-			*/
 		}
 
-		//~ debug("%+k(%d)", ast, ast->line);
 		if ((sym = lookup(s, sym, ref, args, 1))) {
 
 			//~ debug("%k(%d)", ref, ast->line);
@@ -1277,7 +1268,7 @@ symn typecheck(ccState s, symn loc, astn ast) {
 					break;
 			}
 
-			TODO(ugly hack)
+			TODO("ugly hack")
 			if (isType(sym) && args && !args->next) {			// cast
 				if (!castTo(args, sym->cast)) {
 					debug("%k:%t", args, castOf(args->type));
@@ -1322,7 +1313,7 @@ symn typecheck(ccState s, symn loc, astn ast) {
 			}
 
 			ref->kind = TYPE_ref;
-			ref->id.link = sym;
+			ref->ref.link = sym;
 			ref->type = result;
 			ast->type = result;
 
@@ -1411,7 +1402,7 @@ void enter(ccState s, astn ast) {
 		with = with->args;
 
 		while (with) {
-			installex(s, with->name, TYPE_def, 0, with, NULL);
+			install(s, with->name, TYPE_def, 0, with, NULL);
 
 			/ *
 			int h = rehash(with->name, -1) % TBLS;

@@ -5,10 +5,10 @@
  *******************************************************************************
 math, print, time libcall functions
 *******************************************************************************/
-#include "ccvm.h"
 #include <math.h>
 #include <time.h>
 #include <stdlib.h>
+#include "core.h"
 
 //{#region math functions
 

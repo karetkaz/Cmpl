@@ -42,26 +42,18 @@ enum importgfx: bool {
 
 static if (importgfx.rgbUtils) {
 
-//~ define lerp(double ^a, double b, double t) = double(a + t * (b - a));
 define __rgb(int r, int g, int b) = int((r << 16) | (g << 8) | b);
-define __gray(int ^c) = int((c << 16) | (c << 8) | c);
-
-// clamp or something else values to 0..255
-//~ define cxff(int val) = int(val & 255);
-//~ define cxff(double val) = int(clamp(val * 255, 0, 255));
-
 define rgbClamp(int r, int g, int b) = __rgb(clamp(r, 0, 255), clamp(g, 0, 255), clamp(b, 0, 255));
 define rgbAnd(int r, int g, int b) = __rgb(r & 255, g & 255, b & 255);
 define rgb(int r, int g, int b) = rgbAnd(r, g, b);
 
-//~ define rgb(double r, double g, double b) = int(cxff(r * 255) << 16 | cxff(g * 255) << 8 | cxff(b * 255));
-//~ define rgb(double ^c) = int(cxff(c * 255) << 16 | cxff(c * 255) << 8 | cxff(c * 255));
+define __gray(int ^c) = int((c << 16) | (c << 8) | c);
 define grayClamp(int c) = __gray(clamp(c, 0, 255));
 define grayAnd(int c) = __gray(c & 255);
 define gray(int c) = grayAnd(c);
 
-define gray(double c) = grayAnd(c * 255);
-define rgb(double r, double g, double b) = rgbAnd(r * 255, g * 255, b * 255);
+define rgb(double r, double g, double b) = rgb(r * 255, g * 255, b * 255);
+define gray(double c) = gray(c * 255);
 
 // get the Red channel of the color
 define rch(int col) = int32((col >> 16) & 0xff);
@@ -85,7 +77,8 @@ int lrprgbx16(int c1, int c2, int t) {
 	int r = lrpfix16(rch(c1), rch(c2), t);
 	int g = lrpfix16(gch(c1), gch(c2), t);
 	int b = lrpfix16(bch(c1), bch(c2), t);
-	result = r << 16 | g << 8 | b;
+	//~ result = r << 16 | g << 8 | b;
+	result = __rgb(r, g, b);
 }
 
 int rgbOr(int c1, int c2) {
@@ -132,7 +125,6 @@ vec4f Hsv2Rgb(vec4f hsv) {
 		result = vec4f(v);
 	}
 	else {
-
 		h *= 360 / 60;
 
 		int i = int(h);		// round
@@ -169,6 +161,9 @@ define gxSurf() = newSurf(0, 0);
 define gxSurf(int dim) = newSurf(dim, dim);
 define gxSurf(int width, int height) = newSurf(width, height);
 define gxSurf(gxSurf ^copy) = copySurf(newSurf(width(copy), height(copy)), 0, 0, copy, null);
+
+define fillRect(gxSurf dst, gxRect ^roi, int col) = fillRect(dst, roi.x, roi.y, roi.x + roi.w, roi.y + roi.h, col);
+define drawRect(gxSurf dst, gxRect ^roi, int col) = drawRect(dst, roi.x, roi.y, roi.x + roi.w, roi.y + roi.h, col);
 
 gxSurf openImg(gxSurf dst, string fileName) {
 
@@ -382,45 +377,47 @@ gxSurf lut2Surf(gxSurf dst, gxClut &lut, int bg) {
 
 //}
 
-struct dblClickState {
-	int64 clk;		// old clock
-	int32 cnt;		// click count
-	int32 btn;		// old button
-	int32 x;		// old x coord
-	int32 y;		// old y coord
-}
-int dblClick(dblClickState &old, int btn, int x, int y) {
-	result = 0;
-	if (btn == 1 && old.btn == 0) {	// on click
-		int64 now = timeNow();
-		if (x == old.x && y == old.y) {
-			if (clocksPerSec(now - old.clk) < .5) {
-				result = old.cnt += 1;
+static struct Mouse {
+	struct dblClickState {
+		int64 clk;		// old clock
+		int32 cnt;		// click count
+		int32 btn;		// old button
+		int32 x;		// old x coord
+		int32 y;		// old y coord
+	}
+	int dblClick(dblClickState &old, int btn, int x, int y) {
+		result = 0;
+		if (btn == 1 && old.btn == 0) {	// on click
+			int64 now = timeNow();
+			if (x == old.x && y == old.y) {
+				if (clocksPerSec(now - old.clk) < .5) {
+					result = old.cnt += 1;
+				}
 			}
+
+			if (!result) {
+				old.cnt = 0;
+				old.x = x;
+				old.y = y;
+			}
+
+			old.clk = now;
 		}
 
-		if (!result) {
+		if (btn == -1) {
 			old.cnt = 0;
 			old.x = x;
 			old.y = y;
 		}
 
-		old.clk = now;
+		old.btn = btn;
+	}
+	int dblClick(int btn, int x, int y) {
+		static dblClickState old;
+		result = dblClick(&old, btn, x, y);
 	}
 
-	if (btn == -1) {
-		old.cnt = 0;
-		old.x = x;
-		old.y = y;
 	}
-
-	old.btn = btn;
-}
-int dblClick(int btn, int x, int y) {
-	static dblClickState old;
-	result = dblClick(&old, btn, x, y);
-}
-
 //{ 3d Mesh
 /// TODO: closed meshes
 void meshGen(int sdiv, bool sclosed, int tdiv, bool tclosed, void pos(double &x, double &y, double &z, double s, double t), double epsilon) {

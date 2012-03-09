@@ -7,7 +7,7 @@ BINARY=main
 
 OUTOBJ=-o
 OUTEXE=-o
-#~ CFLAGS=-Wall -Wpadded -g3 -ggdb
+CFLAGS=-Wall -Wpadded -g3 -ggdb
 CFLAGS=-g0 -Os
 
 CCC=gcc -m32
@@ -27,11 +27,11 @@ endif
 
 OBJS=\
 	$(OBJDIR)code.o\
-	$(OBJDIR)clog.o\
-	$(OBJDIR)parse.o\
+	$(OBJDIR)parser.o\
+	$(OBJDIR)printer.o\
 	$(OBJDIR)tree.o\
 	$(OBJDIR)type.o\
-	$(OBJDIR)ccvm.o\
+	$(OBJDIR)core.o\
 	$(OBJDIR)lstd.o\
 	\
 	$(OBJDIR)drv_ras.o\

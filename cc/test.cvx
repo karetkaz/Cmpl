@@ -1,14 +1,26 @@
 //~ #open src/ccvm.h
 //~ #open src/pvmc.h
 
-//~ #open src/ccvm.c
-//~ #open src/code.c
-//~ #open src/clog.c
-//~ #open src/type.c
-
+//~ #open src/core.c			// 
 //~ #open src/tree.c
-//~ #open src/parse.c
+
+//~ #open src/code.c			// virtual mashine
+//~ #open src/type.c			// type system
+//~ #open src/parser.c			// input, lexer, parser
+//~ #open src/printer.c			// pretty print, logger
 //~ #open src/main.c
+define nan = emit(float64, int64(0xfff8000000000000));
+//~ int c = 8192 + 19;
+//~ define f64hex float64;	//%0x%016X
+//~ define f32hex float32;	//%0x%08x
+//~ f64hex nan1 = --(0/0.);
+//~ f32hex nan2 = --(0/0.);
+
+//~ double nan1 = Math.nan;
+double x = -1./0;//1e-500;
+bool n1 = isNan(x);
+bool n2 = isInf(x);
+bool n3 = isFinite(x);
 
 /*
 int count = 19;
@@ -18,7 +30,22 @@ int32 arr2[] = Array(int32, count);
 
 //~ for (int i = 0; i < arr2.length; i += 1) {arr2[i] = i + 10;}
 
-//~ int size = sizeof(arr2);
+int size = sizeof(arr2);
+//~ */
+/*TODO: refs and ptrs
+int32 ival = 9;
+
+int32 &iref1 = null;
+int32 &iref2 = ival;
+
+int32ptr iptr1 = null;
+int32ptr iptr2 = ival;
+int32ptr iptr3 = iref2;
+
+//~ int32 x = iref2;
+
+//~ int32ptr aaa(int &a) {&result = &a;}
+//~ int32ptr t = aaa(null);
 //~ */
 
 /* typename
@@ -31,13 +58,11 @@ struct ss {
 	}
 }
 
-//~ ss A = ss(1, 2);
-//~ ss.ss a = ss.ss(1, 2);
-//~ ss.ss b = emit(ss.ss, f64(1), f64(2));
+ss A = ss(1, 2);
+ss.ss a = ss.ss(1, 2);
 
-int n1 = sizeof(ss.ss);
-
-//~ int size = sizeof(int64);
+int n1 = sizeof(ss);
+int n2 = sizeof(ss.ss);
 
 //~ */
 
@@ -106,7 +131,7 @@ struct m {
 }
 
 m m1 = m(5, 9, 1);
-int &ref_m1_a = m1.a;
+int &ref_m1_a = m1.a;	// hacked: warn if const/nonconst ref assignment.
 ref_m1_a = 666;
 
 int x = m1.a;
@@ -119,8 +144,7 @@ int x = m1.a;
 // 2.K int maximum(int arr[])
 // 3.X int maximum(int arr...)
 
-int arr2[2] = 1, 2;
-//~ int16 arr3[2, 2] = 1, 2, 3, 4;
+int arr2[3] = 1, 2, 3;
 //~ int arr3[] = arr2;
 //~ /+
 
@@ -183,52 +207,31 @@ sort(arr2);
 int index = bsearch(arr2, toFind);
 // +/
 
-//~ int arr2[] = null;
-//~ int arr2[] = emit(val, ref(realloc(null, 4 * 300)), i32(300));//[3][3];
-//~ define newArray(int ty, int ^n) = emit(val, ref(realloc(null, ty * n)), i32(n));
-//~ int arr0[2] = 2, 3;
-//~ int arr9[] = newArray(4, 300);
-//~ int arr2[] = emit(val, ref(null), i32(0));
-//~ int arr3[] = emit(val, ref(arr0), i32(arr0.length));
-
-//~ int n = 400;
-
-//~ int arr4[] = emit(val, ref(memmgr(null, 4 * n)), i32(n));
-//~ int arr5[n];
 //~ */
 
 /* strings
-//~ string s = "alma a fa alatt";		// this should be dynamic.
-//~ uint8 ss[4];
-//~ int a = ss.length;
 string x = "almax a fa alatt";
-//~ string ss[3];
-//~ ss[0] = x;//"alma1 a fa alatt";
-//~ ss[1] = "alma2 a fa alatt";
-//~ ss[2] = "alma3 a fa alatt";
-//~ string y = ss[1];
+string ss[3];
+ss[0] = x;//"alma1 a fa alatt";
+ss[1] = "alma2 a fa alatt";
+ss[2] = "alma3 a fa alatt";
+string y = ss[1];
 
 int iii[3] = 1, 2, 3;
-string sss[3] = x, "a2", "a3";
+string sss[3] = x, "alma2 a fa alatt", "alma3 a fa alatt";
 
-//~ ss[0][3] = 'A';
+int a = ss.length;
 
-//~ println(y);
-//~ println(ss[2]);
+ss[0][3] = 'A';
 
-//~ string c = ss[0];
-//~ putstr(c);
+println(y);
+println(ss[2]);
 
-//~ int a = 9;
-//~ int &b = null;
-//~ &b = a;
-
-//~ b = 88;
 // */
 
 /* static and nonstatic members.
 struct alma {
-	//~ static int a0 = 9;
+	static int a0 = 9;
 	int a1;
 	int a2;
 	int a3;
@@ -281,25 +284,6 @@ xrgb a = emit(xrgb, i32(0x801f008f));
 //~ r.rgb.r = min(a.r + b.r, 255);
 //~ r.rgb.g = min(a.g + b.g, 255);
 //~ r.rgb.b = min(a.b + b.b, 255);
-// */
-
-/* get 0 < n <= 64 bit minimum / maximum (signed/unsigned) values
-define hex64 int64;//%%016X
-void bitsget(bool signed, int size, int64 &min, int64 &max) {
-	int64 mask = int64.Shr(int64(-1), -size);
-	min = int64.Shl(-int64(signed), size - 1);
-	max = int64.And(min - 1, mask);
-}
-
-hex64 min;
-hex64 max;
-hex64 umin;
-hex64 umax;
-
-int bitsize = 50;
-
-bitsget(true, bitsize, &min, &max);
-bitsget(!true, bitsize, &umin, &umax);
 // */
 
 /* invoke functions ...
@@ -379,8 +363,8 @@ println(Invoke(b));
 struct Closure {int64 call(Closure &c, int64 n); int64 data; int32 calls; /+...+/ }
 define Closure(int64 call(Closure &c, int64 n), int64 data) = Closure(call, data, 0);
 
-define Invoke(Closure &c, int64 n) = c.call(&c, n);
-//~ operator (Closure &c)(int64 n) = c.call(c, n);
+define Invoke(Closure c, int64 n) = c.call(&c, n);
+//~ operator (Closure c)(int64 n) = c.call(c, n);
 
 int64 countdown(Closure &c, int64 n) {result = c.data; c.data -= n; c.calls += 1; }
 
@@ -390,25 +374,7 @@ print("%d\n", int64(Invoke(a, 9)));
 print("%d\n", int64(Invoke(a, 2)));
 print("%d\n", int64(Invoke(a, 2)));
 print("%d\n", int64(Invoke(a, 2)));
-
-/+todo:
-	function a = function{data: int64(90), calls: int(0)} int(int64 n) {
-		result = c.data;
-		c.data -= n;
-		c.calls += 1;
-	};
-
-	println(Invoke(a, 9));
-	println(Invoke(a, 2));
-	println(Invoke(a, 2));
-	println(Invoke(a, 2));
-
-
-//~ sort_function(int array[0, 3, 4, 2, 5, 1], int function(int a, int b){return a.compareTo(b);})
-//~ sort_delegate(int array[0, 3, 4, 2, 5, 1], int delegate{int xxx}(int a, int b){return a == b ? 0 : a > b ? 1 : -1;});
-
-// +/
-
+//~ +/
 //~ */
 /*BUG: assignment by reference
 
@@ -437,7 +403,7 @@ for (int i = 1; tmp > eps; i += 1) {
 }
 // */
 
-//~ /* iterating
+/* iterating
 
 void printIT(int ri) {
 	print("iterator {%d}\n", int64(ri));
@@ -446,7 +412,6 @@ void printIT(int ri) {
 //~ /+
 struct array_iterator {
 	int pos;
-	//~ int max;
 	int arr[];
 }
 
@@ -455,9 +420,9 @@ array_iterator iterator1(int a[]) {
 }
 define iterator(int a[]) = array_iterator(0, a);
 
-
 bool next(array_iterator &it, int &val) {
-	if (result = it.pos < it.arr.length) {
+	result = it.pos < it.arr.length;
+	if (result) {
 		//~ val = it.arr[it.pos];
 		val = it.pos;
 		it.pos += 1;
@@ -534,19 +499,22 @@ for (range_iterator it = iterator(range(10, 13, true)); next(it, it); ) {
 //~ +/
 
 //~ */
-//~ main.exe -C -O-2 -sf0 -o ss1.cxx -xd test.cvx
-//~ double val = 9;//emit(float64, i64(0x7ff8000000000000));
-//~ print("0b%064B\n", val);
-//~ print("0x%016X\n", val);
-
-//~ println(int64(val));
-//~ println(float64(val));
-//~ double f64_nan = emit(float64, i64(0b0111111111111000000000000000000000000000000000000000000000000000));
-//~ double f64_inf = emit(float64, i64(0b0111111111110000000000000000000000000000000000000000000000000000));
-//~ double f64_one = emit(float64, i64(0b0011111111110000000000000000000000000000000000000000000000000000));
 
 /*
-/+struct vec4f {
+double val = 9;//emit(float64, i64(0x7ff8000000000000));
+print("0b%064B\n", val);
+print("0x%016X\n", val);
+
+println(int64(val));
+println(float64(val));
+double f64_nan = emit(float64, i64(0b0111111111111000000000000000000000000000000000000000000000000000));
+double f64_inf = emit(float64, i64(0b0111111111110000000000000000000000000000000000000000000000000000));
+double f64_one = emit(float64, i64(0b0011111111110000000000000000000000000000000000000000000000000000));
+//~ */
+
+/* enumeration
+/+
+struct vec4f {
 	float32 x;
 	float32 y;
 	float32 z;
@@ -562,18 +530,16 @@ enum: vec4f {
 
 vec4f z = Z;
 // */
-/+ const parameter
+/+ const variable, parameter, member
 int a(const int x) {
-	int &X = x;
+	int &X = x;		// todo: constant asigned to non constant
 	X = 0;
 	result = x;
 }
 
 int x = a(4);
 
-
 const vec4f Z = vec4f(0, 0, 1, 0);
-//~ pointer cls = Z.class;
 //~ +/
 
 /*
@@ -592,24 +558,31 @@ struct individual {
 struct population {
 	double min;
 	double max;
-	individual ind[3];
+	individual ind[1000];
 }
-/+
-int fitness(individual &ind) {
-	ind.objectives[0]= -pi1M(xbin[0],xbin[1]);
-	ind.objectives[1]= -pi2M(xbin[0],xbin[1]); 
 
+//~ /+
+define pi1M(double x, double y) = (x + y);
+define pi2M(double x, double y) = (x + y);
+
+int fitness(individual &ind) {
+	ind.objectives[0]= -pi1M(ind.xbin[0], ind.xbin[1]);
+	ind.objectives[1]= -pi2M(ind.xbin[0], ind.xbin[1]); 
 }
 
 // +/
+//~ double size = 88006400 / double(1 << 20);
+static population pop[3000];
 
-population pop;
 
 //~ */
 
+//~ int n = sizeof(Math);
+
 /+ bugs:
-int s = sizeof(pointer);		// pointer casts to ref
-int s = sizeof(Math);			// enum base type is not typename
+int s1 = sizeof(pointer);		// pointer casts to ref
+int s2 = sizeof(Math);			// enum base type is not typename
+//~ arrays in structures suck
 // +/
 /+ todo:
 - var type: variant, always by ref, struct variant {typename type; uint8 data[0]};
@@ -625,7 +598,49 @@ int s = sizeof(Math);			// enum base type is not typename
  		};
 		f: function()
 	};
+
+	//~ sort_function(int array[0, 3, 4, 2, 5, 1], int function(int a, int b){return a.compareTo(b);})
+	//~ sort_delegate(int array[0, 3, 4, 2, 5, 1], int delegate{int xxx}(int a, int b){return a == b ? 0 : a > b ? 1 : -1;});
+
 // +/
+
+/* optimizing stackalloc
+	// spc -24
+		spc -16
+		spc -8
+
+{
+	int a[1<<10];
+	{
+		int a[1<<10];
+		{
+			int a[1<<10];
+			{
+				int a[1<<20];
+				{
+					int a[1<<10];
+					{
+						int a[1<<10];
+						a[0] = 9;
+					}
+					a[0] = 9;
+				}
+				a[0] = 9;
+			}
+			a[0] = 9;
+		}
+		a[0] = 9;
+	}
+}*/
+
+/+Optimize
+	// remove dup.x1 sp(0) and spc -4
+		ldc.ref 5ee1
+		dup.x1 sp(0)
+		libc: define print( &val)
+		spc -4
+
+//~ +/
 /+class string: char[] {
 	static format(string format, var args) {}
 	struct Builder {

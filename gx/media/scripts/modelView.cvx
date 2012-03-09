@@ -35,8 +35,8 @@ void mouseHandler(int btn, int x, int y) {
 	define rotateSpeed = moveSpeed * Math.pi / 180.;
 	define rotateSpeed2 = 10 * rotateSpeed;
 
-	if (dblClick(btn, x, y)) {
-		dblClick(-1, 0, 0);
+	if (Mouse.dblClick(btn, x, y)) {
+		Mouse.dblClick(-1, 0, 0);
 		camera.LookAt(
 			eyePos,		// eye
 			vec4f(0., 0., 0.),		// target
@@ -58,6 +58,7 @@ void mouseHandler(int btn, int x, int y) {
 		// if no orbit is given, orbit will be the camera position.
 		//~ static vec4f orbit = camera.Pos;
 		if (selection.object) {
+			println("selection.object");
 			selection.Rotate(dx * rotateSpeed, dy * rotateSpeed);
 		}
 		else {
@@ -83,8 +84,13 @@ void mouseHandler(int btn, int x, int y) {
 }
 
 mesh.Read(args[1], texture);
-//~ mesh.Normalize(0);
+
+if (!mesh.hasNormals) {
+	mesh.Normalize(0);
+}
+
 mesh.Center(objSize);
+
 mesh.Info();
 
 //~ mesh.Save("mesh.obj");

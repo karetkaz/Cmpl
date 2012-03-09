@@ -1,7 +1,8 @@
 #include "g2_argb.h"
 #include "g2_surf.h"
-#include "image.i"
 #include "math.h"
+
+#include "image.inl"
 
 void g2_drawline(gx_Surf surf, int x0, int y0, int x1, int y1, long col) {
 	//~ TODO : replace Bresenham with DDA, resolve clipping 

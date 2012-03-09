@@ -1,13 +1,14 @@
 // effects
-define test = 3;
+define test = 4;
 enum Window {
-	//~ draw = RenderMode.swap_buff;
+	draw = RenderMode.swap_buff;
 	resx = 512;
 	resy = 512;
 }
 
-string fileName = "media/images/lenaRGB.png";
-//~ string fileName = "media/images/download.jpg";
+//~ string fileName = "media/images/David.png";
+//~ string fileName = "media/images/lenaRGB.png";
+string fileName = "media/images/download.jpg";
 //~ string fileName = "media/images/Earth.jpg";
 //~ string fileName = "media/images/nol.bmp";
 
@@ -20,7 +21,7 @@ void setupPicView(gxSurf vImg, bool vFit) {
 	static bool clear = false;
 	static bool fit = false;
 
-	define inertial_pan = 25;
+	define inertial_pan = 25.;
 	define inertial_speed = 1.09;
 
 	static int64 inertial_time = 0;
@@ -68,8 +69,8 @@ void setupPicView(gxSurf vImg, bool vFit) {
 		static int oy = 0;
 		static int ob = 0;
 
-		if (dblClick(btn, x, y)) {
-			dblClick(-1, 0, 0);		// prevent multi clicks
+		if (Mouse.dblClick(btn, x, y)) {
+			Mouse.dblClick(-1, 0, 0);		// prevent multi clicks
 			fit = !fit;
 			reDraw = true;
 		}
@@ -100,7 +101,7 @@ void setupPicView(gxSurf vImg, bool vFit) {
 					ooy = y;
 				}
 			}
-		}// */
+		}
 
 		ox = x;
 		oy = y;
@@ -144,13 +145,17 @@ gxSurf dither(gxSurf img, bool grayscale, uint32 colors, Dithering method) {
 
 	int width = width(img);
 	int height = height(img);
+
+	define toRgb(int r, int g, int b) = rgbClamp(r, g, b);
+	define toGtay(int col) = grayClamp(col);
+
 	if (method == Dithering.None) {
 		if (grayscale) {
 			for (int y = 0; y < height; y += 1) {
 				for (int x = 0; x < width; x += 1) {
 					int col = getPixel(img, x, y);
 					int gray = cols[(lum(col) * colors / 256) % colors];
-					setPixel(img, x, y, __gray(gray));
+					setPixel(img, x, y, toGtay(gray));
 				}
 			}
 		}
@@ -161,7 +166,7 @@ gxSurf dither(gxSurf img, bool grayscale, uint32 colors, Dithering method) {
 					int colr = cols[(rch(col) * colors / 256) % colors];
 					int colg = cols[(gch(col) * colors / 256) % colors];
 					int colb = cols[(bch(col) * colors / 256) % colors];
-					setPixel(img, x, y, __rgb(colr, colg, colb));
+					setPixel(img, x, y, toRgb(colr, colg, colb));
 				}
 			}
 		}
@@ -185,9 +190,9 @@ gxSurf dither(gxSurf img, bool grayscale, uint32 colors, Dithering method) {
 					int gray = cols[(lum(col) * colors / 256) % colors];
 
 					int quant_error = lum(col) - gray;
-					define rgbError(int ^col, int ^s) = __gray(lum(col) + s * quant_error / 8);
+					define rgbError(int ^col, int ^s) = toGtay(lum(col) + s * quant_error / 8);
 
-					setPixel(img, x, y, __gray(gray));
+					setPixel(img, x, y, toGtay(gray));
 					setPixel(img, x + 1, y + 0, rgbError(getPixel(img, x + 1, y + 0), 3));
 					setPixel(img, x + 0, y + 1, rgbError(getPixel(img, x + 1, y + 1), 3));
 					setPixel(img, x + 1, y + 1, rgbError(getPixel(img, x + 1, y + 1), 2));
@@ -206,13 +211,13 @@ gxSurf dither(gxSurf img, bool grayscale, uint32 colors, Dithering method) {
 					int quant_error_g = gch(col) - colg;
 					int quant_error_b = bch(col) - colb;
 
-					define rgbError(int ^col, int ^s) = rgb(
+					define rgbError(int ^col, int ^s) = toRgb(
 						rch(col) + s * quant_error_r / 8,
 						gch(col) + s * quant_error_g / 8,
 						bch(col) + s * quant_error_b / 8
 					);
 
-					setPixel(img, x, y, rgb(colr, colg, colb));
+					setPixel(img, x, y, toRgb(colr, colg, colb));
 					setPixel(img, x + 1, y + 0, rgbError(getPixel(img, x + 1, y + 0), 3));
 					setPixel(img, x + 0, y + 1, rgbError(getPixel(img, x + 0, y + 1), 3));
 					setPixel(img, x + 1, y + 1, rgbError(getPixel(img, x + 1, y + 1), 2));
@@ -234,9 +239,9 @@ gxSurf dither(gxSurf img, bool grayscale, uint32 colors, Dithering method) {
 					int gray = cols[(lum(col) * colors / 256) % colors];
 
 					int quant_error = lum(col) - gray;
-					define rgbError(int ^col, int ^s) = __gray(lum(col) + s * quant_error / 16);
+					define rgbError(int col, int s) = toGtay(lum(col) + s * quant_error / 16);
 
-					setPixel(img, x, y, __gray(gray));
+					setPixel(img, x, y, toGtay(gray));
 					setPixel(img, x + 1, y + 0, rgbError(getPixel(img, x + 1, y + 0), 7));
 					setPixel(img, x - 1, y + 1, rgbError(getPixel(img, x - 1, y + 1), 3));
 					setPixel(img, x + 0, y + 1, rgbError(getPixel(img, x + 0, y + 1), 5));
@@ -256,13 +261,13 @@ gxSurf dither(gxSurf img, bool grayscale, uint32 colors, Dithering method) {
 					int quant_error_g = gch(col) - colg;
 					int quant_error_b = bch(col) - colb;
 
-					define rgbError(int ^col, int ^s) = __rgb(
+					define rgbError(int col, int s) = toRgb(
 						rch(col) + s * quant_error_r / 16,
 						gch(col) + s * quant_error_g / 16,
 						bch(col) + s * quant_error_b / 16
 					);
 
-					setPixel(img, x, y, __rgb(colr, colg, colb));
+					setPixel(img, x, y, toRgb(colr, colg, colb));
 					setPixel(img, x + 1, y + 0, rgbError(getPixel(img, x + 1, y + 0), 7));
 					setPixel(img, x - 1, y + 1, rgbError(getPixel(img, x - 1, y + 1), 3));
 					setPixel(img, x + 0, y + 1, rgbError(getPixel(img, x + 0, y + 1), 5));
@@ -285,9 +290,9 @@ gxSurf dither(gxSurf img, bool grayscale, uint32 colors, Dithering method) {
 					int gray = cols[(lum(col) * colors / 256) % colors];
 
 					int quant_error = lum(col) - gray;
-					define rgbError(int col, int s) = __gray(lum(col) + s * quant_error / 42);
+					define rgbError(int col, int s) = toGtay(lum(col) + s * quant_error / 42);
 
-					setPixel(img, x, y, __gray(gray));
+					setPixel(img, x, y, toGtay(gray));
 					setPixel(img, x + 1, y + 0, rgbError(getPixel(img, x + 1, y + 0), 8));
 					setPixel(img, x + 2, y + 0, rgbError(getPixel(img, x + 2, y + 0), 4));
 					setPixel(img, x - 2, y + 1, rgbError(getPixel(img, x - 2, y + 1), 2));
@@ -301,7 +306,7 @@ gxSurf dither(gxSurf img, bool grayscale, uint32 colors, Dithering method) {
 					setPixel(img, x + 1, y + 2, rgbError(getPixel(img, x + 1, y + 2), 2));
 					setPixel(img, x + 2, y + 2, rgbError(getPixel(img, x + 2, y + 2), 1));
 				}
-			}
+			}// */
 		}
 		else {
 			for(int y = 0; y < height; y += 1) {
@@ -315,13 +320,13 @@ gxSurf dither(gxSurf img, bool grayscale, uint32 colors, Dithering method) {
 					int quant_error_g = gch(col) - colg;
 					int quant_error_b = bch(col) - colb;
 
-					define rgbError(int ^col, int ^s) = __rgb(
+					define rgbError(int ^col, int ^s) = toRgb(
 						rch(col) + s * quant_error_r / 42,
 						gch(col) + s * quant_error_g / 42,
 						bch(col) + s * quant_error_b / 42
 					);
 
-					setPixel(img, x, y, __rgb(colr, colg, colb));
+					setPixel(img, x, y, toRgb(colr, colg, colb));
 					setPixel(img, x + 1, y + 0, rgbError(getPixel(img, x + 1, y + 0), 8));
 					setPixel(img, x + 2, y + 0, rgbError(getPixel(img, x + 2, y + 0), 4));
 					setPixel(img, x - 2, y + 1, rgbError(getPixel(img, x - 2, y + 1), 2));
@@ -340,7 +345,7 @@ gxSurf dither(gxSurf img, bool grayscale, uint32 colors, Dithering method) {
 		result = img;
 	}
 	else if (method == Dithering.Bayer) {
-		static const int8 Pattern[8, 8] =
+		static const int8 Pattern[8][8] =
 			 0,32, 8,40, 2,34,10,42,
 			48,16,56,24,50,18,58,26,
 			12,44, 4,36,14,46, 6,38,
@@ -508,6 +513,7 @@ gxSurf image2 = resize(gxSurf(fileBlend), Window.resx, Window.resy);
 //~ gxSurf image1 = gradSurf(gxSurf(Window.resx, Window.resy), &g1, &lut1, Gradient.Linear);
 //~ gxSurf image2 = gradSurf(gxSurf(Window.resx, Window.resy), &g2, &lut2, Gradient.Linear);
 
+static struct BlendMode {
 /*Blend Modes:
 
 #define BlendLinearDodgef 			BlendAddf
@@ -561,125 +567,125 @@ gxSurf image2 = resize(gxSurf(fileBlend), Window.resx, Window.resy);
 
 // */
 
-define BlendLinearDodgef(float32 ^base, float32 ^blend) = min(base + blend, float32(1));
-define BlendLinearBurnf(float32 ^base, float32 ^blend) = max(base + blend - 1, float32(0));
+	define BlendLinearDodgef(float32 ^base, float32 ^blend) = min(base + blend, float32(1));
+	define BlendLinearBurnf(float32 ^base, float32 ^blend) = max(base + blend - 1, float32(0));
 
-define BlendColorDodgef(float32 ^base, float32 ^blend) = (blend == 1 ? blend : min(base / (1 - blend), float32(1)));
-define BlendColorBurnf(float32 ^base, float32 ^blend) = (blend == 0 ? blend : max((1 - ((1 - base) / blend)), float32(0)));
+	define BlendColorDodgef(float32 ^base, float32 ^blend) = (blend == 1 ? blend : min(base / (1 - blend), float32(1)));
+	define BlendColorBurnf(float32 ^base, float32 ^blend) = (blend == 0 ? blend : max((1 - ((1 - base) / blend)), float32(0)));
 
-vec4f rgbOpDarken(vec4f Base, vec4f Blend) {
-	result = min(Base, Blend);
-}
-vec4f rgbOpLighten(vec4f Base, vec4f Blend) {
-	result = max(Base, Blend);
-}
+	vec4f Darken(vec4f Base, vec4f Blend) {
+		result = min(Base, Blend);
+	}
+	vec4f Lighten(vec4f Base, vec4f Blend) {
+		result = max(Base, Blend);
+	}
 
-vec4f rgbOpAddition(vec4f Base, vec4f Blend) {
-	result = add(Base, Blend);
-}
-vec4f rgbOpSubtract(vec4f Base, vec4f Blend) {
-	result = sub(Base, Blend);
-}
-vec4f rgbOpMultiply(vec4f Base, vec4f Blend) {
-	result = mul(Base, Blend);
-}
-vec4f rgbOpDivide(vec4f Base, vec4f Blend) {
-	result = div(Base, Blend);
-}
-vec4f rgbOpDifference(vec4f Base, vec4f Blend) {
-	//~ result = sub(Base, Blend);
-	//~ result.x = abs(result.x);
-	//~ result.y = abs(result.y);
-	//~ result.z = abs(result.z);
-	//~ result.w = abs(result.w);
-	define OP(float32 ^Base, float32 ^Blend) = abs(Base - Blend);
-	result = vec4f(OP(Base.x, Blend.x), OP(Base.y, Blend.y), OP(Base.z, Blend.z), OP(Base.w, Blend.w));
-}
+	vec4f Addition(vec4f Base, vec4f Blend) {
+		result = add(Base, Blend);
+	}
+	vec4f Subtract(vec4f Base, vec4f Blend) {
+		result = sub(Base, Blend);
+	}
+	vec4f Multiply(vec4f Base, vec4f Blend) {
+		result = mul(Base, Blend);
+	}
+	vec4f Divide(vec4f Base, vec4f Blend) {
+		result = div(Base, Blend);
+	}
+	vec4f Difference(vec4f Base, vec4f Blend) {
+		//~ result = sub(Base, Blend);
+		//~ result.x = abs(result.x);
+		//~ result.y = abs(result.y);
+		//~ result.z = abs(result.z);
+		//~ result.w = abs(result.w);
+		define OP(float32 ^Base, float32 ^Blend) = abs(Base - Blend);
+		result = vec4f(OP(Base.x, Blend.x), OP(Base.y, Blend.y), OP(Base.z, Blend.z), OP(Base.w, Blend.w));
+	}
 
-vec4f rgbOpColorBurn(vec4f Base, vec4f Blend) {		// K(B, A)
-	//~ result = sub(1, div(sub(1, Base), Blend));
-	define OP(float32 ^Base, float32 ^Blend) = BlendColorBurnf(Base, Blend);
-	result = vec4f(OP(Base.x, Blend.x), OP(Base.y, Blend.y), OP(Base.z, Blend.z), OP(Base.w, Blend.w));
-}
-vec4f rgbOpLinearBurn(vec4f Base, vec4f Blend) {	// K(B, A)
-	result = sub(add(Base, Blend), 1);
-}
-vec4f rgbOpColorDodge(vec4f Base, vec4f Blend) {	// K(B, A)
-	result = div(Base, sub(1, Blend));
-}
-vec4f rgbOpLinearDodge(vec4f Base, vec4f Blend) {	// K(B, A)
-	result = add(Base, Blend);
-}
+	vec4f ColorBurn(vec4f Base, vec4f Blend) {		// K(B, A)
+		//~ result = sub(1, div(sub(1, Base), Blend));
+		define OP(float32 ^Base, float32 ^Blend) = BlendColorBurnf(Base, Blend);
+		result = vec4f(OP(Base.x, Blend.x), OP(Base.y, Blend.y), OP(Base.z, Blend.z), OP(Base.w, Blend.w));
+	}
+	vec4f LinearBurn(vec4f Base, vec4f Blend) {	// K(B, A)
+		result = sub(add(Base, Blend), 1);
+	}
+	vec4f ColorDodge(vec4f Base, vec4f Blend) {	// K(B, A)
+		result = div(Base, sub(1, Blend));
+	}
+	vec4f LinearDodge(vec4f Base, vec4f Blend) {	// K(B, A)
+		result = add(Base, Blend);
+	}
 
-vec4f rgbOpScreen(vec4f Base, vec4f Blend) {		// K(B, A)
-	result = sub(1, mul(sub(1, Base), sub(1, Blend)));
-}
-vec4f rgbOpOverlay(vec4f Base, vec4f Blend) {		// K(B, A)
-	//~ define OP(float32 ^Base, float32 ^Blend) = BlendOverlayf(Base, Blend);
-	define OP(float32 ^Base, float32 ^Blend) = (
-		Base < float32(.5)
-			? (2 * Base * Blend) 
-			: (1 - 2 * (1 - Base) * (1 - Blend))
-	);
-	result = vec4f(OP(Base.x, Blend.x), OP(Base.y, Blend.y), OP(Base.z, Blend.z), OP(Base.w, Blend.w));
-}
-vec4f rgbOpSoftLight(vec4f Base, vec4f Blend) {		// K(B, A)
-	//~ define OP(float32 ^Base, float32 ^Blend) = BlendSoftLightf(Base, Blend);
-	define OP(float32 ^Base, float32 ^Blend) = (
-		Blend < float32(.5)
-			? (2 * Base * Blend + Base * Base * (1 - 2 * Blend))
-			: (sqrt(Base) * (2 * Blend - 1) + 2 * Base * (1 - Blend))
-	);
-	result = vec4f(OP(Base.x, Blend.x), OP(Base.y, Blend.y), OP(Base.z, Blend.z), OP(Base.w, Blend.w));
-}
-vec4f rgbOpHardLight(vec4f Base, vec4f Blend) {		// K(B, A)
-	define OP(float32 ^Base, float32 ^Blend) = float32(
-		Blend <= float32(.5)
-			? (Base * (2 * Blend))
-			: (1 - (1 - Base) * (1 - 2 * (Blend - float32(.5))))
-	);
-	result = vec4f(OP(Base.x, Blend.x), OP(Base.y, Blend.y), OP(Base.z, Blend.z), OP(Base.w, Blend.w));
-}
-vec4f rgbOpVividLight(vec4f Base, vec4f Blend) {	// K(B, A)
-	define OP(float32 ^base, float32 ^blend) = (
-		(blend < 0.5) 
-			? BlendColorBurnf(base, (2.0 * blend)) 
-			: BlendColorDodgef(base, (2.0 * (blend - 0.5)))
-	);
+	vec4f Screen(vec4f Base, vec4f Blend) {		// K(B, A)
+		result = sub(1, mul(sub(1, Base), sub(1, Blend)));
+	}
+	vec4f Overlay(vec4f Base, vec4f Blend) {		// K(B, A)
+		//~ define OP(float32 ^Base, float32 ^Blend) = BlendOverlayf(Base, Blend);
+		define OP(float32 ^Base, float32 ^Blend) = (
+			Base < float32(.5)
+				? (2 * Base * Blend) 
+				: (1 - 2 * (1 - Base) * (1 - Blend))
+		);
+		result = vec4f(OP(Base.x, Blend.x), OP(Base.y, Blend.y), OP(Base.z, Blend.z), OP(Base.w, Blend.w));
+	}
+	vec4f SoftLight(vec4f Base, vec4f Blend) {		// K(B, A)
+		//~ define OP(float32 ^Base, float32 ^Blend) = BlendSoftLightf(Base, Blend);
+		define OP(float32 ^Base, float32 ^Blend) = (
+			Blend < float32(.5)
+				? (2 * Base * Blend + Base * Base * (1 - 2 * Blend))
+				: (sqrt(Base) * (2 * Blend - 1) + 2 * Base * (1 - Blend))
+		);
+		result = vec4f(OP(Base.x, Blend.x), OP(Base.y, Blend.y), OP(Base.z, Blend.z), OP(Base.w, Blend.w));
+	}
+	vec4f HardLight(vec4f Base, vec4f Blend) {		// K(B, A)
+		define OP(float32 ^Base, float32 ^Blend) = float32(
+			Blend <= float32(.5)
+				? (Base * (2 * Blend))
+				: (1 - (1 - Base) * (1 - 2 * (Blend - float32(.5))))
+		);
+		result = vec4f(OP(Base.x, Blend.x), OP(Base.y, Blend.y), OP(Base.z, Blend.z), OP(Base.w, Blend.w));
+	}
+	vec4f VividLight(vec4f Base, vec4f Blend) {	// K(B, A)
+		define OP(float32 ^base, float32 ^blend) = (
+			(blend < 0.5) 
+				? BlendColorBurnf(base, (2.0 * blend)) 
+				: BlendColorDodgef(base, (2.0 * (blend - 0.5)))
+		);
 
-	result = vec4f(OP(Base.x, Blend.x), OP(Base.y, Blend.y), OP(Base.z, Blend.z), OP(Base.w, Blend.w));
-}
-vec4f rgbOpLinearLight(vec4f Base, vec4f Blend) {
-	//~ define OP(float32 ^Base, float32 ^Blend) = BlendLinearLightf(Base, Blend);
-	define OP(float32 ^Base, float32 ^Blend) = (
-		Blend < float32(.5)
-			? BlendLinearBurnf(Base, (2 * Blend))
-			: BlendLinearDodgef(Base, (2 * (Blend - float32(.5))))
-	);
-	result = vec4f(OP(Base.x, Blend.x), OP(Base.y, Blend.y), OP(Base.z, Blend.z), OP(Base.w, Blend.w));
-}
-vec4f rgbOpPinLight(vec4f Base, vec4f Blend) {		// K(B, A)
-	//~ define OP(float32 ^Base, float32 ^Blend) = BlendPinLightf(Base, Blend);
-	define OP(float32 ^Base, float32 ^Blend) = (
-		Blend < float32(.5)
-			? min(Base, 2 * Blend)
-			: max(Base, 2 *(Blend - float32(0.5)))
-	);
-	result = vec4f(OP(Base.x, Blend.x), OP(Base.y, Blend.y), OP(Base.z, Blend.z), OP(Base.w, Blend.w));
-}
-vec4f rgbOpExclusion(vec4f Base, vec4f Blend) {		// K(B, A)
-	//~ result = sub(.5, mul(mul(2, sub(Base, .5)), sub(Blend, .5)));
-	define OP(float32 ^Base, float32 ^Blend) = (float32(.5) - 2*(Base-float32(.5))*(Blend-float32(.5)));
-	result = vec4f(OP(Base.x, Blend.x), OP(Base.y, Blend.y), OP(Base.z, Blend.z), OP(Base.w, Blend.w));
+		result = vec4f(OP(Base.x, Blend.x), OP(Base.y, Blend.y), OP(Base.z, Blend.z), OP(Base.w, Blend.w));
+	}
+	vec4f LinearLight(vec4f Base, vec4f Blend) {
+		//~ define OP(float32 ^Base, float32 ^Blend) = BlendLinearLightf(Base, Blend);
+		define OP(float32 ^Base, float32 ^Blend) = (
+			Blend < float32(.5)
+				? BlendLinearBurnf(Base, (2 * Blend))
+				: BlendLinearDodgef(Base, (2 * (Blend - float32(.5))))
+		);
+		result = vec4f(OP(Base.x, Blend.x), OP(Base.y, Blend.y), OP(Base.z, Blend.z), OP(Base.w, Blend.w));
+	}
+	vec4f PinLight(vec4f Base, vec4f Blend) {		// K(B, A)
+		//~ define OP(float32 ^Base, float32 ^Blend) = BlendPinLightf(Base, Blend);
+		define OP(float32 ^Base, float32 ^Blend) = (
+			Blend < float32(.5)
+				? min(Base, 2 * Blend)
+				: max(Base, 2 *(Blend - float32(0.5)))
+		);
+		result = vec4f(OP(Base.x, Blend.x), OP(Base.y, Blend.y), OP(Base.z, Blend.z), OP(Base.w, Blend.w));
+	}
+	vec4f Exclusion(vec4f Base, vec4f Blend) {		// K(B, A)
+		//~ result = sub(.5, mul(mul(2, sub(Base, .5)), sub(Blend, .5)));
+		define OP(float32 ^Base, float32 ^Blend) = (float32(.5) - 2*(Base-float32(.5))*(Blend-float32(.5)));
+		result = vec4f(OP(Base.x, Blend.x), OP(Base.y, Blend.y), OP(Base.z, Blend.z), OP(Base.w, Blend.w));
+	}
 }
 
 copySurf(offScreen, 0, 0, image1, null);					// atmasoljuk siman a kepet
-copySurf(offScreen, 0, 0, image2, null, 1, rgbOpOverlay);		// atmasoljuk a fuggvenny segitsegevel a kepet
-//~ dither(offScreen,  true, 16, Dithering.None);
+copySurf(offScreen, 0, 0, image2, null, 1, BlendMode.VividLight);		// atmasoljuk a fuggvenny segitsegevel a kepet
 }
 static if (test == 3) {		// Dithering
 
-int colors = 16;
+int colors = 2;
 bool grayscale = true;
 Dithering method = Dithering.Stucki;
 
@@ -699,7 +705,7 @@ void drawCallback() {
 	copySurf(offScreen, 0, 0, image, null);
 }
 void mouseHandlerGradientDither(int btn, int x, int y) {
-	if (dblClick(btn, x, y)) {
+	if (Mouse.dblClick(btn, x, y)) {
 		static bool ditherIt = false;
 		gradSurf(image, null, &lut, Gradient.Linear);
 		if (ditherIt) {
@@ -722,7 +728,7 @@ gxSurf image = gxSurf(fileName);
 float intensity = .1;
 
 vec4f grayFp(vec4f rgbColor) {
-	static const vec4f RGB2LUM = vec4f(0.2989, 0.587, 0.114);
+	static const vec4f RGB2LUM = vec4f(0.2989, 0.587, 0.114, 0);
 	result = vec4f(dp3(RGB2LUM, rgbColor));
 	//~ result = vec4f(0.2989f * rgbColor.x + 0.5870f * rgbColor.y + 0.1140f * rgbColor.z);
 }
@@ -785,8 +791,8 @@ void mouseCB(int btn, int x, int y) {
 	static int ox;
 	static int oy;
 	int d = oy - y;
-	if (dblClick(btn, x, y)) {
-		dblClick(-1, 0, 0);			// disable multi clicks
+	if (Mouse.dblClick(btn, x, y)) {
+		Mouse.dblClick(-1, 0, 0);			// disable multi clicks
 		reDraw = true;
 		brightness = 0;
 		contrast = 0;
@@ -876,8 +882,8 @@ void mouseCB(int btn, int x, int y) {
 	static int ox;
 	static int oy;
 	int d = oy - y;
-	if (dblClick(btn, x, y)) {
-		dblClick(-1, 0, 0);			// disable multi clicks
+	if (Mouse.dblClick(btn, x, y)) {
+		Mouse.dblClick(-1, 0, 0);			// disable multi clicks
 		reDraw = true;
 		brightness = 0;
 		saturation = 0;
