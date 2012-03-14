@@ -1,7 +1,7 @@
 OUTOBJ=-o
 OUTEXE=-o
 CFLAGS=-Wall -Wpadded -g2 -ggdb
-CFLAGS=-g0 -O0
+#~ CFLAGS=-g0 -O0
 LIBS=-lm -ldl
 CCC=gcc -m32 -c
 LNK=gcc -m32
@@ -25,7 +25,7 @@ endif
 #~ LNK=tcc
 
 SRCDIR=./
-OBJDIR=./
+OBJDIR=../obj/
 BINDIR=../
 #~ OBJDIR=../Debug/src/
 #~ BINDIR=../Debug/

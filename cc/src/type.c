@@ -48,12 +48,12 @@ Basic types
 
 Derived data types:
 	slice: struct {const pointer data; const int length;}
-	[TODO] variant: struct &variant {const typename type; const void data[0];}
+	[TODO] variant: struct &variant {const typename type; const byte data[0];}
 	[TODO] delegate: struct {const pointer function; const pointer data;}
 
 User defined types:
 	pointers arrays and slices:
-		TODO:pointers are unsized
+		TODO: pointers are unsized
 			ex: int *a;
 			are passed by reference,
 		arrays are fixed-size:
@@ -77,7 +77,6 @@ User defined types:
 			define Complex(variant var) = emit(Complex&, byRef(var.type == Complex ? &var.data : null));
 
 	function
-
 
 TODO's:
 	struct initialization:
@@ -196,21 +195,6 @@ symn installtyp(state rt, const char* name, unsigned size, int refType) {
 	
 }*/
 
-
-void extend(symn type, symn args) {
-	symn arg = type->args;
-
-	// go to last arg
-	while (arg && arg->next) {
-		arg = arg->next;
-	}
-	if (arg == NULL) {		// first member
-		arg->next = args;
-	}
-	else {
-		type->args = args;
-	}
-}
 symn addarg(ccState s, symn sym, const char* name, int kind, symn typ, astn init) {
 	symn args = sym->args;
 
@@ -231,16 +215,20 @@ symn addarg(ccState s, symn sym, const char* name, int kind, symn typ, astn init
 // promote
 static inline int castkind(int cast) {
 	switch (cast) {
-		case TYPE_vid: return TYPE_vid;
-		case TYPE_bit: return TYPE_bit;
+		case TYPE_vid:
+			return TYPE_vid;
+		case TYPE_bit:
+			return TYPE_bit;
 		case TYPE_u32:
 		case TYPE_i32:
-		case TYPE_i64: return TYPE_int;
+		case TYPE_i64:
+			return TYPE_int;
 		case TYPE_f32:
-		case TYPE_f64: return TYPE_flt;
-		case TYPE_ref: return TYPE_ref;
+		case TYPE_f64:
+			return TYPE_flt;
+		case TYPE_ref:
+			return TYPE_ref;
 	}
-	//~ debug("failed: %t", cast);
 	return 0;
 }
 static symn promote(symn lht, symn rht) {
@@ -306,7 +294,7 @@ int canAssign(symn var, astn val, int strict) {
 	if (lnk && lnk->kind == TYPE_rec) {
 		if (var->type == val->type->type)
 			return 1;
-	}// */
+	}
 
 	if (var->kind == TYPE_ref) {
 
@@ -364,8 +352,8 @@ int canAssign(symn var, astn val, int strict) {
 		atag.kind = TYPE_ref;
 		atag.type = vty ? vty->type : NULL;
 		atag.cst2 = atag.type ? atag.type->cast : 0;
-		atag.ref.link = NULL;//val->type;
-		atag.ref.name = "generated token";//val->type;
+		atag.ref.link = NULL;
+		atag.ref.name = ".generated token";
 
 		if (canAssign(typ->type, &atag, strict)) {
 			// assign to dynamic array
@@ -397,6 +385,7 @@ int canAssign(symn var, astn val, int strict) {
 			}
 		}
 	}
+
 	trace("can not assign `%k` to `%-T`(%t)", val, var, typ->cast);
 	return 0;
 }
@@ -448,7 +437,6 @@ symn lookup(ccState s, symn sym, astn ref, astn args, int raise) {
 		}
 
 		if (args) {
-
 			if (!sym->call) {
 				TODO("enable basic type casts: float32(1)")
 				int isBasicCast = 0;
@@ -479,8 +467,6 @@ symn lookup(ccState s, symn sym, astn ref, astn args, int raise) {
 					}
 				}
 
-				//~ debug("%+k(%k) is probably cast(%d):%T", ref, args, isBasicCast, sym2);
-
 				if (!isBasicCast)
 					continue;
 			}
@@ -498,7 +484,6 @@ symn lookup(ccState s, symn sym, astn ref, astn args, int raise) {
 				}
 
 				else if (!canAssign(argsym, argval, 1)) {
-				//~ else if (!argsym->type != argval->type) {
 					hascast += 1;
 				}
 
@@ -517,7 +502,6 @@ symn lookup(ccState s, symn sym, astn ref, astn args, int raise) {
 		dieif(s->func && s->func->nest != s->maxlevel - 1, "FIXME %d, %d", s->func->nest, s->maxlevel);
 		if (s->func && !s->siff && s->func->gdef && sym->nest && !sym->stat && sym->nest < s->maxlevel) {
 			error(s->s, ref->file, ref->line, "invalid use of local symbol `%k`.", ref);
-			//~ continue;
 		}
 
 		// rerfect match
@@ -563,7 +547,7 @@ symn declare(ccState s, int kind, astn tag, symn typ) {
 	symn def;
 
 	if (!tag || tag->kind != TYPE_ref) {
-		debug("declare: astn('%k') is null or not an identifyer", tag);
+		trace("declare: astn('%k') is null or not an identifyer", tag);
 		return 0;
 	}
 
@@ -626,7 +610,7 @@ int istype(astn ast) {
 	if (ast->kind == TYPE_ref)
 		return isType(ast->ref.link);
 
-	//~ debug("%t(%+k):(%d)", ast->kind, ast, ast->line);
+	//~ trace("%t(%+k):(%d)", ast->kind, ast, ast->line);
 	return 0;
 }
 
@@ -661,7 +645,8 @@ symn linkOf(astn ast) {
 TODO("this should be calculated by fixargs() and replaced by (var|typ)->size")
 long sizeOf(symn typ) {
 	if (typ) switch (typ->kind) {
-		default:break;
+		default:
+			break;
 		//~ case TYPE_vid:
 		//~ case TYPE_bit:
 		//~ case TYPE_int:
@@ -675,12 +660,12 @@ long sizeOf(symn typ) {
 		case EMIT_opc:
 		case TYPE_rec:
 			if (typ->cast == TYPE_ref)
-				return 4;
+				return vm_size;
 			return typ->size;
 		case TYPE_def:
 		case TYPE_ref:
 			if (typ->cast == TYPE_ref)
-				return 4;
+				return vm_size;
 			return sizeOf(typ->type);
 	}
 	fatal("failed(%t): %-T", typ ? typ->kind : 0, typ);
@@ -1364,11 +1349,11 @@ int fixargs(symn sym, int align, int stbeg) {
 		if (isCall && arg->type->kind == TYPE_arr) {
 			if (arg->type->size < 0) {		//~ dinamic size arrays are passed by pointer+length
 				arg->cast = TYPE_arr;
-				arg->size = 8;
+				arg->size = 2 * vm_size;
 			}
 			else {							//~ static size arrays are passed as pointer
 				arg->cast = TYPE_ref;
-				arg->size = 4;
+				arg->size = vm_size;
 			}
 		}
 

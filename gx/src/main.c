@@ -991,21 +991,21 @@ static int surfGetPixel(state rt) {
 		int y = popi32(rt);
 		//~ /* but this way is faster
 		if ((unsigned)x >= (unsigned)surf->width || (unsigned)y >= (unsigned)surf->height) {
-			setret(rt, int32_t, 0);
+			reti32(rt, 0);
 			return 0;
 		}
 		rowy = y * surf->scanLen;
 		if (surf->depth == 32) {
 			uint32_t *ptr = (uint32_t*)((char*)surf->basePtr + rowy);
-			setret(rt, int32_t, ptr[x]);
+			reti32(rt, ptr[x]);
 			return 0;
 		}
 		else if (surf->depth == 8) {
 			uint8_t *ptr = (uint8_t*)((char*)surf->basePtr + rowy);
-			setret(rt, int32_t, ptr[x]);
+			reti32(rt, ptr[x]);
 			return 0;
 		}// */
-		//~ setret(rt, int32_t, gx_getpixel(surf, x, y));
+		//~ reti32(rt, gx_getpixel(surf, x, y));
 		//~ return 0;
 	}
 	return -1;
@@ -1015,7 +1015,7 @@ static int surfGetPixfp(state rt) {
 	if ((surf = getSurf(popi32(rt)))) {
 		double x = popf64(rt);
 		double y = popf64(rt);
-		setret(rt, int32_t, gx_getpix16(surf, x * 65535, y * 65535, 1));
+		reti32(rt, gx_getpix16(surf, x * 65535, y * 65535, 1));
 		return 0;
 	}
 	return -1;
@@ -1023,12 +1023,12 @@ static int surfGetPixfp(state rt) {
 static int surfCall(state rt) {
 	if (rt->libc == surfOpGetWidth) {
 		gx_Surf surf = getSurf(popi32(rt));
-		setret(rt, int32_t, surf->width);
+		reti32(rt, surf->width);
 		return 0;
 	}
 	if (rt->libc == surfOpGetHeight) {
 		gx_Surf surf = getSurf(popi32(rt));
-		setret(rt, int32_t, surf->height);
+		reti32(rt, surf->height);
 		return 0;
 	}
 
@@ -1037,7 +1037,7 @@ static int surfCall(state rt) {
 		gx_Rect rect = popref(rt);
 		if (surf) {
 			void *ptr = gx_cliprect(surf, rect);
-			setret(rt, int32_t, ptr != NULL);
+			reti32(rt, ptr != NULL);
 		}
 		return 0;
 	}
@@ -1047,7 +1047,7 @@ static int surfCall(state rt) {
 		if ((surf = getSurf(popi32(rt)))) {
 			double x = popf64(rt);
 			double y = popf64(rt);
-			setret(rt, int32_t, gx_getpix16(surf, x * 65535, y * 65535, 1));
+			reti32(rt, gx_getpix16(surf, x * 65535, y * 65535, 1));
 			return 0;
 		}
 	}
@@ -1056,22 +1056,22 @@ static int surfCall(state rt) {
 		if ((surf = getSurf(popi32(rt)))) {
 			int x = popi32(rt);
 			int y = popi32(rt);
-			//~ setret(rt, int32_t, gx_getpixel(surf, x, y));
+			//~ reti32(rt, gx_getpixel(surf, x, y));
 			//~ return 0;
 			/ * but this way is faster
 			if ((unsigned)x >= (unsigned)surf->width || (unsigned)y >= (unsigned)surf->height) {
-				setret(rt, int32_t, 0);
+				reti32(rt, 0);
 				return 0;
 			}
 			int rowy = y * surf->scanLen;
 			if (surf->depth == 32) {
 				uint32_t *ptr = (uint32_t*)((char*)surf->basePtr + rowy);
-				setret(rt, int32_t, ptr[x]);
+				reti32(rt, ptr[x]);
 				return 0;
 			}
 			else if (surf->depth == 8) {
 				uint8_t *ptr = (uint8_t*)((char*)surf->basePtr + rowy);
-				setret(rt, int32_t, ptr[x]);
+				reti32(rt, ptr[x]);
 				return 0;
 			}// * /
 		}
@@ -1189,7 +1189,7 @@ static int surfCall(state rt) {
 		if (sdst && ssrc) {
 			gx_copysurf(sdst, x, y, ssrc, roi, 0);
 		}
-		setret(rt, gxSurfHnd, dst);
+		reti32(rt, dst);
 		return 0;
 	}
 	if (rt->libc == surfOpZoomSurf) {		// int gx_zoomsurf(gx_Surf dst, gx_Rect rect, gx_Surf src, gx_Rect roi, int lin)
@@ -1205,7 +1205,7 @@ static int surfCall(state rt) {
 			gx_zoomsurf(sdst, rect, ssrc, roi, mode);
 		}
 		//~ else dst = 0;
-		setret(rt, gxSurfHnd, dst);
+		reti32(rt, dst);
 		return 0;
 	}
 
@@ -1243,7 +1243,7 @@ static int surfCall(state rt) {
 			rt->argv = argptr;
 		}
 
-		setret(rt, gxSurfHnd, dst);
+		reti32(rt, dst);
 		return 0;
 	}
 	if (rt->libc == surfOpFillPxCB) {		// gxSurf fillSurfrgb(gxSurf dst, gxRect &roi, int callBack(int col));
@@ -1275,7 +1275,7 @@ static int surfCall(state rt) {
 			rt->retv = retptr;
 			rt->argv = argptr;
 		}
-		setret(rt, gxSurfHnd, dst);
+		reti32(rt, dst);
 		return 0;
 	}
 	if (rt->libc == surfOpCopyPxCB) {		// gxSurf copySurfrgb(gxSurf dst, int x, int y, gxSurf src, gxRect &roi, int callBack(int dst, int src));
@@ -1344,7 +1344,7 @@ static int surfCall(state rt) {
 			}
 
 		}
-		setret(rt, gxSurfHnd, dst);
+		reti32(rt, dst);
 		return 0;
 	}
 
@@ -1376,13 +1376,13 @@ static int surfCall(state rt) {
 				for (x01 = sx = 0; sx < sdst->width; sx += 1, x01 += dx01) {
 					if (vmCall(rt, callback, x01, y01) != 0)
 						return -1;
-					cBuff[sx] = vecrgb(retptr(rt, union vector)).col;
+					cBuff[sx] = vecrgb((vector)setret(rt, NULL, 0)).col;
 				}
 			}
 			rt->retv = retptr;
 			rt->argv = argptr;
 		}
-		setret(rt, gxSurfHnd, dst);
+		reti32(rt, dst);
 		return 0;
 	}
 	if (rt->libc == surfOpFillFpCB) {		// gxSurf fillSurf(gxSurf dst, gxRect &roi, vec4f callBack(vec4f col));
@@ -1408,13 +1408,13 @@ static int surfCall(state rt) {
 				for (sx = 0; sx < sdst->width; sx += 1) {
 					if (vmCall(rt, callback, vecldc(rgbval(cBuff[sx]))) != 0)
 						return -1;
-					cBuff[sx] = vecrgb(retptr(rt, union vector)).col;
+					cBuff[sx] = vecrgb((vector)setret(rt, NULL, 0)).col;
 				}
 			}
 			rt->retv = retptr;
 			rt->argv = argptr;
 		}
-		setret(rt, gxSurfHnd, dst);
+		reti32(rt, dst);
 		return 0;
 	}
 	if (rt->libc == surfOpCopyFpCB) {		// gxSurf copySurf(gxSurf dst, int x, int y, gxSurf src, gxRect &roi, float64 alpha, vec4f callBack(vec4f dst, vec4f src));
@@ -1465,7 +1465,7 @@ static int surfCall(state rt) {
 						for (x = clip.x; x < x1; x += 1) {
 							if (vmCall(rt, callback, vecldc(rgbval(*cbdst)), vecldc(rgbval(*cbsrc))) != 0)
 								return -1;
-							*(argb*)cbdst = rgbmix16(*(argb*)cbdst, vecrgb(retptr(rt, union vector)), alpha16);
+							*(argb*)cbdst = rgbmix16(*(argb*)cbdst, vecrgb((vector)setret(rt, NULL, 0)), alpha16);
 							cbdst += 1;
 							cbsrc += 1;
 						}
@@ -1480,7 +1480,7 @@ static int surfCall(state rt) {
 						for (x = clip.x; x < x1; x += 1) {
 							if (vmCall(rt, callback, vecldc(rgbval(*cbdst)), vecldc(rgbval(*cbsrc))) != 0)
 								return -1;
-							*cbdst = vecrgb(retptr(rt, union vector)).col;
+							*cbdst = vecrgb((vector)setret(rt, NULL, 0)).col;
 							cbdst += 1;
 							cbsrc += 1;
 						}
@@ -1518,7 +1518,7 @@ static int surfCall(state rt) {
 			}
 
 		}
-		setret(rt, gxSurfHnd, dst);
+		reti32(rt, dst);
 		return 0;
 	}
 
@@ -1526,7 +1526,7 @@ static int surfCall(state rt) {
 		int w = popi32(rt);
 		int h = popi32(rt);
 		gxSurfHnd hnd = newSurf(w, h);
-		setret(rt, gxSurfHnd, hnd);
+		reti32(rt, hnd);
 		return 0;
 	}
 	if (rt->libc == surfOpDelSurf) {
@@ -1540,7 +1540,7 @@ static int surfCall(state rt) {
 		if ((surf = getSurf(dst))) {
 			char *fileName = popstr(rt);
 			int error = gx_loadBMP(surf, fileName, 32);
-			setret(rt, gxSurfHnd, dst);
+			reti32(rt, dst);
 			//~ debug("gx_readBMP(%s):%d;", fileName, error);
 			return error;
 		}
@@ -1551,7 +1551,7 @@ static int surfCall(state rt) {
 		if ((surf = getSurf(dst))) {
 			char *fileName = popstr(rt);
 			int error = gx_loadJPG(surf, fileName, 32);
-			setret(rt, gxSurfHnd, dst);
+			reti32(rt, dst);
 			//~ debug("readJpg(%s):%d;", fileName, error);
 			return error;
 		}
@@ -1562,7 +1562,7 @@ static int surfCall(state rt) {
 		if ((surf = getSurf(dst))) {
 			char *fileName = popstr(rt);
 			int result = gx_loadPNG(surf, fileName, 32);
-			setret(rt, gxSurfHnd, dst);
+			reti32(rt, dst);
 			//~ debug("gx_readPng(%s):%d;", fileName, result);
 			return result;
 		}
@@ -1584,7 +1584,7 @@ static int surfCall(state rt) {
 		if (sdst && lut) {
 			gx_clutsurf(sdst, roi, lut);
 		}
-		setret(rt, gxSurfHnd, dst);
+		reti32(rt, dst);
 		return 0;
 	}
 	if (rt->libc == surfOpCmatSurf) {		// gxSurf cmatSurf(gxSurf dst, gxRect &roi, mat4f &mat);
@@ -1631,7 +1631,7 @@ static int surfCall(state rt) {
 				dptr += sdst->scanLen;
 			}
 		}
-		setret(rt, gxSurfHnd, dst);
+		reti32(rt, dst);
 		return 0;
 	}
 	if (rt->libc == surfOpGradSurf) {		// gxSurf gradSurf(gxSurf dst, gxRect &roi, gxClut &lut, int mode)
@@ -1643,7 +1643,7 @@ static int surfCall(state rt) {
 
 		if (sdst) {
 			gx_gradsurf(sdst, roi, lut, mode);
-			setret(rt, gxSurfHnd, dst);
+			reti32(rt, dst);
 			return 0;
 		}
 	}
@@ -1657,7 +1657,7 @@ static int surfCall(state rt) {
 
 		if (sdst) {
 			gx_blursurf(sdst, roi, radius);
-			setret(rt, gxSurfHnd, dst);
+			reti32(rt, dst);
 			return 0;
 		}
 	}
@@ -1738,7 +1738,7 @@ static int meshCall(state rt) {
 		//~ addtri(&msh, p1, p2, p3);
 		//~ addtri(&msh, p3, p4, p1);
 		int res = addquad(&msh, p1, p2, p3, p4);
-		//~ setret(rt, int32_t, res);
+		//~ reti32(rt, res);
 		return 0;
 	}
 	//~ case meshOpSetSeg: {		// int meshSetSeg(int t, int p1, int p2)
@@ -1751,11 +1751,11 @@ static int meshCall(state rt) {
 		return 0;
 	}
 	if (rt->libc == meshOphasNrm) {				// bool hasNormals;
-		setret(rt, int32_t, msh.hasNrm);
+		reti32(rt, msh.hasNrm);
 		return 0;
 	}
 	if (rt->libc == meshOpInit) {			// int meshInit(int Capacity);
-		setret(rt, int32_t, initMesh(&msh, popi32(rt)));
+		reti32(rt, initMesh(&msh, popi32(rt)));
 		return 0;
 	}
 	if (rt->libc == meshOpTexture) {
@@ -1771,11 +1771,11 @@ static int meshCall(state rt) {
 	if (rt->libc == meshOpRead) {			// int meshRead(string file);
 		char* mesh = popstr(rt);
 		char* tex = popstr(rt);
-		setret(rt, int32_t, readorevalMesh(&msh, mesh, 0, tex, 0));
+		reti32(rt, readorevalMesh(&msh, mesh, 0, tex, 0));
 		return 0;
 	}
 	if (rt->libc == meshOpSave) {			// int meshSave(string file);
-		setret(rt, int32_t, saveMesh(&msh, popstr(rt)));
+		reti32(rt, saveMesh(&msh, popstr(rt)));
 		return 0;
 	}
 	if (rt->libc == meshOpCenter) {		// void Center(float size);
@@ -1830,7 +1830,7 @@ static int camCall(state rt) {
 
 	//#ifndef _MSC_VER
 	if (rt->libc == camGetPos) {
-		setret(rt, union vector, cam->pos);
+		setret(rt, &cam->pos, sizeof(union vector));
 		return 0;
 	}
 	if (rt->libc == camSetPos) {
@@ -1839,7 +1839,7 @@ static int camCall(state rt) {
 	}
 
 	if (rt->libc == camGetUp) {
-		setret(rt, union vector, cam->dirU);
+		setret(rt, &cam->dirU, sizeof(union vector));
 		return 0;
 	}
 	if (rt->libc == camSetUp) {
@@ -1848,7 +1848,7 @@ static int camCall(state rt) {
 	}
 
 	if (rt->libc == camGetRight) {
-		setret(rt, union vector, cam->dirR);
+		setret(rt, &cam->dirR, sizeof(union vector));
 		return 0;
 	}
 	if (rt->libc == camSetRight) {
@@ -1857,7 +1857,7 @@ static int camCall(state rt) {
 	}
 
 	if (rt->libc == camGetForward) {
-		setret(rt, union vector, cam->dirF);
+		setret(rt, &cam->dirF, sizeof(union vector));
 		return 0;
 	}
 	//#endif
@@ -1876,7 +1876,7 @@ static symn objOpSelected = NULL;
 static int objCall(state rt) {
 
 	if (rt->libc == objOpSelected) {
-		setret(rt, int, getobjvec(0) != NULL);
+		reti32(rt, getobjvec(0) != NULL);
 		return 0;
 	}
 
@@ -2159,7 +2159,11 @@ char* strncatesc(char *dst, int max, char* src) {
 }
 
 #ifdef _MSC_VER
-static inline int snprintf(char* dst, int max, char *fmt, va_list _ArgList) {return sprintf_s(dst, max, fmt, _ArgList);}
+#define snprintf(__DST, __MAX, __FMT, ...)  sprintf_s(__DST, __MAX, __FMT, ##__VA_ARGS__)
+/*static inline int snprintf(char* dst, int max, char *fmt, va_list _ArgList) {
+	//return sprintf_s(dst, max, fmt, _ArgList);
+	return sprintf(dst, fmt, _ArgList);
+}*/
 #endif
 
 static int ccCompile(char *src, int argc, char* argv[]) {

@@ -31,7 +31,7 @@ typedef struct bcde {			// byte code decoder
 		};// */
 		/*struct {				// extended: 4 bytes `res := lhs OP rhs`
 			uint32_t opc:4;		// 0 ... 15
-			uint32_t mem:2;		// mem
+			uint32_t mem:2;		// mem access
 			uint32_t res:6;		// res
 			uint32_t lhs:6;		// lhs
 			uint32_t rhs:6;		// rhs
@@ -46,7 +46,8 @@ typedef struct bcde {			// byte code decoder
 
 			// if there is an indirection
 			switch (ip->ext.mem) {
-				case 0: break;
+				case 0:
+					break;
 				case 1:
 					CHKMEM_W(*(int**)res);
 					res = *(void**)res;
@@ -68,18 +69,18 @@ typedef struct bcde {			// byte code decoder
 				case ext_mul: *(type*)res = (*(type*)lhs) * (*(type*)rhs); break;
 				case ext_div: *(type*)res = (*(type*)lhs) / (*(type*)rhs); break;
 				case ext_mod: *(type*)res = (*(type*)lhs) % (*(type*)rhs); break;
-				case ext_...: res = lhs OP rhs; break;
+				case ext_...: res = lhs ... rhs; break;
 			}
 			// +/ --8<----------------------------------------
-		}ext;// */
+		} ext;// */
 	};
 } *bcde;
 #pragma pack(pop)
 
 typedef struct cell {			// processor
-	unsigned char	*ip;			// Instruction pointer
-	unsigned char	*sp;			// Stack pointer(bp + ss)
-	unsigned char	*bp;			// Stack base
+	unsigned char	*ip;		// Instruction pointer
+	unsigned char	*sp;		// Stack pointer(bp + ss)
+	unsigned char	*bp;		// Stack base
 
 	// multiproc
 	//~ unsigned int	cs;			// child start(==0 join)
@@ -93,14 +94,18 @@ typedef struct cell {			// processor
 
 } *cell;
 
-//{ libc.c ---------------------------------------------------------------------
-
 int vmOffset(state rt, void *ptr) {
 	dieif((unsigned char*)ptr > rt->_mem + rt->_size, "invalid reference");
 	dieif(ptr && (unsigned char*)ptr < rt->_mem, "invalid reference");
 	return ptr ? (unsigned char*)ptr - rt->_mem : 0;
 }
 
+static inline void* getip(state rt, int pos) {
+	return (void *)(rt->_mem + pos);
+}
+
+//{ libc.c ---------------------------------------------------------------------
+TODO("installref should go to type.c")
 static symn installref(state rt, const char *prot, astn *argv) {
 	astn root, args;
 	symn result = NULL;
@@ -115,7 +120,6 @@ static symn installref(state rt, const char *prot, astn *argv) {
 	rt->cc->warn = 9;
 	level = rt->cc->nest;
 	if ((root = decl_var(rt->cc, &args, decl_NoDefs | decl_NoInit))) {
-
 		logif(!skip(rt->cc, STMT_do), "`;` expected declaring: %s", prot);
 		dieif(peek(rt->cc), "FixMe");
 		dieif(level != rt->cc->nest, "FixMe");
@@ -127,15 +131,15 @@ static symn installref(state rt, const char *prot, astn *argv) {
 			result->cast = 0;
 		}
 	}
-
 	return errc == rt->errc ? result : NULL;
-}//*/
+}
 
 /* install a library call
  * @arg rt: the runtime state.
  * @arg libc: the function to call.
  * @arg proto: prototype of function.
  */
+TODO("libcall: parts of it should go to tree.c")
 symn libcall(state rt, int libc(state), const char* proto) {
 	symn arg, sym = NULL;
 	int stdiff = 0;
@@ -144,7 +148,7 @@ symn libcall(state rt, int libc(state), const char* proto) {
 	dieif(libc == NULL || !proto, "FixMe");
 
 	//~ from: int64 zxt(int64 val, int offs, int bits)
-	//~ make: define zxt(int64 val, int offs, int bits) = int64(emit(libc(25), i64(val), i32(offs), i32(bits)));
+	//~ make: define zxt(int64 val, int offs, int bits) = emit(int64, libc(25), i64(val), i32(offs), i32(bits));
 
 	if ((sym = installref(rt, proto, &args))) {
 		struct libc *lc = NULL;
@@ -222,7 +226,7 @@ symn libcall(state rt, int libc(state), const char* proto) {
 //}
 
 static inline int lobit(int a) {return a & -a;}
-static int bitsf(unsigned int x) {
+static inline int bitsf(unsigned int x) {
 	int ans = 0;
 	if ((x & 0x0000ffff) == 0) { ans += 16; x >>= 16; }
 	if ((x & 0x000000ff) == 0) { ans +=  8; x >>=  8; }
@@ -231,10 +235,8 @@ static int bitsf(unsigned int x) {
 	if ((x & 0x00000001) == 0) { ans +=  1; }
 	return x ? ans : -1;
 }
-static inline void* getip(state rt, int pos) {
-	return (void *)(rt->_mem + pos);
-}
 
+// emiting opcodes
 int emitarg(state rt, vmOpcode opc, stkval arg) {
 	libc libcvec = rt->libv;
 	bcde ip = getip(rt, rt->vm.pos);
@@ -254,8 +256,6 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 		case TYPE_i64: opc = i64_neg; break;
 		case TYPE_f32: opc = f32_neg; break;
 		case TYPE_f64: opc = f64_neg; break;
-		//~ case TYPE_pf2: opc = p4d_neg; break;
-		//~ case TYPE_pf4: opc = p4f_neg; break;
 	}
 	else if (opc == opc_add) switch (arg.i4) {
 		case TYPE_u32:
@@ -263,8 +263,6 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 		case TYPE_i64: opc = i64_add; break;
 		case TYPE_f32: opc = f32_add; break;
 		case TYPE_f64: opc = f64_add; break;
-		//~ case TYPE_pf2: opc = p4d_add; break;
-		//~ case TYPE_pf4: opc = p4f_add; break;
 	}
 	else if (opc == opc_sub) switch (arg.i4) {
 		case TYPE_u32:
@@ -272,8 +270,6 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 		case TYPE_i64: opc = i64_sub; break;
 		case TYPE_f32: opc = f32_sub; break;
 		case TYPE_f64: opc = f64_sub; break;
-		//~ case TYPE_pf2: opc = p4d_sub; break;
-		//~ case TYPE_pf4: opc = p4f_sub; break;
 	}
 	else if (opc == opc_mul) switch (arg.i4) {
 		case TYPE_u32: opc = u32_mul; break;
@@ -281,8 +277,6 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 		case TYPE_i64: opc = i64_mul; break;
 		case TYPE_f32: opc = f32_mul; break;
 		case TYPE_f64: opc = f64_mul; break;
-		//~ case TYPE_pf2: opc = p4d_mul; break;
-		//~ case TYPE_pf4: opc = p4f_mul; break;
 	}
 	else if (opc == opc_div) switch (arg.i4) {
 		case TYPE_u32: opc = u32_div; break;
@@ -290,8 +284,6 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 		case TYPE_i64: opc = i64_div; break;
 		case TYPE_f32: opc = f32_div; break;
 		case TYPE_f64: opc = f64_div; break;
-		//~ case TYPE_pf2: opc = p4d_div; break;
-		//~ case TYPE_pf4: opc = p4f_div; break;
 	}
 	else if (opc == opc_mod) switch (arg.i4) {
 		case TYPE_u32: opc = u32_mod; break;
@@ -299,8 +291,6 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 		case TYPE_i64: opc = i64_mod; break;
 		case TYPE_f32: opc = f32_mod; break;
 		case TYPE_f64: opc = f64_mod; break;
-		//~ case TYPE_pf2: opc = p4d_mod; break;
-		//~ case TYPE_pf4: opc = p4f_mod; break; p4f_crs ???
 	}
 
 	// cmp
@@ -344,101 +334,42 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 	else if (opc == opc_cmt) switch (arg.i4) {
 		case TYPE_u32:
 		case TYPE_i32: opc = b32_cmt; break;
+		//~ case TYPE_i64: opc = b64_cmt; break;
 	}
 	else if (opc == opc_shl) switch (arg.i4) {
 		case TYPE_u32:
 		case TYPE_i32: opc = b32_shl; break;
-		//~ case TYPE_i64:
-		//~ case TYPE_f32:
-		//~ case TYPE_f64: return 0;
+		//~ case TYPE_i64: opc = b64_shl; break;
 	}
 	else if (opc == opc_shr) switch (arg.i4) {
-		case TYPE_i32: opc = b32_sar; break;
 		case TYPE_u32: opc = b32_shr; break;
-		//~ case TYPE_i64:
-		//~ case TYPE_f32:
-		//~ case TYPE_f64: return 0;
+		case TYPE_i32: opc = b32_sar; break;
+		//~ case TYPE_i64: opc = b64_sar; break;
 	}
 	else if (opc == opc_and) switch (arg.i4) {
 		case TYPE_u32:
 		case TYPE_i32: opc = b32_and; break;
-		//~ case TYPE_i64:
-		//~ case TYPE_f32:
-		//~ case TYPE_f64: return 0;
+		//~ case TYPE_i64: opc = b64_and; break;
 	}
 	else if (opc == opc_ior) switch (arg.i4) {
 		case TYPE_u32:
 		case TYPE_i32: opc = b32_ior; break;
-		//~ case TYPE_i64:
-		//~ case TYPE_f32:
-		//~ case TYPE_f64: return 0;
+		//~ case TYPE_i64: opc = b64_ior; break;
 	}
 	else if (opc == opc_xor) switch (arg.i4) {
 		case TYPE_u32:
 		case TYPE_i32: opc = b32_xor; break;
-		//~ case TYPE_i64:
-		//~ case TYPE_f32:
-		//~ case TYPE_f64: return 0;
+		//~ case TYPE_i64: opc = b64_xor; break;
 	}
 
 	// load/store
-	/*else if (opc == opc_ldc) {
-		if (arg.u8 == 0) opc = opc_ldz;
-		else if (arg.u8 <= 0xff) opc = opc_ldc1;
-		else if (arg.u8 <= 0xffff) opc = opc_ldc2;
-		else if (arg.u8 <= 0xffffffff) opc = opc_ldc4;
-		else opc = opc_ldc8;
-	}// */
-	/*else if (opc == opc_ldi) {
-
-		const int bms = 4;		// the minimum moveable size in bytes
-
-		while (opc == opc_ldi) {
-			switch (arg.i4) {
-				case  1: opc = opc_ldi1; break;
-				case  2: opc = opc_ldi2; break;
-				case  4: opc = opc_ldi4; break;
-				case  8: opc = opc_ldi8; break;
-				case 16: opc = opc_ldiq; break;
-				default: {
-					if (arg.i4 > bms) {
-						int moveLen = arg.i4 > 16 ? 16 : arg.i4 > 8 ? 8 : bms;
-						ip = getip(s, s->vm.pc);
-
-						switch (ip->opc) {
-							case opc_ldsp: {
-								int rel;
-								arg.i4 -= moveLen;
-								rel = ip->rel += arg.i4;
-								if (!emitint(s, opc_ldi, moveLen)) {
-									debug("FixMe");
-									return 0;
-								}
-								if (!emitint(s, opc_ldsp, rel)) {
-									debug("FixMe");
-									return 0;
-								}
-							} break;
-
-							default:
-								debug("FixMe");
-								return 0;
-						}
-						continue;
-					}
-					return 0;
-				}
-			}
-		}
-	}*/
 	else if (opc == opc_ldi) switch (arg.i4) {
 		case  1: opc = opc_ldi1; break;
 		case  2: opc = opc_ldi2; break;
 		case  4: opc = opc_ldi4; break;
 		case  8: opc = opc_ldi8; break;
 		case 16: opc = opc_ldiq; break;
-		default: 
-			// we have src on the stack
+		default: // we have src on the stack
 
 			// push dst
 			if (!emitint(rt, opc_ldsp, 4 - arg.i4)) {
@@ -455,9 +386,7 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 			// create n bytes on stack
 			arg.i8 = +arg.i8;
 			opc = opc_spc;
-			//~ return s->vm.pc;
 
-			//~ fatal("FixMe: operand size(%d) on load", arg.i4);
 			break;
 	}
 	else if (opc == opc_sti) switch (arg.i4) {
@@ -466,13 +395,12 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 		case  4: opc = opc_sti4; break;
 		case  8: opc = opc_sti8; break;
 		case 16: opc = opc_stiq; break;
-		default:
-			// we have dst on the stack
+		default: // we have dst on the stack
 
 			ip = getip(rt, rt->vm.pc);
 
 			// push dst
-			if (!emitint(rt, opc_ldsp, 4)) {
+			if (!emitint(rt, opc_ldsp, vm_size)) {
 				trace("FixMe");
 				return 0;
 			}
@@ -482,9 +410,6 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 				trace("FixMe");
 				return 0;
 			}
-
-			//~ arg.i4 = arg.i4 / 4;
-			//~ opc = opc_drop;
 
 			if (ip->opc == opc_ldsp) {
 				//~ if we copy from the stack to the stack
@@ -497,32 +422,11 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 			// remove n bytes from stack
 			arg.i8 = -arg.i8;
 			opc = opc_spc;
-
-			//~ fatal("FixMe: operand size(%d) on store", arg.i4);
 			break;
 	}
 
-	/*else if (opc == opc_spc) {
-		dieif (arg.i8 & 3, "FixMe");
-		if (arg.i8 < 0) {
-			if (-arg.i8 < vm_regs * 4) {
-				opc = opc_drop;
-				arg.i8 /= -4;
-			}
-		}
-		else {
-			if (+arg.i8 < vm_regs * 4) {
-				opc = opc_loc;
-				arg.i8 /= 4;
-			}
-		}
-			//~ return 0;
-	}// */
-
 	if (opc > opc_last) {
 		fatal("invalid opc(0x%x, 0x%X)", opc, arg.i8);
-		//~ debug("invalid opc(0x%x, 0x%X)", opc, arg.i8);
-		//~ debug("invalid arg(0x%X)", arg.i8);
 		return 0;
 	}
 
@@ -530,11 +434,21 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 	if (rt->vm.opti > 1) {
 		if (0) {}
 
-		// memory access
+		else if (opc == opc_ldc8) {
+			if (arg.i8 == 0) opc = opc_ldz2;
+		}
+		else if (opc == opc_ldc4) {
+			// vm sign extends ints
+			if (arg.i8 == 0) opc = opc_ldz1;
+			//else if (arg.i8 <= 0xff) opc = opc_ldc1;
+			//else if (arg.u8 <= 0xffff) opc = opc_ldc2;
+		}
+
+		// */ memory access
 		else if (opc == opc_ldi1) {
 			ip = getip(rt, rt->vm.pc);
-			if (ip->opc == opc_ldsp && ((ip->rel & 3) == 0) && ((ip->rel / 4) < vm_regs)) {
-				arg.i4 = ip->rel / 4;
+			if (ip->opc == opc_ldsp && ((ip->rel & (vm_size-1)) == 0) && ((ip->rel / vm_size) < vm_regs)) {
+				arg.i4 = ip->rel / vm_size;
 				opc = opc_dup1;
 				rt->vm.pos = rt->vm.pc;
 				rt->vm.ss -= 1;
@@ -542,8 +456,8 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 		}
 		else if (opc == opc_ldi2) {
 			ip = getip(rt, rt->vm.pc);
-			if (ip->opc == opc_ldsp && ((ip->rel & 3) == 0) && ((ip->rel / 4) < vm_regs)) {
-				arg.i4 = ip->rel / 4;
+			if (ip->opc == opc_ldsp && ((ip->rel & (vm_size-1)) == 0) && ((ip->rel / vm_size) < vm_regs)) {
+				arg.i4 = ip->rel / vm_size;
 				opc = opc_dup1;
 				rt->vm.pos = rt->vm.pc;
 				rt->vm.ss -= 1;
@@ -558,8 +472,8 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 				rt->vm.pos = rt->vm.pc;
 				rt->vm.ss -= 1;
 			}
-			if (ip->opc == opc_ldsp && ((ip->rel & 3) == 0) && ((ip->rel / 4) < vm_regs)) {
-				arg.i4 = ip->rel / 4;
+			if (ip->opc == opc_ldsp && ((ip->rel & (vm_size-1)) == 0) && ((ip->rel / vm_size) < vm_regs)) {
+				arg.i4 = ip->rel / vm_size;
 				opc = opc_dup1;
 				rt->vm.pos = rt->vm.pc;
 				rt->vm.ss -= 1;
@@ -573,8 +487,8 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 				rt->vm.pos = rt->vm.pc;
 				rt->vm.ss -= 1;
 			}
-			if (ip->opc == opc_ldsp && ((ip->rel & 3) == 0) && ((ip->rel / 4) < vm_regs)) {
-				arg.i4 = ip->rel / 4;
+			if (ip->opc == opc_ldsp && ((ip->rel & (vm_size-1)) == 0) && ((ip->rel / vm_size) < vm_regs)) {
+				arg.i4 = ip->rel / vm_size;
 				opc = opc_set1;
 				rt->vm.pos = rt->vm.pc;
 				rt->vm.ss -= 1;
@@ -589,8 +503,8 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 				rt->vm.pos = rt->vm.pc;
 				rt->vm.ss -= 1;
 			}
-			if (ip->opc == opc_ldsp && ((ip->rel & 3) == 0) && ((ip->rel / 4) < vm_regs)) {
-				arg.i4 = ip->rel / 4;
+			if (ip->opc == opc_ldsp && ((ip->rel & (vm_size-1)) == 0) && ((ip->rel / vm_size) < vm_regs)) {
+				arg.i4 = ip->rel / vm_size;
 				opc = opc_dup2;
 				rt->vm.pos = rt->vm.pc;
 				rt->vm.ss -= 1;
@@ -604,8 +518,8 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 				rt->vm.pos = rt->vm.pc;
 				rt->vm.ss -= 1;
 			}
-			if (ip->opc == opc_ldsp && ((ip->rel & 3) == 0) && ((ip->rel / 4) < vm_regs)) {
-				arg.i4 = ip->rel / 4;
+			if (ip->opc == opc_ldsp && ((ip->rel & (vm_size-1)) == 0) && ((ip->rel / vm_size) < vm_regs)) {
+				arg.i4 = ip->rel / vm_size;
 				opc = opc_set2;
 				rt->vm.pos = rt->vm.pc;
 				rt->vm.ss -= 1;
@@ -614,8 +528,8 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 
 		else if (opc == opc_ldiq) {
 			ip = getip(rt, rt->vm.pc);
-			if (ip->opc == opc_ldsp && ((ip->rel & 3) == 0) && ((ip->rel / 4) <= vm_regs)) {
-				arg.i4 = ip->rel / 4;
+			if (ip->opc == opc_ldsp && ((ip->rel & (vm_size-1)) == 0) && ((ip->rel / vm_size) <= vm_regs)) {
+				arg.i4 = ip->rel / vm_size;
 				opc = opc_dup4;
 				rt->vm.pos = rt->vm.pc;
 				rt->vm.ss -= 1;
@@ -623,24 +537,30 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 		}
 		else if (opc == opc_stiq) {
 			ip = getip(rt, rt->vm.pc);
-			if (ip->opc == opc_ldsp && ((ip->rel & 3) == 0) && ((ip->rel / 4) <= vm_regs)) {
-				arg.i4 = ip->rel / 4;
+			if (ip->opc == opc_ldsp && ((ip->rel & (vm_size-1)) == 0) && ((ip->rel / vm_size) <= vm_regs)) {
+				arg.i4 = ip->rel / vm_size;
 				opc = opc_set4;
 				rt->vm.pos = rt->vm.pc;
 				rt->vm.ss -= 1;
 			}
 		}
 
-		// */ grouping 
+		// */ grouping
 		else if (opc == opc_not) {
 			ip = getip(rt, rt->vm.pc);
 			if (ip->opc == opc_not) {
 				rt->vm.pos = rt->vm.pc;
+				ip->opc = opc_nop;
 				return rt->vm.pc;
 			}
 		}
 		else if (opc == i32_neg) {
 			ip = getip(rt, rt->vm.pc);
+			if (ip->opc == i32_neg) {
+				rt->vm.pos = rt->vm.pc;
+				ip->opc = opc_nop;
+				return rt->vm.pc;
+			}
 			if (ip->opc == opc_ldc4) {
 				ip->arg.i4 = -ip->arg.i4;
 				return rt->vm.pc;
@@ -648,6 +568,11 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 		}
 		else if (opc == i64_neg) {
 			ip = getip(rt, rt->vm.pc);
+			if (ip->opc == i64_neg) {
+				rt->vm.pos = rt->vm.pc;
+				ip->opc = opc_nop;
+				return rt->vm.pc;
+			}
 			if (ip->opc == opc_ldc8) {
 				ip->arg.i8 = -ip->arg.i8;
 				return rt->vm.pc;
@@ -655,6 +580,11 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 		}
 		else if (opc == f32_neg) {
 			ip = getip(rt, rt->vm.pc);
+			if (ip->opc == f32_neg) {
+				rt->vm.pos = rt->vm.pc;
+				ip->opc = opc_nop;
+				return rt->vm.pc;
+			}
 			if (ip->opc == opc_ldc4) {
 				ip->arg.f4 = -ip->arg.f4;
 				return rt->vm.pc;
@@ -662,6 +592,11 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 		}
 		else if (opc == f64_neg) {
 			ip = getip(rt, rt->vm.pc);
+			if (ip->opc == f64_neg) {
+				rt->vm.pos = rt->vm.pc;
+				ip->opc = opc_nop;
+				return rt->vm.pc;
+			}
 			if (ip->opc == opc_ldc8) {
 				ip->arg.f8 = -ip->arg.f8;
 				return rt->vm.pc;
@@ -678,15 +613,14 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 				}
 			}
 		}
-		else if (opc == opc_spc) {
-			/* still not good
+		else if (opc == opc_spc) {	/* still not good
 			ip = getip(rt, rt->vm.pc);
 			if (ip->opc == opc_spc) {
 				stkval tmp;
 				tmp.i8 = arg.i8 + ip->rel;
 				if (tmp.rel == tmp.i8) {
 					rt->vm.pos = rt->vm.pc;
-					rt->vm.ss -= ip->rel / 4;
+					rt->vm.ss -= ip->rel / vm_size;
 					arg.i8 += ip->rel;
 				}
 			}// */
@@ -771,9 +705,8 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 			}
 		}
 
-		// */
-		// mul, div, mod
-		/*else if (opc == u32_mod) {
+		/* mul, div, mod
+		else if (opc == u32_mod) {
 			ip = getip(s, s->vm.pc);
 			if (ip->opc == opc_ldc4) {
 				int x = ip->arg.i4;
@@ -794,6 +727,39 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 					opc = b32_shr;
 				}
 			}
+		}*/
+
+		/*else if (opc == opc_ldz1) {
+			ip = getip(s, s->pc);
+			if (ip->opc == opc_ldz1) {
+				opc = opc_ldz2;
+				s->cs = s->pc;
+				s->ss -= 1;
+			}
+		}
+		else if (opc == opc_ldz2) {
+			ip = getip(s, s->pc);
+			if (ip->opc == opc_ldz2) {
+				opc = opc_ldz4;
+				s->cs = s->pc;
+				s->ss -= 2;
+			}
+		}*/
+		/*else if (opc == opc_spc) {
+			dieif (arg.i8 & (vm_size-1), "FixMe");
+			if (arg.i8 < 0) {
+				if (-arg.i8 < vm_regs * vm_size) {
+					arg.i8 /= -vm_size;
+					opc = opc_drop;
+				}
+			}
+			else {
+				if (+arg.i8 < vm_regs * vm_size) {
+					arg.i8 /= vm_size;
+					opc = opc_loc;
+				}
+			}
+				//~ return 0;
 		}*/
 
 		/*if (opc == opc_set) {
@@ -858,37 +824,6 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 				ip = pc = rt->vm.p[ipp];
 			}
 		}*/
-
-		/*~:)) ?? others
-		if (opc == opc_ldz1) {
-			ip = getip(s, s->pc);
-			if (ip->opc == opc_ldz1) {
-				opc = opc_ldz2;
-				s->cs = s->pc;
-				s->ss -= 1;
-			}
-		}
-		else if (opc == opc_ldz2) {
-			ip = getip(s, s->pc);
-			if (ip->opc == opc_ldz2) {
-				opc = opc_ldz4;
-				s->cs = s->pc;
-				s->ss -= 2;
-			}
-		}
-		else if (opc == opc_shl || opc == opc_shr || opc == opc_sar) {
-			ip = getip(s, s->pc);
-			if (ip->opc == opc_ldc4) {
-				if (opc == opc_shl) arg.i1 = 1 << 5;
-				if (opc == opc_shr) arg.i1 = 2 << 5;
-				if (opc == opc_sar) arg.i1 = 3 << 5;
-				s->rets -= 1;
-				opc = opc_bit;
-				arg.i1 |= ip->arg.u1 & 0x1F;
-				s->cs = rt->pc;
-			}
-		}// */
-
 	}
 
 	ip = getip(rt, rt->vm.pos);
@@ -900,9 +835,6 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 	if ((opc == opc_jmp || opc == opc_jnz || opc == opc_jz) && arg.i8 != 0) {
 		ip->rel -= rt->vm.pc;
 		logif((ip->rel + rt->vm.pc) != arg.i8, "FixMe");
-		/*if ((ip->rel + rt->vm.pc) != arg.i8) {
-			fputasm(stdout, rt, rt->vm.seg, -1, 0x119);
-		}*/
 	}
 	else switch (opc) {
 		case opc_inc:
@@ -916,10 +848,10 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 					return 0;
 				arg.i8 -= max;
 			}
-			//~ ip->rel = arg.i8 / 4;
+			//~ ip->rel = arg.i8 / vm_size;
 			// */
 			if (arg.i8 > 0x7fffff) {
-				trace("max 2 megs can be allocated on stack");
+				trace("max 2 megs can be allocated on stack, not(%D)", arg.i8);
 				return 0;
 			}
 			dieif(ip->rel != arg.i8, "FixMe");
@@ -940,19 +872,13 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 			break;
 	}
 
-	//~ debug("opc_x%0x(0x%0X)%09.*A", opc, arg.i8, s->pc, ip);
-	//~ debug("@%04x[ss:%03d]: %09.*A", s->pc, s->ss, s->pc, ip);
-	//~ debug("ss(%d): %09.*A", rt->ss, rt->pc, ip);
-
 	switch (opc) {
 		error_opc:
 			error(rt, NULL, 0, "invalid opcode: op[%.*A]", rt->vm.pc, ip);
-			//~ fputasm(stderr, rt, rt->seg, -1, 0x10);
 			return 0;
 
 		error_stc:
 			error(rt, NULL, 0, "stack underflow: op[%.*A](%d)", rt->vm.pc, ip, rt->vm.ss);
-			//~ fputasm(stderr, rt, rt->seg, -1, 0x10);
 			return 0;
 
 		#define STOP(__ERR, __CHK, __ERC) if (__CHK) goto __ERR
@@ -964,12 +890,12 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 	}
 
 	if (opc == opc_call) {
-		//~ after a call ends with a return,
+		//~ a call ends with a return,
 		//~ wich drops ip from the stack.
 		rt->vm.ss -= 1;
 	}
 
-	//~ debug("ss(%d): %09.*A", rt->ss * 4, rt->pc, ip);
+	//~ debug("ss(%d): %09.*A", rt->ss * vm_size, rt->pc, ip);
 
 	if (rt->vm.sm < rt->vm.ss)
 		rt->vm.sm = rt->vm.ss;
@@ -981,34 +907,7 @@ int emitopc(state rt, vmOpcode opc) {
 	arg.i8 = 0;
 	return emitarg(rt, opc, arg);
 }
-int emiti32(state rt, int32_t arg) {
-	stkval tmp;
-	tmp.i8 = arg;
-	return emitarg(rt, opc_ldc4, tmp);
-}
-int emiti64(state rt, int64_t arg) {
-	stkval tmp;
-	tmp.i8 = arg;
-	return emitarg(rt, opc_ldc8, tmp);
-}
-int emitf32(state rt, float32_t arg) {
-	stkval tmp;
-	tmp.f4 = arg;
-	return emitarg(rt, opc_ldcf, tmp);
-}
-int emitf64(state rt, float64_t arg) {
-	stkval tmp;
-	tmp.f8 = arg;
-	return emitarg(rt, opc_ldcF, tmp);
-}
-int emitref(state rt, void* arg) {
-	stkval tmp;
-	tmp.i8 = vmOffset(rt, arg);
-	return emitarg(rt, opc_ldcr, tmp);
-}
-
 int emitinc(state rt, int arg) {
-
 	if (rt->vm.opti > 0) {
 		bcde ip = getip(rt, rt->vm.pc);
 
@@ -1037,7 +936,7 @@ int emitinc(state rt, int arg) {
 }
 int emitidx(state rt, vmOpcode opc, int arg) {
 	stkval tmp;
-	tmp.i8 = (int32_t)rt->vm.ss * 4 - arg;
+	tmp.i8 = (int32_t)rt->vm.ss * vm_size - arg;
 
 	switch (opc) {
 		default:
@@ -1054,7 +953,7 @@ int emitidx(state rt, vmOpcode opc, int arg) {
 		debug("opc_x%02x(%D(%d))", opc, tmp.i8, arg);
 		return 0;
 	}
-	if (tmp.i8 > rt->vm.ss * 4) {
+	if (tmp.i8 > rt->vm.ss * vm_size) {
 		debug("opc_x%02x(%D(%d))", opc, tmp.i8, arg);
 		return 0;
 	}
@@ -1082,9 +981,9 @@ int fixjump(state rt, int src, int dst, int stc) {
 				break;
 		}
 		if (!src && !dst)
-			rt->vm.ss = stc / 4;
+			rt->vm.ss = stc / vm_size;
 		else if (stc > 0)
-			rt->vm.ss = stc / 4;
+			rt->vm.ss = stc / vm_size;
 		return 1;
 	}
 
@@ -1092,81 +991,83 @@ int fixjump(state rt, int src, int dst, int stc) {
 	return 0;
 }
 
+// emiting constant values.
+int emiti32(state rt, int32_t arg) {
+	stkval tmp;
+	tmp.i8 = arg;
+	return emitarg(rt, opc_ldc4, tmp);
+}
+int emiti64(state rt, int64_t arg) {
+	stkval tmp;
+	tmp.i8 = arg;
+	return emitarg(rt, opc_ldc8, tmp);
+}
+int emitf32(state rt, float32_t arg) {
+	stkval tmp;
+	tmp.f4 = arg;
+	return emitarg(rt, opc_ldcf, tmp);
+}
+int emitf64(state rt, float64_t arg) {
+	stkval tmp;
+	tmp.f8 = arg;
+	return emitarg(rt, opc_ldcF, tmp);
+}
+int emitref(state rt, void* arg) {
+	stkval tmp;
+	tmp.i8 = vmOffset(rt, arg);
+	return emitarg(rt, opc_ldcr, tmp);
+}
+
 int stkoffs(state rt, int size) {
-	if (size < 0) {
-		logif(size < 0, "FixMe");
-	}
-	return padded(size, 4) + rt->vm.ss * 4;
+	logif(size < 0, "FixMe");
+	return padded(size, vm_size) + rt->vm.ss * vm_size;
 }
 
-/*typedef enum {
-	doInit,		// initialize, master is runing
-	doTask,		// start a new processor
-	doJoin,		// wait for childs
-	//~ doBrk,		// 
-	//~ getNext,	// get next working cell
-	//~ doSync = 1;		// syncronize
-} doWhat;
-
-static cell task(state rt, cell pu, int cc, int n, int cl, int dl) {
+/* parallel processing
+static cell task(state rt, cell pu, int n, int master, int cl, int dl) {
 	// find an empty cpu
-	cell pu = 0;//pp;
-	while (pu && pu->ip)
-		pu = pu->next;
-	if (pu != NULL) {
-		// set ip and copy stack
-		pp->cp++;		// workers
-		pu->pp = pp;		// parent
-		pu->ip = pp->ip;
-		pu->sp = pu->bp + ss - cl;
-		memcpy(pu->sp, pp->sp, cl * 4);
+	int slave = master + 1;
+	while (slave < n) {
+		if (pu[slave].ip == NULL) {
+			break;
+		}
+		slave += 1;
 	}
-	return pu + n;
+
+	if (slave < n) {
+		// set workers, parent, ip, sp and copy stack
+		pu[master].cp++;
+		pu[slave].pp = master;
+		pu[slave].ip = pu[master].ip;
+		pu[slave].sp = pu[master].bp + ss - cl;
+		memcpy(pu[slave].sp, pu[master].sp, cl * vm_size);
+		return pu + slave;
+	}
+	return NULL;
 }
 
-static int done(state rt, int cp) {
-	pu[pu[cp].pp].cp -= 1;
-	sigsnd(pp->pp, SIG_quit);
-}
+static int join(state rt, cell pu, int cp) {
 
-static int mtt(state rt, doWhat cmd, cell pu, int n) {
-	static int workers = 0;
-	switch (cmd) {
-		case doInit: {					// master thread is running
-			int i;
-			workers = 1;
-			for (i = 0; i < n; ++i) {
-				pu[i].ip = 0;
-			}
-		} break;
-		case doTask: if (workers) {		// uninitialized or no more processors left
-			// the lowest free processor
-			int fpu = lobit(~workers);
-			workers |= fpu;
-			return fpu;
-		} break;
-		case doWait: {					// master thread is running
-			workers = 1;
-		} break;
+	// there are workers to wait for
+	if (pu[cp].cp > 0) {
+		return 0;
 	}
-	(void)rt;
-	return 0;
+	// a slave finishes his work
+	if (pu[cp].pp != cp) {
+		pu[pu[cp].pp].cp -= 1;
+		pu[cp].ip = NULL;
+	}
+	// cell can continue work
+	return 1;
 }
 // */
 
 static inline int ovf(cell pu) {
 	return (pu->sp - pu->bp) < 0;
 }
-
-/** vmExec
- * executes on a single thread
- * @arg env: enviroment
- * @arg cc: cell count
- * @arg ss: stack size
- * @return: error code
-**/
-static void dbugerr(state rt, char *file, int line, int pu, void *ip, long* bp, int ss, char *text, int xxx) {
+static void dbugerr(state rt, cell cpu, char *file, int line, int pu, void *ip, long* bp, int ss, char *text, int xxx) {
 	int IP = ((unsigned char*)ip) - rt->_mem;
+	//~ fputfmt(stderr, "pu: {ip: %d, sp: %d, bp: %d}\n", cpu->ip - rt->_mem, cpu->sp - rt->_mem, cpu->bp - rt->_mem);
 	//~ error(rt, file, line, "exec:%s(%?d):[pu%02d][sp%02d]@%9.*A rw@%06x", text, xxx, pu, ss, IP, ip);
 	error(rt, file, line, "exec:%s(%?d):[sp%02d]@%9.*A rw@%06x", text, xxx, ss, IP, ip);
 }
@@ -1184,16 +1085,6 @@ static int dbugpu(state rt, cell pu, dbgf dbg) {
 	int err_line = 0;
 	int err_code = 0;
 
-	/*fputfmt(stderr, "pu: {ip: %d, sp: %d, bp: %d}\n", pu->ip - rt->_mem, pu->sp - rt->_mem, pu->bp - rt->_mem);
-	fputfmt(stderr, "init(ro: %d"
-		", ss: %d"
-		", sm: %d"
-		", pc: %d"
-		", px: %d"
-		", pos: %d"
-	") {\n", rt->vm.ro, rt->vm.ss, rt->vm.sm, rt->vm.pc, rt->vm.px, rt->vm.pos);
-	*/
-
 	for ( ; ; ) {
 
 		register bcde ip = (void*)pu->ip;
@@ -1202,59 +1093,56 @@ static int dbugpu(state rt, cell pu, dbgf dbg) {
 		if (dbg && dbg(rt, 0, ip, (long*)sp, st - sp))
 			return -9;
 
-		switch (ip->opc) {		// vmExec
-
-			stop_vm:
-				//~ dbugerr(s, err_file, err_line, 0, ip, (long*)sp, st - sp, "halt virtual mashine", err_code);
-				//~ if (dbg) dbg(vm->s, 0, NULL, (long*)sp, st - sp);
+		switch (ip->opc) {
+			stop_vm:	// halt virtual mashine
 				return 0;
 
 			error_opc:
-				dbugerr(rt, err_file, err_line, 0, ip, (long*)sp, st - sp, "invalid opcode", err_code);
-				//~ error(vm->s, 0, "invalid opcode: op[%.*A]", (char*)ip - (char*)(vm->_mem), ip);
+				dbugerr(rt, pu, err_file, err_line, 0, ip, (long*)sp, st - sp, "invalid opcode", err_code);
 				return -1;
 
 			error_ovf:
-				//~ fputfmt(stderr, "pu: {ip: %d, sp: %d, bp: %d}\n", pu->ip - rt->_mem, pu->sp - rt->_mem, pu->bp - rt->_mem);
-				dbugerr(rt, err_file, err_line, 0, ip, (long*)sp, st - sp, "stack overflow", err_code);
-				//~ error(vm->s, 0, "stack overflow: op[%.*A] / %d", (char*)ip - (char*)(vm->_mem), ip, (vm->_end - pu->sp) / 4);
+				dbugerr(rt, pu, err_file, err_line, 0, ip, (long*)sp, st - sp, "stack overflow", err_code);
 				return -2;
 
 			error_mem:
-				dbugerr(rt, err_file, err_line, 0, ip, (long*)sp, st - sp, "segmentation fault", err_code);
-				//~ error(vm->s, 0, "segmentation fault: op[%.*A]", (char*)ip - (char*)(vm->_mem), ip);
+				dbugerr(rt, pu, err_file, err_line, 0, ip, (long*)sp, st - sp, "segmentation fault", err_code);
 				return -3;
 
 			error_div_flt:
-				dbugerr(rt, err_file, err_line, 0, ip, (long*)sp, st - sp, "division by zero", err_code);
+				dbugerr(rt, pu, err_file, err_line, 0, ip, (long*)sp, st - sp, "division by zero", err_code);
+				// continue execution on floating point division by zero.
 				break;
 
 			error_div:
-				dbugerr(rt, err_file, err_line, 0, ip, (long*)sp, st - sp, "division by zero", err_code);
-				//~ error(s, 0, "division by zero: op[%.*A]", (char*)ip - (char*)(vm->_mem), ip);
+				dbugerr(rt, pu, err_file, err_line, 0, ip, (long*)sp, st - sp, "division by zero", err_code);
 				return -4;
 
 			error_libc:
-				dbugerr(rt, err_file, err_line, 0, ip, (long*)sp, st - sp, "libcall error", err_code);
-				//~ info(s, NULL, 0, ">libc:[pu%02d][sp%02d]@%9.A : %-T", pu, st - sp, ip, libcvec[ip->idx].sym);
+				dbugerr(rt, pu, err_file, err_line, 0, ip, (long*)sp, st - sp, "libcall error", err_code);
 				return -5;
 
-			#define NEXT(__IP, __CHK, __SP) {pu->sp -= 4*(__SP); pu->ip += (__IP);}
+			#define NEXT(__IP, __CHK, __SP) {pu->sp -= vm_size * (__SP); pu->ip += (__IP);}
 			#define STOP(__ERR, __CHK, __ERC) if (__CHK) {err_file = __FILE__; err_line = __LINE__; err_code = __ERC; goto __ERR;}
 			#define EXEC
 			#include "code.inl"
 		}
-
 	}
-
 	return 0;
 }
 
+/** vmExec
+ * executes the script.
+ * @arg rt: enviroment
+ * @arg ss: the stack size (TODO)
+ * @arg dbg: debugger function
+ * @return: error code
+**/
 int vmExec(state rt, dbgf dbg) {
 	struct cell pu[1];
 
-	pu->ip = (unsigned char *)rt->_mem + rt->vm.pc;
-	pu->bp = (unsigned char *)rt->_mem + rt->vm.pos;		// the last emited instruction
+	pu->ip = rt->_mem + rt->vm.pc;
+	pu->bp = rt->_mem + rt->vm.pos;		// the last emited instruction
 	pu->sp = rt->_mem + rt->_size;
 
 	/*if ((((int)pu->sp) & 3)) {
@@ -1273,9 +1161,19 @@ int vmExec(state rt, dbgf dbg) {
 	// reinitialize memory manager
 	rt->_free = rt->_used = NULL;
 
-	//~ if (rt->args) {}	// init argc, argv
+	// TODO argc, argv
 	return dbugpu(rt, pu, dbg);
 }
+
+/** vmCall
+ * executes a function from the script.
+ * vmExec should be called before this function
+ * to initialize global variables.
+ * @arg rt: enviroment
+ * @arg fun: the function to be executed.
+ * @arg...: arguments for the function.
+ * @return: error code
+**/
 int vmCall(state rt, symn fun, ...) {
 
 	symn arg;
@@ -1309,18 +1207,18 @@ int vmCall(state rt, symn fun, ...) {
 	}
 	// */
 
+	dieif(!(fun->kind == TYPE_ref && fun->call), "FixMe");
+
 	pu->ip = rt->_mem - fun->offs;
-	pu->bp = pu->ip + rt->vm.pos;
+	pu->bp = rt->_mem + rt->vm.pos;
 	pu->sp = rt->_ptr;
 
 	// push Arguments;
 	//~ va_start(ap, fun);
 	for (arg = fun->args; arg; arg = arg->next) {
-
 		int size = sizeOf(arg->type);
 		unsigned char *offs = pu->sp - arg->offs;
-
-		if (arg->cast == TYPE_ref/*  || arg->type->cast == TYPE_ref */) {
+		if (arg->cast == TYPE_ref) {
 			trace("by reference");
 			return -2;
 		}
@@ -1354,6 +1252,7 @@ int vmCall(state rt, symn fun, ...) {
 	return result;
 }
 
+// returns a statement for an ip (very slow)
 static astn infoAt(state rt, int pos) {
 	if (rt->cc) {
 		int i;
@@ -1368,7 +1267,6 @@ static astn infoAt(state rt, int pos) {
 }
 
 void fputopc(FILE *fout, unsigned char* ptr, int len, int offs, state rt) {
-	//~ struct libc libcvec[0];		// this variable will be indexed out of bounds
 	bcde ip = (bcde)ptr;
 	int i;
 
@@ -1429,6 +1327,7 @@ void fputopc(FILE *fout, unsigned char* ptr, int len, int offs, state rt) {
 			case b32_bit_shr: fprintf(fout, "shr 0x%03x", ip->idx & 0x3f); break;
 			case b32_bit_sar: fprintf(fout, "sar 0x%03x", ip->idx & 0x3f); break;
 		} break;
+
 		case opc_dup1:
 		case opc_dup2:
 		case opc_dup4:
@@ -1451,13 +1350,11 @@ void fputopc(FILE *fout, unsigned char* ptr, int len, int offs, state rt) {
 				libc lc = NULL;
 				if (rt->cc && rt->cc->libc) {
 					lc = rt->cc->libc;
-					//~ int pos = 0;
 					while (lc) {
 						if (lc->pos == ip->idx) {
 							break;
 						}
 						lc = lc->next;
-						//~ pos += 1;
 					}
 				}
 				else if (rt->libv) {
@@ -1465,7 +1362,6 @@ void fputopc(FILE *fout, unsigned char* ptr, int len, int offs, state rt) {
 				}
 				if (lc) {
 					if (lc->sym)
-						//~ fputfmt(fout, "(pop %d, check %d) %-T", libcvec[ip->idx].pop, libcvec[ip->idx].chk, libcvec[ip->idx].sym);
 						fputfmt(fout, ": %-T", lc->sym);
 					else
 						fputfmt(fout, ": %s", lc->proto);
@@ -1477,12 +1373,6 @@ void fputopc(FILE *fout, unsigned char* ptr, int len, int offs, state rt) {
 			else {
 				fputfmt(fout, "(%d)", ip->idx);
 			}
-			/*if (libcvec[ip->idx].sym)
-				//~ fputfmt(fout, "(pop %d, check %d) %-T", libcvec[ip->idx].pop, libcvec[ip->idx].chk, libcvec[ip->idx].sym);
-				fputfmt(fout, ": %-T", libcvec[ip->idx].sym);
-			else
-				fputfmt(fout, ": %s", libcvec[ip->idx].proto);
-			*/
 			break;
 
 		case p4x_swz: {

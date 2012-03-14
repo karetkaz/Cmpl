@@ -528,7 +528,7 @@ int gx_saveBMP(const char* dst, gx_Surf src, int flags) {
 	return 0;
 }// */
 
-#if !defined(_MSC_VER)
+#if 0 || !defined(_MSC_VER)
 
 //~ int conv_rgb2xrgb(void* dst, void* src, int cnt){}
 /* reciclable
@@ -840,7 +840,6 @@ int gx_loadPNG(gx_Surf dst, const char* src, int depth) {
 }
 
 #else
-
 int gx_loadJPG(gx_Surf dst, const char* src, int depth) {return -1;}
 int gx_loadPNG(gx_Surf dst, const char* src, int depth) {return -1;}
 

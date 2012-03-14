@@ -1,7 +1,5 @@
-//~ #open src/ccvm.h
-//~ #open src/pvmc.h
-
-//~ #open src/ccvm.c			// 
+//~ #open src/core.h
+//~ #open src/core.c
 //~ #open src/tree.c
 
 //~ #open src/code.c			// virtual mashine
@@ -10,7 +8,7 @@
 //~ #open src/printer.c			// pretty print, logger
 //~ #open src/main.c
 
-//~ /* redefinition does not work ...
+/* redefinition does not work ...
 static struct Math {
 	pi = 3.14159265358979323846264338327950288419716939937510582097494459;		// A000796
 	e = 2.71828182845904523536028747135266249775724709369995957496696763;		// A001113
@@ -171,7 +169,7 @@ void setup() {
 setup();
 //~ */
 
-/* iterating
+//~ /* iterating
 
 void printIT(int ri) {
 	print("iterator {%d}\n", int64(ri));

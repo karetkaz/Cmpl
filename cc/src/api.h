@@ -60,16 +60,6 @@ struct state {
 	unsigned char _mem[];
 };
 
-/*struct libcarg {
-	state rt;	// runtime
-
-	symn  libc;		// library call symbol
-	void* retv;		// return value
-	void* argv;		// first argument
-	void* data;		// user data for execution passed to vmExec
-
-}*/
-
 typedef struct stateApi {
 	/** dll should contain the folowing entry:
 		int apiMain(stateApi api) {}
@@ -156,7 +146,7 @@ typedef struct stateApi {
 			error...
 		}
 	 */
-	symn (*findref)(state rt, void *ptr);
+	symn (*findref)(state, void *ptr);
 
 	/** Find a global symbol by name.
 	 * 
@@ -187,16 +177,12 @@ typedef struct stateApi {
 
 }* stateApi;
 
-//~ #define poparg(__ARGV, __SIZE) ((void*)(((__ARGV)->argv += (((__SIZE) + 3) & ~3)) - (((__SIZE) + 3) & ~3))))
-//~ #define popaty(__ARGV, __TYPE) (*(__TYPE*)(poparg((__ARGV), sizeof(__TYPE))))
-//~ #define poparg(__ARGV, __SIZE) ((void*)(((__ARGV)->argv += (__SIZE)) - (__SIZE)))
-
-//~ #define setret(__ARGV, __TYPE, __VAL) (*((__TYPE*)(__ARGV->retv)) = (__TYPE)(__VAL))
-
-#define retptr(__ARGV, __TYPE) ((__TYPE*)(__ARGV->retv))
-#define setret(__ARGV, __TYPE, __VAL) (*retptr(__ARGV, __TYPE) = (__TYPE)(__VAL))
-#define getret(__ARGV, __TYPE) (*retptr(__ARGV, __TYPE))
-
+static inline void* setret(state rt, void *result, int size) {
+	if (result != NULL) {
+		memcpy(rt->retv, result, size);
+	}
+	return rt->retv;
+}
 static inline void* poparg(state rt, void *result, int size) {
 	// if result is not null copy
 	if (result != NULL) {
@@ -205,18 +191,31 @@ static inline void* poparg(state rt, void *result, int size) {
 	else {
 		result = rt->argv;
 	}
-	rt->argv += size;
+	rt->argv += (size + 3) & ~3;
 	return result;
 }
-static inline int32_t popi32(state rt) { return *(int32_t*)poparg(rt, NULL, sizeof(int32_t)); }
-static inline int64_t popi64(state rt) { return *(int64_t*)poparg(rt, NULL, sizeof(int64_t)); }
-static inline float32_t popf32(state rt) { return *(float32_t*)poparg(rt, NULL, sizeof(float32_t)); }
-static inline float64_t popf64(state rt) { return *(float64_t*)poparg(rt, NULL, sizeof(float64_t)); }
+
+//~ #define poparg(__ARGV, __SIZE) ((void*)(((__ARGV)->argv += (((__SIZE) + 3) & ~3)) - (((__SIZE) + 3) & ~3))))
+//~ #define popaty(__ARGV, __TYPE) (*(__TYPE*)(poparg((__ARGV), sizeof(__TYPE))))
+
+#define poparg(__ARGV, __TYPE) (((__TYPE*)((__ARGV)->argv += ((sizeof(__TYPE) + 3) & ~3)))[-1])
+//~ static inline int32_t popi32(state rt) { return *(int32_t*)poparg(rt, NULL, sizeof(int32_t)); }
+//~ static inline int64_t popi64(state rt) { return *(int64_t*)poparg(rt, NULL, sizeof(int64_t)); }
+//~ static inline float32_t popf32(state rt) { return *(float32_t*)poparg(rt, NULL, sizeof(float32_t)); }
+//~ static inline float64_t popf64(state rt) { return *(float64_t*)poparg(rt, NULL, sizeof(float64_t)); }
+static inline int32_t popi32(state rt) { return poparg(rt, int32_t); }
+static inline int64_t popi64(state rt) { return poparg(rt, int64_t); }
+static inline float32_t popf32(state rt) { return poparg(rt, float32_t); }
+static inline float64_t popf64(state rt) { return poparg(rt, float64_t); }
 static inline void* popref(state rt) { int32_t p = popi32(rt); return p ? rt->_mem + p : NULL; }
 static inline char* popstr(state rt) { return popref(rt); }
+#undef poparg
 
-//~ static inline void reti32(state rt, int32_t val) { setret(int32_t, rt, val); }
-//~ static inline void reti64(state rt, int64_t val) { setret(int64_t, rt, val); }
-//~ static inline void retf32(state rt, float32_t val) { setret(float32_t, rt, val); }
-//~ static inline void retf64(state rt, float64_t val) { setret(float64_t, rt, val); }
-//~ static inline void retref(state rt, float64_t val) { setret(float64_t, rt, vmOffset(s, val)); }
+#define getret(__ARGV, __TYPE) (*((__TYPE*)(__ARGV->retv)))
+#define setret(__ARGV, __TYPE, __VAL) (getret(__ARGV, __TYPE) = (__TYPE)(__VAL))
+static inline void reti32(state rt, int32_t val) { setret(rt, int32_t, val); }
+static inline void reti64(state rt, int64_t val) { setret(rt, int64_t, val); }
+static inline void retf32(state rt, float32_t val) { setret(rt, float32_t, val); }
+static inline void retf64(state rt, float64_t val) { setret(rt, float64_t, val); }
+//~ static inline void retref(state rt, void* val) { setret(rt, void*, vmOffset(rt, val)); }
+#undef setret

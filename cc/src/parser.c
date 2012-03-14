@@ -63,11 +63,6 @@ Lexical elements
 #include <math.h>
 #include "core.h"
 
-/* Support postfix C array declarations
- * , such as int a[3][4];
- */
-#define CARRAYDECL      0
-
 //{~~~~~~~~~ Input ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 unsigned rehash(const char* str, unsigned len) {
@@ -999,7 +994,7 @@ static int readTok(ccState s, astn tok) {
 			//~ ('.'[0-9]*)? ([eE]([+-]?)[0-9]+)?
 			if (radix == 10) {
 
-				f64v = i64v;
+				f64v = (float64_t)i64v;
 
 				if (chr == '.') {
 					long double val = 0;
@@ -1309,8 +1304,6 @@ static symn ctorArg(ccState s, symn rec) {
 		ctor->call = 1;
 		ctor->cnst = 1;	// returns constant (params must be constants too)
 
-		//~ fixargs(ctor, 4, 0);
-
 		ctor->init = opnode(s, OPER_fnc, s->emit_tag, root);
 		ctor->init->type = rec;
 
@@ -1556,7 +1549,7 @@ astn decl_var(ccState s, astn *argv, int mode) {
 		}
 
 		ref = declare(s, TYPE_ref, tag, typ);
-		ref->size = byref ? 4 : sizeOf(typ);
+		ref->size = byref ? vm_size : sizeOf(typ);
 
 		if (argv) {
 			*argv = NULL;
@@ -2569,7 +2562,7 @@ astn decl(ccState s, int Rmode) {
 
 			if (Attr != ATTR_stat) {
 				ctorPtr(s, def);
-				if (def->args && pack == 4) {
+				if (def->args && pack == vm_size) {
 					ctorArg(s, def);
 				}
 
@@ -2737,7 +2730,7 @@ astn decl(ccState s, int Rmode) {
 					// result is the first argument
 					result->offs = sizeOf(result);
 
-					ref->offs = result->offs + fixargs(ref, 4, -result->offs);
+					ref->offs = result->offs + fixargs(ref, vm_size, -result->offs);
 
 					//~ ref->nest = s->nest + 1;
 

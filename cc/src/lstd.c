@@ -14,52 +14,52 @@ math, print, time libcall functions
 
 /*static int f64abs(state rt) {
 	float64_t x = popf64(rt);
-	setret(rt, float64_t, fabs(x));
+	retf64(rt, fabs(x));
 	return 0;
 }// */
 static int f64sin(state rt) {
 	float64_t x = popf64(rt);
-	setret(rt, float64_t, sin(x));
+	retf64(rt, sin(x));
 	return 0;
 }
 static int f64cos(state rt) {
 	float64_t x = popf64(rt);
-	setret(rt, float64_t, cos(x));
+	retf64(rt, cos(x));
 	return 0;
 }
 static int f64tan(state rt) {
 	float64_t x = popf64(rt);
-	setret(rt, float64_t, tan(x));
+	retf64(rt, tan(x));
 	return 0;
 }
 
 static int f64log(state rt) {
 	float64_t x = popf64(rt);
-	setret(rt, float64_t, log(x));
+	retf64(rt, log(x));
 	return 0;
 }
 static int f64exp(state rt) {
 	float64_t x = popf64(rt);
-	setret(rt, float64_t, exp(x));
+	retf64(rt, exp(x));
 	return 0;
 }
 static int f64pow(state rt) {
 	float64_t x = popf64(rt);
 	float64_t y = popf64(rt);
-	setret(rt, float64_t, pow(x, y));
+	retf64(rt, pow(x, y));
 	//~ debug("pow(%g, %g) := %g", x, y, pow(x, y));
 	return 0;
 }
 static int f64sqrt(state rt) {
 	float64_t x = popf64(rt);
-	setret(rt, float64_t, sqrt(x));
+	retf64(rt, sqrt(x));
 	return 0;
 }
 
 static int f64atan2(state rt) {
 	float64_t x = popf64(rt);
 	float64_t y = popf64(rt);
-	setret(rt, float64_t, atan2(x, y));
+	retf64(rt, atan2(x, y));
 	return 0;
 }
 //}#endregion
@@ -168,7 +168,7 @@ static int bits_call(state rt, int function) {
 				if ((x & 0x0000000000000003ULL) == 0) { ans +=  2; x >>=  2; }
 				if ((x & 0x0000000000000001ULL) == 0) { ans +=  1; }
 			}
-			setret(rt, int32_t, ans);
+			reti32(rt, ans);
 		} return 0;
 
 		case b32_bsr: {
@@ -193,7 +193,7 @@ static int bits_call(state rt, int function) {
 				if ((x & 0x000000000000000cULL) != 0) { ans +=  2; x >>=  2; }
 				if ((x & 0x0000000000000002ULL) != 0) { ans +=  1; }
 			}
-			setret(rt, int32_t, ans);
+			reti32(rt, ans);
 		} return 0;
 
 		case b32_bhi: {
@@ -240,14 +240,14 @@ static int bits_call(state rt, int function) {
 			int32_t ofs = popi32(rt);
 			int32_t cnt = popi32(rt);
 			val <<= 32 - (ofs + cnt);
-			setret(rt, int32_t, val >> (32 - cnt));
+			reti32(rt, val >> (32 - cnt));
 		} return 0;
 		case b64_zxt: {
 			uint64_t val = popi64(rt);
 			int32_t ofs = popi32(rt);
 			int32_t cnt = popi32(rt);
 			val <<= 64 - (ofs + cnt);
-			setret(rt, int64_t, val >> (64 - cnt));
+			reti64(rt, val >> (64 - cnt));
 		} return 0;
 
 		case b32_sxt: {
@@ -255,14 +255,14 @@ static int bits_call(state rt, int function) {
 			int32_t ofs = popi32(rt);
 			int32_t cnt = popi32(rt);
 			val <<= 32 - (ofs + cnt);
-			setret(rt, int32_t, val >> (32 - cnt));
+			reti32(rt, val >> (32 - cnt));
 		} return 0;
 		case b64_sxt: {
 			int64_t val = popi64(rt);
 			int32_t ofs = popi32(rt);
 			int32_t cnt = popi32(rt);
 			val <<= 64 - (ofs + cnt);
-			setret(rt, int64_t, val >> (64 - cnt));
+			reti64(rt, val >> (64 - cnt));
 		} return 0;
 	}
 	return -1;
@@ -316,29 +316,29 @@ static int miscCall(state rt) {
 			initialized = 1;
 		}
 		result = rand() * rand();	// if it gives a 16 bit int
-		setret(rt, int32_t, result & 0x7fffffff);
+		reti32(rt, result & 0x7fffffff);
 		return 0;
 	}
 	if (rt->libc == miscOpTime32) {
-		setret(rt, int32_t, time(NULL));
+		reti32(rt, time(NULL));
 		return 0;
 	}
 	if (rt->libc == miscOpClock32) {
-		setret(rt, int32_t, clock());
+		reti32(rt, clock());
 		return 0;
 	}
 	if (rt->libc == miscOpClocksPS) {
 		float64_t ticks = popi32(rt);
-		setret(rt, float64_t, ticks / CLOCKS_PER_SEC);
+		retf64(rt, ticks / CLOCKS_PER_SEC);
 		return 0;
 	}
 
 	if (rt->libc == timeOpProc64) {
-		setret(rt, int64_t, clockCpu());
+		reti64(rt, clockCpu());
 		return 0;
 	}
 	if (rt->libc == timeOpClck64) {
-		setret(rt, int64_t, clockNow());
+		reti64(rt, clockNow());
 		return 0;
 	}
 

@@ -1,7 +1,5 @@
-//~ #open src/ccvm.h
-//~ #open src/pvmc.h
-
-//~ #open src/core.c			// 
+//~ #open src/core.h
+//~ #open src/core.c
 //~ #open src/tree.c
 
 //~ #open src/code.c			// virtual mashine
@@ -9,7 +7,8 @@
 //~ #open src/parser.c			// input, lexer, parser
 //~ #open src/printer.c			// pretty print, logger
 //~ #open src/main.c
-define nan = emit(float64, int64(0xfff8000000000000));
+
+//~ define nan = emit(float64, int64(0xfff8000000000000));
 //~ int c = 8192 + 19;
 //~ define f64hex float64;	//%0x%016X
 //~ define f32hex float32;	//%0x%08x
@@ -17,11 +16,81 @@ define nan = emit(float64, int64(0xfff8000000000000));
 //~ f32hex nan2 = --(0/0.);
 
 //~ double nan1 = Math.nan;
-double x = -1./0;//1e-500;
-bool n1 = isNan(x);
-bool n2 = isInf(x);
-bool n3 = isFinite(x);
+//~ double x = -1./0;//1e-500;
+//~ bool n1 = isNan(x);
+//~ bool n2 = isInf(x);
+//~ bool n3 = isFinite(x);
 
+//~ int64 n = 9;
+//~ int i = !!n;
+
+//~ /*
+enum unittesting: bool {
+	asin = true;
+	acos = true;
+}
+float64 vf[10] =
+	4.9790119248836735e+00,
+	7.7388724745781045e+00,
+	-2.7688005719200159e-01,
+	-5.0106036182710749e+00,
+	9.6362937071984173e+00,
+	2.9263772392439646e+00,
+	5.2290834314593066e+00,
+	2.7279399104360102e+00,
+	1.8253080916808550e+00,
+	-8.6859247685756013e+00;
+
+define epsilon = 1e-15;
+
+static if (unittesting.asin) {
+float64 asin[10] =
+	5.2117697218417440497416805e-01,
+	8.8495619865825236751471477e-01,
+	-2.769154466281941332086016e-02,
+	-5.2482360935268931351485822e-01,
+	1.3002662421166552333051524e+00,
+	2.9698415875871901741575922e-01,
+	5.5025938468083370060258102e-01,
+	2.7629597861677201301553823e-01,
+	1.83559892257451475846656e-01,
+	-1.0523547536021497774980928e+00;
+
+for (int i = 0; i < vf.length; i += 1) {
+	float64 x = vf[i] / 10;
+	float64 f = Asin(x);
+	if (abs(asin[i] - f) > epsilon) {
+		//TODO: debug("test failed", {func: "Asin", arg_x: x, got: f, want: asin[i]});
+		debug("test failed"); print("Asin(%g)", x); print(" = %g", f); print(", want %g\n", asin[i]);
+	}
+}
+}
+static if (unittesting.acos) {
+float64 acos[10] =
+	1.0496193546107222142571536e+00,
+	6.8584012813664425171660692e-01,
+	1.5984878714577160325521819e+00,
+	2.0956199361475859327461799e+00,
+	2.7053008467824138592616927e-01,
+	1.2738121680361776018155625e+00,
+	1.0205369421140629186287407e+00,
+	1.2945003481781246062157835e+00,
+	1.3872364345374451433846657e+00,
+	2.6231510803970463967294145e+00;
+
+for (int i = 0; i < vf.length; i += 1) {
+	float64 x = vf[i] / 10;
+	float64 f = Acos(x);
+	if (abs(acos[i] - f) > epsilon) {
+		//TODO: debug("test failed", {func: "Acos", arg_x: x, got: f, want: acos[i]});
+		debug("test failed"); print("Acos(%g)", x); print(" = %g", f); print(", want %g\n", acos[i]);
+	}
+}
+}
+//~ */
+//~ float32 x = -8.5;
+//~ float32 y = x % 1;
+//~ double nan = emit(struct, int64(0xfff8000000000000));
 /*
 int count = 19;
 define Array(typename type, int32 ^n) = emit(struct, byRef(memmgr(null, type.size * n)), i32(n));
@@ -429,7 +498,7 @@ bool next(array_iterator &it, int &val) {
 	}
 }
 
-int a[2] = 1, 2;
+int a[40] = 1, 2, 3, 4;
 array_iterator it = iterator(a);
 for (int pos : a) {
 	printIT(pos);

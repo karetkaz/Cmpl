@@ -81,7 +81,7 @@ char *parsei32(const char *str, int32_t *res, int radix) {
 		str += 1;
 	}
 
-	*res = sign * result;
+	*res = (int32_t)(sign * result);
 
 	return (char *)str;
 }
@@ -204,45 +204,45 @@ int evalexp(ccState cc, char* text) {
 }
 
 //{ int64 ext
-static int b64shl(state s) {
-	uint64_t x = popi64(s);
-	int32_t y = popi32(s);
-	setret(s, uint64_t, x << y);
+static int b64shl(state rt) {
+	uint64_t x = popi64(rt);
+	int32_t y = popi32(rt);
+	reti64(rt, x << y);
 	return 0;
 }
-static int b64shr(state s) {
-	uint64_t x = popi64(s);
-	int32_t y = popi32(s);
-	setret(s, uint64_t, x >> y);
+static int b64shr(state rt) {
+	uint64_t x = popi64(rt);
+	int32_t y = popi32(rt);
+	reti64(rt, x >> y);
 	return 0;
 }
-static int b64sar(state s) {
-	int64_t x = popi64(s);
-	int32_t y = popi32(s);
-	setret(s, uint64_t, x >> y);
+static int b64sar(state rt) {
+	int64_t x = popi64(rt);
+	int32_t y = popi32(rt);
+	reti64(rt, x >> y);
 	return 0;
 }
-static int b64and(state s) {
-	uint64_t x = popi64(s);
-	uint64_t y = popi64(s);
-	setret(s, uint64_t, x & y);
+static int b64and(state rt) {
+	uint64_t x = popi64(rt);
+	uint64_t y = popi64(rt);
+	reti64(rt, x & y);
 	return 0;
 }
-static int b64ior(state s) {
-	uint64_t x = popi64(s);
-	uint64_t y = popi64(s);
-	setret(s, uint64_t, x | y);
+static int b64ior(state rt) {
+	uint64_t x = popi64(rt);
+	uint64_t y = popi64(rt);
+	reti64(rt, x | y);
 	return 0;
 }
-static int b64xor(state s) {
-	uint64_t x = popi64(s);
-	uint64_t y = popi64(s);
-	setret(s, uint64_t, x ^ y);
+static int b64xor(state rt) {
+	uint64_t x = popi64(rt);
+	uint64_t y = popi64(rt);
+	reti64(rt, x ^ y);
 	return 0;
 }
 /* unused
-static int b64bsf(state s) {
-	uint64_t x = popi64(s);
+static int b64bsf(state rt) {
+	uint64_t x = popi64(rt);
 	int ans = -1;
 	if (x != 0) {
 		ans = 0;
@@ -253,11 +253,11 @@ static int b64bsf(state s) {
 		if ((x & 0x0000000000000003ULL) == 0) { ans +=  2; x >>=  2; }
 		if ((x & 0x0000000000000001ULL) == 0) { ans +=  1; }
 	}
-	setret(s, int32_t, ans);
+	reti32(rt, ans);
 	return 0;
 }
-static int b64bsr(state s) {
-	uint64_t x = popi64(s);
+static int b64bsr(state rt) {
+	uint64_t x = popi64(rt);
 	int ans = -1;
 	if (x != 0) {
 		ans = 0;
@@ -268,23 +268,23 @@ static int b64bsr(state s) {
 		if ((x & 0x000000000000000cULL) != 0) { ans +=  2; x >>=  2; }
 		if ((x & 0x0000000000000002ULL) != 0) { ans +=  1; }
 	}
-	setret(s, int32_t, ans);
+	reti32(rt, ans);
 	return 0;
 }
-static int b64hib(state s) {
-	uint64_t x = popi64(s);
+static int b64hib(state rt) {
+	uint64_t x = popi64(rt);
 	x |= x >> 1;
 	x |= x >> 2;
 	x |= x >> 4;
 	x |= x >> 8;
 	x |= x >> 16;
 	x |= x >> 32;
-	setret(s, uint64_t, x - (x >> 1));
+	reti64(rt, x - (x >> 1));
 	return 0;
 }
 static int b64lob(state s) {
 	uint64_t x = popi64(s);
-	setret(s, uint64_t, x & -x);
+	reti64(rt, x & -x);
 	return 0;
 }*/
 //}
@@ -302,7 +302,6 @@ int reglibs(state rt, char *stdlib) {
 		err = err || !libcall(rt, b64ior, "int64  Or(int64 Lhs, int64 Rhs);");
 		err = err || !libcall(rt, b64xor, "int64 Xor(int64 Lhs, int64 Rhs);");
 		type_i64->args = leave(rt->cc, type_i64, 1);
-		//~ extend(type_i64, leave(rt->cc, type_i64, 1));
 	}
 	//~ err = err || install_bits(s);
 
@@ -311,24 +310,11 @@ int reglibs(state rt, char *stdlib) {
 
 int compile(state rt, int wl, char *file) {
 	int result;
-	#if DEBUGGING > 1
-	int size = 0;
-	#endif
 
 	if (!ccOpen(rt, srcFile, file))
 		return -1;
 
-	#if DEBUGGING > 1
-	//~ debug("after init:%d Bytes", s->cc->_beg - s->_mem);
-	size = (rt->cc->_beg - (char*)rt->_mem);
-	#endif
-
 	result = parse(rt->cc, 0, wl);
-
-	#if DEBUGGING > 1
-	//~ debug("%s: init(%.2F); scan(%.2F) KBytes", file, size / 1024., (s->cc->_beg - s->_mem) / 1024.);
-	(void)size;
-	#endif
 
 	return result;
 }
@@ -457,8 +443,7 @@ static int libCallHaltDebug(state rt) {
 	symn arg = rt->libc->args;
 	int argc = (char*)rt->retv - (char*)rt->argv;
 
-	//~ for (arg = rt->gdef ;arg; arg = arg->gdef) {
-	for ( ;arg; arg = arg->next) {
+	for ( ; arg; arg = arg->next) {
 		char *ofs;
 
 		if (arg->call)

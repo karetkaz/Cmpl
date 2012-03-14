@@ -273,9 +273,9 @@ int32 a4 = int1(0.);		// 2015
 }
 static if (Test.Type & 0x02) {
 
-define isNan(float64 ^x) = bool(x != x);
-define isNan(float32 ^x) = bool(x != x);
-float64 NAN = 0/0.;
+//~ define isNan(float64 ^x) = bool(x != x);
+//~ define isNan(float32 ^x) = bool(x != x);
+float64 NAN = Math.nan; // 0 / 0.;
 int isNan1 = int(isNan(NAN));
 //~ int isNan2 = int(isNan(Math.nan));
 }
@@ -429,7 +429,7 @@ define double(fixed val) = double(val, __fix);
 double fixed_test = double(add(fixed(2.225), fixed(3)));
 }// +/
 
-} // */
+}
 static if (Test.Call) {
 static if (Test.Call & 1) {			// 256 bit(8x32bit) integer
 struct i32x8 {
@@ -568,14 +568,13 @@ i32x8 sub(i32x8 &a, i32x8 &b) {
 //~ i32x8 i32x8_c = add(i32x8_a, i32x8_b);
 
 } // +/
-} // */
+}
 
 /* itoa
 uint8 tmp[1024];
 string str = emit(string, ref(tmp));
 itoa(str, 1024, 10, 1, true, "");
 //~ */
-
 /* Reflect
 const TypeCode: int32 {
 	CAST_any = 0x00000000;		// invalid, error, ...
@@ -591,7 +590,6 @@ const TypeCode: int32 {
 
 	CAST_arr = 0x0000000a;		// slice(size, data)
 	CAST_var = 0x0000000b;		// variant(type, data)
-	CAST_p4x = 0x0000000c;		// 
 	CAST____ = 0x0000000d;		// typename
 	CAST____ = 0x0000000e;		// variable
 	CAST____ = 0x0000000f;		// function
@@ -631,8 +629,8 @@ struct TypeInfo {
 	//~ get function = bool(this.kind & ATTR_fun);
 }
 
-//~ class type: TypeInfo {}
-//~ class reference: TypeInfo {}
+//~ class typename: TypeInfo {}
+//~ class variable: TypeInfo {}
 
 bool instanceof(TypeInfo &ty, var obj) {
 	TypeInfo &oty = obj.type;
@@ -746,24 +744,33 @@ bool invoke(TypeInfo &type, string name, var &result, var args...) {
 
 	return false;
 }
+//~ */
+/* debug
+static struct debug {
+	enum {
+		print = 0x0001;		// show message
+		trace = 0x0002;		// show stack trace
+		abort = 0x0010;		// stop program execution
+	}
 
-assert(true);
-static struct assert {
-	const Flags {
-		abort = 0x0001;
-		print = 0x0008;
-	}
-	flags = Flags.print | Flags.abort;
-	static void callback(string file, int line, string message, string stacktrace[]) = function() {
-		if (assert.flags & Flags.print) {
-			libc(log, file, line, 0, message);
-		}
-		if (assert.flags & Flags.abort) {
-			exit(-1);
-		}
-	}
-	static void trace(string message);
+	install(cc, "debug(bool condition, Flags flags, string message, pointer value, pointer stacktrace)", TYPE_def, 0, 0);
+
+	define debug(string message, variant object, int maxStackTrace, bool abort)
+
+	install(cc, "debug(string message, string args...) = debug(message, false, false, args)", TYPE_def, 0, 0);
+	install(cc, "trace(string message, string args...) = debug(message, true, false, args)", TYPE_def, 0, 0);
+	install(cc, "error(string message, string args...) = debug(message, false, true, args)", TYPE_def, 0, 0);
+	install(cc, "info(string message, string args...) = debug(message, false, false, args)", TYPE_def, 0, 0);
+	install(cc, "log(string message, string args...) = debug(message, false, false, args)", TYPE_def, 0, 0);
+	install(cc, "assert(bool test, string message, string args...) = if (test) debug(message, true, true, args)", TYPE_def, 0, 0);
 }
+
+define debug(string message) = debug(message, null, 0, false);
+define trace(string message) = debug(message, null, 0, false);
+define error(string message) = debug(message, null, 0, false);
+define debug(string message, var object) = debug(message, value);
+define trace(string message, var object) = debug(message, value);
+define error(string message, var object) = debug(message, value);
 
 //~ */
 /* stupid things

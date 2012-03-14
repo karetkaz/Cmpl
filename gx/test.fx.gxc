@@ -1,9 +1,9 @@
 // effects
-define test = 4;
+define test = 9;
 enum Window {
 	draw = RenderMode.swap_buff;
 	resx = 512;
-	resy = 512;
+	resy = resx;
 }
 
 //~ string fileName = "media/images/David.png";
@@ -419,13 +419,14 @@ gxSurf image = gxSurf(fileName);
 gxSurf histo(gxSurf dst, gxSurf src, bool rgb) {
 
 	result = dst;
+	bool resize = false;
 
 	if (width(dst) != 256) {
-		println("histogram width must be 256");
-		return;
+		result = gxSurf(256, height(dst));
+		resize = true;
 	}
 
-	int histoHeight = height(dst);
+	int histoHeight = height(result);
 	int imgh = height(src);
 	int imgw = width(src);
 	int histoR[256];
@@ -463,7 +464,7 @@ gxSurf histo(gxSurf dst, gxSurf src, bool rgb) {
 
 	// fill
 	int y2 = histoHeight;
-	fillRect(dst, 0, 0, 35536, 35536, 0);
+	fillRect(result, 0, 0, 35536, 35536, 0);
 
 	for (int x = 0; x < 256; x += 1) {
 		enum {
@@ -480,15 +481,22 @@ gxSurf histo(gxSurf dst, gxSurf src, bool rgb) {
 		if (rgb) {
 			for (int y = 0; y < histoHeight; y += 1) {
 				int col = colR * (y < rsize) | colG * (y < gsize) | colB * (y < bsize);
-				setPixel(dst, x, histoHeight - y, col);
+				setPixel(result, x, histoHeight - y, col);
 			}
 		}
 		else {
 			//~ fillRect(dst, x, y2 - histoHeight(histoL[x], maxLum), x+1, y2, 0xffffff);
-			fillRect(dst, x, y2 - rsize, x+1, y2, colR);
-			fillRect(dst, x, y2 - gsize, x+1, y2, colG);
-			fillRect(dst, x, y2 - bsize, x+1, y2, colB);
+			fillRect(result, x, y2 - rsize, x+1, y2, colR);
+			fillRect(result, x, y2 - gsize, x+1, y2, colG);
+			fillRect(result, x, y2 - bsize, x+1, y2, colB);
 		}
+	}
+
+	if (resize) {// (result != dst) {
+		zoomSurf(dst, null, result, null, 1);
+		delSurf(result);
+		result = dst;
+		println("histogram width not 256, resizing ...");
 	}
 }
 define histo(gxSurf dst, gxSurf src) = histo(dst, src, true);
@@ -499,17 +507,14 @@ copySurf(offScreen, width(offScreen) - width(histo) - 10, 10, histo(histo, image
 }
 static if (test == 2) {		// Blending
 
-gxClut lut1;
-gxClut lut2;
-
-blendLut(lut1, 0xffffff, 0);
-blendLut(lut2, 0, 0xffffff);
-
-gxRect g1 = gxRect(0, Window.resy);
-gxRect g2 = gxRect(Window.resx, 0);
-
 gxSurf image1 = resize(gxSurf(fileName), Window.resx, Window.resy);
 gxSurf image2 = resize(gxSurf(fileBlend), Window.resx, Window.resy);
+//~ gxClut lut1;
+//~ gxClut lut2;
+//~ blendLut(lut1, 0xffffff, 0);
+//~ blendLut(lut2, 0, 0xffffff);
+//~ gxRect g1 = gxRect(0, Window.resy);
+//~ gxRect g2 = gxRect(Window.resx, 0);
 //~ gxSurf image1 = gradSurf(gxSurf(Window.resx, Window.resy), &g1, &lut1, Gradient.Linear);
 //~ gxSurf image2 = gradSurf(gxSurf(Window.resx, Window.resy), &g2, &lut2, Gradient.Linear);
 
@@ -686,8 +691,8 @@ copySurf(offScreen, 0, 0, image2, null, 1, BlendMode.VividLight);		// atmasoljuk
 static if (test == 3) {		// Dithering
 
 int colors = 2;
-bool grayscale = true;
-Dithering method = Dithering.Stucki;
+bool grayscale = !true;
+Dithering method = Dithering.Bayer;
 
 define hex(uint32 ^c) = int(c <= 9 ? (c + '0') : ((c - 10) + 'a'));
 
@@ -777,6 +782,7 @@ setupPicView(fillSurf(image, null, sepiaFp), true);
 }
 static if (test == 5) {		// brightness contrast gamma
 
+define useNativeImpl = true;
 gxSurf img = gxSurf(fileName);
 gxSurf lui = gxSurf(256, 100);
 
@@ -815,6 +821,7 @@ void mouseCB(int btn, int x, int y) {
 }
 
 void drawCB() {
+
 	if (reDraw) {
 		zoomSurf(offScreen, null, img, null, 1);
 
@@ -824,11 +831,11 @@ void drawCB() {
 
 		lutBrightnessContractGamma(&lut, brightness, contrast, gamma / 100.);
 
-		define useNativeImpl = true;
 		static if (useNativeImpl) {
 			clutSurf(offScreen, null, &lut);
 		}
 		static if (!useNativeImpl) {
+			//~ /*
 			static int pixelCB(int col) {
 				result = __rgb(
 					rch(lut.data[rch(col)]),
@@ -837,6 +844,20 @@ void drawCB() {
 				);
 			}
 			fillSurfrgb(offScreen, null, pixelCB);
+			//~ */
+			/* techniq 2
+			int w = width(offScreen);
+			int h = height(offScreen);
+			for (int j = 0; j < h; j += 1) {
+				for (int i = 0; i < w; i += 1) {
+					int col = getPixel(offScreen, i, j);
+					setPixel(offScreen, i, j, __rgb(
+						rch(lut.data[rch(col)]),
+						gch(lut.data[gch(col)]),
+						bch(lut.data[bch(col)])
+					));
+				}
+			}//~ */
 		}
 
 		copySurf(offScreen, Window.resx - 266, 10, lut2Surf(lui, &lut, -1), null);
@@ -869,6 +890,7 @@ Gui.setDrawCallback(drawCB);
 }
 static if (test == 6) {		// hue saturation brightness
 
+define useNativeImpl = true;
 gxSurf img = gxSurf(fileName);
 
 int brightness = 0;
@@ -963,7 +985,6 @@ void drawCB() {
 
 		mat = cmatHSL(hue, saturation, brightness);
 
-		define useNativeImpl = true;
 		static if (useNativeImpl) {
 			cmatSurf(offScreen, null, &mat);
 		}
@@ -1001,7 +1022,7 @@ Gui.setDrawCallback(drawCB);
 }
 static if (test == 9) {		// blur
 
-void fastblur(gxSurf img, int radius) {
+/*void fastblur(gxSurf img, int radius) {
 
 	//~ print("fastBlurImage(%d): http://incubator.quasimondo.com/processing/superfastblur.pde\n", int64(radius));
 
@@ -1096,7 +1117,7 @@ void fastblur(gxSurf img, int radius) {
 			bsum += b[p1] - b[p2];
 		}
 	}
-}
+}*/
 
 gxSurf img = gxSurf(fileName);
 int blurradius = -1;
@@ -1111,8 +1132,8 @@ void drawCB() {
 		int radius = min(blurradius, Window.resy);
 		blurradius = -1;
 		zoomSurf(offScreen, null, img, null, 1);
-		fastblur(offScreen, radius);
-		//~ blurSurf(offScreen, null, radius);
+		//~ fastblur(offScreen, radius);
+		blurSurf(offScreen, null, radius);
 	}
 	//~ Gui.Repaint();
 }

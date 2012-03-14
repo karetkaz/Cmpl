@@ -151,10 +151,10 @@ void meshGen2(int sdiv, bool sclosed, int tdiv, bool tclosed, void pos(double &x
 }
 
 static if (test == 1) {		// load mesh with texture
-mesh.Read("media/meshes/dchair.obj", "media/meshes/ut2k4/FlackCannon.png");
+mesh.Read("media/meshes/dchair.obj", "media/images/download.jpg");
 //~ mesh.Read("media/meshes/ut2k4/FlackCannon.obj", "media/meshes/ut2k4/FlackCannon.png");
 }
-static if (test == 2) {		// generate mesh
+static if (test == 2) {		// generate mesh (height map)
 define resize(gxSurf src, int width, int height) = zoomSurf(gxSurf(width, height), null, src, null, 1);
 define division = 192;
 meshGen(false, false, resize(gxSurf("media/images/hm.jpg"), division, division));
@@ -246,7 +246,7 @@ void cilinder(double &x, double &y, double &z, double s01, double t01) {
 
 	x = cos(t);
 	y = sin(t);
-	z = s;
+	z = -s;
 }
 void OPXor(double &x, double &y, double &z, double s01, double t01) {
 	define H = float64(10);
@@ -270,7 +270,7 @@ define divisionT = divisionM * 64;
 //~ meshGen(divisionM*8, divisionM, shell);
 //~ meshGen(divisionS, true, divisionT, true, OPPerlin, 1e-10);
 mesh.Texture(gxSurf("media/images/download.jpg"));
-meshGen2(divisionS, true, divisionT, true, shell, 1e-10); 
+meshGen2(divisionS, true, divisionT, true, OPXor, 1e-10); 
 
 /*void drawCB() {
 	if (start == true) {
@@ -283,8 +283,8 @@ Gui.setDrawCallback(drawCB);*/
 //~ mesh.Center(2);
 }
 mesh.Center(2);
-//~ mesh.Normalize(0);
-mesh.Normalize(1e-10);
+mesh.Normalize(0);
+//~ mesh.Normalize(1e-10);
 
 static if (true) {			// use custom mouseHandler
 

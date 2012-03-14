@@ -1,7 +1,7 @@
 // 2d
-define test = 2;
+define test = 4;
 enum Window {
-	//~ draw = RenderMode.swap_buff;
+	draw = RenderMode.swap_buff;
 
 	//~ resx = 1440;
 	//~ resy = 900;

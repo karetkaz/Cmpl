@@ -924,26 +924,6 @@ case v2d_max: NEXT(1, 8, -4) {
 default: STOP(error_opc, 1, -1);
 //}-----------------------------------------------------------------------------
 
-/*
-ldi:
-	pop ref(offs)
-	memcpy(sp, offs, size)
-	sp -= size;
-sti:
-	pop ref(offs)
-	memcpy(offs, sp, size)
-	sp += size;
-
-ldst:
-	pop ref(offs)
-	pop i32(size)
-	if (size < 0)
-		memcpy(offs, sp, -size)
-	else
-		memcpy(sp, offs, +size)
-	opc_spc(size);
-*/
-
 #undef SP
 #undef MP
 

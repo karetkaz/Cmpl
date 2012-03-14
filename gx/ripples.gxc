@@ -12,13 +12,13 @@ enum Options {
 }
 
 // division of mesh and heightmap
-define division = 64;
+define division = 92;
 
 //~ do rain every dorain frame
-define dorain = 0;
+define dorain = 5;
 
-define pheight = -256;
-define density = 5;
+define pheight = -512;
+define density = 4;
 
 int mx = 0;
 int my = 0;
@@ -34,12 +34,20 @@ static if (Options.textured) {
 }
 
 void drawCB() {
-	int i;
 	static int page = 0;
 	static int32 hmap[2][division * division] = 0;
-	//~ static int32 hmap[2, division, division] = 0;
 
-	int p = page;
+	Gui.Repaint();
+	static int64 beg = -1;
+	int64 now = timeNow();
+	if (clocksPerSec(now - beg) <= .04) {
+		static if (Options.do2d) {
+			zoomSurf(offScreen, null, tmp, null, 1);
+		}
+		return;
+	}
+	beg = now;
+
 
 	static if (dorain != 0) {
 		if (mx == 0 && my == 0) {
@@ -52,35 +60,27 @@ void drawCB() {
 		}
 	}
 
+	int p = page;
 	if (mx > 0 && my > 0) {
 		int px = mx * division / Window.resx;
 		int py = my * division / Window.resy;
 		if (px > 1 && px < division-2 && py > 1 && py < division-2) {
-			//~ hmap[p][px][py] = pheight;
 			hmap[p][px + division * py] = pheight;
 		}
 		mx = my = 0;
 	}
 
-	static int64 beg = -1;
-	int64 now = timeNow();
-	if (clocksPerSec(now - beg) > .04)
-	{
-		beg = now;
-		// the effect
-		i = division;
-		int np = page ^= 1;
-		for (int y = 1; y < division - 1; y += 1) {
-			for (int x = 1; x < division - 1; x += 1) {
-				int height = ((hmap[p][i-division-1] + hmap[p][i-division] + hmap[p][i-division+1] + hmap[p][i-1] + hmap[p][i+1] + hmap[p][i+division-1] + hmap[p][i+division] + hmap[p][i+division+1]) >> 2) - hmap[np][i];
-				//~ int height = ((hmap[p][i-division] + hmap[p][i-1] + hmap[p][i+1] + hmap[p][i+division]) >> 1) - hmap[np][i];
-				hmap[np][i] = height - (height >> density);
-				i += 1;
-				//~ int height = ((hmap[p][x-1][y-1] + hmap[p][x][y-1] + hmap[p][x+1][y-1] + hmap[p][x-1][y] + hmap[p][x+1][y] + hmap[p][x-1][y+1] + hmap[p][x][y+1] + hmap[p][x+1][y+1]) >> 2) - hmap[np][x][y];
-				//~ hmap[np][x][y] = height - (height >> density);
-			}
-			i += 2;
+	// the effect
+	int i = division;
+	int np = page ^= 1;
+	for (int y = 1; y < division - 1; y += 1) {
+		for (int x = 1; x < division - 1; x += 1) {
+			int height = ((hmap[p][i-division-1] + hmap[p][i-division] + hmap[p][i-division+1] + hmap[p][i-1] + hmap[p][i+1] + hmap[p][i+division-1] + hmap[p][i+division] + hmap[p][i+division+1]) >> 2) - hmap[np][i];
+			//~ int height = ((hmap[p][i-division] + hmap[p][i-1] + hmap[p][i+1] + hmap[p][i+division]) >> 1) - hmap[np][i];
+			hmap[np][i] = height - (height >> density);
+			i += 1;
 		}
+		i += 2;
 	}
 
 	static if (Options.do3d) {
@@ -97,11 +97,6 @@ void drawCB() {
 			int h10 = hmap[page][int(division * (posy + 1) + posx + 0)];
 			int h11 = hmap[page][int(division * (posy + 1) + posx + 1)];
 
-			//~ int h00 = hmap[page][posx + 0][posy + 0];
-			//~ int h01 = hmap[page][posx + 0][posy + 1];
-			//~ int h10 = hmap[page][posx + 1][posy + 0];
-			//~ int h11 = hmap[page][posx + 1][posy + 1];
-
 			h00 += (fixx * (h01 - h00)) >> 16;
 			h10 += (fixx * (h11 - h10)) >> 16;
 			h00 += (fixy * (h10 - h00)) >> 16;
@@ -113,16 +108,14 @@ void drawCB() {
 			x = lerp(1 - s01, -H, H);
 			y = lerp(1 - t01, -H, H);
 
-			//~ int posx = lerp(s01, 0, resX - 1);
-			//~ int posy = lerp(t01, 0, resY - 1);
-			//~ z = double(hmap[page][int(resX * posy + posx)]) / pheight;
+			//~ int posx = lerp(s01, 0, division - 1);
+			//~ int posy = lerp(t01, 0, division - 1);
+			//~ z = double(hmap[page][int(division * posy + posx)]) / pheight;
 
 			z = double(lerpHeight(s01, t01)) / 255;
-
 		}
 		meshGen(division, hmapfn, 1e-2);
 	}
-
 	static if (Options.do2d) {
 		i = division;
 		for (int y = 1; y < division - 1; y += 1) {
@@ -131,9 +124,8 @@ void drawCB() {
 					int Xoffset = hmap[p][i - 1] - hmap[p][i + 1];
 					int Yoffset = hmap[p][i - division] - hmap[p][i + division];
 
-					//~ int Xoffset = hmap[p][x - 1][y] - hmap[p][x + 1][y];
-					//~ int Yoffset = hmap[p][x][y - 1] - hmap[p][x][y + 1];
-
+					//~ Xoffset = Xoffset * 32 / pheight;
+					//~ Yoffset = Yoffset * 32 / pheight;
 					int Shading = clamp(Xoffset, 0, 126);
 
 					int t = getPixel(img, x + Xoffset, y + Yoffset);
@@ -142,7 +134,6 @@ void drawCB() {
 				}
 				static if (!Options.textured) {
 					setPixel(tmp, x, y, grayClamp(abs(hmap[p][i])));
-					//~ setPixel(tmp, x, y, grayClamp(abs(hmap[p][x][y])));
 				}
 				i += 1;
 			}
@@ -150,8 +141,6 @@ void drawCB() {
 		}
 		zoomSurf(offScreen, null, tmp, null, 1);
 	}
-
-	Gui.Repaint();
 }
 
 void mouseHandler(int btn, int x, int y) {

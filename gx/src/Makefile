@@ -1,6 +1,6 @@
 CCSRCDIR=../../cc/src/
 GXSRCDIR=./
-OBJDIR=../../obj/
+OBJDIR=../out/obj/
 LIBDIR=$(OBJDIR)
 BINDIR=../
 BINARY=main

@@ -1,13 +1,13 @@
 /*******************************************************************************
- *   File: ccvm.h
+ *   File: core.h
  *   Date: 2007/04/20
  *   Desc: main header
  *******************************************************************************
  *
  *
 *******************************************************************************/
-#ifndef __CCVM_H
-#define __CCVM_H
+#ifndef __CORE_H
+#define __CORE_H
 #include "pvmc.h"
 #include <stdlib.h>
 
@@ -358,6 +358,7 @@ struct ccState {
 	//~ symn	emit_opc;
 
 	symn	libc_mem;		// memory manager libcall
+	symn	libc_dbg;
 
 	char	*_beg;
 	char	*_end;
@@ -410,7 +411,6 @@ void eatnode(ccState, astn ast);
 symn install(ccState, const char* name, int kind, int cast, unsigned size, symn type, astn init);
 
 symn declare(ccState, int kind, astn tag, symn rtyp);
-void extend(symn type, symn args);
 symn addarg(ccState, symn sym, const char* name, int kind, symn type, astn init);
 
 int canAssign(symn rhs, astn val, int strict);

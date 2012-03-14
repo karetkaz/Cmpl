@@ -1,5 +1,5 @@
-#ifndef __CCVM_API
-#define __CCVM_API
+#ifndef __PVMC_API
+#define __PVMC_API
 
 #include "api.h"
 

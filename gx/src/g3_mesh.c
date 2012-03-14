@@ -1098,12 +1098,12 @@ typedef struct userData {
 
 static int getS(state rt) {
 	userData d = rt->udata;
-	setret(rt, float64_t, lerp(d->smin, d->smax, d->s));
+	retf64(rt, lerp(d->smin, d->smax, d->s));
 	return 0;
 }
 static int getT(state rt) {
 	userData d = rt->udata;
-	setret(rt, float64_t, lerp(d->tmin, d->tmax, d->t));
+	retf64(rt, lerp(d->tmin, d->tmax, d->t));
 	return 0;
 }
 static int setPos(state rt) {
@@ -1125,49 +1125,49 @@ static int setNrm(state rt) {
 
 static int f64abs(state rt) {
 	float64_t x = popf64(rt);
-	setret(rt, float64_t, fabs(x));
+	retf64(rt, fabs(x));
 	return 0;
 }
 static int f64sin(state rt) {
 	float64_t x = popf64(rt);
-	setret(rt, float64_t, sin(x));
+	retf64(rt, sin(x));
 	return 0;
 }
 static int f64cos(state rt) {
 	float64_t x = popf64(rt);
-	setret(rt, float64_t, cos(x));
+	retf64(rt, cos(x));
 	return 0;
 }
 static int f64tan(state rt) {
 	float64_t x = popf64(rt);
-	setret(rt, float64_t, tan(x));
+	retf64(rt, tan(x));
 	return 0;
 }
 static int f64log(state rt) {
 	float64_t x = popf64(rt);
-	setret(rt, float64_t, log(x));
+	retf64(rt, log(x));
 	return 0;
 }
 static int f64exp(state rt) {
 	float64_t x = popf64(rt);
-	setret(rt, float64_t, exp(x));
+	retf64(rt, exp(x));
 	return 0;
 }
 static int f64pow(state rt) {
 	float64_t x = popf64(rt);
 	float64_t y = popf64(rt);
-	setret(rt, float64_t, pow(x, y));
+	retf64(rt, pow(x, y));
 	return 0;
 }
 static int f64sqrt(state rt) {
 	float64_t x = popf64(rt);
-	setret(rt, float64_t, sqrt(x));
+	retf64(rt, sqrt(x));
 	return 0;
 }
 static int f64atan2(state rt) {
 	float64_t x = popf64(rt);
 	float64_t y = popf64(rt);
-	setret(rt, float64_t, atan2(x, y));
+	retf64(rt, atan2(x, y));
 	return 0;
 }
 

@@ -7,7 +7,7 @@ enum Window {
 
 gxSurf srcImg = gxSurf("media/images/download.jpg");
 
-define WIDTH  = 128;
+define WIDTH  = 512/2;
 define HEIGHT = WIDTH;
 gxSurf dstImg = gxSurf(WIDTH, HEIGHT);
 
@@ -32,6 +32,7 @@ int rgbscale(int col, double s) {
 
 define tex2d(gxSurf ^src, double x, double y) = getPixel(src, imgcoord(x, width(src)), imgcoord(y, height(src)));
 define tex2d(gxSurf src, double u, double v, double w) = rgbscale(tex2d(src, u, v), w);
+//~ define tex2d(gxSurf src, double u, double v, double w) = tex2d(src, u, v);
 
 define nz(double x) = nz(x, 1e-200);
 define atan(double x, double y) = atan2(x, y);
@@ -171,7 +172,6 @@ void tunnel0() {
 			setPixel(dstImg, xi, yi, tex2d(srcImg, u, v, 2 * r));
 		}
 	}
-	//~ println(secs(clkbeg));
 	zoomSurf(offScreen, null, dstImg, null, 1);
 	Gui.Repaint();
 }
@@ -367,6 +367,6 @@ void mouseHandler(int btn, int x, int y) {
 	}
 }
 
-Gui.setDrawCallback(tunnel1);
+Gui.setDrawCallback(tunnel0);
 Gui.setMouseHandler(mouseHandler);
 //~ Gui.exitLoop();
