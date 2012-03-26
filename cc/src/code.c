@@ -199,8 +199,8 @@ symn libcall(state rt, int libc(state), const char* proto) {
 		sym->kind = TYPE_def;
 		sym->init = libcinit;
 		sym->offs = libcpos;
+		//~ sym->size = libcpos;
 
-		lc->proto = proto;
 		lc->call = libc;
 		lc->pos = libcpos;
 		lc->sym = sym;
@@ -1360,11 +1360,8 @@ void fputopc(FILE *fout, unsigned char* ptr, int len, int offs, state rt) {
 				else if (rt->libv) {
 					lc = &((libc)rt->libv)[ip->idx];
 				}
-				if (lc) {
-					if (lc->sym)
-						fputfmt(fout, ": %-T", lc->sym);
-					else
-						fputfmt(fout, ": %s", lc->proto);
+				if (lc && lc->sym) {
+					fputfmt(fout, ": %-T", lc->sym);
 				}
 				else {
 					fputfmt(fout, "(%d)", ip->idx);

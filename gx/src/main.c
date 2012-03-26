@@ -1551,8 +1551,8 @@ static int surfCall(state rt) {
 		if ((surf = getSurf(dst))) {
 			char *fileName = popstr(rt);
 			int error = gx_loadJPG(surf, fileName, 32);
-			reti32(rt, dst);
 			//~ debug("readJpg(%s):%d;", fileName, error);
+			reti32(rt, dst);
 			return error;
 		}
 	}

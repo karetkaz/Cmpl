@@ -26,8 +26,9 @@
 
 //~ /*
 enum unittesting: bool {
-	asin = true;
-	acos = true;
+	tan = true;
+	asin = !true;
+	acos = !true;
 }
 float64 vf[10] =
 	4.9790119248836735e+00,
@@ -41,8 +42,31 @@ float64 vf[10] =
 	1.8253080916808550e+00,
 	-8.6859247685756013e+00;
 
-define epsilon = 1e-15;
+define epsilon = 1e-95;
 
+static if (unittesting.tan) {
+float64 tan[10] =
+	-3.661316565040227801781974e+00,
+	8.64900232648597589369854e+00,
+	-2.8417941955033612725238097e-01,
+	3.253290185974728640827156e+00,
+	2.147275640380293804770778e-01,
+	-2.18600910711067004921551e-01,
+	-1.760002817872367935518928e+00,
+	-4.389808914752818126249079e-01,
+	-3.843885560201130679995041e+00,
+	9.10988793377685105753416e-01;
+
+for (int i = 0; i < vf.length; i += 1) {
+	float64 x = vf[i];
+	float64 v = tan[i];
+	float64 f = tan(x);
+	if (abs(v - f) > epsilon) {
+		//TODO: debug("test failed: ", {func: "Tan(x)", x: x, i: i, expected: v, got: f, diff: abs(v - f)});
+		debug("test failed: "); print("Tan(%g)", x); print(" = %.25g", f); print(": %d", i); print(", want %.25g\n", v);
+	}
+}
+}
 static if (unittesting.asin) {
 float64 asin[10] =
 	5.2117697218417440497416805e-01,
@@ -58,10 +82,11 @@ float64 asin[10] =
 
 for (int i = 0; i < vf.length; i += 1) {
 	float64 x = vf[i] / 10;
-	float64 f = Asin(x);
+	float64 v = asin[i];
+	float64 f = Math.Asin(x);
 	if (abs(asin[i] - f) > epsilon) {
-		//TODO: debug("test failed", {func: "Asin", arg_x: x, got: f, want: asin[i]});
-		debug("test failed"); print("Asin(%g)", x); print(" = %g", f); print(", want %g\n", asin[i]);
+		//TODO: debug("test failed: ", {func: "Asin(x)", x: x, i: i, expected: v, got: f, diff: abs(v - f)});
+		debug("test failed: "); print("Asin(%g)", x); print(" = %g", f); print(", want %g\n", v);
 	}
 }
 }
@@ -80,10 +105,11 @@ float64 acos[10] =
 
 for (int i = 0; i < vf.length; i += 1) {
 	float64 x = vf[i] / 10;
-	float64 f = Acos(x);
+	float64 v = acos[i];
+	float64 f = Math.Acos(x);
 	if (abs(acos[i] - f) > epsilon) {
-		//TODO: debug("test failed", {func: "Acos", arg_x: x, got: f, want: acos[i]});
-		debug("test failed"); print("Acos(%g)", x); print(" = %g", f); print(", want %g\n", acos[i]);
+		//TODO: debug("test failed: ", {func: "Acos(x)", x: x, i: i, expected: v, got: f, diff: abs(v - f)});
+		debug("test failed: "); print("Acos(%g)", x); print(" = %g", f); print(", want %g\n", v);
 	}
 }
 }

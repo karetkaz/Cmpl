@@ -3,15 +3,17 @@
 
 #include "api.h"
 
-//~ typedef struct astn *astn;		// tree
-//~ typedef struct ccState *ccState;
-
 enum CompilerRegister {
-	creg_base = 0x0000,				// type system only
-	creg_emit = 0x0008,				// the emit thingie : emit(...)
-	//~ creg_etyp = 0x0001 | creg_emit,	// emit types : emit.i32
-	creg_eopc = 0x0002 | creg_emit,	// emit opcodes : emit.i32.add
-	creg_swiz = 0x0004 | creg_eopc,	// swizzle constants : emit.swz.(xxxx ... xyzw ... wwww)
+	creg_base = 0x0000,			// type system only
+
+	creg_tptr = 0x0001,			//~ pointers and memory manager
+	creg_tvar = 0x0002,			//~ variants and reflection
+
+	//~ low level emit
+	creg_emit = 0x0010,				// emit(...)
+	creg_etyp = 0x0020 | creg_emit,	// emit types : emit.i32
+	creg_eopc = 0x0040 | creg_emit,	// emit opcodes : emit.i32.add
+	creg_swiz = 0x0080 | creg_eopc,	// swizzle constants : emit.swz.(xxxx ... xyzw ... wwww)
 
 	// this are in main
 	//~ creg_stdc = 0x0010 | creg_emit,	// std library calls : sin(float64 x) = emit(float64, libc(3), f64(x));
@@ -20,7 +22,7 @@ enum CompilerRegister {
 	//~ creg_math = 0x000?,
 	//~ creg_rtty = 0x000?,
 	creg_all  = -1,
-	creg_def = creg_eopc,// | creg_swiz,
+	creg_def  = 0xff,
 };
 
 typedef enum {
@@ -35,9 +37,9 @@ typedef enum {
 
 	//~ dump_bin = 0x0000100,
 	dump_sym = 0x0000100,
-	dump_asm = 0x0000200,
-	dump_ast = 0x0000400,
-	dump_txt = 0x0000800,
+	dump_ast = 0x0000200,
+	dump_asm = 0x0000400,
+	dump_bin = 0x0000800,
 	dumpMask = 0x0000f00,
 } srcType, dumpMode;
 

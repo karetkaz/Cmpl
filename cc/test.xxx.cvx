@@ -7,3 +7,9 @@ pointer x = emit(pointer, byRef("er"));
 string str = emit(string, byRef(x));
 println(emit(string, byRef(x)));
 //~ +/
+
+//~ define double2 float64; //%%4.50g
+//~ double2 x = 3.14 / 3 + .0001;
+//~ double2 s1 = sin(x);
+//~ double2 s2 = Math.Sin(x);
+int a = 16 << 10;

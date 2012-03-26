@@ -273,11 +273,9 @@ int32 a4 = int1(0.);		// 2015
 }
 static if (Test.Type & 0x02) {
 
-//~ define isNan(float64 ^x) = bool(x != x);
-//~ define isNan(float32 ^x) = bool(x != x);
 float64 NAN = Math.nan; // 0 / 0.;
-int isNan1 = int(isNan(NAN));
-//~ int isNan2 = int(isNan(Math.nan));
+int isNan1 = int(Math.isNan(NAN));
+//~ int isNan2 = int(Math.isNan(Math.nan));
 }
 static if (Test.Type & 0x04) {		// union
 //~ struct and arrays

@@ -63,6 +63,18 @@ astn lnknode(ccState s, symn ref) {
 	return result;
 }
 
+/*astn tagnode(ccState s, char *str) {
+	astn result = newnode(s, TYPE_ref);
+	if (result && str) {
+		int len = strlen(str);
+		//~ result->kind = TYPE_ref;
+		result->type = result->ref.link = 0;
+		result->ref.hash = rehash(str, len + 1) % TBLS;
+		result->ref.name = mapstr(s, str, len + 1, result->ref.hash);
+	}
+	return result;
+}*/
+
 /// make a constant valued node
 astn intnode(ccState s, int64_t v) {
 	astn ast = newnode(s, TYPE_int);

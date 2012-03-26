@@ -42,7 +42,7 @@ OBJS=\
 
 #~ rebuild:clean build
 
-build:$(OBJS) main.c
+build:$(OBJDIR) $(OBJS) main.c
 	$(LNK) $(OUTEXE)$(BINDIR)main $(OBJS) $(LIBS)
 
 lib:$(OBJS)
@@ -51,6 +51,9 @@ lib:$(OBJS)
 clean:
 	rm -f $(OBJS) $(OBJDIR)main.o
 #	rm -f *.o *.obj *.err
+
+$(OBJDIR):
+	mkdir "$(OBJDIR)"
 
 $(OBJDIR)%.o: $(SRCDIR)%.c
 	$(CCC) $(CFLAGS) $< $(OUTOBJ)$@

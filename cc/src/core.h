@@ -169,7 +169,7 @@ typedef unsigned int uint;
 
 typedef struct libc {
 	struct libc	*next;	// next
-	const char* proto;
+	//~ const char* proto;
 	int (*call)(state);
 	symn sym;
 	int8_t chk, pop;
@@ -230,7 +230,7 @@ struct symn {				// type node (data)
 
 	int32_t	size;		// sizeof(TYPE_xxx)
 
-	//~ NOTE: negative offst means global
+	//~ NOTE: negative offset means global
 	int32_t	offs;		// addrof(TYPE_xxx)
 
 	symn	type;		// base type of TYPE_ref/TYPE_arr/function (void, int, float, struct, ...)
@@ -242,7 +242,7 @@ struct symn {				// type node (data)
 	symn	decl;		// declared in namespace/struct/class, function, ...
 	symn	next;		// symbols on table / next param / next field / next symbol
 
-	#if DEBUGGING < 0
+	#ifdef DEBUGGING
 	ccToken	kind;		// TYPE_ref / TYPE_def / TYPE_rec / TYPE_arr
 	ccToken	cast;		// casts to type(TYPE_(bit, vid, ref, u32, i32, i64, f32, f64, p4x)).
 	uint16_t __castkindpadd;
@@ -296,7 +296,6 @@ struct ccState {
 	symn	defs;		// all definitions
 	libc	libc;		// installed libcalls
 	symn	func;		// functions level stack
-	//~ symn	gdef;		// definitions
 	astn	root;		// statements
 
 	// lists
@@ -308,8 +307,8 @@ struct ccState {
 
 	//~ int		verb;		// verbosity
 	int		warn;		// warning level
-	int		maxlevel;		// max nest level: modified by ?
 	int		nest;		// nest level: modified by (enter/leave)
+	int		maxlevel;		// max nest level: modified by ?
 	//~ int		funl;		// function nest
 	int		siff:1;		// inside a static if false
 	int		sini:1;		// initialize static variables ?
@@ -317,11 +316,9 @@ struct ccState {
 
 	char*	file;	// current file name
 	int		line;	// current line number
-	//~ int		_pad;
 
 	// Warning set to -1 to record.
 	symn	pfmt;
-	//~ char	*doc;
 
 	struct {
 		struct {			// Lexer
@@ -335,7 +332,6 @@ struct ccState {
 			astn	tokp;		// token pool
 			astn	_tok;		// next token
 			int		_chr;		// next char
-			//~ int		_pad;		//
 		};
 	};
 
@@ -399,6 +395,7 @@ astn newnode(ccState, int kind);
 astn opnode(ccState, int kind, astn lhs, astn rhs);
 astn lnknode(ccState, symn ref);
 astn newIden(ccState, char* id);
+//~ astn tagnode(ccState s, char *str);
 
 astn intnode(ccState, int64_t v);
 astn fltnode(ccState, float64_t v);

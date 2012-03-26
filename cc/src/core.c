@@ -1653,11 +1653,12 @@ int gencode(state rt, int level) {
 	dieif(rt->errc, "can not generate code");
 	dieif(cc == NULL, "compiler state invalid");
 
-	/* leave the global scope.
+	/* leaving the global scope.
 	 * HACK: if the optimization level is negative,
 	 * global variables wont be static.
 	 */
 	rt->defs = leave(rt->cc, NULL, level >= 0);
+	ccDone(rt);
 
 	/* reorder the initialization of static variables.
 	 * ex: g must be generated before f
@@ -1665,6 +1666,7 @@ int gencode(state rt, int level) {
 	 *		static int g = 9;
 	 *		// ...
 	 *	}
+	 * TODO: this should be optimized.
 	 */
 	if (rt->gdef != NULL) {
 		symn ng, pg = NULL;
@@ -1701,6 +1703,10 @@ int gencode(state rt, int level) {
 	//~ read only memory ends here.
 	//~ strings, typeinfos, ?TODO(constants, functions, ?)
 	rt->vm.ro = rt->vm.pos;
+
+	rt->vm.size.meta = rt->vm.pos;
+	rt->vm.size.data = 0;
+	rt->vm.size.code = 0;
 
 	// libcalls
 	if (cc->libc) {
@@ -1774,6 +1780,7 @@ int gencode(state rt, int level) {
 					cc->jmps = cc->jmps->next;
 				}
 				var->size = emitopc(rt, markIP) - seg;
+				rt->vm.size.code += var->size;
 
 				var->init = NULL;
 			}
@@ -1782,6 +1789,8 @@ int gencode(state rt, int level) {
 				var->size = sizeOf(var);
 				var->offs = -rt->vm.pos;
 				rt->vm.pos += var->size;
+
+				rt->vm.size.data += var->size;
 
 				if (var->init && !var->glob) {
 					astn init = newnode(cc, TYPE_def);
@@ -1844,20 +1853,21 @@ int gencode(state rt, int level) {
 	// program entry point
 	rt->vm.pc = Lmain;
 
+	rt->vm.size.code += emitopc(rt, markIP) - Lmain;
 	rt->_used = rt->_free = NULL;
 	rt->_ptr = NULL;
 
 	return rt->errc;
 }
 
-// install the basic type system
+// install basic types
 static void install_type(ccState cc, int mode) {
-	symn type_rec = NULL;
 	symn type_i08 = NULL, type_i16 = NULL;
 	symn type_u08 = NULL, type_u16 = NULL;
-	//~ symn type_chr = NULL, type_tmp = NULL;
+	symn type_rec = NULL, type_var = NULL;
 
-	type_rec = install(cc,"typename", ATTR_const | TYPE_rec, TYPE_ref, 0, NULL, NULL);
+	type_rec = install(cc, "typename", ATTR_const | TYPE_rec, TYPE_ref, 0, NULL, NULL);
+
 	type_vid = install(cc,    "void", ATTR_const | TYPE_rec, TYPE_vid, 0, type_rec, NULL);
 	type_bol = install(cc,    "bool", ATTR_const | TYPE_rec, TYPE_bit, 4, type_rec, NULL);
 	type_i08 = install(cc,    "int8", ATTR_const | TYPE_rec, TYPE_i32, 1, type_rec, NULL);
@@ -1871,66 +1881,55 @@ static void install_type(ccState cc, int mode) {
 	// type_ = install(cc, "float16", ATTR_const | TYPE_rec, TYPE_f64, 2, type_rec, NULL);
 	type_f32 = install(cc, "float32", ATTR_const | TYPE_rec, TYPE_f32, 4, type_rec, NULL);
 	type_f64 = install(cc, "float64", ATTR_const | TYPE_rec, TYPE_f64, 8, type_rec, NULL);
-	cc->type_rec = type_rec;
 
-
-	//install(cc, "int32ptr", ATTR_const | TYPE_def, TYPE_ref, vm_size, type_i32, NULL);
-
-	type_ptr = install(cc, "pointer", ATTR_const | TYPE_rec, TYPE_ref, vm_size, type_rec, NULL);
-	null_ref = install(cc,    "null", ATTR_const | TYPE_ref, TYPE_any, vm_size, type_ptr, NULL);
-
-	//~ type_var = install(cc, "variant", ATTR_const | TYPE_rec, TYPE_ref, 0, type_rec);
-
-	if (1) {	// if aliases are needed.
-		// string is alias for char[]
-		symn type_chr = type_u08;
-		//~  type_chr = install(cc,   "char", ATTR_const | TYPE_def, 0, type_i08, NULL);
-		if ((type_str = install(cc, "string", ATTR_const | TYPE_arr, TYPE_ref, vm_size, type_chr, NULL))) {
-			/* TODO:
-			symn length = addarg(cc, type_str, "length", TYPE_ref, type_i32, NULL);
-			dieif(length == NULL, "FixMe");
-			length->offs = 4;
-			type_str->size = 8;
-			// */
-		}
-
-		//~ install(cc, "array",  ATTR_const | TYPE_arr, 0, type_var, NULL);		// array is alias for variant[]
-		//~ install(cc, "var",    ATTR_const | TYPE_def, 0, type_var, NULL);		// var is alias for variant
-
-		install(cc, "int",    TYPE_def, 0, 0, type_i32, NULL);
-		install(cc, "long",   TYPE_def, 0, 0, type_i64, NULL);
-		install(cc, "float",  TYPE_def, 0, 0, type_f32, NULL);
-		install(cc, "double", TYPE_def, 0, 0, type_f64, NULL);
-		install(cc, "true",   TYPE_def, 0, 0, type_bol, intnode(cc, 1));
-		install(cc, "false",  TYPE_def, 0, 0, type_bol, intnode(cc, 0));
+	if (mode & creg_tptr) {
+		type_ptr = install(cc, "pointer", ATTR_const | TYPE_rec, TYPE_ref, vm_size, type_rec, NULL);
+		null_ref = install(cc,    "null", ATTR_const | TYPE_ref, TYPE_any, vm_size, type_ptr, NULL);
 	}
 
-	// TODO:
+	if (mode & creg_tvar) {
+		//~ type_var = install(cc, "variant", ATTR_const | TYPE_rec, TYPE_ref, 0, type_rec);
+	}
+
+	cc->type_rec = type_rec;
+
+	// ? aliases are needed.
+	install(cc, "int",    ATTR_const | TYPE_def, 0, 0, type_i32, NULL);
+	install(cc, "long",   ATTR_const | TYPE_def, 0, 0, type_i64, NULL);
+	install(cc, "float",  ATTR_const | TYPE_def, 0, 0, type_f32, NULL);
+	install(cc, "double", ATTR_const | TYPE_def, 0, 0, type_f64, NULL);
+	install(cc, "true",   ATTR_const | TYPE_def, 0, 0, type_bol, intnode(cc, 1));
+	install(cc, "false",  ATTR_const | TYPE_def, 0, 0, type_bol, intnode(cc, 0));
+
+	//~ TODO: struct string: char[] { ... }
+	//~ temporarly string is alias for uint8[]
+	type_str = install(cc, "string", ATTR_const | TYPE_arr, TYPE_ref, vm_size, type_u08, NULL);
+
+	if (type_var != NULL) {
+		install(cc, "var",   ATTR_const | TYPE_def, 0, 0, type_var, NULL);		// var is alias for variant
+		install(cc, "array", ATTR_const | TYPE_arr, 0, 0, type_var, NULL);		// array is alias for variant[]
+	}
+
 	(void)type_i08;
 	(void)type_i16;
 	(void)type_u16;
 }
 
-// install the emit system
+// install the emit thingie
 static void install_emit(ccState cc, int mode) {
 	symn typ;
 	symn type_v4f = NULL;
 
-	if (!(mode & creg_emit))
-		return;
+	// TODO: emit is a keyword ???
+	emit_opc = install(cc, "emit", EMIT_opc, 0, 0, NULL, NULL);
 
-	emit_opc = install(cc, "emit", ATTR_const | EMIT_opc, 0, 0, NULL, NULL);
+	if (emit_opc && (mode & creg_eopc)) {
 
-	if (!emit_opc)
-		return;
+		symn u32, i32, i64, f32, f64, v4f, v2d;
 
-	if (emit_opc && (mode & creg_eopc) == creg_eopc) {
-
-		symn u32, i32, i64, f32, f64, v4f, v2d, ref;
 		enter(cc, NULL);
-
-		ref = install(cc, "byRef", TYPE_rec, TYPE_ref, vm_size, NULL, NULL);
 		install(cc, "byVal", TYPE_rec, TYPE_rec, 0, NULL, NULL);
+		install(cc, "byRef", TYPE_rec, TYPE_ref, vm_size, NULL, NULL);
 
 		u32 = install(cc, "u32", TYPE_rec, TYPE_u32, 4, NULL, NULL);
 		i32 = install(cc, "i32", TYPE_rec, TYPE_i32, 4, NULL, NULL);
@@ -1944,8 +1943,8 @@ static void install_emit(ccState cc, int mode) {
 		install(cc, "nop", EMIT_opc, 0, opc_nop, type_vid, NULL);
 		install(cc, "not", EMIT_opc, 0, opc_not, type_bol, NULL);
 
-		install(cc, "pop", EMIT_opc, 0, opc_drop, type_vid, intnode(cc, 1));
-		install(cc, "set", EMIT_opc, 0, opc_set1, type_vid, intnode(cc, 1));
+		//~ install(cc, "pop", EMIT_opc, 0, opc_drop, type_vid, intnode(cc, 1));
+		//~ install(cc, "set", EMIT_opc, 0, opc_set1, type_vid, intnode(cc, 1));
 		//~ install(cc, "set0", EMIT_opc, opc_set1, type_vid, intnode(cc, 0));
 		//~ install(cc, "set1", EMIT_opc, opc_set1, type_vid, intnode(cc, 1));
 
@@ -2094,7 +2093,7 @@ static void install_emit(ccState cc, int mode) {
 			typ->args = leave(cc, typ, 1);
 		}
 
-		if ((mode & creg_swiz) == creg_swiz) {
+		if (mode & creg_swiz) {
 			int i;
 			struct {
 				char *name;
@@ -2145,7 +2144,6 @@ static void install_emit(ccState cc, int mode) {
 			}// */
 		}
 		emit_opc->args = leave(cc, emit_opc, 1);
-		(void)ref;
 	}
 }
 
@@ -2218,10 +2216,8 @@ ccState ccInit(state rt, int mode, int libcHalt(state)) {
 	cc->_beg = (char*)rt->_ptr;
 	cc->_end = (char*)rt->_mem + rt->_size;
 
-	install_type(cc, 1);
-
-	if (mode & creg_emit)
-		install_emit(cc, mode);
+	install_type(cc, mode);
+	install_emit(cc, mode);
 
 	// install a void arg for functions with no arguments
 	if ((cc->void_tag = newnode(cc, TYPE_ref))) {
@@ -2239,12 +2235,11 @@ ccState ccInit(state rt, int mode, int libcHalt(state)) {
 	}
 
 	libcall(rt, libcHalt ? libcHalt : libCallHalt, "void Halt(int Code);");
-	cc->libc_mem = libcall(rt, libCallMemMgr, "pointer memmgr(pointer ptr, int32 size);");
+
+	cc->libc_mem = type_ptr ? libcall(cc->s, libCallMemMgr, "pointer memmgr(pointer ptr, int32 size);") : NULL;
 	cc->libc_dbg = libcall(rt, libCallDebug, "void debug(string message, typename object, int maxStackTrace, bool abort);");
 
-	//~ cc->newt_arr = opnode(cc, OPER_fnc, lnknode(cc->libc_mem), null);
-
-	if (cc->type_rec != NULL) {
+	if (cc->type_rec && (mode & creg_tvar)) {
 		symn arg = NULL;
 		enter(cc, NULL);
 		if ((arg = install(cc, "size", ATTR_const | TYPE_ref, TYPE_any, vm_size, type_i32, NULL))) {

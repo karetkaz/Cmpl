@@ -1,9 +1,4 @@
-; .386p
-; .model flat, c
-; option casemap : none
-; nasm -f elf -o drv_ras.o drv_ras.asm
-; ml /nologo /coff /c /Fodrv_ras.o drv_ras.asm
-; objconv -felf -nu- drv_ras.o ../obj/drv_ras.obj
+; low level raster operations
 
 global gx_getpaddr		; void* gx_getpaddr(gx_Surf, int, int);					Get Pixel Address
 global gx_getpixel		; long	gx_getpixel(gx_Surf, int, int);					Get Pixel

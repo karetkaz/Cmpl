@@ -50,6 +50,11 @@ struct state {
 		unsigned int	ro;			// <= ro : read only region(meta data) / cgen:(function parameters)
 		unsigned int	seg;		// current segment
 		unsigned int	pos;		// current positin in buffer
+		struct size {
+			unsigned int	meta;
+			unsigned int	code;
+			unsigned int	data;
+		} size;
 	} vm;
 
 	long _size;		// size of total memory

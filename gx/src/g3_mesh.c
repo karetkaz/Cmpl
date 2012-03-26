@@ -1181,7 +1181,7 @@ static int addText(state rt, char *file, int line, char *buff) {
 }
 
 int evalMesh(mesh msh, int sdiv, int tdiv, char *src, char *file, int line) {
-	static char mem[64 << 10];		// 64K memory !!!
+	static char mem[32 << 10];		// 32K memory
 	state rt = rtInit(mem, sizeof(mem));
 	struct userData ud;
 
@@ -1196,12 +1196,11 @@ int evalMesh(mesh msh, int sdiv, int tdiv, char *src, char *file, int line) {
 		return -2;
 	}// */
 
-	if (!ccInit(rt, creg_emit, NULL)) {
+	if (!ccInit(rt, creg_base, NULL)) {
 		debug("Internal error\n");
 		return -1;
 	}
 
-	//~ ccDone(env);
 	err = err || !libcall(rt, getS,     "float64 gets();");
 	err = err || !libcall(rt, getT,     "float64 gett();");
 	err = err || !libcall(rt, setPos,   "void setPos(float64 x, float64 y, float64 z);");
@@ -1218,22 +1217,7 @@ int evalMesh(mesh msh, int sdiv, int tdiv, char *src, char *file, int line) {
 	err = err || !ccDefFlt(rt, "pi", 3.14159265358979323846264338327950288419716939937510582097494459);
 	err = err || !ccDefFlt(rt, "e",  2.71828182845904523536028747135266249775724709369995957496696763);
 
-	/*err = err || addText(rt, __FILE__, __LINE__ + 1,
-		"enum: double {\n"
-			"pi = 3.14159265358979323846264338327950288419716939937510582097494459;\n"		// A000796
-			"e = 2.71828182845904523536028747135266249775724709369995957496696763;\n"		// A001113
-			//~ "ln2 = 0.693147180559945309417232121458176568075500134360255254120680009;\n"	// A002162
-			//~ "log2E = 1 / ln2;\n"
-			//~ "ln10 = 2.30258509299404568401799145468436420760110148862877297603332790;\n"	// A002392
-			//~ "log10E = 1 / ln10;\n"
-			//~ "phi = 1.61803398874989484820458683436563811772030917980576286213544862;\n"	// A001622
-			//~ "sqrt2 = 1.41421356237309504880168872420969807856967187537694807317667974;\n"	// A002193
-			//~ "sqrtE = 1.64872127070012814684865078781416357165377610071014801157507931;\n"	// A019774
-			//~ "sqrtPi = 1.77245385090551602729816748334114518279754945612238712821380779;\n"	// A002161
-			//~ "sqrtPhi = 1.27201964951406896425242246173749149171560804184009624861664038;\n"	// A139339
-		"}\n"
-	);// */
-
+	//~ /*
 	err = err || addText(rt, __FILE__, __LINE__ + 1,
 		"double s = gets();\n"
 		"double t = gett();\n"
@@ -1243,6 +1227,7 @@ int evalMesh(mesh msh, int sdiv, int tdiv, char *src, char *file, int line) {
 	);
 	err = err || addText(rt, file, line, src);
 	err = err || addText(rt, __FILE__, __LINE__, "setPos(x, y, z);\n");
+	// */
 
 	// optimize on level 3, and do not generate global variables as static variables
 	if (err || gencode(rt, -3) != 0) {
@@ -1252,12 +1237,20 @@ int evalMesh(mesh msh, int sdiv, int tdiv, char *src, char *file, int line) {
 		return -3;
 	}
 
-	//~ dump(rt, dump_sym | 0x01, NULL, "\ntags:\n");
-	//~ dump(rt, dump_ast | 0x00, NULL, "\ncode:\n");
-	//~ dump(rt, dump_asm | 0x19, NULL, "\ndasm:\n");
+	/*fputfmt(stdout, "init(ro: %d"
+		", ss: %d, sm: %d, pc: %d, px: %d"
+		", size.meta: %d, size.code: %d, size.data: %d"
+		//~ ", pos: %d"
+	");\n", rt->vm.ro, rt->vm.ss, rt->vm.sm, rt->vm.pc, rt->vm.px, rt->vm.size.meta, rt->vm.size.code, rt->vm.size.data, rt->vm.pos);
+	//~ */
+
+	logfile(rt, "dump.bin");
+	dump(rt, dump_sym | 0x01, NULL, "\ntags:\n");
+	dump(rt, dump_ast | 0x00, NULL, "\ncode:\n");
+	dump(rt, dump_asm | 0x19, NULL, "\ndasm:\n");
+	dump(rt, dump_bin | 0x10, NULL, "\ndasm:\n");
 	logfile(rt, NULL);	// close log
 
-	// TODO: old styled
 	#define findint(__ENV, __NAME, _OUT_VAL) symvalint(findsym(__ENV, NULL, __NAME), _OUT_VAL)
 	#define findflt(__ENV, __NAME, _OUT_VAL) symvalflt(findsym(__ENV, NULL, __NAME), _OUT_VAL)
 

@@ -292,7 +292,6 @@ static int b64lob(state s) {
 int reglibs(state rt, char *stdlib) {
 	int err = 0;
 
-	err = err || install_stdc(rt, stdlib, wl);
 	if (type_i64 != NULL && type_i64->args == NULL) {
 		enter(rt->cc, NULL);
 		err = err || !libcall(rt, b64shl, "int64 Shl(int64 Value, int Count);");
@@ -303,6 +302,7 @@ int reglibs(state rt, char *stdlib) {
 		err = err || !libcall(rt, b64xor, "int64 Xor(int64 Lhs, int64 Rhs);");
 		type_i64->args = leave(rt->cc, type_i64, 1);
 	}
+	err = err || install_stdc(rt, stdlib, wl);
 	//~ err = err || install_bits(s);
 
 	return err;
@@ -471,6 +471,17 @@ static int libCallHaltDebug(state rt) {
 		vm_fputval(rt, stdout, arg, (stkval*)ofs, 0);
 		fputc('\n', stdout);
 	}
+
+	fputfmt(stdout, "init(ro: %d"
+		", ss: %d"
+		", sm: %d"
+		", pc: %d"
+		", px: %d"
+		", size.meta: %d"
+		", size.code: %d"
+		", size.data: %d"
+		//~ ", pos: %d"
+	");\n", rt->vm.ro, rt->vm.ss, rt->vm.sm, rt->vm.pc, rt->vm.px, rt->vm.size.meta, rt->vm.size.code, rt->vm.size.data, rt->vm.pos);
 
 	rtAlloc(rt, NULL, 0);
 

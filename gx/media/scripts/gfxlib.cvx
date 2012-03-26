@@ -36,7 +36,6 @@ enum RenderMode {
 }
 
 enum importgfx: bool {
-
 	rgbUtils = true;
 }
 
@@ -494,3 +493,104 @@ define meshGen(int ^div, void pos(double &x, double &y, double &z, double s, dou
 define meshGen(int ^div, void pos(double &x, double &y, double &z, double s, double t)) = meshGen(div, true, div, true, pos, 1e-10);
 
 //}*/
+
+void setupPicView(gxSurf vImg, bool vFit) {
+
+	static bool reDraw = true;
+	static bool clear = false;
+	static bool fit = false;
+
+	define inertial_pan = 25.;
+	define inertial_speed = 1.09;
+
+	static int64 inertial_time = 0;
+	static double inertial_pan_x = 0;
+	static double inertial_pan_y = 0;
+
+	static gxRect roi;
+	static gxSurf img;
+
+	void DrawScreen() {
+		if (reDraw) {
+			if (fit) {
+				zoomSurf(offScreen, null, img, null, 1);
+			}
+			else {
+				//~ copy background image
+				if (clear) {
+					fillRect(offScreen, 0, 0, 32768, 32768, 0x000000);
+				}
+				copySurf(offScreen, 0, 0, img, &roi);
+			}
+			reDraw = false;
+		}
+		static if (inertial_pan) {
+			int64 now = timeNow();
+			if (inertial_time < now) {
+				inertial_pan_x = clamp(inertial_pan_x, -inertial_pan, inertial_pan) / inertial_speed;
+				inertial_pan_y = clamp(inertial_pan_y, -inertial_pan, inertial_pan) / inertial_speed;
+
+				if ((abs(inertial_pan_x) > .5) || (abs(inertial_pan_y) > .5)) {
+					roi.x = clamp(roi.x + inertial_pan_x, 0., float64(width(img) - roi.w));
+					roi.y = clamp(roi.y + inertial_pan_y, 0., float64(height(img) - roi.h));
+					reDraw = true;
+				}
+				inertial_time = now + (int64(0x100000000) / 100);
+			}
+			if ((abs(inertial_pan_x) > .5) || (abs(inertial_pan_y) > .5)) {
+				Gui.Repaint();
+			}
+		}
+	}
+
+	void mouseHandler(int btn, int x, int y) {
+		static int ox = 0;
+		static int oy = 0;
+		static int ob = 0;
+
+		if (Mouse.dblClick(btn, x, y)) {
+			Mouse.dblClick(-1, 0, 0);		// prevent multi clicks
+			fit = !fit;
+			reDraw = true;
+		}
+
+		if (btn == 1 && !fit) {
+			roi.x = clamp(roi.x + ox - x, 0, width(img) - roi.w);
+			roi.y = clamp(roi.y + oy - y, 0, height(img) - roi.h);
+			reDraw = true;
+		}
+		static if (inertial_pan) {
+			static int64 ot = 0;
+			static int32 oox = 0;
+			static int32 ooy = 0;
+			if (btn == 1 && ob == 0) {	// on press
+				ot = timeNow();
+				inertial_pan_x = 0;
+				inertial_pan_y = 0;
+				oox = x;
+				ooy = y;
+			}
+			if (btn == 0 && ob == 1) {	// on relase
+				int64 now = timeNow();
+				if (clocksPerSec(now - ot) < .5) {
+					inertial_time = 0;
+					inertial_pan_x = oox - x;
+					inertial_pan_y = ooy - y;
+					oox = x;
+					ooy = y;
+				}
+			}
+		}
+
+		ox = x;
+		oy = y;
+		ob = btn;
+	}
+
+	img = vImg;
+	fit = inertial_pan ? false : vFit;
+	roi = gxRect(0, 0, width(offScreen), height(offScreen));
+	clear = roi.w > width(img) || roi.h > height(img);
+	Gui.setMouseHandler(mouseHandler);
+	Gui.setDrawCallback(DrawScreen);
+}

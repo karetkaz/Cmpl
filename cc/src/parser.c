@@ -1389,7 +1389,6 @@ static int mkConst(astn ast, int cast) {
 //~ astn unit(ccState, int mode);		// parse unit			(mode: script/unit)
 static astn stmt(ccState, int mode);	// parse statement		(mode: enable decl)
 //~ astn decl(ccState, int mode);		// parse declaration	(mode: enable spec)
-//~ astn spec(ccState s/* , int qual */);
 //~ astn type(ccState s/* , int qual */);
 
 static astn args(ccState s, int mode);
@@ -2009,12 +2008,19 @@ static astn stmt(ccState s, int mode) {
 	}
 	else if ((ast = next(s, STMT_brk))) {	// break;
 		ast->type = type_vid;
+		skiptok(s, STMT_do, 1);
 	}
 	else if ((ast = next(s, STMT_con))) {	// continue;
 		ast->type = type_vid;
+		skiptok(s, STMT_do, 1);
 	}
 	else if ((ast = next(s, STMT_ret))) {	// return;
 		ast->type = type_vid;
+		/*/ todo: if (!skip(s, STMT_do)) {
+			backTok(s, newnode(s, ASGN_set));
+			backTok(s, newIden(s, "result"));
+		}// */
+		skiptok(s, STMT_do, 1);
 	}
 
 	else if ((ast = decl(s, TYPE_any))) {	// declaration
@@ -2545,8 +2551,8 @@ astn decl(ccState s, int Rmode) {
 						}
 					}
 					else {
-						if (ref->cnst && !ref->init) {
-							error(s->s, ref->file, ref->line, "uninitialized constant `%-T`", ref);
+						if (ref->cnst && ref->kind == TYPE_ref && !ref->init) {
+							error(s->s, ref->file, ref->line, "uninitialized constant(%t) `%-T`", ref->kind, ref);
 						}
 					}
 				}

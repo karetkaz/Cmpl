@@ -1,7 +1,7 @@
 // 2d
-define test = 4;
+define test = 3;
 enum Window {
-	draw = RenderMode.swap_buff;
+	//~ draw = RenderMode.swap_buff;
 
 	//~ resx = 1440;
 	//~ resy = 900;
@@ -172,6 +172,7 @@ Gui.setDrawCallback(drawCB);
 }
 static if (test == 2) {		// zoomSurf / tileSurf
 gxSurf image = gxSurf("media/images/dino-blue.jpg");		// xxx
+//~ gxSurf image = gxSurf("media/images/download.jpg");
 //~ gxSurf image = gxSurf("media/images/David.png");
 gxSurf bgImg = gxSurf("media/images/nol.bmp");
 

@@ -7,16 +7,15 @@ enum Window {
 
 gxSurf srcImg = gxSurf("media/images/download.jpg");
 
-define WIDTH  = 512/2;
+define WIDTH  = 512/4;
 define HEIGHT = WIDTH;
 gxSurf dstImg = gxSurf(WIDTH, HEIGHT);
 
 int mouseX = Window.resx / 2;
 int mouseY = Window.resy / 2;
 
-int imgcoord(double val, int resolution) {
+double imgcoord(double val, int resolution) {
 	result = val * resolution;
-
 	if ((result %= resolution) < 0)
 		result += resolution;
 }
@@ -367,6 +366,6 @@ void mouseHandler(int btn, int x, int y) {
 	}
 }
 
-Gui.setDrawCallback(tunnel0);
+Gui.setDrawCallback(waves);
 Gui.setMouseHandler(mouseHandler);
 //~ Gui.exitLoop();

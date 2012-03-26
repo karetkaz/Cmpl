@@ -1122,14 +1122,6 @@ void dump(state rt, dumpMode mode, symn sym, char *text, ...) {
 			fatal("FixMe");
 			break;
 
-		case dump_txt: {
-			va_list ap;
-			va_start(ap, text);
-			FPUTFMT(logf, text, ap);
-			va_end(ap);
-			fputfmt(logf, "\n");
-		} break;
-
 		case dump_ast: {
 			if (text != NULL)
 				fputfmt(logf, text);
@@ -1181,12 +1173,47 @@ void dump(state rt, dumpMode mode, symn sym, char *text, ...) {
 				", sm: %d"
 				", pc: %d"
 				", px: %d"
+				", size.meta: %d"
+				", size.code: %d"
+				", size.data: %d"
 				//~ ", pos: %d"
-			") {\n", rt->vm.ro, rt->vm.ss, rt->vm.sm, rt->vm.pc, rt->vm.px, rt->vm.pos);
+			") {\n", rt->vm.ro, rt->vm.ss, rt->vm.sm, rt->vm.pc, rt->vm.px, rt->vm.size.meta, rt->vm.size.code, rt->vm.size.data, rt->vm.pos);
 
 			fputasm(logf, rt, rt->vm.pc, rt->vm.px, mode);
 			fputfmt(logf, "}\n");
 			//~ dumpasm(logf, s, level);
+		} break;
+
+		case dump_bin: {
+			int i, brk = level & 0xff;
+
+			if (text != NULL)
+				fputfmt(logf, text);
+
+			if (brk == 0)
+				brk = 16;
+
+			for (i = 0; i < rt->vm.pos; i += 1) {
+				int val = rt->_mem[i];
+				if (((i % brk) == 0) && i != 0) {
+					int j = i - brk;
+					fputchr(logf, ' ');
+					for ( ; j < i; j += 1) {
+						int chr = rt->_mem[j];
+
+						if (chr < 32 || chr > 127)
+							chr = '.';
+
+						fputchr(logf, chr);
+					}
+					fputchr(logf, '\n');
+				}
+				else if (i != 0) {
+					fputchr(logf, ' ');
+				}
+				fputchr(logf, "0123456789abcdef"[val >> 16 & 0x0f]);
+				fputchr(logf, "0123456789abcdef"[val >>  0 & 0x0f]);
+			}
 		} break;
 
 	}
