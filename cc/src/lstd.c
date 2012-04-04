@@ -64,6 +64,92 @@ static int f64atan2(state rt) {
 }
 //}#endregion
 
+//{ int64 ext
+static int b64shl(state rt) {
+	uint64_t x = popi64(rt);
+	int32_t y = popi32(rt);
+	reti64(rt, x << y);
+	return 0;
+}
+static int b64shr(state rt) {
+	uint64_t x = popi64(rt);
+	int32_t y = popi32(rt);
+	reti64(rt, x >> y);
+	return 0;
+}
+static int b64sar(state rt) {
+	int64_t x = popi64(rt);
+	int32_t y = popi32(rt);
+	reti64(rt, x >> y);
+	return 0;
+}
+static int b64and(state rt) {
+	uint64_t x = popi64(rt);
+	uint64_t y = popi64(rt);
+	reti64(rt, x & y);
+	return 0;
+}
+static int b64ior(state rt) {
+	uint64_t x = popi64(rt);
+	uint64_t y = popi64(rt);
+	reti64(rt, x | y);
+	return 0;
+}
+static int b64xor(state rt) {
+	uint64_t x = popi64(rt);
+	uint64_t y = popi64(rt);
+	reti64(rt, x ^ y);
+	return 0;
+}
+/* unused
+static int b64bsf(state rt) {
+	uint64_t x = popi64(rt);
+	int ans = -1;
+	if (x != 0) {
+		ans = 0;
+		if ((x & 0x00000000ffffffffULL) == 0) { ans += 32; x >>= 32; }
+		if ((x & 0x000000000000ffffULL) == 0) { ans += 16; x >>= 16; }
+		if ((x & 0x00000000000000ffULL) == 0) { ans +=  8; x >>=  8; }
+		if ((x & 0x000000000000000fULL) == 0) { ans +=  4; x >>=  4; }
+		if ((x & 0x0000000000000003ULL) == 0) { ans +=  2; x >>=  2; }
+		if ((x & 0x0000000000000001ULL) == 0) { ans +=  1; }
+	}
+	reti32(rt, ans);
+	return 0;
+}
+static int b64bsr(state rt) {
+	uint64_t x = popi64(rt);
+	int ans = -1;
+	if (x != 0) {
+		ans = 0;
+		if ((x & 0xffffffff00000000ULL) != 0) { ans += 32; x >>= 32; }
+		if ((x & 0x00000000ffff0000ULL) != 0) { ans += 16; x >>= 16; }
+		if ((x & 0x000000000000ff00ULL) != 0) { ans +=  8; x >>=  8; }
+		if ((x & 0x00000000000000f0ULL) != 0) { ans +=  4; x >>=  4; }
+		if ((x & 0x000000000000000cULL) != 0) { ans +=  2; x >>=  2; }
+		if ((x & 0x0000000000000002ULL) != 0) { ans +=  1; }
+	}
+	reti32(rt, ans);
+	return 0;
+}
+static int b64hib(state rt) {
+	uint64_t x = popi64(rt);
+	x |= x >> 1;
+	x |= x >> 2;
+	x |= x >> 4;
+	x |= x >> 8;
+	x |= x >> 16;
+	x |= x >> 32;
+	reti64(rt, x - (x >> 1));
+	return 0;
+}
+static int b64lob(state s) {
+	uint64_t x = popi64(s);
+	reti64(rt, x & -x);
+	return 0;
+}*/
+//}
+
 /*/{#region "bit operations"
 enum bits_funs {
 	b64_cmt,
@@ -426,6 +512,16 @@ int install_stdc(state rt, char* file, int level) {
 		// for reflection. (lookup, import, logger, assert, exec?, ...)
 
 	};
+	if (rt->cc->type_i64 != NULL && rt->cc->type_i64->args == NULL) {
+		enter(rt->cc, NULL);
+		err = err || !libcall(rt, b64shl, "int64 Shl(int64 Value, int Count);");
+		err = err || !libcall(rt, b64shr, "int64 Shr(int64 Value, int Count);");
+		err = err || !libcall(rt, b64sar, "int64 Sar(int64 Value, int Count);");
+		err = err || !libcall(rt, b64and, "int64 And(int64 Lhs, int64 Rhs);");
+		err = err || !libcall(rt, b64ior, "int64  Or(int64 Lhs, int64 Rhs);");
+		err = err || !libcall(rt, b64xor, "int64 Xor(int64 Lhs, int64 Rhs);");
+		rt->cc->type_i64->args = leave(rt->cc, rt->cc->type_i64, 1);
+	}
 	for (i = 0; i < sizeof(math) / sizeof(*math); i += 1) {
 		symn libc = libcall(rt, math[i].fun, math[i].def);
 		if (libc == NULL) {
@@ -462,8 +558,8 @@ int install_stdc(state rt, char* file, int level) {
 		ccEnd(rt, nsp);
 	}
 
-	if (!err && file && ccOpen(rt, srcFile, file)) {
-		return parse(rt->cc, 0, level) != 0;
+	if (!err && file && ccOpen(rt, file, 1, NULL)) {
+		return parse(rt->cc, 0, level);
 	}
 
 	return err;

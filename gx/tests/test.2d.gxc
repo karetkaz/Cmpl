@@ -1,7 +1,7 @@
 // 2d
-define test = 3;
+define test = 4;
 enum Window {
-	//~ draw = RenderMode.swap_buff;
+	draw = RenderMode.swap_buff;
 
 	//~ resx = 1440;
 	//~ resy = 900;
@@ -16,7 +16,6 @@ enum Window {
 define pi = Math.pi;
 
 /* TODO:
-//~ ezeket jo volna megcsinalni
 //~ operator (gxSurf src).width.get = width(src);
 //~ operator (gxSurf src).height.get = height(src);
 //~ operator (gxSurf src)[int x, int y].get = getPixel(src, x, y);
@@ -302,14 +301,19 @@ gxSurf mand = gxSurf(Window.resx, Window.resy);
 //~ gxSurf back = gxSurf("media/images/download.jpg");
 
 void drawCB() {
-
 	int rgbOp(int dst, int src) {
-		result = dst | src;
+		define op(int a, int b) = max(a, b);
+		int r = op(rch(dst), rch(src));
+		int g = op(gch(dst), gch(src));
+		int b = op(bch(dst), bch(src));
+		result = rgb(r, g, b);
+		//~ result = dst & src;
 	}
 
 	copySurf(offScreen, 0, 0, back, null);
 	copySurfrgb(offScreen, roi.x, roi.y, mand, &roi, rgbOp);
 	//~ copySurfrgb(offScreen, roi.x, roi.y, mand, &roi, new int(int dst, int src) {result = dst ^ src;});
+	//~ Gui.Repaint();
 }
 
 Gui.setMouseHandler(mouseMoveSizeRoi);
@@ -319,6 +323,16 @@ Mandel(mand, &mandelLut, QMin, QMax, PMin, PMax);
 //~ evalSurfrgb(mand, null, rgbAdd);
 evalSurfrgb(back, null, rgbXor);
 }
+
+void keyCB(int btn, int ext) {
+	if (btn == 27) {
+		Gui.exitLoop();
+	}
+	print("state[%d]: ", ext);
+	print("button: `%d`\n", btn);
+}
+
+Gui.setKeyboardHandler(keyCB);
 
 //~ define res = 20000;
 //~ bmpWrite(Mandel(gxSurf(res, res), mandelLut, QMin, QMax, PMin, PMax), "Mandel.bmp");

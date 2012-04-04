@@ -55,12 +55,12 @@ operator int32(string value) = atoi(value, 10);
 //~ const float64 nan = 0./0;
 
 enum Test {
-	Emit = ~0;
-	Bits = ~0;
-	Type = ~0;
+	Emit = 0;
+	Bits = 0;
+	Type = 0;
+	Misc = 0;
+	Math = 0;
 	Call = ~0;
-	Misc = ~0;
-	Math = ~0;
 }
 static if (true) {
 define hex8  int8;		//%hex8(0x%02x)
@@ -157,17 +157,17 @@ define mul(float64 &a, Complex &b) = Complex(a * b.re, a * b.im);
 }
 static if (test2exec == prog.simd) {
 //~ define add(Complex &a, Complex &b) = emit(Complex, v2d.add, f64(b.re), f64(b.im), f64(a.re), f64(a.im));
-define add(Complex a, Complex b) = emit(Complex, v2d.add, byVal(b), byVal(a));
-define add(Complex &a, float64 b) = emit(Complex, v2d.add, f64(b), f64(0), byVal(a));
-define add(float64 a, Complex &b) = emit(Complex, v2d.add, byVal(b), f64(a), f64(0));
+define add(Complex a, Complex b) = emit(Complex, v2d.add, Complex(b), Complex(a));
+define add(Complex &a, float64 b) = emit(Complex, v2d.add, f64(b), f64(0), Complex(a));
+define add(float64 a, Complex &b) = emit(Complex, v2d.add, Complex(b), f64(a), f64(0));
 
-define sub(Complex a, Complex b) = emit(Complex, v2d.sub, byVal(b), byVal(a));
-define sub(Complex &a, float64 b) = emit(Complex, v2d.sub, f64(b), f64(0), byVal(a));
-define sub(float64 a, Complex &b) = emit(Complex, v2d.sub, byVal(b), f64(a), f64(0));
+define sub(Complex a, Complex b) = emit(Complex, v2d.sub, Complex(b), Complex(a));
+define sub(Complex &a, float64 b) = emit(Complex, v2d.sub, f64(b), f64(0), Complex(a));
+define sub(float64 a, Complex &b) = emit(Complex, v2d.sub, Complex(b), f64(a), f64(0));
 
 define mul(Complex &a, Complex &b) = emit(Complex,
 	f64.sub, v2d.mul, f64(b.im), f64(b.re), f64(a.im), f64(a.re),	// re = a.re * b.re - a.im * b.im
-	f64.add, v2d.mul, byVal(b), f64(a.im), f64(a.re)	// im = a.re * b.im + a.im * b.re;
+	f64.add, v2d.mul, Complex(b), f64(a.im), f64(a.re)	// im = a.re * b.im + a.im * b.re;
 );
 //~ define mul(Complex &a, double b) = emit(Complex, v2d.mul, f64(b), f64(b), f64(a.im), f64(a.re));
 //~ define mul(double a, Complex &b) = emit(Complex, v2d.mul, f64(b.im), f64(b.re), f64(a), f64(a));
@@ -192,7 +192,7 @@ static if (Test.Emit & 0x08) {	// Vector4
 vec4f v1 = vec4f(11., 12., 13., 14.);
 vec4f v2 = vec4f(21., 22., 23., 24.);
 
-//~ vec4f v3 = emit(vec4f, swz.xywz, byVal(v1));
+//~ vec4f v3 = emit(vec4f, swz.xywz, vec4f(v1));
 }// +/
 } // */
 static if (Test.Bits) {
@@ -430,7 +430,7 @@ double fixed_test = double(add(fixed(2.225), fixed(3)));
 }
 static if (Test.Call) {
 static if (Test.Call & 1) {			// 256 bit(8x32bit) integer
-struct i32x8 {
+struct int32x8 {
 	int32 i8;	//%%08x
 	int32 i7;	//%%08x
 	int32 i6;	//%%08x
@@ -450,10 +450,10 @@ struct i32x8 {
 } // */
 
 //~ define i32x8(int i1, int i2, int i3, int i4, int i5, int i6, int i7, int i8) = emit(i32x8, i32(i1), i32(i2), i32(i3), i32(i4), i32(i5), i32(i6), i32(i7), i32(i8));
-define i32x8(int32 i0) = emit(i32x8, dupp.x1, dupp.x2, dupp.x2, dupp.x1, i32.shr, i32(31), dupp.x1, i32(i0));
-define i32x8(uint32 i0) = emit(i32x8, dupp.x1, dupp.x2, dupp.x2, dupp.x1, i32(0), i32(i0));
+define int32x8(int32 i0) = emit(int32x8, dupp.x1, dupp.x2, dupp.x2, dupp.x1, i32.shr, i32(31), dupp.x1, i32(i0));
+define int32x8(uint32 i0) = emit(int32x8, dupp.x1, dupp.x2, dupp.x2, dupp.x1, i32(0), i32(i0));
 
-void println(i32x8 &x) {
+void println(int32x8 &x) {
 	print("%d, ", x.i1);
 	print("%d, ", x.i2);
 	print("%d, ", x.i3);
@@ -467,7 +467,7 @@ void println(i32x8 &x) {
 //~ define sxt64(int32 a) = int64(int32(a));			// sign extend
 define zxt64(int32 a) = int64(uint32(a));			// zero extend
 
-i32x8 cmt(i32x8 &b) {
+int32x8 cmt(const int32x8 &b) {
 	result.i1 = ~b.i1;
 	result.i2 = ~b.i2;
 	result.i3 = ~b.i3;
@@ -477,7 +477,7 @@ i32x8 cmt(i32x8 &b) {
 	result.i7 = ~b.i7;
 	result.i8 = ~b.i8;
 }
-i32x8 neg(i32x8 &b) {
+int32x8 neg(const int32x8 &b) {
 	int64 sum;
 	int64 ovf = 0;
 	int64 carry = 0;
@@ -499,10 +499,11 @@ i32x8 neg(i32x8 &b) {
 	carry = sum < ovf;
 	result.i8 = opNeg(b.i8);
 }
-i32x8 add(i32x8 &a, i32x8 &b) {
+
+int32x8 add(const int32x8 &a, const int32x8 &b, bool &carryInOut) {
 	int64 sum;
 	int64 ovf = 0xffffffff;
-	int64 carry = 0;
+	int64 carry = carryInOut;
 
 	define opAdd(int a, int b) = int32(sum = zxt64(a) + zxt64(b) + carry);
 	result.i1 = opAdd(a.i1, b.i1);
@@ -520,11 +521,22 @@ i32x8 add(i32x8 &a, i32x8 &b) {
 	result.i7 = opAdd(a.i7, b.i7);
 	carry = sum > ovf;
 	result.i8 = opAdd(a.i8, b.i8);
+	carryInOut = sum > ovf;
 }
-i32x8 sub(i32x8 &a, i32x8 &b) {
+int32x8 add(const int32x8 &a, const int32x8 &b) {
+	bool carry = false;
+	result = add(a, b, carry);
+}
+int32x8 add(const int32x8 &a, int32 b) {
+	bool carry = false;
+	int32x8 bx8 = int32x8(b);
+	result = add(a, bx8, carry);
+}
+
+int32x8 sub(const int32x8 &a, const int32x8 &b, bool &carryInOut) {
 	int64 sum;
 	int64 ovf = 0;
-	int64 carry = 0;
+	int64 carry = carryInOut;
 
 	define opSub(int a, int b) = int32(sum = zxt64(a) - zxt64(b) - carry);
 	result.i1 = opSub(a.i1, b.i1);
@@ -542,28 +554,32 @@ i32x8 sub(i32x8 &a, i32x8 &b) {
 	result.i7 = opSub(a.i7, b.i7);
 	carry = sum < ovf;
 	result.i8 = opSub(a.i8, b.i8);
+	carryInOut = sum < ovf;
+}
+int32x8 sub(const int32x8 &a, const int32x8 &b) {
+	bool carry = false;
+	result = sub(a, b, carry);
+}
+int32x8 sub(const int32x8 &a, int32 b) {
+	bool carry = false;
+	int32x8 bx8 = int32x8(b);
+	result = sub(a, bx8, carry);
 }
 
-//~ i32x8 add(i32x8 &a, int32  b) {}
-//~ i32x8 sub(i32x8 &a, i32x8 &b) {}
-//~ i32x8 add(i32x8 &a, i32x8 &b, int32 &ovf = null);
-//~ i32x8 add(i32x8 &a, int32  b, int32 &ovf = null);
-//~ i32x8 sub(i32x8 &a, i32x8 &b, int32 &ovf = null);
-//~ i32x8 sub(i32x8 &a, int32  b, int32 &ovf = null);
-//~ i32x8 mul(i32x8 &a, i32x8 &b, i32x8 &ovf) {}
-//~ i32x8 mul(i32x8 &a, i32x8 &b, i32x8 &ovf = null);
-//~ i32x8 mul(i32x8 &a, int32  b, i32x8 &ovf = null);
 
-//~ i32x8 div(i32x8 &a, i32x8 &b, i32x8 &rem) {}
-//~ i32x8 div(i32x8 &a, i32x8 &b, i32x8 &rem = null);
-//~ i32x8 div(i32x8 &a, int32  b, i32x8 &rem = null);
+int32x8 mul(const int32x8 &a, const int32x8 &b, int32x8 &hi);
+int32x8 mul(int32x8 &a, int32 b);
+
+//~ i32x8 div(i32x8 &a, i32x8 &b, i32x8 &rem);
+//~ i32x8 div(i32x8 &a, i32x8 &b, i32x8 &rem);
+//~ i32x8 div(i32x8 &a, int32  b, i32x8 &rem);
+
 //~ i32x8 mod(i32x8 &a, i32x8 &b) {div(a, b, result);}
 //~ i32x8 mod(i32x8 &a, int32  b) {div(a, b, result);}
 
-//~ TODO: no indirect store, if global variables are enabled will fail
-//~ i32x8 i32x8_a = i32x8(int32(0x0fffffff), int32(0xffffffff), int32(0xffffffff), int32(0xffffffff), int32(0xffffffff), int32(0xffffffff), int32(0xffffffff), int32(0xffffffff));
-//~ i32x8 i32x8_b = i32x8(1);
-//~ i32x8 i32x8_c = add(i32x8_a, i32x8_b);
+int32x8 i32x8_a = int32x8(-10);
+//~ int32x8 i32x8_b = int32x8(1);
+int32x8 i32x8_c = sub(i32x8_a, -19);
 
 } // +/
 }

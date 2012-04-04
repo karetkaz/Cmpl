@@ -24,7 +24,9 @@
 //~ int64 n = 9;
 //~ int i = !!n;
 
-//~ /*
+//~ int now = time();
+
+/*
 enum unittesting: bool {
 	tan = true;
 	asin = !true;
@@ -119,7 +121,7 @@ for (int i = 0; i < vf.length; i += 1) {
 //~ double nan = emit(struct, int64(0xfff8000000000000));
 /*
 int count = 19;
-define Array(typename type, int32 ^n) = emit(struct, byRef(memmgr(null, type.size * n)), i32(n));
+define Array(typename type, int32 ^n) = emit(struct, ref(memmgr(null, type.size * n)), i32(n));
 
 int32 arr2[] = Array(int32, count);
 
@@ -333,7 +335,7 @@ struct alma {
 }
 
 //~ alma &alma_a1 = null;
-//~ int offs = emit(int, byRef(alma_a1.a3));
+//~ int offs = emit(int, ref(alma_a1.a3));
 //~ int offs = emit(int, ref(alma(null).a2));
 
 //~ pointer x = null;
@@ -455,7 +457,7 @@ println(Invoke(b));
 // +/
 
 //~ /+ count down (2) with args
-struct Closure {int64 call(Closure &c, int64 n); int64 data; int32 calls; /+...+/ }
+struct Closure{int64 call(Closure &c, int64 n); int64 data; int32 calls; /+...+/ }
 define Closure(int64 call(Closure &c, int64 n), int64 data) = Closure(call, data, 0);
 
 define Invoke(Closure c, int64 n) = c.call(&c, n);

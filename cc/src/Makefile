@@ -1,7 +1,7 @@
 OUTOBJ=-o
 OUTEXE=-o
-CFLAGS=-Wall -Wpadded -g2 -ggdb
-#~ CFLAGS=-g0 -O0
+CFLAGS=-Wall -Wpadded -g3 -ggdb
+#~ CFLAGS=-g0 -Os
 LIBS=-lm -ldl
 CCC=gcc -m32 -c
 LNK=gcc -m32

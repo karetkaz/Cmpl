@@ -7,7 +7,7 @@ enum Window {
 
 gxSurf srcImg = gxSurf("media/images/download.jpg");
 
-define WIDTH  = 512/4;
+define WIDTH  = 256;
 define HEIGHT = WIDTH;
 gxSurf dstImg = gxSurf(WIDTH, HEIGHT);
 
@@ -366,6 +366,6 @@ void mouseHandler(int btn, int x, int y) {
 	}
 }
 
-Gui.setDrawCallback(waves);
+Gui.setDrawCallback(tunnel0);
 Gui.setMouseHandler(mouseHandler);
 //~ Gui.exitLoop();

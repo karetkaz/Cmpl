@@ -10,16 +10,17 @@ source code representation using abstract syntax tree
 #include "core.h"
 
 astn newnode(ccState s, int kind) {
+	state rt = s->s;
 	astn ast = 0;
 	if (s->tokp) {
 		ast = s->tokp;
 		s->tokp = ast->next;
 	}
-	else if (s->_end - s->_beg > (int)sizeof(struct astn)){
-		//~ ast = (astn)s->_beg;
-		//~ s->_beg += sizeof(struct astn);
-		s->_end -= sizeof(struct astn);
-		ast = (astn)s->_end;
+	else if (rt->_end - rt->_beg > (int)sizeof(struct astn)){
+		//~ ast = (astn)rt->_beg;
+		//~ rt->_beg += sizeof(struct astn);
+		rt->_end -= sizeof(struct astn);
+		ast = (astn)rt->_end;
 	}
 	else {
 		fatal("memory overrun");
@@ -78,13 +79,13 @@ astn lnknode(ccState s, symn ref) {
 /// make a constant valued node
 astn intnode(ccState s, int64_t v) {
 	astn ast = newnode(s, TYPE_int);
-	ast->type = type_i32;
+	ast->type = s->type_i32;
 	ast->con.cint = v;
 	return ast;
 }
 astn fltnode(ccState s, float64_t v) {
 	astn ast = newnode(s, TYPE_flt);
-	ast->type = type_f64;
+	ast->type = s->type_f64;
 	ast->con.cflt = v;
 	return ast;
 }
@@ -137,6 +138,9 @@ float64_t constflt(astn ast) {
 }
 
 TODO("eval should use cgen and vmExec")
+extern symn type_i32_;
+extern symn type_f64_;
+extern symn type_str_;
 int eval(astn res, astn ast) {
 	struct astn lhs, rhs;
 	int cast;
@@ -427,15 +431,14 @@ int eval(astn res, astn ast) {
 	}
 
 	switch (res->kind) {
-		default: 
+		default:
 			fatal("FixMe %t", res->kind);
 			res->type = NULL;
 			return 0;
-		case TYPE_bit: res->type = type_u32; break;
-		case TYPE_flt: res->type = type_f64; break;
-		case TYPE_int: res->type = type_i32; break;
-		case TYPE_str: res->type = type_str; break;
-		//~ case EMIT_opc: ast->type = emit_opc; break;
+		case TYPE_bit: res->type = type_i32_; break;
+		case TYPE_int: res->type = type_i32_; break;
+		case TYPE_flt: res->type = type_f64_; break;
+		case TYPE_str: res->type = type_str_; break;
 	}
 
 	return res->kind;

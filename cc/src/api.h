@@ -61,7 +61,10 @@ struct state {
 	void *_free;	// list of free memory
 	void *_used;	// list of used memory
 
-	unsigned char *_ptr;	// cc: used memory; vm: max stack when calling vmCall from a libcall
+	//~ unsigned char *_ptr;	// cc: used memory; vm: max stack when calling vmCall from a libcall
+	unsigned char *_beg;	// cc: used memory; vm: max stack when calling vmCall from a libcall
+	unsigned char *_end;
+
 	unsigned char _mem[];
 };
 

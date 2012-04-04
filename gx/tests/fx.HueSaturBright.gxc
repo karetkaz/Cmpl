@@ -1,0 +1,142 @@
+enum Window {
+	draw = RenderMode.swap_buff;
+	resx = 512;
+	resy = resx;
+}
+
+//~ string fileName = "media/images/David.png";
+//~ string fileName = "media/images/lenaRGB.png";
+string fileName = "media/images/download.jpg";
+//~ string fileName = "media/images/dino-blue.jpg";
+//~ string fileName = "media/images/Earth.jpg";
+//~ string fileName = "media/images/nol.bmp";
+
+define useNativeImpl = true;
+gxSurf img = gxSurf(fileName);
+
+int brightness = 0;
+int saturation = 0;
+int hue = 0;
+mat4f mat;
+
+bool reDraw = true;
+
+void mouseCB(int btn, int x, int y) {
+	static int ox;
+	static int oy;
+	int d = oy - y;
+	if (Mouse.dblClick(btn, x, y)) {
+		Mouse.dblClick(-1, 0, 0);			// disable multi clicks
+		reDraw = true;
+		brightness = 0;
+		saturation = 0;
+		hue = 0;
+	}
+	if (btn == 1) {
+		reDraw = true;
+		brightness += d;
+	}
+	if (btn == 2) {
+		reDraw = true;
+		saturation += d;
+	}
+	if (btn == 3) {		// left + right
+		reDraw = true;
+		hue += d;
+	}
+	ox = x;
+	oy = y;
+}
+
+mat4f cmatHue(float64 val) {
+	val = Math.deg2rad(clamp(val, 0., 360.));
+	float64 cV = cos(val);
+	float64 sV = sin(val);
+	float64 lR = 0.213;
+	float64 lG = 0.715;
+	float64 lB = 0.072;
+	result.x = vec4f(lR+cV*(1-lR)+sV*(   -lR), lG+cV*(   -lG)+sV*( -lG), lB+cV*( -lB)+sV*(1 - lB),0.);
+	result.y = vec4f(lR+cV*(0-lR)+sV*(0.1430), lG+cV*(1 - lG)+sV*(0.14), lB+cV*( -lB)+sV*(-0.283),0.);
+	result.z = vec4f(lR+cV*(0-lR)+sV*(lR - 1), lG+cV*(   -lG)+sV*(  lG), lB+cV*(1-lB)+sV*(    lB),0.);
+	result.w = vec4f(0., 0., 0., 1.);
+}
+mat4f cmatSat(float64 val) {
+	float64 x = 1 + clamp(val, -100., 200.) / 100;
+	result.x = vec4f(0.3086*(1-x) + x , .6094*(1-x), .0820*(1-x), 0.);
+	result.y = vec4f(0.3086*(1-x) , .6094*(1-x) + x, .0820*(1-x), 0.);
+	result.z = vec4f(0.3086*(1-x) , .6094*(1-x), .0820*(1-x) + x, 0.);
+	result.w = vec4f(0., 0., 0., 1.);
+}
+mat4f cmatLum(float64 val) {
+	val = clamp(val, -100., 100.) / 100;
+	result.x = vec4f(1., 0., 0., val);
+	result.y = vec4f(0., 1., 0., val);
+	result.z = vec4f(0., 0., 1., val);
+	result.w = vec4f(0., 0., 0.,  1.);
+}
+
+mat4f cmatHSL(float hue, float sat, float lum) {
+
+	result = mat4f(
+		1, 0, 0, 0,
+		0, 1, 0, 0,
+		0, 0, 1, 0,
+		0, 0, 0, 1
+	);
+
+	mat4f tmp;
+
+	tmp = cmatLum(lum);
+	result = mul(&result, &tmp);
+
+	tmp = cmatSat(sat);
+	result = mul(&result, &tmp);
+
+	tmp = cmatHue(hue);
+	result = mul(&result, &tmp);
+}
+
+void drawCB() {
+	if (reDraw) {
+		zoomSurf(offScreen, null, img, null, 1);
+
+		brightness = clamp(brightness, -100, 100);
+		saturation = clamp(saturation, -100, 200);
+		hue = clamp(hue, 0, 360);
+
+		mat = cmatHSL(hue, saturation, brightness);
+
+		static if (useNativeImpl) {
+			cmatSurf(offScreen, null, &mat);
+		}
+		static if (!useNativeImpl) {
+			vec4f pixelCB(vec4f col) {
+				result = dph(mat, col);
+			}
+			fillSurf(offScreen, null, pixelCB);
+		}
+
+		static if (true) {
+			int y = 0;
+			define dy = 12;
+			uint8 txt[1024];
+			string str = emit(string, ref(txt));
+
+			itoa(str, brightness, 10, 1, true, "brightness: ");
+			drawText(offScreen, 0, y, str, -1);
+			y += dy;
+
+			itoa(str, saturation, 10, 1, true, "saturation: ");
+			drawText(offScreen, 0, y, str, -1);
+			y += dy;
+
+			itoa(str, hue, 10, 1, "hue: ");
+			drawText(offScreen, 0, y, str, -1);
+			y += dy;
+		}
+		reDraw = false;
+	}
+}
+
+Gui.setMouseHandler(mouseCB);
+Gui.setDrawCallback(drawCB);

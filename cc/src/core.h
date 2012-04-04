@@ -50,6 +50,7 @@
 // internal errors
 #define prerr(msg, ...) do {pdbg("FixMe", __FILE__, __LINE__, msg, ##__VA_ARGS__); } while(0)
 #define fatal(msg, ...) do {prerr(msg, ##__VA_ARGS__); abort();} while(0)
+
 #define dieif(__EXP, msg, ...) do {if (__EXP) fatal(msg, ##__VA_ARGS__);} while(0)
 #define logif(__EXP, msg, ...) do {if (__EXP) prerr(msg, ##__VA_ARGS__);} while(0)
 
@@ -168,12 +169,11 @@ typedef struct list *list;
 typedef unsigned int uint;
 
 typedef struct libc {
-	struct libc	*next;	// next
-	//~ const char* proto;
+	struct libc *next;	// next
 	int (*call)(state);
+	int chk, pop;
+	int pos;
 	symn sym;
-	int8_t chk, pop;
-	int16_t pos;//__pad[2];
 } *libc;
 struct list {				// linked list: stringlist, memgr, ...
 	struct list		*next;
@@ -209,7 +209,7 @@ struct astn {				// tree node (code)
 			char*	name;			// name of identifyer
 			int32_t hash;			// hash code for 'name'
 			symn	link;			// variable
-			astn	args1;			// next used
+			astn	used;			// next used
 		} ref;
 		struct {					// STMT_brk, STMT_con
 			long offs;
@@ -269,12 +269,12 @@ struct symn {				// type node (data)
 	};
 
 	int		nest;		// declaration level
-	//~ int	refc;		// how many times was referenced by lookup
 
 	symn	defs;		// global variables and functions / while_compiling variables of the block in reverse order
 	symn	gdef;		// static variables and functions / while_compiling ?
 
 	astn	init;		// VAR init / FUN body, this shuld be null after codegen
+	astn	used;		// how many times was referenced by lookup
 	char*	pfmt;		// TEMP: print format
 };
 
@@ -305,14 +305,13 @@ struct ccState {
 	list	strt[TBLS];		// string table
 	symn	deft[TBLS];		// definitions: hashStack;
 
-	//~ int		verb;		// verbosity
 	int		warn;		// warning level
 	int		nest;		// nest level: modified by (enter/leave)
 	int		maxlevel;		// max nest level: modified by ?
-	//~ int		funl;		// function nest
 	int		siff:1;		// inside a static if false
 	int		sini:1;		// initialize static variables ?
 	int		_pad:30;	// 
+	//~ int		verb:1;		// verbosity
 
 	char*	file;	// current file name
 	int		line;	// current line number
@@ -320,19 +319,17 @@ struct ccState {
 	// Warning set to -1 to record.
 	symn	pfmt;
 
-	struct {
-		struct {			// Lexer
-			// INPUT
-			struct {
-				int		_fin;		// file handle (-1) for cc_buff()
-				int		_cnt;		// chars left in buffer
-				char*	_ptr;		// pointer parsing trough source
-				uint8_t	_buf[1024];	// cache
-			} fin;
-			astn	tokp;		// token pool
-			astn	_tok;		// next token
-			int		_chr;		// next char
-		};
+	struct {			// Lexer
+		// INPUT
+		struct {
+			int		_fin;		// file handle (-1) for cc_buff()
+			int		_cnt;		// chars left in buffer
+			char*	_ptr;		// pointer parsing trough source
+			uint8_t	_buf[1024];	// cache
+		} fin;
+		astn	tokp;		// list of reusable tokens
+		astn	_tok;		// one token look-ahead
+		int		_chr;		// one char look-ahead
 	};
 
 	astn	void_tag;		// no parameter of type void
@@ -340,41 +337,26 @@ struct ccState {
 
 
 	symn	type_rec;		// typename
-	//~ symn	type_vid;
-	//~ symn	type_bol;
-	//~ symn	type_u32;
-	//~ symn	type_i32;
-	//~ symn	type_i64;
-	//~ symn	type_f32;
-	//~ symn	type_f64;
-	//~ symn	type_str;
-	//~ symn	type_ptr;
+	symn	type_vid;
+	symn	type_bol;
+	symn	type_u32;
+	symn	type_i32;
+	symn	type_i64;
+	symn	type_f32;
+	symn	type_f64;
+	symn	type_str;
+	symn	type_ptr;
 
-	//~ symn	null_ref;
-	//~ symn	emit_opc;
+	symn	null_ref;
+	symn	emit_opc;
 
 	symn	libc_mem;		// memory manager libcall
 	symn	libc_dbg;
 
-	char	*_beg;
-	char	*_end;
 	arrBuffer dbg;
 };
 static inline int kindOf(astn ast) {return ast ? ast->kind : 0;}
 
-extern symn type_vid;
-extern symn type_bol;
-extern symn type_u32;
-extern symn type_i32;
-extern symn type_i64;
-extern symn type_f32;
-extern symn type_f64;
-
-extern symn type_str;
-extern symn type_ptr;
-extern symn null_ref;
-
-extern symn emit_opc;
 
 //~ clog
 //~ void fputfmt(FILE *fout, const char *msg, ...);
@@ -410,7 +392,7 @@ symn install(ccState, const char* name, int kind, int cast, unsigned size, symn 
 symn declare(ccState, int kind, astn tag, symn rtyp);
 symn addarg(ccState, symn sym, const char* name, int kind, symn type, astn init);
 
-int canAssign(symn rhs, astn val, int strict);
+int canAssign(ccState, symn rhs, astn val, int strict);
 symn lookup(ccState, symn sym, astn ast/*, int deep*/, astn args, int raise);
 // TODO: this is the semantic-analyzer, typecheck should be renamed.
 symn typecheck(ccState, symn loc, astn ast);
@@ -482,7 +464,7 @@ int istype(astn ast);
 symn linkOf(astn ast);
 long sizeOf(symn typ);	// should be typ->size
 
-int source(ccState, srcType mode, char* text);		// mode: file/text
+int source(ccState, int isFile, char* text);
 
 unsigned rehash(const char* str, unsigned size);
 

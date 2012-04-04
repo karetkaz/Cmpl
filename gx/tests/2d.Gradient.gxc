@@ -1,0 +1,142 @@
+enum Window {
+	draw = RenderMode.swap_buff;
+	resx = 512 / 2;
+	resy = resx;
+}
+
+bool reDraw = true;
+
+void doLinearGradient(gxRect roi) {
+	static double l;
+	static double x0;
+	static double y0;
+	static double dx;
+	static double dy;
+
+	vec4f pixelCB(double x, double y) {
+		double c = l * (dx * (x - x0) + dy * (y - y0));
+		//~ if ((c %= 1) < 0) {c += 1;}
+		result = vec4f(float32(c));
+	}
+
+	double w = width(offScreen);
+	double h = height(offScreen);
+
+	x0 = roi.x / w;
+	y0 = roi.y / h;
+	dx = roi.w / w;
+	dy = roi.h / h;
+	l = 1. / nz(dx * dx + dy * dy, 1e-20);
+	evalSurf(offScreen, null, pixelCB);
+}
+
+void doConicalGradient(gxRect roi) {
+	static double a;
+	static double rix;
+	static double riy;
+
+	static vec4f ColorCB(double x, double y) {
+
+		double ang = a - atan2(x - rix, y - riy);
+
+		if (ang < 0) {
+			ang += 2 * Math.pi;
+		}
+
+		ang %= 2 * Math.pi;
+
+		result = vec4f(float32(.5 / Math.pi * ang));
+	}
+
+	double w = width(offScreen);
+	double h = height(offScreen);
+
+	rix = roi.x / w;
+	riy = roi.y / h;
+	a = atan2(roi.w / w, roi.h / h);
+	evalSurf(offScreen, null, ColorCB);
+}
+
+gxClut lut;
+
+//~ int Colors[10] = 0x000000, 0xffffff, 0x000000, 0xff0000, 0x00ff00, 0x0000ff, 0xff0000, 0x00ff00, 0x0000ff, 0xff0000;
+//~ int Colors[4] = 0xff0000, 0x00ff00, 0x0000ff, 0xff0000;//, 0x00ff00, 0x0000ff, 0xff0000;
+
+//~ blendLut(256, lut, Colors);
+blendLut(lut, 0x000000, 0xffffff, 0x000000);
+//~ blendLut(lut, 0xff0000, 0x00ff00, 0x0000ff);
+//~ blendLut(lut, 0xff0000, 0x00ff00, 0x0000ff, 0xff0000);
+//~ zoomSurf(offScreen, null, lutSurf(gxSurf(256, 256), lut, 0), null, 0);
+//~ saveLut(lut, "a.bmp");
+
+int type = Gradient.Linear;
+gxRect roi  = gxRect(Window.resx / 2 - Window.resx / 4, Window.resy / 2 - Window.resy / 4, Window.resx / 2, Window.resy / 2);
+
+void mouseMoveSizeRoi(int btn, int x, int y) {
+	static int ox = 0;
+	static int oy = 0;
+	if (btn == 1) {
+		reDraw = true;
+		roi.x += x - ox;
+		roi.y += y - oy;
+	}
+	if (btn == 2) {
+		reDraw = true;
+		roi.w = x - roi.x;
+		roi.h = y - roi.y;
+	}
+	ox = x;
+	oy = y;
+}
+
+void mouseCB(int btn, int x, int y) {
+	if (Mouse.dblClick(btn, x, y)) {
+		reDraw = true;
+		Mouse.dblClick(-1, 0, 0);			// disable multi clicks
+		if (type == Gradient.Linear) {
+			type = Gradient.Radial;
+		}
+		else if (type == Gradient.Radial) {
+			type = Gradient.Square;
+		}
+		else if (type == Gradient.Square) {
+			type = Gradient.Conical;
+		}
+		else if (type == Gradient.Conical) {
+			type = Gradient.Spiral;
+		}
+		else if (type == Gradient.Spiral) {
+			type = Gradient.Linear;
+		}
+	}
+	else {
+		static int ox = 0;
+		static int oy = 0;
+		if (btn == 1) {
+			reDraw = true;
+			roi.x += x - ox;
+			roi.y += y - oy;
+		}
+		if (btn == 2) {
+			reDraw = true;
+			roi.w = x - roi.x;
+			roi.h = y - roi.y;
+		}
+		ox = x;
+		oy = y;
+	}
+}
+void drawCB() {
+	if (reDraw) {
+		//~ doLinearGradient(roi);
+		//~ doConicalGradient(roi);
+
+		gradSurf(offScreen, &roi, &lut, type | Gradient.Repeat);
+		drawRect(offScreen, &roi, 0xff00ff);
+		drawLine(offScreen, roi.x, roi.y, roi.x + roi.w, roi.y + roi.h, 0xff00ff);
+		reDraw = false;
+	}
+}
+
+Gui.setMouseHandler(mouseCB);
+Gui.setDrawCallback(drawCB);

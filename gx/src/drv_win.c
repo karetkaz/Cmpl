@@ -1,7 +1,7 @@
 #include "drv_gui.h"
 
-static int (*kbdH)(int/* , int */) = 0;
-static int (*ratH)(int, int, int) = 0;
+static int (*kbdH)(int, int) = NULL;
+static int (*ratH)(int, int, int) = NULL;
 
 #if defined(WIN32)
 #include <windows.h>
@@ -10,7 +10,7 @@ static int (*ratH)(int, int, int) = 0;
 static HDC wDC = 0;
 static HWND hWnd = 0;
 static HINSTANCE mainhins = 0;
-static char *class_name = "GFX(2/3)D_GDI_Window";
+static char *class_name = "GFX(2/3)D_Window";
 
 static BITMAPINFO BMP;
 
@@ -51,7 +51,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 			//~ return ratH ? ratH(wParam, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)) : 0;
 		}
 		case WM_CHAR :
-			return kbdH ? kbdH(wParam/*, lParam*/) : 0;
+			return kbdH ? kbdH(wParam, lParam) : 0;
 
 		case WM_DESTROY:
 			PostQuitMessage(0);
@@ -153,7 +153,7 @@ static int winmsg(int wait) {
 	return 0;
 }
 
-int initWin(gx_Surf offs, flip_scr *flip, peek_msg *msgp, int ratHND(int btn, int mx, int my), int kbdHND(int key/* , int lkey */)) {
+int initWin(gx_Surf offs, flip_scr *flip, peek_msg *msgp, int ratHND(int btn, int mx, int my), int kbdHND(int key, int state)) {
 	if (offs && create_window(offs->width, offs->height)) {
 		*flip = copy2_window;
 		*msgp = winmsg;
@@ -196,10 +196,9 @@ static int create_window(int width, int height) {
 		XSetWMProtocols(display, window, &wmDelete, 1);
 
 		// register events
-		XSelectInput(display, window, KeyPressMask | ExposureMask
-			| ButtonPressMask | ButtonReleaseMask
-			| PointerMotionMask
-			//~ | ButtonMotionMask
+		XSelectInput(display, window, ExposureMask
+			| KeyPressMask | KeyReleaseMask
+			| ButtonPressMask | ButtonReleaseMask | PointerMotionMask
 			);
 
 		XMapWindow(display, window);
@@ -260,6 +259,7 @@ static int copy_window(gx_Surf src, int unused) {
 static int winmsg(int wait) {
 	XEvent event;
 	int result = 0;
+	static int btnstate = 0;
 
 	if (wait)
 		XPeekEvent(display, &event);
@@ -279,34 +279,45 @@ static int winmsg(int wait) {
 				//~ printf("> Event:Expose\n");
 				break;
 
-			case ButtonPress:
 			case ButtonRelease:
+			case ButtonPress:
 			case MotionNotify: {
-				static int btnstate = 0;
 				switch (event.type) {
-					case ButtonPress: switch (event.xbutton.button) {
-						case 1: btnstate |= 1; break;
-						case 2: btnstate |= 4; break;
-						case 3: btnstate |= 2; break;
-					} break;
-					case ButtonRelease: switch (event.xbutton.button) {
-						case 1: btnstate &= ~1; break;
-						case 2: btnstate &= ~4; break;
-						case 3: btnstate &= ~2; break;
-					} break;
+					case ButtonPress:
+						switch (event.xbutton.button) {
+							case 1: btnstate |= 1; break;
+							case 2: btnstate |= 4; break;
+							case 3: btnstate |= 2; break;
+						}
+						break;
+					case ButtonRelease: 
+						switch (event.xbutton.button) {
+							case 1: btnstate &= ~1; break;
+							case 2: btnstate &= ~4; break;
+							case 3: btnstate &= ~2; break;
+						}
+						//~ break;
+						return;
 				}
 				if (ratH) result = ratH(btnstate, event.xmotion.x, event.xmotion.y);
 			} break;
 
+			//~ case KeyRelease:
 			case KeyPress: {
 				KeySym keysym = XLookupKeysym(&(event.xkey), 0);
 				if (kbdH) {
-					char buffer[2];
+					unsigned char buffer[1];
 					int nchars = XLookupString(&(event.xkey), buffer, sizeof(buffer), &keysym, NULL);
-					if (nchars == 1) {
-						//~ printf("> Key[%d] '%c' pressed\n", *buffer, *buffer);
-						result = kbdH(*buffer/* , event.xkey.state */);
+					result = kbdH(*buffer, event.xkey.state);
+
+					/*
+					if (nchars == 1)
+					{
+						result = kbdH(*buffer, event.xkey.state);
 					}
+					else {
+						result = kbdH(*buffer + (buffer[1] << 8), event.xkey.state);
+					}// */
 				}
 			} break;
 
@@ -337,7 +348,7 @@ void doneWin(void) {
 	//~ pthread_join(thread_id, NULL);
 }
 
-int initWin(gx_Surf offs, flip_scr *flip, peek_msg *msgp, int ratHND(int btn, int mx, int my), int kbdHND(int key/* , int lkey */)) {
+int initWin(gx_Surf offs, flip_scr *flip, peek_msg *msgp, int ratHND(int btn, int mx, int my), int kbdHND(int key, int state)) {
 	/*if (XInitThreads() == 0) {
 		printf("WARNING - cannot support multi threads\n");
 		return -2;

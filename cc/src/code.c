@@ -91,7 +91,6 @@ typedef struct cell {			// processor
 	//~ unsigned	sf:1;			// sign flag
 	//~ unsigned	cf:1;			// carry flag
 	//~ unsigned	of:1;			// overflow flag
-
 } *cell;
 
 int vmOffset(state rt, void *ptr) {
@@ -112,7 +111,7 @@ static symn installref(state rt, const char *prot, astn *argv) {
 	int level;
 	int errc = rt->errc;
 
-	if (!ccOpen(rt, srcText, (char *)prot)) {
+	if (!ccOpen(rt, NULL, 0, (char *)prot)) {
 		trace("FixMe");
 		return NULL;
 	}
@@ -156,10 +155,10 @@ symn libcall(state rt, int libc(state), const char* proto) {
 		astn libcinit;
 		int libcpos = rt->cc->libc ? rt->cc->libc->pos + 1 : 0;
 
-		dieif(rt->cc->_end - rt->cc->_beg < sizeof(struct libc), "FixMe");
+		dieif(rt->_end - rt->_beg < sizeof(struct libc), "FixMe");
 
-		rt->cc->_end -= sizeof(struct libc);
-		lc = (struct libc *)rt->cc->_end;
+		rt->_end -= sizeof(struct libc);
+		lc = (struct libc *)rt->_end;
 		lc->next = rt->cc->libc;
 		rt->cc->libc = lc;
 
@@ -241,15 +240,11 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 	libc libcvec = rt->libv;
 	bcde ip = getip(rt, rt->vm.pos);
 
+	dieif((unsigned char*)ip + 16 >= rt->_end, "memory overrun");
+
 	if (opc == markIP) {
 		return rt->vm.pos;
 	}
-
-	if (rt->_size - vmOffset(rt, ip) < 16) {
-		debug("memory overrun");
-		return 0;
-	}
-
 	else if (opc == opc_neg) switch (arg.i4) {
 		case TYPE_u32:
 		case TYPE_i32: opc = i32_neg; break;
@@ -444,7 +439,7 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 			//else if (arg.u8 <= 0xffff) opc = opc_ldc2;
 		}
 
-		// */ memory access
+		/* memory access
 		else if (opc == opc_ldi1) {
 			ip = getip(rt, rt->vm.pc);
 			if (ip->opc == opc_ldsp && ((ip->rel & (vm_size-1)) == 0) && ((ip->rel / vm_size) < vm_regs)) {
@@ -463,7 +458,7 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 				rt->vm.ss -= 1;
 			}
 		}
-
+		// */
 		else if (opc == opc_ldi4) {
 			ip = getip(rt, rt->vm.pc);
 			if (ip->opc == opc_ldcr && ip->arg.u4 < 0x00ffffff) {
@@ -746,7 +741,7 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 			}
 		}*/
 		/*else if (opc == opc_spc) {
-			dieif (arg.i8 & (vm_size-1), "FixMe");
+			dieif(arg.i8 & (vm_size-1), "FixMe");
 			if (arg.i8 < 0) {
 				if (-arg.i8 < vm_regs * vm_size) {
 					arg.i8 /= -vm_size;
@@ -1145,7 +1140,7 @@ int vmExec(state rt, dbgf dbg) {
 	pu->bp = rt->_mem + rt->vm.pos;		// the last emited instruction
 	pu->sp = rt->_mem + rt->_size;
 
-	/*if ((((int)pu->sp) & 3)) {
+	/*if ((((int)pu->sp) & (vm_size-1))) {
 		error(vm->s, 0, "invalid statck size");
 		return -99;
 	}// */
@@ -1156,7 +1151,7 @@ int vmExec(state rt, dbgf dbg) {
 	}
 
 	rt->cc = NULL;		// invalidate compiler
-	rt->_ptr = pu->sp;	// initiate stack position
+	rt->_end = pu->sp;	// initiate stack position
 
 	// reinitialize memory manager
 	rt->_free = rt->_used = NULL;
@@ -1211,7 +1206,7 @@ int vmCall(state rt, symn fun, ...) {
 
 	pu->ip = rt->_mem - fun->offs;
 	pu->bp = rt->_mem + rt->vm.pos;
-	pu->sp = rt->_ptr;
+	pu->sp = rt->_end;
 
 	// push Arguments;
 	//~ va_start(ap, fun);
@@ -1382,8 +1377,8 @@ void fputopc(FILE *fout, unsigned char* ptr, int len, int offs, state rt) {
 	}
 }
 void fputasm(FILE *fout, state rt, int beg, int end, int mode) {
-	int rel = 0;//mode & 0x10;// ? 0 : -1;
 	int i, is = 12345;
+	int rel = 0;
 	astn ast = NULL;
 
 	if (end == -1)
@@ -1401,7 +1396,6 @@ void fputasm(FILE *fout, state rt, int beg, int end, int mode) {
 
 		switch (ip->opc) {
 			error_opc: error(rt, NULL, 0, "invalid opcode: %02x '%A'", ip->opc, ip); return;
-			//~ #define NEXT(__IP, __CHK, __SP) {if (__IP) is = (__IP);/*  ss += (__SP); */}
 			#define NEXT(__IP, __CHK, __SP) {if (__IP) is = (__IP);}
 			#define STOP(__ERR, __CHK, __ERC) if (__CHK) goto __ERR
 			#include "code.inl"
@@ -1432,18 +1426,9 @@ void vm_fputval(state rt, FILE *fout, symn var, stkval* ref, int level) {
 				symn tmp;
 				int n = 0;
 
-				if (var == null_ref) {
-					fputfmt(fout, "%T(null)", typ);
-					break;
-				}
-				else if (var->cast == TYPE_ref) {		// arrays, strings, functions, references
+				if (var->cast == TYPE_ref) {		// arrays, strings, functions, references
 					if (ref->u4 == 0) {
 						fputfmt(fout, "%T(null)", typ);
-						//~ fputfmt(fout, "null");
-						break;
-					}
-					else if (typ == type_ptr) {
-						fputfmt(fout, "%T(%08x)", typ, ref->u4);
 						break;
 					}
 					ref = (stkval*)(rt->_mem + ref->u4);
@@ -1512,10 +1497,6 @@ void vm_fputval(state rt, FILE *fout, symn var, stkval* ref, int level) {
 						}
 						break;
 
-					/*case TYPE_ref: {
-						fputfmt(fout, ".ERROR.", );
-						break;
-					}// */
 					default: {
 						fputfmt(fout, "%T {", typ);
 						for (tmp = typ->args; tmp; tmp = tmp->next) {
@@ -1541,10 +1522,13 @@ void vm_fputval(state rt, FILE *fout, symn var, stkval* ref, int level) {
 			case TYPE_arr: {
 				int i = 0, n = 0;
 				symn base = typ->type;
-
-				if (typ == type_str) {
-					ref = (stkval*)(rt->_mem + ref->u4);
-					fputfmt(fout, "(\"%s\")", ref);
+				if (var->pfmt || typ->pfmt) {
+					char *fmt = var->pfmt ? var->pfmt : typ->pfmt;
+					if (ref->u4 == 0) {
+						fputfmt(fout, "%T(null)", typ);
+						break;
+					}
+					fputfmt(fout, fmt, rt->_mem + ref->u4);
 				}
 				else {
 					int arronnln = 0;

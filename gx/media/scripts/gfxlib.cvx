@@ -157,7 +157,7 @@ vec4f Hsv2Rgb(vec4f hsv) {
 }
 
 define gxSurf() = newSurf(0, 0);
-define gxSurf(int dim) = newSurf(dim, dim);
+define gxSurf(int ^dim) = newSurf(dim, dim);
 define gxSurf(int width, int height) = newSurf(width, height);
 define gxSurf(gxSurf ^copy) = copySurf(newSurf(width(copy), height(copy)), 0, 0, copy, null);
 

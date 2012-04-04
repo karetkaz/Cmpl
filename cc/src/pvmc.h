@@ -11,35 +11,26 @@ enum CompilerRegister {
 
 	//~ low level emit
 	creg_emit = 0x0010,				// emit(...)
-	creg_etyp = 0x0020 | creg_emit,	// emit types : emit.i32
+	//~ creg_etyp = 0x0020 | creg_emit,	// emit types : emit.i32
 	creg_eopc = 0x0040 | creg_emit,	// emit opcodes : emit.i32.add
 	creg_swiz = 0x0080 | creg_eopc,	// swizzle constants : emit.swz.(xxxx ... xyzw ... wwww)
 
-	// this are in main
-	//~ creg_stdc = 0x0010 | creg_emit,	// std library calls : sin(float64 x) = emit(float64, libc(3), f64(x));
-	//~ creg_bits = 0x0020 | creg_emit,	// bitwize operations: bits.shr(int64 x, int32 cnt)
-
-	//~ creg_math = 0x000?,
-	//~ creg_rtty = 0x000?,
-	creg_all  = -1,
-	creg_def  = 0xff,
+	//~ creg_all  = 0xff,
+	creg_def  = creg_tptr + creg_tvar + creg_eopc,
 };
 
 typedef enum {
-	srcText = 0x00,		// file / buffer
-	srcFile = 0x10,		// file / buffer
+	//~ srcText = 0x00,		// file / buffer
+	//~ srcFile = 0x10,		// file / buffer
 
 	//~ srcUnit = 0x01,
 	//~ srcDecl = 0x02,
 	//~ srcExpr = 0x03,
 
-	// unit / script (ask the file what is it ? (: first tokens : 'package' 'name'))
-
-	//~ dump_bin = 0x0000100,
-	dump_sym = 0x0000100,
-	dump_ast = 0x0000200,
-	dump_asm = 0x0000400,
-	dump_bin = 0x0000800,
+	dump_bin = 0x0000100,
+	dump_asm = 0x0000200,
+	dump_sym = 0x0000400,
+	dump_ast = 0x0000800,
 	dumpMask = 0x0000f00,
 } srcType, dumpMode;
 
@@ -61,9 +52,9 @@ int logFILE(state, FILE *file);				// set logger
 int logfile(state, char *file);				// set logger
 
 // compile
-//~ int srcfile(state, char *file);				// source
-//~ int srctext(state, char *file, int line, char *src);				// source
-//~ int compile(state, int level);				// warning level
+//~ int srcfile(state, char *file);
+//~ int srctext(state, char *file, int line, char *src);
+//~ int compile(state, int level);			// warning level
 int gencode(state, int level);				// optimize level
 //~ int execute(state, int cc, int ss, dbgf dbg);
 int parse(ccState, srcType, int wl);
@@ -77,14 +68,8 @@ int install_stdc(state rt, char* file, int level);
 
 // Level 1 Functions: use less these
 ccState ccInit(state, int mode, int libcHalt(state));
-ccState ccOpen(state, srcType, char* source);
+ccState ccOpen(state, char* file, int line, char* source);
 int ccDone(state);
-
-//~ state vmInit(state);
-//~ int vmOpen(state, char* binary);
-//~ int vmDone(state s);
-
-void ccSource(ccState, char *file, int line);		// set source position
 
 // declaring namespaces
 symn ccBegin(state, char *cls);

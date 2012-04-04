@@ -127,12 +127,16 @@ char *parsecmd(char *ptr, char *cmd, char *sws) {
 }
 
 static int cctext(state rt, char *file, int line, int wl, char *buff) {
-	if (!ccOpen(rt, srcText, buff))
+	if (!ccOpen(rt, file, line, buff))
 		return -2;
-
-	ccSource(rt->cc, file, line);
 	return parse(rt->cc, 0, wl);
 }
+
+/*static int ccfile(state rt, char *file, int wl) {
+	if (!ccOpen(rt, file, 1, NULL))
+		return -2;
+	return parse(rt->cc, 0, wl);
+}*/
 
 void usage(char* prog, char* cmd) {
 	if (cmd == NULL) {
@@ -181,7 +185,7 @@ int evalexp(ccState cc, char* text) {
 	symn typ;
 	int tid;
 
-	source(cc, 0, text);
+	ccOpen(cc->s, NULL, 0, text);
 
 	ast = expr(cc, TYPE_any);
 	typ = typecheck(cc, NULL, ast);
@@ -203,105 +207,9 @@ int evalexp(ccState cc, char* text) {
 	return -1;
 }
 
-//{ int64 ext
-static int b64shl(state rt) {
-	uint64_t x = popi64(rt);
-	int32_t y = popi32(rt);
-	reti64(rt, x << y);
-	return 0;
-}
-static int b64shr(state rt) {
-	uint64_t x = popi64(rt);
-	int32_t y = popi32(rt);
-	reti64(rt, x >> y);
-	return 0;
-}
-static int b64sar(state rt) {
-	int64_t x = popi64(rt);
-	int32_t y = popi32(rt);
-	reti64(rt, x >> y);
-	return 0;
-}
-static int b64and(state rt) {
-	uint64_t x = popi64(rt);
-	uint64_t y = popi64(rt);
-	reti64(rt, x & y);
-	return 0;
-}
-static int b64ior(state rt) {
-	uint64_t x = popi64(rt);
-	uint64_t y = popi64(rt);
-	reti64(rt, x | y);
-	return 0;
-}
-static int b64xor(state rt) {
-	uint64_t x = popi64(rt);
-	uint64_t y = popi64(rt);
-	reti64(rt, x ^ y);
-	return 0;
-}
-/* unused
-static int b64bsf(state rt) {
-	uint64_t x = popi64(rt);
-	int ans = -1;
-	if (x != 0) {
-		ans = 0;
-		if ((x & 0x00000000ffffffffULL) == 0) { ans += 32; x >>= 32; }
-		if ((x & 0x000000000000ffffULL) == 0) { ans += 16; x >>= 16; }
-		if ((x & 0x00000000000000ffULL) == 0) { ans +=  8; x >>=  8; }
-		if ((x & 0x000000000000000fULL) == 0) { ans +=  4; x >>=  4; }
-		if ((x & 0x0000000000000003ULL) == 0) { ans +=  2; x >>=  2; }
-		if ((x & 0x0000000000000001ULL) == 0) { ans +=  1; }
-	}
-	reti32(rt, ans);
-	return 0;
-}
-static int b64bsr(state rt) {
-	uint64_t x = popi64(rt);
-	int ans = -1;
-	if (x != 0) {
-		ans = 0;
-		if ((x & 0xffffffff00000000ULL) != 0) { ans += 32; x >>= 32; }
-		if ((x & 0x00000000ffff0000ULL) != 0) { ans += 16; x >>= 16; }
-		if ((x & 0x000000000000ff00ULL) != 0) { ans +=  8; x >>=  8; }
-		if ((x & 0x00000000000000f0ULL) != 0) { ans +=  4; x >>=  4; }
-		if ((x & 0x000000000000000cULL) != 0) { ans +=  2; x >>=  2; }
-		if ((x & 0x0000000000000002ULL) != 0) { ans +=  1; }
-	}
-	reti32(rt, ans);
-	return 0;
-}
-static int b64hib(state rt) {
-	uint64_t x = popi64(rt);
-	x |= x >> 1;
-	x |= x >> 2;
-	x |= x >> 4;
-	x |= x >> 8;
-	x |= x >> 16;
-	x |= x >> 32;
-	reti64(rt, x - (x >> 1));
-	return 0;
-}
-static int b64lob(state s) {
-	uint64_t x = popi64(s);
-	reti64(rt, x & -x);
-	return 0;
-}*/
-//}
-
 int reglibs(state rt, char *stdlib) {
 	int err = 0;
 
-	if (type_i64 != NULL && type_i64->args == NULL) {
-		enter(rt->cc, NULL);
-		err = err || !libcall(rt, b64shl, "int64 Shl(int64 Value, int Count);");
-		err = err || !libcall(rt, b64shr, "int64 Shr(int64 Value, int Count);");
-		err = err || !libcall(rt, b64sar, "int64 Sar(int64 Value, int Count);");
-		err = err || !libcall(rt, b64and, "int64 And(int64 Lhs, int64 Rhs);");
-		err = err || !libcall(rt, b64ior, "int64  Or(int64 Lhs, int64 Rhs);");
-		err = err || !libcall(rt, b64xor, "int64 Xor(int64 Lhs, int64 Rhs);");
-		type_i64->args = leave(rt->cc, type_i64, 1);
-	}
 	err = err || install_stdc(rt, stdlib, wl);
 	//~ err = err || install_bits(s);
 
@@ -311,21 +219,21 @@ int reglibs(state rt, char *stdlib) {
 int compile(state rt, int wl, char *file) {
 	int result;
 
-	if (!ccOpen(rt, srcFile, file))
+	if (!ccOpen(rt, file, 1, NULL))
 		return -1;
 
 	result = parse(rt->cc, 0, wl);
 
 	return result;
+	//~ return parse(ccOpen(rt, srcFile, file, 1, file), 0, wl);
 }
 
 //{ plugins
 
-static const char *pluginLibInstall = "apiMain";
-
 typedef struct pluginLib *pluginLib;
-static int installDll(state rt, stateApi api, int ccApiMain(stateApi api)) {
+static const char * pluginLibInstall = "apiMain";
 
+static int installDll(state rt, stateApi api, int ccApiMain(stateApi api)) {
 	api->rt = rt;
 	api->onClose = NULL;
 
@@ -348,7 +256,7 @@ static int installDll(state rt, stateApi api, int ccApiMain(stateApi api)) {
 	return ccApiMain(api);
 }
 
-#if defined(WIN32)
+#if defined(WIN32) || defined(_WIN32)
 #include <windows.h>
 static struct pluginLib {
 	struct stateApi api;	// each plugin will have its own api
@@ -427,7 +335,6 @@ static int importLib(state rt, const char *path) {
 	return result;
 }
 #else
-//#elif defined(__LINUX__) && defined(__WATCOMC__)
 static void closeLibs() {
 }
 static int importLib(state rt, const char *path) {
@@ -472,7 +379,7 @@ static int libCallHaltDebug(state rt) {
 		fputc('\n', stdout);
 	}
 
-	fputfmt(stdout, "init(ro: %d"
+	/*fputfmt(stdout, "init(ro: %d"
 		", ss: %d"
 		", sm: %d"
 		", pc: %d"
@@ -482,6 +389,7 @@ static int libCallHaltDebug(state rt) {
 		", size.data: %d"
 		//~ ", pos: %d"
 	");\n", rt->vm.ro, rt->vm.ss, rt->vm.sm, rt->vm.pc, rt->vm.px, rt->vm.size.meta, rt->vm.size.code, rt->vm.size.data, rt->vm.pos);
+	// */
 
 	rtAlloc(rt, NULL, 0);
 
@@ -810,7 +718,6 @@ static int dbgCon(state rt, int pu, void *ip, long* bp, int ss) {
 		vec2d* v2 = (vec2d*)sp;
 		fputfmt(stdout, "\tsp(%d): {i32(%d), i64(%D), f32(%g), f64(%G), vec4f(%g, %g, %g, %g), vec2d(%G, %G)}\n", ss, sp->i4, sp->f4, sp->i8, sp->f8, v4->x, v4->y, v4->z, v4->w, v2->x, v2->y);
 	}
-	//~ fputfmt(stdout, ">exec:[sp%02d]@%9.*A\n", ss, IP, ip);
 	//~ fputfmt(stdout, ">exec:[sp%02d:%08x]@%9.*A\n", ss, bp + ss, IP, ip);
 	fputfmt(stdout, ">exec:[sp%02d:%08x]@", ss, bp[0], IP, ip);
 	fputopc(stdout, ip, 0x09, IP, rt);
@@ -919,37 +826,3 @@ static int dbgCon(state rt, int pu, void *ip, long* bp, int ss) {
 	//~ (void)SP;
 	return 0;
 }
-
-/* temp
-
-int vmHelp(char *cmd) {
-	FILE *out = stdout;
-	int i, k = 0, n = 0;
-	for (i = 0; i < opc_last; ++i) {
-		char *opc = (char*)opc_tbl[i].name;
-		if (opc && matchstr(opc, cmd, 1)) {
-			fputfmt(out, "Instruction: %s\n", opc);
-			n += 1;
-			k = i;
-		}
-	}
-	if (n == 1 && strcmp(cmd, opc_tbl[k].name) == 0) {
-		fputfmt(out, "Opcode: 0x%02x\n", opc_tbl[k].code);
-		fputfmt(out, "Length: %d\n", opc_tbl[k].size);
-		fputfmt(out, "Stack check: %d\n", opc_tbl[k].chck);
-		fputfmt(out, "Stack diff: %+d\n", opc_tbl[k].diff);
-		//~ fputfmt(out, "0x%02x	%d		\n", opc_tbl[k].code, opc_tbl[k].size-1);
-		//~ fputfmt(out, "\nDescription\n");
-		//~ fputfmt(out, "The '%s' instruction %s\n", opc_tbl[k].name, "#");
-		//~ fputfmt(out, "\nOperation\n");
-		//~ fputfmt(out, "#\n");
-		//~ fputfmt(out, "\nExceptions\n");
-		//~ fputfmt(out, "None#\n");
-		//~ fputfmt(out, "\n");		// end of text
-	}
-	else if (n == 0) {
-		fputfmt(out, "No Entry for: '%s'\n", cmd);
-	}
-	return n;
-}
-// */

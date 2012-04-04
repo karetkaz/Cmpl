@@ -1,0 +1,190 @@
+enum Window {
+	draw = RenderMode.swap_buff;
+	resx = 512;
+	resy = resx;
+}
+
+//~ string fileName = "media/images/David.png";
+//~ string fileName = "media/images/lenaRGB.png";
+string fileName = "media/images/download.jpg";
+//~ string fileName = "media/images/dino-blue.jpg";
+//~ string fileName = "media/images/Earth.jpg";
+//~ string fileName = "media/images/nol.bmp";
+string fileBlend = "media/images/nol.bmp";
+
+define resize(gxSurf src, int width, int height) = zoomSurf(gxSurf(width, height), null, src, null, 1);
+
+gxSurf image1 = resize(gxSurf(fileName), Window.resx, Window.resy);
+gxSurf image2 = resize(gxSurf(fileBlend), Window.resx, Window.resy);
+//~ gxClut lut1;
+//~ gxClut lut2;
+//~ blendLut(lut1, 0xffffff, 0);
+//~ blendLut(lut2, 0, 0xffffff);
+//~ gxRect g1 = gxRect(0, Window.resy);
+//~ gxRect g2 = gxRect(Window.resx, 0);
+//~ gxSurf image1 = gradSurf(gxSurf(Window.resx, Window.resy), &g1, &lut1, Gradient.Linear);
+//~ gxSurf image2 = gradSurf(gxSurf(Window.resx, Window.resy), &g2, &lut2, Gradient.Linear);
+
+static struct BlendMode {
+/*Blend Modes:
+
+#define BlendLinearDodgef 			BlendAddf
+#define BlendLinearBurnf 			BlendSubstractf
+#define BlendAddf(base, blend) 		min(base + blend, 1.0)
+#define BlendSubstractf(base, blend) 	max(base + blend - 1.0, 0.0)
+#define BlendLightenf(base, blend) 		max(blend, base)
+#define BlendDarkenf(base, blend) 		min(blend, base)
+#define BlendLinearLightf(base, blend) 	(blend < 0.5 ? BlendLinearBurnf(base, (2.0 * blend)) : BlendLinearDodgef(base, (2.0 * (blend - 0.5))))
+#define BlendScreenf(base, blend) 		(1.0 - ((1.0 - base) * (1.0 - blend)))
+#define BlendOverlayf(base, blend) 	(base < 0.5 ? (2.0 * base * blend) : (1.0 - 2.0 * (1.0 - base) * (1.0 - blend)))
+#define BlendSoftLightf(base, blend) 	((blend < 0.5) ? (2.0 * base * blend + base * base * (1.0 - 2.0 * blend)) : (sqrt(base) * (2.0 * blend - 1.0) + 2.0 * base * (1.0 - blend)))
+#define BlendColorDodgef(base, blend) 	((blend == 1.0) ? blend : min(base / (1.0 - blend), 1.0))
+#define BlendColorBurnf(base, blend) 	((blend == 0.0) ? blend : max((1.0 - ((1.0 - base) / blend)), 0.0))
+#define BlendVividLightf(base, blend) 	((blend < 0.5) ? BlendColorBurnf(base, (2.0 * blend)) : BlendColorDodgef(base, (2.0 * (blend - 0.5))))
+#define BlendPinLightf(base, blend) 	((blend < 0.5) ? BlendDarkenf(base, (2.0 * blend)) : BlendLightenf(base, (2.0 *(blend - 0.5))))
+#define BlendHardMixf(base, blend) 	((BlendVividLightf(base, blend) < 0.5) ? 0.0 : 1.0)
+#define BlendReflectf(base, blend) 		((blend == 1.0) ? blend : min(base * base / (1.0 - blend), 1.0))
+
+// Component wise blending
+#define Blend(base, blend, funcf) 		vec3(funcf(base.r, blend.r), funcf(base.g, blend.g), funcf(base.b, blend.b))
+
+#define BlendNormal(base, blend) 		(blend)
+#define BlendLighten				BlendLightenf
+#define BlendDarken				BlendDarkenf
+#define BlendMultiply(base, blend) 		(base * blend)
+#define BlendAverage(base, blend) 		((base + blend) / 2.0)
+#define BlendAdd(base, blend) 		min(base + blend, vec3(1.0))
+#define BlendSubstract(base, blend) 	max(base + blend - vec3(1.0), vec3(0.0))
+#define BlendDifference(base, blend) 	abs(base - blend)
+#define BlendNegation(base, blend) 	(vec3(1.0) - abs(vec3(1.0) - base - blend))
+#define BlendExclusion(base, blend) 	(base + blend - 2.0 * base * blend)
+#define BlendScreen(base, blend) 		Blend(base, blend, BlendScreenf)
+#define BlendOverlay(base, blend) 		Blend(base, blend, BlendOverlayf)
+#define BlendSoftLight(base, blend) 	Blend(base, blend, BlendSoftLightf)
+#define BlendHardLight(base, blend) 	BlendOverlay(blend, base)
+#define BlendColorDodge(base, blend) 	Blend(base, blend, BlendColorDodgef)
+#define BlendColorBurn(base, blend) 	Blend(base, blend, BlendColorBurnf)
+#define BlendLinearDodge			BlendAdd
+#define BlendLinearBurn			BlendSubstract
+// Linear Light is another contrast-increasing mode
+// If the blend color is darker than midgray, Linear Light darkens the image by decreasing the brightness. If the blend color is lighter than midgray, the result is a brighter image due to increased brightness.
+#define BlendLinearLight(base, blend) 	Blend(base, blend, BlendLinearLightf)
+#define BlendVividLight(base, blend) 	Blend(base, blend, BlendVividLightf)
+#define BlendPinLight(base, blend) 		Blend(base, blend, BlendPinLightf)
+#define BlendHardMix(base, blend) 		Blend(base, blend, BlendHardMixf)
+#define BlendReflect(base, blend) 		Blend(base, blend, BlendReflectf)
+#define BlendGlow(base, blend) 		BlendReflect(blend, base)
+#define BlendPhoenix(base, blend) 		(min(base, blend) - max(base, blend) + vec3(1.0))
+#define BlendOpacity(base, blend, F, O) 	(F(base, blend) * O + blend * (1.0 - O))
+// */
+
+	define BlendLinearDodgef(float32 ^base, float32 ^blend) = min(base + blend, float32(1));
+	define BlendLinearBurnf(float32 ^base, float32 ^blend) = max(base + blend - 1, float32(0));
+
+	define BlendColorDodgef(float32 ^base, float32 ^blend) = (blend == 1 ? blend : min(base / (1 - blend), float32(1)));
+	define BlendColorBurnf(float32 ^base, float32 ^blend) = (blend == 0 ? blend : max((1 - ((1 - base) / blend)), float32(0)));
+
+	vec4f Darken(vec4f Base, vec4f Blend) {
+		result = min(Base, Blend);
+	}
+	vec4f Lighten(vec4f Base, vec4f Blend) {
+		result = max(Base, Blend);
+	}
+
+	vec4f Addition(vec4f Base, vec4f Blend) {
+		result = add(Base, Blend);
+	}
+	vec4f Subtract(vec4f Base, vec4f Blend) {
+		result = sub(Base, Blend);
+	}
+	vec4f Multiply(vec4f Base, vec4f Blend) {
+		result = mul(Base, Blend);
+	}
+	vec4f Divide(vec4f Base, vec4f Blend) {
+		result = div(Base, Blend);
+	}
+	vec4f Difference(vec4f Base, vec4f Blend) {
+		define OP(float32 ^Base, float32 ^Blend) = abs(Base - Blend);
+		result = vec4f(OP(Base.x, Blend.x), OP(Base.y, Blend.y), OP(Base.z, Blend.z), OP(Base.w, Blend.w));
+	}
+
+	vec4f ColorBurn(vec4f Base, vec4f Blend) {		// K(B, A)
+		//~ result = sub(1, div(sub(1, Base), Blend));
+		define OP(float32 ^Base, float32 ^Blend) = BlendColorBurnf(Base, Blend);
+		result = vec4f(OP(Base.x, Blend.x), OP(Base.y, Blend.y), OP(Base.z, Blend.z), OP(Base.w, Blend.w));
+	}
+	vec4f LinearBurn(vec4f Base, vec4f Blend) {	// K(B, A)
+		result = sub(add(Base, Blend), 1);
+	}
+	vec4f ColorDodge(vec4f Base, vec4f Blend) {	// K(B, A)
+		result = div(Base, sub(1, Blend));
+	}
+	vec4f LinearDodge(vec4f Base, vec4f Blend) {	// K(B, A)
+		result = add(Base, Blend);
+	}
+
+	vec4f Screen(vec4f Base, vec4f Blend) {		// K(B, A)
+		result = sub(1, mul(sub(1, Base), sub(1, Blend)));
+	}
+	vec4f Overlay(vec4f Base, vec4f Blend) {		// K(B, A)
+		//~ define OP(float32 ^Base, float32 ^Blend) = BlendOverlayf(Base, Blend);
+		define OP(float32 ^Base, float32 ^Blend) = (
+			Base < float32(.5)
+				? (2 * Base * Blend) 
+				: (1 - 2 * (1 - Base) * (1 - Blend))
+		);
+		result = vec4f(OP(Base.x, Blend.x), OP(Base.y, Blend.y), OP(Base.z, Blend.z), OP(Base.w, Blend.w));
+	}
+	vec4f SoftLight(vec4f Base, vec4f Blend) {		// K(B, A)
+		//~ define OP(float32 ^Base, float32 ^Blend) = BlendSoftLightf(Base, Blend);
+		define OP(float32 ^Base, float32 ^Blend) = (
+			Blend < float32(.5)
+				? (2 * Base * Blend + Base * Base * (1 - 2 * Blend))
+				: (sqrt(Base) * (2 * Blend - 1) + 2 * Base * (1 - Blend))
+		);
+		result = vec4f(OP(Base.x, Blend.x), OP(Base.y, Blend.y), OP(Base.z, Blend.z), OP(Base.w, Blend.w));
+	}
+	vec4f HardLight(vec4f Base, vec4f Blend) {		// K(B, A)
+		define OP(float32 ^Base, float32 ^Blend) = float32(
+			Blend <= float32(.5)
+				? (Base * (2 * Blend))
+				: (1 - (1 - Base) * (1 - 2 * (Blend - float32(.5))))
+		);
+		result = vec4f(OP(Base.x, Blend.x), OP(Base.y, Blend.y), OP(Base.z, Blend.z), OP(Base.w, Blend.w));
+	}
+	vec4f VividLight(vec4f Base, vec4f Blend) {	// K(B, A)
+		define OP(float32 ^base, float32 ^blend) = (
+			(blend < 0.5) 
+				? BlendColorBurnf(base, (2.0 * blend)) 
+				: BlendColorDodgef(base, (2.0 * (blend - 0.5)))
+		);
+
+		result = vec4f(OP(Base.x, Blend.x), OP(Base.y, Blend.y), OP(Base.z, Blend.z), OP(Base.w, Blend.w));
+	}
+	vec4f LinearLight(vec4f Base, vec4f Blend) {
+		//~ define OP(float32 ^Base, float32 ^Blend) = BlendLinearLightf(Base, Blend);
+		define OP(float32 ^Base, float32 ^Blend) = (
+			Blend < float32(.5)
+				? BlendLinearBurnf(Base, (2 * Blend))
+				: BlendLinearDodgef(Base, (2 * (Blend - float32(.5))))
+		);
+		result = vec4f(OP(Base.x, Blend.x), OP(Base.y, Blend.y), OP(Base.z, Blend.z), OP(Base.w, Blend.w));
+	}
+	vec4f PinLight(vec4f Base, vec4f Blend) {		// K(B, A)
+		//~ define OP(float32 ^Base, float32 ^Blend) = BlendPinLightf(Base, Blend);
+		define OP(float32 ^Base, float32 ^Blend) = (
+			Blend < float32(.5)
+				? min(Base, 2 * Blend)
+				: max(Base, 2 *(Blend - float32(0.5)))
+		);
+		result = vec4f(OP(Base.x, Blend.x), OP(Base.y, Blend.y), OP(Base.z, Blend.z), OP(Base.w, Blend.w));
+	}
+	vec4f Exclusion(vec4f Base, vec4f Blend) {		// K(B, A)
+		//~ result = sub(.5, mul(mul(2, sub(Base, .5)), sub(Blend, .5)));
+		define OP(float32 ^Base, float32 ^Blend) = (float32(.5) - 2*(Base-float32(.5))*(Blend-float32(.5)));
+		result = vec4f(OP(Base.x, Blend.x), OP(Base.y, Blend.y), OP(Base.z, Blend.z), OP(Base.w, Blend.w));
+	}
+}
+
+copySurf(offScreen, 0, 0, image1, null);					// atmasoljuk siman a kepet
+copySurf(offScreen, 0, 0, image2, null, 1, BlendMode.VividLight);		// atmasoljuk a fuggvenny segitsegevel a kepet

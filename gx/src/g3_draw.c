@@ -65,7 +65,6 @@ int ftest_triangle(union vector planes[6], vector p1, vector p2, vector p3) {
 	bsphere(tmp, p1, p2, p3);
 	return ftest_sphere(planes, tmp);
 }
-
 // */
 
 vector mappos(vector dst, matrix mat, vector src) {

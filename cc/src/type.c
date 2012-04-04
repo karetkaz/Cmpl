@@ -73,8 +73,8 @@ User defined types:
 		ex: for struct Complex {double re; double im};
 		will be defined:
 			define Complex(double re, double im) = emit(Complex, double(re), double(im));
-			define Complex(pointer ptr) = emit(Complex&, byRef(ptr));
-			define Complex(variant var) = emit(Complex&, byRef(var.type == Complex ? &var.data : null));
+			define Complex(pointer ptr) = emit(Complex&, ref(ptr));
+			define Complex(variant var) = emit(Complex&, ref(var.type == Complex ? &var.data : null));
 
 	function
 
@@ -97,27 +97,17 @@ TODO's:
 #include "core.h"
 #include <string.h>
 
-TODO("these should go to ccState !")
-symn type_vid = NULL;
-symn type_bol = NULL;
-symn type_u32 = NULL;
-symn type_i32 = NULL;
-symn type_i64 = NULL;
-symn type_f32 = NULL;
-symn type_f64 = NULL;
-symn type_str = NULL;
-symn type_ptr = NULL;
-symn null_ref = NULL;
-
-symn emit_opc = NULL;
+//~ symn null_ref = NULL;
+//~ symn emit_opc = NULL;
 
 //~ Install
 symn newdefn(ccState s, int kind) {
+	state rt = s->s;
 	symn def = NULL;
 
-	if (s->_end - s->_beg > (int)sizeof(struct symn)) {
-		def = (symn)s->_beg;
-		s->_beg += sizeof(struct symn);
+	if (rt->_end - rt->_beg > (int)sizeof(struct symn)) {
+		def = (symn)rt->_beg;
+		rt->_beg += sizeof(struct symn);
 	}
 	else {
 		fatal("memory overrun");
@@ -271,7 +261,7 @@ static symn promote(symn lht, symn rht) {
 	}
 	return pro;
 }
-int canAssign(symn var, astn val, int strict) {
+int canAssign(ccState cc, symn var, astn val, int strict) {
 	symn typ = var;
 	symn lnk = linkOf(val);
 
@@ -281,7 +271,7 @@ int canAssign(symn var, astn val, int strict) {
 	dieif(!val, "FixMe");
 
 	// assigning null or pass by reference
-	if (val->kind == TYPE_ref && val->ref.link == null_ref) {
+	if (val->kind == TYPE_ref && val->ref.link == cc->null_ref) {
 		trace("canAssign null to: %-T", var);
 		// if parameter is byRef or type is byRef
 		if (var->cast == TYPE_ref || typ->cast == TYPE_ref) {
@@ -312,7 +302,7 @@ int canAssign(symn var, astn val, int strict) {
 			atag.cst2 = var->cast;
 			atag.ref.link = var;
 
-			if (canAssign(fun->type, &atag, 1)) {
+			if (canAssign(cc, fun->type, &atag, 1)) {
 				arg2 = fun->args;
 				while (arg1 && arg2) {
 
@@ -320,7 +310,7 @@ int canAssign(symn var, astn val, int strict) {
 					atag.cst2 = arg2->cast;
 					atag.ref.link = arg2;
 
-					if (!canAssign(arg1, &atag, 1)) {
+					if (!canAssign(cc, arg1, &atag, 1)) {
 						trace("%-T != %-T", arg1, arg2);
 						break;
 					}
@@ -355,7 +345,7 @@ int canAssign(symn var, astn val, int strict) {
 		atag.ref.link = NULL;
 		atag.ref.name = ".generated token";
 
-		if (canAssign(typ->type, &atag, strict)) {
+		if (canAssign(cc, typ->type, &atag, strict)) {
 			// assign to dynamic array
 			if (typ->size == -1) {
 				return 1;
@@ -473,17 +463,17 @@ symn lookup(ccState s, symn sym, astn ref, astn args, int raise) {
 
 			while (argval && argsym) {
 
-				if (!canAssign(argsym, argval, 0))
+				if (!canAssign(s, argsym, argval, 0))
 					break;
 
 				//~ debug("%+k%s is probably %-T%s:%t", ref, args ? "()" : "", sym, sym->call ? "()" : "", sym->kind);
 
 				// if null is passed by ref it will be as a cast
-				if (argval->kind == TYPE_ref && argval->ref.link == null_ref) {
+				if (argval->kind == TYPE_ref && argval->ref.link == s->null_ref) {
 					hascast += 1;
 				}
 
-				else if (!canAssign(argsym, argval, 1)) {
+				else if (!canAssign(s, argsym, argval, 1)) {
 					hascast += 1;
 				}
 
@@ -500,6 +490,7 @@ symn lookup(ccState s, symn sym, astn ref, astn args, int raise) {
 		}
 
 		dieif(s->func && s->func->nest != s->maxlevel - 1, "FIXME %d, %d", s->func->nest, s->maxlevel);
+		// TODO: sym->decl && sym->decl->call && sym->decl != s->func
 		if (s->func && !s->siff && s->func->gdef && sym->nest && !sym->stat && sym->nest < s->maxlevel) {
 			error(s->s, ref->file, ref->line, "invalid use of local symbol `%k`.", ref);
 		}
@@ -536,6 +527,11 @@ symn lookup(ccState s, symn sym, astn ref, astn args, int raise) {
 	if (sym != NULL) {
 		if (sym->kind == TYPE_def && !sym->init) {
 			sym = sym->type;
+		}
+		if (sym->used != ref) {
+			// in emit we can lookup 2x
+			ref->ref.used = sym->used;
+			sym->used = ref;
 		}
 	}
 
@@ -614,11 +610,12 @@ int istype(astn ast) {
 	return 0;
 }
 
+extern symn emit_opc_;
 symn linkOf(astn ast) {
 	if (!ast) return 0;
 
 	if (ast->kind == EMIT_opc)
-		return emit_opc;
+		return emit_opc_;
 
 	if (ast->kind == OPER_fnc)
 		return linkOf(ast->op.lhso);
@@ -785,7 +782,7 @@ symn typecheck(ccState s, symn loc, astn ast) {
 				symn lin = NULL;
 
 				if (fun->kind == EMIT_opc) {
-					lin = emit_opc;
+					lin = s->emit_opc;
 				}
 
 				while (args->kind == OPER_com) {
@@ -814,8 +811,8 @@ symn typecheck(ccState s, symn loc, astn ast) {
 				if (lin && args && args->kind == TYPE_rec) {
 					//emit's first arg is 'struct'
 					args->kind = TYPE_ref;
-					args->type = emit_opc;
-					args->ref.link = emit_opc;
+					args->type = s->emit_opc;
+					args->ref.link = s->emit_opc;
 				}
 				else if (!typecheck(s, lin, args)) {
 					if (!lin || !typecheck(s, NULL, args)) {
@@ -923,7 +920,7 @@ symn typecheck(ccState s, symn loc, astn ast) {
 			if ((cast = typeTo(ast, rht))) {
 				ast->type = rht;
 				if (ast->kind == OPER_not) {
-					ast->type = type_bol;
+					ast->type = s->type_bol;
 					ast->cst2 = TYPE_bit;
 				}
 				else if (ast->kind == OPER_adr) {
@@ -1038,16 +1035,16 @@ symn typecheck(ccState s, symn loc, astn ast) {
 			if (ast->kind == OPER_equ || ast->kind == OPER_neq) {
 				symn lhl = ast->op.lhso->kind == TYPE_ref ? ast->op.lhso->ref.link : NULL;
 				symn rhl = ast->op.rhso->kind == TYPE_ref ? ast->op.rhso->ref.link : NULL;
-				if (lhl == null_ref && rhl == null_ref)
+				if (lhl == s->null_ref && rhl == s->null_ref)
 					cast = TYPE_ref;
-				else if (lhl == null_ref && rhl && rhl->cast == TYPE_ref)
+				else if (lhl == s->null_ref && rhl && rhl->cast == TYPE_ref)
 					cast = TYPE_ref;
-				else if (rhl == null_ref && lhl && lhl->cast == TYPE_ref)
+				else if (rhl == s->null_ref && lhl && lhl->cast == TYPE_ref)
 					cast = TYPE_ref;
 			}
 
 			if (cast || (cast = castOf(promote(lht, rht)))) {
-				if (!typeTo(ast, type_bol)) {
+				if (!typeTo(ast, s->type_bol)) {
 					debug("%T('%k', %+k): %t", lht, ast, ast, cast);
 					return 0;
 				}
@@ -1084,7 +1081,7 @@ symn typecheck(ccState s, symn loc, astn ast) {
 					debug("%T('%k', %+k): %t", rht, ast, ast, cast);
 					return 0;
 				}
-				ast->type = type_bol;
+				ast->type = s->type_bol;
 				return ast->type;
 			}
 			fatal("operator %k (%T %T): %+k", ast, lht, rht, ast);
@@ -1211,10 +1208,10 @@ symn typecheck(ccState s, symn loc, astn ast) {
 					case TYPE_any:
 					case TYPE_f64: ast->type = type_f64; break;
 				} return ast->type;*/
-				case TYPE_int: return typeTo(ast, type_i32) ? type_i32 : NULL;
-				case TYPE_flt: return typeTo(ast, type_f64) ? type_f64 : NULL;
-				case TYPE_str: return typeTo(ast, type_str) ? type_str : NULL;
-				case EMIT_opc: return ast->type = emit_opc;
+				case TYPE_int: return typeTo(ast, s->type_i32) ? s->type_i32 : NULL;
+				case TYPE_flt: return typeTo(ast, s->type_f64) ? s->type_f64 : NULL;
+				case TYPE_str: return typeTo(ast, s->type_str) ? s->type_str : NULL;
+				case EMIT_opc: return /* ast->ref.link =  */ast->type = s->emit_opc;
 				default: break;
 			}
 		} break;
@@ -1293,7 +1290,7 @@ symn typecheck(ccState s, symn loc, astn ast) {
 				}
 
 				if (!args) {
-					result = type_ptr;
+					result = s->type_ptr;
 				}
 			}
 
@@ -1336,7 +1333,7 @@ int fixargs(symn sym, int align, int stbeg) {
 		// functions are byRef in structs and params
 		if (arg->call) {
 			arg->cast = TYPE_ref;
-		}// */
+		}
 
 		// referenced types are passed by reference.
 		if (isCall && arg->type->kind == TYPE_ref) {

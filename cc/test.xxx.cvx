@@ -1,15 +1,33 @@
 //~ module test_what_does_not_work;
 
 //~ int alma(int h)[10];
+//~ int stringMap[string];
+
+//~ void alma(int a) {
+	//~ static int A = a;
+//~ }
+
+define sqr2(float64 ^x) = x*x;
+define sqr1(float64 x) = sqr2(x);
+define sqr(float64 x) = sqr1(x);
+
+double x = 9;
+double y = sqr(x*x+x);
 
 /+ static casting pointers
-pointer x = emit(pointer, byRef("er"));
-string str = emit(string, byRef(x));
-println(emit(string, byRef(x)));
+pointer x = emit(pointer, ref("erZKJVDlaknjsdvkSDNVlk"));
+string str = emit(string, ref(x));
+//~ println(emit(string, ref(x)));
 //~ +/
 
 //~ define double2 float64; //%%4.50g
 //~ double2 x = 3.14 / 3 + .0001;
 //~ double2 s1 = sin(x);
 //~ double2 s2 = Math.Sin(x);
-int a = 16 << 10;
+//~ int a = 16 << 10;
+
+//~ int A = 9;
+//~ pointer a = emit(pointer, ref(A));
+//~ pointer b = emit(pointer, int(A));
+//~ int &a2 = A;
+

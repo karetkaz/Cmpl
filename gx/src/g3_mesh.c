@@ -1172,12 +1172,10 @@ static int f64atan2(state rt) {
 }
 
 static int addText(state rt, char *file, int line, char *buff) {
-	if (!ccOpen(rt, srcText, buff))
+	if (!ccOpen(rt, file, line, buff))
 		return -1;
 
-	//~ s->cc->warn = 0;
-	ccSource(rt->cc, file, line);
-	return parse(rt->cc, 0, 5);
+	return parse(rt->cc, 0, 50);
 }
 
 int evalMesh(mesh msh, int sdiv, int tdiv, char *src, char *file, int line) {
@@ -1217,10 +1215,9 @@ int evalMesh(mesh msh, int sdiv, int tdiv, char *src, char *file, int line) {
 	err = err || !ccDefFlt(rt, "pi", 3.14159265358979323846264338327950288419716939937510582097494459);
 	err = err || !ccDefFlt(rt, "e",  2.71828182845904523536028747135266249775724709369995957496696763);
 
-	//~ /*
 	err = err || addText(rt, __FILE__, __LINE__ + 1,
-		"double s = gets();\n"
-		"double t = gett();\n"
+		"const double s = gets();\n"
+		"const double t = gett();\n"
 		"double x = s;\n"
 		"double y = t;\n"
 		"double z = 0;\n"
@@ -1232,23 +1229,23 @@ int evalMesh(mesh msh, int sdiv, int tdiv, char *src, char *file, int line) {
 	// optimize on level 3, and do not generate global variables as static variables
 	if (err || gencode(rt, -3) != 0) {
 		debug("error compiling(%d), see `%s`", err, logf);
-		//~ debug("error compiling(`%s`): %d", obj, err);
 		logfile(rt, NULL);
 		return -3;
 	}
 
-	/*fputfmt(stdout, "init(ro: %d"
+	/* dump
+	fputfmt(stdout, "init(ro: %d"
 		", ss: %d, sm: %d, pc: %d, px: %d"
 		", size.meta: %d, size.code: %d, size.data: %d"
 		//~ ", pos: %d"
 	");\n", rt->vm.ro, rt->vm.ss, rt->vm.sm, rt->vm.pc, rt->vm.px, rt->vm.size.meta, rt->vm.size.code, rt->vm.size.data, rt->vm.pos);
-	//~ */
 
 	logfile(rt, "dump.bin");
 	dump(rt, dump_sym | 0x01, NULL, "\ntags:\n");
 	dump(rt, dump_ast | 0x00, NULL, "\ncode:\n");
 	dump(rt, dump_asm | 0x19, NULL, "\ndasm:\n");
-	dump(rt, dump_bin | 0x10, NULL, "\ndasm:\n");
+	dump(rt, dump_bin | 0x10, NULL, "\ndump:\n");
+	//~ */
 	logfile(rt, NULL);	// close log
 
 	#define findint(__ENV, __NAME, _OUT_VAL) symvalint(findsym(__ENV, NULL, __NAME), _OUT_VAL)

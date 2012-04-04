@@ -1,0 +1,321 @@
+enum Window {
+	draw = RenderMode.swap_buff;
+	resx = 512;
+	resy = resx;
+}
+
+//~ string fileName = "media/images/David.png";
+//~ string fileName = "media/images/lenaRGB.png";
+string fileName = "media/images/download.jpg";
+//~ string fileName = "media/images/dino-blue.jpg";
+//~ string fileName = "media/images/Earth.jpg";
+//~ string fileName = "media/images/nol.bmp";
+
+enum Dithering {
+	None = 0;
+	SteinbergFalse = 1;
+	Steinberg = 2;
+	Stucki = 3;
+	Bayer = 8;
+}
+gxSurf dither(gxSurf img, bool grayscale, uint32 colors, Dithering method) {
+
+	if (colors >= 256) {
+		//~ dithering = Dithering.None;
+		//~ colors = 256;
+		result = img;
+		return;
+	}
+
+	int cols[256];
+
+	int levels = colors - 1;
+
+	for (int i = 0; i < colors; i += 1) {
+		cols[i] = i * 255 / levels;
+	}
+
+	int width = width(img);
+	int height = height(img);
+
+	define toRgb(int r, int g, int b) = rgbClamp(r, g, b);
+	define toGtay(int col) = grayClamp(col);
+
+	if (method == Dithering.None) {
+		if (grayscale) {
+			for (int y = 0; y < height; y += 1) {
+				for (int x = 0; x < width; x += 1) {
+					int col = getPixel(img, x, y);
+					int gray = cols[(lum(col) * colors / 256) % colors];
+					setPixel(img, x, y, toGtay(gray));
+				}
+			}
+		}
+		else {
+			for (int y = 0; y < height; y += 1) {
+				for (int x = 0; x < width; x += 1) {
+					int col = getPixel(img, x, y);
+					int colr = cols[(rch(col) * colors / 256) % colors];
+					int colg = cols[(gch(col) * colors / 256) % colors];
+					int colb = cols[(bch(col) * colors / 256) % colors];
+					setPixel(img, x, y, toRgb(colr, colg, colb));
+				}
+			}
+		}
+		result = img;
+	}
+	else if (method == Dithering.SteinbergFalse) {
+		/** the kernel
+		 * 	*   3
+		 *	3   2
+		 */
+		if (grayscale) {
+			for(int y = 0; y < height; y += 1) {
+				for (int x = 0; x < width; x += 1) {
+					//~ int oldpixel = lum(getPixel(img, x, y));
+					//~ int newpixel = cols[(oldpixel * colors / 256) % colors];
+
+					//~ setPixel(img, x, y, gray(newpixel));
+					//~ int quant_error = oldpixel - newpixel;
+
+					int col = getPixel(img, x, y);
+					int gray = cols[(lum(col) * colors / 256) % colors];
+
+					int quant_error = lum(col) - gray;
+					define rgbError(int ^col, int ^s) = toGtay(lum(col) + s * quant_error / 8);
+
+					setPixel(img, x, y, toGtay(gray));
+					setPixel(img, x + 1, y + 0, rgbError(getPixel(img, x + 1, y + 0), 3));
+					setPixel(img, x + 0, y + 1, rgbError(getPixel(img, x + 1, y + 1), 3));
+					setPixel(img, x + 1, y + 1, rgbError(getPixel(img, x + 1, y + 1), 2));
+				}
+			}
+		}
+		else {
+			for (int y = 0; y < height; y += 1) {
+				for (int x = 0; x < width; x += 1) {
+					int col = getPixel(img, x, y);
+					int colr = cols[(rch(col) * colors / 256) % colors];
+					int colg = cols[(gch(col) * colors / 256) % colors];
+					int colb = cols[(bch(col) * colors / 256) % colors];
+
+					int quant_error_r = rch(col) - colr;
+					int quant_error_g = gch(col) - colg;
+					int quant_error_b = bch(col) - colb;
+
+					define rgbError(int ^col, int ^s) = toRgb(
+						rch(col) + s * quant_error_r / 8,
+						gch(col) + s * quant_error_g / 8,
+						bch(col) + s * quant_error_b / 8
+					);
+
+					setPixel(img, x, y, toRgb(colr, colg, colb));
+					setPixel(img, x + 1, y + 0, rgbError(getPixel(img, x + 1, y + 0), 3));
+					setPixel(img, x + 0, y + 1, rgbError(getPixel(img, x + 0, y + 1), 3));
+					setPixel(img, x + 1, y + 1, rgbError(getPixel(img, x + 1, y + 1), 2));
+				}
+			}
+		}
+		result = img;
+	}
+	else if (method == Dithering.Steinberg) {
+		/** the kernel
+		 * 		*   7
+		 *	3   5   1
+		 */
+		if (grayscale) {
+			for(int y = 0; y < height; y += 1) {
+				for (int x = 0; x < width; x += 1) {
+
+					int col = getPixel(img, x, y);
+					int gray = cols[(lum(col) * colors / 256) % colors];
+
+					int quant_error = lum(col) - gray;
+					define rgbError(int col, int s) = toGtay(lum(col) + s * quant_error / 16);
+
+					setPixel(img, x, y, toGtay(gray));
+					setPixel(img, x + 1, y + 0, rgbError(getPixel(img, x + 1, y + 0), 7));
+					setPixel(img, x - 1, y + 1, rgbError(getPixel(img, x - 1, y + 1), 3));
+					setPixel(img, x + 0, y + 1, rgbError(getPixel(img, x + 0, y + 1), 5));
+					setPixel(img, x + 1, y + 1, rgbError(getPixel(img, x + 1, y + 1), 1));
+				}
+			}
+		}
+		else {
+			for(int y = 0; y < height; y += 1) {
+				for (int x = 0; x < width; x += 1) {
+					int col = getPixel(img, x, y);
+					int colr = cols[(rch(col) * colors / 256) % colors];
+					int colg = cols[(gch(col) * colors / 256) % colors];
+					int colb = cols[(bch(col) * colors / 256) % colors];
+
+					int quant_error_r = rch(col) - colr;
+					int quant_error_g = gch(col) - colg;
+					int quant_error_b = bch(col) - colb;
+
+					define rgbError(int col, int s) = toRgb(
+						rch(col) + s * quant_error_r / 16,
+						gch(col) + s * quant_error_g / 16,
+						bch(col) + s * quant_error_b / 16
+					);
+
+					setPixel(img, x, y, toRgb(colr, colg, colb));
+					setPixel(img, x + 1, y + 0, rgbError(getPixel(img, x + 1, y + 0), 7));
+					setPixel(img, x - 1, y + 1, rgbError(getPixel(img, x - 1, y + 1), 3));
+					setPixel(img, x + 0, y + 1, rgbError(getPixel(img, x + 0, y + 1), 5));
+					setPixel(img, x + 1, y + 1, rgbError(getPixel(img, x + 1, y + 1), 1));
+				}
+			}
+		}
+		result = img;
+	}
+	else if (method == Dithering.Stucki) {
+		/** the kernel
+		 * 			*   8   4
+		 *	2   4   8   4   2
+		 *	1   2   4   2   1
+		 */
+		if (grayscale) {
+			for(int y = 0; y < height; y += 1) {
+				for (int x = 0; x < width; x += 1) {
+					int col = getPixel(img, x, y);
+					int gray = cols[(lum(col) * colors / 256) % colors];
+
+					int quant_error = lum(col) - gray;
+					define rgbError(int col, int s) = toGtay(lum(col) + s * quant_error / 42);
+
+					setPixel(img, x, y, toGtay(gray));
+					setPixel(img, x + 1, y + 0, rgbError(getPixel(img, x + 1, y + 0), 8));
+					setPixel(img, x + 2, y + 0, rgbError(getPixel(img, x + 2, y + 0), 4));
+					setPixel(img, x - 2, y + 1, rgbError(getPixel(img, x - 2, y + 1), 2));
+					setPixel(img, x - 1, y + 1, rgbError(getPixel(img, x - 1, y + 1), 4));
+					setPixel(img, x + 0, y + 1, rgbError(getPixel(img, x + 0, y + 1), 8));
+					setPixel(img, x + 1, y + 1, rgbError(getPixel(img, x + 1, y + 1), 4));
+					setPixel(img, x + 2, y + 1, rgbError(getPixel(img, x + 2, y + 1), 2));
+					setPixel(img, x - 2, y + 2, rgbError(getPixel(img, x - 2, y + 2), 1));
+					setPixel(img, x - 1, y + 2, rgbError(getPixel(img, x - 1, y + 2), 2));
+					setPixel(img, x + 0, y + 2, rgbError(getPixel(img, x + 0, y + 2), 4));
+					setPixel(img, x + 1, y + 2, rgbError(getPixel(img, x + 1, y + 2), 2));
+					setPixel(img, x + 2, y + 2, rgbError(getPixel(img, x + 2, y + 2), 1));
+				}
+			}// */
+		}
+		else {
+			for(int y = 0; y < height; y += 1) {
+				for (int x = 0; x < width; x += 1) {
+					int col = getPixel(img, x, y);
+					int colr = cols[(rch(col) * colors / 256) % colors];
+					int colg = cols[(gch(col) * colors / 256) % colors];
+					int colb = cols[(bch(col) * colors / 256) % colors];
+
+					int quant_error_r = rch(col) - colr;
+					int quant_error_g = gch(col) - colg;
+					int quant_error_b = bch(col) - colb;
+
+					define rgbError(int ^col, int ^s) = toRgb(
+						rch(col) + s * quant_error_r / 42,
+						gch(col) + s * quant_error_g / 42,
+						bch(col) + s * quant_error_b / 42
+					);
+
+					setPixel(img, x, y, toRgb(colr, colg, colb));
+					setPixel(img, x + 1, y + 0, rgbError(getPixel(img, x + 1, y + 0), 8));
+					setPixel(img, x + 2, y + 0, rgbError(getPixel(img, x + 2, y + 0), 4));
+					setPixel(img, x - 2, y + 1, rgbError(getPixel(img, x - 2, y + 1), 2));
+					setPixel(img, x - 1, y + 1, rgbError(getPixel(img, x - 1, y + 1), 4));
+					setPixel(img, x + 0, y + 1, rgbError(getPixel(img, x + 0, y + 1), 8));
+					setPixel(img, x + 1, y + 1, rgbError(getPixel(img, x + 1, y + 1), 4));
+					setPixel(img, x + 2, y + 1, rgbError(getPixel(img, x + 2, y + 1), 2));
+					setPixel(img, x - 2, y + 2, rgbError(getPixel(img, x - 2, y + 2), 1));
+					setPixel(img, x - 1, y + 2, rgbError(getPixel(img, x - 1, y + 2), 2));
+					setPixel(img, x + 0, y + 2, rgbError(getPixel(img, x + 0, y + 2), 4));
+					setPixel(img, x + 1, y + 2, rgbError(getPixel(img, x + 1, y + 2), 2));
+					setPixel(img, x + 2, y + 2, rgbError(getPixel(img, x + 2, y + 2), 1));
+				}
+			}
+		}
+		result = img;
+	}
+	else if (method == Dithering.Bayer) {
+		static const int8 Pattern[8][8] =
+			 0,32, 8,40, 2,34,10,42,
+			48,16,56,24,50,18,58,26,
+			12,44, 4,36,14,46, 6,38,
+			60,28,52,20,62,30,54,22,
+			 3,35,11,43, 1,33, 9,41,
+			51,19,59,27,49,17,57,25,
+			15,47, 7,39,13,45, 5,37,
+			63,31,55,23,61,29,53,21;
+
+		static void bayer(int &num2, int &num3, int col, int levels) {
+			define d = 64;
+			//~ num2 = col * ((levels * d) + 1) / 256;
+			//~ num3 = num2 / d;
+			//~ num2 -= num3 * d;
+			int tmp = col * ((levels * d) + 1) / 256;
+			num3 = tmp / d;
+			num2 = tmp - num3 * d;
+		}
+
+		if (grayscale) {
+			for (int y = 0; y < height; y += 1) {
+				for (int x = 0; x < width; x += 1) {
+					define d = 64;
+					int col = getPixel(img, x, y);
+					int num2;
+					int num3;
+
+					/*
+					int num2 = lum(col) * ((levels * d) + 1) / 256;
+					int num3 = num2 / d;
+					num2 -= num3 * d;
+					//~ */
+					bayer(&num2, &num3, lum(col), levels);
+					int gray = cols[(num3 + (num2 > Pattern[x & 7][y & 7]))];
+
+					setPixel(img, x, y, gray(gray));
+				}
+			}
+		}
+		else {
+			for (int y = 0; y < height; y += 1) {
+				for (int x = 0; x < width; x += 1) {
+					int col = getPixel(img, x, y);
+					int num2;
+					int num3;
+
+					bayer(&num2, &num3, rch(col), levels);
+					int colr = cols[(num3 + (num2 > Pattern[x & 7][y & 7]))];
+
+					bayer(&num2, &num3, gch(col), levels);
+					int colg = cols[(num3 + (num2 > Pattern[x & 7][y & 7]))];
+
+					bayer(&num2, &num3, bch(col), levels);
+					int colb = cols[(num3 + (num2 > Pattern[x & 7][y & 7]))];
+
+					setPixel(img, x, y, rgb(colr, colg, colb));
+				}
+			}
+		}
+
+		result = img;
+	}
+}
+
+int colors = 2;
+bool grayscale = !true;
+Dithering method = Dithering.Bayer;
+
+define hex(uint32 ^c) = int(c <= 9 ? (c + '0') : ((c - 10) + 'a'));
+
+gxClut lut;
+blendLut(lut, 0, -1);
+gxSurf image = gxSurf(fileName);
+//~ gxSurf image = resize(gxSurf(fileName), Window.resx, Window.resx);
+
+dither(image, grayscale, colors, method);
+
+uint8 filename[24] = 'o','u','t','/','o','u','t','[', grayscale ? 'g' : 'c','_',hex(min(colors >> 4 & 0xf, 0xf)),hex(min(colors >> 0 & 0xf, 0xf)),'_','0' + method, ']','.','b','m','p',0;
+bmpWrite(image, emit(string, ref(filename)));
+
+setupPicView(image, false);

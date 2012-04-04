@@ -1,0 +1,84 @@
+enum Window {
+	draw = RenderMode.swap_buff;
+	resx = 512;
+	resy = 512;
+}
+
+gxSurf pop55 = gxSurf("media/images/gol.bmp");
+int w = width(pop55);
+int h = height(pop55);
+int reDraw = 1;
+
+void nextGeneration(gxSurf population) {
+	int w = width(population);
+	int h = height(population);
+	gxSurf next = gxSurf(w, h);
+	fillRect(next, 0, 0, 65535, 65535, 0);
+	for (int y = 1; y < h - 1; y += 1) {
+		for (int x = 1; x < w - 1; x += 1) {
+			int n = 0;
+			int life = 0;
+			int c = getPixel(population, x, y);
+			n += (getPixel(population, x-1, y-1) & 0xffffff) != 0;
+			n += (getPixel(population, x-1, y+0) & 0xffffff) != 0;
+			n += (getPixel(population, x-1, y+1) & 0xffffff) != 0;
+			n += (getPixel(population, x+0, y-1) & 0xffffff) != 0;
+			n += (getPixel(population, x+0, y+1) & 0xffffff) != 0;
+			n += (getPixel(population, x+1, y-1) & 0xffffff) != 0;
+			n += (getPixel(population, x+1, y+0) & 0xffffff) != 0;
+			n += (getPixel(population, x+1, y+1) & 0xffffff) != 0;
+
+			if ((c & 0xffffff) != 0) {
+				if (n == 2 || n == 3) {
+					life = c & 0xffffff;
+				}
+			}
+			else if (n == 3) {
+				life = -1;
+			}
+			setPixel(next, x, y, life);
+		}
+	}
+	copySurf(population, 0, 0, next, null);
+	delSurf(next);
+}
+
+void drawCB() {
+	static int gen = 0;
+	if (reDraw > 3) {
+		//~ bmpWrite(pop55, "gol2.bmp");
+		reDraw = 0;
+	}
+
+	if (reDraw) {
+		nextGeneration(pop55);
+		if (reDraw == 1)
+			reDraw = 0;
+		gen += 1;
+	}
+	zoomSurf(offScreen, null, pop55, null, 0);
+	static if (true) {
+		uint8 txt[512];
+		string str = emit(string, ref(txt));
+		itoa(str, gen, 10, 1, "generation: ");
+		drawText(offScreen, 0, 0, str, -1);
+	}
+	Gui.Repaint();
+}
+
+void mouseCB(int btn, int x, int y) {
+	if (btn == 1) {
+		int X = x * w / Window.resx;
+		int Y = y * h / Window.resy;
+		setPixel(pop55, X, Y, -1);
+		btn = 0;
+	}
+
+	if (btn) {
+		reDraw = btn;
+	}
+}
+
+reDraw = 1;
+Gui.setDrawCallback(drawCB);
+Gui.setMouseHandler(mouseCB);

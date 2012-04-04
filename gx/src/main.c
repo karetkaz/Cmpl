@@ -30,10 +30,11 @@ int ltPLn = 0;			// object filename
 
 char *ini = "app.ini";	// ini filename
 char *fnt = NULL;		// font filename
-char *ccStd = NULL;//"std.gxc";	// stdlib script file (from gx.ini)
-char *ccGfx = NULL;//"gfx.gxc";	// gfxlib script file (from gx.ini)
-char *ccLog = NULL;//"debug.out";	// use stderr
-char *ccDmp = NULL;//"debug.out";
+
+char *ccStd = NULL;//"src/stdlib.gxc";	// stdlib script file (from gx.ini)
+char *ccGfx = NULL;//"src/gfxlib.gxc";	// gfxlib script file (from gx.ini)
+char *ccLog = NULL;//"out/debug.out";
+char *ccDmp = NULL;//"out/dump.out";
 
 char *obj = NULL;		// object filename
 char *tex = NULL;		// texture filename
@@ -47,7 +48,7 @@ double F_fovy = 30.;
 double F_near = 1.;
 double F_far = 100.;
 
-int draw = draw_fill | cull_back | disp_info | zero_cbuf | zero_zbuf | swap_buff;// | OnDemand;
+int draw = draw_fill | cull_back | disp_info | zero_cbuf | zero_zbuf | swap_buff;
 
 union vector eye, tgt, up;
 struct camera cam[1];
@@ -296,8 +297,13 @@ void readIni(char *file) {
 		if ((arg = strchr(ptr, 10)))
 			*arg = 0;
 
-		if (*ptr == 0) continue;								// Empty line
-		if (*ptr == '#' || *ptr == ';') continue;				// Comment
+		if (!*ptr || *ptr == '#' || *ptr == ';') {				// Comment or empty line
+			if (section == objfun) {		// add a newline to script code.
+				*ptr++ = '\n';
+				*ptr = 0;
+			}
+			continue;
+		}
 
 		if (*ptr == '[' && (arg = strchr(ptr, ']'))) {
 			char sectName[1024];
@@ -705,10 +711,13 @@ int ratHND1(int btn, int mx, int my) {
 	}
 	return 0;
 }
-int kbdHND(int key/* , int lkey2 */) {
+int kbdHND1(int key, int state) {
 	const scalar sca = 8;
 	switch (key) {
-		case  27 : return -1;
+		case  27 : 
+			draw = 0;
+			break;
+			//~ return -1;
 		case  13 : {
 			vecldf(&eye, 0, 0, O * sca, 1);
 			camset(cam, &eye, &tgt, &up);
@@ -820,7 +829,7 @@ int kbdHND(int key/* , int lkey2 */) {
 			return doScript;
 
 		default:
-			debug("kbdHND(key(%d), lkey(%d))", key, 0);//lkey2);
+			debug("kbdHND(key(%d), lkey(%d))", key, state);
 			break;
 	}
 	return 0;
@@ -1911,41 +1920,30 @@ static int objCall(state rt) {
 }
 //}#endregion
 
-static void ccline(state rt, char *file, int line) {
-	return ccSource(rt->cc, file, line);
-}
-static int  cctext(state rt, int wl, char *file, int line, char *buff) {
-	if (!ccOpen(rt, srcText, buff))
+static int cctext(state rt, int wl, char *file, int line, char *buff) {
+	if (!ccOpen(rt, file, line, buff))
 		return -2;
-
-	ccline(rt, file, line);
 	return parse(rt->cc, 0, wl);
 }
-static int  ccfile(state rt, int wl, char *file) {
-	if (!ccOpen(rt, srcFile, file))
+static int ccfile(state rt, int wl, char *file) {
+	if (!ccOpen(rt, file, 1, NULL))
 		return -1;
-
-	//~ ccline(s, file, 1);
 	return parse(rt->cc, 0, wl);
 }
 
 state rt = NULL;
-symn mouseCallBack = NULL;
 symn renderMethod = NULL;
+symn mouseCallBack = NULL;
+symn keyboardCallBack = NULL;
 
 static symn miscSetExitLoop = NULL;
 static symn miscOpFlipScreen = NULL;
 static symn miscOpSetCbMouse = NULL;
+static symn miscOpSetCbKeyboard = NULL;
 static symn miscOpSetCbRender = NULL;
 static int miscCall(state rt) {
 	if (rt->libc == miscSetExitLoop) {
 		draw = 0;
-		/*if (popi32(s)) {
-			draw &= ~OnDemand;
-		}
-		else {
-			draw |= OnDemand;
-		}*/
 		return 0;
 	}
 
@@ -1962,6 +1960,11 @@ static int miscCall(state rt) {
 
 	if (rt->libc == miscOpSetCbMouse) {
 		mouseCallBack = findref(rt, popref(rt));
+		return 0;
+	}
+
+	if (rt->libc == miscOpSetCbKeyboard) {
+		keyboardCallBack = findref(rt, popref(rt));
 		return 0;
 	}
 
@@ -1989,31 +1992,22 @@ static int miscCall(state rt) {
 	return 0;
 }
 
-static int setCallBack(state rt) {
-	symn cb = NULL;
-	switch (rt->fdata) {
-		case miscOpSetCbMouse: {
-			cb = mouseCallBack = findref(rt, popref(rt));
-		} break;
-		case miscOpSetCbRender: {
-			cb = renderMethod = findref(rt, popref(rt));
-		} break;
-		default:
-			return -1;
-	}
-	fputfmt(stdout, "setCallBack(%-T)\n", cb);
-	return 0;
-}
-
 // */
 
 static int ratHND(int btn, int mx, int my) {
-	if (mouseCallBack)
+	if (mouseCallBack) {
 		vmCall(rt, mouseCallBack, btn, mx, my);
-	else {
-		ratHND1(btn, mx, my);
+		return 0;//getret(rt, int);
 	}
-	return 0;
+	return ratHND1(btn, mx, my);
+}
+
+static int kbdHND(int btn, int state) {
+	if (keyboardCallBack) {
+		vmCall(rt, keyboardCallBack, btn, state);
+		return 0;//getret(rt, int);
+	}
+	return kbdHND1(btn, state);
 }
 
 struct {
@@ -2025,6 +2019,7 @@ Gui[] = {
 	{miscCall, &miscSetExitLoop,	"void exitLoop();"},
 	{miscCall, &miscOpFlipScreen,	"void Repaint(bool forceNow);"},
 	{miscCall, &miscOpSetCbMouse,	"void setMouseHandler(void handler(int btn, int x, int y));"},
+	{miscCall, &miscOpSetCbKeyboard,"void setKeyboardHandler(void handler(int btn, int ext));"},
 	{miscCall, &miscOpSetCbRender,	"void setDrawCallback(void callback());"},
 },
 Surf[] = {
@@ -2160,10 +2155,6 @@ char* strncatesc(char *dst, int max, char* src) {
 
 #ifdef _MSC_VER
 #define snprintf(__DST, __MAX, __FMT, ...)  sprintf_s(__DST, __MAX, __FMT, ##__VA_ARGS__)
-/*static inline int snprintf(char* dst, int max, char *fmt, va_list _ArgList) {
-	//return sprintf_s(dst, max, fmt, _ArgList);
-	return sprintf(dst, fmt, _ArgList);
-}*/
 #endif
 
 static int ccCompile(char *src, int argc, char* argv[]) {
@@ -2175,10 +2166,10 @@ static int ccCompile(char *src, int argc, char* argv[]) {
 	if (rt == NULL)
 		return -29;
 
-	/*if (!ccInit(rt, cerg_all)) {
+	if (!ccInit(rt, creg_def, NULL)) {
 		debug("Internal error\n");
 		return -1;
-	}*/
+	}// */
 
 	if (ccLog && logfile(rt, ccLog) != 0) {
 		debug("can not open file `%s`\n", ccLog);
@@ -2284,7 +2275,7 @@ static int ccCompile(char *src, int argc, char* argv[]) {
 	err = err || cctext(rt, strwl, __FILE__, __LINE__, "gxSurf offScreen = emit(gxSurf, i32(-1));");
 
 	// it is not an error if library name is not set(NULL)
-	if (ccGfx && ccOpen(rt, srcFile, ccGfx)) {
+	if (ccGfx && ccOpen(rt, ccGfx, 1, NULL)) {
 		err = err || parse(rt->cc, 0, strwl);
 	}
 
@@ -2379,7 +2370,7 @@ static int ccCompile(char *src, int argc, char* argv[]) {
 			dump(rt, dump_asm | 0xf9, NULL, "\ndasm:\n");
 		}
 
-	}// */
+	}
 
 	logFILE(rt, stderr);
 
@@ -2528,7 +2519,7 @@ int main(int argc, char* argv[]) {
 	vecldf(&up, 0, 1, 0, 1);
 	vecldf(&tgt, 0, 0, 0, 1);
 	matidn(view, 1);
-	kbdHND(13);
+	kbdHND(13, 0);
 
 	memset(&font, 0, sizeof(font));
 	if (fnt && (e = gx_loadFNT(&font, fnt))) {
@@ -2581,7 +2572,7 @@ int main(int argc, char* argv[]) {
 		msg = peekMsg((draw & post_swap) == 0);
 		draw &= ~post_swap;
 
-		if (msg == -1)
+		if (!draw || msg == -1)
 			break;
 
 		switch (msg) {
@@ -2598,7 +2589,7 @@ int main(int argc, char* argv[]) {
 			case doSaveMesh:
 				saveMesh(&msh, "mesh.obj");
 				break;
-		}// */
+		}
 
 		if (draw & zero_cbuf) {
 			int *cBuff = (void*)offs.basePtr;

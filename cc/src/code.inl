@@ -83,7 +83,7 @@ case opc_libc: NEXT(2, libcvec[ip->idx].chk, -libcvec[ip->idx].pop) {
 #ifdef EXEC
 	int exitCode;
 	struct symn module;
-	unsigned char *s_vm_end = rt->_ptr;
+	unsigned char *s_vm_end = rt->_end;
 	symn sym = libcvec[ip->idx].sym;
 	STOP(error_libc, sym == NULL, ip->idx);
 	rt->argv = (char *)sp;
@@ -98,9 +98,9 @@ case opc_libc: NEXT(2, libcvec[ip->idx].chk, -libcvec[ip->idx].pop) {
 	}
 
 	// if a libcall calls a vmCall keep the stack
-	rt->_ptr = (unsigned char *)sp;
+	rt->_end = (unsigned char *)sp;
 	exitCode = libcvec[ip->idx].call(rt);
-	rt->_ptr = s_vm_end;
+	rt->_end = s_vm_end;
 
 	STOP(error_libc, exitCode != 0, exitCode);
 	STOP(stop_vm, ip->idx == 0, 0);			// Halt();

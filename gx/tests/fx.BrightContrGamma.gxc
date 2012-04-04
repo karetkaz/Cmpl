@@ -1,0 +1,117 @@
+enum Window {
+	draw = RenderMode.swap_buff;
+	resx = 512;
+	resy = resx;
+}
+
+//~ string fileName = "media/images/David.png";
+//~ string fileName = "media/images/lenaRGB.png";
+string fileName = "media/images/download.jpg";
+//~ string fileName = "media/images/dino-blue.jpg";
+//~ string fileName = "media/images/Earth.jpg";
+//~ string fileName = "media/images/nol.bmp";
+
+define useNativeImpl = true;
+gxSurf img = gxSurf(fileName);
+gxSurf lui = gxSurf(256, 100);
+
+int brightness = 0;
+int contrast = 0;
+int gamma = 100;
+gxClut lut;
+
+bool reDraw = true;
+
+void mouseCB(int btn, int x, int y) {
+	static int ox;
+	static int oy;
+	int d = oy - y;
+	if (Mouse.dblClick(btn, x, y)) {
+		Mouse.dblClick(-1, 0, 0);			// disable multi clicks
+		reDraw = true;
+		brightness = 0;
+		contrast = 0;
+		gamma = 100;
+	}
+	if (btn == 1) {
+		reDraw = true;
+		brightness += d;
+	}
+	if (btn == 2) {
+		reDraw = true;
+		contrast += d;
+	}
+	if (btn == 3) {		// left + right
+		reDraw = true;
+		gamma += d;
+	}
+	ox = x;
+	oy = y;
+}
+
+void drawCB() {
+
+	if (reDraw) {
+		zoomSurf(offScreen, null, img, null, 1);
+
+		brightness = clamp(brightness, -255, 255);
+		contrast = clamp(contrast, -512, 512);
+		gamma = clamp(gamma, 1, 1000);
+
+		lutBrightnessContractGamma(&lut, brightness, contrast, gamma / 100.);
+
+		static if (useNativeImpl) {
+			clutSurf(offScreen, null, &lut);
+		}
+		static if (!useNativeImpl) {
+			//~ /*
+			static int pixelCB(int col) {
+				result = __rgb(
+					rch(lut.data[rch(col)]),
+					gch(lut.data[gch(col)]),
+					bch(lut.data[bch(col)])
+				);
+			}
+			fillSurfrgb(offScreen, null, pixelCB);
+			//~ */
+			/* techniq 2
+			int w = width(offScreen);
+			int h = height(offScreen);
+			for (int j = 0; j < h; j += 1) {
+				for (int i = 0; i < w; i += 1) {
+					int col = getPixel(offScreen, i, j);
+					setPixel(offScreen, i, j, __rgb(
+						rch(lut.data[rch(col)]),
+						gch(lut.data[gch(col)]),
+						bch(lut.data[bch(col)])
+					));
+				}
+			}//~ */
+		}
+
+		copySurf(offScreen, Window.resx - 266, 10, lut2Surf(lui, &lut, -1), null);
+
+		static if (true) {
+			int y = 0;
+			define dy = 12;
+			uint8 txt[1024];
+			string str = emit(string, ref(txt));
+
+			itoa(str, brightness, 10, 1, true, "brightness: ");
+			drawText(offScreen, 0, y, str, -1);
+			y += dy;
+
+			itoa(str, contrast, 10, 1, true, "contrast: ");
+			drawText(offScreen, 0, y, str, -1);
+			y += dy;
+
+			itoa(str, gamma, 10, 1, "gamma: ");
+			drawText(offScreen, 0, y, str, -1);
+			y += dy;
+		}
+		reDraw = false;
+	}
+}
+
+Gui.setMouseHandler(mouseCB);
+Gui.setDrawCallback(drawCB);

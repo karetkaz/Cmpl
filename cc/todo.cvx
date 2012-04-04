@@ -28,8 +28,8 @@ static struct Math {
 }// */
 
 /*TODO: Array assignment
-define Array(int32 typesize, int32 ^n) = emit(struct, byRef(memmgr(null, typesize * n)), i32(n));
-define Array(typename ^type, int32 ^n) = emit(struct, byRef(memmgr(null, type.size * n)), i32(n));
+define Array(int32 typesize, int32 ^n) = emit(struct, ref(memmgr(null, typesize * n)), i32(n));
+define Array(typename ^type, int32 ^n) = emit(struct, ref(memmgr(null, type.size * n)), i32(n));
 
 int a[][];
 a = Array(8, 10);
@@ -169,7 +169,7 @@ void setup() {
 setup();
 //~ */
 
-//~ /* iterating
+/* iterating
 
 void printIT(int ri) {
 	print("iterator {%d}\n", int64(ri));
@@ -267,8 +267,7 @@ for (range_iterator it = iterator(range(10, 13, true)); next(it, it); ) {
 //~ */
 
 /+ bugs:
-int s1 = sizeof(pointer);		// pointer casts to ref
-int s2 = sizeof(Math);			// enum base type is not typename
+//~ int s2 = sizeof(Math);			// enum base type is not typename
 //~ arrays in structures suck
 // +/
 /+ todo:

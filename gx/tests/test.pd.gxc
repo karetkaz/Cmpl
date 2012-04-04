@@ -79,7 +79,7 @@ define colsca(vec4f &x, float s) = void(x = vec4f(x.x * s, x.y * s, x.z * s));
 define pi = Math.pi;
 
 void setup(double &timer, vec4f pixelCBr(double x, double y)) {
-	define WIDTH = 92;
+	define WIDTH = 128;
 	define HEIGHT = WIDTH;
 	static gxSurf tmpImg = gxSurf(WIDTH, HEIGHT);
 
@@ -261,7 +261,7 @@ vec4f eye(double x, double y) {
 	float ry = 2.0f*(y - 0.5f);
 	float h = 3.0f*sqrtf(x*x*x)*(1.0f-x);
 	float e = fabsf(ry) - h;
-	float f = smoothstep( e, 0.0f, 0.01f );
+	float f = smoothstep( e, 0.0f, 0.01f);
 	vec4f cOjo = interior(x, y, 0);
 	vec4f cPiel = vec4f(float32(0));//skin(x, y);
 	result = lerp(f, cOjo, cPiel);
@@ -278,33 +278,32 @@ vec4f tunnel0(double x, double y) {
 		result = rgb(r, g, b);
 	}
 
-	int imgcoord(double val, int resolution) {
+	double imgcoord(double val, int resolution) {
 		result = val * resolution;
-
 		if ((result %= resolution) < 0)
 			result += resolution;
 	}
 
 	define tex2d(gxSurf ^src, double x, double y) = getPixel(src, imgcoord(x, width(src)), imgcoord(y, height(src)));
 	define tex2d(gxSurf src, double u, double v, double w) = rgbscale(tex2d(src, u, v), w);
+	//~ define tex2d(gxSurf src, double u, double v, double w) = tex2d(src, u, v);
 
 	define nz(double x) = nz(x, 1e-200);
-	define atan(double x, double y) = atan2(x, y);
 
-	static gxSurf srcImg = gxSurf("media/images/download.jpg");
+	const static gxSurf srcImg = gxSurf("media/images/download.jpg");
 
 	x = 1. - x * 2;
 	y = 1. - y * 2;
 
-	double a = atan(y, x);
+	double a = atan2(y, x);
 	double r = hypot(x, y);
 
 	double u = .2 * time + .1 / nz(r);
 	double v = a / pi;
 
-	result = rgb2vec4f(tex2d(srcImg, u, v, 3 * r));
+	result = rgb2vec4f(tex2d(srcImg, u, v, 2 * r));
 }
 
-setup(&time, blob2d);
+setup(&time, tunnel0);
 //~ setup(&time, Perlin.Noise2f);
 //~ Gui.exitLoop();
