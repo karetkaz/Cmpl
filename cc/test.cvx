@@ -730,39 +730,3 @@ int s2 = sizeof(Math);			// enum base type is not typename
 	}
 }*/
 
-/+Optimize
-	// remove dup.x1 sp(0) and spc -4
-		ldc.ref 5ee1
-		dup.x1 sp(0)
-		libc: define print( &val)
-		spc -4
-
-//~ +/
-/+class string: char[] {
-	static format(string format, var args) {}
-	struct Builder {
-		
-	}
-	
-	prototype {
-		char charAt(int idx)					// Returns the character at the specified index.
-		//~ char charCodeAt(int idx)			// Returns a number indicating the Unicode value of the character at the given index.
-		string concat(string other)				// Combines the text of two strings and returns a new string.
-		int indexOf(char chr)					// Returns the index within the calling String object of the first occurrence of the specified value, or -1 if not found.
-		int lastIndexOf(char chr)				// Returns the index within the calling String object of the last occurrence of the specified value, or -1 if not found.
-		int localeCompare(string other)			// Returns a number indicating whether a reference string comes before or after or is the same as the given string in sort order.
-		Match[] match(regexp re)				// Used to match a regular expression against a string.
-		replace()								// Used to find a match between a regular expression and a string, and to replace the matched substring with a new substring.
-		search()								// Executes the search for a match between a regular expression and a specified string.
-		slice()									// Extracts a section of a string and returns a new string.
-		string[] split(string sep)				// Splits a String object into an array of strings by separating the string into substrings.
-		string substr(int offset, int length)	// Returns the characters in a string beginning at the specified location through the specified number of characters.
-		string substring(int start, int end)	// Returns the characters in a string between two indexes into the string.
-		string toLocaleLowerCase()				// The characters within a string are converted to lower case while respecting the current locale.
-		string toLocaleUpperCase()				// The characters within a string are converted to upper case while respecting the current locale.
-		string toLowerCase()					// Returns the calling string value converted to lower case.
-		string toUpperCase()					// Returns the calling string value converted to uppercase.
-		//~ toString()							// Returns a string representing the specified object.
-		//~ valueOf()							Returns the primitive value of the specified object.
-	}
-}// +/

@@ -2267,6 +2267,8 @@ astn expr(ccState s, int mode) {
 						}
 						tmp->op.rhso = tok->op.rhso;
 						tmp->op.lhso = tok->op.lhso;
+						tmp->file = tok->file;
+						tmp->line = tok->line;
 						tok->kind = ASGN_set;
 						tok->op.rhso = tmp;
 					} break;
@@ -2707,7 +2709,7 @@ astn decl(ccState s, int Rmode) {
 		if (Attr & ATTR_stat) {
 			ref->stat = 1;
 			if (ref->init && !ref->call && !(isStatic(s, ref->init) || isConst(ref->init))) {
-				error(s->s, ref->file, ref->line, "invalid initialization of static variable `%-T`", ref);
+				warn(s->s, 1, ref->file, ref->line, "probably invalid initialization of static variable `%-T`", ref);
 			}
 
 		}
@@ -2825,103 +2827,118 @@ int parse(ccState s, srcType mode, int wl) {
 	return ccDone(s->s);
 }
 
-/** unit -----------------------------------------------------------------------
-scan a source file
-	@param mode: script mode (enable non declaration statements)
+/** grammar --------------------------------------------------------------------
+grammar psvm;
 
-unit:
-	| ('module' <name> ';') <stmt>*
-	| <stmt>*
+options {
+	language=Java;
+	backtrack=true;
+	memoize=true;
+	//k=1;
+}
+
+program
+	: script
+	//| module
 	;
-**/
-/** stmt -----------------------------------------------------------------------
-scan a statement
-	@param mode: enable or not <decl>, enetr new scope
 
-stmt: ';'
-	| '{' <stmt>* '}'
-	| ('static')? 'if' '(' <decl> | <expr> ')' <stmt> ('else' <stmt>)?
-	| ('static' | 'parallel')? 'for' '(' (<decl> | <expr>)?; <expr>?; <expr>? ')' <stmt>
+module: 'module' REF ('(' args ')')? ';' stmt*;
+
+script: stmt*;
+
+stmt
+	: ';'
+	| '{' stmt* '}'
+	| ('static')? 'if' '(' expr ')' stmt ('else' stmt)?
+	| ('static' | 'parallel')? 'for' '(' (decl | expr)? ';' expr? ';' expr? ')' stmt
 	| 'continue' ';'
 	| 'break' ';'
 	| 'return' ';'
-	| <decl>
-	| <expr> ';'
+	| decl
+	| expr ';'
 	;
 
-**/
-/** decl -----------------------------------------------------------------------
-declarations
+decl
+	: 'enum' REF? (':' type)? '{' (REF init? ';')* '}'
+	| ('static')? 'struct' ('&')? REF? (':' (PACK | type))? '{' decl+ '}'
+	| 'define' REF type
+	| ('static' | 'const')+ 'define' REF ('(' args ')')? init ';'
+	| type REF ('[' expr? ']')? init? ';'
+	| type REF '(' args ')' (('{' stmt* '}') | (expr? ';'))
+	//| 'operator' REF '(' type REF ')' init ';'
+	//| 'operator' UNOP '(' type REF ')' init ';'
+	//| 'operator' '(' type REF ')' BINOP '(' type REF ')' init ';'
+	//|TODO: call, index(get, set), member(get, set) operators
+	;
+
+expr: (REF | CON | ('(' expr ')') | (UNOP expr)) (call | index | member | ('?' expr ':' expr) | (BINOP expr))*;
+
+type: REF member*;
+
+args: (type REF (',' type REF)*)?;
+
+init: ':=' expr;
+
+call : '(' expr ')';
+index : '[' expr ']';
+member : '.' REF;
+
+fragment UNOP
+	: '+' | '-' | '~' | '!'
+	//| 'new';
+	;
+
+fragment BINOP
+	: ('+' | '-' | '*' | '/' | '%')
+	| ('&' | '|' | '^' | '<<' | '>>')
+	| ('<' | '<=' | '>' | '>=' | '==' | '!=')
+	| ('=' | '+=' | '-=' | '*=' | '/=' | '%=' | '&=' | '|=' | '^=' | '<<=' | '>>=')
+	;
+
+fragment REF : LETTER (LETTER | NUMBER)*;
+
+fragment CON
+	: NUMBER+ '.' NUMBER* (('e'|'E') ('+'|'-')? NUMBER+)?
+	| '.' NUMBER+ (('e'|'E') ('+'|'-')? NUMBER+)?
+	| NUMBER+
+	| '0x'('a'..'f' | 'A'..'F' | '0'..'9')+
+	| '0b'('0'..'1')+
+	| '0o'('0'..'7')+
+	//| '0'('0'..'7')+
+	;
+
+fragment NUMBER : '0' .. '9';
+fragment LETTER : '_' | 'A' .. 'Z' | 'a' .. 'z';
+
+fragment WS : (' '|'\r'|'\t'|'\n') {$channel=HIDDEN;};
+
+fragment PACK: '0' | '1' | '2' | '4' | '8' | '16';
+
+//~ grammar --------------------------------------------------------------------
+scan a source file
+	@param mode: script mode (enable non declaration statements)
+
+stmt: scan a statement
+	@param mode: enable or not decl, enetr new scope
+
+decl: declarations
 	@param mode: enable or not type decl.
+	Operator: operators are explicit, defines are implicit
+		operator Complex(float64 re) = Complex(re, 0);
+		operator - (Complex ^x) = Complex(-x.re, -x.im);
+		operator (Complex ^x) + (Complex ^y) = Complex(x.re + y.re, x.im + y.im);
+		Complex x1 = 3.1;
+		Complex y1 = -x1;
+		Complex z1 = x1 + y1;
+		define Complex(float64 re) = Complex(re, 0);
+		define neg(Complex ^x) = Complex(-x.re, -x.im);
+		define add(Complex ^x, Complex ^y) = Complex(x.re + y.re, x.im + y.im);
+		Complex x2 = Complex(3.1);
+		Complex y2 = neg(x2);
+		Complex z2 = add(x2, y2);
 
-decl:
-	# enum
-	| 'enum' <name> (':' <type>)? ':=' <expr> ';'
-	| 'enum' <name>? (':' <type>)? '{' (<name> (':=' <expr>)? ';')* '}'
+		passing arguments to `neg(Complex ^x)`: is by reference, but if x is not a local reference it vill be evaluated first.
 
-	# struct
-	| ('static')? 'struct' <name>? (':' (<pack>|<type>))? '{' <decl>+ '}'
+expr: expression parser
 
-	# define
-	| 'define' <name> <type>;						// typedef
-	# inline expression: static and const should force the lhs to be const or to not use local vars
-	| ('static' | 'const')+ 'define' <name> ('(' <args> ')')? ':=' <expr>;
-
-	//~ # operator: TODO
-	//~ | 'operator' <OP> ('(' <type> rhs ')') ':=' <expr> ';'
-	//~ | 'operator' <type> ('(' <type> rhs ')') ':=' <expr> ';'
-	//~ | 'operator' ('(' <type> lhs ')') <OP> ('(' <type> rhs ')') ':=' <expr> ';'
-
-	# variable
-	| <type> <name> ('['<expr>?']')? (':=' <expr>)? ';'
-	# function
-	| <type> <name> '(' <args> ')' (('{' <stmt>* '}') | (':=' <name> ';') | (';'))
-	;
-
-type:
-	| typename ('.' typename)*
-	;
-
-tref:
-	| <type> ('^' | '&')? <name>
-	;
-
-//~ init: ':=' <expr>;
-
-args:
-	| <tref> (',' <tref>)*
-	;
-
-/+ Operator: operators are explicit, defines are implicit
-	@ operator Complex(float64 re) = Complex(re, 0);
-	@ operator - (Complex ^x) = Complex(-x.re, -x.im);
-	@ operator (Complex ^x) + (Complex ^y) = Complex(x.re + y.re, x.im + y.im);
-	@ Complex x1 = 3.1;
-	@ Complex y1 = -x1;
-	@ Complex z1 = x1 + y1;
-	@ define Complex(float64 re) = Complex(re, 0);
-	@ define neg(Complex ^x) = Complex(-x.re, -x.im);
-	@ define add(Complex ^x, Complex ^y) = Complex(x.re + y.re, x.im + y.im);
-	@ Complex x2 = Complex(3.1);
-	@ Complex y2 = neg(x2);
-	@ Complex z2 = add(x2, y2);
-
-	# define
-	@ define string : char[];
-	@ define pi = 3.1415;
-		@ define sqr(int ^a) = int(a * a);
-	passing arguments to `neg(Complex ^x)`: is by reference, but if x is not a local reference it vill be evaluated first.
-// +/
-
-**/
-/** expr -----------------------------------------------------------------------
-expression parser (non recursive, )
-expr := <name>
-	| <expr> '[' <expr> ']'
-	| <expr> '.' <expr>
-	| <expr>? '(' <expr>? ')'
-	| ['+', '-', '~', '!', '&'] <expr>
-	| <expr> ['+', '*', ...] <expr>
-	| <expr> '?' <expr> ':' <expr>
-	;
 **/

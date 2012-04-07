@@ -37,7 +37,7 @@ enum Format {
 
 static void fputesc(FILE *fout, char* str) {
 	int c;
-	fputchr(fout, '"');
+	fputchr(fout, '\'');
 	while ((c = *str++)) {
 		switch (c) {
 			default : fputchr(fout, c); break;
@@ -45,7 +45,7 @@ static void fputesc(FILE *fout, char* str) {
 			case '\t': fputstr(fout, "\\t"); break;
 		}
 	}
-	fputchr(fout, '"');
+	fputchr(fout, '\'');
 }
 
 static void fputsym(FILE *fout, symn sym, int mode, int level) {
@@ -552,10 +552,17 @@ static void dumpxml(FILE *fout, astn ast, int mode, int level, const char* text)
 	if (!ast) {
 		return;
 	}
-	fputfmt(fout, "%I<%s id=\"%t\"", level, text, ast->kind);
-	if (mode & prType) fputfmt(fout, " type=\"%?T\"", ast->type);
-	if (mode & prCast) fputfmt(fout, " cast=\"%?t\"", ast->cst2);
-	if (mode & prLine) fputfmt(fout, " line=\"%d\"", ast->line);
+	fputfmt(fout, "%I<%s op=\"%t\"", level, text, ast->kind);
+	if (mode & prType) {
+		fputfmt(fout, " type=\"%?T\"", ast->type);
+	}
+	if (mode & prCast) {
+		fputfmt(fout, " cast=\"%?t\"", ast->cst2);
+	}
+	if (mode & prLine) {
+		// && ast->file && ast->line) {
+		fputfmt(fout, " line=\"%s:%d\"", ast->file, ast->line);
+	}
 	switch (ast->kind) {
 		default:
 			fatal("FixMe %t", ast->kind);
@@ -642,7 +649,7 @@ static void dumpxml(FILE *fout, astn ast, int mode, int level, const char* text)
 		case OPER_com:		// ','
 
 		case ASGN_set: {	// '='
-			fputfmt(fout, " oper=\"%?k\">\n", ast);
+			fputfmt(fout, " oper=\"%?+k\">\n", ast);
 			dumpxml(fout, ast->op.test, mode, level + 1, "test");
 			dumpxml(fout, ast->op.lhso, mode, level + 1, "lval");
 			dumpxml(fout, ast->op.rhso, mode, level + 1, "rval");
@@ -661,7 +668,7 @@ static void dumpxml(FILE *fout, astn ast, int mode, int level, const char* text)
 			break;
 
 		case TYPE_ref:
-			fputfmt(fout, ">%-T</%s>\n", ast->ref.link, text);
+			fputfmt(fout, ">%T</%s>\n", ast->ref.link, text);
 			break;
 
 		case TYPE_def: {
@@ -678,10 +685,17 @@ static void dumpxml(FILE *fout, astn ast, int mode, int level, const char* text)
 			if (var && var->args) {
 				symn def = var->args;
 				for (def = var->args; def; def = def->next) {
-					fputfmt(fout, "%I<def id=\"%t\"", level + 1, def->kind, def);
-					if (mode & prType) fputfmt(fout, " type=\"%?T\"", def->type);
-					if (mode & prCast) fputfmt(fout, " cast=\"%?t\"", def->cast);
-					if (mode & prLine) fputfmt(fout, " line=\"%d\"", def->line);
+					fputfmt(fout, "%I<def op=\"%t\"", level + 1, def->kind, def);
+					if (mode & prType) {
+						fputfmt(fout, " type=\"%?T\"", def->type);
+					}
+					if (mode & prCast) {
+						fputfmt(fout, " cast=\"%?t\"", def->cast);
+					}
+					if (mode & prLine) {
+						// && def->file && def->line) {
+						fputfmt(fout, " line=\"%s:%d\"", def->file, def->line);
+					}
 					fputfmt(fout, " name=\"%+T\"", def);
 
 					if (def->init) {

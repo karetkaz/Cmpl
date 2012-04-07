@@ -7,12 +7,15 @@
 	//~ static int A = a;
 //~ }
 
-define sqr2(float64 ^x) = x*x;
-define sqr1(float64 x) = sqr2(x);
-define sqr(float64 x) = sqr1(x);
+define hex int; //%0x%08x
+hex pi = Math.pi * (1 << 28);
 
-double x = 9;
-double y = sqr(x*x+x);
+//~ define sqr2(float64 ^x) = x*x;
+//~ define sqr1(float64 x) = sqr2(x);
+//~ define sqr(float64 x) = sqr1(x);
+
+//~ double x = 9;
+//~ double y = sqr(x*x+x);
 
 /+ static casting pointers
 pointer x = emit(pointer, ref("erZKJVDlaknjsdvkSDNVlk"));
