@@ -138,10 +138,10 @@ void drawCB() {
 		Mandel(mand, &mandelLut, QMin, QMax, PMin, PMax);
 		copySurf(offScreen, 0, 0, mand, null);
 
-		print("Mandel(%F", QMin);
-		print(", %F", QMax);
-		print(", %F", PMin);
-		print(", %F", PMax);
+		print("Mandel(%G", QMin);
+		print(", %G", QMax);
+		print(", %G", PMin);
+		print(", %G", PMax);
 		print("): time: %F\n", clocksPerSec(clock(start)));
 
 		reDraw = 0;

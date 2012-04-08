@@ -1746,7 +1746,8 @@ static int meshCall(state rt) {
 		int p4 = popi32(rt);
 		//~ addtri(&msh, p1, p2, p3);
 		//~ addtri(&msh, p3, p4, p1);
-		int res = addquad(&msh, p1, p2, p3, p4);
+		//~ int res = 
+		addquad(&msh, p1, p2, p3, p4);
 		//~ reti32(rt, res);
 		return 0;
 	}

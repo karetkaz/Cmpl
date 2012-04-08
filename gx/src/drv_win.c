@@ -296,8 +296,8 @@ static int winmsg(int wait) {
 							case 2: btnstate &= ~4; break;
 							case 3: btnstate &= ~2; break;
 						}
-						//~ break;
-						return;
+						break;
+						//~ return result;
 				}
 				if (ratH) result = ratH(btnstate, event.xmotion.x, event.xmotion.y);
 			} break;
@@ -306,8 +306,9 @@ static int winmsg(int wait) {
 			case KeyPress: {
 				KeySym keysym = XLookupKeysym(&(event.xkey), 0);
 				if (kbdH) {
-					unsigned char buffer[1];
-					int nchars = XLookupString(&(event.xkey), buffer, sizeof(buffer), &keysym, NULL);
+					char buffer[1];
+					//int nchars = 
+					XLookupString(&(event.xkey), buffer, sizeof(buffer), &keysym, NULL);
 					result = kbdH(*buffer, event.xkey.state);
 
 					/*

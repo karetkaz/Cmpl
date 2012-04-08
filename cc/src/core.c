@@ -267,63 +267,81 @@ int cgen(state rt, astn ast, ccToken get) {
 				// local declarations inside a static if grows the stack.
 				stpos = stkoffs(rt, 0);
 			}
-			else if (ast->stmt.stmt && ast->stmt.step) {		// if then else
-				if (!cgen(rt, ast->stmt.test, TYPE_bit)) {
-					trace("%+k", ast);
-					return 0;
-				}
-				if (!(jmpt = emitopc(rt, opc_jz))) {
-					trace("%+k", ast);
-					return 0;
-				}
-				if (!cgen(rt, ast->stmt.stmt, TYPE_vid)) {
-					trace("%+k", ast);
-					return 0;
-				}
-				if (!(jmpf = emitopc(rt, opc_jmp))) {
-					trace("%+k", ast);
-					return 0;
-				}
-				fixjump(rt, jmpt, emitopc(rt, markIP), 0);
-				if (!cgen(rt, ast->stmt.step, TYPE_vid)) {
-					trace("%+k", ast);
-					return 0;
-				}
-				fixjump(rt, jmpf, emitopc(rt, markIP), 0);
-			}
-			else if (ast->stmt.stmt) {							// if then
-				if (!cgen(rt, ast->stmt.test, TYPE_bit)) {
-					trace("%+k", ast);
-					return 0;
-				}
-				//~ if false skip THEN block
-				if (!(jmpt = emitopc(rt, opc_jz))) {
-					trace("%+k", ast);
-					return 0;
-				}
-				if (!cgen(rt, ast->stmt.stmt, TYPE_vid)) {
-					trace("%+k", ast);
-					return 0;
-				}
-				fixjump(rt, jmpt, emitopc(rt, markIP), 0);
-			}
-			else if (ast->stmt.step) {							// if else
-				if (!cgen(rt, ast->stmt.test, TYPE_bit)) {
-					trace("%+k", ast);
-					return 0;
-				}
-				//~ if true skip ELSE block
-				if (!(jmpt = emitopc(rt, opc_jnz))) {
-					trace("%+k", ast);
-					return 0;
-				}
-				if (!cgen(rt, ast->stmt.step, TYPE_vid)) {
-					trace("%+k", ast);
-					return 0;
-				}
-				fixjump(rt, jmpt, emitopc(rt, markIP), 0);
-			}
+			else {
+				// hack: if (true) sin(pi/4); will leave the result on stack;
+				// code will be generated as: if(true) {sin(pi/4);}
+				struct astn block;
 
+				memset(&block, 0, sizeof(struct astn));
+				block.kind = STMT_beg;
+				block.type = rt->cc->type_vid;
+
+				if (ast->stmt.stmt && ast->stmt.step) {		// if then else
+					if (!cgen(rt, ast->stmt.test, TYPE_bit)) {
+						trace("%+k", ast);
+						return 0;
+					}
+					if (!(jmpt = emitopc(rt, opc_jz))) {
+						trace("%+k", ast);
+						return 0;
+					}
+
+					block.stmt.stmt = ast->stmt.stmt;
+					if (!cgen(rt, &block, TYPE_vid)) {
+						trace("%+k", ast);
+						return 0;
+					}
+					if (!(jmpf = emitopc(rt, opc_jmp))) {
+						trace("%+k", ast);
+						return 0;
+					}
+					fixjump(rt, jmpt, emitopc(rt, markIP), 0);
+
+					block.stmt.stmt = ast->stmt.step;
+					if (!cgen(rt, &block, TYPE_vid)) {
+						trace("%+k", ast);
+						return 0;
+					}
+					fixjump(rt, jmpf, emitopc(rt, markIP), 0);
+				}
+				else if (ast->stmt.stmt) {							// if then
+					if (!cgen(rt, ast->stmt.test, TYPE_bit)) {
+						trace("%+k", ast);
+						return 0;
+					}
+					//~ if false skip THEN block
+					if (!(jmpt = emitopc(rt, opc_jz))) {
+						trace("%+k", ast);
+						return 0;
+					}
+
+					block.stmt.stmt = ast->stmt.stmt;
+					if (!cgen(rt, &block, TYPE_vid)) {
+						trace("%+k", ast);
+						return 0;
+					}
+					fixjump(rt, jmpt, emitopc(rt, markIP), 0);
+				}
+				else if (ast->stmt.step) {							// if else
+					if (!cgen(rt, ast->stmt.test, TYPE_bit)) {
+						trace("%+k", ast);
+						return 0;
+					}
+					//~ if true skip ELSE block
+					if (!(jmpt = emitopc(rt, opc_jnz))) {
+						trace("%+k", ast);
+						return 0;
+					}
+
+					block.stmt.stmt = ast->stmt.step;
+					if (!cgen(rt, &block, TYPE_vid)) {
+						trace("%+k", ast);
+						return 0;
+					}
+					fixjump(rt, jmpt, emitopc(rt, markIP), 0);
+				}
+				dieif(get != TYPE_vid || stpos != stkoffs(rt, 0), "internal fatal error");
+			}
 			TODO("destruct(ast->stmt.test)")
 			logif(stpos != stkoffs(rt, 0), "invalid stacksize(%d:%d) in statement %+k", stkoffs(rt, 0), stpos, ast);
 		} break;
@@ -518,7 +536,7 @@ int cgen(state rt, astn ast, ccToken get) {
 									case TYPE_ref:
 										break;
 									default:
-										warn(rt, 9, ast->file, ast->line, "inlineing argument `%T` used more than once: %+k", as, n);
+										warn(rt, 15, ast->file, ast->line, "inlineing argument `%T` used more than once: %+k", as, n);
 								}
 							}
 							as->kind = TYPE_def;
@@ -534,11 +552,10 @@ int cgen(state rt, astn ast, ccToken get) {
 								}
 								if (n) switch (n->kind) {
 									case TYPE_ref:
-										warn(rt, 5, ast->file, ast->line, "caching argument used once or none: %-T = %+k", as, n);
+										warn(rt, 15, ast->file, ast->line, "caching argument used once or none: %-T = %+k", as, n);
 										break;
 									default:
 										break;
-										//~ warn(rt, 9, ast->file, ast->line, "inlineing argument `%T` used more than once: %+k", as, arg);
 								}
 							}
 
@@ -1165,7 +1182,7 @@ int cgen(state rt, astn ast, ccToken get) {
 
 				if (var->init != NULL) {
 					astn val = var->init;
-					var->init = NULL;
+					//~ var->init = NULL;
 
 					// var a = emit(...);
 					if (val->type == rt->cc->emit_opc) {
@@ -1521,7 +1538,7 @@ int cgen(state rt, astn ast, ccToken get) {
 	}
 
 	// debug info, invalid after first execution
-	if (ast->kind > STMT_beg && ast->kind < STMT_end && ipdbg < emitopc(rt, markIP)) {
+	if ((ast->kind == TYPE_def || (ast->kind > STMT_beg && ast->kind < STMT_end)) && (ipdbg < emitopc(rt, markIP))) {
 		list l = setBuff(&rt->cc->dbg, rt->cc->dbg.cnt, NULL);
 		dieif(l == NULL, "Fatal Error allocating @%d", rt->cc->dbg.cnt);
 		l->data = (void*)ast;

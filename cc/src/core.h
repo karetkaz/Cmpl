@@ -14,16 +14,19 @@
 // debug level
 #define DEBUGGING 1
 
+// enable dynamic dll/so lib loading
+#define USEPLUGINS
+
+// maximum elements to print from an array
+#define MAX_ARR_PRINT 100
+
 // maximum tokens in expressions & nest level
 #define TOKS 2048
 
 // symbol & hash table size
 #define TBLS 512
 
-// maximum elements to print from an array
-#define MAX_ARR_PRINT 100
-
-#define DO_PRAGMA(x) _Pragma(#x)
+//~ #define DO_PRAGMA(x) _Pragma(#x)
 #define TODO(x) //DO_PRAGMA(message("TODO: " #x))
 
 #define pdbg(__DBG, __FILE, __LINE, msg, ...) do {fputfmt(stderr, "%s:%d: "__DBG": %s: "msg"\n", __FILE, __LINE, __FUNCTION__, ##__VA_ARGS__); fflush(stdout); fflush(stderr);} while(0)

@@ -1379,6 +1379,7 @@ void fputopc(FILE *fout, unsigned char* ptr, int len, int offs, state rt) {
 void fputasm(FILE *fout, state rt, int beg, int end, int mode) {
 	int i, is = 12345;
 	int rel = 0;
+	int stmtEnd = 0;
 	astn ast = NULL;
 
 	if (end == -1)
@@ -1402,7 +1403,12 @@ void fputasm(FILE *fout, state rt, int beg, int end, int mode) {
 		}
 
 		if (1 && (ast = infoAt(rt, i))) {
+			if (stmtEnd) {
+				fputc('}', fout);
+				fputc('\n', fout);
+			}
 			fputfmt(fout, "%s:%d:%+k\n", ast->file, ast->line, ast);
+			//~ stmtEnd = 1;
 		}
 
 		if (mode & 0xf00)
@@ -1410,6 +1416,10 @@ void fputasm(FILE *fout, state rt, int beg, int end, int mode) {
 
 		fputopc(fout, (void*)ip, mode & 0xf, rel >= 0 ? (rel + i) : -1, rt);
 
+		fputc('\n', fout);
+	}
+	if (stmtEnd) {
+		fputc('}', fout);
 		fputc('\n', fout);
 	}
 }

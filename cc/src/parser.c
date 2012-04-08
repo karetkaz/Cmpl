@@ -1957,25 +1957,8 @@ static astn stmt(ccState s, int mode) {
 	}
 
 	else if ((ast = decl(s, TYPE_any))) {	// declaration
-		astn tmp = newnode(s, STMT_do);
-		symn ref = ast->ref.link;
-		tmp->file = ast->file;
-		tmp->line = ast->line;
-		tmp->type = ast->type;
-		tmp->stmt.stmt = ast;
-
-		// constant variables are static
-		if (ref && ref->cnst && ref->kind == TYPE_ref) {
-			if (!ref->init) {
-				error(s->s, ref->file, ref->line, "uninitialized constant `%-T`", ref);
-			}
-			//ref->stat = 1;
-		}
-
 		if (mode)
 			error(s->s, ast->file, ast->line, "unexpected declaration %+k", ast);
-
-		ast = tmp;
 	}
 	else if ((ast = expr(s, TYPE_vid))) {	// expression
 		astn tmp = newnode(s, STMT_do);
@@ -2702,16 +2685,20 @@ astn decl(ccState s, int Rmode) {
 
 		skiptok(s, STMT_do, 1);
 
-		if (Attr & ATTR_const) {
-			ref->cnst = 1;
-		}
-
 		if (Attr & ATTR_stat) {
 			ref->stat = 1;
 			if (ref->init && !ref->call && !(isStatic(s, ref->init) || isConst(ref->init))) {
 				warn(s->s, 1, ref->file, ref->line, "probably invalid initialization of static variable `%-T`", ref);
 			}
+		}
 
+		if (Attr & ATTR_const) {
+			ref->cnst = 1;
+			if (ref && ref->cnst && ref->kind == TYPE_ref) {
+				if (!ref->init) {
+					error(s->s, ref->file, ref->line, "uninitialized constant `%-T`", ref);
+				}
+			}
 		}
 
 		Attr &= ~(ATTR_stat|ATTR_const);		// static and const qualifiers are valid

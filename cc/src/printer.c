@@ -522,7 +522,7 @@ static void fputast(FILE *fout, astn ast, int mode, int level) {
 		case TYPE_str: fputesc(fout, ast->ref.name); break;
 		case TYPE_def: {
 			if (ast->ref.link) {
-				fputsym(fout, ast->ref.link, mode, level);
+				fputsym(fout, ast->ref.link, mode|prInit|prType, level);
 			}
 			else {
 				fputstr(fout, ast->ref.name);

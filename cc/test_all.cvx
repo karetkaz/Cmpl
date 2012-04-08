@@ -54,6 +54,8 @@ operator int32(string value) = atoi(value, 10);
 
 //~ const float64 nan = 0./0;
 
+//~ const int almasaer;
+
 enum Test {
 	Emit = ~0;
 	Bits = ~0;
@@ -86,17 +88,6 @@ float32 res1 = emit(f32.div, float32(2), float32(Math.pi));
 float64 res2 = emit(f64.neg, f64(Math.pi));
 float32 res3 = emit(int32, f32(Math.pi));
 hex32 res4 = emit(hex32, f32(Math.pi));
-
-//~ these won't work because of global vars, use option: -O-2
-//~ emit(f64(math.pi));
-//~ int32 i32 = emit();
-//~ hex32 x32 = emit();
-//~ int64 i64 = emit();
-//~ hex64 x64 = emit();
-//~ uint32 u32 = emit();
-//~ float32 f32 = emit();
-//~ float64 f64 = emit();
-
 }
 static if (Test.Emit & 0x02) {
 define shl(int32 value, int count) = emit(i32.shl, i32(count), i32(value));
@@ -122,7 +113,7 @@ define mad(int32 size, int32 index, int32 offset) = emit(u32.mad, i32(size), i32
 //~ float32 X3 = mad(2., 3., 4000.);
 
 }
-static if (Test.Emit & 0x04) {	// Complex
+static if (Test.Emit & 0x04) {	// Complex multiplication
 
 enum prog {
 	sisd = 1;
@@ -130,7 +121,7 @@ enum prog {
 }
 
 define test2exec = prog.simd;
-define times2exec = -1000000;
+define times2exec = -10000000;
 
 struct Complex {
 	float64 re;

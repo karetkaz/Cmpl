@@ -302,7 +302,7 @@ int canAssign(ccState cc, symn var, astn val, int strict) {
 			atag.cst2 = var->cast;
 			atag.ref.link = var;
 
-			if (canAssign(cc, fun->type, &atag, 1)) {
+			if (fun && canAssign(cc, fun->type, &atag, 1)) {
 				arg2 = fun->args;
 				while (arg1 && arg2) {
 
@@ -321,6 +321,7 @@ int canAssign(ccState cc, symn var, astn val, int strict) {
 			}
 			else {
 				trace("%-T != %-T", typ, fun);
+				return 0;
 			}
 			if (arg1 || arg2) {
 				trace("%-T != %-T", arg1, arg2);

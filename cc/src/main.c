@@ -256,7 +256,7 @@ static int installDll(state rt, stateApi api, int ccApiMain(stateApi api)) {
 	return ccApiMain(api);
 }
 
-#if defined(WIN32) || defined(_WIN32)
+#if defined(USEPLUGINS) && (defined(WIN32) || defined(_WIN32))
 #include <windows.h>
 static struct pluginLib {
 	struct stateApi api;	// each plugin will have its own api
@@ -295,7 +295,7 @@ static int importLib(state rt, const char *path) {
 	fflush(stdout);
 	return result;
 }
-#elif defined(__linux__)
+#elif defined(USEPLUGINS) && defined(__linux__)
 #include <dlfcn.h>
 static struct pluginLib {
 	struct stateApi api;	// each plugin will have its own api
