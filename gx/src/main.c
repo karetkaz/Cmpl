@@ -2322,7 +2322,7 @@ static int ccCompile(char *src, int argc, char* argv[]) {
 		logFILE(rt, stdout);
 		cctext(rt, strwl, __FILE__, __LINE__ , "");
 		gencode(rt, 0);
-		dump(rt, dump_sym | 0x12, NULL, "#api: replace('\\([^)]\\):.*$', '\\1')\n");
+		dump(rt, dump_sym | 0x12, NULL, "#api: replace('([^)]):.*$', '\\1')\n");
 		return 0;
 	}
 
@@ -2545,7 +2545,7 @@ int main(int argc, char* argv[]) {
 
 	if (rt) {
 		int64_t ticks = timenow();
-		e = vmExec(rt, NULL);
+		e = vmExec(rt, NULL, sizeof(mem)/4);
 		debug("vmExecute(): %d\tTime: %f", e, ticksinsecs(ticks));
 		//~ rtAlloc(rt, NULL, 0);
 	}
@@ -2579,7 +2579,7 @@ int main(int argc, char* argv[]) {
 		switch (msg) {
 			case doScript: {		// this should be an "execute callback" from script
 				int64_t ticks = timenow();
-				e = vmExec(rt, NULL);
+				e = vmExec(rt, NULL, sizeof(mem)/4);
 				debug("vmExecute(): %d\tTime: %g", e, ticksinsecs(ticks));
 			} break;
 

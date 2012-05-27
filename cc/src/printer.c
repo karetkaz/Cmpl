@@ -194,7 +194,7 @@ static void fputast(FILE *fout, astn ast, int mode, int level) {
 	int rlev = mode & 0xf;
 
 	if (ast) switch (ast->kind) {
-		//{ STMT
+		//#{ STMT
 		case STMT_do: {
 			if (rlev < 2) {
 				if (rlev > 0) {
@@ -365,8 +365,8 @@ static void fputast(FILE *fout, astn ast, int mode, int level) {
 			}
 			fputstr(fout, "return;\n");
 		} break;
-		//}
-		//{ OPER
+		//#}
+		//#{ OPER
 		case OPER_fnc: {	// '()'
 			if (rlev > 0) {
 				if (ast->op.lhso)
@@ -513,8 +513,8 @@ static void fputast(FILE *fout, astn ast, int mode, int level) {
 			else
 				fputstr(fout, "?:");
 		}break;
-		//}
-		//{ TVAL
+		//#}
+		//#{ TVAL
 		case EMIT_opc: fputstr(fout, "emit"); break;
 		case TYPE_bit: fputfmt(fout, "%U", ast->con.cint); break;
 		case TYPE_int: fputfmt(fout, "%D", ast->con.cint); break;
@@ -536,7 +536,7 @@ static void fputast(FILE *fout, astn ast, int mode, int level) {
 				fputstr(fout, ast->ref.name);
 			}
 		} break;
-		//}
+		//#}
 
 		case PNCT_lc: fputchr(fout, '['); break;
 		case PNCT_rc: fputchr(fout, ']'); break;
@@ -567,7 +567,7 @@ static void dumpxml(FILE *fout, astn ast, int mode, int level, const char* text)
 		default:
 			fatal("FixMe %t", ast->kind);
 			break;
-		//{ STMT
+		//#{ STMT
 		case STMT_do: {
 			fputfmt(fout, " stmt=\"%?+k\">\n", ast);
 			dumpxml(fout, ast->stmt.stmt, mode, level + 1, "expr");
@@ -595,12 +595,16 @@ static void dumpxml(FILE *fout, astn ast, int mode, int level, const char* text)
 			dumpxml(fout, ast->stmt.stmt, mode, level + 1, "stmt");
 			fputfmt(fout, "%I</%s>\n", level, text);
 		} break;
-		case STMT_brk:
-		case STMT_ret:
+		case STMT_brk: {
 			fputfmt(fout, " />\n");
-			break;
-		//}
-		//{ OPER
+		} break;
+		case STMT_ret: {
+			fputfmt(fout, " stmt=\"%?+k\">\n", ast);
+			dumpxml(fout, ast->stmt.stmt, mode, level + 1, "expr");
+			fputfmt(fout, "%I</%s>\n", level, text);
+		} break;
+		//#}
+		//#{ OPER
 		case OPER_fnc: {	// '()'
 			astn arg = ast->op.rhso;
 			fputfmt(fout, ">\n");
@@ -655,8 +659,8 @@ static void dumpxml(FILE *fout, astn ast, int mode, int level, const char* text)
 			dumpxml(fout, ast->op.rhso, mode, level + 1, "rval");
 			fputfmt(fout, "%I</%s>\n", level, text);
 		} break;
-		//}
-		//{ TVAL
+		//#}
+		//#{ TVAL
 		case EMIT_opc:
 			fputfmt(fout, " />\n", text);
 			break;
@@ -711,7 +715,7 @@ static void dumpxml(FILE *fout, astn ast, int mode, int level, const char* text)
 			if (var && (var->args || var->init))
 				fputfmt(fout, "%I</%s>\n", level, text);
 		} break;
-		//}
+		//#}
 	}
 }
 
@@ -1172,7 +1176,7 @@ void dump(state rt, dumpMode mode, symn sym, char *text, ...) {
 		} break;
 
 		case dump_bin: {
-			int i, brk = level & 0xff;
+			unsigned int i, brk = level & 0xff;
 
 			if (text != NULL)
 				fputfmt(logf, text);
@@ -1183,7 +1187,7 @@ void dump(state rt, dumpMode mode, symn sym, char *text, ...) {
 			for (i = 0; i < rt->vm.pos; i += 1) {
 				int val = rt->_mem[i];
 				if (((i % brk) == 0) && i != 0) {
-					int j = i - brk;
+					unsigned int j = i - brk;
 					fputchr(logf, ' ');
 					for ( ; j < i; j += 1) {
 						int chr = rt->_mem[j];

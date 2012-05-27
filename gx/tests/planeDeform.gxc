@@ -7,7 +7,7 @@ enum Window {
 
 gxSurf srcImg = gxSurf("media/images/download.jpg");
 
-define WIDTH  = 256;
+define WIDTH  = 256/3;
 define HEIGHT = WIDTH;
 gxSurf dstImg = gxSurf(WIDTH, HEIGHT);
 

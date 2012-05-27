@@ -304,6 +304,6 @@ vec4f tunnel0(double x, double y) {
 	result = rgb2vec4f(tex2d(srcImg, u, v, 2 * r));
 }
 
-setup(&time, tunnel0);
+setup(&time, eye);
 //~ setup(&time, Perlin.Noise2f);
 //~ Gui.exitLoop();

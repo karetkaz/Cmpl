@@ -8,35 +8,6 @@ enum Window {
 
 define pi = Math.pi;
 
-void meshGen(bool sclosed, bool tclosed, gxSurf heihgtMap) {
-	//~ assert(depth(heihgtMap) == 32, "FixMe");
-	int vtx = 0;
-	int tdiv = width(heihgtMap);
-	int sdiv = height(heihgtMap);
-
-	for (int i = 0; i < tdiv; i += 1) {
-		double t = i / double(tdiv - 1);
-		for (int j = 0; j < sdiv; j += 1) {
-			double s = j / double(sdiv - 1);
-			mesh.Pos(vtx, s, t, lum(getPixel(heihgtMap, i, j)) / (255. * 6));
-			mesh.Nrm(vtx, 0., 0., 1.);
-			mesh.Tex(vtx, s, t);
-			vtx += 1;
-		}
-	}
-	for (int j = 0; j < tdiv - 1; j += 1) {
-		int l1 = j * sdiv;
-		int l2 = l1 + sdiv;
-		for (int i = 0; i < sdiv - 1; i += 1) {
-			int v1 = l1 + i;		// v1 -- v2
-			int v2 = v1 + 1;		//  | \  |
-			int v4 = l2 + i;		//  |  \ |
-			int v3 = v4 + 1;		// v4 -- v3
-			mesh.AddFace(v1, v2, v3, v4);
-		}
-	}
-}
-
 void meshGen2(int sdiv, bool sclosed, int tdiv, bool tclosed, void pos(double &x, double &y, double &z, double s, double t), double epsilon) {
 	int vtx = 0;
 
@@ -154,12 +125,7 @@ static if (test == 1) {		// load mesh with texture
 mesh.Read("media/meshes/dchair.obj", "media/images/download.jpg");
 //~ mesh.Read("media/meshes/ut2k4/FlackCannon.obj", "media/meshes/ut2k4/FlackCannon.png");
 }
-static if (test == 2) {		// generate mesh (height map)
-define resize(gxSurf src, int width, int height) = zoomSurf(gxSurf(width, height), null, src, null, 1);
-define division = 192;
-meshGen(false, false, resize(gxSurf("media/images/hm.jpg"), division, division));
-}
-static if (test == 3) {		// generate mesh
+static if (test == 2) {		// generate mesh
 
 void peak(double &x, double &y, double &z, double s01, double t01) {
 	define H = 20.;

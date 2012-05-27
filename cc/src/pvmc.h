@@ -95,7 +95,7 @@ int symvalflt(symn sym, double* res);
 // executing code ...
 typedef int (*dbgf)(state, int pu, void *ip, long* sptr, int scnt);
 
-int vmExec(state, dbgf dbg);
+int vmExec(state, dbgf dbg, int ss);
 int vmCall(state, symn fun, ...);
 
 #endif

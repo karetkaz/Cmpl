@@ -10,7 +10,7 @@ math, print, time libcall functions
 #include <stdlib.h>
 #include "core.h"
 
-//{#region math functions
+//#{#region math functions
 
 /*static int f64abs(state rt) {
 	float64_t x = popf64(rt);
@@ -62,9 +62,9 @@ static int f64atan2(state rt) {
 	retf64(rt, atan2(x, y));
 	return 0;
 }
-//}#endregion
+//#}#endregion
 
-//{ int64 ext
+//#{ int64 ext
 static int b64shl(state rt) {
 	uint64_t x = popi64(rt);
 	int32_t y = popi32(rt);
@@ -148,9 +148,9 @@ static int b64lob(state s) {
 	reti64(rt, x & -x);
 	return 0;
 }*/
-//}
+//#}
 
-/*/{#region "bit operations"
+/*/#{#region "bit operations"
 enum bits_funs {
 	b64_cmt,
 	b64_and,
@@ -353,7 +353,7 @@ static int bits_call(state rt, int function) {
 	}
 	return -1;
 }
-//}#endregion */
+//#}#endregion */
 
 static symn miscOpExit = NULL;
 static symn miscOpRand32 = NULL;
@@ -491,7 +491,7 @@ int install_stdc(state rt, char* file, int level) {
 		{bits_call, b32_sxt, "int32 sxt(int32 val, int offs, int bits);"},
 	},// */
 	misc[] = {
-		//{ IO/MEM/EXIT
+		// IO/MEM/EXIT
 
 		//~ {miscCall, &miscOpArgc,			"int32 argc();"},
 		//~ {miscCall, &miscOpArgv,			"string arg(int arg);"},
@@ -506,7 +506,6 @@ int install_stdc(state rt, char* file, int level) {
 
 		{miscCall, &miscOpPutStr,		"void print(string val);"},
 		{miscCall, &miscOpPutFmt,		"void print(string fmt, int64 val);"},
-		//}
 
 		// TODO: include some of the compiler functions
 		// for reflection. (lookup, import, logger, assert, exec?, ...)

@@ -6,13 +6,13 @@ enum Window {
 }
 
 enum Options {
-	textured = !true;
+	textured = true;
 	do2d = !true;
 	do3d = true;
 }
 
 // division of mesh and heightmap
-define division = 62;
+define division = 92;
 
 //~ do rain every dorain frame
 define dorain = 0;
@@ -25,6 +25,9 @@ int my = 0;
 
 gxSurf tmp = gxSurf(division, division);
 gxSurf img = gxSurf("media/images/download.jpg");
+//~ gxSurf img = gxSurf("media/images/ex1.jpg");
+int imh = height(img);
+int imw = width(img);
 //~ gxSurf img = gxSurf("media/images/nol.bmp");
 
 static if (Options.textured) {
@@ -40,7 +43,7 @@ void drawCB() {
 	Gui.Repaint();
 	static int64 beg = -1;
 	int64 now = timeNow();
-	if (clocksPerSec(now - beg) <= .04) {
+	if (clocksPerSec(now - beg) <= 1./20) {		// 20 fps
 		static if (Options.do2d) {
 			zoomSurf(offScreen, null, tmp, null, 1);
 		}
@@ -128,7 +131,7 @@ void drawCB() {
 					//~ Yoffset = Yoffset * 32 / pheight;
 					int Shading = clamp(Xoffset, 0, 126);
 
-					int t = getPixel(img, x + Xoffset, y + Yoffset);
+					int t = getPixel(img, x*imw/division + Xoffset, y*imh/division + Yoffset);
 
 					setPixel(tmp, x, y, rgbClamp(rch(t) + Shading, gch(t) + Shading, bch(t) + Shading));
 				}

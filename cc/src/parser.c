@@ -63,7 +63,7 @@ Lexical elements
 #include <math.h>
 #include "core.h"
 
-//{~~~~~~~~~ Input ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//#{~~~~~~~~~ Input ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 unsigned rehash(const char* str, unsigned len) {
 	static unsigned const crc_tab[256] = {
@@ -232,9 +232,9 @@ int source(ccState s, int isFile, char* file) {
 	return 0;
 }// */
 
-//}
+//#}
 
-//{~~~~~~~~~ Lexer ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//#{~~~~~~~~~ Lexer ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 char *mapstr(ccState s, char *name, unsigned size/* = -1U*/, unsigned hash/* = -1U*/) {
 	state rt = s->s;
@@ -1166,9 +1166,9 @@ static int skiptok(ccState s, int kind, int raise) {
 	return kind;
 }
 
-//}
+//#}
 
-//{~~~~~~~~~ Parser ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//#{~~~~~~~~~ Parser ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 // if lhs is null return (rhs) else return (lhs, rhs)
 static inline astn argnode(ccState s, astn lhs, astn rhs) {
@@ -1796,7 +1796,9 @@ static astn stmt(ccState s, int mode) {
 	}
 
 	// scan the statement
-	if (skip(s, STMT_do)) {}				// ;
+	if (skip(s, STMT_do)) {					// ;
+		dieif(qual != 0, "FixMe");
+	}
 	else if ((ast = next(s, STMT_beg))) {	// { ... }
 		astn blk;
 		int newscope = !mode;
@@ -1807,6 +1809,7 @@ static astn stmt(ccState s, int mode) {
 		if ((blk = block(s, 0))) {
 			ast->stmt.stmt = blk;
 			ast->type = s->type_vid;
+			ast->cst2 = qual;
 		}
 		else {
 			// eat code like: {{;{;};{}{}}}
@@ -1948,11 +1951,25 @@ static astn stmt(ccState s, int mode) {
 		skiptok(s, STMT_do, 1);
 	}
 	else if ((ast = next(s, STMT_ret))) {	// return;
+		symn result = s->func->sdef;
 		ast->type = s->type_vid;
-		/*/ todo: if (!skip(s, STMT_do)) {
-			backTok(s, newnode(s, ASGN_set));
-			backTok(s, newIden(s, "result"));
-		}// */
+
+		if (!test(s, STMT_do)) {
+			astn val = expr(s, TYPE_vid);		// do lookup
+			if (val->kind == TYPE_ref && val->ref.link == result) {
+				// skip 'return result;' statements
+			}
+			else {
+				ast->stmt.stmt = opnode(s, ASGN_set, lnknode(s, result), val);
+				ast->stmt.stmt->type = val->type;
+				if (!canAssign(s, result, val, 0)) {
+					error(s->s, val->file, val->line, "invalid return value: `%+k`", val);
+				}
+			}
+		}
+		else if (result->type != s->type_vid) {
+			warn(s->s, 4, s->file, s->line, "returning from function with no value");
+		}
 		skiptok(s, STMT_do, 1);
 	}
 
@@ -2475,8 +2492,11 @@ astn decl(ccState s, int Rmode) {
 
 			if (Attr != ATTR_stat) {
 				ctorPtr(s, def);
-				if (def->args && pack == vm_size) {
+				if (def->args && pack == vm_size && !byref) {
 					ctorArg(s, def);
+				}
+				if (byref) {
+					warn(s->s, 6, def->file, def->line, "constructor not generated for reference type `%T`", def);
 				}
 
 				if (!def->args && !def->type) {
@@ -2629,7 +2649,7 @@ astn decl(ccState s, int Rmode) {
 				ref->gdef = s->func;
 				s->func = ref;
 				s->maxlevel = s->nest;
-				result = install(s, "result", TYPE_ref, 0, ref->type->size, typ, NULL);
+				ref->sdef = result = install(s, "result", TYPE_ref, 0, ref->type->size, typ, NULL);
 
 				if (result) {
 					result->decl = ref;
@@ -2676,6 +2696,9 @@ astn decl(ccState s, int Rmode) {
 					trace("FixMe");
 					return NULL;
 				}
+				// TODO: quick fix.
+				if (typ->cast == TYPE_ref)
+					ref->init->cst2 = ASGN_set;
 			}
 		}
 
@@ -2758,7 +2781,7 @@ astn unit(ccState s, int mode) {
 	return root;
 }
 
-//}
+//#}
 
 /** parse the current buffer and add to root.
  */

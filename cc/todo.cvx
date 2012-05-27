@@ -29,7 +29,6 @@ static struct Math {
 
 /*TODO: Array assignment
 define Array(int32 typesize, int32 ^n) = emit(struct, ref(memmgr(null, typesize * n)), i32(n));
-define Array(typename ^type, int32 ^n) = emit(struct, ref(memmgr(null, type.size * n)), i32(n));
 
 int a[][];
 a = Array(8, 10);
@@ -169,100 +168,24 @@ void setup() {
 setup();
 //~ */
 
-/* iterating
-
-void printIT(int ri) {
-	print("iterator {%d}\n", int64(ri));
+/* Arrays
+struct slice_in_struct {
+	int slice[];
 }
+slice_in_struct slice_in_struct1(int a[]) {return slice_in_struct(a);}
 
-/+
-struct array_iterator {
-	int pos;
-	int arr[];
-}
+int a[4] = 1, 2, 3, 4;
 
-array_iterator iterator1(int a[]) {
-	result = array_iterator(0, a);
-}
-define iterator(int a[]) = array_iterator(0, a);
+slice_in_struct it1 = slice_in_struct(a);
 
-bool next(array_iterator &it, int &val) {
-	result = it.pos < it.arr.length;
-	if (result) {
-		//~ val = it.arr[it.pos];
-		val = it.pos;
-		it.pos += 1;
-	}
-}
+//FixMe: 
+slice_in_struct it2 = slice_in_struct1(a);
 
-int a[2] = 1, 2;
-//~ array_iterator it = iterator(a);
-for (array_iterator pos : a) {
-	printIT(pos);
-}
-// +/
-/+
-define iterator(file &f) = emit(file, ref(f));
-bool next(file &it, int &chr) {
-	chr = fgetc(it);
-	result = chr != -1;
-}// +/
+print("\n");
 
-//~ /+
-struct range {
-	int min;
-	int max;
-	bool exclusive;
-}
+//FixMe: 
+int xxx = it1.slice[0];
 
-struct range_iterator {
-	int pos;
-	int max;
-	bool exclusive;
-}
-
-define iterator(range ^r) = range_iterator(r.min, r.max, r.exclusive);	// start at min, and end at max
-
-void printIT(range_iterator ri) {
-	print("iterator {");
-	print("pos: %d", int64(ri.pos));
-	print(", max: %d", int64(ri.max));
-	print(", excl: %d", int64(ri.exclusive));
-	print("}\n");
-}
-
-bool next(range_iterator &it, int &val) {
-	result = it.pos - it.exclusive < it.max;
-	//~ result = it.pos < it.max;
-	if (result) {
-		val = it.pos;
-		it.pos += 1;
-	}
-}
-bool next(range_iterator &it, range_iterator &val) {
-	result = it.pos - it.exclusive < it.max;
-	//~ result = it.pos < it.max;
-	if (result) {
-		val = it;
-		it.pos += 1;
-	}
-}
-
-//~ /+
-for (range_iterator it : range(10, 13, true)) {
-	printIT(it);
-}// +/
-
-/+
-for (int it : range(10, 13, true)) {
-	printIT(it);
-}// +/
-
-/+
-for (range_iterator it = iterator(range(10, 13, true)); next(it, it); ) {
-	printIT(it);
-}// +/
-//~ +/
 
 //~ */
 

@@ -2,31 +2,13 @@
 //~ #open src/core.c
 //~ #open src/tree.c
 
-//~ #open src/code.c			// virtual mashine
+//~ #open src/code.c			// virtual machine
 //~ #open src/type.c			// type system
 //~ #open src/parser.c			// input, lexer, parser
 //~ #open src/printer.c			// pretty print, logger
 //~ #open src/main.c
 
-//~ define nan = emit(float64, int64(0xfff8000000000000));
-//~ int c = 8192 + 19;
-//~ define f64hex float64;	//%0x%016X
-//~ define f32hex float32;	//%0x%08x
-//~ f64hex nan1 = --(0/0.);
-//~ f32hex nan2 = --(0/0.);
-
-//~ double nan1 = Math.nan;
-//~ double x = -1./0;//1e-500;
-//~ bool n1 = isNan(x);
-//~ bool n2 = isInf(x);
-//~ bool n3 = isFinite(x);
-
-//~ int64 n = 9;
-//~ int i = !!n;
-
-//~ int now = time();
-
-/*
+/* Math func tests
 enum unittesting: bool {
 	tan = true;
 	asin = !true;
@@ -116,18 +98,15 @@ for (int i = 0; i < vf.length; i += 1) {
 }
 }
 //~ */
-//~ float32 x = -8.5;
-//~ float32 y = x % 1;
-//~ double nan = emit(struct, int64(0xfff8000000000000));
-/*
-int count = 19;
-define Array(typename type, int32 ^n) = emit(struct, ref(memmgr(null, type.size * n)), i32(n));
 
-int32 arr2[] = Array(int32, count);
+//~ /* Array Alloc
+int count = 4;
 
-//~ for (int i = 0; i < arr2.length; i += 1) {arr2[i] = i + 10;}
+int32 arr2[] = new(int32, count);
 
-int size = sizeof(arr2);
+for (int i = 0; i < arr2.length; i += 1) {arr2[i] = i + 10;}
+
+//~ int size = sizeof(arr2);
 //~ */
 /*TODO: refs and ptrs
 int32 ival = 9;
@@ -145,7 +124,7 @@ int32ptr iptr3 = iref2;
 //~ int32ptr t = aaa(null);
 //~ */
 
-/* typename
+/* sizeof
 struct ss {
 	int32 x;
 	int32 y;
@@ -219,7 +198,7 @@ for(int i = 0; i < 30; i += 1) {
 
 // */
 
-/* xxx
+/* const ref assignment
 struct m {
 	static const int X = 9;
 	const int a;
@@ -502,57 +481,23 @@ for (int i = 1; tmp > eps; i += 1) {
 
 /* iterating
 
-void printIT(int ri) {
-	print("iterator {%d}\n", int64(ri));
-}
-
-//~ /+
-struct array_iterator {
-	int pos;
-	int arr[];
-}
-
-array_iterator iterator1(int a[]) {
-	result = array_iterator(0, a);
-}
-define iterator(int a[]) = array_iterator(0, a);
-
-bool next(array_iterator &it, int &val) {
-	result = it.pos < it.arr.length;
-	if (result) {
-		//~ val = it.arr[it.pos];
-		val = it.pos;
-		it.pos += 1;
-	}
-}
-
-int a[40] = 1, 2, 3, 4;
-array_iterator it = iterator(a);
-for (int pos : a) {
-	printIT(pos);
-}
-
-/+
-define iterator(file &f) = emit(file, ref(f));
-bool next(file &it, int &chr) {
-	chr = fgetc(it);
-	result = chr != -1;
-}// +/
-
-/+
 struct range {
 	int min;
 	int max;
-	bool exclusive;
+	//~ bool exclusive;
 }
 
 struct range_iterator {
 	int pos;
 	int max;
-	bool exclusive;
+	//~ bool exclusive;
 }
 
-define iterator(range ^r) = range_iterator(r.min, r.max, r.exclusive);	// start at min, and end at max
+define iterator(range ^r) = range_iterator(r.min, r.max);	// start at min, and end at max
+
+void printIT(int ri) {
+	print("iterator {%d}\n", int64(ri));
+}
 
 void printIT(range_iterator ri) {
 	print("iterator {");
@@ -563,16 +508,16 @@ void printIT(range_iterator ri) {
 }
 
 bool next(range_iterator &it, int &val) {
-	result = it.pos - it.exclusive < it.max;
-	//~ result = it.pos < it.max;
+	//~ result = it.pos - it.exclusive < it.max;
+	result = it.pos < it.max;
 	if (result) {
 		val = it.pos;
 		it.pos += 1;
 	}
 }
 bool next(range_iterator &it, range_iterator &val) {
-	result = it.pos - it.exclusive < it.max;
-	//~ result = it.pos < it.max;
+	//~ result = it.pos - it.exclusive < it.max;
+	result = it.pos < it.max;
 	if (result) {
 		val = it;
 		it.pos += 1;
@@ -580,20 +525,21 @@ bool next(range_iterator &it, range_iterator &val) {
 }
 
 //~ /+
-for (range_iterator it : range(10, 13, true)) {
-	printIT(it);
-}// +/
-
-//~ /+
-for (int it : range(10, 13, true)) {
+for (range_iterator it : range(10, 13)) {
 	printIT(it);
 }// +/
 
 /+
-for (range_iterator it = iterator(range(10, 13, true)); next(it, it); ) {
+for (int it : range(10, 13)) {
 	printIT(it);
 }// +/
-//~ +/
+
+/+ file
+define iterator(file &f) = emit(file, ref(f));
+bool next(file &it, int &chr) {
+	chr = fgetc(it);
+	result = chr != -1;
+}// +/
 
 //~ */
 
@@ -627,17 +573,6 @@ enum: vec4f {
 
 vec4f z = Z;
 // */
-/+ const variable, parameter, member
-int a(const int x) {
-	int &X = x;		// todo: constant asigned to non constant
-	X = 0;
-	result = x;
-}
-
-int x = a(4);
-
-const vec4f Z = vec4f(0, 0, 1, 0);
-//~ +/
 
 /*
 struct individual {
@@ -673,60 +608,3 @@ static population pop[3000];
 
 
 //~ */
-
-//~ int n = sizeof(Math);
-
-/+ bugs:
-int s1 = sizeof(pointer);		// pointer casts to ref
-int s2 = sizeof(Math);			// enum base type is not typename
-//~ arrays in structures suck
-// +/
-/+ todo:
-- var type: variant, always by ref, struct variant {typename type; uint8 data[0]};
-	var x = new int(0);
-	var x = new vec4f(0, 1, 0, 1);
-	var x = new int[20];
-	var x = new {
-		x: "alma";
-		z: int(3);
-		c: vec4f(2,3,4,5);
-		ss: {
-			z:"alma";
- 		};
-		f: function()
-	};
-
-	//~ sort_function(int array[0, 3, 4, 2, 5, 1], int function(int a, int b){return a.compareTo(b);})
-	//~ sort_delegate(int array[0, 3, 4, 2, 5, 1], int delegate{int xxx}(int a, int b){return a == b ? 0 : a > b ? 1 : -1;});
-
-// +/
-
-/* optimizing stackalloc
-	// spc -24
-		spc -16
-		spc -8
-
-{
-	int a[1<<10];
-	{
-		int a[1<<10];
-		{
-			int a[1<<10];
-			{
-				int a[1<<20];
-				{
-					int a[1<<10];
-					{
-						int a[1<<10];
-						a[0] = 9;
-					}
-					a[0] = 9;
-				}
-				a[0] = 9;
-			}
-			a[0] = 9;
-		}
-		a[0] = 9;
-	}
-}*/
-

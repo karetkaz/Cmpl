@@ -1,3 +1,29 @@
+/* command line options
+application <global options> <local options>*
+
+	<global options>:
+		-O<int>					optimize
+
+		-l <file>				logger
+		-o <file>				output
+
+		-x[v][d<hex>]			execute
+			v:					print global variables
+			d<hex>:				debug using level <hex>
+
+		-api[<hex>][.<sym>]		output symbols
+		-asm[<hex>][.<fun>]		output assembly
+		-ast[<hex>]				output syntax tree
+
+		--[s|c]*				skip stdlib / code generation
+
+	<local options>:
+		-w[a|x|<hex>]			set warning level
+		-L<file>				import plugin (.so|.dll)
+		-C<file>				compile source
+		<file>					if file extension is (.so|.dll) import else compile
+*/
+
 //~ (wcl386 -cc -q -ei -6s -d2  -fe=../main *.c) & (rm -f *.obj)
 #include <stdlib.h>
 #include <string.h>
@@ -6,10 +32,11 @@
 #include "core.h"
 
 // default values
-static const int wl = 9;		// warning level
-static const int ol = 2;		// optimize level
-static const int cc = 1;		// execution cores
-#define memsize (800 << 20)		// runtime size(4M)
+static const int wl = 9;			// warning level
+static const int ol = 2;			// optimize level
+//~ static const int cc = 1;			// execution cores
+#define memsize (4 << 20)			// runtime size(4M)
+static const int ss = memsize / 4;	// stack size
 static char mem[memsize];
 char *STDLIB = "../stdlib.cvx";		// standard library
 
@@ -138,45 +165,30 @@ static int cctext(state rt, char *file, int line, int wl, char *buff) {
 	return parse(rt->cc, 0, wl);
 }*/
 
-void usage(char* prog, char* cmd) {
-	if (cmd == NULL) {
-		fputfmt(stdout, "Usage: %s <command> [options] ...\n", prog);
-		fputfmt(stdout, "<Commands>\n");
-		fputfmt(stdout, "\t-c: compile\n");
-		fputfmt(stdout, "\t-e: execute\n");
-		fputfmt(stdout, "\t-d: diassemble\n");
-		fputfmt(stdout, "\t-h: help\n");
-		fputfmt(stdout, "\t=<expression>: eval\n");
-	}
-	else if (strcmp(cmd, "-c") == 0) {
-		fputfmt(stdout, "compile: %s -c [options] file ...args\n", prog);
-		fputfmt(stdout, "Options:\n");
+void usage(char* prog) {
+	fputfmt(stdout, "Usage: %s =<eval expression>\n", prog);
+	fputfmt(stdout, "Usage: %s <global options> <local options>*\n", prog);
 
-		fputfmt(stdout, "\t[Output]\n");
-		fputfmt(stdout, "\t-t Output is tags\n");
-		fputfmt(stdout, "\t-c Output is ast code\n");
-		fputfmt(stdout, "\t-s Output is asm code\n");
-		fputfmt(stdout, "\telse output is binary code\n");
-		fputfmt(stdout, "\t-o <file> Put output into <file>. [default=stdout]\n");
-
-		fputfmt(stdout, "\t[Loging]\n");
-		fputfmt(stdout, "\t-wa all warnings\n");
-		fputfmt(stdout, "\t-wx treat warnings as errors\n");
-		fputfmt(stdout, "\t-w<num> set warning level to <num> [default=%d]\n", wl);
-		fputfmt(stdout, "\t-l <file> Put errors into <file>. [default=stderr]\n");
-
-		fputfmt(stdout, "\t[Execute and Debug]\n");
-		fputfmt(stdout, "\t-x<n> execute on <n> procs [default=%d]\n", cc);
-		fputfmt(stdout, "\t-xd<n> debug on <n> procs [default=%d]\n", cc);
-
-		//~ fputfmt(stdout, "\t[Debug & Optimization]\n");
-	}
-	else if (strcmp(cmd, "-h") == 0) {
-		fputfmt(stdout, "command: '-h': help\n");
-	}
-	else {
-		fputfmt(stdout, "invalid help for: '%s'\n", cmd);
-	}
+	fputfmt(stdout, "	<global options>:\n");
+	fputfmt(stdout, "		-O<int>		optimize\n");
+	fputfmt(stdout,"\n");
+	fputfmt(stdout, "		-l <file>	logger\n");
+	fputfmt(stdout, "		-o <file>	output\n");
+	fputfmt(stdout,"\n");
+	fputfmt(stdout, "		-x[v][d<hex>]	execute\n");
+	fputfmt(stdout, "			v: print global variables\n");
+	fputfmt(stdout, "			d<hex>: debug using level <hex>\n");
+	fputfmt(stdout, "		--[s|c]*		skip stdlib / code generation\n");
+	fputfmt(stdout,"\n");
+	fputfmt(stdout,"		-api[<hex>][.<sym>]		output symbols\n");
+	fputfmt(stdout,"		-asm[<hex>][.<fun>]		output assembly\n");
+	fputfmt(stdout,"		-ast[<hex>]	output syntax tree\n");
+	fputfmt(stdout,"\n");
+	fputfmt(stdout,"	<local options>:\n");
+	fputfmt(stdout,"		-w[a|x|<hex>]		set warning level\n");
+	fputfmt(stdout,"		-L<file>	import plugin (.so|.dll)\n");
+	fputfmt(stdout,"		-C<file>	compile source\n");
+	fputfmt(stdout,"		<file>		if file extension is (.so|.dll) import else compile\n");
 }
 
 int evalexp(ccState cc, char* text) {
@@ -207,11 +219,22 @@ int evalexp(ccState cc, char* text) {
 	return -1;
 }
 
+static int test(state rt) {
+	double *ptr = popref(rt);
+	//~ int len = popi32(rt);
+
+	//~ logif(1, "array[%d] @%x", len, ptr);
+	ptr[2] = 7.0;
+	return 0;
+}
+
 int reglibs(state rt, char *stdlib) {
 	int err = 0;
 
 	err = err || install_stdc(rt, stdlib, wl);
 	//~ err = err || install_bits(s);
+
+	libcall(rt, test, "void testFunc(float64 arg[]);");
 
 	return err;
 }
@@ -228,7 +251,7 @@ int compile(state rt, int wl, char *file) {
 	//~ return parse(ccOpen(rt, srcFile, file, 1, file), 0, wl);
 }
 
-//{ plugins
+//#{ plugins
 
 typedef struct pluginLib *pluginLib;
 static const char * pluginLibInstall = "apiMain";
@@ -341,7 +364,7 @@ static int importLib(state rt, const char *path) {
 	return -1;
 }
 #endif
-//} plugins
+//#} plugins
 
 static int printvars = 0;
 static int dbgCon(state, int pu, void *ip, long* bp, int ss);
@@ -396,160 +419,51 @@ static int libCallHaltDebug(state rt) {
 	return 0;
 }
 
-int program_old(int argc, char *argv[]) {
+int program(int argc, char *argv[]) {
 	state rt = rtInit(mem, sizeof(mem));
 
 	char *stdl = STDLIB;
 
-	char *prg, *cmd;
+	char *prg = argv[0];
 	dbgf dbg = NULL;
 
-	prg = argv[0];
-	cmd = argv[1];
 	if (argc < 2) {
-		usage(prg, NULL);
+		usage(prg);
 	}
-	else if (argc == 2 && *cmd == '=') {	// eval
-		return evalexp(ccInit(rt, creg_def, NULL), cmd + 1);
+	else if (argc == 2 && *argv[1] == '=') {
+		return evalexp(ccInit(rt, creg_def, NULL), argv[1] + 1);
 	}
-	else if (strcmp(cmd, "-api") == 0) {	// help
-		ccState env = ccInit(rt, creg_def, NULL);
-		const int level = 2;
-		symn glob;
-		int i;
-
-		if (!env)
-			return -33;
-
-		if (reglibs(rt, stdl) != 0) {
-			error(rt, NULL, 0, "error registering lib calls");
-			logfile(rt, NULL);
-			return -6;
-		}
-
-		glob = leave(env, NULL, 1);
-		if (argc == 2) {
-			dumpsym(stdout, glob, level);
-		}
-		else if (argc == 3 && strcmp(argv[2], ".") == 0) {
-			while (glob) {
-				dumpsym(stdout, glob, 0);
-				glob = glob->defs;
-			}
-		}
-		else for (i = 2; i < argc; i += 1) {
-			symn sym;
-			struct symn nspc = {0};
-			nspc.args = glob;
-			if ((sym = findsym(env, &nspc, argv[i]))) {
-				dumpsym(stdout, sym, 0);
-				dumpsym(stdout, sym->args, level);
-			}
-			else
-				fputfmt(stderr, "symbol not found `%s`\n", argv[i]);
-		}
-		return ccDone(rt);
+	else if (argc == 2 && strcmp(argv[1], "--help") == 0) {
+		usage(prg);
 	}
-	else if (stricmp(cmd, "-c") == 0) {		// compile
+	else {		// compile
 		int level = -1, argi;
-		int warn = wl;
 		int opti = ol;
 
 		int gen_code = 1;	// cgen: true/false
 		int run_code = 0;	// exec: true/false
-		int out_tags = -1;	// tags: level
-		int out_tree = -1;	// walk: level
-		int out_dasm = -1;	// dasm: level
 
-		char *srcf = 0;			// source
+		int out_tree = -1;	// walk: level
+
+		int out_tags = -1;	// tags: level
+		char *str_tags = NULL;
+		int out_dasm = -1;	// dasm: level
+		char *str_dasm = NULL;
+
 		char *logf = 0;			// logger
 		char *outf = 0;			// output
+
+		//~ int srcs = 0;		// number of source files compiled
+		int warn = wl;
+
 		int (*onHalt)(state) = NULL;	// print variables and values on exit
 
-		// no std lib
-		if (cmd[1] == 'C')
-			stdl = NULL;
-
-		// options
-		for (argi = 2; argi < argc; ++argi) {
+		// global options
+		for (argi = 1; argi < argc; ++argi) {
 			char *arg = argv[argi];
 
-			// source file
-			if (*arg != '-') {
-				if (srcf) {
-					fputfmt(stderr, "multiple source files are not suported\n");
-					return -1;
-				}
-				srcf = argv[argi];
-			}
-
-			// output file
-			else if (strcmp(arg, "-l") == 0) {		// log
-				if (++argi >= argc || logf) {
-					fputfmt(stderr, "logger error\n");
-					return -1;
-				}
-				logf = argv[argi];
-			}
-			else if (strcmp(arg, "-o") == 0) {		// out
-				if (++argi >= argc || outf) {
-					fputfmt(stderr, "output error\n");
-					return -1;
-				}
-				outf = argv[argi];
-			}
-
-			// output what
-			else if (strncmp(arg, "-t", 2) == 0) {		// tags
-				level = 2;
-				if (arg[2] && *parsei32(arg + 2, &level, 16)) {
-					fputfmt(stderr, "invalid argument '%s'\n", arg);
-					return 0;
-				}
-				//~ outc = gen_code | out_tags;
-				out_tags = level;
-			}
-			else if (strncmp(arg, "-T", 2) == 0) {		// tags / no cgen
-				level = 2;
-				if (arg[2] && *parsei32(arg + 2, &level, 16)) {
-					fputfmt(stderr, "invalid argument '%s'\n", arg);
-					return 0;
-				}
-				//~ outc = out_tags;
-				out_tags = level;
-				gen_code = 0;
-			}
-			else if (strncmp(arg, "-c", 2) == 0) {		// ast
-				level = 0;
-				if (arg[2] && *parsei32(arg + 2, &level, 16)) {
-					fputfmt(stderr, "invalid argument '%s'\n", arg);
-					return 0;
-				}
-				//~ outc = gen_code | out_tree;
-				out_tree = level;
-			}
-			else if (strncmp(arg, "-C", 2) == 0) {		// ast / no cgen
-				//~ level = 0;
-				if (arg[2] && *parsei32(arg + 2, &level, 16)) {
-					fputfmt(stderr, "invalid argument '%s'\n", arg);
-					return 0;
-				}
-				//~ outc = out_tree;
-				out_tree = level;
-				gen_code = 0;
-			}
-			else if (strncmp(arg, "-s", 2) == 0) {		// asm
-				level = 0;
-				if (arg[2] && *parsei32(arg + 2, &level, 16)) {
-					fputfmt(stderr, "invalid argument '%s'\n", arg);
-					return 0;
-				}
-				//~ outc = gen_code | out_dasm;
-				out_dasm = level;
-			}
-
 			// optimize code
-			else if (strncmp(arg, "-O", 2) == 0) {		// optimize level
+			if (strncmp(arg, "-O", 2) == 0) {			// optimize level
 				if (strcmp(arg, "-O") == 0)
 					opti = 1;
 				else if (strcmp(arg, "-Oa") == 0)
@@ -561,6 +475,7 @@ int program_old(int argc, char *argv[]) {
 				}
 			}
 
+			// execute code
 			else if (strncmp(arg, "-x", 2) == 0) {		// exec(&| debug)
 				char *str = arg + 2;
 
@@ -580,200 +495,18 @@ int program_old(int argc, char *argv[]) {
 					debug("invalid level '%s'", str);
 					return 0;
 				}
-				//~ outc = gen_code | run_code;
 				run_code = 1;
-			}
-
-			// Override settings
-			else if (strncmp(arg, "-i", 2) == 0) {}		// import library
-			else if (strncmp(arg, "-w", 2) == 0) {		// warning level
-				if (strcmp(arg, "-wx") == 0)
-					warn = -1;
-				else if (strcmp(arg, "-wa") == 0)
-					warn = 32;
-				else if (*parsei32(arg + 2, &warn, 10)) {
-					fputfmt(stderr, "invalid level '%s'\n", arg + 2);
-					debug("invalid level '%s'\n", arg + 2);
-					return 0;
-				}
-			}
-
-			else {
-				fputfmt(stderr, "invalid option '%s' for -compile\n", arg);
-				return -1;
-			}
-		}
-
-		// open logger
-		if (logf && logfile(rt, logf) != 0) {
-			fputfmt(stderr, "can not open file `%s`\n", logf);
-			return -1;
-		}
-
-		// intstall basic type system.
-		if (!ccInit(rt, creg_def, onHalt)) {
-			error(rt, NULL, 0, "error registering types");
-			logfile(rt, NULL);
-			return -6;
-		}
-
-		// intstall standard libraries.
-		if (reglibs(rt, stdl) != 0) {
-			error(rt, NULL, 0, "error registering lib calls");
-			logfile(rt, NULL);
-			return -6;
-		}// */
-
-		// intstall dynamic libraries.
-		for (argi = 2; argi < argc; ++argi) {
-			char *arg = argv[argi];
-			if (strncmp(arg, "-i", 2) == 0) {		// import library
-				char *str = arg + 2;
-				importLib(rt, str);
-			}
-		}
-
-		// compile the given source code.
-		if (compile(rt, warn, srcf) != 0) {
-			error(rt, NULL, 0, "error compiling `%s`", srcf);
-			logfile(rt, NULL);
-			closeLibs();
-			return rt->errc;
-		}
-
-		// generate variables and vm code.
-		if ((gen_code || run_code) && gencode(rt, opti) != 0) {
-			logfile(rt, NULL);
-			closeLibs();
-			return rt->errc;
-		}
-
-		// dump to log or execute
-		if (outf)
-			logfile(rt, outf);
-		else
-			logFILE(rt, stdout);
-
-		if (out_tags >= 0) {
-			dump(rt, dump_sym | (out_tags & 0x0ff), NULL, "\ntags:\n");
-		}
-		if (out_tree >= 0) {
-			dump(rt, dump_ast | (out_tree & 0x0ff), NULL, "\ncode:\n");
-		}
-		if (out_dasm >= 0) {
-			dump(rt, dump_asm | (out_dasm & 0x0ff), NULL, "\ndasm:\n");
-		}
-
-		if (run_code) {
-			logFILE(rt, stderr);
-			vmExec(rt, dbg);
-		}
-
-		// close log file
-		logfile(rt, NULL);
-		closeLibs();
-		return 0;
-	}
-	else if (strcmp(cmd, "-h") == 0) {		// help
-		usage(prg, argc >= 2 ? argv[2] : NULL);
-		//~ else if (strcmp(t, "compile") == 0) {}
-	}
-	else fputfmt(stderr, "invalid option: '%s'\n", cmd);
-
-	return 0;
-}
-int program(int argc, char *argv[]) {
-	state rt = rtInit(mem, sizeof(mem));
-
-	char *stdl = STDLIB;
-
-	char *prg, *cmd;
-	dbgf dbg = NULL;
-
-	prg = argv[0];
-	cmd = argv[1];
-	if (argc < 2) {
-		usage(prg, NULL);
-	}
-	else if (argc == 2 && *cmd == '=') {	// eval
-		return evalexp(ccInit(rt, creg_def, NULL), cmd + 1);
-	}
-	else {		// compile
-		int level = -1, argi;
-		int opti = ol;
-
-		int gen_code = 1;	// cgen: true/false
-		int run_code = 0;	// exec: true/false
-
-		int out_tree = -1;	// walk: level
-
-		int out_tags = -1;	// tags: level
-		char *str_tags = NULL;
-		int out_dasm = -1;	// dasm: level
-		char *str_dasm = NULL;
-
-		//~ char *srcf = 0;			// source
-		char *logf = 0;			// logger
-		char *outf = 0;			// output
-
-		//~ int srcs = 0;		// number of source files compiled
-		int warn = wl;
-
-		int (*onHalt)(state) = NULL;	// print variables and values on exit
-
-		// global options
-		for (argi = 1; argi < argc; ++argi) {
-			char *arg = argv[argi];
-
-			// optimize code
-			if (strncmp(arg, "-O", 2) == 0) {		// optimize level
-				if (strcmp(arg, "-O") == 0)
-					opti = 1;
-				else if (strcmp(arg, "-Oa") == 0)
-					opti = 3;
-				else if (!parsei32(arg + 2, &opti, 10)) {
-					fputfmt(stderr, "invalid level '%s'\n", arg + 2);
-					debug("invalid level '%s'\n", arg + 2);
-					return 0;
-				}
-			}
-			else if (strncmp(arg, "-x", 2) == 0) {	// exec(&| debug)
-				char *str = arg + 2;
-
-				if (*str == 'v') {
-					onHalt = libCallHaltDebug;
-					str += 1;
-				}
-				if (*str == 'd' || *str == 'D') {
-					printvars = *str == 'D';
-					dbg = dbgCon;
-					str += 1;
-				}
-
-				level = 1;
-				if (*str && *parsei32(str, &level, 16)) {
-					fputfmt(stderr, "invalid level '%s'\n", str);
-					debug("invalid level '%s'", str);
-					return 0;
-				}
-				run_code = 1;
-			}
-			else if (strncmp(arg, "--", 2) == 0) {	// exclude: do not gen code
-				if (strchr(arg, 'c'))
-					gen_code = 0;
-				if (strchr(arg, 's'))
-					stdl = NULL;
 			}
 
 			// output file
-			else if (strcmp(arg, "-l") == 0) {		// log
+			else if (strcmp(arg, "-l") == 0) {			// log
 				if (++argi >= argc || logf) {
 					fputfmt(stderr, "logger error\n");
 					return -1;
 				}
 				logf = argv[argi];
 			}
-			else if (strcmp(arg, "-o") == 0) {		// out
+			else if (strcmp(arg, "-o") == 0) {			// out
 				if (++argi >= argc || outf) {
 					fputfmt(stderr, "output error\n");
 					return -1;
@@ -796,7 +529,7 @@ int program(int argc, char *argv[]) {
 				}
 				out_tags = level;
 			}
-			else if (strncmp(arg, "-ast", 4) == 0) {	// ast
+			else if (strncmp(arg, "-ast", 4) == 0) {	// tree
 				level = 0;
 				if (arg[4]) {
 					char *ptr = parsei32(arg + 4, &level, 16);
@@ -811,7 +544,7 @@ int program(int argc, char *argv[]) {
 				}
 				out_tree = level;
 			}
-			else if (strncmp(arg, "-asm", 4) == 0) {		// asm
+			else if (strncmp(arg, "-asm", 4) == 0) {	// asm
 				level = 0;
 				if (arg[4]) {
 					char *ptr = parsei32(arg + 4, &level, 16);
@@ -825,6 +558,15 @@ int program(int argc, char *argv[]) {
 				}
 				out_dasm = level;
 			}
+
+			// temp
+			else if (strncmp(arg, "--", 2) == 0) {		// exclude: do not gen code
+				if (strchr(arg, 'c'))
+					gen_code = 0;
+				if (strchr(arg, 's'))
+					stdl = NULL;
+			}
+
 			else break;
 		}
 
@@ -846,12 +588,12 @@ int program(int argc, char *argv[]) {
 			error(rt, NULL, 0, "error registering lib calls");
 			logfile(rt, NULL);
 			return -6;
-		}// */
+		}
 
 		// compile files and import
 		for (; argi < argc; ++argi) {
 			char *arg = argv[argi];
-			//~ info(rt, NULL, 0, "compiling `%s`", arg);
+
 			if (strncmp(arg, "-w", 2) == 0) {			// warning level
 				if (strcmp(arg, "-wx") == 0)
 					warn = -1;
@@ -873,19 +615,29 @@ int program(int argc, char *argv[]) {
 				char *str = arg + 2;
 				if (compile(rt, warn, str) != 0) {
 					error(rt, NULL, 0, "error compiling `%s`", str);
-					//~ logfile(rt, NULL);
-					//~ closeLibs();
-					//~ return rt->errc;
 				}
 			}
-			else {
+			else if (*arg != '-') {
+				char *ext = strrchr(arg, '.');
+				if (ext && strcmp(ext, ".so") == 0) {
+					if (importLib(rt, arg) != 0) {
+						error(rt, NULL, 0, "error importing library `%s`", arg);
+					}
+					continue;
+				}
+				if (ext && strcmp(ext, ".dll") == 0) {
+					if (importLib(rt, arg) != 0) {
+						error(rt, NULL, 0, "error importing library `%s`", arg);
+					}
+					continue;
+				}
 				if (compile(rt, warn, arg) != 0) {
 					error(rt, NULL, 0, "error compiling `%s`", arg);
-					//~ logfile(rt, NULL);
-					//~ closeLibs();
-					//~ return rt->errc;
 				}
 				//~ srcs += 1;
+			}
+			else {
+				error(rt, NULL, 0, "invalid option: `%s`", arg);
 			}
 		}
 
@@ -937,7 +689,7 @@ int program(int argc, char *argv[]) {
 			}
 			if (run_code != 0) {
 				logFILE(rt, stderr);
-				vmExec(rt, dbg);
+				vmExec(rt, dbg, ss);
 			}
 		}
 
@@ -987,7 +739,7 @@ static int dbgCon(state rt, int pu, void *ip, long* bp, int ss) {
 		fputfmt(stdout, "\tsp(%d): {i32(%d), i64(%D), f32(%g), f64(%G), vec4f(%g, %g, %g, %g), vec2d(%G, %G)}\n", ss, sp->i4, sp->f4, sp->i8, sp->f8, v4->x, v4->y, v4->z, v4->w, v2->x, v2->y);
 	}
 	//~ fputfmt(stdout, ">exec:[sp%02d:%08x]@%9.*A\n", ss, bp + ss, IP, ip);
-	fputfmt(stdout, ">exec:[sp%02d:%08x]@", ss, bp[0], IP, ip);
+	fputfmt(stdout, ">exec:[pu:%d, sp%02d:%08x]@", pu, ss, bp[0], IP, ip);
 	fputopc(stdout, ip, 0x09, IP, rt);
 	fputfmt(stdout, "\n");
 

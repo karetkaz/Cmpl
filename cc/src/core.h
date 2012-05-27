@@ -58,7 +58,7 @@
 #define logif(__EXP, msg, ...) do {if (__EXP) prerr(msg, ##__VA_ARGS__);} while(0)
 
 //~ #define offsetof(__TYPE, __FIELD) ((size_t) &((__TYPE*)0)->__FIELD)
-//~ #define lengthof(__ARRAY) (sizeof(__ARRAY) / sizeof(*(__ARRAY)))
+#define lengthof(__ARRAY) (sizeof(__ARRAY) / sizeof(*(__ARRAY)))
 
 // Symbols - CC(tokens)
 typedef enum {
@@ -163,13 +163,13 @@ typedef union {		// value type
 	//~ struct {float64_t x, y;} pd;
 	//~ struct {int64_t lo, hi;} x16;
 	int32_t		rel:24;
-	struct {void* data; int length;} arr;	// dinamic array
+	struct {void* data; int length;} arr;	// slice
 } stkval;
 
 //~ typedef struct symn *symn;		// Symbol Node
 typedef struct astn *astn;		// Abstract Syntax Tree Node
 typedef struct list *list;
-typedef unsigned int uint;
+//typedef unsigned int uint;
 
 typedef struct libc {
 	struct libc *next;	// next

@@ -1288,7 +1288,7 @@ int evalMesh(mesh msh, int sdiv, int tdiv, char *src, char *file, int line) {
 
 			ud.s = s; ud.t = t;
 			ud.isNrm = 0;
-			if (vmExec(rt, NULL) != 0) {
+			if (vmExec(rt, NULL, sizeof(mem)/2) != 0) {
 				debug("error");
 				return -4;
 			}
@@ -1299,14 +1299,14 @@ int evalMesh(mesh msh, int sdiv, int tdiv, char *src, char *file, int line) {
 			}
 			else {
 				ud.s = s + epsilon; ud.t = t;
-				if (vmExec(rt, NULL) != 0) {
+				if (vmExec(rt, NULL, sizeof(mem)/2) != 0) {
 					debug("error");
 					return -5;
 				}
 				dv3cpy(ds, ud.pos);
 
 				ud.s = s; ud.t = t + epsilon;
-				if (vmExec(rt, NULL) != 0) {
+				if (vmExec(rt, NULL, sizeof(mem)/2) != 0) {
 					debug("error");
 					return -6;
 				}

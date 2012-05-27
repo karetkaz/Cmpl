@@ -1,3 +1,4 @@
+// tokens and opcodes
 #ifdef TOKDEF
 /* #define TOKDEF(NAME, TYPE, opArgs, STR) {KIND, TYPE, SIZE, STR},
 	NAME: enum name
@@ -120,7 +121,7 @@ TOKDEF(ASGN_min, 0x09, 2, OP, "<?=")	// a <?= b
 TOKDEF(ASGN_max, 0x09, 2, OP, ">?=")	// a >?= b
 TOKDEF(ASGN_pow, 0x0a, 2, OP, "**=")		// a **= b
 
-//{ ============================================================================
+//~ ============================================================================
 //~ TOKDEF(OPER_new, 0x00, 2, 2, "new")
 //~ TOKDEF(OPER_del, 0x00, 0, 2, "delete")
 
@@ -139,7 +140,7 @@ TOKDEF(ASGN_pow, 0x0a, 2, OP, "**=")		// a **= b
 //~ TOKDEF(OPER_whf, 0x00, 0, 2, "until")		// until '(' <expr>')' <stmt> => for(;!<expr>;) <stmt>
 //~ TOKDEF(OPER_rep, 0x00, 0, 2, "repeat")		// repeat <stmt> ((until '(' <expr> ')' ) | (while '(' <expr> ')' ))?
 
-//} */
+//~ */
 
 #undef TOKDEF
 #endif
@@ -167,8 +168,8 @@ OPCDEF(opc_jnz,  0x0a, 4, 1, -1, 1, "jnz")		// if popi32()!=0 IP += arg.rel;	[�
 OPCDEF(opc_jz,   0x0b, 4, 1, -1, 1, "jz")		// if popi32()==0 IP += arg.rel;	[…, a, b, c => […, a, b;
 OPCDEF(opc_not,  0x0c, 1, 1,  0, 1, "not")		// sp(0) = !sp(0);
 OPCDEF(opc_task, 0x0d, 4, 0,  0, 1, "task")		// arg.3: [code:16][data:8] task, [?fork if (arg.code == 0)]
-OPCDEF(opc__x0f, 0x0e, 0, 0,  0, 1, "sync")		// wait, join, sync
-OPCDEF(opc_libc, 0x0f, 2, 0,  9, 1, "libc")		// lib call
+OPCDEF(opc_sync, 0x0e, 2, 0,  0, 1, "sync")		// wait, join, sync
+OPCDEF(opc_libc, 0x0f, 4, 0,  9, 1, "libc")		// lib call
 //~ stk ========================================================================
 OPCDEF(opc__x10, 0x10, 0, 0,  0, 1, NULL)
 OPCDEF(opc__x11, 0x11, 0, 0,  0, 1, NULL)

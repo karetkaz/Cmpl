@@ -35,21 +35,27 @@ struct state {
 	symn  libc;		// library call symbol
 	void* retv;		// return value
 	char* argv;		// first argument
-	void* udata;	// user data for execution passed to vmExec
+	void* udata;	//?user data for execution passed to vmExec
 
 	ccState cc;		// compiler enviroment
+
 	struct vm {
-		int		opti;			// optimization levevel
 
 		unsigned int	pc;			// entry point / prev program counter
 		unsigned int	px;			// exit point / program counter
 
 		unsigned int	ss;			// stack size / current stack size
 		unsigned int	sm;			// stack minimum size
+		unsigned int	su;			// stack access
+
+		/*struct pp {					// parallel stack
+			unsigned int	ss;		// stack used
+			unsigned int	sm;		// 
+		} pp;*/
 
 		unsigned int	ro;			// <= ro : read only region(meta data) / cgen:(function parameters)
-		unsigned int	seg;		// current segment
 		unsigned int	pos;		// current positin in buffer
+		signed int		opti;		// optimization levevel
 		struct size {
 			unsigned int	meta;
 			unsigned int	code;
@@ -57,11 +63,12 @@ struct state {
 		} size;
 	} vm;
 
+	int (*dbug)(state, int pu, void *ip, long* sptr, int scnt);
+
 	long _size;		// size of total memory
 	void *_free;	// list of free memory
 	void *_used;	// list of used memory
 
-	//~ unsigned char *_ptr;	// cc: used memory; vm: max stack when calling vmCall from a libcall
 	unsigned char *_beg;	// cc: used memory; vm: max stack when calling vmCall from a libcall
 	unsigned char *_end;
 
@@ -109,7 +116,7 @@ typedef struct stateApi {
 			setret(rt, float64_t, sin(x));	// set the return value
 			return 0;						// no error in this call
 		}
-		if (!api->libcall(api->rt, f64sin, 0, "float64 sin(float64 x);")) {
+		if (!api->libcall(api->rt, f64sin, "float64 sin(float64 x);")) {
 			error...
 		}
 	 */
@@ -150,7 +157,7 @@ typedef struct stateApi {
 			}
 			return 0;											// no error in this call
 		}
-		if (!api->libcall(api->rt, f64sin, 0, "void regMouse(void CB(int b, int x, int y);")) {
+		if (!api->libcall(api->rt, f64sin, "void regMouse(void CB(int b, int x, int y);")) {
 			error...
 		}
 	 */

@@ -49,7 +49,7 @@ int isStatic(ccState cc, astn ast) {
 		default:
 			return 0;
 
-		//{ OPER
+		//#{ OPER
 		case OPER_fnc:		// '()' emit/call/cast
 		case OPER_idx:		// '[]'
 		case OPER_dot:		// '.'
@@ -92,8 +92,8 @@ int isStatic(ccState cc, astn ast) {
 
 		case ASGN_set:		// ':='
 			return 0;
-		//}
-		//{ TVAL
+		//#}
+		//#{ TVAL
 		case TYPE_int:
 		case TYPE_flt:
 		case TYPE_str:
@@ -108,7 +108,7 @@ int isStatic(ccState cc, astn ast) {
 
 		//~ case TYPE_def:					// new (var, func, define)
 		//~ case EMIT_opc:
-		//}
+		//#}
 	}
 	return 0;
 }
@@ -159,9 +159,9 @@ int cgen(state rt, astn ast, ccToken get) {
 	struct astn tmp;
 	ccToken ret = 0;
 
-	dieif(!ast || !ast->type, "FixMe %+k", ast);
+	dieif(!ast || !ast->type, "FixMe `%+k`", ast);
 
-	TODO("this sucks")
+	TODO("RemoveMe")
 	if (get == TYPE_any)
 		get = ast->cst2;
 
@@ -181,11 +181,14 @@ int cgen(state rt, astn ast, ccToken get) {
 			fatal("FixMe(%+k)", ast);
 			return 0;
 
-		//{ STMT
+		//#{ STMT
 		case STMT_do:  {	// expr or decl statement
 			int stpos = stkoffs(rt, 0);
 			if (!cgen(rt, ast->stmt.stmt, TYPE_vid)) {
-				trace("%+k", ast);
+				trace("%+k\n%7K", ast, ast);
+				#if DEBUGGING > 10
+				fputasm(rt->logf, rt, ipdbg, -1, 0x119);
+				#endif
 				return 0;
 			}
 			if (stpos != stkoffs(rt, 0)) {
@@ -196,9 +199,19 @@ int cgen(state rt, astn ast, ccToken get) {
 		} break;
 		case STMT_beg: {	// {} or function body
 			astn ptr;
+			int ippar = 0;
+			int stpar = rt->vm.su;
 			int stpos = stkoffs(rt, 0);
 			symn free = rt->cc->free;
+
 			rt->cc->free = NULL;
+			if (ast->cst2 == QUAL_par) {
+				rt->vm.su = 0;
+				ippar = emitopc(rt, opc_task);
+				#if DEBUGGING
+				qual = 0;
+				#endif
+			}
 			for (ptr = ast->stmt.stmt; ptr; ptr = ptr->next) {
 				if (!cgen(rt, ptr, TYPE_vid)) {		// we will free stack on scope close
 					error(rt, ptr->file, ptr->line, "emmiting statement `%+k`", ptr);
@@ -240,6 +253,15 @@ int cgen(state rt, astn ast, ccToken get) {
 				}
 			}
 			rt->cc->free = free;
+			if (ippar) {
+				//~ rt->vm.pp.ss += 1;
+				fixjump(rt, ippar, emitopc(rt, markIP), rt->vm.su * vm_size);
+				emitint(rt, opc_sync, 0);
+			}
+			logif(ippar, "parallel data on stack: %d", rt->vm.su);
+			/*if (rt->vm.su > rt->vm.su - stpar)
+				rt->vm.su = rt->vm.su - stpar;
+			// */
 		} break;
 		case STMT_if:  {
 			int jmpt = 0, jmpf = 0;
@@ -437,6 +459,11 @@ int cgen(state rt, astn ast, ccToken get) {
 				symn var = rt->cc->free;
 				error(rt, var->file, var->line, "return will not free dynamically allocated variables `%-T`", var);
 			}
+			if (ast->stmt.stmt && !cgen(rt, ast->stmt.stmt, TYPE_vid)) {
+				trace("%+k\n%7K", ast, ast);
+				return 0;
+			}
+			dieif(get != TYPE_vid, "FixMe");
 			if (get == TYPE_vid && rt->vm.ro != stkoffs(rt, 0)) {
 				if (!emitidx(rt, opc_drop, rt->vm.ro)) {
 					trace("leve %d", rt->vm.ro);
@@ -449,8 +476,8 @@ int cgen(state rt, astn ast, ccToken get) {
 			}
 			fixjump(rt, 0, 0, bppos);
 		} break;
-		//}
-		//{ OPER
+		//#}
+		//#{ OPER
 		case OPER_fnc: {	// '()' emit/call/cast
 			int stktop = stkoffs(rt, 0);
 			int stkret = stkoffs(rt, sizeOf(ast->type));
@@ -581,6 +608,7 @@ int cgen(state rt, astn ast, ccToken get) {
 					var->init->file = ast->file;
 					var->init->line = ast->line;
 				}
+
 				if (!(ret = cgen(rt, var->init, ret))) {
 					trace("%+k", ast);
 					return 0;
@@ -626,8 +654,9 @@ int cgen(state rt, astn ast, ccToken get) {
 				while (argv->kind == OPER_com) {
 					astn arg = argv->op.rhso;
 
+					logif(DEBUGGING > 10 && (arg->cst2 != TYPE_ref && arg->type->kind == TYPE_arr && arg->type->init), "gen arg(%+k): %t", arg, arg->type->cast);
 					if (!cgen(rt, arg, arg->cst2)) {
-						trace("%+k", arg);
+						trace("%+k", arg, arg->cst2);
 						return 0;
 					}
 					arg->next = argl;
@@ -1051,8 +1080,8 @@ int cgen(state rt, astn ast, ccToken get) {
 				return 0;
 			}
 		} break;
-		//}
-		//{ TVAL
+		//#}
+		//#{ TVAL
 		case TYPE_int: switch (get) {
 			//~ case TYPE_rec: return emiti32(s, ast->con.cint) ? TYPE_i32 : 0;
 			case TYPE_vid: return TYPE_vid;
@@ -1233,6 +1262,7 @@ int cgen(state rt, astn ast, ccToken get) {
 							}
 							val->next = tmp;
 
+							// local variable
 							if (var->offs == 0) {
 								if (!emitint(rt, opc_spc, size)) {
 									trace("%+k", ast);
@@ -1245,6 +1275,7 @@ int cgen(state rt, astn ast, ccToken get) {
 								i = 0;
 								size = 0;
 							}
+
 							for (; ninit < nelem; ninit += 1, i += esize) {
 								if (val != NULL) {
 									tmp = val;
@@ -1254,6 +1285,7 @@ int cgen(state rt, astn ast, ccToken get) {
 									trace("%+k", ast);
 									return 0;
 								}
+
 								if (var->offs == 0) {
 									if (!emitint(rt, opc_ldsp, i)) {
 										trace("%+k", ast);
@@ -1336,11 +1368,16 @@ int cgen(state rt, astn ast, ccToken get) {
 		case EMIT_opc:
 			trace("%+k", ast);
 			return 0;
-		//}
+		//#}
 	}
 
 	// generate cast
 	if (get != ret) switch (get) {
+
+		case TYPE_vid:
+			ret = get;
+			break;
+
 		case TYPE_any: switch (ret) {
 			case TYPE_vid: break;
 			case TYPE_ref: break;
@@ -1499,14 +1536,14 @@ int cgen(state rt, astn ast, ccToken get) {
 				return EMIT_opc;
 		}
 
-		case TYPE_vid:
-			ret = get;
-			break;
-
-		case TYPE_ref:
-			trace("cgen[%t->%t](%+k)\n%7K", ret, get, ast, ast);
-			error(rt, ast->file, ast->line, "invalid rvalue: %+k", ast);
-			return 0;
+		case TYPE_ref: switch (ret) {
+			default: goto errorcast2;
+			case EMIT_opc:
+				return EMIT_opc;
+		}
+			//~ trace("cgen[%t->%t](%+k)\n%7K", ret, get, ast, ast);
+			//~ error(rt, ast->file, ast->line, "invalid rvalue: %+k", ast);
+			//~ return 0;
 
 		default:
 			fatal("%d: unimplemented(cast for `%+k`, %t):%t", ast->line, ast, get, ret);
@@ -1552,7 +1589,7 @@ int cgen(state rt, astn ast, ccToken get) {
 	return ret;
 }
 
-//{ symbols: install and query
+//#{ symbols: install and query
 symn ccBegin(state rt, char *cls) {
 	symn result = NULL;
 	if (rt->cc) {
@@ -1663,7 +1700,7 @@ int getarg(state rt, char* name, void* copy) {
 	}
 	return 0;
 }*/
-//}
+//#}
 
 TODO("this should be named something else")
 int gencode(state rt, int level) {
@@ -1784,7 +1821,7 @@ int gencode(state rt, int level) {
 
 				rt->cc->sini = 0;
 				rt->vm.sm = 0;
-				rt->vm.seg = seg;
+				//~ rt->vm.seg = seg;
 				fixjump(rt, 0, 0, vm_size + var->offs);
 				rt->vm.ro = stkoffs(rt, 0);
 				rt->vm.sm = rt->vm.ss;		// leave return address on stack
@@ -1854,8 +1891,9 @@ int gencode(state rt, int level) {
 	}
 
 	rt->cc->sini = 1;
+
 	Lmain = rt->vm.pos;
-	rt->vm.seg = Lmain;
+	//~ rt->vm.seg = Lmain;
 	if (1 && cc->root) {
 		int seg = rt->vm.pos;
 		rt->vm.ss = rt->vm.sm = 0;
@@ -1984,14 +2022,16 @@ static void install_emit(ccState cc, int mode) {
 
 		install(cc, "nop", EMIT_opc, 0, opc_nop, cc->type_vid, NULL);
 		install(cc, "not", EMIT_opc, 0, opc_not, cc->type_bol, NULL);
-
-		//~ install(cc, "pop", EMIT_opc, 0, opc_drop, type_vid, intnode(cc, 1));
-		//~ install(cc, "set", EMIT_opc, 0, opc_set1, type_vid, intnode(cc, 1));
-		//~ install(cc, "set0", EMIT_opc, opc_set1, type_vid, intnode(cc, 0));
-		//~ install(cc, "set1", EMIT_opc, opc_set1, type_vid, intnode(cc, 1));
+		install(cc, "pop", EMIT_opc, 0, opc_drop, cc->type_vid, intnode(cc, 1));
+		install(cc, "set", EMIT_opc, 0, opc_set1, cc->type_vid, intnode(cc, 1));
+		install(cc, "join", EMIT_opc, 0, opc_sync, cc->type_vid, intnode(cc, 1));
+		//~ install(cc, "set0", EMIT_opc, opc_set1, cc->type_vid, intnode(cc, 0));
+		//~ install(cc, "set1", EMIT_opc, opc_set1, cc->type_vid, intnode(cc, 1));
 
 		if ((typ = ccBegin(rt, "dupp"))) {
 			install(cc, "x1", EMIT_opc, 0, opc_dup1, cc->type_i32, intnode(cc, 0));
+			install(cc, "x1_1", EMIT_opc, 0, opc_dup1, cc->type_i32, intnode(cc, 1));
+			install(cc, "x1_2", EMIT_opc, 0, opc_dup1, cc->type_i32, intnode(cc, 2));
 			install(cc, "x2", EMIT_opc, 0, opc_dup2, cc->type_i64, intnode(cc, 0));
 			install(cc, "x4", EMIT_opc, 0, opc_dup4, cc->type_vid, intnode(cc, 0));
 			ccEnd(cc->s, typ);
@@ -2194,26 +2234,31 @@ static int libCallHalt(state rt) {
 }
 static int libCallDebug(state rt) {
 	int level = 0;
-	//~ void debug(string message, typename object, int maxStackTrace, bool abort);
+	//~ void debug(bool condition, string message, typename object, int maxStackTrace, bool abort);
 	char *file = popstr(rt);
 	int   line = popi32(rt);
 	//~ char *func = popstr(rt);
 
-	char *message = popstr(rt);
-	void *object = popref(rt);
-	int stktrace = popi32(rt);
-	int abortapp = popi32(rt);
+	if (popi32(rt)) {		// pop condition
+		char *message = popstr(rt);
+		void *object = popref(rt);
+		int stktrace = popi32(rt);
+		int abortapp = popi32(rt);
 
-	perr(rt, level, file, line, "%?s", message);
-	if (object != NULL) {
-		perr(rt, level, NULL, 0, "%-T", object);
+		if (message != NULL) {
+			perr(rt, level, file, line, "%?s", message);
+		}
+		if (object != NULL) {
+			perr(rt, level, NULL, 0, "%-T", object);
+		}
+		if (stktrace > 0) {
+			perr(rt, level, NULL, 0, "stacktrace[%d] not supported yet", stktrace);
+		}
+		if (abortapp) {
+			return -1;
+		}
 	}
-	if (stktrace > 0) {
-		perr(rt, level, NULL, 0, "stacktrace[%d] not supported yet", stktrace);
-	}
-	if (abortapp != 0) {
-		return -1;
-	}
+
 	return 0;
 }
 static int libCallMemMgr(state rt) {
@@ -2272,7 +2317,7 @@ ccState ccInit(state rt, int mode, int libcHalt(state)) {
 	libcall(rt, libcHalt ? libcHalt : libCallHalt, "void Halt(int Code);");
 
 	cc->libc_mem = cc->type_ptr ? libcall(cc->s, libCallMemMgr, "pointer memmgr(pointer ptr, int32 size);") : NULL;
-	cc->libc_dbg = libcall(rt, libCallDebug, "void debug(string message, typename object, int maxStackTrace, bool abort);");
+	cc->libc_dbg = libcall(rt, libCallDebug, "void debug(bool condition, string message, typename object, int maxStackTrace, bool abort);");
 
 	// 4 reflection
 	if (cc->type_rec && (mode & creg_tvar)) {
@@ -2403,7 +2448,6 @@ void* rtAlloc(state rt, void *ptr, unsigned size) {
 	if (rt->_free == NULL && rt->_used == NULL) {
 		memchunk freemem = (void*)padded((int)(rt->_mem + rt->vm.px + 16), 16);
 		freemem->next = NULL;
-		//~ freemem->data = (unsigned char*)freemem + sizeof(struct memchunk);
 		freemem->size = rt->_size - (freemem->data - (char*)rt->_mem);
 
 		rt->_used = NULL;
@@ -2469,7 +2513,7 @@ void* rtAlloc(state rt, void *ptr, unsigned size) {
 			fatal("FixMe: %s", "realloc memory to shrink");
 		}
 	}
-	else {		// alloc or init.
+	else {		// alloc.
 		if (size > 0) {
 			memchunk prev = NULL;
 
@@ -2520,7 +2564,7 @@ void* rtAlloc(state rt, void *ptr, unsigned size) {
 	return memd ? memd->data : NULL;
 }
 
-//{ temp.c ---------------------------------------------------------------------
+//#{ temp.c ---------------------------------------------------------------------
 #if 0
 //static void install_rtti(ccState cc, unsigned level) ;		// req emit: libc(import, define, lookup, ...)
 static void install_lang(ccState cc, unsigned level) {
@@ -2628,4 +2672,4 @@ void freeBuff(arrBuffer* buff) {
 }
 
 #endif
-//} */
+//#} */

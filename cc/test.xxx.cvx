@@ -7,15 +7,18 @@
 	//~ static int A = a;
 //~ }
 
-define hex int; //%0x%08x
-hex pi = Math.pi * (1 << 28);
+//~ define hex int; //%0x%08x
+//~ hex pi = Math.pi * (1 << 28);
 
-//~ define sqr2(float64 ^x) = x*x;
-//~ define sqr1(float64 x) = sqr2(x);
-//~ define sqr(float64 x) = sqr1(x);
+/+ inlineing ...
+define sqr2(float64 ^x) = x*x;
+define sqr1(float64 x) = sqr2(x);
+define sqr(float64 x) = sqr1(x);
+double x = 9;
+double y = sqr(x*x+x);
+//~ +/
 
-//~ double x = 9;
-//~ double y = sqr(x*x+x);
+//~ assert(0, "alma");
 
 /+ static casting pointers
 pointer x = emit(pointer, ref("erZKJVDlaknjsdvkSDNVlk"));
@@ -23,14 +26,59 @@ string str = emit(string, ref(x));
 //~ println(emit(string, ref(x)));
 //~ +/
 
-//~ define double2 float64; //%%4.50g
-//~ double2 x = 3.14 / 3 + .0001;
-//~ double2 s1 = sin(x);
-//~ double2 s2 = Math.Sin(x);
-//~ int a = 16 << 10;
+/+ ???
+define double2 float64; //%%4.50g
+double2 x = 3.14 / 3 + .0001;
+double2 s1 = sin(x);
+double2 s2 = Math.Sin(x);
+int a = 16 << 10;
 
-//~ int A = 9;
-//~ pointer a = emit(pointer, ref(A));
-//~ pointer b = emit(pointer, int(A));
-//~ int &a2 = A;
+int A = 9;
+pointer a = emit(pointer, ref(A));
+pointer b = emit(pointer, int(A));
+int &a2 = A;
+//~ +/
 
+/+ fixed size array for defines
+void testArr(double x[16]) {
+	x[2] = 8;
+}
+
+define TestArr(double x[16]) = testArr(x);
+
+double x[16] = 0;
+//~ testArr(x);
+TestArr(x);
+testFunc(x);
+//~ +/
+
+struct ComplexByVal {double re; double im;}
+struct &ComplexByRef {double re; double im;}
+//~ define ComplexByRef(double re, double im) = emit(ComplexByRef, store.b64, dupp.x1_2, f64(re), store.b64, i32.add, i32(8), dupp.x1_2, f64(im), ref(memmgr(null, 16)));
+
+/*
+ComplexByRef ComplexByRef(double re, double im) {
+	result = new(ComplexByRef);
+	result.re = re;
+	result.im = im;
+	return result;
+}// */
+
+define sizeof(typename type) = int(type.size);
+define new(typename type) = emit(struct, ref(memmgr(null, type.size)));
+
+//~ void print(ComplexByRef val) { print("%F", val.re); print(", "); print("%F", val.im); print("\n"); }
+
+//~ int64 a = 0;
+//~ int64& b = &a;
+//~ &b = a;
+//~ b = &a;
+//~ b = a;
+//~ a = b;
+
+//~ ComplexByRef r1 = ComplexByRef(1, 2);
+ComplexByRef r2 = new(ComplexByRef);
+int s2 = sizeof(ComplexByRef);
+//~ print(r1);
+typename t1 = int64;
+//~ typename t2 = ComplexByRef;

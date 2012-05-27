@@ -1,11 +1,10 @@
 //~ #define NEXT(__IP, __CHK, __SP) {checkstack(__CHK); ip += _IP; sp += _SP;}
-//~ #ifdef NEXT
 
 #define SP(__POS, __TYP) (((stkval*)((stkptr)sp + (__POS)))->__TYP)
 #define MP(__POS, __TYP) (((stkval*)((memptr)mp + (__POS)))->__TYP)
 
-//{ switch (ip->opc) { ---------------------------------------------------------
-//{ 0x0?: SYS		// System
+//#{ switch (ip->opc) { ---------------------------------------------------------
+//#{ 0x0?: SYS		// System
 case opc_nop:  NEXT(1, 0, 0) {
 } break;
 case opc_loc:  NEXT(2, 0, +ip->idx) {
@@ -73,24 +72,30 @@ case opc_jmpi: NEXT(1, 1, -1) {
 #endif
 } break;
 case opc_task: NEXT(4, 0, -0) {
-	STOP(error_opc, 1, 1);
 #ifdef EXEC
-	/*if (mtt(rt, doTask, pu, 0))
-		pu->ip += ip->rel - 4;*/
+	if (task(cpu, cc, cp, ip->cl * vm_size))
+		pu->ip += ip->cl - 4;
 #endif
 } break;
-case opc_libc: NEXT(2, libcvec[ip->idx].chk, -libcvec[ip->idx].pop) {
+case opc_sync: NEXT(2, 0, -0) {
+#ifdef EXEC
+	if (!sync(cpu, cp, ip->idx)) {
+		NEXT(-2, 0, -0);
+		//~ pu->ip -= 2;
+	}
+#endif
+} break;
+case opc_libc: NEXT(4, libcvec[ip->rel].chk, -libcvec[ip->rel].pop) {
 #ifdef EXEC
 	int exitCode;
 	struct symn module;
 	unsigned char *s_vm_end = rt->_end;
-	symn sym = libcvec[ip->idx].sym;
-	STOP(error_libc, sym == NULL, ip->idx);
+	symn sym = libcvec[ip->rel].sym;
+	STOP(error_libc, sym == NULL, ip->rel);
 	rt->argv = (char *)sp;
-	rt->retv = (char*)((stkptr)sp + libcvec[ip->idx].pop);
+	rt->retv = (char*)((stkptr)sp + libcvec[ip->rel].pop);
 	rt->libc = sym;
-	if (ip->idx == 0) {
-		TODO("this should be not static")
+	if (ip->rel == 0) {
 		memset(&module, 0, sizeof(struct symn));
 		module.args = rt->defs;
 		rt->retv = (char *)st;
@@ -99,15 +104,15 @@ case opc_libc: NEXT(2, libcvec[ip->idx].chk, -libcvec[ip->idx].pop) {
 
 	// if a libcall calls a vmCall keep the stack
 	rt->_end = (unsigned char *)sp;
-	exitCode = libcvec[ip->idx].call(rt);
+	exitCode = libcvec[ip->rel].call(rt);
 	rt->_end = s_vm_end;
 
 	STOP(error_libc, exitCode != 0, exitCode);
-	STOP(stop_vm, ip->idx == 0, 0);			// Halt();
+	STOP(stop_vm, ip->rel == 0, 0);			// Halt();
 #endif
 } break;
-//}
-//{ 0x1?: STK		// Stack
+//#}
+//#{ 0x1?: STK		// Stack
 /*case opc_ldc1: NEXT(2, 0, +1) {
 #ifdef EXEC
 	STOP(error_ovf, ovf(pu));
@@ -210,8 +215,8 @@ case opc_ldz4: NEXT(1, 0, +4) {
 	SP(-4, i4) = 0;
 #endif
 } break;
-//}
-//{ 0x2?: MEM		// Memory
+//#}
+//#{ 0x2?: MEM		// Memory
 case opc_ldi1: NEXT(1, 1, -0) {
 #ifdef EXEC
 	STOP(error_mem, SP(0, i4) <= 0, SP(0, i4));
@@ -344,8 +349,8 @@ case opc_move: NEXT(4, 2, -2) {
 
 #endif
 } break;
-//}*/
-//{ 0x3?: B32		// Unsigned
+//#}
+//#{ 0x3?: B32		// uint32
 case b32_cmt: NEXT(1, 1, -0) {
 #if defined(EXEC)
 	SP(0, u4) = ~SP(0, u4);
@@ -442,8 +447,8 @@ case u32_mad: NEXT(1, 3, -2) {
 	SP(2, u4) += SP(1, u4) * SP(0, u4);
 #endif
 } break;
-//}
-//{ 0x4?: I32		// Integer
+//#}
+//#{ 0x4?: I32		// int32
 case i32_neg: NEXT(1, 1, -0) {
 #if defined(EXEC)
 	SP(0, i4) = -SP(0, i4);
@@ -525,8 +530,8 @@ case i32_f64: NEXT(1, 1, +1) {
 	SP(-1, f8) = SP(0, i4);
 #endif
 } break;
-//}
-//{ 0x5?: F32		// Float
+//#}
+//#{ 0x5?: F32		// float32
 case f32_neg: NEXT(1, 1, -0) {
 #if defined(EXEC)
 	SP(0, f4) = -SP(0, f4);
@@ -598,8 +603,8 @@ case f32_f64: NEXT(1, 1, +1) {
 	SP(-1, f8) = SP(0, f4);
 #endif
 } break;
-//} */
-//{ 0x6?: I64		// Long
+//#}
+//#{ 0x6?: I64		// int64
 case i64_neg: NEXT(1, 2, -0) {
 #if defined(EXEC)
 	SP(0, i8) = -SP(0, i8);
@@ -669,8 +674,8 @@ case i64_f64: NEXT(1, 2, -0) {
 	SP(0, f8) = (float64_t)SP(0, i8);
 #endif
 } break;
-//}
-//{ 0x7?: F64		// Double
+//#}
+//#{ 0x7?: F64		// float64
 case f64_neg: NEXT(1, 2, -0) {
 #if defined(EXEC)
 	//~ EXEC(f64neg, sp, 0,sp)
@@ -742,8 +747,8 @@ case f64_bol: NEXT(1, 2, -1) {
 	SP(1, i4) = 0 != SP(0, f8);
 #endif
 } break;
-//}
-//{ 0x8?: PF4		// Vector
+//#}
+//#{ 0x8?: PF4		// Vector
 case v4f_neg: NEXT(1, 4, -0) {
 #if defined(EXEC)
 	SP(0, f4) = -SP(0, f4);
@@ -846,8 +851,8 @@ case v4f_dp4: NEXT(1, 8, -7) {
 	SP(7, f4) * SP(3, f4);
 #endif
 } break;
-//}*/
-//{ 0x9?: PD2		// Complex
+//#}
+//#{ 0x9?: PD2		// Complex
 case v2d_neg: NEXT(1, 4, -0) {
 #if defined(EXEC)
 	SP(0, f8) = -SP(0, f8);
@@ -914,7 +919,7 @@ case v2d_max: NEXT(1, 8, -4) {
 		SP(6, f8) = SP(2, f8);
 #endif
 } break;
-//}*/
+//#}
 //~ 0xa?: ???		//
 //~ 0xb?: ???		//
 //~ 0xc?: ???		//
@@ -922,7 +927,7 @@ case v2d_max: NEXT(1, 8, -4) {
 //~ 0xe?: ???		//
 //~ 0xf?: ???		//
 default: STOP(error_opc, 1, -1);
-//}-----------------------------------------------------------------------------
+//#}-----------------------------------------------------------------------------
 
 #undef SP
 #undef MP
@@ -930,4 +935,3 @@ default: STOP(error_opc, 1, -1);
 #undef EXEC
 #undef STOP
 #undef NEXT
-//~ #endif

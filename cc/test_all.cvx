@@ -1100,28 +1100,31 @@ TypeInfo& lookUp(TypeInfo &type, int level, string name, variant args...) {
 	return null;
 }
 
-bool invoke(variant typename, string name, var args...) { ... }
-bool getValue(variant typename, string name, var value) { ... }
-bool setValue(variant typename, string name, var value) { ... }
-
-struct testcls {
+struct cls {
 	static int32 c;
 	int32 a;
 	int32 b;
+	static int M1(int a, int b) {return a + b;}
 }
 
-int t1;
 
-setValue(testcls, "c", var(34));
-t1 = int(getValue(testcls, "c"));
+var a1 = var(34);
+var a2 = var(4);
+var t1;
+cls obj;
 
-testcls t2;
+assert(invoke(cls, "c", t1) && t1 == var(cls.c));				// t1 := cls.c;
+assert(invoke(cls, "c", null, a1) && t1 == var(cls.c));			// cls.c := a1;
+assert(invoke(cls, "c", t1, a1) && t1 == var(cls.c));			// t1 := cls.c = a1;
 
-setValue(t2, "a", var(34));
-t1 = int(getValue(t2, "a"));
+assert(invoke(cls, "M1", t1, a1, a2) && t1 == var(cls.M1(a1, a2));
+assert(invoke(obj, "M1", t1, a1, a2) && t1 == var(obj.M1(a1, a2));
 
-bool invoke(TypeInfo &type, string name, var &result, var args...) {
+assert(invoke(obj, "a", t1) && t1 == var(obj.a));
+assert(invoke(obj, "a", null, a2) && a2 == var(obj.a));			// t1 := obj.a := a2;
 
+bool invoke(var obj, string name, var &&res, var args...) {
+	TypeInfo class = obj.type == TypeInfo ? &obj.data : obj.type;
 	TypeInfo Method = lookUp(type, -1, name, args);
 
 	if (Method != null && Method.offset > 0) {
@@ -1141,15 +1144,23 @@ bool invoke(TypeInfo &type, string name, var &result, var args...) {
 
 		emit(call, u32(Method.offset));
 
-		result.type = Method.type;
-		result.data = malloc(Method.type.size);
-		memcpy(result.data, st, Method.type.size);
+		res.type = Method.type;
+		res.data = malloc(Method.type.size);
+		memcpy(res.data, st, Method.type.size);
+		//~ or short: res = variant(Method.type, st);
 
 		return true;
 	}
-
 	return false;
 }
+
+invoke(t2, "a", t1, var(34));			// t1 = t2.a = 34;
+invoke(t2, "a", t1, t2);				// t1 = t2.a;
+
+bool invoke(variant obj, string name, var &&res, var args...) {
+	return invoke(obj.type, name, &&res, obj, args);
+}
+
 //~ */
 /* debug
 static struct debug {

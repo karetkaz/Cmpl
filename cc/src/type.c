@@ -1270,7 +1270,10 @@ symn typecheck(ccState s, symn loc, astn ast) {
 					}
 
 					if (argsym->cast == TYPE_ref || argval->type->cast == TYPE_ref) {
-						if (!castTo(argval, TYPE_ref)) {
+						// TODO: quick fix.
+						int istypename = argsym->type == s->type_rec;
+						logif(1, "%T", argsym);
+						if (!castTo(argval, istypename ? ASGN_set : TYPE_ref)) {
 							debug("%k:%t", argval, TYPE_ref);
 							return 0;
 						}

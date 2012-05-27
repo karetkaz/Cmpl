@@ -21,6 +21,11 @@ vec4f grayFp(vec4f rgbColor) {
 	//~ result = vec4f(0.2989f * rgbColor.x + 0.5870f * rgbColor.y + 0.1140f * rgbColor.z);
 }
 
+vec4f grayFp2(vec4f rgbColor) {
+	result = vec4f((rgbColor.x + rgbColor.y + rgbColor.z) / 3);
+	//~ result = vec4f(0.2989f * rgbColor.x + 0.5870f * rgbColor.y + 0.1140f * rgbColor.z);
+}
+
 vec4f sepiaFp(vec4f rgbColor) {
 	static const mat4f RGB2YIQ = mat4f(
 		vec4f(0.299,  0.587,  0.114, 0.000),

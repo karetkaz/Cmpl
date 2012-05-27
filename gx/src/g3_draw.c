@@ -67,7 +67,7 @@ int ftest_triangle(union vector planes[6], vector p1, vector p2, vector p3) {
 }
 // */
 
-vector mappos(vector dst, matrix mat, vector src) {
+static inline vector mappos(vector dst, matrix mat, vector src) {
 	scalar div;
 	union vector tmp;
 	if (src == dst)
@@ -91,6 +91,7 @@ static inline argb nrmrgb(vector src) {
 	res.b = (src->b + 1.) * 127;
 	return res;
 }
+
 static inline long sca2fix(double __VAL, int __FIX) {return ((long)((__VAL) * (1 << (__FIX))));}
 static inline long projx(gx_Surf dst, vector p, int sca) {return sca2fix((dst->width - 1) * (1 + p->x) / 2, sca);}
 static inline long projy(gx_Surf dst, vector p) {return sca2fix((dst->height - 1) * (1 - p->y) / 2, 0);}
@@ -527,23 +528,35 @@ static void draw_triangle(gx_Surf dst, vector p, texcol tc, texcol lc, int i1, i
 	gx_Clip roi = gx_getclip(dst);
 
 	long y1, y2, y3;
-	long dy1 = 0, dy2 = 0;
-	long ly1 = 0, ly2 = 0;
-	register int y = roi->ymin;
-
-	struct edge v1, v2;
-	struct ssds s1, s2, s3;
 
 	// sort by y
-	if (p[i1].y < p[i3].y) {i1 ^= i3; i3 ^= i1; i1 ^= i3;}
-	if (p[i1].y < p[i2].y) {i1 ^= i2; i2 ^= i1; i1 ^= i2;}
-	if (p[i2].y < p[i3].y) {i2 ^= i3; i3 ^= i2; i2 ^= i3;}
+	if (p[i1].y < p[i3].y) {
+		i1 ^= i3;
+		i3 ^= i1;
+		i1 ^= i3;
+	}
+	if (p[i1].y < p[i2].y) {
+		i1 ^= i2;
+		i2 ^= i1;
+		i1 ^= i2;
+	}
+	if (p[i2].y < p[i3].y) {
+		i2 ^= i3;
+		i3 ^= i2;
+		i2 ^= i3;
+	}
 
 	y1 = projy(dst, p + i1);
 	y2 = projy(dst, p + i2);
 	y3 = projy(dst, p + i3);
 
 	if (y1 < y3) {				// clip (y)
+		int y = roi->ymin;
+		long dy1 = 0, dy2 = 0;
+		long ly1 = 0, ly2 = 0;
+
+		struct edge v1, v2;
+		struct ssds s1, s2, s3;
 
 		s1.x = projx(dst, p + i1, 16);
 		s2.x = projx(dst, p + i2, 16);
@@ -590,7 +603,7 @@ static void draw_triangle(gx_Surf dst, vector p, texcol tc, texcol lc, int i1, i
 			litmix(s2.c, s2.c, lc[i2]);
 			litmix(s3.c, s3.c, lc[i3]);
 			#undef litmix
-		}// */
+		}
 
 		// calc slope y3 - y1 (the longest)
 		init_edge(&v1, &s1, &s3, y3 - y1, y - y1);
