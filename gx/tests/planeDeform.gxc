@@ -23,9 +23,9 @@ double imgcoord(double val, int resolution) {
 int rgbscale(int col, double s) {
 	define fixp = 16;
 	int scale = s * (1 << fixp);
-	int r = clamp(rch(col) * scale >> fixp, 0, 255);
-	int g = clamp(gch(col) * scale >> fixp, 0, 255);
-	int b = clamp(bch(col) * scale >> fixp, 0, 255);
+	int r = Math.clamp(rch(col) * scale >> fixp, 0, 255);
+	int g = Math.clamp(gch(col) * scale >> fixp, 0, 255);
+	int b = Math.clamp(bch(col) * scale >> fixp, 0, 255);
 	result = rgb(r, g, b);
 }
 
@@ -33,7 +33,7 @@ define tex2d(gxSurf ^src, double x, double y) = getPixel(src, imgcoord(x, width(
 define tex2d(gxSurf src, double u, double v, double w) = rgbscale(tex2d(src, u, v), w);
 //~ define tex2d(gxSurf src, double u, double v, double w) = tex2d(src, u, v);
 
-define nz(double x) = nz(x, 1e-200);
+define nz(double x) = Math.nz(x, 1e-200);
 define atan(double x, double y) = atan2(x, y);
 
 // mert a dogseg nagy betegseg.
@@ -51,12 +51,12 @@ void plasma() {
 			double mov0 = x + y + cos(sin(time)*2.)*100.+sin(x/100.)*1000.;
 			double mov1 = y / HEIGHT / 0.2 + time;
 			double mov2 = x / WIDTH / 0.2;
-			double c1 = abs(sin(mov1+time)/2.+mov2/2.-mov1-mov2+time);
-			double c2 = abs(sin(c1+sin(mov0/1000.+time)+sin(y/40.+time)+sin((x+y)/100.)*3.));
-			double c3 = abs(sin(c2+cos(mov1+mov2+c2)+cos(mov2)+sin(x/1000.)));
-			c1 = clamp(c1, 0., 1.);
-			c2 = clamp(c2, 0., 1.);
-			c3 = clamp(c3, 0., 1.);
+			double c1 = Math.abs(sin(mov1+time)/2.+mov2/2.-mov1-mov2+time);
+			double c2 = Math.abs(sin(c1+sin(mov0/1000.+time)+sin(y/40.+time)+sin((x+y)/100.)*3.));
+			double c3 = Math.abs(sin(c2+cos(mov1+mov2+c2)+cos(mov2)+sin(x/1000.)));
+			c1 = Math.clamp(c1, 0., 1.);
+			c2 = Math.clamp(c2, 0., 1.);
+			c3 = Math.clamp(c3, 0., 1.);
 			setPixel(dstImg, xi, yi, rgb(vec4f(c1, c2, c3)));
 		}
 	}
@@ -74,7 +74,7 @@ void stereographic() {
 			double x = (xi - cx) / WIDTH;
 
 			double a = atan(y, x);
-			double r = 50 * nz(hypot(x, y));
+			double r = 50 * nz(Math.hypot(x, y));
 
 			double u = time + cos(a) / r;
 			double v = time + sin(a) / r;
@@ -95,7 +95,7 @@ void stereographic2() {
 			double x = (xi - cx) / WIDTH;
 
 			double a = atan(y, x);
-			double r = 100 * nz(hypot(x, y) - .4);
+			double r = 100 * nz(Math.hypot(x, y) - .4);
 
 			double u = time + cos(a) / r;
 			double v = time + sin(a) / r;
@@ -117,7 +117,7 @@ void circles() {
 			double x = xi - cx;
 			double y = yi - cy;
 
-			double r = hypot(x, y);
+			double r = Math.hypot(x, y);
 
 			double u = time + r / 200.;
 			double v = r / 200.;
@@ -139,7 +139,7 @@ void rays() {
 			double y = yi - cy;
 
 			double a = atan(y, x);
-			double r = hypot(x, y);
+			double r = Math.hypot(x, y);
 
 			double u = time + a;
 			double v = a;
@@ -163,7 +163,7 @@ void tunnel0() {
 			double x = (xi - cx) / WIDTH;
 
 			double a = atan(y, x);
-			double r = hypot(x, y);
+			double r = Math.hypot(x, y);
 
 			double u = time + .1 / nz(r);
 			double v = a / pi;
@@ -248,11 +248,11 @@ void tunnel4() {
 			double y = yi - cy;
 
 			double a = atan( y, x );
-			double r = nz(hypot(x, y));
+			double r = nz(Math.hypot(x, y));
 
 			double u = time + 0.3 * a / pi;
-			double v = 10 * abs( cos( 1.5 * a ) / r );
-			double w = 0.2 + 100 * abs( cos( 1.5 * a ) / r );
+			double v = 10 * Math.abs( cos( 1.5 * a ) / r );
+			double w = 0.2 + 100 * Math.abs( cos( 1.5 * a ) / r );
 
 			setPixel(dstImg, xi, yi, tex2d(srcImg, v, u));
 		}
@@ -267,7 +267,7 @@ void planes() {
 	double cy = (mouseY * HEIGHT / Window.resy);
 	for (int yi = 0; yi < HEIGHT; yi += 1) {
 		double y = (yi - cy) / HEIGHT;
-		double Y = .2 / nz(abs(y));
+		double Y = .2 / nz(Math.abs(y));
 		for (int xi = 0; xi < WIDTH; xi += 1) {
 			double x = (xi - cx) / WIDTH;
 
@@ -275,7 +275,7 @@ void planes() {
 			double v = time + Y;
 			//~ double w = 2 * abs(y);
 
-			setPixel(dstImg, xi, yi, tex2d(srcImg, v, u, 2 * abs(y)));
+			setPixel(dstImg, xi, yi, tex2d(srcImg, v, u, 2 * Math.abs(y)));
 		}
 	}
 	zoomSurf(offScreen, null, dstImg, null, 1);
@@ -291,7 +291,7 @@ void vortex() {
 			double x = (xi - cx) / WIDTH;
 
 			double a = atan( y, x );
-			double r = hypot(x, y);
+			double r = Math.hypot(x, y);
 			double u = 1 * a / pi + r;
 			double v = 2 * time + 40 * pow( r, 0.01 );
 			//~ double w = 2 * r;
@@ -312,7 +312,7 @@ void waves() {
 			double x = (xi - cx) / WIDTH;
 
 			double a = atan(y, x);
-			double r = hypot(x, y);
+			double r = Math.hypot(x, y);
 
 			double u = .5 * a / pi;
 			double v = time + sin(4 * r);

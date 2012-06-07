@@ -69,7 +69,7 @@ User defined types:
 			with all members, in case packing is default,
 				??? and fixed size arrays are not contained by the structure.
 			from pointer: static cast
-			from variant: 
+			from variant:
 		ex: for struct Complex {double re; double im};
 		will be defined:
 			define Complex(double re, double im) = emit(Complex, double(re), double(im));
@@ -100,7 +100,7 @@ TODO's:
 //~ symn null_ref = NULL;
 //~ symn emit_opc = NULL;
 
-//~ Install
+/// allocate a symbol
 symn newdefn(ccState s, int kind) {
 	state rt = s->s;
 	symn def = NULL;
@@ -108,16 +108,17 @@ symn newdefn(ccState s, int kind) {
 	if (rt->_end - rt->_beg > (int)sizeof(struct symn)) {
 		def = (symn)rt->_beg;
 		rt->_beg += sizeof(struct symn);
+		memset(def, 0, sizeof(struct symn));
+		def->kind = kind;
 	}
 	else {
 		fatal("memory overrun");
 	}
 
-	memset(def, 0, sizeof(struct symn));
-	def->kind = kind;
 	return def;
 }
 
+/// install a symbol(type or variable)
 symn install(ccState s, const char* name, int kind, int cast, unsigned size, symn type, astn init) {
 	unsigned hash = 0;
 	symn def;
@@ -176,15 +177,14 @@ symn install(ccState s, const char* name, int kind, int cast, unsigned size, sym
 	}
 	return def;
 }
+
+/// install a type symbol
 symn installtyp(state rt, const char* name, unsigned size, int refType) {
 	//~ dieif(!rt->cc, "FixMe");
 	return install(rt->cc, name, ATTR_const | TYPE_rec, refType ? TYPE_ref : TYPE_rec, size, rt->cc->type_rec, NULL);
 }
-/*symn installref(state rt, const char* name, symn type, int byRef, int attr) {
-	symn ref = install(rt->cc, name, TYPE_ref, cast, byRef ? vm_size : type->size, type, NULL);
-	
-}*/
 
+/// used to add length property to arrays.
 symn addarg(ccState s, symn sym, const char* name, int kind, symn typ, astn init) {
 	symn args = sym->args;
 
@@ -261,13 +261,12 @@ static symn promote(symn lht, symn rht) {
 	}
 	return pro;
 }
+
 int canAssign(ccState cc, symn var, astn val, int strict) {
 	symn typ = var;
 	symn lnk = linkOf(val);
 
-	if (!var) {
-		dieif(!var, "FixMe");
-	}
+	dieif(!var, "FixMe");
 	dieif(!val, "FixMe");
 
 	// assigning null or pass by reference
@@ -332,6 +331,8 @@ int canAssign(ccState cc, symn var, astn val, int strict) {
 		else if (!strict) {
 			strict = var->cast == TYPE_ref;
 		}
+		if (var->cast == TYPE_ref && val->type == cc->type_ptr)
+			return 1;
 	}
 
 	if (typ == val->type)
@@ -377,7 +378,7 @@ int canAssign(ccState cc, symn var, astn val, int strict) {
 		}
 	}
 
-	trace("can not assign `%k` to `%-T`(%t)", val, var, typ->cast);
+	trace("can not assign `%+k` to `%-T`(%t)", val, var, typ->cast);
 	return 0;
 }
 
@@ -539,7 +540,7 @@ symn lookup(ccState s, symn sym, astn ref, astn args, int raise) {
 	return sym;
 }
 
-TODO("this is define, not declare")
+TODO("we should handle redefinition in this function")
 symn declare(ccState s, int kind, astn tag, symn typ) {
 	symn def;
 
@@ -574,9 +575,10 @@ symn declare(ccState s, int kind, astn tag, symn typ) {
 				tag->kind = kind;
 				break;
 		}
+		//~ /*
 		if (typ) {
 			def->cast = typ->cast;
-		}
+		}// */
 	}
 
 	return def;
@@ -691,7 +693,12 @@ int castOf(symn typ) {
 			return TYPE_ref;
 
 		case EMIT_opc:
+			return typ->cast;
+
 		case TYPE_rec:
+			// refFix
+			if (typ->cast == TYPE_ref)
+				return TYPE_ptr;
 			return typ->cast;
 	}
 	debug("failed(%t): %?-T", typ ? typ->kind : 0, typ);
@@ -924,10 +931,6 @@ symn typecheck(ccState s, symn loc, astn ast) {
 					ast->type = s->type_bol;
 					ast->cst2 = TYPE_bit;
 				}
-				else if (ast->kind == OPER_adr) {
-					//~ ast->type = type_ptr;
-					cast = ast->cst2 = ASGN_set;
-				}
 				if (!castTo(ast->op.rhso, cast)) {
 					debug("%T('%k', %+k): %t", rht, ast, ast, cast);
 					return 0;
@@ -1116,7 +1119,7 @@ symn typecheck(ccState s, symn loc, astn ast) {
 			fatal("operator %k (%T %T): %+k", ast, lht, rht, ast);
 		} break;
 
-		case OPER_com: {	// ''
+		case OPER_com: {	// ','
 			TODO("FixMe")
 			symn lht = typecheck(s, loc, ast->op.lhso);
 			symn rht = typecheck(s, loc, ast->op.rhso);
@@ -1168,8 +1171,7 @@ symn typecheck(ccState s, symn loc, astn ast) {
 				debug("%T('%k', %+k): %t", rht, ast, ast, castOf(lht));
 				return 0;
 			}
-			// assignment by reference
-			//~ /*
+			/* assignment by reference
 			if (!byVal) {
 				ast->op.rhso->cst2 = TYPE_ref;
 				ast->op.lhso->cst2 = ASGN_set;
@@ -1192,23 +1194,6 @@ symn typecheck(ccState s, symn loc, astn ast) {
 				return NULL;
 			}
 			switch (ast->kind) {
-				/*case TYPE_int: {
-					int is32 = ast->con.cint != (int32_t)ast->con.cint;
-					return typeTo(ast, is32 ? type_i32 : type_i64);
-				}
-				case TYPE_int: switch (ast->cst2) {
-					default: fatal("FixMe"); break;
-					case TYPE_any:
-					case TYPE_i32: ast->type = type_i32; break;
-					case TYPE_i64: ast->type = type_i64; break;
-				} return ast->type;
-
-				case TYPE_flt: switch (ast->cst2) {
-					default: fatal("FixMe"); break;
-					case TYPE_f32: ast->type = type_f32; break;
-					case TYPE_any:
-					case TYPE_f64: ast->type = type_f64; break;
-				} return ast->type;*/
 				case TYPE_int: return typeTo(ast, s->type_i32) ? s->type_i32 : NULL;
 				case TYPE_flt: return typeTo(ast, s->type_f64) ? s->type_f64 : NULL;
 				case TYPE_str: return typeTo(ast, s->type_str) ? s->type_str : NULL;
@@ -1269,15 +1254,20 @@ symn typecheck(ccState s, symn loc, astn ast) {
 						return 0;
 					}
 
+					// TODO: review
 					if (argsym->cast == TYPE_ref || argval->type->cast == TYPE_ref) {
-						// TODO: quick fix.
-						int istypename = argsym->type == s->type_rec;
-						logif(1, "%T", argsym);
-						if (!castTo(argval, istypename ? ASGN_set : TYPE_ref)) {
-							debug("%k:%t", argval, TYPE_ref);
+						if (!castTo(argval, argsym->cast)) {
+							debug("%k:%t", argval, argsym->cast);
 							return 0;
 						}
 					}
+
+					/*if (argsym->cast == TYPE_arr && argval->type->cast == TYPE_ref) {
+						if (!castTo(argval, TYPE_arr)) {
+							debug("%k:%t", argval, TYPE_arr);
+							return 0;
+						}
+					}*/
 
 					// swap(a, b) is written instad of swap(&a, &b)
 					if (argsym->cast == TYPE_ref && argval->type->cast != TYPE_ref) {
@@ -1339,10 +1329,10 @@ int fixargs(symn sym, int align, int stbeg) {
 			arg->cast = TYPE_ref;
 		}
 
-		// referenced types are passed by reference.
+		/*/ referenced types are passed by reference.
 		if (isCall && arg->type->kind == TYPE_ref) {
 			arg->cast = TYPE_ref;
-		}
+		}// */
 
 		arg->size = sizeOf(arg);
 

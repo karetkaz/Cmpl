@@ -33,15 +33,15 @@ void fastblur(gxSurf img, int radius) {
 	if (radius > hm)
 		radius = hm;
 
-	define array(typename type, int32 ^n) = emit(struct, ref(memmgr(null, type.size * n)), i32(n));
+	define new(typename type, int32 ^n) = emit(struct, ref(memmgr(null, type.size * n)), i32(n));
 	define free(int v[]) = void(memmgr(emit(pointer, load.b32, ref(v)), 0));
 
-	int r[] = array(int, wh);
-	int g[] = array(int, wh);
-	int b[] = array(int, wh);
-	int vmin[] = array(int, maxwh);
-	int vmax[] = array(int, maxwh);
-	int dv[] = array(int, 256 * div);
+	int r[] = new(int, wh);
+	int g[] = new(int, wh);
+	int b[] = new(int, wh);
+	int vmin[] = new(int, maxwh);
+	int vmax[] = new(int, maxwh);
+	int dv[] = new(int, 256 * div);
 
 	for (int i = 0; i < 256 * div; i += 1) {
 		dv[i] = i / div;
@@ -55,7 +55,7 @@ void fastblur(gxSurf img, int radius) {
 		int bsum = 0;
 
 		for (int i = -radius; i <= radius; i += 1) {
-			int p = getPixel(img, min(wm, max(i, 0)), y);
+			int p = getPixel(img, Math.min(wm, Math.max(i, 0)), y);
 			rsum += rch(p);
 			gsum += gch(p);
 			bsum += bch(p);
@@ -67,8 +67,8 @@ void fastblur(gxSurf img, int radius) {
 			b[yi] = dv[bsum];
 
 			if (y == 0) {
-				vmin[x] = min(x + radius + 1, wm);
-				vmax[x] = max(x - radius, 0);
+				vmin[x] = Math.min(x + radius + 1, wm);
+				vmax[x] = Math.max(x - radius, 0);
 			}
 
 			int p1 = getPixel(img, vmin[x], y);
@@ -89,7 +89,7 @@ void fastblur(gxSurf img, int radius) {
 		int yp = -radius * w;
 
 		for (int i = -radius; i <= radius; i += 1) {
-			int xy = max(0, yp) + x;
+			int xy = Math.max(0, yp) + x;
 			rsum += r[xy];
 			gsum += g[xy];
 			bsum += b[xy];
@@ -100,8 +100,8 @@ void fastblur(gxSurf img, int radius) {
 			setPixel(img, x, y, __rgb(dv[rsum], dv[gsum], dv[bsum]));
 
 			if (x == 0) {
-				vmin[y] = min(y + radius + 1, hm) * w;
-				vmax[y] = max(y - radius, 0) * w;
+				vmin[y] = Math.min(y + radius + 1, hm) * w;
+				vmax[y] = Math.max(y - radius, 0) * w;
 			}
 
 			int p1 = x + vmin[y];
@@ -136,16 +136,16 @@ vec4f grayFp2(vec4f rgbColor) {
 
 void drawCB() {
 	if (blurradius >= 0) {
-		int radius = min(blurradius - 3, Window.resy) / 8;
+		int radius = Math.min(blurradius - 3, Window.resy) / 8;
 		blurradius = -1;
 		zoomSurf(offScreen, null, img, null, 1);
-		blurSurf(offScreen, null, radius);
-		blurSurf(offScreen, null, radius);
-		blurSurf(offScreen, null, radius);
-		fillSurf(offScreen, null, grayFp2);
+		//~ blurSurf(offScreen, null, radius);
+		//~ blurSurf(offScreen, null, radius);
+		//~ blurSurf(offScreen, null, radius);
+		//~ fillSurf(offScreen, null, grayFp2);
 
 		
-		//~ fastblur(offScreen, radius);
+		fastblur(offScreen, radius);
 		//~ fastblur(offScreen, radius);
 		//~ fastblur(offScreen, radius);
 		//~ fastblur(offScreen, radius);

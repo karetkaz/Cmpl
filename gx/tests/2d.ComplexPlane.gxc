@@ -10,7 +10,7 @@ define PI = Math.pi;
 define toCartesian(Complex ^x) = Complex(x.re * cos(x.im), x.re * sin(x.im));
 define toPolar(Complex ^x) = Complex(abs(x), arg(x));
 
-define AbsMod(const double ^val, double mod) = ((val < 0 ? val+mod : val) % mod);
+define AbsMod(const double ^val, double ^mod) = ((val < 0 ? val+mod : val) % mod);
 
 vec4f Domain(Complex z, double mod) {
 	result.x = AbsMod(arg(z)/(PI*2) + PI/4, mod);
@@ -24,10 +24,10 @@ vec4f Domain(Complex z, double mod) {
 
 vec4f rgbOp(double x, double y) {
 	define N = PI / 2;
-	x = lerp(x, -N, N);
-	y = lerp(y, -N, N);
-	//~ x = lerp(x, -PI, 2*PI);
-	//~ y = lerp(y, -1.5*PI, 1.5*PI);
+	x = Math.lerp(x, -N, N);
+	y = Math.lerp(y, -N, N);
+	//~ x = Math.lerp(x, -PI, 2*PI);
+	//~ y = Math.lerp(y, -1.5*PI, 1.5*PI);
 	Complex z = Complex(x, y);
 	//~ z = div(Complex(1), z);
 	z = sin(z);
@@ -38,7 +38,7 @@ vec4f rgbOp(double x, double y) {
 	//~ z = toPolar(z);
 	//~ result = Domain(z, 1);
 	//~ result = vec4f(AbsMod(abs(im(z)), 1));
-	result = Hsv2Rgb(vec4f(abs(re(z)) % 1, 1, 1));
+	result = Hsv2Rgb(vec4f(Math.abs(re(z)) % 1, 1, 1));
 }
 
 evalSurf(offScreen, null, rgbOp);

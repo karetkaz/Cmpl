@@ -167,7 +167,6 @@ int eval(astn res, astn ast) {
 		default:
 			debug("(%+k):%t / %d", ast, ast->cst2, ast->line);
 
-		case ASGN_set:
 		case TYPE_arr:
 		case TYPE_rec:
 		case TYPE_ref:
@@ -393,7 +392,6 @@ int eval(astn res, astn ast) {
 		} break;
 
 		case ASGN_set:
-		case EMIT_opc:
 		//~ case ASGN_add:
 		//~ case ASGN_sub:
 		//~ case ASGN_mul:
@@ -404,6 +402,7 @@ int eval(astn res, astn ast) {
 		//~ case ASGN_and:
 		//~ case ASGN_ior:
 		//~ case ASGN_xor:
+		case EMIT_opc:
 			return 0;
 	}
 

@@ -761,7 +761,7 @@ static int readTok(ccState s, astn tok) {
 							warn(s->s, 4, s->file, s->line, "octal escape sequence overflow");
 						chr = val & 0xff;
 					} break;
-					
+
 
 					// hex sequence (len = 2)
 					case 'x': {
@@ -1495,11 +1495,13 @@ astn decl_var(ccState s, astn *argv, int mode) {
 			return 0;
 		}
 
-		if (byref && typ->cast == TYPE_ref) {
+		/*if (byref && typ->cast == TYPE_ref) {
 			warn(s->s, 3, tag->file, tag->line, "the type `%-T` is a reference type", typ);
-		}
+		}*/
 
 		ref = declare(s, TYPE_ref, tag, typ);
+		//~ logif(1, "variable %-T casts to %t", ref, ref->cast);
+
 		ref->size = byref ? vm_size : sizeOf(typ);
 
 		if (argv) {
@@ -1534,7 +1536,7 @@ astn decl_var(ccState s, astn *argv, int mode) {
 		}
 
 		/* TODO: arrays of functions: without else
-		 * int rgbCopy(int a, int b)[8] = rgbCpy, rgbAnd, ...
+		 * int rgbCopy(int a, int b)[8] = [rgbCpy, rgbAnd, ...];
 		 */
 		else if (skip(s, PNCT_lc)) {		// int a[...]
 			symn tmp = newdefn(s, TYPE_arr);
@@ -1578,6 +1580,7 @@ astn decl_var(ccState s, astn *argv, int mode) {
 					if (eval(&val, dims) == TYPE_int) {
 						addarg(s, typ, "length", TYPE_def, s->type_i32, dims);
 						typ->size = val.con.cint;
+						typ->cast = TYPE_ref;
 						typ->init = init;
 						ref->cast = 0;
 
@@ -1644,7 +1647,7 @@ astn decl_var(ccState s, astn *argv, int mode) {
 		}
 
 		if (byref) {
-			//~ debug("variable %-T is by ref", ref);
+			//~ logif(1, "variable %-T is by ref", ref);
 			ref->cast = TYPE_ref;
 		}
 
@@ -1652,7 +1655,6 @@ astn decl_var(ccState s, astn *argv, int mode) {
 			tag->cst2 = TYPE_ref;
 		}
 		else {
-			//~ addarg(s, typ, "Class", ATTR_const | TYPE_def, s->type_rec, lnknode(s, typ));
 			tag->cst2 = ref->cast;
 		}
 	}
@@ -1917,7 +1919,6 @@ static astn stmt(ccState s, int mode) {
 					ast->stmt.test = fun;
 					if (!typecheck(s, NULL, fun) || !typecheck(s, NULL, sym->init)) {
 						error(s->s, ast->file, ast->line, "invalid iterator for `%+k`", itin);
-						debug("%7K", ast);
 						if (fun->type && fun->type != s->type_bol) {
 							error(s->s, ast->file, ast->line, "invalid iterator, next should return boolean `%+k`", fun);
 						}
@@ -1975,7 +1976,7 @@ static astn stmt(ccState s, int mode) {
 
 	else if ((ast = decl(s, TYPE_any))) {	// declaration
 		if (mode)
-			error(s->s, ast->file, ast->line, "unexpected declaration %+k", ast);
+			error(s->s, ast->file, ast->line, "unexpected declaration `%+k`", ast);
 	}
 	else if ((ast = expr(s, TYPE_vid))) {	// expression
 		astn tmp = newnode(s, STMT_do);
@@ -1986,7 +1987,7 @@ static astn stmt(ccState s, int mode) {
 		skiptok(s, STMT_do, 1);
 		switch (ast->kind) {
 			default:
-				warn(s->s, 1, ast->file, ast->line, "statement expression expected");
+				warn(s->s, 1, ast->file, ast->line, "expression statement expected");
 				break;
 
 			case OPER_fnc:
@@ -1997,7 +1998,7 @@ static astn stmt(ccState s, int mode) {
 	}
 
 	else if ((ast = peek(s))) {
-		error(s->s, ast->file, ast->line, "unexpected token: %k", ast);
+		error(s->s, ast->file, ast->line, "unexpected token: `%k`", ast);
 		skiptok(s, STMT_do, 1);
 	}
 	else {
@@ -2365,18 +2366,6 @@ astn decl(ccState s, int Rmode) {
 				def->args = leave(s, def, 1);
 			}
 		}
-		/*else if (tag && test(s, ASGN_set)) {	// simple constant: enum x:int = 9;
-			//~ HACK: declare as a variable to be assignable, then revert to definition.
-			symn tmp = declare(s, TYPE_ref, tag, base);
-			tmp->stat = tmp->cnst = 1;
-			redefine(s, tmp);
-
-			if (!decl_init(s, tmp)) {
-				error(s->s, tmp->file, tmp->line, "constant expected");
-			}
-			skiptok(s, STMT_do, 1);
-			tmp->kind = TYPE_def;
-		}*/
 		else {
 			skiptok(s, STMT_do, 1);
 		}
@@ -2688,20 +2677,19 @@ astn decl(ccState s, int Rmode) {
 				Attr |= ATTR_stat;
 
 			}
-			else if (test(s, ASGN_set)) {
+			else if (test(s, ASGN_set)) {				// int sqrt(int a) = sqrt_fast;		// function reference.
 				if (ref->call) {
 					ref->cast = TYPE_ref;
 				}
 				if (!decl_init(s, ref)) {
+					//~ skiptok(s, STMT_do, 1);
 					trace("FixMe");
 					return NULL;
 				}
-				// TODO: quick fix.
-				if (typ->cast == TYPE_ref)
-					ref->init->cst2 = ASGN_set;
 			}
 		}
 
+		// for (int a : range(10, 20)) ...
 		if (Rmode & decl_Colon)
 			if (test(s, PNCT_cln))
 				backTok(s, newnode(s, STMT_do));

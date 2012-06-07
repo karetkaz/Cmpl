@@ -37,7 +37,7 @@ void meshGen(bool sclosed, bool tclosed, gxSurf heihgtMap) {
 	}
 }
 
-define division = 92;
+define division = 128;
 string img = "media/images/hm2.jpg";
 define resize(gxSurf src, int width, int height) = zoomSurf(gxSurf(width, height), null, src, null, 1);
 

@@ -354,6 +354,13 @@ static void fputast(FILE *fout, astn ast, int mode, int level) {
 		case STMT_ret: {
 			if (rlev < 2) {
 				fputstr(fout, "return");
+				if (rlev > 0) {
+					if (ast->stmt.stmt) {
+						fputstr(fout, " (");
+						fputast(fout, ast->stmt.stmt, mode | noIden, 0xf);
+						fputchr(fout, ')');
+					}
+				}
 				break;
 			}
 			fputfmt(fout, "%I", noiden ? 0 : level);
@@ -363,7 +370,12 @@ static void fputast(FILE *fout, astn ast, int mode, int level) {
 					debug("error");
 					break;
 			}
-			fputstr(fout, "return;\n");
+			fputstr(fout, "return");
+			if (ast->stmt.stmt) {
+				fputstr(fout, " (");
+				fputast(fout, ast->stmt.stmt, mode | noIden, 0xf);
+				fputchr(fout, ')');
+			}
 		} break;
 		//#}
 		//#{ OPER

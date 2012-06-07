@@ -302,7 +302,7 @@ gxSurf mand = gxSurf(Window.resx, Window.resy);
 
 void drawCB() {
 	int rgbOp(int dst, int src) {
-		define op(int a, int b) = max(a, b);
+		define op(int a, int b) = Math.max(a, b);
 		int r = op(rch(dst), rch(src));
 		int g = op(gch(dst), gch(src));
 		int b = op(bch(dst), bch(src));

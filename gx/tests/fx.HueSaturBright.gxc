@@ -49,7 +49,7 @@ void mouseCB(int btn, int x, int y) {
 }
 
 mat4f cmatHue(float64 val) {
-	val = Math.deg2rad(clamp(val, 0., 360.));
+	val = Math.deg2rad(Math.clamp(val, 0., 360.));
 	float64 cV = cos(val);
 	float64 sV = sin(val);
 	float64 lR = 0.213;
@@ -61,14 +61,14 @@ mat4f cmatHue(float64 val) {
 	result.w = vec4f(0., 0., 0., 1.);
 }
 mat4f cmatSat(float64 val) {
-	float64 x = 1 + clamp(val, -100., 200.) / 100;
+	float64 x = 1 + Math.clamp(val, -100., 200.) / 100;
 	result.x = vec4f(0.3086*(1-x) + x , .6094*(1-x), .0820*(1-x), 0.);
 	result.y = vec4f(0.3086*(1-x) , .6094*(1-x) + x, .0820*(1-x), 0.);
 	result.z = vec4f(0.3086*(1-x) , .6094*(1-x), .0820*(1-x) + x, 0.);
 	result.w = vec4f(0., 0., 0., 1.);
 }
 mat4f cmatLum(float64 val) {
-	val = clamp(val, -100., 100.) / 100;
+	val = Math.clamp(val, -100., 100.) / 100;
 	result.x = vec4f(1., 0., 0., val);
 	result.y = vec4f(0., 1., 0., val);
 	result.z = vec4f(0., 0., 1., val);
@@ -100,9 +100,9 @@ void drawCB() {
 	if (reDraw) {
 		zoomSurf(offScreen, null, img, null, 1);
 
-		brightness = clamp(brightness, -100, 100);
-		saturation = clamp(saturation, -100, 200);
-		hue = clamp(hue, 0, 360);
+		brightness = Math.clamp(brightness, -100, 100);
+		saturation = Math.clamp(saturation, -100, 200);
+		hue = Math.clamp(hue, 0, 360);
 
 		mat = cmatHSL(hue, saturation, brightness);
 

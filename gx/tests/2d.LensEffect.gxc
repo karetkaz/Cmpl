@@ -28,8 +28,8 @@ void mouseCB(int btn, int x, int y) {
 	}
 	if (btn & 2) {
 		reDraw := true;
-		roi.x = clamp(roi.x + ox - x, 0, bgresx - roi.w);
-		roi.y = clamp(roi.y + oy - y, 0, bgresy - roi.h);
+		roi.x = Math.clamp(roi.x + ox - x, 0, bgresx - roi.w);
+		roi.y = Math.clamp(roi.y + oy - y, 0, bgresy - roi.h);
 	}
 	ox = x;
 	oy = y;
@@ -45,8 +45,8 @@ void drawCB() {
 		for (int y = -magRadius; y < magRadius; y += 1) {
 			for (int x = -magRadius ;x < magRadius; x += 1) {
 				vec2d p = magnCoeff[y + magRadius][x + magRadius];
-				double px = clamp(roi.x + magx + p.x, 0., maxx);
-				double py = clamp(roi.y + magy + p.y, 0., maxy);
+				double px = Math.clamp(roi.x + magx + p.x, 0., maxx);
+				double py = Math.clamp(roi.y + magy + p.y, 0., maxy);
 				int col = getPixel(bgImg, px, py);
 				setPixel(offScreen, x + magx, y + magy, col);
 			}
@@ -68,11 +68,11 @@ for (int y = -magRadius; y < magRadius; y += 1) {
 			double z = sqrt(magRadius*magRadius - x*x - y*y);
 			if (z > 0) {
 				a = x * (magRadius / magFactor) / z;
-				if (abs(a) > abs(x))
+				if (Math.abs(a) > Math.abs(x))
 					a = x;
 
 				b = y * (magRadius / magFactor) / z;
-				if (abs(b) > abs(y))
+				if (Math.abs(b) > Math.abs(y))
 					b = y;
 			}
 		}

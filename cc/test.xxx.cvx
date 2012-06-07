@@ -1,14 +1,11 @@
 //~ module test_what_does_not_work;
 
 //~ int alma(int h)[10];
-//~ int stringMap[string];
+//~ int stringMap[string];		stringMap[]
 
 //~ void alma(int a) {
 	//~ static int A = a;
 //~ }
-
-//~ define hex int; //%0x%08x
-//~ hex pi = Math.pi * (1 << 28);
 
 /+ inlineing ...
 define sqr2(float64 ^x) = x*x;
@@ -28,10 +25,10 @@ string str = emit(string, ref(x));
 
 /+ ???
 define double2 float64; //%%4.50g
-double2 x = 3.14 / 3 + .0001;
+double2 x = 3.14 / 4 + .0001;
 double2 s1 = sin(x);
 double2 s2 = Math.Sin(x);
-int a = 16 << 10;
+//~ int a = 16 << 10;
 
 int A = 9;
 pointer a = emit(pointer, ref(A));
@@ -40,20 +37,28 @@ int &a2 = A;
 //~ +/
 
 /+ fixed size array for defines
-void testArr(double x[16]) {
-	x[2] = 8;
-}
+void testArr(double x[]) {
+	print("%d\n", int64(x.length));
+	x[1] = 8;
+}// */
 
-define TestArr(double x[16]) = testArr(x);
+//~ define TestArr(double x[16]) = testArr(x);
 
-double x[16] = 0;
-//~ testArr(x);
-TestArr(x);
+double x[16] = 3;
+testArr(x);
+//~ TestArr(x);
 testFunc(x);
+testFunc2(x);
 //~ +/
 
-struct ComplexByVal {double re; double im;}
-struct &ComplexByRef {double re; double im;}
+	static int &T = null;
+void refassign(int &t) {
+	&T = t;
+}
+
+int a = 6;
+refassign(a);
+
 //~ define ComplexByRef(double re, double im) = emit(ComplexByRef, store.b64, dupp.x1_2, f64(re), store.b64, i32.add, i32(8), dupp.x1_2, f64(im), ref(memmgr(null, 16)));
 
 /*
@@ -64,21 +69,23 @@ ComplexByRef ComplexByRef(double re, double im) {
 	return result;
 }// */
 
-define sizeof(typename type) = int(type.size);
-define new(typename type) = emit(struct, ref(memmgr(null, type.size)));
+/* typenames
+//~ define sizeof(typename type) = int(type.size);
+int sizeof(typename type) {return type.size;}
+define new(typename type) = memmgr(null, type.size);
 
 //~ void print(ComplexByRef val) { print("%F", val.re); print(", "); print("%F", val.im); print("\n"); }
+struct ComplexByVal {double re; double im;}
+struct &ComplexByRef {double re; double im;}
 
-//~ int64 a = 0;
-//~ int64& b = &a;
-//~ &b = a;
-//~ b = &a;
-//~ b = a;
-//~ a = b;
+ComplexByVal v1;// = ComplexByVal(0, 0);
+ComplexByRef v2 = new(ComplexByRef);
 
-//~ ComplexByRef r1 = ComplexByRef(1, 2);
-ComplexByRef r2 = new(ComplexByRef);
+typename t1 = ComplexByVal;
+typename t2 = ComplexByRef;
+
+int s1 = sizeof(ComplexByVal);
 int s2 = sizeof(ComplexByRef);
-//~ print(r1);
-typename t1 = int64;
-//~ typename t2 = ComplexByRef;
+// */
+
+//~  int x = sizeof(int64);

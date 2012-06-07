@@ -54,9 +54,9 @@ void drawCB() {
 	if (reDraw) {
 		zoomSurf(offScreen, null, img, null, 1);
 
-		brightness = clamp(brightness, -255, 255);
-		contrast = clamp(contrast, -512, 512);
-		gamma = clamp(gamma, 1, 1000);
+		brightness = Math.clamp(brightness, -255, 255);
+		contrast = Math.clamp(contrast, -512, 512);
+		gamma = Math.clamp(gamma, 1, 1000);
 
 		lutBrightnessContractGamma(&lut, brightness, contrast, gamma / 100.);
 

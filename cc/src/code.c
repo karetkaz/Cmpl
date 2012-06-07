@@ -1,6 +1,3 @@
-// ╭───────────────────────────────────────────────────╮
-// │ code.c.                                           │
-// ╰───────────────────────────────────────────────────╯
 /*******************************************************************************
  *   File: code.c
  *   Date: 2011/06/23
@@ -177,6 +174,7 @@ symn libcall(state rt, int libc(state), const char* proto) {
 		link->init = intnode(rt->cc, libcpos);
 
 		libcinit = lnknode(rt->cc, link);
+		stdiff = fixargs(sym, 4, 0);
 
 		// glue the new libcinit argument
 		if (args && args != rt->cc->void_tag) {
@@ -184,9 +182,29 @@ symn libcall(state rt, int libc(state), const char* proto) {
 			astn arg = args;
 			narg->op.lhso = libcinit;
 
-			if (arg->kind == OPER_com) {
-				while (arg->op.lhso->kind == OPER_com)
+			if (1) {
+				symn s = NULL;
+				astn arg = args;
+				while (arg->kind == OPER_com) {
+					astn n = arg->op.rhso;
+					s = linkOf(n);
 					arg = arg->op.lhso;
+					if (s && n) {
+						//~ logif(1, "%-T: %-T(%k) casts to %t", sym, s, n, s->cast);
+						n->cst2 = s->cast;
+					}
+				}
+				s = linkOf(arg);
+				if (s && arg) {
+					//~ logif(1, "%-T: %-T(%k) casts to %t", sym, s, arg, s->cast);
+					arg->cst2 = s->cast;
+				}
+			}
+
+			if (arg->kind == OPER_com) {
+				while (arg->op.lhso->kind == OPER_com) {
+					arg = arg->op.lhso;
+				}
 				narg->op.rhso = arg->op.lhso;
 				arg->op.lhso = narg;
 			}
@@ -213,7 +231,6 @@ symn libcall(state rt, int libc(state), const char* proto) {
 		lc->pos = libcpos;
 		lc->sym = sym;
 
-		stdiff = fixargs(sym, 4, 0);
 		lc->chk = stdiff / 4;
 
 		stdiff -= sizeOf(sym->type);
@@ -1194,12 +1211,12 @@ static inline int ovf(cell pu) {
 
 static void dbugerr(state rt, cell cpu, char *file, int line, int pu, void *ip, stkptr bp, int ss, char *text, int xxx) {
 	int IP = ((unsigned char*)ip) - rt->_mem;
-	//~ fputfmt(stderr, "pu: {ip: %d, sp: %d, bp: %d}\n", cpu->ip - rt->_mem, cpu->sp - rt->_mem, cpu->bp - rt->_mem);
 	//~ error(rt, file, line, "exec:%s(%?d):[pu%02d][sp%02d]@%9.*A rw@%06x", text, xxx, pu, ss, IP, ip);
 	error(rt, file, line, "exec:%s(%?d):[sp%02d]@%9.*A rw@%06x", text, xxx, ss, IP, ip);
 }
 
-static int dbgNpu(state rt, cell cpu, const int cc) {
+#if MAXPROCSEXEC > 1
+static int dbgpu(state rt, cell cpu, const int cc) {
 	char* err_file = 0;
 	int err_line = 0;
 	int err_code = 0;
@@ -1211,8 +1228,6 @@ static int dbgNpu(state rt, cell cpu, const int cc) {
 	const int ms = rt->_size;
 	const int ro = rt->vm.ro;			// read only region
 	const memptr mp = (void*)rt->_mem;	// memory begins here
-
-
 
 	for ( ; ; ) {
 
@@ -1261,7 +1276,8 @@ static int dbgNpu(state rt, cell cpu, const int cc) {
 				return -4;
 
 			error_libc:
-				dbugerr(rt, cpu, err_file, err_line, 0, ip, sp, st - sp, "libcall error", err_code);
+				error(rt, err_file, err_line, "libc: %-T returned: %d", libcvec[ip->rel].sym);
+				//~ dbugerr(rt, cpu, err_file, err_line, 0, ip, sp, st - sp, "libcall error", err_code);
 				return -5;
 
 			#define NEXT(__IP, __CHK, __SP) {pu->sp -= vm_size * (__SP); pu->ip += (__IP);}
@@ -1272,8 +1288,8 @@ static int dbgNpu(state rt, cell cpu, const int cc) {
 	}
 	return 0;
 }
-
-static int dbg1pu(state rt, cell pu) {
+#else
+static int dbgpu(state rt, cell pu) {
 	char *err_file = 0;
 	int err_line = 0;
 	int err_code = 0;
@@ -1332,7 +1348,8 @@ static int dbg1pu(state rt, cell pu) {
 				return -4;
 
 			error_libc:
-				dbugerr(rt, cpu, err_file, err_line, 0, ip, sp, st - sp, "libcall error", err_code);
+				error(rt, err_file, err_line, "libc: %-T returned: %d", libcvec[ip->rel].sym, err_code);
+				//~ dbugerr(rt, cpu, err_file, err_line, 0, ip, sp, st - sp, "libcall error", err_code);
 				return -5;
 
 			#define NEXT(__IP, __CHK, __SP) {pu->sp -= vm_size * (__SP); pu->ip += (__IP);}
@@ -1343,6 +1360,7 @@ static int dbg1pu(state rt, cell pu) {
 	}
 	return 0;
 }
+#endif
 
 /** vmExec
  * executes the script.
@@ -1353,7 +1371,7 @@ static int dbg1pu(state rt, cell pu) {
 **/
 int vmExec(state rt, dbgf dbg, int ss) {
 	int i;
-	struct cell pu[1];
+	struct cell pu[MAXPROCSEXEC];
 	rt->_end = rt->_mem + rt->_size;
 
 	ss /= lengthof(pu);
@@ -1392,7 +1410,7 @@ int vmExec(state rt, dbgf dbg, int ss) {
 	if (rt->dbug) {
 		fputfmt(stdout, "\n>> >> >> Initialize\n");
 	}
-	return dbg1pu(rt, pu);
+	return dbgpu(rt, pu);
 	//~ return dbgNpu(rt, pu, lengthof(pu));
 }
 
@@ -1480,7 +1498,7 @@ int vmCall(state rt, symn fun, ...) {
 	if (rt->dbug) {
 		fputfmt(stdout, "\n>> >> >> Invoke: %-T\n", fun);
 	}
-	result = dbg1pu(rt, pu);
+	result = dbgpu(rt, pu);
 	rt->retv = resp;
 	rt->argv = argp;
 	return result;

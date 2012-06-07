@@ -42,12 +42,12 @@ enum importgfx: bool {
 static if (importgfx.rgbUtils) {
 
 define __rgb(int r, int g, int b) = int((r << 16) | (g << 8) | b);
-define rgbClamp(int r, int g, int b) = __rgb(clamp(r, 0, 255), clamp(g, 0, 255), clamp(b, 0, 255));
+define rgbClamp(int r, int g, int b) = __rgb(Math.clamp(r, 0, 255), Math.clamp(g, 0, 255), Math.clamp(b, 0, 255));
 define rgbAnd(int r, int g, int b) = __rgb(r & 255, g & 255, b & 255);
 define rgb(int r, int g, int b) = rgbAnd(r, g, b);
 
 define __gray(int ^c) = int((c << 16) | (c << 8) | c);
-define grayClamp(int c) = __gray(clamp(c, 0, 255));
+define grayClamp(int c) = __gray(Math.clamp(c, 0, 255));
 define grayAnd(int c) = __gray(c & 255);
 define gray(int c) = grayAnd(c);
 
@@ -90,15 +90,15 @@ int rgbAnd(int c1, int c2) {
 	result = c1 & c2;
 }
 int rgbAdd(int c1, int c2) {
-	int r = min(rch(c1) + rch(c2), 255);
-	int g = min(gch(c1) + gch(c2), 255);
-	int b = min(bch(c1) + bch(c2), 255);
+	int r = Math.min(rch(c1) + rch(c2), 255);
+	int g = Math.min(gch(c1) + gch(c2), 255);
+	int b = Math.min(bch(c1) + bch(c2), 255);
 	result = r << 16 | g << 8 | b;
 }
 int rgbSub(int c1, int c2) {
-	int r = max(rch(c1) - rch(c2), 0);
-	int g = max(gch(c1) - gch(c2), 0);
-	int b = max(bch(c1) - bch(c2), 0);
+	int r = Math.max(rch(c1) - rch(c2), 0);
+	int g = Math.max(gch(c1) - gch(c2), 0);
+	int b = Math.max(bch(c1) - bch(c2), 0);
 	result = r << 16 | g << 8 | b;
 }
 int rgbMul(int c1, int c2) {
@@ -109,9 +109,9 @@ int rgbMul(int c1, int c2) {
 	result = r << 16 | g << 8 | b;
 }
 int rgbDiv(int c1, int c2) {
-	int r = min(255, (rch(c1) << 8) / (rch(c2) + 1));
-	int g = min(255, (gch(c1) << 8) / (gch(c2) + 1));
-	int b = min(255, (bch(c1) << 8) / (bch(c2) + 1));
+	int r = Math.min(255, (rch(c1) << 8) / (rch(c2) + 1));
+	int g = Math.min(255, (gch(c1) << 8) / (gch(c2) + 1));
+	int b = Math.min(255, (bch(c1) << 8) / (bch(c2) + 1));
 	result = r << 16 | g << 8 | b;
 }
 
@@ -342,7 +342,7 @@ void lutBrightnessContractGamma(gxClut &lut, int brg, int cntr, double gamma) {
 	lut.count = 256;
 	for (int idx = 0; idx < 256; idx += 1) {
 		//~ int val = clamp(int(255 * pow(((bval + idx / 255. - .5) * cval) + .5, gval)), 0, 255);
-		int val = clamp(brg + int(255 * (cval * (pow(idx / 255., gval) - .5) + .5)), 0, 255);
+		int val = Math.clamp(brg + int(255 * (cval * (pow(idx / 255., gval) - .5) + .5)), 0, 255);
 		//~ lut.data[idx] = (doR ? val : idx) << 16 | (doG ? val : idx) << 8 | (doB ? val : idx);
 		lut.data[idx] = val << 16 | val << 8 | val;
 	}
@@ -527,17 +527,17 @@ void setupPicView(gxSurf vImg, bool vFit) {
 		static if (inertial_pan) {
 			int64 now = timeNow();
 			if (inertial_time < now) {
-				inertial_pan_x = clamp(inertial_pan_x, -inertial_pan, inertial_pan) / inertial_speed;
-				inertial_pan_y = clamp(inertial_pan_y, -inertial_pan, inertial_pan) / inertial_speed;
+				inertial_pan_x = Math.clamp(inertial_pan_x, -inertial_pan, inertial_pan) / inertial_speed;
+				inertial_pan_y = Math.clamp(inertial_pan_y, -inertial_pan, inertial_pan) / inertial_speed;
 
-				if ((abs(inertial_pan_x) > .5) || (abs(inertial_pan_y) > .5)) {
-					roi.x = clamp(roi.x + inertial_pan_x, 0., float64(width(img) - roi.w));
-					roi.y = clamp(roi.y + inertial_pan_y, 0., float64(height(img) - roi.h));
+				if ((Math.abs(inertial_pan_x) > .5) || (Math.abs(inertial_pan_y) > .5)) {
+					roi.x = Math.clamp(roi.x + inertial_pan_x, 0., float64(width(img) - roi.w));
+					roi.y = Math.clamp(roi.y + inertial_pan_y, 0., float64(height(img) - roi.h));
 					reDraw = true;
 				}
 				inertial_time = now + (int64(0x100000000) / 100);
 			}
-			if ((abs(inertial_pan_x) > .5) || (abs(inertial_pan_y) > .5)) {
+			if ((Math.abs(inertial_pan_x) > .5) || (Math.abs(inertial_pan_y) > .5)) {
 				Gui.Repaint();
 			}
 		}
@@ -555,8 +555,8 @@ void setupPicView(gxSurf vImg, bool vFit) {
 		}
 
 		if (btn == 1 && !fit) {
-			roi.x = clamp(roi.x + ox - x, 0, width(img) - roi.w);
-			roi.y = clamp(roi.y + oy - y, 0, height(img) - roi.h);
+			roi.x = Math.clamp(roi.x + ox - x, 0, width(img) - roi.w);
+			roi.y = Math.clamp(roi.y + oy - y, 0, height(img) - roi.h);
 			reDraw = true;
 		}
 		static if (inertial_pan) {

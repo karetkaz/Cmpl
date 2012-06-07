@@ -1,5 +1,5 @@
 // 3d
-define test = 2;
+define test = 1;
 enum Window {
 	draw = RenderMode.drawFill|RenderMode.draw_lit;// & ~RenderMode.zero_cbuf;
 	resx = 512;
@@ -134,8 +134,8 @@ void peak(double &x, double &y, double &z, double s01, double t01) {
 	define smax = +H;
 	define tmin = -H;
 	define tmax = +H;
-	double s = lerp(s01, smin, smax);
-	double t = lerp(t01, tmin, tmax);
+	double s = Math.lerp(s01, smin, smax);
+	double t = Math.lerp(t01, tmin, tmax);
 	//~ double sst = nz(sqrt(s*s + t*t), 1e-323);
 	double sst = sqrt(s*s + t*t);
 	x = s / H;
@@ -152,8 +152,8 @@ void drop(double &x, double &y, double &z, double s01, double t01) {
 	define smin = 0.;
 	define smax = pi;
 
-	double s = lerp(s01, smin, smax);
-	double t = lerp(t01, tmin, tmax);
+	double s = Math.lerp(s01, smin, smax);
+	double t = Math.lerp(t01, tmin, tmax);
 
 	x = .5 * (1 - cos(s)) * sin(s) * cos(t);
 	y = .5 * (1 - cos(s)) * sin(s) * sin(t);
@@ -174,8 +174,8 @@ void shell(double &x, double &y, double &z, double s01, double t01) {
 	define smin = 0.;
 	define smax = 2. * pi;
 
-	double s = lerp(s01, smin, smax);
-	double t = lerp(t01, tmin, tmax);
+	double s = Math.lerp(s01, smin, smax);
+	double t = Math.lerp(t01, tmin, tmax);
 
 	double W = s / (2 * pi);
 	x = W * cos(N * s) * (1 + cos(t));
@@ -191,8 +191,8 @@ void ellipse(double &x, double &y, double &z, double s01, double t01) {
 	define tmin = -pi / 2;
 	define tmax = +pi / 2;
 
-	double s = lerp(s01, smin, smax);
-	double t = lerp(t01, tmin, tmax);
+	double s = Math.lerp(s01, smin, smax);
+	double t = Math.lerp(t01, tmin, tmax);
 
 	x = X * cos(t) * cos(s);
 	y = Y * cos(t) * sin(s);
@@ -207,8 +207,8 @@ void cilinder(double &x, double &y, double &z, double s01, double t01) {
 	define tmin = 0.;
 	define tmax = 2*pi;
 
-	double s = lerp(s01, smin, smax);
-	double t = lerp(t01, tmin, tmax);
+	double s = Math.lerp(s01, smin, smax);
+	double t = Math.lerp(t01, tmin, tmax);
 
 	x = cos(t);
 	y = sin(t);
@@ -216,17 +216,17 @@ void cilinder(double &x, double &y, double &z, double s01, double t01) {
 }
 void OPXor(double &x, double &y, double &z, double s01, double t01) {
 	define H = float64(10);
-	x = lerp(1 - s01, -H, H);
-	y = lerp(1 - t01, -H, H);
+	x = Math.lerp(1 - s01, -H, H);
+	y = Math.lerp(1 - t01, -H, H);
 	z = double(int(255 * s01) ^ int(255 * t01)) / (256 / (2*H));
 }
 
 void OPPerlin(double &x, double &y, double &z, double s01, double t01) {
 	define H = float64(10);
 	define M = float64(10);
-	x = lerp(1 - s01, -H, H);
-	y = lerp(1 - t01, -H, H);
-	z = Perlin.Noise(lerp(s01, 0., M), lerp(t01, 0., M));
+	x = Math.lerp(1 - s01, -H, H);
+	y = Math.lerp(1 - t01, -H, H);
+	z = Perlin.Noise(Math.lerp(s01, 0., M), Math.lerp(t01, 0., M));
 }
 
 define divisionM = 2;

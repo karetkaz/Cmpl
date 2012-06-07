@@ -78,11 +78,11 @@ static struct BlendMode {
 #define BlendOpacity(base, blend, F, O) 	(F(base, blend) * O + blend * (1.0 - O))
 // */
 
-	define BlendLinearDodgef(float32 ^base, float32 ^blend) = min(base + blend, float32(1));
-	define BlendLinearBurnf(float32 ^base, float32 ^blend) = max(base + blend - 1, float32(0));
+	define BlendLinearDodgef(float32 ^base, float32 ^blend) = Math.min(base + blend, float32(1));
+	define BlendLinearBurnf(float32 ^base, float32 ^blend) = Math.max(base + blend - 1, float32(0));
 
-	define BlendColorDodgef(float32 ^base, float32 ^blend) = (blend == 1 ? blend : min(base / (1 - blend), float32(1)));
-	define BlendColorBurnf(float32 ^base, float32 ^blend) = (blend == 0 ? blend : max((1 - ((1 - base) / blend)), float32(0)));
+	define BlendColorDodgef(float32 ^base, float32 ^blend) = (blend == 1 ? blend : Math.min(base / (1 - blend), float32(1)));
+	define BlendColorBurnf(float32 ^base, float32 ^blend) = (blend == 0 ? blend : Math.max((1 - ((1 - base) / blend)), float32(0)));
 
 	vec4f Darken(vec4f Base, vec4f Blend) {
 		result = min(Base, Blend);
@@ -104,7 +104,7 @@ static struct BlendMode {
 		result = div(Base, Blend);
 	}
 	vec4f Difference(vec4f Base, vec4f Blend) {
-		define OP(float32 ^Base, float32 ^Blend) = abs(Base - Blend);
+		define OP(float32 ^Base, float32 ^Blend) = Math.abs(Base - Blend);
 		result = vec4f(OP(Base.x, Blend.x), OP(Base.y, Blend.y), OP(Base.z, Blend.z), OP(Base.w, Blend.w));
 	}
 
@@ -174,8 +174,8 @@ static struct BlendMode {
 		//~ define OP(float32 ^Base, float32 ^Blend) = BlendPinLightf(Base, Blend);
 		define OP(float32 ^Base, float32 ^Blend) = (
 			Blend < float32(.5)
-				? min(Base, 2 * Blend)
-				: max(Base, 2 *(Blend - float32(0.5)))
+				? Math.min(Base, 2 * Blend)
+				: Math.max(Base, 2 *(Blend - float32(0.5)))
 		);
 		result = vec4f(OP(Base.x, Blend.x), OP(Base.y, Blend.y), OP(Base.z, Blend.z), OP(Base.w, Blend.w));
 	}

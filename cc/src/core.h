@@ -17,6 +17,9 @@
 // enable dynamic dll/so lib loading
 #define USEPLUGINS
 
+// enable paralell stuff
+#define MAXPROCSEXEC 1
+
 // maximum elements to print from an array
 #define MAX_ARR_PRINT 100
 
@@ -187,8 +190,8 @@ struct list {				// linked list: stringlist, memgr, ...
 };
 struct astn {				// tree node (code)
 	ccToken		kind;				// code: TYPE_ref, OPER_???
-	symn		type;				// typeof() return type of operator ... base type of IDTF
 	ccToken		cst2;				// casts to basic type: (i32, f32, i64, f64, ref, bool, void)
+	symn		type;				// typeof() return type of operator ... base type of IDTF
 	astn		next;				// next statement, do not use for preorder
 	union {
 		union {						// TYPE_xxx: constant

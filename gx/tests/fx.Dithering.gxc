@@ -23,8 +23,7 @@ gxSurf dither(gxSurf img, bool grayscale, uint32 colors, Dithering method) {
 	if (colors >= 256) {
 		//~ dithering = Dithering.None;
 		//~ colors = 256;
-		result = img;
-		return;
+		return img;
 	}
 
 	int cols[256];
@@ -302,7 +301,7 @@ gxSurf dither(gxSurf img, bool grayscale, uint32 colors, Dithering method) {
 	}
 }
 
-int colors = 2;
+int colors = 4;
 bool grayscale = !true;
 Dithering method = Dithering.Bayer;
 
@@ -315,7 +314,7 @@ gxSurf image = gxSurf(fileName);
 
 dither(image, grayscale, colors, method);
 
-uint8 filename[24] = 'o','u','t','/','o','u','t','[', grayscale ? 'g' : 'c','_',hex(min(colors >> 4 & 0xf, 0xf)),hex(min(colors >> 0 & 0xf, 0xf)),'_','0' + method, ']','.','b','m','p',0;
+uint8 filename[24] = 'o','u','t','/','o','u','t','[', grayscale ? 'g' : 'c','_',hex(Math.min(colors >> 4 & 0xf, 0xf)),hex(Math.min(colors >> 0 & 0xf, 0xf)),'_','0' + method, ']','.','b','m','p',0;
 bmpWrite(image, emit(string, ref(filename)));
 
 setupPicView(image, false);

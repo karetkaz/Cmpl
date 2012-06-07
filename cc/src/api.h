@@ -24,8 +24,8 @@ typedef struct ccState *ccState;// compiler
 
 struct state {
 	int   errc;		// error count
-	FILE* logf;		// log file
 	int   closelog;	// close log file
+	FILE* logf;		// log file
 
 	symn  defs;		// global variables and functions
 	symn  gdef;		// static variables and functions
@@ -38,6 +38,7 @@ struct state {
 	void* udata;	//?user data for execution passed to vmExec
 
 	ccState cc;		// compiler enviroment
+	int (*dbug)(state, int pu, void *ip, long* sptr, int scnt);
 
 	struct vm {
 
@@ -62,8 +63,6 @@ struct state {
 			unsigned int	data;
 		} size;
 	} vm;
-
-	int (*dbug)(state, int pu, void *ip, long* sptr, int scnt);
 
 	long _size;		// size of total memory
 	void *_free;	// list of free memory

@@ -66,8 +66,11 @@ struct ss {
 ss A = ss(1, 2);
 ss.ss a = ss.ss(1, 2);
 
-int n1 = sizeof(ss);
-int n2 = sizeof(ss.ss);
+typename t1 = ss;
+typename t2 = ss.ss;
+
+//~ int n1 = sizeof(ss);
+//~ int n2 = sizeof(ss.ss);
 
 //~ */
 
@@ -168,7 +171,7 @@ void setup() {
 setup();
 //~ */
 
-/* Arrays
+/* Arrays/slices
 struct slice_in_struct {
 	int slice[];
 }

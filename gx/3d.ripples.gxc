@@ -26,9 +26,9 @@ int my = 0;
 gxSurf tmp = gxSurf(division, division);
 gxSurf img = gxSurf("media/images/download.jpg");
 //~ gxSurf img = gxSurf("media/images/ex1.jpg");
+//~ gxSurf img = gxSurf("media/images/nol.bmp");
 int imh = height(img);
 int imw = width(img);
-//~ gxSurf img = gxSurf("media/images/nol.bmp");
 
 static if (Options.textured) {
 	static if (Options.do3d) {
@@ -37,7 +37,7 @@ static if (Options.textured) {
 }
 
 void drawCB() {
-	static int page = 0;
+	static int page;// = 0;
 	static int32 hmap[2][division * division] = 0;
 
 	Gui.Repaint();
@@ -108,11 +108,11 @@ void drawCB() {
 		}
 		static void hmapfn(double &x, double &y, double &z, double s01, double t01) {
 			define H = float64(8);
-			x = lerp(1 - s01, -H, H);
-			y = lerp(1 - t01, -H, H);
+			x = Math.lerp(1 - s01, -H, H);
+			y = Math.lerp(1 - t01, -H, H);
 
-			//~ int posx = lerp(s01, 0., division - 1.);
-			//~ int posy = lerp(t01, 0., division - 1.);
+			//~ int posx = Math.lerp(s01, 0., division - 1.);
+			//~ int posy = Math.lerp(t01, 0., division - 1.);
 			//~ z = double(hmap[page][int(division * posy + posx)]) / pheight;
 
 			z = double(lerpHeight(s01, t01)) / 255;
@@ -129,14 +129,13 @@ void drawCB() {
 
 					//~ Xoffset = Xoffset * 32 / pheight;
 					//~ Yoffset = Yoffset * 32 / pheight;
-					int Shading = clamp(Xoffset, 0, 126);
+					int Shading = Math.clamp(Xoffset, 0, 126);
 
 					int t = getPixel(img, x*imw/division + Xoffset, y*imh/division + Yoffset);
-
 					setPixel(tmp, x, y, rgbClamp(rch(t) + Shading, gch(t) + Shading, bch(t) + Shading));
 				}
 				static if (!Options.textured) {
-					setPixel(tmp, x, y, grayClamp(abs(hmap[p][i])));
+					setPixel(tmp, x, y, grayClamp(Math.abs(hmap[p][i])));
 				}
 				i += 1;
 			}

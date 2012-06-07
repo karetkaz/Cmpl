@@ -56,10 +56,10 @@ gxSurf histo(gxSurf dst, gxSurf src, bool rgb) {
 	int maxRgb = 0;
 	//~ int maxLum = 0;
 	for (int i = 0; i < 256; i += 1) {
-		maxRgb = max(histoR[i], maxRgb);
-		maxRgb = max(histoG[i], maxRgb);
-		maxRgb = max(histoB[i], maxRgb);
-		//~ maxLum = max(histoL[i], maxLum);
+		maxRgb = Math.max(histoR[i], maxRgb);
+		maxRgb = Math.max(histoG[i], maxRgb);
+		maxRgb = Math.max(histoB[i], maxRgb);
+		//~ maxLum = Math.max(histoL[i], maxLum);
 	}
 
 	// fill

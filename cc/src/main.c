@@ -234,7 +234,8 @@ int reglibs(state rt, char *stdlib) {
 	err = err || install_stdc(rt, stdlib, wl);
 	//~ err = err || install_bits(s);
 
-	libcall(rt, test, "void testFunc(float64 arg[]);");
+	libcall(rt, test, "void testFunc(float64 arg[16]);");
+	libcall(rt, test, "void testFunc2(float64 arg[]);");
 
 	return err;
 }

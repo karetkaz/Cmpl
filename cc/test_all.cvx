@@ -187,8 +187,8 @@ vec4f v2 = vec4f(21., 22., 23., 24.);
 }// +/
 } // */
 static if (Test.Bits) {
-int32 var = 0x00001080;		// input
 /+ bit operations moved to library
+int32 var = 0x00001080;		// input
 static if (Test.Bits & 1) {		// bit scan reverse
 int32 BSR_lib = bits.bsr(var);
 int32 BSR_res = -1;
@@ -232,20 +232,25 @@ if (var) {
 }
 //~ +/
 static if (Test.Bits & 8) {		// compute bits
-void bitsget(bool signed, int size, int64 &min, int64 &max) {
-	int64 mask = int64.Shr(int64(-1), -size);
-	min = int64.Shl(-int64(signed), size - 1);
+void bitsget(int bitsize, bool signed, int64 &min, int64 &max) {
+	int64 mask = int64.Shr(int64(-1), -bitsize);
+	min = int64.Shl(-int64(signed), bitsize - 1);
 	max = int64.And(min - 1, mask);
 }
 
-int bitsize = 44;
+int bitsize = 10;
 hex64 min;
 hex64 max;
 hex64 umin;
 hex64 umax;
 
-bitsget(true, bitsize, &min, &max);
-bitsget(!true, bitsize, &umin, &umax);
+bitsget(bitsize, true, &min, &max);
+bitsget(bitsize, !true, &umin, &umax);
+
+//~ assert(umin == 0);
+//~ assert(umin != min);
+//~ assert(umax != max);
+
 }
 } // */
 static if (Test.Type) {
@@ -376,7 +381,7 @@ for (int i = 0; i < dim; i += 1) {
 static if (Test.Math) {
 static if (Test.Math & 1) {
 	double x = Math.pi / 2;
-	double absx = abs(-x);
+	double absx = Math.abs(-x);
 	double sinx = sin(x);
 	double cosx = cos(x);
 	double tanx = tan(x);
@@ -386,7 +391,7 @@ static if (Test.Math & 1) {
 	//~ double ___x = ___(x);
 }
 //~ /+
-static if (Test.Math & 2) {		// fixed point
+static if (false) {// && Test.Math & 2) {		// fixed point
 struct fixed:0 {	//%%08x
 	int32 value;
 	define point = 24;
@@ -632,8 +637,7 @@ static struct Fixed {
 
 	fixed Sqrt(fixed x) {
 		if (x.value < 0) {
-			result = Fixed(fxp_nan);
-			return;
+			return Fixed(fxp_nan);
 		}
 
 		static if ((fixed.point & 1) == 0) {
@@ -974,6 +978,17 @@ int32x8 i32x8_a = int32x8(-10);
 int32x8 i32x8_c = sub(i32x8_a, -19);
 
 } // +/
+static if (Test.Call & 2) {
+int bar(int a) {
+	int foo(int b) {
+		int abc() { return 1; }
+		return b + abc();
+	}
+	return foo(a);
+}
+int i = bar(3); // i is assigned 4
+assert(i == 4);
+}
 }
 
 /* itoa
@@ -1160,34 +1175,6 @@ invoke(t2, "a", t1, t2);				// t1 = t2.a;
 bool invoke(variant obj, string name, var &&res, var args...) {
 	return invoke(obj.type, name, &&res, obj, args);
 }
-
-//~ */
-/* debug
-static struct debug {
-	enum {
-		print = 0x0001;		// show message
-		trace = 0x0002;		// show stack trace
-		abort = 0x0010;		// stop program execution
-	}
-
-	install(cc, "debug(bool condition, Flags flags, string message, pointer value, pointer stacktrace)", TYPE_def, 0, 0);
-
-	define debug(string message, variant object, int maxStackTrace, bool abort)
-
-	install(cc, "debug(string message, string args...) = debug(message, false, false, args)", TYPE_def, 0, 0);
-	install(cc, "trace(string message, string args...) = debug(message, true, false, args)", TYPE_def, 0, 0);
-	install(cc, "error(string message, string args...) = debug(message, false, true, args)", TYPE_def, 0, 0);
-	install(cc, "info(string message, string args...) = debug(message, false, false, args)", TYPE_def, 0, 0);
-	install(cc, "log(string message, string args...) = debug(message, false, false, args)", TYPE_def, 0, 0);
-	install(cc, "assert(bool test, string message, string args...) = if (test) debug(message, true, true, args)", TYPE_def, 0, 0);
-}
-
-define debug(string message) = debug(message, null, 0, false);
-define trace(string message) = debug(message, null, 0, false);
-define error(string message) = debug(message, null, 0, false);
-define debug(string message, var object) = debug(message, value);
-define trace(string message, var object) = debug(message, value);
-define error(string message, var object) = debug(message, value);
 
 //~ */
 /* stupid things

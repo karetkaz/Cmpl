@@ -99,29 +99,16 @@ for (int i = 0; i < vf.length; i += 1) {
 }
 //~ */
 
-//~ /* Array Alloc
-int count = 4;
+/* Arrays, Pointers, References Alloc
 
-int32 arr2[] = new(int32, count);
+//~ int32 &i32ref = new(int32);
 
-for (int i = 0; i < arr2.length; i += 1) {arr2[i] = i + 10;}
+//~ int32 i32arr[] = new(int32, 100);
+//~ for (int i = 0; i < arr2.length; i += 1) {
+	//~ arr2[i] = i + 10;
+//~ }
 
 //~ int size = sizeof(arr2);
-//~ */
-/*TODO: refs and ptrs
-int32 ival = 9;
-
-int32 &iref1 = null;
-int32 &iref2 = ival;
-
-int32ptr iptr1 = null;
-int32ptr iptr2 = ival;
-int32ptr iptr3 = iref2;
-
-//~ int32 x = iref2;
-
-//~ int32ptr aaa(int &a) {&result = &a;}
-//~ int32ptr t = aaa(null);
 //~ */
 
 /* sizeof
@@ -137,8 +124,8 @@ struct ss {
 ss A = ss(1, 2);
 ss.ss a = ss.ss(1, 2);
 
-int n1 = sizeof(ss);
-int n2 = sizeof(ss.ss);
+//~ int n1 = sizeof(ss);
+//~ int n2 = sizeof(ss.ss);
 
 //~ */
 
