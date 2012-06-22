@@ -21,7 +21,7 @@ TOKDEF(TYPE_ptr, 0x04, 0, ".ptr")	// pointer
 
 
 TOKDEF(TYPE_def, 0x00, 0, ".def")		// typedef or inline expression
-TOKDEF(TYPE_rec, 0x00, 0, "struct")		// union := struct:0
+TOKDEF(TYPE_rec, 0x00, 0, ".rec")		// record (union := struct:0)
 TOKDEF(TYPE_ref, 0x00, 0, ".ref")		// variable / function
 TOKDEF(TYPE_arr, 0x00, 0, ".arr")		// pointer, string, array, ..., ???
 

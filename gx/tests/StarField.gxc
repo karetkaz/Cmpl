@@ -12,7 +12,7 @@ struct Star {
 	double zpos;
 }
 
-Star stars[2 * 1024];
+Star stars[8 * 1024];
 
 void initStar(Star &star, int i) {
 	//~ randomly init stars, generate them around the center of the screen
@@ -48,6 +48,9 @@ void drawCB() {
 	double tempx;
 	double tempy;
 
+	// animate
+	Gui.Repaint();
+
 	//~ clear the screen
 	fillRect(offScreen, 0, 0, Window.resx, Window.resy, 0x000000);
 
@@ -74,8 +77,6 @@ void drawCB() {
 		fillRect(offScreen, tempx, tempy, tempx + ps, tempy + ps, 0xffffff);
 	}
 
-	// animate
-	Gui.Repaint();
 }
 
 Gui.setMouseHandler(mouseCB);

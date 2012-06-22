@@ -5,8 +5,8 @@ enum Window {
 }
 
 //~ string fileName = "media/images/David.png";
-//~ string fileName = "media/images/lenaRGB.png";
-string fileName = "media/images/download.jpg";
+string fileName = "media/images/lenaRGB.png";
+//~ string fileName = "media/images/download.jpg";
 //~ string fileName = "media/images/dino-blue.jpg";
 //~ string fileName = "media/images/Earth.jpg";
 //~ string fileName = "media/images/nol.bmp";
@@ -152,7 +152,7 @@ gxSurf dither(gxSurf img, bool grayscale, uint32 colors, Dithering method) {
 					int quant_error_g = gch(col) - colg;
 					int quant_error_b = bch(col) - colb;
 
-					define rgbError(int col, int s) = toRgb(
+					define rgbError(int ^col, int ^s) = toRgb(
 						rch(col) + s * quant_error_r / 16,
 						gch(col) + s * quant_error_g / 16,
 						bch(col) + s * quant_error_b / 16
@@ -301,9 +301,10 @@ gxSurf dither(gxSurf img, bool grayscale, uint32 colors, Dithering method) {
 	}
 }
 
-int colors = 4;
+int colors = 7;
 bool grayscale = !true;
-Dithering method = Dithering.Bayer;
+Dithering method = Dithering.Stucki;
+//~ method = Dithering.Bayer;
 
 define hex(uint32 ^c) = int(c <= 9 ? (c + '0') : ((c - 10) + 'a'));
 
@@ -312,9 +313,9 @@ blendLut(lut, 0, -1);
 gxSurf image = gxSurf(fileName);
 //~ gxSurf image = resize(gxSurf(fileName), Window.resx, Window.resx);
 
+uint8 filename[24] = 'o','u','t','/','o','u','t','[',grayscale ? 'g' : 'c','_',hex(colors >> 4 & 0xf), hex(colors >> 0 & 0xf),'_','0' + method, ']','.','b','m','p',0;
+println(emit(string, ref(filename)));
 dither(image, grayscale, colors, method);
-
-uint8 filename[24] = 'o','u','t','/','o','u','t','[', grayscale ? 'g' : 'c','_',hex(Math.min(colors >> 4 & 0xf, 0xf)),hex(Math.min(colors >> 0 & 0xf, 0xf)),'_','0' + method, ']','.','b','m','p',0;
 bmpWrite(image, emit(string, ref(filename)));
 
 setupPicView(image, false);

@@ -612,8 +612,8 @@ static void conv_abgr2argb(unsigned char* dst, unsigned char* src, int cnt) {
 		cnt -= 1;
 	}
 }
-//~ #pragma GCC diagnostic ignored "-Wpadded"
 #pragma pack(push, 8)
+#pragma GCC diagnostic ignored "-Wpadded"
 #include "lib/libjpeg/jpeg.h"
 int gx_loadJPG(gx_Surf dst, const char* src, int depth) {
 	void (*conv_2xrgb)(unsigned char* dst, unsigned char* src, int cnt) = NULL;

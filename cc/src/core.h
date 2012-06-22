@@ -21,7 +21,7 @@
 #define MAXPROCSEXEC 1
 
 // maximum elements to print from an array
-#define MAX_ARR_PRINT 100
+#define MAX_ARR_PRINT 10
 
 // maximum tokens in expressions & nest level
 #define TOKS 2048
@@ -36,9 +36,15 @@
 
 #if DEBUGGING > 1
 #define debug(msg, ...) pdbg("debug", __FILE__, __LINE__, msg, ##__VA_ARGS__)
+#if DEBUGGING > 15
 #define trace(msg, ...) pdbg("trace", __FILE__, __LINE__, msg, ##__VA_ARGS__)
 #define trloop(msg, ...) //pdbg("trace", __FILE__, __LINE__, msg, ##__VA_ARGS__)
-#define PERR(__ENV, __LEVEL, __FILE, __LINE, msg, ...) do { perr(__ENV, __LEVEL, __FILE, __LINE, msg, ##__VA_ARGS__); debug(msg, ##__VA_ARGS__); } while(0)
+#else
+#define trace(msg, ...)
+#define trloop(msg, ...)
+#endif
+
+#define PERR(__ENV, __LEVEL, __FILE, __LINE, msg, ...) do { perr(__ENV, __LEVEL, __FILE, __LINE, msg, ##__VA_ARGS__); trace(msg, ##__VA_ARGS__); } while(0)
 
 #else // catch the position error raised
 
@@ -60,7 +66,7 @@
 #define dieif(__EXP, msg, ...) do {if (__EXP) fatal(msg, ##__VA_ARGS__);} while(0)
 #define logif(__EXP, msg, ...) do {if (__EXP) prerr(msg, ##__VA_ARGS__);} while(0)
 
-//~ #define offsetof(__TYPE, __FIELD) ((size_t) &((__TYPE*)0)->__FIELD)
+#define offsetof(__TYPE, __FIELD) ((size_t) &((__TYPE)0)->__FIELD)
 #define lengthof(__ARRAY) (sizeof(__ARRAY) / sizeof(*(__ARRAY)))
 
 // Symbols - CC(tokens)
@@ -166,7 +172,7 @@ typedef union {		// value type
 	//~ struct {float64_t x, y;} pd;
 	//~ struct {int64_t lo, hi;} x16;
 	int32_t		rel:24;
-	struct {void* data; int length;} arr;	// slice
+	struct {void* data; long length;} arr;	// slice
 } stkval;
 
 //~ typedef struct symn *symn;		// Symbol Node
@@ -176,7 +182,8 @@ typedef struct list *list;
 
 typedef struct libc {
 	struct libc *next;	// next
-	int (*call)(state);
+	int (*call)(state, void*);
+	void *data;	// user data for this function
 	int chk, pop;
 	int pos;
 	symn sym;
@@ -322,10 +329,11 @@ struct ccState {
 	char*	file;	// current file name
 	int		line;	// current line number
 
-	// Warning set to -1 to record.
-	symn	pfmt;
-
 	struct {			// Lexer
+		symn	pfmt;		// Warning set to -1 to record.
+		astn	tokp;		// list of reusable tokens
+		astn	_tok;		// one token look-ahead
+		int		_chr;		// one char look-ahead
 		// INPUT
 		struct {
 			int		_fin;		// file handle (-1) for cc_buff()
@@ -333,14 +341,10 @@ struct ccState {
 			char*	_ptr;		// pointer parsing trough source
 			uint8_t	_buf[1024];	// cache
 		} fin;
-		astn	tokp;		// list of reusable tokens
-		astn	_tok;		// one token look-ahead
-		int		_chr;		// one char look-ahead
 	};
 
 	astn	void_tag;		// no parameter of type void
 	astn	emit_tag;		// "emit"
-
 
 	symn	type_rec;		// typename
 	symn	type_vid;
@@ -363,7 +367,6 @@ struct ccState {
 };
 static inline int kindOf(astn ast) {return ast ? ast->kind : 0;}
 
-
 //~ clog
 //~ void fputfmt(FILE *fout, const char *msg, ...);
 
@@ -374,16 +377,16 @@ void fputopc(FILE *fout, unsigned char* ptr, int len, int offs, state rt);
 // program error
 void perr(state rt, int level, const char *file, int line, const char *msg, ...);
 
-void dumpsym(FILE *fout, symn sym, int mode);
+//~ void dumpsym(FILE *fout, symn sym, int mode);
 //~ void dumpast(FILE *fout, astn ast, int mode);
 //~ void dumpxml(FILE *fout, astn ast, int lev, const char* text, int level);
 
 symn newdefn(ccState, int kind);
 astn newnode(ccState, int kind);
+
 astn opnode(ccState, int kind, astn lhs, astn rhs);
 astn lnknode(ccState, symn ref);
-astn newIden(ccState, char* id);
-//~ astn tagnode(ccState s, char *str);
+astn tagnode(ccState s, char *str);
 
 astn intnode(ccState, int64_t v);
 astn fltnode(ccState, float64_t v);
@@ -438,9 +441,9 @@ symn leave(ccState s, symn def, int mkstatic);
  * @todo should use the vmExec funtion, for the generated code.
  */
 int eval(astn res, astn ast);
+
 int isStatic(ccState,astn ast);
 int isConst(astn ast);
-//~ int mkConst(astn ast);
 
 /** emit an opcode with args
  * @param opc: opcode
@@ -462,7 +465,6 @@ int fixjump(state, int src, int dst, int stc);
 
 // returns the stack size
 int stkoffs(state rt, int size);
-int padded(int offs, int align);
 
 int isType(symn sym);
 int istype(astn ast);
@@ -477,6 +479,12 @@ unsigned rehash(const char* str, unsigned size);
 char* mapstr(ccState s, char *name, unsigned size/* = -1U*/, unsigned hash/* = -1U*/);
 
 void fputasm(FILE *fout, state rt, int beg, int end, int mode);
+
+/** return the internal offset of a reference
+ * aborts if ptr is not null and not inside the context.
+ */
+int vmOffset(state, void *ptr);
+void vm_fputval(state, FILE *fout, symn var, stkval* ref, int flgs);
 
 //~ disable warning messages
 #ifdef _MSC_VER

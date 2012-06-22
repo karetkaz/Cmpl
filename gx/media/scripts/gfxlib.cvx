@@ -421,44 +421,86 @@ static struct Mouse {
 /// TODO: closed meshes
 void meshGen(int sdiv, bool sclosed, int tdiv, bool tclosed, void pos(double &x, double &y, double &z, double s, double t), double epsilon) {
 	int vtx = 0;
+
+	// set vertex and poly count to 0, but do not free memory
 	mesh.Init(-1);
+
 	if (pos != null) {
+		double tDiv = tdiv - tclosed;
+		double sDiv = sdiv - sclosed;
 		for (int i = 0; i < tdiv; i += 1) {
-			double t = i / double(tdiv - tclosed);
+			double t = i / tDiv;
 			for (int j = 0; j < sdiv; j += 1) {
-				double s = j / double(sdiv - sclosed);
-				double p[3];
-				double n[3];
-				double ds[3];
-				double dt[3];
+				double s = j / sDiv;
 
-				pos(&p[0], &p[1], &p[2], s, t);
-				pos(&ds[0], &ds[1], &ds[2], s + epsilon, t);
-				pos(&dt[0], &dt[1], &dt[2], s, t + epsilon);
+				define usev3 = true;
 
-				ds[0] = (p[0] - ds[0]) / epsilon;
-				ds[1] = (p[1] - ds[1]) / epsilon;
-				ds[2] = (p[2] - ds[2]) / epsilon;
-				dt[0] = (p[0] - dt[0]) / epsilon;
-				dt[1] = (p[1] - dt[1]) / epsilon;
-				dt[2] = (p[2] - dt[2]) / epsilon;
+				static if (usev3) {		// slower
 
-				// normal is the cross product
-				n[0] = ds[1] * dt[2] - ds[2] * dt[1];
-				n[1] = ds[2] * dt[0] - ds[0] * dt[2];
-				n[2] = ds[0] * dt[1] - ds[1] * dt[0];
+					struct Vec3{double x; double y; double z;}
 
-				define sqr(double ^x) = double(x * x);
-				double len = sqrt(sqr(n[0]) + sqr(n[1]) + sqr(n[2]));
-				if (len != 0) {
-					n[0] /= len;
-					n[1] /= len;
-					n[2] /= len;
+					//~ define add(Vec3 &a, Vec3 &b) = Vec3(a.x + b.x, a.y + b.y, a.z + b.z);
+					//~ define mul(Vec3 &a, Vec3 &b) = Vec3(a.x * b.x, a.y * b.y, a.z * b.z);
+					//~ define div(Vec3 &a, Vec3 &b) = Vec3(a.x / b.x, a.y / b.y, a.z / b.z);
+
+					define sub(Vec3 ^a, Vec3 ^b) = Vec3(a.x - b.x, a.y - b.y, a.z - b.z);
+					define div(Vec3 ^a, double ^b) = Vec3(a.x / b, a.y / b, a.z / b);
+
+					define dot(Vec3 ^a, Vec3 ^b) = double(a.x * b.x + a.y * b.y + a.z * b.z);
+					define cross(Vec3 ^a, Vec3 ^b) = Vec3(a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x);
+					//~ define divnz(Vec3 ^a, double ^b) = Vec3(b ? a.x / b : a.x, b ? a.y / b : a.y, b ? a.z / b : a.z);
+					define divnz(Vec3 ^a, double ^b) = Vec3(b ? div(a, b) : a);
+
+					Vec3 p;
+					Vec3 ds;
+					Vec3 dt;
+					pos(&p.x, &p.y, &p.z, s, t);
+					pos(&ds.x, &ds.y, &ds.z, s + epsilon, t);
+					pos(&dt.x, &dt.y, &dt.z, s, t + epsilon);
+
+					ds = div(sub(p, ds), epsilon);
+					dt = div(sub(p, dt), epsilon);
+
+					Vec3 n = cross(ds, dt);
+					n = divnz(n, sqrt(dot(n, n)));
+
+					mesh.Pos(vtx, p.x, p.y, p.z);
+					mesh.Nrm(vtx, n.x, n.y, n.z);
+					mesh.Tex(vtx, s, t);
 				}
+				static if (!usev3) {	// faster
+					double p[3];
+					double n[3];
+					double ds[3];
+					double dt[3];
 
-				mesh.Pos(vtx, p[0], p[1], p[2]);
-				mesh.Nrm(vtx, n[0], n[1], n[2]);
-				mesh.Tex(vtx, s, t);
+					pos(&p[0], &p[1], &p[2], s, t);
+					pos(&ds[0], &ds[1], &ds[2], s + epsilon, t);
+					pos(&dt[0], &dt[1], &dt[2], s, t + epsilon);
+
+					ds[0] = (p[0] - ds[0]) / epsilon;
+					ds[1] = (p[1] - ds[1]) / epsilon;
+					ds[2] = (p[2] - ds[2]) / epsilon;
+					dt[0] = (p[0] - dt[0]) / epsilon;
+					dt[1] = (p[1] - dt[1]) / epsilon;
+					dt[2] = (p[2] - dt[2]) / epsilon;
+
+					n[0] = ds[1] * dt[2] - ds[2] * dt[1];
+					n[1] = ds[2] * dt[0] - ds[0] * dt[2];
+					n[2] = ds[0] * dt[1] - ds[1] * dt[0];
+
+					define sqr(double ^x) = double(x * x);
+					double len = sqrt(sqr(n[0]) + sqr(n[1]) + sqr(n[2]));
+					if (len != 0) {
+						n[0] /= len;
+						n[1] /= len;
+						n[2] /= len;
+					}
+
+					mesh.Pos(vtx, p[0], p[1], p[2]);
+					mesh.Nrm(vtx, n[0], n[1], n[2]);
+					mesh.Tex(vtx, s, t);
+				}
 				vtx += 1;
 			}
 		}

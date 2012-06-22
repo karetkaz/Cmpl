@@ -208,7 +208,7 @@ int x = m1.a;
 // 3.X int maximum(int arr...)
 
 int arr2[3] = 1, 2, 3;
-//~ int arr3[] = arr2;
+int arr3[] = arr2;
 //~ /+
 
 int maximum(int arr[]) {
@@ -261,8 +261,6 @@ void randomize(int arr[]) {
 	}
 }
 
-//~ define hex32 int32;		// %hex32(0x%08x)
-
 randomize(arr2);
 int max = maximum(arr2);
 int toFind = arr2[arr2.length / 2];
@@ -273,24 +271,62 @@ int index = bsearch(arr2, toFind);
 //~ */
 
 /* strings
-string x = "almax a fa alatt";
-string ss[3];
-ss[0] = x;//"alma1 a fa alatt";
-ss[1] = "alma2 a fa alatt";
-ss[2] = "alma3 a fa alatt";
-string y = ss[1];
+//~ string x = "almax a fa alatt";
+//~ string ss[3] = null;
+//~ ss[0] = x;//"alma1 a fa alatt";
+//~ ss[1] = "alma2 a fa alatt";
+//~ ss[2] = "alma3 a fa alatt";
+//~ string y = ss[1];
 
-int iii[3] = 1, 2, 3;
-string sss[3] = x, "alma2 a fa alatt", "alma3 a fa alatt";
+//~ int iii[3] = 1, 2, 3;
+//~ string sss[3] = x, "alma2 a fa alatt", "alma3 a fa alatt";
 
-int a = ss.length;
+struct type {
+	int a;
+	int64 b;
+	float x;
+}
 
-ss[0][3] = 'A';
+struct type2 {
+	int64 a;
+	int b;
+	float x;
+}
 
-println(y);
-println(ss[2]);
+type val = type(1,2,3);
+type &v2 = null;
+debug(true, "asd", type, emit(pointer, ref(val)), 0, false);
 
+//~ vec4f obj = vec4f(1,2,3,4);
+//~ debug(true, "asd", vec4f, emit(pointer, ref(obj)), 0, false);
+//~ int a = ss.length;
+
+//~ ss[0][3] = 'A';
+
+//~ println(y);
+//~ print(ss[1]);
 // */
+
+/* typename
+struct ss {
+	int32 x;
+	int32 y;
+	struct ss {
+		int64 x;
+		int64 y;
+	}
+}
+
+ss A = ss(1, 2);
+ss.ss a = ss.ss(1, 2);
+
+typename t1 = ss;
+typename t2 = ss.ss;
+
+int n1 = sizeof(ss);
+int n2 = sizeof(ss.ss);
+
+//~ */
 
 /* static and nonstatic members.
 struct alma {
@@ -348,6 +384,16 @@ xrgb a = emit(xrgb, i32(0x801f008f));
 //~ r.rgb.g = min(a.g + b.g, 255);
 //~ r.rgb.b = min(a.b + b.b, 255);
 // */
+
+//~ define dim = 11;
+//~ static int x[dim][dim][dim][dim][dim] = 0;
+//~ assert(0);
+typename t = Complex;
+if (t == Complex) {
+	print("Complex\n");
+}
+//~ float64 c;
+//~ float64 x = Math.modf(Math.pi, &c);
 
 /* invoke functions ...
 int method0() {}

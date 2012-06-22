@@ -12,51 +12,51 @@ math, print, time libcall functions
 
 //#{#region math functions
 
-/*static int f64abs(state rt) {
+/*static int f64abs(state rt, void* _) {
 	float64_t x = popf64(rt);
 	retf64(rt, fabs(x));
 	return 0;
 }// */
-static int f64sin(state rt) {
+static int f64sin(state rt, void* _) {
 	float64_t x = popf64(rt);
 	retf64(rt, sin(x));
 	return 0;
 }
-static int f64cos(state rt) {
+static int f64cos(state rt, void* _) {
 	float64_t x = popf64(rt);
 	retf64(rt, cos(x));
 	return 0;
 }
-static int f64tan(state rt) {
+static int f64tan(state rt, void* _) {
 	float64_t x = popf64(rt);
 	retf64(rt, tan(x));
 	return 0;
 }
 
-static int f64log(state rt) {
+static int f64log(state rt, void* _) {
 	float64_t x = popf64(rt);
 	retf64(rt, log(x));
 	return 0;
 }
-static int f64exp(state rt) {
+static int f64exp(state rt, void* _) {
 	float64_t x = popf64(rt);
 	retf64(rt, exp(x));
 	return 0;
 }
-static int f64pow(state rt) {
+static int f64pow(state rt, void* _) {
 	float64_t x = popf64(rt);
 	float64_t y = popf64(rt);
 	retf64(rt, pow(x, y));
 	//~ debug("pow(%g, %g) := %g", x, y, pow(x, y));
 	return 0;
 }
-static int f64sqrt(state rt) {
+static int f64sqrt(state rt, void* _) {
 	float64_t x = popf64(rt);
 	retf64(rt, sqrt(x));
 	return 0;
 }
 
-static int f64atan2(state rt) {
+static int f64atan2(state rt, void* _) {
 	float64_t x = popf64(rt);
 	float64_t y = popf64(rt);
 	retf64(rt, atan2(x, y));
@@ -65,37 +65,37 @@ static int f64atan2(state rt) {
 //#}#endregion
 
 //#{ int64 ext
-static int b64shl(state rt) {
+static int b64shl(state rt, void *_) {
 	uint64_t x = popi64(rt);
 	int32_t y = popi32(rt);
 	reti64(rt, x << y);
 	return 0;
 }
-static int b64shr(state rt) {
+static int b64shr(state rt, void *_) {
 	uint64_t x = popi64(rt);
 	int32_t y = popi32(rt);
 	reti64(rt, x >> y);
 	return 0;
 }
-static int b64sar(state rt) {
+static int b64sar(state rt, void *_) {
 	int64_t x = popi64(rt);
 	int32_t y = popi32(rt);
 	reti64(rt, x >> y);
 	return 0;
 }
-static int b64and(state rt) {
+static int b64and(state rt, void *_) {
 	uint64_t x = popi64(rt);
 	uint64_t y = popi64(rt);
 	reti64(rt, x & y);
 	return 0;
 }
-static int b64ior(state rt) {
+static int b64ior(state rt, void *_) {
 	uint64_t x = popi64(rt);
 	uint64_t y = popi64(rt);
 	reti64(rt, x | y);
 	return 0;
 }
-static int b64xor(state rt) {
+static int b64xor(state rt, void *_) {
 	uint64_t x = popi64(rt);
 	uint64_t y = popi64(rt);
 	reti64(rt, x ^ y);
@@ -355,16 +355,17 @@ static int bits_call(state rt, int function) {
 }
 //#}#endregion */
 
-static symn miscOpExit = NULL;
-static symn miscOpRand32 = NULL;
-static symn miscOpTime32 = NULL;
-static symn miscOpClock32 = NULL;
-static symn miscOpClocksPS = NULL;
-static symn timeOpProc64 = NULL;
-static symn timeOpClck64 = NULL;
-static symn miscOpPutStr = NULL;
-static symn miscOpPutFmt = NULL;
-
+typedef enum {
+	miscOpExit,
+	miscOpRand32,
+	miscOpTime32,
+	miscOpClock32,
+	miscOpClocksPS,
+	timeOpProc64,
+	timeOpClck64,
+	miscOpPutStr,
+	miscOpPutFmt,
+} miscFunc;
 
 static inline int64_t clockCpu() {
 	uint64_t now = clock();
@@ -390,56 +391,58 @@ static inline int64_t clockNow() {
 }
 #endif
 
-static int miscCall(state rt) {
-	if (rt->libc == miscOpExit) {
-		exit(popi32(rt));
-	}
-	if (rt->libc == miscOpRand32) {
-		static int initialized = 0;
-		int result;
-		if (!initialized) {
-			srand(time(NULL));
-			initialized = 1;
+static int miscCall(state rt, void* data) {
+	switch ((miscFunc)(int)data) {
+		case miscOpExit: {
+			exit(popi32(rt));
+			return 0;
 		}
-		result = rand() * rand();	// if it gives a 16 bit int
-		reti32(rt, result & 0x7fffffff);
-		return 0;
-	}
-	if (rt->libc == miscOpTime32) {
-		reti32(rt, time(NULL));
-		return 0;
-	}
-	if (rt->libc == miscOpClock32) {
-		reti32(rt, clock());
-		return 0;
-	}
-	if (rt->libc == miscOpClocksPS) {
-		float64_t ticks = popi32(rt);
-		retf64(rt, ticks / CLOCKS_PER_SEC);
-		return 0;
-	}
+		case miscOpRand32: {
+			static int initialized = 0;
+			int result;
+			if (!initialized) {
+				srand(time(NULL));
+				initialized = 1;
+			}
+			result = rand() * rand();	// if it gives a 16 bit int
+			reti32(rt, result & 0x7fffffff);
+			return 0;
+		}
+		case miscOpTime32: {
+			reti32(rt, time(NULL));
+			return 0;
+		}
+		case miscOpClock32: {
+			reti32(rt, clock());
+			return 0;
+		}
+		case miscOpClocksPS: {
+			float64_t ticks = popi32(rt);
+			retf64(rt, ticks / CLOCKS_PER_SEC);
+			return 0;
+		}
 
-	if (rt->libc == timeOpProc64) {
-		reti64(rt, clockCpu());
-		return 0;
-	}
-	if (rt->libc == timeOpClck64) {
-		reti64(rt, clockNow());
-		return 0;
-	}
+		case timeOpProc64: {
+			reti64(rt, clockCpu());
+			return 0;
+		}
+		case timeOpClck64: {
+			reti64(rt, clockNow());
+			return 0;
+		}
 
-	if (rt->libc == miscOpPutStr) {
-		// TODO: check bounds
-		fputfmt(stdout, "%s", popref(rt));
-		return 0;
+		case miscOpPutStr: {
+			// TODO: check bounds
+			fputfmt(stdout, "%s", popref(rt));
+			return 0;
+		}
+		case miscOpPutFmt: {
+			char *fmt = popref(rt);
+			int64_t arg = popi64(rt);
+			fputfmt(stdout, fmt, arg);
+			return 0;
+		}
 	}
-	if (rt->libc == miscOpPutFmt) {
-		char *fmt = popref(rt);
-		int64_t arg = popi64(rt);
-		fputfmt(stdout, fmt, arg);
-		return 0;
-	}
-
 	return -1;
 }
 
@@ -447,20 +450,20 @@ int install_stdc(state rt, char* file, int level) {
 	symn nsp = NULL;		// namespace
 	int i, err = 0;
 	struct {
-		int (*fun)(state);
-		symn *fsym;
+		int (*fun)(state, void* data);
+		miscFunc data;
 		char *def;
 	}
 	math[] = {
 		//~ {f64abs, 0, "float64 abs(float64 x);"},
-		{f64sin,   NULL, "float64 sin(float64 x);"},
-		{f64cos,   NULL, "float64 cos(float64 x);"},
-		{f64tan,   NULL, "float64 tan(float64 x);"},
-		{f64log,   NULL, "float64 log(float64 x);"},
-		{f64exp,   NULL, "float64 exp(float64 x);"},
-		{f64pow,   NULL, "float64 pow(float64 x, float64 y);"},
-		{f64sqrt,  NULL, "float64 sqrt(float64 x);"},
-		{f64atan2, NULL, "float64 atan2(float64 x, float64 y);"},
+		{f64sin,   0, "float64 sin(float64 x);"},
+		{f64cos,   0, "float64 cos(float64 x);"},
+		{f64tan,   0, "float64 tan(float64 x);"},
+		{f64log,   0, "float64 log(float64 x);"},
+		{f64exp,   0, "float64 exp(float64 x);"},
+		{f64pow,   0, "float64 pow(float64 x, float64 y);"},
+		{f64sqrt,  0, "float64 sqrt(float64 x);"},
+		{f64atan2, 0, "float64 atan2(float64 x, float64 y);"},
 
 		//~ {f64lg2, "float64 log2(float64 x);"},
 		//~ {f64xp2, "float64 exp2(float64 x);"},
@@ -496,16 +499,16 @@ int install_stdc(state rt, char* file, int level) {
 		//~ {miscCall, &miscOpArgc,			"int32 argc();"},
 		//~ {miscCall, &miscOpArgv,			"string arg(int arg);"},
 
-		{miscCall, &miscOpRand32,		"int32 rand();"},
-		//~ {miscCall, &timeOpTime32,		"int32 time();"},
-		//~ {miscCall, &timeOpClock32,		"int32 clock();"},
-		//~ {miscCall, &timeOpClocksPS,		"float64 clocksPerSec(int32 ticks);"},
+		{miscCall, miscOpRand32,		"int32 rand();"},
+		//~ {miscCall, timeOpTime32,		"int32 time();"},
+		//~ {miscCall, timeOpClock32,		"int32 clock();"},
+		//~ {miscCall, timeOpClocksPS,		"float64 clocksPerSec(int32 ticks);"},
 
-		{miscCall, &timeOpClck64,		"int64 timeNow();"},
-		{miscCall, &timeOpProc64,		"int64 timeCpu();"},
+		{miscCall, timeOpClck64,		"int64 timeNow();"},
+		{miscCall, timeOpProc64,		"int64 timeCpu();"},
 
-		{miscCall, &miscOpPutStr,		"void print(string val);"},
-		{miscCall, &miscOpPutFmt,		"void print(string fmt, int64 val);"},
+		{miscCall, miscOpPutStr,		"void print(string val);"},
+		{miscCall, miscOpPutFmt,		"void print(string fmt, int64 val);"},
 
 		// TODO: include some of the compiler functions
 		// for reflection. (lookup, import, logger, assert, exec?, ...)
@@ -513,21 +516,18 @@ int install_stdc(state rt, char* file, int level) {
 	};
 	if (rt->cc->type_i64 != NULL && rt->cc->type_i64->args == NULL) {
 		enter(rt->cc, NULL);
-		err = err || !libcall(rt, b64shl, "int64 Shl(int64 Value, int Count);");
-		err = err || !libcall(rt, b64shr, "int64 Shr(int64 Value, int Count);");
-		err = err || !libcall(rt, b64sar, "int64 Sar(int64 Value, int Count);");
-		err = err || !libcall(rt, b64and, "int64 And(int64 Lhs, int64 Rhs);");
-		err = err || !libcall(rt, b64ior, "int64  Or(int64 Lhs, int64 Rhs);");
-		err = err || !libcall(rt, b64xor, "int64 Xor(int64 Lhs, int64 Rhs);");
+		err = err || !libcall(rt, b64shl, NULL, "int64 Shl(int64 Value, int Count);");
+		err = err || !libcall(rt, b64shr, NULL, "int64 Shr(int64 Value, int Count);");
+		err = err || !libcall(rt, b64sar, NULL, "int64 Sar(int64 Value, int Count);");
+		err = err || !libcall(rt, b64and, NULL, "int64 And(int64 Lhs, int64 Rhs);");
+		err = err || !libcall(rt, b64ior, NULL, "int64  Or(int64 Lhs, int64 Rhs);");
+		err = err || !libcall(rt, b64xor, NULL, "int64 Xor(int64 Lhs, int64 Rhs);");
 		rt->cc->type_i64->args = leave(rt->cc, rt->cc->type_i64, 1);
 	}
 	for (i = 0; i < sizeof(math) / sizeof(*math); i += 1) {
-		symn libc = libcall(rt, math[i].fun, math[i].def);
+		symn libc = libcall(rt, math[i].fun, (void*)math[i].data, math[i].def);
 		if (libc == NULL) {
 			return -1;
-		}
-		if (math[i].fsym != NULL) {
-			*math[i].fsym = libc;
 		}
 	}
 	/*if ((nsp = ccBegin(rt, "bits"))) {
@@ -539,27 +539,27 @@ int install_stdc(state rt, char* file, int level) {
 		ccEnd(rt, nsp);
 	}*/
 	for (i = 0; i < sizeof(misc) / sizeof(*misc); i += 1) {
-		symn libc = libcall(rt, misc[i].fun, misc[i].def);
+		symn libc = libcall(rt, misc[i].fun, (void*)misc[i].data, misc[i].def);
 		if (libc == NULL) {
 			return -1;
 		}
-		if (misc[i].fsym != NULL) {
-			*misc[i].fsym = libc;
-		}
 	}
 
-	if ((nsp = ccBegin(rt, "system"))) {
+	if ((nsp = ccBegin(rt, "System"))) {
 		// libcall will return 0 on failure,
 		// 'err = err || !libcall...' <=> 'if (!err) err = !libcall...'
 		// will skip forward libcalls if an error ocurred
 
-		err = err || !(miscOpExit = libcall(rt, miscCall, "void Exit(int Code);"));
+		err = err || !libcall(rt, miscCall, (void*)miscOpExit, "void Exit(int Code);");
 		ccEnd(rt, nsp);
 	}
 
-	if (!err && file && ccOpen(rt, file, 1, NULL)) {
-		return parse(rt->cc, 0, level);
+	if (!err && file) {
+		return compile(rt, level, file, 1, NULL);
 	}
+	/*if (!err && file && ccOpen(rt, file, 1, NULL)) {
+		return parse(rt->cc, 0, level);
+	}*/
 
 	return err;
 }

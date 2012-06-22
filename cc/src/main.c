@@ -15,7 +15,7 @@ application <global options> <local options>*
 		-asm[<hex>][.<fun>]		output assembly
 		-ast[<hex>]				output syntax tree
 
-		--[s|c]*				skip stdlib / code generation
+		--[s|c]*				skip: stdlib | code <eration
 
 	<local options>:
 		-w[a|x|<hex>]			set warning level
@@ -153,18 +153,6 @@ char *parsecmd(char *ptr, char *cmd, char *sws) {
 	return ptr;
 }
 
-static int cctext(state rt, char *file, int line, int wl, char *buff) {
-	if (!ccOpen(rt, file, line, buff))
-		return -2;
-	return parse(rt->cc, 0, wl);
-}
-
-/*static int ccfile(state rt, char *file, int wl) {
-	if (!ccOpen(rt, file, 1, NULL))
-		return -2;
-	return parse(rt->cc, 0, wl);
-}*/
-
 void usage(char* prog) {
 	fputfmt(stdout, "Usage: %s =<eval expression>\n", prog);
 	fputfmt(stdout, "Usage: %s <global options> <local options>*\n", prog);
@@ -219,7 +207,7 @@ int evalexp(ccState cc, char* text) {
 	return -1;
 }
 
-static int test(state rt) {
+static int test(state rt, void* _) {
 	double *ptr = popref(rt);
 	//~ int len = popi32(rt);
 
@@ -234,22 +222,10 @@ int reglibs(state rt, char *stdlib) {
 	err = err || install_stdc(rt, stdlib, wl);
 	//~ err = err || install_bits(s);
 
-	libcall(rt, test, "void testFunc(float64 arg[16]);");
-	libcall(rt, test, "void testFunc2(float64 arg[]);");
+	libcall(rt, test, NULL, "void testFunc(float64 arg[16]);");
+	libcall(rt, test, NULL, "void testFunc2(float64 arg[]);");
 
 	return err;
-}
-
-int compile(state rt, int wl, char *file) {
-	int result;
-
-	if (!ccOpen(rt, file, 1, NULL))
-		return -1;
-
-	result = parse(rt->cc, 0, wl);
-
-	return result;
-	//~ return parse(ccOpen(rt, srcFile, file, 1, file), 0, wl);
 }
 
 //#{ plugins
@@ -265,15 +241,14 @@ static int installDll(state rt, stateApi api, int ccApiMain(stateApi api)) {
 	api->ccDefInt = ccDefInt;
 	api->ccDefFlt = ccDefFlt;
 	api->ccDefStr = ccDefStr;
-	api->install = installtyp;
-	api->libcall = libcall;
+	api->ccAddType = install_typ;
+	api->ccAddLibc = libcall;
+	api->ccAddCode = compile;
 	api->ccEnd = ccEnd;
-
-	api->ccAddText = cctext;
-	//~ api->ccAddFile = ccfile;
 
 	api->rtAlloc = rtAlloc;
 	api->invoke = vmCall;
+
 	//~ api->findsym = findsym;
 	api->findref = findref;
 
@@ -368,9 +343,8 @@ static int importLib(state rt, const char *path) {
 //#} plugins
 
 static int printvars = 0;
-static int dbgCon(state, int pu, void *ip, long* bp, int ss);
-void vm_fputval(state, FILE *fout, symn var, stkval* ref, int flgs);
-static int libCallHaltDebug(state rt) {
+static int dbgCon(state, int pu, void* ip, long* bp, int ss);
+static int libCallHaltDebug(state rt, void* _) {
 	symn arg = rt->libc->args;
 	int argc = (char*)rt->retv - (char*)rt->argv;
 
@@ -457,7 +431,7 @@ int program(int argc, char *argv[]) {
 		//~ int srcs = 0;		// number of source files compiled
 		int warn = wl;
 
-		int (*onHalt)(state) = NULL;	// print variables and values on exit
+		int (*onHalt)(state, void*) = NULL;	// print variables and values on exit
 
 		// global options
 		for (argi = 1; argi < argc; ++argi) {
@@ -561,6 +535,9 @@ int program(int argc, char *argv[]) {
 			}
 
 			// temp
+			else if (strncmp(arg, "-std", 4) == 0) {	// redefine stdlib
+				stdl = arg + 4;
+			}
 			else if (strncmp(arg, "--", 2) == 0) {		// exclude: do not gen code
 				if (strchr(arg, 'c'))
 					gen_code = 0;
@@ -614,7 +591,7 @@ int program(int argc, char *argv[]) {
 			}
 			else if (strncmp(arg, "-C", 2) == 0) {		// compile source
 				char *str = arg + 2;
-				if (compile(rt, warn, str) != 0) {
+				if (compile(rt, warn, str, 1, NULL) != 0) {
 					error(rt, NULL, 0, "error compiling `%s`", str);
 				}
 			}
@@ -632,7 +609,7 @@ int program(int argc, char *argv[]) {
 					}
 					continue;
 				}
-				if (compile(rt, warn, arg) != 0) {
+				if (compile(rt, warn, arg, 1, NULL) != 0) {
 					error(rt, NULL, 0, "error compiling `%s`", arg);
 				}
 				//~ srcs += 1;
@@ -702,13 +679,15 @@ int program(int argc, char *argv[]) {
 	return 0;
 }
 
-//extern int vmTest();
+extern int vmTest();
+extern int vmHelp();
 
 int main(int argc, char *argv[]) {
 	int result = 0;
 	setbuf(stdout, NULL);
 	setbuf(stderr, NULL);
 	//~ return vmTest();
+	//~ return vmHelp();
 	result = program(argc, argv);
 	return result;
 }
@@ -817,7 +796,6 @@ static int dbgCon(state rt, int pu, void *ip, long* bp, int ss) {
 					debug("arg:%T", sym);
 					if (sym && sym->kind == TYPE_ref && sym->offs >= 0) {
 						stkval* sp = (stkval*)((char*)bp + ss + sym->offs);
-						void vm_fputval(state rt, FILE *fout, symn var, stkval* ref, int flgs);
 						vm_fputval(rt, stdout, sym, sp, 0);
 					}
 				}

@@ -471,19 +471,19 @@ static int read_3ds(mesh msh, const char* file) {
 		if (feof(fin))
 			break;
 		switch (chunk_id) {
-			//{ Color chunks
+			//#{ Color chunks
 				//~ 0x0010 : Rgb (float)
 				//~ 0x0011 : Rgb (byte)
 				//~ 0x0012 : Rgb (byte) gamma corrected
 				//~ 0x0013 : Rgb (float) gamma corrected
-			//}
-			//{ Percent chunks
+			//#}
+			//#{ Percent chunks
 				//~ 0x0030 : percent (int)
 				//~ 0x0031 : percent (float)
-			//}
-			//{ 0x4D4D: Main chunk
+			//#}
+			//#{ 0x4D4D: Main chunk
 				//~ 0x0002 : 3DS-Version
-				//{ 0x3D3D : 3D editor chunk
+				//#{ 0x3D3D : 3D editor chunk
 					//~ 0x0100 : One unit
 					//~ 0x1100 : Background bitmap
 					//~ 0x1101 : Use background bitmap
@@ -506,13 +506,13 @@ static int read_3ds(mesh msh, const char* file) {
 					//~ 0x2302 : Layered fog options
 					//~ 0x2303 : Use layered fog
 					//~ 0x3D3E : Mesh version
-					//{ 0x4000 : Object block
+					//#{ 0x4000 : Object block
 						//~ 0x4010 : Object hidden
 						//~ 0x4012 : Object doesn't cast
 						//~ 0x4013 : Matte object
 						//~ 0x4015 : External process on
 						//~ 0x4017 : Object doesn't receive shadows
-						//{ 0x4100 : Triangular mesh
+						//#{ 0x4100 : Triangular mesh
 							//~ 0x4110 : Vertices list
 							//~ 0x4120 : Faces description
 								//~ 0x4130 : Faces material list
@@ -522,9 +522,9 @@ static int read_3ds(mesh msh, const char* file) {
 							//~ 0x4165 : Object color in editor
 							//~ 0x4181 : External process name
 							//~ 0x4182 : External process parameters
-						//}
-						//{ 0x4600 : Light
-							//{ 0x4610 : Spotlight
+						//#}
+						//#{ 0x4600 : Light
+							//#{ 0x4610 : Spotlight
 								//~ 0x4627 : Spot raytrace
 								//~ 0x4630 : Light shadowed
 								//~ 0x4641 : Spot shadow map
@@ -534,21 +534,21 @@ static int read_3ds(mesh msh, const char* file) {
 								//~ 0x4653 : Spot map
 								//~ 0x4656 : Spot roll
 								//~ 0x4658 : Spot ray trace bias
-							//}
+							//#}
 							//~ 0x4620 : Light off
 							//~ 0x4625 : Attenuation on
 							//~ 0x4659 : Range start
 							//~ 0x465A : Range end
 							//~ 0x465B : Multiplier
-						//}
+						//#}
 						//~ 0x4700 : Camera
-					//}
-					//{ 0x7001 : Window settings
+					//#}
+					//#{ 0x7001 : Window settings
 						//~ 0x7011 : Window description #2 ...
 						//~ 0x7012 : Window description #1 ...
 						//~ 0x7020 : Mesh windows ...
-					//}
-					//{ 0xAFFF : Material block
+					//#}
+					//#{ 0xAFFF : Material block
 						//~ 0xA000 : Material name
 						//~ 0xA010 : Ambient color
 						//~ 0xA020 : Diffuse color
@@ -587,7 +587,7 @@ static int read_3ds(mesh msh, const char* file) {
 						//~ 0xA348 : Mask for specular map
 						//~ 0xA34A : Mask for self illum. map
 						//~ 0xA34C : Mask for reflection map
-						//{ Sub-chunks for all maps:
+						//#{ Sub-chunks for all maps:
 							//~ 0xA300 : Mapping filename
 							//~ 0xA351 : Mapping parameters
 							//~ 0xA353 : Blur percent
@@ -601,10 +601,10 @@ static int read_3ds(mesh msh, const char* file) {
 							//~ 0xA364 : RGB tint R
 							//~ 0xA366 : RGB tint G
 							//~ 0xA368 : RGB tint B
-						//}
-					//}
-				//}
-				//{ 0xB000 : Keyframer chunk
+						//#}
+					//#}
+				//#}
+				//#{ 0xB000 : Keyframer chunk
 					//~ 0xB001 : Ambient light information block
 					//~ 0xB002 : Mesh information block
 					//~ 0xB003 : Camera information block
@@ -612,7 +612,7 @@ static int read_3ds(mesh msh, const char* file) {
 					//~ 0xB005 : Omni light information block
 					//~ 0xB006 : Spot light target information block
 					//~ 0xB007 : Spot light information block
-					//{ 0xB008 : Frames (Start and End)
+					//#{ 0xB008 : Frames (Start and End)
 						//~ 0xB010 : Object name, parameters and hierarchy father
 						//~ 0xB013 : Object pivot point
 						//~ 0xB015 : Object morph angle
@@ -627,9 +627,9 @@ static int read_3ds(mesh msh, const char* file) {
 						//~ 0xB028 : Falloff track
 						//~ 0xB029 : Hide track
 						//~ 0xB030 : Hierarchy position
-					//}
-				//}
-			//} Main chunk
+					//#}
+				//#}
+			//#} Main chunk
 			case 0x4d4d: break;//debug("Main chunk"); break;
 				case 0x3d3d: break;//debug("3D editor chunk"); break;
 					//~ case 0x0100: // One unit
@@ -848,8 +848,8 @@ void centMesh(mesh msh, scalar size) {
 	}
 }
 
-/**
- * recalculate mesh normals
+/** recalculate mesh normals
+ * 
  */
 void normMesh(mesh msh, scalar tolerance) {
 	union vector tmp;
@@ -1096,17 +1096,17 @@ typedef struct userData {
 
 #include "pvmc.h"
 
-static int getS(state rt) {
+static int getS(state rt, void* _) {
 	userData d = rt->udata;
 	retf64(rt, lerp(d->smin, d->smax, d->s));
 	return 0;
 }
-static int getT(state rt) {
+static int getT(state rt, void* _) {
 	userData d = rt->udata;
 	retf64(rt, lerp(d->tmin, d->tmax, d->t));
 	return 0;
 }
-static int setPos(state rt) {
+static int setPos(state rt, void* _) {
 	userData d = rt->udata;
 	d->pos[0] = popf64(rt);
 	d->pos[1] = popf64(rt);
@@ -1114,7 +1114,7 @@ static int setPos(state rt) {
 	d->isPos = 1;
 	return 0;
 }
-static int setNrm(state rt) {
+static int setNrm(state rt, void* _) {
 	userData d = rt->udata;
 	d->nrm[0] = popf64(rt);
 	d->nrm[1] = popf64(rt);
@@ -1123,48 +1123,48 @@ static int setNrm(state rt) {
 	return 0;
 }
 
-static int f64abs(state rt) {
+static int f64abs(state rt, void* _) {
 	float64_t x = popf64(rt);
 	retf64(rt, fabs(x));
 	return 0;
 }
-static int f64sin(state rt) {
+static int f64sin(state rt, void* _) {
 	float64_t x = popf64(rt);
 	retf64(rt, sin(x));
 	return 0;
 }
-static int f64cos(state rt) {
+static int f64cos(state rt, void* _) {
 	float64_t x = popf64(rt);
 	retf64(rt, cos(x));
 	return 0;
 }
-static int f64tan(state rt) {
+static int f64tan(state rt, void* _) {
 	float64_t x = popf64(rt);
 	retf64(rt, tan(x));
 	return 0;
 }
-static int f64log(state rt) {
+static int f64log(state rt, void* _) {
 	float64_t x = popf64(rt);
 	retf64(rt, log(x));
 	return 0;
 }
-static int f64exp(state rt) {
+static int f64exp(state rt, void* _) {
 	float64_t x = popf64(rt);
 	retf64(rt, exp(x));
 	return 0;
 }
-static int f64pow(state rt) {
+static int f64pow(state rt, void* _) {
 	float64_t x = popf64(rt);
 	float64_t y = popf64(rt);
 	retf64(rt, pow(x, y));
 	return 0;
 }
-static int f64sqrt(state rt) {
+static int f64sqrt(state rt, void* _) {
 	float64_t x = popf64(rt);
 	retf64(rt, sqrt(x));
 	return 0;
 }
-static int f64atan2(state rt) {
+static int f64atan2(state rt, void* _) {
 	float64_t x = popf64(rt);
 	float64_t y = popf64(rt);
 	retf64(rt, atan2(x, y));
@@ -1172,10 +1172,7 @@ static int f64atan2(state rt) {
 }
 
 static int addText(state rt, char *file, int line, char *buff) {
-	if (!ccOpen(rt, file, line, buff))
-		return -1;
-
-	return parse(rt->cc, 0, 50);
+	return compile(rt, 10, file, line, buff);
 }
 
 int evalMesh(mesh msh, int sdiv, int tdiv, char *src, char *file, int line) {
@@ -1199,19 +1196,19 @@ int evalMesh(mesh msh, int sdiv, int tdiv, char *src, char *file, int line) {
 		return -1;
 	}
 
-	err = err || !libcall(rt, getS,     "float64 gets();");
-	err = err || !libcall(rt, getT,     "float64 gett();");
-	err = err || !libcall(rt, setPos,   "void setPos(float64 x, float64 y, float64 z);");
-	err = err || !libcall(rt, setNrm,   "void setNrm(float64 x, float64 y, float64 z);");
-	err = err || !libcall(rt, f64abs,   "float64 abs(float64 x);");
-	err = err || !libcall(rt, f64sin,   "float64 sin(float64 x);");
-	err = err || !libcall(rt, f64cos,   "float64 cos(float64 x);");
-	err = err || !libcall(rt, f64tan,   "float64 tan(float64 x);");
-	err = err || !libcall(rt, f64log,   "float64 log(float64 x);");
-	err = err || !libcall(rt, f64exp,   "float64 exp(float64 x);");
-	err = err || !libcall(rt, f64sqrt,  "float64 sqrt(float64 x);");
-	err = err || !libcall(rt, f64atan2, "float64 atan(float64 x, float64 y);");
-	err = err || !libcall(rt, f64pow,   "float64 pow(float64 x, float64 y);");
+	err = err || !libcall(rt, getS, NULL,     "float64 gets();");
+	err = err || !libcall(rt, getT, NULL,     "float64 gett();");
+	err = err || !libcall(rt, setPos, NULL,   "void setPos(float64 x, float64 y, float64 z);");
+	err = err || !libcall(rt, setNrm, NULL,   "void setNrm(float64 x, float64 y, float64 z);");
+	err = err || !libcall(rt, f64abs, NULL,   "float64 abs(float64 x);");
+	err = err || !libcall(rt, f64sin, NULL,   "float64 sin(float64 x);");
+	err = err || !libcall(rt, f64cos, NULL,   "float64 cos(float64 x);");
+	err = err || !libcall(rt, f64tan, NULL,   "float64 tan(float64 x);");
+	err = err || !libcall(rt, f64log, NULL,   "float64 log(float64 x);");
+	err = err || !libcall(rt, f64exp, NULL,   "float64 exp(float64 x);");
+	err = err || !libcall(rt, f64sqrt, NULL,  "float64 sqrt(float64 x);");
+	err = err || !libcall(rt, f64atan2, NULL, "float64 atan(float64 x, float64 y);");
+	err = err || !libcall(rt, f64pow, NULL,   "float64 pow(float64 x, float64 y);");
 	err = err || !ccDefFlt(rt, "pi", 3.14159265358979323846264338327950288419716939937510582097494459);
 	err = err || !ccDefFlt(rt, "e",  2.71828182845904523536028747135266249775724709369995957496696763);
 

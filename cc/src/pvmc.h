@@ -3,73 +3,77 @@
 
 #include "api.h"
 
-enum CompilerRegister {
+enum {
 	creg_base = 0x0000,			// type system only
 
-	creg_tptr = 0x0001,			//~ pointers and memory manager
-	creg_tvar = 0x0002,			//~ variants and reflection
+	creg_tptr = 0x0001,			//~ pointers with memory manager
+	creg_tvar = 0x0002,			//~ variants with reflection
 
-	//~ low level emit
 	creg_emit = 0x0010,				// emit(...)
-	//~ creg_etyp = 0x0020 | creg_emit,	// emit types : emit.i32
-	creg_eopc = 0x0040 | creg_emit,	// emit opcodes : emit.i32.add
-	creg_swiz = 0x0080 | creg_eopc,	// swizzle constants : emit.swz.(xxxx ... xyzw ... wwww)
+	creg_eopc = 0x0020 | creg_emit,	// emit opcodes : emit.i32.add
+	creg_swiz = 0x0040 | creg_eopc,	// swizzle constants : emit.swz.(xxxx, ... xyzw, ... wwww)
 
-	//~ creg_all  = 0xff,
+	// register defaults if ccInit not invoked explicitly.
 	creg_def  = creg_tptr + creg_tvar + creg_eopc,
+
+	// dump(dump_xxx | (level & 0xff))
+	dump_sym = 0x0000100,
+	dump_ast = 0x0000200,
+	dump_asm = 0x0000400,
+	dump_bin = 0x0000800,
 };
 
-typedef enum {
-	//~ srcText = 0x00,		// file / buffer
-	//~ srcFile = 0x10,		// file / buffer
-
-	//~ srcUnit = 0x01,
-	//~ srcDecl = 0x02,
-	//~ srcExpr = 0x03,
-
-	dump_bin = 0x0000100,
-	dump_asm = 0x0000200,
-	dump_sym = 0x0000400,
-	dump_ast = 0x0000800,
-	dumpMask = 0x0000f00,
-} srcType, dumpMode;
-
-// Runtime / global state
-state rtInit(void* mem, unsigned size);
-void* rtAlloc(state rt, void* ptr, unsigned size);	// realloc/alloc/free
-
-/** return the internal offset of a reference
- *  aborts if ptr not inside the context.
+/** Initialize the global state of execution and or compilation.
+ * @param mem if not null allocate memory else use it for the state
+ * @param size the size of memory in bytes to be used.
+ * 
  */
-int vmOffset(state, void *ptr);
-
-// output
-void fputfmt(FILE *fout, const char *msg, ...);
-void dump(state, dumpMode, symn, char* text, ...);
+state rtInit(void* mem, unsigned size);
 
 // logging
 int logFILE(state, FILE *file);				// set logger
 int logfile(state, char *file);				// set logger
 
 // compile
-//~ int srcfile(state, char *file);
-//~ int srctext(state, char *file, int line, char *src);
-//~ int compile(state, int level);			// warning level
-int gencode(state, int level);				// optimize level
-//~ int execute(state, int cc, int ss, dbgf dbg);
-int parse(ccState, srcType, int wl);
+/** Add a libcall (native function) to the runtime.
+ * initializes the compiler state.
+ * @param runtime state.
+ * @param libc the c function.
+ * @param proto prototype of the function, do not forget the ending ';'
+ * @return the symbol to the definition, null on error.
+ * @usage:
+	static int f64sin(state rt) {
+		float64_t x = popf64(rt);		// pop one argument
+		setret(rt, float64_t, sin(x));	// set the return value
+		return 0;						// no error in this call
+	}
+	if (!api->libcall(api->rt, f64sin, "float64 sin(float64 x);")) {
+		error...
+	}
+ */
+symn libcall(state, int libc(state, void* data), void* data, const char* proto);
 
-symn libcall(state, int libc(state), const char* proto);
-symn installtyp(state, const char* name, unsigned size, int refType);
-//~ symn installvar(state s, const char* name, symn type, int refType);	// install a static variable.
+/// install a type symbol
+symn install_typ(state, const char* name, unsigned size, int refType);
 
-// instal io, mem, math and parse optionaly the given file
-int install_stdc(state rt, char* file, int level);
+/** instal standard functions.
+ * io, mem, math and parse optionaly the given file
+ * @param state
+ * @param file if not null parse this file @see stdlib.cvx
+ * @param level warning level for parsing.
+ */
+int install_stdc(state, char* file, int level);
 
-// Level 1 Functions: use less these
-ccState ccInit(state, int mode, int libcHalt(state));
-ccState ccOpen(state, char* file, int line, char* source);
-int ccDone(state);
+/** compile the given file or text block.
+ * initializes the compiler state.
+ * @param state
+ * @param warn the warning level to be used.
+ * @param file filename of the compiled unit; this file will be opened if code is not null.
+ * @param line linenumber where compilation begins; it will be reset if code is not null.
+ * @param code if not null, this text will be compiled instead of the file.
+ * @return the number of errors.
+ */
+int compile(state, int warn, char *file, int line, char *code);
 
 // declaring namespaces
 symn ccBegin(state, char *cls);
@@ -79,11 +83,15 @@ symn ccDefInt(state, char *name, int64_t value);
 symn ccDefFlt(state, char *name, double value);
 symn ccDefStr(state, char *name, char* value);
 
-//~ declaring types and variables
-//~ symn ccDefVar(state, char *name, char* value);
-//~ symn ccDefType(state, char *name, char* value);
+//~ int  ccAddCode(state, int warn, char *file, int line, char *code);
+//~ symn ccAddType(state, const char* name, unsigned size, int refType);
+//~ symn ccAddLibc(state, int libc(state), const char* proto);
 
 void ccEnd(state, symn cls);
+
+ccState ccInit(state, int mode, int libcHalt(state, void*));
+ccState ccOpen(state, char* file, int line, char* source);
+int ccDone(state);
 
 // searching for symbols ...
 symn findref(state, void *ptr);
@@ -92,10 +100,33 @@ symn findsym(ccState, symn in, char *name);
 int symvalint(symn sym, int* res);
 int symvalflt(symn sym, double* res);
 
+
+/** Memory manager for the virtual machine
+ * this function should be called after vmExec.
+ * aborts if ptr is not null and not inside the context.
+ * @param the runtime state.
+ * @param ptr: an allocated memory address in the vm or null.
+ * @param size: the new size to reallocate or 0.
+ * @return non zero on error.
+	ptr == null && size == 0: nothing
+	ptr == null && size >  0: alloc
+	ptr != null && size == 0: free
+	ptr != null && size >  0: TODO: realloc
+*/
+void* rtAlloc(state rt, void* ptr, unsigned size);	// realloc/alloc/free
+
+int gencode(state, int opti);
+//~ int execute(state, int cc, int ss, dbgf dbg);
+
 // executing code ...
 typedef int (*dbgf)(state, int pu, void *ip, long* sptr, int scnt);
 
 int vmExec(state, dbgf dbg, int ss);
-int vmCall(state, symn fun, ...);
+int vmCall(state, symn fun, void *args);
+int vmCall2(state, symn fun, ...);
+
+// output
+void fputfmt(FILE *fout, const char *msg, ...);
+void dump(state, int dumpWhat, symn, char* msg, ...);
 
 #endif

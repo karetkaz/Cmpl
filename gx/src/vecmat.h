@@ -82,7 +82,7 @@ typedef enum {				// swizzle
 } vswzop;
 
 //#################################  COLOR8  ###################################
-/*/{
+/*/#{
 typedef union color8_t {				// bool vect || byte vect || argb
 	unsigned long val;
 	unsigned char v[4];
@@ -226,7 +226,7 @@ argb argbovr(argb lhs, argb rhs) {
 	res.a = lhs.a <= 127 ? (lhs.a * (1 + rhs.a)) >> 7 : 255 - (((255 - lhs.a) * (256 - rhs.a)) >> 7);
 	return res;
 }
-//} */
+//#} */
 //#################################  VECTOR  ###################################
 
 static inline vector veclds(vector dst, scalar s) {

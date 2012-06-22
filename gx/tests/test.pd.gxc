@@ -1,8 +1,10 @@
 // Procedural drawing
 enum Window {
 	draw = RenderMode.swap_buff;
-	resx = 512/1;
-	resy = 512/1;
+	resx = 1024;
+	resy = 768;
+	//~ resx = 512*2;
+	//~ resy = 512*2;
 }
 
 void zoomSurf2(gxSurf dst, gxRect &rect, gxSurf src, gxRect &roi, int mode) {
@@ -78,7 +80,7 @@ define colsca(vec4f &x, float ^s) = void(x = vec4f(x.x * s, x.y * s, x.z * s));
 //~ define collerp(vec4f &res, float t, vec4f ^a, vec4f ^b) = void(res = lerp(t, a, b));
 define pi = Math.pi;
 
-void setup(double &timer, vec4f pixelCBr(double x, double y)) {
+void setup(double &time, vec4f pixelCB(double x, double y)) {
 	define WIDTH = 128;
 	define HEIGHT = WIDTH;
 	static gxSurf tmpImg = gxSurf(WIDTH, HEIGHT);
@@ -86,26 +88,32 @@ void setup(double &timer, vec4f pixelCBr(double x, double y)) {
 	static bool snapshot = false;
 	static bool animate = true;
 
-	static double &time = null;
-	static vec4f pixelCB(double x, double y) = null;
+	struct Internals {
+		double &time;
+		vec4f pixelCB(double x, double y);
+	}
+
+	static Internals internals;
 
 	static int64 begTime = timeNow();
 
 	// for each frame
 	void drawCB() {
-		if (snapshot && pixelCB != null) {
+		if (snapshot) {
 			animate = false;
 			snapshot = false;
 			//~ bmpWrite(tmpImg, "out-0.bmp");
 			//~ bmpWrite(offScreen, "out-1.bmp");
-			evalSurf(offScreen, null, pixelCB);
+			int64 start = timeCpu();
+			evalSurf(offScreen, null, internals.pixelCB);
+			print("evaluated in: %F seconds\n", clocksPerSec(timeCpu() - start));
 			//~ bmpWrite(offScreen, "out-2.bmp");
 		}
-		if (animate && pixelCB != null) {
+		if (animate) {
 			// application time spent in processor
-			time = .5 * clocksPerSec(timeNow() - begTime);
+			internals.time = .5 * clocksPerSec(timeNow() - begTime);
 			//~ evalSurf((offScreen, null, pixelCB);
-			zoomSurf(offScreen, null, evalSurf(tmpImg, null, pixelCB), null, 1);
+			zoomSurf(offScreen, null, evalSurf(tmpImg, null, internals.pixelCB), null, 1);
 			// post a redraw for animation
 			Gui.Repaint();
 		}
@@ -122,8 +130,7 @@ void setup(double &timer, vec4f pixelCBr(double x, double y)) {
 		omb = btn;
 	}
 
-	&time = timer;
-	&pixelCB = pixelCBr;
+	internals = Internals(time, pixelCB);
 	Gui.setDrawCallback(drawCB);
 	Gui.setMouseHandler(mouseCB);
 }
@@ -199,8 +206,8 @@ vec4f yinyang(double x, double y) {
 		float64 b = h - 1.00;
 		float64 c = Math.sign(a * b * (y + x + (y - x) * Math.sign(d)));
 
-		c = Math.mix(c, 0.0, Math.smooth(0.98, 1.00, h));
-		c = Math.mix(c, 1.0, Math.smooth(1.00, 1.02, h));
+		c = Math.lerp(Math.smooth(0.98, 1.00, h), c, 0.0);
+		c = Math.lerp(Math.smooth(1.00, 1.02, h), c, 1.0);
 		result = vec4f(float32(c));
 	}
 	else {
@@ -305,6 +312,7 @@ vec4f tunnel0(double x, double y) {
 	result = rgb2vec4f(tex2d(srcImg, u, v, 2 * r));
 }
 
-setup(&time, yinyang);
+setup(&time, eye);
+//~ setup(&yinyang, yinyang);
 //~ setup(&time, Perlin.Noise2f);
 //~ Gui.exitLoop();

@@ -301,14 +301,15 @@ gxSurf mand = gxSurf(Window.resx, Window.resy);
 //~ gxSurf back = gxSurf("media/images/download.jpg");
 
 void drawCB() {
-	int rgbOp(int dst, int src) {
+	int rgbMax(int dst, int src) {
 		define op(int a, int b) = Math.max(a, b);
 		int r = op(rch(dst), rch(src));
 		int g = op(gch(dst), gch(src));
 		int b = op(bch(dst), bch(src));
-		result = rgb(r, g, b);
+		result = __rgb(r, g, b);
 		//~ result = dst & src;
 	}
+	int rgbOp(int dst, int src) = rgbMul;
 
 	copySurf(offScreen, 0, 0, back, null);
 	copySurfrgb(offScreen, roi.x, roi.y, mand, &roi, rgbOp);

@@ -10,69 +10,39 @@
 
 /* redefinition does not work ...
 static struct Math {
-	pi = 3.14159265358979323846264338327950288419716939937510582097494459;		// A000796
-	e = 2.71828182845904523536028747135266249775724709369995957496696763;		// A001113
-	ln2 = 0.693147180559945309417232121458176568075500134360255254120680009;	// A002162
-	log2E = 1. / ln2;
-	ln10 = 2.30258509299404568401799145468436420760110148862877297603332790;	// A002392
-	log10E = 1. / ln10;
-	phi = 1.61803398874989484820458683436563811772030917980576286213544862;		// A001622
-	sqrt2 = 1.41421356237309504880168872420969807856967187537694807317667974;	// A002193
-	sqrtE = 1.64872127070012814684865078781416357165377610071014801157507931;	// A019774
-	sqrtPi = 1.77245385090551602729816748334114518279754945612238712821380779;	// A002161
-	sqrtPhi = 1.27201964951406896425242246173749149171560804184009624861664038;	// A139339
-	nan = 0/0.;//emit(float64, int64(0xfff8000000000000));
-	inf = 1/0.;//emit(float64, int64(0xfff8000000000000));
+	enum: float64 {
+		pi = 3.14159265358979323846264338327950288419716939937510582097494459;		// A000796
+		e = 2.71828182845904523536028747135266249775724709369995957496696763;		// A001113
+		ln2 = 0.693147180559945309417232121458176568075500134360255254120680009;	// A002162
+		log2E = 1. / ln2;
+		ln10 = 2.30258509299404568401799145468436420760110148862877297603332790;	// A002392
+		log10E = 1. / ln10;
+		phi = 1.61803398874989484820458683436563811772030917980576286213544862;		// A001622
+		sqrt2 = 1.41421356237309504880168872420969807856967187537694807317667974;	// A002193
+		sqrtE = 1.64872127070012814684865078781416357165377610071014801157507931;	// A019774
+		sqrtPi = 1.77245385090551602729816748334114518279754945612238712821380779;	// A002161
+		sqrtPhi = 1.27201964951406896425242246173749149171560804184009624861664038;	// A139339
+		nan = 0/0.;//emit(float64, int64(0xfff8000000000000));
+		inf = 1/0.;//emit(float64, int64(0xfff8000000000000));
+	}
 	define isNan(float64 ^x) = bool(x != x);
 	define isNan(float32 ^x) = bool(x != x);
 }// */
 
-/*TODO: Array assignment
+//~ /*TODO: Array assignment
 define Array(int32 typesize, int32 ^n) = emit(struct, ref(memmgr(null, typesize * n)), i32(n));
 
+int b[];
+//~ b = Array(4, 10);
+int c[] = Array(4, 10);
+//~ b = c;
+/+
 int a[][];
 a = Array(8, 10);
 for (int i = 0; i < a.length; i += 1) {
 	a[i] = Array(int, 10);
-}
+}// +/
 // */
-
-/*TODO: refs and ptrs
-int32 ival = 9;
-
-int32 &iref1 = null;
-int32 &iref2 = ival;
-
-int32ptr iptr1 = null;
-int32ptr iptr2 = ival;
-int32ptr iptr3 = iref2;
-
-//~ int32 x = iref2;
-
-//~ int32ptr aaa(int &a) {&result = &a;}
-//~ int32ptr t = aaa(null);
-//~ */
-
-/* typename
-struct ss {
-	int32 x;
-	int32 y;
-	struct ss {
-		int64 x;
-		int64 y;
-	}
-}
-
-ss A = ss(1, 2);
-ss.ss a = ss.ss(1, 2);
-
-typename t1 = ss;
-typename t2 = ss.ss;
-
-//~ int n1 = sizeof(ss);
-//~ int n2 = sizeof(ss.ss);
-
-//~ */
 
 /* xxx
 struct m {
@@ -90,78 +60,7 @@ int x = m1.a;
 
 // */
 
-/* arrays
-
-// 1.K int maximum(int arr[12])
-// 2.K int maximum(int arr[])
-// 3.X int maximum(int arr...)
-
-int arr2[3] = 1, 2, 3;
-//~ int arr3[] = arr2;
-//~ /+
-
-int maximum(int arr[]) {
-	result = arr[0];
-	for (int i = 1; i < arr.length; i += 1) {
-		if (result < arr[i]) {
-			result = arr[i];
-		}
-	}
-}
-
-void sort(int arr[]) {
-	for (int i = 0; i < arr.length - 1; i += 1) {
-		for (int j = i + 1; j < arr.length; j += 1) {
-			if (arr[i] > arr[j]) {
-				int tmp = arr[i];
-				arr[i] = arr[j];
-				arr[j] = tmp;
-			}
-		}
-	}
-}
-
-int bsearch(int arr[], int elem) {
-	int lo = 0;
-	int hi = arr.length;
-
-	result = -1;
-	for (;lo < hi;) {
-		int mid = lo + ((hi - lo) / 2);
-		int val = arr[mid];
-
-		if (val < elem) {
-			lo = mid + 1;
-		}
-		else if (val > elem) {
-			hi = mid;
-		}
-		else {
-			result = mid;
-			//~ return;
-			lo = hi;
-		}
-	}
-}
-
-void randomize(int arr[]) {
-	for (int i = 0; i < arr.length; i += 1) {
-		arr[i] = rand() % 30;
-	}
-}
-
-//~ define hex32 int32;		// %hex32(0x%08x)
-
-randomize(arr2);
-int max = maximum(arr2);
-int toFind = arr2[arr2.length / 2];
-sort(arr2);
-int index = bsearch(arr2, toFind);
-// +/
-
-//~ */
-
-/*DONE: assignment by reference
+/*TODO: assignment by reference
 int64 a = 32;
 a = 33;
 void setup() {
@@ -189,32 +88,7 @@ print("\n");
 //FixMe: 
 int xxx = it1.slice[0];
 
-
 //~ */
-
-/+ bugs:
-//~ int s2 = sizeof(Math);			// enum base type is not typename
-//~ arrays in structures suck
-// +/
-/+ todo:
-- var type: variant, always by ref, struct variant {typename type; uint8 data[0]};
-	var x = new int(0);
-	var x = new vec4f(0, 1, 0, 1);
-	var x = new int[20];
-	var x = new {
-		x: "alma";
-		z: int(3);
-		c: vec4f(2,3,4,5);
-		ss: {
-			z:"alma";
- 		};
-		f: function()
-	};
-
-	//~ sort_function(int array[0, 3, 4, 2, 5, 1], int function(int a, int b){return a.compareTo(b);})
-	//~ sort_delegate(int array[0, 3, 4, 2, 5, 1], int delegate{int xxx}(int a, int b){return a == b ? 0 : a > b ? 1 : -1;});
-
-// +/
 
 /* optimizing stackalloc
 	// spc -24

@@ -644,6 +644,22 @@ static void draw_triangle(gx_Surf dst, vector p, texcol tc, texcol lc, int i1, i
 	}
 }
 
+/*
+findBoundingBox(&xmin, &xmax, &ymin, &ymax);
+setupEdges (&a0,&b0,&c0,&a1,&b1,&c1,&a2,&b2,&c2);
+for (int y = yMin; y <= yMax; y++) {
+	float e0 = a0*xMin + b0*y + c0;
+	float e1 = a1*xMin + b1*y + c1;
+	float e2 = a2*xMin + b2*y + c2;
+	for (int x = xMin; x <= xMax; x++) {
+		if (e0 > 0 && e1 > 0 && e2 > 0)
+			Image[x][y] = TriangleColor;
+		e0 += a0;
+		e1 += a1;
+		e2 += a2;
+	}
+}*/
+
 static argb litpos(vector color, vector V, vector N, vector E, Light lit) {
 	union vector tmp[8];
 	while (lit) {

@@ -38,7 +38,7 @@ struct state {
 	void* udata;	//?user data for execution passed to vmExec
 
 	ccState cc;		// compiler enviroment
-	int (*dbug)(state, int pu, void *ip, long* sptr, int scnt);
+	int (*dbug)(state, int pu, void* ip, long* sptr, int scnt);
 
 	struct vm {
 
@@ -47,12 +47,7 @@ struct state {
 
 		unsigned int	ss;			// stack size / current stack size
 		unsigned int	sm;			// stack minimum size
-		unsigned int	su;			// stack access
-
-		/*struct pp {					// parallel stack
-			unsigned int	ss;		// stack used
-			unsigned int	sm;		// 
-		} pp;*/
+		unsigned int	su;			// stack access (parallel processing)
 
 		unsigned int	ro;			// <= ro : read only region(meta data) / cgen:(function parameters)
 		unsigned int	pos;		// current positin in buffer
@@ -65,131 +60,153 @@ struct state {
 	} vm;
 
 	long _size;		// size of total memory
-	void *_free;	// list of free memory
-	void *_used;	// list of used memory
+	void* _free;	// list of free memory
+	void* _used;	// list of used memory
 
-	unsigned char *_beg;	// cc: used memory; vm: max stack when calling vmCall from a libcall
-	unsigned char *_end;
+	unsigned char* _beg;	// cc: used memory; vm: max stack when calling vmCall from a libcall
+	unsigned char* _end;
 
 	unsigned char _mem[];
 };
 
 typedef struct stateApi {
 	/** dll should contain the folowing entry:
-		int apiMain(stateApi api) {}
-		this struct should be copied.
+	 *     int apiMain(stateApi api) {}
+	 * this struct should be copied?
 	**/
 
 	state rt;	// runtime
 
 	void (*onClose)();	// callback: when the library is closed
 
-	// add a namespace. Returns NULL if error occurs.
-	symn (*ccBegin)(state, char *cls);
+	/** Begin a namespace. Returns NULL if error occurs.
+	 * 
+	 */
+	symn (*ccBegin)(state, char* cls);
 
-	/** Add integer, floating point or string constant.
+	/** Define a(n) integer, floating point or string constant.
 	 * @param the runtime state.
-	 * @param name: the name of the constant.
-	 * @param value: the value of the constant.
+	 * @param name the name of the constant.
+	 * @param value the value of the constant.
 	 * @return the symbol to the definition, null on error.
 	 */
-	symn (*ccDefInt)(state, char *name, int64_t value);
-	symn (*ccDefFlt)(state, char *name, float64_t value);
-	symn (*ccDefStr)(state, char *name, char* value);
+	symn (*ccDefInt)(state, char* name, int64_t value);
+	symn (*ccDefFlt)(state, char* name, float64_t value);
+	symn (*ccDefStr)(state, char* name, char* value);
 
 	/** Add a type to the runtime.
-	 * @param the runtime state.
-	 * @param name: the name of the constant.
+	 * @param state the runtime state.
+	 * @param name the name of the type.
+	 * @param size the size of the type.
+	 * @param refType non zero if is a reference type (class).
 	 * @return the symbol to the definition, null on error.
 	 */
-	symn (*install)(state, const char* name, unsigned size, int refType);
+	symn (*ccAddType)(state, const char* name, unsigned size, int refType);
 
 	/** Add a libcall (native function) to the runtime.
 	 * @param the runtime state.
-	 * @param libc: the c function.
-	 * @param proto: prototype of the function, do not forget the ending ';'
+	 * @param libc the c function.
+	 * @param data user data for this function.
+	 * @param proto prototype of the function, do not forget the ending ';'
 	 * @return the symbol to the definition, null on error.
-	 * @usage:
+	 * @usage
 		static int f64sin(state rt) {
 			float64_t x = popf64(rt);		// pop one argument
 			setret(rt, float64_t, sin(x));	// set the return value
 			return 0;						// no error in this call
 		}
-		if (!api->libcall(api->rt, f64sin, "float64 sin(float64 x);")) {
+		if (!api->ccAddLibc(api->rt, f64sin, NULL, "float64 sin(float64 x);")) {
 			error...
 		}
 	 */
-	symn (*libcall)(state, int libc(state), const char* proto);
+	symn (*ccAddLibc)(state, int libc(state, void* data), void* data, const char* proto);
 
-	/** Add a type to the runtime.
-	 * @param the runtime state.
-	 * @param name: the name of the constant.
-	 * @return the symbol to the definition, null on error.
-	//~ symn (*ccDefVar)(state, char *name, symn type, int array);
+	/** compile the given file or text block.
+	 * @param state
+	 * @param warn the warning level to be used.
+	 * @param file filename of the compiled unit; this file will be opened if code is not null.
+	 * @param line linenumber where compilation begins; it will be reset if code is not null.
+	 * @param code if not null, this text will be compiled instead of the file.
+	 * @return the number of errors.
 	 */
-
-	/** Add a string fragment of source code.
-	 * @param the runtime state.
-	 * @param __file: filename the source is located (pass __FILE__ or NULL)
-	 * @param __line: linenumber of source (pass __LINE__)
-	 * @param warn: warning level.
-	 * @param code: source code to be compiled.
-	 * @return non zero on error.
-	 */
-	int (*ccAddText)(state, char *__file, int __line, int warn, char *code);
-	//~ int (*ccAddFile)(state, char *name, int warn);
+	int (*ccAddCode)(state, int warn, char *file, int line, char *code);
 
 	/** End the namespace, makes all declared variables static.
-	 * @param the runtime state.
-	 * @param cls: the namespace, returned by ccBegin.
+	 * @param state
+	 * @param cls the namespace, returned by ccBegin.
 	*/
 	void (*ccEnd)(state, symn cls);
 
 	/** Find a global symbol by offset.
 	 * usefull for callbacks
-	 * @usage:
+	 * @usage
 		static symn onMouse = null;
+		static int mouseCb(int btn, int x, int y) {
+			if (onMouse) {
+				struct {int btn, x, y;} args = {btn, x, y};
+				api->invoke(api->rt, onMouse, &args);		// invoke the callback
+			}
+		}
 		static int setMouseCb(state rt) {
 			onMouse = api->findref(api->rt, popref(rt));		// pop and find the functions symbol
-			if (onMouse) {
-				api->invoke(api->rt, onMouse, btn, x, y);		// invoke the callback
-			}
-			return 0;											// no error in this call
+			return onMouse != NULL;								// no error in this call
 		}
-		if (!api->libcall(api->rt, f64sin, "void regMouse(void CB(int b, int x, int y);")) {
+		if (!api->ccAddLibc(api->rt, setMouseCb, NULL, "void regMouse(void CB(int b, int x, int y);")) {
 			error...
 		}
 	 */
 	symn (*findref)(state, void *ptr);
 
-	/** Find a global symbol by name.
+	/* Find a global symbol by name.
 	 * 
 	symn (*findsym)(ccState cc, symn in, char *name);
 	 */
-	/** offset of a pointer in the vm
+	/* offset of a pointer in the vm
+	 * 
 	int (*vmOffset)(state, void *ptr);
 	 */
 
 	/** Invoke a function inside the vm.
-	 * @param the runtime state.
-	 * @param fun: the symbol of the function.
+	 * @param state
+	 * @param fun the symbol of the function.
 	 * @return non zero on error.
+	 * @usage
+		static int setpixels(state rt) {
+			symn pixelfun = api->findref(api->rt, popref(rt));		// pop and find the functions symbol
+			for (int y = 0; y < sceen.height; ++y) {
+				for (int x = 0; x < sceen.width; ++x) {
+					struct {double x, y;} args = {(double)x / sceen.width, (double)y / sceen.height};
+					if (api->invoke(api->rt, pixelfun, &args) == 0) {
+						sceen.pixels[x + y * sceen.width] = getret(api->rt, int32_t);
+					}
+				}
+			}
+		}
+		if (!api->ccAddLibc(api->rt, setpixels, NULL, "void setpixels(int CallBack(double x, double y);")) {
+			error...
+		}
 	*/
-	int (*invoke)(state, symn fun, ...);
+	int (*invoke)(state, symn fun, void *args);
 
 	/** memory manager of the vm.
 	 * @param the runtime state.
-	 * @param ptr: an allocated memory address in the vm or null.
-	 * @param size: the new size to reallocate or 0.
+	 * @param ptr an allocated memory address in the vm or null.
+	 * @param size the new size to reallocate or 0.
 	 * @return non zero on error.
 		ptr == null && size == 0: nothing
-		ptr == null && size > 0: alloc
+		ptr == null && size >  0: alloc
 		ptr != null && size == 0: free
-		ptr != null && size > 0: realloc
+		ptr != null && size >  0: realloc
 	*/
 	void* (*rtAlloc)(state, void* ptr, unsigned size);
 
 }* stateApi;
+
+static inline int padded(int offs, int align) {
+	//~ assert(align == (align & -align));
+	//~ return align + ((offs - 1) & ~(align - 1));
+	return offs + (align - 1) & ~(align - 1);
+}
 
 static inline void* setret(state rt, void *result, int size) {
 	if (result != NULL) {
@@ -205,7 +222,7 @@ static inline void* poparg(state rt, void *result, int size) {
 	else {
 		result = rt->argv;
 	}
-	rt->argv += (size + 3) & ~3;
+	rt->argv += padded(size, 4);
 	return result;
 }
 

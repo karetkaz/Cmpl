@@ -1,10 +1,10 @@
 OUTOBJ=-o
 OUTEXE=-o
 CFLAGS=-Wall -Wpadded -g3 -ggdb
-CFLAGS=-g0 -Os
+CFLAGS=-Wall -Wpadded -g0 -Os
 LIBS=-lm -ldl
-CCC=gcc -m32 -c
 LNK=gcc -m32
+CCC=gcc -m32 -c
 
 ifeq "$(OS)" "Windows_NT"
 LIBS=-lm

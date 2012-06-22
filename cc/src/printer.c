@@ -471,8 +471,8 @@ static void fputast(FILE *fout, astn ast, int mode, int level) {
 			}
 			else switch (ast->kind) {
 				default: fatal("FixMe");
-				case OPER_adr: fputstr(fout, "&"); break;		// '.'
 				case OPER_dot: fputstr(fout, "."); break;		// '.'
+				case OPER_adr: fputstr(fout, "&"); break;		// '&'
 				case OPER_pls: fputstr(fout, "+"); break;		// '+'
 				case OPER_mns: fputstr(fout, "-"); break;		// '-'
 				case OPER_cmt: fputstr(fout, "~"); break;		// '~'
@@ -1099,12 +1099,20 @@ int logfile(state rt, char* file) {
 	return 0;
 }
 
-void dump(state rt, dumpMode mode, symn sym, char *text, ...) {
+void dump(state rt, int mode, symn sym, char *text, ...) {
 	FILE *logf = rt ? rt->logf : stdout;
 	int level = mode & 0xff;
 
 	if (!logf)
 		return;
+
+	if (text != NULL) {
+		va_list ap;
+		va_start(ap, text);
+		FPUTFMT(logf, text, ap);
+		va_end(ap);
+		fflush(logf);
+	}
 
 	if (sym) {
 		if (mode & dump_sym) {
@@ -1124,25 +1132,9 @@ void dump(state rt, dumpMode mode, symn sym, char *text, ...) {
 			}
 		}
 	}
-	else switch (mode & dumpMask) {
-		default:
-			fatal("FixMe");
-			break;
-
-		case dump_ast: {
-			if (text != NULL)
-				fputfmt(logf, text);
-			if ((level & 0x0f) == 0x0f)
-				dumpxml(logf, rt->cc->root, level, 0, "root");
-			else
-				fputast(logf, rt->cc->root, level | 2, 0);
-		} break;
-
-		case dump_sym: {
+	else {
+		if (mode & dump_sym) {
 			symn glob = rt->defs;
-
-			if (text != NULL)
-				fputfmt(logf, text);
 
 			if ((level & 0x0f) == 0x0f) {
 				while (glob) {
@@ -1153,24 +1145,25 @@ void dump(state rt, dumpMode mode, symn sym, char *text, ...) {
 			else {
 				dumpsym(logf, glob, level);
 			}
-		} break;
+		}
+		if (mode & dump_ast) {
+			if ((level & 0x0f) == 0x0f)
+				dumpxml(logf, rt->cc->root, level, 0, "root");
+			else
+				fputast(logf, rt->cc->root, level | 2, 0);
+		}
 
-		case dump_asm: {
-			if (text != NULL)
-				fputfmt(logf, text);
-
-			if (mode & 0x80) {
-				symn var;
-				for (var = rt->defs; var; var = var->next) {
-					if (var->kind == TYPE_ref && var->call) {
-						symn arg = var->args;
-						fputfmt(logf, "%-T [@%06x: %d] {\n", var, -var->offs, var->size);
-						for (; arg; arg = arg->next) {
-							fputfmt(logf, "\targ %-T [@%06x: %d]\n", arg, arg->offs, arg->size);
-						}
-						fputasm(logf, rt, -var->offs, -var->offs + var->size, mode);
-						fputfmt(logf, "}\n");
+		if (mode & dump_asm) {
+			symn var;
+			for (var = rt->defs; var; var = var->next) {
+				if (var->kind == TYPE_ref && var->call) {
+					symn arg = var->args;
+					fputfmt(logf, "%-T [@%06x: %d] {\n", var, -var->offs, var->size);
+					for (; arg; arg = arg->next) {
+						fputfmt(logf, "\targ %-T [@%06x, size:%d, cast:%t]\n", arg, arg->offs, arg->size, arg->cast);
 					}
+					fputasm(logf, rt, -var->offs, -var->offs + var->size, mode);
+					fputfmt(logf, "}\n");
 				}
 			}
 			fputfmt(logf, "init(ro: %d"
@@ -1185,13 +1178,10 @@ void dump(state rt, dumpMode mode, symn sym, char *text, ...) {
 
 			fputasm(logf, rt, rt->vm.pc, rt->vm.px, mode);
 			fputfmt(logf, "}\n");
-		} break;
+		}
 
-		case dump_bin: {
+		if (mode & dump_bin) {
 			unsigned int i, brk = level & 0xff;
-
-			if (text != NULL)
-				fputfmt(logf, text);
 
 			if (brk == 0)
 				brk = 16;
@@ -1217,7 +1207,7 @@ void dump(state rt, dumpMode mode, symn sym, char *text, ...) {
 				fputchr(logf, "0123456789abcdef"[val >> 16 & 0x0f]);
 				fputchr(logf, "0123456789abcdef"[val >>  0 & 0x0f]);
 			}
-		} break;
+		}
 	}
 }
 

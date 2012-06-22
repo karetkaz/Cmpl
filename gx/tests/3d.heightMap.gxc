@@ -1,5 +1,4 @@
-// 3d
-define test = 3;
+// 3d height Map
 enum Window {
 	draw = RenderMode.drawFill|RenderMode.draw_lit;// & ~RenderMode.zero_cbuf;
 	resx = 512;

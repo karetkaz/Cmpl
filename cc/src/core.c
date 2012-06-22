@@ -56,7 +56,6 @@ int isStatic(ccState cc, astn ast) {
 			return 0;
 
 		case OPER_com:
-		case OPER_adr:
 		case OPER_not:		// '!'
 		case OPER_pls:		// '+'
 		case OPER_mns:		// '-'
@@ -149,7 +148,120 @@ int isConst(astn ast) {
 	return 0;
 }
 
-int cgen(state rt, astn ast, ccToken get) {
+//#{ symbols: install and query
+symn ccBegin(state rt, char *cls) {
+	symn result = NULL;
+	if (rt->cc) {
+		result = install(rt->cc, cls, TYPE_rec, TYPE_vid, 0, NULL, NULL);
+		if (result) {
+			enter(rt->cc, NULL);
+		}
+	}
+	return result;
+}
+void ccEnd(state rt, symn cls) {
+	if (cls) {
+		cls->args = leave(rt->cc, cls, 1);
+	}
+}
+
+symn ccDefInt(state rt, char *name, int64_t value) {
+	name = mapstr(rt->cc, name, -1, -1);
+	return install(rt->cc, name, TYPE_def, TYPE_int, 0, rt->cc->type_i32, intnode(rt->cc, value));
+}
+symn ccDefFlt(state rt, char *name, double value) {
+	name = mapstr(rt->cc, name, -1, -1);
+	return install(rt->cc, name, TYPE_def, TYPE_flt, 0, rt->cc->type_f64, fltnode(rt->cc, value));
+}
+symn ccDefStr(state rt, char *name, char* value) {
+	name = mapstr(rt->cc, name, -1, -1);
+	value = mapstr(rt->cc, value, -1, -1);
+	return install(rt->cc, name, TYPE_def, TYPE_str, 0, rt->cc->type_str, strnode(rt->cc, value));
+}
+
+symn findsym(ccState s, symn in, char *name) {
+	struct astn ast;
+	memset(&ast, 0, sizeof(struct astn));
+	ast.kind = TYPE_ref;
+	ast.ref.hash = rehash(name, -1);
+	ast.ref.name = name;
+	return lookup(s, in ? in->args : s->s->defs, &ast, NULL, 1);
+}
+symn findref(state rt, void *ptr) {
+	int offs;
+	symn sym = NULL;
+
+	if (ptr == NULL) {
+		trace("null");
+		return NULL;
+	}
+
+	if (ptr < (void*)rt->_mem) {
+		fatal("Error");
+		return NULL;
+	}
+
+	if ((unsigned char*)ptr > rt->_mem + rt->vm.pc) {		// pc
+		fatal("Error");
+		return NULL;
+	}
+
+	offs = -((unsigned char*)ptr - rt->_mem);
+	for (sym = rt->gdef; sym; sym = sym->gdef) {
+		if (sym->offs == offs)
+			return sym;
+	}
+
+	return NULL;
+}
+
+int symvalint(symn sym, int* res) {
+	struct astn ast;
+	if (sym && eval(&ast, sym->init)) {
+		*res = (int)constint(&ast);
+		return 1;
+	}
+	return 0;
+}
+int symvalflt(symn sym, double* res) {
+	struct astn ast;
+	if (sym && eval(&ast, sym->init)) {
+		*res = constflt(&ast);
+		return 1;
+	}
+	return 0;
+}
+
+/* get a libcall arg by name
+int getarg(state rt, char* name, void* copy) {
+
+	dieif(!rt || rt->libc || !name || !copy, "FixMe");
+
+	if (rt->libc->args) {
+		symn arg = rt->libc->args;
+		while (arg != NULL) {
+			if (strcmp(name, arg->name) == 0)
+				break;
+			arg = arg->next;
+		}
+		if (arg != NULL) {
+			int argc = (char*)rt->retv - (char*)rt->argv;
+
+			void* offs = ((char*)rt->argv) + argc - arg->offs;
+
+			if (arg->cast == TYPE_ref) {
+				offs = *(void**)offs;
+			}
+
+			memcpy(copy, offs, arg->size);
+			return arg->size;
+		}
+	}
+	return 0;
+}*/
+//#}
+
+static int cgen(state rt, astn ast, ccToken get) {
 	int ipdbg = emitopc(rt, markIP);
 
 	#if DEBUGGING
@@ -161,7 +273,7 @@ int cgen(state rt, astn ast, ccToken get) {
 
 	dieif(!ast || !ast->type, "FixMe `%+k`", ast);
 
-	TODO("RemoveMe")
+	TODO("RemMe")
 	if (get == TYPE_any)
 		get = ast->cst2;
 
@@ -824,8 +936,9 @@ int cgen(state rt, astn ast, ccToken get) {
 				}
 			}
 
-			if (get == TYPE_ref)
+			if (get == TYPE_ref) {
 				return TYPE_ref;
+			}
 
 			if (!emitint(rt, opc_ldi, sizeOf(ast->type))) {
 				trace("%+k", ast);
@@ -833,17 +946,16 @@ int cgen(state rt, astn ast, ccToken get) {
 			}
 		} break;
 
-		case OPER_not:
-		case OPER_adr:
+		case OPER_not:		// '!'
+		case OPER_adr:		// '&'
 		case OPER_pls:		// '+'
 		case OPER_mns:		// '-'
 		case OPER_cmt: {	// '~'
 			int opc = -1;
 			switch (ast->kind) {
 				default: fatal("FixMe"); return 0;
-				case OPER_pls:
-					return cgen(rt, ast->op.rhso, get);
 				case OPER_adr:
+				case OPER_pls:
 					return cgen(rt, ast->op.rhso, get);
 
 				case OPER_mns:
@@ -1021,12 +1133,17 @@ int cgen(state rt, astn ast, ccToken get) {
 		case ASGN_set: {	// ':='
 			// TODO: ast->type->size;
 			int size = sizeOf(ast->type);
-			int rhsAddr = ast->op.lhso->kind == OPER_adr;
-			int refAssign = rhsAddr;// || ast->type->cast == TYPE_ref;
+			int refAssign = TYPE_ref;
 
-			if (refAssign) {
-				ret = TYPE_ref;
-				size = 4;
+			if (ast->op.lhso->kind == TYPE_ref) {
+				symn typ = ast->op.lhso->type;
+				//~ symn var = ast->op.lhso->ref.link;
+				if (typ->kind == TYPE_rec && typ->cast == TYPE_ref) {
+					logif(1, "reference Assignment: %+k", ast);
+					dieif(ret != TYPE_ref, "FixMe");
+					refAssign = ASGN_set;
+					size = vm_size;
+				}
 			}
 
 			if (!cgen(rt, ast->op.rhso, ret)) {
@@ -1050,8 +1167,7 @@ int cgen(state rt, astn ast, ccToken get) {
 			else
 				ret = get;
 
-			//~ if (!cgen(rt, ast->op.lhso, TYPE_ref)) {
-			if (!cgen(rt, refAssign ? ast->op.lhso->op.rhso : ast->op.lhso, refAssign ? ASGN_set : TYPE_ref)) {
+			if (!cgen(rt, ast->op.lhso, refAssign)) {
 				trace("%+k", ast);
 				return 0;
 			}
@@ -1132,8 +1248,7 @@ int cgen(state rt, astn ast, ccToken get) {
 					if (get == ASGN_set) {
 						get = TYPE_ref;
 					}
-					else // */
-					if (var->cast == TYPE_ref && var != typ) {
+					else if (var->cast == TYPE_ref && var != typ) {
 						if (!emitint(rt, opc_ldi, vm_size)) {
 							trace("%+k", ast);
 							return 0;
@@ -1147,6 +1262,9 @@ int cgen(state rt, astn ast, ccToken get) {
 						}
 					}
 					else {
+						if (var->cast == TYPE_arr) {
+							retarr = TYPE_arr;
+						}
 						ret = TYPE_ref;
 					}
 
@@ -1431,7 +1549,7 @@ int cgen(state rt, astn ast, ccToken get) {
 				else if (!var->offs) {		// alloc locally a block of the size of the type;
 					//~ int size = sizeOf(typ);	// TODO: var->size;
 					logif(var->size != sizeOf(typ) && typ->kind != TYPE_arr, "FixMe %T(%d, %d)", var, var->size, sizeOf(typ));
-					debug("%-T:%t", var, var->cast);
+					trace("%-T:%t", var, var->cast);
 					if (!emitint(rt, opc_spc, size)) {
 						trace("%+k", ast);
 						return 0;
@@ -1622,6 +1740,11 @@ int cgen(state rt, astn ast, ccToken get) {
 			case EMIT_opc:
 				return EMIT_opc;
 		}
+		case TYPE_ptr: switch (ret) {
+			default: goto errorcast2;
+			case TYPE_ref:
+				return TYPE_ptr;
+		}// */
 
 		default:
 			fatal("%d: unimplemented(cast for `%+k`, %t):%t", ast->line, ast, get, ret);
@@ -1667,120 +1790,6 @@ int cgen(state rt, astn ast, ccToken get) {
 	return ret;
 }
 
-//#{ symbols: install and query
-symn ccBegin(state rt, char *cls) {
-	symn result = NULL;
-	if (rt->cc) {
-		result = install(rt->cc, cls, TYPE_rec, TYPE_vid, 0, NULL, NULL);
-		if (result) {
-			enter(rt->cc, NULL);
-		}
-	}
-	return result;
-}
-void ccEnd(state rt, symn cls) {
-	if (cls) {
-		cls->args = leave(rt->cc, cls, 1);
-	}
-}
-
-symn ccDefInt(state rt, char *name, int64_t value) {
-	name = mapstr(rt->cc, name, -1, -1);
-	return install(rt->cc, name, TYPE_def, TYPE_int, 0, rt->cc->type_i32, intnode(rt->cc, value));
-}
-symn ccDefFlt(state rt, char *name, double value) {
-	name = mapstr(rt->cc, name, -1, -1);
-	return install(rt->cc, name, TYPE_def, TYPE_flt, 0, rt->cc->type_f64, fltnode(rt->cc, value));
-}
-symn ccDefStr(state rt, char *name, char* value) {
-	name = mapstr(rt->cc, name, -1, -1);
-	value = mapstr(rt->cc, value, -1, -1);
-	return install(rt->cc, name, TYPE_def, TYPE_str, 0, rt->cc->type_str, strnode(rt->cc, value));
-}
-
-symn findsym(ccState s, symn in, char *name) {
-	struct astn ast;
-	memset(&ast, 0, sizeof(struct astn));
-	ast.kind = TYPE_ref;
-	ast.ref.hash = rehash(name, -1);
-	ast.ref.name = name;
-	return lookup(s, in ? in->args : s->s->defs, &ast, NULL, 1);
-}
-symn findref(state rt, void *ptr) {
-	int offs;
-	symn sym = NULL;
-
-	if (ptr == NULL) {
-		trace("null");
-		return NULL;
-	}
-
-	if (ptr < (void*)rt->_mem) {
-		fatal("Error");
-		return NULL;
-	}
-
-	if ((unsigned char*)ptr > rt->_mem + rt->vm.pc) {		// pc
-		fatal("Error");
-		return NULL;
-	}
-
-	offs = -((unsigned char*)ptr - rt->_mem);
-	for (sym = rt->gdef; sym; sym = sym->gdef) {
-		if (sym->offs == offs)
-			return sym;
-	}
-
-	return NULL;
-}
-
-int symvalint(symn sym, int* res) {
-	struct astn ast;
-	if (sym && eval(&ast, sym->init)) {
-		*res = (int)constint(&ast);
-		return 1;
-	}
-	return 0;
-}
-int symvalflt(symn sym, double* res) {
-	struct astn ast;
-	if (sym && eval(&ast, sym->init)) {
-		*res = constflt(&ast);
-		return 1;
-	}
-	return 0;
-}
-
-/* get a libcall arg by name
-int getarg(state rt, char* name, void* copy) {
-
-	dieif(!rt || rt->libc || !name || !copy, "FixMe");
-
-	if (rt->libc->args) {
-		symn arg = rt->libc->args;
-		while (arg != NULL) {
-			if (strcmp(name, arg->name) == 0)
-				break;
-			arg = arg->next;
-		}
-		if (arg != NULL) {
-			int argc = (char*)rt->retv - (char*)rt->argv;
-
-			void* offs = ((char*)rt->argv) + argc - arg->offs;
-
-			if (arg->cast == TYPE_ref) {
-				offs = *(void**)offs;
-			}
-
-			memcpy(copy, offs, arg->size);
-			return arg->size;
-		}
-	}
-	return 0;
-}*/
-//#}
-
-TODO("this should be named something else")
 int gencode(state rt, int level) {
 	ccState cc = rt->cc;
 	libc lc = NULL;
@@ -1922,7 +1931,7 @@ int gencode(state rt, int level) {
 				var->init = NULL;
 			}
 			else {
-				dieif(var->offs, "FixMe %-T@%d", var, var->offs);
+				dieif(var->offs, "FixMe %-T@%d:%t", var, var->offs, var->cast);
 				var->size = sizeOf(var);
 				var->offs = -rt->vm.pos;
 				rt->vm.pos += var->size;
@@ -2005,9 +2014,6 @@ int gencode(state rt, int level) {
 }
 
 // install basic types
-symn type_i32_ = NULL;
-symn type_f64_ = NULL;
-symn type_str_ = NULL;
 symn emit_opc_ = NULL;
 static void install_type(ccState cc, int mode) {
 	symn type_i08 = NULL, type_i16 = NULL;
@@ -2029,10 +2035,6 @@ static void install_type(ccState cc, int mode) {
 		// type_ = install(cc, "float16", ATTR_const | TYPE_rec, TYPE_f64, 2, cc->type_rec, NULL);
 	cc->type_f32 = install(cc, "float32", ATTR_const | TYPE_rec, TYPE_f32, 4, cc->type_rec, NULL);
 	cc->type_f64 = install(cc, "float64", ATTR_const | TYPE_rec, TYPE_f64, 8, cc->type_rec, NULL);
-
-	type_i32_ = cc->type_i32;
-	type_f64_ = cc->type_f64;
-	type_str_ = cc->type_str;
 
 	if (mode & creg_tptr) {
 		cc->type_ptr = install(cc, "pointer", ATTR_const | TYPE_rec, TYPE_ref, vm_size, cc->type_rec, NULL);
@@ -2306,30 +2308,47 @@ static void install_emit(ccState cc, int mode) {
 	}
 }
 
-static int libCallHalt(state rt) {
+static int libCallHalt(state rt, void* _) {
 	return 0;
 }
-static int libCallDebug(state rt) {
-	int level = 0;
-	//~ void debug(bool condition, string message, typename object, int maxStackTrace, bool abort);
+static int libCallDebug(state rt, void* _) {
+	//~ void debug(bool condition, string message, typename objType, pointer objRef, int maxStackTrace, bool abort);
 	char *file = popstr(rt);
 	int   line = popi32(rt);
 	//~ char *func = popstr(rt);
 
 	if (popi32(rt)) {		// pop condition
+		FILE *logf = rt ? rt->logf : stderr;
+
 		char *message = popstr(rt);
+		symn  objtyp = popref(rt);
 		void *object = popref(rt);
 		int stktrace = popi32(rt);
 		int abortapp = popi32(rt);
+		int level = 0;
 
-		if (message != NULL) {
-			perr(rt, level, file, line, "%?s", message);
-		}
-		if (object != NULL) {
-			perr(rt, level, NULL, 0, "%-T", object);
-		}
-		if (stktrace > 0) {
-			perr(rt, level, NULL, 0, "stacktrace[%d] not supported yet", stktrace);
+		if (logf) {
+			int isOutput = 0;
+			if (file && line) {
+				fputfmt(rt->logf, "%s:%u", file, line);
+				isOutput = 1;
+			}
+			if (message != NULL) {
+				fputfmt(rt->logf, ": %s", message);
+				isOutput = 1;
+			}
+			if (objtyp && object) {
+				fputfmt(rt->logf, ": ");
+				vm_fputval(rt, rt->logf, objtyp, object, 0);
+				isOutput = 1;
+			}
+			if (stktrace > 0) {
+				perr(rt, level, NULL, 0, "stacktrace[%d] not supported yet", stktrace);
+				//~ isOutput = 1;
+			}
+			if (isOutput) {
+				fputfmt(logf, "\n");
+			}
 		}
 		if (abortapp) {
 			return -1;
@@ -2338,7 +2357,7 @@ static int libCallDebug(state rt) {
 
 	return 0;
 }
-static int libCallMemMgr(state rt) {
+static int libCallMemMgr(state rt, void* _) {
 	void *old = popref(rt);
 	int size = popi32(rt);
 	void *res = rtAlloc(rt, old, size);
@@ -2347,7 +2366,7 @@ static int libCallMemMgr(state rt) {
 	return 0;
 }
 
-ccState ccInit(state rt, int mode, int libcHalt(state)) {
+ccState ccInit(state rt, int mode, int libcHalt(state, void*)) {
 	ccState cc = (void*)(rt->_end - sizeof(struct ccState));
 
 	dieif(rt->_beg != rt->_mem, "Compiler initialization failed.");
@@ -2391,17 +2410,17 @@ ccState ccInit(state rt, int mode, int libcHalt(state)) {
 		cc->emit_tag->ref.hash = -1;
 	}
 
-	libcall(rt, libcHalt ? libcHalt : libCallHalt, "void Halt(int Code);");
+	libcall(rt, libcHalt ? libcHalt : libCallHalt, NULL, "void Halt(int Code);");
 
-	cc->libc_mem = cc->type_ptr ? libcall(cc->s, libCallMemMgr, "pointer memmgr(pointer ptr, int32 size);") : NULL;
-	cc->libc_dbg = libcall(rt, libCallDebug, "void debug(bool condition, string message, typename object, int maxStackTrace, bool abort);");
+	cc->libc_mem = cc->type_ptr ? libcall(cc->s, libCallMemMgr, NULL, "pointer memmgr(pointer ptr, int32 size);") : NULL;
+	cc->libc_dbg = libcall(rt, libCallDebug, NULL, "void debug(bool condition, string message, typename objtyp, typename objref, int maxStackTrace, bool abort);");
 
 	// 4 reflection
 	if (cc->type_rec && (mode & creg_tvar)) {
 		symn arg = NULL;
 		enter(cc, NULL);
 		if ((arg = install(cc, "size", ATTR_const | TYPE_ref, TYPE_any, vm_size, cc->type_i32, NULL))) {
-			arg->offs = (int)(&((symn)NULL)->size);
+			arg->offs = offsetof(symn, size);
 		}
 		/*if ((arg = install(cc, "offset", ATTR_const | TYPE_ref, TYPE_any, vm_size, type_i32))) {
 			arg->offs = (int)(&((symn)NULL)->offs);
@@ -2520,6 +2539,9 @@ void* rtAlloc(state rt, void *ptr, unsigned size) {
 	memchunk memd = NULL;
 
 	size = padded(size, sizeof(struct memchunk));
+
+	dieif(ptr && (unsigned char*)ptr < rt->_mem, "invalid reference");
+	dieif((unsigned char*)ptr > rt->_mem + rt->_size, "invalid reference");
 
 	// memory manager was not initialized, initialize it first
 	if (rt->_free == NULL && rt->_used == NULL) {
@@ -2643,13 +2665,13 @@ void* rtAlloc(state rt, void *ptr, unsigned size) {
 
 //#{ temp.c ---------------------------------------------------------------------
 #if 0
-//static void install_rtti(ccState cc, unsigned level) ;		// req emit: libc(import, define, lookup, ...)
 static void install_lang(ccState cc, unsigned level) {
 	state rt = cc->s;
 	symn cls;
 	if ((cls = ccBegin(rt, "Runtime"))) {
 		install(cc, "Args", TYPE_arr, 0, 0);// string Args[];
 		install(cc, "Env", TYPE_def, 0, 0);	// string Env[string];
+		install(cc, "Exit(int Code)", TYPE_def, 0, 0);	// string Env[string];
 		ccEnd(cc, cls);
 	}
 	if ((cls = ccBegin(rt, "Reflection"))) {
@@ -2661,44 +2683,6 @@ static void install_lang(ccState cc, unsigned level) {
 		install(cc, "bool instanceof(type &ty, var obj)", TYPE_def, 0, 0);
 		ccEnd(cc, cls);
 	}
-}
-#endif
-// vm test&help
-#if 0
-int vm_hgen() {
-	int i, e = 0;
-	FILE *out = stdout;
-	for (i = 0; i < opc_last; i++) {
-		int err = 0;
-		if (!opc_tbl[i].name) continue;
-		if (!opc_tbl[i].size) continue;
-
-		fprintf(out, "\nInstruction: %s: #\n", opc_tbl[i].name);
-		fprintf(out, "Opcode		argsize		Stack trasition\n");
-		fprintf(out, "0x%02x		%d		[..., a, b, c, d => [..., a, b, c, d#\n", opc_tbl[i].code, opc_tbl[i].size-1);
-
-		fprintf(out, "\nDescription\n");
-		if (opc_tbl[i].code != i) {
-			e += err = 1;
-		}
-		else switch (i) {
-			error_opc: e += err = 1; break;
-			#define NEXT(__IP, __CHK, __SP) if (opc_tbl[i].size != (__IP)) goto error_opc;
-			#define STOP(__ERR, __CHK) if (__CHK) goto __ERR
-			#include "code.i"
-		}
-		if (err)
-			fprintf(out, "The '%s' instruction %s\n", opc_tbl[i].name, err ? "is invalid" : "#");
-
-		fprintf(out, "\nOperation\n");
-		fprintf(out, "#\n");
-
-		fprintf(out, "\nExceptions\n");
-		fprintf(out, "None#\n");
-
-		fprintf(out, "\n");		// end of text
-	}
-	return e;
 }
 #endif
 // arrBuffer

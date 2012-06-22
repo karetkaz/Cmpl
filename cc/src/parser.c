@@ -460,7 +460,7 @@ static int readTok(ccState s, astn tok) {
 				if (chr == -1)
 					warn(s->s, 9, s->file, line, "no newline at end of file");
 				else if (s->line != line + 1)
-					warn(s->s, 9, s->file, line, "multi-line comment");
+					warn(s->s, 9, s->file, line, "multi-line comment: `%s`", ptr);
 				if (fmt && s->pfmt && s->pfmt->line == line) {
 					*ptr++ = 0;
 					s->pfmt->pfmt = mapstr(s, beg, ptr - beg, -1);
@@ -1253,11 +1253,11 @@ static symn ctorArg(ccState s, symn rec) {
 			}
 		}
 
-		ctor->args = leave(s, ctor, 0);
 		ctor->kind = TYPE_def;
 		//~ ctor->type = rec;
 		ctor->call = 1;
 		ctor->cnst = 1;	// returns constant (params must be constants too)
+		ctor->args = leave(s, ctor, 0);
 
 		ctor->init = opnode(s, OPER_fnc, s->emit_tag, root);
 		ctor->init->type = rec;
@@ -1491,7 +1491,7 @@ astn decl_var(ccState s, astn *argv, int mode) {
 		}
 
 		if (!(tag = next(s, TYPE_ref))) {
-			debug("id expected, not %k", peek(s));
+			debug("id expected, not %k:%s@%d", peek(s), s->file, s->line);
 			return 0;
 		}
 
@@ -1515,23 +1515,22 @@ astn decl_var(ccState s, astn *argv, int mode) {
 			skiptok(s, PNCT_rp, 1);
 
 
-			ref->args = leave(s, ref, 0);
 			//~ ref->cast = TYPE_ref;
 			ref->call = 1;
+			ref->args = leave(s, ref, 0);
 
 			if (ref->args == NULL) {
 				argroot = s->void_tag;
 				ref->args = s->void_tag->ref.link;
 			}
 
-			if (byref) {
-				error(s->s, tag->file, tag->line, "declaration of `%+T` as returning a reference [TODO]", ref);
-			}
-
 			if (argv) {
 				*argv = argroot;
 			}
 
+			if (byref) {
+				error(s->s, tag->file, tag->line, "declaration of `%+T` as returning a reference [TODO]", ref);
+			}
 			byref = 0;
 		}
 
@@ -1886,11 +1885,11 @@ static astn stmt(ccState s, int mode) {
 					// next(.it, a);
 					astn fun, arg;
 
-					astn tok = newIden(s, "iterator");
+					astn tok = tagnode(s, "iterator");
 					symn loc = s->deft[tok->ref.hash];
 					symn sym = lookup(s, loc, tok, itin, 0);
 					astn dcl1 = ast->stmt.init;
-					astn dcl2 = newIden(s, ".it");
+					astn dcl2 = tagnode(s, ".it");
 
 					if (sym != NULL && dcl2 != NULL) {
 						symn x = declare(s, TYPE_ref, dcl2, sym->type);
@@ -1913,8 +1912,8 @@ static astn stmt(ccState s, int mode) {
 					ast->stmt.init->cst2 = TYPE_rec;
 
 					// make the `next(it, a)` test
-					arg = opnode(s, OPER_com, newIden(s, dcl2->ref.name), newIden(s, dcl1->ref.name));
-					fun = opnode(s, OPER_fnc, newIden(s, "next"), arg);
+					arg = opnode(s, OPER_com, tagnode(s, dcl2->ref.name), tagnode(s, dcl1->ref.name));
+					fun = opnode(s, OPER_fnc, tagnode(s, "next"), arg);
 
 					ast->stmt.test = fun;
 					if (!typecheck(s, NULL, fun) || !typecheck(s, NULL, sym->init)) {
@@ -2280,11 +2279,13 @@ astn expr(ccState s, int mode) {
 	}
 	if (mode && tok) {								// check
 
+		astn root = s->root;
 		s->root = NULL;
 		if (!typecheck(s, NULL, tok)) {
 			error(s->s, tok->file, tok->line, "invalid expression: `%+k` in `%+k`", s->root, tok);
 			debug("%7K", tok);
 		}
+		s->root = root;
 	}
 	return tok;
 }
@@ -2638,7 +2639,7 @@ astn decl(ccState s, int Rmode) {
 				ref->gdef = s->func;
 				s->func = ref;
 				s->maxlevel = s->nest;
-				ref->sdef = result = install(s, "result", TYPE_ref, 0, ref->type->size, typ, NULL);
+				ref->sdef = result = install(s, "result", TYPE_ref, ref->type->cast, ref->type->size, typ, NULL);
 
 				if (result) {
 					result->decl = ref;
@@ -2675,7 +2676,6 @@ astn decl(ccState s, int Rmode) {
 				backTok(s, newnode(s, STMT_do));
 
 				Attr |= ATTR_stat;
-
 			}
 			else if (test(s, ASGN_set)) {				// int sqrt(int a) = sqrt_fast;		// function reference.
 				if (ref->call) {
@@ -2773,14 +2773,14 @@ astn unit(ccState s, int mode) {
 
 /** parse the current buffer and add to root.
  */
-int parse(ccState s, srcType mode, int wl) {
+static int parse(ccState s, int preparse, int warn) {
 	astn newRoot, oldRoot = s->root;
 
-	s->warn = wl;
+	s->warn = warn;
 
-	dieif(mode != 0, "FixMe");
+	dieif(preparse != 0, "FixMe");
 
-	/*if (mode & SCAN_pre) {
+	if (preparse) {
 		astn root = NULL;
 		astn ast, prev = NULL;
 		while ((ast = next(s, 0))) {
@@ -2793,14 +2793,8 @@ int parse(ccState s, srcType mode, int wl) {
 			prev = ast;
 			//~ info(s->s, ast->file, ast->line, "%k", ast);
 		}
-		backTok(root);
+		backTok(s, root);
 	}
-	switch (mode) {
-		case srcUnit: root = unit(s, 0); break;
-		case srcDecl: root = decl(s, 0); break;
-		case srcExpr: root = expr(s, 0); break;
-	}
-	// */
 
 	if ((newRoot = unit(s, 0))) {
 		if (oldRoot) {
@@ -2823,6 +2817,15 @@ int parse(ccState s, srcType mode, int wl) {
 		s->root = newRoot;
 	}
 	return ccDone(s->s);
+}
+
+int compile(state rt, int warn, char *file, int line, char *text) {
+	ccState cc = ccOpen(rt, file, line, text);
+	if (cc == NULL) {
+		error(rt, NULL, 0, "can not open: %s", file);
+		return -1;
+	}
+	return parse(cc, 0, warn);
 }
 
 /** grammar --------------------------------------------------------------------

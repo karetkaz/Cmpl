@@ -27,7 +27,6 @@ void fastblur(gxSurf img, int radius) {
 	int wh = w * h;
 	int div = 2 * radius + 1;
 
-	
 	int maxwh = w > h ? w : h;
 
 	if (radius > hm)
@@ -131,7 +130,6 @@ void mouseCB(int btn, int x, int y) {
 
 vec4f grayFp2(vec4f rgbColor) {
 	result = vec4f(rgbColor.x * 10);
-	//~ result = vec4f(0.2989f * rgbColor.x + 0.5870f * rgbColor.y + 0.1140f * rgbColor.z);
 }
 
 void drawCB() {
@@ -139,13 +137,13 @@ void drawCB() {
 		int radius = Math.min(blurradius - 3, Window.resy) / 8;
 		blurradius = -1;
 		zoomSurf(offScreen, null, img, null, 1);
-		//~ blurSurf(offScreen, null, radius);
-		//~ blurSurf(offScreen, null, radius);
-		//~ blurSurf(offScreen, null, radius);
-		//~ fillSurf(offScreen, null, grayFp2);
+		blurSurf(offScreen, null, radius);
+		blurSurf(offScreen, null, radius);
+		blurSurf(offScreen, null, radius);
+		fillSurf(offScreen, null, grayFp2);
 
 		
-		fastblur(offScreen, radius);
+		//~ fastblur(offScreen, radius);
 		//~ fastblur(offScreen, radius);
 		//~ fastblur(offScreen, radius);
 		//~ fastblur(offScreen, radius);

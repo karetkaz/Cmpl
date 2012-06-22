@@ -178,8 +178,7 @@ symn install(ccState s, const char* name, int kind, int cast, unsigned size, sym
 	return def;
 }
 
-/// install a type symbol
-symn installtyp(state rt, const char* name, unsigned size, int refType) {
+symn install_typ(state rt, const char* name, unsigned size, int refType) {
 	//~ dieif(!rt->cc, "FixMe");
 	return install(rt->cc, name, ATTR_const | TYPE_rec, refType ? TYPE_ref : TYPE_rec, size, rt->cc->type_rec, NULL);
 }
@@ -271,7 +270,6 @@ int canAssign(ccState cc, symn var, astn val, int strict) {
 
 	// assigning null or pass by reference
 	if (val->kind == TYPE_ref && val->ref.link == cc->null_ref) {
-		trace("canAssign null to: %-T", var);
 		// if parameter is byRef or type is byRef
 		if (var->cast == TYPE_ref || typ->cast == TYPE_ref) {
 			trace("canAssign null to: %-T", var);
@@ -507,7 +505,7 @@ symn lookup(ccState s, symn sym, astn ref, astn args, int raise) {
 
 		found += 1;
 		// if we are here then sym is found, but it has implicit cast in it
-		debug("%+k%s is probably %-T%s:%t", ref, args ? "()" : "", sym, sym->call ? "()" : "", sym->kind);
+		trace("%+k%s is probably %-T%s:%t", ref, args ? "()" : "", sym, sym->call ? "()" : "", sym->kind);
 	}
 
 	if (sym == NULL && best) {
@@ -885,12 +883,6 @@ symn typecheck(ccState s, symn loc, astn ast) {
 
 			loc = sym;
 			ref = ast->op.rhso;
-			//~ debug("%T", linkOf(ast->op.lhso));
-			/*if (isType(linkOf(ast->op.lhso))) {
-				checkStaticMembers = 1;
-			}
-			//~ debug("lookup %+k in %T / %d", ref, loc, checkStaticMembers);
-			// */
 		} break;
 		case OPER_idx: {
 			symn lht = typecheck(s, loc, ast->op.lhso);
@@ -913,10 +905,10 @@ symn typecheck(ccState s, symn loc, astn ast) {
 			return ast->type = lht->type;
 		} break;
 
+		case OPER_adr:		// '+'
 		case OPER_pls:		// '+'
 		case OPER_mns:		// '-'
 		case OPER_cmt:		// '~'
-		case OPER_adr:		// '&'
 		case OPER_not: {	// '!'
 			int cast;
 			symn rht = typecheck(s, loc, ast->op.rhso);
@@ -1039,12 +1031,24 @@ symn typecheck(ccState s, symn loc, astn ast) {
 			if (ast->kind == OPER_equ || ast->kind == OPER_neq) {
 				symn lhl = ast->op.lhso->kind == TYPE_ref ? ast->op.lhso->ref.link : NULL;
 				symn rhl = ast->op.rhso->kind == TYPE_ref ? ast->op.rhso->ref.link : NULL;
+
 				if (lhl == s->null_ref && rhl == s->null_ref)
 					cast = TYPE_ref;
+
 				else if (lhl == s->null_ref && rhl && rhl->cast == TYPE_ref)
 					cast = TYPE_ref;
+
 				else if (rhl == s->null_ref && lhl && lhl->cast == TYPE_ref)
 					cast = TYPE_ref;
+
+				// bool isint32 = type == int32;
+				if (rhl == rht && lht == s->type_rec) {
+					cast = TYPE_ref;
+				}
+				if (lhl == lht && rht == s->type_rec) {
+					cast = TYPE_ref;
+				}// * /
+
 			}
 
 			if (cast || (cast = castOf(promote(lht, rht)))) {
@@ -1147,22 +1151,19 @@ symn typecheck(ccState s, symn loc, astn ast) {
 
 		// operator set
 		case ASGN_set: {	// ':='
-			int byVal;
 			symn lht = typecheck(s, loc, ast->op.lhso);
 			symn rht = typecheck(s, loc, ast->op.rhso);
+			symn var = linkOf(ast->op.lhso);
 
 			if (!lht || !rht || loc) {
 				debug("cast(%T, %T)", lht, rht);
 				return NULL;
 			}
 
-			byVal = !(ast->op.lhso->kind == OPER_adr || lht->cast == TYPE_ref);
-			/* this didn't work with i += 1; same ast for i
-			if (!castTo(ast->op.lhso, TYPE_ref)) {
-				debug("%T('%k', %+k): %t", rht, ast, ast, TYPE_ref);
-				return 0;
-			}// */
-			if (byVal && !promote(lht, rht)) {
+			// HACK: pointer can be assigned to referencetypes.
+			if (rht == s->type_ptr && var->cast == TYPE_ref) {
+			}
+			else if (!promote(lht, rht)) {
 				trace("promote(%-T, %-T)", lht, rht);
 				trace("%+k", ast);
 				return 0;
@@ -1171,11 +1172,6 @@ symn typecheck(ccState s, symn loc, astn ast) {
 				debug("%T('%k', %+k): %t", rht, ast, ast, castOf(lht));
 				return 0;
 			}
-			/* assignment by reference
-			if (!byVal) {
-				ast->op.rhso->cst2 = TYPE_ref;
-				ast->op.lhso->cst2 = ASGN_set;
-			}// */
 			ast->type = lht;
 			return ast->type;
 		} break;
@@ -1262,22 +1258,13 @@ symn typecheck(ccState s, symn loc, astn ast) {
 						}
 					}
 
-					/*if (argsym->cast == TYPE_arr && argval->type->cast == TYPE_ref) {
-						if (!castTo(argval, TYPE_arr)) {
-							debug("%k:%t", argval, TYPE_arr);
-							return 0;
-						}
-					}*/
-
-					// swap(a, b) is written instad of swap(&a, &b)
+					//* if swap(a, b) is written instad of swap(&a, &b)
 					if (argsym->cast == TYPE_ref && argval->type->cast != TYPE_ref) {
-						if (argval->kind != OPER_adr && argval->cst2 != TYPE_ref && argval->file) {
-							//~ warn(s->s, 7, argval->file, argval->line, "argument `%+k` will be passed by reference", argval);
-							warn(s->s, 7, argval->file, argval->line, "argument `%+k` is not explicitly passed by reference", argval);
+						symn lnk = argval->kind == TYPE_ref ? argval->ref.link : NULL;
+						if (argval->kind != OPER_adr && lnk && lnk->cast != TYPE_ref) {
+							warn(s->s, 2, argval->file, argval->line, "argument `%+k` is not explicitly passed by reference", argval);
 						}
-					}
-
-					//~ debug("cast Arg(%+k): %t", args, args->cst2);
+					}// */
 
 					argsym = argsym->next;
 					argval = argval->next;
@@ -1304,11 +1291,6 @@ symn typecheck(ccState s, symn loc, astn ast) {
 	//~ if (!result) debug("%+k in %-T", ast, loc);
 
 	return result;
-}
-
-int padded(int offs, int align) {
-	dieif(align != (align & -align), "FixMe");
-	return align + ((offs - 1) & ~(align - 1));
 }
 
 int fixargs(symn sym, int align, int stbeg) {
@@ -1399,6 +1381,7 @@ void enter(ccState s, astn ast) {
 symn leave(ccState s, symn dcl, int mkstatic) {
 	state rt = s->s;
 
+	//~ int isFunc = dcl && dcl->call;
 	// nonstatic declarations
 	symn loc = NULL, lastloc = NULL;
 
@@ -1446,15 +1429,19 @@ symn leave(ccState s, symn dcl, int mkstatic) {
 			}
 		}
 
-		if (sym->stat) {
-			sym->next = sta;
-			sta = sym;
-		}
-		else {
-			sym->next = loc;
-			loc = sym;
-			if (!lastloc) {
-				lastloc = sym;
+		// public symbol if not starts with _
+		//if (isFunc || !sym->name || *sym->name != '_')
+		{
+			if (sym->stat) {
+				sym->next = sta;
+				sta = sym;
+			}
+			else {
+				sym->next = loc;
+				loc = sym;
+				if (!lastloc) {
+					lastloc = sym;
+				}
 			}
 		}
 	}

@@ -15,8 +15,6 @@ double x = 9;
 double y = sqr(x*x+x);
 //~ +/
 
-//~ assert(0, "alma");
-
 /+ static casting pointers
 pointer x = emit(pointer, ref("erZKJVDlaknjsdvkSDNVlk"));
 string str = emit(string, ref(x));
@@ -39,53 +37,78 @@ int &a2 = A;
 /+ fixed size array for defines
 void testArr(double x[]) {
 	print("%d\n", int64(x.length));
-	x[1] = 8;
+	x[3] = 8;
 }// */
 
-//~ define TestArr(double x[16]) = testArr(x);
+define TestArr(double x[16]) = testArr(x);
 
-double x[16] = 3;
-testArr(x);
+double x[16] = 1;
+//~ testArr(x);
 //~ TestArr(x);
-testFunc(x);
-testFunc2(x);
+//~ testFunc(x);
+//~ testFunc2(x);
 //~ +/
 
-	static int &T = null;
-void refassign(int &t) {
-	&T = t;
+/+
+struct Refs{
+	int &i;
+	double &d;
+	int f();
+}
+
+static Refs refs;
+void refassign(int &t, double &x, int f()) {
+	refs = Refs(t, x, f);
 }
 
 int a = 6;
-refassign(a);
+double b = 6;
+int f(){print("ok\n");};
 
-//~ define ComplexByRef(double re, double im) = emit(ComplexByRef, store.b64, dupp.x1_2, f64(re), store.b64, i32.add, i32(8), dupp.x1_2, f64(im), ref(memmgr(null, 16)));
+refassign(&a, &b, f);
+if (refs.f != null) {
+	refs.f();
+}
+//~ +/
 
 /*
-ComplexByRef ComplexByRef(double re, double im) {
-	result = new(ComplexByRef);
-	result.re = re;
-	result.im = im;
-	return result;
-}// */
+//~ define ComplexByRef(double re, double im) = emit(ComplexByRef, store.b64, dupp.x1_2, f64(re), store.b64, i32.add, i32(8), dupp.x1_2, f64(im), ref(memmgr(null, 16)));
 
-/* typenames
+//~ /* typenames
 //~ define sizeof(typename type) = int(type.size);
-int sizeof(typename type) {return type.size;}
-define new(typename type) = memmgr(null, type.size);
+//~ int sizeof(typename type) {return type.size;}
+//~ define new(typename type) = memmgr(null, type.size);
 
 //~ void print(ComplexByRef val) { print("%F", val.re); print(", "); print("%F", val.im); print("\n"); }
 struct ComplexByVal {double re; double im;}
 struct &ComplexByRef {double re; double im;}
 
-ComplexByVal v1;// = ComplexByVal(0, 0);
+/+
+ComplexByRef ComplexByRef(double re, double im) {
+	result = new(ComplexByRef);
+	result.re = re;
+	result.im = im;
+	return result;
+}// +/
+
+ComplexByVal v1 = ComplexByVal(3,-2);
 ComplexByRef v2 = new(ComplexByRef);
+ComplexByRef v3 = emit(pointer, i32(-87));
 
-typename t1 = ComplexByVal;
-typename t2 = ComplexByRef;
+v2.re = v1.re;
+//~ v3 = v2;
+//~ v2 = null;
 
-int s1 = sizeof(ComplexByVal);
-int s2 = sizeof(ComplexByRef);
+//~ typename t1 = ComplexByVal;
+//~ typename t2 = ComplexByRef;
+//~ int s1 = sizeof(ComplexByVal);
+//~ int s2 = sizeof(ComplexByRef);
+
 // */
 
 //~  int x = sizeof(int64);
+
+float64 x = -0.;
+float64 y = +0.;
+float64 a = x + y;
+bool z = x == y;

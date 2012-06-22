@@ -30,7 +30,7 @@ astn newnode(ccState s, int kind) {
 	return ast;
 }
 
-astn newIden(ccState s, char* id) {
+astn tagnode(ccState s, char* id) {
 	int slen = strlen(id);
 	astn ast = newnode(s, TYPE_ref);
 	if (ast != NULL) {
@@ -138,12 +138,10 @@ float64_t constflt(astn ast) {
 }
 
 TODO("eval should use cgen and vmExec")
-extern symn type_i32_;
-extern symn type_f64_;
-extern symn type_str_;
 int eval(astn res, astn ast) {
 	struct astn lhs, rhs;
-	int cast;
+	int cast = 0;
+	symn type = NULL;
 
 	if (!ast)
 		return 0;
@@ -151,6 +149,7 @@ int eval(astn res, astn ast) {
 	if (!res)
 		res = &rhs;
 
+	type = ast->type;
 	switch (ast->cst2) {
 		case TYPE_bit: cast = TYPE_bit; break;
 
@@ -214,6 +213,7 @@ int eval(astn res, astn ast) {
 		case TYPE_ref: {
 			symn var = ast->ref.link;		// link
 			if (var && var->kind == TYPE_def && var->init) {
+				type = var->type;
 				if (!eval(res, var->init))
 					return 0;
 			}
@@ -245,7 +245,6 @@ int eval(astn res, astn ast) {
 		} break;
 
 		case OPER_not: {		// '!'
-
 			logif(ast->cst2 != TYPE_bit, "FixMe %+k", ast);
 			if (!eval(res, ast->op.rhso))
 				return 0;
@@ -434,10 +433,12 @@ int eval(astn res, astn ast) {
 			fatal("FixMe %t", res->kind);
 			res->type = NULL;
 			return 0;
-		case TYPE_bit: res->type = type_i32_; break;
-		case TYPE_int: res->type = type_i32_; break;
-		case TYPE_flt: res->type = type_f64_; break;
-		case TYPE_str: res->type = type_str_; break;
+		case TYPE_bit:
+		case TYPE_int:
+		case TYPE_flt:
+		case TYPE_str:
+			res->type = type;
+			break;
 	}
 
 	return res->kind;

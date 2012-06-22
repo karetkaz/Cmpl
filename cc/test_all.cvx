@@ -1,10 +1,14 @@
 /* TODO:
- ? static if else part
- * .
- ? separate struct and unoin declaration.
- *	in case of structures create a new constructor with all members; fix padding on stack, copy arrays, ...
- ?	in case of unions create a constructors with the bigger member.
- * 
+	static if else part?
+	js like initialization.
+	inside a static if false threat errors as warnings?
+
+	separate struct and unoin declaration?
+	in case of unions create a constructor?
+
+	int s2 = sizeof(Math);			// enum base type is not typename
+ */
+/* TODO: define/operator
  * define-s are implicit
  * operator-s are explicit
  * 
@@ -21,18 +25,36 @@
  * float4 c = b;				// this will call `operator float4(float3 x)`
  * float3 d = a;				// Error: no operator float3(float4 x)
  * 
- * define void(var &a) = var.tryInvoke(a.Class, ".dtor", a.Data);
+ * define void(var &a) = var.tryInvoke(a.type, ".dtor", a.Data);
  * 
- * define void(int8 &a)    = void(0);
- * define void(int16 &a)   = void(0);
- * define void(int32 &a)   = void(0);
- * define void(int64 &a)   = void(0);
- * define void(uint8 &a)   = void(0);
- * define void(uint16 &a)  = void(0);
- * define void(uint32 &a)  = void(0);
- * define void(float32 &a) = void(0);
- * define void(float64 &a) = void(0);
+ * define void(int8 &&a)    = void(0);
+ * define void(int16 &&a)   = void(0);
+ * define void(int32 &&a)   = void(0);
+ * define void(int64 &&a)   = void(0);
+ * define void(uint8 &&a)   = void(0);
+ * define void(uint16 &&a)  = void(0);
+ * define void(uint32 &&a)  = void(0);
+ * define void(float32 &&a) = void(0);
+ * define void(float64 &&a) = void(0);
  * 
+ * 
+ * operator -(int32 rhs) = emit(i32.neg, i32(rhs));
+ * operator (int32 lhs) + (int32 rhs) = emit(i32.add, i32(rhs), i32(lhs));
+ * 
+ * operator (string lhs) [int32 rhs] = emit(int32, ldi.byte, i32.mad, i32(1), i32(rhs), ref(lhs));
+ * operator (string lhs) [int32 rhs] (int32 setValue) = emit(int32, ldi.byte, i32.mad, i32(1), i32(rhs), ref(lhs));
+ * 
+ * operator int32(string value) = atoi(value, 10);
+ * 
+**/
+
+/* TODO: out param
+ * inout argument: &&
+ * in case of defines: symbolic parameter
+ *   void free(pointer &&ref) {
+ *     memmgr(ref, 0);
+ *     ref = null;
+ *   }
  * 
 **/
 /+ TODO: errors
@@ -40,21 +62,11 @@
 define fact(int64 n) = (n * fact(n - 1));
 //~ +/
 //~ +/
-/* TODO: operators
-
-operator -(int32 rhs) = emit(i32.neg, i32(rhs));
-operator (int32 lhs) + (int32 rhs) = emit(i32.add, i32(rhs), i32(lhs));
-
-operator (string lhs) [int32 rhs] = emit(int32, ldi.byte, i32.mad, i32(1), i32(rhs), ref(lhs));
-operator (string lhs) [int32 rhs] (int32 setValue) = emit(int32, ldi.byte, i32.mad, i32(1), i32(rhs), ref(lhs));
-
-operator int32(string value) = atoi(value, 10);
+/* BUGS:
+	arrays in structures
+	array of references
 
 // */
-
-//~ const float64 nan = 0./0;
-
-//~ const int almasaer;
 
 enum Test {
 	Emit = ~0;
@@ -65,10 +77,11 @@ enum Test {
 	Call = ~0;
 }
 static if (true) {
-define hex8  int8;		//%hex8(0x%02x)
-define hex16 int16;		//%hex16(0x%04x)
-define hex32 int32;		//%hex32(0x%08x)
-define hex64 int64;		//%hex64(0x%016X)
+define hex8  int8;		//%hex8(%02x)
+define hex16 int16;		//%hex16(%04x)
+define hex32 int32;		//%hex32(%08x)
+define hex64 int64;		//%hex64(%016X)
+define bin32 int32;		//%bin32(%032b)
 
 define print(hex32 arg) = print("%08x", int64(arg));
 define println(hex32 arg) = print("%08x\n", int64(arg));
@@ -187,51 +200,17 @@ vec4f v2 = vec4f(21., 22., 23., 24.);
 }// +/
 } // */
 static if (Test.Bits) {
-/+ bit operations moved to library
-int32 var = 0x00001080;		// input
-static if (Test.Bits & 1) {		// bit scan reverse
-int32 BSR_lib = bits.bsr(var);
-int32 BSR_res = -1;
-if (var != 0) {
-	uint32 ans = uint32(0);
-	uint32 x = uint32(var);
-	//~ if (x & 0xffffffff00000000) { ans += 32; x >>= 32; }
-	if (x & uint32(0xffff0000)) { ans += 16; x >>= 16; }
-	if (x & uint32(0x0000ff00)) { ans +=  8; x >>=  8; }
-	if (x & uint32(0x000000f0)) { ans +=  4; x >>=  4; }
-	if (x & uint32(0x0000000c)) { ans +=  2; x >>=  2; }
-	if (x & uint32(0x00000002)) { ans +=  1; }
-	BSR_res = ans;
+static if (Test.Bits & 1) {		// compute bits
+
+bin32 test_bit1_value = 100;
+bin32 test_bit1_bitlo = bitlo(test_bit1_value);
+bin32 test_bit1_bithi = bithi(test_bit1_value);
+bin32 test_bit1_bswap = bitswp(test_bit1_value);
+int32 test_bit1_bitcnt = bitcnt(test_bit1_value);
+int32 test_bit1_bitsf = bitsf(test_bit1_value);
+int32 test_bit1_bitsr = bitsr(test_bit1_value);
 }
-}
-static if (Test.Bits & 2) {		// highest bit
-//~ hex32 BLO_res = var & -var;
-hex32 BHI_lib = bits.hibit(var);
-hex32 BHI_res = -1;
-if (var) {
-	uint32 u = uint32(var);
-	u |= u >> 1;
-	u |= u >> 2;
-	u |= u >> 4;
-	u |= u >> 8;
-	u |= u >> 16;
-	BHI_res = u - (u >> 1);
-}
-}
-static if (Test.Bits & 4) {		// swap bits
-hex32 SWP_lib = bits.swp(var);
-hex32 SWP_res = -1;
-if (var) {
-	uint32 x = uint32(var);
-	x = ((x >> 1) & 0x55555555) | ((x & 0x55555555) << 1);
-	x = ((x >> 2) & 0x33333333) | ((x & 0x33333333) << 2);
-	x = ((x >> 4) & 0x0F0F0F0F) | ((x & 0x0F0F0F0F) << 4);
-	x = ((x >> 8) & 0x00FF00FF) | ((x & 0x00FF00FF) << 8);
-	SWP_res = (x >> 16) | (x << 16);
-}
-}
-//~ +/
-static if (Test.Bits & 8) {		// compute bits
+static if (Test.Bits & 2) {		// compute bits
 void bitsget(int bitsize, bool signed, int64 &min, int64 &max) {
 	int64 mask = int64.Shr(int64(-1), -bitsize);
 	min = int64.Shl(-int64(signed), bitsize - 1);
@@ -343,7 +322,7 @@ static if (Test.Misc) {
 static if (Test.Misc & 1) {			// matrix multiply
 // Matrix Multiply
 
-define dim = 3;
+define dim = 30;
 define scalar float64;		//%%f
 scalar m1[dim][dim];
 scalar m2[dim][dim];
@@ -694,7 +673,7 @@ static struct Fixed {
 
 	fixed Sin(fixed x) {
 		fixed temp;
-		sincos(x, result, temp);
+		sincos(x, &result, &temp);
 	}
 	fixed Cos(fixed x) {
 		fixed temp;
@@ -959,7 +938,7 @@ int32x8 sub(const int32x8 &a, const int32x8 &b) {
 int32x8 sub(const int32x8 &a, int32 b) {
 	bool carry = false;
 	int32x8 bx8 = int32x8(b);
-	result = sub(a, bx8, carry);
+	result = sub(a, &bx8, carry);
 }
 
 
@@ -1176,17 +1155,4 @@ bool invoke(variant obj, string name, var &&res, var args...) {
 	return invoke(obj.type, name, &&res, obj, args);
 }
 
-//~ */
-/* stupid things
-/+ swap typedefs
-define float float64;
-define double float32;
-double res = .35;
-//~ +/
-/+ do nothing
-if (1)
-	{{{{{;;;};}};;;}{;;;}}
-else
-	{{;};;{;}}
-//~ +/
 //~ */

@@ -129,7 +129,7 @@ void gx_drawbez3(gx_Surf dst, int x0, int y0, int x1, int y1, int x2, int y2, in
 	g2_drawline(dst, x0, y0, x3, y3, col);
 }
 
-//{	Gradient fill
+//#{	Gradient fill
 #define F64_MPI 3.14159265358979323846
 #define F64_2PI (2 * F64_MPI)
 
@@ -281,4 +281,4 @@ int gx_gradsurf(gx_Surf dst, gx_Rect roi, gx_Clut lut, int gradtype/* , cmix mix
 
 }
 
-//}	Gradient fill */
+//#}	Gradient fill */
