@@ -29,10 +29,10 @@ static struct Math {
 	define isNan(float32 ^x) = bool(x != x);
 }// */
 
-//~ /*TODO: Array assignment
+/*TODO: Array assignment
 define Array(int32 typesize, int32 ^n) = emit(struct, ref(memmgr(null, typesize * n)), i32(n));
 
-int b[];
+int b[] = Array(4, 1);
 //~ b = Array(4, 10);
 int c[] = Array(4, 10);
 //~ b = c;
@@ -44,23 +44,31 @@ for (int i = 0; i < a.length; i += 1) {
 }// +/
 // */
 
-/* xxx
-struct m {
-	static const int X = 9;
+/* const & static members
+struct M {
+	static const int A = 9;
+	static int B = 9;
 	const int a;
 	int b;
-	int c;// = 8;
+
+	static const int A_;		// error: uninitialized constant
+	static int B_;
+	const int a_ = 0;			// error: can not be initialized
+	int b_ = 0;					// error: can not be initialized
 }
 
-m m1 = m(5, 9, 1);
-int &ref_m1_a = m1.a;	// hacked: warn if const/nonconst ref assignment.
-ref_m1_a = 666;
+M m = M(6, 9);
+m.A = 69;			// error: constant lvalue in asignment
+m.a = 69;			// error: constant lvalue in asignment
+m.B = 69;			// warn: access wia instance reference
+m.b = 69;
 
-int x = m1.a;
+//~ int &ref_m_a = m.a;	// hacked: warn if const/nonconst ref assignment.
+//~ ref_m_a = 666;
 
 // */
 
-/*TODO: assignment by reference
+/*DONE: assignment by reference
 int64 a = 32;
 a = 33;
 void setup() {
@@ -69,6 +77,16 @@ void setup() {
 }
 setup();
 //~ */
+
+/* BUG: return: int returned instead of float
+double f(int32 idx) {
+	return idx;
+}
+/// 0 is returned.
+double f(int32 idx) {
+	result = idx;
+}
+*/
 
 /* Arrays/slices
 struct slice_in_struct {

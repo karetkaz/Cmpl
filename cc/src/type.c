@@ -54,7 +54,7 @@ Derived data types:
 User defined types:
 	pointers arrays and slices:
 		TODO: pointers are unsized
-			ex: int *a;
+			ex: int* a;
 			are passed by reference,
 		arrays are fixed-size:
 			ex: int a[2];
@@ -118,7 +118,7 @@ symn newdefn(ccState s, int kind) {
 	return def;
 }
 
-/// install a symbol(type or variable)
+/// install a symbol(typename or variable)
 symn install(ccState s, const char* name, int kind, int cast, unsigned size, symn type, astn init) {
 	unsigned hash = 0;
 	symn def;
@@ -178,7 +178,7 @@ symn install(ccState s, const char* name, int kind, int cast, unsigned size, sym
 	return def;
 }
 
-symn install_typ(state rt, const char* name, unsigned size, int refType) {
+symn ccAddType(state rt, const char* name, unsigned size, int refType) {
 	//~ dieif(!rt->cc, "FixMe");
 	return install(rt->cc, name, ATTR_const | TYPE_rec, refType ? TYPE_ref : TYPE_rec, size, rt->cc->type_rec, NULL);
 }
@@ -231,7 +231,7 @@ static symn promote(symn lht, symn rht) {
 			case TYPE_int: switch (castkind(lht->cast)) {
 				case TYPE_bit:
 				case TYPE_int:
-					TODO("bool + int is bool; if sizeof(bool) == 4")
+					//~ TODO: bool + int is bool; if sizeof(bool) == 4
 					if (lht->cast == TYPE_bit && lht->size == rht->size)
 						pro = rht;
 					else
@@ -361,7 +361,7 @@ int canAssign(ccState cc, symn var, astn val, int strict) {
 	if (!strict && promote(typ, val->type))
 		return 1;
 
-	//~ /*TODO(hex32 can be passed as int32 by ref)
+	//~ /*TODO: hex32 can be passed as int32 by ref
 	if (val->type && typ->cast == val->type->cast) {
 		if (typ->size == val->type->size) {
 			switch (typ->cast) {
@@ -380,7 +380,7 @@ int canAssign(ccState cc, symn var, astn val, int strict) {
 	return 0;
 }
 
-TODO("!!! args are linked in a list by next !!??")
+//~ TODO: !!! args are linked in a list by next !!??
 symn lookup(ccState s, symn sym, astn ref, astn args, int raise) {
 	symn asref = 0;
 	symn best = 0;
@@ -428,7 +428,7 @@ symn lookup(ccState s, symn sym, astn ref, astn args, int raise) {
 
 		if (args) {
 			if (!sym->call) {
-				TODO("enable basic type casts: float32(1)")
+				//~ TODO: enable basic type casts: float32(1)
 				int isBasicCast = 0;
 
 				symn sym2 = sym;
@@ -538,7 +538,7 @@ symn lookup(ccState s, symn sym, astn ref, astn args, int raise) {
 	return sym;
 }
 
-TODO("we should handle redefinition in this function")
+//~ TODO: we should handle redefinition in this function
 symn declare(ccState s, int kind, astn tag, symn typ) {
 	symn def;
 
@@ -640,7 +640,7 @@ symn linkOf(astn ast) {
 	return NULL;
 }
 
-TODO("this should be calculated by fixargs() and replaced by (var|typ)->size")
+//~ TODO: this should be calculated by fixargs() and replaced by (var|typ)->size
 long sizeOf(symn typ) {
 	if (typ) switch (typ->kind) {
 		default:
@@ -705,7 +705,7 @@ int castOf(symn typ) {
 int castTo(astn ast, int cto) {
 	int atc = 0;
 	if (!ast) return 0;
-	TODO("check validity / Remove function");
+	//~ TODO: check validity / Remove function
 
 	atc = ast->type ? ast->type->cast : 0;
 	if (cto != atc) switch (cto) {
@@ -743,7 +743,7 @@ int castTo(astn ast, int cto) {
 static int typeTo(astn ast, symn type) {
 	if (!ast) return 0;
 
-	TODO("check validity / Remove function");
+	//~ TODO: check validity / Remove function
 
 	while (ast->kind == OPER_com) {
 		if (!typeTo(ast->op.rhso, type)) {
@@ -765,7 +765,6 @@ symn typecheck(ccState s, symn loc, astn ast) {
 	dieif (!ast, "FixMe");
 
 	ast->cst2 = 0;
-
 	switch (ast->kind) {
 		default:
 			fatal("FixMe: %t(%+k)", ast->kind, ast);
@@ -1124,7 +1123,7 @@ symn typecheck(ccState s, symn loc, astn ast) {
 		} break;
 
 		case OPER_com: {	// ','
-			TODO("FixMe")
+			//~ TODO: FixMe
 			symn lht = typecheck(s, loc, ast->op.lhso);
 			symn rht = typecheck(s, loc, ast->op.rhso);
 
@@ -1154,12 +1153,16 @@ symn typecheck(ccState s, symn loc, astn ast) {
 			symn lht = typecheck(s, loc, ast->op.lhso);
 			symn rht = typecheck(s, loc, ast->op.rhso);
 			symn var = linkOf(ast->op.lhso);
+			int cast = castOf(lht);
 
 			if (!lht || !rht || loc) {
 				debug("cast(%T, %T)", lht, rht);
 				return NULL;
 			}
 
+			if (var->cnst) {
+				error(s->s, ast->file, ast->line, "constant lvalue in asignment: %+k", ast);
+			}
 			// HACK: pointer can be assigned to referencetypes.
 			if (rht == s->type_ptr && var->cast == TYPE_ref) {
 			}
@@ -1168,10 +1171,16 @@ symn typecheck(ccState s, symn loc, astn ast) {
 				trace("%+k", ast);
 				return 0;
 			}
-			if (!castTo(ast->op.rhso, castOf(lht))) {
+			if (!castTo(ast->op.rhso, cast)) {
 				debug("%T('%k', %+k): %t", rht, ast, ast, castOf(lht));
 				return 0;
 			}
+
+			/*/ HACK: arrays of references dont casts to ref.
+			if (lht->kind == TYPE_arr) {// && lht->type->cast == TYPE_ref) {
+				ast->op.rhso->cst2 = TYPE_any;
+			}*/
+
 			ast->type = lht;
 			return ast->type;
 		} break;
@@ -1232,7 +1241,7 @@ symn typecheck(ccState s, symn loc, astn ast) {
 					break;
 			}
 
-			TODO("ugly hack")
+			//~ TODO: ugly hack
 			if (isType(sym) && args && !args->next) {			// cast
 				if (!castTo(args, sym->cast)) {
 					debug("%k:%t", args, castOf(args->type));
@@ -1331,7 +1340,6 @@ int fixargs(symn sym, int align, int stbeg) {
 		}
 
 		arg->nest = 0;
-		//~ arg->size = arg->type->size;
 		arg->offs = align ? stbeg + stdiff : stbeg;
 		stdiff += padded(arg->size, align);
 
@@ -1381,7 +1389,9 @@ void enter(ccState s, astn ast) {
 symn leave(ccState s, symn dcl, int mkstatic) {
 	state rt = s->s;
 
-	//~ int isFunc = dcl && dcl->call;
+	//~ int isDecl = dcl != NULL;
+	//~ int isFunc = isDecl && dcl->call;
+
 	// nonstatic declarations
 	symn loc = NULL, lastloc = NULL;
 
@@ -1426,6 +1436,13 @@ symn leave(ccState s, symn dcl, int mkstatic) {
 			if (sym->stat) {
 				sym->gdef = rt->gdef;
 				rt->gdef = sym;
+			}
+		}
+
+		if (dcl != NULL && dcl->kind == TYPE_rec) {	// struct decl
+			dieif(dcl->call, "FixMe");
+			if (sym->kind == TYPE_ref && !sym->stat && sym->init) {
+				error(s->s, sym->file, sym->line, "non static member `%-T` can not be initialized", sym);
 			}
 		}
 

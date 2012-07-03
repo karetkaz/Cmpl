@@ -3,7 +3,8 @@
 
 typedef float scalar;
 
-typedef union vector {
+typedef struct vector {
+	union {
 	scalar v[4];
 	struct {
 		scalar x;
@@ -17,16 +18,18 @@ typedef union vector {
 		scalar b;
 		scalar a;
 	};
+	};
 } *vector; //, *color, *position, *normal;
 
-typedef union matrix {
+typedef struct matrix {
+	union {
 	scalar d[16];
 	scalar m[4][4];
 	struct {
-		union vector x;
-		union vector y;
-		union vector z;
-		union vector w;
+		struct vector x;
+		struct vector y;
+		struct vector z;
+		struct vector w;
 	};
 	struct {
 		scalar m11, m12, m13, m14;
@@ -34,15 +37,16 @@ typedef union matrix {
 		scalar m31, m32, m33, m34;
 		scalar m41, m42, m43, m44;
 	};
+	};
 } *matrix;
 
 typedef struct camera {
-	union matrix proj;			// projection matrix
+	struct matrix proj;			// projection matrix
 
-	union vector dirR;			// camera right direction
-	union vector dirU;			// camera up direction
-	union vector dirF;			// camera forward direction
-	union vector pos;			// camera Location
+	struct vector dirR;			// camera right direction
+	struct vector dirU;			// camera up direction
+	struct vector dirF;			// camera forward direction
+	struct vector pos;			// camera Location
 	//~ scalar	zoom;			// , aspect;
 } *camera;
 
@@ -346,7 +350,7 @@ static inline vector vecmul(vector dst, vector lhs, vector rhs) {
 }
 
 static inline vector veccrs(vector dst, vector lhs, vector rhs) {
-	union vector tmp;
+	struct vector tmp;
 	tmp.x = lhs->y * rhs->z - lhs->z * rhs->y;
 	tmp.y = lhs->z * rhs->x - lhs->x * rhs->z;
 	tmp.z = lhs->x * rhs->y - lhs->y * rhs->x;
@@ -362,7 +366,7 @@ static inline vector vecsca(vector dst, vector lhs, scalar rhs) {
 }
 
 static inline vector vecmov(vector dst, vector src, vswzop swz) {
-	union vector tmp;
+	struct vector tmp;
 	if (src == dst)
 		tmp = *src, src = &tmp;
 	dst->x = src->v[(swz >> 0) & 3]; 
@@ -391,8 +395,8 @@ static inline argb vecrgb(vector src) {
 	return res;
 }
 
-static inline union vector vecldc(argb col) {
-	union vector result;
+static inline struct vector vecldc(argb col) {
+	struct vector result;
 	result.r = col.r / 255.;
 	result.g = col.g / 255.;
 	result.b = col.b / 255.;
@@ -414,7 +418,7 @@ static inline scalar veclen(vector src) {
 }
 
 static inline scalar vecdst(vector lhs, vector rhs) {
-	union vector tmp[1];
+	struct vector tmp[1];
 	return veclen(vecsub(tmp, lhs, rhs));
 }
 
@@ -500,7 +504,7 @@ static inline matrix matsca(matrix dst, matrix lhs, scalar rhs) {
 }
 
 static inline matrix matmul(matrix dst, matrix lhs, matrix rhs) {
-	union matrix tmp;
+	struct matrix tmp;
 	int row, col;
 	for(row = 0; row < 4; ++row) {
 		for(col = 0; col < 4; ++col) {
@@ -516,7 +520,7 @@ static inline matrix matmul(matrix dst, matrix lhs, matrix rhs) {
 }
 
 static inline vector matvp3(vector dst, matrix mat, vector src) {
-	union vector tmp;
+	struct vector tmp;
 	if (src == dst)
 		tmp = *src, src = &tmp;
 	dst->x = vecdp3(&mat->x, src);
@@ -527,7 +531,7 @@ static inline vector matvp3(vector dst, matrix mat, vector src) {
 }
 
 static inline vector matvp4(vector dst, matrix mat, vector src) {
-	union vector tmp;
+	struct vector tmp;
 	if (src == dst)
 		tmp = *src, src = &tmp;
 	dst->x = vecdp4(&mat->x, src);
@@ -538,7 +542,7 @@ static inline vector matvp4(vector dst, matrix mat, vector src) {
 }
 
 static inline vector matvph(vector dst, matrix mat, vector src) {
-	union vector tmp;
+	struct vector tmp;
 	if (src == dst)
 		tmp = *src, src = &tmp;
 	dst->x = vecdph(&mat->x, src);
@@ -565,7 +569,7 @@ static inline matrix matldf(matrix dst
 }
 
 static inline matrix matldR(matrix dst, vector dir, scalar ang) {
-	union vector tmp;
+	struct vector tmp;
 	scalar xx, yy, zz, xy, yz, xz;
 	scalar sin_t = sin(ang);
 	scalar cos_t = cos(ang);
@@ -602,7 +606,7 @@ static inline matrix matldR(matrix dst, vector dir, scalar ang) {
 }
 
 static inline matrix matldS(matrix dst, vector dir, scalar cnt) {
-	union vector tmp;
+	struct vector tmp;
 	matidn(dst, 1);
 	vecsca(&tmp, dir, cnt);
 	dst->x.x = tmp.x;
@@ -613,7 +617,7 @@ static inline matrix matldS(matrix dst, vector dir, scalar cnt) {
 }
 
 static inline matrix matldT(matrix dst, vector dir, scalar cnt) {
-	union vector tmp;
+	struct vector tmp;
 	matidn(dst, 1);
 	vecsca(&tmp, dir, cnt);
 	dst->x.w = tmp.x;
@@ -716,7 +720,7 @@ static inline matrix matcpy(matrix dst, matrix src) {
 }
 
 static inline matrix matran(matrix dst, matrix src) {
-	union matrix tmp;
+	struct matrix tmp;
 	int row, col;
 	if (src == dst)
 		src = matcpy(&tmp, src);//~ {*tmp = src; rsc = &tmp;}
@@ -744,7 +748,7 @@ static inline scalar matdet(matrix src) {
 }
 
 static inline matrix matadj(matrix dst, matrix src) {
-	union matrix tmp;
+	struct matrix tmp;
 	scalar* x = (scalar*)&tmp.x.v;
 	scalar* y = (scalar*)&tmp.y.v;
 	scalar* z = (scalar*)&tmp.z.v;
@@ -782,7 +786,7 @@ static inline scalar matinv(matrix dst, matrix src) {
 
 // look at ...
 static inline void camset(camera cam, vector eye, vector tgt, vector up) {
-	union vector tmp;
+	struct vector tmp;
 	vecnrm(&cam->dirF, vecsub(&tmp, tgt, eye));
 	vecnrm(&cam->dirR, veccrs(&tmp, up, &tmp));
 	veccrs(&cam->dirU, &cam->dirF, &cam->dirR);
@@ -793,14 +797,14 @@ static inline void camset(camera cam, vector eye, vector tgt, vector up) {
 
 // move the camera ...
 static inline void cammov(camera cam, vector dir, scalar cnt) {
-	union vector tmp;
+	struct vector tmp;
 	vecsca(&tmp, dir, cnt);
 	vecadd(&cam->pos, &cam->pos, &tmp);
 }
 
 // rotate the camera ...
 static inline void camrot(camera cam, vector dir, vector orbit, scalar ang) {
-	union matrix tmp;
+	struct matrix tmp;
 	if (ang == 0)
 			return;
 	matldR(&tmp, dir, ang);
@@ -809,7 +813,7 @@ static inline void camrot(camera cam, vector dir, vector orbit, scalar ang) {
 	vecnrm(&cam->dirR, matvph(&cam->dirR, &tmp, &cam->dirR));
 	veccrs(&cam->dirU, &cam->dirF, &cam->dirR);
 	if (orbit != NULL) {
-		union vector dir[1];
+		struct vector dir[1];
 		scalar dist = veclen(vecsub(dir, orbit, &cam->pos));
 		#if 1	// camera will just rotate arund orbit
 			vecnrm(dir, matvph(dir, &tmp, dir));

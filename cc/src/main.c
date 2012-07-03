@@ -38,13 +38,13 @@ static const int ol = 2;			// optimize level
 #define memsize (4 << 20)			// runtime size(4M)
 static const int ss = memsize / 4;	// stack size
 static char mem[memsize];
-char *STDLIB = "../stdlib.cvx";		// standard library
+char* STDLIB = "../stdlib.cvx";		// standard library
 
 #ifdef __linux__
 #define stricmp(__STR1, __STR2) strcasecmp(__STR1, __STR2)
 #endif
 
-char *parsei32(const char *str, int32_t *res, int radix) {
+char* parsei32(const char* str, int32_t* res, int radix) {
 	int64_t result = 0;
 	int sign = 1;
 
@@ -110,15 +110,15 @@ char *parsei32(const char *str, int32_t *res, int radix) {
 
 	*res = (int32_t)(sign * result);
 
-	return (char *)str;
+	return (char*)str;
 }
-char *matchstr(const char *t, const char *p, int ic) {
+char* matchstr(const char* t, const char* p, int ic) {
 	int i = 0;//, ic = flgs & 1;
 
 	for ( ; *t && p[i]; ++t, ++i) {
 		if (p[i] == '*') {
 			if (matchstr(t, p + i + 1, ic))
-				return (char *)(t - i);
+				return (char*)(t - i);
 			return 0;
 		}
 
@@ -135,9 +135,9 @@ char *matchstr(const char *t, const char *p, int ic) {
 	while (p[i] == '*')			// "a***" is "a"
 		++p;					// keep i for return
 
-	return (char *)(p[i] ? 0 : t - i);
+	return (char*)(p[i] ? 0 : t - i);
 }
-char *parsecmd(char *ptr, char *cmd, char *sws) {
+char* parsecmd(char* ptr, char* cmd, char* sws) {
 	while (*cmd && *cmd == *ptr)
 		cmd++, ptr++;
 
@@ -208,30 +208,36 @@ int evalexp(ccState cc, char* text) {
 }
 
 static int test(state rt, void* _) {
-	double *ptr = popref(rt);
-	//~ int len = popi32(rt);
+	int i;
+	double* ptr = popref(rt);
+	int len = popi32(rt);
+	symn each = findref(rt, popref(rt));
+	for (i = 0; i < len; ++i) {
+		//~ struct {int x;} args = {i};
+		//~ double result;
+		vmCall(rt, each, &ptr[i], &i);		// invoke the callback
+	}
 
 	//~ logif(1, "array[%d] @%x", len, ptr);
 	ptr[2] = 7.0;
 	return 0;
 }
 
-int reglibs(state rt, char *stdlib) {
+int reglibs(state rt, char* stdlib) {
 	int err = 0;
 
 	err = err || install_stdc(rt, stdlib, wl);
 	//~ err = err || install_bits(s);
 
-	libcall(rt, test, NULL, "void testFunc(float64 arg[16]);");
-	libcall(rt, test, NULL, "void testFunc2(float64 arg[]);");
+	ccAddCall(rt, test, NULL, "void testFunc(float64 arg[], float64 cb(int idx));");
 
 	return err;
 }
 
 //#{ plugins
 
-typedef struct pluginLib *pluginLib;
-static const char * pluginLibInstall = "apiMain";
+typedef struct pluginLib* pluginLib;
+static const char* pluginLibInstall = "apiMain";
 
 static int installDll(state rt, stateApi api, int ccApiMain(stateApi api)) {
 	api->rt = rt;
@@ -241,9 +247,9 @@ static int installDll(state rt, stateApi api, int ccApiMain(stateApi api)) {
 	api->ccDefInt = ccDefInt;
 	api->ccDefFlt = ccDefFlt;
 	api->ccDefStr = ccDefStr;
-	api->ccAddType = install_typ;
-	api->ccAddLibc = libcall;
-	api->ccAddCode = compile;
+	api->ccAddType = ccAddType;
+	api->ccAddCall = ccAddCall;
+	api->ccAddCode = ccAddCode;
 	api->ccEnd = ccEnd;
 
 	api->rtAlloc = rtAlloc;
@@ -274,7 +280,7 @@ static void closeLibs() {
 		pluginLibs = pluginLibs->next;
 	}
 }
-static int importLib(state rt, const char *path) {
+static int importLib(state rt, const char* path) {
 	int result = -1;
 	HANDLE lib = LoadLibraryA(path);
 	if (lib != NULL) {
@@ -299,7 +305,7 @@ static int importLib(state rt, const char *path) {
 static struct pluginLib {
 	struct stateApi api;	// each plugin will have its own api
 	pluginLib next;			// next plugin
-	void *lib;				// 
+	void* lib;				// 
 } *pluginLibs = NULL;
 static void closeLibs() {
 	while (pluginLibs != NULL) {
@@ -313,11 +319,11 @@ static void closeLibs() {
 		pluginLibs = pluginLibs->next;
 	}
 }
-static int importLib(state rt, const char *path) {
+static int importLib(state rt, const char* path) {
 	int result = -1;
-	void *lib = dlopen(path, RTLD_NOW);
+	void* lib = dlopen(path, RTLD_NOW);
 	if (lib != NULL) {
-		void *install = dlsym(lib, pluginLibInstall);
+		void* install = dlsym(lib, pluginLibInstall);
 		if (install != NULL) {
 			pluginLib lib = malloc(sizeof(struct pluginLib));
 			lib->next = pluginLibs;
@@ -336,7 +342,7 @@ static int importLib(state rt, const char *path) {
 #else
 static void closeLibs() {
 }
-static int importLib(state rt, const char *path) {
+static int importLib(state rt, const char* path) {
 	return -1;
 }
 #endif
@@ -345,11 +351,11 @@ static int importLib(state rt, const char *path) {
 static int printvars = 0;
 static int dbgCon(state, int pu, void* ip, long* bp, int ss);
 static int libCallHaltDebug(state rt, void* _) {
-	symn arg = rt->libc->args;
-	int argc = (char*)rt->retv - (char*)rt->argv;
+	symn arg = rt->libc.libc->args;
+	int argc = (char*)rt->libc.retv - (char*)rt->libc.argv;
 
 	for ( ; arg; arg = arg->next) {
-		char *ofs;
+		char* ofs;
 
 		if (arg->call)
 			continue;
@@ -370,7 +376,7 @@ static int libCallHaltDebug(state rt, void* _) {
 		}
 		else {
 			// argument or local variable.
-			ofs = ((char*)rt->argv) + argc - arg->offs;
+			ofs = ((char*)rt->libc.argv) + argc - arg->offs;
 		}
 
 		vm_fputval(rt, stdout, arg, (stkval*)ofs, 0);
@@ -394,12 +400,12 @@ static int libCallHaltDebug(state rt, void* _) {
 	return 0;
 }
 
-int program(int argc, char *argv[]) {
+int program(int argc, char* argv[]) {
 	state rt = rtInit(mem, sizeof(mem));
 
-	char *stdl = STDLIB;
+	char* stdl = STDLIB;
 
-	char *prg = argv[0];
+	char* prg = argv[0];
 	dbgf dbg = NULL;
 
 	if (argc < 2) {
@@ -421,21 +427,20 @@ int program(int argc, char *argv[]) {
 		int out_tree = -1;	// walk: level
 
 		int out_tags = -1;	// tags: level
-		char *str_tags = NULL;
+		char* str_tags = NULL;
 		int out_dasm = -1;	// dasm: level
-		char *str_dasm = NULL;
+		char* str_dasm = NULL;
 
-		char *logf = 0;			// logger
-		char *outf = 0;			// output
+		char* logf = 0;			// logger
+		char* outf = 0;			// output
 
-		//~ int srcs = 0;		// number of source files compiled
 		int warn = wl;
 
 		int (*onHalt)(state, void*) = NULL;	// print variables and values on exit
 
 		// global options
 		for (argi = 1; argi < argc; ++argi) {
-			char *arg = argv[argi];
+			char* arg = argv[argi];
 
 			// optimize code
 			if (strncmp(arg, "-O", 2) == 0) {			// optimize level
@@ -452,7 +457,7 @@ int program(int argc, char *argv[]) {
 
 			// execute code
 			else if (strncmp(arg, "-x", 2) == 0) {		// exec(&| debug)
-				char *str = arg + 2;
+				char* str = arg + 2;
 
 				if (*str == 'v') {
 					onHalt = libCallHaltDebug;
@@ -493,7 +498,7 @@ int program(int argc, char *argv[]) {
 			else if (strncmp(arg, "-api", 4) == 0) {	// tags
 				level = 2;
 				if (arg[4]) {
-					char *ptr = parsei32(arg + 4, &level, 16);
+					char* ptr = parsei32(arg + 4, &level, 16);
 					if (*ptr == '.') {
 						str_tags = ptr + 1;
 					}
@@ -507,7 +512,7 @@ int program(int argc, char *argv[]) {
 			else if (strncmp(arg, "-ast", 4) == 0) {	// tree
 				level = 0;
 				if (arg[4]) {
-					char *ptr = parsei32(arg + 4, &level, 16);
+					char* ptr = parsei32(arg + 4, &level, 16);
 					/*if (*ptr == '.') {
 						str_tree = ptr + 1;
 					}
@@ -522,7 +527,7 @@ int program(int argc, char *argv[]) {
 			else if (strncmp(arg, "-asm", 4) == 0) {	// asm
 				level = 0;
 				if (arg[4]) {
-					char *ptr = parsei32(arg + 4, &level, 16);
+					char* ptr = parsei32(arg + 4, &level, 16);
 					if (*ptr == '.') {
 						str_dasm = ptr + 1;
 					}
@@ -570,7 +575,7 @@ int program(int argc, char *argv[]) {
 
 		// compile files and import
 		for (; argi < argc; ++argi) {
-			char *arg = argv[argi];
+			char* arg = argv[argi];
 
 			if (strncmp(arg, "-w", 2) == 0) {			// warning level
 				if (strcmp(arg, "-wx") == 0)
@@ -584,19 +589,19 @@ int program(int argc, char *argv[]) {
 				}
 			}
 			else if (strncmp(arg, "-L", 2) == 0) {		// import library
-				char *str = arg + 2;
+				char* str = arg + 2;
 				if (importLib(rt, str) != 0) {
 					error(rt, NULL, 0, "error importing library `%s`", str);
 				}
 			}
 			else if (strncmp(arg, "-C", 2) == 0) {		// compile source
-				char *str = arg + 2;
-				if (compile(rt, warn, str, 1, NULL) != 0) {
+				char* str = arg + 2;
+				if (ccAddCode(rt, warn, str, 1, NULL) != 0) {
 					error(rt, NULL, 0, "error compiling `%s`", str);
 				}
 			}
 			else if (*arg != '-') {
-				char *ext = strrchr(arg, '.');
+				char* ext = strrchr(arg, '.');
 				if (ext && strcmp(ext, ".so") == 0) {
 					if (importLib(rt, arg) != 0) {
 						error(rt, NULL, 0, "error importing library `%s`", arg);
@@ -609,7 +614,7 @@ int program(int argc, char *argv[]) {
 					}
 					continue;
 				}
-				if (compile(rt, warn, arg, 1, NULL) != 0) {
+				if (ccAddCode(rt, warn, arg, 1, NULL) != 0) {
 					error(rt, NULL, 0, "error compiling `%s`", arg);
 				}
 				//~ srcs += 1;
@@ -682,21 +687,26 @@ int program(int argc, char *argv[]) {
 extern int vmTest();
 extern int vmHelp();
 
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
 	int result = 0;
 	setbuf(stdout, NULL);
 	setbuf(stderr, NULL);
 	//~ return vmTest();
 	//~ return vmHelp();
 	result = program(argc, argv);
+
+	#ifdef _MSC_VER
+	system("pause");
+	#endif
+
 	return result;
 }
 
-static int dbgCon(state rt, int pu, void *ip, long* bp, int ss) {
+static int dbgCon(state rt, int pu, void* ip, long* bp, int ss) {
 	static char buff[1024];
 	static char cmd = 'N';
 	int IP;//, SP;
-	char *arg;
+	char* arg;
 
 	if (ip == NULL) {
 		return 0;
@@ -709,7 +719,6 @@ static int dbgCon(state rt, int pu, void *ip, long* bp, int ss) {
 	IP = ((char*)ip) - ((char*)rt->_mem);
 	//~ SP = ((char*)rt->_ptr) - ((char*)bp);
 
-	//~ fputfmt(stdout, ">exec:[pu%02d][sp%02d]@%9.*A\n", pu, ss, IP, ip);
 	if (printvars) {
 		typedef struct {double x, y;} vec2d;
 		typedef struct {float x, y, z, w;} vec4f;
@@ -718,10 +727,10 @@ static int dbgCon(state rt, int pu, void *ip, long* bp, int ss) {
 		vec2d* v2 = (vec2d*)sp;
 		fputfmt(stdout, "\tsp(%d): {i32(%d), i64(%D), f32(%g), f64(%G), vec4f(%g, %g, %g, %g), vec2d(%G, %G)}\n", ss, sp->i4, sp->f4, sp->i8, sp->f8, v4->x, v4->y, v4->z, v4->w, v2->x, v2->y);
 	}
-	//~ fputfmt(stdout, ">exec:[sp%02d:%08x]@%9.*A\n", ss, bp + ss, IP, ip);
-	fputfmt(stdout, ">exec:[pu:%d, sp%02d:%08x]@", pu, ss, bp[0], IP, ip);
-	fputopc(stdout, ip, 0x09, IP, rt);
-	fputfmt(stdout, "\n");
+	fputfmt(stdout, ">exec:[sp%02d:%08x]@%9.*A\n", ss, bp[0], IP, ip);
+	//~ fputfmt(stdout, ">exec:[pu:%d, sp%02d:%08x]@", pu, ss, bp[0], IP, ip);
+	//~ fputopc(stdout, ip, 0x09, IP, rt);
+	//~ fputfmt(stdout, "\n");
 
 	if (cmd != 'N') for ( ; ; ) {
 		if (fgets(buff, 1024, stdin) == NULL) {
@@ -740,19 +749,18 @@ static int dbgCon(state rt, int pu, void *ip, long* bp, int ss) {
 			cmd = 'p';
 		}
 		else if ((arg = parsecmd(buff, "step", " "))) {
-
-			if (!*arg || strcmp(arg, "over") == 0) {
+			if (*arg == 0) {	// step = step over
 				cmd = 'n';
 			}
-
-			else if (strcmp(arg, "in") == 0) {
+			else if (strcmp(arg, "over") == 0) {
 				cmd = 'n';
 			}
-
 			else if (strcmp(arg, "out") == 0) {
 				cmd = 'n';
 			}
-
+			else if (strcmp(arg, "in") == 0) {
+				cmd = 'n';
+			}
 		}
 		else if ((arg = parsecmd(buff, "sp", " "))) {
 			cmd = 's';
@@ -822,6 +830,5 @@ static int dbgCon(state rt, int pu, void *ip, long* bp, int ss) {
 			} break;
 		}
 	}
-	//~ (void)SP;
 	return 0;
 }

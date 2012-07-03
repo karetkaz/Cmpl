@@ -18,10 +18,10 @@
 #define USEPLUGINS
 
 // enable paralell stuff
-#define MAXPROCSEXEC 1
+//~ #define MAXPROCSEXEC 1
 
 // maximum elements to print from an array
-#define MAX_ARR_PRINT 10
+#define MAX_ARR_PRINT 100
 
 // maximum tokens in expressions & nest level
 #define TOKS 2048
@@ -30,7 +30,7 @@
 #define TBLS 512
 
 //~ #define DO_PRAGMA(x) _Pragma(#x)
-#define TODO(x) //DO_PRAGMA(message("TODO: " #x))
+//~ #define TODO(x) //DO_PRAGMA(message("TODO: " #x))
 
 #define pdbg(__DBG, __FILE, __LINE, msg, ...) do {fputfmt(stderr, "%s:%d: "__DBG": %s: "msg"\n", __FILE, __LINE, __FUNCTION__, ##__VA_ARGS__); fflush(stdout); fflush(stderr);} while(0)
 
@@ -269,14 +269,13 @@ struct symn {				// type node (data)
 	// TODO: remove call
 	uint16_t	call:1;		// callable(function/definition) <=> (kind == TYPE_ref && args)
 	uint16_t	cnst:1;		// constant
+	uint16_t	priv:1;		// private
 	uint16_t	stat:1;		// static ?
 	uint16_t	glob:1;		// global
 
 	//~ uint8_t	load:1;		// indirect reference: cast == TYPE_ref
-	//~ uint8_t	priv:1;		// private
-	//~ uint8_t	read:1;		// const / no override
 	//~ uint8_t	used:1;		// 
-	uint16_t _padd:12;		// attributes (const static /+ private, ... +/).
+	uint16_t _padd:11;		// attributes (const static /+ private, ... +/).
 	};
 	uint16_t	Attr;
 	};

@@ -124,8 +124,28 @@ struct ss {
 ss A = ss(1, 2);
 ss.ss a = ss.ss(1, 2);
 
-//~ int n1 = sizeof(ss);
-//~ int n2 = sizeof(ss.ss);
+int n1 = sizeof(ss);
+int n2 = sizeof(ss.ss);
+
+//~ */
+/* typename
+struct ss {
+	int32 x;
+	int32 y;
+	struct ss {
+		int64 x;
+		int64 y;
+	}
+}
+
+ss A = ss(1, 2);
+ss.ss a = ss.ss(1, 2);
+
+typename t1 = ss;
+typename t2 = ss.ss;
+
+int n1 = sizeof(ss);
+int n2 = sizeof(ss.ss);
 
 //~ */
 
@@ -201,159 +221,30 @@ int x = m1.a;
 
 // */
 
-/* arrays
+/* string arrays
+string x = "almax a fa alatt";
 
-// 1.K int maximum(int arr[12])
-// 2.K int maximum(int arr[])
-// 3.X int maximum(int arr...)
+string ss[3] = null;
+ss[0] = x;//"alma1 a fa alatt";
+ss[1] = "alma2 a fa alatt";
+ss[2] = "alma3 a fa alatt";
 
-int arr2[3] = 1, 2, 3;
-int arr3[] = arr2;
-//~ /+
-
-int maximum(int arr[]) {
-	result = arr[0];
-	for (int i = 1; i < arr.length; i += 1) {
-		if (result < arr[i]) {
-			result = arr[i];
-		}
-	}
-}
-
-void sort(int arr[]) {
-	for (int i = 0; i < arr.length - 1; i += 1) {
-		for (int j = i + 1; j < arr.length; j += 1) {
-			if (arr[i] > arr[j]) {
-				int tmp = arr[i];
-				arr[i] = arr[j];
-				arr[j] = tmp;
-			}
-		}
-	}
-}
-
-int bsearch(int arr[], int elem) {
-	int lo = 0;
-	int hi = arr.length;
-
-	result = -1;
-	for (;lo < hi;) {
-		int mid = lo + ((hi - lo) / 2);
-		int val = arr[mid];
-
-		if (val < elem) {
-			lo = mid + 1;
-		}
-		else if (val > elem) {
-			hi = mid;
-		}
-		else {
-			result = mid;
-			//~ return;
-			lo = hi;
-		}
-	}
-}
-
-void randomize(int arr[]) {
-	for (int i = 0; i < arr.length; i += 1) {
-		arr[i] = rand() % 30;
-	}
-}
-
-randomize(arr2);
-int max = maximum(arr2);
-int toFind = arr2[arr2.length / 2];
-sort(arr2);
-int index = bsearch(arr2, toFind);
-// +/
-
-//~ */
-
-/* strings
-//~ string x = "almax a fa alatt";
-//~ string ss[3] = null;
-//~ ss[0] = x;//"alma1 a fa alatt";
-//~ ss[1] = "alma2 a fa alatt";
-//~ ss[2] = "alma3 a fa alatt";
-//~ string y = ss[1];
+string y;
+y = ss[1];
 
 //~ int iii[3] = 1, 2, 3;
 //~ string sss[3] = x, "alma2 a fa alatt", "alma3 a fa alatt";
-
-struct type {
-	int a;
-	int64 b;
-	float x;
-}
-
-struct type2 {
-	int64 a;
-	int b;
-	float x;
-}
-
-type val = type(1,2,3);
-type &v2 = null;
-debug(true, "asd", type, emit(pointer, ref(val)), 0, false);
-
-//~ vec4f obj = vec4f(1,2,3,4);
-//~ debug(true, "asd", vec4f, emit(pointer, ref(obj)), 0, false);
-//~ int a = ss.length;
-
-//~ ss[0][3] = 'A';
+//~ string y = sss[0];
+//~ sss[0][3] = 'A';
 
 //~ println(y);
 //~ print(ss[1]);
 // */
 
-/* typename
-struct ss {
-	int32 x;
-	int32 y;
-	struct ss {
-		int64 x;
-		int64 y;
-	}
-}
+//~ int &x = null;
+//~ x = 4;
 
-ss A = ss(1, 2);
-ss.ss a = ss.ss(1, 2);
-
-typename t1 = ss;
-typename t2 = ss.ss;
-
-int n1 = sizeof(ss);
-int n2 = sizeof(ss.ss);
-
-//~ */
-
-/* static and nonstatic members.
-struct alma {
-	static int a0 = 9;
-	int a1;
-	int a2;
-	int a3;
-}
-
-//~ alma &alma_a1 = null;
-//~ int offs = emit(int, ref(alma_a1.a3));
-//~ int offs = emit(int, ref(alma(null).a2));
-
-//~ pointer x = null;
-//~ alma a2 = alma(x);
-
-//~ alma a = alma(12, 13, 14);
-//~ alma.a0 = 99;
-//~ a = alma(a.a1, 0);
-
-//~ a.a0 = 98;			// warning: member is accessed through an instance reference
-//~ alma.a1 = 99;		// error: object reference is required to access the member `alma.a1`
-//~ alma &a2 = a;
-//~ int alma_a0 = alma.a0;
-// */
-
-/* xrgb
+//~ /* xrgb
 struct xrgb:1 {
 	uint8 b;
 	uint8 g;
@@ -385,13 +276,13 @@ xrgb a = emit(xrgb, i32(0x801f008f));
 //~ r.rgb.b = min(a.b + b.b, 255);
 // */
 
-//~ define dim = 11;
-//~ static int x[dim][dim][dim][dim][dim] = 0;
-//~ assert(0);
-typename t = Complex;
-if (t == Complex) {
-	print("Complex\n");
-}
+//~ define dim = 4;
+//~ static int x[dim][dim][dim][dim][dim] = 690;
+
+//~ typename t = Complex;
+//~ if (t == Complex) {
+	//~ print("Complex\n");
+//~ }
 //~ float64 c;
 //~ float64 x = Math.modf(Math.pi, &c);
 
@@ -641,3 +532,10 @@ static population pop[3000];
 
 
 //~ */
+
+//~ struct flt32: float32; // %f(%.20F)
+
+//~ float res1 = emit(float32, f32.div, f32(2), f32(Math.pi));
+//~ flt32 res2 = Math.pi / 2;
+//~ flt32 res3 = emit(float32, f32(Math.pi));
+//~ flt32 res4 = Math.pi;

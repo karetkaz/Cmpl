@@ -87,7 +87,7 @@ static int create_window(int w, int h) {
 	windowClass.hCursor = LoadCursor(mainhins, IDC_ARROW); // A standard cursor
 	windowClass.hbrBackground = (HBRUSH)COLOR_APPWORKSPACE; // A standard background
 	windowClass.lpszMenuName = NULL; // No menus in this window
-	windowClass.lpszClassName = class_name; // A name for this class
+	windowClass.lpszClassName = (void*)class_name; // A name for this class
 	windowClass.lpfnWndProc	= (WNDPROC)WndProc;
 
 	RegisterClass(&windowClass); // Register the class

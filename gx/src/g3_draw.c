@@ -7,7 +7,7 @@
 #include "g3_draw.h"
 
 //~ /* frustum tests
-void frustum_get(union vector planes[6], matrix mat) {
+void frustum_get(struct vector planes[6], matrix mat) {
 	//~ near and far	: -1 < z < 1
 	vecnrm(&planes[0], vecadd(&planes[0], &mat->w, &mat->z));
 	vecnrm(&planes[1], vecsub(&planes[1], &mat->w, &mat->z));
@@ -21,7 +21,7 @@ void frustum_get(union vector planes[6], matrix mat) {
 
 vector bsphere(vector s, vector p1, vector p2, vector p3) {
 	scalar	len, ln1, ln2;
-	union vector tmp[1];
+	struct vector tmp[1];
 	//~ union vector	min, max;
 	//~ vecmax(&max, vecmax(&tmp, p1, p2), p3);					// minimum
 	//~ vecmin(&min, vecmin(&tmp, p1, p2), p3);					// maximum
@@ -40,7 +40,7 @@ vector bsphere(vector s, vector p1, vector p2, vector p3) {
 }
 
 // returns false if triangle is outside of the frustum
-int ftest_point(union vector planes[6], vector p) {				// clip point
+int ftest_point(struct vector planes[6], vector p) {				// clip point
 	const scalar r = 0;
 	if (vecdph(p, &planes[0]) <= r) return 0;
 	if (vecdph(p, &planes[1]) <= r) return 0;
@@ -50,7 +50,7 @@ int ftest_point(union vector planes[6], vector p) {				// clip point
 	if (vecdph(p, &planes[5]) <= r) return 0;
 	return 1;	// inside
 }
-int ftest_sphere(union vector planes[6], vector p) {			// clip sphere
+int ftest_sphere(struct vector planes[6], vector p) {			// clip sphere
 	scalar r = -p->w;
 	if (vecdph(&planes[0], p) <= r) return 0;
 	if (vecdph(&planes[1], p) <= r) return 0;
@@ -60,8 +60,8 @@ int ftest_sphere(union vector planes[6], vector p) {			// clip sphere
 	if (vecdph(&planes[5], p) <= r) return 0;
 	return 1;	// inside
 }
-int ftest_triangle(union vector planes[6], vector p1, vector p2, vector p3) {
-	union vector tmp[1];
+int ftest_triangle(struct vector planes[6], vector p1, vector p2, vector p3) {
+	struct vector tmp[1];
 	bsphere(tmp, p1, p2, p3);
 	return ftest_sphere(planes, tmp);
 }
@@ -69,7 +69,7 @@ int ftest_triangle(union vector planes[6], vector p1, vector p2, vector p3) {
 
 static inline vector mappos(vector dst, matrix mat, vector src) {
 	scalar div;
-	union vector tmp;
+	struct vector tmp;
 	if (src == dst)
 		src = veccpy(&tmp, src);
 
@@ -661,7 +661,7 @@ for (int y = yMin; y <= yMax; y++) {
 }*/
 
 static argb litpos(vector color, vector V, vector N, vector E, Light lit) {
-	union vector tmp[8];
+	struct vector tmp[8];
 	while (lit) {
 		if (lit->attr & L_on) {
 			vector D = vecsub(tmp+2, V, &lit->pos);
@@ -707,8 +707,8 @@ static argb litpos(vector color, vector V, vector N, vector E, Light lit) {
 int g3_drawenvc(gx_Surf dst, struct gx_Surf img[6], vector view, matrix proj, double size) {
 	#define CLPNRM 1
 	const scalar e = 0;
-	union vector v[8], nrm[1];
-	union texcol t[8];
+	struct vector v[8], nrm[1];
+	struct texcol t[8];
 
 	v[4].x = v[7].x = v[3].x = v[0].x = -size;
 	v[1].x = v[2].x = v[5].x = v[6].x = +size;
@@ -779,9 +779,9 @@ int g3_drawenvc(gx_Surf dst, struct gx_Surf img[6], vector view, matrix proj, do
 }// */
 
 void g3_drawOXYZ(gx_Surf dst, camera cam, double n) {
-	union matrix tmp[3];
+	struct matrix tmp[3];
 	matrix proj, view;
-	union vector v[4];
+	struct vector v[4];
 
 	view = cammat(tmp, cam);
 	proj = matmul(tmp + 2, &cam->proj, view);
@@ -808,14 +808,14 @@ int g3_drawmesh(gx_Surf dst, mesh msh, matrix objm, camera cam, int draw, double
 	const long edit_col = 0xff00ff;
 
 	unsigned i, tricnt = 0;
-	union vector v[8];
-	union matrix tmp[3];
+	struct vector v[8];
+	struct matrix tmp[3];
 	matrix proj, view;
 	Light l;
 
 	#define MAXVTX (65536*16)
-	static union vector pos[MAXVTX];
-	static union texcol tmpcolarr[MAXVTX];
+	static struct vector pos[MAXVTX];
+	static struct texcol tmpcolarr[MAXVTX];
 	texcol lit = 0, col = tmpcolarr;
 
 	//~ objm = NULL;
@@ -850,7 +850,7 @@ int g3_drawmesh(gx_Surf dst, mesh msh, matrix objm, camera cam, int draw, double
 		mappos(pos + i, proj, msh->pos + i);
 
 		if (lit) {
-			union vector Col = msh->mtl.emis;
+			struct vector Col = msh->mtl.emis;
 			vector V = msh->pos + i;
 			vector N = msh->nrm + i;	// normalVec
 			if (objm) {
@@ -953,8 +953,8 @@ int g3_drawbbox(gx_Surf dst, mesh msh, matrix objm, camera cam) {
 	const long bbox_col = 0xff00ff;
 
 	//~ unsigned i, tricnt = 0;
-	union vector v[8];
-	union matrix tmp[3];
+	struct vector v[8];
+	struct matrix tmp[3];
 	matrix proj, view;
 
 	//~ World*Wiew*Proj

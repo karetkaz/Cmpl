@@ -1,4 +1,4 @@
-// empty file
+/*/ empty file
 enum Window {
 	draw = RenderMode.swap_buff;
 	resx = 512;
@@ -22,3 +22,8 @@ void mouseCB(int btn, int x, int y) {
 	}
 }
 Gui.setMouseHandler(mouseCB);
+// */
+
+//~ define VmDebug = 1;
+//~ bool grayscale = true;
+//~ int gs = grayscale ? 'g' : 'c';

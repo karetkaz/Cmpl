@@ -34,7 +34,7 @@ pointer b = emit(pointer, int(A));
 int &a2 = A;
 //~ +/
 
-/+ fixed size array for defines
+/+ DONE: fixed size array for defines
 void testArr(double x[]) {
 	print("%d\n", int64(x.length));
 	x[3] = 8;
@@ -45,9 +45,23 @@ define TestArr(double x[16]) = testArr(x);
 double x[16] = 1;
 //~ testArr(x);
 //~ TestArr(x);
+//~ double x[16] = 1;
 //~ testFunc(x);
 //~ testFunc2(x);
 //~ +/
+
+/*
+double x[16] = 1;
+
+double f(int32 idx) {
+	return 1.*idx;
+}
+testFunc(x, f);
+
+for (int i = 0; i < x.length; i += 1) {
+	print("%f\n", x[i]);
+}
+//~ */
 
 /+
 struct Refs{
@@ -108,7 +122,12 @@ v2.re = v1.re;
 
 //~  int x = sizeof(int64);
 
-float64 x = -0.;
-float64 y = +0.;
-float64 a = x + y;
-bool z = x == y;
+//~ float64 x = -0.;
+//~ float64 y = +0.;
+//~ float64 a = x + y;
+//~ bool z = x == y;
+
+//~ float32 res1 = emit(f32.div, f32(2), f32(Math.pi));
+//~ float32 res2 = Math.pi / 2.;
+//~ println(res1);
+//~ println(res2);

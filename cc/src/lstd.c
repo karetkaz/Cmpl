@@ -65,37 +65,37 @@ static int f64atan2(state rt, void* _) {
 //#}#endregion
 
 //#{ int64 ext
-static int b64shl(state rt, void *_) {
+static int b64shl(state rt, void* _) {
 	uint64_t x = popi64(rt);
 	int32_t y = popi32(rt);
 	reti64(rt, x << y);
 	return 0;
 }
-static int b64shr(state rt, void *_) {
+static int b64shr(state rt, void* _) {
 	uint64_t x = popi64(rt);
 	int32_t y = popi32(rt);
 	reti64(rt, x >> y);
 	return 0;
 }
-static int b64sar(state rt, void *_) {
+static int b64sar(state rt, void* _) {
 	int64_t x = popi64(rt);
 	int32_t y = popi32(rt);
 	reti64(rt, x >> y);
 	return 0;
 }
-static int b64and(state rt, void *_) {
+static int b64and(state rt, void* _) {
 	uint64_t x = popi64(rt);
 	uint64_t y = popi64(rt);
 	reti64(rt, x & y);
 	return 0;
 }
-static int b64ior(state rt, void *_) {
+static int b64ior(state rt, void* _) {
 	uint64_t x = popi64(rt);
 	uint64_t y = popi64(rt);
 	reti64(rt, x | y);
 	return 0;
 }
-static int b64xor(state rt, void *_) {
+static int b64xor(state rt, void* _) {
 	uint64_t x = popi64(rt);
 	uint64_t y = popi64(rt);
 	reti64(rt, x ^ y);
@@ -437,7 +437,7 @@ static int miscCall(state rt, void* data) {
 			return 0;
 		}
 		case miscOpPutFmt: {
-			char *fmt = popref(rt);
+			char* fmt = popref(rt);
 			int64_t arg = popi64(rt);
 			fputfmt(stdout, fmt, arg);
 			return 0;
@@ -452,7 +452,7 @@ int install_stdc(state rt, char* file, int level) {
 	struct {
 		int (*fun)(state, void* data);
 		miscFunc data;
-		char *def;
+		char* def;
 	}
 	math[] = {
 		//~ {f64abs, 0, "float64 abs(float64 x);"},
@@ -516,30 +516,30 @@ int install_stdc(state rt, char* file, int level) {
 	};
 	if (rt->cc->type_i64 != NULL && rt->cc->type_i64->args == NULL) {
 		enter(rt->cc, NULL);
-		err = err || !libcall(rt, b64shl, NULL, "int64 Shl(int64 Value, int Count);");
-		err = err || !libcall(rt, b64shr, NULL, "int64 Shr(int64 Value, int Count);");
-		err = err || !libcall(rt, b64sar, NULL, "int64 Sar(int64 Value, int Count);");
-		err = err || !libcall(rt, b64and, NULL, "int64 And(int64 Lhs, int64 Rhs);");
-		err = err || !libcall(rt, b64ior, NULL, "int64  Or(int64 Lhs, int64 Rhs);");
-		err = err || !libcall(rt, b64xor, NULL, "int64 Xor(int64 Lhs, int64 Rhs);");
+		err = err || !ccAddCall(rt, b64shl, NULL, "int64 Shl(int64 Value, int Count);");
+		err = err || !ccAddCall(rt, b64shr, NULL, "int64 Shr(int64 Value, int Count);");
+		err = err || !ccAddCall(rt, b64sar, NULL, "int64 Sar(int64 Value, int Count);");
+		err = err || !ccAddCall(rt, b64and, NULL, "int64 And(int64 Lhs, int64 Rhs);");
+		err = err || !ccAddCall(rt, b64ior, NULL, "int64  Or(int64 Lhs, int64 Rhs);");
+		err = err || !ccAddCall(rt, b64xor, NULL, "int64 Xor(int64 Lhs, int64 Rhs);");
 		rt->cc->type_i64->args = leave(rt->cc, rt->cc->type_i64, 1);
 	}
 	for (i = 0; i < sizeof(math) / sizeof(*math); i += 1) {
-		symn libc = libcall(rt, math[i].fun, (void*)math[i].data, math[i].def);
+		symn libc = ccAddCall(rt, math[i].fun, (void*)math[i].data, math[i].def);
 		if (libc == NULL) {
 			return -1;
 		}
 	}
 	/*if ((nsp = ccBegin(rt, "bits"))) {
 		for (i = 0; i < sizeof(bits) / sizeof(*bits); i += 1) {
-			if (!libcall(rt, bits[i].fun, bits[i].n, bits[i].def)) {
+			if (!ccAddCall(rt, bits[i].fun, bits[i].n, bits[i].def)) {
 				return -1;
 			}
 		}
 		ccEnd(rt, nsp);
 	}*/
 	for (i = 0; i < sizeof(misc) / sizeof(*misc); i += 1) {
-		symn libc = libcall(rt, misc[i].fun, (void*)misc[i].data, misc[i].def);
+		symn libc = ccAddCall(rt, misc[i].fun, (void*)misc[i].data, misc[i].def);
 		if (libc == NULL) {
 			return -1;
 		}
@@ -550,12 +550,12 @@ int install_stdc(state rt, char* file, int level) {
 		// 'err = err || !libcall...' <=> 'if (!err) err = !libcall...'
 		// will skip forward libcalls if an error ocurred
 
-		err = err || !libcall(rt, miscCall, (void*)miscOpExit, "void Exit(int Code);");
+		err = err || !ccAddCall(rt, miscCall, (void*)miscOpExit, "void Exit(int Code);");
 		ccEnd(rt, nsp);
 	}
 
 	if (!err && file) {
-		return compile(rt, level, file, 1, NULL);
+		return ccAddCode(rt, level, file, 1, NULL);
 	}
 	/*if (!err && file && ccOpen(rt, file, 1, NULL)) {
 		return parse(rt->cc, 0, level);

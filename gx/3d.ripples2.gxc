@@ -7,8 +7,8 @@ enum Window {
 
 enum Options {
 	textured = true;
-	do2d = true;
-	do3d = !true;
+	do2d = !true;
+	do3d = true;
 }
 
 // division of mesh and heightmap

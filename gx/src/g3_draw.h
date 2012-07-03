@@ -22,7 +22,6 @@ enum {
 	draw_tex  = 0x00000040,		// use texture
 	draw_lit  = 0x00000080,		// use lights
 	disp_info = 0x00010000,
-	disp_oxyz = 0x00020000,
 	disp_norm = 0x00040000,		// normals
 	disp_bbox = 0x00080000,		// Bounding Box
 	temp_lght = 0x00100000,		// lights
@@ -33,7 +32,8 @@ enum {
 	//~ OnDemand =  0x02000000,
 };
 
-typedef union texcol {
+typedef struct texcol {
+	union {
 	struct {
 		unsigned short s;
 		unsigned short t;
@@ -50,13 +50,14 @@ typedef union texcol {
 	};
 	unsigned long val;
 	argb rgb;
+	};
 } *texcol;
 
 typedef struct Material {		// material
-	union vector emis;		// Emissive
-	union vector ambi;		// Ambient
-	union vector diff;		// Diffuse
-	union vector spec;		// Specular
+	struct vector emis;		// Emissive
+	struct vector ambi;		// Ambient
+	struct vector diff;		// Diffuse
+	struct vector spec;		// Specular
 	scalar spow;			// Shininess
 } *Material;
 
@@ -64,12 +65,12 @@ typedef struct Light {			// lights
 	struct Material mtl;
 	struct Light	*next;
 	//
-	union vector	ambi;		// Ambient
-	union vector	diff;		// Diffuse
-	union vector	spec;		// Specular
-	union vector	attn;		// Attenuation
-	union vector	pos;		// position
-	union vector	dir;		// direction
+	struct vector	ambi;		// Ambient
+	struct vector	diff;		// Diffuse
+	struct vector	spec;		// Specular
+	struct vector	attn;		// Attenuation
+	struct vector	pos;		// position
+	struct vector	dir;		// direction
 
 	scalar	sCos, sExp;			// spot light related
 	enum {						// Type
@@ -95,9 +96,9 @@ typedef struct mesh {
 	signed maxtri, tricnt;	// triangles
 	signed maxseg, segcnt;	// segments
 	signed maxgrp, grpcnt;	// grouping
-	union vector *pos;		// (x, y, z, 1) position
-	union vector *nrm;		// (x, y, z, 0) normal
-	union texcol *tex;		// (s, t, 0, 0) tetxure|color
+	struct vector *pos;		// (x, y, z, 1) position
+	struct vector *nrm;		// (x, y, z, 0) normal
+	struct texcol *tex;		// (s, t, 0, 0) tetxure|color
 	//~ union texcol *col;		// xrgb precalculated colors
 	struct tri {			// triangle list
 		// signed id;	// groupId

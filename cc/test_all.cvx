@@ -77,11 +77,11 @@ enum Test {
 	Call = ~0;
 }
 static if (true) {
-define hex8  int8;		//%hex8(%02x)
-define hex16 int16;		//%hex16(%04x)
-define hex32 int32;		//%hex32(%08x)
-define hex64 int64;		//%hex64(%016X)
-define bin32 int32;		//%bin32(%032b)
+struct hex8: int8;			//%hex8(%02x)
+struct hex16: int16;		//%hex16(%04x)
+struct hex32: int32;		//%hex32(%08x)
+struct hex64: int64;		//%hex64(%016X)
+struct bin32: int32;		//%bin32(%032b)
 
 define print(hex32 arg) = print("%08x", int64(arg));
 define println(hex32 arg) = print("%08x\n", int64(arg));
@@ -97,10 +97,10 @@ static if (Test.Emit) {
 	"movups	[edi], xmm0"
 +/
 static if (Test.Emit & 0x01) {
-float32 res1 = emit(f32.div, float32(2), float32(Math.pi));
+float32 res1 = emit(float32, f32.div, f32(2), f32(Math.pi));
 float64 res2 = emit(f64.neg, f64(Math.pi));
-float32 res3 = emit(int32, f32(Math.pi));
-hex32 res4 = emit(hex32, f32(Math.pi));
+float32 res3 = emit(i32, f32(Math.pi));
+hex32 res4 = emit(i32, f32(Math.pi));
 }
 static if (Test.Emit & 0x02) {
 define shl(int32 value, int count) = emit(i32.shl, i32(count), i32(value));
@@ -195,7 +195,7 @@ static if (Test.Emit & 0x08) {	// Vector4
 //~ vec4f v2 = emit(vec4f, f32(21), f32(22), f32(23), f32(24));
 vec4f v1 = vec4f(11., 12., 13., 14.);
 vec4f v2 = vec4f(21., 22., 23., 24.);
-
+//~ println(v2);
 //~ vec4f v3 = emit(vec4f, swz.xywz, vec4f(v1));
 }// +/
 } // */
@@ -240,41 +240,40 @@ define int1() = int(1995);
 define int1(int32 _) = int(2010);
 define int1(float64 _) = int(2015);
 
-int32 a1 = int1;			// 1990
-int32 a2 = int1();			// 1995
-int32 a3 = int1(0);			// 2010
-int32 a4 = int1(0.);		// 2015
+//~ int32 a1 = int1;			// 1990
+//~ int32 a2 = int1();			// 1995
+//~ int32 a3 = int1(0);			// 2010
+//~ int32 a4 = int1(0.);		// 2015
+
+assert(int1 == 1990);
+assert(int1() == 1995);
+assert(int1(0) == 2010);
+assert(int1(0.) == 2015);
 
 }
 static if (Test.Type & 0x02) {
 
 float64 NAN = Math.nan; // 0 / 0.;
 int isNan1 = int(Math.isNan(NAN));
-//~ int isNan2 = int(Math.isNan(Math.nan));
+int isNan2 = int(Math.isNan(Math.nan));
 }
-static if (Test.Type & 0x04) {		// union
+static if (Test.Type & 0x04) {		// union & packing
 //~ struct and arrays
-struct fiu32:0 {int32 i;float32 f;}
-struct fiu64:0 {int64 i;float64 f;}
-define intTY int32;
+struct fltint32:0 {int32 i;float32 f;}
+struct fltint64:0 {int64 i;float64 f;}
 
+
+/*define intTY int32;
 struct intabc:8 {
 	intTY X;		//%%?08b
 	intTY Y;		//%%?08b
 	intTY Z;		//%%?08b
 	//~ intTY W;		//!X%?03x
 	fiu64 U;
-}
+}*/
 
-intabc alma;
-alma.U.f = 9;
-alma.X = 8;
-//~ alma.Z = alma.Y = alma.X = 7;
-
-//~ intTY c[3] = emit();
-//~ c[1] |= 1;
-
-//~ intabc alma1 = alma;
+fltint64 fltintunionvalue;
+fltintunionvalue.f = 0;
 }
 static if (Test.Type & 0x08) {		// color
 struct bgra:1 {
@@ -302,10 +301,8 @@ define color(float64 r, float64 g, float64 b) = color(float64(1), r, g, b);
 //~ color C2 = color(0xca, 0xfe, 0xba, 0xbc);
 //~ color C3 = emit(color, i32(0xcafebabe));
 //~ color C4 = emit(color, i32(0xcafebabf));
-color C5 = color(0.1, .5, 1.);
+color C5 = color(0.1, .5, .7);
 //~ color C5 = color(1, 5, 205);
-
-//~ uint8 u08[4] = emit(struct, i32(0xcafebabe));
 
 enum colors: color {
 	c5 = color(0.1, .5, 1.);
@@ -315,14 +312,75 @@ enum colors: color {
 color c5 = colors.c5;
 
 }
-static if (Test.Type & 0x10) {
+static if (Test.Type & 0x10) {		// arrays
+// 1.K int maximum(int arr[12])
+// 2.K int maximum(int arr[])
+// 3.X int maximum(int arr...)
+
+int arr2[3] = 1, 2, 3;	// array
+int arr3[] = arr2;		// slice
+
+int maximum(int arr[]) {
+	result = arr[0];
+	for (int i = 1; i < arr.length; i += 1) {
+		if (result < arr[i]) {
+			result = arr[i];
+		}
+	}
+}
+
+void sort(int arr[]) {
+	for (int i = 0; i < arr.length - 1; i += 1) {
+		for (int j = i + 1; j < arr.length; j += 1) {
+			if (arr[i] > arr[j]) {
+				int tmp = arr[i];
+				arr[i] = arr[j];
+				arr[j] = tmp;
+			}
+		}
+	}
+}
+
+int bsearch(int arr[], int elem) {
+	int lo = 0;
+	int hi = arr.length;
+
+	result = -1;
+	for (;lo < hi;) {
+		int mid = lo + ((hi - lo) / 2);
+		int val = arr[mid];
+
+		if (val == elem) {
+			return mid;
+		}
+		else if (val > elem) {
+			hi = mid;
+		}
+		else {
+			lo = mid + 1;
+		}
+	}
+}
+
+void randomize(int arr[], int max) {
+	for (int i = 0; i < arr.length; i += 1) {
+		arr[i] = rand() % max;
+	}
+}
+
+randomize(arr2, 300);
+int test_arr_max = maximum(arr2);
+int test_arr_toFind = arr2[arr2.length / 2];
+sort(arr2);
+int test_arr_index = bsearch(arr2, test_arr_toFind);
+
 }
 } // */
 static if (Test.Misc) {
 static if (Test.Misc & 1) {			// matrix multiply
 // Matrix Multiply
 
-define dim = 30;
+define dim = 3;
 define scalar float64;		//%%f
 scalar m1[dim][dim];
 scalar m2[dim][dim];
@@ -351,7 +409,7 @@ for (int i = 0; i < dim; i += 1) {
 	for (int j = 0; j < dim; j += 1) {
 		if (j != 0)
 			putchr(' ');
-		print(float64(m3[i][j]));
+		print(m3[i][j]);
 	}
 	putchr('\n');
 } // +/
@@ -677,12 +735,12 @@ static struct Fixed {
 	}
 	fixed Cos(fixed x) {
 		fixed temp;
-		sincos(x, temp, result);
+		sincos(x, &temp, &result);
 	}
 	fixed Tan(fixed x) {
 		fixed sin;
 		fixed cos;
-		sincos(x, sin, cos);
+		sincos(x, &sin, &cos);
 		result = div(sin, cos);
 	}
 	fixed Asin(fixed x) {
@@ -881,6 +939,7 @@ int32x8 add(const int32x8 &a, const int32x8 &b, bool &carryInOut) {
 	int64 carry = carryInOut;
 
 	define opAdd(int a, int b) = int32(sum = zxt64(a) + zxt64(b) + carry);
+
 	result.i1 = opAdd(a.i1, b.i1);
 	carry = sum > ovf;
 	result.i2 = opAdd(a.i2, b.i2);
@@ -900,12 +959,12 @@ int32x8 add(const int32x8 &a, const int32x8 &b, bool &carryInOut) {
 }
 int32x8 add(const int32x8 &a, const int32x8 &b) {
 	bool carry = false;
-	result = add(a, b, carry);
+	result = add(a, b, &carry);
 }
 int32x8 add(const int32x8 &a, int32 b) {
 	bool carry = false;
 	int32x8 bx8 = int32x8(b);
-	result = add(a, bx8, carry);
+	result = add(a, &bx8, &carry);
 }
 
 int32x8 sub(const int32x8 &a, const int32x8 &b, bool &carryInOut) {
@@ -933,16 +992,18 @@ int32x8 sub(const int32x8 &a, const int32x8 &b, bool &carryInOut) {
 }
 int32x8 sub(const int32x8 &a, const int32x8 &b) {
 	bool carry = false;
-	result = sub(a, b, carry);
+	result = sub(a, b, &carry);
 }
 int32x8 sub(const int32x8 &a, int32 b) {
 	bool carry = false;
 	int32x8 bx8 = int32x8(b);
-	result = sub(a, &bx8, carry);
+	result = sub(a, &bx8, &carry);
 }
 
 
-int32x8 mul(const int32x8 &a, const int32x8 &b, int32x8 &hi);
+int32x8 mul(const int32x8 &a, const int32x8 &b, int32x8 &hi) {
+	
+}
 int32x8 mul(int32x8 &a, int32 b);
 
 //~ i32x8 div(i32x8 &a, i32x8 &b, i32x8 &rem);
@@ -954,7 +1015,7 @@ int32x8 mul(int32x8 &a, int32 b);
 
 int32x8 i32x8_a = int32x8(-10);
 //~ int32x8 i32x8_b = int32x8(1);
-int32x8 i32x8_c = sub(i32x8_a, -19);
+int32x8 i32x8_c = sub(&i32x8_a, -19);
 
 } // +/
 static if (Test.Call & 2) {
@@ -966,7 +1027,7 @@ int bar(int a) {
 	return foo(a);
 }
 int i = bar(3); // i is assigned 4
-assert(i == 4);
+//~ assert(i == 4);
 }
 }
 
@@ -976,7 +1037,7 @@ string str = emit(string, ref(tmp));
 itoa(str, 1024, 10, 1, true, "");
 //~ */
 /* Reflect
-const TypeCode: int32 {
+enum TypeCode: int32 {
 	CAST_any = 0x00000000;		// invalid, error, ...
 	CAST_vid = 0x00000001;		// void;
 	CAST_bit = 0x00000002;		// bool;
@@ -1004,7 +1065,7 @@ const TypeCode: int32 {
 	ATTR_par = 0x00000004;		// parrallel
 	ATTR_snc = 0x00000008;		// synchronized
 	ATTR_ref = 0x00000010;		// indirect
-	ATTR_pub = 0x00000010;		// public
+	ATTR_prv = 0x00000010;		// private
 }
 
 struct TypeInfo {
@@ -1029,8 +1090,8 @@ struct TypeInfo {
 	//~ get function = bool(this.kind & ATTR_fun);
 }
 
-//~ class typename: TypeInfo {}
-//~ class variable: TypeInfo {}
+//~ class typename: TypeInfo;
+//~ class variable: TypeInfo;
 
 bool instanceof(TypeInfo &ty, var obj) {
 	TypeInfo &oty = obj.type;

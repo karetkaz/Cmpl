@@ -47,22 +47,14 @@ int logfile(state, char *file);				// set logger
 		setret(rt, float64_t, sin(x));	// set the return value
 		return 0;						// no error in this call
 	}
-	if (!api->libcall(api->rt, f64sin, "float64 sin(float64 x);")) {
+	if (!ccAddCall(api->rt, f64sin, "float64 sin(float64 x);")) {
 		error...
 	}
  */
-symn libcall(state, int libc(state, void* data), void* data, const char* proto);
+symn ccAddCall(state, int libc(state, void* data), void* data, const char* proto);
 
 /// install a type symbol
-symn install_typ(state, const char* name, unsigned size, int refType);
-
-/** instal standard functions.
- * io, mem, math and parse optionaly the given file
- * @param state
- * @param file if not null parse this file @see stdlib.cvx
- * @param level warning level for parsing.
- */
-int install_stdc(state, char* file, int level);
+symn ccAddType(state, const char* name, unsigned size, int refType);
 
 /** compile the given file or text block.
  * initializes the compiler state.
@@ -73,7 +65,7 @@ int install_stdc(state, char* file, int level);
  * @param code if not null, this text will be compiled instead of the file.
  * @return the number of errors.
  */
-int compile(state, int warn, char *file, int line, char *code);
+int ccAddCode(state, int warn, char *file, int line, char *code);
 
 // declaring namespaces
 symn ccBegin(state, char *cls);
@@ -82,10 +74,6 @@ symn ccBegin(state, char *cls);
 symn ccDefInt(state, char *name, int64_t value);
 symn ccDefFlt(state, char *name, double value);
 symn ccDefStr(state, char *name, char* value);
-
-//~ int  ccAddCode(state, int warn, char *file, int line, char *code);
-//~ symn ccAddType(state, const char* name, unsigned size, int refType);
-//~ symn ccAddLibc(state, int libc(state), const char* proto);
 
 void ccEnd(state, symn cls);
 
@@ -100,6 +88,13 @@ symn findsym(ccState, symn in, char *name);
 int symvalint(symn sym, int* res);
 int symvalflt(symn sym, double* res);
 
+/** instal standard functions.
+ * io, mem, math and parse optionaly the given file
+ * @param state
+ * @param file if not null parse this file @see stdlib.cvx
+ * @param level warning level for parsing.
+ */
+int install_stdc(state, char* file, int level);
 
 /** Memory manager for the virtual machine
  * this function should be called after vmExec.
@@ -122,7 +117,7 @@ int gencode(state, int opti);
 typedef int (*dbgf)(state, int pu, void *ip, long* sptr, int scnt);
 
 int vmExec(state, dbgf dbg, int ss);
-int vmCall(state, symn fun, void *args);
+int vmCall(state, symn fun, void* ret, void* args);
 int vmCall2(state, symn fun, ...);
 
 // output

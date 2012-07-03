@@ -30,17 +30,19 @@ struct state {
 	symn  defs;		// global variables and functions
 	symn  gdef;		// static variables and functions
 
-	void* libv;		// libcall vector
-
-	symn  libc;		// library call symbol
-	void* retv;		// return value
-	char* argv;		// first argument
-	void* udata;	//?user data for execution passed to vmExec
+	void* udata;
+	struct libcstate {
+		symn  libc;		// library call symbol
+		void* retv;		// return value
+		char* argv;		// first argument
+	} libc;
 
 	ccState cc;		// compiler enviroment
-	int (*dbug)(state, int pu, void* ip, long* sptr, int scnt);
 
-	struct vm {
+	struct {
+		int (*dbug)(state, int pu, void* ip, long* sptr, int scnt);
+		void* cell;					// execution unit
+		void* libv;					// libcall vector
 
 		unsigned int	pc;			// entry point / prev program counter
 		unsigned int	px;			// exit point / program counter
@@ -52,20 +54,20 @@ struct state {
 		unsigned int	ro;			// <= ro : read only region(meta data) / cgen:(function parameters)
 		unsigned int	pos;		// current positin in buffer
 		signed int		opti;		// optimization levevel
-		struct size {
+
+		struct {
 			unsigned int	meta;
 			unsigned int	code;
 			unsigned int	data;
 		} size;
+
+		void* _free;	// list of free memory
+		void* _used;	// list of used memory
 	} vm;
 
-	long _size;		// size of total memory
-	void* _free;	// list of free memory
-	void* _used;	// list of used memory
-
-	unsigned char* _beg;	// cc: used memory; vm: max stack when calling vmCall from a libcall
+	long _size;				// size of total memory
+	unsigned char* _beg;	// cc: used memory; vm: heap begin
 	unsigned char* _end;
-
 	unsigned char _mem[];
 };
 
@@ -115,11 +117,11 @@ typedef struct stateApi {
 			setret(rt, float64_t, sin(x));	// set the return value
 			return 0;						// no error in this call
 		}
-		if (!api->ccAddLibc(api->rt, f64sin, NULL, "float64 sin(float64 x);")) {
+		if (!api->ccAddCall(api->rt, f64sin, NULL, "float64 sin(float64 x);")) {
 			error...
 		}
 	 */
-	symn (*ccAddLibc)(state, int libc(state, void* data), void* data, const char* proto);
+	symn (*ccAddCall)(state, int libc(state, void* data), void* data, const char* proto);
 
 	/** compile the given file or text block.
 	 * @param state
@@ -144,14 +146,14 @@ typedef struct stateApi {
 		static int mouseCb(int btn, int x, int y) {
 			if (onMouse) {
 				struct {int btn, x, y;} args = {btn, x, y};
-				api->invoke(api->rt, onMouse, &args);		// invoke the callback
+				api->invoke(api->rt, onMouse, null, &args);		// invoke the callback
 			}
 		}
 		static int setMouseCb(state rt) {
 			onMouse = api->findref(api->rt, popref(rt));		// pop and find the functions symbol
 			return onMouse != NULL;								// no error in this call
 		}
-		if (!api->ccAddLibc(api->rt, setMouseCb, NULL, "void regMouse(void CB(int b, int x, int y);")) {
+		if (!api->ccAddCall(api->rt, setMouseCb, NULL, "void regMouse(void CB(int b, int x, int y);")) {
 			error...
 		}
 	 */
@@ -175,18 +177,19 @@ typedef struct stateApi {
 			symn pixelfun = api->findref(api->rt, popref(rt));		// pop and find the functions symbol
 			for (int y = 0; y < sceen.height; ++y) {
 				for (int x = 0; x < sceen.width; ++x) {
+					int result;
 					struct {double x, y;} args = {(double)x / sceen.width, (double)y / sceen.height};
-					if (api->invoke(api->rt, pixelfun, &args) == 0) {
-						sceen.pixels[x + y * sceen.width] = getret(api->rt, int32_t);
+					if (api->invoke(api->rt, pixelfun, &result, &args) == 0) {
+						sceen.pixels[x + y * sceen.width] = result;
 					}
 				}
 			}
 		}
-		if (!api->ccAddLibc(api->rt, setpixels, NULL, "void setpixels(int CallBack(double x, double y);")) {
+		if (!api->ccAddCall(api->rt, setpixels, NULL, "void setpixels(int CallBack(double x, double y);")) {
 			error...
 		}
 	*/
-	int (*invoke)(state, symn fun, void *args);
+	int (*invoke)(state, symn fun, void* result, void *args);
 
 	/** memory manager of the vm.
 	 * @param the runtime state.
@@ -204,32 +207,31 @@ typedef struct stateApi {
 
 static inline int padded(int offs, int align) {
 	//~ assert(align == (align & -align));
-	//~ return align + ((offs - 1) & ~(align - 1));
-	return offs + (align - 1) & ~(align - 1);
+	return (offs + (align - 1)) & ~(align - 1);
 }
 
 static inline void* setret(state rt, void *result, int size) {
 	if (result != NULL) {
-		memcpy(rt->retv, result, size);
+		memcpy(rt->libc.retv, result, size);
 	}
-	return rt->retv;
+	return rt->libc.retv;
 }
 static inline void* poparg(state rt, void *result, int size) {
 	// if result is not null copy
 	if (result != NULL) {
-		memcpy(result, rt->argv, size);
+		memcpy(result, rt->libc.argv, size);
 	}
 	else {
-		result = rt->argv;
+		result = rt->libc.argv;
 	}
-	rt->argv += padded(size, 4);
+	rt->libc.argv += padded(size, 4);
 	return result;
 }
 
 //~ #define poparg(__ARGV, __SIZE) ((void*)(((__ARGV)->argv += (((__SIZE) + 3) & ~3)) - (((__SIZE) + 3) & ~3))))
 //~ #define popaty(__ARGV, __TYPE) (*(__TYPE*)(poparg((__ARGV), sizeof(__TYPE))))
 
-#define poparg(__ARGV, __TYPE) (((__TYPE*)((__ARGV)->argv += ((sizeof(__TYPE) + 3) & ~3)))[-1])
+#define poparg(__ARGV, __TYPE) (((__TYPE*)((__ARGV)->libc.argv += ((sizeof(__TYPE) + 3) & ~3)))[-1])
 //~ static inline int32_t popi32(state rt) { return *(int32_t*)poparg(rt, NULL, sizeof(int32_t)); }
 //~ static inline int64_t popi64(state rt) { return *(int64_t*)poparg(rt, NULL, sizeof(int64_t)); }
 //~ static inline float32_t popf32(state rt) { return *(float32_t*)poparg(rt, NULL, sizeof(float32_t)); }
@@ -242,7 +244,7 @@ static inline void* popref(state rt) { int32_t p = popi32(rt); return p ? rt->_m
 static inline char* popstr(state rt) { return popref(rt); }
 #undef poparg
 
-#define getret(__ARGV, __TYPE) (*((__TYPE*)(__ARGV->retv)))
+#define getret(__ARGV, __TYPE) (*((__TYPE*)(__ARGV->libc.retv)))
 #define setret(__ARGV, __TYPE, __VAL) (getret(__ARGV, __TYPE) = (__TYPE)(__VAL))
 static inline void reti32(state rt, int32_t val) { setret(rt, int32_t, val); }
 static inline void reti64(state rt, int64_t val) { setret(rt, int64_t, val); }

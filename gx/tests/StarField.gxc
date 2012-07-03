@@ -12,7 +12,7 @@ struct Star {
 	double zpos;
 }
 
-Star stars[8 * 1024];
+Star stars[1 * 1024];
 
 void initStar(Star &star, int i) {
 	//~ randomly init stars, generate them around the center of the screen

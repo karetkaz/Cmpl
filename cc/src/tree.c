@@ -64,18 +64,6 @@ astn lnknode(ccState s, symn ref) {
 	return result;
 }
 
-/*astn tagnode(ccState s, char *str) {
-	astn result = newnode(s, TYPE_ref);
-	if (result && str) {
-		int len = strlen(str);
-		//~ result->kind = TYPE_ref;
-		result->type = result->ref.link = 0;
-		result->ref.hash = rehash(str, len + 1) % TBLS;
-		result->ref.name = mapstr(s, str, len + 1, result->ref.hash);
-	}
-	return result;
-}*/
-
 /// make a constant valued node
 astn intnode(ccState s, int64_t v) {
 	astn ast = newnode(s, TYPE_int);
@@ -89,7 +77,7 @@ astn fltnode(ccState s, float64_t v) {
 	ast->con.cflt = v;
 	return ast;
 }
-astn strnode(ccState s, char * v) {
+astn strnode(ccState s, char* v) {
 	astn ast = newnode(s, TYPE_str);
 	ast->ref.hash = -1;
 	ast->ref.name = v;
@@ -137,7 +125,7 @@ float64_t constflt(astn ast) {
 	return 0;
 }
 
-TODO("eval should use cgen and vmExec")
+//~ TODO: eval should use cgen and vmExec
 int eval(astn res, astn ast) {
 	struct astn lhs, rhs;
 	int cast = 0;

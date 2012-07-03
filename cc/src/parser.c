@@ -236,7 +236,7 @@ int source(ccState s, int isFile, char* file) {
 
 //#{~~~~~~~~~ Lexer ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-char *mapstr(ccState s, char *name, unsigned size/* = -1U*/, unsigned hash/* = -1U*/) {
+char* mapstr(ccState s, char* name, unsigned size/* = -1U*/, unsigned hash/* = -1U*/) {
 	state rt = s->s;
 	list newn, next, prev = 0;
 
@@ -280,7 +280,7 @@ char *mapstr(ccState s, char *name, unsigned size/* = -1U*/, unsigned hash/* = -
 		prev->next = newn;
 
 	newn->next = next;
-	newn->data = (unsigned char *)name;
+	newn->data = (unsigned char*)name;
 
 	return name;
 }
@@ -437,8 +437,9 @@ static int readTok(ccState s, astn tok) {
 	};
 	int chr = readChr(s);
 
-	char *end = (char*)s->s->_end;
-	char *beg = 0, *ptr = 0;
+	char* end = (char*)s->s->_end;
+	char* beg = NULL;
+	char* ptr = NULL;
 
 	// skip white spaces and comments
 	while (chr != -1) {
@@ -813,7 +814,7 @@ static int readTok(ccState s, astn tok) {
 					return tok->kind = TOKN_err;
 				}
 
-				TODO("size of char is type_chr->size, not sizeof(char)")
+				//~ TODO: size of char is type_chr->size, not sizeof(char)
 				if (ptr > beg + sizeof(val) + 1)
 					warn(s->s, 1, s->file, s->line, "multi character constant truncated");
 
@@ -830,7 +831,7 @@ static int readTok(ccState s, astn tok) {
 		} break;
 		read_idf: {			// [a-zA-Z_][a-zA-Z0-9_]*
 			static const struct {
-				char *name;
+				char* name;
 				int type;
 			}
 			keywords[] = {
@@ -890,7 +891,7 @@ static int readTok(ccState s, astn tok) {
 			int radix = 10;
 			int64_t i64v = 0;
 			float64_t f64v = 0;
-			char *suffix = 0;
+			char* suffix = NULL;
 
 			//~ 0[.oObBxX]?
 			if (chr == '0') {
@@ -1102,7 +1103,7 @@ astn peekTok(ccState s, int kind) {
 	return 0;
 }
 
-TODO(this should be removed)
+//~ TODO: this should be removed
 astn peek(ccState s) {return peekTok(s, 0);}
 
 astn next(ccState s, int kind) {
@@ -1175,7 +1176,7 @@ static inline astn argnode(ccState s, astn lhs, astn rhs) {
 	return lhs ? opnode(s, OPER_com, lhs, rhs) : rhs;
 }
 
-TODO("it does not work as expected, these should go to type.c")
+//~ TODO: it does not work as expected, these should go to type.c
 static void redefine(ccState s, symn sym) {
 	symn ptr;
 
@@ -1347,7 +1348,7 @@ static astn args(ccState, int mode);	// parse arguments		(mode: ...)
 //~ astn type(ccState s/* , int qual */);
 
 
-TODO("eliminate this function, use instead expr, then check if it is a type")
+//~ TODO: eliminate this function, use instead expr, then check if it is a type
 static astn type(ccState s/* , int mode */) {	// type(.type)* ('&' | '[]')mode?
 	symn def = NULL;
 	astn tok, list = NULL;
@@ -1463,7 +1464,6 @@ static astn decl_init(ccState s, symn var) {
 			// int a[] = 1 / int a[] = 1, 2, 3, 4, 5, 6
 			if (base == typ->type && typ->init == NULL) {
 				typ->init = intnode(s, nelem);
-				//~ typ->size = nelem;
 			}
 			else if (typ->size < 0) {
 				error(s->s, var->file, var->line, "invalid initialization `%+k`", var->init);
@@ -1476,7 +1476,7 @@ static astn decl_init(ccState s, symn var) {
 	return var->init;
 }
 
-astn decl_var(ccState s, astn *argv, int mode) {
+astn decl_var(ccState s, astn* argv, int mode) {
 	astn tag = NULL;
 	if ((tag = type(s))) {
 		symn ref = NULL;
@@ -1529,7 +1529,8 @@ astn decl_var(ccState s, astn *argv, int mode) {
 			}
 
 			if (byref) {
-				error(s->s, tag->file, tag->line, "declaration of `%+T` as returning a reference [TODO]", ref);
+				//~ error(s->s, tag->file, tag->line, "declaration of `%+T` as returning a reference [TODO]", ref);
+				error(s->s, tag->file, tag->line, "TODO: declaration returning reference: `%+T`", ref);
 			}
 			byref = 0;
 		}
@@ -1545,10 +1546,6 @@ astn decl_var(ccState s, astn *argv, int mode) {
 			tmp->type = typ;
 			tmp->size = -1;
 			typ = tmp;
-
-			if (byref) {					// int& a[200] a contains 200 references to integers
-				error(s->s, tag->file, tag->line, "declaration of `%+T` as array of references [TODO]", ref);
-			}
 
 			ref->type = typ;
 			tag->type = typ;
@@ -1584,7 +1581,7 @@ astn decl_var(ccState s, astn *argv, int mode) {
 						ref->cast = 0;
 
 						dynarr = 0;
-						if (typ->size < 0) {
+						if (val.con.cint < 0) {
 							error(s->s, dims->file, dims->line, "positive integer constant expected, got `%+k`", dims);
 						}
 					}
@@ -1642,6 +1639,10 @@ astn decl_var(ccState s, astn *argv, int mode) {
 			}
 
 			ref->args = base;	// fixme (temporarly used)
+
+			if (byref || base->cast == TYPE_ref) {					// int& a[200] a contains 200 references to integers
+				error(s->s, tag->file, tag->line, "TODO: declaring array of references: `%+T`", ref);
+			}
 			byref = 0;
 		}
 
@@ -2009,10 +2010,14 @@ static astn stmt(ccState s, int mode) {
 }
 
 astn expr(ccState s, int mode) {
-	astn buff[TOKS], *base = buff + TOKS;
-	astn *post = buff, *prec = base, tok;
-	char sym[TOKS];							// symbol stack {, [, (, ?
-	int level = 0, unary = 1;				// precedence, top of sym , start in unary mode
+	astn buff[TOKS], tok;
+	astn* base = buff + TOKS;
+	astn* post = buff;
+	astn* prec = base;
+	char sym[TOKS];						// symbol stack {, [, (, ?
+	int unary = 1;						// start in unary mode
+	int level = 0;						// precedence, top of sym
+
 	sym[level] = 0;
 
 	while ((tok = next(s, 0))) {					// parse
@@ -2188,7 +2193,7 @@ astn expr(ccState s, int mode) {
 			break;
 	}
 	if (unary || level) {							// error
-		char *missing = "expression";
+		char* missing = "expression";
 		if (level) switch (sym[level]) {
 			default:
 				fatal("FixMe");
@@ -2200,7 +2205,8 @@ astn expr(ccState s, int mode) {
 		error(s->s, s->file, s->line, "missing %s, %k", missing, peek(s));
 	}
 	else if (prec > buff) {							// build
-		astn *ptr, *lhs;
+		astn* ptr;
+		astn* lhs;
 
 		while (prec < buff + TOKS)					// flush
 			*post++ = *prec++;
@@ -2293,7 +2299,7 @@ astn expr(ccState s, int mode) {
 astn decl(ccState s, int Rmode) {
 	int Attr = qual(s, ATTR_const | ATTR_stat);
 	int line = s->line;
-	char *file = s->file;
+	char* file = s->file;
 	astn tok, tag = NULL;
 	symn def = NULL;
 
@@ -2376,8 +2382,15 @@ astn decl(ccState s, int Rmode) {
 		//~ Attr &= ~(0);		// disable all qualifiers
 	}
 	else if (skip(s, TYPE_rec)) {		// struct
-		int byref = skip(s, OPER_and);
+		int byref = 0;
 		int pack = vm_size;
+		int cast = TYPE_rec;
+		symn base = NULL;
+
+		if (skip(s, OPER_and)) {
+			cast = TYPE_ref;
+			byref = 1;
+		}
 
 		if (!(tag = next(s, TYPE_ref))) {	// name?
 			tag = newnode(s, TYPE_ref);
@@ -2389,7 +2402,6 @@ astn decl(ccState s, int Rmode) {
 		if (skip(s, PNCT_cln)) {			// basetype or packing
 			if ((tok = expr(s, TYPE_def))) {
 				if (tok->kind == TYPE_int) {
-
 					if (Attr == ATTR_stat) {
 						error(s->s, s->file, s->line, "alignment can not be applied to static struct");
 					}
@@ -2423,10 +2435,14 @@ astn decl(ccState s, int Rmode) {
 							break;
 					}
 				}
-				/*else if (istype(tok)) {
+				else if (istype(tok)) {
 					base = linkOf(tok);
-					pack = base->pack;
-				}// */
+					cast = base->cast;
+					if (skiptok(s, STMT_do, 1)) {
+						backTok(s, newnode(s, STMT_end));
+						backTok(s, newnode(s, STMT_beg));
+					}
+				}
 				else {
 					error(s->s, s->file, s->line, "alignment must be an integer constant");
 				}
@@ -2458,17 +2474,6 @@ astn decl(ccState s, int Rmode) {
 					if (ref->kind != TYPE_ref) {
 						ref->stat = 1;
 					}
-
-					if (!ref->stat) {
-						if (ref->init) {
-							error(s->s, ref->file, ref->line, "non static member `%-T` can not be initialized", ref);
-						}
-					}
-					else {
-						if (ref->cnst && ref->kind == TYPE_ref && !ref->init) {
-							error(s->s, ref->file, ref->line, "uninitialized constant(%t) `%-T`", ref->kind, ref);
-						}
-					}
 				}
 				else {
 					error(s->s, s->file, s->line, "declaration expected, got: `%+k`", peek(s));
@@ -2478,7 +2483,12 @@ astn decl(ccState s, int Rmode) {
 
 			def->args = leave(s, def, (Attr & ATTR_stat) != 0);
 			def->size = fixargs(def, pack, 0);
-			def->cast = byref ? TYPE_ref : TYPE_rec;
+			if (base != NULL) {
+				def->size += base->size;
+				def->pfmt = base->pfmt;
+				s->pfmt = def;
+			}
+			def->cast = cast;
 
 			if (Attr != ATTR_stat) {
 				ctorPtr(s, def);
@@ -2501,17 +2511,15 @@ astn decl(ccState s, int Rmode) {
 			skiptok(s, STMT_beg, 1);
 		}
 
-		// error handling
-		if (byref && Attr == ATTR_stat) {	// namespace: static struct
+		if (byref && Attr == ATTR_stat) {
 			error(s->s, tag->file, tag->line, "alignment can not be applied to this struct");
 		}
 
 		Attr &= ~(ATTR_stat);		// enable static structures
 		tag->type = def;
 	}
-
 	else if (skip(s, TYPE_def)) {		// define
-		symn typ = 0;
+		symn typ = NULL;
 
 		if (!(tag = next(s, TYPE_ref))) {	// name?
 			error(s->s, s->file, s->line, "Identifyer expected");
@@ -2605,10 +2613,7 @@ astn decl(ccState s, int Rmode) {
 		}
 		else if ((tok = type(s))) {				// typedef: define hex16 int16;	???
 			typ = tok->type;
-			def = declare(s, TYPE_rec, tag, typ);
-			def->kind = typ->kind;
-			def->cast = typ->cast;
-			def->type = typ->type;
+			def = declare(s, TYPE_def, tag, typ);
 			s->pfmt = def;
 		}
 		else {
@@ -2621,7 +2626,7 @@ astn decl(ccState s, int Rmode) {
 		tag->type = typ;
 		tag->ref.link = def;
 
-		Attr &= ~(ATTR_stat|ATTR_const);		// enable static and const qualifiers
+		Attr &= ~(ATTR_stat | ATTR_const);		// enable static and const qualifiers
 		redefine(s, def);
 	}
 	else if ((tag = decl_var(s, NULL, 0))) {	// variable, function, ...
@@ -2639,7 +2644,7 @@ astn decl(ccState s, int Rmode) {
 				ref->gdef = s->func;
 				s->func = ref;
 				s->maxlevel = s->nest;
-				ref->sdef = result = install(s, "result", TYPE_ref, ref->type->cast, ref->type->size, typ, NULL);
+				ref->sdef = result = install(s, "result", TYPE_ref, ref->type->cast, sizeOf(ref->type), typ, NULL);
 
 				if (result) {
 					result->decl = ref;
@@ -2697,19 +2702,17 @@ astn decl(ccState s, int Rmode) {
 		skiptok(s, STMT_do, 1);
 
 		if (Attr & ATTR_stat) {
-			ref->stat = 1;
 			if (ref->init && !ref->call && !(isStatic(s, ref->init) || isConst(ref->init))) {
 				warn(s->s, 1, ref->file, ref->line, "probably invalid initialization of static variable `%-T`", ref);
 			}
+			ref->stat = 1;
 		}
 
 		if (Attr & ATTR_const) {
-			ref->cnst = 1;
-			if (ref && ref->cnst && ref->kind == TYPE_ref) {
-				if (!ref->init) {
-					error(s->s, ref->file, ref->line, "uninitialized constant `%-T`", ref);
-				}
+			if (ref->kind == TYPE_ref && ref->stat && ref->init == NULL) {
+				error(s->s, ref->file, ref->line, "uninitialized constant `%-T`", ref);
 			}
+			ref->cnst = 1;
 		}
 
 		Attr &= ~(ATTR_stat|ATTR_const);		// static and const qualifiers are valid
@@ -2819,7 +2822,7 @@ static int parse(ccState s, int preparse, int warn) {
 	return ccDone(s->s);
 }
 
-int compile(state rt, int warn, char *file, int line, char *text) {
+int ccAddCode(state rt, int warn, char* file, int line, char* text) {
 	ccState cc = ccOpen(rt, file, line, text);
 	if (cc == NULL) {
 		error(rt, NULL, 0, "can not open: %s", file);

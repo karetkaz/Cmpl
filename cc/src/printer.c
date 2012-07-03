@@ -35,7 +35,7 @@ enum Format {
 	prLine = 0x0080,
 };
 
-static void fputesc(FILE *fout, char* str) {
+static void fputesc(FILE* fout, char* str) {
 	int c;
 	fputchr(fout, '\'');
 	while ((c = *str++)) {
@@ -48,7 +48,7 @@ static void fputesc(FILE *fout, char* str) {
 	fputchr(fout, '\'');
 }
 
-static void fputsym(FILE *fout, symn sym, int mode, int level) {
+static void fputsym(FILE* fout, symn sym, int mode, int level) {
 	int noiden = mode & noIden;	// internal use
 	int prtype = mode & prType;
 	int prinit = mode & prInit;
@@ -71,12 +71,13 @@ static void fputsym(FILE *fout, symn sym, int mode, int level) {
 
 				for (p = bp; p < sp; ++p) {
 					typ = *p;
-					if (typ->size < 0) {
+					fputfmt(fout, "[%?+k]", typ->init);
+					/*if (typ->size < 0) {
 						fputfmt(fout, "[]");
 					}
 					else {
 						fputfmt(fout, "[%d]", typ->size);
-					}
+					}*/
 				}
 				return;
 			}
@@ -145,7 +146,8 @@ static void fputsym(FILE *fout, symn sym, int mode, int level) {
 							default:
 								break;
 							case TYPE_ref:
-								fputchr(fout, '&');
+								if (!sym->call && sym->type->cast != TYPE_ref)
+									fputchr(fout, '&');
 								break;
 							//~ case TYPE_def:
 								//~ fputchr(fout, '$');
@@ -187,7 +189,7 @@ static void fputsym(FILE *fout, symn sym, int mode, int level) {
 	}
 	else fputstr(fout, "(null)");
 }
-static void fputast(FILE *fout, astn ast, int mode, int level) {
+static void fputast(FILE* fout, astn ast, int mode, int level) {
 	int noiden = mode & noIden;	// internal use
 	int nlelif = mode & nlElIf;	// ...}'\n'else '\n'? if ...
 	int nlbody = mode & nlBody;	// '\n'? { ...
@@ -560,7 +562,7 @@ static void fputast(FILE *fout, astn ast, int mode, int level) {
 	}
 	else fputstr(fout, "(null)");
 }
-static void dumpxml(FILE *fout, astn ast, int mode, int level, const char* text) {
+static void dumpxml(FILE* fout, astn ast, int mode, int level, const char* text) {
 	if (!ast) {
 		return;
 	}
@@ -731,8 +733,8 @@ static void dumpxml(FILE *fout, astn ast, int mode, int level, const char* text)
 	}
 }
 
-static char* fmtuns(char *dst, int max, int prc, int radix, uint64_t num) {
-	char *ptr = dst + max;
+static char* fmtuns(char* dst, int max, int prc, int radix, uint64_t num) {
+	char* ptr = dst + max;
 	int p = 0, plc = ',';
 	*--ptr = 0;
 	do {
@@ -745,7 +747,7 @@ static char* fmtuns(char *dst, int max, int prc, int radix, uint64_t num) {
 	return ptr;
 }
 
-static void FPUTFMT(FILE *fout, const char *msg, va_list ap) {
+static void FPUTFMT(FILE* fout, const char* msg, va_list ap) {
 	char buff[1024], chr;
 	while ((chr = *msg++)) {
 		if (chr == '%') {
@@ -915,7 +917,7 @@ static void FPUTFMT(FILE *fout, const char *msg, va_list ap) {
 						memcpy(buff, fmt, len);
 						buff[len++] = chr;
 						buff[len++] = 0;
-						TODO("replace fprintf")
+						//~ TODO: replace fprintf
 						fprintf(fout, buff, num);
 					}
 				} continue;
@@ -955,7 +957,7 @@ static void FPUTFMT(FILE *fout, const char *msg, va_list ap) {
 	}
 }
 
-void fputfmt(FILE *fout, const char *msg, ...) {
+void fputfmt(FILE* fout, const char* msg, ...) {
 	va_list ap;
 	va_start(ap, msg);
 	FPUTFMT(fout, msg, ap);
@@ -973,7 +975,7 @@ void fputfmt(FILE *fout, const char *msg, ...) {
  *	'#': constant(def)
  *	'$': variable(ref)
 **/
-void dumpsym(FILE *fout, symn sym, int mode) {
+void dumpsym(FILE* fout, symn sym, int mode) {
 	symn ptr, bp[TOKS], *sp = bp;
 
 	int print_line = mode & prLine;		// print file and location
@@ -1099,8 +1101,8 @@ int logfile(state rt, char* file) {
 	return 0;
 }
 
-void dump(state rt, int mode, symn sym, char *text, ...) {
-	FILE *logf = rt ? rt->logf : stdout;
+void dump(state rt, int mode, symn sym, char* text, ...) {
+	FILE* logf = rt ? rt->logf : stdout;
 	int level = mode & 0xff;
 
 	if (!logf)
@@ -1211,8 +1213,8 @@ void dump(state rt, int mode, symn sym, char *text, ...) {
 	}
 }
 
-void perr(state rt, int level, const char *file, int line, const char *msg, ...) {
-	FILE *logf = rt ? rt->logf : stderr;
+void perr(state rt, int level, const char* file, int line, const char* msg, ...) {
+	FILE* logf = rt ? rt->logf : stderr;
 	int warnl = rt && rt->cc ? rt->cc->warn : 0;
 	va_list argp;
 

@@ -1,8 +1,8 @@
 // Procedural drawing
 enum Window {
 	draw = RenderMode.swap_buff;
-	resx = 1024;
-	resy = 768;
+	resx = 512;
+	resy = 512;
 	//~ resx = 512*2;
 	//~ resy = 512*2;
 }
@@ -312,7 +312,7 @@ vec4f tunnel0(double x, double y) {
 	result = rgb2vec4f(tex2d(srcImg, u, v, 2 * r));
 }
 
-setup(&time, eye);
+setup(&time, yinyang);
 //~ setup(&yinyang, yinyang);
 //~ setup(&time, Perlin.Noise2f);
 //~ Gui.exitLoop();

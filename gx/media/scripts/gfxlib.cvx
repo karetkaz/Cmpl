@@ -280,7 +280,7 @@ void tileSurf(gxSurf dst, int x, int y, gxSurf src, gxRect &roi) {
 	}
 }
 
-//{ lookup table manipulations
+//#{ lookup table manipulations
 /* How it should be implemented ...
 void blendLut(int count, gxClut &lut, int ControlColors...) {
 
@@ -374,7 +374,7 @@ gxSurf lut2Surf(gxSurf dst, gxClut &lut, int bg) {
 	delSurf(surf);
 }*/
 
-//}
+//#}
 
 static struct Mouse {
 	struct dblClickState {
@@ -417,7 +417,7 @@ static struct Mouse {
 	}
 
 	}
-//{ 3d Mesh
+//#{ 3d Mesh
 /// TODO: closed meshes
 void meshGen(int sdiv, bool sclosed, int tdiv, bool tclosed, void pos(double &x, double &y, double &z, double s, double t), double epsilon) {
 	int vtx = 0;
@@ -534,7 +534,7 @@ define meshGen(int sdiv, int tdiv, void pos(double &x, double &y, double &z, dou
 define meshGen(int ^div, void pos(double &x, double &y, double &z, double s, double t), double epsilon) = meshGen(div, true, div, true, pos, epsilon);
 define meshGen(int ^div, void pos(double &x, double &y, double &z, double s, double t)) = meshGen(div, true, div, true, pos, 1e-10);
 
-//}*/
+//#}
 
 void setupPicView(gxSurf vImg, bool vFit) {
 

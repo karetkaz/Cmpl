@@ -26,7 +26,7 @@ static inline int HIBIT(unsigned int x) {
 }
 
 scalar backface(vector N, vector p1, vector p2, vector p3) {
-	union vector e1, e2, tmp;
+	struct vector e1, e2, tmp;
 	if (!N) N = &tmp;
 	vecsub(&e1, p2, p1);
 	vecsub(&e2, p3, p1);
@@ -80,9 +80,9 @@ int initMesh(mesh msh, int n) {
 
 	msh->triptr = (struct tri*)malloc(sizeof(struct tri) * msh->maxtri);
 	msh->segptr = (struct seg*)malloc(sizeof(struct seg) * msh->maxseg);
-	msh->pos = malloc(sizeof(union vector) * msh->maxvtx);
-	msh->nrm = malloc(sizeof(union vector) * msh->maxvtx);
-	msh->tex = malloc(sizeof(union texcol) * msh->maxvtx);
+	msh->pos = malloc(sizeof(struct vector) * msh->maxvtx);
+	msh->nrm = malloc(sizeof(struct vector) * msh->maxvtx);
+	msh->tex = malloc(sizeof(struct texcol) * msh->maxvtx);
 
 	if (!msh->triptr || !msh->pos || !msh->nrm || !msh->tex) {
 		//~ freeMesh(msh);
@@ -106,9 +106,9 @@ int initMesh(mesh msh, int n) {
 int getvtx(mesh msh, int idx) {
 	if (idx >= msh->maxvtx) {
 		msh->maxvtx = HIBIT(idx) * 2;
-		msh->pos = (vector)realloc(msh->pos, sizeof(union vector) * msh->maxvtx);
-		msh->nrm = (vector)realloc(msh->nrm, sizeof(union vector) * msh->maxvtx);
-		msh->tex = (texcol)realloc(msh->tex, sizeof(union texcol) * msh->maxvtx);
+		msh->pos = (vector)realloc(msh->pos, sizeof(struct vector) * msh->maxvtx);
+		msh->nrm = (vector)realloc(msh->nrm, sizeof(struct vector) * msh->maxvtx);
+		msh->tex = (texcol)realloc(msh->tex, sizeof(struct texcol) * msh->maxvtx);
 		if (!msh->pos || !msh->nrm || !msh->tex) return -1;
 	}
 	if (msh->vtxcnt <= idx) {
@@ -117,7 +117,7 @@ int getvtx(mesh msh, int idx) {
 	return idx;
 }
 int setvtxD(mesh msh, int idx, int atr, double x, double y, double z) {
-	union vector tmp[1];
+	struct vector tmp[1];
 	if (getvtx(msh, idx) < 0)
 		return -1;
 	switch (atr) {
@@ -827,7 +827,7 @@ void bboxMesh(mesh msh, vector min, vector max) {
 
 void centMesh(mesh msh, scalar size) {
 	unsigned i;
-	union vector min, max, use;
+	struct vector min, max, use;
 
 	bboxMesh(msh, &min, &max);
 
@@ -852,13 +852,13 @@ void centMesh(mesh msh, scalar size) {
  * 
  */
 void normMesh(mesh msh, scalar tolerance) {
-	union vector tmp;
+	struct vector tmp;
 	unsigned i, j;
 	for (i = 0; i < msh->vtxcnt; i += 1)
 		vecldf(&msh->nrm[i], 0, 0, 0, 1);
 
 	for (i = 0; i < msh->tricnt; i += 1) {
-		union vector nrm;
+		struct vector nrm;
 		int i1 = msh->triptr[i].i1;
 		int i2 = msh->triptr[i].i2;
 		int i3 = msh->triptr[i].i3;
@@ -889,14 +889,14 @@ void normMesh(mesh msh, scalar tolerance) {
 /**	subdivide mesh
  *	TODO: not bezier curve => patch eval
 **/
-static void pntri(union vector res[10], mesh msh, int i1, int i2, int i3) {
+static void pntri(struct vector res[10], mesh msh, int i1, int i2, int i3) {
 	#define P1 (msh->pos + i1)
 	#define P2 (msh->pos + i2)
 	#define P3 (msh->pos + i3)
 	#define N1 (msh->nrm + i1)
 	#define N2 (msh->nrm + i2)
 	#define N3 (msh->nrm + i3)
-	union vector tmp[3];
+	struct vector tmp[3];
 	scalar w12 = vecdp3(vecsub(tmp, P2, P1), N1);
 	scalar w13 = vecdp3(vecsub(tmp, P3, P1), N1);
 	scalar w21 = vecdp3(vecsub(tmp, P1, P2), N2);
@@ -940,8 +940,8 @@ static void pntri(union vector res[10], mesh msh, int i1, int i2, int i3) {
 	#undef N3
 }
 
-static vector bezexp(union vector res[4], vector p0, vector c0, vector c1, vector p1) {
-	union vector tmp[5];
+static vector bezexp(struct vector res[4], vector p0, vector c0, vector c1, vector p1) {
+	struct vector tmp[5];
 	p0 = veccpy(tmp + 1, p0);
 	c0 = veccpy(tmp + 2, c0);
 	p1 = veccpy(tmp + 3, p1);
@@ -953,7 +953,7 @@ static vector bezexp(union vector res[4], vector p0, vector c0, vector c1, vecto
 	vecsub(res + 3, vecsub(tmp, vecsub(tmp, p1, res+2), res+1), res+0);
 	return res;
 }
-static vector bezevl(union vector res[1], union vector p[4], scalar t) {
+static vector bezevl(struct vector res[1], struct vector p[4], scalar t) {
 	//~ p = ((((p3) * t + p2) * t + p1) * t + p0);
 	vecadd(res, vecsca(res, p+3, t), p+2);
 	vecadd(res, vecsca(res, res, t), p+1);
@@ -963,14 +963,14 @@ static vector bezevl(union vector res[1], union vector p[4], scalar t) {
 
 // subdivide using bezier
 int sdvtxBP(mesh msh, int a, int b, vector c1, vector c2) {
-	union vector tmp[6];//, res[3];
+	struct vector tmp[6];//, res[3];
 	int r = getvtx(msh, msh->vtxcnt);
 	vecnrm(msh->nrm + r, vecadd(tmp, msh->nrm + a, msh->nrm + b));
 	bezevl(msh->pos + r, bezexp(tmp, msh->pos + a, c1, c2, msh->pos + b), .5);
 	return r;
 }
 int sdvtx(mesh msh, int a, int b) {
-	union vector tmp[1];
+	struct vector tmp[1];
 	int r = getvtx(msh, msh->vtxcnt);
 	vecnrm(msh->nrm + r, vecadd(tmp, msh->nrm + a, msh->nrm + b));
 	vecsca(msh->pos + r, vecadd(tmp, msh->pos + a, msh->pos + b), .5);
@@ -980,7 +980,7 @@ int sdvtx(mesh msh, int a, int b) {
 void sdivMesh(mesh msh, int smooth) {
 	unsigned i, n = msh->tricnt;
 	if (smooth) for (i = 0; i < n; i++) {
-		union vector pn[11];
+		struct vector pn[11];
 		unsigned i1 = msh->triptr[i].i1;
 		unsigned i2 = msh->triptr[i].i2;
 		unsigned i3 = msh->triptr[i].i3;
@@ -1172,7 +1172,7 @@ static int f64atan2(state rt, void* _) {
 }
 
 static int addText(state rt, char *file, int line, char *buff) {
-	return compile(rt, 10, file, line, buff);
+	return ccAddCode(rt, 10, file, line, buff);
 }
 
 int evalMesh(mesh msh, int sdiv, int tdiv, char *src, char *file, int line) {
@@ -1196,19 +1196,19 @@ int evalMesh(mesh msh, int sdiv, int tdiv, char *src, char *file, int line) {
 		return -1;
 	}
 
-	err = err || !libcall(rt, getS, NULL,     "float64 gets();");
-	err = err || !libcall(rt, getT, NULL,     "float64 gett();");
-	err = err || !libcall(rt, setPos, NULL,   "void setPos(float64 x, float64 y, float64 z);");
-	err = err || !libcall(rt, setNrm, NULL,   "void setNrm(float64 x, float64 y, float64 z);");
-	err = err || !libcall(rt, f64abs, NULL,   "float64 abs(float64 x);");
-	err = err || !libcall(rt, f64sin, NULL,   "float64 sin(float64 x);");
-	err = err || !libcall(rt, f64cos, NULL,   "float64 cos(float64 x);");
-	err = err || !libcall(rt, f64tan, NULL,   "float64 tan(float64 x);");
-	err = err || !libcall(rt, f64log, NULL,   "float64 log(float64 x);");
-	err = err || !libcall(rt, f64exp, NULL,   "float64 exp(float64 x);");
-	err = err || !libcall(rt, f64sqrt, NULL,  "float64 sqrt(float64 x);");
-	err = err || !libcall(rt, f64atan2, NULL, "float64 atan(float64 x, float64 y);");
-	err = err || !libcall(rt, f64pow, NULL,   "float64 pow(float64 x, float64 y);");
+	err = err || !ccAddCall(rt, getS, NULL,     "float64 gets();");
+	err = err || !ccAddCall(rt, getT, NULL,     "float64 gett();");
+	err = err || !ccAddCall(rt, setPos, NULL,   "void setPos(float64 x, float64 y, float64 z);");
+	err = err || !ccAddCall(rt, setNrm, NULL,   "void setNrm(float64 x, float64 y, float64 z);");
+	err = err || !ccAddCall(rt, f64abs, NULL,   "float64 abs(float64 x);");
+	err = err || !ccAddCall(rt, f64sin, NULL,   "float64 sin(float64 x);");
+	err = err || !ccAddCall(rt, f64cos, NULL,   "float64 cos(float64 x);");
+	err = err || !ccAddCall(rt, f64tan, NULL,   "float64 tan(float64 x);");
+	err = err || !ccAddCall(rt, f64log, NULL,   "float64 log(float64 x);");
+	err = err || !ccAddCall(rt, f64exp, NULL,   "float64 exp(float64 x);");
+	err = err || !ccAddCall(rt, f64sqrt, NULL,  "float64 sqrt(float64 x);");
+	err = err || !ccAddCall(rt, f64atan2, NULL, "float64 atan(float64 x, float64 y);");
+	err = err || !ccAddCall(rt, f64pow, NULL,   "float64 pow(float64 x, float64 y);");
 	err = err || !ccDefFlt(rt, "pi", 3.14159265358979323846264338327950288419716939937510582097494459);
 	err = err || !ccDefFlt(rt, "e",  2.71828182845904523536028747135266249775724709369995957496696763);
 

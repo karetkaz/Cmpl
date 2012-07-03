@@ -1,3 +1,4 @@
+// image dithering
 enum Window {
 	draw = RenderMode.swap_buff;
 	resx = 512;
@@ -12,11 +13,11 @@ string fileName = "media/images/lenaRGB.png";
 //~ string fileName = "media/images/nol.bmp";
 
 enum Dithering {
-	None = 0;
-	SteinbergFalse = 1;
-	Steinberg = 2;
-	Stucki = 3;
-	Bayer = 8;
+	None = '0';
+	SteinbergFalse = '2';
+	Steinberg = '3';
+	Stucki = '5';
+	Bayer = 'B';
 }
 gxSurf dither(gxSurf img, bool grayscale, uint32 colors, Dithering method) {
 
@@ -302,18 +303,23 @@ gxSurf dither(gxSurf img, bool grayscale, uint32 colors, Dithering method) {
 }
 
 int colors = 7;
-bool grayscale = !true;
+int grayscale = !true;
 Dithering method = Dithering.Stucki;
-//~ method = Dithering.Bayer;
+method = Dithering.Bayer;
 
-define hex(uint32 ^c) = int(c <= 9 ? (c + '0') : ((c - 10) + 'a'));
+//~ define hex(uint32 ^c) = int(c <= 9 ? (c + '0') : ((c - 10) + 'a'));
+define hex(uint32 c) = int("0123456789abcdefh"[c & 255]);
 
 gxClut lut;
 blendLut(lut, 0, -1);
 gxSurf image = gxSurf(fileName);
-//~ gxSurf image = resize(gxSurf(fileName), Window.resx, Window.resx);
 
-uint8 filename[24] = 'o','u','t','/','o','u','t','[',grayscale ? 'g' : 'c','_',hex(colors >> 4 & 0xf), hex(colors >> 0 & 0xf),'_','0' + method, ']','.','b','m','p',0;
+int gs = grayscale ? 'g' : 'c';
+int h1 = hex(colors >> 4);
+int h2 = hex(colors);
+
+uint8 filename[34] = 'o','u','t','/','o','u','t','[',gs,'x',h1, h2,'_',method,']','.','b','m','p',0;
+
 println(emit(string, ref(filename)));
 dither(image, grayscale, colors, method);
 bmpWrite(image, emit(string, ref(filename)));

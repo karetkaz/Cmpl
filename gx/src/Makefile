@@ -42,6 +42,7 @@ OBJS=\
 	$(OBJDIR)/g2_surf.o\
 	$(OBJDIR)/g3_draw.o\
 	$(OBJDIR)/g3_mesh.o\
+	$(OBJDIR)/gx_script.o\
 	$(OBJDIR)/main.o\
 
 #~ rebuild:clean build
