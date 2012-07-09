@@ -347,7 +347,7 @@ int canAssign(ccState cc, symn var, astn val, int strict) {
 
 		if (canAssign(cc, typ->type, &atag, strict)) {
 			// assign to dynamic array
-			if (typ->size == -1) {
+			if (typ->init == NULL) {
 				return 1;
 			}
 			if (typ->size == val->type->size) {
@@ -651,8 +651,6 @@ long sizeOf(symn typ) {
 		//~ case TYPE_flt:
 
 		case TYPE_arr:
-			if (typ->size < 0)
-				return 8;
 			return typ->size * sizeOf(typ->type);
 
 		case EMIT_opc:
@@ -686,7 +684,7 @@ int castOf(symn typ) {
 
 		case TYPE_arr:
 			// static sized arrays cast to pointer
-			if (typ->size < 0)
+			if (typ->init == NULL)
 				return TYPE_arr;
 			return TYPE_ref;
 
@@ -1270,7 +1268,7 @@ symn typecheck(ccState s, symn loc, astn ast) {
 					//* if swap(a, b) is written instad of swap(&a, &b)
 					if (argsym->cast == TYPE_ref && argval->type->cast != TYPE_ref) {
 						symn lnk = argval->kind == TYPE_ref ? argval->ref.link : NULL;
-						if (argval->kind != OPER_adr && lnk && lnk->cast != TYPE_ref) {
+						if (argval->kind != OPER_adr && lnk && lnk->cast != TYPE_ref && lnk->type->cast != TYPE_ref) {
 							warn(s->s, 2, argval->file, argval->line, "argument `%+k` is not explicitly passed by reference", argval);
 						}
 					}// */
@@ -1329,11 +1327,11 @@ int fixargs(symn sym, int align, int stbeg) {
 
 		// array types are passed by reference.
 		if (isCall && arg->type->kind == TYPE_arr) {
-			if (arg->type->size < 0) {		//~ dinamic size arrays are passed by pointer+length
+			if (arg->type->init == NULL) {		//~ dinamic size arrays are passed by pointer+length
 				arg->cast = TYPE_arr;
 				arg->size = 2 * vm_size;
 			}
-			else {							//~ static size arrays are passed as pointer
+			else {								//~ static size arrays are passed as pointer
 				arg->cast = TYPE_ref;
 				arg->size = vm_size;
 			}

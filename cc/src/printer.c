@@ -72,12 +72,6 @@ static void fputsym(FILE* fout, symn sym, int mode, int level) {
 				for (p = bp; p < sp; ++p) {
 					typ = *p;
 					fputfmt(fout, "[%?+k]", typ->init);
-					/*if (typ->size < 0) {
-						fputfmt(fout, "[]");
-					}
-					else {
-						fputfmt(fout, "[%d]", typ->size);
-					}*/
 				}
 				return;
 			}

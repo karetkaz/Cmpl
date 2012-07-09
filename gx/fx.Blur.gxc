@@ -1,5 +1,5 @@
 enum Window {
-	draw = RenderMode.swap_buff;
+	//~ draw = RenderMode.swap_buff;
 	resx = 512;
 	resy = resx;
 }

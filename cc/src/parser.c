@@ -1210,7 +1210,7 @@ static void redefine(ccState s, symn sym) {
 			arg2 = arg2->next;
 		}
 
-		if (arg1 || arg2)
+		if (sym->call && (arg1 || arg2))
 			continue;
 
 		break;
@@ -1465,7 +1465,7 @@ static astn decl_init(ccState s, symn var) {
 			if (base == typ->type && typ->init == NULL) {
 				typ->init = intnode(s, nelem);
 			}
-			else if (typ->size < 0) {
+			else if (typ->init == NULL) {
 				error(s->s, var->file, var->line, "invalid initialization `%+k`", var->init);
 			}
 		}
@@ -1603,7 +1603,7 @@ astn decl_var(ccState s, astn* argv, int mode) {
 
 			// Multi dimensional arrays / c style
 			while (skip(s, PNCT_lc)) {
-				symn tmp = newdefn(s, TYPE_arr);
+				tmp = newdefn(s, TYPE_arr);
 				trloop("%k", peek(s));
 				tmp->type = typ->type;
 				typ->type = tmp;
@@ -2371,6 +2371,7 @@ astn decl(ccState s, int Rmode) {
 
 			if (def) {
 				def->args = leave(s, def, 1);
+				redefine(s, def);
 			}
 		}
 		else {
@@ -2455,7 +2456,6 @@ astn decl(ccState s, int Rmode) {
 		if (skip(s, STMT_beg)) {			// body
 
 			def = declare(s, TYPE_rec, tag, s->type_rec);
-			redefine(s, def);
 
 			enter(s, tag);
 			//~ install(s, "class", ATTR_stat | ATTR_const | TYPE_def, 0, type_ptr, lnknode(s, def));
@@ -2506,6 +2506,7 @@ astn decl(ccState s, int Rmode) {
 			else {
 				Attr &= ~ATTR_stat;
 			}
+			redefine(s, def);
 		}
 		else {
 			skiptok(s, STMT_beg, 1);

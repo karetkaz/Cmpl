@@ -12,7 +12,7 @@
 #include <stdlib.h>
 
 // debug level
-#define DEBUGGING 1
+#define DEBUGGING 15
 
 // enable dynamic dll/so lib loading
 #define USEPLUGINS

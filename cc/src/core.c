@@ -299,7 +299,7 @@ static int cgen(state rt, astn ast, ccToken get) {
 			if (!cgen(rt, ast->stmt.stmt, TYPE_vid)) {
 				trace("%+k\n%7K", ast, ast);
 				#if DEBUGGING > 10
-				fputasm(rt->logf, rt, ipdbg, -1, 0x119);
+				//~ fputasm(rt->logf, rt, ipdbg, -1, 0x119);
 				#endif
 				return 0;
 			}
@@ -325,8 +325,15 @@ static int cgen(state rt, astn ast, ccToken get) {
 				#endif
 			}
 			for (ptr = ast->stmt.stmt; ptr; ptr = ptr->next) {
+				ipdbg = emitopc(rt, markIP);
 				if (!cgen(rt, ptr, TYPE_vid)) {		// we will free stack on scope close
 					error(rt, ptr->file, ptr->line, "emmiting statement `%+k`", ptr);
+
+					//~ trace("%+k\n%7K", ast, ast);
+					#if DEBUGGING > 10
+					fputasm(rt->logf, rt, ipdbg, -1, 0x119);
+					#endif
+
 				}
 			}
 			if (ast->cst2 == TYPE_rec) {
@@ -1366,7 +1373,7 @@ static int cgen(state rt, astn ast, ccToken get) {
 
 						// TODO: base should not be stored in var->args !!!
 						while (base && base != var->args) {
-							if (base->size <= 0)
+							if (base->init == NULL)
 								break;
 							nelem *= base->size;
 							base = base->type;
@@ -2101,6 +2108,7 @@ static void install_type(ccState cc, int mode) {
 	cc->type_str = install(cc, "string", ATTR_const | TYPE_arr, TYPE_ref, vm_size, type_u08, NULL);
 	if (cc->type_str != NULL) {
 		cc->type_str->pfmt = "string(`%s`)";
+		cc->type_str->init = intnode(cc, -1);
 	}
 
 	if (type_var != NULL) {
@@ -2465,10 +2473,11 @@ ccState ccInit(state rt, int mode, int libcHalt(state, void*)) {
 		if ((arg = install(cc, "size", ATTR_const | TYPE_ref, TYPE_any, vm_size, cc->type_i32, NULL))) {
 			arg->offs = offsetof(symn, size);
 		}
-		/*if ((arg = install(cc, "offset", ATTR_const | TYPE_ref, TYPE_any, vm_size, type_i32))) {
-			arg->offs = (int)(&((symn)NULL)->offs);
+		if ((arg = install(cc, "offset", ATTR_const | TYPE_ref, TYPE_any, vm_size, cc->type_i32, NULL))) {
+			arg->offs = offsetof(symn, offs);
+			arg->pfmt = "%04x";
 		}
-		if ((arg = install(cc, "name", ATTR_const | TYPE_ref, TYPE_any, vm_size, type_ptr))) {
+		/*if ((arg = install(cc, "name", ATTR_const | TYPE_ref, TYPE_any, vm_size, type_ptr))) {
 			arg->offs = (int)(&((symn)NULL)->name);
 			arg->cast = TYPE_ref;
 		}

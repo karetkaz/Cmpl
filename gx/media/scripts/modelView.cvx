@@ -1,0 +1,105 @@
+enum Window {
+	draw = RenderMode.drawFill|RenderMode.draw_lit;
+	resx = 512;
+	resy = 512;
+}
+
+/* list arguments
+print("arguments[%d]\n", args.length);
+for (int i = 0; i < args.length; i += 1) {
+	print("arguments[%d] = ", i);
+	println(args[i]);
+}// */
+
+string filename = "media/meshes/dchair.obj";
+string texture = properties.texture;
+
+if (args.length > 1) {
+	filename = args[1];
+	if (args.length > 2) {
+		texture = args[2];
+	}
+}// */
+
+define objSize = 2;
+define eyePos = vec4f(0, 0, 2 * objSize);
+
+void mouseHandler(int btn, int x, int y) {
+	static const vec4f orbit = vec4f(0, 0, 0, 0);
+	static int ox;
+	static int oy;
+	float dx = x - ox;
+	float dy = y - oy;
+	ox = x;
+	oy = y;
+
+	define moveSpeed = .08;
+	define rotateSpeed = moveSpeed * Math.pi / 180.;
+	define rotateSpeed2 = 10 * rotateSpeed;
+
+	if (Mouse.dblClick(btn, x, y)) {
+		Mouse.dblClick(-1, 0, 0);
+		camera.LookAt(
+			eyePos,		// eye
+			vec4f(0., 0., 0.),		// target
+			vec4f(0., 1., 0.)		// up
+		);
+	}
+
+	if (btn == 1) {	// orbit the camera
+		if (dx) {
+			vec4f direction = camera.Up;
+			camera.Rotate(&direction, &orbit, dx * rotateSpeed2);
+		}
+		if (dy) {
+			vec4f direction = camera.Right;
+			camera.Rotate(&direction, &orbit, dy * rotateSpeed2);
+		}
+	}
+	if (btn == 2) {	// rotate the camera
+		// if no orbit is given, orbit will be the camera position.
+		//~ static vec4f orbit = camera.Pos;
+		if (selection.object) {
+			println("selection.object");
+			selection.Rotate(dx * rotateSpeed, dy * rotateSpeed);
+		}
+		else {
+			if (dx) {
+				vec4f direction = camera.Up;
+				camera.Rotate(&direction, null, dx * rotateSpeed);
+			}
+			if (dy) {
+				vec4f direction = camera.Right;
+				camera.Rotate(&direction, null, dy * rotateSpeed);
+			}
+		}
+	}
+	if (btn == 3) {	// move forward / back
+		if (selection.object) {
+			selection.Move(dx * moveSpeed, dy * -moveSpeed);
+		}
+		else {
+			vec4f direction = camera.Forward;
+			camera.Move(&direction, dy * moveSpeed);
+		}
+	}
+}
+
+mesh.Read(filename, texture);
+
+if (!mesh.hasNormals) {
+	mesh.Normalize(0);
+}
+
+mesh.Center(objSize);
+
+mesh.Info();
+
+//~ mesh.Save("mesh.obj");
+
+Gui.setMouseHandler(mouseHandler);
+camera.LookAt(
+	eyePos,		// eye
+	vec4f(0., 0., 0.),		// target
+	vec4f(0., 1., 0.)		// up
+);

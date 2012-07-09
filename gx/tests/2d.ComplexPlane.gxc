@@ -23,22 +23,22 @@ vec4f Domain(Complex z, double mod) {
 //~ define Domain(Complex ^z, double ^mod) = Hsv2Rgb(vec4f(AbsMod(abs(z), mod), AbsMod(arg(z), mod), 1.));
 
 vec4f rgbOp(double x, double y) {
-	define N = PI / 2;
+	define N = PI / 1;
 	x = Math.lerp(x, -N, N);
 	y = Math.lerp(y, -N, N);
 	//~ x = Math.lerp(x, -PI, 2*PI);
 	//~ y = Math.lerp(y, -1.5*PI, 1.5*PI);
 	Complex z = Complex(x, y);
 	//~ z = div(Complex(1), z);
-	z = sin(z);
-	//~ z = pow(z, Complex(4.));
+	//~ z = sin(z);
+	z = pow(z, Complex(4.));
 	//~ z = sin(pow(z, Complex(4., 0)));
 
 	//~ z = add(z, div(pow(z, Complex(4)), sub(sin(pow(z, Complex(4, 0))), 1)));
 	//~ z = toPolar(z);
-	//~ result = Domain(z, 1);
+	result = Domain(z, 1);
 	//~ result = vec4f(AbsMod(abs(im(z)), 1));
-	result = Hsv2Rgb(vec4f(Math.abs(re(z)) % 1, 1, 1));
+	//~ result = Hsv2Rgb(vec4f(Math.abs(re(z)) % 1, 1, 1));
 }
 
 evalSurf(offScreen, null, rgbOp);

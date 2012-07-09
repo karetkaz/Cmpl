@@ -7,6 +7,10 @@
 	//~ static int A = a;
 //~ }
 
+int x1[20] = 9;
+int x2[] = x1;
+
+
 /+ inlineing ...
 define sqr2(float64 ^x) = x*x;
 define sqr1(float64 x) = sqr2(x);

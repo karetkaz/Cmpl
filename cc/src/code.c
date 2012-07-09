@@ -1004,7 +1004,7 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 		rt->vm.ss -= 1;
 	}
 
-	logif(DEBUGGING > 10, ">cgen:[sp%02d]@%9.*A", rt->vm.ss, rt->vm.pc, ip);
+	logif(DEBUGGING > 15, ">cgen:[sp%02d]@%9.*A", rt->vm.ss, rt->vm.pc, ip);
 	//~ fputfmt(stdout, ">cgen:[sp%02d:%08x]@%9.*A\n", rt->vm.ss, 0, rt->vm.pc, ip);
 
 	if (rt->vm.sm < rt->vm.ss)
@@ -1636,7 +1636,7 @@ void fputopc(FILE* fout, unsigned char* ptr, int len, int offs, state rt) {
 					lc = &((libc)rt->vm.libv)[ip->idx];
 				}
 				if (lc && lc->sym) {
-					fputfmt(fout, ": %-T", lc->sym);
+					fputfmt(fout, ": %+T: %T", lc->sym, lc->sym->type);
 				}
 				else {
 					fputfmt(fout, "(%d)", ip->idx);
@@ -1814,7 +1814,7 @@ void vm_fputval(state rt, FILE* fout, symn var, stkval* ref, int level) {
 						fputfmt(fout, ",");
 					if (elementsOnNewLine)
 						fputfmt(fout, "\n");
-					else
+					else if (i > 0)
 						fputfmt(fout, " ");
 
 					vm_fputval(rt, fout, base, (stkval*)((char*)ref + i * sizeOf(base)), elementsOnNewLine ? level + 1 : 0);
