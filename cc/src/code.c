@@ -1004,7 +1004,7 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 		rt->vm.ss -= 1;
 	}
 
-	logif(DEBUGGING > 15, ">cgen:[sp%02d]@%9.*A", rt->vm.ss, rt->vm.pc, ip);
+	logif(DEBUGGING > 2, ">cgen:[sp%02d]@%9.*A", rt->vm.ss, rt->vm.pc, ip);
 	//~ fputfmt(stdout, ">cgen:[sp%02d:%08x]@%9.*A\n", rt->vm.ss, 0, rt->vm.pc, ip);
 
 	if (rt->vm.sm < rt->vm.ss)
@@ -1733,7 +1733,7 @@ void vm_fputval(state rt, FILE* fout, symn var, stkval* ref, int level) {
 			int n = 0;
 
 			if (var && var->call) {
-				fputfmt(fout, "function @%d", -var->offs);
+				fputfmt(fout, "function @%d", var->offs);
 				break;
 			}
 			if (fmt != NULL) {

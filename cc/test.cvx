@@ -7,11 +7,23 @@
 //~ #open src/parser.c			// input, lexer, parser
 //~ #open src/printer.c			// pretty print, logger
 //~ #open src/main.c
+struct xxx {
+	int64 x1;
+	int64 x2;
+}
 
-int intSize = typename(int64).size;
-//~ int intSize2 = int64.size;
-typename t1 = void;
-typename t2 = int64;
+typename type = xxx;
+//~ int size1 = typename(type).size;
+
+string name = typename.name(type);
+int size = typename.size(type);
+
+string file = typename.file(type);
+int line = typename.line(type);
+
+//~ typename t1 = void;
+//~ typename t2 = int64;
+//~ typename t3 = typename;
 
 /* Arrays, Pointers, References Alloc
 define new(typename type) = memmgr(null, type.size);

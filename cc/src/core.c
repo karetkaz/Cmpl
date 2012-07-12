@@ -39,7 +39,8 @@ const opc_inf opc_tbl[255] = {
 };
 
 static inline int genRef(state rt, symn var) {
-	if (var->offs > 0)
+	logif(var->stat != (var->offs < 0), "FixMe(%d)@%d %-T (%s:%d)", var->stat, var->offs, var, var->file, var->line);
+	if (!var->stat)
 		return emitidx(rt, opc_ldsp, var->offs);
 	return emitint(rt, opc_ldcr, -var->offs);
 }
@@ -297,10 +298,7 @@ static int cgen(state rt, astn ast, ccToken get) {
 		case STMT_do:  {	// expr or decl statement
 			int stpos = stkoffs(rt, 0);
 			if (!cgen(rt, ast->stmt.stmt, TYPE_vid)) {
-				trace("%+k\n%7K", ast, ast);
-				#if DEBUGGING > 10
-				//~ fputasm(rt->logf, rt, ipdbg, -1, 0x119);
-				#endif
+				trace("%+k", ast);
 				return 0;
 			}
 			if (stpos != stkoffs(rt, 0)) {
@@ -328,12 +326,10 @@ static int cgen(state rt, astn ast, ccToken get) {
 				ipdbg = emitopc(rt, markIP);
 				if (!cgen(rt, ptr, TYPE_vid)) {		// we will free stack on scope close
 					error(rt, ptr->file, ptr->line, "emmiting statement `%+k`", ptr);
-
+					#if DEBUGGING > 2
 					//~ trace("%+k\n%7K", ast, ast);
-					#if DEBUGGING > 10
 					fputasm(rt->logf, rt, ipdbg, -1, 0x119);
 					#endif
-
 				}
 			}
 			if (ast->cst2 == TYPE_rec) {
@@ -773,7 +769,7 @@ static int cgen(state rt, astn ast, ccToken get) {
 				while (argv->kind == OPER_com) {
 					astn arg = argv->op.rhso;
 
-					logif(DEBUGGING > 10 && (arg->cst2 != TYPE_ref && arg->type->kind == TYPE_arr && arg->type->init), "gen arg(%+k): %t", arg, arg->type->cast);
+					logif(DEBUGGING > 2 && (arg->cst2 != TYPE_ref && arg->type->kind == TYPE_arr && arg->type->init), "gen arg(%+k): %t", arg, arg->type->cast);
 					if (!cgen(rt, arg, arg->cst2)) {
 						trace("%+k", arg, arg->cst2);
 						return 0;
@@ -785,7 +781,7 @@ static int cgen(state rt, astn ast, ccToken get) {
 
 				if (var == rt->cc->emit_opc && istype(argv)) {
 					// static casting with emit
-					//~ logif(DEBUGGING, "%+k", ast);
+					logif(DEBUGGING, "%+k", ast);
 					break;
 				}
 
@@ -805,7 +801,7 @@ static int cgen(state rt, astn ast, ccToken get) {
 			}
 
 			if (var == rt->cc->emit_opc) {		// emit()
-				//~ logif(DEBUGGING, "emit: %+k", ast);
+				logif(DEBUGGING, "emit: %+k", ast);
 			}
 			else if (isType(var)) {				// cast()
 				//~ debug("cast: %+k", ast);
@@ -1113,14 +1109,14 @@ static int cgen(state rt, astn ast, ccToken get) {
 			rt->cc->jmps = jmp2;
 			// */
 
-			#if DEBUGGING
-			if (DEBUGGING) {
+			if (1) {
 				static int firstTimeShowOnly = 1;
 				if (firstTimeShowOnly) {
 					warn(rt, 1, ast->file, ast->line, "operators `&&` and `||` does not short-circuit yet", ast);
 					firstTimeShowOnly = 0;
 				}
 			}
+			#if DEBUGGING
 			// these must be true
 			//~ dieif(ast->op.lhso->cst2 != ast->op.rhso->cst2, "RemMe", ast);
 			dieif(ast->op.lhso->cst2 != TYPE_bit, "RemMe", ast);
@@ -1898,8 +1894,6 @@ int gencode(state rt, int level) {
 		// we will append the list of declarations here.
 		astn staticinitializers = newnode(cc, STMT_beg);
 
-		dieif(rt->defs != rt->cc->defs, "FixMe");
-
 		// mark global variables, and make them static if needed.
 		for (var = rt->defs; var; var = var->next) {
 			// include only variables.
@@ -1953,8 +1947,8 @@ int gencode(state rt, int level) {
 				}
 				var->size = emitopc(rt, markIP) - seg;
 				rt->vm.size.code += var->size;
-
 				var->init = NULL;
+				var->stat = 1;
 			}
 			else {
 				dieif(var->offs, "FixMe %-T@%d:%t", var, var->offs, var->cast);
@@ -2042,25 +2036,25 @@ int gencode(state rt, int level) {
 // install basic types
 symn emit_opc_ = NULL;
 static void install_type(ccState cc, int mode) {
-	symn type_vid, type_bol, type_ptr = NULL, type_var = NULL;
+	symn type_rec, type_vid, type_bol, type_ptr = NULL, type_var = NULL;
 	symn type_i08, type_i16, type_i32, type_i64;
 	symn type_u08, type_u16, type_u32;
 	symn type_f32, type_f64;
 
-	cc->type_rec = install(cc, "typename", ATTR_const | TYPE_rec, TYPE_ref, 0, NULL, NULL);
+	type_rec = install(cc, "typename", ATTR_const | ATTR_stat | TYPE_rec, TYPE_ref, 0, NULL, NULL);
 
-	type_vid = install(cc,    "void", ATTR_const | TYPE_rec, TYPE_vid, 0, cc->type_rec, NULL);
-	type_bol = install(cc,    "bool", ATTR_const | TYPE_rec, TYPE_bit, 4, cc->type_rec, NULL);
-	type_i08 = install(cc,    "int8", ATTR_const | TYPE_rec, TYPE_i32, 1, cc->type_rec, NULL);
-	type_i16 = install(cc,   "int16", ATTR_const | TYPE_rec, TYPE_i32, 2, cc->type_rec, NULL);
-	type_i32 = install(cc,   "int32", ATTR_const | TYPE_rec, TYPE_i32, 4, cc->type_rec, NULL);
-	type_i64 = install(cc,   "int64", ATTR_const | TYPE_rec, TYPE_i64, 8, cc->type_rec, NULL);
-	type_u08 = install(cc,   "uint8", ATTR_const | TYPE_rec, TYPE_u32, 1, cc->type_rec, NULL);
-	type_u16 = install(cc,  "uint16", ATTR_const | TYPE_rec, TYPE_u32, 2, cc->type_rec, NULL);
-	type_u32 = install(cc,  "uint32", ATTR_const | TYPE_rec, TYPE_u32, 4, cc->type_rec, NULL);
-	// type_ = install(cc,  "uint64", ATTR_const | TYPE_rec, TYPE_u64, 8, cc->type_rec, NULL);
-	type_f32 = install(cc, "float32", ATTR_const | TYPE_rec, TYPE_f32, 4, cc->type_rec, NULL);
-	type_f64 = install(cc, "float64", ATTR_const | TYPE_rec, TYPE_f64, 8, cc->type_rec, NULL);
+	type_vid = install(cc,    "void", ATTR_const | ATTR_stat | TYPE_rec, TYPE_vid, 0, type_rec, NULL);
+	type_bol = install(cc,    "bool", ATTR_const | ATTR_stat | TYPE_rec, TYPE_bit, 4, type_rec, NULL);
+	type_i08 = install(cc,    "int8", ATTR_const | ATTR_stat | TYPE_rec, TYPE_i32, 1, type_rec, NULL);
+	type_i16 = install(cc,   "int16", ATTR_const | ATTR_stat | TYPE_rec, TYPE_i32, 2, type_rec, NULL);
+	type_i32 = install(cc,   "int32", ATTR_const | ATTR_stat | TYPE_rec, TYPE_i32, 4, type_rec, NULL);
+	type_i64 = install(cc,   "int64", ATTR_const | ATTR_stat | TYPE_rec, TYPE_i64, 8, type_rec, NULL);
+	type_u08 = install(cc,   "uint8", ATTR_const | ATTR_stat | TYPE_rec, TYPE_u32, 1, type_rec, NULL);
+	type_u16 = install(cc,  "uint16", ATTR_const | ATTR_stat | TYPE_rec, TYPE_u32, 2, type_rec, NULL);
+	type_u32 = install(cc,  "uint32", ATTR_const | ATTR_stat | TYPE_rec, TYPE_u32, 4, type_rec, NULL);
+	// type_ = install(cc,  "uint64", ATTR_const | ATTR_stat | TYPE_rec, TYPE_u64, 8, type_rec, NULL);
+	type_f32 = install(cc, "float32", ATTR_const | ATTR_stat | TYPE_rec, TYPE_f32, 4, type_rec, NULL);
+	type_f64 = install(cc, "float64", ATTR_const | ATTR_stat | TYPE_rec, TYPE_f64, 8, type_rec, NULL);
 
 	type_vid->pfmt = "";
 	type_bol->pfmt = "bool(%d)";
@@ -2074,18 +2068,20 @@ static void install_type(ccState cc, int mode) {
 	// type_->pfmt = "uint64(%u)";
 	type_f32->pfmt = "float32(%f)";
 	type_f64->pfmt = "float64(%F)";
+	type_rec->type = type_rec;
 
 	if (mode & creg_tptr) {
-		type_ptr = install(cc, "pointer", ATTR_const | TYPE_rec, TYPE_ref, vm_size, cc->type_rec, NULL);
+		type_ptr = install(cc,  "pointer", ATTR_const | ATTR_stat | TYPE_rec, TYPE_ref, vm_size, type_rec, NULL);
+		cc->null_ref = install(cc, "null", ATTR_const | ATTR_stat | TYPE_ref, TYPE_any, vm_size, type_ptr, NULL);
 		if (type_ptr != NULL) {
 			type_ptr->pfmt = "pointer(%x)";
 		}
-		cc->null_ref = install(cc,    "null", ATTR_const | TYPE_ref, TYPE_any, vm_size, type_ptr, NULL);
 	}
 	if (mode & creg_tvar) {
 		//~ type_var = install(cc, "variant", ATTR_const | TYPE_rec, TYPE_ref, 0, type_rec);
 	}
 
+	cc->type_rec = type_rec;
 	cc->type_vid = type_vid;
 	cc->type_bol = type_bol;
 	cc->type_i32 = type_i32;
@@ -2408,8 +2404,35 @@ static int libCallMemMgr(state rt, void* _) {
 	int size = popi32(rt);
 	void* res = rtAlloc(rt, old, size);
 	reti32(rt, vmOffset(rt, res));
-	//~ logif(DEBUGGING, "memmgr(%06x, %d): %06x", vmOffset(rt, old), size, vmOffset(rt, res));
 	return 0;
+}
+typedef enum {
+	typeOpGetName,
+	typeOpGetFile,
+	typeOpGetBase,
+	typeOpGetLine,
+} TpenameOp;
+
+static int libTypeName(state rt, void* op) {
+	symn sym = findref(rt, popref(rt));
+	switch((TpenameOp)op) {
+		//~ default:
+			//~ // error
+			//~ return -1;
+		case typeOpGetName:
+			reti32(rt, vmOffset(rt, sym->name));
+			return 0;
+		case typeOpGetFile:
+			reti32(rt, vmOffset(rt, sym->file));
+			return 0;
+		case typeOpGetBase:
+			reti32(rt, vmOffset(rt, sym->type));
+			return 0;
+		case typeOpGetLine:
+			reti32(rt, sym->line);
+			return 0;
+	}
+	return -1;
 }
 
 ccState ccInit(state rt, int mode, int libcHalt(state, void*)) {
@@ -2477,18 +2500,18 @@ ccState ccInit(state rt, int mode, int libcHalt(state, void*)) {
 			arg->offs = offsetof(symn, offs);
 			arg->pfmt = "%04x";
 		}
-		/*if ((arg = install(cc, "name", ATTR_const | TYPE_ref, TYPE_any, vm_size, type_ptr))) {
-			arg->offs = (int)(&((symn)NULL)->name);
-			arg->cast = TYPE_ref;
-		}
-		if ((arg = install(cc, "file", ATTR_const | TYPE_ref, TYPE_any, vm_size, type_ptr))) {
-			arg->offs = (int)(&((symn)NULL)->file);
-			arg->cast = TYPE_ref;
-		}
-		if ((arg = install(cc, "line", ATTR_const | TYPE_ref, TYPE_any, vm_size, type_i32))) {
-			arg->offs = (int)(&((symn)NULL)->line);
-		}*/
+		ccAddCall(rt, libTypeName, (void*)typeOpGetFile, "string file(typename type);");
+		ccAddCall(rt, libTypeName, (void*)typeOpGetLine, "int line(typename type);");
+
+		ccAddCall(rt, libTypeName, (void*)typeOpGetName, "string name(typename type);");
+		ccAddCall(rt, libTypeName, (void*)typeOpGetBase, "typename base(typename type);");
 		cc->type_rec->args = leave(cc, cc->type_rec, 0);
+
+		enter(cc, NULL);
+		ccAddCode(rt, 0, __FILE__, __LINE__, "define size(typename type) = int(type.size);");
+		arg = leave(cc, cc->type_rec, 0);
+		arg->next = cc->type_rec->args;
+		cc->type_rec->args = arg;
 	}
 
 	return cc;

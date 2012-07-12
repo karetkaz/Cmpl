@@ -1053,7 +1053,7 @@ void dumpsym(FILE* fout, symn sym, int mode) {
 		}
 
 		if (print_info) {
-			fputfmt(fout, ": [%c%06x", ptr->offs < 0 ? '@' : '+', ptr->offs < 0 ? -ptr->offs : ptr->offs);
+			fputfmt(fout, ": [%c%06x", ptr->stat ? '@' : '+', ptr->offs);
 			fputfmt(fout, ", size: %d", ptr->size);
 			fputfmt(fout, ", kind: %s", tch);
 			if (ptr->cast != 0)
@@ -1124,7 +1124,7 @@ void dump(state rt, int mode, symn sym, char* text, ...) {
 		}
 		if (mode & dump_asm) {
 			if (sym->kind == TYPE_ref && sym->call) {
-				fputasm(logf, rt, -sym->offs, -sym->offs + sym->size, 0x119);
+				fputasm(logf, rt, sym->offs, sym->offs + sym->size, 0x119);
 			}
 		}
 	}
@@ -1154,11 +1154,11 @@ void dump(state rt, int mode, symn sym, char* text, ...) {
 			for (var = rt->defs; var; var = var->next) {
 				if (var->kind == TYPE_ref && var->call) {
 					symn arg = var->args;
-					fputfmt(logf, "%-T [@%06x: %d] {\n", var, -var->offs, var->size);
+					fputfmt(logf, "%-T [@%06x: %d] {\n", var, var->offs, var->size);
 					for (; arg; arg = arg->next) {
 						fputfmt(logf, "\targ %-T [@%06x, size:%d, cast:%t]\n", arg, arg->offs, arg->size, arg->cast);
 					}
-					fputasm(logf, rt, -var->offs, -var->offs + var->size, mode);
+					fputasm(logf, rt, var->offs, var->offs + var->size, mode);
 					fputfmt(logf, "}\n");
 				}
 			}

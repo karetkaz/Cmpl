@@ -31,7 +31,7 @@ vec4f rgbOp(double x, double y) {
 	Complex z = Complex(x, y);
 	//~ z = div(Complex(1), z);
 	//~ z = sin(z);
-	z = pow(z, Complex(4.));
+	z = pow(z, Complex(-1));
 	//~ z = sin(pow(z, Complex(4., 0)));
 
 	//~ z = add(z, div(pow(z, Complex(4)), sub(sin(pow(z, Complex(4, 0))), 1)));

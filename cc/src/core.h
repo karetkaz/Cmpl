@@ -12,7 +12,7 @@
 #include <stdlib.h>
 
 // debug level
-#define DEBUGGING 15
+#define DEBUGGING 0
 
 // enable dynamic dll/so lib loading
 #define USEPLUGINS
@@ -36,7 +36,7 @@
 
 #if DEBUGGING > 1
 #define debug(msg, ...) pdbg("debug", __FILE__, __LINE__, msg, ##__VA_ARGS__)
-#if DEBUGGING > 15
+#if DEBUGGING > 2
 #define trace(msg, ...) pdbg("trace", __FILE__, __LINE__, msg, ##__VA_ARGS__)
 #define trloop(msg, ...) //pdbg("trace", __FILE__, __LINE__, msg, ##__VA_ARGS__)
 #else
@@ -255,7 +255,7 @@ struct symn {				// type node (data)
 	symn	decl;		// declared in namespace/struct/class, function, ...
 	symn	next;		// symbols on table / next param / next field / next symbol
 
-	#ifdef DEBUGGING
+	#if DEBUGGING
 	ccToken	kind;		// TYPE_ref / TYPE_def / TYPE_rec / TYPE_arr
 	ccToken	cast;		// casts to type(TYPE_(bit, vid, ref, u32, i32, i64, f32, f64, p4x)).
 	uint16_t __castkindpadd;

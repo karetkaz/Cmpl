@@ -368,9 +368,9 @@ static int libCallHaltDebug(state rt, void* _) {
 		else
 			fputfmt(stdout, "var: ");
 
-		fputfmt(stdout, "@0x%06x[size: %d]: ", arg->offs < 0 ? -arg->offs : arg->offs, arg->size);
+		fputfmt(stdout, "@0x%06x[size: %d]: ", arg->offs, arg->size);
 
-		if (arg->offs <= 0) {
+		if (arg->stat) {
 			// static variable.
 			ofs = (void*)(rt->_mem - arg->offs);
 		}
@@ -802,7 +802,7 @@ static int dbgCon(state rt, int pu, void* ip, long* bp, int ss) {
 				else {
 					symn sym = findsym(rt->cc, NULL, arg);
 					debug("arg:%T", sym);
-					if (sym && sym->kind == TYPE_ref && sym->offs >= 0) {
+					if (sym && sym->kind == TYPE_ref && sym->stat == 0) {
 						stkval* sp = (stkval*)((char*)bp + ss + sym->offs);
 						vm_fputval(rt, stdout, sym, sp, 0);
 					}

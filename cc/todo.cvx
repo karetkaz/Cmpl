@@ -8,7 +8,7 @@
 //~ #open src/printer.c			// pretty print, logger
 //~ #open src/main.c
 
-//~ /*TODO: Array assignment
+/*TODO: Array assignment
 define Array(int32 typesize, int32 ^n) = emit(struct, ref(memmgr(null, typesize * n)), i32(n));
 
 int b[] = Array(4, 10);

@@ -52,7 +52,7 @@ void drawCB() {
 	Gui.Repaint();
 
 	//~ clear the screen
-	fillRect(offScreen, 0, 0, Window.resx, Window.resy, 0x000000);
+	fillRect(offScreen, 0, 0, Window.resx, Window.resy, 0);
 
 	//~ move and draw stars
 	for (int i = 0; i < stars.length; i += 1) {

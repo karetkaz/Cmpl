@@ -86,13 +86,7 @@ double QMin = -1.5;
 double QMax = +1.5;
 double PMin = -2.25;
 double PMax = +0.75;
-//~ define zoom = 1.17187372574E-2;
-//~ double QMin = -1.25632982971-zoom;
-//~ double QMax = -1.25632982971+zoom;
-//~ double PMin = -0.02761733591558-zoom;
-//~ double PMax = -0.02761733591558+zoom;
 blendLut(32, &mandelLut, 0xFFFFFF, 0x000000, 0xadadff, 0x000000);
-
 }
 
 int reDraw = 1;
@@ -309,7 +303,7 @@ void drawCB() {
 		result = __rgb(r, g, b);
 		//~ result = dst & src;
 	}
-	int rgbOp(int dst, int src) = rgbMul;
+	int rgbOp(int dst, int src) = rgbXor;
 
 	copySurf(offScreen, 0, 0, back, null);
 	copySurfrgb(offScreen, roi.x, roi.y, mand, &roi, rgbOp);

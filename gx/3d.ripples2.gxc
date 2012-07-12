@@ -12,7 +12,7 @@ enum Options {
 }
 
 // division of mesh and heightmap
-define division = 124;
+define division = 92;
 
 //~ do rain every dorain frame
 define dorain = 0;

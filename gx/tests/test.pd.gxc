@@ -112,8 +112,10 @@ void setup(double &time, vec4f pixelCB(double x, double y)) {
 		if (animate) {
 			// application time spent in processor
 			internals.time = .5 * clocksPerSec(timeNow() - begTime);
-			//~ evalSurf((offScreen, null, pixelCB);
+
+			//~ evalSurf(offScreen, null, internals.pixelCB);
 			zoomSurf(offScreen, null, evalSurf(tmpImg, null, internals.pixelCB), null, 1);
+
 			// post a redraw for animation
 			Gui.Repaint();
 		}

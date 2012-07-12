@@ -125,9 +125,14 @@ symn install(ccState s, const char* name, int kind, int cast, unsigned size, sym
 
 	dieif(!s || !name || !kind, "FixMe(s, %s, %t)", name, kind);
 
+	if ((kind & 0xff) == TYPE_rec) {
+		logif(DEBUGGING > 1 && !(kind & ATTR_stat), "typename %s is not declared static", name);
+		kind |= ATTR_stat;
+	}
+
 	if ((def = newdefn(s, kind & 0xff))) {
 		def->nest = s->nest;
-		def->name = (char*)name;
+		def->name = mapstr(s, (char*)name, -1, -1);
 		def->type = type;
 		def->init = init;
 		def->size = size;
