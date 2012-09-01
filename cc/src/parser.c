@@ -1387,10 +1387,6 @@ static astn type(ccState s/* , int mode */) {	// type(.type)* ('&' | '[]')mode?
 	else if (list) {
 		list->type = def;
 	}
-	//info(s->s, root->file, root->line, "`%+k` is a type", root);
-	/*if (list && mode && skip(s, OPER_and)) {
-		//~ list = newsy
-	}*/
 	return list;
 }
 

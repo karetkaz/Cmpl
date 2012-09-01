@@ -16,15 +16,6 @@ enum Window {
 define pi = Math.pi;
 
 /* TODO:
-//~ operator (gxSurf src).width.get = width(src);
-//~ operator (gxSurf src).height.get = height(src);
-//~ operator (gxSurf src)[int x, int y].get = getPixel(src, x, y);
-//~ operator (gxSurf src)[int x, int y].set(int color) = setPixel(src, x, y, color);
-
-//~ operator (gxSurf src) get width = width(src);
-//~ operator (gxSurf src) get height = height(src);
-//~ operator (gxSurf src) get [int x, int y] = getPixel(src, x, y);
-//~ operator (gxSurf src)[int x, int y].set(int color) = setPixel(src, x, y, color);
 
 string alma() {
 	result = "alma";

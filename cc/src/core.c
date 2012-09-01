@@ -39,10 +39,10 @@ const opc_inf opc_tbl[255] = {
 };
 
 static inline int genRef(state rt, symn var) {
-	logif(var->stat != (var->offs < 0), "FixMe(%d)@%d %-T (%s:%d)", var->stat, var->offs, var, var->file, var->line);
+	//~ logif(var->stat != (var->offs < 0), "FixMe(%d)@%d %-T (%s:%d)", var->stat, var->offs, var, var->file, var->line);
 	if (!var->stat)
 		return emitidx(rt, opc_ldsp, var->offs);
-	return emitint(rt, opc_ldcr, -var->offs);
+	return emitint(rt, opc_ldcr, var->offs);
 }
 
 int isStatic(ccState cc, astn ast) {
@@ -207,7 +207,7 @@ symn findref(state rt, void* ptr) {
 		return NULL;
 	}
 
-	offs = -((unsigned char*)ptr - rt->_mem);
+	offs = ((unsigned char*)ptr - rt->_mem);
 	for (sym = rt->gdef; sym; sym = sym->gdef) {
 		if (sym->offs == offs)
 			return sym;
@@ -601,7 +601,7 @@ static int cgen(state rt, astn ast, ccToken get) {
 
 			dieif(!var && ast->op.lhso, "FixMe[%+k]", ast);
 
-			if (var == rt->cc->libc_dbg) {	// debug()
+			if (rt->cc->libc_dbg && var == rt->cc->libc_dbg) {	// debug()
 				if (argv) {
 					while (argv->kind == OPER_com) {
 						astn arg = argv->op.rhso;
@@ -1900,7 +1900,9 @@ int gencode(state rt, int level) {
 			if (var->kind != TYPE_ref)
 				continue;
 
-			var->stat = globalstatic;
+			if (!var->stat) {
+				var->stat = globalstatic;
+			}
 			var->glob = 1;
 		}
 		// generate global and static variables & functions
@@ -1932,7 +1934,7 @@ int gencode(state rt, int level) {
 				rt->vm.ro = stkoffs(rt, 0);
 				rt->vm.sm = rt->vm.ss;		// leave return address on stack
 
-				var->offs = -emitopc(rt, markIP);
+				var->offs = emitopc(rt, markIP);
 
 				if (!cgen(rt, var->init, TYPE_vid)) {
 					continue;
@@ -1953,7 +1955,7 @@ int gencode(state rt, int level) {
 			else {
 				dieif(var->offs, "FixMe %-T@%d:%t", var, var->offs, var->cast);
 				var->size = sizeOf(var);
-				var->offs = -rt->vm.pos;
+				var->offs = rt->vm.pos;
 				rt->vm.pos += var->size;
 
 				rt->vm.size.data += var->size;
@@ -2385,15 +2387,17 @@ static int libCallDebug(state rt, void* _) {
 				isOutput = 1;
 			}
 			if (stktrace > 0) {
-				perr(rt, level, NULL, 0, "stacktrace[%d] not supported yet", stktrace);
-				//~ isOutput = 1;
+				perr(rt, level, NULL, 0, ": stack trace[%d] not supported yet", stktrace);
 			}
 			if (isOutput) {
 				fputfmt(logf, "\n");
 			}
 		}
-		if (dbgmode != 1) {
-			return -1;
+		if (dbgmode > 1) {
+			if (dbgmode > 2) {
+				abort();
+			}
+			exit(-1);
 		}
 	}
 
@@ -2481,13 +2485,16 @@ ccState ccInit(state rt, int mode, int libcHalt(state, void*)) {
 
 	ccAddCall(rt, libcHalt ? libcHalt : libCallHalt, NULL, "void Halt(int Code);");
 
-	cc->libc_mem = cc->type_ptr ? ccAddCall(cc->s, libCallMemMgr, NULL, "pointer memmgr(pointer ptr, int32 size);") : NULL;
-	/*enum debug {
-		skip = 0;
-		info = 1;
-		abort = -1;
-	}*/
-	cc->libc_dbg = ccAddCall(rt, libCallDebug, NULL, "void debug(string message, typename objtyp, typename objref, int maxStackTrace, int mode);");
+	if (cc->type_ptr && (mode & creg_tptr)) {
+		cc->libc_mem = ccAddCall(cc->s, libCallMemMgr, NULL, "pointer memmgr(pointer ptr, int32 size);");
+		cc->libc_dbg = ccAddCall(rt, libCallDebug, NULL, "void debug(string message, typename objtyp, pointer objref, int maxStackTrace, int mode);");
+		/*enum mode {
+			skip = 0;
+			info = 1;
+			exit = 2;
+			abort = 3;
+		}*/
+	}
 
 	// 4 reflection
 	if (cc->type_rec && (mode & creg_tvar)) {

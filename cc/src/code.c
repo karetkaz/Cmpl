@@ -1486,7 +1486,7 @@ int vmCall(state rt, symn fun, void* ret, void* args) {
 	// return here: vm->px: program exit
 	pu->sp -= vm_size;
 	*(int*)(pu->sp) = rt->vm.px;
-	pu->ip = rt->_mem - fun->offs;
+	pu->ip = rt->_mem + fun->offs;
 
 	if (rt->vm.dbug) {
 		fputfmt(stdout, "\n>> >> >> Invoke: %-T\n", fun);
@@ -1618,7 +1618,15 @@ void fputopc(FILE* fout, unsigned char* ptr, int len, int offs, state rt) {
 		case opc_ldc8: fputfmt(fout, " %D", ip->arg.i8); break;
 		case opc_ldcf: fputfmt(fout, " %f", ip->arg.f4); break;
 		case opc_ldcF: fputfmt(fout, " %F", ip->arg.f8); break;
-		case opc_ldcr: fputfmt(fout, " %x", ip->arg.u4); break;
+		case opc_ldcr: {
+			fputfmt(fout, " %x", ip->arg.u4);
+			if (rt != NULL) {
+				symn sym = findref(rt, getip(rt, ip->arg.u4));
+				if (sym != NULL) {
+					fputfmt(fout, ": %+T: %T", sym, sym->type);
+				}
+			}
+		} break;
 
 		case opc_libc:
 			if (rt != NULL) {

@@ -1,0 +1,337 @@
+struct string: char[] {
+
+	class Builder {
+		define defSize = 256;
+		int count;
+		char store;
+
+		bool ensureCap(int length) {
+			result = false;
+			if (value.length < length) {
+				value.length *= 2;
+				result = true;
+			}
+			return result;
+		}
+
+		Builder Append(bool value) {
+			if (value) {
+				ensureCap(count + 4);
+				store[count++] = 't';
+				store[count++] = 'r';
+				store[count++] = 'u';
+				store[count++] = 'e';
+			}
+			else {
+				ensureCap(count + 5);
+				store[count++] = 'f';
+				store[count++] = 'a';
+				store[count++] = 'l';
+				store[count++] = 's';
+				store[count++] = 'e';
+			}
+			return this;
+		}
+		Builder Append(char value) {
+			ensureCap(count + 1);
+			store[count++] = value;
+			return this;
+		}
+		Builder Append(string value) {
+			ensureCap(count + value.length);
+			for (int i = 0 ; i < value.length; i += 1) {
+				store[count++] = value[i];
+			}
+			return this;
+		}
+
+		Builder Append(int64 value, int radix, int paddChar, int paddSize, bool forceSign) {
+			struct Options {
+				const char signChar;
+
+				const char paddChar;
+				const int paddSize;
+
+				const int radix;
+			}
+
+			void Append(Builder dst, int64 value, int pos, Options &opt) {
+				if (value != 0) {
+					Append(value / opt.radix, pos + 1, opt);
+					dst.Append("0123456789"[value % opt.radix]);
+				}
+				else {
+					int padd = opt.paddSize - pos;
+
+					if (opt.signChar) {
+						padd -= 1;
+					}
+
+					for (int i = 0; i < padd; i += 1) {
+						dst.Append(opt.padChar);
+					}
+
+					if (opt.signChar) {
+						dst.Append(opt.signChar);
+					}
+				}
+			}
+
+			int signChar = value < 0 ? '-' : forceSign ? '+' : 0;
+			Options opt = Options(signChar, paddChar, paddSize, radix);
+
+			Append(this, value, 0, &opt);
+		}
+
+		Builder Append(int64 value, int radix) {
+			Append(value, radix, 0, 0, false);
+		}
+		Builder Append(int64 value) {
+			Append(value, 10);
+		}
+
+		Builder Append(int32 value, int radix) {
+			Append(int64(value), radix);
+		}
+		Builder Append(int64 value) {
+			Append(int64(value));
+		}
+	}
+
+	enum CompareOptions {
+		None = 0;
+		IgnoreCase = 1;
+	}
+
+	static int Compare(string strA, int ofsA, string strB, int ofsB, CompareOptions options, int count) {...}
+	static int Compare(string a, string b, CompareOptions options) {
+		return Compare(a, 0, b, 0, options, a.length);
+	}
+	static int Compare(string a, string b, bool ignoreCase) {
+		return Compare(a, b, ignoreCase ? CompareOptions.IgnoreCase : CompareOptions.None);
+	}
+	static int Compare(string a,  b) {
+		return Compare(a, b, CompareType.None);
+	}
+
+	static int IndexOf(string str, string val, CompareOptions options) {...}
+	static int IndexOf(string str, string val, bool ignoreCase) {
+		return IndexOf(str, val, ignoreCase ? CompareOptions.IgnoreCase : CompareOptions.None);
+	}
+	static int IndexOf(string str, string val) {
+		return IndexOf(str, val, CompareOptions.None);
+	}
+	static int IndexOf(string str, char val, CompareOptions options) {...
+		result = -1;
+		if (options == CompareOptions.None) {
+			for (int i = 0; str[i]; i += 1) {
+				if (str[i] == val) {
+					result = i;
+					break;
+				}
+			}
+		}
+		return result;
+	}
+	static int IndexOf(string str, char val, bool ignoreCase) {
+		return IndexOf(str, val, ignoreCase ? CompareOptions.IgnoreCase : CompareOptions.None);
+	}
+	static int IndexOf(string str, char val) {
+		return IndexOf(str, val, CompareOptions.None);
+	}
+
+	static int LastIndexOf(string str, string val, CompareOptions options) {...}
+	static int LastIndexOf(string str, string val, bool ignoreCase) {
+		return LastIndexOf(str, val, ignoreCase ? CompareOptions.IgnoreCase : CompareOptions.None);
+	}
+	static int LastIndexOf(string str, string val) {
+		return LastIndexOf(str, val, CompareOptions.None);
+	}
+	static int LastIndexOf(string str, char val, CompareOptions options) {...
+		result = -1;
+		if (options == CompareOptions.None) {
+			for (int i = 0; str[i]; i += 1) {
+				if (str[i] == chr) {
+					result = i;
+				}
+			}
+		}
+		return result;
+	}
+	static int LastIndexOf(string str, char val, bool ignoreCase) {
+		return LastIndexOf(str, val, ignoreCase ? CompareOptions.IgnoreCase : CompareOptions.None);
+	}
+	static int LastIndexOf(string str, char val) {
+		return LastIndexOf(str, val, CompareOptions.None);
+	}
+
+	static bool StartsWith(string str, string val, CompareOptions options) {
+		if (str.length > val.length) {
+			return Compare(str, 0, val, 0, options, b.length) == 0;
+		}
+		return false;
+	}
+	static bool StartsWith(string str, string val, bool ignoreCase) {
+		return StartsWith(str, val, ignoreCase ? CompareOptions.IgnoreCase : CompareOptions.None);
+	}
+	static bool StartsWith(string str, string val) {
+		return StartsWith(str, val, CompareOptions.None);
+	}
+
+	static bool EndsWith(string str, string val, CompareOptions options) {
+		if (str.length > val.length) {
+			return Compare(str, str.length - val.length, val, 0, options, val.length) == 0;
+		}
+		return false;
+	}
+	static bool EndsWith(string str, string val, bool ignoreCase) {
+		return EndsWith(str, val, ignoreCase ? CompareOptions.IgnoreCase : CompareOptions.None);
+	}
+	static bool EndsWith(string str, string val) {
+		return EndsWith(str, val, CompareOptions.None);
+	}
+
+	static string Format(string format, var args...) {
+		Builder resBuilder = Builder(Builder.defSize);
+		int j = 0;
+		for (int i = 0; i < format.length; i += 1) {
+			chr = format[i];
+			if (chr == '%') {
+				int beg = i;
+
+				char sgn = 0;
+				chr = format[i += 1];
+				if (chr == '-' || chr == '+') {
+					sgn = chr;
+					chr = format[i += 1];
+				}
+
+				char pad = 0;
+				if (chr == '0' || chr == ' ') {
+					pad = chr;
+					chr = format[i += 1];
+				}
+
+				int len = 0;
+				for (; chr >= '0' && chr <= '9'; ) {
+					len = (len * 10) + (chr - '0');
+					chr = format[i += 1];
+				}
+
+				int prc = 0;
+				if (chr == '.') {
+					chr = format[i += 1];
+					for (; chr >= '0' && chr <= '9'; ) {
+						prc = (prc * 10) + (chr - '0');
+						chr = format[i += 1];
+					}
+				}
+
+				switch (chr) {
+					case 'c':
+						resBuilder.append(char(args[j += 1]), sgn, pad, len, prc);
+						break;
+					case 's':
+						resBuilder.append(string(args[j += 1]), sgn, pad, len, prc);
+						break;
+
+					case 'd':
+						resBuilder.append(int32(args[j += 1]), sgn, pad, len, prc);
+						break;
+					case 'D':
+						resBuilder.append(int64(args[j += 1]), sgn, pad, len, prc);
+						break;
+
+					case 'b':
+						resBuilder.append(int32(args[j += 1]), sgn, pad, len, prc, 2);
+						break;
+					case 'B':
+						resBuilder.append(int64(args[j += 1]), sgn, pad, len, prc, 2);
+						break;
+
+					case 'o':
+						resBuilder.append(int32(args[j += 1]), sgn, pad, len, prc, 8);
+						break;
+					case 'O':
+						resBuilder.append(int64(args[j += 1]), sgn, pad, len, prc, 8);
+						break;
+
+					case 'f':
+						resBuilder.append(float32(args[j += 1]), sgn, pad, len, prc);
+						break;
+					case 'F':
+						resBuilder.append(float64(args[j += 1]), sgn, pad, len, prc);
+						break;
+
+					case 'x':
+						resBuilder.append(int32(args[j += 1]), sgn, pad, len, prc, 16);
+						break;
+					case 'X':
+						resBuilder.append(int64(args[j += 1]), sgn, pad, len, prc, 16);
+						break;
+
+					case 'o':
+						resBuilder.append(string(typename.invoke(args[j += 1], "toString", string(format, beg, i))));
+						break;
+
+					else:
+						resBuilder.append(string(format, beg, i));
+						break;
+				}
+			}
+			else {
+				resBuilder.append(chr);
+			}
+		}
+		resBuilder
+		
+	}
+
+	prototype {
+		char charAt(int idx)					// Returns the character at the specified index.
+		//~ char charCodeAt(int idx)			// Returns a number indicating the Unicode value of the character at the given index.
+		string concat(string other)				// Combines the text of two strings and returns a new string.
+		int indexOf(char chr)					// Returns the index within the calling String object of the first occurrence of the specified value, or -1 if not found.
+		int lastIndexOf(char chr)				// Returns the index within the calling String object of the last occurrence of the specified value, or -1 if not found.
+		int localeCompare(string other)			// Returns a number indicating whether a reference string comes before or after or is the same as the given string in sort order.
+		Match[] match(regexp re)				// Used to match a regular expression against a string.
+		replace()								// Used to find a match between a regular expression and a string, and to replace the matched substring with a new substring.
+		search()								// Executes the search for a match between a regular expression and a specified string.
+		string substr(int offset, int length)	// Returns the characters in a string beginning at the specified location through the specified number of characters.
+		string substring(int start, int end)	// Returns the characters in a string between two indexes into the string.
+		string toLocaleLowerCase()				// The characters within a string are converted to lower case while respecting the current locale.
+		string toLocaleUpperCase()				// The characters within a string are converted to upper case while respecting the current locale.
+		string toLowerCase()					// Returns the calling string value converted to lower case.
+		string toUpperCase()					// Returns the calling string value converted to uppercase.
+		//~ toString()							// Returns a string representing the specified object.
+		//~ valueOf()							Returns the primitive value of the specified object.
+	}
+
+	string[] split(string str, string separator) {
+		int n = 0;
+		for (int i = 0; i < str.length; i += 1) {
+			if (separator.indexOf(str[i]) >= 0) {
+				n += 1;
+			}
+		}
+		result = new string[n];
+
+		int end = n = 0;
+		for (int i = 0; i < str.length; i += 1) {
+			if (separator.indexOf(str[i]) >= 0) {
+				result[n] = new string(str, beg, i - beg);
+			}
+		}
+	}
+	string slice(string str, int beg, int len) {
+		assert(beg > str.length, "");
+		if (beg > str.length)
+			return null;
+
+		if (len >= str.length - beg)
+			len = str.length - beg - 1;
+
+		result = emit(string, i32.add, i32(beg), byRef(str), i32(len));
+	}
+}
+

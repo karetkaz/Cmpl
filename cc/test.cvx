@@ -12,7 +12,9 @@ struct xxx {
 	int64 x2;
 }
 
-typename type = xxx;
+define alias1 xxx;
+
+typename type = alias1;
 //~ int size1 = typename(type).size;
 
 string name = typename.name(type);

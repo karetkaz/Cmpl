@@ -1309,14 +1309,14 @@ int ccCompile(char *src, int argc, char* argv[]) {
 	if (rt == NULL)
 		return -29;
 
-	if (!ccInit(rt, creg_def, NULL)) {
-		debug("Internal error\n");
-		return -1;
-	}// */
-
 	if (ccLog && logfile(rt, ccLog) != 0) {
 		debug("can not open file `%s`\n", ccLog);
 		return -2;
+	}// */
+
+	if (!ccInit(rt, creg_def, NULL)) {
+		debug("Internal error\n");
+		return -1;
 	}// */
 
 	//#{ inlined here for libcall functions

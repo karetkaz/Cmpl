@@ -77,7 +77,6 @@ define sinf(float x) = sin(x);
 define fabsf(float x) = Math.abs(x);
 define cosf(float x) = cos(x);
 define colsca(vec4f &x, float ^s) = void(x = vec4f(x.x * s, x.y * s, x.z * s));
-//~ define collerp(vec4f &res, float t, vec4f ^a, vec4f ^b) = void(res = lerp(t, a, b));
 define pi = Math.pi;
 
 void setup(double &time, vec4f pixelCB(double x, double y)) {
@@ -136,37 +135,7 @@ void setup(double &time, vec4f pixelCB(double x, double y)) {
 	Gui.setDrawCallback(drawCB);
 	Gui.setMouseHandler(mouseCB);
 }
-/*
-void setup(double &timer, double pixelCBr(double x, double y)) {
-	static float pixelCB(double x, double y) = null;
 
-	static vec4f pixelCBf64(double x, double y) {
-		result = vec4f(pixelCB(x, y));
-	}
-	&pixelCB = pixelCBr;
-	setup(timer, pixelCBf64);
-}
-
-void setup_XXX(double &timer, vec4f pixelCBr(float x, float y)) {
-	static vec4f pixelCB(float x, float y) = null;
-
-	static vec4f pixelCBf64(double x, double y) {
-		result = pixelCB(x, y);
-	}
-	&pixelCB = pixelCBr;
-	setup(timer, pixelCBf64);
-}
-
-void setup(double &timer, float pixelCBr(float x, float y)) {
-	static float pixelCB(float x, float y) = null;
-
-	static vec4f pixelCBf64(double x, double y) {
-		result = vec4f(pixelCB(x, y));
-	}
-	&pixelCB = pixelCBr;
-	setup(timer, pixelCBf64);
-}
-// */
 double aspect = 1.33;
 double time;
 

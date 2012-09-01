@@ -85,7 +85,7 @@ typedef enum {
 
 	decl_NoDefs = 0x100,		// disable type defs in decl.
 	decl_NoInit = 0x200,		// disable initializer.
-	decl_Colon  = 0x400,		// enable ':' after variable name: for(int a : range(0, 12))
+	decl_Colon  = 0x400,		// enable ':' after declaration: for(int a : range(0, 12))
 
 	ATTR_const = 0x0100,		// constant
 	ATTR_stat  = 0x0200,		// static
@@ -139,8 +139,11 @@ typedef enum {
 	b32_bit_shr = 2 << 6,
 	b32_bit_sar = 3 << 6,
 
-	//~ opc_ldcf = opc_ldc4,
-	//~ opc_ldcF = opc_ldc8,
+	/* remove temp opcodes
+	opc_ldcr = opc_ldc4,
+	opc_ldcf = opc_ldc4,
+	opc_ldcF = opc_ldc8,
+	// */
 
 	vm_size = sizeof(int),	// size of data on stack
 	vm_regs = 255,	// maximum registers for dup, set, pop, ...
@@ -157,28 +160,25 @@ extern const opc_inf opc_tbl[255];
 
 typedef union {		// value type
 	int8_t		i1;
-	uint8_t		u1;
 	int16_t		i2;
-	uint16_t	u2;
 	int32_t		i4;
-	uint32_t	u4;
 	int64_t		i8;
+	uint8_t		u1;
+	uint16_t	u2;
+	uint32_t	u4;
 	//uint64_t	u8;
-	float32_t		f4;
-	float64_t		f8;
+	float32_t	f4;
+	float64_t	f8;
 	//~ float32_t		pf[4];
 	//~ float32_t		pd[2];
 	//~ struct {float32_t x, y, z, w;} pf;
 	//~ struct {float64_t x, y;} pd;
-	//~ struct {int64_t lo, hi;} x16;
 	int32_t		rel:24;
 	struct {void* data; long length;} arr;	// slice
 } stkval;
 
-//~ typedef struct symn *symn;		// Symbol Node
 typedef struct astn *astn;		// Abstract Syntax Tree Node
-typedef struct list *list;
-//typedef unsigned int uint;
+typedef struct list *list;		// Linked List Node
 
 typedef struct libc {
 	struct libc *next;	// next
@@ -189,16 +189,15 @@ typedef struct libc {
 	symn sym;
 } *libc;
 struct list {				// linked list: stringlist, memgr, ...
-	struct list		*next;
-	unsigned char	*data;
-	unsigned int	size;	// := ((char*)&node) - data;
+	struct list*	next;
+	unsigned char*	data;
+	unsigned int	size;
 	unsigned int	_pad;
-	//~ unsigned int	offs;	// offset in file ?
 };
 struct astn {				// tree node (code)
 	ccToken		kind;				// code: TYPE_ref, OPER_???
 	ccToken		cst2;				// casts to basic type: (i32, f32, i64, f64, ref, bool, void)
-	symn		type;				// typeof() return type of operator ... base type of IDTF
+	symn		type;				// typeof() return type of operator
 	astn		next;				// next statement, do not use for preorder
 	union {
 		union {						// TYPE_xxx: constant

@@ -8,7 +8,7 @@
 //~ }
 
 int x1[20] = 9;
-int x2[] = x1;
+//~ int x2[] = x1;
 
 
 /+ inlineing ...

@@ -55,6 +55,7 @@ vec4f sepiaFp(vec4f rgbColor) {
 
 	// convert back to RGB.
 	result = dot(YIQ2RGB, yiqColor);
+	//~ result = rgbColor;
 }
 
 vec4f sepia2Fp(vec4f c) {

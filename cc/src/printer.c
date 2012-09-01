@@ -178,7 +178,7 @@ static void fputsym(FILE* fout, symn sym, int mode, int level) {
 		} break;
 
 		default:
-			fatal("FixMe");
+			fatal("FixMe(%s)", sym->name);
 			break;
 	}
 	else fputstr(fout, "(null)");
@@ -1056,6 +1056,10 @@ void dumpsym(FILE* fout, symn sym, int mode) {
 			fputfmt(fout, ": [%c%06x", ptr->stat ? '@' : '+', ptr->offs);
 			fputfmt(fout, ", size: %d", ptr->size);
 			fputfmt(fout, ", kind: %s", tch);
+			if (ptr->cnst)
+				fputfmt(fout, ", const");
+			if (ptr->stat)
+				fputfmt(fout, ", static");
 			if (ptr->cast != 0)
 				fputfmt(fout, ", cast: %t", ptr->cast);
 			fputstr(fout, "]");

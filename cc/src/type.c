@@ -158,7 +158,7 @@ symn install(ccState s, const char* name, int kind, int cast, unsigned size, sym
 			//~ case TYPE_ptr:
 			case TYPE_arr:
 			case TYPE_rec:
-				def->offs = -vmOffset(s->s, def);
+				def->offs = vmOffset(s->s, def);
 				//~ def->pack = size;
 				break;
 

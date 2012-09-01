@@ -234,7 +234,7 @@ int reglibs(state rt, char* stdlib) {
 	return err;
 }
 
-//#{ plugins
+#if defined(USEPLUGINS)
 
 typedef struct pluginLib* pluginLib;
 static const char* pluginLibInstall = "apiMain";
@@ -261,7 +261,8 @@ static int installDll(state rt, stateApi api, int ccApiMain(stateApi api)) {
 	return ccApiMain(api);
 }
 
-#if defined(USEPLUGINS) && (defined(WIN32) || defined(_WIN32))
+#if (defined(WIN32) || defined(_WIN32))
+
 #include <windows.h>
 static struct pluginLib {
 	struct stateApi api;	// each plugin will have its own api
@@ -300,7 +301,9 @@ static int importLib(state rt, const char* path) {
 	fflush(stdout);
 	return result;
 }
-#elif defined(USEPLUGINS) && defined(__linux__)
+
+#elif (defined(__linux__))
+
 #include <dlfcn.h>
 static struct pluginLib {
 	struct stateApi api;	// each plugin will have its own api
@@ -339,14 +342,19 @@ static int importLib(state rt, const char* path) {
 	fflush(stdout);
 	return result;
 }
+#endif
+
 #else
-static void closeLibs() {
-}
+
+static void closeLibs() {}
 static int importLib(state rt, const char* path) {
+	(void)rt;
+	(void)path;
+	error(rt, path, 1, "dynamic linking is not available in this build.");
 	return -1;
 }
+
 #endif
-//#} plugins
 
 static int printvars = 0;
 static int dbgCon(state, int pu, void* ip, long* bp, int ss);

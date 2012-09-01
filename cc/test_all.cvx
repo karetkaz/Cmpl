@@ -69,12 +69,12 @@ define fact(int64 n) = (n * fact(n - 1));
 // */
 
 enum Test {
-	Emit = ~0;
-	Bits = ~0;
-	Type = ~0;
-	Misc = ~0;
-	Math = ~0;
-	Call = ~0;
+	Emit = +0;
+	Bits = +0;
+	Type = +0;
+	Misc = +0;
+	Math = +0;
+	Call = +0;
 }
 static if (true) {
 struct hex8: int8;			//%hex8(%02x)
@@ -86,7 +86,7 @@ struct bin32: int32;		//%bin32(%032b)
 define print(hex32 arg) = print("%08x", int64(arg));
 define println(hex32 arg) = print("%08x\n", int64(arg));
 define print(hex64 arg) = print("%08X", int64(arg));
-define println(hex64 arg) = print("%08X\n", int64(arg));
+define println(hex64 arg) = print("%016X\n", int64(arg));
 }
 
 static if (Test.Emit) {
@@ -1021,7 +1021,27 @@ int i = bar(3); // i is assigned 4
 //~ assert(i == 4);
 }
 }
+static if (true) {
 
+int getArrayElement(uint32 index, int array[]) {
+	if (index < array.length) {
+		result = array[index];
+	}
+}
+
+int getArrayElement(uint32 index, int a1, int a2) {
+	int array[2] = a1, a2;
+	return getArrayElement(index, array);
+}
+
+int getArrayElement(uint32 index, int a1, int a2, int a3) {
+	int array[3] = a1, a2, a3;
+	return getArrayElement(index, array);
+}
+
+define getArrayElementDef(uint32 index, int a1, int a2, int a3) = getArrayElement(index, a1, a2, a3);
+assert(getArrayElementDef(2, 1, 2, 3) == 3, false);
+}
 /* itoa
 uint8 tmp[1024];
 string str = emit(string, ref(tmp));
@@ -1208,3 +1228,7 @@ bool invoke(variant obj, string name, var &&res, var args...) {
 }
 
 //~ */
+//~ debug.Priority = 0;
+//~ debug.print(1, "alma");
+//~ debug("alma");
+abort("alma");

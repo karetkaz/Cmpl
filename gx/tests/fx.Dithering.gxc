@@ -305,7 +305,7 @@ gxSurf dither(gxSurf img, bool grayscale, uint32 colors, Dithering method) {
 int colors = 7;
 int grayscale = !true;
 Dithering method = Dithering.Stucki;
-method = Dithering.Bayer;
+//~ method = Dithering.Bayer;
 
 //~ define hex(uint32 ^c) = int(c <= 9 ? (c + '0') : ((c - 10) + 'a'));
 define hex(uint32 c) = int("0123456789abcdefh"[c & 255]);
@@ -322,6 +322,6 @@ uint8 filename[34] = 'o','u','t','/','o','u','t','[',gs,'x',h1, h2,'_',method,']
 
 println(emit(string, ref(filename)));
 dither(image, grayscale, colors, method);
-bmpWrite(image, emit(string, ref(filename)));
+//~ bmpWrite(image, emit(string, ref(filename)));
 
 setupPicView(image, false);
