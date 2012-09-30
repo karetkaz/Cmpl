@@ -1,23 +1,25 @@
 enum Window {
-	//~ draw = RenderMode.swap_buff;
-	resx = 512;
-	resy = 512;
+	draw = RenderMode.swap_buff;
+	//~ resx = properties.screen.width;
+	//~ resy = properties.screen.height;
+	//~ resx = 800;
+	//~ resy = 800;
 }
 
-string filename = "media/images/Earth.jpg";
+//~ string filename = "media/images/Earth.jpg";
 
-//~ /* list arguments
+/* list arguments
 print("arguments[%d]\n", args.length);
 for (int i = 0; i < args.length; i += 1) {
 	print("arguments[%d] = ", i);
 	println(args[i]);
-}// */
+}// * /
 
 if (args.length > 1) {
 	filename = args[1];
 }// */
 
-//~ setupPicView(gxSurf(filename), true);
+setupPicView(gxSurf(filename), true);
 
 /*
 gxRect roi = gxRect(width(offScreen), height(offScreen));

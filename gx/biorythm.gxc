@@ -1,0 +1,207 @@
+enum Window {
+	draw = RenderMode.swap_buff;
+	resx = 800;
+	resy = 600;
+	padding = 5;
+}
+
+struct Biorithm {
+	int color;
+	string name;
+	int period;
+	int period2;
+}
+
+static Biorithm biorithms[10]
+	= Biorithm(0x7070ff, "Physical", 23,  0)
+	, Biorithm(0xff0000, "Emotional", 28,  0)
+	, Biorithm(0x00ff00, "Intellectual", 33,  0)
+	, Biorithm(0xdadada, "Intuitive", 38,  0)
+	, Biorithm(0x6f6f6f, "Mastery", 23, 33)
+	, Biorithm(0xfeab00, "Passion", 23, 28)
+	, Biorithm(0x9466db, "Wisdom", 28, 33)
+	, Biorithm(0x000000, "skip", 0,  0);
+
+void biorithm(gxSurf dst, int daysToShow, double now, Date birth) {
+
+	void drawGraph(gxSurf dst, Biorithm &br, int daysToShow, double now, Date birth, int label) {
+		double lx;
+		double ly;
+		double days = now - birth.days;
+
+		define precision = 4;
+		if (br.period2) {
+			double p1 = br.period;
+			double p2 = br.period2;
+			for (int i = 0; i <= 2. * precision * daysToShow; i += 1) {
+				double t = days + (double(i) / precision) - daysToShow;
+				double x = Window.resx * (i / (2. * precision * daysToShow));
+				double y1 = Window.resy * (1 - sin(t % p1 / p1 * 2 * Math.pi)) / 2;
+				double y2 = Window.resy * (1 - sin(t % p2 / p2 * 2 * Math.pi)) / 2;
+				double y = (y1 + y2) / 2;
+
+				if (i > 0) {
+					drawLine(dst, lx, ly, x, y, br.color);
+				}
+				lx = x;
+				ly = y;
+			}
+		}
+		else {
+			double p1 = br.period;
+			for (int i = 0; i <= 2. * precision * daysToShow; i += 1) {
+				double t = days + (double(i) / precision) - daysToShow;
+				double x = Window.resx * (i / (2. * precision * daysToShow));
+				double y = Window.resy * (1 - sin(2 * Math.pi * t / p1)) / 2;
+				if (i > 0) {
+					drawLine(dst, lx, ly, x, y, br.color);
+				}
+				lx = x;
+				ly = y;
+			}
+		}
+
+		if (label) {
+			drawText(dst, Window.padding, label, br.name, br.color);
+		}
+	}
+
+	define textSpacing = 16;
+	int textPosition = Window.resy - Window.padding - textSpacing;
+
+	// clear screen
+	fillRect(dst, 0, 0, 32768, 32768, 0x000000);
+
+	// day lines
+	for (int i = 1; i <= 2 * daysToShow; i += 1) {
+		double time = Window.resx * (i / (2. * daysToShow)) - (now % 1 * (double(Window.resx) / daysToShow / 2));
+		drawLine(dst, time, 0, time, Window.resy, 0x282828);
+	}// */
+
+	for (int  i = 0; i < biorithms.length; i += 1) {
+		if (biorithms[i].color == 0)
+			continue;
+		textPosition -= textSpacing;
+	}
+	for (int  i = 0; i < biorithms.length; i += 1) {
+		if (biorithms[i].color == 0)
+			continue;
+		drawGraph(dst, biorithms[i], daysToShow, now, birth, textPosition += textSpacing);
+	}
+
+	// coordinate
+	drawLine(dst, 0, Window.resy / 2, Window.resx, Window.resy / 2, 0x989898);
+	drawLine(dst, Window.resx / 2, 0, Window.resx / 2, Window.resy, 0x989898);
+
+	int y;
+	int m;
+	int d;
+	Date.ToParts(now, &y, &m, &d);
+	define get(int v, int o) = '0' + v / o % 10;
+	uint8 text[32] = 'D', 'a', 't', 'e', ':', ' ', 
+		get(y, 1000), get(y, 100), get(y, 10), get(y, 1),
+		'.', get(m, 10), get(m, 1),
+		'.', get(d, 10), get(d, 1), 0;
+	drawText(dst, Window.padding, Window.padding, emit(string, ref(text)), -1);
+
+}
+
+void setupBiorithm(int _daysToShow, Date _now, Date _birth) {
+
+	static int pos;
+	static Date now;
+	static Date birth;
+	static int daysToShow;
+	static bool reDraw = true;
+
+	define inertial_pan = 30.;
+	define inertial_speed = 1.025;
+
+	static int64 inertial_time = 0;
+	static double inertial_pan_x = 0;
+	static double inertial_pan_y = 0;
+
+	void DrawScreen() {
+		if (reDraw) {
+			double nowPos = now.days + double(pos * daysToShow) / (Window.resx / 2);
+			biorithm(offScreen, daysToShow, nowPos, birth);
+			reDraw = false;
+		}
+		static if (inertial_pan) {
+			int64 now = timeNow();
+			if (inertial_time < now) {
+				inertial_pan_x = Math.clamp(inertial_pan_x, -inertial_pan, inertial_pan) / inertial_speed;
+				inertial_pan_y = Math.clamp(inertial_pan_y, -inertial_pan, inertial_pan) / inertial_speed;
+
+				if ((Math.abs(inertial_pan_x) > .5) || (Math.abs(inertial_pan_y) > .5)) {
+					pos += inertial_pan_x;
+					reDraw = true;
+				}
+				inertial_time = now + (int64(0x100000000) / 100);
+			}
+			if ((Math.abs(inertial_pan_x) > .5) || (Math.abs(inertial_pan_y) > .5)) {
+				Gui.Repaint();
+			}
+		}
+	}
+
+	void mouseHandler(int btn, int x, int y) {
+		static int ox = 0;
+		static int oy = 0;
+		static int ob = 0;
+
+		if (Mouse.dblClick(btn, x, y)) {
+			Mouse.dblClick(-1, 0, 0);		// prevent multi clicks
+			reDraw = true;
+			pos = 0;
+		}
+
+		if (btn == 1) {
+			pos += ox - x;
+			//~ roi.x = Math.clamp(roi.x + ox - x, 0, width(img) - roi.w);
+			//~ roi.y = Math.clamp(roi.y + oy - y, 0, height(img) - roi.h);
+			reDraw = true;
+		}
+		static if (inertial_pan) {
+			static int64 ot = 0;
+			static int32 oox = 0;
+			static int32 ooy = 0;
+			if (btn == 1 && ob == 0) {	// on press
+				ot = timeNow();
+				inertial_pan_x = 0;
+				inertial_pan_y = 0;
+				oox = x;
+				ooy = y;
+			}
+			if (btn == 0 && ob == 1) {	// on relase
+				int64 now = timeNow();
+				if (clocksPerSec(now - ot) < .5) {
+					inertial_time = 0;
+					inertial_pan_x = oox - x;
+					inertial_pan_y = ooy - y;
+					oox = x;
+					ooy = y;
+				}
+			}
+		}
+
+		ox = x;
+		oy = y;
+		ob = btn;
+	}
+
+	pos = 0;
+	now = _now;
+	birth = _birth;
+	daysToShow = _daysToShow;
+	Gui.setDrawCallback(DrawScreen);
+	Gui.setMouseHandler(mouseHandler);
+}
+
+Date Now = Date(2012, 9, 9);
+define daysToShow = 15;
+
+setupBiorithm(daysToShow, Now, Date(1983, 5, 2));
+//~ setupBiorithm(daysToShow, Now, Date(1984, 8, 30));
+
+//~ biorithm(offScreen, daysToShow, Now.days, Date(1983, 5, 2));

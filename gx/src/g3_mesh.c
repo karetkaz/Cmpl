@@ -1097,88 +1097,89 @@ typedef struct userData {
 #include "pvmc.h"
 
 static int getS(state rt, void* _) {
-	userData d = rt->udata;
+	userData d = rt->libc.data;
 	retf64(rt, lerp(d->smin, d->smax, d->s));
 	return 0;
 }
 static int getT(state rt, void* _) {
-	userData d = rt->udata;
+	userData d = rt->libc.data;
 	retf64(rt, lerp(d->tmin, d->tmax, d->t));
 	return 0;
 }
 static int setPos(state rt, void* _) {
-	userData d = rt->udata;
-	d->pos[0] = popf64(rt);
-	d->pos[1] = popf64(rt);
-	d->pos[2] = popf64(rt);
+	userData d = rt->libc.data;
+	d->pos[0] = argf64(rt, 8 * 0);
+	d->pos[1] = argf64(rt, 8 * 1);
+	d->pos[2] = argf64(rt, 8 * 2);
 	d->isPos = 1;
 	return 0;
 }
 static int setNrm(state rt, void* _) {
-	userData d = rt->udata;
-	d->nrm[0] = popf64(rt);
-	d->nrm[1] = popf64(rt);
-	d->nrm[2] = popf64(rt);
+	userData d = rt->libc.data;
+	d->nrm[0] = argf64(rt, 8 * 0);
+	d->nrm[1] = argf64(rt, 8 * 1);
+	d->nrm[2] = argf64(rt, 8 * 2);
 	d->isNrm = 1;
 	return 0;
 }
 
 static int f64abs(state rt, void* _) {
-	float64_t x = popf64(rt);
+	float64_t x = argf64(rt, 0);
 	retf64(rt, fabs(x));
 	return 0;
 }
 static int f64sin(state rt, void* _) {
-	float64_t x = popf64(rt);
+	float64_t x = argf64(rt, 0);
 	retf64(rt, sin(x));
 	return 0;
 }
 static int f64cos(state rt, void* _) {
-	float64_t x = popf64(rt);
+	float64_t x = argf64(rt, 0);
 	retf64(rt, cos(x));
 	return 0;
 }
 static int f64tan(state rt, void* _) {
-	float64_t x = popf64(rt);
+	float64_t x = argf64(rt, 0);
 	retf64(rt, tan(x));
 	return 0;
 }
 static int f64log(state rt, void* _) {
-	float64_t x = popf64(rt);
+	float64_t x = argf64(rt, 0);
 	retf64(rt, log(x));
 	return 0;
 }
 static int f64exp(state rt, void* _) {
-	float64_t x = popf64(rt);
+	float64_t x = argf64(rt, 0);
 	retf64(rt, exp(x));
 	return 0;
 }
 static int f64pow(state rt, void* _) {
-	float64_t x = popf64(rt);
-	float64_t y = popf64(rt);
+	float64_t x = argf64(rt, 0);
+	float64_t y = argf64(rt, 8);
 	retf64(rt, pow(x, y));
 	return 0;
 }
 static int f64sqrt(state rt, void* _) {
-	float64_t x = popf64(rt);
+	float64_t x = argf64(rt, 0);
 	retf64(rt, sqrt(x));
 	return 0;
 }
 static int f64atan2(state rt, void* _) {
-	float64_t x = popf64(rt);
-	float64_t y = popf64(rt);
+	float64_t x = argf64(rt, 0);
+	float64_t y = argf64(rt, 8);
 	retf64(rt, atan2(x, y));
 	return 0;
 }
 
-static int addText(state rt, char *file, int line, char *buff) {
+/*static int addText(state rt, char *file, int line, char *buff) {
 	return ccAddCode(rt, 10, file, line, buff);
-}
+}*/
 
 int evalMesh(mesh msh, int sdiv, int tdiv, char *src, char *file, int line) {
 	static char mem[32 << 10];		// 32K memory
 	state rt = rtInit(mem, sizeof(mem));
 	struct userData ud;
+	const int warnlevel = 2;
 
 	char *logf = NULL;//"dump.evalMesh.txt";
 
@@ -1212,15 +1213,15 @@ int evalMesh(mesh msh, int sdiv, int tdiv, char *src, char *file, int line) {
 	err = err || !ccDefFlt(rt, "pi", 3.14159265358979323846264338327950288419716939937510582097494459);
 	err = err || !ccDefFlt(rt, "e",  2.71828182845904523536028747135266249775724709369995957496696763);
 
-	err = err || addText(rt, __FILE__, __LINE__ + 1,
+	err = err || ccAddCode(rt, warnlevel, __FILE__, __LINE__ + 1,
 		"const double s = gets();\n"
 		"const double t = gett();\n"
 		"double x = s;\n"
 		"double y = t;\n"
 		"double z = 0;\n"
 	);
-	err = err || addText(rt, file, line, src);
-	err = err || addText(rt, __FILE__, __LINE__, "setPos(x, y, z);\n");
+	err = err || ccAddCode(rt, warnlevel, file, line, src);
+	err = err || ccAddCode(rt, warnlevel, __FILE__, __LINE__, "setPos(x, y, z);\n");
 	// */
 
 	// optimize on level 3, and do not generate global variables as static variables
@@ -1245,8 +1246,8 @@ int evalMesh(mesh msh, int sdiv, int tdiv, char *src, char *file, int line) {
 	//~ */
 	logfile(rt, NULL);	// close log
 
-	#define findint(__ENV, __NAME, _OUT_VAL) symvalint(findsym(__ENV, NULL, __NAME), _OUT_VAL)
-	#define findflt(__ENV, __NAME, _OUT_VAL) symvalflt(findsym(__ENV, NULL, __NAME), _OUT_VAL)
+	#define findint(__ENV, __NAME, _OUT_VAL) ccSymValInt(ccFindSym(__ENV, NULL, __NAME), _OUT_VAL)
+	#define findflt(__ENV, __NAME, _OUT_VAL) ccSymValFlt(ccFindSym(__ENV, NULL, __NAME), _OUT_VAL)
 
 	if (findint(rt->cc, "division", &tdiv)) {
 		sdiv = tdiv;
@@ -1275,7 +1276,7 @@ int evalMesh(mesh msh, int sdiv, int tdiv, char *src, char *file, int line) {
 	msh->hasTex = msh->hasNrm = 1;
 	msh->tricnt = msh->vtxcnt = 0;
 
-	rt->udata = &ud;
+	rt->libc.data = &ud;
 	for (t = 0, j = 0; j < tdiv; t += dt, ++j) {
 		for (s = 0, i = 0; i < sdiv; s += ds, ++i) {
 			double pos[3], nrm[3], tex[2];

@@ -209,9 +209,9 @@ int evalexp(ccState cc, char* text) {
 
 static int test(state rt, void* _) {
 	int i;
-	double* ptr = popref(rt);
-	int len = popi32(rt);
-	symn each = findref(rt, popref(rt));
+	double* ptr = argref(rt, 0);
+	int len = argi32(rt, 4);
+	symn each = symfind(rt, argref(rt, 8));
 	for (i = 0; i < len; ++i) {
 		//~ struct {int x;} args = {i};
 		//~ double result;
@@ -237,42 +237,40 @@ int reglibs(state rt, char* stdlib) {
 #if defined(USEPLUGINS)
 
 typedef struct pluginLib* pluginLib;
-static const char* pluginLibInstall = "apiMain";
+static const char* pluginLibInstall = "ccvmInit";
+static const char* pluginLibDestroy = "ccvmDone";
 
-static int installDll(state rt, stateApi api, int ccApiMain(stateApi api)) {
-	api->rt = rt;
-	api->onClose = NULL;
+static int installDll(state rt, int ccApiMain(state rt)) {
+	rt->api.ccBegin = ccBegin;
+	rt->api.ccDefInt = ccDefInt;
+	rt->api.ccDefFlt = ccDefFlt;
+	rt->api.ccDefStr = ccDefStr;
+	rt->api.ccAddType = ccAddType;
+	rt->api.ccAddCall = ccAddCall;
+	rt->api.ccAddCode = ccAddCode;
+	rt->api.ccEnd = ccEnd;
 
-	api->ccBegin = ccBegin;
-	api->ccDefInt = ccDefInt;
-	api->ccDefFlt = ccDefFlt;
-	api->ccDefStr = ccDefStr;
-	api->ccAddType = ccAddType;
-	api->ccAddCall = ccAddCall;
-	api->ccAddCode = ccAddCode;
-	api->ccEnd = ccEnd;
+	//~ rt->api.ccSymFind = ccSymFind;
 
-	api->rtAlloc = rtAlloc;
-	api->invoke = vmCall;
+	rt->api.rtAlloc = rtAlloc;
 
-	//~ api->findsym = findsym;
-	api->findref = findref;
-
-	return ccApiMain(api);
+	rt->api.invoke = vmCall;
+	rt->api.symfind = symfind;
+	return ccApiMain(rt);
 }
 
 #if (defined(WIN32) || defined(_WIN32))
 
 #include <windows.h>
 static struct pluginLib {
-	struct stateApi api;	// each plugin will have its own api
+	void (*onClose)();
 	pluginLib next;			// next plugin
 	HANDLE lib;				// 
 } *pluginLibs = NULL;
 static void closeLibs() {
 	while (pluginLibs != NULL) {
-		if (pluginLibs->api.onClose) {
-			pluginLibs->api.onClose();
+		if (pluginLibs->onClose) {
+			pluginLibs->onClose();
 		}
 		if (pluginLibs->lib) {
 			FreeLibrary((HINSTANCE)pluginLibs->lib);
@@ -285,13 +283,14 @@ static int importLib(state rt, const char* path) {
 	int result = -1;
 	HANDLE lib = LoadLibraryA(path);
 	if (lib != NULL) {
-		int (*install)(stateApi api) = (void*)GetProcAddress(lib, pluginLibInstall);
+		int (*install)(state api) = (void*)GetProcAddress(lib, pluginLibInstall);
+		void (*destroy)() = (void*)GetProcAddress(lib, pluginLibDestroy);
 		if (install != NULL) {
 			pluginLib lib = malloc(sizeof(struct pluginLib));
+			result = installDll(rt, install);
+			lib->onClose = destroy;
 			lib->next = pluginLibs;
 			pluginLibs = lib;
-
-			result = installDll(rt, &lib->api, install);
 		}
 		else {
 			result = -2;
@@ -306,14 +305,14 @@ static int importLib(state rt, const char* path) {
 
 #include <dlfcn.h>
 static struct pluginLib {
-	struct stateApi api;	// each plugin will have its own api
+	void (*onClose)();
 	pluginLib next;			// next plugin
 	void* lib;				// 
 } *pluginLibs = NULL;
 static void closeLibs() {
 	while (pluginLibs != NULL) {
-		if (pluginLibs->api.onClose) {
-			pluginLibs->api.onClose();
+		if (pluginLibs->onClose) {
+			pluginLibs->onClose();
 		}
 		if (pluginLibs->lib) {
 			dlclose(pluginLibs->lib);
@@ -327,12 +326,13 @@ static int importLib(state rt, const char* path) {
 	void* lib = dlopen(path, RTLD_NOW);
 	if (lib != NULL) {
 		void* install = dlsym(lib, pluginLibInstall);
+		void* destroy = dlsym(lib, pluginLibDestroy);
 		if (install != NULL) {
 			pluginLib lib = malloc(sizeof(struct pluginLib));
+			result = installDll(rt, install);
+			lib->onClose = destroy;
 			lib->next = pluginLibs;
 			pluginLibs = lib;
-
-			result = installDll(rt, &lib->api, install);
 		}
 		else {
 			result = -2;
@@ -651,7 +651,7 @@ int program(int argc, char* argv[]) {
 			if (out_tags >= 0) {
 				symn sym = NULL;
 				if (str_tags != NULL) {
-					sym = findsym(rt->cc, NULL, str_tags);
+					sym = ccFindSym(rt->cc, NULL, str_tags);
 					if (sym == NULL) {
 						info(rt, NULL, 0, "symbol not found: %s", str_tags);
 					}
@@ -661,7 +661,7 @@ int program(int argc, char* argv[]) {
 			if (out_tree >= 0) {
 				symn sym = NULL;
 				/*if (str_tree != NULL) {
-					sym = findsym(rt, NULL, str_tree);
+					sym = ccFindSym(rt, NULL, str_tree);
 					if (sym == NULL) {
 						info(rt, NULL, 0, "symbol not found: %s", str_tree);
 					}
@@ -671,7 +671,7 @@ int program(int argc, char* argv[]) {
 			if (out_dasm >= 0) {
 				symn sym = NULL;
 				if (str_dasm != NULL) {
-					sym = findsym(rt->cc, NULL, str_dasm);
+					sym = ccFindSym(rt->cc, NULL, str_dasm);
 					if (sym == NULL) {
 						info(rt, NULL, 0, "symbol not found: %s", str_dasm);
 					}
@@ -808,7 +808,7 @@ static int dbgCon(state rt, int pu, void* ip, long* bp, int ss) {
 					// vmTags(rt, (void*)sptr, slen, 0);
 				}
 				else {
-					symn sym = findsym(rt->cc, NULL, arg);
+					symn sym = ccFindSym(rt->cc, NULL, arg);
 					debug("arg:%T", sym);
 					if (sym && sym->kind == TYPE_ref && sym->stat == 0) {
 						stkval* sp = (stkval*)((char*)bp + ss + sym->offs);

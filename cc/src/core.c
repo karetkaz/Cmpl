@@ -20,6 +20,8 @@ the core:
 				ex complex a = emit(struct, f64(1), f64(-1));
 	emit is used for libcalls, constructors, ..., optimizations
 
+	
+
 *******************************************************************************/
 #include <string.h>
 #include <stdlib.h>
@@ -180,15 +182,7 @@ symn ccDefStr(state rt, char* name, char* value) {
 	return install(rt->cc, name, TYPE_def, TYPE_str, 0, rt->cc->type_str, strnode(rt->cc, value));
 }
 
-symn findsym(ccState s, symn in, char* name) {
-	struct astn ast;
-	memset(&ast, 0, sizeof(struct astn));
-	ast.kind = TYPE_ref;
-	ast.ref.hash = rehash(name, -1);
-	ast.ref.name = name;
-	return lookup(s, in ? in->args : s->s->defs, &ast, NULL, 1);
-}
-symn findref(state rt, void* ptr) {
+symn symfind(state rt, void* ptr) {
 	int offs;
 	symn sym = NULL;
 
@@ -216,7 +210,15 @@ symn findref(state rt, void* ptr) {
 	return NULL;
 }
 
-int symvalint(symn sym, int* res) {
+symn ccFindSym(ccState s, symn in, char* name) {
+	struct astn ast;
+	memset(&ast, 0, sizeof(struct astn));
+	ast.kind = TYPE_ref;
+	ast.ref.hash = rehash(name, -1);
+	ast.ref.name = name;
+	return lookup(s, in ? in->args : s->s->defs, &ast, NULL, 1);
+}
+int ccSymValInt(symn sym, int* res) {
 	struct astn ast;
 	if (sym && eval(&ast, sym->init)) {
 		*res = (int)constint(&ast);
@@ -224,7 +226,7 @@ int symvalint(symn sym, int* res) {
 	}
 	return 0;
 }
-int symvalflt(symn sym, double* res) {
+int ccSymValFlt(symn sym, double* res) {
 	struct astn ast;
 	if (sym && eval(&ast, sym->init)) {
 		*res = constflt(&ast);
@@ -2029,8 +2031,8 @@ int gencode(state rt, int level) {
 	rt->vm.pc = Lmain;
 
 	rt->vm.size.code += emitopc(rt, markIP) - Lmain;
-	rt->vm._used = rt->vm._free = NULL;
 	rt->_beg = rt->_end = NULL;
+	rt->vm._heap = NULL;
 
 	return rt->errc;
 }
@@ -2076,7 +2078,7 @@ static void install_type(ccState cc, int mode) {
 		type_ptr = install(cc,  "pointer", ATTR_const | ATTR_stat | TYPE_rec, TYPE_ref, vm_size, type_rec, NULL);
 		cc->null_ref = install(cc, "null", ATTR_const | ATTR_stat | TYPE_ref, TYPE_any, vm_size, type_ptr, NULL);
 		if (type_ptr != NULL) {
-			type_ptr->pfmt = "pointer(%x)";
+			type_ptr->pfmt = "pointer(@%04x)";
 		}
 	}
 	if (mode & creg_tvar) {
@@ -2359,7 +2361,20 @@ static int libCallHalt(state rt, void* _) {
 }
 static int libCallDebug(state rt, void* _) {
 	//~ void debug(string message, typename objType, pointer objRef, int maxStackTrace, int skip_warn_abort);
-	char* file = popstr(rt);
+
+	//~ /*
+	int arg = 0;
+	#define poparg(__TYPE) (arg += sizeof(__TYPE)) - sizeof(__TYPE)
+	char* file = argstr(rt, poparg(char*));
+	int   line = argi32(rt, poparg(int));
+	//~ char* func = argstr(rt, poparg(char*));
+	char* message = argstr(rt, poparg(char*));
+	symn  objtyp = argref(rt, (arg += 4) - 4);
+	void* object = argref(rt, (arg += 4) - 4);
+	int stktrace = argi32(rt, (arg += 4) - 4);
+	int dbgmode = argi32(rt, (arg += 4) - 4);
+	//~ */
+	/*char* file = popstr(rt);
 	int   line = popi32(rt);
 	//~ char* func = popstr(rt);
 	char* message = popstr(rt);
@@ -2367,6 +2382,7 @@ static int libCallDebug(state rt, void* _) {
 	void* object = popref(rt);
 	int stktrace = popi32(rt);
 	int dbgmode = popi32(rt);
+	// */
 	int level = 0;
 
 	if (dbgmode) {
@@ -2404,8 +2420,8 @@ static int libCallDebug(state rt, void* _) {
 	return 0;
 }
 static int libCallMemMgr(state rt, void* _) {
-	void* old = popref(rt);
-	int size = popi32(rt);
+	void* old = argref(rt, 0);
+	int size = argi32(rt, 4);
 	void* res = rtAlloc(rt, old, size);
 	reti32(rt, vmOffset(rt, res));
 	return 0;
@@ -2418,7 +2434,7 @@ typedef enum {
 } TpenameOp;
 
 static int libTypeName(state rt, void* op) {
-	symn sym = findref(rt, popref(rt));
+	symn sym = symfind(rt, argref(rt, 0));
 	switch((TpenameOp)op) {
 		//~ default:
 			//~ // error
@@ -2514,8 +2530,29 @@ ccState ccInit(state rt, int mode, int libcHalt(state, void*)) {
 		ccAddCall(rt, libTypeName, (void*)typeOpGetBase, "typename base(typename type);");
 		cc->type_rec->args = leave(cc, cc->type_rec, 0);
 
+		/* TODO: reflection
+		enum BindingFlags {
+			//inline     = 0x000000;	// this is not available at runtime.
+			typename     = 0x000001;
+			variable     = 0x000002;
+			function     = 0x000003;	// 
+			attr_static  = 0x000004;
+			attr_const   = 0x000008;
+		}
+		ccAddCall(rt, libTypeName, (void*)typeOpGetFile, "typename lookup(typename type, int options, string name, typename args...)");
+
+		// 
+		ccAddCall(rt, libTypeName, (void*)typeOpGetFile, "variant invoke(typename field, variant args...)");
+		ccAddCall(rt, libTypeName, (void*)typeOpGetFile, "variant setValue(typename field, variant value)");
+		ccAddCall(rt, libTypeName, (void*)typeOpGetFile, "variant getValue(typename field)");
+
+		ccAddCall(rt, libTypeName, (void*)typeOpGetFile, "bool canassign(typename to, typename from, bool canCast)");
+		ccAddCall(rt, libTypeName, (void*)typeOpGetFile, "bool instanceof(typename of, var obj)");
+		//~ */
+
 		enter(cc, NULL);
 		ccAddCode(rt, 0, __FILE__, __LINE__, "define size(typename type) = int(type.size);");
+
 		arg = leave(cc, cc->type_rec, 0);
 		arg->next = cc->type_rec->args;
 		cc->type_rec->args = arg;
@@ -2587,26 +2624,30 @@ state rtInit(void* mem, unsigned size) {
  * return NULL if cannot allocate, or size == 0
 **/
 void* rtAlloc(state rt, void* ptr, unsigned size) {
-	/* memory map
+	/* memory manager
+	 * using one double linked list with used and unused memory chunks.
+	 * The idea is when allocating a block of memory we always must to traverse the list of chunks.
+	 * when freeing a block not. Because of this if a block is used prev points to the previos block.
+	 * a block is free when prev is null.
 	 .
 	 :
 	>+--------------------------------+
 	 | next                           |
 	 +--------------------------------+
-	 | size                           |
+	 | prev                           |
 	 +--------------------------------+
 	 | 0                              |
 	 .                                .
 	 : ...                            :
-	 | size - 1 bytes                 |
+	 | next - this bytes              |
 	>+--------------------------------+
 	 | next                           |
 	 +--------------------------------+
-	 | size                           |
+	 | prev                           |
 	 +--------------------------------+
 	 | 0                              |
 	 : ...                            :
-	 | size - 1 bytes                 |
+	 | next - this bytes              |
 	 +--------------------------------+
 	 :
 	the lowest bit in size indicates
@@ -2614,134 +2655,127 @@ void* rtAlloc(state rt, void* ptr, unsigned size) {
 
 	typedef struct memchunk {
 		struct memchunk* next;
-		unsigned int size;
-		char data[];
+		struct memchunk* prev;		// not null for used memory
+		char data[0];
 	} *memchunk;
 
-	memchunk memd = NULL;
-
+	memchunk memd = (memchunk)((char*)ptr - sizeof(struct memchunk));
 	size = padded(size, sizeof(struct memchunk));
 
-	dieif(ptr && (unsigned char*)ptr < rt->_mem, "invalid reference");
-	dieif((unsigned char*)ptr > rt->_mem + rt->_size, "invalid reference");
-
 	// memory manager was not initialized, initialize it first
-	if (rt->vm._free == NULL && rt->vm._used == NULL) {
-		memchunk freemem = (void*)padded((int)(rt->_mem + rt->vm.px + 16), 16);
-		freemem->next = NULL;
-		freemem->size = rt->_size - (freemem->data - (char*)rt->_mem);
-
-		rt->vm._used = NULL;
-		rt->vm._free = freemem;
+	if (rt->vm._heap == NULL) {
+		memchunk heap = (void*)padded((int)(rt->_mem + rt->vm.px + 16), 16);
+		int heapsize = rt->_size - (heap->data - (char*)rt->_mem);
+		memchunk last = (void*)((char*)heap + heapsize - sizeof(struct memchunk));
+		last->prev = last->next = NULL;
+		heap->prev = NULL;
+		heap->next = last;
+		rt->vm._heap = heap;
 	}
 
 	if (ptr) {	// realloc or free.
-		if (size == 0) {							// free
+		dieif((unsigned char*)ptr < rt->_mem, "memmgr: invalid reference");
+		dieif((unsigned char*)ptr > rt->_mem + rt->_size, "memmgr: invalid reference");
 
-			memchunk prev = NULL;		// prevous free memory block
-			memchunk next = rt->vm._free;	// is there a mergeable free memory block ?
-			void* find;
+		int chunksize = memd->next ? ((char*)memd->next - (char*)memd) : 0;
 
-			memd = (memchunk)((char*)ptr - sizeof(struct memchunk));
-
-			find = (void*)(memd->data + memd->size);
-
-			while (next && (void*)next != find) {
-				//~ trace("find to merge %06x, %06x", vmOffset(rt, next), vmOffset(rt, find));
-				prev = next;
-				next = next->next;
+		if (1) {
+			// extra check if ptr is in used list.
+			memchunk find = rt->vm._heap;
+			memchunk prev = find;
+			while (find && find != memd) {
+				prev = find;
+				find = find->next;
 			}
-
-			if (1) {	// unlink from used list
-				memchunk prev = NULL, list = rt->vm._used;
-				while (list && list != memd) {
-					prev = list;
-					list = list->next;
-				}
-
-				dieif(!list, "FixMe");
-
-				if (prev) {
-					prev->next = list->next;
-				}
-				else {
-					rt->vm._used = list->next;
-				}
-			}
-
-			// merge blocks if possible
-			if (next && next == find) {
-				//~ fputfmt(stdout, "%x: %x\n", vmOffset(rt, next), vmOffset(rt, find));
-				memd->size += next->size + sizeof(struct memchunk);
-				memd->next = next->next;
-			}
-			else {
-				memd->next = next;
-			}
-
-			// link to free list
-			if (prev != NULL) {
-				prev->next = memd;
-			}
-			else {
-				rt->vm._free = memd;
-			}
+			dieif(find != memd, "memmgr: pointer not in list.");
+			dieif(memd->prev != prev, "memmgr: pointer not in used list.");
 		}
-		else if (size > memd->size) {				// grow
-			fatal("FixMe: %s", "realloc memory to grow");
+
+		if (size == 0) {							// free
+			memchunk prev = memd->prev;
+			memchunk next = memd->next;
+
+			if (next && next->prev == NULL) {	// next block is free
+				next = next->next;
+				memd->next = next;
+				if (next && next->prev != NULL)
+					next->prev = prev;
+			}
+			if (prev && prev->prev == NULL) {	// prev block is free
+				memd = prev;
+				prev->next = next;
+				if (next->prev != NULL)
+					next->prev = prev;
+			}
+			memd->prev = NULL;			// mark as unused.
+			memd = NULL;
+		}
+		else if (size > chunksize) {				// grow
+			//~ fatal("FixMe: %s", "realloc memory to grow");
+			error(rt, __FILE__, __LINE__, "not implemented the case when realloc to grow.");
+			memd = NULL;
 		}
 		else if (size > sizeof(struct memchunk)) {	// shrink
-			fatal("FixMe: %s", "realloc memory to shrink");
+			memchunk next = memd->next;
+			memchunk free = (memchunk)((char*)memd + size);
+			if (((char*)next - (char*)free) > sizeof(struct memchunk)) {
+				memd->next = free;
+				free->next = next;
+				free->prev = NULL;
+				if (next->prev == NULL) {	// next block is free
+					next = next->next;
+					free->next = next;
+					if (next && next->prev != NULL)
+						next->prev = free;
+				}
+				else {
+					next->prev = free;
+				}
+			}
 		}
 	}
 	else {		// alloc.
 		if (size > 0) {
-			memchunk prev = NULL;
+			memchunk prev = memd = rt->vm._heap;
+			while (memd) {
+				memchunk next = memd->next;
 
-			int asize = sizeof(struct memchunk) + size;
+				// check if block is free.
+				if (memd->prev == NULL && next) {
+					int chunksize = (char*)next - (char*)memd;
+					chunksize -= sizeof(struct memchunk);
 
-			for (memd = rt->vm._free; memd; memd = memd->next) {
-				if (memd->size >= asize) {
-					break;
+					if (size < chunksize) {
+						int diff = chunksize - size;
+						if (diff > 16) {
+							memchunk free = (memchunk)((char*)memd + size);
+							memd->next = free;
+							free->prev = NULL;
+							free->next = next;
+						}
+						memd->prev = prev;
+						break;
+					}
 				}
 				prev = memd;
-			}
-
-			// here we have the block
-			if (memd) {
-
-				// make a new free block
-				memchunk free = (memchunk)(memd->data + size);
-
-				// link to free list
-				free->size = memd->size - asize;
-				free->next = prev;
-				if (prev != NULL) {
-					prev->next = free;
-				}
-				else {
-					rt->vm._free = free;
-				}
-
-				// todo link used block back ordered by size.
-				memd->size = size;
-				memd->next = rt->vm._used;
-				rt->vm._used = memd;
-			}
-		}
-		else {	// init
-			memchunk mem;
-
-			perr(rt, 0, NULL, 0, "memory info");
-			for (mem = rt->vm._free; mem; mem = mem->next) {
-				perr(rt, 0, NULL, 0, "free chunk@%06x[%06x:%06x] %d", vmOffset(rt, mem), vmOffset(rt, mem->data), vmOffset(rt, mem->data + mem->size), mem->size);
-			}
-			for (mem = rt->vm._used; mem; mem = mem->next) {
-				perr(rt, 0, NULL, 0, "used chunk@%06x[%06x:%06x] %d", vmOffset(rt, mem), vmOffset(rt, mem->data), vmOffset(rt, mem->data + mem->size), mem->size);
+				memd = next;
 			}
 		}
 	}
+
 	//~ debug("memmgr(%x, %d): (%x, %d)", vmOffset(rt, ptr), size, vmOffset(rt, memd ? memd->data : NULL), memd ? memd->size : -1);
+	if (0) {
+		memchunk mem = ptr ? (memchunk)((char*)ptr - sizeof(struct memchunk)) : NULL;
+		perr(rt, 0, __FILE__, __LINE__, "heap info: memmgr(%06x, %d)", vmOffset(rt, mem), size);
+		for (mem = rt->vm._heap; mem; mem = mem->next) {
+			char *status = mem->prev ? "used" : "free";
+			if (mem->next) {
+				int size = (char*)mem->next - (char*)mem;
+				perr(rt, 0, NULL, 0, "%s chunk@%06x[%06x:%06x] %d", status, 
+					vmOffset(rt, mem), vmOffset(rt, mem->prev), vmOffset(rt, mem->next), size);
+			}
+		}
+	}
 	return memd ? memd->data : NULL;
 }
 

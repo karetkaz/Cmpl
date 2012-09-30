@@ -1071,12 +1071,13 @@ enum TypeCode: int32 {
 	TYPE_ref = 0x00000020;		// variable
 	TYPE_fun = 0x00000030;		// function (variable and typename too)
 
-	ATTR_con = 0x00000001;		// constant
-	ATTR_sta = 0x00000002;		// static
-	ATTR_par = 0x00000004;		// parrallel
-	ATTR_snc = 0x00000008;		// synchronized
-	ATTR_ref = 0x00000010;		// indirect
-	ATTR_prv = 0x00000010;		// private
+	ATTR_sta = 0x00000040;		// static
+	ATTR_con = 0x00000080;		// constant
+
+	ATTR_par = 0x00000100;		// parrallel
+	ATTR_snc = 0x00000200;		// synchronized
+	ATTR_ref = 0x00000400;		// indirect
+	ATTR_prv = 0x00000800;		// private
 }
 
 struct TypeInfo {
@@ -1230,5 +1231,5 @@ bool invoke(variant obj, string name, var &&res, var args...) {
 //~ */
 //~ debug.Priority = 0;
 //~ debug.print(1, "alma");
-//~ debug("alma");
-abort("alma");
+debug("alma");
+//~ abort("alma");

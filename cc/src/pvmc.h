@@ -82,11 +82,11 @@ ccState ccOpen(state, char* file, int line, char* source);
 int ccDone(state);
 
 // searching for symbols ...
-symn findref(state, void *ptr);
-symn findsym(ccState, symn in, char *name);
+symn symfind(state, void *ptr);
 
-int symvalint(symn sym, int* res);
-int symvalflt(symn sym, double* res);
+symn ccFindSym(ccState, symn in, char *name);
+int ccSymValInt(symn sym, int* res);
+int ccSymValFlt(symn sym, double* res);
 
 /** instal standard functions.
  * io, mem, math and parse optionaly the given file
@@ -123,5 +123,66 @@ int vmCall2(state, symn fun, ...);
 // output
 void fputfmt(FILE *fout, const char *msg, ...);
 void dump(state, int dumpWhat, symn, char* msg, ...);
+
+typedef struct astn *astn;		// Abstract Syntax Tree Node
+
+/* symbols
+	there are 4 kind of symbols:[TODO]
+		alias is a shortcut to another symbol or an expression
+		typename
+		variable
+		function
+*/
+struct symn {				// type node (data)
+	char*	name;		// symbol name
+	char*	file;		// declared in file
+	int		line;		// declared on line
+
+	int32_t	size;		// sizeof(TYPE_xxx)
+	int32_t	offs;		// addrof(TYPE_xxx)
+
+	symn	type;		// base type of TYPE_ref/TYPE_arr/function (void, int, float, struct, ...)
+
+	//~ TODO: temporarly array variable base type
+	symn	args;		// struct members / function paramseters
+	symn	sdef;		// static members (is the tail of args) / function return value(out value)
+
+	symn	decl;		// declared in namespace/struct/class, function, ...
+	symn	next;		// symbols on table / next param / next field / next symbol
+
+	#if DEBUGGING
+	ccToken	kind;		// TYPE_def / TYPE_rec / TYPE_ref / TYPE_arr
+	ccToken	cast;		// casts to type(TYPE_(bit, vid, ref, u32, i32, i64, f32, f64, p4x)).
+	uint16_t __castkindpadd;
+	#else
+	uint8_t	kind;		// TYPE_ref / TYPE_def / TYPE_rec / TYPE_arr
+	uint8_t	cast;		// casts to type(TYPE_(bit, vid, ref, u32, i32, i64, f32, f64, p4x)).
+	#endif
+
+	union {				// Attributes
+	struct {
+	// TODO: remove call
+	uint16_t	call:1;		// callable(function/definition) <=> (kind == TYPE_ref && args)
+	uint16_t	cnst:1;		// constant
+	uint16_t	priv:1;		// private
+	uint16_t	stat:1;		// static ?
+	uint16_t	glob:1;		// global
+
+	//~ uint8_t	load:1;		// indirect reference: cast == TYPE_ref
+	//~ uint8_t	used:1;		// 
+	uint16_t _padd:11;		// attributes (const static /+ private, ... +/).
+	};
+	uint16_t	Attr;
+	};
+
+	int		nest;		// declaration level
+
+	symn	defs;		// global variables and functions / while_compiling variables of the block in reverse order
+	symn	gdef;		// static variables and functions / while_compiling ?
+
+	astn	init;		// VAR init / FUN body, this shuld be null after codegen
+	astn	used;		// how many times was referenced by lookup
+	char*	pfmt;		// TEMP: print format
+};
 
 #endif

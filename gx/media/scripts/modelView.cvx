@@ -1,7 +1,9 @@
 enum Window {
-	draw = RenderMode.drawFill|RenderMode.draw_lit;
-	resx = 512;
-	resy = 512;
+	draw = RenderMode.drawFill;
+	//~ resx = properties.screen.width;
+	//~ resy = properties.screen.height;
+	//~ resx = 800;
+	//~ resy = 800;
 }
 
 /* list arguments
@@ -11,10 +13,10 @@ for (int i = 0; i < args.length; i += 1) {
 	println(args[i]);
 }// */
 
-string filename = "media/meshes/dchair.obj";
+//~ string filename = "media/meshes/dchair.obj";
 string texture = properties.texture;
 
-if (args.length > 1) {
+/*if (args.length > 1) {
 	filename = args[1];
 	if (args.length > 2) {
 		texture = args[2];

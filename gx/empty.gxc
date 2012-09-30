@@ -24,6 +24,13 @@ void mouseCB(int btn, int x, int y) {
 Gui.setMouseHandler(mouseCB);
 // */
 
+enum Window {
+	//~ draw = RenderMode.swap_buff;
+	resx = 800;
+	resy = 600;
+	padding = 5;
+}
+//~ setPixel(offScreen, 10, 500, 0xff00ff);
 //~ define VmDebug = 1;
 //~ bool grayscale = true;
 //~ int gs = grayscale ? 'g' : 'c';

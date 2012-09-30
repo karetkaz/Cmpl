@@ -10,6 +10,55 @@
 #include "drv_gui.h"
 
 #include "pvmc.h"
+#include <assert.h>
+
+//#{ old style
+/*static inline void* poparg1(state rt, void *result, int size) {
+	// if result is not null copy
+	assert(rt->libc.args != NULL);
+	assert(rt->libc.args->size == size);
+	debug("poparg(`%s`): @%d", rt->libc.args->name, rt->libc.args->offs);
+	void *offs = rt->libc.retv - rt->libc.args->offs;
+	if (result != NULL) {
+		memcpy(result, offs, size);
+	}
+	else {
+		result = offs;
+	}
+	//~ rt->libc.argv += padded(size, 4);
+	rt->libc.args = rt->libc.args->next;
+	return result;
+}// */
+static inline void* poparg2(state rt, void *result, int size) {
+	// if result is not null copy
+	if (result != NULL) {
+		memcpy(result, rt->libc.argv, size);
+	}
+	else {
+		result = rt->libc.argv;
+	}
+	rt->libc.argv += padded(size, 4);
+	return result;
+}
+
+static inline void* poparg(state rt, void *result, int size) {return poparg2(rt, result, size);}
+
+//~ static inline int32_t popi32(state rt) { return *(int32_t*)poparg(rt, NULL, sizeof(int32_t)); }
+//~ static inline int64_t popi64(state rt) { return *(int64_t*)poparg(rt, NULL, sizeof(int64_t)); }
+//~ static inline float32_t popf32(state rt) { return *(float32_t*)poparg(rt, NULL, sizeof(float32_t)); }
+//~ static inline float64_t popf64(state rt) { return *(float64_t*)poparg(rt, NULL, sizeof(float64_t)); }
+
+#define poparg(__ARGV, __TYPE) (((__TYPE*)((__ARGV)->libc.argv += ((sizeof(__TYPE) + 3) & ~3)))[-1])
+static inline int32_t popi32(state rt) { return poparg(rt, int32_t); }
+static inline int64_t popi64(state rt) { return poparg(rt, int64_t); }
+static inline float32_t popf32(state rt) { return poparg(rt, float32_t); }
+static inline float64_t popf64(state rt) { return poparg(rt, float64_t); }
+#undef poparg
+
+static inline void* popref(state rt) { int32_t p = popi32(rt); return p ? rt->_mem + p : NULL; }
+static inline char* popstr(state rt) { return popref(rt); }
+
+//#}
 
 state rt = NULL;
 symn renderMethod = NULL;
@@ -220,7 +269,7 @@ static int surfCall(state rt, void* fun) {
 
 		case surfOpClipRect: {
 			gx_Surf surf = getSurf(popi32(rt));
-			gx_Rect rect = popref(rt);
+			gx_Rect rect = argref(rt, 0);
 			if (surf) {
 				void *ptr = gx_cliprect(surf, rect);
 				reti32(rt, ptr != NULL);
@@ -398,7 +447,7 @@ static int surfCall(state rt, void* fun) {
 		case surfOpEvalPxCB: {		// gxSurf evalSurfrgb(gxSurf dst, gxRect &roi, int callBack(int x, int y));
 			gxSurfHnd dst = popi32(rt);
 			gx_Rect roi = popref(rt);
-			symn callback = findref(rt, popref(rt));
+			symn callback = symfind(rt, popref(rt));
 			//~ fputfmt(stdout, "callback is: %-T\n", callback);
 
 			gx_Surf sdst = getSurf(dst);
@@ -431,7 +480,7 @@ static int surfCall(state rt, void* fun) {
 		case surfOpFillPxCB: {		// gxSurf fillSurfrgb(gxSurf dst, gxRect &roi, int callBack(int col));
 			gxSurfHnd dst = popi32(rt);
 			gx_Rect roi = popref(rt);
-			symn callback = findref(rt, popref(rt));
+			symn callback = symfind(rt, popref(rt));
 
 			gx_Surf sdst = getSurf(dst);
 
@@ -464,7 +513,7 @@ static int surfCall(state rt, void* fun) {
 			int y = popi32(rt);
 			gxSurfHnd src = popi32(rt);
 			gx_Rect roi = popref(rt);
-			symn callback = findref(rt, popref(rt));
+			symn callback = symfind(rt, popref(rt));
 
 			gx_Surf sdst = getSurf(dst);
 			gx_Surf ssrc = getSurf(src);
@@ -529,7 +578,7 @@ static int surfCall(state rt, void* fun) {
 		case surfOpEvalFpCB: {		// gxSurf evalSurf(gxSurf dst, gxRect &roi, vec4f callBack(double x, double y));
 			gxSurfHnd dst = popi32(rt);
 			gx_Rect roi = popref(rt);
-			symn callback = findref(rt, popref(rt));
+			symn callback = symfind(rt, popref(rt));
 
 			gx_Surf sdst = getSurf(dst);
 
@@ -566,7 +615,7 @@ static int surfCall(state rt, void* fun) {
 		case surfOpFillFpCB: {		// gxSurf fillSurf(gxSurf dst, gxRect &roi, vec4f callBack(vec4f col));
 			gxSurfHnd dst = popi32(rt);
 			gx_Rect roi = popref(rt);
-			symn callback = findref(rt, popref(rt));
+			symn callback = symfind(rt, popref(rt));
 
 			gx_Surf sdst = getSurf(dst);
 
@@ -602,7 +651,7 @@ static int surfCall(state rt, void* fun) {
 			gxSurfHnd src = popi32(rt);
 			gx_Rect roi = popref(rt);
 			double alpha = popf64(rt);
-			symn callback = findref(rt, popref(rt));
+			symn callback = symfind(rt, popref(rt));
 
 			gx_Surf sdst = getSurf(dst);
 			gx_Surf ssrc = getSurf(src);
@@ -1135,17 +1184,17 @@ static int miscCall(state rt, void* fun) {
 		}
 
 		case miscOpSetCbMouse: {
-			mouseCallBack = findref(rt, popref(rt));
+			mouseCallBack = symfind(rt, popref(rt));
 			return 0;
 		}
 
 		case miscOpSetCbKeyboard: {
-			keyboardCallBack = findref(rt, popref(rt));
+			keyboardCallBack = symfind(rt, popref(rt));
 			return 0;
 		}
 
 		case miscOpSetCbRender: {
-			renderMethod = findref(rt, popref(rt));
+			renderMethod = symfind(rt, popref(rt));
 			return 0;
 		}
 
@@ -1419,18 +1468,24 @@ int ccCompile(char *src, int argc, char* argv[]) {
 				ccEnd(rt, subcls);
 			}// */
 
-			err = err || !ccDefStr(rt, "object", strnesc(tmpf, sizeof(tmpf), obj));
-			err = err || !ccDefStr(rt, "texture", strnesc(tmpf, sizeof(tmpf), tex));
+			err = err || !ccDefStr(rt, "object", strnesc(tmp, sizeof(tmp), obj));
+			err = err || !ccDefStr(rt, "texture", strnesc(tmp, sizeof(tmp), tex));
 			ccEnd(rt, cls);
 		}
 
-		/* add args
+		/* TODO: add args
 		snprintf(tmp, sizeof(tmp), "string args[%d];", argc);
 		err = err || ccAddCode(rt, strwl, __FILE__, __LINE__ , tmp);
 		for (i = 0; i < argc; i += 1) {
 			snprintf(tmp, sizeof(tmp), "args[%d] = \"%s\";", i, strnesc(tmpf, sizeof(tmpf), argv[i]));
 			err = err || ccAddCode(rt, strwl, __FILE__, __LINE__ , tmp);
 		}// */
+		//~ snprintf(tmp, sizeof(tmp), "string filename = \"%s\";", i, strnesc(tmpf, sizeof(tmpf), argv[i]));
+		//~ err = err || ccAddCode(rt, strwl, __FILE__, __LINE__ , tmp);
+		if (argc == 2) {
+			//~ err = err || !ccDefStr(rt, "script", strnesc(tmp, sizeof(tmp), argv[0]));
+			err = err || !ccDefStr(rt, "filename", strnesc(tmp, sizeof(tmp), argv[1]));
+		}
 		err = err || ccAddCode(rt, srcwl, src, 1, NULL);
 	}
 	else {
@@ -1454,18 +1509,18 @@ int ccCompile(char *src, int argc, char* argv[]) {
 		ccState cc = rt->cc;
 
 		draw = 0;
-		if (symvalint(findsym(cc, NULL, "VmDebug"), &tmp)) {
+		if (ccSymValInt(ccFindSym(cc, NULL, "VmDebug"), &tmp)) {
 			ccDbg = tmp != 0;
 		}
 
-		if ((cls = findsym(cc, NULL, "Window"))) {
-			if (!symvalint(findsym(cc, cls, "resx"), &resx)) {
+		if ((cls = ccFindSym(cc, NULL, "Window"))) {
+			if (!ccSymValInt(ccFindSym(cc, cls, "resx"), &resx)) {
 				//~ debug("using default value for resx: %d", resx);
 			}
-			if (!symvalint(findsym(cc, cls, "resy"), &resy)) {
+			if (!ccSymValInt(ccFindSym(cc, cls, "resy"), &resy)) {
 				//~ debug("using default value for resy: %d", resy);
 			}
-			if (!symvalint(findsym(cc, cls, "draw"), &draw)) {
+			if (!ccSymValInt(ccFindSym(cc, cls, "draw"), &draw)) {
 				//~ debug("using default value for renderType: 0x%08x", draw);
 			}
 		}

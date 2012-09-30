@@ -25,8 +25,6 @@ TOKDEF(TYPE_rec, 0x00, 0, ".rec")		// record (union := struct:0)
 TOKDEF(TYPE_ref, 0x00, 0, ".ref")		// variable / function
 TOKDEF(TYPE_arr, 0x00, 0, ".arr")		// pointer, string, array, ..., ???
 
-//~ TOKDEF(TYPE_p4x, 0x00, 128, ".p4x")
-
 TOKDEF(ENUM_kwd, 0x00, 0, "enum")
 //~ TOKDEF(UNIT_kwd, 0x00, 0, "module")
 //~ TOKDEF(OPER_kwd, 0x00, 0, "operator")

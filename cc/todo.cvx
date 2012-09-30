@@ -8,6 +8,9 @@
 //~ #open src/printer.c			// pretty print, logger
 //~ #open src/main.c
 
+//~ bug: static functions are not accessible from a non static struct it there is only static data.
+//~ bug: function with empty body does not generate the return instruction.
+
 /*TODO: Array assignment
 define Array(int32 typesize, int32 ^n) = emit(struct, ref(memmgr(null, typesize * n)), i32(n));
 
@@ -124,3 +127,173 @@ int xxx = it1.slice[0];
 		spc -4
 
 //~ +/
+
+
+static(typename Value) {
+	Value& select(Value arr[], int pos) {
+		assert(unsigned(pos) > arr.lenght);
+		return pointer(arr) + pos * Value.size;
+	}
+
+	bool insert(Value arr[], int pos, Value value) {
+		return false;
+	}
+
+	bool update(Value arr[], int pos, Value value) {
+		if (unsigned(pos) > arr.lenght)
+			return false;
+		select(arr, pos) = value;
+		return true;
+	}
+
+	bool delete(Value arr[], int pos) {
+		return false;
+	}
+
+	operator (Value arr[]) insert(Value value) = insert(arr, -1, value);
+	operator (Value arr[]) insert(int pos, Value value) = insert(arr, pos, value);
+	operator (Value arr[]) update(int pos, Value value) = update(arr, pos, value);
+	operator (Value arr[]) delete(int pos) = delete(arr, pos);
+
+	operator (Value arr[]) [int pos] = select(arr, pos);
+}
+static(typename Key, typename Value) {
+
+	struct Map {
+		struct Iterator {
+			Map &map;
+			int pos;
+		}
+		struct Item {
+			int hash;		// hash code or previos slot
+			int next;		// next slot
+			Key key;
+			Value value;
+		}
+		int hash;		// hash size, treemap if <= 0
+		int used;		// number of used items
+		Item data[];
+	}
+
+	define iterator(Map map) = Map.Iterator(map, 0);
+	bool next(Map.Iterator it) {
+		pos += 1;
+		// skip not used data.
+		while (it.map.data[pos].hash == 0) {
+			pos += 1;
+		}
+		return pos > it.map.used;
+	}
+
+	bool insert(Map map, Key key, Value value) {
+
+		if (map.data.length <= map.used) {
+			Item data = map.data;
+			map.data = new Item[2 * data.length];
+			for (int i = 0; i < data.length; i += 1) {
+				map.data[i] = data[i];
+			}
+		}
+
+		if (map.hash > 0) {
+			int hash = hash(key) % map.hash;
+			int pos = hash;
+
+			Item &item = null;
+			for (; pos > 0; ) {
+
+				item = map.data[pos];
+				pos = item.next;
+
+				if (key == item.key) {
+					// can not insert key more than once
+					return false;
+				}
+			}
+
+			if (pos != hash) {
+				// wee have to insert a new item
+				item.next = map.used;
+				item = data[map.used];
+				map.used += 1;
+			}
+
+			item.hash = hash;
+			item.next = -1;
+			item.key = key;
+			item.value = value;
+		}
+		else {
+			heap insert
+		}
+		return true;
+	}
+	bool update(Map map, Key key, Value value) {
+		Item &item = select(map, key);
+
+		if (item == null)
+			return false;
+
+		item.value = value;
+		return true;
+	}
+	bool delete(Map map, Key key) {
+		Item &item = select(map, key);
+
+		if (item == null)
+			return false;
+
+		if (map.hash > 0) {
+			while (item.next > 0) {
+				Item next = map[item.next];
+				item.next = next.next;
+
+				item.key = next.key;
+				item.value = next.value;
+
+				item = next;
+			}
+		}
+		else {
+			// heap delete
+			return false;
+		}
+		return true;
+	}
+	Item &select(Map map, Key key) {
+		if (map.hash > 0) {
+			int hash = hash(key) % map.hash;
+			int pos = hash;
+
+			Item &item = null;
+			for (; pos > 0; ) {
+
+				item = map.data[pos];
+				pos = item.next;
+
+				if (key == item.key) {
+					return item;
+				}
+			}
+		}
+		else {
+			heap search
+		}
+		return null;
+	}
+	define value(Map.Item item) = item != null ? item.value : null;
+
+	operator (Value map[Key]) insert(Key key, Value value) = insert(map, key, value);
+	operator (Value map[Key]) update(Key key, Value value) = update(map, key, value);
+	operator (Value map[Key]) delete(Key key) = delete(map, key);
+
+	operator (Value map[Key]) [Key key] = value(select(map, key));
+}
+
+
+int a1 = int(0);
+int a2 = int{0};
+
+Complex c1 = Complex(10, 20);
+Complex c2 = Complex{re: 10, im:20};
+

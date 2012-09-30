@@ -2,13 +2,17 @@ struct string: char[] {
 
 	class Builder {
 		define defSize = 256;
-		int count;
-		char store;
+		char data[];
+		int size;
 
 		bool ensureCap(int length) {
 			result = false;
-			if (value.length < length) {
-				value.length *= 2;
+			if (data.length < size) {
+				char newdata[] = new(char, 2 * int.bsf(size));
+				for (int i = 0; i < data.length; i += 1) {
+					newdata[i] = data[i];
+				}
+				data = newdata;
 				result = true;
 			}
 			return result;
@@ -16,31 +20,35 @@ struct string: char[] {
 
 		Builder Append(bool value) {
 			if (value) {
-				ensureCap(count + 4);
-				store[count++] = 't';
-				store[count++] = 'r';
-				store[count++] = 'u';
-				store[count++] = 'e';
+				if (ensureCap(size + 4)) {
+					data[size++] = 't';
+					data[size++] = 'r';
+					data[size++] = 'u';
+					data[size++] = 'e';
+				}
 			}
 			else {
-				ensureCap(count + 5);
-				store[count++] = 'f';
-				store[count++] = 'a';
-				store[count++] = 'l';
-				store[count++] = 's';
-				store[count++] = 'e';
+				if (ensureCap(size + 5)) {
+					data[size++] = 'f';
+					data[size++] = 'a';
+					data[size++] = 'l';
+					data[size++] = 's';
+					data[size++] = 'e';
+				}
 			}
 			return this;
 		}
 		Builder Append(char value) {
-			ensureCap(count + 1);
-			store[count++] = value;
+			if (ensureCap(size + 1)) {
+				data[size++] = value;
+			}
 			return this;
 		}
 		Builder Append(string value) {
-			ensureCap(count + value.length);
-			for (int i = 0 ; i < value.length; i += 1) {
-				store[count++] = value[i];
+			if (ensureCap(size + value.length)) {
+				for (int i = 0 ; i < value.length; i += 1) {
+					data[size++] = value[i];
+				}
 			}
 			return this;
 		}
@@ -93,9 +101,17 @@ struct string: char[] {
 		Builder Append(int32 value, int radix) {
 			Append(int64(value), radix);
 		}
-		Builder Append(int64 value) {
+		Builder Append(int32 value) {
 			Append(int64(value));
 		}
+
+		string ToString() {
+			result = new(char, size);
+			for (int i = 0; i < size; i += 1) {
+				result[i] = data[i];
+			}
+		}
+
 	}
 
 	enum CompareOptions {
@@ -283,8 +299,14 @@ struct string: char[] {
 				resBuilder.append(chr);
 			}
 		}
-		resBuilder
-		
+		result = resBuilder.ToString();
+	}
+
+	static string ToLowerCase(string str) {
+		result = new(char, str.length);
+		for (int i = 0; i < str.length; i += 1) {
+			result[i] = str[i];
+		}
 	}
 
 	prototype {

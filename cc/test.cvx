@@ -7,7 +7,8 @@
 //~ #open src/parser.c			// input, lexer, parser
 //~ #open src/printer.c			// pretty print, logger
 //~ #open src/main.c
-struct xxx {
+
+/*struct xxx {
 	int64 x1;
 	int64 x2;
 }
@@ -80,34 +81,53 @@ int n2 = sizeof(ss.ss);
 
 //~ */
 
-/* alloc / realloc / free
+//~ /* alloc / realloc / free
 //~ define realloc(pointer ptr, int size) = memmgr(ptr, size);
 define malloc(int size) = memmgr(null, size);
 define free(pointer ptr) = memmgr(ptr, 0);
+
+//~ static int a = 7;
 
 pointer p1 = null;
 pointer p2 = null;
 pointer p3 = null;
 pointer p4 = null;
+//~ pointer p5 = emit(pointer, ref(a));
 
 memmgr(null, 0);
 p1 = malloc(160);
-p2 = malloc(160);
+//~ p1 = free(p1);
+p2 = malloc(161);
 p3 = malloc(160);
+//~ p4 = malloc(160);
+
+//~ p2 = memmgr(p2, 250);
 memmgr(null, 0);
+//~ /*
 
-if (true) {
+define test = 1;
+static if (test == 1) {
 	p3 = free(p3);
 	p2 = free(p2);
 	p1 = free(p1);
 }
-else {
+static if (test == 2) {
 	p1 = free(p1);
 	p2 = free(p2);
 	p3 = free(p3);
 }
+static if (test == 3) {
+	p2 = free(p2);
+	p1 = free(p1);
+	p3 = free(p3);
+}
+static if (test == 4) {
+	p2 = free(p2);
+	p3 = free(p3);
+	p1 = free(p1);
+}
 
-//~ realloc(null, 0);
+free(p4);
 //~ */
 
 /* random floats

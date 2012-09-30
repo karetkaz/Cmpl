@@ -1334,7 +1334,7 @@ static int dbgpu(state rt, cell pu) {
 			switch (ip->opc) {
 				case opc_libc:?
 				case opc_call:
-					*--rt->trace.sp = findsym(rt, mp + *sp);
+					*--rt->trace.sp = symfind(rt, mp + *sp);
 					break;
 				case opc_jmpi:
 					rt->trace.sp++;
@@ -1438,7 +1438,7 @@ int vmExec(state rt, dbgf dbg, int ss) {
 	rt->vm.dbug = dbg;
 
 	// reinitialize memory manager
-	rt->vm._free = rt->vm._used = NULL;
+	rt->vm._heap = NULL;
 
 	// TODO argc, argv
 	if (rt->vm.dbug) {
@@ -1621,7 +1621,7 @@ void fputopc(FILE* fout, unsigned char* ptr, int len, int offs, state rt) {
 		case opc_ldcr: {
 			fputfmt(fout, " %x", ip->arg.u4);
 			if (rt != NULL) {
-				symn sym = findref(rt, getip(rt, ip->arg.u4));
+				symn sym = symfind(rt, getip(rt, ip->arg.u4));
 				if (sym != NULL) {
 					fputfmt(fout, ": %+T: %T", sym, sym->type);
 				}
@@ -1725,6 +1725,10 @@ void vm_fputval(state rt, FILE* fout, symn var, stkval* ref, int level) {
 	if (var->cast == TYPE_ref) {		// by reference
 		if (ref->u4 == 0) {				// null reference.
 			fputfmt(fout, "%T(null)", typ);
+			return;
+		}
+		if (fmt) {
+			fputfmt(fout, fmt, ref->u4);
 			return;
 		}
 		ref = (stkval*)(rt->_mem + ref->u4);

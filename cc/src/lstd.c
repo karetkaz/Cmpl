@@ -13,52 +13,52 @@ math, print, time libcall functions
 //#{#region math functions
 
 /*static int f64abs(state rt, void* _) {
-	float64_t x = popf64(rt);
+	float64_t x = argf64(rt, 0);
 	retf64(rt, fabs(x));
 	return 0;
 }// */
 static int f64sin(state rt, void* _) {
-	float64_t x = popf64(rt);
+	float64_t x = argf64(rt, 0);
 	retf64(rt, sin(x));
 	return 0;
 }
 static int f64cos(state rt, void* _) {
-	float64_t x = popf64(rt);
+	float64_t x = argf64(rt, 0);
 	retf64(rt, cos(x));
 	return 0;
 }
 static int f64tan(state rt, void* _) {
-	float64_t x = popf64(rt);
+	float64_t x = argf64(rt, 0);
 	retf64(rt, tan(x));
 	return 0;
 }
 
 static int f64log(state rt, void* _) {
-	float64_t x = popf64(rt);
+	float64_t x = argf64(rt, 0);
 	retf64(rt, log(x));
 	return 0;
 }
 static int f64exp(state rt, void* _) {
-	float64_t x = popf64(rt);
+	float64_t x = argf64(rt, 0);
 	retf64(rt, exp(x));
 	return 0;
 }
 static int f64pow(state rt, void* _) {
-	float64_t x = popf64(rt);
-	float64_t y = popf64(rt);
+	float64_t x = argf64(rt, 0);
+	float64_t y = argf64(rt, 8);
 	retf64(rt, pow(x, y));
 	//~ debug("pow(%g, %g) := %g", x, y, pow(x, y));
 	return 0;
 }
 static int f64sqrt(state rt, void* _) {
-	float64_t x = popf64(rt);
+	float64_t x = argf64(rt, 0);
 	retf64(rt, sqrt(x));
 	return 0;
 }
 
 static int f64atan2(state rt, void* _) {
-	float64_t x = popf64(rt);
-	float64_t y = popf64(rt);
+	float64_t x = argf64(rt, 0);
+	float64_t y = argf64(rt, 8);
 	retf64(rt, atan2(x, y));
 	return 0;
 }
@@ -66,38 +66,38 @@ static int f64atan2(state rt, void* _) {
 
 //#{ int64 ext
 static int b64shl(state rt, void* _) {
-	uint64_t x = popi64(rt);
-	int32_t y = popi32(rt);
+	uint64_t x = argi64(rt, 0);
+	int32_t y = argi32(rt, 8);
 	reti64(rt, x << y);
 	return 0;
 }
 static int b64shr(state rt, void* _) {
-	uint64_t x = popi64(rt);
-	int32_t y = popi32(rt);
+	uint64_t x = argi64(rt, 0);
+	int32_t y = argi32(rt, 8);
 	reti64(rt, x >> y);
 	return 0;
 }
 static int b64sar(state rt, void* _) {
-	int64_t x = popi64(rt);
-	int32_t y = popi32(rt);
+	int64_t x = argi64(rt, 0);
+	int32_t y = argi32(rt, 8);
 	reti64(rt, x >> y);
 	return 0;
 }
 static int b64and(state rt, void* _) {
-	uint64_t x = popi64(rt);
-	uint64_t y = popi64(rt);
+	uint64_t x = argi64(rt, 0);
+	uint64_t y = argi64(rt, 8);
 	reti64(rt, x & y);
 	return 0;
 }
 static int b64ior(state rt, void* _) {
-	uint64_t x = popi64(rt);
-	uint64_t y = popi64(rt);
+	uint64_t x = argi64(rt, 0);
+	uint64_t y = argi64(rt, 8);
 	reti64(rt, x | y);
 	return 0;
 }
 static int b64xor(state rt, void* _) {
-	uint64_t x = popi64(rt);
-	uint64_t y = popi64(rt);
+	uint64_t x = argi64(rt, 0);
+	uint64_t y = argi64(rt, 8);
 	reti64(rt, x ^ y);
 	return 0;
 }
@@ -394,7 +394,7 @@ static inline int64_t clockNow() {
 static int miscCall(state rt, void* data) {
 	switch ((miscFunc)(int)data) {
 		case miscOpExit: {
-			exit(popi32(rt));
+			exit(argi32(rt, 0));
 			return 0;
 		}
 		case miscOpRand32: {
@@ -417,7 +417,7 @@ static int miscCall(state rt, void* data) {
 			return 0;
 		}
 		case miscOpClocksPS: {
-			float64_t ticks = popi32(rt);
+			float64_t ticks = argi32(rt, 0);
 			retf64(rt, ticks / CLOCKS_PER_SEC);
 			return 0;
 		}
@@ -433,12 +433,12 @@ static int miscCall(state rt, void* data) {
 
 		case miscOpPutStr: {
 			// TODO: check bounds
-			fputfmt(stdout, "%s", popref(rt));
+			fputfmt(stdout, "%s", argref(rt, 0));
 			return 0;
 		}
 		case miscOpPutFmt: {
-			char* fmt = popref(rt);
-			int64_t arg = popi64(rt);
+			char* fmt = argref(rt, 0);
+			int64_t arg = argi64(rt, 4);
 			fputfmt(stdout, fmt, arg);
 			return 0;
 		}

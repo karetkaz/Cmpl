@@ -1102,6 +1102,10 @@ int main(int argc, char* argv[]) {
 			case doSaveMesh:
 				saveMesh(&msh, "mesh.obj");
 				break;
+			
+			case -1:
+				draw = 0;
+				break;
 		}
 
 		if (!draw) {

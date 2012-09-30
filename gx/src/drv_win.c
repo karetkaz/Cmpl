@@ -55,7 +55,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 
 		case WM_DESTROY:
 			PostQuitMessage(0);
-			break;
+			return -1;
 
 		//~ defcase:
 		default:
@@ -270,7 +270,8 @@ static int winmsg(int wait) {
 
 		switch (event.type) {
 
-			case ClientMessage: return -1;
+			case ClientMessage:
+				return -1;
 				//~ post = post_msg = -1;
 				//~ printf("> Event:ClientMessage\n");
 				//~ break;
