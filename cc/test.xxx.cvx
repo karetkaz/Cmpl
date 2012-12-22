@@ -10,6 +10,7 @@
 int x1[20] = 9;
 //~ int x2[] = x1;
 
+//~ assert(!true);
 
 /+ inlineing ...
 define sqr2(float64 ^x) = x*x;

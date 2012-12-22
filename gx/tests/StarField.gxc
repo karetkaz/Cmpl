@@ -6,7 +6,7 @@ enum Window {
 }
 
 struct Star {
-	define speed = 5;
+	define speed = 1;
 	double xpos;
 	double ypos;
 	double zpos;
@@ -51,6 +51,12 @@ void drawCB() {
 	// animate
 	Gui.Repaint();
 
+	static int wait = 0;
+	if ((wait += 1) < 10) {
+		return;
+	}
+	wait = 0;
+
 	//~ clear the screen
 	fillRect(offScreen, 0, 0, Window.resx, Window.resy, 0);
 
@@ -63,7 +69,7 @@ void drawCB() {
 			initStar(&stars[i], i + 1);
 		}
 
-		//~ compute 3D position
+		//~ compute 3D position0
 		tempx = (stars[i].xpos / stars[i].zpos) + centerx;
 		tempy = (stars[i].ypos / stars[i].zpos) + centery;
 
@@ -73,7 +79,7 @@ void drawCB() {
 			continue;
 		}
 
-		define ps = 2;
+		define ps = Math.max(0x200 / stars[i].zpos, 2);
 		fillRect(offScreen, tempx, tempy, tempx + ps, tempy + ps, 0xffffff);
 	}
 

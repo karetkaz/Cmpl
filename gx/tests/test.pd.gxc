@@ -79,6 +79,8 @@ define cosf(float x) = cos(x);
 define colsca(vec4f &x, float ^s) = void(x = vec4f(x.x * s, x.y * s, x.z * s));
 define pi = Math.pi;
 
+define timeCpu() = sTimeHp();
+
 void setup(double &time, vec4f pixelCB(double x, double y)) {
 	define WIDTH = 128;
 	define HEIGHT = WIDTH;

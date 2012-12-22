@@ -128,6 +128,7 @@ vec4f Hsv2Rgb(vec4f hsv) {
 
 		int i = int(h);		// round
 		float32 f = h - i;	// fract
+
 		float32 u = v;
 		float32 p = v * (1 - s);
 		float32 q = v * (1 - s * f);
@@ -163,6 +164,8 @@ define gxSurf(gxSurf ^copy) = copySurf(newSurf(width(copy), height(copy)), 0, 0,
 
 define fillRect(gxSurf dst, gxRect ^roi, int col) = fillRect(dst, roi.x, roi.y, roi.x + roi.w, roi.y + roi.h, col);
 define drawRect(gxSurf dst, gxRect ^roi, int col) = drawRect(dst, roi.x, roi.y, roi.x + roi.w, roi.y + roi.h, col);
+
+define timeNow() = uTimeHp();
 
 gxSurf openImg(gxSurf dst, string fileName) {
 

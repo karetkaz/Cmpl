@@ -12,7 +12,7 @@ enum Options {
 }
 
 // division of mesh and heightmap
-define division = 62;
+define division = 72;
 
 //~ do rain every dorain frame
 define dorain = 0;
@@ -25,8 +25,8 @@ int my = 0;
 
 gxSurf tmp = gxSurf(division, division);
 //~ gxSurf img = gxSurf("media/images/download.jpg");
-//~ gxSurf img = gxSurf("media/images/ex1.jpg");
-gxSurf img = gxSurf("media/images/nol.bmp");
+gxSurf img = gxSurf("media/images/ex1.jpg");
+//~ gxSurf img = gxSurf("media/images/nol.bmp");
 int imh = height(img);
 int imw = width(img);
 

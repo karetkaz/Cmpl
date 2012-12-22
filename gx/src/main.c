@@ -752,6 +752,7 @@ static int kbdHND(int key, int state) {
 		case 'N': msh.hasNrm = !msh.hasNrm; break;
 
 		case 'l': draw ^= draw_lit; break;
+		case '!': draw ^= temp_debug; break;
 
 		case '~': vtx = 0; rm = NULL; break;
 		case '.': vtx += 1; break;
@@ -824,6 +825,7 @@ static int kbdHND(int key, int state) {
 		default:
 			debug("kbdHND(key(%d), lkey(%d))", key, state);
 			break;
+
 	}
 	return 0;
 }
@@ -1210,6 +1212,8 @@ int main(int argc, char* argv[]) {
 		if (draw & swap_buff) {
 			flip(&offs, 0);
 		}
+
+		draw &= ~temp_debug;
 
 	}
 

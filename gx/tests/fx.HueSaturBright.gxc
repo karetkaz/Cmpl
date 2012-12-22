@@ -11,7 +11,7 @@ string fileName = "media/images/download.jpg";
 //~ string fileName = "media/images/Earth.jpg";
 //~ string fileName = "media/images/nol.bmp";
 
-define useNativeImpl = true;
+define useNativeImpl = !true;
 gxSurf img = gxSurf(fileName);
 
 int brightness = 0;
@@ -119,18 +119,21 @@ void drawCB() {
 		static if (true) {
 			int y = 0;
 			define dy = 12;
-			uint8 txt[1024];
+			char txt[1024];
 			string str = emit(string, ref(txt));
 
-			itoa(str, brightness, 10, 1, true, "brightness: ");
+			//~ itoa(str, brightness, 10, 1, true, "brightness: ");
+			itoa(txt, "brightness: %d", brightness);
 			drawText(offScreen, 0, y, str, -1);
 			y += dy;
 
-			itoa(str, saturation, 10, 1, true, "saturation: ");
+			//~ itoa(str, saturation, 10, 1, true, "saturation: ");
+			itoa(txt, "saturation: %d", saturation);
 			drawText(offScreen, 0, y, str, -1);
 			y += dy;
 
-			itoa(str, hue, 10, 1, "hue: ");
+			//~ itoa(str, hue, 10, 1, "hue: ");
+			itoa(txt, "hue: %d", hue);
 			drawText(offScreen, 0, y, str, -1);
 			y += dy;
 		}

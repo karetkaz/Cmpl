@@ -29,13 +29,15 @@ typedef struct bcde {			// byte code decoder
 			uint8_t  dl;	// data to to be copied to stack
 			uint16_t cl;	// code to to be executed paralel: 0 means fork
 		};
-		/*struct {				// extended: 4 bytes `res := lhs OP rhs`
+		/* TODO: extended opcodes
+		struct {				// extended: 4 bytes `res := lhs OP rhs`
 			uint32_t opc:3;		// 0 ... 7
 			uint32_t pad:1;		//
 			uint32_t mem:2;		// mem access
 			uint32_t res:6;		// res
 			uint32_t lhs:6;		// lhs
 			uint32_t rhs:6;		// rhs
+
 			/+ --8<-------------------------------------------
 			void* res = sp + ip->ext.res;
 			void* lhs = sp + ip->ext.lhs;
@@ -1145,7 +1147,9 @@ int emitref(state rt, void* arg) {
 }
 
 int stkoffs(state rt, int size) {
-	logif(size < 0, "FixMe");
+	if (size < 0) {
+		logif(size < 0, "FixMe");
+	}
 	return padded(size, vm_size) + rt->vm.ss * vm_size;
 }
 
@@ -1728,7 +1732,12 @@ void vm_fputval(state rt, FILE* fout, symn var, stkval* ref, int level) {
 			return;
 		}
 		if (fmt) {
-			fputfmt(fout, fmt, ref->u4);
+			if (strcmp("string", typ->name) == 0) {
+				fputfmt(fout, fmt, rt->_mem + ref->u4);
+			}
+			else {
+				fputfmt(fout, fmt, ref->u4);
+			}
 			return;
 		}
 		ref = (stkval*)(rt->_mem + ref->u4);

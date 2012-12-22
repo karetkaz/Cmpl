@@ -11,7 +11,7 @@ string fileName = "media/images/download.jpg";
 //~ string fileName = "media/images/Earth.jpg";
 //~ string fileName = "media/images/nol.bmp";
 
-define useNativeImpl = true;
+define useNativeImpl = !true;
 gxSurf img = gxSurf(fileName);
 gxSurf lui = gxSurf(256, 100);
 
@@ -64,7 +64,7 @@ void drawCB() {
 			clutSurf(offScreen, null, &lut);
 		}
 		static if (!useNativeImpl) {
-			//~ /*
+			//~ /* techniq 1
 			static int pixelCB(int col) {
 				result = __rgb(
 					rch(lut.data[rch(col)]),
@@ -95,18 +95,17 @@ void drawCB() {
 			int y = 0;
 			define dy = 12;
 			uint8 txt[1024];
-			string str = emit(string, ref(txt));
 
-			itoa(str, brightness, 10, 1, true, "brightness: ");
-			drawText(offScreen, 0, y, str, -1);
+			itoa(txt, "brightness: %d", brightness);
+			drawText(offScreen, 0, y, string(txt), -1);
 			y += dy;
 
-			itoa(str, contrast, 10, 1, true, "contrast: ");
-			drawText(offScreen, 0, y, str, -1);
+			itoa(txt, "contrast: %d", contrast);
+			drawText(offScreen, 0, y, string(txt), -1);
 			y += dy;
 
-			itoa(str, gamma, 10, 1, "gamma: ");
-			drawText(offScreen, 0, y, str, -1);
+			itoa(txt, "gamma: %d", gamma);
+			drawText(offScreen, 0, y, string(txt), -1);
 			y += dy;
 		}
 		reDraw = false;

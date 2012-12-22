@@ -1396,7 +1396,32 @@ static astn decl_init(ccState s, symn var) {
 		int cast = var->cast;
 		int mkcon = var->cnst;
 
-		var->init = expr(s, TYPE_def);
+		if (typ->kind == TYPE_arr) {
+			int arrinit = skip(s, STMT_beg);
+			var->init = expr(s, TYPE_def);
+			//~ skip(s, OPER_com);
+			//~ debug("%k", peek(s));
+			if (arrinit) {
+				skiptok(s, STMT_end, 1);
+			}
+			/*if (typ->cnst && typ->stat) {
+				int length = 0;
+				astn ptr = var->init;
+				while (ptr && ptr->kind == OPER_com) {
+					ptr = ptr->op.lhso;
+					length += 1;
+				}
+				if (ptr) {
+					length += 1;
+				}
+				typ->init = intnode(s, 2*length);
+				typ->args = NULL;
+				addarg(s, typ, "length", TYPE_def, s->type_i32, typ->init);
+			}*/
+		}
+		else {
+			var->init = expr(s, TYPE_def);
+		}
 
 		if (var->init->type == s->emit_opc) {		// just in case of  = emit(val, ...)
 			var->init->type = var->type;
@@ -1459,7 +1484,13 @@ static astn decl_init(ccState s, symn var) {
 
 			// int a[] = 1 / int a[] = 1, 2, 3, 4, 5, 6
 			if (base == typ->type && typ->init == NULL) {
+				//*TODO: array length
 				typ->init = intnode(s, nelem);
+				typ->size = nelem;// * sizeOf(base);//->size;
+				//~ typ->args = NULL;
+				var->cast = 0;
+				addarg(s, typ, "length", TYPE_def, s->type_i32, typ->init);
+				// */
 			}
 			else if (typ->init == NULL) {
 				error(s->s, var->file, var->line, "invalid initialization `%+k`", var->init);
@@ -2343,7 +2374,7 @@ astn decl(ccState s, int Rmode) {
 				}
 
 				if ((tok = next(s, TYPE_ref))) {
-					// HACK: declare as a variable to be assignable, then revert to definition.
+					// HACK: declare as a variable to be assignable, then revert to be an alias.
 					symn tmp = declare(s, TYPE_ref, tok, base);
 					tmp->stat = tmp->cnst = 1;
 					redefine(s, tmp);

@@ -358,11 +358,14 @@ static int bits_call(state rt, int function) {
 typedef enum {
 	miscOpExit,
 	miscOpRand32,
-	miscOpTime32,
-	miscOpClock32,
-	miscOpClocksPS,
+
+	timeOpTime32,
+	timeOpClock32,
+	timeOpClocksPS,
+
 	timeOpProc64,
 	timeOpClck64,
+
 	miscOpPutStr,
 	miscOpPutFmt,
 } miscFunc;
@@ -408,15 +411,15 @@ static int miscCall(state rt, void* data) {
 			reti32(rt, result & 0x7fffffff);
 			return 0;
 		}
-		case miscOpTime32: {
+		case timeOpTime32: {
 			reti32(rt, time(NULL));
 			return 0;
 		}
-		case miscOpClock32: {
+		case timeOpClock32: {
 			reti32(rt, clock());
 			return 0;
 		}
-		case miscOpClocksPS: {
+		case timeOpClocksPS: {
 			float64_t ticks = argi32(rt, 0);
 			retf64(rt, ticks / CLOCKS_PER_SEC);
 			return 0;
@@ -500,12 +503,13 @@ int install_stdc(state rt, char* file, int level) {
 		//~ {miscCall, &miscOpArgv,			"string arg(int arg);"},
 
 		{miscCall, miscOpRand32,		"int32 rand();"},
-		//~ {miscCall, timeOpTime32,		"int32 time();"},
-		//~ {miscCall, timeOpClock32,		"int32 clock();"},
-		//~ {miscCall, timeOpClocksPS,		"float64 clocksPerSec(int32 ticks);"},
 
-		{miscCall, timeOpClck64,		"int64 timeNow();"},
-		{miscCall, timeOpProc64,		"int64 timeCpu();"},
+		{miscCall, timeOpTime32,		"int32 time();"},
+		{miscCall, timeOpClck64,		"int32 ticks();"},
+		{miscCall, timeOpClocksPS,		"float64 ticks(int32 ticks);"},
+
+		{miscCall, timeOpClck64,		"int64 uTimeHp();"},
+		{miscCall, timeOpProc64,		"int64 sTimeHp();"},
 
 		{miscCall, miscOpPutStr,		"void print(string val);"},
 		{miscCall, miscOpPutFmt,		"void print(string fmt, int64 val);"},

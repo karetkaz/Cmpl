@@ -7,22 +7,59 @@ enum Window {
 
 struct Biorithm {
 	int color;
-	string name;
 	int period;
 	int period2;
+	string name;
 }
 
-static Biorithm biorithms[10]
-	= Biorithm(0x7070ff, "Physical", 23,  0)
-	, Biorithm(0xff0000, "Emotional", 28,  0)
-	, Biorithm(0x00ff00, "Intellectual", 33,  0)
-	, Biorithm(0xdadada, "Intuitive", 38,  0)
-	, Biorithm(0x6f6f6f, "Mastery", 23, 33)
-	, Biorithm(0xfeab00, "Passion", 23, 28)
-	, Biorithm(0x9466db, "Wisdom", 28, 33)
-	, Biorithm(0x000000, "skip", 0,  0);
+static const Biorithm biorithms[] = {
+	Biorithm(0x7070ff, 23,  0, "Physical"),
+	Biorithm(0xff0000, 28,  0, "Emotional"),
+	Biorithm(0x00ff00, 33,  0, "Intellectual"),
+	Biorithm(0xdadada, 38,  0, "Intuitive"),
+	Biorithm(0x6f6f6f, 23, 33, "Mastery"),
+	Biorithm(0xfeab00, 23, 28, "Passion"),
+	Biorithm(0x9466db, 28, 33, "Wisdom"),
+	Biorithm(0x000000, 0,  0, "skip")
+};
 
-void biorithm(gxSurf dst, int daysToShow, double now, Date birth) {
+void dateToStr(char res[], string prefix, Date date) {
+	int pos = 0;
+	for (int i = 0; prefix[i]; i += 1) {
+		if (pos < res.length) {
+			res[pos] = prefix[i];
+			pos += 1;
+		}
+	}
+	if (pos + 11 < res.length) {
+		pos -= 1;
+
+		int y;
+		int m;
+		int d;
+
+		Date.ToParts(date.days, &y, &m, &d);
+
+		define get(int v, int o) = '0' + v / o % 10;
+
+		res[pos += 1] = get(y, 1000);
+		res[pos += 1] = get(y, 100);
+		res[pos += 1] = get(y, 10);
+		res[pos += 1] = get(y, 1);
+		res[pos += 1] = '.';
+		res[pos += 1] = get(m, 10);
+		res[pos += 1] = get(m, 1);
+		res[pos += 1] = '.';
+		res[pos += 1] = get(d, 10);
+		res[pos += 1] = get(d, 1);
+		res[pos += 1] = 0;
+	}
+	else {
+		res[res.length - 1] = 0;
+	}
+}
+
+void biorithm(gxSurf dst, int daysToShow, double now, Date birth, Biorithm biorithms[]) {
 
 	void drawGraph(gxSurf dst, Biorithm &br, int daysToShow, double now, Date birth, int label) {
 		double lx;
@@ -78,7 +115,7 @@ void biorithm(gxSurf dst, int daysToShow, double now, Date birth) {
 		drawLine(dst, time, 0, time, Window.resy, 0x282828);
 	}// */
 
-	for (int  i = 0; i < biorithms.length; i += 1) {
+	for (int i = 0; i < biorithms.length; i += 1) {
 		if (biorithms[i].color == 0)
 			continue;
 		textPosition -= textSpacing;
@@ -93,29 +130,27 @@ void biorithm(gxSurf dst, int daysToShow, double now, Date birth) {
 	drawLine(dst, 0, Window.resy / 2, Window.resx, Window.resy / 2, 0x989898);
 	drawLine(dst, Window.resx / 2, 0, Window.resx / 2, Window.resy, 0x989898);
 
-	int y;
-	int m;
-	int d;
-	Date.ToParts(now, &y, &m, &d);
-	define get(int v, int o) = '0' + v / o % 10;
-	uint8 text[32] = 'D', 'a', 't', 'e', ':', ' ', 
-		get(y, 1000), get(y, 100), get(y, 10), get(y, 1),
-		'.', get(m, 10), get(m, 1),
-		'.', get(d, 10), get(d, 1), 0;
+	uint8 text[32];
+	dateToStr(text, "Date: ", Date(int64(now)));
 	drawText(dst, Window.padding, Window.padding, emit(string, ref(text)), -1);
+
+	dateToStr(text, "Birth: ", birth);
+	drawText(dst, Window.padding, Window.padding + textSpacing, emit(string, ref(text)), -1);
+	//~ itoa(emit(string, ref(text)), int32(now));
+	//~ drawText(dst, Window.padding, Window.padding + textSpacing, emit(string, ref(text)), -1);
 
 }
 
 void setupBiorithm(int _daysToShow, Date _now, Date _birth) {
 
-	static int pos;
+	static int64 pos;
 	static Date now;
 	static Date birth;
 	static int daysToShow;
 	static bool reDraw = true;
 
-	define inertial_pan = 30.;
-	define inertial_speed = 1.025;
+	define inertial_pan = 300.;
+	define inertial_speed = 1.45;
 
 	static int64 inertial_time = 0;
 	static double inertial_pan_x = 0;
@@ -124,7 +159,7 @@ void setupBiorithm(int _daysToShow, Date _now, Date _birth) {
 	void DrawScreen() {
 		if (reDraw) {
 			double nowPos = now.days + double(pos * daysToShow) / (Window.resx / 2);
-			biorithm(offScreen, daysToShow, nowPos, birth);
+			biorithm(offScreen, daysToShow, nowPos, birth, biorithms);
 			reDraw = false;
 		}
 		static if (inertial_pan) {
@@ -198,10 +233,12 @@ void setupBiorithm(int _daysToShow, Date _now, Date _birth) {
 	Gui.setMouseHandler(mouseHandler);
 }
 
-Date Now = Date(2012, 9, 9);
+//~ Date Now = Date(2012, 11, 10);
+
+Date Now = DateFromTime(time());
 define daysToShow = 15;
+
+//~ Now.days = 6103462;		// 16711.09.19
 
 setupBiorithm(daysToShow, Now, Date(1983, 5, 2));
 //~ setupBiorithm(daysToShow, Now, Date(1984, 8, 30));
-
-//~ biorithm(offScreen, daysToShow, Now.days, Date(1983, 5, 2));

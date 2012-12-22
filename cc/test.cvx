@@ -8,6 +8,9 @@
 //~ #open src/printer.c			// pretty print, logger
 //~ #open src/main.c
 
+//~ uint8 a[] = emit(struct, ref("string"), i32(6));
+
+
 /*struct xxx {
 	int64 x1;
 	int64 x2;
@@ -28,7 +31,7 @@ int line = typename.line(type);
 //~ typename t2 = int64;
 //~ typename t3 = typename;
 
-/* Arrays, Pointers, References Alloc
+/ * Arrays, Pointers, References Alloc
 define new(typename type) = memmgr(null, type.size);
 define new(typename type, int32 ^n) = emit(struct, ref(memmgr(null, type.size * n)), i32(n));// creates a slice: {data, length}
 
@@ -81,7 +84,7 @@ int n2 = sizeof(ss.ss);
 
 //~ */
 
-//~ /* alloc / realloc / free
+/* alloc / realloc / free
 //~ define realloc(pointer ptr, int size) = memmgr(ptr, size);
 define malloc(int size) = memmgr(null, size);
 define free(pointer ptr) = memmgr(ptr, 0);
@@ -103,7 +106,7 @@ p3 = malloc(160);
 
 //~ p2 = memmgr(p2, 250);
 memmgr(null, 0);
-//~ /*
+//~ / *
 
 define test = 1;
 static if (test == 1) {
@@ -483,4 +486,37 @@ int fitness(individual &ind) {
 static population pop[3000];
 
 
+//~ */
+
+//~ Date date = Date(2011, 1, 124);
+//~ Date.Parts parts = Date.ToParts(date.days);
+/*
+int val = 20;
+char buff[512] = 0;
+//~ string str = emit(string, ref(buff));
+
+itoa(buff, "alma: %+20.10i, aweigf", val);
+print(string(buff));
+print("\n");
+*/
+
+struct Biorithm {
+	int color;
+	int period;
+	int period2;
+	string name;
+}
+
+static const Biorithm biorithms[] = {
+	Biorithm(0x7070ff, 23,  0, "Physical"),
+	Biorithm(0xff0000, 28,  0, "Emotional"),
+	Biorithm(0x00ff00, 33,  0, "Intellectual"),
+	Biorithm(0xdadada, 38,  0, "Intuitive"),
+	Biorithm(0x6f6f6f, 23, 33, "Mastery"),
+	Biorithm(0xfeab00, 23, 28, "Passion"),
+	Biorithm(0x9466db, 28, 33, "Wisdom")
+	//~ Biorithm(0x000000,  0,  0, "skip")
+};
+
+//~ test.cvx:510:@0x005360[size: 128]: biorithms: Biorithm[8] {}
 //~ */

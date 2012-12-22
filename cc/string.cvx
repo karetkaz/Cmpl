@@ -1,6 +1,6 @@
 struct string: char[] {
 
-	class Builder {
+	struct Builder {
 		define defSize = 256;
 		char data[];
 		int size;
@@ -329,6 +329,14 @@ struct string: char[] {
 		//~ valueOf()							Returns the primitive value of the specified object.
 	}
 
+	contains: function(str) {
+		return this.indexOf(str) > -1;
+	},
+	endsWith: function(str) {
+		var pos = this.indexOf(str);
+		return pos > -1 && this.length == pos + str.length;
+	}
+
 	string[] split(string str, string separator) {
 		int n = 0;
 		for (int i = 0; i < str.length; i += 1) {
@@ -357,3 +365,5 @@ struct string: char[] {
 	}
 }
 
+//~ operator (string str).IndexOf(char val) = string.IndexOf(str, val);
+//~ operator (string str).IndexOf(string val) = string.IndexOf(str, val);

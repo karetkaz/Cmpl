@@ -380,7 +380,7 @@ static int libCallHaltDebug(state rt, void* _) {
 
 		if (arg->stat) {
 			// static variable.
-			ofs = (void*)(rt->_mem - arg->offs);
+			ofs = (void*)(rt->_mem + arg->offs);
 		}
 		else {
 			// argument or local variable.

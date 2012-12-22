@@ -819,14 +819,14 @@ int g3_drawmesh(gx_Surf dst, mesh msh, matrix objm, camera cam, int draw, double
 	texcol lit = 0, col = tmpcolarr;
 
 	//~ objm = NULL;
-	if (msh->vtxcnt > MAXVTX) return -1;
+	if (msh->vtxcnt > MAXVTX)
+		return -1;
 
 	//~ World*Wiew*Proj
 	view = cammat(tmp, cam);
 
 	if (objm)
 		view = matmul(tmp + 1, tmp, objm);
-
 	proj = matmul(tmp + 2, &cam->proj, view);
 
 	if (draw & draw_tex) {
@@ -921,6 +921,11 @@ int g3_drawmesh(gx_Surf dst, mesh msh, matrix objm, camera cam, int draw, double
 			} break;
 			case draw_fill: {
 				draw_triangle(dst, pos, col, lit, i1, i2, i3, img);
+				if (draw & temp_debug) {
+					debug("p1: %f, %f, %f", pos[i1].x, pos[i1].y, pos[i1].z);
+					debug("p2: %f, %f, %f", pos[i2].x, pos[i2].y, pos[i2].z);
+					debug("p3: %f, %f, %f", pos[i3].x, pos[i3].y, pos[i3].z);
+				}
 			} break;
 		}
 		tricnt += 1;

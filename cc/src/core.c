@@ -1268,7 +1268,8 @@ static int cgen(state rt, astn ast, ccToken get) {
 					logif(var->size == 0, "invalid use of variable: `%-T`", var);
 
 					// a slice is needed, push(length).
-					if (get == TYPE_arr) {
+					if (get == TYPE_arr && ret != TYPE_arr) {
+						//~ info(rt, __FILE__, __LINE__, "assign to array from %t @ %k", ret, ast);
 						if (!emiti32(rt, typ->size)) {
 							trace("%+k", ast);
 							return 0;
@@ -1295,6 +1296,12 @@ static int cgen(state rt, astn ast, ccToken get) {
 					}
 
 					if (get != TYPE_ref) {
+						if (get == TYPE_arr && ret == TYPE_arr) {
+							//~ info(rt, __FILE__, __LINE__, "assign to array from %t @ %k", ret, ast);
+							//~ info(rt, ast->file, ast->line, "assign to array from %t @ %k", ret, ast);
+							size = 8;
+						}
+
 						if (!emitint(rt, opc_ldi, size)) {
 							trace("%+k", ast);
 							return 0;
@@ -1302,6 +1309,7 @@ static int cgen(state rt, astn ast, ccToken get) {
 					}
 					else {
 						if (var->cast == TYPE_arr) {
+							//~ info(rt, __FILE__, __LINE__, "assign to array from %t @ %k", ret, ast);
 							retarr = TYPE_arr;
 						}
 						ret = TYPE_ref;
@@ -2044,6 +2052,7 @@ static void install_type(ccState cc, int mode) {
 	symn type_i08, type_i16, type_i32, type_i64;
 	symn type_u08, type_u16, type_u32;
 	symn type_f32, type_f64;
+	symn type_chr;
 
 	type_rec = install(cc, "typename", ATTR_const | ATTR_stat | TYPE_rec, TYPE_ref, 0, NULL, NULL);
 
@@ -2096,6 +2105,11 @@ static void install_type(ccState cc, int mode) {
 	cc->type_ptr = type_ptr;
 
 	// aliases.
+
+	type_chr = install(cc, "char", ATTR_const | ATTR_stat | TYPE_rec, TYPE_u32, 1, type_rec, NULL);
+	//~ type_chr = install(cc, "char", ATTR_const | TYPE_def, 0, 0, type_u08, NULL);
+	type_chr->pfmt = "'%c'";
+
 	install(cc, "int",    ATTR_const | TYPE_def, 0, 0, cc->type_i32, NULL);
 	install(cc, "long",   ATTR_const | TYPE_def, 0, 0, cc->type_i64, NULL);
 	install(cc, "float",  ATTR_const | TYPE_def, 0, 0, cc->type_f32, NULL);

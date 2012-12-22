@@ -26,6 +26,7 @@ enum {
 	disp_bbox = 0x00080000,		// Bounding Box
 	temp_lght = 0x00100000,		// lights
 	temp_zbuf = 0x00200000,
+	temp_debug= 0x00400000,		// print positions
 
 	swap_buff = 0x01000000,
 	post_swap = 0x02000000,		// post swap_buff,

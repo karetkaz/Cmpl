@@ -24,8 +24,8 @@ typedef struct ccState *ccState;// compiler
 
 struct state {
 	int   errc;		// error count
-	FILE* logf;		// log file
 	int   closelog;	// close log file
+	FILE* logf;		// log file
 
 	symn  defs;		// global variables and functions
 	symn  gdef;		// static variables and functions
@@ -38,7 +38,7 @@ struct state {
 		void* data;		// user data
 	} libc;
 
-	// virtual mashine
+	// virtual machine
 	struct {
 		int (*dbug)(state, int pu, void* ip, long* sptr, int scnt);
 		void* cell;					// execution unit
@@ -64,7 +64,9 @@ struct state {
 		void* _heap;
 	} vm;
 
-	// compiler enviroment
+	/* compiler enviroment
+	 * after code was generated this becomes null.
+	*/
 	ccState cc;
 
 	// external library support

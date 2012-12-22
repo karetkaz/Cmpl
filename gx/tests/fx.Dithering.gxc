@@ -5,8 +5,8 @@ enum Window {
 	resy = resx;
 }
 
-//~ string fileName = "media/images/David.png";
-string fileName = "media/images/lenaRGB.png";
+string fileName = "media/images/David.png";
+//~ string fileName = "media/images/lenaRGB.png";
 //~ string fileName = "media/images/download.jpg";
 //~ string fileName = "media/images/dino-blue.jpg";
 //~ string fileName = "media/images/Earth.jpg";
@@ -302,10 +302,11 @@ gxSurf dither(gxSurf img, bool grayscale, uint32 colors, Dithering method) {
 	}
 }
 
-int colors = 7;
+int colors = 8;
 int grayscale = !true;
 Dithering method = Dithering.Stucki;
-//~ method = Dithering.Bayer;
+method = Dithering.Bayer;
+//~ method = Dithering.None;
 
 //~ define hex(uint32 ^c) = int(c <= 9 ? (c + '0') : ((c - 10) + 'a'));
 define hex(uint32 c) = int("0123456789abcdefh"[c & 255]);
