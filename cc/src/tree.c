@@ -31,13 +31,16 @@ astn newnode(ccState s, int kind) {
 }
 
 astn tagnode(ccState s, char* id) {
-	int slen = strlen(id);
-	astn ast = newnode(s, TYPE_ref);
-	if (ast != NULL) {
-		ast->kind = TYPE_ref;
-		ast->type = ast->ref.link = 0;
-		ast->ref.hash = rehash(id, slen + 1) % TBLS;
-		ast->ref.name = mapstr(s, id, slen + 1, ast->ref.hash);
+	astn ast = NULL;
+	if (s && id) {
+		ast = newnode(s, TYPE_ref);
+		if (ast != NULL) {
+			int slen = strlen(id);
+			ast->kind = TYPE_ref;
+			ast->type = ast->ref.link = 0;
+			ast->ref.hash = rehash(id, slen + 1) % TBLS;
+			ast->ref.name = mapstr(s, id, slen + 1, ast->ref.hash);
+		}
 	}
 	return ast;
 }
@@ -175,13 +178,13 @@ int eval(astn res, astn ast) {
 			return 0;
 
 		case OPER_dot: {
-			if (!istype(ast->op.lhso)) return 0;
+			if (!isType(ast->op.lhso)) return 0;
 			return eval(res, ast->op.rhso);
 		} break;
 		case OPER_fnc: {
 			astn lhs = ast->op.lhso;
 
-			if (lhs && !istype(lhs))
+			if (lhs && !isType(lhs))
 				return 0;
 
 			if (!eval(res, ast->op.rhso))

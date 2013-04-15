@@ -285,7 +285,7 @@ vec4f tunnel0(double x, double y) {
 	result = rgb2vec4f(tex2d(srcImg, u, v, 2 * r));
 }
 
-setup(&time, yinyang);
-//~ setup(&yinyang, yinyang);
+setup(&time, blob2d);
+//~ setup(&time, yinyang);
 //~ setup(&time, Perlin.Noise2f);
 //~ Gui.exitLoop();

@@ -12,14 +12,14 @@ struct Biorithm {
 	string name;
 }
 
-static const Biorithm biorithms[] = {
-	Biorithm(0x7070ff, 23,  0, "Physical"),
-	Biorithm(0xff0000, 28,  0, "Emotional"),
-	Biorithm(0x00ff00, 33,  0, "Intellectual"),
-	Biorithm(0xdadada, 38,  0, "Intuitive"),
-	Biorithm(0x6f6f6f, 23, 33, "Mastery"),
-	Biorithm(0xfeab00, 23, 28, "Passion"),
-	Biorithm(0x9466db, 28, 33, "Wisdom"),
+const Biorithm biorithms1[] = {
+	Biorithm(0x5050ff, 23,  0, "Physical - Fizikai %d %%"),
+	Biorithm(0xff0000, 28,  0, "Emotional - Erzelmi %d %%"),
+	Biorithm(0x00ff00, 33,  0, "Intellectual - Szellemi %d %%"),
+	Biorithm(0xdadada, 38,  0, "Intuitive - Megerzes"),
+	Biorithm(0x6f6f6f, 23, 33, "Mastery - Iranyitas"),
+	Biorithm(0xfeab00, 23, 28, "Passion - Szenvedely"),
+	Biorithm(0x9466db, 28, 33, "Wisdom - Bolcsesseg"),
 	Biorithm(0x000000, 0,  0, "skip")
 };
 
@@ -65,6 +65,7 @@ void biorithm(gxSurf dst, int daysToShow, double now, Date birth, Biorithm biori
 		double lx;
 		double ly;
 		double days = now - birth.days;
+		double precent = 0;
 
 		define precision = 4;
 		if (br.period2) {
@@ -79,6 +80,9 @@ void biorithm(gxSurf dst, int daysToShow, double now, Date birth, Biorithm biori
 
 				if (i > 0) {
 					drawLine(dst, lx, ly, x, y, br.color);
+					if (i == precision * daysToShow) {
+						precent = 100 - y * 200. / Window.resy;
+					}
 				}
 				lx = x;
 				ly = y;
@@ -92,6 +96,9 @@ void biorithm(gxSurf dst, int daysToShow, double now, Date birth, Biorithm biori
 				double y = Window.resy * (1 - sin(2 * Math.pi * t / p1)) / 2;
 				if (i > 0) {
 					drawLine(dst, lx, ly, x, y, br.color);
+					if (i == precision * daysToShow) {
+						precent = 100 - y * 200. / Window.resy;
+					}
 				}
 				lx = x;
 				ly = y;
@@ -99,7 +106,9 @@ void biorithm(gxSurf dst, int daysToShow, double now, Date birth, Biorithm biori
 		}
 
 		if (label) {
-			drawText(dst, Window.padding, label, br.name, br.color);
+			char text[256] = 0;
+			itoa(text, br.name, precent);
+			drawText(dst, Window.padding, label, string(text), br.color);
 		}
 	}
 
@@ -150,7 +159,7 @@ void setupBiorithm(int _daysToShow, Date _now, Date _birth) {
 	static bool reDraw = true;
 
 	define inertial_pan = 300.;
-	define inertial_speed = 1.45;
+	define inertial_speed = 1.05;
 
 	static int64 inertial_time = 0;
 	static double inertial_pan_x = 0;
@@ -159,7 +168,7 @@ void setupBiorithm(int _daysToShow, Date _now, Date _birth) {
 	void DrawScreen() {
 		if (reDraw) {
 			double nowPos = now.days + double(pos * daysToShow) / (Window.resx / 2);
-			biorithm(offScreen, daysToShow, nowPos, birth, biorithms);
+			biorithm(offScreen, daysToShow, nowPos, birth, biorithms1);
 			reDraw = false;
 		}
 		static if (inertial_pan) {

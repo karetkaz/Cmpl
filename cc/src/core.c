@@ -20,8 +20,6 @@ the core:
 				ex complex a = emit(struct, f64(1), f64(-1));
 	emit is used for libcalls, constructors, ..., optimizations
 
-	
-
 *******************************************************************************/
 #include <string.h>
 #include <stdlib.h>
@@ -47,6 +45,9 @@ static inline int genRef(state rt, symn var) {
 	return emitint(rt, opc_ldcr, var->offs);
 }
 
+/* TODO: remove function:
+ * static expressions should be handled by lookup.
+ */
 int isStatic(ccState cc, astn ast) {
 	if (ast) switch (ast->kind) {
 		default:
@@ -169,16 +170,28 @@ void ccEnd(state rt, symn cls) {
 }
 
 symn ccDefInt(state rt, char* name, int64_t value) {
+	if (!rt || !name) {
+		debug("%x, %s, %D", rt, name, value);
+		return NULL;
+	}
 	name = mapstr(rt->cc, name, -1, -1);
 	return install(rt->cc, name, TYPE_def, TYPE_int, 0, rt->cc->type_i32, intnode(rt->cc, value));
 }
 symn ccDefFlt(state rt, char* name, double value) {
+	if (!rt || !name) {
+		debug("%x, %s, %F", rt, name, value);
+		return NULL;
+	}
 	name = mapstr(rt->cc, name, -1, -1);
 	return install(rt->cc, name, TYPE_def, TYPE_flt, 0, rt->cc->type_f64, fltnode(rt->cc, value));
 }
 symn ccDefStr(state rt, char* name, char* value) {
+	if (!rt || !name) {
+		debug("%x, %s, %s", rt, name, value);
+		return NULL;
+	}
 	name = mapstr(rt->cc, name, -1, -1);
-	value = mapstr(rt->cc, value, -1, -1);
+	value = value ? mapstr(rt->cc, value, -1, -1) : NULL;
 	return install(rt->cc, name, TYPE_def, TYPE_str, 0, rt->cc->type_str, strnode(rt->cc, value));
 }
 
@@ -757,7 +770,7 @@ static int cgen(state rt, astn ast, ccToken get) {
 			}
 
 			// push Result, Arguments
-			if (var && !isType(var) && var != rt->cc->emit_opc && var->call) {
+			if (var && !istype(var) && var != rt->cc->emit_opc && var->call) {
 				if (sizeOf(var->type) && !emitint(rt, opc_spc, sizeOf(var->type))) {
 					trace("%+k", ast);
 					return 0;
@@ -781,9 +794,9 @@ static int cgen(state rt, astn ast, ccToken get) {
 					argv = argv->op.lhso;
 				}
 
-				if (var == rt->cc->emit_opc && istype(argv)) {
+				if (var == rt->cc->emit_opc && isType(argv)) {
 					// static casting with emit
-					logif(DEBUGGING, "%+k", ast);
+					logif(DEBUGGING > 4, "%+k @(%s: %d)", ast, ast->file, ast->line);
 					break;
 				}
 
@@ -803,9 +816,9 @@ static int cgen(state rt, astn ast, ccToken get) {
 			}
 
 			if (var == rt->cc->emit_opc) {		// emit()
-				logif(DEBUGGING, "emit: %+k", ast);
+				//~ logif(DEBUGGING, "emit: %+k", ast);
 			}
-			else if (isType(var)) {				// cast()
+			else if (istype(var)) {				// cast()
 				//~ debug("cast: %+k", ast);
 				if (!argv || argv != ast->op.rhso) {
 					warn(rt, 1, ast->file, ast->line, "multiple values, array ?: '%+k'", ast);
@@ -900,7 +913,7 @@ static int cgen(state rt, astn ast, ccToken get) {
 		case OPER_dot: {	// '.'
 			// TODO: this should work as indexing
 			symn var = linkOf(ast->op.rhso);
-			int lhsstat = istype(ast->op.lhso);
+			int lhsstat = isType(ast->op.lhso);
 
 			if (!var) {
 				trace("%+k", ast);
@@ -1268,8 +1281,8 @@ static int cgen(state rt, astn ast, ccToken get) {
 					logif(var->size == 0, "invalid use of variable: `%-T`", var);
 
 					// a slice is needed, push(length).
+					//~ logif(get == TYPE_arr, "assign to array from %t to %t @ %k(%t)", ret, get, ast, ast->type->cast);
 					if (get == TYPE_arr && ret != TYPE_arr) {
-						//~ info(rt, __FILE__, __LINE__, "assign to array from %t @ %k", ret, ast);
 						if (!emiti32(rt, typ->size)) {
 							trace("%+k", ast);
 							return 0;
@@ -2087,7 +2100,7 @@ static void install_type(ccState cc, int mode) {
 		type_ptr = install(cc,  "pointer", ATTR_const | ATTR_stat | TYPE_rec, TYPE_ref, vm_size, type_rec, NULL);
 		cc->null_ref = install(cc, "null", ATTR_const | ATTR_stat | TYPE_ref, TYPE_any, vm_size, type_ptr, NULL);
 		if (type_ptr != NULL) {
-			type_ptr->pfmt = "pointer(@%04x)";
+			type_ptr->pfmt = "pointer(@%06x)";
 		}
 	}
 	if (mode & creg_tvar) {
@@ -2374,32 +2387,22 @@ static int libCallHalt(state rt, void* _) {
 	return 0;
 }
 static int libCallDebug(state rt, void* _) {
-	//~ void debug(string message, typename objType, pointer objRef, int maxStackTrace, int skip_warn_abort);
+	// debug(string message, int level, int trace, bool abort, typename objtyp, pointer objref);
 
-	//~ /*
 	int arg = 0;
 	#define poparg(__TYPE) (arg += sizeof(__TYPE)) - sizeof(__TYPE)
-	char* file = argstr(rt, poparg(char*));
-	int   line = argi32(rt, poparg(int));
+	char* file = argstr(rt, poparg(int32_t));
+	int   line = argi32(rt, poparg(int32_t));
 	//~ char* func = argstr(rt, poparg(char*));
-	char* message = argstr(rt, poparg(char*));
-	symn  objtyp = argref(rt, (arg += 4) - 4);
-	void* object = argref(rt, (arg += 4) - 4);
-	int stktrace = argi32(rt, (arg += 4) - 4);
-	int dbgmode = argi32(rt, (arg += 4) - 4);
-	//~ */
-	/*char* file = popstr(rt);
-	int   line = popi32(rt);
-	//~ char* func = popstr(rt);
-	char* message = popstr(rt);
-	symn  objtyp = popref(rt);
-	void* object = popref(rt);
-	int stktrace = popi32(rt);
-	int dbgmode = popi32(rt);
-	// */
-	int level = 0;
 
-	if (dbgmode) {
+	char* message = argstr(rt, poparg(int32_t));
+	int loglevel = argi32(rt, poparg(int32_t));
+	int tracelevel = argi32(rt, poparg(int32_t));
+	symn objtyp = argref(rt, poparg(int32_t));
+	void* object = argref(rt, poparg(int32_t));
+
+	// TODO: level < rt->loglevel
+	if (loglevel < 0 || loglevel) {
 		FILE* logf = rt ? rt->logf : stderr;
 		if (logf) {
 			int isOutput = 0;
@@ -2416,19 +2419,19 @@ static int libCallDebug(state rt, void* _) {
 				vm_fputval(rt, rt->logf, objtyp, object, 0);
 				isOutput = 1;
 			}
-			if (stktrace > 0) {
-				perr(rt, level, NULL, 0, ": stack trace[%d] not supported yet", stktrace);
+			if (tracelevel > 0) {
+				perr(rt, tracelevel, NULL, 0, ": stack trace[%d] not supported yet", tracelevel);
 			}
 			if (isOutput) {
 				fputfmt(logf, "\n");
 			}
 		}
-		if (dbgmode > 1) {
-			if (dbgmode > 2) {
-				abort();
-			}
+	}
+	if (loglevel < 0) {
+		/*if (loglevel < 1) {
 			exit(-1);
-		}
+		}*/
+		abort();
 	}
 
 	return 0;
@@ -2517,7 +2520,7 @@ ccState ccInit(state rt, int mode, int libcHalt(state, void*)) {
 
 	if (cc->type_ptr && (mode & creg_tptr)) {
 		cc->libc_mem = ccAddCall(cc->s, libCallMemMgr, NULL, "pointer memmgr(pointer ptr, int32 size);");
-		cc->libc_dbg = ccAddCall(rt, libCallDebug, NULL, "void debug(string message, typename objtyp, pointer objref, int maxStackTrace, int mode);");
+		cc->libc_dbg = ccAddCall(rt, libCallDebug, NULL, "void debug(string message, int level, int trace, typename objtyp, pointer objref);");
 		/*enum mode {
 			skip = 0;
 			info = 1;

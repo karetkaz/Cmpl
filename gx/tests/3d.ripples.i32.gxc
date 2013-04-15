@@ -6,7 +6,7 @@ enum Window {
 }
 
 enum Options {
-	textured = true;
+	textured = !true;
 	do2d = !true;
 	do3d = true;
 }

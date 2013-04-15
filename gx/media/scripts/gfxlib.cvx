@@ -165,8 +165,6 @@ define gxSurf(gxSurf ^copy) = copySurf(newSurf(width(copy), height(copy)), 0, 0,
 define fillRect(gxSurf dst, gxRect ^roi, int col) = fillRect(dst, roi.x, roi.y, roi.x + roi.w, roi.y + roi.h, col);
 define drawRect(gxSurf dst, gxRect ^roi, int col) = drawRect(dst, roi.x, roi.y, roi.x + roi.w, roi.y + roi.h, col);
 
-define timeNow() = uTimeHp();
-
 gxSurf openImg(gxSurf dst, string fileName) {
 
 	int ext = strlen(fileName);
@@ -378,6 +376,8 @@ gxSurf lut2Surf(gxSurf dst, gxClut &lut, int bg) {
 
 //#}
 
+define timeNow() = uTimeHp();
+
 static struct Mouse {
 	struct dblClickState {
 		int64 clk;		// old clock
@@ -417,8 +417,8 @@ static struct Mouse {
 		static dblClickState old;
 		result = dblClick(&old, btn, x, y);
 	}
+}
 
-	}
 //#{ 3d Mesh
 /// TODO: closed meshes
 void meshGen(int sdiv, bool sclosed, int tdiv, bool tclosed, void pos(double &x, double &y, double &z, double s, double t), double epsilon) {

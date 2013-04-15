@@ -11,7 +11,7 @@ string fileName = "media/images/download.jpg";
 //~ string fileName = "media/images/Earth.jpg";
 //~ string fileName = "media/images/nol.bmp";
 
-define useNativeImpl = !true;
+define useNativeImpl = true;
 gxSurf img = gxSurf(fileName);
 
 int brightness = 0;
@@ -48,27 +48,34 @@ void mouseCB(int btn, int x, int y) {
 	oy = y;
 }
 
-mat4f cmatHue(float64 val) {
-	val = Math.deg2rad(Math.clamp(val, 0., 360.));
-	float64 cV = cos(val);
-	float64 sV = sin(val);
-	float64 lR = 0.213;
-	float64 lG = 0.715;
-	float64 lB = 0.072;
+mat4f matHue(float val) {
+	//assert(val >= 0 && val <= 2*pi);
+	float cV = cos(val);
+	float sV = sin(val);
+	float lR = 0.213;
+	float lG = 0.715;
+	float lB = 0.072;
 	result.x = vec4f(lR+cV*(1-lR)+sV*(   -lR), lG+cV*(   -lG)+sV*( -lG), lB+cV*( -lB)+sV*(1 - lB),0.);
 	result.y = vec4f(lR+cV*(0-lR)+sV*(0.1430), lG+cV*(1 - lG)+sV*(0.14), lB+cV*( -lB)+sV*(-0.283),0.);
 	result.z = vec4f(lR+cV*(0-lR)+sV*(lR - 1), lG+cV*(   -lG)+sV*(  lG), lB+cV*(1-lB)+sV*(    lB),0.);
 	result.w = vec4f(0., 0., 0., 1.);
 }
-mat4f cmatSat(float64 val) {
-	float64 x = 1 + Math.clamp(val, -100., 200.) / 100;
-	result.x = vec4f(0.3086*(1-x) + x , .6094*(1-x), .0820*(1-x), 0.);
-	result.y = vec4f(0.3086*(1-x) , .6094*(1-x) + x, .0820*(1-x), 0.);
-	result.z = vec4f(0.3086*(1-x) , .6094*(1-x), .0820*(1-x) + x, 0.);
+mat4f matSaturation(float val) {
+	//~ val between 0, 3
+	const float inv = 1 - val;
+	const float R = .213f * inv;
+	const float G = .715f * inv;
+	const float B = .072f * inv;
+	//~ const float R = .3086 * inv;
+	//~ const float G = .6094 * inv;
+	//~ const float B = .0820 * inv;
+
+	result.x = vec4f(R + val, G, B, 0.);
+	result.y = vec4f(R, G + val, B, 0.);
+	result.z = vec4f(R, G, B + val, 0.);
 	result.w = vec4f(0., 0., 0., 1.);
 }
-mat4f cmatLum(float64 val) {
-	val = Math.clamp(val, -100., 100.) / 100;
+mat4f matLuminosity(float val) {
 	result.x = vec4f(1., 0., 0., val);
 	result.y = vec4f(0., 1., 0., val);
 	result.z = vec4f(0., 0., 1., val);
@@ -86,14 +93,15 @@ mat4f cmatHSL(float hue, float sat, float lum) {
 
 	mat4f tmp;
 
-	tmp = cmatLum(lum);
+	tmp = matLuminosity(lum);
 	result = mul(&result, &tmp);
 
-	tmp = cmatSat(sat);
+	tmp = matSaturation(sat);
 	result = mul(&result, &tmp);
 
-	tmp = cmatHue(hue);
+	tmp = matHue(hue);
 	result = mul(&result, &tmp);
+	//~ result = mul(&result, matHue(hue));
 }
 
 void drawCB() {
@@ -104,7 +112,7 @@ void drawCB() {
 		saturation = Math.clamp(saturation, -100, 200);
 		hue = Math.clamp(hue, 0, 360);
 
-		mat = cmatHSL(hue, saturation, brightness);
+		mat = cmatHSL(Math.deg2rad(hue), saturation / 100. + 1, brightness / 100.);
 
 		static if (useNativeImpl) {
 			cmatSurf(offScreen, null, &mat);
@@ -114,6 +122,9 @@ void drawCB() {
 				result = dph(mat, col);
 			}
 			fillSurf(offScreen, null, pixelCB);
+			/*fillSurf(offScreen, null, function vec4f(vec4f col) {
+				result = dph(mat, col);
+			});*/
 		}
 
 		static if (true) {

@@ -187,7 +187,7 @@ typedef struct libc {
 	int pos;
 	symn sym;
 } *libc;
-struct list {				// linked list: stringlist, memgr, ...
+struct list {				// linked list: stringlist, ...
 	struct list*	next;
 	unsigned char*	data;
 	unsigned int	size;
@@ -410,8 +410,8 @@ int fixjump(state, int src, int dst, int stc);
 // returns the stack size
 int stkoffs(state rt, int size);
 
-int isType(symn sym);
-int istype(astn ast);
+int istype(symn sym);
+int isType(astn ast);
 
 symn linkOf(astn ast);
 long sizeOf(symn typ);	// should be typ->size

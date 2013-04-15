@@ -101,7 +101,7 @@ int install_stdc(state, char* file, int level);
  * aborts if ptr is not null and not inside the context.
  * @param the runtime state.
  * @param ptr: an allocated memory address in the vm or null.
- * @param size: the new size to reallocate or 0.
+ * @param size: the new size to reallocate or 0 to free memory.
  * @return non zero on error.
 	ptr == null && size == 0: nothing
 	ptr == null && size >  0: alloc
@@ -118,7 +118,6 @@ typedef int (*dbgf)(state, int pu, void *ip, long* sptr, int scnt);
 
 int vmExec(state, dbgf dbg, int ss);
 int vmCall(state, symn fun, void* ret, void* args);
-int vmCall2(state, symn fun, ...);
 
 // output
 void fputfmt(FILE *fout, const char *msg, ...);
@@ -184,5 +183,10 @@ struct symn {				// type node (data)
 	astn	used;		// how many times was referenced by lookup
 	char*	pfmt;		// TEMP: print format
 };
+
+static inline int padded(int offs, int align) {
+	//~ assert(align == (align & -align));
+	return (offs + (align - 1)) & ~(align - 1);
+}
 
 #endif

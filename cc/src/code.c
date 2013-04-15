@@ -1509,19 +1509,6 @@ int vmCall(state rt, symn fun, void* ret, void* args) {
 	return result;
 }
 
-/*/ todo: 32 bits only
-static int vmCall2(state rt, symn fun, ...) {
-	int result = 0;
-	if (fun != NULL) {
-		va_list args;
-		va_start(args, fun);
-		result = vmCall(rt, fun, args);
-		va_end(args);
-	}
-	return result;
-	// return vmCall(rt, fun, ((char*)&fun) + sizeof(fun));
-}*/
-
 // returns a statement for an ip (very slow)
 static astn infoAt(state rt, int pos) {
 	if (rt->cc) {
@@ -1731,13 +1718,12 @@ void vm_fputval(state rt, FILE* fout, symn var, stkval* ref, int level) {
 			fputfmt(fout, "%T(null)", typ);
 			return;
 		}
-		if (fmt) {
-			if (strcmp("string", typ->name) == 0) {
-				fputfmt(fout, fmt, rt->_mem + ref->u4);
-			}
-			else {
-				fputfmt(fout, fmt, ref->u4);
-			}
+		if (fmt && strcmp("string", typ->name) == 0) {
+			fputfmt(fout, fmt, rt->_mem + ref->u4);
+			return;
+		}
+		if (fmt && strcmp("pointer", typ->name) == 0) {
+			fputfmt(fout, fmt, ref->u4);
 			return;
 		}
 		ref = (stkval*)(rt->_mem + ref->u4);

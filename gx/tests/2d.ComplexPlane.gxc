@@ -37,7 +37,7 @@ vec4f rgbOp(double x, double y) {
 	//~ z = add(z, div(pow(z, Complex(4)), sub(sin(pow(z, Complex(4, 0))), 1)));
 	//~ z = toPolar(z);
 	result = Domain(z, 1);
-	//~ result = vec4f(AbsMod(abs(im(z)), 1));
+	//~ result = vec4f(AbsMod(Math.abs(im(z)), 1));
 	//~ result = Hsv2Rgb(vec4f(Math.abs(re(z)) % 1, 1, 1));
 }
 

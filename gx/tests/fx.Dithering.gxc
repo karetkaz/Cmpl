@@ -302,10 +302,11 @@ gxSurf dither(gxSurf img, bool grayscale, uint32 colors, Dithering method) {
 	}
 }
 
-int colors = 8;
-int grayscale = !true;
+int colors = 12;
+int grayscale = true;
 Dithering method = Dithering.Stucki;
-method = Dithering.Bayer;
+//~ method = Dithering.Steinberg;
+//~ method = Dithering.Bayer;
 //~ method = Dithering.None;
 
 //~ define hex(uint32 ^c) = int(c <= 9 ? (c + '0') : ((c - 10) + 'a'));

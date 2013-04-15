@@ -207,29 +207,11 @@ int evalexp(ccState cc, char* text) {
 	return -1;
 }
 
-static int test(state rt, void* _) {
-	int i;
-	double* ptr = argref(rt, 0);
-	int len = argi32(rt, 4);
-	symn each = symfind(rt, argref(rt, 8));
-	for (i = 0; i < len; ++i) {
-		//~ struct {int x;} args = {i};
-		//~ double result;
-		vmCall(rt, each, &ptr[i], &i);		// invoke the callback
-	}
-
-	//~ logif(1, "array[%d] @%x", len, ptr);
-	ptr[2] = 7.0;
-	return 0;
-}
-
 int reglibs(state rt, char* stdlib) {
 	int err = 0;
 
 	err = err || install_stdc(rt, stdlib, wl);
 	//~ err = err || install_bits(s);
-
-	ccAddCall(rt, test, NULL, "void testFunc(float64 arg[], float64 cb(int idx));");
 
 	return err;
 }
@@ -296,7 +278,7 @@ static int importLib(state rt, const char* path) {
 			result = -2;
 		}
 	}
-	fprintf(stdout, "imported: %s.%s(): %d\n", path, pluginLibInstall, result);
+	//~ fprintf(stdout, "imported: %s.%s(): %d\n", path, pluginLibInstall, result);
 	fflush(stdout);
 	return result;
 }
@@ -338,7 +320,7 @@ static int importLib(state rt, const char* path) {
 			result = -2;
 		}
 	}
-	fprintf(stdout, "imported: %s.%s(): %d `%s`\n", path, pluginLibInstall, result, dlerror());
+	//~ fprintf(stdout, "imported: %s.%s(): %d `%s`\n", path, pluginLibInstall, result, dlerror());
 	fflush(stdout);
 	return result;
 }

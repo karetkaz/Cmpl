@@ -102,4 +102,4 @@ gxSurf histo(gxSurf dst, gxSurf src, bool rgb) {
 define histo(gxSurf dst, gxSurf src) = histo(dst, src, true);
 
 zoomSurf(offScreen, null, image, null, 1);
-copySurf(offScreen, width(offScreen) - width(histo) - 10, 10, histo(histo, image), null, .10, null);
+copySurf(offScreen, width(offScreen) - width(histo) - 10, 10, histo(histo, image), null, .2, null);

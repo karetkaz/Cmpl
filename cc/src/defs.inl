@@ -30,7 +30,7 @@ TOKDEF(ENUM_kwd, 0x00, 0, "enum")
 //~ TOKDEF(OPER_kwd, 0x00, 0, "operator")
 //~ TOKDEF(NSPC_kwd, 0x00, 0, "namespace")
 
-TOKDEF(QUAL_con, 0x00, 0, "const")	// constant
+//~ TOKDEF(QUAL_con, 0x00, 0, "const")	// constant
 TOKDEF(QUAL_sta, 0x00, 0, "static")
 TOKDEF(QUAL_par, 0x00, 0, "parallel")
 //~ TOKDEF(QUAL_syn, 0x00, 0, "synchronized")

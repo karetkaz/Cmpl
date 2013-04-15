@@ -10,16 +10,22 @@
 
 //~ uint8 a[] = emit(struct, ref("string"), i32(6));
 
-
-/*struct xxx {
+/* typename...
+struct xxx {
 	int64 x1;
 	int64 x2;
 }
 
-define alias1 xxx;
+define Xxx = xxx;		// alias
 
-typename type = alias1;
-//~ int size1 = typename(type).size;
+typename type = Xxx;
+
+xxx a = xxx(0, 0);
+Xxx b = xxx(0, 0);
+
+int size1 = typename(xxx).size;
+int size2 = typename(Xxx).size;
+int size3 = typename(type).size;
 
 string name = typename.name(type);
 int size = typename.size(type);
@@ -31,38 +37,16 @@ int line = typename.line(type);
 //~ typename t2 = int64;
 //~ typename t3 = typename;
 
-/ * Arrays, Pointers, References Alloc
-define new(typename type) = memmgr(null, type.size);
-define new(typename type, int32 ^n) = emit(struct, ref(memmgr(null, type.size * n)), i32(n));// creates a slice: {data, length}
-
-//~ int64 &i32ref = new(int64);
-
-int32 i32arr[] = new(int32, 100);
-
-//~ for (int i = 0; i < arr2.length; i += 1) {
-	//~ arr2[i] = i + 10;
+//~ typename t = Complex;
+//~ if (t == Complex) {
+	//~ print("Complex\n");
+//~ }
+//~ if (Complex == t) {
+	//~ print("Complex\n");
 //~ }
 
-//~ int size = sizeof(arr2);
-//~ */
+*/
 
-/* sizeof
-struct ss {
-	int32 x;
-	int32 y;
-	struct ss {
-		int64 x;
-		int64 y;
-	}
-}
-
-ss A = ss(1, 2);
-ss.ss a = ss.ss(1, 2);
-
-int n1 = sizeof(ss);
-int n2 = sizeof(ss.ss);
-
-//~ */
 /* typename
 struct ss {
 	int32 x;
@@ -82,6 +66,21 @@ typename t2 = ss.ss;
 int n1 = sizeof(ss);
 int n2 = sizeof(ss.ss);
 
+//~ */
+
+/* Arrays, Pointers, References Alloc
+//~ define new(typename type) = memmgr(null, type.size);
+//~ define new(typename type, int32 ^n) = emit(struct, ref(memmgr(null, type.size * n)), i32(n));// creates a slice: {data, length}
+
+//~ int64 &i32ref = new(int64);
+
+int32 i32arr[] = new(int32, 100);
+
+//~ for (int i = 0; i < arr2.length; i += 1) {
+	//~ arr2[i] = i + 10;
+//~ }
+
+//~ int size = sizeof(arr2);
 //~ */
 
 /* alloc / realloc / free
@@ -175,7 +174,7 @@ int x = m1.a;
 
 // */
 
-/* string arrays
+/* TODO: string arrays
 string x = "almax a fa alatt";
 
 string ss[3] = null;
@@ -195,29 +194,21 @@ y = ss[1];
 //~ print(ss[1]);
 // */
 
-//~ int &x = null;
-//~ x = 4;
-
 /* xrgb
-struct xrgb:1 {
+struct xrgb: 1 {
 	uint8 b;
 	uint8 g;
 	uint8 r;
 	uint8 x;
 }
-struct xrgbi32:0 {
+struct xrgbi32: 0 {
 	xrgb rgb;
 	int32 val;
 }
 //~ xrgb res = result;
-//~ define min(int ^a, int ^b) = (a < b ? a : b);
 //~ define clamp(int t, int a, int b) = min(max(t, a), b);
 
 xrgb a = emit(xrgb, i32(0x801f008f));
-
-//~ int structSize = xrgb.class.size;
-//~ int objectSize = a.class.size;
-//~ xrgb b = emit(a.typeOf, i32(0x1f002f));
 
 //~ xrgb b = emit(xrgb, i32(0x2f3f1f));
 //~ int r = a.r + b.r;
@@ -234,12 +225,11 @@ xrgb a = emit(xrgb, i32(0x801f008f));
 //~ static int x[dim][dim][dim][dim] = 690;
 //~ static int x[dim][dim][dim][dim][dim] = 690;
 
-//~ typename t = Complex;
-//~ if (t == Complex) {
-	//~ print("Complex\n");
-//~ }
 //~ float64 c;
 //~ float64 x = Math.modf(Math.pi, &c);
+
+//~ int &x = null;
+//~ x = 4;
 
 /* invoke functions ...
 int method0() {}
@@ -358,7 +348,7 @@ for (int i = 1; tmp > eps; i += 1) {
 }
 // */
 
-/* iterating
+//~ /* iterating
 
 struct range {
 	int min;
@@ -366,59 +356,89 @@ struct range {
 	//~ bool exclusive;
 }
 
-struct range_iterator {
+struct rangeIterator {
 	int pos;
 	int max;
+	int Value;
 	//~ bool exclusive;
 }
 
-define iterator(range ^r) = range_iterator(r.min, r.max);	// start at min, and end at max
+define iterator(range ^r) = rangeIterator(r.min, r.max, 0);	// start at min, and end at max
 
 void printIT(int ri) {
 	print("iterator {%d}\n", int64(ri));
 }
-
-void printIT(range_iterator ri) {
+void printIT(rangeIterator ri) {
 	print("iterator {");
+	//~ print("Value: %d", int64(ri.Value));
 	print("pos: %d", int64(ri.pos));
 	print(", max: %d", int64(ri.max));
 	//~ print(", excl: %d", int64(ri.exclusive));
 	print("}\n");
 }
 
-bool next(range_iterator &it, int &val) {
+bool next(rangeIterator &it) {
 	//~ result = it.pos - it.exclusive < it.max;
 	result = it.pos < it.max;
 	if (result) {
+		it.Value = it.pos;
+		it.pos += 1;
+	}
+}
+//~ for (rangeIterator it : range(10, 13)) {printIT(it.Value);}
+//~ for (rangeIterator it = iterator(range(10, 13)); next(it); ) {printIT(it.Value);}
+
+bool next(rangeIterator &it, int &val) {
+	//~ result = it.pos - it.exclusive < it.max;
+	if (result = it.pos < it.max) {
 		val = it.pos;
 		it.pos += 1;
 	}
 }
-bool next(range_iterator &it, range_iterator &val) {
-	//~ result = it.pos - it.exclusive < it.max;
-	result = it.pos < it.max;
-	if (result) {
-		val = it;
+//~ for (int it : range(10, 13)) {printIT(it);}
+
+bool next(rangeIterator &it, char str[]) {
+	if (result = it.pos < it.max) {
+		// TODO: bugfix: reference of array is not the reference of the variable.
+		//~ print("%08x\n", emit(i32, pointer(str)));
+		if (str != null) {
+			itoa(str, "val: %d", it.pos);
+		}
+		//~ if (str.length != 0) {print(0);}
 		it.pos += 1;
 	}
 }
+for (char str[65536] : range(1, 13)) {println(string(str));}
 
-//~ /+
-for (range_iterator it : range(10, 13)) {
-	printIT(it);
-}// +/
+/+ enable iterating an iterator
+define iterator(rangeIterator ^r) = (r);
+for (rangeIterator it : rangeIterator(10, 13, 8)) {
+	printIT(it.Value);
+}
++/
 
-/+
-for (int it : range(10, 13)) {
-	printIT(it);
-}// +/
+/+ file iterators
+define iterator(file ^f) = (f);
 
-/+ file
-define iterator(file &f) = emit(file, ref(f));
-bool next(file &it, int &chr) {
-	chr = fgetc(it);
-	result = chr != -1;
-}// +/
+// iterate chars
+bool next(file &f, char &chr) {
+	int ch = fgetc(f);
+	result = ch != -1;
+	if (result) {
+		chr = ch;
+	}
+}
+
+// iterate strings
+bool next(file &f, char chr[]) {
+	result = fngets(str, str.length, f) != -1;
+}
+
+//~ file f = open("alma.txt");
+//~ for (char chr : f) {print(chr);}
+//~ for (char str[512] : f) {print(str);}
+
+// +/
 
 //~ */
 
@@ -443,17 +463,19 @@ struct vec4f {
 	float32 w;
 }// +/
 
-enum: vec4f {
+enum xo: vec4f {
 	O = vec4f(0, 0, 0, 0);
 	X = vec4f(1, 0, 0, 0);
 	Y = vec4f(0, 1, 0, 0);
 	Z = vec4f(0, 0, 1, 0);
 }
 
-vec4f z = Z;
+vec4f z = xo.Z;
+//~ xo k = xo.Z;	// ok
+//~ xo x = z;		// error
 // */
 
-/*
+/* ai: Genetic algorithm
 struct individual {
 	bool gene[2][10];
 	double xreal[2];
@@ -483,14 +505,16 @@ int fitness(individual &ind) {
 
 // +/
 //~ double size = 88006400 / double(1 << 20);
-static population pop[3000];
+//~ static population pop[3000];
+//~ int size = sizeof(population) * 3000 >> 20;
 
 
 //~ */
 
-//~ Date date = Date(2011, 1, 124);
+//~ Date date = Date(2011, 10, 24);
 //~ Date.Parts parts = Date.ToParts(date.days);
-/*
+
+/* atoi
 int val = 20;
 char buff[512] = 0;
 //~ string str = emit(string, ref(buff));
@@ -498,8 +522,9 @@ char buff[512] = 0;
 itoa(buff, "alma: %+20.10i, aweigf", val);
 print(string(buff));
 print("\n");
-*/
+//~ */
 
+/*Bug: const struct array initialization
 struct Biorithm {
 	int color;
 	int period;
@@ -507,7 +532,7 @@ struct Biorithm {
 	string name;
 }
 
-static const Biorithm biorithms[] = {
+static const Biorithm biorithms1[7] = {
 	Biorithm(0x7070ff, 23,  0, "Physical"),
 	Biorithm(0xff0000, 28,  0, "Emotional"),
 	Biorithm(0x00ff00, 33,  0, "Intellectual"),
@@ -515,8 +540,25 @@ static const Biorithm biorithms[] = {
 	Biorithm(0x6f6f6f, 23, 33, "Mastery"),
 	Biorithm(0xfeab00, 23, 28, "Passion"),
 	Biorithm(0x9466db, 28, 33, "Wisdom")
-	//~ Biorithm(0x000000,  0,  0, "skip")
 };
 
-//~ test.cvx:510:@0x005360[size: 128]: biorithms: Biorithm[8] {}
+static const Biorithm biorithms2[] = {
+	Biorithm(0x7070ff, 23,  0, "Physical"),
+	Biorithm(0xff0000, 28,  0, "Emotional"),
+	Biorithm(0x00ff00, 33,  0, "Intellectual"),
+	Biorithm(0xdadada, 38,  0, "Intuitive"),
+	Biorithm(0x6f6f6f, 23, 33, "Mastery"),
+	Biorithm(0xfeab00, 23, 28, "Passion"),
+	Biorithm(0x9466db, 28, 33, "Wisdom")
+};
+
+void printsize(Biorithm biorithms[]) {
+	print("length: %d\n", biorithms.length);
+}
+
+printsize(biorithms1);
+printsize(biorithms2);
 //~ */
+
+//~ char str1[] = "alma";
+//~ const char str2[] = {'a', 'l', 'm', 'a', 0};

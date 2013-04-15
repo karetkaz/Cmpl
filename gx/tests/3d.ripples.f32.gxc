@@ -5,8 +5,8 @@ enum Window {
 	resy = 512;
 }
 
-enum Options {
-	textured = true;
+enum Options: bool {
+	textured = !true;
 	do2d = !true;
 	do3d = true;
 }
@@ -23,10 +23,14 @@ define density = 16;
 int mx = 0;
 int my = 0;
 
+// temporary surface for 2d view
 gxSurf tmp = gxSurf(division, division);
-//~ gxSurf img = gxSurf("media/images/download.jpg");
+
+// texture
 gxSurf img = gxSurf("media/images/ex1.jpg");
+//~ gxSurf img = gxSurf("media/images/download.jpg");
 //~ gxSurf img = gxSurf("media/images/nol.bmp");
+
 int imh = height(img);
 int imw = width(img);
 

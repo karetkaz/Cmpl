@@ -41,7 +41,7 @@ struct state {
 	// virtual machine
 	struct {
 		int (*dbug)(state, int pu, void* ip, long* sptr, int scnt);
-		void* cell;					// execution unit
+		void* cell;					// execution unit(s)
 		void* libv;					// libcall vector
 
 		unsigned int	pc;			// entry point / prev program counter
@@ -202,34 +202,6 @@ struct state {
 	unsigned char* _end;
 	unsigned char _mem[];
 };
-
-static inline int padded(int offs, int align) {
-	//~ assert(align == (align & -align));
-	return (offs + (align - 1)) & ~(align - 1);
-}
-
-/* deprecated
-static inline void* poparg(state rt, void *result, int size) {
-	// if result is not null copy
-	if (result != NULL) {
-		memcpy(result, rt->libc.argv, size);
-	}
-	else {
-		result = rt->libc.argv;
-	}
-	rt->libc.argv += padded(size, 4);
-	return result;
-}
-
-#define poparg(__ARGV, __TYPE) (((__TYPE*)((__ARGV)->libc.argv += ((sizeof(__TYPE) + 3) & ~3)))[-1])
-static inline int32_t popi32(state rt) { return poparg(rt, int32_t); }
-static inline int64_t popi64(state rt) { return poparg(rt, int64_t); }
-static inline float32_t popf32(state rt) { return poparg(rt, float32_t); }
-static inline float64_t popf64(state rt) { return poparg(rt, float64_t); }
-static inline void* popref(state rt) { int32_t p = popi32(rt); return p ? rt->_mem + p : NULL; }
-static inline char* popstr(state rt) { return popref(rt); }
-#undef poparg
-//~ */
 
 static inline void* argval(state rt, int offset, void *result, int size) {
 	// if result is not null copy

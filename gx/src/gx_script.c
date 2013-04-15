@@ -1314,6 +1314,10 @@ Obj[] = {
 char* strnesc(char *dst, int max, char* src) {
 	int i = 0;
 
+	if (dst == NULL || src == NULL) {
+		return NULL;
+	}
+
 	while (*src && i < max) {
 		int chr = *src++;
 
@@ -1457,7 +1461,7 @@ int ccCompile(char *src, int argc, char* argv[]) {
 	}
 
 	if (src != NULL) {
-		char tmp[65535], tmpf[4096];
+		char tmp[65535];//, tmpf[4096];
 
 		if ((cls = ccBegin(rt, "properties"))) {
 
@@ -1468,8 +1472,12 @@ int ccCompile(char *src, int argc, char* argv[]) {
 				ccEnd(rt, subcls);
 			}// */
 
-			err = err || !ccDefStr(rt, "object", strnesc(tmp, sizeof(tmp), obj));
-			err = err || !ccDefStr(rt, "texture", strnesc(tmp, sizeof(tmp), tex));
+			if (!err && obj != NULL) {
+				err = !ccDefStr(rt, "object", strnesc(tmp, sizeof(tmp), obj));
+			}
+			if (!err && tex != NULL) {
+				err = !ccDefStr(rt, "texture", strnesc(tmp, sizeof(tmp), tex));
+			}
 			ccEnd(rt, cls);
 		}
 

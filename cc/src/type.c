@@ -126,7 +126,7 @@ symn install(ccState s, const char* name, int kind, int cast, unsigned size, sym
 	dieif(!s || !name || !kind, "FixMe(s, %s, %t)", name, kind);
 
 	if ((kind & 0xff) == TYPE_rec) {
-		logif(DEBUGGING > 1 && !(kind & ATTR_stat), "typename %s is not declared static", name);
+		logif(DEBUGGING > 4 && !(kind & ATTR_stat), "typename %s is not declared static", name);
 		kind |= ATTR_stat;
 	}
 
@@ -445,9 +445,10 @@ symn lookup(ccState s, symn sym, astn ref, astn args, int raise) {
 					sym2 = sym2->type;
 				}
 
-				if (!args->next && isType(sym2)) {
+				if (!args->next && istype(sym2)) {
 					switch(sym2->cast) {
-						default:break;
+						default:
+							break;
 						case TYPE_rec:
 						case TYPE_ref:
 						case TYPE_vid:
@@ -587,7 +588,7 @@ symn declare(ccState s, int kind, astn tag, symn typ) {
 	return def;
 }
 
-int isType(symn sym) {
+int istype(symn sym) {
 	if (sym) switch (sym->kind) {
 		default:break;
 		case TYPE_arr:
@@ -600,17 +601,17 @@ int isType(symn sym) {
 	//~ trace("%T is not a type", sym);
 	return 0;
 }
-int istype(astn ast) {
+int isType(astn ast) {
 	if (!ast) return 0;
 
 	if (ast->kind == EMIT_opc)
 		return 0;
 
 	if (ast->kind == OPER_dot)
-		return istype(ast->op.lhso) && istype(ast->op.rhso);
+		return isType(ast->op.lhso) && isType(ast->op.rhso);
 
 	if (ast->kind == TYPE_ref)
-		return isType(ast->ref.link);
+		return istype(ast->ref.link);
 
 	//~ trace("%t(%+k):(%d)", ast->kind, ast, ast->line);
 	return 0;
@@ -632,7 +633,7 @@ symn linkOf(astn ast) {
 	if (ast->kind == OPER_idx)
 		return linkOf(ast->op.lhso);
 
-	if (ast->kind == TYPE_ref && ast->ref.link) {
+	if ((ast->kind == TYPE_ref || ast->kind == TYPE_def) && ast->ref.link) {
 		// skip type defs
 		symn lnk = ast->ref.link;
 		if (lnk->kind == TYPE_def && lnk->init->kind == TYPE_ref) {
@@ -800,7 +801,7 @@ symn typecheck(ccState s, symn loc, astn ast) {
 							trace("arg(%+k)", arg);
 							return NULL;
 						}
-						if (!(arg->kind == OPER_fnc && isType(linkOf(arg->op.lhso)))) {
+						if (!(arg->kind == OPER_fnc && istype(linkOf(arg->op.lhso)))) {
 							if (arg->type->cast == TYPE_ref) {
 								warn(s->s, 2, arg->file, arg->line, "argument `%+k` is passed by reference", arg);
 							}
@@ -828,7 +829,7 @@ symn typecheck(ccState s, symn loc, astn ast) {
 						return NULL;
 					}
 					// emit's first arg can be a type (static cast)
-					if (!istype(args) && !(args->kind == OPER_fnc && isType(linkOf(args)))) {
+					if (!isType(args) && !(args->kind == OPER_fnc && istype(linkOf(args)))) {
 						if (args->type->cast == TYPE_ref) {
 							warn(s->s, 2, args->file, args->line, "argument `%+k` is passed by reference", args);
 						}
@@ -1037,10 +1038,10 @@ symn typecheck(ccState s, symn loc, astn ast) {
 				if (lhl == s->null_ref && rhl == s->null_ref)
 					cast = TYPE_ref;
 
-				else if (lhl == s->null_ref && rhl && rhl->cast == TYPE_ref)
+				else if (lhl == s->null_ref && rhl && (rhl->cast == TYPE_ref || rhl->cast == TYPE_arr))
 					cast = TYPE_ref;
 
-				else if (rhl == s->null_ref && lhl && lhl->cast == TYPE_ref)
+				else if (rhl == s->null_ref && lhl && (lhl->cast == TYPE_ref || lhl->cast == TYPE_arr))
 					cast = TYPE_ref;
 
 				// bool isint32 = type == int32;
@@ -1245,7 +1246,7 @@ symn typecheck(ccState s, symn loc, astn ast) {
 			}
 
 			//~ TODO: ugly hack
-			if (isType(sym) && args && !args->next) {			// cast
+			if (istype(sym) && args && !args->next) {			// cast
 				if (!castTo(args, sym->cast)) {
 					debug("%k:%t", args, castOf(args->type));
 					return 0;

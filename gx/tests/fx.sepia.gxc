@@ -7,6 +7,7 @@ enum Window {
 //~ string fileName = "media/images/David.png";
 //~ string fileName = "media/images/lenaRGB.png";
 string fileName = "media/images/download.jpg";
+//~ string fileName = "/home/kmz/Dropbox/Photos/DelMe/2012-08-15 11.30.29.jpg";
 //~ string fileName = "media/images/dino-blue.jpg";
 //~ string fileName = "media/images/Earth.jpg";
 //~ string fileName = "media/images/nol.bmp";
@@ -66,4 +67,5 @@ vec4f sepia2Fp(vec4f c) {
 }
 
 //~ setupPicView(image, true);
-setupPicView(fillSurf(image, null, sepiaFp), true);
+fillSurf(image, null, sepia2Fp);
+setupPicView(image, true);

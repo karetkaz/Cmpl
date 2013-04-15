@@ -209,7 +209,7 @@ int source(ccState s, int isFile, char* file) {
 	//~ s->file = 0;
 	s->line = 0;
 
-	if (isFile) {
+	if (isFile && file != NULL) {
 		if ((s->fin._fin = open(file, O_RDONLY)) <= 0)
 			return -1;
 		s->file = mapstr(s, file, -1, -1);
@@ -225,7 +225,7 @@ int source(ccState s, int isFile, char* file) {
 			}
 		}
 	}
-	else if (file) {
+	else if (file != NULL) {
 		s->fin._ptr = file;
 		s->fin._cnt = strlen(file);
 	}
@@ -262,7 +262,8 @@ char* mapstr(ccState s, char* name, unsigned size/* = -1U*/, unsigned hash/* = -
 	dieif(rt->_end - rt->_beg <= (int)(sizeof(struct list) + size + 1), "memory overrun");
 
 	if (name != (char*)rt->_beg) {
-		debug("lookupstr(%s)", name);
+		logif(DEBUGGING > 4, "lookupstr(%s)", name);
+		//~ debug("lookupstr(%s)", name);
 		memcpy(rt->_beg, name, size);
 		name = (char*)rt->_beg;
 	}
@@ -839,7 +840,7 @@ static int readTok(ccState s, astn tok) {
 				//~ {"module", UNIT_kwd},
 				//~ {"operator", OPER_def},
 				{"break", STMT_brk},
-				{"const", QUAL_con},
+				{"const", ATTR_const},
 				{"continue", STMT_con},
 				{"define", TYPE_def},
 				{"else", STMT_els},
@@ -1362,7 +1363,7 @@ static astn type(ccState s/* , int mode */) {	// type(.type)* ('&' | '[]')mode?
 
 		def = sym;
 
-		if (!isType(sym)) {
+		if (!istype(sym)) {
 			def = NULL;
 			break;
 		}
@@ -1451,6 +1452,10 @@ static astn decl_init(ccState s, symn var) {
 			base = var->args;
 			cast = base ? base->cast : 0;
 
+			if (base == typ->type && typ->init == NULL) {
+				mkcon = 0;
+			}
+
 			while (init->kind == OPER_com) {
 				astn val = init->op.rhso;
 				if (!canAssign(s, base, val, 0)) {
@@ -1483,12 +1488,13 @@ static astn decl_init(ccState s, symn var) {
 			}
 
 			// int a[] = 1 / int a[] = 1, 2, 3, 4, 5, 6
-			if (base == typ->type && typ->init == NULL) {
+			if (base == typ->type && typ->init == NULL && var->cnst) {
 				//*TODO: array length
 				typ->init = intnode(s, nelem);
-				typ->size = nelem;// * sizeOf(base);//->size;
-				//~ typ->args = NULL;
-				var->cast = 0;
+				typ->size = nelem;
+				typ->cast = TYPE_ref;
+				var->cast = TYPE_any;
+
 				addarg(s, typ, "length", TYPE_def, s->type_i32, typ->init);
 				// */
 			}
@@ -1541,8 +1547,6 @@ astn decl_var(ccState s, astn* argv, int mode) {
 			argroot = args(s, TYPE_ref);
 			skiptok(s, PNCT_rp, 1);
 
-
-			//~ ref->cast = TYPE_ref;
 			ref->call = 1;
 			ref->args = leave(s, ref, 0);
 
@@ -1694,7 +1698,7 @@ static int qual(ccState s, int mode) {
 	while ((ast = peek(s))) {
 		trloop("%k", peek(s));
 		switch (ast->kind) {
-			case QUAL_con:
+			case ATTR_const:
 				if (!(mode & ATTR_const))
 					return result;
 				if (result & ATTR_const) {
@@ -1799,7 +1803,7 @@ static astn stmt(ccState s, int mode) {
 	}
 
 	// check statement construct
-	if ((ast = next(s, QUAL_par))) {		// 'parallel' ('for' | '{')
+	if ((ast = next(s, QUAL_par))) {		// 'parallel' ('{' | 'for')
 		switch (test(s, 0)) {
 			case STMT_beg:		// parallel task
 			case STMT_for:		// parallel loop
@@ -1813,8 +1817,8 @@ static astn stmt(ccState s, int mode) {
 	}
 	else if ((ast = next(s, QUAL_sta))) {	// 'static' ('if' | 'for')
 		switch (test(s, 0)) {
-			case STMT_for:		// loop unroll
 			case STMT_if:		// compile time if
+			case STMT_for:		// loop unroll
 				qual = QUAL_sta;
 				break;
 			default:
@@ -1908,50 +1912,102 @@ static astn stmt(ccState s, int mode) {
 			else if (skip(s, PNCT_cln)) {		// iterate
 				astn itin = expr(s, TYPE_vid);
 
+				if (qual == QUAL_sta) {
+					error(s->s, ast->file, ast->line, "invalid use of static iteration");
+				}
 				if (itin && itin->type) {
 					// auto .it = iterator(range);
-					// next(.it, a);
-					astn fun, arg;
 
+					// iterator constructor: iterator(range)
+					// TODO: rename: itNew
 					astn tok = tagnode(s, "iterator");
 					symn loc = s->deft[tok->ref.hash];
 					symn sym = lookup(s, loc, tok, itin, 0);
-					astn dcl1 = ast->stmt.init;
-					astn dcl2 = tagnode(s, ".it");
 
-					if (sym != NULL && dcl2 != NULL) {
-						symn x = declare(s, TYPE_ref, dcl2, sym->type);
-						x->init = opnode(s, OPER_fnc, tok, itin);
-						x->init->type = sym->type;
-						x->size = sym->type->size;
-						x->cast = TYPE_rec;
+					// next(.it, a);
+					// TODO: rename: itNext
+					astn fun = NULL;
 
-						dcl2->kind = TYPE_def;
-						dcl2->file = dcl1->file;
-						dcl2->line = dcl1->line;
-						dcl2->next = NULL;
-						dcl1->next = dcl2;
-						sym = x;
-					}
+					if (sym != NULL) {
+						if (sym->type == ast->stmt.init->type) {
+							astn itVar = ast->stmt.init;
 
-					ast->stmt.init = newnode(s, STMT_beg);
-					ast->stmt.init->stmt.stmt = dcl1;
-					ast->stmt.init->type = s->type_vid;
-					ast->stmt.init->cst2 = TYPE_rec;
+							symn x = itVar->ref.link;	// TODO: linkOf(ast->stmt.init);
+							x->init = opnode(s, OPER_fnc, tok, itin);
+							x->init->type = sym->type;
+							x->size = sym->type->size;
+							x->cast = TYPE_rec;
+							sym = x;
 
-					// make the `next(it, a)` test
-					arg = opnode(s, OPER_com, tagnode(s, dcl2->ref.name), tagnode(s, dcl1->ref.name));
-					fun = opnode(s, OPER_fnc, tagnode(s, "next"), arg);
+							itVar->kind = TYPE_def;
+							itVar->next = NULL;
+							// make the `next(it)` test
+							fun = opnode(s, OPER_fnc, tagnode(s, "next"), opnode(s, OPER_adr, NULL, tagnode(s, itVar->ref.name)));
+							//~ debug("%15K", ast);
+						}
+						else {
+							astn itVar = tagnode(s, ".it");
+							astn itVal = ast->stmt.init;
 
-					ast->stmt.test = fun;
-					if (!typecheck(s, NULL, fun) || !typecheck(s, NULL, sym->init)) {
-						error(s->s, ast->file, ast->line, "invalid iterator for `%+k`", itin);
-						if (fun->type && fun->type != s->type_bol) {
-							error(s->s, ast->file, ast->line, "invalid iterator, next should return boolean `%+k`", fun);
+							if (itVar != NULL) {
+								symn x = declare(s, TYPE_ref, itVar, sym->type);
+								x->init = opnode(s, OPER_fnc, tok, itin);
+								x->init->type = sym->type;
+								x->size = sym->type->size;
+								x->cast = TYPE_rec;
+
+								itVar->kind = TYPE_def;
+								itVar->file = itVal->file;
+								itVar->line = itVal->line;
+								itVar->next = NULL;
+								itVal->next = itVar;
+								sym = x;
+							}
+
+							ast->stmt.init = newnode(s, STMT_beg);
+							ast->stmt.init->stmt.stmt = itVal;
+							ast->stmt.init->type = s->type_vid;
+							ast->stmt.init->cst2 = TYPE_rec;
+
+							// make the `next(it, a)` test
+							fun = opnode(s, OPER_fnc, tagnode(s, "next"), opnode(s, OPER_com, opnode(s, OPER_adr, NULL, tagnode(s, itVar->ref.name)), opnode(s, OPER_adr, NULL, tagnode(s, itVal->ref.name))));
+							//~ debug("%+k, %+k", itVar, itVal);
 						}
 					}
+
+					if (fun == NULL || !typecheck(s, NULL, sym->init)) {
+						fun = opnode(s, OPER_fnc, tagnode(s, "next"), NULL);
+						error(s->s, ast->file, ast->line, "iterator not defined for `%T`", itin->type);
+						info(s->s, ast->file, ast->line, "a function `%k(%T)` should be declared", tok, itin->type);
+					}
+					else if (!typecheck(s, NULL, fun) || fun->type != s->type_bol) {
+						error(s->s, ast->file, ast->line, "iterator not found for `%+k`: %+k", itin, fun);
+						if (fun->op.rhso->kind == OPER_com) {
+							info(s->s, ast->file, ast->line, "a function `%k(%T &, %T): %T` should be declared", fun->op.lhso, fun->op.rhso->op.lhso->type, fun->op.rhso->op.rhso->type, s->type_bol);
+						}
+						else {
+							info(s->s, ast->file, ast->line, "a function `%k(%T &): %T` should be declared", fun->op.lhso, fun->op.rhso->type, s->type_bol);
+						}
+					}
+					else {
+						//~ symn nextFun = fun->op.lhso->ref.link;
+						symn nextFun = linkOf(fun);
+						if (nextFun != NULL && nextFun->args != NULL) {
+							if (nextFun->args->cast != TYPE_ref) {
+								error(s->s, nextFun->file, nextFun->line, "iterator arguments are not by ref");
+							}
+							if (nextFun->args->next && (nextFun->args->next->cast != TYPE_ref && nextFun->args->next->cast != TYPE_arr)) {
+								error(s->s, nextFun->file, nextFun->line, "iterator arguments are not by ref");
+								//~ error(s->s, nextFun->file, nextFun->line, "iterator argument 2 is not by ref (%t)", nextFun->args->next->cast);
+							}
+						}
+					}
+
+
 					fun->cst2 = TYPE_bit;
+					ast->stmt.test = fun;
 					sym->init->cst2 = TYPE_rec;
+					//~ debug("%15K", ast);
 				}
 				backTok(s, newnode(s, STMT_do));
 			}// */
@@ -2338,11 +2394,11 @@ astn decl(ccState s, int Rmode) {
 		if (skip(s, PNCT_cln)) {		// base type
 			base = NULL;
 			if ((tok = expr(s, TYPE_def))) {
-				if (istype(tok)) {
+				if (isType(tok)) {
 					base = linkOf(tok);
 				}
 				else {
-					error(s->s, s->file, s->line, "typename expected, got `%+15K`", tok);
+					error(s->s, s->file, s->line, "typename expected, got `%k`", tok);
 				}
 			}
 			else {
@@ -2463,7 +2519,7 @@ astn decl(ccState s, int Rmode) {
 							break;
 					}
 				}
-				else if (istype(tok)) {
+				else if (isType(tok)) {
 					base = linkOf(tok);
 					cast = base->cast;
 					if (skiptok(s, STMT_do, 1)) {
@@ -2561,14 +2617,20 @@ astn decl(ccState s, int Rmode) {
 			astn val = expr(s, TYPE_def);
 			if (val != NULL) {
 				def = declare(s, TYPE_def, tag, val->type);
-				if (isConst(val)) {
-					def->stat = 1;
-					def->cnst = 1;
+				if (isType(val)) {
+					s->pfmt = def;
 				}
-				else if (isStatic(s, val)) {
-					def->stat = 1;
+				else {
+					//def = declare(s, TYPE_def, tag, val->type);
+					if (isConst(val)) {
+						def->stat = 1;
+						def->cnst = 1;
+					}
+					else if (isStatic(s, val)) {
+						def->stat = 1;
+					}
+					def->init = val;
 				}
-				def->init = val;
 				typ = def->type;
 			}
 			else {
@@ -2639,11 +2701,11 @@ astn decl(ccState s, int Rmode) {
 				error(s->s, s->file, s->line, "expression expected");
 			}
 		}
-		else if ((tok = type(s))) {				// typedef: define hex16 int16;	???
+		/*else if ((tok = type(s))) {				// typedef: define hex16 int16;	???
 			typ = tok->type;
 			def = declare(s, TYPE_def, tag, typ);
 			s->pfmt = def;
-		}
+		}*/
 		else {
 			error(s->s, tag->file, tag->line, "typename excepted");
 		}
@@ -2713,6 +2775,9 @@ astn decl(ccState s, int Rmode) {
 			else if (test(s, ASGN_set)) {				// int sqrt(int a) = sqrt_fast;		// function reference.
 				if (ref->call) {
 					ref->cast = TYPE_ref;
+				}
+				if (Attr & ATTR_const) {
+					ref->cnst = 1;
 				}
 				if (!decl_init(s, ref)) {
 					//~ skiptok(s, STMT_do, 1);

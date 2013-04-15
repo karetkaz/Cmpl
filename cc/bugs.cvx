@@ -7,7 +7,7 @@
 	//~ static int A = a;
 //~ }
 
-int x1[20] = 9;
+//~ int x1[20] = 9;
 //~ int x2[] = x1;
 
 //~ assert(!true);
@@ -27,23 +27,23 @@ string str = emit(string, ref(x));
 //~ +/
 
 /+ ???
-define double2 float64; //%%4.50g
-double2 x = 3.14 / 4 + .0001;
-double2 s1 = sin(x);
-double2 s2 = Math.Sin(x);
-//~ int a = 16 << 10;
+define A = 9;
+int a1 = A;
+int &a2 = a1;
 
-int A = 9;
-pointer a = emit(pointer, ref(A));
-pointer b = emit(pointer, int(A));
-int &a2 = A;
+pointer a = emit(pointer, ref(a1));
+pointer b = emit(pointer, int(a1));
+
+//~ assert(a1 == A);
+//~ assert(a2 == A);
+
 //~ +/
 
 /+ DONE: fixed size array for defines
 void testArr(double x[]) {
 	print("%d\n", int64(x.length));
 	x[3] = 8;
-}// */
+}
 
 define TestArr(double x[16]) = testArr(x);
 
@@ -55,16 +55,23 @@ double x[16] = 1;
 //~ testFunc2(x);
 //~ +/
 
-/*
+/* BUG: return idx; does return int instead of double
 double x[16] = 1;
+
+void forEach(double x[], double cb(int idx)) {
+	for (int i = 0; i < x.length; i += 1) {
+		x[i] = cb(i);
+	}
+}
 
 double f(int32 idx) {
 	return 1.*idx;
 }
-testFunc(x, f);
+
+forEach(x, f);
 
 for (int i = 0; i < x.length; i += 1) {
-	print("%f\n", x[i]);
+	println(x[i]);
 }
 //~ */
 
@@ -90,19 +97,18 @@ if (refs.f != null) {
 }
 //~ +/
 
-/*
-//~ define ComplexByRef(double re, double im) = emit(ComplexByRef, store.b64, dupp.x1_2, f64(re), store.b64, i32.add, i32(8), dupp.x1_2, f64(im), ref(memmgr(null, 16)));
 
-//~ /* typenames
-//~ define sizeof(typename type) = int(type.size);
-//~ int sizeof(typename type) {return type.size;}
-//~ define new(typename type) = memmgr(null, type.size);
+/* typenames
+define sizeof(typename type) = int(type.size);
+define new(typename type) = memmgr(null, type.size);
 
-//~ void print(ComplexByRef val) { print("%F", val.re); print(", "); print("%F", val.im); print("\n"); }
 struct ComplexByVal {double re; double im;}
 struct &ComplexByRef {double re; double im;}
 
-/+
+//? define ComplexByRef(double re, double im) = emit(ComplexByRef, store.b64, dupp.x1_2, f64(re), store.b64, i32.add, i32(8), dupp.x1_2, f64(im), ref(memmgr(null, 16)));
+//~ void print(ComplexByRef val) { print("%F", val.re); print(", "); print("%F", val.im); print("\n"); }
+
+/+ TODO: 
 ComplexByRef ComplexByRef(double re, double im) {
 	result = new(ComplexByRef);
 	result.re = re;
@@ -112,27 +118,10 @@ ComplexByRef ComplexByRef(double re, double im) {
 
 ComplexByVal v1 = ComplexByVal(3,-2);
 ComplexByRef v2 = new(ComplexByRef);
-ComplexByRef v3 = emit(pointer, i32(-87));
+ComplexByRef v3 = emit(ComplexByRef, i32(-1));
 
 v2.re = v1.re;
 //~ v3 = v2;
 //~ v2 = null;
 
-//~ typename t1 = ComplexByVal;
-//~ typename t2 = ComplexByRef;
-//~ int s1 = sizeof(ComplexByVal);
-//~ int s2 = sizeof(ComplexByRef);
-
 // */
-
-//~  int x = sizeof(int64);
-
-//~ float64 x = -0.;
-//~ float64 y = +0.;
-//~ float64 a = x + y;
-//~ bool z = x == y;
-
-//~ float32 res1 = emit(f32.div, f32(2), f32(Math.pi));
-//~ float32 res2 = Math.pi / 2.;
-//~ println(res1);
-//~ println(res2);
