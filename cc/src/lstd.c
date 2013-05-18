@@ -567,3 +567,159 @@ int install_stdc(state rt, char* file, int level) {
 
 	return err;
 }
+
+//#{ file io ext
+static inline int argpos(int *argp, int size) {
+	int result = *argp;
+	*argp += padded(size, vm_size);
+	return result;
+}
+
+//~ #define logFILE(msg, ...) prerr(msg, ##__VA_ARGS__)
+#define logFILE(msg, ...)
+/*static int FILE_open(state rt, void* _) {
+	int argc = 0;
+	char *name = argref(rt, argpos(&argc, sizeof(char *)));
+	int slen = argi32(rt, argpos(&argc, sizeof(int)));
+	int mode = argi32(rt, argpos(&argc, sizeof(int)));
+	FILE *file = fopen(name, mode ? "w+" : "r+");
+	logFILE("Name: %s, Mode: %d, File: %x", name, mode, file);
+	rethnd(rt, file);
+	(void)slen;
+	return 0;
+}*/
+static int FILE_open(state rt, void* _) {
+	int argc = 0;
+	char *name = argref(rt, argpos(&argc, sizeof(char *)));
+	int slen = argi32(rt, argpos(&argc, sizeof(int)));
+	FILE *file = fopen(name, "r");
+	logFILE("Name: %s, Mode: %d, File: %x", name, mode, file);
+	rethnd(rt, file);
+	(void)slen;
+	return 0;
+}
+static int FILE_create(state rt, void* _) {
+	int argc = 0;
+	char *name = argref(rt, argpos(&argc, sizeof(char *)));
+	int slen = argi32(rt, argpos(&argc, sizeof(int)));
+	FILE *file = fopen(name, "w");
+	logFILE("Name: %s, Mode: %d, File: %x", name, mode, file);
+	rethnd(rt, file);
+	(void)slen;
+	return 0;
+}
+static int FILE_append(state rt, void* _) {
+	int argc = 0;
+	char *name = argref(rt, argpos(&argc, sizeof(char *)));
+	int slen = argi32(rt, argpos(&argc, sizeof(int)));
+	FILE *file = fopen(name, "a");
+	logFILE("Name: %s, Mode: %d, File: %x", name, mode, file);
+	rethnd(rt, file);
+	(void)slen;
+	return 0;
+}
+static int FILE_getc(state rt, void* _) {
+	FILE *file = arghnd(rt, 0);
+	reti32(rt, fgetc(file));
+	return 0;
+}
+static int FILE_peek(state rt, void* _) {
+	FILE *file = arghnd(rt, 0);
+	int chr = ungetc(getc(file), file);
+	reti32(rt, chr);
+	return 0;
+}
+static int FILE_read(state rt, void* _) {	// int read(Fifle &f, uint8 buff[])
+	int argc = 0;
+	FILE *file = arghnd(rt, argpos(&argc, sizeof(FILE *)));
+	char *buff = argref(rt, argpos(&argc, sizeof(char *)));
+	int len = argi32(rt, argpos(&argc, sizeof(int)));
+	len = fread(buff, len, 1, file);
+	reti32(rt, len);
+	return 0;
+}
+static int FILE_gets(state rt, void* _) {	// int fgets(Fifle &f, uint8 buff[])
+	int argc = 0;
+	FILE *file = arghnd(rt, argpos(&argc, sizeof(FILE *)));
+	char *buff = argref(rt, argpos(&argc, sizeof(char *)));
+	int len = argi32(rt, argpos(&argc, sizeof(int)));
+	logFILE("Buff: %08x[%d], File: %x", buff, len, file);
+	if (feof(file)) {
+		reti32(rt, -1);
+	}
+	else {
+		long pos1, pos2;
+		pos1 = ftell(file);
+		fgets(buff, len, file);
+		pos2 = ftell(file);
+		reti32(rt, pos2 - pos1);
+	}
+	return 0;
+}
+
+static int FILE_putc(state rt, void* _) {
+	int argc = 0;
+	FILE *file = arghnd(rt, argpos(&argc, sizeof(FILE *)));
+	int data = argi32(rt, argpos(&argc, sizeof(int)));
+	logFILE("Data: %c, File: %x", data, file);
+	reti32(rt, putc(data, file));
+	return 0;
+}
+static int FILE_write(state rt, void* _) {	// int write(Fifle &f, uint8 buff[])
+	int argc = 0;
+	FILE *file = arghnd(rt, argpos(&argc, sizeof(FILE *)));
+	char *buff = argref(rt, argpos(&argc, sizeof(char *)));
+	int len = argi32(rt, argpos(&argc, sizeof(int)));
+	len = fwrite(buff, len, 1, file);
+	reti32(rt, len);
+	return 0;
+}
+static int FILE_flush(state rt, void* _) {
+	FILE *file = arghnd(rt, 0);
+	logFILE("File: %x", file);
+	fflush(file);
+	return 0;
+}
+static int FILE_close(state rt, void* _) {	// void close(Fifle file);
+	FILE *file = arghnd(rt, 0);
+	logFILE("File: %x", file);
+	fclose(file);
+	return 0;
+}
+//#}
+
+int install_file(state rt) {
+	symn file_nsp = ccAddType(rt, "File", sizeof(FILE*), 0);
+	int err = file_nsp == NULL;
+	if (file_nsp != NULL) {
+		enter(rt->cc, NULL);
+
+		err = err || !ccAddCall(rt, FILE_open, NULL, "File Open(char path[]);");
+		err = err || !ccAddCall(rt, FILE_create, NULL, "File Create(char path[]);");
+		err = err || !ccAddCall(rt, FILE_append, NULL, "File Append(char path[]);");
+		//~ err = err || !ccAddCode(rt, 0, NULL, 0,  "define Open(char path[]) = Open(path, false);");
+		
+
+		err = err || !ccAddCall(rt, FILE_peek, NULL, "int Peek(File file);");
+		err = err || !ccAddCall(rt, FILE_getc, NULL, "int Read(File file);");
+		err = err || !ccAddCall(rt, FILE_read, NULL, "int Read(File file, uint8 buff[]);");
+		err = err || !ccAddCall(rt, FILE_gets, NULL, "int ReadLine(File file, uint8 buff[]);");
+
+		err = err || !ccAddCall(rt, FILE_putc, NULL, "int Write(File file, uint8 byte);");
+		err = err || !ccAddCall(rt, FILE_write, NULL, "int Write(File file, uint8 buff[]);");
+		err = err || !ccAddCall(rt, FILE_flush, NULL, "void Flush(File file);");
+
+		//~ err = err || !ccAddCall(rt, FILE_gets, NULL, "int gets(char buff[], File file);");
+		//~ err = err || !ccAddCall(rt, FILE_puts, NULL, "int puts(char buff[], File file);");
+		//~ err = err || !ccAddCall(rt, FILE_ungetc, NULL, "int ungetc(int chr, File file);");
+
+		err = err || !ccAddCall(rt, FILE_close, NULL, "void Close(File file);");
+
+		//~ err = err || !ccAddCall(rt, FILE_delete, NULL, "//File Create(char path[]);");
+		//~ err = err || !ccAddCall(rt, FILE_delete, NULL, "bool Delete(char path[]);");
+		//~ err = err || !ccAddCall(rt, FILE_delete, NULL, "bool Exists(char path[]);");
+
+		file_nsp->args = leave(rt->cc, file_nsp, 1);
+	}
+	return err;
+}

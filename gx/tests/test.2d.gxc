@@ -297,7 +297,7 @@ void drawCB() {
 	int rgbOp(int dst, int src) = rgbXor;
 
 	copySurf(offScreen, 0, 0, back, null);
-	copySurfrgb(offScreen, roi.x, roi.y, mand, &roi, rgbOp);
+	copySurfrgb(offScreen, roi.x, roi.y, mand, &roi, rgbMax);
 	//~ copySurfrgb(offScreen, roi.x, roi.y, mand, &roi, new int(int dst, int src) {result = dst ^ src;});
 	//~ Gui.Repaint();
 }

@@ -52,5 +52,7 @@ clean:
 	rm -f $(OBJS) $(OBJDIR)main.o
 #	rm -f *.o *.obj *.err
 
-$(OBJDIR)%.o: $(SRCDIR)%.c
+#~ $(OBJDIR)%.o: $(SRCDIR)%.c $(SRCDIR)api.h $(SRCDIR)pvmc.h $(SRCDIR)core.h
+	#~ $(CCC) $(CFLAGS) $< $(OUTOBJ)$@
+$(OBJDIR)%.o: $(SRCDIR)%.c $(SRCDIR)*.h $(SRCDIR)*.inl
 	$(CCC) $(CFLAGS) $< $(OUTOBJ)$@

@@ -218,6 +218,7 @@ static inline int32_t argi32(state rt, int offs) { return argval(rt, offs, int32
 static inline int64_t argi64(state rt, int offs) { return argval(rt, offs, int64_t); }
 static inline float32_t argf32(state rt, int offs) { return argval(rt, offs, float32_t); }
 static inline float64_t argf64(state rt, int offs) { return argval(rt, offs, float64_t); }
+static inline void* arghnd(state rt, int offs) { return argval(rt, offs, void*); }
 static inline void* argref(state rt, int offs) { int32_t p = argval(rt, offs, int32_t); return p ? rt->_mem + p : NULL; }
 static inline char* argstr(state rt, int offs) { return argref(rt, offs); }
 #undef argval
@@ -234,5 +235,6 @@ static inline void reti32(state rt, int32_t val) { setret(rt, int32_t, val); }
 static inline void reti64(state rt, int64_t val) { setret(rt, int64_t, val); }
 static inline void retf32(state rt, float32_t val) { setret(rt, float32_t, val); }
 static inline void retf64(state rt, float64_t val) { setret(rt, float64_t, val); }
+static inline void rethnd(state rt, void* val) { setret(rt, void*, val); }
 //~ static inline void retref(state rt, void* val) { setret(rt, void*, vmOffset(rt, val)); }
 #undef setret

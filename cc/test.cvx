@@ -10,6 +10,11 @@
 
 //~ uint8 a[] = emit(struct, ref("string"), i32(6));
 
+struct hex32: int32; //%%08x
+//~ const char tmb[] = "alma a fa alatt nyari piros alma";
+const char tmb[2][2] = {1,2,1,2};
+//~ const char tmb[] = {'a', 'l', 'm'};//a a fa alatt nyari piros alma";
+
 /* typename...
 struct xxx {
 	int64 x1;
@@ -348,99 +353,18 @@ for (int i = 1; tmp > eps; i += 1) {
 }
 // */
 
-//~ /* iterating
+/* bugs
+//~ bool isNullOrEmpty(int a[]) {
+	//~ if (a == null)
+		//~ result = true;
+	//~ if (a.length == 0)
+		//~ result = true;
+//~ }
 
-struct range {
-	int min;
-	int max;
-	//~ bool exclusive;
-}
+//~ int a[12];
 
-struct rangeIterator {
-	int pos;
-	int max;
-	int Value;
-	//~ bool exclusive;
-}
-
-define iterator(range ^r) = rangeIterator(r.min, r.max, 0);	// start at min, and end at max
-
-void printIT(int ri) {
-	print("iterator {%d}\n", int64(ri));
-}
-void printIT(rangeIterator ri) {
-	print("iterator {");
-	//~ print("Value: %d", int64(ri.Value));
-	print("pos: %d", int64(ri.pos));
-	print(", max: %d", int64(ri.max));
-	//~ print(", excl: %d", int64(ri.exclusive));
-	print("}\n");
-}
-
-bool next(rangeIterator &it) {
-	//~ result = it.pos - it.exclusive < it.max;
-	result = it.pos < it.max;
-	if (result) {
-		it.Value = it.pos;
-		it.pos += 1;
-	}
-}
-//~ for (rangeIterator it : range(10, 13)) {printIT(it.Value);}
-//~ for (rangeIterator it = iterator(range(10, 13)); next(it); ) {printIT(it.Value);}
-
-bool next(rangeIterator &it, int &val) {
-	//~ result = it.pos - it.exclusive < it.max;
-	if (result = it.pos < it.max) {
-		val = it.pos;
-		it.pos += 1;
-	}
-}
-//~ for (int it : range(10, 13)) {printIT(it);}
-
-bool next(rangeIterator &it, char str[]) {
-	if (result = it.pos < it.max) {
-		// TODO: bugfix: reference of array is not the reference of the variable.
-		//~ print("%08x\n", emit(i32, pointer(str)));
-		if (str != null) {
-			itoa(str, "val: %d", it.pos);
-		}
-		//~ if (str.length != 0) {print(0);}
-		it.pos += 1;
-	}
-}
-for (char str[65536] : range(1, 13)) {println(string(str));}
-
-/+ enable iterating an iterator
-define iterator(rangeIterator ^r) = (r);
-for (rangeIterator it : rangeIterator(10, 13, 8)) {
-	printIT(it.Value);
-}
-+/
-
-/+ file iterators
-define iterator(file ^f) = (f);
-
-// iterate chars
-bool next(file &f, char &chr) {
-	int ch = fgetc(f);
-	result = ch != -1;
-	if (result) {
-		chr = ch;
-	}
-}
-
-// iterate strings
-bool next(file &f, char chr[]) {
-	result = fngets(str, str.length, f) != -1;
-}
-
-//~ file f = open("alma.txt");
-//~ for (char chr : f) {print(chr);}
-//~ for (char str[512] : f) {print(str);}
-
-// +/
-
-//~ */
+//~ bool b = isNullOrEmpty(a);
+*/
 
 /*
 double val = 9;//emit(float64, i64(0x7ff8000000000000));

@@ -1,7 +1,7 @@
 enum Window {
 	draw = RenderMode.swap_buff;
-	resx = 800;
-	resy = 600;
+	resx = 700;
+	resy = 500;
 	padding = 5;
 }
 
@@ -13,55 +13,163 @@ struct Biorithm {
 }
 
 const Biorithm biorithms1[] = {
-	Biorithm(0x5050ff, 23,  0, "Physical - Fizikai %d %%"),
-	Biorithm(0xff0000, 28,  0, "Emotional - Erzelmi %d %%"),
-	Biorithm(0x00ff00, 33,  0, "Intellectual - Szellemi %d %%"),
-	Biorithm(0xdadada, 38,  0, "Intuitive - Megerzes"),
-	Biorithm(0x6f6f6f, 23, 33, "Mastery - Iranyitas"),
-	Biorithm(0xfeab00, 23, 28, "Passion - Szenvedely"),
-	Biorithm(0x9466db, 28, 33, "Wisdom - Bolcsesseg"),
-	Biorithm(0x000000, 0,  0, "skip")
+	Biorithm(0x5050ff, 23,  0, "Physical - Fizikai %d%%"),
+	Biorithm(0xff0000, 28,  0, "Emotional - Erzelmi %d%%"),
+	Biorithm(0x00ff00, 33,  0, "Intellectual - Szellemi %d%%"),
+	Biorithm(0xdadada, 38,  0, "Intuitive - Megerzes %d%%"),
+	Biorithm(0x6f6f6f, 23, 33, "Mastery - Iranyitas %d%%"),
+	Biorithm(0xfeab00, 23, 28, "Passion - Szenvedely %d%%"),
+	Biorithm(0x9466db, 28, 33, "Wisdom - Bolcsesseg %d%%")
 };
 
-void dateToStr(char res[], string prefix, Date date) {
+int format(char output[], int pos, FormatFlags &flags, uint32 value) {
+	static const char digits[] = "0123456789abcdef";
+	//~ assert(rad > 0 && rad < digits.length);
+
+	char temp[80];
+	int end = temp.length;
+	int rad = flags.radix;
+	//~ string digits = "0123456789abcdefghijklmnopqrstuvwxyz";
+
+	temp[end -= 1] = 0;
+	for ( ; value > 0; value /= rad) {
+		temp[end -= 1] = digits[value % rad];
+	}
+	if (temp[end] == 0) {
+		temp[end -= 1] = '0';
+	}
+
+	//~ width -= len;
+	//~ if (i < 0) width--;
+	//~ if (fill == '0' && i < 0) count_kputc('-');
+	//~ if (adjust == RIGHT) {
+		//~ while (width > 0) { count_kputc(fill); width--; }
+	//~ }
+	//~ if (fill == ' ' && i < 0) count_kputc('-');
+	//~ while (len > 0) { count_kputc((unsigned char) *p++); len--; }
+	//~ while (width > 0) { count_kputc(fill); width--; }
+
+	//~ int sgnChr;	// should be one of: 0, '-', '+'
+	//~ int padChr;	// padding character: 0, '0'
+	//~ int padLen;	// padding length
+	//~ int maxLen;	// maximum length
+	//~ int fmtChr; // format char
+	int strLen = temp.length - end;
+	int padLen = flags.padLen;
+
+	/*if (sgnChr != 0) {
+		padLen -= 1;
+	}*/
+
+	int max = pos + padLen - strLen + 1;
+	if (max > output.length) {
+		max = output.length - 1;
+	}
+	for (; pos < max; pos += 1) {
+		output[pos] = flags.padChr;
+	}
+
+	max = pos + strLen;
+	if (max > output.length) {
+		max = output.length - 1;
+	}
+
+	for (; pos < max; pos += 1) {
+		output[pos] = temp[end];
+		end += 1;
+	}
+	return pos - 1;
+}
+
+void format(char output[], string format, Date value) {
+	int y;
+	int m;
+	int d;
+
+	Date.ToParts(value.days, &y, &m, &d);
+
+	if (format == null) {
+		format = "%04y.%02m.%02d";
+	}
+
 	int pos = 0;
-	for (int i = 0; prefix[i]; i += 1) {
-		if (pos < res.length) {
-			res[pos] = prefix[i];
-			pos += 1;
+	int spos = 0;
+	for (int chr; chr = format[spos]; spos += 1) {
+		if (chr != '%') {
+			if (pos < output.length) {
+				output[pos] = chr;
+				pos += 1;
+			}
+			continue;
+		}
+
+		//~ print("pos : %d\n", pos);
+		chr = format[spos += 1];
+		int sgnChr = 0;
+		if (chr == '-' || chr == '+') {
+			sgnChr = chr;
+			chr = format[spos += 1];
+		}
+
+		int padChr = ' ';
+		if (chr == '0') {
+			padChr = chr;
+			chr = format[spos += 1];
+		}
+
+		int padLen = 0;
+		for (;chr >= '0' && chr <= '9';) {
+			padLen = padLen * 10 + chr - '0';
+			chr = format[spos += 1];
+		}
+
+		int maxLen = 10;
+		if (chr == '.') {
+			maxLen = 0;
+			chr = format[spos += 1];
+			for (;chr >= '0' && chr <= '9';) {
+				maxLen = maxLen * 10 + chr - '0';
+				chr = format[spos += 1];
+			}
+		}
+
+		if (chr == 'y') {
+			uint32 val = y;
+			if (y < 0) {
+				val = -val;
+				sgnChr = '-';
+			}
+			FormatFlags flags = FormatFlags(sgnChr, padChr, padLen, maxLen, chr, 10);
+			pos = format(output, pos, &flags, val);
+			//~ continue;
+		}
+		else if (chr == 'm') {
+			uint32 val = m;
+			if (y < 0) {
+				val = -val;
+				sgnChr = '-';
+			}
+			FormatFlags flags = FormatFlags(sgnChr, padChr, padLen, maxLen, chr, 10);
+			pos = format(output, pos, &flags, val);
+			//~ continue;
+		}
+		else if (chr == 'd') {
+			uint32 val = d;
+			if (y < 0) {
+				val = -val;
+				sgnChr = '-';
+			}
+			FormatFlags flags = FormatFlags(sgnChr, padChr, padLen, maxLen, chr, 10);
+			pos = format(output, pos, &flags, val);
+			//~ continue;
 		}
 	}
-	if (pos + 11 < res.length) {
-		pos -= 1;
-
-		int y;
-		int m;
-		int d;
-
-		Date.ToParts(date.days, &y, &m, &d);
-
-		define get(int v, int o) = '0' + v / o % 10;
-
-		res[pos += 1] = get(y, 1000);
-		res[pos += 1] = get(y, 100);
-		res[pos += 1] = get(y, 10);
-		res[pos += 1] = get(y, 1);
-		res[pos += 1] = '.';
-		res[pos += 1] = get(m, 10);
-		res[pos += 1] = get(m, 1);
-		res[pos += 1] = '.';
-		res[pos += 1] = get(d, 10);
-		res[pos += 1] = get(d, 1);
-		res[pos += 1] = 0;
-	}
-	else {
-		res[res.length - 1] = 0;
-	}
 }
+//~ */
 
 void biorithm(gxSurf dst, int daysToShow, double now, Date birth, Biorithm biorithms[]) {
 
-	void drawGraph(gxSurf dst, Biorithm &br, int daysToShow, double now, Date birth, int label) {
+	static void drawGraph(gxSurf dst, Biorithm &br, int daysToShow, double now, Date birth, int labelposY) {
 		double lx;
 		double ly;
 		double days = now - birth.days;
@@ -104,16 +212,16 @@ void biorithm(gxSurf dst, int daysToShow, double now, Date birth, Biorithm biori
 				ly = y;
 			}
 		}
-
-		if (label) {
+		if (labelposY >= 0) {
 			char text[256] = 0;
 			itoa(text, br.name, precent);
-			drawText(dst, Window.padding, label, string(text), br.color);
+			//~ format(text, br.name, )
+			drawText(dst, Window.padding, labelposY, string(text), br.color);
 		}
 	}
 
 	define textSpacing = 16;
-	int textPosition = Window.resy - Window.padding - textSpacing;
+	int textPosition = Window.resy - Window.padding - textSpacing * (biorithms.length + 1);
 
 	// clear screen
 	fillRect(dst, 0, 0, 32768, 32768, 0x000000);
@@ -124,26 +232,23 @@ void biorithm(gxSurf dst, int daysToShow, double now, Date birth, Biorithm biori
 		drawLine(dst, time, 0, time, Window.resy, 0x282828);
 	}// */
 
+	// draw graphs & labels
 	for (int i = 0; i < biorithms.length; i += 1) {
 		if (biorithms[i].color == 0)
 			continue;
-		textPosition -= textSpacing;
-	}
-	for (int  i = 0; i < biorithms.length; i += 1) {
-		if (biorithms[i].color == 0)
-			continue;
-		drawGraph(dst, biorithms[i], daysToShow, now, birth, textPosition += textSpacing);
+		textPosition += textSpacing;
+		drawGraph(dst, biorithms[i], daysToShow, now, birth, textPosition);
 	}
 
 	// coordinate
 	drawLine(dst, 0, Window.resy / 2, Window.resx, Window.resy / 2, 0x989898);
 	drawLine(dst, Window.resx / 2, 0, Window.resx / 2, Window.resy, 0x989898);
 
-	uint8 text[32];
-	dateToStr(text, "Date: ", Date(int64(now)));
+	uint8 text[128];
+	format(text, "Date: %04y.%02m.%02d", Date(int64(now)));
 	drawText(dst, Window.padding, Window.padding, emit(string, ref(text)), -1);
 
-	dateToStr(text, "Birth: ", birth);
+	format(text, "Birth: %04y.%02m.%02d", birth);
 	drawText(dst, Window.padding, Window.padding + textSpacing, emit(string, ref(text)), -1);
 	//~ itoa(emit(string, ref(text)), int32(now));
 	//~ drawText(dst, Window.padding, Window.padding + textSpacing, emit(string, ref(text)), -1);
@@ -249,5 +354,7 @@ define daysToShow = 15;
 
 //~ Now.days = 6103462;		// 16711.09.19
 
-setupBiorithm(daysToShow, Now, Date(1983, 5, 2));
+if (int == int32) {
+	setupBiorithm(daysToShow, Now, Date(1983, 5, 2));
+}
 //~ setupBiorithm(daysToShow, Now, Date(1984, 8, 30));

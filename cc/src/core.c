@@ -273,7 +273,7 @@ int getarg(state rt, char* name, void* copy) {
 			return arg->size;
 		}
 	}
-	return 0;
+	return -1;
 }*/
 //#}
 
@@ -316,10 +316,8 @@ static int cgen(state rt, astn ast, ccToken get) {
 				trace("%+k", ast);
 				return 0;
 			}
-			if (stpos != stkoffs(rt, 0)) {
-				if (stpos > stkoffs(rt, 0)) {
-					warn(rt, 1, ast->file, ast->line, "statement underflows stack: %+k", ast->stmt.stmt);
-				}
+			if (stpos > stkoffs(rt, 0)) {
+				warn(rt, 1, ast->file, ast->line, "statement underflows stack: %+k", ast->stmt.stmt);
 			}
 		} break;
 		case STMT_beg: {	// {} or function body
@@ -340,11 +338,11 @@ static int cgen(state rt, astn ast, ccToken get) {
 			for (ptr = ast->stmt.stmt; ptr; ptr = ptr->next) {
 				ipdbg = emitopc(rt, markIP);
 				if (!cgen(rt, ptr, TYPE_vid)) {		// we will free stack on scope close
-					error(rt, ptr->file, ptr->line, "emmiting statement `%+k`", ptr);
 					#if DEBUGGING > 2
 					//~ trace("%+k\n%7K", ast, ast);
 					fputasm(rt->logf, rt, ipdbg, -1, 0x119);
 					#endif
+					error(rt, ptr->file, ptr->line, "emmiting statement `%+k`", ptr);
 				}
 			}
 			if (ast->cst2 == TYPE_rec) {
@@ -1142,7 +1140,7 @@ static int cgen(state rt, astn ast, ccToken get) {
 		} break;
 		case OPER_sel: {	// '?:'
 			int jmpt, jmpf;
-			if (0 && rt->vm.opti && eval(&tmp, ast->op.test)) {
+			if (rt->vm.opti && eval(&tmp, ast->op.test)) {
 				if (!cgen(rt, constbol(&tmp) ? ast->op.lhso : ast->op.rhso, TYPE_any)) {
 					trace("%+k", ast);
 					return 0;
@@ -1301,6 +1299,7 @@ static int cgen(state rt, astn ast, ccToken get) {
 					if (get == ASGN_set) {
 						get = TYPE_ref;
 					}
+					//TODO: else if (var != typ && (var->cast == TYPE_ref || var->cast == TYPE_arr)) {
 					else if (var->cast == TYPE_ref && var != typ) {
 						if (!emitint(rt, opc_ldi, vm_size)) {
 							trace("%+k", ast);
@@ -1368,15 +1367,17 @@ static int cgen(state rt, astn ast, ccToken get) {
 					astn val = var->init;
 					//~ var->init = NULL;
 
-					// var a = emit(...);
+					// ... a = emit(...);
 					if (val->type == rt->cc->emit_opc) {
 						ret = get;
 					}
-					// int abs(int x) = abs1;
+
+					// int a(int x) = abs;
 					else if (var->call || var->cast == TYPE_ref) {
 						ret = TYPE_ref;
 					}
-					// var a = null;
+
+					// ... a = null;
 					else if (val->kind == TYPE_ref && val->ref.link == rt->cc->null_ref) {
 						trace("assigning null: %-T", var);
 						val->cst2 = ret = TYPE_ref;
@@ -1891,8 +1892,6 @@ int gencode(state rt, int level) {
 	rt->vm.opti = level < 0 ? -level : level;
 
 	rt->vm.size.meta = rt->vm.pos;
-	rt->vm.size.data = 0;
-	rt->vm.size.code = 0;
 
 	initBuff(&cc->dbg, 128, sizeof(struct list));
 
@@ -1971,7 +1970,7 @@ int gencode(state rt, int level) {
 					cc->jmps = cc->jmps->next;
 				}
 				var->size = emitopc(rt, markIP) - seg;
-				rt->vm.size.code += var->size;
+				//~ rt->vm.size.code += var->size;
 				var->init = NULL;
 				var->stat = 1;
 			}
@@ -1981,7 +1980,7 @@ int gencode(state rt, int level) {
 				var->offs = rt->vm.pos;
 				rt->vm.pos += var->size;
 
-				rt->vm.size.data += var->size;
+				//~ rt->vm.size.data += var->size;
 
 				if (var->init && !var->glob) {
 					astn init = newnode(cc, TYPE_def);
@@ -2050,8 +2049,10 @@ int gencode(state rt, int level) {
 
 	// program entry point
 	rt->vm.pc = Lmain;
+	rt->vm.size.code = rt->vm.pos;
+	rt->vm.size.data = rt->vm.pos;
 
-	rt->vm.size.code += emitopc(rt, markIP) - Lmain;
+	//~ rt->vm.size.code += emitopc(rt, markIP) - Lmain;
 	rt->_beg = rt->_end = NULL;
 	rt->vm._heap = NULL;
 
@@ -2691,10 +2692,10 @@ void* rtAlloc(state rt, void* ptr, unsigned size) {
 	}
 
 	if (ptr) {	// realloc or free.
+		int chunksize = memd->next ? ((char*)memd->next - (char*)memd) : 0;
+
 		dieif((unsigned char*)ptr < rt->_mem, "memmgr: invalid reference");
 		dieif((unsigned char*)ptr > rt->_mem + rt->_size, "memmgr: invalid reference");
-
-		int chunksize = memd->next ? ((char*)memd->next - (char*)memd) : 0;
 
 		if (1) {
 			// extra check if ptr is in used list.

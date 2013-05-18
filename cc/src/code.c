@@ -31,12 +31,10 @@ typedef struct bcde {			// byte code decoder
 		};
 		/* TODO: extended opcodes
 		struct {				// extended: 4 bytes `res := lhs OP rhs`
-			uint32_t opc:3;		// 0 ... 7
-			uint32_t pad:1;		//
 			uint32_t mem:2;		// mem access
-			uint32_t res:6;		// res
-			uint32_t lhs:6;		// lhs
-			uint32_t rhs:6;		// rhs
+			uint32_t res:8;		// res
+			uint32_t lhs:7;		// lhs
+			uint32_t rhs:7;		// rhs
 
 			/+ --8<-------------------------------------------
 			void* res = sp + ip->ext.res;
@@ -65,14 +63,15 @@ typedef struct bcde {			// byte code decoder
 					break;
 			}
 
-			switch (ip->ext.opc) {
+			switch (ip->opc) {
 				case ext_neg: *(type*)res = -(*(type*)rhs); break;
 				case ext_add: *(type*)res = (*(type*)lhs) + (*(type*)rhs); break;
 				case ext_sub: *(type*)res = (*(type*)lhs) - (*(type*)rhs); break;
 				case ext_mul: *(type*)res = (*(type*)lhs) * (*(type*)rhs); break;
 				case ext_div: *(type*)res = (*(type*)lhs) / (*(type*)rhs); break;
 				case ext_mod: *(type*)res = (*(type*)lhs) % (*(type*)rhs); break;
-				case ext_...: res = lhs ... rhs; break;
+				case ext_..1: res = lhs ... rhs; break;
+				case ext_..2: res = lhs ... rhs; break;
 			}
 			// +/ --8<----------------------------------------
 		} ext;// */
@@ -1006,11 +1005,10 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 		rt->vm.ss -= 1;
 	}
 
-	logif(DEBUGGING > 2, ">cgen:[sp%02d]@%9.*A", rt->vm.ss, rt->vm.pc, ip);
-	//~ fputfmt(stdout, ">cgen:[sp%02d:%08x]@%9.*A\n", rt->vm.ss, 0, rt->vm.pc, ip);
-
 	if (rt->vm.sm < rt->vm.ss)
 		rt->vm.sm = rt->vm.ss;
+
+	logif(DEBUGGING > 5, ">cgen:[sp%02d]@%9.*A", rt->vm.ss, rt->vm.pc, ip);
 
 	return rt->vm.pc;
 }
@@ -1445,9 +1443,6 @@ int vmExec(state rt, dbgf dbg, int ss) {
 	rt->vm._heap = NULL;
 
 	// TODO argc, argv
-	if (rt->vm.dbug) {
-		fputfmt(stdout, "\n>> >> >> Initialize\n");
-	}
 
 	return dbgpu(rt, pu);
 	//~ return dbgNpu(rt, pu, lengthof(pu));
@@ -1493,7 +1488,7 @@ int vmCall(state rt, symn fun, void* ret, void* args) {
 	pu->ip = rt->_mem + fun->offs;
 
 	if (rt->vm.dbug) {
-		fputfmt(stdout, "\n>> >> >> Invoke: %-T\n", fun);
+		fputfmt(rt->logf, "\n>> >> >> Invoke: %-T\n", fun);
 	}
 
 	result = dbgpu(rt, pu);

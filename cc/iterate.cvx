@@ -1,0 +1,130 @@
+/* iterating
+
+struct range {
+	int min;
+	int max;
+}
+
+struct rangeIterator {
+	int pos;
+	int max;
+	int Value;
+}
+
+define iterator(range ^r) = rangeIterator(r.min, r.max, 0);	// start at min, and end at max
+
+void printIT(int ri) {
+	print("iterator {%d}\n", int64(ri));
+}
+
+bool next(rangeIterator &it) {
+	result = it.pos < it.max;
+	if (result != false) {
+		it.Value = it.pos;
+		it.pos += 1;
+	}
+	return result;
+}
+
+for (rangeIterator it : range(10, 13)) {
+	printIT(it.Value);
+}
+
+bool next(rangeIterator &it, int &val) {
+	result = it.pos < it.max;
+	if (result != false) {
+		val = it.pos;
+		it.pos += 1;
+	}
+	return result;
+}
+for (int it : range(10, 13)) {
+	printIT(it);
+}
+//~ for (int it, rangeIterator .it = iterator(range(10, 13)); next(.it, &it); ) ...
+
+
+/+ enable iterating an iterator
+define iterator(rangeIterator ^r) = (r);
+for (rangeIterator it : rangeIterator(10, 13, 8)) {
+	printIT(it.Value);
+}
++/
+
+//~ */
+
+//~ /* iterate files
+define iterator(File &file) = (file);
+
+// iterate by chars
+bool next(File &file, char &value) {
+	int ch = File.Read(file);
+	result = ch != -1;
+	if (result) {
+		value = ch;
+	}
+}
+
+// iterate by lines
+bool next(File &file, char buff[]) {
+	int pos = 0;
+	//~ buff[(pos += 1) - 1] = '>';
+	int max = buff.length - 1;
+	result = false;
+	for (; pos < max; pos += 1) {
+		int chr = File.Read(file);
+		buff[pos] = chr;
+
+		if (chr == '\n' || chr == '\r') {
+			if (chr == '\r') {
+				chr = File.Peek(file);
+				if (chr == '\n') {
+					File.Read(file);
+				}
+			}
+			// end of line
+			buff[pos + 1] = 0;
+			return true;
+		}
+
+		if (chr < 0) {
+			// end of file
+			buff[pos] = 0;
+			return result;
+		}
+		result = true;
+	}
+
+	// end of buff (line was splitted)
+	buff[pos] = 0;
+	return true;
+}
+
+//~ bool next(File &file, char buff[]) {return File.ReadLine(file, buff) > 0;}
+
+/+ iterate file by chars
+File file1 = File.Open("History.txt");
+for (char chr : file1) {
+	print("%c", chr);
+}
+File.Close(file1);
+//~ +/
+
+//~ /+ iterate file by lines
+File file2 = File.Open("History.txt");
+for (char str[60] : file2) {
+	print(string(str));
+}
+File.Close(file2);
+//~ +/
+
+/+ copy file with iterator
+File file3 = File.Open("History.txt");
+File fileO = File.Create("History2.txt");
+for (char chr : file3) {
+	File.Write(fileO, chr);
+}
+File.Close(fileO);
+File.Close(file3);
+//~ +/
+//~ */

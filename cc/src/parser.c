@@ -136,7 +136,7 @@ unsigned rehash(const char* str, unsigned len) {
 	register unsigned hs = 0xffffffff;
 
 	if (str) {
-		if (len == -1U)
+		if (len == (unsigned)(-1))
 			len = strlen(str) + 1;
 		while (len-- > 0)
 			hs = (hs >> 8) ^ crc_tab[(hs ^ (*str++)) & 0xff];
@@ -240,12 +240,12 @@ char* mapstr(ccState s, char* name, unsigned size/* = -1U*/, unsigned hash/* = -
 	state rt = s->s;
 	list newn, next, prev = 0;
 
-	if (size == -1U) {
+	if (size == (unsigned)(-1)) {
 		//~ debug("strlen '%s'", name);
 		size = strlen(name) + 1;
 	}
 
-	if (hash == -1U) {
+	if (hash == (unsigned)(-1)) {
 		//~ debug("strcrc '%s'", name);
 		hash = rehash(name, size) % TBLS;
 	}

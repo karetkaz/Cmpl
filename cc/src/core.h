@@ -12,7 +12,7 @@
 #include <stdlib.h>
 
 // debug level
-#define DEBUGGING 0
+#define DEBUGGING 50
 
 // enable dynamic dll/so lib loading
 #define USEPLUGINS
@@ -32,7 +32,7 @@
 //~ #define DO_PRAGMA(x) _Pragma(#x)
 //~ #define TODO(x) //DO_PRAGMA(message("TODO: " #x))
 
-#define pdbg(__DBG, __FILE, __LINE, msg, ...) do {fputfmt(stderr, "%s:%d: "__DBG": %s: "msg"\n", __FILE, __LINE, __FUNCTION__, ##__VA_ARGS__); fflush(stdout); fflush(stderr);} while(0)
+#define pdbg(__DBG, __FILE, __LINE, msg, ...) do {fputfmt(stderr, "%s:%d: "__DBG": %s: "msg"\n", __FILE, __LINE, __FUNCTION__, ##__VA_ARGS__); fflush(stderr); fflush(stderr);} while(0)
 
 #if DEBUGGING > 1
 #define debug(msg, ...) pdbg("debug", __FILE__, __LINE__, msg, ##__VA_ARGS__)
@@ -192,6 +192,57 @@ struct list {				// linked list: stringlist, ...
 	unsigned char*	data;
 	unsigned int	size;
 	unsigned int	_pad;
+};
+struct symn {				// type node (data)
+	char*	name;		// symbol name
+	char*	file;		// declared in file
+	int		line;		// declared on line
+
+	int32_t	size;		// sizeof(TYPE_xxx)
+	int32_t	offs;		// addrof(TYPE_xxx)
+
+	symn	type;		// base type of TYPE_ref/TYPE_arr/function (void, int, float, struct, ...)
+
+	//~ TODO: temporarly array variable base type
+	symn	args;		// struct members / function paramseters
+	symn	sdef;		// static members (is the tail of args) / function return value(out value)
+
+	symn	decl;		// declared in namespace/struct/class, function, ...
+	symn	next;		// symbols on table / next param / next field / next symbol
+
+	#if DEBUGGING
+	ccToken	kind;		// TYPE_def / TYPE_rec / TYPE_ref / TYPE_arr
+	ccToken	cast;		// casts to type(TYPE_(bit, vid, ref, u32, i32, i64, f32, f64, p4x)).
+	uint16_t __castkindpadd;
+	#else
+	uint8_t	kind;		// TYPE_ref / TYPE_def / TYPE_rec / TYPE_arr
+	uint8_t	cast;		// casts to type(TYPE_(bit, vid, ref, u32, i32, i64, f32, f64, p4x)).
+	#endif
+
+	union {				// Attributes
+	struct {
+	// TODO: remove call
+	uint16_t	call:1;		// callable(function/definition) <=> (kind == TYPE_ref && args)
+	uint16_t	cnst:1;		// constant
+	uint16_t	priv:1;		// private
+	uint16_t	stat:1;		// static ?
+	uint16_t	glob:1;		// global
+
+	//~ uint8_t	load:1;		// indirect reference: cast == TYPE_ref
+	//~ uint8_t	used:1;		//
+	uint16_t _padd:11;		// attributes (const static /+ private, ... +/).
+	};
+	uint16_t	Attr;
+	};
+
+	int		nest;		// declaration level
+
+	symn	defs;		// global variables and functions / while_compiling variables of the block in reverse order
+	symn	gdef;		// static variables and functions / while_compiling ?
+
+	astn	init;		// VAR init / FUN body, this shuld be null after codegen
+	astn	used;		// how many times was referenced by lookup
+	char*	pfmt;		// TEMP: print format
 };
 struct astn {				// tree node (code)
 	ccToken		kind;				// code: TYPE_ref, OPER_???

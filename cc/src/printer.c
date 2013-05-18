@@ -696,8 +696,23 @@ static void dumpxml(FILE* fout, astn ast, int mode, int level, const char* text)
 
 			if (var && var->args) {
 				symn def = var->args;
+				char *argn = "def";
+
+				switch (var->type->kind) {
+					case TYPE_arr:
+					case TYPE_rec:
+						argn = "base";
+						break;
+					default:
+						break;
+				}
+
+				if (var->call || var->type->call) {
+					argn = "argn";
+				}
+
 				for (def = var->args; def; def = def->next) {
-					fputfmt(fout, "%I<def op=\"%t\"", level + 1, def->kind, def);
+					fputfmt(fout, "%I<%s op=\"%t\"", level + 1, argn, def->kind, def);
 					if (mode & prType) {
 						fputfmt(fout, " type=\"%?T\"", def->type);
 					}
