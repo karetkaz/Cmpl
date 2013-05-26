@@ -15,13 +15,6 @@ enum Window {
 
 define pi = Math.pi;
 
-/* TODO:
-
-string alma() {
-	result = "alma";
-}
-// */
-
 define fillRect(gxSurf dst, int col) = fillRect(dst, 0, 0, 65535, 65535, col);
 
 static if (true) {		// mandelbrot
@@ -125,14 +118,25 @@ Gui.setDrawCallback(drawCB);
 
 }
 
-static if (test == -2) {	// zoomSurf / tileSurf
+static if (test == 2) {	// zoomSurf / tileSurf
 gxSurf image = gxSurf("media/images/dino-blue.jpg");
 gxSurf bgImg = gxSurf("media/images/nol.bmp");
 
 void mouseCB(int btn, int x, int y) {
-	if (reDraw = btn) {
-		roi = gxRect(0, 0, x, y);
+	static int ox = 0;
+	static int oy = 0;
+	if (btn == 1 + 2) {
+		roi.x += x - ox;
+		roi.y += y - oy;
+		roi.w = width(image);
+		roi.h = height(image);
+		reDraw = true;
 	}
+	else if (reDraw = btn) {
+		roi = gxRect(roi.x, roi.y, x, y);
+	}
+	ox = x;
+	oy = y;
 }
 void drawCB() {
 	define filter = 1;
@@ -154,7 +158,7 @@ Gui.setMouseHandler(mouseCB);
 Gui.setDrawCallback(drawCB);
 //~ reDraw = 0;
 }
-static if (test == 2) {		// zoomSurf / tileSurf
+static if (test == -2) {		// zoomSurf / tileSurf
 gxSurf image = gxSurf("media/images/dino-blue.jpg");		// xxx
 //~ gxSurf image = gxSurf("media/images/download.jpg");
 //~ gxSurf image = gxSurf("media/images/David.png");
@@ -186,11 +190,11 @@ static if (test == 3) {		// fillRect, drawRect, fillOval, drawOval
 
 gxSurf bgImg = gxSurf("media/images/nol.bmp");
 
-void drawOval(gxSurf s, int x0, int y0, int x1, int y1, int size, long color) {
-	if (size == 1) {
+void drawOval(gxSurf s, int x0, int y0, int x1, int y1, int width, long color) {
+	if (width == 1) {
 		drawOval(s, x0, y0, x1, y1, color);
 	}
-	else if (size < 0) {
+	else if (width < 0) {
 		fillOval(s, x0, y0, x1, y1, color);
 	}
 	else {
@@ -219,16 +223,17 @@ void drawOval(gxSurf s, int x0, int y0, int x1, int y1, int size, long color) {
 		dx += dx & 1;
 		dy += dy & 1;
 
-		//~ int step = 2;//size / 2;
+		//~ int step = 2;//width / 2;
 		sx = dx * dx;
 		sy = dy * dy;
 
 		r = sx * dy >> 2;
 		dx = 0;
 		dy = r << 1;
-		int sdiv2 = size / 2;
-		int sdivstep = sdiv2 / 3;
+		int sdiv2 = width / 2;
+		int sdivstep = Math.max(1, sdiv2 / 3);
 		//~ define pixels(gxSurf s, int &x, int &y, int &sdiv2, int c) = fillRect(s, x-sdiv2, y-sdiv2, x+sdiv2, y+sdiv2, c);
+
 		define pixels(gxSurf s, int &x, int &y, int &sdiv2, int c) = fillOval(s, x-sdiv2, y-sdiv2, x+sdiv2, y+sdiv2, c);
 		for (int n = 0; y0 < y1; n += 1) {
 			define step = 1;
@@ -267,8 +272,8 @@ void drawCB() {
 	define color = 0xff00ff;
 	tileSurf(offScreen, 0, 0, bgImg, null);
 
-	drawLine2(offScreen, roi.x, roi.y, roi.x + roi.w, roi.y + roi.h, color);
-	//~ drawOval(offScreen, roi.x, roi.y, roi.x + roi.w, roi.y + roi.h, 30, color);
+	//~ drawLine2(offScreen, roi.x, roi.y, roi.x + roi.w, roi.y + roi.h, color);
+	drawOval(offScreen, roi.x, roi.y, roi.x + roi.w, roi.y + roi.h, 60, color);
 	//~ fillOval(offScreen, roi.x, roi.y, roi.x + roi.w, roi.y + roi.h, color);
 	//~ drawOval(offScreen, roi.x, roi.y, roi.x + roi.w, roi.y + roi.h, color);
 	//~ fillRect(offScreen, roi.x, roi.y, roi.x + roi.w, roi.y + roi.h, color);
@@ -297,7 +302,7 @@ void drawCB() {
 	int rgbOp(int dst, int src) = rgbXor;
 
 	copySurf(offScreen, 0, 0, back, null);
-	copySurfrgb(offScreen, roi.x, roi.y, mand, &roi, rgbMax);
+	copySurfrgb(offScreen, roi.x, roi.y, mand, &roi, rgbOp);
 	//~ copySurfrgb(offScreen, roi.x, roi.y, mand, &roi, new int(int dst, int src) {result = dst ^ src;});
 	//~ Gui.Repaint();
 }

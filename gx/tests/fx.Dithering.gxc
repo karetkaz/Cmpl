@@ -45,8 +45,8 @@ gxSurf dither(gxSurf img, bool grayscale, uint32 colors, Dithering method) {
 		if (grayscale) {
 			for (int y = 0; y < height; y += 1) {
 				for (int x = 0; x < width; x += 1) {
-					int col = getPixel(img, x, y);
-					int gray = cols[(lum(col) * colors / 256) % colors];
+					int col = lum(getPixel(img, x, y));
+					int gray = cols[(col * colors / 256) % colors];
 					setPixel(img, x, y, toGtay(gray));
 				}
 			}
@@ -72,16 +72,10 @@ gxSurf dither(gxSurf img, bool grayscale, uint32 colors, Dithering method) {
 		if (grayscale) {
 			for(int y = 0; y < height; y += 1) {
 				for (int x = 0; x < width; x += 1) {
-					//~ int oldpixel = lum(getPixel(img, x, y));
-					//~ int newpixel = cols[(oldpixel * colors / 256) % colors];
+					int col = lum(getPixel(img, x, y));
+					int gray = cols[(col * colors / 256) % colors];
 
-					//~ setPixel(img, x, y, gray(newpixel));
-					//~ int quant_error = oldpixel - newpixel;
-
-					int col = getPixel(img, x, y);
-					int gray = cols[(lum(col) * colors / 256) % colors];
-
-					int quant_error = lum(col) - gray;
+					int quant_error = col - gray;
 					define rgbError(int ^col, int ^s) = toGtay(lum(col) + s * quant_error / 8);
 
 					setPixel(img, x, y, toGtay(gray));
@@ -127,10 +121,10 @@ gxSurf dither(gxSurf img, bool grayscale, uint32 colors, Dithering method) {
 			for(int y = 0; y < height; y += 1) {
 				for (int x = 0; x < width; x += 1) {
 
-					int col = getPixel(img, x, y);
-					int gray = cols[(lum(col) * colors / 256) % colors];
+					int col = lum(getPixel(img, x, y));
+					int gray = cols[(col * colors / 256) % colors];
 
-					int quant_error = lum(col) - gray;
+					int quant_error = col - gray;
 					define rgbError(int col, int s) = toGtay(lum(col) + s * quant_error / 16);
 
 					setPixel(img, x, y, toGtay(gray));
@@ -178,10 +172,10 @@ gxSurf dither(gxSurf img, bool grayscale, uint32 colors, Dithering method) {
 		if (grayscale) {
 			for(int y = 0; y < height; y += 1) {
 				for (int x = 0; x < width; x += 1) {
-					int col = getPixel(img, x, y);
-					int gray = cols[(lum(col) * colors / 256) % colors];
+					int col = lum(getPixel(img, x, y));
+					int gray = cols[(col * colors / 256) % colors];
 
-					int quant_error = lum(col) - gray;
+					int quant_error = col - gray;
 					define rgbError(int col, int s) = toGtay(lum(col) + s * quant_error / 42);
 
 					setPixel(img, x, y, toGtay(gray));
@@ -198,7 +192,7 @@ gxSurf dither(gxSurf img, bool grayscale, uint32 colors, Dithering method) {
 					setPixel(img, x + 1, y + 2, rgbError(getPixel(img, x + 1, y + 2), 2));
 					setPixel(img, x + 2, y + 2, rgbError(getPixel(img, x + 2, y + 2), 1));
 				}
-			}// */
+			}
 		}
 		else {
 			for(int y = 0; y < height; y += 1) {
@@ -237,21 +231,19 @@ gxSurf dither(gxSurf img, bool grayscale, uint32 colors, Dithering method) {
 		result = img;
 	}
 	else if (method == Dithering.Bayer) {
-		static const int8 Pattern[8][8] =
-			 0,32, 8,40, 2,34,10,42,
-			48,16,56,24,50,18,58,26,
-			12,44, 4,36,14,46, 6,38,
-			60,28,52,20,62,30,54,22,
-			 3,35,11,43, 1,33, 9,41,
-			51,19,59,27,49,17,57,25,
-			15,47, 7,39,13,45, 5,37,
-			63,31,55,23,61,29,53,21;
+		static const int8 Pattern[8][8] = {
+			 0, 32,  8, 40,  2, 34, 10, 42,
+			48, 16, 56, 24, 50, 18, 58, 26,
+			12, 44,  4, 36, 14, 46,  6, 38,
+			60, 28, 52, 20, 62, 30, 54, 22,
+			 3, 35, 11, 43,  1, 33,  9, 41,
+			51, 19, 59, 27, 49, 17, 57, 25,
+			15, 47,  7, 39, 13, 45,  5, 37,
+			63, 31, 55, 23, 61, 29, 53, 21
+		};
 
 		static void bayer(int &num2, int &num3, int col, int levels) {
 			define d = 64;
-			//~ num2 = col * ((levels * d) + 1) / 256;
-			//~ num3 = num2 / d;
-			//~ num2 -= num3 * d;
 			int tmp = col * ((levels * d) + 1) / 256;
 			num3 = tmp / d;
 			num2 = tmp - num3 * d;
@@ -261,16 +253,11 @@ gxSurf dither(gxSurf img, bool grayscale, uint32 colors, Dithering method) {
 			for (int y = 0; y < height; y += 1) {
 				for (int x = 0; x < width; x += 1) {
 					define d = 64;
-					int col = getPixel(img, x, y);
+					int col = lum(getPixel(img, x, y));
 					int num2;
 					int num3;
 
-					/*
-					int num2 = lum(col) * ((levels * d) + 1) / 256;
-					int num3 = num2 / d;
-					num2 -= num3 * d;
-					//~ */
-					bayer(&num2, &num3, lum(col), levels);
+					bayer(&num2, &num3, col, levels);
 					int gray = cols[(num3 + (num2 > Pattern[x & 7][y & 7]))];
 
 					setPixel(img, x, y, gray(gray));
@@ -302,27 +289,25 @@ gxSurf dither(gxSurf img, bool grayscale, uint32 colors, Dithering method) {
 	}
 }
 
-int colors = 12;
+int colors = 8;
 int grayscale = true;
 Dithering method = Dithering.Stucki;
-//~ method = Dithering.Steinberg;
+method = Dithering.Steinberg;
 //~ method = Dithering.Bayer;
 //~ method = Dithering.None;
 
 //~ define hex(uint32 ^c) = int(c <= 9 ? (c + '0') : ((c - 10) + 'a'));
-define hex(uint32 c) = int("0123456789abcdefh"[c & 255]);
-
-gxClut lut;
-blendLut(lut, 0, -1);
-gxSurf image = gxSurf(fileName);
+define hex(uint32 c) = int("0123456789abcdef"[c & 15]);
 
 int gs = grayscale ? 'g' : 'c';
 int h1 = hex(colors >> 4);
 int h2 = hex(colors);
 
-uint8 filename[34] = 'o','u','t','/','o','u','t','[',gs,'x',h1, h2,'_',method,']','.','b','m','p',0;
+uint8 filename[34] = {'o','u','t','/','o','u','t','[',gs,'x',h1, h2,'_',method,']','.','b','m','p',0};
 
-println(emit(string, ref(filename)));
+println(string(filename));
+
+gxSurf image = gxSurf(fileName);
 dither(image, grayscale, colors, method);
 //~ bmpWrite(image, emit(string, ref(filename)));
 

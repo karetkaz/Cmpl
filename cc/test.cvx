@@ -11,9 +11,21 @@
 //~ uint8 a[] = emit(struct, ref("string"), i32(6));
 
 struct hex32: int32; //%%08x
-//~ const char tmb[] = "alma a fa alatt nyari piros alma";
-const char tmb[2][2] = {1,2,1,2};
-//~ const char tmb[] = {'a', 'l', 'm'};//a a fa alatt nyari piros alma";
+define d1 = 2;
+define d2 = 3;
+char arr[d1][d2] = {65};//{1,2,3, 1,2,3};
+//~ const char str1[] = "alma a fa alatt nyari piros alma";
+//~ const char str2[] = {'a', 'l', 'm', 'a', 0};
+//~ string str3 = "alma";
+
+/* TODO:
+
+string alma() {
+	result = "alma";
+}
+// */
+
+
 
 /* typename...
 struct xxx {
@@ -50,7 +62,7 @@ int line = typename.line(type);
 	//~ print("Complex\n");
 //~ }
 
-*/
+//~ */
 
 /* typename
 struct ss {
@@ -79,13 +91,12 @@ int n2 = sizeof(ss.ss);
 
 //~ int64 &i32ref = new(int64);
 
-int32 i32arr[] = new(int32, 100);
+//~ int32 i32arr[] = new(int32, 100);
+int32 i32arr[] = emit(struct, ref(memmgr(null, sizeof(int32) * 100)), i32(100));
+for (int i = 0; i < i32arr.length; i += 1) {
+	i32arr[i] = i + 10;
+}
 
-//~ for (int i = 0; i < arr2.length; i += 1) {
-	//~ arr2[i] = i + 10;
-//~ }
-
-//~ int size = sizeof(arr2);
 //~ */
 
 /* alloc / realloc / free
@@ -226,15 +237,9 @@ xrgb a = emit(xrgb, i32(0x801f008f));
 //~ r.rgb.b = min(a.b + b.b, 255);
 // */
 
-//~ define dim = 10;
-//~ static int x[dim][dim][dim][dim] = 690;
-//~ static int x[dim][dim][dim][dim][dim] = 690;
-
-//~ float64 c;
-//~ float64 x = Math.modf(Math.pi, &c);
-
-//~ int &x = null;
-//~ x = 4;
+//~ define dim = 3;
+//~ static int x[dim][dim][dim][dim] = {690};
+//~ static int x[dim][dim][dim][dim][dim] = {690};
 
 /* invoke functions ...
 int method0() {}
@@ -284,7 +289,6 @@ methodCall(method);
 
 //~ */
 /* return function ...
-
 /+ count down
 struct Closure {int call(Closure &data); int data;}
 define Invoke(Closure &wcd) = wcd.call(wcd);
@@ -329,9 +333,9 @@ print("%d\n", int64(Invoke(a, 2)));
 /*BUG: assignment by reference
 
 int64 a = 32;
-//~ a = 33;
+a = 33;
 void setup() {
-	//~ static int64 &b = a;
+	static int64 &b = a;
 	print("%d\n", int64(a));
 }
 setup();
@@ -353,18 +357,23 @@ for (int i = 1; tmp > eps; i += 1) {
 }
 // */
 
-/* bugs
-//~ bool isNullOrEmpty(int a[]) {
-	//~ if (a == null)
-		//~ result = true;
-	//~ if (a.length == 0)
-		//~ result = true;
-//~ }
+/* TODO: arrays
+bool isNullOrEmpty(int a[]) {
+	if (a == null)
+		result = true;
+	if (a.length == 0)
+		result = true;
+}
 
-//~ int a[12];
+//~ int val_null[] = null;
+int val_empty[0];
+int val_elements[10] = {9};
 
-//~ bool b = isNullOrEmpty(a);
-*/
+//~ bool res_true1 = isNullOrEmpty(null);
+//~ bool res_true2 = isNullOrEmpty(val_null);
+bool res_true3 = isNullOrEmpty(val_empty);
+bool res_false = isNullOrEmpty(val_elements);
+//~ */
 
 /*
 double val = 9;//emit(float64, i64(0x7ff8000000000000));
@@ -438,14 +447,12 @@ int fitness(individual &ind) {
 //~ Date date = Date(2011, 10, 24);
 //~ Date.Parts parts = Date.ToParts(date.days);
 
-/* atoi
+/* itoa
 int val = 20;
-char buff[512] = 0;
-//~ string str = emit(string, ref(buff));
+char buff[512] = {0};
 
 itoa(buff, "alma: %+20.10i, aweigf", val);
-print(string(buff));
-print("\n");
+println(string(buff));
 //~ */
 
 /*Bug: const struct array initialization
@@ -484,5 +491,11 @@ printsize(biorithms1);
 printsize(biorithms2);
 //~ */
 
-//~ char str1[] = "alma";
-//~ const char str2[] = {'a', 'l', 'm', 'a', 0};
+/* DONE
+float64 Sum(float64 data[]) = Math.Sum;
+float64 Mean(float64 data[]) = Math.Mean;
+
+float64 data[3] = {1,2,3};
+float64 sum = Sum(data);
+float64 mean = Mean(data);
+//~ */

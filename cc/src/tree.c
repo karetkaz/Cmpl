@@ -100,7 +100,8 @@ int32_t constbol(astn ast) {
 			return ast->con.cint != 0;
 		case TYPE_flt:
 			return ast->con.cflt != 0;
-		default: break;
+		default:
+			break;
 	}
 	fatal("not a constant %+k", ast);
 	return 0;
@@ -111,7 +112,14 @@ int64_t constint(astn ast) {
 			return (int64_t)ast->con.cint;
 		case TYPE_flt:
 			return (int64_t)ast->con.cflt;
-		default: break;
+		//~ case TYPE_ref: {
+			//~ symn lnk = ast->ref.link;
+			//~ if (lnk && lnk->kind == TYPE_def) {
+				//~ return constint(lnk->init);
+			//~ }
+		//~ }
+		default:
+			break;
 	}
 	fatal("not a constant %+k", ast);
 	return 0;
@@ -122,7 +130,8 @@ float64_t constflt(astn ast) {
 			return (float64_t)ast->con.cint;
 		case TYPE_flt:
 			return (float64_t)ast->con.cflt;
-		default: break;
+		default:
+			break;
 	}
 	fatal("not a constant %+k", ast);
 	return 0;
@@ -130,9 +139,9 @@ float64_t constflt(astn ast) {
 
 //~ TODO: eval should use cgen and vmExec
 int eval(astn res, astn ast) {
-	struct astn lhs, rhs;
-	int cast = 0;
 	symn type = NULL;
+	ccToken cast = TYPE_any;
+	struct astn lhs, rhs;
 
 	if (!ast)
 		return 0;

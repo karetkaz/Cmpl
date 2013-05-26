@@ -374,6 +374,7 @@ static int libCallHaltDebug(state rt, void* _) {
 	rtAlloc(rt, NULL, 0);
 
 	return 0;
+	(void)_;
 }
 
 int program(int argc, char* argv[]) {
@@ -387,11 +388,11 @@ int program(int argc, char* argv[]) {
 	if (argc < 2) {
 		usage(prg);
 	}
-	else if (argc == 2 && *argv[1] == '=') {
-		return evalexp(ccInit(rt, creg_def, NULL), argv[1] + 1);
-	}
 	else if (argc == 2 && strcmp(argv[1], "--help") == 0) {
 		usage(prg);
+	}
+	else if (argc == 2 && *argv[1] == '=') {
+		return evalexp(ccInit(rt, creg_def, NULL), argv[1] + 1);
 	}
 	else {		// compile
 		int level = -1, argi;
@@ -426,8 +427,7 @@ int program(int argc, char* argv[]) {
 				else if (strcmp(arg, "-Oa") == 0)
 					opti = 3;
 				else if (!parsei32(arg + 2, &opti, 10)) {
-					fputfmt(stderr, "invalid level '%s'\n", arg + 2);
-					debug("invalid level '%s'\n", arg + 2);
+					error(rt, NULL, 0, "invalid level '%s'", arg + 2);
 					return 0;
 				}
 			}
@@ -447,27 +447,20 @@ int program(int argc, char* argv[]) {
 						str += 1;
 					}
 				}
-
-				/*level = 1;
-				if (*str && *parsei32(str, &level, 16)) {
-					fputfmt(stderr, "invalid level '%s'\n", str);
-					debug("invalid level '%s'", str);
-					return 0;
-				}*/
 				run_code = 1;
 			}
 
 			// output file
 			else if (strcmp(arg, "-l") == 0) {			// log
 				if (++argi >= argc || logf) {
-					fputfmt(stderr, "logger error\n");
+					error(rt, NULL, 0, "log file not specified");
 					return -1;
 				}
 				logf = argv[argi];
 			}
 			else if (strcmp(arg, "-o") == 0) {			// out
 				if (++argi >= argc || outf) {
-					fputfmt(stderr, "output error\n");
+					error(rt, NULL, 0, "output file not specified");
 					return -1;
 				}
 				outf = argv[argi];
@@ -482,7 +475,7 @@ int program(int argc, char* argv[]) {
 						str_tags = ptr + 1;
 					}
 					else if (*ptr) {
-						fputfmt(stderr, "invalid argument '%s'\n", arg);
+						error(rt, NULL, 0, "invalid argument '%s'\n", arg);
 						return 0;
 					}
 				}
@@ -496,7 +489,7 @@ int program(int argc, char* argv[]) {
 						str_tree = ptr + 1;
 					}
 					else if (*ptr) {
-						fputfmt(stderr, "invalid argument '%s'\n", arg);
+						error(rt, NULL, 0, "invalid argument '%s'\n", arg);
 						return 0;
 					}
 				}
@@ -510,7 +503,7 @@ int program(int argc, char* argv[]) {
 						str_dasm = ptr + 1;
 					}
 					else if (*ptr) {
-						fputfmt(stderr, "invalid argument '%s'\n", arg);
+						error(rt, NULL, 0, "invalid argument '%s'\n", arg);
 						return 0;
 					}
 				}
@@ -533,7 +526,7 @@ int program(int argc, char* argv[]) {
 
 		// open logger
 		if (logf && logfile(rt, logf) != 0) {
-			fputfmt(stderr, "can not open file `%s`\n", logf);
+			error(rt, NULL, 0, "can not open file `%s`\n", logf);
 			return -1;
 		}
 
@@ -561,8 +554,7 @@ int program(int argc, char* argv[]) {
 				else if (strcmp(arg, "-wa") == 0)
 					warn = 32;
 				else if (*parsei32(arg + 2, &warn, 10)) {
-					fputfmt(stderr, "invalid level '%s'\n", arg + 2);
-					debug("invalid level '%s'\n", arg + 2);
+					error(rt, NULL, 0, "invalid warning level '%s'\n", arg + 2);
 					return 0;
 				}
 			}
@@ -595,7 +587,6 @@ int program(int argc, char* argv[]) {
 				if (ccAddCode(rt, warn, arg, 1, NULL) != 0) {
 					error(rt, NULL, 0, "error compiling `%s`", arg);
 				}
-				//~ srcs += 1;
 			}
 			else {
 				error(rt, NULL, 0, "invalid option: `%s`", arg);
@@ -660,7 +651,7 @@ int program(int argc, char* argv[]) {
 				dump(rt, dump_asm | (out_dasm & 0x0ff), NULL, "\ndasm:\n");
 			}
 			if (run_code != 0) {
-				logFILE(rt, stderr);
+				logFILE(rt, stdout);
 				vmExec(rt, dbg, ss);
 			}
 		}
@@ -677,18 +668,12 @@ extern int vmTest();
 extern int vmHelp();
 
 int main(int argc, char* argv[]) {
-	int result = 0;
-	setbuf(stdout, NULL);
-	setbuf(stderr, NULL);
+	//setbuf(stdout, NULL);
+	//setbuf(stderr, NULL);
+
 	//~ return vmTest();
 	//~ return vmHelp();
-	result = program(argc, argv);
-
-	#ifdef _MSC_VER
-	system("pause");
-	#endif
-
-	return result;
+	return program(argc, argv);
 }
 
 static int dbgCon(state rt, int pu, void* ip, long* bp, int ss) {
@@ -785,7 +770,7 @@ static int dbgCon(state rt, int pu, void* ip, long* bp, int ss) {
 				else {
 					symn sym = ccFindSym(rt->cc, NULL, arg);
 					debug("arg:%T", sym);
-					if (sym && sym->kind == TYPE_ref && sym->stat == 0) {
+					if (sym && sym->kind == TYPE_ref && !sym->stat) {
 						stkval* sp = (stkval*)((char*)bp + ss + sym->offs);
 						vm_fputval(rt, stdout, sym, sp, 0);
 					}
@@ -814,4 +799,5 @@ static int dbgCon(state rt, int pu, void* ip, long* bp, int ss) {
 		}
 	}
 	return 0;
+	(void)pu;
 }

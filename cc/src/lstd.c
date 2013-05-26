@@ -21,27 +21,32 @@ static int f64sin(state rt, void* _) {
 	float64_t x = argf64(rt, 0);
 	retf64(rt, sin(x));
 	return 0;
+	(void)_;
 }
 static int f64cos(state rt, void* _) {
 	float64_t x = argf64(rt, 0);
 	retf64(rt, cos(x));
 	return 0;
+	(void)_;
 }
 static int f64tan(state rt, void* _) {
 	float64_t x = argf64(rt, 0);
 	retf64(rt, tan(x));
 	return 0;
+	(void)_;
 }
 
 static int f64log(state rt, void* _) {
 	float64_t x = argf64(rt, 0);
 	retf64(rt, log(x));
 	return 0;
+	(void)_;
 }
 static int f64exp(state rt, void* _) {
 	float64_t x = argf64(rt, 0);
 	retf64(rt, exp(x));
 	return 0;
+	(void)_;
 }
 static int f64pow(state rt, void* _) {
 	float64_t x = argf64(rt, 0);
@@ -49,11 +54,13 @@ static int f64pow(state rt, void* _) {
 	retf64(rt, pow(x, y));
 	//~ debug("pow(%g, %g) := %g", x, y, pow(x, y));
 	return 0;
+	(void)_;
 }
 static int f64sqrt(state rt, void* _) {
 	float64_t x = argf64(rt, 0);
 	retf64(rt, sqrt(x));
 	return 0;
+	(void)_;
 }
 
 static int f64atan2(state rt, void* _) {
@@ -61,6 +68,7 @@ static int f64atan2(state rt, void* _) {
 	float64_t y = argf64(rt, 8);
 	retf64(rt, atan2(x, y));
 	return 0;
+	(void)_;
 }
 //#}#endregion
 
@@ -70,36 +78,42 @@ static int b64shl(state rt, void* _) {
 	int32_t y = argi32(rt, 8);
 	reti64(rt, x << y);
 	return 0;
+	(void)_;
 }
 static int b64shr(state rt, void* _) {
 	uint64_t x = argi64(rt, 0);
 	int32_t y = argi32(rt, 8);
 	reti64(rt, x >> y);
 	return 0;
+	(void)_;
 }
 static int b64sar(state rt, void* _) {
 	int64_t x = argi64(rt, 0);
 	int32_t y = argi32(rt, 8);
 	reti64(rt, x >> y);
 	return 0;
+	(void)_;
 }
 static int b64and(state rt, void* _) {
 	uint64_t x = argi64(rt, 0);
 	uint64_t y = argi64(rt, 8);
 	reti64(rt, x & y);
 	return 0;
+	(void)_;
 }
 static int b64ior(state rt, void* _) {
 	uint64_t x = argi64(rt, 0);
 	uint64_t y = argi64(rt, 8);
 	reti64(rt, x | y);
 	return 0;
+	(void)_;
 }
 static int b64xor(state rt, void* _) {
 	uint64_t x = argi64(rt, 0);
 	uint64_t y = argi64(rt, 8);
 	reti64(rt, x ^ y);
 	return 0;
+	(void)_;
 }
 /* unused
 static int b64bsf(state rt) {
@@ -528,21 +542,21 @@ int install_stdc(state rt, char* file, int level) {
 		err = err || !ccAddCall(rt, b64xor, NULL, "int64 Xor(int64 Lhs, int64 Rhs);");
 		rt->cc->type_i64->args = leave(rt->cc, rt->cc->type_i64, 1);
 	}
-	for (i = 0; i < sizeof(math) / sizeof(*math); i += 1) {
+	for (i = 0; i < lengthOf(math); i += 1) {
 		symn libc = ccAddCall(rt, math[i].fun, (void*)math[i].data, math[i].def);
 		if (libc == NULL) {
 			return -1;
 		}
 	}
 	/*if ((nsp = ccBegin(rt, "bits"))) {
-		for (i = 0; i < sizeof(bits) / sizeof(*bits); i += 1) {
+		for (i = 0; i < lengthOf(bits); i += 1) {
 			if (!ccAddCall(rt, bits[i].fun, bits[i].n, bits[i].def)) {
 				return -1;
 			}
 		}
 		ccEnd(rt, nsp);
 	}*/
-	for (i = 0; i < sizeof(misc) / sizeof(*misc); i += 1) {
+	for (i = 0; i < lengthOf(misc); i += 1) {
 		symn libc = ccAddCall(rt, misc[i].fun, (void*)misc[i].data, misc[i].def);
 		if (libc == NULL) {
 			return -1;
@@ -555,6 +569,10 @@ int install_stdc(state rt, char* file, int level) {
 		// will skip forward libcalls if an error ocurred
 
 		err = err || !ccAddCall(rt, miscCall, (void*)miscOpExit, "void Exit(int Code);");
+
+		//~ install(cc, "Args", TYPE_arr, 0, 0);// string Args[];
+		//~ install(cc, "Env", TYPE_def, 0, 0);	// string Env[string];
+
 		ccEnd(rt, nsp);
 	}
 
@@ -571,78 +589,79 @@ int install_stdc(state rt, char* file, int level) {
 //#{ file io ext
 static inline int argpos(int *argp, int size) {
 	int result = *argp;
-	*argp += padded(size, vm_size);
+	*argp += padded(size || 1, vm_size);
 	return result;
 }
 
 //~ #define logFILE(msg, ...) prerr(msg, ##__VA_ARGS__)
 #define logFILE(msg, ...)
-/*static int FILE_open(state rt, void* _) {
-	int argc = 0;
-	char *name = argref(rt, argpos(&argc, sizeof(char *)));
-	int slen = argi32(rt, argpos(&argc, sizeof(int)));
-	int mode = argi32(rt, argpos(&argc, sizeof(int)));
-	FILE *file = fopen(name, mode ? "w+" : "r+");
-	logFILE("Name: %s, Mode: %d, File: %x", name, mode, file);
-	rethnd(rt, file);
-	(void)slen;
-	return 0;
-}*/
+
 static int FILE_open(state rt, void* _) {
 	int argc = 0;
-	char *name = argref(rt, argpos(&argc, sizeof(char *)));
-	int slen = argi32(rt, argpos(&argc, sizeof(int)));
+	char *name = argref(rt, argpos(&argc, vm_size));
+	// int slen = argi32(rt, argpos(&argc, vm_size));
 	FILE *file = fopen(name, "r");
-	logFILE("Name: %s, Mode: %d, File: %x", name, mode, file);
 	rethnd(rt, file);
-	(void)slen;
+
+	logFILE("Name: %s, Mode: %s, File: %x", name, "r", file);
 	return 0;
+
+	(void)_;
 }
 static int FILE_create(state rt, void* _) {
 	int argc = 0;
-	char *name = argref(rt, argpos(&argc, sizeof(char *)));
-	int slen = argi32(rt, argpos(&argc, sizeof(int)));
+	char *name = argref(rt, argpos(&argc, vm_size));
+	// int slen = argi32(rt, argpos(&argc, vm_size));
 	FILE *file = fopen(name, "w");
-	logFILE("Name: %s, Mode: %d, File: %x", name, mode, file);
 	rethnd(rt, file);
-	(void)slen;
+
+	logFILE("Name: %s, Mode: %s, File: %x", name, "w", file);
 	return 0;
+
+	(void)_;
 }
 static int FILE_append(state rt, void* _) {
 	int argc = 0;
-	char *name = argref(rt, argpos(&argc, sizeof(char *)));
-	int slen = argi32(rt, argpos(&argc, sizeof(int)));
+	char *name = argref(rt, argpos(&argc, vm_size));
+	// int slen = argi32(rt, argpos(&argc, vm_size));
 	FILE *file = fopen(name, "a");
-	logFILE("Name: %s, Mode: %d, File: %x", name, mode, file);
 	rethnd(rt, file);
-	(void)slen;
+
+	logFILE("Name: %s, Mode: %s, File: %x", name, "a", file);
 	return 0;
+
+	(void)_;
 }
 static int FILE_getc(state rt, void* _) {
 	FILE *file = arghnd(rt, 0);
 	reti32(rt, fgetc(file));
 	return 0;
+
+	(void)_;
 }
 static int FILE_peek(state rt, void* _) {
 	FILE *file = arghnd(rt, 0);
 	int chr = ungetc(getc(file), file);
 	reti32(rt, chr);
 	return 0;
+
+	(void)_;
 }
 static int FILE_read(state rt, void* _) {	// int read(Fifle &f, uint8 buff[])
 	int argc = 0;
 	FILE *file = arghnd(rt, argpos(&argc, sizeof(FILE *)));
-	char *buff = argref(rt, argpos(&argc, sizeof(char *)));
-	int len = argi32(rt, argpos(&argc, sizeof(int)));
+	char *buff = argref(rt, argpos(&argc, vm_size));
+	int len = argi32(rt, argpos(&argc, vm_size));
 	len = fread(buff, len, 1, file);
 	reti32(rt, len);
 	return 0;
+	(void)_;
 }
 static int FILE_gets(state rt, void* _) {	// int fgets(Fifle &f, uint8 buff[])
 	int argc = 0;
 	FILE *file = arghnd(rt, argpos(&argc, sizeof(FILE *)));
-	char *buff = argref(rt, argpos(&argc, sizeof(char *)));
-	int len = argi32(rt, argpos(&argc, sizeof(int)));
+	char *buff = argref(rt, argpos(&argc, vm_size));
+	int len = argi32(rt, argpos(&argc, vm_size));
 	logFILE("Buff: %08x[%d], File: %x", buff, len, file);
 	if (feof(file)) {
 		reti32(rt, -1);
@@ -655,36 +674,41 @@ static int FILE_gets(state rt, void* _) {	// int fgets(Fifle &f, uint8 buff[])
 		reti32(rt, pos2 - pos1);
 	}
 	return 0;
+	(void)_;
 }
 
 static int FILE_putc(state rt, void* _) {
 	int argc = 0;
 	FILE *file = arghnd(rt, argpos(&argc, sizeof(FILE *)));
-	int data = argi32(rt, argpos(&argc, sizeof(int)));
+	int data = argi32(rt, argpos(&argc, vm_size));
 	logFILE("Data: %c, File: %x", data, file);
 	reti32(rt, putc(data, file));
 	return 0;
+	(void)_;
 }
 static int FILE_write(state rt, void* _) {	// int write(Fifle &f, uint8 buff[])
 	int argc = 0;
 	FILE *file = arghnd(rt, argpos(&argc, sizeof(FILE *)));
-	char *buff = argref(rt, argpos(&argc, sizeof(char *)));
-	int len = argi32(rt, argpos(&argc, sizeof(int)));
+	char *buff = argref(rt, argpos(&argc, vm_size));
+	int len = argi32(rt, argpos(&argc, vm_size));
 	len = fwrite(buff, len, 1, file);
 	reti32(rt, len);
 	return 0;
+	(void)_;
 }
 static int FILE_flush(state rt, void* _) {
 	FILE *file = arghnd(rt, 0);
 	logFILE("File: %x", file);
 	fflush(file);
 	return 0;
+	(void)_;
 }
 static int FILE_close(state rt, void* _) {	// void close(Fifle file);
 	FILE *file = arghnd(rt, 0);
 	logFILE("File: %x", file);
 	fclose(file);
 	return 0;
+	(void)_;
 }
 //#}
 

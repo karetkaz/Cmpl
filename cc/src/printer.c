@@ -801,7 +801,8 @@ static void FPUTFMT(FILE* fout, const char* msg, va_list ap) {
 
 			switch (chr = *msg++) {
 				case 0:
-					return;
+					msg -= 1;
+					continue;
 
 				default:
 					fputchr(fout, chr);
@@ -812,7 +813,7 @@ static void FPUTFMT(FILE* fout, const char* msg, va_list ap) {
 					if (!sym && nil)
 						continue;
 					switch (sgn) {
-						case '-': fputsym(fout, sym, prType|prQual | 1, 0); break;
+						case '-': fputsym(fout, sym, prType | prQual | 1, 0); break;
 						case '+': fputsym(fout, sym, prQual | 1, 0); break;
 						default:  fputsym(fout, sym, 0, 0); break;
 					}
@@ -833,12 +834,6 @@ static void FPUTFMT(FILE* fout, const char* msg, va_list ap) {
 						continue;
 					dumpxml(fout, ast, len << 4, 0, "node");
 				} continue;
-				case 'A': {		// opcode
-					void* opc = va_arg(ap, void*);
-					if (nil && !opc)
-						continue;
-					fputopc(fout, opc, len, prc, NULL);
-				} continue;
 				case 't': {		// token
 					unsigned arg = va_arg(ap, unsigned);
 					if (!arg && nil)
@@ -848,6 +843,12 @@ static void FPUTFMT(FILE* fout, const char* msg, va_list ap) {
 					else
 						str = ".ERROR.";
 				} break;
+				case 'A': {		// opcode
+					void* opc = va_arg(ap, void*);
+					if (nil && !opc)
+						continue;
+					fputopc(fout, opc, len, prc, NULL);
+				} continue;
 
 				case 'I': {		// ident
 					unsigned arg = va_arg(ap, unsigned);
@@ -934,16 +935,13 @@ static void FPUTFMT(FILE* fout, const char* msg, va_list ap) {
 				//~ case 'S':		// wstr
 				case 's': {		// cstr
 					str = va_arg(ap, char*);
-					//~ if (!str) continue;
-					//~ if (str) len -= strlen(str);
 				} break;
 
 				//~ case 'C':		// wchr  // passed as int
 				case 'c': {		// cchr
+					buff[0] = va_arg(ap, int);
+					buff[1] = 0;
 					str = buff;
-					str[0] = va_arg(ap, int);
-					str[1] = 0;
-					len -= 1;
 				} break;
 			}
 
@@ -961,9 +959,11 @@ static void FPUTFMT(FILE* fout, const char* msg, va_list ap) {
 				fputstr(fout, str);
 			}
 		}
-		else
+		else {
 			fputchr(fout, chr);
+		}
 	}
+	fflush(fout);
 }
 
 void fputfmt(FILE* fout, const char* msg, ...) {
@@ -971,7 +971,6 @@ void fputfmt(FILE* fout, const char* msg, ...) {
 	va_start(ap, msg);
 	FPUTFMT(fout, msg, ap);
 	va_end(ap);
-	fflush(fout);
 }
 
 /** print symbols
@@ -1126,7 +1125,6 @@ void dump(state rt, int mode, symn sym, char* text, ...) {
 		va_start(ap, text);
 		FPUTFMT(logf, text, ap);
 		va_end(ap);
-		fflush(logf);
 	}
 
 	if (sym) {
@@ -1227,7 +1225,7 @@ void dump(state rt, int mode, symn sym, char* text, ...) {
 }
 
 void perr(state rt, int level, const char* file, int line, const char* msg, ...) {
-	FILE* logf = rt ? rt->logf : stderr;
+	FILE* logf = rt ? rt->logf : stdout;//stderr;
 	int warnl = rt && rt->cc ? rt->cc->warn : 0;
 	va_list argp;
 
@@ -1258,6 +1256,5 @@ void perr(state rt, int level, const char* file, int line, const char* msg, ...)
 	va_start(argp, msg);
 	FPUTFMT(logf, msg, argp);
 	fputchr(logf, '\n');
-	fflush(logf);
 	va_end(argp);
 }

@@ -11,7 +11,7 @@ string fileName = "media/images/download.jpg";
 //~ string fileName = "media/images/Earth.jpg";
 //~ string fileName = "media/images/nol.bmp";
 
-define useNativeImpl = true;
+define useNativeImpl = !true;
 gxSurf img = gxSurf(fileName);
 gxSurf lui = gxSurf(256, 100);
 

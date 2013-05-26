@@ -79,7 +79,7 @@ void drawCB() {
 			continue;
 		}
 
-		define ps = Math.max(0x200 / stars[i].zpos, 2);
+		define ps = Math.max(int32(0x200 / stars[i].zpos), 2);
 		fillRect(offScreen, tempx, tempy, tempx + ps, tempy + ps, 0xffffff);
 	}
 

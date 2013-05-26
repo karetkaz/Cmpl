@@ -14,7 +14,7 @@ case opc_loc:  NEXT(2, 0, +ip->idx) {
 } break;
 case opc_drop: NEXT(2, ip->idx, -ip->idx) {} break;
 case opc_inc:  NEXT(4, 1, -0) {
-#if defined(EXEC)
+#ifdef EXEC
 	SP(0, u4) += ip->rel;
 #endif
 } break;

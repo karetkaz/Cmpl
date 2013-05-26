@@ -267,29 +267,29 @@ static symn promote(symn lht, symn rht) {
 }
 
 int canAssign(ccState cc, symn var, astn val, int strict) {
-	symn typ = var;
 	symn lnk = linkOf(val);
+	symn typ = var;
 
 	dieif(!var, "FixMe");
 	dieif(!val, "FixMe");
 
 	// assigning null or pass by reference
-	if (val->kind == TYPE_ref && val->ref.link == cc->null_ref) {
+	if (lnk == cc->null_ref) {
 		// if parameter is byRef or type is byRef
-		if (var->cast == TYPE_ref || typ->cast == TYPE_ref) {
-			trace("canAssign null to: %-T", var);
+		if (var->cast == TYPE_ref) {
+			//~ trace("canAssign null to: %-T", var);
 			return 1;
 		}
 	}
 
 	// assigning typename or pass by reference
 	if (lnk && lnk->kind == TYPE_rec) {
-		if (var->type == val->type->type)
+		if (var->type == val->type->type) {
 			return 1;
+		}
 	}
 
 	if (var->kind == TYPE_ref) {
-
 		typ = var->type;
 
 		// assigning a function
@@ -338,33 +338,48 @@ int canAssign(ccState cc, symn var, astn val, int strict) {
 			return 1;
 	}
 
-	if (typ == val->type)
+	if (typ == val->type) {
 		return 1;
+	}
 
+	// array assign
 	if (typ->kind == TYPE_arr) {
-		symn vty = val->type;
-		struct astn atag;
-		atag.kind = TYPE_ref;
-		atag.type = vty ? vty->type : NULL;
-		atag.cst2 = atag.type ? atag.type->cast : 0;
-		atag.ref.link = NULL;
-		atag.ref.name = ".generated token";
-
-		if (canAssign(cc, typ->type, &atag, strict)) {
-			// assign to dynamic array
-			if (typ->init == NULL) {
-				return 1;
-			}
-			if (typ->size == val->type->size) {
+		// FIXME: if valuetype is arrays base type
+		if (var->args == val->type) {
+			return 1;
+		}
+		// assigning a string constant:
+		if (val->type == cc->type_str) {
+			if (typ->type->size == 1) {
 				return 1;
 			}
 		}
+		if (1) {
+			symn vty = val->type;
+			struct astn atag;
+			atag.kind = TYPE_ref;
+			atag.type = vty ? vty->type : NULL;
+			atag.cst2 = atag.type ? atag.type->cast : 0;
+			atag.ref.link = NULL;
+			atag.ref.name = ".generated token";
 
-		//~ trace("assign `%k` to `%-T`(%t)", val, var, var->type->cast);
+			if (canAssign(cc, typ->type, &atag, strict)) {
+				// assign to dynamic array
+				if (typ->init == NULL) {
+					return 1;
+				}
+				if (typ->size == val->type->size) {
+					return 1;
+				}
+			}
+		}
+
+		return canAssign(cc, var->type, val, strict);
 	}
 
-	if (!strict && promote(typ, val->type))
+	if (!strict && promote(typ, val->type)) {
 		return 1;
+	}
 
 	//~ /*TODO: hex32 can be passed as int32 by ref
 	if (val->type && typ->cast == val->type->cast) {
@@ -381,7 +396,7 @@ int canAssign(ccState cc, symn var, astn val, int strict) {
 		}
 	}
 
-	trace("can not assign `%+k` to `%-T`(%t)", val, var, typ->cast);
+	debug("can not assign `%+k` to `%-T`(%t)", val, var, typ->cast);
 	return 0;
 }
 
@@ -642,7 +657,7 @@ symn linkOf(astn ast) {
 		return lnk;
 	}
 
-	trace("%t(%+k)", ast->kind, ast);
+	//~ trace("%t(%+k)", ast->kind, ast);
 	return NULL;
 }
 
@@ -665,10 +680,14 @@ long sizeOf(symn typ) {
 				return vm_size;
 			return typ->size;
 		case TYPE_def:
-		case TYPE_ref:
-			if (typ->cast == TYPE_ref)
-				return vm_size;
-			return sizeOf(typ->type);
+		case TYPE_ref: switch (typ->cast) {
+				case TYPE_ref:
+					return vm_size;
+				case TYPE_arr:
+					return 2 * vm_size;
+				default:
+					return sizeOf(typ->type);
+			}
 	}
 	fatal("failed(%t): %-T", typ ? typ->kind : 0, typ);
 	return 0;
@@ -706,13 +725,16 @@ int castOf(symn typ) {
 	debug("failed(%t): %?-T", typ ? typ->kind : 0, typ);
 	return 0;
 }
-int castTo(astn ast, int cto) {
-	int atc = 0;
+int castTo(astn ast, ccToken cto) {
+	ccToken atc = 0;
 	if (!ast) return 0;
 	//~ TODO: check validity / Remove function
 
 	atc = ast->type ? ast->type->cast : 0;
 	if (cto != atc) switch (cto) {
+		case TYPE_any:
+			return atc;
+
 		case TYPE_vid:		// void(true): can cast 2 to void !!!
 		case TYPE_bit:
 		case TYPE_u32:

@@ -263,7 +263,6 @@ char* mapstr(ccState s, char* name, unsigned size/* = -1U*/, unsigned hash/* = -
 
 	if (name != (char*)rt->_beg) {
 		logif(DEBUGGING > 4, "lookupstr(%s)", name);
-		//~ debug("lookupstr(%s)", name);
 		memcpy(rt->_beg, name, size);
 		name = (char*)rt->_beg;
 	}
@@ -1085,7 +1084,7 @@ static int readTok(ccState s, astn tok) {
 	return tok->kind;
 }
 
-astn peekTok(ccState s, int kind) {
+astn peekTok(ccState s, ccToken kind) {
 	//~ dieif(!s->_cnt, "FixMe: invalid ccState");
 	if (s->_tok == 0) {
 		s->_tok = newnode(s, 0);
@@ -1101,13 +1100,13 @@ astn peekTok(ccState s, int kind) {
 	if (s->_tok->kind == kind)
 		return s->_tok;
 
-	return 0;
+	return NULL;
 }
 
 //~ TODO: this should be removed
 astn peek(ccState s) {return peekTok(s, 0);}
 
-astn next(ccState s, int kind) {
+astn next(ccState s, ccToken kind) {
 	if (peekTok(s, kind)) {
 		astn ast = s->_tok;
 		s->_tok = ast->next;
@@ -1123,13 +1122,11 @@ static void backTok(ccState s, astn ast) {
 	s->_tok = ast;
 }
 
-static int test(ccState s, int kind) {
-	astn ast = peek(s);
-	if (!ast || (kind && ast->kind != kind))
-		return 0;
-	return ast->kind;
+static int test(ccState s) {
+	astn tok = peekTok(s, 0);
+	return tok ? tok->kind : 0;
 }
-int skip(ccState s, int kind) {
+int skip(ccState s, ccToken kind) {
 	astn ast = peekTok(s, 0);
 	if (!ast || (kind && ast->kind != kind))
 		return 0;
@@ -1138,7 +1135,7 @@ int skip(ccState s, int kind) {
 	return 1;
 }
 
-static int skiptok(ccState s, int kind, int raise) {
+static int skiptok(ccState s, ccToken kind, int raise) {
 	if (!skip(s, kind)) {
 		if (raise) {
 			error(s->s, s->file, s->line, "`%t` excepted, got `%k`", kind, peek(s));
@@ -1234,7 +1231,7 @@ static symn ctorArg(ccState s, symn rec) {
 
 		for (arg = rec->args; arg; arg = arg->next) {
 
-			if (arg->stat)
+			if (arg == rec->sdef || arg->stat)
 				break;
 
 			if (arg->kind != TYPE_ref)
@@ -1394,116 +1391,113 @@ static astn type(ccState s/* , int mode */) {	// type(.type)* ('&' | '[]')mode?
 static astn decl_init(ccState s, symn var) {
 	if (skip(s, ASGN_set)) {
 		symn typ = var->type;
-		int cast = var->cast;
+		ccToken cast = var->cast;
 		int mkcon = var->cnst;
+		int arrayInit = 0;
 
 		if (typ->kind == TYPE_arr) {
-			int arrinit = skip(s, STMT_beg);
+			arrayInit = skip(s, STMT_beg);
 			var->init = expr(s, TYPE_def);
-			//~ skip(s, OPER_com);
-			//~ debug("%k", peek(s));
-			if (arrinit) {
+			if (arrayInit) {
 				skiptok(s, STMT_end, 1);
 			}
-			/*if (typ->cnst && typ->stat) {
-				int length = 0;
-				astn ptr = var->init;
-				while (ptr && ptr->kind == OPER_com) {
-					ptr = ptr->op.lhso;
-					length += 1;
-				}
-				if (ptr) {
-					length += 1;
-				}
-				typ->init = intnode(s, 2*length);
-				typ->args = NULL;
-				addarg(s, typ, "length", TYPE_def, s->type_i32, typ->init);
-			}*/
 		}
 		else {
 			var->init = expr(s, TYPE_def);
 		}
 
-		if (var->init->type == s->emit_opc) {		// just in case of  = emit(val, ...)
-			var->init->type = var->type;
-			var->init->cst2 = cast;
-			if (mkcon) {
-				error(s->s, var->file, var->line, "invalid constant initialization `%+k`", var->init);
-			}
-		}
-		if (canAssign(s, var, var->init, cast == TYPE_ref)) {
-			//~ trace("canAssign(%-T, %+k)", typ, var->init);
-			if (!castTo(var->init, cast)) {
-				trace("%t", cast);
-				return NULL;
-			}
-			if (mkcon && !mkConst(var->init, cast)) {
-				if (!isConst(var->init))
-					warn(s->s, 1, var->file, var->line, "probably non constant initialization of `%-T`", var);
-			}
-		}
-		// try initialize an array with elements
-		else if (typ->kind == TYPE_arr) {
-			astn init = var->init;
-			symn base = typ;
-			int nelem = 1;
+		if (var->init != NULL) {
 
-			// TODO: base should not be stored in var->args !!!
-			base = var->args;
-			cast = base ? base->cast : 0;
-
-			if (base == typ->type && typ->init == NULL) {
-				mkcon = 0;
+			// assigning an emit expression: ... x = emit(struct, ...)
+			if (var->init->type == s->emit_opc) {
+				var->init->type = var->type;
+				var->init->cst2 = cast;
+				if (mkcon) {
+					error(s->s, var->file, var->line, "invalid constant initialization `%+k`", var->init);
+				}
 			}
 
-			while (init->kind == OPER_com) {
-				astn val = init->op.rhso;
-				if (!canAssign(s, base, val, 0)) {
-					trace("canAssignCast(%-T, %+k, %t)", base, val, cast);
+			// assigning to an array
+			else if (arrayInit) {
+				astn init = var->init;
+				symn base = var->args;
+				int nelem = 1;
+
+				// TODO: base should not be stored in var->args !!!
+				cast = base ? base->cast : 0;
+
+				if (base == typ->type && typ->init == NULL) {
+					mkcon = 0;
+				}
+
+				while (init->kind == OPER_com) {
+					astn val = init->op.rhso;
+					if (!canAssign(s, base, val, 0)) {
+						trace("canAssignCast(%-T, %+k, %t)", base, val, cast);
+						return NULL;
+					}
+					if (!castTo(val, cast)) {
+						trace("canAssignCast(%-T, %+k, %t)", base, val, cast);
+						return NULL;
+					}
+					if (mkcon && !mkConst(val, cast)) {
+						trace("canAssignCast(%-T, %+k, %t)", base, val, cast);
+						return NULL;
+					}
+					init = init->op.lhso;
+					nelem += 1;
+				}
+				if (!canAssign(s, base, init, 0)) {
+					trace("canAssignArray(%-T, %+k, %t)", base, init, cast);
 					return NULL;
 				}
-				if (!castTo(val, cast)) {
-					trace("canAssignCast(%-T, %+k, %t)", base, val, cast);
+				if (!castTo(init, cast)) {
+					trace("canAssignCast(%-T, %+k, %t)", base, init, cast);
 					return NULL;
 				}
-				if (mkcon && !mkConst(val, cast)) {
-					trace("canAssignCast(%-T, %+k, %t)", base, val, cast);
+				if (mkcon && !mkConst(init, cast)) {
+					trace("canAssignCast(%-T, %+k, %t)", base, init, cast);
 					return NULL;
 				}
-				init = init->op.lhso;
-				nelem += 1;
+
+				// int a[] = 1; OR int a[] = 1, 2, 3, 4, 5, 6;
+				if (base == typ->type && typ->init == NULL && var->cnst) {
+					typ->init = intnode(s, nelem);
+					typ->size = nelem;
+					typ->cast = TYPE_ref;
+					var->cast = TYPE_any;
+
+					addarg(s, typ, "length", TYPE_def, s->type_i32, typ->init);
+					// */
+				}
+				else if (typ->init == NULL) {
+					error(s->s, var->file, var->line, "invalid initialization `%+k`", var->init);
+					return NULL;
+				}
+				var->init->type = var->args;
 			}
 
-			if (!canAssign(s, base, init, 0)) {
-				trace("canAssignCast(%-T, %+k, %t)", base, init, cast);
+			// check if value can be assigned to variable.
+			if (canAssign(s, var, var->init, cast == TYPE_ref)) {
+				//~ trace("canAssign(%-T, %+k)", typ, var->init);
+				if (!castTo(var->init, cast)) {
+					trace("%t", cast);
+					return NULL;
+				}
+				if (mkcon && !mkConst(var->init, cast)) {
+					if (!isConst(var->init)) {
+						warn(s->s, 1, var->file, var->line, "probably non constant initialization of `%-T`", var);
+					}
+				}
+			}
+			else {
+				error(s->s, var->file, var->line, "invalid initialization `%-T` := `%+k`", var, var->init);
 				return NULL;
-			}
-			if (!castTo(init, cast)) {
-				trace("canAssignCast(%-T, %+k, %t)", base, init, cast);
-				return NULL;
-			}
-			if (mkcon && !mkConst(init, cast)) {
-				trace("%t", cast);
-				return NULL;
-			}
-
-			// int a[] = 1 / int a[] = 1, 2, 3, 4, 5, 6
-			if (base == typ->type && typ->init == NULL && var->cnst) {
-				//*TODO: array length
-				typ->init = intnode(s, nelem);
-				typ->size = nelem;
-				typ->cast = TYPE_ref;
-				var->cast = TYPE_any;
-
-				addarg(s, typ, "length", TYPE_def, s->type_i32, typ->init);
-				// */
-			}
-			else if (typ->init == NULL) {
-				error(s->s, var->file, var->line, "invalid initialization `%+k`", var->init);
 			}
 		}
 		else {
-			error(s->s, var->file, var->line, "invalid initialization `%-T` := `%+k`", var, var->init);
+			// var->init is null and expr raised the error.
+			//~ error(s->s, var->file, var->line, "invalid initialization of `%-T`", var);
 		}
 	}
 	return var->init;
@@ -1581,7 +1575,7 @@ astn decl_var(ccState s, astn* argv, int mode) {
 			ref->type = typ;
 			tag->type = typ;
 
-			if (!test(s, PNCT_rc)) {
+			if (!peekTok(s, PNCT_rc)) {
 				struct astn val;
 				astn init = expr(s, TYPE_def);
 				typ->init = init;
@@ -1641,7 +1635,7 @@ astn decl_var(ccState s, astn* argv, int mode) {
 				tmp->size = -1;
 				typ = tmp;
 
-				if (!test(s, PNCT_rc)) {
+				if (!peekTok(s, PNCT_rc)) {
 					struct astn val;
 					astn init = expr(s, TYPE_def);
 					if (eval(&val, init) == TYPE_int) {
@@ -1728,7 +1722,7 @@ static int qual(ccState s, int mode) {
 static astn args(ccState s, int mode) {
 	astn root = NULL;
 
-	if (test(s, PNCT_rp))
+	if (peekTok(s, PNCT_rp))
 		return s->void_tag;
 
 	while (peek(s)) {
@@ -1760,7 +1754,7 @@ static astn block(ccState s, int mode) {
 		int stop = 0;
 		trloop("%k", peek(s));
 
-		switch (test(s, 0)) {
+		switch (test(s)) {
 			case 0 :	// end of file
 			case PNCT_rp :
 			case PNCT_rc :
@@ -1785,6 +1779,7 @@ static astn block(ccState s, int mode) {
 	}
 
 	return head;
+	(void)mode;
 }
 
 static astn stmt(ccState s, int mode) {
@@ -1792,7 +1787,7 @@ static astn stmt(ccState s, int mode) {
 	int qual = 0;			// static | parallel
 
 	//~ invalid start of statement
-	switch (test(s, 0)) {
+	switch (test(s)) {
 		case STMT_end:
 		case PNCT_rp :
 		case PNCT_rc :
@@ -1804,7 +1799,7 @@ static astn stmt(ccState s, int mode) {
 
 	// check statement construct
 	if ((ast = next(s, QUAL_par))) {		// 'parallel' ('{' | 'for')
-		switch (test(s, 0)) {
+		switch (test(s)) {
 			case STMT_beg:		// parallel task
 			case STMT_for:		// parallel loop
 				qual = QUAL_par;
@@ -1816,7 +1811,7 @@ static astn stmt(ccState s, int mode) {
 		ast = 0;
 	}
 	else if ((ast = next(s, QUAL_sta))) {	// 'static' ('if' | 'for')
-		switch (test(s, 0)) {
+		switch (test(s)) {
 			case STMT_if:		// compile time if
 			case STMT_for:		// loop unroll
 				qual = QUAL_sta;
@@ -1866,7 +1861,7 @@ static astn stmt(ccState s, int mode) {
 
 		if (qual == QUAL_sta) {
 			struct astn ift;
-			if (!eval(&ift, ast->stmt.test) || !test(s, STMT_beg)) {
+			if (!eval(&ift, ast->stmt.test) || !peekTok(s, STMT_beg)) {
 				error(s->s, ast->file, ast->line, "invalid static if construct");
 				return 0;
 			}
@@ -2038,7 +2033,7 @@ static astn stmt(ccState s, int mode) {
 		symn result = s->func->sdef;
 		ast->type = s->type_vid;
 
-		if (!test(s, STMT_do)) {
+		if (!peekTok(s, STMT_do)) {
 			astn val = expr(s, TYPE_vid);		// do lookup
 			if (val->kind == TYPE_ref && val->ref.link == result) {
 				// skip 'return result;' statements
@@ -2061,6 +2056,7 @@ static astn stmt(ccState s, int mode) {
 		if (mode)
 			error(s->s, ast->file, ast->line, "unexpected declaration `%+k`", ast);
 	}
+
 	else if ((ast = expr(s, TYPE_vid))) {	// expression
 		astn tmp = newnode(s, STMT_do);
 		tmp->file = ast->file;
@@ -2088,7 +2084,6 @@ static astn stmt(ccState s, int mode) {
 		error(s->s, s->file, s->line, "unexpected end of file");
 	}
 
-	//~ dieif(qual, "FixMe");
 	return ast;
 }
 
@@ -2154,7 +2149,7 @@ astn expr(ccState s, int mode) {
 			case PNCT_lp: {			// '('
 				if (unary)			// a + (3*b)
 					*post++ = 0;
-				else if (test(s, PNCT_rp)) {	// a()
+				else if (peekTok(s, PNCT_rp)) {	// a()
 					unary = 2;
 				}
 				else {
@@ -2724,7 +2719,7 @@ astn decl(ccState s, int Rmode) {
 		symn ref = tag->ref.link;
 
 		if ((Rmode & decl_NoInit) == 0) {
-			if (ref->call && test(s, STMT_beg)) {		// int sqr(int a) {return a * a;}
+			if (ref->call && peekTok(s, STMT_beg)) {		// int sqr(int a) {return a * a;}
 				symn tmp, result = NULL;
 				int maxlevel = s->maxlevel;
 
@@ -2772,7 +2767,7 @@ astn decl(ccState s, int Rmode) {
 
 				Attr |= ATTR_stat;
 			}
-			else if (test(s, ASGN_set)) {				// int sqrt(int a) = sqrt_fast;		// function reference.
+			else if (peekTok(s, ASGN_set)) {				// int sqrt(int a) = sqrt_fast;		// function reference.
 				if (ref->call) {
 					ref->cast = TYPE_ref;
 				}
@@ -2788,9 +2783,11 @@ astn decl(ccState s, int Rmode) {
 		}
 
 		// for (int a : range(10, 20)) ...
-		if (Rmode & decl_Colon)
-			if (test(s, PNCT_cln))
+		if (Rmode & decl_Colon) {
+			if (peekTok(s, PNCT_cln)) {
 				backTok(s, newnode(s, STMT_do));
+			}
+		}
 
 		skiptok(s, STMT_do, 1);
 

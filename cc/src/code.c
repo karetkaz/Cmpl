@@ -135,8 +135,8 @@ static symn installref(state rt, const char* prot, astn* argv) {
 	rt->cc->warn = 9;
 	level = rt->cc->nest;
 	if ((root = decl_var(rt->cc, &args, decl_NoDefs | decl_NoInit))) {
-		logif(!skip(rt->cc, STMT_do), "`;` expected declaring: %s", prot);
-		dieif(peek(rt->cc), "FixMe");
+		dieif(!skip(rt->cc, STMT_do), "`;` expected declaring: %s", prot);
+		dieif(peek(rt->cc), "unexpected token `%k` declaring: %-k", peek(rt->cc), root);
 		dieif(level != rt->cc->nest, "FixMe");
 		dieif(root->kind != TYPE_ref, "FixMe %+k", root);
 
@@ -948,7 +948,7 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 	}
 	else switch (opc) {
 		case opc_inc:
-			dieif(ip->rel != arg.i8, "FixMe");
+			dieif(ip->rel != arg.i8, "FixMe([%A]: %d, %D)", ip, ip->rel, arg.i8);
 			break;
 
 		case opc_spc:
@@ -1008,7 +1008,7 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 	if (rt->vm.sm < rt->vm.ss)
 		rt->vm.sm = rt->vm.ss;
 
-	logif(DEBUGGING > 5, ">cgen:[sp%02d]@%9.*A", rt->vm.ss, rt->vm.pc, ip);
+	logif(DEBUGGING > 3, ">cgen:[sp%02d]@%9.*A", rt->vm.ss, rt->vm.pc, ip);
 
 	return rt->vm.pc;
 }
@@ -1151,17 +1151,10 @@ int stkoffs(state rt, int size) {
 	return padded(size, vm_size) + rt->vm.ss * vm_size;
 }
 
-#define traceProc(__PU, __CP, __MSG) logif(1, "%?s: {pu:%d, ip:%x, bp:%x, sp:%x, ss:%d, parent:%d, childs:%d}", __MSG, __CP, __PU[__CP].ip, __PU[__CP].bp, __PU[__CP].sp, __PU[__CP].ss, __PU[__CP].pp, __PU[__CP].cp);
-/*static void traceProc(cell pu, int cp, char* msg) {
-	//~ unsigned char	*ip;		// Instruction pointer
-	//~ unsigned char	*sp;		// Stack pointer(bp + ss)
-	//~ unsigned char	*bp;		// Stack base
-
-	//~ unsigned int	ss;			// stack size
-	//~ unsigned int	cp;			// child start(==0 join)
-	//~ unsigned int	pp;			// parent proc(==0 main)
+static void traceProc(cell pu, int cp, char* msg) {
+	//~ #define traceProc(__PU, __CP, __MSG) logif(1, "%?s: {pu:%d, ip:%x, bp:%x, sp:%x, ss:%d, parent:%d, childs:%d}", __MSG, __CP, __PU[__CP].ip, __PU[__CP].bp, __PU[__CP].sp, __PU[__CP].ss, __PU[__CP].pp, __PU[__CP].cp);
 	logif(1, "%s: {pu:%d, ip:%x, bp:%x, sp:%x, stacksize:%d, parent:%d, childs:%d}", msg, cp, pu[cp].ip, pu[cp].bp, pu[cp].sp, pu[cp].ss, pu[cp].pp, pu[cp].cp);
-}*/
+}
 
 //~ parallel processing
 static int task(cell pu, int n, int master, int cl) {
@@ -1183,9 +1176,9 @@ static int task(cell pu, int n, int master, int cl) {
 		pu[slave].ip = pu[master].ip;
 		pu[slave].sp = pu[slave].bp + pu[slave].ss - cl;
 		memcpy(pu[slave].sp, pu[master].sp, cl);
-		//~ logif(1, "master(%d): starts: %d.", master, slave);
-		//~ traceProc(pu, master, "master");
-		//~ traceProc(pu, slave, "slave");
+
+		traceProc(pu, master, "master");
+		traceProc(pu, slave, "slave");
 
 		return slave;
 	}
@@ -1195,7 +1188,7 @@ static int task(cell pu, int n, int master, int cl) {
 
 static int sync(cell pu, int cp, int wait) {
 	int pp = pu[cp].pp;
-	//~ traceProc(pu, cp, "join");
+	traceProc(pu, cp, "join");
 
 	// there are workers to wait for
 
@@ -1235,6 +1228,9 @@ static void dbugerr(state rt, cell cpu, char* file, int line, int pu, void* ip, 
 	int IP = ((unsigned char*)ip) - rt->_mem;
 	//~ error(rt, file, line, "exec:%s(%?d):[pu%02d][sp%02d]@%9.*A rw@%06x", text, xxx, pu, ss, IP, ip);
 	error(rt, file, line, "exec:%s(%?d):[sp%02d]@%.*A rw@%06x", text, xxx, ss, IP, ip);
+	(void)cpu;
+	(void)pu;
+	(void)bp;
 }
 
 #if MAXPROCSEXEC > 1
@@ -1791,11 +1787,14 @@ void vm_fputval(state rt, FILE* fout, symn var, stkval* ref, int level) {
 			else {
 				int elementsOnNewLine = 0;
 				int arrayHasMoreElements = 0;
-				fputfmt(fout, "%T {", typ);
 
 				if (var->cast == TYPE_arr) {
 					n = ref->arr.length;
 					ref = (stkval*)(rt->_mem + ref->u4);
+					fputfmt(fout, "%T[.%d.] {", typ->type, n);
+				}
+				else {
+					fputfmt(fout, "%T {", typ);
 				}
 
 				#ifdef MAX_ARR_PRINT
@@ -1843,9 +1842,10 @@ void vm_fputval(state rt, FILE* fout, symn var, stkval* ref, int level) {
 	}
 }
 
-#if DEBUGGING
-const int vmTest() {
+#if DEBUGGING > 10
+int vmTest() {
 	int i, e = 0;
+	FILE *out = stdout;
 	struct bcde ip[1];
 	struct libc libcvec[1];
 	ip->arg.i8 = 0;
@@ -1854,14 +1854,14 @@ const int vmTest() {
 		//~ ip->opc = i;
 		if (opc_tbl[i].size == 0) continue;
 		if (opc_tbl[i].code != i) {
-			fprintf(stderr, "invalid '%s'[%02x]\n", opc_tbl[i].name, i);
+			fprintf(out, "invalid '%s'[%02x]\n", opc_tbl[i].name, i);
 			e += err = 1;
 		}
 		else switch (i) {
-			error_len: e += 1; fputfmt(stderr, "opcode size 0x%02x: '%A'\n", i, ip); break;
-			error_chk: e += 1; fputfmt(stderr, "stack check 0x%02x: '%A'\n", i, ip); break;
-			error_dif: e += 1; fputfmt(stderr, "stack difference 0x%02x: '%A'\n", i, ip); break;
-			error_opc: e += 1; fputfmt(stderr, "unimplemented opcode 0x%02x: '%A'\n", i, ip); break;
+			error_len: e += 1; fputfmt(out, "opcode size 0x%02x: '%A'\n", i, ip); break;
+			error_chk: e += 1; fputfmt(out, "stack check 0x%02x: '%A'\n", i, ip); break;
+			error_dif: e += 1; fputfmt(out, "stack difference 0x%02x: '%A'\n", i, ip); break;
+			error_opc: e += 1; fputfmt(out, "unimplemented opcode 0x%02x: '%A'\n", i, ip); break;
 			#define NEXT(__IP, __CHK, __DIFF) {\
 				if (opc_tbl[i].size && (__IP) && opc_tbl[i].size != (__IP)) goto error_len;\
 				if (opc_tbl[i].chck != 9 && opc_tbl[i].chck != (__CHK)) goto error_chk;\
@@ -1873,7 +1873,7 @@ const int vmTest() {
 	}
 	return e;
 }
-const int vmHelp() {
+int vmHelp() {
 	int i, e = 0;
 	FILE* out = stdout;
 	struct bcde ip[1];

@@ -26,7 +26,7 @@ for (int i = 0; i < a.length; i += 1) {
 }// +/
 // */
 
-/* const & static members
+/*DONE: const & static members
 struct M {
 	static const int A = 9;
 	static int B = 9;
@@ -61,29 +61,32 @@ setup();
 //~ */
 
 /* BUG: return: int returned instead of float
-double f(int32 idx) {
+double f1(int32 idx) {
 	return idx;
 }
 /// 0 is returned.
-double f(int32 idx) {
+double f2(int32 idx) {
 	result = idx;
 }
-*/
 
-/* Arrays/slices
+double f1 = f1(11);
+double f2 = f2(11);
+//~ */
+
+//~ /* Arrays/slices
 struct slice_in_struct {
 	int slice[];
 }
-slice_in_struct slice_in_struct1(int a[]) {return slice_in_struct(a);}
+slice_in_struct slice_in_struct_fn(int a[]) {return slice_in_struct(a);}
 
-int a[4] = 1, 2, 3, 4;
+int a[4] = {1, 2, 3, 4};
 
 slice_in_struct it1 = slice_in_struct(a);
 
-//FixMe: 
-slice_in_struct it2 = slice_in_struct1(a);
+//~ DONE:
+slice_in_struct it2 = slice_in_struct_fn(a);
 
-print("\n");
+//~ print("\n");
 
 //FixMe: 
 int xxx = it1.slice[0];
@@ -128,7 +131,7 @@ int xxx = it1.slice[0];
 
 //~ +/
 
-
+/*
 static(typename Value) {
 	Value& select(Value arr[], int pos) {
 		assert(unsigned(pos) > arr.lenght);
@@ -159,7 +162,7 @@ static(typename Value) {
 }
 static(typename Key, typename Value) {
 
-	struct Map {
+	struct &Map {
 		struct Iterator {
 			Map &map;
 			int pos;
@@ -283,17 +286,26 @@ static(typename Key, typename Value) {
 	}
 	define value(Map.Item item) = item != null ? item.value : null;
 
-	operator (Value map[Key]) insert(Key key, Value value) = insert(map, key, value);
-	operator (Value map[Key]) update(Key key, Value value) = update(map, key, value);
-	operator (Value map[Key]) delete(Key key) = delete(map, key);
+	//~ operator (Value map[Key]).insert(Key key, Value value) = insert(map, key, value);
+	//~ operator (Value map[Key]).update(Key key, Value value) = update(map, key, value);
+	//~ operator (Value map[Key]).delete(Key key) = delete(map, key);
 
-	operator (Value map[Key]) [Key key] = value(select(map, key));
+	operator (Value map[Key])[Key key] = value(select(map, key));
+
+	operator (Value map[Key])[Key key].set(Value value) {
+		if (value == null) {
+			return delete(map, key);
+		}
+		if (!update(map, key, value)) {
+			return insert(map, key, value);
+		}
+		return true;
 }
+//~ */
 
+//~ int a1 = int(0);
+//~ int a2 = int{0};
 
-int a1 = int(0);
-int a2 = int{0};
-
-Complex c1 = Complex(10, 20);
-Complex c2 = Complex{re: 10, im:20};
+//~ Complex c1 = Complex(10, 20);
+//~ Complex c2 = Complex{re: 10, im:20};
 

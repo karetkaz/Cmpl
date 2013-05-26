@@ -88,8 +88,8 @@ symn ccFindSym(ccState, symn in, char *name);
 int ccSymValInt(symn sym, int* res);
 int ccSymValFlt(symn sym, double* res);
 
-/** instal standard functions.
- * io, mem, math and parse optionaly the given file
+/** instal standard functions and parse optionaly the given file.
+ * io, mem, math, ...
  * @param state
  * @param file if not null parse this file @see stdlib.cvx
  * @param level warning level for parsing.

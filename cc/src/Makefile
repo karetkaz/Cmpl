@@ -27,8 +27,6 @@ endif
 SRCDIR=./
 OBJDIR=../obj/
 BINDIR=../
-#~ OBJDIR=../Debug/src/
-#~ BINDIR=../Debug/
 
 OBJS=\
 	$(OBJDIR)code.o\
@@ -45,14 +43,16 @@ OBJS=\
 build:$(OBJS) main.c
 	$(LNK) $(OUTEXE)$(BINDIR)main $(OBJS) $(LIBS)
 
+clean:
+	rm -f $(OBJS) $(OBJDIR)main.o
+
 lib:$(OBJS)
 	$(LIB) $(OBJS)
 
-clean:
-	rm -f $(OBJS) $(OBJDIR)main.o
-#	rm -f *.o *.obj *.err
-
-#~ $(OBJDIR)%.o: $(SRCDIR)%.c $(SRCDIR)api.h $(SRCDIR)pvmc.h $(SRCDIR)core.h
-	#~ $(CCC) $(CFLAGS) $< $(OUTOBJ)$@
 $(OBJDIR)%.o: $(SRCDIR)%.c $(SRCDIR)*.h $(SRCDIR)*.inl
 	$(CCC) $(CFLAGS) $< $(OUTOBJ)$@
+
+
+end:
+#~ $(OBJDIR)%.o: $(SRCDIR)%.c $(SRCDIR)api.h $(SRCDIR)pvmc.h $(SRCDIR)core.h
+	#~ $(CCC) $(CFLAGS) $< $(OUTOBJ)$@

@@ -11,8 +11,16 @@
 #include "pvmc.h"
 #include <stdlib.h>
 
-// debug level
-#define DEBUGGING 50
+/* debug level:
+	0: no debug info
+	1: print debug messages
+	2: print trace messages
+	3: print generated assembly for statements with errors;
+	4: print generated assembly
+	5: print non pre-mapped strings, non static types
+	6: print static casts generated with emit
+*/
+//~ #define DEBUGGING 2
 
 // enable dynamic dll/so lib loading
 #define USEPLUGINS
@@ -29,45 +37,43 @@
 // symbol & hash table size
 #define TBLS 512
 
-//~ #define DO_PRAGMA(x) _Pragma(#x)
-//~ #define TODO(x) //DO_PRAGMA(message("TODO: " #x))
 
-#define pdbg(__DBG, __FILE, __LINE, msg, ...) do {fputfmt(stderr, "%s:%d: "__DBG": %s: "msg"\n", __FILE, __LINE, __FUNCTION__, ##__VA_ARGS__); fflush(stderr); fflush(stderr);} while(0)
+#define prerr(__DBG, __MSG, ...) do { fputfmt(stdout, "%s:%d: "__DBG": %s: "__MSG"\n", __FILE__, __LINE__, __FUNCTION__, ##__VA_ARGS__); } while(0)
 
-#if DEBUGGING > 1
-#define debug(msg, ...) pdbg("debug", __FILE__, __LINE__, msg, ##__VA_ARGS__)
-#if DEBUGGING > 2
-#define trace(msg, ...) pdbg("trace", __FILE__, __LINE__, msg, ##__VA_ARGS__)
-#define trloop(msg, ...) //pdbg("trace", __FILE__, __LINE__, msg, ##__VA_ARGS__)
+#ifdef DEBUGGING
+#define logif(__EXP, msg, ...) do {if (__EXP) prerr("info", msg, ##__VA_ARGS__);} while(0)
+#if DEBUGGING > 0	// enable debug
+#define debug(msg, ...) do { prerr("debug", msg, ##__VA_ARGS__); } while(0)
 #else
-#define trace(msg, ...)
-#define trloop(msg, ...)
+#define debug(msg, ...) do {} while(0)
+#endif
+#if DEBUGGING > 1	// enable trace
+#define trace(msg, ...) do { prerr("trace", msg, ##__VA_ARGS__); } while(0)
+#define trloop(msg, ...) //do { prerr("trace", msg, ##__VA_ARGS__); } while(0)
+#else
+#define trace(msg, ...) do {} while(0)
+#define trloop(msg, ...) do {} while(0)
 #endif
 
-#define PERR(__ENV, __LEVEL, __FILE, __LINE, msg, ...) do { perr(__ENV, __LEVEL, __FILE, __LINE, msg, ##__VA_ARGS__); trace(msg, ##__VA_ARGS__); } while(0)
+#else
+#define logif(__EXP, msg, ...) do {} while(0)
+#define debug(msg, ...) do {} while(0)
+#define trace(msg, ...) do {} while(0)
+#define trloop(msg, ...) do {} while(0)
 
-#else // catch the position error raised
-
-#define debug(msg, ...)
-#define trace(msg, ...)
-#define trloop(msg, ...)
-#define PERR(__ENV, __LEVEL, __FILE, __LINE, msg, ...) do { perr(__ENV, __LEVEL, __FILE, __LINE, msg, ##__VA_ARGS__); } while(0)
 #endif
-
-// error
-#define error(__ENV, __FILE, __LINE, msg, ...) PERR(__ENV, -1, __FILE, __LINE, msg, ##__VA_ARGS__)
-#define warn(__ENV, __LEVEL, __FILE, __LINE, msg, ...) PERR(__ENV, __LEVEL, __FILE, __LINE, msg, ##__VA_ARGS__)
-#define info(__ENV, __FILE, __LINE, msg, ...) PERR(__ENV, 0, __FILE, __LINE, msg, ##__VA_ARGS__)
 
 // internal errors
-#define prerr(msg, ...) do {pdbg("FixMe", __FILE__, __LINE__, msg, ##__VA_ARGS__); } while(0)
-#define fatal(msg, ...) do {prerr(msg, ##__VA_ARGS__); abort();} while(0)
+#define dieif(__EXP, msg, ...) do { if (__EXP) { prerr("fatal", msg, ##__VA_ARGS__); abort(); }} while(0)
+#define fatal(msg, ...) do { prerr("fatal", msg, ##__VA_ARGS__); abort(); } while(0)
 
-#define dieif(__EXP, msg, ...) do {if (__EXP) fatal(msg, ##__VA_ARGS__);} while(0)
-#define logif(__EXP, msg, ...) do {if (__EXP) prerr(msg, ##__VA_ARGS__);} while(0)
+// compilation errors
+#define error(__ENV, __FILE, __LINE, msg, ...) do { perr(__ENV, -1, __FILE, __LINE, msg, ##__VA_ARGS__); debug(msg, ##__VA_ARGS__); } while(0)
+#define warn(__ENV, __LEVEL, __FILE, __LINE, msg, ...) do { perr(__ENV, __LEVEL, __FILE, __LINE, msg, ##__VA_ARGS__); } while(0)
+#define info(__ENV, __FILE, __LINE, msg, ...) do { warn(__ENV, 0, __FILE, __LINE, msg, ##__VA_ARGS__); } while(0)
 
-#define offsetof(__TYPE, __FIELD) ((size_t) &((__TYPE)0)->__FIELD)
-#define lengthof(__ARRAY) (sizeof(__ARRAY) / sizeof(*(__ARRAY)))
+#define lengthOf(__ARRAY) ((signed)(sizeof(__ARRAY) / sizeof(*(__ARRAY))))
+#define offsetOf(__TYPE, __FIELD) ((size_t) &((__TYPE)0)->__FIELD)
 
 // Symbols - CC(tokens)
 typedef enum {
@@ -90,9 +96,7 @@ typedef enum {
 	ATTR_const = 0x0100,		// constant
 	ATTR_stat  = 0x0200,		// static
 
-	//~ ATTR_byref = 0x00000002,		// indirect
-	//~ ATTR_glob  = 0x00000008,		// global
-	//~ ATTR_used  = 0x00000080,		// used
+	tok_last2
 } ccToken;
 typedef struct tok_inf {
 	int const	type;
@@ -149,16 +153,15 @@ typedef enum {
 	vm_regs = 255,	// maximum registers for dup, set, pop, ...
 } vmOpcode;
 typedef struct opc_inf {
-	int const code;
-	int const size;
-	int const chck;
-	int const diff;
-	char *const name;
-	//~ const char *help;
+	int const code;		// opcode value (0..255)
+	int const size;		// length of opcode with args
+	int const chck;		// minimum elements on stack before execution
+	int const diff;		// stack size difference after execution
+	char *const name;	// mnemonic for the opcode
 } opc_inf;
 extern const opc_inf opc_tbl[255];
 
-typedef union {		// value type
+typedef union {		// on stack value type
 	int8_t		i1;
 	int16_t		i2;
 	int32_t		i4;
@@ -169,16 +172,16 @@ typedef union {		// value type
 	//uint64_t	u8;
 	float32_t	f4;
 	float64_t	f8;
-	//~ float32_t		pf[4];
-	//~ float32_t		pd[2];
-	//~ struct {float32_t x, y, z, w;} pf;
-	//~ struct {float64_t x, y;} pd;
 	int32_t		rel:24;
 	struct {void* data; long length;} arr;	// slice
 } stkval;
 
-typedef struct list *list;		// Linked List Node
-
+typedef struct list {				// linked list: stringlist, ...
+	struct list*	next;
+	unsigned char*	data;
+	unsigned int	size;
+	unsigned int	_pad;
+} *list;
 typedef struct libc {
 	struct libc *next;	// next
 	int (*call)(state, void*);
@@ -187,13 +190,7 @@ typedef struct libc {
 	int pos;
 	symn sym;
 } *libc;
-struct list {				// linked list: stringlist, ...
-	struct list*	next;
-	unsigned char*	data;
-	unsigned int	size;
-	unsigned int	_pad;
-};
-struct symn {				// type node (data)
+struct symn {				// type node (meta)
 	char*	name;		// symbol name
 	char*	file;		// declared in file
 	int		line;		// declared on line
@@ -210,32 +207,25 @@ struct symn {				// type node (data)
 	symn	decl;		// declared in namespace/struct/class, function, ...
 	symn	next;		// symbols on table / next param / next field / next symbol
 
-	#if DEBUGGING
 	ccToken	kind;		// TYPE_def / TYPE_rec / TYPE_ref / TYPE_arr
 	ccToken	cast;		// casts to type(TYPE_(bit, vid, ref, u32, i32, i64, f32, f64, p4x)).
-	uint16_t __castkindpadd;
-	#else
-	uint8_t	kind;		// TYPE_ref / TYPE_def / TYPE_rec / TYPE_arr
-	uint8_t	cast;		// casts to type(TYPE_(bit, vid, ref, u32, i32, i64, f32, f64, p4x)).
-	#endif
 
 	union {				// Attributes
+		uint32_t	Attr;
 	struct {
-	// TODO: remove call
-	uint16_t	call:1;		// callable(function/definition) <=> (kind == TYPE_ref && args)
-	uint16_t	cnst:1;		// constant
-	uint16_t	priv:1;		// private
-	uint16_t	stat:1;		// static ?
-	uint16_t	glob:1;		// global
+		uint32_t	call:1;		// callable(function/definition) <=> (kind == TYPE_ref && args)
+		uint32_t	cnst:1;		// constant
+		uint32_t	stat:1;		// static ?
+		uint32_t	glob:1;		// global
 
-	//~ uint8_t	load:1;		// indirect reference: cast == TYPE_ref
-	//~ uint8_t	used:1;		//
-	uint16_t _padd:11;		// attributes (const static /+ private, ... +/).
+		//~ uint32_t	priv:1;		// private
+		//~ uint32_t	load:1;		// indirect reference: cast == TYPE_ref
+		//~ uint32_t	used:1;		// 
+		uint32_t _padd:28;		// declaration level
 	};
-	uint16_t	Attr;
 	};
 
-	int		nest;		// declaration level
+	int nest;		// declaration level
 
 	symn	defs;		// global variables and functions / while_compiling variables of the block in reverse order
 	symn	gdef;		// static variables and functions / while_compiling ?
@@ -293,10 +283,9 @@ typedef struct arrBuffer {
 	int cnt;		// length
 } arrBuffer;
 
-void* getBuff(struct arrBuffer* buff, int idx);
+int initBuff(struct arrBuffer* buff, int initsize, int elemsize);
 void* setBuff(struct arrBuffer* buff, int idx, void* data);
-void* addBuff(arrBuffer* buff, void* data);
-void initBuff(struct arrBuffer* buff, int initsize, int elemsize);
+void* getBuff(struct arrBuffer* buff, int idx);
 void freeBuff(struct arrBuffer* buff);
 
 struct ccState {
@@ -407,17 +396,15 @@ symn typecheck(ccState, symn loc, astn ast);
 int fixargs(symn sym, int align, int spos);
 
 int castOf(symn typ);
-int castTo(astn ast, int tyId);
+int castTo(astn ast, ccToken tyId);
 
 int32_t constbol(astn ast);
 int64_t constint(astn ast);
 float64_t constflt(astn ast);
 
 astn peek(ccState);
-astn next(ccState, int kind);
-//~ void back(ccState, astn ast);
-int  skip(ccState, int kind);
-//~ int  test(ccState, int kind);
+astn next(ccState, ccToken kind);
+int  skip(ccState, ccToken kind);
 
 astn expr(ccState, int mode);		// parse expression	(mode: do typecheck)
 astn decl(ccState, int mode);		// parse declaration	(mode: enable defs(: struct, define, ...))

@@ -5,14 +5,14 @@ enum Window {
 	resy = 512;
 }
 
-enum Options: bool {
+enum Options {
 	textured = !true;
 	do2d = !true;
 	do3d = true;
 }
 
 // division of mesh and heightmap
-define division = 72;
+define division = 62;
 
 //~ do rain every dorain frame
 define dorain = 0;
@@ -23,14 +23,10 @@ define density = 16;
 int mx = 0;
 int my = 0;
 
-// temporary surface for 2d view
 gxSurf tmp = gxSurf(division, division);
-
-// texture
-gxSurf img = gxSurf("media/images/ex1.jpg");
-//~ gxSurf img = gxSurf("media/images/download.jpg");
+gxSurf img = gxSurf("media/images/download.jpg");
+//~ gxSurf img = gxSurf("media/images/ex1.jpg");
 //~ gxSurf img = gxSurf("media/images/nol.bmp");
-
 int imh = height(img);
 int imw = width(img);
 
@@ -41,22 +37,23 @@ static if (Options.textured) {
 }
 
 void drawCB() {
-	static float32 u[division][division] = {0};
-	static float32 v[division][division] = {0};
+	static int page = 0;
+	static int hmap[2][division * division] = {0};
 
 	Gui.Repaint();
 	static int64 beg = -1;
 	int64 now = timeNow();
-	//~ /* limit speed to 20 fps
-	if (clocksPerSec(now - beg) <= 1./25) {
+	//~ /* limit to 20 fps
+	if (clocksPerSec(now - beg) <= 1./20) {
 		static if (Options.do2d) {
 			zoomSurf(offScreen, null, tmp, null, 1);
 		}
 		return;
 	}// */
-
 	beg = now;
-	static if (dorain) {
+
+
+	static if (dorain != 0) {
 		if (mx == 0 && my == 0) {
 			static int count = 0;
 			if ((count += 1) > dorain) {
@@ -67,26 +64,27 @@ void drawCB() {
 		}
 	}
 
+	int p = page;
 	if (mx > 0 && my > 0) {
 		int px = mx * division / Window.resx;
 		int py = my * division / Window.resy;
 		if (px > 1 && px < division-2 && py > 1 && py < division-2) {
-			v[px][py] = pheight;
+			hmap[p][px + division * py] = pheight;
 		}
 		mx = my = 0;
 	}
 
 	// the effect
-	for (int y = 0; y < division; y += 1) {
-		for (int x = 0; x < division; x += 1) {
-			define cl(int ^c) = (c < 0 ? 0 : c >= division ? division - 1 : c);
-			v[x][y] += (u[cl(x - 1)][y] + u[cl(x + 1)][y] + u[x][cl(y - 1)] + u[x][cl(y + 1)]) / 4 - u[x][y];
+	int i = division;
+	int np = page ^= 1;
+	for (int y = 1; y < division - 1; y += 1) {
+		for (int x = 1; x < division - 1; x += 1) {
+			int height = ((hmap[p][i-division-1] + hmap[p][i-division] + hmap[p][i-division+1] + hmap[p][i-1] + hmap[p][i+1] + hmap[p][i+division-1] + hmap[p][i+division] + hmap[p][i+division+1]) >> 2) - hmap[np][i];
+			//~ int height = ((hmap[p][i-division] + hmap[p][i-1] + hmap[p][i+1] + hmap[p][i+division]) / 2) - hmap[np][i];
+			hmap[np][i] = height - (height / density);
+			i += 1;
 		}
-	}
-	for (int y = 0; y < division; y += 1) {
-		for (int x = 0; x < division; x += 1) {
-			u[x][y] += v[x][y] *= .96;// * 1.9;
-		}
+		i += 2;
 	}
 
 	static if (Options.do3d) {
@@ -98,10 +96,10 @@ void drawCB() {
 			fixx &= 0xffff;
 			fixy &= 0xffff;
 
-			int h00 = u[posx + 0][posy + 0];
-			int h01 = u[posx + 0][posy + 1];
-			int h10 = u[posx + 1][posy + 0];
-			int h11 = u[posx + 1][posy + 1];
+			int h00 = hmap[page][int(division * (posy + 0) + posx + 0)];
+			int h01 = hmap[page][int(division * (posy + 0) + posx + 1)];
+			int h10 = hmap[page][int(division * (posy + 1) + posx + 0)];
+			int h11 = hmap[page][int(division * (posy + 1) + posx + 1)];
 
 			h00 += (fixx * (h01 - h00)) >> 16;
 			h10 += (fixx * (h11 - h10)) >> 16;
@@ -116,30 +114,36 @@ void drawCB() {
 
 			//~ int posx = Math.lerp(s01, 0., division - 1.);
 			//~ int posy = Math.lerp(t01, 0., division - 1.);
-			//~ z = double(u[posx][posy]) / -pheight;
+			//~ z = double(hmap[page][int(division * posy + posx)]) / pheight;
 
-			z = double(lerpHeight(s01, t01)) / -pheight;
+			z = double(lerpHeight(s01, t01)) / 255;
 		}
-		meshGen(division, hmapfn, 1.5e-2);
+		meshGen(division, hmapfn, 1e-2);
 	}
 	static if (Options.do2d) {
+		i = division;
 		for (int y = 1; y < division - 1; y += 1) {
 			for (int x = 1; x < division - 1; x += 1) {
 				static if (Options.textured) {
-					int Xoffset = int(u[x - 1][y] - u[x + 1][y]) / 20;
-					int Yoffset = int(u[x][y - 1] - u[x][y + 1]) / 20;
+					int Xoffset = hmap[p][i - 1] - hmap[p][i + 1];
+					int Yoffset = hmap[p][i - division] - hmap[p][i + division];
+
+					//~ Xoffset = Xoffset * 32 / pheight;
+					//~ Yoffset = Yoffset * 32 / pheight;
 					int Shading = Math.clamp(Xoffset, 0, 126);
 
 					int t = getPixel(img, x*imw/division + Xoffset, y*imh/division + Yoffset);
 					setPixel(tmp, x, y, rgbClamp(rch(t) + Shading, gch(t) + Shading, bch(t) + Shading));
 				}
 				static if (!Options.textured) {
-					setPixel(tmp, x, y, grayClamp(Math.abs(u[x][y])));
+					setPixel(tmp, x, y, grayClamp(Math.abs(hmap[p][i])));
 				}
+				i += 1;
 			}
+			i += 2;
 		}
 		zoomSurf(offScreen, null, tmp, null, 1);
-	}// */
+	}
 }
 
 void mouseHandler(int btn, int x, int y) {
