@@ -1,13 +1,13 @@
 enum Window {
 	draw = RenderMode.swap_buff;
-	resx = 512;
-	resy = resx;
+	resx = 1440;
+	resy = 800;
 }
 
 //~ string fileName = "media/images/David.png";
-//~ string fileName = "media/images/lenaRGB.png";
-string fileName = "media/images/download.jpg";
-//~ string fileName = "/home/kmz/Dropbox/Photos/DelMe/2012-08-15 11.30.29.jpg";
+string fileName = "media/images/lenaRGB.png";
+//~ string fileName = "media/images/download.jpg";
+//~ string fileName = "//media/Data/Pictures/Canon/2006/2006_04_17 - Banya/IMG_0086.JPG";
 //~ string fileName = "media/images/dino-blue.jpg";
 //~ string fileName = "media/images/Earth.jpg";
 //~ string fileName = "media/images/nol.bmp";

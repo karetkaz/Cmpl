@@ -60,7 +60,7 @@ static void fputsym(FILE* fout, symn sym, int mode, int level) {
 
 		case TYPE_arr: {
 			if (sym->name == NULL) {
-				symn bp[512], *sp = bp, *p;// + sizeof(bp) / sizeof(*bp);
+				symn bp[TBLS], *sp = bp, *p;// + sizeof(bp) / sizeof(*bp);
 
 				symn typ = sym;
 				while (typ->kind == TYPE_arr) {
@@ -1168,14 +1168,15 @@ void dump(state rt, int mode, symn sym, char* text, ...) {
 
 		if (mode & dump_asm) {
 			symn var;
-			for (var = rt->defs; var; var = var->next) {
+			//~ for (var = rt->defs; var; var = var->next) {
+			for (var = rt->gdef; var; var = var->gdef) {
 				if (var->kind == TYPE_ref && var->call) {
 					symn arg = var->args;
 					fputfmt(logf, "%-T [@%06x: %d] {\n", var, var->offs, var->size);
 					for (; arg; arg = arg->next) {
 						fputfmt(logf, "\targ %-T [@%06x, size:%d, cast:%t]\n", arg, arg->offs, arg->size, arg->cast);
 					}
-					fputasm(logf, rt, var->offs, var->offs + var->size, mode);
+					fputasm(logf, rt, var->offs, var->offs + var->size, 0x100 | (mode & 0xff));
 					fputfmt(logf, "}\n");
 				}
 			}
@@ -1189,7 +1190,7 @@ void dump(state rt, int mode, symn sym, char* text, ...) {
 				", size.data: %d"
 			") {\n", rt->vm.ro, rt->vm.ss, rt->vm.sm, rt->vm.pc, rt->vm.px, rt->vm.size.meta, rt->vm.size.code, rt->vm.size.data);
 
-			fputasm(logf, rt, rt->vm.pc, rt->vm.px, mode);
+			fputasm(logf, rt, rt->vm.pc, rt->vm.px, 0x100 | (mode & 0xff));
 			fputfmt(logf, "}\n");
 		}
 

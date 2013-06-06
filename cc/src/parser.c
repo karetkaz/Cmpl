@@ -1345,7 +1345,6 @@ static astn args(ccState, int mode);	// parse arguments		(mode: ...)
 //~ astn decl(ccState, int mode);		// parse declaration	(mode: enable spec)
 //~ astn type(ccState s/* , int qual */);
 
-
 //~ TODO: eliminate this function, use instead expr, then check if it is a type
 static astn type(ccState s/* , int mode */) {	// type(.type)* ('&' | '[]')mode?
 	symn def = NULL;
@@ -1460,10 +1459,12 @@ static astn decl_init(ccState s, symn var) {
 					return NULL;
 				}
 
-				// int a[] = 1; OR int a[] = 1, 2, 3, 4, 5, 6;
+				// int a[] = {1, 2, 3, 4, 5, 6};
 				if (base == typ->type && typ->init == NULL && var->cnst) {
 					typ->init = intnode(s, nelem);
-					typ->size = nelem;
+					// ArraySize
+					typ->size = nelem * typ->type->size;
+					typ->offs = nelem;
 					typ->cast = TYPE_ref;
 					var->cast = TYPE_any;
 
@@ -1518,8 +1519,11 @@ astn decl_var(ccState s, astn* argv, int mode) {
 		}
 
 		if (!(tag = next(s, TYPE_ref))) {
-			debug("id expected, not %k:%s@%d", peek(s), s->file, s->line);
-			return 0;
+			if (mode != TYPE_def) {
+				debug("id expected, not %k:%s@%d", tag, s->file, s->line);
+				return 0;
+			}
+			tag = tagnode(s, "");
 		}
 
 		/*if (byref && typ->cast == TYPE_ref) {
@@ -1527,9 +1531,8 @@ astn decl_var(ccState s, astn* argv, int mode) {
 		}*/
 
 		ref = declare(s, TYPE_ref, tag, typ);
-		//~ logif(1, "variable %-T casts to %t", ref, ref->cast);
-
 		ref->size = byref ? vm_size : sizeOf(typ);
+		//~ logif(1, "variable %-T casts to %t", ref, ref->cast);
 
 		if (argv) {
 			*argv = NULL;
@@ -1564,7 +1567,8 @@ astn decl_var(ccState s, astn* argv, int mode) {
 		 * int rgbCopy(int a, int b)[8] = [rgbCpy, rgbAnd, ...];
 		 */
 		else if (skip(s, PNCT_lc)) {		// int a[...]
-			symn tmp = newdefn(s, TYPE_arr);
+			symn arr = newdefn(s, TYPE_arr);
+			symn tmp = arr;
 			symn base = typ;
 			int dynarr = 1;		// dynamic sized array: slice
 
@@ -1599,8 +1603,10 @@ astn decl_var(ccState s, astn* argv, int mode) {
 						dims = dims->op.lhso;
 					}*/
 					if (eval(&val, dims) == TYPE_int) {
-						addarg(s, typ, "length", TYPE_def, s->type_i32, dims);
-						typ->size = val.con.cint;
+						// add static const length property to array type.
+						addarg(s, typ, "length", /*TODO: ArraySize ATTR_stat |  */TYPE_def, s->type_i32, dims);
+						typ->size = val.con.cint * typ->type->size;
+						typ->offs = val.con.cint;
 						typ->cast = TYPE_ref;
 						typ->init = init;
 						ref->cast = 0;
@@ -1616,14 +1622,13 @@ astn decl_var(ccState s, astn* argv, int mode) {
 				}
 			}
 			if (dynarr) {
-				symn length = addarg(s, typ, "length", TYPE_ref, s->type_i32, NULL);
-				dieif(length == NULL, "FixMe");
-				length->offs = 4;
-
+				// add length property to array type.
+				symn len = addarg(s, typ, "length", TYPE_ref, s->type_i32, NULL);
+				dieif(len == NULL, "FixMe");
+				ref->size = 2 * vm_size;	// slice is a struct {pointer data, int32 length}
 				ref->cast = TYPE_arr;
-				ref->size = 8;
+				len->offs = vm_size;		// offset for length.
 			}
-
 			skiptok(s, PNCT_rc, 1);
 
 			// Multi dimensional arrays / c style
@@ -1631,6 +1636,8 @@ astn decl_var(ccState s, astn* argv, int mode) {
 				tmp = newdefn(s, TYPE_arr);
 				trloop("%k", peek(s));
 				tmp->type = typ->type;
+				//~ typ->decl = tmp;
+				tmp->decl = typ;
 				typ->type = tmp;
 				tmp->size = -1;
 				typ = tmp;
@@ -1639,8 +1646,10 @@ astn decl_var(ccState s, astn* argv, int mode) {
 					struct astn val;
 					astn init = expr(s, TYPE_def);
 					if (eval(&val, init) == TYPE_int) {
+						//~ ArraySize
 						addarg(s, typ, "length", TYPE_def, s->type_i32, init);
-						typ->size = val.con.cint;
+						typ->size = val.con.cint * typ->type->size;
+						typ->offs = val.con.cint;
 						typ->init = init;
 					}
 					else {
@@ -1648,12 +1657,12 @@ astn decl_var(ccState s, astn* argv, int mode) {
 					}
 				}
 				if (typ->init == NULL) {
-					symn length = addarg(s, typ, "length", TYPE_ref, s->type_i32, NULL);
-					dieif(length == NULL, "FixMe");
-					length->offs = 4;
-
+					// add length property to array type.
+					symn len = addarg(s, typ, "length", TYPE_ref, s->type_i32, NULL);
+					dieif(len == NULL, "FixMe");
+					ref->size = 2 * vm_size;	// slice is a struct {pointer data, int32 length}
 					ref->cast = TYPE_arr;
-					ref->size = 8;
+					len->offs = vm_size;		// offset for length.
 				}
 
 				if (dynarr != (typ->init == NULL)) {
@@ -1664,12 +1673,19 @@ astn decl_var(ccState s, astn* argv, int mode) {
 			}
 
 			ref->args = base;	// fixme (temporarly used)
+			dynarr = base->size;
+			for (; typ; typ = typ->decl) {
+				typ->size = (dynarr *= typ->offs);
+				//~ logif(1, "%-T: %d", typ, dynarr);
+			}
+			ref->size = byref ? vm_size : sizeOf(arr);
 
 			if (byref || base->cast == TYPE_ref) {					// int& a[200] a contains 200 references to integers
 				error(s->s, tag->file, tag->line, "TODO: declaring array of references: `%+T`", ref);
 			}
 			byref = 0;
 		}
+
 
 		if (byref) {
 			//~ logif(1, "variable %-T is by ref", ref);

@@ -23,8 +23,7 @@ gxSurf dither(gxSurf img, bool grayscale, uint32 colors, Dithering method) {
 
 	if (colors >= 256) {
 		//~ dithering = Dithering.None;
-		//~ colors = 256;
-		return img;
+		colors = 256;
 	}
 
 	int cols[256];

@@ -130,7 +130,7 @@ static struct BlendMode {
 		//~ define OP(float32 ^Base, float32 ^Blend) = BlendOverlayf(Base, Blend);
 		define OP(float32 ^Base, float32 ^Blend) = (
 			Base < float32(.5)
-				? (2 * Base * Blend) 
+				? (2 * Base * Blend)
 				: (1 - 2 * (1 - Base) * (1 - Blend))
 		);
 		result = vec4f(OP(Base.x, Blend.x), OP(Base.y, Blend.y), OP(Base.z, Blend.z), OP(Base.w, Blend.w));

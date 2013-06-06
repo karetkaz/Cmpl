@@ -8,16 +8,20 @@
 //~ #open src/printer.c			// pretty print, logger
 //~ #open src/main.c
 
-//~ uint8 a[] = emit(struct, ref("string"), i32(6));
-
 struct hex32: int32; //%%08x
 define d1 = 2;
 define d2 = 3;
-char arr[d1][d2] = {65};//{1,2,3, 1,2,3};
-//~ const char str1[] = "alma a fa alatt nyari piros alma";
-//~ const char str2[] = {'a', 'l', 'm', 'a', 0};
+define d3 = 4;
+uint8 arr[d1][d2][d3] = {1,2,3, 1,2,3};
+const char str1[] = "alma a fa alatt nyari piros alma";
+const char str2[] = {'a', 'l', 'm', 'a', 0};
 //~ string str3 = "alma";
 
+//~ char a[] = emit(struct, ref(null), i32(139135));
+//~ char a[] = emit(struct, ref(null), i32(27330));
+//~ for(int i = 1; i < 2 * a.length; i += 1) {
+	//~ print("%c", a[i]);
+//~ }
 /* TODO:
 
 string alma() {
@@ -27,7 +31,7 @@ string alma() {
 
 
 
-/* typename...
+//~ /* typename...
 struct xxx {
 	int64 x1;
 	int64 x2;
@@ -45,8 +49,6 @@ int size2 = typename(Xxx).size;
 int size3 = typename(type).size;
 
 string name = typename.name(type);
-int size = typename.size(type);
-
 string file = typename.file(type);
 int line = typename.line(type);
 

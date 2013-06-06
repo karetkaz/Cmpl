@@ -1312,7 +1312,8 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 					// a slice is needed, push(length).
 					//~ logif(get == TYPE_arr, "assign to array from %t to %t @ %k(%t)", ret, get, ast, ast->type->cast);
 					if (get == TYPE_arr && ret != TYPE_arr) {
-						if (!emiti32(rt, typ->size)) {
+						// ArraySize
+						if (!emiti32(rt, typ->offs)) {// size / typ->type->size)) {
 							trace("%+k", ast);
 							return TYPE_any;
 						}
@@ -1430,7 +1431,9 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 						while (base && base != var->args) {
 							if (base->init == NULL)
 								break;
-							nelem *= constint(base->init);//->con.cint;
+							// ArraySize
+							//~ nelem *= base->size / base->type->size;//constint(base->init);//->con.cint;
+							nelem *= base->offs;
 							base = base->type;
 						}
 						if (base == NULL) {

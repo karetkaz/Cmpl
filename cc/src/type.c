@@ -345,7 +345,7 @@ int canAssign(ccState cc, symn var, astn val, int strict) {
 	// array assign
 	if (typ->kind == TYPE_arr) {
 		// FIXME: if valuetype is arrays base type
-		if (var->args == val->type) {
+		/*if (var->args == val->type) {
 			return 1;
 		}
 		// assigning a string constant:
@@ -353,8 +353,8 @@ int canAssign(ccState cc, symn var, astn val, int strict) {
 			if (typ->type->size == 1) {
 				return 1;
 			}
-		}
-		if (1) {
+		}*/
+		if (!strict) {
 			symn vty = val->type;
 			struct astn atag;
 			atag.kind = TYPE_ref;
@@ -372,9 +372,9 @@ int canAssign(ccState cc, symn var, astn val, int strict) {
 					return 1;
 				}
 			}
+			return canAssign(cc, var->type, val, strict);
 		}
 
-		return canAssign(cc, var->type, val, strict);
 	}
 
 	if (!strict && promote(typ, val->type)) {
@@ -671,11 +671,13 @@ long sizeOf(symn typ) {
 		//~ case TYPE_int:
 		//~ case TYPE_flt:
 
+		case TYPE_rec:
 		case TYPE_arr:
-			return typ->size * sizeOf(typ->type);
+			// TODO:
+			return typ->size;//* sizeOf(typ->type);
 
 		case EMIT_opc:
-		case TYPE_rec:
+		//~ case TYPE_rec:
 			if (typ->cast == TYPE_ref)
 				return vm_size;
 			return typ->size;
@@ -1353,7 +1355,7 @@ int fixargs(symn sym, int align, int stbeg) {
 
 		arg->size = sizeOf(arg);
 
-		// array types are passed by reference.
+		//~ HACK: static sized array types are passed by reference.
 		if (isCall && arg->type->kind == TYPE_arr) {
 			if (arg->type->init == NULL) {		//~ dinamic size arrays are passed by pointer+length
 				arg->cast = TYPE_arr;

@@ -56,15 +56,6 @@ for (rangeIterator it : rangeIterator(10, 13, 8)) {
 //~ /* iterate files
 define iterator(File &file) = (file);
 
-// iterate by chars
-bool next(File &file, char &value) {
-	int ch = File.Read(file);
-	result = ch != -1;
-	if (result) {
-		value = ch;
-	}
-}
-
 // iterate by lines
 bool next(File &file, char buff[]) {
 	int pos = 0;
@@ -100,9 +91,18 @@ bool next(File &file, char buff[]) {
 	return true;
 }
 
+// iterate by chars
+bool next(File &file, char &value) {
+	int ch = File.Read(file);
+	result = ch != -1;
+	if (result) {
+		value = ch;
+	}
+}
+
 //~ bool next(File &file, char buff[]) {return File.ReadLine(file, buff) > 0;}
 
-/+ iterate file by chars
+//~ /+ iterate file by chars
 File file1 = File.Open("History.txt");
 for (char chr : file1) {
 	print("%c", chr);
@@ -128,3 +128,5 @@ File.Close(fileO);
 File.Close(file3);
 //~ +/
 //~ */
+
+struct hex32: int32; //%%08x

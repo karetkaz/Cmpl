@@ -82,7 +82,7 @@ define pi = Math.pi;
 define timeCpu() = sTimeHp();
 
 void setup(double &time, vec4f pixelCB(double x, double y)) {
-	define WIDTH = 128;
+	define WIDTH = 256/3;
 	define HEIGHT = WIDTH;
 	static gxSurf tmpImg = gxSurf(WIDTH, HEIGHT);
 
@@ -103,8 +103,6 @@ void setup(double &time, vec4f pixelCB(double x, double y)) {
 		if (snapshot) {
 			animate = false;
 			snapshot = false;
-			//~ bmpWrite(tmpImg, "out-0.bmp");
-			//~ bmpWrite(offScreen, "out-1.bmp");
 			int64 start = timeCpu();
 			evalSurf(offScreen, null, internals.pixelCB);
 			print("evaluated in: %F seconds\n", clocksPerSec(timeCpu() - start));
@@ -250,7 +248,7 @@ vec4f eye(double x, double y) {
 
 vec4f tunnel0(double x, double y) {
 
-	int rgbscale(int col, double s) {
+	static int rgbscale(int col, double s) {
 		define fixp = 16;
 		int scale = s * (1 << fixp);
 		int r = Math.clamp(rch(col) * scale >> fixp, 0, 255);
@@ -259,17 +257,18 @@ vec4f tunnel0(double x, double y) {
 		result = rgb(r, g, b);
 	}
 
-	double imgcoord(double val, int resolution) {
+	static double imgcoord(double val, int resolution) {
 		result = val * resolution;
-		if ((result %= resolution) < 0)
+		if ((result %= resolution) < 0) {
 			result += resolution;
+		}
 	}
 
-	define tex2d(gxSurf ^src, double x, double y) = getPixel(src, imgcoord(x, width(src)), imgcoord(y, height(src)));
-	define tex2d(gxSurf src, double u, double v, double w) = rgbscale(tex2d(src, u, v), w);
-	//~ define tex2d(gxSurf src, double u, double v, double w) = tex2d(src, u, v);
+	static define tex2d(gxSurf ^src, double x, double y) = getPixel(src, imgcoord(x, width(src)), imgcoord(y, height(src)));
+	static define tex2d(gxSurf src, double u, double v, double w) = rgbscale(tex2d(src, u, v), w);
+	//~ static define tex2d(gxSurf src, double u, double v, double w) = tex2d(src, u, v);
 
-	define nz(double x) = Math.nz(x, 1e-200);
+	static define nz(double x) = Math.nz(x, 1e-200);
 
 	const static gxSurf srcImg = gxSurf("media/images/download.jpg");
 
@@ -285,7 +284,7 @@ vec4f tunnel0(double x, double y) {
 	result = rgb2vec4f(tex2d(srcImg, u, v, 2 * r));
 }
 
-setup(&time, yinyang);
+setup(&time, tunnel0);
 //~ setup(&time, yinyang);
 //~ setup(&time, Perlin.Noise2f);
 //~ Gui.exitLoop();

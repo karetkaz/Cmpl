@@ -11,12 +11,6 @@ math, print, time libcall functions
 #include "core.h"
 
 //#{#region math functions
-
-/*static int f64abs(state rt, void* _) {
-	float64_t x = argf64(rt, 0);
-	retf64(rt, fabs(x));
-	return 0;
-}// */
 static int f64sin(state rt, void* _) {
 	float64_t x = argf64(rt, 0);
 	retf64(rt, sin(x));
@@ -35,7 +29,6 @@ static int f64tan(state rt, void* _) {
 	return 0;
 	(void)_;
 }
-
 static int f64log(state rt, void* _) {
 	float64_t x = argf64(rt, 0);
 	retf64(rt, log(x));
@@ -62,7 +55,6 @@ static int f64sqrt(state rt, void* _) {
 	return 0;
 	(void)_;
 }
-
 static int f64atan2(state rt, void* _) {
 	float64_t x = argf64(rt, 0);
 	float64_t y = argf64(rt, 8);
@@ -409,7 +401,7 @@ static inline int64_t clockNow() {
 #endif
 
 static int miscCall(state rt, void* data) {
-	switch ((miscFunc)(int)data) {
+	switch ((miscFunc)data) {
 		case miscOpExit: {
 			exit(argi32(rt, 0));
 			return 0;
@@ -596,41 +588,15 @@ static inline int argpos(int *argp, int size) {
 //~ #define logFILE(msg, ...) prerr(msg, ##__VA_ARGS__)
 #define logFILE(msg, ...)
 
-static int FILE_open(state rt, void* _) {
+static int FILE_open(state rt, void* mode) {
 	int argc = 0;
 	char *name = argref(rt, argpos(&argc, vm_size));
 	// int slen = argi32(rt, argpos(&argc, vm_size));
-	FILE *file = fopen(name, "r");
+	FILE *file = fopen(name, mode);
 	rethnd(rt, file);
 
-	logFILE("Name: %s, Mode: %s, File: %x", name, "r", file);
+	logFILE("Name: %s, Mode: %s, File: %x", name, mode, file);
 	return 0;
-
-	(void)_;
-}
-static int FILE_create(state rt, void* _) {
-	int argc = 0;
-	char *name = argref(rt, argpos(&argc, vm_size));
-	// int slen = argi32(rt, argpos(&argc, vm_size));
-	FILE *file = fopen(name, "w");
-	rethnd(rt, file);
-
-	logFILE("Name: %s, Mode: %s, File: %x", name, "w", file);
-	return 0;
-
-	(void)_;
-}
-static int FILE_append(state rt, void* _) {
-	int argc = 0;
-	char *name = argref(rt, argpos(&argc, vm_size));
-	// int slen = argi32(rt, argpos(&argc, vm_size));
-	FILE *file = fopen(name, "a");
-	rethnd(rt, file);
-
-	logFILE("Name: %s, Mode: %s, File: %x", name, "a", file);
-	return 0;
-
-	(void)_;
 }
 static int FILE_getc(state rt, void* _) {
 	FILE *file = arghnd(rt, 0);
@@ -718,11 +684,9 @@ int install_file(state rt) {
 	if (file_nsp != NULL) {
 		enter(rt->cc, NULL);
 
-		err = err || !ccAddCall(rt, FILE_open, NULL, "File Open(char path[]);");
-		err = err || !ccAddCall(rt, FILE_create, NULL, "File Create(char path[]);");
-		err = err || !ccAddCall(rt, FILE_append, NULL, "File Append(char path[]);");
-		//~ err = err || !ccAddCode(rt, 0, NULL, 0,  "define Open(char path[]) = Open(path, false);");
-		
+		err = err || !ccAddCall(rt, FILE_open,  "r", "File Open(char path[]);");
+		err = err || !ccAddCall(rt, FILE_open,  "w", "File Create(char path[]);");
+		err = err || !ccAddCall(rt, FILE_open,  "a", "File Append(char path[]);");
 
 		err = err || !ccAddCall(rt, FILE_peek, NULL, "int Peek(File file);");
 		err = err || !ccAddCall(rt, FILE_getc, NULL, "int Read(File file);");

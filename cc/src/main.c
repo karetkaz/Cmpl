@@ -34,10 +34,13 @@ application <global options> <local options>*
 // default values
 static const int wl = 9;			// warning level
 static const int ol = 2;			// optimize level
+static int dl = 0x19;				// disassambly level
+
 //~ static const int cc = 1;			// execution cores
 #define memsize (4 << 20)			// runtime size(4M)
 static const int ss = memsize / 4;	// stack size
 static char mem[memsize];
+
 char* STDLIB = "../stdlib.cvx";		// standard library
 
 #ifdef __linux__
@@ -441,9 +444,9 @@ int program(int argc, char* argv[]) {
 					str += 1;
 				}
 				if (*str == 'd') {
+					dbg = dbgCon;
 					if (str[1] == ':') {
 						stk_dump = str + 2;
-						dbg = dbgCon;
 						str += 1;
 					}
 				}
@@ -593,18 +596,23 @@ int program(int argc, char* argv[]) {
 			}
 		}
 
-		if (rt->errc == 0) {
-
-			// print top of stack as a type or var.
-			if (stk_dump != NULL) {
-				ccState cc = ccOpen(rt, NULL, 0, stk_dump);
-				if (cc != NULL) {
-					astn ast = decl(cc, TYPE_any);
-					//~ logif(1, "%s: %+k", stk_dump, ast);
-					printvars = linkOf(ast);
-					printvars->name = NULL;
+		// print top of stack as a type or var.
+		if (stk_dump != NULL) {
+			ccState cc = ccOpen(rt, NULL, 0, stk_dump);
+			if (cc != NULL) {
+				astn ast = decl_var(cc, NULL, TYPE_def);
+				printvars = linkOf(ast);
+				if (printvars != NULL) {
+					printvars->name = "";
+				}
+				else {
+					error(rt, NULL, 0, "error in debug print format `%s`", stk_dump);
 				}
 			}
+		}
+
+		if (rt->errc == 0) {
+
 			// generate variables and vm code.
 			if ((gen_code || run_code) && gencode(rt, opti) != 0) {
 				logfile(rt, NULL);
@@ -648,7 +656,8 @@ int program(int argc, char* argv[]) {
 						info(rt, NULL, 0, "symbol not found: %s", str_dasm);
 					}
 				}
-				dump(rt, dump_asm | (out_dasm & 0x0ff), NULL, "\ndasm:\n");
+				dl = out_dasm & 0x0ff;
+				dump(rt, dump_asm | dl, NULL, "\ndasm:\n");
 			}
 			if (run_code != 0) {
 				logFILE(rt, stdout);
@@ -693,12 +702,15 @@ static int dbgCon(state rt, int pu, void* ip, long* bp, int ss) {
 	IP = ((char*)ip) - ((char*)rt->_mem);
 	//~ SP = ((char*)rt->_ptr) - ((char*)bp);
 
-	fputfmt(stdout, ">exec:[sp%02d", ss);
+	fputfmt(stdout, ">exec:[sp(%02d)", ss);
 	if (printvars != NULL) {
 		stkval* sp = (stkval*)((char*)bp);
 		vm_fputval(rt, stdout, printvars, sp, 0);
 	}
-	fputfmt(stdout, "]@%9.*A\n", IP, ip);
+	//~ fputfmt(stdout, "]@%9.*A\n", IP, ip);
+	fputfmt(stdout, "]");
+	fputopc(stdout, ip, dl & 0xf, IP, rt);fputfmt(stdout, "\n");
+	//~ fputasm(stdout, rt, IP, IP + 1, dl);
 
 	if (cmd != 'N') for ( ; ; ) {
 		if (fgets(buff, 1024, stdin) == NULL) {

@@ -7,7 +7,6 @@
 #define inline __inline
 #endif
 
-
 #define debug(msg, ...) fprintf(stdout, "%s:%d:debug:"msg"\n", __FILE__, __LINE__, ##__VA_ARGS__)
 
 #define SURF_NO_MEM	0X0004

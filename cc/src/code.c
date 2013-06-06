@@ -1294,8 +1294,7 @@ static int dbgpu(state rt, cell cpu, const int cc) {
 				return -4;
 
 			error_libc:
-				error(rt, err_file, err_line, "libc: %-T returned: %d", libcvec[ip->rel].sym);
-				//~ dbugerr(rt, cpu, err_file, err_line, 0, ip, sp, st - sp, "libcall error", err_code);
+				error(rt, err_file, err_line, "libc(%d): %-T returned: %d", ip->rel, libcvec[ip->rel].sym);
 				return -5;
 
 			#define NEXT(__IP, __CHK, __SP) {pu->sp -= vm_size * (__SP); pu->ip += (__IP);}
@@ -1368,8 +1367,7 @@ static int dbgpu(state rt, cell pu) {
 				return -4;
 
 			error_libc:
-				error(rt, err_file, err_line, "libc: %-T returned: %d", libcvec[ip->rel].sym, err_code);
-				//~ dbugerr(rt, cpu, err_file, err_line, 0, ip, sp, st - sp, "libcall error", err_code);
+				error(rt, err_file, err_line, "libc(%d): %-T returned: %d", ip->rel, libcvec[ip->rel].sym, err_code);
 				return -5;
 
 			#define NEXT(__IP, __CHK, __SP) {pu->sp -= vm_size * (__SP); pu->ip += (__IP);}
@@ -1626,7 +1624,7 @@ void fputopc(FILE* fout, unsigned char* ptr, int len, int offs, state rt) {
 					lc = &((libc)rt->vm.libv)[ip->idx];
 				}
 				if (lc && lc->sym) {
-					fputfmt(fout, ": %+T: %T", lc->sym, lc->sym->type);
+					fputfmt(fout, "(%d): %+T: %T", ip->idx, lc->sym, lc->sym->type);
 				}
 				else {
 					fputfmt(fout, "(%d)", ip->idx);
@@ -1659,7 +1657,6 @@ void fputasm(FILE* fout, state rt, int beg, int end, int mode) {
 		case 0x00: rel = -1; break;
 		case 0x10: rel = 0; break;
 		case 0x20: rel = beg; break;
-		//~ case 0x30: rel = (unsigned char*)getip(s, mark) - s->_mem; break;
 	}
 
 	for (i = beg; i < end; i += is) {
@@ -1672,7 +1669,7 @@ void fputasm(FILE* fout, state rt, int beg, int end, int mode) {
 			#include "code.inl"
 		}
 
-		if (1 && (ast = infoAt(rt, i))) {
+		if ((ast = infoAt(rt, i))) {
 			if (stmtEnd) {
 				fputc('}', fout);
 				fputc('\n', fout);
@@ -1681,10 +1678,11 @@ void fputasm(FILE* fout, state rt, int beg, int end, int mode) {
 			//~ stmtEnd = 1;
 		}
 
-		if (mode & 0xf00)
+		if (mode & 0xf00) {
 			fputfmt(fout, "%I", (mode & 0xf00) >> 8);
+		}
 
-		fputopc(fout, (void*)ip, mode & 0xf, rel >= 0 ? (rel + i) : -1, rt);
+		fputopc(fout, (void*)ip, mode & 0xf, rel < 0 ? -1 : i - rel, rt);
 
 		fputc('\n', fout);
 	}
@@ -1721,7 +1719,7 @@ void vm_fputval(state rt, FILE* fout, symn var, stkval* ref, int level) {
 	}
 
 	if (!isValidOffset(rt, ref)) {
-		fputfmt(fout, "%T(invalid reference)", typ);
+		fputfmt(fout, "%T(BadRef)", typ);
 		return;
 	}
 
@@ -1776,10 +1774,11 @@ void vm_fputval(state rt, FILE* fout, symn var, stkval* ref, int level) {
 			}
 		} break;
 		case TYPE_arr: {
-			// TODO: typ->size / typ->type->size;
-			int i, n = typ->size;
+			// ArraySize
+			int i, n = typ->offs;//size / typ->type->size;
 			symn base = typ->type;
 
+            //dieif(typ->size % typ->type->size != 0, "FixMe");
 			if (fmt != NULL) {
 				// TODO: string uses this
 				fputfmt(fout, fmt, ref);

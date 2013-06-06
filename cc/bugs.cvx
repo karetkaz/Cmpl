@@ -26,16 +26,16 @@ string str = emit(string, ref(x));
 //~ println(emit(string, ref(x)));
 //~ +/
 
-/+ ???
+//~ /+ ???
 define A = 9;
 int a1 = A;
 int &a2 = a1;
 
+assert(a1 == A);
+assert(a2 == A);
+
 pointer a = emit(pointer, ref(a1));
 pointer b = emit(pointer, int(a1));
-
-//~ assert(a1 == A);
-//~ assert(a2 == A);
 
 //~ +/
 
