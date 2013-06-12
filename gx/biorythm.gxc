@@ -12,7 +12,7 @@ struct Biorithm {
 	string name;
 }
 
-const Biorithm biorithms1[] = {
+const Biorithm biorithms[] = {
 	Biorithm(0x5050ff, 23,  0, "Physical - Fizikai %d%%"),
 	Biorithm(0xff0000, 28,  0, "Emotional - Erzelmi %d%%"),
 	Biorithm(0x00ff00, 33,  0, "Intellectual - Szellemi %d%%"),
@@ -264,7 +264,7 @@ void setupBiorithm(int _daysToShow, Date _now, Date _birth) {
 	static int daysToShow;
 	static bool reDraw = true;
 
-	define inertial_pan = 300.;
+	define inertial_pan = 3000.;
 	define inertial_speed = 1.05;
 
 	static int64 inertial_time = 0;
@@ -274,7 +274,7 @@ void setupBiorithm(int _daysToShow, Date _now, Date _birth) {
 	void DrawScreen() {
 		if (reDraw) {
 			double nowPos = now.days + double(pos * daysToShow) / (Window.resx / 2);
-			biorithm(offScreen, daysToShow, nowPos, birth, biorithms1);
+			biorithm(offScreen, daysToShow, nowPos, birth, biorithms);
 			reDraw = false;
 		}
 		static if (inertial_pan) {
@@ -355,7 +355,5 @@ define daysToShow = 15;
 
 //~ Now.days = 6103462;		// 16711.09.19
 
-if (int == int32) {
-	setupBiorithm(daysToShow, Now, Date(1983, 5, 2));
-}
+setupBiorithm(daysToShow, Now, Date(1983, 5, 2));
 //~ setupBiorithm(daysToShow, Now, Date(1984, 8, 30));

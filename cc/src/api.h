@@ -18,9 +18,10 @@ typedef unsigned long long	uint64_t;
 typedef float float32_t;
 typedef double float64_t;
 
-typedef struct symn *symn;		// symbol
-typedef struct state *state;	// runtime
-typedef struct ccState *ccState;// compiler
+typedef struct symn *symn;			// symbol
+typedef struct state *state;		// runtime
+typedef struct ccState *ccState;	// compiler
+typedef struct dbgState *dbgState;	// debugger
 
 struct state {
 	int   errc;		// error count
@@ -30,6 +31,7 @@ struct state {
 	symn  defs;		// global variables and functions
 	symn  gdef;		// static variables and functions
 
+	// TODO: should be inside vm.
 	// function data
 	struct libcstate {
 		symn  libc;		// invoked function
@@ -40,7 +42,6 @@ struct state {
 
 	// virtual machine
 	struct {
-		int (*dbug)(state, int pu, void* ip, long* sptr, int scnt);
 		void* cell;					// execution unit(s)
 		void* libv;					// libcall vector
 
@@ -52,7 +53,7 @@ struct state {
 		unsigned int	su;			// stack access (parallel processing)
 
 		unsigned int	ro;			// <= ro : read only region(meta data) / cgen:(function parameters)
-		unsigned int	pos;		// current positin in buffer
+		unsigned int	pos;		// trace pos / current positin in buffer
 		signed int		opti;		// optimization levevel
 
 		struct {
@@ -66,8 +67,17 @@ struct state {
 
 	/* compiler enviroment
 	 * after code was generated this becomes null.
-	*/
+	 */
 	ccState cc;
+
+	/* debug informatios
+	 * this struct should hold:
+	 *  * debugger function
+	 *  * line mappings
+	 *  * stack traces
+	 *  * break points
+	 */
+	dbgState dbg;
 
 	// external library support
 	struct {
@@ -142,18 +152,33 @@ struct state {
 		/** Find a global symbol by offset.
 		 * usefull for callbacks
 		 * @usage see also: test.gl/gl.c
-			static symn onMouse = null;
+
+			static symn onMouse = NULL;
+
+			static int setMouseCb(state rt) {
+				void* fun = argref(rt, 0);
+
+				// unregister event callback
+				if (fun == NULL) {
+					onMouse = NULL;
+					return 1;
+				}
+
+				// register event callback
+				onMouse = rt->api.symfind(rt, fun);		// get and find the functions symbol
+				return onMouse != NULL;
+			}
+
 			static int mouseCb(int btn, int x, int y) {
-				if (onMouse) {
-					struct {int btn, x, y;} args = {btn, x, y};
-					rt->api.invoke(rt, onMouse, null, &args);		// invoke the callback
+				if (onMouse != NULL) {
+					// invoke the callback with arguments.
+					struct {int32_t btn, x, y;} args = {btn, x, y};
+					rt->api.invoke(rt, onMouse, NULL, &args);
 				}
 			}
-			static int setMouseCb(state rt) {
-				onMouse = rt->api.symfind(rt, argref(rt, 0));		// get and find the functions symbol
-				return onMouse != NULL;								// no error in this call
-			}
-			if (!rt->api.ccAddCall(rt, setMouseCb, NULL, "void regMouse(void CB(int b, int x, int y);")) {
+
+			// expose the callback register function to the compiler
+			if (!rt->api.ccAddCall(rt, setMouseCb, NULL, "void setMouseCallback(void Callback(int b, int x, int y);")) {
 				error...
 			}
 		 */
@@ -163,22 +188,7 @@ struct state {
 		 * @param state
 		 * @param fun the symbol of the function.
 		 * @return non zero on error.
-		 * @usage
-			static int setpixels(state rt) {
-				symn pixelfun = rt->api.symfind(rt, argref(rt, 0));		// pop and find the functions symbol
-				for (int y = 0; y < sceen.height; ++y) {
-					for (int x = 0; x < sceen.width; ++x) {
-						int result;
-						struct {double x, y;} args = {(double)x / sceen.width, (double)y / sceen.height};
-						if (rt->api.invoke(rt, pixelfun, &result, &args) == 0) {
-							sceen.pixels[x + y * sceen.width] = result;
-						}
-					}
-				}
-			}
-			if (!rt->api.ccAddCall(rt, setpixels, NULL, "void setpixels(int CallBack(double x, double y);")) {
-				error...
-			}
+		 * @usage see @symfind example.
 		*/
 		int (*invoke)(state, symn fun, void* result, void *args);
 

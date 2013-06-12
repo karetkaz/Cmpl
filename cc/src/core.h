@@ -20,7 +20,7 @@
 	5: print non pre-mapped strings, non static types
 	6: print static casts generated with emit
 */
-//~ #define DEBUGGING 2
+//~ #define DEBUGGING 1
 
 // enable dynamic dll/so lib loading
 #define USEPLUGINS
@@ -277,7 +277,7 @@ struct astn {				// tree node (code)
 };
 
 typedef struct arrBuffer {
-	char *ptr;
+	char *ptr;		// data
 	int esz;		// element size
 	int cap;		// capacity
 	int cnt;		// length
@@ -346,9 +346,65 @@ struct ccState {
 
 	symn	libc_mem;		// memory manager libcall
 	symn	libc_dbg;
-
-	arrBuffer dbg;
 };
+
+typedef struct dbgInfo {
+	astn code;		// the generated node
+
+	char* file;
+	int line;
+
+	int start;
+	int end;		// code generated between positions
+
+} *dbgInfo;
+
+struct dbgState {
+	int (*dbug)(state, int pu, void* ip, long* sptr, int scnt);
+
+	struct {
+		void* cf;
+		void* ip;
+		void* sp;
+		int pos;
+	} trace[512];
+
+	int tracePos;
+
+	arrBuffer codeMap;
+};
+
+static inline dbgInfo addCodeMapping(state rt, astn ast, int start, int end) {
+	dbgInfo result = NULL;
+	if (rt->dbg != NULL) {
+		dbgInfo result = setBuff(&rt->dbg->codeMap, rt->dbg->codeMap.cnt, NULL);
+		if (result != NULL) {
+			result->code = ast;
+			result->file = ast->file;
+			result->line = ast->line;
+			result->start = start;
+			result->end = end;
+		}
+	}
+	return result;
+}
+
+static inline dbgInfo getCodeMapping(state rt, int position) {
+	if (rt->dbg != NULL) {
+		int i;
+		for (i = 0; i < rt->dbg->codeMap.cnt; ++i) {
+			dbgInfo result = getBuff(&rt->dbg->codeMap, i);
+			if (position >= result->start) {
+				if (position < result->end) {
+					return result;
+				}
+			}
+		}
+	}
+	return NULL;
+}
+
+
 static inline int kindOf(astn ast) {return ast ? ast->kind : 0;}
 
 //~ clog

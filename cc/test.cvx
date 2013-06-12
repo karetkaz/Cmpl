@@ -9,12 +9,13 @@
 //~ #open src/main.c
 
 struct hex32: int32; //%%08x
-define d1 = 2;
-define d2 = 3;
-define d3 = 4;
-uint8 arr[d1][d2][d3] = {1,2,3, 1,2,3};
-const char str1[] = "alma a fa alatt nyari piros alma";
-const char str2[] = {'a', 'l', 'm', 'a', 0};
+//~ define d1 = 2;
+//~ define d2 = 3;
+//~ define d3 = 4;
+//~ uint8 arr[d1][d2][d3] = {1,2,3, 1,2,3};
+//~ const char str1[] = "alma a fa alatt nyari piros alma";
+//~ const char str2[] = {'a', 'l', 'm', 'a', 0};
+
 //~ string str3 = "alma";
 
 //~ char a[] = emit(struct, ref(null), i32(139135));
@@ -30,8 +31,7 @@ string alma() {
 // */
 
 
-
-//~ /* typename...
+/* typename...
 struct xxx {
 	int64 x1;
 	int64 x2;
@@ -39,7 +39,7 @@ struct xxx {
 
 define Xxx = xxx;		// alias
 
-typename type = Xxx;
+typename type = xxx;
 
 xxx a = xxx(0, 0);
 Xxx b = xxx(0, 0);
@@ -500,4 +500,17 @@ float64 Mean(float64 data[]) = Math.Mean;
 float64 data[3] = {1,2,3};
 float64 sum = Sum(data);
 float64 mean = Mean(data);
+//~ */
+
+//~ /*trace info
+void f1() {
+	void f2() {
+		//~ int i = 5;
+		//~ i = i / 2;
+		trace("stack trace :)");
+	}
+	f2();
+}
+f1();
+
 //~ */

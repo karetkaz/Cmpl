@@ -1225,7 +1225,7 @@ int evalMesh(mesh msh, int sdiv, int tdiv, char *src, char *file, int line) {
 	// */
 
 	// optimize on level 3, and do not generate global variables as static variables
-	if (err || gencode(rt, -3) != 0) {
+	if (err || gencode(rt, -3, 0) != 0) {
 		debug("error compiling(%d), see `%s`", err, logf);
 		logfile(rt, NULL);
 		return -3;

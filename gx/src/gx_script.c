@@ -1499,12 +1499,12 @@ int ccCompile(char *src, int argc, char* argv[]) {
 	else {
 		logFILE(rt, stdout);
 		ccAddCode(rt, strwl, __FILE__, __LINE__ , "");
-		gencode(rt, 0);
+		gencode(rt, 2, 0);
 		dump(rt, dump_sym | 0x12, NULL, "#api: replace('([^)]):.*$', '\\1')\n");
 		return 0;
 	}
 
-	if (err || gencode(rt, 2) != 0) {
+	if (err || gencode(rt, 2, 0) != 0) {
 		if (ccLog)
 			debug("error compiling(%d), see `%s`", err, ccLog);
 		if (ccLog) logfile(rt, NULL);

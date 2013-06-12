@@ -36,8 +36,8 @@ vec4f rgbOp(double x, double y) {
 
 	//~ z = pow(z, Complex(1.4));
 
-	//~ z = sin(z);
-	z = add(z, div(pow(z, 4), sub(sin(pow(z, 3)), 1)));
+	z = sin(z);
+	//~ z = add(z, div(pow(z, 4), sub(sin(pow(z, 3)), 1)));
 	return Domain(z, 1);
 }
 

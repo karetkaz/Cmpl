@@ -330,7 +330,7 @@ OPCDEF(v2d_sub,  0x92, 1, 8, -4, 1, "v2d.sub")	// sp(4) -= sp(0); pop4;
 OPCDEF(v2d_mul,  0x93, 1, 8, -4, 1, "v2d.mul")	// sp(4) *= sp(0); pop4;
 OPCDEF(v2d_div,  0x94, 1, 8, -4, 1, "v2d.div")	// sp(4) /= sp(0); pop4;
 OPCDEF(p2d___5,  0x95, 0, 0, -0, 1, NULL)		// 
-OPCDEF(p4x___6,  0x96, 2, 4, -0, 1, NULL)		// 
+OPCDEF(p4x___6,  0x96, 0, 0, -0, 1, NULL)		// 
 OPCDEF(v2d_ceq,  0x97, 0, 8, -7, 1, "v2d.ceq")	// sp(1) = sp(1) == sp(0) pop7;
 OPCDEF(v2d_min,  0x98, 1, 8, -4, 1, "v2d.min")	// sp(1) = sp(1) <? sp(0) pop4;
 OPCDEF(v2d_max,  0x99, 1, 8, -4, 1, "v2d.max")	// sp(1) = sp(1) >? sp(0) pop4;

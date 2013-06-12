@@ -163,18 +163,27 @@ int isConst(astn ast) {
 //#{ symbols: install and query
 symn ccBegin(state rt, char* cls) {
 	symn result = NULL;
-	if (rt->cc) {
-		result = install(rt->cc, cls, TYPE_rec, TYPE_vid, 0, NULL, NULL);
-		if (result) {
+	if (rt->cc != NULL) {
+		if (cls != NULL) {
+			result = install(rt->cc, cls, TYPE_rec, TYPE_vid, 0, NULL, NULL);
+		}
+		if (cls == NULL || result) {
 			enter(rt->cc, NULL);
 		}
 	}
 	return result;
 }
-void ccEnd(state rt, symn cls) {
-	if (cls) {
-		cls->args = leave(rt->cc, cls, 1);
+void ccExtEnd(state rt, symn cls, int mode) {
+	if (cls != NULL) {
+		symn args = leave(rt->cc, cls, (mode & ATTR_stat) != 0);
+		if (mode & 1) {
+			args->next = cls->args;
+		}
+		cls->args = args;
 	}
+}
+void ccEnd(state rt, symn cls) {
+	ccExtEnd(rt, cls, ATTR_stat);
 }
 
 symn ccDefInt(state rt, char* name, int64_t value) {
@@ -1893,11 +1902,15 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 	}
 
 	// debug info, invalid after first execution
-	if ((ast->kind == TYPE_def || (ast->kind > STMT_beg && ast->kind < STMT_end)) && (ipdbg < emitopc(rt, markIP))) {
-		list l = (list)setBuff(&rt->cc->dbg, rt->cc->dbg.cnt, NULL);
-		dieif(!l, "Fatal Error allocating @%d", rt->cc->dbg.cnt);
-		l->data = (unsigned char*)ast;
-		l->size = ipdbg;
+	if ((ast->kind == TYPE_def || (ast->kind > STMT_beg && ast->kind < STMT_end))) {
+		int ipEnd = emitopc(rt, markIP);
+		if (ipdbg < ipEnd) {
+			addCodeMapping(rt, ast, ipdbg, ipEnd);
+			//~ list l = (list)setBuff(&rt->cc->dbg, rt->cc->dbg.cnt, NULL);
+			//~ dieif(!l, "Fatal Error allocating @%d", rt->cc->dbg.cnt);
+			//~ l->data = (unsigned char*)ast;
+			//~ l->size = ipdbg;
+		}
 	}
 
 	#ifdef DEBUGGING
@@ -1907,7 +1920,7 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 	return ret;
 }
 
-int gencode(state rt, int level) {
+int gencode(state rt, int level, int doDebug) {
 	ccState cc = rt->cc;
 	libc lc = NULL;
 	int Lmain;
@@ -1965,15 +1978,23 @@ int gencode(state rt, int level) {
 
 	rt->vm.size.meta = rt->vm.pos;
 
-	initBuff(&cc->dbg, 128, sizeof(struct list));
-
 	// libcalls
 	if (cc->libc) {
 		rt->vm.libv = rt->_mem + rt->vm.pos;
 		rt->vm.pos += sizeof(struct libc) * (cc->libc->pos + 1);
+		dieif(rt->_end < rt->_mem + rt->vm.pos, "memory overrun");
 		for (lc = cc->libc; lc; lc = lc->next) {
 			((struct libc*)rt->vm.libv)[lc->pos] = *lc;
 		}
+	}
+
+	if (doDebug) {
+		rt->dbg = (dbgState)(rt->_mem + rt->vm.pos);
+		rt->vm.pos += sizeof(struct dbgState);
+		dieif(rt->_end < rt->_mem + rt->vm.pos, "memory overrun");
+		memset(rt->dbg, sizeof(struct dbgState), 0);
+
+		initBuff(&rt->dbg->codeMap, 128, sizeof(struct dbgInfo));
 	}
 
 	//~ read only memory ends here.
@@ -2471,36 +2492,66 @@ static int libCallDebug(state rt, void* _) {
 	symn objtyp = argref(rt, poparg(int32_t));
 	void* object = argref(rt, poparg(int32_t));
 
-	// TODO: level < rt->loglevel
-	if (loglevel < 0 || loglevel) {
+	// skip loglevel 0
+	if (loglevel != 0) {
 		FILE* logf = rt ? rt->logf : stdout;
 		if (logf) {
 			int isOutput = 0;
+
+			// position where the function was invoked
 			if (file && line) {
 				fputfmt(rt->logf, "%s:%u", file, line);
 				isOutput = 1;
 			}
+
+			// the message to be printed
 			if (message != NULL) {
 				fputfmt(rt->logf, ": %s", message);
 				isOutput = 1;
 			}
+
+			// specified object
 			if (objtyp && object) {
 				fputfmt(rt->logf, ": ");
 				vm_fputval(rt, rt->logf, objtyp, object, 0);
 				isOutput = 1;
 			}
-			if (tracelevel > 0) {
-				perr(rt, tracelevel, NULL, 0, ": stack trace[%d] not supported yet", tracelevel);
+
+			// print stack trace
+			if (rt->dbg && tracelevel > 0) {
+				int i, pos = rt->dbg->tracePos;
+				if (tracelevel > pos) {
+					tracelevel = pos;
+				}
+				for (i = 0; i < tracelevel; ++i) {
+					dbgInfo trInfo = getCodeMapping(rt, rt->dbg->trace[pos - i - 1].pos);
+					symn fun = symfind(rt, rt->dbg->trace[pos - i - 1].cf);
+
+					file = file ? file : "file";
+					fputfmt(rt->logf, "\n\t%s:%u: %?+T", file, line, fun);
+					if (trInfo) {
+						file = trInfo->file;
+						line = trInfo->line;
+					}
+					else {
+						file = NULL;
+						line = 0;
+					}
+					isOutput = 1;
+				}
+				if (i < pos) {
+					fputfmt(rt->logf, "\n\t... %d more", pos - i);
+				}
+				//~ perr(rt, 1, NULL, 0, ": stack trace[%d] not supported yet", tracelevel);
 			}
 			if (isOutput) {
 				fputfmt(logf, "\n");
 			}
 		}
 	}
+
+	// abor the application
 	if (loglevel < 0) {
-		/*if (loglevel < 1) {
-			exit(-1);
-		}*/
 		abort();
 	}
 
@@ -2515,28 +2566,31 @@ static int libCallMemMgr(state rt, void* _) {
 	return 0;
 	(void)_;
 }
+
 typedef enum {
 	typeOpGetName,
 	typeOpGetFile,
 	typeOpGetBase,
 	typeOpGetLine,
 } TpenameOp;
-
 static int libTypeName(state rt, void* op) {
 	symn sym = symfind(rt, argref(rt, 0));
-	switch((TpenameOp)op) {
-		//~ default:
-			//~ // error
-			//~ return -1;
+	if (sym) switch ((TpenameOp)op) {
+		default:
+			break;
+
 		case typeOpGetName:
 			reti32(rt, vmOffset(rt, sym->name));
 			return 0;
+
 		case typeOpGetFile:
 			reti32(rt, vmOffset(rt, sym->file));
 			return 0;
+
 		case typeOpGetBase:
 			reti32(rt, vmOffset(rt, sym->type));
 			return 0;
+
 		case typeOpGetLine:
 			reti32(rt, sym->line);
 			return 0;
@@ -2550,11 +2604,8 @@ ccState ccInit(state rt, int mode, int libcHalt(state, void*)) {
 	dieif(rt->_beg != rt->_mem, "Compiler initialization failed.");
 	dieif(rt->_end != rt->_mem + rt->_size, "Compiler initialization failed.");
 
-	if (rt->_end - rt->_beg < sizeof(struct ccState)) {
-		return NULL;
-	}
-
 	rt->_end -= sizeof(struct ccState);
+	dieif(rt->_end < rt->_beg, "memory overrun");
 	memset(rt->_end, 0, sizeof(struct ccState));
 
 	cc->s = rt;
@@ -2574,7 +2625,7 @@ ccState ccInit(state rt, int mode, int libcHalt(state, void*)) {
 	install_emit(cc, mode);
 
 	// install a void arg for functions with no arguments
-	if ((cc->void_tag = newnode(cc, TYPE_ref))) {
+	if (cc->type_vid && (cc->void_tag = newnode(cc, TYPE_ref))) {
 		enter(cc, NULL);
 		cc->void_tag->ref.name = "";
 		cc->void_tag->next = NULL;
@@ -2593,12 +2644,6 @@ ccState ccInit(state rt, int mode, int libcHalt(state, void*)) {
 	if (cc->type_ptr && (mode & creg_tptr)) {
 		cc->libc_mem = ccAddCall(cc->s, libCallMemMgr, NULL, "pointer memmgr(pointer ptr, int32 size);");
 		cc->libc_dbg = ccAddCall(rt, libCallDebug, NULL, "void debug(string message, int level, int trace, typename objtyp, pointer objref);");
-		/*enum mode {
-			skip = 0;
-			info = 1;
-			exit = 2;
-			abort = 3;
-		}*/
 	}
 
 	// 4 reflection
@@ -2612,45 +2657,38 @@ ccState ccInit(state rt, int mode, int libcHalt(state, void*)) {
 			arg->offs = offsetOf(symn, offs);
 			arg->pfmt = "%04x";
 		}
+
 		ccAddCall(rt, libTypeName, (void*)typeOpGetFile, "string file(typename type);");
 		ccAddCall(rt, libTypeName, (void*)typeOpGetLine, "int line(typename type);");
 
 		ccAddCall(rt, libTypeName, (void*)typeOpGetName, "string name(typename type);");
 		ccAddCall(rt, libTypeName, (void*)typeOpGetBase, "typename base(typename type);");
 
-		//~ install(cc, "bool canAssign(type to, type from, bool canCast)");
-		//~ install(cc, "typeSeq lookUp(variant &obj, int options, string name, variant args...)");
-		//~ install(cc, "variant invoke(variant &obj, int options, string name, variant args...)");
-		//~ install(cc, "bool instanceof(typename &type, variant obj)");
-
 		cc->type_rec->args = leave(cc, cc->type_rec, 0);
 
-		/* TODO: reflection
+		/* TODO: more 4 reflection
 		enum BindingFlags {
 			//inline     = 0x000000;	// this is not available at runtime.
 			typename     = 0x000001;
-			variable     = 0x000002;
-			function     = 0x000003;	// 
+			function     = 0x000002;	// 
+			variable     = 0x000003;	// functions and typenames are also variables
 			attr_static  = 0x000004;
 			attr_const   = 0x000008;
 		}
-		ccAddCall(rt, libTypeName, (void*)typeOpGetFile, "typename lookup(typename type, int options, string name, typename args...)");
-
 		// 
-		ccAddCall(rt, libTypeName, (void*)typeOpGetFile, "variant invoke(typename field, variant args...)");
 		ccAddCall(rt, libTypeName, (void*)typeOpGetFile, "variant setValue(typename field, variant value)");
 		ccAddCall(rt, libTypeName, (void*)typeOpGetFile, "variant getValue(typename field)");
 
-		ccAddCall(rt, libTypeName, (void*)typeOpGetFile, "bool canassign(typename to, typename from, bool canCast)");
-		ccAddCall(rt, libTypeName, (void*)typeOpGetFile, "bool instanceof(typename of, var obj)");
+		//~ install(cc, "typename[] lookup(variant &obj, int options, string name, variant args...)");
+		//~ install(cc, "variant invoke(variant &obj, int options, string name, variant args...)");
+		//~ install(cc, "bool canassign(typename toType, variant value, bool canCast)");
+		//~ install(cc, "bool instanceof(typename &type, variant obj)");
+
 		//~ */
 
-		enter(cc, NULL);
+		ccBegin(rt, NULL);
 		ccAddCode(rt, 0, __FILE__, __LINE__, "define size(typename type) = int(type.size);");
-
-		arg = leave(cc, cc->type_rec, 0);
-		arg->next = cc->type_rec->args;
-		cc->type_rec->args = arg;
+		ccExtEnd(rt, cc->type_rec, 1);
 	}
 
 	return cc;
@@ -2873,7 +2911,6 @@ void* rtAlloc(state rt, void* ptr, unsigned size) {
 	return memd ? memd->data : NULL;
 }
 
-//#{ temp.c ---------------------------------------------------------------------
 // arrBuffer
 int initBuff(arrBuffer* buff, int initsize, int elemsize) {
 	buff->cnt = 0;
@@ -2919,5 +2956,3 @@ void freeBuff(arrBuffer* buff) {
 	buff->cap = 0;
 	buff->esz = 0;
 }
-
-//#} */

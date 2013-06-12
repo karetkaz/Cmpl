@@ -114,7 +114,7 @@ int install_file(state);
 */
 void* rtAlloc(state rt, void* ptr, unsigned size);	// realloc/alloc/free
 
-int gencode(state, int opti);
+int gencode(state, int optimizeLevel, int debug);
 //~ int execute(state, int cc, int ss, dbgf dbg);
 
 // executing code ...

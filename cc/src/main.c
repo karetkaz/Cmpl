@@ -397,11 +397,11 @@ int program(int argc, char* argv[]) {
 	else if (argc == 2 && *argv[1] == '=') {
 		return evalexp(ccInit(rt, creg_def, NULL), argv[1] + 1);
 	}
-	else {		// compile
+	else {		// compile, run, debug, ...
 		int level = -1, argi;
 		int opti = ol;
 
-		int gen_code = 1;	// cgen: true/false
+		int gen_code = 2;	// cgen: false/true/debug
 		int run_code = 0;	// exec: true/false
 		char* stk_dump = NULL;
 
@@ -443,8 +443,11 @@ int program(int argc, char* argv[]) {
 					onHalt = libCallHaltDebug;
 					str += 1;
 				}
-				if (*str == 'd') {
-					dbg = dbgCon;
+				if (*str == 'd' || *str == 'D') {
+					gen_code = 2;
+					if (*str == 'D') {
+						dbg = dbgCon;
+					}
 					if (str[1] == ':') {
 						stk_dump = str + 2;
 						str += 1;
@@ -603,7 +606,7 @@ int program(int argc, char* argv[]) {
 				astn ast = decl_var(cc, NULL, TYPE_def);
 				printvars = linkOf(ast);
 				if (printvars != NULL) {
-					printvars->name = "";
+					printvars->name = "\tsp";
 				}
 				else {
 					error(rt, NULL, 0, "error in debug print format `%s`", stk_dump);
@@ -614,7 +617,7 @@ int program(int argc, char* argv[]) {
 		if (rt->errc == 0) {
 
 			// generate variables and vm code.
-			if ((gen_code || run_code) && gencode(rt, opti) != 0) {
+			if ((gen_code || run_code) && gencode(rt, opti, gen_code > 1) != 0) {
 				logfile(rt, NULL);
 				closeLibs();
 				return rt->errc;
@@ -688,8 +691,8 @@ int main(int argc, char* argv[]) {
 static int dbgCon(state rt, int pu, void* ip, long* bp, int ss) {
 	static char buff[1024];
 	static char cmd = 'N';
-	int IP;//, SP;
 	char* arg;
+	int IP;
 
 	if (ip == NULL) {
 		return 0;
@@ -700,17 +703,13 @@ static int dbgCon(state rt, int pu, void* ip, long* bp, int ss) {
 	}
 
 	IP = ((char*)ip) - ((char*)rt->_mem);
-	//~ SP = ((char*)rt->_ptr) - ((char*)bp);
+	fputfmt(stdout, ">exec:[sp(%02d)] %9.*A\n", ss, IP, ip);
 
-	fputfmt(stdout, ">exec:[sp(%02d)", ss);
 	if (printvars != NULL) {
 		stkval* sp = (stkval*)((char*)bp);
 		vm_fputval(rt, stdout, printvars, sp, 0);
+		fputfmt(stdout, "\n");
 	}
-	//~ fputfmt(stdout, "]@%9.*A\n", IP, ip);
-	fputfmt(stdout, "]");
-	fputopc(stdout, ip, dl & 0xf, IP, rt);fputfmt(stdout, "\n");
-	//~ fputasm(stdout, rt, IP, IP + 1, dl);
 
 	if (cmd != 'N') for ( ; ; ) {
 		if (fgets(buff, 1024, stdin) == NULL) {
@@ -724,7 +723,10 @@ static int dbgCon(state rt, int pu, void* ip, long* bp, int ss) {
 			*arg = 0;		// remove new line char
 		}
 
-		if (*buff == 0) {}		// no command, use last
+		if (*buff == 0) {}		// no command, use last one
+		else if ((arg = parsecmd(buff, "continue", " "))) {
+			cmd = 'N';
+		}
 		else if ((arg = parsecmd(buff, "print", " "))) {
 			cmd = 'p';
 		}
@@ -741,9 +743,6 @@ static int dbgCon(state rt, int pu, void* ip, long* bp, int ss) {
 			else if (strcmp(arg, "in") == 0) {
 				cmd = 'n';
 			}
-		}
-		else if ((arg = parsecmd(buff, "sp", " "))) {
-			cmd = 's';
 		}
 		else if (buff[1] == 0) {
 			arg = buff + 1;
@@ -775,6 +774,7 @@ static int dbgCon(state rt, int pu, void* ip, long* bp, int ss) {
 			//~ case 'C' :		// step out
 			case 'n' :		// step over
 				return 0;
+
 			case 'p' : if (rt->cc) {		// print
 				if (!*arg) {
 					// vmTags(rt, (void*)sptr, slen, 0);
@@ -788,25 +788,17 @@ static int dbgCon(state rt, int pu, void* ip, long* bp, int ss) {
 					}
 				}
 			} break;
+
+			// trace
+			case 't' : {
+			} break;
+
 			case 's' : {
 				int i;
 				stkval* sp = (stkval*)bp;
-				if (*arg == 0) for (i = 0; i < ss; i++) {
+				for (i = 0; i < ss; i++) {
 					fputfmt(stdout, "\tsp(%d): {i32(%d), f32(%g), i64(%D), f64(%G)}\n", i, sp[i].i4, sp[i].f4, sp[i].i8, sp[i].f8);
 				}
-				else if (*parsei32(arg, &i, 10) == '\0') {
-					if (i < ss)
-						fputfmt(stdout, "\tsp(%d): {i32(%d), f32(%g), i64(%D), f64(%G)}\n", i, sp[i].i4, sp[i].f4, sp[i].i8, sp[i].f8);
-					//~ fputfmt(stdout, "\tsp: {i32(%d), i64(%D), f32(%g), f64(%G), p4f(%g, %g, %g, %g), p2d(%G, %G)}\n", sp->i4, sp->i8, sp->f4, sp->f8, sp->pf.x, sp->pf.y, sp->pf.z, sp->pf.w, sp->pd.x, sp->pd.y);
-				}
-				else if (strcmp(arg, "i32") == 0)
-					fputfmt(stdout, "\tsp: i32(%d)\n", sp->i4);
-				else if (strcmp(arg, "f32") == 0)
-					fputfmt(stdout, "\tsp: f32(%d)\n", sp->i8);
-				else if (strcmp(arg, "i64") == 0)
-					fputfmt(stdout, "\tsp: i64(%d)\n", sp->f4);
-				else if (strcmp(arg, "f64") == 0)
-					fputfmt(stdout, "\tsp: f64(%d)\n", sp->f8);
 			} break;
 		}
 	}

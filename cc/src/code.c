@@ -992,7 +992,7 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 			return 0;
 
 		#define STOP(__ERR, __CHK, __ERC) if (__CHK) goto __ERR
-		#define NEXT(__IP, __CHK, __SP)\
+		#define NEXT(__IP, __SP, __CHK)\
 			STOP(error_stc, rt->vm.ss < (__CHK), -1);\
 			rt->vm.ss += (__SP);\
 			rt->vm.pos += (__IP);
@@ -1233,6 +1233,23 @@ static void dbugerr(state rt, cell cpu, char* file, int line, int pu, void* ip, 
 	(void)bp;
 }
 
+//~ static void pretrace(state rt, void* ip, void* sp) {fputfmt(stdout, "%d: (%x, %x):%T\n", rt->vm.pos, ip, sp, symfind(rt, ip));}
+static inline void dotrace(state rt, void* cf, void* ip, void* sp) {
+	//~ fputfmt(stdout, "%d: (%x, %x):%T\n", rt->vm.pos, ip, sp, symfind(rt, ip));
+	if (rt->dbg) {
+		if(cf == NULL) {
+			rt->dbg->tracePos -= 1;
+		}
+		else if (rt->dbg->tracePos < lengthOf(rt->dbg->trace)) {
+			rt->dbg->trace[rt->dbg->tracePos].ip = ip;
+			rt->dbg->trace[rt->dbg->tracePos].sp = sp;
+			rt->dbg->trace[rt->dbg->tracePos].cf = cf;
+			rt->dbg->trace[rt->dbg->tracePos].pos = (char*)ip - (char*)rt->_mem;
+			rt->dbg->tracePos += 1;
+		}
+	}
+}
+
 #if MAXPROCSEXEC > 1
 static int dbgpu(state rt, cell cpu, const int cc) {
 	char* err_file = 0;
@@ -1297,7 +1314,7 @@ static int dbgpu(state rt, cell cpu, const int cc) {
 				error(rt, err_file, err_line, "libc(%d): %-T returned: %d", ip->rel, libcvec[ip->rel].sym);
 				return -5;
 
-			#define NEXT(__IP, __CHK, __SP) {pu->sp -= vm_size * (__SP); pu->ip += (__IP);}
+			#define NEXT(__IP, __SP, __CHK) {pu->sp -= vm_size * (__SP); pu->ip += (__IP);}
 			#define STOP(__ERR, __CHK, __ERC) if (__CHK) {err_file = __FILE__; err_line = __LINE__; err_code = __ERC; goto __ERR;}
 			#define EXEC
 			#include "code.inl"
@@ -1313,7 +1330,6 @@ static int dbgpu(state rt, cell pu) {
 
 	const cell cpu = pu;
 	const int cp = 0, cc = 1;
-	const dbgf dbg = rt->vm.dbug;
 	const libc libcvec = rt->vm.libv;
 
 	const int ms = rt->_size;			// memory size
@@ -1321,26 +1337,59 @@ static int dbgpu(state rt, cell pu) {
 	const memptr mp = (void*)rt->_mem;
 	const stkptr st = (void*)(pu->bp + pu->ss);
 
-	for ( ; ; ) {
+	if (rt->dbg != NULL) {
+		const dbgf dbg = rt->dbg->dbug;
+		for ( ; ; ) {
 
+			register bcde ip = (void*)pu->ip;
+			register stkptr sp = (void*)pu->sp;
+
+			if (dbg && dbg(rt, cp, ip, (long*)sp, st - sp)) {
+				return -9;
+			}
+
+			switch (ip->opc) {
+				dbg_stop_vm:	// halt virtual machine
+					return 0;
+
+				dbg_error_opc:
+					dbugerr(rt, pu, err_file, err_line, cp, ip, sp, st - sp, "invalid opcode", err_code);
+					return -1;
+
+				dbg_error_ovf:
+					dbugerr(rt, cpu, err_file, err_line, cp, ip, sp, st - sp, "stack overflow", err_code);
+					return -2;
+
+				dbg_error_mem:
+					dbugerr(rt, cpu, err_file, err_line, cp, ip, sp, st - sp, "segmentation fault", err_code);
+					return -3;
+
+				dbg_error_div_flt:
+					dbugerr(rt, cpu, err_file, err_line, cp, ip, sp, st - sp, "division by zero", err_code);
+					// continue execution on floating point division by zero.
+					break;
+
+				dbg_error_div:
+					dbugerr(rt, cpu, err_file, err_line, 0, ip, sp, st - sp, "division by zero", err_code);
+					return -4;
+
+				dbg_error_libc:
+					error(rt, err_file, err_line, "libc(%d): %-T returned: %d", ip->rel, libcvec[ip->rel].sym, err_code);
+					return -5;
+
+				#define NEXT(__IP, __SP, __CHK) pu->sp -= vm_size * (__SP); pu->ip += (__IP);
+				#define STOP(__ERR, __CHK, __ERC) do {if (__CHK) {err_file = __FILE__; err_line = __LINE__; err_code = __ERC; goto dbg_##__ERR;}} while(0)
+				#define EXEC
+				#define TRACE(__IP) do { dotrace(rt, __IP, ip, sp); } while(0)
+				#include "code.inl"
+			}
+		}
+	}
+
+	// code for maximum speed
+	else for ( ; ; ) {
 		register bcde ip = (void*)pu->ip;
 		register stkptr sp = (void*)pu->sp;
-
-		if (dbg) {
-			/* handle stacktrace
-			switch (ip->opc) {
-				case opc_libc:?
-				case opc_call:
-					*--rt->trace.sp = symfind(rt, mp + *sp);
-					break;
-				case opc_jmpi:
-					rt->trace.sp++;
-					break;
-			}*/
-			if (dbg(rt, cp, ip, (long*)sp, st - sp))
-				return -9;
-		}
-
 		switch (ip->opc) {
 			stop_vm:	// halt virtual machine
 				return 0;
@@ -1369,13 +1418,13 @@ static int dbgpu(state rt, cell pu) {
 			error_libc:
 				error(rt, err_file, err_line, "libc(%d): %-T returned: %d", ip->rel, libcvec[ip->rel].sym, err_code);
 				return -5;
-
-			#define NEXT(__IP, __CHK, __SP) {pu->sp -= vm_size * (__SP); pu->ip += (__IP);}
+			#define NEXT(__IP, __SP, __CHK) {pu->sp -= vm_size * (__SP); pu->ip += (__IP);}
 			#define STOP(__ERR, __CHK, __ERC) if (__CHK) {err_file = __FILE__; err_line = __LINE__; err_code = __ERC; goto __ERR;}
 			#define EXEC
 			#include "code.inl"
 		}
 	}
+
 	return 0;
 }
 #endif
@@ -1388,8 +1437,10 @@ static int dbgpu(state rt, cell pu) {
  * @return: error code
 **/
 int vmExec(state rt, dbgf dbg, int ss) {
-	//~ int i = 0;
+	struct dbgState dbgSt;
 	cell pu;
+
+	//~ int result = 0;
 	rt->_end = rt->_mem + rt->_size;
 
 	// allocate cells
@@ -1429,10 +1480,22 @@ int vmExec(state rt, dbgf dbg, int ss) {
 		return -99;
 	}
 
-	rt->cc = NULL;			// invalidate compiler
-	rt->vm.cell = pu;
-	rt->vm.dbug = dbg;
+	// invalidate compiler
+	rt->cc = NULL;
 
+	rt->vm.cell = pu;
+	if (dbg != NULL) {
+		// HACK: using local struct for debug if not present.
+		if (rt->dbg == NULL) {
+			rt->dbg = &dbgSt;
+			memset(&dbgSt, 0, sizeof(struct dbgState));
+		}
+		rt->dbg->dbug = dbg;
+	}
+
+	if (rt->dbg) {
+		dotrace(rt, pu->ip, pu->ip, pu->sp);
+	}
 	// reinitialize memory manager
 	rt->vm._heap = NULL;
 
@@ -1481,10 +1544,6 @@ int vmCall(state rt, symn fun, void* ret, void* args) {
 	*(int*)(pu->sp) = rt->vm.px;
 	pu->ip = rt->_mem + fun->offs;
 
-	if (rt->vm.dbug) {
-		fputfmt(rt->logf, "\n>> >> >> Invoke: %-T\n", fun);
-	}
-
 	result = dbgpu(rt, pu);
 
 	if (ret) {
@@ -1496,20 +1555,6 @@ int vmCall(state rt, symn fun, void* ret, void* args) {
 	pu->sp = sp;
 
 	return result;
-}
-
-// returns a statement for an ip (very slow)
-static astn infoAt(state rt, int pos) {
-	if (rt->cc) {
-		int i;
-		for (i = 0; i < rt->cc->dbg.cnt; i += 1) {
-			list l = getBuff(&rt->cc->dbg, i);
-			if (l && l->size == pos) {
-				return (astn)l->data;
-			}
-		}
-	}
-	return NULL;
 }
 
 void fputopc(FILE* fout, unsigned char* ptr, int len, int offs, state rt) {
@@ -1648,7 +1693,6 @@ void fputasm(FILE* fout, state rt, int beg, int end, int mode) {
 	int i, is = 12345;
 	int rel = 0;
 	int stmtEnd = 0;
-	astn ast = NULL;
 
 	if (end == -1)
 		end = rt->vm.pos;
@@ -1661,21 +1705,25 @@ void fputasm(FILE* fout, state rt, int beg, int end, int mode) {
 
 	for (i = beg; i < end; i += is) {
 		bcde ip = getip(rt, i);
+		dbgInfo dbg = getCodeMapping(rt, i);
 
 		switch (ip->opc) {
 			error_opc: error(rt, NULL, 0, "invalid opcode: %02x '%A'", ip->opc, ip); return;
-			#define NEXT(__IP, __CHK, __SP) {if (__IP) is = (__IP);}
+			#define NEXT(__IP, __SP, __CHK) {if (__IP) is = (__IP);}
 			#define STOP(__ERR, __CHK, __ERC) if (__CHK) goto __ERR
 			#include "code.inl"
 		}
 
-		if ((ast = infoAt(rt, i))) {
-			if (stmtEnd) {
-				fputc('}', fout);
-				fputc('\n', fout);
+		if (dbg != NULL) {
+			astn ast = dbg->code;
+			if (dbg->start == i && ast) {
+				if (stmtEnd) {
+					fputc('}', fout);
+					fputc('\n', fout);
+				}
+				fputfmt(fout, "%s:%d:%+k\n", ast->file, ast->line, ast);
+				//~ stmtEnd = 1;
 			}
-			fputfmt(fout, "%s:%d:%+k\n", ast->file, ast->line, ast);
-			//~ stmtEnd = 1;
 		}
 
 		if (mode & 0xf00) {
@@ -1861,7 +1909,7 @@ int vmTest() {
 			error_chk: e += 1; fputfmt(out, "stack check 0x%02x: '%A'\n", i, ip); break;
 			error_dif: e += 1; fputfmt(out, "stack difference 0x%02x: '%A'\n", i, ip); break;
 			error_opc: e += 1; fputfmt(out, "unimplemented opcode 0x%02x: '%A'\n", i, ip); break;
-			#define NEXT(__IP, __CHK, __DIFF) {\
+			#define NEXT(__IP, __DIFF, __CHK) {\
 				if (opc_tbl[i].size && (__IP) && opc_tbl[i].size != (__IP)) goto error_len;\
 				if (opc_tbl[i].chck != 9 && opc_tbl[i].chck != (__CHK)) goto error_chk;\
 				if (opc_tbl[i].diff != 9 && opc_tbl[i].diff != (__DIFF)) goto error_dif;\
@@ -1901,7 +1949,7 @@ int vmHelp() {
 		}
 		else switch (i) {
 			error_opc: e += err = 1; break;
-			#define NEXT(__IP, __CHK, __SP) if (opc_tbl[i].size != (__IP)) goto error_opc;
+			#define NEXT(__IP, __SP, __CHK) if (opc_tbl[i].size != (__IP)) goto error_opc;
 			#define STOP(__ERR, __CHK, __ERR1) if (__CHK) goto error_opc
 			#include "code.inl"
 		}
