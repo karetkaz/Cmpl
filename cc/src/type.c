@@ -105,10 +105,10 @@ symn newdefn(ccState s, int kind) {
 	state rt = s->s;
 	symn def = NULL;
 
-	if (rt->_end - rt->_beg > (int)sizeof(struct symn)) {
+	if (rt->_end - rt->_beg > (int)sizeof(struct symRec)) {
 		def = (symn)rt->_beg;
-		rt->_beg += sizeof(struct symn);
-		memset(def, 0, sizeof(struct symn));
+		rt->_beg += sizeof(struct symRec);
+		memset(def, 0, sizeof(struct symRec));
 		def->kind = kind;
 	}
 	else {
@@ -297,7 +297,7 @@ int canAssign(ccState cc, symn var, astn val, int strict) {
 			symn fun = linkOf(val);
 			symn arg1 = var->args;
 			symn arg2 = NULL;
-			struct astn atag;
+			struct astRec atag;
 
 			atag.kind = TYPE_ref;
 			atag.type = typ;
@@ -344,37 +344,30 @@ int canAssign(ccState cc, symn var, astn val, int strict) {
 
 	// array assign
 	if (typ->kind == TYPE_arr) {
-		// FIXME: if valuetype is arrays base type
-		/*if (var->args == val->type) {
-			return 1;
-		}
-		// assigning a string constant:
-		if (val->type == cc->type_str) {
-			if (typ->type->size == 1) {
+		struct astRec atag;
+		symn vty = val->type;
+
+		atag.kind = TYPE_ref;
+		atag.type = vty ? vty->type : NULL;
+		atag.cst2 = atag.type ? atag.type->cast : 0;
+		atag.ref.link = NULL;
+		atag.ref.name = ".generated token";
+
+		//~ check if subtypes are assignable
+		if (canAssign(cc, typ->type, &atag, strict)) {
+			// assign to dynamic array
+			//~ trace("assign `%+k` to `%+T`", val, var);
+			if (typ->init == NULL) {
 				return 1;
 			}
-		}*/
-		if (!strict) {
-			symn vty = val->type;
-			struct astn atag;
-			atag.kind = TYPE_ref;
-			atag.type = vty ? vty->type : NULL;
-			atag.cst2 = atag.type ? atag.type->cast : 0;
-			atag.ref.link = NULL;
-			atag.ref.name = ".generated token";
-
-			if (canAssign(cc, typ->type, &atag, strict)) {
-				// assign to dynamic array
-				if (typ->init == NULL) {
-					return 1;
-				}
-				if (typ->size == val->type->size) {
-					return 1;
-				}
+			if (typ->size == val->type->size) {
+				return 1;
 			}
-			return canAssign(cc, var->type, val, strict);
 		}
 
+		if (!strict) {
+			return canAssign(cc, var->type, val, strict);
+		}
 	}
 
 	if (!strict && promote(typ, val->type)) {
@@ -396,7 +389,7 @@ int canAssign(ccState cc, symn var, astn val, int strict) {
 		}
 	}
 
-	debug("can not assign `%+k` to `%-T`(%t)", val, var, typ->cast);
+	trace("can not assign `%+k` to `%-T`(%t)", val, var, typ->cast);
 	return 0;
 }
 

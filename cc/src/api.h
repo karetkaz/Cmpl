@@ -1,3 +1,10 @@
+#ifndef CC_API_H
+#define CC_API_H 2
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
 #include <stdio.h>		//for logf in struct state
 #include <string.h>		//for memcpy in poparg
 
@@ -18,12 +25,12 @@ typedef unsigned long long	uint64_t;
 typedef float float32_t;
 typedef double float64_t;
 
-typedef struct symn *symn;			// symbol
-typedef struct state *state;		// runtime
-typedef struct ccState *ccState;	// compiler
-typedef struct dbgState *dbgState;	// debugger
+typedef struct symRec *symn;			// symbol
+typedef struct stateRec *state;		// runtime
+typedef struct ccStateRec *ccState;	// compiler
+typedef struct dbgStateRec *dbgState;	// debugger
 
-struct state {
+struct stateRec {
 	int   errc;		// error count
 	int   closelog;	// close log file
 	FILE* logf;		// log file
@@ -230,7 +237,7 @@ static inline float32_t argf32(state rt, int offs) { return argval(rt, offs, flo
 static inline float64_t argf64(state rt, int offs) { return argval(rt, offs, float64_t); }
 static inline void* arghnd(state rt, int offs) { return argval(rt, offs, void*); }
 static inline void* argref(state rt, int offs) { int32_t p = argval(rt, offs, int32_t); return p ? rt->_mem + p : NULL; }
-static inline char* argstr(state rt, int offs) { return argref(rt, offs); }
+static inline char* argstr(state rt, int offs) { return (char*)argref(rt, offs); }
 #undef argval
 
 static inline void* setret(state rt, void *result, int size) {
@@ -248,3 +255,8 @@ static inline void retf64(state rt, float64_t val) { setret(rt, float64_t, val);
 static inline void rethnd(state rt, void* val) { setret(rt, void*, val); }
 //~ static inline void retref(state rt, void* val) { setret(rt, void*, vmOffset(rt, val)); }
 #undef setret
+
+#ifdef __cplusplus
+}
+#endif
+#endif

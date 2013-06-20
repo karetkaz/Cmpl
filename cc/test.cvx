@@ -9,6 +9,7 @@
 //~ #open src/main.c
 
 struct hex32: int32; //%%08x
+struct hex64: int64; //%%016x
 //~ define d1 = 2;
 //~ define d2 = 3;
 //~ define d3 = 4;
@@ -238,6 +239,9 @@ xrgb a = emit(xrgb, i32(0x801f008f));
 //~ r.rgb.g = min(a.g + b.g, 255);
 //~ r.rgb.b = min(a.b + b.b, 255);
 // */
+
+//~ hex64 t = 273469;
+//~ hex64 T = int64.Not(t);
 
 //~ define dim = 3;
 //~ static int x[dim][dim][dim][dim] = {690};
@@ -502,15 +506,85 @@ float64 sum = Sum(data);
 float64 mean = Mean(data);
 //~ */
 
-//~ /*trace info
-void f1() {
-	void f2() {
-		//~ int i = 5;
-		//~ i = i / 2;
-		trace("stack trace :)");
-	}
-	f2();
-}
-f1();
+//~ assert(false);
 
+struct T1 {int i;}
+struct T2 {int i;}
+struct T3 {int i;}
+
+typename t1 = T1;
+typename t2 = T2;
+typename t3 = T3;
+//~ int a = 9;
+
+string name = t1.name;
+string file = t1.file;
+int line = t1.line;
+
+//~ string file2 = typename.file(t);
+//~ int line = t.line;
+
+/* BUG: should not be able to declare these 2 functions.
+void idnMat14x4(float64 mat[]) {
+	trace("this");
+	float64 diag = 1;
+	for (int i = 0; i < mat.length; i += 1) {
+		mat[i] = i & 3 ? 0 : diag;
+	}
+}
+
+void idnMat14x4(float64 mat[16]) {
+	trace("this");
+	float64 diag = 1;
+	for (int i = 0; i < mat.length; i += 1) {
+		mat[i] = i & 3 ? 0 : diag;
+	}
+}
+
+float64 mat1[16];
+float64 mat2[] = mat1;
+
+idnMat14x4(mat1);
+idnMat14x4(mat2);
+//~ idnMat14x4_1(mat1);
+//~ idnMat14x4_2(mat1);
+//~ idnMat14x4_1(mat2);		// ERROR: this should not compile
+//~ idnMat14x4_2(mat2);
+
+// */
+
+/*trace info
+void f1(int maxRecursiveCalls) {
+	void f2(int maxRecursiveCalls) {
+		if (maxRecursiveCalls <= 0) {
+			trace("stack trace :)");
+			return;
+		}
+		f2(maxRecursiveCalls - 1);
+	}
+	f2(maxRecursiveCalls);
+}
+//~ f1(50);
+void f3(int maxRecursiveCalls) {
+	if (maxRecursiveCalls <= 0) {
+		trace("stack trace :)");
+		return;
+	}
+	testFunction(f3, maxRecursiveCalls - 1);
+}
+
+void testFunction2(void cb(int n), int n) {
+	cb(n);
+}
+void f4(int maxRecursiveCalls) {
+	if (maxRecursiveCalls <= 0) {
+		trace("stack trace :)");
+		return;
+	}
+	testFunction2(f4, maxRecursiveCalls - 1);
+}
+
+int n = 2;
+testFunction2(f4, n);
+testFunction(f3, n);
 //~ */

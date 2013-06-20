@@ -279,7 +279,7 @@ static void fputast(FILE* fout, astn ast, int mode, int level) {
 			if (rlev < 2) {
 				fputstr(fout, "for");
 				if (rlev > 0)
-					fputfmt(fout, " (%+k; %+k; %+k)", ast->stmt.init, ast->stmt.test, ast->stmt.step);
+					fputfmt(fout, " (%?+ k; %?+k; %?+k)", ast->stmt.init, ast->stmt.test, ast->stmt.step);
 				break;
 			}
 			fputfmt(fout, "%I", noiden ? 0 : level);
@@ -810,8 +810,12 @@ static void FPUTFMT(FILE* fout, const char* msg, va_list ap) {
 
 				case 'T': {		// type
 					symn sym = va_arg(ap, symn);
-					if (!sym && nil)
+					if (!sym && nil) {
+						if (pad != 0) {
+							fputchr(fout, pad);
+						}
 						continue;
+					}
 					switch (sgn) {
 						case '-': fputsym(fout, sym, prType | prQual | 1, 0); break;
 						case '+': fputsym(fout, sym, prQual | 1, 0); break;
@@ -820,8 +824,12 @@ static void FPUTFMT(FILE* fout, const char* msg, va_list ap) {
 				} continue;
 				case 'k': {		// node
 					astn ast = va_arg(ap, astn);
-					if (!ast && nil)
+					if (!ast && nil) {
+						if (pad != 0) {
+							fputchr(fout, pad);
+						}
 						continue;
+					}
 					switch (sgn) {
 						case '-': fputast(fout, ast, noIden | 2, prc); break;	// walk
 						case '+': fputast(fout, ast, noIden | 1, 0x0f); break;	// tree
@@ -830,14 +838,22 @@ static void FPUTFMT(FILE* fout, const char* msg, va_list ap) {
 				} continue;
 				case 'K': {		// node
 					astn ast = va_arg(ap, astn);
-					if (!ast && nil)
+					if (!ast && nil) {
+						if (pad != 0) {
+							fputchr(fout, pad);
+						}
 						continue;
+					}
 					dumpxml(fout, ast, len << 4, 0, "node");
 				} continue;
 				case 't': {		// token
 					unsigned arg = va_arg(ap, unsigned);
-					if (!arg && nil)
+					if (!arg && nil) {
+						if (pad != 0) {
+							fputchr(fout, pad);
+						}
 						continue;
+					}
 					if (arg < tok_last)
 						str = (char*)tok_tbl[arg].name;
 					else
@@ -845,8 +861,12 @@ static void FPUTFMT(FILE* fout, const char* msg, va_list ap) {
 				} break;
 				case 'A': {		// opcode
 					void* opc = va_arg(ap, void*);
-					if (nil && !opc)
+					if (nil && !opc)  {
+						if (pad != 0) {
+							fputchr(fout, pad);
+						}
 						continue;
+					}
 					fputopc(fout, opc, len, prc, NULL);
 				} continue;
 
@@ -1113,7 +1133,7 @@ int logfile(state rt, char* file) {
 	return 0;
 }
 
-void dump(state rt, int mode, symn sym, char* text, ...) {
+void dump(state rt, int mode, symn sym, const char* text, ...) {
 	FILE* logf = rt ? rt->logf : stdout;
 	int level = mode & 0xff;
 
@@ -1141,7 +1161,7 @@ void dump(state rt, int mode, symn sym, char* text, ...) {
 		}
 		if (mode & dump_asm) {
 			if (sym->kind == TYPE_ref && sym->call) {
-				fputasm(logf, rt, sym->offs, sym->offs + sym->size, 0x119);
+				fputasm(rt, logf, sym->offs, sym->offs + sym->size, 0x119);
 			}
 		}
 	}
@@ -1176,7 +1196,7 @@ void dump(state rt, int mode, symn sym, char* text, ...) {
 					for (; arg; arg = arg->next) {
 						fputfmt(logf, "\targ %-T [@%06x, size:%d, cast:%t]\n", arg, arg->offs, arg->size, arg->cast);
 					}
-					fputasm(logf, rt, var->offs, var->offs + var->size, 0x100 | (mode & 0xff));
+					fputasm(rt, logf, var->offs, var->offs + var->size, 0x100 | (mode & 0xff));
 					fputfmt(logf, "}\n");
 				}
 			}
@@ -1190,7 +1210,7 @@ void dump(state rt, int mode, symn sym, char* text, ...) {
 				", size.data: %d"
 			") {\n", rt->vm.ro, rt->vm.ss, rt->vm.sm, rt->vm.pc, rt->vm.px, rt->vm.size.meta, rt->vm.size.code, rt->vm.size.data);
 
-			fputasm(logf, rt, rt->vm.pc, rt->vm.px, 0x100 | (mode & 0xff));
+			fputasm(rt, logf, rt->vm.pc, rt->vm.px, 0x100 | (mode & 0xff));
 			fputfmt(logf, "}\n");
 		}
 

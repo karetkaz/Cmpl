@@ -1,7 +1,10 @@
-#ifndef __PVMC_API
-#define __PVMC_API
-
 #include "api.h"
+
+#ifndef CC_BASE_H
+#define CC_BASE_H 2
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 enum {
 	creg_base = 0x0000,			// type system only
@@ -75,9 +78,10 @@ symn ccDefInt(state, char *name, int64_t value);
 symn ccDefFlt(state, char *name, double value);
 symn ccDefStr(state, char *name, char* value);
 
-void ccEnd(state, symn cls);
+void ccEnd(state, symn sym);
+void ccExtEnd(state, symn sym, int mode);
 
-ccState ccInit(state, int mode, int libcHalt(state, void*));
+ccState ccInit(state, int mode, int onHalt(state, void*));
 ccState ccOpen(state, char* file, int line, char* source);
 int ccDone(state);
 
@@ -88,6 +92,9 @@ symn ccFindSym(ccState, symn in, char *name);
 int ccSymValInt(symn sym, int* res);
 int ccSymValFlt(symn sym, double* res);
 
+int libCallHaltDebug(state, void*);
+int install_base(state, int mode, int onHalt(state, void*));
+
 /** instal standard functions and parse optionaly the given file.
  * io, mem, math, ...
  * @param state
@@ -95,6 +102,7 @@ int ccSymValFlt(symn sym, double* res);
  * @param level warning level for parsing.
  */
 int install_stdc(state, char* file, int level);
+
 /** instal file functions.
  * @param state
  */
@@ -123,22 +131,29 @@ typedef int (*dbgf)(state, int pu, void *ip, long* sptr, int scnt);
 int vmExec(state, dbgf dbg, int ss);
 int vmCall(state, symn fun, void* ret, void* args);
 
+//
+void* rtError(state rt, char *file, int line, const char *msg, ...);
+
 // output
 void fputfmt(FILE *fout, const char *msg, ...);
-void dump(state, int dumpWhat, symn, char* msg, ...);
+void dump(state, int dumpWhat, symn, const char* msg, ...);
 
-typedef struct astn *astn;		// Abstract Syntax Tree Node
+//typedef struct astRec *astn;		// Abstract Syntax Tree Node
+//astn newnode(ccState, int kind);
 
-/* symbols
+/* todo: symbols
 	there are 4 kind of symbols:[TODO]
-		alias is a shortcut to another symbol or an expression
-		typename
-		variable
-		function
+		0: alias is a shortcut to another symbol or an expression
+		1: typename
+		2: variable
+		3: function
 */
 static inline int padded(int offs, int align) {
 	//~ assert(align == (align & -align));
 	return (offs + (align - 1)) & ~(align - 1);
 }
 
+#ifdef __cplusplus
+}
+#endif
 #endif

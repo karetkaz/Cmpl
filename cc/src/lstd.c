@@ -64,25 +64,10 @@ static int f64atan2(state rt, void* _) {
 }
 //#}#endregion
 
-//#{ int64 ext
-static int b64shl(state rt, void* _) {
+//#{#region bit operations
+static int b64not(state rt, void* _) {
 	uint64_t x = argi64(rt, 0);
-	int32_t y = argi32(rt, 8);
-	reti64(rt, x << y);
-	return 0;
-	(void)_;
-}
-static int b64shr(state rt, void* _) {
-	uint64_t x = argi64(rt, 0);
-	int32_t y = argi32(rt, 8);
-	reti64(rt, x >> y);
-	return 0;
-	(void)_;
-}
-static int b64sar(state rt, void* _) {
-	int64_t x = argi64(rt, 0);
-	int32_t y = argi32(rt, 8);
-	reti64(rt, x >> y);
+	reti64(rt, ~x);
 	return 0;
 	(void)_;
 }
@@ -107,65 +92,29 @@ static int b64xor(state rt, void* _) {
 	return 0;
 	(void)_;
 }
-/* unused
-static int b64bsf(state rt) {
-	uint64_t x = popi64(rt);
-	int ans = -1;
-	if (x != 0) {
-		ans = 0;
-		if ((x & 0x00000000ffffffffULL) == 0) { ans += 32; x >>= 32; }
-		if ((x & 0x000000000000ffffULL) == 0) { ans += 16; x >>= 16; }
-		if ((x & 0x00000000000000ffULL) == 0) { ans +=  8; x >>=  8; }
-		if ((x & 0x000000000000000fULL) == 0) { ans +=  4; x >>=  4; }
-		if ((x & 0x0000000000000003ULL) == 0) { ans +=  2; x >>=  2; }
-		if ((x & 0x0000000000000001ULL) == 0) { ans +=  1; }
-	}
-	reti32(rt, ans);
+static int b64shl(state rt, void* _) {
+	uint64_t x = argi64(rt, 0);
+	int32_t y = argi32(rt, 8);
+	reti64(rt, x << y);
 	return 0;
+	(void)_;
 }
-static int b64bsr(state rt) {
-	uint64_t x = popi64(rt);
-	int ans = -1;
-	if (x != 0) {
-		ans = 0;
-		if ((x & 0xffffffff00000000ULL) != 0) { ans += 32; x >>= 32; }
-		if ((x & 0x00000000ffff0000ULL) != 0) { ans += 16; x >>= 16; }
-		if ((x & 0x000000000000ff00ULL) != 0) { ans +=  8; x >>=  8; }
-		if ((x & 0x00000000000000f0ULL) != 0) { ans +=  4; x >>=  4; }
-		if ((x & 0x000000000000000cULL) != 0) { ans +=  2; x >>=  2; }
-		if ((x & 0x0000000000000002ULL) != 0) { ans +=  1; }
-	}
-	reti32(rt, ans);
+static int b64shr(state rt, void* _) {
+	uint64_t x = argi64(rt, 0);
+	int32_t y = argi32(rt, 8);
+	reti64(rt, x >> y);
 	return 0;
+	(void)_;
 }
-static int b64hib(state rt) {
-	uint64_t x = popi64(rt);
-	x |= x >> 1;
-	x |= x >> 2;
-	x |= x >> 4;
-	x |= x >> 8;
-	x |= x >> 16;
-	x |= x >> 32;
-	reti64(rt, x - (x >> 1));
+static int b64sar(state rt, void* _) {
+	int64_t x = argi64(rt, 0);
+	int32_t y = argi32(rt, 8);
+	reti64(rt, x >> y);
 	return 0;
+	(void)_;
 }
-static int b64lob(state s) {
-	uint64_t x = popi64(s);
-	reti64(rt, x & -x);
-	return 0;
-}*/
-//#}
 
-/*/#{#region "bit operations"
-enum bits_funs {
-	b64_cmt,
-	b64_and,
-	b64_or,
-	b64_xor,
-	b64_shl,	// 
-	b64_shr,	// 
-	b64_sar,	// 
-
+typedef enum {
 	b32_btc,	// count ones
 	//~ b64_btc,
 
@@ -184,97 +133,69 @@ enum bits_funs {
 	b32_swp,	// 
 	//~ b64_swp,
 
-	b32_zxt,	// zero extend
-	b64_zxt,
+	//~ b32_zxt,	// zero extend
+	//~ b64_zxt,
 
-	b32_sxt,	// sign extend
-	b64_sxt,
-};
-static int bits_call(state rt, int function) {
-	switch (function) {
-		case b64_cmt: {
-			uint64_t x = popi64(rt);
-			setret(rt, uint64_t, ~x);
-		} return 0;
-		case b64_and: {
-			uint64_t x = popi64(rt);
-			uint64_t y = popi64(rt);
-			setret(rt, uint64_t, x & y);
-		} return 0;
-		case b64_or:  {
-			uint64_t x = popi64(rt);
-			uint64_t y = popi64(rt);
-			setret(rt, uint64_t, x | y);
-		} return 0;
-		case b64_xor: {
-			uint64_t x = popi64(rt);
-			uint64_t y = popi64(rt);
-			setret(rt, uint64_t, x ^ y);
-		} return 0;
-		case b64_shl: {
-			uint64_t x = popi64(rt);
-			uint32_t y = popi32(rt);
-			setret(rt, uint64_t, x << y);
-		} return 0;
-		case b64_shr: {
-			uint64_t x = popi64(rt);
-			uint32_t y = popi32(rt);
-			setret(rt, uint64_t, x >> y);
-			//~ debug("%D >> %d = %D", x, y, x >> y);
-		} return 0;
-		case b64_sar: {
-			int64_t x = popi64(rt);
-			uint32_t y = popi32(rt);
-			setret(rt, uint64_t, x >> y);
-		} return 0;
+	//~ b32_sxt,	// sign extend
+	//~ b64_sxt,
+} bitOperation;
+
+static int bitFunction(state rt, void *function) {
+	switch ((bitOperation)function) {
 
 		case b32_btc: {
-			uint32_t x = popi32(rt);
+			uint32_t x = argi32(rt, 0);
 			x -= ((x >> 1) & 0x55555555);
 			x = (((x >> 2) & 0x33333333) + (x & 0x33333333));
 			x = (((x >> 4) + x) & 0x0f0f0f0f);
 			x += (x >> 8) + (x >> 16);
-			setret(rt, uint32_t, x & 0x3f);
-		} return 0;
+			reti32(rt, x & 0x3f);
+			return 0;
+		}
 		//case b64_btc:
 
 		case b32_bsf: {
-			uint32_t x = popi32(rt);
-			int ans = 0;
-			if ((x & 0x0000ffff) == 0) { ans += 16; x >>= 16; }
-			if ((x & 0x000000ff) == 0) { ans +=  8; x >>=  8; }
-			if ((x & 0x0000000f) == 0) { ans +=  4; x >>=  4; }
-			if ((x & 0x00000003) == 0) { ans +=  2; x >>=  2; }
-			if ((x & 0x00000001) == 0) { ans +=  1; }
-			setret(rt, uint32_t, x ? ans : -1);
-		} return 0;
+			int result = 0;
+			uint32_t x = argi32(rt, 0);
+			if ((x & 0x0000ffff) == 0) { result += 16; x >>= 16; }
+			if ((x & 0x000000ff) == 0) { result +=  8; x >>=  8; }
+			if ((x & 0x0000000f) == 0) { result +=  4; x >>=  4; }
+			if ((x & 0x00000003) == 0) { result +=  2; x >>=  2; }
+			if ((x & 0x00000001) == 0) { result +=  1; }
+			reti32(rt, x ? result : -1);
+			return 0;
+		}
+
 		case b64_bsf: {
-			uint64_t x = popi64(rt);
-			int ans = -1;
+			int result = -1;
+			uint64_t x = argi64(rt, 0);
 			if (x != 0) {
-				ans = 0;
-				if ((x & 0x00000000ffffffffULL) == 0) { ans += 32; x >>= 32; }
-				if ((x & 0x000000000000ffffULL) == 0) { ans += 16; x >>= 16; }
-				if ((x & 0x00000000000000ffULL) == 0) { ans +=  8; x >>=  8; }
-				if ((x & 0x000000000000000fULL) == 0) { ans +=  4; x >>=  4; }
-				if ((x & 0x0000000000000003ULL) == 0) { ans +=  2; x >>=  2; }
-				if ((x & 0x0000000000000001ULL) == 0) { ans +=  1; }
+				result = 0;
+				if ((x & 0x00000000ffffffffULL) == 0) { result += 32; x >>= 32; }
+				if ((x & 0x000000000000ffffULL) == 0) { result += 16; x >>= 16; }
+				if ((x & 0x00000000000000ffULL) == 0) { result +=  8; x >>=  8; }
+				if ((x & 0x000000000000000fULL) == 0) { result +=  4; x >>=  4; }
+				if ((x & 0x0000000000000003ULL) == 0) { result +=  2; x >>=  2; }
+				if ((x & 0x0000000000000001ULL) == 0) { result +=  1; }
 			}
-			reti32(rt, ans);
-		} return 0;
+			reti32(rt, result);
+			return 0;
+		}
 
 		case b32_bsr: {
-			uint32_t x = popi32(rt);
+			uint32_t x = argi32(rt, 0);
 			unsigned ans = 0;
 			if ((x & 0xffff0000) != 0) { ans += 16; x >>= 16; }
 			if ((x & 0x0000ff00) != 0) { ans +=  8; x >>=  8; }
 			if ((x & 0x000000f0) != 0) { ans +=  4; x >>=  4; }
 			if ((x & 0x0000000c) != 0) { ans +=  2; x >>=  2; }
 			if ((x & 0x00000002) != 0) { ans +=  1; }
-			setret(rt, uint32_t, x ? ans : -1);
-		} return 0;
+			reti32(rt, x ? ans : -1);
+			return 0;
+		}
+
 		case b64_bsr: {
-			uint64_t x = popi64(rt);
+			uint64_t x = argi64(rt, 0);
 			int ans = -1;
 			if (x != 0) {
 				ans = 0;
@@ -286,54 +207,63 @@ static int bits_call(state rt, int function) {
 				if ((x & 0x0000000000000002ULL) != 0) { ans +=  1; }
 			}
 			reti32(rt, ans);
-		} return 0;
+			return 0;
+		}
 
 		case b32_bhi: {
-			uint32_t x = popi32(rt);
+			uint32_t x = argi32(rt, 0);
 			x |= x >> 1;
 			x |= x >> 2;
 			x |= x >> 4;
 			x |= x >> 8;
 			x |= x >> 16;
-			setret(rt, uint32_t, x - (x >> 1));
-		} return 0;
+			reti32(rt, x - (x >> 1));
+			return 0;
+		}
+
 		case b64_bhi: {
-			uint64_t x = popi64(rt);
+			uint64_t x = argi64(rt, 0);
 			x |= x >> 1;
 			x |= x >> 2;
 			x |= x >> 4;
 			x |= x >> 8;
 			x |= x >> 16;
 			x |= x >> 32;
-			setret(rt, uint64_t, x - (x >> 1));
-		} return 0;
+			reti64(rt, x - (x >> 1));
+			return 0;
+		}
 
 		case b32_blo: {
-			uint32_t x = popi32(rt);
-			setret(rt, uint32_t, x & -x);
-		} return 0;
+			uint32_t x = argi32(rt, 0);
+			reti32(rt, x & -x);
+			return 0;
+		}
+
 		case b64_blo: {
-			uint64_t x = popi64(rt);
-			setret(rt, uint64_t, x & -x);
-		} return 0;
+			uint64_t x = argi64(rt, 0);
+			reti64(rt, x & -x);
+			return 0;
+		}
 
 		case b32_swp: {
-			uint32_t x = popi32(rt);
+			uint32_t x = argi32(rt, 0);
 			x = ((x >> 1) & 0x55555555) | ((x & 0x55555555) << 1);
 			x = ((x >> 2) & 0x33333333) | ((x & 0x33333333) << 2);
 			x = ((x >> 4) & 0x0F0F0F0F) | ((x & 0x0F0F0F0F) << 4);
 			x = ((x >> 8) & 0x00FF00FF) | ((x & 0x00FF00FF) << 8);
-			setret(rt, uint32_t, (x >> 16) | (x << 16));
-		} return 0;
+			reti64(rt, (x >> 16) | (x << 16));
+			return 0;
+		}
 		//case b64_swp:
 
-		case b32_zxt: {
+		/*case b32_zxt: {
 			uint32_t val = popi32(rt);
 			int32_t ofs = popi32(rt);
 			int32_t cnt = popi32(rt);
 			val <<= 32 - (ofs + cnt);
 			reti32(rt, val >> (32 - cnt));
-		} return 0;
+			return 0;
+		}
 		case b64_zxt: {
 			uint64_t val = popi64(rt);
 			int32_t ofs = popi32(rt);
@@ -356,11 +286,136 @@ static int bits_call(state rt, int function) {
 			val <<= 64 - (ofs + cnt);
 			reti64(rt, val >> (64 - cnt));
 		} return 0;
+		// */
 	}
 	return -1;
 }
-//#}#endregion */
+//#}#endregion
 
+//#{#region file operations
+static inline int argpos(int *argp, int size) {
+	int result = *argp;
+	*argp += padded(size || 1, vm_size);
+	return result;
+}
+
+//~ #define logFILE(msg, ...) prerr(msg, ##__VA_ARGS__)
+#define logFILE(msg, ...)
+
+static int FILE_open(state rt, void* mode) {
+	int argc = 0;
+	char *name = argref(rt, argpos(&argc, vm_size));
+	// int slen = argi32(rt, argpos(&argc, vm_size));
+	FILE *file = fopen(name, mode);
+	rethnd(rt, file);
+
+	logFILE("Name: %s, Mode: %s, File: %x", name, mode, file);
+	return 0;
+}
+static int FILE_close(state rt, void* _) {	// void close(File file);
+	FILE *file = arghnd(rt, 0);
+	logFILE("File: %x", file);
+	fclose(file);
+	return 0;
+	(void)_;
+}
+
+static int FILE_getc(state rt, void* _) {
+	FILE *file = arghnd(rt, 0);
+	reti32(rt, fgetc(file));
+	return 0;
+
+	(void)_;
+}
+static int FILE_peek(state rt, void* _) {
+	FILE *file = arghnd(rt, 0);
+	int chr = ungetc(getc(file), file);
+	reti32(rt, chr);
+	return 0;
+
+	(void)_;
+}
+static int FILE_read(state rt, void* _) {	// int read(File &f, uint8 buff[])
+	int argc = 0;
+	FILE *file = arghnd(rt, argpos(&argc, sizeof(FILE *)));
+	char *buff = argref(rt, argpos(&argc, vm_size));
+	int len = argi32(rt, argpos(&argc, vm_size));
+	len = fread(buff, len, 1, file);
+	reti32(rt, len);
+	return 0;
+	(void)_;
+}
+static int FILE_gets(state rt, void* _) {	// int fgets(File &f, uint8 buff[])
+	int argc = 0;
+	FILE *file = arghnd(rt, argpos(&argc, sizeof(FILE *)));
+	char *buff = argref(rt, argpos(&argc, vm_size));
+	int len = argi32(rt, argpos(&argc, vm_size));
+	logFILE("Buff: %08x[%d], File: %x", buff, len, file);
+	if (feof(file)) {
+		reti32(rt, -1);
+	}
+	else {
+		long pos1, pos2;
+		pos1 = ftell(file);
+		fgets(buff, len, file);
+		pos2 = ftell(file);
+		reti32(rt, pos2 - pos1);
+	}
+	return 0;
+	(void)_;
+}
+
+static int FILE_putc(state rt, void* _) {
+	int argc = 0;
+	FILE *file = arghnd(rt, argpos(&argc, sizeof(FILE *)));
+	int data = argi32(rt, argpos(&argc, vm_size));
+	logFILE("Data: %c, File: %x", data, file);
+	reti32(rt, putc(data, file));
+	return 0;
+	(void)_;
+}
+static int FILE_write(state rt, void* _) {	// int write(File &f, uint8 buff[])
+	int argc = 0;
+	FILE *file = arghnd(rt, argpos(&argc, sizeof(FILE *)));
+	char *buff = argref(rt, argpos(&argc, vm_size));
+	int len = argi32(rt, argpos(&argc, vm_size));
+	len = fwrite(buff, len, 1, file);
+	reti32(rt, len);
+	return 0;
+	(void)_;
+}
+
+static int FILE_flush(state rt, void* _) {
+	FILE *file = arghnd(rt, 0);
+	logFILE("File: %x", file);
+	fflush(file);
+	return 0;
+	(void)_;
+}
+//#}#endregion
+
+//#{#region reflection operations
+static int typenameGetName(state rt, void* _) {
+	symn sym = symfind(rt, argref(rt, 0));
+	reti32(rt, vmOffset(rt, sym->name));
+	return 0;
+	(void)_;
+}
+static int typenameGetFile(state rt, void* _) {
+	symn sym = symfind(rt, argref(rt, 0));
+	reti32(rt, vmOffset(rt, sym->file));
+	return 0;
+	(void)_;
+}
+static int typenameGetBase(state rt, void* _) {
+	symn sym = symfind(rt, argref(rt, 0));
+	reti32(rt, vmOffset(rt, sym->type));
+	return 0;
+	(void)_;
+}
+//#}#endregion
+
+//#{#region io functions (exit, rand, clock, print, debug)
 typedef enum {
 	miscOpExit,
 	miscOpRand32,
@@ -374,7 +429,7 @@ typedef enum {
 
 	miscOpPutStr,
 	miscOpPutFmt,
-} miscFunc;
+} miscOperation;
 
 static inline int64_t clockCpu() {
 	uint64_t now = clock();
@@ -400,8 +455,8 @@ static inline int64_t clockNow() {
 }
 #endif
 
-static int miscCall(state rt, void* data) {
-	switch ((miscFunc)data) {
+static int miscFunction(state rt, void* data) {
+	switch ((miscOperation)data) {
 		case miscOpExit: {
 			exit(argi32(rt, 0));
 			return 0;
@@ -455,15 +510,230 @@ static int miscCall(state rt, void* data) {
 	return -1;
 }
 
+static int libCallHalt(state rt, void* _) {
+	return 0;
+	(void)_;
+	(void)rt;
+}
+static int libCallDebug(state rt, void* _) {
+	// debug(string message, int level, int trace, bool abort, typename objtyp, pointer objref);
+
+	int arg = 0;
+	#define poparg(__TYPE) (arg += sizeof(__TYPE)) - sizeof(__TYPE)
+	char* file = argstr(rt, poparg(int32_t));
+	int   line = argi32(rt, poparg(int32_t));
+	//~ char* func = argstr(rt, poparg(char*));
+
+	char* message = argstr(rt, poparg(int32_t));
+	int loglevel = argi32(rt, poparg(int32_t));
+	int tracelevel = argi32(rt, poparg(int32_t));
+	symn objtyp = argref(rt, poparg(int32_t));
+	void* object = argref(rt, poparg(int32_t));
+
+	// skip loglevel 0
+	if (loglevel != 0) {
+		FILE* logf = rt ? rt->logf : stdout;
+		if (logf) {
+			int isOutput = 0;
+
+			// position where the function was invoked
+			if (file && line) {
+				fputfmt(rt->logf, "%s:%u", file, line);
+				isOutput = 1;
+			}
+
+			// the message to be printed
+			if (message != NULL) {
+				fputfmt(rt->logf, ": %s", message);
+				isOutput = 1;
+			}
+
+			// specified object
+			if (objtyp && object) {
+				fputfmt(rt->logf, ": ");
+				fputval(rt, rt->logf, objtyp, object, 0);
+				isOutput = 1;
+			}
+
+			// print stack trace
+			if (rt->dbg && tracelevel > 0) {
+				int i, pos = rt->dbg->tracePos;
+				if (tracelevel > pos) {
+					tracelevel = pos;
+				}
+				// i = 1: skip debug function.
+				for (i = 1; i < tracelevel; ++i) {
+					dbgInfo trInfo = getCodeMapping(rt, rt->dbg->trace[pos - i].pos);
+					symn fun = rt->dbg->trace[pos - i - 1].sym;
+
+					if (trInfo) {
+						file = trInfo->file;
+						line = trInfo->line;
+					}
+					else {
+						file = NULL;
+						line = 0;
+					}
+
+					if (fun == NULL) {
+						fun = symfind(rt, rt->dbg->trace[pos - i - 1].cf);
+					}
+
+					file = file ? file : "eternal.code";
+					fputfmt(rt->logf, "\n\t%s:%u: %?+T", file, line, fun);
+					isOutput = 1;
+				}
+				if (i < pos) {
+					fputfmt(rt->logf, "\n\t... %d more", pos - i);
+				}
+				//~ perr(rt, 1, NULL, 0, ": stack trace[%d] not supported yet", tracelevel);
+			}
+			if (isOutput) {
+				fputfmt(logf, "\n");
+			}
+		}
+	}
+
+	// abor the application
+	if (loglevel < 0) {
+		//~ abort();
+		return -loglevel;
+	}
+
+	return 0;
+	(void)_;
+}
+static int libCallMemMgr(state rt, void* _) {
+	void* old = argref(rt, 0);
+	int size = argi32(rt, 4);
+	void* res = rtAlloc(rt, old, size);
+	reti32(rt, vmOffset(rt, res));
+	return 0;
+	(void)_;
+}
+
+int libCallHaltDebug(state rt, void* _) {
+	symn arg = rt->libc.libc->args;
+	int argc = (char*)rt->libc.retv - (char*)rt->libc.argv;
+
+	for ( ; arg; arg = arg->next) {
+		char* ofs;
+
+		if (arg->call)
+			continue;
+
+		if (arg->kind != TYPE_ref)
+			continue;
+
+		if (arg->file && arg->line)
+			fputfmt(stdout, "%s:%d:", arg->file, arg->line);
+		else
+			fputfmt(stdout, "var: ");
+
+		fputfmt(stdout, "@0x%06x[size: %d]: ", arg->offs, arg->size);
+
+		if (arg->stat) {
+			// static variable.
+			ofs = (void*)(rt->_mem + arg->offs);
+		}
+		else {
+			// argument or local variable.
+			ofs = ((char*)rt->libc.argv) + argc - arg->offs;
+		}
+
+		fputval(rt, stdout, arg, (stkval*)ofs, 0);
+		fputc('\n', stdout);
+	}
+
+	rtAlloc(rt, NULL, 0);
+
+	return 0;
+	(void)_;
+}
+
+//#}#endregion
+
+int install_base(state rt, int mode, int onHalt(state, void*)) {
+	int error = 0;
+	ccState cc = rt->cc;
+	ccAddCall(rt, onHalt ? onHalt : libCallHalt, NULL, "void Halt(int Code);");
+
+	if (cc->type_ptr && (mode & creg_tptr)) {
+		cc->libc_mem = ccAddCall(cc->s, libCallMemMgr, NULL, "pointer memmgr(pointer ptr, int32 size);");
+		cc->libc_dbg = ccAddCall(rt, libCallDebug, NULL, "void debug(string message, int level, int trace, typename objtyp, pointer objref);");
+	}
+
+	// 4 reflection
+	if (cc->type_rec && (mode & creg_tvar)) {
+		symn arg = NULL;
+		enter(cc, NULL);
+		if ((arg = install(cc, "line", ATTR_const | TYPE_ref, TYPE_any, vm_size, cc->type_i32, NULL))) {
+			arg->offs = offsetOf(symn, line);
+		}
+		if ((arg = install(cc, "size", ATTR_const | TYPE_ref, TYPE_any, vm_size, cc->type_i32, NULL))) {
+			arg->offs = offsetOf(symn, size);
+		}
+		if ((arg = install(cc, "offset", ATTR_const | TYPE_ref, TYPE_any, vm_size, cc->type_i32, NULL))) {
+			arg->offs = offsetOf(symn, offs);
+			arg->pfmt = "%04x";
+		}
+
+		error = error || !(arg = ccAddCall(rt, typenameGetFile, NULL, "string file;"));
+		if (arg != NULL) {
+			arg->stat = 0;
+			arg->memb = 1;
+			rt->cc->libc->chk += 1;
+			rt->cc->libc->pop += 1;
+		}
+
+		error = error || !(arg = ccAddCall(rt, typenameGetName, NULL, "string name;"));
+		if (arg != NULL) {
+			arg->stat = 0;
+			arg->memb = 1;
+			rt->cc->libc->chk += 1;
+			rt->cc->libc->pop += 1;
+		}
+
+		error = error || !ccAddCall(rt, typenameGetBase, NULL, "typename base(typename type);");
+
+		cc->type_rec->args = leave(cc, cc->type_rec, 0);
+
+		/* TODO: more 4 reflection
+		enum BindingFlags {
+			//inline     = 0x000000;	// this is not available at runtime.
+			typename     = 0x000001;
+			function     = 0x000002;	// 
+			variable     = 0x000003;	// functions and typenames are also variables
+			attr_static  = 0x000004;
+			attr_const   = 0x000008;
+		}
+		// 
+		error = error || !ccAddCall(rt, typeFunction, (void*)typeOpGetFile, "variant setValue(typename field, variant value)");
+		error = error || !ccAddCall(rt, typeFunction, (void*)typeOpGetFile, "variant getValue(typename field)");
+
+		//~ install(cc, "typename[] lookup(variant &obj, int options, string name, variant args...)");
+		//~ install(cc, "variant invoke(variant &obj, int options, string name, variant args...)");
+		//~ install(cc, "bool canassign(typename toType, variant value, bool canCast)");
+		//~ install(cc, "bool instanceof(typename &type, variant obj)");
+
+		//~ */
+
+		ccBegin(rt, NULL);
+		error = error || !ccAddCode(rt, 0, __FILE__, __LINE__, "define size(typename type) = int(type.size);");
+		ccExtEnd(rt, cc->type_rec, 1);
+	}
+	return error;
+}
+
 int install_stdc(state rt, char* file, int level) {
 	symn nsp = NULL;		// namespace
 	int i, err = 0;
 	struct {
 		int (*fun)(state, void* data);
-		miscFunc data;
+		miscOperation data;
 		char* def;
 	}
-	math[] = {
+	math[] = {		// sin, cos, sqrt, ...
 		//~ {f64abs, 0, "float64 abs(float64 x);"},
 		{f64sin,   0, "float64 sin(float64 x);"},
 		{f64cos,   0, "float64 cos(float64 x);"},
@@ -477,77 +747,48 @@ int install_stdc(state rt, char* file, int level) {
 		//~ {f64lg2, "float64 log2(float64 x);"},
 		//~ {f64xp2, "float64 exp2(float64 x);"},
 	},
-	/*bits[] = {
-		{bits_call, b64_cmt, "int64 cmt(int64 x);"},
-		{bits_call, b64_and, "int64 and(int64 x, int64 y);"},
-		{bits_call, b64_or,  "int64 or(int64 x, int64 y);"},
-		{bits_call, b64_xor, "int64 xor(int64 x, int64 y);"},
-		{bits_call, b64_shl, "int64 shl(int64 x, int32 y);"},
-		{bits_call, b64_shr, "int64 shr(int64 x, int32 y);"},
-		{bits_call, b64_sar, "int64 sar(int64 x, int32 y);"},
-		//~ {bits_call, b64_btc, "int32 btc(int64 x);"},
-		{bits_call, b64_bsf, "int32 bsf(int64 x);"},
-		{bits_call, b64_bsr, "int32 bsr(int64 x);"},
-		{bits_call, b64_bhi, "int32 bhi(int64 x);"},
-		{bits_call, b64_blo, "int32 blo(int64 x);"},
-		//~ {bits_call, b64_swp, "int64 swp(int64 x);"},
-		{bits_call, b64_zxt, "int64 zxt(int64 val, int offs, int bits);"},
-		{bits_call, b64_sxt, "int64 sxt(int64 val, int offs, int bits);"},
-		{bits_call, b32_btc, "int32 btc(int32 x);"},
-		{bits_call, b32_bsf, "int32 bsf(int32 x);"},
-		{bits_call, b32_bsr, "int32 bsr(int32 x);"},
-		{bits_call, b32_bhi, "int32 bhi(int32 x);"},
-		{bits_call, b32_blo, "int32 blo(int32 x);"},
-		{bits_call, b32_swp, "int32 swp(int32 x);"},
-		{bits_call, b32_zxt, "int32 zxt(int32 val, int offs, int bits);"},
-		{bits_call, b32_sxt, "int32 sxt(int32 val, int offs, int bits);"},
-	},// */
-	misc[] = {
-		// IO/MEM/EXIT
+	misc[] = {		// IO/MEM/EXIT
 
-		//~ {miscCall, &miscOpArgc,			"int32 argc();"},
-		//~ {miscCall, &miscOpArgv,			"string arg(int arg);"},
+		//~ {miscFunction, &miscOpArgc,			"int32 argc();"},
+		//~ {miscFunction, &miscOpArgv,			"string arg(int arg);"},
 
-		{miscCall, miscOpRand32,		"int32 rand();"},
+		{miscFunction, miscOpRand32,		"int32 rand();"},
 
-		{miscCall, timeOpTime32,		"int32 time();"},
-		{miscCall, timeOpClck64,		"int32 ticks();"},
-		{miscCall, timeOpClocksPS,		"float64 ticks(int32 ticks);"},
+		{miscFunction, timeOpTime32,		"int32 time();"},
+		{miscFunction, timeOpClck64,		"int32 ticks();"},
+		{miscFunction, timeOpClocksPS,		"float64 ticks(int32 ticks);"},
 
-		{miscCall, timeOpClck64,		"int64 uTimeHp();"},
-		{miscCall, timeOpProc64,		"int64 sTimeHp();"},
+		{miscFunction, timeOpClck64,		"int64 uTimeHp();"},
+		{miscFunction, timeOpProc64,		"int64 sTimeHp();"},
 
-		{miscCall, miscOpPutStr,		"void print(string val);"},
-		{miscCall, miscOpPutFmt,		"void print(string fmt, int64 val);"},
+		{miscFunction, miscOpPutStr,		"void print(string val);"},
+		{miscFunction, miscOpPutFmt,		"void print(string fmt, int64 val);"},
 
 		// TODO: include some of the compiler functions
 		// for reflection. (lookup, import, logger, assert, exec?, ...)
 
 	};
-	if (rt->cc->type_i64 != NULL && rt->cc->type_i64->args == NULL) {
-		enter(rt->cc, NULL);
-		err = err || !ccAddCall(rt, b64shl, NULL, "int64 Shl(int64 Value, int Count);");
-		err = err || !ccAddCall(rt, b64shr, NULL, "int64 Shr(int64 Value, int Count);");
-		err = err || !ccAddCall(rt, b64sar, NULL, "int64 Sar(int64 Value, int Count);");
+
+	// Add bitwise operations to int64 as functions
+	if (rt->cc->type_i64 && !rt->cc->type_i64->args) {
+		ccBegin(rt, NULL);
+		err = err || !ccAddCall(rt, b64not, NULL, "int64 Not(int64 Value);");
 		err = err || !ccAddCall(rt, b64and, NULL, "int64 And(int64 Lhs, int64 Rhs);");
 		err = err || !ccAddCall(rt, b64ior, NULL, "int64  Or(int64 Lhs, int64 Rhs);");
 		err = err || !ccAddCall(rt, b64xor, NULL, "int64 Xor(int64 Lhs, int64 Rhs);");
-		rt->cc->type_i64->args = leave(rt->cc, rt->cc->type_i64, 1);
+		err = err || !ccAddCall(rt, b64shl, NULL, "int64 Shl(int64 Value, int Count);");
+		err = err || !ccAddCall(rt, b64shr, NULL, "int64 Shr(int64 Value, int Count);");
+		err = err || !ccAddCall(rt, b64sar, NULL, "int64 Sar(int64 Value, int Count);");
+		ccEnd(rt, rt->cc->type_i64);
 	}
+
 	for (i = 0; i < lengthOf(math); i += 1) {
 		symn libc = ccAddCall(rt, math[i].fun, (void*)math[i].data, math[i].def);
 		if (libc == NULL) {
 			return -1;
 		}
 	}
-	/*if ((nsp = ccBegin(rt, "bits"))) {
-		for (i = 0; i < lengthOf(bits); i += 1) {
-			if (!ccAddCall(rt, bits[i].fun, bits[i].n, bits[i].def)) {
-				return -1;
-			}
-		}
-		ccEnd(rt, nsp);
-	}*/
+
 	for (i = 0; i < lengthOf(misc); i += 1) {
 		symn libc = ccAddCall(rt, misc[i].fun, (void*)misc[i].data, misc[i].def);
 		if (libc == NULL) {
@@ -555,12 +796,13 @@ int install_stdc(state rt, char* file, int level) {
 		}
 	}
 
+	// System.Exit(int code), ...
 	if ((nsp = ccBegin(rt, "System"))) {
 		// libcall will return 0 on failure,
 		// 'err = err || !libcall...' <=> 'if (!err) err = !libcall...'
 		// will skip forward libcalls if an error ocurred
 
-		err = err || !ccAddCall(rt, miscCall, (void*)miscOpExit, "void Exit(int Code);");
+		err = err || !ccAddCall(rt, miscFunction, (void*)miscOpExit, "void Exit(int Code);");
 
 		//~ install(cc, "Args", TYPE_arr, 0, 0);// string Args[];
 		//~ install(cc, "Env", TYPE_def, 0, 0);	// string Env[string];
@@ -568,121 +810,18 @@ int install_stdc(state rt, char* file, int level) {
 		ccEnd(rt, nsp);
 	}
 
-	if (!err && file) {
+	if (err == 0 && file != NULL) {
 		return ccAddCode(rt, level, file, 1, NULL);
 	}
-	/*if (!err && file && ccOpen(rt, file, 1, NULL)) {
-		return parse(rt->cc, 0, level);
-	}*/
 
 	return err;
 }
-
-//#{ file io ext
-static inline int argpos(int *argp, int size) {
-	int result = *argp;
-	*argp += padded(size || 1, vm_size);
-	return result;
-}
-
-//~ #define logFILE(msg, ...) prerr(msg, ##__VA_ARGS__)
-#define logFILE(msg, ...)
-
-static int FILE_open(state rt, void* mode) {
-	int argc = 0;
-	char *name = argref(rt, argpos(&argc, vm_size));
-	// int slen = argi32(rt, argpos(&argc, vm_size));
-	FILE *file = fopen(name, mode);
-	rethnd(rt, file);
-
-	logFILE("Name: %s, Mode: %s, File: %x", name, mode, file);
-	return 0;
-}
-static int FILE_getc(state rt, void* _) {
-	FILE *file = arghnd(rt, 0);
-	reti32(rt, fgetc(file));
-	return 0;
-
-	(void)_;
-}
-static int FILE_peek(state rt, void* _) {
-	FILE *file = arghnd(rt, 0);
-	int chr = ungetc(getc(file), file);
-	reti32(rt, chr);
-	return 0;
-
-	(void)_;
-}
-static int FILE_read(state rt, void* _) {	// int read(Fifle &f, uint8 buff[])
-	int argc = 0;
-	FILE *file = arghnd(rt, argpos(&argc, sizeof(FILE *)));
-	char *buff = argref(rt, argpos(&argc, vm_size));
-	int len = argi32(rt, argpos(&argc, vm_size));
-	len = fread(buff, len, 1, file);
-	reti32(rt, len);
-	return 0;
-	(void)_;
-}
-static int FILE_gets(state rt, void* _) {	// int fgets(Fifle &f, uint8 buff[])
-	int argc = 0;
-	FILE *file = arghnd(rt, argpos(&argc, sizeof(FILE *)));
-	char *buff = argref(rt, argpos(&argc, vm_size));
-	int len = argi32(rt, argpos(&argc, vm_size));
-	logFILE("Buff: %08x[%d], File: %x", buff, len, file);
-	if (feof(file)) {
-		reti32(rt, -1);
-	}
-	else {
-		long pos1, pos2;
-		pos1 = ftell(file);
-		fgets(buff, len, file);
-		pos2 = ftell(file);
-		reti32(rt, pos2 - pos1);
-	}
-	return 0;
-	(void)_;
-}
-
-static int FILE_putc(state rt, void* _) {
-	int argc = 0;
-	FILE *file = arghnd(rt, argpos(&argc, sizeof(FILE *)));
-	int data = argi32(rt, argpos(&argc, vm_size));
-	logFILE("Data: %c, File: %x", data, file);
-	reti32(rt, putc(data, file));
-	return 0;
-	(void)_;
-}
-static int FILE_write(state rt, void* _) {	// int write(Fifle &f, uint8 buff[])
-	int argc = 0;
-	FILE *file = arghnd(rt, argpos(&argc, sizeof(FILE *)));
-	char *buff = argref(rt, argpos(&argc, vm_size));
-	int len = argi32(rt, argpos(&argc, vm_size));
-	len = fwrite(buff, len, 1, file);
-	reti32(rt, len);
-	return 0;
-	(void)_;
-}
-static int FILE_flush(state rt, void* _) {
-	FILE *file = arghnd(rt, 0);
-	logFILE("File: %x", file);
-	fflush(file);
-	return 0;
-	(void)_;
-}
-static int FILE_close(state rt, void* _) {	// void close(Fifle file);
-	FILE *file = arghnd(rt, 0);
-	logFILE("File: %x", file);
-	fclose(file);
-	return 0;
-	(void)_;
-}
-//#}
 
 int install_file(state rt) {
 	symn file_nsp = ccAddType(rt, "File", sizeof(FILE*), 0);
 	int err = file_nsp == NULL;
 	if (file_nsp != NULL) {
-		enter(rt->cc, NULL);
+		ccBegin(rt, NULL);
 
 		err = err || !ccAddCall(rt, FILE_open,  "r", "File Open(char path[]);");
 		err = err || !ccAddCall(rt, FILE_open,  "w", "File Create(char path[]);");
@@ -697,17 +836,15 @@ int install_file(state rt) {
 		err = err || !ccAddCall(rt, FILE_write, NULL, "int Write(File file, uint8 buff[]);");
 		err = err || !ccAddCall(rt, FILE_flush, NULL, "void Flush(File file);");
 
-		//~ err = err || !ccAddCall(rt, FILE_gets, NULL, "int gets(char buff[], File file);");
 		//~ err = err || !ccAddCall(rt, FILE_puts, NULL, "int puts(char buff[], File file);");
 		//~ err = err || !ccAddCall(rt, FILE_ungetc, NULL, "int ungetc(int chr, File file);");
 
 		err = err || !ccAddCall(rt, FILE_close, NULL, "void Close(File file);");
 
-		//~ err = err || !ccAddCall(rt, FILE_delete, NULL, "//File Create(char path[]);");
 		//~ err = err || !ccAddCall(rt, FILE_delete, NULL, "bool Delete(char path[]);");
 		//~ err = err || !ccAddCall(rt, FILE_delete, NULL, "bool Exists(char path[]);");
 
-		file_nsp->args = leave(rt->cc, file_nsp, 1);
+		ccEnd(rt, file_nsp);
 	}
 	return err;
 }

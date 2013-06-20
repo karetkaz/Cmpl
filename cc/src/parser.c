@@ -1297,7 +1297,7 @@ static symn ctorPtr(ccState s, symn rec) {
 }
 
 static int mkConst(astn ast, int cast) {
-	struct astn tmp;
+	struct astRec tmp;
 
 	dieif(!ast, "FixMe");
 
@@ -1580,7 +1580,7 @@ astn decl_var(ccState s, astn* argv, int mode) {
 			tag->type = typ;
 
 			if (!peekTok(s, PNCT_rc)) {
-				struct astn val;
+				struct astRec val;
 				astn init = expr(s, TYPE_def);
 				typ->init = init;
 
@@ -1643,7 +1643,7 @@ astn decl_var(ccState s, astn* argv, int mode) {
 				typ = tmp;
 
 				if (!peekTok(s, PNCT_rc)) {
-					struct astn val;
+					struct astRec val;
 					astn init = expr(s, TYPE_def);
 					if (eval(&val, init) == TYPE_int) {
 						//~ ArraySize
@@ -1876,7 +1876,7 @@ static astn stmt(ccState s, int mode) {
 		skiptok(s, PNCT_rp, 1);
 
 		if (qual == QUAL_sta) {
-			struct astn ift;
+			struct astRec ift;
 			if (!eval(&ift, ast->stmt.test) || !peekTok(s, STMT_beg)) {
 				error(s->s, ast->file, ast->line, "invalid static if construct");
 				return 0;

@@ -33,7 +33,11 @@ application <global options> <local options>*
 #include <string.h>
 #include <ctype.h>
 #include <math.h>
-#include "core.h"
+#include "pvmc.h"
+
+#define error(__ENV, __FILE, __LINE, msg, ...) do { } while(0)
+#define info(__ENV, __FILE, __LINE, msg, ...) do { } while(0)
+#define debug(msg, ...) do { } while(0)
 
 // default values
 static const int wl = 9;			// warning level
@@ -188,7 +192,7 @@ void usage(char* prog) {
 }
 
 int evalexp(ccState cc, char* text) {
-	struct astRec res;
+	/*CPP:struct astRec res;
 	astn ast;
 	symn typ;
 	int tid;
@@ -212,6 +216,7 @@ int evalexp(ccState cc, char* text) {
 
 	fputfmt(cc->s->logf, "ERROR(typ:`%T`, tid:%d)\n", typ, tid);
 
+	// */
 	return -1;
 }
 
@@ -578,7 +583,7 @@ int program(int argc, char* argv[]) {
 		}
 
 		// print top of stack as a type or var.
-		if (stk_dump != NULL) {
+		/*CPP: if (stk_dump != NULL) {
 			ccState cc = ccOpen(rt, NULL, 0, stk_dump);
 			if (cc != NULL) {
 				astn ast = decl_var(cc, NULL, TYPE_def);
@@ -590,7 +595,7 @@ int program(int argc, char* argv[]) {
 					error(rt, NULL, 0, "error in debug print format `%s`", stk_dump);
 				}
 			}
-		}
+		}*/
 
 		if (rt->errc == 0) {
 
@@ -617,7 +622,7 @@ int program(int argc, char* argv[]) {
 						info(rt, NULL, 0, "symbol not found: %s", str_tags);
 					}
 				}
-				dump(rt, dump_sym | (out_tags & 0x0ff), sym, "\ntags:\n#api: replace(`^([^:]*).*$`, `\\1`)\n");
+				dump(rt, dump_sym | (out_tags & 0x0ff), sym, "\ntags:\n");
 			}
 			if (out_tree >= 0) {
 				symn sym = NULL;
@@ -683,11 +688,11 @@ static int dbgCon(state rt, int pu, void* ip, long* bp, int ss) {
 	IP = ((char*)ip) - ((char*)rt->_mem);
 	fputfmt(stdout, ">exec:[sp(%02d)] %9.*A\n", ss, IP, ip);
 
-	if (printvars != NULL) {
+	/*CPP: if (printvars != NULL) {
 		stkval* sp = (stkval*)((char*)bp);
 		fputval(rt, stdout, printvars, sp, 0);
 		fputfmt(stdout, "\n");
-	}
+	}*/
 
 	if (cmd != 'N') for ( ; ; ) {
 		if (fgets(buff, sizeof(buff), stdin) == NULL) {
@@ -758,12 +763,12 @@ static int dbgCon(state rt, int pu, void* ip, long* bp, int ss) {
 					// vmTags(rt, (void*)sptr, slen, 0);
 				}
 				else {
-					symn sym = ccFindSym(rt->cc, NULL, arg);
+					/*CPP: symn sym = ccFindSym(rt->cc, NULL, arg);
 					debug("arg:%T", sym);
 					if (sym && sym->kind == TYPE_ref && !sym->stat) {
 						stkval* sp = (stkval*)((char*)bp + ss + sym->offs);
 						fputval(rt, stdout, sym, sp, 0);
-					}
+					}*/
 				}
 			} break;
 
@@ -772,11 +777,11 @@ static int dbgCon(state rt, int pu, void* ip, long* bp, int ss) {
 			} break;
 
 			case 's' : {
-				int i;
+				/*CPP: int i;
 				stkval* sp = (stkval*)bp;
 				for (i = 0; i < ss; i++) {
 					fputfmt(stdout, "\tsp(%d): {i32(%d), f32(%g), i64(%D), f64(%G)}\n", i, sp[i].i4, sp[i].f4, sp[i].i8, sp[i].f8);
-				}
+				}*/
 			} break;
 		}
 	}

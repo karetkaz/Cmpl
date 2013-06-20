@@ -78,7 +78,7 @@ case opc_call: NEXT(1, -0, 1) {
 	pu->ip = mp + SP(0, u4);
 	SP(0, u4) = retip;
 #ifdef TRACE
-	TRACE(pu->ip);
+	TRACE(pu->ip, NULL);
 #endif
 #endif
 } break;
@@ -86,7 +86,7 @@ case opc_jmpi: NEXT(1, -1, 1) {
 #ifdef EXEC
 	pu->ip = mp + SP(0, u4);
 #ifdef TRACE
-	TRACE(NULL);
+	TRACE(NULL, NULL);
 #endif
 #endif
 } break;
@@ -107,21 +107,29 @@ case opc_sync: NEXT(2, -0, 0) {
 case opc_libc: NEXT(4, -libcvec[ip->rel].pop, libcvec[ip->rel].chk) {
 #ifdef EXEC
 	int exitCode;
-	struct symn module;
+	struct symRec module;
 	libc libcall = &libcvec[ip->rel];
+
+	//~ debug("libc(%T): pop: %d, check: %d", libcall->sym, libcall->pop, libcall->chk);
 
 	rt->libc.libc = libcall->sym;
 	rt->libc.argv = (char*)sp;
 	rt->libc.retv = (char*)((stkptr)sp + libcall->pop);
 
 	if (ip->rel == 0) {
-		memset(&module, 0, sizeof(struct symn));
+		memset(&module, 0, sizeof(struct symRec));
 		module.args = rt->defs;
 		rt->libc.retv = (char *)st;
 		rt->libc.libc = &module;
 	}
 
+#ifdef TRACE
+	TRACE(pu->ip, libcall->sym);
+#endif
 	exitCode = libcall->call(rt, libcall->data);
+#ifdef TRACE
+	TRACE(NULL, NULL);
+#endif
 
 	STOP(error_libc, exitCode != 0, exitCode);
 	STOP(stop_vm, ip->rel == 0, 0);			// Halt();
@@ -159,11 +167,6 @@ case opc_dup2: NEXT(2, +2, ip->idx) {
 case opc_dup4: NEXT(2, +4, ip->idx) {
 #ifdef EXEC
 	STOP(error_ovf, ovf(pu), -1);
-	//~ SP(-4, x16) = SP(ip->idx, x16);
-	//~ SP(-4, u4) = SP(ip->idx + 0, u4);
-	//~ SP(-3, u4) = SP(ip->idx + 1, u4);
-	//~ SP(-2, u4) = SP(ip->idx + 2, u4);
-	//~ SP(-1, u4) = SP(ip->idx + 3, u4);
 	SP(-4, u4) = SP(ip->idx + 0, u4);
 	SP(-3, u4) = SP(ip->idx + 1, u4);
 	SP(-2, u4) = SP(ip->idx + 2, u4);
@@ -182,15 +185,6 @@ case opc_set2: NEXT(2, ip->idx <= 2 ? -ip->idx : -2, ip->idx) {
 } break;
 case opc_set4: NEXT(2, ip->idx <= 4 ? -ip->idx : -4, ip->idx) {
 #ifdef EXEC
-	//~ int64_t lo = SP(0, x16).lo;
-	//~ int64_t hi = SP(0, x16).hi;
-	//~ SP(ip->idx, x16).lo = lo;
-	//~ SP(ip->idx, x16).hi = hi;
-
-	// this does not work !!!
-	// will overwrite values
-	//~ SP(ip->idx, x16) = SP(0, x16);
-
 	SP(ip->idx + 3, u4) = SP(3, u4);
 	SP(ip->idx + 2, u4) = SP(2, u4);
 	SP(ip->idx + 1, u4) = SP(1, u4);
@@ -223,109 +217,118 @@ case opc_ldz4: NEXT(1, +4, 0) {
 //#{ 0x2?: MEM		// Memory
 case opc_ldi1: NEXT(1, -0, 1) {
 #ifdef EXEC
-	STOP(error_mem, SP(0, i4) <= 0, SP(0, i4));
-	STOP(error_mem, SP(0, i4) > ms, SP(0, i4));
-	SP(0, i4) = MP(SP(0, i4), i1);
+	int mem = SP(0, i4);
+	STOP(error_mem, mem <= 0, mem);
+	STOP(error_mem, mem > ms, mem);
+	SP(0, i4) = MP(mem, i1);
 #endif
 } break;
 case opc_ldi2: NEXT(1, -0, 1) {
 #ifdef EXEC
-	STOP(error_mem, SP(0, i4) <= 0, SP(0, i4));
-	STOP(error_mem, SP(0, i4) > ms, SP(0, i4));
-	SP(0, i4) = MP(SP(0, i4), i2);
+	int mem = SP(0, i4);
+	STOP(error_mem, mem <= 0, mem);
+	STOP(error_mem, mem > ms, mem);
+	SP(0, i4) = MP(mem, i2);
 #endif
 } break;
 case opc_ldi4: NEXT(1, -0, 1) {
 #ifdef EXEC
-	STOP(error_mem, SP(0, i4) <= 0, SP(0, i4));
-	STOP(error_mem, SP(0, i4) > ms, SP(0, i4));
-	SP(0, i4) = MP(SP(0, i4), i4);
+	int mem = SP(0, i4);
+	STOP(error_mem, mem <= 0, mem);
+	STOP(error_mem, mem > ms, mem);
+	SP(0, i4) = MP(mem, i4);
 #endif
 } break;
 case opc_ldi8: NEXT(1, +1, 1) {
 #ifdef EXEC
+	int mem = SP(0, i4);
 	STOP(error_ovf, ovf(pu), -1);
-	STOP(error_mem, SP(0, i4) <= 0, SP(0, i4));
-	STOP(error_mem, SP(0, i4) > ms, SP(0, i4));
-	SP(-1, i8) = MP(SP(0, i4), i8);
+	STOP(error_mem, mem <= 0, mem);
+	STOP(error_mem, mem > ms, mem);
+	SP(-1, i8) = MP(mem, i8);
 #endif
 } break;
 case opc_ldiq: NEXT(1, +3, 1) {
 #ifdef EXEC
+	int mem = SP(0, i4);
 	STOP(error_ovf, ovf(pu), -1);
-	STOP(error_mem, SP(0, i4) <= 0, SP(0, i4));
-	STOP(error_mem, SP(0, i4) > ms, SP(0, i4));
-	memmove(&SP(-3, u4), &MP(SP(0, i4), u4), 16);
+	STOP(error_mem, mem <= 0, mem);
+	STOP(error_mem, mem > ms, mem);
+	memmove(&SP(-3, u4), &MP(mem, u4), 16);
 #endif
 } break;
 
 case opc_sti1: NEXT(1, -2, 2) {
 #ifdef EXEC
-	//~ rw = SP(0, i4);
-	STOP(error_mem, SP(0, i4) < ro, SP(0, i4));
-	STOP(error_mem, SP(0, i4) > ms, SP(0, i4));
-	MP(SP(0, i4), i1) = SP(1, i1);
+	int mem = SP(0, i4);
+	STOP(error_mem, mem < ro, mem);
+	STOP(error_mem, mem > ms, mem);
+	MP(mem, i1) = SP(1, i1);
 #endif
 } break;
 case opc_sti2: NEXT(1, -2, 2) {
 #ifdef EXEC
-	//~ rw = SP(0, i4);
-	STOP(error_mem, SP(0, i4) < ro, SP(0, i4));
-	STOP(error_mem, SP(0, i4) > ms, SP(0, i4));
-	MP(SP(0, i4), i2) = SP(1, i2);
+	int mem = SP(0, i4);
+	STOP(error_mem, mem < ro, mem);
+	STOP(error_mem, mem > ms, mem);
+	MP(mem, i2) = SP(1, i2);
 #endif
 } break;
 case opc_sti4: NEXT(1, -2, 2) {
 #ifdef EXEC
-	//~ rw = SP(0, i4);
-	STOP(error_mem, SP(0, i4) < ro, SP(0, i4));
-	STOP(error_mem, SP(0, i4) > ms, SP(0, i4));
-	MP(SP(0, i4), i4) = SP(1, i4);
+	int mem = SP(0, i4);
+	STOP(error_mem, mem < ro, mem);
+	STOP(error_mem, mem > ms, mem);
+	MP(mem, i4) = SP(1, i4);
 #endif
 } break;
 case opc_sti8: NEXT(1, -3, 3) {
 #ifdef EXEC
-	//~ rw = SP(0, i4);
-	STOP(error_mem, SP(0, i4) < ro, SP(0, i4));
-	STOP(error_mem, SP(0, i4) > ms, SP(0, i4));
-	MP(SP(0, i4), i8) = SP(1, i8);
+	int mem = SP(0, i4);
+	STOP(error_mem, mem < ro, mem);
+	STOP(error_mem, mem > ms, mem);
+	MP(mem, i8) = SP(1, i8);
 #endif
 } break;
 case opc_stiq: NEXT(1, -5, 5) {
 #ifdef EXEC
-	//~ rw = SP(0, i4);
-	STOP(error_mem, SP(0, i4) < ro, SP(0, i4));
-	STOP(error_mem, SP(0, i4) > ms, SP(0, i4));
-	memmove(&MP(SP(0, i4), u4), &SP(1, u4), 16);
+	int mem = SP(0, i4);
+	STOP(error_mem, mem < ro, mem);
+	STOP(error_mem, mem > ms, mem);
+	memmove(&MP(mem, u4), &SP(1, u4), 16);
 #endif
 } break;
 
 case opc_ld32: NEXT(4, +1, 0) {
 #ifdef EXEC
-	STOP(error_mem, ip->rel <= 0, ip->rel);
-	STOP(error_mem, ip->rel > ms, ip->rel);
-	SP(-1, i4) = MP(ip->rel, i4);
+	int mem = ip->rel;
+	STOP(error_mem, mem <= 0, mem);
+	STOP(error_mem, mem > ms, mem);
+	SP(-1, i4) = MP(mem, i4);
 #endif
 } break;
 case opc_ld64: NEXT(4, +2, 0) {
 #ifdef EXEC
-	STOP(error_mem, ip->rel <= 0, ip->rel);
-	STOP(error_mem, ip->rel > ms, ip->rel);
-	SP(-2, i8) = MP(ip->rel, i8);
+	int mem = ip->rel;
+	STOP(error_mem, mem <= 0, mem);
+	STOP(error_mem, mem > ms, mem);
+	SP(-2, i8) = MP(mem, i8);
 #endif
 } break;
 case opc_st32: NEXT(4, -1, 1) {
 #ifdef EXEC
-	STOP(error_mem, ip->rel < ro, ip->rel);
-	STOP(error_mem, ip->rel > ms, ip->rel);
-	MP(ip->rel, i4) = SP(0, i4);
+	int mem = ip->rel;
+	STOP(error_mem, mem < ro, mem);
+	STOP(error_mem, mem > ms, mem);
+	MP(mem, i4) = SP(0, i4);
 #endif
 } break;
 case opc_st64: NEXT(4, -2, 2) {
 #ifdef EXEC
-	STOP(error_mem, ip->rel < ro, ip->rel);
-	STOP(error_mem, ip->rel > ms, ip->rel);
-	MP(ip->rel, i8) = SP(0, i8);
+	int mem = ip->rel;
+	STOP(error_mem, mem < ro, mem);
+	STOP(error_mem, mem > ms, mem);
+	MP(mem, i8) = SP(0, i8);
 #endif
 } break;
 
@@ -682,13 +685,11 @@ case i64_f64: NEXT(1, -0, 2) {
 //#{ 0x7?: F64		// float64
 case f64_neg: NEXT(1, -0, 2) {
 #if defined(EXEC)
-	//~ EXEC(f64neg, sp, 0,sp)
 	SP(0, f8) = -SP(0, f8);
 #endif
 } break;
 case f64_add: NEXT(1, -2, 4) {
 #if defined(EXEC)
-	//~ EXEC(f64neg, sp + 2, sp + 2, sp)
 	SP(2, f8) += SP(0, f8);
 #endif
 } break;
@@ -828,10 +829,6 @@ case v4f_max: NEXT(1, -4, 8) {
 } break;
 case v4f_dp3: NEXT(1, -7, 8) {
 #if defined(EXEC)
-	//~ SP(7, f4) = 
-	//~ SP(4, pf).x * SP(0, pf).x +
-	//~ SP(4, pf).y * SP(0, pf).y +
-	//~ SP(4, pf).z * SP(0, pf).z ;
 	SP(7, f4) = 
 	SP(4, f4) * SP(0, f4) +
 	SP(5, f4) * SP(1, f4) +

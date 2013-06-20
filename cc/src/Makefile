@@ -1,7 +1,7 @@
 OUTOBJ=-o
 OUTEXE=-o
 CFLAGS=-Wall -Wpadded -g3 -ggdb
-CFLAGS=-Wall -Wpadded -g0 -Os
+#~ CFLAGS=-Wall -Wpadded -g0 -Os
 LIBS=-lm -ldl
 LNK=gcc -m32
 CCC=gcc -m32 -c
@@ -51,6 +51,9 @@ lib:$(OBJS)
 
 $(OBJDIR)%.o: $(SRCDIR)%.c $(SRCDIR)*.h $(SRCDIR)*.inl
 	$(CCC) $(CFLAGS) $< $(OUTOBJ)$@
+
+#~ $(OBJDIR)main.o: $(SRCDIR)main.cpp $(SRCDIR)*.h $(SRCDIR)*.inl
+#~ 	$(CCC) $(CFLAGS) $< $(OUTOBJ)$@
 
 
 end:

@@ -124,7 +124,7 @@ static inline void* getip(state rt, int pos) {
 static symn installref(state rt, const char* prot, astn* argv) {
 	astn root, args;
 	symn result = NULL;
-	int level;
+	int level, warn;
 	int errc = rt->errc;
 
 	if (!ccOpen(rt, NULL, 0, (char*)prot)) {
@@ -132,20 +132,26 @@ static symn installref(state rt, const char* prot, astn* argv) {
 		return NULL;
 	}
 
-	rt->cc->warn = 9;
+	warn = rt->cc->warn;
 	level = rt->cc->nest;
-	if ((root = decl_var(rt->cc, &args, decl_NoDefs | decl_NoInit))) {
-		dieif(!skip(rt->cc, STMT_do), "`;` expected declaring: %s", prot);
-		dieif(peek(rt->cc), "unexpected token `%k` declaring: %-k", peek(rt->cc), root);
-		dieif(level != rt->cc->nest, "FixMe");
-		dieif(root->kind != TYPE_ref, "FixMe %+k", root);
 
-		if ((result = root->ref.link)) {
-			dieif(result->kind != TYPE_ref, "FixMe");
-			*argv = args;
-			result->cast = 0;
-		}
+	// enable all warnings
+	rt->cc->warn = 9;
+	root = decl_var(rt->cc, &args, decl_NoDefs | decl_NoInit);
+
+	dieif(root == NULL, "error declaring: %s", prot);
+	dieif(!skip(rt->cc, STMT_do), "`;` expected declaring: %s", prot);
+	dieif(peek(rt->cc), "unexpected token `%k` declaring: %s", peek(rt->cc), prot);
+	dieif(level != rt->cc->nest, "FixMe");
+	dieif(root->kind != TYPE_ref, "FixMe %+k", root);
+
+	if ((result = root->ref.link)) {
+		dieif(result->kind != TYPE_ref, "FixMe");
+		*argv = args;
+		result->cast = 0;
 	}
+
+	rt->cc->warn = warn;
 	return errc == rt->errc ? result : NULL;
 }
 
@@ -273,7 +279,7 @@ static inline int32_t bitsf(uint32_t x) {
 	return x ? ans : -1;
 }
 
-// emiting opcodes
+//#{ emit opcodes
 int emitarg(state rt, vmOpcode opc, stkval arg) {
 	libc libcvec = rt->vm.libv;
 	bcde ip = getip(rt, rt->vm.pos);
@@ -1143,6 +1149,7 @@ int emitref(state rt, void* arg) {
 	tmp.i8 = vmOffset(rt, arg);
 	return emitarg(rt, opc_ldcr, tmp);
 }
+//#}
 
 int stkoffs(state rt, int size) {
 	if (size < 0) {
@@ -1233,8 +1240,7 @@ static void dbugerr(state rt, cell cpu, char* file, int line, int pu, void* ip, 
 	(void)bp;
 }
 
-//~ static void pretrace(state rt, void* ip, void* sp) {fputfmt(stdout, "%d: (%x, %x):%T\n", rt->vm.pos, ip, sp, symfind(rt, ip));}
-static inline void dotrace(state rt, void* cf, void* ip, void* sp) {
+static inline void dotrace(state rt, void* cf, symn sym, void* ip, void* sp) {
 	//~ fputfmt(stdout, "%d: (%x, %x):%T\n", rt->vm.pos, ip, sp, symfind(rt, ip));
 	if (rt->dbg) {
 		if(cf == NULL) {
@@ -1244,85 +1250,13 @@ static inline void dotrace(state rt, void* cf, void* ip, void* sp) {
 			rt->dbg->trace[rt->dbg->tracePos].ip = ip;
 			rt->dbg->trace[rt->dbg->tracePos].sp = sp;
 			rt->dbg->trace[rt->dbg->tracePos].cf = cf;
+			rt->dbg->trace[rt->dbg->tracePos].sym = sym;
 			rt->dbg->trace[rt->dbg->tracePos].pos = (char*)ip - (char*)rt->_mem;
 			rt->dbg->tracePos += 1;
 		}
 	}
 }
 
-#if MAXPROCSEXEC > 1
-static int dbgpu(state rt, cell cpu, const int cc) {
-	char* err_file = 0;
-	int err_line = 0;
-	int err_code = 0;
-
-	int cp = -1;
-	const dbgf dbg = rt->dbug;			// debuger function
-	const libc libcvec = rt->libv;		// libcalls
-
-	const int ms = rt->_size;
-	const int ro = rt->vm.ro;			// read only region
-	const memptr mp = (void*)rt->_mem;	// memory begins here
-
-	for ( ; ; ) {
-
-		cell pu;
-		register bcde ip;
-		register stkptr sp;
-		stkptr st;
-
-		if ((cp += 1) >= cc)
-			cp = 0;
-
-		pu = &cpu[cp];
-		ip = (void*)pu->ip;
-		sp = (void*)pu->sp;
-
-		if (ip == NULL)
-			continue;
-
-		st = (void*)(pu->bp + pu->ss);
-		if (dbg && dbg(rt, cp, ip, (long*)sp, st - sp))
-			return -9;
-
-		switch (ip->opc) {
-			stop_vm:	// halt virtual machine
-				return 0;
-
-			error_opc:
-				dbugerr(rt, cpu, err_file, err_line, cp, ip, sp, st - sp, "invalid opcode", err_code);
-				return -1;
-
-			error_ovf:
-				dbugerr(rt, cpu, err_file, err_line, cp, ip, sp, st - sp, "stack overflow", err_code);
-				return -2;
-
-			error_mem:
-				dbugerr(rt, cpu, err_file, err_line, cp, ip, sp, st - sp, "segmentation fault", err_code);
-				return -3;
-
-			error_div_flt:
-				dbugerr(rt, cpu, err_file, err_line, cp, ip, sp, st - sp, "division by zero", err_code);
-				// continue execution on floating point division by zero.
-				break;
-
-			error_div:
-				dbugerr(rt, cpu, err_file, err_line, 0, ip, sp, st - sp, "division by zero", err_code);
-				return -4;
-
-			error_libc:
-				error(rt, err_file, err_line, "libc(%d): %-T returned: %d", ip->rel, libcvec[ip->rel].sym);
-				return -5;
-
-			#define NEXT(__IP, __SP, __CHK) {pu->sp -= vm_size * (__SP); pu->ip += (__IP);}
-			#define STOP(__ERR, __CHK, __ERC) if (__CHK) {err_file = __FILE__; err_line = __LINE__; err_code = __ERC; goto __ERR;}
-			#define EXEC
-			#include "code.inl"
-		}
-	}
-	return 0;
-}
-#else
 static int dbgpu(state rt, cell pu) {
 	char* err_file = 0;
 	int err_line = 0;
@@ -1374,13 +1308,13 @@ static int dbgpu(state rt, cell pu) {
 					return -4;
 
 				dbg_error_libc:
-					error(rt, err_file, err_line, "libc(%d): %-T returned: %d", ip->rel, libcvec[ip->rel].sym, err_code);
+				error(rt, err_file, err_line, "libc(%d) error: %d: %+T", ip->rel, err_code, libcvec[ip->rel].sym);
 					return -5;
 
 				#define NEXT(__IP, __SP, __CHK) pu->sp -= vm_size * (__SP); pu->ip += (__IP);
 				#define STOP(__ERR, __CHK, __ERC) do {if (__CHK) {err_file = __FILE__; err_line = __LINE__; err_code = __ERC; goto dbg_##__ERR;}} while(0)
 				#define EXEC
-				#define TRACE(__IP) do { dotrace(rt, __IP, ip, sp); } while(0)
+				#define TRACE(__IP, __SYM) do { dotrace(rt, __IP, __SYM, ip, sp); } while(0)
 				#include "code.inl"
 			}
 		}
@@ -1416,8 +1350,9 @@ static int dbgpu(state rt, cell pu) {
 				return -4;
 
 			error_libc:
-				error(rt, err_file, err_line, "libc(%d): %-T returned: %d", ip->rel, libcvec[ip->rel].sym, err_code);
-				return -5;
+				error(rt, err_file, err_line, "libc(%d) error: %d: %+T", ip->rel, err_code, libcvec[ip->rel].sym);
+				return err_code;
+
 			#define NEXT(__IP, __SP, __CHK) {pu->sp -= vm_size * (__SP); pu->ip += (__IP);}
 			#define STOP(__ERR, __CHK, __ERC) if (__CHK) {err_file = __FILE__; err_line = __LINE__; err_code = __ERC; goto __ERR;}
 			#define EXEC
@@ -1427,7 +1362,6 @@ static int dbgpu(state rt, cell pu) {
 
 	return 0;
 }
-#endif
 
 /** vmExec
  * executes the script.
@@ -1437,7 +1371,8 @@ static int dbgpu(state rt, cell pu) {
  * @return: error code
 **/
 int vmExec(state rt, dbgf dbg, int ss) {
-	struct dbgState dbgSt;
+	struct dbgStateRec dbgSt;
+	struct symRec dbgSym;
 	cell pu;
 
 	//~ int result = 0;
@@ -1484,18 +1419,22 @@ int vmExec(state rt, dbgf dbg, int ss) {
 	rt->cc = NULL;
 
 	rt->vm.cell = pu;
-	if (dbg != NULL) {
+	if (dbg || rt->dbg) {
 		// HACK: using local struct for debug if not present.
 		if (rt->dbg == NULL) {
 			rt->dbg = &dbgSt;
-			memset(&dbgSt, 0, sizeof(struct dbgState));
+			memset(&dbgSt, 0, sizeof(struct dbgStateRec));
 		}
+
+		memset(&dbgSym, 0, sizeof(struct symRec));
+		dbgSym.kind = TYPE_ref;
+		dbgSym.name = "<init>";
+
 		rt->dbg->dbug = dbg;
+
+		dotrace(rt, pu->ip, &dbgSym, pu->ip, pu->sp);
 	}
 
-	if (rt->dbg) {
-		dotrace(rt, pu->ip, pu->ip, pu->sp);
-	}
 	// reinitialize memory manager
 	rt->vm._heap = NULL;
 
@@ -1544,6 +1483,7 @@ int vmCall(state rt, symn fun, void* ret, void* args) {
 	*(int*)(pu->sp) = rt->vm.px;
 	pu->ip = rt->_mem + fun->offs;
 
+	if (rt->dbg) {dotrace(rt, pu->ip, fun, NULL, sp);}
 	result = dbgpu(rt, pu);
 
 	if (ret) {
@@ -1689,7 +1629,7 @@ void fputopc(FILE* fout, unsigned char* ptr, int len, int offs, state rt) {
 		} break;
 	}
 }
-void fputasm(FILE* fout, state rt, int beg, int end, int mode) {
+void fputasm(state rt, FILE* fout, int beg, int end, int mode) {
 	int i, is = 12345;
 	int rel = 0;
 	int stmtEnd = 0;
@@ -1721,7 +1661,8 @@ void fputasm(FILE* fout, state rt, int beg, int end, int mode) {
 					fputc('}', fout);
 					fputc('\n', fout);
 				}
-				fputfmt(fout, "%s:%d:%+k\n", ast->file, ast->line, ast);
+				fputfmt(fout, "%s:%d: [%06x-%06x]: %+k\n", ast->file, ast->line, dbg->start, dbg->end, ast);
+				//~ fputfmt(fout, "%s:%d: %+k\n", ast->file, ast->line, ast);
 				//~ stmtEnd = 1;
 			}
 		}
@@ -1740,7 +1681,7 @@ void fputasm(FILE* fout, state rt, int beg, int end, int mode) {
 	}
 }
 
-void vm_fputval(state rt, FILE* fout, symn var, stkval* ref, int level) {
+void fputval(state rt, FILE* fout, symn var, stkval* ref, int level) {
 	symn typ = var->kind == TYPE_ref ? var->type : var;
 	char* fmt = var->pfmt ? var->pfmt : typ->pfmt;
 
@@ -1813,7 +1754,7 @@ void vm_fputval(state rt, FILE* fout, symn var, stkval* ref, int level) {
 						fputfmt(fout, ",");
 
 					fputfmt(fout, "\n");
-					vm_fputval(rt, fout, tmp, (void*)((char*)ref + tmp->offs), level + 1);
+					fputval(rt, fout, tmp, (void*)((char*)ref + tmp->offs), level + 1);
 					n += 1;
 				}
 				if (typ->args)
@@ -1865,7 +1806,7 @@ void vm_fputval(state rt, FILE* fout, symn var, stkval* ref, int level) {
 					else if (i > 0)
 						fputfmt(fout, " ");
 
-					vm_fputval(rt, fout, base, (stkval*)((char*)ref + i * sizeOf(base)), elementsOnNewLine ? level + 1 : 0);
+					fputval(rt, fout, base, (stkval*)((char*)ref + i * sizeOf(base)), elementsOnNewLine ? level + 1 : 0);
 				}
 
 				if (arrayHasMoreElements) {
@@ -1887,6 +1828,48 @@ void vm_fputval(state rt, FILE* fout, symn var, stkval* ref, int level) {
 			fputfmt(fout, "%T[ERROR]", typ);
 		} break;
 	}
+}
+
+dbgInfo getCodeMapping(state rt, int position) {
+	if (rt->dbg != NULL) {
+		int i;
+		for (i = 0; i < rt->dbg->codeMap.cnt; ++i) {
+			dbgInfo result = getBuff(&rt->dbg->codeMap, i);
+			if (position >= result->start) {
+				//~ fputfmt(stdout, "@%06x-%06x: %+k\n", result->start, result->end, result->code);
+				if (position < result->end) {
+					return result;
+				}
+			}
+		}
+	}
+	return NULL;
+}
+
+dbgInfo addCodeMapping(state rt, astn ast, int start, int end) {
+	dbgInfo result = NULL;
+	if (rt->dbg != NULL) {
+		int i;
+		for (i = 0; i < rt->dbg->codeMap.cnt; ++i) {
+			result = getBuff(&rt->dbg->codeMap, i);
+			if (start <= result->start) {
+				break;
+			}
+		}
+
+		if (result == NULL || start != result->start) {
+			result = insBuff(&rt->dbg->codeMap, i, NULL);
+		}
+
+		if (result != NULL) {
+			result->code = ast;
+			result->file = ast->file;
+			result->line = ast->line;
+			result->start = start;
+			result->end = end;
+		}
+	}
+	return result;
 }
 
 #if DEBUGGING > 10
