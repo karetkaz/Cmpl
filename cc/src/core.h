@@ -20,7 +20,7 @@
 	5: print non pre-mapped strings, non static types
 	6: print static casts generated with emit
 */
-#define DEBUGGING 4
+//~ #define DEBUGGING 4
 
 // enable dynamic dll/so lib loading
 #define USEPLUGINS
