@@ -11,7 +11,7 @@
 //~ bug: static functions are not accessible from a non static struct it there is only static data.
 //~ bug: function with empty body does not generate the return instruction.
 
-/*TODO: Array assignment
+/* TODO: Array assignment
 define Array(int32 typesize, int32 ^n) = emit(struct, ref(memmgr(null, typesize * n)), i32(n));
 
 int b[] = Array(4, 10);
@@ -26,7 +26,7 @@ for (int i = 0; i < a.length; i += 1) {
 }// +/
 // */
 
-/*DONE: const & static members
+/* DONE: const & static members
 struct M {
 	static const int A = 9;
 	static int B = 9;
@@ -50,30 +50,7 @@ m.b = 69;
 
 // */
 
-/*DONE: assignment by reference
-int64 a = 32;
-a = 33;
-void setup() {
-	static int64 &b = a;
-	print("%d\n", int64(b));
-}
-setup();
-//~ */
-
-/* BUG: return: int returned instead of float
-double f1(int32 idx) {
-	return idx;
-}
-/// 0 is returned.
-double f2(int32 idx) {
-	result = idx;
-}
-
-double f1 = f1(11);
-double f2 = f2(11);
-//~ */
-
-//~ /* Arrays/slices
+/* BUG: Arrays/slices inside structs
 struct slice_in_struct {
 	int slice[];
 }
@@ -93,11 +70,7 @@ int xxx = it1.slice[0];
 
 //~ */
 
-/* optimizing stackalloc
-	// spc -24
-		spc -16
-		spc -8
-
+/+ optimize stack deallocations
 {
 	int a[1<<10];
 	{
@@ -114,24 +87,30 @@ int xxx = it1.slice[0];
 					}
 					a[0] = 9;
 				}
-				a[0] = 9;
+				//~ a[0] = 9;
 			}
 			a[0] = 9;
 		}
 		a[0] = 9;
 	}
-}*/
+}// +/
 
-/+Optimize
-	// remove dup.x1 sp(0) and spc -4
-		ldc.ref 5ee1
-		dup.x1 sp(0)
-		libc: define print( &val)
-		spc -4
+/+ Optimize
+{
+	string a = "a";
+	print(a);
+}
+//! `dup.x1 sp(0)` and `spc -4` can be removed
+// todo.cvx:100: [008ea4-008ea9]: string a = 'a'
+//| 	1f 96 61 00 00             load.ref 6196
+// todo.cvx:101: [008ea9-008eaf]: print(a);
+//| 	12 00                      dup.x1 sp(0)
+//| 	09 1c 00 00                libc(28): print(string val): void
+//| 	10 fc ff ff                spc -4
 
 //~ +/
 
-/*
+/* ?Templates?
 static(typename Value) {
 	Value& select(Value arr[], int pos) {
 		assert(unsigned(pos) > arr.lenght);
@@ -303,9 +282,268 @@ static(typename Key, typename Value) {
 }
 //~ */
 
+/+ add to System
+enum Arch {
+	arm
+	?armf
+	i386
+	x86_64 | amd64
+}
+
+enum Os: string {
+	Windows("Windows");
+	Linux("Linux");
+	Mac("Mac");
+}
+
+Arch arch = Arch.?
+char name[] = "Windows"|"Linux"|"Mac"|"Unknown"
+
+boolean bigEndian = false;
+
+//~ +/
+
+/+ initialization (type and variable)
+
+struct Person {
+	LastName: string,
+	FirstName: string,
+	birthYear: int(1970);
+	Jobs: string[] = null,
+	next: Person& = null,
+	Address: struct {
+		type: enum {
+			Home, Work, Other
+		}
+		PostOfficeBox: String;
+		StreetAddress: String;
+		ZipCode: String;
+		City: String;
+		State: String;
+		Country: String;
+	};
+	Address2: struct& {
+		type: enum {
+			Home, Work, Other
+		}
+		PostOfficeBox: String;
+		StreetAddress: String;
+		ZipCode: String;
+		City: String;
+		State: String;
+		Country: String;
+	} = null;
+	Phone: struct[] {
+		type: enum {
+			Mobile, Home, Work, Fax, Other
+		} = Other;
+		value: String;
+	} = null,
+	Mail: struct[] {
+		type: enum {
+			Home, Work, Other
+		} = Other;
+		value: String = "";
+	} = null,
+	Dates: struct[] {
+		type: enum {
+			Other, BirthDay, Aniversary
+		}
+		value: String;
+	} = [],
+	Gender: enum {
+		Male, Female, NotDefined
+	} = NotDefined;
+};
+
+Person person = {
+	LastName: "Last";
+	FirstName: "First";
+	Address: {
+		type: Home;
+		value: "12345678";
+	};
+	Phone: [{
+		type: Home;
+		value: "12345678";
+	}, {
+		type: Home;
+		value: "23456789";
+	}];
+	Gender: Male;
+};
+
+//~ /+
+struct Rect {
+	int top;
+	int right;
+	int bottom;
+	int left;
+}
+
+struct Anchor {
+	enum Style {
+		Fill;
+		FillTop;
+		FillRight;
+		FillBottom;
+		FillLeft;
+
+		Center;
+		CenterTop;
+		CenterRight;
+		CenterBottom;
+		CenterLeft;
+	};
+	int &top;
+	int &bottom;
+	bool centerHorizontal;	// center / fill
+
+	int &left;
+	int &right;
+	bool centerVertical;	// center / fill
+
+	Rect margin;
+
+	static Anchor dock(Anchor.Style dock, Rect r, int &pin) {
+		result.top = r.top;
+		result.bottom = r.bottom;
+		result.centerHorizontal = true;
+
+		result.left = r.left;
+		result.right = r.right;
+		result.centerVertical = true;
+
+		switch (dock) {
+
+			case Fill:
+				result.centerHorizontal = false;
+				result.centerVertical = false;
+			case Center:
+				break;
+
+			case FillTop:
+				result.centerHorizontal = false;
+			case CenterTop:
+				result.bottom = pin;
+				break;
+
+			case FillRight:
+				result.centerVertical = false;
+			case CenterRight:
+				result.left = pin;
+				break;
+
+			case FillBottom:
+				result.centerHorizontal = false;
+			case CenterBottom:
+				result.top = pin;
+				break;
+
+			case FillLeft:
+				result.centerVertical = false;
+			case CenterLeft:
+				result.right = pin;
+				break;
+		}
+	}
+}
+
+struct Font {...}
+
+struct Component {
+	Rect position;	// calc by the layout
+
+	Anchor anchor;
+	int width = 20;
+	int height = 20;
+	
+	bool enabled;
+	bool focusable;
+	Component children[];
+}
+
+//~ struct Page: Component {...}
+//~ struct List: Component {...}
+//~ struct Grid: Component {...}
+struct Label: Component {...}
+struct Image: Component {...}
+struct Check: Component {...}
+struct Input: Component {...}	// single line, multi line, html
+struct Select: Component {...}	// ComboBox
+struct Slider: Component {...}
+
+struct Window: Component {...}
+struct Button: Component {
+	struct Style {
+		Rect margin = {
+			top: 0;
+			right: 0;
+			bottom: 0;
+			left: 0;
+		};
+		Rect padding = {
+			top: 0;
+			right: 0;
+			bottom: 0;
+			left: 0;
+		};
+		int width = 100;
+		int height = 25;
+	}
+
+	bool checked = false;
+	bool checkable = false;
+	//~ property alias pressed: mouseArea.pressed
+	//~ property alias text: label.text
+	//~ property alias platformMouseAnchors: mouseArea.anchors
+
+	Style style = {
+		//~ margin:...
+		
+	};
+	Group &group = null;
+
+	width: defaultStyle.width;
+	height: defaultStyle.height;
+
+	//~ property alias font: label.font
+
+	Image image = {
+		anchor: dock(CenterLeft, parent);
+		source: button.iconSource
+		visible: source != ""
+	}
+
+	Label label = {
+		anchor = dock(CenterRight, parent, image.right);
+
+		elide: Text.ElideRight
+
+		font.family: button.platformStyle.fontFamily
+		font.weight: button.platformStyle.fontWeight
+		font.pixelSize: button.platformStyle.fontPixelSize
+		font.capitalization: button.platformStyle.fontCapitalization
+		colors: {
+			disabled: Style.disabledTextColor;
+			enabled: Style.textColor;
+			focused: Style.textColor;
+			pressed: pressedTextColor;
+			checked: checkedTextColor;
+		}
+		text: ""
+		visible: text != ""
+	}
+
+	children: const[image, label];
+}// +/
+
+//~ +/
+
 //~ int a1 = int(0);
 //~ int a2 = int{0};
 
+typename strty = string;
 //~ Complex c1 = Complex(10, 20);
 //~ Complex c2 = Complex{re: 10, im:20};
 

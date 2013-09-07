@@ -20,7 +20,7 @@
 	5: print non pre-mapped strings, non static types
 	6: print static casts generated with emit
 */
-//~ #define DEBUGGING 4
+//~ #define DEBUGGING 2
 
 // enable dynamic dll/so lib loading
 #define USEPLUGINS
@@ -131,11 +131,12 @@ typedef enum {
 	opc_clt,
 	opc_cle,
 	opc_cgt,
-	opc_cge,		// argument is the type
+	opc_cge,
 
 
 	opc_ldi,		// argument is the size
 	opc_sti,		// argument is the size
+	opc_drop,		// convert this to opcode.spc
 
 	markIP,
 
@@ -144,13 +145,7 @@ typedef enum {
 	b32_bit_shr = 2 << 6,
 	b32_bit_sar = 3 << 6,
 
-	/* remove temp opcodes
-	opc_ldcr = opc_ldc4,
-	opc_ldcf = opc_ldc4,
-	opc_ldcF = opc_ldc8,
-	// */
-
-	vm_size = sizeof(int),	// size of data on stack
+	vm_size = sizeof(int),	// size of data element on stack
 	vm_regs = 255,	// maximum registers for dup, set, pop, ...
 } vmOpcode;
 typedef struct opc_inf {
@@ -205,11 +200,12 @@ struct symRec {				// type node (meta)
 	symn	type;		// base type of TYPE_ref/TYPE_arr/function (void, int, float, struct, ...)
 
 	//~ TODO: temporarly array variable base type
+	//~ TODO: sdefs should be defs, and args the tail of it.
 	symn	args;		// struct members / function paramseters
 	symn	sdef;		// static members (is the tail of args) / function return value(out value)
 
 	symn	decl;		// declared in namespace/struct/class, function, ...
-	symn	next;		// symbols on table / next param / next field / next symbol
+	symn	next;		// next symbol in scope table / next param / next field / ?
 
 	ccToken	kind;		// TYPE_def / TYPE_rec / TYPE_ref / TYPE_arr
 	ccToken	cast;		// casts to type(TYPE_(bit, vid, ref, u32, i32, i64, f32, f64, p4x)).
@@ -244,7 +240,7 @@ struct astRec {				// tree node (code)
 	ccToken		kind;				// code: TYPE_ref, OPER_???
 	ccToken		cst2;				// casts to basic type: (i32, f32, i64, f64, ref, bool, void)
 	symn		type;				// typeof() return type of operator
-	astn		next;				// next statement, do not use for preorder
+	astn		next;				// next statement, next usage of identifier, do not use for preorder
 	union {
 		union {						// TYPE_xxx: constant
 			int64_t	cint;			// const: integer
@@ -338,15 +334,17 @@ struct ccStateRec {
 	astn	emit_tag;		// "emit"
 
 	symn	type_rec;		// typename
-	symn	type_vid;
-	symn	type_bol;
-	symn	type_u32;
-	symn	type_i32;
-	symn	type_i64;
-	symn	type_f32;
-	symn	type_f64;
-	symn	type_str;
-	symn	type_ptr;
+	symn	type_vid;		// void
+	symn	type_bol;		// boolean
+	symn	type_u32;		// 32bit unsigned integer
+	symn	type_i32;		// 32bit integer
+	symn	type_i64;		// 64bit integer
+	symn	type_f32;		// 32bit floating point
+	symn	type_f64;		// 64bit floating point
+	symn	type_ptr;		// pointer
+	symn	type_var;		// variant
+
+	symn	type_str;		// TODO: string should be replaced with pointer or char* or cstr
 
 	symn	null_ref;
 	symn	emit_opc;

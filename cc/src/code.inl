@@ -3,6 +3,7 @@
  *    __IP: instruction size.
  *    __SP: diff of stack after instruction executes.
  *    __CHK: number of elements needed on stack. (compile time only check.)
+ *    #define NEXT(__IP, __SP, __CHK) if (checkstack(sp, __CHK)) { ip += __IP; sp += __SP; }
  * }
  * STOP(__ERR, __CHK, __ERC)
  * EXEC if execution is needed.
@@ -10,7 +11,6 @@
  * 
  * 
  * 
-//~ #define NEXT(__IP, __SP, __CHK) if (checkstack(__CHK)) { ip += _IP; sp += _SP;}
 */
 
 #define SP(__POS, __TYP) (((stkval*)((stkptr)sp + (__POS)))->__TYP)
@@ -20,20 +20,9 @@
 //#{ 0x0?: SYS		// System
 case opc_nop:  NEXT(1, 0, 0) {
 } break;
-case opc_loc:  NEXT(2, +ip->idx, 0) {
-#ifdef EXEC
-	STOP(error_ovf, ovf(pu), -1);
-#endif
-} break;
-case opc_drop: NEXT(2, -ip->idx, ip->idx) {} break;
-case opc_inc:  NEXT(4, -0, 1) {
-#ifdef EXEC
-	SP(0, u4) += ip->rel;
-#endif
-} break;
 case opc_spc:  NEXT(4, 0, 0) {
-	int sm = ip->rel / 4;
-	STOP(error_opc, ip->rel & 3, -1);
+	int sm = ip->rel / vm_size;
+	STOP(error_opc, ip->rel & (vm_size - 1), -1);
 	if (sm > 0) {
 		NEXT(0, sm, 0);
 #ifdef EXEC
@@ -133,6 +122,17 @@ case opc_libc: NEXT(4, -libcvec[ip->rel].pop, libcvec[ip->rel].chk) {
 
 	STOP(error_libc, exitCode != 0, exitCode);
 	STOP(stop_vm, ip->rel == 0, 0);			// Halt();
+#endif
+} break;
+
+case opc_inc:  NEXT(4, -0, 1) {
+#ifdef EXEC
+	SP(0, u4) += ip->rel;
+#endif
+} break;
+case opc_umad: NEXT(1, -2, 3) {
+#if defined(EXEC)
+	SP(2, u4) += SP(1, u4) * SP(0, u4);
 #endif
 } break;
 //#}
@@ -447,11 +447,6 @@ case u32_mod: NEXT(1, -1, 2) {
 #if defined(EXEC)
 	STOP(error_div, SP(0, u4) == 0, -1);
 	SP(1, u4) %= SP(0, u4);
-#endif
-} break;
-case u32_mad: NEXT(1, -2, 3) {
-#if defined(EXEC)
-	SP(2, u4) += SP(1, u4) * SP(0, u4);
 #endif
 } break;
 //#}

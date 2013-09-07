@@ -140,7 +140,7 @@ typedef enum {
 	//~ b64_sxt,
 } bitOperation;
 
-static int bitFunction(state rt, void *function) {
+static int bitFunctions(state rt, void *function) {
 	switch ((bitOperation)function) {
 
 		case b32_btc: {
@@ -302,7 +302,7 @@ static inline int argpos(int *argp, int size) {
 //~ #define logFILE(msg, ...) prerr(msg, ##__VA_ARGS__)
 #define logFILE(msg, ...)
 
-static int FILE_open(state rt, void* mode) {
+static int FILE_open(state rt, void* mode) {	// void Open(char filename[]);
 	int argc = 0;
 	char *name = argref(rt, argpos(&argc, vm_size));
 	// int slen = argi32(rt, argpos(&argc, vm_size));
@@ -355,11 +355,10 @@ static int FILE_gets(state rt, void* _) {	// int fgets(File &f, uint8 buff[])
 		reti32(rt, -1);
 	}
 	else {
-		long pos1, pos2;
-		pos1 = ftell(file);
-		fgets(buff, len, file);
-		pos2 = ftell(file);
-		reti32(rt, pos2 - pos1);
+		long pos = ftell(file);
+		char *unused = fgets(buff, len, file);
+		reti32(rt, ftell(file) - pos);
+		(void)unused;
 	}
 	return 0;
 	(void)_;
@@ -396,19 +395,19 @@ static int FILE_flush(state rt, void* _) {
 
 //#{#region reflection operations
 static int typenameGetName(state rt, void* _) {
-	symn sym = symfind(rt, argref(rt, 0));
+	symn sym = mapsym(rt, argref(rt, 0));
 	reti32(rt, vmOffset(rt, sym->name));
 	return 0;
 	(void)_;
 }
 static int typenameGetFile(state rt, void* _) {
-	symn sym = symfind(rt, argref(rt, 0));
+	symn sym = mapsym(rt, argref(rt, 0));
 	reti32(rt, vmOffset(rt, sym->file));
 	return 0;
 	(void)_;
 }
 static int typenameGetBase(state rt, void* _) {
-	symn sym = symfind(rt, argref(rt, 0));
+	symn sym = mapsym(rt, argref(rt, 0));
 	reti32(rt, vmOffset(rt, sym->type));
 	return 0;
 	(void)_;
@@ -527,8 +526,8 @@ static int libCallDebug(state rt, void* _) {
 	char* message = argstr(rt, poparg(int32_t));
 	int loglevel = argi32(rt, poparg(int32_t));
 	int tracelevel = argi32(rt, poparg(int32_t));
+	void* objref = argref(rt, poparg(int32_t));
 	symn objtyp = argref(rt, poparg(int32_t));
-	void* object = argref(rt, poparg(int32_t));
 
 	// skip loglevel 0
 	if (loglevel != 0) {
@@ -549,9 +548,10 @@ static int libCallDebug(state rt, void* _) {
 			}
 
 			// specified object
-			if (objtyp && object) {
+			if (objtyp && objref) {
 				fputfmt(rt->logf, ": ");
-				fputval(rt, rt->logf, objtyp, object, 0);
+				//~ fputfmt(rt->logf, "typ@%x, ref@%x: ", (unsigned char*)objtyp - rt->_mem, (unsigned char*)objref - rt->_mem);
+				fputval(rt, rt->logf, objtyp, objref, 0);
 				isOutput = 1;
 			}
 
@@ -576,7 +576,7 @@ static int libCallDebug(state rt, void* _) {
 					}
 
 					if (fun == NULL) {
-						fun = symfind(rt, rt->dbg->trace[pos - i - 1].cf);
+						fun = mapsym(rt, rt->dbg->trace[pos - i - 1].cf);
 					}
 
 					file = file ? file : "eternal.code";
@@ -660,7 +660,17 @@ int install_base(state rt, int mode, int onHalt(state, void*)) {
 
 	if (cc->type_ptr && (mode & creg_tptr)) {
 		cc->libc_mem = ccAddCall(cc->s, libCallMemMgr, NULL, "pointer memmgr(pointer ptr, int32 size);");
-		cc->libc_dbg = ccAddCall(rt, libCallDebug, NULL, "void debug(string message, int level, int trace, typename objtyp, pointer objref);");
+	}
+	if (cc->type_var && (mode & creg_tvar)) {
+		cc->libc_dbg = ccAddCall(rt, libCallDebug, NULL, "void debug(string message, int level, int trace, variant objref);");
+	}
+
+	//~ TODO: temporarly add null to variant type.
+	if (rt->cc->type_var && !rt->cc->type_var->args) {
+		ccBegin(rt, NULL);
+		//~ install(cc, "null", ATTR_const | ATTR_stat | TYPE_def, TYPE_i64, 2 * vm_size, rt->cc->type_var, intnode(cc, 0));
+		install(cc, "null", ATTR_const | ATTR_stat | TYPE_def, TYPE_any, 2 * vm_size, rt->cc->type_var, NULL);
+		ccEnd(rt, rt->cc->type_var);
 	}
 
 	// 4 reflection
@@ -670,28 +680,43 @@ int install_base(state rt, int mode, int onHalt(state, void*)) {
 		if ((arg = install(cc, "line", ATTR_const | TYPE_ref, TYPE_any, vm_size, cc->type_i32, NULL))) {
 			arg->offs = offsetOf(symn, line);
 		}
+		else {
+			error = 1;
+		}
+
 		if ((arg = install(cc, "size", ATTR_const | TYPE_ref, TYPE_any, vm_size, cc->type_i32, NULL))) {
 			arg->offs = offsetOf(symn, size);
 		}
+		else {
+			error = 1;
+		}
+
 		if ((arg = install(cc, "offset", ATTR_const | TYPE_ref, TYPE_any, vm_size, cc->type_i32, NULL))) {
 			arg->offs = offsetOf(symn, offs);
-			arg->pfmt = "%04x";
+			arg->pfmt = "@%06x";
+		}
+		else {
+			error = 1;
 		}
 
-		error = error || !(arg = ccAddCall(rt, typenameGetFile, NULL, "string file;"));
-		if (arg != NULL) {
+		if ((arg = ccAddCall(rt, typenameGetFile, NULL, "string file;"))) {
 			arg->stat = 0;
 			arg->memb = 1;
 			rt->cc->libc->chk += 1;
 			rt->cc->libc->pop += 1;
 		}
+		else {
+			error = 1;
+		}
 
-		error = error || !(arg = ccAddCall(rt, typenameGetName, NULL, "string name;"));
-		if (arg != NULL) {
+		if ((arg = ccAddCall(rt, typenameGetName, NULL, "string name;"))) {
 			arg->stat = 0;
 			arg->memb = 1;
 			rt->cc->libc->chk += 1;
 			rt->cc->libc->pop += 1;
+		}
+		else {
+			error = 1;
 		}
 
 		error = error || !ccAddCall(rt, typenameGetBase, NULL, "typename base(typename type);");
@@ -814,6 +839,7 @@ int install_stdc(state rt, char* file, int level) {
 		return ccAddCode(rt, level, file, 1, NULL);
 	}
 
+	(void)bitFunctions;
 	return err;
 }
 

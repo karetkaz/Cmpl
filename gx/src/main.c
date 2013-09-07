@@ -1019,7 +1019,7 @@ int main(int argc, char* argv[]) {
 
 		ticks = timenow();
 		e = ccCompile(script, argc, argv);
-		debug("ccCompile(): %d\tTime: %f", e, ticksinsecs(ticks));
+		debug("ccCompile(Exit code: %d, Time: %.3f)", e, ticksinsecs(ticks));
 
 		if (e != 0) {
 			freeMesh(&mshLightPoint);
@@ -1046,7 +1046,8 @@ int main(int argc, char* argv[]) {
 	if (rt != NULL) {
 		int64_t ticks = timenow();
 		e = vmExec(rt, ccDbg ? dbgCon : NULL, sizeof(mem)/4);
-		debug("vmExecute(): %d\tTime: %f", e, ticksinsecs(ticks));
+		//~ debug("vmExecute(): %d\tTime: %f", e, ticksinsecs(ticks));
+		debug("vmExecute(Exit code: %d, Time: %.3f)", e, ticksinsecs(ticks));
 		if (e != 0) {
 			gx_doneSurf(&offs);
 			gx_doneSurf(&font);

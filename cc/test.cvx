@@ -8,31 +8,33 @@
 //~ #open src/printer.c			// pretty print, logger
 //~ #open src/main.c
 
-struct hex32: int32; //%%08x
-struct hex64: int64; //%%016x
+//~ struct hex32: int32; //%%08x
+//~ struct hex64: int64; //%%016x
+
 //~ define d1 = 2;
-//~ define d2 = 3;
-//~ define d3 = 4;
-//~ uint8 arr[d1][d2][d3] = {1,2,3, 1,2,3};
+//~ define d2 = 2;
+//~ define d3 = 3;
+//~ uint8 arr[d1][d2][d3] = {1,2,3, 1,2,3, 0};
+
 //~ const char str1[] = "alma a fa alatt nyari piros alma";
 //~ const char str2[] = {'a', 'l', 'm', 'a', 0};
-
 //~ string str3 = "alma";
+//~ TODO: BUG: string str4 = string(str1);
 
-//~ char a[] = emit(struct, ref(null), i32(139135));
-//~ char a[] = emit(struct, ref(null), i32(27330));
-//~ for(int i = 1; i < 2 * a.length; i += 1) {
-	//~ print("%c", a[i]);
-//~ }
-/* TODO:
+// makeing slices from strings (substring)
+//~ char slice1[] = emit(struct, ref(str2), i32(2));
+//~ char slice2[] = emit(struct, i32.add, ref(str2), i32(2), i32(2));
 
-string alma() {
-	result = "alma";
-}
-// */
+/+ print the content of memory :)
+char memory[] = emit(struct, ref(null), i32(65536));
+for(int i = 1; i < 2 * memory.length; i += 1) {
+	if (i % 80 == 0) {
+		println();
+	}
+	print("%c", memory[i]);
+}// +/
 
-
-/* typename...
+/* typename and type informations
 struct xxx {
 	int64 x1;
 	int64 x2;
@@ -49,22 +51,21 @@ int size1 = typename(xxx).size;
 int size2 = typename(Xxx).size;
 int size3 = typename(type).size;
 
-string name = typename.name(type);
-string file = typename.file(type);
-int line = typename.line(type);
+string name = type.name;
+string file = type.file;
+int line = type.line;
 
-//~ typename t1 = void;
-//~ typename t2 = int64;
-//~ typename t3 = typename;
+/+ compare typenames
+typename t = Complex;
+if (t == Complex) {
+	print("Complex\n");
+}
+if (Complex == t) {
+	print("Complex\n");
+}
+ +/
 
-//~ typename t = Complex;
-//~ if (t == Complex) {
-	//~ print("Complex\n");
-//~ }
-//~ if (Complex == t) {
-	//~ print("Complex\n");
-//~ }
-
+//? TODO: variable.struct should return the type of variable.
 //~ */
 
 /* typename
@@ -89,12 +90,6 @@ int n2 = sizeof(ss.ss);
 //~ */
 
 /* Arrays, Pointers, References Alloc
-//~ define new(typename type) = memmgr(null, type.size);
-//~ define new(typename type, int32 ^n) = emit(struct, ref(memmgr(null, type.size * n)), i32(n));// creates a slice: {data, length}
-
-//~ int64 &i32ref = new(int64);
-
-//~ int32 i32arr[] = new(int32, 100);
 int32 i32arr[] = emit(struct, ref(memmgr(null, sizeof(int32) * 100)), i32(100));
 for (int i = 0; i < i32arr.length; i += 1) {
 	i32arr[i] = i + 10;
@@ -102,7 +97,7 @@ for (int i = 0; i < i32arr.length; i += 1) {
 
 //~ */
 
-/* alloc / realloc / free
+/* malloc / realloc / free
 //~ define realloc(pointer ptr, int size) = memmgr(ptr, size);
 define malloc(int size) = memmgr(null, size);
 define free(pointer ptr) = memmgr(ptr, 0);
@@ -177,7 +172,7 @@ for(int i = 0; i < 30; i += 1) {
 
 // */
 
-/* const ref assignment
+/* TODO: const ref assignment
 struct m {
 	static const int X = 9;
 	const int a;
@@ -193,7 +188,7 @@ int x = m1.a;
 
 // */
 
-/* TODO: string arrays
+/* TODO: arrays of string
 string x = "almax a fa alatt";
 
 string ss[3] = null;
@@ -224,28 +219,27 @@ struct xrgbi32: 0 {
 	xrgb rgb;
 	int32 val;
 }
-//~ xrgb res = result;
-//~ define clamp(int t, int a, int b) = min(max(t, a), b);
 
 xrgb a = emit(xrgb, i32(0x801f008f));
+xrgb b = emit(xrgb, i32(0x2f3f1f));
 
-//~ xrgb b = emit(xrgb, i32(0x2f3f1f));
 //~ int r = a.r + b.r;
 
-//~ xrgbi32 r;
-//~ r.val = 0;
+xrgbi32 r;
+/+ TODO: initializations
+xrgbi32 r = {val : 0};
+xrgbi32 r = {
+	r: Math.min(a.r + b.r, 255),
+	g: Math.min(a.g + b.g, 255),
+	b: Math.min(a.b + b.b, 255),
+	a: 0,
+};
++/
 
-//~ r.rgb.r = min(a.r + b.r, 255);
-//~ r.rgb.g = min(a.g + b.g, 255);
-//~ r.rgb.b = min(a.b + b.b, 255);
+r.rgb.r = Math.min(a.r + b.r, 255);
+r.rgb.g = Math.min(a.g + b.g, 255);
+r.rgb.b = Math.min(a.b + b.b, 255);
 // */
-
-//~ hex64 t = 273469;
-//~ hex64 T = int64.Not(t);
-
-//~ define dim = 3;
-//~ static int x[dim][dim][dim][dim] = {690};
-//~ static int x[dim][dim][dim][dim][dim] = {690};
 
 /* invoke functions ...
 int method0() {}
@@ -269,10 +263,9 @@ void methodCall(int method()) {
 }
 
 //~ /+	just call it
-static if (true) {
-	method1();
-	method2();
-}// +/
+method1();
+method2();
+// +/
 
 //~ /+	call passed to another fun
 //~ methodCall(method1);	// this will not work because there are 2 method1 named functions
@@ -281,7 +274,7 @@ methodCall(method2);
 //~ +/
 
 //~ /+	call as a reference
-int method() = null;//method2;
+int method() = method2;
 
 //~ method = null;
 
@@ -294,55 +287,34 @@ methodCall(method);
 // +/
 
 //~ */
-/* return function ...
-/+ count down
-struct Closure {int call(Closure &data); int data;}
-define Invoke(Closure &wcd) = wcd.call(wcd);
-//~ operator (Closure &wdc)() = wcd.call(wcd);
+/* Closure like constructs ...
 
-int countdown(Closure &a) {result = a.data; a.data -= 1;}
-
-Closure a = Closure(countdown, 3);
-Closure b = Closure(countdown, 30);
-
-println(Invoke(a));
-println(Invoke(b));
-println(Invoke(a));
-println(Invoke(a));
-println(Invoke(a));
-println(Invoke(b));
-println(Invoke(b));
-println(Invoke(b));
-println(Invoke(b));
-println(Invoke(b));
-println(Invoke(b));
-println(Invoke(b));
-// +/
-
-//~ /+ count down (2) with args
-struct Closure{int64 call(Closure &c, int64 n); int64 data; int32 calls; /+...+/ }
+struct Closure { int64 call(Closure &c, int64 n); int64 data; int32 invoked; /+...+/ }
 define Closure(int64 call(Closure &c, int64 n), int64 data) = Closure(call, data, 0);
 
 define Invoke(Closure c, int64 n) = c.call(&c, n);
-//~ operator (Closure c)(int64 n) = c.call(c, n);
+// TODO: operator (Closure c)(int64 n) = c.call(c, n);
 
-int64 countdown(Closure &c, int64 n) {result = c.data; c.data -= n; c.calls += 1; }
+int64 countdown(Closure &c, int64 n) { result = c.data; c.data -= n; c.invoked += 1; }
 
 Closure a = Closure(countdown, 90);
+Closure b = Closure(countdown, 9);
 
-print("%d\n", int64(Invoke(a, 9)));
-print("%d\n", int64(Invoke(a, 2)));
-print("%d\n", int64(Invoke(a, 2)));
-print("%d\n", int64(Invoke(a, 2)));
-//~ +/
+println(Invoke(a, 9));
+println(Invoke(a, 2));
+println(Invoke(b, 10));
+println(Invoke(a, 2));
+println(Invoke(a, 2));
+
 //~ */
-/*BUG: assignment by reference
 
+/*BUG: assignment of local variable to a static one (compiler option `-O-2` alloc global variables on stack.)
 int64 a = 32;
 a = 33;
 void setup() {
 	static int64 &b = a;
-	print("%d\n", int64(a));
+	//~ print("%d\n", int64(a));
+	println(b);
 }
 setup();
 //~ */
@@ -363,7 +335,7 @@ for (int i = 1; tmp > eps; i += 1) {
 }
 // */
 
-/* TODO: arrays
+/* TODO: array.isNullOrEmpty()
 bool isNullOrEmpty(int a[]) {
 	if (a == null)
 		result = true;
@@ -373,35 +345,15 @@ bool isNullOrEmpty(int a[]) {
 
 //~ int val_null[] = null;
 int val_empty[0];
-int val_elements[10] = {9};
+int val_nonempty[10] = {9};
 
 //~ bool res_true1 = isNullOrEmpty(null);
 //~ bool res_true2 = isNullOrEmpty(val_null);
 bool res_true3 = isNullOrEmpty(val_empty);
-bool res_false = isNullOrEmpty(val_elements);
+bool res_false = isNullOrEmpty(val_nonempty);
 //~ */
 
-/*
-double val = 9;//emit(float64, i64(0x7ff8000000000000));
-print("0b%064B\n", val);
-print("0x%016X\n", val);
-
-println(int64(val));
-println(float64(val));
-double f64_nan = emit(float64, i64(0b0111111111111000000000000000000000000000000000000000000000000000));
-double f64_inf = emit(float64, i64(0b0111111111110000000000000000000000000000000000000000000000000000));
-double f64_one = emit(float64, i64(0b0011111111110000000000000000000000000000000000000000000000000000));
-//~ */
-
-/* enumeration
-/+
-struct vec4f {
-	float32 x;
-	float32 y;
-	float32 z;
-	float32 w;
-}// +/
-
+/* TODO: enumeration assignment
 enum xo: vec4f {
 	O = vec4f(0, 0, 0, 0);
 	X = vec4f(1, 0, 0, 0);
@@ -409,67 +361,32 @@ enum xo: vec4f {
 	Z = vec4f(0, 0, 1, 0);
 }
 
-vec4f z = xo.Z;
-//~ xo k = xo.Z;	// ok
-//~ xo x = z;		// error
+vec4f z = xo.Z;		// ok: xo.Z is of type vec4f, so it can be assigned
+//~ xo k = xo.Z;	// ok: k of type xo can be assigned to a value from the enumeration
+//~ xo x = z;		// error: x of type xo can be assigned only to a value from the enumeration
 // */
-
-/* ai: Genetic algorithm
-struct individual {
-	bool gene[2][10];
-	double xreal[2];
-	double objectives[2];
-	double constraints[2];
-
-	const int rank;
-	double constr_violation;
-	const double xbin[10];
-	//~ double crowd_dist;
-}
-
-struct population {
-	double min;
-	double max;
-	individual ind[1000];
-}
-
-//~ /+
-define pi1M(double x, double y) = (x + y);
-define pi2M(double x, double y) = (x + y);
-
-int fitness(individual &ind) {
-	ind.objectives[0]= -pi1M(ind.xbin[0], ind.xbin[1]);
-	ind.objectives[1]= -pi2M(ind.xbin[0], ind.xbin[1]); 
-}
-
-// +/
-//~ double size = 88006400 / double(1 << 20);
-//~ static population pop[3000];
-//~ int size = sizeof(population) * 3000 >> 20;
-
-
-//~ */
 
 //~ Date date = Date(2011, 10, 24);
 //~ Date.Parts parts = Date.ToParts(date.days);
 
-/* itoa
-int val = 20;
+/* format integer
+int val = 0x20928374;
 char buff[512] = {0};
 
-itoa(buff, "alma: %+20.10i, aweigf", val);
+format(buff, "value: %d = 0x%016.16i = 0b%064.2i = [%.8i]8", val);
 println(string(buff));
 //~ */
 
 /*Bug: const struct array initialization
 struct Biorithm {
-	int color;
-	int period;
-	int period2;
-	string name;
+	int color;		//%#%08x
+	int period;		//%%d
+	int period2;	//%%d
+	string name;	//%'%s'
 }
 
-static const Biorithm biorithms1[7] = {
+//TODO: static const Biorithm biorithms1[7] = {
+static Biorithm biorithms1[7] = {
 	Biorithm(0x7070ff, 23,  0, "Physical"),
 	Biorithm(0xff0000, 28,  0, "Emotional"),
 	Biorithm(0x00ff00, 33,  0, "Intellectual"),
@@ -489,15 +406,12 @@ static const Biorithm biorithms2[] = {
 	Biorithm(0x9466db, 28, 33, "Wisdom")
 };
 
-void printsize(Biorithm biorithms[]) {
-	print("length: %d\n", biorithms.length);
-}
-
-printsize(biorithms1);
-printsize(biorithms2);
+//~ void printsize(Biorithm biorithms[]) {print("length: %d\n", biorithms.length);}
+//~ printsize(biorithms1);
+//~ printsize(biorithms2);
 //~ */
 
-/* DONE
+/* DONE: function reference initialization
 float64 Sum(float64 data[]) = Math.Sum;
 float64 Mean(float64 data[]) = Math.Mean;
 
@@ -505,24 +419,6 @@ float64 data[3] = {1,2,3};
 float64 sum = Sum(data);
 float64 mean = Mean(data);
 //~ */
-
-//~ assert(false);
-
-struct T1 {int i;}
-struct T2 {int i;}
-struct T3 {int i;}
-
-typename t1 = T1;
-typename t2 = T2;
-typename t3 = T3;
-//~ int a = 9;
-
-string name = t1.name;
-string file = t1.file;
-int line = t1.line;
-
-//~ string file2 = typename.file(t);
-//~ int line = t.line;
 
 /* BUG: should not be able to declare these 2 functions.
 void idnMat14x4(float64 mat[]) {
@@ -553,7 +449,18 @@ idnMat14x4(mat2);
 
 // */
 
-/*trace info
+/*debug and trace info
+struct debugInfo {
+	string func;
+	double x;
+	double expected;
+	double got;
+}
+
+define assert(bool condition, const debugInfo &dbginf) = debug("test failed", condition ? 0 : Debug.debug, Debug.deftrace, emit(var, ref(dbginf), ref(debugInfo)));
+
+assert(false, debugInfo("fail", 1., 2., 3.));
+
 void f1(int maxRecursiveCalls) {
 	void f2(int maxRecursiveCalls) {
 		if (maxRecursiveCalls <= 0) {
@@ -577,6 +484,7 @@ void testFunction2(void cb(int n), int n) {
 	cb(n);
 }
 void f4(int maxRecursiveCalls) {
+	assert(maxRecursiveCalls > 0, debugInfo("fail", 1., 2., 3.));
 	if (maxRecursiveCalls <= 0) {
 		trace("stack trace :)");
 		return;

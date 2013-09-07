@@ -116,78 +116,110 @@ int getvtx(mesh msh, int idx) {
 	}
 	return idx;
 }
+
 int setvtxD(mesh msh, int idx, int atr, double x, double y, double z) {
 	struct vector tmp[1];
+
 	if (getvtx(msh, idx) < 0)
 		return -1;
+
 	switch (atr) {
-		default: debug("???"); break;
-		case 'P': case 'p': vecldf(msh->pos + idx, x, y, z, 1); break;
-		case 'N': case 'n': vecnrm(msh->nrm + idx, vecldf(tmp, x, y, z, 0)); break;
+		default:
+			return -1;
+
+		case 'P':
+		case 'p':
+			vecldf(msh->pos + idx, x, y, z, 1);
+			break;
+
+		case 'N':
+		case 'n':
+			vecnrm(msh->nrm + idx, vecldf(tmp, x, y, z, 0));
+			break;
 	}
 	return idx;
 }
 
 int setvtxDV(mesh msh, int idx, double pos[3], double nrm[3], double tex[2], long col) {
-	if (getvtx(msh, idx) < 0)
+	if (getvtx(msh, idx) < 0) {
 		return -1;
-	if (pos) vecldf(msh->pos + idx, pos[0], pos[1], pos[2], 1);
-	if (nrm) vecldf(msh->nrm + idx, nrm[0], nrm[1], nrm[2], 0);
-	if (tex) {
+	}
+
+	if (pos != NULL) {
+		vecldf(msh->pos + idx, pos[0], pos[1], pos[2], 1);
+	}
+
+	if (nrm != NULL) {
+		vecldf(msh->nrm + idx, nrm[0], nrm[1], nrm[2], 0);
+	}
+
+	if (tex != NULL) {
 		msh->tex[idx].s = tex[0] * 65535.;
 		msh->tex[idx].t = tex[1] * 65535.;
 	}
+
 	return idx;
 }
 int addvtxDV(mesh msh, double pos[3], double nrm[3], double tex[2]) {
-	int idx = msh->vtxcnt;
-	if (setvtxDV(msh, idx, pos, nrm, tex, 0) < 0)
-		return -1;
-	return idx;
+	return setvtxDV(msh, msh->vtxcnt, pos, nrm, tex, 0);
 }
+
 int setvtxFV(mesh msh, int idx, float pos[3], float nrm[3], float tex[2]) {
-	if (getvtx(msh, idx) < 0)
+	if (getvtx(msh, idx) < 0) {
 		return -1;
-	//~ if (pos) debug("setvtxFV(%f, %f, %f)", pos[0], pos[1], pos[2]);
-	if (pos) vecldf(msh->pos + idx, pos[0], pos[1], pos[2], 1);
-	if (nrm) vecldf(msh->nrm + idx, nrm[0], nrm[1], nrm[2], 0);
-	if (tex) {
+	}
+	if (pos != NULL) {
+		vecldf(msh->pos + idx, pos[0], pos[1], pos[2], 1);
+	}
+	if (nrm != NULL) {
+		vecldf(msh->nrm + idx, nrm[0], nrm[1], nrm[2], 0);
+	}
+	if (tex != NULL) {
 		msh->tex[idx].s = tex[0] * 65535.;
 		msh->tex[idx].t = tex[1] * 65535.;
 	}
 	return idx;
 }
 int addvtxFV(mesh msh, float pos[3], float nrm[3], float tex[2]) {
-	int idx = msh->vtxcnt;
-	if (setvtxFV(msh, idx, pos, nrm, tex) < 0)
-		return -1;
-	return idx;
+	return setvtxFV(msh, msh->vtxcnt, pos, nrm, tex);
 }
 
 int addseg(mesh msh, int p1, int p2) {
-	if (p1 >= msh->vtxcnt || p2 >= msh->vtxcnt) return -1;
+	if (p1 >= msh->vtxcnt || p2 >= msh->vtxcnt)
+		return -1;
+
 	if (msh->segcnt >= msh->maxseg) {
-		if (msh->maxseg == 0) msh->maxseg = 16;
+		if (msh->maxseg == 0) {
+			msh->maxseg = 16;
+		}
 		msh->segptr = (struct seg*)realloc(msh->segptr, sizeof(struct seg) * (msh->maxseg <<= 1));
 		if (!msh->segptr) return -2;
 	}
+
 	msh->segptr[msh->segcnt].p1 = p1;
 	msh->segptr[msh->segcnt].p2 = p2;
 	return msh->segcnt++;
 }
 int addtri(mesh msh, int p1, int p2, int p3) {
-	if (p1 >= msh->vtxcnt || p2 >= msh->vtxcnt || p3 >= msh->vtxcnt){
+	if (p1 >= msh->vtxcnt || p2 >= msh->vtxcnt || p3 >= msh->vtxcnt) {
 		debug("addTri(%d, %d, %d)", p1, p2, p3);
 		return -1;
 	}
+
 	#define H 1e-10
-	if (vecdst(msh->pos + p1, msh->pos + p2) < H) return 0;
-	if (vecdst(msh->pos + p1, msh->pos + p3) < H) return 0;
-	if (vecdst(msh->pos + p2, msh->pos + p3) < H) return 0;
+	if (vecdst(msh->pos + p1, msh->pos + p2) < H)
+		return 0;
+	if (vecdst(msh->pos + p1, msh->pos + p3) < H)
+		return 0;
+	if (vecdst(msh->pos + p2, msh->pos + p3) < H)
+		return 0;
 	#undef H
+
 	if (msh->tricnt >= msh->maxtri) {
 		msh->triptr = (struct tri*)realloc(msh->triptr, sizeof(struct tri) * (msh->maxtri <<= 1));
-		if (!msh->triptr) return -2;
+		if (msh->triptr == NULL) {
+			return -2;
+		}
 	}
 	msh->triptr[msh->tricnt].i1 = p1;
 	msh->triptr[msh->tricnt].i2 = p2;
@@ -195,8 +227,9 @@ int addtri(mesh msh, int p1, int p2, int p3) {
 	return msh->tricnt++;
 }
 int addquad(mesh msh, int p1, int p2, int p3, int p4) {
-	if (addtri(msh, p1, p2, p3) >= 0)
+	if (addtri(msh, p1, p2, p3) >= 0) {
 		return addtri(msh, p3, p4, p1);
+	}
 	return -1;
 }
 
@@ -249,13 +282,16 @@ static void initBuff(struct growBuffer* buff, int initsize, int elemsize) {
 //~ static float freadf32(FILE *fin) {float result;fread(&result, sizeof(result), 1, fin);return result;}
 static char* freadstr(char buff[], int maxlen, FILE *fin) {
 	char *ptr = buff;
-	for ( ; ; ) {
+	for ( ; maxlen > 0; --maxlen) {
 		int chr = fgetc(fin);
-		if (chr == -1) break;
-		if (chr == 0) break;
-		*ptr = chr;
-		if (maxlen > 0)
-			++ptr, --maxlen;
+
+		if (chr == -1)
+			break;
+
+		if (chr == 0)
+			break;
+
+		*ptr++ = chr;
 	}
 	*ptr = 0;
 	return buff;
@@ -271,7 +307,8 @@ static int read_obj(mesh msh, const char* file) {
 	struct growBuffer nrmb;
 	struct growBuffer texb;
 
-	if (!(fin = fopen(file, "rb"))) return -1;
+	if (!(fin = fopen(file, "rb")))
+		return -1;
 
 	initBuff(&nrmb, 64, 3 * sizeof(float));
 	initBuff(&texb, 64, 2 * sizeof(float));
@@ -288,11 +325,14 @@ static int read_obj(mesh msh, const char* file) {
 		// remove line end character
 		if ((ptr = strchr(buff, 13)))
 			*ptr = 0;
+
 		if ((ptr = strchr(buff, 10)))
 			*ptr = 0;
 
-		if (*buff == '#') continue;				// Comment
-		if (*buff == '\0') continue;			// Empty line
+		if (*buff == '#')				// Comment
+			continue;
+		if (*buff == '\0')				// Empty line
+			continue;
 
 		// Grouping:
 		if (readKVP(buff, "g", NULL, ws)) continue;		// Group name
@@ -832,14 +872,20 @@ void centMesh(mesh msh, scalar size) {
 	bboxMesh(msh, &min, &max);
 
 	vecsca(&use, vecadd(&use, &max, &min), 1./2);		// scale
-	for (i = 0; i < msh->vtxcnt; i += 1)
-		vecsub(&msh->pos[i], &msh->pos[i], &use);
 
-	if (size == 0) return;
+	for (i = 0; i < msh->vtxcnt; i += 1) {
+		vecsub(&msh->pos[i], &msh->pos[i], &use);
+	}
+
+	if (size == 0) {
+		return;
+	}
 
 	vecsub(&use, &max, &min);		// resize
-	if (use.x < use.y) use.x = use.y;
-	if (use.x < use.z) use.x = use.z;
+	if (use.x < use.y)
+		use.x = use.y;
+	if (use.x < use.z)
+		use.x = use.z;
 	size = 2 * size / use.x;
 
 	for (i = 0; i < msh->vtxcnt; i += 1) {
@@ -868,23 +914,25 @@ void normMesh(mesh msh, scalar tolerance) {
 		vecadd(&msh->nrm[i3], &msh->nrm[i3], &nrm);
 	}
 
-	if (tolerance) for (i = 1; i < msh->vtxcnt; i += 1) {
-		for (j = 0; j < i; j += 1) {
-			if (vtxcmp(msh, i, j, tolerance) < 2) {
-				vecadd(&tmp, &msh->nrm[j], &msh->nrm[i]);
-				msh->nrm[i] = tmp;
-				msh->nrm[j] = tmp;
-				break;
+	if (tolerance != 0) {
+		for (i = 1; i < msh->vtxcnt; i += 1) {
+			for (j = 0; j < i; j += 1) {
+				if (vtxcmp(msh, i, j, tolerance) < 2) {
+					vecadd(&tmp, &msh->nrm[j], &msh->nrm[i]);
+					msh->nrm[i] = tmp;
+					msh->nrm[j] = tmp;
+					break;
+				}
 			}
 		}
-	}// */
+	}
 
 	for (i = 0; i < msh->vtxcnt; i += 1) {
 		//~ vecsca(&msh->vtxptr[i].nrm, &msh->vtxptr[i].nrm, 1./msh->vtxptr[i].nrm.w);
 		msh->nrm[i].w = 0;
 		vecnrm(&msh->nrm[i], &msh->nrm[i]);
 	}
-}// */
+}
 
 /**	subdivide mesh
  *	TODO: not bezier curve => patch eval
@@ -954,7 +1002,7 @@ static vector bezexp(struct vector res[4], vector p0, vector c0, vector c1, vect
 	return res;
 }
 static vector bezevl(struct vector res[1], struct vector p[4], scalar t) {
-	//~ p = ((((p3) * t + p2) * t + p1) * t + p0);
+	//~ p = (((p3 * t + p2) * t + p1) * t + p0);
 	vecadd(res, vecsca(res, p+3, t), p+2);
 	vecadd(res, vecsca(res, res, t), p+1);
 	vecadd(res, vecsca(res, res, t), p+0);
@@ -1086,7 +1134,7 @@ inline double* dv3nrm(double dst[3], double src[3]) {
 	return dst;
 }
 
-#if 1
+#if 1 // eval mesh with scripting support
 typedef struct userData {
 	double s, smin, smax;
 	double t, tmin, tmax;
@@ -1171,10 +1219,6 @@ static int f64atan2(state rt, void* _) {
 	return 0;
 }
 
-/*static int addText(state rt, char *file, int line, char *buff) {
-	return ccAddCode(rt, 10, file, line, buff);
-}*/
-
 int evalMesh(mesh msh, int sdiv, int tdiv, char *src, char *file, int line) {
 	static char mem[32 << 10];		// 32K memory
 	state rt = rtInit(mem, sizeof(mem));
@@ -1186,11 +1230,6 @@ int evalMesh(mesh msh, int sdiv, int tdiv, char *src, char *file, int line) {
 	int i, j, err = 0;
 
 	double s, t, ds, dt;	// 0 .. 1
-
-	/*if (logfile(rt, logf) != 0) {
-		debug("can not open file `%s`\n", logf);
-		return -2;
-	}// */
 
 	if (!ccInit(rt, creg_base, NULL)) {
 		debug("Internal error\n");
@@ -1224,7 +1263,7 @@ int evalMesh(mesh msh, int sdiv, int tdiv, char *src, char *file, int line) {
 	err = err || ccAddCode(rt, warnlevel, __FILE__, __LINE__, "setPos(x, y, z);\n");
 	// */
 
-	// optimize on level 3, and do not generate global variables as static variables
+	// optimize on level 3, and do not generate global variables on stack
 	if (err || gencode(rt, -3, 0) != 0) {
 		debug("error compiling(%d), see `%s`", err, logf);
 		logfile(rt, NULL);
@@ -1244,7 +1283,9 @@ int evalMesh(mesh msh, int sdiv, int tdiv, char *src, char *file, int line) {
 	dump(rt, dump_asm | 0x19, NULL, "\ndasm:\n");
 	dump(rt, dump_bin | 0x10, NULL, "\ndump:\n");
 	//~ */
-	logfile(rt, NULL);	// close log
+
+	// close log
+	logfile(rt, NULL);
 
 	#define findint(__ENV, __NAME, _OUT_VAL) ccSymValInt(ccFindSym(__ENV, NULL, __NAME), _OUT_VAL)
 	#define findflt(__ENV, __NAME, _OUT_VAL) ccSymValFlt(ccFindSym(__ENV, NULL, __NAME), _OUT_VAL)
@@ -1284,9 +1325,10 @@ int evalMesh(mesh msh, int sdiv, int tdiv, char *src, char *file, int line) {
 			tex[0] = t;
 			tex[1] = s;
 
-			ud.s = s; ud.t = t;
+			ud.s = s;
+			ud.t = t;
 			ud.isNrm = 0;
-			if (vmExec(rt, NULL, sizeof(mem)/2) != 0) {
+			if (vmExec(rt, NULL, sizeof(mem) / 2) != 0) {
 				debug("error");
 				return -4;
 			}
@@ -1296,15 +1338,17 @@ int evalMesh(mesh msh, int sdiv, int tdiv, char *src, char *file, int line) {
 				dv3nrm(nrm, ud.nrm);
 			}
 			else {
-				ud.s = s + epsilon; ud.t = t;
-				if (vmExec(rt, NULL, sizeof(mem)/2) != 0) {
+				ud.s = s + epsilon;
+				ud.t = t;
+				if (vmExec(rt, NULL, sizeof(mem) / 2) != 0) {
 					debug("error");
 					return -5;
 				}
 				dv3cpy(ds, ud.pos);
 
-				ud.s = s; ud.t = t + epsilon;
-				if (vmExec(rt, NULL, sizeof(mem)/2) != 0) {
+				ud.s = s;
+				ud.t = t + epsilon;
+				if (vmExec(rt, NULL, sizeof(mem) / 2) != 0) {
 					debug("error");
 					return -6;
 				}
@@ -1316,14 +1360,13 @@ int evalMesh(mesh msh, int sdiv, int tdiv, char *src, char *file, int line) {
 				dt[0] = (pos[0] - dt[0]) / epsilon;
 				dt[1] = (pos[1] - dt[1]) / epsilon;
 				dt[2] = (pos[2] - dt[2]) / epsilon;
-				//~ dv3sca(ds, dv3sub(ds, pos, ds), 1. / epsilon);
-				//~ dv3sca(dt, dv3sub(dt, pos, dt), 1. / epsilon);
 				dv3nrm(nrm, dv3crs(nrm, ds, dt));
 			}
 
 			addvtxDV(msh, pos, nrm, tex);
 		}
 	}
+
 	for (j = 0; j < tdiv - 1; ++j) {
 		int l1 = j * sdiv;
 		int l2 = l1 + sdiv;
@@ -1336,51 +1379,3 @@ int evalMesh(mesh msh, int sdiv, int tdiv, char *src, char *file, int line) {
 	return 0;
 }
 #endif
-
-/*static inline void sphere(double dst[3], double nrm[3], double tex[2], double s, double t) {
-	const double PI = 3.14159265358979323846264338327950288419716939937510582097494459;	// A000796
-	const double s_min = 0.0, s_max = 1 * PI;
-	const double t_min = 0.0, t_max = 2 * PI;
-
-	double S = lerp(s_min, s_max, s);
-	double T = lerp(t_min, t_max, t);
-
-	dst[0] = cos(T) * sin(S);
-	dst[1] = sin(T) * sin(S);
-	dst[2] = cos(S);
-
-	dv3nrm(nrm, dst);
-
-	tex[0] = s;
-	tex[1] = t;
-}
-
-int evalSphere(mesh msh, int sdiv, int tdiv) {
-	double s, t, ds, dt;	// 0 .. 1
-	int i, j;
-
-	ds = 1. / (sdiv - 1);
-	dt = 1. / (tdiv - 1);
-	msh->hasTex = msh->hasNrm = 1;
-	msh->tricnt = msh->vtxcnt = 0;
-
-	initMesh(msh, sdiv * tdiv);
-	for (t = 0, j = 0; j < tdiv; t += dt, ++j) {
-		for (s = 0, i = 0; i < sdiv; s += ds, ++i) {
-			double pos[3], nrm[3], tex[2];
-			sphere(pos, nrm, tex, s, t);
-			addvtxDV(msh, pos, nrm, tex);
-		}
-	}
-	for (j = 0; j < tdiv - 1; ++j) {
-		int l1 = j * sdiv;
-		int l2 = l1 + sdiv;
-		for (i = 0; i < sdiv - 1; ++i) {
-			int v1 = l1 + i, v2 = v1 + 1;
-			int v4 = l2 + i, v3 = v4 + 1;
-			addquad(msh, v1, v2, v3, v4);
-		}
-	}
-	return 0;
-}
-// */

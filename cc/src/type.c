@@ -275,6 +275,9 @@ int canAssign(ccState cc, symn var, astn val, int strict) {
 
 	// assigning null or pass by reference
 	if (lnk == cc->null_ref) {
+		if (var && var->type == cc->type_var) {
+			return 1;
+		}
 		// if parameter is byRef or type is byRef
 		if (var->cast == TYPE_ref) {
 			//~ trace("canAssign null to: %-T", var);
@@ -282,9 +285,14 @@ int canAssign(ccState cc, symn var, astn val, int strict) {
 		}
 	}
 
-	// assigning typename or pass by reference
-	if (lnk && lnk->kind == TYPE_rec) {
-		if (var->type == val->type->type) {
+	// assigning a typename or pass by reference
+	if (lnk && (lnk->kind == TYPE_rec || lnk->kind == TYPE_arr)) {
+		//~ debug("assigning typename or pass by reference: %T = %+k", var, val);
+		/*if (var->type == val->type->type) {
+			return 1;
+		}*/
+		if (var->type == cc->type_rec) {
+			//~ debug("assigning typename: %T = %+k", var, val);
 			return 1;
 		}
 	}
@@ -347,6 +355,7 @@ int canAssign(ccState cc, symn var, astn val, int strict) {
 		struct astRec atag;
 		symn vty = val->type;
 
+		memset(&atag, 0, sizeof(atag));
 		atag.kind = TYPE_ref;
 		atag.type = vty ? vty->type : NULL;
 		atag.cst2 = atag.type ? atag.type->cast : 0;
@@ -389,7 +398,7 @@ int canAssign(ccState cc, symn var, astn val, int strict) {
 		}
 	}
 
-	trace("can not assign `%+k` to `%-T`(%t)", val, var, typ->cast);
+	trace("can not assign `%+k` to `%-T`(%?s:%?d:%t)", val, var, val->file, val->line, typ->cast);
 	return 0;
 }
 
@@ -785,7 +794,7 @@ symn typecheck(ccState s, symn loc, astn ast) {
 
 	dieif (!ast, "FixMe");
 
-	ast->cst2 = 0;
+	ast->cst2 = TYPE_any;
 	switch (ast->kind) {
 		default:
 			fatal("FixMe: %t(%+k)", ast->kind, ast);
@@ -890,7 +899,6 @@ symn typecheck(ccState s, symn loc, astn ast) {
 
 		} break;
 		case OPER_dot: {
-			//~ debug("%+k", ast);
 			sym = typecheck(s, loc, ast->op.lhso);
 			if (sym == NULL) {
 				debug("lookup %+k in %T", ast->op.lhso, loc);
@@ -925,13 +933,37 @@ symn typecheck(ccState s, symn loc, astn ast) {
 			return ast->type = lht->type;
 		} break;
 
-		case OPER_adr:		// '+'
+		case OPER_adr: /*{	// '&'
+			symn rht = typecheck(s, loc, ast->op.rhso);
+			symn var = linkOf(ast->op.rhso);
+			ccToken cast;
+
+			if (!rht || !var || loc) {
+				debug("cast(%T)", rht);
+				return NULL;
+			}
+
+			if ((cast = typeTo(ast, s->type_ptr))) {
+				if (!castTo(ast->op.rhso, TYPE_ref)) {
+					debug("%T('%k', %+k): %t", rht, ast, ast, cast);
+					return 0;
+				}
+				if (cast != TYPE_ptr) {
+					debug("cast(%T): %t", rht, cast);
+					return NULL;
+				}
+				return ast->type;
+			}
+			fatal("operator %k (%T): %+k", ast, rht, ast);
+			break;
+		}*/
+
 		case OPER_pls:		// '+'
 		case OPER_mns:		// '-'
 		case OPER_cmt:		// '~'
 		case OPER_not: {	// '!'
-			int cast;
 			symn rht = typecheck(s, loc, ast->op.rhso);
+			ccToken cast;
 
 			if (!rht || loc) {
 				debug("cast(%T)[%k]: %+k", rht, ast, ast);
@@ -948,6 +980,9 @@ symn typecheck(ccState s, symn loc, astn ast) {
 					return 0;
 				}
 				switch (cast) {
+					default:
+						break;
+
 					case TYPE_u32:
 					case TYPE_i32:
 					case TYPE_i64:
@@ -1000,9 +1035,9 @@ symn typecheck(ccState s, symn loc, astn ast) {
 		case OPER_and:		// '&'
 		case OPER_ior:		// '|'
 		case OPER_xor: {	// '^'
-			int cast;
 			symn lht = typecheck(s, loc, ast->op.lhso);
 			symn rht = typecheck(s, loc, ast->op.rhso);
+			ccToken cast;
 
 			if (!lht || !rht || loc) {
 				debug("cast(%T, %T): %T", lht, rht, 0);
@@ -1018,6 +1053,9 @@ symn typecheck(ccState s, symn loc, astn ast) {
 					return 0;
 				}
 				switch (cast) {
+					default:
+						break;
+
 					case TYPE_u32:
 					case TYPE_i32:
 					case TYPE_i64:
@@ -1039,9 +1077,9 @@ symn typecheck(ccState s, symn loc, astn ast) {
 		case OPER_leq:		// '<='
 		case OPER_gte:		// '>'
 		case OPER_geq: {	// '>='
-			int cast = 0;
 			symn lht = typecheck(s, loc, ast->op.lhso);
 			symn rht = typecheck(s, loc, ast->op.rhso);
+			ccToken cast = TYPE_any;
 
 			if (!lht || !rht || loc) {
 				debug("cast(%T, %T) : %+k", lht, rht, ast);
@@ -1092,9 +1130,9 @@ symn typecheck(ccState s, symn loc, astn ast) {
 
 		case OPER_lor:		// '&&'
 		case OPER_lnd: {	// '||'
-			int cast;
 			symn lht = typecheck(s, loc, ast->op.lhso);
 			symn rht = typecheck(s, loc, ast->op.rhso);
+			ccToken cast;
 
 			if (!lht || !rht || loc) {
 				debug("cast(%T, %T)", lht, rht);
@@ -1116,10 +1154,10 @@ symn typecheck(ccState s, symn loc, astn ast) {
 		} break;
 
 		case OPER_sel: {	// '?:'
-			int cast;
 			symn cmp = typecheck(s, loc, ast->op.test);
 			symn lht = typecheck(s, loc, ast->op.lhso);
 			symn rht = typecheck(s, loc, ast->op.rhso);
+			ccToken cast;
 
 			if (!cmp || !lht || !rht || loc) {
 				debug("cast(%T, %T)[%k]", lht, rht, ast);
@@ -1174,9 +1212,9 @@ symn typecheck(ccState s, symn loc, astn ast) {
 			symn lht = typecheck(s, loc, ast->op.lhso);
 			symn rht = typecheck(s, loc, ast->op.rhso);
 			symn var = linkOf(ast->op.lhso);
-			int cast = castOf(lht);
+			ccToken cast = castOf(lht);
 
-			if (!lht || !rht || loc) {
+			if (!lht || !rht || !var || loc) {
 				debug("cast(%T, %T)", lht, rht);
 				return NULL;
 			}

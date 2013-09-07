@@ -10,7 +10,7 @@ struct Biorithm {
 	int color;
 	int period;
 	int period2;
-	string name;
+	string label;
 }
 
 const Biorithm biorithms[] = {
@@ -23,153 +23,7 @@ const Biorithm biorithms[] = {
 	Biorithm(0x9466db, 28, 33, "Wisdom - Bolcsesseg %d%%")
 };
 
-int format(char output[], int pos, FormatFlags &flags, uint32 value) {
-	static const char digits[] = "0123456789abcdefghijklmnopqrstuvwxyz";
-
-	int rad = flags.radix;
-	assert(rad > 0 && rad < digits.length);
-
-	char temp[80];
-	int end = temp.length;
-	//~ string digits = "0123456789abcdefghijklmnopqrstuvwxyz";
-
-	temp[end -= 1] = 0;
-	for ( ; value > 0; value /= rad) {
-		temp[end -= 1] = digits[value % rad];
-	}
-	if (temp[end] == 0) {
-		temp[end -= 1] = '0';
-	}
-
-	//~ width -= len;
-	//~ if (i < 0) width--;
-	//~ if (fill == '0' && i < 0) count_kputc('-');
-	//~ if (adjust == RIGHT) {
-		//~ while (width > 0) { count_kputc(fill); width--; }
-	//~ }
-	//~ if (fill == ' ' && i < 0) count_kputc('-');
-	//~ while (len > 0) { count_kputc((unsigned char) *p++); len--; }
-	//~ while (width > 0) { count_kputc(fill); width--; }
-
-	//~ int sgnChr;	// should be one of: 0, '-', '+'
-	//~ int padChr;	// padding character: 0, '0'
-	//~ int padLen;	// padding length
-	//~ int maxLen;	// maximum length
-	//~ int fmtChr; // format char
-	int strLen = temp.length - end;
-	int padLen = flags.padLen;
-
-	/*if (sgnChr != 0) {
-		padLen -= 1;
-	}*/
-
-	int max = pos + padLen - strLen + 1;
-	if (max > output.length) {
-		max = output.length - 1;
-	}
-	for (; pos < max; pos += 1) {
-		output[pos] = flags.padChr;
-	}
-
-	max = pos + strLen;
-	if (max > output.length) {
-		max = output.length - 1;
-	}
-
-	for (; pos < max; pos += 1) {
-		output[pos] = temp[end];
-		end += 1;
-	}
-	return pos - 1;
-}
-
-void format(char output[], string format, Date value) {
-	int y;
-	int m;
-	int d;
-
-	Date.ToParts(value.days, &y, &m, &d);
-
-	if (format == null) {
-		format = "%04y.%02m.%02d";
-	}
-
-	int pos = 0;
-	int spos = 0;
-	for (int chr; chr = format[spos]; spos += 1) {
-		if (chr != '%') {
-			if (pos < output.length) {
-				output[pos] = chr;
-				pos += 1;
-			}
-			continue;
-		}
-
-		//~ print("pos : %d\n", pos);
-		chr = format[spos += 1];
-		int sgnChr = 0;
-		if (chr == '-' || chr == '+') {
-			sgnChr = chr;
-			chr = format[spos += 1];
-		}
-
-		int padChr = ' ';
-		if (chr == '0') {
-			padChr = chr;
-			chr = format[spos += 1];
-		}
-
-		int padLen = 0;
-		for (;chr >= '0' && chr <= '9';) {
-			padLen = padLen * 10 + chr - '0';
-			chr = format[spos += 1];
-		}
-
-		int maxLen = 10;
-		if (chr == '.') {
-			maxLen = 0;
-			chr = format[spos += 1];
-			for (;chr >= '0' && chr <= '9';) {
-				maxLen = maxLen * 10 + chr - '0';
-				chr = format[spos += 1];
-			}
-		}
-
-		if (chr == 'y') {
-			uint32 val = y;
-			if (y < 0) {
-				val = -val;
-				sgnChr = '-';
-			}
-			FormatFlags flags = FormatFlags(sgnChr, padChr, padLen, maxLen, chr, 10);
-			pos = format(output, pos, &flags, val);
-			//~ continue;
-		}
-		else if (chr == 'm') {
-			uint32 val = m;
-			if (y < 0) {
-				val = -val;
-				sgnChr = '-';
-			}
-			FormatFlags flags = FormatFlags(sgnChr, padChr, padLen, maxLen, chr, 10);
-			pos = format(output, pos, &flags, val);
-			//~ continue;
-		}
-		else if (chr == 'd') {
-			uint32 val = d;
-			if (y < 0) {
-				val = -val;
-				sgnChr = '-';
-			}
-			FormatFlags flags = FormatFlags(sgnChr, padChr, padLen, maxLen, chr, 10);
-			pos = format(output, pos, &flags, val);
-			//~ continue;
-		}
-	}
-}
-//~ */
-
-void biorithm(gxSurf dst, int daysToShow, double now, Date birth, Biorithm biorithms[]) {
+void drawBiorithm(gxSurf dst, int daysToShow, double now, Date birth, Biorithm biorithms[]) {
 
 	static void drawGraph(gxSurf dst, Biorithm &br, int daysToShow, double now, Date birth, int labelposY) {
 		double lx;
@@ -216,8 +70,7 @@ void biorithm(gxSurf dst, int daysToShow, double now, Date birth, Biorithm biori
 		}
 		if (labelposY >= 0) {
 			char text[256] = {0};
-			itoa(text, br.name, precent);
-			//~ format(text, br.name, )
+			format(text, br.label, precent);
 			drawText(dst, Window.padding, labelposY, string(text), br.color);
 		}
 	}
@@ -232,7 +85,7 @@ void biorithm(gxSurf dst, int daysToShow, double now, Date birth, Biorithm biori
 	for (int i = 1; i <= 2 * daysToShow; i += 1) {
 		double time = Window.resx * (i / (2. * daysToShow)) - (now % 1 * (double(Window.resx) / daysToShow / 2));
 		drawLine(dst, time, 0, time, Window.resy, 0x282828);
-	}// */
+	}
 
 	// draw graphs & labels
 	for (int i = 0; i < biorithms.length; i += 1) {
@@ -246,7 +99,7 @@ void biorithm(gxSurf dst, int daysToShow, double now, Date birth, Biorithm biori
 	drawLine(dst, 0, Window.resy / 2, Window.resx, Window.resy / 2, 0x989898);
 	drawLine(dst, Window.resx / 2, 0, Window.resx / 2, Window.resy, 0x989898);
 
-	uint8 text[128];
+	char text[128];
 	format(text, "Date: %04y.%02m.%02d", Date(int64(now)));
 	drawText(dst, Window.padding, Window.padding, emit(string, ref(text)), -1);
 
@@ -258,7 +111,6 @@ void biorithm(gxSurf dst, int daysToShow, double now, Date birth, Biorithm biori
 }
 
 void setupBiorithm(int _daysToShow, Date _now, Date _birth) {
-
 	static int64 pos;
 	static Date now;
 	static Date birth;
@@ -267,15 +119,14 @@ void setupBiorithm(int _daysToShow, Date _now, Date _birth) {
 
 	define inertial_pan = 3000.;
 	define inertial_speed = 1.05;
-
 	static int64 inertial_time = 0;
 	static double inertial_pan_x = 0;
 	static double inertial_pan_y = 0;
 
-	void DrawScreen() {
+	void onDrawScreen() {
 		if (reDraw) {
 			double nowPos = now.days + double(pos * daysToShow) / (Window.resx / 2);
-			biorithm(offScreen, daysToShow, nowPos, birth, biorithms);
+			drawBiorithm(offScreen, daysToShow, nowPos, birth, biorithms);
 			reDraw = false;
 		}
 		static if (inertial_pan) {
@@ -296,7 +147,7 @@ void setupBiorithm(int _daysToShow, Date _now, Date _birth) {
 		}
 	}
 
-	void mouseHandler(int btn, int x, int y) {
+	void onMouseAction(int btn, int x, int y) {
 		static int ox = 0;
 		static int oy = 0;
 		static int ob = 0;
@@ -341,20 +192,18 @@ void setupBiorithm(int _daysToShow, Date _now, Date _birth) {
 		ob = btn;
 	}
 
-	pos = 0;
-	now = _now;
-	birth = _birth;
+	// set callbacks and initialize static variables
+	Gui.setDrawCallback(onDrawScreen);
+	Gui.setMouseHandler(onMouseAction);
 	daysToShow = _daysToShow;
-	Gui.setDrawCallback(DrawScreen);
-	Gui.setMouseHandler(mouseHandler);
+	birth = _birth;
+	now = _now;
+	pos = 0;
 }
 
 //~ Date Now = Date(2012, 11, 10);
-
 Date Now = DateFromTime(time());
 define daysToShow = 15;
 
-//~ Now.days = 6103462;		// 16711.09.19
-
-setupBiorithm(daysToShow, Now, Date(1983, 5, 2));
+setupBiorithm(daysToShow, Now, Date(1983, 5,  2));
 //~ setupBiorithm(daysToShow, Now, Date(1984, 8, 30));

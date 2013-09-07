@@ -1,42 +1,27 @@
-//~ module test_what_does_not_work;
+//~ tests_which_does_not_work;
 
+/+ TODOS:
 //~ int alma(int h)[10];
 //~ int stringMap[string];		stringMap[]
 
-//~ void alma(int a) {
-	//~ static int A = a;
-//~ }
+//~ void alma(int a) {static int A = a;}
 
 //~ int x1[20] = 9;
-//~ int x2[] = x1;
-
-//~ assert(!true);
-
-/+ inlineing ...
-define sqr2(float64 ^x) = x*x;
-define sqr1(float64 x) = sqr2(x);
-define sqr(float64 x) = sqr1(x);
-double x = 9;
-double y = sqr(x*x+x);
+//~ int x2[] = x1;	// size should be 8
 //~ +/
 
-/+ static casting pointers
+/+ inlineing ...
+define sqr1(float64 ^x) = x*x;
+define sqr2(float64 x) = sqr1(x);
+double x = 9;
+double y1 = sqr1(x*x+x);		// 
+double y2 = sqr2(x*x+x);		// should produce the same code as above
+//~ +/
+
+/+ DONE: static casting pointers
 pointer x = emit(pointer, ref("erZKJVDlaknjsdvkSDNVlk"));
 string str = emit(string, ref(x));
 //~ println(emit(string, ref(x)));
-//~ +/
-
-//~ /+ ???
-define A = 9;
-int a1 = A;
-int &a2 = a1;
-
-assert(a1 == A);
-assert(a2 == A);
-
-pointer a = emit(pointer, ref(a1));
-pointer b = emit(pointer, int(a1));
-
 //~ +/
 
 /+ DONE: fixed size array for defines
@@ -47,16 +32,13 @@ void testArr(double x[]) {
 
 define TestArr(double x[16]) = testArr(x);
 
-double x[16] = 1;
+double x[16] = {1};
 //~ testArr(x);
 //~ TestArr(x);
-//~ double x[16] = 1;
-//~ testFunc(x);
-//~ testFunc2(x);
 //~ +/
 
-/* BUG: return idx; does return int instead of double
-double x[16] = 1;
+/+ BUG: return idx; does return int instead of double
+double x[16] = {1};
 
 void forEach(double x[], double cb(int idx)) {
 	for (int i = 0; i < x.length; i += 1) {
@@ -65,47 +47,53 @@ void forEach(double x[], double cb(int idx)) {
 }
 
 double f(int32 idx) {
-	return 1.*idx;
+	//~ result = idx;
+	return idx;
 }
 
 forEach(x, f);
 
 for (int i = 0; i < x.length; i += 1) {
+	print("%d - ", x[i]);
 	println(x[i]);
 }
-//~ */
+//~ +/
 
-/+
-struct Refs{
+/+ BUG: struct containing references.
+struct Refs {
 	int &i;
 	double &d;
 	int f();
 }
 
-static Refs refs;
-void refassign(int &t, double &x, int f()) {
-	refs = Refs(t, x, f);
-}
-
 int a = 6;
 double b = 6;
-int f(){print("ok\n");};
+int f() { print("ok\n"); }
 
-refassign(&a, &b, f);
-if (refs.f != null) {
-	refs.f();
+static Refs refs = Refs(&a, &b, f);
+
+void refassign() {
+	static int a = 62;
+	static double b = 62;
+	static int f2() { print("ok62\n"); }
+
+	refs = Refs(&a, &b, f2);
 }
+
+//~ refassign();
+refs.f();
+
+//~ if (refs.f != null) { refs.f(); }
+
 //~ +/
 
-
-/* typenames
-define sizeof(typename type) = int(type.size);
-define new(typename type) = memmgr(null, type.size);
+/+ BUG: function returning reference or string type.
+//~ define sizeof(typename type) = int(type.size);
+//~ define new(typename type) = memmgr(null, type.size);
 
 struct ComplexByVal {double re; double im;}
 struct &ComplexByRef {double re; double im;}
 
-//? define ComplexByRef(double re, double im) = emit(ComplexByRef, store.b64, dupp.x1_2, f64(re), store.b64, i32.add, i32(8), dupp.x1_2, f64(im), ref(memmgr(null, 16)));
 //~ void print(ComplexByRef val) { print("%F", val.re); print(", "); print("%F", val.im); print("\n"); }
 
 /+ TODO: 
@@ -119,9 +107,14 @@ ComplexByRef ComplexByRef(double re, double im) {
 ComplexByVal v1 = ComplexByVal(3,-2);
 ComplexByRef v2 = new(ComplexByRef);
 ComplexByRef v3 = emit(ComplexByRef, i32(-1));
+//~ ComplexByRef v4 = ComplexByRef(2, -3);
 
-v2.re = v1.re;
+//~ v2.re = v1.re;
 //~ v3 = v2;
 //~ v2 = null;
 
-// */
+
+//~ TODO: return string.
+//~ string alma() {result = "alma";}
+
+// +/

@@ -382,7 +382,36 @@ void testing() {
 	Gui.Repaint();
 }
 
-void setup(vec4f func(float x, float y, float t)) {
+vec4f blob2d(float x, float y, float time) {
+
+	vec2d p = vec2d(2 * x - 1, 2 * y - 1);
+
+	//~ the centre point for each blob
+	vec2d move1 = vec2d(cos(time * 4.5) * 0.4, sin(time * 1.5) * 0.4);
+	vec2d move2 = vec2d(cos(time * 2.0) * 0.4, sin(time * 3.0) * 0.4);
+	//~ vec2d move3 = vec2d(cos(time * 7.0) * 0.4, sin(time * 2.0) * 0.4);
+	//~ vec2d move4 = vec2d(cos(time * 2.0) * 0.4, sin(time * 4.3) * 0.4);
+
+	//~ radius for each blob
+	double r1 = dot(sub(p, move1), sub(p, move1)) * 8;
+	double r2 = dot(sub(p, move2), sub(p, move2)) * 16;
+	//~ double r3 = dot(sub(p, move3), sub(p, move3)) * 32;
+	//~ double r4 = dot(sub(p, move4), sub(p, move4)) * 64;
+
+	//~ sum the meatballs
+	double metaball = (1.0 / Math.max(r1, 1.)) + (1.0 / Math.max(r2, 1.));
+	//~ metaball += 1.0 / max(r3, 1.);
+	//~ metaball += 1.0 / max(r4, 1.);
+
+	//~ alter the cut-off power
+	//~ set the output color
+	result = vec4f(float32(Math.clamp(pow(metaball, 8.0), 0., 1.)));
+}
+
+void setup(vec4f _func(float x, float y, float t)) {
+
+	static vec4f func(float x, float y, float t) = null;
+
 	static void mouseHandler(int btn, int x, int y) {
 		if (btn == 1) {
 			mouseX = x;
@@ -390,7 +419,36 @@ void setup(vec4f func(float x, float y, float t)) {
 		}
 	}
 
-	Gui.setDrawCallback(stereographic2);
+	static void onDraw() {
+
+		float time = .05 * getTime();
+		float cx = (mouseX * WIDTH / Window.resx);
+		float cy = (mouseY * HEIGHT / Window.resy);
+
+		for (int yi = 0; yi < HEIGHT; yi += 1) {
+			float y = (yi - cy) / HEIGHT * 2;
+			for (int xi = 0; xi < WIDTH; xi += 1) {
+				float x = (xi - cx) / WIDTH * 2;
+
+				//~ define vec4f2rgb(vec4f ^col) = rgb(int(col.x * 255), int(col.y * 255), int(col.z * 255));
+
+				int32 col = rgb(func(x, y, time * 6));
+
+				setPixel(dstImg, xi, yi, col);
+			}
+		}
+
+		zoomSurf(offScreen, null, dstImg, null, 1);
+		Gui.Repaint();
+
+		// post a redraw for animation
+		Gui.Repaint();
+	}
+
+	func = _func;
+	Gui.setDrawCallback(onDraw);
 	Gui.setMouseHandler(mouseHandler);
 }
+
+setup(blob2d);
 //~ Gui.exitLoop();

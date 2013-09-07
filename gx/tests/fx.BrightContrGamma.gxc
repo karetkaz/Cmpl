@@ -96,15 +96,15 @@ void drawCB() {
 			define dy = 12;
 			uint8 txt[1024];
 
-			itoa(txt, "brightness: %d", brightness);
+			format(txt, "brightness: %d", brightness);
 			drawText(offScreen, 0, y, string(txt), -1);
 			y += dy;
 
-			itoa(txt, "contrast: %d", contrast);
+			format(txt, "contrast: %d", contrast);
 			drawText(offScreen, 0, y, string(txt), -1);
 			y += dy;
 
-			itoa(txt, "gamma: %d", gamma);
+			format(txt, "gamma: %d", gamma);
 			drawText(offScreen, 0, y, string(txt), -1);
 			y += dy;
 		}

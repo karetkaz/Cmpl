@@ -2805,6 +2805,7 @@ astn decl(ccState s, int Rmode) {
 			}
 		}
 
+		s->pfmt = ref;
 		skiptok(s, STMT_do, 1);
 
 		if (Attr & ATTR_stat) {

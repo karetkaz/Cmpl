@@ -178,7 +178,7 @@ static void fputsym(FILE* fout, symn sym, int mode, int level) {
 		} break;
 
 		default:
-			fatal("FixMe(%s)", sym->name);
+			fatal("FixMe(%s:%k)", sym->name, sym->kind);
 			break;
 	}
 	else fputstr(fout, "(null)");
@@ -861,11 +861,10 @@ static void FPUTFMT(FILE* fout, const char* msg, va_list ap) {
 				} break;
 				case 'A': {		// opcode
 					void* opc = va_arg(ap, void*);
-					if (nil && !opc)  {
-						if (pad != 0) {
-							fputchr(fout, pad);
-						}
-						continue;
+					if (nil && opc == NULL) {
+						str = "";
+						len = 1;
+						break;
 					}
 					fputopc(fout, opc, len, prc, NULL);
 				} continue;
@@ -880,26 +879,56 @@ static void FPUTFMT(FILE* fout, const char* msg, va_list ap) {
 
 				case 'b': {		// bin32
 					uint32_t num = va_arg(ap, int32_t);
+					if (nil && num == 0) {
+						len = pad != 0;
+						str = "";
+						break;
+					}
 					str = fmtuns(buff, sizeof(buff), prc, 2, num);
 				} break;
 				case 'B': {		// bin64
 					uint64_t num = va_arg(ap, int64_t);
+					if (nil && num == 0) {
+						len = pad != 0;
+						str = "";
+						break;
+					}
 					str = fmtuns(buff, sizeof(buff), prc, 2, num);
 				} break;
 				case 'o': {		// oct32
 					uint32_t num = va_arg(ap, int32_t);
+					if (nil && num == 0) {
+						len = pad != 0;
+						str = "";
+						break;
+					}
 					str = fmtuns(buff, sizeof(buff), prc, 8, num);
 				} break;
 				case 'O': {		// oct64
 					uint64_t num = va_arg(ap, int64_t);
+					if (nil && num == 0) {
+						len = pad != 0;
+						str = "";
+						break;
+					}
 					str = fmtuns(buff, sizeof(buff), prc, 8, num);
 				} break;
 				case 'x': {		// hex32
 					uint32_t num = va_arg(ap, int32_t);
+					if (nil && num == 0) {
+						len = pad != 0;
+						str = "";
+						break;
+					}
 					str = fmtuns(buff, sizeof(buff), prc, 16, num);
 				} break;
 				case 'X': {		// hex64
 					uint64_t num = va_arg(ap, int64_t);
+					if (nil && num == 0) {
+						len = pad != 0;
+						str = "";
+						break;
+					}
 					str = fmtuns(buff, sizeof(buff), prc, 16, num);
 				} break;
 
@@ -907,6 +936,13 @@ static void FPUTFMT(FILE* fout, const char* msg, va_list ap) {
 				case 'd': {		// dec32
 					int neg = 0;
 					uint32_t num = va_arg(ap, int32_t);
+
+					if (nil && num == 0) {
+						len = pad != 0;
+						str = "";
+						break;
+					}
+
 					if (chr == 'd' && (int32_t)num < 0) {
 						num = -(int32_t)num;
 						neg = -1;
@@ -922,6 +958,13 @@ static void FPUTFMT(FILE* fout, const char* msg, va_list ap) {
 				case 'D': {		// dec64
 					int neg = 0;
 					uint64_t num = va_arg(ap, int64_t);
+
+					if (nil && num == 0) {
+						len = pad != 0;
+						str = "";
+						break;
+					}
+
 					if (chr == 'D' && (int64_t)num < 0) {
 						num = -(int64_t)num;
 						neg = -1;
@@ -943,6 +986,11 @@ static void FPUTFMT(FILE* fout, const char* msg, va_list ap) {
 				case 'f':		// float32
 				case 'g': {		// float32
 					float64_t num = va_arg(ap, float64_t);
+					if (nil && num == 0) {
+						len = pad != 0;
+						str = "";
+						break;
+					}
 					if ((len = msg - fmt - 1) < 1020) {
 						memcpy(buff, fmt, len);
 						buff[len++] = chr;
@@ -955,6 +1003,11 @@ static void FPUTFMT(FILE* fout, const char* msg, va_list ap) {
 				//~ case 'S':		// wstr
 				case 's': {		// cstr
 					str = va_arg(ap, char*);
+					if (nil && str == 0) {
+						len = pad != 0;
+						str = "";
+						break;
+					}
 				} break;
 
 				//~ case 'C':		// wchr  // passed as int

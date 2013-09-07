@@ -133,41 +133,14 @@ void gx_drawbez3(gx_Surf dst, int x0, int y0, int x1, int y1, int x2, int y2, in
 #define F64_MPI 3.14159265358979323846
 #define F64_2PI (2 * F64_MPI)
 
-/*static inline argb rgblerpw(argb dst, argb src, int t) {		// Linear interpolate t in [0 ... 65535)
-	if (t >= 65536) return src;
-	//~ else if (t <= 0) return dst;
-	dst.r += (t * (src.r - dst.r)) >> 16;
-	dst.g += (t * (src.g - dst.g)) >> 16;
-	dst.b += (t * (src.b - dst.b)) >> 16;
-	return dst;
-}
-static inline argb rgblerpd(argb dst, argb src, double t) {		// Linear interpolate t in [0 ... 1.0)
-	if (t >= 1.) return src;
-	//~ else if (t <= 0.) return dst;
-	dst.r += (unsigned char)(t * (src.r - dst.r) + .5);
-	dst.g += (unsigned char)(t * (src.g - dst.g) + .5);
-	dst.b += (unsigned char)(t * (src.b - dst.b) + .5);
-	return dst;
-}*/
-
-/*void gx_clutblend(clut lut, int argb_mask, argb c1, argb c2) {
-	int idx;
-	for (idx = 0; idx < 256; ++idx) {
-		argb c = rgblerpd(c1, c2, idx / 255.);
-		if (argb_mask & argb_mchn) lut->data[idx].a = c.a;
-		if (argb_mask & argb_rchn) lut->data[idx].r = c.r;
-		if (argb_mask & argb_gchn) lut->data[idx].g = c.g;
-		if (argb_mask & argb_bchn) lut->data[idx].b = c.b;
-	}
-}*/
 static inline float fltmax(float a, float b) {return a > b ? a : b;}
 static inline float fltClamp(float t, float a, float b) {return t < a ? a : t > b ? b : t;}
 
-typedef struct gradient_data {
+struct gradient_data {
 	int	sx, sy, x, y;
 	double	dx, dy, l, a;
 	double (*gf)(struct gradient_data*);
-}gradient_data;
+};
 
 static double gradient_lin_factor(struct gradient_data* g) {
 	int x = g->x - g->sx;
@@ -219,7 +192,8 @@ int gx_gradsurf(gx_Surf dst, gx_Rect roi, gx_Clut lut, int gradtype/* , cmix mix
 		g.sy = roi->y;
 		g.x = roi->w ? roi->w : 1;
 		g.y = roi->h ? roi->h : 1;
-	} else {
+	}
+	else {
 		g.sx = g.sy = 0;
 		g.x = dst->width;
 		g.y = dst->height;
@@ -229,53 +203,66 @@ int gx_gradsurf(gx_Surf dst, gx_Rect roi, gx_Clut lut, int gradtype/* , cmix mix
 		return -2;
 
 	switch (gradtype & gradient_TYP) {
-		default : return -3;
-		case gradient_lin : {
+		default:
+			return -3;
+
+		case gradient_lin:
 			g.dx = g.x;
 			g.dy = g.y;
 			g.l = 1. / (g.x * g.x + g.y * g.y);
 			g.gf = gradient_lin_factor;
-		} break;
-		case gradient_rad : {
+			break;
+
+		case gradient_rad:
 			g.dx = 1. / (g.x * g.x);
 			g.dy = 1. / (g.y * g.y);
 			g.gf = gradient_rad_factor;
-		} break;
-		case gradient_sqr : {
+			break;
+
+		case gradient_sqr:
 			g.dx = 1. / (g.x * g.x);
 			g.dy = 1. / (g.y * g.y);
 			g.gf = gradient_sqr_factor;
-		} break;
-		case gradient_con : {
+			break;
+
+		case gradient_con:
 			g.a = atan2(g.x, g.y) + F64_MPI;
 			g.gf = gradient_con_factor;
 			gradtype |= gradient_rep;
-		} break;
-		case gradient_spr : {
+			break;
+
+		case gradient_spr:
 			g.a = atan2(g.x, g.y) + F64_MPI;
 			g.l = 1. / sqrt(g.x*g.x + g.y*g.y);
 			g.gf = gradient_spr_factor;
 			gradtype |= gradient_rep;
-		} break;
+			break;
+
 	}
 
-	for(g.y = clp->t; g.y < clp->b; ++g.y) {
+	if (gradtype & gradient_rep) {
+		for(g.y = clp->t; g.y < clp->b; ++g.y) {
+			register argb* d = (argb*)dptr;
+			for(g.x = clp->l; g.x < clp->r; ++g.x) {
 
-		register argb* d = (argb*)dptr;
-
-		for(g.x = clp->l; g.x < clp->r; ++g.x) {
-
-			double len = g.gf(&g);
-
-			if (!(gradtype & gradient_rep)) {
-				len = fltClamp(len, 0., 1.);
+				double len = g.gf(&g);
+				len = fmod(len, 1 + 1. / 0x7fffffff);
+				*d++ = p[(int)(len * 0xff) & 0xff];
 			}
-
-			len = fmod(len, 1 + 1. / 0x7fffffff);
-
-			*d++ = p[(int)(len * 0xff) & 0xff];
+			dptr += dst->scanLen;
 		}
-		dptr += dst->scanLen;
+	}
+	else {
+		for(g.y = clp->t; g.y < clp->b; ++g.y) {
+			register argb* d = (argb*)dptr;
+			for(g.x = clp->l; g.x < clp->r; ++g.x) {
+
+				double len = fltClamp(g.gf(&g), 0., 1.);
+				len = fmod(len, 1 + 1. / 0x7fffffff);
+				*d++ = p[(int)(len * 0xff) & 0xff];
+			}
+			dptr += dst->scanLen;
+		}
 	}
 	return 0;
 

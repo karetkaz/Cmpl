@@ -29,7 +29,7 @@
 	rt->libc.args = rt->libc.args->next;
 	return result;
 }// */
-static inline void* poparg2(state rt, void *result, int size) {
+static inline void* poparg(state rt, void *result, int size) {
 	// if result is not null copy
 	if (result != NULL) {
 		memcpy(result, rt->libc.argv, size);
@@ -41,13 +41,6 @@ static inline void* poparg2(state rt, void *result, int size) {
 	return result;
 }
 
-static inline void* poparg(state rt, void *result, int size) {return poparg2(rt, result, size);}
-
-//~ static inline int32_t popi32(state rt) { return *(int32_t*)poparg(rt, NULL, sizeof(int32_t)); }
-//~ static inline int64_t popi64(state rt) { return *(int64_t*)poparg(rt, NULL, sizeof(int64_t)); }
-//~ static inline float32_t popf32(state rt) { return *(float32_t*)poparg(rt, NULL, sizeof(float32_t)); }
-//~ static inline float64_t popf64(state rt) { return *(float64_t*)poparg(rt, NULL, sizeof(float64_t)); }
-
 #define poparg(__ARGV, __TYPE) (((__TYPE*)((__ARGV)->libc.argv += ((sizeof(__TYPE) + 3) & ~3)))[-1])
 static inline int32_t popi32(state rt) { return poparg(rt, int32_t); }
 static inline int64_t popi64(state rt) { return poparg(rt, int64_t); }
@@ -57,7 +50,6 @@ static inline float64_t popf64(state rt) { return poparg(rt, float64_t); }
 
 static inline void* popref(state rt) { int32_t p = popi32(rt); return p ? rt->_mem + p : NULL; }
 static inline char* popstr(state rt) { return popref(rt); }
-
 //#}
 
 state rt = NULL;
@@ -447,7 +439,7 @@ static int surfCall(state rt, void* fun) {
 		case surfOpEvalPxCB: {		// gxSurf evalSurfrgb(gxSurf dst, gxRect &roi, int callBack(int x, int y));
 			gxSurfHnd dst = popi32(rt);
 			gx_Rect roi = popref(rt);
-			symn callback = symfind(rt, popref(rt));
+			symn callback = mapsym(rt, popref(rt));
 			//~ fputfmt(stdout, "callback is: %-T\n", callback);
 
 			gx_Surf sdst = getSurf(dst);
@@ -480,7 +472,7 @@ static int surfCall(state rt, void* fun) {
 		case surfOpFillPxCB: {		// gxSurf fillSurfrgb(gxSurf dst, gxRect &roi, int callBack(int col));
 			gxSurfHnd dst = popi32(rt);
 			gx_Rect roi = popref(rt);
-			symn callback = symfind(rt, popref(rt));
+			symn callback = mapsym(rt, popref(rt));
 
 			gx_Surf sdst = getSurf(dst);
 
@@ -513,7 +505,7 @@ static int surfCall(state rt, void* fun) {
 			int y = popi32(rt);
 			gxSurfHnd src = popi32(rt);
 			gx_Rect roi = popref(rt);
-			symn callback = symfind(rt, popref(rt));
+			symn callback = mapsym(rt, popref(rt));
 
 			gx_Surf sdst = getSurf(dst);
 			gx_Surf ssrc = getSurf(src);
@@ -578,7 +570,7 @@ static int surfCall(state rt, void* fun) {
 		case surfOpEvalFpCB: {		// gxSurf evalSurf(gxSurf dst, gxRect &roi, vec4f callBack(double x, double y));
 			gxSurfHnd dst = popi32(rt);
 			gx_Rect roi = popref(rt);
-			symn callback = symfind(rt, popref(rt));
+			symn callback = mapsym(rt, popref(rt));
 
 			gx_Surf sdst = getSurf(dst);
 
@@ -615,7 +607,7 @@ static int surfCall(state rt, void* fun) {
 		case surfOpFillFpCB: {		// gxSurf fillSurf(gxSurf dst, gxRect &roi, vec4f callBack(vec4f col));
 			gxSurfHnd dst = popi32(rt);
 			gx_Rect roi = popref(rt);
-			symn callback = symfind(rt, popref(rt));
+			symn callback = mapsym(rt, popref(rt));
 
 			gx_Surf sdst = getSurf(dst);
 
@@ -651,7 +643,7 @@ static int surfCall(state rt, void* fun) {
 			gxSurfHnd src = popi32(rt);
 			gx_Rect roi = popref(rt);
 			double alpha = popf64(rt);
-			symn callback = symfind(rt, popref(rt));
+			symn callback = mapsym(rt, popref(rt));
 
 			gx_Surf sdst = getSurf(dst);
 			gx_Surf ssrc = getSurf(src);
@@ -953,7 +945,7 @@ static int meshCall(state rt, void* fun) {
 	}
 	//~ case meshOpGetPos: {		// vec3f meshPos(int Index)
 	//~ case meshOpGetNrm: {		// vec3f meshNrm(int Index)
-	if ((meshFunc)fun == meshOpSetTex) {			// void meshTex(int Index, vec2f Value)
+	if ((meshFunc)fun == meshOpSetTex) {			// void meshTex(int Index, double s, double t)
 		double pos[2];
 		int idx = popi32(rt);
 		pos[0] = popf64(rt);
@@ -977,9 +969,7 @@ static int meshCall(state rt, void* fun) {
 		int p4 = popi32(rt);
 		//~ addtri(&msh, p1, p2, p3);
 		//~ addtri(&msh, p3, p4, p1);
-		//~ int res = 
 		addquad(&msh, p1, p2, p3, p4);
-		//~ reti32(rt, res);
 		return 0;
 	}
 	//~ case meshOpSetSeg: {		// int meshSetSeg(int t, int p1, int p2)
@@ -1184,17 +1174,17 @@ static int miscCall(state rt, void* fun) {
 		}
 
 		case miscOpSetCbMouse: {
-			mouseCallBack = symfind(rt, popref(rt));
+			mouseCallBack = mapsym(rt, popref(rt));
 			return 0;
 		}
 
 		case miscOpSetCbKeyboard: {
-			keyboardCallBack = symfind(rt, popref(rt));
+			keyboardCallBack = mapsym(rt, popref(rt));
 			return 0;
 		}
 
 		case miscOpSetCbRender: {
-			renderMethod = symfind(rt, popref(rt));
+			renderMethod = mapsym(rt, popref(rt));
 			return 0;
 		}
 

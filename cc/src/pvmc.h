@@ -86,7 +86,7 @@ ccState ccOpen(state, char* file, int line, char* source);
 int ccDone(state);
 
 // searching for symbols ...
-symn symfind(state, void *ptr);
+symn mapsym(state, void *ptr);
 
 symn ccFindSym(ccState, symn in, char *name);
 int ccSymValInt(symn sym, int* res);

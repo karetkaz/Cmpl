@@ -36,7 +36,7 @@ void meshGen(bool sclosed, bool tclosed, gxSurf heihgtMap) {
 	}
 }
 
-define division = 128;
+define division = 512/6;
 string img = "media/images/hm2.jpg";
 define resize(gxSurf src, int width, int height) = zoomSurf(gxSurf(width, height), null, src, null, 1);
 
@@ -45,6 +45,11 @@ meshGen(false, false, resize(gxSurf(img), division, division));
 mesh.Center(2);
 mesh.Normalize(0);
 //~ mesh.Normalize(1e-10);
+
+void drawCB() {
+	Gui.Repaint();
+}
+Gui.setDrawCallback(drawCB);
 
 static if (true) {			// use custom mouseHandler
 

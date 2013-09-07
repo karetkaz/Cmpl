@@ -156,7 +156,7 @@ void* gx_cliprect(gx_Surf surf, gx_Rect roi) {
 		return NULL;
 
 	return gx_getpaddr(surf, roi->x, roi->y);
-}// */
+}
 
 
 

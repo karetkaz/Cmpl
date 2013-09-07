@@ -1,5 +1,5 @@
 /* command line options
-application <global options> <local options>*
+application [global options] [local options]...
 
 	<global options>:
 		-O<int>					optimize
@@ -41,9 +41,7 @@ static const int ol = 2;			// optimize level
 static int dl = 0x19;				// disassambly level
 
 //~ static const int cc = 1;			// execution cores
-#define memsize (4 << 20)			// runtime size(4M)
-static const int ss = memsize / 4;	// stack size
-static char mem[memsize];
+static char mem[400 << 20];			// runtime memory of (4M)
 
 const char* STDLIB = "../stdlib.cvx";		// standard library
 
@@ -216,7 +214,7 @@ int evalexp(ccState cc, char* text) {
 }
 
 static int testFunction(state rt, void* funcData) {		// void testFunction(void cb(int n), int n)
-	symn cb = symfind(rt, argref(rt, 0));
+	symn cb = mapsym(rt, argref(rt, 0));
 	int n = argi32(rt, 4);
 	if (cb != NULL) {
 		struct {int n;} args = {n};
@@ -243,21 +241,6 @@ static const char* pluginLibInstall = "ccvmInit";
 static const char* pluginLibDestroy = "ccvmDone";
 
 static int installDll(state rt, int ccApiMain(state rt)) {
-	rt->api.ccBegin = ccBegin;
-	rt->api.ccDefInt = ccDefInt;
-	rt->api.ccDefFlt = ccDefFlt;
-	rt->api.ccDefStr = ccDefStr;
-	rt->api.ccAddType = ccAddType;
-	rt->api.ccAddCall = ccAddCall;
-	rt->api.ccAddCode = ccAddCode;
-	rt->api.ccEnd = ccEnd;
-
-	//~ rt->api.ccSymFind = ccSymFind;
-
-	rt->api.rtAlloc = rtAlloc;
-
-	rt->api.invoke = vmCall;
-	rt->api.symfind = symfind;
 	return ccApiMain(rt);
 }
 
@@ -362,307 +345,316 @@ int program(int argc, char* argv[]) {
 
 	char* stdl = (char*)STDLIB;
 
-	char* prg = argv[0];
+	//~ char* prg = argv[0];
 	dbgf dbg = NULL;
 
-	if (argc < 2) {
-		usage(prg);
-	}
-	else if (argc == 2 && strcmp(argv[1], "--help") == 0) {
-		usage(prg);
-	}
-	else if (argc == 2 && *argv[1] == '=') {
+	// compile, run, debug, ...
+	int level = -1, argi;
+	int opti = ol;
+
+	int gen_code = 1;	// cgen: false/true/debug
+	int run_code = 0;	// exec: true/false
+	char* stk_dump = NULL;
+
+	int out_tree = -1;	// walk: level
+	char* str_tree = NULL;
+	int out_tags = -1;	// tags: level
+	char* str_tags = NULL;
+	int out_dasm = -1;	// dasm: level
+	char* str_dasm = NULL;
+
+	char* logf = 0;			// logger filename
+	char* outf = 0;			// output filename
+
+	int warn = wl;
+	int result = 0;
+
+	int (*onHalt)(state, void*) = NULL;	// print variables and values on exit
+
+	// evaluate constant expression.
+	if (argc == 2 && *argv[1] == '=') {
 		return evalexp(ccInit(rt, creg_def, NULL), argv[1] + 1);
 	}
-	else {		// compile, run, debug, ...
-		int level = -1, argi;
-		int opti = ol;
 
-		int gen_code = 1;	// cgen: false/true/debug
-		int run_code = 0;	// exec: true/false
-		char* stk_dump = NULL;
+	// global options
+	for (argi = 1; argi < argc; ++argi) {
+		char* arg = argv[argi];
 
-		int out_tree = -1;	// walk: level
-		char* str_tree = NULL;
-		int out_tags = -1;	// tags: level
-		char* str_tags = NULL;
-		int out_dasm = -1;	// dasm: level
-		char* str_dasm = NULL;
+		// optimize code
+		if (strncmp(arg, "-O", 2) == 0) {			// optimize level
+			if (strcmp(arg, "-O") == 0)
+				opti = 1;
+			else if (strcmp(arg, "-Oa") == 0)
+				opti = 3;
+			else if (!parsei32(arg + 2, &opti, 10)) {
+				error(rt, NULL, 0, "invalid level '%s'", arg + 2);
+				return 0;
+			}
+		}
 
-		char* logf = 0;			// logger filename
-		char* outf = 0;			// output filename
+		// execute code
+		else if (strncmp(arg, "-x", 2) == 0) {		// exec(&| debug)
+			char* str = arg + 2;
 
-		int warn = wl;
-		int result = 0;
+			if (*str == 'v') {
+				onHalt = libCallHaltDebug;
+				str += 1;
+			}
+			if (*str == 'd' || *str == 'D') {
+				gen_code = 2;
+				if (*str == 'D') {
+					dbg = dbgCon;
+				}
+				if (str[1] == ':') {
+					stk_dump = str + 2;
+					str += 1;
+				}
+			}
+			run_code = 1;
+		}
 
-		int (*onHalt)(state, void*) = NULL;	// print variables and values on exit
+		// output file
+		else if (strcmp(arg, "-l") == 0) {			// log
+			if (++argi >= argc || logf) {
+				error(rt, NULL, 0, "log file not specified");
+				return -1;
+			}
+			logf = argv[argi];
+		}
+		else if (strcmp(arg, "-o") == 0) {			// out
+			if (++argi >= argc || outf) {
+				error(rt, NULL, 0, "output file not specified");
+				return -1;
+			}
+			outf = argv[argi];
+		}
 
-		// global options
-		for (argi = 1; argi < argc; ++argi) {
-			char* arg = argv[argi];
-
-			// optimize code
-			if (strncmp(arg, "-O", 2) == 0) {			// optimize level
-				if (strcmp(arg, "-O") == 0)
-					opti = 1;
-				else if (strcmp(arg, "-Oa") == 0)
-					opti = 3;
-				else if (!parsei32(arg + 2, &opti, 10)) {
-					error(rt, NULL, 0, "invalid level '%s'", arg + 2);
+		// output what
+		else if (strncmp(arg, "-api", 4) == 0) {	// tags
+			level = 2;
+			if (arg[4]) {
+				char* ptr = parsei32(arg + 4, &level, 16);
+				if (*ptr == '.') {
+					str_tags = ptr + 1;
+				}
+				else if (*ptr) {
+					error(rt, NULL, 0, "invalid argument '%s'\n", arg);
 					return 0;
 				}
 			}
-
-			// execute code
-			else if (strncmp(arg, "-x", 2) == 0) {		// exec(&| debug)
-				char* str = arg + 2;
-
-				if (*str == 'v') {
-					onHalt = libCallHaltDebug;
-					str += 1;
+			out_tags = level;
+		}
+		else if (strncmp(arg, "-ast", 4) == 0) {	// tree
+			level = 0;
+			if (arg[4]) {
+				char* ptr = parsei32(arg + 4, &level, 16);
+				if (*ptr == '.') {
+					str_tree = ptr + 1;
 				}
-				if (*str == 'd' || *str == 'D') {
-					gen_code = 2;
-					if (*str == 'D') {
-						dbg = dbgCon;
-					}
-					if (str[1] == ':') {
-						stk_dump = str + 2;
-						str += 1;
-					}
+				else if (*ptr) {
+					error(rt, NULL, 0, "invalid argument '%s'\n", arg);
+					return 0;
 				}
-				run_code = 1;
 			}
-
-			// output file
-			else if (strcmp(arg, "-l") == 0) {			// log
-				if (++argi >= argc || logf) {
-					error(rt, NULL, 0, "log file not specified");
-					return -1;
+			out_tree = level;
+		}
+		else if (strncmp(arg, "-asm", 4) == 0) {	// dasm
+			level = 0;
+			if (arg[4]) {
+				char* ptr = parsei32(arg + 4, &level, 16);
+				if (*ptr == '.') {
+					str_dasm = ptr + 1;
 				}
-				logf = argv[argi];
-			}
-			else if (strcmp(arg, "-o") == 0) {			// out
-				if (++argi >= argc || outf) {
-					error(rt, NULL, 0, "output file not specified");
-					return -1;
+				else if (*ptr) {
+					error(rt, NULL, 0, "invalid argument '%s'\n", arg);
+					return 0;
 				}
-				outf = argv[argi];
 			}
-
-			// output what
-			else if (strncmp(arg, "-api", 4) == 0) {	// tags
-				level = 2;
-				if (arg[4]) {
-					char* ptr = parsei32(arg + 4, &level, 16);
-					if (*ptr == '.') {
-						str_tags = ptr + 1;
-					}
-					else if (*ptr) {
-						error(rt, NULL, 0, "invalid argument '%s'\n", arg);
-						return 0;
-					}
-				}
-				out_tags = level;
-			}
-			else if (strncmp(arg, "-ast", 4) == 0) {	// tree
-				level = 0;
-				if (arg[4]) {
-					char* ptr = parsei32(arg + 4, &level, 16);
-					if (*ptr == '.') {
-						str_tree = ptr + 1;
-					}
-					else if (*ptr) {
-						error(rt, NULL, 0, "invalid argument '%s'\n", arg);
-						return 0;
-					}
-				}
-				out_tree = level;
-			}
-			else if (strncmp(arg, "-asm", 4) == 0) {	// dasm
-				level = 0;
-				if (arg[4]) {
-					char* ptr = parsei32(arg + 4, &level, 16);
-					if (*ptr == '.') {
-						str_dasm = ptr + 1;
-					}
-					else if (*ptr) {
-						error(rt, NULL, 0, "invalid argument '%s'\n", arg);
-						return 0;
-					}
-				}
-				out_dasm = level;
-			}
-
-			// temp
-			else if (strncmp(arg, "-std", 4) == 0) {	// redefine stdlib
-				stdl = arg + 4;
-			}
-			else if (strncmp(arg, "--", 2) == 0) {		// exclude: do not gen code
-				if (strchr(arg, 'c'))
-					gen_code = 0;
-				if (strchr(arg, 's'))
-					stdl = NULL;
-			}
-
-			else break;
+			out_dasm = level;
 		}
 
-		// open logger
-		if (logf && logfile(rt, logf) != 0) {
-			error(rt, NULL, 0, "can not open file `%s`\n", logf);
-			return -1;
+		// temp
+		else if (strncmp(arg, "-std", 4) == 0) {	// redefine stdlib
+			stdl = arg + 4;
+		}
+		else if (strncmp(arg, "--", 2) == 0) {		// exclude: do not gen code
+			if (strchr(arg, 'c'))
+				gen_code = 0;
+			if (strchr(arg, 's'))
+				stdl = NULL;
 		}
 
-		// intstall basic type system.
-		if (!ccInit(rt, creg_def, onHalt)) {
-			error(rt, NULL, 0, "error registering types");
-			logfile(rt, NULL);
-			return -6;
-		}
-
-		// intstall standard libraries.
-		if (reglibs(rt, stdl) != 0) {
-			error(rt, NULL, 0, "error registering lib calls");
-			logfile(rt, NULL);
-			return -6;
-		}
-
-		// compile files and import
-		for (; argi < argc; ++argi) {
-			char* arg = argv[argi];
-
-			if (strncmp(arg, "-w", 2) == 0) {			// warning level
-				if (strcmp(arg, "-wx") == 0)
-					warn = -1;
-				else if (strcmp(arg, "-wa") == 0)
-					warn = 32;
-				else if (*parsei32(arg + 2, &warn, 10)) {
-					error(rt, NULL, 0, "invalid warning level '%s'\n", arg + 2);
-					return 1;
-				}
-			}
-			else if (strncmp(arg, "-L", 2) == 0) {		// import library
-				char* str = arg + 2;
-				if (importLib(rt, str) != 0) {
-					error(rt, NULL, 0, "error importing library `%s`", str);
-				}
-			}
-			else if (strncmp(arg, "-C", 2) == 0) {		// compile source
-				char* str = arg + 2;
-				if (ccAddCode(rt, warn, str, 1, NULL) != 0) {
-					error(rt, NULL, 0, "error compiling `%s`", str);
-				}
-			}
-			else if (*arg != '-') {
-				char* ext = strrchr(arg, '.');
-				if (ext && strcmp(ext, ".so") == 0) {
-					if (importLib(rt, arg) != 0) {
-						error(rt, NULL, 0, "error importing library `%s`", arg);
-					}
-					continue;
-				}
-				if (ext && strcmp(ext, ".dll") == 0) {
-					if (importLib(rt, arg) != 0) {
-						error(rt, NULL, 0, "error importing library `%s`", arg);
-					}
-					continue;
-				}
-				if (ccAddCode(rt, warn, arg, 1, NULL) != 0) {
-					error(rt, NULL, 0, "error compiling `%s`", arg);
-				}
-			}
-			else {
-				error(rt, NULL, 0, "invalid option: `%s`", arg);
-			}
-		}
-
-		// print top of stack as a type or var.
-		if (stk_dump != NULL) {
-			ccState cc = ccOpen(rt, NULL, 0, stk_dump);
-			if (cc != NULL) {
-				astn ast = decl_var(cc, NULL, TYPE_def);
-				printvars = linkOf(ast);
-				if (printvars != NULL) {
-					printvars->name = "\tsp";
-				}
-				else {
-					error(rt, NULL, 0, "error in debug print format `%s`", stk_dump);
-				}
-			}
-		}
-
-		if (rt->errc == 0) {
-
-			// generate variables and vm code.
-			if ((gen_code || run_code) && gencode(rt, opti, gen_code > 1) != 0) {
-				logfile(rt, NULL);
-				closeLibs();
-				return rt->errc;
-			}
-
-			// dump to log or execute
-			if (outf == NULL) {
-				logFILE(rt, stdout);
-			}
-			else {
-				logfile(rt, outf);
-			}
-
-			if (out_tags >= 0) {
-				symn sym = NULL;
-				if (str_tags != NULL) {
-					sym = ccFindSym(rt->cc, NULL, str_tags);
-					if (sym == NULL) {
-						info(rt, NULL, 0, "symbol not found: %s", str_tags);
-					}
-				}
-				dump(rt, dump_sym | (out_tags & 0x0ff), sym, "\ntags:\n#api: replace(`^([^:]*).*$`, `\\1`)\n");
-			}
-			if (out_tree >= 0) {
-				symn sym = NULL;
-				if (str_tree != NULL) {
-					sym = ccFindSym(rt->cc, NULL, str_tree);
-					if (sym == NULL) {
-						info(rt, NULL, 0, "symbol not found: %s", str_tree);
-					}
-				}
-				dump(rt, dump_ast | (out_tree & 0x0ff), sym, "\ncode:\n");
-			}
-			if (out_dasm >= 0) {
-				symn sym = NULL;
-				if (str_dasm != NULL) {
-					sym = ccFindSym(rt->cc, NULL, str_dasm);
-					if (sym == NULL) {
-						info(rt, NULL, 0, "symbol not found: %s", str_dasm);
-					}
-				}
-				dl = out_dasm & 0x0ff;
-				dump(rt, dump_asm | dl, NULL, "\ndasm:\n");
-			}
-			if (run_code != 0) {
-				logFILE(rt, stdout);
-				result = vmExec(rt, dbg, ss);
-			}
-		}
-
-		// close log file
-		logfile(rt, NULL);
-		closeLibs();
-		return result;
+		else break;
 	}
-	return 0;
+
+	// open logger
+	if (logf && logfile(rt, logf) != 0) {
+		error(rt, NULL, 0, "can not open file `%s`\n", logf);
+		return -1;
+	}
+
+	// intstall basic type system.
+	if (!ccInit(rt, creg_def, onHalt)) {
+		error(rt, NULL, 0, "error registering types");
+		logfile(rt, NULL);
+		return -6;
+	}
+
+	// intstall standard libraries.
+	if (reglibs(rt, stdl) != 0) {
+		error(rt, NULL, 0, "error registering lib calls");
+		logfile(rt, NULL);
+		return -6;
+	}
+
+	// compile files and import
+	for (; argi < argc; ++argi) {
+		char* arg = argv[argi];
+
+		if (strncmp(arg, "-w", 2) == 0) {			// warning level
+			if (strcmp(arg, "-wx") == 0)
+				warn = -1;
+			else if (strcmp(arg, "-wa") == 0)
+				warn = 32;
+			else if (*parsei32(arg + 2, &warn, 10)) {
+				error(rt, NULL, 0, "invalid warning level '%s'\n", arg + 2);
+				return 1;
+			}
+		}
+		else if (strncmp(arg, "-L", 2) == 0) {		// import library
+			char* str = arg + 2;
+			if (importLib(rt, str) != 0) {
+				error(rt, NULL, 0, "error importing library `%s`", str);
+			}
+		}
+		else if (strncmp(arg, "-C", 2) == 0) {		// compile source
+			char* str = arg + 2;
+			if (ccAddCode(rt, warn, str, 1, NULL) != 0) {
+				error(rt, NULL, 0, "error compiling `%s`", str);
+			}
+		}
+		else if (*arg != '-') {
+			char* ext = strrchr(arg, '.');
+			if (ext && strcmp(ext, ".so") == 0) {
+				if (importLib(rt, arg) != 0) {
+					error(rt, NULL, 0, "error importing library `%s`", arg);
+				}
+				continue;
+			}
+			if (ext && strcmp(ext, ".dll") == 0) {
+				if (importLib(rt, arg) != 0) {
+					error(rt, NULL, 0, "error importing library `%s`", arg);
+				}
+				continue;
+			}
+			if (ccAddCode(rt, warn, arg, 1, NULL) != 0) {
+				error(rt, NULL, 0, "error compiling `%s`", arg);
+			}
+		}
+		else {
+			error(rt, NULL, 0, "invalid option: `%s`", arg);
+		}
+	}
+
+	// print top of stack as a type or var.
+	if (stk_dump != NULL) {
+		ccState cc = ccOpen(rt, NULL, 0, stk_dump);
+		if (cc != NULL) {
+			astn ast = decl_var(cc, NULL, TYPE_def);
+			printvars = linkOf(ast);
+			if (printvars != NULL) {
+				printvars->name = "\tsp";
+			}
+			else {
+				error(rt, NULL, 0, "error in debug print format `%s`", stk_dump);
+			}
+		}
+	}
+
+	if (rt->errc == 0) {
+
+		// generate variables and vm code.
+		if ((gen_code || run_code) && gencode(rt, opti, gen_code > 1) != 0) {
+			logfile(rt, NULL);
+			closeLibs();
+			return rt->errc;
+		}
+
+		// dump to log or execute
+		if (outf == NULL) {
+			logFILE(rt, stdout);
+		}
+		else {
+			logfile(rt, outf);
+		}
+
+		if (out_tags >= 0) {
+			symn sym = NULL;
+			if (str_tags != NULL) {
+				sym = ccFindSym(rt->cc, NULL, str_tags);
+				if (sym == NULL) {
+					info(rt, NULL, 0, "symbol not found: %s", str_tags);
+				}
+			}
+			dump(rt, dump_sym | (out_tags & 0x0ff), sym, "\ntags:\n#api: replace(`^([^:]*).*$`, `\\1`)\n");
+		}
+		if (out_tree >= 0) {
+			symn sym = NULL;
+			if (str_tree != NULL) {
+				sym = ccFindSym(rt->cc, NULL, str_tree);
+				if (sym == NULL) {
+					info(rt, NULL, 0, "symbol not found: %s", str_tree);
+				}
+			}
+			dump(rt, dump_ast | (out_tree & 0x0ff), sym, "\ncode:\n");
+		}
+		if (out_dasm >= 0) {
+			symn sym = NULL;
+			if (str_dasm != NULL) {
+				sym = ccFindSym(rt->cc, NULL, str_dasm);
+				if (sym == NULL) {
+					info(rt, NULL, 0, "symbol not found: %s", str_dasm);
+				}
+			}
+			dl = out_dasm & 0x0ff;
+			dump(rt, dump_asm | dl, NULL, "\ndasm:\n");
+		}
+		if (run_code != 0) {
+			logFILE(rt, stdout);
+			result = vmExec(rt, dbg, rt->_size / 4);
+		}
+	}
+
+	// close log file
+	logfile(rt, NULL);
+	closeLibs();
+	return result;
 }
 
 extern int vmTest();
 extern int vmHelp();
 
 int main(int argc, char* argv[]) {
+	if (argc < 2) {
+		usage(*argv);
+		return 0;
+	}
+	if (argc == 2) {
+		#if DEBUGGING > 0
+		if (strcmp(argv[1], "-vmTest") == 0) {
+			return vmTest();
+		}
+		if (strcmp(argv[1], "-vmHelp") == 0) {
+			return vmHelp();
+		}
+		#endif
+		if (strcmp(argv[1], "--help") == 0) {
+			usage(*argv);
+			return 0;
+		}
+	}
 	//setbuf(stdout, NULL);
 	//setbuf(stderr, NULL);
-
-	//~ return vmTest();
-	//~ return vmHelp();
 	return program(argc, argv);
 }
 

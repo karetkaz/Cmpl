@@ -533,6 +533,10 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 			break;
 		}
 	}
+	else if (opc == opc_drop) {
+		opc = opc_spc;
+		arg.i8 = -arg.i8;
+	}
 
 	if (opc > opc_last) {
 		fatal("invalid opc(0x%x, 0x%X)", opc, arg.i8);
@@ -854,23 +858,6 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 				s->ss -= 2;
 			}
 		}*/
-		/*else if (opc == opc_spc) {
-			dieif(arg.i8 & (vm_size-1), "FixMe");
-			if (arg.i8 < 0) {
-				if (-arg.i8 < vm_regs * vm_size) {
-					arg.i8 /= -vm_size;
-					opc = opc_drop;
-				}
-			}
-			else {
-				if (+arg.i8 < vm_regs * vm_size) {
-					arg.i8 /= vm_size;
-					opc = opc_loc;
-				}
-			}
-				//~ return 0;
-		}*/
-
 		/*if (opc == opc_set) {
 			int ipp, rm = 0;
 			int op = 0, lhs, rhs;
@@ -978,11 +965,6 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 			dieif(ip->rel != arg.i8, "FixMe");
 			break;
 
-		case opc_drop:
-		case opc_loc:
-			dieif(ip->idx != arg.i8, "FixMe");
-			break;
-
 		default:
 			//~ TODO: check other opcodes too
 			break;
@@ -1068,9 +1050,10 @@ int emitidx(state rt, vmOpcode opc, int arg) {
 			tmp.i8 /= vm_size;
 			break;
 		case opc_drop:
-			opc = opc_spc;
-			tmp.i8 = -tmp.i8;
+			//~ opc = opc_spc;
+			//~ tmp.i8 = -tmp.i8;
 			// no break
+		//~ case opc_drop:
 		case opc_ldsp:
 			return emitarg(rt, opc, tmp);
 	}
@@ -1241,7 +1224,7 @@ static void dbugerr(state rt, cell cpu, char* file, int line, int pu, void* ip, 
 }
 
 static inline void dotrace(state rt, void* cf, symn sym, void* ip, void* sp) {
-	//~ fputfmt(stdout, "%d: (%x, %x):%T\n", rt->vm.pos, ip, sp, symfind(rt, ip));
+	//~ fputfmt(stdout, "%d: (%x, %x):%T\n", rt->vm.pos, ip, sp, mapsym(rt, ip));
 	if (rt->dbg) {
 		if(cf == NULL) {
 			rt->dbg->tracePos -= 1;
@@ -1518,10 +1501,12 @@ void fputopc(FILE* fout, unsigned char* ptr, int len, int offs, state rt) {
 		else fprintf(fout, "   ");
 	}
 
-	if (opc_tbl[ip->opc].name)
+	if (opc_tbl[ip->opc].name) {
 		fputs(opc_tbl[ip->opc].name, fout);
-	else
+	}
+	else {
 		fputfmt(fout, "opc%02x", ip->opc);
+	}
 
 	switch (ip->opc) {
 		case opc_inc:
@@ -1538,11 +1523,6 @@ void fputopc(FILE* fout, unsigned char* ptr, int len, int offs, state rt) {
 			fprintf(fout, " %x", ip->rel);
 			break;
 
-		case opc_loc:
-		case opc_drop:
-			fprintf(fout, " %d", ip->idx);
-			break;
-
 		case opc_jmp:
 		case opc_jnz:
 		case opc_jz:
@@ -1553,11 +1533,12 @@ void fputopc(FILE* fout, unsigned char* ptr, int len, int offs, state rt) {
 			break;
 
 		case opc_task:
-			//~ fputfmt(fout, " %d, %d", ip->dl, ip->cl); break;
-			if (offs < 0)
+			if (offs < 0) {
 				fputfmt(fout, " %d, %d", ip->dl, ip->cl);
-			else
+			}
+			else {
 				fprintf(fout, " %d, .%06x", ip->dl, offs + ip->cl);
+			}
 			break;
 		case opc_sync: fputfmt(fout, " %d", ip->idx); break;
 
@@ -1586,7 +1567,7 @@ void fputopc(FILE* fout, unsigned char* ptr, int len, int offs, state rt) {
 		case opc_ldcr: {
 			fputfmt(fout, " %x", ip->arg.u4);
 			if (rt != NULL) {
-				symn sym = symfind(rt, getip(rt, ip->arg.u4));
+				symn sym = mapsym(rt, getip(rt, ip->arg.u4));
 				if (sym != NULL) {
 					fputfmt(fout, ": %+T: %T", sym, sym->type);
 				}
@@ -1872,7 +1853,7 @@ dbgInfo addCodeMapping(state rt, astn ast, int start, int end) {
 	return result;
 }
 
-#if DEBUGGING > 10
+#if DEBUGGING > 0
 int vmTest() {
 	int i, e = 0;
 	FILE *out = stdout;

@@ -221,7 +221,7 @@ int evalexp(ccState cc, char* text) {
 }
 
 static int testFunction(state rt, void* funcData) {		// void testFunction(void cb(int n), int n)
-	symn cb = symfind(rt, argref(rt, 0));
+	symn cb = mapsym(rt, argref(rt, 0));
 	int n = argi32(rt, 4);
 	if (cb != NULL) {
 		struct {int n;} args = {n};
@@ -248,21 +248,6 @@ static const char* pluginLibInstall = "ccvmInit";
 static const char* pluginLibDestroy = "ccvmDone";
 
 static int installDll(state rt, int ccApiMain(state rt)) {
-	rt->api.ccBegin = ccBegin;
-	rt->api.ccDefInt = ccDefInt;
-	rt->api.ccDefFlt = ccDefFlt;
-	rt->api.ccDefStr = ccDefStr;
-	rt->api.ccAddType = ccAddType;
-	rt->api.ccAddCall = ccAddCall;
-	rt->api.ccAddCode = ccAddCode;
-	rt->api.ccEnd = ccEnd;
-
-	//~ rt->api.ccSymFind = ccSymFind;
-
-	rt->api.rtAlloc = rtAlloc;
-
-	rt->api.invoke = vmCall;
-	rt->api.symfind = symfind;
 	return ccApiMain(rt);
 }
 

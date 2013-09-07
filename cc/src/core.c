@@ -177,7 +177,7 @@ symn ccBegin(state rt, char* cls) {
 	symn result = NULL;
 	if (rt->cc != NULL) {
 		if (cls != NULL) {
-			result = install(rt->cc, cls, TYPE_rec, TYPE_vid, 0, NULL, NULL);
+			result = install(rt->cc, cls, ATTR_const | ATTR_stat | TYPE_rec, TYPE_vid, 0, NULL, NULL);
 		}
 		if (cls == NULL || result) {
 			enter(rt->cc, NULL);
@@ -224,7 +224,7 @@ symn ccDefStr(state rt, char* name, char* value) {
 	return install(rt->cc, name, TYPE_def, TYPE_str, 0, rt->cc->type_str, strnode(rt->cc, value));
 }
 
-symn symfind(state rt, void* ptr) {
+symn mapsym(state rt, void* ptr) {
 	int offs;
 	symn sym = NULL;
 
@@ -334,10 +334,11 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 
 	// generate code
 	switch (ast->kind) {
+		//* c should warn about non cased enum members
 		default:
 			fatal("FixMe(%+k)", ast);
 			return TYPE_any;
-
+		//~ */
 		//#{ STMT
 		case STMT_do:  {	// expr or decl statement
 			int stpos = stkoffs(rt, 0);
@@ -652,6 +653,17 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 			// debug(...)
 			if (rt->cc->libc_dbg && var == rt->cc->libc_dbg) {
 				if (argv) {
+					/*XXX:if (argv->kind == OPER_com) {
+						// the last argument is a object by reference, pass also its type by ref
+						symn typ = argv->op.rhso->type;
+						if (argv->op.rhso->kind == OPER_adr) {
+							typ = argv->op.rhso->op.rhso->type;
+						}
+						if (!genRef(rt, typ)) {
+							trace("%+k", ast);
+							return TYPE_any;
+						}
+					}*/
 					while (argv->kind == OPER_com) {
 						astn arg = argv->op.rhso;
 
@@ -674,6 +686,7 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 				break;
 			}
 			// inline
+
 			if (var && var->kind == TYPE_def) {
 				int chachedArgSize = 0;
 				symn as = var->args;
@@ -790,9 +803,11 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 							return TYPE_any;
 						}
 					}
-					if (stkret < stkoffs(rt, 0) && !emitidx(rt, opc_drop, stkret)) {
-						trace("%+k", ast);
-						return TYPE_any;
+					if (stkret < stkoffs(rt, 0)) {
+						if (!emitidx(rt, opc_drop, stkret)) {
+							trace("%+k", ast);
+							return TYPE_any;
+						}
 					}
 				}
 
@@ -912,7 +927,7 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 						trace("%+k", ast);
 						return TYPE_any;
 					}
-					if (!emitopc(rt, u32_mad)) {
+					if (!emitopc(rt, opc_umad)) {
 						trace("%+k", ast);
 						return TYPE_any;
 					}
@@ -969,7 +984,7 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 			}
 			if (var->kind == TYPE_def) {
 				// static array length is of this type
-				debug("%+T: %t", var, get);
+				trace("%+T: %t", var, get);
 				return cgen(rt, ast->op.rhso, get);
 			}
 
@@ -1332,6 +1347,7 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 			dieif(!typ || !var, "FixMe");
 
 			switch (var->kind) {
+				case TYPE_arr:		// typename
 				case TYPE_rec:		// typename
 				case TYPE_ref: {	// variable
 					ccToken retarr = TYPE_any;
@@ -1403,7 +1419,7 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 					return TYPE_vid;
 
 				case TYPE_def:
-					//~ TODO: this sucks, but it works
+					//~ TODO: reimplement: it works, but ...
 					if (var->init) {
 						return cgen(rt, var->init, get);
 					}
@@ -2237,7 +2253,7 @@ static void install_type(ccState cc, int mode) {
 	}
 
 	if (mode & creg_tvar) {
-		//~ type_var = install(cc, "variant", ATTR_const | TYPE_rec, TYPE_ref, 0, type_rec);
+		type_var = install(cc, "variant", ATTR_const | ATTR_stat | TYPE_rec, TYPE_rec, 2 * vm_size, type_rec, NULL);
 	}
 
 	cc->type_rec = type_rec;
@@ -2249,18 +2265,19 @@ static void install_type(ccState cc, int mode) {
 	cc->type_f32 = type_f32;
 	cc->type_f64 = type_f64;
 	cc->type_ptr = type_ptr;
+	cc->type_var = type_var;
 
 	// aliases.
+	install(cc, "int",    ATTR_const | TYPE_def, 0, 0, type_i32, NULL);
+	install(cc, "long",   ATTR_const | TYPE_def, 0, 0, type_i64, NULL);
+	install(cc, "float",  ATTR_const | TYPE_def, 0, 0, type_f32, NULL);
+	install(cc, "double", ATTR_const | TYPE_def, 0, 0, type_f64, NULL);
 
-	install(cc, "int",    ATTR_const | TYPE_def, 0, 0, cc->type_i32, NULL);
-	install(cc, "long",   ATTR_const | TYPE_def, 0, 0, cc->type_i64, NULL);
-	install(cc, "float",  ATTR_const | TYPE_def, 0, 0, cc->type_f32, NULL);
-	install(cc, "double", ATTR_const | TYPE_def, 0, 0, cc->type_f64, NULL);
-	install(cc, "true",   ATTR_const | TYPE_def, 0, 0, cc->type_bol, intnode(cc, 1));
-	install(cc, "false",  ATTR_const | TYPE_def, 0, 0, cc->type_bol, intnode(cc, 0));
+	install(cc, "true",   ATTR_const | TYPE_def, 0, 0, type_bol, intnode(cc, 1));
+	install(cc, "false",  ATTR_const | TYPE_def, 0, 0, type_bol, intnode(cc, 0));
 
-	type_chr = install(cc, "char", ATTR_const | ATTR_stat | TYPE_rec, TYPE_u32, 1, type_rec, NULL);
 	//~ type_chr = install(cc, "char", ATTR_const | ATTR_stat | TYPE_def, 0, 0, type_u08, NULL);
+	type_chr = install(cc, "char", ATTR_const | ATTR_stat | TYPE_rec, TYPE_u32, 1, type_rec, NULL);
 	type_chr->pfmt = "'%c'";
 
 	//~ TODO: struct string: char[] { ... }, temporarly string is alias for uint8[]
@@ -2271,8 +2288,8 @@ static void install_type(ccState cc, int mode) {
 	}
 
 	if (type_var != NULL) {
-		install(cc, "var",   ATTR_const | TYPE_def, 0, 0, type_var, NULL);		// var is alias for variant
-		install(cc, "array", ATTR_const | TYPE_arr, 0, 0, type_var, NULL);		// array is alias for variant[]
+		install(cc, "var",    ATTR_const | TYPE_def, 0, 0, type_var, NULL);
+		//~ install(cc, "array", ATTR_const | TYPE_arr, 0, 0, cc->type_var, NULL);		// array is alias for variant[]
 	}
 
 	(void)type_i08;
@@ -2295,22 +2312,22 @@ static void install_emit(ccState cc, int mode) {
 		symn u32, i32, i64, f32, f64, v4f, v2d;
 
 		enter(cc, NULL);
-		install(cc, "ref", TYPE_rec, TYPE_ref, vm_size, NULL, NULL);
+		install(cc, "ref", ATTR_const | ATTR_stat | TYPE_rec, TYPE_ref, vm_size, NULL, NULL);
 
-		u32 = install(cc, "u32", TYPE_rec, TYPE_u32, 4, NULL, NULL);
-		i32 = install(cc, "i32", TYPE_rec, TYPE_i32, 4, NULL, NULL);
-		i64 = install(cc, "i64", TYPE_rec, TYPE_i64, 8, NULL, NULL);
-		f32 = install(cc, "f32", TYPE_rec, TYPE_f32, 4, NULL, NULL);
-		f64 = install(cc, "f64", TYPE_rec, TYPE_f64, 8, NULL, NULL);
+		u32 = install(cc, "u32", ATTR_const | ATTR_stat | TYPE_rec, TYPE_u32, 4, NULL, NULL);
+		i32 = install(cc, "i32", ATTR_const | ATTR_stat | TYPE_rec, TYPE_i32, 4, NULL, NULL);
+		i64 = install(cc, "i64", ATTR_const | ATTR_stat | TYPE_rec, TYPE_i64, 8, NULL, NULL);
+		f32 = install(cc, "f32", ATTR_const | ATTR_stat | TYPE_rec, TYPE_f32, 4, NULL, NULL);
+		f64 = install(cc, "f64", ATTR_const | ATTR_stat | TYPE_rec, TYPE_f64, 8, NULL, NULL);
 
-		v4f = install(cc, "v4f", TYPE_rec, TYPE_rec, 16, NULL, NULL);
-		v2d = install(cc, "v2d", TYPE_rec, TYPE_rec, 16, NULL, NULL);
+		v4f = install(cc, "v4f", ATTR_const | ATTR_stat | TYPE_rec, TYPE_rec, 16, NULL, NULL);
+		v2d = install(cc, "v2d", ATTR_const | ATTR_stat | TYPE_rec, TYPE_rec, 16, NULL, NULL);
 
 		install(cc, "nop", EMIT_opc, 0, opc_nop, cc->type_vid, NULL);
 		install(cc, "not", EMIT_opc, 0, opc_not, cc->type_bol, NULL);
-		install(cc, "pop", EMIT_opc, 0, opc_drop, cc->type_vid, intnode(cc, 1));
+		//~ install(cc, "pop", EMIT_opc, 0, opc_drop, cc->type_vid, intnode(cc, 1));
 		install(cc, "set", EMIT_opc, 0, opc_set1, cc->type_vid, intnode(cc, 1));
-		install(cc, "join", EMIT_opc, 0, opc_sync, cc->type_vid, intnode(cc, 1));
+		//~ install(cc, "join", EMIT_opc, 0, opc_sync, cc->type_vid, intnode(cc, 1));
 		//~ install(cc, "set0", EMIT_opc, opc_set1, cc->type_vid, intnode(cc, 0));
 		//~ install(cc, "set1", EMIT_opc, opc_set1, cc->type_vid, intnode(cc, 1));
 
@@ -2322,29 +2339,29 @@ static void install_emit(ccState cc, int mode) {
 			install(cc, "x4", EMIT_opc, 0, opc_dup4, cc->type_vid, intnode(cc, 0));
 			ccEnd(cc->s, typ);
 		}
-		if ((typ = install(cc, "ldz", TYPE_rec, TYPE_vid, 0, NULL, NULL))) {
+		if ((typ = install(cc, "load", ATTR_const | ATTR_stat | TYPE_rec, TYPE_vid, 0, NULL, NULL))) {
 			enter(cc, NULL);
-			install(cc, "x1", EMIT_opc, 0, opc_ldz1, cc->type_vid, intnode(cc, 0));
-			install(cc, "x2", EMIT_opc, 0, opc_ldz2, cc->type_vid, intnode(cc, 0));
-			install(cc, "x4", EMIT_opc, 0, opc_ldz4, cc->type_vid, intnode(cc, 0));
+
+			// load zero
+			install(cc, "z32", EMIT_opc, 0, opc_ldz1, cc->type_vid, NULL);
+			install(cc, "z64", EMIT_opc, 0, opc_ldz2, cc->type_vid, NULL);
+			install(cc, "z128", EMIT_opc, 0, opc_ldz4, cc->type_vid, NULL);
+
+			// load memory
+			install(cc, "i8",   EMIT_opc, 0, opc_ldi1, cc->type_vid, NULL);
+			install(cc, "i16",  EMIT_opc, 0, opc_ldi2, cc->type_vid, NULL);
+			install(cc, "i32",  EMIT_opc, 0, opc_ldi4, cc->type_vid, NULL);
+			install(cc, "i64",  EMIT_opc, 0, opc_ldi8, cc->type_vid, NULL);
+			install(cc, "i128", EMIT_opc, 0, opc_ldiq, cc->type_vid, NULL);
 			typ->args = leave(cc, typ, 1);
 		}
-		if ((typ = install(cc, "load", TYPE_rec, TYPE_vid, 0, NULL, NULL))) {
+		if ((typ = install(cc, "store", ATTR_const | ATTR_stat | TYPE_rec, TYPE_vid, 0, NULL, NULL))) {
 			enter(cc, NULL);
-			install(cc, "b8",   EMIT_opc, 0, opc_ldi1, cc->type_vid, NULL);
-			install(cc, "b16",  EMIT_opc, 0, opc_ldi2, cc->type_vid, NULL);
-			install(cc, "b32",  EMIT_opc, 0, opc_ldi4, cc->type_vid, NULL);
-			install(cc, "b64",  EMIT_opc, 0, opc_ldi8, cc->type_vid, NULL);
-			install(cc, "b128", EMIT_opc, 0, opc_ldiq, cc->type_vid, NULL);
-			typ->args = leave(cc, typ, 1);
-		}
-		if ((typ = install(cc, "store", TYPE_rec, TYPE_vid, 0, NULL, NULL))) {
-			enter(cc, NULL);
-			install(cc, "b8",   EMIT_opc, 0, opc_sti1, cc->type_vid, NULL);
-			install(cc, "b16",  EMIT_opc, 0, opc_sti2, cc->type_vid, NULL);
-			install(cc, "b32",  EMIT_opc, 0, opc_sti4, cc->type_vid, NULL);
-			install(cc, "b64",  EMIT_opc, 0, opc_sti8, cc->type_vid, NULL);
-			install(cc, "b128", EMIT_opc, 0, opc_stiq, cc->type_vid, NULL);
+			install(cc, "i8",   EMIT_opc, 0, opc_sti1, cc->type_vid, NULL);
+			install(cc, "i16",  EMIT_opc, 0, opc_sti2, cc->type_vid, NULL);
+			install(cc, "i32",  EMIT_opc, 0, opc_sti4, cc->type_vid, NULL);
+			install(cc, "i64",  EMIT_opc, 0, opc_sti8, cc->type_vid, NULL);
+			install(cc, "i128", EMIT_opc, 0, opc_stiq, cc->type_vid, NULL);
 			typ->args = leave(cc, typ, 1);
 		}
 
@@ -2353,21 +2370,20 @@ static void install_emit(ccState cc, int mode) {
 		if ((typ = u32) != NULL) {
 			enter(cc, NULL);
 			install(cc, "cmt", EMIT_opc, 0, b32_cmt, cc->type_u32, NULL);
-			//~ install(cc, "adc", EMIT_opc, 0, b32_adc, cc->type_u32, NULL);
-			//~ install(cc, "sbb", EMIT_opc, 0, b32_sbb, cc->type_u32, NULL);
-
-			install(cc, "mul", EMIT_opc, 0, u32_mul, cc->type_u32, NULL);
-			install(cc, "div", EMIT_opc, 0, u32_div, cc->type_u32, NULL);
-			install(cc, "mod", EMIT_opc, 0, u32_mod, cc->type_u32, NULL);
-
-			install(cc, "mad", EMIT_opc, 0, u32_mad, cc->type_u32, NULL);
-			install(cc, "clt", EMIT_opc, 0, u32_clt, cc->type_bol, NULL);
-			install(cc, "cgt", EMIT_opc, 0, u32_cgt, cc->type_bol, NULL);
 			install(cc, "and", EMIT_opc, 0, b32_and, cc->type_u32, NULL);
 			install(cc,  "or", EMIT_opc, 0, b32_ior, cc->type_u32, NULL);
 			install(cc, "xor", EMIT_opc, 0, b32_xor, cc->type_u32, NULL);
 			install(cc, "shl", EMIT_opc, 0, b32_shl, cc->type_u32, NULL);
 			install(cc, "shr", EMIT_opc, 0, b32_shr, cc->type_u32, NULL);
+			install(cc, "sar", EMIT_opc, 0, b32_sar, cc->type_u32, NULL);
+
+			install(cc, "mul", EMIT_opc, 0, u32_mul, cc->type_u32, NULL);
+			install(cc, "div", EMIT_opc, 0, u32_div, cc->type_u32, NULL);
+			install(cc, "mod", EMIT_opc, 0, u32_mod, cc->type_u32, NULL);
+
+			install(cc, "mad", EMIT_opc, 0, opc_umad, cc->type_u32, NULL);
+			install(cc, "clt", EMIT_opc, 0, u32_clt, cc->type_bol, NULL);
+			install(cc, "cgt", EMIT_opc, 0, u32_cgt, cc->type_bol, NULL);
 			//~ install(cc, "to_i64", EMIT_opc, 0, u32_i64, cc->type_i64, NULL);
 			u32->args = leave(cc, typ, 1);
 		}
@@ -2515,6 +2531,37 @@ static void install_emit(ccState cc, int mode) {
 	}
 }
 
+state rtInit(void* mem, unsigned size) {
+	state rt = mem;
+
+	/*TODO: if (mem == NULL) {
+		rt = malloc(size);
+	}*/
+
+	dieif(rt == NULL, "internal error");
+	memset(mem, 0, sizeof(struct stateRec));
+
+	*(void**)&rt->api.ccBegin = ccBegin;
+	*(void**)&rt->api.ccDefInt = ccDefInt;
+	*(void**)&rt->api.ccDefFlt = ccDefFlt;
+	*(void**)&rt->api.ccDefStr = ccDefStr;
+	*(void**)&rt->api.ccAddType = ccAddType;
+	*(void**)&rt->api.ccAddCall = ccAddCall;
+	*(void**)&rt->api.ccAddCode = ccAddCode;
+	*(void**)&rt->api.ccEnd = ccEnd;
+	//~ rt->api.ccSymFind = ccSymFind;
+	*(void**)&rt->api.mapsym = mapsym;
+	*(void**)&rt->api.invoke = vmCall;
+	*(void**)&rt->api.rtAlloc = rtAlloc;
+
+	rt->_size = size - sizeof(struct stateRec);
+	rt->_end = rt->_mem + rt->_size;
+	rt->_beg = rt->_mem;
+
+	logFILE(rt, stdout);//stderr);
+	rt->cc = NULL;
+	return rt;
+}
 ccState ccInit(state rt, int mode, int onHalt(state, void*)) {
 	ccState cc = (void*)(rt->_end - sizeof(struct ccStateRec));
 
@@ -2596,25 +2643,6 @@ int ccDone(state rt) {
 
 	// return errors
 	return rt->errc;
-}
-
-state rtInit(void* mem, unsigned size) {
-	state rt = mem;
-
-	/*TODO: if (rt == NULL) {
-		rt = malloc(size);
-	}*/
-
-	dieif(rt == NULL, "internal error");
-	memset(mem, 0, sizeof(struct stateRec));
-
-	rt->_size = size - sizeof(struct stateRec);
-	rt->_end = rt->_mem + rt->_size;
-	rt->_beg = rt->_mem;
-
-	logFILE(rt, stdout);//stderr);
-	rt->cc = NULL;
-	return rt;
 }
 
 /** allocate memory in the runtime state.

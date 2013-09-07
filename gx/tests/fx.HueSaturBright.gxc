@@ -133,18 +133,15 @@ void drawCB() {
 			char txt[1024];
 			string str = emit(string, ref(txt));
 
-			//~ itoa(str, brightness, 10, 1, true, "brightness: ");
-			itoa(txt, "brightness: %d", brightness);
+			format(txt, "brightness: %d", brightness);
 			drawText(offScreen, 0, y, str, -1);
 			y += dy;
 
-			//~ itoa(str, saturation, 10, 1, true, "saturation: ");
-			itoa(txt, "saturation: %d", saturation);
+			format(txt, "saturation: %d", saturation);
 			drawText(offScreen, 0, y, str, -1);
 			y += dy;
 
-			//~ itoa(str, hue, 10, 1, "hue: ");
-			itoa(txt, "hue: %d", hue);
+			format(txt, "hue: %d", hue);
 			drawText(offScreen, 0, y, str, -1);
 			y += dy;
 		}

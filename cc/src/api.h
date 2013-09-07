@@ -91,7 +91,7 @@ struct stateRec {
 		/** Begin a namespace. Returns NULL if error occurs.
 		 * 
 		 */
-		symn (*ccBegin)(state, char* cls);
+		symn (*const ccBegin)(state, char* cls);
 
 		/** Define a(n) integer, floating point or string constant.
 		 * @param the runtime state.
@@ -99,9 +99,9 @@ struct stateRec {
 		 * @param value the value of the constant.
 		 * @return the symbol to the definition, null on error.
 		 */
-		symn (*ccDefInt)(state, char* name, int64_t value);
-		symn (*ccDefFlt)(state, char* name, float64_t value);
-		symn (*ccDefStr)(state, char* name, char* value);
+		symn (*const ccDefInt)(state, char* name, int64_t value);
+		symn (*const ccDefFlt)(state, char* name, float64_t value);
+		symn (*const ccDefStr)(state, char* name, char* value);
 
 		/** Add a type to the runtime.
 		 * @param state the runtime state.
@@ -110,7 +110,7 @@ struct stateRec {
 		 * @param refType non zero if is a reference type (class).
 		 * @return the symbol to the definition, null on error.
 		 */
-		symn (*ccAddType)(state, const char* name, unsigned size, int refType);
+		symn (*const ccAddType)(state, const char* name, unsigned size, int refType);
 
 		/** Add a libcall (native function) to the runtime.
 		 * @param the runtime state.
@@ -128,7 +128,7 @@ struct stateRec {
 				error...
 			}
 		 */
-		symn (*ccAddCall)(state, int libc(state, void* data), void* data, const char* proto);
+		symn (*const ccAddCall)(state, int libc(state, void* data), void* data, const char* proto);
 
 		/** compile the given file or text block.
 		 * @param state
@@ -138,17 +138,17 @@ struct stateRec {
 		 * @param code if not null, this text will be compiled instead of the file.
 		 * @return the number of errors.
 		 */
-		int (*ccAddCode)(state, int warn, char *file, int line, char *code);
+		int (*const ccAddCode)(state, int warn, char *file, int line, char *code);
 
 		/** End the namespace, makes all declared variables static.
 		 * @param state
 		 * @param cls the namespace, returned by ccBegin.
 		*/
-		void (*ccEnd)(state, symn cls);
+		void (*const ccEnd)(state, symn cls);
 
 		/* Find a symbol by name.
 		 * 
-		symn (*ccSymFind)(ccState cc, symn in, char *name);
+		symn (*const ccSymFind)(ccState cc, symn in, char *name);
 		 */
 
 		/* offset of a pointer in the vm
@@ -172,7 +172,7 @@ struct stateRec {
 				}
 
 				// register event callback
-				onMouse = rt->api.symfind(rt, fun);		// get and find the functions symbol
+				onMouse = rt->api.mapsym(rt, fun);		// get and find the functions symbol
 				return onMouse != NULL;
 			}
 
@@ -189,15 +189,15 @@ struct stateRec {
 				error...
 			}
 		 */
-		symn (*symfind)(state, void *ptr);
+		symn (*const mapsym)(state, void *ptr);
 
 		/** Invoke a callback function inside the vm.
 		 * @param state
 		 * @param fun the symbol of the function.
 		 * @return non zero on error.
-		 * @usage see @symfind example.
+		 * @usage see @mapsym example.
 		*/
-		int (*invoke)(state, symn fun, void* result, void *args);
+		int (*const invoke)(state, symn fun, void* result, void *args);
 
 		/** memory manager of the vm.
 		 * @param the runtime state.
@@ -210,7 +210,7 @@ struct stateRec {
 			ptr != null && size == 0: free
 			ptr != null && size >  0: realloc
 		*/
-		void* (*rtAlloc)(state, void* ptr, unsigned size);
+		void* (*const rtAlloc)(state, void* ptr, unsigned size);
 	} api;
 
 	// memory related
@@ -237,6 +237,7 @@ static inline float32_t argf32(state rt, int offs) { return argval(rt, offs, flo
 static inline float64_t argf64(state rt, int offs) { return argval(rt, offs, float64_t); }
 static inline void* arghnd(state rt, int offs) { return argval(rt, offs, void*); }
 static inline void* argref(state rt, int offs) { int32_t p = argval(rt, offs, int32_t); return p ? rt->_mem + p : NULL; }
+static inline void* argsym(state rt, int offs) { return rt->api.mapsym(rt, argref(rt, offs)); }
 static inline char* argstr(state rt, int offs) { return (char*)argref(rt, offs); }
 #undef argval
 

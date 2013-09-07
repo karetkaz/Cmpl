@@ -59,7 +59,7 @@ void drawCB() {
 	zoomSurf(offScreen, null, pop55, null, 0);
 	static if (true) {
 		char txt[512];
-		itoa(txt, "generation: %d", gen);
+		format(txt, "generation: %d", gen);
 		drawText(offScreen, 0, 0, string(txt), -1);
 	}
 	Gui.Repaint();
