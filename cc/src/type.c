@@ -105,10 +105,10 @@ symn newdefn(ccState s, int kind) {
 	state rt = s->s;
 	symn def = NULL;
 
-	if (rt->_end - rt->_beg > (int)sizeof(struct symRec)) {
+	if (rt->_end - rt->_beg > (int)sizeof(struct symNode)) {
 		def = (symn)rt->_beg;
-		rt->_beg += sizeof(struct symRec);
-		memset(def, 0, sizeof(struct symRec));
+		rt->_beg += sizeof(struct symNode);
+		memset(def, 0, sizeof(struct symNode));
 		def->kind = kind;
 	}
 	else {
@@ -190,20 +190,20 @@ symn ccAddType(state rt, const char* name, unsigned size, int refType) {
 
 /// used to add length property to arrays.
 symn addarg(ccState s, symn sym, const char* name, int kind, symn typ, astn init) {
-	symn args = sym->args;
+	symn args = sym->prms;
 
 	enter(s, NULL);
 	install(s, name, kind, 0, 0, typ, init);
-	sym->args = leave(s, sym, 0);
+	sym->prms = leave(s, sym, 0);
 
 	// non static member
-	if (sym->args) {
-		sym->args->next = args;
+	if (sym->prms) {
+		sym->prms->next = args;
 	}
 	else {
-		sym->args = args;
+		sym->prms = args;
 	}
-	return sym->args;
+	return sym->prms;
 }
 
 // promote
@@ -303,9 +303,9 @@ int canAssign(ccState cc, symn var, astn val, int strict) {
 		// assigning a function
 		if (var->call) {
 			symn fun = linkOf(val);
-			symn arg1 = var->args;
+			symn arg1 = var->prms;
 			symn arg2 = NULL;
-			struct astRec atag;
+			struct astNode atag;
 
 			atag.kind = TYPE_ref;
 			atag.type = typ;
@@ -313,7 +313,7 @@ int canAssign(ccState cc, symn var, astn val, int strict) {
 			atag.ref.link = var;
 
 			if (fun && canAssign(cc, fun->type, &atag, 1)) {
-				arg2 = fun->args;
+				arg2 = fun->prms;
 				while (arg1 && arg2) {
 
 					atag.type = arg2->type;
@@ -352,7 +352,7 @@ int canAssign(ccState cc, symn var, astn val, int strict) {
 
 	// array assign
 	if (typ->kind == TYPE_arr) {
-		struct astRec atag;
+		struct astNode atag;
 		symn vty = val->type;
 
 		memset(&atag, 0, sizeof(atag));
@@ -427,8 +427,8 @@ symn lookup(ccState s, symn sym, astn ref, astn args, int raise) {
 
 	for (; sym; sym = sym->next) {
 		int hascast = 0;
-		astn argval = args;				// arg values
-		symn argsym = sym->args;		// arg symbols
+		astn argval = args;				// arguments
+		symn param = sym->prms;		// parameters
 
 		// there are nameless symbols: functions, array types.
 		if (!sym->name)
@@ -484,9 +484,9 @@ symn lookup(ccState s, symn sym, astn ref, astn args, int raise) {
 					continue;
 			}
 
-			while (argval && argsym) {
+			while (argval && param) {
 
-				if (!canAssign(s, argsym, argval, 0))
+				if (!canAssign(s, param, argval, 0))
 					break;
 
 				//~ debug("%+k%s is probably %-T%s:%t", ref, args ? "()" : "", sym, sym->call ? "()" : "", sym->kind);
@@ -496,18 +496,18 @@ symn lookup(ccState s, symn sym, astn ref, astn args, int raise) {
 					hascast += 1;
 				}
 
-				else if (!canAssign(s, argsym, argval, 1)) {
+				else if (!canAssign(s, param, argval, 1)) {
 					hascast += 1;
 				}
 
 				// TODO: hascast += argval->cst2 != 0;
 
 				argval = argval->next;
-				argsym = argsym->next;
+				param = param->next;
 			}
 
-			if (sym->call && (argval || argsym)) {
-				//~ debug("%-T(%+k, %-T)", sym, argval, argsym);
+			if (sym->call && (argval || param)) {
+				//~ debug("%-T(%+k, %-T)", sym, argval, param);
 				continue;
 			}
 		}
@@ -1271,7 +1271,7 @@ symn typecheck(ccState s, symn loc, astn ast) {
 		sym = s->deft[ref->ref.hash];
 
 		if (loc != NULL) {
-			sym = loc->args;
+			sym = loc->prms;
 		}
 
 		if ((sym = lookup(s, sym, ref, args, 1))) {
@@ -1300,7 +1300,7 @@ symn typecheck(ccState s, symn loc, astn ast) {
 					break;
 			}
 
-			//~ TODO: ugly hack
+            //~ TODO: hack
 			if (istype(sym) && args && !args->next) {			// cast
 				if (!castTo(args, sym->cast)) {
 					debug("%k:%t", args, castOf(args->type));
@@ -1310,31 +1310,31 @@ symn typecheck(ccState s, symn loc, astn ast) {
 
 			if (sym->call) {
 				astn argval = args;			// argument
-				symn argsym = sym->args;	// parameter
+				symn param = sym->prms;	// parameter
 
-				while (argsym && argval) {
-					if (!castTo(argval, castOf(argsym->type))) {
-						debug("%k:%t %+k", argval, castOf(argsym->type), argval);
+				while (param && argval) {
+					if (!castTo(argval, castOf(param->type))) {
+						debug("%k:%t %+k", argval, castOf(param->type), argval);
 						return 0;
 					}
 
 					// TODO: review
-					if (argsym->cast == TYPE_ref || argval->type->cast == TYPE_ref) {
-						if (!castTo(argval, argsym->cast)) {
-							debug("%k:%t", argval, argsym->cast);
+					if (param->cast == TYPE_ref || argval->type->cast == TYPE_ref) {
+						if (!castTo(argval, param->cast)) {
+							debug("%k:%t", argval, param->cast);
 							return 0;
 						}
 					}
 
 					//* if swap(a, b) is written instad of swap(&a, &b)
-					if (argsym->cast == TYPE_ref && argval->type->cast != TYPE_ref) {
+					if (param->cast == TYPE_ref && argval->type->cast != TYPE_ref) {
 						symn lnk = argval->kind == TYPE_ref ? argval->ref.link : NULL;
 						if (argval->kind != OPER_adr && lnk && lnk->cast != TYPE_ref && lnk->type->cast != TYPE_ref) {
 							warn(s->s, 2, argval->file, argval->line, "argument `%+k` is not explicitly passed by reference", argval);
 						}
 					}// */
 
-					argsym = argsym->next;
+					param = param->next;
 					argval = argval->next;
 				}
 
@@ -1366,7 +1366,7 @@ int fixargs(symn sym, int align, int stbeg) {
 	int stdiff = 0;
 	int isCall = sym->call;
 	//~ int stbeg = sizeOf(sym->type);
-	for (arg = sym->args; arg; arg = arg->next) {
+	for (arg = sym->prms; arg; arg = arg->next) {
 
 		if (arg->kind != TYPE_ref)
 			continue;
@@ -1409,7 +1409,7 @@ int fixargs(symn sym, int align, int stbeg) {
 	}
 	//~ because args are evaluated from right to left
 	if (isCall) {
-		for (arg = sym->args; arg; arg = arg->next) {
+		for (arg = sym->prms; arg; arg = arg->next) {
 			arg->offs = stdiff - arg->offs;
 		}
 	}
@@ -1524,10 +1524,10 @@ symn leave(ccState s, symn dcl, int mkstatic) {
 
 	if (sta) {
 		if (dcl) {
-			dcl->sdef = sta;
+			dcl->flds = sta;
 		}
 		else if (s->func) {
-			s->func->sdef = sta;
+			s->func->flds = sta;
 		}
 	}
 

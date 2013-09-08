@@ -1,0 +1,799 @@
+/* TODO:
+	static if else part?
+	js like initialization.
+	inside a static if false threat errors as warnings?
+
+	separate struct and unoin declaration?
+	in case of unions create a constructor?
+ */
+/* TODO: define/operator
+ * define-s are implicit
+ * operator-s are explicit
+ * 
+ * struct float3 { float x; float y; float z; }
+ * struct float4 { float x; float y; float z; float w; }
+ * 
+ * and:
+ * define float3(float4 x) = float3(x.x, x.y, x.z);
+ * operator float4(float3 x) = float4(x.x, x.y, x.z, 0.);
+ *
+ * then:
+ * float4 a = float4(1., 2., 3., 4.);
+ * float3 b = float3(a);
+ * float4 c = b;				// this will call `operator float4(float3 x)`
+ * float3 d = a;				// Error: undefined operator float3(float4 x)
+ * 
+ * 
+ * operator -(int32 rhs) = emit(i32.neg, i32(rhs));
+ * operator (int32 lhs) + (int32 rhs) = emit(i32.add, i32(rhs), i32(lhs));
+ * 
+ * geters only.
+ * operator (string lhs) [int32 rhs] = emit(int32, load.i8, u32.mad, i32(1), i32(rhs), ref(lhs));
+ *
+ * or set enabled indexing.
+ * operator (string lhs) [int32 rhs] = emit(char&, i32.mad, i32(1), i32(rhs), ref(lhs));
+ * 
+ * operator int32(string value) = atoi(value, 10);
+ * 
+**/
+
+/* TODO: inout param
+ * inout argument: &&
+ * in case of defines: symbolic parameter
+ *   void free(pointer &&ref) {
+ *     memmgr(ref, 0);
+ *     ref = null;
+ *   }
+ * 
+**/
+/* TODO: destructors
+ * define void(var &a) = void(typename.Invoke(a.type, ".dtor", a.data));
+ * 
+ * define void(int8 &&a)    = void(0);
+ * define void(int16 &&a)   = void(0);
+ * define void(int32 &&a)   = void(0);
+ * define void(int64 &&a)   = void(0);
+ * define void(uint8 &&a)   = void(0);
+ * define void(uint16 &&a)  = void(0);
+ * define void(uint32 &&a)  = void(0);
+ * define void(float32 &&a) = void(0);
+ * define void(float64 &&a) = void(0);
+**/
+/+ TODO: errors
+/+ recursively define
+define fact(int64 n) = (n * fact(n - 1));
+//~ +/
+//~ +/
+/* BUGS:
+	arrays in structures
+	array of references
+// */
+
+enum Test {
+	Emit = ~0;
+	Bits = ~0;
+	Type = ~0;
+	Misc = ~0;
+	Math = ~0;
+	Call = ~0;
+}
+static if (true) {
+struct hex8: int8;			//%hex8(%02x)
+struct hex16: int16;		//%hex16(%04x)
+struct hex32: int32;		//%hex32(%08x)
+struct hex64: int64;		//%hex64(%016X)
+struct bin32: int32;		//%bin32(%032b)
+
+define print(hex32 arg) = print("%08x", int64(arg));
+define println(hex32 arg) = print("%08x\n", int64(arg));
+define print(hex64 arg) = print("%08X", int64(arg));
+define println(hex64 arg) = print("%016X\n", int64(arg));
+}
+
+static if (Test.Emit) {
+/+ emit should be such as:
+#pragma aux (parm [edi] [eax] [edx] value [edi] modify exact [xmm0]) vecmul =\
+	"movps	xmm0, [eax]"\
+	"mulps	xmm0, [edx]"\
+	"movups	[edi], xmm0"
++/
+static if (Test.Emit & 0x01) {
+float32 res1 = emit(float32, f32.div, f32(2), f32(Math.pi));
+float64 res2 = emit(f64.neg, f64(Math.pi));
+float32 res3 = emit(i32, f32(Math.pi));
+hex32 res4 = emit(i32, f32(Math.pi));
+}
+static if (Test.Emit & 0x02) {
+define shl(int32 value, int count) = emit(i32.shl, i32(count), i32(value));
+define shr(int32 value, int count) = emit(i32.shr, i32(count), i32(value));
+define shr(uint32 value, int count) = emit(u32.shr, i32(count), i32(value));
+
+define add(float32 a, float32 b) = emit(f32.add, f32(b), f32(a));		// := a + b
+define sub(float32 a, float32 b) = emit(f32.sub, f32(b), f32(a));
+define mul(float32 a, float32 b) = emit(f32.mul, f32(b), f32(a));
+define div(float32 a, float32 b) = emit(f32.div, f32(b), f32(a));
+define mod(float32 a, float32 b) = emit(f32.mod, f32(b), f32(a));
+
+define mad(float32 a, float32 b, float32 c) = emit(f32.add, f32.mul, f32(a), f32(b), f32(c));	// a * b + c
+define mad(float64 a, float64 b, float64 c) = emit(f64.add, f64.mul, f64(a), f64(b), f64(c));	// a * b + c
+define mad(int32 size, int32 index, int32 offset) = emit(u32.mad, i32(size), i32(index), i32(offset));
+
+//~ int a = -0x8989;
+//! int32 a1 = shr(uint32(a), 8);
+//! int64 a2 = shr(int32(a), 8);
+
+//~ float32 X1 = mad(2, 3, 4000);
+//~ float32 X2 = mad(float32(2), float32(3), float32(4000));
+//~ float32 X3 = mad(2., 3., 4000.);
+
+}
+static if (Test.Emit & 0x04) {	// Complex multiplication
+
+enum prog {
+	sisd = 1;
+	simd = 2;
+}
+
+define test2exec = prog.simd;
+define times2exec = -10000000;
+
+//~ /* Complex is defined in stdlib
+struct Complex2 {
+	float64 re;
+	float64 im;
+}// */
+
+//~ define Complex2(float64 re, float64 im) = emit(Complex2, f64(re), f64(im));
+//~ define Complex2(float64 re) = Complex2(re, float64(0));
+
+static if (test2exec) {
+static if (test2exec == prog.sisd) {
+
+define add(Complex2 &a, Complex2 &b) = Complex2(a.re + b.re, a.im + b.im);
+define add(Complex2 &a, float64 b) = Complex2(a.re + b, a.im);
+define add(float64 a, Complex2 &b) = Complex2(a + b.re, b.im);
+
+define sub(Complex2 &a, Complex2 &b) = Complex2(a.re - b.re, a.im - b.im);
+define sub(Complex2 &a, float64 b) = Complex2(a.re - b, a.im);
+define sub(float64 a, Complex2 &b) = Complex2(a - b.re, b.im);
+
+define mul(Complex2 &a, Complex2 &b) = Complex2(a.re * b.re - a.im * b.im, a.re * b.im + a.im * b.re);
+define mul(Complex2 &a, float64 &b) = Complex2(a.re * b, a.im * b);
+define mul(float64 &a, Complex2 &b) = Complex2(a * b.re, a * b.im);
+}
+static if (test2exec == prog.simd) {
+//~ define add(Complex2 &a, Complex2 &b) = emit(Complex2, v2d.add, f64(b.re), f64(b.im), f64(a.re), f64(a.im));
+define add(Complex2 a, Complex2 b) = emit(Complex2, v2d.add, Complex2(b), Complex2(a));
+define add(Complex2 &a, float64 b) = emit(Complex2, v2d.add, f64(b), f64(0), Complex2(a));
+define add(float64 a, Complex2 &b) = emit(Complex2, v2d.add, Complex2(b), f64(a), f64(0));
+
+define sub(Complex2 a, Complex2 b) = emit(Complex2, v2d.sub, Complex2(b), Complex2(a));
+define sub(Complex2 &a, float64 b) = emit(Complex2, v2d.sub, f64(b), f64(0), Complex2(a));
+define sub(float64 a, Complex2 &b) = emit(Complex2, v2d.sub, Complex2(b), f64(a), f64(0));
+
+define mul(Complex2 &a, Complex2 &b) = emit(Complex2,
+	f64.sub, v2d.mul, f64(b.im), f64(b.re), f64(a.im), f64(a.re),	// re = a.re * b.re - a.im * b.im
+	f64.add, v2d.mul, Complex2(b), f64(a.im), f64(a.re)	// im = a.re * b.im + a.im * b.re;
+);
+//~ define mul(Complex2 &a, double b) = emit(Complex2, v2d.mul, f64(b), f64(b), f64(a.im), f64(a.re));
+//~ define mul(double a, Complex2 &b) = emit(Complex2, v2d.mul, f64(b.im), f64(b.re), f64(a), f64(a));
+}
+}
+
+Complex2 Ca = Complex2(3., 4.);
+Complex2 Cb = Complex2(2., 5.);
+Complex2 Cc = mul(Ca, Cb);
+//~ Complex2 Cc = mul(Complex2(3., 4.), Complex2(2., 5.));
+
+static if (times2exec > 0) {
+	for (int i = 0; i < times2exec; i += 1) {
+		Complex2 C1 = mul(Ca, Cb);
+	}
+}
+}// +/
+static if (Test.Emit & 0x08) {	// Vector4
+
+//~ vec4f v1 = emit(vec4f, f32(11), f32(12), f32(13), f32(14));
+//~ vec4f v2 = emit(vec4f, f32(21), f32(22), f32(23), f32(24));
+vec4f v1 = vec4f(11., 12., 13., 14.);
+vec4f v2 = vec4f(21., 22., 23., 24.);
+//~ println(v2);
+//~ vec4f v3 = emit(vec4f, swz.xywz, vec4f(v1));
+}// +/
+} // */
+static if (Test.Bits) {
+static if (Test.Bits & 1) {		// compute bits
+
+bin32 test_bit1_value = 100;
+bin32 test_bit1_bitlo = bitlo(test_bit1_value);
+bin32 test_bit1_bithi = bithi(test_bit1_value);
+bin32 test_bit1_bswap = bitswp(test_bit1_value);
+int32 test_bit1_bitcnt = bitcnt(test_bit1_value);
+int32 test_bit1_bitsf = bitsf(test_bit1_value);
+int32 test_bit1_bitsr = bitsr(test_bit1_value);
+}
+static if (Test.Bits & 2) {		// compute bits
+void bitsget(int bitsize, bool signed, int64 &min, int64 &max) {
+	int64 mask = int64.Shr(int64(-1), -bitsize);
+	min = int64.Shl(-int64(signed), bitsize - 1);
+	max = int64.And(min - 1, mask);
+}
+
+int bitsize = 10;
+hex64 min;
+hex64 max;
+hex64 umin;
+hex64 umax;
+
+bitsget(bitsize, true, &min, &max);
+bitsget(bitsize, !true, &umin, &umax);
+
+//~ assert(umin == 0);
+//~ assert(umin != min);
+//~ assert(umax != max);
+
+}
+} // */
+static if (Test.Type) {
+static if (Test.Type & 0x01) {		// lookup test
+
+define int1 = int(1990);
+define int1() = int(1995);
+define int1(int32 _) = int(2010);
+define int1(float64 _) = int(2015);
+
+//~ int32 a1 = int1;			// 1990
+//~ int32 a2 = int1();			// 1995
+//~ int32 a3 = int1(0);			// 2010
+//~ int32 a4 = int1(0.);		// 2015
+
+assert(int1 == 1990);
+assert(int1() == 1995);
+assert(int1(0) == 2010);
+assert(int1(0.) == 2015);
+
+}
+static if (Test.Type & 0x02) {
+
+float64 NAN = Math.nan;
+int isNan1 = int(Math.isNan(NAN));
+int isNan2 = int(Math.isNan(Math.nan));
+}
+static if (Test.Type & 0x04) {		// union & packing
+//~ struct and arrays
+struct fltint32:0 {int32 i;float32 f;}
+struct fltint64:0 {int64 i;float64 f;}
+
+fltint64 fltintunionvalue;
+fltintunionvalue.f = 20;
+}
+static if (Test.Type & 0x08) {		// color
+struct bgra:1 {
+	uint8 b; 	//%blue(%d)
+	uint8 g; 	//%green(%d)
+	uint8 r; 	//%red(%d)
+	uint8 a; 	//%alpha(%d)
+}
+struct color:0 {
+	int32 val;	//%#%08x
+	bgra col;	//%
+}
+
+define color(int32 c) = emit(color, i32(c));
+//~ define cxff(int32 c) = int32(c & 0xff);
+//~ define color(int32 a, int32 r, int32 g, int32 b) = emit(color, i32((cxff(a) << 24) | (cxff(r) << 16) | (cxff(g) << 8) | cxff(b)));
+
+define color(int32 a, int32 r, int32 g, int32 b) = color(int32(((a & 0xff) << 24) | ((r & 0xff) << 16) | ((g & 0xff) << 8) | ((b & 0xff) << 0)));
+define color(float64 a, float64 r, float64 g, float64 b) = color(int32(a*255), int32(r*255), int32(g*255), int32(b*255));
+
+define color(int32 r, int32 g, int32 b) = color(int32(255), r, g, b);
+define color(float64 r, float64 g, float64 b) = color(float64(1), r, g, b);
+
+//~ color C1 = color(0xcafebabd);
+//~ color C2 = color(0xca, 0xfe, 0xba, 0xbc);
+//~ color C3 = emit(color, i32(0xcafebabe));
+//~ color C4 = emit(color, i32(0xcafebabf));
+color C5 = color(0.1, .5, .7);
+//~ color C5 = color(1, 5, 205);
+
+enum colors: color {
+	c5 = color(0.1, .5, 1.);
+	none = color(-1);
+	//~ pink = color(2,3,4);
+}
+color c5 = colors.c5;
+
+}
+static if (Test.Type & 0x10) {		// arrays
+// 1.K int maximum(int arr[12])
+// 2.K int maximum(int arr[])
+// 3.X int maximum(int arr...)
+
+int arr2[3] = 1, 2, 3;	// array
+//~ int arr3[] = arr2;		// slice
+
+int maximum(int arr[]) {
+	result = arr[0];
+	for (int i = 1; i < arr.length; i += 1) {
+		if (result < arr[i]) {
+			result = arr[i];
+		}
+	}
+}
+
+void sort(int arr[]) {
+	for (int i = 0; i < arr.length - 1; i += 1) {
+		for (int j = i + 1; j < arr.length; j += 1) {
+			if (arr[i] > arr[j]) {
+				int tmp = arr[i];
+				arr[i] = arr[j];
+				arr[j] = tmp;
+			}
+		}
+	}
+}
+
+int bsearch(int arr[], int elem) {
+	int lo = 0;
+	int hi = arr.length;
+
+	result = -1;
+	for (;lo < hi;) {
+		int mid = lo + ((hi - lo) / 2);
+		int val = arr[mid];
+
+		if (val == elem) {
+			return mid;
+		}
+		else if (val > elem) {
+			hi = mid;
+		}
+		else {
+			lo = mid + 1;
+		}
+	}
+}
+
+void randomize(int arr[], int max) {
+	for (int i = 0; i < arr.length; i += 1) {
+		arr[i] = rand() % max;
+	}
+}
+
+randomize(arr2, 300);
+int test_arr_max = maximum(arr2);
+int test_arr_toFind = arr2[arr2.length / 2];
+sort(arr2);
+int test_arr_index = bsearch(arr2, test_arr_toFind);
+
+}
+} // */
+static if (Test.Misc) {
+static if (Test.Misc & 1) {			// matrix multiply
+// Matrix Multiply
+
+define dim = 7;
+struct scalar: float64;		//%%.0f
+scalar m1[dim][dim];
+scalar m2[dim][dim];
+scalar m3[dim][dim];
+
+//~ /+ Initialize
+for (int i = 0; i < dim; i += 1) {
+	for (int j = 0; j < dim; j += 1) {
+		//~TODO: error: m1[i][j] = m2[i][j] = (i == j) + 2;
+		m1[i][j] = m2[i][j] = (i == j) * 1. + 0;
+	}
+} // +/
+
+//~ /+ Compute
+for (int i = 0; i < dim; i += 1) {
+	for (int j = 0; j < dim; j += 1) {
+		m3[i][j] = 0;
+		for (int k = 0; k < dim; k += 1) {
+			m3[i][j] += m1[i][k] * m2[k][j];
+		}
+	}
+} // +/
+
+/+ Print
+for (int i = 0; i < dim; i += 1) {
+	for (int j = 0; j < dim; j += 1) {
+		if (j != 0)
+			putchr(' ');
+		print(m3[i][j]);
+	}
+	putchr('\n');
+} // +/
+}
+} // */
+static if (Test.Math) {
+static if (Test.Math & 1) {
+	double x = Math.pi / 2;
+	double absx = Math.abs(-x);
+	double sinx = sin(x);
+	double cosx = cos(x);
+	double tanx = tan(x);
+	double logx = log(x);
+	double expx = exp(x);
+	double powx = pow(2, 8);
+	//~ double ___x = ___(x);
+}
+}
+static if (Test.Call) {
+static if (Test.Call & 1) {			// 256 bit(8x32bit) integer
+struct int32x8 {
+	int32 i8;	//%%08x
+	int32 i7;	//%%08x
+	int32 i6;	//%%08x
+	int32 i5;	//%%08x
+	int32 i4;	//%%08x
+	int32 i3;	//%%08x
+	int32 i2;	//%%08x
+	int32 i1;	//%%08x
+	//~ int32 i1;	//%%08x
+	//~ int32 i2;	//%%08x
+	//~ int32 i3;	//%%08x
+	//~ int32 i4;	//%%08x
+	//~ int32 i5;	//%%08x
+	//~ int32 i6;	//%%08x
+	//~ int32 i7;	//%%08x
+	//~ int32 i8;	//%%08x
+} // */
+
+//~ define i32x8(int i1, int i2, int i3, int i4, int i5, int i6, int i7, int i8) = emit(i32x8, i32(i1), i32(i2), i32(i3), i32(i4), i32(i5), i32(i6), i32(i7), i32(i8));
+define int32x8(int32 i0) = emit(int32x8, dupp.x1, dupp.x2, dupp.x2, dupp.x1, i32.shr, i32(31), dupp.x1, i32(i0));
+define int32x8(uint32 i0) = emit(int32x8, dupp.x1, dupp.x2, dupp.x2, dupp.x1, i32(0), i32(i0));
+
+void println(int32x8 &x) {
+	print("%d, ", x.i1);
+	print("%d, ", x.i2);
+	print("%d, ", x.i3);
+	print("%d, ", x.i4);
+	print("%d, ", x.i5);
+	print("%d, ", x.i6);
+	print("%d, ", x.i7);
+	print("%d\n", x.i8);
+}
+
+//~ define sxt64(int32 a) = int64(int32(a));			// sign extend
+define zxt64(int32 a) = int64(uint32(a));			// zero extend
+
+int32x8 cmt(const int32x8 &b) {
+	result.i1 = ~b.i1;
+	result.i2 = ~b.i2;
+	result.i3 = ~b.i3;
+	result.i4 = ~b.i4;
+	result.i5 = ~b.i5;
+	result.i6 = ~b.i6;
+	result.i7 = ~b.i7;
+	result.i8 = ~b.i8;
+}
+int32x8 neg(const int32x8 &b) {
+	int64 sum;
+	int64 ovf = 0;
+	int64 carry = 0;
+
+	define opNeg(int b) = int32(sum = ovf - zxt64(b) - carry);
+	result.i1 = opNeg(b.i1);
+	carry = sum < ovf;
+	result.i2 = opNeg(b.i2);
+	carry = sum < ovf;
+	result.i3 = opNeg(b.i3);
+	carry = sum < ovf;
+	result.i4 = opNeg(b.i4);
+	carry = sum < ovf;
+	result.i5 = opNeg(b.i5);
+	carry = sum < ovf;
+	result.i6 = opNeg(b.i6);
+	carry = sum < ovf;
+	result.i7 = opNeg(b.i7);
+	carry = sum < ovf;
+	result.i8 = opNeg(b.i8);
+}
+
+int32x8 add(const int32x8 &a, const int32x8 &b, bool &carryInOut) {
+	int64 sum;
+	int64 ovf = 0xffffffff;
+	int64 carry = carryInOut;
+
+	define opAdd(int a, int b) = int32(sum = zxt64(a) + zxt64(b) + carry);
+
+	result.i1 = opAdd(a.i1, b.i1);
+	carry = sum > ovf;
+	result.i2 = opAdd(a.i2, b.i2);
+	carry = sum > ovf;
+	result.i3 = opAdd(a.i3, b.i3);
+	carry = sum > ovf;
+	result.i4 = opAdd(a.i4, b.i4);
+	carry = sum > ovf;
+	result.i5 = opAdd(a.i5, b.i5);
+	carry = sum > ovf;
+	result.i6 = opAdd(a.i6, b.i6);
+	carry = sum > ovf;
+	result.i7 = opAdd(a.i7, b.i7);
+	carry = sum > ovf;
+	result.i8 = opAdd(a.i8, b.i8);
+	carryInOut = sum > ovf;
+}
+int32x8 add(const int32x8 &a, const int32x8 &b) {
+	bool carry = false;
+	result = add(a, b, &carry);
+}
+int32x8 add(const int32x8 &a, int32 b) {
+	bool carry = false;
+	int32x8 bx8 = int32x8(b);
+	result = add(a, &bx8, &carry);
+}
+
+int32x8 sub(const int32x8 &a, const int32x8 &b, bool &carryInOut) {
+	int64 sum;
+	int64 ovf = 0;
+	int64 carry = carryInOut;
+
+	define opSub(int a, int b) = int32(sum = zxt64(a) - zxt64(b) - carry);
+	result.i1 = opSub(a.i1, b.i1);
+	carry = sum < ovf;
+	result.i2 = opSub(a.i2, b.i2);
+	carry = sum < ovf;
+	result.i3 = opSub(a.i3, b.i3);
+	carry = sum < ovf;
+	result.i4 = opSub(a.i4, b.i4);
+	carry = sum < ovf;
+	result.i5 = opSub(a.i5, b.i5);
+	carry = sum < ovf;
+	result.i6 = opSub(a.i6, b.i6);
+	carry = sum < ovf;
+	result.i7 = opSub(a.i7, b.i7);
+	carry = sum < ovf;
+	result.i8 = opSub(a.i8, b.i8);
+	carryInOut = sum < ovf;
+}
+int32x8 sub(const int32x8 &a, const int32x8 &b) {
+	bool carry = false;
+	result = sub(a, b, &carry);
+}
+int32x8 sub(const int32x8 &a, int32 b) {
+	bool carry = false;
+	int32x8 bx8 = int32x8(b);
+	result = sub(a, &bx8, &carry);
+}
+
+
+int32x8 mul(const int32x8 &a, const int32x8 &b, int32x8 &hi) {
+	
+}
+int32x8 mul(int32x8 &a, int32 b);
+
+//~ i32x8 div(i32x8 &a, i32x8 &b, i32x8 &rem);
+//~ i32x8 div(i32x8 &a, i32x8 &b, i32x8 &rem);
+//~ i32x8 div(i32x8 &a, int32  b, i32x8 &rem);
+
+//~ i32x8 mod(i32x8 &a, i32x8 &b) {div(a, b, result);}
+//~ i32x8 mod(i32x8 &a, int32  b) {div(a, b, result);}
+
+int32x8 i32x8_a = int32x8(-10);
+//~ int32x8 i32x8_b = int32x8(1);
+int32x8 i32x8_c = sub(&i32x8_a, -19);
+
+} // +/
+static if (Test.Call & 2) {
+int bar(int a) {
+	int foo(int b) {
+		int abc() { return 1; }
+		return b + abc();
+	}
+	return foo(a);
+}
+int i = bar(3); // i is assigned 4
+assert(i == 4);
+}
+}
+static if (true) {
+
+int getArrayElement(uint32 index, int array[]) {
+	if (index < array.length) {
+		result = array[index];
+	}
+}
+
+int getArrayElement(uint32 index, int a1, int a2) {
+	int array[2] = a1, a2;
+	return getArrayElement(index, array);
+}
+
+int getArrayElement(uint32 index, int a1, int a2, int a3) {
+	int array[3] = a1, a2, a3;
+	return getArrayElement(index, array);
+}
+
+define getArrayElementDef(uint32 index, int a1, int a2, int a3) = getArrayElement(index, a1, a2, a3);
+assert(getArrayElementDef(2, 1, 2, 3) == 3);
+}
+
+/* Reflect
+enum TypeCode: int32 {
+	CAST_any = 0x00000000;		// invalid, error, ...
+	CAST_vid = 0x00000001;		// void;
+	CAST_bit = 0x00000002;		// bool;
+	CAST_i32 = 0x00000003;		// int8, int16, int32
+	CAST_u32 = 0x00000004;		// uint8, uint16, uint32
+	CAST_i64 = 0x00000005;		// int64
+	CAST_u64 = 0x00000006;		// uint64
+	CAST_f32 = 0x00000007;		// float32
+	CAST_f64 = 0x00000008;		// float64
+	CAST_ptr = 0x00000009;		// pointer
+
+	CAST_arr = 0x0000000a;		// slice(size, data)
+	CAST_var = 0x0000000b;		// variant(type, data)
+	CAST____ = 0x0000000d;		// typename
+	CAST____ = 0x0000000e;		// variable
+	CAST____ = 0x0000000f;		// function
+
+	TYPE_def = 0x00000000;		// alias (or error)
+	TYPE_rec = 0x00000010;		// typename
+	TYPE_ref = 0x00000020;		// variable
+	TYPE_fun = 0x00000030;		// function (variable and typename too)
+
+	ATTR_sta = 0x00000040;		// static
+	ATTR_con = 0x00000080;		// constant
+
+	ATTR_par = 0x00000100;		// parrallel
+	ATTR_snc = 0x00000200;		// synchronized
+	ATTR_ref = 0x00000400;		// indirect
+	ATTR_prv = 0x00000800;		// private
+}
+
+struct TypeInfo {
+	pointer file;		// declared in file (cstr)
+	int32 line;			// declared on line
+
+	pointer name;		// typename (cstr)
+	int32 offs;			// offset
+	int32 size;			// size
+
+	TypeInfo &base;		// function return type, typename base, variable type
+	TypeInfo &args;		// function arguments, typename fields, ?
+	TypeInfo &next;		// next type, argument, field
+
+	int8  kind;			// ref(var / fun), type,
+	int8  cast;			// casts to ...
+	int16 attr;			// attributes
+
+	//~ get typename = bool((this.kind & 0xf) != TYPE_ref);
+	//~ get constant = bool(this.kind & ATTR_con);
+	//~ get indirect = bool(this.kind & ATTR_ind);
+	//~ get function = bool(this.kind & ATTR_fun);
+}
+
+//~ class typename: TypeInfo;
+//~ class variable: TypeInfo;
+
+bool instanceof(TypeInfo &ty, var obj) {
+	TypeInfo &oty = obj.type;
+	while (ty && ty != oty) {
+		ty = ty.base;
+	}
+	return ty;
+}
+
+define lookUp(TypeInfo &type, int level, string name) = lookUp(type, level, name, null);
+
+TypeInfo& lookUp(TypeInfo &type, int level, string name, variant args...) {
+
+	bool func = args != null;
+
+	while (type && level > 0 && type.code != TYPE_ref) {
+
+		for (TypeInfo arg : type.args) {
+
+			// skip defines, consts, ...
+			if (arg.code != TYPE_ref)
+				continue;
+
+			// lookup only variables or functions
+			if (arg.call != func)
+				continue;
+
+			if (arg.name != name)
+				continue;
+
+			if (func) {
+				int i = 0;
+				for (TypeInfo &param : arg.args) {
+
+					if (i >= args.Length)
+						break;
+
+					if (param.load) ...		// by ref
+					if (param.call) ...		// argument is a funtion: (byref must be set)
+
+					if (!canAssign(param, args[i]))
+						break;
+
+					if (param.type != args[i].type)		// check return types
+						break;
+
+					if (!param.Vararg)
+						i += 1;
+				}
+
+				if (i != args.Length)
+					continue;
+			}
+			return arg;
+		}
+
+		// base class has this member ?
+		type = type.base;
+		level -= 1;
+	}
+	return null;
+}
+
+struct cls {
+	static int32 c;
+	int32 a;
+	int32 b;
+	static int M1(int a, int b) {return a + b;}
+}
+
+
+var a1 = var(34);
+var a2 = var(4);
+var t1;
+cls obj;
+
+assert(invoke(cls, "c", t1) && t1 == var(cls.c));				// t1 := cls.c;
+assert(invoke(cls, "c", null, a1) && t1 == var(cls.c));			// cls.c := a1;
+assert(invoke(cls, "c", t1, a1) && t1 == var(cls.c));			// t1 := cls.c = a1;
+
+assert(invoke(cls, "M1", t1, a1, a2) && t1 == var(cls.M1(a1, a2));
+assert(invoke(obj, "M1", t1, a1, a2) && t1 == var(obj.M1(a1, a2));
+
+assert(invoke(obj, "a", t1) && t1 == var(obj.a));
+assert(invoke(obj, "a", null, a2) && a2 == var(obj.a));			// t1 := obj.a := a2;
+
+bool invoke(var obj, string name, var &&res, var args...) {
+	TypeInfo class = obj.type == TypeInfo ? &obj.data : obj.type;
+	TypeInfo Method = lookUp(type, -1, name, args);
+
+	if (Method != null && Method.offset > 0) {
+		uint8 stop[4096];			// this is on top of stack
+		pointer st = pointer(stop);
+
+		memset(st, Method.type.size);	// clear result
+
+		for (int i = 0; i < Method.args.length; i += 1) {
+			TypeInfo marg = Method.args[i];
+
+			if (marg.offset > stop.length)
+				return false;
+
+			memcpy(st + marg.offset, args[i].data, marg.size);
+		}
+
+		emit(call, u32(Method.offset));
+
+		res.type = Method.type;
+		res.data = malloc(Method.type.size);
+		memcpy(res.data, st, Method.type.size);
+		//~ or short: res = variant(Method.type, st);
+
+		return true;
+	}
+	return false;
+}
+
+invoke(t2, "a", t1, var(34));			// t1 = t2.a = 34;
+invoke(t2, "a", t1, t2);				// t1 = t2.a;
+
+bool invoke(variant obj, string name, var &&res, var args...) {
+	return invoke(obj.type, name, &&res, obj, args);
+}
+
+//~ */
+//~ debug.Priority = 0;
+//~ debug.print(1, "alma");
+//~ debug("alma");
+//~ abort("alma");

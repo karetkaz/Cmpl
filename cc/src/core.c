@@ -130,7 +130,7 @@ int isStatic(ccState cc, astn ast) {
 
 int isConst(astn ast) {
 	if (ast != NULL) {
-		struct astRec tmp;
+		struct astNode tmp;
 
 		while (ast->kind == OPER_com) {
 			if (!isConst(ast->op.rhso)) {
@@ -189,9 +189,10 @@ void ccExtEnd(state rt, symn cls, int mode) {
 	if (cls != NULL) {
 		symn args = leave(rt->cc, cls, (mode & ATTR_stat) != 0);
 		if (mode & 1) {
-			args->next = cls->args;
+			args->next = cls->prms;
 		}
-		cls->args = args;
+		//~ TODO: prms is the tail of the list.
+		cls->prms = args;
 	}
 }
 void ccEnd(state rt, symn cls) {
@@ -252,16 +253,16 @@ symn mapsym(state rt, void* ptr) {
 	return NULL;
 }
 
-symn ccFindSym(ccState s, symn in, char* name) {
-	struct astRec ast;
-	memset(&ast, 0, sizeof(struct astRec));
+symn ccFindSym(ccState cc, symn in, char* name) {
+	struct astNode ast;
+	memset(&ast, 0, sizeof(struct astNode));
 	ast.kind = TYPE_ref;
 	ast.ref.hash = rehash(name, -1);
 	ast.ref.name = name;
-	return lookup(s, in ? in->args : s->s->defs, &ast, NULL, 1);
+    return lookup(cc, in ? in->prms : cc->s->defs, &ast, NULL, 1);
 }
 int ccSymValInt(symn sym, int* res) {
-	struct astRec ast;
+	struct astNode ast;
 	if (sym && eval(&ast, sym->init)) {
 		*res = (int)constint(&ast);
 		return 1;
@@ -269,7 +270,7 @@ int ccSymValInt(symn sym, int* res) {
 	return 0;
 }
 int ccSymValFlt(symn sym, double* res) {
-	struct astRec ast;
+	struct astNode ast;
 	if (sym && eval(&ast, sym->init)) {
 		*res = constflt(&ast);
 		return 1;
@@ -313,7 +314,7 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 	ccToken qual = TYPE_any;
 	#endif
 
-	struct astRec tmp;
+	struct astNode tmp;
 	ccToken ret = TYPE_any;
 
 	dieif(!ast || !ast->type, "FixMe `%+k`", ast);
@@ -450,9 +451,9 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 			else {
 				// hack: if (true) sin(pi/4); will leave the result on stack;
 				// code will be generated as: if(true) {sin(pi/4);}
-				struct astRec block;
+				struct astNode block;
 
-				memset(&block, 0, sizeof(struct astRec));
+				memset(&block, 0, sizeof(struct astNode));
 				block.kind = STMT_beg;
 				block.type = rt->cc->type_vid;
 
@@ -685,13 +686,13 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 				dieif(!emitidx(rt, opc_drop, stkret), "__DROP__");
 				break;
 			}
-			// inline
 
+			// inline
 			if (var && var->kind == TYPE_def) {
 				int chachedArgSize = 0;
-				symn as = var->args;
+                symn param = var->prms;
 
-				if (argv) {
+                if (argv != NULL) {
 					astn an = NULL;
 
 					// this is done by lookup... but...
@@ -705,7 +706,7 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 					argv->next = an;
 					an = argv;
 
-					while (an && as) {
+                    while (an && param) {
 						int inlineArg = 0;
 						astn arg = an;
 
@@ -713,16 +714,16 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 							arg = &tmp;
 						}
 
-						if (as->cast == TYPE_def) {
+                        if (param->cast == TYPE_def) {
 							inlineArg = 1;
 						}
 						else if (an->kind == TYPE_str) {
-							if (!as->used || !as->used->ref.used) {
+                            if (!param->used || !param->used->ref.used) {
 								inlineArg = 1;
 							}
 						}
 						else if (an->kind == TYPE_ref) {
-							if (an->type == as->type) {
+                            if (an->type == param->type) {
 								// static variables should not be inlined ?
 								// what about indirect references ?
 								//~ if (!an->ref.link->stat)
@@ -731,7 +732,7 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 						}
 
 						if (inlineArg) {
-							if (as->used && as->used->ref.used) {
+                            if (param->used && param->used->ref.used) {
 								astn n = an;
 								while (n && n->ref.link && n->ref.link->kind == TYPE_def) {
 									n = n->ref.link->init;
@@ -740,45 +741,45 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 									case TYPE_ref:
 										break;
 									default:
-										warn(rt, 15, ast->file, ast->line, "inlineing argument `%T` used more than once: %+k", as, n);
+                                        warn(rt, 15, ast->file, ast->line, "inlineing argument `%T` used more than once: %+k", param, n);
 								}
 							}
-							as->kind = TYPE_def;
-							as->init = an;
+                            param->kind = TYPE_def;
+                            param->init = an;
 						}
 						else {
-							int stktop = stkoffs(rt, sizeOf(as));
-							chachedArgSize += sizeOf(as);
-							if (!as->used || !as->used->ref.used) {
+                            int stktop = stkoffs(rt, sizeOf(param));
+                            chachedArgSize += sizeOf(param);
+                            if (!param->used || !param->used->ref.used) {
 								astn n = an;
 								while (n && n->ref.link && n->ref.link->kind == TYPE_def) {
 									n = n->ref.link->init;
 								}
 								if (n) switch (n->kind) {
 									case TYPE_ref:
-										warn(rt, 15, ast->file, ast->line, "caching argument used once or none: %-T = %+k", as, n);
+                                        warn(rt, 15, ast->file, ast->line, "caching argument used once or none: %-T = %+k", param, n);
 										break;
 									default:
 										break;
 								}
 							}
 
-							warn(rt, 16, ast->file, ast->line, "caching argument: %-T = %+k", as, arg);
-							if (!cgen(rt, arg, as->cast)) {
+                            warn(rt, 16, ast->file, ast->line, "caching argument: %-T = %+k", param, arg);
+                            if (!cgen(rt, arg, param->cast)) {
 								trace("%+k", arg);
 								return TYPE_any;
 							}
-							as->offs = stkoffs(rt, 0);
-							as->kind = TYPE_ref;
-							if (stktop != as->offs) {
-								error(rt, ast->file, ast->line, "invalid size: %d <> got(%d): `%+k`", stktop, as->offs, as);
+                            param->offs = stkoffs(rt, 0);
+                            param->kind = TYPE_ref;
+                            if (stktop != param->offs) {
+                                error(rt, ast->file, ast->line, "invalid size: %d <> got(%d): `%+k`", stktop, param->offs, param);
 								return TYPE_any;
 							}
 						}
 						an = an->next;
-						as = as->next;
+                        param = param->next;
 					}
-					dieif(an || as, "FixMe");
+                    dieif(an || param, "FixMe");
 				}
 
 				if (var->init) {
@@ -811,9 +812,9 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 					}
 				}
 
-				for (as = var->args; as; as = as->next) {
-					as->kind = TYPE_ref;
-					as->init = NULL;
+                for (param = var->prms; param; param = param->next) {
+                    param->kind = TYPE_ref;
+                    param->init = NULL;
 				}
 				break;
 			}
@@ -852,8 +853,8 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 				}
 
 				if (var && var != rt->cc->emit_opc && var != rt->cc->libc_dbg && var->call && var->cast != TYPE_ref) {
-					if (var->args->offs != stkoffs(rt, 0) - stktop) {
-						trace("args:%T(%d != %d(%d - %d))", var, var->args->offs, stkoffs(rt, 0) - stktop, stkoffs(rt, 0), stktop);
+					if (var->prms->offs != stkoffs(rt, 0) - stktop) {
+						trace("args:%T(%d != %d(%d - %d))", var, var->prms->offs, stkoffs(rt, 0) - stktop, stkoffs(rt, 0), stktop);
 						return TYPE_any;
 					}
 				}
@@ -868,7 +869,7 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 					warn(rt, 1, ast->file, ast->line, "multiple values, array ?: '%+k'", ast);
 				}
 			}
-			else if (var) {					// call()
+			else if (var) {						// call()
 				if (var->call) {
 					if (!cgen(rt, ast->op.lhso, TYPE_ref)) {
 						trace("%+k", ast);
@@ -889,7 +890,7 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 					return TYPE_any;
 				}
 			}
-			else {							// ()
+			else {								// ()
 				dieif(ast->op.lhso, "FixMe %+k:%+k", ast, ast->op.lhso);
 				if (!argv || argv != ast->op.rhso)
 					warn(rt, 1, ast->file, ast->line, "multiple values, array ?: '%+k'", ast);
@@ -1464,7 +1465,7 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 
 					// int a[3] = {1,2,3};	// array initialization by elements
 					// FIXME: if valuetype is arrays base type
-					if (typ->kind == TYPE_arr && var->args == val->type) {
+					if (typ->kind == TYPE_arr && var->prms == val->type) {
 						int i, esize;
 						symn base = typ;
 						astn tmp = NULL;
@@ -1472,7 +1473,7 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 						int ninit = 0;
 
 						// TODO: base should not be stored in var->args !!!
-						while (base && base != var->args) {
+						while (base && base != var->prms) {
 							if (base->init == NULL)
 								break;
 							// ArraySize
@@ -2311,7 +2312,7 @@ static void install_emit(ccState cc, int mode) {
 
 		symn u32, i32, i64, f32, f64, v4f, v2d;
 
-		enter(cc, NULL);
+		ccBegin(rt, NULL);
 		install(cc, "ref", ATTR_const | ATTR_stat | TYPE_rec, TYPE_ref, vm_size, NULL, NULL);
 
 		u32 = install(cc, "u32", ATTR_const | ATTR_stat | TYPE_rec, TYPE_u32, 4, NULL, NULL);
@@ -2340,7 +2341,7 @@ static void install_emit(ccState cc, int mode) {
 			ccEnd(cc->s, typ);
 		}
 		if ((typ = install(cc, "load", ATTR_const | ATTR_stat | TYPE_rec, TYPE_vid, 0, NULL, NULL))) {
-			enter(cc, NULL);
+			ccBegin(rt, NULL);
 
 			// load zero
 			install(cc, "z32", EMIT_opc, 0, opc_ldz1, cc->type_vid, NULL);
@@ -2353,22 +2354,22 @@ static void install_emit(ccState cc, int mode) {
 			install(cc, "i32",  EMIT_opc, 0, opc_ldi4, cc->type_vid, NULL);
 			install(cc, "i64",  EMIT_opc, 0, opc_ldi8, cc->type_vid, NULL);
 			install(cc, "i128", EMIT_opc, 0, opc_ldiq, cc->type_vid, NULL);
-			typ->args = leave(cc, typ, 1);
+			ccEnd(rt, typ);
 		}
 		if ((typ = install(cc, "store", ATTR_const | ATTR_stat | TYPE_rec, TYPE_vid, 0, NULL, NULL))) {
-			enter(cc, NULL);
+			ccBegin(rt, NULL);
 			install(cc, "i8",   EMIT_opc, 0, opc_sti1, cc->type_vid, NULL);
 			install(cc, "i16",  EMIT_opc, 0, opc_sti2, cc->type_vid, NULL);
 			install(cc, "i32",  EMIT_opc, 0, opc_sti4, cc->type_vid, NULL);
 			install(cc, "i64",  EMIT_opc, 0, opc_sti8, cc->type_vid, NULL);
 			install(cc, "i128", EMIT_opc, 0, opc_stiq, cc->type_vid, NULL);
-			typ->args = leave(cc, typ, 1);
+			ccEnd(rt, typ);
 		}
 
 		install(cc, "call", EMIT_opc, 0, opc_call, cc->type_vid, NULL);
 
 		if ((typ = u32) != NULL) {
-			enter(cc, NULL);
+			ccBegin(rt, NULL);
 			install(cc, "cmt", EMIT_opc, 0, b32_cmt, cc->type_u32, NULL);
 			install(cc, "and", EMIT_opc, 0, b32_and, cc->type_u32, NULL);
 			install(cc,  "or", EMIT_opc, 0, b32_ior, cc->type_u32, NULL);
@@ -2385,10 +2386,10 @@ static void install_emit(ccState cc, int mode) {
 			install(cc, "clt", EMIT_opc, 0, u32_clt, cc->type_bol, NULL);
 			install(cc, "cgt", EMIT_opc, 0, u32_cgt, cc->type_bol, NULL);
 			//~ install(cc, "to_i64", EMIT_opc, 0, u32_i64, cc->type_i64, NULL);
-			u32->args = leave(cc, typ, 1);
+			ccEnd(rt, typ);
 		}
 		if ((typ = i32) != NULL) {
-			enter(cc, NULL);
+			ccBegin(rt, NULL);
 			install(cc, "cmt", EMIT_opc, 0, b32_cmt, cc->type_i32, NULL);
 			install(cc, "neg", EMIT_opc, 0, i32_neg, cc->type_i32, NULL);
 			install(cc, "add", EMIT_opc, 0, i32_add, cc->type_i32, NULL);
@@ -2406,10 +2407,10 @@ static void install_emit(ccState cc, int mode) {
 			install(cc, "xor", EMIT_opc, 0, b32_xor, cc->type_i32, NULL);
 			install(cc, "shl", EMIT_opc, 0, b32_shl, cc->type_i32, NULL);
 			install(cc, "shr", EMIT_opc, 0, b32_sar, cc->type_i32, NULL);
-			typ->args = leave(cc, typ, 1);
+			ccEnd(rt, typ);
 		}
 		if ((typ = i64) != NULL) {
-			enter(cc, NULL);
+			ccBegin(rt, NULL);
 			install(cc, "neg", EMIT_opc, 0, i64_neg, cc->type_i64, NULL);
 			install(cc, "add", EMIT_opc, 0, i64_add, cc->type_i64, NULL);
 			install(cc, "sub", EMIT_opc, 0, i64_sub, cc->type_i64, NULL);
@@ -2419,10 +2420,10 @@ static void install_emit(ccState cc, int mode) {
 			install(cc, "ceq", EMIT_opc, 0, i64_ceq, cc->type_bol, NULL);
 			install(cc, "clt", EMIT_opc, 0, i64_clt, cc->type_bol, NULL);
 			install(cc, "cgt", EMIT_opc, 0, i64_cgt, cc->type_bol, NULL);
-			typ->args = leave(cc, typ, 1);
+			ccEnd(rt, typ);
 		}
 		if ((typ = f32) != NULL) {
-			enter(cc, NULL);
+			ccBegin(rt, NULL);
 			install(cc, "neg", EMIT_opc, 0, f32_neg, cc->type_f32, NULL);
 			install(cc, "add", EMIT_opc, 0, f32_add, cc->type_f32, NULL);
 			install(cc, "sub", EMIT_opc, 0, f32_sub, cc->type_f32, NULL);
@@ -2432,10 +2433,10 @@ static void install_emit(ccState cc, int mode) {
 			install(cc, "ceq", EMIT_opc, 0, f32_ceq, cc->type_bol, NULL);
 			install(cc, "clt", EMIT_opc, 0, f32_clt, cc->type_bol, NULL);
 			install(cc, "cgt", EMIT_opc, 0, f32_cgt, cc->type_bol, NULL);
-			typ->args = leave(cc, typ, 1);
+			ccEnd(rt, typ);
 		}
 		if ((typ = f64) != NULL) {
-			enter(cc, NULL);
+			ccBegin(rt, NULL);
 			install(cc, "neg", EMIT_opc, 0, f64_neg, cc->type_f64, NULL);
 			install(cc, "add", EMIT_opc, 0, f64_add, cc->type_f64, NULL);
 			install(cc, "sub", EMIT_opc, 0, f64_sub, cc->type_f64, NULL);
@@ -2445,12 +2446,12 @@ static void install_emit(ccState cc, int mode) {
 			install(cc, "ceq", EMIT_opc, 0, f64_ceq, cc->type_bol, NULL);
 			install(cc, "clt", EMIT_opc, 0, f64_clt, cc->type_bol, NULL);
 			install(cc, "cgt", EMIT_opc, 0, f64_cgt, cc->type_bol, NULL);
-			typ->args = leave(cc, typ, 1);
+			ccEnd(rt, typ);
 		}
 
 		if ((typ = v4f) != NULL) {
 			type_v4f = typ;
-			enter(cc, NULL);
+			ccBegin(rt, NULL);
 			install(cc, "neg", EMIT_opc, 0, v4f_neg, type_v4f, NULL);
 			install(cc, "add", EMIT_opc, 0, v4f_add, type_v4f, NULL);
 			install(cc, "sub", EMIT_opc, 0, v4f_sub, type_v4f, NULL);
@@ -2462,10 +2463,10 @@ static void install_emit(ccState cc, int mode) {
 			install(cc, "dp3", EMIT_opc, 0, v4f_dp3, cc->type_f32, NULL);
 			install(cc, "dp4", EMIT_opc, 0, v4f_dp4, cc->type_f32, NULL);
 			install(cc, "dph", EMIT_opc, 0, v4f_dph, cc->type_f32, NULL);
-			typ->args = leave(cc, typ, 1);
+			ccEnd(rt, typ);
 		}
 		if ((typ = v2d) != NULL) {
-			enter(cc, NULL);
+			ccBegin(rt, NULL);
 			install(cc, "neg", EMIT_opc, 0, v2d_neg, typ, NULL);
 			install(cc, "add", EMIT_opc, 0, v2d_add, typ, NULL);
 			install(cc, "sub", EMIT_opc, 0, v2d_sub, typ, NULL);
@@ -2474,7 +2475,7 @@ static void install_emit(ccState cc, int mode) {
 			install(cc, "equ", EMIT_opc, 0, v2d_ceq, cc->type_bol, NULL);
 			install(cc, "min", EMIT_opc, 0, v2d_min, typ, NULL);
 			install(cc, "max", EMIT_opc, 0, v2d_max, typ, NULL);
-			typ->args = leave(cc, typ, 1);
+			ccEnd(rt, typ);
 		}
 
 		if ((mode & creg_swiz) == creg_swiz) {
@@ -2495,10 +2496,11 @@ static void install_emit(ccState cc, int mode) {
 				swz[i].node = intnode(cc, i);
 			}
 			if ((typ = install(cc, "swz", TYPE_rec, 0, 0, NULL, NULL))) {
-				enter(cc, NULL);
-				for (i = 0; i < 256; i += 1)
+				ccBegin(rt, NULL);
+				for (i = 0; i < 256; i += 1) {
 					install(cc, swz[i].name, EMIT_opc, 0, p4x_swz, type_v4f, swz[i].node);
-				typ->args = leave(cc, typ, 1);
+				}
+				ccEnd(rt, typ);
 			}
 			/*if ((typ = install(cc, "dup", TYPE_rec, 0, 0))) {
 				//~ extended set(masked) and dup(swizzle): p4d.dup.xyxy / p4d.set.xyz0
@@ -2527,7 +2529,8 @@ static void install_emit(ccState cc, int mode) {
 				typ->args = leave(cc, typ, 1);
 			}// */
 		}
-		cc->emit_opc->args = leave(cc, cc->emit_opc, 1);
+		//~ cc->emit_opc->args = leave(cc, cc->emit_opc, 1);
+		ccEnd(rt, cc->emit_opc);
 	}
 }
 

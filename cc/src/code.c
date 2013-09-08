@@ -162,7 +162,7 @@ static symn installref(state rt, const char* prot, astn* argv) {
  */
 //~ TODO: libcall: parts of it should go to tree.c
 symn ccAddCall(state rt, int libc(state, void* data), void* data, const char* proto) {
-	symn arg, sym = NULL;
+    symn param, sym = NULL;
 	int stdiff = 0;
 	astn args = NULL;
 
@@ -253,11 +253,10 @@ symn ccAddCall(state rt, int libc(state, void* data), void* data, const char* pr
 		stdiff -= sizeOf(sym->type);
 		lc->pop = stdiff / 4;
 
-		// make arguments symbolic by default
-		for (arg = sym->args; arg; arg = arg->next) {
-			//~ arg->cast = arg->type->cast;
-			if (arg->cast != TYPE_ref)
-				arg->cast = TYPE_def;
+		// make parameters symbolic by default
+        for (param = sym->prms; param; param = param->next) {
+            if (param->cast != TYPE_ref)
+                param->cast = TYPE_def;
 		}
 	}
 	else {
@@ -1355,7 +1354,7 @@ static int dbgpu(state rt, cell pu) {
 **/
 int vmExec(state rt, dbgf dbg, int ss) {
 	struct dbgStateRec dbgSt;
-	struct symRec dbgSym;
+    struct symNode dbgSym;
 	cell pu;
 
 	//~ int result = 0;
@@ -1409,7 +1408,7 @@ int vmExec(state rt, dbgf dbg, int ss) {
 			memset(&dbgSt, 0, sizeof(struct dbgStateRec));
 		}
 
-		memset(&dbgSym, 0, sizeof(struct symRec));
+        memset(&dbgSym, 0, sizeof(struct symNode));
 		dbgSym.kind = TYPE_ref;
 		dbgSym.name = "<init>";
 
@@ -1431,12 +1430,13 @@ int vmExec(state rt, dbgf dbg, int ss) {
  * executes a function from the script.
  * vmExec should be called before this function
  * to initialize global variables.
- * @param state
+ * @param rt runtime context
  * @param fun the function to be executed.
+ * @param ret result of the function.
  * @param args arguments for the function.
  * @return: error code
 **/
-int vmCall(state rt, symn fun, void* ret, void* args) {
+int vmCall(state rt, symn fun, void* res, void* args) {
 
 	int result = 0;
 	cell pu = rt->vm.cell;
@@ -1445,32 +1445,34 @@ int vmCall(state rt, symn fun, void* ret, void* args) {
 	struct libcstate old = rt->libc;
 
 	void* resp = NULL;
-	int retsize = sizeOf(fun->type);
+    // TODO: ressize = fun->prms->size;  // result is the first param
+    int ressize = sizeOf(fun->type);
 
 	//dieif(!rt || !fun, "FixMe");
 	dieif(!(fun->kind == TYPE_ref && fun->call), "FixMe");
 
 	// result is the last argument.
-	resp = pu->sp - retsize;
+    resp = pu->sp - ressize;
 
-	// make space for paramerters & result
-	pu->sp -= fun->args->offs;
+	// make space for result and arguments
+	pu->sp -= fun->prms->offs;
 
-	if (args) {
-		memcpy(pu->sp, args, fun->args->offs - retsize);
-		//_watch: *(long (*)[4])(pu->sp)
+	if (args != NULL) {
+        memcpy(pu->sp, args, fun->prms->offs - ressize);
 	}
 
 	// return here: vm->px: program exit
-	pu->sp -= vm_size;
-	*(int*)(pu->sp) = rt->vm.px;
+	*(int*)(pu->sp -= vm_size) = rt->vm.px;
+
 	pu->ip = rt->_mem + fun->offs;
 
-	if (rt->dbg) {dotrace(rt, pu->ip, fun, NULL, sp);}
+    if (rt->dbg != NULL) {
+		dotrace(rt, pu->ip, fun, NULL, sp);
+	}
 	result = dbgpu(rt, pu);
 
-	if (ret) {
-		memcpy(ret, resp, retsize);
+    if (res != NULL) {
+        memcpy(res, resp, ressize);
 	}
 
 	rt->libc = old;
@@ -1695,7 +1697,6 @@ void fputval(state rt, FILE* fout, symn var, stkval* ref, int level) {
 
 	switch (typ->kind) {
 		case TYPE_rec: {
-			symn tmp;
 			int n = 0;
 
 			if (var && var->call) {
@@ -1723,23 +1724,25 @@ void fputval(state rt, FILE* fout, symn var, stkval* ref, int level) {
 				}
 			}
 			else {
-				fputfmt(fout, "%T {", typ);
-				for (tmp = typ->args; tmp; tmp = tmp->next) {
-					if (tmp->stat || tmp->kind != TYPE_ref)
-						continue;
+                fputfmt(fout, "%T {", typ);
+				if (typ->prms) {
+                    symn tmp;
+                    for (tmp = typ->prms; tmp; tmp = tmp->next) {
+						if (tmp->stat || tmp->kind != TYPE_ref)
+							continue;
 
-					if (tmp->pfmt && !*tmp->pfmt)
-						continue;
+						if (tmp->pfmt && !*tmp->pfmt)
+							continue;
 
-					if (n > 0)
-						fputfmt(fout, ",");
+						if (n > 0)
+							fputfmt(fout, ",");
 
+						fputfmt(fout, "\n");
+						fputval(rt, fout, tmp, (void*)((char*)ref + tmp->offs), level + 1);
+						n += 1;
+					}
 					fputfmt(fout, "\n");
-					fputval(rt, fout, tmp, (void*)((char*)ref + tmp->offs), level + 1);
-					n += 1;
 				}
-				if (typ->args)
-					fputfmt(fout, "\n");
 				fputfmt(fout, "%I}", level, typ);
 			}
 		} break;
@@ -1776,7 +1779,7 @@ void fputval(state rt, FILE* fout, symn var, stkval* ref, int level) {
 				if (base->kind == TYPE_arr)
 					elementsOnNewLine = 1;
 
-				if (base->kind == TYPE_rec && base->args)
+				if (base->kind == TYPE_rec && base->prms)
 					elementsOnNewLine = 1;
 
 				for (i = 0; i < n; ++i) {

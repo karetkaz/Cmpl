@@ -326,7 +326,7 @@ for (int i = 1; i <= n; i += 1) {
 	res *= i;
 }
 // */
-/* calc E
+//~ /* calc E
 define eps = 1e-50;
 double tmp = 1.;
 double res = 1.;
@@ -335,7 +335,7 @@ for (int i = 1; tmp > eps; i += 1) {
 }
 // */
 
-/* TODO: array.isNullOrEmpty()
+//~ /* TODO: array.isNullOrEmpty()
 bool isNullOrEmpty(int a[]) {
 	if (a == null)
 		result = true;
@@ -369,11 +369,11 @@ vec4f z = xo.Z;		// ok: xo.Z is of type vec4f, so it can be assigned
 //~ Date date = Date(2011, 10, 24);
 //~ Date.Parts parts = Date.ToParts(date.days);
 
-/* format integer
+//~ /* format integer
 int val = 0x20928374;
 char buff[512] = {0};
 
-format(buff, "value: %d = 0x%016.16i = 0b%064.2i = [%.8i]8", val);
+format(buff, "value: %d = 0x%08x = 0b%032b = [%.5i]5", val);
 println(string(buff));
 //~ */
 

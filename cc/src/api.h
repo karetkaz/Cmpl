@@ -25,9 +25,9 @@ typedef unsigned long long	uint64_t;
 typedef float float32_t;
 typedef double float64_t;
 
-typedef struct symRec *symn;			// symbol
-typedef struct stateRec *state;		// runtime
-typedef struct ccStateRec *ccState;	// compiler
+typedef struct symNode *symn;			// symbol
+typedef struct stateRec *state;         // runtime
+typedef struct ccStateRec *ccState; 	// compiler
 typedef struct dbgStateRec *dbgState;	// debugger
 
 struct stateRec {

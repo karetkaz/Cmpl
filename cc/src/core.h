@@ -20,7 +20,7 @@
 	5: print non pre-mapped strings, non static types
 	6: print static casts generated with emit
 */
-//~ #define DEBUGGING 2
+//~ #define DEBUGGING 7
 
 // enable dynamic dll/so lib loading
 #define USEPLUGINS
@@ -187,9 +187,9 @@ typedef struct libc {
 	symn sym;
 } *libc;
 
-typedef struct astRec *astn;		// Abstract Syntax Tree Node
+typedef struct astNode *astn;		// Abstract Syntax Tree Node
 
-struct symRec {				// type node (meta)
+struct symNode {                	// type node (meta)
 	char*	name;		// symbol name
 	char*	file;		// declared in file
 	int		line;		// declared on line
@@ -199,13 +199,12 @@ struct symRec {				// type node (meta)
 
 	symn	type;		// base type of TYPE_ref/TYPE_arr/function (void, int, float, struct, ...)
 
-	//~ TODO: temporarly array variable base type
-	//~ TODO: sdefs should be defs, and args the tail of it.
-	symn	args;		// struct members / function paramseters
-	symn	sdef;		// static members (is the tail of args) / function return value(out value)
+	symn	flds;		// all fields: static + nonstatic fields / function return value + paramseters
+    //~ TODO: temporarly array variable base type
+    symn	prms;		// tail of flds: struct nonstatic fields / function paramseters
 
-	symn	decl;		// declared in namespace/struct/class, function, ...
-	symn	next;		// next symbol in scope table / next param / next field / ?
+	symn	decl;		// declaring symbol: struct, function, ...
+	symn	next;		// next symbol: field / param / ... /(in scope table)
 
 	ccToken	kind;		// TYPE_def / TYPE_rec / TYPE_ref / TYPE_arr
 	ccToken	cast;		// casts to type(TYPE_(bit, vid, ref, u32, i32, i64, f32, f64, p4x)).
@@ -236,11 +235,11 @@ struct symRec {				// type node (meta)
 	char*	pfmt;		// TEMP: print format
 };
 
-struct astRec {				// tree node (code)
+struct astNode {                	// tree node (code)
 	ccToken		kind;				// code: TYPE_ref, OPER_???
 	ccToken		cst2;				// casts to basic type: (i32, f32, i64, f64, ref, bool, void)
 	symn		type;				// typeof() return type of operator
-	astn		next;				// next statement, next usage of identifier, do not use for preorder
+    astn		next;				// next statement, do not use for preorder
 	union {
 		union {						// TYPE_xxx: constant
 			int64_t	cint;			// const: integer

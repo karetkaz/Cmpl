@@ -54,13 +54,12 @@ static void fputsym(FILE* fout, symn sym, int mode, int level) {
 	int prinit = mode & prInit;
 	int prqual = mode & prQual;
 	int rlev = mode & 0xf;
-	symn arg;
 
 	if (sym) switch (sym->kind) {
 
 		case TYPE_arr: {
 			if (sym->name == NULL) {
-				symn bp[TBLS], *sp = bp, *p;// + sizeof(bp) / sizeof(*bp);
+				symn bp[TBLS], *sp = bp, *p;// + lengthOf(bp);
 
 				symn typ = sym;
 				while (typ->kind == TYPE_arr) {
@@ -95,6 +94,8 @@ static void fputsym(FILE* fout, symn sym, int mode, int level) {
 
 		print_record:
 		case TYPE_rec: {
+			symn arg;
+
 			if (rlev < 2) {
 				fputstr(fout, sym->name);
 				break;
@@ -102,7 +103,7 @@ static void fputsym(FILE* fout, symn sym, int mode, int level) {
 
 			fputfmt(fout, "%Istruct %?s {\n", noiden ? 0 : level, sym->name);
 
-			for (arg = sym->args; arg; arg = arg->next) {
+			for (arg = sym->prms; arg; arg = arg->next) {
 				fputsym(fout, arg, mode & ~prQual, level + 1);
 				if (arg->kind != TYPE_rec)		// nested struct
 					fputstr(fout, ";\n");
@@ -159,7 +160,7 @@ static void fputsym(FILE* fout, symn sym, int mode, int level) {
 				fputstr(fout, sym->name);
 			}
 			if (rlev > 0 && sym->call) {
-				symn arg = sym->args;
+				symn arg = sym->prms;
 				fputchr(fout, '(');
 				while (arg) {
 					fputsym(fout, arg, prType | 1, 0);
@@ -687,15 +688,15 @@ static void dumpxml(FILE* fout, astn ast, int mode, int level, const char* text)
 			symn var = ast->ref.link;
 
 			fputfmt(fout, " name=\"%+T\"", var);
-			if (var && (var->args || var->init)) {
+			if (var && (var->prms || var->init)) {
 				fputfmt(fout, ">\n");
 			}
 			else {
 				fputfmt(fout, " />\n");
 			}
 
-			if (var && var->args) {
-				symn def = var->args;
+			if (var && var->prms) {
+				symn def = var->prms;
 				char *argn = "def";
 
 				switch (var->type->kind) {
@@ -711,7 +712,7 @@ static void dumpxml(FILE* fout, astn ast, int mode, int level, const char* text)
 					argn = "argn";
 				}
 
-				for (def = var->args; def; def = def->next) {
+				for (def = var->prms; def; def = def->next) {
 					fputfmt(fout, "%I<%s op=\"%t\"", level + 1, argn, def->kind, def);
 					if (mode & prType) {
 						fputfmt(fout, " type=\"%?T\"", def->type);
@@ -735,7 +736,7 @@ static void dumpxml(FILE* fout, astn ast, int mode, int level, const char* text)
 			if (var && var->init)
 				dumpxml(fout, var->init, mode, level + 1, "init");
 
-			if (var && (var->args || var->init))
+			if (var && (var->prms || var->init))
 				fputfmt(fout, "%I</%s>\n", level, text);
 		} break;
 		//#}
@@ -1107,17 +1108,17 @@ void dumpsym(FILE* fout, symn sym, int mode) {
 			case TYPE_def:
 			case TYPE_ref:
 				if (mode > 3)
-					*++sp = ptr->args;
+					*++sp = ptr->prms;
 				break;
 
 			case EMIT_opc:
 				if (mode > 2)
-					*++sp = ptr->args;
+					*++sp = ptr->prms;
 				break;
 
 			default:
 				if (mode > 1)
-					*++sp = ptr->args;
+					*++sp = ptr->prms;
 				break;
 		}
 
@@ -1244,10 +1245,10 @@ void dump(state rt, int mode, symn sym, const char* text, ...) {
 			//~ for (var = rt->defs; var; var = var->next) {
 			for (var = rt->gdef; var; var = var->gdef) {
 				if (var->kind == TYPE_ref && var->call) {
-					symn arg = var->args;
+					symn param;
 					fputfmt(logf, "%-T [@%06x: %d] {\n", var, var->offs, var->size);
-					for (; arg; arg = arg->next) {
-						fputfmt(logf, "\targ %-T [@%06x, size:%d, cast:%t]\n", arg, arg->offs, arg->size, arg->cast);
+					for (param = var->prms; param; param = param->next) {
+						fputfmt(logf, "\tparam %-T [@%06x, size:%d, cast:%t]\n", param, param->offs, param->size, param->cast);
 					}
 					fputasm(rt, logf, var->offs, var->offs + var->size, 0x100 | (mode & 0xff));
 					fputfmt(logf, "}\n");

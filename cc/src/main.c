@@ -186,7 +186,7 @@ void usage(char* prog) {
 }
 
 int evalexp(ccState cc, char* text) {
-	struct astRec res;
+	struct astNode res;
 	astn ast;
 	symn typ;
 	int tid;

@@ -130,7 +130,7 @@ typedef enum {
 	b32_blo,	// lowest bit only
 	b64_blo,
 
-	b32_swp,	// 
+	b32_swp,	//
 	//~ b64_swp,
 
 	//~ b32_zxt,	// zero extend
@@ -612,36 +612,39 @@ static int libCallMemMgr(state rt, void* _) {
 	(void)_;
 }
 
+/*
+ *
+ */
 int libCallHaltDebug(state rt, void* _) {
-	symn arg = rt->libc.libc->args;
+	symn var = rt->libc.libc->prms;
 	int argc = (char*)rt->libc.retv - (char*)rt->libc.argv;
 
-	for ( ; arg; arg = arg->next) {
+	for ( ; var; var = var->next) {
 		char* ofs;
 
-		if (arg->call)
+		if (var->call)
 			continue;
 
-		if (arg->kind != TYPE_ref)
+		if (var->kind != TYPE_ref)
 			continue;
 
-		if (arg->file && arg->line)
-			fputfmt(stdout, "%s:%d:", arg->file, arg->line);
+		if (var->file && var->line)
+			fputfmt(stdout, "%s:%d:", var->file, var->line);
 		else
 			fputfmt(stdout, "var: ");
 
-		fputfmt(stdout, "@0x%06x[size: %d]: ", arg->offs, arg->size);
+		fputfmt(stdout, "@0x%06x[size: %d]: ", var->offs, var->size);
 
-		if (arg->stat) {
+		if (var->stat) {
 			// static variable.
-			ofs = (void*)(rt->_mem + arg->offs);
+			ofs = (void*)(rt->_mem + var->offs);
 		}
 		else {
 			// argument or local variable.
-			ofs = ((char*)rt->libc.argv) + argc - arg->offs;
+			ofs = ((char*)rt->libc.argv) + argc - var->offs;
 		}
 
-		fputval(rt, stdout, arg, (stkval*)ofs, 0);
+		fputval(rt, stdout, var, (stkval*)ofs, 0);
 		fputc('\n', stdout);
 	}
 
@@ -666,7 +669,7 @@ int install_base(state rt, int mode, int onHalt(state, void*)) {
 	}
 
 	//~ TODO: temporarly add null to variant type.
-	if (rt->cc->type_var && !rt->cc->type_var->args) {
+	if (rt->cc->type_var && !rt->cc->type_var->prms) {
 		ccBegin(rt, NULL);
 		//~ install(cc, "null", ATTR_const | ATTR_stat | TYPE_def, TYPE_i64, 2 * vm_size, rt->cc->type_var, intnode(cc, 0));
 		install(cc, "null", ATTR_const | ATTR_stat | TYPE_def, TYPE_any, 2 * vm_size, rt->cc->type_var, NULL);
@@ -721,18 +724,18 @@ int install_base(state rt, int mode, int onHalt(state, void*)) {
 
 		error = error || !ccAddCall(rt, typenameGetBase, NULL, "typename base(typename type);");
 
-		cc->type_rec->args = leave(cc, cc->type_rec, 0);
+		ccExtEnd(rt, cc->type_rec, 0);
 
 		/* TODO: more 4 reflection
 		enum BindingFlags {
 			//inline     = 0x000000;	// this is not available at runtime.
 			typename     = 0x000001;
-			function     = 0x000002;	// 
+			function     = 0x000002;	//
 			variable     = 0x000003;	// functions and typenames are also variables
 			attr_static  = 0x000004;
 			attr_const   = 0x000008;
 		}
-		// 
+		//
 		error = error || !ccAddCall(rt, typeFunction, (void*)typeOpGetFile, "variant setValue(typename field, variant value)");
 		error = error || !ccAddCall(rt, typeFunction, (void*)typeOpGetFile, "variant getValue(typename field)");
 
@@ -742,10 +745,6 @@ int install_base(state rt, int mode, int onHalt(state, void*)) {
 		//~ install(cc, "bool instanceof(typename &type, variant obj)");
 
 		//~ */
-
-		ccBegin(rt, NULL);
-		error = error || !ccAddCode(rt, 0, __FILE__, __LINE__, "define size(typename type) = int(type.size);");
-		ccExtEnd(rt, cc->type_rec, 1);
 	}
 	return error;
 }
@@ -795,7 +794,7 @@ int install_stdc(state rt, char* file, int level) {
 	};
 
 	// Add bitwise operations to int64 as functions
-	if (rt->cc->type_i64 && !rt->cc->type_i64->args) {
+	if (rt->cc->type_i64 && !rt->cc->type_i64->prms) {
 		ccBegin(rt, NULL);
 		err = err || !ccAddCall(rt, b64not, NULL, "int64 Not(int64 Value);");
 		err = err || !ccAddCall(rt, b64and, NULL, "int64 And(int64 Lhs, int64 Rhs);");

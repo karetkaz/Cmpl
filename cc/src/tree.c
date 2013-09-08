@@ -16,16 +16,16 @@ astn newnode(ccState s, int kind) {
 		ast = s->tokp;
 		s->tokp = ast->next;
 	}
-	else if (rt->_end - rt->_beg > (int)sizeof(struct astRec)){
+	else if (rt->_end - rt->_beg > (int)sizeof(struct astNode)){
 		//~ ast = (astn)rt->_beg;
 		//~ rt->_beg += sizeof(struct astRec);
-		rt->_end -= sizeof(struct astRec);
+		rt->_end -= sizeof(struct astNode);
 		ast = (astn)rt->_end;
 	}
 	else {
 		fatal("memory overrun");
 	}
-	memset(ast, 0, sizeof(struct astRec));
+	memset(ast, 0, sizeof(struct astNode));
 	ast->kind = kind;
 	return ast;
 }
@@ -133,7 +133,7 @@ float64_t constflt(astn ast) {
 		default:
 			break;
 	}
-	fatal("not a constant %+k", ast);
+    fatal("not a constant %+k", ast);
 	return 0;
 }
 
@@ -141,7 +141,7 @@ float64_t constflt(astn ast) {
 int eval(astn res, astn ast) {
 	symn type = NULL;
 	ccToken cast = TYPE_any;
-	struct astRec lhs, rhs;
+	struct astNode lhs, rhs;
 
 	if (!ast)
 		return 0;

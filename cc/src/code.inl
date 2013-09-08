@@ -96,7 +96,7 @@ case opc_sync: NEXT(2, -0, 0) {
 case opc_libc: NEXT(4, -libcvec[ip->rel].pop, libcvec[ip->rel].chk) {
 #ifdef EXEC
 	int exitCode;
-	struct symRec module;
+    struct symNode module;
 	libc libcall = &libcvec[ip->rel];
 
 	//~ debug("libc(%T): pop: %d, check: %d", libcall->sym, libcall->pop, libcall->chk);
@@ -106,8 +106,8 @@ case opc_libc: NEXT(4, -libcvec[ip->rel].pop, libcvec[ip->rel].chk) {
 	rt->libc.retv = (char*)((stkptr)sp + libcall->pop);
 
 	if (ip->rel == 0) {
-		memset(&module, 0, sizeof(struct symRec));
-		module.args = rt->defs;
+        memset(&module, 0, sizeof(struct symNode));
+		module.prms = rt->defs;
 		rt->libc.retv = (char *)st;
 		rt->libc.libc = &module;
 	}
