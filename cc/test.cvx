@@ -1,29 +1,3 @@
-//~ #open src/core.h
-//~ #open src/core.c
-//~ #open src/tree.c
-
-//~ #open src/code.c			// virtual machine
-//~ #open src/type.c			// type system
-//~ #open src/parser.c			// input, lexer, parser
-//~ #open src/printer.c			// pretty print, logger
-//~ #open src/main.c
-
-//~ struct hex32: int32; //%%08x
-//~ struct hex64: int64; //%%016x
-
-//~ define d1 = 2;
-//~ define d2 = 2;
-//~ define d3 = 3;
-//~ uint8 arr[d1][d2][d3] = {1,2,3, 1,2,3, 0};
-
-//~ const char str1[] = "alma a fa alatt nyari piros alma";
-//~ const char str2[] = {'a', 'l', 'm', 'a', 0};
-//~ string str3 = "alma";
-//~ TODO: BUG: string str4 = string(str1);
-
-// makeing slices from strings (substring)
-//~ char slice1[] = emit(struct, ref(str2), i32(2));
-//~ char slice2[] = emit(struct, i32.add, ref(str2), i32(2), i32(2));
 
 /+ print the content of memory :)
 char memory[] = emit(struct, ref(null), i32(65536));
@@ -33,40 +7,6 @@ for(int i = 1; i < 2 * memory.length; i += 1) {
 	}
 	print("%c", memory[i]);
 }// +/
-
-/* typename and type informations
-struct xxx {
-	int64 x1;
-	int64 x2;
-}
-
-define Xxx = xxx;		// alias
-
-typename type = xxx;
-
-xxx a = xxx(0, 0);
-Xxx b = xxx(0, 0);
-
-int size1 = typename(xxx).size;
-int size2 = typename(Xxx).size;
-int size3 = typename(type).size;
-
-string name = type.name;
-string file = type.file;
-int line = type.line;
-
-/+ compare typenames
-typename t = Complex;
-if (t == Complex) {
-	print("Complex\n");
-}
-if (Complex == t) {
-	print("Complex\n");
-}
- +/
-
-//? TODO: variable.struct should return the type of variable.
-//~ */
 
 /* typename
 struct ss {
@@ -89,61 +29,126 @@ int n2 = sizeof(ss.ss);
 
 //~ */
 
+/+ typename and type informations
+struct xxx {
+	int64 x1;
+	int64 x2;
+}
+
+define Xxx = xxx;		// alias
+
+typename type = xxx;
+
+xxx a = xxx(0, 0);
+Xxx b = xxx(0, 0);
+
+int size1 = typename(xxx).size;
+int size2 = typename(Xxx).size;
+int size3 = typename(type).size;
+
+string name = type.name;
+string file = type.file;
+int line = type.line;
+
+/+ compare typenames
+typename t = Complex;
+/+ TODO:
+if (null == Complex) {
+	debug("Complex not null");
+}
+if (Complex == null) {
+	debug("Complex not null");
+}
+// +/
+
+if (t != null) {
+	debug("t not null");
+}
+if (null != t) {
+	debug("t not null");
+}
+if (t == Complex) {
+	debug("Complex");
+}
+if (Complex == t) {
+	debug("Complex");
+}
+//~ +/
+
+//? TODO: variable.struct should return the type of variable.
+//~ +/
+
 /* Arrays, Pointers, References Alloc
-int32 i32arr[] = emit(struct, ref(memmgr(null, sizeof(int32) * 100)), i32(100));
+int32 i32arr[] = emit(struct, ref(memmgr(null, typename(int32).size * 100)), i32(100));
 for (int i = 0; i < i32arr.length; i += 1) {
-	i32arr[i] = i + 10;
+	i32arr[i] = i;
 }
 
 //~ */
 
-/* malloc / realloc / free
+/* malloc / free
 //~ define realloc(pointer ptr, int size) = memmgr(ptr, size);
 define malloc(int size) = memmgr(null, size);
 define free(pointer ptr) = memmgr(ptr, 0);
 
-//~ static int a = 7;
+void testDeallocation(int test) {
+	pointer p1 = malloc(160);
+	pointer p2 = malloc(161);
+	pointer p3 = malloc(160);
 
-pointer p1 = null;
-pointer p2 = null;
-pointer p3 = null;
-pointer p4 = null;
-//~ pointer p5 = emit(pointer, ref(a));
+	if (test == 1) {
+		p3 = free(p3);
+		p2 = free(p2);
+		p1 = free(p1);
+	}
+	else if (test == 2) {
+		p1 = free(p1);
+		p2 = free(p2);
+		p3 = free(p3);
+	}
+	else if (test == 3) {
+		p2 = free(p2);
+		p1 = free(p1);
+		p3 = free(p3);
+	}
+	else if (test == 4) {
+		p2 = free(p2);
+		p3 = free(p3);
+		p1 = free(p1);
+	}
+	memmgr(null, 0);
+}
 
 memmgr(null, 0);
-p1 = malloc(160);
-//~ p1 = free(p1);
-p2 = malloc(161);
-p3 = malloc(160);
-//~ p4 = malloc(160);
+//~ BUG: testDeallocation(0);
+testDeallocation(1);
+testDeallocation(2);
+testDeallocation(3);
+testDeallocation(4);
+//~ free(p4);
+//~ */
 
-//~ p2 = memmgr(p2, 250);
+/* BUG: realloc test
+define realloc(pointer ptr, int size) = memmgr(ptr, size);
+define malloc(int size) = memmgr(null, size);
+define free(pointer ptr) = memmgr(ptr, 0);
+
 memmgr(null, 0);
-//~ / *
+pointer p1 = malloc(160);
+pointer p2 = malloc(161);
+pointer p3 = malloc(160);
 
-define test = 1;
-static if (test == 1) {
-	p3 = free(p3);
-	p2 = free(p2);
-	p1 = free(p1);
-}
-static if (test == 2) {
-	p1 = free(p1);
-	p2 = free(p2);
-	p3 = free(p3);
-}
-static if (test == 3) {
-	p2 = free(p2);
-	p1 = free(p1);
-	p3 = free(p3);
-}
-static if (test == 4) {
-	p2 = free(p2);
-	p3 = free(p3);
-	p1 = free(p1);
-}
+//~ pointer p = p2; p2 = null;
+//~ memmgr(null, 0);
+//~ p = realloc(p, 100);
+//~ memmgr(null, 0);
+//~ p = free(p);
+//~ memmgr(null, 0);
 
-free(p4);
+free(p3);
+free(p2);
+free(p1);
+//~ memmgr(null, 0);
 //~ */
 
 /* random floats
@@ -326,7 +331,7 @@ for (int i = 1; i <= n; i += 1) {
 	res *= i;
 }
 // */
-//~ /* calc E
+/* calc E
 define eps = 1e-50;
 double tmp = 1.;
 double res = 1.;
@@ -335,7 +340,7 @@ for (int i = 1; tmp > eps; i += 1) {
 }
 // */
 
-//~ /* TODO: array.isNullOrEmpty()
+/* TODO: array.isNullOrEmpty()
 bool isNullOrEmpty(int a[]) {
 	if (a == null)
 		result = true;
@@ -369,7 +374,7 @@ vec4f z = xo.Z;		// ok: xo.Z is of type vec4f, so it can be assigned
 //~ Date date = Date(2011, 10, 24);
 //~ Date.Parts parts = Date.ToParts(date.days);
 
-//~ /* format integer
+/* format integer
 int val = 0x20928374;
 char buff[512] = {0};
 
@@ -377,7 +382,7 @@ format(buff, "value: %d = 0x%08x = 0b%032b = [%.5i]5", val);
 println(string(buff));
 //~ */
 
-/*Bug: const struct array initialization
+/* Bug: const struct array initialization
 struct Biorithm {
 	int color;		//%#%08x
 	int period;		//%%d
@@ -449,7 +454,8 @@ idnMat14x4(mat2);
 
 // */
 
-/*debug and trace info
+/* debug and trace info
+//~ /+
 struct debugInfo {
 	string func;
 	double x;
@@ -457,11 +463,13 @@ struct debugInfo {
 	double got;
 }
 
-define assert(bool condition, const debugInfo &dbginf) = debug("test failed", condition ? 0 : Debug.debug, Debug.deftrace, emit(var, ref(dbginf), ref(debugInfo)));
+//~ define assert(bool condition, const debugInfo &dbginf) = debug("test failed", condition ? 0 : Debug.debug, Debug.deftrace, emit(var, ref(dbginf), ref(debugInfo)));
+//~ assert(false, debugInfo("fail", 1., 2., 3.));
 
-assert(false, debugInfo("fail", 1., 2., 3.));
+//~ define trace(string message) = debug(message, 1, 10, variant.null);
 
-void f1(int maxRecursiveCalls) {
+/+void f1(int maxRecursiveCalls) {
+	define X = "sads";
 	void f2(int maxRecursiveCalls) {
 		if (maxRecursiveCalls <= 0) {
 			trace("stack trace :)");
@@ -470,29 +478,55 @@ void f1(int maxRecursiveCalls) {
 		f2(maxRecursiveCalls - 1);
 	}
 	f2(maxRecursiveCalls);
-}
-//~ f1(50);
+}// +/
+
 void f3(int maxRecursiveCalls) {
 	if (maxRecursiveCalls <= 0) {
-		trace("stack trace :)");
+		trace("stack trace :-)");
 		return;
 	}
 	testFunction(f3, maxRecursiveCalls - 1);
 }
 
-void testFunction2(void cb(int n), int n) {
-	cb(n);
+//~ FIXME: void testFunction2(void cb(double x, debugInfo info, int n), int n, debugInfo &info) {
+void testFunction2(void cb(double x, debugInfo &info, int n), int n, debugInfo info) {
+	cb(n * 3.14, &info, n);
 }
-void f4(int maxRecursiveCalls) {
-	assert(maxRecursiveCalls > 0, debugInfo("fail", 1., 2., 3.));
+void f4(double x, debugInfo &info, int maxRecursiveCalls) {
+	//~ assert(maxRecursiveCalls > 0, debugInfo("fail", 1., 2., 3.));
 	if (maxRecursiveCalls <= 0) {
 		trace("stack trace :)");
 		return;
 	}
-	testFunction2(f4, maxRecursiveCalls - 1);
+	testFunction2(f4, maxRecursiveCalls - 1, info);
 }
 
 int n = 2;
-testFunction2(f4, n);
 testFunction(f3, n);
+//~ debugInfo info = debugInfo("fail", 1., 2., 3.);
+//~ testFunction2(f4, n, info);
+//~ +/
+
+/+
+void f3(int maxRecursiveCalls) {
+	if (maxRecursiveCalls <= 0) {
+		//~ trace("stack trace :-)");
+		return;
+	}
+	//~ testFunction(f3, maxRecursiveCalls - 1);
+}
+
+f3(9);// +/
 //~ */
+
+int f1(int a) {
+	static int f2(int b) {
+		static int f3(int c) {
+			return c + 33;
+		}
+		return f3(b);
+	}
+	return f2(a);
+}
+
+int f = f1(8);

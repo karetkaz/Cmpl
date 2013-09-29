@@ -1231,6 +1231,7 @@ int evalMesh(mesh msh, int sdiv, int tdiv, char *src, char *file, int line) {
 
 	double s, t, ds, dt;	// 0 .. 1
 
+	// pointers, variants and emit are not needed.
 	if (!ccInit(rt, creg_base, NULL)) {
 		debug("Internal error\n");
 		return -1;
@@ -1252,19 +1253,19 @@ int evalMesh(mesh msh, int sdiv, int tdiv, char *src, char *file, int line) {
 	err = err || !ccDefFlt(rt, "pi", 3.14159265358979323846264338327950288419716939937510582097494459);
 	err = err || !ccDefFlt(rt, "e",  2.71828182845904523536028747135266249775724709369995957496696763);
 
-	err = err || ccAddCode(rt, warnlevel, __FILE__, __LINE__ + 1,
+	err = err || !ccAddCode(rt, warnlevel, __FILE__, __LINE__ + 1,
 		"const double s = gets();\n"
 		"const double t = gett();\n"
 		"double x = s;\n"
 		"double y = t;\n"
 		"double z = 0;\n"
 	);
-	err = err || ccAddCode(rt, warnlevel, file, line, src);
-	err = err || ccAddCode(rt, warnlevel, __FILE__, __LINE__, "setPos(x, y, z);\n");
+	err = err || !ccAddCode(rt, warnlevel, file, line, src);
+	err = err || !ccAddCode(rt, warnlevel, __FILE__, __LINE__, "setPos(x, y, z);\n");
 	// */
 
 	// optimize on level 3, and do not generate global variables on stack
-	if (err || gencode(rt, -3, 0) != 0) {
+	if (err || gencode(rt, -3, NULL) != 0) {
 		debug("error compiling(%d), see `%s`", err, logf);
 		logfile(rt, NULL);
 		return -3;
@@ -1328,7 +1329,7 @@ int evalMesh(mesh msh, int sdiv, int tdiv, char *src, char *file, int line) {
 			ud.s = s;
 			ud.t = t;
 			ud.isNrm = 0;
-			if (vmExec(rt, NULL, sizeof(mem) / 2) != 0) {
+			if (vmExec(rt, sizeof(mem) / 2) != 0) {
 				debug("error");
 				return -4;
 			}
@@ -1340,7 +1341,7 @@ int evalMesh(mesh msh, int sdiv, int tdiv, char *src, char *file, int line) {
 			else {
 				ud.s = s + epsilon;
 				ud.t = t;
-				if (vmExec(rt, NULL, sizeof(mem) / 2) != 0) {
+				if (vmExec(rt, sizeof(mem) / 2) != 0) {
 					debug("error");
 					return -5;
 				}
@@ -1348,7 +1349,7 @@ int evalMesh(mesh msh, int sdiv, int tdiv, char *src, char *file, int line) {
 
 				ud.s = s;
 				ud.t = t + epsilon;
-				if (vmExec(rt, NULL, sizeof(mem) / 2) != 0) {
+				if (vmExec(rt, sizeof(mem) / 2) != 0) {
 					debug("error");
 					return -6;
 				}

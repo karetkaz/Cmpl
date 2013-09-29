@@ -4,9 +4,9 @@
 extern "C" {
 #endif
 
-
-#include <stdio.h>		//for logf in struct state
-#include <string.h>		//for memcpy in poparg
+#include <stdio.h>
+#include <string.h>
+#include <stddef.h>
 
 #ifdef _MSC_VER
 typedef signed char			int8_t;
@@ -26,7 +26,7 @@ typedef float float32_t;
 typedef double float64_t;
 
 typedef struct symNode *symn;			// symbol
-typedef struct stateRec *state;         // runtime
+typedef struct stateRec *state;			// runtime
 typedef struct ccStateRec *ccState; 	// compiler
 typedef struct dbgStateRec *dbgState;	// debugger
 
@@ -36,10 +36,13 @@ struct stateRec {
 	FILE* logf;		// log file
 
 	symn  defs;		// global variables and functions
-	symn  gdef;		// static variables and functions
+	symn  gdef;		// all static variables and functions
 
-	// TODO: should be inside vm.
-	// function data
+	/** Native function invocation
+	 * NOTE: the return value and the arguments begin at the same memory location.
+	 * setting the return value may invalidate the arguments.
+	 * 
+	 */
 	struct libcstate {
 		symn  libc;		// invoked function
 		char* argv;		// first argument
@@ -47,7 +50,7 @@ struct stateRec {
 		void* data;		// user data
 	} libc;
 
-	// virtual machine
+	// virtual machine state
 	struct {
 		void* cell;					// execution unit(s)
 		void* libv;					// libcall vector
@@ -55,9 +58,9 @@ struct stateRec {
 		unsigned int	pc;			// entry point / prev program counter
 		unsigned int	px;			// exit point / program counter
 
-		unsigned int	ss;			// stack size / current stack size
-		unsigned int	sm;			// stack minimum size
-		unsigned int	su;			// stack access (parallel processing)
+		signed int		ss;			// stack size / current stack size
+		signed int		sm;			// stack minimum size
+		signed int		su;			// stack access (parallel processing)
 
 		unsigned int	ro;			// <= ro : read only region(meta data) / cgen:(function parameters)
 		unsigned int	pos;		// trace pos / current positin in buffer
@@ -72,17 +75,17 @@ struct stateRec {
 		void* _heap;
 	} vm;
 
-	/* compiler enviroment
+	/* compiler context
 	 * after code was generated this becomes null.
 	 */
 	ccState cc;
 
 	/* debug informatios
-	 * this struct should hold:
+	 * this struct holds:
 	 *  * debugger function
-	 *  * line mappings
-	 *  * stack traces
-	 *  * break points
+	 *  * code2line mapping
+	 *  ? stack traces
+	 *  ? break points
 	 */
 	dbgState dbg;
 
@@ -94,7 +97,7 @@ struct stateRec {
 		symn (*const ccBegin)(state, char* cls);
 
 		/** Define a(n) integer, floating point or string constant.
-		 * @param the runtime state.
+		 * @param the runtime context.
 		 * @param name the name of the constant.
 		 * @param value the value of the constant.
 		 * @return the symbol to the definition, null on error.
@@ -104,7 +107,7 @@ struct stateRec {
 		symn (*const ccDefStr)(state, char* name, char* value);
 
 		/** Add a type to the runtime.
-		 * @param state the runtime state.
+		 * @param state the runtime context.
 		 * @param name the name of the type.
 		 * @param size the size of the type.
 		 * @param refType non zero if is a reference type (class).
@@ -113,7 +116,7 @@ struct stateRec {
 		symn (*const ccAddType)(state, const char* name, unsigned size, int refType);
 
 		/** Add a libcall (native function) to the runtime.
-		 * @param the runtime state.
+		 * @param the runtime context.
 		 * @param libc the c function.
 		 * @param data user data for this function.
 		 * @param proto prototype of the function, do not forget the ending ';'
@@ -130,18 +133,18 @@ struct stateRec {
 		 */
 		symn (*const ccAddCall)(state, int libc(state, void* data), void* data, const char* proto);
 
-		/** compile the given file or text block.
-		 * @param state
+		/** Compile the given file or text block.
+		 * @param the runtime context.
 		 * @param warn the warning level to be used.
 		 * @param file filename of the compiled unit; this file will be opened if code is not null.
 		 * @param line linenumber where compilation begins; it will be reset if code is not null.
 		 * @param code if not null, this text will be compiled instead of the file.
-		 * @return the number of errors.
+		 * @return 0 on fail.
 		 */
 		int (*const ccAddCode)(state, int warn, char *file, int line, char *code);
 
 		/** End the namespace, makes all declared variables static.
-		 * @param state
+		 * @param the runtime context.
 		 * @param cls the namespace, returned by ccBegin.
 		*/
 		void (*const ccEnd)(state, symn cls);
@@ -191,33 +194,33 @@ struct stateRec {
 		 */
 		symn (*const mapsym)(state, void *ptr);
 
-		/** Invoke a callback function inside the vm.
-		 * @param state
+		/** Invoke a function inside the vm.
+		 * @param the runtime context.
 		 * @param fun the symbol of the function.
 		 * @return non zero on error.
 		 * @usage see @mapsym example.
 		*/
 		int (*const invoke)(state, symn fun, void* result, void *args);
 
-		/** memory manager of the vm.
-		 * @param the runtime state.
+		/** Allocate free  memory inside the vm.
+		 * @param the runtime context.
 		 * @param ptr an allocated memory address in the vm or null.
-		 * @param size the new size to reallocate or 0.
+		 * @param size the new size to reallocate or 0 to free.
 		 * @return pointer to the allocated memory.
 		 * cases:
 			ptr == null && size == 0: nothing
-			ptr == null && size >  0: alloc
 			ptr != null && size == 0: free
+			ptr == null && size >  0: alloc
 			ptr != null && size >  0: realloc
 		*/
 		void* (*const rtAlloc)(state, void* ptr, unsigned size);
 	} api;
 
 	// memory related
-	long _size;				// size of total memory
-	unsigned char* _beg;	// cc: used memory; vm: heap begin
-	unsigned char* _end;
-	unsigned char _mem[];
+	unsigned char *_beg;		// cc: used memory; vm: heap begin
+	unsigned char *_end;
+	const long _size;			// size of total memory
+	unsigned char _mem[];		// this is whwewe the memory begins.
 };
 
 static inline void* argval(state rt, int offset, void *result, int size) {

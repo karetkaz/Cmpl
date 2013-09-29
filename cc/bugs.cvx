@@ -18,6 +18,17 @@ double y1 = sqr1(x*x+x);		//
 double y2 = sqr2(x*x+x);		// should produce the same code as above
 //~ +/
 
+/+ BUG: convert char slice to string 
+const char str1[] = "alma a fa alatt nyari piros alma";
+const char str2[] = {'a', 'l', 'm', 'a', 0};
+string str3 = "alma";
+//~ TODO: BUG: string str4 = string(str1);
+
+// makeing slices from strings (substring)
+//~ char slice1[] = emit(struct, ref(str2), i32(2));
+//~ char slice2[] = emit(struct, i32.add, ref(str2), i32(2), i32(2));
+//~ +/
+
 /+ DONE: static casting pointers
 pointer x = emit(pointer, ref("erZKJVDlaknjsdvkSDNVlk"));
 string str = emit(string, ref(x));
@@ -37,26 +48,17 @@ double x[16] = {1};
 //~ TestArr(x);
 //~ +/
 
-/+ BUG: return idx; does return int instead of double
-double x[16] = {1};
+/+ DONE: return does not cast
+double f(int32 v) {result = v;}
+double g(int32 v) {return v;}
+double h(int32 v) {return result = v;}
 
-void forEach(double x[], double cb(int idx)) {
-	for (int i = 0; i < x.length; i += 1) {
-		x[i] = cb(i);
-	}
-}
+int v = 12756;
+double v1 = v;
+assert(v == f(v));
+assert(f(v) == g(v));
+assert(f(v) == h(v));
 
-double f(int32 idx) {
-	//~ result = idx;
-	return idx;
-}
-
-forEach(x, f);
-
-for (int i = 0; i < x.length; i += 1) {
-	print("%d - ", x[i]);
-	println(x[i]);
-}
 //~ +/
 
 /+ BUG: struct containing references.

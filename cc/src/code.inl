@@ -67,7 +67,7 @@ case opc_call: NEXT(1, -0, 1) {
 	pu->ip = mp + SP(0, u4);
 	SP(0, u4) = retip;
 #ifdef TRACE
-	TRACE(pu->ip, NULL);
+	TRACE(pu->ip, NULL, sp);
 #endif
 #endif
 } break;
@@ -75,7 +75,7 @@ case opc_jmpi: NEXT(1, -1, 1) {
 #ifdef EXEC
 	pu->ip = mp + SP(0, u4);
 #ifdef TRACE
-	TRACE(NULL, NULL);
+	TRACE(NULL, NULL, NULL);
 #endif
 #endif
 } break;
@@ -96,7 +96,7 @@ case opc_sync: NEXT(2, -0, 0) {
 case opc_libc: NEXT(4, -libcvec[ip->rel].pop, libcvec[ip->rel].chk) {
 #ifdef EXEC
 	int exitCode;
-    struct symNode module;
+	struct symNode module;
 	libc libcall = &libcvec[ip->rel];
 
 	//~ debug("libc(%T): pop: %d, check: %d", libcall->sym, libcall->pop, libcall->chk);
@@ -106,18 +106,20 @@ case opc_libc: NEXT(4, -libcvec[ip->rel].pop, libcvec[ip->rel].chk) {
 	rt->libc.retv = (char*)((stkptr)sp + libcall->pop);
 
 	if (ip->rel == 0) {
-        memset(&module, 0, sizeof(struct symNode));
+		memset(&module, 0, sizeof(struct symNode));
 		module.prms = rt->defs;
 		rt->libc.retv = (char *)st;
 		rt->libc.libc = &module;
 	}
 
 #ifdef TRACE
-	TRACE(pu->ip, libcall->sym);
+	// FIXME: libcalls are not pushing the result to the stack, only the arguments.
+	//~ TRACE(pu->ip, libcall->sym, NULL);
+	TRACE(pu->ip, libcall->sym, (char*)sp - vm_size);
 #endif
 	exitCode = libcall->call(rt, libcall->data);
 #ifdef TRACE
-	TRACE(NULL, NULL);
+	TRACE(NULL, NULL, NULL);
 #endif
 
 	STOP(error_libc, exitCode != 0, exitCode);

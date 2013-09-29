@@ -57,14 +57,18 @@ astn opnode(ccState s, int kind, astn lhs, astn rhs) {
 /// make a node witch si a link to a reference
 astn lnknode(ccState s, symn ref) {
 	astn result = newnode(s, TYPE_ref);
-	if (result) {
-		result->type = ref->kind == TYPE_ref ? ref->type : ref;
-		result->ref.name = ref->name;
-		result->ref.link = ref;
-		result->ref.hash = -1;
-		result->cst2 = ref->cast;
+
+	if (result == NULL) {
+		return NULL;
 	}
+
+	result->type = ref->kind == TYPE_ref ? ref->type : ref;
+	result->ref.name = ref->name;
+	result->ref.link = ref;
+	result->ref.hash = -1;//rehash(ref->name, -1) % TBLS;
+	result->cst2 = ref->cast;
 	return result;
+	//return ref->used;
 }
 
 /// make a constant valued node

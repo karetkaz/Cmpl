@@ -162,7 +162,7 @@ static symn installref(state rt, const char* prot, astn* argv) {
  */
 //~ TODO: libcall: parts of it should go to tree.c
 symn ccAddCall(state rt, int libc(state, void* data), void* data, const char* proto) {
-    symn param, sym = NULL;
+	symn param, sym = NULL;
 	int stdiff = 0;
 	astn args = NULL;
 
@@ -254,9 +254,9 @@ symn ccAddCall(state rt, int libc(state, void* data), void* data, const char* pr
 		lc->pop = stdiff / 4;
 
 		// make parameters symbolic by default
-        for (param = sym->prms; param; param = param->next) {
-            if (param->cast != TYPE_ref)
-                param->cast = TYPE_def;
+		for (param = sym->prms; param; param = param->next) {
+			if (param->cast != TYPE_ref)
+				param->cast = TYPE_def;
 		}
 	}
 	else {
@@ -657,7 +657,7 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 			}
 		}
 
-		// */ grouping
+		// arithmetic
 		else if (opc == opc_not) {
 			ip = getip(rt, rt->vm.pc);
 			if (ip->opc == opc_not) {
@@ -725,7 +725,31 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 				}
 			}
 		}
-		else if (opc == opc_spc) {	/* still not good
+		else if (opc == i32_add) {
+			ip = getip(rt, rt->vm.pc);
+			if (ip->opc == opc_ldc4) {
+				arg.i8 = ip->arg.i4;
+				if (arg.rel == arg.i8) {
+					rt->vm.pos = rt->vm.pc;
+					rt->vm.ss -= 1;
+					opc = opc_inc;
+				}
+			}
+		}
+		else if (opc == i32_sub) {
+			ip = getip(rt, rt->vm.pc);
+			if (ip->opc == opc_ldc4) {
+				arg.i8 = -ip->arg.i4;
+				if (arg.rel == arg.i8) {
+					rt->vm.pos = rt->vm.pc;
+					rt->vm.ss -= 1;
+					opc = opc_inc;
+				}
+			}
+		}
+
+		/* TODO: merge allocations on stack
+		else if (opc == opc_spc) {
 			ip = getip(rt, rt->vm.pc);
 			if (ip->opc == opc_spc) {
 				stkval tmp;
@@ -735,10 +759,10 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 					rt->vm.ss -= ip->rel / vm_size;
 					arg.i8 += ip->rel;
 				}
-			}// */
-		}
+			}
+		}// */
 
-		// */ conditional jumps
+		// conditional jumps
 		else if (opc == opc_jnz) {
 			ip = getip(rt, rt->vm.pc);
 			if (ip->opc == opc_not) {
@@ -754,7 +778,7 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 			}
 		}
 
-		// */ shl, shr, and
+		// shl, shr, and
 		else if (opc == b32_shl) {
 			ip = getip(rt, rt->vm.pc);
 			if (ip->opc == opc_ldc4) {
@@ -790,29 +814,6 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 					rt->vm.ss -= 1;
 					opc = b32_bit;
 					arg.i4 = b32_bit_and | (bitsf(ip->arg.i4 + 1) & 0x3f);
-				}
-			}
-		}
-
-		else if (opc == i32_add) {
-			ip = getip(rt, rt->vm.pc);
-			if (ip->opc == opc_ldc4) {
-				arg.i8 = ip->arg.i4;
-				if (arg.rel == arg.i8) {
-					rt->vm.pos = rt->vm.pc;
-					rt->vm.ss -= 1;
-					opc = opc_inc;
-				}
-			}
-		}
-		else if (opc == i32_sub) {
-			ip = getip(rt, rt->vm.pc);
-			if (ip->opc == opc_ldc4) {
-				arg.i8 = -ip->arg.i4;
-				if (arg.rel == arg.i8) {
-					rt->vm.pos = rt->vm.pc;
-					rt->vm.ss -= 1;
-					opc = opc_inc;
 				}
 			}
 		}
@@ -921,10 +922,11 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 		}*/
 		else if (opc == opc_jmpi) {
 			ip = getip(rt, rt->vm.pc);
+			/* TODO: only if we have no jump here
 			if (ip->opc == opc_jmpi) {
 				//~ rt->vm.pos = rt->vm.pc;
 				return rt->vm.pc;
-			}
+			}*/
 		}
 	}
 
@@ -1254,7 +1256,7 @@ static int dbgpu(state rt, cell pu) {
 	const stkptr st = (void*)(pu->bp + pu->ss);
 
 	if (rt->dbg != NULL) {
-		const dbgf dbg = rt->dbg->dbug;
+		int (*dbg)(state, int pu, void *ip, long* sptr, int scnt) = rt->dbg->dbug;
 		for ( ; ; ) {
 
 			register bcde ip = (void*)pu->ip;
@@ -1296,7 +1298,7 @@ static int dbgpu(state rt, cell pu) {
 				#define NEXT(__IP, __SP, __CHK) pu->sp -= vm_size * (__SP); pu->ip += (__IP);
 				#define STOP(__ERR, __CHK, __ERC) do {if (__CHK) {err_file = __FILE__; err_line = __LINE__; err_code = __ERC; goto dbg_##__ERR;}} while(0)
 				#define EXEC
-				#define TRACE(__IP, __SYM) do { dotrace(rt, __IP, __SYM, ip, sp); } while(0)
+				#define TRACE(__IP, __SYM, __SP) do { dotrace(rt, __IP, __SYM, ip, __SP); } while(0)
 				#include "code.inl"
 			}
 		}
@@ -1352,9 +1354,8 @@ static int dbgpu(state rt, cell pu) {
  * @arg dbg: debugger function
  * @return: error code
 **/
-int vmExec(state rt, dbgf dbg, int ss) {
-	struct dbgStateRec dbgSt;
-    struct symNode dbgSym;
+int vmExec(state rt, int ss) {
+	struct symNode dbgSym;
 	cell pu;
 
 	//~ int result = 0;
@@ -1387,10 +1388,7 @@ int vmExec(state rt, dbgf dbg, int ss) {
 	pu->sp = rt->_end + ss;
 	pu->ip = rt->_mem + rt->vm.pc;
 
-	/*if ((((int)pu->sp) & (vm_size-1))) {
-		error(vm->s, 0, "invalid statck size");
-		return -99;
-	}// */
+	dieif((int)pu->sp & (vm_size - 1), "invalid statck alignment");
 
 	if (pu->bp > pu->sp) {
 		error(rt, NULL, 0, "invalid statck size");
@@ -1401,20 +1399,11 @@ int vmExec(state rt, dbgf dbg, int ss) {
 	rt->cc = NULL;
 
 	rt->vm.cell = pu;
-	if (dbg || rt->dbg) {
-		// HACK: using local struct for debug if not present.
-		if (rt->dbg == NULL) {
-			rt->dbg = &dbgSt;
-			memset(&dbgSt, 0, sizeof(struct dbgStateRec));
-		}
-
-        memset(&dbgSym, 0, sizeof(struct symNode));
+	if (rt->dbg) {
+		memset(&dbgSym, 0, sizeof(struct symNode));
 		dbgSym.kind = TYPE_ref;
 		dbgSym.name = "<init>";
-
-		rt->dbg->dbug = dbg;
-
-		dotrace(rt, pu->ip, &dbgSym, pu->ip, pu->sp);
+		dotrace(rt, pu->ip, &dbgSym, pu->ip, NULL);
 	}
 
 	// reinitialize memory manager
@@ -1445,20 +1434,20 @@ int vmCall(state rt, symn fun, void* res, void* args) {
 	struct libcstate old = rt->libc;
 
 	void* resp = NULL;
-    // TODO: ressize = fun->prms->size;  // result is the first param
-    int ressize = sizeOf(fun->type);
+	// TODO: ressize = fun->prms->size;  // result is the first param
+	int ressize = sizeOf(fun->type);
 
 	//dieif(!rt || !fun, "FixMe");
 	dieif(!(fun->kind == TYPE_ref && fun->call), "FixMe");
 
 	// result is the last argument.
-    resp = pu->sp - ressize;
+	resp = pu->sp - ressize;
 
 	// make space for result and arguments
 	pu->sp -= fun->prms->offs;
 
 	if (args != NULL) {
-        memcpy(pu->sp, args, fun->prms->offs - ressize);
+		memcpy(pu->sp, args, fun->prms->offs - ressize);
 	}
 
 	// return here: vm->px: program exit
@@ -1466,13 +1455,13 @@ int vmCall(state rt, symn fun, void* res, void* args) {
 
 	pu->ip = rt->_mem + fun->offs;
 
-    if (rt->dbg != NULL) {
-		dotrace(rt, pu->ip, fun, NULL, sp);
+	if (rt->dbg != NULL) {
+		dotrace(rt, pu->ip, fun, NULL, pu->sp);
 	}
 	result = dbgpu(rt, pu);
 
-    if (res != NULL) {
-        memcpy(res, resp, ressize);
+	if (res != NULL) {
+		memcpy(res, resp, ressize);
 	}
 
 	rt->libc = old;
@@ -1507,7 +1496,7 @@ void fputopc(FILE* fout, unsigned char* ptr, int len, int offs, state rt) {
 		fputs(opc_tbl[ip->opc].name, fout);
 	}
 	else {
-		fputfmt(fout, "opc%02x", ip->opc);
+		fputfmt(fout, "opc.x%02x", ip->opc);
 	}
 
 	switch (ip->opc) {
@@ -1631,7 +1620,10 @@ void fputasm(state rt, FILE* fout, int beg, int end, int mode) {
 		dbgInfo dbg = getCodeMapping(rt, i);
 
 		switch (ip->opc) {
-			error_opc: error(rt, NULL, 0, "invalid opcode: %02x '%A'", ip->opc, ip); return;
+			error_opc:
+				error(rt, NULL, 0, "invalid opcode: %02x '%A'", ip->opc, ip);
+				return;
+
 			#define NEXT(__IP, __SP, __CHK) {if (__IP) is = (__IP);}
 			#define STOP(__ERR, __CHK, __ERC) if (__CHK) goto __ERR
 			#include "code.inl"
@@ -1667,8 +1659,14 @@ void fputasm(state rt, FILE* fout, int beg, int end, int mode) {
 void fputval(state rt, FILE* fout, symn var, stkval* ref, int level) {
 	symn typ = var->kind == TYPE_ref ? var->type : var;
 	char* fmt = var->pfmt ? var->pfmt : typ->pfmt;
+	int byRef = 0;
 
-	fputfmt(fout, "%I", level);
+	if (level > 0) {
+		fputfmt(fout, "%I", level);
+	}
+	else {
+		level = -level;
+	}
 
 	if (var != typ) {
 		fputfmt(fout, "%T: ", var);
@@ -1688,6 +1686,7 @@ void fputval(state rt, FILE* fout, symn var, stkval* ref, int level) {
 			return;
 		}
 		ref = (stkval*)(rt->_mem + ref->u4);
+		byRef = '&';
 	}
 
 	if (!isValidOffset(rt, ref)) {
@@ -1724,10 +1723,11 @@ void fputval(state rt, FILE* fout, symn var, stkval* ref, int level) {
 				}
 			}
 			else {
-                fputfmt(fout, "%T {", typ);
+				fputfmt(fout, "%?c%T", byRef, typ);
 				if (typ->prms) {
-                    symn tmp;
-                    for (tmp = typ->prms; tmp; tmp = tmp->next) {
+					symn tmp;
+					fputfmt(fout, " {", level);
+					for (tmp = typ->prms; tmp; tmp = tmp->next) {
 						if (tmp->stat || tmp->kind != TYPE_ref)
 							continue;
 
@@ -1741,9 +1741,11 @@ void fputval(state rt, FILE* fout, symn var, stkval* ref, int level) {
 						fputval(rt, fout, tmp, (void*)((char*)ref + tmp->offs), level + 1);
 						n += 1;
 					}
-					fputfmt(fout, "\n");
+					fputfmt(fout, "\n%I}", level);
 				}
-				fputfmt(fout, "%I}", level, typ);
+				else if (typ->size) {
+					fputfmt(fout, " {...}");
+				}
 			}
 		} break;
 		case TYPE_arr: {
@@ -1751,7 +1753,7 @@ void fputval(state rt, FILE* fout, symn var, stkval* ref, int level) {
 			int i, n = typ->offs;//size / typ->type->size;
 			symn base = typ->type;
 
-            //dieif(typ->size % typ->type->size != 0, "FixMe");
+			//dieif(typ->size % typ->type->size != 0, "FixMe");
 			if (fmt != NULL) {
 				// TODO: string uses this
 				fputfmt(fout, fmt, ref);

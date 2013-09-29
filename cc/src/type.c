@@ -119,7 +119,7 @@ symn newdefn(ccState s, int kind) {
 }
 
 /// install a symbol(typename or variable)
-symn install(ccState s, const char* name, int kind, int cast, unsigned size, symn type, astn init) {
+symn install(ccState s, const char* name, ccToken kind, ccToken cast, unsigned size, symn type, astn init) {
 	unsigned hash = 0;
 	symn def;
 
@@ -186,24 +186,6 @@ symn install(ccState s, const char* name, int kind, int cast, unsigned size, sym
 symn ccAddType(state rt, const char* name, unsigned size, int refType) {
 	//~ dieif(!rt->cc, "FixMe");
 	return install(rt->cc, name, ATTR_const | TYPE_rec, refType ? TYPE_ref : TYPE_rec, size, rt->cc->type_rec, NULL);
-}
-
-/// used to add length property to arrays.
-symn addarg(ccState s, symn sym, const char* name, int kind, symn typ, astn init) {
-	symn args = sym->prms;
-
-	enter(s, NULL);
-	install(s, name, kind, 0, 0, typ, init);
-	sym->prms = leave(s, sym, 0);
-
-	// non static member
-	if (sym->prms) {
-		sym->prms->next = args;
-	}
-	else {
-		sym->prms = args;
-	}
-	return sym->prms;
 }
 
 // promote
@@ -428,10 +410,10 @@ symn lookup(ccState s, symn sym, astn ref, astn args, int raise) {
 	for (; sym; sym = sym->next) {
 		int hascast = 0;
 		astn argval = args;				// arguments
-		symn param = sym->prms;		// parameters
+		symn param = sym->prms;			// parameters
 
-		// there are nameless symbols: functions, array types.
-		if (!sym->name)
+		// there are nameless symbols: functions, arrays.
+		if (sym->name == NULL)
 			continue;
 
 		// check name
@@ -551,18 +533,13 @@ symn lookup(ccState s, symn sym, astn ref, astn args, int raise) {
 		if (sym->kind == TYPE_def && !sym->init) {
 			sym = sym->type;
 		}
-		if (sym->used != ref) {
-			// in emit we can lookup 2x
-			ref->ref.used = sym->used;
-			sym->used = ref;
-		}
 	}
 
 	return sym;
 }
 
 //~ TODO: we should handle redefinition in this function
-symn declare(ccState s, int kind, astn tag, symn typ) {
+symn declare(ccState s, ccToken kind, astn tag, symn typ) {
 	symn def;
 
 	if (!tag || tag->kind != TYPE_ref) {
@@ -576,6 +553,7 @@ symn declare(ccState s, int kind, astn tag, symn typ) {
 
 		def->line = tag->line;
 		def->file = s->file;
+		def->used = tag;
 
 		tag->type = typ;
 		tag->ref.link = def;
@@ -596,10 +574,9 @@ symn declare(ccState s, int kind, astn tag, symn typ) {
 				tag->kind = kind;
 				break;
 		}
-		//~ /*
-		if (typ) {
+		if (typ != NULL) {
 			def->cast = typ->cast;
-		}// */
+		}
 	}
 
 	return def;
@@ -663,6 +640,15 @@ symn linkOf(astn ast) {
 	return NULL;
 }
 
+int usedCnt(symn sym) {
+	int result = 0;
+	astn usage;
+	for (usage = sym->used; usage; usage = usage->ref.used) {
+		result += 1;
+	}
+	return result;
+}
+
 //~ TODO: this should be calculated by fixargs() and replaced by (var|typ)->size
 long sizeOf(symn typ) {
 	if (typ) switch (typ->kind) {
@@ -700,10 +686,11 @@ long sizeOf(symn typ) {
 /** Cast
  * returns one of (TYPE_bit, ref, u32, i32, i64, f32, f64)
 **/
-int castOf(symn typ) {
+ccToken castOf(symn typ) {
 	if (typ) switch (typ->kind) {
 
-		default:break;
+		default:
+			break;
 
 		case TYPE_def:
 			return castOf(typ->type);
@@ -1026,7 +1013,7 @@ symn typecheck(ccState s, symn loc, astn ast) {
 					return 0;
 				}
 				return ast->type = typ;
-			}// */
+			}
 			fatal("operator %k (%T, %T): %+k", ast, lht, rht, ast);
 		} break;
 
@@ -1205,7 +1192,6 @@ symn typecheck(ccState s, symn loc, astn ast) {
 			}
 			fatal("operator %k (%T, %T): %+k", ast, lht, rht, ast);
 		} break;
-		// */
 
 		// operator set
 		case ASGN_set: {	// ':='
@@ -1215,7 +1201,7 @@ symn typecheck(ccState s, symn loc, astn ast) {
 			ccToken cast = castOf(lht);
 
 			if (!lht || !rht || !var || loc) {
-				debug("cast(%T, %T)", lht, rht);
+				debug("cast(%T, %T): %+k", lht, rht, ast);
 				return NULL;
 			}
 
@@ -1247,6 +1233,11 @@ symn typecheck(ccState s, symn loc, astn ast) {
 		// operator get
 		case TYPE_ref:
 			ref = ast;
+			if (ast->ref.link != NULL) {
+				if (ast->ref.hash == -1) {
+					return ast->type;
+				}
+			}
 			break;
 
 		case TYPE_int:
@@ -1271,14 +1262,12 @@ symn typecheck(ccState s, symn loc, astn ast) {
 		sym = s->deft[ref->ref.hash];
 
 		if (loc != NULL) {
-			sym = loc->prms;
+			sym = loc->flds;
 		}
 
 		if ((sym = lookup(s, sym, ref, args, 1))) {
 
-			//~ debug("%k(%d)", ref, ast->line);
 			// using function args
-
 			if (sym) switch (sym->kind) {
 				default:
 					fatal("FixMe");
@@ -1300,7 +1289,7 @@ symn typecheck(ccState s, symn loc, astn ast) {
 					break;
 			}
 
-            //~ TODO: hack
+			//~ TODO: hack
 			if (istype(sym) && args && !args->next) {			// cast
 				if (!castTo(args, sym->cast)) {
 					debug("%k:%t", args, castOf(args->type));
@@ -1310,7 +1299,7 @@ symn typecheck(ccState s, symn loc, astn ast) {
 
 			if (sym->call) {
 				astn argval = args;			// argument
-				symn param = sym->prms;	// parameter
+				symn param = sym->prms;		// parameter
 
 				while (param && argval) {
 					if (!castTo(argval, castOf(param->type))) {
@@ -1326,13 +1315,13 @@ symn typecheck(ccState s, symn loc, astn ast) {
 						}
 					}
 
-					//* if swap(a, b) is written instad of swap(&a, &b)
+					// if swap(a, b) is written instad of swap(&a, &b)
 					if (param->cast == TYPE_ref && argval->type->cast != TYPE_ref) {
 						symn lnk = argval->kind == TYPE_ref ? argval->ref.link : NULL;
 						if (argval->kind != OPER_adr && lnk && lnk->cast != TYPE_ref && lnk->type->cast != TYPE_ref) {
 							warn(s->s, 2, argval->file, argval->line, "argument `%+k` is not explicitly passed by reference", argval);
 						}
-					}// */
+					}
 
 					param = param->next;
 					argval = argval->next;
@@ -1348,16 +1337,18 @@ symn typecheck(ccState s, symn loc, astn ast) {
 			ref->type = result;
 			ast->type = result;
 
-			if (dot)
+			if (sym->used != ref) {
+				ref->ref.used = sym->used;
+				sym->used = ref;
+			}
+
+			if (dot != NULL) {
 				dot->type = result;
+			}
 		}
 		else
 			s->root = ref;
 	}
-
-	//~ if (ast->kind == OPER_fnc) {debug("%k is %-T: %-T", ref, sym, result);}
-	//~ if (!result) debug("%+k in %-T", ast, loc);
-
 	return result;
 }
 
@@ -1365,7 +1356,6 @@ int fixargs(symn sym, int align, int stbeg) {
 	symn arg;
 	int stdiff = 0;
 	int isCall = sym->call;
-	//~ int stbeg = sizeOf(sym->type);
 	for (arg = sym->prms; arg; arg = arg->next) {
 
 		if (arg->kind != TYPE_ref)
@@ -1447,15 +1437,13 @@ void enter(ccState s, astn ast) {
 }
 symn leave(ccState s, symn dcl, int mkstatic) {
 	state rt = s->s;
+	symn result = NULL;
 
-	//~ int isDecl = dcl != NULL;
-	//~ int isFunc = isDecl && dcl->call;
-
-	// nonstatic declarations
-	symn loc = NULL, lastloc = NULL;
+	// local declarations (non static)
+	//~ symn loc = NULL;
 
 	// static declarations
-	symn sta = NULL;
+	//~ symn sta = NULL, tail = NULL;
 
 	int i;
 
@@ -1465,10 +1453,7 @@ symn leave(ccState s, symn dcl, int mkstatic) {
 	for (i = 0; i < TBLS; i++) {
 		symn def = s->deft[i];
 		while (def && def->nest > s->nest) {
-			symn tmp = def;
 			def = def->next;
-			tmp->next = NULL;
-			//~ tmp->next = tmp->uses;
 		}
 		s->deft[i] = def;
 	}
@@ -1477,66 +1462,42 @@ symn leave(ccState s, symn dcl, int mkstatic) {
 	while (rt->defs && s->nest < rt->defs->nest) {
 		symn sym = rt->defs;
 
-		//~ debug("%d:%?T.%+T", s->nest, dcl, sym);
-		// declared in: (module, structure, function or wathever)
-		sym->decl = dcl ? dcl : s->func;
-
 		// pop from stack
 		rt->defs = sym->defs;
+
+		sym->next = NULL;
+
+		// declared in: (module, structure, function or wathever)
+		sym->decl = dcl ? dcl : s->func;
 
 		if (mkstatic) {
 			sym->stat = 1;
 		}
 
+		//~ debug("global(%d): %-T / %?-T", sym->stat, sym, sym->gdef);
 		// if not inside a static if, link to all
 		if (!s->siff) {
-			sym->defs = s->defs;
-			s->defs = sym;
-			if (sym->stat) {
+			if (sym->defs == NULL) {
+				sym->defs = s->defs;
+				s->defs = sym;
+			}
+			if (sym->stat && sym->gdef == NULL) {
 				sym->gdef = rt->gdef;
 				rt->gdef = sym;
 			}
 		}
 
-		if (dcl != NULL && dcl->kind == TYPE_rec) {	// struct decl
+		// TODO: fields can have default values.
+		if (dcl != NULL && dcl->kind == TYPE_rec) {
 			dieif(dcl->call, "FixMe");
 			if (sym->kind == TYPE_ref && !sym->stat && sym->init) {
 				error(s->s, sym->file, sym->line, "non static member `%-T` can not be initialized", sym);
 			}
 		}
 
-		// public symbol if not starts with _
-		//if (isFunc || !sym->name || *sym->name != '_')
-		{
-			if (sym->stat) {
-				sym->next = sta;
-				sta = sym;
-			}
-			else {
-				sym->next = loc;
-				loc = sym;
-				if (!lastloc) {
-					lastloc = sym;
-				}
-			}
-		}
+		sym->next = result;
+		result = sym;
 	}
 
-	if (sta) {
-		if (dcl) {
-			dcl->flds = sta;
-		}
-		else if (s->func) {
-			s->func->flds = sta;
-		}
-	}
-
-	if (mkstatic) {
-		loc = sta;
-	}
-	else if (lastloc) {
-		lastloc->next = sta;
-	}
-
-	return loc;
+	return result;
 }

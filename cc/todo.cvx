@@ -543,7 +543,8 @@ struct Button: Component {
 //~ int a1 = int(0);
 //~ int a2 = int{0};
 
-typename strty = string;
+//~ typename strty = string;
+//~ typename complex = Complex;
 //~ Complex c1 = Complex(10, 20);
 //~ Complex c2 = Complex{re: 10, im:20};
 

@@ -177,7 +177,7 @@ symn ccBegin(state rt, char* cls) {
 	symn result = NULL;
 	if (rt->cc != NULL) {
 		if (cls != NULL) {
-			result = install(rt->cc, cls, ATTR_const | ATTR_stat | TYPE_rec, TYPE_vid, 0, NULL, NULL);
+			result = install(rt->cc, cls, ATTR_const | ATTR_stat | TYPE_rec, TYPE_vid, 0, rt->cc->type_vid, NULL);
 		}
 		if (cls == NULL || result) {
 			enter(rt->cc, NULL);
@@ -187,12 +187,11 @@ symn ccBegin(state rt, char* cls) {
 }
 void ccExtEnd(state rt, symn cls, int mode) {
 	if (cls != NULL) {
-		symn args = leave(rt->cc, cls, (mode & ATTR_stat) != 0);
+		symn fields = leave(rt->cc, cls, (mode & ATTR_stat) != 0);
 		if (mode & 1) {
-			args->next = cls->prms;
+			fields->next = cls->flds;
 		}
-		//~ TODO: prms is the tail of the list.
-		cls->prms = args;
+		cls->flds = fields;
 	}
 }
 void ccEnd(state rt, symn cls) {
@@ -246,8 +245,9 @@ symn mapsym(state rt, void* ptr) {
 
 	offs = ((unsigned char*)ptr - rt->_mem);
 	for (sym = rt->gdef; sym; sym = sym->gdef) {
-		if (sym->offs == offs)
+		if (sym->offs == offs) {
 			return sym;
+		}
 	}
 
 	return NULL;
@@ -259,7 +259,7 @@ symn ccFindSym(ccState cc, symn in, char* name) {
 	ast.kind = TYPE_ref;
 	ast.ref.hash = rehash(name, -1);
 	ast.ref.name = name;
-    return lookup(cc, in ? in->prms : cc->s->defs, &ast, NULL, 1);
+	return lookup(cc, in ? in->flds : cc->s->defs, &ast, NULL, 1);
 }
 int ccSymValInt(symn sym, int* res) {
 	struct astNode ast;
@@ -690,9 +690,9 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 			// inline
 			if (var && var->kind == TYPE_def) {
 				int chachedArgSize = 0;
-                symn param = var->prms;
+				symn param = var->prms;
 
-                if (argv != NULL) {
+				if (argv != NULL) {
 					astn an = NULL;
 
 					// this is done by lookup... but...
@@ -706,7 +706,7 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 					argv->next = an;
 					an = argv;
 
-                    while (an && param) {
+					while (an && param) {
 						int inlineArg = 0;
 						astn arg = an;
 
@@ -714,16 +714,16 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 							arg = &tmp;
 						}
 
-                        if (param->cast == TYPE_def) {
+						if (param->cast == TYPE_def) {
 							inlineArg = 1;
 						}
 						else if (an->kind == TYPE_str) {
-                            if (!param->used || !param->used->ref.used) {
+							if (usedCnt(param) <= 1) {
 								inlineArg = 1;
 							}
 						}
 						else if (an->kind == TYPE_ref) {
-                            if (an->type == param->type) {
+							if (an->type == param->type) {
 								// static variables should not be inlined ?
 								// what about indirect references ?
 								//~ if (!an->ref.link->stat)
@@ -732,7 +732,7 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 						}
 
 						if (inlineArg) {
-                            if (param->used && param->used->ref.used) {
+							if (usedCnt(param) <= 1) {
 								astn n = an;
 								while (n && n->ref.link && n->ref.link->kind == TYPE_def) {
 									n = n->ref.link->init;
@@ -741,45 +741,45 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 									case TYPE_ref:
 										break;
 									default:
-                                        warn(rt, 15, ast->file, ast->line, "inlineing argument `%T` used more than once: %+k", param, n);
+										warn(rt, 15, ast->file, ast->line, "inlineing argument `%T` used more than once: %+k", param, n);
 								}
 							}
-                            param->kind = TYPE_def;
-                            param->init = an;
+							param->kind = TYPE_def;
+							param->init = an;
 						}
 						else {
-                            int stktop = stkoffs(rt, sizeOf(param));
-                            chachedArgSize += sizeOf(param);
-                            if (!param->used || !param->used->ref.used) {
+							int stktop = stkoffs(rt, sizeOf(param));
+							chachedArgSize += sizeOf(param);
+							if (usedCnt(param) <= 1) {
 								astn n = an;
 								while (n && n->ref.link && n->ref.link->kind == TYPE_def) {
 									n = n->ref.link->init;
 								}
 								if (n) switch (n->kind) {
 									case TYPE_ref:
-                                        warn(rt, 15, ast->file, ast->line, "caching argument used once or none: %-T = %+k", param, n);
+										warn(rt, 15, ast->file, ast->line, "caching argument used once or none: %-T = %+k", param, n);
 										break;
 									default:
 										break;
 								}
 							}
 
-                            warn(rt, 16, ast->file, ast->line, "caching argument: %-T = %+k", param, arg);
-                            if (!cgen(rt, arg, param->cast)) {
+							warn(rt, 16, ast->file, ast->line, "caching argument: %-T = %+k", param, arg);
+							if (!cgen(rt, arg, param->cast)) {
 								trace("%+k", arg);
 								return TYPE_any;
 							}
-                            param->offs = stkoffs(rt, 0);
-                            param->kind = TYPE_ref;
-                            if (stktop != param->offs) {
-                                error(rt, ast->file, ast->line, "invalid size: %d <> got(%d): `%+k`", stktop, param->offs, param);
+							param->offs = stkoffs(rt, 0);
+							param->kind = TYPE_ref;
+							if (stktop != param->offs) {
+								error(rt, ast->file, ast->line, "invalid size: %d <> got(%d): `%+k`", stktop, param->offs, param);
 								return TYPE_any;
 							}
 						}
 						an = an->next;
-                        param = param->next;
+						param = param->next;
 					}
-                    dieif(an || param, "FixMe");
+					dieif(an || param, "FixMe");
 				}
 
 				if (var->init) {
@@ -812,9 +812,9 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 					}
 				}
 
-                for (param = var->prms; param; param = param->next) {
-                    param->kind = TYPE_ref;
-                    param->init = NULL;
+				for (param = var->prms; param; param = param->next) {
+					param->kind = TYPE_ref;
+					param->init = NULL;
 				}
 				break;
 			}
@@ -1352,7 +1352,7 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 				case TYPE_rec:		// typename
 				case TYPE_ref: {	// variable
 					ccToken retarr = TYPE_any;
-					logif(var->size == 0, "invalid use of variable: `%-T`", var);
+					logif(var->size == 0, "invalid use of variable(%s:%d): `%-T`", ast->file, ast->line, var);
 
 					// a slice is needed, push(length).
 					//~ logif(get == TYPE_arr, "assign to array from %t to %t @ %k(%t)", ret, get, ast, ast->type->cast);
@@ -1861,7 +1861,7 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 		case TYPE_f64: switch (ret) {
 			default:
 				goto errorcast2;
-				
+
 			case TYPE_bit:
 			//~ case TYPE_u32:
 			case TYPE_i32:
@@ -1956,7 +1956,7 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 	return ret;
 }
 
-int gencode(state rt, int level, int doDebug) {
+int gencode(state rt, int level, int (*dbg)(state, int pu, void *ip, long* sp, int ss)) {
 	ccState cc = rt->cc;
 	libc lc = NULL;
 	int Lmain;
@@ -1981,6 +1981,7 @@ int gencode(state rt, int level, int doDebug) {
 	 */
 	if (rt->gdef != NULL) {
 		symn ng, pg = NULL;
+
 		for (ng = rt->gdef; ng; ng = ng->gdef) {
 			symn Ng, Pg = NULL;
 
@@ -2024,13 +2025,14 @@ int gencode(state rt, int level, int doDebug) {
 		}
 	}
 
-	if (doDebug) {
+	if (dbg != NULL) {
 		rt->dbg = (dbgState)(rt->_mem + rt->vm.pos);
 		rt->vm.pos += sizeof(struct dbgStateRec);
 		dieif(rt->_end < rt->_mem + rt->vm.pos, "memory overrun");
 		memset(rt->dbg, 0, sizeof(struct dbgStateRec));
 
 		initBuff(&rt->dbg->codeMap, 128, sizeof(struct dbgInfo));
+		rt->dbg->dbug = dbg;
 	}
 
 	//~ read only memory ends here.
@@ -2177,7 +2179,8 @@ int gencode(state rt, int level, int doDebug) {
 	rt->vm.size.code = rt->vm.pos;
 	rt->vm.size.data = rt->vm.pos;
 
-	rt->_beg = rt->_end = NULL;
+	rt->_beg = rt->_mem + rt->vm.pos;
+	rt->_end = rt->_mem + rt->_size;
 	rt->vm._heap = NULL;
 
 	if (rt->dbg != NULL) {
@@ -2313,22 +2316,22 @@ static void install_emit(ccState cc, int mode) {
 		symn u32, i32, i64, f32, f64, v4f, v2d;
 
 		ccBegin(rt, NULL);
-		install(cc, "ref", ATTR_const | ATTR_stat | TYPE_rec, TYPE_ref, vm_size, NULL, NULL);
+		install(cc, "ref", ATTR_const | ATTR_stat | TYPE_rec, TYPE_ref, vm_size, cc->type_rec, NULL);
 
-		u32 = install(cc, "u32", ATTR_const | ATTR_stat | TYPE_rec, TYPE_u32, 4, NULL, NULL);
-		i32 = install(cc, "i32", ATTR_const | ATTR_stat | TYPE_rec, TYPE_i32, 4, NULL, NULL);
-		i64 = install(cc, "i64", ATTR_const | ATTR_stat | TYPE_rec, TYPE_i64, 8, NULL, NULL);
-		f32 = install(cc, "f32", ATTR_const | ATTR_stat | TYPE_rec, TYPE_f32, 4, NULL, NULL);
-		f64 = install(cc, "f64", ATTR_const | ATTR_stat | TYPE_rec, TYPE_f64, 8, NULL, NULL);
+		u32 = install(cc, "u32", ATTR_const | ATTR_stat | TYPE_rec, TYPE_u32, 4, cc->type_rec, NULL);
+		i32 = install(cc, "i32", ATTR_const | ATTR_stat | TYPE_rec, TYPE_i32, 4, cc->type_rec, NULL);
+		i64 = install(cc, "i64", ATTR_const | ATTR_stat | TYPE_rec, TYPE_i64, 8, cc->type_rec, NULL);
+		f32 = install(cc, "f32", ATTR_const | ATTR_stat | TYPE_rec, TYPE_f32, 4, cc->type_rec, NULL);
+		f64 = install(cc, "f64", ATTR_const | ATTR_stat | TYPE_rec, TYPE_f64, 8, cc->type_rec, NULL);
 
-		v4f = install(cc, "v4f", ATTR_const | ATTR_stat | TYPE_rec, TYPE_rec, 16, NULL, NULL);
-		v2d = install(cc, "v2d", ATTR_const | ATTR_stat | TYPE_rec, TYPE_rec, 16, NULL, NULL);
+		v4f = install(cc, "v4f", ATTR_const | ATTR_stat | TYPE_rec, TYPE_rec, 16, cc->type_rec, NULL);
+		v2d = install(cc, "v2d", ATTR_const | ATTR_stat | TYPE_rec, TYPE_rec, 16, cc->type_rec, NULL);
 
 		install(cc, "nop", EMIT_opc, 0, opc_nop, cc->type_vid, NULL);
 		install(cc, "not", EMIT_opc, 0, opc_not, cc->type_bol, NULL);
 		//~ install(cc, "pop", EMIT_opc, 0, opc_drop, cc->type_vid, intnode(cc, 1));
 		install(cc, "set", EMIT_opc, 0, opc_set1, cc->type_vid, intnode(cc, 1));
-		//~ install(cc, "join", EMIT_opc, 0, opc_sync, cc->type_vid, intnode(cc, 1));
+		install(cc, "join", EMIT_opc, 0, opc_sync, cc->type_vid, intnode(cc, 1));
 		//~ install(cc, "set0", EMIT_opc, opc_set1, cc->type_vid, intnode(cc, 0));
 		//~ install(cc, "set1", EMIT_opc, opc_set1, cc->type_vid, intnode(cc, 1));
 
@@ -2340,9 +2343,7 @@ static void install_emit(ccState cc, int mode) {
 			install(cc, "x4", EMIT_opc, 0, opc_dup4, cc->type_vid, intnode(cc, 0));
 			ccEnd(cc->s, typ);
 		}
-		if ((typ = install(cc, "load", ATTR_const | ATTR_stat | TYPE_rec, TYPE_vid, 0, NULL, NULL))) {
-			ccBegin(rt, NULL);
-
+		if ((typ = ccBegin(rt, "load"))) {
 			// load zero
 			install(cc, "z32", EMIT_opc, 0, opc_ldz1, cc->type_vid, NULL);
 			install(cc, "z64", EMIT_opc, 0, opc_ldz2, cc->type_vid, NULL);
@@ -2356,8 +2357,7 @@ static void install_emit(ccState cc, int mode) {
 			install(cc, "i128", EMIT_opc, 0, opc_ldiq, cc->type_vid, NULL);
 			ccEnd(rt, typ);
 		}
-		if ((typ = install(cc, "store", ATTR_const | ATTR_stat | TYPE_rec, TYPE_vid, 0, NULL, NULL))) {
-			ccBegin(rt, NULL);
+		if ((typ = ccBegin(rt, "store"))) {
 			install(cc, "i8",   EMIT_opc, 0, opc_sti1, cc->type_vid, NULL);
 			install(cc, "i16",  EMIT_opc, 0, opc_sti2, cc->type_vid, NULL);
 			install(cc, "i32",  EMIT_opc, 0, opc_sti4, cc->type_vid, NULL);
@@ -2478,7 +2478,7 @@ static void install_emit(ccState cc, int mode) {
 			ccEnd(rt, typ);
 		}
 
-		if ((mode & creg_swiz) == creg_swiz) {
+		if ((mode & creg_eswz) == creg_eswz) {
 			int i;
 			struct {
 				char* name;
@@ -2557,7 +2557,7 @@ state rtInit(void* mem, unsigned size) {
 	*(void**)&rt->api.invoke = vmCall;
 	*(void**)&rt->api.rtAlloc = rtAlloc;
 
-	rt->_size = size - sizeof(struct stateRec);
+	*(long*)&rt->_size = size - sizeof(struct stateRec);
 	rt->_end = rt->_mem + rt->_size;
 	rt->_beg = rt->_mem;
 
@@ -2589,7 +2589,6 @@ ccState ccInit(state rt, int mode, int onHalt(state, void*)) {
 	cc->fin._fin = -1;
 
 	install_type(cc, mode);
-
 	install_emit(cc, mode);
 
 	// install a void arg for functions with no arguments
@@ -2611,42 +2610,6 @@ ccState ccInit(state rt, int mode, int onHalt(state, void*)) {
 
 	return cc;
 }
-ccState ccOpen(state rt, char* file, int line, char* text) {
-	if (rt->cc || ccInit(rt, creg_def, NULL)) {
-		if (source(rt->cc, text == NULL, text ? text : file) != 0)
-			return NULL;
-
-		if (file != NULL) {
-			rt->cc->file = mapstr(rt->cc, file, -1, -1);
-		}
-		else {
-			rt->cc->file = NULL;
-		}
-
-		rt->cc->line = line;
-	}
-	return rt->cc;
-}
-int ccDone(state rt) {
-	astn ast;
-	ccState cc = rt->cc;
-
-	// not initialized
-	if (cc == NULL)
-		return -1;
-
-	// check no token left to read
-	if ((ast = peek(cc))) {
-		error(rt, ast->file, ast->line, "unexpected: `%k`", ast);
-		return -1;
-	}
-
-	// close input
-	source(cc, 0, NULL);
-
-	// return errors
-	return rt->errc;
-}
 
 /** allocate memory in the runtime state.
  * if (size != 0 && ptr != NULL): realloc
@@ -2657,32 +2620,26 @@ int ccDone(state rt) {
 **/
 void* rtAlloc(state rt, void* ptr, unsigned size) {
 	/* memory manager
-	 * using one double linked list with used and unused memory chunks.
+	 * using one linked list containing both used and unused memory chunks.
 	 * The idea is when allocating a block of memory we always must to traverse the list of chunks.
 	 * when freeing a block not. Because of this if a block is used prev points to the previos block.
 	 * a block is free when prev is null.
 	 .
 	 :
-	>+--------------------------------+
-	 | next                           |
-	 +--------------------------------+
-	 | prev                           |
-	 +--------------------------------+
-	 | 0                              |
-	 .                                .
-	 : ...                            :
-	 | next - this bytes              |
-	>+--------------------------------+
-	 | next                           |
-	 +--------------------------------+
-	 | prev                           |
-	 +--------------------------------+
-	 | 0                              |
-	 : ...                            :
-	 | next - this bytes              |
-	 +--------------------------------+
+	 +------+------+
+	 | next | prev |
+	 +------+------+
+	 |             |
+	 .             .
+	 : ...         :
+	 +-------------
+	 | next | prev |
+	 +------+------+
+	 |             |
+	 .             .
+	 : ...         :
+	 +------+------+
 	 :
-	the lowest bit in size indicates
 	*/
 
 	typedef struct memchunk {
@@ -2691,123 +2648,137 @@ void* rtAlloc(state rt, void* ptr, unsigned size) {
 		char data[0];
 	} *memchunk;
 
-	memchunk memd = (memchunk)((char*)ptr - sizeof(struct memchunk));
-	size = padded(size, sizeof(struct memchunk));
+	const int minAllocationSize = 16;
+	memchunk chunk = (memchunk)((char*)ptr - sizeof(struct memchunk));
+	unsigned allocsize = padded(size + minAllocationSize, minAllocationSize);
 
-	// memory manager was not initialized, initialize it first
+	// memory manager is not initialized, initialize it first
 	if (rt->vm._heap == NULL) {
-		memchunk heap = (void*)padded((int)(rt->_mem + rt->vm.px + 16), 16);
-		int heapsize = rt->_size - (heap->data - (char*)rt->_mem);
-		memchunk last = (void*)((char*)heap + heapsize - sizeof(struct memchunk));
-		last->prev = last->next = NULL;
-		heap->prev = NULL;
+		memchunk heap = paddptr(rt->_beg, minAllocationSize);
+		memchunk last = paddptr(rt->_end - minAllocationSize, minAllocationSize);
+
 		heap->next = last;
+		heap->prev = NULL;
+
+		last->next = NULL;
+		last->prev = NULL;
+
 		rt->vm._heap = heap;
 	}
 
-	if (ptr) {	// realloc or free.
-		int chunksize = memd->next ? ((char*)memd->next - (char*)memd) : 0;
+	// realloc or free.
+	if (ptr != NULL) {
+		unsigned chunksize = chunk->next ? ((char*)chunk->next - (char*)chunk) : 0;
 
 		dieif((unsigned char*)ptr < rt->_mem, "memmgr: invalid reference");
 		dieif((unsigned char*)ptr > rt->_mem + rt->_size, "memmgr: invalid reference");
 
-		if (1) {
-			// extra check if ptr is in used list.
+		if (1) { // extra check if ptr is in used list.
 			memchunk find = rt->vm._heap;
 			memchunk prev = find;
-			while (find && find != memd) {
+			while (find && find != chunk) {
 				prev = find;
 				find = find->next;
 			}
-			dieif(find != memd, "memmgr: pointer not in list.");
-			dieif(memd->prev != prev, "memmgr: pointer not in used list.");
+			dieif(find != chunk, "memmgr: pointer not in list.");
+			dieif(chunk->prev != prev, "memmgr: pointer not in used list.");
 		}
 
-		if (size == 0) {							// free
-			memchunk prev = memd->prev;
-			memchunk next = memd->next;
+		if (size <= 0) {							// free
+			memchunk next = chunk->next;
+			memchunk prev = chunk->prev;
 
-			if (next && next->prev == NULL) {	// next block is free
+			// merge with next block if free
+			if (next && next->prev == NULL) {
 				next = next->next;
-				memd->next = next;
-				if (next && next->prev != NULL)
+				chunk->next = next;
+				if (next && next->prev != NULL) {
 					next->prev = prev;
+				}
 			}
-			if (prev && prev->prev == NULL) {	// prev block is free
-				memd = prev;
+
+			// merge with previos block if free
+			if (prev && prev->prev == NULL) {
+				chunk = prev;
 				prev->next = next;
 				if (next->prev != NULL)
 					next->prev = prev;
 			}
-			memd->prev = NULL;			// mark as unused.
-			memd = NULL;
+
+			// mark as unused.
+			chunk->prev = NULL;
+			chunk = NULL;
 		}
-		else if (size > chunksize) {				// grow
-			//~ fatal("FixMe: %s", "realloc memory to grow");
-			error(rt, __FILE__, __LINE__, "not implemented the case when realloc to grow.");
-			memd = NULL;
-		}
-		else if (size > sizeof(struct memchunk)) {	// shrink
-			memchunk next = memd->next;
-			memchunk free = (memchunk)((char*)memd + size);
-			if (((char*)next - (char*)free) > sizeof(struct memchunk)) {
-				memd->next = free;
+		else if (allocsize < chunksize) {			// shrink
+			memchunk next = chunk->next;
+			memchunk free = (memchunk)((char*)chunk + allocsize);
+
+			// do not make a free unaligned block (realoc 161 to 160 bytes)
+			if (((char*)next - (char*)free) > minAllocationSize) {
+				chunk->next = free;
 				free->next = next;
 				free->prev = NULL;
-				if (next->prev == NULL) {	// next block is free
+
+				// merge with next block if free
+				if (next->prev == NULL) {
 					next = next->next;
 					free->next = next;
-					if (next && next->prev != NULL)
+					if (next && next->prev != NULL) {
 						next->prev = free;
+					}
 				}
 				else {
 					next->prev = free;
 				}
 			}
 		}
-	}
-	else {		// alloc.
-		if (size > 0) {
-			memchunk prev = memd = rt->vm._heap;
-			while (memd) {
-				memchunk next = memd->next;
-
-				// check if block is free.
-				if (memd->prev == NULL && next) {
-					int chunksize = (char*)next - (char*)memd;
-					chunksize -= sizeof(struct memchunk);
-
-					if (size < chunksize) {
-						int diff = chunksize - size;
-						if (diff > 16) {
-							memchunk free = (memchunk)((char*)memd + size);
-							memd->next = free;
-							free->prev = NULL;
-							free->next = next;
-						}
-						memd->prev = prev;
-						break;
-					}
-				}
-				prev = memd;
-				memd = next;
-			}
+		else {										// grow
+			error(rt, __FILE__, __LINE__, "not implemented the case when realloc to grow.");
+			chunk = NULL;
 		}
 	}
 
-	//~ debug("memmgr(%x, %d): (%x, %d)", vmOffset(rt, ptr), size, vmOffset(rt, memd ? memd->data : NULL), memd ? memd->size : -1);
-	if (0) {
+	// allocate.
+	else if (size > 0) {
+		memchunk prev = chunk = rt->vm._heap;
+
+		while (chunk) {
+			memchunk next = chunk->next;
+
+			// check if block is free.
+			if (chunk->prev == NULL && next) {
+				unsigned chunksize = (char*)next - (char*)chunk - allocsize;
+				if (allocsize < chunksize) {
+					int diff = chunksize - allocsize;
+					if (diff > minAllocationSize) {
+						memchunk free = (memchunk)((char*)chunk + allocsize);
+						chunk->next = free;
+						free->prev = NULL;
+						free->next = next;
+					}
+					chunk->prev = prev;
+					break;
+				}
+			}
+			prev = chunk;
+			chunk = next;
+		}
+	}
+
+	// debug
+	else if (1) {
 		memchunk mem = ptr ? (memchunk)((char*)ptr - sizeof(struct memchunk)) : NULL;
 		perr(rt, 0, __FILE__, __LINE__, "heap info: memmgr(%06x, %d)", vmOffset(rt, mem), size);
 		for (mem = rt->vm._heap; mem; mem = mem->next) {
 			char *status = mem->prev ? "used" : "free";
 			if (mem->next) {
-				int size = (char*)mem->next - (char*)mem;
-				perr(rt, 0, NULL, 0, "%s chunk@%06x[%06x:%06x] %d", status, vmOffset(rt, mem), vmOffset(rt, mem->prev), vmOffset(rt, mem->next), size);
+				int size = (char*)mem->next - (char*)mem - sizeof(struct memchunk);
+				perr(rt, 0, NULL, 0, "%s chunk[%d]: @%06x; next: %06x; prev: %06x", status, size, vmOffset(rt, mem), vmOffset(rt, mem->next), vmOffset(rt, mem->prev));
 			}
 		}
 	}
-	return memd ? memd->data : NULL;
+
+	return chunk ? chunk->data : NULL;
 }
 
 // arrBuffer

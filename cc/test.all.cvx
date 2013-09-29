@@ -75,7 +75,7 @@ enum Test {
 	Type = ~0;
 	Misc = ~0;
 	Math = ~0;
-	Call = ~0;
+	Call = 1;
 }
 static if (true) {
 struct hex8: int8;			//%hex8(%02x)
@@ -219,7 +219,7 @@ void bitsget(int bitsize, bool signed, int64 &min, int64 &max) {
 	max = int64.And(min - 1, mask);
 }
 
-int bitsize = 10;
+int bitsize = 10;   //%%d
 hex64 min;
 hex64 max;
 hex64 umin;
@@ -373,8 +373,8 @@ static if (Test.Misc & 1) {			// matrix multiply
 // Matrix Multiply
 
 define dim = 7;
-struct scalar: float64;		//%%.0f
-scalar m1[dim][dim];
+struct scalar: float64;		//%%.1f
+scalar m1[dim][dim];		//%%.1f
 scalar m2[dim][dim];
 scalar m3[dim][dim];
 

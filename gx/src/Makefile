@@ -8,7 +8,7 @@ BINARY=main
 OUTOBJ=-o
 OUTEXE=-o
 CFLAGS=-Wall -Wpadded -g3 -ggdb
-CFLAGS=-g0 -Os
+#~ CFLAGS=-g0 -Os
 
 CCC=gcc -m32
 LNK=gcc -m32

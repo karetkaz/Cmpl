@@ -20,7 +20,7 @@
 	5: print non pre-mapped strings, non static types
 	6: print static casts generated with emit
 */
-//~ #define DEBUGGING 7
+//~ #define DEBUGGING 1
 
 // enable dynamic dll/so lib loading
 #define USEPLUGINS
@@ -64,19 +64,19 @@
 #endif
 
 // internal errors
-#define dieif(__EXP, msg, ...) do { if (__EXP) { prerr("fatal", msg, ##__VA_ARGS__); abort(); }} while(0)
 #define fatal(msg, ...) do { prerr("fatal", msg, ##__VA_ARGS__); abort(); } while(0)
+#define dieif(__EXP, msg, ...) do { if (__EXP) { fatal(msg, ##__VA_ARGS__); } } while(0)
 
 // compilation errors
 #define error(__ENV, __FILE, __LINE, msg, ...) do { perr(__ENV, -1, __FILE, __LINE, msg, ##__VA_ARGS__); debug(msg, ##__VA_ARGS__); } while(0)
 #define warn(__ENV, __LEVEL, __FILE, __LINE, msg, ...) do { perr(__ENV, __LEVEL, __FILE, __LINE, msg, ##__VA_ARGS__); } while(0)
 #define info(__ENV, __FILE, __LINE, msg, ...) do { warn(__ENV, 0, __FILE, __LINE, msg, ##__VA_ARGS__); } while(0)
 
-#define lengthOf(__ARRAY) ((signed)(sizeof(__ARRAY) / sizeof(*(__ARRAY))))
+#define lengthOf(__ARRAY) (sizeof(__ARRAY) / sizeof(*(__ARRAY)))
 #define offsetOf(__TYPE, __FIELD) ((size_t) &((__TYPE)0)->__FIELD)
 
 
-// Symbols - CC(tokens)
+// Tokens - CC(tokens)
 typedef enum {
 	#define TOKDEF(NAME, TYPE, SIZE, STR) NAME,
 	#include "defs.inl"
@@ -90,14 +90,12 @@ typedef enum {
 	stmt_NoDefs = 0x100,		// disable typedefs in stmt.
 	stmt_NoRefs = 0x200,		// disable variables in stmt.
 
-	decl_NoDefs = 0x100,		// disable type defs in decl.
+	decl_NoDefs = 0x100,		// disable typedefs in decl.
 	decl_NoInit = 0x200,		// disable initializer.
-	decl_Colon  = 0x400,		// enable ':' after declaration: for(int a : range(0, 12))
+	decl_ItDecl = 0x400,		// enable ':' after declaration: for(int a : range(0, 12))
 
 	ATTR_const = 0x0100,		// constant
-	ATTR_stat  = 0x0200,		// static
-
-	tok_last2
+	ATTR_stat  = 0x0200			// static
 } ccToken;
 typedef struct tok_inf {
 	int const	type;
@@ -146,7 +144,7 @@ typedef enum {
 	b32_bit_sar = 3 << 6,
 
 	vm_size = sizeof(int),	// size of data element on stack
-	vm_regs = 255,	// maximum registers for dup, set, pop, ...
+	vm_regs = 255	// maximum registers for dup, set, pop, ...
 } vmOpcode;
 typedef struct opc_inf {
 	int const code;		// opcode value (0..255)
@@ -189,7 +187,7 @@ typedef struct libc {
 
 typedef struct astNode *astn;		// Abstract Syntax Tree Node
 
-struct symNode {                	// type node (meta)
+struct symNode {					// type node (meta)
 	char*	name;		// symbol name
 	char*	file;		// declared in file
 	int		line;		// declared on line
@@ -200,8 +198,8 @@ struct symNode {                	// type node (meta)
 	symn	type;		// base type of TYPE_ref/TYPE_arr/function (void, int, float, struct, ...)
 
 	symn	flds;		// all fields: static + nonstatic fields / function return value + paramseters
-    //~ TODO: temporarly array variable base type
-    symn	prms;		// tail of flds: struct nonstatic fields / function paramseters
+	//~ TODO: temporarly array variable base type
+	symn	prms;		// tail of flds: struct nonstatic fields / function paramseters
 
 	symn	decl;		// declaring symbol: struct, function, ...
 	symn	next;		// next symbol: field / param / ... /(in scope table)
@@ -217,10 +215,6 @@ struct symNode {                	// type node (meta)
 		uint32_t	cnst:1;		// constant
 		uint32_t	stat:1;		// static ?
 		uint32_t	glob:1;		// global
-
-		//~ uint32_t	priv:1;		// private
-		//~ uint32_t	load:1;		// indirect reference: cast == TYPE_ref
-		//~ uint32_t	used:1;		//
 		uint32_t _padd:27;		// declaration level
 	};
 	};
@@ -228,18 +222,18 @@ struct symNode {                	// type node (meta)
 	int nest;		// declaration level
 
 	symn	defs;		// global variables and functions / while_compiling variables of the block in reverse order
-	symn	gdef;		// static variables and functions / while_compiling ?
+	symn	gdef;		// all static variables and functions
 
+	astn	used;		// usage references
 	astn	init;		// VAR init / FUN body, this shuld be null after codegen
-	astn	used;		// how many times was referenced by lookup
 	char*	pfmt;		// TEMP: print format
 };
 
-struct astNode {                	// tree node (code)
+struct astNode {					// tree node (code)
 	ccToken		kind;				// code: TYPE_ref, OPER_???
-	ccToken		cst2;				// casts to basic type: (i32, f32, i64, f64, ref, bool, void)
+	ccToken		cst2;				// casts to: (void, bool, int32, int64, float32, float64, reference, value)
 	symn		type;				// typeof() return type of operator
-    astn		next;				// next statement, do not use for preorder
+	astn		next;				// next statement, do not use for preorder
 	union {
 		union {						// TYPE_xxx: constant
 			int64_t	cint;			// const: integer
@@ -290,6 +284,33 @@ void* insBuff(struct arrBuffer* buff, int idx, void* data);
 void* getBuff(struct arrBuffer* buff, int idx);
 void freeBuff(struct arrBuffer* buff);
 
+typedef struct dbgInfo {
+	astn code;		// the generated node
+
+	char* file;
+	int line;
+
+	int start;
+	int end;		// code generated between positions
+
+} *dbgInfo;
+
+struct dbgStateRec {
+	int (*dbug)(state, int pu, void* ip, long* sptr, int scnt);
+
+	struct {
+		void* cf;
+		void* ip;
+		void* sp;
+		symn sym;
+		int pos;
+	} trace[512];
+
+	int tracePos;
+
+	struct arrBuffer codeMap;
+};
+
 struct ccStateRec {
 	state	s;
 	symn	defs;		// all definitions
@@ -309,7 +330,7 @@ struct ccStateRec {
 	int		maxlevel;		// max nest level: modified by ?
 	int		siff:1;		// inside a static if false
 	int		sini:1;		// initialize static variables ?
-	int		_pad:30;	// 
+	int		_pad:30;	//
 	//~ int		verb:1;		// verbosity
 
 	char*	file;	// current file name
@@ -352,52 +373,27 @@ struct ccStateRec {
 	symn	libc_dbg;
 };
 
-typedef struct dbgInfo {
-	astn code;		// the generated node
-
-	char* file;
-	int line;
-
-	int start;
-	int end;		// code generated between positions
-
-} *dbgInfo;
-
-struct dbgStateRec {
-	int (*dbug)(state, int pu, void* ip, long* sptr, int scnt);
-
-	struct {
-		void* cf;
-		void* ip;
-		void* sp;
-		symn sym;
-		int pos;
-	} trace[512];
-
-	int tracePos;
-
-	struct arrBuffer codeMap;
-};
-
 dbgInfo getCodeMapping(state rt, int position);
 dbgInfo addCodeMapping(state rt, astn ast, int start, int end);
 
-static inline int kindOf(astn ast) {return ast ? ast->kind : 0;}
-
 //~ clog
-//~ void fputfmt(FILE *fout, const char *msg, ...);
-
+void fputfmt(FILE *fout, const char *msg, ...);
 //~ void fputsym(FILE *fout, symn sym, int mode, int level);
 //~ void fputast(FILE *fout, astn ast, int mode, int level);
+
+//~ void dumpxml(FILE* fout, astn ast, int mode, int level, const char* text)
+//~ void dumpsym(FILE *fout, symn sym, int mode);
+
+
 void fputopc(FILE *fout, unsigned char* ptr, int len, int offs, state rt);
+void fputasm(state, FILE *fout, int beg, int end, int mode);
+
+void fputval(state, FILE *fout, symn var, stkval* ref, int flgs);
 
 // program error
 void perr(state rt, int level, const char *file, int line, const char *msg, ...);
 
-//~ void dumpsym(FILE *fout, symn sym, int mode);
-//~ void dumpast(FILE *fout, astn ast, int mode);
-//~ void dumpxml(FILE *fout, astn ast, int lev, const char* text, int level);
-
+// creating syms and nodes
 symn newdefn(ccState, int kind);
 astn newnode(ccState, int kind);
 
@@ -408,19 +404,31 @@ astn tagnode(ccState s, char *str);
 astn intnode(ccState, int64_t v);
 astn fltnode(ccState, float64_t v);
 astn strnode(ccState, char *v);
-//~ astn fh8node(ccState, uint64_t v);
 
-astn cpynode(ccState, astn src);
+//~ astn cpynode(ccState, astn src);
 void eatnode(ccState, astn ast);
 
-symn install(ccState, const char* name, int kind, int cast, unsigned size, symn type, astn init);
+/** install a new symbol: typename, function, variable or alias.
+ * @param ccState compiler context
+ * @param name symbol name
+ * @param kind: type of sybol: (TYPE_ref, TYPE_def, TYPE_rec, TYPE_arr)
+ * @param cast: casts to ...
+ * @param size: size of symbol
+ * @param type: type, base type, return type, of symbol.
+ * @param init: initializer, function body, alias link.
+ * 
+ */
+symn install(ccState, const char* name, ccToken kind, ccToken cast, unsigned size, symn type, astn init);
 
-symn declare(ccState, int kind, astn tag, symn rtyp);
-symn addarg(ccState, symn sym, const char* name, int kind, symn type, astn init);
+/** install a new symbol: typename, function, variable or alias.
+ * like install, using tag node as refernce.
+ */
+symn declare(ccState, ccToken kind, astn tag, symn rtyp);
 
 int canAssign(ccState, symn rhs, astn val, int strict);
-symn lookup(ccState, symn sym, astn ast/*, int deep*/, astn args, int raise);
-// TODO: this is the semantic-analyzer, typecheck should be renamed.
+symn lookup(ccState, symn sym, astn ast, astn args, int raise);
+
+// TODO: this is the semantic-analyzer, typecheck should be renamed to something like `fixtype`.
 symn typecheck(ccState, symn loc, astn ast);
 
 /* fix structure member offsets / function arguments
@@ -428,7 +436,7 @@ symn typecheck(ccState, symn loc, astn ast);
  */
 int fixargs(symn sym, int align, int spos);
 
-int castOf(symn typ);
+ccToken castOf(symn typ);
 int castTo(astn ast, ccToken tyId);
 
 int32_t constbol(astn ast);
@@ -439,7 +447,7 @@ astn peek(ccState);
 astn next(ccState, ccToken kind);
 int  skip(ccState, ccToken kind);
 
-astn expr(ccState, int mode);		// parse expression	(mode: do typecheck)
+astn expr(ccState, int mode);		// parse expression	(mode: typecheck)
 astn decl(ccState, int mode);		// parse declaration	(mode: enable defs(: struct, define, ...))
 astn decl_var(ccState, astn *args, int mode);
 //~ astn stmt(ccState, int mode);		// parse statement	(mode: enable decl/enter new scope)
@@ -462,8 +470,8 @@ int isConst(astn ast);
 
 /** emit an opcode with args
  * @param opc: opcode
- * @param ...: argument
- * @return: program counter
+ * @param arg: argument
+ * @return program counter
  */
 int emit(state, vmOpcode opc, stkval arg);
 int emitopc(state, vmOpcode opc);
@@ -483,17 +491,15 @@ int stkoffs(state rt, int size);
 
 int istype(symn sym);
 int isType(astn ast);
+int usedCnt(symn sym);
 
 symn linkOf(astn ast);
 long sizeOf(symn typ);
 
-int source(ccState, int isFile, char* text);
+ccState ccOpen(state rt, char* file, int line, char* source);
 
 unsigned rehash(const char* str, unsigned size);
 char* mapstr(ccState s, char *name, unsigned size/* = -1U*/, unsigned hash/* = -1U*/);
-
-void fputasm(state, FILE *fout, int beg, int end, int mode);
-void fputval(state, FILE *fout, symn var, stkval* ref, int flgs);
 
 /** return the internal offset of a reference
  * aborts if ptr is not null and not inside the context.

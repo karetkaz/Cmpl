@@ -40,8 +40,7 @@ static const int wl = 9;			// warning level
 static const int ol = 2;			// optimize level
 static int dl = 0x19;				// disassambly level
 
-//~ static const int cc = 1;			// execution cores
-static char mem[400 << 20];			// runtime memory of (4M)
+static char mem[64 << 20];			// runtime memory of (4M)
 
 const char* STDLIB = "../stdlib.cvx";		// standard library
 
@@ -213,7 +212,7 @@ int evalexp(ccState cc, char* text) {
 	return -1;
 }
 
-static int testFunction(state rt, void* funcData) {		// void testFunction(void cb(int n), int n)
+static int testFunction(state rt, void* _) {		// void testFunction(void cb(int n), int n)
 	symn cb = mapsym(rt, argref(rt, 0));
 	int n = argi32(rt, 4);
 	if (cb != NULL) {
@@ -221,17 +220,20 @@ static int testFunction(state rt, void* funcData) {		// void testFunction(void c
 		return vmCall(rt, cb, NULL, &args);
 	}
 	return 0;
+	(void)_;
 }
 
-int reglibs(state rt, char* stdlib) {
+static int reglibs(state rt, char* stdlib) {
 	int err = 0;
 
-	err = err || !ccAddCall(rt, testFunction, NULL, "void testFunction(void cb(int n), int n);");
-	err = err || install_stdc(rt, stdlib, 0);
-	err = err || install_file(rt);
-	//~ err = err || install_bits(s);
+	err = err || !ccAddCall(rt, testFunction, NULL, "void testFunction(void cb(pointer args), pointer args);");
+	err = err || !ccAddUnit(rt, install_stdc, 0, stdlib);
+	err = err || !ccAddUnit(rt, install_file, 0, NULL);
+
+	//~ err = err || install_bits(rt);
 
 	return err;
+	(void)testFunction;
 }
 
 #if defined(USEPLUGINS)
@@ -339,6 +341,17 @@ static int importLib(state rt, const char* path) {
 
 static symn printvars = NULL;
 static int dbgCon(state, int pu, void* ip, long* bp, int ss);
+static int dbgDummy(state rt, int pu, void* ip, long* bp, int ss) {
+	//~ int IP = ((char*)ip) - ((char*)rt->_mem);
+	//~ fputfmt(stdout, ">exec:[sp(%06x)] %9.*A\n", bp, IP, ip);
+
+	return 0;
+	(void)rt;
+	(void)pu;
+	(void)ip;
+	(void)bp;
+	(void)ss;
+}
 
 int program(int argc, char* argv[]) {
 	state rt = rtInit(mem, sizeof(mem));
@@ -346,13 +359,13 @@ int program(int argc, char* argv[]) {
 	char* stdl = (char*)STDLIB;
 
 	//~ char* prg = argv[0];
-	dbgf dbg = NULL;
+	int (*dbg)(state, int pu, void *ip, long* sp, int ss) = NULL;
 
 	// compile, run, debug, ...
 	int level = -1, argi;
 	int opti = ol;
 
-	int gen_code = 1;	// cgen: false/true/debug
+	int gen_code = 1;	// cgen: false/true
 	int run_code = 0;	// exec: true/false
 	char* stk_dump = NULL;
 
@@ -401,9 +414,11 @@ int program(int argc, char* argv[]) {
 				str += 1;
 			}
 			if (*str == 'd' || *str == 'D') {
-				gen_code = 2;
 				if (*str == 'D') {
 					dbg = dbgCon;
+				}
+				else {
+					dbg = dbgDummy;
 				}
 				if (str[1] == ':') {
 					stk_dump = str + 2;
@@ -529,7 +544,7 @@ int program(int argc, char* argv[]) {
 		}
 		else if (strncmp(arg, "-C", 2) == 0) {		// compile source
 			char* str = arg + 2;
-			if (ccAddCode(rt, warn, str, 1, NULL) != 0) {
+			if (!ccAddCode(rt, warn, str, 1, NULL)) {
 				error(rt, NULL, 0, "error compiling `%s`", str);
 			}
 		}
@@ -547,7 +562,7 @@ int program(int argc, char* argv[]) {
 				}
 				continue;
 			}
-			if (ccAddCode(rt, warn, arg, 1, NULL) != 0) {
+			if (!ccAddCode(rt, warn, arg, 1, NULL)) {
 				error(rt, NULL, 0, "error compiling `%s`", arg);
 			}
 		}
@@ -574,7 +589,7 @@ int program(int argc, char* argv[]) {
 	if (rt->errc == 0) {
 
 		// generate variables and vm code.
-		if ((gen_code || run_code) && gencode(rt, opti, gen_code > 1) != 0) {
+		if ((gen_code || run_code) && gencode(rt, opti, dbg) != 0) {
 			logfile(rt, NULL);
 			closeLibs();
 			return rt->errc;
@@ -621,7 +636,7 @@ int program(int argc, char* argv[]) {
 		}
 		if (run_code != 0) {
 			logFILE(rt, stdout);
-			result = vmExec(rt, dbg, rt->_size / 4);
+			result = vmExec(rt, rt->_size / 4);
 		}
 	}
 

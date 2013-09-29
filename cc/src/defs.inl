@@ -7,7 +7,7 @@
 			typename size, if == ff then keyword
 
 	opArgs: if != 0 then operator
-// */
+*/
 TOKDEF(TYPE_any, 0x00, 0, ".err")	// error
 TOKDEF(TYPE_vid, 0x00, 0, ".vid")	// void
 TOKDEF(TYPE_bit, 0x04, 0, ".bit")	// bool

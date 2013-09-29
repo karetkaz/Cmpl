@@ -101,13 +101,10 @@ void drawBiorithm(gxSurf dst, int daysToShow, double now, Date birth, Biorithm b
 
 	char text[128];
 	format(text, "Date: %04y.%02m.%02d", Date(int64(now)));
-	drawText(dst, Window.padding, Window.padding, emit(string, ref(text)), -1);
+	drawText(dst, Window.padding, Window.padding, string(text), -1);
 
 	format(text, "Birth: %04y.%02m.%02d", birth);
-	drawText(dst, Window.padding, Window.padding + textSpacing, emit(string, ref(text)), -1);
-	//~ itoa(emit(string, ref(text)), int32(now));
-	//~ drawText(dst, Window.padding, Window.padding + textSpacing, emit(string, ref(text)), -1);
-
+	drawText(dst, Window.padding, Window.padding + textSpacing, string(text), -1);
 }
 
 void setupBiorithm(int _daysToShow, Date _now, Date _birth) {
@@ -204,6 +201,8 @@ void setupBiorithm(int _daysToShow, Date _now, Date _birth) {
 //~ Date Now = Date(2012, 11, 10);
 Date Now = DateFromTime(time());
 define daysToShow = 15;
+
+setupBiorithm(daysToShow, Now, Date(1990, 12, 25));
 
 setupBiorithm(daysToShow, Now, Date(1983, 5,  2));
 //~ setupBiorithm(daysToShow, Now, Date(1984, 8, 30));

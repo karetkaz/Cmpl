@@ -35,7 +35,7 @@ char *ccStd = NULL;//"src/stdlib.gxc";	// stdlib script file (from gx.ini)
 char *ccGfx = NULL;//"src/gfxlib.gxc";	// gfxlib script file (from gx.ini)
 char *ccLog = NULL;//"out/debug.out";
 char *ccDmp = NULL;//"out/dump.out";
-int ccDbg = 0;
+int ccDbg = 1;
 
 
 char *obj = NULL;		// object filename
@@ -682,7 +682,7 @@ extern state rt;
 extern symn renderMethod;
 extern symn mouseCallBack;
 extern symn keyboardCallBack;
-extern int ccCompile(char *src, int argc, char* argv[]);
+extern int ccCompile(char *src, int argc, char* argv[], int dbgCon(state rt, int pu, void* ip, long* bp, int ss));
 
 enum Events {
 	doReload = 10,
@@ -897,15 +897,13 @@ static int ratHND(int btn, int mx, int my) {
 
 static int dbgCon(state rt, int pu, void* ip, long* bp, int ss) {
 	int IP = ((char*)ip) - ((char*)rt->_mem);
-	fputfmt(stdout, ">exec:[sp%02d:%08x]@%9.*A\n", ss, bp + ss, IP, ip);
-	//~ fputfmt(stdout, ">exec:[pu:%d, sp%02d:%08x]@", pu, ss, bp[0], IP, ip);
-	//~ fputopc(stdout, ip, 0x09, IP, rt);
-	//~ fputfmt(stdout, "\n");
-
+	dump(rt, 0, NULL, ">exec:[sp%02d:%08x]@%9.*A\n", ss, bp + ss, IP, ip);
+	//~ fputfmt(stdout, ">exec:[sp%02d:%08x]@%9.*A\n", ss, bp + ss, IP, ip);
 	return 0;
 }
 
 int main(int argc, char* argv[]) {
+	int (*dbg)(state rt, int pu, void* ip, long* bp, int ss) = NULL;
 	static char mem[16 << 20];		// 16MB memory for vm & compiler
 	char *script = NULL;			// compile script
 
@@ -962,17 +960,20 @@ int main(int argc, char* argv[]) {
 		//~ readorevalMesh(&mshLightDir, ltD, ltDLn, NULL, 10);
 
 	if (argc > 1) {
-		if (strcmp("-s", argv[1]) == 0) {	// scripts
+		if (strncmp("-s", argv[1], 2) == 0) {	// scripts
 			if (argc == 2) {
 				// need help ?
 				rt = rtInit(mem, sizeof(mem));
-				ccCompile(NULL, 0, NULL);
+				ccCompile(NULL, 0, NULL, dbg);
 				gx_doneSurf(&offs);
 				freeMesh(&mshLightPoint);
 				freeMesh(&msh);
 				return 0;
 			}
 			else {
+				if (strrchr(argv[1], 'd') != NULL) {
+					dbg = dbgCon;
+				}
 				script = argv[2];
 				argv += 2;
 				argc -= 2;
@@ -1018,7 +1019,7 @@ int main(int argc, char* argv[]) {
 		rt = rtInit(mem, sizeof(mem));
 
 		ticks = timenow();
-		e = ccCompile(script, argc, argv);
+		e = ccCompile(script, argc, argv, dbg);
 		debug("ccCompile(Exit code: %d, Time: %.3f)", e, ticksinsecs(ticks));
 
 		if (e != 0) {
@@ -1045,7 +1046,7 @@ int main(int argc, char* argv[]) {
 
 	if (rt != NULL) {
 		int64_t ticks = timenow();
-		e = vmExec(rt, ccDbg ? dbgCon : NULL, sizeof(mem)/4);
+		e = vmExec(rt, sizeof(mem)/4);
 		//~ debug("vmExecute(): %d\tTime: %f", e, ticksinsecs(ticks));
 		debug("vmExecute(Exit code: %d, Time: %.3f)", e, ticksinsecs(ticks));
 		if (e != 0) {
@@ -1093,7 +1094,7 @@ int main(int argc, char* argv[]) {
 				}
 				else {
 					int64_t ticks = timenow();
-					e = vmExec(rt, NULL, sizeof(mem)/4);
+					e = vmExec(rt, sizeof(mem)/4);
 					debug("vmExecute(): %d\tTime: %g", e, ticksinsecs(ticks));
 				}
 			} break;
