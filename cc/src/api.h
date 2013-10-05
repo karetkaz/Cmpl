@@ -1,3 +1,8 @@
+/** TODO:
+ * vmExec should invoke vmCall, with a `module` symbol redundant in current implementation (opcode: libc, vmExec).
+ * 
+ */
+
 #ifndef CC_API_H
 #define CC_API_H 2
 #ifdef __cplusplus
@@ -30,6 +35,25 @@ typedef struct stateRec *state;			// runtime
 typedef struct ccStateRec *ccState; 	// compiler
 typedef struct dbgStateRec *dbgState;	// debugger
 
+/** Native function invocation arguments
+ * NOTE: the return value and the arguments begin at the same memory location.
+ * setting the return value may invalidate the arguments.
+ * 
+ */
+typedef struct libcArgsRec {
+	state rt;		// runtime context
+
+	symn  fun;		// invoked function
+	void* retv;		// result of function
+	char* argv;		// arguments for function
+
+	void* data;		// function data (ccAddCall)
+	void* extra;	// extra data (ccCall)
+} *libcArgs;
+
+/** runtime context
+ * 
+ */
 struct stateRec {
 	int   errc;		// error count
 	int   closelog;	// close log file
@@ -37,18 +61,6 @@ struct stateRec {
 
 	symn  defs;		// global variables and functions
 	symn  gdef;		// all static variables and functions
-
-	/** Native function invocation
-	 * NOTE: the return value and the arguments begin at the same memory location.
-	 * setting the return value may invalidate the arguments.
-	 * 
-	 */
-	struct libcstate {
-		symn  libc;		// invoked function
-		char* argv;		// first argument
-		void* retv;		// return value
-		void* data;		// user data
-	} libc;
 
 	// virtual machine state
 	struct {
@@ -131,7 +143,7 @@ struct stateRec {
 				error...
 			}
 		 */
-		symn (*const ccAddCall)(state, int libc(state, void* data), void* data, const char* proto);
+		symn (*const ccAddCall)(state, int libc(libcArgs), void* extra, const char* proto);
 
 		/** Compile the given file or text block.
 		 * @param the runtime context.
@@ -200,7 +212,7 @@ struct stateRec {
 		 * @return non zero on error.
 		 * @usage see @mapsym example.
 		*/
-		int (*const invoke)(state, symn fun, void* result, void *args);
+		int (*const invoke)(state, symn fun, void* res, void* args, void* extra);
 
 		/** Allocate free  memory inside the vm.
 		 * @param the runtime context.
@@ -208,10 +220,10 @@ struct stateRec {
 		 * @param size the new size to reallocate or 0 to free.
 		 * @return pointer to the allocated memory.
 		 * cases:
-			ptr == null && size == 0: nothing
-			ptr != null && size == 0: free
-			ptr == null && size >  0: alloc
-			ptr != null && size >  0: realloc
+			size == 0 && ptr == null: nothing
+			size == 0 && ptr != null: free
+			size >  0 && ptr == null: alloc
+			size >  0 && ptr != null: realloc
 		*/
 		void* (*const rtAlloc)(state, void* ptr, unsigned size);
 	} api;
@@ -223,41 +235,41 @@ struct stateRec {
 	unsigned char _mem[];		// this is whwewe the memory begins.
 };
 
-static inline void* argval(state rt, int offset, void *result, int size) {
+static inline void* argval(libcArgs args, int offset, void *result, int size) {
 	// if result is not null copy
 	if (result != NULL) {
-		memcpy(result, rt->libc.argv + offset, size);
+		memcpy(result, args->argv + offset, size);
 	}
 	else {
-		result = rt->libc.argv + offset;
+		result = args->argv + offset;
 	}
 	return result;
 }
-#define argval(__ARGV, __OFFS, __TYPE) (*(__TYPE*)((__ARGV)->libc.argv + __OFFS))
-static inline int32_t argi32(state rt, int offs) { return argval(rt, offs, int32_t); }
-static inline int64_t argi64(state rt, int offs) { return argval(rt, offs, int64_t); }
-static inline float32_t argf32(state rt, int offs) { return argval(rt, offs, float32_t); }
-static inline float64_t argf64(state rt, int offs) { return argval(rt, offs, float64_t); }
-static inline void* arghnd(state rt, int offs) { return argval(rt, offs, void*); }
-static inline void* argref(state rt, int offs) { int32_t p = argval(rt, offs, int32_t); return p ? rt->_mem + p : NULL; }
-static inline void* argsym(state rt, int offs) { return rt->api.mapsym(rt, argref(rt, offs)); }
-static inline char* argstr(state rt, int offs) { return (char*)argref(rt, offs); }
+#define argval(__ARGV, __OFFS, __TYPE) (*(__TYPE*)((__ARGV)->argv + __OFFS))
+static inline int32_t argi32(libcArgs args, int offs) { return argval(args, offs, int32_t); }
+static inline int64_t argi64(libcArgs args, int offs) { return argval(args, offs, int64_t); }
+static inline float32_t argf32(libcArgs args, int offs) { return argval(args, offs, float32_t); }
+static inline float64_t argf64(libcArgs args, int offs) { return argval(args, offs, float64_t); }
+static inline void* arghnd(libcArgs args, int offs) { return argval(args, offs, void*); }
+static inline void* argref(libcArgs args, int offs) { int32_t p = argval(args, offs, int32_t); return p ? args->rt->_mem + p : NULL; }
+static inline void* argsym(libcArgs args, int offs) { return args->rt->api.mapsym(args->rt, argref(args, offs)); }
+static inline char* argstr(libcArgs args, int offs) { return (char*)argref(args, offs); }
 #undef argval
 
-static inline void* setret(state rt, void *result, int size) {
+static inline void* setret(libcArgs args, void *result, int size) {
 	if (result != NULL) {
-		memcpy(rt->libc.retv, result, size);
+		memcpy(args->retv, result, size);
 	}
-	return rt->libc.retv;
+	return args->retv;
 }
-#define getret(__ARGV, __TYPE) (*((__TYPE*)(__ARGV->libc.retv)))
+#define getret(__ARGV, __TYPE) (*((__TYPE*)((__ARGV)->retv)))
 #define setret(__ARGV, __TYPE, __VAL) (getret(__ARGV, __TYPE) = (__TYPE)(__VAL))
-static inline void reti32(state rt, int32_t val) { setret(rt, int32_t, val); }
-static inline void reti64(state rt, int64_t val) { setret(rt, int64_t, val); }
-static inline void retf32(state rt, float32_t val) { setret(rt, float32_t, val); }
-static inline void retf64(state rt, float64_t val) { setret(rt, float64_t, val); }
-static inline void rethnd(state rt, void* val) { setret(rt, void*, val); }
-//~ static inline void retref(state rt, void* val) { setret(rt, void*, vmOffset(rt, val)); }
+static inline void reti32(libcArgs args, int32_t val) { setret(args, int32_t, val); }
+static inline void reti64(libcArgs args, int64_t val) { setret(args, int64_t, val); }
+static inline void retf32(libcArgs args, float32_t val) { setret(args, float32_t, val); }
+static inline void retf64(libcArgs args, float64_t val) { setret(args, float64_t, val); }
+static inline void rethnd(libcArgs args, void* val) { setret(args, void*, val); }
+//~ static inline void retref(libcArgs args, void* val) { setret(args, void*, vmOffset(args->rt, val)); }
 #undef setret
 
 #ifdef __cplusplus

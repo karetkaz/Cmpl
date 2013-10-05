@@ -43,7 +43,7 @@ void dump(state, int dumpWhat, symn, const char* msg, ...);
 /** Initialze compiler state
  * installs base types, emit, standard lib, ...
  */
-ccState ccInit(state, int mode, int onHalt(state, void*));
+ccState ccInit(state, int mode, int onHalt(libcArgs));
 
 // declare and start a namespace (static struct)
 symn ccBegin(state, char *cls);
@@ -74,7 +74,7 @@ void ccEnd(state, symn sym);
 		error...
 	}
  */
-symn ccAddCall(state, int libc(state, void* data), void* data, const char* proto);
+symn ccAddCall(state, int libc(libcArgs), void* data, const char* proto);
 
 /// install a type symbol
 symn ccAddType(state, const char* name, unsigned size, int refType);
@@ -95,6 +95,7 @@ int ccAddCode(state, int warn, char *file, int line, char *code);
  * @param warn the warning level to be used.
  * @param unit this function should install types and functions of the unit
  * @param file additional file to be compiled with this unit.
+ * @return boolean value of success.
  */
 int ccAddUnit(state, int unit(state), int warn, char *file);
 
@@ -108,7 +109,7 @@ int ccSymValFlt(symn sym, double* res);
  + @param level warning level.
  + @param file additional file extending module
  */
-int install_base(state, int mode, int onHalt(state, void*));
+int install_base(state, int mode, int onHalt(libcArgs));
 
 /** instal standard functions.
  * io, mem, math, ...
@@ -138,18 +139,19 @@ int gencode(state, int optimizeLevel, int dbg(state, int pu, void *ip, long* sp,
  * @todo param args(char*[]) arguments from main.
  * @return 0 on success.
  */
-int vmExec(state, int ss);
+int vmExec(state, void* extra, int ss);
 
 /** execute a function inside the context.
  * @param context
  * @param fun symbol of the function to be executed.
  * @param ret result of the function.
  * @param args arguments for the function.
+ * @param extra extra data for the function.
  * @return 0 on success.
  */
-int vmCall(state, symn fun, void* ret, void* args);
+int vmCall(state, symn fun, void* ret, void* args, void* extra);
 
-int libCallHaltDebug(state, void*);
+int libCallHaltDebug(libcArgs);
 
 // searching for symbols ...
 symn mapsym(state, void *ptr);

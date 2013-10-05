@@ -38,15 +38,17 @@ application [global options] [local options]...
 // default values
 static const int wl = 9;			// warning level
 static const int ol = 2;			// optimize level
-static int dl = 0x19;				// disassambly level
-
-static char mem[64 << 20];			// runtime memory of (4M)
+static char mem[6 << 10];			// runtime memory of (16M)
 
 const char* STDLIB = "../stdlib.cvx";		// standard library
 
 #ifdef __linux__
 #define stricmp(__STR1, __STR2) strcasecmp(__STR1, __STR2)
 #endif
+
+static inline int streq(const char *a, const char *b) {
+	return strcmp(a, b) == 0;
+}
 
 char* parsei32(const char* str, int32_t* res, int radix) {
 	int64_t result = 0;
@@ -212,15 +214,14 @@ int evalexp(ccState cc, char* text) {
 	return -1;
 }
 
-static int testFunction(state rt, void* _) {		// void testFunction(void cb(int n), int n)
-	symn cb = mapsym(rt, argref(rt, 0));
-	int n = argi32(rt, 4);
+static int testFunction(libcArgs rt) {		// void testFunction(void cb(int n), int n)
+	symn cb = mapsym(rt->rt, argref(rt, 0));
 	if (cb != NULL) {
-		struct {int n;} args = {n};
-		return vmCall(rt, cb, NULL, &args);
+        int n = argi32(rt, 4);
+        struct {int n;} args = {n};
+        return vmCall(rt->rt, cb, NULL, &args, NULL);
 	}
 	return 0;
-	(void)_;
 }
 
 static int reglibs(state rt, char* stdlib) {
@@ -382,7 +383,7 @@ int program(int argc, char* argv[]) {
 	int warn = wl;
 	int result = 0;
 
-	int (*onHalt)(state, void*) = NULL;	// print variables and values on exit
+	int (*onHalt)(libcArgs) = NULL;	// print variables and values on exit
 
 	// evaluate constant expression.
 	if (argc == 2 && *argv[1] == '=') {
@@ -538,8 +539,9 @@ int program(int argc, char* argv[]) {
 		}
 		else if (strncmp(arg, "-L", 2) == 0) {		// import library
 			char* str = arg + 2;
-			if (importLib(rt, str) != 0) {
-				error(rt, NULL, 0, "error importing library `%s`", str);
+			int resultCode = importLib(rt, str);
+			if (resultCode != 0) {
+				error(rt, NULL, 0, "error(%d) importing library `%s`", resultCode, arg);
 			}
 		}
 		else if (strncmp(arg, "-C", 2) == 0) {		// compile source
@@ -550,15 +552,10 @@ int program(int argc, char* argv[]) {
 		}
 		else if (*arg != '-') {
 			char* ext = strrchr(arg, '.');
-			if (ext && strcmp(ext, ".so") == 0) {
-				if (importLib(rt, arg) != 0) {
-					error(rt, NULL, 0, "error importing library `%s`", arg);
-				}
-				continue;
-			}
-			if (ext && strcmp(ext, ".dll") == 0) {
-				if (importLib(rt, arg) != 0) {
-					error(rt, NULL, 0, "error importing library `%s`", arg);
+			if (ext && (streq(ext, ".so") || streq(ext, ".dll"))) {
+				int resultCode = importLib(rt, arg);
+				if (resultCode != 0) {
+					error(rt, NULL, 0, "error(%d) importing library `%s`", resultCode, arg);
 				}
 				continue;
 			}
@@ -631,12 +628,11 @@ int program(int argc, char* argv[]) {
 					info(rt, NULL, 0, "symbol not found: %s", str_dasm);
 				}
 			}
-			dl = out_dasm & 0x0ff;
-			dump(rt, dump_asm | dl, NULL, "\ndasm:\n");
+			dump(rt, dump_asm | (out_dasm & 0x0ff), NULL, "\ndasm:\n");
 		}
 		if (run_code != 0) {
 			logFILE(rt, stdout);
-			result = vmExec(rt, rt->_size / 4);
+			result = vmExec(rt, NULL, rt->_size / 4);
 		}
 	}
 

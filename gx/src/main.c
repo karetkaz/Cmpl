@@ -695,7 +695,7 @@ static int kbdHND(int key, int state) {
 	if (keyboardCallBack) {
 		int result = 0;
 		//~ struct {int key, state;} args = {key, state};
-		vmCall(rt, keyboardCallBack, NULL, &key);
+		vmCall(rt, keyboardCallBack, NULL, &key, NULL);
 		return result;
 	}
 	else switch (key) {
@@ -834,7 +834,7 @@ static int ratHND(int btn, int mx, int my) {
 	if (mouseCallBack) {
 		int result = 0;
 		//~ struct {int btn, x, y;} args = {btn, mx, my};
-		vmCall(rt, mouseCallBack, NULL, &btn);
+		vmCall(rt, mouseCallBack, NULL, &btn, NULL);
 		return result;
 	}
 	else {// native mouse handler.
@@ -899,6 +899,10 @@ static int dbgCon(state rt, int pu, void* ip, long* bp, int ss) {
 	int IP = ((char*)ip) - ((char*)rt->_mem);
 	dump(rt, 0, NULL, ">exec:[sp%02d:%08x]@%9.*A\n", ss, bp + ss, IP, ip);
 	//~ fputfmt(stdout, ">exec:[sp%02d:%08x]@%9.*A\n", ss, bp + ss, IP, ip);
+	return 0;
+}
+
+static int dbgDummy(state rt, int pu, void* ip, long* bp, int ss) {
 	return 0;
 }
 
@@ -971,7 +975,11 @@ int main(int argc, char* argv[]) {
 				return 0;
 			}
 			else {
-				if (strrchr(argv[1], 'd') != NULL) {
+				char* swithces = argv[1] + 2;
+				if (strrchr(swithces, 'd') != NULL) {
+					dbg = dbgDummy;
+				}
+				if (strrchr(swithces, 'D') != NULL) {
 					dbg = dbgCon;
 				}
 				script = argv[2];
@@ -1046,7 +1054,7 @@ int main(int argc, char* argv[]) {
 
 	if (rt != NULL) {
 		int64_t ticks = timenow();
-		e = vmExec(rt, sizeof(mem)/4);
+		e = vmExec(rt, NULL, sizeof(mem)/4);
 		//~ debug("vmExecute(): %d\tTime: %f", e, ticksinsecs(ticks));
 		debug("vmExecute(Exit code: %d, Time: %.3f)", e, ticksinsecs(ticks));
 		if (e != 0) {
@@ -1094,7 +1102,7 @@ int main(int argc, char* argv[]) {
 				}
 				else {
 					int64_t ticks = timenow();
-					e = vmExec(rt, sizeof(mem)/4);
+					e = vmExec(rt, NULL, sizeof(mem)/4);
 					debug("vmExecute(): %d\tTime: %g", e, ticksinsecs(ticks));
 				}
 			} break;
@@ -1131,7 +1139,7 @@ int main(int argc, char* argv[]) {
 
 		// before render method
 		if (renderMethod != NULL) {
-			vmCall(rt, renderMethod, NULL, NULL);
+			vmCall(rt, renderMethod, NULL, NULL, NULL);
 		}
 
 		if (draw & (draw_mode | temp_lght | disp_bbox | temp_zbuf | disp_info)) {

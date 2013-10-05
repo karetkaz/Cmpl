@@ -411,13 +411,13 @@ define int32(fixed ^val) = int(val.value >> Fixed.Point);
 define float64(fixed ^val) = double(val.value / double(1 << Fixed.Point));
 
 struct assertInfo {
-	string function;
+	string  function;
 	float64 expected;
-	float64 result;
+	float64 returned;
 }
 
-define assert(const assertInfo ^info) = debug("test failed", Math.abs(info.result - info.expected) < 1e-3 ? 0 : Debug.debug, Debug.notrace, emit(variant, ref(info), ref(assertInfo)));
-define assertEquals(string f, float64 a, fixed ^b) = void(0);//assert(assertInfo(f, a, float64(b)));
+define assert(const assertInfo ^info) = debug("test failed", Math.abs(info.returned - info.expected) < 1e-13 ? 0 : Debug.debug, Debug.notrace, emit(variant, ref(info), ref(assertInfo)));
+define assertEquals(string f, float64 a, fixed ^b) = assert(assertInfo(f, a, float64(b)));
 
 //~ define variant(assertInfo ^info) = emit(variant, ref(info), ref(assertInfo));
 //~ define assertEquals(string f, float64 ^a, fixed ^b) = void(0);//debug("test failed", (Math.abs(a - float64(b)) < 1e-14) ? 0 : Debug.debug, Debug.notrace, variant(assertInfo(f, a, float64(b))));

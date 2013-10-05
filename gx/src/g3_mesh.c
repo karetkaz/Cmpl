@@ -1144,26 +1144,26 @@ typedef struct userData {
 
 #include "pvmc.h"
 
-static int getS(state rt, void* _) {
-	userData d = rt->libc.data;
+static int getS(libcArgs rt) {
+	userData d = rt->extra;
 	retf64(rt, lerp(d->smin, d->smax, d->s));
 	return 0;
 }
-static int getT(state rt, void* _) {
-	userData d = rt->libc.data;
+static int getT(libcArgs rt) {
+	userData d = rt->extra;
 	retf64(rt, lerp(d->tmin, d->tmax, d->t));
 	return 0;
 }
-static int setPos(state rt, void* _) {
-	userData d = rt->libc.data;
+static int setPos(libcArgs rt) {
+	userData d = rt->extra;
 	d->pos[0] = argf64(rt, 8 * 0);
 	d->pos[1] = argf64(rt, 8 * 1);
 	d->pos[2] = argf64(rt, 8 * 2);
 	d->isPos = 1;
 	return 0;
 }
-static int setNrm(state rt, void* _) {
-	userData d = rt->libc.data;
+static int setNrm(libcArgs rt) {
+	userData d = rt->extra;
 	d->nrm[0] = argf64(rt, 8 * 0);
 	d->nrm[1] = argf64(rt, 8 * 1);
 	d->nrm[2] = argf64(rt, 8 * 2);
@@ -1171,48 +1171,48 @@ static int setNrm(state rt, void* _) {
 	return 0;
 }
 
-static int f64abs(state rt, void* _) {
+static int f64abs(libcArgs rt) {
 	float64_t x = argf64(rt, 0);
 	retf64(rt, fabs(x));
 	return 0;
 }
-static int f64sin(state rt, void* _) {
+static int f64sin(libcArgs rt) {
 	float64_t x = argf64(rt, 0);
 	retf64(rt, sin(x));
 	return 0;
 }
-static int f64cos(state rt, void* _) {
+static int f64cos(libcArgs rt) {
 	float64_t x = argf64(rt, 0);
 	retf64(rt, cos(x));
 	return 0;
 }
-static int f64tan(state rt, void* _) {
+static int f64tan(libcArgs rt) {
 	float64_t x = argf64(rt, 0);
 	retf64(rt, tan(x));
 	return 0;
 }
-static int f64log(state rt, void* _) {
+static int f64log(libcArgs rt) {
 	float64_t x = argf64(rt, 0);
 	retf64(rt, log(x));
 	return 0;
 }
-static int f64exp(state rt, void* _) {
+static int f64exp(libcArgs rt) {
 	float64_t x = argf64(rt, 0);
 	retf64(rt, exp(x));
 	return 0;
 }
-static int f64pow(state rt, void* _) {
+static int f64pow(libcArgs rt) {
 	float64_t x = argf64(rt, 0);
 	float64_t y = argf64(rt, 8);
 	retf64(rt, pow(x, y));
 	return 0;
 }
-static int f64sqrt(state rt, void* _) {
+static int f64sqrt(libcArgs rt) {
 	float64_t x = argf64(rt, 0);
 	retf64(rt, sqrt(x));
 	return 0;
 }
-static int f64atan2(state rt, void* _) {
+static int f64atan2(libcArgs rt) {
 	float64_t x = argf64(rt, 0);
 	float64_t y = argf64(rt, 8);
 	retf64(rt, atan2(x, y));
@@ -1224,6 +1224,7 @@ int evalMesh(mesh msh, int sdiv, int tdiv, char *src, char *file, int line) {
 	state rt = rtInit(mem, sizeof(mem));
 	struct userData ud;
 	const int warnlevel = 2;
+	const int stacksize = sizeof(mem) / 2;
 
 	char *logf = NULL;//"dump.evalMesh.txt";
 
@@ -1318,7 +1319,6 @@ int evalMesh(mesh msh, int sdiv, int tdiv, char *src, char *file, int line) {
 	msh->hasTex = msh->hasNrm = 1;
 	msh->tricnt = msh->vtxcnt = 0;
 
-	rt->libc.data = &ud;
 	for (t = 0, j = 0; j < tdiv; t += dt, ++j) {
 		for (s = 0, i = 0; i < sdiv; s += ds, ++i) {
 			double pos[3], nrm[3], tex[2];
@@ -1329,7 +1329,7 @@ int evalMesh(mesh msh, int sdiv, int tdiv, char *src, char *file, int line) {
 			ud.s = s;
 			ud.t = t;
 			ud.isNrm = 0;
-			if (vmExec(rt, sizeof(mem) / 2) != 0) {
+			if (vmExec(rt, &ud, stacksize) != 0) {
 				debug("error");
 				return -4;
 			}
@@ -1341,7 +1341,7 @@ int evalMesh(mesh msh, int sdiv, int tdiv, char *src, char *file, int line) {
 			else {
 				ud.s = s + epsilon;
 				ud.t = t;
-				if (vmExec(rt, sizeof(mem) / 2) != 0) {
+				if (vmExec(rt, &ud, stacksize) != 0) {
 					debug("error");
 					return -5;
 				}
@@ -1349,7 +1349,7 @@ int evalMesh(mesh msh, int sdiv, int tdiv, char *src, char *file, int line) {
 
 				ud.s = s;
 				ud.t = t + epsilon;
-				if (vmExec(rt, sizeof(mem) / 2) != 0) {
+				if (vmExec(rt, &ud, stacksize) != 0) {
 					debug("error");
 					return -6;
 				}

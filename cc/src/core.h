@@ -178,7 +178,7 @@ typedef struct list {				// linked list: stringlist, ...
 } *list;
 typedef struct libc {
 	struct libc *next;	// next
-	int (*call)(state, void*);
+	int (*call)(libcArgs);
 	void *data;	// user data for this function
 	int chk, pop;
 	int pos;

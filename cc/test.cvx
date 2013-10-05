@@ -1,7 +1,7 @@
 
 /+ print the content of memory :)
 char memory[] = emit(struct, ref(null), i32(65536));
-for(int i = 1; i < 2 * memory.length; i += 1) {
+for(int i = 1; i < memory.length; i += 1) {
 	if (i % 80 == 0) {
 		println();
 	}
@@ -390,7 +390,7 @@ struct Biorithm {
 	string name;	//%'%s'
 }
 
-//TODO: static const Biorithm biorithms1[7] = {
+//BUG: static const Biorithm biorithms1[7] = {
 static Biorithm biorithms1[7] = {
 	Biorithm(0x7070ff, 23,  0, "Physical"),
 	Biorithm(0xff0000, 28,  0, "Emotional"),
@@ -454,8 +454,7 @@ idnMat14x4(mat2);
 
 // */
 
-/* debug and trace info
-//~ /+
+/+ debug and trace info
 struct debugInfo {
 	string func;
 	double x;
@@ -463,37 +462,21 @@ struct debugInfo {
 	double got;
 }
 
-//~ define assert(bool condition, const debugInfo &dbginf) = debug("test failed", condition ? 0 : Debug.debug, Debug.deftrace, emit(var, ref(dbginf), ref(debugInfo)));
-//~ assert(false, debugInfo("fail", 1., 2., 3.));
-
-//~ define trace(string message) = debug(message, 1, 10, variant.null);
-
-/+void f1(int maxRecursiveCalls) {
-	define X = "sads";
-	void f2(int maxRecursiveCalls) {
-		if (maxRecursiveCalls <= 0) {
-			trace("stack trace :)");
-			return;
-		}
-		f2(maxRecursiveCalls - 1);
-	}
-	f2(maxRecursiveCalls);
-}// +/
-
-void f3(int maxRecursiveCalls) {
-	if (maxRecursiveCalls <= 0) {
+void f3(pointer maxRecursiveCalls) {
+	const int &n = maxRecursiveCalls;
+	if (n <= 0) {
 		trace("stack trace :-)");
 		return;
 	}
-	testFunction(f3, maxRecursiveCalls - 1);
+	int n2 = n - 1;
+	testFunction(f3, pointer(n2));
 }
 
-//~ FIXME: void testFunction2(void cb(double x, debugInfo info, int n), int n, debugInfo &info) {
+//~ BUG: void testFunction2(void cb(double x, debugInfo info, int n), int n, debugInfo &info) {
 void testFunction2(void cb(double x, debugInfo &info, int n), int n, debugInfo info) {
 	cb(n * 3.14, &info, n);
 }
 void f4(double x, debugInfo &info, int maxRecursiveCalls) {
-	//~ assert(maxRecursiveCalls > 0, debugInfo("fail", 1., 2., 3.));
 	if (maxRecursiveCalls <= 0) {
 		trace("stack trace :)");
 		return;
@@ -502,31 +485,7 @@ void f4(double x, debugInfo &info, int maxRecursiveCalls) {
 }
 
 int n = 2;
-testFunction(f3, n);
-//~ debugInfo info = debugInfo("fail", 1., 2., 3.);
-//~ testFunction2(f4, n, info);
+//~ testFunction(f3, pointer(n));
+debugInfo info = debugInfo("fail", 1., 2., 3.);
+testFunction2(f4, n, info);
 //~ +/
-
-/+
-void f3(int maxRecursiveCalls) {
-	if (maxRecursiveCalls <= 0) {
-		//~ trace("stack trace :-)");
-		return;
-	}
-	//~ testFunction(f3, maxRecursiveCalls - 1);
-}
-
-f3(9);// +/
-//~ */
-
-int f1(int a) {
-	static int f2(int b) {
-		static int f3(int c) {
-			return c + 33;
-		}
-		return f3(b);
-	}
-	return f2(a);
-}
-
-int f = f1(8);

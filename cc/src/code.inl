@@ -99,25 +99,37 @@ case opc_libc: NEXT(4, -libcvec[ip->rel].pop, libcvec[ip->rel].chk) {
 	struct symNode module;
 	libc libcall = &libcvec[ip->rel];
 
-	//~ debug("libc(%T): pop: %d, check: %d", libcall->sym, libcall->pop, libcall->chk);
+	struct libcArgsRec args = {
+		rt,
+		libcall->sym,
+		(char*)((stkptr)sp + libcall->pop), //retv;
+		(char*)sp,		// arguments for function
 
-	rt->libc.libc = libcall->sym;
-	rt->libc.argv = (char*)sp;
-	rt->libc.retv = (char*)((stkptr)sp + libcall->pop);
+		libcall->data,		// function data (ccAddCall)
+		extra	// extra data (ccCall)
+	};
+
+//	args.rt = rt;
+//	args.fun = libcall->sym;
+//	args.data = libcall->data;
+//	args.extra = extra;
+
+//	args.argv = (char*)sp;
+//	args.retv = (char*)((stkptr)sp + libcall->pop);
 
 	if (ip->rel == 0) {
 		memset(&module, 0, sizeof(struct symNode));
 		module.prms = rt->defs;
-		rt->libc.retv = (char *)st;
-		rt->libc.libc = &module;
+		args.fun = &module;
+		//~ args.argv = (char*)sp;
+		args.retv = (char *)st;
 	}
 
 #ifdef TRACE
 	// FIXME: libcalls are not pushing the result to the stack, only the arguments.
-	//~ TRACE(pu->ip, libcall->sym, NULL);
 	TRACE(pu->ip, libcall->sym, (char*)sp - vm_size);
 #endif
-	exitCode = libcall->call(rt, libcall->data);
+	exitCode = libcall->call(&args);
 #ifdef TRACE
 	TRACE(NULL, NULL, NULL);
 #endif

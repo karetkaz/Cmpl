@@ -2565,7 +2565,7 @@ state rtInit(void* mem, unsigned size) {
 	rt->cc = NULL;
 	return rt;
 }
-ccState ccInit(state rt, int mode, int onHalt(state, void*)) {
+ccState ccInit(state rt, int mode, int onHalt(libcArgs)) {
 	ccState cc = (void*)(rt->_end - sizeof(struct ccStateRec));
 
 	dieif(rt->_beg != rt->_mem, "Compiler initialization failed.");

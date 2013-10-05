@@ -11,107 +11,92 @@ math, print, time libcall functions
 #include "core.h"
 
 //#{#region math functions
-static int f64sin(state rt, void* _) {
+static int f64sin(libcArgs rt) {
 	float64_t x = argf64(rt, 0);
 	retf64(rt, sin(x));
 	return 0;
-	(void)_;
 }
-static int f64cos(state rt, void* _) {
-	float64_t x = argf64(rt, 0);
-	retf64(rt, cos(x));
+static int f64cos(libcArgs args) {
+	float64_t x = argf64(args, 0);
+	retf64(args, cos(x));
 	return 0;
-	(void)_;
 }
-static int f64tan(state rt, void* _) {
+static int f64tan(libcArgs rt) {
 	float64_t x = argf64(rt, 0);
 	retf64(rt, tan(x));
 	return 0;
-	(void)_;
 }
-static int f64log(state rt, void* _) {
+static int f64log(libcArgs rt) {
 	float64_t x = argf64(rt, 0);
 	retf64(rt, log(x));
 	return 0;
-	(void)_;
 }
-static int f64exp(state rt, void* _) {
+static int f64exp(libcArgs rt) {
 	float64_t x = argf64(rt, 0);
 	retf64(rt, exp(x));
 	return 0;
-	(void)_;
 }
-static int f64pow(state rt, void* _) {
+static int f64pow(libcArgs rt) {
 	float64_t x = argf64(rt, 0);
 	float64_t y = argf64(rt, 8);
 	retf64(rt, pow(x, y));
 	//~ debug("pow(%g, %g) := %g", x, y, pow(x, y));
 	return 0;
-	(void)_;
 }
-static int f64sqrt(state rt, void* _) {
+static int f64sqrt(libcArgs rt) {
 	float64_t x = argf64(rt, 0);
 	retf64(rt, sqrt(x));
 	return 0;
-	(void)_;
 }
-static int f64atan2(state rt, void* _) {
+static int f64atan2(libcArgs rt) {
 	float64_t x = argf64(rt, 0);
 	float64_t y = argf64(rt, 8);
 	retf64(rt, atan2(x, y));
 	return 0;
-	(void)_;
 }
 //#}#endregion
 
 //#{#region bit operations
-static int b64not(state rt, void* _) {
+static int b64not(libcArgs rt) {
 	uint64_t x = argi64(rt, 0);
 	reti64(rt, ~x);
 	return 0;
-	(void)_;
 }
-static int b64and(state rt, void* _) {
+static int b64and(libcArgs rt) {
 	uint64_t x = argi64(rt, 0);
 	uint64_t y = argi64(rt, 8);
 	reti64(rt, x & y);
 	return 0;
-	(void)_;
 }
-static int b64ior(state rt, void* _) {
+static int b64ior(libcArgs rt) {
 	uint64_t x = argi64(rt, 0);
 	uint64_t y = argi64(rt, 8);
 	reti64(rt, x | y);
 	return 0;
-	(void)_;
 }
-static int b64xor(state rt, void* _) {
+static int b64xor(libcArgs rt) {
 	uint64_t x = argi64(rt, 0);
 	uint64_t y = argi64(rt, 8);
 	reti64(rt, x ^ y);
 	return 0;
-	(void)_;
 }
-static int b64shl(state rt, void* _) {
+static int b64shl(libcArgs rt) {
 	uint64_t x = argi64(rt, 0);
 	int32_t y = argi32(rt, 8);
 	reti64(rt, x << y);
 	return 0;
-	(void)_;
 }
-static int b64shr(state rt, void* _) {
+static int b64shr(libcArgs rt) {
 	uint64_t x = argi64(rt, 0);
 	int32_t y = argi32(rt, 8);
 	reti64(rt, x >> y);
 	return 0;
-	(void)_;
 }
-static int b64sar(state rt, void* _) {
+static int b64sar(libcArgs rt) {
 	int64_t x = argi64(rt, 0);
 	int32_t y = argi32(rt, 8);
 	reti64(rt, x >> y);
 	return 0;
-	(void)_;
 }
 
 typedef enum {
@@ -140,8 +125,8 @@ typedef enum {
 	//~ b64_sxt,
 } bitOperation;
 
-static int bitFunctions(state rt, void *function) {
-	switch ((bitOperation)function) {
+static int bitFunctions(libcArgs rt) {
+	switch ((bitOperation)rt->data) {
 
 		case b32_btc: {
 			uint32_t x = argi32(rt, 0);
@@ -302,8 +287,9 @@ static inline int argpos(int *argp, int size) {
 
 #define logFILE(msg, ...) //prerr("debug", msg, ##__VA_ARGS__)
 
-static int FILE_open(state rt, void* mode) {	// void Open(char filename[]);
+static int FILE_open(libcArgs rt) {	// void Open(char filename[]);
 	int argc = 0;
+	char *mode = rt->data;
 	char *name = argref(rt, argpos(&argc, vm_size));
 	// int slen = argi32(rt, argpos(&argc, vm_size));
 
@@ -313,32 +299,29 @@ static int FILE_open(state rt, void* mode) {	// void Open(char filename[]);
 	logFILE("Name: %s, Mode: %s, File: %x", name, mode, file);
 	return 0;
 }
-static int FILE_close(state rt, void* _) {	// void close(File file);
+static int FILE_close(libcArgs rt) {	// void close(File file);
 	FILE *file = arghnd(rt, 0);
 	logFILE("File: %x", file);
 	fclose(file);
 
 	return 0;
-	(void)_;
 }
 
-static int FILE_getc(state rt, void* _) {
+static int FILE_getc(libcArgs rt) {
 	FILE *file = arghnd(rt, 0);
 	reti32(rt, fgetc(file));
 
 	return 0;
-	(void)_;
 }
-static int FILE_peek(state rt, void* _) {
+static int FILE_peek(libcArgs rt) {
 	FILE *file = arghnd(rt, 0);
 
 	int chr = ungetc(getc(file), file);
 	reti32(rt, chr);
 
 	return 0;
-	(void)_;
 }
-static int FILE_read(state rt, void* _) {	// int read(File &f, uint8 buff[])
+static int FILE_read(libcArgs rt) {	// int read(File &f, uint8 buff[])
 	int argc = 0;
 	FILE *file = arghnd(rt, argpos(&argc, sizeof(FILE *)));
 	char *buff = argref(rt, argpos(&argc, vm_size));
@@ -347,9 +330,8 @@ static int FILE_read(state rt, void* _) {	// int read(File &f, uint8 buff[])
 	reti32(rt, fread(buff, len, 1, file));
 
 	return 0;
-	(void)_;
 }
-static int FILE_gets(state rt, void* _) {	// int fgets(File &f, uint8 buff[])
+static int FILE_gets(libcArgs rt) {	// int fgets(File &f, uint8 buff[])
 	int argc = 0;
 	FILE *file = arghnd(rt, argpos(&argc, sizeof(FILE *)));
 	char *buff = argref(rt, argpos(&argc, vm_size));
@@ -368,10 +350,9 @@ static int FILE_gets(state rt, void* _) {	// int fgets(File &f, uint8 buff[])
 	}
 
 	return 0;
-	(void)_;
 }
 
-static int FILE_putc(state rt, void* _) {
+static int FILE_putc(libcArgs rt) {
 	int argc = 0;
 	FILE *file = arghnd(rt, argpos(&argc, sizeof(FILE *)));
 	int data = argi32(rt, argpos(&argc, vm_size));
@@ -380,9 +361,8 @@ static int FILE_putc(state rt, void* _) {
 	reti32(rt, putc(data, file));
 
 	return 0;
-	(void)_;
 }
-static int FILE_write(state rt, void* _) {	// int write(File &f, uint8 buff[])
+static int FILE_write(libcArgs rt) {	// int write(File &f, uint8 buff[])
 	int argc = 0;
 	FILE *file = arghnd(rt, argpos(&argc, sizeof(FILE *)));
 	char *buff = argref(rt, argpos(&argc, vm_size));
@@ -392,41 +372,36 @@ static int FILE_write(state rt, void* _) {	// int write(File &f, uint8 buff[])
 	reti32(rt, len);
 
 	return 0;
-	(void)_;
 }
 
-static int FILE_flush(state rt, void* _) {
+static int FILE_flush(libcArgs rt) {
 	FILE *file = arghnd(rt, 0);
 
 	logFILE("File: %x", file);
 	fflush(file);
 
 	return 0;
-	(void)_;
 }
 //#}#endregion
 
 //#{#region reflection operations
-static int typenameGetName(state rt, void* _) {
-	symn sym = mapsym(rt, argref(rt, 0));
-	reti32(rt, vmOffset(rt, sym->name));
+static int typenameGetName(libcArgs rt) {
+	symn sym = mapsym(rt->rt, argref(rt, 0));
+	reti32(rt, vmOffset(rt->rt, sym->name));
 
 	return 0;
-	(void)_;
 }
-static int typenameGetFile(state rt, void* _) {
-	symn sym = mapsym(rt, argref(rt, 0));
-	reti32(rt, vmOffset(rt, sym->file));
+static int typenameGetFile(libcArgs rt) {
+	symn sym = mapsym(rt->rt, argref(rt, 0));
+	reti32(rt, vmOffset(rt->rt, sym->file));
 
 	return 0;
-	(void)_;
 }
-static int typenameGetBase(state rt, void* _) {
-	symn sym = mapsym(rt, argref(rt, 0));
-	reti32(rt, vmOffset(rt, sym->type));
+static int typenameGetBase(libcArgs rt) {
+	symn sym = mapsym(rt->rt, argref(rt, 0));
+	reti32(rt, vmOffset(rt->rt, sym->type));
 
 	return 0;
-	(void)_;
 }
 //#}#endregion
 
@@ -470,8 +445,8 @@ static inline int64_t clockNow() {
 }
 #endif
 
-static int miscFunction(state rt, void* data) {
-	switch ((miscOperation)data) {
+static int miscFunction(libcArgs rt) {
+	switch ((miscOperation)rt->data) {
 
 		case miscOpExit:
 			exit(argi32(rt, 0));
@@ -527,25 +502,25 @@ static int miscFunction(state rt, void* data) {
 	return -1;
 }
 
-static int libCallHalt(state rt, void* _) {
-	return 0;
-	(void)_;
+static int libCallHalt(libcArgs rt) {
 	(void)rt;
+	return 0;
 }
-static int libCallDebug(state rt, void* _) {
+static int libCallDebug(libcArgs args) {
 	// debug(string message, int level, int trace, bool abort, typename objtyp, pointer objref);
 
 	int arg = 0;
+	state rt = args->rt;
 	#define poparg(__TYPE) (arg += sizeof(__TYPE)) - sizeof(__TYPE)
-	char* file = argstr(rt, poparg(int32_t));
-	int   line = argi32(rt, poparg(int32_t));
-	//~ char* func = argstr(rt, poparg(char*));
+	char* file = argstr(args, poparg(int32_t));
+	int   line = argi32(args, poparg(int32_t));
+	//~ char* func = argstr(args, poparg(char*));
 
-	char* message = argstr(rt, poparg(int32_t));
-	int loglevel = argi32(rt, poparg(int32_t));
-	int tracelevel = argi32(rt, poparg(int32_t));
-	void* objref = argref(rt, poparg(int32_t));
-	symn objtyp = argref(rt, poparg(int32_t));
+	char* message = argstr(args, poparg(int32_t));
+	int loglevel = argi32(args, poparg(int32_t));
+	int tracelevel = argi32(args, poparg(int32_t));
+	void* objref = argref(args, poparg(int32_t));
+	symn objtyp = argref(args, poparg(int32_t));
 
 	// skip loglevel 0
 	if (rt->logf != NULL && loglevel != 0) {
@@ -631,22 +606,20 @@ static int libCallDebug(state rt, void* _) {
 	}
 
 	return 0;
-	(void)_;
 }
-static int libCallMemMgr(state rt, void* _) {
+static int libCallMemMgr(libcArgs rt) {
 	void* old = argref(rt, 0);
 	int size = argi32(rt, 4);
 
-	void* res = rtAlloc(rt, old, size);
-	reti32(rt, vmOffset(rt, res));
+	void* res = rtAlloc(rt->rt, old, size);
+	reti32(rt, vmOffset(rt->rt, res));
 
 	return 0;
-	(void)_;
 }
 
-int libCallHaltDebug(state rt, void* _) {
-	symn var = rt->libc.libc->prms;
-	int argc = (char*)rt->libc.retv - (char*)rt->libc.argv;
+int libCallHaltDebug(libcArgs rt) {
+	symn var = rt->fun->prms;
+	int argc = (char*)rt->retv - (char*)rt->argv;
 
 	for ( ; var; var = var->next) {
 		char* ofs;
@@ -666,27 +639,26 @@ int libCallHaltDebug(state rt, void* _) {
 
 		if (var->stat) {
 			// static variable.
-			ofs = (void*)(rt->_mem + var->offs);
+			ofs = (void*)(rt->rt->_mem + var->offs);
 		}
 		else {
 			// argument or local variable.
-			ofs = ((char*)rt->libc.argv) + argc - var->offs;
+			ofs = ((char*)rt->argv) + argc - var->offs;
 		}
 
-		fputval(rt, stdout, var, (stkval*)ofs, 0);
+		fputval(rt->rt, stdout, var, (stkval*)ofs, 0);
 		fputc('\n', stdout);
 	}
 
 	// show allocated memory chunks.
-	rtAlloc(rt, NULL, 0);
+	rtAlloc(rt->rt, NULL, 0);
 
 	return 0;
-	(void)_;
 }
 
 //#}#endregion
 
-int install_base(state rt, int mode, int onHalt(state, void*)) {
+int install_base(state rt, int mode, int onHalt(libcArgs)) {
 	int error = 0;
 	ccState cc = rt->cc;
 
@@ -786,7 +758,7 @@ int install_stdc(state rt) {
 	symn nsp = NULL;		// namespace
 	unsigned int i, err = 0;
 	struct {
-		int (*fun)(state, void* data);
+		int (*fun)(libcArgs);
 		miscOperation data;
 		char* def;
 	}

@@ -161,7 +161,7 @@ static symn installref(state rt, const char* prot, astn* argv) {
  * @arg proto: prototype of function.
  */
 //~ TODO: libcall: parts of it should go to tree.c
-symn ccAddCall(state rt, int libc(state, void* data), void* data, const char* proto) {
+symn ccAddCall(state rt, int libc(libcArgs), void* data, const char* proto) {
 	symn param, sym = NULL;
 	int stdiff = 0;
 	astn args = NULL;
@@ -1241,7 +1241,7 @@ static inline void dotrace(state rt, void* cf, symn sym, void* ip, void* sp) {
 	}
 }
 
-static int dbgpu(state rt, cell pu) {
+static int dbgpu(state rt, cell pu, void* extra) {
 	char* err_file = 0;
 	int err_line = 0;
 	int err_code = 0;
@@ -1354,7 +1354,7 @@ static int dbgpu(state rt, cell pu) {
  * @arg dbg: debugger function
  * @return: error code
 **/
-int vmExec(state rt, int ss) {
+int vmExec(state rt, void* extra, int ss) {
 	struct symNode dbgSym;
 	cell pu;
 
@@ -1411,7 +1411,7 @@ int vmExec(state rt, int ss) {
 
 	// TODO argc, argv
 
-	return dbgpu(rt, pu);
+	return dbgpu(rt, pu, extra);
 	//~ return dbgNpu(rt, pu, lengthof(pu));
 }
 
@@ -1425,13 +1425,12 @@ int vmExec(state rt, int ss) {
  * @param args arguments for the function.
  * @return: error code
 **/
-int vmCall(state rt, symn fun, void* res, void* args) {
+int vmCall(state rt, symn fun, void* res, void* args, void* extra) {
 
 	int result = 0;
 	cell pu = rt->vm.cell;
 	void* ip = pu->ip;
 	void* sp = pu->sp;
-	struct libcstate old = rt->libc;
 
 	void* resp = NULL;
 	// TODO: ressize = fun->prms->size;  // result is the first param
@@ -1458,13 +1457,12 @@ int vmCall(state rt, symn fun, void* res, void* args) {
 	if (rt->dbg != NULL) {
 		dotrace(rt, pu->ip, fun, NULL, pu->sp);
 	}
-	result = dbgpu(rt, pu);
+	result = dbgpu(rt, pu, extra);
 
 	if (res != NULL) {
 		memcpy(res, resp, ressize);
 	}
 
-	rt->libc = old;
 	pu->ip = ip;
 	pu->sp = sp;
 

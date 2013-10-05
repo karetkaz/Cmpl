@@ -202,7 +202,6 @@ void setupBiorithm(int _daysToShow, Date _now, Date _birth) {
 Date Now = DateFromTime(time());
 define daysToShow = 15;
 
-setupBiorithm(daysToShow, Now, Date(1990, 12, 25));
-
 setupBiorithm(daysToShow, Now, Date(1983, 5,  2));
 //~ setupBiorithm(daysToShow, Now, Date(1984, 8, 30));
+//~ setupBiorithm(daysToShow, Now, Date(1990, 12, 25));
