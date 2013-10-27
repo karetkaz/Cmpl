@@ -81,47 +81,33 @@ case opc_jmpi: NEXT(1, -1, 1) {
 } break;
 case opc_task: NEXT(4, -0, 0) {
 #ifdef EXEC
-	if (task(cpu, cc, cp, ip->cl * vm_size))
+	if (task(pu, cc, cp, ip->cl * vm_size))
 		pu->ip += ip->cl - 4;
 #endif
 } break;
 case opc_sync: NEXT(2, -0, 0) {
 #ifdef EXEC
-	if (!sync(cpu, cp, ip->idx)) {
+	if (!sync(pu, cp, ip->idx)) {
 		NEXT(-2, -0, 0);
-		//~ pu->ip -= 2;
 	}
 #endif
 } break;
 case opc_libc: NEXT(4, -libcvec[ip->rel].pop, libcvec[ip->rel].chk) {
 #ifdef EXEC
 	int exitCode;
-	struct symNode module;
+	struct libcArgsRec args;
 	libc libcall = &libcvec[ip->rel];
 
-	struct libcArgsRec args = {
-		rt,
-		libcall->sym,
-		(char*)((stkptr)sp + libcall->pop), //retv;
-		(char*)sp,		// arguments for function
+	args.rt = rt;
+	args.fun = libcall->sym;
+	args.data = libcall->data;
+	args.extra = extra;
 
-		libcall->data,		// function data (ccAddCall)
-		extra	// extra data (ccCall)
-	};
-
-//	args.rt = rt;
-//	args.fun = libcall->sym;
-//	args.data = libcall->data;
-//	args.extra = extra;
-
-//	args.argv = (char*)sp;
-//	args.retv = (char*)((stkptr)sp + libcall->pop);
+	args.argv = (char*)sp;
+	args.retv = (char*)((stkptr)sp + libcall->pop);
 
 	if (ip->rel == 0) {
-		memset(&module, 0, sizeof(struct symNode));
-		module.prms = rt->defs;
-		args.fun = &module;
-		//~ args.argv = (char*)sp;
+		args.fun = fun;
 		args.retv = (char *)st;
 	}
 
@@ -133,7 +119,6 @@ case opc_libc: NEXT(4, -libcvec[ip->rel].pop, libcvec[ip->rel].chk) {
 #ifdef TRACE
 	TRACE(NULL, NULL, NULL);
 #endif
-
 	STOP(error_libc, exitCode != 0, exitCode);
 	STOP(stop_vm, ip->rel == 0, 0);			// Halt();
 #endif
@@ -435,17 +420,6 @@ case u32_cgt: NEXT(1, -1, 2) {
 	SP(1, u4) = SP(1, u4)  > SP(0, u4);
 #endif
 } break;
-
-/*case b32_zxt: NEXT(2, -0, 1) {
-#if defined(EXEC)
-	SP(0, u4) = zxt(SP(0, u4), ip->arg.u1 >> 5, ip->arg.u1 & 31);
-#endif
-} break;*/
-/*case b32_sxt: NEXT(2, -0, 1) {
-#if defined(EXEC)
-	SP(0, i4) = sxt(SP(0, i4), ip->arg.u1 >> 5, ip->arg.u1 & 31);
-#endif
-} break;*/
 case u32_mul: NEXT(1, -1, 2) {
 #if defined(EXEC)
 	SP(1, u4) *= SP(0, u4);
@@ -933,9 +907,9 @@ case v2d_max: NEXT(1, -4, 8) {
 //~ 0xa?: ???		//
 //~ 0xb?: ???		//
 //~ 0xc?: ???		//
-//~ 0xd?: ???		//
-//~ 0xe?: ???		//
-//~ 0xf?: ???		//
+//~ 0xd?: ???		// ext i32+i64
+//~ 0xe?: ???		// ext f32+f64
+//~ 0xf?: ???		// ext vec+pck
 default: STOP(error_opc, 1, -1);
 //#}-----------------------------------------------------------------------------
 

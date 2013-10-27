@@ -1,0 +1,1715 @@
+/**
+ * standard library extension
+ */
+
+static struct Math {
+
+	// constants
+	enum: float64 {
+		pi = 3.14159265358979323846264338327950288419716939937510582097494459;		// A000796
+		e = 2.71828182845904523536028747135266249775724709369995957496696763;		// A001113
+		ln2 = 0.693147180559945309417232121458176568075500134360255254120680009;	// A002162
+		log2E = 1. / ln2;
+		ln10 = 2.30258509299404568401799145468436420760110148862877297603332790;	// A002392
+		log10E = 1. / ln10;
+		phi = 1.61803398874989484820458683436563811772030917980576286213544862;		// A001622
+		sqrt2 = 1.41421356237309504880168872420969807856967187537694807317667974;	// A002193
+		sqrtE = 1.64872127070012814684865078781416357165377610071014801157507931;	// A019774
+		sqrtPi = 1.77245385090551602729816748334114518279754945612238712821380779;	// A002161
+		sqrtPhi = 1.27201964951406896425242246173749149171560804184009624861664038;	// A139339
+		nan = 0 / 0.;
+		inf = 1 / 0.;
+	}
+
+	float64 modf(float64 x, float64 &intPart) {
+		if (x < 1) {
+			if (x < 0) {
+				result = -modf(-x, intPart);
+				intPart = -intPart;
+				return result;
+			}
+			result = x;
+			intPart = 0;
+			return result;
+		}
+		result = x % 1;
+		intPart = x - result;
+		return result;
+	}
+
+	define isNan(float64 ^x) = bool(x != x);
+	define isNan(float32 ^x) = bool(x != x);
+
+	define isInf(float64 ^x) = bool(x != 0 && x == 2 * x);
+	define isInf(float32 ^x) = bool(x != 0 && x == 2 * x);
+
+	// (x == x) && ((x == 0) || (x != 2 * x));
+	define isFinite(float64 ^x) = bool(x - x == 0);
+	define isFinite(float32 ^x) = bool(x - x == 0);
+
+	//#{
+	define abs(int32 ^x) = (x < 0 ? -x : x);
+	define abs(int64 ^x) = (x < 0 ? -x : x);
+	define abs(uint32 ^x) = x;
+	define abs(float32 ^x) = (x < 0 ? -x : x);
+	define abs(float64 ^x) = (x < 0 ? -x : x);
+
+	define sign(int32 ^x) = (x ? x < 0 ? -1 : 1 : 0);
+	define sign(int64 ^x) = (x ? x < 0 ? -1 : 1 : 0);
+	define sign(uint32 ^x) = (x ? 1 : 0);
+	define sign(float32 ^x) = (x ? x < 0 ? -1 : 1 : 0);
+	define sign(float64 ^x) = (x ? x < 0 ? -1 : 1 : 0);
+
+	float64 floor(float64 x) {
+		modf(x, &result);
+		return result;
+	}
+	define floor(float32 x) = float32(floor(float64(x)));
+
+	define ceil(float32 ^x) = -floor(-x);
+	define ceil(float64 ^x) = -floor(-x);
+
+	define round(float32 ^x) = floor(x + .5);
+	define round(float64 ^x) = floor(x + .5);
+
+	define max(int32 ^a, int32 ^b) = (a > b ? a : b);
+	define max(int64 ^a, int64 ^b) = (a > b ? a : b);
+	define max(uint32 ^a, uint32 ^b) = (a > b ? a : b);
+	define max(float32 ^a, float32 ^b) = (a > b ? a : b);
+	define max(float64 ^a, float64 ^b) = (a > b ? a : b);
+
+	define min(int32 ^a, int32 ^b) = (a < b ? a : b);
+	define min(int64 ^a, int64 ^b) = (a < b ? a : b);
+	define min(uint32 ^a, uint32 ^b) = (a < b ? a : b);
+	define min(float32 ^a, float32 ^b) = (a < b ? a : b);
+	define min(float64 ^a, float64 ^b) = (a < b ? a : b);
+
+	define clamp(int32 ^t, int32 ^a, int32 ^b) = min(max(t, a), b);
+	define clamp(float32 ^t, float32 ^a, float32 ^b) = min(max(t, a), b);
+	define clamp(float64 ^t, float64 ^a, float64 ^b) = min(max(t, a), b);
+
+	define lerp(float32 t, float32 ^a, float32 b) = (a + t * (b - a));
+	define lerp(float64 t, float64 ^a, float64 b) = (a + t * (b - a));
+
+	define smooth(float32 ^t) = (t * t * (3 - 2 * t));
+	define smooth(float64 ^t) = (t * t * (3 - 2 * t));
+	define smooth(float32 t, float32 ^a, float32 b) = smooth(clamp((t - a) / (b - a), float32(0), float32(1)));
+	define smooth(float64 t, float64 ^a, float64 b) = smooth(clamp((t - a) / (b - a), float64(0), float64(1)));
+
+	// TODO: remove me
+	define nz(float64 ^val1, float64 val2) = float64(val1 ? val1 : val2);
+	//~ define nz(float64 ^val1, float64 val2, float64 val3) = float64(val1 ? val1 : nz(val2, val3));
+	//~ define nz(float64 ^val1, float64 val2, float64 val3, float64 val4) = float64(val1 ? val1 : nz(val2, val3, val4));
+
+	define hypot(float64 ^x, float64 ^y) = sqrt(x * x + y * y);
+
+	//TODO: float64 eval(float64 x, float64 poly...) {...}
+	define eval(float64 x, float64 a0, float64 a1) = (a0 + x * a1);
+	define eval(float64 ^x, float64 a0, float64 a1, float64 a2) = (a0 + x * eval(x, a1, a2));
+	define eval(float64 ^x, float64 a0, float64 a1, float64 a2, float64 a3) = (a0 + x * eval(x, a1, a2, a3));
+	define eval(float64 ^x, float64 a0, float64 a1, float64 a2, float64 a3, float64 a4) = (a0 + x * eval(x, a1, a2, a3, a4));
+	define eval(float64 ^x, float64 a0, float64 a1, float64 a2, float64 a3, float64 a4, float64 a5) = (a0 + x * eval(x, a1, a2, a3, a4, a5));
+	define eval(float64 ^x, float64 a0, float64 a1, float64 a2, float64 a3, float64 a4, float64 a5, float64 a6) = (a0 + x * eval(x, a1, a2, a3, a4, a5, a6));
+	define eval(float64 ^x, float64 a0, float64 a1, float64 a2, float64 a3, float64 a4, float64 a5, float64 a6, float64 a7) = (a0 + x * eval(x, a1, a2, a3, a4, a5, a6, a7));
+
+/+ TODO
+//~ float64 abs(float64 x);
+//~ float64 sin(float64 x);
+//~ float64 cos(float64 x);
+//~ float64 tan(float64 x);
+//~ float64 log(float64 x);
+//~ float64 exp(float64 x);
+//~ float64 pow(float64 x, float64 y);
+//~ float64 sqrt(float64 x);
+//~ float64 atan2(float64 x, float64 y);
+
+//~ Number.prototype.abs = function(){return Math.abs(this);};
+//~ Number.prototype.sign = function(){return this == 0 ? 0 : (this > 0 ? 1 : -1);};
+//~ Number.prototype.ceil = function(){return Math.ceil(this);};
+//~ Number.prototype.floor = function(){return Math.floor(this);};
+//~ Number.prototype.round = function(){return Math.round(this);};
+//~ Number.prototype.degToRad = function(){return this * Math.PI / 180;};
+//~ Number.prototype.radToDeg = function(){return this * 180 / Math.PI;};
+
+//~ Number.prototype.sin = function(){return Math.sin(this);};
+//~ Number.prototype.sinh = function(){return (Math.exp(this) - Math.exp(-this)) / 2;};
+//~ Number.prototype.asin = function(){return Math.asin(this);};
+Number.prototype.asinh = function(){return Math.log(this + Math.sqrt(this * this + 1));};
+
+Number.prototype.sec = function(){return 1 / Math.cos(this);};
+Number.prototype.sech = function(){return 2 / (Math.exp(this) + Math.exp(-this));};
+Number.prototype.asec = function(){return Math.PI / 2 - Math.asin(1 / this);};
+Number.prototype.asech = function(){return Math.log((1 + Math.sqrt(1 - this * this)) / this);};
+
+//~ Number.prototype.cos = function(){return Math.cos(this);};
+//~ Number.prototype.cosh = function(){return (Math.exp(this) + Math.exp(-this)) / 2;};
+//~ Number.prototype.acos = function(){return Math.acos(this);};
+Number.prototype.acosh = function(){return Math.log(this + Math.sqrt(this * this - 1));};
+
+Number.prototype.cot = function(){return 1 / Math.tan(this);};
+Number.prototype.coth = function(){return (Math.exp(this) + Math.exp(-this)) / (Math.exp(this) - Math.exp(-this));};
+Number.prototype.acot = function(){return Math.PI / 2 - Math.atan(this);};
+Number.prototype.acoth = function(){return Math.log((this + 1) / (this - 1)) / 2;};
+
+Number.prototype.cosec = function(){return 1 / Math.sin(this);};
+Number.prototype.cosech = function(){return 2 / (Math.exp(this) - Math.exp(-this));};
+Number.prototype.acosec = function(){return Math.asin(1 / this);};
+Number.prototype.acosech = function(){
+	return this < 0
+		? Math.log((1 - Math.sqrt(1 + this * this)) / this)
+		: Math.log((1 + Math.sqrt(1 + this * this)) / this);
+};
+
+//~ Number.prototype.tan = function(){return Math.tan(this);};
+Number.prototype.tanh = function(){return (Math.exp(this) - Math.exp(-this)) / (Math.exp(this) + Math.exp(-this));};
+Number.prototype.atan = function(){return Math.atan(this);};
+Number.prototype.atanh = function(){return Math.log((1 + this) / (1 - this)) / 2;};
+
+Number.prototype.ln = function(){return Math.log(this);};
+//~ Number.prototype.log = function(base){return Math.log(this) / Math.log(base);};
+Number.prototype.log2 = function(){return Math.log(this) / Math.LN2;};
+Number.prototype.log10 = function(){return Math.log(this) / Math.LN10;};
+//~ Number.prototype.exp = function(){return Math.exp(this);};
+
+//~ Number.prototype.sqrt = function(){return Math.sqrt(this);};
+//~ Number.prototype.pow = function(exponent){return Math.pow(this,exponent);};
+//- Number.prototype.mod = function(modulus){return this >= 0 ? this % modulus : (this % modulus + Math.abs(modulus)) % modulus;};
+//- Number.prototype.wrap = function(low, high){return low + (this - low).mod(high - low);};
+// +/
+	//#}
+
+	float64 Min(float64 data[]) {
+		/*TODO: if (isNullOrEmpty(data)) {
+			return 0;
+		}*/
+		result := data[0];
+		for (int i = 1; i < data.length; i += 1) {
+			if (result > data[i]) {
+				result := data[i];
+			}
+		}
+		return result;
+	}
+	float64 Max(float64 data[]) {
+		/*TODO: if (isNullOrEmpty(data)) {
+			return 0;
+		}*/
+		result := data[0];
+		for (int i = 1; i < data.length; i += 1) {
+			if (result < data[i]) {
+				result := data[i];
+			}
+		}
+		return result;
+	}
+	float64 Sum(float64 data[]) {
+		result := 0;
+		for (int i = 0; i < data.length; i += 1) {
+			result += data[i];
+		}
+		return result;
+	}
+	float64 Mean(float64 data[]) {
+		return Sum(data) / data.length;
+	}
+
+	int Cmp(float32 a, float32 b, float32 eps) {
+		if (a < b) {
+			if (eps < (b - a))
+				return -1;
+		}
+		else {
+			if (eps < (a - b))
+				return +1;
+		}
+		return 0;
+	}
+	int Cmp(float64 a, float64 b, float64 eps) {
+		if (a < b) {
+			if (eps < (b - a))
+				return -1;
+		}
+		else {
+			if (eps < (a - b))
+				return +1;
+		}
+		return 0;
+	}
+
+	float64 sincos(float64 arg, int quad) {
+		enum: float64 {
+			PIO2 = 1.570796326794896619231e0;
+			p0 = .1357884097877375669092680e8;
+			p1 = -.4942908100902844161158627e7;
+			p2 = .4401030535375266501944918e6;
+			p3 = -.1384727249982452873054457e5;
+			p4 = .1459688406665768722226959e3;
+			q0 = .8644558652922534429915149e7;
+			q1 = .4081792252343299749395779e6;
+			q2 = .9463096101538208180571257e4;
+			q3 = .1326534908786136358911494e3;
+		}
+
+		float64 x = arg;
+		if (x < 0) {
+			x = -x;
+			quad += 2;
+		}
+
+		float64 y;
+		x *= 1 / PIO2;	/* underflow? */
+		if (x > 32764) {
+			float64 e;
+			float64 f;
+			y = modf(x, &e);
+			e += quad;
+			modf(0.25*e, &f);
+			quad = e - 4*f;
+		}
+		else {
+			int k = x;
+			y = x - k;
+			quad += k;
+			quad &= 3;
+		}
+		if (quad & 1) {
+			y = 1-y;
+		}
+		if (quad > 1) {
+			y = -y;
+		}
+
+		float64 ysq = y * y;
+		float64 temp1 = ((((p4 * ysq + p3) * ysq + p2) * ysq + p1) * ysq + p0) * y;
+		float64 temp2 = ((((ysq + q3) * ysq + q2) * ysq + q1) * ysq + q0);
+		return temp1 / temp2;
+	}
+
+	//~ sin, cos, tan, asin, acos, atan, atan2
+	// Sin returns the sine of arg.
+	define Sin(float64 arg) = sincos(arg, 0);
+
+	// Cos returns the cosine of arg.
+	define Cos(float64 arg) = sincos(abs(arg), 1);
+
+	// Tan returns the tangent of arg.
+	float64 Tan(float64 arg) {
+		enum: float64 {
+			PIO2 = 1.570796326794896619231e0;
+			p0 = -0.1306820264754825668269611177e+5;
+			p1 =  0.1055970901714953193602353981e+4;
+			p2 = -0.1550685653483266376941705728e+2;
+			p3 =  0.3422554387241003435328470489e-1;
+			p4 =  0.3386638642677172096076369e-4;
+			q0 = -0.1663895238947119001851464661e+5;
+			q1 =  0.4765751362916483698926655581e+4;
+			q2 = -0.1555033164031709966900124574e+3;
+			nan = 0./0;
+		}
+
+		int flag = 0;
+		int sign = 0;
+
+		if (arg < 0) {
+			arg = -arg;
+			sign += 1;
+		}
+		arg = 2 * arg / PIO2;   /* overflow? */
+
+		double e;
+		double x = modf(arg, &e);
+		int i = int(e) % 4;
+
+		if (i == 0) {}
+		else if (i == 1) {
+			x = 1 - x;
+			flag = 1;
+		}
+		else if (i == 2) {
+			sign = !sign;
+			flag = 1;
+		}
+		else if (i == 3) {
+			x = 1 - x;
+			sign = !sign;
+		}
+
+		double xsq = x * x;
+		result = ((((p4 * xsq + p3) * xsq + p2) * xsq + p1) * xsq + p0) * x;
+		result /= ((xsq + q2) * xsq + q1) * xsq + q0;
+
+		if (flag) {
+			if (result == 0) {
+				return nan;
+			}
+			result = 1 / result;
+		}
+		if (sign) {
+			result = -result;
+		}
+		//~ return result;
+	}
+
+	// Sinh returns the hyperbolic sine of x.
+	float64 Sinh(float64 x) {
+		// The coefficients are #2029 from Hart & Cheney. (20.36D)
+		enum: float64 {
+			P0 = -0.6307673640497716991184787251e+6;
+			P1 = -0.8991272022039509355398013511e+5;
+			P2 = -0.2894211355989563807284660366e+4;
+			P3 = -0.2630563213397497062819489e+2;
+			Q0 = -0.6307673640497716991212077277e+6;
+			Q1 = 0.1521517378790019070696485176e+5;
+			Q2 = -0.173678953558233699533450911e+3;
+		}
+
+		bool sign := false;
+		if (x < 0) {
+			x := -x;
+			sign := true;
+		}
+
+		if (x > 21) {
+			return exp(x) / 2;
+		}
+		if (x > 0.5) {
+			result := (exp(x) - exp(-x)) / 2;
+		}
+		else {
+			float64 sq := x * x;
+			//~ result := x * eval(sq, P0, P1, P2, P3);
+			//~ result /= eval(sq, Q0, Q1, Q2, 1.);
+			result := (((P3 * sq + P2) * sq + P1) * sq + P0) * x;
+			result /= ((sq + Q2) * sq + Q1) * sq + Q0;
+		}
+
+		if (sign) {
+			result = -result;
+		}
+	}
+
+	// Cosh returns the hyperbolic cosine of x.
+	float64 Cosh(float64 x) {
+		if (x < 0) {
+			x = -x;
+		}
+		if (x > 21) {
+			result =  exp(x) / 2;
+		}
+		else {
+			result = (exp(x) + exp(-x)) / 2;
+		}
+	}
+
+	/* Asin returns the arcsine of x.
+		Special cases are:
+			Asin(±0) = ±0
+			Asin(x) = NaN if x < -1 or x > 1
+	*/
+	float64 Asin(float64 x) {
+		if (x == 0) {
+			// special case
+			return x;
+		}
+		bool sign := false;
+		if (x < 0) {
+			x := -x;
+			sign := true;
+		}
+		if (x > 1) {
+			return nan; // special case
+		}
+
+		result = sqrt(1 - x * x);
+		if (x > 0.7) {
+			result = pi / 2 - atan2(result, x);
+		}
+		else {
+			result = atan2(x, result);
+		}
+
+		if (sign) {
+			result = -result;
+		}
+	}
+
+	/* Acos returns the arccosine of x.
+		Special case is:
+		Acos(x) = NaN if x < -1 or x > 1
+	*/
+	define Acos(float64 x) = (pi / 2 - Asin(x));
+
+	/* arccosine of x
+		Absolute error <= 6.7e-5.
+		http://http.developer.nvidia.com/Cg/acos.html
+	* /
+	float64 acos(float64 x) {
+		float64 negate = 0;
+		if (x < 0) {
+			negate = 1;
+			x = -x;
+		}
+		result = -0.0187293;
+		result = result * x;
+		result = result + 0.0742610;
+		result = result * x;
+		result = result - 0.2121144;
+		result = result * x;
+		result = result + 1.5707288;
+		result = result * sqrt(1. - x);
+		result = result - 2 * negate * result;
+		result = negate * 3.14159265358979 + result;
+	}*/
+
+	define deg2rad(float64 x) = float64(x * pi / 180);
+	define rad2deg(float64 x) = float64(x * 180 / pi);
+}
+
+static struct Perlin {		// Perlin noise
+	define B = 0x100;
+	define BM = 0xff;
+	define N = 0x1000;
+	define NP = 12;   // 2^N
+	define NM = 0xfff;
+
+	int p[B + B + 2];
+	float g3[B + B + 2][3];
+	float g2[B + B + 2][2];
+	float g1[B + B + 2];
+
+	bool start = true;
+
+	void init() {
+		int i;
+		define sqr(float ^x) = float(x * x);
+		for (i = 0 ; i < B ; i+=1) {
+			p[i] = i;
+
+			g1[i] = float((rand() % (B + B)) - B) / B;
+
+			for (int j = 0 ; j < 2 ; j+=1)
+				g2[i][j] = float((rand() % (B + B)) - B) / B;
+
+			//~ normalize2(g2[i]);
+			float n2 = sqrt(sqr(g2[i][0]) + sqr(g2[i][1]));
+			if (n2 != 0) {
+				g2[i][0] /= n2;
+				g2[i][1] /= n2;
+			}
+
+			for (int j = 0 ; j < 3 ; j+=1)
+				g3[i][j] = float((rand() % (B + B)) - B) / B;
+
+			//~ normalize3(g3[i]);
+			float n3 = sqrt(sqr(g3[i][0]) + sqr(g3[i][1]) + sqr(g3[i][1]));
+			if (n3 != 0) {
+				g3[i][0] /= n3;
+				g3[i][1] /= n3;
+				g3[i][2] /= n3;
+			}
+		}
+
+		for (;i -= 1;) {
+			int k = p[i];
+			int j = rand() % B;
+			p[i] = p[j];
+			p[j] = k;
+		}
+
+		for (i = 0 ; i < B + 2 ; i+=1) {
+			p[B + i] = p[i];
+			g1[B + i] = g1[i];
+			for (int j = 0 ; j < 2 ; j+=1)
+				g2[B + i][j] = g2[i][j];
+			for (int j = 0 ; j < 3 ; j+=1)
+				g3[B + i][j] = g3[i][j];
+		}
+	}
+
+	void setup(float vec_i, int &b0, int &b1, float &r0,float &r1) {
+		float t = vec_i + N;
+		b0 = int(t) & BM;
+		b1 = (b0+1) & BM;
+		r0 = t - int(t);
+		r1 = r0 - 1.;
+	}
+
+	define s_curve(float32 t) = Math.smooth(t);
+	define lerp(float32 t, float32 a, float32 b) = Math.lerp(t, a, b);
+
+	float Noise1f(float x) {
+		int bx0;
+		int bx1;
+		float rx0;
+		float rx1;
+		float sx;
+		float u;
+		float v;
+
+		if (start) {
+			start = false;
+			init();
+		}
+
+		setup(x, &bx0, &bx1, &rx0, &rx1);
+
+		sx = s_curve(rx0);
+
+		u = rx0 * g1[p[bx0]];
+		v = rx1 * g1[p[bx1]];
+
+		result = lerp(sx, u, v);
+	}
+	float Noise2f(float x, float y) {
+		int bx0;
+		int bx1;
+		int by0;
+		int by1;
+		float rx0;
+		float rx1;
+		float ry0;
+		float ry1;
+
+		if (start) {
+			start = false;
+			init();
+		}
+
+		setup(x, &bx0, &bx1, &rx0, &rx1);
+		setup(y, &by0, &by1, &ry0, &ry1);
+
+		int i = p[ bx0 ];
+		int j = p[ bx1 ];
+
+		int b00 = p[ i + by0 ];
+		int b10 = p[ j + by0 ];
+		int b01 = p[ i + by1 ];
+		int b11 = p[ j + by1 ];
+
+		float sx = s_curve(rx0);
+		float sy = s_curve(ry0);
+
+		define at2(float rx, float ry, int ^i) = float(rx * g2[i][0] + ry * g2[i][1]);
+
+		float a = lerp(sx, at2(rx0, ry0, b00), at2(rx1, ry0, b10));
+		float b = lerp(sx, at2(rx0, ry1, b01), at2(rx1, ry1, b11));
+
+		result = lerp(sy, a, b);
+	}
+	float Noise3f(float x, float y, float z) {
+
+		int bx0;
+		int bx1;
+		int by0;
+		int by1;
+		int bz0;
+		int bz1;
+		float rx0;
+		float rx1;
+		float ry0;
+		float ry1;
+		float rz0;
+		float rz1;
+
+		if (start) {
+			start = false;
+			init();
+		}
+
+		setup(x, &bx0, &bx1, &rx0, &rx1);
+		setup(y, &by0, &by1, &ry0, &ry1);
+		setup(z, &bz0, &bz1, &rz0, &rz1);
+
+		int i = p[ bx0 ];
+		int j = p[ bx1 ];
+
+		int b00 = p[ i + by0 ];
+		int b10 = p[ j + by0 ];
+		int b01 = p[ i + by1 ];
+		int b11 = p[ j + by1 ];
+
+		float sx = s_curve(rx0);
+		float sy = s_curve(ry0);
+		float sz = s_curve(rz0);
+
+		define at3(float rx, float ry, float rz, int ^i) = float(rx * g3[i][0] + ry * g3[i][1] + rz * g3[i][2]);
+
+		float a;
+		float b;
+		float c;
+		float d;
+		float u;
+		float v;
+
+		u = at3(rx0, ry0, rz0, b00 + bz0);
+		v = at3(rx1, ry0, rz0, b10 + bz0);
+		a = lerp(sx, u, v);
+
+		u = at3(rx0, ry1, rz0, b01 + bz0);
+		v = at3(rx1, ry1, rz0, b11 + bz0);
+		b = lerp(sx, u, v);
+
+		c = lerp(sy, a, b);
+
+		u = at3(rx0, ry0, rz1, b00 + bz1);
+		v = at3(rx1, ry0, rz1, b10 + bz1);
+		a = lerp(sx, u, v);
+
+		u = at3(rx0, ry1, rz1, b01 + bz1);
+		v = at3(rx1, ry1, rz1, b11 + bz1);
+		b = lerp(sx, u, v);
+
+		d = lerp(sy, a, b);
+
+		result = lerp(sz, c, d);
+	}
+
+	define Noise(float x) = Noise1f(x);
+	define Noise(float x, float y) = Noise2f(x, y);
+	define Noise(float x, float y, float z) = Noise3f(x, y, z);
+}
+
+struct Date {
+	long days;
+
+	enum: long { // Number of 100ns ticks per time unit
+		TicksPerMillisecond = 10000;
+		TicksPerSecond = TicksPerMillisecond * 1000;
+		TicksPerMinute = TicksPerSecond * 60;
+		TicksPerHour = TicksPerMinute * 60;
+		TicksPerDay = TicksPerHour * 24;
+
+		HoursPerDay = 24;
+		MinutesPerDay = 60 * HoursPerDay;
+		SecondsPerDay = 60 * MinutesPerDay;
+		MillisecondsPerDay = 1000 * SecondsPerDay;
+	}
+	enum: int { // DaysPer...
+		// Number of milliseconds per time unit
+		//~ MillisPerSecond = 1000;
+		//~ MillisPerMinute = MillisPerSecond * 60;
+		//~ MillisPerHour = MillisPerMinute * 60;
+		//~ MillisPerDay = MillisPerHour * 24;
+
+		// Number of days in a non-leap year
+		DaysPerYear = 365;
+		// Number of days in 4 years
+		DaysPer4Years = DaysPerYear * 4 + 1;
+		// Number of days in 100 years
+		DaysPer100Years = DaysPer4Years * 25 - 1;
+		// Number of days in 400 years
+		DaysPer400Years = DaysPer100Years * 4 + 1;
+	}// */
+
+	static const int DaysToMonth365[] = {0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365};
+	static const int DaysToMonth366[] = {0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335, 366};
+
+	static bool IsLeapYear(int year) {
+		if (year % 4 == 0) {
+			if (year % 100 != 0) {
+				return true;
+			}
+			if (year % 400 == 0) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	static long ToDays(int year, int month, int day) {
+		result = -1;
+		if (year > 0 && year <= 9999) {
+			if (month > 0 && month <= 12) {
+				int daysInYear = 0;
+				int daysInMonth = 0;
+				if (IsLeapYear(year)) {
+					daysInYear = DaysToMonth366[month - 1];
+					daysInMonth = DaysToMonth366[month] - daysInMonth;
+				}
+				else {
+					daysInYear = DaysToMonth365[month - 1];
+					daysInMonth = DaysToMonth365[month] - daysInMonth;
+				}
+
+				if (day > 0 && day <= daysInMonth) {
+					int y = year - 1;
+					result = y * 365 + y / 4 - y / 100 + y / 400 + daysInYear + day - 1;
+				}
+			}
+		}
+	}
+
+	struct Parts {
+		int year;
+		int month;			// 1 ... 12 	[Jan, Feb, Mar, ...]
+		int dayOfYear;		// 1 ... 366
+		int dayOfMonth;		// 1 ... 31
+		int dayOfWeek;		// 1 ... 7		[Mon, Tue, ...]
+		//~ bool leapYear;
+	}
+
+	static Parts ToParts(int n) {
+		// n = number of days since 1/1/0001
+
+		// y400 = number of whole 400-year periods since 1/1/0001
+		int y400 = n / DaysPer400Years;
+		// n = day number within 400-year period
+		n -= y400 * DaysPer400Years;
+
+		// y100 = number of whole 100-year periods within 400-year period
+		int y100 = n / DaysPer100Years;
+
+		// Last 100-year period has an extra day, so decrement result if 4
+		if (y100 == 4) y100 = 3;
+		// n = day number within 100-year period
+		n -= y100 * DaysPer100Years;
+
+		// y4 = number of whole 4-year periods within 100-year period
+		int y4 = n / DaysPer4Years;
+		// n = day number within 4-year period
+		n -= y4 * DaysPer4Years;
+
+		// y1 = number of whole years within 4-year period
+		int y1 = n / DaysPerYear;
+		// Last year has an extra day, so decrement result if 4
+		if (y1 == 4) y1 = 3;
+
+		// If year was requested, compute and return it
+		result.year = y400 * 400 + y100 * 100 + y4 * 4 + y1 + 1;
+
+		// n = day number within year
+		n -= y1 * DaysPerYear;
+		result.dayOfYear = n + 1;
+
+		// All months have less than 32 days, so n >> 5 is a good conservative
+		// estimate for the month
+		int m = n >> 5 + 1;
+
+		if (IsLeapYear(result.year)) {
+			// m = 1-based month number
+			for (;n >= DaysToMonth366[m];) m += 1;
+			result.month = m;
+			// 1-based day-of-month
+			result.dayOfMonth = n - DaysToMonth366[m - 1] + 1;
+		}
+		else {
+			// m = 1-based month number
+			for (;n >= DaysToMonth365[m];) m += 1;
+			result.month = m;
+			// 1-based day-of-month
+			result.dayOfMonth = n - DaysToMonth365[m - 1] + 1;
+		}
+		return result;
+	}
+	static void ToParts(long days, int &year, int &month, int &day) {
+		Parts parts = ToParts(days);
+		year = parts.year;
+		month = parts.month;
+		day = parts.dayOfMonth;
+	}
+
+	define Parts(int n) = ToParts(n);
+	//~ Date.Parts dateParts = Date.ToParts(Date.ToDays(2613, 8, 15));
+	//~ debug("Date", Date.Parts, pointer(dateParts), 0, 1);
+}
+define Date(int year, int month, int day) = Date(Date.ToDays(year, month, day));
+
+Date DateFromTime(int time) {
+	static const int _1970 = Date.ToDays(1970, 1, 1);
+	result = Date(_1970 + (time / Date.SecondsPerDay));
+}
+
+enum importstd: bool {
+	print = true;
+	bits2 = true;		// 
+	complex = true;		// Complex numbers
+
+	// simd
+	vec2d = true;
+	vec4f = true;
+	mat4f = true;
+
+	strUtils = true;
+}
+
+static if (importstd.bits2) {
+
+define Lo64(int64 a) = int32(a);					// Lo32 part
+define Hi64(int64 a) = Lo64(int64.Shr(a, 32));		// Hi32 part
+define Lo32(int32 a) = int32(a & 0xffff);			// Lo16 part
+define Hi32(int32 a) = Lo32(a >> 16);				// Hi16 part
+define Lo16(int32 a) = int32(a & 0xff);				// Lo16 part
+define Hi16(int32 a) = Lo16(a >> 8);				// Hi16 part
+
+//~ define zxt64(int32 a) = int64(uint32(a));			// zero extend
+//~ define sxt64(int32 a) = int64(a);					// sign extend
+
+/** bit scan reverse
+ * get the index of the highest bit
+ * MSB (MostSignificantBit)
+ * note: see: http://xkr.us/articles/javascript/encode-compare/
+ * todo: bitsr(uint64 x)
+ * example: bitsr(0b100);
+ * returns: 2
+ */
+int bitsr(uint32 x) {
+	if (x != 0) {
+		result = 0;
+		if (x & 0xffff0000) { result += 16; x >>= 16; }
+		if (x & 0x0000ff00) { result +=  8; x >>=  8; }
+		if (x & 0x000000f0) { result +=  4; x >>=  4; }
+		if (x & 0x0000000c) { result +=  2; x >>=  2; }
+		if (x & 0x00000002) { result +=  1; }
+	}
+	else {
+		result = -1;
+	}
+}
+
+/** bit scan forward
+ * get the index of the lowest bit
+ * LSB (LeastSignificantBit)
+ */
+int bitsf(uint32 x) {
+	if (x != 0) {
+		result = 0;
+		if ((x & 0x0000ffff) == 0) { result += 16; x >>= 16; }
+		if ((x & 0x000000ff) == 0) { result +=  8; x >>=  8; }
+		if ((x & 0x0000000f) == 0) { result +=  4; x >>=  4; }
+		if ((x & 0x00000003) == 0) { result +=  2; x >>=  2; }
+		if ((x & 0x00000001) == 0) { result +=  1; }
+		//~ if (x & 0xffff0000) { result += 16; x >>= 16; }
+		//~ if (x & 0x0000ff00) { result +=  8; x >>=  8; }
+		//~ if (x & 0x000000f0) { result +=  4; x >>=  4; }
+		//~ if (x & 0x0000000c) { result +=  2; x >>=  2; }
+		//~ if (x & 0x00000002) { result +=  1; }
+	}
+	else {
+		result = -1;
+	}
+}
+
+/** keep the highest bit only
+ */
+int32 bithi(uint32 x) {
+	x |= x >> 1;
+	x |= x >> 2;
+	x |= x >> 4;
+	x |= x >> 8;
+	x |= x >> 16;
+	return x - (x >> 1);
+}
+
+/** keep the lowest bit only
+ */
+int32 bitlo(uint32 x) {
+	return x & -x;
+}
+
+// count bits
+int bitcnt(uint32 x) {
+	x -= ((x >> 1) & 0x55555555);
+	x = (((x >> 2) & 0x33333333) + (x & 0x33333333));
+	x = (((x >> 4) + x) & 0x0f0f0f0f);
+	x += (x >> 8) + (x >> 16);
+	return x & 0x3f;
+}
+
+// swap bits
+int bitswp(uint32 x) {
+	x = ((x >> 1) & 0x55555555) | ((x & 0x55555555) << 1);
+	x = ((x >> 2) & 0x33333333) | ((x & 0x33333333) << 2);
+	x = ((x >> 4) & 0x0F0F0F0F) | ((x & 0x0F0F0F0F) << 4);
+	x = ((x >> 8) & 0x00FF00FF) | ((x & 0x00FF00FF) << 8);
+	return (x >> 16) | (x << 16);
+}
+
+}
+static if (importstd.print) {
+
+define print(bool arg)      = print(arg ? "true" : "false");
+define print(char arg)      = print("%c", int64(arg));
+define print(int8 arg)      = print("%d", int64(arg));
+define print(int16 arg)     = print("%d", int64(arg));
+define print(int32 arg)     = print("%d", int64(arg));
+define print(int64 arg)     = print("%D", int64(arg));
+define print(uint8 arg)     = print("%d", int64(arg));
+define print(uint16 arg)    = print("%d", int64(arg));
+define print(uint32 arg)    = print("%d", int64(arg));
+define print(float32 arg)   = print("%f", emit(i64, f64(arg)));
+define print(float64 arg)   = print("%F", emit(i64, f64(arg)));
+
+define println()            = print("\n");
+//~ define println(bool arg)    = print("%d\n", int64(arg));
+define println(bool arg)    = print(arg ? "true\n" : "false\n");
+define println(char arg)    = print("%c\n", int64(arg));
+define println(int8 arg)    = print("%d\n", int64(arg));
+define println(int16 arg)   = print("%d\n", int64(arg));
+define println(int32 arg)   = print("%d\n", int64(arg));
+define println(int64 arg)   = print("%D\n", int64(arg));
+define println(uint8 arg)   = print("%d\n", int64(arg));
+define println(uint16 arg)  = print("%d\n", int64(arg));
+define println(uint32 arg)  = print("%d\n", int64(arg));
+define println(float32 arg) = print("%f\n", emit(i64, f64(arg)));
+define println(float64 arg) = print("%F\n", emit(i64, f64(arg)));
+
+define print(string fmt, int8 arg)    = print(fmt, int64(arg));
+define print(string fmt, int16 arg)   = print(fmt, int64(arg));
+define print(string fmt, int32 arg)   = print(fmt, int64(arg));
+define print(string fmt, uint8 arg)   = print(fmt, int64(arg));
+define print(string fmt, uint16 arg)  = print(fmt, int64(arg));
+define print(string fmt, uint32 arg)  = print(fmt, int64(arg));
+define print(string fmt, float32 arg) = print(fmt, emit(i64, f64(arg)));
+define print(string fmt, float64 arg) = print(fmt, emit(i64, f64(arg)));
+
+void println(string arg) {print(arg); print("\n");}
+define putchr(int chr) = print("%c", int64(chr));
+
+define rand(int32 max) = int32(rand() % max);
+define rand(int32 ^min, int32 max) = int32(min + rand(max - min));
+
+define rand(int64 max) = int64((int64(rand()) * rand()) % max);
+define rand(int64 ^min, int64 max) = int64(min + rand(max - min));
+
+define rand2FloatValue = 0xffffff;
+define rand(float64 max) = float64((max * rand(rand2FloatValue)) / rand2FloatValue);
+define rand(float64 ^min, float64 max) = float64(min + rand(max - min));
+
+}
+
+static if (importstd.complex) {
+struct Complex {
+	const float64 re;
+	const float64 im;
+}
+
+//~ define Complex(float64 re, float64 im) = emit(Complex, f64(re), f64(im));
+define Complex(float64 re) = Complex(re, float64(0));
+
+define neg(Complex a) = emit(Complex, v2d.neg, Complex(a));
+
+define add(Complex a, Complex b) = emit(Complex, v2d.add, Complex(b), Complex(a));
+define add(Complex a, float64 b) = emit(Complex, v2d.add, f64(b), f64(0), Complex(a));
+define add(float64 a, Complex b) = emit(Complex, v2d.add, Complex(b), f64(a), f64(0));
+
+define sub(Complex a, Complex b) = emit(Complex, v2d.sub, Complex(b), Complex(a));
+define sub(Complex a, float64 b) = emit(Complex, v2d.sub, f64(b), f64(0), Complex(a));
+define sub(float64 a, Complex b) = emit(Complex, v2d.sub, Complex(b), f64(a), f64(0));
+
+define mul(Complex ^a, Complex ^b) = emit(Complex,
+	f64.sub, v2d.mul, f64(b.im), f64(b.re), f64(a.im), f64(a.re),	// re = a.re * b.re - a.im * b.im
+	f64.add, v2d.mul, Complex(b), f64(a.im), f64(a.re)				// im = a.re * b.im + a.im * b.re;
+	//~ f64.add, v2d.mul, f64(b.re), f64(b.im), f64(a.im), f64(a.re)	// im = a.re * b.im + a.im * b.re;
+);
+define mul(Complex a, float64 b) = emit(Complex, v2d.mul, dupp.x2, f64(b), Complex(a));
+define mul(float64 a, Complex b) = emit(Complex, v2d.mul, Complex(b), dupp.x2, f64(a));
+
+Complex div(Complex a, Complex b) {
+	// Adapted from Numerical Recipes in C - The Art of Scientific Computing
+	// ISBN 0-521-43108-5
+
+	if (Math.abs(b.re) >= Math.abs(b.im)) {
+		float64 r = b.im / b.re;
+		float64 den = b.re + r * b.im;
+		float64 re = (a.re + r * a.im) / den;
+		float64 im = (a.im - r * a.re) / den;
+		result = Complex(re, im);
+	}
+	else {
+		float64 r = b.re / b.im;
+		float64 den = b.im + r * b.re;
+		float64 re = (a.re * r + a.im) / den;
+		float64 im = (a.im * r - a.re) / den;
+		result = Complex(re, im);
+	}
+}
+
+define abs(Complex ^a) = Math.hypot(a.re, a.im);
+define arg(Complex ^a) = atan2(a.re, a.im);
+
+define re(Complex ^a) = float64(a.re);		// a must be an rvalue.
+define im(Complex ^a) = float64(a.im);
+
+Complex inv(Complex a) {
+	float64 d = (a.re * a.re + a.im * a.im);
+	return Complex(+a.re / d, -a.im / d);
+}
+
+define conj(Complex ^a) = Complex(a.re, -a.im);
+
+define exp(Complex ^a) = Complex(exp(a.re) * cos(a.im), exp(a.re) * sin(a.im));
+
+define log(Complex ^a) = Complex(log(abs(a)), arg(a));
+
+Complex pow(Complex a, Complex b) {
+	/*
+	if (b.im == 0) {
+		if (a.im == 0) return new Complex(Math.pow(a.re, b.re));
+		return Complex.exp(Complex.mul(b.re, Complex.log(a)));
+	}
+	if (a.im == 0) return Complex.exp(Complex.mul(b, Math.log(a.re)));
+	return Complex.exp(Complex.mul(b, Complex.log(a)));
+	//~ */
+
+	float64 r = Math.hypot(a.im, a.re);
+	float64 t = atan2(a.im, a.re);
+	float64 u = b.re * t + b.im * log(r);
+	float64 v = pow(r, b.re) * exp(-b.im * t);
+	return Complex(v * cos(u), v * sin(u));
+}
+
+define pow(Complex a, float64 b) = pow(a, Complex(b));
+
+define sin(Complex ^a) = Complex(sin(a.re) * Math.Cosh(a.im), cos(a.re) * Math.Sinh(a.im));
+define cos(Complex ^a) = Complex(cos(a.re) * Math.Cosh(a.im),-sin(a.re) * Math.Sinh(a.im));
+define tan(Complex ^a) = div(sin(a), cos(a));
+
+/+ More Trig ... ???
+public static Complex Cot(Complex a) {
+	return Cos(a) / Sin(a);
+}
+
+public static Complex Sinh(Complex a) {
+	return (Exp(a) - Exp(-a)) / 2;
+}
+
+public static Complex Cosh(Complex a) {
+	return (Exp(a) + Exp(-a)) / 2;
+}
+
+public static Complex Tanh(Complex a) {
+	return (Exp(2 * a) - 1) / (Exp(2 * a) + 1);
+}
+
+public static Complex Coth(Complex a) {
+	return (Exp(2 * a) + 1) / (Exp(2 * a) - 1);
+}
+
+
+public static Complex Sech(Complex a) {
+	return Inv(Cosh(a));
+}
+
+public static Complex Csch(Complex a) {
+	return Inv(Sinh(a));
+}
+// +/
+}
+
+static if (importstd.vec2d) {
+struct vec2d {
+	float64 x;
+	float64 y;
+}
+
+define add(vec2d x, vec2d y) = emit(vec2d, v2d.add, vec2d(y), vec2d(x));
+define sub(vec2d x, vec2d y) = emit(vec2d, v2d.sub, vec2d(y), vec2d(x));
+define mul(vec2d x, vec2d y) = emit(vec2d, v2d.mul, vec2d(y), vec2d(x));
+define div(vec2d x, vec2d y) = emit(vec2d, v2d.div, vec2d(y), vec2d(x));
+
+//~ define mod(vec2d x, vec2d y) = emit(vec2d, v2d.rem, byVal(y), byVal(x));
+define min(vec2d x, vec2d y) = emit(vec2d, v2d.min, vec2d(y), vec2d(x));
+define max(vec2d x, vec2d y) = emit(vec2d, v2d.max, vec2d(y), vec2d(x));
+define ceq(vec2d x, vec2d y) = emit(v2d.equ, vec2d(y), vec2d(x));
+
+define dot(vec2d ^x, vec2d ^y) = float64(x.x * y.x + x.y * y.y);
+
+static if (importstd.print) {
+void print(vec2d v) {
+	print("vec2d(");
+	print(v.x);
+	print(", ");
+	print(v.y);
+	println(")");
+}
+void println(vec2d v) {
+	print(v);
+	println();
+}
+}
+}
+static if (importstd.vec4f) {
+struct vec4f {
+	float32 x;
+	float32 y;
+	float32 z;
+	float32 w;
+}
+
+define vec4f(float32 x, float32 y, float32 z) = emit(vec4f, f32(x), f32(y), f32(z), f32(0));
+define vec4f(float32 val) = emit(vec4f, dupp.x2, dupp.x1, f32(val));
+//~ define vec4f(vec4f v) = emit(vec4f, vec4f(v));
+
+define neg(vec4f rhs) = emit(vec4f, v4f.neg, vec4f(rhs));
+define add(vec4f lhs, vec4f rhs) = emit(vec4f, v4f.add, vec4f(rhs), vec4f(lhs));
+define add(float32 a, vec4f b) = add(vec4f(a), b);
+define add(vec4f a, float32 b) = add(a, vec4f(b));
+define sub(vec4f lhs, vec4f rhs) = emit(vec4f, v4f.sub, vec4f(rhs), vec4f(lhs));
+define sub(float32 a, vec4f b) = sub(vec4f(a), b);
+define sub(vec4f a, float32 b) = sub(a, vec4f(b));
+define mul(vec4f lhs, vec4f rhs) = emit(vec4f, v4f.mul, vec4f(rhs), vec4f(lhs));
+define mul(float32 a, vec4f b) = mul(vec4f(a), b);
+define mul(vec4f a, float32 b) = mul(a, vec4f(b));
+define div(vec4f lhs, vec4f rhs) = emit(vec4f, v4f.div, vec4f(rhs), vec4f(lhs));
+define div(float32 a, vec4f b) = div(vec4f(a), b);
+define div(vec4f a, float32 b) = div(a, vec4f(b));
+
+define min(vec4f x, vec4f y) = emit(vec4f, v4f.min, vec4f(y), vec4f(x));
+define max(vec4f x, vec4f y) = emit(vec4f, v4f.max, vec4f(y), vec4f(x));
+define ceq(vec4f x, vec4f y) = emit(v4f.equ, vec4f(y), vec4f(x));
+
+define mad(vec4f a, vec4f b, vec4f c) = emit(vec4f, v4f.add, v4f.mul, vec4f(a), vec4f(b), vec4f(c));	// a * b + c
+
+//~ define dp3(vec4f lhs, vec4f rhs) = rhs.x * lhs.x + rhs.y * lhs.y + rhs.z * lhs.z;
+//~ define dph(vec4f lhs, vec4f rhs) = rhs.x * lhs.x + rhs.y * lhs.y + rhs.z * lhs.z + rhs.w;
+//~ define dp4(vec4f lhs, vec4f rhs) = rhs.x * lhs.x + rhs.y * lhs.y + rhs.z * lhs.z + rhs.w * lhs.w;
+
+define dp3(vec4f lhs, vec4f rhs) = emit(v4f.dp3, vec4f(rhs), vec4f(lhs));
+define dp4(vec4f lhs, vec4f rhs) = emit(v4f.dp4, vec4f(rhs), vec4f(lhs));
+define dph(vec4f lhs, vec4f rhs) = emit(v4f.dph, vec4f(rhs), vec4f(lhs));
+define cross(vec4f ^a, vec4f ^b) = vec4f(float64(a.y) * b.z - a.z * b.y, float64(a.z) * b.x - a.x * b.z, float64(a.x) * b.y - a.y * b.x);
+	//~ tmp.x = lhs->y * rhs->z - lhs->z * rhs->y;
+	//~ tmp.y = lhs->z * rhs->x - lhs->x * rhs->z;
+	//~ tmp.z = lhs->x * rhs->y - lhs->y * rhs->x;
+
+define lerp(float32 ^t, vec4f ^lhs, vec4f ^rhs) = vec4f(Math.lerp(t, lhs.x, rhs.x), Math.lerp(t, lhs.y, rhs.y), Math.lerp(t, lhs.z, rhs.z), Math.lerp(t, lhs.w, rhs.w));
+//~ define lerp(float32 ^t, vec4f ^lhs, vec4f ^rhs) = emit(vec4f, byVal(lhs));
+//~ define lerp(float32 ^t, vec4f ^lhs, vec4f ^rhs) = vec4f(lhs);
+
+define len(vec4f ^v) = sqrt(dp3(v, v));
+define eval(vec4f ^v, float32 ^x) = float32((((v.w * x + v.z) * x + v.y) * x) + v.x);
+define normalize(vec4f ^a) = div(a, vec4f(float32(sqrt(dp3(a, a)))));
+//~ vec4f normalize(vec4f in) {}
+
+//~ operator float32(vec4f ^vec) = float32(vec.w);
+define float32(vec4f ^vec) = float32(vec.w);
+//~ define bool(vec4f ^vec) = bool(vec.x && vec.y && vec.z && vec.w);
+
+//~ operator - (vec4f x) = emit(vec4f, v4f.neg, vec4f(x));
+//~ operator (vec4f x) + (vec4f y) = emit(vec4f, v4f.add, vec4f(y), vec4f(x));
+//~ operator (vec4f x) - (vec4f y) = emit(vec4f, v4f.sub, vec4f(y), vec4f(x));
+//~ operator (vec4f x) * (vec4f y) = emit(vec4f, v4f.mul, vec4f(y), vec4f(x));
+//~ operator (vec4f x) / (vec4f y) = emit(vec4f, v4f.div, vec4f(y), vec4f(x));
+//~ operator (vec4f x) % (vec4f y) = emit(vec4f, v4f.mod, vec4f(y), vec4f(x));
+
+static if (importstd.print) {
+void print(vec4f v) {
+	print("vec4f(");
+	print(v.x);
+	print(", ");
+	print(v.y);
+	print(", ");
+	print(v.z);
+	print(", ");
+	print(v.w);
+	print(")");
+}
+void println(vec4f v) {
+	print(v);
+	println();
+}
+}
+}
+static if (importstd.mat4f) {
+struct mat4f {
+	vec4f x;
+	vec4f y;
+	vec4f z;
+	vec4f w;
+}
+
+define mat4f(
+	float64 m11, float64 m12, float64 m13, float64 m14,
+	float64 m21, float64 m22, float64 m23, float64 m24,
+	float64 m31, float64 m32, float64 m33, float64 m34,
+	float64 m41, float64 m42, float64 m43, float64 m44)
+= mat4f(vec4f(m11, m12, m13, m14), vec4f(m21, m22, m23, m24), vec4f(m31, m32, m33, m34), vec4f(m41, m42, m43, m44));
+//~ = emit(mat4f, f32(m11), f32(m12), f32(m13), f32(m14), f32(m21), f32(m22), f32(m23), f32(m24), f32(m31), f32(m32), f32(m33), f32(m34), f32(m41), f32(m42), f32(m43), f32(m44));
+
+define dp3(mat4f ^mat, vec4f ^vec) = vec4f(dp3(mat.x, vec), dp3(mat.y, vec), dp3(mat.z, vec), float32(1));
+define dp4(mat4f ^mat, vec4f ^vec) = vec4f(dp4(mat.x, vec), dp4(mat.y, vec), dp4(mat.z, vec), dp4(mat.w, vec));
+define dph(mat4f ^mat, vec4f ^vec) = vec4f(dph(mat.x, vec), dph(mat.y, vec), dph(mat.z, vec), dph(mat.w, vec));
+
+mat4f mul(mat4f &lhs, mat4f &rhs) {
+
+	// transposed
+	mat4f Trhs = mat4f(
+		rhs.x.x, rhs.y.x, rhs.z.x, rhs.w.x,
+		rhs.x.y, rhs.y.y, rhs.z.y, rhs.w.y,
+		rhs.x.z, rhs.y.z, rhs.z.z, rhs.w.z,
+		rhs.x.w, rhs.y.w, rhs.z.w, rhs.w.w
+	);
+
+	result.x = dp4(Trhs, lhs.x);
+	result.y = dp4(Trhs, lhs.y);
+	result.z = dp4(Trhs, lhs.z);
+	result.w = dp4(Trhs, lhs.w);
+}
+
+mat4f transpose(mat4f &mat) {
+	result.x.x = mat.x.x;
+	result.x.y = mat.y.x;
+	result.x.z = mat.z.x;
+	result.x.w = mat.w.x;
+
+	result.y.x = mat.x.y;
+	result.y.y = mat.y.y;
+	result.y.z = mat.z.y;
+	result.y.w = mat.w.y;
+
+	result.z.x = mat.x.z;
+	result.z.y = mat.y.z;
+	result.z.z = mat.z.z;
+	result.z.w = mat.w.z;
+
+	result.w.x = mat.x.w;
+	result.w.y = mat.y.w;
+	result.w.z = mat.z.w;
+	result.w.w = mat.w.w;
+}
+
+void transpose2(mat4f &mat) {
+	static void swap(float32 &a, float32 &b) {
+		float32 c = a;
+		a = b;
+		b = c;
+	}
+	//~ swap(&mat.x.x, &mat.x.x);	same
+	swap(&mat.x.y, &mat.y.x);
+	swap(&mat.x.z, &mat.z.x);
+	swap(&mat.x.w, &mat.w.x);
+
+	//~ swap(&mat.y.x, &mat.x.y);	done
+	//~ swap(&mat.y.y, &mat.y.y);	same
+	swap(&mat.y.z, &mat.z.y);
+	swap(&mat.y.w, &mat.w.y);
+
+	//~ swap(&mat.z.x, &mat.x.z);	done
+	//~ swap(&mat.z.y, &mat.y.z);	done
+	//~ swap(&mat.z.z, &mat.z.z);	same
+	swap(&mat.z.w, &mat.w.z);
+
+	//~ swap(&mat.w.x, &mat.x.w);	done
+	//~ swap(&mat.w.y, &mat.y.w);	done
+	//~ swap(&mat.w.z, &mat.z.w);	done
+	//~ swap(&mat.w.w, &mat.w.w);	same
+}
+
+static if (importstd.print) {
+void print(mat4f v) {
+	print("mat4f(");
+	print(v.x);
+	print(", ");
+	print(v.y);
+	print(", ");
+	print(v.z);
+	print(", ");
+	print(v.w);
+	print(")");
+}
+void println(mat4f v) {
+	print(v);
+	println();
+}
+}
+}
+
+//#{ debuging ...
+static struct Debug {
+	enum: int {
+		abort = -1;
+		//~ quiet = 0;
+		//~ print = 1;
+		debug = 3;
+
+		notrace = 0;
+		deftrace = 25;
+	}
+
+	//~ int Priority = verbose;
+	//~ define setPriority(int priority) = void(Priority = priority);
+
+	//~ define print(int priority, string message) = void(Priority <= priority ? debug(message, null, null, 0, 1) : void(0));
+}
+
+define debug(string message) = debug(message, Debug.debug, Debug.notrace, variant.null);
+define trace(string message) = debug(message, Debug.debug, Debug.deftrace, variant.null);
+define trace(string message, variant var) = debug(message, Debug.debug, Debug.deftrace, var);
+
+define abort() = debug(null, Debug.abort, Debug.deftrace, variant.null);
+define abort(string message) = debug(message, Debug.abort, Debug.deftrace, variant.null);
+
+define assert(bool condition) = debug("assertion failed!", condition ? 0 : Debug.abort, Debug.deftrace, variant.null);
+define assert(bool condition, string message) = debug(message, condition ? 0 : Debug.abort, Debug.deftrace, variant.null);
+
+//~ TODO: define assert(bool condition) = void(condition ? void(0) : abort("assertion failed!"));
+//#}
+
+static if (importstd.strUtils) {
+
+/// length of the string
+int strlen(string str) {
+	for (result = 0; str[result]; result += 1) ;
+}
+
+define umin(uint32 ^a, uint32 ^b) = Math.min(a, b);
+
+/// the first occurenec of a char in string
+int strchr(string str, int chr) {
+	result = -1;
+	for (int i = 0; str[i]; i += 1) {
+		if (str[i] == chr) {
+			result = i;
+			break;
+		}
+	}
+}
+int strchr(string str, int chr, int max) {
+	result = -1;
+	max = umin(max, strlen(str));
+	for (int i = 0; i <= max; i += 1) {
+		if (str[i] == chr) {
+			result = i;
+			break;
+		}
+	}
+}
+
+/// the last occurenec of a char in string
+int strrchr(string str, int chr) {
+	result = -1;
+	for (int i = 0; str[i]; i += 1) {
+		if (str[i] == chr) {
+			result = i;
+		}
+	}
+}
+int strrchr(string str, int chr, int max) {
+	result = -1;
+	max = umin(max, strlen(str));
+	for (int i = 0; i <= max; i += 1) {
+		if (str[i] == chr) {
+			result = i;
+		}
+	}
+}
+
+// convert number to string
+struct FormatFlags {
+	int sgnChr;	// should be one of: 0, '-', '+'
+	int padChr;	// padding character: 0, '0'
+	int padLen;	// padding length
+	int maxLen;	// maximum length
+	int fmtChr; // format char
+	int radix;
+}
+
+// TODO: extend this function as in format.itoa(...)
+int format(char output[], int pos, FormatFlags &flags, uint32 value) {
+	static const char digits[] = "0123456789abcdefghijklmnopqrstuvwxyz";
+	static FormatFlags default = FormatFlags(0, ' ', 0, 0, 'd', 10);
+
+	if (flags == null) {
+		flags = default;
+	}
+
+	int rad = flags.radix;
+	assert(rad > 0 && rad < digits.length);
+
+	char temp[80];
+	int end = temp.length;
+
+	temp[end -= 1] = 0;
+	for ( ; value > 0; value /= rad) {
+		temp[end -= 1] = digits[value % rad];
+	}
+	if (temp[end] == 0) {
+		temp[end -= 1] = '0';
+	}
+
+	int strLen = temp.length - end;
+	int padLen = flags.padLen;
+
+	int max = pos + padLen - strLen + 1;
+	if (max > output.length) {
+		max = output.length - 1;
+	}
+	for (; pos < max; pos += 1) {
+		output[pos] = flags.padChr;
+	}
+
+	max = pos + strLen;
+	if (max > output.length) {
+		max = output.length - 1;
+	}
+
+	for (; pos < max; pos += 1) {
+		output[pos] = temp[end];
+		end += 1;
+	}
+	return pos - 1;
+}
+
+/**
+ * Format integer to text
+ * @param output write output to this buffer
+ * @param format format string
+ *  	%b format as binary
+ *  	%o format as octal
+ *  	%d format as decimal
+ *  	%x format as hexadecimal
+ *  	%i format as custom radix
+ *  	null defaults to: "%d"
+ * @param value date to format
+ */
+int format(char buff[], string format, int value) {
+	static const char digits[] = "0123456789abcdefghijklmnopqrstuvwxyz";
+
+	int _itoa(char dst[], uint32 num, int rad, int pos, FormatFlags &flags) {
+		if (num == 0) {
+			int dstLen = dst.length;
+			int padChr = flags.padChr;
+			int padLen = flags.padLen;
+
+			if (padChr && flags.sgnChr && pos < dstLen) {
+				dst[pos] = flags.sgnChr;
+				pos += 1;
+			}
+
+			if (padChr == 0) {
+				padChr = ' ';
+			}
+
+			for (int i = 0; i < padLen; i += 1) {
+				if (pos < dstLen) {
+					dst[pos] = padChr;
+				}
+				pos += 1;
+			}
+			return pos;
+		}
+
+		flags.padLen -= 1;
+		pos = _itoa(dst, num / rad, rad, pos, &flags);
+		if (pos < dst.length) {
+			dst[pos] = digits[num % rad];
+		}
+		result = pos + 1;
+	}
+
+	int pos = 0;
+	if (format == null) {
+		format = "%d";
+	}
+	int spos = 0;
+	for (int chr; chr = format[spos]; spos += 1) {
+		if (chr == '%') {
+			//~ spos += readFlags(format, spos, &flags);
+			chr = format[spos += 1];
+			if (chr == '%') {
+				if (pos < buff.length) {
+					buff[pos] = chr;
+					pos += 1;
+				}
+				continue;
+			}
+
+			int sgnChr = 0;
+			if (chr == '-' || chr == '+') {
+				sgnChr = chr;
+				chr = format[spos += 1];
+			}
+
+			int padChr = ' ';
+			if (chr == '0') {
+				padChr = chr;
+				chr = format[spos += 1];
+			}
+
+			int padLen = 0;
+			for (;chr >= '0' && chr <= '9';) {
+				padLen = padLen * 10 + chr - '0';
+				chr = format[spos += 1];
+			}
+
+			int maxLen = 10;
+			if (chr == '.') {
+				maxLen = 0;
+				chr = format[spos += 1];
+				for ( ;chr >= '0' && chr <= '9'; ) {
+					maxLen = maxLen * 10 + chr - '0';
+					chr = format[spos += 1];
+				}
+			}
+
+
+			int rad = 10;
+			if (chr == 'b') {
+				rad = 2;
+			}
+			else if (chr == 'o') {
+				rad = 8;
+			}
+			else if (chr == 'd') {
+				rad = 10;
+			}
+			else if (chr == 'x') {
+				rad = 16;
+			}
+			else if (chr == 'i') {
+				rad = maxLen;
+			}
+
+			int val = value;
+			if (val < 0) {
+				val = -val;
+				sgnChr = '-';
+			}
+			else {
+				if (val == 0) {
+					padChr = '0';
+					if (!padLen) {
+						padLen = 1;
+					}
+				}
+			}
+
+			assert(rad > 0 && rad < digits.length);
+			FormatFlags flags = FormatFlags(sgnChr, padChr, padLen, maxLen, chr, rad);
+			pos = _itoa(buff, val, rad, pos, &flags);
+
+		}// */
+		else if (pos < buff.length) {
+			buff[pos] = chr;
+			pos += 1;
+		}
+	}
+
+	if (pos >= buff.length) {
+		pos = buff.length - 1;
+	}
+	buff[pos] = 0;
+	return pos;
+}
+
+/**
+ * Format date to text
+ * @param output write output to this buffer
+ * @param format format string
+ *  	%y representing the year
+ *  	%m representing the month
+ *  	%d representing the day
+ *  	null defaults to: "%04y.%02m.%02d"
+ * @param value date to format
+ */
+void format(char output[], string format, Date value) {
+	int y;
+	int m;
+	int d;
+
+	Date.ToParts(value.days, &y, &m, &d);
+
+	if (format == null) {
+		format = "%04y.%02m.%02d";
+	}
+
+	int pos = 0;
+	int spos = 0;
+	for (int chr; chr = format[spos]; spos += 1) {
+		if (chr != '%') {
+			if (pos < output.length) {
+				output[pos] = chr;
+				pos += 1;
+			}
+			continue;
+		}
+
+		//~ print("pos : %d\n", pos);
+		chr = format[spos += 1];
+		int sgnChr = 0;
+		if (chr == '-' || chr == '+') {
+			sgnChr = chr;
+			chr = format[spos += 1];
+		}
+
+		int padChr = ' ';
+		if (chr == '0') {
+			padChr = chr;
+			chr = format[spos += 1];
+		}
+
+		int padLen = 0;
+		for (;chr >= '0' && chr <= '9';) {
+			padLen = padLen * 10 + chr - '0';
+			chr = format[spos += 1];
+		}
+
+		int maxLen = 10;
+		if (chr == '.') {
+			maxLen = 0;
+			chr = format[spos += 1];
+			for (;chr >= '0' && chr <= '9';) {
+				maxLen = maxLen * 10 + chr - '0';
+				chr = format[spos += 1];
+			}
+		}
+
+		if (chr == 'y') {
+			uint32 val = y;
+			if (y < 0) {
+				val = -val;
+				sgnChr = '-';
+			}
+			FormatFlags flags = FormatFlags(sgnChr, padChr, padLen, maxLen, chr, 10);
+			pos = format(output, pos, &flags, val);
+			//~ continue;
+		}
+		else if (chr == 'm') {
+			uint32 val = m;
+			if (y < 0) {
+				val = -val;
+				sgnChr = '-';
+			}
+			FormatFlags flags = FormatFlags(sgnChr, padChr, padLen, maxLen, chr, 10);
+			pos = format(output, pos, &flags, val);
+			//~ continue;
+		}
+		else if (chr == 'd') {
+			uint32 val = d;
+			if (y < 0) {
+				val = -val;
+				sgnChr = '-';
+			}
+			FormatFlags flags = FormatFlags(sgnChr, padChr, padLen, maxLen, chr, 10);
+			pos = format(output, pos, &flags, val);
+			//~ continue;
+		}
+	}
+}
+
+/* TODO: like this
+int itoa(string format, int value, bool write(char c)) { ... }
+int itoa(string format, int value, char buff[]) {
+	int pos = 0;
+	return itoa(format, value, bool function(char chr) {
+		if (pos >= buff.length)
+			return false;
+		buff[pos] = chr;
+		pos += 1;
+		return true;
+	})
+}
+*/
+
+//define string(int value, int radix) = itoa(new(string), value, radix, 1, false, null);
+//define string(int value) = itoa(new(string), value, 10, 1, false, null);
+//~ define variant(string ^str) = emit(variant, ref(str), typename(string));
+}
+
+// these should be something like emit
+define new(typename type) = memmgr(null, type.size);
+//~ define new(typename type, int32 n) = memmgr(null, type.size * n);
+// creates a slice: {data, length}
+//~ define Array(typename type, int32 ^n) = emit(struct, ref(memmgr(null, type.size * n)), i32(n));
+define variant(string str) = emit(variant, ref(str), typename(string));
+define sizeof(typename type) = int(type.size);

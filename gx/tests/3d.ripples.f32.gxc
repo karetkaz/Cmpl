@@ -46,9 +46,9 @@ void drawCB() {
 
 	Gui.Repaint();
 	static int64 beg = -1;
-	int64 now = timeNow();
+	int32 now = clock();
 	//~ /* limit speed to 20 fps
-	if (clocksPerSec(now - beg) <= 1./25) {
+	if (clocks2Sec(now - beg) <= 1./25) {
 		static if (Options.do2d) {
 			zoomSurf(offScreen, null, tmp, null, 1);
 		}

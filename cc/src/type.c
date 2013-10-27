@@ -294,6 +294,10 @@ int canAssign(ccState cc, symn var, astn val, int strict) {
 			atag.cst2 = var->cast;
 			atag.ref.link = var;
 
+			if (fun && fun->kind == EMIT_opc) {
+				val->type = var;
+				return 1;
+			}
 			if (fun && canAssign(cc, fun->type, &atag, 1)) {
 				arg2 = fun->prms;
 				while (arg1 && arg2) {

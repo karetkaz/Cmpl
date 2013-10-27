@@ -1,32 +1,44 @@
-//~ #open src/core.h
-//~ #open src/core.c
-//~ #open src/tree.c
+//~ TODO: cgen: optimize casts
+	//~ stdlib.cvx:720:exec:[sp(06)] .02f645: 1b ff ff ff ff             load.c32 -1
+	//~ stdlib.cvx:720:exec:[sp(07)] .02f64a: 4c                         i32.2i64
 
-//~ #open src/code.c			// virtual mashine
-//~ #open src/type.c			// type system
-//~ #open src/parser.c			// input, lexer, parser
-//~ #open src/printer.c			// pretty print, logger
-//~ #open src/main.c
+//~ BUG: static functions are not accessible from a non static struct it there is only static data.
+//~ BUG: function with empty body does not generate the return instruction.
 
-//~ bug: static functions are not accessible from a non static struct it there is only static data.
-//~ bug: function with empty body does not generate the return instruction.
+//~ BUG: arrays in structures
+//~ BUG: array of references
 
-/* TODO: Array assignment
-define Array(int32 typesize, int32 ^n) = emit(struct, ref(memmgr(null, typesize * n)), i32(n));
+//~ TODO: static if else part?
+//~ TODO: js like initialization.
+//~ TODO: inside a static if false threat errors as warnings?
+//~ TODO: separate struct and unoin declaration?
+//~ TODO: in case of unions create a constructor?
 
-int b[] = Array(4, 10);
-//~ b = Array(4, 10);
-//~ int c[] = Array(4, 10);
+//~ static int a[10] = 9;
+//~ int i = 4;
+//~ int b = a[i];
+
+long a = -12374;
+
+/+ TODO: Array allocation and assignment
+define new(typename type, int32 ^n) = emit(struct, pointer(memmgr(null, n * type.size)), i32(n));
+
+int b[] = new(int, 10);
+//~ b = new(int, 10);
+//~ int c[] = new(int, 10);
 //~ b = c;
+
 /+
 int a[][];
-a = Array(8, 10);
+a = new(int[], 10);
 for (int i = 0; i < a.length; i += 1) {
-	a[i] = Array(int, 10);
-}// +/
-// */
+	a[i] = new(int, 10);
+}
+// +/
 
-/* DONE: const & static members
+// +/
+
+/+ DONE: const & static members
 struct M {
 	static const int A = 9;
 	static int B = 9;
@@ -45,12 +57,12 @@ m.a = 69;			// error: constant lvalue in asignment
 m.B = 69;			// warn: access wia instance reference
 m.b = 69;
 
-//~ int &ref_m_a = m.a;	// hacked: warn if const/nonconst ref assignment.
+//~ int &ref_m_a = m.a;	// TODO: hacked: warn if const/nonconst ref assignment.
 //~ ref_m_a = 666;
 
-// */
+// +/
 
-/* BUG: Arrays/slices inside structs
+/+ BUG: Arrays/slices inside structs
 struct slice_in_struct {
 	int slice[];
 }
@@ -68,253 +80,26 @@ slice_in_struct it2 = slice_in_struct_fn(a);
 //FixMe: 
 int xxx = it1.slice[0];
 
-//~ */
-
-/+ optimize stack deallocations
-{
-	int a[1<<10];
-	{
-		int a[1<<10];
-		{
-			int a[1<<10];
-			{
-				int a[1<<20];
-				{
-					int a[1<<10];
-					{
-						int a[1<<10];
-						a[0] = 9;
-					}
-					a[0] = 9;
-				}
-				//~ a[0] = 9;
-			}
-			a[0] = 9;
-		}
-		a[0] = 9;
-	}
-}// +/
-
-/+ Optimize
-{
-	string a = "a";
-	print(a);
-}
-//! `dup.x1 sp(0)` and `spc -4` can be removed
-// todo.cvx:100: [008ea4-008ea9]: string a = 'a'
-//| 	1f 96 61 00 00             load.ref 6196
-// todo.cvx:101: [008ea9-008eaf]: print(a);
-//| 	12 00                      dup.x1 sp(0)
-//| 	09 1c 00 00                libc(28): print(string val): void
-//| 	10 fc ff ff                spc -4
-
-//~ +/
-
-/* ?Templates?
-static(typename Value) {
-	Value& select(Value arr[], int pos) {
-		assert(unsigned(pos) > arr.lenght);
-		return pointer(arr) + pos * Value.size;
-	}
-
-	bool insert(Value arr[], int pos, Value value) {
-		return false;
-	}
-
-	bool update(Value arr[], int pos, Value value) {
-		if (unsigned(pos) > arr.lenght)
-			return false;
-		select(arr, pos) = value;
-		return true;
-	}
-
-	bool delete(Value arr[], int pos) {
-		return false;
-	}
-
-	operator (Value arr[]) insert(Value value) = insert(arr, -1, value);
-	operator (Value arr[]) insert(int pos, Value value) = insert(arr, pos, value);
-	operator (Value arr[]) update(int pos, Value value) = update(arr, pos, value);
-	operator (Value arr[]) delete(int pos) = delete(arr, pos);
-
-	operator (Value arr[]) [int pos] = select(arr, pos);
-}
-static(typename Key, typename Value) {
-
-	struct &Map {
-		struct Iterator {
-			Map &map;
-			int pos;
-		}
-		struct Item {
-			int hash;		// hash code or previos slot
-			int next;		// next slot
-			Key key;
-			Value value;
-		}
-		int hash;		// hash size, treemap if <= 0
-		int used;		// number of used items
-		Item data[];
-	}
-
-	define iterator(Map map) = Map.Iterator(map, 0);
-	bool next(Map.Iterator it) {
-		pos += 1;
-		// skip not used data.
-		while (it.map.data[pos].hash == 0) {
-			pos += 1;
-		}
-		return pos > it.map.used;
-	}
-
-	bool insert(Map map, Key key, Value value) {
-
-		if (map.data.length <= map.used) {
-			Item data = map.data;
-			map.data = new Item[2 * data.length];
-			for (int i = 0; i < data.length; i += 1) {
-				map.data[i] = data[i];
-			}
-		}
-
-		if (map.hash > 0) {
-			int hash = hash(key) % map.hash;
-			int pos = hash;
-
-			Item &item = null;
-			for (; pos > 0; ) {
-
-				item = map.data[pos];
-				pos = item.next;
-
-				if (key == item.key) {
-					// can not insert key more than once
-					return false;
-				}
-			}
-
-			if (pos != hash) {
-				// wee have to insert a new item
-				item.next = map.used;
-				item = data[map.used];
-				map.used += 1;
-			}
-
-			item.hash = hash;
-			item.next = -1;
-			item.key = key;
-			item.value = value;
-		}
-		else {
-			heap insert
-		}
-		return true;
-	}
-	bool update(Map map, Key key, Value value) {
-		Item &item = select(map, key);
-
-		if (item == null)
-			return false;
-
-		item.value = value;
-		return true;
-	}
-	bool delete(Map map, Key key) {
-		Item &item = select(map, key);
-
-		if (item == null)
-			return false;
-
-		if (map.hash > 0) {
-			while (item.next > 0) {
-				Item next = map[item.next];
-				item.next = next.next;
-
-				item.key = next.key;
-				item.value = next.value;
-
-				item = next;
-			}
-		}
-		else {
-			// heap delete
-			return false;
-		}
-		return true;
-	}
-	Item &select(Map map, Key key) {
-		if (map.hash > 0) {
-			int hash = hash(key) % map.hash;
-			int pos = hash;
-
-			Item &item = null;
-			for (; pos > 0; ) {
-
-				item = map.data[pos];
-				pos = item.next;
-
-				if (key == item.key) {
-					return item;
-				}
-			}
-		}
-		else {
-			heap search
-		}
-		return null;
-	}
-	define value(Map.Item item) = item != null ? item.value : null;
-
-	//~ operator (Value map[Key]).insert(Key key, Value value) = insert(map, key, value);
-	//~ operator (Value map[Key]).update(Key key, Value value) = update(map, key, value);
-	//~ operator (Value map[Key]).delete(Key key) = delete(map, key);
-
-	operator (Value map[Key])[Key key] = value(select(map, key));
-
-	operator (Value map[Key])[Key key].set(Value value) {
-		if (value == null) {
-			return delete(map, key);
-		}
-		if (!update(map, key, value)) {
-			return insert(map, key, value);
-		}
-		return true;
-}
-//~ */
-
-/+ add to System
-enum Arch {
-	arm
-	?armf
-	i386
-	x86_64 | amd64
-}
-
-enum Os: string {
-	Windows("Windows");
-	Linux("Linux");
-	Mac("Mac");
-}
-
-Arch arch = Arch.?
-char name[] = "Windows"|"Linux"|"Mac"|"Unknown"
-
-boolean bigEndian = false;
-
 //~ +/
 
 /+ initialization (type and variable)
 
+//~ int a1 = int(0);
+//~ int a2 = int{0};
+
+//~ typename strty = string;
+//~ typename complex = Complex;
+//~ Complex c1 = Complex(10, 20);
+//~ Complex c2 = Complex{re: 10, im:20};
+
 struct Person {
 	LastName: string,
 	FirstName: string,
-	birthYear: int(1970);
+	BirthYear: int(1970);
 	Jobs: string[] = null,
 	next: Person& = null,
 	Address: struct {
-		type: enum {
-			Home, Work, Other
-		}
+		Type: enum {Home, Work, Other}
 		PostOfficeBox: String;
 		StreetAddress: String;
 		ZipCode: String;
@@ -323,9 +108,7 @@ struct Person {
 		Country: String;
 	};
 	Address2: struct& {
-		type: enum {
-			Home, Work, Other
-		}
+		Type: enum {Home, Work, Other}
 		PostOfficeBox: String;
 		StreetAddress: String;
 		ZipCode: String;
@@ -334,53 +117,45 @@ struct Person {
 		Country: String;
 	} = null;
 	Phone: struct[] {
-		type: enum {
-			Mobile, Home, Work, Fax, Other
-		} = Other;
-		value: String;
+		Type: enum {Mobile, Home, Work, Fax, Other} = Other;
+		Value: String;
 	} = null,
 	Mail: struct[] {
-		type: enum {
-			Home, Work, Other
-		} = Other;
+		Type: enum {Home, Work, Other} = Other;
 		value: String = "";
 	} = null,
 	Dates: struct[] {
-		type: enum {
-			Other, BirthDay, Aniversary
-		}
+		type: enum {Other, BirthDay, Aniversary}
 		value: String;
 	} = [],
-	Gender: enum {
-		Male, Female, NotDefined
-	} = NotDefined;
+	Gender: enum {Male, Female, NotDefined} = NotDefined;
 };
 
 Person person = {
 	LastName: "Last";
 	FirstName: "First";
 	Address: {
-		type: Home;
-		value: "12345678";
+		Type: Home;
+		Value: "12345678";
 	};
 	Phone: [{
-		type: Home;
-		value: "12345678";
+		Type: Mobile;
+		Value: "12345678";
 	}, {
-		type: Home;
-		value: "23456789";
+		Type: Home;
+		Value: "23456789";
 	}];
 	Gender: Male;
 };
+//~ +/
 
-//~ /+
+/+ initialization (type and variable): Ui
 struct Rect {
 	int top;
 	int right;
 	int bottom;
 	int left;
 }
-
 struct Anchor {
 	enum Style {
 		Fill;
@@ -453,11 +228,10 @@ struct Font {...}
 
 struct Component {
 	Rect position;	// calc by the layout
-
 	Anchor anchor;
 	int width = 20;
 	int height = 20;
-	
+
 	bool enabled;
 	bool focusable;
 	Component children[];
@@ -536,15 +310,363 @@ struct Button: Component {
 	}
 
 	children: const[image, label];
-}// +/
+}
+// +/
+
+/+ inlineing ...
+define sqr1(float64 ^x) = x*x;
+define sqr2(float64 x) = sqr1(x);
+double x = 9;
+double y1 = sqr1(x*x+x);		// 
+double y2 = sqr2(x*x+x);		// should produce the same code as above
+//~ +/
+
+/+ BUG: convert char slice to string 
+const char str1[] = "alma a fa alatt nyari piros alma";
+const char str2[] = {'a', 'l', 'm', 'a', 0};
+string str3 = "alma";
+//~ TODO: BUG: string str4 = string(str1);
+
+// makeing slices from strings (substring)
+//~ char slice1[] = emit(struct, ref(str2), i32(2));
+//~ char slice2[] = emit(struct, i32.add, ref(str2), i32(2), i32(2));
+//~ +/
+
+/+ DONE: static casting pointers
+pointer x = emit(pointer, ref("erZKJVDlaknjsdvkSDNVlk"));
+string str = emit(string, ref(x));
+//~ println(emit(string, ref(x)));
+//~ +/
+
+/+ DONE: fixed size array for defines
+void testArr(double x[]) {
+	print("%d\n", int64(x.length));
+	x[3] = 8;
+}
+
+define TestArr(double x[16]) = testArr(x);
+
+double x[16] = {1};
+//~ testArr(x);
+//~ TestArr(x);
+//~ +/
+
+/+ DONE: return does not cast
+double f(int32 v) {result = v;}
+double g(int32 v) {return v;}
+double h(int32 v) {return result = v;}
+
+int v = 12756;
+double v1 = v;
+assert(v1 == f(v));
+assert(v1 == g(v));
+assert(v1 == h(v));
 
 //~ +/
 
-//~ int a1 = int(0);
-//~ int a2 = int{0};
+/+ BUG: struct containing references.
+struct Refs {
+	int &i;
+	double &d;
+	int f();
+}
 
-//~ typename strty = string;
-//~ typename complex = Complex;
-//~ Complex c1 = Complex(10, 20);
-//~ Complex c2 = Complex{re: 10, im:20};
+int a = 6;
+double b = 6;
+int f() { println("ok"); }
 
+static Refs refs = Refs(&a, &b, f);
+
+void refassign() {
+	static int a = 62;
+	static double b = 62;
+	static int f2() { println("ok62"); }
+
+	refs = Refs(&a, &b, f2);
+}
+
+refs.f();
+refassign();
+refs.f();
+
+//~ BUG: if (refs.f != null) { refs.f(); }
+
+//~ +/
+
+/+ BUG: function returning reference or string type.
+//~ define sizeof(typename type) = int(type.size);
+//~ define new(typename type) = memmgr(null, type.size);
+
+struct ComplexByVal {double re; double im;}
+struct &ComplexByRef {double re; double im;}
+
+//~ void print(ComplexByRef val) { print("%F", val.re); print(", "); print("%F", val.im); print("\n"); }
+
+/+ TODO: 
+ComplexByRef ComplexByRef(double re, double im) {
+	result = new(ComplexByRef);
+	result.re = re;
+	result.im = im;
+	return result;
+}// +/
+
+ComplexByVal v1 = ComplexByVal(3,-2);
+ComplexByRef v2 = new(ComplexByRef);
+ComplexByRef v3 = emit(ComplexByRef, i32(-1));
+//~ ComplexByRef v4 = ComplexByRef(2, -3);
+
+//~ v2.re = v1.re;
+//~ v3 = v2;
+//~ v2 = null;
+
+
+//~ TODO: return string.
+//~ string alma() {result = "alma";}
+
+// +/
+
+/+ TODO: nice to have
+//~ arrays of functions
+	int alma(int h)[10];
+
+//~ associative arrays: maps
+	int stringMap[string];		stringMap[]
+
+//~ recursively define:
+	define fact(int64 n) = (n * fact(n - 1));
+
+//~ void alma(int a) {static int A = a;}
+
+/+ TODO: cast operators
+ + define-s are implicit
+ + operator-s are explicit
+ + 
+ + struct float3 { float x; float y; float z; }
+ + struct float4 { float x; float y; float z; float w; }
+ + 
+ + and:
+ + define float3(float4 x) = float3(x.x, x.y, x.z);
+ + operator float4(float3 x) = float4(x.x, x.y, x.z, 0.);
+ +
+ + then:
+ + float4 a = float4(1., 2., 3., 4.);
+ + float3 b = float3(a);
+ + float4 c = b;				// this will call `operator float4(float3 x)`
+ + float3 d = a;				// Error: undefined operator float3(float4 x)
+ + 
+ + operator -(int32 rhs) = emit(i32.neg, i32(rhs));
+ + operator (int32 lhs) + (int32 rhs) = emit(i32.add, i32(rhs), i32(lhs));
+ + 
+ + geters only.
+ + operator (string lhs) [int32 rhs] = emit(int32, load.i8, u32.mad, i32(1), i32(rhs), ref(lhs));
+ +
+ + or set enabled indexing.
+ + operator (string lhs) [int32 rhs] = emit(char&, i32.mad, i32(1), i32(rhs), ref(lhs));
+ + 
+ + operator int32(string value) = atoi(value, 10);
+ + 
+++/
+/+ TODO: inout params(&&), destructors
+	(in case of defines: symbolic parameter)
+
+void free(pointer &&ref) {
+  memmgr(ref, 0);
+  ref = null;
+}
+
+define void(var &&a) = void(typename.Invoke(a.type, ".dtor", a.data));
+
+define void(int8 &&a)    = void(0);
+define void(int16 &&a)   = void(0);
+define void(int32 &&a)   = void(0);
+define void(int64 &&a)   = void(0);
+define void(uint8 &&a)   = void(0);
+define void(uint16 &&a)  = void(0);
+define void(uint32 &&a)  = void(0);
+define void(float32 &&a) = void(0);
+define void(float64 &&a) = void(0);
+//~ +/
+
+/+ Reflect
+enum TypeCode: int32 {
+	CAST_any = 0x00000000;		// invalid, error, ...
+	CAST_vid = 0x00000001;		// void;
+	CAST_bit = 0x00000002;		// bool;
+	CAST_i32 = 0x00000003;		// int8, int16, int32
+	CAST_u32 = 0x00000004;		// uint8, uint16, uint32
+	CAST_i64 = 0x00000005;		// int64
+	CAST_u64 = 0x00000006;		// uint64
+	CAST_f32 = 0x00000007;		// float32
+	CAST_f64 = 0x00000008;		// float64
+	CAST_ptr = 0x00000009;		// pointer
+
+	CAST_arr = 0x0000000a;		// slice(size, data)
+	CAST_var = 0x0000000b;		// variant(type, data)
+	CAST____ = 0x0000000d;		// typename
+	CAST____ = 0x0000000e;		// variable
+	CAST____ = 0x0000000f;		// function
+
+	TYPE_def = 0x00000000;		// alias (or error)
+	TYPE_rec = 0x00000010;		// typename
+	TYPE_ref = 0x00000020;		// variable
+	TYPE_fun = 0x00000030;		// function (variable and typename too)
+
+	ATTR_sta = 0x00000040;		// static
+	ATTR_con = 0x00000080;		// constant
+
+	ATTR_par = 0x00000100;		// parrallel
+	ATTR_snc = 0x00000200;		// synchronized
+	ATTR_ref = 0x00000400;		// indirect
+	ATTR_prv = 0x00000800;		// private
+}
+
+struct TypeInfo {
+	pointer file;		// declared in file (cstr)
+	int32 line;			// declared on line
+
+	pointer name;		// typename (cstr)
+	int32 offs;			// offset
+	int32 size;			// size
+
+	TypeInfo &base;		// function return type, typename base, variable type
+	TypeInfo &args;		// function arguments, typename fields, ?
+	TypeInfo &next;		// next type, argument, field
+
+	int8  kind;			// ref(var / fun), type,
+	int8  cast;			// casts to ...
+	int16 attr;			// attributes
+
+	//~ get typename = bool((this.kind & 0xf) != TYPE_ref);
+	//~ get constant = bool(this.kind & ATTR_con);
+	//~ get indirect = bool(this.kind & ATTR_ind);
+	//~ get function = bool(this.kind & ATTR_fun);
+}
+
+//~ class typename: TypeInfo;
+//~ class variable: TypeInfo;
+
+bool instanceof(TypeInfo &ty, var obj) {
+	TypeInfo &oty = obj.type;
+	while (ty && ty != oty) {
+		ty = ty.base;
+	}
+	return ty;
+}
+
+define lookUp(TypeInfo &type, int level, string name) = lookUp(type, level, name, null);
+
+TypeInfo& lookUp(TypeInfo &type, int level, string name, variant args...) {
+
+	bool func = args != null;
+
+	while (type && level > 0 && type.code != TYPE_ref) {
+
+		for (TypeInfo arg : type.args) {
+
+			// skip defines, consts, ...
+			if (arg.code != TYPE_ref)
+				continue;
+
+			// lookup only variables or functions
+			if (arg.call != func)
+				continue;
+
+			if (arg.name != name)
+				continue;
+
+			if (func) {
+				int i = 0;
+				for (TypeInfo &param : arg.args) {
+
+					if (i >= args.Length)
+						break;
+
+					if (param.load) ...		// by ref
+					if (param.call) ...		// argument is a funtion: (byref must be set)
+
+					if (!canAssign(param, args[i]))
+						break;
+
+					if (param.type != args[i].type)		// check return types
+						break;
+
+					if (!param.Vararg)
+						i += 1;
+				}
+
+				if (i != args.Length)
+					continue;
+			}
+			return arg;
+		}
+
+		// base class has this member ?
+		type = type.base;
+		level -= 1;
+	}
+	return null;
+}
+
+struct cls {
+	static int32 c;
+	int32 a;
+	int32 b;
+	static int M1(int a, int b) {return a + b;}
+}
+
+
+var a1 = var(34);
+var a2 = var(4);
+var t1;
+cls obj;
+
+assert(invoke(cls, "c", t1) && t1 == var(cls.c));				// t1 := cls.c;
+assert(invoke(cls, "c", null, a1) && t1 == var(cls.c));			// cls.c := a1;
+assert(invoke(cls, "c", t1, a1) && t1 == var(cls.c));			// t1 := cls.c = a1;
+
+assert(invoke(cls, "M1", t1, a1, a2) && t1 == var(cls.M1(a1, a2));
+assert(invoke(obj, "M1", t1, a1, a2) && t1 == var(obj.M1(a1, a2));
+
+assert(invoke(obj, "a", t1) && t1 == var(obj.a));
+assert(invoke(obj, "a", null, a2) && a2 == var(obj.a));			// t1 := obj.a := a2;
+
+bool invoke(var obj, string name, var &&res, var args...) {
+	TypeInfo class = obj.type == TypeInfo ? &obj.data : obj.type;
+	TypeInfo Method = lookUp(type, -1, name, args);
+
+	if (Method != null && Method.offset > 0) {
+		uint8 stop[4096];			// this is on top of stack
+		pointer st = pointer(stop);
+
+		memset(st, Method.type.size);	// clear result
+
+		for (int i = 0; i < Method.args.length; i += 1) {
+			TypeInfo marg = Method.args[i];
+
+			if (marg.offset > stop.length)
+				return false;
+
+			memcpy(st + marg.offset, args[i].data, marg.size);
+		}
+
+		emit(call, u32(Method.offset));
+
+		res.type = Method.type;
+		res.data = malloc(Method.type.size);
+		memcpy(res.data, st, Method.type.size);
+		//~ or short: res = variant(Method.type, st);
+
+		return true;
+	}
+	return false;
+}
+
+invoke(t2, "a", t1, var(34));			// t1 = t2.a = 34;
+invoke(t2, "a", t1, t2);				// t1 = t2.a;
+
+bool invoke(variant obj, string name, var &&res, var args...) {
+	return invoke(obj.type, name, &&res, obj, args);
+}
+
+//~ +/
+//~ +/

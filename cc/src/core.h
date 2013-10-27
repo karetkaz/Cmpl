@@ -94,6 +94,16 @@ typedef enum {
 	decl_NoInit = 0x200,		// disable initializer.
 	decl_ItDecl = 0x400,		// enable ':' after declaration: for(int a : range(0, 12))
 
+	/*? enum Kind {
+		//inline     = 0x000000;	// this is not available at runtime.
+		typename     = 0x000001;
+		function     = 0x000002;	//
+		variable     = 0x000003;	// functions and typenames are also variables
+
+		attr_const   = 0x000004;
+		attr_static  = 0x000008;
+	}*/
+
 	ATTR_const = 0x0100,		// constant
 	ATTR_stat  = 0x0200			// static
 } ccToken;
@@ -180,9 +190,9 @@ typedef struct libc {
 	struct libc *next;	// next
 	int (*call)(libcArgs);
 	void *data;	// user data for this function
+	symn sym;
 	int chk, pop;
 	int pos;
-	symn sym;
 } *libc;
 
 typedef struct astNode *astn;		// Abstract Syntax Tree Node
@@ -190,14 +200,15 @@ typedef struct astNode *astn;		// Abstract Syntax Tree Node
 struct symNode {					// type node (meta)
 	char*	name;		// symbol name
 	char*	file;		// declared in file
-	int		line;		// declared on line
+	int32_t	line;		// declared on line
+	int32_t nest;		// declaration level
 
 	int32_t	size;		// sizeof(TYPE_xxx)
 	int32_t	offs;		// addrof(TYPE_xxx)
 
 	symn	type;		// base type of TYPE_ref/TYPE_arr/function (void, int, float, struct, ...)
 
-	symn	flds;		// all fields: static + nonstatic fields / function return value + paramseters
+	symn	flds;		// all fields: static + nonstatic fields / function return value + parameters
 	//~ TODO: temporarly array variable base type
 	symn	prms;		// tail of flds: struct nonstatic fields / function paramseters
 
@@ -208,6 +219,7 @@ struct symNode {					// type node (meta)
 	ccToken	cast;		// casts to type(TYPE_(bit, vid, ref, u32, i32, i64, f32, f64, p4x)).
 
 	union {				// Attributes
+		uint64_t	pad;
 		uint32_t	Attr;
 	struct {
 		uint32_t	memb:1;		// member operator (push the object by ref first)
@@ -218,8 +230,6 @@ struct symNode {					// type node (meta)
 		uint32_t _padd:27;		// declaration level
 	};
 	};
-
-	int nest;		// declaration level
 
 	symn	defs;		// global variables and functions / while_compiling variables of the block in reverse order
 	symn	gdef;		// all static variables and functions
@@ -236,7 +246,7 @@ struct astNode {					// tree node (code)
 	astn		next;				// next statement, do not use for preorder
 	union {
 		union {						// TYPE_xxx: constant
-			int64_t	cint;			// const: integer
+			int64_t     cint;		// const: integer
 			float64_t	cflt;		// const: float
 			//~ char*	cstr;		// const: use instead: '.ref.name'
 		} con;
@@ -254,9 +264,9 @@ struct astNode {					// tree node (code)
 		} op;
 		struct {					// TYPE_ref: identifyer
 			char*	name;			// name of identifyer
-			int32_t hash;			// hash code for 'name'
 			symn	link;			// variable
 			astn	used;			// next used
+			int32_t hash;			// hash code for 'name'
 		} ref;
 		struct {					// STMT_brk, STMT_con
 			long offs;
@@ -285,13 +295,16 @@ void* getBuff(struct arrBuffer* buff, int idx);
 void freeBuff(struct arrBuffer* buff);
 
 typedef struct dbgInfo {
-	astn code;		// the generated node
+	// the statement tree
+	astn stmt;
 
+	// position in file
 	char* file;
 	int line;
 
+	// position in code
 	int start;
-	int end;		// code generated between positions
+	int end;
 
 } *dbgInfo;
 
@@ -320,7 +333,7 @@ struct ccStateRec {
 
 	// lists
 	astn	jmps;		// jumps
-	symn	free;		// free these variables
+	//~ symn	free;		// free these variables
 
 	list	strt[TBLS];		// string table
 	symn	deft[TBLS];		// definitions: hashStack;
@@ -331,7 +344,6 @@ struct ccStateRec {
 	int		siff:1;		// inside a static if false
 	int		sini:1;		// initialize static variables ?
 	int		_pad:30;	//
-	//~ int		verb:1;		// verbosity
 
 	char*	file;	// current file name
 	int		line;	// current line number
@@ -341,8 +353,7 @@ struct ccStateRec {
 		astn	tokp;		// list of reusable tokens
 		astn	_tok;		// one token look-ahead
 		int		_chr;		// one char look-ahead
-		// INPUT
-		struct {
+		struct {		// INPUT
 			int		_fin;		// file handle (-1) for cc_buff()
 			int		_cnt;		// chars left in buffer
 			char*	_ptr;		// pointer parsing trough source
@@ -377,18 +388,10 @@ dbgInfo getCodeMapping(state rt, int position);
 dbgInfo addCodeMapping(state rt, astn ast, int start, int end);
 
 //~ clog
-void fputfmt(FILE *fout, const char *msg, ...);
-//~ void fputsym(FILE *fout, symn sym, int mode, int level);
-//~ void fputast(FILE *fout, astn ast, int mode, int level);
-
-//~ void dumpxml(FILE* fout, astn ast, int mode, int level, const char* text)
-//~ void dumpsym(FILE *fout, symn sym, int mode);
-
-
 void fputopc(FILE *fout, unsigned char* ptr, int len, int offs, state rt);
-void fputasm(state, FILE *fout, int beg, int end, int mode);
-
 void fputval(state, FILE *fout, symn var, stkval* ref, int flgs);
+void fputasm(state, FILE *fout, int beg, int end, int mode);
+void fputfmt(FILE *fout, const char *msg, ...);
 
 // program error
 void perr(state rt, int level, const char *file, int line, const char *msg, ...);
@@ -510,4 +513,5 @@ int vmOffset(state, void *ptr);
 #ifdef _MSC_VER
 #pragma warning(disable: 4996)
 #endif
+
 #endif

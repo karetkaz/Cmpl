@@ -12,7 +12,8 @@ code emmiting, executing and formatting
 
 #ifdef __WATCOMC__
 #pragma disable_message(124);
-//~ #pragma disable_message(201);
+
+// needed for opcode f32_mod
 static inline double fmodf(float x, float y) {
 	return fmod(x, y);
 }
@@ -22,10 +23,11 @@ static inline double fmodf(float x, float y) {
 typedef struct bcde {			// byte code decoder
 	uint8_t opc;
 	union {
-		stkval arg;		// argument (load const)
+		stkval arg;			// argument (load const)
 		uint8_t idx;		// usualy index for stack
-		int32_t rel:24;	// relative offset (ip, sp) +- 7MB
-		struct {		// when starting a task
+		int32_t rel:24;		// relative offset (ip, sp) +- 7MB
+		struct {
+			// when starting a new paralel task
 			uint8_t  dl;	// data to to be copied to stack
 			uint16_t cl;	// code to to be executed paralel: 0 means fork
 		};
@@ -87,8 +89,8 @@ typedef struct cell {			// processor
 
 	// multiproc
 	unsigned int	ss;			// stack size
-	unsigned int	cp;			// child start(==0 join)
-	unsigned int	pp;			// parent proc(==0 main)
+	unsigned int	cp;			// child procs (join == 0)
+	unsigned int	pp;			// parent proc (main == 0)
 
 	// flags ?
 	//~ unsigned	zf:1;			// zero flag
@@ -177,7 +179,7 @@ symn ccAddCall(state rt, int libc(libcArgs), void* data, const char* proto) {
 		astn libcinit;
 		int libcpos = rt->cc->libc ? rt->cc->libc->pos + 1 : 0;
 
-		dieif(rt->_end - rt->_beg < sizeof(struct libc), "FixMe");
+		dieif(rt->_end - rt->_beg < (ptrdiff_t)sizeof(struct libc), "FixMe");
 
 		rt->_end -= sizeof(struct libc);
 		lc = (struct libc*)rt->_end;
@@ -185,12 +187,12 @@ symn ccAddCall(state rt, int libc(libcArgs), void* data, const char* proto) {
 		rt->cc->libc = lc;
 
 		link->name = "libc";
-		link->type = sym->type;
 		link->offs = opc_libc;
+		link->type = sym->type;
 		link->init = intnode(rt->cc, libcpos);
 
 		libcinit = lnknode(rt->cc, link);
-		stdiff = fixargs(sym, 4, 0);
+		stdiff = fixargs(sym, vm_size, 0);
 
 		// glue the new libcinit argument
 		if (args && args != rt->cc->void_tag) {
@@ -285,7 +287,7 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 
 	dieif((unsigned char*)ip + 16 >= rt->_end, "memory overrun");
 
-	/*/ set max stack use.
+	/*/ TODO: set max stack used.
 	switch (opc) {
 		case opc_dup1:
 		case opc_set1:
@@ -443,7 +445,7 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 		//~ case TYPE_i64: opc = b64_xor; break;
 	}
 
-	// load/store
+	// load / store
 	else if (opc == opc_ldi) {
 		ip = getip(rt, rt->vm.pc);
 		if (ip->opc == opc_ldsp) {
@@ -453,30 +455,44 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 		}
 
 		switch (arg.i4) {
-		case  1: opc = opc_ldi1; break;
-		case  2: opc = opc_ldi2; break;
-		case  4: opc = opc_ldi4; break;
-		case  8: opc = opc_ldi8; break;
-		case 16: opc = opc_ldiq; break;
-		default: // we have src on the stack
+			case 1:
+				opc = opc_ldi1;
+				break;
 
-			// push dst
-			if (!emitint(rt, opc_ldsp, 4 - arg.i4)) {
-				trace("FixMe");
-				return 0;
-			}
+			case 2:
+				opc = opc_ldi2;
+				break;
 
-			// copy
-			if (!emitint(rt, opc_move, -arg.i4)) {
-				trace("FixMe");
-				return 0;
-			}
+			case 4:
+				opc = opc_ldi4;
+				break;
 
-			// create n bytes on stack
-			arg.i8 = +arg.i8;
-			opc = opc_spc;
+			case 8:
+				opc = opc_ldi8;
+				break;
 
-			break;
+			case 16:
+				opc = opc_ldiq;
+				break;
+
+			default: // we have src on the stack
+
+				// push dst
+				if (!emitint(rt, opc_ldsp, 4 - arg.i4)) {
+					trace("FixMe");
+					return 0;
+				}
+
+				// copy
+				if (!emitint(rt, opc_move, -arg.i4)) {
+					trace("FixMe");
+					return 0;
+				}
+
+				// create n bytes on stack
+				arg.i8 = +arg.i8;
+				opc = opc_spc;
+				break;
 		}
 	}
 	else if (opc == opc_sti) {
@@ -486,50 +502,52 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 			if (rt->vm.su < vardist)
 				rt->vm.su = vardist;
 		}
-		/*ip = getip(rt, rt->vm.pc);
-		//~ dieif(ip->opc == opc_ldsp, "FixMe");
-		if (ip->opc == opc_ldsp) {
-			int vardist = (ip->rel + arg.i4) / 4;
-			vardist -= rt->vm.ss - rt->vm.pp.sm;
-			//~ logif(1, "ldsp(%d, %d)", rt->vm.pp.ss, arg.i4);
-			if (rt->vm.pp.ss < vardist)
-				rt->vm.pp.ss = vardist;
-		}*/
-
 		switch (arg.i4) {
-		case  1: opc = opc_sti1; break;
-		case  2: opc = opc_sti2; break;
-		case  4: opc = opc_sti4; break;
-		case  8: opc = opc_sti8; break;
-		case 16: opc = opc_stiq; break;
-		default: // we have dst on the stack
+			case 1:
+				opc = opc_sti1;
+				break;
 
-			ip = getip(rt, rt->vm.pc);
+			case 2:
+				opc = opc_sti2;
+				break;
 
-			// push dst
-			if (!emitint(rt, opc_ldsp, vm_size)) {
-				trace("FixMe");
-				return 0;
-			}
+			case 4:
+				opc = opc_sti4;
+				break;
 
-			// copy
-			if (!emitint(rt, opc_move, arg.i4)) {
-				trace("FixMe");
-				return 0;
-			}
+			case 8:
+				opc = opc_sti8;
+				break;
 
-			if (ip->opc == opc_ldsp) {
-				//~ if we copy from the stack to the stack
-				//~ do not remove more elements than
-				//~ we copy to
-				if (arg.i8 > ip->rel) {
-					arg.i8 = ip->rel;
+			case 16:
+				opc = opc_stiq;
+				break;
+
+			default: // we have dst on the stack
+
+				// push dst
+				if (!emitint(rt, opc_ldsp, vm_size)) {
+					trace("FixMe");
+					return 0;
 				}
-			}
-			// remove n bytes from stack
-			arg.i8 = -arg.i8;
-			opc = opc_spc;
-			break;
+
+				// copy
+				if (!emitint(rt, opc_move, arg.i4)) {
+					trace("FixMe");
+					return 0;
+				}
+
+				if (ip->opc == opc_ldsp) {
+					//~ if we copy from the stack to the stack
+					//~ do not remove more elements than we copy
+					if (arg.i8 > ip->rel) {
+						arg.i8 = ip->rel;
+					}
+				}
+				// remove n bytes from stack
+				arg.i8 = -arg.i8;
+				opc = opc_spc;
+				break;
 		}
 	}
 	else if (opc == opc_drop) {
@@ -544,20 +562,38 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 
 	// Optimize
 	if (rt->vm.opti > 1) {
-		if (0) {}
-
-		else if (opc == opc_ldc8) {
-			if (arg.i8 == 0) opc = opc_ldz2;
+		if (0) {
 		}
+
+		/*else if (opc == opc_ldz1) {
+			ip = getip(s, s->pc);
+			if (ip->opc == opc_ldz1) {
+				opc = opc_ldz2;
+				s->cs = s->pc;
+				s->ss -= 1;
+			}
+		}
+		else if (opc == opc_ldz2) {
+			ip = getip(s, s->pc);
+			if (ip->opc == opc_ldz2) {
+				opc = opc_ldz4;
+				s->cs = s->pc;
+				s->ss -= 2;
+			}
+		}*/
+
 		else if (opc == opc_ldc4) {
-			// vm sign extends ints
-			if (arg.i8 == 0) opc = opc_ldz1;
-			//else if (arg.i8 <= 0xff) opc = opc_ldc1;
-			//else if (arg.u8 <= 0xffff) opc = opc_ldc2;
+			if (arg.i8 == 0) {
+				opc = opc_ldz1;
+			}
+		}
+		else if (opc == opc_ldc8) {
+			if (arg.i8 == 0) {
+				opc = opc_ldz2;
+			}
 		}
 
-		/* memory access
-		else if (opc == opc_ldi1) {
+		/*else if (opc == opc_ldi1) {
 			ip = getip(rt, rt->vm.pc);
 			if (ip->opc == opc_ldsp && ((ip->rel & (vm_size-1)) == 0) && ((ip->rel / vm_size) < vm_regs)) {
 				arg.i4 = ip->rel / vm_size;
@@ -576,32 +612,33 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 			}
 		}
 		// */
+
 		else if (opc == opc_ldi4) {
 			ip = getip(rt, rt->vm.pc);
-			if (ip->opc == opc_ldcr && ip->arg.u4 < 0x00ffffff) {
-				arg.i8 = ip->arg.u4;
-				opc = opc_ld32;
-				rt->vm.pos = rt->vm.pc;
-				rt->vm.ss -= 1;
-			}
 			if (ip->opc == opc_ldsp && ((ip->rel & (vm_size-1)) == 0) && ((ip->rel / vm_size) < vm_regs)) {
 				arg.i4 = ip->rel / vm_size;
 				opc = opc_dup1;
 				rt->vm.pos = rt->vm.pc;
 				rt->vm.ss -= 1;
 			}
-		}
-		else if (opc == opc_sti4) {
-			ip = getip(rt, rt->vm.pc);
-			if (ip->opc == opc_ldcr && ip->arg.u4 < 0x00ffffff) {
+			else if (ip->opc == opc_ldcr && ip->arg.u4 < 0x00ffffff) {
 				arg.i8 = ip->arg.u4;
-				opc = opc_st32;
+				opc = opc_ld32;
 				rt->vm.pos = rt->vm.pc;
 				rt->vm.ss -= 1;
 			}
+		}
+		else if (opc == opc_sti4) {
+			ip = getip(rt, rt->vm.pc);
 			if (ip->opc == opc_ldsp && ((ip->rel & (vm_size-1)) == 0) && ((ip->rel / vm_size) < vm_regs)) {
 				arg.i4 = ip->rel / vm_size;
 				opc = opc_set1;
+				rt->vm.pos = rt->vm.pc;
+				rt->vm.ss -= 1;
+			}
+			else if (ip->opc == opc_ldcr && ip->arg.u4 < 0x00ffffff) {
+				arg.i8 = ip->arg.u4;
+				opc = opc_st32;
 				rt->vm.pos = rt->vm.pc;
 				rt->vm.ss -= 1;
 			}
@@ -609,30 +646,30 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 
 		else if (opc == opc_ldi8) {
 			ip = getip(rt, rt->vm.pc);
-			if (ip->opc == opc_ldcr && ip->arg.u4 < 0x00ffffff) {
-				arg.i8 = ip->arg.u4;
-				opc = opc_ld64;
-				rt->vm.pos = rt->vm.pc;
-				rt->vm.ss -= 1;
-			}
 			if (ip->opc == opc_ldsp && ((ip->rel & (vm_size-1)) == 0) && ((ip->rel / vm_size) < vm_regs)) {
 				arg.i4 = ip->rel / vm_size;
 				opc = opc_dup2;
 				rt->vm.pos = rt->vm.pc;
 				rt->vm.ss -= 1;
 			}
-		}
-		else if (opc == opc_sti8) {
-			ip = getip(rt, rt->vm.pc);
-			if (ip->opc == opc_ldcr && ip->arg.u4 < 0x00ffffff) {
+			else if (ip->opc == opc_ldcr && ip->arg.u4 < 0x00ffffff) {
 				arg.i8 = ip->arg.u4;
-				opc = opc_st64;
+				opc = opc_ld64;
 				rt->vm.pos = rt->vm.pc;
 				rt->vm.ss -= 1;
 			}
+		}
+		else if (opc == opc_sti8) {
+			ip = getip(rt, rt->vm.pc);
 			if (ip->opc == opc_ldsp && ((ip->rel & (vm_size-1)) == 0) && ((ip->rel / vm_size) < vm_regs)) {
 				arg.i4 = ip->rel / vm_size;
 				opc = opc_set2;
+				rt->vm.pos = rt->vm.pc;
+				rt->vm.ss -= 1;
+			}
+			else if (ip->opc == opc_ldcr && ip->arg.u4 < 0x00ffffff) {
+				arg.i8 = ip->arg.u4;
+				opc = opc_st64;
 				rt->vm.pos = rt->vm.pc;
 				rt->vm.ss -= 1;
 			}
@@ -748,44 +785,14 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 			}
 		}
 
-		/* TODO: merge allocations on stack
-		else if (opc == opc_spc) {
-			ip = getip(rt, rt->vm.pc);
-			if (ip->opc == opc_spc) {
-				stkval tmp;
-				tmp.i8 = arg.i8 + ip->rel;
-				if (tmp.rel == tmp.i8) {
-					rt->vm.pos = rt->vm.pc;
-					rt->vm.ss -= ip->rel / vm_size;
-					arg.i8 += ip->rel;
-				}
-			}
-		}// */
-
-		// conditional jumps
-		else if (opc == opc_jnz) {
-			ip = getip(rt, rt->vm.pc);
-			if (ip->opc == opc_not) {
-				rt->vm.pos = rt->vm.pc;
-				opc = opc_jz;
-			}
-		}
-		else if (opc == opc_jz) {
-			ip = getip(rt, rt->vm.pc);
-			if (ip->opc == opc_not) {
-				rt->vm.pos = rt->vm.pc;
-				opc = opc_jnz;
-			}
-		}
-
 		// shl, shr, and
 		else if (opc == b32_shl) {
 			ip = getip(rt, rt->vm.pc);
 			if (ip->opc == opc_ldc4) {
 				rt->vm.pos = rt->vm.pc;
 				rt->vm.ss -= 1;
-				opc = b32_bit;
 				arg.i4 = b32_bit_shl | (ip->arg.i4 & 0x3f);
+				opc = b32_bit;
 			}
 		}
 		else if (opc == b32_shr) {
@@ -793,8 +800,8 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 			if (ip->opc == opc_ldc4) {
 				rt->vm.pos = rt->vm.pc;
 				rt->vm.ss -= 1;
-				opc = b32_bit;
 				arg.i4 = b32_bit_shr | (ip->arg.i4 & 0x3f);
+				opc = b32_bit;
 			}
 		}
 		else if (opc == b32_sar) {
@@ -802,8 +809,8 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 			if (ip->opc == opc_ldc4) {
 				rt->vm.pos = rt->vm.pc;
 				rt->vm.ss -= 1;
-				opc = b32_bit;
 				arg.i4 = b32_bit_sar | (ip->arg.i4 & 0x3f);
+				opc = b32_bit;
 			}
 		}
 		else if (opc == b32_and) {
@@ -812,9 +819,19 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 				if ((ip->arg.i4 & (ip->arg.i4 + 1)) == 0) {
 					rt->vm.pos = rt->vm.pc;
 					rt->vm.ss -= 1;
-					opc = b32_bit;
 					arg.i4 = b32_bit_and | (bitsf(ip->arg.i4 + 1) & 0x3f);
+					opc = b32_bit;
 				}
+			}
+		}
+
+		else if (opc == i32_i64) {
+			ip = getip(rt, rt->vm.pc);
+			if (ip->opc == opc_ldc4) {
+				rt->vm.pos = rt->vm.pc;
+				rt->vm.ss -= 1;
+				arg.i8 = ip->arg.i4;
+				opc = opc_ldc8;
 			}
 		}
 
@@ -842,92 +859,44 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 			}
 		}*/
 
-		/*else if (opc == opc_ldz1) {
-			ip = getip(s, s->pc);
-			if (ip->opc == opc_ldz1) {
-				opc = opc_ldz2;
-				s->cs = s->pc;
-				s->ss -= 1;
+		// conditional jumps
+		else if (opc == opc_jnz) {
+			ip = getip(rt, rt->vm.pc);
+			if (ip->opc == opc_not) {
+				rt->vm.pos = rt->vm.pc;
+				opc = opc_jz;
 			}
 		}
-		else if (opc == opc_ldz2) {
-			ip = getip(s, s->pc);
-			if (ip->opc == opc_ldz2) {
-				opc = opc_ldz4;
-				s->cs = s->pc;
-				s->ss -= 2;
-			}
-		}*/
-		/*if (opc == opc_set) {
-			int ipp, rm = 0;
-			int op = 0, lhs, rhs;
+		else if (opc == opc_jz) {
 			ip = getip(rt, rt->vm.pc);
-			switch (ip->opc) {
-				case i32_add:
-				case i32_sub:
-				case i32_mul:
-				case i32_div:
-				case i32_mod:
-					op = i32_ext;
-					break;
-				case f32_add:
-				case f32_sub:
-				case f32_mul:
-				case f32_div:
-				case f32_mod:
-					op = f32_ext;
-					break;
-				case i64_add:
-				case i64_sub:
-				case i64_mul:
-				case i64_div:
-				case i64_mod:
-					op = i64_ext;
-					break;
-				case f64_add:
-				case f64_sub:
-				case f64_mul:
-				case f64_div:
-				case f64_mod:
-					op = f64_ext;
-					break;
+			if (ip->opc == opc_not) {
+				rt->vm.pos = rt->vm.pc;
+				opc = opc_jnz;
 			}
-			if (op == i32_ext || op == f32_ext) {
-				ip = getip(rt, rt->vm.p[ipp = 1]);
-				if (ip->opc == opc_ldi4 && rm == 0) {
-					ip = getip(rt, rt->vm.p[ipp += 1]);
-					rm = 1;
-				}
-				if (ip->opc == opc_dup1) {
-					rhs = ip->idx;
-					ip = getip(rt, rt->vm.p[ipp += 1]);
-					if (ip->opc == opc_ldi4 && rm == 0) {
-						ip = getip(rt, rt->vm.p[ipp += 1]);
-						rm = 2;
-					}
-					if (ip->opc == opc_dup1) {
-						lhs = ip->idx;
-						opc = op;
-					}
-				}
-			}
-			if (op == i64_ext || op == f64_ext) {
-				...
-			}
+		}
 
-			if (opc == op) {
-				arg = extarg(arg, lhs, rhs, rm);
-				ip = pc = rt->vm.p[ipp];
+		/* TODO: merge stack allocations
+		else if (opc == opc_spc) {
+			ip = getip(rt, rt->vm.pc);
+			if (ip->opc == opc_spc) {
+				stkval tmp;
+				tmp.i8 = arg.i8 + ip->rel;
+				if (tmp.rel == tmp.i8) {
+					rt->vm.pos = rt->vm.pc;
+					rt->vm.ss -= ip->rel / vm_size;
+					arg.i8 += ip->rel;
+				}
 			}
-		}*/
+		}// */
+
+		/* TODO: only if we have no jump here
 		else if (opc == opc_jmpi) {
 			ip = getip(rt, rt->vm.pc);
-			/* TODO: only if we have no jump here
 			if (ip->opc == opc_jmpi) {
 				//~ rt->vm.pos = rt->vm.pc;
 				return rt->vm.pc;
-			}*/
-		}
+			}
+		}*/
 	}
 
 	ip = getip(rt, rt->vm.pos);
@@ -936,24 +905,13 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 	ip->arg = arg;
 	rt->vm.pc = rt->vm.pos;	// previous program pointer is here
 
+	// post checks
 	if ((opc == opc_jmp || opc == opc_jnz || opc == opc_jz) && arg.i8 != 0) {
 		ip->rel -= rt->vm.pc;
 		logif((ip->rel + rt->vm.pc) != arg.i8, "FixMe");
 	}
 	else switch (opc) {
-		case opc_inc:
-			dieif(ip->rel != arg.i8, "FixMe([%A]: %d, %D)", ip, ip->rel, arg.i8);
-			break;
-
 		case opc_spc:
-			/*TODO: int max = 0x7fffff;
-			while (arg.i8 > max) {
-				if (!emit(s, opc, max))
-					return 0;
-				arg.i8 -= max;
-			}
-			//~ ip->rel = arg.i8 / vm_size;
-			// */
 			if (arg.i8 > 0x7fffff) {
 				trace("max 2 megs can be allocated on stack, not(%D)", arg.i8);
 				return 0;
@@ -963,21 +921,21 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 
 		case opc_ldsp:
 		case opc_move:
+		case opc_inc:
 			dieif(ip->rel != arg.i8, "FixMe");
 			break;
 
 		default:
-			//~ TODO: check other opcodes too
 			break;
 	}
 
 	switch (opc) {
 		error_opc:
-			error(rt, NULL, 0, "invalid opcode: op[%.*A]", rt->vm.pc, ip);
+			error(rt, NULL, 0, "invalid opcode: %.*A", rt->vm.pc, ip);
 			return 0;
 
 		error_stc:
-			error(rt, NULL, 0, "stack underflow: op[%.*A](%d)", rt->vm.pc, ip, rt->vm.ss);
+			error(rt, NULL, 0, "stack underflow(%d): %.*A", rt->vm.ss, rt->vm.pc, ip);
 			return 0;
 
 		#define STOP(__ERR, __CHK, __ERC) if (__CHK) goto __ERR
@@ -989,11 +947,12 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 	}
 
 	if (opc == opc_call) {
-		//~ a call ends with a return,
+		//~ call ends with a return,
 		//~ wich drops ip from the stack.
 		rt->vm.ss -= 1;
 	}
 
+	// set max stack used.
 	if (rt->vm.sm < rt->vm.ss)
 		rt->vm.sm = rt->vm.ss;
 
@@ -1001,13 +960,9 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 
 	return rt->vm.pc;
 }
-int emitopc(state rt, vmOpcode opc) {
-	stkval arg;
-	arg.i8 = 0;
-	return emitarg(rt, opc, arg);
-}
 int emitinc(state rt, int arg) {
 	if (rt->vm.opti > 0) {
+		// TODO: do this if in emitarg
 		bcde ip = getip(rt, rt->vm.pc);
 
 		if (arg == 0) {
@@ -1019,14 +974,18 @@ int emitinc(state rt, int arg) {
 				break;
 
 			case opc_ldsp:
-				if (arg < 0)
+				if (arg < 0) {
+					trace("FixMe");
 					return 0;
+				}
 				ip->rel += arg;
 				return rt->vm.pc;
 
 			case opc_ldcr:
-				if (arg < 0)
+				if (arg < 0) {
+					trace("FixMe");
 					return 0;
+				}
 				ip->rel += arg;
 				return rt->vm.pc;
 		}
@@ -1039,7 +998,7 @@ int emitidx(state rt, vmOpcode opc, int arg) {
 
 	switch (opc) {
 		default:
-			dieif(1, "FixMe");
+			fatal("FixMe");
 			break;
 
 		case opc_dup1:
@@ -1050,16 +1009,13 @@ int emitidx(state rt, vmOpcode opc, int arg) {
 		case opc_set4:
 			tmp.i8 /= vm_size;
 			break;
+
 		case opc_drop:
-			//~ opc = opc_spc;
-			//~ tmp.i8 = -tmp.i8;
-			// no break
-		//~ case opc_drop:
 		case opc_ldsp:
 			return emitarg(rt, opc, tmp);
 	}
 
-	if (tmp.i8 > 255) {
+	if (tmp.i8 > vm_regs) {
 		debug("opc_x%02x(%D(%d))", opc, tmp.i8, arg);
 		return 0;
 	}
@@ -1133,6 +1089,12 @@ int emitref(state rt, void* arg) {
 	tmp.i8 = vmOffset(rt, arg);
 	return emitarg(rt, opc_ldcr, tmp);
 }
+
+int emitopc(state rt, vmOpcode opc) {
+	stkval arg;
+	arg.i8 = 0;
+	return emitarg(rt, opc, arg);
+}
 //#}
 
 int stkoffs(state rt, int size) {
@@ -1142,14 +1104,13 @@ int stkoffs(state rt, int size) {
 	return padded(size, vm_size) + rt->vm.ss * vm_size;
 }
 
-static void traceProc(cell pu, int cp, char* msg) {
-	//~ #define traceProc(__PU, __CP, __MSG) logif(1, "%?s: {pu:%d, ip:%x, bp:%x, sp:%x, ss:%d, parent:%d, childs:%d}", __MSG, __CP, __PU[__CP].ip, __PU[__CP].bp, __PU[__CP].sp, __PU[__CP].ss, __PU[__CP].pp, __PU[__CP].cp);
+static inline void traceProc(cell pu, int cp, char* msg) {
 	logif(1, "%s: {pu:%d, ip:%x, bp:%x, sp:%x, stacksize:%d, parent:%d, childs:%d}", msg, cp, pu[cp].ip, pu[cp].bp, pu[cp].sp, pu[cp].ss, pu[cp].pp, pu[cp].cp);
 }
 
 //~ parallel processing
-static int task(cell pu, int n, int master, int cl) {
-	// find an empty cpu
+static inline int task(cell pu, int n, int master, int cl) {
+	// find an empty cell
 	int slave = master + 1;
 	while (slave < n) {
 		if (pu[slave].ip == NULL) {
@@ -1176,15 +1137,11 @@ static int task(cell pu, int n, int master, int cl) {
 	//~ else logif(1, "master(%d): continue.", master);
 	return 0;
 }
-
 static int sync(cell pu, int cp, int wait) {
 	int pp = pu[cp].pp;
 	traceProc(pu, cp, "join");
 
-	// there are workers to wait for
-
 	// slave proc
-	//~ logif(1, "slave(%d) of %d finish.", cp, pp);
 	if (pp != cp) {
 		if (pu[cp].cp == 0) {
 			//~ logif(1, "stop slave(%d).", cp);
@@ -1194,59 +1151,58 @@ static int sync(cell pu, int cp, int wait) {
 		}
 		return 0;
 	}
-	else {
-		//~ logif(1, "master(%d): continue.", cp);
-		if (pu[cp].cp > 0) {
-			return !wait;
-		}
-	}
 
-	/*if (pu[cp].wj > 0) {
+	if (pu[cp].cp > 0) {
 		//~ logif(1, "master(%d): continue.", cp);
-		pu[cp].wj -= 1;
-		return 1;
-	}// */
+		return !wait;
+	}
 
 	// cell can continue to work
 	return 1;
 }
 
+// check stack overflow
 static inline int ovf(cell pu) {
 	return (pu->sp - pu->bp) < 0;
 }
 
 static void dbugerr(state rt, cell cpu, char* file, int line, int pu, void* ip, stkptr bp, int ss, char* text, int xxx) {
-	int IP = ((unsigned char*)ip) - rt->_mem;
-	//~ error(rt, file, line, "exec:%s(%?d):[pu%02d][sp%02d]@%9.*A rw@%06x", text, xxx, pu, ss, IP, ip);
-	error(rt, file, line, "exec:%s(%?d):[sp%02d]@%.*A rw@%06x", text, xxx, ss, IP, ip);
+	error(rt, file, line, "exec:%s(%?d):[sp%02d]@%.*A rw@%06x", text, xxx, ss, vmOffset(rt, ip), ip);
 	(void)cpu;
 	(void)pu;
 	(void)bp;
 }
 
 static inline void dotrace(state rt, void* cf, symn sym, void* ip, void* sp) {
-	//~ fputfmt(stdout, "%d: (%x, %x):%T\n", rt->vm.pos, ip, sp, mapsym(rt, ip));
-	if (rt->dbg) {
-		if(cf == NULL) {
+	if (rt->dbg != NULL) {
+		if (cf == NULL) {
 			rt->dbg->tracePos -= 1;
 		}
-		else if (rt->dbg->tracePos < lengthOf(rt->dbg->trace)) {
+		else if (rt->dbg->tracePos < (ptrdiff_t)lengthOf(rt->dbg->trace)) {
 			rt->dbg->trace[rt->dbg->tracePos].ip = ip;
 			rt->dbg->trace[rt->dbg->tracePos].sp = sp;
 			rt->dbg->trace[rt->dbg->tracePos].cf = cf;
 			rt->dbg->trace[rt->dbg->tracePos].sym = sym;
-			rt->dbg->trace[rt->dbg->tracePos].pos = (char*)ip - (char*)rt->_mem;
+			rt->dbg->trace[rt->dbg->tracePos].pos = vmOffset(rt, ip);
 			rt->dbg->tracePos += 1;
 		}
 	}
 }
 
-static int dbgpu(state rt, cell pu, void* extra) {
+static int dbgDummy(state rt, int pu, void *ip, long* sp, int ss) {
+	return 0;
+	(void)rt;
+	(void)pu;
+	(void)ip;
+	(void)sp;
+	(void)ss;
+}
+
+static int exec(state rt, cell pu, symn fun, void* extra) {
 	char* err_file = 0;
 	int err_line = 0;
 	int err_code = 0;
 
-	const cell cpu = pu;
 	const int cp = 0, cc = 1;
 	const libc libcvec = rt->vm.libv;
 
@@ -1257,12 +1213,17 @@ static int dbgpu(state rt, cell pu, void* extra) {
 
 	if (rt->dbg != NULL) {
 		int (*dbg)(state, int pu, void *ip, long* sptr, int scnt) = rt->dbg->dbug;
+		if (dbg == NULL) {
+			dbg = dbgDummy;
+		}
+
 		for ( ; ; ) {
 
 			register bcde ip = (void*)pu->ip;
 			register stkptr sp = (void*)pu->sp;
 
-			if (dbg && dbg(rt, cp, ip, (long*)sp, st - sp)) {
+			if (dbg(rt, cp, ip, (long*)sp, st - sp)) {
+				// execution aborted
 				return -9;
 			}
 
@@ -1275,24 +1236,24 @@ static int dbgpu(state rt, cell pu, void* extra) {
 					return -1;
 
 				dbg_error_ovf:
-					dbugerr(rt, cpu, err_file, err_line, cp, ip, sp, st - sp, "stack overflow", err_code);
+					dbugerr(rt, pu, err_file, err_line, cp, ip, sp, st - sp, "stack overflow", err_code);
 					return -2;
 
 				dbg_error_mem:
-					dbugerr(rt, cpu, err_file, err_line, cp, ip, sp, st - sp, "segmentation fault", err_code);
+					dbugerr(rt, pu, err_file, err_line, cp, ip, sp, st - sp, "segmentation fault", err_code);
 					return -3;
 
 				dbg_error_div_flt:
-					dbugerr(rt, cpu, err_file, err_line, cp, ip, sp, st - sp, "division by zero", err_code);
+					dbugerr(rt, pu, err_file, err_line, cp, ip, sp, st - sp, "division by zero", err_code);
 					// continue execution on floating point division by zero.
 					break;
 
 				dbg_error_div:
-					dbugerr(rt, cpu, err_file, err_line, 0, ip, sp, st - sp, "division by zero", err_code);
+					dbugerr(rt, pu, err_file, err_line, 0, ip, sp, st - sp, "division by zero", err_code);
 					return -4;
 
 				dbg_error_libc:
-				error(rt, err_file, err_line, "libc(%d) error: %d: %+T", ip->rel, err_code, libcvec[ip->rel].sym);
+					error(rt, err_file, err_line, "libc(%d) error: %d: %+T", ip->rel, err_code, libcvec[ip->rel].sym);
 					return -5;
 
 				#define NEXT(__IP, __SP, __CHK) pu->sp -= vm_size * (__SP); pu->ip += (__IP);
@@ -1317,20 +1278,20 @@ static int dbgpu(state rt, cell pu, void* extra) {
 				return -1;
 
 			error_ovf:
-				dbugerr(rt, cpu, err_file, err_line, cp, ip, sp, st - sp, "stack overflow", err_code);
+				dbugerr(rt, pu, err_file, err_line, cp, ip, sp, st - sp, "stack overflow", err_code);
 				return -2;
 
 			error_mem:
-				dbugerr(rt, cpu, err_file, err_line, cp, ip, sp, st - sp, "segmentation fault", err_code);
+				dbugerr(rt, pu, err_file, err_line, cp, ip, sp, st - sp, "segmentation fault", err_code);
 				return -3;
 
 			error_div_flt:
-				dbugerr(rt, cpu, err_file, err_line, cp, ip, sp, st - sp, "division by zero", err_code);
+				dbugerr(rt, pu, err_file, err_line, cp, ip, sp, st - sp, "division by zero", err_code);
 				// continue execution on floating point division by zero.
 				break;
 
 			error_div:
-				dbugerr(rt, cpu, err_file, err_line, 0, ip, sp, st - sp, "division by zero", err_code);
+				dbugerr(rt, pu, err_file, err_line, 0, ip, sp, st - sp, "division by zero", err_code);
 				return -4;
 
 			error_libc:
@@ -1345,74 +1306,6 @@ static int dbgpu(state rt, cell pu, void* extra) {
 	}
 
 	return 0;
-}
-
-/** vmExec
- * executes the script.
- * @arg rt: enviroment
- * @arg ss: the stack size (TODO)
- * @arg dbg: debugger function
- * @return: error code
-**/
-int vmExec(state rt, void* extra, int ss) {
-	struct symNode dbgSym;
-	cell pu;
-
-	//~ int result = 0;
-	rt->_end = rt->_mem + rt->_size;
-
-	// allocate cells
-	rt->_end -= sizeof(struct cell);
-	rt->vm.cell = pu = (void*)rt->_end;
-
-	/*ss /= MAXPROCSEXEC;
-	for (i = 0; i < MAXPROCSEXEC; ++i) {
-		rt->_end -= ss;
-
-		pu[i].ip = NULL;
-
-		pu[i].cp = 0;
-		pu[i].pp = 0;
-
-		pu[i].ss = ss;
-		pu[i].bp = rt->_end;
-		pu[i].sp = rt->_end + ss;
-	}// */
-
-	rt->_end -= ss;
-
-	pu->cp = 0;
-	pu->pp = 0;
-	pu->ss = ss;
-	pu->bp = rt->_end;
-	pu->sp = rt->_end + ss;
-	pu->ip = rt->_mem + rt->vm.pc;
-
-	dieif((int)pu->sp & (vm_size - 1), "invalid statck alignment");
-
-	if (pu->bp > pu->sp) {
-		error(rt, NULL, 0, "invalid statck size");
-		return -99;
-	}
-
-	// invalidate compiler
-	rt->cc = NULL;
-
-	rt->vm.cell = pu;
-	if (rt->dbg) {
-		memset(&dbgSym, 0, sizeof(struct symNode));
-		dbgSym.kind = TYPE_ref;
-		dbgSym.name = "<init>";
-		dotrace(rt, pu->ip, &dbgSym, pu->ip, NULL);
-	}
-
-	// reinitialize memory manager
-	rt->vm._heap = NULL;
-
-	// TODO argc, argv
-
-	return dbgpu(rt, pu, extra);
-	//~ return dbgNpu(rt, pu, lengthof(pu));
 }
 
 /** vmCall
@@ -1433,16 +1326,16 @@ int vmCall(state rt, symn fun, void* res, void* args, void* extra) {
 	void* sp = pu->sp;
 
 	void* resp = NULL;
-	// TODO: ressize = fun->prms->size;  // result is the first param
+	// result is the first param
+	// TODO: ressize = fun->prms->size;
 	int ressize = sizeOf(fun->type);
 
-	//dieif(!rt || !fun, "FixMe");
 	dieif(!(fun->kind == TYPE_ref && fun->call), "FixMe");
 
 	// result is the last argument.
 	resp = pu->sp - ressize;
 
-	// make space for result and arguments
+	// make space for result and arguments// result is the first param
 	pu->sp -= fun->prms->offs;
 
 	if (args != NULL) {
@@ -1457,9 +1350,10 @@ int vmCall(state rt, symn fun, void* res, void* args, void* extra) {
 	if (rt->dbg != NULL) {
 		dotrace(rt, pu->ip, fun, NULL, pu->sp);
 	}
-	result = dbgpu(rt, pu, extra);
 
-	if (res != NULL) {
+	result = exec(rt, pu, fun, extra);
+
+	if (res != NULL && result == 0) {
 		memcpy(res, resp, ressize);
 	}
 
@@ -1469,14 +1363,68 @@ int vmCall(state rt, symn fun, void* res, void* args, void* extra) {
 	return result;
 }
 
+/** vmExec
+ * executes the script.
+ * @arg rt: enviroment
+ * @arg ss: the stack size (TODO)
+ * @arg dbg: debugger function
+ * @return: error code
+**/
+int vmExec(state rt, void* extra, int ss) {
+	struct symNode unit;
+	// TODO: cells should be in runtimes read only memory
+	cell pu;
+
+	// invalidate compiler
+	rt->cc = NULL;
+
+	// invalidate memory manager
+	rt->vm._heap = NULL;
+
+	// allocate cell(s)
+	rt->_end = rt->_mem + rt->_size;
+	rt->_end -= sizeof(struct cell);
+	rt->vm.cell = pu = (void*)rt->_end;
+
+	rt->_end -= ss;
+
+	pu->cp = 0;
+	pu->pp = 0;
+	pu->ss = ss;
+	pu->bp = rt->_end;
+	pu->sp = rt->_end + ss;
+	pu->ip = rt->_mem + rt->vm.pc;
+
+	dieif((ptrdiff_t)pu->sp & (vm_size - 1), "invalid statck alignment");
+
+	if (pu->bp > pu->sp) {
+		error(rt, NULL, 0, "invalid statck size");
+		return -99;
+	}
+
+	memset(&unit, 0, sizeof(struct symNode));
+	unit.kind = TYPE_ref;
+	unit.file = "internal.code";
+	unit.name = "<init>";
+	unit.prms = rt->defs;
+	unit.call = 1;
+	if (rt->dbg) {
+		dotrace(rt, pu->ip, &unit, pu->ip, NULL);
+	}
+
+	// TODO argc, argv
+	return exec(rt, pu, &unit, extra);
+}
+
 void fputopc(FILE* fout, unsigned char* ptr, int len, int offs, state rt) {
-	bcde ip = (bcde)ptr;
 	int i;
+	bcde ip = (bcde)ptr;
 
-	if (offs >= 0)
+	if (offs >= 0) {
 		fputfmt(fout, ".%06x: ", offs);
+	}
 
-	//~ TODO: writing data shold be a function
+	//~ write data as bytes
 	if (len > 1 && len < opc_tbl[ip->opc].size) {
 		for (i = 0; i < len - 2; i++) {
 			if (i < opc_tbl[ip->opc].size) fprintf(fout, "%02x ", ptr[i]);
@@ -1490,7 +1438,7 @@ void fputopc(FILE* fout, unsigned char* ptr, int len, int offs, state rt) {
 		else fprintf(fout, "   ");
 	}
 
-	if (opc_tbl[ip->opc].name) {
+	if (opc_tbl[ip->opc].name != NULL) {
 		fputs(opc_tbl[ip->opc].name, fout);
 	}
 	else {
@@ -1515,10 +1463,12 @@ void fputopc(FILE* fout, unsigned char* ptr, int len, int offs, state rt) {
 		case opc_jmp:
 		case opc_jnz:
 		case opc_jz:
-			if (offs < 0)
+			if (offs < 0) {
 				fprintf(fout, " %+d", ip->rel);
-			else
+			}
+			else {
 				fprintf(fout, " .%06x", offs + ip->rel);
+			}
 			break;
 
 		case opc_task:
@@ -1529,13 +1479,24 @@ void fputopc(FILE* fout, unsigned char* ptr, int len, int offs, state rt) {
 				fprintf(fout, " %d, .%06x", ip->dl, offs + ip->cl);
 			}
 			break;
-		case opc_sync: fputfmt(fout, " %d", ip->idx); break;
+
+		case opc_sync:
+			fputfmt(fout, " %d", ip->idx);
+			break;
 
 		case b32_bit: switch (ip->idx & 0xc0) {
-			case b32_bit_and: fprintf(fout, "and 0x%03x", (1 << (ip->idx & 0x3f)) - 1); break;
-			case b32_bit_shl: fprintf(fout, "shl 0x%03x", ip->idx & 0x3f); break;
-			case b32_bit_shr: fprintf(fout, "shr 0x%03x", ip->idx & 0x3f); break;
-			case b32_bit_sar: fprintf(fout, "sar 0x%03x", ip->idx & 0x3f); break;
+			case b32_bit_and:
+				fprintf(fout, "and 0x%03x", (1 << (ip->idx & 0x3f)) - 1);
+				break;
+			case b32_bit_shl:
+				fprintf(fout, "shl 0x%03x", ip->idx & 0x3f);
+				break;
+			case b32_bit_shr:
+				fprintf(fout, "shr 0x%03x", ip->idx & 0x3f);
+				break;
+			case b32_bit_sar:
+				fprintf(fout, "sar 0x%03x", ip->idx & 0x3f);
+				break;
 		} break;
 
 		case opc_dup1:
@@ -1547,12 +1508,22 @@ void fputopc(FILE* fout, unsigned char* ptr, int len, int offs, state rt) {
 			fputfmt(fout, " sp(%d)", ip->idx);
 			break;
 
-		//~ case opc_ldc1: fputfmt(fout, " %d", ip->arg.i1); break;
-		//~ case opc_ldc2: fputfmt(fout, " %d", ip->arg.i2); break;
-		case opc_ldc4: fputfmt(fout, " %d", ip->arg.i4); break;
-		case opc_ldc8: fputfmt(fout, " %D", ip->arg.i8); break;
-		case opc_ldcf: fputfmt(fout, " %f", ip->arg.f4); break;
-		case opc_ldcF: fputfmt(fout, " %F", ip->arg.f8); break;
+		case opc_ldc4:
+			fputfmt(fout, " %d", ip->arg.i4);
+			break;
+
+		case opc_ldc8:
+			fputfmt(fout, " %D", ip->arg.i8);
+			break;
+
+		case opc_ldcf:
+			fputfmt(fout, " %f", ip->arg.f4);
+			break;
+
+		case opc_ldcF:
+			fputfmt(fout, " %F", ip->arg.f8);
+			break;
+
 		case opc_ldcr: {
 			fputfmt(fout, " %x", ip->arg.u4);
 			if (rt != NULL) {
@@ -1560,8 +1531,13 @@ void fputopc(FILE* fout, unsigned char* ptr, int len, int offs, state rt) {
 				if (sym != NULL) {
 					fputfmt(fout, ": %+T: %T", sym, sym->type);
 				}
+				/*else {
+					char* str = NULL;
+					for (int i = 0; i < tbl)
+				}*/
 			}
-		} break;
+			break;
+		}
 
 		case opc_libc:
 			if (rt != NULL) {
@@ -1602,7 +1578,6 @@ void fputopc(FILE* fout, unsigned char* ptr, int len, int offs, state rt) {
 void fputasm(state rt, FILE* fout, int beg, int end, int mode) {
 	int i, is = 12345;
 	int rel = 0;
-	int stmtEnd = 0;
 
 	if (end == -1)
 		end = rt->vm.pos;
@@ -1628,15 +1603,8 @@ void fputasm(state rt, FILE* fout, int beg, int end, int mode) {
 		}
 
 		if (dbg != NULL) {
-			astn ast = dbg->code;
-			if (dbg->start == i && ast) {
-				if (stmtEnd) {
-					fputc('}', fout);
-					fputc('\n', fout);
-				}
-				fputfmt(fout, "%s:%d: [%06x-%06x]: %+k\n", ast->file, ast->line, dbg->start, dbg->end, ast);
-				//~ fputfmt(fout, "%s:%d: %+k\n", ast->file, ast->line, ast);
-				//~ stmtEnd = 1;
+			if (dbg->start == i && dbg->stmt) {
+				fputfmt(fout, "%s:%d: [%06x-%06x]: %+k\n", dbg->file, dbg->line, dbg->start, dbg->end, dbg->stmt);
 			}
 		}
 
@@ -1648,16 +1616,11 @@ void fputasm(state rt, FILE* fout, int beg, int end, int mode) {
 
 		fputc('\n', fout);
 	}
-	if (stmtEnd) {
-		fputc('}', fout);
-		fputc('\n', fout);
-	}
 }
 
 void fputval(state rt, FILE* fout, symn var, stkval* ref, int level) {
 	symn typ = var->kind == TYPE_ref ? var->type : var;
-	char* fmt = var->pfmt ? var->pfmt : typ->pfmt;
-	int byRef = 0;
+	char* fmt = var->pfmt ? var->pfmt : var->call ? NULL : typ->pfmt;
 
 	if (level > 0) {
 		fputfmt(fout, "%I", level);
@@ -1672,68 +1635,77 @@ void fputval(state rt, FILE* fout, symn var, stkval* ref, int level) {
 
 	if (var->cast == TYPE_ref) {		// by reference
 		if (ref->u4 == 0) {				// null reference.
-			fputfmt(fout, "%T(null)", typ);
+			fputfmt(fout, "null");
 			return;
 		}
-		if (fmt && strcmp("string", typ->name) == 0) {
-			fputfmt(fout, fmt, rt->_mem + ref->u4);
-			return;
+		ref = getip(rt, ref->u4);
+		if (typ->cast != TYPE_ref) {
+			fputfmt(fout, "&");
 		}
-		if (fmt && strcmp("pointer", typ->name) == 0) {
-			fputfmt(fout, fmt, ref->u4);
-			return;
-		}
-		ref = (stkval*)(rt->_mem + ref->u4);
-		byRef = '&';
 	}
 
 	if (!isValidOffset(rt, ref)) {
-		fputfmt(fout, "%T(BadRef)", typ);
+		fputfmt(fout, "%T(BadRef: %06x)", typ, var->offs);
+		return;
+	}
+
+	if (var->call) {
+		fputfmt(fout, "function(@%?c%06x)", var->stat ? 0 : '+', var->offs);
 		return;
 	}
 
 	switch (typ->kind) {
 		case TYPE_rec: {
 			int n = 0;
-
-			if (var && var->call) {
-				fputfmt(fout, "function @%d", var->offs);
-				break;
-			}
 			if (fmt != NULL) {
 				switch (typ->size) {
-					case 1: fputfmt(fout, fmt, ref->u1); break;
-					case 2: fputfmt(fout, fmt, ref->u2); break;
-					case 4: switch (typ->cast) {
-						case TYPE_f32: fputfmt(fout, fmt, ref->f4); break;
-						default: fputfmt(fout, fmt, ref->u4); break;
-					} break;
-					case 8: if (typ->cast == TYPE_f64) {
-								fputfmt(fout, fmt, ref->f8);
-							}
-							else {
-								fputfmt(fout, fmt, ref->i8);
-							}
-							break;
 					default:
 						fputfmt(fout, "%T(size: %d)", typ, typ->size);
+						break;
+
+					case 1:
+						fputfmt(fout, fmt, ref->i1);
+						break;
+
+					case 2:
+						fputfmt(fout, fmt, ref->i2);
+						break;
+
+					case 4:
+						if (typ->cast == TYPE_f32) {
+								fputfmt(fout, fmt, ref->f4);
+							}
+							else {
+								fputfmt(fout, fmt, ref->i4);
+							}
+						break;
+
+					case 8:
+						if (typ->cast == TYPE_f64) {
+							fputfmt(fout, fmt, ref->f8);
+						}
+						else {
+							fputfmt(fout, fmt, ref->i8);
+						}
 						break;
 				}
 			}
 			else {
-				fputfmt(fout, "%?c%T", byRef, typ);
+				fputfmt(fout, "%T", typ);
 				if (typ->prms) {
 					symn tmp;
-					fputfmt(fout, " {", level);
+					fputfmt(fout, " {");
 					for (tmp = typ->prms; tmp; tmp = tmp->next) {
+
 						if (tmp->stat || tmp->kind != TYPE_ref)
 							continue;
 
 						if (tmp->pfmt && !*tmp->pfmt)
 							continue;
 
-						if (n > 0)
+						if (n > 0) {
 							fputfmt(fout, ",");
+						}
 
 						fputfmt(fout, "\n");
 						fputval(rt, fout, tmp, (void*)((char*)ref + tmp->offs), level + 1);
@@ -1741,17 +1713,18 @@ void fputval(state rt, FILE* fout, symn var, stkval* ref, int level) {
 					}
 					fputfmt(fout, "\n%I}", level);
 				}
-				else if (typ->size) {
-					fputfmt(fout, " {...}");
+				else {
+					//~ fputfmt(fout, " {...}");
+					fputfmt(fout, "(@%?c%06x)", var->stat ? 0 : '+', var->offs);
+					return;
 				}
 			}
 		} break;
 		case TYPE_arr: {
 			// ArraySize
-			int i, n = typ->offs;//size / typ->type->size;
+			int i, n = typ->offs;
 			symn base = typ->type;
 
-			//dieif(typ->size % typ->type->size != 0, "FixMe");
 			if (fmt != NULL) {
 				// TODO: string uses this
 				fputfmt(fout, fmt, ref);
@@ -1783,21 +1756,26 @@ void fputval(state rt, FILE* fout, symn var, stkval* ref, int level) {
 					elementsOnNewLine = 1;
 
 				for (i = 0; i < n; ++i) {
-					if (i > 0)
+					if (i > 0) {
 						fputfmt(fout, ",");
-					if (elementsOnNewLine)
+					}
+					if (elementsOnNewLine){
 						fputfmt(fout, "\n");
-					else if (i > 0)
+					}
+					else if (i > 0){
 						fputfmt(fout, " ");
+					}
 
 					fputval(rt, fout, base, (stkval*)((char*)ref + i * sizeOf(base)), elementsOnNewLine ? level + 1 : 0);
 				}
 
 				if (arrayHasMoreElements) {
-					if (elementsOnNewLine)
+					if (elementsOnNewLine) {
 						fputfmt(fout, ",\n%I...", level + 1);
-					else
+					}
+					else {
 						fputfmt(fout, ", ...");
+					}
 				}
 
 				if (elementsOnNewLine) {
@@ -1805,12 +1783,14 @@ void fputval(state rt, FILE* fout, symn var, stkval* ref, int level) {
 				}
 				fputfmt(fout, "}");
 			}
-		} break;
-		default: {
-			if (var != typ)
+			break;
+		}
+		default:
+			if (var != typ) {
 				fputfmt(fout, "%T:", var);
+			}
 			fputfmt(fout, "%T[ERROR]", typ);
-		} break;
+			break;
 	}
 }
 
@@ -1820,7 +1800,6 @@ dbgInfo getCodeMapping(state rt, int position) {
 		for (i = 0; i < rt->dbg->codeMap.cnt; ++i) {
 			dbgInfo result = getBuff(&rt->dbg->codeMap, i);
 			if (position >= result->start) {
-				//~ fputfmt(stdout, "@%06x-%06x: %+k\n", result->start, result->end, result->code);
 				if (position < result->end) {
 					return result;
 				}
@@ -1829,7 +1808,6 @@ dbgInfo getCodeMapping(state rt, int position) {
 	}
 	return NULL;
 }
-
 dbgInfo addCodeMapping(state rt, astn ast, int start, int end) {
 	dbgInfo result = NULL;
 	if (rt->dbg != NULL) {
@@ -1846,7 +1824,7 @@ dbgInfo addCodeMapping(state rt, astn ast, int start, int end) {
 		}
 
 		if (result != NULL) {
-			result->code = ast;
+			result->stmt = ast;
 			result->file = ast->file;
 			result->line = ast->line;
 			result->start = start;
@@ -1862,11 +1840,16 @@ int vmTest() {
 	FILE *out = stdout;
 	struct bcde ip[1];
 	struct libc libcvec[1];
+
 	ip->arg.i8 = 0;
 	for (i = 0; i < opc_last; i++) {
 		int err = 0;
 		//~ ip->opc = i;
-		if (opc_tbl[i].size == 0) continue;
+
+		if (opc_tbl[i].size == 0) {
+			continue;
+		}
+
 		if (opc_tbl[i].code != i) {
 			fprintf(out, "invalid '%s'[%02x]\n", opc_tbl[i].name, i);
 			e += err = 1;
@@ -1902,15 +1885,11 @@ int vmHelp() {
 		if (!opc_tbl[i].size)
 			continue;
 
-		fprintf(out, "\nInstruction: %s: #\n", opc_tbl[i].name);
-		//~ fputfmt(out, "\topcode size: %d\n", opc_tbl[i].size);
-		//~ fputfmt(out, "\tstack check: %d\n", opc_tbl[i].chck);
-		//~ fputfmt(out, "\tstack difference: %d\n", opc_tbl[i].diff);
+		fprintf(out, "\nInstruction: %s: #", opc_tbl[i].name);
+		fprintf(out, "\nOpcode		size		Stack trasition");
+		fprintf(out, "\n0x%02x		%d		[..., a, b, c, d => [..., a, b, c, d#", opc_tbl[i].code, opc_tbl[i].size);
 
-		fprintf(out, "Opcode		size		Stack trasition\n");
-		fprintf(out, "0x%02x		%d		[..., a, b, c, d => [..., a, b, c, d#\n", opc_tbl[i].code, opc_tbl[i].size);
-
-		fprintf(out, "\nDescription\n");
+		fprintf(out, "\n\nDescription\n");
 		if (opc_tbl[i].code != i) {
 			e += err = 1;
 		}
@@ -1920,16 +1899,17 @@ int vmHelp() {
 			#define STOP(__ERR, __CHK, __ERR1) if (__CHK) goto error_opc
 			#include "code.inl"
 		}
-		if (err)
+		if (err) {
 			fprintf(out, "The '%s' instruction %s\n", opc_tbl[i].name, err ? "is invalid" : "#");
+		}
 
-		fprintf(out, "\nOperation\n");
-		fprintf(out, "#\n");
+		fprintf(out, "\n\nOperation");
+		fprintf(out, "\n#");
 
-		fprintf(out, "\nExceptions\n");
-		fprintf(out, "None#\n");
+		fprintf(out, "\n\nExceptions");
+		fprintf(out, "\nNone#");
 
-		fprintf(out, "\n");		// end of text
+		fprintf(out, "\n\n");		// end of text
 	}
 	return e;
 }

@@ -39,8 +39,8 @@ define atan(double x, double y) = atan2(x, y);
 // mert a dogseg nagy betegseg.
 define pi = Math.pi;
 
-int64 begTime = timeNow();
-define getTime() = clocksPerSec(timeNow() - begTime);
+int32 begTime = clock();
+define getTime() = clock2Sec(clock() - begTime);
 
 void plasma() {
 	double time = getTime();

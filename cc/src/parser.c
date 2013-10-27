@@ -267,12 +267,12 @@ char* mapstr(ccState s, char* name, unsigned size/* = -1U*/, unsigned hash/* = -
 		name = (char*)rt->_beg;
 	}
 
-	rt->_beg += size;
-	newn = (list)rt->_beg;
-	rt->_beg += sizeof(struct list);
+	rt->_beg += size + 1;
+	//~ newn = (list)rt->_beg;
+	//~ rt->_beg += sizeof(struct list);
 
-	//~ s->_end -= sizeof(struct list);
-	//~ newn = (list)s->_end;
+	rt->_end -= sizeof(struct list);
+	newn = (list)rt->_end;
 
 	if (!prev)
 		s->strt[hash] = newn;
@@ -2545,8 +2545,13 @@ astn decl(ccState cc, int Rmode) {
 				cc->pfmt = def;
 			}
 			def->cast = cast;
+			if (Attr == ATTR_stat) {
+				Attr &= ~ATTR_stat;
 
-			if (Attr != ATTR_stat) {
+				// make uninstantiable
+				def->cast = TYPE_vid;
+			}
+			else {
 				if (def->flds && pack == vm_size && !byref) {
 					ctorArg(cc, def);
 				}
@@ -2557,9 +2562,6 @@ astn decl(ccState cc, int Rmode) {
 				if (!def->flds && !def->type) {
 					warn(cc->s, 2, cc->file, cc->line, "empty declaration");
 				}
-			}
-			else {
-				Attr &= ~ATTR_stat;
 			}
 			redefine(cc, def);
 		}
@@ -2734,7 +2736,6 @@ astn decl(ccState cc, int Rmode) {
 
 				ref->flds = leave(cc, ref, 0);
 				dieif(ref->flds != result, "FixMe %-T", ref);
-				//~ ref->prms = ref->flds;
 
 				backTok(cc, newnode(cc, STMT_do));
 
@@ -2763,6 +2764,11 @@ astn decl(ccState cc, int Rmode) {
 
 		cc->pfmt = ref;
 		skiptok(cc, STMT_do, 1);
+
+		// TODO: functions type == return type
+		if (typ->cast == TYPE_vid && !ref->call) {
+			error(cc->s, ref->file, ref->line, "cannot declare a variable of type `%-T`", typ);
+		}
 
 		if (Attr & ATTR_stat) {
 			if (ref->init && !ref->call && !(isStatic(cc, ref->init) || isConst(ref->init))) {

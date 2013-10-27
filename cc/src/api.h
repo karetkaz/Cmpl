@@ -1,8 +1,3 @@
-/** TODO:
- * vmExec should invoke vmCall, with a `module` symbol redundant in current implementation (opcode: libc, vmExec).
- * 
- */
-
 #ifndef CC_API_H
 #define CC_API_H 2
 #ifdef __cplusplus
@@ -67,21 +62,22 @@ struct stateRec {
 		void* cell;					// execution unit(s)
 		void* libv;					// libcall vector
 
-		unsigned int	pc;			// entry point / prev program counter
-		unsigned int	px;			// exit point / program counter
+		unsigned int	pc;			// exec: entry point / cgen: prev program counter
+		unsigned int	px;			// exec: exit point / cgen: program counter
 
-		signed int		ss;			// stack size / current stack size
-		signed int		sm;			// stack minimum size
-		signed int		su;			// stack access (parallel processing)
+		unsigned int	ro;			// exec: read only memory / cgen: function parameters
+		signed int		ss;			// exec: stack size / cgen: current stack size
 
-		unsigned int	ro;			// <= ro : read only region(meta data) / cgen:(function parameters)
-		unsigned int	pos;		// trace pos / current positin in buffer
-		signed int		opti;		// optimization levevel
+		signed int		sm;			// exec: - / cgen: stack minimum size
+		signed int		su;			// exec: - / cgen: stack access (parallel processing)
+
+		unsigned int	pos;		// exec: trace pos / cgen: current positin in buffer
+		signed int		opti;		// exec: - / cgen: optimization levevel
 
 		struct {
 			unsigned int	meta;
 			unsigned int	code;
-			unsigned int	data;
+			//~ unsigned int	data;
 		} size;
 
 		void* _heap;
@@ -92,8 +88,8 @@ struct stateRec {
 	 */
 	ccState cc;
 
-	/* debug informatios
-	 * this struct holds:
+	/* debug context
+	 * this holds:
 	 *  * debugger function
 	 *  * code2line mapping
 	 *  ? stack traces
@@ -168,7 +164,7 @@ struct stateRec {
 
 		/* offset of a pointer in the vm
 		 * 
-		int (*vmOffset)(state, void *ptr);
+		int (*const vmOffset)(state, void *ptr);
 		 */
 
 		/** Find a global symbol by offset.
@@ -177,38 +173,45 @@ struct stateRec {
 
 			static symn onMouse = NULL;
 
-			static int setMouseCb(state rt) {
+			static int setMouseCb(libcArgs rt) {
 				void* fun = argref(rt, 0);
 
 				// unregister event callback
 				if (fun == NULL) {
 					onMouse = NULL;
-					return 1;
+					return 0;
 				}
 
-				// register event callback
-				onMouse = rt->api.mapsym(rt, fun);		// get and find the functions symbol
+				// register event callback using the symbol of the function.
+				onMouse = rt->api.mapsym(rt, fun);
+
+				// runtime error if symbol was not found.
 				return onMouse != NULL;
 			}
 
 			static int mouseCb(int btn, int x, int y) {
-				if (onMouse != NULL) {
+				if (onMouse != NULL && rt != NULL) {
 					// invoke the callback with arguments.
 					struct {int32_t btn, x, y;} args = {btn, x, y};
-					rt->api.invoke(rt, onMouse, NULL, &args);
+					rt->api.invoke(rt, onMouse, NULL, &args, NULL);
 				}
 			}
 
 			// expose the callback register function to the compiler
-			if (!rt->api.ccAddCall(rt, setMouseCb, NULL, "void setMouseCallback(void Callback(int b, int x, int y);")) {
+			if (!rt->api.ccAddCall(rt, setMouseCb, NULL, "void setMouseCallback(void Callback(int32 b, int32 x, int32 y);")) {
 				error...
 			}
+		 *
+		 * TODO: symn (*const vmSymbol)(state, void *ptr);
 		 */
 		symn (*const mapsym)(state, void *ptr);
 
 		/** Invoke a function inside the vm.
 		 * @param the runtime context.
 		 * @param fun the symbol of the function.
+		 * @param res if not null copy here the result of the function.
+		 * @param args the arguments of the fuction are located here.
+		 * @param extra extra parameter passed to each libcall executed from here.
 		 * @return non zero on error.
 		 * @usage see @mapsym example.
 		*/
@@ -229,8 +232,9 @@ struct stateRec {
 	} api;
 
 	// memory related
-	unsigned char *_beg;		// cc: used memory; vm: heap begin
+	unsigned char *_beg;		// cc: used memory; vm: >? heap begin
 	unsigned char *_end;
+
 	const long _size;			// size of total memory
 	unsigned char _mem[];		// this is whwewe the memory begins.
 };
@@ -253,7 +257,7 @@ static inline float64_t argf64(libcArgs args, int offs) { return argval(args, of
 static inline void* arghnd(libcArgs args, int offs) { return argval(args, offs, void*); }
 static inline void* argref(libcArgs args, int offs) { int32_t p = argval(args, offs, int32_t); return p ? args->rt->_mem + p : NULL; }
 static inline void* argsym(libcArgs args, int offs) { return args->rt->api.mapsym(args->rt, argref(args, offs)); }
-static inline char* argstr(libcArgs args, int offs) { return (char*)argref(args, offs); }
+//static inline char* argstr(libcArgs args, int offs) { return (char*)argref(args, offs); }
 #undef argval
 
 static inline void* setret(libcArgs args, void *result, int size) {

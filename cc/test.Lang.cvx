@@ -1,3 +1,4 @@
+// tests
 
 /+ print the content of memory :)
 char memory[] = emit(struct, ref(null), i32(65536));
@@ -465,7 +466,7 @@ struct debugInfo {
 void f3(pointer maxRecursiveCalls) {
 	const int &n = maxRecursiveCalls;
 	if (n <= 0) {
-		trace("stack trace :-)");
+		//~ trace("stack trace :-)");
 		return;
 	}
 	int n2 = n - 1;
@@ -485,7 +486,22 @@ void f4(double x, debugInfo &info, int maxRecursiveCalls) {
 }
 
 int n = 2;
-//~ testFunction(f3, pointer(n));
-debugInfo info = debugInfo("fail", 1., 2., 3.);
-testFunction2(f4, n, info);
+testFunction(f3, pointer(n));
+//~ debugInfo info = debugInfo("fail", 1., 2., 3.);
+//~ testFunction2(f4, n, info);
 //~ +/
+
+//~ void testFunction2(void farg(int &args), int &args) {testFunction(emit(struct, ref(farg)), pointer(args));}
+
+void f(int &arg) {
+	if (arg <= 0) {
+		trace("stack trace :-)");
+		return;
+	}
+	int n2 = arg - 1;
+	//~ f(n2);
+	testFunction(emit(struct, ref(f)), pointer(n2));
+}
+
+int N = 4;
+f(&N);

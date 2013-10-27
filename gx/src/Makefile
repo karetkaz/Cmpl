@@ -1,7 +1,7 @@
 CCSRCDIR=../../cc/src/
 GXSRCDIR=./
 OBJDIR=../out/obj
-LIBDIR=$(OBJDIR)/
+LIBDIR=../out/
 BINDIR=../
 BINARY=main
 
@@ -10,8 +10,8 @@ OUTEXE=-o
 CFLAGS=-Wall -Wpadded -g3 -ggdb
 CFLAGS=-g0 -Os
 
-CCC=gcc -m32
-LNK=gcc -m32
+CCC=gcc
+LNK=gcc
 DBG=nemiver
 AS=nasm -f elf
 MK=make
@@ -20,11 +20,16 @@ LIBS=$(LIBDIR)libjpeg.a $(LIBDIR)libpng.a
 SYSLIBS=-lm -lX11
 
 ifeq "$(OS)" "Windows_NT"
-LIBS=$(LIBDIR)libjpeg.win.a $(LIBDIR)libpng.win.a
-SYSLIBS=-lm -lgdi32
-AS=nasm -f coff --prefix _
-MK=mingw32-make
-MKDIR=mkdir
+	LIBS=$(LIBDIR)libjpeg.win.a $(LIBDIR)libpng.win.a
+	SYSLIBS=-lm -lgdi32
+	AS=nasm -f coff --prefix _
+	MK=mingw32-make
+	MKDIR=mkdir
+endif
+
+ifeq ($(shell uname -m),x86_64)
+	LIBS=$(LIBDIR)libjpeg.x64.a $(LIBDIR)libpng.x64.a
+	AS=nasm -f elf64
 endif
 
 OBJS=\
@@ -61,11 +66,15 @@ $(LIBDIR)libjpeg.a:
 	$(MK) -C lib/libjpeg
 $(LIBDIR)libjpeg.win.a:
 	$(MK) -C lib/libjpeg
+$(LIBDIR)libjpeg.x64.a:
+	$(MK) -C lib/libjpeg
 
 $(LIBDIR)libpng.a:
 	$(MK) -C lib/libpng
 $(LIBDIR)libpng.win.a:
 	$(MK) -C lib/libpng
+$(LIBDIR)libpng.x64.a:
+	$(MK) -C lib/libjpeg
 
 $(OBJDIR)/%.o: $(GXSRCDIR)%.c
 	$(CCC) -c $(CFLAGS) -I '$(CCSRCDIR)' '$<' -o '$@'

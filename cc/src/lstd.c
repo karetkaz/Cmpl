@@ -11,9 +11,9 @@ math, print, time libcall functions
 #include "core.h"
 
 //#{#region math functions
-static int f64sin(libcArgs rt) {
-	float64_t x = argf64(rt, 0);
-	retf64(rt, sin(x));
+static int f64sin(libcArgs args) {
+	float64_t x = argf64(args, 0);
+	retf64(args, sin(x));
 	return 0;
 }
 static int f64cos(libcArgs args) {
@@ -21,84 +21,85 @@ static int f64cos(libcArgs args) {
 	retf64(args, cos(x));
 	return 0;
 }
-static int f64tan(libcArgs rt) {
-	float64_t x = argf64(rt, 0);
-	retf64(rt, tan(x));
+static int f64tan(libcArgs args) {
+	float64_t x = argf64(args, 0);
+	retf64(args, tan(x));
 	return 0;
 }
-static int f64log(libcArgs rt) {
-	float64_t x = argf64(rt, 0);
-	retf64(rt, log(x));
+static int f64log(libcArgs args) {
+	float64_t x = argf64(args, 0);
+	retf64(args, log(x));
 	return 0;
 }
-static int f64exp(libcArgs rt) {
-	float64_t x = argf64(rt, 0);
-	retf64(rt, exp(x));
+static int f64exp(libcArgs args) {
+	float64_t x = argf64(args, 0);
+	retf64(args, exp(x));
 	return 0;
 }
-static int f64pow(libcArgs rt) {
-	float64_t x = argf64(rt, 0);
-	float64_t y = argf64(rt, 8);
-	retf64(rt, pow(x, y));
+static int f64pow(libcArgs args) {
+	float64_t x = argf64(args, 0);
+	float64_t y = argf64(args, 8);
+	retf64(args, pow(x, y));
 	//~ debug("pow(%g, %g) := %g", x, y, pow(x, y));
 	return 0;
 }
-static int f64sqrt(libcArgs rt) {
-	float64_t x = argf64(rt, 0);
-	retf64(rt, sqrt(x));
+static int f64sqrt(libcArgs args) {
+	float64_t x = argf64(args, 0);
+	retf64(args, sqrt(x));
 	return 0;
 }
-static int f64atan2(libcArgs rt) {
-	float64_t x = argf64(rt, 0);
-	float64_t y = argf64(rt, 8);
-	retf64(rt, atan2(x, y));
+static int f64atan2(libcArgs args) {
+	float64_t x = argf64(args, 0);
+	float64_t y = argf64(args, 8);
+	retf64(args, atan2(x, y));
 	return 0;
 }
 //#}#endregion
 
 //#{#region bit operations
-static int b64not(libcArgs rt) {
-	uint64_t x = argi64(rt, 0);
-	reti64(rt, ~x);
+static int b64not(libcArgs args) {
+	uint64_t x = argi64(args, 0);
+	reti64(args, ~x);
 	return 0;
 }
-static int b64and(libcArgs rt) {
-	uint64_t x = argi64(rt, 0);
-	uint64_t y = argi64(rt, 8);
-	reti64(rt, x & y);
+static int b64and(libcArgs args) {
+	uint64_t x = argi64(args, 0);
+	uint64_t y = argi64(args, 8);
+	reti64(args, x & y);
 	return 0;
 }
-static int b64ior(libcArgs rt) {
-	uint64_t x = argi64(rt, 0);
-	uint64_t y = argi64(rt, 8);
-	reti64(rt, x | y);
+static int b64ior(libcArgs args) {
+	uint64_t x = argi64(args, 0);
+	uint64_t y = argi64(args, 8);
+	reti64(args, x | y);
 	return 0;
 }
-static int b64xor(libcArgs rt) {
-	uint64_t x = argi64(rt, 0);
-	uint64_t y = argi64(rt, 8);
-	reti64(rt, x ^ y);
+static int b64xor(libcArgs args) {
+	uint64_t x = argi64(args, 0);
+	uint64_t y = argi64(args, 8);
+	reti64(args, x ^ y);
 	return 0;
 }
-static int b64shl(libcArgs rt) {
-	uint64_t x = argi64(rt, 0);
-	int32_t y = argi32(rt, 8);
-	reti64(rt, x << y);
+static int b64shl(libcArgs args) {
+	uint64_t x = argi64(args, 0);
+	int32_t y = argi32(args, 8);
+	reti64(args, x << y);
 	return 0;
 }
-static int b64shr(libcArgs rt) {
-	uint64_t x = argi64(rt, 0);
-	int32_t y = argi32(rt, 8);
-	reti64(rt, x >> y);
+static int b64shr(libcArgs args) {
+	uint64_t x = argi64(args, 0);
+	int32_t y = argi32(args, 8);
+	reti64(args, x >> y);
 	return 0;
 }
-static int b64sar(libcArgs rt) {
-	int64_t x = argi64(rt, 0);
-	int32_t y = argi32(rt, 8);
-	reti64(rt, x >> y);
+static int b64sar(libcArgs args) {
+	int64_t x = argi64(args, 0);
+	int32_t y = argi32(args, 8);
+	reti64(args, x >> y);
 	return 0;
 }
 
+/* unused bit operations
 typedef enum {
 	b32_btc,	// count ones
 	//~ b64_btc,
@@ -125,35 +126,35 @@ typedef enum {
 	//~ b64_sxt,
 } bitOperation;
 
-static int bitFunctions(libcArgs rt) {
-	switch ((bitOperation)rt->data) {
+static int bitFunctions(libcArgs args) {
+	switch ((bitOperation)args->data) {
 
 		case b32_btc: {
-			uint32_t x = argi32(rt, 0);
+			uint32_t x = argi32(args, 0);
 			x -= ((x >> 1) & 0x55555555);
 			x = (((x >> 2) & 0x33333333) + (x & 0x33333333));
 			x = (((x >> 4) + x) & 0x0f0f0f0f);
 			x += (x >> 8) + (x >> 16);
-			reti32(rt, x & 0x3f);
+			reti32(args, x & 0x3f);
 			return 0;
 		}
 		//case b64_btc:
 
 		case b32_bsf: {
 			int result = 0;
-			uint32_t x = argi32(rt, 0);
+			uint32_t x = argi32(args, 0);
 			if ((x & 0x0000ffff) == 0) { result += 16; x >>= 16; }
 			if ((x & 0x000000ff) == 0) { result +=  8; x >>=  8; }
 			if ((x & 0x0000000f) == 0) { result +=  4; x >>=  4; }
 			if ((x & 0x00000003) == 0) { result +=  2; x >>=  2; }
 			if ((x & 0x00000001) == 0) { result +=  1; }
-			reti32(rt, x ? result : -1);
+			reti32(args, x ? result : -1);
 			return 0;
 		}
 
 		case b64_bsf: {
 			int result = -1;
-			uint64_t x = argi64(rt, 0);
+			uint64_t x = argi64(args, 0);
 			if (x != 0) {
 				result = 0;
 				if ((x & 0x00000000ffffffffULL) == 0) { result += 32; x >>= 32; }
@@ -163,24 +164,24 @@ static int bitFunctions(libcArgs rt) {
 				if ((x & 0x0000000000000003ULL) == 0) { result +=  2; x >>=  2; }
 				if ((x & 0x0000000000000001ULL) == 0) { result +=  1; }
 			}
-			reti32(rt, result);
+			reti32(args, result);
 			return 0;
 		}
 
 		case b32_bsr: {
-			uint32_t x = argi32(rt, 0);
+			uint32_t x = argi32(args, 0);
 			signed ans = 0;
 			if ((x & 0xffff0000) != 0) { ans += 16; x >>= 16; }
 			if ((x & 0x0000ff00) != 0) { ans +=  8; x >>=  8; }
 			if ((x & 0x000000f0) != 0) { ans +=  4; x >>=  4; }
 			if ((x & 0x0000000c) != 0) { ans +=  2; x >>=  2; }
 			if ((x & 0x00000002) != 0) { ans +=  1; }
-			reti32(rt, x ? ans : -1);
+			reti32(args, x ? ans : -1);
 			return 0;
 		}
 
 		case b64_bsr: {
-			uint64_t x = argi64(rt, 0);
+			uint64_t x = argi64(args, 0);
 			int ans = -1;
 			if (x != 0) {
 				ans = 0;
@@ -191,91 +192,92 @@ static int bitFunctions(libcArgs rt) {
 				if ((x & 0x000000000000000cULL) != 0) { ans +=  2; x >>=  2; }
 				if ((x & 0x0000000000000002ULL) != 0) { ans +=  1; }
 			}
-			reti32(rt, ans);
+			reti32(args, ans);
 			return 0;
 		}
 
 		case b32_bhi: {
-			uint32_t x = argi32(rt, 0);
+			uint32_t x = argi32(args, 0);
 			x |= x >> 1;
 			x |= x >> 2;
 			x |= x >> 4;
 			x |= x >> 8;
 			x |= x >> 16;
-			reti32(rt, x - (x >> 1));
+			reti32(args, x - (x >> 1));
 			return 0;
 		}
 
 		case b64_bhi: {
-			uint64_t x = argi64(rt, 0);
+			uint64_t x = argi64(args, 0);
 			x |= x >> 1;
 			x |= x >> 2;
 			x |= x >> 4;
 			x |= x >> 8;
 			x |= x >> 16;
 			x |= x >> 32;
-			reti64(rt, x - (x >> 1));
+			reti64(args, x - (x >> 1));
 			return 0;
 		}
 
 		case b32_blo: {
-			uint32_t x = argi32(rt, 0);
-			reti32(rt, x & -x);
+			int32_t x = argi32(args, 0);
+			reti32(args, x & -x);
 			return 0;
 		}
 
 		case b64_blo: {
-			uint64_t x = argi64(rt, 0);
-			reti64(rt, x & -x);
+			int64_t x = argi64(args, 0);
+			reti64(args, x & -x);
 			return 0;
 		}
 
 		case b32_swp: {
-			uint32_t x = argi32(rt, 0);
+			uint32_t x = argi32(args, 0);
 			x = ((x >> 1) & 0x55555555) | ((x & 0x55555555) << 1);
 			x = ((x >> 2) & 0x33333333) | ((x & 0x33333333) << 2);
 			x = ((x >> 4) & 0x0F0F0F0F) | ((x & 0x0F0F0F0F) << 4);
 			x = ((x >> 8) & 0x00FF00FF) | ((x & 0x00FF00FF) << 8);
-			reti64(rt, (x >> 16) | (x << 16));
+			reti64(args, (x >> 16) | (x << 16));
 			return 0;
 		}
-		/*case b64_swp:
+		/ *case b64_swp:
 			???
 
 		case b32_zxt: {
-			uint32_t val = popi32(rt);
-			int32_t ofs = popi32(rt);
-			int32_t cnt = popi32(rt);
+			uint32_t val = popi32(args);
+			int32_t ofs = popi32(args);
+			int32_t cnt = popi32(args);
 			val <<= 32 - (ofs + cnt);
-			reti32(rt, val >> (32 - cnt));
+			reti32(args, val >> (32 - cnt));
 			return 0;
 		}
 		case b64_zxt: {
-			uint64_t val = popi64(rt);
-			int32_t ofs = popi32(rt);
-			int32_t cnt = popi32(rt);
+			uint64_t val = popi64(args);
+			int32_t ofs = popi32(args);
+			int32_t cnt = popi32(args);
 			val <<= 64 - (ofs + cnt);
-			reti64(rt, val >> (64 - cnt));
+			reti64(args, val >> (64 - cnt));
 		} return 0;
 
 		case b32_sxt: {
-			int32_t val = popi32(rt);
-			int32_t ofs = popi32(rt);
-			int32_t cnt = popi32(rt);
+			int32_t val = popi32(args);
+			int32_t ofs = popi32(args);
+			int32_t cnt = popi32(args);
 			val <<= 32 - (ofs + cnt);
-			reti32(rt, val >> (32 - cnt));
+			reti32(args, val >> (32 - cnt));
 		} return 0;
 		case b64_sxt: {
-			int64_t val = popi64(rt);
-			int32_t ofs = popi32(rt);
-			int32_t cnt = popi32(rt);
+			int64_t val = popi64(args);
+			int32_t ofs = popi32(args);
+			int32_t cnt = popi32(args);
 			val <<= 64 - (ofs + cnt);
-			reti64(rt, val >> (64 - cnt));
+			reti64(args, val >> (64 - cnt));
 		} return 0;
-		*/
+		* /
 	}
 	return -1;
-}
+}*/
+
 //#}#endregion
 
 //#{#region file operations
@@ -287,20 +289,20 @@ static inline int argpos(int *argp, int size) {
 
 #define logFILE(msg, ...) //prerr("debug", msg, ##__VA_ARGS__)
 
-static int FILE_open(libcArgs rt) {	// void Open(char filename[]);
+static int FILE_open(libcArgs args) {	// void Open(char filename[]);
 	int argc = 0;
-	char *mode = rt->data;
-	char *name = argref(rt, argpos(&argc, vm_size));
-	// int slen = argi32(rt, argpos(&argc, vm_size));
+	char *mode = args->data;
+	char *name = argref(args, argpos(&argc, vm_size));
+	// int slen = argi32(args, argpos(&argc, vm_size));
 
 	FILE *file = fopen(name, mode);
-	rethnd(rt, file);
+	rethnd(args, file);
 
 	logFILE("Name: %s, Mode: %s, File: %x", name, mode, file);
 	return 0;
 }
-static int FILE_close(libcArgs rt) {	// void close(File file);
-	FILE *file = arghnd(rt, 0);
+static int FILE_close(libcArgs args) {	// void close(File file);
+	FILE *file = arghnd(args, 0);
 	logFILE("File: %x", file);
 	fclose(file);
 
@@ -331,51 +333,52 @@ static int FILE_read(libcArgs rt) {	// int read(File &f, uint8 buff[])
 
 	return 0;
 }
-static int FILE_gets(libcArgs rt) {	// int fgets(File &f, uint8 buff[])
+static int FILE_gets(libcArgs args) {	// int fgets(File &f, uint8 buff[])
 	int argc = 0;
-	FILE *file = arghnd(rt, argpos(&argc, sizeof(FILE *)));
-	char *buff = argref(rt, argpos(&argc, vm_size));
-	int len = argi32(rt, argpos(&argc, vm_size));
+	FILE *file = arghnd(args, argpos(&argc, sizeof(FILE *)));
+	char *buff = argref(args, argpos(&argc, vm_size));
+	int len = argi32(args, argpos(&argc, vm_size));
 
 	logFILE("Buff: %08x[%d], File: %x", buff, len, file);
 
 	if (feof(file)) {
-		reti32(rt, -1);
+		reti32(args, -1);
 	}
 	else {
 		long pos = ftell(file);
 		char *unused = fgets(buff, len, file);
-		reti32(rt, ftell(file) - pos);
+		reti32(args, ftell(file) - pos);
 		(void)unused;
 	}
 
 	return 0;
 }
 
-static int FILE_putc(libcArgs rt) {
+static int FILE_putc(libcArgs args) {
 	int argc = 0;
-	FILE *file = arghnd(rt, argpos(&argc, sizeof(FILE *)));
-	int data = argi32(rt, argpos(&argc, vm_size));
+	FILE *file = arghnd(args, argpos(&argc, sizeof(FILE *)));
+	int data = argi32(args, argpos(&argc, vm_size));
 
 	logFILE("Data: %c, File: %x", data, file);
-	reti32(rt, putc(data, file));
+	reti32(args, putc(data, file));
 
 	return 0;
 }
-static int FILE_write(libcArgs rt) {	// int write(File &f, uint8 buff[])
+static int FILE_write(libcArgs args) {	// int write(File &f, uint8 buff[])
 	int argc = 0;
-	FILE *file = arghnd(rt, argpos(&argc, sizeof(FILE *)));
-	char *buff = argref(rt, argpos(&argc, vm_size));
-	int len = argi32(rt, argpos(&argc, vm_size));
+	FILE *file = arghnd(args, argpos(&argc, sizeof(FILE *)));
+	char *buff = argref(args, argpos(&argc, vm_size));
+	int len = argi32(args, argpos(&argc, vm_size));
 
+	logFILE("Buff: %08x[%d], File: %x", buff, len, file);
 	len = fwrite(buff, len, 1, file);
-	reti32(rt, len);
+	reti32(args, len);
 
 	return 0;
 }
 
-static int FILE_flush(libcArgs rt) {
-	FILE *file = arghnd(rt, 0);
+static int FILE_flush(libcArgs args) {
+	FILE *file = arghnd(args, 0);
 
 	logFILE("File: %x", file);
 	fflush(file);
@@ -385,21 +388,21 @@ static int FILE_flush(libcArgs rt) {
 //#}#endregion
 
 //#{#region reflection operations
-static int typenameGetName(libcArgs rt) {
-	symn sym = mapsym(rt->rt, argref(rt, 0));
-	reti32(rt, vmOffset(rt->rt, sym->name));
+static int typenameGetName(libcArgs args) {
+	symn sym = mapsym(args->rt, argref(args, 0));
+	reti32(args, vmOffset(args->rt, sym->name));
 
 	return 0;
 }
-static int typenameGetFile(libcArgs rt) {
-	symn sym = mapsym(rt->rt, argref(rt, 0));
-	reti32(rt, vmOffset(rt->rt, sym->file));
+static int typenameGetFile(libcArgs args) {
+	symn sym = mapsym(args->rt, argref(args, 0));
+	reti32(args, vmOffset(args->rt, sym->file));
 
 	return 0;
 }
-static int typenameGetBase(libcArgs rt) {
-	symn sym = mapsym(rt->rt, argref(rt, 0));
-	reti32(rt, vmOffset(rt->rt, sym->type));
+static int typenameGetBase(libcArgs args) {
+	symn sym = mapsym(args->rt, argref(args, 0));
+	reti32(args, vmOffset(args->rt, sym->type));
 
 	return 0;
 }
@@ -412,44 +415,17 @@ typedef enum {
 
 	timeOpTime32,
 	timeOpClock32,
-	timeOpClocksPS,
-
-	timeOpProc64,
-	timeOpClck64,
+	timeOpClocks2s,
 
 	miscOpPutStr,
 	miscOpPutFmt
 } miscOperation;
 
-static inline int64_t clockCpu() {
-	uint64_t now = clock();
-	return (now << 32) / CLOCKS_PER_SEC;
-	//~ return (now / CLOCKS_PER_SEC) << 32;
-}
-
-#if (defined __WATCOMC__) || (defined _MSC_VER)
-static inline int64_t clockNow() {
-	return clockCpu();
-}
-#else
-#include <sys/time.h>
-static inline int64_t clockNow() {
-	int64_t now;
-	struct timeval tv_now;
-	gettimeofday(&tv_now, NULL);
-
-	now = ((uint64_t)(tv_now.tv_sec)) << 32;
-	now |= ((uint64_t)tv_now.tv_usec << 32) / 1000000;
-
-	return now;
-}
-#endif
-
-static int miscFunction(libcArgs rt) {
-	switch ((miscOperation)rt->data) {
+static int miscFunction(libcArgs args) {
+	switch ((miscOperation)args->data) {
 
 		case miscOpExit:
-			exit(argi32(rt, 0));
+			exit(argi32(args, 0));
 			return 0;
 
 		case miscOpRand32: {
@@ -460,41 +436,33 @@ static int miscFunction(libcArgs rt) {
 				initialized = 1;
 			}
 			result = rand() * rand();	// if it gives a 16 bit int
-			reti32(rt, result & 0x7fffffff);
+			reti32(args, result & 0x7fffffff);
 			return 0;
 		}
 
 		case timeOpTime32:
-			reti32(rt, time(NULL));
+			reti32(args, time(NULL));
 			return 0;
 
 		case timeOpClock32:
-			reti32(rt, clock());
+			reti32(args, clock());
 			return 0;
 
-		case timeOpClocksPS: {
-			float64_t ticks = argi32(rt, 0);
-			retf64(rt, ticks / CLOCKS_PER_SEC);
+		case timeOpClocks2s: {
+			float64_t ticks = argi32(args, 0);
+			retf64(args, ticks / CLOCKS_PER_SEC);
 			return 0;
 		}
 
-		case timeOpProc64:
-			reti64(rt, clockCpu());
-			return 0;
-
-		case timeOpClck64:
-			reti64(rt, clockNow());
-			return 0;
-
 		case miscOpPutStr:
 			// TODO: check bounds
-			fputfmt(stdout, "%s", argref(rt, 0));
+			fputfmt(stdout, "%s", argref(args, 0));
 			return 0;
 
 		case miscOpPutFmt: {
 			// TODO: remove me
-			char* fmt = argref(rt, 0);
-			int64_t arg = argi64(rt, 4);
+			char* fmt = argref(args, 0);
+			int64_t arg = argi64(args, 4);
 			fputfmt(stdout, fmt, arg);
 			return 0;
 		}
@@ -502,21 +470,87 @@ static int miscFunction(libcArgs rt) {
 	return -1;
 }
 
-static int libCallHalt(libcArgs rt) {
-	(void)rt;
-	return 0;
-}
-static int libCallDebug(libcArgs args) {
-	// debug(string message, int level, int trace, bool abort, typename objtyp, pointer objref);
+static void traceArgs(state rt, symn fun, char *file, int line, void* sp, int ident) {
+	symn sym;
+	int printFileLine = 0;
 
+	file = file ? file : "internal.code";
+	fputfmt(rt->logf, "%I%s:%u: %?T", ident, file, line, fun);
+	if (ident > 0) {
+	}
+	else {
+		printFileLine = 1;
+		ident = -ident;
+	}
+
+	if (sp != NULL && fun->prms != NULL) {
+		int firstArg = 1;
+		if (ident > 0) {
+			fputfmt(rt->logf, "(");
+		}
+		else {
+			fputfmt(rt->logf, "\n");
+		}
+		for (sym = fun->prms; sym; sym = sym->next) {
+			void *offs;
+
+			//~ if (sym->call)
+				//~ continue;
+
+			if (sym->kind != TYPE_ref)
+				continue;
+
+			if (firstArg == 0) {
+				if (ident > 0) {
+					fputfmt(rt->logf, ", ");
+				}
+				else {
+					fputfmt(rt->logf, "\n");
+				}
+			}
+			else {
+				firstArg = 0;
+			}
+
+			if (sym->stat) {
+				// static variable.
+				offs = (void*)(rt->_mem + sym->offs);
+			}
+			else {
+				// argument or local variable.
+				offs = (char*)sp + fun->prms->offs + vm_size - sym->offs;
+			}
+
+			//~ fputfmt(rt->logf, "%?+T: @%x", sym, sym->offs);
+			if (printFileLine) {
+				if (sym->file != NULL && sym->line != 0) {
+					fputfmt(rt->logf, "%I%s:%u: ", ident, sym->file, sym->line);
+				}
+				else {
+					fputfmt(rt->logf, "%I", ident);
+				}
+			}
+			fputval(rt, rt->logf, sym, offs, -ident);
+		}
+		if (ident > 0) {
+			fputfmt(rt->logf, ")");
+		}
+		else {
+			fputfmt(rt->logf, "\n");
+		}
+		//~ fputfmt(rt->logf, ")");
+	}
+}
+
+static int libCallDebug(libcArgs args) {
 	int arg = 0;
 	state rt = args->rt;
 	#define poparg(__TYPE) (arg += sizeof(__TYPE)) - sizeof(__TYPE)
-	char* file = argstr(args, poparg(int32_t));
+	char* file = argref(args, poparg(int32_t));
 	int   line = argi32(args, poparg(int32_t));
-	//~ char* func = argstr(args, poparg(char*));
+	//~ char* func = argstr(args, poparg(int32_t));
 
-	char* message = argstr(args, poparg(int32_t));
+	char* message = argref(args, poparg(int32_t));
 	int loglevel = argi32(args, poparg(int32_t));
 	int tracelevel = argi32(args, poparg(int32_t));
 	void* objref = argref(args, poparg(int32_t));
@@ -548,7 +582,7 @@ static int libCallDebug(libcArgs args) {
 
 		// print stack trace
 		if (rt->dbg && tracelevel > 0) {
-			symn sym;
+			//~ symn sym;
 			int i, pos = rt->dbg->tracePos;
 			if (tracelevel > pos) {
 				tracelevel = pos;
@@ -570,25 +604,11 @@ static int libCallDebug(libcArgs args) {
 
 				if (fun == NULL) {
 					fun = mapsym(rt, rt->dbg->trace[pos - i - 1].cf);
+					rt->dbg->trace[pos - i - 1].sym = fun;
 				}
 
-				file = file ? file : "external.code";
-				fputfmt(rt->logf, "\n\t%s:%u: %?T", file, line, fun);
-				if (sp != NULL && (sym = fun->prms)) {
-					int firstArg = 1;
-					fputfmt(rt->logf, "(");
-					for (; sym; sym = sym->next) {
-						if (firstArg == 0) {
-							fputfmt(rt->logf, ", ");
-						}
-						else {
-							firstArg = 0;
-						}
-						//~ fputfmt(rt->logf, "%?+T: @%x", sym, sym->offs);
-						fputval(rt, rt->logf, sym, (void*)(sp + fun->prms->offs + vm_size - sym->offs), -1);
-					}
-					fputfmt(rt->logf, ")");
-				}
+				fputc('\n', rt->logf);
+				traceArgs(rt, fun, file, line, sp, 1);
 				isOutput = 1;
 			}
 			if (i < pos) {
@@ -616,11 +636,14 @@ static int libCallMemMgr(libcArgs rt) {
 
 	return 0;
 }
-
+int libCallHaltQuiet(libcArgs args) {
+	(void)args;
+	return 0;
+}
 int libCallHaltDebug(libcArgs rt) {
+	//~ /*
+	//~ int isInit = rt->fun->prms == rt->rt->defs;
 	symn var = rt->fun->prms;
-	int argc = (char*)rt->retv - (char*)rt->argv;
-
 	for ( ; var; var = var->next) {
 		char* ofs;
 
@@ -630,10 +653,12 @@ int libCallHaltDebug(libcArgs rt) {
 		if (var->kind != TYPE_ref)
 			continue;
 
-		if (var->file && var->line)
+		if (var->file && var->line) {
 			fputfmt(stdout, "%s:%d:", var->file, var->line);
-		else
+		}
+		else {
 			fputfmt(stdout, "var: ");
+		}
 
 		fputfmt(stdout, "@0x%06x[size: %d]: ", var->offs, var->size);
 
@@ -643,15 +668,17 @@ int libCallHaltDebug(libcArgs rt) {
 		}
 		else {
 			// argument or local variable.
-			ofs = ((char*)rt->argv) + argc - var->offs;
+			ofs = ((char*)rt->retv) - var->offs;
 		}
 
 		fputval(rt->rt, stdout, var, (stkval*)ofs, 0);
 		fputc('\n', stdout);
-	}
+	}// */
+
+	//~ traceArgs(rt->rt, rt->fun, rt->fun->file, rt->fun->line, ((char*)rt->retv) - vm_size, 0);
 
 	// show allocated memory chunks.
-	rtAlloc(rt->rt, NULL, 0);
+	//~ rtAlloc(rt->rt, NULL, 0);
 
 	return 0;
 }
@@ -662,13 +689,13 @@ int install_base(state rt, int mode, int onHalt(libcArgs)) {
 	int error = 0;
 	ccState cc = rt->cc;
 
-	ccAddCall(rt, onHalt ? onHalt : libCallHalt, NULL, "void Halt(int Code);");
+	ccAddCall(rt, onHalt ? onHalt : libCallHaltQuiet, NULL, "void Halt(int Code);");
 
 	if (cc->type_ptr && (mode & creg_tptr)) {
 		cc->libc_mem = ccAddCall(cc->s, libCallMemMgr, NULL, "pointer memmgr(pointer ptr, int32 size);");
 	}
 	if (cc->type_var && (mode & creg_tvar)) {
-		cc->libc_dbg = ccAddCall(rt, libCallDebug, NULL, "void debug(string message, int level, int trace, variant objref);");
+		cc->libc_dbg = ccAddCall(rt, libCallDebug, NULL, "void debug(string message, int level, int trace, variant object);");
 	}
 
 	//~ TODO: temporarly add null to variant type.
@@ -732,23 +759,14 @@ int install_base(state rt, int mode, int onHalt(libcArgs)) {
 		ccExtEnd(rt, cc->type_rec, 0);
 
 		/* TODO: more 4 reflection
-		enum BindingFlags {
-			//inline     = 0x000000;	// this is not available at runtime.
-			typename     = 0x000001;
-			function     = 0x000002;	//
-			variable     = 0x000003;	// functions and typenames are also variables
-			attr_const   = 0x000004;
-			attr_static  = 0x000008;
-		}
-		//
+
 		error = error || !ccAddCall(rt, typeFunction, (void*)typeOpGetFile, "variant setValue(typename field, variant value)");
 		error = error || !ccAddCall(rt, typeFunction, (void*)typeOpGetFile, "variant getValue(typename field)");
 
-		//~ install(cc, "typename[] lookup(variant &obj, int options, string name, variant args...)");
-		//~ install(cc, "variant invoke(variant &obj, int options, string name, variant args...)");
-		//~ install(cc, "bool canassign(typename toType, variant value, bool canCast)");
-		//~ install(cc, "bool instanceof(typename &type, variant obj)");
-
+		install(cc, "typename[] lookup(variant &obj, int options, string name, variant args...)");
+		install(cc, "variant invoke(variant &obj, int options, string name, variant args...)");
+		install(cc, "bool canassign(typename toType, variant value, bool canCast)");
+		install(cc, "bool instanceof(typename &type, variant obj)");
 		//~ */
 	}
 	return error;
@@ -771,29 +789,19 @@ int install_stdc(state rt) {
 		{f64pow,   0, "float64 pow(float64 x, float64 y);"},
 		{f64sqrt,  0, "float64 sqrt(float64 x);"},
 		{f64atan2, 0, "float64 atan2(float64 x, float64 y);"},
-
-		//~ {f64lg2, "float64 log2(float64 x);"},
-		//~ {f64xp2, "float64 exp2(float64 x);"},
 	},
 	misc[] = {		// IO/MEM/EXIT
-
-		//~ {miscFunction, &miscOpArgc,			"int32 argc();"},
-		//~ {miscFunction, &miscOpArgv,			"string arg(int arg);"},
 
 		{miscFunction, miscOpRand32,		"int32 rand();"},
 
 		{miscFunction, timeOpTime32,		"int32 time();"},
-		{miscFunction, timeOpClck64,		"int32 ticks();"},
-		{miscFunction, timeOpClocksPS,		"float64 ticks(int32 ticks);"},
-
-		{miscFunction, timeOpClck64,		"int64 uTimeHp();"},
-		{miscFunction, timeOpProc64,		"int64 sTimeHp();"},
+		{miscFunction, timeOpClock32,		"int32 clock();"},
+		{miscFunction, timeOpClocks2s,		"float64 clocks2Sec(int32 clock);"},
 
 		{miscFunction, miscOpPutStr,		"void print(string val);"},
 		{miscFunction, miscOpPutFmt,		"void print(string fmt, int64 val);"},
 
-		// TODO: include some of the compiler functions
-		// for reflection. (lookup, import, logger, exec?, ...)
+		// TODO: include some of the compiler functions for reflection. (lookup, exec?, ...)
 	};
 
 	// Add bitwise operations to int64 as functions
@@ -825,25 +833,21 @@ int install_stdc(state rt) {
 
 	// System.Exit(int code), ...
 	if ((nsp = ccBegin(rt, "System"))) {
-		// libcall will return 0 on failure,
-		// 'err = err || !libcall...' <=> 'if (!err) err = !libcall...'
-		// will skip forward libcalls if an error ocurred
-
 		err = err || !ccAddCall(rt, miscFunction, (void*)miscOpExit, "void Exit(int Code);");
 
-		//~ install(cc, "Args", TYPE_arr, 0, 0);// string Args[];
-		//~ install(cc, "Env", TYPE_def, 0, 0);	// string Env[string];
+		//~ install(cc, "Arguments", TYPE_arr, 0, 0);	// string Args[];
+		//~ install(cc, "Enviroment", TYPE_def, 0, 0);	// string Env[string];
 
 		ccEnd(rt, nsp);
 	}
 
-	(void)bitFunctions;
 	return err;
 }
 
 int install_file(state rt) {
 	symn file_nsp = ccAddType(rt, "File", sizeof(FILE*), 0);
 	int err = file_nsp == NULL;
+
 	if (file_nsp != NULL) {
 		ccBegin(rt, NULL);
 

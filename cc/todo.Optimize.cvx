@@ -1,0 +1,83 @@
+/+ Optimize stack deallocations
+{
+	int a[1<<10];
+	{
+		int a[1<<10];
+		{
+			int a[1<<10];
+			{
+				int a[1<<20];
+				{
+					int a[1<<10];
+					{
+						int a[1<<10];
+						a[0] = 9;
+					}
+					a[0] = 9;
+				}
+				//~ a[0] = 9;
+			}
+			a[0] = 9;
+		}
+		a[0] = 9;
+	}
+}// +/
+
+/+ Optimize
+{
+	string a = "a";
+	print(a);
+}
+//! `dup.x1 sp(0)` and `spc -4` can be removed
+// todo.cvx:100: [008ea4-008ea9]: string a = 'a'
+//| 	1f 96 61 00 00             load.ref 6196
+// todo.cvx:101: [008ea9-008eaf]: print(a);
+//| 	12 00                      dup.x1 sp(0)
+//| 	09 1c 00 00                libc(28): print(string val): void
+//| 	10 fc ff ff                spc -4
+
+//~ +/
+
+/+ add to System ...
+enum Arch {
+	arm
+	?armf
+	i386
+	x86_64 | amd64
+}
+
+enum Os: string {
+	Windows("Windows");
+	Linux("Linux");
+	Mac("Mac");
+}
+
+Arch arch = Arch.?
+char name[] = "Windows"|"Linux"|"Mac"|"Unknown"
+
+boolean bigEndian = false;
+
+//~ +/
+
+/+ ? Templates ?
+static struct Array(typename Type) {
+	int bSearch(Type array[], Type element) {
+		...
+	}
+	int indexOf(Type array[], Type element) {
+		...
+	}
+	...
+	operator (Type array[]).bSearch(Type element) = bSearch;
+	operator (Type array[]).indexOf(Type element) = indexOf;
+	/+ then using like:
+		using Array(int);
+
+		using Array(int) {
+			int array[200] = ...;
+			int x = array.indexOf(30);
+		}
+	
+	+/
+}
+//~ +/

@@ -79,8 +79,6 @@ define cosf(float x) = cos(x);
 define colsca(vec4f &x, float ^s) = void(x = vec4f(x.x * s, x.y * s, x.z * s));
 define pi = Math.pi;
 
-define timeCpu() = sTimeHp();
-
 void setup(double &time, vec4f pixelCB(double x, double y)) {
 	define WIDTH = 256/3;
 	define HEIGHT = WIDTH;
@@ -96,21 +94,21 @@ void setup(double &time, vec4f pixelCB(double x, double y)) {
 
 	static Internals internals;
 
-	static int64 begTime = timeNow();
+	static int32 begTime = clock();
 
 	// for each frame
 	void drawCB() {
 		if (snapshot) {
 			animate = false;
 			snapshot = false;
-			int64 start = timeCpu();
+			int32 start = clock();
 			evalSurf(offScreen, null, internals.pixelCB);
-			print("evaluated in: %F seconds\n", clocksPerSec(timeCpu() - start));
+			print("evaluated in: %F seconds\n", clocks2Sec(clock() - start));
 			//~ bmpWrite(offScreen, "out-2.bmp");
 		}
 		if (animate) {
 			// application time spent in processor
-			internals.time = .5 * clocksPerSec(timeNow() - begTime);
+			internals.time = .5 * clocks2Sec(clock() - begTime);
 
 			//~ evalSurf(offScreen, null, internals.pixelCB);
 			zoomSurf(offScreen, null, evalSurf(tmpImg, null, internals.pixelCB), null, 1);

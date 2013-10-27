@@ -1467,8 +1467,8 @@ void dump(state rt, int mode, symn sym, const char* text, ...) {
 				", px: %d"
 				", size.meta: %d"
 				", size.code: %d"
-				", size.data: %d"
-			") {\n", rt->vm.ro, rt->vm.ss, rt->vm.sm, rt->vm.pc, rt->vm.px, rt->vm.size.meta, rt->vm.size.code, rt->vm.size.data);
+				//~ ", size.data: %d"
+			") {\n", rt->vm.ro, rt->vm.ss, rt->vm.sm, rt->vm.pc, rt->vm.px, rt->vm.size.meta, rt->vm.size.code);//, rt->vm.size.data);
 
 			fputasm(rt, logf, rt->vm.pc, rt->vm.px, 0x100 | (mode & 0xff));
 			fputfmt(logf, "}\n");

@@ -1265,8 +1265,8 @@ int evalMesh(mesh msh, int sdiv, int tdiv, char *src, char *file, int line) {
 	err = err || !ccAddCode(rt, warnlevel, __FILE__, __LINE__, "setPos(x, y, z);\n");
 	// */
 
-	// optimize on level 3, and do not generate global variables on stack
-	if (err || gencode(rt, -3, NULL) != 0) {
+	// optimize on max level, and generate global variables on stack
+	if (err || gencode(rt, cgen_glob | 0xff) != 0) {
 		debug("error compiling(%d), see `%s`", err, logf);
 		logfile(rt, NULL);
 		return -3;

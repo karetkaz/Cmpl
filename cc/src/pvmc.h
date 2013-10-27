@@ -7,24 +7,31 @@ extern "C" {
 #endif
 
 enum {
-	creg_base = 0x0000,			// type system only
 
-	creg_tptr = 0x0001,			// pointers and memory manager
-	creg_tvar = 0x0002,			// variants and reflection
+	// ccInit
+	creg_base = 0x0000,					// type system only
 
-	creg_emit = 0x0010,				// emit thingie: emit(...)
-	creg_eopc = 0x0020 | creg_emit,	// emit opcodes: emit.i32.add
-	creg_eswz = 0x0040 | creg_eopc,	// swizzle constants: emit.swz.(xxxx, ... xyzw, ... wwww)
+	creg_tptr = 0x0001 | creg_base,		// pointers and memory manager
+	creg_tvar = 0x0002 | creg_base,		// variants and reflection
+
+	creg_emit = 0x0100 | creg_base,		// emit thingie: emit(...)
+	creg_eopc = 0x0200 | creg_emit,		// emit opcodes: emit.i32.add
+	creg_eswz = 0x0400 | creg_eopc,		// swizzle constants: emit.swz.(xxxx, ... xyzw, ... wwww)
 
 	// register defaults if ccInit not invoked explicitly.
 	creg_def  = creg_tptr + creg_tvar + creg_eopc,
 
+	// gencode(cgen_xxx | (level & 0xff))
+	cgen_opti = 0x00ff,		// optimze code generation
+	cgen_glob = 0x0100,		// generate globals on stack
+	cgen_info = 0x0200,		// generate debug info
+
 	// dump(dump_xxx | (level & 0xff))
-	//~ dump_msg = 0x0000000,
-	dump_sym = 0x0000100,
-	dump_ast = 0x0000200,
-	dump_asm = 0x0000400,
-	dump_bin = 0x0000800
+	//~ dump_msg = 0x0000,
+	dump_sym = 0x0100,
+	dump_ast = 0x0200,
+	dump_asm = 0x0400,
+	dump_bin = 0x0800
 };
 
 /** Initialize the global state of execution and or compilation.
@@ -124,12 +131,11 @@ int install_file(state);
 
 /** generate executable bytecode.
  * @param context
- * @param optimizeLevel level of optimization
- * @todo param onHalt the libcall which is executed before vmExec or vmCall returns.
- * @param dbg debuger function, this is executed for each opcode.
- * @return 0 on success.
+ * @param mode see@(cgen_opti, cgen_info, cgen_glob)
+ * @return error code, 0 on success.
  */
-int gencode(state, int optimizeLevel, int dbg(state, int pu, void *ip, long* sp, int ss));
+
+int gencode(state, int mode);//optimizeLevel, int dbg(state, int pu, void *ip, long* sp, int ss));
 
 /** execute initializer.
  * @param context
@@ -151,6 +157,9 @@ int vmExec(state, void* extra, int ss);
  */
 int vmCall(state, symn fun, void* ret, void* args, void* extra);
 
+// silently exits the execution
+int libCallHaltQuiet(libcArgs);
+// prints variables and their values after execution
 int libCallHaltDebug(libcArgs);
 
 // searching for symbols ...
@@ -182,7 +191,7 @@ static inline void* paddptr(void *offs, unsigned align) {
 	return (void*)(((ptrdiff_t)offs + (align - 1)) & ~(ptrdiff_t)(align - 1));
 }
 static inline int padded(int offs, unsigned align) {
-	return (int)paddptr((void*)offs, align);
+	return (offs + (align - 1)) & ~(align - 1);
 }
 
 #ifdef __cplusplus

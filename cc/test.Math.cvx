@@ -1,0 +1,85 @@
+// test math functions
+define epsilon = 1e-105;
+
+const float64 vf[] = {
+	4.9790119248836735e+00,
+	7.7388724745781045e+00,
+	-2.7688005719200159e-01,
+	-5.0106036182710749e+00,
+	9.6362937071984173e+00,
+	2.9263772392439646e+00,
+	5.2290834314593066e+00,
+	2.7279399104360102e+00,
+	1.8253080916808550e+00,
+	-8.6859247685756013e+00
+};
+
+const float64 tan[] = {
+	-3.661316565040227801781974e+00,
+	8.64900232648597589369854e+00,
+	-2.8417941955033612725238097e-01,
+	3.253290185974728640827156e+00,
+	2.147275640380293804770778e-01,
+	-2.18600910711067004921551e-01,
+	-1.760002817872367935518928e+00,
+	-4.389808914752818126249079e-01,
+	-3.843885560201130679995041e+00,
+	9.10988793377685105753416e-01
+};
+
+const float64 asin[] = {
+	5.2117697218417440497416805e-01,
+	8.8495619865825236751471477e-01,
+	-2.769154466281941332086016e-02,
+	-5.2482360935268931351485822e-01,
+	1.3002662421166552333051524e+00,
+	2.9698415875871901741575922e-01,
+	5.5025938468083370060258102e-01,
+	2.7629597861677201301553823e-01,
+	1.83559892257451475846656e-01,
+	-1.0523547536021497774980928e+00
+};
+
+const float64 acos[] = {
+	1.0496193546107222142571536e+00,
+	6.8584012813664425171660692e-01,
+	1.5984878714577160325521819e+00,
+	2.0956199361475859327461799e+00,
+	2.7053008467824138592616927e-01,
+	1.2738121680361776018155625e+00,
+	1.0205369421140629186287407e+00,
+	1.2945003481781246062157835e+00,
+	1.3872364345374451433846657e+00,
+	2.6231510803970463967294145e+00
+};
+
+struct debugInfo {
+	string function;//%`%s`
+	double argument;//%%f
+	double expected;//%%.50f
+	double returned;//%%.50f
+	int index;	//%
+}
+
+define assert(bool condition, const debugInfo &dbginf) = debug("test failed", condition ? 0 : Debug.debug, Debug.notrace, emit(variant, ref(dbginf), ref(debugInfo)));
+define assert(string func, double arg, double ret, double exp, int i) = assert(Math.abs(exp - ret) < epsilon, debugInfo(func, arg, ret, exp, i));
+
+for (int i = 0; i < vf.length; i += 1) {
+	float64 x = vf[i];
+	float64 v = tan[i];
+	//~ float64 f = tan(x);
+	float64 f = Math.Tan(x);
+	assert("Math.Tan", x, v, f, i);
+}
+for (int i = 0; i < vf.length; i += 1) {
+	float64 x = vf[i] / 10;
+	float64 v = asin[i];
+	float64 f = Math.Asin(x);
+	assert("Math.Asin", x, v, f, i);
+}
+for (int i = 0; i < vf.length; i += 1) {
+	float64 x = vf[i] / 10;
+	float64 v = acos[i];
+	float64 f = Math.Acos(x);
+	assert("Math.Acos", x, v, f, i);
+}

@@ -2,18 +2,19 @@
 application [global options] [local options]...
 
 	<global options>:
-		-O<int>					optimize
-			0:					no optimizations
-			1:					constant expression evaluation
-			2:					opcode optimizations
-			negative:			no global variables
+		-g[d][-]<int>			generate
+			d:					generate debug info
+			-:					generate globals on stack
+			int:				optimization level, max 255
+
+		-x[v][d|D[:<type>]]		execute
+			v:					print global variable values
+			d|D:				debug application
+			<type>				print top of stack as it would be a variable of type
+				ex: -xd:int32[20]
 
 		-l <file>				logger
 		-o <file>				output
-
-		-x[v][d<hex>]			execute
-			v:					print global variables
-			d<hex>:				debug using level <hex>
 
 		-api[<hex>][.<sym>]		output symbols
 		-asm[<hex>][.<fun>]		output assembly
@@ -28,7 +29,7 @@ application [global options] [local options]...
 		<file>					if file extension is (.so|.dll) import else compile
 */
 
-//~ (wcl386 -cc -q -ei -6s -d2  -fe=../main *.c) & (rm -f *.obj)
+//~ (wcl386 -cc -q -ei -6s -d2  -fe=../main *.c) && (rm -f *.o *.obj *.err)
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
@@ -38,9 +39,9 @@ application [global options] [local options]...
 // default values
 static const int wl = 9;			// warning level
 static const int ol = 2;			// optimize level
-static char mem[6 << 10];			// runtime memory of (16M)
+static char mem[16 << 20];			// runtime memory of (16M)
 
-const char* STDLIB = "../stdlib.cvx";		// standard library
+const char* STDLIB = "stdlib.cvx";		// standard library
 
 #ifdef __linux__
 #define stricmp(__STR1, __STR2) strcasecmp(__STR1, __STR2)
@@ -217,9 +218,10 @@ int evalexp(ccState cc, char* text) {
 static int testFunction(libcArgs rt) {		// void testFunction(void cb(int n), int n)
 	symn cb = mapsym(rt->rt, argref(rt, 0));
 	if (cb != NULL) {
-        int n = argi32(rt, 4);
-        struct {int n;} args = {n};
-        return vmCall(rt->rt, cb, NULL, &args, NULL);
+		int n = argi32(rt, 4);
+		struct {int n;} args;// = {n};
+		args.n = n;
+		return vmCall(rt->rt, cb, NULL, &args, NULL);
 	}
 	return 0;
 }
@@ -326,6 +328,16 @@ static int importLib(state rt, const char* path) {
 	}
 	return result;
 }
+#else
+
+static void closeLibs() {}
+static int importLib(state rt, const char* path) {
+	(void)rt;
+	(void)path;
+	error(rt, path, 1, "dynamic linking is not available in this build.");
+	return -1;
+}
+
 #endif
 
 #else
@@ -342,17 +354,6 @@ static int importLib(state rt, const char* path) {
 
 static symn printvars = NULL;
 static int dbgCon(state, int pu, void* ip, long* bp, int ss);
-static int dbgDummy(state rt, int pu, void* ip, long* bp, int ss) {
-	//~ int IP = ((char*)ip) - ((char*)rt->_mem);
-	//~ fputfmt(stdout, ">exec:[sp(%06x)] %9.*A\n", bp, IP, ip);
-
-	return 0;
-	(void)rt;
-	(void)pu;
-	(void)ip;
-	(void)bp;
-	(void)ss;
-}
 
 int program(int argc, char* argv[]) {
 	state rt = rtInit(mem, sizeof(mem));
@@ -364,17 +365,19 @@ int program(int argc, char* argv[]) {
 
 	// compile, run, debug, ...
 	int level = -1, argi;
-	int opti = ol;
+	//~ int opti = ol;
 
-	int gen_code = 1;	// cgen: false/true
-	int run_code = 0;	// exec: true/false
+	int gen_code = ol;	// optimize_level, debug_info, ...
+	int run_code = 0;	// true/false: exec
 	char* stk_dump = NULL;
 
-	int out_tree = -1;	// walk: level
+	int out_tree = -1;
 	char* str_tree = NULL;
-	int out_tags = -1;	// tags: level
+
+	int out_tags = -1;
 	char* str_tags = NULL;
-	int out_dasm = -1;	// dasm: level
+
+	int out_dasm = -1;
 	char* str_dasm = NULL;
 
 	char* logf = 0;			// logger filename
@@ -383,7 +386,7 @@ int program(int argc, char* argv[]) {
 	int warn = wl;
 	int result = 0;
 
-	int (*onHalt)(libcArgs) = NULL;	// print variables and values on exit
+	int (*onHalt)(libcArgs) = NULL;	// print variables and values on exit?
 
 	// evaluate constant expression.
 	if (argc == 2 && *argv[1] == '=') {
@@ -394,15 +397,26 @@ int program(int argc, char* argv[]) {
 	for (argi = 1; argi < argc; ++argi) {
 		char* arg = argv[argi];
 
-		// optimize code
-		if (strncmp(arg, "-O", 2) == 0) {			// optimize level
-			if (strcmp(arg, "-O") == 0)
-				opti = 1;
-			else if (strcmp(arg, "-Oa") == 0)
-				opti = 3;
-			else if (!parsei32(arg + 2, &opti, 10)) {
-				error(rt, NULL, 0, "invalid level '%s'", arg + 2);
-				return 0;
+		// generate code
+		if (strncmp(arg, "-g", 2) == 0) {			// generate code
+			char* str = arg + 2;
+
+			if (*str == 'd') {
+				// generate debug info
+				gen_code |= cgen_info;
+				str += 1;
+			}
+			if (*str == '-') {
+				// generate globals on stack
+				gen_code |= cgen_glob;
+				str += 1;
+			}
+			if (*str) {
+				if (!parsei32(str, &level, 10)) {
+					error(rt, NULL, 0, "invalid level '%s'", str);
+					return 0;
+				}
+				gen_code |= level & cgen_opti;
 			}
 		}
 
@@ -414,13 +428,11 @@ int program(int argc, char* argv[]) {
 				onHalt = libCallHaltDebug;
 				str += 1;
 			}
-			if (*str == 'd' || *str == 'D') {
-				if (*str == 'D') {
-					dbg = dbgCon;
-				}
-				else {
-					dbg = dbgDummy;
-				}
+			if (*str == 'd') {
+
+				gen_code |= cgen_info;
+				dbg = dbgCon;
+
 				if (str[1] == ':') {
 					stk_dump = str + 2;
 					str += 1;
@@ -575,7 +587,7 @@ int program(int argc, char* argv[]) {
 			astn ast = decl_var(cc, NULL, TYPE_def);
 			printvars = linkOf(ast);
 			if (printvars != NULL) {
-				printvars->name = "\tsp";
+				printvars->name = "\tsp";	// stack pointer
 			}
 			else {
 				error(rt, NULL, 0, "error in debug print format `%s`", stk_dump);
@@ -586,7 +598,7 @@ int program(int argc, char* argv[]) {
 	if (rt->errc == 0) {
 
 		// generate variables and vm code.
-		if ((gen_code || run_code) && gencode(rt, opti, dbg) != 0) {
+		if ((gen_code || run_code) && gencode(rt, gen_code) != 0) {
 			logfile(rt, NULL);
 			closeLibs();
 			return rt->errc;
@@ -631,7 +643,9 @@ int program(int argc, char* argv[]) {
 			dump(rt, dump_asm | (out_dasm & 0x0ff), NULL, "\ndasm:\n");
 		}
 		if (run_code != 0) {
-			logFILE(rt, stdout);
+			if (dbg != NULL && rt->dbg != NULL) {
+				rt->dbg->dbug = dbg;
+			}
 			result = vmExec(rt, NULL, rt->_size / 4);
 		}
 	}
@@ -672,6 +686,7 @@ int main(int argc, char* argv[]) {
 static int dbgCon(state rt, int pu, void* ip, long* bp, int ss) {
 	static char buff[1024];
 	static char cmd = 'N';
+	dbgInfo dbg;
 	char* arg;
 	int IP;
 
@@ -684,7 +699,16 @@ static int dbgCon(state rt, int pu, void* ip, long* bp, int ss) {
 	}
 
 	IP = ((char*)ip) - ((char*)rt->_mem);
-	fputfmt(stdout, ">exec:[sp(%02d)] %9.*A\n", ss, IP, ip);
+
+	dbg = getCodeMapping(rt, IP);
+
+	if (dbg != NULL) {
+		fputfmt(stdout, "%s:%d:exec:[sp(%02d)] %9.*A\n", dbg->file, dbg->line, ss, IP, ip);
+	}
+	else {
+		fputfmt(stdout, ">exec:[sp(%02d)] %9.*A\n", ss, IP, ip);
+	}
+	//~ fputfmt(stdout, ">exec:[sp(%x)] %9.*A\n", bp, IP, ip);
 
 	if (printvars != NULL) {
 		stkval* sp = (stkval*)((char*)bp);

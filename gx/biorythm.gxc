@@ -116,7 +116,7 @@ void setupBiorithm(int _daysToShow, Date _now, Date _birth) {
 
 	define inertial_pan = 3000.;
 	define inertial_speed = 1.05;
-	static int64 inertial_time = 0;
+	static int32 inertial_time = 0;
 	static double inertial_pan_x = 0;
 	static double inertial_pan_y = 0;
 
@@ -127,7 +127,7 @@ void setupBiorithm(int _daysToShow, Date _now, Date _birth) {
 			reDraw = false;
 		}
 		static if (inertial_pan) {
-			int64 now = timeNow();
+			int32 now = clock();
 			if (inertial_time < now) {
 				inertial_pan_x = Math.clamp(inertial_pan_x, -inertial_pan, inertial_pan) / inertial_speed;
 				inertial_pan_y = Math.clamp(inertial_pan_y, -inertial_pan, inertial_pan) / inertial_speed;
@@ -136,7 +136,7 @@ void setupBiorithm(int _daysToShow, Date _now, Date _birth) {
 					pos += inertial_pan_x;
 					reDraw = true;
 				}
-				inertial_time = now + (int64(0x100000000) / 100);
+				inertial_time = now;
 			}
 			if ((Math.abs(inertial_pan_x) > .5) || (Math.abs(inertial_pan_y) > .5)) {
 				Gui.Repaint();
@@ -162,19 +162,19 @@ void setupBiorithm(int _daysToShow, Date _now, Date _birth) {
 			reDraw = true;
 		}
 		static if (inertial_pan) {
-			static int64 ot = 0;
+			static int32 ot = 0;
 			static int32 oox = 0;
 			static int32 ooy = 0;
 			if (btn == 1 && ob == 0) {	// on press
-				ot = timeNow();
+				ot = clock();
 				inertial_pan_x = 0;
 				inertial_pan_y = 0;
 				oox = x;
 				ooy = y;
 			}
 			if (btn == 0 && ob == 1) {	// on relase
-				int64 now = timeNow();
-				if (clocksPerSec(now - ot) < .5) {
+				int32 now = clock();
+				if (clocks2Sec(now - ot) < .5) {
 					inertial_time = 0;
 					inertial_pan_x = oox - x;
 					inertial_pan_y = ooy - y;

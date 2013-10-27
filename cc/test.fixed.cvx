@@ -9,7 +9,7 @@ static struct Fixed {
 
 	enum: int32 {
 
-		Point = 24;
+		Point = 16;
 
 		fxpmask = (1 << Point) - 1;
 
@@ -19,6 +19,7 @@ static struct Fixed {
 
 		fxp_d2r = 0x000477d1 >> (24 - Point);		// pi / 180 : degrees to radians
 		fxp_r2d = 0x394bb834 >> (24 - Point);		// 180 / pi : radians to degrees
+
 		fxp_ln2 = 0x00b17217 >> (24 - Point);		// .6931471805599453 : natural logarithm (2)
 		fxp_lg2 = 0x004d104d >> (24 - Point);		// .3010299956639812 : decimal logarithm (2)
 		fxp_l2e = 0x01715476 >> (24 - Point);		// 1.442695040888963 : logarithm base 2  (e)
@@ -46,18 +47,31 @@ static struct Fixed {
 	static define mod(fixed ^lhs, fixed ^rhs) = asFixed(lhs.value % rhs.value);
 	static define inv(fixed rhs) = div(asFixed(fxp_one), rhs);
 
-	static uint32 bsr(uint32 x) {		//scan bit reverse (first bit = 31 (msb))
-		if (x != 0) {
-			result = 0;
-			if ((x & 0xffff0000) != 0) { result += 16; x >>= 16; }
-			if ((x & 0x0000ff00) != 0) { result +=  8; x >>=  8; }
-			if ((x & 0x000000f0) != 0) { result +=  4; x >>=  4; }
-			if ((x & 0x0000000c) != 0) { result +=  2; x >>=  2; }
-			if ((x & 0x00000002) != 0) { result +=  1; }
+	static uint32 bsr(uint32 x) {		// scan bit reverse (first bit = 31 (msb))
+		if (x == 0) {
+			return -1;
 		}
-		else {
-			result = -1;
+		result = 0;
+		if ((x & 0xffff0000) != 0) {
+			result += 16;
+			x >>= 16;
 		}
+		if ((x & 0x0000ff00) != 0) {
+			result += 8;
+			x >>= 8;
+		}
+		if ((x & 0x000000f0) != 0) {
+			result += 4;
+			x >>= 4;
+		}
+		if ((x & 0x0000000c) != 0) {
+			result += 2;
+			x >>= 2;
+		}
+		if ((x & 0x00000002) != 0) {
+			result += 1;
+		}
+		return result;
 	}
 	static uint32 gettbl(const uint16 tbl[257], int32 x) {
 		uint32 idx = (x >> (Point -  8)) & 0x00ff;
@@ -114,7 +128,7 @@ static struct Fixed {
 			0xf507, 0xf663, 0xf7c0, 0xf91e, 0xfa7c, 0xfbdc, 0xfd3c, 0xfe9e,
 			0xffff};
 
-		/* Math:
+		/* Math Logic:
 		 * fxp2xp(x) <=> 2 ** x
 		 * n = floor(x), q = fract(x)
 		 * => exp2(x) = exp2(n + q) = exp2(n) * exp2(q)
@@ -167,7 +181,7 @@ static struct Fixed {
 			0xfa2f, 0xfaea, 0xfba5, 0xfc60, 0xfd1a, 0xfdd4, 0xfe8e, 0xff47,
 			0xffff};
 
-		/* Math:
+		/* Math Logic:
 		 * log2(x) logarithm base 2
 		 * log2(x) = log2((2 ** n) * (x / 2 ** n)) = 
 		 * = log2(2 ** n) + log2(x / 2 ** n) = n + log2(q)
@@ -416,15 +430,22 @@ struct assertInfo {
 	float64 returned;
 }
 
-define assert(const assertInfo ^info) = debug("test failed", Math.abs(info.returned - info.expected) < 1e-13 ? 0 : Debug.debug, Debug.notrace, emit(variant, ref(info), ref(assertInfo)));
+define assert(const assertInfo ^info) = debug("test failed", Math.abs(info.returned - info.expected) < 1e-3 ? 0 : Debug.debug, Debug.notrace, emit(variant, ref(info), ref(assertInfo)));
 define assertEquals(string f, float64 a, fixed ^b) = assert(assertInfo(f, a, float64(b)));
+//~ define assertEquals(string f, float64 a, fixed ^b) = void(0);
 
 //~ define variant(assertInfo ^info) = emit(variant, ref(info), ref(assertInfo));
 //~ define assertEquals(string f, float64 ^a, fixed ^b) = void(0);//debug("test failed", (Math.abs(a - float64(b)) < 1e-14) ? 0 : Debug.debug, Debug.notrace, variant(assertInfo(f, a, float64(b))));
 
 //~ double fixed_test0 = float64(Fixed.add(fixed(2.225), fixed(3)));
+int n = 99;
+string TEST = "Fixed point math.";
+string nullStr = null;
+int &nullInt = n;
 
-double float_value = Math.pi / 4;
+uint32 nullFun(uint32 a) = Fixed.bsr;
+
+double float_value = Math.pi / 3;
 double fixed_value = float64(fixed(float_value));
 //~ assert(Math.abs(float_value - fixed_value) < 1e-4);
 
