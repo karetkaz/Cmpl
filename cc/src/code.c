@@ -751,17 +751,6 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 				return rt->vm.pc;
 			}
 		}
-		else if (opc == opc_inc) {
-			ip = getip(rt, rt->vm.pc);
-			if (ip->opc == opc_inc) {
-				stkval tmp;
-				tmp.i8 = arg.i8 + ip->rel;
-				if (tmp.rel == tmp.i8) {
-					ip->rel = tmp.rel;
-					return rt->vm.pc;
-				}
-			}
-		}
 		else if (opc == i32_add) {
 			ip = getip(rt, rt->vm.pc);
 			if (ip->opc == opc_ldc4) {
@@ -781,6 +770,17 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 					rt->vm.pos = rt->vm.pc;
 					rt->vm.ss -= 1;
 					opc = opc_inc;
+				}
+			}
+		}
+		else if (opc == opc_inc) {
+			ip = getip(rt, rt->vm.pc);
+			if (ip->opc == opc_inc) {
+				stkval tmp;
+				tmp.i8 = arg.i8 + ip->rel;
+				if (tmp.rel == tmp.i8) {
+					ip->rel = tmp.rel;
+					return rt->vm.pc;
 				}
 			}
 		}
@@ -922,6 +922,7 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 		case opc_ldsp:
 		case opc_move:
 		case opc_inc:
+		case opc_mad:
 			dieif(ip->rel != arg.i8, "FixMe");
 			break;
 
@@ -1106,6 +1107,9 @@ int stkoffs(state rt, int size) {
 
 static inline void traceProc(cell pu, int cp, char* msg) {
 	logif(1, "%s: {pu:%d, ip:%x, bp:%x, sp:%x, stacksize:%d, parent:%d, childs:%d}", msg, cp, pu[cp].ip, pu[cp].bp, pu[cp].sp, pu[cp].ss, pu[cp].pp, pu[cp].cp);
+	(void)pu;
+	(void)cp;
+	(void)msg;
 }
 
 //~ parallel processing
@@ -1451,6 +1455,10 @@ void fputopc(FILE* fout, unsigned char* ptr, int len, int offs, state rt) {
 		case opc_ldsp:
 		case opc_move:
 			fprintf(fout, " %+d", ip->rel);
+			break;
+
+		case opc_mad:
+			fprintf(fout, " %d", ip->rel);
 			break;
 
 		case opc_ld32:

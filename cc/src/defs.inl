@@ -160,8 +160,8 @@ OPCDEF(opc_jz,   0x06, 4, 1, -1, 1, "jz")			// if (popi32() == 0) {IP += arg.rel
 OPCDEF(opc_task, 0x07, 4, 0,  0, 1, "task")			// arg.3: [code:16][data:8] task, [?fork if (arg.code == 0)]
 OPCDEF(opc_sync, 0x08, 2, 0,  0, 1, "sync")			// wait, join, sync
 OPCDEF(opc_libc, 0x09, 4, 0,  9, 1, "libc")			// lib call
-OPCDEF(opc_inc,  0x0a, 4, 1,  0, 1, "inc")			// push32(popi32(n) + arg.rel);
-OPCDEF(opc_umad, 0x0b, 1, 3, -2, 1, "umad")			// sp(2).u32 += sp(1).u32 * sp(0).u32; pop2;	[…, a, b, c => […, a + b * c;
+OPCDEF(opc_inc,  0x0a, 4, 1,  0, 1, "inc")			// push32(popi32(n) + arg.rel);	[…, a, b, c => […, a, b, c + arg.rel;
+OPCDEF(opc_mad,  0x0b, 4, 2, -1, 1, "mad")			// sp(1).u32 += sp(0).u32 * arg.rel; pop1;	[…, a, b, c => […, a, b + c * arg.rel;
 OPCDEF(opc___0c, 0x0c, 0, 0,  0, 1, NULL)			//
 OPCDEF(opc___0d, 0x0d, 0, 0,  0, 1, NULL)			//
 OPCDEF(opc___0e, 0x0e, 0, 0,  0, 1, NULL)			//

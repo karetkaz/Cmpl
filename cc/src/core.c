@@ -894,12 +894,7 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 					return TYPE_any;
 				}
 				if (size > 1) {
-					//~ TODO: an index operator (mad with immediate value should be used)
-					if (!emiti32(rt, size)) {
-						trace("%+k", ast);
-						return TYPE_any;
-					}
-					if (!emitopc(rt, opc_umad)) {
+					if (!emitint(rt, opc_mad, size)) {
 						trace("%+k", ast);
 						return TYPE_any;
 					}
@@ -911,8 +906,7 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 					}
 				}
 				else {
-					// size of array element size error
-					fatal("FixMe");
+					fatal("invalid array element size");
 					return TYPE_any;
 				}
 			}
@@ -1999,7 +1993,7 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 	return ret;
 }
 
-int gencode(state rt, int mode/*level, int dbg(state, int pu, void *ip, long* sp, int ss)*/) {
+int gencode(state rt, int mode) {
 	ccState cc = rt->cc;
 	libc lc = NULL;
 	int Lmain;
@@ -2056,8 +2050,6 @@ int gencode(state rt, int mode/*level, int dbg(state, int pu, void *ip, long* sp
 
 	// allocate used memeory
 	rt->vm.pos = rt->_beg - rt->_mem;
-	rt->vm.opti = mode & cgen_opti;
-
 	rt->vm.size.meta = rt->vm.pos;
 
 	// libcalls
@@ -2085,6 +2077,7 @@ int gencode(state rt, int mode/*level, int dbg(state, int pu, void *ip, long* sp
 	//~ strings, typeinfos, TODO(constants, functions, enums, ...)
 	rt->vm.ro = rt->vm.pos;
 
+	rt->vm.opti = mode & cgen_opti;
 	// static vars & functions
 	if (rt->defs) {
 		symn var = rt->defs;
@@ -2098,7 +2091,7 @@ int gencode(state rt, int mode/*level, int dbg(state, int pu, void *ip, long* sp
 			if (var->kind != TYPE_ref)
 				continue;
 
-			dieif (!var->stat && gstat, "FixMe"); /* {
+			dieif(!var->stat && gstat, "FixMe"); /* {
 				
 				var->stat = 1;
 			}*/
@@ -2254,7 +2247,7 @@ int gencode(state rt, int mode/*level, int dbg(state, int pu, void *ip, long* sp
 		}*/
 	}
 
-	return rt->errc;
+	return rt->errc == 0;
 }
 
 // install basic types
@@ -2431,7 +2424,6 @@ static void install_emit(ccState cc, int mode) {
 			install(cc, "div", EMIT_opc, 0, u32_div, cc->type_u32, NULL);
 			install(cc, "mod", EMIT_opc, 0, u32_mod, cc->type_u32, NULL);
 
-			install(cc, "mad", EMIT_opc, 0, opc_umad, cc->type_u32, NULL);
 			install(cc, "clt", EMIT_opc, 0, u32_clt, cc->type_bol, NULL);
 			install(cc, "cgt", EMIT_opc, 0, u32_cgt, cc->type_bol, NULL);
 			//~ install(cc, "to_i64", EMIT_opc, 0, u32_i64, cc->type_i64, NULL);
@@ -2611,7 +2603,7 @@ state rtInit(void* mem, unsigned size) {
 	rt->_end = rt->_mem + rt->_size;
 	rt->_beg = rt->_mem;
 
-	logFILE(rt, stdout);//stderr);
+    logFILE(rt, stdout);
 	rt->cc = NULL;
 	return rt;
 }

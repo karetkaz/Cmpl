@@ -1266,7 +1266,7 @@ int evalMesh(mesh msh, int sdiv, int tdiv, char *src, char *file, int line) {
 	// */
 
 	// optimize on max level, and generate global variables on stack
-	if (err || gencode(rt, cgen_glob | 0xff) != 0) {
+	if (err || !gencode(rt, cgen_glob | 0xff)) {
 		debug("error compiling(%d), see `%s`", err, logf);
 		logfile(rt, NULL);
 		return -3;

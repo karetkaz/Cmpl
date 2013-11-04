@@ -287,7 +287,7 @@ static inline int argpos(int *argp, int size) {
 	return result;
 }
 
-#define logFILE(msg, ...) //prerr("debug", msg, ##__VA_ARGS__)
+#define debugFILE(msg, ...) //prerr("debug", msg, ##__VA_ARGS__)
 
 static int FILE_open(libcArgs args) {	// void Open(char filename[]);
 	int argc = 0;
@@ -298,12 +298,12 @@ static int FILE_open(libcArgs args) {	// void Open(char filename[]);
 	FILE *file = fopen(name, mode);
 	rethnd(args, file);
 
-	logFILE("Name: %s, Mode: %s, File: %x", name, mode, file);
+	debugFILE("Name: %s, Mode: %s, File: %x", name, mode, file);
 	return 0;
 }
 static int FILE_close(libcArgs args) {	// void close(File file);
 	FILE *file = arghnd(args, 0);
-	logFILE("File: %x", file);
+	debugFILE("File: %x", file);
 	fclose(file);
 
 	return 0;
@@ -339,7 +339,7 @@ static int FILE_gets(libcArgs args) {	// int fgets(File &f, uint8 buff[])
 	char *buff = argref(args, argpos(&argc, vm_size));
 	int len = argi32(args, argpos(&argc, vm_size));
 
-	logFILE("Buff: %08x[%d], File: %x", buff, len, file);
+	debugFILE("Buff: %08x[%d], File: %x", buff, len, file);
 
 	if (feof(file)) {
 		reti32(args, -1);
@@ -359,7 +359,7 @@ static int FILE_putc(libcArgs args) {
 	FILE *file = arghnd(args, argpos(&argc, sizeof(FILE *)));
 	int data = argi32(args, argpos(&argc, vm_size));
 
-	logFILE("Data: %c, File: %x", data, file);
+	debugFILE("Data: %c, File: %x", data, file);
 	reti32(args, putc(data, file));
 
 	return 0;
@@ -370,7 +370,7 @@ static int FILE_write(libcArgs args) {	// int write(File &f, uint8 buff[])
 	char *buff = argref(args, argpos(&argc, vm_size));
 	int len = argi32(args, argpos(&argc, vm_size));
 
-	logFILE("Buff: %08x[%d], File: %x", buff, len, file);
+	debugFILE("Buff: %08x[%d], File: %x", buff, len, file);
 	len = fwrite(buff, len, 1, file);
 	reti32(args, len);
 
@@ -380,7 +380,7 @@ static int FILE_write(libcArgs args) {	// int write(File &f, uint8 buff[])
 static int FILE_flush(libcArgs args) {
 	FILE *file = arghnd(args, 0);
 
-	logFILE("File: %x", file);
+	debugFILE("File: %x", file);
 	fflush(file);
 
 	return 0;

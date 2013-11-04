@@ -129,9 +129,10 @@ case opc_inc:  NEXT(4, -0, 1) {
 	SP(0, u4) += ip->rel;
 #endif
 } break;
-case opc_umad: NEXT(1, -2, 3) {
+case opc_mad:  NEXT(4, -1, 2) {
 #if defined(EXEC)
-	SP(2, u4) += SP(1, u4) * SP(0, u4);
+	//~ SP(2, u4) += SP(1, u4) * SP(0, u4);
+	SP(1, u4) += SP(0, u4) * ip->rel;
 #endif
 } break;
 //#}

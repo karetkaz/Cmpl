@@ -1352,7 +1352,7 @@ void dumpsym(FILE* fout, symn sym, int mode) {
 	}
 }
 
-int logFILE(state rt, FILE* file) {
+void logFILE(state rt, FILE* file) {
 
 	if (rt->closelog != 0) {
 		fclose(rt->logf);
@@ -1360,7 +1360,6 @@ int logFILE(state rt, FILE* file) {
 	}
 
 	rt->logf = file;
-	return 0;
 }
 
 int logfile(state rt, char* file) {

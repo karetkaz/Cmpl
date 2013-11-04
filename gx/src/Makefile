@@ -10,8 +10,8 @@ OUTEXE=-o
 CFLAGS=-Wall -Wpadded -g3 -ggdb
 CFLAGS=-g0 -Os
 
-CCC=gcc
-LNK=gcc
+CCC=gcc -m32
+LNK=gcc -m32
 DBG=nemiver
 AS=nasm -f elf
 MK=make
@@ -28,8 +28,8 @@ ifeq "$(OS)" "Windows_NT"
 endif
 
 ifeq ($(shell uname -m),x86_64)
-	LIBS=$(LIBDIR)libjpeg.x64.a $(LIBDIR)libpng.x64.a
-	AS=nasm -f elf64
+	#~ LIBS=$(LIBDIR)libjpeg.x64.a $(LIBDIR)libpng.x64.a
+	#~ AS=nasm -f elf64
 endif
 
 OBJS=\

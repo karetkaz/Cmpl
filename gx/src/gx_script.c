@@ -1442,7 +1442,7 @@ int ccCompile(char *src, int argc, char* argv[], int (*dbg)(state rt, int pu, vo
 	}
 
 	if (src != NULL) {
-		char tmp[65535];//, tmpf[4096];
+		char tmp[65535];
 
 		if ((cls = ccBegin(rt, "properties"))) {
 
@@ -1451,7 +1451,7 @@ int ccCompile(char *src, int argc, char* argv[], int (*dbg)(state rt, int pu, vo
 				err = err || !ccDefInt(rt, "width", resx);
 				err = err || !ccDefInt(rt, "height", resy);
 				ccEnd(rt, subcls);
-			}// */
+			}
 
 			if (!err && obj != NULL) {
 				err = !ccDefStr(rt, "object", strnesc(tmp, sizeof(tmp), obj));
@@ -1485,10 +1485,11 @@ int ccCompile(char *src, int argc, char* argv[], int (*dbg)(state rt, int pu, vo
 		return 0;
 	}
 
-	if (err || gencode(rt, 0xff) != 0) {
-		if (ccLog)
-			debug("error compiling(%d), see `%s`", err, ccLog);
-		if (ccLog) logfile(rt, NULL);
+	if (err || !gencode(rt, 0xff)) {
+		if (ccLog) {
+			debug("error compiling(%d), see ligfile: `%s`", err, ccLog);
+			logfile(rt, NULL);
+		}
 		err = -3;
 	}
 

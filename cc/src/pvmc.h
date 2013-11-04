@@ -42,7 +42,7 @@ enum {
 state rtInit(void* mem, unsigned size);
 
 // logging
-int logFILE(state, FILE *file);				// set logger
+void logFILE(state, FILE *file);				// set logger
 int logfile(state, char *file);				// set logger
 void dump(state, int dumpWhat, symn, const char* msg, ...);
 
@@ -132,7 +132,7 @@ int install_file(state);
 /** generate executable bytecode.
  * @param context
  * @param mode see@(cgen_opti, cgen_info, cgen_glob)
- * @return error code, 0 on success.
+ * @return boolean value of success.
  */
 
 int gencode(state, int mode);//optimizeLevel, int dbg(state, int pu, void *ip, long* sp, int ss));

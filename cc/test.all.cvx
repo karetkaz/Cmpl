@@ -4,10 +4,10 @@
 
 enum Test {
 	Emit = ~0;
-	Type = +0;	//Lang = ~0;
-	Call = +0;
-	Bits = +0;
-	Math = +0;
+	Type = ~0;	//Lang = ~0;
+	Call = ~0;
+	Bits = ~0;
+	Math = ~0;
 	//~ Misc = ~0;
 }
 static if (true) {
@@ -49,7 +49,7 @@ define mod(float32 a, float32 b) = emit(f32.mod, f32(b), f32(a));
 
 define mad(float32 a, float32 b, float32 c) = emit(f32.add, f32.mul, f32(a), f32(b), f32(c));	// a * b + c
 define mad(float64 a, float64 b, float64 c) = emit(f64.add, f64.mul, f64(a), f64(b), f64(c));	// a * b + c
-define mad(int32 size, int32 index, int32 offset) = emit(u32.mad, i32(size), i32(index), i32(offset));
+//~ define mad(int32 size, int32 index, int32 offset) = emit(u32.mad, i32(size), i32(index), i32(offset));
 
 int a = -0x8989;
 int32 a1 = shr(uint32(a), 8);
@@ -127,7 +127,7 @@ assert(int1(0.) == 2015);
 static if (Test.Type & 0x02) {		// not a number test
 
 float64 NAN = Math.nan;
-int isNan1 = int(Math.isNan(NAN));
+bool isNan1 = Math.isNan(NAN);
 int isNan2 = int(Math.isNan(Math.nan));
 }
 static if (Test.Type & 0x04) {		// union & packing: int and float
@@ -176,7 +176,7 @@ color c5 = colors.c5;
 }
 static if (Test.Type & 0x10) {		// arrays
 
-int arr2[3] = 1, 2, 3;	// array
+int arr2[3] = {1, 2, 3};	// array
 int arr3[] = arr2;		// slice
 
 int maximum(int arr[]) {
@@ -227,7 +227,7 @@ void randomize(int arr[], int max) {
 	}
 }
 
-randomize(arr2, 300);
+randomize(arr3, 300);
 int test_arr_max = maximum(arr2);
 int test_arr_toFind = arr2[arr2.length / 2];
 sort(arr2);

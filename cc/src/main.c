@@ -598,7 +598,7 @@ int program(int argc, char* argv[]) {
 	if (rt->errc == 0) {
 
 		// generate variables and vm code.
-		if ((gen_code || run_code) && gencode(rt, gen_code) != 0) {
+		if ((gen_code || run_code) && !gencode(rt, gen_code)) {
 			logfile(rt, NULL);
 			closeLibs();
 			return rt->errc;
@@ -682,6 +682,50 @@ int main(int argc, char* argv[]) {
 	//setbuf(stderr, NULL);
 	return program(argc, argv);
 }
+/*X
+int scite_addText(libcArgs args) {
+	//~ ScintillaEditBase *editor = (ScintillaEditBase*)args->extra;
+	char *text = (char*)argref(args, 0);
+
+	//~ qDebug() << "scite.setText(" << text << ")";
+
+	//~ editor->sends(SCI_SETTEXT, 0, text);
+	fprintf(stdout, "%s", text);
+
+	return 0;
+}
+
+int main(int argc, char* argv[]) {
+	static char mem[1 << 20];
+	state rt = rtInit(mem, sizeof(mem));
+	ccState cc = ccInit(rt, creg_def, NULL);
+	if (cc != NULL) {
+		symn nsp;
+		int err = 0;
+		if ((nsp = ccBegin(rt, "editor"))) {
+			err = err || !ccAddCall(rt, scite_addText, NULL, "void setText(char text[]);");
+			// ...
+			ccEnd(rt, nsp);
+		}
+
+		//~ int textLen = sciEditor->sends(SCI_GETTEXTLENGTH) + 1;
+		char* text = "editor.setText(\"alma\");";
+		//~ new char[textLen];
+
+		//~ sciEditor->sends(SCI_GETTEXT, textLen, text);
+
+		fprintf(stdout, "cc:AddCall: %d\n", err);
+		err = err || !ccAddCode(rt, 1, NULL, 1, text);
+		fprintf(stdout, "cc:AddCode: %d\n", err);
+		err = err || !gencode(rt, 0xff);
+		fprintf(stdout, "cc:gencode: %d\n", err);
+		err = err || !vmExec(rt, NULL, sizeof(mem) / 3);
+		fprintf(stdout, "vm:execute: %d\n", err);
+		//err = err || ccDone(rt);
+	}
+	return 0;
+}
+//~ */
 
 static int dbgCon(state rt, int pu, void* ip, long* bp, int ss) {
 	static char buff[1024];

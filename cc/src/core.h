@@ -94,18 +94,17 @@ typedef enum {
 	decl_NoInit = 0x200,		// disable initializer.
 	decl_ItDecl = 0x400,		// enable ':' after declaration: for(int a : range(0, 12))
 
+	ATTR_const  = 0x100,		// constant
+	ATTR_stat   = 0x200			// static
 	/*? enum Kind {
-		//inline     = 0x000000;	// this is not available at runtime.
-		typename     = 0x000001;
+		//inline     = 0x000000;	// these are not available at runtime.
+		typename     = 0x000001;	//
 		function     = 0x000002;	//
 		variable     = 0x000003;	// functions and typenames are also variables
 
 		attr_const   = 0x000004;
 		attr_static  = 0x000008;
 	}*/
-
-	ATTR_const = 0x0100,		// constant
-	ATTR_stat  = 0x0200			// static
 } ccToken;
 typedef struct tok_inf {
 	int const	type;

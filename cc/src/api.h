@@ -71,7 +71,7 @@ struct stateRec {
 		signed int		sm;			// exec: - / cgen: stack minimum size
 		signed int		su;			// exec: - / cgen: stack access (parallel processing)
 
-		unsigned int	pos;		// exec: trace pos / cgen: current positin in buffer
+		unsigned int	pos;		// TODO: remove use: _beg: trace pos / cgen: current positin in buffer
 		signed int		opti;		// exec: - / cgen: optimization levevel
 
 		struct {
