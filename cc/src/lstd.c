@@ -432,7 +432,7 @@ static int miscFunction(libcArgs args) {
 			static int initialized = 0;
 			int result;
 			if (!initialized) {
-				srand(time(NULL));
+				srand((unsigned int)time(NULL));
 				initialized = 1;
 			}
 			result = rand() * rand();	// if it gives a 16 bit int
@@ -441,7 +441,7 @@ static int miscFunction(libcArgs args) {
 		}
 
 		case timeOpTime32:
-			reti32(args, time(NULL));
+			reti32(args, (int)time(NULL));
 			return 0;
 
 		case timeOpClock32:
@@ -660,15 +660,13 @@ int libCallHaltDebug(libcArgs rt) {
 			fputfmt(stdout, "var: ");
 		}
 
-		fputfmt(stdout, "@0x%06x[size: %d]: ", var->offs, var->size);
-
 		if (var->stat) {
 			// static variable.
-			ofs = (void*)(rt->rt->_mem + var->offs);
+			ofs = rt->rt->_mem + var->offs;
 		}
 		else {
 			// argument or local variable.
-			ofs = ((char*)rt->retv) - var->offs;
+			ofs = (char*)rt->retv + rt->fun->prms->offs - var->offs;
 		}
 
 		fputval(rt->rt, stdout, var, (stkval*)ofs, 0);

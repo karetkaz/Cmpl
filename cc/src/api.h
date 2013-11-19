@@ -39,11 +39,11 @@ typedef struct libcArgsRec {
 	state rt;		// runtime context
 
 	symn  fun;		// invoked function
+	void* data;		// function data
+
 	void* retv;		// result of function
 	char* argv;		// arguments for function
-
-	void* data;		// function data (ccAddCall)
-	void* extra;	// extra data (ccCall)
+	void* extra;	// extra data for function
 } *libcArgs;
 
 /** runtime context
@@ -59,8 +59,8 @@ struct stateRec {
 
 	// virtual machine state
 	struct {
-		void* cell;					// execution unit(s)
 		void* libv;					// libcall vector
+		void* cell;					// execution unit(s)
 
 		unsigned int	pc;			// exec: entry point / cgen: prev program counter
 		unsigned int	px;			// exec: exit point / cgen: program counter
@@ -68,16 +68,14 @@ struct stateRec {
 		unsigned int	ro;			// exec: read only memory / cgen: function parameters
 		signed int		ss;			// exec: stack size / cgen: current stack size
 
-		signed int		sm;			// exec: - / cgen: stack minimum size
+		signed int		sm;			// exec: - / cgen: minimum stack size
 		signed int		su;			// exec: - / cgen: stack access (parallel processing)
 
-		unsigned int	pos;		// TODO: remove use: _beg: trace pos / cgen: current positin in buffer
 		signed int		opti;		// exec: - / cgen: optimization levevel
 
 		struct {
 			unsigned int	meta;
 			unsigned int	code;
-			//~ unsigned int	data;
 		} size;
 
 		void* _heap;
@@ -232,11 +230,11 @@ struct stateRec {
 	} api;
 
 	// memory related
-	unsigned char *_beg;		// cc: used memory; vm: >? heap begin
-	unsigned char *_end;
+	unsigned char *_beg;		// cc: used memory(increments); vm: TODO: heap free memory
+	unsigned char *_end;		// cc: temp memory(decrements); vm: TODO: heap used memory
 
 	const long _size;			// size of total memory
-	unsigned char _mem[];		// this is whwewe the memory begins.
+	unsigned char _mem[];		// this is where the memory begins.
 };
 
 static inline void* argval(libcArgs args, int offset, void *result, int size) {
@@ -257,7 +255,6 @@ static inline float64_t argf64(libcArgs args, int offs) { return argval(args, of
 static inline void* arghnd(libcArgs args, int offs) { return argval(args, offs, void*); }
 static inline void* argref(libcArgs args, int offs) { int32_t p = argval(args, offs, int32_t); return p ? args->rt->_mem + p : NULL; }
 static inline void* argsym(libcArgs args, int offs) { return args->rt->api.mapsym(args->rt, argref(args, offs)); }
-//static inline char* argstr(libcArgs args, int offs) { return (char*)argref(args, offs); }
 #undef argval
 
 static inline void* setret(libcArgs args, void *result, int size) {
@@ -266,8 +263,7 @@ static inline void* setret(libcArgs args, void *result, int size) {
 	}
 	return args->retv;
 }
-#define getret(__ARGV, __TYPE) (*((__TYPE*)((__ARGV)->retv)))
-#define setret(__ARGV, __TYPE, __VAL) (getret(__ARGV, __TYPE) = (__TYPE)(__VAL))
+#define setret(__ARGV, __TYPE, __VAL) (*(__TYPE*)(__ARGV)->retv = (__TYPE)(__VAL))
 static inline void reti32(libcArgs args, int32_t val) { setret(args, int32_t, val); }
 static inline void reti64(libcArgs args, int64_t val) { setret(args, int64_t, val); }
 static inline void retf32(libcArgs args, float32_t val) { setret(args, float32_t, val); }

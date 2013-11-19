@@ -446,7 +446,6 @@ static int surfCall(libcArgs rt) {
 							//~ dump(s, dump_sym | dump_asm, callback, "error:&-T\n", callback);
 							return -1;
 						}
-						//~ cBuff[sx] = getret(rt, long);
 					}
 				}
 			}

@@ -53,7 +53,7 @@ void dump(state, int dumpWhat, symn, const char* msg, ...);
 ccState ccInit(state, int mode, int onHalt(libcArgs));
 
 // declare and start a namespace (static struct)
-symn ccBegin(state, char *cls);
+symn ccBegin(state, const char *cls);
 
 //~ declare constants
 symn ccDefInt(state, char *name, int64_t value);

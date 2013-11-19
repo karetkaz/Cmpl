@@ -505,3 +505,5 @@ void f(int &arg) {
 
 int N = 4;
 f(&N);
+
+//~ int &b = N = 8;

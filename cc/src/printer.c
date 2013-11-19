@@ -1466,8 +1466,7 @@ void dump(state rt, int mode, symn sym, const char* text, ...) {
 				", px: %d"
 				", size.meta: %d"
 				", size.code: %d"
-				//~ ", size.data: %d"
-			") {\n", rt->vm.ro, rt->vm.ss, rt->vm.sm, rt->vm.pc, rt->vm.px, rt->vm.size.meta, rt->vm.size.code);//, rt->vm.size.data);
+			") {\n", rt->vm.ro, rt->vm.ss, rt->vm.sm, rt->vm.pc, rt->vm.px, rt->vm.size.meta, rt->vm.size.code);
 
 			fputasm(rt, logf, rt->vm.pc, rt->vm.px, 0x100 | (mode & 0xff));
 			fputfmt(logf, "}\n");
@@ -1476,11 +1475,12 @@ void dump(state rt, int mode, symn sym, const char* text, ...) {
 
 	if (mode & dump_bin) {
 		unsigned int i, brk = level & 0xff;
+		unsigned int max = rt->_beg - rt->_mem;
 
 		if (brk == 0)
 			brk = 16;
 
-		for (i = 0; i < rt->vm.pos; i += 1) {
+		for (i = 0; i < max; i += 1) {
 			int val = rt->_mem[i];
 			if (((i % brk) == 0) && i != 0) {
 				unsigned int j = i - brk;

@@ -20,7 +20,7 @@
 	5: print non pre-mapped strings, non static types
 	6: print static casts generated with emit
 */
-//~ #define DEBUGGING 1
+//#define DEBUGGING 1
 
 // enable dynamic dll/so lib loading
 #define USEPLUGINS
@@ -225,8 +225,8 @@ struct symNode {					// type node (meta)
 		uint32_t	call:1;		// callable(function/definition) <=> (kind == TYPE_ref && args)
 		uint32_t	cnst:1;		// constant
 		uint32_t	stat:1;		// static ?
-		uint32_t	glob:1;		// global
-		uint32_t _padd:27;		// declaration level
+		//~ uint32_t	glob:1;		// global
+		uint32_t _padd:28;		// declaration level
 	};
 	};
 
@@ -347,12 +347,12 @@ struct ccStateRec {
 	char*	file;	// current file name
 	int		line;	// current line number
 
-	struct {			// Lexer
-		symn	pfmt;		// Warning set to -1 to record.
-		astn	tokp;		// list of reusable tokens
-		astn	_tok;		// one token look-ahead
-		int		_chr;		// one char look-ahead
-		struct {		// INPUT
+	struct {					// Lexer
+		symn	pfmt;			// Warning set to -1 to record.
+		astn	tokp;			// list of reusable tokens
+		astn	_tok;			// one token look-ahead
+		int		_chr;			// one char look-ahead
+		struct {				// Input
 			int		_fin;		// file handle (-1) for cc_buff()
 			int		_cnt;		// chars left in buffer
 			char*	_ptr;		// pointer parsing trough source

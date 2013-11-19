@@ -75,7 +75,7 @@ static struct Array(typename Type) {
 	/+ then using like:
 		using Array(int);
 
-		using Array(int) {
+		using (Array(int)) {
 			int array[200] = ...;
 			int x = array.indexOf(30);
 		}

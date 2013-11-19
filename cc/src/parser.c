@@ -246,16 +246,18 @@ char* mapstr(ccState s, char* name, unsigned size/* = -1U*/, unsigned hash/* = -
 	}
 
 	if (hash == (unsigned)(-1)) {
-		//~ debug("strcrc '%s'", name);
 		hash = rehash(name, size) % TBLS;
 	}
 
-	dieif (name[size-1], "FixMe: %s[%d]", name, size);
+	dieif (name[size-1] != 0, "FixMe: %s[%d]", name, size);
 	for (next = s->strt[hash]; next; next = next->next) {
-		//~ int slen = next->data - (unsigned char*)next;
 		register int c = memcmp(next->data, name, size);
-		if (c == 0) return (char*)next->data;
-		if (c > 0) break;
+		if (c == 0) {
+			return (char*)next->data;
+		}
+		if (c > 0) {
+			break;
+		}
 		prev = next;
 	}
 
@@ -1085,7 +1087,6 @@ static int readTok(ccState s, astn tok) {
 }
 
 astn peekTok(ccState s, ccToken kind) {
-	//~ dieif(!s->_cnt, "FixMe: invalid ccState");
 	if (s->_tok == 0) {
 		s->_tok = newnode(s, 0);
 		if (!readTok(s, s->_tok)) {
@@ -1563,8 +1564,8 @@ astn decl_var(ccState cc, astn* argv, int mode) {
 					if (eval(&val, dims) == TYPE_int) {
 						// add static const length property to array type.
 						addLength(cc, typ, /*TODO: ArraySize ATTR_stat |  */TYPE_def, dims);
-						typ->size = val.con.cint * typ->type->size;
-						typ->offs = val.con.cint;
+						typ->size = (int)val.con.cint * typ->type->size;
+						typ->offs = (int)val.con.cint;
 						typ->cast = TYPE_ref;
 						typ->init = init;
 						ref->cast = 0;
@@ -1606,8 +1607,8 @@ astn decl_var(ccState cc, astn* argv, int mode) {
 					if (eval(&val, init) == TYPE_int) {
 						//~ ArraySize
 						addLength(cc, typ, TYPE_def, init);
-						typ->size = val.con.cint * typ->type->size;
-						typ->offs = val.con.cint;
+						typ->size = (int)val.con.cint * typ->type->size;
+						typ->offs = (int)val.con.cint;
 						typ->init = init;
 					}
 					else {

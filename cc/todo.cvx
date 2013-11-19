@@ -1,189 +1,15 @@
-//~ BUG: static functions are not accessible from a non static struct it there is only static data.
+//~ BUG: static functions are not accessible from a non static struct if there is only static data.
 //~ BUG: function with empty body does not generate the return instruction.
 
 //~ BUG: arrays in structures
 //~ BUG: array of references
 
-//~ TODO: static if else part?
-//~ TODO: js like initialization.
-//~ TODO: inside a static if false threat errors as warnings?
-//~ TODO: separate struct and unoin declaration?
-//~ TODO: in case of unions create a constructor?
-
-/+ TODO: Array allocation and assignment
-define new(typename type, int32 ^n) = emit(struct, pointer(memmgr(null, n * type.size)), i32(n));
-
-int b[] = new(int, 10);
-//~ b = new(int, 10);
-//~ int c[] = new(int, 10);
-//~ b = c;
-
-/+
-int a[][];
-a = new(int[], 10);
-for (int i = 0; i < a.length; i += 1) {
-	a[i] = new(int, 10);
-}
-// +/
-
-// +/
-
-/+ DONE: const & static members
-struct M {
-	static const int A = 9;
-	static int B = 9;
-	const int a;
-	int b;
-
-	static const int A_;		// error: uninitialized constant
-	static int B_;
-	const int a_ = 0;			// error: can not be initialized
-	int b_ = 0;					// error: can not be initialized
-}
-
-M m = M(6, 9);
-m.A = 69;			// error: constant lvalue in asignment
-m.a = 69;			// error: constant lvalue in asignment
-m.B = 69;			// warn: access wia instance reference
-m.b = 69;
-
-//~ int &ref_m_a = m.a;	// TODO: hacked: warn if const/nonconst ref assignment.
-//~ ref_m_a = 666;
-
-// +/
-
-/+ BUG: Arrays/slices inside structs
-struct slice_in_struct {
-	int slice[];
-}
-slice_in_struct slice_in_struct_fn(int a[]) {return slice_in_struct(a);}
-
-int a[4] = {1, 2, 3, 4};
-
-slice_in_struct it1 = slice_in_struct(a);
-
-//~ DONE:
-slice_in_struct it2 = slice_in_struct_fn(a);
-
-//~ print("\n");
-
-//FixMe: 
-int xxx = it1.slice[0];
-
-//~ +/
-
-/+ inlineing ...
-define sqr1(float64 ^x) = x*x;
-define sqr2(float64 x) = sqr1(x);
-double x = 9;
-double y1 = sqr1(x*x+x);		// 
-double y2 = sqr2(x*x+x);		// should produce the same code as above
-//~ +/
-
-/+ BUG: convert char slice to string 
-const char str1[] = "alma a fa alatt nyari piros alma";
-const char str2[] = {'a', 'l', 'm', 'a', 0};
-string str3 = "alma";
-//~ TODO: BUG: string str4 = string(str1);
-
-// makeing slices from strings (substring)
-//~ char slice1[] = emit(struct, ref(str2), i32(2));
-//~ char slice2[] = emit(struct, i32.add, ref(str2), i32(2), i32(2));
-//~ +/
-
-/+ DONE: static casting pointers
-pointer x = emit(pointer, ref("erZKJVDlaknjsdvkSDNVlk"));
-string str = emit(string, ref(x));
-//~ println(emit(string, ref(x)));
-//~ +/
-
-/+ DONE: fixed size array for defines
-void testArr(double x[]) {
-	print("%d\n", int64(x.length));
-	x[3] = 8;
-}
-
-define TestArr(double x[16]) = testArr(x);
-
-double x[16] = {1};
-//~ testArr(x);
-//~ TestArr(x);
-//~ +/
-
-/+ DONE: return does not cast
-double f(int32 v) {result = v;}
-double g(int32 v) {return v;}
-double h(int32 v) {return result = v;}
-
-int v = 12756;
-double v1 = v;
-assert(v1 == f(v));
-assert(v1 == g(v));
-assert(v1 == h(v));
-
-//~ +/
-
-/+ BUG: struct containing references.
-struct Refs {
-	int &i;
-	double &d;
-	int f();
-}
-
-int a = 6;
-double b = 6;
-int f() { println("ok"); }
-
-static Refs refs = Refs(&a, &b, f);
-
-void refassign() {
-	static int a = 62;
-	static double b = 62;
-	static int f2() { println("ok62"); }
-
-	refs = Refs(&a, &b, f2);
-}
-
-refs.f();
-refassign();
-refs.f();
-
-//~ BUG: if (refs.f != null) { refs.f(); }
-
-//~ +/
-
-/+ BUG: function returning reference or string type.
-//~ define sizeof(typename type) = int(type.size);
-//~ define new(typename type) = memmgr(null, type.size);
-
-struct ComplexByVal {double re; double im;}
-struct &ComplexByRef {double re; double im;}
-
-//~ void print(ComplexByRef val) { print("%F", val.re); print(", "); print("%F", val.im); print("\n"); }
-
-/+ TODO: 
-ComplexByRef ComplexByRef(double re, double im) {
-	result = new(ComplexByRef);
-	result.re = re;
-	result.im = im;
-	return result;
-}// +/
-
-ComplexByVal v1 = ComplexByVal(3,-2);
-ComplexByRef v2 = new(ComplexByRef);
-ComplexByRef v3 = emit(ComplexByRef, i32(-1));
-//~ ComplexByRef v4 = ComplexByRef(2, -3);
-
-//~ v2.re = v1.re;
-//~ v3 = v2;
-//~ v2 = null;
-
-
-//~ TODO: return string.
-//~ string alma() {result = "alma";}
-
-// +/
-
+//~ TODO:! inout parameters + iteration over struct members.
+//~ TODO:! variable initialization in js style.
+//~ TODO:? static if else part
+//~ TODO:? inside static if false part threat errors as warnings
+//~ TODO:? separate struct and unoin declaration
+//~ TODO:X in case of unions create a constructor (!js style initialization resolves this)
 /+ TODO: nice to have
 //~ arrays of functions
 	int alma(int h)[10];
@@ -429,3 +255,207 @@ bool invoke(variant obj, string name, var &&res, var args...) {
 
 //~ +/
 //~ +/
+
+/+ BenchMarks
+3d-cube
+3d-morph
+3d-raytrace
+access-binary-trees
+access-fannkuch
+access-nbody
+access-nsieve
+bitops-3bit-bits-in-byte
+bitops-bits-in-byte
+bitops-bitwise-and
+bitops-nsieve-bits
+controlflow-recursive
+crypto-aes
+crypto-md5
+crypto-sha1
+date-format-tofte
+date-format-xparb
+math-cordic
+math-partial-sums
+math-spectral-norm
+regexp-dna
+string-base64
+string-fasta
+string-tagcloud
+string-unpack-code
+string-validate-input
+//~ +/
+
+/+ TODO: Array allocation and assignment
+define new(typename type, int32 ^n) = emit(struct, pointer(memmgr(null, n * type.size)), i32(n));
+
+int b[] = new(int, 10);
+//~ b = new(int, 10);
+//~ int c[] = new(int, 10);
+//~ b = c;
+
+/+
+int a[][];
+a = new(int[], 10);
+for (int i = 0; i < a.length; i += 1) {
+	a[i] = new(int, 10);
+}
+// +/
+
+// +/
+
+/+ DONE: const & static members
+struct M {
+	static const int A = 9;
+	static int B = 9;
+	const int a;
+	int b;
+
+	static const int A_;		// error: uninitialized constant
+	static int B_;
+	const int a_ = 0;			// error: can not be initialized
+	int b_ = 0;					// error: can not be initialized
+}
+
+M m = M(6, 9);
+m.A = 69;			// error: constant lvalue in asignment
+m.a = 69;			// error: constant lvalue in asignment
+m.B = 69;			// warn: access wia instance reference
+m.b = 69;
+
+//~ int &ref_m_a = m.a;	// TODO: hacked: warn if const/nonconst ref assignment.
+//~ ref_m_a = 666;
+
+// +/
+
+/+ BUG: Arrays/slices inside structs
+struct slice_in_struct {
+	int slice[];
+}
+slice_in_struct slice_in_struct_fn(int a[]) {return slice_in_struct(a);}
+
+int a[4] = {1, 2, 3, 4};
+
+slice_in_struct it1 = slice_in_struct(a);
+
+//~ DONE:
+slice_in_struct it2 = slice_in_struct_fn(a);
+
+//~ print("\n");
+
+//FixMe: 
+int xxx = it1.slice[0];
+
+//~ +/
+
+/+ inlineing ...
+define sqr1(float64 ^x) = x*x;
+define sqr2(float64 x) = sqr1(x);
+double x = 9;
+double y1 = sqr1(x*x+x);		// 
+double y2 = sqr2(x*x+x);		// should produce the same code as above
+//~ +/
+
+/+ BUG: convert char slice to string 
+const char str1[] = "alma a fa alatt nyari piros alma";
+const char str2[] = {'a', 'l', 'm', 'a', 0};
+string str3 = "alma";
+//~ TODO: BUG: string str4 = string(str1);
+
+// makeing slices from strings (substring)
+//~ char slice1[] = emit(struct, ref(str2), i32(2));
+//~ char slice2[] = emit(struct, i32.add, ref(str2), i32(2), i32(2));
+//~ +/
+
+/+ DONE: static casting pointers
+pointer x = emit(pointer, ref("erZKJVDlaknjsdvkSDNVlk"));
+string str = emit(string, ref(x));
+//~ println(emit(string, ref(x)));
+//~ +/
+
+/+ DONE: fixed size array for defines
+void testArr(double x[]) {
+	print("%d\n", int64(x.length));
+	x[3] = 8;
+}
+
+define TestArr(double x[16]) = testArr(x);
+
+double x[16] = {1};
+//~ testArr(x);
+//~ TestArr(x);
+//~ +/
+
+/+ DONE: return does not cast
+double f(int32 v) {result = v;}
+double g(int32 v) {return v;}
+double h(int32 v) {return result = v;}
+
+int v = 12756;
+double v1 = v;
+assert(v1 == f(v));
+assert(v1 == g(v));
+assert(v1 == h(v));
+
+//~ +/
+
+/+ BUG: struct containing references.
+struct Refs {
+	int &i;
+	double &d;
+	int f();
+}
+
+int a = 6;
+double b = 6;
+int f() { println("ok"); }
+
+static Refs refs = Refs(&a, &b, f);
+
+void refassign() {
+	static int a = 62;
+	static double b = 62;
+	static int f2() { println("ok62"); }
+
+	refs = Refs(&a, &b, f2);
+}
+
+refs.f();
+refassign();
+refs.f();
+
+//~ BUG: if (refs.f != null) { refs.f(); }
+
+//~ +/
+
+/+ BUG: function returning reference or string type.
+//~ define sizeof(typename type) = int(type.size);
+//~ define new(typename type) = memmgr(null, type.size);
+
+struct ComplexByVal {double re; double im;}
+struct &ComplexByRef {double re; double im;}
+
+//~ void print(ComplexByRef val) { print("%F", val.re); print(", "); print("%F", val.im); print("\n"); }
+
+/+ TODO: 
+ComplexByRef ComplexByRef(double re, double im) {
+	result = new(ComplexByRef);
+	result.re = re;
+	result.im = im;
+	return result;
+}// +/
+
+ComplexByVal v1 = ComplexByVal(3,-2);
+ComplexByRef v2 = new(ComplexByRef);
+ComplexByRef v3 = emit(ComplexByRef, i32(-1));
+//~ ComplexByRef v4 = ComplexByRef(2, -3);
+
+//~ v2.re = v1.re;
+//~ v3 = v2;
+//~ v2 = null;
+
+
+//~ TODO: return string.
+//~ string alma() {result = "alma";}
+
+// +/
+

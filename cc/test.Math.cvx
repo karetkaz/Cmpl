@@ -1,5 +1,5 @@
 // test math functions
-define epsilon = 1e-105;
+define epsilon = 1e-14;
 
 const float64 vf[] = {
 	4.9790119248836735e+00,

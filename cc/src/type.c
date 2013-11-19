@@ -260,21 +260,14 @@ int canAssign(ccState cc, symn var, astn val, int strict) {
 		if (var && var->type == cc->type_var) {
 			return 1;
 		}
-		// if parameter is byRef or type is byRef
 		if (var->cast == TYPE_ref) {
-			//~ trace("canAssign null to: %-T", var);
 			return 1;
 		}
 	}
 
 	// assigning a typename or pass by reference
 	if (lnk && (lnk->kind == TYPE_rec || lnk->kind == TYPE_arr)) {
-		//~ debug("assigning typename or pass by reference: %T = %+k", var, val);
-		/*if (var->type == val->type->type) {
-			return 1;
-		}*/
 		if (var->type == cc->type_rec) {
-			//~ debug("assigning typename: %T = %+k", var, val);
 			return 1;
 		}
 	}
@@ -328,15 +321,18 @@ int canAssign(ccState cc, symn var, astn val, int strict) {
 		else if (!strict) {
 			strict = var->cast == TYPE_ref;
 		}
-		if (var->cast == TYPE_ref && val->type == cc->type_ptr)
+		// assign pointer to reference
+		if (var->cast == TYPE_ref && val->type == cc->type_ptr) {
+			// TODO: warn
 			return 1;
+		}
 	}
 
 	if (typ == val->type) {
 		return 1;
 	}
 
-	// array assign
+	// assign array
 	if (typ->kind == TYPE_arr) {
 		struct astNode atag;
 		symn vty = val->type;
@@ -351,7 +347,6 @@ int canAssign(ccState cc, symn var, astn val, int strict) {
 		//~ check if subtypes are assignable
 		if (canAssign(cc, typ->type, &atag, strict)) {
 			// assign to dynamic array
-			//~ trace("assign `%+k` to `%+T`", val, var);
 			if (typ->init == NULL) {
 				return 1;
 			}
@@ -373,7 +368,9 @@ int canAssign(ccState cc, symn var, astn val, int strict) {
 	if (val->type && typ->cast == val->type->cast) {
 		if (typ->size == val->type->size) {
 			switch (typ->cast) {
-				default:break;
+				default:
+					break;
+
 				case TYPE_u32:
 				case TYPE_i32:
 				case TYPE_i64:
@@ -436,7 +433,7 @@ symn lookup(ccState s, symn sym, astn ref, astn args, int raise) {
 
 		if (args) {
 			if (!sym->call) {
-				//~ TODO: enable basic type casts: float32(1)
+				// TODO: enable basic type casts: float32(1)
 				int isBasicCast = 0;
 
 				symn sym2 = sym;
@@ -475,8 +472,6 @@ symn lookup(ccState s, symn sym, astn ref, astn args, int raise) {
 				if (!canAssign(s, param, argval, 0))
 					break;
 
-				//~ debug("%+k%s is probably %-T%s:%t", ref, args ? "()" : "", sym, sym->call ? "()" : "", sym->kind);
-
 				// if null is passed by ref it will be as a cast
 				if (argval->kind == TYPE_ref && argval->ref.link == s->null_ref) {
 					hascast += 1;
@@ -504,7 +499,7 @@ symn lookup(ccState s, symn sym, astn ref, astn args, int raise) {
 			error(s->s, ref->file, ref->line, "invalid use of local symbol `%k`.", ref);
 		}
 
-		// rerfect match
+		// perfect match
 		if (hascast == 0)
 			break;
 
@@ -1373,11 +1368,6 @@ int fixargs(symn sym, int align, int stbeg) {
 			arg->cast = TYPE_ref;
 		}
 
-		/*/ referenced types are passed by reference.
-		if (isCall && arg->type->kind == TYPE_ref) {
-			arg->cast = TYPE_ref;
-		}// */
-
 		arg->size = sizeOf(arg);
 
 		//~ HACK: static sized array types are passed by reference.
@@ -1396,10 +1386,9 @@ int fixargs(symn sym, int align, int stbeg) {
 		arg->offs = align ? stbeg + stdiff : stbeg;
 		stdiff += padded(arg->size, align);
 
-		if (align == 0 && stdiff < arg->size)
+		if (align == 0 && stdiff < arg->size) {
 			stdiff = arg->size;
-
-		//~ debug("sizeof(%-T):%d", arg, arg->offs);
+		}
 	}
 	//~ because args are evaluated from right to left
 	if (isCall) {
@@ -1408,7 +1397,6 @@ int fixargs(symn sym, int align, int stbeg) {
 		}
 	}
 	return stdiff;
-
 }
 
 //~ scoping
@@ -1440,16 +1428,9 @@ void enter(ccState s, astn ast) {
 	(void)ast;
 }
 symn leave(ccState s, symn dcl, int mkstatic) {
+	int i;
 	state rt = s->s;
 	symn result = NULL;
-
-	// local declarations (non static)
-	//~ symn loc = NULL;
-
-	// static declarations
-	//~ symn sta = NULL, tail = NULL;
-
-	int i;
 
 	s->nest -= 1;
 
@@ -1471,14 +1452,13 @@ symn leave(ccState s, symn dcl, int mkstatic) {
 
 		sym->next = NULL;
 
-		// declared in: (module, structure, function or wathever)
+		// declared in: (structure, function or wathever)
 		sym->decl = dcl ? dcl : s->func;
 
 		if (mkstatic) {
 			sym->stat = 1;
 		}
 
-		//~ debug("global(%d): %-T / %?-T", sym->stat, sym, sym->gdef);
 		// if not inside a static if, link to all
 		if (!s->siff) {
 			if (sym->defs == NULL) {
@@ -1491,7 +1471,7 @@ symn leave(ccState s, symn dcl, int mkstatic) {
 			}
 		}
 
-		// TODO: fields can have default values.
+		// TODO: any field can have default value.
 		if (dcl != NULL && dcl->kind == TYPE_rec) {
 			dieif(dcl->call, "FixMe");
 			if (sym->kind == TYPE_ref && !sym->stat && sym->init) {

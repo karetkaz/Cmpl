@@ -160,7 +160,7 @@ char* parsecmd(char* ptr, const char* cmd, const char* sws) {
 	return ptr;
 }
 
-void usage(char* prog) {
+static void usage(char* prog) {
 	FILE *out = stdout;
 	fputfmt(out, "Usage: %s =<eval expression>\n", prog);
 	fputfmt(out, "Usage: %s <global options> <local options>*\n", prog);
@@ -199,8 +199,9 @@ int evalexp(ccState cc, char* text) {
 	typ = typecheck(cc, NULL, ast);
 	tid = eval(&res, ast);
 
-	if (peek(cc))
+	if (peek(cc)) {
 		error(cc->s, cc->file, cc->line, "unexpected: `%k`", peek(cc));
+	}
 
 	fputfmt(cc->s->logf, "expr: %+K", ast);
 	fputfmt(cc->s->logf, "eval(`%+k`) = ", ast);
@@ -353,7 +354,7 @@ static int importLib(state rt, const char* path) {
 #endif
 
 static symn printvars = NULL;
-static int dbgCon(state, int pu, void* ip, long* bp, int ss);
+static int dbgCon(state, int pu, void* ip, long* sp, int ss);
 
 int program(int argc, char* argv[]) {
 	state rt = rtInit(mem, sizeof(mem));
@@ -587,7 +588,7 @@ int program(int argc, char* argv[]) {
 			astn ast = decl_var(cc, NULL, TYPE_def);
 			printvars = linkOf(ast);
 			if (printvars != NULL) {
-				printvars->name = "\tsp";	// stack pointer
+				printvars->name = "sp";	// stack pointer
 			}
 			else {
 				error(rt, NULL, 0, "error in debug print format `%s`", stk_dump);
@@ -727,7 +728,7 @@ int main(int argc, char* argv[]) {
 }
 //~ */
 
-static int dbgCon(state rt, int pu, void* ip, long* bp, int ss) {
+static int dbgCon(state rt, int pu, void* ip, long* sp, int ss) {
 	static char buff[1024];
 	static char cmd = 'N';
 	dbgInfo dbg;
@@ -746,17 +747,17 @@ static int dbgCon(state rt, int pu, void* ip, long* bp, int ss) {
 
 	dbg = getCodeMapping(rt, IP);
 
-	if (dbg != NULL) {
+	/*! if (dbg != NULL) {
 		fputfmt(stdout, "%s:%d:exec:[sp(%02d)] %9.*A\n", dbg->file, dbg->line, ss, IP, ip);
 	}
 	else {
 		fputfmt(stdout, ">exec:[sp(%02d)] %9.*A\n", ss, IP, ip);
-	}
-	//~ fputfmt(stdout, ">exec:[sp(%x)] %9.*A\n", bp, IP, ip);
+	}// */
+
+	fputfmt(stdout, ">exec:[sp(%d)@%x: %08x %08x %08x %08x] %9.*A\n", ss, sp, sp[0], sp[1], sp[2], sp[3], IP, ip);
 
 	if (printvars != NULL) {
-		stkval* sp = (stkval*)((char*)bp);
-		fputval(rt, stdout, printvars, sp, 0);
+		fputval(rt, stdout, printvars, (stkval*)sp, 0);
 		fputfmt(stdout, "\n");
 	}
 
@@ -832,8 +833,7 @@ static int dbgCon(state rt, int pu, void* ip, long* bp, int ss) {
 					symn sym = ccFindSym(rt->cc, NULL, arg);
 					debug("arg:%T", sym);
 					if (sym && sym->kind == TYPE_ref && !sym->stat) {
-						stkval* sp = (stkval*)((char*)bp + ss + sym->offs);
-						fputval(rt, stdout, sym, sp, 0);
+						fputval(rt, stdout, sym, (stkval*)sp, 0);
 					}
 				}
 			} break;
@@ -844,9 +844,9 @@ static int dbgCon(state rt, int pu, void* ip, long* bp, int ss) {
 
 			case 's' : {
 				int i;
-				stkval* sp = (stkval*)bp;
 				for (i = 0; i < ss; i++) {
-					fputfmt(stdout, "\tsp(%d): {i32(%d), f32(%g), i64(%D), f64(%G)}\n", i, sp[i].i4, sp[i].f4, sp[i].i8, sp[i].f8);
+					stkval* v = (stkval*)&sp[i];
+					fputfmt(stdout, "\tsp(%d): {i32(%d), f32(%g), i64(%D), f64(%G)}\n", i, v->i4, v->f4, v->i8, v->f8);
 				}
 			} break;
 		}
