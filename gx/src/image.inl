@@ -349,7 +349,7 @@ int gx_saveBMP(const char* dst, gx_Surf src, int flags) {
 	cblt_proc	convln;			// color convereter rutine
 	memset(&bmphdr, 0, sizeof(BMP_HDR));
 	memset(&bmpinf, 0, sizeof(BMP_INF));
-	memset(&bmppal, 0, sizeof(gx_Clut));
+	memset(&bmppal, 0, sizeof(struct gx_Clut));
 	flags &= ~BMP_RLE;				// not implemented	//TODO
 	switch (src->depth) {
 		case  8 : {

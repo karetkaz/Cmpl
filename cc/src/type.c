@@ -97,9 +97,6 @@ TODO's:
 #include "core.h"
 #include <string.h>
 
-//~ symn null_ref = NULL;
-//~ symn emit_opc = NULL;
-
 /// allocate a symbol
 symn newdefn(ccState s, int kind) {
 	state rt = s->s;
@@ -126,8 +123,9 @@ symn install(ccState s, const char* name, ccToken kind, ccToken cast, unsigned s
 	dieif(!s || !name || !kind, "FixMe(s, %s, %t)", name, kind);
 
 	if ((kind & 0xff) == TYPE_rec) {
-		logif(DEBUGGING > 4 && !(kind & ATTR_stat), "typename %s is not declared static", name);
-		kind |= ATTR_stat;
+		logif((kind & ATTR_stat) == 0, "typename %s is not declared static", name);
+		logif((kind & ATTR_const) == 0, "typename %s is not declared constant", name);
+		kind |= ATTR_stat | ATTR_const;
 	}
 
 	if ((def = newdefn(s, kind & 0xff))) {
@@ -151,7 +149,7 @@ symn install(ccState s, const char* name, ccToken kind, ccToken cast, unsigned s
 
 		switch (kind & 0xff) {
 			default:
-				fatal("FixMe (%t)", kind& 0xff);
+				fatal("FixMe (%t)", kind & 0xff);
 				return NULL;
 
 			// user type
@@ -183,9 +181,10 @@ symn install(ccState s, const char* name, ccToken kind, ccToken cast, unsigned s
 	return def;
 }
 
+/// Install a type; @see state.api.ccAddType
 symn ccAddType(state rt, const char* name, unsigned size, int refType) {
 	//~ dieif(!rt->cc, "FixMe");
-	return install(rt->cc, name, ATTR_const | TYPE_rec, refType ? TYPE_ref : TYPE_rec, size, rt->cc->type_rec, NULL);
+	return install(rt->cc, name, ATTR_stat | ATTR_const | TYPE_rec, refType ? TYPE_ref : TYPE_rec, size, rt->cc->type_rec, NULL);
 }
 
 // promote
@@ -208,10 +207,16 @@ static inline int castkind(int cast) {
 	return 0;
 }
 static symn promote(symn lht, symn rht) {
-	symn pro = 0;
+	symn result = 0;
+	if (lht && lht->cast == ENUM_kwd) {
+		lht = lht->type;
+	}
+	if (rht && rht->cast == ENUM_kwd) {
+		rht = rht->type;
+	}
 	if (lht && rht) {
 		if (lht == rht) {
-			pro = lht;
+			result = lht;
 		}
 		else switch (castkind(rht->cast)) {
 			case TYPE_bit:
@@ -220,32 +225,34 @@ static symn promote(symn lht, symn rht) {
 				case TYPE_int:
 					//~ TODO: bool + int is bool; if sizeof(bool) == 4
 					if (lht->cast == TYPE_bit && lht->size == rht->size)
-						pro = rht;
+						result = rht;
 					else
-						pro = lht->size >= rht->size ? lht : rht;
+						result = lht->size >= rht->size ? lht : rht;
 					break;
 
 				case TYPE_flt:
-					pro = lht;
+					result = lht;
 					break;
 
 			} break;
 			case TYPE_flt: switch (castkind(lht->cast)) {
 				case TYPE_bit:
 				case TYPE_int:
-					pro = rht;
+					result = rht;
 					break;
 
 				case TYPE_flt:
-					pro = lht->size >= rht->size ? lht : rht;
+					result = lht->size >= rht->size ? lht : rht;
 					break;
 			} break;
 		}
 	}
 	else if (rht) {
-		pro = rht;
+		result = rht;
 	}
-	return pro;
+
+	//~ logif(DEBUGGING > 4 && result == NULL, "promote failed(%T, %T)", lht, rht);
+	return result;
 }
 
 int canAssign(ccState cc, symn var, astn val, int strict) {
@@ -255,20 +262,24 @@ int canAssign(ccState cc, symn var, astn val, int strict) {
 	dieif(!var, "FixMe");
 	dieif(!val, "FixMe");
 
+	if (val->type == NULL) {
+		return 0;
+	}
+
 	// assigning null or pass by reference
 	if (lnk == cc->null_ref) {
 		if (var && var->type == cc->type_var) {
-			return 1;
+			return TYPE_ref;
 		}
 		if (var->cast == TYPE_ref) {
-			return 1;
+			return TYPE_ref;
 		}
 	}
 
 	// assigning a typename or pass by reference
 	if (lnk && (lnk->kind == TYPE_rec || lnk->kind == TYPE_arr)) {
 		if (var->type == cc->type_rec) {
-			return 1;
+			return TYPE_ref;
 		}
 	}
 
@@ -289,7 +300,7 @@ int canAssign(ccState cc, symn var, astn val, int strict) {
 
 			if (fun && fun->kind == EMIT_opc) {
 				val->type = var;
-				return 1;
+				return TYPE_ref;
 			}
 			if (fun && canAssign(cc, fun->type, &atag, 1)) {
 				arg2 = fun->prms;
@@ -316,7 +327,8 @@ int canAssign(ccState cc, symn var, astn val, int strict) {
 				trace("%-T != %-T", arg1, arg2);
 				return 0;
 			}
-			return 1;
+			// function is by ref
+			return TYPE_ref;
 		}
 		else if (!strict) {
 			strict = var->cast == TYPE_ref;
@@ -324,13 +336,22 @@ int canAssign(ccState cc, symn var, astn val, int strict) {
 		// assign pointer to reference
 		if (var->cast == TYPE_ref && val->type == cc->type_ptr) {
 			// TODO: warn
-			return 1;
+			return TYPE_ref;
 		}
 	}
 
 	if (typ == val->type) {
-		return 1;
+		return var->cast;
 	}
+
+	// assign enum
+	if (val->type->cast == ENUM_kwd) {
+		trace("enum assign `%+k` to `%-T`(%?s:%?d:%t)", val, var, val->file, val->line, typ->cast);
+		if (typ == val->type->type) {
+			return var->cast;
+		}
+	}// */
+
 
 	// assign array
 	if (typ->kind == TYPE_arr) {
@@ -348,10 +369,11 @@ int canAssign(ccState cc, symn var, astn val, int strict) {
 		if (canAssign(cc, typ->type, &atag, strict)) {
 			// assign to dynamic array
 			if (typ->init == NULL) {
-				return 1;
+				return TYPE_arr;
 			}
 			if (typ->size == val->type->size) {
-				return 1;
+				// TODO: return <?>
+				return TYPE_ref;
 			}
 		}
 
@@ -361,7 +383,8 @@ int canAssign(ccState cc, symn var, astn val, int strict) {
 	}
 
 	if (!strict && promote(typ, val->type)) {
-		return 1;
+		// TODO: return <?> val->cast ?
+		return TYPE_rec;
 	}
 
 	//~ /*TODO: hex32 can be passed as int32 by ref
@@ -376,12 +399,12 @@ int canAssign(ccState cc, symn var, astn val, int strict) {
 				case TYPE_i64:
 				case TYPE_f32:
 				case TYPE_f64:
-					return 1;
+					return typ->cast;
 			}
 		}
 	}
 
-	trace("can not assign `%+k` to `%-T`(%?s:%?d:%t)", val, var, val->file, val->line, typ->cast);
+	trace("invalid assignment %-T := %-T(%+k): (%?s:%?d:%t)", var, val->type, val, val->file, val->line, typ->cast);
 	return 0;
 }
 
@@ -558,7 +581,7 @@ symn declare(ccState s, ccToken kind, astn tag, symn typ) {
 		tag->ref.link = def;
 
 		tag->kind = TYPE_def;
-		switch (kind) {
+		switch (kind & 0xff) {
 			default:
 				fatal("FixMe");
 				break;
@@ -570,7 +593,7 @@ symn declare(ccState s, ccToken kind, astn tag, symn typ) {
 
 			case TYPE_def:			// typename
 			case TYPE_ref:			// variable
-				tag->kind = kind;
+				tag->kind = kind & 0xff;
 				break;
 		}
 		if (typ != NULL) {
@@ -610,12 +633,11 @@ int isType(astn ast) {
 	return 0;
 }
 
-extern symn emit_opc_;
 symn linkOf(astn ast) {
 	if (!ast) return 0;
 
 	if (ast->kind == EMIT_opc)
-		return emit_opc_;
+		return ast->type;
 
 	if (ast->kind == OPER_fnc)
 		return linkOf(ast->op.lhso);
@@ -744,10 +766,13 @@ int castTo(astn ast, ccToken cto) {
 			default:
 				goto error;
 		} break;
+
 		case TYPE_ref:
 		case TYPE_arr:
 			break;
 		default:
+			if (cto == TYPE_rec && atc == ENUM_kwd)
+				break;
 		error:
 			trace("cast(%+k) to %t/%t", ast, cto, atc);
 			break;
@@ -857,19 +882,22 @@ symn typecheck(ccState s, symn loc, astn ast) {
 
 			if (fun) switch (fun->kind) {
 				case OPER_dot: {	// math.isNan ???
-					astn call = ast->op.lhso;
-					if (!(loc = typecheck(s, loc, call->op.lhso))) {
+					if (!(loc = typecheck(s, loc, fun->op.lhso))) {
 						debug("%+k:%T", ast, loc);
 						return 0;
 					}
-					dot = call;
-					//~ loc = call->op.lhso->type;
-					ref = call->op.rhso;
+					dot = fun;
+					ref = fun->op.rhso;
 				} break;
 				case EMIT_opc: {
 					astn arg = args;
-					for (arg = args; arg; arg = arg->next)
+					for (arg = args; arg; arg = arg->next) {
 						arg->cst2 = arg->type->cast;
+					}
+					if (!(loc = typecheck(s, loc, fun))) {
+						debug("%+k:%T", ast, loc);
+						return 0;
+					}
 					return ast->type = args ? args->type : NULL;
 				} break;
 				case TYPE_ref:
@@ -1011,6 +1039,10 @@ symn typecheck(ccState s, symn loc, astn ast) {
 					debug("%T('%k', %+k): %t", rht, ast, ast, cast);
 					return 0;
 				}
+				if (!castTo(ast, cast)) {
+					debug("%T('%k', %+k): %t", rht, ast, ast, cast);
+					return 0;
+				}
 				return ast->type = typ;
 			}
 			fatal("operator %k (%T, %T): %+k", ast, lht, rht, ast);
@@ -1111,7 +1143,7 @@ symn typecheck(ccState s, symn loc, astn ast) {
 				return ast->type;
 			}
 
-			fatal("operator %k (%-T %-T): %+k", ast, lht, rht, ast);
+			fatal("operator %k (%-T, %-T): %+k", ast, lht, rht, ast);
 		} break;
 
 		case OPER_lor:		// '&&'
@@ -1207,7 +1239,7 @@ symn typecheck(ccState s, symn loc, astn ast) {
 			if (var->cnst) {
 				error(s->s, ast->file, ast->line, "constant lvalue in asignment: %+k", ast);
 			}
-			// HACK: pointer can be assigned to referencetypes.
+			// HACK: pointer can be assigned to a reference (int &a = null).
 			if (rht == s->type_ptr && var->cast == TYPE_ref) {
 			}
 			else if (!promote(lht, rht)) {
@@ -1239,10 +1271,12 @@ symn typecheck(ccState s, symn loc, astn ast) {
 			}
 			break;
 
+		case EMIT_opc:
+			return ast->type = s->emit_opc;
+
 		case TYPE_int:
 		case TYPE_flt:
-		case TYPE_str:
-		case EMIT_opc: {
+		case TYPE_str: {
 			if (loc) {
 				debug("cast()");
 				return NULL;
@@ -1251,7 +1285,6 @@ symn typecheck(ccState s, symn loc, astn ast) {
 				case TYPE_int: return typeTo(ast, s->type_i32) ? s->type_i32 : NULL;
 				case TYPE_flt: return typeTo(ast, s->type_f64) ? s->type_f64 : NULL;
 				case TYPE_str: return typeTo(ast, s->type_str) ? s->type_str : NULL;
-				case EMIT_opc: return /* ast->ref.link =  */ast->type = s->emit_opc;
 				default: break;
 			}
 		} break;
@@ -1288,7 +1321,7 @@ symn typecheck(ccState s, symn loc, astn ast) {
 					break;
 			}
 
-			//~ TODO: hack
+			//~ TODO: hack: type cast if one argument
 			if (istype(sym) && args && !args->next) {			// cast
 				if (!castTo(args, sym->cast)) {
 					debug("%k:%t", args, castOf(args->type));

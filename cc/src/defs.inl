@@ -169,7 +169,7 @@ OPCDEF(opc___0f, 0x0f, 0, 0,  0, 1, NULL)			//
 
 //~ stk ========================================================================
 OPCDEF(opc_spc,  0x10, 4, 0,  0, 1, "spc")			// SP += arg.rel;
-OPCDEF(opc___11, 0x11, 2, 9, +9, 1, "drop")			// SP -= 4*arg.u1;				[…, a, b, c => […, a, b;
+OPCDEF(opc___11, 0x11, 2, 9, +9, 1, NULL)			//
 OPCDEF(opc_dup1, 0x12, 2, 9, +1, 1, "dup.x1")		// push(sp(arg.1: 3));			[…, a, b, c, d => […, a, b, c, d, a;
 OPCDEF(opc_dup2, 0x13, 2, 9, +2, 1, "dup.x2")		// push(sp(arg.1: 3))x2;		[…, a, b, c, d => […, a, b, c, d, a, b;
 OPCDEF(opc_dup4, 0x14, 2, 9, +4, 1, "dup.x4")		// push(sp(arg.1: 3))x4;		[…, a, b, c, d => […, a, b, c, d, a, b, c, d;
@@ -181,23 +181,23 @@ OPCDEF(opc_ldz2, 0x19, 1, 0, +2, 1, "load.z64")		// push(0, 0);			[…, a, b, c 
 OPCDEF(opc_ldz4, 0x1a, 1, 0, +4, 1, "load.z128")	// push(0, 0, 0, 0);	[…, a, b, c => […, a, b, c, 0, 0, 0, 0;
 OPCDEF(opc_ldc4, 0x1b, 5, 0, +1, 1, "load.c32")		// push(arg.b4: 2);		[…, a, b, c => […, a, b, c, 2;
 OPCDEF(opc_ldc8, 0x1c, 9, 0, +2, 1, "load.c64")		// push(arg.b8: 2);		[…, a, b, c => […, a, b, c, 0, 2;
-OPCDEF(opc_ldcf, 0x1d, 5, 0, +1, 1, "load.f32")		// TODO: temporary opcode
-OPCDEF(opc_ldcF, 0x1e, 9, 0, +2, 1, "load.f64")		// TODO: temporary opcode
-OPCDEF(opc_ldcr, 0x1f, 5, 0, +1, 1, "load.ref")		// TODO: temporary opcode
+OPCDEF(opc_ldcf, 0x1d, 5, 0, +1, 1, "load.f32")		// temporary opcode
+OPCDEF(opc_ldcF, 0x1e, 9, 0, +2, 1, "load.f64")		// temporary opcode
+OPCDEF(opc_ldcr, 0x1f, 5, 0, +1, 1, "load.ref")		// temporary opcode
 
 //~ mem ========================================================================
-OPCDEF(opc_ldi1, 0x20, 1, 1, +0, 1, "load.i8")		// copy(sp, sp(0), 1);				[…, a, b, c => […, a, b, *c;
-OPCDEF(opc_ldi2, 0x21, 1, 1, +0, 1, "load.i16")		// copy(sp, sp(0), 2);				[…, a, b, c => […, a, b, *c;
-OPCDEF(opc_ldi4, 0x22, 1, 1, +0, 1, "load.i32")		// copy(sp, sp(0), 4);				[…, a, b, c => […, a, b, *c;
-OPCDEF(opc_ldi8, 0x23, 1, 1, +1, 1, "load.i64")		// copy(sp, sp(0), 8);				[…, a, b, c => […, a, b, *c12;
-OPCDEF(opc_ldiq, 0x24, 0, 1, +3, 1, "load.i128")	// copy(sp, sp(0), 16);				[…, a, b, c => […, a, b, *c1234;
+OPCDEF(opc_ldi1, 0x20, 1, 1, +0, 1, "load.i8")		// copy(sp, sp(0), 1);				[…, a, b, c => […, a, b, *(int8*)c;
+OPCDEF(opc_ldi2, 0x21, 1, 1, +0, 1, "load.i16")		// copy(sp, sp(0), 2);				[…, a, b, c => […, a, b, *(int16*)c;
+OPCDEF(opc_ldi4, 0x22, 1, 1, +0, 1, "load.i32")		// copy(sp, sp(0), 4);				[…, a, b, c => […, a, b, *(int32*)c;
+OPCDEF(opc_ldi8, 0x23, 1, 1, +1, 1, "load.i64")		// copy(sp, sp(0), 8);				[…, a, b, c => […, a, b, *(int64*)c12;
+OPCDEF(opc_ldiq, 0x24, 0, 1, +3, 1, "load.i128")	// copy(sp, sp(0), 16);				[…, a, b, c => […, a, b, *(p4x4*)c1234;
 OPCDEF(opc_sti1, 0x25, 1, 2, -2, 1, "store.i8")		// copy(sp(1), sp(0), 1);pop2;		[…, a, b, c => […, a
 OPCDEF(opc_sti2, 0x26, 1, 2, -2, 1, "store.i16")	// copy(sp(1), sp(0), 2);pop2;		[…, a, b, c => […
 OPCDEF(opc_sti4, 0x27, 1, 2, -2, 1, "store.i32")	// copy(sp(1), sp(0), 4);pop2;		[…, a, b, c => […
 OPCDEF(opc_sti8, 0x28, 1, 3, -3, 1, "store.i64")	// copy(sp(1), sp(0), 8);pop3;		[…, a, b, c => […
 OPCDEF(opc_stiq, 0x29, 0, 5, -5, 1, "store.i128")	// copy(sp(1), sp(0), 16);pop5;		[…, a, b, c => […
-OPCDEF(opc_ld32, 0x2a, 4, 0, +1, 1, "load.m32")		// copy(sp, ip.rel, 4);				[…, a, b, c => […, a, b, *c;
-OPCDEF(opc_ld64, 0x2b, 4, 0, +2, 1, "load.m64")		// copy(sp, ip.rel, 8);				[…, a, b, c => […, a, b, *c;
+OPCDEF(opc_ld32, 0x2a, 4, 0, +1, 1, "load.m32")		// copy(sp, ip.rel, 4);				[…, a, b, c => […, a, b, c, *(int32*)ip.rel;
+OPCDEF(opc_ld64, 0x2b, 4, 0, +2, 1, "load.m64")		// copy(sp, ip.rel, 8);				[…, a, b, c => […, a, b, c, *(int64*)ip.rel;
 OPCDEF(opc___2c, 0x2c, 0, 0,  0, 1, NULL)			//
 OPCDEF(opc_st32, 0x2d, 4, 1, -1, 1, "store.m32")	// copy(ip.rel, sp(0), 4); pop1;	[…, a, b, c => […, a, b
 OPCDEF(opc_st64, 0x2e, 4, 2, -2, 1, "store.m64")	// copy(ip.rel, sp(0), 8); pop2;	[…, a, b, c => […, a
@@ -211,15 +211,13 @@ OPCDEF(u32_mul,  0x33, 1, 2, -1, 1, "u32.mul")		// sp(1).u32 *= sp(0).u32; pop;
 OPCDEF(u32_div,  0x34, 1, 2, -1, 1, "u32.div")		// sp(1).u32 /= sp(0).u32; pop;
 OPCDEF(u32_mod,  0x35, 1, 2, -1, 1, "u32.mod")		// sp(1).u32 %= sp(0).u32; pop;
 OPCDEF(b32_xor,  0x36, 1, 2, -1, 1, "b32.xor")		// sp(1).u32 ^= sp(0).u32; pop;
-
 OPCDEF(opc_not,  0x37, 1, 1,  0, 1, "b32.not")		// sp(0).u32 = !sp(0).u32;
 OPCDEF(u32_clt,  0x38, 1, 2, -1, 1, "u32.clt")		// sp(1).b32 = sp(1).u32 < sp(0).u32; pop;
 OPCDEF(u32_cgt,  0x39, 1, 2, -1, 1, "u32.cgt")		// sp(1).b32 = sp(1).u32 > sp(0).u32; pop;
-
 OPCDEF(b32_shl,  0x3a, 1, 2, -1, 1, "b32.shl")		// sp(1).u32 <<= sp(0).u32; pop;
 OPCDEF(b32_shr,  0x3b, 1, 2, -1, 1, "b32.shr")		// sp(1).u32 >>= sp(0).u32; pop;
 OPCDEF(b32_sar,  0x3c, 1, 2, -1, 1, "b32.sar")		// sp(1).i32 >>= sp(0).i32; pop;
-OPCDEF(u32__3d,  0x3d, 1, 3, -2, 1, NULL)			// sp(2) += sp(1) * sp(0); pop2;	[…, a, b, c => […, a + b * c;
+OPCDEF(u32__3d,  0x3d, 1, 3, -2, 1, NULL)			//
 OPCDEF(u32_i64,  0x3e, 1, 1, +1, 1, "u32.2i64")
 OPCDEF(b32_bit,  0x3f, 2, 1,  0, 1, "b32.")			// ext: mask, shl, shr, sar
 
@@ -234,11 +232,9 @@ OPCDEF(i32_mul,  0x43, 1, 2, -1, 1, "i32.mul")		// sp(1).i32 *= sp(0).i32; pop;
 OPCDEF(i32_div,  0x44, 1, 2, -1, 1, "i32.div")		// sp(1).i32 /= sp(0).i32; pop;
 OPCDEF(i32_mod,  0x45, 1, 2, -1, 1, "i32.mod")		// sp(1).i32 %= sp(0).i32; pop;
 OPCDEF(i32___6,  0x46, 0, 0, -0, 1, NULL)			// TODO
-
 OPCDEF(i32_ceq,  0x47, 1, 2, -1, 1, "i32.ceq")		// sp(1).b32 = sp(1).i32 == sp(0).i32; pop;
 OPCDEF(i32_clt,  0x48, 1, 2, -1, 1, "i32.clt")		// sp(1).b32 = sp(1).i32  < sp(0).i32; pop;
 OPCDEF(i32_cgt,  0x49, 1, 2, -1, 1, "i32.cgt")		// sp(1).b32 = sp(1).i32  > sp(0).i32; pop;
-
 OPCDEF(i32_bol,  0x4a, 1, 1, -0, 1, "i32.2bool")	// push(pop.i32 != 0)
 OPCDEF(i32_f32,  0x4b, 1, 1, -0, 1, "i32.2f32")		// push(f32(pop.i32))
 OPCDEF(i32_i64,  0x4c, 1, 1, +1, 1, "i32.2i64")		// push(i64(pop.i32))
@@ -254,11 +250,9 @@ OPCDEF(i64_mul,  0x53, 1, 4, -2, 1, "i64.mul")		// sp(2) *= sp(0); pop2;
 OPCDEF(i64_div,  0x54, 1, 4, -2, 1, "i64.div")		// sp(2) /= sp(0); pop2;
 OPCDEF(i64_mod,  0x55, 1, 4, -2, 1, "i64.mod")		// sp(2) %= sp(0); pop2;
 OPCDEF(i64___6,  0x56, 0, 0, -0, 1, NULL)			// TODO
-
 OPCDEF(i64_ceq,  0x57, 1, 4, -3, 1, "i64.ceq")		// sp(2).b32 = sp(2).i64 == sp(0).i64; pop2;
 OPCDEF(i64_clt,  0x58, 1, 4, -3, 1, "i64.clt")		// sp(2).b32 = sp(2).i64  < sp(0).i64; pop2;
 OPCDEF(i64_cgt,  0x59, 1, 4, -3, 1, "i64.cgt")		// sp(2).b32 = sp(2).i64  > sp(0).i64; pop2;
-
 OPCDEF(i64_i32,  0x5a, 1, 2, -1, 1, "i64.2i32")		// push(i32(pop.i64))
 OPCDEF(i64_f32,  0x5b, 1, 2, -1, 1, "i64.2f32")		// push(f32(pop.i64))
 OPCDEF(i64_bol,  0x5c, 1, 2, -1, 1, "i64.2bool")	// push(pop.i64 != 0)
@@ -274,11 +268,9 @@ OPCDEF(f32_mul,  0x63, 1, 2, -1, 1, "f32.mul")		// sp(1) *= sp(0); pop;
 OPCDEF(f32_div,  0x64, 1, 2, -1, 1, "f32.div")		// sp(1) /= sp(0); pop;
 OPCDEF(f32_mod,  0x65, 1, 2, -1, 1, "f32.mod")		// sp(1) %= sp(0); pop;
 OPCDEF(f32___6,  0x66, 0, 0, -0, 1, NULL)			// TODO
-
 OPCDEF(f32_ceq,  0x67, 1, 2, -1, 1, "f32.ceq")		// sp(1).b32 = sp(1).f32 == sp(0).f32; pop;
 OPCDEF(f32_clt,  0x68, 1, 2, -1, 1, "f32.clt")		// sp(1).b32 = sp(1).f32  < sp(0).f32; pop;
 OPCDEF(f32_cgt,  0x69, 1, 2, -1, 1, "f32.cgt")		// sp(1).b32 = sp(1).f32  > sp(0).f32; pop;
-
 OPCDEF(f32_i32,  0x6a, 1, 1, -0, 1, "f32.2i32")		// push(i32(pop.f32))
 OPCDEF(f32_bol,  0x6b, 1, 1, -0, 1, "f32.2bool")	// push(pop.f32 != 0)
 OPCDEF(f32_i64,  0x6c, 1, 1, +1, 1, "f32.2i64")		// push(i64(pop.f32))
@@ -294,11 +286,9 @@ OPCDEF(f64_mul,  0x73, 1, 4, -2, 1, "f64.mul")	// sp(2) *= sp(0); pop2;
 OPCDEF(f64_div,  0x74, 1, 4, -2, 1, "f64.div")	// sp(2) /= sp(0); pop2;
 OPCDEF(f64_mod,  0x75, 1, 4, -2, 1, "f64.mod")	// sp(2) %= sp(0); pop2;
 OPCDEF(f64___6,  0x76, 0, 0, -0, 1, NULL)		// TODO
-
 OPCDEF(f64_ceq,  0x77, 1, 4, -3, 1, "f64.ceq")	// sp(2).b32 = sp(2).f64 == sp(0).f64; pop2;
 OPCDEF(f64_clt,  0x78, 1, 4, -3, 1, "f64.clt")	// sp(2).b32 = sp(2).f64  < sp(0).f64; pop2;
 OPCDEF(f64_cgt,  0x79, 1, 4, -3, 1, "f64.cgt")	// sp(2).b32 = sp(2).f64  > sp(0).f64; pop2;
-
 OPCDEF(f64_i32,  0x7a, 1, 2, -1, 1, "f64.2i32")	// push(i32(pop.f64))
 OPCDEF(f64_f32,  0x7b, 1, 2, -1, 1, "f64.2f32")	// push(f32(pop.f64))
 OPCDEF(f64_i64,  0x7c, 1, 2, -0, 1, "f64.2i64")	// push(i64(pop.f64))
@@ -314,11 +304,9 @@ OPCDEF(v4f_mul,  0x83, 1, 8, -4, 1, "v4f.mul")	// sp(4) *= sp(0); pop4;
 OPCDEF(v4f_div,  0x84, 1, 8, -4, 1, "v4f.div")	// sp(4) /= sp(0); pop4;
 OPCDEF(v4f_rem,  0x85, 0, 0, -0, 1, NULL)		// TODO: rem
 OPCDEF(v4f_crs,  0x86, 0, 8, -4, 1, "v4f.crs")	// cross
-
 OPCDEF(v4f_ceq,  0x87, 0, 8, -7, 1, "v4f.ceq")	// sp(4).p4f = sp(4) == sp(0) pop7;
 OPCDEF(v4f_min,  0x88, 1, 8, -4, 1, "v4f.min")	// sp(4).p4f = sp(4) <? sp(0) pop4;
 OPCDEF(v4f_max,  0x89, 1, 8, -4, 1, "v4f.max")	// sp(4).p4f = sp(4) >? sp(0) pop4;
-
 OPCDEF(v4f_dp3,  0x8a, 1, 8, -7, 1, "v4f.dp3")	// 3-component dot product
 OPCDEF(v4f_dp4,  0x8b, 1, 8, -7, 1, "v4f.dp4")	// 4-component dot product
 OPCDEF(v4f_dph,  0x8c, 1, 8, -7, 1, "v4f.dph")	// homogeneous dot product

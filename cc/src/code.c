@@ -82,8 +82,13 @@ typedef struct bcde {			// byte code decoder
 #pragma pack(pop)
 
 typedef struct cell {			// processor
-	unsigned char	*ip;		// Instruction pointer
-	unsigned char	*sp;		// Stack pointer(bp + ss)
+
+	// Instruction pointer
+	unsigned char	*ip;
+
+	// Stack
+	unsigned char	*sp;		// Stack pointer -(bp + ss)
+	//~ unsigned char	*tp;		// Trace pointer +(bp)
 	unsigned char	*bp;		// Stack base
 
 	// multiproc
@@ -125,8 +130,7 @@ static inline void* getip(state rt, int pos) {
 static symn installref(state rt, const char* prot, astn* argv) {
 	astn root, args;
 	symn result = NULL;
-	int level, warn;
-	int errc = rt->errc;
+	int warn, errc = rt->errc;
 
 	if (!ccOpen(rt, NULL, 0, (char*)prot)) {
 		trace("FixMe");
@@ -134,16 +138,17 @@ static symn installref(state rt, const char* prot, astn* argv) {
 	}
 
 	warn = rt->cc->warn;
-	level = rt->cc->nest;
 
 	// enable all warnings
 	rt->cc->warn = 9;
 	root = decl_var(rt->cc, &args, decl_NoDefs | decl_NoInit);
 
 	dieif(root == NULL, "error declaring: %s", prot);
+
 	dieif(!skip(rt->cc, STMT_do), "`;` expected declaring: %s", prot);
-	dieif(peek(rt->cc), "unexpected token `%k` declaring: %s", peek(rt->cc), prot);
-	dieif(level != rt->cc->nest, "FixMe");
+
+	dieif(ccDone(rt->cc) != 0, "FixMe");
+
 	dieif(root->kind != TYPE_ref, "FixMe %+k", root);
 
 	if ((result = root->ref.link)) {
@@ -156,12 +161,7 @@ static symn installref(state rt, const char* prot, astn* argv) {
 	return errc == rt->errc ? result : NULL;
 }
 
-/* install a library call
- * @arg rt: the runtime state.
- * @arg libc: the function to call.
- * @arg proto: prototype of function.
- */
-//~ TODO: libcall: parts of it should go to tree.c
+/// Install a native function; @see state.api.ccAddCall
 symn ccAddCall(state rt, int libc(libcArgs), void* data, const char* proto) {
 	symn param, sym = NULL;
 	int stdiff = 0;
@@ -1130,7 +1130,7 @@ int stkoffs(state rt, int size) {
 }
 
 static inline void traceProc(cell pu, int cp, char* msg) {
-	logif(1, "%s: {pu:%d, ip:%x, bp:%x, sp:%x, stacksize:%d, parent:%d, childs:%d}", msg, cp, pu[cp].ip, pu[cp].bp, pu[cp].sp, pu[cp].ss, pu[cp].pp, pu[cp].cp);
+	trace("%s: {pu:%d, ip:%x, bp:%x, sp:%x, stacksize:%d, parent:%d, childs:%d}", msg, cp, pu[cp].ip, pu[cp].bp, pu[cp].sp, pu[cp].ss, pu[cp].pp, pu[cp].cp);
 	(void)pu;
 	(void)cp;
 	(void)msg;
@@ -1162,7 +1162,7 @@ static inline int task(cell pu, int n, int master, int cl) {
 
 		return slave;
 	}
-	//~ else logif(1, "master(%d): continue.", master);
+	//~ else trace("master(%d): continue.", master);
 	return 0;
 }
 static int sync(cell pu, int cp, int wait) {
@@ -1172,7 +1172,7 @@ static int sync(cell pu, int cp, int wait) {
 	// slave proc
 	if (pp != cp) {
 		if (pu[cp].cp == 0) {
-			//~ logif(1, "stop slave(%d).", cp);
+			//~ trace("stop slave(%d).", cp);
 			pu[cp].ip = NULL;
 			pu[pp].cp -= 1;
 			return 1;
@@ -1181,7 +1181,7 @@ static int sync(cell pu, int cp, int wait) {
 	}
 
 	if (pu[cp].cp > 0) {
-		//~ logif(1, "master(%d): continue.", cp);
+		//~ trace("master(%d): continue.", cp);
 		return !wait;
 	}
 
@@ -1335,17 +1335,8 @@ static int exec(state rt, cell pu, symn fun, void* extra) {
 	return 0;
 }
 
-/** vmCall
- * executes a function from the script.
- * vmExec should be called before this function
- * to initialize global variables.
- * @param rt runtime context
- * @param fun the function to be executed.
- * @param ret result of the function.
- * @param args arguments for the function.
- * @return: error code
-**/
-int vmCall(state rt, symn fun, void* res, void* args, void* extra) {
+/// Invoke a function; @see state.api.invoke
+int invoke(state rt, symn fun, void* res, void* args, void* extra) {
 
 	int result = 0;
 	cell pu = rt->vm.cell;
@@ -1390,14 +1381,8 @@ int vmCall(state rt, symn fun, void* res, void* args, void* extra) {
 	return result;
 }
 
-/** vmExec
- * executes the script.
- * @arg rt: enviroment
- * @arg ss: the stack size (TODO)
- * @arg dbg: debugger function
- * @return: error code
-**/
-int vmExec(state rt, void* extra, int ss) {
+/// Execute the compiled script; @see header
+int execute(state rt, void* extra, int ss) {
 	struct symNode unit;
 	// TODO: cells should be in runtimes read only memory
 	cell pu;
@@ -1406,7 +1391,7 @@ int vmExec(state rt, void* extra, int ss) {
 	rt->cc = NULL;
 
 	// invalidate memory manager
-	rt->vm._heap = NULL;
+	rt->vm.heap = NULL;
 
 	// allocate cell(s)
 	rt->_end = rt->_mem + rt->_size;

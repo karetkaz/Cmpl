@@ -37,7 +37,6 @@ char *ccLog = NULL;//"out/debug.out";
 char *ccDmp = NULL;//"out/dump.out";
 int ccDbg = 1;
 
-
 char *obj = NULL;		// object filename
 char *tex = NULL;		// texture filename
 int objLn = 0;			// object fileline
@@ -72,6 +71,20 @@ vector getobjvec(int Normal) {
 		return (Normal ? msh.nrm : msh.pos) + vtx - 1;
 	return NULL;
 }
+
+char* my_itoa(char dst[], unsigned int num, int rad, int pos) {
+	static const char digits[] = "0123456789abcdefghijklmnopqrstuvwxyz";
+
+	if (num == 0) {
+		dst[pos] = 0;
+		return dst + pos;
+	}
+
+	my_itoa(dst, num / rad, rad, pos + 1);
+	dst[pos] = digits[num % rad];
+	return dst + pos;
+}
+
 
 #include <time.h>
 static inline int64_t timenow() {return clock();}
@@ -688,14 +701,17 @@ enum Events {
 	doReload = 10,
 	doSaveMesh = 11,
 	doSaveImage = 12,
+	doNormalize = 13,
+	doOptimize = 14,
 };
 
 static int kbdHND(int key, int state) {
+	char buff[1024];
 	const scalar sca = 8;
 	if (keyboardCallBack) {
 		int result = 0;
 		//~ struct {int key, state;} args = {key, state};
-		vmCall(rt, keyboardCallBack, NULL, &key, NULL);
+		invoke(rt, keyboardCallBack, NULL, &key, NULL);
 		return result;
 	}
 	else switch (key) {
@@ -822,8 +838,11 @@ static int kbdHND(int key, int state) {
 		case 18:		// Ctrl + R
 			return doReload;
 
+		//~ case 14:		// Ctrl + N
+			//~ return doNormalize;
+
 		default:
-			debug("kbdHND(key(%d), lkey(%d))", key, state);
+			debug("kbdHND(key(%d), lkey(%8s))", key, my_itoa(buff, state, 10, 0));
 			break;
 
 	}
@@ -834,7 +853,7 @@ static int ratHND(int btn, int mx, int my) {
 	if (mouseCallBack) {
 		int result = 0;
 		//~ struct {int btn, x, y;} args = {btn, mx, my};
-		vmCall(rt, mouseCallBack, NULL, &btn, NULL);
+		invoke(rt, mouseCallBack, NULL, &btn, NULL);
 		return result;
 	}
 	else {// native mouse handler.
@@ -909,7 +928,6 @@ static int dbgDummy(state rt, int pu, void* ip, long* bp, int ss) {
 int main(int argc, char* argv[]) {
 	int (*dbg)(state rt, int pu, void* ip, long* bp, int ss) = NULL;
 	static char mem[16 << 20];		// 16MB memory for vm & compiler
-	char *script = NULL;			// compile script
 
 	struct matrix proj[1], view[1];
 	struct mesh mshLightPoint;		// mesh for Lights
@@ -926,6 +944,7 @@ int main(int argc, char* argv[]) {
 		int	fps; // ,col
 	} fps = {0, 0, 0};
 
+	char *script = NULL;			// compile script
 	char str[1024];
 	Light l;
 	int e;
@@ -1054,7 +1073,7 @@ int main(int argc, char* argv[]) {
 
 	if (rt != NULL) {
 		int64_t ticks = timenow();
-		e = vmExec(rt, NULL, sizeof(mem)/4);
+		e = execute(rt, NULL, sizeof(mem)/4);
 		//~ debug("vmExecute(): %d\tTime: %f", e, ticksinsecs(ticks));
 		debug("vmExecute(Exit code: %d, Time: %.3f)", e, ticksinsecs(ticks));
 		if (e != 0) {
@@ -1102,16 +1121,28 @@ int main(int argc, char* argv[]) {
 				}
 				else {
 					int64_t ticks = timenow();
-					e = vmExec(rt, NULL, sizeof(mem)/4);
+					e = execute(rt, NULL, sizeof(mem)/4);
 					debug("vmExecute(): %d\tTime: %g", e, ticksinsecs(ticks));
 				}
 			} break;
 
 			case doSaveImage:
+				debug("Saving screeen ...");
 				gx_saveBMP("screen.bmp", &offs, 0);
 				break;
 
+			case doNormalize:
+				debug("Normalizing mesh ...");
+				normMesh(&msh, 0);
+				break;
+
+			case doOptimize:
+				debug("Optimizing mesh ...");
+				optiMesh(&msh, epsilon, osdProgress);
+				break;
+
 			case doSaveMesh:
+				debug("Saving mesh ...");
 				saveMesh(&msh, "mesh.obj");
 				break;
 			
@@ -1139,7 +1170,7 @@ int main(int argc, char* argv[]) {
 
 		// before render method
 		if (renderMethod != NULL) {
-			vmCall(rt, renderMethod, NULL, NULL, NULL);
+			invoke(rt, renderMethod, NULL, NULL, NULL);
 		}
 
 		if (draw & (draw_mode | temp_lght | disp_bbox | temp_zbuf | disp_info)) {

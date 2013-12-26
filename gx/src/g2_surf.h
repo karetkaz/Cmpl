@@ -242,7 +242,7 @@ void gx_clipText(gx_Rect roi, gx_Surf fnt, const char *str);
 void gx_drawChar(gx_Surf dst, int x, int y, gx_Surf fnt, unsigned chr, long col);
 void gx_drawText(gx_Surf dst, int x, int y, gx_Surf fnt, const char *str, long col);
 
-static inline gx_Clip const gx_getclip(gx_Surf s) {return s->clipPtr ? s->clipPtr : (gx_Clip)s;}
+static inline gx_Clip gx_getclip(gx_Surf s) {return s->clipPtr ? s->clipPtr : (gx_Clip)s;}
 
 extern pattern gx_patt[41];
 

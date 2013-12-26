@@ -1,13 +1,13 @@
-#include "api.h"
-
 #ifndef CC_BASE_H
 #define CC_BASE_H 2
+
+#include "api.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 enum {
-
 	// ccInit
 	creg_base = 0x0000,					// type system only
 
@@ -34,10 +34,11 @@ enum {
 	dump_bin = 0x0800
 };
 
-/** Initialize the global state of execution and or compilation.
- * @param mem if not null allocate memory else use it for the state
+/**
+ * @brief Initialize runtime context.
+ * @param mem optionally use this memory.
  * @param size the size of memory in bytes to be used.
- * 
+ * @return runtime context.
  */
 state rtInit(void* mem, unsigned size);
 
@@ -47,147 +48,123 @@ int logfile(state, char *file);				// set logger
 void dump(state, int dumpWhat, symn, const char* msg, ...);
 
 // compile
-/** Initialze compiler state
- * installs base types, emit, standard lib, ...
+/**
+ * @brief Initialze compiler context.
+ * @param runtime context.
+ * @param mode see the enum abowe
+ * @param onHalt function to be executed when execution terminates.
+ * @return compiler state.
+ * @note installs: base types, emit, builtin functions
  */
 ccState ccInit(state, int mode, int onHalt(libcArgs));
 
-// declare and start a namespace (static struct)
+/// Begin a namespace; @see state.api.ccBegin
 symn ccBegin(state, const char *cls);
 
-//~ declare constants
+/// Declare int constant; @see state.api.ccDefInt
 symn ccDefInt(state, char *name, int64_t value);
+/// Declare float constant; @see state.api.ccDefFlt
 symn ccDefFlt(state, char *name, double value);
+/// Declare string constant; @see state.api.ccDefStr
 symn ccDefStr(state, char *name, char* value);
 
-// end the current namespace (static struct)
+/// Close a namespace extended.
 void ccExtEnd(state, symn sym, int mode);
+/// Close a namespace; @see state.api.ccEnd
 void ccEnd(state, symn sym);
 
-/** Add a libcall (native function) to the runtime.
- * initializes the compiler state.
- * @param runtime state.
- * @param libc the c function.
- * @param data extra data for the function.
- * @param proto prototype of the function, do not forget the ending ';'
- * @return the symbol to the definition, null on error.
- * @usage:
-	static int f64sin(state rt, void* _) {
-		float64_t x = popf64(rt);		// pop one argument
-		setret(rt, float64_t, sin(x));	// set the return value
-		return 0;						// no error in this call
-	}
-	if (!ccAddCall(api->rt, f64sin, NULL, "float64 sin(float64 x);")) {
-		error...
-	}
- */
+/// Install a native function; @see state.api.ccAddCall
 symn ccAddCall(state, int libc(libcArgs), void* data, const char* proto);
 
-/// install a type symbol
+/// Install a type; @see state.api.ccAddType
 symn ccAddType(state, const char* name, unsigned size, int refType);
 
-/** compile the given file or text block.
- * initializes the compiler state.
- * @param state
- * @param warn the warning level to be used.
- * @param file filename of the compiled unit; this file will be opened if code is not null.
- * @param line linenumber where compilation begins; it will be reset if code is not null.
- * @param code if not null, this text will be compiled instead of the file.
- * @return boolean value of success.
- */
-int ccAddCode(state, int warn, char *file, int line, char *code);
+/// Compile file or text; @see state.api.ccAddCode
+int ccAddCode(state, int warn, char *file, int line, char *text);
 
-/** execute the unit function then compile the file
- * @param context
- * @param warn the warning level to be used.
- * @param unit this function should install types and functions of the unit
+/**
+ * @brief Execute the unit function then optionally compile the file.
+ * @param runtime context.
+ * @param warn warning level.
+ * @param unit function installing types and native functions.
  * @param file additional file to be compiled with this unit.
  * @return boolean value of success.
  */
 int ccAddUnit(state, int unit(state), int warn, char *file);
 
+/**
+ * @brief Find symbol by name.
+ * @param compiler context.
+ * @param in search for symbol as member of this.
+ * @param name name of the symbol to be found.
+ * @return the first found symbol.
+ */
 symn ccFindSym(ccState, symn in, char *name);
+
+/** TODO: to be removed
+ * @brief get the int value of constant symbol.
+ * @param sym constant symbol.
+ * @param res copy the value of constant here.
+ * @return TYPE_int or 0 on fail.
+ */
 int ccSymValInt(symn sym, int* res);
+/** TODO: to be removed
+ * @brief get the float value of constant symbol.
+ * @param sym constant symbol.
+ * @param res copy the value of constant here.
+ * @return TYPE_flt or 0 on fail.
+ */
 int ccSymValFlt(symn sym, double* res);
 
-/** instal type system.
- * io, mem, math, ...
- * @param state runtime state.
+/** TODO::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+ * @brief Instal type system.
+ * @param runtime context.
  + @param level warning level.
  + @param file additional file extending module
  */
-int install_base(state, int mode, int onHalt(libcArgs));
+int install_base(state, int mode);
 
 /** instal standard functions.
  * io, mem, math, ...
- * @param state context
+ * @param Runtime context.
  */
 int install_stdc(state);
 
 /** instal file functions.
- * @param state
+ * open, read, delete, ...
+ * @param Runtime context.
  */
 int install_file(state);
 
 /** generate executable bytecode.
- * @param context
+ * @param Runtime context.
  * @param mode see@(cgen_opti, cgen_info, cgen_glob)
  * @return boolean value of success.
  */
+int gencode(state, int mode);
 
-int gencode(state, int mode);//optimizeLevel, int dbg(state, int pu, void *ip, long* sp, int ss));
-
-/** execute initializer.
- * @param context
- * @todo param cc number of execution units to run on.
- * @param ss stack size to use for one execution unit.
- * @todo param argc(int) argument count from main.
- * @todo param args(char*[]) arguments from main.
- * @return 0 on success.
+/**
+ * @brief Execute the compiled script.
+ * @param Runtime context.
+ * @param extra Extra data for libcalls.
+ * @param ss stack size in bytes.
+ * @return error code of execution, 0 on success.
+ * @todo units number of execution units to run on.
+ * @todo argc(int) argument count from main.
+ * @todo argv(char*[]) arguments from main.
  */
-int vmExec(state, void* extra, int ss);
+int execute(state, void* extra, int ss);
 
-/** execute a function inside the context.
- * @param context
- * @param fun symbol of the function to be executed.
- * @param ret result of the function.
- * @param args arguments for the function.
- * @param extra extra data for the function.
- * @return 0 on success.
- */
-int vmCall(state, symn fun, void* ret, void* args, void* extra);
+/// Invoke a function; @see state.api.invoke
+int invoke(state, symn fun, void* ret, void* args, void* extra);
 
-// silently exits the execution
-int libCallHaltQuiet(libcArgs);
-// prints variables and their values after execution
-int libCallHaltDebug(libcArgs);
-
-// searching for symbols ...
+/// Get symbol by offset; @see state.api.mapsym
 symn mapsym(state, void *ptr);
 
-/** memory manager for the virtual machine
- * this function should be called after vmExec.
- * aborts if ptr is not null and not inside the context.
- * @param context.
- * @param ptr an allocated memory address in the vm or null.
- * @param size the new size to reallocate or 0 to free memory.
- * @return allocated memory in the vm context.
- *     ptr == null && size == 0: nothing
- *     ptr == null && size >  0: alloc
- *     ptr != null && size == 0: free
- *     ptr != null && size >  0: TODO: realloc
-*/
+/// Alloc, resize or free memory; @see state.api.rtAlloc
 void* rtAlloc(state, void* ptr, unsigned size);
 
-/* TODO: symbols
-	there are 4 kind of symbols:[TODO]
-		0: alias is a shortcut to another symbol or an expression
-		1: typename
-		2: variable
-		3: function
-*/
 static inline void* paddptr(void *offs, unsigned align) {
-	//~ assert(align == (align & -align));
 	return (void*)(((ptrdiff_t)offs + (align - 1)) & ~(ptrdiff_t)(align - 1));
 }
 static inline int padded(int offs, unsigned align) {

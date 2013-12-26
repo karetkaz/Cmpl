@@ -679,7 +679,9 @@ static void dumpxml(FILE* fout, astn ast, int mode, int level, const char* text)
 	}
 
 	if ((mode & prLine) != 0) {
-		fputfmt(fout, " line=\"%s:%d\"", ast->file, ast->line);
+		if (ast->file != NULL && ast->line > 0) {
+			fputfmt(fout, " file=\"%s:%d\"", ast->file, ast->line);
+		}
 	}
 
 	switch (ast->kind) {
@@ -720,6 +722,7 @@ static void dumpxml(FILE* fout, astn ast, int mode, int level, const char* text)
 			fputfmt(fout, "%I</%s>\n", level, text);
 			break;
 
+		case STMT_con:
 		case STMT_brk:
 			fputfmt(fout, " />\n");
 			break;
@@ -807,17 +810,19 @@ static void dumpxml(FILE* fout, astn ast, int mode, int level, const char* text)
 
 		case TYPE_def: {
 			symn var = ast->ref.link;
+			astn init = var ? var->init : NULL;
+			symn fields = var ? var->flds : NULL;
 
-			fputfmt(fout, " name=\"%+T\"", var);
-			if (var && (var->prms || var->init)) {
+			fputfmt(fout, " tyc=\"%?t\" name=\"%+T\"", var->cast, var);
+			if (fields || init) {
 				fputfmt(fout, ">\n");
 			}
 			else {
 				fputfmt(fout, " />\n");
 			}
 
-			if (var && var->prms) {
-				symn def = var->prms;
+			if (var && fields) {
+				symn def;
 				char *argn = "def";
 
 				switch (var->type->kind) {
@@ -833,7 +838,7 @@ static void dumpxml(FILE* fout, astn ast, int mode, int level, const char* text)
 					argn = "argn";
 				}
 
-				for (def = var->prms; def; def = def->next) {
+				for (def = fields; def; def = def->next) {
 					fputfmt(fout, "%I<%s op=\"%t\"", level + 1, argn, def->kind, def);
 					if (mode & prType) {
 						fputfmt(fout, " type=\"%?T\"", def->type);
@@ -854,11 +859,11 @@ static void dumpxml(FILE* fout, astn ast, int mode, int level, const char* text)
 				}
 			}
 
-			if (var && var->init) {
+			if (init) {
 				dumpxml(fout, var->init, mode, level + 1, "init");
 			}
 
-			if (var && (var->prms || var->init)) {
+			if (fields || init) {
 				fputfmt(fout, "%I</%s>\n", level, text);
 			}
 			break;
@@ -1464,9 +1469,9 @@ void dump(state rt, int mode, symn sym, const char* text, ...) {
 				", sm: %d"
 				", pc: %d"
 				", px: %d"
-				", size.meta: %d"
-				", size.code: %d"
-			") {\n", rt->vm.ro, rt->vm.ss, rt->vm.sm, rt->vm.pc, rt->vm.px, rt->vm.size.meta, rt->vm.size.code);
+				//", size.meta: %d"
+				//", size.code: %d"
+			") {\n", rt->vm.ro, rt->vm.ss, rt->vm.sm, rt->vm.pc, rt->vm.px);
 
 			fputasm(rt, logf, rt->vm.pc, rt->vm.px, 0x100 | (mode & 0xff));
 			fputfmt(logf, "}\n");

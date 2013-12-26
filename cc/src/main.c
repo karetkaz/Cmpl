@@ -36,6 +36,9 @@ application [global options] [local options]...
 #include <math.h>
 #include "core.h"
 
+// enable dynamic dll/so lib loading
+#define USEPLUGINS
+
 // default values
 static const int wl = 9;			// warning level
 static const int ol = 2;			// optimize level
@@ -187,21 +190,20 @@ static void usage(char* prog) {
 	fputfmt(out,"		<file>		if file extension is (.so|.dll) import else compile\n");
 }
 
-int evalexp(ccState cc, char* text) {
+int evalexp(state rt, char* text) {
 	struct astNode res;
-	astn ast;
-	symn typ;
-	int tid;
+	astn ast = NULL;
+	symn typ = NULL;
+	int tid = 0;
 
+	ccState cc = ccInit(rt, creg_def, NULL);
 	ccOpen(cc->s, NULL, 0, text);
 
-	ast = expr(cc, TYPE_any);
+	//ast = expr(cc, TYPE_def);
 	typ = typecheck(cc, NULL, ast);
 	tid = eval(&res, ast);
 
-	if (peek(cc)) {
-		error(cc->s, cc->file, cc->line, "unexpected: `%k`", peek(cc));
-	}
+	ccDone(cc);
 
 	fputfmt(cc->s->logf, "expr: %+K", ast);
 	fputfmt(cc->s->logf, "eval(`%+k`) = ", ast);
@@ -222,22 +224,9 @@ static int testFunction(libcArgs rt) {		// void testFunction(void cb(int n), int
 		int n = argi32(rt, 4);
 		struct {int n;} args;// = {n};
 		args.n = n;
-		return vmCall(rt->rt, cb, NULL, &args, NULL);
+		return invoke(rt->rt, cb, NULL, &args, NULL);
 	}
 	return 0;
-}
-
-static int reglibs(state rt, char* stdlib) {
-	int err = 0;
-
-	err = err || !ccAddCall(rt, testFunction, NULL, "void testFunction(void cb(pointer args), pointer args);");
-	err = err || !ccAddUnit(rt, install_stdc, 0, stdlib);
-	err = err || !ccAddUnit(rt, install_file, 0, NULL);
-
-	//~ err = err || install_bits(rt);
-
-	return err;
-	(void)testFunction;
 }
 
 #if defined(USEPLUGINS)
@@ -357,17 +346,13 @@ static symn printvars = NULL;
 static int dbgCon(state, int pu, void* ip, long* sp, int ss);
 
 int program(int argc, char* argv[]) {
-	state rt = rtInit(mem, sizeof(mem));
-
-	char* stdl = (char*)STDLIB;
+	char* stdlib = (char*)STDLIB;
 
 	//~ char* prg = argv[0];
 	int (*dbg)(state, int pu, void *ip, long* sp, int ss) = NULL;
 
 	// compile, run, debug, ...
 	int level = -1, argi;
-	//~ int opti = ol;
-
 	int gen_code = ol;	// optimize_level, debug_info, ...
 	int run_code = 0;	// true/false: exec
 	char* stk_dump = NULL;
@@ -389,9 +374,16 @@ int program(int argc, char* argv[]) {
 
 	int (*onHalt)(libcArgs) = NULL;	// print variables and values on exit?
 
+	state rt = rtInit(mem, sizeof(mem));
+
+	if (rt == NULL) {
+		fatal("initializing runtime context.");
+		return -1;
+	}
+
 	// evaluate constant expression.
 	if (argc == 2 && *argv[1] == '=') {
-		return evalexp(ccInit(rt, creg_def, NULL), argv[1] + 1);
+		return evalexp(rt, argv[1] + 1);
 	}
 
 	// global options
@@ -504,13 +496,13 @@ int program(int argc, char* argv[]) {
 
 		// temp
 		else if (strncmp(arg, "-std", 4) == 0) {	// redefine stdlib
-			stdl = arg + 4;
+			stdlib = arg + 4;
 		}
 		else if (strncmp(arg, "--", 2) == 0) {		// exclude: do not gen code
 			if (strchr(arg, 'c'))
 				gen_code = 0;
 			if (strchr(arg, 's'))
-				stdl = NULL;
+				stdlib = NULL;
 		}
 
 		else break;
@@ -524,23 +516,44 @@ int program(int argc, char* argv[]) {
 
 	// intstall basic type system.
 	if (!ccInit(rt, creg_def, onHalt)) {
-		error(rt, NULL, 0, "error registering types");
+		error(rt, NULL, 0, "error registering base types");
 		logfile(rt, NULL);
 		return -6;
 	}
 
 	// intstall standard libraries.
-	if (reglibs(rt, stdl) != 0) {
-		error(rt, NULL, 0, "error registering lib calls");
+	if (!ccAddUnit(rt, install_stdc, 0, stdlib)) {
+		error(rt, NULL, 0, "error registering standard libs");
 		logfile(rt, NULL);
 		return -6;
 	}
 
-	// compile files and import
+	// intstall file libraries.
+	if (!ccAddUnit(rt, install_file, 0, NULL)) {
+		error(rt, NULL, 0, "error registering file libs");
+		logfile(rt, NULL);
+		return -6;
+	}
+
+	// TODO: remove test function
+	ccAddCall(rt, testFunction, NULL, "void testFunction(void cb(pointer args), pointer args);");
+
+	// compile and import files / modules
 	for (; argi < argc; ++argi) {
 		char* arg = argv[argi];
-
-		if (strncmp(arg, "-w", 2) == 0) {			// warning level
+		if (*arg != '-') {
+			char* ext = strrchr(arg, '.');
+			if (ext && (streq(ext, ".so") || streq(ext, ".dll"))) {
+				int resultCode = importLib(rt, arg);
+				if (resultCode != 0) {
+					error(rt, NULL, 0, "error(%d) importing library `%s`", resultCode, arg);
+				}
+			}
+			else if (!ccAddCode(rt, warn, arg, 1, NULL)) {
+				error(rt, NULL, 0, "error compiling `%s`", arg);
+			}
+		}
+		else if (strncmp(arg, "-w", 2) == 0) {		// warning level for 
 			if (strcmp(arg, "-wx") == 0)
 				warn = -1;
 			else if (strcmp(arg, "-wa") == 0)
@@ -563,19 +576,6 @@ int program(int argc, char* argv[]) {
 				error(rt, NULL, 0, "error compiling `%s`", str);
 			}
 		}
-		else if (*arg != '-') {
-			char* ext = strrchr(arg, '.');
-			if (ext && (streq(ext, ".so") || streq(ext, ".dll"))) {
-				int resultCode = importLib(rt, arg);
-				if (resultCode != 0) {
-					error(rt, NULL, 0, "error(%d) importing library `%s`", resultCode, arg);
-				}
-				continue;
-			}
-			if (!ccAddCode(rt, warn, arg, 1, NULL)) {
-				error(rt, NULL, 0, "error compiling `%s`", arg);
-			}
-		}
 		else {
 			error(rt, NULL, 0, "invalid option: `%s`", arg);
 		}
@@ -593,9 +593,11 @@ int program(int argc, char* argv[]) {
 			else {
 				error(rt, NULL, 0, "error in debug print format `%s`", stk_dump);
 			}
+			ccDone(cc);
 		}
 	}
 
+	// if no error generate code and execute
 	if (rt->errc == 0) {
 
 		// generate variables and vm code.
@@ -647,7 +649,7 @@ int program(int argc, char* argv[]) {
 			if (dbg != NULL && rt->dbg != NULL) {
 				rt->dbg->dbug = dbg;
 			}
-			result = vmExec(rt, NULL, rt->_size / 4);
+			result = execute(rt, NULL, rt->_size / 4);
 		}
 	}
 
@@ -683,50 +685,6 @@ int main(int argc, char* argv[]) {
 	//setbuf(stderr, NULL);
 	return program(argc, argv);
 }
-/*X
-int scite_addText(libcArgs args) {
-	//~ ScintillaEditBase *editor = (ScintillaEditBase*)args->extra;
-	char *text = (char*)argref(args, 0);
-
-	//~ qDebug() << "scite.setText(" << text << ")";
-
-	//~ editor->sends(SCI_SETTEXT, 0, text);
-	fprintf(stdout, "%s", text);
-
-	return 0;
-}
-
-int main(int argc, char* argv[]) {
-	static char mem[1 << 20];
-	state rt = rtInit(mem, sizeof(mem));
-	ccState cc = ccInit(rt, creg_def, NULL);
-	if (cc != NULL) {
-		symn nsp;
-		int err = 0;
-		if ((nsp = ccBegin(rt, "editor"))) {
-			err = err || !ccAddCall(rt, scite_addText, NULL, "void setText(char text[]);");
-			// ...
-			ccEnd(rt, nsp);
-		}
-
-		//~ int textLen = sciEditor->sends(SCI_GETTEXTLENGTH) + 1;
-		char* text = "editor.setText(\"alma\");";
-		//~ new char[textLen];
-
-		//~ sciEditor->sends(SCI_GETTEXT, textLen, text);
-
-		fprintf(stdout, "cc:AddCall: %d\n", err);
-		err = err || !ccAddCode(rt, 1, NULL, 1, text);
-		fprintf(stdout, "cc:AddCode: %d\n", err);
-		err = err || !gencode(rt, 0xff);
-		fprintf(stdout, "cc:gencode: %d\n", err);
-		err = err || !vmExec(rt, NULL, sizeof(mem) / 3);
-		fprintf(stdout, "vm:execute: %d\n", err);
-		//err = err || ccDone(rt);
-	}
-	return 0;
-}
-//~ */
 
 static int dbgCon(state rt, int pu, void* ip, long* sp, int ss) {
 	static char buff[1024];
@@ -743,22 +701,18 @@ static int dbgCon(state rt, int pu, void* ip, long* sp, int ss) {
 		return 0;
 	}
 
+	if (ss > 0 && printvars != NULL) {
+		fputval(rt, stdout, printvars, (stkval*)sp, 0);
+		fputfmt(stdout, "\n");
+	}
+
 	IP = ((char*)ip) - ((char*)rt->_mem);
-
 	dbg = getCodeMapping(rt, IP);
-
-	/*! if (dbg != NULL) {
+	if (dbg != NULL) {
 		fputfmt(stdout, "%s:%d:exec:[sp(%02d)] %9.*A\n", dbg->file, dbg->line, ss, IP, ip);
 	}
 	else {
 		fputfmt(stdout, ">exec:[sp(%02d)] %9.*A\n", ss, IP, ip);
-	}// */
-
-	fputfmt(stdout, ">exec:[sp(%d)@%x: %08x %08x %08x %08x] %9.*A\n", ss, sp, sp[0], sp[1], sp[2], sp[3], IP, ip);
-
-	if (printvars != NULL) {
-		fputval(rt, stdout, printvars, (stkval*)sp, 0);
-		fputfmt(stdout, "\n");
 	}
 
 	if (cmd != 'N') for ( ; ; ) {

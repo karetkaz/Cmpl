@@ -8,6 +8,7 @@
 *******************************************************************************/
 #ifndef CC_CORE_H
 #define CC_CORE_H 2
+
 #include "pvmc.h"
 #include <stdlib.h>
 
@@ -20,23 +21,19 @@
 	5: print non pre-mapped strings, non static types
 	6: print static casts generated with emit
 */
-//#define DEBUGGING 1
+#define DEBUGGING 1
 
-// enable dynamic dll/so lib loading
-#define USEPLUGINS
-
-// enable paralell stuff
+// enable paralell execution stuff
 //~ #define MAXPROCSEXEC 1
 
 // maximum elements to print from an array
 #define MAX_ARR_PRINT 100
 
-// maximum tokens in expressions & nest level
+// maximum tokens in expressions & nesting level
 #define TOKS 2048
 
-// symbol & hash table size
+// hash table size
 #define TBLS 512
-
 
 #define prerr(__DBG, __MSG, ...) do { fputfmt(stdout, "%s:%d: "__DBG": %s: "__MSG"\n", __FILE__, __LINE__, __FUNCTION__, ##__VA_ARGS__); } while(0)
 
@@ -64,7 +61,7 @@
 #endif
 
 // internal errors
-#define fatal(msg, ...) do { prerr("fatal", msg, ##__VA_ARGS__); abort(); } while(0)
+#define fatal(msg, ...) do { prerr("internal error", msg, ##__VA_ARGS__); abort(); } while(0)
 #define dieif(__EXP, msg, ...) do { if (__EXP) { fatal(msg, ##__VA_ARGS__); } } while(0)
 
 // compilation errors
@@ -74,7 +71,6 @@
 
 #define lengthOf(__ARRAY) (sizeof(__ARRAY) / sizeof(*(__ARRAY)))
 #define offsetOf(__TYPE, __FIELD) ((size_t) &((__TYPE)0)->__FIELD)
-
 
 // Tokens - CC(tokens)
 typedef enum {
@@ -91,7 +87,7 @@ typedef enum {
 	stmt_NoRefs = 0x200,		// disable variables in stmt.
 
 	decl_NoDefs = 0x100,		// disable typedefs in decl.
-	decl_NoInit = 0x200,		// disable initializer.
+	decl_NoInit = 0x200,		// disable initialization.
 	decl_ItDecl = 0x400,		// enable ':' after declaration: for(int a : range(0, 12))
 
 	ATTR_const  = 0x100,		// constant
@@ -155,7 +151,7 @@ typedef enum {
 	vm_size = sizeof(int),	// size of data element on stack
 	vm_regs = 255	// maximum registers for dup, set, pop, ...
 } vmOpcode;
-typedef struct opc_inf {
+typedef struct {
 	int const code;		// opcode value (0..255)
 	int const size;		// length of opcode with args
 	int const chck;		// minimum elements on stack before execution
@@ -212,13 +208,13 @@ struct symNode {					// type node (meta)
 	symn	prms;		// tail of flds: struct nonstatic fields / function paramseters
 
 	symn	decl;		// declaring symbol: struct, function, ...
-	symn	next;		// next symbol: field / param / ... /(in scope table)
+	symn	next;		// next symbol: field / param / ... / (in scope table)
 
 	ccToken	kind;		// TYPE_def / TYPE_rec / TYPE_ref / TYPE_arr
 	ccToken	cast;		// casts to type(TYPE_(bit, vid, ref, u32, i32, i64, f32, f64, p4x)).
 
 	union {				// Attributes
-		uint64_t	pad;
+		//~ uint64_t	pad;
 		uint32_t	Attr;
 	struct {
 		uint32_t	memb:1;		// member operator (push the object by ref first)
@@ -276,8 +272,8 @@ struct astNode {					// tree node (code)
 			astn tail;
 		} list;
 	};
-	char*		file;				// token in file
-	uint32_t	line;				// token on line
+	char*		file;				// file name of the token belongs to
+	uint32_t	line;				// line position of token
 };
 
 typedef struct arrBuffer {
@@ -331,17 +327,17 @@ struct ccStateRec {
 	astn	root;		// statements
 
 	// lists
-	astn	jmps;		// jumps
-	//~ symn	free;		// free these variables
+	astn	jmps;		// list of break and continue statements to fix
+	//~ symn	free;		// variables that needs to be freed
 
-	list	strt[TBLS];		// string table
-	symn	deft[TBLS];		// definitions: hashStack;
+	list	strt[TBLS];		// string hash table
+	symn	deft[TBLS];		// symbol hash stack
 
 	int		warn;		// warning level
 	int		nest;		// nest level: modified by (enter/leave)
 	int		maxlevel;		// max nest level: modified by ?
 	int		siff:1;		// inside a static if false
-	int		sini:1;		// initialize static variables ?
+	int		init:1;		// initialize static variables ?
 	int		_pad:30;	//
 
 	char*	file;	// current file name
@@ -353,10 +349,11 @@ struct ccStateRec {
 		astn	_tok;			// one token look-ahead
 		int		_chr;			// one char look-ahead
 		struct {				// Input
-			int		_fin;		// file handle (-1) for cc_buff()
+			int		nest;		// nesting level on open.
+			int		_fin;		// file handle
 			int		_cnt;		// chars left in buffer
 			char*	_ptr;		// pointer parsing trough source
-			uint8_t	_buf[1024];	// cache
+			uint8_t	_buf[1024];	// memory file buffer
 		} fin;
 	};
 
@@ -379,8 +376,8 @@ struct ccStateRec {
 	symn	null_ref;
 	symn	emit_opc;
 
-	symn	libc_mem;		// memory manager libcall
-	symn	libc_dbg;
+	symn	libc_mem;		// memory manager libcall: memmgr(pointer oldOffset, int newSize);
+	symn	libc_dbg;		// debug function libcall: debug(string message, int level, int maxTrace, variant vars);
 };
 
 dbgInfo getCodeMapping(state rt, int position);
@@ -397,11 +394,10 @@ void perr(state rt, int level, const char *file, int line, const char *msg, ...)
 
 // creating syms and nodes
 symn newdefn(ccState, int kind);
-astn newnode(ccState, int kind);
 
+astn newnode(ccState, int kind);
 astn opnode(ccState, int kind, astn lhs, astn rhs);
 astn lnknode(ccState, symn ref);
-astn tagnode(ccState s, char *str);
 
 astn intnode(ccState, int64_t v);
 astn fltnode(ccState, float64_t v);
@@ -445,15 +441,13 @@ int32_t constbol(astn ast);
 int64_t constint(astn ast);
 float64_t constflt(astn ast);
 
-astn peek(ccState);
-astn next(ccState, ccToken kind);
-int  skip(ccState, ccToken kind);
+/// skip the next token.
+int skip(ccState, ccToken kind);
 
-astn expr(ccState, int mode);		// parse expression	(mode: typecheck)
-astn decl(ccState, int mode);		// parse declaration	(mode: enable defs(: struct, define, ...))
-astn decl_var(ccState, astn *args, int mode);
+//~ astn expr(ccState, int mode);		// parse expression	(mode: typecheck)
+//~ astn decl(ccState, int mode);		// parse declaration	(mode: enable defs(: struct, define, ...))
 //~ astn stmt(ccState, int mode);		// parse statement	(mode: enable decl/enter new scope)
-//~ astn unit(ccState, int mode);		// parse program	(mode: script mode)
+astn decl_var(ccState, astn *args, int mode);
 
 // scoping ...
 void enter(ccState s, astn ast);
@@ -498,15 +492,39 @@ int usedCnt(symn sym);
 symn linkOf(astn ast);
 long sizeOf(symn typ);
 
+/**
+ * @brief open a file or text for compilation.
+ * @param rt runtime context.
+ * @param file file name of input.
+ * @param line first line of input.
+ * @param text if not null, this will be compiled instead of the file.
+ * @return compiler state or null on error.
+ * @note invokes ccInit if not initialized.
+ */
 ccState ccOpen(state rt, char* file, int line, char* source);
 
+/**
+ * @brief Close input file, ensuring it ends correctly.
+ * @param cc compiler context.
+ * @return number of errors.
+ */
+int ccDone(ccState cc);
+
 unsigned rehash(const char* str, unsigned size);
-char* mapstr(ccState s, char *name, unsigned size/* = -1U*/, unsigned hash/* = -1U*/);
+char* mapstr(ccState cc, char *str, unsigned size/* = -1U*/, unsigned hash/* = -1U*/);
 
 /** return the internal offset of a reference
  * aborts if ptr is not null and not inside the context.
  */
 int vmOffset(state, void *ptr);
+
+
+// Debuging.
+
+// silently exits the execution
+int libCallHaltQuiet(libcArgs);
+// prints variables and their values after execution
+int libCallHaltDebug(libcArgs);
 
 //~ disable warning messages
 #ifdef _MSC_VER

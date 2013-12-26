@@ -1,15 +1,17 @@
 // test some language features
 
-// split this file
+// TODO: split this file
 
 enum Test {
-	Emit = +0;
-	Type = +0;	//Lang = ~0;
-	Call = +0;
-	Bits = +0;
-	Math = +0;
-	//~ Misc = ~0;
+	Emit = ~0;
+	Type = ~0;
+//	Lang = ~0;
+	Call = ~0;
+	Bits = ~0;
+	Math = ~0;
+//	Misc = ~0;
 }
+
 static if (true) {
 struct hex8: int8;			//%hex8(%02x)
 struct hex16: int16;		//%hex16(%04x)
@@ -22,7 +24,7 @@ define println(hex32 arg) = print("%08x\n", int64(arg));
 define print(hex64 arg) = print("%08X", int64(arg));
 define println(hex64 arg) = print("%016X\n", int64(arg));
 }
-/*
+
 static if (Test.Emit) {
 /+ emit is something like watcoms inline assembly:
  +	#pragma aux (parm [edi] [eax] [edx] value [edi] modify exact [xmm0]) __mul_packed_4float =\
@@ -35,6 +37,10 @@ float32 res1 = emit(float32, f32.div, f32(2), f32(Math.pi));
 float64 res2 = emit(f64.neg, f64(Math.pi));
 float32 res3 = emit(i32, f32(Math.pi));
 hex32 res4 = emit(i32, f32(Math.pi));
+println(res1);
+println(res2);
+println(res3);
+println(res4);
 }
 static if (Test.Emit & 0x02) {		// more basic emit examples
 define shl(int32 value, int count) = emit(i32.shl, i32(count), i32(value));
@@ -231,6 +237,11 @@ int test_arr_max = maximum(arr2);
 int test_arr_toFind = arr2[arr2.length / 2];
 sort(arr2);
 int test_arr_index = bsearch(arr2, test_arr_toFind);
+
+}
+static if (Test.Type & 0x20) {		// enum
+
+//~ ...
 
 }
 }
@@ -499,12 +510,12 @@ int32x8 i32x8_c = sub(&i32x8_a, -19);
 
 }
 }
-*/
 
 //~ uint32 x = 0b100000000;
 //~ uint32 X2 = -2;
 
-uint8 x = 0x1238a;
-hex32 X = x;
+//~ uint8 x = 0x1238a;
+//~ int32 X = x;
+//~ assert(uint8(x) == int32(X));
 
-string b = "sajdfg";
+//~ string b = "sajdfg";

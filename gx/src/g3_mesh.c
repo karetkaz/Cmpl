@@ -396,7 +396,11 @@ static int read_obj(mesh msh, const char* file) {
 				while (*ptr && strchr(" \t", *ptr)) ptr++;		// skip white spaces
 				if (*ptr == '\0') break;				// end of line
 
-				if (i > 4) break;						// error
+				if (i > 4) {
+					fprintf(stderr, "%s:%d: face too complex: `%s`\n", file, line, buff);
+					*ptr = 0;
+					break;						// error
+				}
 				if (!strchr("+-0123456789", *ptr)) {	// error
 					fprintf(stderr, "unsuported line: `%s`\n", ptr);
 					break;
@@ -1329,7 +1333,7 @@ int evalMesh(mesh msh, int sdiv, int tdiv, char *src, char *file, int line) {
 			ud.s = s;
 			ud.t = t;
 			ud.isNrm = 0;
-			if (vmExec(rt, &ud, stacksize) != 0) {
+			if (execute(rt, &ud, stacksize) != 0) {
 				debug("error");
 				return -4;
 			}
@@ -1341,7 +1345,7 @@ int evalMesh(mesh msh, int sdiv, int tdiv, char *src, char *file, int line) {
 			else {
 				ud.s = s + epsilon;
 				ud.t = t;
-				if (vmExec(rt, &ud, stacksize) != 0) {
+				if (execute(rt, &ud, stacksize) != 0) {
 					debug("error");
 					return -5;
 				}
@@ -1349,7 +1353,7 @@ int evalMesh(mesh msh, int sdiv, int tdiv, char *src, char *file, int line) {
 
 				ud.s = s;
 				ud.t = t + epsilon;
-				if (vmExec(rt, &ud, stacksize) != 0) {
+				if (execute(rt, &ud, stacksize) != 0) {
 					debug("error");
 					return -6;
 				}

@@ -66,11 +66,11 @@ static struct Math {
 	}
 	define floor(float32 x) = float32(floor(float64(x)));
 
-	define ceil(float32 ^x) = -floor(-x);
 	define ceil(float64 ^x) = -floor(-x);
+	define ceil(float32 ^x) = float32(ceil(float64(-x)));
 
-	define round(float32 ^x) = floor(x + .5);
 	define round(float64 ^x) = floor(x + .5);
+	define round(float32 ^x) = float32(round(float64(x)));
 
 	define max(int32 ^a, int32 ^b) = (a > b ? a : b);
 	define max(int64 ^a, int64 ^b) = (a > b ? a : b);
@@ -180,7 +180,7 @@ Number.prototype.log10 = function(){return Math.log(this) / Math.LN10;};
 
 	float64 Min(float64 data[]) {
 		/*TODO: if (isNullOrEmpty(data)) {
-			return 0;
+			return nan;
 		}*/
 		result := data[0];
 		for (int i = 1; i < data.length; i += 1) {
@@ -192,7 +192,7 @@ Number.prototype.log10 = function(){return Math.log(this) / Math.LN10;};
 	}
 	float64 Max(float64 data[]) {
 		/*TODO: if (isNullOrEmpty(data)) {
-			return 0;
+			return nan;
 		}*/
 		result := data[0];
 		for (int i = 1; i < data.length; i += 1) {
@@ -534,7 +534,7 @@ static struct Perlin {		// Perlin noise
 		r1 = r0 - 1.;
 	}
 
-	define s_curve(float32 t) = Math.smooth(t);
+	define smooth(float32 t) = Math.smooth(t);
 	define lerp(float32 t, float32 a, float32 b) = Math.lerp(t, a, b);
 
 	float Noise1f(float x) {
@@ -553,7 +553,7 @@ static struct Perlin {		// Perlin noise
 
 		setup(x, &bx0, &bx1, &rx0, &rx1);
 
-		sx = s_curve(rx0);
+		sx = smooth(rx0);
 
 		u = rx0 * g1[p[bx0]];
 		v = rx1 * g1[p[bx1]];
@@ -586,8 +586,8 @@ static struct Perlin {		// Perlin noise
 		int b01 = p[ i + by1 ];
 		int b11 = p[ j + by1 ];
 
-		float sx = s_curve(rx0);
-		float sy = s_curve(ry0);
+		float sx = smooth(rx0);
+		float sy = smooth(ry0);
 
 		define at2(float rx, float ry, int ^i) = float(rx * g2[i][0] + ry * g2[i][1]);
 
@@ -628,9 +628,9 @@ static struct Perlin {		// Perlin noise
 		int b01 = p[ i + by1 ];
 		int b11 = p[ j + by1 ];
 
-		float sx = s_curve(rx0);
-		float sy = s_curve(ry0);
-		float sz = s_curve(rz0);
+		float sx = smooth(rx0);
+		float sy = smooth(ry0);
+		float sz = smooth(rz0);
 
 		define at3(float rx, float ry, float rz, int ^i) = float(rx * g3[i][0] + ry * g3[i][1] + rz * g3[i][2]);
 
@@ -853,17 +853,31 @@ define Hi16(int32 a) = Lo16(a >> 8);				// Hi16 part
  * returns: 2
  */
 int bitsr(uint32 x) {
-	if (x != 0) {
-		result = 0;
-		if (x & 0xffff0000) { result += 16; x >>= 16; }
-		if (x & 0x0000ff00) { result +=  8; x >>=  8; }
-		if (x & 0x000000f0) { result +=  4; x >>=  4; }
-		if (x & 0x0000000c) { result +=  2; x >>=  2; }
-		if (x & 0x00000002) { result +=  1; }
+	if (x == 0) {
+		return -1;
 	}
-	else {
-		result = -1;
+
+	result = 0;
+	if (x & 0xffff0000) {
+		result += 16;
+		x >>= 16;
 	}
+	if (x & 0x0000ff00) {
+		result +=  8;
+		x >>= 8;
+	}
+	if (x & 0x000000f0) {
+		result += 4;
+		x >>= 4;
+	}
+	if (x & 0x0000000c) {
+		result += 2;
+		x >>= 2;
+	}
+	if (x & 0x00000002) {
+		result += 1;
+	}
+	return result;
 }
 
 /** bit scan forward
@@ -871,22 +885,30 @@ int bitsr(uint32 x) {
  * LSB (LeastSignificantBit)
  */
 int bitsf(uint32 x) {
-	if (x != 0) {
-		result = 0;
-		if ((x & 0x0000ffff) == 0) { result += 16; x >>= 16; }
-		if ((x & 0x000000ff) == 0) { result +=  8; x >>=  8; }
-		if ((x & 0x0000000f) == 0) { result +=  4; x >>=  4; }
-		if ((x & 0x00000003) == 0) { result +=  2; x >>=  2; }
-		if ((x & 0x00000001) == 0) { result +=  1; }
-		//~ if (x & 0xffff0000) { result += 16; x >>= 16; }
-		//~ if (x & 0x0000ff00) { result +=  8; x >>=  8; }
-		//~ if (x & 0x000000f0) { result +=  4; x >>=  4; }
-		//~ if (x & 0x0000000c) { result +=  2; x >>=  2; }
-		//~ if (x & 0x00000002) { result +=  1; }
+	if (x == 0) {
+		return -1;
 	}
-	else {
-		result = -1;
+
+	result = 0;
+	if ((x & 0x0000ffff) == 0) {
+		result += 16;
+		x >>= 16;
 	}
+	if ((x & 0x000000ff) == 0) {
+		result += 8; x >>= 8;
+	}
+	if ((x & 0x0000000f) == 0) {
+		result += 4;
+		x >>= 4;
+	}
+	if ((x & 0x00000003) == 0) {
+		result += 2;
+		x >>= 2;
+	}
+	if ((x & 0x00000001) == 0) {
+		result += 1;
+	}
+	return result;
 }
 
 /** keep the highest bit only

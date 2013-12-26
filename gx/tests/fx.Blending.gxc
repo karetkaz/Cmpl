@@ -187,4 +187,4 @@ static struct BlendMode {
 }
 
 copySurf(offScreen, 0, 0, image1, null);					// atmasoljuk siman a kepet
-copySurf(offScreen, 0, 0, image2, null, 1, BlendMode.PinLight);		// atmasoljuk a fuggvenny segitsegevel a kepet
+copySurf(offScreen, 0, 0, image2, null, 1, BlendMode.LinearLight);		// atmasoljuk a fuggvenny segitsegevel a kepet

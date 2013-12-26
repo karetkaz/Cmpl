@@ -102,7 +102,6 @@ int rgbSub(int c1, int c2) {
 	result = r << 16 | g << 8 | b;
 }
 int rgbMul(int c1, int c2) {
-	//~ dst->r * (src->r + 1); dst->r = tmp >> 8;
 	int r = (rch(c1) * (rch(c2) + 1)) >> 8;
 	int g = (gch(c1) * (gch(c2) + 1)) >> 8;
 	int b = (bch(c1) * (bch(c2) + 1)) >> 8;
@@ -341,7 +340,6 @@ void lutBrightnessContractGamma(gxClut &lut, int brg, int cntr, double gamma) {
 
 	lut.count = 256;
 	for (int idx = 0; idx < 256; idx += 1) {
-		//~ int val = clamp(int(255 * pow(((bval + idx / 255. - .5) * cval) + .5, gval)), 0, 255);
 		int val = Math.clamp(brg + int(255 * (cval * (pow(idx / 255., gval) - .5) + .5)), 0, 255);
 		//~ lut.data[idx] = (doR ? val : idx) << 16 | (doG ? val : idx) << 8 | (doB ? val : idx);
 		lut.data[idx] = val << 16 | val << 8 | val;

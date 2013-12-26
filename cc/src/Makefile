@@ -1,9 +1,9 @@
 OUTOBJ=-o
 OUTEXE=-o
-CFLAGS=-Wall -g3 -ggdb
-CFLAGS=-Wall -g0 -Os
+CFLAGS=-Wall -Wpadded -g3 -ggdb
+#~ CFLAGS=-Wall -g0 -Os
 LIBS=-lm -ldl
-#~ ARH=-m32
+ARH=-m32
 LNK=gcc $(ARH)
 CCC=gcc -c $(ARH)
 
@@ -26,7 +26,7 @@ endif
 #~ LNK=tcc
 
 SRCDIR=./
-OBJDIR=../obj/
+OBJDIR=../tmp/
 BINDIR=../
 
 OBJS=\

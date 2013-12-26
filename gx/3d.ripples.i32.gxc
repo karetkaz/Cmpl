@@ -5,14 +5,14 @@ enum Window {
 	resy = 512;
 }
 
-enum Options {
+enum Options: bool {
 	textured = !true;
 	do2d = !true;
 	do3d = true;
 }
 
 // division of mesh and heightmap
-define division = 62;
+define division = 92;
 
 //~ do rain every dorain frame
 define dorain = 0;

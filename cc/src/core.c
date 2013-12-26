@@ -49,6 +49,42 @@ const opc_inf opc_tbl[255] = {
 	{0},
 };
 
+/// Initialize runtime context; @see header
+state rtInit(void* mem, unsigned size) {
+	state rt = mem;
+
+	/*TODO: dynamic memory allocation
+	if (mem == NULL) {
+		mem = malloc(size);
+		rt = mem;
+	}
+	// */
+
+	dieif(rt == NULL, "internal error");
+	memset(mem, 0, sizeof(struct stateRec));
+
+	*(void**)&rt->api.ccBegin = ccBegin;
+	*(void**)&rt->api.ccDefInt = ccDefInt;
+	*(void**)&rt->api.ccDefFlt = ccDefFlt;
+	*(void**)&rt->api.ccDefStr = ccDefStr;
+	*(void**)&rt->api.ccAddType = ccAddType;
+	*(void**)&rt->api.ccAddCall = ccAddCall;
+	*(void**)&rt->api.ccAddCode = ccAddCode;
+	*(void**)&rt->api.ccEnd = ccEnd;
+	//~ rt->api.ccSymFind = ccSymFind;
+	*(void**)&rt->api.mapsym = mapsym;
+	*(void**)&rt->api.invoke = invoke;
+	*(void**)&rt->api.rtAlloc = rtAlloc;
+
+	*(long*)&rt->_size = size - sizeof(struct stateRec);
+	rt->_end = rt->_mem + rt->_size;
+	rt->_beg = rt->_mem;
+
+	logFILE(rt, stdout);
+	rt->cc = NULL;
+	return rt;
+}
+
 static inline int genRef(state rt, symn var) {
 	if (!var->stat) {
 		return emitidx(rt, opc_ldsp, var->offs);
@@ -172,11 +208,12 @@ int isConst(astn ast) {
 }
 
 //#{ symbols: install and query
+/// Begin a namespace; @see state.api.ccBegin
 symn ccBegin(state rt, const char* cls) {
 	symn result = NULL;
 	if (rt->cc != NULL) {
 		if (cls != NULL) {
-			result = install(rt->cc, cls, ATTR_const | ATTR_stat | TYPE_rec, TYPE_vid, 0, rt->cc->type_vid, NULL);
+			result = install(rt->cc, cls, ATTR_stat | ATTR_const | TYPE_rec, TYPE_vid, 0, rt->cc->type_vid, NULL);
 		}
 		if (cls == NULL || result) {
 			enter(rt->cc, NULL);
@@ -184,6 +221,8 @@ symn ccBegin(state rt, const char* cls) {
 	}
 	return result;
 }
+
+/// Close a namespace; @see header
 void ccExtEnd(state rt, symn cls, int mode) {
 	if (cls != NULL) {
 		symn fields = leave(rt->cc, cls, (mode & ATTR_stat) != 0);
@@ -193,10 +232,12 @@ void ccExtEnd(state rt, symn cls, int mode) {
 		cls->flds = fields;
 	}
 }
+/// Close a namespace; @see state.api.ccEnd
 void ccEnd(state rt, symn cls) {
 	ccExtEnd(rt, cls, ATTR_stat);
 }
 
+/// Declare int constant; @see state.api.ccDefInt
 symn ccDefInt(state rt, char* name, int64_t value) {
 	if (!rt || !rt->cc || !name) {
 		debug("%x, %s, %D", rt, name, value);
@@ -205,6 +246,7 @@ symn ccDefInt(state rt, char* name, int64_t value) {
 	name = mapstr(rt->cc, name, -1, -1);
 	return install(rt->cc, name, TYPE_def, TYPE_int, 0, rt->cc->type_i32, intnode(rt->cc, value));
 }
+/// Declare float constant; @see state.api.ccDefFlt
 symn ccDefFlt(state rt, char* name, double value) {
 	if (!rt || !rt->cc || !name) {
 		debug("%x, %s, %F", rt, name, value);
@@ -213,6 +255,7 @@ symn ccDefFlt(state rt, char* name, double value) {
 	name = mapstr(rt->cc, name, -1, -1);
 	return install(rt->cc, name, TYPE_def, TYPE_flt, 0, rt->cc->type_f64, fltnode(rt->cc, value));
 }
+/// Declare string constant; @see state.api.ccDefStr
 symn ccDefStr(state rt, char* name, char* value) {
 	if (!rt || !rt->cc || !name) {
 		debug("%x, %s, %s", rt, name, value);
@@ -225,6 +268,7 @@ symn ccDefStr(state rt, char* name, char* value) {
 	return install(rt->cc, name, TYPE_def, TYPE_str, 0, rt->cc->type_str, strnode(rt->cc, value));
 }
 
+/// Find symbol by name; @see header
 symn ccFindSym(ccState cc, symn in, char* name) {
 	struct astNode ast;
 	memset(&ast, 0, sizeof(struct astNode));
@@ -233,6 +277,8 @@ symn ccFindSym(ccState cc, symn in, char* name) {
 	ast.ref.name = name;
 	return lookup(cc, in ? in->flds : cc->s->defs, &ast, NULL, 1);
 }
+
+// TODO: to be removed
 int ccSymValInt(symn sym, int* res) {
 	struct astNode ast;
 	if (sym && eval(&ast, sym->init)) {
@@ -241,6 +287,7 @@ int ccSymValInt(symn sym, int* res) {
 	}
 	return 0;
 }
+// TODO: to be removed
 int ccSymValFlt(symn sym, double* res) {
 	struct astNode ast;
 	if (sym && eval(&ast, sym->init)) {
@@ -250,6 +297,7 @@ int ccSymValFlt(symn sym, double* res) {
 	return 0;
 }
 
+/// Get symbol by offset; @see state.api.mapsym
 symn mapsym(state rt, void* ptr) {
 	ptrdiff_t offs = (unsigned char*)ptr - rt->_mem;
 	symn sym = NULL;
@@ -268,33 +316,6 @@ symn mapsym(state rt, void* ptr) {
 	return NULL;
 }
 
-/* get a libcall arg by name
-int getarg(state rt, char* name, void* copy) {
-
-	dieif(!rt || rt->libc || !name || !copy, "FixMe");
-
-	if (rt->libc->args) {
-		symn arg = rt->libc->args;
-		while (arg != NULL) {
-			if (strcmp(name, arg->name) == 0)
-				break;
-			arg = arg->next;
-		}
-		if (arg != NULL) {
-			int argc = (char*)rt->retv - (char*)rt->argv;
-
-			void* offs = ((char*)rt->argv) + argc - arg->offs;
-
-			if (arg->cast == TYPE_ref) {
-				offs = *(void**)offs;
-			}
-
-			memcpy(copy, offs, arg->size);
-			return arg->size;
-		}
-	}
-	return -1;
-}*/
 //#}
 
 static ccToken cgen(state rt, astn ast, ccToken get) {
@@ -375,12 +396,12 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 					return TYPE_any;
 				}
 			}
-			if (ippar) {
+			if (ippar != 0) {
 				//~ rt->vm.pp.ss += 1;
 				fixjump(rt, ippar, emitopc(rt, markIP), rt->vm.su * vm_size);
 				emitint(rt, opc_sync, 0);
 			}
-			logif(ippar, "parallel data on stack: %d", rt->vm.su);
+			logif(ippar != 0, "parallel data on stack: %d", rt->vm.su);
 			/*if (rt->vm.su > rt->vm.su - stpar)
 				rt->vm.su = rt->vm.su - stpar;
 			// */
@@ -491,7 +512,7 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 				dieif(get != TYPE_vid || stpos != stkoffs(rt, 0), "internal fatal error");
 			}
 			//~ TODO: destruct(ast->stmt.test)
-			logif(stpos != stkoffs(rt, 0), "invalid stacksize(%d:%d) in statement %+k", stkoffs(rt, 0), stpos, ast);
+			dieif(stpos != stkoffs(rt, 0), "invalid stacksize(%d:%d) in statement %+k", stkoffs(rt, 0), stpos, ast);
 		} break;
 		case STMT_for: {
 			astn jl = rt->cc->jmps;
@@ -615,7 +636,7 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 			dieif(!var && ast->op.lhso, "FixMe[%+k]", ast);
 
 			// debug(...)
-			if (var == rt->cc->libc_dbg) {
+			if (var && var == rt->cc->libc_dbg) {
 				if (argv != NULL) {
 					while (argv->kind == OPER_com) {
 						astn arg = argv->op.rhso;
@@ -633,7 +654,7 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 				}
 				//~ dieif(!emitref(rt, NULL), "__FUNC__");
 				dieif(!emiti32(rt, ast->line), "__FILE__");
-				dieif(!emitref(rt, ast->file), "__FILE__");
+				dieif(!emitref(rt, ast->file), "__LINE__");
 				dieif(!emitint(rt, opc_libc, rt->cc->libc_dbg->offs), "__LIBC__");
 				dieif(!emitidx(rt, opc_drop, stkret), "__DROP__");
 				break;
@@ -795,7 +816,9 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 				}
 
 				if (var == rt->cc->emit_opc && isType(argv)) {
-					logif(DEBUGGING > 5, "static casting with emit: %+k @(%s: %d)", ast, ast->file, ast->line);
+					#if defined DEBUGGING && DEBUGGING > 5
+					debug("static casting with emit: %+k @(%s: %d)", ast, ast->file, ast->line);
+					#endif
 					break;
 				}
 
@@ -1203,7 +1226,7 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 				symn typ = ast->op.lhso->type;
 				//~ symn var = ast->op.lhso->ref.link;
 				if (typ->kind == TYPE_rec && typ->cast == TYPE_ref) {
-					logif(1, "reference Assignment: %+k", ast);
+					trace("reference assignment: %+k", ast);
 					dieif(ret != TYPE_ref, "FixMe");
 					refAssign = ASGN_set;
 					size = vm_size;
@@ -1371,12 +1394,16 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 				return TYPE_ref;
 		} break;
 
-		case TYPE_ref: {					// use (var, func, define)
+		case TYPE_ref: {					// use (var, func, enum, define)
 			symn typ = ast->type;			// type
 			symn var = ast->ref.link;		// link
 			// TODO: ast->type->size;
 			int size = sizeOf(typ);
 			dieif(!typ || !var, "FixMe");
+
+			if (get == ENUM_kwd) {
+				trace("%+k", ast);
+			}
 
 			switch (var->kind) {
 				default:
@@ -1454,7 +1481,11 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 
 				case TYPE_def:
 					//~ TODO: reimplement: it works, but ...
-					if (var->init) {
+					if (var->init != NULL) {
+						//*?
+						if (get == ENUM_kwd) {
+							get = var->type->type->cast;
+						}// */
 						return cgen(rt, var->init, get);
 					}
 			}
@@ -1469,7 +1500,7 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 			if (var->kind == TYPE_ref) {
 
 				// skip initialized static function variables
-				if (var->init && var->offs && !rt->cc->sini) {
+				if (var->init && var->offs && !rt->cc->init) {
 					return TYPE_vid;
 				}
 
@@ -1679,7 +1710,7 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 
 					// int a = 99;	// variable initialization
 					else {
-						logif(val->cst2 != var->cast, "FixMe(%t : %t: get: %t): %15.15K", val->cst2, var->cast, get, val);
+						logif(val->cst2 != var->cast, "FixMe(%t : %t: get: %t): %15.15k", val->cst2, var->cast, get, val);
 						switch (val->kind) {
 							case TYPE_int:
 							case TYPE_flt:
@@ -1948,7 +1979,7 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 
 	// zero extend ...
 	if (get == TYPE_u32) {
-		debug("zero extend: to (%k)[%t->%t] '%-T'", ast, ret, get, ast->type);
+		trace("zero extend: to (%k)[%t->%t] '%-T'", ast, ret, get, ast->type);
 		switch (ast->type->size) {
 			default:
 				fatal("FixMe");
@@ -1990,8 +2021,7 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 
 int gencode(state rt, int mode) {
 	ccState cc = rt->cc;
-	libc lc = NULL;
-	int Lmain;
+	int Lmain, Lmeta;
 
 	// make global variables static ?
 	int gstat = (mode & cgen_glob) == 0;
@@ -2041,23 +2071,27 @@ int gencode(state rt, int mode) {
 		}
 	}
 
-	// allocate used memeory
-	rt->vm.size.meta = rt->_beg - rt->_mem;
+	// used memeory by metadata (string constants and typeinfos)
+	Lmeta = rt->_beg - rt->_mem;
 
 	// libcalls
 	if (cc->libc != NULL) {
-		// TODO: clean this code
-		struct libc* calls = rt->_beg = paddptr(rt->_beg, sizeof(void*));
+		libc lc, calls;
+
+		calls = (libc)(rt->_beg = paddptr(rt->_beg, sizeof(void*)));
 		rt->_beg += sizeof(struct libc) * (cc->libc->pos + 1);
 		dieif(rt->_beg >= rt->_end, "memory overrun");
+
 		for (lc = cc->libc; lc; lc = lc->next) {
 			calls[lc->pos] = *lc;
 		}
+
 		rt->vm.libv = calls;
 	}
 
+	// debuginfo
 	if (mode & cgen_info) {
-		rt->dbg = (dbgState)rt->_beg;
+		rt->dbg = (dbgState)(rt->_beg = paddptr(rt->_beg, sizeof(void*)));
 		rt->_beg += sizeof(struct dbgStateRec);
 
 		dieif(rt->_beg >= rt->_end, "memory overrun");
@@ -2070,7 +2104,9 @@ int gencode(state rt, int mode) {
 	//~ strings, typeinfos, TODO(constants, functions, enums, ...)
 	rt->vm.ro = rt->_beg - rt->_mem;
 
+	// TODO: generate functions first
 	rt->vm.opti = mode & cgen_opti;
+
 	// static vars & functions
 	if (rt->defs != NULL) {
 		symn var = rt->defs;
@@ -2100,7 +2136,7 @@ int gencode(state rt, int mode) {
 					continue;
 				}
 
-				rt->cc->sini = 0;
+				rt->cc->init = 0;
 				rt->vm.sm = 0;
 				fixjump(rt, 0, 0, vm_size + var->offs);
 				rt->vm.ro = stkoffs(rt, 0);
@@ -2125,9 +2161,15 @@ int gencode(state rt, int mode) {
 			}
 			else {
 				dieif(var->offs, "FixMe %-T@%d:%t", var, var->offs, var->cast);
+				logif(var->size != sizeOf(var), "FixMe %-T@%d:%t", var, var->offs, var->cast);
 				var->size = sizeOf(var);
-				var->offs = rt->_beg - rt->_mem;
+
+				// align the memory of the variable. speeding up the read and write of it.
+				rt->_beg = paddptr(rt->_beg, sizeof(void*));
+				var->offs = vmOffset(rt, rt->_beg);
 				rt->_beg += var->size;
+
+				dieif(rt->_beg >= rt->_end, "memory overrun");
 
 				if (var->init != NULL) {
 					astn init = newnode(cc, TYPE_def);
@@ -2164,15 +2206,18 @@ int gencode(state rt, int mode) {
 			dieif(!cc->root || cc->root->kind != STMT_beg, "FixMe");
 			staticinitializers->list.tail->next = cc->root->stmt.stmt;
 			cc->root->stmt.stmt = staticinitializers->list.head;
+			//~ staticinitializers->list.tail->next = cc->root->stmt.stmt;
+			//~ cc->root = staticinitializers->list.head;
 		}
 	}
-
-	rt->cc->sini = 1;
 
 	Lmain = rt->_beg - rt->_mem;
 	if (cc->root) {
 		int seg = Lmain;
 		rt->vm.ss = rt->vm.sm = 0;
+
+		// enable static var initialization
+		rt->cc->init = 1;
 
 		// TYPE_vid clears the stack
 		if (!cgen(rt, cc->root, gstat ? TYPE_vid : TYPE_any)) {
@@ -2190,12 +2235,15 @@ int gencode(state rt, int mode) {
 		}
 	}
 
+	// application exit point: exit(0)
 	rt->vm.px = emiti32(rt, 0);
 	emitint(rt, opc_libc, 0);
 
 	// program entry point
 	rt->vm.pc = Lmain;
-	rt->vm.size.code = rt->_beg - rt->_mem;
+
+	//rt->vm.size.meta = Lmeta;
+	//rt->vm.size.code = rt->_beg - rt->_mem;
 
 	rt->_end = rt->_mem + rt->_size;
 
@@ -2216,18 +2264,13 @@ int gencode(state rt, int mode) {
 				}
 			}
 		}
-		/*x:for (i = 0; i < codeMap->cnt; ++i) {
-			dbgInfo dbg = getBuff(codeMap, i);
-			astn ast = dbg->code;
-			fputfmt(stdout, "%s:%d:@%06x-%06x: %+k\n", ast->file, ast->line, dbg->start, dbg->end, ast);
-		}*/
 	}
 
 	return rt->errc == 0;
+	(void)Lmeta;
 }
 
 // install basic types
-symn emit_opc_ = NULL;
 static void install_type(ccState cc, int mode) {
 	symn type_rec, type_vid, type_bol, type_ptr = NULL, type_var = NULL;
 	symn type_i08, type_i16, type_i32, type_i64;
@@ -2235,30 +2278,30 @@ static void install_type(ccState cc, int mode) {
 	symn type_f32, type_f64;
 	symn type_chr;
 
-	type_rec = install(cc, "typename", ATTR_const | ATTR_stat | TYPE_rec, TYPE_ref, 0, NULL, NULL);
+	type_rec = install(cc, "typename", ATTR_stat | ATTR_const | TYPE_rec, TYPE_ref, 0, NULL, NULL);
 
 	// TODO: typename is of type typename
 	type_rec->type = type_rec;
 
-	type_vid = install(cc,    "void", ATTR_const | ATTR_stat | TYPE_rec, TYPE_vid, 0, type_rec, NULL);
-	type_bol = install(cc,    "bool", ATTR_const | ATTR_stat | TYPE_rec, TYPE_bit, 4, type_rec, NULL);
-	type_i08 = install(cc,    "int8", ATTR_const | ATTR_stat | TYPE_rec, TYPE_i32, 1, type_rec, NULL);
-	type_i16 = install(cc,   "int16", ATTR_const | ATTR_stat | TYPE_rec, TYPE_i32, 2, type_rec, NULL);
-	type_i32 = install(cc,   "int32", ATTR_const | ATTR_stat | TYPE_rec, TYPE_i32, 4, type_rec, NULL);
-	type_i64 = install(cc,   "int64", ATTR_const | ATTR_stat | TYPE_rec, TYPE_i64, 8, type_rec, NULL);
-	type_u08 = install(cc,   "uint8", ATTR_const | ATTR_stat | TYPE_rec, TYPE_u32, 1, type_rec, NULL);
-	type_u16 = install(cc,  "uint16", ATTR_const | ATTR_stat | TYPE_rec, TYPE_u32, 2, type_rec, NULL);
-	type_u32 = install(cc,  "uint32", ATTR_const | ATTR_stat | TYPE_rec, TYPE_u32, 4, type_rec, NULL);
-	// type_ = install(cc,  "uint64", ATTR_const | ATTR_stat | TYPE_rec, TYPE_u64, 8, type_rec, NULL);
-	type_f32 = install(cc, "float32", ATTR_const | ATTR_stat | TYPE_rec, TYPE_f32, 4, type_rec, NULL);
-	type_f64 = install(cc, "float64", ATTR_const | ATTR_stat | TYPE_rec, TYPE_f64, 8, type_rec, NULL);
+	type_vid = install(cc,    "void", ATTR_stat | ATTR_const | TYPE_rec, TYPE_vid, 0, type_rec, NULL);
+	type_bol = install(cc,    "bool", ATTR_stat | ATTR_const | TYPE_rec, TYPE_bit, 4, type_rec, NULL);
+	type_i08 = install(cc,    "int8", ATTR_stat | ATTR_const | TYPE_rec, TYPE_i32, 1, type_rec, NULL);
+	type_i16 = install(cc,   "int16", ATTR_stat | ATTR_const | TYPE_rec, TYPE_i32, 2, type_rec, NULL);
+	type_i32 = install(cc,   "int32", ATTR_stat | ATTR_const | TYPE_rec, TYPE_i32, 4, type_rec, NULL);
+	type_i64 = install(cc,   "int64", ATTR_stat | ATTR_const | TYPE_rec, TYPE_i64, 8, type_rec, NULL);
+	type_u08 = install(cc,   "uint8", ATTR_stat | ATTR_const | TYPE_rec, TYPE_u32, 1, type_rec, NULL);
+	type_u16 = install(cc,  "uint16", ATTR_stat | ATTR_const | TYPE_rec, TYPE_u32, 2, type_rec, NULL);
+	type_u32 = install(cc,  "uint32", ATTR_stat | ATTR_const | TYPE_rec, TYPE_u32, 4, type_rec, NULL);
+	// type_ = install(cc,  "uint64", ATTR_stat | ATTR_const | TYPE_rec, TYPE_u64, 8, type_rec, NULL);
+	type_f32 = install(cc, "float32", ATTR_stat | ATTR_const | TYPE_rec, TYPE_f32, 4, type_rec, NULL);
+	type_f64 = install(cc, "float64", ATTR_stat | ATTR_const | TYPE_rec, TYPE_f64, 8, type_rec, NULL);
 
 	if (mode & creg_tptr) {
-		type_ptr = install(cc,  "pointer", ATTR_const | ATTR_stat | TYPE_rec, TYPE_ref, vm_size, type_rec, NULL);
-		cc->null_ref = install(cc, "null", ATTR_const | ATTR_stat | TYPE_ref, TYPE_any, vm_size, type_ptr, NULL);
+		type_ptr = install(cc,  "pointer", ATTR_stat | ATTR_const | TYPE_rec, TYPE_ref, vm_size, type_rec, NULL);
+		cc->null_ref = install(cc, "null", ATTR_stat | ATTR_const | TYPE_ref, TYPE_any, vm_size, type_ptr, NULL);
 	}
 	if (mode & creg_tvar) {
-		type_var = install(cc, "variant", ATTR_const | ATTR_stat | TYPE_rec, TYPE_rec, 2 * vm_size, type_rec, NULL);
+		type_var = install(cc, "variant", ATTR_stat | ATTR_const | TYPE_rec, TYPE_rec, 2 * vm_size, type_rec, NULL);
 		//~ install(cc, "array", ATTR_const | TYPE_arr, 0, 0, cc->type_var, NULL);		// array is alias for variant[]
 	}
 
@@ -2291,20 +2334,20 @@ static void install_type(ccState cc, int mode) {
 	cc->type_var = type_var;
 
 	// aliases.
-	install(cc, "int",    ATTR_const | TYPE_def, 0, 0, type_i32, NULL);
-	install(cc, "long",   ATTR_const | TYPE_def, 0, 0, type_i64, NULL);
-	install(cc, "float",  ATTR_const | TYPE_def, 0, 0, type_f32, NULL);
-	install(cc, "double", ATTR_const | TYPE_def, 0, 0, type_f64, NULL);
+	install(cc, "int",    ATTR_stat | ATTR_const | TYPE_def, 0, 0, type_i32, NULL);
+	install(cc, "long",   ATTR_stat | ATTR_const | TYPE_def, 0, 0, type_i64, NULL);
+	install(cc, "float",  ATTR_stat | ATTR_const | TYPE_def, 0, 0, type_f32, NULL);
+	install(cc, "double", ATTR_stat | ATTR_const | TYPE_def, 0, 0, type_f64, NULL);
 
-	install(cc, "true",   ATTR_const | TYPE_def, 0, 0, type_bol, intnode(cc, 1));
-	install(cc, "false",  ATTR_const | TYPE_def, 0, 0, type_bol, intnode(cc, 0));
+	install(cc, "true",   ATTR_stat | ATTR_const | TYPE_def, 0, 0, type_bol, intnode(cc, 1));
+	install(cc, "false",  ATTR_stat | ATTR_const | TYPE_def, 0, 0, type_bol, intnode(cc, 0));
 
-	//~ type_chr = install(cc, "char", ATTR_const | ATTR_stat | TYPE_def, 0, 0, type_u08, NULL);
-	type_chr = install(cc, "char", ATTR_const | ATTR_stat | TYPE_rec, TYPE_u32, 1, type_rec, NULL);
+	//~ type_chr = install(cc, "char", ATTR_stat | ATTR_const | TYPE_def, 0, 0, type_u08, NULL);
+	type_chr = install(cc, "char", ATTR_stat | ATTR_const | TYPE_rec, TYPE_u32, 1, type_rec, NULL);
 	type_chr->pfmt = "'%c'";
 
 	//~ TODO: struct string: char[] { ... }, temporarly string is alias for uint8[]
-	cc->type_str = install(cc, "string", ATTR_const | ATTR_stat | TYPE_arr, TYPE_ref, vm_size, type_chr, NULL);
+	cc->type_str = install(cc, "string", ATTR_stat | ATTR_const | TYPE_arr, TYPE_ref, vm_size, type_chr, NULL);
 	if (cc->type_str != NULL) {
 		cc->type_str->pfmt = "string(`%s`)";
 		cc->type_str->init = intnode(cc, -1);
@@ -2327,23 +2370,21 @@ static void install_emit(ccState cc, int mode) {
 
 	// TODO: emit is a keyword ???
 	cc->emit_opc = install(cc, "emit", EMIT_opc, 0, 0, NULL, NULL);
-	emit_opc_ = cc->emit_opc;
 
 	if (cc->emit_opc && (mode & creg_eopc) == creg_eopc) {
 
 		symn u32, i32, i64, f32, f64, v4f, v2d;
 
 		ccBegin(rt, NULL);
-		install(cc, "ref", ATTR_const | ATTR_stat | TYPE_rec, TYPE_ref, vm_size, cc->type_rec, NULL);
+		install(cc, "ref", ATTR_stat | ATTR_const | TYPE_rec, TYPE_ref, vm_size, cc->type_rec, NULL);
 
-		u32 = install(cc, "u32", ATTR_const | ATTR_stat | TYPE_rec, TYPE_u32, 4, cc->type_rec, NULL);
-		i32 = install(cc, "i32", ATTR_const | ATTR_stat | TYPE_rec, TYPE_i32, 4, cc->type_rec, NULL);
-		i64 = install(cc, "i64", ATTR_const | ATTR_stat | TYPE_rec, TYPE_i64, 8, cc->type_rec, NULL);
-		f32 = install(cc, "f32", ATTR_const | ATTR_stat | TYPE_rec, TYPE_f32, 4, cc->type_rec, NULL);
-		f64 = install(cc, "f64", ATTR_const | ATTR_stat | TYPE_rec, TYPE_f64, 8, cc->type_rec, NULL);
-
-		v4f = install(cc, "v4f", ATTR_const | ATTR_stat | TYPE_rec, TYPE_rec, 16, cc->type_rec, NULL);
-		v2d = install(cc, "v2d", ATTR_const | ATTR_stat | TYPE_rec, TYPE_rec, 16, cc->type_rec, NULL);
+		u32 = install(cc, "u32", ATTR_stat | ATTR_const | TYPE_rec, TYPE_u32, 4, cc->type_rec, NULL);
+		i32 = install(cc, "i32", ATTR_stat | ATTR_const | TYPE_rec, TYPE_i32, 4, cc->type_rec, NULL);
+		i64 = install(cc, "i64", ATTR_stat | ATTR_const | TYPE_rec, TYPE_i64, 8, cc->type_rec, NULL);
+		f32 = install(cc, "f32", ATTR_stat | ATTR_const | TYPE_rec, TYPE_f32, 4, cc->type_rec, NULL);
+		f64 = install(cc, "f64", ATTR_stat | ATTR_const | TYPE_rec, TYPE_f64, 8, cc->type_rec, NULL);
+		v4f = install(cc, "v4f", ATTR_stat | ATTR_const | TYPE_rec, TYPE_rec, 16, cc->type_rec, NULL);
+		v2d = install(cc, "v2d", ATTR_stat | ATTR_const | TYPE_rec, TYPE_rec, 16, cc->type_rec, NULL);
 
 		install(cc, "nop", EMIT_opc, 0, opc_nop, cc->type_vid, NULL);
 		install(cc, "not", EMIT_opc, 0, opc_not, cc->type_bol, NULL);
@@ -2496,12 +2537,12 @@ static void install_emit(ccState cc, int mode) {
 		}
 
 		if ((mode & creg_eswz) == creg_eswz) {
-			int i;
+			unsigned i;
 			struct {
 				char* name;
 				astn node;
 			} swz[256];
-			for (i = 0; i < 256; i += 1) {
+			for (i = 0; i < lengthOf(swz); i += 1) {
 				dieif(rt->_end - rt->_beg < 5, "memory overrun");
 				rt->_beg[0] = "xyzw"[i>>0&3];
 				rt->_beg[1] = "xyzw"[i>>2&3];
@@ -2519,77 +2560,22 @@ static void install_emit(ccState cc, int mode) {
 				}
 				ccEnd(rt, typ);
 			}
-			/*if ((typ = install(cc, "dup", TYPE_rec, 0, 0))) {
-				//~ extended set(masked) and dup(swizzle): p4d.dup.xyxy / p4d.set.xyz0
-				enter(cc, NULL);
-				for (i = 0; i < 256; i += 1)
-					install(cc, swz[i].name, EMIT_opc, p4x_dup, type_v4f, swz[i].node);
-				typ->args = leave(cc, typ, 1);
-			}// */
-			/*if ((typ = install(cc, "set", TYPE_rec, 0, 0))) {
-				enter(cc, NULL);
-
-				// 0: set 0.0
-				// 1: set 1.0
-				// 2: set src
-				// 3: set dst
-
-				install(cc,    "x", EMIT_opc, p4x_set, type_v4f, intnode(cc, 0));
-				install(cc,    "y", EMIT_opc, p4x_set, type_v4f, intnode(cc, 0));
-				install(cc,    "z", EMIT_opc, p4x_set, type_v4f, intnode(cc, 0));
-				install(cc,    "w", EMIT_opc, p4x_set, type_v4f, intnode(cc, 0));
-				install(cc,  "xyz", EMIT_opc, p4x_set, type_v4f, intnode(cc, 0));
-				install(cc, "xyzw", EMIT_opc, p4x_set, type_v4f, intnode(cc, 0));
-				install(cc, "xyz0", EMIT_opc, p4x_set, type_v4f, intnode(cc, 0));
-				install(cc, "xyz1", EMIT_opc, p4x_set, type_v4f, intnode(cc, 0));
-				install(cc, "xyz_", EMIT_opc, p4x_set, type_v4f, intnode(cc, 0));
-				typ->args = leave(cc, typ, 1);
-			}// */
 		}
-		//~ cc->emit_opc->args = leave(cc, cc->emit_opc, 1);
 		ccEnd(rt, cc->emit_opc);
 	}
 }
 
-state rtInit(void* mem, unsigned size) {
-	state rt = mem;
-
-	/*TODO: if (mem == NULL) {
-		mem = malloc(size);
-		rt = mem;
-	}*/
-
-	dieif(rt == NULL, "internal error");
-	memset(mem, 0, sizeof(struct stateRec));
-
-	*(void**)&rt->api.ccBegin = ccBegin;
-	*(void**)&rt->api.ccDefInt = ccDefInt;
-	*(void**)&rt->api.ccDefFlt = ccDefFlt;
-	*(void**)&rt->api.ccDefStr = ccDefStr;
-	*(void**)&rt->api.ccAddType = ccAddType;
-	*(void**)&rt->api.ccAddCall = ccAddCall;
-	*(void**)&rt->api.ccAddCode = ccAddCode;
-	*(void**)&rt->api.ccEnd = ccEnd;
-	//~ rt->api.ccSymFind = ccSymFind;
-	*(void**)&rt->api.mapsym = mapsym;
-	*(void**)&rt->api.invoke = vmCall;
-	*(void**)&rt->api.rtAlloc = rtAlloc;
-
-	*(long*)&rt->_size = size - sizeof(struct stateRec);
-	rt->_end = rt->_mem + rt->_size;
-	rt->_beg = rt->_mem;
-
-    logFILE(rt, stdout);
-	rt->cc = NULL;
-	return rt;
-}
+/// Initialze compiler context; @see header
 ccState ccInit(state rt, int mode, int onHalt(libcArgs)) {
-	ccState cc = (void*)(rt->_end - sizeof(struct ccStateRec));
+	ccState cc;
 
+	dieif(rt->cc != NULL, "Compiler state already initialzed.");
 	dieif(rt->_beg != rt->_mem, "Compiler initialization failed.");
 	dieif(rt->_end != rt->_mem + rt->_size, "Compiler initialization failed.");
 
+	cc = (ccState)(rt->_end - sizeof(struct ccStateRec));
 	rt->_end -= sizeof(struct ccStateRec);
+
 	dieif(rt->_end < rt->_beg, "memory overrun");
 	memset(rt->_end, 0, sizeof(struct ccStateRec));
 
@@ -2606,8 +2592,15 @@ ccState ccInit(state rt, int mode, int onHalt(libcArgs)) {
 	cc->fin._cnt = 0;
 	cc->fin._fin = -1;
 
+	cc->root = newnode(cc, STMT_beg);
+
 	install_type(cc, mode);
 	install_emit(cc, mode);
+
+	ccAddCall(rt, onHalt ? onHalt : libCallHaltQuiet, NULL, "void Halt(int Code);");
+
+	cc->root->type = cc->type_vid;
+	cc->root->cst2 = TYPE_any;
 
 	// install a void arg for functions with no arguments
 	if (cc->type_vid && (cc->void_tag = newnode(cc, TYPE_ref))) {
@@ -2624,18 +2617,12 @@ ccState ccInit(state rt, int mode, int onHalt(libcArgs)) {
 		cc->emit_tag->ref.hash = -1;
 	}
 
-	install_base(rt, mode, onHalt);
+	install_base(rt, mode);
 
 	return cc;
 }
 
-/** allocate memory in the runtime state.
- * if (size != 0 && ptr != NULL): realloc
- * if (size != 0 && ptr == NULL): alloc
- * if (size == 0 && ptr != NULL): free
- * if (size == 0 && ptr == NULL): nothing
- * return NULL if cannot allocate, or size == 0
-**/
+/// Alloc, resize or free memory; @see state.api.rtAlloc
 void* rtAlloc(state rt, void* ptr, unsigned size) {
 	/* memory manager
 	 * using one linked list containing both used and unused memory chunks.
@@ -2671,7 +2658,7 @@ void* rtAlloc(state rt, void* ptr, unsigned size) {
 	unsigned allocsize = padded(size + minAllocationSize, minAllocationSize);
 
 	// memory manager is not initialized, initialize it first
-	if (rt->vm._heap == NULL) {
+	if (rt->vm.heap == NULL) {
 		memchunk heap = paddptr(rt->_beg, minAllocationSize);
 		memchunk last = paddptr(rt->_end - minAllocationSize, minAllocationSize);
 
@@ -2681,7 +2668,7 @@ void* rtAlloc(state rt, void* ptr, unsigned size) {
 		last->next = NULL;
 		last->prev = NULL;
 
-		rt->vm._heap = heap;
+		rt->vm.heap = heap;
 	}
 
 	// realloc or free.
@@ -2692,7 +2679,7 @@ void* rtAlloc(state rt, void* ptr, unsigned size) {
 		dieif((unsigned char*)ptr > rt->_mem + rt->_size, "memmgr: invalid reference");
 
 		if (1) { // extra check if ptr is in used list.
-			memchunk find = rt->vm._heap;
+			memchunk find = rt->vm.heap;
 			memchunk prev = find;
 			while (find && find != chunk) {
 				prev = find;
@@ -2702,7 +2689,7 @@ void* rtAlloc(state rt, void* ptr, unsigned size) {
 			dieif(chunk->prev != prev, "memmgr: pointer not in used list.");
 		}
 
-		if (size <= 0) {							// free
+		if (size == 0) {							// free
 			memchunk next = chunk->next;
 			memchunk prev = chunk->prev;
 
@@ -2758,7 +2745,7 @@ void* rtAlloc(state rt, void* ptr, unsigned size) {
 
 	// allocate.
 	else if (size > 0) {
-		memchunk prev = chunk = rt->vm._heap;
+		memchunk prev = chunk = rt->vm.heap;
 
 		while (chunk) {
 			memchunk next = chunk->next;
@@ -2787,7 +2774,7 @@ void* rtAlloc(state rt, void* ptr, unsigned size) {
 	else if (1) {
 		memchunk mem = ptr ? (memchunk)((char*)ptr - sizeof(struct memchunk)) : NULL;
 		perr(rt, 0, __FILE__, __LINE__, "heap info: memmgr(%06x, %d)", vmOffset(rt, mem), size);
-		for (mem = rt->vm._heap; mem; mem = mem->next) {
+		for (mem = rt->vm.heap; mem; mem = mem->next) {
 			char *status = mem->prev ? "used" : "free";
 			if (mem->next) {
 				int size = (char*)mem->next - (char*)mem - sizeof(struct memchunk);

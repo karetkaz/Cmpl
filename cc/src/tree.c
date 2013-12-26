@@ -30,21 +30,6 @@ astn newnode(ccState s, int kind) {
 	return ast;
 }
 
-astn tagnode(ccState s, char* id) {
-	astn ast = NULL;
-	if (s && id) {
-		ast = newnode(s, TYPE_ref);
-		if (ast != NULL) {
-			int slen = strlen(id);
-			ast->kind = TYPE_ref;
-			ast->type = ast->ref.link = 0;
-			ast->ref.hash = rehash(id, slen + 1) % TBLS;
-			ast->ref.name = mapstr(s, id, slen + 1, ast->ref.hash);
-		}
-	}
-	return ast;
-}
-
 astn opnode(ccState s, int kind, astn lhs, astn rhs) {
 	astn result = newnode(s, kind);
 	if (result) {
@@ -54,7 +39,7 @@ astn opnode(ccState s, int kind, astn lhs, astn rhs) {
 	return result;
 }
 
-/// make a node witch si a link to a reference
+/// make a node witch is a link to a reference
 astn lnknode(ccState s, symn ref) {
 	astn result = newnode(s, TYPE_ref);
 
@@ -107,7 +92,7 @@ int32_t constbol(astn ast) {
 		default:
 			break;
 	}
-	fatal("not a constant %+k", ast);
+	fatal("not a constant %t: %+k", ast->kind, ast);
 	return 0;
 }
 int64_t constint(astn ast) {
@@ -116,16 +101,16 @@ int64_t constint(astn ast) {
 			return (int64_t)ast->con.cint;
 		case TYPE_flt:
 			return (int64_t)ast->con.cflt;
-		//~ case TYPE_ref: {
-			//~ symn lnk = ast->ref.link;
-			//~ if (lnk && lnk->kind == TYPE_def) {
-				//~ return constint(lnk->init);
-			//~ }
-		//~ }
+		case TYPE_ref: {
+			symn lnk = ast->ref.link;
+			if (lnk && lnk->kind == TYPE_def) {
+				return constint(lnk->init);
+			}
+		}
 		default:
 			break;
 	}
-	fatal("not a constant %+k", ast);
+	fatal("not a constant %t: %+k", ast->kind, ast);
 	return 0;
 }
 float64_t constflt(astn ast) {
@@ -137,7 +122,7 @@ float64_t constflt(astn ast) {
 		default:
 			break;
 	}
-    fatal("not a constant %+k", ast);
+	fatal("not a constant %t: %+k", ast->kind, ast);
 	return 0;
 }
 
@@ -147,7 +132,7 @@ int eval(astn res, astn ast) {
 	ccToken cast = TYPE_any;
 	struct astNode lhs, rhs;
 
-	if (!ast)
+	if (ast == NULL)
 		return 0;
 
 	if (!res)
@@ -155,45 +140,66 @@ int eval(astn res, astn ast) {
 
 	type = ast->type;
 	switch (ast->cst2) {
-		case TYPE_bit: cast = TYPE_bit; break;
-
-		//~ case TYPE_int:
-		case TYPE_i32: cast = TYPE_int; break;
-		case TYPE_u32: cast = TYPE_int; break;
-		case TYPE_i64: cast = TYPE_int; break;
-		//~ case TYPE_u64: cast = TYPE_int; break;
-
-		//~ case TYPE_flt:
-		case TYPE_f32: cast = TYPE_flt; break;
-		case TYPE_f64: cast = TYPE_flt; break;
-
 		default:
 			debug("(%+k):%t / %d", ast, ast->cst2, ast->line);
+			return 0;
+
+		case TYPE_bit:
+			cast = TYPE_bit;
+			break;
+
+		//~ case TYPE_int:
+		case TYPE_i32:
+		case TYPE_u32:
+		case TYPE_i64:
+		//case TYPE_u64:
+			cast = TYPE_int;
+			break;
+
+		//~ case TYPE_flt:
+		case TYPE_f32:
+		case TYPE_f64:
+			cast = TYPE_flt;
+			break;
+
+		case TYPE_rec:
+			switch (ast->kind) {
+				default:
+					return 0;
+
+				case TYPE_int:
+				case TYPE_flt:
+				case TYPE_str:
+					cast = ast->cst2;
+					break;
+			}
+			break;
+			//*/
 
 		case TYPE_arr:
-		case TYPE_rec:
 		case TYPE_ref:
 		case TYPE_vid:
 			return 0;
-		case 0:
-		//~ case TYPE_def:
-			//~ return 0;
+
+		case TYPE_any:
 			cast = ast->cst2;
+			break;
 	}
 
 	switch (ast->kind) {
 		default:
-			//~ fatal("FixMe %t: %+k", ast->kind, ast);
+			fatal("FixMe %t: %+k", ast->kind, ast);
 			debug("FixMe %+k", ast);
 			return 0;
 
 		case STMT_beg:
 			return 0;
 
-		case OPER_dot: {
-			if (!isType(ast->op.lhso)) return 0;
+		case OPER_dot:
+			if (!isType(ast->op.lhso))
+				return 0;
 			return eval(res, ast->op.rhso);
-		} break;
+
 		case OPER_fnc: {
 			astn lhs = ast->op.lhso;
 
@@ -221,178 +227,337 @@ int eval(astn res, astn ast) {
 				if (!eval(res, var->init))
 					return 0;
 			}
-			else
+			else {
 				return 0;
-		} break;
-
-		case OPER_pls: {		// '+'
-			if (!eval(res, ast->op.rhso))
-				return 0;
-		} break;
-		case OPER_mns: {		// '-'
-			if (!eval(res, ast->op.rhso))
-				return 0;
-			switch (res->kind) {
-				default: return 0;
-				case TYPE_int: res->con.cint = -res->con.cint; break;
-				case TYPE_flt: res->con.cflt = -res->con.cflt; break;
-			}
-		} break;
-		case OPER_cmt: {		// '~'
-			if (!eval(res, ast->op.rhso))
-				return 0;
-			switch (res->kind) {
-				default: return 0;
-				case TYPE_int: res->con.cint = ~res->con.cint; break;
-				//~ case TYPE_flt: res->con.cflt = 1. / res->con.cflt; break;
 			}
 		} break;
 
-		case OPER_not: {		// '!'
+		case OPER_pls:		// '+'
+			if (!eval(res, ast->op.rhso))
+				return 0;
+			break;
+
+		case OPER_mns:		// '-'
+			if (!eval(res, ast->op.rhso))
+				return 0;
+
+			switch (res->kind) {
+				default:
+					return 0;
+				case TYPE_int:
+					res->con.cint = -res->con.cint;
+					break;
+				case TYPE_flt:
+					res->con.cflt = -res->con.cflt;
+					break;
+			}
+			break;
+
+		case OPER_cmt:			// '~'
+
+			if (!eval(res, ast->op.rhso))
+				return 0;
+			
+			switch (res->kind) {
+
+				default:
+					return 0;
+
+				case TYPE_int:
+					res->con.cint = ~res->con.cint;
+					break;
+
+				/*case TYPE_flt:
+					res->con.cflt = 1. / res->con.cflt;
+					break;
+				//? */
+			}
+			break;
+
+		case OPER_not:			// '!'
+
+			if (!eval(res, ast->op.rhso))
+				return 0;
+
 			logif(ast->cst2 != TYPE_bit, "FixMe %+k", ast);
-			if (!eval(res, ast->op.rhso))
-				return 0;
 
 			switch (res->kind) {
-				default: return 0;
-				case TYPE_int: res->kind = TYPE_int; res->con.cint = !res->con.cint; break;
-				case TYPE_flt: res->kind = TYPE_int; res->con.cint = !res->con.cflt; break;
-			}
-		} break;
 
-		//~ / *
+				default:
+					return 0;
+
+				case TYPE_int:
+					res->con.cint = !res->con.cint;
+					res->kind = TYPE_int;
+					break;
+
+				case TYPE_flt:
+					res->con.cint = !res->con.cflt;
+					res->kind = TYPE_int;
+					break;
+			}
+			break;
+
 		case OPER_add:			// '+'
 		case OPER_sub:			// '-'
 		case OPER_mul:			// '*'
 		case OPER_div:			// '/'
-		case OPER_mod: {		// '%'
+		case OPER_mod:			// '%'
 			if (!eval(&lhs, ast->op.lhso))
 				return 0;
+
 			if (!eval(&rhs, ast->op.rhso))
 				return 0;
+
 			dieif(lhs.kind != rhs.kind, "eval operator %k (%t, %t): %t", ast, lhs.kind, rhs.kind, ast->cst2);
 
 			switch (rhs.kind) {
-				default: return 0;
-				case TYPE_int: {
+				default:
+					return 0;
+
+				case TYPE_int:
 					res->kind = TYPE_int;
 					switch (ast->kind) {
-						default: fatal("FixMe");
-						case OPER_add: res->con.cint = lhs.con.cint + rhs.con.cint; break;		// '+'
-						case OPER_sub: res->con.cint = lhs.con.cint - rhs.con.cint; break;		// '-'
-						case OPER_mul: res->con.cint = lhs.con.cint * rhs.con.cint; break;		// '*'
-						case OPER_div: 
-						case OPER_mod: {
-							if (rhs.con.cint) switch (ast->kind) {
-								default: fatal("FixMe");
-								case OPER_div: res->con.cint = lhs.con.cint / rhs.con.cint; break;		// '/'
-								case OPER_mod: res->con.cint = lhs.con.cint % rhs.con.cint; break;		// '%'
-							}
-							else {
+
+						default:
+							fatal("FixMe");
+							return 0;
+
+						case OPER_add:
+							res->con.cint = lhs.con.cint + rhs.con.cint;
+							break;
+
+						case OPER_sub:
+							res->con.cint = lhs.con.cint - rhs.con.cint;
+							break;
+
+						case OPER_mul:
+							res->con.cint = lhs.con.cint * rhs.con.cint;
+							break;
+
+						case OPER_div:
+							if (rhs.con.cint == 0) {
 								error(NULL, NULL, 0, "Division by zero: %+k", ast);
 								res->con.cint = 0;
+								break;
 							}
-						}
+							res->con.cint = lhs.con.cint / rhs.con.cint;
+							break;
+
+						case OPER_mod:
+							if (rhs.con.cint == 0) {
+								error(NULL, NULL, 0, "Division by zero: %+k", ast);
+								res->con.cint = 0;
+								break;
+							}
+							res->con.cint = lhs.con.cint % rhs.con.cint;
+							break;
 					}
-				} break;
-				case TYPE_flt: {
+					break;
+
+				case TYPE_flt:
 					res->kind = TYPE_flt;
 					switch (ast->kind) {
-						default: fatal("FixMe: %+k", ast);
-						case OPER_add: res->con.cflt = lhs.con.cflt + rhs.con.cflt; break;		// '+'
-						case OPER_sub: res->con.cflt = lhs.con.cflt - rhs.con.cflt; break;		// '-'
-						case OPER_mul: res->con.cflt = lhs.con.cflt * rhs.con.cflt; break;		// '*'
-						case OPER_div: res->con.cflt = lhs.con.cflt / rhs.con.cflt; break;		// '/'
-						case OPER_mod: res->con.cflt = fmod(lhs.con.cflt, rhs.con.cflt); break;		// '%'
+
+						default:
+							fatal("FixMe: %+k", ast);
+							return 0;
+
+						case OPER_add:
+							res->con.cflt = lhs.con.cflt + rhs.con.cflt;
+							break;
+
+						case OPER_sub:
+							res->con.cflt = lhs.con.cflt - rhs.con.cflt;
+							break;
+
+						case OPER_mul:
+							res->con.cflt = lhs.con.cflt * rhs.con.cflt;
+							break;
+
+						case OPER_div:
+							res->con.cflt = lhs.con.cflt / rhs.con.cflt;
+							break;
+
+						case OPER_mod:
+							res->con.cflt = fmod(lhs.con.cflt, rhs.con.cflt);
+							break;
 					}
-				} break;
+					break;
 			}
-		} break;
+			break;
 
 		case OPER_neq:			// '!='
 		case OPER_equ:			// '=='
 		case OPER_gte:			// '>'
 		case OPER_geq:			// '>='
 		case OPER_lte:			// '<'
-		case OPER_leq: {		// '<='
+		case OPER_leq:			// '<='
+
 			if (!eval(&lhs, ast->op.lhso))
 				return 0;
+
 			if (!eval(&rhs, ast->op.rhso))
 				return 0;
+			
 			dieif(lhs.kind != rhs.kind, "eval operator %k (%t, %t): %t", ast, lhs.kind, rhs.kind, ast->cst2);
+
 			res->kind = TYPE_bit;
 			switch (rhs.kind) {
-				default: return 0;
-				case TYPE_int: switch (ast->kind) {
-					default: fatal("FixMe");
-					case OPER_neq: res->con.cint = lhs.con.cint != rhs.con.cint; break;
-					case OPER_equ: res->con.cint = lhs.con.cint == rhs.con.cint; break;
-					case OPER_gte: res->con.cint = lhs.con.cint  > rhs.con.cint; break;
-					case OPER_geq: res->con.cint = lhs.con.cint >= rhs.con.cint; break;
-					case OPER_lte: res->con.cint = lhs.con.cint  < rhs.con.cint; break;
-					case OPER_leq: res->con.cint = lhs.con.cint <= rhs.con.cint; break;
-				} break;
-				case TYPE_flt: switch (ast->kind) {
-					default: fatal("FixMe");
-					case OPER_neq: res->con.cint = lhs.con.cflt != rhs.con.cflt; break;
-					case OPER_equ: res->con.cint = lhs.con.cflt == rhs.con.cflt; break;
-					case OPER_gte: res->con.cint = lhs.con.cflt  > rhs.con.cflt; break;
-					case OPER_geq: res->con.cint = lhs.con.cflt >= rhs.con.cflt; break;
-					case OPER_lte: res->con.cint = lhs.con.cflt  < rhs.con.cflt; break;
-					case OPER_leq: res->con.cint = lhs.con.cflt <= rhs.con.cflt; break;
-				} break;
+				default:
+					return 0;
+
+				case TYPE_int:
+					switch (ast->kind) {
+
+						default:
+							fatal("FixMe");
+							return 0;
+
+						case OPER_neq:
+							res->con.cint = lhs.con.cint != rhs.con.cint;
+							break;
+
+						case OPER_equ:
+							res->con.cint = lhs.con.cint == rhs.con.cint;
+							break;
+
+						case OPER_gte:
+							res->con.cint = lhs.con.cint  > rhs.con.cint;
+							break;
+
+						case OPER_geq:
+							res->con.cint = lhs.con.cint >= rhs.con.cint;
+							break;
+
+						case OPER_lte:
+							res->con.cint = lhs.con.cint  < rhs.con.cint;
+							break;
+
+						case OPER_leq:
+							res->con.cint = lhs.con.cint <= rhs.con.cint;
+							break;
+					}
+					break;
+				case TYPE_flt:
+					switch (ast->kind) {
+
+						default:
+							fatal("FixMe");
+							return 0;
+
+						case OPER_neq:
+							res->con.cint = lhs.con.cflt != rhs.con.cflt;
+							break;
+
+						case OPER_equ:
+							res->con.cint = lhs.con.cflt == rhs.con.cflt;
+							break;
+
+						case OPER_gte:
+							res->con.cint = lhs.con.cflt  > rhs.con.cflt;
+							break;
+
+						case OPER_geq:
+							res->con.cint = lhs.con.cflt >= rhs.con.cflt;
+							break;
+
+						case OPER_lte:
+							res->con.cint = lhs.con.cflt  < rhs.con.cflt;
+							break;
+
+						case OPER_leq:
+							res->con.cint = lhs.con.cflt <= rhs.con.cflt;
+							break;
+					}
+					break;
 			}
-		} break;
+			break;
 
 		case OPER_shr:			// '>>'
 		case OPER_shl:			// '<<'
 		case OPER_and:			// '&'
 		case OPER_ior:			// '|'
-		case OPER_xor: {		// '^'
+		case OPER_xor:			// '^'
+
 			if (!eval(&lhs, ast->op.lhso))
 				return 0;
+
 			if (!eval(&rhs, ast->op.rhso))
 				return 0;
+
 			dieif(lhs.kind != rhs.kind, "eval operator %k (%t, %t): %t", ast, lhs.kind, rhs.kind, ast->cst2);
 
 			switch (rhs.kind) {
+
 				default:
 					debug("eval(%+k) : %t", ast->op.rhso, rhs.kind);
 					return 0;
-				case TYPE_int: {
+
+				case TYPE_int:
 					res->kind = TYPE_int;
 					switch (ast->kind) {
-						default: fatal("FixMe");
-						case OPER_shr: res->con.cint = lhs.con.cint >> rhs.con.cint; break;
-						case OPER_shl: res->con.cint = lhs.con.cint << rhs.con.cint; break;
-						case OPER_and: res->con.cint = lhs.con.cint  & rhs.con.cint; break;
-						case OPER_xor: res->con.cint = lhs.con.cint  ^ rhs.con.cint; break;
-						case OPER_ior: res->con.cint = lhs.con.cint  | rhs.con.cint; break;
+
+						default:
+							fatal("FixMe");
+							return 0;
+
+						case OPER_shr:
+							res->con.cint = lhs.con.cint >> rhs.con.cint;
+							break;
+
+						case OPER_shl:
+							res->con.cint = lhs.con.cint << rhs.con.cint;
+							break;
+
+						case OPER_and:
+							res->con.cint = lhs.con.cint  & rhs.con.cint;
+							break;
+
+						case OPER_xor:
+							res->con.cint = lhs.con.cint  ^ rhs.con.cint;
+							break;
+
+						case OPER_ior:
+							res->con.cint = lhs.con.cint  | rhs.con.cint;
+							break;
 					}
-				} break;
+					break;
 			}
-		} break;
+			break;
 
 		case OPER_lnd:
-		case OPER_lor: {
+		case OPER_lor:
+
 			if (!eval(&lhs, ast->op.lhso))
 				return 0;
+
 			if (!eval(&rhs, ast->op.rhso))
 				return 0;
+
 			dieif(lhs.kind != rhs.kind, "eval operator %k (%t, %t): %t", ast, lhs.kind, rhs.kind, ast->cst2);
 
 			res->kind = TYPE_bit;
 			switch (ast->kind) {
-				default: fatal("FixMe");
-				case OPER_lor: res->con.cint = lhs.con.cint || rhs.con.cint; break;
-				case OPER_lnd: res->con.cint = lhs.con.cint && rhs.con.cint; break;
+				default:
+					fatal("FixMe");
+					return 0;
+
+				case OPER_lor:
+					res->con.cint = lhs.con.cint || rhs.con.cint;
+					break;
+
+				case OPER_lnd:
+					res->con.cint = lhs.con.cint && rhs.con.cint;
+					break;
 			}
-		} break;
-		case OPER_sel: {
+			break;
+
+		case OPER_sel:
 			if (!eval(&lhs, ast->op.test))
 				return 0;
+			
 			return eval(res, lhs.con.cint ? ast->op.lhso : ast->op.rhso);
-		} break;
 
 		case ASGN_set:
 		//~ case ASGN_add:
@@ -410,10 +575,13 @@ int eval(astn res, astn ast) {
 	}
 
 	if (cast != res->kind) switch (cast) {
-		default: fatal("FixMe");
+		default:
+			fatal("FixMe");
+			return 0;
 
 		case TYPE_vid:
 		case TYPE_any:
+		case TYPE_rec:
 			break;
 
 		case TYPE_bit:
@@ -437,6 +605,7 @@ int eval(astn res, astn ast) {
 			fatal("FixMe %t", res->kind);
 			res->type = NULL;
 			return 0;
+
 		case TYPE_bit:
 		case TYPE_int:
 		case TYPE_flt:

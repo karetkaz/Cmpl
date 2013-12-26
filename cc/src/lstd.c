@@ -413,16 +413,34 @@ typedef enum {
 	miscOpExit,
 	miscOpRand32,
 
-	timeOpTime32,
-	timeOpClock32,
+	timeOpTime32,		// current time in seconds since 1970
+	timeOpMillis64,		// current time millis.
+
+	timeOpClock32,		// process time spent in processor.
 	timeOpClocks2s,
 
 	miscOpPutStr,
 	miscOpPutFmt
 } miscOperation;
 
+#if (defined __WATCOMC__) || (defined _MSC_VER)
+static inline int64_t timeMillis() {
+	return clock() * (int64_t)1000 / CLOCKS_PER_SEC;
+}
+#else
+#include <sys/time.h>
+static inline int64_t timeMillis() {
+	int64_t now;
+	struct timeval tv;
+	gettimeofday(&tv, NULL);
+	now = tv.tv_sec * (uint64_t)1000;
+	now += tv.tv_usec / (uint64_t)1000;
+	return now;
+}
+#endif
+
 static int miscFunction(libcArgs args) {
-	switch ((miscOperation)args->data) {
+	switch ((miscOperation)(int)args->data) {
 
 		case miscOpExit:
 			exit(argi32(args, 0));
@@ -442,6 +460,10 @@ static int miscFunction(libcArgs args) {
 
 		case timeOpTime32:
 			reti32(args, (int)time(NULL));
+			return 0;
+
+		case timeOpMillis64:
+			reti64(args, timeMillis());
 			return 0;
 
 		case timeOpClock32:
@@ -662,7 +684,7 @@ int libCallHaltDebug(libcArgs rt) {
 
 		if (var->stat) {
 			// static variable.
-			ofs = rt->rt->_mem + var->offs;
+			ofs = (char*)rt->rt->_mem + var->offs;
 		}
 		else {
 			// argument or local variable.
@@ -683,11 +705,9 @@ int libCallHaltDebug(libcArgs rt) {
 
 //#}#endregion
 
-int install_base(state rt, int mode, int onHalt(libcArgs)) {
+int install_base(state rt, int mode) {
 	int error = 0;
 	ccState cc = rt->cc;
-
-	ccAddCall(rt, onHalt ? onHalt : libCallHaltQuiet, NULL, "void Halt(int Code);");
 
 	if (cc->type_ptr && (mode & creg_tptr)) {
 		cc->libc_mem = ccAddCall(cc->s, libCallMemMgr, NULL, "pointer memmgr(pointer ptr, int32 size);");
@@ -793,6 +813,8 @@ int install_stdc(state rt) {
 		{miscFunction, miscOpRand32,		"int32 rand();"},
 
 		{miscFunction, timeOpTime32,		"int32 time();"},
+		{miscFunction, timeOpMillis64,		"int64 millis();"},
+
 		{miscFunction, timeOpClock32,		"int32 clock();"},
 		{miscFunction, timeOpClocks2s,		"float64 clocks2Sec(int32 clock);"},
 
@@ -849,9 +871,9 @@ int install_file(state rt) {
 	if (file_nsp != NULL) {
 		ccBegin(rt, NULL);
 
-		err = err || !ccAddCall(rt, FILE_open,  "r", "File Open(char path[]);");
-		err = err || !ccAddCall(rt, FILE_open,  "w", "File Create(char path[]);");
-		err = err || !ccAddCall(rt, FILE_open,  "a", "File Append(char path[]);");
+		err = err || !ccAddCall(rt, FILE_open, "r", "File Open(char path[]);");
+		err = err || !ccAddCall(rt, FILE_open, "w", "File Create(char path[]);");
+		err = err || !ccAddCall(rt, FILE_open, "a", "File Append(char path[]);");
 
 		err = err || !ccAddCall(rt, FILE_peek, NULL, "int Peek(File file);");
 		err = err || !ccAddCall(rt, FILE_getc, NULL, "int Read(File file);");
