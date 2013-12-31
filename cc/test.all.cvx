@@ -1,4 +1,5 @@
-// test some language features
+//~ src/main.c
+// test some features
 
 // TODO: split this file
 
@@ -37,10 +38,6 @@ float32 res1 = emit(float32, f32.div, f32(2), f32(Math.pi));
 float64 res2 = emit(f64.neg, f64(Math.pi));
 float32 res3 = emit(i32, f32(Math.pi));
 hex32 res4 = emit(i32, f32(Math.pi));
-println(res1);
-println(res2);
-println(res3);
-println(res4);
 }
 static if (Test.Emit & 0x02) {		// more basic emit examples
 define shl(int32 value, int count) = emit(i32.shl, i32(count), i32(value));
@@ -57,9 +54,9 @@ define mad(float32 a, float32 b, float32 c) = emit(f32.add, f32.mul, f32(a), f32
 define mad(float64 a, float64 b, float64 c) = emit(f64.add, f64.mul, f64(a), f64(b), f64(c));	// a * b + c
 //~ define mad(int32 size, int32 index, int32 offset) = emit(u32.mad, i32(size), i32(index), i32(offset));
 
-int a = -0x8989;
-int32 a1 = shr(uint32(a), 8);
-int32 a2 = shr(int32(a), 8);
+hex32 a = -0x8989;
+hex32 a1 = shr(uint32(a), 8);
+hex32 a2 = shr(int32(a), 8);
 
 //:ERROR: float32 X1 = mad(2, 3, 4000);
 float32 X2 = mad(float32(2), float32(3), float32(4000));
@@ -519,3 +516,5 @@ int32x8 i32x8_c = sub(&i32x8_a, -19);
 //~ assert(uint8(x) == int32(X));
 
 //~ string b = "sajdfg";
+
+//~ double Math_Sinh_P0 = Math.Sinh.P0;

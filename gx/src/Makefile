@@ -26,10 +26,10 @@ ifeq "$(OS)" "Windows_NT"
 	MKDIR=mkdir
 endif
 
-ifeq ($(shell uname -m),x86_64)
+#~ ifeq ($(shell uname -m),x86_64)
 	#~ LIBS=$(LIBDIR)libjpeg.x64.a $(LIBDIR)libpng.x64.a
 	#~ AS=nasm -f elf64
-endif
+#~ endif
 
 OBJS=\
 	$(OBJDIR)/code.o\

@@ -21,7 +21,7 @@
 	5: print non pre-mapped strings, non static types
 	6: print static casts generated with emit
 */
-#define DEBUGGING 1
+#define DEBUGGING 0
 
 // enable paralell execution stuff
 //~ #define MAXPROCSEXEC 1
@@ -62,7 +62,7 @@
 
 // internal errors
 #define fatal(msg, ...) do { prerr("internal error", msg, ##__VA_ARGS__); abort(); } while(0)
-#define dieif(__EXP, msg, ...) do { if (__EXP) { fatal(msg, ##__VA_ARGS__); } } while(0)
+#define dieif(__EXP, msg, ...) do {if (__EXP) { prerr("internal error("#__EXP")", msg, ##__VA_ARGS__); abort(); }} while(0)
 
 // compilation errors
 #define error(__ENV, __FILE, __LINE, msg, ...) do { perr(__ENV, -1, __FILE, __LINE, msg, ##__VA_ARGS__); debug(msg, ##__VA_ARGS__); } while(0)
@@ -90,6 +90,7 @@ typedef enum {
 	decl_NoInit = 0x200,		// disable initialization.
 	decl_ItDecl = 0x400,		// enable ':' after declaration: for(int a : range(0, 12))
 
+	//ATTR_paral  = 0x100,		// parallel
 	ATTR_const  = 0x100,		// constant
 	ATTR_stat   = 0x200			// static
 	/*? enum Kind {
@@ -102,16 +103,16 @@ typedef enum {
 		attr_static  = 0x000008;
 	}*/
 } ccToken;
-typedef struct tok_inf {
+struct tok_inf {
 	int const	type;
 	int const	argc;
 	char *const	name;
-} tok_inf;
-extern const tok_inf tok_tbl[255];
+};
+extern const struct tok_inf tok_tbl[255];
 
 // Opcodes - VM(opcodes)
 typedef enum {
-	#define OPCDEF(Name, Code, Size, Args, Push, Time, Mnem) Name = Code,
+	#define OPCDEF(Name, Code, Size, Args, Push, Mnem) Name = Code,
 	#include "defs.inl"
 	opc_last,
 
@@ -136,7 +137,6 @@ typedef enum {
 	opc_cgt,
 	opc_cge,
 
-
 	opc_ldi,		// argument is the size
 	opc_sti,		// argument is the size
 	opc_drop,		// convert this to opcode.spc
@@ -151,14 +151,14 @@ typedef enum {
 	vm_size = sizeof(int),	// size of data element on stack
 	vm_regs = 255	// maximum registers for dup, set, pop, ...
 } vmOpcode;
-typedef struct {
+struct opc_inf{
 	int const code;		// opcode value (0..255)
 	int const size;		// length of opcode with args
 	int const chck;		// minimum elements on stack before execution
 	int const diff;		// stack size difference after execution
 	char *const name;	// mnemonic for the opcode
-} opc_inf;
-extern const opc_inf opc_tbl[255];
+};
+extern const struct opc_inf opc_tbl[255];
 
 typedef union {		// on stack value type
 	int8_t		i1;
@@ -175,11 +175,9 @@ typedef union {		// on stack value type
 	struct {void* data; long length;} arr;	// slice
 } stkval;
 
-typedef struct list {				// linked list: stringlist, ...
+typedef struct list {
 	struct list*	next;
 	unsigned char*	data;
-	unsigned int	size;
-	unsigned int	_pad;
 } *list;
 typedef struct libc {
 	struct libc *next;	// next
@@ -190,9 +188,11 @@ typedef struct libc {
 	int pos;
 } *libc;
 
-typedef struct astNode *astn;		// Abstract Syntax Tree Node
+/// Abstract Syntax Tree Node
+typedef struct astNode *astn;
 
-struct symNode {					// type node (meta)
+/// Symbol node types and variables
+struct symNode {
 	char*	name;		// symbol name
 	char*	file;		// declared in file
 	int32_t	line;		// declared on line
@@ -234,7 +234,8 @@ struct symNode {					// type node (meta)
 	char*	pfmt;		// TEMP: print format
 };
 
-struct astNode {					// tree node (code)
+/// Abstract Syntax Tree Node
+struct astNode {
 	ccToken		kind;				// code: TYPE_ref, OPER_???
 	ccToken		cst2;				// casts to: (void, bool, int32, int64, float32, float64, reference, value)
 	symn		type;				// typeof() return type of operator
@@ -276,13 +277,12 @@ struct astNode {					// tree node (code)
 	uint32_t	line;				// line position of token
 };
 
-typedef struct arrBuffer {
+struct arrBuffer {
 	char *ptr;		// data
 	int esz;		// element size
 	int cap;		// capacity
 	int cnt;		// length
-} arrBuffer;
-
+};
 int initBuff(struct arrBuffer* buff, int initsize, int elemsize);
 void* setBuff(struct arrBuffer* buff, int idx, void* data);
 void* insBuff(struct arrBuffer* buff, int idx, void* data);
@@ -303,22 +303,7 @@ typedef struct dbgInfo {
 
 } *dbgInfo;
 
-struct dbgStateRec {
-	int (*dbug)(state, int pu, void* ip, long* sptr, int scnt);
-
-	struct {
-		void* cf;
-		void* ip;
-		void* sp;
-		symn sym;
-		int pos;
-	} trace[512];
-
-	int tracePos;
-
-	struct arrBuffer codeMap;
-};
-
+/// Compiler context
 struct ccStateRec {
 	state	s;
 	symn	defs;		// all definitions
@@ -380,66 +365,180 @@ struct ccStateRec {
 	symn	libc_dbg;		// debug function libcall: debug(string message, int level, int maxTrace, variant vars);
 };
 
-dbgInfo getCodeMapping(state rt, int position);
-dbgInfo addCodeMapping(state rt, astn ast, int start, int end);
+/// Debuger context
+struct dbgStateRec {
+	int (*dbug)(state, int pu, void* ip, long* sptr, int scnt);
+
+	struct {
+		void* cf;
+		void* ip;
+		void* sp;
+		symn sym;
+		int pos;
+	} trace[512];
+
+	int tracePos;
+
+	struct arrBuffer codeMap;
+};
 
 //~ clog
-void fputopc(FILE *fout, unsigned char* ptr, int len, int offs, state rt);
-void fputval(state, FILE *fout, symn var, stkval* ref, int flgs);
-void fputasm(state, FILE *fout, int beg, int end, int mode);
+/**
+ * @brief Print formated text to the output stream.
+ * @param fout Output stream.
+ * @param msg Format text.
+ * @param len Length to represent binary the instruction.
+ * @param offs Base offset to be used for relative instructions.
+ *    negative value forces relative offsets. (ex: jmp +5)
+ *    positive or zero value forces absolute offsets. (ex: jmp @0255d0)
+ * @param rt Runtime context (optional).
+ */
+/**
+ * @brief Print formated text to the output stream.
+ * @param fout Output stream.
+ * @param msg Format text.
+ * @param ... Format variables.
+ * @note %(\?)?[+-]?[0 ]?([1-9][0-9]*)?(.(\*)|([1-9][0-9]*))?[tTkKAIbBoOxXuUdDfFeEsScC]
+ *    skip: (\?)? skip printing if variable is null or zero (prints pad character if specified.)
+ *    sign: [+-]? sign flag / alignment.
+ *    padd: [0 ]? padd character.
+ *    len:  ([1-9][0-9]*)? length
+ *    offs: (.(*)|([1-9][0-9]*))? precent or offset.
+ *
+ *    T: symbol
+ *      +: expand function
+ *      -: qualified name only
+ *    k: ast
+ *      +: expand statements
+ *      -: ?
+ *    t: kind
+ *    K: xml tree
+ *    A: instruction (asm)
+ *    I: ident
+ *    b: 32 bit bin value
+ *    B: 64 bit bin value
+ *    o: 32 bit oct value
+ *    O: 64 bit oct value
+ *    x: 32 bit hex value
+ *    X: 64 bit hex value
+ *    u: 32 bit unsigned value
+ *    U: 64 bit unsigned value
+ *    d: 32 bit signed value (decimal)
+ *    D: 64 bit signed value (decimal)
+ *    f: 32 bit floating point value
+ *    F: 64 bit floating point value
+ *    e: 32 bit floating point value (Scientific notation (mantissa/exponent))
+ *    E: 64 bit floating point value (Scientific notation (mantissa/exponent))
+ *    s: ansi string
+ *    c: ansi character
+ *    S: ?wide string
+ *    C: ?wide character
+ * flags
+ *    +-
+ *        oOuU: ignored
+ *        bBxX: lowerCase / upperCase
+ *        dDfFeE: putsign /
+ *
+ */
 void fputfmt(FILE *fout, const char *msg, ...);
+
+/**
+ * @brief Print an instruction to the output stream.
+ * @param fout Output stream.
+ * @param ptr Instruction pointer.
+ * @param len Length to represent binary the instruction.
+ * @param offs Base offset to be used for relative instructions.
+ *    negative value forces relative offsets. (ex: jmp +5)
+ *    positive or zero value forces absolute offsets. (ex: jmp @0255d0)
+ * @param rt Runtime context (optional).
+ */
+void fputopc(FILE *fout, unsigned char* ptr, int len, int offs, state rt);
+
+/**
+ * @brief Print instructions to the output stream.
+ * @param Runtime context.
+ * @param fout Output stream.
+ * @param beg First instruction offset.
+ * @param end Last instruction offset.
+ * @param mode Flags for printing
+ *     0x0f: Length mask for instruction hex display.
+ *     0x10: use local absolute offsets (0 ... end - beg).
+ *     0x20: use global absolute offsets (beg ... end).
+ */
+void fputasm(state, FILE *fout, int beg, int end, int mode);
+
+/** TODO: to be renamed and moved.
+ * @brief Print the runtime value of a variable.
+ * @param rt Runtime context.
+ * @param fout Output stream.
+ * @param var Variable to be printed. (May be a typename also)
+ * @param ref Base offset of variable.
+ * @param level Identation level. (Used for members and arrays)
+ */
+void fputval(state, FILE *fout, symn var, stkval* ref, int flgs);
 
 // program error
 void perr(state rt, int level, const char *file, int line, const char *msg, ...);
 
-// creating syms and nodes
-symn newdefn(ccState, int kind);
-
-astn newnode(ccState, int kind);
-astn opnode(ccState, int kind, astn lhs, astn rhs);
-astn lnknode(ccState, symn ref);
-
-astn intnode(ccState, int64_t v);
-astn fltnode(ccState, float64_t v);
-astn strnode(ccState, char *v);
-
-//~ astn cpynode(ccState, astn src);
-void eatnode(ccState, astn ast);
-
-/** install a new symbol: typename, function, variable or alias.
- * @param ccState compiler context
- * @param name symbol name
- * @param kind: type of sybol: (TYPE_ref, TYPE_def, TYPE_rec, TYPE_arr)
- * @param cast: casts to ...
- * @param size: size of symbol
- * @param type: type, base type, return type, of symbol.
- * @param init: initializer, function body, alias link.
- * 
+/**
+ * @brief Install a new symbol: alias, type, variable or function.
+ * @param name Symbol name.
+ * @param kind Kind of sybol: (TYPE_def, TYPE_ref,TYPE_rec, TYPE_arr)
+ * @param cast Casts to ...
+ * @param size Size of symbol
+ * @param type Type of symbol (base type / return type).
+ * @param init Initializer, function body, alias link.
+ * @return The symbol.
  */
 symn install(ccState, const char* name, ccToken kind, ccToken cast, unsigned size, symn type, astn init);
 
-/** install a new symbol: typename, function, variable or alias.
- * like install, using tag node as refernce.
+/**
+ * @brief Install a new symbol: alias, type, variable or function.
+ * @param kind Kind of sybol: (TYPE_def, TYPE_ref,TYPE_rec, TYPE_arr)
+ * @param tag Parsed tree node representing the sybol.
+ * @param typ Type of symbol.
+ * @return The symbol.
  */
-symn declare(ccState, ccToken kind, astn tag, symn rtyp);
+symn declare(ccState, ccToken kind, astn tag, symn typ);
 
+/**
+ * @brief check if a value can be assigned to a symbol.
+ * @param rhs variable to be assigned to.
+ * @param val value to be assigned.
+ * @param strict Strict mode: casts are not enabled.
+ * @return true if the assignmet can be done.
+ */
 int canAssign(ccState, symn rhs, astn val, int strict);
+
+/**
+ * @brief Lookup an identifier.
+ * @param sym List of symbols to search in.
+ * @param ast Identifier node to search for.
+ * @param args List of arguments, use null for variables.
+ * @param raise may raise error if more than one result found.
+ * @return Symbol found.
+ */
 symn lookup(ccState, symn sym, astn ast, astn args, int raise);
 
-// TODO: this is the semantic-analyzer, typecheck should be renamed to something like `fixtype`.
+/** TODO: to be renamed to something like `fixtype`.
+ * @brief Type Check an expression.
+ * @param loc Override scope.
+ * @param ast Tree to check.
+ * @return Type of expression.
+ */
 symn typecheck(ccState, symn loc, astn ast);
 
-/* fix structure member offsets / function arguments
- * returns the size of struct / functions param size.
+/**
+ * @brief Fix structure member offsets / function arguments.
+ * @param sym Symbol of struct or function.
+ * @param align Alignment of members.
+ * @param spos Size of base / return.
+ * @return Size of struct / functions param size.
  */
 int fixargs(symn sym, int align, int spos);
 
 ccToken castOf(symn typ);
-int castTo(astn ast, ccToken tyId);
-
-int32_t constbol(astn ast);
-int64_t constint(astn ast);
-float64_t constflt(astn ast);
+ccToken castTo(astn ast, ccToken tyId);
 
 /// skip the next token.
 int skip(ccState, ccToken kind);
@@ -449,51 +548,13 @@ int skip(ccState, ccToken kind);
 //~ astn stmt(ccState, int mode);		// parse statement	(mode: enable decl/enter new scope)
 astn decl_var(ccState, astn *args, int mode);
 
-// scoping ...
-void enter(ccState s, astn ast);
-symn leave(ccState s, symn def, int mkstatic);
-
-/** try to evaluate an expression
- * @param res: where to put the result
- * @param ast: tree to be evaluated
- * @return one of [TYPE_err, TYPE_bit, TYPE_int, TYPE_flt, ?TYPE_str]
- * @todo should use the vmExec funtion, for the generated code.
- */
-int eval(astn res, astn ast);
-
-int isStatic(ccState,astn ast);
-int isConst(astn ast);
-
-/** emit an opcode with args
- * @param opc: opcode
- * @param arg: argument
- * @return program counter
- */
-int emit(state, vmOpcode opc, stkval arg);
-int emitopc(state, vmOpcode opc);
-int emiti32(state, int32_t arg);
-int emiti64(state, int64_t arg);
-int emitf32(state, float32_t arg);
-int emitf64(state, float64_t arg);
-int emitref(state, void* arg);		// arg should be a pointer inside the vm
-
-int emitinc(state, int val);		// increment the top of stack by ...
-int emitidx(state, vmOpcode opc, int pos);
-int emitint(state, vmOpcode opc, int64_t arg);
-int fixjump(state, int src, int dst, int stc);
-
-// returns the stack size
-int stkoffs(state rt, int size);
-
-int istype(symn sym);
-int isType(astn ast);
-int usedCnt(symn sym);
-
-symn linkOf(astn ast);
-long sizeOf(symn typ);
+/// Enter a new scope.
+void enter(ccState, astn ast);
+/// Leave current scope.
+symn leave(ccState, symn def, int mkstatic);
 
 /**
- * @brief open a file or text for compilation.
+ * @brief Open a file or text for compilation.
  * @param rt runtime context.
  * @param file file name of input.
  * @param line first line of input.
@@ -510,16 +571,139 @@ ccState ccOpen(state rt, char* file, int line, char* source);
  */
 int ccDone(ccState cc);
 
+
+/** TODO: to be deleted; lookup should handle static expressions.
+ * @brief Check if an expression is static.
+ * @param Compiler context.
+ * @param ast Abstract syntax tree to be checked.
+ * @return true or false.
+ */
+int isStatic(ccState, astn ast);
+
+/**
+ * @brief Check if an expression is constant.
+ * @param ast Abstract syntax tree to be checked.
+ * @return true or false.
+ */
+int isConst(astn ast);
+
+/**
+ * @brief Check if an expression is a type.
+ * @param ast Abstract syntax tree to be checked.
+ * @return true or false.
+ */
+int isType(astn ast);
+
+/**
+ * @brief Check if a symbol is a type.
+ * @param sym Symbol to be checked.
+ * @return true or false.
+ */
+int istype(symn sym);
+
+/**
+ * @brief Get how many time a symbol was used.
+ * @param sym Symbol to be checked.
+ * @return Usage count including declaration.
+ */
+int usedCnt(symn sym);
+
+/** TODO: to be deleted; sym->size should be used instead.
+ * @brief Get the size of the symbol.
+ * @param sym Symbol to be checked.
+ * @return Syze of type or variable.
+ */
+long sizeOf(symn sym);
+
+/**
+ * @brief Get the symbol(variable) linked to expression.
+ * @param ast Abstract syntax tree to be checked.
+ * @return null if not an identifier.
+ * @note if input is a the symbol for variable a is returned.
+ * @note if input is a.b the symbol for member b is returned.
+ * @note if input is a(1, 2) the symbol for function a is returned.
+ */
+symn linkOf(astn ast);
+
+/** TODO: to be deleted; use vm to evaluate constants.
+ * @brief Try to evaluate a constant expression.
+ * @param res Place the result here.
+ * @param ast Abstract syntax tree to be evaluated.
+ * @return Type of result: [TYPE_err, TYPE_bit, TYPE_int, TYPE_flt, TYPE_str]
+ */
+int eval(astn res, astn ast);
+
+/// Allocate a symbol node.
+symn newdefn(ccState, int kind);
+/// Allocate a tree node.
+astn newnode(ccState, int kind);
+/// Consume node, so it may be reused.
+void eatnode(ccState, astn ast);
+
+/// Allocate an operator tree node.
+astn opnode(ccState, int kind, astn lhs, astn rhs);
+/// Allocate node whitch is a link to a reference
+astn lnknode(ccState, symn ref);
+
+/// Allocate a constant integer node.
+astn intnode(ccState, int64_t v);
+/// Allocate a constant float node.
+astn fltnode(ccState, float64_t v);
+/// Allocate a constant string node.
+astn strnode(ccState, char *v);
+
+
+int32_t constbol(astn ast);
+int64_t constint(astn ast);
+float64_t constflt(astn ast);
+
+
 unsigned rehash(const char* str, unsigned size);
 char* mapstr(ccState cc, char *str, unsigned size/* = -1U*/, unsigned hash/* = -1U*/);
 
-/** return the internal offset of a reference
- * aborts if ptr is not null and not inside the context.
+//  VM: execution + debuging.
+
+/**
+ * @brief Get the internal offset of a reference.
+ * @param ptr Memory location.
+ * @return The internal offset.
+ * @note Aborts if ptr is not null and not inside the context.
  */
 int vmOffset(state, void *ptr);
 
+/**
+ * @brief Emit an instruction.
+ * @param Runtime context.
+ * @param opc Opcode.
+ * @param arg Argument.
+ * @return Program counter.
+ */
+int emitarg(state, vmOpcode opc, stkval arg);
+
+/**
+ * @brief Emit an instruction with int argument.
+ * @param Runtime context.
+ * @param opc Opcode.
+ * @param arg Integer argument.
+ * @return Program counter.
+ */
+int emitint(state, vmOpcode opc, int64_t arg);
+
+/**
+ * @brief Fix a jump instruction.
+ * @param Runtime context.
+ * @param src Location of the instruction.
+ * @param dst Absolute position to jump.
+ * @param stc Fix also stack size.
+ * @return
+ */
+int fixjump(state, int src, int dst, int stc);
+
 
 // Debuging.
+
+dbgInfo getCodeMapping(state rt, int position);
+dbgInfo addCodeMapping(state rt, astn ast, int start, int end);
 
 // silently exits the execution
 int libCallHaltQuiet(libcArgs);

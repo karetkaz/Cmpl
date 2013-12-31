@@ -12,22 +12,55 @@ code emmiting, executing and formatting
 
 #ifdef __WATCOMC__
 #pragma disable_message(124);
-
 // needed for opcode f32_mod
 static inline double fmodf(float x, float y) {
 	return fmod(x, y);
 }
 #endif
 
+/// Bit scan forward. (get the highest bit seted)
+static inline int32_t bitsf(uint32_t x) {
+	int result = 0;
+	if ((x & 0x0000ffff) == 0) {
+		result += 16;
+		x >>= 16;
+	}
+	if ((x & 0x000000ff) == 0) {
+		result += 8;
+		x >>= 8;
+	}
+	if ((x & 0x0000000f) == 0) {
+		result += 4;
+		x >>= 4;
+	}
+	if ((x & 0x00000003) == 0) {
+		result += 2;
+		x >>= 2;
+	}
+	if ((x & 0x00000001) == 0) {
+		result += 1;
+	}
+	return x ? result : -1;
+}
+
+typedef uint8_t* memptr;
+typedef uint32_t* stkptr;
+
+/// byte code instruction
+typedef struct bcde *bcde;
+
+/// bytecode processor cell
+typedef struct cell *cell;
+
 #pragma pack(push, 1)
-typedef struct bcde {			// byte code decoder
+struct bcde {
 	uint8_t opc;
 	union {
 		stkval arg;			// argument (load const)
 		uint8_t idx;		// usualy index for stack
 		int32_t rel:24;		// relative offset (ip, sp) +- 7MB
 		struct {
-			// when starting a new paralel task
+			// used when starting a new paralel task
 			uint8_t  dl;	// data to to be copied to stack
 			uint16_t cl;	// code to to be executed paralel: 0 means fork
 		};
@@ -78,34 +111,24 @@ typedef struct bcde {			// byte code decoder
 			// +/ --8<----------------------------------------
 		} ext;// */
 	};
-} *bcde;
+};
 #pragma pack(pop)
 
-typedef struct cell {			// processor
-
-	// Instruction pointer
-	unsigned char	*ip;
+struct cell {
+	unsigned char	*ip;		// Instruction pointer
 
 	// Stack
+	unsigned char	*bp;		// Stack base
 	unsigned char	*sp;		// Stack pointer -(bp + ss)
 	//~ unsigned char	*tp;		// Trace pointer +(bp)
-	unsigned char	*bp;		// Stack base
 
 	// multiproc
 	unsigned int	ss;			// stack size
 	unsigned int	cp;			// child procs (join == 0)
 	unsigned int	pp;			// parent proc (main == 0)
+};
 
-	// flags ?
-	//~ unsigned	zf:1;			// zero flag
-	//~ unsigned	sf:1;			// sign flag
-	//~ unsigned	cf:1;			// carry flag
-	//~ unsigned	of:1;			// overflow flag
-} *cell;
-
-typedef uint8_t* memptr;
-typedef uint32_t* stkptr;
-
+/// Check if the pointer is inside the vm.
 static inline int isValidOffset(state rt, void* ptr) {
 	if ((unsigned char*)ptr > rt->_mem + rt->_size) {
 		return 0;
@@ -116,185 +139,16 @@ static inline int isValidOffset(state rt, void* ptr) {
 	return 1;
 }
 
+// TODO: to be removed.
+static inline void* getip(state rt, int pos) {
+	return (void*)(rt->_mem + pos);
+}
+
 int vmOffset(state rt, void* ptr) {
 	dieif(!isValidOffset(rt, ptr), "invalid reference");
 	return ptr ? (unsigned char*)ptr - rt->_mem : 0;
 }
 
-static inline void* getip(state rt, int pos) {
-	return (void*)(rt->_mem + pos);
-}
-
-//#{ libc.c ---------------------------------------------------------------------
-//~ TODO: installref should go to type.c
-static symn installref(state rt, const char* prot, astn* argv) {
-	astn root, args;
-	symn result = NULL;
-	int warn, errc = rt->errc;
-
-	if (!ccOpen(rt, NULL, 0, (char*)prot)) {
-		trace("FixMe");
-		return NULL;
-	}
-
-	warn = rt->cc->warn;
-
-	// enable all warnings
-	rt->cc->warn = 9;
-	root = decl_var(rt->cc, &args, decl_NoDefs | decl_NoInit);
-
-	dieif(root == NULL, "error declaring: %s", prot);
-
-	dieif(!skip(rt->cc, STMT_do), "`;` expected declaring: %s", prot);
-
-	dieif(ccDone(rt->cc) != 0, "FixMe");
-
-	dieif(root->kind != TYPE_ref, "FixMe %+k", root);
-
-	if ((result = root->ref.link)) {
-		dieif(result->kind != TYPE_ref, "FixMe");
-		*argv = args;
-		result->cast = 0;
-	}
-
-	rt->cc->warn = warn;
-	return errc == rt->errc ? result : NULL;
-}
-
-/// Install a native function; @see state.api.ccAddCall
-symn ccAddCall(state rt, int libc(libcArgs), void* data, const char* proto) {
-	symn param, sym = NULL;
-	int stdiff = 0;
-	astn args = NULL;
-
-	dieif(libc == NULL || !proto, "FixMe");
-
-	//~ from: int64 zxt(int64 val, int offs, int bits);
-	//~ make: define zxt(int64 val, int offs, int bits) = emit(int64, libc(25), i64(val), i32(offs), i32(bits));
-
-	if ((sym = installref(rt, proto, &args))) {
-		struct libc* lc = NULL;
-		symn link = newdefn(rt->cc, EMIT_opc);
-		astn libcinit;
-		int libcpos = rt->cc->libc ? rt->cc->libc->pos + 1 : 0;
-
-		dieif(rt->_end - rt->_beg < (ptrdiff_t)sizeof(struct libc), "FixMe");
-
-		rt->_end -= sizeof(struct libc);
-		lc = (struct libc*)rt->_end;
-		lc->next = rt->cc->libc;
-		rt->cc->libc = lc;
-
-		link->name = "libc";
-		link->offs = opc_libc;
-		link->type = sym->type;
-		link->init = intnode(rt->cc, libcpos);
-
-		libcinit = lnknode(rt->cc, link);
-		stdiff = fixargs(sym, vm_size, 0);
-
-		// glue the new libcinit argument
-		if (args && args != rt->cc->void_tag) {
-			astn narg = newnode(rt->cc, OPER_com);
-			astn arg = args;
-			narg->op.lhso = libcinit;
-
-			if (1) {
-				symn s = NULL;
-				astn arg = args;
-				while (arg->kind == OPER_com) {
-					astn n = arg->op.rhso;
-					s = linkOf(n);
-					arg = arg->op.lhso;
-					if (s && n) {
-						n->cst2 = s->cast;
-					}
-				}
-				s = linkOf(arg);
-				if (s && arg) {
-					arg->cst2 = s->cast;
-				}
-			}
-
-			if (arg->kind == OPER_com) {
-				while (arg->op.lhso->kind == OPER_com) {
-					arg = arg->op.lhso;
-				}
-				narg->op.rhso = arg->op.lhso;
-				arg->op.lhso = narg;
-			}
-			else {
-				narg->op.rhso = args;
-				args = narg;
-			}
-		}
-		else {
-			args = libcinit;
-		}
-
-		libcinit = newnode(rt->cc, OPER_fnc);
-		libcinit->op.lhso = rt->cc->emit_tag;
-		libcinit->type = sym->type;
-		libcinit->op.rhso = args;
-
-		sym->kind = TYPE_def;
-		sym->init = libcinit;
-		sym->offs = libcpos;
-		//~ sym->size = libcpos;
-
-		lc->call = libc;
-		lc->data = data;
-		lc->pos = libcpos;
-		lc->sym = sym;
-
-		lc->chk = stdiff / 4;
-
-		stdiff -= sizeOf(sym->type);
-		lc->pop = stdiff / 4;
-
-		// make non reference parameters symbolic by default
-		for (param = sym->prms; param; param = param->next) {
-			if (param->cast != TYPE_ref) {
-				param->cast = TYPE_def;
-			}
-		}
-	}
-	else {
-		error(rt, NULL, 0, "install(`%s`)", proto);
-	}
-
-	return sym;
-}
-//#}
-
-static inline int32_t bitlo(int32_t a) {
-	return a & -a;
-}
-static inline int32_t bitsf(uint32_t x) {
-	int result = 0;
-	if ((x & 0x0000ffff) == 0) {
-		result += 16;
-		x >>= 16;
-	}
-	if ((x & 0x000000ff) == 0) {
-		result += 8;
-		x >>= 8;
-	}
-	if ((x & 0x0000000f) == 0) {
-		result += 4;
-		x >>= 4;
-	}
-	if ((x & 0x00000003) == 0) {
-		result += 2;
-		x >>= 2;
-	}
-	if ((x & 0x00000001) == 0) {
-		result += 1;
-	}
-	return x ? result : -1;
-}
-
-//#{ emit opcodes
 int emitarg(state rt, vmOpcode opc, stkval arg) {
 	libc libcvec = rt->vm.libv;
 	bcde ip = (bcde)rt->_beg;
@@ -635,7 +489,7 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 		// */
 
 		else if (opc == opc_ldi4) {
-			ip = (bcde)getip(rt, rt->vm.pc);
+			ip = getip(rt, rt->vm.pc);
 			if (ip->opc == opc_ldsp && ((ip->rel & (vm_size-1)) == 0) && ((ip->rel / vm_size) < vm_regs)) {
 				arg.i4 = ip->rel / vm_size;
 				opc = opc_dup1;
@@ -650,7 +504,7 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 			}
 		}
 		else if (opc == opc_sti4) {
-			ip = (bcde)getip(rt, rt->vm.pc);
+			ip = getip(rt, rt->vm.pc);
 			if (ip->opc == opc_ldsp && ((ip->rel & (vm_size-1)) == 0) && ((ip->rel / vm_size) < vm_regs)) {
 				arg.i4 = ip->rel / vm_size;
 				opc = opc_set1;
@@ -795,9 +649,39 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 			}
 		}
 		else if (opc == opc_inc) {
+			if (arg.i8 == 0) {
+				return rt->vm.pc;
+			}
+
 			ip = getip(rt, rt->vm.pc);
 			if (ip->opc == opc_inc) {
 				stkval tmp;
+				tmp.i8 = arg.i8 + ip->rel;
+				if (tmp.rel == tmp.i8) {
+					ip->rel = tmp.rel;
+					return rt->vm.pc;
+				}
+			}
+			else if (ip->opc == opc_ldsp) {
+				stkval tmp;
+				if (arg.i8 < 0) {
+					// local variable bound error.
+					trace("FixMe");
+					return 0;
+				}
+				tmp.i8 = arg.i8 + ip->rel;
+				if (tmp.rel == tmp.i8) {
+					ip->rel = tmp.rel;
+					return rt->vm.pc;
+				}
+			}
+			else if (ip->opc == opc_ldcr) {
+				stkval tmp;
+				if (arg.i8 < 0) {
+					// global variable bound error.
+					trace("FixMe");
+					return 0;
+				}
 				tmp.i8 = arg.i8 + ip->rel;
 				if (tmp.rel == tmp.i8) {
 					ip->rel = tmp.rel;
@@ -887,12 +771,22 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 				rt->_beg = (memptr)ip;
 				opc = opc_jz;
 			}
+			// i32 to boolean can be skiped
+			// f32 to boolean can not be skiped (-0f != 0)
+			else if (ip->opc == i32_bol) {
+				rt->_beg = (memptr)ip;
+			}
 		}
 		else if (opc == opc_jz) {
 			ip = getip(rt, rt->vm.pc);
 			if (ip->opc == opc_not) {
 				rt->_beg = (memptr)ip;
 				opc = opc_jnz;
+			}
+			// i32 to boolean can be skiped
+			// f32 to boolean can not be skiped (-0f != 0)
+			else if (ip->opc == i32_bol) {
+				rt->_beg = (memptr)ip;
 			}
 		}
 
@@ -983,71 +877,6 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 
 	return rt->vm.pc;
 }
-int emitinc(state rt, int arg) {
-	if (rt->vm.opti > 0) {
-		// TODO: do this if in emitarg
-		bcde ip = getip(rt, rt->vm.pc);
-
-		if (arg == 0) {
-			return rt->vm.pc;
-		}
-
-		switch (ip->opc) {
-			default:
-				break;
-
-			case opc_ldsp:
-				if (arg < 0) {
-					trace("FixMe");
-					return 0;
-				}
-				ip->rel += arg;
-				return rt->vm.pc;
-
-			case opc_ldcr:
-				if (arg < 0) {
-					trace("FixMe");
-					return 0;
-				}
-				ip->rel += arg;
-				return rt->vm.pc;
-		}
-	}
-	return emitint(rt, opc_inc, arg);
-}
-int emitidx(state rt, vmOpcode opc, int arg) {
-	stkval tmp;
-	tmp.i8 = (int32_t)rt->vm.ss * vm_size - arg;
-
-	switch (opc) {
-		default:
-			fatal("FixMe");
-			break;
-
-		case opc_dup1:
-		case opc_dup2:
-		case opc_dup4:
-		case opc_set1:
-		case opc_set2:
-		case opc_set4:
-			tmp.i8 /= vm_size;
-			break;
-
-		case opc_drop:
-		case opc_ldsp:
-			return emitarg(rt, opc, tmp);
-	}
-
-	if (tmp.i8 > vm_regs) {
-		debug("opc_x%02x(%D(%d))", opc, tmp.i8, arg);
-		return 0;
-	}
-	if (tmp.i8 > rt->vm.ss * vm_size) {
-		debug("opc_x%02x(%D(%d))", opc, tmp.i8, arg);
-		return 0;
-	}
-	return emitarg(rt, opc, tmp);
-}
 int emitint(state rt, vmOpcode opc, int64_t arg) {
 	stkval tmp;
 	tmp.i8 = arg;
@@ -1088,55 +917,15 @@ int fixjump(state rt, int src, int dst, int stc) {
 	return 0;
 }
 
-// emiting constant values.
-int emiti32(state rt, int32_t arg) {
-	stkval tmp;
-	tmp.i8 = arg;
-	return emitarg(rt, opc_ldc4, tmp);
-}
-int emiti64(state rt, int64_t arg) {
-	stkval tmp;
-	tmp.i8 = arg;
-	return emitarg(rt, opc_ldc8, tmp);
-}
-int emitf32(state rt, float32_t arg) {
-	stkval tmp;
-	tmp.f4 = arg;
-	return emitarg(rt, opc_ldcf, tmp);
-}
-int emitf64(state rt, float64_t arg) {
-	stkval tmp;
-	tmp.f8 = arg;
-	return emitarg(rt, opc_ldcF, tmp);
-}
-int emitref(state rt, void* arg) {
-	stkval tmp;
-	tmp.i8 = vmOffset(rt, arg);
-	return emitarg(rt, opc_ldcr, tmp);
-}
-
-int emitopc(state rt, vmOpcode opc) {
-	stkval arg;
-	arg.i8 = 0;
-	return emitarg(rt, opc, arg);
-}
-//#}
-
-int stkoffs(state rt, int size) {
-	if (size < 0) {
-		logif(size < 0, "FixMe");
-	}
-	return padded(size, vm_size) + rt->vm.ss * vm_size;
-}
-
-static inline void traceProc(cell pu, int cp, char* msg) {
+// TODO: to be removed.
+static inline void logProc(cell pu, int cp, char* msg) {
 	trace("%s: {pu:%d, ip:%x, bp:%x, sp:%x, stacksize:%d, parent:%d, childs:%d}", msg, cp, pu[cp].ip, pu[cp].bp, pu[cp].sp, pu[cp].ss, pu[cp].pp, pu[cp].cp);
 	(void)pu;
 	(void)cp;
 	(void)msg;
 }
 
-//~ parallel processing
+/// Try to start a new child cell for task.
 static inline int task(cell pu, int n, int master, int cl) {
 	// find an empty cell
 	int slave = master + 1;
@@ -1157,17 +946,19 @@ static inline int task(cell pu, int n, int master, int cl) {
 		pu[slave].sp = pu[slave].bp + pu[slave].ss - cl;
 		memcpy(pu[slave].sp, pu[master].sp, cl);
 
-		traceProc(pu, master, "master");
-		traceProc(pu, slave, "slave");
+		logProc(pu, master, "master");
+		logProc(pu, slave, "slave");
 
 		return slave;
 	}
 	//~ else trace("master(%d): continue.", master);
 	return 0;
 }
+
+/// Wait for child cells to halt.
 static int sync(cell pu, int cp, int wait) {
 	int pp = pu[cp].pp;
-	traceProc(pu, cp, "join");
+	logProc(pu, cp, "join");
 
 	// slave proc
 	if (pp != cp) {
@@ -1189,18 +980,18 @@ static int sync(cell pu, int cp, int wait) {
 	return 1;
 }
 
-// check stack overflow
+/// Check for stack overflow.
 static inline int ovf(cell pu) {
 	return (pu->sp - pu->bp) < 0;
 }
 
-static void dbugerr(state rt, cell cpu, char* file, int line, int pu, void* ip, stkptr bp, int ss, char* text, int xxx) {
-	error(rt, file, line, "exec:%s(%?d):[sp%02d]@%.*A rw@%06x", text, xxx, ss, vmOffset(rt, ip), ip);
+// TODO: to be removed.
+static inline void dbugerr(state rt, char* error_msg, int error_code, cell cpu, void* ip, int ss) {
+	error(rt, NULL, 0, "exec:%s(%?d):[sp%02d]@%.*A rw@%06x", error_msg, error_code, ss, vmOffset(rt, ip), ip);
 	(void)cpu;
-	(void)pu;
-	(void)bp;
 }
 
+// TODO: to be renamed; manages function call stack traces
 static inline void dotrace(state rt, void* cf, symn sym, void* ip, void* sp) {
 	if (rt->dbg != NULL) {
 		if (cf == NULL) {
@@ -1217,6 +1008,7 @@ static inline void dotrace(state rt, void* cf, symn sym, void* ip, void* sp) {
 	}
 }
 
+/// Private dummy debug function.
 static int dbgDummy(state rt, int pu, void *ip, long* sp, int ss) {
 	return 0;
 	(void)rt;
@@ -1226,12 +1018,18 @@ static int dbgDummy(state rt, int pu, void *ip, long* sp, int ss) {
 	(void)ss;
 }
 
+/**
+ * @brief Execute bytecode.
+ * @param rt Runtime context.
+ * @param pu Cell to execute on.
+ * @param fun Executing function.
+ * @param extra Extra data for libcalls.
+ * @return Error code of execution, 0 on success.
+ */
 static int exec(state rt, cell pu, symn fun, void* extra) {
-	char* err_file = 0;
-	int err_line = 0;
 	int err_code = 0;
 
-	const int cp = 0, cc = 1;
+	const int cc = 1;
 	const libc libcvec = rt->vm.libv;
 
 	const int ms = rt->_size;			// memory size
@@ -1244,47 +1042,45 @@ static int exec(state rt, cell pu, symn fun, void* extra) {
 		if (dbg == NULL) {
 			dbg = dbgDummy;
 		}
-
 		for ( ; ; ) {
 			register bcde ip = (void*)pu->ip;
 			register stkptr sp = (void*)pu->sp;
 
-			if (dbg(rt, cp, ip, (long*)sp, st - sp)) {
+			if (dbg(rt, 0, ip, (long*)sp, st - sp)) {
 				// execution aborted
 				return -9;
 			}
-
 			switch (ip->opc) {
 				dbg_stop_vm:	// halt virtual machine
 					return 0;
 
 				dbg_error_opc:
-					dbugerr(rt, pu, err_file, err_line, cp, ip, sp, st - sp, "invalid opcode", err_code);
+					dbugerr(rt, "invalid opcode", err_code, pu, ip, st - sp);
 					return -1;
 
 				dbg_error_ovf:
-					dbugerr(rt, pu, err_file, err_line, cp, ip, sp, st - sp, "stack overflow", err_code);
+					dbugerr(rt, "stack overflow", err_code, pu, ip, st - sp);
 					return -2;
 
 				dbg_error_mem:
-					dbugerr(rt, pu, err_file, err_line, cp, ip, sp, st - sp, "segmentation fault", err_code);
+					dbugerr(rt, "segmentation fault", err_code, pu, ip, st - sp);
 					return -3;
 
 				dbg_error_div_flt:
-					dbugerr(rt, pu, err_file, err_line, cp, ip, sp, st - sp, "division by zero", err_code);
+					dbugerr(rt, "division by zero", err_code, pu, ip, st - sp);
 					// continue execution on floating point division by zero.
 					break;
 
 				dbg_error_div:
-					dbugerr(rt, pu, err_file, err_line, 0, ip, sp, st - sp, "division by zero", err_code);
+					dbugerr(rt, "division by zero", err_code, pu, ip, st - sp);
 					return -4;
 
 				dbg_error_libc:
-					error(rt, err_file, err_line, "libc(%d) error: %d: %+T", ip->rel, err_code, libcvec[ip->rel].sym);
+					error(rt, NULL, 0, "libc(%d) error: %d: %+T", ip->rel, err_code, libcvec[ip->rel].sym);
 					return -5;
 
 				#define NEXT(__IP, __SP, __CHK) pu->sp -= vm_size * (__SP); pu->ip += (__IP);
-				#define STOP(__ERR, __CHK, __ERC) do {if (__CHK) {err_file = __FILE__; err_line = __LINE__; err_code = __ERC; goto dbg_##__ERR;}} while(0)
+				#define STOP(__ERR, __CHK, __ERC) do {if (__CHK) {err_code = __ERC; goto dbg_##__ERR;}} while(0)
 				#define EXEC
 				#define TRACE(__IP, __SYM, __SP) do { dotrace(rt, __IP, __SYM, ip, __SP); } while(0)
 				#include "code.inl"
@@ -1301,41 +1097,40 @@ static int exec(state rt, cell pu, symn fun, void* extra) {
 				return 0;
 
 			error_opc:
-				dbugerr(rt, pu, err_file, err_line, cp, ip, sp, st - sp, "invalid opcode", err_code);
+				dbugerr(rt, "invalid opcode", err_code, pu, ip, st - sp);
 				return -1;
 
 			error_ovf:
-				dbugerr(rt, pu, err_file, err_line, cp, ip, sp, st - sp, "stack overflow", err_code);
+				dbugerr(rt, "stack overflow", err_code, pu, ip, st - sp);
 				return -2;
 
 			error_mem:
-				dbugerr(rt, pu, err_file, err_line, cp, ip, sp, st - sp, "segmentation fault", err_code);
+				dbugerr(rt, "segmentation fault", err_code, pu, ip, st - sp);
 				return -3;
 
 			error_div_flt:
-				dbugerr(rt, pu, err_file, err_line, cp, ip, sp, st - sp, "division by zero", err_code);
+				dbugerr(rt, "division by zero", err_code, pu, ip, st - sp);
 				// continue execution on floating point division by zero.
 				break;
 
 			error_div:
-				dbugerr(rt, pu, err_file, err_line, 0, ip, sp, st - sp, "division by zero", err_code);
+				dbugerr(rt, "division by zero", err_code, pu, ip, st - sp);
 				return -4;
 
 			error_libc:
-				error(rt, err_file, err_line, "libc(%d) error: %d: %+T", ip->rel, err_code, libcvec[ip->rel].sym);
+				error(rt, NULL, 0, "libc(%d) error: %d: %+T", ip->rel, err_code, libcvec[ip->rel].sym);
 				return err_code;
 
 			#define NEXT(__IP, __SP, __CHK) {pu->sp -= vm_size * (__SP); pu->ip += (__IP);}
-			#define STOP(__ERR, __CHK, __ERC) if (__CHK) {err_file = __FILE__; err_line = __LINE__; err_code = __ERC; goto __ERR;}
+			#define STOP(__ERR, __CHK, __ERC) if (__CHK) {err_code = __ERC; goto __ERR;}
 			#define EXEC
 			#include "code.inl"
 		}
 	}
-
 	return 0;
 }
 
-/// Invoke a function; @see state.api.invoke
+
 int invoke(state rt, symn fun, void* res, void* args, void* extra) {
 
 	int result = 0;
@@ -1380,8 +1175,6 @@ int invoke(state rt, symn fun, void* res, void* args, void* extra) {
 
 	return result;
 }
-
-/// Execute the compiled script; @see header
 int execute(state rt, void* extra, int ss) {
 	struct symNode unit;
 	// TODO: cells should be in runtimes read only memory
@@ -1428,26 +1221,35 @@ int execute(state rt, void* extra, int ss) {
 	return exec(rt, pu, &unit, extra);
 }
 
+
 void fputopc(FILE* fout, unsigned char* ptr, int len, int offs, state rt) {
 	int i;
 	bcde ip = (bcde)ptr;
 
-	if (offs >= 0) {
-		fputfmt(fout, ".%06x: ", offs);
-	}
-
 	//~ write data as bytes
+	//~ TODO: symplify this
 	if (len > 1 && len < opc_tbl[ip->opc].size) {
 		for (i = 0; i < len - 2; i++) {
-			if (i < opc_tbl[ip->opc].size) fprintf(fout, "%02x ", ptr[i]);
-			else fprintf(fout, "   ");
+			if (i < opc_tbl[ip->opc].size) {
+				fprintf(fout, "%02x ", ptr[i]);
+			}
+			else {
+				fprintf(fout, "   ");
+			}
 		}
-		if (i < opc_tbl[ip->opc].size)
+		if (i < opc_tbl[ip->opc].size) {
 			fprintf(fout, "%02x... ", ptr[i]);
+		}
 	}
-	else for (i = 0; i < len; i++) {
-		if (i < opc_tbl[ip->opc].size) fprintf(fout, "%02x ", ptr[i]);
-		else fprintf(fout, "   ");
+	else {
+		for (i = 0; i < len; i++) {
+			if (i < opc_tbl[ip->opc].size) {
+				fprintf(fout, "%02x ", ptr[i]);
+			}
+			else {
+				fprintf(fout, "   ");
+			}
+		}
 	}
 
 	if (opc_tbl[ip->opc].name != NULL) {
@@ -1483,7 +1285,7 @@ void fputopc(FILE* fout, unsigned char* ptr, int len, int offs, state rt) {
 				fprintf(fout, " %+d", ip->rel);
 			}
 			else {
-				fprintf(fout, " .%06x", offs + ip->rel);
+				fprintf(fout, " @%06x", offs + ip->rel);
 			}
 			break;
 
@@ -1547,10 +1349,6 @@ void fputopc(FILE* fout, unsigned char* ptr, int len, int offs, state rt) {
 				if (sym != NULL) {
 					fputfmt(fout, ": %+T: %T", sym, sym->type);
 				}
-				/*else {
-					char* str = NULL;
-					for (int i = 0; i < tbl)
-				}*/
 			}
 			break;
 		}
@@ -1593,15 +1391,9 @@ void fputopc(FILE* fout, unsigned char* ptr, int len, int offs, state rt) {
 }
 void fputasm(state rt, FILE* fout, int beg, int end, int mode) {
 	int i, is = 12345;
-	int rel = 0;
 
-	if (end == -1)
+	if (end == -1) {
 		end = rt->_beg - rt->_mem;
-
-	switch (mode & 0x30) {
-		case 0x00: rel = -1; break;
-		case 0x10: rel = 0; break;
-		case 0x20: rel = beg; break;
 	}
 
 	for (i = beg; i < end; i += is) {
@@ -1610,7 +1402,7 @@ void fputasm(state rt, FILE* fout, int beg, int end, int mode) {
 
 		switch (ip->opc) {
 			error_opc:
-				error(rt, NULL, 0, "invalid opcode: %02x '%A'", ip->opc, ip);
+				error(rt, NULL, 0, "invalid opcode: %02x `%A`", ip->opc, ip);
 				return;
 
 			#define NEXT(__IP, __SP, __CHK) {if (__IP) is = (__IP);}
@@ -1620,7 +1412,12 @@ void fputasm(state rt, FILE* fout, int beg, int end, int mode) {
 
 		if (dbg != NULL) {
 			if (dbg->start == i && dbg->stmt) {
-				fputfmt(fout, "%s:%d: [%06x-%06x]: %+k\n", dbg->file, dbg->line, dbg->start, dbg->end, dbg->stmt);
+				if ((mode & 0x30) != 0) {
+					fputfmt(fout, "%s:%d: [%06x-%06x): %+k\n", dbg->file, dbg->line, dbg->start - 0, dbg->end - 0, dbg->stmt);
+				}
+				else {
+					fputfmt(fout, "%s:%d: %+k\n", dbg->file, dbg->line, dbg->stmt);
+				}
 			}
 		}
 
@@ -1628,175 +1425,28 @@ void fputasm(state rt, FILE* fout, int beg, int end, int mode) {
 			fputfmt(fout, "%I", (mode & 0xf00) >> 8);
 		}
 
-		fputopc(fout, (void*)ip, mode & 0xf, rel < 0 ? -1 : i - rel, rt);
+		switch (mode & 0x30) {
+			case 0x00: // relative offsets
+				fputopc(fout, (void*)ip, mode & 0xf, -1, rt);
+				break;
+
+			case 0x10: // local offsets
+				fputfmt(fout, "+%06x: ", i - beg);
+				fputopc(fout, (void*)ip, mode & 0xf, i - beg, rt);
+				break;
+
+			case 0x20: // global offsets
+				fputfmt(fout, ".%06x: ", i);
+				fputopc(fout, (void*)ip, mode & 0xf, i, rt);
+				break;
+
+			case 0x30: // global + local offsets
+				fputfmt(fout, ".%06x <+%06x>: ", i, i - beg);
+				fputopc(fout, (void*)ip, mode & 0xf, i - beg, rt);
+				break;
+		}
 
 		fputc('\n', fout);
-	}
-}
-
-void fputval_X(state rt, FILE* fout, symn var, stkval* ref, int level) {
-	symn typ = var->kind == TYPE_ref ? var->type : var;
-	char* fmt = var->pfmt ? var->pfmt : var->call ? NULL : typ->pfmt;
-
-	if (level > 0) {
-		fputfmt(fout, "%I", level);
-	}
-	else {
-		level = -level;
-	}
-
-	if (var != typ) {
-		fputfmt(fout, "%T: ", var);
-	}
-
-	if (var->cast == TYPE_ref) {		// by reference
-		if (ref->u4 == 0) {				// null reference.
-			fputfmt(fout, "null");
-			return;
-		}
-		ref = getip(rt, ref->u4);
-		if (typ->cast != TYPE_ref) {
-			fputfmt(fout, "&");
-		}
-	}
-
-	if (!isValidOffset(rt, ref)) {
-		fputfmt(fout, "%T(BadRef: %06x)", typ, var->offs);
-		return;
-	}
-
-	fputfmt(fout, "@%x: ", ref);
-
-	if (var->call) {
-		fputfmt(fout, "function(@%?c%06x)", var->stat ? 0 : '+', var->offs);
-		return;
-	}
-
-	switch (typ->kind) {
-		case TYPE_rec: {
-			int n = 0;
-			if (fmt != NULL) {
-				switch (typ->size) {
-					default:
-						fputfmt(fout, "%T(size: %d)", typ, typ->size);
-						break;
-
-					case 1:
-						fputfmt(fout, fmt, typ->cast == TYPE_u32 ? ref->u1 : ref->i1);
-						//~ fputfmt(fout, fmt, ref->i1);
-						break;
-
-					case 2:
-						//~ fputfmt(fout, fmt, typ->cast == TYPE_u32 ? ref->u2 : ref->i2);
-						fputfmt(fout, fmt, ref->i2);
-						break;
-
-					case 4:
-						fputfmt(fout, fmt, typ->cast == TYPE_f32 ? ref->f4 : ref->i4);
-						break;
-
-					case 8:
-						fputfmt(fout, fmt, typ->cast == TYPE_f64 ? ref->f8 : ref->i8);
-						break;
-				}
-			}
-			else {
-				fputfmt(fout, "%T", typ);
-				if (typ->prms) {
-					symn tmp;
-					fputfmt(fout, " {");
-					for (tmp = typ->prms; tmp; tmp = tmp->next) {
-
-						if (tmp->stat || tmp->kind != TYPE_ref)
-							continue;
-
-						if (tmp->pfmt && !*tmp->pfmt)
-							continue;
-
-						if (n > 0) {
-							fputfmt(fout, ",");
-						}
-
-						fputfmt(fout, "\n");
-						fputval(rt, fout, tmp, (void*)((char*)ref + tmp->offs), level + 1);
-						n += 1;
-					}
-					fputfmt(fout, "\n%I}", level);
-				}
-				else {
-					fputfmt(fout, "(@%?c%06x)", var->stat ? 0 : '+', var->offs);
-					return;
-				}
-			}
-		} break;
-		case TYPE_arr: {
-			// ArraySize
-			int i, n = typ->offs;
-			symn base = typ->type;
-
-			if (fmt != NULL) {
-				// TODO: string uses this
-				fputfmt(fout, fmt, ref);
-			}
-			else {
-				int elementsOnNewLine = 0;
-				int arrayHasMoreElements = 0;
-
-				if (var->cast == TYPE_arr) {
-					n = ref->arr.length;
-					ref = (stkval*)(rt->_mem + ref->u4);
-					fputfmt(fout, "%T[.%d] {", typ->type, n);
-				}
-				else {
-					fputfmt(fout, "%T {", typ);
-				}
-
-				#ifdef MAX_ARR_PRINT
-				if (n > MAX_ARR_PRINT) {
-					n = MAX_ARR_PRINT;
-					arrayHasMoreElements = 1;
-				}
-				#endif
-
-				if (base->kind == TYPE_arr)
-					elementsOnNewLine = 1;
-
-				if (base->kind == TYPE_rec && base->prms)
-					elementsOnNewLine = 1;
-
-				for (i = 0; i < n; ++i) {
-					if (i > 0) {
-						fputfmt(fout, ",");
-					}
-					if (elementsOnNewLine){
-						fputfmt(fout, "\n");
-					}
-					else if (i > 0){
-						fputfmt(fout, " ");
-					}
-
-					fputval(rt, fout, base, (stkval*)((char*)ref + i * sizeOf(base)), elementsOnNewLine ? level + 1 : 0);
-				}
-
-				if (arrayHasMoreElements) {
-					if (elementsOnNewLine) {
-						fputfmt(fout, ",\n%I...", level + 1);
-					}
-					else {
-						fputfmt(fout, ", ...");
-					}
-				}
-
-				if (elementsOnNewLine) {
-					fputfmt(fout, "\n%I", level);
-				}
-				fputfmt(fout, "}");
-			}
-			break;
-		}
-		default:
-			fputfmt(fout, "%T{(ERROR)}", typ);
-			break;
 	}
 }
 
@@ -1812,6 +1462,7 @@ void fputval(state rt, FILE* fout, symn var, stkval* ref, int level) {
 	}
 
 	if (var != typ) {
+		//~ fputfmt(fout, "%T@%x: ", var, ref);
 		fputfmt(fout, "%T: ", var);
 	}
 
@@ -1830,8 +1481,6 @@ void fputval(state rt, FILE* fout, symn var, stkval* ref, int level) {
 		fputfmt(fout, "%T(BadRef: %06x)", typ, var->offs);
 		return;
 	}
-
-	fputfmt(fout, "@%x: ", ref);
 
 	if (var->call) {
 		fputfmt(fout, "function(@%?c%06x)", var->stat ? 0 : '+', var->offs);
@@ -1869,6 +1518,10 @@ void fputval(state rt, FILE* fout, symn var, stkval* ref, int level) {
 						if (typ->cast == TYPE_f32) {
 							fputfmt(fout, fmt, ref->f4);
 						}
+						else if (typ->cast == TYPE_u32) {
+							// force zero extend (may sign extend to int64 ?).
+							fputfmt(fout, fmt, ref->u4);
+						}
 						else {
 							fputfmt(fout, fmt, ref->i4);
 						}
@@ -1883,37 +1536,6 @@ void fputval(state rt, FILE* fout, symn var, stkval* ref, int level) {
 						}
 						break;
 				}
-				/*switch (typ->size) {
-					default:
-						fputfmt(fout, "%T(size: %d)", typ, typ->size);
-						break;
-
-					case 1:
-						fputfmt(fout, fmt, ref->i1);
-						break;
-
-					case 2:
-						fputfmt(fout, fmt, ref->i2);
-						break;
-
-					case 4:
-						if (typ->cast == TYPE_f32) {
-								fputfmt(fout, fmt, ref->f4);
-							}
-							else {
-								fputfmt(fout, fmt, ref->i4);
-							}
-						break;
-
-					case 8:
-						if (typ->cast == TYPE_f64) {
-							fputfmt(fout, fmt, ref->f8);
-						}
-						else {
-							fputfmt(fout, fmt, ref->i8);
-						}
-						break;
-				}*/
 			}
 			else {
 				fputfmt(fout, "%T", typ);
@@ -1939,7 +1561,6 @@ void fputval(state rt, FILE* fout, symn var, stkval* ref, int level) {
 					fputfmt(fout, "\n%I}", level);
 				}
 				else {
-					//~ fputfmt(fout, " {...}");
 					fputfmt(fout, "(@%?c%06x)", var->stat ? 0 : '+', var->offs);
 					return;
 				}
@@ -2019,123 +1640,107 @@ void fputval(state rt, FILE* fout, symn var, stkval* ref, int level) {
 	}
 }
 
-dbgInfo getCodeMapping(state rt, int position) {
-	if (rt->dbg != NULL) {
-		int i;
-		for (i = 0; i < rt->dbg->codeMap.cnt; ++i) {
-			dbgInfo result = getBuff(&rt->dbg->codeMap, i);
-			if (position >= result->start) {
-				if (position < result->end) {
-					return result;
-				}
-			}
-		}
-	}
-	return NULL;
-}
-dbgInfo addCodeMapping(state rt, astn ast, int start, int end) {
-	dbgInfo result = NULL;
-	if (rt->dbg != NULL) {
-		int i;
-		for (i = 0; i < rt->dbg->codeMap.cnt; ++i) {
-			result = getBuff(&rt->dbg->codeMap, i);
-			if (start <= result->start) {
-				break;
-			}
-		}
-
-		if (result == NULL || start != result->start) {
-			result = insBuff(&rt->dbg->codeMap, i, NULL);
-		}
-
-		if (result != NULL) {
-			result->stmt = ast;
-			result->file = ast->file;
-			result->line = ast->line;
-			result->start = start;
-			result->end = end;
-		}
-	}
-	return result;
-}
-
-#if DEBUGGING > 0
+#if defined DEBUGGING
 int vmTest() {
-	int i, e = 0;
+	int i, err = 0;
 	FILE *out = stdout;
 	struct bcde ip[1];
 	struct libc libcvec[1];
 
-	ip->arg.i8 = 0;
+	memset(ip, 0, sizeof(ip));
+	memset(libcvec, 0, sizeof(libcvec));
+
 	for (i = 0; i < opc_last; i++) {
-		int err = 0;
-		//~ ip->opc = i;
+		int IS, CHK, DIFF;
+		int NEXT = 0;
 
-		if (opc_tbl[i].size == 0) {
-			continue;
-		}
+		switch (ip->opc = i) {
+			error_opc:
+				if (opc_tbl[i].name == NULL) {
+					// skip unimplemented instruction.
+					continue;
+				}
+				fprintf(out, "Invalid instruction opc_x%02x: %s\n", i, opc_tbl[i].name);
+				err += 1;
+				break;
 
-		if (opc_tbl[i].code != i) {
-			fprintf(out, "invalid '%s'[%02x]\n", opc_tbl[i].name, i);
-			e += err = 1;
-		}
-		else switch (i) {
-			error_len: e += 1; fputfmt(out, "opcode size 0x%02x: '%A'\n", i, ip); break;
-			error_chk: e += 1; fputfmt(out, "stack check 0x%02x: '%A'\n", i, ip); break;
-			error_dif: e += 1; fputfmt(out, "stack difference 0x%02x: '%A'\n", i, ip); break;
-			error_opc: e += 1; fputfmt(out, "unimplemented opcode 0x%02x: '%A'\n", i, ip); break;
+			error_len:
+				fputfmt(out, "invalid opcode size 0x%02x: '%A': expected: %d, found: %d\n", i, ip, opc_tbl[i].size, IS);
+				err += 1;
+				break;
+
+			error_chk:
+				fputfmt(out, "stack check 0x%02x: '%A': expected: %d, found: %d\n", i, ip, opc_tbl[i].chck, CHK);
+				err += 1;
+				break;
+
+			error_dif:
+				fputfmt(out, "stack difference 0x%02x: '%A': expected: %d, found: %d\n", i, ip, opc_tbl[i].diff, DIFF);
+				err += 1;
+				break;
+
 			#define NEXT(__IP, __DIFF, __CHK) {\
-				if (opc_tbl[i].size && (__IP) && opc_tbl[i].size != (__IP)) goto error_len;\
-				if (opc_tbl[i].chck != 9 && opc_tbl[i].chck != (__CHK)) goto error_chk;\
-				if (opc_tbl[i].diff != 9 && opc_tbl[i].diff != (__DIFF)) goto error_dif;\
+				NEXT += 1;\
+				IS = __IP;\
+				CHK = __CHK;\
+				DIFF = __DIFF;\
+				if ((__IP) && opc_tbl[i].size != (__IP)) {\
+					goto error_len;\
+				}\
+				if (opc_tbl[i].chck != 9 && opc_tbl[i].chck != (__CHK)) {\
+					goto error_chk;\
+				}\
+				if (opc_tbl[i].diff != 9 && opc_tbl[i].diff != (__DIFF)) {\
+					goto error_dif;\
+				}\
 			}
 			#define STOP(__ERR, __CHK, __ERR1) if (__CHK) goto __ERR
 			#include "code.inl"
 		}
+
+		if (NEXT > 1 && i != opc_spc) {
+			fputfmt(out, "More than one NEXT: opcode 0x%02x: '%A'\n", i, ip);
+		}
 	}
-	return e;
+	return err;
 }
 int vmHelp() {
-	int i, e = 0;
+	int i, err = 0;
 	FILE* out = stdout;
 	struct bcde ip[1];
 	ip->arg.i8 = 0;
 
+	fprintf(out, "\nVirtual machine opcode listing.\n");
+
 	for (i = 0; i < opc_last; i++) {
-		int err = 0;
+		switch (i) {
+			error_opc:
+				if (opc_tbl[i].name == NULL) {
+					// skip unimplemented instruction.
+					continue;
+				}
+				fprintf(out, "Invalid instruction opc_x%02x: %s\n", i, opc_tbl[i].name);
+				err += 1;
+				continue;
 
-		if (!opc_tbl[i].name)
-			continue;
-
-		if (!opc_tbl[i].size)
-			continue;
-
-		fprintf(out, "\nInstruction: %s: #", opc_tbl[i].name);
-		fprintf(out, "\nOpcode		size		Stack trasition");
-		fprintf(out, "\n0x%02x		%d		[..., a, b, c, d => [..., a, b, c, d#", opc_tbl[i].code, opc_tbl[i].size);
-
-		fprintf(out, "\n\nDescription\n");
-		if (opc_tbl[i].code != i) {
-			e += err = 1;
-		}
-		else switch (i) {
-			error_opc: e += err = 1; break;
-			#define NEXT(__IP, __SP, __CHK) if (opc_tbl[i].size != (__IP)) goto error_opc;
+			#define NEXT(__IP, __SP, __CHK) if ((__IP) && opc_tbl[i].size != (__IP)) goto error_opc;
 			#define STOP(__ERR, __CHK, __ERR1) if (__CHK) goto error_opc
 			#include "code.inl"
 		}
-		if (err) {
-			fprintf(out, "The '%s' instruction %s\n", opc_tbl[i].name, err ? "is invalid" : "#");
-		}
 
+		fprintf(out, "\nInstruction: %s: #", opc_tbl[i].name);
+		fprintf(out, "\nOpcode		Size		Stack trasition");
+		fprintf(out, "\n0x%02x		%d		[..., a, b, c, d => [..., a, b, c, d#", opc_tbl[i].code, opc_tbl[i].size);
+
+		fprintf(out, "\n\nDescription");
+		fprintf(out, "\n#");
 		fprintf(out, "\n\nOperation");
 		fprintf(out, "\n#");
-
 		fprintf(out, "\n\nExceptions");
 		fprintf(out, "\nNone#");
 
 		fprintf(out, "\n\n");		// end of text
 	}
-	return e;
+	return err;
 }
 #endif

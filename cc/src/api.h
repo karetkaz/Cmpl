@@ -32,9 +32,9 @@ typedef struct dbgStateRec *dbgState;	// debugger
 typedef struct libcArgsRec *libcArgs;	// libcall
 
 /**
- * @brief Native function invocation arguments
- * @note the return value and the arguments begin at the same memory location.
- * setting the return value may invalidate some of the arguments.
+ * @brief Native function invocation arguments.
+ * @note Setting the return value may invalidate some of the arguments.
+ * (The return value and the arguments begin at the same memory location.)
  */
 struct libcArgsRec {
 	state rt;		// runtime context
@@ -49,7 +49,6 @@ struct libcArgsRec {
 
 /**
  * @brief Runtime context
- * 
  */
 struct stateRec {
 	int   errc;		// error count
@@ -94,23 +93,23 @@ struct stateRec {
 
 	/**
 	 * @brief External library support.
-	 * @note if a function returns error, the error is already reported
+	 * @note If a function returns error, the error was reported.
 	 */
 	struct {
 		/**
 		 * @brief Begin a namespace (static struct).
-		 * @param runtime context.
-		 * @param name the name of the namespace.
-		 * @return the defined symbol, null on error.
+		 * @param Runtime context.
+		 * @param name Name of the namespace.
+		 * @return Defined symbol, null on error.
 		 */
 		symn (*const ccBegin)(state, char* name);
 
 		/**
 		 * @brief Define a(n) integer, floating point or string constant.
-		 * @param runtime context.
-		 * @param name the name of the constant.
-		 * @param value the value of the constant.
-		 * @return the defined symbol, null on error.
+		 * @param Runtime context.
+		 * @param name Name of the constant.
+		 * @param value Value of the constant.
+		 * @return Defined symbol, null on error.
 		 */
 		symn (*const ccDefInt)(state, char* name, int64_t value);
 		symn (*const ccDefFlt)(state, char* name, float64_t value);
@@ -118,22 +117,22 @@ struct stateRec {
 
 		/**
 		 * @brief Add a type to the runtime.
-		 * @param runtime context.
-		 * @param name the name of the type.
-		 * @param size the size of the type.
-		 * @param refType non zero if is a reference type (class).
-		 * @return the defined symbol, null on error.
+		 * @param Runtime context.
+		 * @param name Name of the type.
+		 * @param size Size of the type.
+		 * @param refType Value indicating ByRef or ByValue.
+		 * @return Defined symbol, null on error.
 		 * @see: lstd.File;
 		 */
 		symn (*const ccAddType)(state, const char* name, unsigned size, int refType);
 
 		/**
 		 * @brief Add a native function (libcall) to the runtime.
-		 * @param runtime context.
-		 * @param libc the c function.
-		 * @param data extra user data for the function.
-		 * @param proto prototype of the function, do not forget the ending ';'
-		 * @return the defined symbol, null on error.
+		 * @param Runtime context.
+		 * @param libc The c function.
+		 * @param data Extra user data for the function.
+		 * @param proto Prototype of the function. (Must end with ';')
+		 * @return Defined symbol, null on error.
 		 * @usage see also: test.gl/gl.c
 			static int f64sin(libcArgs rt) {
 				float64_t x = argf64(rt, 0);	// get first argument
@@ -149,20 +148,20 @@ struct stateRec {
 
 		/**
 		 * @brief Compile the given file or text block.
-		 * @param runtime context.
-		 * @param warn warning level.
-		 * @param file file name of input.
-		 * @param line first line of input.
-		 * @param text if not null, this will be compiled instead of the file.
-		 * @return boolean value of success.
+		 * @param Runtime context.
+		 * @param warn Warning level.
+		 * @param file File name of input.
+		 * @param line First line of input.
+		 * @param text If not null, this will be compiled instead of the file.
+		 * @return Boolean value of success.
 		 */
 		int (*const ccAddCode)(state, int warn, char *file, int line, char *code);
 
 		/**
 		 * @brief Close the namespace.
-		 * @param runtime context.
-		 * @param cls the namespace to be closed, returned by ccBegin.
-		 * @note makes all declared variables static.
+		 * @param Runtime context.
+		 * @param cls Namespace to be closed. (The returned by ccBegin.)
+		 * @note Makes all declared variables static.
 		*/
 		void (*const ccEnd)(state, symn cls);
 
@@ -179,8 +178,8 @@ struct stateRec {
 		/**
 		 * @brief Find a static symbol by offset.
 		 * @param Runtime context.
-		 * @param ptr pointer to the variable.
-		 * @note usefull for callbacks
+		 * @param ptr Pointer to the variable.
+		 * @note Usefull for callbacks.
 		 * @usage see also: test.gl/gl.c
 
 			static symn onMouse = NULL;
@@ -219,14 +218,14 @@ struct stateRec {
 
 		/**
 		 * @brief Invoke a function inside the vm.
-		 * @param runtime context.
-		 * @param fun the symbol of the function.
-		 * @param res if not null copy here the result of the function.
-		 * @param args the arguments of the fuction are located here.
-		 * @param extra extra parameter passed to each libcall executed from here.
-		 * @return error code of execution, 0 on success.
+		 * @param Runtime context.
+		 * @param fun Symbol of the function.
+		 * @param res Result value of the invoked function. (May be null.)
+		 * @param args Arguments for the fuction. (May be null.)
+		 * @param extra Extra data for each libcall executed from here.
+		 * @return Error code of execution. (0 means success.)
 		 * @usage see @mapsym example.
-		 * @note invocation to execute must preceed this call.
+		 * @note Invocation to execute must preceed this call.
 		 */
 		int (*const invoke)(state, symn fun, void* res, void* args, void* extra);
 
@@ -241,7 +240,7 @@ struct stateRec {
 		 * 		size == 0 && ptr != null: free
 		 * 		size >  0 && ptr == null: alloc
 		 * 		size >  0 && ptr != null: realloc
-		 * @note invocation to execute must preceed this call.
+		 * @note Invocation to execute must preceed this call.
 		 */
 		void* (*const rtAlloc)(state, void* ptr, unsigned size);
 	} api;
@@ -255,12 +254,12 @@ struct stateRec {
 };
 
 /**
- * @brief get the value of a libcall argument.
- * @param args libcall arguments context.
- * @param offset relative offset of argument.
- * @param result optionally copy here the result.
- * @param size size of the argument to copy to result.
- * @return pointer where the result is located or copied.
+ * @brief Get the value of a libcall argument.
+ * @param args Libcall arguments context.
+ * @param offset Relative offset of argument.
+ * @param result Optionally copy here the result.
+ * @param size Size of the argument to copy to result.
+ * @return Pointer where the result is located or copied.
  */
 static inline void* argval(libcArgs args, int offset, void *result, int size) {
 	// if result is not null copy
@@ -285,12 +284,12 @@ static inline void* argsym(libcArgs args, int offs) { return args->rt->api.mapsy
 #undef argval
 
 /**
- * @brief set the value of a libcall.
- * @param args libcall arguments context.
- * @param result pointer containing the result value.
- * @param size size of the argument to copy to result.
- * @return pointer where the result is located or copied.
- * @note may invalidate some of the arguments.
+ * @brief Set the value of a libcall.
+ * @param args Libcall arguments context.
+ * @param result Pointer containing the result value.
+ * @param size Size of the argument to copy to result.
+ * @return Pointer where the result is located or copied.
+ * @note May invalidate some of the arguments.
  */
 static inline void* setret(libcArgs args, void *result, int size) {
 	if (result != NULL) {

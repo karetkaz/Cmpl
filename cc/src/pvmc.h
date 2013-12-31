@@ -43,7 +43,7 @@ enum {
 state rtInit(void* mem, unsigned size);
 
 // logging
-void logFILE(state, FILE *file);				// set logger
+void logFILE(state, FILE *file);			// set logger
 int logfile(state, char *file);				// set logger
 void dump(state, int dumpWhat, symn, const char* msg, ...);
 
@@ -116,7 +116,7 @@ int ccSymValInt(symn sym, int* res);
  */
 int ccSymValFlt(symn sym, double* res);
 
-/** TODO::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+/** TODO: to be moved & private
  * @brief Instal type system.
  * @param runtime context.
  + @param level warning level.
@@ -124,19 +124,19 @@ int ccSymValFlt(symn sym, double* res);
  */
 int install_base(state, int mode);
 
-/** instal standard functions.
+/** Instal standard functions.
  * io, mem, math, ...
  * @param Runtime context.
  */
 int install_stdc(state);
 
-/** instal file functions.
+/** Instal file functions.
  * open, read, delete, ...
  * @param Runtime context.
  */
 int install_file(state);
 
-/** generate executable bytecode.
+/** Generate executable bytecode.
  * @param Runtime context.
  * @param mode see@(cgen_opti, cgen_info, cgen_glob)
  * @return boolean value of success.
@@ -148,7 +148,7 @@ int gencode(state, int mode);
  * @param Runtime context.
  * @param extra Extra data for libcalls.
  * @param ss stack size in bytes.
- * @return error code of execution, 0 on success.
+ * @return Error code of execution, 0 on success.
  * @todo units number of execution units to run on.
  * @todo argc(int) argument count from main.
  * @todo argv(char*[]) arguments from main.

@@ -9,37 +9,41 @@ source code representation using abstract syntax tree
 #include <math.h>
 #include "core.h"
 
-astn newnode(ccState s, int kind) {
-	state rt = s->s;
+astn newnode(ccState cc, int kind) {
+	state rt = cc->s;
 	astn ast = 0;
-	if (s->tokp) {
-		ast = s->tokp;
-		s->tokp = ast->next;
+	if (cc->tokp) {
+		ast = cc->tokp;
+		cc->tokp = ast->next;
 	}
-	else if (rt->_end - rt->_beg > (int)sizeof(struct astNode)){
-		//~ ast = (astn)rt->_beg;
-		//~ rt->_beg += sizeof(struct astRec);
-		rt->_end -= sizeof(struct astNode);
-		ast = (astn)rt->_end;
-	}
-	else {
-		fatal("memory overrun");
-	}
+
+	// allocate memory from temporary storage.
+	rt->_end -= sizeof(struct astNode);
+	ast = (astn)rt->_end;
+	dieif(rt->_beg >= rt->_end, "memory overrun");
+
 	memset(ast, 0, sizeof(struct astNode));
 	ast->kind = kind;
 	return ast;
 }
+void eatnode(ccState s, astn ast) {
+	if (!ast) return;
+	ast->next = s->tokp;
+	s->tokp = ast;
+}
+
 
 astn opnode(ccState s, int kind, astn lhs, astn rhs) {
 	astn result = newnode(s, kind);
-	if (result) {
-		result->op.lhso = lhs;
-		result->op.rhso = rhs;
+	if (result == NULL) {
+		return NULL;
 	}
+	//~ TODO: dieif(tok_inf[kind].args == 0, "Erroro");
+	result->op.lhso = lhs;
+	result->op.rhso = rhs;
 	return result;
 }
 
-/// make a node witch is a link to a reference
 astn lnknode(ccState s, symn ref) {
 	astn result = newnode(s, TYPE_ref);
 
@@ -76,12 +80,6 @@ astn strnode(ccState s, char* v) {
 	return ast;
 }
 
-void eatnode(ccState s, astn ast) {
-	if (!ast) return;
-	ast->next = s->tokp;
-	s->tokp = ast;
-}
-
 int32_t constbol(astn ast) {
 	if (ast) switch (ast->kind) {
 		case TYPE_bit:
@@ -101,12 +99,12 @@ int64_t constint(astn ast) {
 			return (int64_t)ast->con.cint;
 		case TYPE_flt:
 			return (int64_t)ast->con.cflt;
-		case TYPE_ref: {
+		/*case TYPE_ref: {
 			symn lnk = ast->ref.link;
 			if (lnk && lnk->kind == TYPE_def) {
 				return constint(lnk->init);
 			}
-		}
+		}*/
 		default:
 			break;
 	}
@@ -123,6 +121,141 @@ float64_t constflt(astn ast) {
 			break;
 	}
 	fatal("not a constant %t: %+k", ast->kind, ast);
+	return 0;
+}
+
+
+int isStatic(ccState cc, astn ast) {
+	if (ast) switch (ast->kind) {
+		default:
+			return 0;
+
+		//#{ OPER
+		case OPER_fnc:		// '()' emit/call/cast
+		case OPER_idx:		// '[]'
+		case OPER_dot:		// '.'
+			return 0;
+
+		case OPER_com:
+		case OPER_not:		// '!'
+		case OPER_pls:		// '+'
+		case OPER_mns:		// '-'
+		case OPER_cmt:		// '~'
+			return isStatic(cc, ast->op.rhso);
+
+		case OPER_shl:		// '>>'
+		case OPER_shr:		// '<<'
+		case OPER_and:		// '&'
+		case OPER_ior:		// '|'
+		case OPER_xor:		// '^'
+
+		case OPER_equ:		// '=='
+		case OPER_neq:		// '!='
+		case OPER_lte:		// '<'
+		case OPER_leq:		// '<='
+		case OPER_gte:		// '>'
+		case OPER_geq:		// '>='
+
+		case OPER_add:		// '+'
+		case OPER_sub:		// '-'
+		case OPER_mul:		// '*'
+		case OPER_div:		// '/'
+		case OPER_mod:		// '%'
+			return isStatic(cc, ast->op.lhso) && isStatic(cc, ast->op.rhso);
+
+		case OPER_lnd:		// '&&'
+		case OPER_lor:		// '||'
+			return isStatic(cc, ast->op.lhso) && isStatic(cc, ast->op.rhso);
+
+		case OPER_sel:		// '?:'
+			return isStatic(cc, ast->op.test) && isStatic(cc, ast->op.lhso) && isStatic(cc, ast->op.rhso);
+
+		case ASGN_set:		// ':='
+			return 0;
+		//#}
+		//#{ TVAL
+		case TYPE_int:
+		case TYPE_flt:
+		case TYPE_str:
+			return 1;
+
+		case TYPE_ref: {					// use (var, func, define)
+			symn typ = ast->type;			// type
+			symn var = ast->ref.link;		// link
+			dieif(!typ || !var, "FixMe");
+			return var->stat || var->nest > cc->nest;
+		}
+
+		//~ case TYPE_def:					// new (var, func, define)
+		//~ case EMIT_opc:
+		//#}
+	}
+	return 0;
+}
+
+int isConst(astn ast) {
+	if (ast != NULL) {
+		struct astNode tmp;
+
+		while (ast->kind == OPER_com) {
+			if (!isConst(ast->op.rhso)) {
+				trace("%+k", ast);
+				return 0;
+			}
+			ast = ast->op.lhso;
+		}
+
+		if (eval(&tmp, ast)) {
+			return 1;
+		}
+
+		if (ast->kind == OPER_fnc) {
+			// check if it is an initializer or a pure function
+			symn ref = linkOf(ast->op.lhso);
+			if (ref && !ref->cnst) {
+				return 0;
+			}
+
+			// check if arguments are constants
+			return isConst(ast->op.rhso);
+		}
+
+		else if (ast->kind == TYPE_ref) {
+			symn ref = linkOf(ast);
+			if (ref && ref->cnst) {
+				return 1;
+			}
+		}
+
+		// string constant is constant
+		else if (ast->kind == TYPE_str) {
+			return 1;
+		}
+	}
+
+	trace("%+k", ast);
+	return 0;
+}
+
+int isType(astn ast) {
+	if (!ast) return 0;
+
+	if (ast->kind == EMIT_opc) {
+		return 0;
+	}
+
+	if (ast->kind == OPER_dot) {
+		if (isType(ast->op.lhso)) {
+			return isType(ast->op.rhso);
+		}
+		return 0;
+	}
+
+	if (ast->kind == TYPE_ref) {
+		return istype(ast->ref.link);
+	}
+
+	//~ trace("%t(%+k):(%d)", ast->kind, ast, ast->line);
 	return 0;
 }
 
@@ -615,4 +748,36 @@ int eval(astn res, astn ast) {
 	}
 
 	return res->kind;
+}
+
+symn linkOf(astn ast) {
+	if (!ast) return 0;
+
+	if (ast->kind == EMIT_opc) {
+		return ast->type;
+	}
+
+	if (ast->kind == OPER_fnc) {
+		return linkOf(ast->op.lhso);
+	}
+
+	if (ast->kind == OPER_dot) {
+		return linkOf(ast->op.rhso);
+	}
+
+	if (ast->kind == OPER_idx) {
+		return linkOf(ast->op.lhso);
+	}
+
+	if ((ast->kind == TYPE_ref || ast->kind == TYPE_def) && ast->ref.link) {
+		// skip type defs
+		symn lnk = ast->ref.link;
+		if (lnk->kind == TYPE_def && lnk->init->kind == TYPE_ref) {
+			lnk = linkOf(lnk->init);
+		}
+		return lnk;
+	}
+
+	//~ trace("%t(%+k)", ast->kind, ast);
+	return NULL;
 }

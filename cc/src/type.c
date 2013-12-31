@@ -97,7 +97,6 @@ TODO's:
 #include "core.h"
 #include <string.h>
 
-/// allocate a symbol
 symn newdefn(ccState s, int kind) {
 	state rt = s->s;
 	symn def = NULL;
@@ -186,6 +185,148 @@ symn ccAddType(state rt, const char* name, unsigned size, int refType) {
 	//~ dieif(!rt->cc, "FixMe");
 	return install(rt->cc, name, ATTR_stat | ATTR_const | TYPE_rec, refType ? TYPE_ref : TYPE_rec, size, rt->cc->type_rec, NULL);
 }
+
+//#{ libc.c ---------------------------------------------------------------------
+//~ TODO: installref should go to type.c
+static symn installref(state rt, const char* prot, astn* argv) {
+	astn root, args;
+	symn result = NULL;
+	int warn, errc = rt->errc;
+
+	if (!ccOpen(rt, NULL, 0, (char*)prot)) {
+		trace("FixMe");
+		return NULL;
+	}
+
+	warn = rt->cc->warn;
+
+	// enable all warnings
+	rt->cc->warn = 9;
+	root = decl_var(rt->cc, &args, decl_NoDefs | decl_NoInit);
+
+	dieif(root == NULL, "error declaring: %s", prot);
+
+	dieif(!skip(rt->cc, STMT_do), "`;` expected declaring: %s", prot);
+
+	dieif(ccDone(rt->cc) != 0, "FixMe");
+
+	dieif(root->kind != TYPE_ref, "FixMe %+k", root);
+
+	if ((result = root->ref.link)) {
+		dieif(result->kind != TYPE_ref, "FixMe");
+		*argv = args;
+		result->cast = 0;
+	}
+
+	rt->cc->warn = warn;
+	return errc == rt->errc ? result : NULL;
+}
+
+/// Install a native function; @see state.api.ccAddCall
+symn ccAddCall(state rt, int libc(libcArgs), void* data, const char* proto) {
+	symn param, sym = NULL;
+	int stdiff = 0;
+	astn args = NULL;
+
+	dieif(libc == NULL || !proto, "FixMe");
+
+	//~ from: int64 zxt(int64 val, int offs, int bits);
+	//~ make: define zxt(int64 val, int offs, int bits) = emit(int64, libc(25), i64(val), i32(offs), i32(bits));
+
+	if ((sym = installref(rt, proto, &args))) {
+		struct libc* lc = NULL;
+		symn link = newdefn(rt->cc, EMIT_opc);
+		astn libcinit;
+		int libcpos = rt->cc->libc ? rt->cc->libc->pos + 1 : 0;
+
+		dieif(rt->_end - rt->_beg < (ptrdiff_t)sizeof(struct libc), "FixMe");
+
+		rt->_end -= sizeof(struct libc);
+		lc = (struct libc*)rt->_end;
+		lc->next = rt->cc->libc;
+		rt->cc->libc = lc;
+
+		link->name = "libc";
+		link->offs = opc_libc;
+		link->type = sym->type;
+		link->init = intnode(rt->cc, libcpos);
+
+		libcinit = lnknode(rt->cc, link);
+		stdiff = fixargs(sym, vm_size, 0);
+
+		// glue the new libcinit argument
+		if (args && args != rt->cc->void_tag) {
+			astn narg = newnode(rt->cc, OPER_com);
+			astn arg = args;
+			narg->op.lhso = libcinit;
+
+			if (1) {
+				symn s = NULL;
+				astn arg = args;
+				while (arg->kind == OPER_com) {
+					astn n = arg->op.rhso;
+					s = linkOf(n);
+					arg = arg->op.lhso;
+					if (s && n) {
+						n->cst2 = s->cast;
+					}
+				}
+				s = linkOf(arg);
+				if (s && arg) {
+					arg->cst2 = s->cast;
+				}
+			}
+
+			if (arg->kind == OPER_com) {
+				while (arg->op.lhso->kind == OPER_com) {
+					arg = arg->op.lhso;
+				}
+				narg->op.rhso = arg->op.lhso;
+				arg->op.lhso = narg;
+			}
+			else {
+				narg->op.rhso = args;
+				args = narg;
+			}
+		}
+		else {
+			args = libcinit;
+		}
+
+		libcinit = newnode(rt->cc, OPER_fnc);
+		libcinit->op.lhso = rt->cc->emit_tag;
+		libcinit->type = sym->type;
+		libcinit->op.rhso = args;
+
+		sym->kind = TYPE_def;
+		sym->init = libcinit;
+		sym->offs = libcpos;
+		//~ sym->size = libcpos;
+
+		lc->call = libc;
+		lc->data = data;
+		lc->pos = libcpos;
+		lc->sym = sym;
+
+		lc->chk = stdiff / 4;
+
+		stdiff -= sizeOf(sym->type);
+		lc->pop = stdiff / 4;
+
+		// make non reference parameters symbolic by default
+		for (param = sym->prms; param; param = param->next) {
+			if (param->cast != TYPE_ref) {
+				param->cast = TYPE_def;
+			}
+		}
+	}
+	else {
+		error(rt, NULL, 0, "install(`%s`)", proto);
+	}
+
+	return sym;
+}
+//#}
 
 // promote
 static inline int castkind(int cast) {
@@ -605,60 +746,26 @@ symn declare(ccState s, ccToken kind, astn tag, symn typ) {
 }
 
 int istype(symn sym) {
-	if (sym) switch (sym->kind) {
-		default:break;
+	if (sym == NULL) {
+		return 0;
+	}
+
+	switch (sym->kind) {
+		default:
+			break;
+
 		case TYPE_arr:
 		case TYPE_rec:
-			return 1;
+			return sym->kind;
 
 		case TYPE_def:
-			return sym->init == NULL;
+			if (sym->init == NULL) {
+				return istype(sym->type);
+			}
+			break;
 	}
 	//~ trace("%T is not a type", sym);
 	return 0;
-}
-int isType(astn ast) {
-	if (!ast) return 0;
-
-	if (ast->kind == EMIT_opc)
-		return 0;
-
-	if (ast->kind == OPER_dot)
-		return isType(ast->op.lhso) && isType(ast->op.rhso);
-
-	if (ast->kind == TYPE_ref)
-		return istype(ast->ref.link);
-
-	//~ trace("%t(%+k):(%d)", ast->kind, ast, ast->line);
-	return 0;
-}
-
-symn linkOf(astn ast) {
-	if (!ast) return 0;
-
-	if (ast->kind == EMIT_opc)
-		return ast->type;
-
-	if (ast->kind == OPER_fnc)
-		return linkOf(ast->op.lhso);
-
-	if (ast->kind == OPER_dot)
-		return linkOf(ast->op.rhso);
-
-	if (ast->kind == OPER_idx)
-		return linkOf(ast->op.lhso);
-
-	if ((ast->kind == TYPE_ref || ast->kind == TYPE_def) && ast->ref.link) {
-		// skip type defs
-		symn lnk = ast->ref.link;
-		if (lnk->kind == TYPE_def && lnk->init->kind == TYPE_ref) {
-			lnk = linkOf(lnk->init);
-		}
-		return lnk;
-	}
-
-	//~ trace("%t(%+k)", ast->kind, ast);
-	return NULL;
 }
 
 int usedCnt(symn sym) {
@@ -671,8 +778,8 @@ int usedCnt(symn sym) {
 }
 
 //~ TODO: this should be calculated by fixargs() and replaced by (var|typ)->size
-long sizeOf(symn typ) {
-	if (typ) switch (typ->kind) {
+long sizeOf(symn sym) {
+	if (sym) switch (sym->kind) {
 		default:
 			break;
 		//~ case TYPE_vid:
@@ -683,24 +790,24 @@ long sizeOf(symn typ) {
 		case TYPE_rec:
 		case TYPE_arr:
 			// TODO:
-			return typ->size;//* sizeOf(typ->type);
+			return sym->size;//* sizeOf(sym->type);
 
 		case EMIT_opc:
 		//~ case TYPE_rec:
-			if (typ->cast == TYPE_ref)
+			if (sym->cast == TYPE_ref)
 				return vm_size;
-			return typ->size;
+			return sym->size;
 		case TYPE_def:
-		case TYPE_ref: switch (typ->cast) {
+		case TYPE_ref: switch (sym->cast) {
 				case TYPE_ref:
 					return vm_size;
 				case TYPE_arr:
 					return 2 * vm_size;
 				default:
-					return sizeOf(typ->type);
+					return sizeOf(sym->type);
 			}
 	}
-	fatal("failed(%t): %-T", typ ? typ->kind : 0, typ);
+	fatal("failed(%t): %-T", sym ? sym->kind : 0, sym);
 	return 0;
 }
 
@@ -737,7 +844,7 @@ ccToken castOf(symn typ) {
 	debug("failed(%t): %?-T", typ ? typ->kind : 0, typ);
 	return 0;
 }
-int castTo(astn ast, ccToken cto) {
+ccToken castTo(astn ast, ccToken cto) {
 	ccToken atc = 0;
 	if (!ast) return 0;
 	//~ TODO: check validity / Remove function

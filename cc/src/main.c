@@ -42,7 +42,7 @@ application [global options] [local options]...
 // default values
 static const int wl = 9;			// warning level
 static const int ol = 2;			// optimize level
-static char mem[16 << 20];			// runtime memory of (16M)
+static char mem[2 << 20];			// runtime memory
 
 const char* STDLIB = "stdlib.cvx";		// standard library
 
@@ -54,7 +54,7 @@ static inline int streq(const char *a, const char *b) {
 	return strcmp(a, b) == 0;
 }
 
-char* parsei32(const char* str, int32_t* res, int radix) {
+static char* parsei32(const char* str, int32_t* res, int radix) {
 	int64_t result = 0;
 	int sign = 1;
 
@@ -122,7 +122,22 @@ char* parsei32(const char* str, int32_t* res, int radix) {
 
 	return (char*)str;
 }
-char* matchstr(const char* t, const char* p, int ic) {
+static char* parsecmd(char* ptr, const char* cmd, const char* sws) {
+	while (*cmd && *cmd == *ptr)
+		cmd++, ptr++;
+
+	if (*cmd != 0)
+		return 0;
+
+	if (*ptr == 0)
+		return ptr;
+
+	while (strchr(sws, *ptr))
+		++ptr;
+
+	return ptr;
+}
+/*static char* matchstr(const char* t, const char* p, int ic) {
 	int i = 0;//, ic = flgs & 1;
 
 	for ( ; *t && p[i]; ++t, ++i) {
@@ -146,22 +161,7 @@ char* matchstr(const char* t, const char* p, int ic) {
 		++p;					// keep i for return
 
 	return (char*)(p[i] ? 0 : t - i);
-}
-char* parsecmd(char* ptr, const char* cmd, const char* sws) {
-	while (*cmd && *cmd == *ptr)
-		cmd++, ptr++;
-
-	if (*cmd != 0)
-		return 0;
-
-	if (*ptr == 0)
-		return ptr;
-
-	while (strchr(sws, *ptr))
-		++ptr;
-
-	return ptr;
-}
+}// */
 
 static void usage(char* prog) {
 	FILE *out = stdout;
@@ -190,7 +190,7 @@ static void usage(char* prog) {
 	fputfmt(out,"		<file>		if file extension is (.so|.dll) import else compile\n");
 }
 
-int evalexp(state rt, char* text) {
+static int evalexp(state rt, char* text) {
 	struct astNode res;
 	astn ast = NULL;
 	symn typ = NULL;
@@ -218,19 +218,18 @@ int evalexp(state rt, char* text) {
 	return -1;
 }
 
-static int testFunction(libcArgs rt) {		// void testFunction(void cb(int n), int n)
+// void testFunction(void cb(pointer n), pointer n)
+static int testFunction(libcArgs rt) {
 	symn cb = mapsym(rt->rt, argref(rt, 0));
 	if (cb != NULL) {
-		int n = argi32(rt, 4);
-		struct {int n;} args;// = {n};
-		args.n = n;
+		struct {int n;} args;
+		args.n = argi32(rt, 4);
 		return invoke(rt->rt, cb, NULL, &args, NULL);
 	}
 	return 0;
 }
 
 #if defined(USEPLUGINS)
-
 typedef struct pluginLib* pluginLib;
 static const char* pluginLibInstall = "ccvmInit";
 static const char* pluginLibDestroy = "ccvmDone";
@@ -280,7 +279,6 @@ static int importLib(state rt, const char* path) {
 }
 
 #elif (defined(__linux__))
-
 #include <dlfcn.h>
 static struct pluginLib {
 	void (*onClose)();
@@ -331,15 +329,11 @@ static int importLib(state rt, const char* path) {
 #endif
 
 #else
-
 static void closeLibs() {}
 static int importLib(state rt, const char* path) {
-	(void)rt;
-	(void)path;
 	error(rt, path, 1, "dynamic linking is not available in this build.");
 	return -1;
 }
-
 #endif
 
 static symn printvars = NULL;
@@ -348,8 +342,8 @@ static int dbgCon(state, int pu, void* ip, long* sp, int ss);
 int program(int argc, char* argv[]) {
 	char* stdlib = (char*)STDLIB;
 
-	//~ char* prg = argv[0];
 	int (*dbg)(state, int pu, void *ip, long* sp, int ss) = NULL;
+	int (*onHalt)(libcArgs) = NULL;	// print variables and values on exit?
 
 	// compile, run, debug, ...
 	int level = -1, argi;
@@ -372,8 +366,6 @@ int program(int argc, char* argv[]) {
 	int warn = wl;
 	int result = 0;
 
-	int (*onHalt)(libcArgs) = NULL;	// print variables and values on exit?
-
 	state rt = rtInit(mem, sizeof(mem));
 
 	if (rt == NULL) {
@@ -386,7 +378,7 @@ int program(int argc, char* argv[]) {
 		return evalexp(rt, argv[1] + 1);
 	}
 
-	// global options
+	// porcess global options
 	for (argi = 1; argi < argc; ++argi) {
 		char* arg = argv[argi];
 
@@ -508,7 +500,7 @@ int program(int argc, char* argv[]) {
 		else break;
 	}
 
-	// open logger
+	// open log file (global option)
 	if (logf && logfile(rt, logf) != 0) {
 		error(rt, NULL, 0, "can not open file `%s`\n", logf);
 		return -1;
@@ -535,7 +527,7 @@ int program(int argc, char* argv[]) {
 		return -6;
 	}
 
-	// TODO: remove test function
+	// TODO: to be removed: function for testing purpouses.
 	ccAddCall(rt, testFunction, NULL, "void testFunction(void cb(pointer args), pointer args);");
 
 	// compile and import files / modules
@@ -553,7 +545,7 @@ int program(int argc, char* argv[]) {
 				error(rt, NULL, 0, "error compiling `%s`", arg);
 			}
 		}
-		else if (strncmp(arg, "-w", 2) == 0) {		// warning level for 
+		else if (strncmp(arg, "-w", 2) == 0) {		// warning level for file
 			if (strcmp(arg, "-wx") == 0)
 				warn = -1;
 			else if (strcmp(arg, "-wa") == 0)

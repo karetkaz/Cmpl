@@ -391,19 +391,16 @@ static int FILE_flush(libcArgs args) {
 static int typenameGetName(libcArgs args) {
 	symn sym = mapsym(args->rt, argref(args, 0));
 	reti32(args, vmOffset(args->rt, sym->name));
-
 	return 0;
 }
 static int typenameGetFile(libcArgs args) {
 	symn sym = mapsym(args->rt, argref(args, 0));
 	reti32(args, vmOffset(args->rt, sym->file));
-
 	return 0;
 }
 static int typenameGetBase(libcArgs args) {
 	symn sym = mapsym(args->rt, argref(args, 0));
 	reti32(args, vmOffset(args->rt, sym->type));
-
 	return 0;
 }
 //#}#endregion
@@ -440,7 +437,7 @@ static inline int64_t timeMillis() {
 #endif
 
 static int miscFunction(libcArgs args) {
-	switch ((miscOperation)(int)args->data) {
+	switch ((miscOperation)(size_t)args->data) {
 
 		case miscOpExit:
 			exit(argi32(args, 0));
@@ -563,7 +560,6 @@ static void traceArgs(state rt, symn fun, char *file, int line, void* sp, int id
 		//~ fputfmt(rt->logf, ")");
 	}
 }
-
 static int libCallDebug(libcArgs args) {
 	int arg = 0;
 	state rt = args->rt;
@@ -658,6 +654,7 @@ static int libCallMemMgr(libcArgs rt) {
 
 	return 0;
 }
+
 int libCallHaltQuiet(libcArgs args) {
 	(void)args;
 	return 0;
@@ -676,7 +673,7 @@ int libCallHaltDebug(libcArgs rt) {
 			continue;
 
 		if (var->file && var->line) {
-			fputfmt(stdout, "%s:%d:", var->file, var->line);
+			fputfmt(stdout, "%s:%d: ", var->file, var->line);
 		}
 		else {
 			fputfmt(stdout, "var: ");

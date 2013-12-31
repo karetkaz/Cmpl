@@ -1029,6 +1029,7 @@ static void FPUTFMT(FILE* fout, const char* msg, va_list ap) {
 						break;
 					}
 
+					// fputfmt(fout, ".%06x: ", prc);
 					fputopc(fout, opc, len, prc, NULL);
 					continue;
 				}
@@ -1162,13 +1163,11 @@ static void FPUTFMT(FILE* fout, const char* msg, va_list ap) {
 
 				case 'E':		// float64
 				case 'F':		// float64
-				case 'G':
 					chr -= 'A' - 'a';
 					// no break
 
 				case 'e':		// float32
-				case 'f':		// float32
-				case 'g': {		// float32
+				case 'f': {		// float32
 					float64_t num = va_arg(ap, float64_t);
 					if (num == 0 && nil) {
 						len = pad != 0;
@@ -1234,7 +1233,7 @@ static void FPUTFMT(FILE* fout, const char* msg, va_list ap) {
  *	'#': constant(def)
  *	'$': variable(ref)
 **/
-void dumpsym(FILE* fout, symn sym, int mode) {
+static void dumpsym(FILE* fout, symn sym, int mode) {
 	symn ptr, bp[TOKS], *sp = bp;
 
 	int print_line = mode & prLine;		// print file and location

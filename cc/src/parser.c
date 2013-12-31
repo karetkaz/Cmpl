@@ -116,11 +116,10 @@ static int readChr(ccState cc) {
 			cc->line += 1;
 		}
 
-		cc->fin._cnt -= 1;
-		cc->fin._ptr += 1;
-		return '\n';
+		chr = '\n';
 	}
 
+	//~ if (cc->file && cc->line) {prerr("", "%s:%d: %c", cc->file, cc->line, chr);}
 	cc->fin._cnt -= 1;
 	cc->fin._ptr += 1;
 	return chr;
@@ -283,7 +282,7 @@ char* mapstr(ccState cc, char* str, unsigned len/* = -1U*/, unsigned hash/* = -1
 		prev = next;
 	}
 
-	dieif(rt->_end - rt->_beg <= (int)(sizeof(struct list) + len), "memory overrun");
+	dieif(rt->_beg >= rt->_end - (sizeof(struct list) + len), "memory overrun");
 	if (str != (char *)rt->_beg) {
 		// copy data from constants ?
 		memcpy(rt->_beg, str, len + 1);
@@ -489,7 +488,7 @@ static int readTok(ccState cc, astn tok) {
 					chr = readChr(cc);
 				}
 				if (chr == -1) {
-					warn(cc->s, 9, cc->file, line, "no newline at end of file");
+					warn(cc->s, 9, cc->file, line, "no newline at end of file (chars left: %d)", cc->fin._cnt);
 				}
 				else if (cc->line != line + 1) {
 					warn(cc->s, 9, cc->file, line, "multi-line comment: `%s`", ptr);
@@ -1309,16 +1308,17 @@ static inline astn argnode(ccState cc, astn lhs, astn rhs) {
 	return lhs ? opnode(cc, OPER_com, lhs, rhs) : rhs;
 }
 
-static inline astn tagnode(ccState s, char* id) {
+static inline astn tagnode(ccState cc, char* id) {
 	astn ast = NULL;
-	if (s && id) {
-		ast = newnode(s, TYPE_ref);
+
+	if (cc && id) {
+		ast = newnode(cc, TYPE_ref);
 		if (ast != NULL) {
 			int slen = strlen(id);
 			ast->kind = TYPE_ref;
 			ast->type = ast->ref.link = 0;
 			ast->ref.hash = rehash(id, slen + 1) % TBLS;
-			ast->ref.name = mapstr(s, id, slen + 1, ast->ref.hash);
+			ast->ref.name = mapstr(cc, id, slen + 1, ast->ref.hash);
 		}
 	}
 	return ast;
@@ -1426,7 +1426,7 @@ static symn addLength(ccState cc, symn sym, astn init) {
 	 * static array size: ATTR_stat | ATTR_const | TYPE_def
 	 * dynamic array size: ATTR_const | TYPE_ref
 	 */
-	ccToken kind = ATTR_const | (init != NULL ? ATTR_stat | TYPE_def : TYPE_ref);
+	ccToken kind = ATTR_const | (init != NULL ? TYPE_def : TYPE_ref);
 	symn args = sym->flds;
 	symn result = NULL;
 
@@ -1504,7 +1504,7 @@ static astn stmt(ccState, int mode);	// parse statement		(mode: enable decl)
  * @param mode
  * @return
  */
-astn expr(ccState cc, int mode) {
+static astn expr(ccState cc, int mode) {
 	astn buff[TOKS], tok;
 	astn* base = buff + TOKS;
 	astn* post = buff;
@@ -1878,7 +1878,7 @@ static astn type(ccState cc/* , int mode */) {	// type(.type)*
 	return list;
 }
 
-/** TODO: rename?: parameters
+/** TODO: rename?: params
  * @brief Parse the parameters of a function declaration.
  * @param cc compiler context.
  * @param mode
@@ -2230,7 +2230,7 @@ astn decl_var(ccState cc, astn* argv, int mode) {
  * @param mode
  * @return parsed syntax tree.
  */
-astn decl(ccState cc, int mode) {
+static astn decl(ccState cc, int mode) {
 	int Attr = qual(cc, ATTR_const | ATTR_stat);
 	int line = cc->line;
 	char* file = cc->file;
@@ -3058,7 +3058,11 @@ static int source(ccState cc, int isFile, char* src) {
 	cc->line = 0;
 
 	if (isFile && src != NULL) {
+#ifdef __WATCOMC__
+		if ((cc->fin._fin = open(src, O_RDONLY|O_BINARY)) <= 0) {
+#else
 		if ((cc->fin._fin = open(src, O_RDONLY)) <= 0) {
+#endif
 			return -1;
 		}
 

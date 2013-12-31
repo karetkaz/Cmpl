@@ -63,13 +63,13 @@ case opc_jz:   NEXT(4, -1, 1) {
 } break;
 case opc_task: NEXT(4, -0, 0) {
 #ifdef EXEC
-	if (task(pu, cc, cp, ip->cl * vm_size))
+	if (task(pu, cc, -1, ip->cl * vm_size))
 		pu->ip += ip->cl - 4;
 #endif
 } break;
 case opc_sync: NEXT(2, -0, 0) {
 #ifdef EXEC
-	if (!sync(pu, cp, ip->idx)) {
+	if (!sync(pu, -1, ip->idx)) {
 		NEXT(-2, -0, 0);
 	}
 #endif
@@ -773,7 +773,7 @@ case v4f_ceq: NEXT(1, -7, 8) {
 			 && (SP(6, f4) == SP(2, f4))
 			 && (SP(7, f4) == SP(3, f4));
 #endif
-}
+} break;
 case v4f_min: NEXT(1, -4, 8) {
 #if defined(EXEC)
 	if (SP(4, f4) > SP(0, f4))
