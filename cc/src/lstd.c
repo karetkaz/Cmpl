@@ -537,10 +537,10 @@ static void traceArgs(state rt, symn fun, char *file, int line, void* sp, int id
 			}
 			else {
 				// argument or local variable.
-				offs = (char*)sp + fun->prms->offs + vm_size - sym->offs;
+				// 1 * vm_size holds the return value of the function.
+				offs = (char*)sp + fun->prms->offs + 1 * vm_size - sym->offs;
 			}
 
-			//~ fputfmt(rt->logf, "%?+T: @%x", sym, sym->offs);
 			if (printFileLine) {
 				if (sym->file != NULL && sym->line != 0) {
 					fputfmt(rt->logf, "%I%s:%u: ", ident, sym->file, sym->line);
@@ -557,29 +557,26 @@ static void traceArgs(state rt, symn fun, char *file, int line, void* sp, int id
 		else {
 			fputfmt(rt->logf, "\n");
 		}
-		//~ fputfmt(rt->logf, ")");
 	}
 }
 static int libCallDebug(libcArgs args) {
-	int arg = 0;
 	state rt = args->rt;
-	#define poparg(__TYPE) (arg += sizeof(__TYPE)) - sizeof(__TYPE)
-	char* file = argref(args, poparg(int32_t));
-	int   line = argi32(args, poparg(int32_t));
+	char* file = argref(args, 0 * vm_size);
+	int   line = argi32(args, 1 * vm_size);
 	//~ char* func = argstr(args, poparg(int32_t));
 
-	char* message = argref(args, poparg(int32_t));
-	int loglevel = argi32(args, poparg(int32_t));
-	int tracelevel = argi32(args, poparg(int32_t));
-	void* objref = argref(args, poparg(int32_t));
-	symn objtyp = argref(args, poparg(int32_t));
+	char* message = argref(args, 2 * vm_size);
+	int loglevel = argi32(args, 3 * vm_size);
+	int tracelevel = argi32(args, 4 * vm_size);
+	void* objref = argref(args, 5 * vm_size);
+	symn objtyp = argref(args, 6 * vm_size);
 
 	// skip loglevel 0
 	if (rt->logf != NULL && loglevel != 0) {
 		int isOutput = 0;
 
 		// position where the function was invoked
-		if (file && line) {
+		if (file != NULL && line > 0) {
 			fputfmt(rt->logf, "%s:%u", file, line);
 			isOutput = 1;
 		}
@@ -591,16 +588,16 @@ static int libCallDebug(libcArgs args) {
 		}
 
 		// specified object
-		if (objtyp && objref) {
-			fputfmt(rt->logf, ": ");
-			//~ fputfmt(rt->logf, "typ@%x, ref@%x: ", (unsigned char*)objtyp - rt->_mem, (unsigned char*)objref - rt->_mem);
+		if (objtyp != NULL && objref != NULL) {
+			if (isOutput) {
+				fputfmt(rt->logf, ": ");
+			}
 			fputval(rt, rt->logf, objtyp, objref, 0);
 			isOutput = 1;
 		}
 
 		// print stack trace
 		if (rt->dbg && tracelevel > 0) {
-			//~ symn sym;
 			int i, pos = rt->dbg->tracePos;
 			if (tracelevel > pos) {
 				tracelevel = pos;

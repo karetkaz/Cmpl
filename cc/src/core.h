@@ -468,7 +468,7 @@ void fputopc(FILE *fout, unsigned char* ptr, int len, int offs, state rt);
 void fputasm(state, FILE *fout, int beg, int end, int mode);
 
 /** TODO: to be renamed and moved.
- * @brief Print the runtime value of a variable.
+ * @brief Print the value of a variable at runtime.
  * @param rt Runtime context.
  * @param fout Output stream.
  * @param var Variable to be printed. (May be a typename also)

@@ -4,7 +4,7 @@
  *   Desc: type system
  *******************************************************************************
 the core:
-	convert ast to vmcode
+	convert ast to bytecode
 	initializations, memory management
 
 	emit:
@@ -1709,7 +1709,7 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 
 					// int a = 99;	// variable initialization
 					else {
-						logif(val->cst2 != var->cast, "cast (%t : %t: get: %t): %+k", val->cst2, var->cast, get, val);
+						logif(val->cst2 != var->cast, "cast error (%t : %t: get: %t): %+k", val->cst2, var->cast, get, val);
 						switch (val->kind) {
 							case TYPE_int:
 							case TYPE_flt:
@@ -2160,7 +2160,7 @@ int gencode(state rt, int mode) {
 			}
 			else {
 				dieif(var->offs != 0, "Error %-T", var);
-				logif(var->size != sizeOf(var), "Error %-T: %d / %d", var, var->size, sizeOf(var));
+				logif(var->size != sizeOf(var), "size error: %-T: %d / %d", var, var->size, sizeOf(var));
 				var->size = sizeOf(var);
 
 				// align the memory of the variable. speeding up the read and write of it.

@@ -18,7 +18,7 @@ static inline double fmodf(float x, float y) {
 }
 #endif
 
-/// Bit scan forward. (get the highest bit seted)
+/// Bit scan forward. (get the index of the highest bit seted)
 static inline int32_t bitsf(uint32_t x) {
 	int result = 0;
 	if ((x & 0x0000ffff) == 0) {
@@ -46,10 +46,10 @@ static inline int32_t bitsf(uint32_t x) {
 typedef uint8_t* memptr;
 typedef uint32_t* stkptr;
 
-/// byte code instruction
+/// bytecode instruction
 typedef struct bcde *bcde;
 
-/// bytecode processor cell
+/// bytecode processor
 typedef struct cell *cell;
 
 #pragma pack(push, 1)
