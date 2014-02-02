@@ -114,9 +114,9 @@ void setupBiorithm(int _daysToShow, Date _now, Date _birth) {
 	static int daysToShow;
 	static bool reDraw = true;
 
-	define inertial_pan = 3000.;
+	define inertial_pan = 30.;
 	define inertial_speed = 1.01;
-	static int32 inertial_time = 0;
+	static int64 inertial_time = 0;
 	static double inertial_pan_x = 0;
 	static double inertial_pan_y = 0;
 
@@ -132,8 +132,8 @@ void setupBiorithm(int _daysToShow, Date _now, Date _birth) {
 				inertial_pan_x = Math.clamp(inertial_pan_x, -inertial_pan, inertial_pan) / inertial_speed;
 				inertial_pan_y = Math.clamp(inertial_pan_y, -inertial_pan, inertial_pan) / inertial_speed;
 
-				if ((Math.abs(inertial_pan_x) > .0) || (Math.abs(inertial_pan_y) > .0)) {
-					pos += inertial_pan_x;
+				if ((Math.abs(inertial_pan_x) > 0) || (Math.abs(inertial_pan_y) > 0)) {
+					pos += inertial_pan_x/4;
 					reDraw = true;
 				}
 				inertial_time = now;
@@ -202,6 +202,5 @@ void setupBiorithm(int _daysToShow, Date _now, Date _birth) {
 Date Now = DateFromTime(time());
 define daysToShow = 15;
 
-//~ setupBiorithm(daysToShow, Now, Date(1983, 5,  2));
-setupBiorithm(daysToShow, Now, Date(1984, 8, 30));
-//~ setupBiorithm(daysToShow, Now, Date(1990, 12, 25));
+//~ setupBiorithm(daysToShow, Now, Date(1984, 8, 30));
+setupBiorithm(daysToShow, Now, Date(1983, 5,  2));

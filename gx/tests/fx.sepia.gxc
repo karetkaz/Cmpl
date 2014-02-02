@@ -1,7 +1,8 @@
+// Sepia effect demo.
 enum Window {
 	draw = RenderMode.swap_buff;
-	resx = 1440;
-	resy = 800;
+	//~ resx = 1440;
+	//~ resy = 800;
 }
 
 //~ string fileName = "media/images/David.png";

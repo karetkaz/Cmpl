@@ -1,4 +1,4 @@
-// old school demos
+// Old school demos.
 enum Window {
 	draw = RenderMode.swap_buff;
 	resx = 512;

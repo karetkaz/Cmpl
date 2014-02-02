@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
+#include <memory.h>
 #include <stdlib.h>
 #include "g2_surf.h"
 #include "g2_argb.h"
@@ -326,7 +327,7 @@ void readIni(char *file) {
 			int funend = section == objfun;
 
 			*arg = 0;
-			if (arg - ptr > sizeof(sectName)) {
+			if (arg - ptr > (ptrdiff_t)sizeof(sectName)) {
 				debug("section name too large");
 				abort();
 			}
@@ -1052,7 +1053,7 @@ int main(int argc, char* argv[]) {
 		if (e != 0) {
 			freeMesh(&mshLightPoint);
 			freeMesh(&msh);
-			return -21;
+			return 21;
 		}
 	}
 
@@ -1061,14 +1062,14 @@ int main(int argc, char* argv[]) {
 		gx_doneSurf(&font);
 		gx_doneSurf(&offs);
 		freeMesh(&msh);
-		return -2;
+		return 2;
 	}
 	if (initWin(draw ? &offs : NULL, &flip, &peekMsg, ratHND, kbdHND)) {
 		printf("Cannot init surface\n");
 		gx_doneSurf(&font);
 		gx_doneSurf(&offs);
 		freeMesh(&msh);
-		return -1;
+		return 1;
 	}
 
 	if (rt != NULL) {
@@ -1081,7 +1082,7 @@ int main(int argc, char* argv[]) {
 			gx_doneSurf(&font);
 			freeMesh(&mshLightPoint);
 			freeMesh(&msh);
-			return -21;
+			return 22;
 		}
 	}
 	else {
@@ -1209,8 +1210,9 @@ int main(int argc, char* argv[]) {
 				int *zBuff = (void*)offs.tempPtr;
 				for(e = 0; e < offs.width * offs.height; e += 1) {
 					long z = zBuff[e];
-					z = (z >> 15) & 0x1ff;
-					if (z < 256) z = ~z & 0xff;
+					z = (z >> 16) & 0xff;
+					//~ z = (z >> 15) & 0x1ff;
+					//~ if (z < 256) z = ~z & 0xff;
 					cBuff[e] = ~(z << 16 | z << 8 | z);
 				}
 			}

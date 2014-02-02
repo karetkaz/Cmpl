@@ -325,6 +325,7 @@ int eval(astn res, astn ast) {
 			debug("FixMe %+k", ast);
 			return 0;
 
+		case OPER_com:
 		case STMT_beg:
 			return 0;
 

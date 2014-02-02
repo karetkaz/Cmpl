@@ -1,67 +1,30 @@
+// Mandelbrot demo.
 enum Window {
 	draw = RenderMode.swap_buff;
 	resx = 512;
 	resy = 512;
 }
 
-gxSurf Mandel(gxSurf dst, gxClut &lut, double QMin, double QMax, double PMin, double PMax) {
-
-	define M = 4.;			// It. Limit
-
-	int kmax = lut.count;
-	int resx = width(dst);
-	int resy = height(dst);
-
-	double xStep = (PMax - PMin) / resx;
-	double yStep = (QMax - QMin) / resy;
-
-	for (int sy = 0; sy < resy; sy += 1) {
-		double y0 = QMin + sy * yStep;
-
-		for (int sx = 0; sx < resx; sx += 1) {
-			double x0 = PMin + sx * xStep;
-
-			double xtemp;
-			double x = 0;
-			double y = 0;
-			int k = 0;
-
-			for (k = 0; k < kmax; k += 1) {
-				xtemp = x * x - y * y + x0;
-				y = 2 * x * y + y0;
-				x = xtemp;
-
-				if (x * x + y * y > M)
-					break;
-			}
-
-			if (k >= kmax)
-				k = 0;
-
-			setPixel(dst, sx, sy, lut.data[k]);
-		}
-		if (resx > 1000) {
-			print("line(%d", sy);
-			print(") of %d\n", resy);
-		}
-	}
-	result = dst;
-}
-
-gxClut mandelLut;
 double QMin = -1.5;
 double QMax = +1.5;
 double PMin = -2.25;
 double PMax = +0.75;
-//~ define zoom = 1.17187372574E-2;
-//~ double QMin = -1.25632982971-zoom;
-//~ double QMax = -1.25632982971+zoom;
-//~ double PMin = -0.02761733591558-zoom;
-//~ double PMax = -0.02761733591558+zoom;
-blendLut(32, &mandelLut, 0xFFFFFF, 0x000000, 0xadadff, 0x000000);
+
+//~ //Mandel(-0.441324 ± 8.081852e-04, -1.295320 ± 8.081852e-04): time: 0.680000
+//~ define zoom = 8.081852e-04;
+//~ double QMin = -0.441324-zoom;
+//~ double QMax = -0.441324+zoom;
+//~ double PMin = -1.295320-zoom;
+//~ double PMax = -1.295320+zoom;
+
+gxClut mandelLut;
+blendLut(32, &mandelLut, 0x000020, 0xffffff, 0x0000ff);
+//~ blendLut(32, &mandelLut, 0xFFFFFF, 0x000000, 0xadadff, 0x000000);
+//~ const int colors[] = {0xFFFFFF, 0xa9cffa, 0x8ab7ee, 0x7ba5e9, 0x7295db, 0x6987cb, 0x5e7ec5, 0x4f6fb3, 0x3a5393, 0x2c3e73, 0x1d3165, 0x070e50};
+//~ blendLut(64, &mandelLut, colors);
 
 int reDraw = 1;
-gxRect roi  = gxRect(Window.resx / 2 - Window.resx / 4, Window.resy / 2 - Window.resy / 4, Window.resx / 2, Window.resy / 2);
+gxRect roi = gxRect(Window.resx / 2 - Window.resx / 4, Window.resy / 2 - Window.resy / 4, Window.resx / 2, Window.resy / 2);
 
 gxSurf mand = gxSurf(Window.resx, Window.resy);
 
@@ -131,19 +94,21 @@ void drawCB() {
 	if (reDraw == 2) {
 		copySurf(offScreen, 0, 0, mand, null);
 		drawRect(offScreen, roi, 0xff0000);
+		//~ zoomSurf(offScreen, null, mand, &roi, 1);
 		reDraw = 0;
 	}
 	if (reDraw == 1) {
 		int32 start = clock();
+		//~ Mandel(offScreen, &mandelLut, QMin, QMax, PMin, PMax);
 		Mandel(mand, &mandelLut, QMin, QMax, PMin, PMax);
 		copySurf(offScreen, 0, 0, mand, null);
 		double QSize = QMax - QMin;
 		double PSize = PMax - PMin;
 
-		print("Mandel(%G", QMin + QSize / 2);
-		print(" ± %G", QSize);
-		print(", %G", PMin + PSize / 2);
-		print(" ± %G", PSize);
+		print("Mandel(%F", QMin + QSize / 2);
+		print(" ± %E", QSize / 2);
+		print(", %F", PMin + PSize / 2);
+		print(" ± %E", PSize / 2);
 		print("): time: %F\n", clocks2Sec(clock() - start));
 
 		reDraw = 0;
@@ -152,5 +117,4 @@ void drawCB() {
 
 Gui.setMouseHandler(mouseCB);
 Gui.setDrawCallback(drawCB);
-
 //~ bmpWrite(Mandel(gxSurf(2000), &mandelLut, QMin, QMax, PMin, PMax), "mandel.bmp");

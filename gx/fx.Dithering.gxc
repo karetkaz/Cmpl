@@ -1,18 +1,18 @@
-// image dithering
+// Image dithering demo.
 enum Window {
 	draw = RenderMode.swap_buff;
 	resx = 512;
 	resy = resx;
 }
 
-string fileName = "media/images/David.png";
-//~ string fileName = "media/images/lenaRGB.png";
+//~ string fileName = "media/images/David.png";
+string fileName = "media/images/lenaRGB.png";
 //~ string fileName = "media/images/download.jpg";
 //~ string fileName = "media/images/dino-blue.jpg";
 //~ string fileName = "media/images/Earth.jpg";
 //~ string fileName = "media/images/nol.bmp";
 
-enum Dithering {
+enum Dithering: int32 {
 	None = '0';
 	SteinbergFalse = '2';
 	Steinberg = '3';
@@ -288,15 +288,14 @@ gxSurf dither(gxSurf img, bool grayscale, uint32 colors, Dithering method) {
 	}
 }
 
-int colors = 8;
+int colors = 5;
 int grayscale = true;
 Dithering method = Dithering.Stucki;
 method = Dithering.Steinberg;
 //~ method = Dithering.Bayer;
 //~ method = Dithering.None;
 
-//~ define hex(uint32 ^c) = int(c <= 9 ? (c + '0') : ((c - 10) + 'a'));
-define hex(uint32 c) = int("0123456789abcdef"[c & 15]);
+define hex(uint32 c) = int("0123456789abcdef"[c & 0xf]);
 
 int gs = grayscale ? 'g' : 'c';
 int h1 = hex(colors >> 4);

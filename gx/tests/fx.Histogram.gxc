@@ -1,7 +1,8 @@
+// Image histogram demo.
 enum Window {
 	draw = RenderMode.swap_buff;
-	resx = 512;
-	resy = resx;
+	//~ resx = 512;
+	//~ resy = resx;
 }
 
 //~ string fileName = "media/images/David.png";
@@ -32,14 +33,14 @@ gxSurf histo(gxSurf dst, gxSurf src, bool rgb) {
 	int histoR[256];
 	int histoG[256];
 	int histoB[256];
-	//~ int histoL[256];
+	int histoL[256];
 
 	// init
 	for (int i = 0; i < 256; i += 1) {
 		histoR[i] = 0;
 		histoG[i] = 0;
 		histoB[i] = 0;
-		//~ histoL[i] = 0;
+		histoL[i] = 0;
 	}
 
 	// set
@@ -49,17 +50,16 @@ gxSurf histo(gxSurf dst, gxSurf src, bool rgb) {
 			histoR[rch(c1)] += 1;
 			histoG[gch(c1)] += 1;
 			histoB[bch(c1)] += 1;
-			//~ histoL[lum(c1)] += 1;
+			histoL[lum(c1)] += 1;
 		}
 	}
 
 	int maxRgb = 0;
-	//~ int maxLum = 0;
 	for (int i = 0; i < 256; i += 1) {
 		maxRgb = Math.max(histoR[i], maxRgb);
 		maxRgb = Math.max(histoG[i], maxRgb);
 		maxRgb = Math.max(histoB[i], maxRgb);
-		//~ maxLum = Math.max(histoL[i], maxLum);
+		maxRgb = Math.max(histoL[i], maxRgb);
 	}
 
 	// fill
@@ -77,6 +77,7 @@ gxSurf histo(gxSurf dst, gxSurf src, bool rgb) {
 		int rsize = histoHeight(histoR[x], maxRgb);
 		int gsize = histoHeight(histoG[x], maxRgb);
 		int bsize = histoHeight(histoB[x], maxRgb);
+		int lsize = histoHeight(histoL[x], maxRgb);
 
 		if (rgb) {
 			for (int y = 0; y < histoHeight; y += 1) {
@@ -85,10 +86,10 @@ gxSurf histo(gxSurf dst, gxSurf src, bool rgb) {
 			}
 		}
 		else {
-			//~ fillRect(dst, x, y2 - histoHeight(histoL[x], maxLum), x+1, y2, 0xffffff);
 			fillRect(result, x, y2 - rsize, x+1, y2, colR);
 			fillRect(result, x, y2 - gsize, x+1, y2, colG);
 			fillRect(result, x, y2 - bsize, x+1, y2, colB);
+			fillRect(result, x, y2 - lsize, x+1, y2, 0xffffff);
 		}
 	}
 
@@ -99,7 +100,6 @@ gxSurf histo(gxSurf dst, gxSurf src, bool rgb) {
 		println("histogram width not 256, resizing ...");
 	}
 }
-define histo(gxSurf dst, gxSurf src) = histo(dst, src, true);
 
 zoomSurf(offScreen, null, image, null, 1);
-copySurf(offScreen, width(offScreen) - width(histo) - 10, 10, histo(histo, image), null, .2, null);
+copySurf(offScreen, width(offScreen) - width(histo) - 10, 10, histo(histo, image, !true), null, .2, null);

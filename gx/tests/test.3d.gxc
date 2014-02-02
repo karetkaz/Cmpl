@@ -1,4 +1,4 @@
-// 3d
+// 3d todo demo.
 enum Window {
 	draw = RenderMode.drawFill|RenderMode.draw_lit;// & ~RenderMode.zero_cbuf;
 	resx = 512;
@@ -71,33 +71,33 @@ mat4f matrix_Translation(vec4f &dir, float cnt) {
 }
 
 void camera_Rotate(vec4f &dir, vec4f &orbit, float ang) {
+	if (ang == 0)
+		return;
 
-	if (ang != 0) {
+	mat4f tmp = matrix_Rotation(dir, ang);
 
-		mat4f tmp = matrix_Rotation(dir, ang);
+	camera.Forward(normalize(dp3(tmp, camera.Forward)));
+	camera.Right(normalize(dp3(tmp, camera.Right)));
+	camera.Up(cross(camera.Forward, camera.Right));
 
-		camera.Forward(normalize(dp3(tmp, camera.Forward)));
-		camera.Right(normalize(dp3(tmp, camera.Right)));
-		camera.Up(cross(camera.Forward, camera.Right));
+	if (orbit == null)
+		return;
 
-		if (orbit != null) {
-			define lookAtOrbit = !true;
-			vec4f dir2 = sub(orbit, camera.Pos);
-			float dist = sqrt(dp3(dir2, dir2));
+	vec4f dir2 = sub(orbit, camera.Pos);
+	float dist = sqrt(dp3(dir2, dir2));
 
-			static if (!lookAtOrbit) {	// camera will just rotate arund orbit
-				vec4f x = normalize(dph(tmp, dir2));
-				tmp = matrix_Translation(&x, -dist);
-			}
+	define lookAtOrbit = !true;
+	static if (!lookAtOrbit) {	// camera will just rotate arund orbit
+		vec4f x = normalize(dph(tmp, dir2));
+		tmp = matrix_Translation(&x, -dist);
+	}
 
-			static if (lookAtOrbit) {	// camera will rotate and look at orbit
-				vec4f x = camera.Forward;
-				tmp = matrix_Translation(&x, -dist);
-			}
+	static if (lookAtOrbit) {	// camera will rotate and look at orbit
+		vec4f x = camera.Forward;
+		tmp = matrix_Translation(&x, -dist);
+	}
 
-			camera.Pos(dph(tmp, orbit));
-		}// +/
-	}// */
+	camera.Pos(dph(tmp, orbit));
 }
 void camera_Move(vec4f &dir, float step) {
 	camera.Pos(add(camera.Pos, mul(dir, step)));
@@ -129,11 +129,11 @@ void mouseHandler(int btn, int x, int y) {
 		vec4f orbit = vec4f(0., 0., 0., 0.);
 		if (dx) {
 			vec4f direction = camera.Up;
-			camera.Rotate(&direction, &orbit, dx * rotateFast);
+			camera_Rotate(&direction, &orbit, dx * rotateFast);
 		}
 		if (dy) {
 			vec4f direction = camera.Right;
-			camera.Rotate(&direction, &orbit, dy * rotateFast);
+			camera_Rotate(&direction, &orbit, dy * rotateFast);
 		}
 	}
 	if (btn == 2) {	// rotate the camera
@@ -141,16 +141,16 @@ void mouseHandler(int btn, int x, int y) {
 		//~ static vec4f orbit = camera.Pos();
 		if (dx) {
 			vec4f direction = camera.Up;
-			camera.Rotate(&direction, null, dx * rotateSlow);
+			camera_Rotate(&direction, null, dx * rotateSlow);
 		}
 		if (dy) {
 			vec4f direction = camera.Right;
-			camera.Rotate(&direction, null, dy * rotateSlow);
+			camera_Rotate(&direction, null, dy * rotateSlow);
 		}
 	}
 	if (btn == 1+2) {	// move forward / back
 		vec4f direction = camera.Forward;
-		camera.Move(&direction, dy * moveSlow);
+		camera_Move(&direction, dy * moveSlow);
 	}
 }
 

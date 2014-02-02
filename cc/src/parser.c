@@ -779,49 +779,23 @@ static int readTok(ccState cc, astn tok) {
 
 		case '\'':			// \'[^\'\n]*
 		case '"': {			// \"[^\"\n]*
-			int lit = chr;	// literals start character
+			int multi_line = 0;		// multi line string constant.
+			int start_char = chr;	// literals start character.
+
 			while (ptr < end && (chr = readChr(cc)) != -1) {
 
 				// end reached
-				if (chr == lit)
+				if (chr == start_char)
 					break;
 
 				// new line reached
-				if (chr == '\n')
+				if (chr == '\n' && multi_line == 0)
 					break;
 
-				// escape
+				// escape sequence
 				if (chr == '\\') {
 					int oct, hex1, hex2;
 					switch (chr = readChr(cc)) {
-						case 'a':
-							chr = '\a';
-							break;
-
-						case 'b':
-							chr = '\b';
-							break;
-
-						case 'f':
-							chr = '\f';
-							break;
-
-						case 'n':
-							chr = '\n';
-							break;
-
-						case 'r':
-							chr = '\r';
-							break;
-
-						case 't':
-							chr = '\t';
-							break;
-
-						case 'v':
-							chr = '\v';
-							break;
-
 						case '\'':
 							chr = '\'';
 							break;
@@ -830,15 +804,49 @@ static int readTok(ccState cc, astn tok) {
 							chr = '\"';
 							break;
 
-						case '\\':
-							chr = '\\';
-							break;
-
 						case '\?':
 							chr = '\?';
 							break;
 
-						// octal sequence (max len = 3)
+						case '\\':
+							chr = '\\';
+							break;
+
+						case 'a':
+							//~ audible bell
+							chr = '\a';
+							break;
+
+						case 'b':
+							//~ backspace
+							chr = '\b';
+							break;
+
+						case 'f':
+							//~ form feed - new page
+							chr = '\f';
+							break;
+
+						case 'n':
+							//~ line feed - new line
+							chr = '\n';
+							break;
+
+						case 'r':
+							//~ carriage return
+							chr = '\r';
+							break;
+
+						case 't':
+							//~ horizontal tab
+							chr = '\t';
+							break;
+
+						case 'v':
+							//~ vertical tab
+							chr = '\v';
+							break;
+
 						case '0':
 						case '1':
 						case '2':
@@ -847,6 +855,7 @@ static int readTok(ccState cc, astn tok) {
 						case '5':
 						case '6':
 						case '7':
+							//~ octal sequence (max length = 3)
 							oct = chr - '0';
 							if ((chr = peekChr(cc)) >= '0' && chr <= '7') {
 								oct = (oct << 3) | (chr - '0');
@@ -862,8 +871,8 @@ static int readTok(ccState cc, astn tok) {
 							chr = oct & 0xff;
 							break;
 
-							// hex sequence (len = 2)
 						case 'x':
+							// hexadecimal sequence (length = 2)
 							hex1 = readChr(cc);
 							hex2 = readChr(cc);
 							if (hex1 >= '0' && hex1 <= '9') {
@@ -899,6 +908,15 @@ static int readTok(ccState cc, astn tok) {
 							error(cc->s, cc->file, cc->line, "invalid escape sequence '\\%c'", chr);
 							chr = 0;
 							break;
+
+						// just for christmas.
+						case '\n':
+							// start multi line string.
+							if (start_char == '"' && beg == ptr) {
+								multi_line = 1;
+							}
+							// wraps on next line.
+							continue;
 					}
 				}
 
@@ -907,12 +925,12 @@ static int readTok(ccState cc, astn tok) {
 
 			*ptr++ = 0;
 
-			if (chr != lit) {
-				error(cc->s, cc->file, cc->line, "unclosed %s literal", lit == '"' ? "string" : "character");
+			if (chr != start_char) {
+				error(cc->s, cc->file, cc->line, "unclosed %s literal", start_char == '"' ? "string" : "character");
 				return tok->kind = TOKN_err;
 			}
 
-			if (lit == '"') {
+			if (start_char == '"') {
 				tok->kind = TYPE_str;
 				tok->ref.hash = rehash(beg, ptr - beg) % TBLS;
 				tok->ref.name = mapstr(cc, beg, ptr - beg, tok->ref.hash);
@@ -1452,7 +1470,7 @@ static int mkConst(astn ast, ccToken cast) {
 	dieif(!ast, "FixMe");
 
 	if (!eval(&tmp, ast)) {
-		trace("%15K", ast);
+		trace("%+k", ast);
 		return 0;
 	}
 
@@ -2301,7 +2319,7 @@ static astn decl(ccState cc, int mode) {
 					}
 					ref->kind = TYPE_def;
 					// make it of enum type
-					//ref->type = def;
+					ref->type = def;
 				}
 				skiptok(cc, STMT_do, 1);
 			}

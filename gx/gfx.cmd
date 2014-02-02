@@ -1,7 +1,8 @@
 @ECHO off
 cd %~dp0
-start main.old.exe %*
-REM ~ start main.exe %*
+REM ~ start main.old.exe %*
+REM ~ start 
+main.exe %*
+IF ERRORLEVEL 1 PAUSE
 
-REM ~ pause
 @ECHO on

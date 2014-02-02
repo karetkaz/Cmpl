@@ -16,7 +16,7 @@ Star stars[1 * 1024];
 
 void initStar(Star &star, int i) {
 	//~ randomly init stars, generate them around the center of the screen
-	define scale = double(Window.resx << 11);
+	define scale = double(Window.resx << 10);
 	star.xpos = rand(-scale, scale);
 	star.ypos = rand(-scale, scale);
 	star.zpos = i;
@@ -69,7 +69,7 @@ void drawCB() {
 			initStar(&stars[i], i + 1);
 		}
 
-		//~ compute 3D position0
+		//~ compute 3D positions
 		tempx = (stars[i].xpos / stars[i].zpos) + centerx;
 		tempy = (stars[i].ypos / stars[i].zpos) + centery;
 

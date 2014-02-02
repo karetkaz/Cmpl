@@ -487,7 +487,7 @@ int canAssign(ccState cc, symn var, astn val, int strict) {
 
 	// assign enum
 	if (val->type->cast == ENUM_kwd) {
-		trace("enum assign `%+k` to `%-T`(%?s:%?d:%t)", val, var, val->file, val->line, typ->cast);
+		//~ trace("enum assign `%+k` to `%-T`(%?s:%?d:%t)", val, var, val->file, val->line, typ->cast);
 		if (typ == val->type->type) {
 			return var->cast;
 		}
@@ -997,7 +997,7 @@ symn typecheck(ccState s, symn loc, astn ast) {
 					ref = fun->op.rhso;
 				} break;
 				case EMIT_opc: {
-					astn arg = args;
+					astn arg;
 					for (arg = args; arg; arg = arg->next) {
 						arg->cst2 = arg->type->cast;
 					}
@@ -1540,9 +1540,9 @@ int fixargs(symn sym, int align, int stbeg) {
 }
 
 //~ scoping
-void enter(ccState s, astn ast) {
+void enter(ccState cc, astn ast) {
 	//~ dieif(!s->_cnt, "FixMe: invalid ccState");
-	s->nest += 1;
+	cc->nest += 1;
 
 	/* using(type)
 	if (with != NULL) {
@@ -1567,24 +1567,24 @@ void enter(ccState s, astn ast) {
 	}// */
 	(void)ast;
 }
-symn leave(ccState s, symn dcl, int mkstatic) {
+symn leave(ccState cc, symn dcl, int mkstatic) {
 	int i;
-	state rt = s->s;
+	state rt = cc->s;
 	symn result = NULL;
 
-	s->nest -= 1;
+	cc->nest -= 1;
 
 	// clear from table
 	for (i = 0; i < TBLS; i++) {
-		symn def = s->deft[i];
-		while (def && def->nest > s->nest) {
+		symn def = cc->deft[i];
+		while (def && def->nest > cc->nest) {
 			def = def->next;
 		}
-		s->deft[i] = def;
+		cc->deft[i] = def;
 	}
 
 	// clear from stack
-	while (rt->defs && s->nest < rt->defs->nest) {
+	while (rt->defs && cc->nest < rt->defs->nest) {
 		symn sym = rt->defs;
 
 		// pop from stack
@@ -1593,18 +1593,19 @@ symn leave(ccState s, symn dcl, int mkstatic) {
 		sym->next = NULL;
 
 		// declared in: (structure, function or wathever)
-		sym->decl = dcl ? dcl : s->func;
+		sym->decl = dcl ? dcl : cc->func;
 
 		if (mkstatic) {
 			sym->stat = 1;
 		}
 
 		// if not inside a static if, link to all
-		if (!s->siff) {
-			if (sym->defs == NULL) {
-				sym->defs = s->defs;
-				s->defs = sym;
-			}
+		//if (rt->dbg) {
+			sym->defs = cc->defs;
+			cc->defs = sym;
+		//}
+
+		if (!cc->siff) {
 			if (sym->stat && sym->gdef == NULL) {
 				sym->gdef = rt->gdef;
 				rt->gdef = sym;
@@ -1615,13 +1616,14 @@ symn leave(ccState s, symn dcl, int mkstatic) {
 		if (dcl != NULL && dcl->kind == TYPE_rec) {
 			dieif(dcl->call, "FixMe");
 			if (sym->kind == TYPE_ref && !sym->stat && sym->init) {
-				error(s->s, sym->file, sym->line, "non static member `%-T` can not be initialized", sym);
+				error(cc->s, sym->file, sym->line, "non static member `%-T` can not be initialized", sym);
 			}
 		}
 
 		sym->next = result;
 		result = sym;
 	}
+	//cc->defs = defs;
 
 	return result;
 }

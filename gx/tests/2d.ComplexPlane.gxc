@@ -1,4 +1,4 @@
-// complex plane domain coloring
+// complex plane domain coloring demo.
 enum Window {
 	draw = RenderMode.swap_buff;
 	resx = 512;

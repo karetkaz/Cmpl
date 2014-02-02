@@ -1,4 +1,4 @@
-// gradient coloring
+// gradient coloring demo.
 enum Window {
 	draw = RenderMode.swap_buff;
 	resx = 512;
@@ -127,7 +127,7 @@ void drawCB() {
 		//~ doLinearGradient(roi, true);
 		//~ doConicalGradient(roi);
 
-		gradSurf(offScreen, &roi, &lut, type | Gradient.Repeat);
+		gradSurf(offScreen, &roi, &lut, Gradient.Repeat | type);
 		drawRect(offScreen, &roi, 0xff00ff);
 		drawLine(offScreen, roi.x, roi.y, roi.x + roi.w, roi.y + roi.h, 0xff00ff);
 		reDraw = false;

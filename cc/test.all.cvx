@@ -4,13 +4,13 @@
 // TODO: split this file
 
 enum Test {
-	Emit = ~0;
-	Type = ~0;
-//	Lang = ~0;
-	Call = ~0;
-	Bits = ~0;
-	Math = ~0;
-//	Misc = ~0;
+	Emit = +0;
+	Type = +0;
+//	Lang = +0;
+	Call = +0;
+	Bits = +0;
+	Math = +0;
+//	Misc = +0;
 }
 
 static if (true) {
@@ -125,6 +125,8 @@ assert(int1 == 1990);
 assert(int1() == 1995);
 assert(int1(0) == 2010);
 assert(int1(0.) == 2015);
+
+int &badRef = emit(pointer, int(-1));
 
 }
 static if (Test.Type & 0x02) {		// not a number test
@@ -508,6 +510,8 @@ int32x8 i32x8_c = sub(&i32x8_a, -19);
 }
 }
 
+
+//~ Test a = Test.Emit;
 //~ uint32 x = 0b100000000;
 //~ uint32 X2 = -2;
 
@@ -515,6 +519,31 @@ int32x8 i32x8_c = sub(&i32x8_a, -19);
 //~ int32 X = x;
 //~ assert(uint8(x) == int32(X));
 
-//~ string b = "sajdfg";
+string ps = "\
+int bar(int a) {
+	int foo(int b) {
+		int abc() {
+			return 1;
+		}
+		return b + abc();
+	}
+	return foo(a);
+}
+int i = bar(3);
+assert(i == 4);
+";
+
+string ps2 = "int bar(int a) {\n\
+	int foo(int b) {\n\
+		int abc() {\n\
+			return 1;\n\
+		}\n\
+		return b + abc();\n\
+	}\n\
+	return foo(a);\n\
+}\n\
+int i = bar(3);\n\
+assert(i == 4);\n\
+";
 
 //~ double Math_Sinh_P0 = Math.Sinh.P0;

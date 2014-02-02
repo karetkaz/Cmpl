@@ -1,7 +1,7 @@
 /*******************************************************************************
  *   File: code.c
  *   Date: 2011/06/23
- *   Desc: bytecode related stuff
+ *   Description: bytecode related stuff
  *******************************************************************************
 code emmiting, executing and formatting
 *******************************************************************************/
@@ -199,122 +199,6 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 
 	if (opc == markIP) {
 		return rt->_beg - rt->_mem;
-	}
-
-	// arithmetic
-	else if (opc == opc_neg) switch (arg.i4) {
-		case TYPE_u32:
-		case TYPE_i32: opc = i32_neg; break;
-		case TYPE_i64: opc = i64_neg; break;
-		case TYPE_f32: opc = f32_neg; break;
-		case TYPE_f64: opc = f64_neg; break;
-	}
-	else if (opc == opc_add) switch (arg.i4) {
-		case TYPE_u32:
-		case TYPE_i32: opc = i32_add; break;
-		case TYPE_i64: opc = i64_add; break;
-		case TYPE_f32: opc = f32_add; break;
-		case TYPE_f64: opc = f64_add; break;
-	}
-	else if (opc == opc_sub) switch (arg.i4) {
-		case TYPE_u32:
-		case TYPE_i32: opc = i32_sub; break;
-		case TYPE_i64: opc = i64_sub; break;
-		case TYPE_f32: opc = f32_sub; break;
-		case TYPE_f64: opc = f64_sub; break;
-	}
-	else if (opc == opc_mul) switch (arg.i4) {
-		case TYPE_u32: opc = u32_mul; break;
-		case TYPE_i32: opc = i32_mul; break;
-		case TYPE_i64: opc = i64_mul; break;
-		case TYPE_f32: opc = f32_mul; break;
-		case TYPE_f64: opc = f64_mul; break;
-	}
-	else if (opc == opc_div) switch (arg.i4) {
-		case TYPE_u32: opc = u32_div; break;
-		case TYPE_i32: opc = i32_div; break;
-		case TYPE_i64: opc = i64_div; break;
-		case TYPE_f32: opc = f32_div; break;
-		case TYPE_f64: opc = f64_div; break;
-	}
-	else if (opc == opc_mod) switch (arg.i4) {
-		case TYPE_u32: opc = u32_mod; break;
-		case TYPE_i32: opc = i32_mod; break;
-		case TYPE_i64: opc = i64_mod; break;
-		case TYPE_f32: opc = f32_mod; break;
-		case TYPE_f64: opc = f64_mod; break;
-	}
-
-	// cmp
-	else if (opc == opc_ceq) switch (arg.i4) {
-		case TYPE_bit:
-		case TYPE_ref:
-		case TYPE_u32:
-		case TYPE_i32: opc = i32_ceq; break;
-		case TYPE_f32: opc = f32_ceq; break;
-		case TYPE_i64: opc = i64_ceq; break;
-		case TYPE_f64: opc = f64_ceq; break;
-	}
-	else if (opc == opc_clt) switch (arg.i4) {
-		case TYPE_u32: opc = u32_clt; break;
-		case TYPE_i32: opc = i32_clt; break;
-		case TYPE_f32: opc = f32_clt; break;
-		case TYPE_i64: opc = i64_clt; break;
-		case TYPE_f64: opc = f64_clt; break;
-	}
-	else if (opc == opc_cgt) switch (arg.i4) {
-		case TYPE_u32: opc = u32_cgt; break;
-		case TYPE_i32: opc = i32_cgt; break;
-		case TYPE_f32: opc = f32_cgt; break;
-		case TYPE_i64: opc = i64_cgt; break;
-		case TYPE_f64: opc = f64_cgt; break;
-	}
-	else if (opc == opc_cne) {
-		if (emitarg(rt, opc_ceq, arg)) {
-			opc = opc_not;
-		}
-	}
-	else if (opc == opc_cle) {
-		if (emitarg(rt, opc_cgt, arg)) {
-			opc = opc_not;
-		}
-	}
-	else if (opc == opc_cge) {
-		if (emitarg(rt, opc_clt, arg)) {
-			opc = opc_not;
-		}
-	}
-
-	// bit
-	else if (opc == opc_cmt) switch (arg.i4) {
-		case TYPE_u32:
-		case TYPE_i32: opc = b32_cmt; break;
-		//~ case TYPE_i64: opc = b64_cmt; break;
-	}
-	else if (opc == opc_shl) switch (arg.i4) {
-		case TYPE_u32:
-		case TYPE_i32: opc = b32_shl; break;
-		//~ case TYPE_i64: opc = b64_shl; break;
-	}
-	else if (opc == opc_shr) switch (arg.i4) {
-		case TYPE_u32: opc = b32_shr; break;
-		case TYPE_i32: opc = b32_sar; break;
-		//~ case TYPE_i64: opc = b64_sar; break;
-	}
-	else if (opc == opc_and) switch (arg.i4) {
-		case TYPE_u32:
-		case TYPE_i32: opc = b32_and; break;
-		//~ case TYPE_i64: opc = b64_and; break;
-	}
-	else if (opc == opc_ior) switch (arg.i4) {
-		case TYPE_u32:
-		case TYPE_i32: opc = b32_ior; break;
-		//~ case TYPE_i64: opc = b64_ior; break;
-	}
-	else if (opc == opc_xor) switch (arg.i4) {
-		case TYPE_u32:
-		case TYPE_i32: opc = b32_xor; break;
-		//~ case TYPE_i64: opc = b64_xor; break;
 	}
 
 	// load / store
@@ -1076,7 +960,7 @@ static int exec(state rt, cell pu, symn fun, void* extra) {
 					return -4;
 
 				dbg_error_libc:
-					error(rt, NULL, 0, "libc(%d) error: %d: %+T", ip->rel, err_code, libcvec[ip->rel].sym);
+					error(rt, NULL, 0, "%d returned by libcall[%d]: %+T", err_code, ip->rel, libcvec[ip->rel].sym);
 					return -5;
 
 				#define NEXT(__IP, __SP, __CHK) pu->sp -= vm_size * (__SP); pu->ip += (__IP);
@@ -1118,7 +1002,7 @@ static int exec(state rt, cell pu, symn fun, void* extra) {
 				return -4;
 
 			error_libc:
-				error(rt, NULL, 0, "libc(%d) error: %d: %+T", ip->rel, err_code, libcvec[ip->rel].sym);
+				error(rt, NULL, 0, "%d returned by libcall[%d]: %+T", err_code, ip->rel, libcvec[ip->rel].sym);
 				return err_code;
 
 			#define NEXT(__IP, __SP, __CHK) {pu->sp -= vm_size * (__SP); pu->ip += (__IP);}
@@ -1213,7 +1097,7 @@ int execute(state rt, void* extra, int ss) {
 	unit.name = "<init>";
 	unit.prms = rt->defs;
 	unit.call = 1;
-	if (rt->dbg) {
+	if (rt->dbg != NULL) {
 		dotrace(rt, pu->ip, &unit, pu->ip, NULL);
 	}
 
@@ -1478,7 +1362,7 @@ void fputval(state rt, FILE* fout, symn var, stkval* ref, int level) {
 	}
 
 	if (!isValidOffset(rt, ref)) {
-		fputfmt(fout, "%T(BadRef: %06x)", typ, var->offs);
+		fputfmt(fout, "%T(BadRef@%06x)", typ, var->offs);
 		return;
 	}
 

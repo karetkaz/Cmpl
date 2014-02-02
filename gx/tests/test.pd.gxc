@@ -1,4 +1,4 @@
-// Procedural drawing
+// Procedural drawing demos.
 enum Window {
 	draw = RenderMode.swap_buff;
 	resx = 512;
@@ -101,9 +101,9 @@ void setup(double &time, vec4f pixelCB(double x, double y)) {
 		if (snapshot) {
 			animate = false;
 			snapshot = false;
-			int32 start = clock();
+			int64 start = millis();
 			evalSurf(offScreen, null, internals.pixelCB);
-			print("evaluated in: %F seconds\n", clocks2Sec(clock() - start));
+			print("evaluated in: %F seconds\n", float64(millis() - start) / 1000);
 			//~ bmpWrite(offScreen, "out-2.bmp");
 		}
 		if (animate) {
@@ -282,7 +282,7 @@ vec4f tunnel0(double x, double y) {
 	result = rgb2vec4f(tex2d(srcImg, u, v, 2 * r));
 }
 
-setup(&time, tunnel0);
+setup(&time, eye);
 //~ setup(&time, yinyang);
 //~ setup(&time, Perlin.Noise2f);
 //~ Gui.exitLoop();

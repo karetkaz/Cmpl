@@ -116,14 +116,6 @@ int ccSymValInt(symn sym, int* res);
  */
 int ccSymValFlt(symn sym, double* res);
 
-/** TODO: to be moved & private
- * @brief Instal type system.
- * @param runtime context.
- + @param level warning level.
- + @param file additional file extending module
- */
-int install_base(state, int mode);
-
 /** Instal standard functions.
  * io, mem, math, ...
  * @param Runtime context.

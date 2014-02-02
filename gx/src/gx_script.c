@@ -1335,7 +1335,7 @@ char* strncatesc(char *dst, int max, char* src) {
 
 int ccCompile(char *src, int argc, char* argv[], int (*dbg)(state rt, int pu, void* ip, long* bp, int ss)) {
 	symn cls = NULL;
-	const int strwl = 9;
+	const int stdwl = 0;
 	const int srcwl = 9;
 	int i, err = 0;
 
@@ -1353,7 +1353,7 @@ int ccCompile(char *src, int argc, char* argv[], int (*dbg)(state rt, int pu, vo
 	}
 
 	//#{ inlined here for libcall functions
-	err = err || !ccAddCode(rt, strwl, __FILE__, __LINE__ + 1,
+	err = err || !ccAddCode(rt, stdwl, __FILE__, __LINE__ + 1,
 		"struct gxRect {\n"
 			"int32 x;//%x(%d)\n"
 			"int32 y;//%y(%d)\n"
@@ -1383,7 +1383,7 @@ int ccCompile(char *src, int argc, char* argv[], int (*dbg)(state rt, int pu, vo
 	}
 
 	// install standard library calls
-	err = err || !ccAddUnit(rt, install_stdc, strwl, ccStd);
+	err = err || !ccAddUnit(rt, install_stdc, stdwl, ccStd);
 	err = err || !ccAddType(rt, "gxSurf", sizeof(gxSurfHnd), 0);
 
 	for (i = 0; i < sizeof(Surf) / sizeof(*Surf); i += 1) {
@@ -1400,7 +1400,7 @@ int ccCompile(char *src, int argc, char* argv[], int (*dbg)(state rt, int pu, vo
 				return -1;
 			}
 		}
-		err = err || !ccAddCode(rt, strwl, __FILE__, __LINE__ + 1,
+		err = err || !ccAddCode(rt, stdwl, __FILE__, __LINE__ + 1,
 			"define Repaint() = Repaint(false);\n"
 		);
 		ccEnd(rt, cls);
@@ -1433,11 +1433,11 @@ int ccCompile(char *src, int argc, char* argv[], int (*dbg)(state rt, int pu, vo
 		ccEnd(rt, cls);
 	}
 
-	err = err || !ccAddCode(rt, strwl, __FILE__, __LINE__, "gxSurf offScreen = emit(gxSurf, i32(-1));");
+	err = err || !ccAddCode(rt, stdwl, __FILE__, __LINE__, "gxSurf offScreen = emit(gxSurf, i32(-1));");
 
 	// it is not an error if library name is not set(NULL)
 	if (err == 0 && ccGfx) {
-		err = !ccAddCode(rt, strwl, ccGfx, 1, NULL);
+		err = !ccAddCode(rt, stdwl, ccGfx, 1, NULL);
 	}
 
 	if (src != NULL) {
@@ -1463,13 +1463,13 @@ int ccCompile(char *src, int argc, char* argv[], int (*dbg)(state rt, int pu, vo
 
 		/* TODO: add args
 		snprintf(tmp, sizeof(tmp), "string args[%d];", argc);
-		err = err || !ccAddCode(rt, strwl, __FILE__, __LINE__ , tmp);
+		err = err || !ccAddCode(rt, stdwl, __FILE__, __LINE__ , tmp);
 		for (i = 0; i < argc; i += 1) {
 			snprintf(tmp, sizeof(tmp), "args[%d] = \"%s\";", i, strnesc(tmpf, sizeof(tmpf), argv[i]));
-			err = err || !ccAddCode(rt, strwl, __FILE__, __LINE__ , tmp);
+			err = err || !ccAddCode(rt, stdwl, __FILE__, __LINE__ , tmp);
 		}// */
 		//~ snprintf(tmp, sizeof(tmp), "string filename = \"%s\";", i, strnesc(tmpf, sizeof(tmpf), argv[i]));
-		//~ err = err || !ccAddCode(rt, strwl, __FILE__, __LINE__ , tmp);
+		//~ err = err || !ccAddCode(rt, stdwl, __FILE__, __LINE__ , tmp);
 		if (argc == 2) {
 			//~ err = err || !ccDefStr(rt, "script", strnesc(tmp, sizeof(tmp), argv[0]));
 			err = err || !ccDefStr(rt, "filename", strnesc(tmp, sizeof(tmp), argv[1]));
@@ -1478,7 +1478,7 @@ int ccCompile(char *src, int argc, char* argv[], int (*dbg)(state rt, int pu, vo
 	}
 	else {
 		logFILE(rt, stdout);
-		ccAddCode(rt, strwl, __FILE__, __LINE__ , "");
+		ccAddCode(rt, stdwl, __FILE__, __LINE__ , "");
 		gencode(rt, 0);
 		dump(rt, dump_sym | 0x12, NULL, "#api: replace(`^([^:]*).*$`, `\\1`)\n");
 		return 0;

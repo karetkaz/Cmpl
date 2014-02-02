@@ -289,7 +289,7 @@ static inline int argpos(int *argp, int size) {
 
 #define debugFILE(msg, ...) //prerr("debug", msg, ##__VA_ARGS__)
 
-static int FILE_open(libcArgs args) {	// void Open(char filename[]);
+static int FILE_open(libcArgs args) {	// File Open(char filename[]);
 	int argc = 0;
 	char *mode = args->data;
 	char *name = argref(args, argpos(&argc, vm_size));
@@ -299,7 +299,7 @@ static int FILE_open(libcArgs args) {	// void Open(char filename[]);
 	rethnd(args, file);
 
 	debugFILE("Name: %s, Mode: %s, File: %x", name, mode, file);
-	return 0;
+	return file == NULL;
 }
 static int FILE_close(libcArgs args) {	// void close(File file);
 	FILE *file = arghnd(args, 0);
@@ -307,6 +307,28 @@ static int FILE_close(libcArgs args) {	// void close(File file);
 	fclose(file);
 
 	return 0;
+}
+static int FILE_stream(libcArgs args) {	// File std[in, out, err];
+	//~ int argc = 0;
+	int stream = (int)args->data;
+
+	//~ FILE *file = fdopen(name, mode);
+	switch (stream) {
+		case 0:
+			rethnd(args, stdin);
+			return 0;
+
+		case 1:
+			rethnd(args, stdout);
+			return 0;
+
+		case 2:
+			rethnd(args, stderr);
+			return 0;
+	}
+
+	debugFILE("error opening stream: %x", stream);
+	return 1;
 }
 
 static int FILE_getc(libcArgs rt) {
@@ -388,21 +410,6 @@ static int FILE_flush(libcArgs args) {
 //#}#endregion
 
 //#{#region reflection operations
-static int typenameGetName(libcArgs args) {
-	symn sym = mapsym(args->rt, argref(args, 0));
-	reti32(args, vmOffset(args->rt, sym->name));
-	return 0;
-}
-static int typenameGetFile(libcArgs args) {
-	symn sym = mapsym(args->rt, argref(args, 0));
-	reti32(args, vmOffset(args->rt, sym->file));
-	return 0;
-}
-static int typenameGetBase(libcArgs args) {
-	symn sym = mapsym(args->rt, argref(args, 0));
-	reti32(args, vmOffset(args->rt, sym->type));
-	return 0;
-}
 //#}#endregion
 
 //#{#region io functions (exit, rand, clock, print, debug)
@@ -479,7 +486,6 @@ static int miscFunction(libcArgs args) {
 			return 0;
 
 		case miscOpPutFmt: {
-			// TODO: remove me
 			char* fmt = argref(args, 0);
 			int64_t arg = argi64(args, 4);
 			fputfmt(stdout, fmt, arg);
@@ -531,16 +537,6 @@ static void traceArgs(state rt, symn fun, char *file, int line, void* sp, int id
 				firstArg = 0;
 			}
 
-			if (sym->stat) {
-				// static variable.
-				offs = (void*)(rt->_mem + sym->offs);
-			}
-			else {
-				// argument or local variable.
-				// 1 * vm_size holds the return value of the function.
-				offs = (char*)sp + fun->prms->offs + 1 * vm_size - sym->offs;
-			}
-
 			if (printFileLine) {
 				if (sym->file != NULL && sym->line != 0) {
 					fputfmt(rt->logf, "%I%s:%u: ", ident, sym->file, sym->line);
@@ -549,6 +545,11 @@ static void traceArgs(state rt, symn fun, char *file, int line, void* sp, int id
 					fputfmt(rt->logf, "%I", ident);
 				}
 			}
+			dieif(sym->stat, "Error");
+
+			// 1 * vm_size holds the return value of the function.
+			offs = (char*)sp + fun->prms->offs + 1 * vm_size - sym->offs;
+
 			fputval(rt, rt->logf, sym, offs, -ident);
 		}
 		if (ident > 0) {
@@ -563,8 +564,7 @@ static int libCallDebug(libcArgs args) {
 	state rt = args->rt;
 	char* file = argref(args, 0 * vm_size);
 	int   line = argi32(args, 1 * vm_size);
-	//~ char* func = argstr(args, poparg(int32_t));
-
+	//~ char* func = argstr(args, ? * vm_size);
 	char* message = argref(args, 2 * vm_size);
 	int loglevel = argi32(args, 3 * vm_size);
 	int tracelevel = argi32(args, 4 * vm_size);
@@ -642,6 +642,7 @@ static int libCallDebug(libcArgs args) {
 
 	return 0;
 }
+
 static int libCallMemMgr(libcArgs rt) {
 	void* old = argref(rt, 0);
 	int size = argi32(rt, 4);
@@ -651,138 +652,7 @@ static int libCallMemMgr(libcArgs rt) {
 
 	return 0;
 }
-
-int libCallHaltQuiet(libcArgs args) {
-	(void)args;
-	return 0;
-}
-int libCallHaltDebug(libcArgs rt) {
-	//~ /*
-	//~ int isInit = rt->fun->prms == rt->rt->defs;
-	symn var = rt->fun->prms;
-	for ( ; var; var = var->next) {
-		char* ofs;
-
-		if (var->call)
-			continue;
-
-		if (var->kind != TYPE_ref)
-			continue;
-
-		if (var->file && var->line) {
-			fputfmt(stdout, "%s:%d: ", var->file, var->line);
-		}
-		else {
-			fputfmt(stdout, "var: ");
-		}
-
-		if (var->stat) {
-			// static variable.
-			ofs = (char*)rt->rt->_mem + var->offs;
-		}
-		else {
-			// argument or local variable.
-			ofs = (char*)rt->retv + rt->fun->prms->offs - var->offs;
-		}
-
-		fputval(rt->rt, stdout, var, (stkval*)ofs, 0);
-		fputc('\n', stdout);
-	}// */
-
-	//~ traceArgs(rt->rt, rt->fun, rt->fun->file, rt->fun->line, ((char*)rt->retv) - vm_size, 0);
-
-	// show allocated memory chunks.
-	//~ rtAlloc(rt->rt, NULL, 0);
-
-	return 0;
-}
-
 //#}#endregion
-
-int install_base(state rt, int mode) {
-	int error = 0;
-	ccState cc = rt->cc;
-
-	if (cc->type_ptr && (mode & creg_tptr)) {
-		cc->libc_mem = ccAddCall(cc->s, libCallMemMgr, NULL, "pointer memmgr(pointer ptr, int32 size);");
-	}
-	if (cc->type_var && (mode & creg_tvar)) {
-		cc->libc_dbg = ccAddCall(rt, libCallDebug, NULL, "void debug(string message, int level, int trace, variant object);");
-	}
-
-	//~ TODO: temporarly add null to variant type.
-	if (rt->cc->type_var && !rt->cc->type_var->flds) {
-		ccBegin(rt, NULL);
-		//~ install(cc, "null", ATTR_const | ATTR_stat | TYPE_def, TYPE_i64, 2 * vm_size, rt->cc->type_var, intnode(cc, 0));
-		install(cc, "null", ATTR_const | ATTR_stat | TYPE_def, TYPE_any, 2 * vm_size, rt->cc->type_var, NULL);
-		ccEnd(rt, rt->cc->type_var);
-	}
-
-	// 4 reflection
-	if (cc->type_rec && (mode & creg_tvar)) {
-		symn arg = NULL;
-		enter(cc, NULL);
-		if ((arg = install(cc, "line", ATTR_const | TYPE_ref, TYPE_any, vm_size, cc->type_i32, NULL))) {
-			arg->offs = offsetOf(symn, line);
-		}
-		else {
-			error = 1;
-		}
-
-		if ((arg = install(cc, "size", ATTR_const | TYPE_ref, TYPE_any, vm_size, cc->type_i32, NULL))) {
-			arg->offs = offsetOf(symn, size);
-		}
-		else {
-			error = 1;
-		}
-
-		if ((arg = install(cc, "offset", ATTR_const | TYPE_ref, TYPE_any, vm_size, cc->type_i32, NULL))) {
-			arg->offs = offsetOf(symn, offs);
-			arg->pfmt = "@%06x";
-		}
-		else {
-			error = 1;
-		}
-
-		// HACK: `operator (typename type).file = typename.file(type);`
-		if ((arg = ccAddCall(rt, typenameGetFile, NULL, "string file;"))) {
-			rt->cc->libc->chk += 1;
-			rt->cc->libc->pop += 1;
-			arg->stat = 0;
-			arg->memb = 1;
-		}
-		else {
-			error = 1;
-		}
-
-		// HACK: `operator (typename type).name = typename.name(type);`
-		if ((arg = ccAddCall(rt, typenameGetName, NULL, "string name;"))) {
-			rt->cc->libc->chk += 1;
-			rt->cc->libc->pop += 1;
-			arg->stat = 0;
-			arg->memb = 1;
-		}
-		else {
-			error = 1;
-		}
-
-		error = error || !ccAddCall(rt, typenameGetBase, NULL, "typename base(typename type);");
-
-		ccExtEnd(rt, cc->type_rec, 0);
-
-		/* TODO: more 4 reflection
-
-		error = error || !ccAddCall(rt, typeFunction, (void*)typeOpGetFile, "variant setValue(typename field, variant value)");
-		error = error || !ccAddCall(rt, typeFunction, (void*)typeOpGetFile, "variant getValue(typename field)");
-
-		install(cc, "typename[] lookup(variant &obj, int options, string name, variant args...)");
-		install(cc, "variant invoke(variant &obj, int options, string name, variant args...)");
-		install(cc, "bool canassign(typename toType, variant value, bool canCast)");
-		install(cc, "bool instanceof(typename &type, variant obj)");
-		//~ */
-	}
-	return error;
-}
 
 int install_stdc(state rt) {
 	symn nsp = NULL;		// namespace
@@ -818,6 +688,23 @@ int install_stdc(state rt) {
 		// TODO: include some of the compiler functions for reflection. (lookup, exec?, ...)
 	};
 
+	if (rt->cc->type_ptr != NULL) {		// realloc, malloc, free.
+		rt->cc->libc_mem = ccAddCall(rt, libCallMemMgr, NULL, "pointer memmgr(pointer ptr, int32 size);");
+	}
+	if (rt->cc->type_var != NULL) {		// debug.
+		rt->cc->libc_dbg = ccAddCall(rt, libCallDebug, NULL, "void debug(string message, int level, int trace, variant object);");
+	}
+
+	// System.Exit(int code), ...
+	if ((nsp = ccBegin(rt, "System"))) {
+		err = err || !ccAddCall(rt, miscFunction, (void*)miscOpExit, "void Exit(int Code);");
+
+		//~ install(cc, "Arguments", TYPE_arr, 0, 0);	// string Args[];
+		//~ install(cc, "Enviroment", TYPE_def, 0, 0);	// string Env[string];
+
+		ccEnd(rt, nsp);
+	}
+
 	// Add bitwise operations to int64 as functions
 	if (rt->cc->type_i64 && !rt->cc->type_i64->flds) {
 		ccBegin(rt, NULL);
@@ -843,16 +730,6 @@ int install_stdc(state rt) {
 		if (libc == NULL) {
 			return -1;
 		}
-	}
-
-	// System.Exit(int code), ...
-	if ((nsp = ccBegin(rt, "System"))) {
-		err = err || !ccAddCall(rt, miscFunction, (void*)miscOpExit, "void Exit(int Code);");
-
-		//~ install(cc, "Arguments", TYPE_arr, 0, 0);	// string Args[];
-		//~ install(cc, "Enviroment", TYPE_def, 0, 0);	// string Env[string];
-
-		ccEnd(rt, nsp);
 	}
 
 	return err;
@@ -882,6 +759,13 @@ int install_file(state rt) {
 
 		err = err || !ccAddCall(rt, FILE_flush, NULL, "void Flush(File file);");
 		err = err || !ccAddCall(rt, FILE_close, NULL, "void Close(File file);");
+
+		//~ err = err || !ccAddCall(rt, FILE_memory, (void*)0, "File MemIn(char data[]);");
+		//~ err = err || !ccAddCall(rt, FILE_memory, (void*)1, "File MemOut(char data[]);");
+
+		err = err || !ccAddCall(rt, FILE_stream, (void*)0, "File StdIn;");
+		err = err || !ccAddCall(rt, FILE_stream, (void*)1, "File StdOut;");
+		err = err || !ccAddCall(rt, FILE_stream, (void*)2, "File StdErr;");
 
 		//~ err = err || !ccAddCall(rt, FILE_mkdirs, NULL, "bool mkdirs(char path[]);");
 		//~ err = err || !ccAddCall(rt, FILE_exists, NULL, "bool Exists(char path[]);");

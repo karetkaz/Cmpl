@@ -37,7 +37,7 @@ application [global options] [local options]...
 #include "core.h"
 
 // enable dynamic dll/so lib loading
-#define USEPLUGINS
+//~ #define USEPLUGINS
 
 // default values
 static const int wl = 9;			// warning level
@@ -100,18 +100,24 @@ static char* parsei32(const char* str, int32_t* res, int radix) {
 	}
 
 	//~ ([0-9])*
-	while (*str) {
+	while (*str != 0) {
 		int value = *str;
-		if (value >= '0' && value <= '9')
+		if (value >= '0' && value <= '9') {
 			value -= '0';
-		else if (value >= 'a' && value <= 'z')
+		}
+		else if (value >= 'a' && value <= 'z') {
 			value -= 'a' - 10;
-		else if (value >= 'A' && value <= 'Z')
+		}
+		else if (value >= 'A' && value <= 'Z') {
 			value -= 'A' - 10;
-		else break;
-
-		if (value > radix)
+		}
+		else {
 			break;
+		}
+
+		if (value > radix) {
+			break;
+		}
 
 		result *= radix;
 		result += value;
@@ -123,17 +129,21 @@ static char* parsei32(const char* str, int32_t* res, int radix) {
 	return (char*)str;
 }
 static char* parsecmd(char* ptr, const char* cmd, const char* sws) {
-	while (*cmd && *cmd == *ptr)
+	while (*cmd && *cmd == *ptr) {
 		cmd++, ptr++;
+	}
 
-	if (*cmd != 0)
+	if (*cmd != 0) {
 		return 0;
+	}
 
-	if (*ptr == 0)
+	if (*ptr == 0) {
 		return ptr;
+	}
 
-	while (strchr(sws, *ptr))
+	while (strchr(sws, *ptr)) {
 		++ptr;
+	}
 
 	return ptr;
 }
@@ -322,6 +332,8 @@ static void closeLibs() {}
 static int importLib(state rt, const char* path) {
 	(void)rt;
 	(void)path;
+	(void)pluginLibInstall;
+	(void)pluginLibDestroy;
 	error(rt, path, 1, "dynamic linking is not available in this build.");
 	return -1;
 }
@@ -331,12 +343,15 @@ static int importLib(state rt, const char* path) {
 #else
 static void closeLibs() {}
 static int importLib(state rt, const char* path) {
+	(void)rt;
+	(void)path;
 	error(rt, path, 1, "dynamic linking is not available in this build.");
 	return -1;
 }
 #endif
 
 static symn printvars = NULL;
+static int haltVerbose(libcArgs rt);
 static int dbgCon(state, int pu, void* ip, long* sp, int ss);
 
 int program(int argc, char* argv[]) {
@@ -410,7 +425,7 @@ int program(int argc, char* argv[]) {
 			char* str = arg + 2;
 
 			if (*str == 'v') {
-				onHalt = libCallHaltDebug;
+				onHalt = haltVerbose;
 				str += 1;
 			}
 			if (*str == 'd') {
@@ -678,6 +693,43 @@ int main(int argc, char* argv[]) {
 	return program(argc, argv);
 }
 
+static int haltVerbose(libcArgs rt) {
+	symn var = rt->fun->prms;
+	for ( ; var; var = var->next) {
+		char* ofs;
+
+		if (var->call)
+			continue;
+
+		if (var->kind != TYPE_ref)
+			continue;
+
+		if (var->file && var->line) {
+			fputfmt(stdout, "%s:%d: ", var->file, var->line);
+		}
+		else {
+			fputfmt(stdout, "var: ");
+		}
+
+		if (var->stat) {
+			// static variable.
+			ofs = (char*)rt->rt->_mem + var->offs;
+		}
+		else {
+			// argument or local variable.
+			ofs = (char*)rt->retv + rt->fun->prms->offs - var->offs;
+		}
+
+		fputval(rt->rt, stdout, var, (stkval*)ofs, 0);
+		fputc('\n', stdout);
+	}
+
+	// show allocated memory chunks.
+	//~ rtAlloc(rt->rt, NULL, 0);
+
+	return 0;
+}
+
 static int dbgCon(state rt, int pu, void* ip, long* sp, int ss) {
 	static char buff[1024];
 	static char cmd = 'N';
@@ -745,14 +797,14 @@ static int dbgCon(state rt, int pu, void* ip, long* sp, int ss) {
 			cmd = buff[0];
 		}
 		else {
-			debug("invalid command %rt", buff);
+			debug("invalid command %s", buff);
 			arg = buff + 1;
 			cmd = buff[0];
 			buff[1] = 0;
 			continue;
 		}
 		if (!arg) {
-			debug("invalid command %rt", buff);
+			debug("invalid command %s", buff);
 			arg = NULL;
 			//cmd = 0;
 			continue;
@@ -762,7 +814,7 @@ static int dbgCon(state rt, int pu, void* ip, long* sp, int ss) {
 			default:
 				debug("invalid command '%c'", cmd);
 				break;
-			case 0 :
+			case 0:
 				break;
 
 			case 'r' :		// resume
@@ -772,7 +824,7 @@ static int dbgCon(state rt, int pu, void* ip, long* sp, int ss) {
 				return 0;
 
 			case 'p' : if (rt->cc) {		// print
-				if (!*arg) {
+				if (*arg == 0) {
 					// vmTags(rt, (void*)sptr, slen, 0);
 				}
 				else {

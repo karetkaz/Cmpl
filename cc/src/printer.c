@@ -16,7 +16,7 @@
 #define fputchr(__OUT, __CHR) fputc(__CHR, __OUT)
 
 enum Format {
-	noIden = 0x1000,
+	noIden = 0x1000,		// TODO: to be removed: use -level instead.
 	//~ noName = 0x2000,
 
 	alPars = 0x0100,
@@ -239,14 +239,11 @@ static void fputast(FILE* fout, astn ast, int mode, int level) {
 			for (list = ast->stmt.stmt; list; list = list->next) {
 				fputast(fout, list, mode & ~noIden, level + 1);
 			}
-			fputfmt(fout, "%I}\n", level, ast->type);
+			fputfmt(fout, "%I} %-T\n", level, ast->type);
 		} break;
 		case STMT_if: {
-			if (rlev < 2) {
+			if (rlev == 0) {
 				fputstr(fout, "if");
-				if (rlev > 0) {
-					fputfmt(fout, " (%+k)", ast->stmt.test);
-				}
 				break;
 			}
 
@@ -269,6 +266,9 @@ static void fputast(FILE* fout, astn ast, int mode, int level) {
 			fputast(fout, ast->stmt.test, mode | noIden, 0xf);
 			fputstr(fout, ")");
 
+			if (rlev < 2) {
+				break;
+			}
 			// if then part
 			if (ast->stmt.stmt != NULL) {
 				int kind = ast->stmt.stmt->kind;
@@ -697,7 +697,7 @@ static void dumpxml(FILE* fout, astn ast, int mode, int level, const char* text)
 			break;
 
 		case STMT_beg: {
-			astn list = ast->stmt.stmt;
+			astn list;
 			fputfmt(fout, ">\n");
 			for (list = ast->stmt.stmt; list; list = list->next)
 				dumpxml(fout, list, mode, level + 1, "stmt");
@@ -1281,8 +1281,20 @@ static void dumpsym(FILE* fout, symn sym, int mode) {
 
 		switch (ptr->kind) {
 
-			case TYPE_def:
+			case TYPE_arr:
 			case TYPE_ref:
+				/*if (ptr->cast == TYPE_arr) {
+					break;
+				}
+				if (ptr->cast == TYPE_ref) {
+					break;
+				}*/
+				if (mode > 3 && ptr->call && ptr->prms) {
+					*++sp = ptr->prms;
+				}
+				break;
+
+			case TYPE_def:
 				if (mode > 3) {
 					*++sp = ptr->prms;
 				}
@@ -1344,7 +1356,7 @@ static void dumpsym(FILE* fout, symn sym, int mode) {
 		if (print_used) {
 			astn used;
 			for (used = ptr->used; used; used = used->ref.used) {
-				fputfmt(fout, "%s:%d: referenced as `%+k`\n", used->file, used->line, used);
+				fputfmt(fout, "%s:%d: referenced(%t) as `%+k`\n", used->file, used->line, used->cst2, used);
 			}
 		}
 
@@ -1403,21 +1415,19 @@ void dump(state rt, int mode, symn sym, const char* text, ...) {
 		va_end(ap);
 	}
 
-	if (mode & dump_sym) {
+	if (mode & dump_sym && rt->defs != NULL) {
 		if (sym != NULL) {
 			dumpsym(logf, sym, level);
 		}
 		else {
-			symn glob = rt->defs;
-
 			if ((level & 0x0f) == 0x0f) {
-				while (glob) {
-					dumpsym(logf, glob, 0);
-					glob = glob->defs;
+				// print all symbols.
+				for (sym = rt->defs; sym; sym = sym->defs) {
+					dumpsym(logf, sym, level & ~0x0f);
 				}
 			}
 			else {
-				dumpsym(logf, glob, level);
+				dumpsym(logf, rt->defs, level);
 			}
 		}
 	}
@@ -1451,15 +1461,14 @@ void dump(state rt, int mode, symn sym, const char* text, ...) {
 			}
 		}
 		else {
-			symn var;
-			for (var = rt->gdef; var; var = var->gdef) {
-				if (var->kind == TYPE_ref && var->call) {
+			for (sym = rt->gdef; sym; sym = sym->gdef) {
+				if (sym->kind == TYPE_ref && sym->call) {
 					symn param;
-					fputfmt(logf, "%-T [@%06x: %d] {\n", var, var->offs, var->size);
-					for (param = var->flds; param; param = param->next) {
+					fputfmt(logf, "%-T [@%06x: %d] {\n", sym, sym->offs, sym->size);
+					for (param = sym->flds; param; param = param->next) {
 						fputfmt(logf, "\t.local %-T [@%06x, size:%d, cast:%t]\n", param, param->offs, param->size, param->cast);
 					}
-					fputasm(rt, logf, var->offs, var->offs + var->size, 0x100 | (mode & 0xff));
+					fputasm(rt, logf, sym->offs, sym->offs + sym->size, 0x100 | (mode & 0xff));
 					fputfmt(logf, "}\n");
 				}
 			}

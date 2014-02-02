@@ -207,7 +207,7 @@ bool res_true3 = isNullOrEmpty(val_empty);
 bool res_false = isNullOrEmpty(val_nonempty);
 //~ */
 
-/* TODO: enumeration assignment
+//~ /* TODO: enumeration assignment
 struct vec4f {
 	float x;
 	float y;
@@ -216,27 +216,31 @@ struct vec4f {
 }
 
 enum xo: vec4f {
-	//~ define z_ = float32(0);
-	//~ O = vec4f(z_, z_, z_, z_);
 	O = vec4f(float32(0), float32(0), float32(0), float32(0));
-	//~ X = vec4f(1, 0, 0, 0);
-	//~ Y = vec4f(0, 1, 0, 0);
-	//~ Z = vec4f(0, 0, 1, 0);
+	X = vec4f(float32(1), float32(0), float32(0), float32(0));
+	Y = vec4f(float32(0), float32(1), float32(0), float32(0));
+	Z = vec4f(float32(0), float32(0), float32(1), float32(0));
 }
 
 vec4f z = xo.O;		// ok: xo.Z is of type vec4f, so it can be assigned
 xo k = xo.O;	// ok: k of type xo can be assigned to a value from the enumeration
 //~ xo x = z;		// error: x of type xo can be assigned only to a value from the enumeration
+//~ k = z;			// error: x of type xo can be assigned only to a value from the enumeration
 
 // */
 
+//~ /*
 enum Window {
 	width = 90;
-	//~ height1 = 2 * width;
+	height1 = 2 * width;
 	height2 = width * 2;
 }
-
+define min(int ^x, int ^y) = int(x < y ? x : y);
 int x = 3 * Window.width;
+int y = Window.height2 * 3;
+int cpos = min(x, Window.width) * y / Window.width;
+
+//~ */
 
 /* Bug: const struct array initialization
 struct Biorithm {

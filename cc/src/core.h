@@ -21,7 +21,7 @@
 	5: print non pre-mapped strings, non static types
 	6: print static casts generated with emit
 */
-#define DEBUGGING 0
+//~ #define DEBUGGING 3
 
 // enable paralell execution stuff
 //~ #define MAXPROCSEXEC 1
@@ -61,8 +61,10 @@
 #endif
 
 // internal errors
-#define fatal(msg, ...) do { prerr("internal error", msg, ##__VA_ARGS__); abort(); } while(0)
-#define dieif(__EXP, msg, ...) do {if (__EXP) { prerr("internal error("#__EXP")", msg, ##__VA_ARGS__); abort(); }} while(0)
+//#define fatal(msg, ...) do { prerr("internal error", msg, ##__VA_ARGS__); abort(); } while(0)
+//#define dieif(__EXP, msg, ...) do {if (__EXP) { prerr("internal error("#__EXP")", msg, ##__VA_ARGS__); abort(); }} while(0)
+#define fatal(msg, ...) do { prerr("internal error", msg, ##__VA_ARGS__); } while(0)
+#define dieif(__EXP, msg, ...) do {if (__EXP) { prerr("internal error("#__EXP")", msg, ##__VA_ARGS__); }} while(0)
 
 // compilation errors
 #define error(__ENV, __FILE, __LINE, msg, ...) do { perr(__ENV, -1, __FILE, __LINE, msg, ##__VA_ARGS__); debug(msg, ##__VA_ARGS__); } while(0)
@@ -197,9 +199,8 @@ struct symNode {
 	char*	file;		// declared in file
 	int32_t	line;		// declared on line
 	int32_t nest;		// declaration level
-
-	int32_t	size;		// sizeof(TYPE_xxx)
-	int32_t	offs;		// addrof(TYPE_xxx)
+	int32_t	size;		// type var or function size.
+	int32_t	offs;		// address of variable.
 
 	symn	type;		// base type of TYPE_ref/TYPE_arr/function (void, int, float, struct, ...)
 
@@ -214,14 +215,12 @@ struct symNode {
 	ccToken	cast;		// casts to type(TYPE_(bit, vid, ref, u32, i32, i64, f32, f64, p4x)).
 
 	union {				// Attributes
-		//~ uint64_t	pad;
 		uint32_t	Attr;
 	struct {
 		uint32_t	memb:1;		// member operator (push the object by ref first)
-		uint32_t	call:1;		// callable(function/definition) <=> (kind == TYPE_ref && args)
+		uint32_t	call:1;		// callable (function/definition) <=> (kind == TYPE_ref && args)
 		uint32_t	cnst:1;		// constant
-		uint32_t	stat:1;		// static ?
-		//~ uint32_t	glob:1;		// global
+		uint32_t	stat:1;		// static
 		uint32_t _padd:28;		// declaration level
 	};
 	};
@@ -290,8 +289,10 @@ void* getBuff(struct arrBuffer* buff, int idx);
 void freeBuff(struct arrBuffer* buff);
 
 typedef struct dbgInfo {
-	// the statement tree
+	// the statement tree.
 	astn stmt;
+	// the declared symbol.
+	symn decl;
 
 	// position in file
 	char* file;
@@ -367,6 +368,7 @@ struct ccStateRec {
 
 /// Debuger context
 struct dbgStateRec {
+
 	int (*dbug)(state, int pu, void* ip, long* sptr, int scnt);
 
 	struct {
@@ -704,11 +706,6 @@ int fixjump(state, int src, int dst, int stc);
 
 dbgInfo getCodeMapping(state rt, int position);
 dbgInfo addCodeMapping(state rt, astn ast, int start, int end);
-
-// silently exits the execution
-int libCallHaltQuiet(libcArgs);
-// prints variables and their values after execution
-int libCallHaltDebug(libcArgs);
 
 //~ disable warning messages
 #ifdef _MSC_VER

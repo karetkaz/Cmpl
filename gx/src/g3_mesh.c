@@ -1258,7 +1258,7 @@ int evalMesh(mesh msh, int sdiv, int tdiv, char *src, char *file, int line) {
 	err = err || !ccDefFlt(rt, "pi", 3.14159265358979323846264338327950288419716939937510582097494459);
 	err = err || !ccDefFlt(rt, "e",  2.71828182845904523536028747135266249775724709369995957496696763);
 
-	err = err || !ccAddCode(rt, warnlevel, __FILE__, __LINE__ + 1,
+	err = err || !ccAddCode(rt, 0, __FILE__, __LINE__ + 1,
 		"const double s = gets();\n"
 		"const double t = gett();\n"
 		"double x = s;\n"

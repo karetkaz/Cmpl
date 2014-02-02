@@ -1,4 +1,4 @@
-// 3d height Map
+// 3d height map demo.
 enum Window {
 	draw = RenderMode.drawFill|RenderMode.draw_lit;// & ~RenderMode.zero_cbuf;
 	resx = 512;

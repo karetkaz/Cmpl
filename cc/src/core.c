@@ -278,6 +278,324 @@ static inline int emitref(state rt, void* arg) {
 	return emitarg(rt, opc_ldcr, tmp);
 }
 
+static inline int emitopr(state rt, vmOpcode opc, ccToken type) {
+	// comparation
+	if (opc == opc_ceq) switch (type) {
+		default:
+			break;
+
+		case TYPE_bit:
+		case TYPE_ref:
+		case TYPE_u32:
+		case TYPE_i32:
+			opc = i32_ceq;
+			break;
+
+		case TYPE_f32:
+			opc = f32_ceq;
+			break;
+
+		case TYPE_i64:
+			opc = i64_ceq;
+			break;
+
+		case TYPE_f64:
+			opc = f64_ceq;
+			break;
+	}
+	else if (opc == opc_clt) switch (type) {
+		default:
+			break;
+
+		case TYPE_u32:
+			opc = u32_clt;
+			break;
+
+		case TYPE_i32:
+			opc = i32_clt;
+			break;
+
+		case TYPE_f32:
+			opc = f32_clt;
+			break;
+
+		case TYPE_i64:
+			opc = i64_clt;
+			break;
+
+		case TYPE_f64:
+			opc = f64_clt;
+			break;
+	}
+	else if (opc == opc_cgt) switch (type) {
+		default:
+			break;
+
+		case TYPE_u32:
+			opc = u32_cgt;
+			break;
+
+		case TYPE_i32:
+			opc = i32_cgt;
+			break;
+
+		case TYPE_f32:
+			opc = f32_cgt;
+			break;
+
+		case TYPE_i64:
+			opc = i64_cgt;
+			break;
+
+		case TYPE_f64:
+			opc = f64_cgt;
+			break;
+	}
+	else if (opc == opc_cne) {
+		if (!emitopr(rt, opc_ceq, type)) {
+			trace("Error");
+			return 0;
+		}
+		opc = opc_not;
+	}
+	else if (opc == opc_cle) {
+		if (!emitopr(rt, opc_cgt, type)) {
+			trace("Error");
+			return 0;
+		}
+		opc = opc_not;
+	}
+	else if (opc == opc_cge) {
+		if (!emitopr(rt, opc_clt, type)) {
+			trace("Error");
+			return 0;
+		}
+		opc = opc_not;
+	}
+
+	// arithmetic
+	else if (opc == opc_neg) switch (type) {
+		default:
+			break;
+
+		case TYPE_u32:
+		case TYPE_i32:
+			opc = i32_neg;
+			break;
+
+		case TYPE_i64:
+			opc = i64_neg;
+			break;
+
+		case TYPE_f32:
+			opc = f32_neg;
+			break;
+
+		case TYPE_f64:
+			opc = f64_neg;
+			break;
+	}
+	else if (opc == opc_add) switch (type) {
+		default:
+			break;
+
+		case TYPE_u32:
+		case TYPE_i32:
+			opc = i32_add;
+			break;
+
+		case TYPE_i64:
+			opc = i64_add;
+			break;
+
+		case TYPE_f32:
+			opc = f32_add;
+			break;
+
+		case TYPE_f64:
+			opc = f64_add;
+			break;
+	}
+	else if (opc == opc_sub) switch (type) {
+		default:
+			break;
+
+		case TYPE_u32:
+		case TYPE_i32:
+			opc = i32_sub;
+			break;
+
+		case TYPE_i64:
+			opc = i64_sub;
+			break;
+
+		case TYPE_f32:
+			opc = f32_sub;
+			break;
+
+		case TYPE_f64:
+			opc = f64_sub;
+			break;
+	}
+	else if (opc == opc_mul) switch (type) {
+		default:
+			break;
+
+		case TYPE_u32:
+			opc = u32_mul;
+			break;
+
+		case TYPE_i32:
+			opc = i32_mul;
+			break;
+
+		case TYPE_i64:
+			opc = i64_mul;
+			break;
+
+		case TYPE_f32:
+			opc = f32_mul;
+			break;
+
+		case TYPE_f64:
+			opc = f64_mul;
+			break;
+	}
+	else if (opc == opc_div) switch (type) {
+		default:
+			break;
+
+		case TYPE_u32:
+			opc = u32_div;
+			break;
+
+		case TYPE_i32:
+			opc = i32_div;
+			break;
+
+		case TYPE_i64:
+			opc = i64_div;
+			break;
+
+		case TYPE_f32:
+			opc = f32_div;
+			break;
+
+		case TYPE_f64:
+			opc = f64_div;
+			break;
+	}
+	else if (opc == opc_mod) switch (type) {
+		default:
+			break;
+
+		case TYPE_u32:
+			opc = u32_mod;
+			break;
+
+		case TYPE_i32:
+			opc = i32_mod;
+			break;
+
+		case TYPE_i64:
+			opc = i64_mod;
+			break;
+
+		case TYPE_f32:
+			opc = f32_mod;
+			break;
+
+		case TYPE_f64:
+			opc = f64_mod;
+			break;
+	}
+
+	// bit operations
+	else if (opc == opc_cmt) switch (type) {
+		default:
+			break;
+
+		case TYPE_u32:
+		case TYPE_i32:
+			opc = b32_cmt;
+			break;
+
+		/*case TYPE_i64:
+			opc = b64_cmt;
+			break;// */
+	}
+	else if (opc == opc_shl) switch (type) {
+		default:
+			break;
+
+		case TYPE_u32:
+		case TYPE_i32:
+			opc = b32_shl;
+			break;
+
+		/*case TYPE_i64:
+			opc = b64_shl;
+			break;// */
+	}
+	else if (opc == opc_shr) switch (type) {
+		default:
+			break;
+
+		case TYPE_u32:
+			opc = b32_shr;
+			break;
+
+		case TYPE_i32:
+			opc = b32_sar;
+			break;
+
+		/*case TYPE_i64:
+			opc = b64_sar;
+			break;// */
+	}
+	else if (opc == opc_and) switch (type) {
+		default:
+			break;
+
+		case TYPE_u32:
+		case TYPE_i32:
+			opc = b32_and;
+			break;
+
+		/*case TYPE_i64:
+			opc = b64_and;
+			break;// */
+	}
+	else if (opc == opc_ior) switch (type) {
+		default:
+			break;
+
+		case TYPE_u32:
+		case TYPE_i32:
+			opc = b32_ior;
+			break;
+
+		/*case TYPE_i64:
+			opc = b64_ior;
+			break;// */
+	}
+	else if (opc == opc_xor) switch (type) {
+		default:
+			break;
+
+		case TYPE_u32:
+		case TYPE_i32:
+			opc = b32_xor;
+			break;
+
+		/*case TYPE_i64:
+			opc = b64_xor;
+			break;// */
+	}
+
+	return emitopc(rt, opc);
+}
+
 /**
  * @brief emit the address of the variable.
  * @param rt Runtime context.
@@ -1002,7 +1320,7 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 				trace("%+k", ast);
 				return TYPE_any;
 			}
-			if (!emitint(rt, opc, ret)) {
+			if (!emitopr(rt, opc, ret)) {
 				trace("%+k", ast);
 				return TYPE_any;
 			}
@@ -1059,7 +1377,7 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 				trace("%+k", ast);
 				return TYPE_any;
 			}
-			if (!emitint(rt, opc, ast->op.lhso->cst2)) {	// uint % int => u32.mod
+			if (!emitopr(rt, opc, ast->op.lhso->cst2)) {	// uint % int => u32.mod
 				trace("opc__%02x:%+k", opc, ast);
 				return TYPE_any;
 			}
@@ -1109,7 +1427,7 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 				return TYPE_any;
 			}
 
-			if (!emitint(rt, opc, TYPE_u32)) {
+			if (!emitopr(rt, opc, TYPE_u32)) {
 				trace("opc__%02x:%+k", opc, ast);
 				return TYPE_any;
 			}
@@ -1967,8 +2285,12 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 				return TYPE_ptr;
 		}
 
+		case ENUM_kwd:
+			error(rt, ast->file, ast->line, "%+k is not member of the enumeration", ast);
+			goto errorcast2;
+
 		default:
-			fatal("%d: unimplemented(cast for `%+k`, %t):%t", ast->line, ast, get, ret);
+			fatal("unimplemented(cast for `%+k`, %t):%t (%s:%d)", ast, get, ret, ast->file, ast->line);
 			// fall to next case
 
 		errorcast2:
@@ -2108,7 +2430,7 @@ int gencode(state rt, int mode) {
 
 	// static vars & functions
 	if (rt->defs != NULL) {
-		symn var = rt->defs;
+		symn var;
 
 		// we will append the list of declarations here.
 		astn staticinitializers = newnode(cc, STMT_beg);
@@ -2556,6 +2878,112 @@ static void install_emit(ccState cc, int mode) {
 	}
 }
 
+/// Private dummy on exit function.
+static int haltDummy(libcArgs args) {
+	return 0;
+	(void)args;
+}
+
+static int typenameGetName(libcArgs args) {
+	symn sym = mapsym(args->rt, argref(args, 0));
+	reti32(args, vmOffset(args->rt, sym->name));
+	return 0;
+}
+static int typenameGetFile(libcArgs args) {
+	symn sym = mapsym(args->rt, argref(args, 0));
+	reti32(args, vmOffset(args->rt, sym->file));
+	return 0;
+}
+static int typenameGetBase(libcArgs args) {
+	symn sym = mapsym(args->rt, argref(args, 0));
+	reti32(args, vmOffset(args->rt, sym->type));
+	return 0;
+}
+
+/**
+ * @brief Instal type system.
+ * @param runtime context.
+ + @param level warning level.
+ + @param file additional file extending module
+ */
+static int install_base(state rt, int mode) {
+	int error = 0;
+	ccState cc = rt->cc;
+
+	//~ TODO: temporarly add null to variant type.
+	if (rt->cc->type_var && !rt->cc->type_var->flds) {
+		ccBegin(rt, NULL);
+		//~ install(cc, "null", ATTR_const | ATTR_stat | TYPE_def, TYPE_i64, 2 * vm_size, rt->cc->type_var, intnode(cc, 0));
+		install(cc, "null", ATTR_const | ATTR_stat | TYPE_def, TYPE_any, 2 * vm_size, rt->cc->type_var, NULL);
+		ccEnd(rt, rt->cc->type_var);
+	}
+
+	// 4 reflection
+	if (cc->type_rec && (mode & creg_tvar)) {
+		symn arg = NULL;
+		enter(cc, NULL);
+		if ((arg = install(cc, "line", ATTR_const | TYPE_ref, TYPE_any, vm_size, cc->type_i32, NULL))) {
+			arg->offs = offsetOf(symn, line);
+		}
+		else {
+			error = 1;
+		}
+
+		if ((arg = install(cc, "size", ATTR_const | TYPE_ref, TYPE_any, vm_size, cc->type_i32, NULL))) {
+			arg->offs = offsetOf(symn, size);
+		}
+		else {
+			error = 1;
+		}
+
+		if ((arg = install(cc, "offset", ATTR_const | TYPE_ref, TYPE_any, vm_size, cc->type_i32, NULL))) {
+			arg->offs = offsetOf(symn, offs);
+			arg->pfmt = "@%06x";
+		}
+		else {
+			error = 1;
+		}
+
+		// HACK: `operator (typename type).file = typename.file(type);`
+		if ((arg = ccAddCall(rt, typenameGetFile, NULL, "string file;"))) {
+			rt->cc->libc->chk += 1;
+			rt->cc->libc->pop += 1;
+			arg->stat = 0;
+			arg->memb = 1;
+		}
+		else {
+			error = 1;
+		}
+
+		// HACK: `operator (typename type).name = typename.name(type);`
+		if ((arg = ccAddCall(rt, typenameGetName, NULL, "string name;"))) {
+			rt->cc->libc->chk += 1;
+			rt->cc->libc->pop += 1;
+			arg->stat = 0;
+			arg->memb = 1;
+		}
+		else {
+			error = 1;
+		}
+
+		error = error || !ccAddCall(rt, typenameGetBase, NULL, "typename base(typename type);");
+
+		ccExtEnd(rt, cc->type_rec, 0);
+
+		/* TODO: more 4 reflection
+
+		error = error || !ccAddCall(rt, typeFunction, (void*)typeOpGetFile, "variant setValue(typename field, variant value)");
+		error = error || !ccAddCall(rt, typeFunction, (void*)typeOpGetFile, "variant getValue(typename field)");
+
+		install(cc, "typename[] lookup(variant &obj, int options, string name, variant args...)");
+		install(cc, "variant invoke(variant &obj, int options, string name, variant args...)");
+		install(cc, "bool canassign(typename toType, variant value, bool canCast)");
+		install(cc, "bool instanceof(typename &type, variant obj)");
+		//~ */
+	}
+	return error;
+}
+
 /// Initialze compiler context; @see header
 ccState ccInit(state rt, int mode, int onHalt(libcArgs)) {
 	ccState cc;
@@ -2588,7 +3016,7 @@ ccState ccInit(state rt, int mode, int onHalt(libcArgs)) {
 	install_type(cc, mode);
 	install_emit(cc, mode);
 
-	ccAddCall(rt, onHalt ? onHalt : libCallHaltQuiet, NULL, "void Halt(int Code);");
+	ccAddCall(rt, onHalt ? onHalt : haltDummy, NULL, "void Halt(int Code);");
 
 	cc->root->type = cc->type_vid;
 	cc->root->cst2 = TYPE_any;

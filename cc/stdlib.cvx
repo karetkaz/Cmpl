@@ -1363,6 +1363,7 @@ define abort(string message) = debug(message, Debug.abort, Debug.deftrace, varia
 
 define assert(bool condition) = debug("assertion failed!", condition ? 0 : Debug.abort, Debug.deftrace, variant.null);
 define assert(bool condition, string message) = debug(message, condition ? 0 : Debug.abort, Debug.deftrace, variant.null);
+define assert(bool condition, string message, variant object) = debug(message, condition ? 0 : Debug.abort, Debug.deftrace, object);
 
 //~ TODO: define assert(bool condition) = void(condition ? void(0) : abort("assertion failed!"));
 //#}
@@ -1734,4 +1735,5 @@ define new(typename type) = memmgr(null, type.size);
 // creates a slice: {data, length}
 //~ define Array(typename type, int32 ^n) = emit(struct, ref(memmgr(null, type.size * n)), i32(n));
 define variant(string str) = emit(variant, ref(str), typename(string));
+define variant(int32 value) = emit(variant, ref(value), typename(int));
 define sizeof(typename type) = int(type.size);
