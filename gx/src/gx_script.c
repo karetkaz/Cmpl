@@ -1480,11 +1480,11 @@ int ccCompile(char *src, int argc, char* argv[], int (*dbg)(state rt, int pu, vo
 		logFILE(rt, stdout);
 		ccAddCode(rt, stdwl, __FILE__, __LINE__ , "");
 		gencode(rt, 0);
-		dump(rt, dump_sym | 0x12, NULL, "#api: replace(`^([^:]*).*$`, `\\1`)\n");
+		dump(rt, dump_sym | 0x33, NULL, "#api: replace(`^([^:]*).*$`, `\\1`)\n");
 		return 0;
 	}
 
-	if (err || !gencode(rt, 0xff)) {
+	if (err || !gencode(rt, dbg ? cgen_info | 3 : 3)) {
 		if (ccLog) {
 			debug("error compiling(%d), see ligfile: `%s`", err, ccLog);
 			logfile(rt, NULL);
@@ -1520,6 +1520,7 @@ int ccCompile(char *src, int argc, char* argv[], int (*dbg)(state rt, int pu, vo
 			dump(rt, dump_asm | 0xf9, NULL, "\ndasm:\n");
 		}
 
+		//~ rt->dbg->dbug = dbg;
 	}
 
 	logFILE(rt, stderr);

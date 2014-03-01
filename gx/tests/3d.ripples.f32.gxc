@@ -131,10 +131,10 @@ void drawCB() {
 					int Shading = Math.clamp(Xoffset, 0, 126);
 
 					int t = getPixel(img, x*imw/division + Xoffset, y*imh/division + Yoffset);
-					setPixel(tmp, x, y, rgbClamp(rch(t) + Shading, gch(t) + Shading, bch(t) + Shading));
+					setPixel(tmp, x, y, int(rgbClamp(rch(t) + Shading, gch(t) + Shading, bch(t) + Shading)));
 				}
 				static if (!Options.textured) {
-					setPixel(tmp, x, y, grayClamp(Math.abs(u[x][y])));
+					setPixel(tmp, x, y, int(grayClamp(Math.abs(u[x][y]))));
 				}
 			}
 		}

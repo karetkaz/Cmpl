@@ -6,20 +6,20 @@ enum Window {
 }
 
 //~ string fileName = "media/images/David.png";
-string fileName = "media/images/lenaRGB.png";
+//~ string fileName = "media/images/lenaRGB.png";
 //~ string fileName = "media/images/download.jpg";
 //~ string fileName = "media/images/dino-blue.jpg";
 //~ string fileName = "media/images/Earth.jpg";
-//~ string fileName = "media/images/nol.bmp";
+string fileName = "media/images/nol.bmp";
 
 enum Dithering: int32 {
 	None = '0';
+	Bayer = 'B';
 	SteinbergFalse = '2';
 	Steinberg = '3';
 	Stucki = '5';
-	Bayer = 'B';
 }
-gxSurf dither(gxSurf img, bool grayscale, uint32 colors, Dithering method) {
+gxSurf dither(gxSurf img, bool grayscale, uint32 colors, int method) {
 
 	if (colors >= 256) {
 		//~ dithering = Dithering.None;
@@ -37,8 +37,8 @@ gxSurf dither(gxSurf img, bool grayscale, uint32 colors, Dithering method) {
 	int width = width(img);
 	int height = height(img);
 
-	define toRgb(int r, int g, int b) = rgbClamp(r, g, b);
-	define toGtay(int col) = grayClamp(col);
+	define toRgb(int r, int g, int b) = int(__rgb(r, g, b));
+	define toGray(int col) = int(__gray(col));
 
 	if (method == Dithering.None) {
 		if (grayscale) {
@@ -46,7 +46,7 @@ gxSurf dither(gxSurf img, bool grayscale, uint32 colors, Dithering method) {
 				for (int x = 0; x < width; x += 1) {
 					int col = lum(getPixel(img, x, y));
 					int gray = cols[(col * colors / 256) % colors];
-					setPixel(img, x, y, toGtay(gray));
+					setPixel(img, x, y, toGray(gray));
 				}
 			}
 		}
@@ -75,9 +75,9 @@ gxSurf dither(gxSurf img, bool grayscale, uint32 colors, Dithering method) {
 					int gray = cols[(col * colors / 256) % colors];
 
 					int quant_error = col - gray;
-					define rgbError(int ^col, int ^s) = toGtay(lum(col) + s * quant_error / 8);
+					define rgbError(int ^col, int ^s) = toGray(lum(col) + s * quant_error / 8);
 
-					setPixel(img, x, y, toGtay(gray));
+					setPixel(img, x, y, toGray(gray));
 					setPixel(img, x + 1, y + 0, rgbError(getPixel(img, x + 1, y + 0), 3));
 					setPixel(img, x + 0, y + 1, rgbError(getPixel(img, x + 1, y + 1), 3));
 					setPixel(img, x + 1, y + 1, rgbError(getPixel(img, x + 1, y + 1), 2));
@@ -124,9 +124,9 @@ gxSurf dither(gxSurf img, bool grayscale, uint32 colors, Dithering method) {
 					int gray = cols[(col * colors / 256) % colors];
 
 					int quant_error = col - gray;
-					define rgbError(int col, int s) = toGtay(lum(col) + s * quant_error / 16);
+					define rgbError(int col, int s) = toGray(lum(col) + s * quant_error / 16);
 
-					setPixel(img, x, y, toGtay(gray));
+					setPixel(img, x, y, toGray(gray));
 					setPixel(img, x + 1, y + 0, rgbError(getPixel(img, x + 1, y + 0), 7));
 					setPixel(img, x - 1, y + 1, rgbError(getPixel(img, x - 1, y + 1), 3));
 					setPixel(img, x + 0, y + 1, rgbError(getPixel(img, x + 0, y + 1), 5));
@@ -175,9 +175,9 @@ gxSurf dither(gxSurf img, bool grayscale, uint32 colors, Dithering method) {
 					int gray = cols[(col * colors / 256) % colors];
 
 					int quant_error = col - gray;
-					define rgbError(int col, int s) = toGtay(lum(col) + s * quant_error / 42);
+					define rgbError(int col, int s) = toGray(lum(col) + s * quant_error / 42);
 
-					setPixel(img, x, y, toGtay(gray));
+					setPixel(img, x, y, toGray(gray));
 					setPixel(img, x + 1, y + 0, rgbError(getPixel(img, x + 1, y + 0), 8));
 					setPixel(img, x + 2, y + 0, rgbError(getPixel(img, x + 2, y + 0), 4));
 					setPixel(img, x - 2, y + 1, rgbError(getPixel(img, x - 2, y + 1), 2));
@@ -259,7 +259,7 @@ gxSurf dither(gxSurf img, bool grayscale, uint32 colors, Dithering method) {
 					bayer(&num2, &num3, col, levels);
 					int gray = cols[(num3 + (num2 > Pattern[x & 7][y & 7]))];
 
-					setPixel(img, x, y, gray(gray));
+					setPixel(img, x, y, toGray(gray));
 				}
 			}
 		}
@@ -279,7 +279,7 @@ gxSurf dither(gxSurf img, bool grayscale, uint32 colors, Dithering method) {
 					bayer(&num2, &num3, bch(col), levels);
 					int colb = cols[(num3 + (num2 > Pattern[x & 7][y & 7]))];
 
-					setPixel(img, x, y, rgb(colr, colg, colb));
+					setPixel(img, x, y, toRgb(colr, colg, colb));
 				}
 			}
 		}
@@ -289,8 +289,8 @@ gxSurf dither(gxSurf img, bool grayscale, uint32 colors, Dithering method) {
 }
 
 int colors = 5;
-int grayscale = true;
-Dithering method = Dithering.Stucki;
+int grayscale = !true;
+int method = Dithering.Stucki;
 method = Dithering.Steinberg;
 //~ method = Dithering.Bayer;
 //~ method = Dithering.None;
@@ -306,7 +306,119 @@ uint8 filename[34] = {'o','u','t','/','o','u','t','[',gs,'x',h1, h2,'_',method,'
 println(string(filename));
 
 gxSurf image = gxSurf(fileName);
+
+
 dither(image, grayscale, colors, method);
 //~ bmpWrite(image, emit(string, ref(filename)));
 
+void setupPicView(gxSurf vImg, bool vFit) {
+
+	static bool reDraw = true;
+	static bool clear = false;
+	static bool fit = false;
+
+	define inertial_pan = 25.;
+	define inertial_speed = 1.01;
+	static int64 inertial_time = 0;
+	static double inertial_pan_x = 0;
+	static double inertial_pan_y = 0;
+	static double inertial_pos_x = 0;
+	static double inertial_pos_y = 0;
+
+	static gxRect roi;
+	static gxSurf img;
+
+	static double clamp(double val, double max, double mod) {
+		result = Math.clamp(val, 0., max - mod);
+	}
+
+	void DrawScreen() {
+		if (reDraw) {
+			if (fit) {
+				zoomSurf(offScreen, null, img, null, 1);
+			}
+			else {
+				//~ copy background image
+				if (clear) {
+					fillRect(offScreen, 0, 0, 32768, 32768, 0x000000);
+				}
+				roi.x = clamp(inertial_pos_x, width(img), roi.w);
+				roi.y = clamp(inertial_pos_y, height(img), roi.h);
+				copySurf(offScreen, 0, 0, img, &roi);
+			}
+			reDraw = false;
+		}
+		static if (inertial_pan) {
+			int64 now = millis();
+			if (inertial_time < now) {
+				inertial_pan_x = Math.clamp(inertial_pan_x, -inertial_pan, inertial_pan) / inertial_speed;
+				inertial_pan_y = Math.clamp(inertial_pan_y, -inertial_pan, inertial_pan) / inertial_speed;
+				inertial_pos_x += inertial_pan_x / inertial_pan*3;
+				inertial_pos_y += inertial_pan_y / inertial_pan*3;
+				if ((Math.abs(inertial_pan_x) > 1) || (Math.abs(inertial_pan_y) > 1)) {
+					reDraw = true;
+				}
+				inertial_time = now;
+			}
+			if ((Math.abs(inertial_pan_x) > 1) || (Math.abs(inertial_pan_y) > 1)) {
+				Gui.Repaint();
+			}
+		}
+	}
+
+	void mouseHandler(int btn, int x, int y) {
+		static int ox = 0;
+		static int oy = 0;
+		static int ob = 0;
+
+		if (Mouse.dblClick(btn, x, y)) {
+			Mouse.dblClick(-1, 0, 0);		// prevent multi clicks
+			fit = !fit;
+			reDraw = true;
+		}
+
+		if (btn == 1 && !fit) {
+			//~ roi.x = clamp(inertial_pos_x = roi.x + ox - x, width(img), roi.w);
+			//~ roi.y = clamp(inertial_pos_y = roi.y + oy - y, height(img), roi.h);
+			inertial_pos_x = clamp(inertial_pos_x + ox - x, width(img), roi.w);
+			inertial_pos_y = clamp(inertial_pos_y + oy - y, height(img), roi.h);
+			reDraw = true;
+		}
+		static if (inertial_pan) {
+			static int64 ot = 0;
+			static int32 oox = 0;
+			static int32 ooy = 0;
+			if (btn == 1 && ob == 0) {	// on press
+				ot = millis();
+				inertial_pan_x = 0;
+				inertial_pan_y = 0;
+				oox = x;
+				ooy = y;
+			}
+			if (btn == 0 && ob == 1) {	// on relase
+				int64 time = millis() - ot;
+				if (time < 350) {
+					inertial_time = 0;
+					inertial_pan_x = (oox - x) / (time / 100.);
+					inertial_pan_y = (ooy - y) / (time / 100.);
+					oox = x;
+					ooy = y;
+				}
+			}
+		}
+
+		ox = x;
+		oy = y;
+		ob = btn;
+	}
+
+	img = vImg;
+	fit = inertial_pan ? false : vFit;
+	roi = gxRect(0, 0, width(offScreen), height(offScreen));
+	clear = roi.w > width(img) || roi.h > height(img);
+	Gui.setMouseHandler(mouseHandler);
+	Gui.setDrawCallback(DrawScreen);
+}
+
+image = tileSurf(gxSurf(4000, 4000), 0, 0, image, null);
 setupPicView(image, false);

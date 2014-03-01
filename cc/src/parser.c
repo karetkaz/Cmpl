@@ -1801,7 +1801,6 @@ static astn expr(ccState cc, int mode) {
 		cc->root = NULL;
 		if (!typecheck(cc, NULL, tok)) {
 			error(cc->s, tok->file, tok->line, "invalid expression: `%+k` in `%+k`", cc->root, tok);
-			debug("%7K", tok);
 		}
 		cc->root = root;
 	}
@@ -2319,7 +2318,7 @@ static astn decl(ccState cc, int mode) {
 					}
 					ref->kind = TYPE_def;
 					// make it of enum type
-					ref->type = def;
+					//~ ref->type = def;
 				}
 				skiptok(cc, STMT_do, 1);
 			}
@@ -2600,7 +2599,7 @@ static astn decl(ccState cc, int mode) {
 				ref->gdef = cc->func;
 				cc->func = ref;
 
-				result = install(cc, "result", TYPE_ref, TYPE_any, vm_size, typ, NULL);
+				result = install(cc, "result", TYPE_ref, TYPE_any, sizeOf(typ), typ, NULL);
 				ref->flds = result;
 
 				if (result) {
@@ -2652,7 +2651,7 @@ static astn decl(ccState cc, int mode) {
 					ref->cnst = 1;
 				}
 				if (!decl_init(cc, ref)) {
-					trace("FixMe %15.15K", tag);
+					trace("%+k", tag);
 					return NULL;
 				}
 			}
@@ -3000,6 +2999,10 @@ static astn stmt(ccState cc, int mode) {
 			astn val = expr(cc, TYPE_vid);		// do lookup
 			if (val->kind == TYPE_ref && val->ref.link == result) {
 				// skip 'return result;' statements
+			}
+			else if (result->type == cc->type_vid && val->type == result->type) {
+				// return void expression from a function returning void.
+				node->stmt.stmt = val;
 			}
 			else {
 				node->stmt.stmt = opnode(cc, ASGN_set, lnknode(cc, result), val);

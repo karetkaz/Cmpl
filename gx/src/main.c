@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
-#include <memory.h>
+#include <stddef.h>
 #include <stdlib.h>
 #include "g2_surf.h"
 #include "g2_argb.h"

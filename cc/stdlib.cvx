@@ -84,9 +84,10 @@ static struct Math {
 	define min(float32 ^a, float32 ^b) = (a < b ? a : b);
 	define min(float64 ^a, float64 ^b) = (a < b ? a : b);
 
-	define clamp(int32 ^t, int32 ^a, int32 ^b) = min(max(t, a), b);
-	define clamp(float32 ^t, float32 ^a, float32 ^b) = min(max(t, a), b);
-	define clamp(float64 ^t, float64 ^a, float64 ^b) = min(max(t, a), b);
+	//~ define clamp(int32 ^t, int32 ^a, int32 ^b) = min(max(t, a), b);
+	define clamp(int32 ^t, int32 ^a, int32 ^b) = (t < a ? a : t > b ? b : t);
+	define clamp(float32 ^t, float32 ^a, float32 ^b) = (t < a ? a : t > b ? b : t);
+	define clamp(float64 ^t, float64 ^a, float64 ^b) = (t < a ? a : t > b ? b : t);
 
 	define lerp(float32 t, float32 ^a, float32 b) = (a + t * (b - a));
 	define lerp(float64 t, float64 ^a, float64 b) = (a + t * (b - a));
@@ -95,6 +96,11 @@ static struct Math {
 	define smooth(float64 ^t) = (t * t * (3 - 2 * t));
 	define smooth(float32 t, float32 ^a, float32 b) = smooth(clamp((t - a) / (b - a), float32(0), float32(1)));
 	define smooth(float64 t, float64 ^a, float64 b) = smooth(clamp((t - a) / (b - a), float64(0), float64(1)));
+
+	define absMod(int32 ^val, int32 ^mod) = ((val < 0 ? val + mod : val) % mod);
+	define absMod(float32 ^val, float32 ^mod) = ((val < 0 ? val + mod : val) % mod);
+	define absMod(float64 ^val, float64 ^mod) = ((val < 0 ? val + mod : val) % mod);
+
 
 	// TODO: remove me
 	define nz(float64 ^val1, float64 val2) = float64(val1 ? val1 : val2);

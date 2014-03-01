@@ -40,12 +40,20 @@ enum importgfx: bool {
 }
 
 static if (importgfx.rgbUtils) {
+struct rgb:1 {
+	int8 b;
+	int8 g;
+	int8 r;
+	int8 x;
+}
 
-define __rgb(int r, int g, int b) = int((r << 16) | (g << 8) | b);
+define int(rgb value) = emit(int, rgb(value));
+
+define __rgb(int r, int g, int b) = emit(rgb, i32((r << 16) | (g << 8) | b));
 define rgbClamp(int r, int g, int b) = __rgb(Math.clamp(r, 0, 255), Math.clamp(g, 0, 255), Math.clamp(b, 0, 255));
 define rgbAnd(int r, int g, int b) = __rgb(r & 255, g & 255, b & 255);
 
-define __gray(int ^c) = int((c << 16) | (c << 8) | c);
+define __gray(int ^c) = __rgb(c, c, c);
 define grayClamp(int c) = __gray(Math.clamp(c, 0, 255));
 define grayAnd(int c) = __gray(c & 255);
 
@@ -116,7 +124,7 @@ int rgbLerp16(int c1, int c2, int t) {
 	int r = lrpfix16(rch(c1), rch(c2));
 	int g = lrpfix16(gch(c1), gch(c2));
 	int b = lrpfix16(bch(c1), bch(c2));
-	result = __rgb(r, g, b);
+	result = int(__rgb(r, g, b));
 }
 
 int rgbLerp(int c1, int c2, double t) {
@@ -259,14 +267,14 @@ void evalSurf2(gxSurf dst, gxRect &roi, vec4f eval(double x, double y)) {
 	for (int y = rect.y; y < rect.y + rect.h; y += 1) {
 		double x01 = 0;
 		for (int x = rect.x; x < rect.x + rect.w; x += 1) {
-			setPixel(dst, x, y, rgb(eval(x01, y01)));
+			setPixel(dst, x, y, int(rgb(eval(x01, y01))));
 			x01 += dx;
 		}
 		y01 += dy;
 	}
 }
 
-void tileSurf(gxSurf dst, int x, int y, gxSurf src, gxRect &roi) {
+gxSurf tileSurf(gxSurf dst, int x, int y, gxSurf src, gxRect &roi) {
 	gxRect clip = gxRect(0, 0, width(src), height(src));
 
 	if (roi != null) {
@@ -284,6 +292,7 @@ void tileSurf(gxSurf dst, int x, int y, gxSurf src, gxRect &roi) {
 			}
 		}
 	}
+	result = dst;
 }
 
 //#{ lookup table manipulations
@@ -388,7 +397,7 @@ gxSurf lut2Surf(gxSurf dst, gxClut &lut, int bg) {
 
 static struct Mouse {
 	struct dblClickState {
-		int64 clk;		// old clock
+		int64 time;		// old clock
 		int32 cnt;		// click count
 		int32 btn;		// old button
 		int32 x;		// old x coord
@@ -399,7 +408,7 @@ static struct Mouse {
 		if (btn == 1 && old.btn == 0) {	// on click
 			int64 now = millis();
 			if (x == old.x && y == old.y) {
-				if ((now - old.clk) / 1000. < .5) {
+				if ((now - old.time) / 1000. < .5) {
 					result = old.cnt += 1;
 				}
 			}
@@ -410,7 +419,7 @@ static struct Mouse {
 				old.y = y;
 			}
 
-			old.clk = now;
+			old.time = now;
 		}
 
 		if (btn == -1) {
@@ -590,7 +599,7 @@ gxSurf Mandel(gxSurf dst, gxClut &lut, double QMin, double QMax, double PMin, do
 	result = dst;
 }
 
-void setupPicView(gxSurf vImg, bool vFit) {
+void setupPicViewX(gxSurf vImg, bool vFit) {
 
 	static bool reDraw = true;
 	static bool clear = false;
@@ -598,12 +607,12 @@ void setupPicView(gxSurf vImg, bool vFit) {
 
 	//~ define inertial_pan = 25.;
 	//~ define inertial_speed = 1.01;
-	//~ static int32 inertial_time = 0;
+	//~ static int64 inertial_time = 0;
 	//~ static double inertial_pan_x = 0;
 	//~ static double inertial_pan_y = 0;
-	define inertial_pan = 30.;
+	define inertial_pan = 25.;
 	define inertial_speed = 1.01;
-	static int32 inertial_time = 0;
+	static int64 inertial_time = 0;
 	static double inertial_pan_x = 0;
 	static double inertial_pan_y = 0;
 
@@ -630,14 +639,14 @@ void setupPicView(gxSurf vImg, bool vFit) {
 				inertial_pan_x = Math.clamp(inertial_pan_x, -inertial_pan, inertial_pan) / inertial_speed;
 				inertial_pan_y = Math.clamp(inertial_pan_y, -inertial_pan, inertial_pan) / inertial_speed;
 
-				if ((Math.abs(inertial_pan_x) > .5) || (Math.abs(inertial_pan_y) > .5)) {
+				if ((Math.abs(inertial_pan_x) > .1) || (Math.abs(inertial_pan_y) > .1)) {
 					roi.x = Math.clamp(roi.x + inertial_pan_x, 0., float64(width(img) - roi.w));
 					roi.y = Math.clamp(roi.y + inertial_pan_y, 0., float64(height(img) - roi.h));
 					reDraw = true;
 				}
 				inertial_time = now;
 			}
-			if ((Math.abs(inertial_pan_x) > .5) || (Math.abs(inertial_pan_y) > .5)) {
+			if ((Math.abs(inertial_pan_x) > .1) || (Math.abs(inertial_pan_y) > .1)) {
 				Gui.Repaint();
 			}
 		}
@@ -671,11 +680,11 @@ void setupPicView(gxSurf vImg, bool vFit) {
 				ooy = y;
 			}
 			if (btn == 0 && ob == 1) {	// on relase
-				int64 now = millis();
-				if (now - ot < 500) {
+				int64 time = millis() - ot;
+				if (time < 500) {
 					inertial_time = 0;
-					inertial_pan_x = oox - x;
-					inertial_pan_y = ooy - y;
+					inertial_pan_x = (oox - x) / time;
+					inertial_pan_y = (ooy - y) / time;
 					oox = x;
 					ooy = y;
 				}

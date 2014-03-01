@@ -37,7 +37,7 @@ application [global options] [local options]...
 #include "core.h"
 
 // enable dynamic dll/so lib loading
-//~ #define USEPLUGINS
+#define USEPLUGINS
 
 // default values
 static const int wl = 9;			// warning level
@@ -215,7 +215,6 @@ static int evalexp(state rt, char* text) {
 
 	ccDone(cc);
 
-	fputfmt(cc->s->logf, "expr: %+K", ast);
 	fputfmt(cc->s->logf, "eval(`%+k`) = ", ast);
 
 	if (ast && typ && tid) {

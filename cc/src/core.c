@@ -29,12 +29,12 @@ the core:
 const struct tok_inf tok_tbl[255] = {
 	#define TOKDEF(NAME, TYPE, SIZE, STR) {TYPE, SIZE, STR},
 	#include "defs.inl"
-	{0},
+	{0}
 };
 const struct opc_inf opc_tbl[255] = {
 	#define OPCDEF(NAME, CODE, SIZE, CHCK, DIFF, MNEM) {CODE, SIZE, CHCK, DIFF, MNEM},
 	#include "defs.inl"
-	{0},
+	{0}
 };
 
 static void memswap(void* _a, void* _b, int size) {
@@ -911,7 +911,7 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 			int bppos = stkoffs(rt, 0);
 			ipdbg = emitopc(rt, markIP);
 			if (ast->stmt.stmt && !cgen(rt, ast->stmt.stmt, TYPE_vid)) {
-				trace("%+k\n%7K", ast, ast);
+				trace("%+k", ast);
 				return TYPE_any;
 			}
 			dieif(get != TYPE_vid, "Error");
@@ -1393,7 +1393,7 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 				case OPER_lte:
 				case OPER_leq:
 				case OPER_gte:
-					dieif(ret != TYPE_bit, "RemMe(%t): %+7K", ret, ast);
+					dieif(ret != TYPE_bit, "RemMe(%t): %+7k", ret, ast);
 				default:
 					break;
 			}
@@ -1532,6 +1532,8 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 			// TODO: ast->type->size;
 			int size = sizeOf(ast->type);
 			int refAssign = TYPE_ref;
+
+			dieif(size == 0, "Error: %+k", ast);
 
 			if (ast->op.lhso->kind == TYPE_ref) {
 				symn typ = ast->op.lhso->type;
@@ -1716,6 +1718,7 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 
 			if (get == ENUM_kwd) {
 				trace("%+k", ast);
+				//~ ret = get;
 			}
 
 			switch (var->kind) {
@@ -2027,7 +2030,7 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 
 					// int a = 99;	// variable initialization
 					else {
-						logif(val->cst2 != var->cast, "cast error (%t : %t: get: %t): %+k", val->cst2, var->cast, get, val);
+						logif(val->cst2 != var->cast, "cast error [%t->%t], get: %t: %-T := %+k", val->cst2, var->cast, get, var, val);
 						switch (val->kind) {
 							case TYPE_int:
 							case TYPE_flt:
@@ -2294,7 +2297,7 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 			// fall to next case
 
 		errorcast2:
-			trace("cgen[%t->%t](%+k)\n%7K", ret, get, ast, ast);
+			trace("cgen[%t->%t](%+k)", ret, get, ast);
 			return TYPE_any;
 	}
 

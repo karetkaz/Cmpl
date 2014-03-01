@@ -208,7 +208,7 @@ bool res_false = isNullOrEmpty(val_nonempty);
 //~ */
 
 //~ /* TODO: enumeration assignment
-struct vec4f {
+struct _vec4f {
 	float x;
 	float y;
 	float z;
@@ -222,14 +222,16 @@ enum xo: vec4f {
 	Z = vec4f(float32(0), float32(0), float32(1), float32(0));
 }
 
-vec4f z = xo.O;		// ok: xo.Z is of type vec4f, so it can be assigned
-xo k = xo.O;	// ok: k of type xo can be assigned to a value from the enumeration
-//~ xo x = z;		// error: x of type xo can be assigned only to a value from the enumeration
-//~ k = z;			// error: x of type xo can be assigned only to a value from the enumeration
+vec4f z = xo.O;		// ok: values from xo are of type vec4f, so it can be assigned
+//~ xo xo1 = xo.O;	// ok: k of type xo can be assigned to a value from the enumeration
+//~ xo xo2 = z;		// error: x of type xo can be assigned only to a value from the enumeration
+//~ xo xo3;			// error: x of type xo can be assigned only to a value from the enumeration
+//~ xo3 = z;		// error: x of type xo can be assigned only to a value from the enumeration
+//~ xo3 = xo.X;		// error: x of type xo can be assigned only to a value from the enumeration
 
 // */
 
-//~ /*
+/*
 enum Window {
 	width = 90;
 	height1 = 2 * width;

@@ -54,15 +54,15 @@ const float64 acos[] = {
 };
 
 struct debugInfo {
-	string function;//%`%s`
+	int index;	//%
+	string function;//%%s
 	double argument;//%%f
 	double expected;//%%.50f
 	double returned;//%%.50f
-	int index;	//%
 }
 
 define assert(bool condition, const debugInfo &dbginf) = debug("test failed", condition ? 0 : Debug.debug, Debug.notrace, emit(variant, ref(dbginf), ref(debugInfo)));
-define assert(string func, double arg, double ret, double exp, int i) = assert(Math.abs(exp - ret) < epsilon, debugInfo(func, arg, ret, exp, i));
+define assert(string func, double arg, double ret, double exp, int i) = assert(Math.abs(exp - ret) < epsilon, debugInfo(i, func, arg, ret, exp));
 
 for (int i = 0; i < vf.length; i += 1) {
 	float64 x = vf[i];

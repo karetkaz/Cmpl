@@ -26,7 +26,7 @@ int rgbscale(int col, double s) {
 	int r = Math.clamp(rch(col) * scale >> fixp, 0, 255);
 	int g = Math.clamp(gch(col) * scale >> fixp, 0, 255);
 	int b = Math.clamp(bch(col) * scale >> fixp, 0, 255);
-	result = rgb(r, g, b);
+	result = int(rgb(r, g, b));
 }
 
 define tex2d(gxSurf ^src, double x, double y) = getPixel(src, imgcoord(x, width(src)), imgcoord(y, height(src)));
@@ -39,8 +39,8 @@ define atan(double x, double y) = atan2(x, y);
 // mert a dogseg nagy betegseg.
 define pi = Math.pi;
 
-int32 begTime = clock();
-define getTime() = clock2Sec(clock() - begTime);
+int64 begTime = millis();
+define getTime() = (millis() - begTime) / 1000.;
 
 void plasma() {
 	double time = getTime();
@@ -57,7 +57,7 @@ void plasma() {
 			c1 = Math.clamp(c1, 0., 1.);
 			c2 = Math.clamp(c2, 0., 1.);
 			c3 = Math.clamp(c3, 0., 1.);
-			setPixel(dstImg, xi, yi, rgb(vec4f(c1, c2, c3)));
+			setPixel(dstImg, xi, yi, int(rgb(vec4f(c1, c2, c3))));
 		}
 	}
 	zoomSurf(offScreen, null, dstImg, null, 1);
@@ -432,7 +432,7 @@ void setup(vec4f _func(float x, float y, float t)) {
 
 				//~ define vec4f2rgb(vec4f ^col) = rgb(int(col.x * 255), int(col.y * 255), int(col.z * 255));
 
-				int32 col = rgb(func(x, y, time * 6));
+				int32 col = int(rgb(func(x, y, time * 6)));
 
 				setPixel(dstImg, xi, yi, col);
 			}

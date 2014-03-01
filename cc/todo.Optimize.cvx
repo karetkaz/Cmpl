@@ -4,25 +4,26 @@
 {
 	int a[1<<10];
 	{
-		int a[1<<10];
+		int a[2<<10];
 		{
-			int a[1<<10];
+			int a[3<<10];
 			{
-				int a[1<<20];
+				int a[4<<10];
 				{
-					int a[1<<10];
+					int a[5<<10];
 					{
-						int a[1<<10];
-						a[0] = 9;
+						int a[6<<10];
+						a[0] = 6;
 					}
-					a[0] = 9;
+					a[0] = 5;
 				}
-				//~ a[0] = 9;
+				//~ a[0] = 4;
 			}
-			a[0] = 9;
+			//~ a[0] = 3;
 		}
-		a[0] = 9;
+		a[0] = 2;
 	}
+	//~ a[0] = 1;
 }// +/
 
 /+ Optimize stack allocation
@@ -30,14 +31,54 @@
 	string a = "a";
 	print(a);
 }
-//! `dup.x1 sp(0)` and `spc -4` can be removed
-// todo.cvx:100: [008ea4-008ea9]: string a = 'a'
-//| 	1f 96 61 00 00             load.ref 6196
-// todo.cvx:101: [008ea9-008eaf]: print(a);
-//| 	12 00                      dup.x1 sp(0)
-//| 	09 1c 00 00                libc(28): print(string val): void
-//| 	10 fc ff ff                spc -4
 
+// |init(ro: 34576, ss: 0, sm: 2, pc: 34576, px: 34591) {
+// |todo.Optimize.cvx:30: string a = 'a'
+// |	1f da 59 00 00             load.ref 59da
+// |todo.Optimize.cvx:31: print(a);
+// |	12 00                      dup.x1 sp(0)
+// |	09 1b 00 00                libc(27): print(string val): void
+// |	10 fc ff ff                spc -4
+//! dup.x1 sp(0) and spc -4 can be removed
+// |}
+//~ +/
+
+/+ Optimize returning void
+void testRetVoid0() {
+}
+
+void testRetVoid1() {
+	return;
+}
+
+void testRetVoid2() {
+	return result;
+}
+
+void testRetVoid3() {
+	return void(0);
+}
+
+void testRetVoid4() {
+	return testRetVoid0();
+}
+
+void testRetVoid5() {
+	return void(sin(3.14/3));
+}
+
+long testRetLong0() {
+	return 9;
+}
+
+// |void testRetVoid1(void) [@008d61: 2] {
+// |	.local void testRetVoid1.result [@000000, size:0, cast:.err]
+// |	.local void [@000000, size:0, cast:.def]
+// |todo.Optimize.cvx:51: return
+// |	03                         ret
+// do not generate multiple returns.
+// |	03                         ret
+// |}
 //~ +/
 
 /+ add to System ...
@@ -49,9 +90,9 @@ enum Arch {
 }
 
 enum Os: string {
-	Windows("Windows");
-	Linux("Linux");
-	Mac("Mac");
+	Windows = "Windows";
+	Linux = "Linux";
+	Mac = "Mac";
 }
 
 Arch arch = Arch.?
@@ -153,10 +194,10 @@ Person person = {
 
 /+ initialization (type and variable): Ui
 struct Rect {
-	int top;
-	int right;
-	int bottom;
-	int left;
+	int top = 0;
+	int right = 0;
+	int bottom = 0;
+	int left = 0;
 }
 struct Anchor {
 	enum Style {
@@ -172,17 +213,16 @@ struct Anchor {
 		CenterBottom;
 		CenterLeft;
 	};
-	int &top;
-	int &bottom;
-	bool centerHorizontal;	// center / fill
 
-	int &left;
-	int &right;
-	bool centerVertical;	// center / fill
+	int &top = null;
+	int &bottom = null;
+	bool centerHorizontal = false;	// center / fill
 
-	Rect margin;
+	int &left = null;
+	int &right = null;
+	bool centerVertical = false;	// center / fill
 
-	static Anchor dock(Anchor.Style dock, Rect r, int &pin) {
+	static Anchor dock(Style dock, Rect r, int **pin) {
 		result.top = r.top;
 		result.bottom = r.bottom;
 		result.centerHorizontal = true;
@@ -225,74 +265,69 @@ struct Anchor {
 		}
 	}
 }
-
 struct Font {...}
 
-struct Component {
-	Rect position;	// calc by the layout
-	Anchor anchor;
-	int width = 20;
-	int height = 20;
-
-	bool enabled;
-	bool focusable;
-	Component children[];
-}
-
-//~ struct Page: Component {...}
-//~ struct List: Component {...}
-//~ struct Grid: Component {...}
-struct Label: Component {...}
-struct Image: Component {...}
-struct Check: Component {...}
-struct Input: Component {...}	// single line, multi line, html
-struct Select: Component {...}	// ComboBox
-struct Slider: Component {...}
-
-struct Window: Component {...}
-struct Button: Component {
+struct View {
 	struct Style {
-		Rect margin = {
-			top: 0;
-			right: 0;
-			bottom: 0;
-			left: 0;
+		Ancor anchor = {};
+		Rect margin = {};
+		Rect padding = {	// default padding is 4
+			top: 4;
+			right: 4;
+			bottom: 4;
+			left: 4;
 		};
-		Rect padding = {
-			top: 0;
-			right: 0;
-			bottom: 0;
-			left: 0;
-		};
-		int width = 100;
+		rgb color = rgb(127);	// grey
+		int radius = 0;
+		//~ ? border;
+		int width = 25;
 		int height = 25;
 	}
 
+	Style style;
+	Rect position;	// calc by the layout
+
+	define width = style.width;
+	define height = style.height;
+
+	bool enabled;
+	bool focusable;
+	View children[];
+}
+
+//~ struct List: View {...}
+//~ struct Grid: View {...}
+struct Text: View {...}
+struct Label: View {...}
+struct Image: View {...}
+struct Check: View {...}
+struct Input: View {...}	// single line, multi line, html
+struct Select: View {...}	// ComboBox
+struct Slider: View {...}
+
+//~ struct Page: View {...}
+struct Window: View {...}
+struct Button: View {
 	bool checked = false;
 	bool checkable = false;
 	//~ property alias pressed: mouseArea.pressed
 	//~ property alias text: label.text
 	//~ property alias platformMouseAnchors: mouseArea.anchors
 
-	Style style = {
-		//~ margin:...
-		
+	View.Style style = {
+		width: 100;
+		height: 25;
+		radius: 8;
 	};
 	Group &group = null;
-
-	width: defaultStyle.width;
-	height: defaultStyle.height;
-
-	//~ property alias font: label.font
 
 	Image image = {
 		anchor: dock(CenterLeft, parent);
 		source: button.iconSource
 		visible: source != ""
 	}
-
 	Label label = {
-		anchor = dock(CenterRight, parent, image.right);
+		anchor = Anchor.dock(Anchor.Style.CenterRight, parent, image.right);
 
 		elide: Text.ElideRight
 
@@ -315,3 +350,17 @@ struct Button: Component {
 }
 // +/
 
+struct Alarm {
+	// duration in seconds, 0 means
+	int  duration;
+
+	// Alarm starts on
+	Date start;
+
+	// Alarm starts on
+	Date end;
+
+	struct repeat:1 {
+		s
+	}
+}

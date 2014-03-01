@@ -21,7 +21,7 @@
 	5: print non pre-mapped strings, non static types
 	6: print static casts generated with emit
 */
-//~ #define DEBUGGING 3
+//~ #define DEBUGGING 6
 
 // enable paralell execution stuff
 //~ #define MAXPROCSEXEC 1
@@ -414,7 +414,6 @@ struct dbgStateRec {
  *      +: expand statements
  *      -: ?
  *    t: kind
- *    K: xml tree
  *    A: instruction (asm)
  *    I: ident
  *    b: 32 bit bin value

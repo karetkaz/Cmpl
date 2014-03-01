@@ -10,13 +10,12 @@
 //! TODO: varargs: int min(int first, int rest...) {...}
 //! TODO: js like initialization of structs: Complex a = {re: 0, im: 1};
 
-//~ TODO:! inout parameters: `bool next(typenameiterator &it, typename &&ref)` + iteration over struct members.
-//~ TODO:! variable initialization in js style.
+//~ TODO:! inout parameters: `bool next(typename &it, typename &&out)` + iteration over struct members.
 
 //~ TODO:? static if else part
 //~ TODO:? threat errors as warnings inside static if false branch
 //~ TODO:? separate struct and unoin declaration
-//~ TODO:X in case of unions create a constructor (!js style initialization resolves this)
+//~ TODO:X in case of unions create a constructor (!resolved by js style initialization)
 
 //~ BUG: array of references
 //~ BUG: void alma(int a) {static int A = a;}
@@ -124,7 +123,7 @@ double x[16] = {1};
 //~ TestArr(x);
 //~ +/
 
-/+ DONE: return does not cast
+//~ /+ DONE: return does not cast
 double f(int32 v) {result = v;}
 double g(int32 v) {return v;}
 double h(int32 v) {return result = v;}
