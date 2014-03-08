@@ -599,25 +599,26 @@ gxSurf Mandel(gxSurf dst, gxClut &lut, double QMin, double QMax, double PMin, do
 	result = dst;
 }
 
-void setupPicViewX(gxSurf vImg, bool vFit) {
+void setupPicView(gxSurf vImg, bool vFit) {
 
 	static bool reDraw = true;
 	static bool clear = false;
 	static bool fit = false;
 
-	//~ define inertial_pan = 25.;
-	//~ define inertial_speed = 1.01;
-	//~ static int64 inertial_time = 0;
-	//~ static double inertial_pan_x = 0;
-	//~ static double inertial_pan_y = 0;
 	define inertial_pan = 25.;
 	define inertial_speed = 1.01;
 	static int64 inertial_time = 0;
 	static double inertial_pan_x = 0;
 	static double inertial_pan_y = 0;
+	static double inertial_pos_x = 0;
+	static double inertial_pos_y = 0;
 
 	static gxRect roi;
 	static gxSurf img;
+
+	static double clamp(double val, double max, double mod) {
+		result = Math.clamp(val, 0., max - mod);
+	}
 
 	void DrawScreen() {
 		if (reDraw) {
@@ -629,6 +630,8 @@ void setupPicViewX(gxSurf vImg, bool vFit) {
 				if (clear) {
 					fillRect(offScreen, 0, 0, 32768, 32768, 0x000000);
 				}
+				roi.x = clamp(inertial_pos_x, width(img), roi.w);
+				roi.y = clamp(inertial_pos_y, height(img), roi.h);
 				copySurf(offScreen, 0, 0, img, &roi);
 			}
 			reDraw = false;
@@ -638,15 +641,14 @@ void setupPicViewX(gxSurf vImg, bool vFit) {
 			if (inertial_time < now) {
 				inertial_pan_x = Math.clamp(inertial_pan_x, -inertial_pan, inertial_pan) / inertial_speed;
 				inertial_pan_y = Math.clamp(inertial_pan_y, -inertial_pan, inertial_pan) / inertial_speed;
-
-				if ((Math.abs(inertial_pan_x) > .1) || (Math.abs(inertial_pan_y) > .1)) {
-					roi.x = Math.clamp(roi.x + inertial_pan_x, 0., float64(width(img) - roi.w));
-					roi.y = Math.clamp(roi.y + inertial_pan_y, 0., float64(height(img) - roi.h));
+				inertial_pos_x += inertial_pan_x / inertial_pan*3;
+				inertial_pos_y += inertial_pan_y / inertial_pan*3;
+				if ((Math.abs(inertial_pan_x) > 1) || (Math.abs(inertial_pan_y) > 1)) {
 					reDraw = true;
 				}
 				inertial_time = now;
 			}
-			if ((Math.abs(inertial_pan_x) > .1) || (Math.abs(inertial_pan_y) > .1)) {
+			if ((Math.abs(inertial_pan_x) > 1) || (Math.abs(inertial_pan_y) > 1)) {
 				Gui.Repaint();
 			}
 		}
@@ -664,8 +666,10 @@ void setupPicViewX(gxSurf vImg, bool vFit) {
 		}
 
 		if (btn == 1 && !fit) {
-			roi.x = Math.clamp(roi.x + ox - x, 0, width(img) - roi.w);
-			roi.y = Math.clamp(roi.y + oy - y, 0, height(img) - roi.h);
+			//~ roi.x = clamp(inertial_pos_x = roi.x + ox - x, width(img), roi.w);
+			//~ roi.y = clamp(inertial_pos_y = roi.y + oy - y, height(img), roi.h);
+			inertial_pos_x = clamp(inertial_pos_x + ox - x, width(img), roi.w);
+			inertial_pos_y = clamp(inertial_pos_y + oy - y, height(img), roi.h);
 			reDraw = true;
 		}
 		static if (inertial_pan) {
@@ -681,10 +685,10 @@ void setupPicViewX(gxSurf vImg, bool vFit) {
 			}
 			if (btn == 0 && ob == 1) {	// on relase
 				int64 time = millis() - ot;
-				if (time < 500) {
+				if (time < 350) {
 					inertial_time = 0;
-					inertial_pan_x = (oox - x) / time;
-					inertial_pan_y = (ooy - y) / time;
+					inertial_pan_x = (oox - x) / (time / 100.);
+					inertial_pan_y = (ooy - y) / (time / 100.);
 					oox = x;
 					ooy = y;
 				}

@@ -796,14 +796,14 @@ static int dbgCon(state rt, int pu, void* ip, long* sp, int ss) {
 			cmd = buff[0];
 		}
 		else {
-			debug("invalid command %s", buff);
+			fputfmt(stdout, "invalid command %s", buff);
 			arg = buff + 1;
 			cmd = buff[0];
 			buff[1] = 0;
 			continue;
 		}
 		if (!arg) {
-			debug("invalid command %s", buff);
+			fputfmt(stdout, "invalid command %s", buff);
 			arg = NULL;
 			//cmd = 0;
 			continue;
@@ -811,7 +811,7 @@ static int dbgCon(state rt, int pu, void* ip, long* sp, int ss) {
 
 		switch (cmd) {
 			default:
-				debug("invalid command '%c'", cmd);
+				fputfmt(stdout, "invalid command '%c'", cmd);
 				break;
 			case 0:
 				break;
@@ -828,7 +828,7 @@ static int dbgCon(state rt, int pu, void* ip, long* sp, int ss) {
 				}
 				else {
 					symn sym = ccFindSym(rt->cc, NULL, arg);
-					debug("arg:%T", sym);
+					fputfmt(stdout, "arg:%T", sym);
 					if (sym && sym->kind == TYPE_ref && !sym->stat) {
 						fputval(rt, stdout, sym, (stkval*)sp, 0);
 					}

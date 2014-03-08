@@ -38,27 +38,27 @@ for (int i = 0; i < a.length; i += 1) {
 
 // +/
 
-/+ TODO: const & static members default initialization.
+//~ /+ TODO: any members default initialization.
 struct M {
 	static const int A = 9;
-	static const int _A;		// error: uninitialized constant
+	//~ static const int _A;		// error: uninitialized constant
 
 	static int B = 9;
 	static int _B;
 
-	const int a = 0;			// error: can not be initialized
+	const int a = 0;			// warn: unimplemented usage
 	const int _a;
 
-	int b = 0;					// error: can not be initialized
+	int b = 0;					// warn: unimplemented usage
 	int _b;
 
 }
 
-M m = M(6, 9);
-m.A = 69;			// error: constant lvalue in asignment
-m.a = 69;			// error: constant lvalue in asignment
+M m = M(6, 6, 9, 9);
+//~ m.A = 69;			// error: asignment of constant variable
+//~ m.a = 69;			// error: asignment of constant variable
 m.B = 69;			// warn: access wia instance reference
-m.b = 69;
+m._b = 69;
 
 //~ int &ref_m_a = m.a;	// TODO: hacked: warn if const/nonconst ref assignment.
 //~ ref_m_a = 666;
@@ -123,7 +123,7 @@ double x[16] = {1};
 //~ TestArr(x);
 //~ +/
 
-//~ /+ DONE: return does not cast
+/+ DONE: return does not cast
 double f(int32 v) {result = v;}
 double g(int32 v) {return v;}
 double h(int32 v) {return result = v;}
@@ -199,14 +199,15 @@ ComplexByRef v3 = emit(ComplexByRef, i32(-1));
 
 /+ TODO: nice to have
 //~ arrays of functions
-	int alma(int h)[10];
+	//~ int alma(int h)[10];
 
 //~ associative arrays: maps
-	int stringMap[string];		stringMap[]
+	//~ int stringMap[string];		stringMap[]
 
 //~ recursively define:
-	define fact(int64 n) = (n * fact(n - 1));
+	//~ define fact(int64 n) = (n * fact(n - 1));
 
+//~ +/
 /+ TODO: nameless struct variable
 	struct color: 0 {
 		int32 value;
@@ -251,11 +252,12 @@ ComplexByRef v3 = emit(ComplexByRef, i32(-1));
 	(in case of defines: symbolic parameter)
 
 void free(pointer &&ref) {
-  memmgr(ref, 0);
-  ref = null;
+	memmgr(ref, 0);
+	ref = null;
 }
 
-define void(var &&a) = void(typename.Invoke(a.type, ".dtor", a.data));
+// invoke in the global namespace, the void function with a as argument
+define void(var &&a) = void(assert(typename.invoke(null, null, "void", a)));
 
 define void(int8 &&a)    = void(0);
 define void(int16 &&a)   = void(0);
@@ -273,38 +275,36 @@ enum TypeCode: int32 {
 	CAST_any = 0x00000000;		// invalid, error, ...
 	CAST_vid = 0x00000001;		// void;
 	CAST_bit = 0x00000002;		// bool;
-	CAST_i32 = 0x00000003;		// int8, int16, int32
-	CAST_u32 = 0x00000004;		// uint8, uint16, uint32
+	CAST_i32 = 0x00000003;		// int32, int16, int8
+	CAST_u32 = 0x00000004;		// uint32, uint16, uint8
 	CAST_i64 = 0x00000005;		// int64
 	CAST_u64 = 0x00000006;		// uint64
 	CAST_f32 = 0x00000007;		// float32
 	CAST_f64 = 0x00000008;		// float64
-	CAST_ptr = 0x00000009;		// pointer
+	CAST_ptr = 0x00000009;		// pointer, reference
 
-	CAST_arr = 0x0000000a;		// slice(size, data)
-	CAST_var = 0x0000000b;		// variant(type, data)
-	CAST____ = 0x0000000d;		// typename
-	CAST____ = 0x0000000e;		// variable
-	CAST____ = 0x0000000f;		// function
+	CAST_arr = 0x0000000a;		// slice: struct {size, data}
+	CAST_var = 0x0000000b;		// variant: struct {type, data}
+	CAST___d = 0x0000000d;		// 
+	CAST___e = 0x0000000e;		// 
+	CAST___f = 0x0000000f;		// 
 
-	TYPE_def = 0x00000000;		// alias (or error)
+	TYPE_def = 0x00000000;		// inline (/ error at runtime)
 	TYPE_rec = 0x00000010;		// typename
-	TYPE_ref = 0x00000020;		// variable
-	TYPE_fun = 0x00000030;		// function (variable and typename too)
+	TYPE_fun = 0x00000020;		// function
+	TYPE_ref = 0x00000030;		// variable: functions and typenames are also variables
+	ATTR_sta = 0x00000040;		// static attribute
+	ATTR_con = 0x00000080;		// constant attribute
 
-	ATTR_sta = 0x00000040;		// static
-	ATTR_con = 0x00000080;		// constant
-
-	ATTR_par = 0x00000100;		// parrallel
-	ATTR_snc = 0x00000200;		// synchronized
-	ATTR_ref = 0x00000400;		// indirect
-	ATTR_prv = 0x00000800;		// private
+	ATTR_par = 0x00000100;		// ?parrallel
+	ATTR_snc = 0x00000200;		// ?synchronized
+	ATTR_ref = 0x00000400;		// ?indirect
+	ATTR_prv = 0x00000800;		// ?private
 }
 
 struct TypeInfo {
 	pointer file;		// declared in file (cstr)
 	int32 line;			// declared on line
-
 	pointer name;		// typename (cstr)
 	int32 offs;			// offset
 	int32 size;			// size
@@ -388,30 +388,7 @@ TypeInfo& lookUp(TypeInfo &type, int level, string name, variant args...) {
 	return null;
 }
 
-struct cls {
-	static int32 c;
-	int32 a;
-	int32 b;
-	static int M1(int a, int b) {return a + b;}
-}
-
-
-var a1 = var(34);
-var a2 = var(4);
-var t1;
-cls obj;
-
-assert(invoke(cls, "c", t1) && t1 == var(cls.c));				// t1 := cls.c;
-assert(invoke(cls, "c", null, a1) && t1 == var(cls.c));			// cls.c := a1;
-assert(invoke(cls, "c", t1, a1) && t1 == var(cls.c));			// t1 := cls.c = a1;
-
-assert(invoke(cls, "M1", t1, a1, a2) && t1 == var(cls.M1(a1, a2));
-assert(invoke(obj, "M1", t1, a1, a2) && t1 == var(obj.M1(a1, a2));
-
-assert(invoke(obj, "a", t1) && t1 == var(obj.a));
-assert(invoke(obj, "a", null, a2) && a2 == var(obj.a));			// t1 := obj.a := a2;
-
-bool invoke(var obj, string name, var &&res, var args...) {
+bool invoke(var obj, var &&res, string name, var args...) {
 	TypeInfo class = obj.type == TypeInfo ? &obj.data : obj.type;
 	TypeInfo Method = lookUp(type, -1, name, args);
 
@@ -442,14 +419,27 @@ bool invoke(var obj, string name, var &&res, var args...) {
 	return false;
 }
 
-invoke(t2, "a", t1, var(34));			// t1 = t2.a = 34;
-invoke(t2, "a", t1, t2);				// t1 = t2.a;
-
-bool invoke(variant obj, string name, var &&res, var args...) {
-	return invoke(obj.type, name, &&res, obj, args);
+struct cls {
+	static int32 c;
+	int32 a;
+	int32 b;
+	static int M1(int a, int b) {return a + b;}
 }
 
-//~ +/
+var a1 = var(34);
+var a2 = var(4);
+var res;
+cls obj;
+
+// get and set value of static member
+assert(invoke(cls, res, "c") && res == cls.c);							// res := cls.c;
+//~ assert(invoke(cls, res, "c", a1) && cls.c == a1 && res == a1);			// res := (cls.c := a1);
+// get and set value of object member
+assert(invoke(obj, res, "a") && res == obj.a);							// res := cls.a;
+//~ assert(invoke(obj, res, "a", a2) && obj.a == a2 && res == a2);			// res := (obj.a := a2);
+// invoke function with arguments
+assert(invoke(cls, res, "M1", a1, a2) && res == cls.M1(a1, a2));		// res = cls.M1(a1, a2);
+
 //~ +/
 
 /+ BenchMarks

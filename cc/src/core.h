@@ -14,14 +14,14 @@
 
 /* debug level:
 	0: no debug info
-	1: print debug messages
-	2: print trace messages
+	1: print trace messages
+	2: print debug messages
 	3: print generated assembly for statements with errors;
 	4: print generated assembly
 	5: print non pre-mapped strings, non static types
 	6: print static casts generated with emit
 */
-//~ #define DEBUGGING 6
+//~ #define DEBUGGING 1
 
 // enable paralell execution stuff
 //~ #define MAXPROCSEXEC 1
@@ -40,41 +40,41 @@
 #ifdef DEBUGGING
 #define logif(__EXP, msg, ...) do {if (__EXP) prerr("info", msg, ##__VA_ARGS__);} while(0)
 #if DEBUGGING > 0	// enable debug
-#define debug(msg, ...) do { prerr("debug", msg, ##__VA_ARGS__); } while(0)
-#else
-#define debug(msg, ...) do {} while(0)
-#endif
-#if DEBUGGING > 1	// enable trace
 #define trace(msg, ...) do { prerr("trace", msg, ##__VA_ARGS__); } while(0)
 #define trloop(msg, ...) //do { prerr("trace", msg, ##__VA_ARGS__); } while(0)
 #else
 #define trace(msg, ...) do {} while(0)
 #define trloop(msg, ...) do {} while(0)
 #endif
+#if DEBUGGING > 1	// enable trace errors
+#define debug(msg, ...) do { prerr("debug", msg, ##__VA_ARGS__); } while(0)
+#else
+#define debug(msg, ...) do {} while(0)
+#endif
 
 #else
 #define logif(__EXP, msg, ...) do {} while(0)
-#define debug(msg, ...) do {} while(0)
 #define trace(msg, ...) do {} while(0)
 #define trloop(msg, ...) do {} while(0)
+#define debug(msg, ...) do {} while(0)
 
 #endif
 
-// internal errors
-//#define fatal(msg, ...) do { prerr("internal error", msg, ##__VA_ARGS__); abort(); } while(0)
-//#define dieif(__EXP, msg, ...) do {if (__EXP) { prerr("internal error("#__EXP")", msg, ##__VA_ARGS__); abort(); }} while(0)
+// internal errors (not aborting!?)
+//~ #define fatal(msg, ...) do { prerr("internal error", msg, ##__VA_ARGS__); abort(); } while(0)
+//~ #define dieif(__EXP, msg, ...) do {if (__EXP) { prerr("internal error("#__EXP")", msg, ##__VA_ARGS__); abort(); }} while(0)
 #define fatal(msg, ...) do { prerr("internal error", msg, ##__VA_ARGS__); } while(0)
 #define dieif(__EXP, msg, ...) do {if (__EXP) { prerr("internal error("#__EXP")", msg, ##__VA_ARGS__); }} while(0)
 
 // compilation errors
-#define error(__ENV, __FILE, __LINE, msg, ...) do { perr(__ENV, -1, __FILE, __LINE, msg, ##__VA_ARGS__); debug(msg, ##__VA_ARGS__); } while(0)
+#define error(__ENV, __FILE, __LINE, msg, ...) do { perr(__ENV, -1, __FILE, __LINE, msg, ##__VA_ARGS__); trace(msg, ##__VA_ARGS__); } while(0)
 #define warn(__ENV, __LEVEL, __FILE, __LINE, msg, ...) do { perr(__ENV, __LEVEL, __FILE, __LINE, msg, ##__VA_ARGS__); } while(0)
 #define info(__ENV, __FILE, __LINE, msg, ...) do { warn(__ENV, 0, __FILE, __LINE, msg, ##__VA_ARGS__); } while(0)
 
 #define lengthOf(__ARRAY) (sizeof(__ARRAY) / sizeof(*(__ARRAY)))
 #define offsetOf(__TYPE, __FIELD) ((size_t) &((__TYPE)0)->__FIELD)
 
-// Tokens - CC(tokens)
+// Tokens - CC
 typedef enum {
 	#define TOKDEF(NAME, TYPE, SIZE, STR) NAME,
 	#include "defs.inl"
@@ -85,6 +85,10 @@ typedef enum {
 	TYPE_flt = TYPE_f64,
 	TYPE_str = TYPE_ptr,
 
+	ATTR_stat   = 0x400,		// static
+	ATTR_const  = 0x800,		// constant
+	//ATTR_paral  = 0x100,		// parallel
+
 	stmt_NoDefs = 0x100,		// disable typedefs in stmt.
 	stmt_NoRefs = 0x200,		// disable variables in stmt.
 
@@ -92,13 +96,42 @@ typedef enum {
 	decl_NoInit = 0x200,		// disable initialization.
 	decl_ItDecl = 0x400,		// enable ':' after declaration: for(int a : range(0, 12))
 
-	//ATTR_paral  = 0x100,		// parallel
-	ATTR_const  = 0x100,		// constant
-	ATTR_stat   = 0x200			// static
 	/*? enum Kind {
-		//inline     = 0x000000;	// these are not available at runtime.
-		typename     = 0x000001;	//
-		function     = 0x000002;	//
+		CAST_any = 0x00000000;		// invalid, error, ...
+		CAST_vid = 0x00000001;		// void;
+		CAST_bit = 0x00000002;		// bool;
+		CAST_i32 = 0x00000003;		// int32, int16, int8
+		CAST_u32 = 0x00000004;		// uint32, uint16, uint8
+		CAST_i64 = 0x00000005;		// int64
+		CAST_u64 = 0x00000006;		// uint64
+		CAST_f32 = 0x00000007;		// float32
+		CAST_f64 = 0x00000008;		// float64
+		CAST_ptr = 0x00000009;		// pointer, reference
+
+		CAST_arr = 0x0000000a;		// slice: struct {size, data}
+		CAST_var = 0x0000000b;		// variant: struct {type, data}
+		CAST___d = 0x0000000d;		// 
+		CAST___e = 0x0000000e;		// 
+		CAST___f = 0x0000000f;		// 
+
+		TYPE_def = 0x00000000;		// inline (/ error at runtime)
+		TYPE_rec = 0x00000010;		// typename
+		TYPE_fun = 0x00000020;		// function
+		TYPE_ref = 0x00000030;		// variable functions and typenames are also variables
+		ATTR_sta = 0x00000040;		// static
+		ATTR_con = 0x00000080;		// constant
+
+		ATTR_par = 0x00000100;		// ?parrallel
+		ATTR_snc = 0x00000200;		// ?synchronized
+		ATTR_ref = 0x00000400;		// ?indirect
+		ATTR_prv = 0x00000800;		// ?private
+	}
+
+
+	enum Kind {
+		//inline     = 0x000000;	// unavailable at runtime.
+		typename     = 0x000001;	// struct metadata info.
+		function     = 0x000002;	// function
 		variable     = 0x000003;	// functions and typenames are also variables
 
 		attr_const   = 0x000004;
@@ -112,7 +145,7 @@ struct tok_inf {
 };
 extern const struct tok_inf tok_tbl[255];
 
-// Opcodes - VM(opcodes)
+// Opcodes - VM
 typedef enum {
 	#define OPCDEF(Name, Code, Size, Args, Push, Mnem) Name = Code,
 	#include "defs.inl"
@@ -177,11 +210,11 @@ typedef union {		// on stack value type
 	struct {void* data; long length;} arr;	// slice
 } stkval;
 
-typedef struct list {
+typedef struct list {	// linked list
 	struct list*	next;
 	unsigned char*	data;
 } *list;
-typedef struct libc {
+typedef struct libc {	// library call
 	struct libc *next;	// next
 	int (*call)(libcArgs);
 	void *data;	// user data for this function
@@ -217,8 +250,11 @@ struct symNode {
 	union {				// Attributes
 		uint32_t	Attr;
 	struct {
+		//~ uint32_t	kind:8;
+		//~ uint32_t	cast:8;
 		uint32_t	memb:1;		// member operator (push the object by ref first)
-		uint32_t	call:1;		// callable (function/definition) <=> (kind == TYPE_ref && args)
+		uint32_t	call:1;		// callable (function/definition) <=> TODO: prms != NULL
+		//~ uint32_t	rsvd:1;		// reserved
 		uint32_t	cnst:1;		// constant
 		uint32_t	stat:1;		// static
 		uint32_t _padd:28;		// declaration level
@@ -227,9 +263,9 @@ struct symNode {
 
 	symn	defs;		// global variables and functions / while_compiling variables of the block in reverse order
 	symn	gdef;		// all static variables and functions
-
-	astn	used;		// usage references
 	astn	init;		// VAR init / FUN body, this shuld be null after codegen
+
+	astn	used;		// TEMP: usage references
 	char*	pfmt;		// TEMP: print format
 };
 
@@ -507,7 +543,7 @@ symn declare(ccState, ccToken kind, astn tag, symn typ);
  * @param rhs variable to be assigned to.
  * @param val value to be assigned.
  * @param strict Strict mode: casts are not enabled.
- * @return true if the assignmet can be done.
+ * @return cast of the assignmet if it can be done.
  */
 int canAssign(ccState, symn rhs, astn val, int strict);
 

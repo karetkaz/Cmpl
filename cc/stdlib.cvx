@@ -722,7 +722,7 @@ struct Date {
 		return false;
 	}
 
-	static long ToDays(int year, int month, int day) {
+	static const long ToDays(int year, int month, int day) {
 		result = -1;
 		if (year > 0 && year <= 9999) {
 			if (month > 0 && month <= 12) {

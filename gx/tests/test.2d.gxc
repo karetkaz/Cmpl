@@ -249,7 +249,7 @@ void drawCB() {
 		int r = op(rch(dst), rch(src));
 		int g = op(gch(dst), gch(src));
 		int b = op(bch(dst), bch(src));
-		result = __rgb(r, g, b);
+		result = int(__rgb(r, g, b));
 		//~ result = dst & src;
 	}
 	int rgbOp(int dst, int src) = rgbMax;

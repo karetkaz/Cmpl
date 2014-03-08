@@ -252,7 +252,7 @@ vec4f tunnel0(double x, double y) {
 		int r = Math.clamp(rch(col) * scale >> fixp, 0, 255);
 		int g = Math.clamp(gch(col) * scale >> fixp, 0, 255);
 		int b = Math.clamp(bch(col) * scale >> fixp, 0, 255);
-		result = rgb(r, g, b);
+		result = int(rgb(r, g, b));
 	}
 
 	static double imgcoord(double val, int resolution) {
@@ -282,7 +282,7 @@ vec4f tunnel0(double x, double y) {
 	result = rgb2vec4f(tex2d(srcImg, u, v, 2 * r));
 }
 
-setup(&time, eye);
+setup(&time, yinyang);
 //~ setup(&time, yinyang);
 //~ setup(&time, Perlin.Noise2f);
 //~ Gui.exitLoop();

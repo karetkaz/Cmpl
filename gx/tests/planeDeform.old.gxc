@@ -26,7 +26,7 @@ int rgbscale(int col, double s) {
 	int r = Math.clamp(rch(col) * scale >> fixp, 0, 255);
 	int g = Math.clamp(gch(col) * scale >> fixp, 0, 255);
 	int b = Math.clamp(bch(col) * scale >> fixp, 0, 255);
-	result = rgb(r, g, b);
+	result = int(rgb(r, g, b));
 }
 
 define tex2d(gxSurf ^src, double x, double y) = getPixel(src, imgcoord(x, width(src)), imgcoord(y, height(src)));
@@ -57,7 +57,7 @@ void plasma() {
 			c1 = Math.clamp(c1, 0., 1.);
 			c2 = Math.clamp(c2, 0., 1.);
 			c3 = Math.clamp(c3, 0., 1.);
-			setPixel(dstImg, xi, yi, rgb(vec4f(c1, c2, c3)));
+			setPixel(dstImg, xi, yi, int(rgb(vec4f(c1, c2, c3))));
 		}
 	}
 	zoomSurf(offScreen, null, dstImg, null, 1);
@@ -359,7 +359,7 @@ void testing() {
 			double r = nz(sqrt( x*x + y*y ));
 			double a = atan2( y, x );
 
-			//~ // cloud like dream scroll
+			// cloud like dream scroll
 			//~ double u = time + .1 * x / (.11 + r * .5);
 			//~ double v = time + .1 * y / (.11 + r * .5);
 
@@ -367,11 +367,11 @@ void testing() {
 			//~ double u = time + 0.5 * a / pi;
 			//~ double v = time + sin(2 * r);
 
-			//~ // clockwise flush down the toilet
+			// clockwise flush down the toilet
 			//~ double v = time + pow(r, 0.1);
 			//~ double u = time + (a / pi) + r;
 
-			//~ // 3D ball
+			// 3D ball
 			double v = time + x * (3 - sqrt(4 - 15 * r * r)) / (r * r + 1);
 			double u = time + y * (3 - sqrt(4 - 15 * r * r)) / (r * r + 1);
 
@@ -389,6 +389,6 @@ void mouseHandler(int btn, int x, int y) {
 	}
 }
 
-Gui.setDrawCallback(stereographic2);
+Gui.setDrawCallback(tunnel0);
 Gui.setMouseHandler(mouseHandler);
 //~ Gui.exitLoop();

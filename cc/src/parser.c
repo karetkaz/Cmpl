@@ -1470,7 +1470,7 @@ static int mkConst(astn ast, ccToken cast) {
 	dieif(!ast, "FixMe");
 
 	if (!eval(&tmp, ast)) {
-		trace("%+k", ast);
+		debug("%+k", ast);
 		return 0;
 	}
 
@@ -1770,19 +1770,42 @@ static astn expr(ccState cc, int mode) {
 					case ASGN_and:
 					case ASGN_ior:
 					case ASGN_xor: {
-						astn tmp = newnode(cc, 0);
+						astn tmp = NULL;
 						switch (tok->kind) {
-							case ASGN_add: tmp->kind = OPER_add; break;
-							case ASGN_sub: tmp->kind = OPER_sub; break;
-							case ASGN_mul: tmp->kind = OPER_mul; break;
-							case ASGN_div: tmp->kind = OPER_div; break;
-							case ASGN_mod: tmp->kind = OPER_mod; break;
-							case ASGN_shl: tmp->kind = OPER_shl; break;
-							case ASGN_shr: tmp->kind = OPER_shr; break;
-							case ASGN_and: tmp->kind = OPER_and; break;
-							case ASGN_ior: tmp->kind = OPER_ior; break;
-							case ASGN_xor: tmp->kind = OPER_xor; break;
-							default: fatal("FixMe");
+							default:
+								fatal("FixMe");
+								return NULL;
+
+							case ASGN_add:
+								tmp = newnode(cc, OPER_add);
+								break;
+							case ASGN_sub:
+								tmp = newnode(cc, OPER_sub);
+								break;
+							case ASGN_mul:
+								tmp = newnode(cc, OPER_mul);
+								break;
+							case ASGN_div:
+								tmp = newnode(cc, OPER_div);
+								break;
+							case ASGN_mod:
+								tmp = newnode(cc, OPER_mod);
+								break;
+							case ASGN_shl:
+								tmp = newnode(cc, OPER_shl);
+								break;
+							case ASGN_shr:
+								tmp = newnode(cc, OPER_shr);
+								break;
+							case ASGN_and:
+								tmp = newnode(cc, OPER_and);
+								break;
+							case ASGN_ior:
+								tmp = newnode(cc, OPER_ior);
+								break;
+							case ASGN_xor:
+								tmp = newnode(cc, OPER_xor);
+								break;
 						}
 						tmp->op.rhso = tok->op.rhso;
 						tmp->op.lhso = tok->op.lhso;
@@ -1790,7 +1813,8 @@ static astn expr(ccState cc, int mode) {
 						tmp->line = tok->line;
 						tok->kind = ASGN_set;
 						tok->op.rhso = tmp;
-					} break;
+						break;
+					}
 				}
 			}
 			*lhs++ = tok;
@@ -1800,7 +1824,12 @@ static astn expr(ccState cc, int mode) {
 		astn root = cc->root;
 		cc->root = NULL;
 		if (!typecheck(cc, NULL, tok)) {
-			error(cc->s, tok->file, tok->line, "invalid expression: `%+k` in `%+k`", cc->root, tok);
+			if (cc->root != NULL) {
+				error(cc->s, tok->file, tok->line, "invalid expression: `%+k` in `%+k`", cc->root, tok);
+			}
+			else {
+				error(cc->s, tok->file, tok->line, "invalid expression: `%+k`", tok);
+			}
 		}
 		cc->root = root;
 	}
@@ -1952,6 +1981,7 @@ static astn decl_init(ccState cc, symn var) {
 
 		if (var->init != NULL) {
 
+			//~ TODO: try to typecheck the same as using ASGN_set
 			// assigning an emit expression: ... x = emit(struct, ...)
 			if (var->init->type == cc->emit_opc) {
 				var->init->type = var->type;
@@ -2023,11 +2053,17 @@ static astn decl_init(ccState cc, symn var) {
 			}
 
 			// check if value can be assigned to variable.
-			if ((cast = canAssign(cc, var, var->init, cast == TYPE_ref))) {
-				//*?
-				if (cast == ENUM_kwd) {
-					cast = var->type->cast;
-				}// */
+			if (canAssign(cc, var, var->init, cast == TYPE_ref)) {
+				// assign enum variable to base type.
+				if (var->cast != ENUM_kwd && var->init->type->cast == ENUM_kwd) {
+					astn ast = var->init;
+					symn typ = ast->type->type;
+					if (!castTo(ast, castOf(ast->type = typ))) {
+						trace("%+k", ast);
+						return NULL;
+					}
+				}
+				//~ trace("%+T -> %t (%s:%u)", var, cast, var->file, var->line);
 				if (!castTo(var->init, cast)) {
 					trace("%t", cast);
 					return NULL;
@@ -2076,7 +2112,7 @@ astn decl_var(ccState cc, astn* argv, int mode) {
 
 		if (!(tag = next(cc, TYPE_ref))) {
 			if (mode != TYPE_def) {
-				debug("id expected, not %k:%s@%d", tag, cc->file, cc->line);
+				trace("id expected, not %k:%s@%d", tag, cc->file, cc->line);
 				return 0;
 			}
 			tag = tagnode(cc, "");
@@ -2241,7 +2277,7 @@ astn decl_var(ccState cc, astn* argv, int mode) {
 }
 
 /**
- * @brief parse the declaration of a enum, struct, alias, variable or function.
+ * @brief parse the declaration of an alias, enum, struct, variable or function.
  * @param cc compiler context.
  * @param argv out parameter for function arguments.
  * @param mode
@@ -2296,7 +2332,7 @@ static astn decl(ccState cc, int mode) {
 				}
 
 				if ((tok = next(cc, TYPE_ref))) {
-					// HACK: declare as a variable to be assignable, then revert to be an alias.
+					// HACK: declare as a variable to be assignable, then revert it to be an alias.
 					symn ref = declare(cc, TYPE_ref, tok, base);
 					ref->stat = ref->cnst = 1;
 					redefine(cc, ref);
@@ -2317,7 +2353,7 @@ static astn decl(ccState cc, int mode) {
 						error(cc->s, ref->file, ref->line, "constant expected");
 					}
 					ref->kind = TYPE_def;
-					// make it of enum type
+					// TODO: enum: make it of enum type ?
 					//~ ref->type = def;
 				}
 				skiptok(cc, STMT_do, 1);
@@ -2325,6 +2361,7 @@ static astn decl(ccState cc, int mode) {
 
 			if (tag != NULL) {
 				def->flds = leave(cc, def, 1);
+				def->prms = base->prms;
 				def->cast = ENUM_kwd;
 				redefine(cc, def);
 			}
@@ -2525,15 +2562,6 @@ static astn decl(ccState cc, int mode) {
 			if (skip(cc, ASGN_set)) {
 				// define sqr(int a) = (a * a);
 				if ((init = expr(cc, TYPE_def))) {
-					/*if (init->kind != OPER_fnc) {
-						astn tmp = newnode(s, OPER_fnc);
-						tmp->type = init->type;
-						tmp->cst2 = init->cst2;
-						tmp->file = init->file;
-						tmp->line = init->line;
-						tmp->op.rhso = init;
-						init = tmp;
-					}*/
 					typ = init->type;
 				}
 			}
@@ -2669,19 +2697,19 @@ static astn decl(ccState cc, int mode) {
 
 		// TODO: functions type == return type
 		if (typ->cast == TYPE_vid && !ref->call) {
-			error(cc->s, ref->file, ref->line, "cannot declare a variable of type `%-T`", typ);
+			error(cc->s, ref->file, ref->line, "invalid variable declaration of type `%+T`", typ);
 		}
 
 		if (Attr & ATTR_stat) {
 			if (ref->init && !ref->call && !(isStatic(cc, ref->init) || isConst(ref->init))) {
-				warn(cc->s, 1, ref->file, ref->line, "probably invalid initialization of static variable `%-T`", ref);
+				warn(cc->s, 1, ref->file, ref->line, "probably invalid static variable initialization `%+T`", ref);
 			}
 			ref->stat = 1;
 		}
 
 		if (Attr & ATTR_const) {
 			if (ref->kind == TYPE_ref && ref->stat && ref->init == NULL) {
-				error(cc->s, ref->file, ref->line, "uninitialized constant `%-T`", ref);
+				error(cc->s, ref->file, ref->line, "uninitialized constant `%+T`", ref);
 			}
 			ref->cnst = 1;
 		}

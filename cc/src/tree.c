@@ -199,7 +199,7 @@ int isConst(astn ast) {
 
 		while (ast->kind == OPER_com) {
 			if (!isConst(ast->op.rhso)) {
-				trace("%+k", ast);
+				debug("%+k", ast);
 				return 0;
 			}
 			ast = ast->op.lhso;
@@ -233,7 +233,7 @@ int isConst(astn ast) {
 		}
 	}
 
-	trace("%+k", ast);
+	debug("%+k", ast);
 	return 0;
 }
 
@@ -274,7 +274,7 @@ int eval(astn res, astn ast) {
 	type = ast->type;
 	switch (ast->cst2) {
 		default:
-			debug("(%+k):%t / %d", ast, ast->cst2, ast->line);
+			trace("(%+k):%t(%s:%u)", ast, ast->cst2, ast->file, ast->line);
 			return 0;
 
 		case TYPE_bit:
@@ -322,7 +322,6 @@ int eval(astn res, astn ast) {
 	switch (ast->kind) {
 		default:
 			fatal("FixMe %t: %+k", ast->kind, ast);
-			debug("FixMe %+k", ast);
 			return 0;
 
 		case OPER_com:
@@ -617,15 +616,16 @@ int eval(astn res, astn ast) {
 			if (!eval(&lhs, ast->op.lhso))
 				return 0;
 
-			if (!eval(&rhs, ast->op.rhso))
+			if (!eval(&rhs, ast->op.rhso)) {
 				return 0;
+			}
 
 			dieif(lhs.kind != rhs.kind, "eval operator %k (%t, %t): %t", ast, lhs.kind, rhs.kind, ast->cst2);
 
 			switch (rhs.kind) {
 
 				default:
-					debug("eval(%+k) : %t", ast->op.rhso, rhs.kind);
+					trace("eval(%+k) : %t", ast->op.rhso, rhs.kind);
 					return 0;
 
 				case TYPE_int:

@@ -5,44 +5,45 @@ struct fixed:0 {
 
 static struct Fixed {
 	// constants
-	//~ define Point = 24;
+	//~ define FractBits = 24;
 
 	enum: int32 {
 
-		Point = 16;
+		FractBits = 16;
 
-		fxpmask = (1 << Point) - 1;
+		fxpmask = (1 << FractBits) - 1;
 
 		fxp_nan = 0x80000000;
-		fxp_inf = 0x7fffffff;
-		fxp_one = 1 << Point;
+		fxp_max = 0x7fffffff;
+		fxp_min = -fxp_max;
+		fxp_one = 1 << FractBits;
 
-		fxp_d2r = 0x000477d1 >> (24 - Point);		// pi / 180 : degrees to radians
-		fxp_r2d = 0x394bb834 >> (24 - Point);		// 180 / pi : radians to degrees
+		fxp_d2r = 0x000477d1 >> (24 - FractBits);		// pi / 180 : degrees to radians
+		fxp_r2d = 0x394bb834 >> (24 - FractBits);		// 180 / pi : radians to degrees
 
-		fxp_ln2 = 0x00b17217 >> (24 - Point);		// .6931471805599453 : natural logarithm (2)
-		fxp_lg2 = 0x004d104d >> (24 - Point);		// .3010299956639812 : decimal logarithm (2)
-		fxp_l2e = 0x01715476 >> (24 - Point);		// 1.442695040888963 : logarithm base 2  (e)
-		fxp_l2t = 0x035269e1 >> (24 - Point);		// 3.321928094887362 : logarithm base 2 (10)
+		fxp_ln2 = 0x00b17217 >> (24 - FractBits);		// .6931471805599453 : natural logarithm (2)
+		fxp_lg2 = 0x004d104d >> (24 - FractBits);		// .3010299956639812 : decimal logarithm (2)
+		fxp_l2e = 0x01715476 >> (24 - FractBits);		// 1.442695040888963 : logarithm base 2  (e)
+		fxp_l2t = 0x035269e1 >> (24 - FractBits);		// 3.321928094887362 : logarithm base 2 (10)
 
-		fxp_mpi = 0x3243f6a8 >> (28 - Point);
-		fxp_2pi = 0x3243f6a8 >> (28 - Point - 1);
-		fxp_pi2 = 0x3243f6a8 >> (28 - Point + 1);
+		fxp_mpi = 0x3243f6a8 >> (28 - FractBits);
+		fxp_2pi = 0x3243f6a8 >> (28 - FractBits - 1);
+		fxp_pi2 = 0x3243f6a8 >> (28 - FractBits + 1);
 	}
 
-	static define asFixed(const int32 val) = emit(fixed, i32(val));
-	static define toFixed(const int32 val) = emit(fixed, i32(val << Point));
-	static define toFixed(const float64 val) = emit(fixed, int32(val * (1 << Point)));
+	static const define asFixed(const int32 val) = emit(fixed, i32(val));
+	static const define toFixed(const int32 val) = emit(fixed, i32(val << FractBits));
+	static const define toFixed(const float64 val) = emit(fixed, int32(val * (1 << FractBits)));
 
 	static define mul(int32 lhs, int32 rhs, int __fixp) = int32(int64.Sar(int64(lhs) * rhs, __fixp));
 	static define div(int32 lhs, int32 rhs, int __fixp) = int32(int64.Shl(int64(lhs), __fixp) / rhs);
 
 	static define add(fixed ^lhs, fixed ^rhs) = asFixed(lhs.value + rhs.value);
 	static define sub(fixed ^lhs, fixed ^rhs) = asFixed(lhs.value - rhs.value);
-	static define mul(fixed ^lhs, fixed ^rhs) = asFixed(mul(lhs.value, rhs.value, Point));
+	static define mul(fixed ^lhs, fixed ^rhs) = asFixed(mul(lhs.value, rhs.value, FractBits));
 	static define mul(fixed ^lhs, int32 rhs) = asFixed(lhs.value * rhs);
 	static define mul(int32 lhs, fixed ^rhs) = asFixed(lhs * rhs.value);
-	static define div(fixed ^lhs, fixed ^rhs) = asFixed(div(lhs.value, rhs.value, Point));
+	static define div(fixed ^lhs, fixed ^rhs) = asFixed(div(lhs.value, rhs.value, FractBits));
 	static define div(fixed ^lhs, int32 rhs) = asFixed(lhs.value / rhs);
 	static define mod(fixed ^lhs, fixed ^rhs) = asFixed(lhs.value % rhs.value);
 	static define inv(fixed rhs) = div(asFixed(fxp_one), rhs);
@@ -74,8 +75,8 @@ static struct Fixed {
 		return result;
 	}
 	static uint32 gettbl(const uint16 tbl[257], int32 x) {
-		uint32 idx = (x >> (Point -  8)) & 0x00ff;
-		uint32 lrp = (x << (24 - Point)) & 0xffff;
+		uint32 idx = (x >> (FractBits -  8)) & 0x00ff;
+		uint32 lrp = (x << (24 - FractBits)) & 0xffff;
 		result = (tbl[idx] << 16) + lrp * (tbl[idx + 1] - tbl[idx]);
 	}
 
@@ -87,13 +88,13 @@ static struct Fixed {
 	}
 	static fixed eval4(fixed x, const fixed p[4]) {
 		result.value = p[0].value;
-		result.value = p[1].value + mul(result.value, x.value, Point);
-		result.value = p[2].value + mul(result.value, x.value, Point);
-		result.value = p[3].value + mul(result.value, x.value, Point);
+		result.value = p[1].value + mul(result.value, x.value, FractBits);
+		result.value = p[2].value + mul(result.value, x.value, FractBits);
+		result.value = p[3].value + mul(result.value, x.value, FractBits);
 	}
 
 	static fixed fxp2xp(fixed x) {
-		static const uint16 tbl2xp[] = {		// (2 ** x) - 1, x : [0,1)
+		static const uint16 tbl2xp[] = {		// (2 ** x) - 1, x: [0,1)
 			0x0000, 0x00b2, 0x0164, 0x0217, 0x02ca, 0x037d, 0x0431, 0x04e6,
 			0x059b, 0x0651, 0x0707, 0x07bd, 0x0874, 0x092c, 0x09e4, 0x0a9c,
 			0x0b56, 0x0c0f, 0x0cc9, 0x0d84, 0x0e3f, 0x0efa, 0x0fb6, 0x1073,
@@ -129,24 +130,29 @@ static struct Fixed {
 			0xffff};
 
 		/* Math Logic:
-		 * fxp2xp(x) <=> 2 ** x
-		 * n = floor(x), q = fract(x)
+		 * fxp2xp(x) <=> exp2(x) <=> 2 ** x
+		 * n = floor(x)
+		 * q = fract(x)
 		 * => exp2(x) = exp2(n + q) = exp2(n) * exp2(q)
 		 * exp2(q) = look up from table tbl2px (>> (32 - FXPOINT) + FXP_ONE)
-		 * exp2(x) = (x >= 0) ? (exp2(q) << n) : (exp2(q) >> -n)
+		 * exp2(n) is a shift operation by n
+		 * => exp2(x) = (x >= 0) ? (exp2(q) << n) : (exp2(q) >> -n)
 		 * ---------------------------------------------------
 		 */
-		int32 n = (x.value >> Point) + Point;
-		if (n < 0 || n >= 31) {
-			result = asFixed(n < 0 ? 0 : fxp_inf);
+		int32 n = (x.value >> FractBits) + FractBits;
+		if (n > 0 && n < 31) {
+			result.value = (1 << n) | (gettbl(tbl2xp, x.value) >> (32 - n));
+		}
+		else if (n > 0) {
+			result = asFixed(fxp_max);
 		}
 		else {
-			result.value = (1 << n) | (gettbl(tbl2xp, x.value) >> (32 - n));
+			result = asFixed(0);
 		}
 	}
 
 	static fixed fxplg2(fixed x) {
-		static const uint16 tbllg2[] = {		// log2(x) - 1, x : [0,1)
+		static const uint16 tbllg2[] = {		// log2(x) - 1, x: [0,1)
 			0x0000, 0x0171, 0x02e0, 0x044e, 0x05ba, 0x0725, 0x088e, 0x09f7,
 			0x0b5d, 0x0cc3, 0x0e27, 0x0f8a, 0x10eb, 0x124b, 0x13aa, 0x1508,
 			0x1664, 0x17bf, 0x1919, 0x1a71, 0x1bc8, 0x1d1e, 0x1e73, 0x1fc6,
@@ -192,12 +198,12 @@ static struct Fixed {
 		 * ---------------------------------------------------
 		 */
 		if (x.value <= 0) {
-			result.value = (x.value != 0) ? fxp_nan : -fxp_inf;
+			result.value = (x.value != 0) ? fxp_nan : -fxp_max;
 		}
 		else {
-			int32 n = bsr(x.value) - Point;
+			int32 n = bsr(x.value) - FractBits;
 			uint32 q = gettbl(tbllg2, n > 0 ? (x.value >> n) : (x.value << -n));
-			result.value = (n << Point) + (q >> (32 - Point));
+			result.value = (n << FractBits) + (q >> (32 - FractBits));
 		}
 	}
 
@@ -261,13 +267,13 @@ static struct Fixed {
 			return asFixed(fxp_nan);
 		}
 
-		static if ((Point & 1) == 0) {
+		static if ((FractBits & 1) == 0) {
 			// from "Graphics Gems"
 			uint32 testDiv;
 			uint32 root = 0;			// Clear root
 			uint32 remHi = 0;			// Clear high part of partial remainder
 			uint32 remLo = x.value;			// Get argument into low part of partial remainder
-			uint32 count = 16 + (Point >> 1);	// Load loop counter
+			uint32 count = 16 + (FractBits >> 1);	// Load loop counter
 			for (;count > 0; count -= 1) {
 				remHi = (remHi << 2) | (remLo >> 30);		// get 2 bits of arg
 				remLo <<= 2;
@@ -280,7 +286,7 @@ static struct Fixed {
 			}
 			result = asFixed(int32(root));
 		}
-		static if ((Point & 1) != 0) {
+		static if ((FractBits & 1) != 0) {
 			result = fxp2xp(div(fxplg2(x), 2));
 		}
 	}
@@ -292,11 +298,11 @@ static struct Fixed {
 	static fixed Pow(fixed x, fixed y) {
 		if (x.value <= 0) {
 			//~ Domain error in fxppow
-			result = asFixed(x.value ? fxp_nan : fxp_inf);
+			result = asFixed(x.value ? fxp_nan : fxp_max);
 		}
 		else if ((y.value & fxpmask) == 0) {
 			fixed sqr = x;
-			int32 pow = (y.value < 0 ? -y.value : y.value) >> Point;
+			int32 pow = (y.value < 0 ? -y.value : y.value) >> FractBits;
 			fixed res = asFixed(fxp_one);
 			for ( ; pow; ) {
 				if (pow & 1) {
@@ -421,33 +427,47 @@ long fxpatanh(long x) {
 
 define fixed(int32 val) = Fixed.toFixed(val);
 define fixed(float64 val) = Fixed.toFixed(val);
-define int32(fixed ^val) = int(val.value >> Fixed.Point);
-define float64(fixed ^val) = double(val.value / double(1 << Fixed.Point));
+define int32(fixed ^val) = int(val.value >> Fixed.FractBits);
+define float64(fixed ^val) = double(val.value / double(1 << Fixed.FractBits));
 
 struct assertInfo {
 	string  function;
 	float64 expected;
 	float64 returned;
+	fixed   retfixed;	//%
 }
 
-define assert(const assertInfo ^info) = debug("test failed", Math.abs(info.returned - info.expected) < 1e-3 ? 0 : Debug.debug, Debug.notrace, emit(variant, ref(info), ref(assertInfo)));
-define assertEquals(string f, float64 a, fixed ^b) = assert(assertInfo(f, a, float64(b)));
+int test(const assertInfo info, double eps) {
+	// not a number case
+	if (info.expected != info.expected) {
+		return info.retfixed.value == Fixed.fxp_nan ? 0 : Debug.debug;
+	}
+
+	// infinity case
+	if (info.expected != 0 && info.expected == 2 * info.expected) {
+		int retFixed = info.retfixed.value;
+		if (retFixed == Fixed.fxp_nan) {return 0;}
+		//~ if (retFixed == Fixed.fxp_max) {return 0;}
+		//~ if (retFixed == Fixed.fxp_min) {return 0;}
+		return Debug.debug;
+	}
+
+	return Math.abs(info.returned - info.expected) < eps ? 0 : Debug.debug;
+}
+
+define assert(const assertInfo ^info) = debug("test failed", test(info, 1e-4), Debug.notrace, emit(variant, ref(info), ref(assertInfo)));
+define assertEquals(string f, float64 a, fixed ^b) = assert(assertInfo(f, a, float64(b), b));
 //~ define assertEquals(string f, float64 a, fixed ^b) = void(0);
 
 //~ define variant(assertInfo ^info) = emit(variant, ref(info), ref(assertInfo));
 //~ define assertEquals(string f, float64 ^a, fixed ^b) = void(0);//debug("test failed", (Math.abs(a - float64(b)) < 1e-14) ? 0 : Debug.debug, Debug.notrace, variant(assertInfo(f, a, float64(b))));
 
 //~ double fixed_test0 = float64(Fixed.add(fixed(2.225), fixed(3)));
-int n = 99;
-string TEST = "Fixed point math.";
-string nullStr = null;
-int &nullInt = n;
 
-uint32 nullFun(uint32 a) = Fixed.bsr;
 
 double float_value = Math.pi / 3;
 double fixed_value = float64(fixed(float_value));
-//~ assert(Math.abs(float_value - fixed_value) < 1e-4);
+assertEquals("Cmp", float_value, fixed(float_value));
 
 double float_test1 = Math.Sin(float_value);
 double fixed_test1 = float64(Fixed.Sin(fixed(float_value)));
@@ -464,3 +484,7 @@ assertEquals("Tan", Math.Tan(float_value), Fixed.Tan(fixed(float_value)));
 double float_test4 = pow(float_value, .5);
 double fixed_test4 = float64(Fixed.Sqrt(fixed(float_value)));
 assertEquals("Sqrt", pow(float_value, .5), Fixed.Sqrt(fixed(float_value)));
+
+double float_test5 = pow(2, float_value);
+double fixed_test5 = float64(Fixed.fxp2xp(fixed(float_value)));
+assertEquals("exp2", pow(2, float_value), Fixed.fxp2xp(fixed(float_value)));

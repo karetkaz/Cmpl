@@ -102,6 +102,10 @@ static void fputsym(FILE* fout, char *esc[], symn sym, int mode, int level) {
 	int pr_init = mode & prInit;
 	int pr_qual = mode & prQual;
 	int rlev = mode & 0xf;
+	if (level < 0) {
+		no_iden = 1;
+		level = -level;
+	}
 
 	if (sym == NULL) {
 		fputstr(fout, esc, "(null)");
@@ -301,7 +305,7 @@ static void fputast(FILE* fout, char *esc[], astn ast, int mode, int level) {
 
 			switch (ast->cst2) {
 				default:
-					debug("error");
+					trace("%+k", ast);
 				case TYPE_any:
 					break;
 
@@ -364,7 +368,7 @@ static void fputast(FILE* fout, char *esc[], astn ast, int mode, int level) {
 			fputfmt(fout, "%I", no_iden ? 0 : level);
 			switch (ast->cst2) {
 				default:
-					debug("error");
+					trace("%+k", ast);
 				case TYPE_any:
 					break;
 
@@ -431,10 +435,9 @@ static void fputast(FILE* fout, char *esc[], astn ast, int mode, int level) {
 
 			fputfmt(fout, "%I", no_iden ? 0 : level);
 			switch (ast->cst2) {
-				case 0:
-					break;
 				default:
-					debug("error");
+					trace("%+k", ast);
+				case TYPE_any:
 					break;
 			}
 			switch (ast->kind) {
@@ -468,7 +471,7 @@ static void fputast(FILE* fout, char *esc[], astn ast, int mode, int level) {
 			fputfmt(fout, "%I", no_iden ? 0 : level);
 			switch (ast->cst2) {
 				default:
-					debug("error");
+					trace("%+k", ast);
 				case TYPE_any:
 					break;
 			}
@@ -557,7 +560,7 @@ static void fputast(FILE* fout, char *esc[], astn ast, int mode, int level) {
 		case ASGN_set: {	// '='
 			if (rlev > 0) {
 				int pre = ast->kind & 0xf;
-				int putparen = level < pre;
+				int putparen = (level < 0 ? -level : level) < pre;
 
 				if (mode & prCast) {
 					fputsym(fout, esc, ast->type, prQual, 0);
@@ -720,9 +723,9 @@ static void FPUTFMT(FILE* fout, char *esc[], const char* msg, va_list ap) {
 		if (chr == '%') {
 			char	nil = 0;	// [?]? skip on null || zero value
 			char	sgn = 0;	// [+-]?
-			long	len = 0;	// ([0-9]*)?
 			char	pad = 0;	// 0?
-			long	prc = -1;	// (.('*')|([0-9])*)? precision
+			long	len = 0;	// ([0-9]*)? length
+			long	prc = -1;	// (.('*')|([0-9])*)? precision / ident
 			char*	str = NULL;	// the string to be printed
 			//~ %(\?)?[+-]?[0 ]?([1-9][0-9]*)?(.[1-9][0-9]*)?[tTkKAIbBoOxXuUdDfFeEsScC]
 			const char*	fmt = msg - 1;		// start of format string
@@ -787,7 +790,7 @@ static void FPUTFMT(FILE* fout, char *esc[], const char* msg, va_list ap) {
 							mode = prQual | 1;
 							break;
 					}
-					fputsym(fout, esc, sym, mode, 0);
+					fputsym(fout, esc, sym, mode, prc);
 					continue;
 				}
 
@@ -813,7 +816,7 @@ static void FPUTFMT(FILE* fout, char *esc[], const char* msg, va_list ap) {
 							break;
 					}
 
-					fputast(fout, esc, ast, mode, 0);
+					fputast(fout, esc, ast, mode, prc);
 					continue;
 				}
 
@@ -1085,7 +1088,7 @@ static void dumpsym(FILE* fout, symn sym, int mode) {
 
 		switch (ptr->kind) {
 
-			// constant/enum
+			// constant
 			case TYPE_def:
 				if (mode > 4) {
 					*++sp = ptr->flds;
@@ -1118,7 +1121,7 @@ static void dumpsym(FILE* fout, symn sym, int mode) {
 				break;
 
 			default:
-				debug("psym:%d:%T['%t']", ptr->kind, ptr, ptr->kind);
+				trace("psym:%d:%T['%t']", ptr->kind, ptr, ptr->kind);
 				tch = "err";
 				break;
 		}
@@ -1450,21 +1453,22 @@ void dump(state rt, int mode, symn sym, const char* text, ...) {
 	if (mode & dump_ast && rt->cc != NULL) {
 		if (sym != NULL) {
 			if (sym->kind == TYPE_ref && sym->call) {
-				if ((level & 0x0f) == 0x0f) {
-					dumpxml(logf, sym->init, level, 0, "code");
+				dumpxml(logf, sym->init, level, 0, "code");
+				/*if ((level & 0x0f) == 0x0f) {
 				}
 				else {
 					fputast(logf, NULL, sym->init, level | 2, 0);
-				}
+				}*/
 			}
 		}
 		else {
-			if ((level & 0x0f) == 0x0f) {
+			dumpxml(logf, sym->init, level, 0, "code");
+			/*if ((level & 0x0f) == 0x0f) {
 				dumpxml(logf, rt->cc->root, level, 0, "root");
 			}
 			else {
 				fputast(logf, NULL, rt->cc->root, level | 2, 0);
-			}
+			}*/
 		}
 	}
 

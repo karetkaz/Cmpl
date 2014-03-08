@@ -1,5 +1,13 @@
 // tests
 
+int n = 99;
+string TEST = "Fixed point math.";
+string nullStr = null;
+int &nullInt = null;
+
+double nullFun(double a) = Math.Tan;
+nullFun = null;
+
 /* test: typename
 struct ss {
 	int32 x;
@@ -77,8 +85,8 @@ for (int i = 0; i < i32arr.length; i += 1) {
 
 //~ */
 
-/* test: malloc / free
-//~ define realloc(pointer ptr, int size) = memmgr(ptr, size);
+/* BUG: realloc / malloc / free
+define realloc(pointer ptr, int size) = memmgr(ptr, size);
 define malloc(int size) = memmgr(null, size);
 define free(pointer ptr) = memmgr(ptr, 0);
 
@@ -110,13 +118,12 @@ void testDeallocation(int test) {
 	memmgr(null, 0);
 }
 
-memmgr(null, 0);
-//~ BUG: testDeallocation(0);
+define makeBug = 1;
+memmgr(null, makeBug);
 testDeallocation(1);
 testDeallocation(2);
 testDeallocation(3);
 testDeallocation(4);
-//~ free(p4);
 //~ */
 
 /* BUG: realloc test
@@ -129,12 +136,12 @@ pointer p1 = malloc(160);
 pointer p2 = malloc(161);
 pointer p3 = malloc(160);
 
-//~ pointer p = p2; p2 = null;
-//~ memmgr(null, 0);
-//~ p = realloc(p, 100);
-//~ memmgr(null, 0);
-//~ p = free(p);
-//~ memmgr(null, 0);
+pointer p = p2; p2 = null;
+memmgr(null, 0);
+p = realloc(p, 100);
+memmgr(null, 0);
+p = free(p);
+memmgr(null, 0);
 
 free(p3);
 free(p2);
@@ -158,10 +165,10 @@ int x = m1.a;
 
 // */
 
-/* TODO: arrays of string
+/* TODO: arrays of references string
 string x = "almax a fa alatt";
 
-string ss[3] = null;
+string ss[3];// = {x,x,x};
 ss[0] = x;//"alma1 a fa alatt";
 ss[1] = "alma2 a fa alatt";
 ss[2] = "alma3 a fa alatt";
@@ -183,8 +190,8 @@ int64 a = 32;
 a = 33;
 void setup() {
 	static int64 &b = a;
-	//~ print("%d\n", int64(a));
-	println(b);
+	print("a: %d\n", a);
+	print("b: %d\n", b);
 }
 setup();
 //~ */
@@ -207,7 +214,7 @@ bool res_true3 = isNullOrEmpty(val_empty);
 bool res_false = isNullOrEmpty(val_nonempty);
 //~ */
 
-//~ /* TODO: enumeration assignment
+/* TODO: enumeration assignment
 struct _vec4f {
 	float x;
 	float y;
@@ -215,21 +222,35 @@ struct _vec4f {
 	float w;
 }
 
-enum xo: vec4f {
+enum coord: vec4f {
 	O = vec4f(float32(0), float32(0), float32(0), float32(0));
 	X = vec4f(float32(1), float32(0), float32(0), float32(0));
 	Y = vec4f(float32(0), float32(1), float32(0), float32(0));
 	Z = vec4f(float32(0), float32(0), float32(1), float32(0));
 }
 
-vec4f z = xo.O;		// ok: values from xo are of type vec4f, so it can be assigned
-//~ xo xo1 = xo.O;	// ok: k of type xo can be assigned to a value from the enumeration
-//~ xo xo2 = z;		// error: x of type xo can be assigned only to a value from the enumeration
-//~ xo xo3;			// error: x of type xo can be assigned only to a value from the enumeration
-//~ xo3 = z;		// error: x of type xo can be assigned only to a value from the enumeration
-//~ xo3 = xo.X;		// error: x of type xo can be assigned only to a value from the enumeration
+coord e1 = coord.X;		// ok: enum variable can be assigned with a value from the enumeration.
+coord e2 = e1;			// ok: enum variable can be assigned with the same type of variable.
+e2 = coord.X;			// ok: assigment, not initialization.
+e2 = e2;				// ok: assigment, not initialization.
 
+vec4f v1 = coord.Y;		// ok: values from enum are of type vec4f, so it can be assigned.
+vec4f v2 = e1;			// ok: enum variables can be assigned to variables of their base type.
+v2 = coord.X;			// ok: assigment, not initialization.
+v2 = e2;				// ok: assigment, not initialization.
+
+//~ coord e3 = v1;			// error: enum variable can be assigned only from a value from the enumeration
+//~ e3 = v1;				// error: assigment, not initialization.
+coord e0;				// TODO: error: uninitialized enum.
+
+//~ bool b1 = e1 == e2;
+//~ bool b2 = e1 == v1;
+//~ bool b3 = v1 == e2;
+//~ bool b4 = v1 == v1;
 // */
+
+//~ int a = 7; a += 7.;
+//~ int b = 7.;
 
 /*
 enum Window {
@@ -318,10 +339,10 @@ idnMat14x4(mat2);
 
 /* TEST: xrgb
 struct xrgb: 1 {
-	uint8 b;
-	uint8 g;
-	uint8 r;
-	uint8 x;
+	uint8 b;	//%0x%02x
+	uint8 g;	//%0x%02x
+	uint8 r;	//%0x%02x
+	uint8 x;	//%0x%02x
 }
 struct xrgbi32: 0 {
 	xrgb rgb;
@@ -342,7 +363,7 @@ xrgbi32 r = {
 	b: Math.min(a.b + b.b, 255),
 	a: 0,
 };
-+/
+// +/
 
 r.rgb.r = Math.min(a.r + b.r, 255);
 r.rgb.g = Math.min(a.g + b.g, 255);
@@ -365,7 +386,6 @@ void methodCall(int method()) {
 		print("(null)\n");
 		return;
 	}
-	//~ print("(xxxx)\n");
 	int n = method();
 	//~ print("%D\n", int64(n));
 }
@@ -466,12 +486,9 @@ char buff[512] = {0};
 format(buff, "value: %d = 0x%08x = 0b%032b = [%.5i]5", val);
 println(string(buff));
 
-//~ Date date = Date(2011, 10, 24);
-//~ Date.Parts parts = Date.ToParts(date.days);
-
 //~ */
 
-/* test: Trace with external call
+/* TODO: Trace with external call
 void f(int &arg) {
 	if (arg <= 0) {
 		trace("stack trace :-)");
@@ -486,7 +503,7 @@ int N = 4;
 f(&N);
 
 //~ int &b = N = 8;
-*/
+// */
 
 /+ test: debug and trace info
 struct debugInfo {

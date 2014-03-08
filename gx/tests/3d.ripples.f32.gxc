@@ -6,7 +6,7 @@ enum Window {
 }
 
 enum Options: bool {
-	textured = !true;
+	textured = true;
 	do2d = !true;
 	do3d = true;
 }
@@ -46,9 +46,9 @@ void drawCB() {
 
 	Gui.Repaint();
 	static int64 beg = -1;
-	int32 now = clock();
+	int64 now = millis();
 	//~ /* limit speed to 20 fps
-	if (clocks2Sec(now - beg) <= 1./25) {
+	if ((now - beg) / 1000. <= 1./25) {
 		static if (Options.do2d) {
 			zoomSurf(offScreen, null, tmp, null, 1);
 		}
@@ -80,12 +80,12 @@ void drawCB() {
 	for (int y = 0; y < division; y += 1) {
 		for (int x = 0; x < division; x += 1) {
 			define cl(int ^c) = (c < 0 ? 0 : c >= division ? division - 1 : c);
-			v[x][y] += (u[cl(x - 1)][y] + u[cl(x + 1)][y] + u[x][cl(y - 1)] + u[x][cl(y + 1)]) / 4 - u[x][y];
+			v[x][y] += (u[cl(x - 1)][y] + u[cl(x + 1)][y] + u[x][cl(y - 1)] + u[x][cl(y + 1)]) / 4. - u[x][y];
 		}
 	}
 	for (int y = 0; y < division; y += 1) {
 		for (int x = 0; x < division; x += 1) {
-			u[x][y] += v[x][y] *= .96;// * 1.9;
+			u[x][y] += v[x][y] *= .95;
 		}
 	}
 
@@ -114,11 +114,11 @@ void drawCB() {
 			x = Math.lerp(1 - s01, -H, H);
 			y = Math.lerp(1 - t01, -H, H);
 
-			//~ int posx = Math.lerp(s01, 0., division - 1.);
-			//~ int posy = Math.lerp(t01, 0., division - 1.);
-			//~ z = double(u[posx][posy]) / -pheight;
+			int posx = Math.lerp(s01, 0., division - 1.);
+			int posy = Math.lerp(t01, 0., division - 1.);
+			z = double(u[posx][posy]) / -pheight;
 
-			z = double(lerpHeight(s01, t01)) / -pheight;
+			//~ z = double(lerpHeight(s01, t01)) / -pheight;
 		}
 		meshGen(division, hmapfn, 1.5e-2);
 	}

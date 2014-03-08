@@ -133,7 +133,7 @@ void setupBiorithm(int _daysToShow, Date _now, Date _birth) {
 				inertial_pan_y = Math.clamp(inertial_pan_y, -inertial_pan, inertial_pan) / inertial_speed;
 
 				if ((Math.abs(inertial_pan_x) > 0) || (Math.abs(inertial_pan_y) > 0)) {
-					pos += inertial_pan_x/4;
+					pos += inertial_pan_x / 4.;
 					reDraw = true;
 				}
 				inertial_time = now;

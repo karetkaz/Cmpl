@@ -4,13 +4,13 @@
 // TODO: split this file
 
 enum Test {
-	Emit = +0;
-	Type = +0;
-//	Lang = +0;
-	Call = +0;
-	Bits = +0;
-	Math = +0;
-//	Misc = +0;
+	Emit = ~0;
+	Type = ~0;
+//	Lang = ~0;
+	Call = ~0;
+	Bits = ~0;
+	Math = ~0;
+//	Misc = ~0;
 }
 
 static if (true) {

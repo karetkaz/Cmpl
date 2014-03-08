@@ -67,11 +67,11 @@ void drawCB() {
 		static if (!useNativeImpl) {
 			//~ /* techniq 1
 			static int pixelCB(int col) {
-				result = __rgb(
+				result = int(__rgb(
 					rch(lut.data[rch(col)]),
 					gch(lut.data[gch(col)]),
 					bch(lut.data[bch(col)])
-				);
+				));
 			}
 			fillSurfrgb(offScreen, null, pixelCB);
 			//~ */

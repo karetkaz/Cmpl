@@ -103,7 +103,7 @@ boolean bigEndian = false;
 //~ +/
 
 /+ ? Templates ?
-static struct Array(typename Type) {
+static struct Array(struct Type) {
 	int bSearch(Type array[], Type element) {
 		...
 	}
@@ -113,16 +113,66 @@ static struct Array(typename Type) {
 	...
 	operator (Type array[]).bSearch(Type element) = bSearch;
 	operator (Type array[]).indexOf(Type element) = indexOf;
-	/+ then using like:
+	/+ instantiating:
+
+	case1:
 		using Array(int);
 
+	case2:
+		int array[200] = ...;
 		using (Array(int)) {
-			int array[200] = ...;
 			int x = array.indexOf(30);
 		}
-	
+
+	case3:
+		struct IntArray: Array(int);
+
 	+/
 }
+
+struct Fixed(int FractBits): 0 {
+	assert(FractBits >= 0 && FractBits <= 24)
+	int32 value;
+
+	enum: int32 {
+
+		fxpmask = (1 << FractBits) - 1;
+
+		fxp_nan = 0x80000000;
+		fxp_one = 1 << FractBits;
+
+		fxp_d2r = 0x000477d1 >> (24 - FractBits);		// pi / 180 : degrees to radians
+		fxp_r2d = 0x394bb834 >> (24 - FractBits);		// 180 / pi : radians to degrees
+
+		fxp_ln2 = 0x00b17217 >> (24 - FractBits);		// .6931471805599453 : natural logarithm (2)
+		fxp_lg2 = 0x004d104d >> (24 - FractBits);		// .3010299956639812 : decimal logarithm (2)
+		fxp_l2e = 0x01715476 >> (24 - FractBits);		// 1.442695040888963 : logarithm base 2  (e)
+		fxp_l2t = 0x035269e1 >> (24 - FractBits);		// 3.321928094887362 : logarithm base 2 (10)
+
+		fxp_mpi = 0x3243f6a8 >> (28 - FractBits);
+		fxp_2pi = 0x3243f6a8 >> (28 - FractBits - 1);
+		fxp_pi2 = 0x3243f6a8 >> (28 - FractBits + 1);
+	}
+
+	static const define asFixed(const int32 val) = emit(Fixed, i32(val));
+	static const define toFixed(const int32 val) = emit(Fixed, i32(val << FractBits));
+	static const define toFixed(const float64 val) = emit(Fixed, int32(val * (1 << FractBits)));
+
+	static define add(fixed ^lhs, fixed ^rhs) = asFixed(lhs.value + rhs.value);
+	static define sub(fixed ^lhs, fixed ^rhs) = asFixed(lhs.value - rhs.value);
+	static define mul(fixed ^lhs, fixed ^rhs) = asFixed(int64.Sar(int64(lhs.value) * rhs.value, FractBits));
+	static define mul(fixed ^lhs, int32 rhs) = asFixed(lhs.value * rhs);
+	static define mul(int32 lhs, fixed ^rhs) = asFixed(lhs * rhs.value);
+	static define div(fixed ^lhs, fixed ^rhs) = asFixed(int64.Shl(lhs.value, FractBits) / rhs.value);
+	static define div(fixed ^lhs, int32 rhs) = asFixed(lhs.value / rhs);
+	static define mod(fixed ^lhs, fixed ^rhs) = asFixed(lhs.value % rhs.value);
+	static define inv(fixed rhs) = div(asFixed(fxp_one), rhs);
+	...
+
+	// using ?
+	int fxp12_pi = Fixed(12).toFixed(3.14).value;
+}
+
 //~ +/
 
 /+ initialization (type and variable)
@@ -350,17 +400,38 @@ struct Button: View {
 }
 // +/
 
+/*
 struct Alarm {
-	// duration in seconds, 0 means
-	int  duration;
-
 	// Alarm starts on
 	Date start;
 
-	// Alarm starts on
+	// Alarm ends on
 	Date end;
 
-	struct repeat:1 {
-		s
+	// duration in seconds
+	int duration;
+
+	// 
+	int repeat;
+	enum: int {
+		repeatDaily   = 0x10000;
+		repeatWeekly  = 0x10000;
+		repeatMonthly = 0x10000;
+
+		repeatDayMon  = 0x00001;
+		repeatDayTue  = 0x00002;
+		repeatDayWed  = 0x00004;
+		repeatDayThu  = 0x00008;
+		repeatDayFri  = 0x00010;
+		repeatDaySat  = 0x00020;
+		repeatDaySun  = 0x00040;
 	}
 }
+
+struct Verbosity { enum Level {
+	NoOutput = 0,
+	Quiet,
+	Normal
+}; };
+
+*/

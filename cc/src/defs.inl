@@ -1,9 +1,8 @@
 // tokens and opcodes
 #ifdef TOKDEF
 /* #define TOKDEF(NAME, TYPE, opArgs, STR) {KIND, TYPE, SIZE, STR},
-	NAME: enum name
-	TYPE:	oprator priority
-			typename size, if == ff then keyword
+	NAME: name
+	TYPE: oprator priority
 	opArgs: if != 0 then operator
 */
 TOKDEF(TYPE_any, 0x00, 0, ".err")	// error
@@ -23,16 +22,15 @@ TOKDEF(TYPE_def, 0x00, 0, ".def")		// typedef or inline expression
 TOKDEF(TYPE_rec, 0x00, 0, ".rec")		// type: struct, cast: by value
 TOKDEF(TYPE_ref, 0x00, 0, ".ref")		// type: variable, cast: by reference
 
+//~ vmInterface ================================================================
+TOKDEF(EMIT_opc, 0x00, 0, "emit")		// opcodes in emit(args...)
 TOKDEF(ENUM_kwd, 0x00, 0, "enum")
 //~ TOKDEF(OPER_kwd, 0x00, 0, "operator")
 
-//~ TOKDEF(QUAL_con, 0x00, 0, "const")	// constant
 TOKDEF(QUAL_sta, 0x00, 0, "static")
 TOKDEF(QUAL_par, 0x00, 0, "parallel")
 //~ TOKDEF(QUAL_syn, 0x00, 0, "synchronized")
 
-//~ vmInterface ================================================================
-TOKDEF(EMIT_opc, 0x00, 0, "emit")		// opcodes in emit(args...)
 
 //~ Statements =================================================================
 //! keep beg the first and end the last statement token
@@ -139,8 +137,8 @@ TOKDEF(ASGN_pow, 0x0a, 2, OP, "**=")		// a **= b
 #endif
 #ifdef OPCDEF
 /* #define OPCDEF(Name, Code, Size, Chk, Diff, Mnem) Name = Code
- * Name: enum name;
- * Code: enum value;
+ * Name: name;
+ * Code: value;
  * Size: opcode length; (0: UNIMPLEMENTED OR VARIABLE);
  * Diff: pops n stack elements; (9: VARIABLE);
  * Chk:  requires n stack elements; (9: VARIABLE);

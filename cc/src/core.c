@@ -129,7 +129,7 @@ void ccEnd(state rt, symn cls) {
 /// Declare int constant; @see state.api.ccDefInt
 symn ccDefInt(state rt, char* name, int64_t value) {
 	if (!rt || !rt->cc || !name) {
-		debug("%x, %s, %D", rt, name, value);
+		trace("%x, %s, %D", rt, name, value);
 		return NULL;
 	}
 	name = mapstr(rt->cc, name, -1, -1);
@@ -138,7 +138,7 @@ symn ccDefInt(state rt, char* name, int64_t value) {
 /// Declare float constant; @see state.api.ccDefFlt
 symn ccDefFlt(state rt, char* name, double value) {
 	if (!rt || !rt->cc || !name) {
-		debug("%x, %s, %F", rt, name, value);
+		trace("%x, %s, %F", rt, name, value);
 		return NULL;
 	}
 	name = mapstr(rt->cc, name, -1, -1);
@@ -147,7 +147,7 @@ symn ccDefFlt(state rt, char* name, double value) {
 /// Declare string constant; @see state.api.ccDefStr
 symn ccDefStr(state rt, char* name, char* value) {
 	if (!rt || !rt->cc || !name) {
-		debug("%x, %s, %s", rt, name, value);
+		trace("%x, %s, %s", rt, name, value);
 		return NULL;
 	}
 	name = mapstr(rt->cc, name, -1, -1);
@@ -193,7 +193,7 @@ symn mapsym(state rt, void* ptr) {
 
 	// TODO: symbols are saved to read only memory.
 	if (offs < 0 || offs > rt->vm.pc) {
-		debug("invalid offset: %06x", offs);
+		trace("invalid offset: %06x", offs);
 		return NULL;
 	}
 	for (sym = rt->gdef; sym; sym = sym->gdef) {
@@ -231,11 +231,11 @@ static int emitidx(state rt, vmOpcode opc, int arg) {
 	}
 
 	if (tmp.i8 > vm_regs) {
-		debug("opc_x%02x(%D(%d))", opc, tmp.i8, arg);
+		trace("opc_x%02x(%D(%d))", opc, tmp.i8, arg);
 		return 0;
 	}
 	if (tmp.i8 > rt->vm.ss * vm_size) {
-		debug("opc_x%02x(%D(%d))", opc, tmp.i8, arg);
+		trace("opc_x%02x(%D(%d))", opc, tmp.i8, arg);
 		return 0;
 	}
 	return emitarg(rt, opc, tmp);
@@ -678,8 +678,17 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 			for (ptr = ast->stmt.stmt; ptr; ptr = ptr->next) {
 				ipdbg = emitopc(rt, markIP);
 				if (!cgen(rt, ptr, TYPE_vid)) {		// we will free stack on scope close
-					#if DEBUGGING > 2
-					fputasm(rt, rt->logf, ipdbg, emitopc(rt, markIP), 0x119);
+					#if DEBUGGING > 0
+					struct symNode dbg;
+					memset(&dbg, 0, sizeof(dbg));
+					dbg.kind = TYPE_ref;
+					dbg.name = "error";
+					dbg.call = 1;
+					dbg.init = ptr;
+					dbg.offs = ipdbg;
+					dbg.size = emitopc(rt, markIP) - ipdbg;
+					dump(rt, dump_ast | dump_asm | 0x1ff, &dbg, "");
+					//~ fputasm(rt, rt->logf, ipdbg, emitopc(rt, markIP), 0x119);
 					#endif
 					error(rt, ptr->file, ptr->line, "emmiting statement `%+k`", ptr);
 				}
@@ -1245,7 +1254,7 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 			}
 			if (var->stat) {
 				if (!lhsstat) {
-					warn(rt, 5, ast->file, ast->line, "Member `%+T` is accessed with an instance reference", var);
+					warn(rt, 5, ast->file, ast->line, "accessing static member using instance variable `%+T`", var);
 				}
 				return cgen(rt, ast->op.rhso, get);
 			}
@@ -1259,7 +1268,7 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 			}
 			if (var->kind == TYPE_def) {
 				// static array length is of this type
-				trace("%+T: %t", var, get);
+				debug("%+T: %t", var, get);
 				return cgen(rt, ast->op.rhso, get);
 			}
 
@@ -1350,24 +1359,56 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 					fatal("Error");
 					return TYPE_any;
 
-				case OPER_add: opc = opc_add; break;
-				case OPER_sub: opc = opc_sub; break;
-				case OPER_mul: opc = opc_mul; break;
-				case OPER_div: opc = opc_div; break;
-				case OPER_mod: opc = opc_mod; break;
+				case OPER_add:
+					opc = opc_add;
+					break;
+				case OPER_sub:
+					opc = opc_sub;
+					break;
+				case OPER_mul:
+					opc = opc_mul;
+					break;
+				case OPER_div:
+					opc = opc_div;
+					break;
+				case OPER_mod:
+					opc = opc_mod;
+					break;
 
-				case OPER_neq: opc = opc_cne; break;
-				case OPER_equ: opc = opc_ceq; break;
-				case OPER_geq: opc = opc_cge; break;
-				case OPER_lte: opc = opc_clt; break;
-				case OPER_leq: opc = opc_cle; break;
-				case OPER_gte: opc = opc_cgt; break;
+				case OPER_neq:
+					opc = opc_cne;
+					break;
+				case OPER_equ:
+					opc = opc_ceq;
+					break;
+				case OPER_geq:
+					opc = opc_cge;
+					break;
+				case OPER_lte:
+					opc = opc_clt;
+					break;
+				case OPER_leq:
+					opc = opc_cle;
+					break;
+				case OPER_gte:
+					opc = opc_cgt;
+					break;
 
-				case OPER_shl: opc = opc_shl; break;
-				case OPER_shr: opc = opc_shr; break;
-				case OPER_and: opc = opc_and; break;
-				case OPER_ior: opc = opc_ior; break;
-				case OPER_xor: opc = opc_xor; break;
+				case OPER_shl:
+					opc = opc_shl;
+					break;
+				case OPER_shr:
+					opc = opc_shr;
+					break;
+				case OPER_and:
+					opc = opc_and;
+					break;
+				case OPER_ior:
+					opc = opc_ior;
+					break;
+				case OPER_xor:
+					opc = opc_xor;
+					break;
 			}
 			if (!cgen(rt, ast->op.lhso, TYPE_any)) {
 				trace("%+k", ast);
@@ -1384,6 +1425,17 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 
 			#ifdef DEBUGGING
 			// these must be true
+			if (ast->op.lhso->cst2 != ast->op.rhso->cst2) {
+				struct symNode dbg;
+				memset(&dbg, 0, sizeof(dbg));
+				dbg.kind = TYPE_ref;
+				dbg.name = "error";
+				dbg.call = 1;
+				dbg.init = ast;
+				dbg.offs = ipdbg;
+				dbg.size = emitopc(rt, markIP) - ipdbg;
+				dump(rt, dump_ast | dump_asm | 0x1ff, &dbg, "");
+			}
 			dieif(ast->op.lhso->cst2 != ast->op.rhso->cst2, "RemMe", ast);
 			dieif(ret != castOf(ast->type), "RemMe");
 			switch (ast->kind) {
@@ -1716,11 +1768,6 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 			dieif(typ == NULL, "Error");
 			dieif(var == NULL, "Error");
 
-			if (get == ENUM_kwd) {
-				trace("%+k", ast);
-				//~ ret = get;
-			}
-
 			switch (var->kind) {
 				default:
 					error(rt, ast->file, ast->line, "invalid rvalue `%+k:` %t", ast, var->kind);
@@ -1798,10 +1845,9 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 				case TYPE_def:
 					//~ TODO: reimplement: it works, but ...
 					if (var->init != NULL) {
-						//*?
 						if (get == ENUM_kwd) {
-							get = var->type->type->cast;
-						}// */
+							get = ast->cst2;
+						}
 						return cgen(rt, var->init, get);
 					}
 			}
@@ -2030,7 +2076,7 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 
 					// int a = 99;	// variable initialization
 					else {
-						logif(val->cst2 != var->cast, "cast error [%t->%t], get: %t: %-T := %+k", val->cst2, var->cast, get, var, val);
+						logif(val->cst2 != var->cast, "cast error [%t -> %t] -> %t: %-T := %+k", val->cst2, var->cast, get, var, val);
 						switch (val->kind) {
 							case TYPE_int:
 							case TYPE_flt:
@@ -2038,7 +2084,7 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 							default:
 								break;
 						}
-						if (!cgen(rt, val, var->cast)) {
+						if (!cgen(rt, val, TYPE_any)) {
 							trace("%+k", ast);
 							return TYPE_any;
 						}
@@ -2288,10 +2334,6 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 				return TYPE_ptr;
 		}
 
-		case ENUM_kwd:
-			error(rt, ast->file, ast->line, "%+k is not member of the enumeration", ast);
-			goto errorcast2;
-
 		default:
 			fatal("unimplemented(cast for `%+k`, %t):%t (%s:%d)", ast, get, ret, ast->file, ast->line);
 			// fall to next case
@@ -2303,7 +2345,7 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 
 	// zero extend ...
 	if (get == TYPE_u32) {
-		trace("zero extend: to (%k)[%t->%t] '%-T'", ast, ret, get, ast->type);
+		debug("zero extend: to (%k)[%t->%t] '%-T'", ast, ret, get, ast->type);
 		switch (ast->type->size) {
 			default:
 				fatal("Error");

@@ -1,0 +1,31 @@
+struct vec3f {
+	float x;
+	float y;
+	float z;
+}
+
+enum coord: vec3f {
+	O = vec3f(0, 0, 0);
+	X = vec3f(1, 0, 0);
+	Y = vec3f(0, 1, 0);
+	Z = vec3f(0, 0, 1);
+}
+
+coord e1 = coord.X;		// ok: enum variable can be assigned with a value from the enumeration.
+coord e2 = e1;			// ok: enum variable can be assigned with the same type of variable.
+e2 = coord.X;			// ok.
+e2 = e1;				// ok.
+
+vec3f v1 = coord.Y;		// ok: values from enum are of type vec3f, so it can be assigned.
+vec3f v2 = e1;			// ok: enum variables can be assigned to variables of their base type.
+v2 = coord.X;			// ok.
+v2 = e2;				// ok.
+
+//~ coord e3 = v1;			// error: enum variable can be assigned only from a value from the enumeration.
+//~ e3 = v1;				// error.
+//~ coord e0;				// TODO: error: enum variable must be initialized.
+
+//~ bool b1 = e1 == e2;
+//~ bool b2 = e1 == v1;
+//~ bool b3 = v1 == e2;
+//~ bool b4 = v1 == v1;

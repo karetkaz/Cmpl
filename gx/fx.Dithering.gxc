@@ -19,19 +19,16 @@ enum Dithering: int32 {
 	Steinberg = '3';
 	Stucki = '5';
 }
-gxSurf dither(gxSurf img, bool grayscale, uint32 colors, int method) {
+gxSurf dither(gxSurf img, bool grayscale, uint32 colors, Dithering method) {
 
 	if (colors >= 256) {
 		//~ dithering = Dithering.None;
 		colors = 256;
 	}
-
 	int cols[256];
 
-	int levels = colors - 1;
-
-	for (int i = 0; i < colors; i += 1) {
-		cols[i] = i * 255 / levels;
+	for (int i = 0; i < cols.length; i += 1) {
+		cols[i] = (i * (colors) / cols.length) * (cols.length / colors);
 	}
 
 	int width = width(img);
@@ -44,8 +41,8 @@ gxSurf dither(gxSurf img, bool grayscale, uint32 colors, int method) {
 		if (grayscale) {
 			for (int y = 0; y < height; y += 1) {
 				for (int x = 0; x < width; x += 1) {
-					int col = lum(getPixel(img, x, y));
-					int gray = cols[(col * colors / 256) % colors];
+					int col = getPixel(img, x, y);
+					int gray = cols[lum(col)];
 					setPixel(img, x, y, toGray(gray));
 				}
 			}
@@ -54,9 +51,9 @@ gxSurf dither(gxSurf img, bool grayscale, uint32 colors, int method) {
 			for (int y = 0; y < height; y += 1) {
 				for (int x = 0; x < width; x += 1) {
 					int col = getPixel(img, x, y);
-					int colr = cols[(rch(col) * colors / 256) % colors];
-					int colg = cols[(gch(col) * colors / 256) % colors];
-					int colb = cols[(bch(col) * colors / 256) % colors];
+					int colr = cols[rch(col)];
+					int colg = cols[gch(col)];
+					int colb = cols[bch(col)];
 					setPixel(img, x, y, toRgb(colr, colg, colb));
 				}
 			}
@@ -72,7 +69,7 @@ gxSurf dither(gxSurf img, bool grayscale, uint32 colors, int method) {
 			for(int y = 0; y < height; y += 1) {
 				for (int x = 0; x < width; x += 1) {
 					int col = lum(getPixel(img, x, y));
-					int gray = cols[(col * colors / 256) % colors];
+					int gray = cols[col];
 
 					int quant_error = col - gray;
 					define rgbError(int ^col, int ^s) = toGray(lum(col) + s * quant_error / 8);
@@ -88,9 +85,9 @@ gxSurf dither(gxSurf img, bool grayscale, uint32 colors, int method) {
 			for (int y = 0; y < height; y += 1) {
 				for (int x = 0; x < width; x += 1) {
 					int col = getPixel(img, x, y);
-					int colr = cols[(rch(col) * colors / 256) % colors];
-					int colg = cols[(gch(col) * colors / 256) % colors];
-					int colb = cols[(bch(col) * colors / 256) % colors];
+					int colr = cols[rch(col)];
+					int colg = cols[gch(col)];
+					int colb = cols[bch(col)];
 
 					int quant_error_r = rch(col) - colr;
 					int quant_error_g = gch(col) - colg;
@@ -121,7 +118,7 @@ gxSurf dither(gxSurf img, bool grayscale, uint32 colors, int method) {
 				for (int x = 0; x < width; x += 1) {
 
 					int col = lum(getPixel(img, x, y));
-					int gray = cols[(col * colors / 256) % colors];
+					int gray = cols[col];
 
 					int quant_error = col - gray;
 					define rgbError(int col, int s) = toGray(lum(col) + s * quant_error / 16);
@@ -138,9 +135,9 @@ gxSurf dither(gxSurf img, bool grayscale, uint32 colors, int method) {
 			for(int y = 0; y < height; y += 1) {
 				for (int x = 0; x < width; x += 1) {
 					int col = getPixel(img, x, y);
-					int colr = cols[(rch(col) * colors / 256) % colors];
-					int colg = cols[(gch(col) * colors / 256) % colors];
-					int colb = cols[(bch(col) * colors / 256) % colors];
+					int colr = cols[rch(col)];
+					int colg = cols[gch(col)];
+					int colb = cols[bch(col)];
 
 					int quant_error_r = rch(col) - colr;
 					int quant_error_g = gch(col) - colg;
@@ -172,7 +169,7 @@ gxSurf dither(gxSurf img, bool grayscale, uint32 colors, int method) {
 			for(int y = 0; y < height; y += 1) {
 				for (int x = 0; x < width; x += 1) {
 					int col = lum(getPixel(img, x, y));
-					int gray = cols[(col * colors / 256) % colors];
+					int gray = cols[col];
 
 					int quant_error = col - gray;
 					define rgbError(int col, int s) = toGray(lum(col) + s * quant_error / 42);
@@ -197,9 +194,9 @@ gxSurf dither(gxSurf img, bool grayscale, uint32 colors, int method) {
 			for(int y = 0; y < height; y += 1) {
 				for (int x = 0; x < width; x += 1) {
 					int col = getPixel(img, x, y);
-					int colr = cols[(rch(col) * colors / 256) % colors];
-					int colg = cols[(gch(col) * colors / 256) % colors];
-					int colb = cols[(bch(col) * colors / 256) % colors];
+					int colr = cols[rch(col)];
+					int colg = cols[gch(col)];
+					int colb = cols[bch(col)];
 
 					int quant_error_r = rch(col) - colr;
 					int quant_error_g = gch(col) - colg;
@@ -240,6 +237,12 @@ gxSurf dither(gxSurf img, bool grayscale, uint32 colors, int method) {
 			15, 47,  7, 39, 13, 45,  5, 37,
 			63, 31, 55, 23, 61, 29, 53, 21
 		};
+
+		// TODO: simplify
+		int levels = colors - 1;
+		for (int i = 0; i < colors; i += 1) {
+			cols[i] = i * 255 / levels;
+		}
 
 		static void bayer(int &num2, int &num3, int col, int levels) {
 			define d = 64;
@@ -288,137 +291,31 @@ gxSurf dither(gxSurf img, bool grayscale, uint32 colors, int method) {
 	}
 }
 
-int colors = 5;
-int grayscale = !true;
-int method = Dithering.Stucki;
-method = Dithering.Steinberg;
+int maxcolors = 4;
+int grayscale = true;
+Dithering method = Dithering.Stucki;
+//~ method = Dithering.Steinberg;
+method = Dithering.SteinbergFalse;
 //~ method = Dithering.Bayer;
 //~ method = Dithering.None;
 
 define hex(uint32 c) = int("0123456789abcdef"[c & 0xf]);
 
 int gs = grayscale ? 'g' : 'c';
-int h1 = hex(colors >> 4);
-int h2 = hex(colors);
+int h1 = hex(maxcolors >> 4);
+int h2 = hex(maxcolors);
 
-uint8 filename[34] = {'o','u','t','/','o','u','t','[',gs,'x',h1, h2,'_',method,']','.','b','m','p',0};
+uint8 filename[34] = {'o','u','t','/','o','u','t','[',gs,'x',h1, h2,'_',emit(char, (method)),']','.','b','m','p',0};
 
 println(string(filename));
 
 gxSurf image = gxSurf(fileName);
 
+vec4f color(float64 x, float64 y) {return vec4f(Math.min(x, y));}
+evalSurf(image, null, color);
 
-dither(image, grayscale, colors, method);
-//~ bmpWrite(image, emit(string, ref(filename)));
-
-void setupPicView(gxSurf vImg, bool vFit) {
-
-	static bool reDraw = true;
-	static bool clear = false;
-	static bool fit = false;
-
-	define inertial_pan = 25.;
-	define inertial_speed = 1.01;
-	static int64 inertial_time = 0;
-	static double inertial_pan_x = 0;
-	static double inertial_pan_y = 0;
-	static double inertial_pos_x = 0;
-	static double inertial_pos_y = 0;
-
-	static gxRect roi;
-	static gxSurf img;
-
-	static double clamp(double val, double max, double mod) {
-		result = Math.clamp(val, 0., max - mod);
-	}
-
-	void DrawScreen() {
-		if (reDraw) {
-			if (fit) {
-				zoomSurf(offScreen, null, img, null, 1);
-			}
-			else {
-				//~ copy background image
-				if (clear) {
-					fillRect(offScreen, 0, 0, 32768, 32768, 0x000000);
-				}
-				roi.x = clamp(inertial_pos_x, width(img), roi.w);
-				roi.y = clamp(inertial_pos_y, height(img), roi.h);
-				copySurf(offScreen, 0, 0, img, &roi);
-			}
-			reDraw = false;
-		}
-		static if (inertial_pan) {
-			int64 now = millis();
-			if (inertial_time < now) {
-				inertial_pan_x = Math.clamp(inertial_pan_x, -inertial_pan, inertial_pan) / inertial_speed;
-				inertial_pan_y = Math.clamp(inertial_pan_y, -inertial_pan, inertial_pan) / inertial_speed;
-				inertial_pos_x += inertial_pan_x / inertial_pan*3;
-				inertial_pos_y += inertial_pan_y / inertial_pan*3;
-				if ((Math.abs(inertial_pan_x) > 1) || (Math.abs(inertial_pan_y) > 1)) {
-					reDraw = true;
-				}
-				inertial_time = now;
-			}
-			if ((Math.abs(inertial_pan_x) > 1) || (Math.abs(inertial_pan_y) > 1)) {
-				Gui.Repaint();
-			}
-		}
-	}
-
-	void mouseHandler(int btn, int x, int y) {
-		static int ox = 0;
-		static int oy = 0;
-		static int ob = 0;
-
-		if (Mouse.dblClick(btn, x, y)) {
-			Mouse.dblClick(-1, 0, 0);		// prevent multi clicks
-			fit = !fit;
-			reDraw = true;
-		}
-
-		if (btn == 1 && !fit) {
-			//~ roi.x = clamp(inertial_pos_x = roi.x + ox - x, width(img), roi.w);
-			//~ roi.y = clamp(inertial_pos_y = roi.y + oy - y, height(img), roi.h);
-			inertial_pos_x = clamp(inertial_pos_x + ox - x, width(img), roi.w);
-			inertial_pos_y = clamp(inertial_pos_y + oy - y, height(img), roi.h);
-			reDraw = true;
-		}
-		static if (inertial_pan) {
-			static int64 ot = 0;
-			static int32 oox = 0;
-			static int32 ooy = 0;
-			if (btn == 1 && ob == 0) {	// on press
-				ot = millis();
-				inertial_pan_x = 0;
-				inertial_pan_y = 0;
-				oox = x;
-				ooy = y;
-			}
-			if (btn == 0 && ob == 1) {	// on relase
-				int64 time = millis() - ot;
-				if (time < 350) {
-					inertial_time = 0;
-					inertial_pan_x = (oox - x) / (time / 100.);
-					inertial_pan_y = (ooy - y) / (time / 100.);
-					oox = x;
-					ooy = y;
-				}
-			}
-		}
-
-		ox = x;
-		oy = y;
-		ob = btn;
-	}
-
-	img = vImg;
-	fit = inertial_pan ? false : vFit;
-	roi = gxRect(0, 0, width(offScreen), height(offScreen));
-	clear = roi.w > width(img) || roi.h > height(img);
-	Gui.setMouseHandler(mouseHandler);
-	Gui.setDrawCallback(DrawScreen);
-}
+dither(image, grayscale, maxcolors, method);
+bmpWrite(image, string(filename));
 
 image = tileSurf(gxSurf(4000, 4000), 0, 0, image, null);
 setupPicView(image, false);
