@@ -495,71 +495,6 @@ static int miscFunction(libcArgs args) {
 	return -1;
 }
 
-static void traceArgs(state rt, symn fun, char *file, int line, void* sp, int ident) {
-	symn sym;
-	int printFileLine = 0;
-
-	file = file ? file : "internal.code";
-	fputfmt(rt->logf, "%I%s:%u: %?T", ident, file, line, fun);
-	if (ident > 0) {
-	}
-	else {
-		printFileLine = 1;
-		ident = -ident;
-	}
-
-	if (sp != NULL && fun->prms != NULL) {
-		int firstArg = 1;
-		if (ident > 0) {
-			fputfmt(rt->logf, "(");
-		}
-		else {
-			fputfmt(rt->logf, "\n");
-		}
-		for (sym = fun->prms; sym; sym = sym->next) {
-			void *offs;
-
-			//~ if (sym->call)
-				//~ continue;
-
-			if (sym->kind != TYPE_ref)
-				continue;
-
-			if (firstArg == 0) {
-				if (ident > 0) {
-					fputfmt(rt->logf, ", ");
-				}
-				else {
-					fputfmt(rt->logf, "\n");
-				}
-			}
-			else {
-				firstArg = 0;
-			}
-
-			if (printFileLine) {
-				if (sym->file != NULL && sym->line != 0) {
-					fputfmt(rt->logf, "%I%s:%u: ", ident, sym->file, sym->line);
-				}
-				else {
-					fputfmt(rt->logf, "%I", ident);
-				}
-			}
-			dieif(sym->stat, "Error");
-
-			// 1 * vm_size holds the return value of the function.
-			offs = (char*)sp + fun->prms->offs + 1 * vm_size - sym->offs;
-
-			fputval(rt, rt->logf, sym, offs, -ident);
-		}
-		if (ident > 0) {
-			fputfmt(rt->logf, ")");
-		}
-		else {
-			fputfmt(rt->logf, "\n");
-		}
-	}
-}
 static int libCallDebug(libcArgs args) {
 	state rt = args->rt;
 	char* file = argref(args, 0 * vm_size);
@@ -596,42 +531,12 @@ static int libCallDebug(libcArgs args) {
 			isOutput = 1;
 		}
 
-		// print stack trace
-		if (rt->dbg && tracelevel > 0) {
-			int i, pos = rt->dbg->tracePos;
-			if (tracelevel > pos) {
-				tracelevel = pos;
-			}
-			// i = 1: skip debug function.
-			for (i = 1; i < tracelevel; ++i) {
-				dbgInfo trInfo = getCodeMapping(rt, rt->dbg->trace[pos - i].pos);
-				symn fun = rt->dbg->trace[pos - i - 1].sym;
-				char *sp = rt->dbg->trace[pos - i - 1].sp;
-
-				if (trInfo) {
-					file = trInfo->file;
-					line = trInfo->line;
-				}
-				else {
-					file = NULL;
-					line = 0;
-				}
-
-				if (fun == NULL) {
-					fun = mapsym(rt, rt->dbg->trace[pos - i - 1].cf);
-					rt->dbg->trace[pos - i - 1].sym = fun;
-				}
-
-				fputc('\n', rt->logf);
-				traceArgs(rt, fun, file, line, sp, 1);
-				isOutput = 1;
-			}
-			if (i < pos) {
-				fputfmt(rt->logf, "\n\t... %d more", pos - i);
-			}
-		}
 		if (isOutput) {
 			fputfmt(rt->logf, "\n");
+		}
+		// print stack trace skipping this function
+		if (tracelevel > 0) {
+			logTrace(rt, 1, 1, tracelevel);
 		}
 	}
 

@@ -5,32 +5,23 @@
 	TYPE: oprator priority
 	opArgs: if != 0 then operator
 */
-TOKDEF(TYPE_any, 0x00, 0, ".err")	// error
-TOKDEF(TYPE_vid, 0x00, 0, ".vid")	// void
-TOKDEF(TYPE_bit, 0x04, 0, ".bit")	// bool
-TOKDEF(TYPE_i32, 0x04, 0, ".i32")	// int8, int16, int32
-TOKDEF(TYPE_u32, 0x04, 0, ".u32")	// uint8, uint16, uint32
-TOKDEF(TYPE_i64, 0x08, 0, ".i64")	// int64
-//~ TOKDEF(TYPE_u64, 0x08, 0, ".u64")		// uint64: no vm support yet
-TOKDEF(TYPE_f32, 0x04, 0, ".f32")	// float32
-TOKDEF(TYPE_f64, 0x08, 0, ".f64")	// float64
-TOKDEF(TYPE_ptr, 0x04, 0, ".ptr")	// pointer, string, ...
-TOKDEF(TYPE_arr, 0x08, 0, ".arr")	// slice
-//~ TOKDEF(TYPE_var, 0x08, 0, ".var")	// variant
+TOKDEF(TYPE_any, 0x00, 0, ".err")		// alias, define, error
+TOKDEF(TYPE_vid, 0x00, 0, ".vid")		// void
+TOKDEF(TYPE_bit, 0x04, 0, ".bit")		// bool
+TOKDEF(TYPE_i32, 0x04, 0, ".i32")		// int8, int16, int32
+TOKDEF(TYPE_u32, 0x04, 0, ".u32")		// uint8, uint16, uint32
+TOKDEF(TYPE_i64, 0x08, 0, ".i64")		// int64
+TOKDEF(TYPE_u64, 0x08, 0, ".u64")		// uint64: no vm support yet
+TOKDEF(TYPE_f32, 0x04, 0, ".f32")		// float32
+TOKDEF(TYPE_f64, 0x08, 0, ".f64")		// float64
+TOKDEF(TYPE_ptr, 0x04, 0, ".ptr")		// pointer, string, ...
+// compound 0x0a ... 0x0f
+TOKDEF(TYPE_arr, 0x08, 0, ".arr")		// slice
+TOKDEF(TYPE_var, 0x08, 0, ".var")		// variant
 
-TOKDEF(TYPE_def, 0x00, 0, ".def")		// typedef or inline expression
+TOKDEF(TYPE_def, 0x00, 0, ".def")		// alias or inline expression
 TOKDEF(TYPE_rec, 0x00, 0, ".rec")		// type: struct, cast: by value
 TOKDEF(TYPE_ref, 0x00, 0, ".ref")		// type: variable, cast: by reference
-
-//~ vmInterface ================================================================
-TOKDEF(EMIT_opc, 0x00, 0, "emit")		// opcodes in emit(args...)
-TOKDEF(ENUM_kwd, 0x00, 0, "enum")
-//~ TOKDEF(OPER_kwd, 0x00, 0, "operator")
-
-TOKDEF(QUAL_sta, 0x00, 0, "static")
-TOKDEF(QUAL_par, 0x00, 0, "parallel")
-//~ TOKDEF(QUAL_syn, 0x00, 0, "synchronized")
-
 
 //~ Statements =================================================================
 //! keep beg the first and end the last statement token
@@ -96,10 +87,17 @@ TOKDEF(OPER_com, 0x01, 2, ",")			// a, b
 
 //~ temp =======================================================================
 
-TOKDEF(PNCT_lc , 0x00, 0, "[par")		// curlies
-TOKDEF(PNCT_rc , 0x00, 0, "]par")
-TOKDEF(PNCT_lp , 0x00, 0, "(par")		// parentheses
-TOKDEF(PNCT_rp , 0x00, 0, ")par")
+TOKDEF(EMIT_opc, 0x00, 0, "emit")		// opcodes in emit(args...)
+TOKDEF(ENUM_kwd, 0x00, 0, "enum")		// enum keyword
+//~ TOKDEF(OPER_kwd, 0x00, 0, "operator")
+
+TOKDEF(QUAL_par, 0x00, 0, "parallel")
+//~ TOKDEF(QUAL_syn, 0x00, 0, "synchronized")
+
+TOKDEF(PNCT_lc , 0x00, 0, "[")			// curlies
+TOKDEF(PNCT_rc , 0x00, 0, "]")
+TOKDEF(PNCT_lp , 0x00, 0, "(")			// parentheses
+TOKDEF(PNCT_rp , 0x00, 0, ")")
 TOKDEF(PNCT_qst, 0x00, 0, "?")			// question mark
 TOKDEF(PNCT_cln, 0x00, 0, ":")			// colon
 

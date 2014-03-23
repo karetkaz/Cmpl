@@ -1,6 +1,8 @@
 // Sepia effect demo.
 enum Window {
 	draw = RenderMode.swap_buff;
+	resx = 512;
+	resy = resx;
 	//~ resx = 1440;
 	//~ resy = 800;
 }

@@ -488,13 +488,14 @@ static struct Perlin {		// Perlin noise
 	void init() {
 		int i;
 		define sqr(float ^x) = float(x * x);
-		for (i = 0 ; i < B ; i+=1) {
+		for (i = 0; i < B ; i += 1) {
 			p[i] = i;
 
 			g1[i] = float((rand() % (B + B)) - B) / B;
 
-			for (int j = 0 ; j < 2 ; j+=1)
+			for (int j = 0 ; j < 2 ; j += 1) {
 				g2[i][j] = float((rand() % (B + B)) - B) / B;
+			}
 
 			//~ normalize2(g2[i]);
 			float n2 = sqrt(sqr(g2[i][0]) + sqr(g2[i][1]));
@@ -503,8 +504,9 @@ static struct Perlin {		// Perlin noise
 				g2[i][1] /= n2;
 			}
 
-			for (int j = 0 ; j < 3 ; j+=1)
+			for (int j = 0 ; j < 3 ; j += 1) {
 				g3[i][j] = float((rand() % (B + B)) - B) / B;
+			}
 
 			//~ normalize3(g3[i]);
 			float n3 = sqrt(sqr(g3[i][0]) + sqr(g3[i][1]) + sqr(g3[i][1]));
@@ -515,20 +517,22 @@ static struct Perlin {		// Perlin noise
 			}
 		}
 
-		for (;i -= 1;) {
+		for ( ; i -= 1; ) {
 			int k = p[i];
 			int j = rand() % B;
 			p[i] = p[j];
 			p[j] = k;
 		}
 
-		for (i = 0 ; i < B + 2 ; i+=1) {
+		for (i = 0 ; i < B + 2 ; i += 1) {
 			p[B + i] = p[i];
 			g1[B + i] = g1[i];
-			for (int j = 0 ; j < 2 ; j+=1)
+			for (int j = 0 ; j < 2 ; j += 1) {
 				g2[B + i][j] = g2[i][j];
-			for (int j = 0 ; j < 3 ; j+=1)
+			}
+			for (int j = 0 ; j < 3 ; j += 1) {
 				g3[B + i][j] = g3[i][j];
+			}
 		}
 	}
 
@@ -1012,7 +1016,7 @@ struct Complex {
 }
 
 //~ define Complex(float64 re, float64 im) = emit(Complex, f64(re), f64(im));
-define Complex(float64 re) = Complex(re, float64(0));
+define Complex(float64 &re) = Complex(re, float64(0));
 
 define neg(Complex a) = emit(Complex, v2d.neg, Complex(a));
 
@@ -1381,7 +1385,7 @@ int strlen(string str) {
 	for (result = 0; str[result]; result += 1) ;
 }
 
-define umin(uint32 ^a, uint32 ^b) = Math.min(a, b);
+define umin(uint32 a, uint32 b) = Math.min(a, b);
 
 /// the first occurenec of a char in string
 int strchr(string str, int chr) {
@@ -1494,7 +1498,7 @@ int format(char output[], int pos, FormatFlags &flags, uint32 value) {
 int format(char buff[], string format, int value) {
 	static const char digits[] = "0123456789abcdefghijklmnopqrstuvwxyz";
 
-	int _itoa(char dst[], uint32 num, int rad, int pos, FormatFlags &flags) {
+	static int _itoa(char dst[], uint32 num, int rad, int pos, FormatFlags &flags) {
 		if (num == 0) {
 			int dstLen = dst.length;
 			int padChr = flags.padChr;

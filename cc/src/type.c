@@ -1631,12 +1631,14 @@ symn leave(ccState cc, symn dcl, int mkstatic) {
 		if (mkstatic) {
 			sym->stat = 1;
 		}
+		if (!sym->stat && !cc->siff && sym->call && sym->init && sym->init->kind == STMT_beg) {
+			warn(cc->s, 1, sym->file, sym->line, "marking function to be static: `%-T`", sym);
+			sym->stat = 1;
+		}
 
 		// if not inside a static if, link to all
-		//if (rt->dbg) {
-			sym->defs = cc->defs;
-			cc->defs = sym;
-		//}
+		sym->defs = cc->defs;
+		cc->defs = sym;
 
 		if (!cc->siff) {
 			if (sym->stat && sym->gdef == NULL) {

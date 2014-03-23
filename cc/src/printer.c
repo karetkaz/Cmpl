@@ -309,7 +309,7 @@ static void fputast(FILE* fout, char *esc[], astn ast, int mode, int level) {
 				case TYPE_any:
 					break;
 
-				case QUAL_sta:
+				case ATTR_stat:
 					fputstr(fout, esc, "static ");
 					break;
 			}
@@ -372,7 +372,7 @@ static void fputast(FILE* fout, char *esc[], astn ast, int mode, int level) {
 				case TYPE_any:
 					break;
 
-				case QUAL_sta:
+				case ATTR_stat:
 					fputstr(fout, esc, "static ");
 					break;
 
@@ -806,6 +806,10 @@ static void FPUTFMT(FILE* fout, char *esc[], const char* msg, va_list ap) {
 					}
 
 					switch (sgn) {
+						case 0:
+							mode = len;
+							break;
+
 						case '-':
 							mode = noIden | 2;
 							break;
@@ -1454,21 +1458,10 @@ void dump(state rt, int mode, symn sym, const char* text, ...) {
 		if (sym != NULL) {
 			if (sym->kind == TYPE_ref && sym->call) {
 				dumpxml(logf, sym->init, level, 0, "code");
-				/*if ((level & 0x0f) == 0x0f) {
-				}
-				else {
-					fputast(logf, NULL, sym->init, level | 2, 0);
-				}*/
 			}
 		}
 		else {
-			dumpxml(logf, sym->init, level, 0, "code");
-			/*if ((level & 0x0f) == 0x0f) {
-				dumpxml(logf, rt->cc->root, level, 0, "root");
-			}
-			else {
-				fputast(logf, NULL, rt->cc->root, level | 2, 0);
-			}*/
+			dumpxml(logf, rt->cc->root, level, 0, "code");
 		}
 	}
 
@@ -1573,7 +1566,7 @@ void perr(state rt, int level, const char* file, int line, const char* msg, ...)
 	}
 
 	if (level > 0) {
-		fputstr(logFile, esc, "warning: ");
+		fputfmt(logFile, "warning[%d]: ", level);
 	}
 	else if (level) {
 		fputstr(logFile, esc, "error: ");
@@ -1584,4 +1577,113 @@ void perr(state rt, int level, const char* file, int line, const char* msg, ...)
 	fputchr(logFile, '\n');
 	fflush(logFile);
 	va_end(argp);
+}
+
+// ============= 
+static void traceArgs(state rt, symn fun, char *file, int line, void* sp, int ident) {
+	symn sym;
+	int printFileLine = 0;
+
+	file = file ? file : "internal.code";
+	fputfmt(rt->logf, "%I%s:%u: %?T", ident, file, line, fun);
+	if (ident > 0) {
+	}
+	else {
+		printFileLine = 1;
+		ident = -ident;
+	}
+
+	if (sp != NULL && fun->prms != NULL) {
+		int firstArg = 1;
+		if (ident > 0) {
+			fputfmt(rt->logf, "(");
+		}
+		else {
+			fputfmt(rt->logf, "\n");
+		}
+		for (sym = fun->prms; sym; sym = sym->next) {
+			void *offs;
+
+			//~ if (sym->call)
+				//~ continue;
+
+			if (sym->kind != TYPE_ref)
+				continue;
+
+			if (firstArg == 0) {
+				if (ident > 0) {
+					fputfmt(rt->logf, ", ");
+				}
+				else {
+					fputfmt(rt->logf, "\n");
+				}
+			}
+			else {
+				firstArg = 0;
+			}
+
+			if (printFileLine) {
+				if (sym->file != NULL && sym->line != 0) {
+					fputfmt(rt->logf, "%I%s:%u: ", ident, sym->file, sym->line);
+				}
+				else {
+					fputfmt(rt->logf, "%I", ident);
+				}
+			}
+			dieif(sym->stat, "Error");
+
+			// 1 * vm_size holds the return value of the function.
+			offs = (char*)sp + fun->prms->offs + 1 * vm_size - sym->offs;
+
+			fputval(rt, rt->logf, sym, offs, -ident);
+		}
+		if (ident > 0) {
+			fputfmt(rt->logf, ")");
+		}
+		else {
+			fputfmt(rt->logf, "\n");
+		}
+	}
+}
+
+//~ TODO: void dumpTrace(state rt, int tracelevel, int flags)
+int logTrace(state rt, int ident, int startlevel, int tracelevel) {
+	int i, pos, isOutput = 0;
+	if (rt->dbg == NULL) {
+		return 0;
+	}
+	pos = rt->dbg->tracePos;
+	if (tracelevel > pos) {
+		tracelevel = pos;
+	}
+	// i = 1: skip debug function.
+	for (i = startlevel; i < tracelevel; ++i) {
+		dbgInfo trInfo = getCodeMapping(rt, rt->dbg->trace[pos - i].pos);
+		symn fun = rt->dbg->trace[pos - i - 1].sym;
+		char *sp = rt->dbg->trace[pos - i - 1].sp;
+		char *file = NULL;
+		int line = 0;
+
+		if (trInfo != NULL) {
+			file = trInfo->file;
+			line = trInfo->line;
+		}
+
+		if (fun == NULL) {
+			fun = mapsym(rt, rt->dbg->trace[pos - i - 1].cf);
+			rt->dbg->trace[pos - i - 1].sym = fun;
+		}
+
+		traceArgs(rt, fun, file, line, sp, 1);
+		isOutput += 1;
+	}
+	if (i < pos) {
+		fputfmt(rt->logf, "\n\t... %d more", pos - i);
+		isOutput += 1;
+	}
+
+	if (isOutput) {
+		fputc('\n', rt->logf);
+	}
+	return isOutput;
 }

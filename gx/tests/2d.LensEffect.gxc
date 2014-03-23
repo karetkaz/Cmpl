@@ -7,7 +7,7 @@ enum Window {
 
 gxSurf bgImg = gxSurf("media/images/Earth.jpg");
 
-define magFactor = 4.4;
+define magFactor = 3.4;
 define magRadius = 92;
 
 bool reDraw = true;

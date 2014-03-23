@@ -869,9 +869,15 @@ static inline int ovf(cell pu) {
 	return (pu->sp - pu->bp) < 0;
 }
 
+/// Check if memory is aligned.
+static inline int aligned(int mem, int align) {
+	return 1;//mem % align == 0;
+}
+
 // TODO: to be removed.
 static inline void dbugerr(state rt, char* error_msg, int error_code, cell cpu, void* ip, int ss) {
 	error(rt, NULL, 0, "exec:%s(%?d):[sp%02d]@%.*A rw@%06x", error_msg, error_code, ss, vmOffset(rt, ip), ip);
+	logTrace(rt, 1, 0, 30);
 	(void)cpu;
 }
 

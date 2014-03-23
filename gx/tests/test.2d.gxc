@@ -1,5 +1,5 @@
 // 2d todo demos.
-define test = 4;
+define test = 5;
 enum Window {
 	draw = RenderMode.swap_buff;
 
@@ -93,7 +93,7 @@ void mouseCB(int btn, int x, int y) {
 	oy = y;
 }
 void drawCB() {
-	define filter = 1;
+	define filter = 2;
 
 	if (reDraw == 1) {
 		tileSurf(offScreen, 0, 0, bgImg, null);

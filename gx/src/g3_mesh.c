@@ -1261,9 +1261,9 @@ int evalMesh(mesh msh, int sdiv, int tdiv, char *src, char *file, int line) {
 	err = err || !ccAddCode(rt, 0, __FILE__, __LINE__ + 1,
 		"const double s = gets();\n"
 		"const double t = gett();\n"
-		"double x = s;\n"
-		"double y = t;\n"
-		"double z = 0;\n"
+		"float64 x = s;\n"
+		"float64 y = t;\n"
+		"float64 z = float64(0);\n"
 	);
 	err = err || !ccAddCode(rt, warnlevel, file, line, src);
 	err = err || !ccAddCode(rt, warnlevel, __FILE__, __LINE__, "setPos(x, y, z);\n");

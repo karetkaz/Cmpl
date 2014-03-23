@@ -1,5 +1,6 @@
 //~ BUG: static functions are not accessible from a non static struct if there is only static data.
 //~ BUG: function with empty body does not generate the return instruction.
+//~ implemented non static functions should be generated like static functions.
 
 /+~ BUG: it is posible to declare functions with (? different type ?) arguments:
 	void setzero(int vec[4]) {...}
@@ -38,7 +39,7 @@ for (int i = 0; i < a.length; i += 1) {
 
 // +/
 
-//~ /+ TODO: any members default initialization.
+/+ TODO: any members default initialization.
 struct M {
 	static const int A = 9;
 	//~ static const int _A;		// error: uninitialized constant
@@ -176,6 +177,8 @@ struct &ComplexByRef {double re; double im;}
 
 /+ TODO: 
 ComplexByRef ComplexByRef(double re, double im) {
+	//~ pointer p = memmgr(null, sizeof(ComplexByRef));
+	//~ result = ComplexByRef(p);
 	result = new(ComplexByRef);
 	result.re = re;
 	result.im = im;

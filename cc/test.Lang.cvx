@@ -1,5 +1,38 @@
 // tests
 
+//~ int a = 9;
+//~ int b = 4;
+
+//~ (a, b) = b, a;
+
+
+//~ float x1 = 9;
+//~ static float x2 = 9;
+//~ define inc(float x) = float(x + 1);
+//~ define sqr(float x) = float(x * x);
+//~ float inc0 = inc(9.);	// inline: used only once
+//~ float inc1 = inc(x1);	// inline: used only once
+//~ float inc2 = inc(x2);	// inline: used only once
+//~ float sqr0 = sqr(9.);	// cached: used more than once
+//~ float sqr1 = sqr(x1);	// inline: local variable
+//~ float sqr2 = sqr(x2);	// cached: static variable
+
+
+Complex Ca = Complex(3., 4.);
+Complex Cb = Complex(2., 5.);
+Complex C1 = mul(Ca, Cb);
+Complex C2 = mul(Ca, Complex(2., 5.));
+Complex C3 = neg(Complex(2., 5.));
+
+//~ define Re(Complex a) = (a.re);
+//~ define Im(Complex a) = (a.im);
+//~ Complex C4 = Complex(Im(Complex(2., 5.)), 0.);
+//~ Complex C5 = Complex(3., Im(Complex(2., 5.)));
+//~ double d1 = Im(Complex(2., 5.));
+//~ double d2 = Re(Complex(2., 5.));
+
+
+/*
 int n = 99;
 string TEST = "Fixed point math.";
 string nullStr = null;
@@ -7,7 +40,7 @@ int &nullInt = null;
 
 double nullFun(double a) = Math.Tan;
 nullFun = null;
-
+*/
 /* test: typename
 struct ss {
 	int32 x;
@@ -149,6 +182,29 @@ free(p1);
 //~ memmgr(null, 0);
 //~ */
 
+/* test: function members
+
+int32 f3(int a, int b) {
+	/+static int32 f4(int a, int b) {
+		return a < b ? a : b;
+	}
+	return f4(a, b);+/
+	return a < b ? a : b;
+}
+/+
+struct Struct {
+	//~ int32 &r[1];
+	int32 f1(int a, int b) = f3;
+	//~ int32 f2(int a, int b) = null;
+	int32 f3(int a, int b) {
+		return a < b ? a : b;
+	}
+}
+
+Struct instance;
+//~ +/
+//~ */
+
 /* TODO: const ref assignment
 struct m {
 	static const int X = 9;
@@ -249,10 +305,7 @@ coord e0;				// TODO: error: uninitialized enum.
 //~ bool b4 = v1 == v1;
 // */
 
-//~ int a = 7; a += 7.;
-//~ int b = 7.;
-
-/*
+/* Enum test
 enum Window {
 	width = 90;
 	height1 = 2 * width;

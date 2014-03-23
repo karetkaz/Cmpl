@@ -38,7 +38,7 @@
 #define prerr(__DBG, __MSG, ...) do { fputfmt(stdout, "%s:%d: "__DBG": %s: "__MSG"\n", __FILE__, __LINE__, __FUNCTION__, ##__VA_ARGS__); } while(0)
 
 #ifdef DEBUGGING
-#define logif(__EXP, msg, ...) do {if (__EXP) prerr("info", msg, ##__VA_ARGS__);} while(0)
+#define logif(__EXP, msg, ...) do {if (__EXP) prerr("todo", msg, ##__VA_ARGS__);} while(0)
 #if DEBUGGING > 0	// enable debug
 #define trace(msg, ...) do { prerr("trace", msg, ##__VA_ARGS__); } while(0)
 #define trloop(msg, ...) //do { prerr("trace", msg, ##__VA_ARGS__); } while(0)
@@ -97,45 +97,18 @@ typedef enum {
 	decl_ItDecl = 0x400,		// enable ':' after declaration: for(int a : range(0, 12))
 
 	/*? enum Kind {
-		CAST_any = 0x00000000;		// invalid, error, ...
-		CAST_vid = 0x00000001;		// void;
-		CAST_bit = 0x00000002;		// bool;
-		CAST_i32 = 0x00000003;		// int32, int16, int8
-		CAST_u32 = 0x00000004;		// uint32, uint16, uint8
-		CAST_i64 = 0x00000005;		// int64
-		CAST_u64 = 0x00000006;		// uint64
-		CAST_f32 = 0x00000007;		// float32
-		CAST_f64 = 0x00000008;		// float64
-		CAST_ptr = 0x00000009;		// pointer, reference
+		CAST_any    = 0x000000;		// invalid, error, ...
+		CAST_vid    = 0x000001;		// void;
+		CAST_bit    = 0x000002;		// bool;
+		CAST_i32    = 0x000003;		// int32, int16, int8
+		// ...
+		//inline    = 0x000000;		// unavailable at runtime.
+		typename    = 0x000010;		// struct metadata info.
+		function    = 0x000020;		// function
+		variable    = 0x000030;		// functions and typenames are also variables
 
-		CAST_arr = 0x0000000a;		// slice: struct {size, data}
-		CAST_var = 0x0000000b;		// variant: struct {type, data}
-		CAST___d = 0x0000000d;		// 
-		CAST___e = 0x0000000e;		// 
-		CAST___f = 0x0000000f;		// 
-
-		TYPE_def = 0x00000000;		// inline (/ error at runtime)
-		TYPE_rec = 0x00000010;		// typename
-		TYPE_fun = 0x00000020;		// function
-		TYPE_ref = 0x00000030;		// variable functions and typenames are also variables
-		ATTR_sta = 0x00000040;		// static
-		ATTR_con = 0x00000080;		// constant
-
-		ATTR_par = 0x00000100;		// ?parrallel
-		ATTR_snc = 0x00000200;		// ?synchronized
-		ATTR_ref = 0x00000400;		// ?indirect
-		ATTR_prv = 0x00000800;		// ?private
-	}
-
-
-	enum Kind {
-		//inline     = 0x000000;	// unavailable at runtime.
-		typename     = 0x000001;	// struct metadata info.
-		function     = 0x000002;	// function
-		variable     = 0x000003;	// functions and typenames are also variables
-
-		attr_const   = 0x000004;
-		attr_static  = 0x000008;
+		attr_const  = 0x000040;
+		attr_static = 0x000080;
 	}*/
 } ccToken;
 struct tok_inf {
@@ -362,10 +335,10 @@ struct ccStateRec {
 	int		init:1;		// initialize static variables ?
 	int		_pad:30;	//
 
-	char*	file;	// current file name
-	int		line;	// current line number
+	char*	file;		// current file name
+	int		line;		// current line number
 
-	struct {					// Lexer
+	struct {				// Lexer
 		symn	pfmt;			// Warning set to -1 to record.
 		astn	tokp;			// list of reusable tokens
 		astn	_tok;			// one token look-ahead
@@ -385,9 +358,10 @@ struct ccStateRec {
 	symn	type_rec;		// typename
 	symn	type_vid;		// void
 	symn	type_bol;		// boolean
+	symn	type_i32;		// 32bit signed integer
 	symn	type_u32;		// 32bit unsigned integer
-	symn	type_i32;		// 32bit integer
-	symn	type_i64;		// 64bit integer
+	symn	type_i64;		// 64bit signed integer
+	//~ symn	type_u64;		// 64bit unsigned integer
 	symn	type_f32;		// 32bit floating point
 	symn	type_f64;		// 64bit floating point
 	symn	type_ptr;		// pointer
@@ -395,14 +369,15 @@ struct ccStateRec {
 
 	symn	type_str;		// TODO: string should be replaced with pointer or char* or cstr
 
-	symn	null_ref;
-	symn	emit_opc;
+	symn	null_ref;		// variable null
+	symn	emit_opc;		// emit intrinsic function, or whatever it is.
 
 	symn	libc_mem;		// memory manager libcall: memmgr(pointer oldOffset, int newSize);
-	symn	libc_dbg;		// debug function libcall: debug(string message, int level, int maxTrace, variant vars);
+	symn	libc_dbg;		// debug function libcall: debug(string message, int level, int maxTrace, variant values);
 };
 
 /// Debuger context
+// TODO: merge this somehow with libcArgs and cell into exeState
 struct dbgStateRec {
 
 	int (*dbug)(state, int pu, void* ip, long* sptr, int scnt);
@@ -420,17 +395,6 @@ struct dbgStateRec {
 	struct arrBuffer codeMap;
 };
 
-//~ clog
-/**
- * @brief Print formated text to the output stream.
- * @param fout Output stream.
- * @param msg Format text.
- * @param len Length to represent binary the instruction.
- * @param offs Base offset to be used for relative instructions.
- *    negative value forces relative offsets. (ex: jmp +5)
- *    positive or zero value forces absolute offsets. (ex: jmp @0255d0)
- * @param rt Runtime context (optional).
- */
 /**
  * @brief Print formated text to the output stream.
  * @param fout Output stream.
@@ -742,6 +706,7 @@ int fixjump(state, int src, int dst, int stc);
 dbgInfo getCodeMapping(state rt, int position);
 dbgInfo addCodeMapping(state rt, astn ast, int start, int end);
 
+int logTrace(state rt, int ident, int startlevel, int tracelevel);
 //~ disable warning messages
 #ifdef _MSC_VER
 #pragma warning(disable: 4996)

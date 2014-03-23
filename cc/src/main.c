@@ -42,7 +42,7 @@ application [global options] [local options]...
 // default values
 static const int wl = 9;			// warning level
 static const int ol = 2;			// optimize level
-static char mem[2 << 20];			// runtime memory
+static char mem[320 << 20];			// runtime memory
 
 const char* STDLIB = "stdlib.cvx";		// standard library
 
@@ -472,7 +472,7 @@ int program(int argc, char* argv[]) {
 			out_tags = level;
 		}
 		else if (strncmp(arg, "-ast", 4) == 0) {	// tree
-			level = 0;
+			level = 0x7f;
 			if (arg[4]) {
 				char* ptr = parsei32(arg + 4, &level, 16);
 				if (*ptr == '.') {

@@ -719,7 +719,7 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 			dieif(get != TYPE_vid, "Error");
 
 			ipdbg = emitopc(rt, markIP);
-			if (ast->cst2 == QUAL_sta) {
+			if (ast->cst2 == ATTR_stat) {
 				if (ast->stmt.step || !tt) {
 					error(rt, ast->file, ast->line, "invalid static if construct: %s", !tt ? "can not evaluate" : "else part is invalid");
 					return TYPE_any;
@@ -731,7 +731,7 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 				ipdbg = 0;
 			}
 
-			if (tt && (rt->vm.opti || ast->cst2 == QUAL_sta)) {	// static if then else
+			if (tt && (rt->vm.opti || ast->cst2 == ATTR_stat)) {	// static if then else
 				astn gen = constbol(&tmp) ? ast->stmt.stmt : ast->stmt.step;
 				if (gen && !cgen(rt, gen, TYPE_any)) {	// leave the stack
 					trace("%+k", gen);
@@ -979,7 +979,7 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 				if (argv != NULL) {
 					astn an = NULL;
 
-					// this is done by lookup... but...
+					// flatten arguments. (this is also done by lookup !?)
 					while (argv->kind == OPER_com) {
 						astn arg = argv->op.rhso;
 						argv = argv->op.lhso;
@@ -991,42 +991,60 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 					an = argv;
 
 					while (an && param) {
+						int useCount = usedCnt(param) - 1;
 						int inlineArg = 0;
 						astn arg = an;
 
+						/*/ TODO: skip over aliases.
+						while (arg && arg->kind == TYPE_ref) {
+							symn def = arg->ref.link;
+							if (def == NULL) {
+								break;
+							}
+							if (def->init == NULL) {
+								break;
+							}
+							if (def->kind != TYPE_def) {
+								break;
+							}
+							arg = def->init;
+						}
+						*/
+						// try to evaluate as a constant.
 						if (rt->vm.opti && eval(&tmp, arg)) {
 							arg = &tmp;
 						}
 
-						if (param->cast == TYPE_def) {
-							inlineArg = 1;
-						}
-						else if (an->kind == TYPE_str) {
-							if (usedCnt(param) <= 1) {
-								inlineArg = 1;
-							}
-						}
-						else if (an->kind == TYPE_ref) {
-							if (an->type == param->type) {
-								// static variables should not be inlined ?
-								// what about indirect references ?
-								//~ if (!an->ref.link->stat)
-								inlineArg = 1;
+						if (param->cast != TYPE_ref) {
+							switch (arg->kind) {
+								default:
+									if (useCount <= 1) {
+										inlineArg = 1;
+									}
+									break;
+
+								case TYPE_ref:
+									if (arg->type == param->type) {
+										symn link = arg->ref.link;
+										// static variables should not be inlined ?
+										if (link->stat) {
+											if (useCount > 1) {
+												break;
+											}
+										}
+										/*/ what about indirect references ?
+										if (link->cast == TYPE_ref) {
+											break;
+										}*/
+										inlineArg = 1;
+									}
+									break;
 							}
 						}
 
-						if (inlineArg) {
-							if (usedCnt(param) <= 1) {
-								astn n = an;
-								while (n && n->kind == TYPE_ref && n->ref.link && n->ref.link->kind == TYPE_def) {
-									n = n->ref.link->init;
-								}
-								if (n) switch (n->kind) {
-									case TYPE_ref:
-										break;
-									default:
-										warn(rt, 15, ast->file, ast->line, "inlineing argument `%T` used more than once: %+k", param, n);
-								}
+						if (inlineArg || param->cast == TYPE_def) {
+							if (1|| param->cast != TYPE_def) {
+								warn(rt, 16, ast->file, ast->line, "inlineing argument used %d times: %+T: %+k", useCount, param, arg);
 							}
 							param->kind = TYPE_def;
 							param->init = an;
@@ -1034,25 +1052,12 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 						else {
 							int stktop = stkoffs(rt, sizeOf(param));
 							chachedArgSize += sizeOf(param);
-							if (usedCnt(param) <= 1) {
-								astn n = an;
-								while (n && n->ref.link && n->ref.link->kind == TYPE_def) {
-									n = n->ref.link->init;
-								}
-								if (n) switch (n->kind) {
-									case TYPE_ref:
-										warn(rt, 15, ast->file, ast->line, "caching argument used once or none: %-T = %+k", param, n);
-										break;
-									default:
-										break;
-								}
-							}
-
-							warn(rt, 16, ast->file, ast->line, "caching argument: %-T = %+k", param, arg);
 							if (!cgen(rt, arg, param->cast)) {
 								trace("%+k", arg);
 								return TYPE_any;
 							}
+
+							warn(rt, 16, ast->file, ast->line, "caching argument used %d times: %+T: %+k", useCount, param, arg);
 							param->offs = stkoffs(rt, 0);
 							param->kind = TYPE_ref;
 							if (stktop != param->offs) {
@@ -2111,7 +2116,7 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 
 				// alloc locally a block of the size of the type;
 				else if (var->offs == 0) {
-					logif(var->size != sizeOf(typ), "Error %T(%d, %d)", var, var->size, sizeOf(typ));
+					logif(var->size != sizeOf(typ), "size error: %T(%d, %d)", var, var->size, sizeOf(typ));
 					if (!emitint(rt, opc_spc, size)) {
 						trace("%+k", ast);
 						return TYPE_any;
