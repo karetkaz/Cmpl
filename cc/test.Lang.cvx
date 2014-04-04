@@ -24,8 +24,8 @@ Complex C1 = mul(Ca, Cb);
 Complex C2 = mul(Ca, Complex(2., 5.));
 Complex C3 = neg(Complex(2., 5.));
 
-//~ define Re(Complex a) = (a.re);
-//~ define Im(Complex a) = (a.im);
+define Re(Complex &a) = (a.re);
+define Im(Complex &a) = (a.im);
 //~ Complex C4 = Complex(Im(Complex(2., 5.)), 0.);
 //~ Complex C5 = Complex(3., Im(Complex(2., 5.)));
 //~ double d1 = Im(Complex(2., 5.));

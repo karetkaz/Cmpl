@@ -72,7 +72,7 @@ gxSurf dither(gxSurf img, bool grayscale, uint32 colors, Dithering method) {
 					int gray = cols[col];
 
 					int quant_error = col - gray;
-					define rgbError(int ^col, int ^s) = toGray(lum(col) + s * quant_error / 8);
+					define rgbError(int col, int s) = toGray(lum(col) + s * quant_error / 8);
 
 					setPixel(img, x, y, toGray(gray));
 					setPixel(img, x + 1, y + 0, rgbError(getPixel(img, x + 1, y + 0), 3));
@@ -93,7 +93,7 @@ gxSurf dither(gxSurf img, bool grayscale, uint32 colors, Dithering method) {
 					int quant_error_g = gch(col) - colg;
 					int quant_error_b = bch(col) - colb;
 
-					define rgbError(int ^col, int ^s) = toRgb(
+					define rgbError(int col, int s) = toRgb(
 						rch(col) + s * quant_error_r / 8,
 						gch(col) + s * quant_error_g / 8,
 						bch(col) + s * quant_error_b / 8
@@ -143,7 +143,7 @@ gxSurf dither(gxSurf img, bool grayscale, uint32 colors, Dithering method) {
 					int quant_error_g = gch(col) - colg;
 					int quant_error_b = bch(col) - colb;
 
-					define rgbError(int ^col, int ^s) = toRgb(
+					define rgbError(int col, int s) = toRgb(
 						rch(col) + s * quant_error_r / 16,
 						gch(col) + s * quant_error_g / 16,
 						bch(col) + s * quant_error_b / 16
@@ -202,7 +202,7 @@ gxSurf dither(gxSurf img, bool grayscale, uint32 colors, Dithering method) {
 					int quant_error_g = gch(col) - colg;
 					int quant_error_b = bch(col) - colb;
 
-					define rgbError(int ^col, int ^s) = toRgb(
+					define rgbError(int col, int s) = toRgb(
 						rch(col) + s * quant_error_r / 42,
 						gch(col) + s * quant_error_g / 42,
 						bch(col) + s * quant_error_b / 42

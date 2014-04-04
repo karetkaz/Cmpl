@@ -29,7 +29,7 @@ int rgbscale(int col, double s) {
 	result = int(rgb(r, g, b));
 }
 
-define tex2d(gxSurf ^src, double x, double y) = getPixel(src, imgcoord(x, width(src)), imgcoord(y, height(src)));
+define tex2d(gxSurf src, double x, double y) = getPixel(src, imgcoord(x, width(src)), imgcoord(y, height(src)));
 define tex2d(gxSurf src, double u, double v, double w) = rgbscale(tex2d(src, u, v), w);
 //~ define tex2d(gxSurf src, double u, double v, double w) = tex2d(src, u, v);
 
@@ -430,7 +430,7 @@ void setup(vec4f _func(float x, float y, float t)) {
 			for (int xi = 0; xi < WIDTH; xi += 1) {
 				float x = (xi - cx) / WIDTH * 2;
 
-				//~ define vec4f2rgb(vec4f ^col) = rgb(int(col.x * 255), int(col.y * 255), int(col.z * 255));
+				//~ define vec4f2rgb(vec4f col) = rgb(int(col.x * 255), int(col.y * 255), int(col.z * 255));
 
 				int32 col = int(rgb(func(x, y, time * 6)));
 

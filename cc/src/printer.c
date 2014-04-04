@@ -1658,7 +1658,8 @@ int logTrace(state rt, int ident, int startlevel, int tracelevel) {
 	}
 	// i = 1: skip debug function.
 	for (i = startlevel; i < tracelevel; ++i) {
-		dbgInfo trInfo = getCodeMapping(rt, rt->dbg->trace[pos - i].pos);
+		
+		dbgInfo trInfo = getCodeMapping(rt, vmOffset(rt, rt->dbg->trace[pos - i].ip));
 		symn fun = rt->dbg->trace[pos - i - 1].sym;
 		char *sp = rt->dbg->trace[pos - i - 1].sp;
 		char *file = NULL;
@@ -1674,6 +1675,9 @@ int logTrace(state rt, int ident, int startlevel, int tracelevel) {
 			rt->dbg->trace[pos - i - 1].sym = fun;
 		}
 
+		if (isOutput > 0) {
+			fputc('\n', rt->logf);
+		}
 		traceArgs(rt, fun, file, line, sp, 1);
 		isOutput += 1;
 	}

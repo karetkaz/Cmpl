@@ -79,11 +79,11 @@ static struct BlendMode {
 #define BlendOpacity(base, blend, F, O) 	(F(base, blend) * O + blend * (1.0 - O))
 // */
 
-	define BlendLinearDodgef(float32 ^base, float32 ^blend) = Math.min(base + blend, float32(1));
-	define BlendLinearBurnf(float32 ^base, float32 ^blend) = Math.max(base + blend - 1, float32(0));
+	define BlendLinearDodgef(float32 base, float32 blend) = Math.min(base + blend, float32(1));
+	define BlendLinearBurnf(float32 base, float32 blend) = Math.max(base + blend - 1, float32(0));
 
-	define BlendColorDodgef(float32 ^base, float32 ^blend) = (blend == 1 ? blend : Math.min(base / (1 - blend), float32(1)));
-	define BlendColorBurnf(float32 ^base, float32 ^blend) = (blend == 0 ? blend : Math.max((1 - ((1 - base) / blend)), float32(0)));
+	define BlendColorDodgef(float32 base, float32 blend) = (blend == 1 ? blend : Math.min(base / (1 - blend), float32(1)));
+	define BlendColorBurnf(float32 base, float32 blend) = (blend == 0 ? blend : Math.max((1 - ((1 - base) / blend)), float32(0)));
 
 	vec4f Darken(vec4f Base, vec4f Blend) {
 		result = min(Base, Blend);
@@ -105,13 +105,13 @@ static struct BlendMode {
 		result = div(Base, Blend);
 	}
 	vec4f Difference(vec4f Base, vec4f Blend) {
-		define OP(float32 ^Base, float32 ^Blend) = Math.abs(Base - Blend);
+		define OP(float32 Base, float32 Blend) = Math.abs(Base - Blend);
 		result = vec4f(OP(Base.x, Blend.x), OP(Base.y, Blend.y), OP(Base.z, Blend.z), OP(Base.w, Blend.w));
 	}
 
 	vec4f ColorBurn(vec4f Base, vec4f Blend) {		// K(B, A)
 		//~ result = sub(1, div(sub(1, Base), Blend));
-		define OP(float32 ^Base, float32 ^Blend) = BlendColorBurnf(Base, Blend);
+		define OP(float32 Base, float32 Blend) = BlendColorBurnf(Base, Blend);
 		result = vec4f(OP(Base.x, Blend.x), OP(Base.y, Blend.y), OP(Base.z, Blend.z), OP(Base.w, Blend.w));
 	}
 	vec4f LinearBurn(vec4f Base, vec4f Blend) {	// K(B, A)
@@ -128,8 +128,8 @@ static struct BlendMode {
 		result = sub(1, mul(sub(1, Base), sub(1, Blend)));
 	}
 	vec4f Overlay(vec4f Base, vec4f Blend) {		// K(B, A)
-		//~ define OP(float32 ^Base, float32 ^Blend) = BlendOverlayf(Base, Blend);
-		define OP(float32 ^Base, float32 ^Blend) = (
+		//~ define OP(float32 Base, float32 Blend) = BlendOverlayf(Base, Blend);
+		define OP(float32 Base, float32 Blend) = (
 			Base < float32(.5)
 				? (2 * Base * Blend)
 				: (1 - 2 * (1 - Base) * (1 - Blend))
@@ -137,8 +137,8 @@ static struct BlendMode {
 		result = vec4f(OP(Base.x, Blend.x), OP(Base.y, Blend.y), OP(Base.z, Blend.z), OP(Base.w, Blend.w));
 	}
 	vec4f SoftLight(vec4f Base, vec4f Blend) {		// K(B, A)
-		//~ define OP(float32 ^Base, float32 ^Blend) = BlendSoftLightf(Base, Blend);
-		define OP(float32 ^Base, float32 ^Blend) = (
+		//~ define OP(float32 Base, float32 Blend) = BlendSoftLightf(Base, Blend);
+		define OP(float32 Base, float32 Blend) = (
 			Blend < float32(.5)
 				? (2 * Base * Blend + Base * Base * (1 - 2 * Blend))
 				: (sqrt(Base) * (2 * Blend - 1) + 2 * Base * (1 - Blend))
@@ -146,7 +146,7 @@ static struct BlendMode {
 		result = vec4f(OP(Base.x, Blend.x), OP(Base.y, Blend.y), OP(Base.z, Blend.z), OP(Base.w, Blend.w));
 	}
 	vec4f HardLight(vec4f Base, vec4f Blend) {		// K(B, A)
-		define OP(float32 ^Base, float32 ^Blend) = float32(
+		define OP(float32 Base, float32 Blend) = float32(
 			Blend <= float32(.5)
 				? (Base * (2 * Blend))
 				: (1 - (1 - Base) * (1 - 2 * (Blend - float32(.5))))
@@ -154,7 +154,7 @@ static struct BlendMode {
 		result = vec4f(OP(Base.x, Blend.x), OP(Base.y, Blend.y), OP(Base.z, Blend.z), OP(Base.w, Blend.w));
 	}
 	vec4f VividLight(vec4f Base, vec4f Blend) {	// K(B, A)
-		define OP(float32 ^base, float32 ^blend) = (
+		define OP(float32 base, float32 blend) = (
 			(blend < 0.5) 
 				? BlendColorBurnf(base, (2.0 * blend)) 
 				: BlendColorDodgef(base, (2.0 * (blend - 0.5)))
@@ -163,8 +163,8 @@ static struct BlendMode {
 		result = vec4f(OP(Base.x, Blend.x), OP(Base.y, Blend.y), OP(Base.z, Blend.z), OP(Base.w, Blend.w));
 	}
 	vec4f LinearLight(vec4f Base, vec4f Blend) {
-		//~ define OP(float32 ^Base, float32 ^Blend) = BlendLinearLightf(Base, Blend);
-		define OP(float32 ^Base, float32 ^Blend) = (
+		//~ define OP(float32 Base, float32 Blend) = BlendLinearLightf(Base, Blend);
+		define OP(float32 Base, float32 Blend) = (
 			Blend < float32(.5)
 				? BlendLinearBurnf(Base, (2 * Blend))
 				: BlendLinearDodgef(Base, (2 * (Blend - float32(.5))))
@@ -172,8 +172,8 @@ static struct BlendMode {
 		result = vec4f(OP(Base.x, Blend.x), OP(Base.y, Blend.y), OP(Base.z, Blend.z), OP(Base.w, Blend.w));
 	}
 	vec4f PinLight(vec4f Base, vec4f Blend) {		// K(B, A)
-		//~ define OP(float32 ^Base, float32 ^Blend) = BlendPinLightf(Base, Blend);
-		define OP(float32 ^Base, float32 ^Blend) = (
+		//~ define OP(float32 Base, float32 Blend) = BlendPinLightf(Base, Blend);
+		define OP(float32 Base, float32 Blend) = (
 			Blend < float32(.5)
 				? Math.min(Base, 2 * Blend)
 				: Math.max(Base, 2 *(Blend - float32(0.5)))
@@ -182,7 +182,7 @@ static struct BlendMode {
 	}
 	vec4f Exclusion(vec4f Base, vec4f Blend) {		// K(B, A)
 		//~ result = sub(.5, mul(mul(2, sub(Base, .5)), sub(Blend, .5)));
-		define OP(float32 ^Base, float32 ^Blend) = (float32(.5) - 2*(Base-float32(.5))*(Blend-float32(.5)));
+		define OP(float32 Base, float32 Blend) = (float32(.5) - 2*(Base-float32(.5))*(Blend-float32(.5)));
 		result = vec4f(OP(Base.x, Blend.x), OP(Base.y, Blend.y), OP(Base.z, Blend.z), OP(Base.w, Blend.w));
 	}
 }

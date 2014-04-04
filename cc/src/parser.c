@@ -1446,7 +1446,9 @@ static symn ctorArg(ccState cc, symn rec) {
 			if (arg->kind != TYPE_ref)
 				continue;
 
-			newarg = install(cc, arg->name, TYPE_ref, TYPE_def, 0, arg->type, NULL);
+			newarg = install(cc, arg->name, TYPE_def, arg->type->cast, 0, arg->type, NULL);
+			//~ newarg = install(cc, arg->name, TYPE_ref, TYPE_rec, 0, arg->type, NULL);
+			//~ newarg->cast = arg->type->cast;
 
 			if (newarg != NULL) {
 				astn tag;
@@ -1617,9 +1619,9 @@ static int qual(ccState cc, int mode) {
  */
 static astn expr(ccState cc, int mode) {
 	astn buff[TOKS], tok;
-	astn* base = buff + TOKS;
+	const astn* base = buff + TOKS;
+	astn* prec = (astn*)base;
 	astn* post = buff;
-	astn* prec = base;
 	char sym[TOKS];						// symbol stack {, [, (, ?
 	int unary = 1;						// start in unary mode
 	int level = 0;						// precedence, top of sym
@@ -1646,12 +1648,12 @@ static astn expr(ccState cc, int mode) {
 			tok_op: {
 				int oppri = tok_tbl[tok->kind].type;
 				tok->op.prec = pri | (oppri & 0x0f);
-				if (oppri & 0x10) while (prec < buff + TOKS) {
+				if (oppri & 0x10) while (prec < base) {
 					if ((*prec)->op.prec <= tok->op.prec)
 						break;
 					*post++ = *prec++;
 				}
-				else while (prec < buff + TOKS) {
+				else while (prec < base) {
 					if ((*prec)->op.prec < tok->op.prec)
 						break;
 					*post++ = *prec++;
@@ -2114,8 +2116,7 @@ astn decl_var(ccState cc, astn* argv, int mode) {
 		symn ref = NULL;
 		symn typ = tag->type;
 
-		// todo: deprecated operator xor
-		int inout = skip(cc, OPER_lnd) || skip(cc, OPER_xor);
+		int inout = skip(cc, OPER_lnd);
 		int byref = inout || skip(cc, OPER_and);
 
 		if (byref && typ->cast == TYPE_ref) {
@@ -2272,7 +2273,11 @@ astn decl_var(ccState cc, astn* argv, int mode) {
 			byref = 0;
 		}
 
-		if (byref) {
+		/* TODO: in-out parameters
+		if (inout) {
+			ref->cast = TYPE_def;
+		}
+		else */if (byref) {
 			ref->cast = TYPE_ref;
 		}
 	}
@@ -2543,7 +2548,6 @@ static astn decl(ccState cc, int mode) {
 					cc->pfmt = def;
 				}
 				else {
-					//def = declare(s, TYPE_def, tag, val->type);
 					if (isConst(val)) {
 						def->stat = 1;
 						def->cnst = 1;
@@ -2557,7 +2561,6 @@ static astn decl(ccState cc, int mode) {
 			}
 			else {
 				error(cc->s, cc->file, cc->line, "expression expected");
-				//~ return NULL;
 			}
 		}
 		else if (skip(cc, PNCT_lp)) {			// inline:  define isNan(float64 x) = x != x;
@@ -2590,6 +2593,7 @@ static astn decl(ccState cc, int mode) {
 			def->init = init;
 			def->call = 1;
 
+			//* TODO: in-out parameters: remove
 			// TODO: this should go to fixargs
 			for (param = def->prms; param; param = param->next) {
 				// is explicitly set to be cached.
@@ -2597,13 +2601,16 @@ static astn decl(ccState cc, int mode) {
 					param->cast = param->type->cast;
 				}
 				else {
-					param->cast = TYPE_def;
+					int used = usedCnt(param) - 1;
 					// warn to cache if it is used more than once
-					if (usedCnt(param) > 2) {
-						warn(cc->s, 8, param->file, param->line, "parameter %T should be cached (used more than once in expression)", param);
+					if (used > 1) {
+						warn(cc->s, 8, param->file, param->line, "parameter %T may be cached (used %d times in expression)", param, used);
+					}
+					else {
+						param->kind = TYPE_def;
 					}
 				}
-			}
+			}// */
 
 			if (init == NULL) {
 				error(cc->s, cc->file, cc->line, "expression expected");

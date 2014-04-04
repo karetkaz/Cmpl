@@ -892,7 +892,6 @@ static inline void dotrace(state rt, void* cf, symn sym, void* ip, void* sp) {
 			rt->dbg->trace[rt->dbg->tracePos].sp = sp;
 			rt->dbg->trace[rt->dbg->tracePos].cf = cf;
 			rt->dbg->trace[rt->dbg->tracePos].sym = sym;
-			rt->dbg->trace[rt->dbg->tracePos].pos = vmOffset(rt, ip);
 			rt->dbg->tracePos += 1;
 		}
 	}
@@ -978,7 +977,7 @@ static int exec(state rt, cell pu, symn fun, void* extra) {
 		}
 	}
 
-	// code for maximum speed
+	// code at maximum speed
 	else for ( ; ; ) {
 		register bcde ip = (void*)pu->ip;
 		register stkptr sp = (void*)pu->sp;

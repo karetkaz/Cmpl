@@ -73,9 +73,9 @@ Complex Cr = mul(Ca, Cb);
 
 static if (times2exec > 0) {
 
-define mul_sisd(Complex a, Complex b) = Complex(a.re * b.re - a.im * b.im, a.re * b.im + a.im * b.re);
+define mul_sisd(Complex &a, Complex &b) = Complex(a.re * b.re - a.im * b.im, a.re * b.im + a.im * b.re);
 
-define mul_simd(Complex a, Complex b) = emit(Complex,
+define mul_simd(Complex &a, Complex &b) = emit(Complex,
 	f64.sub, v2d.mul, f64(b.im), f64(b.re), f64(a.im), f64(a.re),	// re = a.re * b.re - a.im * b.im
 	f64.add, v2d.mul, Complex(b), f64(a.im), f64(a.re)	// im = a.re * b.im + a.im * b.re;
 );

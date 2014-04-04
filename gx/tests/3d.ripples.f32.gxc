@@ -79,7 +79,7 @@ void drawCB() {
 	// the effect
 	for (int y = 0; y < division; y += 1) {
 		for (int x = 0; x < division; x += 1) {
-			define cl(int ^c) = (c < 0 ? 0 : c >= division ? division - 1 : c);
+			define cl(int c) = (c < 0 ? 0 : c >= division ? division - 1 : c);
 			v[x][y] += (u[cl(x - 1)][y] + u[cl(x + 1)][y] + u[x][cl(y - 1)] + u[x][cl(y + 1)]) / 4. - u[x][y];
 		}
 	}

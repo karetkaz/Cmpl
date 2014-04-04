@@ -21,7 +21,7 @@
 	5: print non pre-mapped strings, non static types
 	6: print static casts generated with emit
 */
-//~ #define DEBUGGING 1
+#define DEBUGGING 1
 
 // enable paralell execution stuff
 //~ #define MAXPROCSEXEC 1
@@ -327,9 +327,10 @@ struct ccStateRec {
 
 	list	strt[TBLS];		// string hash table
 	symn	deft[TBLS];		// symbol hash stack
+	//~ astn	scope[TBLS];		// current scope + expression scope, string literal, ...
+	int		nest;		// nest level: modified by (enter/leave)
 
 	int		warn;		// warning level
-	int		nest;		// nest level: modified by (enter/leave)
 	int		maxlevel;		// max nest level: modified by ?
 	int		siff:1;		// inside a static if false
 	int		init:1;		// initialize static variables ?
@@ -387,7 +388,6 @@ struct dbgStateRec {
 		void* ip;
 		void* sp;
 		symn sym;
-		int pos;
 	} trace[512];
 
 	int tracePos;

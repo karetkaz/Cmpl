@@ -29,7 +29,7 @@ int rgbscale(int col, double s) {
 	result = int(rgb(r, g, b));
 }
 
-define tex2d(gxSurf ^src, double x, double y) = getPixel(src, imgcoord(x, width(src)), imgcoord(y, height(src)));
+define tex2d(gxSurf src, double x, double y) = getPixel(src, imgcoord(x, width(src)), imgcoord(y, height(src)));
 define tex2d(gxSurf src, double u, double v, double w) = rgbscale(tex2d(src, u, v), w);
 //~ define tex2d(gxSurf src, double u, double v, double w) = tex2d(src, u, v);
 

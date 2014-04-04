@@ -60,6 +60,21 @@ static inline int stkoffs(state rt, int size) {
 	return padded(size, vm_size) + rt->vm.ss * vm_size;
 }
 
+static inline void dumpTree(state rt, astn ast, int offsStart, int offsEnd) {
+	#if DEBUGGING > 0
+	struct symNode dbg;
+	memset(&dbg, 0, sizeof(dbg));
+	dbg.kind = TYPE_ref;
+	dbg.name = "error";
+	dbg.call = 1;
+	dbg.init = ast;
+	dbg.offs = offsStart;
+	dbg.size = offsEnd - offsStart;
+	dump(rt, dump_ast | dump_asm | 0x1ff, &dbg, "");
+	//~ fputasm(rt, rt->logf, ipdbg, emitopc(rt, markIP), 0x119);
+	#endif
+}
+
 /// Initialize runtime context; @see header
 state rtInit(void* mem, unsigned size) {
 	state rt = mem;
@@ -646,7 +661,7 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 	switch (ast->kind) {
 
 		default:
-			fatal("Error: %+k");
+			fatal("Error: %t: %+k", ast->kind, ast);
 			return TYPE_any;
 
 		//#{ STMT
@@ -679,7 +694,8 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 				ipdbg = emitopc(rt, markIP);
 				if (!cgen(rt, ptr, TYPE_vid)) {		// we will free stack on scope close
 					#if DEBUGGING > 0
-					struct symNode dbg;
+					dumpTree(rt, ptr, ipdbg, emitopc(rt, markIP));
+					/*struct symNode dbg;
 					memset(&dbg, 0, sizeof(dbg));
 					dbg.kind = TYPE_ref;
 					dbg.name = "error";
@@ -689,6 +705,7 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 					dbg.size = emitopc(rt, markIP) - ipdbg;
 					dump(rt, dump_ast | dump_asm | 0x1ff, &dbg, "");
 					//~ fputasm(rt, rt->logf, ipdbg, emitopc(rt, markIP), 0x119);
+					// */
 					#endif
 					error(rt, ptr->file, ptr->line, "emmiting statement `%+k`", ptr);
 				}
@@ -991,11 +1008,11 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 					an = argv;
 
 					while (an && param) {
+						int inlineArg = param->cast == TYPE_def;
 						int useCount = usedCnt(param) - 1;
-						int inlineArg = 0;
 						astn arg = an;
 
-						/*/ TODO: skip over aliases.
+						// TODO: skip over aliases?
 						while (arg && arg->kind == TYPE_ref) {
 							symn def = arg->ref.link;
 							if (def == NULL) {
@@ -1008,13 +1025,13 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 								break;
 							}
 							arg = def->init;
-						}
-						*/
+						}// */
 						// try to evaluate as a constant.
 						if (rt->vm.opti && eval(&tmp, arg)) {
 							arg = &tmp;
 						}
 
+						/* TODO: make args inlineable
 						if (param->cast != TYPE_ref) {
 							switch (arg->kind) {
 								default:
@@ -1032,34 +1049,34 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 												break;
 											}
 										}
-										/*/ what about indirect references ?
-										if (link->cast == TYPE_ref) {
-											break;
-										}*/
+										// what about indirect references ?
+										//~ if (link->cast == TYPE_ref) { break; }
 										inlineArg = 1;
 									}
 									break;
 							}
 						}
+						//~ */
 
-						if (inlineArg || param->cast == TYPE_def) {
+						inlineArg = 0;
+						if (inlineArg || param->kind == TYPE_def) {
 							if (1|| param->cast != TYPE_def) {
-								warn(rt, 16, ast->file, ast->line, "inlineing argument used %d times: %+T: %+k", useCount, param, arg);
+								warn(rt, 16, ast->file, ast->line, "inlineing(%d) argument used %d times: %+T: %+k", inlineArg, useCount, param, arg);
 							}
-							param->kind = TYPE_def;
+							//~ param->kind = TYPE_def;
 							param->init = an;
 						}
 						else {
 							int stktop = stkoffs(rt, sizeOf(param));
 							chachedArgSize += sizeOf(param);
-							if (!cgen(rt, arg, param->cast)) {
+							warn(rt, 16, ast->file, ast->line, "caching argument used %d times: %+T: %+k", useCount, param, arg);
+							if (!cgen(rt, an, param->cast == TYPE_def ? param->type->cast : param->cast)) {
 								trace("%+k", arg);
 								return TYPE_any;
 							}
 
-							warn(rt, 16, ast->file, ast->line, "caching argument used %d times: %+T: %+k", useCount, param, arg);
 							param->offs = stkoffs(rt, 0);
-							param->kind = TYPE_ref;
+							//~ param->kind = TYPE_ref;
 							if (stktop != param->offs) {
 								error(rt, ast->file, ast->line, "invalid size: %d <> got(%d): `%+k`", stktop, param->offs, param);
 								return TYPE_any;
@@ -1102,8 +1119,9 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 				}
 
 				for (param = var->prms; param; param = param->next) {
-					param->kind = TYPE_ref;
 					param->init = NULL;
+					// TODO: ugly hack
+					//~ param->kind = param->cast == TYPE_def ? TYPE_def : TYPE_ref;
 				}
 				break;
 			}
@@ -1287,7 +1305,7 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 				return TYPE_any;
 			}
 
-			if (var->cast == TYPE_ref/* && ast->cast == TYPE_ref*/) {
+			if (var->cast == TYPE_ref) {
 				if (!emitint(rt, opc_ldi, vm_size)) {
 					trace("%+k", ast);
 					return TYPE_any;
@@ -2112,6 +2130,9 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 							return TYPE_any;
 						}
 					}
+
+					// TODO: disable variable initialization 2x
+					var->init = NULL;
 				}
 
 				// alloc locally a block of the size of the type;
@@ -2212,28 +2233,29 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 				goto errorcast2;
 
 			case TYPE_bit:
-			//~ case TYPE_any:
 			case TYPE_u32:
 				break;
+
 			case TYPE_i64:
 				if (!emitopc(rt, i64_i32)) {
 					trace("%+k", ast);
 					return TYPE_any;
 				}
 				break;
+
 			case TYPE_f32:
 				if (!emitopc(rt, f32_i32)) {
 					trace("%+k", ast);
 					return TYPE_any;
 				}
 				break;
+
 			case TYPE_f64:
 				if (!emitopc(rt, f64_i32)) {
 					trace("%+k", ast);
 					return TYPE_any;
 				}
 				break;
-			//~ case TYPE_ref: if (!emitopc(s, opc_ldi, vm_size)) return TYPE_any; break;
 		} break;
 
 		case TYPE_i64: switch (ret) {
@@ -2247,25 +2269,27 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 					return TYPE_any;
 				}
 				break;
+
 			case TYPE_i32:
 				if (!emitopc(rt, i32_i64)) {
 					trace("%+k", ast);
 					return TYPE_any;
 				}
 				break;
+
 			case TYPE_f32:
 				if (!emitopc(rt, f32_i64)) {
 					trace("%+k", ast);
 					return TYPE_any;
 				}
 				break;
+
 			case TYPE_f64:
 				if (!emitopc(rt, f64_i64)) {
 					trace("%+k", ast);
 					return TYPE_any;
 				}
 				break;
-			//~ case TYPE_ref: if (!emitopc(s, opc_ldi, 8)) return TYPE_any; break;
 		} break;
 
 		case TYPE_f32: switch (ret) {
@@ -2280,19 +2304,20 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 					return TYPE_any;
 				}
 				break;
+
 			case TYPE_i64:
 				if (!emitopc(rt, i64_f32)) {
 					trace("%+k", ast);
 					return TYPE_any;
 				}
 				break;
+
 			case TYPE_f64:
 				if (!emitopc(rt, f64_f32)) {
 					trace("%+k", ast);
 					return TYPE_any;
 				}
 				break;
-			//~ case TYPE_ref: if (!emitopc(s, opc_ldi, vm_size)) return TYPE_any; break;
 		} break;
 
 		case TYPE_f64: switch (ret) {
@@ -2307,19 +2332,20 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 					return TYPE_any;
 				}
 				break;
+
 			case TYPE_i64:
 				if (!emitopc(rt, i64_f64)) {
 					trace("%+k", ast);
 					return TYPE_any;
 				}
 				break;
+
 			case TYPE_f32:
 				if (!emitopc(rt, f32_f64)) {
 					trace("%+k", ast);
 					return TYPE_any;
 				}
 				break;
-			//~ case TYPE_ref: if (!emitopc(s, opc_ldi, 8)) return 0; break;
 		} break;
 
 		case TYPE_ref:
@@ -2581,6 +2607,8 @@ int gencode(state rt, int mode) {
 			//~ cc->root = staticinitializers->list.head;
 		}
 	}
+
+	//~ dumpTree(rt, cc->root, 0, 0);
 
 	Lmain = rt->_beg - rt->_mem;
 	if (cc->root) {

@@ -7,10 +7,10 @@ enum Window {
 
 define PI = Math.pi;
 
-define toCartesian(Complex ^x) = Complex(x.re * cos(x.im), x.re * sin(x.im));
-define toPolar(Complex ^x) = Complex(abs(x), arg(x));
+define toCartesian(Complex &x) = Complex(x.re * cos(x.im), x.re * sin(x.im));
+define toPolar(Complex x) = Complex(abs(x), arg(x));
 
-define AbsMod(const double ^val, double ^mod) = ((val < 0 ? val + mod : val) % mod);
+define AbsMod(const double val, double mod) = ((val < 0 ? val + mod : val) % mod);
 
 vec4f Domain(Complex z, double mod) {
 	result.x = AbsMod(arg(z)/(PI*2) + PI/4, mod);

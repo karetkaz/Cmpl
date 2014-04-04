@@ -6,7 +6,6 @@
 	void setzero(int vec[4]) {...}
 	void setzero(int vec[]) {...}
 //~ +/
-
 //~ TODO: assign to variants: null, variable
 //! TODO: varargs: int min(int first, int rest...) {...}
 //! TODO: js like initialization of structs: Complex a = {re: 0, im: 1};
@@ -22,7 +21,7 @@
 //~ BUG: void alma(int a) {static int A = a;}
 
 /+ TODO: Array allocation and assignment
-define new(typename ^type, int32 ^n) = emit(type, pointer(memmgr(null, n * type.size)), i32(n));
+define new(typename type, int32 n) = emit(type, pointer(memmgr(null, n * type.size)), i32(n));
 
 int b[] = new(int, 10);
 //~ b = new(int, 10);
@@ -66,11 +65,19 @@ m._b = 69;
 
 // +/
 
+/+ DONE: stack underflow(18): dup.x1 sp(255)
+vec4f Screen(vec4f Base, vec4f Blend) {
+	result = sub(1, mul(sub(1, Base), sub(1, Blend)));
+}
+//~ +/
+
 /+ BUG: accessing elements of dynamic size vectors in structures
 struct slice_in_struct {
 	int slice[];
 }
-slice_in_struct slice_in_struct_fn(int a[]) {return slice_in_struct(a);}
+slice_in_struct slice_in_struct_fn(int a[]) {
+	return slice_in_struct(a);
+}
 
 int a[4] = {1, 2, 3, 4};
 
@@ -87,7 +94,7 @@ int xxx = it1.slice[0];
 //~ +/
 
 /+ TODO: inlineing ...
-define sqr1(float64 ^x) = x*x;
+define sqr1(float64 x) = x * x;
 define sqr2(float64 x) = sqr1(x);
 double x = 9;
 double y1 = sqr1(x*x+x);		// 
@@ -98,7 +105,9 @@ double y2 = sqr2(x*x+x);		// should produce the same code as above
 const char str1[] = "alma a fa alatt nyari piros alma";
 const char str2[] = {'a', 'l', 'm', 'a', 0};
 string str3 = "alma";
-//~ TODO: BUG: string str4 = string(str1);
+
+string str5 = string(str2);		//~ OK
+string str4 = string(str1);		//~ BUG
 
 // makeing slices from strings (substring)
 //~ char slice1[] = emit(struct, ref(str2), i32(2));

@@ -59,7 +59,7 @@ void drawCB() {
 		contrast = Math.clamp(contrast, -512, 512);
 		gamma = Math.clamp(gamma, 1, 1000);
 
-		lutBrightnessContractGamma(&lut, brightness, contrast, gamma / 100.);
+		lutBrightnessContrastGamma(&lut, brightness, contrast, gamma / 100.);
 
 		static if (useNativeImpl) {
 			clutSurf(offScreen, null, &lut);

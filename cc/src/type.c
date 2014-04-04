@@ -315,8 +315,8 @@ symn ccAddCall(state rt, int libc(libcArgs), void* data, const char* proto) {
 
 		// make non reference parameters symbolic by default
 		for (param = sym->prms; param; param = param->next) {
-			if (param->cast != TYPE_ref) {
-				param->cast = TYPE_def;
+			if (param->cast != TYPE_ref && !param->call) {
+				param->kind = TYPE_def;
 			}
 		}
 	}
@@ -419,7 +419,7 @@ int canAssign(ccState cc, symn var, astn val, int strict) {
 		}
 	}
 
-	if (var->kind == TYPE_ref) {
+	if (var->kind == TYPE_ref || var->kind == TYPE_def) {
 		typ = var->type;
 
 		// assigning a function

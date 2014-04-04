@@ -76,7 +76,7 @@ define sqrtf(float x) = sqrt(x);
 define sinf(float x) = sin(x);
 define fabsf(float x) = Math.abs(x);
 define cosf(float x) = cos(x);
-define colsca(vec4f &x, float ^s) = void(x = vec4f(x.x * s, x.y * s, x.z * s));
+define colsca(vec4f &x, float s) = void(x = vec4f(x.x * s, x.y * s, x.z * s));
 define pi = Math.pi;
 
 void setup(double &time, vec4f pixelCB(double x, double y)) {
@@ -88,7 +88,7 @@ void setup(double &time, vec4f pixelCB(double x, double y)) {
 	static bool animate = true;
 
 	struct Internals {
-		double &time;
+		double time;
 		vec4f pixelCB(double x, double y);
 	}
 
@@ -169,7 +169,7 @@ vec4f yinyang(double x, double y) {
 	x = (nx*cos(time) - ny*sin(time));
 	y = (nx*sin(time) + ny*cos(time));
 	float64 h = x*x + y*y;
-	if (h < 1) {
+	if (h < 1.) {
 		float64 d = Math.abs(y) - h;
 		float64 a = d - 0.23;
 		float64 b = h - 1.00;
@@ -262,7 +262,7 @@ vec4f tunnel0(double x, double y) {
 		}
 	}
 
-	static define tex2d(gxSurf ^src, double x, double y) = getPixel(src, imgcoord(x, width(src)), imgcoord(y, height(src)));
+	static define tex2d(gxSurf src, double x, double y) = getPixel(src, imgcoord(x, width(src)), imgcoord(y, height(src)));
 	static define tex2d(gxSurf src, double u, double v, double w) = rgbscale(tex2d(src, u, v), w);
 	//~ static define tex2d(gxSurf src, double u, double v, double w) = tex2d(src, u, v);
 

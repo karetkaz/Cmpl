@@ -1,5 +1,5 @@
 // 2d todo demos.
-define test = 5;
+define test = 4;
 enum Window {
 	draw = RenderMode.swap_buff;
 
@@ -324,8 +324,8 @@ void keyboardCB(int btn, int ext) {
 }
 
 void drawCB() {
-	define drawLine(gxSurf dst, point ^p1, point ^p2, int color) = drawLine(offScreen, p1.x, p1.y, p2.x, p2.y, color);
-	define drawOval(gxSurf dst, point ^p, int ^s, int color) = drawOval(offScreen, p.x - s / 2, p.y - s / 2, p.x + s / 2, p.y + s / 2, color);
+	define drawLine(gxSurf dst, point &p1, point &p2, int color) = drawLine(offScreen, p1.x, p1.y, p2.x, p2.y, color);
+	define drawOval(gxSurf dst, point &p, int s, int color) = drawOval(offScreen, p.x - s / 2, p.y - s / 2, p.x + s / 2, p.y + s / 2, color);
 
 	enum {
 		background = 0xffffff;
