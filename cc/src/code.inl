@@ -32,7 +32,7 @@ case opc_call: NEXT(1, -0, 1) {
 	pu->ip = mp + SP(0, u4);
 	SP(0, u4) = retip;
 #ifdef TRACE
-	TRACE(pu->ip, NULL, sp);
+	TRACE(ip, sp);
 #endif
 #endif
 } break;
@@ -40,7 +40,7 @@ case opc_jmpi: NEXT(1, -1, 1) {
 #ifdef EXEC
 	pu->ip = mp + SP(0, u4);
 #ifdef TRACE
-	TRACE(NULL, NULL, NULL);
+	TRACE(NULL, NULL);
 #endif
 #endif
 } break;
@@ -94,12 +94,11 @@ case opc_libc: NEXT(4, -libcvec[ip->rel].pop, libcvec[ip->rel].chk) {
 	}
 
 #ifdef TRACE
-	// FIXME: libcalls are not pushing the result to the stack, only the arguments.
-	TRACE(pu->ip, libcall->sym, (char*)sp - vm_size);
+	TRACE(ip, sp);
 #endif
 	exitCode = libcall->call(&args);
 #ifdef TRACE
-	TRACE(NULL, NULL, NULL);
+	TRACE(NULL, NULL);
 #endif
 	STOP(error_libc, exitCode != 0, exitCode);
 	STOP(stop_vm, ip->rel == 0, 0);			// Halt();

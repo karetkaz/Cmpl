@@ -1584,16 +1584,16 @@ static void traceArgs(state rt, symn fun, char *file, int line, void* sp, int id
 	symn sym;
 	int printFileLine = 0;
 
-	file = file ? file : "internal.code";
+	file = file ? file : "native.code";
 	fputfmt(rt->logf, "%I%s:%u: %?T", ident, file, line, fun);
-	if (ident > 0) {
-	}
-	else {
+	if (ident < 0) {
 		printFileLine = 1;
 		ident = -ident;
 	}
 
-	if (sp != NULL && fun->prms != NULL) {
+	dieif(sp == NULL, "Error");
+	dieif(fun == NULL, "Error");
+	if (fun->prms != NULL && fun->prms != rt->defs) {
 		int firstArg = 1;
 		if (ident > 0) {
 			fputfmt(rt->logf, "(");
@@ -1658,10 +1658,10 @@ int logTrace(state rt, int ident, int startlevel, int tracelevel) {
 	}
 	// i = 1: skip debug function.
 	for (i = startlevel; i < tracelevel; ++i) {
-		
-		dbgInfo trInfo = getCodeMapping(rt, vmOffset(rt, rt->dbg->trace[pos - i].ip));
-		symn fun = rt->dbg->trace[pos - i - 1].sym;
+		int pc = vmOffset(rt, rt->dbg->trace[pos - i].ip);
+		dbgInfo trInfo = getCodeMapping(rt, pc);
 		char *sp = rt->dbg->trace[pos - i - 1].sp;
+		symn fun = mapsym(rt, pc, 1);
 		char *file = NULL;
 		int line = 0;
 
@@ -1670,19 +1670,17 @@ int logTrace(state rt, int ident, int startlevel, int tracelevel) {
 			line = trInfo->line;
 		}
 
-		if (fun == NULL) {
-			fun = mapsym(rt, rt->dbg->trace[pos - i - 1].cf);
-			rt->dbg->trace[pos - i - 1].sym = fun;
-		}
-
 		if (isOutput > 0) {
 			fputc('\n', rt->logf);
 		}
-		traceArgs(rt, fun, file, line, sp, 1);
+		traceArgs(rt, fun, file, line, sp, ident);
 		isOutput += 1;
 	}
 	if (i < pos) {
-		fputfmt(rt->logf, "\n\t... %d more", pos - i);
+		if (isOutput > 0) {
+			fputc('\n', rt->logf);
+		}
+		fputfmt(rt->logf, "%I... %d more", ident, pos - i);
 		isOutput += 1;
 	}
 

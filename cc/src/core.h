@@ -384,10 +384,8 @@ struct dbgStateRec {
 	int (*dbug)(state, int pu, void* ip, long* sptr, int scnt);
 
 	struct {
-		void* cf;
 		void* ip;
 		void* sp;
-		symn sym;
 	} trace[512];
 
 	int tracePos;

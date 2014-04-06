@@ -1,5 +1,6 @@
 // tests
 
+/*
 //~ int a = 9;
 //~ int b = 4;
 
@@ -30,7 +31,7 @@ define Im(Complex &a) = (a.im);
 //~ Complex C5 = Complex(3., Im(Complex(2., 5.)));
 //~ double d1 = Im(Complex(2., 5.));
 //~ double d2 = Re(Complex(2., 5.));
-
+//~ */
 
 /*
 int n = 99;
@@ -541,10 +542,11 @@ println(string(buff));
 
 //~ */
 
-/* TODO: Trace with external call
+//~ /* TODO: Trace with external call
 void f(int &arg) {
 	if (arg <= 0) {
-		trace("stack trace :-)");
+		debug("stack trace :-)", 3, 256, variant.null);
+		//~ trace("stack trace :-)");
 		return;
 	}
 	int n2 = arg - 1;
@@ -553,7 +555,12 @@ void f(int &arg) {
 }
 
 int N = 4;
-f(&N);
+//~ f(&N);
+
+void f2(int arg, string b) {
+	f(&arg);
+}
+f2(N, "apple");
 
 //~ int &b = N = 8;
 // */

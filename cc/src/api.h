@@ -41,7 +41,7 @@ struct libcArgsRec {
 
 	symn  fun;		// invoked function
 	void* data;		// static data for function (passed to install)
-	void* extra;	// extra data for function (passed to vmExec or vmCall)
+	void* extra;	// extra data for function (passed to execute or invoke)
 
 	void* retv;		// result of function
 	char* argv;		// arguments for function
@@ -52,11 +52,12 @@ struct libcArgsRec {
  */
 struct stateRec {
 	int   errc;		// error count
-	int   closelog;	// close log file
+	int   closelog;	// close the log file
 	FILE* logf;		// log file
 
 	symn  defs;		// global variables and functions
-	symn  gdef;		// all static variables and functions
+	symn  gdef;		// TDOO: check if this is really needed: all static variables and functions
+	symn  init;		// the main initializer function.
 
 	// virtual machine state
 	struct {
@@ -194,7 +195,7 @@ struct stateRec {
 				}
 
 				// register event callback using the symbol of the function.
-				onMouse = rt->api.mapsym(rt, fun);
+				onMouse = rt->api.getsym(rt, fun);
 
 				// runtime error if symbol was not found.
 				return onMouse != NULL;
@@ -214,7 +215,7 @@ struct stateRec {
 			}
 		 * TODO: symn (*const vmSymbol)(state, int offset);
 		 */
-		symn (*const mapsym)(state, void *ptr);
+		symn (*const getsym)(state, void *ptr);
 
 		/**
 		 * @brief Invoke a function inside the vm.
@@ -224,7 +225,7 @@ struct stateRec {
 		 * @param args Arguments for the fuction. (May be null.)
 		 * @param extra Extra data for each libcall executed from here.
 		 * @return Error code of execution. (0 means success.)
-		 * @usage see @mapsym example.
+		 * @usage see @getsym example.
 		 * @note Invocation to execute must preceed this call.
 		 */
 		int (*const invoke)(state, symn fun, void* res, void* args, void* extra);
@@ -280,7 +281,7 @@ static inline float32_t argf32(libcArgs args, int offs) { return argval(args, of
 static inline float64_t argf64(libcArgs args, int offs) { return argval(args, offs, float64_t); }
 static inline void* arghnd(libcArgs args, int offs) { return argval(args, offs, void*); }
 static inline void* argref(libcArgs args, int offs) { int32_t p = argval(args, offs, int32_t); return p ? args->rt->_mem + p : NULL; }
-static inline void* argsym(libcArgs args, int offs) { return args->rt->api.mapsym(args->rt, argref(args, offs)); }
+static inline void* argsym(libcArgs args, int offs) { return args->rt->api.getsym(args->rt, argref(args, offs)); }
 #undef argval
 
 /**

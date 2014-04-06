@@ -229,11 +229,11 @@ static int evalexp(state rt, char* text) {
 
 // void testFunction(void cb(pointer n), pointer n)
 static int testFunction(libcArgs rt) {
-	symn cb = mapsym(rt->rt, argref(rt, 0));
+	symn cb = argsym(rt, 0);
 	if (cb != NULL) {
 		struct {int n;} args;
 		args.n = argi32(rt, 4);
-		return invoke(rt->rt, cb, NULL, &args, NULL);
+		return invoke(rt->rt, cb, NULL, &args, NULL, rt->fun);
 	}
 	return 0;
 }
@@ -722,6 +722,7 @@ static int haltVerbose(libcArgs rt) {
 		fputval(rt->rt, stdout, var, (stkval*)ofs, 0);
 		fputc('\n', stdout);
 	}
+	logTrace(rt->rt, 2, 0, 20);
 
 	// show allocated memory chunks.
 	//~ rtAlloc(rt->rt, NULL, 0);

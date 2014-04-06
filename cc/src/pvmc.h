@@ -148,10 +148,11 @@ int gencode(state, int mode);
 int execute(state, void* extra, int ss);
 
 /// Invoke a function; @see state.api.invoke
-int invoke(state, symn fun, void* ret, void* args, void* extra);
+int invoke(state, symn fun, void* ret, void* args, void* extra, symn trace);
 
-/// Get symbol by offset; @see state.api.mapsym
-symn mapsym(state, void *ptr);
+/// Lookup symbol by offset; @see state.api.mapsym
+symn mapsym(state, int offs, int callsOnly);
+symn getsym(state, void* offs);
 
 /// Alloc, resize or free memory; @see state.api.rtAlloc
 void* rtAlloc(state, void* ptr, unsigned size);

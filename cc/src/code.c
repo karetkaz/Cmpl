@@ -149,6 +149,7 @@ int vmOffset(state rt, void* ptr) {
 	return ptr ? (unsigned char*)ptr - rt->_mem : 0;
 }
 
+// base function emiting an ocode, see header
 int emitarg(state rt, vmOpcode opc, stkval arg) {
 	libc libcvec = rt->vm.libv;
 	bcde ip = (bcde)rt->_beg;
@@ -761,11 +762,6 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 
 	return rt->vm.pc;
 }
-int emitint(state rt, vmOpcode opc, int64_t arg) {
-	stkval tmp;
-	tmp.i8 = arg;
-	return emitarg(rt, opc, tmp);
-}
 int fixjump(state rt, int src, int dst, int stc) {
 	dieif(stc > 0 && stc & 3, "FixMe");
 	if (src >= 0) {
@@ -871,7 +867,7 @@ static inline int ovf(cell pu) {
 
 /// Check if memory is aligned.
 static inline int aligned(int mem, int align) {
-	return 1;//mem % align == 0;
+	return 1;//TODO: mem % align == 0;
 }
 
 // TODO: to be removed.
@@ -882,16 +878,14 @@ static inline void dbugerr(state rt, char* error_msg, int error_code, cell cpu, 
 }
 
 // TODO: to be renamed; manages function call stack traces
-static inline void dotrace(state rt, void* cf, symn sym, void* ip, void* sp) {
+static inline void dotrace(state rt, void* ip, void* sp) {
 	if (rt->dbg != NULL) {
-		if (cf == NULL) {
+		if (ip == NULL) {
 			rt->dbg->tracePos -= 1;
 		}
 		else if (rt->dbg->tracePos < (ptrdiff_t)lengthOf(rt->dbg->trace)) {
 			rt->dbg->trace[rt->dbg->tracePos].ip = ip;
 			rt->dbg->trace[rt->dbg->tracePos].sp = sp;
-			rt->dbg->trace[rt->dbg->tracePos].cf = cf;
-			rt->dbg->trace[rt->dbg->tracePos].sym = sym;
 			rt->dbg->tracePos += 1;
 		}
 	}
@@ -971,7 +965,7 @@ static int exec(state rt, cell pu, symn fun, void* extra) {
 				#define NEXT(__IP, __SP, __CHK) pu->sp -= vm_size * (__SP); pu->ip += (__IP);
 				#define STOP(__ERR, __CHK, __ERC) do {if (__CHK) {err_code = __ERC; goto dbg_##__ERR;}} while(0)
 				#define EXEC
-				#define TRACE(__IP, __SYM, __SP) do { dotrace(rt, __IP, __SYM, ip, __SP); } while(0)
+				#define TRACE(__IP, __SP) do { dotrace(rt, __IP, __SP); } while(0)
 				#include "code.inl"
 			}
 		}
@@ -1020,17 +1014,17 @@ static int exec(state rt, cell pu, symn fun, void* extra) {
 }
 
 
-int invoke(state rt, symn fun, void* res, void* args, void* extra) {
+int invoke(state rt, symn fun, void* res, void* args, void* extra, symn trace) {
 
-	int result = 0;
 	cell pu = rt->vm.cell;
 	void* ip = pu->ip;
 	void* sp = pu->sp;
 
-	void* resp = NULL;
 	// result is the first param
 	// TODO: ressize = fun->prms->size;
 	int ressize = sizeOf(fun->type);
+	void* resp = NULL;
+	int result = 0;
 
 	dieif(!(fun->kind == TYPE_ref && fun->call), "FixMe");
 
@@ -1049,13 +1043,16 @@ int invoke(state rt, symn fun, void* res, void* args, void* extra) {
 
 	pu->ip = rt->_mem + fun->offs;
 
-	if (rt->dbg != NULL) {
-		dotrace(rt, pu->ip, fun, NULL, pu->sp);
+	if (rt->dbg != NULL && trace != NULL) {
+		dotrace(rt, getip(rt, trace->offs), pu->sp);
+		result = exec(rt, pu, fun, extra);
+		dotrace(rt, NULL, NULL);
+	}
+	else {
+		result = exec(rt, pu, fun, extra);
 	}
 
-	result = exec(rt, pu, fun, extra);
-
-	if (res != NULL && result == 0) {
+	if (result == 0 && res != NULL) {
 		memcpy(res, resp, ressize);
 	}
 
@@ -1065,8 +1062,7 @@ int invoke(state rt, symn fun, void* res, void* args, void* extra) {
 	return result;
 }
 int execute(state rt, void* extra, int ss) {
-	struct symNode unit;
-	// TODO: cells should be in runtimes read only memory
+	// TODO: cells should be in runtimes read only memory?
 	cell pu;
 
 	// invalidate compiler
@@ -1096,18 +1092,12 @@ int execute(state rt, void* extra, int ss) {
 		return -99;
 	}
 
-	memset(&unit, 0, sizeof(struct symNode));
-	unit.kind = TYPE_ref;
-	unit.file = "internal.code";
-	unit.name = "<init>";
-	unit.prms = rt->defs;
-	unit.call = 1;
 	if (rt->dbg != NULL) {
-		dotrace(rt, pu->ip, &unit, pu->ip, NULL);
+		dotrace(rt, pu->ip, pu->sp);
 	}
 
 	// TODO argc, argv
-	return exec(rt, pu, &unit, extra);
+	return exec(rt, pu, rt->init, extra);
 }
 
 
@@ -1234,7 +1224,7 @@ void fputopc(FILE* fout, unsigned char* ptr, int len, int offs, state rt) {
 		case opc_ldcr: {
 			fputfmt(fout, " %x", ip->arg.u4);
 			if (rt != NULL) {
-				symn sym = mapsym(rt, getip(rt, ip->arg.u4));
+				symn sym = mapsym(rt, ip->arg.u4, 0);
 				if (sym != NULL) {
 					fputfmt(fout, ": %+T: %T", sym, sym->type);
 				}
