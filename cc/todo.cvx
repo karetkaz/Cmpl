@@ -1,0 +1,7 @@
+struct Random {
+	define multiplier = 0x5deece66d;
+	int seed;
+}
+
+define Random(int64 seed) = Random(int64.And(int64.Xor(seed, Random.multiplier), (int64.Shl(1, 48) - 1)));
+

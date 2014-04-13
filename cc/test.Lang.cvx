@@ -33,156 +33,6 @@ define Im(Complex &a) = (a.im);
 //~ double d2 = Re(Complex(2., 5.));
 //~ */
 
-/*
-int n = 99;
-string TEST = "Fixed point math.";
-string nullStr = null;
-int &nullInt = null;
-
-double nullFun(double a) = Math.Tan;
-nullFun = null;
-*/
-/* test: typename
-struct ss {
-	int32 x;
-	int32 y;
-	struct ss {
-		int64 x;
-		int64 y;
-	}
-}
-
-ss A = ss(1, 2);
-ss.ss a = ss.ss(1, 2);
-
-typename t1 = ss;
-typename t2 = ss.ss;
-
-int n1 = sizeof(ss);
-int n2 = sizeof(ss.ss);
-
-//~ */
-/+ tets: typename and type informations
-struct xxx {
-	int64 x1;
-	int64 x2;
-}
-
-define Xxx = xxx;		// alias
-
-typename type = xxx;
-
-xxx a = xxx(0, 0);
-Xxx b = xxx(0, 0);
-
-int size1 = typename(xxx).size;
-int size2 = typename(Xxx).size;
-int size3 = typename(type).size;
-
-string name = type.name;
-string file = type.file;
-int line = type.line;
-
-/+ compare typenames
-typename t = Complex;
-/+ TODO:
-if (null == Complex) {
-	debug("Complex not null");
-}
-if (Complex == null) {
-	debug("Complex not null");
-}
-// +/
-
-if (t != null) {
-	debug("t not null");
-}
-if (null != t) {
-	debug("t not null");
-}
-if (t == Complex) {
-	debug("Complex");
-}
-if (Complex == t) {
-	debug("Complex");
-}
-//~ +/
-
-//? TODO: variable.struct should return the type of variable.
-//~ +/
-
-/* test: Arrays, Pointers, References Alloc
-int32 i32arr[] = emit(struct, ref(memmgr(null, typename(int32).size * 100)), i32(100));
-for (int i = 0; i < i32arr.length; i += 1) {
-	i32arr[i] = i;
-}
-
-//~ */
-
-/* BUG: realloc / malloc / free
-define realloc(pointer ptr, int size) = memmgr(ptr, size);
-define malloc(int size) = memmgr(null, size);
-define free(pointer ptr) = memmgr(ptr, 0);
-
-void testDeallocation(int test) {
-	pointer p1 = malloc(160);
-	pointer p2 = malloc(161);
-	pointer p3 = malloc(160);
-
-	if (test == 1) {
-		p3 = free(p3);
-		p2 = free(p2);
-		p1 = free(p1);
-	}
-	else if (test == 2) {
-		p1 = free(p1);
-		p2 = free(p2);
-		p3 = free(p3);
-	}
-	else if (test == 3) {
-		p2 = free(p2);
-		p1 = free(p1);
-		p3 = free(p3);
-	}
-	else if (test == 4) {
-		p2 = free(p2);
-		p3 = free(p3);
-		p1 = free(p1);
-	}
-	memmgr(null, 0);
-}
-
-define makeBug = 1;
-memmgr(null, makeBug);
-testDeallocation(1);
-testDeallocation(2);
-testDeallocation(3);
-testDeallocation(4);
-//~ */
-
-/* BUG: realloc test
-define realloc(pointer ptr, int size) = memmgr(ptr, size);
-define malloc(int size) = memmgr(null, size);
-define free(pointer ptr) = memmgr(ptr, 0);
-
-memmgr(null, 0);
-pointer p1 = malloc(160);
-pointer p2 = malloc(161);
-pointer p3 = malloc(160);
-
-pointer p = p2; p2 = null;
-memmgr(null, 0);
-p = realloc(p, 100);
-memmgr(null, 0);
-p = free(p);
-memmgr(null, 0);
-
-free(p3);
-free(p2);
-free(p1);
-//~ memmgr(null, 0);
-//~ */
-
 /* test: function members
 
 int32 f3(int a, int b) {
@@ -242,17 +92,6 @@ y = ss[1];
 //~ print(ss[1]);
 // */
 
-/* BUG: assignment of local variable to a static one (compiler optimization: allocate global variables on stack.)
-int64 a = 32;
-a = 33;
-void setup() {
-	static int64 &b = a;
-	print("a: %d\n", a);
-	print("b: %d\n", b);
-}
-setup();
-//~ */
-
 /* TODO: array.isNullOrEmpty()
 bool isNullOrEmpty(int a[]) {
 	if (a == null)
@@ -270,126 +109,6 @@ int val_nonempty[10] = {9};
 bool res_true3 = isNullOrEmpty(val_empty);
 bool res_false = isNullOrEmpty(val_nonempty);
 //~ */
-
-/* TODO: enumeration assignment
-struct _vec4f {
-	float x;
-	float y;
-	float z;
-	float w;
-}
-
-enum coord: vec4f {
-	O = vec4f(float32(0), float32(0), float32(0), float32(0));
-	X = vec4f(float32(1), float32(0), float32(0), float32(0));
-	Y = vec4f(float32(0), float32(1), float32(0), float32(0));
-	Z = vec4f(float32(0), float32(0), float32(1), float32(0));
-}
-
-coord e1 = coord.X;		// ok: enum variable can be assigned with a value from the enumeration.
-coord e2 = e1;			// ok: enum variable can be assigned with the same type of variable.
-e2 = coord.X;			// ok: assigment, not initialization.
-e2 = e2;				// ok: assigment, not initialization.
-
-vec4f v1 = coord.Y;		// ok: values from enum are of type vec4f, so it can be assigned.
-vec4f v2 = e1;			// ok: enum variables can be assigned to variables of their base type.
-v2 = coord.X;			// ok: assigment, not initialization.
-v2 = e2;				// ok: assigment, not initialization.
-
-//~ coord e3 = v1;			// error: enum variable can be assigned only from a value from the enumeration
-//~ e3 = v1;				// error: assigment, not initialization.
-coord e0;				// TODO: error: uninitialized enum.
-
-//~ bool b1 = e1 == e2;
-//~ bool b2 = e1 == v1;
-//~ bool b3 = v1 == e2;
-//~ bool b4 = v1 == v1;
-// */
-
-/* Enum test
-enum Window {
-	width = 90;
-	height1 = 2 * width;
-	height2 = width * 2;
-}
-define min(int ^x, int ^y) = int(x < y ? x : y);
-int x = 3 * Window.width;
-int y = Window.height2 * 3;
-int cpos = min(x, Window.width) * y / Window.width;
-
-//~ */
-
-/* Bug: const struct array initialization
-struct Biorithm {
-	int color;		//%#%08x
-	int period;		//%%d
-	int period2;	//%%d
-	string name;	//%'%s'
-}
-
-//BUG: static const Biorithm biorithms1[7] = {
-static Biorithm biorithms1[7] = {
-	Biorithm(0x7070ff, 23,  0, "Physical"),
-	Biorithm(0xff0000, 28,  0, "Emotional"),
-	Biorithm(0x00ff00, 33,  0, "Intellectual"),
-	Biorithm(0xdadada, 38,  0, "Intuitive"),
-	Biorithm(0x6f6f6f, 23, 33, "Mastery"),
-	Biorithm(0xfeab00, 23, 28, "Passion"),
-	Biorithm(0x9466db, 28, 33, "Wisdom")
-};
-
-static const Biorithm biorithms2[] = {
-	Biorithm(0x7070ff, 23,  0, "Physical"),
-	Biorithm(0xff0000, 28,  0, "Emotional"),
-	Biorithm(0x00ff00, 33,  0, "Intellectual"),
-	Biorithm(0xdadada, 38,  0, "Intuitive"),
-	Biorithm(0x6f6f6f, 23, 33, "Mastery"),
-	Biorithm(0xfeab00, 23, 28, "Passion"),
-	Biorithm(0x9466db, 28, 33, "Wisdom")
-};
-
-//~ void printsize(Biorithm biorithms[]) {print("length: %d\n", biorithms.length);}
-//~ printsize(biorithms1);
-//~ printsize(biorithms2);
-//~ */
-
-/* DONE: function reference initialization
-float64 Sum(float64 data[]) = Math.Sum;
-float64 Mean(float64 data[]) = Math.Mean;
-
-float64 data[3] = {1,2,3};
-float64 sum = Sum(data);
-float64 mean = Mean(data);
-//~ */
-
-/* BUG: should not be able to declare these 2 functions.
-void idnMat14x4(float64 mat[]) {
-	trace("this");
-	float64 diag = 1;
-	for (int i = 0; i < mat.length; i += 1) {
-		mat[i] = i & 3 ? 0 : diag;
-	}
-}
-
-void idnMat14x4(float64 mat[16]) {
-	trace("this");
-	float64 diag = 1;
-	for (int i = 0; i < mat.length; i += 1) {
-		mat[i] = i & 3 ? 0 : diag;
-	}
-}
-
-float64 mat1[16];
-float64 mat2[] = mat1;
-
-idnMat14x4(mat1);
-idnMat14x4(mat2);
-//~ idnMat14x4_1(mat1);
-//~ idnMat14x4_2(mat1);
-//~ idnMat14x4_1(mat2);		// ERROR: this should not compile
-//~ idnMat14x4_2(mat2);
-
-// */
 
 /* TEST: xrgb
 struct xrgb: 1 {
@@ -410,8 +129,8 @@ xrgb b = emit(xrgb, i32(0x2f3f1f));
 
 xrgbi32 r;
 /+ TODO: initializations
-xrgbi32 r = {val : 0};
-xrgbi32 r = {
+xrgbi32 r1 = {val : 0};
+xrgbi32 r2 = {
 	r: Math.min(a.r + b.r, 255),
 	g: Math.min(a.g + b.g, 255),
 	b: Math.min(a.b + b.b, 255),
@@ -424,125 +143,7 @@ r.rgb.g = Math.min(a.g + b.g, 255);
 r.rgb.b = Math.min(a.b + b.b, 255);
 // */
 
-/* TEST: invoke functions ...
-int method0() {}
-int method1(int x) {
-	//~ print("!alma a fa alatt nyári piros alma\n");
-	static int i = 0;
-	result = i += x;
-	print("%D\n", int64(result));
-}
-int method1() {result = method1(1);}
-int method2() {result = method1(2);}
-
-void methodCall(int method()) {
-	if (method == null) {
-		print("(null)\n");
-		return;
-	}
-	int n = method();
-	//~ print("%D\n", int64(n));
-}
-
-//~ /+	just call it
-method1();
-method2();
-// +/
-
-//~ /+	call passed to another fun
-//~ methodCall(method1);	// this will not work because there are 2 method1 named functions
-methodCall(null);
-methodCall(method2);
-//~ +/
-
-//~ /+	call as a reference
-int method() = method2;
-
-//~ method = null;
-
-if (method != null) {
-	method();
-}
-
-methodCall(method);
-
-// +/
-
-//~ */
-/* TEST: Closure like constructs ...
-
-struct Closure { int64 call(Closure &c, int64 n); int64 data; int32 invoked; /+...+/ }
-define Closure(int64 call(Closure &c, int64 n), int64 data) = Closure(call, data, 0);
-
-define Invoke(Closure c, int64 n) = c.call(&c, n);
-// TODO: operator (Closure c)(int64 n) = c.call(c, n);
-
-int64 countdown(Closure &c, int64 n) { result = c.data; c.data -= n; c.invoked += 1; }
-
-Closure a = Closure(countdown, 90);
-Closure b = Closure(countdown, 9);
-
-println(Invoke(a, 9));
-println(Invoke(a, 2));
-println(Invoke(b, 10));
-println(Invoke(a, 2));
-println(Invoke(a, 2));
-
-//~ */
-
-/* TEST: calc E
-define eps = 1e-50;
-double tmp = 1.;
-double res = 1.;
-for (int i = 1; tmp > eps; i += 1) {
-	res += tmp /= i;
-}
-// */
-
-/* TEST: factorial
-define n = 6;
-int64 res = 1;
-for (int i = 1; i <= n; i += 1) {
-	res *= i;
-}
-// */
-
-/* test: random floats
-float32 frand() {
-	uint32 randnum = rand() * rand();
-	float32 tmp = emit(float32, i32((randnum >> 9 ) | 0x3f800000));
-	result = tmp - 1;
-}
-
-float64 drand() {
-	uint32 randnum1 = rand() * rand();
-	uint32 randnum2 = rand() * rand();
-	float64 tmp = emit(float64, i32(randnum1), i32((randnum2 >> 12) | 0x3ff00000));
-	result = tmp - 1;
-}
-
-float maxrand = -1;
-for(int i = 0; i < 30; i += 1) {
-	float64 currand = drand();
-
-	if (maxrand < currand)
-		maxrand = currand;
-
-	print("%f\n", currand);
-}
-
-// */
-
-/* test: format integer
-int val = 0x20928374;
-char buff[512] = {0};
-
-format(buff, "value: %d = 0x%08x = 0b%032b = [%.5i]5", val);
-println(string(buff));
-
-//~ */
-
-//~ /* TODO: Trace with external call
+/* TODO: Trace with external call
 void f(int &arg) {
 	if (arg <= 0) {
 		debug("stack trace :-)", 3, 256, variant.null);
@@ -562,10 +163,9 @@ void f2(int arg, string b) {
 }
 f2(N, "apple");
 
-//~ int &b = N = 8;
 // */
 
-/+ test: debug and trace info
+//~ /+ test: debug and trace info
 struct debugInfo {
 	string func;
 	double x;

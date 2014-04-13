@@ -1604,19 +1604,16 @@ static void traceArgs(state rt, symn fun, char *file, int line, void* sp, int id
 		for (sym = fun->prms; sym; sym = sym->next) {
 			void *offs;
 
-			//~ if (sym->call)
-				//~ continue;
+			/* fun->prms should contain only function parameters.
+			if (sym->call)
+				continue;
 
 			if (sym->kind != TYPE_ref)
 				continue;
+			*/
 
 			if (firstArg == 0) {
-				if (ident > 0) {
-					fputfmt(rt->logf, ", ");
-				}
-				else {
-					fputfmt(rt->logf, "\n");
-				}
+				fputstr(rt->logf, NULL, ", ");
 			}
 			else {
 				firstArg = 0;

@@ -2265,6 +2265,7 @@ int gencode(state rt, int mode) {
 	dieif(cc == NULL, "compiler state invalid");
 
 	// leave the global scope.
+	rt->init = ccAddType(rt, "<init>", 0, 0);
 	rt->defs = leave(rt->cc, NULL, gstat);
 
 	/* reorder the initialization of static variables and functions.
@@ -2311,6 +2312,7 @@ int gencode(state rt, int mode) {
 
 	// libcalls
 	if (cc->libc != NULL) {
+		int count = 0;
 		libc lc, calls;
 
 		calls = (libc)(rt->_beg = paddptr(rt->_beg, sizeof(void*)));
@@ -2319,10 +2321,12 @@ int gencode(state rt, int mode) {
 
 		for (lc = cc->libc; lc; lc = lc->next) {
 			calls[lc->pos] = *lc;
+			count += 1;
 			//lc->sym->offs = vmOffset(rt, &calls[lc->pos]);
 		}
 
 		rt->vm.libv = calls;
+		trace("installed %d lib calls", count);
 	}
 
 	if (DEBUGGING > 6) {
@@ -2486,13 +2490,13 @@ int gencode(state rt, int mode) {
 	// program entry point
 	rt->vm.pc = Lmain;
 
-	//~ rt->init->kind = TYPE_ref;
 	//~ rt->init->name = "<init>";
+	//~ rt->init->prms = rt->defs;
 
-	rt->init->prms = rt->defs;
 	rt->init->file = NULL;
 	rt->init->line = 0;
 
+	rt->init->kind = TYPE_ref;
 	rt->init->call = 1;
 	rt->init->offs = Lmain;
 	rt->init->size = emitopc(rt, markIP) - Lmain;

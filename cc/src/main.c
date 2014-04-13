@@ -722,7 +722,7 @@ static int haltVerbose(libcArgs rt) {
 		fputval(rt->rt, stdout, var, (stkval*)ofs, 0);
 		fputc('\n', stdout);
 	}
-	logTrace(rt->rt, 2, 0, 20);
+	//~ logTrace(rt->rt, 1, 0, 20);
 
 	// show allocated memory chunks.
 	//~ rtAlloc(rt->rt, NULL, 0);

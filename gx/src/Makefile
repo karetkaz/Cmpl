@@ -32,11 +32,12 @@ endif
 #~ endif
 
 OBJS=\
-	$(OBJDIR)/code.o\
-	$(OBJDIR)/parser.o\
-	$(OBJDIR)/printer.o\
 	$(OBJDIR)/tree.o\
 	$(OBJDIR)/type.o\
+	$(OBJDIR)/parser.o\
+	$(OBJDIR)/printer.o\
+	$(OBJDIR)/code.o\
+	$(OBJDIR)/cgen.o\
 	$(OBJDIR)/core.o\
 	$(OBJDIR)/lstd.o\
 	\

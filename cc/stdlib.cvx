@@ -1356,6 +1356,7 @@ static struct Debug {
 }
 
 define debug(string message) = debug(message, Debug.debug, Debug.notrace, variant.null);
+define debug(string message, variant var) = debug(message, Debug.debug, Debug.notrace, var);
 define trace(string message) = debug(message, Debug.debug, Debug.deftrace, variant.null);
 define trace(string message, variant var) = debug(message, Debug.debug, Debug.deftrace, var);
 
@@ -1733,8 +1734,13 @@ int itoa(string format, int value, char buff[]) {
 // these should be something like emit
 define new(typename type) = memmgr(null, type.size);
 //~ define new(typename type, int32 n) = memmgr(null, type.size * n);
+
 // creates a slice: {data, length}
 //~ define Array(typename type, int32 n) = emit(struct, ref(memmgr(null, type.size * n)), i32(n));
 define variant(string str) = emit(variant, ref(str), typename(string));
-define variant(int32 value) = emit(variant, ref(value), typename(int));
+define variant(int32 value) = emit(variant, ref(value), typename(int32));
+define variant(int64 value) = emit(variant, ref(value), typename(int64));
+define variant(float32 value) = emit(variant, ref(value), typename(float32));
+define variant(float64 value) = emit(variant, ref(value), typename(float64));
+define variant(typename type, pointer value) = emit(variant, pointer(value), ref(type));
 define sizeof(typename type) = int(type.size);

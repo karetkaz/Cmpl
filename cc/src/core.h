@@ -102,7 +102,7 @@ typedef enum {
 		CAST_bit    = 0x000002;		// bool;
 		CAST_i32    = 0x000003;		// int32, int16, int8
 		// ...
-		//inline    = 0x000000;		// unavailable at runtime.
+		// alias    = 0x000000;		// invalid at runtime.
 		typename    = 0x000010;		// struct metadata info.
 		function    = 0x000020;		// function
 		variable    = 0x000030;		// functions and typenames are also variables
@@ -383,12 +383,13 @@ struct dbgStateRec {
 
 	int (*dbug)(state, int pu, void* ip, long* sptr, int scnt);
 
+	//* TODO: move to cpu.bp ... cpu.tp
 	struct {
 		void* ip;
 		void* sp;
 	} trace[512];
-
 	int tracePos;
+	// */
 
 	struct arrBuffer codeMap;
 };

@@ -33,6 +33,7 @@ static inline float64_t popf64(libcArgs rt) { return poparg(rt, float64_t); }
 #undef poparg
 
 static inline void* popref(libcArgs rt) { int32_t p = popi32(rt); return p ? rt->rt->_mem + p : NULL; }
+static inline void* popsym(libcArgs rt) { int32_t p = popi32(rt); return p ? mapsym(rt->rt, p, 0) : NULL; }
 static inline char* popstr(libcArgs rt) { return popref(rt); }
 //#}
 
@@ -424,7 +425,7 @@ static int surfCall(libcArgs rt) {
 			state rt_ = rt->rt;
 			gxSurfHnd dst = popi32(rt);
 			gx_Rect roi = popref(rt);
-			symn callback = mapsym(rt_, popref(rt));
+			symn callback = popsym(rt);
 			//~ fputfmt(stdout, "callback is: %-T\n", callback);
 
 			gx_Surf sdst = getSurf(dst);
@@ -442,7 +443,7 @@ static int surfCall(libcArgs rt) {
 					cBuffY += sdst->scanLen;
 					for (sx = 0; sx < sdst->width; sx += 1) {
 						struct {int32_t x, y;} args = {sx, sy};
-						if (invoke(rt_, callback, &cBuff[sx], &args, NULL) != 0) {
+						if (invoke(rt_, callback, &cBuff[sx], &args, NULL, rt->fun) != 0) {
 							//~ dump(s, dump_sym | dump_asm, callback, "error:&-T\n", callback);
 							return -1;
 						}
@@ -457,7 +458,7 @@ static int surfCall(libcArgs rt) {
 			state rt_ = rt->rt;
 			gxSurfHnd dst = popi32(rt);
 			gx_Rect roi = popref(rt);
-			symn callback = mapsym(rt_, popref(rt));
+			symn callback = popsym(rt);
 
 			gx_Surf sdst = getSurf(dst);
 
@@ -474,7 +475,7 @@ static int surfCall(libcArgs rt) {
 					cBuffY += sdst->scanLen;
 					for (sx = 0; sx < sdst->width; sx += 1) {
 						struct {int32_t col;} args = {cBuff[sx]};
-						if (invoke(rt_, callback, &cBuff[sx], &args, NULL) != 0) {
+						if (invoke(rt_, callback, &cBuff[sx], &args, NULL, rt->fun) != 0) {
 							//~ dump(s, dump_sym | dump_asm, callback, "error:&-T\n", callback);
 							return -1;
 						}
@@ -491,7 +492,7 @@ static int surfCall(libcArgs rt) {
 			int y = popi32(rt);
 			gxSurfHnd src = popi32(rt);
 			gx_Rect roi = popref(rt);
-			symn callback = mapsym(rt_, popref(rt));
+			symn callback = popsym(rt);
 
 			gx_Surf sdst = getSurf(dst);
 			gx_Surf ssrc = getSurf(src);
@@ -527,7 +528,7 @@ static int surfCall(libcArgs rt) {
 						long* cbsrc = (long*)sptr;
 						for (x = clip.x; x < x1; x += 1) {
 							struct {int32_t dst, src;} args = {*cbdst, *cbsrc};
-							if (invoke(rt_, callback, cbdst, &args, NULL) != 0) {
+							if (invoke(rt_, callback, cbdst, &args, NULL, rt->fun) != 0) {
 								//~ dump(s, dump_sym | dump_asm, callback, "error:&-T\n", callback);
 								return -1;
 							}
@@ -557,7 +558,7 @@ static int surfCall(libcArgs rt) {
 			state rt_ = rt->rt;
 			gxSurfHnd dst = popi32(rt);
 			gx_Rect roi = popref(rt);
-			symn callback = mapsym(rt_, popref(rt));
+			symn callback = popsym(rt);
 
 			gx_Surf sdst = getSurf(dst);
 
@@ -580,7 +581,7 @@ static int surfCall(libcArgs rt) {
 					for (x01 = sx = 0; sx < sdst->width; sx += 1, x01 += dx01) {
 						struct {float64_t x, y;} args = {x01, y01};
 						struct vector result;
-						if (invoke(rt_, callback, &result, &args, NULL) != 0) {
+						if (invoke(rt_, callback, &result, &args, NULL, rt->fun) != 0) {
 							//~ dump(s, dump_sym | dump_asm, callback, "error:&-T\n", callback);
 							return -1;
 						}
@@ -595,7 +596,7 @@ static int surfCall(libcArgs rt) {
 			state rt_ = rt->rt;
 			gxSurfHnd dst = popi32(rt);
 			gx_Rect roi = popref(rt);
-			symn callback = mapsym(rt_, popref(rt));
+			symn callback = popsym(rt);
 
 			gx_Surf sdst = getSurf(dst);
 
@@ -613,7 +614,7 @@ static int surfCall(libcArgs rt) {
 					for (sx = 0; sx < sdst->width; sx += 1) {
 						struct vector result;
 						struct vector args = vecldc(rgbval(cBuff[sx]));
-						if (invoke(rt_, callback, &result, &args, NULL) != 0) {
+						if (invoke(rt_, callback, &result, &args, NULL, rt->fun) != 0) {
 							//~ dump(s, dump_sym | dump_asm, callback, "error:&-T\n", callback);
 							return -1;
 						}
@@ -632,7 +633,7 @@ static int surfCall(libcArgs rt) {
 			gxSurfHnd src = popi32(rt);
 			gx_Rect roi = popref(rt);
 			double alpha = popf64(rt);
-			symn callback = mapsym(rt_, popref(rt));
+			symn callback = popsym(rt);
 
 			gx_Surf sdst = getSurf(dst);
 			gx_Surf ssrc = getSurf(src);
@@ -676,7 +677,7 @@ static int surfCall(libcArgs rt) {
 								};// */
 								args.dst = vecldc(rgbval(*cbdst));
 								args.src = vecldc(rgbval(*cbsrc));
-								if (invoke(rt_, callback, &result, &args, NULL) != 0) {
+								if (invoke(rt_, callback, &result, &args, NULL, rt->fun) != 0) {
 									return -1;
 								}
 								*(argb*)cbdst = rgbmix16(*(argb*)cbdst, vecrgb(&result), alpha16);
@@ -699,7 +700,7 @@ static int surfCall(libcArgs rt) {
 								};// */
 								args.dst = vecldc(rgbval(*cbdst));
 								args.src = vecldc(rgbval(*cbsrc));
-								if (invoke(rt_, callback, &result, &args, NULL) != 0) {
+								if (invoke(rt_, callback, &result, &args, NULL, rt->fun) != 0) {
 									return -1;
 								}
 								*cbdst = vecrgb(&result).col;
@@ -1164,17 +1165,17 @@ static int miscCall(libcArgs rt) {
 		}
 
 		case miscOpSetCbMouse: {
-			mouseCallBack = mapsym(rt->rt, popref(rt));
+			mouseCallBack = popsym(rt);
 			return 0;
 		}
 
 		case miscOpSetCbKeyboard: {
-			keyboardCallBack = mapsym(rt->rt, popref(rt));
+			keyboardCallBack = popsym(rt);
 			return 0;
 		}
 
 		case miscOpSetCbRender: {
-			renderMethod = mapsym(rt->rt, popref(rt));
+			renderMethod = popsym(rt);
 			return 0;
 		}
 

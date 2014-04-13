@@ -1994,6 +1994,8 @@ static astn decl_init(ccState cc, symn var) {
 
 		if (var->init != NULL) {
 
+				//~ trace("Assign %+T: (%-T, %+k, %t)", var, base, init, cast);
+				//~ trace("Assign %+T:%+T %+k", var, typ, var->init);
 			//~ TODO: try to typecheck the same as using ASGN_set
 			// assigning an emit expression: ... x = emit(struct, ...)
 			if (var->init->type == cc->emit_opc) {
@@ -2055,6 +2057,7 @@ static astn decl_init(ccState cc, symn var) {
 					typ->offs = nelem;
 					typ->cast = TYPE_ref;
 					var->cast = TYPE_any;
+					var->size = typ->size;
 
 					addLength(cc, typ, typ->init);
 				}
@@ -2699,6 +2702,7 @@ static astn decl(ccState cc, int mode) {
 					trace("%+k", tag);
 					return NULL;
 				}
+				dieif(ref->size == 0, "FixMe: %+T", ref);
 			}
 		}
 

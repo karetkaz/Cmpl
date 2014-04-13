@@ -793,7 +793,6 @@ ccState ccInit(state rt, int mode, int onHalt(libcArgs)) {
 	install_type(cc, mode);
 	install_emit(cc, mode);
 
-	rt->init = ccAddType(rt, "<init>", 0, 0);
 	ccAddCall(rt, onHalt ? onHalt : haltDummy, NULL, "void Halt(int Code);");
 
 	cc->root->type = cc->type_vid;

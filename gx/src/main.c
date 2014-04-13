@@ -712,7 +712,7 @@ static int kbdHND(int key, int state) {
 	if (keyboardCallBack) {
 		int result = 0;
 		//~ struct {int key, state;} args = {key, state};
-		invoke(rt, keyboardCallBack, NULL, &key, NULL);
+		invoke(rt, keyboardCallBack, NULL, &key, NULL, NULL);
 		return result;
 	}
 	else switch (key) {
@@ -854,7 +854,7 @@ static int ratHND(int btn, int mx, int my) {
 	if (mouseCallBack) {
 		int result = 0;
 		//~ struct {int btn, x, y;} args = {btn, mx, my};
-		invoke(rt, mouseCallBack, NULL, &btn, NULL);
+		invoke(rt, mouseCallBack, NULL, &btn, NULL, NULL);
 		return result;
 	}
 	else {// native mouse handler.
@@ -1171,7 +1171,7 @@ int main(int argc, char* argv[]) {
 
 		// before render method
 		if (renderMethod != NULL) {
-			invoke(rt, renderMethod, NULL, NULL, NULL);
+			invoke(rt, renderMethod, NULL, NULL, NULL, NULL);
 		}
 
 		if (draw & (draw_mode | temp_lght | disp_bbox | temp_zbuf | disp_info)) {

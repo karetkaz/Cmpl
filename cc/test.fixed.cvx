@@ -3,6 +3,7 @@ struct fixed:0 {
 	int32 value;
 }
 
+// TODO: struct Fixed(int FractBits) { ... }
 static struct Fixed {
 	// constants
 	//~ define FractBits = 24;
@@ -31,24 +32,24 @@ static struct Fixed {
 		fxp_pi2 = 0x3243f6a8 >> (28 - FractBits + 1);
 	}
 
-	static const define asFixed(const int32 val) = emit(fixed, i32(val));
-	static const define toFixed(const int32 val) = emit(fixed, i32(val << FractBits));
-	static const define toFixed(const float64 val) = emit(fixed, int32(val * (1 << FractBits)));
+	const define asFixed(const int32 val) = emit(fixed, i32(val));
+	const define toFixed(const int32 val) = emit(fixed, i32(val << FractBits));
+	const define toFixed(const float64 val) = emit(fixed, int32(val * (1 << FractBits)));
 
-	static define mul(int32 lhs, int32 rhs, int __fixp) = int32(int64.Sar(int64(lhs) * rhs, __fixp));
-	static define div(int32 lhs, int32 rhs, int __fixp) = int32(int64.Shl(int64(lhs), __fixp) / rhs);
+	define mul(int32 lhs, int32 rhs, int __fixp) = int32(int64.Sar(int64(lhs) * rhs, __fixp));
+	define div(int32 lhs, int32 rhs, int __fixp) = int32(int64.Shl(int64(lhs), __fixp) / rhs);
 
-	static define add(fixed &lhs, fixed &rhs) = asFixed(lhs.value + rhs.value);
-	static define sub(fixed &lhs, fixed &rhs) = asFixed(lhs.value - rhs.value);
-	static define mul(fixed &lhs, fixed &rhs) = asFixed(mul(lhs.value, rhs.value, FractBits));
-	static define mul(fixed &lhs, int32 rhs) = asFixed(lhs.value * rhs);
-	static define mul(int32 lhs, fixed &rhs) = asFixed(lhs * rhs.value);
-	static define div(fixed &lhs, fixed &rhs) = asFixed(div(lhs.value, rhs.value, FractBits));
-	static define div(fixed &lhs, int32 rhs) = asFixed(lhs.value / rhs);
-	static define mod(fixed &lhs, fixed &rhs) = asFixed(lhs.value % rhs.value);
-	static define inv(fixed rhs) = div(asFixed(fxp_one), rhs);
+	define add(fixed &lhs, fixed &rhs) = asFixed(lhs.value + rhs.value);
+	define sub(fixed &lhs, fixed &rhs) = asFixed(lhs.value - rhs.value);
+	define mul(fixed &lhs, fixed &rhs) = asFixed(mul(lhs.value, rhs.value, FractBits));
+	define mul(fixed &lhs, int32 rhs) = asFixed(lhs.value * rhs);
+	define mul(int32 lhs, fixed &rhs) = asFixed(lhs * rhs.value);
+	define div(fixed &lhs, fixed &rhs) = asFixed(div(lhs.value, rhs.value, FractBits));
+	define div(fixed &lhs, int32 rhs) = asFixed(lhs.value / rhs);
+	define mod(fixed &lhs, fixed &rhs) = asFixed(lhs.value % rhs.value);
+	define inv(fixed rhs) = div(asFixed(fxp_one), rhs);
 
-	static uint32 bsr(uint32 x) {		// scan bit reverse (first bit = 31 (msb))
+	uint32 bsr(uint32 x) {		// scan bit reverse (first bit = 31 (msb))
 		if (x == 0) {
 			return -1;
 		}
@@ -74,26 +75,26 @@ static struct Fixed {
 		}
 		return result;
 	}
-	static uint32 gettbl(const uint16 tbl[257], int32 x) {
+	uint32 gettbl(const uint16 tbl[257], int32 x) {
 		uint32 idx = (x >> (FractBits -  8)) & 0x00ff;
 		uint32 lrp = (x << (24 - FractBits)) & 0xffff;
 		result = (tbl[idx] << 16) + lrp * (tbl[idx + 1] - tbl[idx]);
 	}
 
-	static fixed eval(fixed x, const fixed p[]) {
+	fixed eval(fixed x, const fixed p[]) {
 		result = p[0];
 		for (int i = 1; i < p.length; i += 1) {
 			result = add(p[i], mul(result, x));
 		}
 	}
-	static fixed eval4(fixed x, const fixed p[4]) {
+	fixed eval4(fixed x, const fixed p[4]) {
 		result.value = p[0].value;
 		result.value = p[1].value + mul(result.value, x.value, FractBits);
 		result.value = p[2].value + mul(result.value, x.value, FractBits);
 		result.value = p[3].value + mul(result.value, x.value, FractBits);
 	}
 
-	static fixed fxp2xp(fixed x) {
+	fixed fxp2xp(fixed x) {
 		static const uint16 tbl2xp[] = {		// (2 ** x) - 1, x: [0,1)
 			0x0000, 0x00b2, 0x0164, 0x0217, 0x02ca, 0x037d, 0x0431, 0x04e6,
 			0x059b, 0x0651, 0x0707, 0x07bd, 0x0874, 0x092c, 0x09e4, 0x0a9c,
@@ -151,7 +152,7 @@ static struct Fixed {
 		}
 	}
 
-	static fixed fxplg2(fixed x) {
+	fixed fxplg2(fixed x) {
 		static const uint16 tbllg2[] = {		// log2(x) - 1, x: [0,1)
 			0x0000, 0x0171, 0x02e0, 0x044e, 0x05ba, 0x0725, 0x088e, 0x09f7,
 			0x0b5d, 0x0cc3, 0x0e27, 0x0f8a, 0x10eb, 0x124b, 0x13aa, 0x1508,
@@ -207,7 +208,7 @@ static struct Fixed {
 		}
 	}
 
-	static void sincos(fixed x, fixed &s, fixed &c) {
+	void sincos(fixed x, fixed &s, fixed &c) {
 		//~ TODO: const static fixed polysin[4] = {
 		const static fixed polysin[] = {		// eps < 0.000124 in [0, 2pi]
 			toFixed(-1./5040	+.00001),		// 1/7!
@@ -251,18 +252,18 @@ static struct Fixed {
 	}
 
 	//~ ln(x) := ln2 * l2(x);
-	static define Ln(fixed x) = mul(fxp_ln2, fxplg2(x));
+	define Ln(fixed x) = mul(fxp_ln2, fxplg2(x));
 
 	//~ ln(x) := lg2 * l2(x);
-	static define Lg(fixed x) = mul(fxp_lg2, fxplg2(x));
+	define Lg(fixed x) = mul(fxp_lg2, fxplg2(x));
 
 	//~ e ** x = 2 ** (l2e * x)
-	static define Exp(fixed x) = fxp2xp(mul(fxp_l2e, x));
+	define Exp(fixed x) = fxp2xp(mul(fxp_l2e, x));
 
 	//~ 10 ** x = 2 ** (l2t * x)
 	//~ define Txp(fixed x) = fxp2xp(mul(fxp_l2t, x));
 
-	static fixed Sqrt(fixed x) {
+	fixed Sqrt(fixed x) {
 		if (x.value < 0) {
 			return asFixed(fxp_nan);
 		}
@@ -291,11 +292,11 @@ static struct Fixed {
 		}
 	}
 
-	static fixed Rsq(fixed x) {
+	fixed Rsq(fixed x) {
 		result = x.value < 0 ? asFixed(fxp_nan) : fxp2xp(div(fxplg2(x), -2));
 	}
 
-	static fixed Pow(fixed x, fixed y) {
+	fixed Pow(fixed x, fixed y) {
 		if (x.value <= 0) {
 			//~ Domain error in fxppow
 			result = asFixed(x.value ? fxp_nan : fxp_max);
@@ -318,21 +319,21 @@ static struct Fixed {
 		}
 	}
 
-	static fixed Sin(fixed x) {
+	fixed Sin(fixed x) {
 		fixed temp;
 		sincos(x, &result, &temp);
 	}
-	static fixed Cos(fixed x) {
+	fixed Cos(fixed x) {
 		fixed temp;
 		sincos(x, &temp, &result);
 	}
-	static fixed Tan(fixed x) {
+	fixed Tan(fixed x) {
 		fixed sin;
 		fixed cos;
 		sincos(x, &sin, &cos);
 		result = div(sin, cos);
 	}
-	static fixed Asin(fixed x) {
+	fixed Asin(fixed x) {
 		const static fixed polyasin[] = {			// eps < 0.000106 in [-1, +1]
 			toFixed(-0.0187293),
 			toFixed(+0.0742610),
@@ -458,9 +459,6 @@ int test(const assertInfo info, double eps) {
 define assert(const assertInfo &info) = debug("test failed", test(info, 1e-4), Debug.notrace, emit(variant, ref(info), ref(assertInfo)));
 define assertEquals(string f, float64 a, fixed b) = assert(assertInfo(f, a, float64(b), b));
 //~ define assertEquals(string f, float64 a, fixed ^b) = void(0);
-
-//~ define variant(assertInfo ^info) = emit(variant, ref(info), ref(assertInfo));
-//~ define assertEquals(string f, float64 ^a, fixed ^b) = void(0);//debug("test failed", (Math.abs(a - float64(b)) < 1e-14) ? 0 : Debug.debug, Debug.notrace, variant(assertInfo(f, a, float64(b))));
 
 //~ double fixed_test0 = float64(Fixed.add(fixed(2.225), fixed(3)));
 

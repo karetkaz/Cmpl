@@ -1,0 +1,6 @@
+
+//~ format integer
+char buff[512];
+
+format(buff, "value: %d = 0x%08x = 0b%032b = [%.5i]5", 0x20928374);
+debug(string(buff));

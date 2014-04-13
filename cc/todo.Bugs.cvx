@@ -209,6 +209,136 @@ ComplexByRef v3 = emit(ComplexByRef, i32(-1));
 
 // +/
 
+/* BUG: assignment of local variable to a static one (compiler optimization: allocate global variables on stack [-gd-2].)
+int64 a = 32;
+a = 33;
+void setup() {
+	static int64 &b = a;
+	print("a: %d\n", a);
+	print("b: %d\n", b);
+}
+setup();
+//~ */
+
+/* BUG: realloc / malloc / free
+define realloc(pointer ptr, int size) = memmgr(ptr, size);
+define malloc(int size) = memmgr(null, size);
+define free(pointer ptr) = memmgr(ptr, 0);
+
+void testDeallocation(int test) {
+	pointer p1 = malloc(160);
+	pointer p2 = malloc(161);
+	pointer p3 = malloc(160);
+
+	if (test == 1) {
+		p3 = free(p3);
+		p2 = free(p2);
+		p1 = free(p1);
+	}
+	else if (test == 2) {
+		p1 = free(p1);
+		p2 = free(p2);
+		p3 = free(p3);
+	}
+	else if (test == 3) {
+		p2 = free(p2);
+		p1 = free(p1);
+		p3 = free(p3);
+	}
+	else if (test == 4) {
+		p2 = free(p2);
+		p3 = free(p3);
+		p1 = free(p1);
+	}
+	memmgr(null, 0);
+}
+
+define makeBug = 1;
+memmgr(null, makeBug);
+testDeallocation(1);
+testDeallocation(2);
+testDeallocation(3);
+testDeallocation(4);
+//~ */
+
+/* BUG: realloc test
+define realloc(pointer ptr, int size) = memmgr(ptr, size);
+define malloc(int size) = memmgr(null, size);
+define free(pointer ptr) = memmgr(ptr, 0);
+
+memmgr(null, 0);
+pointer p1 = malloc(160);
+pointer p2 = malloc(161);
+pointer p3 = malloc(160);
+
+pointer p = p2; p2 = null;
+memmgr(null, 0);
+p = realloc(p, 100);
+memmgr(null, 0);
+p = free(p);
+memmgr(null, 0);
+
+free(p3);
+free(p2);
+free(p1);
+//~ memmgr(null, 0);
+//~ */
+
+/* BUG: compilation error ?
+static const Biorithm biorithms1[7] = {
+	Biorithm(0x7070ff, 23,  0, "Physical"),
+	Biorithm(0xff0000, 28,  0, "Emotional"),
+	Biorithm(0x00ff00, 33,  0, "Intellectual"),
+	Biorithm(0xdadada, 38,  0, "Intuitive"),
+	Biorithm(0x6f6f6f, 23, 33, "Mastery"),
+	Biorithm(0xfeab00, 23, 28, "Passion"),
+	Biorithm(0x9466db, 28, 33, "Wisdom")
+};
+
+static const Biorithm biorithms2[] = {
+	Biorithm(0x7070ff, 23,  0, "Physical"),
+	Biorithm(0xff0000, 28,  0, "Emotional"),
+	Biorithm(0x00ff00, 33,  0, "Intellectual"),
+	Biorithm(0xdadada, 38,  0, "Intuitive"),
+	Biorithm(0x6f6f6f, 23, 33, "Mastery"),
+	Biorithm(0xfeab00, 23, 28, "Passion"),
+	Biorithm(0x9466db, 28, 33, "Wisdom")
+};
+
+//~ void printsize(Biorithm biorithms[]) {print("length: %d\n", biorithms.length);}
+//~ printsize(biorithms1);
+//~ printsize(biorithms2);
+//~ */
+
+/* BUG: should not be able to declare these 2 functions.
+void idnMat14x4(float64 mat[]) {
+	trace("this");
+	float64 diag = 1;
+	for (int i = 0; i < mat.length; i += 1) {
+		mat[i] = i & 3 ? 0 : diag;
+	}
+}
+
+void idnMat14x4(float64 mat[16]) {
+	trace("this");
+	float64 diag = 1;
+	for (int i = 0; i < mat.length; i += 1) {
+		mat[i] = i & 3 ? 0 : diag;
+	}
+}
+
+float64 mat1[16];
+float64 mat2[] = mat1;
+
+idnMat14x4(mat1);
+idnMat14x4(mat2);
+//~ idnMat14x4_1(mat1);
+//~ idnMat14x4_2(mat1);
+//~ idnMat14x4_1(mat2);		// ERROR: this should not compile
+//~ idnMat14x4_2(mat2);
+
+// */
+
 /+ TODO: nice to have
 //~ arrays of functions
 	//~ int alma(int h)[10];

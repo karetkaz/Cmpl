@@ -310,7 +310,7 @@ static int FILE_close(libcArgs args) {	// void close(File file);
 }
 static int FILE_stream(libcArgs args) {	// File std[in, out, err];
 	//~ int argc = 0;
-	int stream = (int)args->data;
+	int stream = (int)(size_t)args->data;
 
 	//~ FILE *file = fdopen(name, mode);
 	switch (stream) {

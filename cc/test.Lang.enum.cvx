@@ -29,3 +29,14 @@ v2 = e2;				// ok.
 //~ bool b2 = e1 == v1;
 //~ bool b3 = v1 == e2;
 //~ bool b4 = v1 == v1;
+
+// using enum values in expressions.
+enum Window {
+	width = 90;
+	height1 = 2 * width;
+	height2 = width * 2;
+}
+define min(int x, int y) = int(x < y ? x : y);
+int x = 3 * Window.width;
+int y = Window.height2 * 3;
+int cpos = min(x, Window.width) * y / Window.width;

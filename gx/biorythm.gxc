@@ -44,7 +44,7 @@ void drawBiorithm(gxSurf dst, int daysToShow, double now, Date birth, Biorithm b
 
 				if (i > 0) {
 					drawLine(dst, lx, ly, x, y, br.color);
-					if (i == precision * daysToShow / 0) {
+					if (i == precision * daysToShow) {
 						precent = 100 - y * 200. / Window.resy;
 					}
 				}
