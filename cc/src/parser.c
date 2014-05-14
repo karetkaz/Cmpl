@@ -1994,8 +1994,6 @@ static astn decl_init(ccState cc, symn var) {
 
 		if (var->init != NULL) {
 
-				//~ trace("Assign %+T: (%-T, %+k, %t)", var, base, init, cast);
-				//~ trace("Assign %+T:%+T %+k", var, typ, var->init);
 			//~ TODO: try to typecheck the same as using ASGN_set
 			// assigning an emit expression: ... x = emit(struct, ...)
 			if (var->init->type == cc->emit_opc) {
@@ -2079,6 +2077,13 @@ static astn decl_init(ccState cc, symn var) {
 						trace("%+k", ast);
 						return NULL;
 					}
+				}
+
+				if (var->cast == TYPE_arr && var->init->kind == TYPE_str) {
+					//~ trace("alma %t: %T", var->cast, var);
+					//~ dieif(var->cast != TYPE_ref, "Error");
+					//~ var->cast = TYPE_ref;
+					var->size = 2 * vm_size;
 				}
 
 				//~ trace("%+T -> %t (%s:%u)", var, cast, var->file, var->line);
@@ -2180,6 +2185,8 @@ astn decl_var(ccState cc, astn* argv, int mode) {
 
 			ref->type = typ;
 			tag->type = typ;
+			//~ arr->offs = vmOffset(cc->s, arr);
+			//~ arr->stat = 1;
 
 			if (!peekTok(cc, PNCT_rc)) {
 				struct astNode val;
@@ -2213,6 +2220,11 @@ astn decl_var(ccState cc, astn* argv, int mode) {
 				ref->size = 2 * vm_size;	// slice is a struct {pointer data, int32 length}
 				ref->cast = TYPE_arr;
 				len->offs = vm_size;		// offset for length.
+				typ->cast = TYPE_arr;
+			}
+			else {
+				typ->cast = TYPE_ref;
+				typ->stat = 1;
 			}
 			skiptok(cc, PNCT_rc, 1);
 
@@ -2225,6 +2237,8 @@ astn decl_var(ccState cc, astn* argv, int mode) {
 				tmp->decl = typ;
 				typ->type = tmp;
 				tmp->size = -1;
+				//~ tmp->offs = vmOffset(cc->s, tmp);
+				//~ tmp->stat = 1;
 				typ = tmp;
 
 				if (!peekTok(cc, PNCT_rc)) {
@@ -2248,6 +2262,11 @@ astn decl_var(ccState cc, astn* argv, int mode) {
 					ref->size = 2 * vm_size;	// slice is a struct {pointer data, int32 length}
 					ref->cast = TYPE_arr;
 					len->offs = vm_size;		// offset of length property.
+					typ->cast = TYPE_arr;
+				}
+				else {
+					typ->cast = TYPE_ref;
+					typ->stat = 1;
 				}
 
 				if (dynarr != (typ->init == NULL)) {

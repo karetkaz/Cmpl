@@ -101,15 +101,13 @@ symn newdefn(ccState s, int kind) {
 	state rt = s->s;
 	symn def = NULL;
 
-	if (rt->_end - rt->_beg > (int)sizeof(struct symNode)) {
-		def = (symn)rt->_beg;
-		rt->_beg += sizeof(struct symNode);
-		memset(def, 0, sizeof(struct symNode));
-		def->kind = kind;
-	}
-	else {
-		fatal("memory overrun");
-	}
+	rt->_beg = paddptr(rt->_beg, 8);
+	dieif(rt->_beg >= rt->_end, "memory overrun");
+
+	def = (symn)rt->_beg;
+	rt->_beg += sizeof(struct symNode);
+	memset(def, 0, sizeof(struct symNode));
+	def->kind = kind;
 
 	return def;
 }
@@ -301,7 +299,6 @@ symn ccAddCall(state rt, int libc(libcArgs), void* data, const char* proto) {
 		sym->kind = TYPE_def;
 		sym->init = libcinit;
 		sym->offs = libcpos;
-		//~ sym->size = libcpos;
 
 		lc->call = libc;
 		lc->data = data;
@@ -882,7 +879,6 @@ ccToken castTo(astn ast, ccToken cto) {
 			break;
 
 		default:
-			//~ if (cto == TYPE_rec && atc == ENUM_kwd) break;
 		error:
 			debug("cast(%+k) to %t/%t", ast, cto, atc);
 			//~ return 0;

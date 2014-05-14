@@ -1,8 +1,8 @@
 // biorithm calculator
 enum Window {
 	draw = RenderMode.swap_buff;
-	resx = 700;
-	resy = 500;
+	resx = 320;
+	resy = 200;
 	padding = 5;
 }
 
@@ -204,3 +204,5 @@ define daysToShow = 15;
 
 //~ setupBiorithm(daysToShow, Now, Date(1984, 8, 30));
 setupBiorithm(daysToShow, Now, Date(1983, 5,  2));
+
+println(millis());

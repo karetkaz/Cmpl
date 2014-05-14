@@ -428,8 +428,49 @@ typedef enum {
 } miscOperation;
 
 #if (defined __WATCOMC__) || (defined _MSC_VER)
+/**
+int64_t TimerUtils::GetCurrentTimeMilliseconds() {
+  return GetCurrentTimeMicros() / 1000;
+}
+
+int64_t TimerUtils::GetCurrentTimeMicros() {
+  static const int64_t kTimeEpoc = 116444736000000000LL;
+  static const int64_t kTimeScaler = 10;  // 100 ns to us.
+
+  // Although win32 uses 64-bit integers for representing timestamps,
+  // these are packed into a FILETIME structure. The FILETIME
+  // structure is just a struct representing a 64-bit integer. The
+  // TimeStamp union allows access to both a FILETIME and an integer
+  // representation of the timestamp. The Windows timestamp is in
+  // 100-nanosecond intervals since January 1, 1601.
+  union TimeStamp {
+    FILETIME ft_;
+    int64_t t_;
+  };
+  TimeStamp time;
+  GetSystemTimeAsFileTime(&time.ft_);
+  return (time.t_ - kTimeEpoc) / kTimeScaler;
+}
+**/
+//#include <time.h>
+#include <Windows.h>
 static inline int64_t timeMillis() {
-	return clock() * (int64_t)1000 / CLOCKS_PER_SEC;
+	static const int64_t kTimeEpoc = 116444736000000000LL;
+	static const int64_t kTimeScaler = 10000;  // 100 ns to us.
+
+	// Although win32 uses 64-bit integers for representing timestamps,
+	// these are packed into a FILETIME structure. The FILETIME
+	// structure is just a struct representing a 64-bit integer. The
+	// TimeStamp union allows access to both a FILETIME and an integer
+	// representation of the timestamp. The Windows timestamp is in
+	// 100-nanosecond intervals since January 1, 1601.
+	typedef union {
+		FILETIME ftime;
+		int64_t time;
+	} TimeStamp;
+	TimeStamp time;
+	GetSystemTimeAsFileTime(&time.ftime);
+	return (time.time - kTimeEpoc) / kTimeScaler;
 }
 #else
 #include <sys/time.h>
@@ -527,7 +568,11 @@ static int libCallDebug(libcArgs args) {
 			if (isOutput) {
 				fputfmt(rt->logf, ": ");
 			}
-			fputval(rt, rt->logf, objtyp, objref, 0);
+			// indirect reference
+			if (objtyp->cast == TYPE_ref) {
+				//~ objref = argval(args, 5 * vm_size, NULL, 0);
+			}
+			fputval(rt, rt->logf, objtyp, objref, 0, 1);
 			isOutput = 1;
 		}
 
@@ -594,10 +639,11 @@ int install_stdc(state rt) {
 	};
 
 	if (rt->cc->type_ptr != NULL) {		// realloc, malloc, free.
-		rt->cc->libc_mem = ccAddCall(rt, libCallMemMgr, NULL, "pointer memmgr(pointer ptr, int32 size);");
+		ccAddCall(rt, libCallMemMgr, NULL, "pointer memmgr(pointer ptr, int32 size);");
 	}
 	if (rt->cc->type_var != NULL) {		// debug.
 		rt->cc->libc_dbg = ccAddCall(rt, libCallDebug, NULL, "void debug(string message, int level, int trace, variant object);");
+		rt->cc->libc_dbg_idx = rt->cc->libc_dbg->offs;
 	}
 
 	// System.Exit(int code), ...

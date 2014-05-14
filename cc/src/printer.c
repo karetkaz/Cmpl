@@ -184,10 +184,6 @@ static void fputsym(FILE* fout, char *esc[], symn sym, int mode, int level) {
 			fputfmt(fout, "%I", no_iden ? 0 : level);
 
 			if (pr_type) switch (sym->kind) {
-				case TYPE_def:
-					fputstr(fout, esc, "define ");
-					break;
-
 				case TYPE_rec:
 					fputstr(fout, esc, "struct ");
 					break;
@@ -1489,17 +1485,6 @@ void dump(state rt, int mode, symn sym, const char* text, ...) {
 					fputfmt(logf, "}\n");
 				}
 			}
-			fputfmt(logf, "init(ro: %d"
-				", ss: %d"
-				", sm: %d"
-				", pc: %d"
-				", px: %d"
-				//", size.meta: %d"
-				//", size.code: %d"
-			") {\n", rt->vm.ro, rt->vm.ss, rt->vm.sm, rt->vm.pc, rt->vm.px);
-
-			fputasm(rt, logf, rt->vm.pc, rt->vm.px, 0x100 | (mode & 0xff));
-			fputfmt(logf, "}\n");
 		}
 	}
 
@@ -1577,112 +1562,4 @@ void perr(state rt, int level, const char* file, int line, const char* msg, ...)
 	fputchr(logFile, '\n');
 	fflush(logFile);
 	va_end(argp);
-}
-
-// ============= 
-static void traceArgs(state rt, symn fun, char *file, int line, void* sp, int ident) {
-	symn sym;
-	int printFileLine = 0;
-
-	file = file ? file : "native.code";
-	fputfmt(rt->logf, "%I%s:%u: %?T", ident, file, line, fun);
-	if (ident < 0) {
-		printFileLine = 1;
-		ident = -ident;
-	}
-
-	dieif(sp == NULL, "Error");
-	dieif(fun == NULL, "Error");
-	if (fun->prms != NULL && fun->prms != rt->defs) {
-		int firstArg = 1;
-		if (ident > 0) {
-			fputfmt(rt->logf, "(");
-		}
-		else {
-			fputfmt(rt->logf, "\n");
-		}
-		for (sym = fun->prms; sym; sym = sym->next) {
-			void *offs;
-
-			/* fun->prms should contain only function parameters.
-			if (sym->call)
-				continue;
-
-			if (sym->kind != TYPE_ref)
-				continue;
-			*/
-
-			if (firstArg == 0) {
-				fputstr(rt->logf, NULL, ", ");
-			}
-			else {
-				firstArg = 0;
-			}
-
-			if (printFileLine) {
-				if (sym->file != NULL && sym->line != 0) {
-					fputfmt(rt->logf, "%I%s:%u: ", ident, sym->file, sym->line);
-				}
-				else {
-					fputfmt(rt->logf, "%I", ident);
-				}
-			}
-			dieif(sym->stat, "Error");
-
-			// 1 * vm_size holds the return value of the function.
-			offs = (char*)sp + fun->prms->offs + 1 * vm_size - sym->offs;
-
-			fputval(rt, rt->logf, sym, offs, -ident);
-		}
-		if (ident > 0) {
-			fputfmt(rt->logf, ")");
-		}
-		else {
-			fputfmt(rt->logf, "\n");
-		}
-	}
-}
-
-//~ TODO: void dumpTrace(state rt, int tracelevel, int flags)
-int logTrace(state rt, int ident, int startlevel, int tracelevel) {
-	int i, pos, isOutput = 0;
-	if (rt->dbg == NULL) {
-		return 0;
-	}
-	pos = rt->dbg->tracePos;
-	if (tracelevel > pos) {
-		tracelevel = pos;
-	}
-	// i = 1: skip debug function.
-	for (i = startlevel; i < tracelevel; ++i) {
-		int pc = vmOffset(rt, rt->dbg->trace[pos - i].ip);
-		dbgInfo trInfo = getCodeMapping(rt, pc);
-		char *sp = rt->dbg->trace[pos - i - 1].sp;
-		symn fun = mapsym(rt, pc, 1);
-		char *file = NULL;
-		int line = 0;
-
-		if (trInfo != NULL) {
-			file = trInfo->file;
-			line = trInfo->line;
-		}
-
-		if (isOutput > 0) {
-			fputc('\n', rt->logf);
-		}
-		traceArgs(rt, fun, file, line, sp, ident);
-		isOutput += 1;
-	}
-	if (i < pos) {
-		if (isOutput > 0) {
-			fputc('\n', rt->logf);
-		}
-		fputfmt(rt->logf, "%I... %d more", ident, pos - i);
-		isOutput += 1;
-	}
-
-	if (isOutput) {
-		fputc('\n', rt->logf);
-	}
-	return isOutput;
 }

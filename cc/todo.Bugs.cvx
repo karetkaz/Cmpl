@@ -339,7 +339,7 @@ idnMat14x4(mat2);
 
 // */
 
-/+ TODO: nice to have
+//~ /+ TODO: nice to have
 //~ arrays of functions
 	//~ int alma(int h)[10];
 
@@ -348,6 +348,10 @@ idnMat14x4(mat2);
 
 //~ recursively define:
 	//~ define fact(int64 n) = (n * fact(n - 1));
+
+//~ ?: operator short form (non zero):
+	//~ int b = a || 10; => int b = a != 0 ? a : 10;
+	//~ int b = a ?: 10; => int b = a != 0 ? a : 10;
 
 //~ +/
 /+ TODO: nameless struct variable

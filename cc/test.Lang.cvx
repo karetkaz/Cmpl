@@ -180,7 +180,7 @@ void f3(pointer maxRecursiveCalls) {
 		return;
 	}
 	int n2 = n - 1;
-	testFunction(f3, pointer(n2));
+	testFunction(f3, pointer(&n2));
 }
 
 //~ BUG: void testFunction2(void cb(double x, debugInfo info, int n), int n, debugInfo &info) {
@@ -196,7 +196,7 @@ void f4(double x, debugInfo &info, int maxRecursiveCalls) {
 }
 
 int n = 2;
-testFunction(f3, pointer(n));
+testFunction(f3, pointer(&n));
 
 debugInfo info = debugInfo("fail", 1, 2, 3);
 testFunction2(f4, n, info);

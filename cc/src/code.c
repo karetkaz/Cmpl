@@ -51,6 +51,7 @@ typedef struct bcde *bcde;
 
 /// bytecode processor
 typedef struct cell *cell;
+typedef struct trace *trace;
 
 #pragma pack(push, 1)
 struct bcde {
@@ -119,13 +120,18 @@ struct cell {
 
 	// Stack
 	unsigned char	*bp;		// Stack base
+	unsigned char	*tp;		// Trace pointer +(bp)
 	unsigned char	*sp;		// Stack pointer -(bp + ss)
-	//~ unsigned char	*tp;		// Trace pointer +(bp)
 
 	// multiproc
 	unsigned int	ss;			// stack size
 	unsigned int	cp;			// child procs (join == 0)
 	unsigned int	pp;			// parent proc (main == 0)
+};
+
+struct trace {
+	unsigned char	*ip;		// Instruction pointer
+	signed char	*sp;			// Stack pointer
 };
 
 /// Check if the pointer is inside the vm.
@@ -141,6 +147,9 @@ static inline int isValidOffset(state rt, void* ptr) {
 
 // TODO: to be removed.
 static inline void* getip(state rt, int pos) {
+	if (pos == 0) {
+		return NULL;
+	}
 	return (void*)(rt->_mem + pos);
 }
 
@@ -156,7 +165,7 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 
 	dieif((unsigned char*)ip + 16 >= rt->_end, "memory overrun");
 
-	/*/ TODO: set max stack used.
+	/* TODO: set max stack used.
 	switch (opc) {
 		case opc_dup1:
 		case opc_set1:
@@ -248,7 +257,6 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 				}
 
 				// create n bytes on stack
-				//~ arg.i8 = +arg.i8;
 				opc = opc_spc;
 				break;
 		}
@@ -719,6 +727,22 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 			dieif(ip->rel != arg.i8, "FixMe");
 			break;
 
+		case opc_st64:
+		case opc_ld64:
+			/*if ((ip->rel & 7) != 0) {
+				trace("Error: %d", ip->rel);
+				return 0;
+			}*/
+			dieif((ip->rel & 7) != 0, "Error @ip @%06x", vmOffset(rt, ip));
+			dieif(ip->rel != arg.i8, "Error");
+			break;
+
+		case opc_st32:
+		case opc_ld32:
+			dieif((ip->rel & 3) != 0, "Error");
+			dieif(ip->rel != arg.i8, "Error");
+			break;
+
 		case opc_ldsp:
 		case opc_move:
 		case opc_inc:
@@ -805,6 +829,14 @@ static inline void logProc(cell pu, int cp, char* msg) {
 	(void)msg;
 }
 
+// TODO: to be removed.
+//~ static inline void dbugerr2(state rt, char* error_msg, int error_code, cell cpu, void* ip, int ss) {
+static inline void dbugerr2(state rt, char *file, int line, char* error_msg, int error_code, cell cpu, void* ip, int ss) {
+	error(rt, file, line, "exec: %s(%?d):[sp%02d]@%.*A rw@%06x", error_msg, error_code, ss, vmOffset(rt, ip), ip);
+	logTrace(rt, 1, 0, 100);
+	(void)cpu;
+}
+#define dbugerr(rt, error_msg, error_code, cpu, ip, ss) dbugerr2(rt, __FILE__, __LINE__, error_msg, error_code, cpu, ip, ss)
 /// Try to start a new child cell for task.
 static inline int task(cell pu, int n, int master, int cl) {
 	// find an empty cell
@@ -862,33 +894,38 @@ static int sync(cell pu, int cp, int wait) {
 
 /// Check for stack overflow.
 static inline int ovf(cell pu) {
-	return (pu->sp - pu->bp) < 0;
-}
-
-/// Check if memory is aligned.
-static inline int aligned(int mem, int align) {
-	return 1;//TODO: mem % align == 0;
-}
-
-// TODO: to be removed.
-static inline void dbugerr(state rt, char* error_msg, int error_code, cell cpu, void* ip, int ss) {
-	error(rt, NULL, 0, "exec:%s(%?d):[sp%02d]@%.*A rw@%06x", error_msg, error_code, ss, vmOffset(rt, ip), ip);
-	logTrace(rt, 1, 0, 30);
-	(void)cpu;
+	//~ logif((pu->sp - pu->tp) < 0, "{tp: %d, sp: %d}", pu->tp - pu->bp, pu->sp - pu->bp);
+	return (pu->sp - pu->tp) < 0;
 }
 
 // TODO: to be renamed; manages function call stack traces
-static inline void dotrace(state rt, void* ip, void* sp) {
-	if (rt->dbg != NULL) {
-		if (ip == NULL) {
-			rt->dbg->tracePos -= 1;
-		}
-		else if (rt->dbg->tracePos < (ptrdiff_t)lengthOf(rt->dbg->trace)) {
-			rt->dbg->trace[rt->dbg->tracePos].ip = ip;
-			rt->dbg->trace[rt->dbg->tracePos].sp = sp;
-			rt->dbg->tracePos += 1;
-		}
+static inline int dotrace(state rt, void* ip, void* sp) {
+	cell pu = rt->vm.cell;
+	if (rt->dbg == NULL) {
+		return 0;
 	}
+	if (sp == NULL) {
+		if (pu->tp - pu->bp < (ptrdiff_t)sizeof(struct trace)) {
+			debug("tp: %d - sp: %d", pu->tp - pu->bp, pu->sp - pu->bp);
+			return 0;
+		}
+		pu->tp -= sizeof(struct trace);
+		//~ logif(1, "pop trace (%d)", (pu->tp - pu->bp) / sizeof(struct trace));
+	}
+	else {
+		trace tp = (trace)pu->tp;
+		//~ if ((pu->sp - pu->tp) > -sizeof(struct trace)) {
+		//~ if (pu->tp + sizeof(struct trace) >= pu->sp) {
+		if (ovf(pu)) {
+			debug("tp: %d - sp: %d", pu->tp - pu->bp, pu->sp - pu->bp);
+			return 0;
+		}
+		tp->ip = ip;
+		tp->sp = sp;
+		//~ logif(1, "add to trace(%d): %-T", (pu->tp - pu->bp) / sizeof(struct trace), mapsym(rt, vmOffset(rt, ip), 1));
+		pu->tp += sizeof(struct trace);
+	}
+	return 1;
 }
 
 /// Private dummy debug function.
@@ -921,14 +958,29 @@ static int exec(state rt, cell pu, symn fun, void* extra) {
 	const stkptr st = (void*)(pu->bp + pu->ss);
 
 	if (rt->dbg != NULL) {
-		int (*dbg)(state, int pu, void *ip, long* sptr, int scnt) = rt->dbg->dbug;
+		const stkptr spMin = (stkptr)(pu->bp);
+		const stkptr spMax = (stkptr)(pu->bp + pu->ss);
+		const bcde ipMin = (bcde)(rt->_mem);
+		const bcde ipMax = (bcde)(rt->_mem + rt->vm.px + 2);
+		int (*dbg) (state, int pu, void *ip, long* sptr, int scnt) = rt->dbg->dbug;
+
 		if (dbg == NULL) {
 			dbg = dbgDummy;
 		}
+		// invoked function will return with a ret instruction
+		dotrace(rt, NULL, pu->sp);
 		for ( ; ; ) {
-			register bcde ip = (void*)pu->ip;
-			register stkptr sp = (void*)pu->sp;
+			register bcde ip = (bcde)pu->ip;
+			register stkptr sp = (stkptr)pu->sp;
 
+			if (ip >= ipMax || ip < ipMin) {
+				fatal("invalid instruction pointer: %06x", ip);
+				return -10;
+			}
+			if (sp > spMax || sp < spMin) {
+				fatal("invalid stack pointer: %06x", sp);
+				return -11;
+			}
 			if (dbg(rt, 0, ip, (long*)sp, st - sp)) {
 				// execution aborted
 				return -9;
@@ -943,6 +995,10 @@ static int exec(state rt, cell pu, symn fun, void* extra) {
 
 				dbg_error_ovf:
 					dbugerr(rt, "stack overflow", err_code, pu, ip, st - sp);
+					return -2;
+
+				dbg_error_trace_ovf:
+					dbugerr(rt, "trace overflow", err_code, pu, ip, st - sp);
 					return -2;
 
 				dbg_error_mem:
@@ -965,7 +1021,7 @@ static int exec(state rt, cell pu, symn fun, void* extra) {
 				#define NEXT(__IP, __SP, __CHK) pu->sp -= vm_size * (__SP); pu->ip += (__IP);
 				#define STOP(__ERR, __CHK, __ERC) do {if (__CHK) {err_code = __ERC; goto dbg_##__ERR;}} while(0)
 				#define EXEC
-				#define TRACE(__IP, __SP) do { dotrace(rt, __IP, __SP); } while(0)
+				#define TRACE(__IP, __SP) do { if (!dotrace(rt, __IP, __SP)) goto dbg_error_trace_ovf; } while(0)
 				#include "code.inl"
 			}
 		}
@@ -973,8 +1029,8 @@ static int exec(state rt, cell pu, symn fun, void* extra) {
 
 	// code at maximum speed
 	else for ( ; ; ) {
-		register bcde ip = (void*)pu->ip;
-		register stkptr sp = (void*)pu->sp;
+		register bcde ip = (bcde)pu->ip;
+		register stkptr sp = (stkptr)pu->sp;
 		switch (ip->opc) {
 			stop_vm:	// halt virtual machine
 				return 0;
@@ -1014,11 +1070,11 @@ static int exec(state rt, cell pu, symn fun, void* extra) {
 }
 
 
-int invoke(state rt, symn fun, void* res, void* args, void* extra, symn trace) {
-
+int invoke(state rt, symn fun, void* res, void* args, void* extra) {
 	cell pu = rt->vm.cell;
-	void* ip = pu->ip;
-	void* sp = pu->sp;
+	unsigned char *ip = pu->ip;
+	unsigned char *sp = pu->sp;
+	unsigned char *tp = pu->tp;
 
 	// result is the first param
 	// TODO: ressize = fun->prms->size;
@@ -1026,7 +1082,7 @@ int invoke(state rt, symn fun, void* res, void* args, void* extra, symn trace) {
 	void* resp = NULL;
 	int result = 0;
 
-	dieif(!(fun->kind == TYPE_ref && fun->call), "FixMe");
+	dieif(fun->kind != TYPE_ref || !fun->call, "FixMe");
 
 	// result is the last argument.
 	resp = pu->sp - ressize;
@@ -1041,23 +1097,18 @@ int invoke(state rt, symn fun, void* res, void* args, void* extra, symn trace) {
 	// return here: vm->px: program exit
 	*(int*)(pu->sp -= vm_size) = rt->vm.px;
 
-	pu->ip = rt->_mem + fun->offs;
+	pu->ip = getip(rt, fun->offs);
 
-	if (rt->dbg != NULL && trace != NULL) {
-		dotrace(rt, getip(rt, trace->offs), pu->sp);
-		result = exec(rt, pu, fun, extra);
-		dotrace(rt, NULL, NULL);
-	}
-	else {
-		result = exec(rt, pu, fun, extra);
-	}
-
+	result = exec(rt, pu, fun, extra);
 	if (result == 0 && res != NULL) {
 		memcpy(res, resp, ressize);
 	}
 
+	//~ dieif(pu->sp < sp, "Error");
+	dieif(pu->tp != tp, "Error diff(%d) @%-T", pu->tp - tp, fun);
 	pu->ip = ip;
-	pu->sp = sp;
+	pu->sp = sp;	// 
+	pu->tp = tp;	// during exec we may return from code.
 
 	return result;
 }
@@ -1082,6 +1133,7 @@ int execute(state rt, void* extra, int ss) {
 	pu->pp = 0;
 	pu->ss = ss;
 	pu->bp = rt->_end;
+	pu->tp = rt->_end;
 	pu->sp = rt->_end + ss;
 	pu->ip = rt->_mem + rt->vm.pc;
 
@@ -1090,10 +1142,6 @@ int execute(state rt, void* extra, int ss) {
 	if (pu->bp > pu->sp) {
 		error(rt, NULL, 0, "invalid statck size");
 		return -99;
-	}
-
-	if (rt->dbg != NULL) {
-		dotrace(rt, pu->ip, pu->sp);
 	}
 
 	// TODO argc, argv
@@ -1148,13 +1196,6 @@ void fputopc(FILE* fout, unsigned char* ptr, int len, int offs, state rt) {
 
 		case opc_mad:
 			fprintf(fout, " %d", ip->rel);
-			break;
-
-		case opc_ld32:
-		case opc_st32:
-		case opc_ld64:
-		case opc_st64:
-			fprintf(fout, " %x", ip->rel);
 			break;
 
 		case opc_jmp:
@@ -1231,6 +1272,19 @@ void fputopc(FILE* fout, unsigned char* ptr, int len, int offs, state rt) {
 			}
 			break;
 		}
+
+		case opc_ld32:
+		case opc_st32:
+		case opc_ld64:
+		case opc_st64:
+			fprintf(fout, " %x", ip->rel);
+			if (rt != NULL) {
+				symn sym = mapsym(rt, ip->rel, 0);
+				if (sym != NULL) {
+					fputfmt(fout, ": %+T: %T", sym, sym->type);
+				}
+			}
+			break;
 
 		case opc_libc:
 			if (rt != NULL) {
@@ -1329,9 +1383,9 @@ void fputasm(state rt, FILE* fout, int beg, int end, int mode) {
 	}
 }
 
-void fputval(state rt, FILE* fout, symn var, stkval* ref, int level) {
+void fputval(state rt, FILE* fout, symn var, stkval* ref, int level, int mode) {
 	symn typ = var->kind == TYPE_ref ? var->type : var;
-	char* fmt = var->pfmt ? var->pfmt : var->call ? NULL : typ->pfmt;
+	char* fmt = var->pfmt ? var->pfmt : typ->pfmt;
 
 	if (level > 0) {
 		fputfmt(fout, "%I", level);
@@ -1341,38 +1395,45 @@ void fputval(state rt, FILE* fout, symn var, stkval* ref, int level) {
 	}
 
 	if (var != typ) {
-		//~ fputfmt(fout, "%T@%x: ", var, ref);
-		fputfmt(fout, "%T: ", var);
-	}
-
-	if (var->cast == TYPE_ref) {		// by reference
-		if (ref->u4 == 0) {				// null reference.
-			fputfmt(fout, "null");
-			return;
-		}
-		ref = getip(rt, ref->u4);
-		if (typ->cast != TYPE_ref) {
+		if (var->cast == TYPE_ref && typ->cast != TYPE_ref) {
 			fputfmt(fout, "&");
 		}
+		fputfmt(fout, "%T: ", var);
 	}
-
-	if (!isValidOffset(rt, ref)) {
-		fputfmt(fout, "%T(BadRef@%06x)", typ, var->offs);
-		return;
-	}
-
 	if (var->call) {
 		fputfmt(fout, "function(@%?c%06x)", var->stat ? 0 : '+', var->offs);
 		return;
 	}
 
-	switch (typ->kind) {
+	fputfmt(fout, "@%06x: ", vmOffset(rt, ref));
+	if (var != typ && var->cast == TYPE_ref && ref != NULL) {	// indirect reference
+		//~ fputfmt(fout, "@%06x->", vmOffset(rt, ref));
+		ref = getip(rt, ref->u4);
+	}
+
+	if (mode) {
+		fputfmt(fout, "%T(", typ);
+	}
+
+	if (ref == NULL) {					// null reference.
+		fputfmt(fout, "null");
+	}
+	else if (!isValidOffset(rt, ref)) {	// invalid offset.
+		fputfmt(fout, "BadRef@%06x", var->offs);
+	}
+	else if (typ == rt->type_var) {		// TODO: temp only.
+		typ = getip(rt, ref->var.type);
+		ref = getip(rt, ref->var.data);
+		fputfmt(fout, "%+T, ", typ);
+		fputval(rt, fout, typ, ref, level, 0);
+	}
+	else switch (typ->kind) {
 		case TYPE_rec: {
 			int n = 0;
 			if (fmt != NULL) {
 				switch (typ->size) {
 					default:
-						fputfmt(fout, "%T(size: %d)", typ, typ->size);
+						fputfmt(fout, "struct, size: %d", typ->size);
 						break;
 
 					case 1:
@@ -1416,33 +1477,29 @@ void fputval(state rt, FILE* fout, symn var, stkval* ref, int level) {
 						break;
 				}
 			}
-			else {
-				fputfmt(fout, "%T", typ);
-				if (typ->prms) {
-					symn tmp;
-					fputfmt(fout, " {");
-					for (tmp = typ->prms; tmp; tmp = tmp->next) {
+			else if (typ->prms != NULL) {
+				symn tmp;
+				fputfmt(fout, "{");
+				for (tmp = typ->prms; tmp; tmp = tmp->next) {
 
-						if (tmp->stat || tmp->kind != TYPE_ref)
-							continue;
+					if (tmp->stat || tmp->kind != TYPE_ref)
+						continue;
 
-						if (tmp->pfmt && !*tmp->pfmt)
-							continue;
+					if (tmp->pfmt && !*tmp->pfmt)
+						continue;
 
-						if (n > 0) {
-							fputfmt(fout, ",");
-						}
-
-						fputfmt(fout, "\n");
-						fputval(rt, fout, tmp, (void*)((char*)ref + tmp->offs), level + 1);
-						n += 1;
+					if (n > 0) {
+						fputfmt(fout, ",");
 					}
-					fputfmt(fout, "\n%I}", level);
+
+					fputfmt(fout, "\n");
+					fputval(rt, fout, tmp, (void*)((char*)ref + tmp->offs), level + 1, mode);
+					n += 1;
 				}
-				else {
-					fputfmt(fout, "(@%?c%06x)", var->stat ? 0 : '+', var->offs);
-					return;
-				}
+				fputfmt(fout, "\n%I}", level);
+			}
+			else {
+				fputfmt(fout, "@%?c%06x, size: %d", var->stat ? 0 : '+', var->offs, var->size);
 			}
 		} break;
 		case TYPE_arr: {
@@ -1458,13 +1515,16 @@ void fputval(state rt, FILE* fout, symn var, stkval* ref, int level) {
 				int elementsOnNewLine = 0;
 				int arrayHasMoreElements = 0;
 
-				if (var->cast == TYPE_arr) {
-					n = ref->arr.length;
-					ref = (stkval*)(rt->_mem + ref->u4);
-					fputfmt(fout, "%T[.%d.] {", typ->type, n);
+				//~ fputfmt(fout, "@%06x", vmOffset(rt, ref));
+				if (typ->stat) {
+				// if (typ->cast != TYPE_arr) {
+					// static array
+					fputfmt(fout, "{");
 				}
 				else {
-					fputfmt(fout, "%T {", typ);
+					n = ref->arr.length;
+					ref = (stkval*)(rt->_mem + ref->u4);
+					fputfmt(fout, "[%d]{", n);
 				}
 
 				#ifdef MAX_ARR_PRINT
@@ -1491,7 +1551,7 @@ void fputval(state rt, FILE* fout, symn var, stkval* ref, int level) {
 						fputfmt(fout, " ");
 					}
 
-					fputval(rt, fout, base, (stkval*)((char*)ref + i * sizeOf(base)), elementsOnNewLine ? level + 1 : 0);
+					fputval(rt, fout, base, (stkval*)((char*)ref + i * sizeOf(base)), elementsOnNewLine ? level + 1 : 0, 0);
 				}
 
 				if (arrayHasMoreElements) {
@@ -1517,6 +1577,124 @@ void fputval(state rt, FILE* fout, symn var, stkval* ref, int level) {
 			fputfmt(fout, "%T[ERROR]", typ);
 			break;
 	}
+	if (mode) {
+		fputfmt(fout, ")");
+	}
+}
+
+
+static void traceArgs(state rt, symn fun, char *file, int line, void* sp, int ident) {
+	symn sym;
+	int printFileLine = 0;
+
+	file = file ? file : "native.code";
+	fputfmt(rt->logf, "%I%s:%u: %?T", ident, file, line, fun);
+	if (ident < 0) {
+		printFileLine = 1;
+		ident = -ident;
+	}
+
+	dieif(sp == NULL, "Error");
+	dieif(fun == NULL, "Error");
+	if (fun->prms != NULL && fun->prms != rt->defs) {
+		int firstArg = 1;
+		if (ident > 0) {
+			fputfmt(rt->logf, "(");
+		}
+		else {
+			fputfmt(rt->logf, "\n");
+		}
+		for (sym = fun->prms; sym; sym = sym->next) {
+			void *offs;
+
+			/* fun->prms should contain only function parameters.
+			if (sym->call)
+			continue;
+
+			if (sym->kind != TYPE_ref)
+			continue;
+			*/
+
+			if (firstArg == 0) {
+				fputfmt(rt->logf, ", ");
+			}
+			else {
+				firstArg = 0;
+			}
+
+			if (printFileLine) {
+				if (sym->file != NULL && sym->line != 0) {
+					fputfmt(rt->logf, "%I%s:%u: ", ident, sym->file, sym->line);
+				}
+				else {
+					fputfmt(rt->logf, "%I", ident);
+				}
+			}
+			dieif(sym->stat, "Error");
+
+			// 1 * vm_size holds the return value of the function.
+			offs = (char*)sp + fun->prms->offs + 1 * vm_size - sym->offs;
+
+			fputval(rt, rt->logf, sym, offs, -ident, 1);
+		}
+		if (ident > 0) {
+			fputfmt(rt->logf, ")");
+		}
+		else {
+			fputfmt(rt->logf, "\n");
+		}
+	}
+}
+
+//~ TODO: void dumpTrace(state rt, int tracelevel, int flags)
+int logTrace(state rt, int ident, int startlevel, int tracelevel) {
+	int i, pos, isOutput = 0;
+	cell pu = rt->vm.cell;
+	trace tr = (trace)pu->bp;
+
+	if (rt->dbg == NULL) {
+		return 0;
+	}
+	pos = ((trace)pu->tp) - tr - 1;
+	if (tracelevel > pos) {
+		tracelevel = pos;
+	}
+	// i = 1: skip debug function.
+	for (i = startlevel; i < tracelevel; ++i) {
+		int pc = vmOffset(rt, tr[pos - i].ip);
+		dbgInfo trInfo = getCodeMapping(rt, pc);
+		signed char *sp = tr[pos - i - 1].sp;
+		symn fun = mapsym(rt, pc, 1);
+		char *file = NULL;
+		int line = 0;
+
+		if (fun == NULL) {
+			continue;
+		}
+
+		if (trInfo != NULL) {
+			file = trInfo->file;
+			line = trInfo->line;
+		}
+
+		if (isOutput > 0) {
+			fputc('\n', rt->logf);
+		}
+		traceArgs(rt, fun, file, line, sp, ident);
+		isOutput += 1;
+	}
+	if (i < pos) {
+		if (isOutput > 0) {
+			fputc('\n', rt->logf);
+		}
+		fputfmt(rt->logf, "%I... %d more", ident, pos - i);
+		isOutput += 1;
+	}
+
+	if (isOutput) {
+		fputc('\n', rt->logf);
+	}
+	return isOutput;
 }
 
 #if defined DEBUGGING

@@ -92,12 +92,17 @@ case opc_libc: NEXT(4, -libcvec[ip->rel].pop, libcvec[ip->rel].chk) {
 		args.fun = fun;
 		args.retv = (char *)st;
 	}
+	//prerr("info", "libcall %-T", libcall->sym);
 
 #ifdef TRACE
 	TRACE(ip, sp);
+	TRACE(getip(rt, args.fun->offs), sp);
+	//TRACE(mp + libcall->sym->offs, sp);
+	//TRACE(getip(rt, fun->offs), sp);
 #endif
 	exitCode = libcall->call(&args);
 #ifdef TRACE
+	TRACE(NULL, NULL);
 	TRACE(NULL, NULL);
 #endif
 	STOP(error_libc, exitCode != 0, exitCode);
@@ -213,7 +218,7 @@ case opc_ldi1: NEXT(1, -0, 1) {
 	int mem = SP(0, i4);
 	STOP(error_mem, mem <= 0, mem);
 	STOP(error_mem, mem > ms - 1, mem);
-	STOP(error_mem, !aligned(mem, 1), mem);
+	//~ STOP(error_mem, !aligned(mem, 1), mem);
 	SP(0, i4) = MP(mem, i1);
 #endif
 } break;
@@ -222,7 +227,7 @@ case opc_ldi2: NEXT(1, -0, 1) {
 	int mem = SP(0, i4);
 	STOP(error_mem, mem <= 0, mem);
 	STOP(error_mem, mem > ms - 2, mem);
-	STOP(error_mem, !aligned(mem, 2), mem);
+	//~ STOP(error_mem, !aligned(mem, 2), mem);
 	SP(0, i4) = MP(mem, i2);
 #endif
 } break;
@@ -231,7 +236,7 @@ case opc_ldi4: NEXT(1, -0, 1) {
 	int mem = SP(0, i4);
 	STOP(error_mem, mem <= 0, mem);
 	STOP(error_mem, mem > ms - 4, mem);
-	STOP(error_mem, !aligned(mem, 4), mem);
+	//~ STOP(error_mem, !aligned(mem, 4), mem);
 	SP(0, i4) = MP(mem, i4);
 #endif
 } break;
@@ -241,7 +246,7 @@ case opc_ldi8: NEXT(1, +1, 1) {
 	STOP(error_ovf, ovf(pu), -1);
 	STOP(error_mem, mem <= 0, mem);
 	STOP(error_mem, mem > ms - 8, mem);
-	STOP(error_mem, !aligned(mem, 8), mem);
+	//~ STOP(error_mem, !aligned(mem, 8), mem);
 	SP(-1, i8) = MP(mem, i8);
 #endif
 } break;
@@ -251,7 +256,7 @@ case opc_ldiq: NEXT(1, +3, 1) {
 	STOP(error_ovf, ovf(pu), -1);
 	STOP(error_mem, mem <= 0, mem);
 	STOP(error_mem, mem > ms - 16, mem);
-	STOP(error_mem, !aligned(mem, 16), mem);
+	//~ STOP(error_mem, !aligned(mem, 16), mem);
 	memmove(&SP(-3, u4), &MP(mem, u4), 16);
 #endif
 } break;
@@ -260,7 +265,7 @@ case opc_sti1: NEXT(1, -2, 2) {
 	int mem = SP(0, i4);
 	STOP(error_mem, mem < ro, mem);
 	STOP(error_mem, mem > ms - 1, mem);
-	STOP(error_mem, !aligned(mem, 1), mem);
+	//~ STOP(error_mem, !aligned(mem, 1), mem);
 	MP(mem, i1) = SP(1, i1);
 #endif
 } break;
@@ -269,7 +274,7 @@ case opc_sti2: NEXT(1, -2, 2) {
 	int mem = SP(0, i4);
 	STOP(error_mem, mem < ro, mem);
 	STOP(error_mem, mem > ms - 2, mem);
-	STOP(error_mem, !aligned(mem, 2), mem);
+	//~ STOP(error_mem, !aligned(mem, 2), mem);
 	MP(mem, i2) = SP(1, i2);
 #endif
 } break;
@@ -278,7 +283,7 @@ case opc_sti4: NEXT(1, -2, 2) {
 	int mem = SP(0, i4);
 	STOP(error_mem, mem < ro, mem);
 	STOP(error_mem, mem > ms - 4, mem);
-	STOP(error_mem, !aligned(mem, 4), mem);
+	//~ STOP(error_mem, !aligned(mem, 4), mem);
 	MP(mem, i4) = SP(1, i4);
 #endif
 } break;
@@ -287,7 +292,7 @@ case opc_sti8: NEXT(1, -3, 3) {
 	int mem = SP(0, i4);
 	STOP(error_mem, mem < ro, mem);
 	STOP(error_mem, mem > ms - 8, mem);
-	STOP(error_mem, !aligned(mem, 8), mem);
+	//~ STOP(error_mem, !aligned(mem, 8), mem);
 	MP(mem, i8) = SP(1, i8);
 #endif
 } break;
@@ -296,7 +301,7 @@ case opc_stiq: NEXT(1, -5, 5) {
 	int mem = SP(0, i4);
 	STOP(error_mem, mem < ro, mem);
 	STOP(error_mem, mem > ms - 16, mem);
-	STOP(error_mem, !aligned(mem, 16), mem);
+	//~ STOP(error_mem, !aligned(mem, 16), mem);
 	memmove(&MP(mem, u4), &SP(1, u4), 16);
 #endif
 } break;
@@ -305,7 +310,7 @@ case opc_ld32: NEXT(4, +1, 0) {
 	int mem = ip->rel;
 	STOP(error_mem, mem <= 0, mem);
 	STOP(error_mem, mem > ms - 4, mem);
-	STOP(error_mem, !aligned(mem, 4), mem);
+	//~ STOP(error_mem, !aligned(mem, 4), mem);
 	SP(-1, i4) = MP(mem, i4);
 #endif
 } break;
@@ -314,7 +319,7 @@ case opc_ld64: NEXT(4, +2, 0) {
 	int mem = ip->rel;
 	STOP(error_mem, mem <= 0, mem);
 	STOP(error_mem, mem > ms - 8, mem);
-	STOP(error_mem, !aligned(mem, 8), mem);
+	//~ STOP(error_mem, !aligned(mem, 8), mem);
 	SP(-2, i8) = MP(mem, i8);
 #endif
 } break;
@@ -323,7 +328,7 @@ case opc_st32: NEXT(4, -1, 1) {
 	int mem = ip->rel;
 	STOP(error_mem, mem < ro, mem);
 	STOP(error_mem, mem > ms - 4, mem);
-	STOP(error_mem, !aligned(mem, 4), mem);
+	//~ STOP(error_mem, !aligned(mem, 4), mem);
 	MP(mem, i4) = SP(0, i4);
 #endif
 } break;
@@ -332,7 +337,7 @@ case opc_st64: NEXT(4, -2, 2) {
 	int mem = ip->rel;
 	STOP(error_mem, mem < ro, mem);
 	STOP(error_mem, mem > ms - 8, mem);
-	STOP(error_mem, !aligned(mem, 8), mem);
+	//~ STOP(error_mem, !aligned(mem, 8), mem);
 	MP(mem, i8) = SP(0, i8);
 #endif
 } break;

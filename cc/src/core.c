@@ -29,12 +29,12 @@ the core:
 const struct tok_inf tok_tbl[255] = {
 	#define TOKDEF(NAME, TYPE, SIZE, STR) {TYPE, SIZE, STR},
 	#include "defs.inl"
-	{0}
+	//~ {0}
 };
 const struct opc_inf opc_tbl[255] = {
 	#define OPCDEF(NAME, CODE, SIZE, CHCK, DIFF, MNEM) {CODE, SIZE, CHCK, DIFF, MNEM},
 	#include "defs.inl"
-	{0}
+	//~ {0}
 };
 
 /// Initialize runtime context; @see header
@@ -73,7 +73,7 @@ state rtInit(void* mem, unsigned size) {
 	return rt;
 }
 
-/// Alloc, resize or free memory; @see state.api.rtAlloc
+/// Allocate, resize or free memory; @see state.api.rtAlloc
 void* rtAlloc(state rt, void* ptr, unsigned size) {
 	/* memory manager
 	 * using one linked list containing both used and unused memory chunks.
@@ -341,7 +341,7 @@ symn mapsym(state rt, int offs, int callsOnly) {
 		if (callsOnly && !sym->call) {
 			continue;
 		}
-		if (offs >= sym->offs && offs <= sym->offs + sym->size) {
+		if (offs >= sym->offs && offs < sym->offs + sym->size) {
 			if (!callsOnly && offs != sym->offs) {
 				continue;
 			}
@@ -370,7 +370,7 @@ static void install_type(ccState cc, int mode) {
 
 	type_rec = install(cc, "typename", ATTR_stat | ATTR_const | TYPE_rec, TYPE_ref, 0, NULL, NULL);
 
-	// TODO: typename is of type typename
+	// TODO: !cycle: typename is instance of typename
 	type_rec->type = type_rec;
 
 	type_vid = install(cc,    "void", ATTR_stat | ATTR_const | TYPE_rec, TYPE_vid, 0, type_rec, NULL);
@@ -391,22 +391,23 @@ static void install_type(ccState cc, int mode) {
 		cc->null_ref = install(cc, "null", ATTR_stat | ATTR_const | TYPE_ref, TYPE_any, vm_size, type_ptr, NULL);
 	}
 	if (mode & creg_tvar) {
+		// TODO: variant should cast to TYPE_var
 		type_var = install(cc, "variant", ATTR_stat | ATTR_const | TYPE_rec, TYPE_rec, 2 * vm_size, type_rec, NULL);
 		//~ install(cc, "array", ATTR_const | TYPE_arr, 0, 0, cc->type_var, NULL);		// array is alias for variant[]
 	}
 
 	type_vid->pfmt = NULL;
-	type_bol->pfmt = "bool(%d)";
-	type_i08->pfmt = "int8(%d)";
-	type_i16->pfmt = "int16(%d)";
-	type_i32->pfmt = "int32(%d)";
-	type_i64->pfmt = "int64(%D)";
-	type_u08->pfmt = "uint8(%u)";
-	type_u16->pfmt = "uint16(%u)";
-	type_u32->pfmt = "uint32(%u)";
-	// type_->pfmt = "uint64(%U)";
-	type_f32->pfmt = "float32(%f)";
-	type_f64->pfmt = "float64(%F)";
+	type_bol->pfmt = "%d";
+	type_i08->pfmt = "%d";
+	type_i16->pfmt = "%d";
+	type_i32->pfmt = "%d";
+	type_i64->pfmt = "%D";
+	type_u08->pfmt = "%u";
+	type_u16->pfmt = "%u";
+	type_u32->pfmt = "%u";
+	// type_->pfmt = "%U";
+	type_f32->pfmt = "%f";
+	type_f64->pfmt = "%F";
 
 	cc->type_rec = type_rec;
 	cc->type_vid = type_vid;
@@ -418,6 +419,7 @@ static void install_type(ccState cc, int mode) {
 	cc->type_f64 = type_f64;
 	cc->type_ptr = type_ptr;
 	cc->type_var = type_var;
+	cc->s->type_var = type_var;
 
 	// aliases.
 	install(cc, "int",    ATTR_stat | ATTR_const | TYPE_def, 0, 0, type_i32, NULL);
@@ -430,13 +432,13 @@ static void install_type(ccState cc, int mode) {
 
 	//~ type_chr = install(cc, "char", ATTR_stat | ATTR_const | TYPE_def, 0, 0, type_u08, NULL);
 	type_chr = install(cc, "char", ATTR_stat | ATTR_const | TYPE_rec, TYPE_u32, 1, type_rec, NULL);
-	type_chr->pfmt = "char('%c')";
+	type_chr->pfmt = "'%c'";
 
-	//~ TODO: struct string: char[] { ... }, temporarly string is alias for uint8[]
+	//~ TODO: struct string: char[] { ... }, temporarly string is alias for char[]
 	cc->type_str = install(cc, "string", ATTR_stat | ATTR_const | TYPE_arr, TYPE_ref, vm_size, type_chr, NULL);
-	cc->type_str->pfmt = "string(`%s`)";
+	cc->type_str->pfmt = "\"%s\"";
 
-	// hack: string is static sized array.
+	// hack: strings are static sized arrays.
 	cc->type_str->init = intnode(cc, -1);
 
 	if (type_var != NULL) {
@@ -472,19 +474,22 @@ static void install_emit(ccState cc, int mode) {
 		install(cc, "not", EMIT_opc, 0, opc_not, cc->type_bol, NULL);
 		install(cc, "set", EMIT_opc, 0, opc_set1, cc->type_vid, intnode(cc, 1));
 		install(cc, "join", EMIT_opc, 0, opc_sync, cc->type_vid, intnode(cc, 1));
+		install(cc, "call", EMIT_opc, 0, opc_call, cc->type_vid, NULL);
+
 		//~ install(cc, "pop1", EMIT_opc, 0, opc_drop, cc->type_vid, intnode(cc, 1));
 		//~ install(cc, "set0", EMIT_opc, 0, opc_set1, cc->type_vid, intnode(cc, 0));
 		//~ install(cc, "set1", EMIT_opc, 0, opc_set1, cc->type_vid, intnode(cc, 1));
 
-		if ((typ = ccBegin(rt, "dupp"))) {
+		if ((typ = ccBegin(rt, "dupp")) != NULL) {
 			install(cc, "x1", EMIT_opc, 0, opc_dup1, cc->type_i32, intnode(cc, 0));
-			install(cc, "x1_1", EMIT_opc, 0, opc_dup1, cc->type_i32, intnode(cc, 1));
-			install(cc, "x1_2", EMIT_opc, 0, opc_dup1, cc->type_i32, intnode(cc, 2));
 			install(cc, "x2", EMIT_opc, 0, opc_dup2, cc->type_i64, intnode(cc, 0));
 			install(cc, "x4", EMIT_opc, 0, opc_dup4, cc->type_vid, intnode(cc, 0));
+			// dupplicate the second and or third 32bit element on stack
+			//~ install(cc, "x1_1", EMIT_opc, 0, opc_dup1, cc->type_i32, intnode(cc, 1));
+			//~ install(cc, "x1_2", EMIT_opc, 0, opc_dup1, cc->type_i32, intnode(cc, 2));
 			ccEnd(cc->s, typ);
 		}
-		if ((typ = ccBegin(rt, "load"))) {
+		if ((typ = ccBegin(rt, "load")) != NULL) {
 			// load zero
 			install(cc, "z32", EMIT_opc, 0, opc_ldz1, cc->type_vid, NULL);
 			install(cc, "z64", EMIT_opc, 0, opc_ldz2, cc->type_vid, NULL);
@@ -498,7 +503,7 @@ static void install_emit(ccState cc, int mode) {
 			install(cc, "i128", EMIT_opc, 0, opc_ldiq, cc->type_vid, NULL);
 			ccEnd(rt, typ);
 		}
-		if ((typ = ccBegin(rt, "store"))) {
+		if ((typ = ccBegin(rt, "store")) != NULL) {
 			install(cc, "i8",   EMIT_opc, 0, opc_sti1, cc->type_vid, NULL);
 			install(cc, "i16",  EMIT_opc, 0, opc_sti2, cc->type_vid, NULL);
 			install(cc, "i32",  EMIT_opc, 0, opc_sti4, cc->type_vid, NULL);
@@ -507,7 +512,6 @@ static void install_emit(ccState cc, int mode) {
 			ccEnd(rt, typ);
 		}
 
-		install(cc, "call", EMIT_opc, 0, opc_call, cc->type_vid, NULL);
 
 		if ((typ = u32) != NULL) {
 			ccBegin(rt, NULL);
@@ -721,7 +725,7 @@ static int install_base(state rt, int mode) {
 			error = 1;
 		}
 
-		// HACK: `operator (typename type).file = typename.file(type);`
+		// HACK: `operator(typename type).file = typename.file(type);`
 		if ((arg = ccAddCall(rt, typenameGetFile, NULL, "string file;"))) {
 			rt->cc->libc->chk += 1;
 			rt->cc->libc->pop += 1;
@@ -732,7 +736,7 @@ static int install_base(state rt, int mode) {
 			error = 1;
 		}
 
-		// HACK: `operator (typename type).name = typename.name(type);`
+		// HACK: `operator(typename type).name = typename.name(type);`
 		if ((arg = ccAddCall(rt, typenameGetName, NULL, "string name;"))) {
 			rt->cc->libc->chk += 1;
 			rt->cc->libc->pop += 1;

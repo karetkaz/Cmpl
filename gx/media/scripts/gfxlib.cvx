@@ -329,21 +329,21 @@ void blendLut(gxClut &lut, int Colors[]) {
 }
 
 void blendLut(int count, gxClut &lut, int c1, int c2) {
-	int Colors[2] = c1, c2;
+	int Colors[2] = {c1, c2};
 	blendLut(count, lut, Colors);
 }
 void blendLut(int count, gxClut &lut, int c1, int c2, int c3) {
-	int Colors[3] = c1, c2, c3;
+	int Colors[3] = {c1, c2, c3};
 	blendLut(count, lut, Colors);
 }
 void blendLut(int count, gxClut &lut, int c1, int c2, int c3, int c4) {
-	int Colors[4] = c1, c2, c3, c4;
+	int Colors[4] = {c1, c2, c3, c4};
 	blendLut(count, lut, Colors);
 }
 
-define blendLut(gxClut &lut, int c1, int c2) = blendLut(256, lut, c1, c2);
-define blendLut(gxClut &lut, int c1, int c2, int c3) = blendLut(256, lut, c1, c2, c3);
-define blendLut(gxClut &lut, int c1, int c2, int c3, int c4) = blendLut(256, lut, c1, c2, c3, c4);
+define blendLut(gxClut lut, int c1, int c2) = blendLut(256, lut, c1, c2);
+define blendLut(gxClut lut, int c1, int c2, int c3) = blendLut(256, lut, c1, c2, c3);
+define blendLut(gxClut lut, int c1, int c2, int c3, int c4) = blendLut(256, lut, c1, c2, c3, c4);
 
 void lutBrightnessContrastGamma(gxClut &lut, int brightness, int contrast, double gamma) {
 	double gval = 1. / gamma;
@@ -601,7 +601,7 @@ gxSurf Mandel(gxSurf dst, gxClut &lut, double QMin, double QMax, double PMin, do
 
 enum Fit {
 	center;					// do not zoom, move to center
-	strech = fill = zoom;	// strech
+	strech;// = fill = zoom;	// strech
 	fitWidth;
 	fitHeight;
 }

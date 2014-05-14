@@ -1,0 +1,31 @@
+struct DebugInfo {
+	string func;
+	double x;
+	double expected;
+	double got;
+}
+
+//~ DebugInfo info = DebugInfo("sin", 0, 0.1, 0.09);
+
+variant varNull = variant(&null);
+
+int32 &nullInt = null;
+variant varNullInt = variant(&nullInt);
+int32 zeroInt = 0;
+variant varzeroInt = variant(&zeroInt);
+
+string infoString = "blah";
+variant varString = variant(&infoString);
+
+string infoNullStr = null;
+variant varNullStr = variant(&infoNullStr);
+
+vec4f vector4f = vec4f(1,2,3,4);
+variant varStruct = variant(&vector4f);
+
+int intArray[9] = {6};
+variant varArray = variant(&intArray);
+
+int intSlice[] = intArray;
+variant varSlice = variant(&intSlice);
+

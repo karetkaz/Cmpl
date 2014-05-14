@@ -1,5 +1,6 @@
 CFLAGS=-Wall -Wpadded -g3 -ggdb
 CFLAGS=-Wall -Wpadded -g0 -Os
+CFLAGS=-pipe -g -Wall -Wextra
 ARH=-m32
 LIBS=-lm -ldl
 MKDIR=mkdir -p

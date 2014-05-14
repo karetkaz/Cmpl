@@ -11,6 +11,21 @@ description:
 #include <time.h>
 #include "core.h"
 
+#ifdef DEBUGGING
+// utility function for debuging only.
+static void dumpTree(state rt, astn ast, int offsStart, int offsEnd) {
+	struct symNode dbg;
+	memset(&dbg, 0, sizeof(dbg));
+	dbg.kind = TYPE_ref;
+	dbg.name = "error";
+	dbg.call = 1;
+	dbg.init = ast;
+	dbg.offs = offsStart;
+	dbg.size = offsEnd - offsStart;
+	dump(rt, dump_ast | dump_asm | 0x1ff, &dbg, "");
+}
+#endif
+
 /**
  * @brief get absolute position on stack, of relative offset
  * @param rt Runtime context.
@@ -35,19 +50,10 @@ static inline void memswap(void* _a, void* _b, int size) {
 	}
 }
 
-// utility function for debuging only.
-static void dumpTree(state rt, astn ast, int offsStart, int offsEnd) {
-	#if DEBUGGING > 0
-	struct symNode dbg;
-	memset(&dbg, 0, sizeof(dbg));
-	dbg.kind = TYPE_ref;
-	dbg.name = "error";
-	dbg.call = 1;
-	dbg.init = ast;
-	dbg.offs = offsStart;
-	dbg.size = offsEnd - offsStart;
-	dump(rt, dump_ast | dump_asm | 0x1ff, &dbg, "");
-	#endif
+int emitint(state rt, vmOpcode opc, int64_t arg) {
+	stkval tmp;
+	tmp.i8 = arg;
+	return emitarg(rt, opc, tmp);
 }
 
 /// Emit an instruction indexing nth stack element.
@@ -527,17 +533,6 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 				if (!cgen(rt, ptr, TYPE_vid)) {		// we will free stack on scope close
 					#if DEBUGGING > 0
 					dumpTree(rt, ptr, ipdbg, emitopc(rt, markIP));
-					/*struct symNode dbg;
-					memset(&dbg, 0, sizeof(dbg));
-					dbg.kind = TYPE_ref;
-					dbg.name = "error";
-					dbg.call = 1;
-					dbg.init = ptr;
-					dbg.offs = ipdbg;
-					dbg.size = emitopc(rt, markIP) - ipdbg;
-					dump(rt, dump_ast | dump_asm | 0x1ff, &dbg, "");
-					//~ fputasm(rt, rt->logf, ipdbg, emitopc(rt, markIP), 0x119);
-					// */
 					#endif
 					error(rt, ptr->file, ptr->line, "emmiting statement `%+k`", ptr);
 				}
@@ -795,6 +790,67 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 
 			dieif(var == NULL && ast->op.lhso != NULL, "Error %+k", ast);
 
+			// variant(&info);
+			if (var && var == rt->cc->type_var) {
+				if (argv && argv->kind != OPER_com) {
+					symn variant = NULL;
+					if (argv->kind == OPER_adr) {
+						variant = linkOf(argv->op.rhso);
+					}
+					else {
+						variant = linkOf(argv);
+						if (variant && !(variant->cast == TYPE_ref || variant->type->cast == TYPE_ref)) {
+							warn(rt, 2, argv->file, argv->line, "argument `%+k` is not explicitly passed by reference", argv);
+						}
+					}
+					if (variant != NULL) {
+						if (!emitint(rt, opc_ldcr, vmOffset(rt, variant->type))) {
+							trace("%+k", ast);
+							return TYPE_any;
+						}
+						if (!emitvar(rt, variant)) {
+							trace("%+k", ast);
+							return TYPE_any;
+						}
+						if (variant->cast == TYPE_ref/* && variant->type->cast != TYPE_ref*/) {
+							// load a reference type
+							if (!emitint(rt, opc_ldi, vm_size)) {
+								trace("%+k", ast);
+								return TYPE_any;
+							}
+						}
+						return TYPE_var;
+					}
+					/*dieif(argv->cst2 != TYPE_ref, "Error: %t", argv->cst2);
+					argv->cst2 = TYPE_ref;
+					trace("emit variant(%T, %T)", argv->type, variant);
+					// TODO: if (!emitvar(rt, argv->type)) {
+					if (!emitint(rt, opc_ldcr, vmOffset(rt, argv->type))) {
+						trace("%+k", ast);
+						return TYPE_any;
+					}*/
+				}
+			}
+
+			if (var && var == rt->cc->type_ptr) {
+				if (argv && argv->kind != OPER_com) {
+					symn variant = NULL;
+					if (argv->kind == OPER_adr) {
+						variant = linkOf(argv->op.rhso);
+					}
+					else {
+						warn(rt, 2, argv->file, argv->line, "argument `%+k` is not explicitly passed by reference", argv);
+					}
+					if (variant != NULL) {
+						if (!emitvar(rt, variant)) {
+							trace("%+k", ast);
+							return TYPE_any;
+						}
+						return TYPE_var;
+					}
+				}
+			}
+
 			// debug(...)
 			if (var && var == rt->cc->libc_dbg) {
 				if (argv != NULL) {
@@ -815,7 +871,8 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 				//~ dieif(!emitref(rt, NULL), "__FUNC__");
 				dieif(!emiti32(rt, ast->line), "__FILE__");
 				dieif(!emitref(rt, ast->file), "__LINE__");
-				dieif(!emitint(rt, opc_libc, rt->cc->libc_dbg->offs), "__LIBC__");
+				dieif(!emitint(rt, opc_libc, rt->cc->libc_dbg_idx), "__LIBC__");
+
 				dieif(!emitidx(rt, opc_drop, stkret), "__DROP__");
 				break;
 			}
@@ -1006,6 +1063,7 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 			if (var == rt->cc->emit_opc) {		// emit()
 			}
 			else if (istype(var)) {				// cast()
+				dieif(stkret != stkoffs(rt, 0), "Error: %+k", ast);
 				if (!argv || argv != ast->op.rhso) {
 					warn(rt, 1, ast->file, ast->line, "multiple values, array ?: '%+k'", ast);
 				}
@@ -1632,7 +1690,7 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 				case TYPE_rec:		// typename
 				case TYPE_ref: {	// variable
 					ccToken retarr = TYPE_any;
-					logif(var->size == 0, "invalid use of variable(%s:%d): `%-T`", ast->file, ast->line, var);
+					dieif(var->size == 0, "invalid use of variable(%s:%d): `%-T`", ast->file, ast->line, var);
 
 					// a slice is needed, push length first.
 					if (get == TYPE_arr && ret != TYPE_arr) {
@@ -2248,12 +2306,6 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 	return ret;
 }
 
-int emitint(state rt, vmOpcode opc, int64_t arg) {
-	stkval tmp;
-	tmp.i8 = arg;
-	return emitarg(rt, opc, tmp);
-}
-
 int gencode(state rt, int mode) {
 	ccState cc = rt->cc;
 	int Lmain, Lmeta;
@@ -2312,7 +2364,6 @@ int gencode(state rt, int mode) {
 
 	// libcalls
 	if (cc->libc != NULL) {
-		int count = 0;
 		libc lc, calls;
 
 		calls = (libc)(rt->_beg = paddptr(rt->_beg, sizeof(void*)));
@@ -2320,21 +2371,23 @@ int gencode(state rt, int mode) {
 		dieif(rt->_beg >= rt->_end, "memory overrun");
 
 		for (lc = cc->libc; lc; lc = lc->next) {
+			// relocate libcall offsets to be uniq.
+			lc->sym->offs = vmOffset(rt, &calls[lc->pos]);
+			lc->sym->size = sizeof(struct libc);
 			calls[lc->pos] = *lc;
-			count += 1;
-			//lc->sym->offs = vmOffset(rt, &calls[lc->pos]);
 		}
 
 		rt->vm.libv = calls;
-		trace("installed %d lib calls", count);
 	}
 
+	#ifdef DEBUGGING
 	if (DEBUGGING > 6) {
 		symn var;
 		for (var = rt->gdef; var != NULL; var = var->gdef) {
 			trace("global: @%06x: %+T", var->offs, var);
 		}
 	}
+	#endif
 
 	// debuginfo
 	if (mode & cgen_info) {
@@ -2408,12 +2461,33 @@ int gencode(state rt, int mode) {
 				var->stat = 1;
 			}
 			else {
+				int padd = sizeof(void*);
 				dieif(var->offs != 0, "Error %-T", var);
-				logif(var->size != sizeOf(var), "size error: %-T: %d / %d", var, var->size, sizeOf(var));
+				dieif(var->size == 0, "Error %-T", var);	// instance of void ?
+				dieif(var->size != sizeOf(var), "size error: %-T: %d / %d", var, var->size, sizeOf(var));
 				var->size = sizeOf(var);
 
 				// align the memory of the variable. speeding up the read and write of it.
-				rt->_beg = paddptr(rt->_beg, sizeof(void*));
+				if (var->size >= 16) {
+					padd = 16;
+				}
+				else if (var->size >= 8) {
+					padd = 8;
+				}
+				else if (var->size >= 4) {
+					padd = 4;
+				}
+				else if (var->size >= 2) {
+					padd = 2;
+				}
+				else if (var->size >= 1) {
+					padd = 1;
+				}
+				else {
+					fatal("Error %-T", var);
+				}
+
+				rt->_beg = paddptr(rt->_beg, padd);
 				var->offs = vmOffset(rt, rt->_beg);
 				rt->_beg += var->size;
 
@@ -2447,6 +2521,7 @@ int gencode(state rt, int mode) {
 					staticinitializers->list.tail = init;
 				}
 			}
+			//~ trace("@%06x: %+T", var->offs, var);
 		}
 
 		// initialize static non global variables

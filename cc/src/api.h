@@ -91,6 +91,7 @@ struct stateRec {
 	 *  + break point lists
 	 */
 	dbgState dbg;
+	symn type_var;	// TODO: to be removed
 
 	/**
 	 * @brief External library support.

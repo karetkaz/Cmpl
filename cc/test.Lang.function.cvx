@@ -11,7 +11,7 @@ float64 mean = Mean(data);
 int method1(int x) {
 	static int i = 0;
 	result = i += x;
-	trace("log", variant(result));
+	trace("log", variant(&result));
 }
 int method1() {
 	return method1(1);
@@ -26,7 +26,7 @@ void methodCall(int method()) {
 		return;
 	}
 	int n = method();
-	trace("log", variant(n));
+	trace("log", variant(&n));
 }
 
 //~ just invoke it
@@ -80,7 +80,7 @@ variant vari64(int64 value) {
 	//~ int64 &refValue = new(int64);
 
 	refValue = value;
-	return variant(int64, pointer(refValue));
+	return variant(refValue);
 }
 
 debug("Invoke", vari64(Invoke(&a, 9)));

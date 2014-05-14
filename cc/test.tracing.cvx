@@ -1,4 +1,4 @@
-//~ Trace native calls
+//~ /*/~ Trace native calls
 void f(int &arg) {
 	if (arg <= 0) {
 		debug("stack trace :-)", 3, 256, variant.null);
@@ -6,21 +6,29 @@ void f(int &arg) {
 		return;
 	}
 	int n2 = arg - 1;
-	//~ f(n2);
-	testFunction(emit(struct, ref(f)), pointer(n2));
+	f(&n2);
+	//~ testFunction(emit(struct, ref(f)), pointer(n2));
 }
 
 int N = 4;
-//~ f(&N);
+f(&N);
 
 void f2(int arg, string b) {
+	//~ x = 0;
 	f(&arg);
 }
 f2(N, "apple");
+f2(N, "apple23");
+f2(N, "apple354");
 
 // */
 
+//~ define trace(string message) = debug(message, 3, 25, variant.null);
+//~ define trace(string message, variant value) = debug(message, 3, 25, value);
+
 //~ /+ test: debug and trace info
+//~ define trace(string message) = debug(message, 3, 25, variant.null);
+
 struct debugInfo {
 	string func;
 	double x;
@@ -35,7 +43,10 @@ void f3(pointer maxRecursiveCalls) {
 		return;
 	}
 	int n2 = n - 1;
-	testFunction(f3, pointer(n2));
+	if ((n2 & 1) == 0) {
+		return f3(pointer(&n2));
+	} // */
+	testFunction(f3, pointer(&n2));
 }
 
 //~ BUG: void testFunction2(void cb(double x, debugInfo info, int n), int n, debugInfo &info) {
@@ -50,9 +61,9 @@ void f4(double x, debugInfo &info, int maxRecursiveCalls) {
 	testFunction2(f4, maxRecursiveCalls - 1, info);
 }
 
-int n = 2;
-testFunction(f3, pointer(n));
-
-debugInfo info = debugInfo("fail", 1, 2, 3);
-testFunction2(f4, n, info);
+int n = 5;
+testFunction(f3, pointer(&n));
+int a = 9;
+//~ debugInfo info = debugInfo("fail", 1, 2, 3);
+//~ testFunction2(f4, n, info);
 //~ +/

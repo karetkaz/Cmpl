@@ -65,3 +65,4 @@ int32 i32arr[] = emit(struct, ref(memmgr(null, typename(int32).size * 100)), i32
 for (int i = 0; i < i32arr.length; i += 1) {
 	i32arr[i] = i;
 }
+// */

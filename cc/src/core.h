@@ -9,8 +9,8 @@
 #ifndef CC_CORE_H
 #define CC_CORE_H 2
 
-#include "pvmc.h"
 #include <stdlib.h>
+#include "pvmc.h"
 
 /* debug level:
 	0: no debug info
@@ -63,8 +63,8 @@
 // internal errors (not aborting!?)
 //~ #define fatal(msg, ...) do { prerr("internal error", msg, ##__VA_ARGS__); abort(); } while(0)
 //~ #define dieif(__EXP, msg, ...) do {if (__EXP) { prerr("internal error("#__EXP")", msg, ##__VA_ARGS__); abort(); }} while(0)
-#define fatal(msg, ...) do { prerr("internal error", msg, ##__VA_ARGS__); } while(0)
-#define dieif(__EXP, msg, ...) do {if (__EXP) { prerr("internal error("#__EXP")", msg, ##__VA_ARGS__); }} while(0)
+#define fatal(msg, ...) do { prerr("internal error", msg, ##__VA_ARGS__); _abort(); } while(0)
+#define dieif(__EXP, msg, ...) do {if (__EXP) { prerr("internal error("#__EXP")", msg, ##__VA_ARGS__); _abort(); }} while(0)
 
 // compilation errors
 #define error(__ENV, __FILE, __LINE, msg, ...) do { perr(__ENV, -1, __FILE, __LINE, msg, ##__VA_ARGS__); trace(msg, ##__VA_ARGS__); } while(0)
@@ -180,7 +180,8 @@ typedef union {		// on stack value type
 	float32_t	f4;
 	float64_t	f8;
 	int32_t		rel:24;
-	struct {void* data; long length;} arr;	// slice
+	struct {int32_t data; int32_t length;} arr;	// slice
+	struct {int32_t data; int32_t type;} var;	// variant
 } stkval;
 
 typedef struct list {	// linked list
@@ -373,8 +374,9 @@ struct ccStateRec {
 	symn	null_ref;		// variable null
 	symn	emit_opc;		// emit intrinsic function, or whatever it is.
 
-	symn	libc_mem;		// memory manager libcall: memmgr(pointer oldOffset, int newSize);
+	//~ symn	libc_mem;		// memory manager libcall: memmgr(pointer oldOffset, int newSize);
 	symn	libc_dbg;		// debug function libcall: debug(string message, int level, int maxTrace, variant values);
+	int32_t	libc_dbg_idx;	// debug function index
 };
 
 /// Debuger context
@@ -382,15 +384,6 @@ struct ccStateRec {
 struct dbgStateRec {
 
 	int (*dbug)(state, int pu, void* ip, long* sptr, int scnt);
-
-	//* TODO: move to cpu.bp ... cpu.tp
-	struct {
-		void* ip;
-		void* sp;
-	} trace[512];
-	int tracePos;
-	// */
-
 	struct arrBuffer codeMap;
 };
 
@@ -461,9 +454,12 @@ void fputopc(FILE *fout, unsigned char* ptr, int len, int offs, state rt);
  * @param beg First instruction offset.
  * @param end Last instruction offset.
  * @param mode Flags for printing
- *     0x0f: Length mask for instruction hex display.
+ *     0x0f: Length mask for instruction hex display (code bytes).
  *     0x10: use local absolute offsets (0 ... end - beg).
  *     0x20: use global absolute offsets (beg ... end).
+ *     0x40: TODO: show symbol names.
+ *     0x80: TODO: show source code.
+ *     0xf00: identation
  */
 void fputasm(state, FILE *fout, int beg, int end, int mode);
 
@@ -475,7 +471,7 @@ void fputasm(state, FILE *fout, int beg, int end, int mode);
  * @param ref Base offset of variable.
  * @param level Identation level. (Used for members and arrays)
  */
-void fputval(state, FILE *fout, symn var, stkval* ref, int flgs);
+void fputval(state, FILE *fout, symn var, stkval* ref, int level, int mode);
 
 // program error
 void perr(state rt, int level, const char *file, int line, const char *msg, ...);
@@ -710,5 +706,9 @@ int logTrace(state rt, int ident, int startlevel, int tracelevel);
 #ifdef _MSC_VER
 #pragma warning(disable: 4996)
 #endif
+
+static inline void _abort() {
+	//~ abort();
+}
 
 #endif

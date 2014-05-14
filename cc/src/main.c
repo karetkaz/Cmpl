@@ -18,15 +18,15 @@ application [global options] [local options]...
 
 		-api[<hex>][.<sym>]		output symbols
 		-asm[<hex>][.<fun>]		output assembly
-		-ast[<hex>]				output syntax tree
+		-ast[<hex>]				TEMP: output syntax tree
 
-		--[s|c]*				skip: stdlib | code geration
+		--[s|c]*				TEMP: skip: stdlib | code geration
 
 	<local options>:
 		-w[a|x|<hex>]			set warning level
-		-L<file>				import plugin (.so|.dll)
+		-L<file>				load library (.so|.dll)
 		-C<file>				compile source
-		<file>					if file extension is (.so|.dll) import else compile
+		<file>					if file extension is (.so|.dll) load as libraray else compile
 */
 
 //~ (wcl386 -cc -q -ei -6s -d2  -fe=../main *.c) && (rm -f *.o *.obj *.err)
@@ -42,7 +42,7 @@ application [global options] [local options]...
 // default values
 static const int wl = 9;			// warning level
 static const int ol = 2;			// optimize level
-static char mem[320 << 20];			// runtime memory
+static char mem[128 << 20];			// runtime memory
 
 const char* STDLIB = "stdlib.cvx";		// standard library
 
@@ -147,31 +147,6 @@ static char* parsecmd(char* ptr, const char* cmd, const char* sws) {
 
 	return ptr;
 }
-/*static char* matchstr(const char* t, const char* p, int ic) {
-	int i = 0;//, ic = flgs & 1;
-
-	for ( ; *t && p[i]; ++t, ++i) {
-		if (p[i] == '*') {
-			if (matchstr(t, p + i + 1, ic))
-				return (char*)(t - i);
-			return 0;
-		}
-
-		if (p[i] == '?' || p[i] == *t)		// skip | match
-			continue;
-
-		if (ic && p[i] == tolower(*t))		// ignore case
-			continue;
-
-		t -= i;
-		i = -1;
-	}
-
-	while (p[i] == '*')			// "a***" is "a"
-		++p;					// keep i for return
-
-	return (char*)(p[i] ? 0 : t - i);
-}// */
 
 static void usage(char* prog) {
 	FILE *out = stdout;
@@ -233,13 +208,12 @@ static int testFunction(libcArgs rt) {
 	if (cb != NULL) {
 		struct {int n;} args;
 		args.n = argi32(rt, 4);
-		return invoke(rt->rt, cb, NULL, &args, NULL, rt->fun);
+		return invoke(rt->rt, cb, NULL, &args, NULL);
 	}
 	return 0;
 }
 
 #if defined(USEPLUGINS)
-typedef struct pluginLib* pluginLib;
 static const char* pluginLibInstall = "ccvmInit";
 static const char* pluginLibDestroy = "ccvmDone";
 
@@ -251,33 +225,36 @@ static int installDll(state rt, int ccApiMain(state rt)) {
 
 #include <windows.h>
 static struct pluginLib {
-	void (*onClose)();
-	pluginLib next;			// next plugin
-	HANDLE lib;				// 
+	struct pluginLib *next;		// next plugin
+	void(*onClose)();
+	HANDLE lib;					// 
 } *pluginLibs = NULL;
 static void closeLibs() {
 	while (pluginLibs != NULL) {
-		if (pluginLibs->onClose) {
-			pluginLibs->onClose();
+		struct pluginLib *lib = pluginLibs;
+		pluginLibs = lib->next;
+
+		if (lib->onClose) {
+			lib->onClose();
 		}
-		if (pluginLibs->lib) {
-			FreeLibrary((HINSTANCE)pluginLibs->lib);
+		if (lib->lib) {
+			FreeLibrary((HINSTANCE)lib->lib);
 		}
-		free(pluginLibs);
-		pluginLibs = pluginLibs->next;
+		free(lib);
 	}
 }
 static int importLib(state rt, const char* path) {
 	int result = -1;
-	HANDLE lib = LoadLibraryA(path);
-	if (lib != NULL) {
-		int (*install)(state api) = (void*)GetProcAddress(lib, pluginLibInstall);
-		void (*destroy)() = (void*)GetProcAddress(lib, pluginLibDestroy);
+	HANDLE library = LoadLibraryA(path);
+	if (library != NULL) {
+		void *install = (void*)GetProcAddress(library, pluginLibInstall);
+		void *destroy = (void*)GetProcAddress(library, pluginLibDestroy);
 		if (install != NULL) {
-			pluginLib lib = malloc(sizeof(struct pluginLib));
+			struct pluginLib *lib = malloc(sizeof(struct pluginLib));
 			result = installDll(rt, install);
-			lib->onClose = destroy;
 			lib->next = pluginLibs;
+			lib->onClose = destroy;
+			lib->lib = library;
 			pluginLibs = lib;
 		}
 		else {
@@ -290,33 +267,36 @@ static int importLib(state rt, const char* path) {
 #elif (defined(__linux__))
 #include <dlfcn.h>
 static struct pluginLib {
+	struct pluginLib *next;		// next plugin
 	void (*onClose)();
-	pluginLib next;			// next plugin
-	void* lib;				// 
+	void *lib;					// 
 } *pluginLibs = NULL;
 static void closeLibs() {
 	while (pluginLibs != NULL) {
-		if (pluginLibs->onClose) {
-			pluginLibs->onClose();
+		struct pluginLib *lib = pluginLibs;
+		pluginLibs = lib->next;
+
+		if (lib->onClose) {
+			lib->onClose();
 		}
-		if (pluginLibs->lib) {
-			dlclose(pluginLibs->lib);
+		if (lib->lib) {
+			dlclose(lib->lib);
 		}
-		free(pluginLibs);
-		pluginLibs = pluginLibs->next;
+		free(lib);
 	}
 }
 static int importLib(state rt, const char* path) {
 	int result = -1;
-	void* lib = dlopen(path, RTLD_NOW);
-	if (lib != NULL) {
-		void* install = dlsym(lib, pluginLibInstall);
-		void* destroy = dlsym(lib, pluginLibDestroy);
+	void* library = dlopen(path, RTLD_NOW);
+	if (library != NULL) {
+		void* install = dlsym(library, pluginLibInstall);
+		void* destroy = dlsym(library, pluginLibDestroy);
 		if (install != NULL) {
-			pluginLib lib = malloc(sizeof(struct pluginLib));
+			struct pluginLib *lib = malloc(sizeof(struct pluginLib));
 			result = installDll(rt, install);
 			lib->onClose = destroy;
 			lib->next = pluginLibs;
+			lib->lib = library;
 			pluginLibs = lib;
 		}
 		else {
@@ -420,7 +400,7 @@ int program(int argc, char* argv[]) {
 		}
 
 		// execute code
-		else if (strncmp(arg, "-x", 2) == 0) {		// exec(&| debug)
+		else if (strncmp(arg, "-x", 2) == 0) {		// execute(&| debug)
 			char* str = arg + 2;
 
 			if (*str == 'v') {
@@ -690,11 +670,29 @@ int main(int argc, char* argv[]) {
 	//setbuf(stdout, NULL);
 	//setbuf(stderr, NULL);
 	return program(argc, argv);
+
+	// TODO: what is wrong here ?
+	//~ state rt = rtInit(mem, sizeof(mem));
+	//~ importLib(rt, "test.gl/gl.dll");
+	//~ closeLibs();
+	//~ return 0;
 }
 
 static int haltVerbose(libcArgs rt) {
-	symn var = rt->fun->prms;
-	for ( ; var; var = var->next) {
+	symn var;
+	FILE *out = stdout;
+
+	// print the global variables and their values,
+	// only when returning from execution of function <init>
+	if (rt->fun != rt->rt->init) {
+		return 0;
+	}
+
+	if (rt->rt->logf != NULL) {
+		out = rt->rt->logf;
+	}
+	fputfmt(out, "\n");
+	for (var = rt->rt->defs; var; var = var->next) {
 		char* ofs;
 
 		if (var->call)
@@ -704,10 +702,10 @@ static int haltVerbose(libcArgs rt) {
 			continue;
 
 		if (var->file && var->line) {
-			fputfmt(stdout, "%s:%d: ", var->file, var->line);
+			fputfmt(out, "%s:%d: ", var->file, var->line);
 		}
 		else {
-			fputfmt(stdout, "var: ");
+			fputfmt(out, "var: ");
 		}
 
 		if (var->stat) {
@@ -719,8 +717,8 @@ static int haltVerbose(libcArgs rt) {
 			ofs = (char*)rt->retv + rt->fun->prms->offs - var->offs;
 		}
 
-		fputval(rt->rt, stdout, var, (stkval*)ofs, 0);
-		fputc('\n', stdout);
+		fputval(rt->rt, out, var, (stkval*)ofs, 0, 1);
+		fputc('\n', out);
 	}
 	//~ logTrace(rt->rt, 1, 0, 20);
 
@@ -746,17 +744,18 @@ static int dbgCon(state rt, int pu, void* ip, long* sp, int ss) {
 	}
 
 	if (ss > 0 && printvars != NULL) {
-		fputval(rt, stdout, printvars, (stkval*)sp, 0);
+		fputval(rt, stdout, printvars, (stkval*)sp, 0, 1);
 		fputfmt(stdout, "\n");
 	}
 
 	IP = ((char*)ip) - ((char*)rt->_mem);
 	dbg = getCodeMapping(rt, IP);
 	if (dbg != NULL) {
-		fputfmt(stdout, "%s:%d:exec:[sp(%02d)] %9.*A\n", dbg->file, dbg->line, ss, IP, ip);
+		int32_t SP = ss > 0 ? *(int32_t*)sp : 0xbadbad;
+		fputfmt(stdout, "%s:%d:exec:[%06x sp(%02d): %08x] %9.*A\n", dbg->file, dbg->line, IP, ss, SP, IP, ip);
 	}
 	else {
-		fputfmt(stdout, ">exec:[sp(%02d)] %9.*A\n", ss, IP, ip);
+		fputfmt(stdout, ">exec:[%06x sp(%02d)] %9.*A\n", IP, ss, IP, ip);
 	}
 
 	if (cmd != 'N') for ( ; ; ) {
@@ -831,7 +830,7 @@ static int dbgCon(state rt, int pu, void* ip, long* sp, int ss) {
 					symn sym = ccFindSym(rt->cc, NULL, arg);
 					fputfmt(stdout, "arg:%T", sym);
 					if (sym && sym->kind == TYPE_ref && !sym->stat) {
-						fputval(rt, stdout, sym, (stkval*)sp, 0);
+						fputval(rt, stdout, sym, (stkval*)sp, 0, 1);
 					}
 				}
 			} break;

@@ -148,7 +148,7 @@ int gencode(state, int mode);
 int execute(state, void* extra, int ss);
 
 /// Invoke a function; @see state.api.invoke
-int invoke(state, symn fun, void* ret, void* args, void* extra, symn trace);
+int invoke(state, symn fun, void* ret, void* args, void* extra);
 
 /// Lookup symbol by offset; @see state.api.mapsym
 symn mapsym(state, int offs, int callsOnly);

@@ -6,9 +6,9 @@ struct Biorithm {
 	string label;
 }
 
-Biorithm biorithm = Biorithm(0x5050ff, 23,  0, "Physical - Fizikai %d%%");
+//~ Biorithm biorithm = Biorithm(0x5050ff, 23,  0, "Physical - Fizikai %d%%");
 
-/* TODO: Biorithm biorithms[] = { ... }
+//~ /* TODO: Biorithm biorithms[] = { ... }
 const Biorithm biorithms[] = {
 	Biorithm(0x5050ff, 23,  0, "Physical - Fizikai %d%%"),
 	Biorithm(0xff0000, 28,  0, "Emotional - Erzelmi %d%%"),
@@ -19,3 +19,4 @@ const Biorithm biorithms[] = {
 	Biorithm(0x9466db, 28, 33, "Wisdom - Bolcsesseg %d%%")
 }; //~ */
 
+//~ println(millis());

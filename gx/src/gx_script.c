@@ -49,6 +49,7 @@ extern struct gx_Surf font;		// font
 
 //~ extern struct vector eye, tgt, up;
 
+extern int readorevalMesh(mesh msh, char *src, int line, char *tex, int div);
 extern vector getobjvec(int Normal);
 extern void meshInfo(mesh msh);
 
@@ -443,7 +444,7 @@ static int surfCall(libcArgs rt) {
 					cBuffY += sdst->scanLen;
 					for (sx = 0; sx < sdst->width; sx += 1) {
 						struct {int32_t x, y;} args = {sx, sy};
-						if (invoke(rt_, callback, &cBuff[sx], &args, NULL, rt->fun) != 0) {
+						if (invoke(rt_, callback, &cBuff[sx], &args, NULL) != 0) {
 							//~ dump(s, dump_sym | dump_asm, callback, "error:&-T\n", callback);
 							return -1;
 						}
@@ -475,7 +476,7 @@ static int surfCall(libcArgs rt) {
 					cBuffY += sdst->scanLen;
 					for (sx = 0; sx < sdst->width; sx += 1) {
 						struct {int32_t col;} args = {cBuff[sx]};
-						if (invoke(rt_, callback, &cBuff[sx], &args, NULL, rt->fun) != 0) {
+						if (invoke(rt_, callback, &cBuff[sx], &args, NULL) != 0) {
 							//~ dump(s, dump_sym | dump_asm, callback, "error:&-T\n", callback);
 							return -1;
 						}
@@ -528,7 +529,7 @@ static int surfCall(libcArgs rt) {
 						long* cbsrc = (long*)sptr;
 						for (x = clip.x; x < x1; x += 1) {
 							struct {int32_t dst, src;} args = {*cbdst, *cbsrc};
-							if (invoke(rt_, callback, cbdst, &args, NULL, rt->fun) != 0) {
+							if (invoke(rt_, callback, cbdst, &args, NULL) != 0) {
 								//~ dump(s, dump_sym | dump_asm, callback, "error:&-T\n", callback);
 								return -1;
 							}
@@ -581,7 +582,7 @@ static int surfCall(libcArgs rt) {
 					for (x01 = sx = 0; sx < sdst->width; sx += 1, x01 += dx01) {
 						struct {float64_t x, y;} args = {x01, y01};
 						struct vector result;
-						if (invoke(rt_, callback, &result, &args, NULL, rt->fun) != 0) {
+						if (invoke(rt_, callback, &result, &args, NULL) != 0) {
 							//~ dump(s, dump_sym | dump_asm, callback, "error:&-T\n", callback);
 							return -1;
 						}
@@ -614,7 +615,7 @@ static int surfCall(libcArgs rt) {
 					for (sx = 0; sx < sdst->width; sx += 1) {
 						struct vector result;
 						struct vector args = vecldc(rgbval(cBuff[sx]));
-						if (invoke(rt_, callback, &result, &args, NULL, rt->fun) != 0) {
+						if (invoke(rt_, callback, &result, &args, NULL) != 0) {
 							//~ dump(s, dump_sym | dump_asm, callback, "error:&-T\n", callback);
 							return -1;
 						}
@@ -677,7 +678,7 @@ static int surfCall(libcArgs rt) {
 								};// */
 								args.dst = vecldc(rgbval(*cbdst));
 								args.src = vecldc(rgbval(*cbsrc));
-								if (invoke(rt_, callback, &result, &args, NULL, rt->fun) != 0) {
+								if (invoke(rt_, callback, &result, &args, NULL) != 0) {
 									return -1;
 								}
 								*(argb*)cbdst = rgbmix16(*(argb*)cbdst, vecrgb(&result), alpha16);
@@ -700,7 +701,7 @@ static int surfCall(libcArgs rt) {
 								};// */
 								args.dst = vecldc(rgbval(*cbdst));
 								args.src = vecldc(rgbval(*cbsrc));
-								if (invoke(rt_, callback, &result, &args, NULL, rt->fun) != 0) {
+								if (invoke(rt_, callback, &result, &args, NULL) != 0) {
 									return -1;
 								}
 								*cbdst = vecrgb(&result).col;
