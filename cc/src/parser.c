@@ -25,7 +25,7 @@ Lexical elements
 			enum,
 			for,
 			if,
-			module,
+			?module,
 			operator,
 			parallel,
 			return,
@@ -109,6 +109,7 @@ static int readChr(ccState cc) {
 		if (chr == '\r' && cc->fin._ptr[1] == '\n') {
 			cc->fin._cnt -= 1;
 			cc->fin._ptr += 1;
+			cc->fpos += 1;
 		}
 
 		// next line
@@ -116,12 +117,14 @@ static int readChr(ccState cc) {
 			cc->line += 1;
 		}
 
+		cc->lpos = cc->fpos + 1;
 		chr = '\n';
 	}
 
 	//~ if (cc->file && cc->line) {prerr("", "%s:%d: %c", cc->file, cc->line, chr);}
 	cc->fin._cnt -= 1;
 	cc->fin._ptr += 1;
+	cc->fpos += 1;
 	return chr;
 }
 
@@ -576,6 +579,7 @@ static int readTok(ccState cc, astn tok) {
 	memset(tok, 0, sizeof(*tok));
 	tok->file = cc->file;
 	tok->line = cc->line;
+	tok->colp = cc->fpos - cc->lpos;
 
 	// scan
 	if (chr != -1) switch (chr) {
@@ -2530,8 +2534,8 @@ static astn decl(ccState cc, int mode) {
 				if (def->flds && pack == vm_size && !byref) {
 					ctorArg(cc, def);
 				}
-				if (byref) {
-					warn(cc->s, 15, def->file, def->line, "constructor not generated for reference type `%T`", def);
+				else {
+					warn(cc->s, 15, def->file, def->line, "default constructor not generated for struct `%T`", def);
 				}
 
 				if (!def->flds && !def->type) {
@@ -2623,7 +2627,7 @@ static astn decl(ccState cc, int mode) {
 					param->cast = param->type->cast;
 				}
 				else {
-					int used = usedCnt(param) - 1;
+					int used = usages(param) - 1;
 					// warn to cache if it is used more than once
 					if (used > 1) {
 						warn(cc->s, 8, param->file, param->line, "parameter %T may be cached (used %d times in expression)", param, used);
@@ -3072,7 +3076,8 @@ static astn stmt(ccState cc, int mode) {
 
 		if (!peekTok(cc, STMT_do)) {
 			astn val = expr(cc, TYPE_vid);		// do lookup
-			if (val->kind == TYPE_ref && val->ref.link == result) {
+			if (val == NULL) {/* error */}
+			else if (val->kind == TYPE_ref && val->ref.link == result) {
 				// skip 'return result;' statements
 			}
 			else if (result->type == cc->type_vid && val->type == result->type) {
@@ -3094,8 +3099,9 @@ static astn stmt(ccState cc, int mode) {
 		skiptok(cc, STMT_do, 1);
 	}
 	else if ((node = decl(cc, TYPE_any))) {	// declaration
-		if (mode)
+		if (mode) {
 			error(cc->s, node->file, node->line, "unexpected declaration `%+k`", node);
+		}
 	}
 	else if ((node = expr(cc, TYPE_vid))) {	// expression
 		astn tmp = newnode(cc, STMT_do);

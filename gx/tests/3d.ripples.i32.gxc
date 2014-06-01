@@ -24,9 +24,10 @@ int mx = 0;
 int my = 0;
 
 gxSurf tmp = gxSurf(division, division);
-gxSurf img = gxSurf("media/images/download.jpg");
+//~ gxSurf img = gxSurf("media/images/download.jpg");
 //~ gxSurf img = gxSurf("media/images/ex1.jpg");
 //~ gxSurf img = gxSurf("media/images/nol.bmp");
+gxSurf img = gxSurf(100, 100);
 int imh = height(img);
 int imw = width(img);
 

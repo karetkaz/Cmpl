@@ -15,26 +15,6 @@
 //~ #define fputstr(__OUT, __STR) fputs(__STR, __OUT)
 #define fputchr(__OUT, __CHR) fputc(__CHR, __OUT)
 
-enum Format {
-	noIden = 0x1000,		// TODO: to be removed: use -level instead.
-	//~ noName = 0x2000,
-
-	alPars = 0x0100,
-	nlBody = 0x0400,
-	nlElIf = 0x0800,
-
-	// sym & ast
-	prType = 0x0010,
-
-	prQual = 0x0020,
-	prCast = 0x0020,
-
-	prInit = 0x0040,
-
-	//~ prArgs = 0x0080,
-	prLine = 0x0080
-};
-
 static char* fmtuns(char* dst, int max, int prc, int radix, uint64_t num) {
 	char* ptr = dst + max;
 	int p = 0, plc = ',';
@@ -1127,7 +1107,7 @@ static void dumpsym(FILE* fout, symn sym, int mode) {
 		}
 
 		if (print_line && ptr->file && ptr->line) {
-			fputfmt(fout, "%s:%d:", ptr->file, ptr->line);
+			fputfmt(fout, "%s:%u: ", ptr->file, ptr->line);
 		}
 
 		// qualified name with arguments

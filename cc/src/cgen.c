@@ -461,7 +461,6 @@ static inline int emitvar(state rt, symn var) {
 	}
 	return emitint(rt, opc_ldcr, var->offs);
 }
-//# }
 
 /**
  * @brief Generate bytecode from abstract syntax tree.
@@ -800,7 +799,7 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 					else {
 						variant = linkOf(argv);
 						if (variant && !(variant->cast == TYPE_ref || variant->type->cast == TYPE_ref)) {
-							warn(rt, 2, argv->file, argv->line, "argument `%+k` is not explicitly passed by reference", argv);
+							warn(rt, 2, argv->file, argv->line, "argument `%+k` is not explicitly passed by reference as variant", argv);
 						}
 					}
 					if (variant != NULL) {
@@ -812,12 +811,22 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 							trace("%+k", ast);
 							return TYPE_any;
 						}
-						if (variant->cast == TYPE_ref/* && variant->type->cast != TYPE_ref*/) {
-							// load a reference type
-							if (!emitint(rt, opc_ldi, vm_size)) {
-								trace("%+k", ast);
-								return TYPE_any;
-							}
+
+						switch (variant->cast) {
+							default:
+								break;
+
+							case TYPE_var:	// another variant ?
+							case TYPE_arr:	// slice
+								warn(rt, 2, argv->file, argv->line, "argument `%+k` converted to variant may be incomplete", argv);
+
+							case TYPE_ref:
+								// load a reference type
+								if (!emitint(rt, opc_ldi, vm_size)) {
+									trace("%+k", ast);
+									return TYPE_any;
+								}
+								break;
 						}
 						return TYPE_var;
 					}
@@ -839,7 +848,10 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 						variant = linkOf(argv->op.rhso);
 					}
 					else {
-						warn(rt, 2, argv->file, argv->line, "argument `%+k` is not explicitly passed by reference", argv);
+						variant = linkOf(argv);
+						if (variant && !(variant->cast == TYPE_ref || variant->type->cast == TYPE_ref)) {
+							warn(rt, 2, argv->file, argv->line, "argument `%+k` is not explicitly passed by reference as pointer", argv);
+						}
 					}
 					if (variant != NULL) {
 						if (!emitvar(rt, variant)) {
@@ -898,7 +910,7 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 
 					while (an && param) {
 						int inlineArg = param->cast == TYPE_def;
-						int useCount = usedCnt(param) - 1;
+						int useCount = usages(param) - 1;
 						astn arg = an;
 
 						// TODO: skip over aliases?
@@ -2113,6 +2125,8 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 					trace("%+k", ast);
 					return TYPE_any;
 				}
+				//~ trace("cgen[%t->%t](%+k)", ret, get, ast);
+				get = ret = TYPE_int;
 			} break;
 			//~ case TYPE_f32: if (!emitopc(s, f32_i32)) return TYPE_any; break;
 			//~ case TYPE_f64: if (!emitopc(s, f64_i32)) return TYPE_any; break;
@@ -2269,7 +2283,8 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 		debug("zero extend: to (%k)[%t->%t] '%-T'", ast, ret, get, ast->type);
 		switch (ast->type->size) {
 			default:
-				fatal("Error");
+				error(rt, ast->file, ast->line, "Error zero extending `%+k` of size: %d", ast, ast->type->size);
+				return TYPE_any;
 				break;
 
 			case 1:
@@ -2295,7 +2310,7 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 	if (rt->dbg != NULL && ipdbg > 0) {
 		int ipEnd = emitopc(rt, markIP);
 		if (ipdbg < ipEnd) {
-			addCodeMapping(rt, ast, ipdbg, ipEnd);
+			dbgMapCode(rt, ast, ipdbg, ipEnd);
 		}
 	}
 

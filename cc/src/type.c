@@ -613,8 +613,29 @@ symn lookup(ccState cc, symn sym, astn ref, astn args, int raise) {
 						default:
 							break;
 						case TYPE_rec:
+							// Complex x = Complex(Complex(3,4));
+							if (sym2 == args->type) {
+								isBasicCast = 1;
+							}
+							// variant(variable)
+							else if (sym2 == cc->s->type_var) {
+								isBasicCast = 1;
+							}
+							break;
+
 						case TYPE_ref:
+							// enable pointer(ref) and typename(ref)
+							if (sym2 == cc->type_ptr || sym2 == cc->type_rec) {
+								isBasicCast = 1;
+							}
+							break;
+
 						case TYPE_vid:
+							// void(0);
+							if (sym2 == cc->type_vid) {
+								isBasicCast = 1;
+							}
+							break;
 						case TYPE_bit:
 						case TYPE_u32:
 						case TYPE_i32:
@@ -678,7 +699,7 @@ symn lookup(ccState cc, symn sym, astn ref, astn args, int raise) {
 
 	if (sym == NULL && best) {
 		if (found > 1)
-			warn(cc->s, 2, ref->file, ref->line, "using overload `%-T` of %d", best, found);
+			warn(cc->s, 2, ref->file, ref->line, "using overload `%-T` of %d declared symbols.", best, found);
 		sym = best;
 	}
 
@@ -714,8 +735,9 @@ symn declare(ccState s, ccToken kind, astn tag, symn typ) {
 
 	if (def != NULL) {
 
+		def->file = tag->file;
 		def->line = tag->line;
-		def->file = s->file;
+		def->colp = tag->colp;
 		def->used = tag;
 
 		tag->type = typ;
@@ -768,7 +790,7 @@ int istype(symn sym) {
 	return 0;
 }
 
-int usedCnt(symn sym) {
+int usages(symn sym) {
 	int result = 0;
 	astn usage;
 	for (usage = sym->used; usage; usage = usage->ref.used) {

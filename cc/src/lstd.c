@@ -551,6 +551,9 @@ static int libCallDebug(libcArgs args) {
 	if (rt->logf != NULL && loglevel != 0) {
 		int isOutput = 0;
 
+		if (!(message || (objref && objtyp))) {
+			message = "";
+		}
 		// position where the function was invoked
 		if (file != NULL && line > 0) {
 			fputfmt(rt->logf, "%s:%u", file, line);
@@ -568,11 +571,7 @@ static int libCallDebug(libcArgs args) {
 			if (isOutput) {
 				fputfmt(rt->logf, ": ");
 			}
-			// indirect reference
-			if (objtyp->cast == TYPE_ref) {
-				//~ objref = argval(args, 5 * vm_size, NULL, 0);
-			}
-			fputval(rt, rt->logf, objtyp, objref, 0, 1);
+			fputval(rt, rt->logf, objtyp, objref, 0, prType);
 			isOutput = 1;
 		}
 

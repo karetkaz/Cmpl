@@ -1,7 +1,22 @@
-struct Random {
-	define multiplier = 0x5deece66d;
-	int seed;
+
+struct Biorithm {
+	int color;
+	int period;
+	int period2;
+	string label;
 }
 
-define Random(int64 seed) = Random(int64.And(int64.Xor(seed, Random.multiplier), (int64.Shl(1, 48) - 1)));
+//~ Biorithm biorithm = Biorithm(0x5050ff, 23,  0, "Physical - Fizikai %d%%");
 
+//~ /* TODO: Biorithm biorithms[] = { ... }
+const Biorithm biorithms[7] = {
+	Biorithm(0x5050ff, 23,  0, "Physical - Fizikai %d%%"),
+	Biorithm(0xff0000, 28,  0, "Emotional - Erzelmi %d%%"),
+	Biorithm(0x00ff00, 33,  0, "Intellectual - Szellemi %d%%"),
+	Biorithm(0xdadada, 38,  0, "Intuitive - Megerzes %d%%"),
+	Biorithm(0x6f6f6f, 23, 33, "Mastery - Iranyitas %d%%"),
+	Biorithm(0xfeab00, 23, 28, "Passion - Szenvedely %d%%"),
+	Biorithm(0x9466db, 28, 33, "Wisdom - Bolcsesseg %d%%")
+}; //~ */
+
+//~ println(millis());

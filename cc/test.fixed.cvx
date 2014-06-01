@@ -456,9 +456,9 @@ int test(const assertInfo info, double eps) {
 	return Math.abs(info.returned - info.expected) < eps ? 0 : Debug.debug;
 }
 
-define assert(const assertInfo &info) = debug("test failed", test(info, 1e-4), Debug.notrace, emit(variant, ref(info), ref(assertInfo)));
+define assert(const assertInfo &info) = debug("test failed", test(info, 1e-4), Debug.notrace, variant(&info));
 define assertEquals(string f, float64 a, fixed b) = assert(assertInfo(f, a, float64(b), b));
-//~ define assertEquals(string f, float64 a, fixed ^b) = void(0);
+//~ define assertEquals(string f, float64 a, fixed b) = void(0);
 
 //~ double fixed_test0 = float64(Fixed.add(fixed(2.225), fixed(3)));
 

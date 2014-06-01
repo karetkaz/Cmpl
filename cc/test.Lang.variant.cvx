@@ -1,18 +1,12 @@
-struct DebugInfo {
-	string func;
-	double x;
-	double expected;
-	double got;
-}
-
-//~ DebugInfo info = DebugInfo("sin", 0, 0.1, 0.09);
-
-variant varNull = variant(&null);
+variant var0Null = variant(&null);			// TODO: BUG
+variant varNull = variant(null);
+variant varVariant = variant(&varNull);	// this is interresting ...
+variant var2Variant = variant(&varVariant);	// this is interresting ...
 
 int32 &nullInt = null;
 variant varNullInt = variant(&nullInt);
 int32 zeroInt = 0;
-variant varzeroInt = variant(&zeroInt);
+variant varZeroInt = variant(&zeroInt);
 
 string infoString = "blah";
 variant varString = variant(&infoString);
@@ -28,4 +22,3 @@ variant varArray = variant(&intArray);
 
 int intSlice[] = intArray;
 variant varSlice = variant(&intSlice);
-

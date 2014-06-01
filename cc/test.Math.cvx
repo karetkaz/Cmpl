@@ -61,7 +61,7 @@ struct debugInfo {
 	double returned;//%%.50f
 }
 
-define assert(bool condition, const debugInfo &dbginf) = debug("test failed", condition ? 0 : Debug.debug, Debug.notrace, emit(variant, ref(dbginf), ref(debugInfo)));
+define assert(bool condition, const debugInfo &dbginf) = debug("test failed", condition ? 0 : Debug.debug, Debug.notrace, variant(dbginf));
 define assert(string func, double arg, double ret, double exp, int i) = assert(Math.abs(exp - ret) < epsilon, debugInfo(i, func, arg, ret, exp));
 
 for (int i = 0; i < vf.length; i += 1) {

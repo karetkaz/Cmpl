@@ -26,9 +26,9 @@ extern "C" {
 #endif
 
 typedef struct symNode *symn;			// symbol
-typedef struct stateRec *state;			// runtime
-typedef struct ccStateRec *ccState; 	// compiler
-typedef struct dbgStateRec *dbgState;	// debugger
+typedef struct stateRec *state;			// runtimeContext
+typedef struct ccStateRec *ccState; 	// compilerContext
+typedef struct dbgStateRec *dbgState;	// debugContext
 typedef struct libcArgsRec *libcArgs;	// libcall
 
 /**

@@ -19,7 +19,7 @@ enum {
 	creg_eswz = 0x0400 | creg_eopc,		// swizzle constants: emit.swz.(xxxx, ... xyzw, ... wwww)
 
 	// register defaults if ccInit not invoked explicitly.
-	creg_def  = creg_tptr + creg_tvar + creg_eopc,
+	creg_def  = creg_tptr + creg_tvar + creg_eswz,
 
 	// gencode(cgen_xxx | (level & 0xff))
 	cgen_opti = 0x00ff,		// optimze code generation

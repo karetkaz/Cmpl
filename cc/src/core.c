@@ -83,13 +83,15 @@ void* rtAlloc(state rt, void* ptr, unsigned size) {
 	 .
 	 :
 	 +------+------+
-	 | next | prev |
+	 | next        | next chunk (allocated or free)
+	 | prev        | previous chunk (null for free chunks)
 	 +------+------+
 	 |             |
 	 .             .
 	 : ...         :
-	 +-------------
-	 | next | prev |
+	 +-------------+
+	 | next        |
+	 | prev        |
 	 +------+------+
 	 |             |
 	 .             .
@@ -99,13 +101,15 @@ void* rtAlloc(state rt, void* ptr, unsigned size) {
 	*/
 
 	typedef struct memchunk {
-		struct memchunk* next;
-		struct memchunk* prev;		// not null for used memory
-		char data[];
+		struct memchunk* prev;		// null for free chunks
+		struct memchunk* next;		// next chunk
+		char data[0];				// here begins the user data
+		//~ struct memchunk* free;		// TODO: next free chunk oredered by size
+		//~ struct memchunk* free_skip;	// TODO: next free whitch 2x biger tahan this
 	} *memchunk;
 
-	const int minAllocationSize = 16;
-	memchunk chunk = (memchunk)((char*)ptr - sizeof(struct memchunk));
+	const int minAllocationSize = sizeof(struct memchunk);
+	memchunk chunk = (memchunk)((char*)ptr - offsetOf(memchunk, data));
 	unsigned allocsize = padded(size + minAllocationSize, minAllocationSize);
 
 	// memory manager is not initialized, initialize it first
@@ -120,14 +124,18 @@ void* rtAlloc(state rt, void* ptr, unsigned size) {
 		last->prev = NULL;
 
 		rt->vm.heap = heap;
+		perr(rt, 0, NULL, 0, "init memmgr(chunk size: %d)", sizeof(struct memchunk));
 	}
 
 	// realloc or free.
 	if (ptr != NULL) {
 		unsigned chunksize = chunk->next ? ((char*)chunk->next - (char*)chunk) : 0;
 
-		dieif((unsigned char*)ptr < rt->_mem, "memmgr: invalid reference");
-		dieif((unsigned char*)ptr > rt->_mem + rt->_size, "memmgr: invalid reference");
+		if ((unsigned char*)ptr < rt->_beg || (unsigned char*)ptr > rt->_end) {
+			dieif((unsigned char*)ptr < rt->_beg, "invalid heap reference(%06x)", vmOffset(rt, ptr));
+			dieif((unsigned char*)ptr > rt->_end, "invalid heap reference(%06x)", vmOffset(rt, ptr));
+			return NULL;
+		}
 
 		if (1) { // extra check if ptr is in used list.
 			memchunk find = rt->vm.heap;
@@ -136,8 +144,11 @@ void* rtAlloc(state rt, void* ptr, unsigned size) {
 				prev = find;
 				find = find->next;
 			}
-			dieif(find != chunk, "memmgr: pointer not in list.");
-			dieif(chunk->prev != prev, "memmgr: pointer not in used list.");
+			if (find != chunk || chunk->prev != prev) {
+				dieif(find != chunk, "unallocated reference(%06x)", vmOffset(rt, ptr));
+				dieif(chunk->prev != prev, "unallocated reference(%06x)", vmOffset(rt, ptr));
+				return NULL;
+			}
 		}
 
 		if (size == 0) {							// free
@@ -149,16 +160,17 @@ void* rtAlloc(state rt, void* ptr, unsigned size) {
 				next = next->next;
 				chunk->next = next;
 				if (next && next->prev != NULL) {
-					next->prev = prev;
+					next->prev = chunk;
 				}
 			}
 
 			// merge with previos block if free
 			if (prev && prev->prev == NULL) {
 				chunk = prev;
-				prev->next = next;
-				if (next->prev != NULL)
-					next->prev = prev;
+				chunk->next = next;
+				if (next && next->prev != NULL) {
+					next->prev = chunk;
+				}
 			}
 
 			// mark as unused.
@@ -189,7 +201,7 @@ void* rtAlloc(state rt, void* ptr, unsigned size) {
 			}
 		}
 		else {										// grow
-			error(rt, __FILE__, __LINE__, "not implemented the case when realloc to grow.");
+			error(rt, __FILE__, __LINE__, "can not grow allocated chunk (unimplemented).");
 			chunk = NULL;
 		}
 	}
@@ -220,16 +232,19 @@ void* rtAlloc(state rt, void* ptr, unsigned size) {
 			chunk = next;
 		}
 	}
+	else {
+		chunk = NULL;
+	}
 
 	// debug
-	else if (1) {
-		memchunk mem = ptr ? (memchunk)((char*)ptr - sizeof(struct memchunk)) : NULL;
-		perr(rt, 0, __FILE__, __LINE__, "heap info: memmgr(%06x, %d)", vmOffset(rt, mem), size);
+	if (0 || (ptr == NULL && size == 0)) {
+		memchunk mem;
+		perr(rt, 0, NULL, 0, "memmgr(%06x, %d): %06x; chunk[%06x, size: %d]", vmOffset(rt, ptr), size, vmOffset(rt, chunk ? chunk->data : NULL), vmOffset(rt, chunk), allocsize);
 		for (mem = rt->vm.heap; mem; mem = mem->next) {
 			char *status = mem->prev ? "used" : "free";
 			if (mem->next) {
 				int size = (char*)mem->next - (char*)mem - sizeof(struct memchunk);
-				perr(rt, 0, NULL, 0, "%s chunk[%d]: @%06x; next: %06x; prev: %06x", status, size, vmOffset(rt, mem), vmOffset(rt, mem->next), vmOffset(rt, mem->prev));
+				perr(rt, 0, NULL, 0, "!%s chunk[@%06x; next: %06x; prev: %06x; data: %06x; size: %d]", status, vmOffset(rt, mem), vmOffset(rt, mem->next), vmOffset(rt, mem->prev), vmOffset(rt, mem->data), size);
 			}
 		}
 	}
@@ -388,6 +403,7 @@ static void install_type(ccState cc, int mode) {
 
 	if (mode & creg_tptr) {
 		type_ptr = install(cc,  "pointer", ATTR_stat | ATTR_const | TYPE_rec, TYPE_ref, vm_size, type_rec, NULL);
+		type_ptr->pfmt = "@%06x";
 		cc->null_ref = install(cc, "null", ATTR_stat | ATTR_const | TYPE_ref, TYPE_any, vm_size, type_ptr, NULL);
 	}
 	if (mode & creg_tvar) {
@@ -460,7 +476,8 @@ static void install_emit(ccState cc, int mode) {
 		symn u32, i32, i64, f32, f64, v4f, v2d;
 
 		ccBegin(rt, NULL);
-		install(cc, "ref", ATTR_stat | ATTR_const | TYPE_rec, TYPE_ref, vm_size, cc->type_rec, NULL);
+		//~ cc->emit_ref = install(cc, "ref", ATTR_stat | ATTR_const | TYPE_rec, TYPE_ref, vm_size, cc->type_rec, NULL);
+		install(cc, "ref", ATTR_stat | ATTR_const | TYPE_def, TYPE_def, 0, cc->type_ptr, NULL);
 
 		u32 = install(cc, "u32", ATTR_stat | ATTR_const | TYPE_rec, TYPE_u32, 4, cc->type_rec, NULL);
 		i32 = install(cc, "i32", ATTR_stat | ATTR_const | TYPE_rec, TYPE_i32, 4, cc->type_rec, NULL);
@@ -915,7 +932,7 @@ dbgInfo getCodeMapping(state rt, int position) {
 	}
 	return NULL;
 }
-dbgInfo addCodeMapping(state rt, astn ast, int start, int end) {
+dbgInfo dbgMapCode(state rt, astn ast, int start, int end) {
 	dbgInfo result = NULL;
 	if (rt->dbg != NULL) {
 		int i;

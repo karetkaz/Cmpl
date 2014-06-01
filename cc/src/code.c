@@ -154,7 +154,7 @@ static inline void* getip(state rt, int pos) {
 }
 
 int vmOffset(state rt, void* ptr) {
-	dieif(!isValidOffset(rt, ptr), "invalid reference");
+	dieif(!isValidOffset(rt, ptr), "invalid reference(%06x)", ((unsigned char*)ptr - rt->_mem));
 	return ptr ? (unsigned char*)ptr - rt->_mem : 0;
 }
 
@@ -729,11 +729,11 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 
 		case opc_st64:
 		case opc_ld64:
-			/*if ((ip->rel & 7) != 0) {
+			/*TODO: if ((ip->rel & 7) != 0) {
 				trace("Error: %d", ip->rel);
 				return 0;
 			}*/
-			dieif((ip->rel & 7) != 0, "Error @ip @%06x", vmOffset(rt, ip));
+			//~ dieif((ip->rel & 7) != 0, "Error @ip @%06x", vmOffset(rt, ip));
 			dieif(ip->rel != arg.i8, "Error");
 			break;
 
@@ -833,7 +833,7 @@ static inline void logProc(cell pu, int cp, char* msg) {
 //~ static inline void dbugerr2(state rt, char* error_msg, int error_code, cell cpu, void* ip, int ss) {
 static inline void dbugerr2(state rt, char *file, int line, char* error_msg, int error_code, cell cpu, void* ip, int ss) {
 	error(rt, file, line, "exec: %s(%?d):[sp%02d]@%.*A rw@%06x", error_msg, error_code, ss, vmOffset(rt, ip), ip);
-	logTrace(rt, 1, 0, 100);
+	logTrace(rt, 1, -1, 100);
 	(void)cpu;
 }
 #define dbugerr(rt, error_msg, error_code, cpu, ip, ss) dbugerr2(rt, __FILE__, __LINE__, error_msg, error_code, cpu, ip, ss)
@@ -1384,8 +1384,26 @@ void fputasm(state rt, FILE* fout, int beg, int end, int mode) {
 }
 
 void fputval(state rt, FILE* fout, symn var, stkval* ref, int level, int mode) {
-	symn typ = var->kind == TYPE_ref ? var->type : var;
-	char* fmt = var->pfmt ? var->pfmt : typ->pfmt;
+	symn typ = var;
+	char* fmt = var->pfmt;
+
+	static int initStatic = 1;
+	static struct symNode func;	// for printig only
+	static struct symNode type;	// for printig only
+	//~ static struct symNode defn;	// for printig only
+
+	if (initStatic) {
+		initStatic = 0;
+
+		type = *rt->defs;
+		type.name = "<typename>";
+
+		func = *rt->defs;
+		func.name = "<function>";
+
+		//~ defn = *rt->defs;
+		//~ defn.name = "<inline>";
+	}
 
 	if (level > 0) {
 		fputfmt(fout, "%I", level);
@@ -1394,24 +1412,46 @@ void fputval(state rt, FILE* fout, symn var, stkval* ref, int level, int mode) {
 		level = -level;
 	}
 
-	if (var != typ) {
-		if (var->cast == TYPE_ref && typ->cast != TYPE_ref) {
-			fputfmt(fout, "&");
+	if (var->kind == TYPE_ref) {
+		typ = var->call ? &func : var->type;
+		fmt = var->pfmt ? var->pfmt : typ->pfmt;
+
+		//~ fputfmt(fout, "@%06x", vmOffset(rt, ref));
+		if (var != typ && var->cast == TYPE_ref && ref != NULL) {	// indirect reference
+			//~ fputfmt(fout, "->@%06x", vmOffset(rt, ref));
+			ref = getip(rt, ref->u4);
 		}
-		fputfmt(fout, "%T: ", var);
+		//~ fputfmt(fout, ": ");
 	}
-	if (var->call) {
-		fputfmt(fout, "function(@%?c%06x)", var->stat ? 0 : '+', var->offs);
-		return;
+	else if (var->kind == TYPE_def) {
+		//~ typ = &defn;
+		fmt = NULL;
+		mode = 0;
+	}
+	else if ((void*)var == (void*)ref) {
+		typ = var->call ? &func : &type;
+		fmt = NULL;
+	}
+	if (var != typ) {
+		int byref = 0;
+		if (var->cast == TYPE_ref) {
+			if (typ->cast != TYPE_ref) {
+				byref = '&';
+			}
+		}
+		if (mode & prQual) {
+			fputfmt(fout, "%+T%?c: ", var, byref);
+		}
+		else {
+			fputfmt(fout, "%T%?c: ", var, byref);
+		}
+		if (var->call) {
+			// print return type.
+			fputfmt(fout, "%+T: ", var->type);
+		}
 	}
 
-	fputfmt(fout, "@%06x: ", vmOffset(rt, ref));
-	if (var != typ && var->cast == TYPE_ref && ref != NULL) {	// indirect reference
-		//~ fputfmt(fout, "@%06x->", vmOffset(rt, ref));
-		ref = getip(rt, ref->u4);
-	}
-
-	if (mode) {
+	if (mode & prType) {
 		fputfmt(fout, "%T(", typ);
 	}
 
@@ -1425,7 +1465,7 @@ void fputval(state rt, FILE* fout, symn var, stkval* ref, int level, int mode) {
 		typ = getip(rt, ref->var.type);
 		ref = getip(rt, ref->var.data);
 		fputfmt(fout, "%+T, ", typ);
-		fputval(rt, fout, typ, ref, level, 0);
+		fputval(rt, fout, typ, ref, level, prType);
 	}
 	else switch (typ->kind) {
 		case TYPE_rec: {
@@ -1433,7 +1473,7 @@ void fputval(state rt, FILE* fout, symn var, stkval* ref, int level, int mode) {
 			if (fmt != NULL) {
 				switch (typ->size) {
 					default:
-						fputfmt(fout, "struct, size: %d", typ->size);
+						fputfmt(fout, "!-!@%?c%06x, size: %d", var->stat ? 0 : '+', var->offs, var->size);
 						break;
 
 					case 1:
@@ -1493,7 +1533,7 @@ void fputval(state rt, FILE* fout, symn var, stkval* ref, int level, int mode) {
 					}
 
 					fputfmt(fout, "\n");
-					fputval(rt, fout, tmp, (void*)((char*)ref + tmp->offs), level + 1, mode);
+					fputval(rt, fout, tmp, (void*)((char*)ref + tmp->offs), level + 1, prType);
 					n += 1;
 				}
 				fputfmt(fout, "\n%I}", level);
@@ -1570,14 +1610,14 @@ void fputval(state rt, FILE* fout, symn var, stkval* ref, int level, int mode) {
 			}
 			break;
 		}
+		case TYPE_def: 
+			fputfmt(fout, "%+T: %+T", typ, typ->type);
+			break;
 		default:
-			if (var != typ) {
-				fputfmt(fout, "%T:", var);
-			}
-			fputfmt(fout, "%T[ERROR]", typ);
+			fputfmt(fout, "%+T[ERROR(%t)]", typ, typ->kind);
 			break;
 	}
-	if (mode) {
+	if (mode & prType) {
 		fputfmt(fout, ")");
 	}
 }
@@ -1635,7 +1675,7 @@ static void traceArgs(state rt, symn fun, char *file, int line, void* sp, int id
 			// 1 * vm_size holds the return value of the function.
 			offs = (char*)sp + fun->prms->offs + 1 * vm_size - sym->offs;
 
-			fputval(rt, rt->logf, sym, offs, -ident, 1);
+			fputval(rt, rt->logf, sym, offs, -ident, 0);
 		}
 		if (ident > 0) {
 			fputfmt(rt->logf, ")");

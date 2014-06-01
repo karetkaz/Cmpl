@@ -341,9 +341,9 @@ void blendLut(int count, gxClut &lut, int c1, int c2, int c3, int c4) {
 	blendLut(count, lut, Colors);
 }
 
-define blendLut(gxClut lut, int c1, int c2) = blendLut(256, lut, c1, c2);
-define blendLut(gxClut lut, int c1, int c2, int c3) = blendLut(256, lut, c1, c2, c3);
-define blendLut(gxClut lut, int c1, int c2, int c3, int c4) = blendLut(256, lut, c1, c2, c3, c4);
+//~ define blendLut(gxClut &lut, int c1, int c2) = blendLut(256, lut, c1, c2);
+//~ define blendLut(gxClut &lut, int c1, int c2, int c3) = blendLut(256, lut, c1, c2, c3);
+//~ define blendLut(gxClut &lut, int c1, int c2, int c3, int c4) = blendLut(256, lut, c1, c2, c3, c4);
 
 void lutBrightnessContrastGamma(gxClut &lut, int brightness, int contrast, double gamma) {
 	double gval = 1. / gamma;

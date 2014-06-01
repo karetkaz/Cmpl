@@ -1074,10 +1074,14 @@ define log(Complex a) = Complex(log(abs(a)), arg(a));
 Complex pow(Complex a, Complex b) {
 	/*
 	if (b.im == 0) {
-		if (a.im == 0) return new Complex(Math.pow(a.re, b.re));
+		if (a.im == 0) {
+			return new Complex(Math.pow(a.re, b.re));
+		}
 		return Complex.exp(Complex.mul(b.re, Complex.log(a)));
 	}
-	if (a.im == 0) return Complex.exp(Complex.mul(b, Math.log(a.re)));
+	if (a.im == 0) {
+		return Complex.exp(Complex.mul(b, Math.log(a.re)));
+	}
 	return Complex.exp(Complex.mul(b, Complex.log(a)));
 	//~ */
 
@@ -1137,7 +1141,6 @@ define sub(vec2d x, vec2d y) = emit(vec2d, v2d.sub, vec2d(y), vec2d(x));
 define mul(vec2d x, vec2d y) = emit(vec2d, v2d.mul, vec2d(y), vec2d(x));
 define div(vec2d x, vec2d y) = emit(vec2d, v2d.div, vec2d(y), vec2d(x));
 
-//~ define mod(vec2d x, vec2d y) = emit(vec2d, v2d.rem, byVal(y), byVal(x));
 define min(vec2d x, vec2d y) = emit(vec2d, v2d.min, vec2d(y), vec2d(x));
 define max(vec2d x, vec2d y) = emit(vec2d, v2d.max, vec2d(y), vec2d(x));
 define ceq(vec2d x, vec2d y) = emit(v2d.equ, vec2d(y), vec2d(x));
@@ -1356,6 +1359,7 @@ static struct Debug {
 }
 
 define debug(string message) = debug(message, Debug.debug, Debug.notrace, variant.null);
+define debug(variant var) = debug(null, Debug.debug, Debug.notrace, var);
 define debug(string message, variant var) = debug(message, Debug.debug, Debug.notrace, var);
 define trace(string message) = debug(message, Debug.debug, Debug.deftrace, variant.null);
 define trace(string message, variant var) = debug(message, Debug.debug, Debug.deftrace, var);
@@ -1371,6 +1375,8 @@ define assert(bool condition, string message, variant object) = debug(message, c
 //#}
 
 static if (importstd.strUtils) {
+
+define string(char arr[]) = emit(string, ref(&arr));
 
 /// length of the string
 int strlen(string str) {
@@ -1726,9 +1732,7 @@ int itoa(string format, int value, char buff[]) {
 }
 */
 
-//define string(int value, int radix) = itoa(new(string), value, radix, 1, false, null);
-//define string(int value) = itoa(new(string), value, 10, 1, false, null);
-//~ define variant(string str) = emit(variant, ref(str), typename(string));
+define variant(string str) = emit(variant, ref(str), typename(string));
 }
 
 // these should be something like emit
@@ -1742,5 +1746,5 @@ define new(typename type) = memmgr(null, type.size);
 //~ define variant(int64 value) = emit(variant, ref(value), typename(int64));
 //~ define variant(float32 value) = emit(variant, ref(value), typename(float32));
 //~ define variant(float64 value) = emit(variant, ref(value), typename(float64));
-define variant(typename type, pointer value) = emit(variant, pointer(value), ref(type));
+define variant(typename type, pointer value) = emit(variant, value, type);
 define sizeof(typename type) = int(type.size);

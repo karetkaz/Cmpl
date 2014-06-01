@@ -1,0 +1,69 @@
+struct Random {
+	//~ http://www.codeproject.com/Articles/25172/Simple-Random-Number-Generation
+	//~ http://iquilezles.org/www/articles/sfrand/sfrand.htm
+	uint32 m_z;
+	uint32 m_w;
+}
+
+Random Random() {
+	result.m_z = 362436069;
+	result.m_w = 521288629;
+}
+
+Random Random(int64 seed) {
+	result.m_z = 362436069;
+	result.m_w = uint32(seed);	// use low 32 bits
+	//int64.And(int64.Xor(seed, 0x5deece66d), (int64.Shl(1, 48) - 1));
+}
+
+int32 nextInt32(Random &random) {
+	random.m_z = 36969 * (random.m_z & 0xffff) + (random.m_z >> 16);
+	random.m_w = 18000 * (random.m_w & 0xffff) + (random.m_w >> 16);
+	return (random.m_z << 16) + random.m_w;
+}
+
+int64 _nextInt64(Random &random) {
+	uint32 randnum1 = nextInt32(random);
+	uint32 randnum2 = nextInt32(random);
+	return emit(int64, uint32(randnum1), uint32(randnum2));
+}
+
+float32 nextFloat32(Random &random) {
+	uint32 randnum = nextInt32(random);
+	result = emit(float32, i32((randnum >> 9) | 0x3f800000));
+	return result - 1;
+}
+
+float64 nextFloat64(Random &random) {
+	uint32 randnum1 = nextInt32(random);
+	uint32 randnum2 = nextInt32(random);
+	result = emit(float64, i32(randnum1), i32((randnum2 >> 12) | 0x3ff00000));
+	return result - 1;
+}
+
+float64 drand() {
+	uint32 randnum1 = rand() * rand();
+	uint32 randnum2 = rand() * rand();
+	float64 tmp = emit(float64, i32(randnum1), i32((randnum2 >> 12) | 0x3ff00000));
+	return tmp - 1;
+}
+
+
+int64 seed = 1400565045904;//millis();
+Random rnd = Random(seed);
+
+float64 maxrand = -1;	//%%e
+for(int i = 0; i < 1500000; i += 1) {
+	float64 currand = nextFloat64(&rnd);
+	//~ float64 currand = drand();
+
+	//~ int32 currand = nextInt32(&rnd);
+	//~ int32 currand = rand();
+
+	if (maxrand < currand)
+		maxrand = currand;
+
+	//~ debug("random value", variant(&currand));
+}
+//~ debug("random maximum", variant(&maxrand));
+

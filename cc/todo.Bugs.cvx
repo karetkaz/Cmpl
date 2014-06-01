@@ -120,17 +120,19 @@ string str = emit(string, ref(x));
 //~ println(emit(string, ref(x)));
 //~ +/
 
-/+ DONE: fixed size array for defines
+//~ /+ DONE: fixed size array for defines
 void testArr(double x[]) {
-	print("%d\n", int64(x.length));
+	trace("array.length", variant(&x.length));
 	x[3] = 8;
 }
 
 define TestArr(double x[16]) = testArr(x);
 
 double x[16] = {1};
-//~ testArr(x);
-//~ TestArr(x);
+//~ double x[18] = {1};
+
+testArr(x);
+TestArr(x);
 //~ +/
 
 /+ DONE: return does not cast
@@ -220,70 +222,6 @@ void setup() {
 setup();
 //~ */
 
-/* BUG: realloc / malloc / free
-define realloc(pointer ptr, int size) = memmgr(ptr, size);
-define malloc(int size) = memmgr(null, size);
-define free(pointer ptr) = memmgr(ptr, 0);
-
-void testDeallocation(int test) {
-	pointer p1 = malloc(160);
-	pointer p2 = malloc(161);
-	pointer p3 = malloc(160);
-
-	if (test == 1) {
-		p3 = free(p3);
-		p2 = free(p2);
-		p1 = free(p1);
-	}
-	else if (test == 2) {
-		p1 = free(p1);
-		p2 = free(p2);
-		p3 = free(p3);
-	}
-	else if (test == 3) {
-		p2 = free(p2);
-		p1 = free(p1);
-		p3 = free(p3);
-	}
-	else if (test == 4) {
-		p2 = free(p2);
-		p3 = free(p3);
-		p1 = free(p1);
-	}
-	memmgr(null, 0);
-}
-
-define makeBug = 1;
-memmgr(null, makeBug);
-testDeallocation(1);
-testDeallocation(2);
-testDeallocation(3);
-testDeallocation(4);
-//~ */
-
-/* BUG: realloc test
-define realloc(pointer ptr, int size) = memmgr(ptr, size);
-define malloc(int size) = memmgr(null, size);
-define free(pointer ptr) = memmgr(ptr, 0);
-
-memmgr(null, 0);
-pointer p1 = malloc(160);
-pointer p2 = malloc(161);
-pointer p3 = malloc(160);
-
-pointer p = p2; p2 = null;
-memmgr(null, 0);
-p = realloc(p, 100);
-memmgr(null, 0);
-p = free(p);
-memmgr(null, 0);
-
-free(p3);
-free(p2);
-free(p1);
-//~ memmgr(null, 0);
-//~ */
-
 /* BUG: compilation error ?
 static const Biorithm biorithms1[7] = {
 	Biorithm(0x7070ff, 23,  0, "Physical"),
@@ -339,7 +277,7 @@ idnMat14x4(mat2);
 
 // */
 
-//~ /+ TODO: nice to have
+/+ TODO: nice to have
 //~ arrays of functions
 	//~ int alma(int h)[10];
 

@@ -354,8 +354,8 @@ int program(int argc, char* argv[]) {
 	int out_dasm = -1;
 	char* str_dasm = NULL;
 
-	char* logf = 0;			// logger filename
-	char* outf = 0;			// output filename
+	char* logf = NULL;			// logger filename
+	//~ char* outf = NULL;			// output filename
 
 	int warn = wl;
 	int result = 0;
@@ -428,13 +428,13 @@ int program(int argc, char* argv[]) {
 			}
 			logf = argv[argi];
 		}
-		else if (strcmp(arg, "-o") == 0) {			// out
+		/*else if (strcmp(arg, "-o") == 0) {			// out
 			if (++argi >= argc || outf) {
 				error(rt, NULL, 0, "output file not specified");
 				return -1;
 			}
 			outf = argv[argi];
-		}
+		}*/
 
 		// output what
 		else if (strncmp(arg, "-api", 4) == 0) {	// tags
@@ -496,11 +496,11 @@ int program(int argc, char* argv[]) {
 
 	// open log file (global option)
 	if (logf && logfile(rt, logf) != 0) {
-		error(rt, NULL, 0, "can not open file `%s`\n", logf);
+		error(rt, NULL, 0, "can not open log file: `%s`", logf);
 		return -1;
 	}
 
-	// intstall basic type system.
+	// intstall base type system.
 	if (!ccInit(rt, creg_def, onHalt)) {
 		error(rt, NULL, 0, "error registering base types");
 		logfile(rt, NULL);
@@ -591,14 +591,6 @@ int program(int argc, char* argv[]) {
 			logfile(rt, NULL);
 			closeLibs();
 			return rt->errc;
-		}
-
-		// dump to log or execute
-		if (outf == NULL) {
-			logFILE(rt, stdout);
-		}
-		else {
-			logfile(rt, outf);
 		}
 
 		if (out_tags >= 0) {
@@ -695,17 +687,17 @@ static int haltVerbose(libcArgs rt) {
 	for (var = rt->rt->defs; var; var = var->next) {
 		char* ofs;
 
-		if (var->call)
-			continue;
-
 		if (var->kind != TYPE_ref)
 			continue;
 
+		if (var->call)
+			continue;
+
 		if (var->file && var->line) {
-			fputfmt(out, "%s:%d: ", var->file, var->line);
+			fputfmt(out, "%s:%u:%u: ", var->file, var->line, var->colp);
 		}
 		else {
-			fputfmt(out, "var: ");
+			//~ fputfmt(out, "var: ");
 		}
 
 		if (var->stat) {
@@ -717,13 +709,13 @@ static int haltVerbose(libcArgs rt) {
 			ofs = (char*)rt->retv + rt->fun->prms->offs - var->offs;
 		}
 
-		fputval(rt->rt, out, var, (stkval*)ofs, 0, 1);
+		fputval(rt->rt, out, var, (stkval*)ofs, 0, prQual|prType);
 		fputc('\n', out);
 	}
 	//~ logTrace(rt->rt, 1, 0, 20);
 
 	// show allocated memory chunks.
-	//~ rtAlloc(rt->rt, NULL, 0);
+	rtAlloc(rt->rt, NULL, 0);
 
 	return 0;
 }
@@ -744,7 +736,7 @@ static int dbgCon(state rt, int pu, void* ip, long* sp, int ss) {
 	}
 
 	if (ss > 0 && printvars != NULL) {
-		fputval(rt, stdout, printvars, (stkval*)sp, 0, 1);
+		fputval(rt, stdout, printvars, (stkval*)sp, 0, prType);
 		fputfmt(stdout, "\n");
 	}
 
@@ -830,7 +822,7 @@ static int dbgCon(state rt, int pu, void* ip, long* sp, int ss) {
 					symn sym = ccFindSym(rt->cc, NULL, arg);
 					fputfmt(stdout, "arg:%T", sym);
 					if (sym && sym->kind == TYPE_ref && !sym->stat) {
-						fputval(rt, stdout, sym, (stkval*)sp, 0, 1);
+						fputval(rt, stdout, sym, (stkval*)sp, 0, prType);
 					}
 				}
 			} break;

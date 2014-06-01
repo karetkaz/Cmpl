@@ -21,7 +21,7 @@
 	5: print non pre-mapped strings, non static types
 	6: print static casts generated with emit
 */
-#define DEBUGGING 1
+//~ #define DEBUGGING 1
 
 // enable paralell execution stuff
 //~ #define MAXPROCSEXEC 1
@@ -73,6 +73,26 @@
 
 #define lengthOf(__ARRAY) (sizeof(__ARRAY) / sizeof(*(__ARRAY)))
 #define offsetOf(__TYPE, __FIELD) ((size_t) &((__TYPE)0)->__FIELD)
+
+enum Format {
+	noIden = 0x1000,		// TODO: to be removed: use -level instead.
+	//~ noName = 0x2000,
+
+	alPars = 0x0100,
+	nlBody = 0x0400,
+	nlElIf = 0x0800,
+
+	// sym & ast & val
+	prType = 0x0010,
+
+	prQual = 0x0020,
+	prCast = 0x0020,
+
+	prInit = 0x0040,
+
+	//~ prArgs = 0x0080,
+	prLine = 0x0080
+};
 
 // Tokens - CC
 typedef enum {
@@ -205,6 +225,7 @@ struct symNode {
 	char*	name;		// symbol name
 	char*	file;		// declared in file
 	int32_t	line;		// declared on line
+	int32_t	colp;		// declared on column
 	int32_t nest;		// declaration level
 	int32_t	size;		// type var or function size.
 	int32_t	offs;		// address of variable.
@@ -284,6 +305,8 @@ struct astNode {
 	};
 	char*		file;				// file name of the token belongs to
 	uint32_t	line;				// line position of token
+	uint32_t	colp;				// column position
+	uint32_t	padd;				// --padding
 };
 
 struct arrBuffer {
@@ -339,6 +362,9 @@ struct ccStateRec {
 
 	char*	file;		// current file name
 	int		line;		// current line number
+	int		lpos;		// current line position
+	int		fpos;		// current file position
+	//~ current column = fpos - lpos
 
 	struct {				// Lexer
 		symn	pfmt;			// Warning set to -1 to record.
@@ -602,7 +628,7 @@ int istype(symn sym);
  * @param sym Symbol to be checked.
  * @return Usage count including declaration.
  */
-int usedCnt(symn sym);
+int usages(symn sym);
 
 /** TODO: to be deleted; sym->size should be used instead.
  * @brief Get the size of the symbol.
@@ -699,7 +725,7 @@ int fixjump(state, int src, int dst, int stc);
 // Debuging.
 
 dbgInfo getCodeMapping(state rt, int position);
-dbgInfo addCodeMapping(state rt, astn ast, int start, int end);
+dbgInfo dbgMapCode(state rt, astn ast, int start, int end);
 
 int logTrace(state rt, int ident, int startlevel, int tracelevel);
 //~ disable warning messages

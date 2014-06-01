@@ -36,8 +36,8 @@ TOKDEF(STMT_ret, 0x00, 0, "return")	// stmt: return
 TOKDEF(STMT_end, 0x00, 0, ".end")		// destruct calls ?
 
 //~ Operators ==================================================================
-TOKDEF(OPER_idx, 0x0f, 2, ".idx")		// a[i]		index
 TOKDEF(OPER_fnc, 0x0f, 2, ".call")		// a(x)		function call, cast, emit, ctor = <typename>(args...), dtor ?= void(<typename> &&variable), ...
+TOKDEF(OPER_idx, 0x0f, 2, ".idx")		// a[i]		index
 TOKDEF(OPER_dot, 0x0f, 2, ".dot")		// a.b		member
 
 TOKDEF(OPER_adr, 0x1e, 1, ".adr")		// & a		address of [todo: remove]
@@ -60,6 +60,7 @@ TOKDEF(OPER_gte, 0x0a, 2, ".cgt")		// a > b
 TOKDEF(OPER_geq, 0x0a, 2, ".cge")		// a >= b
 TOKDEF(OPER_lte, 0x0a, 2, ".clt")		// a < b
 TOKDEF(OPER_leq, 0x0a, 2, ".cle")		// a <= b
+
 TOKDEF(OPER_equ, 0x09, 2, ".ceq")		// a == b
 TOKDEF(OPER_neq, 0x09, 2, ".cne")		// a != b
 

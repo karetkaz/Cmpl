@@ -3,21 +3,21 @@
 // TODO: split this file
 
 enum Test {
-	Emit = +0;
-	Type = +0;
-//	Lang = +0;
-	Call = +0;
-	Bits = +0;
-	Math = +1;
-//	Misc = +0;
+	Emit = ~0x0;
+	Type = ~0x0;
+//	Lang = ~0x0;
+	Call = ~0x0;
+	Bits = ~0x0;
+	Math = ~0x0;
+//	Misc = ~0x0;
 }
 
 static if (true) {
-struct hex8: int8;			//%hex8(%02x)
-struct hex16: int16;		//%hex16(%04x)
-struct hex32: int32;		//%hex32(%08x)
-struct hex64: int64;		//%hex64(%016X)
-struct bin32: int32;		//%bin32(%032b)
+struct hex8: int8;			//%%02x
+struct hex16: int16;		//%%04x
+struct hex32: int32;		//%%08x
+struct hex64: int64;		//%%016X
+struct bin32: int32;		//%%032b
 
 define print(hex32 arg) = print("%08x", int64(arg));
 define println(hex32 arg) = print("%08x\n", int64(arg));
@@ -57,7 +57,7 @@ hex32 a = -0x8989;
 hex32 a1 = shr(uint32(a), 8);
 hex32 a2 = shr(int32(a), 8);
 
-//:ERROR: float32 X1 = mad(2, 3, 4000);
+float32 X1 = mad(2, 3, 4000);
 float32 X2 = mad(float32(2), float32(3), float32(4000));
 float32 X3 = mad(2., 3., 4000.);
 
@@ -103,8 +103,8 @@ static if (Test.Emit & 0x08) {		// Vector4 swizzle
 
 vec4f v1 = vec4f(11., 12., 13., 14.);
 vec4f v2 = vec4f(21., 22., 23., 24.);
-println(v2);
-//~ vec4f v3 = emit(vec4f, swz.xywz, vec4f(v1));
+debug(variant(&v2));
+vec4f v3 = emit(vec4f, swz.xywz, vec4f(v1));
 }
 }
 static if (Test.Type) {
@@ -179,9 +179,6 @@ color c5 = colors.c5;
 }
 static if (Test.Type & 0x10) {		// arrays
 
-int arr2[3] = {1, 2, 3};	// array
-int arr3[] = arr2;			// slice
-
 int maximum(int arr[]) {
 	result = arr[0];
 	for (int i = 1; i < arr.length; i += 1) {
@@ -201,6 +198,43 @@ void sort(int arr[]) {
 			}
 		}
 	}
+}
+
+void qsort(int array[]) {
+	static void qsort(int array[], int low, int high) {
+		struct Qsort {
+			int array[];	//
+			int low;
+			int high;
+			int pivot;
+		}
+		int i := low;
+		int j := high;
+		int pivot := array[low + (high-low) / 2];
+		Qsort args = Qsort(array, low, high, pivot);
+		debug(variant(&args));
+		//~ trace("pivot", variant(&pivot));
+
+		for ( ; i <= j; ) {
+			for ( ; array[i] < pivot; i += 1) {}
+			for ( ; array[j] > pivot; j -= 1) {}
+
+			if (i <= j) {
+				int temp := array[i];
+				array[i] := array[j];
+				array[j] := temp;
+				i += 1;
+				j -= 1;
+			}
+		}
+		if (low < j) {
+			qsort(array, low, j);
+		}
+		if (i < high) {
+			qsort(array, i, high);
+		}
+	}
+	return qsort(array, 0, array.length - 1);
 }
 
 int bsearch(int arr[], int elem) {
@@ -230,10 +264,19 @@ void randomize(int arr[], int max) {
 	}
 }
 
+int arr2[15];			// array
+int arr3[] = arr2;		// slice
+
 randomize(arr3, 300);
+
 int test_arr_max = maximum(arr2);
+
 int test_arr_toFind = arr2[arr2.length / 2];
-sort(arr2);
+
+debug("unsorted", variant(arr2));
+qsort(arr2);
+debug("sorted", variant(arr2));
+
 int test_arr_index = bsearch(arr2, test_arr_toFind);
 
 }
@@ -348,16 +391,16 @@ float64 drand() {
 	return tmp - 1;
 }
 
-float maxrand = -1;
+float64 maxrand = -1;
 for(int i = 0; i < 30; i += 1) {
-	float32 currand = drand();
+	float64 currand = drand();
 
 	if (maxrand < currand)
 		maxrand = currand;
 
-	debug("random value", variant(currand));
+	//~ debug("random value", variant(&currand));
 }
-
+debug("random maximum", variant(&maxrand));
 // */
 
 }
@@ -557,7 +600,7 @@ int32x8 i32x8_c = sub(&i32x8_a, -19);
 }
 }
 
-string ps = "\
+string multiline = "\
 int bar(int a) {
 	int foo(int b) {
 		int abc() {
@@ -571,7 +614,7 @@ int i = bar(3);
 assert(i == 4);
 ";
 
-string ps2 = "int bar(int a) {\n\
+string escaped = "int bar(int a) {\n\
 	int foo(int b) {\n\
 		int abc() {\n\
 			return 1;\n\

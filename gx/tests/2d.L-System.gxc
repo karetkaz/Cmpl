@@ -1,0 +1,43 @@
+// Lens effect demo.
+enum Window {
+	draw = RenderMode.swap_buff;
+	resx = 940;
+	resy = 700;
+}
+
+bool reDraw = true;
+
+void drawTree(gxSurf g, int x1, int y1, double angle, int depth) {
+	if (depth == 0) {
+		return;
+	}
+
+	int x2 = x1 + int(Math.Cos(Math.deg2rad(angle)) * depth * 10.0);
+	int y2 = y1 + int(Math.Sin(Math.deg2rad(angle)) * depth * 10.0);
+
+	drawLine(g, x1, y1, x2, y2, 0);
+	drawTree(g, x2, y2, angle - 30, depth - 1);
+	drawTree(g, x2, y2, angle + 30, depth - 1);
+	//~ Gui.Repaint(true);
+}
+
+void mouseCB(int btn, int x, int y) {
+	static int ox;
+	static int oy;
+	if (btn & 1) {
+		reDraw := true;
+		// ...
+	}
+	ox = x;
+	oy = y;
+}
+void drawCB() {
+	if (reDraw) {
+		fillRect(offScreen, 0, 0, Window.resx, Window.resy, 0xffffff);
+		drawTree(offScreen, Window.resx / 2, Window.resy, -90, 11);
+		reDraw = false;
+	}
+}
+
+Gui.setMouseHandler(mouseCB);
+Gui.setDrawCallback(drawCB);

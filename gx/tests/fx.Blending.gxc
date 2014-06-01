@@ -15,16 +15,20 @@ string fileBlend = "media/images/nol.bmp";
 
 define resize(gxSurf src, int width, int height) = zoomSurf(gxSurf(width, height), null, src, null, 1);
 
-gxSurf image1 = resize(gxSurf(fileName), Window.resx, Window.resy);
-gxSurf image2 = resize(gxSurf(fileBlend), Window.resx, Window.resy);
-//~ gxClut lut1;
-//~ gxClut lut2;
-//~ blendLut(lut1, 0xffffff, 0);
-//~ blendLut(lut2, 0, 0xffffff);
-//~ gxRect g1 = gxRect(0, Window.resy);
-//~ gxRect g2 = gxRect(Window.resx, 0);
-//~ gxSurf image1 = gradSurf(gxSurf(Window.resx, Window.resy), &g1, &lut1, Gradient.Linear);
-//~ gxSurf image2 = gradSurf(gxSurf(Window.resx, Window.resy), &g2, &lut2, Gradient.Linear);
+gxSurf image0 = gxSurf(Window.resx, Window.resy);
+
+//~ gxSurf image1 = resize(gxSurf(fileName), Window.resx, Window.resy);
+//~ gxSurf image2 = resize(gxSurf(fileBlend), Window.resx, Window.resy);
+gxClut lut1;
+gxClut lut2;
+blendLut(256, &lut1, 0xffffff, 0);
+blendLut(256, &lut2, 0, 0xffffff);
+gxRect g1 = gxRect(0, Window.resy);
+gxRect g2 = gxRect(Window.resx, 0);
+gxSurf image1 = gxSurf(Window.resx, Window.resy);
+gradSurf(image1, &g1, &lut1, Gradient.Linear);
+gxSurf image2 = gxSurf(Window.resx, Window.resy);
+gradSurf(image2, &g2, &lut2, Gradient.Linear);
 
 static struct BlendMode {
 /*Blend Modes:
@@ -187,5 +191,37 @@ static struct BlendMode {
 	}
 }
 
-copySurf(offScreen, 0, 0, image1, null);					// atmasoljuk siman a kepet
-copySurf(offScreen, 0, 0, image2, null, 1, BlendMode.LinearLight);		// atmasoljuk a fuggvenny segitsegevel a kepet
+int reDraw = 1;
+
+void drawCB() {
+	if (reDraw == 1) {
+		copySurf(offScreen, 0, 0, image0, null);
+		reDraw := 0;
+	}
+	else if (reDraw == 2) {
+		copySurf(offScreen, 0, 0, image1, null);
+		reDraw := 0;
+	}
+	else if (reDraw == 3) {
+		copySurf(offScreen, 0, 0, image2, null);
+		reDraw := 0;
+	}
+}
+
+void mouseCB(int btn, int x, int y) {
+	static int ob;
+	static int ox;
+	static int oy;
+	if (btn != ob) {
+		reDraw := btn + 1;
+		// ...
+	}
+	ox = x;
+	oy = y;
+	ob = btn;
+}
+
+Gui.setDrawCallback(drawCB);
+Gui.setMouseHandler(mouseCB);
+copySurf(image0, 0, 0, image1, null);					// atmasoljuk siman a kepet
+copySurf(image0, 0, 0, image2, null, 1, BlendMode.LinearLight);		// atmasoljuk a fuggvenny segitsegevel a kepet
