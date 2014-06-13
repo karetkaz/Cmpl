@@ -151,7 +151,7 @@ symn install(ccState s, const char* name, ccToken kind, ccToken cast, unsigned s
 
 			// user type
 			//~ case TYPE_ptr:
-			case TYPE_arr:
+			case TYPE_arr:	// string
 			case TYPE_rec:
 				def->offs = vmOffset(s->s, def);
 				//~ def->pack = size;
@@ -757,10 +757,10 @@ symn declare(ccState s, ccToken kind, astn tag, symn typ) {
 			case TYPE_def:			// typename
 			case TYPE_ref:			// variable
 				tag->kind = kind & 0xff;
+				if (typ != NULL) {
+					def->cast = typ->cast;
+				}
 				break;
-		}
-		if (typ != NULL) {
-			def->cast = typ->cast;
 		}
 	}
 

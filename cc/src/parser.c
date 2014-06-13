@@ -1986,14 +1986,11 @@ static astn decl_init(ccState cc, symn var) {
 		int arrayInit = 0;
 
 		if (typ->kind == TYPE_arr) {
-			arrayInit = skip(cc, STMT_beg);
-			var->init = expr(cc, TYPE_def);
-			if (arrayInit) {
-				skiptok(cc, STMT_end, 1);
-			}
+			arrayInit = skip(cc, PNCT_lc);
 		}
-		else {
-			var->init = expr(cc, TYPE_def);
+		var->init = expr(cc, TYPE_def);
+		if (arrayInit) {
+			skiptok(cc, PNCT_rc, 1);
 		}
 
 		if (var->init != NULL) {
@@ -2058,6 +2055,7 @@ static astn decl_init(ccState cc, symn var) {
 					typ->size = nelem * typ->type->size;
 					typ->offs = nelem;
 					typ->cast = TYPE_ref;
+					typ->stat = 1;
 					var->cast = TYPE_any;
 					var->size = typ->size;
 
@@ -2157,7 +2155,7 @@ astn decl_var(ccState cc, astn* argv, int mode) {
 			ref->prms = leave(cc, ref, 0);
 			skiptok(cc, PNCT_rp, 1);
 
-			ref->size = 0;
+			ref->size = vm_size;
 			ref->call = 1;
 
 			if (ref->prms == NULL) {
@@ -2284,6 +2282,7 @@ astn decl_var(ccState cc, astn* argv, int mode) {
 			dynarr = base->size;
 			for (; typ; typ = typ->decl) {
 				typ->size = (dynarr *= typ->offs);
+				//~ typ->offs = vmOffset(cc->s, typ);
 			}
 			ref->size = byref ? vm_size : sizeOf(arr);
 
@@ -2630,7 +2629,7 @@ static astn decl(ccState cc, int mode) {
 					int used = usages(param) - 1;
 					// warn to cache if it is used more than once
 					if (used > 1) {
-						warn(cc->s, 8, param->file, param->line, "parameter %T may be cached (used %d times in expression)", param, used);
+						warn(cc->s, 8, param->file, param->line, "parameter `%T` may be cached (used %d times in expression)", param, used);
 					}
 					else {
 						param->kind = TYPE_def;
@@ -2660,8 +2659,10 @@ static astn decl(ccState cc, int mode) {
 		symn ref = tag->ref.link;
 
 		if ((mode & decl_NoInit) == 0) {
-			// function declaration and implementation
-			// int sqr(int a) {return a * a;}
+			/* function declaration with implementation.
+			 * int sqr(int a) {return a * a;}
+			 *		static const non indirect reference.
+			 */
 			if (ref->call && peekTok(cc, STMT_beg)) {
 				symn tmp, result = NULL;
 				int maxlevel = cc->maxlevel;
@@ -2679,8 +2680,10 @@ static astn decl(ccState cc, int mode) {
 
 					// result is the first argument
 					result->offs = sizeOf(result);
-					ref->offs = result->offs + fixargs(ref, vm_size, -result->offs);
+					ref->offs = result->offs + 
+					fixargs(ref, vm_size, -result->offs);
 				}
+
 				// reinstall all args
 				for (tmp = ref->prms; tmp; tmp = tmp->next) {
 					//~ TODO: install(cc, tmp->name, TYPE_def, 0, 0, tmp->type, tmp->used);
@@ -2712,9 +2715,25 @@ static astn decl(ccState cc, int mode) {
 				dieif(ref->flds != result, "FixMe %-T", ref);
 
 				backTok(cc, newnode(cc, STMT_do));
-
 			}
-			else if (peekTok(cc, ASGN_set)) {				// int sqrt(int a) = sqrt_fast;		// function reference.
+			/* function reference declaration.
+			 * TODO: int sqrt(int a);		// forward declaration.
+			 * TODO: 	static const indirect reference.
+			 * int sqrt(int a) = sqrt_386;	// initialized 
+			 *		static indirect reference.
+			 */
+			else if (ref->call) {
+				ref->size = vm_size;
+				// TODO
+				//~ ref->cast = TYPE_ref;
+				//~ Attr |= ATTR_stat;
+				//~ if (peekTok(cc, ASGN_set)) {
+					//~ Attr |= ATTR_const;
+				//~ }
+			}
+
+			// variable or function initialization.
+			if (peekTok(cc, ASGN_set)) {
 				if (ref->call) {
 					ref->cast = TYPE_ref;
 				}
@@ -2725,7 +2744,9 @@ static astn decl(ccState cc, int mode) {
 					trace("%+k", tag);
 					return NULL;
 				}
-				dieif(ref->size == 0, "FixMe: %+T", ref);
+				if (ref->size == 0) {
+					dieif(ref->size == 0, "FixMe: %+T", ref);
+				}
 			}
 		}
 

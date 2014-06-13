@@ -5,23 +5,21 @@ enum Window {
 	resy = 512;
 }
 
-gxSurf srcImg = gxSurf("media/images/download.jpg");
+//~ gxSurf srcImg = gxSurf("media/images/download.jpg");
+gxSurf srcImg = gxSurf("media/images/nol.bmp");
 
-define WIDTH  = 256/2;
+define WIDTH  = 128;
 define HEIGHT = WIDTH;
 gxSurf dstImg = gxSurf(WIDTH, HEIGHT);
 
-int mouseX = Window.resx / 2;
-int mouseY = Window.resy / 2;
-
-double imgcoord(double val, int resolution) {
+float64 imgcoord(float64 val, int resolution) {
 	result = val * resolution;
 	if ((result %= resolution) < 0)
 		result += resolution;
 }
 
-int rgbscale(int col, double s) {
-	define fixp = 16;
+int rgbscale(int col, float64 s) {
+	define fixp = 20;
 	int scale = s * (1 << fixp);
 	int r = Math.clamp(rch(col) * scale >> fixp, 0, 255);
 	int g = Math.clamp(gch(col) * scale >> fixp, 0, 255);
@@ -29,361 +27,194 @@ int rgbscale(int col, double s) {
 	result = int(rgb(r, g, b));
 }
 
-define tex2d(gxSurf src, double x, double y) = getPixel(src, imgcoord(x, width(src)), imgcoord(y, height(src)));
-define tex2d(gxSurf src, double u, double v, double w) = rgbscale(tex2d(src, u, v), w);
-//~ define tex2d(gxSurf src, double u, double v, double w) = tex2d(src, u, v);
+define tex2d(gxSurf src, float64 x, float64 y) = getPixel(src, imgcoord(x, width(src)), imgcoord(y, height(src)));
+define tex2d(gxSurf src, float64 u, float64 v, float64 w) = rgbscale(tex2d(src, u, v), w);
+//~ define tex2d(gxSurf src, float64 u, float64 v, float64 w) = tex2d(src, u, v);
 
-define nz(double x) = Math.nz(x, 1e-200);
-define atan(double x, double y) = atan2(x, y);
+define nz(float64 x) = Math.nz(x, 1e-20);
+define atan(float64 x, float64 y) = atan2(x, y);
 
-// mert a dogseg nagy betegseg.
-define pi = Math.pi;
-
-int64 begTime = millis();
-define getTime() = (millis() - begTime) / 1000.;
-
-void plasma() {
-	double time = getTime();
-	for (int yi = 0; yi < HEIGHT; yi += 1) {
-		double y = double(yi);// / HEIGHT;
-		for (int xi = 0; xi < WIDTH; xi += 1) {
-			double x = double(xi);// / WIDTH;
-			double mov0 = x + y + cos(sin(time)*2.)*100.+sin(x/100.)*1000.;
-			double mov1 = y / HEIGHT / 0.2 + time;
-			double mov2 = x / WIDTH / 0.2;
-			double c1 = Math.abs(sin(mov1+time)/2.+mov2/2.-mov1-mov2+time);
-			double c2 = Math.abs(sin(c1+sin(mov0/1000.+time)+sin(y/40.+time)+sin((x+y)/100.)*3.));
-			double c3 = Math.abs(sin(c2+cos(mov1+mov2+c2)+cos(mov2)+sin(x/1000.)));
-			c1 = Math.clamp(c1, 0., 1.);
-			c2 = Math.clamp(c2, 0., 1.);
-			c3 = Math.clamp(c3, 0., 1.);
-			setPixel(dstImg, xi, yi, int(rgb(vec4f(c1, c2, c3))));
-		}
-	}
-	zoomSurf(offScreen, null, dstImg, null, 1);
-	Gui.Repaint();
+rgb plasma_x(float64 x, float64 y, float64 time) {
+	//~ time *= .2;
+	x *= Window.resx /3;
+	y *= Window.resy /3;
+	float64 mov0 = x + y + cos(sin(time)*2.)*100.+sin(x/100.)*1000.;
+	float64 mov1 = y / HEIGHT / 0.2 + time;
+	float64 mov2 = x / WIDTH / 0.2;
+	float64 c1 = Math.abs(sin(mov1+time)/2.+mov2/2.-mov1-mov2+time);
+	float64 c2 = Math.abs(sin(c1+sin(mov0/1000.+time)+sin(y/40.+time)+sin((x+y)/100.)*3.));
+	float64 c3 = Math.abs(sin(c2+cos(mov1+mov2+c2)+cos(mov2)+sin(x/1000.)));
+	return rgb(c1, c2, c3);
+}
+rgb plasma(float64 x, float64 y, float64 time) {
+	//~ time *= .2;
+	float64 v = 0;
+	v += sin((x*10+time));
+	v += sin((y*10+time)/2.0);
+	v += sin((x*10+y*10+time)/2.0);
+	float64 cx = x + .5 * sin(time/5.0);
+	float64 cy = y + .5 * cos(time/3.0);
+	v += sin(sqrt(100*(cx*cx+cy*cy)+1)+time);
+	v = v/2.0;
+	return rgb(v, v, v);
 }
 
-void stereographic0() {
-	double time = .05 * getTime();
-	double cx = (mouseX * WIDTH / Window.resx);
-	double cy = (mouseY * HEIGHT / Window.resy);
-	for (int yi = 0; yi < HEIGHT; yi += 1) {
-		double y = (yi - cy) / HEIGHT;
-		for (int xi = 0; xi < WIDTH; xi += 1) {
-			double x = (xi - cx) / WIDTH;
+rgb stereographic0(float64 x, float64 y, float64 time) {
+	time *= .05;
 
-			double a = atan(y, x);
-			double r = 100 * nz(Math.hypot(x, y) - .4);
+	float64 a = atan(y, x);
+	float64 r = 100 * nz(Math.hypot(x, y) - .4);
 
-			double u = time + cos(a) / r;
-			double v = time + sin(a) / r;
+	float64 u = time + cos(a) / r;
+	float64 v = time + sin(a) / r;
 
-			setPixel(dstImg, xi, yi, tex2d(srcImg, u, v));
-		}
-	}
-	zoomSurf(offScreen, null, dstImg, null, 1);
-	Gui.Repaint();
-	//~ time += .001;
+	return asrgb(tex2d(srcImg, u, v));
 }
-void stereographic1() {
-	double time = .05 * getTime();
-	double cx = (mouseX * WIDTH / Window.resx);
-	double cy = (mouseY * HEIGHT / Window.resy);
-	for (int yi = 0; yi < HEIGHT; yi += 1) {
-		double y = (yi - cy) / HEIGHT;
-		for (int xi = 0; xi < WIDTH; xi += 1) {
-			double x = (xi - cx) / WIDTH;
+rgb stereographic1(float64 x, float64 y, float64 time) {
+	time *= .05;
+	float64 a = atan(y, x);
+	float64 r = 50 * nz(Math.hypot(x, y));
 
-			double a = atan(y, x);
-			double r = 50 * nz(Math.hypot(x, y));
+	float64 u = time + cos(a) / r;
+	float64 v = time + sin(a) / r;
 
-			double u = time + cos(a) / r;
-			double v = time + sin(a) / r;
-
-			setPixel(dstImg, xi, yi, tex2d(srcImg, u, v));
-		}
-	}
-	zoomSurf(offScreen, null, dstImg, null, 1);
-	Gui.Repaint();
-}
-void stereographic2() {
-	double time = .05 * getTime();
-	double cx = (mouseX * WIDTH / Window.resx);
-	double cy = (mouseY * HEIGHT / Window.resy);
-	for (int yi = 0; yi < HEIGHT; yi += 1) {
-		double y = (yi - cy) / HEIGHT;
-		for (int xi = 0; xi < WIDTH; xi += 1) {
-			double x = (xi - cx) / WIDTH;
-
-			double r = nz(sqrt( x*x + y*y ));
-			double a = atan2( y, x );
-
-			// cloud like dream scroll
-			double u = time + .1 * x / (.11 + r * .5);
-			double v = time + .1 * y / (.11 + r * .5);
-
-			setPixel(dstImg, xi, yi, tex2d(srcImg, u, v));
-		}
-	}
-	zoomSurf(offScreen, null, dstImg, null, 1);
-	Gui.Repaint();
-	//~ time += .001;
+	return asrgb(tex2d(srcImg, u, v));
 }
 
-void circles() {
-	double time = .05 * getTime();
-	double cx = (mouseX * WIDTH / Window.resx);
-	double cy = (mouseY * HEIGHT / Window.resy);
-	for (int yi = 0; yi < HEIGHT; yi += 1) {
-		for (int xi = 0; xi < WIDTH; xi += 1) {
-			double x = xi - cx;
-			double y = yi - cy;
-
-			double r = Math.hypot(x, y);
-
-			double u = time + r / 200.;
-			double v = r / 200.;
-
-			setPixel(dstImg, xi, yi, tex2d(srcImg, v, u));
-
-		}
-	}
-	zoomSurf(offScreen, null, dstImg, null, 1);
-	Gui.Repaint();
+rgb circles(float64 x, float64 y, float64 time) {
+	time *= .05;
+	x *= WIDTH;
+	y *= HEIGHT;
+	float64 r = Math.hypot(x, y) / 200.;
+	float64 u = time + r;
+	return asrgb(tex2d(srcImg, r, u));
 }
-void rays() {
-	double time = .05 * getTime();
-	double cx = (mouseX * WIDTH / Window.resx);
-	double cy = (mouseY * HEIGHT / Window.resy);
-	for (int yi = 0; yi < HEIGHT; yi += 1) {
-		for (int xi = 0; xi < WIDTH; xi += 1) {
-			double x = xi - cx;
-			double y = yi - cy;
-
-			double a = atan(y, x);
-			double r = Math.hypot(x, y);
-
-			double u = time + a;
-			double v = a;
-			//~ double w = 16 / nz(pow( r, .5 ));
-
-			setPixel(dstImg, xi, yi, tex2d(srcImg, u, v));
-
-		}
-	}
-	zoomSurf(offScreen, null, dstImg, null, 1);
-	Gui.Repaint();
+rgb rays(float64 x, float64 y, float64 time) {
+	time *= .05;
+	float64 a = atan(y, x);
+	float64 r = Math.hypot(x, y);
+	float64 u = time + a;
+	float64 v = a;
+	//~ float64 w = 16 / nz(pow(r, .5));
+	return asrgb(tex2d(srcImg, u, v));
 }
 
-void tunnel0() {
-	double time = .1 * getTime();
-	double cx = (mouseX * WIDTH / Window.resx);
-	double cy = (mouseY * HEIGHT / Window.resy);
-	for (int yi = 0; yi < HEIGHT; yi += 1) {
-		double y = (yi - cy) / HEIGHT;
-		for (int xi = 0; xi < WIDTH; xi += 1) {
-			double x = (xi - cx) / WIDTH;
+rgb tunnel0(float64 x, float64 y, float64 time) {
+	time *= .1;
 
-			double a = atan(y, x);
-			double r = Math.hypot(x, y);
+	float64 a = atan(y, x);
+	float64 r = Math.hypot(x, y);
 
-			double u = time + .1 / nz(r);
-			double v = a / pi;
+	float64 u = time + .1 / nz(r);
+	float64 v = a / Math.pi;
 
-			setPixel(dstImg, xi, yi, tex2d(srcImg, u, v, 2 * r));
-		}
-	}
-	zoomSurf(offScreen, null, dstImg, null, 1);
-	Gui.Repaint();
+	return asrgb(tex2d(srcImg, u, v, 2 * r));
 }
-void tunnel1() {
-	double time = .1 * getTime();
-	double cx = (mouseX * WIDTH / Window.resx);
-	double cy = (mouseY * HEIGHT / Window.resy);
-	for (int yi = 0; yi < HEIGHT; yi += 1) {
-		double y = (yi - cy) / HEIGHT;
-		for (int xi = 0; xi < WIDTH; xi += 1) {
-			double x = (xi - cx) / WIDTH;
+rgb tunnel1(float64 x, float64 y, float64 time) {
+	time *= .1;
 
-			double r = pow(pow(x * x, 16) + pow(y * y, 16), 1. / 32);
-			double u = time + .1 / nz(r);
-			double v = atan(y, x) / pi;
+	float64 r = pow(pow(x * x, 16) + pow(y * y, 16), 1. / 32);
+	float64 u = time + .1 / nz(r);
+	float64 v = atan(y, x) / Math.pi;
 
-			setPixel(dstImg, xi, yi, tex2d(srcImg, v, u, 2 * r));
-		}
-	}
-	zoomSurf(offScreen, null, dstImg, null, 1);
-	Gui.Repaint();
+	return asrgb(tex2d(srcImg, v, u, 2 * r));
 }
 
-void tunnel2() {
-	double time = .05 * getTime();
-	double cx = (mouseX * WIDTH / Window.resx);
-	double cy = (mouseY * HEIGHT / Window.resy);
-	for (int yi = 0; yi < HEIGHT; yi += 1) {
-		for (int xi = 0; xi < WIDTH; xi += 1) {
-			double x = xi - cx;
-			double y = yi - cy;
-
-			double a = atan( y, x );
-			double r = sqrt( x * x + y * y );
-
-			double u = time + 10 / nz(r + 10 + 50 * sin( 5 * a ));
-			double v = 0.5 * a / pi;
-			double w = 0.01 * ( r + 50 + 50 * sin( 5 * a ));
-
-			setPixel(dstImg, xi, yi, tex2d(srcImg, v, u, w));
-		}
-	}
-	zoomSurf(offScreen, null, dstImg, null, 1);
-	Gui.Repaint();
+rgb tunnel2(float64 x, float64 y, float64 time) {
+	time *= .05;
+	float64 a = atan(y, x);
+	float64 r = 100 * sqrt(x * x + y * y);
+	float64 u = time + 10 / nz(r + 10 + 50 * sin(5 * a));
+	float64 v = 0.5 * a / Math.pi;
+	float64 w = 0.01 * (r + 50 + 50 * sin(5 * a));
+	return asrgb(tex2d(srcImg, v, u, w));
 }
-void tunnel3() {
-	double time = .05 * getTime();
-	double cx = (mouseX * WIDTH / Window.resx);
-	double cy = (mouseY * HEIGHT / Window.resy);
-	for (int yi = 0; yi < HEIGHT; yi += 1) {
-		for (int xi = 0; xi < WIDTH; xi += 1) {
-			double x = xi - cx;
-			double y = yi - cy;
-
-			double a = atan( y, x );
-			double r = nz(sqrt( x * x + y * y ));
-
-			double u = time + ( 40 / r ) + 0.1 * sin(8 * a);
-			double v = .5 + .5 * a / pi;
-			double w = r * 0.02;
-
-			setPixel(dstImg, xi, yi, tex2d(srcImg, v, u, w));
-		}
-	}
-	zoomSurf(offScreen, null, dstImg, null, 1);
-	Gui.Repaint();
+rgb tunnel3(float64 x, float64 y, float64 time) {
+	time *= .05;
+	float64 a = atan(y, x);
+	float64 r = 100 * nz(sqrt(x * x + y * y));
+	float64 u = time + (40 / r) + 0.1 * sin(8 * a);
+	float64 v = .5 + .5 * a / Math.pi;
+	float64 w = r * 0.02;
+	return asrgb(tex2d(srcImg, v, u, w));
 }
-void tunnel4() {
-	double time = .05 * getTime();
-	double cx = (mouseX * WIDTH / Window.resx);
-	double cy = (mouseY * HEIGHT / Window.resy);
-	for (int yi = 0; yi < HEIGHT; yi += 1) {
-		for (int xi = 0; xi < WIDTH; xi += 1) {
-			double x = xi - cx;
-			double y = yi - cy;
-
-			double a = atan( y, x );
-			double r = nz(Math.hypot(x, y));
-
-			double u = time + 0.3 * a / pi;
-			double v = 10 * Math.abs( cos( 1.5 * a ) / r );
-			double w = 0.2 + 100 * Math.abs( cos( 1.5 * a ) / r );
-
-			setPixel(dstImg, xi, yi, tex2d(srcImg, v, u));
-		}
-	}
-	zoomSurf(offScreen, null, dstImg, null, 1);
-	Gui.Repaint();
+rgb tunnel4(float64 x, float64 y, float64 time) {
+	time *= .05;
+	float64 a = atan(y, x);
+	float64 r = 100 * nz(Math.hypot(x, y));
+	float64 u = time + 0.3 * a / Math.pi;
+	float64 v = 10 * Math.abs(cos(1.5 * a) / r);
+	float64 w = 0.2 + 5 * v;
+	return asrgb(tex2d(srcImg, v, u, w));
 }
 
-void planes() {
-	double time = .1 * getTime();
-	double cx = (mouseX * WIDTH / Window.resx);
-	double cy = (mouseY * HEIGHT / Window.resy);
-	for (int yi = 0; yi < HEIGHT; yi += 1) {
-		double y = (yi - cy) / HEIGHT;
-		double Y = .2 / nz(Math.abs(y));
-		for (int xi = 0; xi < WIDTH; xi += 1) {
-			double x = (xi - cx) / WIDTH;
-
-			double u = x * Y;
-			double v = time + Y;
-			//~ double w = 2 * abs(y);
-
-			setPixel(dstImg, xi, yi, tex2d(srcImg, v, u, 2 * Math.abs(y)));
-		}
-	}
-	zoomSurf(offScreen, null, dstImg, null, 1);
-	Gui.Repaint();
-}
-void vortex() {
-	double time = .05 * getTime();
-	double cx = (mouseX * WIDTH / Window.resx);
-	double cy = (mouseY * HEIGHT / Window.resy);
-	for (int yi = 0; yi < HEIGHT; yi += 1) {
-		double y = (yi - cy) / HEIGHT;
-		for (int xi = 0; xi < WIDTH; xi += 1) {
-			double x = (xi - cx) / WIDTH;
-
-			double a = atan( y, x );
-			double r = Math.hypot(x, y);
-			double u = 1 * a / pi + r;
-			double v = 2 * time + 40 * pow( r, 0.01 );
-			//~ double w = 2 * r;
-
-			setPixel(dstImg, xi, yi, tex2d(srcImg, u, v));
-		}
-	}
-	zoomSurf(offScreen, null, dstImg, null, 1);
-	Gui.Repaint();
-}
-void waves() {
-	double time = .05 * getTime();
-	double cx = (mouseX * WIDTH / Window.resx);
-	double cy = (mouseY * HEIGHT / Window.resy);
-	for (int yi = 0; yi < HEIGHT; yi += 1) {
-		double y = (yi - cy) / HEIGHT;
-		for (int xi = 0; xi < WIDTH; xi += 1) {
-			double x = (xi - cx) / WIDTH;
-
-			double a = atan(y, x);
-			double r = Math.hypot(x, y);
-
-			double u = .5 * a / pi;
-			double v = time + sin(4 * r);
-
-			setPixel(dstImg, xi, yi, tex2d(srcImg, u, v));
-		}
-	}
-	zoomSurf(offScreen, null, dstImg, null, 1);
-	Gui.Repaint();
+rgb planes(float64 x, float64 y, float64 time) {
+	time *= .1;
+	float64 a = .2 / nz(Math.abs(y));
+	float64 u = x * a;
+	float64 v = time + a;
+	float64 w = 2 * Math.abs(y);
+	return asrgb(tex2d(srcImg, v, u, w));
 }
 
-void testing() {
-	double time = .05 * getTime();
-	double cx = (mouseX * WIDTH / Window.resx);
-	double cy = (mouseY * HEIGHT / Window.resy);
-	for (int yi = 0; yi < HEIGHT; yi += 1) {
-		double y = (yi - cy) / HEIGHT;
-		for (int xi = 0; xi < WIDTH; xi += 1) {
-			double x = (xi - cx) / WIDTH;
-
-			double r = nz(sqrt( x*x + y*y ));
-			double a = atan2( y, x );
-
-			//~ // cloud like dream scroll
-			//~ double u = time + .1 * x / (.11 + r * .5);
-			//~ double v = time + .1 * y / (.11 + r * .5);
-
-			// hot magma liquid swirl
-			//~ double u = time + 0.5 * a / pi;
-			//~ double v = time + sin(2 * r);
-
-			//~ // clockwise flush down the toilet
-			//~ double v = time + pow(r, 0.1);
-			//~ double u = time + (a / pi) + r;
-
-			//~ // 3D ball
-			double v = time + x * (3 - sqrt(4 - 15 * r * r)) / (r * r + 1);
-			double u = time + y * (3 - sqrt(4 - 15 * r * r)) / (r * r + 1);
-
-			setPixel(dstImg, xi, yi, tex2d(srcImg, u, v));
-		}
-	}
-	zoomSurf(offScreen, null, dstImg, null, 1);
-	Gui.Repaint();
+rgb vortex(float64 x, float64 y, float64 time) {
+	time *= .05;
+	float64 a = atan(y, x);
+	float64 r = Math.hypot(x, y);
+	float64 u = 1 * a / Math.pi + r;
+	float64 v = 2 * time + 40 * pow(r, 0.01);
+	//~ float64 w = r;
+	return asrgb(tex2d(srcImg, u, v));
+}
+rgb toilet(float64 x, float64 y, float64 time) {
+	time *= .05;
+	// clockwise flush down the toilet
+	float64 a = atan(y, x);
+	float64 r = Math.hypot(x, y);
+	float64 v = time + pow(r, 0.1);
+	float64 u = time + (a / Math.pi) + r;
+	return asrgb(tex2d(srcImg, u, v));
 }
 
-vec4f blob2d(float x, float y, float time) {
+rgb waves(float64 x, float64 y, float64 time) {
+	time *= .05;
+	float64 a = .5 * atan(y, x);
+	float64 r = 4 * Math.hypot(x, y);
+	float64 u = a / Math.pi;
+	float64 v = time + sin(r);
+	return asrgb(tex2d(srcImg, u, v));
+}
+rgb magma(float64 x, float64 y, float64 time) {
+	time *= .05;
+	// hot magma liquid swirl
+	float64 a = .5 * atan(y, x);
+	float64 r = 4 * Math.hypot(x, y);
+	float64 u = time + a / Math.pi;
+	float64 v = time + sin(r);
+	return asrgb(tex2d(srcImg, u, v));
+}
 
+rgb scroll(float64 x, float64 y, float64 time) {
+	time *= .05;
+	// cloud like dream scroll
+	float64 a = atan(y, x);
+	float64 r = Math.hypot(x, y);
+	float64 u = time + .1 * x / (.11 + r * .5);
+	float64 v = time + .1 * y / (.11 + r * .5);
+	return asrgb(tex2d(srcImg, u, v));
+}
+rgb ball3d(float64 x, float64 y, float64 time) {
+	time *= .5;
+	//~ // 3D ball
+	float64 a = atan(y, x);
+	float64 r = .5 * Math.hypot(x, y);
+	float64 v = time + x * (3 - sqrt(4 - 15 * r * r)) / (r * r + 1);
+	float64 u = time + y * (3 - sqrt(4 - 15 * r * r)) / (r * r + 1);
+	return asrgb(tex2d(srcImg, u, v));
+}
+
+rgb blob2d(float64 x, float64 y, float64 time) {
+	time *= .5;
 	vec2d p = vec2d(2 * x - 1, 2 * y - 1);
 
 	//~ the centre point for each blob
@@ -393,25 +224,84 @@ vec4f blob2d(float x, float y, float time) {
 	//~ vec2d move4 = vec2d(cos(time * 2.0) * 0.4, sin(time * 4.3) * 0.4);
 
 	//~ radius for each blob
-	double r1 = dot(sub(p, move1), sub(p, move1)) * 8;
-	double r2 = dot(sub(p, move2), sub(p, move2)) * 16;
-	//~ double r3 = dot(sub(p, move3), sub(p, move3)) * 32;
-	//~ double r4 = dot(sub(p, move4), sub(p, move4)) * 64;
+	float64 r1 = dot(sub(p, move1), sub(p, move1)) * 8;
+	float64 r2 = dot(sub(p, move2), sub(p, move2)) * 16;
+	//~ float64 r3 = dot(sub(p, move3), sub(p, move3)) * 32;
+	//~ float64 r4 = dot(sub(p, move4), sub(p, move4)) * 64;
 
 	//~ sum the meatballs
-	double metaball = (1.0 / Math.max(r1, 1.)) + (1.0 / Math.max(r2, 1.));
-	//~ metaball += 1.0 / max(r3, 1.);
-	//~ metaball += 1.0 / max(r4, 1.);
+	float64 metaball = (1.0 / Math.max(r1, 1.)) + (1.0 / Math.max(r2, 1.));
+	//~ metaball += 1.0 / Math.max(r3, 1.);
+	//~ metaball += 1.0 / Math.max(r4, 1.);
 
 	//~ alter the cut-off power
 	//~ set the output color
-	result = vec4f(float32(Math.clamp(pow(metaball, 8.0), 0., 1.)));
+	return gray(Math.clamp(pow(metaball, 8.0), 0., 1.));
 }
 
-void setup(vec4f _func(float x, float y, float t)) {
+void setup(rgb _func(float64 x, float64 y, float64 t)) {
 
-	static vec4f func(float x, float y, float t) = null;
+	static rgb func(float64 x, float64 y, float64 t) = null;
+	static int64 begTime;
 
+	static int mouseX = Window.resx / 2;
+	static int mouseY = Window.resy / 2;
+
+	static bool snapshot = false;
+	static bool animate = true;
+
+	void mouseCB(int btn, int x, int y) {
+		static int omb = 0;
+
+		if (btn != omb) {
+			if (btn == 0) { // onRelase(btn:1)
+				//~ debug("button released", variant(&animate));
+				snapshot = !(animate = !animate);
+			}
+		}
+		if (btn == 1 && omb == 1) {
+			mouseX = x;
+			mouseY = y;
+			animate = true;
+		}
+		omb = btn;
+	}
+
+	// for each frame
+	void drawCB() {
+		float64 time = (millis() - begTime) / 1000.;
+
+		if (snapshot) {
+			animate = false;
+			snapshot = false;
+			int64 start = millis();
+			for (int yi = 0; yi < Window.resy; yi += 1) {
+				float64 y = double(yi - mouseY) / Window.resy * 2;
+				for (int xi = 0; xi < Window.resx; xi += 1) {
+					float64 x = double(xi - mouseX) / Window.resx * 2;
+					setPixel(offScreen, xi, yi, int(func(x, y, time)));
+				}
+			}
+			//~ bmpWrite(offScreen, "out-2.bmp");
+		}
+		if (animate) {
+			float64 cx = (mouseX * WIDTH / Window.resx);
+			float64 cy = (mouseY * HEIGHT / Window.resy);
+			for (int yi = 0; yi < HEIGHT; yi += 1) {
+				float64 y = (yi - cy) / HEIGHT * 2;
+				for (int xi = 0; xi < WIDTH; xi += 1) {
+					float64 x = (xi - cx) / WIDTH * 2;
+					setPixel(dstImg, xi, yi, int(func(x, y, time)));
+				}
+			}
+			zoomSurf(offScreen, null, dstImg, null, 1);
+			// post a redraw for animation
+			Gui.Repaint();
+
+		}
+	}
+
+/*
 	static void mouseHandler(int btn, int x, int y) {
 		if (btn == 1) {
 			mouseX = x;
@@ -421,34 +311,28 @@ void setup(vec4f _func(float x, float y, float t)) {
 
 	static void onDraw() {
 
-		float time = .05 * getTime();
-		float cx = (mouseX * WIDTH / Window.resx);
-		float cy = (mouseY * HEIGHT / Window.resy);
+		float64 time = (millis() - begTime) / 1000.;
+		float64 cx = (mouseX * WIDTH / Window.resx);
+		float64 cy = (mouseY * HEIGHT / Window.resy);
 
+		//~ debug("time", variant(&time));
 		for (int yi = 0; yi < HEIGHT; yi += 1) {
-			float y = (yi - cy) / HEIGHT * 2;
+			float64 y = (yi - cy) / HEIGHT * 2;
 			for (int xi = 0; xi < WIDTH; xi += 1) {
-				float x = (xi - cx) / WIDTH * 2;
-
-				//~ define vec4f2rgb(vec4f col) = rgb(int(col.x * 255), int(col.y * 255), int(col.z * 255));
-
-				int32 col = int(rgb(func(x, y, time * 6)));
-
-				setPixel(dstImg, xi, yi, col);
+				float64 x = (xi - cx) / WIDTH * 2;
+				setPixel(dstImg, xi, yi, int(func(x, y, time)));
 			}
 		}
 
 		zoomSurf(offScreen, null, dstImg, null, 1);
-		Gui.Repaint();
-
 		// post a redraw for animation
 		Gui.Repaint();
 	}
-
+*/
 	func = _func;
-	Gui.setDrawCallback(onDraw);
-	Gui.setMouseHandler(mouseHandler);
+	begTime = millis();
+	Gui.setDrawCallback(drawCB);
+	Gui.setMouseHandler(mouseCB);
 }
 
-setup(blob2d);
-//~ Gui.exitLoop();
+setup(waves);

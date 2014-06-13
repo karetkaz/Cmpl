@@ -183,6 +183,7 @@ struct Fixed(int FractBits): 0 {
 //~ typename strty = string;
 //~ typename complex = Complex;
 //~ Complex c1 = Complex(10, 20);
+//~ Complex c2 = {re: 10, im:20};	// short
 //~ Complex c2 = Complex{re: 10, im:20};
 
 struct Person {

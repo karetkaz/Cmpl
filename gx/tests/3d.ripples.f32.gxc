@@ -42,8 +42,8 @@ static if (Options.textured) {
 }
 
 void drawCB() {
-	static float32 u[division][division] = {0};
-	static float32 v[division][division] = {0};
+	static float32 u[division][division] = [0];
+	static float32 v[division][division] = [0];
 
 	Gui.Repaint();
 	static int64 beg = -1;

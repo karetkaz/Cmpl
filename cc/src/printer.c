@@ -134,8 +134,25 @@ static void fputsym(FILE* fout, char *esc[], symn sym, int mode, int level) {
 
 			if (rlev < 2) {
 				if (pr_qual && sym->decl) {
-					fputsym(fout, esc, sym->decl, mode, 2);
-					fputchr(fout, '.');
+					//~ fputsym(fout, esc, sym->decl, 0 | prQual, 0);
+					//~ fputchr(fout, '.');
+					//~ symn bp[TBLS], *sp = bp, *p;
+
+					symn typ = sym->decl;
+					while (typ != NULL) {
+						//~ *sp++ = typ;
+						fputsym(fout, esc, typ, 0, 0);
+						fputchr(fout, '.');
+						typ = typ->decl;
+					}
+					//~ fputsym(fout, esc, typ, 0, 0);
+
+					/*for (p = bp; p < sp; ++p) {
+						typ = *p;
+						fputsym(fout, esc, typ, 0, 0);
+						fputchr(fout, '.');
+						//~ fputfmt(fout, "[%?+k]", typ->init);
+					}*/
 				}
 				fputstr(fout, esc, sym->name);
 				break;

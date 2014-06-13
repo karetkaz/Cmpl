@@ -200,10 +200,10 @@ void sort(int arr[]) {
 	}
 }
 
-void qsort(int array[]) {
+void qsort1(int array[]) {
 	static void qsort(int array[], int low, int high) {
 		struct Qsort {
-			int array[];	//
+			int array[];
 			int low;
 			int high;
 			int pivot;
@@ -274,7 +274,7 @@ int test_arr_max = maximum(arr2);
 int test_arr_toFind = arr2[arr2.length / 2];
 
 debug("unsorted", variant(arr2));
-qsort(arr2);
+qsort1(arr2);
 debug("sorted", variant(arr2));
 
 int test_arr_index = bsearch(arr2, test_arr_toFind);
@@ -308,12 +308,12 @@ int getArrayElement(uint32 index, int array[]) {
 }
 
 int getArrayElement(uint32 index, int a1, int a2) {
-	const int array[] = {a1, a2};
+	const int array[] = [a1, a2];
 	return getArrayElement(index, array);
 }
 
 int getArrayElement(uint32 index, int a1, int a2, int a3) {
-	const int array[] = {a1, a2, a3};
+	const int array[] = [a1, a2, a3];
 	return getArrayElement(index, array);
 }
 

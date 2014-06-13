@@ -1,16 +1,16 @@
 // Image dithering demo.
 enum Window {
 	draw = RenderMode.swap_buff;
-	resx = 512;
+	resx = 512 * 1;
 	resy = resx;
 }
 
 //~ string fileName = "media/images/David.png";
 //~ string fileName = "media/images/lenaRGB.png";
-//~ string fileName = "media/images/download.jpg";
+string fileName = "media/images/download.jpg";
 //~ string fileName = "media/images/dino-blue.jpg";
 //~ string fileName = "media/images/Earth.jpg";
-string fileName = "media/images/nol.bmp";
+//~ string fileName = "media/images/nol.bmp";
 
 enum Dithering: int32 {
 	None = '0';
@@ -28,14 +28,14 @@ gxSurf dither(gxSurf img, bool grayscale, uint32 colors, Dithering method) {
 	int cols[256];
 
 	for (int i = 0; i < cols.length; i += 1) {
-		cols[i] = (i * (colors) / cols.length) * (cols.length / colors);
+		cols[i] = (i * (colors+1) / cols.length) * (cols.length / colors);
 	}
 
 	int width = width(img);
 	int height = height(img);
 
-	define toRgb(int r, int g, int b) = int(__rgb(r, g, b));
-	define toGray(int col) = int(__gray(col));
+	define toRgb(int r, int g, int b) = int(rgbClamp(r, g, b));
+	define toGray(int col) = int(grayClamp(col));
 
 	if (method == Dithering.None) {
 		if (grayscale) {
@@ -128,6 +128,19 @@ gxSurf dither(gxSurf img, bool grayscale, uint32 colors, Dithering method) {
 					setPixel(img, x - 1, y + 1, rgbError(getPixel(img, x - 1, y + 1), 3));
 					setPixel(img, x + 0, y + 1, rgbError(getPixel(img, x + 0, y + 1), 5));
 					setPixel(img, x + 1, y + 1, rgbError(getPixel(img, x + 1, y + 1), 1));
+
+					/*if (x + 1 < width) {
+						setPixel(img, x + 1, y + 0, rgbError(getPixel(img, x + 1, y + 0), 7));
+					}
+					if (y + 1 < height) {
+						if (x - 1 > 0) {
+							setPixel(img, x - 1, y + 1, rgbError(getPixel(img, x - 1, y + 1), 3));
+						}
+						setPixel(img, x + 0, y + 1, rgbError(getPixel(img, x + 0, y + 1), 5));
+						if (x + 1 < width) {
+							setPixel(img, x + 1, y + 1, rgbError(getPixel(img, x + 1, y + 1), 1));
+						}
+					}*/
 				}
 			}
 		}
@@ -227,7 +240,7 @@ gxSurf dither(gxSurf img, bool grayscale, uint32 colors, Dithering method) {
 		result = img;
 	}
 	else if (method == Dithering.Bayer) {
-		static const int8 Pattern[8][8] = {
+		static const int8 Pattern[8][8] = [
 			 0, 32,  8, 40,  2, 34, 10, 42,
 			48, 16, 56, 24, 50, 18, 58, 26,
 			12, 44,  4, 36, 14, 46,  6, 38,
@@ -236,7 +249,7 @@ gxSurf dither(gxSurf img, bool grayscale, uint32 colors, Dithering method) {
 			51, 19, 59, 27, 49, 17, 57, 25,
 			15, 47,  7, 39, 13, 45,  5, 37,
 			63, 31, 55, 23, 61, 29, 53, 21
-		};
+		];
 
 		// TODO: simplify
 		int levels = colors - 1;
@@ -291,31 +304,41 @@ gxSurf dither(gxSurf img, bool grayscale, uint32 colors, Dithering method) {
 	}
 }
 
-int maxcolors = 4;
-int grayscale = true;
-Dithering method = Dithering.Stucki;
-//~ method = Dithering.Steinberg;
-method = Dithering.SteinbergFalse;
+int maxcolors = 1;
+int grayscale = !true;
+Dithering method = Dithering.Bayer;
+method = Dithering.Steinberg;
+//~ method = Dithering.SteinbergFalse;
 //~ method = Dithering.Bayer;
 //~ method = Dithering.None;
 
+define workOnOffscreen = !true;
+
+static if(workOnOffscreen) {
+//~ vec4f makegray(float64 x, float64 y) {return vec4f(Math.min(x, y));}
+vec4f makegray(float64 x, float64 y) {return vec4f(x * y);}
+evalSurf(offScreen, null, makegray);
+
+bmpWrite(offScreen, "out/image.bmp");
+
+dither(offScreen, grayscale, maxcolors, method);
+
+}
+static if(!workOnOffscreen) {
 define hex(uint32 c) = int("0123456789abcdef"[c & 0xf]);
 
 int gs = grayscale ? 'g' : 'c';
 int h1 = hex(maxcolors >> 4);
 int h2 = hex(maxcolors);
 
-uint8 filename[34] = {'o','u','t','/','o','u','t','[',gs,'x',h1, h2,'_',emit(char, (method)),']','.','b','m','p',0};
-
-println(string(filename));
+uint8 filename[34] = ['o','u','t','/','o','u','t','[',gs,'x',h1, h2,'_',emit(char, (method)),']','.','b','m','p',0];
 
 gxSurf image = gxSurf(fileName);
-
-vec4f color(float64 x, float64 y) {return vec4f(Math.min(x, y));}
-evalSurf(image, null, color);
-
 dither(image, grayscale, maxcolors, method);
+
+//~ debug(string(filename));
 bmpWrite(image, string(filename));
 
-image = tileSurf(gxSurf(4000, 4000), 0, 0, image, null);
+//~ image = tileSurf(gxSurf(4000, 4000), 0, 0, image, null);
 setupPicView(image, false);
+}

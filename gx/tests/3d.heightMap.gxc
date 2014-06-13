@@ -1,14 +1,14 @@
 // 3d height map demo.
 enum Window {
 	draw = RenderMode.drawFill|RenderMode.draw_lit;// & ~RenderMode.zero_cbuf;
-	resx = 512;
-	resy = 512;
+	resx = 1200;
+	resy = 800;
 }
 
 define pi = Math.pi;
 
-void meshGen(bool sclosed, bool tclosed, gxSurf heihgtMap) {
-	//~ assert(depth(heihgtMap) == 32, "FixMe");
+void meshGen(gxSurf heihgtMap) {
+	//~ assert(depth(heihgtMap) == 32, "Error");
 	int vtx = 0;
 	int tdiv = width(heihgtMap);
 	int sdiv = height(heihgtMap);
@@ -17,9 +17,9 @@ void meshGen(bool sclosed, bool tclosed, gxSurf heihgtMap) {
 		double t = i / double(tdiv - 1);
 		for (int j = 0; j < sdiv; j += 1) {
 			double s = j / double(sdiv - 1);
-			mesh.Pos(vtx, s, t, lum(getPixel(heihgtMap, i, j)) / (255. * 6));
+			mesh.Pos(vtx, s, t, lum(getPixel(heihgtMap, sdiv - j, tdiv - i)) / (255. * 6));
 			mesh.Nrm(vtx, 0., 0., 1.);
-			mesh.Tex(vtx, s, t);
+			mesh.Tex(vtx, 1-s, 1-t);
 			vtx += 1;
 		}
 	}
@@ -36,16 +36,19 @@ void meshGen(bool sclosed, bool tclosed, gxSurf heihgtMap) {
 	}
 }
 
-define division = 512/6;
-string img = "media/images/hm2.jpg";
+define division = 512/4;
+//~ string img = "media/images/hm2.jpg";
+string img = "C:/Users/User/Desktop/disp1.jpg";
+string tex = "C:/Users/User/Desktop/disp1.jpg";
 define resize(gxSurf src, int width, int height) = zoomSurf(gxSurf(width, height), null, src, null, 1);
 
-meshGen(false, false, resize(gxSurf(img), division, division));
+meshGen(resize(gxSurf(img), division, division));
+mesh.Texture(gxSurf(tex));
 
 mesh.Center(2);
 mesh.Normalize(0);
 //~ mesh.Normalize(1e-10);
-
+/*
 void drawCB() {
 	Gui.Repaint();
 }
@@ -134,7 +137,7 @@ void camera_Rotate(vec4f &dir, vec4f &orbit, float ang) {
 
 			camera.Pos(dph(tmp, orbit));
 		}// +/
-	}// */
+	}// * /
 }
 void camera_Move(vec4f &dir, float step) {
 	camera.Pos(add(camera.Pos, mul(dir, step)));
@@ -197,3 +200,4 @@ Gui.setMouseHandler(mouseHandler);
 mesh.Info();
 //~ mesh.Save("mesh.obj");
 //~ Gui.exitLoop();
+*/

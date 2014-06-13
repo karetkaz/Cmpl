@@ -542,10 +542,10 @@ static int libCallDebug(libcArgs args) {
 	int   line = argi32(args, 1 * vm_size);
 	//~ char* func = argstr(args, ? * vm_size);
 	char* message = argref(args, 2 * vm_size);
-	int loglevel = argi32(args, 3 * vm_size);
-	int tracelevel = argi32(args, 4 * vm_size);
-	void* objref = argref(args, 5 * vm_size);
-	symn objtyp = argref(args, 6 * vm_size);
+	void* objref = argref(args, 3 * vm_size);
+	symn objtyp = argref(args, 4 * vm_size);
+	int loglevel = argi32(args, 5 * vm_size);
+	int tracelevel = argi32(args, 6 * vm_size);
 
 	// skip loglevel 0
 	if (rt->logf != NULL && loglevel != 0) {
@@ -641,7 +641,7 @@ int install_stdc(state rt) {
 		ccAddCall(rt, libCallMemMgr, NULL, "pointer memmgr(pointer ptr, int32 size);");
 	}
 	if (rt->cc->type_var != NULL) {		// debug.
-		rt->cc->libc_dbg = ccAddCall(rt, libCallDebug, NULL, "void debug(string message, int level, int trace, variant object);");
+		rt->cc->libc_dbg = ccAddCall(rt, libCallDebug, NULL, "void debug(string message, variant inspect, int level, int maxTrace);");
 		rt->cc->libc_dbg_idx = rt->cc->libc_dbg->offs;
 	}
 

@@ -95,7 +95,7 @@ static struct Fixed {
 	}
 
 	fixed fxp2xp(fixed x) {
-		static const uint16 tbl2xp[] = {		// (2 ** x) - 1, x: [0,1)
+		static const uint16 tbl2xp[] = [		// (2 ** x) - 1, x: [0,1)
 			0x0000, 0x00b2, 0x0164, 0x0217, 0x02ca, 0x037d, 0x0431, 0x04e6,
 			0x059b, 0x0651, 0x0707, 0x07bd, 0x0874, 0x092c, 0x09e4, 0x0a9c,
 			0x0b56, 0x0c0f, 0x0cc9, 0x0d84, 0x0e3f, 0x0efa, 0x0fb6, 0x1073,
@@ -128,7 +128,7 @@ static struct Fixed {
 			0xdfc9, 0xe116, 0xe264, 0xe3b3, 0xe503, 0xe654, 0xe7a5, 0xe8f8,
 			0xea4b, 0xeb9f, 0xecf5, 0xee4b, 0xefa2, 0xf0fa, 0xf253, 0xf3ad,
 			0xf507, 0xf663, 0xf7c0, 0xf91e, 0xfa7c, 0xfbdc, 0xfd3c, 0xfe9e,
-			0xffff};
+			0xffff];
 
 		/* Math Logic:
 		 * fxp2xp(x) <=> exp2(x) <=> 2 ** x
@@ -153,7 +153,7 @@ static struct Fixed {
 	}
 
 	fixed fxplg2(fixed x) {
-		static const uint16 tbllg2[] = {		// log2(x) - 1, x: [0,1)
+		static const uint16 tbllg2[] = [		// log2(x) - 1, x: [0,1)
 			0x0000, 0x0171, 0x02e0, 0x044e, 0x05ba, 0x0725, 0x088e, 0x09f7,
 			0x0b5d, 0x0cc3, 0x0e27, 0x0f8a, 0x10eb, 0x124b, 0x13aa, 0x1508,
 			0x1664, 0x17bf, 0x1919, 0x1a71, 0x1bc8, 0x1d1e, 0x1e73, 0x1fc6,
@@ -186,7 +186,7 @@ static struct Fixed {
 			0xee45, 0xef06, 0xefc8, 0xf088, 0xf149, 0xf209, 0xf2c8, 0xf387,
 			0xf446, 0xf505, 0xf5c3, 0xf680, 0xf73e, 0xf7fb, 0xf8b7, 0xf973,
 			0xfa2f, 0xfaea, 0xfba5, 0xfc60, 0xfd1a, 0xfdd4, 0xfe8e, 0xff47,
-			0xffff};
+			0xffff];
 
 		/* Math Logic:
 		 * log2(x) logarithm base 2
@@ -210,18 +210,18 @@ static struct Fixed {
 
 	void sincos(fixed x, fixed &s, fixed &c) {
 		//~ TODO: const static fixed polysin[4] = {
-		const static fixed polysin[] = {		// eps < 0.000124 in [0, 2pi]
+		const static fixed polysin[] = [		// eps < 0.000124 in [0, 2pi]
 			toFixed(-1./5040	+.00001),		// 1/7!
 			toFixed(+1./120		+.00000),		// 1/5!
 			toFixed(-1./6		-.00006),		// 1/3!
 			toFixed(+1./1		+.00000)		// 1/1!
-		};
-		const static fixed polycos[] = {		// eps < 0.000126 in [0, 2pi]
+		];
+		const static fixed polycos[] = [		// eps < 0.000126 in [0, 2pi]
 			toFixed(-1./720		-.00004),		// 1/6!
 			toFixed(+1./24		+.00003),		// 1/4!
 			toFixed(-1./2		-.00007),		// 1/2!
 			toFixed(+1./1		-.00010)		// 1/0!
-		};
+		];
 
 		int32 ssgn = 1;
 		int32 csgn = 1;
@@ -334,12 +334,12 @@ static struct Fixed {
 		result = div(sin, cos);
 	}
 	fixed Asin(fixed x) {
-		const static fixed polyasin[] = {			// eps < 0.000106 in [-1, +1]
+		const static fixed polyasin[] = [			// eps < 0.000106 in [-1, +1]
 			toFixed(-0.0187293),
 			toFixed(+0.0742610),
 			toFixed(-0.2121144),
 			toFixed(+1.5707288)
-		};
+		];
 
 		int32 neg = 0;
 		if (x.value < 0) {
@@ -456,7 +456,7 @@ int test(const assertInfo info, double eps) {
 	return Math.abs(info.returned - info.expected) < eps ? 0 : Debug.debug;
 }
 
-define assert(const assertInfo &info) = debug("test failed", test(info, 1e-4), Debug.notrace, variant(&info));
+define assert(const assertInfo &info) = debug("test failed", variant(&info), test(info, 1e-4), Debug.notrace);
 define assertEquals(string f, float64 a, fixed b) = assert(assertInfo(f, a, float64(b), b));
 //~ define assertEquals(string f, float64 a, fixed b) = void(0);
 

@@ -8,9 +8,9 @@ enum Window {
 define PI = Math.pi;
 
 define toCartesian(Complex &x) = Complex(x.re * cos(x.im), x.re * sin(x.im));
-define toPolar(Complex x) = Complex(abs(x), arg(x));
+define toPolar(Complex &x) = Complex(abs(x), arg(x));
 
-define AbsMod(const double val, double mod) = ((val < 0 ? val + mod : val) % mod);
+define AbsMod(const double &val, double &mod) = ((val < 0 ? val + mod : val) % mod);
 
 vec4f Domain(Complex z, double mod) {
 	result.x = AbsMod(arg(z)/(PI*2) + PI/4, mod);
@@ -20,7 +20,7 @@ vec4f Domain(Complex z, double mod) {
 }
 
 vec4f rgbOp(double x, double y) {
-	define N = PI / 1;
+	define N = PI / 1.;
 	x = Math.lerp(x, -N, N);
 	y = Math.lerp(y, -N, N);
 
@@ -33,11 +33,9 @@ vec4f rgbOp(double x, double y) {
 	//~ z = sin(toCartesian(sin(toPolar(z))));
 	//~ z = sin(toCartesian(sin(toCartesian(sin(z)))));
 	//~ z = sin(sin(sin(toCartesian(z))));
-
-	//~ z = pow(z, Complex(1.4));
+	//~ z = add(z, div(pow(z, 4), sub(sin(pow(z, 3)), 1)));
 
 	z = sin(z);
-	//~ z = add(z, div(pow(z, 4), sub(sin(pow(z, 3)), 1)));
 	return Domain(z, 1);
 }
 

@@ -57,9 +57,7 @@ void testDeallocation(bool reAlloc, int test) {
 	//~ memmgr(null, 0);
 }
 
-define makeBug = 1;
-//~ memmgr(null, 0);
-memmgr(null, makeBug);
+memmgr(null, 0);
 testDeallocation(false, 1);
 testDeallocation(false, 2);
 testDeallocation(false, 3);
@@ -72,10 +70,9 @@ testDeallocation(true, 3);
 testDeallocation(true, 4);
 testDeallocation(true, 5);
 memmgr(null, 0);
-//~ int a = 9;
-//~ free(pointer(&a));
 
 //~ intptr p2;
+//~ pointer p = malloc(100);
 //~ p2.ptr = p;
-//~ p2.int += 1;
+//? p2.int += 1;
 //~ free(p2.ptr);

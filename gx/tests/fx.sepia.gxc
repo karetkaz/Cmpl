@@ -1,16 +1,16 @@
 // Sepia effect demo.
 enum Window {
 	draw = RenderMode.swap_buff;
-	resx = 512;
-	resy = resx;
-	//~ resx = 1440;
-	//~ resy = 800;
+	//~ resx = 512;
+	//~ resy = resx;
+	resx = 1440;
+	resy = 800;
 }
 
 //~ string fileName = "media/images/David.png";
-string fileName = "media/images/lenaRGB.png";
+//~ string fileName = "media/images/lenaRGB.png";
 //~ string fileName = "media/images/download.jpg";
-//~ string fileName = "//media/Data/Pictures/Canon/2006/2006_04_17 - Banya/IMG_0086.JPG";
+string fileName = "/media/Data/Pictures/Canon/2006/2006_04_17 - Banya/IMG_0086.JPG";
 //~ string fileName = "media/images/dino-blue.jpg";
 //~ string fileName = "media/images/Earth.jpg";
 //~ string fileName = "media/images/nol.bmp";
@@ -61,7 +61,7 @@ vec4f sepiaFp(vec4f rgbColor) {
 	result = dot(YIQ2RGB, yiqColor);
 }
 
-vec4f sepia2Fp(vec4f c) {
+vec4f sepiaFp2(vec4f c) {
 	result = vec4f(
 		c.x * 0.400 + c.y * 0.769 + c.z * 0.189,
 		c.x * 0.349 + c.y * 0.686 + c.z * 0.168,
@@ -70,5 +70,5 @@ vec4f sepia2Fp(vec4f c) {
 }
 
 //~ setupPicView(image, true);
-fillSurf(image, null, sepia2Fp);
+fillSurf(image, null, sepiaFp);
 setupPicView(image, true);

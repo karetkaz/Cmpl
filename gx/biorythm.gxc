@@ -1,9 +1,10 @@
 // biorithm calculator
 enum Window {
 	draw = RenderMode.swap_buff;
-	resx = 320;
-	resy = 200;
+	resx = 800;
+	resy = 560;
 	padding = 5;
+	lineHeight = 26;
 }
 
 struct Biorithm {
@@ -13,7 +14,7 @@ struct Biorithm {
 	string label;
 }
 
-const Biorithm biorithms[] = {
+const Biorithm biorithms[] = [
 	Biorithm(0x5050ff, 23,  0, "Physical - Fizikai %d%%"),
 	Biorithm(0xff0000, 28,  0, "Emotional - Erzelmi %d%%"),
 	Biorithm(0x00ff00, 33,  0, "Intellectual - Szellemi %d%%"),
@@ -21,7 +22,7 @@ const Biorithm biorithms[] = {
 	Biorithm(0x6f6f6f, 23, 33, "Mastery - Iranyitas %d%%"),
 	Biorithm(0xfeab00, 23, 28, "Passion - Szenvedely %d%%"),
 	Biorithm(0x9466db, 28, 33, "Wisdom - Bolcsesseg %d%%")
-};
+];
 
 void drawBiorithm(gxSurf dst, int daysToShow, double now, Date birth, Biorithm biorithms[]) {
 
@@ -31,7 +32,7 @@ void drawBiorithm(gxSurf dst, int daysToShow, double now, Date birth, Biorithm b
 		double days = now - birth.days;
 		double precent = 0;
 
-		define precision = 4;
+		define precision = 3;
 		if (br.period2) {
 			double p1 = br.period;
 			double p2 = br.period2;
@@ -69,19 +70,18 @@ void drawBiorithm(gxSurf dst, int daysToShow, double now, Date birth, Biorithm b
 			}
 		}
 		if (labelposY >= 0) {
-			char text[256] = {0};
+			char text[256] = [0];
 			format(text, br.label, precent);
 			drawText(dst, Window.padding, labelposY, string(text), br.color);
 		}
 	}
 
-	define textSpacing = 16;
-	int textPosition = Window.resy - Window.padding - textSpacing * (biorithms.length + 1);
+	int textPosition = Window.resy - Window.padding - Window.lineHeight * (biorithms.length + 1);
 
 	// clear screen
 	fillRect(dst, 0, 0, 32768, 32768, 0x000000);
 
-	// day lines
+	// day grid lines
 	for (int i = 1; i <= 2 * daysToShow; i += 1) {
 		double time = Window.resx * (i / (2. * daysToShow)) - (now % 1 * (double(Window.resx) / daysToShow / 2));
 		drawLine(dst, time, 0, time, Window.resy, 0x282828);
@@ -91,7 +91,7 @@ void drawBiorithm(gxSurf dst, int daysToShow, double now, Date birth, Biorithm b
 	for (int i = 0; i < biorithms.length; i += 1) {
 		if (biorithms[i].color == 0)
 			continue;
-		textPosition += textSpacing;
+		textPosition += Window.lineHeight;
 		drawGraph(dst, biorithms[i], daysToShow, now, birth, textPosition);
 	}
 
@@ -104,7 +104,7 @@ void drawBiorithm(gxSurf dst, int daysToShow, double now, Date birth, Biorithm b
 	drawText(dst, Window.padding, Window.padding, string(text), -1);
 
 	format(text, "Birth: %04y.%02m.%02d", birth);
-	drawText(dst, Window.padding, Window.padding + textSpacing, string(text), -1);
+	drawText(dst, Window.padding, Window.padding + Window.lineHeight, string(text), -1);
 }
 
 void setupBiorithm(int _daysToShow, Date _now, Date _birth) {
@@ -157,8 +157,6 @@ void setupBiorithm(int _daysToShow, Date _now, Date _birth) {
 
 		if (btn == 1) {
 			pos += ox - x;
-			//~ roi.x = Math.clamp(roi.x + ox - x, 0, width(img) - roi.w);
-			//~ roi.y = Math.clamp(roi.y + oy - y, 0, height(img) - roi.h);
 			reDraw = true;
 		}
 		static if (inertial_pan) {
@@ -205,4 +203,5 @@ define daysToShow = 15;
 //~ setupBiorithm(daysToShow, Now, Date(1984, 8, 30));
 setupBiorithm(daysToShow, Now, Date(1983, 5,  2));
 
-println(millis());
+long now = millis();
+debug("now", variant(&now));

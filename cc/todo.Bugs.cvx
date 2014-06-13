@@ -79,7 +79,7 @@ slice_in_struct slice_in_struct_fn(int a[]) {
 	return slice_in_struct(a);
 }
 
-int a[4] = {1, 2, 3, 4};
+const int a[] = [1, 2, 3, 4];
 
 slice_in_struct it1 = slice_in_struct(a);
 
@@ -101,9 +101,9 @@ double y1 = sqr1(x*x+x);		//
 double y2 = sqr2(x*x+x);		// should produce the same code as above
 //~ +/
 
-/+ BUG: convert char slice to string 
+//~ /+ BUG: convert char slice to string 
 const char str1[] = "alma a fa alatt nyari piros alma";
-const char str2[] = {'a', 'l', 'm', 'a', 0};
+const char str2[] = ['a', 'l', 'm', 'a', 0];
 string str3 = "alma";
 
 string str5 = string(str2);		//~ OK
@@ -120,7 +120,7 @@ string str = emit(string, ref(x));
 //~ println(emit(string, ref(x)));
 //~ +/
 
-//~ /+ DONE: fixed size array for defines
+/+ DONE: fixed size array for defines
 void testArr(double x[]) {
 	trace("array.length", variant(&x.length));
 	x[3] = 8;
@@ -128,7 +128,7 @@ void testArr(double x[]) {
 
 define TestArr(double x[16]) = testArr(x);
 
-double x[16] = {1};
+double x[16] = 1.;
 //~ double x[18] = {1};
 
 testArr(x);

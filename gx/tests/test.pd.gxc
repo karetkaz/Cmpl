@@ -76,7 +76,6 @@ define sqrtf(float x) = sqrt(x);
 define sinf(float x) = sin(x);
 define fabsf(float x) = Math.abs(x);
 define cosf(float x) = cos(x);
-define colsca(vec4f &x, float s) = void(x = vec4f(x.x * s, x.y * s, x.z * s));
 define pi = Math.pi;
 
 void setup(double &time, vec4f pixelCB(double x, double y)) {
@@ -103,7 +102,8 @@ void setup(double &time, vec4f pixelCB(double x, double y)) {
 			snapshot = false;
 			int64 start = millis();
 			evalSurf(offScreen, null, internals.pixelCB);
-			print("evaluated in: %F seconds\n", float64(millis() - start) / 1000);
+			float64 time = (millis() - start) / 1000.;
+			debug("evaluation time in seconds", variant(&time));
 			//~ bmpWrite(offScreen, "out-2.bmp");
 		}
 		if (animate) {
@@ -186,7 +186,11 @@ vec4f yinyang(double x, double y) {
 define smoothstep(float t, float a, float b) = Math.smooth(t, a, b);
 
 vec4f eye(double x, double y) {
-	vec4f interior(float x, float y, float b) {
+	static void colscale(vec4f &x, float s) {
+		x = vec4f(x.x * s, x.y * s, x.z * s);
+	}
+
+	static vec4f interior(float x, float y, float b) {
 		// ezt nem tudom mire jo
 		define noise2f(float32 x, float32 y, int xx, int yy) = Perlin.Noise(x, y);
 
@@ -208,10 +212,10 @@ vec4f eye(double x, double y) {
 
 		vec4f den = vec4f(0.3f, 0.7f, 0.4f+e);
 		float no = 0.8f+0.2f*noise2f(4.0f*r, 32.0f*a/pi,32,32);
-		colsca(den, no);
+		colscale(&den, no);
 
 		float f2 = smoothstep(e, 0.025f, 0.035f);
-		colsca(den, f2);
+		colscale(&den, f2);
 
 		// blend in/out
 		result = lerp(smoothstep(e, 0.35f, 0.36f), den, fue);
@@ -219,7 +223,7 @@ vec4f eye(double x, double y) {
 		// ring
 		float ri=smoothstep(e,.31f,.35f)-smoothstep(e,.35f,.39f);
 		ri = 1.0f-0.35f*ri;
-		colsca(result, ri);
+		colscale(&result, ri);
 
 		// reflecion
 		float r3 = sqrtf(r*r*r);
@@ -230,7 +234,7 @@ vec4f eye(double x, double y) {
 		result.z += re*(1.0f-result.z);
 
 		// shadow
-		colsca(result, 0.85f+0.15f*smoothstep(-b, 0.0f, 0.2f) );
+		colscale(&result, 0.85f+0.15f*smoothstep(-b, 0.0f, 0.2f) );
 
 	}
 
@@ -282,7 +286,7 @@ vec4f tunnel0(double x, double y) {
 	result = rgb2vec4f(tex2d(srcImg, u, v, 2 * r));
 }
 
-setup(&time, blob2d);
+setup(&time, tunnel0);
 //~ setup(&time, yinyang);
 //~ setup(&time, Perlin.Noise2f);
 //~ Gui.exitLoop();

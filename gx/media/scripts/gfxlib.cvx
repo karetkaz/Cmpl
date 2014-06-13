@@ -47,7 +47,8 @@ struct rgb:1 {
 	int8 x;
 }
 
-define int(rgb value) = emit(int, rgb(value));
+define int(rgb value) = emit(int, (value));
+define asrgb(int value) = emit(rgb, (value));
 
 define __rgb(int r, int g, int b) = emit(rgb, i32((r << 16) | (g << 8) | b));
 define rgbClamp(int r, int g, int b) = __rgb(Math.clamp(r, 0, 255), Math.clamp(g, 0, 255), Math.clamp(b, 0, 255));
@@ -60,8 +61,10 @@ define grayAnd(int c) = __gray(c & 255);
 define rgb(int r, int g, int b) = rgbAnd(r, g, b);
 define gray(int c) = grayAnd(c);
 
-define rgb(double r, double g, double b) = rgbClamp(r * 255, g * 255, b * 255);
-define gray(double c) = grayClamp(c * 255);
+define rgb(float64 r, float64 g, float64 b) = rgbClamp(r * 255, g * 255, b * 255);
+define rgb(float32 r, float32 g, float32 b) = rgbClamp(r * 255, g * 255, b * 255);
+define gray(float64 c) = grayClamp(c * 255);
+define gray(float32 c) = grayClamp(c * 255);
 
 // get the Red channel of the color
 define rch(int col) = int32((col >> 16) & 0xff);
@@ -329,15 +332,15 @@ void blendLut(gxClut &lut, int Colors[]) {
 }
 
 void blendLut(int count, gxClut &lut, int c1, int c2) {
-	int Colors[2] = {c1, c2};
+	int Colors[2] = [c1, c2];
 	blendLut(count, lut, Colors);
 }
 void blendLut(int count, gxClut &lut, int c1, int c2, int c3) {
-	int Colors[3] = {c1, c2, c3};
+	int Colors[3] = [c1, c2, c3];
 	blendLut(count, lut, Colors);
 }
 void blendLut(int count, gxClut &lut, int c1, int c2, int c3, int c4) {
-	int Colors[4] = {c1, c2, c3, c4};
+	int Colors[4] = [c1, c2, c3, c4];
 	blendLut(count, lut, Colors);
 }
 

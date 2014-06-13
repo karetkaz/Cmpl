@@ -1452,7 +1452,7 @@ void fputval(state rt, FILE* fout, symn var, stkval* ref, int level, int mode) {
 	}
 
 	if (mode & prType) {
-		fputfmt(fout, "%T(", typ);
+		fputfmt(fout, "%-T(", typ);
 	}
 
 	if (ref == NULL) {					// null reference.
@@ -1544,70 +1544,72 @@ void fputval(state rt, FILE* fout, symn var, stkval* ref, int level, int mode) {
 		} break;
 		case TYPE_arr: {
 			// ArraySize
-			int i, n = typ->offs;
+			int i, n = typ->size;
 			symn base = typ->type;
+			int elementsOnNewLine = 0;
+			int arrayHasMoreElements = 0;
 
 			if (fmt != NULL) {
-				// TODO: string uses this
+				// TODO: printing strings ...
 				fputfmt(fout, fmt, ref);
+				break;
+			}
+
+			//~ fputfmt(fout, "@%06x", vmOffset(rt, ref));
+			if (typ->cast != TYPE_arr) { // TODO: OR USE: if (typ->stat) {
+				// static array
+				dieif(n % base->size != 0, "FixMe");
+				fputfmt(fout, "[");
+				n /= base->size;
 			}
 			else {
-				int elementsOnNewLine = 0;
-				int arrayHasMoreElements = 0;
+				n = ref->arr.length;
+				ref = (stkval*)(rt->_mem + ref->u4);
+				fputfmt(fout, "<%d>[", n);
+			}
 
-				//~ fputfmt(fout, "@%06x", vmOffset(rt, ref));
-				if (typ->stat) {
-				// if (typ->cast != TYPE_arr) {
-					// static array
-					fputfmt(fout, "{");
+			#ifdef MAX_ARR_PRINT
+			if (n > MAX_ARR_PRINT) {
+				n = MAX_ARR_PRINT;
+				arrayHasMoreElements = 1;
+			}
+			#endif
+
+			if (base->kind == TYPE_arr) {
+				elementsOnNewLine = 1;
+			}
+
+			//~ if (base->kind == TYPE_rec && base->prms) {
+				//~ elementsOnNewLine = 1;
+			//~ }
+
+			for (i = 0; i < n; ++i) {
+				if (i > 0) {
+					fputfmt(fout, ",");
+				}
+				if (elementsOnNewLine) {
+					fputfmt(fout, "\n");
+				}
+				else if (i > 0) {
+					fputfmt(fout, " ");
+				}
+
+				fputval(rt, fout, base, (stkval*)((char*)ref + i * sizeOf(base)), elementsOnNewLine ? level + 1 : -level, 0);
+			}
+
+			if (arrayHasMoreElements) {
+				if (elementsOnNewLine) {
+					fputfmt(fout, ",\n%I...", level + 1);
 				}
 				else {
-					n = ref->arr.length;
-					ref = (stkval*)(rt->_mem + ref->u4);
-					fputfmt(fout, "[%d]{", n);
+					fputfmt(fout, ", ...");
 				}
-
-				#ifdef MAX_ARR_PRINT
-				if (n > MAX_ARR_PRINT) {
-					n = MAX_ARR_PRINT;
-					arrayHasMoreElements = 1;
-				}
-				#endif
-
-				if (base->kind == TYPE_arr)
-					elementsOnNewLine = 1;
-
-				if (base->kind == TYPE_rec && base->prms)
-					elementsOnNewLine = 1;
-
-				for (i = 0; i < n; ++i) {
-					if (i > 0) {
-						fputfmt(fout, ",");
-					}
-					if (elementsOnNewLine){
-						fputfmt(fout, "\n");
-					}
-					else if (i > 0){
-						fputfmt(fout, " ");
-					}
-
-					fputval(rt, fout, base, (stkval*)((char*)ref + i * sizeOf(base)), elementsOnNewLine ? level + 1 : 0, 0);
-				}
-
-				if (arrayHasMoreElements) {
-					if (elementsOnNewLine) {
-						fputfmt(fout, ",\n%I...", level + 1);
-					}
-					else {
-						fputfmt(fout, ", ...");
-					}
-				}
-
-				if (elementsOnNewLine) {
-					fputfmt(fout, "\n%I", level);
-				}
-				fputfmt(fout, "}");
 			}
+
+			if (elementsOnNewLine) {
+				fputfmt(fout, "\n%I", level);
+			}
+			fputfmt(fout, "]");
 			break;
 		}
 		case TYPE_def: 

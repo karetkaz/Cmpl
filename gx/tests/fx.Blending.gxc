@@ -17,8 +17,8 @@ define resize(gxSurf src, int width, int height) = zoomSurf(gxSurf(width, height
 
 gxSurf image0 = gxSurf(Window.resx, Window.resy);
 
-//~ gxSurf image1 = resize(gxSurf(fileName), Window.resx, Window.resy);
-//~ gxSurf image2 = resize(gxSurf(fileBlend), Window.resx, Window.resy);
+define useGradient = !true;
+static if (useGradient) {
 gxClut lut1;
 gxClut lut2;
 blendLut(256, &lut1, 0xffffff, 0);
@@ -29,6 +29,11 @@ gxSurf image1 = gxSurf(Window.resx, Window.resy);
 gradSurf(image1, &g1, &lut1, Gradient.Linear);
 gxSurf image2 = gxSurf(Window.resx, Window.resy);
 gradSurf(image2, &g2, &lut2, Gradient.Linear);
+}
+static if (!useGradient) {
+gxSurf image1 = resize(gxSurf(fileName), Window.resx, Window.resy);
+gxSurf image2 = resize(gxSurf(fileBlend), Window.resx, Window.resy);
+}
 
 static struct BlendMode {
 /*Blend Modes:
@@ -224,4 +229,4 @@ void mouseCB(int btn, int x, int y) {
 Gui.setDrawCallback(drawCB);
 Gui.setMouseHandler(mouseCB);
 copySurf(image0, 0, 0, image1, null);					// atmasoljuk siman a kepet
-copySurf(image0, 0, 0, image2, null, 1, BlendMode.LinearLight);		// atmasoljuk a fuggvenny segitsegevel a kepet
+copySurf(image0, 0, 0, image2, null, 1, BlendMode.PinLight);		// atmasoljuk a fuggvenny segitsegevel a kepet

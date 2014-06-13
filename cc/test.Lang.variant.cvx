@@ -17,7 +17,7 @@ variant varNullStr = variant(&infoNullStr);
 vec4f vector4f = vec4f(1,2,3,4);
 variant varStruct = variant(&vector4f);
 
-int intArray[9] = {6};
+int intArray[9] = 6;
 variant varArray = variant(&intArray);
 
 int intSlice[] = intArray;

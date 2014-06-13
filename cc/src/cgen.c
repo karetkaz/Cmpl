@@ -2422,7 +2422,7 @@ int gencode(state rt, int mode) {
 	// TODO: generate functions first
 	rt->vm.opti = mode & cgen_opti;
 
-	// static vars & functions
+	// static variables & functions
 	if (rt->defs != NULL) {
 		symn var;
 
@@ -2432,16 +2432,17 @@ int gencode(state rt, int mode) {
 		// generate global and static variables & functions
 		for (var = rt->gdef; var; var = var->gdef) {
 
+			// exclude null
 			if (var == rt->cc->null_ref)
 				continue;
 
+			// exclude aliases and typenames
 			if (var->kind != TYPE_ref)
 				continue;
 
+			// exclude non static variables
 			if (!var->stat)
 				continue;
-
-			dieif(var->kind != TYPE_ref, "Error");
 
 			if (var->call && var->cast != TYPE_ref) {
 				int seg = emitopc(rt, markIP);
@@ -2458,6 +2459,7 @@ int gencode(state rt, int mode) {
 				rt->vm.ro = stkoffs(rt, 0);
 				rt->vm.sm = rt->vm.ss;		// leave return address on stack
 
+				//~ dieif(var->offs != 0, "offset %06x for: %+T", var->offs, var);
 				var->offs = emitopc(rt, markIP);
 
 				if (!cgen(rt, var->init, TYPE_vid)) {

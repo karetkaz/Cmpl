@@ -438,7 +438,7 @@ int program(int argc, char* argv[]) {
 
 		// output what
 		else if (strncmp(arg, "-api", 4) == 0) {	// tags
-			level = 2;
+			level = 0x32;
 			if (arg[4]) {
 				char* ptr = parsei32(arg + 4, &level, 16);
 				if (*ptr == '.') {
@@ -601,7 +601,8 @@ int program(int argc, char* argv[]) {
 					info(rt, NULL, 0, "symbol not found: %s", str_tags);
 				}
 			}
-			dump(rt, dump_sym | (out_tags & 0x0ff), sym, "\ntags:\n#api: replace(`^([^:]*).*$`, `\\1`)\n");
+			//~ dump(rt, dump_sym | (out_tags & 0x0ff), sym, "\ntags:\n#api: replace(`^([^:]*).*$`, `\\1`)\n");
+			dump(rt, dump_sym | (out_tags & 0x0ff), sym, "\ntags:\n#api: replace(`^([^:)]*([)][:][^:]+)?).*$`, `\\1`)\n");
 		}
 		if (out_tree >= 0) {
 			symn sym = NULL;
@@ -687,10 +688,16 @@ static int haltVerbose(libcArgs rt) {
 	for (var = rt->rt->defs; var; var = var->next) {
 		char* ofs;
 
+		// exclude types
 		if (var->kind != TYPE_ref)
 			continue;
 
+		// exclude functions
 		if (var->call)
+			continue;
+
+		// exclude null
+		if (var->offs == 0)
 			continue;
 
 		if (var->file && var->line) {
@@ -715,7 +722,7 @@ static int haltVerbose(libcArgs rt) {
 	//~ logTrace(rt->rt, 1, 0, 20);
 
 	// show allocated memory chunks.
-	rtAlloc(rt->rt, NULL, 0);
+	//~ rtAlloc(rt->rt, NULL, 0);
 
 	return 0;
 }

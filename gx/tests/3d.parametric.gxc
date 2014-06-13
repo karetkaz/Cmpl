@@ -16,7 +16,6 @@ void peak(double &x, double &y, double &z, double s01, double t01) {
 	define tmax = +H;
 	double s = Math.lerp(s01, smin, smax);
 	double t = Math.lerp(t01, tmin, tmax);
-	//~ double sst = nz(sqrt(s*s + t*t), 1e-323);
 	double sst = sqrt(s*s + t*t);
 	x = s / H;
 	y = t / H;
@@ -115,7 +114,7 @@ define divisionT = divisionM * 64;
 
 //~ meshGen(divisionM*8, divisionM, shell);
 mesh.Texture(gxSurf("media/images/download.jpg"));
-meshGen(divisionS, true, divisionT, true, drop, 1e-10);
+meshGen(divisionS, true, divisionT, true, peak, 1e-10);
 //~ meshGen(divisionS, true, divisionT, true, drop, 1e-10); 
 
 void kbdHandler(int key, int ext) {

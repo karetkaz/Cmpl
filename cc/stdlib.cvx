@@ -709,8 +709,8 @@ struct Date {
 		DaysPer400Years = DaysPer100Years * 4 + 1;
 	}// */
 
-	static const int DaysToMonth365[] = {0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365};
-	static const int DaysToMonth366[] = {0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335, 366};
+	static const int DaysToMonth365[] = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365];
+	static const int DaysToMonth366[] = [0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335, 366];
 
 	static bool IsLeapYear(int year) {
 		if (year % 4 == 0) {
@@ -1358,25 +1358,23 @@ static struct Debug {
 	//~ define print(int priority, string message) = void(Priority <= priority ? debug(message, null, null, 0, 1) : void(0));
 }
 
-define debug(string message) = debug(message, Debug.debug, Debug.notrace, variant.null);
-define debug(variant var) = debug(null, Debug.debug, Debug.notrace, var);
-define debug(string message, variant var) = debug(message, Debug.debug, Debug.notrace, var);
-define trace(string message) = debug(message, Debug.debug, Debug.deftrace, variant.null);
-define trace(string message, variant var) = debug(message, Debug.debug, Debug.deftrace, var);
+define debug(string message) = debug(message, variant.null, Debug.debug, Debug.notrace);
+define debug(variant inspect) = debug(null, inspect, Debug.debug, Debug.notrace);
+define debug(string message, variant inspect) = debug(message, inspect, Debug.debug, Debug.notrace);
+define trace(string message) = debug(message, variant.null, Debug.debug, Debug.deftrace);
+define trace(string message, variant inspect) = debug(message, inspect, Debug.debug, Debug.deftrace);
 
-define abort() = debug(null, Debug.abort, Debug.deftrace, variant.null);
-define abort(string message) = debug(message, Debug.abort, Debug.deftrace, variant.null);
+define abort() = debug(null, variant.null, Debug.abort, Debug.deftrace);
+define abort(string message) = debug(message, variant.null, Debug.abort, Debug.deftrace);
 
-define assert(bool &condition) = debug("assertion failed!", condition ? 0 : Debug.abort, Debug.deftrace, variant.null);
-define assert(bool condition, string message) = debug(message, condition ? 0 : Debug.abort, Debug.deftrace, variant.null);
-define assert(bool condition, string message, variant object) = debug(message, condition ? 0 : Debug.abort, Debug.deftrace, object);
+define assert(bool &condition) = debug("assertion failed!", variant.null, condition ? 0 : Debug.abort, Debug.deftrace);
+define assert(bool condition, string message) = debug(message, variant.null, condition ? 0 : Debug.abort, Debug.deftrace);
+define assert(bool condition, string message, variant inspect) = debug(message, inspect, condition ? 0 : Debug.abort, Debug.deftrace);
 
 //~ TODO: define assert(bool condition) = void(condition ? void(0) : abort("assertion failed!"));
 //#}
 
 static if (importstd.strUtils) {
-
-define string(char arr[]) = emit(string, ref(&arr));
 
 /// length of the string
 int strlen(string str) {
@@ -1732,7 +1730,9 @@ int itoa(string format, int value, char buff[]) {
 }
 */
 
-define variant(string str) = emit(variant, ref(str), typename(string));
+define string(char arr[]) = emit(string, (arr));
+define variant(string str) = emit(variant, (str), (string));
+
 }
 
 // these should be something like emit

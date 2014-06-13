@@ -22,7 +22,7 @@ int32 nextInt32(Random &random) {
 	return (random.m_z << 16) + random.m_w;
 }
 
-int64 _nextInt64(Random &random) {
+int64 nextInt64(Random &random) {
 	uint32 randnum1 = nextInt32(random);
 	uint32 randnum2 = nextInt32(random);
 	return emit(int64, uint32(randnum1), uint32(randnum2));
@@ -66,4 +66,9 @@ for(int i = 0; i < 1500000; i += 1) {
 	//~ debug("random value", variant(&currand));
 }
 //~ debug("random maximum", variant(&maxrand));
+struct float64_fmt: float64;	//%%e
+
+//~ BUG: a should be initialized after the loop execution.
+float64_fmt a = maxrand;
+debug("random maximum", variant(&a));
 

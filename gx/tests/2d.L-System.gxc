@@ -21,7 +21,10 @@ void drawTree(gxSurf g, int x1, int y1, double angle, int depth) {
 	//~ Gui.Repaint(true);
 }
 
-void mouseCB(int btn, int x, int y) {
+fillRect(offScreen, 0, 0, Window.resx, Window.resy, 0xffffff);
+drawTree(offScreen, Window.resx / 2, Window.resy, -90, 11);
+
+/*void mouseCB(int btn, int x, int y) {
 	static int ox;
 	static int oy;
 	if (btn & 1) {
@@ -41,3 +44,4 @@ void drawCB() {
 
 Gui.setMouseHandler(mouseCB);
 Gui.setDrawCallback(drawCB);
+*/

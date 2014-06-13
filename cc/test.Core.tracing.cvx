@@ -1,7 +1,7 @@
 //~ /*/~ Trace native calls
 void f(int &arg) {
 	if (arg <= 0) {
-		debug("stack trace :-)", 3, 256, variant.null);
+		debug("stack trace :-)", variant.null, 3, 256);
 		//~ trace("stack trace :-)");
 		return;
 	}
@@ -43,9 +43,9 @@ void f3(pointer maxRecursiveCalls) {
 		return;
 	}
 	int n2 = n - 1;
-	if ((n2 & 1) == 0) {
+	if ((n2 % 4) == 0) {
 		return f3(pointer(&n2));
-	} // */
+	}
 	testFunction(f3, pointer(&n2));
 }
 
@@ -61,7 +61,7 @@ void f4(double x, debugInfo &info, int maxRecursiveCalls) {
 	testFunction2(f4, maxRecursiveCalls - 1, info);
 }
 
-int n = 5;
+int n = 9;
 testFunction(f3, pointer(&n));
 int a = 9;
 //~ debugInfo info = debugInfo("fail", 1, 2, 3);

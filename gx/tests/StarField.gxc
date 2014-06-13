@@ -6,7 +6,7 @@ enum Window {
 }
 
 struct Star {
-	define speed = 1;
+	static define speed = 1;
 	double xpos;
 	double ypos;
 	double zpos;
@@ -85,9 +85,8 @@ void drawCB() {
 
 }
 
-Gui.setMouseHandler(mouseCB);
-Gui.setDrawCallback(drawCB);
-
 for (int i = 0; i < stars.length; i += 1) {
 	initStar(&stars[i], i + 1);
 }
+Gui.setMouseHandler(mouseCB);
+Gui.setDrawCallback(drawCB);

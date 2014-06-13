@@ -1,24 +1,19 @@
 // tests
 
-/*
-//~ int a = 9;
-//~ int b = 4;
+/* TODO: caching arguments
+float x1 = 9;
+static float x2 = 9;
+define inc(float x) = float(x + 1);
+define sqr(float x) = float(x * x);
+float inc0 = inc(9.);	// inline: used only once
+float inc1 = inc(x1);	// inline: used only once
+float inc2 = inc(x2);	// inline: used only once
+float sqr0 = sqr(9.);	// cached: used more than once
+float sqr1 = sqr(x1);	// inline: local variable
+float sqr2 = sqr(x2);	// cached: static variable
+//~ */
 
-//~ (a, b) = b, a;
-
-
-//~ float x1 = 9;
-//~ static float x2 = 9;
-//~ define inc(float x) = float(x + 1);
-//~ define sqr(float x) = float(x * x);
-//~ float inc0 = inc(9.);	// inline: used only once
-//~ float inc1 = inc(x1);	// inline: used only once
-//~ float inc2 = inc(x2);	// inline: used only once
-//~ float sqr0 = sqr(9.);	// cached: used more than once
-//~ float sqr1 = sqr(x1);	// inline: local variable
-//~ float sqr2 = sqr(x2);	// cached: static variable
-
-
+/* BUG: caching arguments
 Complex Ca = Complex(3., 4.);
 Complex Cb = Complex(2., 5.);
 Complex C1 = mul(Ca, Cb);
@@ -27,13 +22,13 @@ Complex C3 = neg(Complex(2., 5.));
 
 define Re(Complex &a) = (a.re);
 define Im(Complex &a) = (a.im);
-//~ Complex C4 = Complex(Im(Complex(2., 5.)), 0.);
-//~ Complex C5 = Complex(3., Im(Complex(2., 5.)));
-//~ double d1 = Im(Complex(2., 5.));
-//~ double d2 = Re(Complex(2., 5.));
+Complex C4 = Complex(Im(Complex(2., 5.)), 0.);
+Complex C5 = Complex(3., Im(Complex(2., 5.)));
+double d1 = Im(Complex(2., 5.));
+double d2 = Re(Complex(2., 5.));
 //~ */
 
-/* test: function members
+/* TODO: function members initialization
 
 int32 f3(int a, int b) {
 	/+static int32 f4(int a, int b) {
@@ -42,7 +37,7 @@ int32 f3(int a, int b) {
 	return f4(a, b);+/
 	return a < b ? a : b;
 }
-/+
+//~ /+
 struct Struct {
 	//~ int32 &r[1];
 	int32 f1(int a, int b) = f3;
@@ -56,7 +51,7 @@ Struct instance;
 //~ +/
 //~ */
 
-/* TODO: const ref assignment
+/* TODO: const ref assignment warning
 struct m {
 	static const int X = 9;
 	const int a;
@@ -92,7 +87,7 @@ y = ss[1];
 //~ print(ss[1]);
 // */
 
-/* TODO: array.isNullOrEmpty()
+//~ /* TODO: array.isNullOrEmpty()
 bool isNullOrEmpty(int a[]) {
 	if (a == null)
 		result = true;
@@ -102,7 +97,7 @@ bool isNullOrEmpty(int a[]) {
 
 //~ int val_null[] = null;
 int val_empty[0];
-int val_nonempty[10] = {9};
+int val_nonempty[10] = [9];
 
 //~ bool res_true1 = isNullOrEmpty(null);
 //~ bool res_true2 = isNullOrEmpty(val_null);
@@ -119,7 +114,7 @@ struct xrgb: 1 {
 }
 struct xrgbi32: 0 {
 	xrgb rgb;
-	int32 val;
+	int32 val;	//%0x%08x
 }
 
 xrgb a = emit(xrgb, i32(0x801f008f));
@@ -142,65 +137,6 @@ r.rgb.r = Math.min(a.r + b.r, 255);
 r.rgb.g = Math.min(a.g + b.g, 255);
 r.rgb.b = Math.min(a.b + b.b, 255);
 // */
-
-/* TODO: Trace with external call
-void f(int &arg) {
-	if (arg <= 0) {
-		debug("stack trace :-)", 3, 256, variant.null);
-		//~ trace("stack trace :-)");
-		return;
-	}
-	int n2 = arg - 1;
-	//~ f(n2);
-	testFunction(emit(struct, ref(f)), pointer(n2));
-}
-
-int N = 4;
-//~ f(&N);
-
-void f2(int arg, string b) {
-	f(&arg);
-}
-f2(N, "apple");
-
-// */
-
-//~ /+ test: debug and trace info
-struct debugInfo {
-	string func;
-	double x;
-	double expected;
-	double got;
-}
-
-void f3(pointer maxRecursiveCalls) {
-	const int &n = maxRecursiveCalls;
-	if (n <= 0) {
-		trace("stack trace :-)");
-		return;
-	}
-	int n2 = n - 1;
-	testFunction(f3, pointer(&n2));
-}
-
-//~ BUG: void testFunction2(void cb(double x, debugInfo info, int n), int n, debugInfo &info) {
-void testFunction2(void cb(double x, debugInfo &info, int n), int n, debugInfo info) {
-	cb(n * 3.14, &info, n);
-}
-void f4(double x, debugInfo &info, int maxRecursiveCalls) {
-	if (maxRecursiveCalls <= 0) {
-		trace("stack trace :)");
-		return;
-	}
-	testFunction2(f4, maxRecursiveCalls - 1, info);
-}
-
-int n = 2;
-testFunction(f3, pointer(&n));
-
-debugInfo info = debugInfo("fail", 1, 2, 3);
-testFunction2(f4, n, info);
-//~ +/
 
 /+ test: print the content of memory :)
 char memory[] = emit(struct, ref(null), i32(65536));
