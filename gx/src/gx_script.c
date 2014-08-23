@@ -69,7 +69,7 @@ extern int ccDbg;
 
 //#{#region Surfaces
 typedef enum {
-//~ surfOpGetDepth,
+surfOpGetDepth,
 surfOpGetWidth,
 surfOpGetHeight,
 //~ surfOpGetPixel,
@@ -242,6 +242,12 @@ static int surfCall(libcArgs rt) {
 		case surfOpGetHeight: {
 			gx_Surf surf = getSurf(popi32(rt));
 			reti32(rt, surf->height);
+			return 0;
+		} break;
+
+		case surfOpGetDepth: {
+			gx_Surf surf = getSurf(popi32(rt));
+			reti32(rt, surf->depth);
 			return 0;
 		} break;
 
@@ -1199,6 +1205,7 @@ Gui[] = {
 Surf[] = {
 	{surfCall, surfOpGetWidth,		"int width(gxSurf dst);"},
 	{surfCall, surfOpGetHeight,	"int height(gxSurf dst);"},
+	{surfCall, surfOpGetDepth,	"int depth(gxSurf dst);"},
 	{surfCall, surfOpClipRect,		"bool clipRect(gxSurf surf, gxRect &rect);"},
 
 	{surfGetPixel, 0,			"int getPixel(gxSurf dst, int x, int y);"},

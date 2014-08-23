@@ -100,10 +100,10 @@ void drawBiorithm(gxSurf dst, int daysToShow, double now, Date birth, Biorithm b
 	drawLine(dst, Window.resx / 2, 0, Window.resx / 2, Window.resy, 0x989898);
 
 	char text[128];
-	format(text, "Date: %04y.%02m.%02d", Date(int64(now)));
+	format(text, "Date: %Y.%m.%d", Date(int64(now)));
 	drawText(dst, Window.padding, Window.padding, string(text), -1);
 
-	format(text, "Birth: %04y.%02m.%02d", birth);
+	format(text, "Birth: %Y.%m.%d", birth);
 	drawText(dst, Window.padding, Window.padding + Window.lineHeight, string(text), -1);
 }
 

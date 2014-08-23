@@ -546,6 +546,8 @@ static int libCallDebug(libcArgs args) {
 	symn objtyp = argref(args, 4 * vm_size);
 	int loglevel = argi32(args, 5 * vm_size);
 	int tracelevel = argi32(args, 6 * vm_size);
+	//~ long *argv = (long*)args->argv;
+	//~ fatal("args: [%d, %d, %d, %d, %d, %d, %d]", argv[0], argv[1], argv[2], argv[3], argv[4], argv[5], argv[6]);
 
 	// skip loglevel 0
 	if (rt->logf != NULL && loglevel != 0) {

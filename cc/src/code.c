@@ -960,7 +960,7 @@ static int exec(state rt, cell pu, symn fun, void* extra) {
 	if (rt->dbg != NULL) {
 		const stkptr spMin = (stkptr)(pu->bp);
 		const stkptr spMax = (stkptr)(pu->bp + pu->ss);
-		const bcde ipMin = (bcde)(rt->_mem);
+		const bcde ipMin = (bcde)(rt->_mem + rt->vm.ro);
 		const bcde ipMax = (bcde)(rt->_mem + rt->vm.px + 2);
 		int (*dbg) (state, int pu, void *ip, long* sptr, int scnt) = rt->dbg->dbug;
 
@@ -974,11 +974,11 @@ static int exec(state rt, cell pu, symn fun, void* extra) {
 			register stkptr sp = (stkptr)pu->sp;
 
 			if (ip >= ipMax || ip < ipMin) {
-				fatal("invalid instruction pointer: %06x", ip);
+				dbugerr(rt, "invalid instruction pointer", vmOffset(rt, ip), pu, ip, st - sp);
 				return -10;
 			}
 			if (sp > spMax || sp < spMin) {
-				fatal("invalid stack pointer: %06x", sp);
+				dbugerr(rt, "invalid stack pointer", vmOffset(rt, sp), pu, ip, st - sp);
 				return -11;
 			}
 			if (dbg(rt, 0, ip, (long*)sp, st - sp)) {
@@ -1027,7 +1027,7 @@ static int exec(state rt, cell pu, symn fun, void* extra) {
 		}
 	}
 
-	// code at maximum speed
+	// code for maximum execution speed
 	else for ( ; ; ) {
 		register bcde ip = (bcde)pu->ip;
 		register stkptr sp = (stkptr)pu->sp;

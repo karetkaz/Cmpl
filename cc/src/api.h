@@ -198,7 +198,7 @@ struct stateRec {
 				// register event callback using the symbol of the function.
 				onMouse = rt->api.getsym(rt, fun);
 
-				// runtime error if symbol was not found.
+				// runtime error if symbol is not valid.
 				return onMouse != NULL;
 			}
 
@@ -275,7 +275,7 @@ static inline void* argval(libcArgs args, int offset, void *result, int size) {
 }
 
 // speed up of getting arguments of known types.
-#define argval(__ARGV, __OFFS, __TYPE) (*(__TYPE*)((__ARGV)->argv + __OFFS))
+#define argval(__ARGV, __OFFS, __TYPE) (*(__TYPE*)((__ARGV)->argv + (__OFFS)))
 static inline int32_t argi32(libcArgs args, int offs) { return argval(args, offs, int32_t); }
 static inline int64_t argi64(libcArgs args, int offs) { return argval(args, offs, int64_t); }
 static inline float32_t argf32(libcArgs args, int offs) { return argval(args, offs, float32_t); }

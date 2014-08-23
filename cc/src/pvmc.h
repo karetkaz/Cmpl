@@ -20,6 +20,7 @@ enum {
 
 	// register defaults if ccInit not invoked explicitly.
 	creg_def  = creg_tptr + creg_tvar + creg_eswz,
+	creg_min  = creg_tptr + creg_tvar + creg_emit,
 
 	// gencode(cgen_xxx | (level & 0xff))
 	cgen_opti = 0x00ff,		// optimze code generation
@@ -27,7 +28,6 @@ enum {
 	cgen_info = 0x0200,		// generate debug info
 
 	// dump(dump_xxx | (level & 0xff))
-	//~ dump_msg = 0x0000,
 	dump_sym = 0x0100,
 	dump_ast = 0x0200,
 	dump_asm = 0x0400,
@@ -45,7 +45,7 @@ state rtInit(void* mem, unsigned size);
 // logging
 void logFILE(state, FILE *file);			// set logger
 int logfile(state, char *file);				// set logger
-void dump(state, int dumpWhat, symn, const char* msg, ...);
+void dump(state, int dumpWhat, symn);
 
 // compile
 /**

@@ -2,6 +2,9 @@
  * standard library extension
  */
 
+/** 
+ * 
+ */
 static struct Math {
 
 	// constants
@@ -469,7 +472,10 @@ Number.prototype.log10 = function(){return Math.log(this) / Math.LN10;};
 	define rad2deg(float64 x) = float64(x * 180 / pi);
 }
 
-static struct Perlin {		// Perlin noise
+/** Perlin noise
+ * 
+ */
+static struct Perlin {
 	define B = 0x100;
 	define BM = 0xff;
 	define N = 0x1000;
@@ -680,25 +686,21 @@ static struct Perlin {		// Perlin noise
 struct Date {
 	long days;
 
-	enum: long { // Number of 100ns ticks per time unit
-		TicksPerMillisecond = 10000;
-		TicksPerSecond = TicksPerMillisecond * 1000;
-		TicksPerMinute = TicksPerSecond * 60;
-		TicksPerHour = TicksPerMinute * 60;
-		TicksPerDay = TicksPerHour * 24;
+	enum: long {
+		//~ TicksPerMillisecond = 10000;
+		//~ TicksPerSecond = TicksPerMillisecond * 1000;
+		//~ TicksPerMinute = TicksPerSecond * 60;
+		//~ TicksPerHour = TicksPerMinute * 60;
+		//~ TicksPerDay = TicksPerHour * 24;
 
-		HoursPerDay = 24;
-		MinutesPerDay = 60 * HoursPerDay;
-		SecondsPerDay = 60 * MinutesPerDay;
-		MillisecondsPerDay = 1000 * SecondsPerDay;
+		// Number of milliseconds per time unit
+		MillisPerSecond = 1000;
+		MillisPerMinute = MillisPerSecond * 60;
+		MillisPerHour = MillisPerMinute * 60;
+		MillisPerDay = MillisPerHour * 24;
+		MillisPerWeek = MillisPerDay * 7;
 	}
 	enum: int { // DaysPer...
-		// Number of milliseconds per time unit
-		//~ MillisPerSecond = 1000;
-		//~ MillisPerMinute = MillisPerSecond * 60;
-		//~ MillisPerHour = MillisPerMinute * 60;
-		//~ MillisPerDay = MillisPerHour * 24;
-
 		// Number of days in a non-leap year
 		DaysPerYear = 365;
 		// Number of days in 4 years
@@ -707,6 +709,65 @@ struct Date {
 		DaysPer100Years = DaysPer4Years * 25 - 1;
 		// Number of days in 400 years
 		DaysPer400Years = DaysPer100Years * 4 + 1;
+
+		HoursPerDay = 24;
+		MinutesPerDay = 60 * HoursPerDay;
+		SecondsPerDay = 60 * MinutesPerDay;
+	}// */
+
+	/** Converting between time units
+	 * TimeUnit.MINUTE.convert(60, TimeUnit.HOUR) = 1;	// 60 minutes result in one hour.
+	 * /
+	enum TimeUnit {
+		//~ long toMillis(long value);
+		//~ long convert(long value);
+
+		static TimeUnit MILLIS {
+			long toMillis(long value) = value;
+			long convert(long value, TimeUnit unit) = unit.toMillis(value);
+		}
+		static TimeUnit SECOND {
+			long toMillis(long value) = value * MillisPerSecond;
+			long convert(long value, TimeUnit unit) = unit.toMillis(value) / MillisPerSecond;
+		}
+		static TimeUnit MINUTE {
+			long toMillis(long value) = value * MillisPerMinute;
+			long convert(long value, TimeUnit unit) = unit.toMillis(value) / MillisPerMinute;
+		}
+		static TimeUnit HOUR {
+			long toMillis(long value) = value * MillisPerHour;
+			long convert(long value, TimeUnit unit) = unit.toMillis(value) / MillisPerHour;
+		}
+		static TimeUnit DAY {
+			long toMillis(long value) = value * MillisPerDay;
+			long convert(long value, TimeUnit unit) = unit.toMillis(value) / MillisPerDay;
+		}
+		/+static TimeUnit ?WEEK {
+			long toMillis(long value) = value * MillisPerWeek;
+			long convert(long value, TimeUnit unit) = unit.toMillis(value) / MillisPerWeek;
+		}
+		static TimeUnit ?YEAR {
+			long toMillis(long value) = value * MillisPerYear;
+			long convert(long value, TimeUnit unit) = unit.toMillis(value) / MillisPerYear;
+		}+/
+	}// */
+
+	/*struct DateLocale {
+		string weeksShort[7];
+		string weeksFull[7];
+		string montsShort[12];
+		string montsFull[12];
+	}
+	/** Formatting date and time
+	 * 
+	 * /
+	enum DateFormat: DateLocale {
+		en_US: {
+			weeksShort: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+			weeksFull: ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+			montsShort: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+			montsFull: ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+		}
 	}// */
 
 	static const int DaysToMonth365[] = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365];
@@ -756,8 +817,52 @@ struct Date {
 		//~ bool leapYear;
 	}
 
+	struct Parts2 {
+		int year;
+		int month;			// 1 ... 12
+		int dayOfYear;		// 1 ... 366
+		int dayOfMonth;		// 1 ... 31
+		int dayOfWeek;		// 1 ... 7
+
+		//~ %a	Weekday as locale’s abbreviated name.		en_US: [Sun, Mon, ..., Sat]; de_DE: [So, Mo, ..., Sa]
+		//~ %A	Weekday as locale’s full name.				en_US: [Sunday, Monday, ..., Saturday]; de_DE: [Sonntag, Montag, ..., Samstag]
+		//~ %w	Weekday as a decimal number, where 0 is Sunday and 6 is Saturday.	0, 1, ..., 6
+
+		//~ %b	Month as locale’s abbreviated name.			en_US: [Jan, Feb, ..., Dec]; de_DE: [Jan, Feb, ..., Dez]
+		//~ %B	Month as locale’s full name.				en_US: [January, February, ..., December];de_DE: [Januar, Februar, ..., Dezember]
+		//~ %m	Month as a decimal number.					1, 2, ..., 12
+
+		//~ %d	Day of the month as a decimal number.		1, 2, ..., 31
+		//~ %y	Year without century as a decimal number.	0, 1, ..., 99
+		//~ %Y	Year with century as a decimal number.		1970, 1988, 2001, 2013
+
+		//~ %H	Hour (24-hour clock) as a decimal number.	0, 1, ..., 23
+		//~ %I	Hour (12-hour clock) as a decimal number.	1, 2, ..., 12
+		//- %p	Locale’s equivalent of either AM or PM.		en_US: [AM, PM]; de_DE: [am, pm]
+
+		//~ %M	Minute as a decimal number.					0, 1, ..., 59
+		//~ %S	Second as a decimal number.					0, 1, ..., 59
+		//X %f	Microsecond as a decimal number.			0, 1, ..., 999999
+
+		//~ %j	Day of the year as a decimal number.		1, 2, ..., 366
+
+		//- %U	Week number of the year (Sunday as the first day of the week) as a decimal number. All days in a new year preceding the first Sunday are considered to be in week 0.	0, 1, ..., 53
+		//- %W	Week number of the year (Monday as the first day of the week) as a decimal number. All days in a new year preceding the first Monday are considered to be in week 0.	0, 1, ..., 53
+
+		//~ %z	UTC offset in the form +HHMM or -HHMM (empty string if the the object is naive).	(empty), +0000, -0400, +1030
+		//~ %Z	Time zone name (empty string if the object is naive).	(empty), UTC, EST, CST	 
+
+
+		//~ %c	Locale’s appropriate date and time representation.	en_US: "Tue Aug 16 21:30:00 1988"; de_DE: "Di 16 Aug 21:30:00 1988"
+		//~ %x	Locale’s appropriate date representation.			None:  "1988.08.16"; en_US: "08/16/1988"; de_DE: "16.08.1988"
+		//~ %X	Locale’s appropriate time representation.			en_US: "21:30:00"; de_DE: "21:30:00"
+		//~ %%
+		//~ ERA, YEAR, MONTH, WEEK_OF_YEAR, WEEK_OF_MONTH, DAY_OF_MONTH, DAY_OF_YEAR, DAY_OF_WEEK, DAY_OF_WEEK_IN_MONTH, AM_PM, HOUR, HOUR_OF_DAY, MINUTE, SECOND, MILLISECOND, ZONE_OFFSET, DST_OFFSET 
+	}
+
 	static Parts ToParts(int n) {
 		// n = number of days since 1/1/0001
+		result.dayOfWeek = n % 7 + 1;
 
 		// y400 = number of whole 400-year periods since 1/1/0001
 		int y400 = n / DaysPer400Years;
@@ -1632,14 +1737,23 @@ int format(char buff[], string format, int value) {
  * @param value date to format
  */
 void format(char output[], string format, Date value) {
-	int y;
-	int m;
-	int d;
+	Date.Parts parts = Date.ToParts(value.days);
 
-	Date.ToParts(value.days, &y, &m, &d);
+	int strcat(char output[], int pos, string value) {
+		int len = strlen(value);
+		for (result = 0; result < len; result += 1) {
+			if (pos >= output.length) {
+				trace("overflow");
+				break;
+			}
+			output[pos] = value[result];
+			pos += 1;
+		}
+		return result;
+	}
 
 	if (format == null) {
-		format = "%04y.%02m.%02d";
+		format = "%Y.%02m.%02d";
 	}
 
 	int pos = 0;
@@ -1667,10 +1781,13 @@ void format(char output[], string format, Date value) {
 			chr = format[spos += 1];
 		}
 
-		int padLen = 0;
-		for (;chr >= '0' && chr <= '9';) {
-			padLen = padLen * 10 + chr - '0';
-			chr = format[spos += 1];
+		int padLen = -1;
+		if (chr >= '0' && chr <= '9') {
+			padLen = 0;
+			for (;chr >= '0' && chr <= '9';) {
+				padLen = padLen * 10 + chr - '0';
+				chr = format[spos += 1];
+			}
 		}
 
 		int maxLen = 10;
@@ -1683,36 +1800,248 @@ void format(char output[], string format, Date value) {
 			}
 		}
 
-		if (chr == 'y') {
-			uint32 val = y;
-			if (y < 0) {
-				val = -val;
-				sgnChr = '-';
+		//#{
+			//~ FORMAT  controls the output.  Interpreted sequences are:
+			//~ %%      a literal %
+			//~ %a      locale's abbreviated weekday name (e.g., Sun)
+			//~ %A      locale's full weekday name (e.g., Sunday)
+			//~ %b      locale's abbreviated month name (e.g., Jan)
+			//~ %B      locale's full month name (e.g., January)
+			//~ %c      locale's date and time (e.g., Thu Mar  3 23:05:25 2005)
+			//~ %C      century; like %Y, except omit last two digits (e.g., 20)
+			//~ %d      day of month (e.g., 01)
+			//~ %D      date; same as %m/%d/%y
+			//~ %e      day of month, space padded; same as %_d
+			//~ %F      full date; same as %Y-%m-%d
+			//~ %g      last two digits of year of ISO week number (see %G)
+			//~ %G      year of ISO week number (see %V); normally useful only with %V
+			//~ %h      same as %b
+			//~ %H      hour (00..23)
+			//~ %I      hour (01..12)
+			//~ %j      day of year (001..366)
+			//~ %k      hour, space padded ( 0..23); same as %_H
+			//~ %l      hour, space padded ( 1..12); same as %_I
+			//~ %m      month (01..12)
+			//~ %M      minute (00..59)
+			//~ %n      a newline
+			//~ %N      nanoseconds (000000000..999999999)
+			//~ %p      locale's equivalent of either AM or PM; blank if not known
+			//~ %P      like %p, but lower case
+			//~ %r      locale's 12-hour clock time (e.g., 11:11:04 PM)
+			//~ %R      24-hour hour and minute; same as %H:%M
+			//~ %s      seconds since 1970-01-01 00:00:00 UTC
+			//~ %S      second (00..60)
+			//~ %t      a tab
+			//~ %T      time; same as %H:%M:%S
+			//~ %u      day of week (1..7); 1 is Monday
+			//~ %U      week number of year, with Sunday as first day of week (00..53)
+			//~ %V      ISO week number, with Monday as first day of week (01..53)
+			//~ %w      day of week (0..6); 0 is Sunday
+			//~ %W      week number of year, with Monday as first day of week (00..53)
+			//~ %x      locale's date representation (e.g., 12/31/99)
+			//~ %X      locale's time representation (e.g., 23:13:48)
+			//~ %y      last two digits of year (00..99)
+			//~ %Y      year
+			//~ %z      +hhmm numeric time zone (e.g., -0400)
+			//~ %:z     +hh:mm numeric time zone (e.g., -04:00)
+			//~ %::z    +hh:mm:ss numeric time zone (e.g., -04:00:00)
+			//~ %:::z   numeric time zone with : to necessary precision (e.g., -04, +05:30)
+			//~ %Z      alphabetic time zone abbreviation (e.g., EDT)
+
+			//~ %%	a literal %
+			//~ %a	locale's abbreviated weekday name (e.g., Sun)
+			//~ %A	locale's full weekday name (e.g., Sunday)
+			//~ %b	locale's abbreviated month name (e.g., Jan)
+			//~ %B	locale's full month name (e.g., January)
+			//~ %c	locale's date and time (e.g., Thu Mar 3 23:05:25 2005)
+			//~ %C	century; like %Y, except omit last two digits (e.g., 21)
+			//~ %d	day of month (e.g, 01)
+			//~ %D	date; same as %m/%d/%y
+			//- %e	day of month, space padded; same as %_d
+			//~ %F	full date; same as %Y-%m-%d
+			//~ %g	last two digits of year of ISO week number (see %G)
+			//~ %G	year of ISO week number (see %V); normally useful only with %V
+			//+ %h	same as %b
+			//~ %H	hour (00..23)
+			//~ %I	hour (01..12)
+			//~ %j	day of year (001..366)
+			//~ %k	hour ( 0..23)
+			//~ %l	hour ( 1..12)
+			//~ %m	month (01..12)
+			//~ %M	minute (00..59)
+			//~ %n	a newline
+			//~ %N	nanoseconds (000000000..999999999)
+			//~ %p	locale's equivalent of either AM or PM; blank if not known
+			//~ %P	like %p, but lower case
+			//~ %r	locale's 12-hour clock time (e.g., 11:11:04 PM)
+			//~ %R	24-hour hour and minute; same as %H:%M
+			//~ %s	seconds since 1970-01-01 00:00:00 UTC
+			//~ %S	second (00..60)
+			//~ %t	a tab
+			//~ %T	time; same as %H:%M:%S
+			//~ %u	day of week (1..7); 1 is Monday
+			//~ %U	week number of year, with Sunday as first day of week (00..53)
+			//~ %V	ISO week number, with Monday as first day of week (01..53)
+			//~ %w	day of week (0..6); 0 is Sunday
+			//~ %W	week number of year, with Monday as first day of week (00..53)
+			//~ %x	locale's date representation (e.g., 12/31/99)
+			//~ %X	locale's time representation (e.g., 23:13:48)
+			//~ %y	last two digits of year (00..99)
+			//~ %Y	year
+			//~ %z	+hhmm numeric timezone (e.g., -0400)
+			//~ %:z	+hh:mm numeric timezone (e.g., -04:00)
+			//~ %::z	+hh:mm:ss numeric time zone (e.g., -04:00:00)
+			//~ %:::z	numeric time zone with : to necessary precision (e.g., -04, +05:30)
+			//~ %Z	alphabetic time zone abbreviation (e.g., EDT)
+		//#}
+
+		if (chr == '%') {//TODO: ...
+			if (pos < output.length) {
+				output[pos] = chr;
+				pos += 1;
 			}
-			FormatFlags flags = FormatFlags(sgnChr, padChr, padLen, maxLen, chr, 10);
-			pos = format(output, pos, &flags, val);
-			//~ continue;
+			//~ %H	Hour (24-hour clock) as a decimal number.	0, 1, ..., 23
+			//~ %I	Hour (12-hour clock) as a decimal number.	1, 2, ..., 12
+			//- %p	Locale’s equivalent of either AM or PM.		en_US: [AM, PM]; de_DE: [am, pm]
+
+			//~ %M	Minute as a decimal number.					0, 1, ..., 59
+			//~ %S	Second as a decimal number.					0, 1, ..., 59
+			//X %f	Microsecond as a decimal number.			0, 1, ..., 999999
+
+
+			//- %U	Week number of the year (Sunday as the first day of the week) as a decimal number. All days in a new year preceding the first Sunday are considered to be in week 0.	0, 1, ..., 53
+			//- %W	Week number of the year (Monday as the first day of the week) as a decimal number. All days in a new year preceding the first Monday are considered to be in week 0.	0, 1, ..., 53
+
+			//~ %z	UTC offset in the form +HHMM or -HHMM (empty string if the the object is naive).	(empty), +0000, -0400, +1030
+			//~ %Z	Time zone name (empty string if the object is naive).	(empty), UTC, EST, CST	 
+
+
+			//~ %c	Locale’s appropriate date and time representation.	en_US: "Tue Aug 16 21:30:00 1988"; de_DE: "Di 16 Aug 21:30:00 1988"
+			//~ %x	Locale’s appropriate date representation.			None:  "1988.08.16"; en_US: "08/16/1988"; de_DE: "16.08.1988"
+			//~ %X	Locale’s appropriate time representation.			en_US: "21:30:00"; de_DE: "21:30:00"
 		}
-		else if (chr == 'm') {
-			uint32 val = m;
-			if (y < 0) {
-				val = -val;
-				sgnChr = '-';
+
+		else if (chr == 'a' || chr == 'A') {//~ %a	Weekday as locale’s name.
+			//~ %a	Weekday as locale’s abbreviated name.		en_US: [Sun, Mon, ..., Sat]; de_DE: [So, Mo, ..., Sa]
+			//TODO %A	Weekday as locale’s full name.				en_US: [Sunday, Monday, ..., Saturday]; de_DE: [Sonntag, Montag, ..., Samstag]
+			//~ weeksShort: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+			//~ weeksFull: ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
+			//~ string weeks[] = chr == 'a' ? weeksShort : weeksFull;
+			//~ pos += strcat(output, pos, weeks[parts.dayOfWeek - 1]);
+
+			// TODO: no support for array of references yet
+			int dayOfWeek = parts.dayOfWeek;
+			if (dayOfWeek == 1) {
+				pos += strcat(output, pos, chr == 'a' ? "Mon" : "Monday");
 			}
-			FormatFlags flags = FormatFlags(sgnChr, padChr, padLen, maxLen, chr, 10);
-			pos = format(output, pos, &flags, val);
-			//~ continue;
-		}
-		else if (chr == 'd') {
-			uint32 val = d;
-			if (y < 0) {
-				val = -val;
-				sgnChr = '-';
+			else if (dayOfWeek == 2) {
+				pos += strcat(output, pos, chr == 'a' ? "Tue" : "Tuesday");
 			}
-			FormatFlags flags = FormatFlags(sgnChr, padChr, padLen, maxLen, chr, 10);
-			pos = format(output, pos, &flags, val);
-			//~ continue;
+			else if (dayOfWeek == 3) {
+				pos += strcat(output, pos, chr == 'a' ? "Wed" : "Wednesday");
+			}
+			else if (dayOfWeek == 4) {
+				pos += strcat(output, pos, chr == 'a' ? "Thu" : "Thursday");
+			}
+			else if (dayOfWeek == 5) {
+				pos += strcat(output, pos, chr == 'a' ? "Fri" : "Friday");
+			}
+			else if (dayOfWeek == 6) {
+				pos += strcat(output, pos, chr == 'a' ? "Sat" : "Saturday");
+			}
+			else if (dayOfWeek == 7) {
+				pos += strcat(output, pos, chr == 'a' ? "Sun" : "Sunday");
+			}
 		}
+		else if (chr == 'w') {//~ %w	Weekday as a decimal number, where 0 is Sunday and 6 is Saturday.	0, 1, ..., 6
+			FormatFlags flags = FormatFlags(sgnChr, padChr, padLen, maxLen, chr, 10);
+			pos = format(output, pos, &flags, parts.dayOfWeek);
+		}
+		else if (chr == 'd') {//~ %d	Day of the month as a decimal number.		01, 02, ..., 31
+			if (padLen < 0) {padLen = 2; padChr = '0';}
+			FormatFlags flags = FormatFlags(sgnChr, padChr, padLen, maxLen, chr, 10);
+			pos = format(output, pos, &flags, parts.dayOfMonth);
+		}
+		else if (chr == 'j') {//~ %j	Day of the year as a decimal number.		001, 002, ..., 366
+			if (padLen < 0) {padLen = 3; padChr = '0';}
+			FormatFlags flags = FormatFlags(sgnChr, padChr, padLen, maxLen, chr, 10);
+			pos = format(output, pos, &flags, parts.dayOfYear);
+		}
+
+		else if (chr == 'b' || chr == 'B') {//~ %a	Month as locale’s name.
+			//TODO %b	Month as locale’s abbreviated name.			en_US: [Jan, Feb, ..., Dec]; de_DE: [Jan, Feb, ..., Dez]
+			//TODO %B	Month as locale’s full name.				en_US: [January, February, ..., December];de_DE: [Januar, Februar, ..., Dezember]
+			//~ montsShort: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+			//~ montsFull: ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
+			//~ string months[] = chr == 'b' ? montsShort : montsFull;
+			//~ pos += strcat(output, pos, months[parts.month - 1]);
+
+			int month = parts.month;
+			if (month == 1) {
+				pos += strcat(output, pos, chr == 'b' ? "Jan" : "January");
+			}
+			else if (month == 2) {
+				pos += strcat(output, pos, chr == 'b' ? "Feb" : "February");
+			}
+			else if (month == 3) {
+				pos += strcat(output, pos, chr == 'b' ? "Mar" : "March");
+			}
+			else if (month == 4) {
+				pos += strcat(output, pos, chr == 'b' ? "Apr" : "April");
+			}
+			else if (month == 5) {
+				pos += strcat(output, pos, chr == 'b' ? "May" : "May");
+			}
+			else if (month == 6) {
+				pos += strcat(output, pos, chr == 'b' ? "Jun" : "June");
+			}
+			else if (month == 7) {
+				pos += strcat(output, pos, chr == 'b' ? "Jul" : "July");
+			}
+			else if (month == 8) {
+				pos += strcat(output, pos, chr == 'b' ? "Aug" : "August");
+			}
+			else if (month == 9) {
+				pos += strcat(output, pos, chr == 'b' ? "Sep" : "September");
+			}
+			else if (month == 10) {
+				pos += strcat(output, pos, chr == 'b' ? "Oct" : "October");
+			}
+			else if (month == 11) {
+				pos += strcat(output, pos, chr == 'b' ? "Nov" : "November");
+			}
+			else if (month == 12) {
+				pos += strcat(output, pos, chr == 'b' ? "Dec" : "December");
+			}
+		}
+		else if (chr == 'm') {//~ %m	Month as a decimal number.					01, 02, ..., 12
+			if (padLen < 0) {padLen = 2; padChr = '0';}
+			FormatFlags flags = FormatFlags(sgnChr, padChr, padLen, maxLen, chr, 10);
+			pos = format(output, pos, &flags, parts.month);
+		}
+
+		else if (chr == 'y') {//~ %y	Year without century as a decimal number.	0, 1, ..., 99
+			FormatFlags flags = FormatFlags(sgnChr, padChr, padLen, maxLen, chr, 10);
+			pos = format(output, pos, &flags, parts.year % 100);
+		}
+		else if (chr == 'Y') {//~ %Y	Year with century as a decimal number.		1970, 1988, 2001, 2013
+			FormatFlags flags = FormatFlags(sgnChr, padChr, padLen, maxLen, chr, 10);
+			pos = format(output, pos, &flags, parts.year);
+		}
+		else {
+			if (pos < output.length - 1) {
+				output[pos] = '%';
+				pos += 1;
+				output[pos] = chr;
+				pos += 1;
+			}
+		}
+
+	}
+	if (pos < output.length) {
+		output[pos] = 0;
 	}
 }
 
@@ -1729,6 +2058,15 @@ int itoa(string format, int value, char buff[]) {
 	})
 }
 */
+
+/*/~ TODO: make this in a functios body, and make it static
+static char chrStrings[256][2];// = ({
+	for (int i = 0; i < 256; i += 1) {
+		chrStrings[i][0] = i;
+		chrStrings[i][1] = 0;
+	}
+define string(char chr) = emit(string, (chrStrings[chr]));
+//});// */
 
 define string(char arr[]) = emit(string, (arr));
 define variant(string str) = emit(variant, (str), (string));

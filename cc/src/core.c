@@ -103,7 +103,7 @@ void* rtAlloc(state rt, void* ptr, unsigned size) {
 	typedef struct memchunk {
 		struct memchunk* prev;		// null for free chunks
 		struct memchunk* next;		// next chunk
-		char data[0];				// here begins the user data
+		char data[];				// here begins the user data
 		//~ struct memchunk* free;		// TODO: next free chunk oredered by size
 		//~ struct memchunk* free_skip;	// TODO: next free whitch 2x biger tahan this
 	} *memchunk;
@@ -381,31 +381,32 @@ static void install_type(ccState cc, int mode) {
 	symn type_i08, type_i16, type_i32, type_i64;
 	symn type_u08, type_u16, type_u32;
 	symn type_f32, type_f64;
-	symn type_chr;
+	symn type_obj, type_chr;
 
-	type_rec = install(cc, "typename", ATTR_stat | ATTR_const | TYPE_rec, TYPE_ref, 0, NULL, NULL);
+	type_rec = install(cc, "typename", ATTR_stat | ATTR_const | TYPE_rec, TYPE_ref,      0, NULL, NULL);
 
 	// TODO: !cycle: typename is instance of typename
 	type_rec->type = type_rec;
 
-	type_vid = install(cc,    "void", ATTR_stat | ATTR_const | TYPE_rec, TYPE_vid, 0, type_rec, NULL);
-	type_bol = install(cc,    "bool", ATTR_stat | ATTR_const | TYPE_rec, TYPE_bit, 4, type_rec, NULL);
-	type_i08 = install(cc,    "int8", ATTR_stat | ATTR_const | TYPE_rec, TYPE_i32, 1, type_rec, NULL);
-	type_i16 = install(cc,   "int16", ATTR_stat | ATTR_const | TYPE_rec, TYPE_i32, 2, type_rec, NULL);
-	type_i32 = install(cc,   "int32", ATTR_stat | ATTR_const | TYPE_rec, TYPE_i32, 4, type_rec, NULL);
-	type_i64 = install(cc,   "int64", ATTR_stat | ATTR_const | TYPE_rec, TYPE_i64, 8, type_rec, NULL);
-	type_u08 = install(cc,   "uint8", ATTR_stat | ATTR_const | TYPE_rec, TYPE_u32, 1, type_rec, NULL);
-	type_u16 = install(cc,  "uint16", ATTR_stat | ATTR_const | TYPE_rec, TYPE_u32, 2, type_rec, NULL);
-	type_u32 = install(cc,  "uint32", ATTR_stat | ATTR_const | TYPE_rec, TYPE_u32, 4, type_rec, NULL);
-	// type_ = install(cc,  "uint64", ATTR_stat | ATTR_const | TYPE_rec, TYPE_u64, 8, type_rec, NULL);
-	type_f32 = install(cc, "float32", ATTR_stat | ATTR_const | TYPE_rec, TYPE_f32, 4, type_rec, NULL);
-	type_f64 = install(cc, "float64", ATTR_stat | ATTR_const | TYPE_rec, TYPE_f64, 8, type_rec, NULL);
+	type_vid = install(cc,    "void", ATTR_stat | ATTR_const | TYPE_rec, TYPE_vid,       0, type_rec, NULL);
+	type_bol = install(cc,    "bool", ATTR_stat | ATTR_const | TYPE_rec, TYPE_bit, vm_size, type_rec, NULL);
+	type_i08 = install(cc,    "int8", ATTR_stat | ATTR_const | TYPE_rec, TYPE_i32,       1, type_rec, NULL);
+	type_i16 = install(cc,   "int16", ATTR_stat | ATTR_const | TYPE_rec, TYPE_i32,       2, type_rec, NULL);
+	type_i32 = install(cc,   "int32", ATTR_stat | ATTR_const | TYPE_rec, TYPE_i32,       4, type_rec, NULL);
+	type_i64 = install(cc,   "int64", ATTR_stat | ATTR_const | TYPE_rec, TYPE_i64,       8, type_rec, NULL);
+	type_u08 = install(cc,   "uint8", ATTR_stat | ATTR_const | TYPE_rec, TYPE_u32,       1, type_rec, NULL);
+	type_u16 = install(cc,  "uint16", ATTR_stat | ATTR_const | TYPE_rec, TYPE_u32,       2, type_rec, NULL);
+	type_u32 = install(cc,  "uint32", ATTR_stat | ATTR_const | TYPE_rec, TYPE_u32,       4, type_rec, NULL);
+	// type_ = install(cc,  "uint64", ATTR_stat | ATTR_const | TYPE_rec, TYPE_u64,       8, type_rec, NULL);
+	type_f32 = install(cc, "float32", ATTR_stat | ATTR_const | TYPE_rec, TYPE_f32,       4, type_rec, NULL);
+	type_f64 = install(cc, "float64", ATTR_stat | ATTR_const | TYPE_rec, TYPE_f64,       8, type_rec, NULL);
 
 	if (mode & creg_tptr) {
 		type_ptr = install(cc,  "pointer", ATTR_stat | ATTR_const | TYPE_rec, TYPE_ref, vm_size, type_rec, NULL);
 		type_ptr->pfmt = "@%06x";
 		cc->null_ref = install(cc, "null", ATTR_stat | ATTR_const | TYPE_ref, TYPE_any, vm_size, type_ptr, NULL);
 	}
+	type_obj = install(cc, "object", ATTR_stat | ATTR_const | TYPE_rec, TYPE_ref, 0, type_rec, NULL);
 	if (mode & creg_tvar) {
 		// TODO: variant should cast to TYPE_var
 		type_var = install(cc, "variant", ATTR_stat | ATTR_const | TYPE_rec, TYPE_rec, 2 * vm_size, type_rec, NULL);
@@ -792,6 +793,7 @@ ccState ccInit(state rt, int mode, int onHalt(libcArgs)) {
 
 	cc = (ccState)(rt->_end - sizeof(struct ccStateRec));
 	rt->_end -= sizeof(struct ccStateRec);
+	rt->_beg += 1;	// HACK: make first symbol start not at null.
 
 	dieif(rt->_end < rt->_beg, "memory overrun");
 	memset(rt->_end, 0, sizeof(struct ccStateRec));

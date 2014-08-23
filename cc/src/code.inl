@@ -92,13 +92,10 @@ case opc_libc: NEXT(4, -libcvec[ip->rel].pop, libcvec[ip->rel].chk) {
 		args.fun = fun;
 		args.retv = (char *)st;
 	}
-	//prerr("info", "libcall %-T", libcall->sym);
 
 #ifdef TRACE
 	TRACE(ip, sp);
 	TRACE(getip(rt, args.fun->offs), sp);
-	//TRACE(mp + libcall->sym->offs, sp);
-	//TRACE(getip(rt, fun->offs), sp);
 #endif
 	exitCode = libcall->call(&args);
 #ifdef TRACE

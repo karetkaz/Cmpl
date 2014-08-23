@@ -1570,7 +1570,7 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 				return TYPE_vid;
 
 			case TYPE_bit:
-				if (!emiti32(rt, ast->con.cint != 0)) {
+				if (!emiti32(rt, ast->cint != 0)) {
 					trace("%+k", ast);
 					return TYPE_any;
 				}
@@ -1578,7 +1578,7 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 
 			case TYPE_u32:
 			case TYPE_i32:
-				if (!emiti32(rt, (int32_t)ast->con.cint)) {
+				if (!emiti32(rt, (int32_t)ast->cint)) {
 					trace("%+k", ast);
 					return TYPE_any;
 				}
@@ -1587,21 +1587,21 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 				//~ return TYPE_i32;//TODO: get?
 
 			case TYPE_i64:
-				if (!emiti64(rt, (int64_t)ast->con.cint)) {
+				if (!emiti64(rt, (int64_t)ast->cint)) {
 					trace("%+k", ast);
 					return TYPE_any;
 				}
 				return TYPE_i64;
 
 			case TYPE_f32:
-				if (!emitf32(rt, (float32_t)ast->con.cint)) {
+				if (!emitf32(rt, (float32_t)ast->cint)) {
 					trace("%+k", ast);
 					return TYPE_any;
 				}
 				return TYPE_f32;
 
 			case TYPE_f64:
-				if (!emitf64(rt, (float64_t)ast->con.cint)) {
+				if (!emitf64(rt, (float64_t)ast->cint)) {
 					trace("%+k", ast);
 					return TYPE_any;
 				}
@@ -1619,7 +1619,7 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 				return TYPE_vid;
 
 			case TYPE_bit:
-				if (!emiti32(rt, ast->con.cflt != 0.)) {
+				if (!emiti32(rt, ast->cflt != 0.)) {
 					trace("%+k", ast);
 					return TYPE_any;
 				}
@@ -1627,28 +1627,28 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 
 			case TYPE_u32:
 			case TYPE_i32:
-				if (!emiti32(rt, (int32_t)ast->con.cflt)) {
+				if (!emiti32(rt, (int32_t)ast->cflt)) {
 					trace("%+k", ast);
 					return TYPE_any;
 				}
 				return TYPE_i32;//TODO: get?
 
 			case TYPE_i64:
-				if (!emiti64(rt, (int64_t)ast->con.cflt)) {
+				if (!emiti64(rt, (int64_t)ast->cflt)) {
 					trace("%+k", ast);
 					return TYPE_any;
 				}
 				return TYPE_i64;
 
 			case TYPE_f32:
-				if (!emitf32(rt, (float32_t)ast->con.cflt)) {
+				if (!emitf32(rt, (float32_t)ast->cflt)) {
 					trace("%+k", ast);
 					return TYPE_any;
 				}
 				return TYPE_f32;
 
 			case TYPE_f64:
-				if (!emitf64(rt, (float64_t)ast->con.cflt)) {
+				if (!emitf64(rt, (float64_t)ast->cflt)) {
 					trace("%+k", ast);
 					return TYPE_any;
 				}
@@ -1789,8 +1789,9 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 			ipdbg = emitopc(rt, markIP);
 			if (var->kind == TYPE_ref) {
 
-				// skip initialized static function variables
-				if (var->init && var->offs && !rt->cc->init) {
+				// skip initialized static variables and function
+				if (var->stat && var->offs && !rt->cc->init) {
+					trace("already initialized: %+T", var);
 					return TYPE_vid;
 				}
 
@@ -2032,9 +2033,6 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 							return TYPE_any;
 						}
 					}
-
-					// TODO: disable variable initialization 2x
-					var->init = NULL;
 				}
 
 				// alloc locally a block of the size of the type;
@@ -2381,7 +2379,7 @@ int gencode(state rt, int mode) {
 	if (cc->libc != NULL) {
 		libc lc, calls;
 
-		calls = (libc)(rt->_beg = paddptr(rt->_beg, sizeof(void*)));
+		calls = (libc)(rt->_beg = paddptr(rt->_beg, rt_size));
 		rt->_beg += sizeof(struct libc) * (cc->libc->pos + 1);
 		dieif(rt->_beg >= rt->_end, "memory overrun");
 
@@ -2406,7 +2404,7 @@ int gencode(state rt, int mode) {
 
 	// debuginfo
 	if (mode & cgen_info) {
-		rt->dbg = (dbgState)(rt->_beg = paddptr(rt->_beg, sizeof(void*)));
+		rt->dbg = (dbgState)(rt->_beg = paddptr(rt->_beg, rt_size));
 		rt->_beg += sizeof(struct dbgStateRec);
 
 		dieif(rt->_beg >= rt->_end, "memory overrun");
@@ -2444,6 +2442,8 @@ int gencode(state rt, int mode) {
 			if (!var->stat)
 				continue;
 
+			dieif(var->offs != 0, "offset %06x for: %+T", var->offs, var);
+
 			if (var->call && var->cast != TYPE_ref) {
 				int seg = emitopc(rt, markIP);
 
@@ -2454,12 +2454,11 @@ int gencode(state rt, int mode) {
 
 				rt->cc->init = 0;
 				rt->vm.sm = 0;
-				fixjump(rt, 0, 0, vm_size + var->offs);
+				fixjump(rt, 0, 0, vm_size + var->size);
 				//TODO: why?: 
 				rt->vm.ro = stkoffs(rt, 0);
 				rt->vm.sm = rt->vm.ss;		// leave return address on stack
 
-				//~ dieif(var->offs != 0, "offset %06x for: %+T", var->offs, var);
 				var->offs = emitopc(rt, markIP);
 
 				if (!cgen(rt, var->init, TYPE_vid)) {
@@ -2478,7 +2477,7 @@ int gencode(state rt, int mode) {
 				var->stat = 1;
 			}
 			else {
-				int padd = sizeof(void*);
+				int padd = rt_size;
 				dieif(var->offs != 0, "Error %-T", var);
 				dieif(var->size == 0, "Error %-T", var);	// instance of void ?
 				dieif(var->size != sizeOf(var), "size error: %-T: %d / %d", var, var->size, sizeOf(var));
@@ -2529,23 +2528,23 @@ int gencode(state rt, int mode) {
 					init->file = var->file;
 					init->line = var->line;
 
-					if (staticinitializers->list.head == NULL) {
-						staticinitializers->list.head = init;
+					if (staticinitializers->lst.head == NULL) {
+						staticinitializers->lst.head = init;
 					}
 					else {
-						staticinitializers->list.tail->next = init;
+						staticinitializers->lst.tail->next = init;
 					}
-					staticinitializers->list.tail = init;
+					staticinitializers->lst.tail = init;
 				}
 			}
 			//~ trace("@%06x: %+T", var->offs, var);
 		}
 
 		// initialize static non global variables
-		if (staticinitializers && staticinitializers->list.tail) {
+		if (staticinitializers && staticinitializers->lst.tail) {
 			dieif(cc->root == NULL || cc->root->kind != STMT_beg, "Error");
-			staticinitializers->list.tail->next = cc->root->stmt.stmt;
-			cc->root->stmt.stmt = staticinitializers->list.head;
+			staticinitializers->lst.tail->next = cc->root->stmt.stmt;
+			cc->root->stmt.stmt = staticinitializers->lst.head;
 			//~ staticinitializers->list.tail->next = cc->root->stmt.stmt;
 			//~ cc->root = staticinitializers->list.head;
 		}
@@ -2582,23 +2581,14 @@ int gencode(state rt, int mode) {
 	// program entry point
 	rt->vm.pc = Lmain;
 
-	//~ rt->init->name = "<init>";
-	//~ rt->init->prms = rt->defs;
-
 	rt->init->file = NULL;
 	rt->init->line = 0;
-
 	rt->init->kind = TYPE_ref;
 	rt->init->call = 1;
 	rt->init->offs = Lmain;
 	rt->init->size = emitopc(rt, markIP) - Lmain;
 
-
-	//rt->vm.size.meta = Lmeta;
-	//rt->vm.size.code = rt->_beg - rt->_mem;
-
 	rt->_end = rt->_mem + rt->_size;
-
 	if (rt->dbg != NULL) {
 		int i, j;
 		struct arrBuffer *codeMap = &rt->dbg->codeMap;

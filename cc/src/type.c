@@ -114,7 +114,6 @@ symn newdefn(ccState s, int kind) {
 
 /// install a symbol(typename or variable)
 symn install(ccState s, const char* name, ccToken kind, ccToken cast, unsigned size, symn type, astn init) {
-	unsigned hash = 0;
 	symn def;
 
 	dieif(!s || !name || !kind, "FixMe(s, %s, %t)", name, kind);
@@ -126,8 +125,10 @@ symn install(ccState s, const char* name, ccToken kind, ccToken cast, unsigned s
 	}
 
 	if ((def = newdefn(s, kind & 0xff))) {
+		unsigned length = strlen(name) + 1;
+		unsigned hash = rehash(name, length) % TBLS;
+		def->name = mapstr(s, (char*)name, length, hash);
 		def->nest = s->nest;
-		def->name = mapstr(s, (char*)name, -1, -1);
 		def->type = type;
 		def->init = init;
 		def->size = size;
@@ -163,12 +164,11 @@ symn install(ccState s, const char* name, ccToken kind, ccToken cast, unsigned s
 				break;
 
 			case EMIT_opc:
-				def->size = 0;
 				def->offs = size;
+				def->size = 0;
 				break;
 		}
 
-		hash = rehash(name, -1) % TBLS;
 		def->next = s->deft[hash];
 		s->deft[hash] = def;
 

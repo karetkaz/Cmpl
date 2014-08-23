@@ -131,28 +131,14 @@ static void fputsym(FILE* fout, char *esc[], symn sym, int mode, int level) {
 		}
 		case TYPE_rec: {
 			symn arg;
-
 			if (rlev < 2) {
 				if (pr_qual && sym->decl) {
-					//~ fputsym(fout, esc, sym->decl, 0 | prQual, 0);
-					//~ fputchr(fout, '.');
-					//~ symn bp[TBLS], *sp = bp, *p;
-
 					symn typ = sym->decl;
 					while (typ != NULL) {
-						//~ *sp++ = typ;
 						fputsym(fout, esc, typ, 0, 0);
 						fputchr(fout, '.');
 						typ = typ->decl;
 					}
-					//~ fputsym(fout, esc, typ, 0, 0);
-
-					/*for (p = bp; p < sp; ++p) {
-						typ = *p;
-						fputsym(fout, esc, typ, 0, 0);
-						fputchr(fout, '.');
-						//~ fputfmt(fout, "[%?+k]", typ->init);
-					}*/
 				}
 				fputstr(fout, esc, sym->name);
 				break;
@@ -650,15 +636,15 @@ static void fputast(FILE* fout, char *esc[], astn ast, int mode, int level) {
 			break;
 
 		case TYPE_bit:
-			fputfmt(fout, "%U", ast->con.cint);
+			fputfmt(fout, "%U", ast->cint);
 			break;
 
 		case TYPE_int:
-			fputfmt(fout, "%D", ast->con.cint);
+			fputfmt(fout, "%D", ast->cint);
 			break;
 
 		case TYPE_flt:
-			fputfmt(fout, "%F", ast->con.cflt);
+			fputfmt(fout, "%F", ast->cflt);
 			break;
 
 		case TYPE_str:
@@ -831,7 +817,16 @@ static void FPUTFMT(FILE* fout, char *esc[], const char* msg, va_list ap) {
 						str = (char*)tok_tbl[arg].name;
 					}
 					else {
-						str = ".ERROR.";
+						char *con = arg & ATTR_const ? "const " : "";
+						char *stat = arg & ATTR_stat ? "static " : "";
+						str = buff;
+						arg &= 0xff;
+						if (arg < tok_last) {
+							sprintf(str, "%s%s%s", con, stat, tok_tbl[arg].name);
+						}
+						else {
+							sprintf(str, "%s%s.ERR_%02x", con, stat, arg);
+						}
 					}
 					break;
 				}
@@ -1422,19 +1417,12 @@ void fputfmt(FILE* fout, const char* msg, ...) {
 	va_end(ap);
 }
 
-void dump(state rt, int mode, symn sym, const char* text, ...) {
+void dump(state rt, int mode, symn sym) {
 	int level = mode & 0xff;
 	FILE* logf = rt->logf;
 
 	if (logf == NULL) {
 		return;
-	}
-
-	if (text != NULL) {
-		va_list ap;
-		va_start(ap, text);
-		FPUTFMT(logf, NULL, text, ap);
-		va_end(ap);
 	}
 
 	if (mode & dump_sym && rt->defs != NULL) {

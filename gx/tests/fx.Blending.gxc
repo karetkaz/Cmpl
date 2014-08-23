@@ -17,7 +17,7 @@ define resize(gxSurf src, int width, int height) = zoomSurf(gxSurf(width, height
 
 gxSurf image0 = gxSurf(Window.resx, Window.resy);
 
-define useGradient = !true;
+define useGradient = true;
 static if (useGradient) {
 gxClut lut1;
 gxClut lut2;
@@ -29,6 +29,11 @@ gxSurf image1 = gxSurf(Window.resx, Window.resy);
 gradSurf(image1, &g1, &lut1, Gradient.Linear);
 gxSurf image2 = gxSurf(Window.resx, Window.resy);
 gradSurf(image2, &g2, &lut2, Gradient.Linear);
+
+//~ vec4f hsvOP(float64 x, float64 y) {
+	//~ return Hsv2Rgb(vec4f(x, 1 - y, 1));
+//~ }
+//~ evalSurf(image2, null, hsvOP);
 }
 static if (!useGradient) {
 gxSurf image1 = resize(gxSurf(fileName), Window.resx, Window.resy);

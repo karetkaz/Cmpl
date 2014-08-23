@@ -1,4 +1,5 @@
-
+// --s -gd2 -asm29 -l out/asm.cvx -xv -w9 "todo.cvx"
+/*
 struct Biorithm {
 	int color;
 	int period;
@@ -8,7 +9,7 @@ struct Biorithm {
 
 //~ Biorithm biorithm = Biorithm(0x5050ff, 23,  0, "Physical - Fizikai %d%%");
 
-//~ /* TODO:
+//~ / * TODO:
 //~ Biorithm biorithms[] = [
 //~ const Biorithm biorithms[7] = [
 //~ const Biorithm biorithms[] = [
@@ -19,6 +20,94 @@ struct Biorithm {
 	Biorithm(0x6f6f6f, 23, 33, "Mastery - Iranyitas %d%%"),
 	Biorithm(0xfeab00, 23, 28, "Passion - Szenvedely %d%%"),
 	Biorithm(0x9466db, 28, 33, "Wisdom - Bolcsesseg %d%%")
-]; //~ */
+];
 
 //~ println(millis());
+//~ */
+
+//~ /* System.io
+
+define byte = uint8;
+struct Stream: object {
+	const void close(Stream stream);
+}
+
+struct InputStream: Stream {
+	const int read(Stream stream, byte values[]);
+}
+
+struct OutputStream: Stream {
+	const int write(Stream stream, byte values[]);
+	const void flush(Stream stream);
+}
+
+//?: struct FileInputStream: InputStream(File.close, File.read) {const File stream;}
+
+struct FileInputStream: InputStream {
+	//~ close: File.close;	// initialize close function
+	//~ read: File.read;	// initialize read function
+	const File stream;
+}
+
+int sizeofFileInputStream = sizeof(FileInputStream);
+FileInputStream fis = emit(FileInputStream, memmgr(null, sizeof(FileInputStream)));
+
+/*struct Stream: InputStream + OutputStream;
+	> TeeStream: Stream
+	> PipeStream: Stream
+	> NetworkStream: Stream
+
+struct RandomAccessStream: Stream {long seek(long offset, Direction dir);}
+	> FileStream: RandomAccessStream {FileStream open(String file);}
+	> MemoryStream: RandomAccessStream
+
+struct Encoder {InputStream input; int read(byte[]);}
+struct Decoder {OutputStream output; int write(byte[]);}
+
+struct TextReader {InputStream input; bool closeStream; int read(char[]);}
+	> Latin1Reader
+	> AsciiReader
+	> Utf7Reader
+	> Utf8Reader
+
+struct TextWriter {OutputStream output; bool closeStream; int write(char[]);}
+	> Latin1Writer
+	> AsciiWriter
+	> Utf7Writer
+	> Utf8Writer
+
+struct Path {
+	exists
+	isFile
+	isDirectory
+	isHidden
+
+	parent
+	isAbsolute
+	canRead,write,execute,...
+	permissions
+}
+
+struct File: Path {
+	open = InputStream(FileStream.open(path), true);
+	//openText = Utf8Reader(InputStream(FileStream.open(path)));
+	create = OutputStream(FileStream.open(path), true);
+	append = OutputStream(FileStream.open(path), true);
+	size;
+}
+
+struct Directory: Path {
+	list, make, remove(recursive)
+}
+
+*/
+
+/+ TODO: vs studio BUG
+string decodedFile = "out.txt";
+debug("file", variant(decodedFile));
+// +/
+
+define foo(int &a, int &b) = a * a + 2 * a * b + b * b;
+int a = 6;
+int b = 6;
+int c = foo(a, b);

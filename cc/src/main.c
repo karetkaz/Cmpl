@@ -29,7 +29,7 @@ application [global options] [local options]...
 		<file>					if file extension is (.so|.dll) load as libraray else compile
 */
 
-//~ (wcl386 -cc -q -ei -6s -d2  -fe=../main *.c) && (rm -f *.o *.obj *.err)
+//~ (wcl386 -cc -q -ei -6s -d0  -fe=../main *.c) && (rm -f *.o *.obj *.err)
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
@@ -330,20 +330,20 @@ static int importLib(state rt, const char* path) {
 #endif
 
 static symn printvars = NULL;
-static int haltVerbose(libcArgs rt);
+//~ static int haltVerbose(libcArgs rt);
+static void printGlobals(FILE* out, state rt, int all);
 static int dbgCon(state, int pu, void* ip, long* sp, int ss);
 
 int program(int argc, char* argv[]) {
 	char* stdlib = (char*)STDLIB;
 
-	int (*dbg)(state, int pu, void *ip, long* sp, int ss) = NULL;
-	int (*onHalt)(libcArgs) = NULL;	// print variables and values on exit?
-
 	// compile, run, debug, ...
 	int level = -1, argi;
 	int gen_code = ol;	// optimize_level, debug_info, ...
 	int run_code = 0;	// true/false: exec
-	char* stk_dump = NULL;
+
+	char* stk_dump = NULL;	// dump top of stack
+	int var_dump = -1;	// dump variables after execution.
 
 	int out_tree = -1;
 	char* str_tree = NULL;
@@ -360,7 +360,9 @@ int program(int argc, char* argv[]) {
 	int warn = wl;
 	int result = 0;
 
-	state rt = rtInit(mem, sizeof(mem));
+	char* amem = paddptr(mem, rt_size);
+	state rt = rtInit(amem, sizeof(mem) - (amem - mem));
+	int (*dbg)(state, int pu, void* ip, long* sp, int ss) = NULL;
 
 	if (rt == NULL) {
 		fatal("initializing runtime context.");
@@ -404,9 +406,15 @@ int program(int argc, char* argv[]) {
 			char* str = arg + 2;
 
 			if (*str == 'v') {
-				onHalt = haltVerbose;
+				//~ onHalt = haltVerbose;
+				var_dump = 0;
 				str += 1;
 			}
+			else if (*str == 'V') {
+				var_dump = 1;
+				str += 1;
+			}
+
 			if (*str == 'd') {
 
 				gen_code |= cgen_info;
@@ -428,7 +436,7 @@ int program(int argc, char* argv[]) {
 			}
 			logf = argv[argi];
 		}
-		/*else if (strcmp(arg, "-o") == 0) {			// out
+		/*else if (strcmp(arg, "-o") == 0) {		// out
 			if (++argi >= argc || outf) {
 				error(rt, NULL, 0, "output file not specified");
 				return -1;
@@ -466,7 +474,7 @@ int program(int argc, char* argv[]) {
 			out_tree = level;
 		}
 		else if (strncmp(arg, "-asm", 4) == 0) {	// dasm
-			level = 0;
+			level = 0x29;	// 2 use global offset, 9 characters for bytecode hexview
 			if (arg[4]) {
 				char* ptr = parsei32(arg + 4, &level, 16);
 				if (*ptr == '.') {
@@ -481,10 +489,10 @@ int program(int argc, char* argv[]) {
 		}
 
 		// temp
-		else if (strncmp(arg, "-std", 4) == 0) {	// redefine stdlib
+		else if (strcmp(arg, "-std") == 0) {		// override stdlib file
 			stdlib = arg + 4;
 		}
-		else if (strncmp(arg, "--", 2) == 0) {		// exclude: do not gen code
+		else if (strncmp(arg, "--", 2) == 0) {		// exclude stdlib, do not gen code, ...
 			if (strchr(arg, 'c'))
 				gen_code = 0;
 			if (strchr(arg, 's'))
@@ -501,7 +509,7 @@ int program(int argc, char* argv[]) {
 	}
 
 	// intstall base type system.
-	if (!ccInit(rt, creg_def, onHalt)) {
+	if (!ccInit(rt, creg_def, NULL)) {
 		error(rt, NULL, 0, "error registering base types");
 		logfile(rt, NULL);
 		return -6;
@@ -536,7 +544,7 @@ int program(int argc, char* argv[]) {
 				}
 			}
 			else if (!ccAddCode(rt, warn, arg, 1, NULL)) {
-				error(rt, NULL, 0, "error compiling `%s`", arg);
+				error(rt, NULL, 0, "error compiling source `%s`", arg);
 			}
 		}
 		else if (strncmp(arg, "-w", 2) == 0) {		// warning level for file
@@ -559,7 +567,7 @@ int program(int argc, char* argv[]) {
 		else if (strncmp(arg, "-C", 2) == 0) {		// compile source
 			char* str = arg + 2;
 			if (!ccAddCode(rt, warn, str, 1, NULL)) {
-				error(rt, NULL, 0, "error compiling `%s`", str);
+				error(rt, NULL, 0, "error compiling source `%s`", arg);
 			}
 		}
 		else {
@@ -585,6 +593,10 @@ int program(int argc, char* argv[]) {
 
 	// if no error generate code and execute
 	if (rt->errc == 0) {
+		FILE *out = rt->logf;
+		if (out == NULL) {
+			out = stdout;
+		}
 
 		// generate variables and vm code.
 		if ((gen_code || run_code) && !gencode(rt, gen_code)) {
@@ -602,7 +614,9 @@ int program(int argc, char* argv[]) {
 				}
 			}
 			//~ dump(rt, dump_sym | (out_tags & 0x0ff), sym, "\ntags:\n#api: replace(`^([^:]*).*$`, `\\1`)\n");
-			dump(rt, dump_sym | (out_tags & 0x0ff), sym, "\ntags:\n#api: replace(`^([^:)]*([)][:][^:]+)?).*$`, `\\1`)\n");
+			fputfmt(out, "\n>==-- tags:\n");
+			fputfmt(out, "#api: replace(`^([^:)]*([)][:][^:]+)?).*$`, `\\1`)\n");
+			dump(rt, dump_sym | (out_tags & 0x0ff), sym);
 		}
 		if (out_tree >= 0) {
 			symn sym = NULL;
@@ -612,7 +626,8 @@ int program(int argc, char* argv[]) {
 					info(rt, NULL, 0, "symbol not found: %s", str_tree);
 				}
 			}
-			dump(rt, dump_ast | (out_tree & 0x0ff), sym, "\ncode:\n");
+			fputfmt(out, "\n>==-- code:\n");
+			dump(rt, dump_ast | (out_tree & 0x0ff), sym);
 		}
 		if (out_dasm >= 0) {
 			symn sym = NULL;
@@ -622,13 +637,24 @@ int program(int argc, char* argv[]) {
 					info(rt, NULL, 0, "symbol not found: %s", str_dasm);
 				}
 			}
-			dump(rt, dump_asm | (out_dasm & 0x0ff), NULL, "\ndasm:\n");
+			fputfmt(out, "\n>==-- dasm:\n");
+			dump(rt, dump_asm | (out_dasm & 0x0ff), sym);
 		}
 		if (run_code != 0) {
 			if (dbg != NULL && rt->dbg != NULL) {
 				rt->dbg->dbug = dbg;
 			}
+			//~ fputfmt(out, "\n>==-- exec:\n");
 			result = execute(rt, NULL, rt->_size / 4);
+			if (var_dump >= 0) {
+
+				fputfmt(out, "\n>==-- vars:\n");
+				printGlobals(out, rt, var_dump);
+				//~ logTrace(rt->rt, 1, 0, 20);
+
+				// show allocated memory chunks.
+				//~ rtAlloc(rt->rt, NULL, 0);
+			}
 		}
 	}
 
@@ -671,7 +697,47 @@ int main(int argc, char* argv[]) {
 	//~ return 0;
 }
 
-static int haltVerbose(libcArgs rt) {
+static void printGlobals(FILE* out, state rt, int all) {
+	symn var;
+	for (var = rt->defs; var; var = var->next) {
+		char* ofs = NULL;
+
+		// exclude types
+		if (var->kind != TYPE_ref)
+			continue;
+
+		// exclude functions
+		if (var->call && !all)
+			continue;
+
+		// exclude null
+		if (var->offs == 0)
+			continue;
+
+		if (var->file && var->line) {
+			fputfmt(out, "%s:%u:%u: ", var->file, var->line, var->colp);
+		}
+		else {
+			//~ fputfmt(out, "var: ");
+		}
+
+		if (var->stat) {
+			// static variable.
+			ofs = (char*)rt->_mem + var->offs;
+		}
+		else {
+			// argument or local variable.
+			// in case if: var != rt->defs.
+			//~ ofs = (char*)rt->retv + rt->fun->prms->offs - var->offs;
+			continue;
+		}
+
+		fputval(rt, out, var, (stkval*)ofs, 0, prQual|prType);
+		fputc('\n', out);
+	}
+}
+
+/*static int haltVerbose(libcArgs rt) {
 	symn var;
 	FILE *out = stdout;
 
@@ -725,7 +791,7 @@ static int haltVerbose(libcArgs rt) {
 	//~ rtAlloc(rt->rt, NULL, 0);
 
 	return 0;
-}
+}*/
 
 static int dbgCon(state rt, int pu, void* ip, long* sp, int ss) {
 	static char buff[1024];

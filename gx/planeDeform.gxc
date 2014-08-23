@@ -335,4 +335,4 @@ void setup(rgb _func(float64 x, float64 y, float64 t)) {
 	Gui.setMouseHandler(mouseCB);
 }
 
-setup(waves);
+setup(vortex);

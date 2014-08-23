@@ -1,24 +1,24 @@
 //~ BUG: static functions are not accessible from a non static struct if there is only static data.
+//~ BUG: implemented non static functions should be generated like static functions.
 //~ BUG: function with empty body does not generate the return instruction.
-//~ implemented non static functions should be generated like static functions.
-
+//~ BUG: array of references
+//~ BUG: void alma(int a) {static int A = a;}
 /+~ BUG: it is posible to declare functions with (? different type ?) arguments:
 	void setzero(int vec[4]) {...}
 	void setzero(int vec[]) {...}
 //~ +/
-//~ TODO: assign to variants: null, variable
+
+//! TODO: assign null to array: int a[] = null;
+//! TODO: assign null to variant: variant var = null;
 //! TODO: varargs: int min(int first, int rest...) {...}
 //! TODO: js like initialization of structs: Complex a = {re: 0, im: 1};
+//! TODO: inout parameters: `bool next(typename &it, typename &&out)` + iteration over struct members.
+//? TODO: assign variable to variant: variant var = a;
 
-//~ TODO:! inout parameters: `bool next(typename &it, typename &&out)` + iteration over struct members.
+//? TODO: static if else part
+//? TODO: threat errors as warnings inside static if false branch
+//? TODO: separate struct and unoin declaration
 
-//~ TODO:? static if else part
-//~ TODO:? threat errors as warnings inside static if false branch
-//~ TODO:? separate struct and unoin declaration
-//~ TODO:X in case of unions create a constructor (!resolved by js style initialization)
-
-//~ BUG: array of references
-//~ BUG: void alma(int a) {static int A = a;}
 
 /+ TODO: Array allocation and assignment
 define new(typename type, int32 n) = emit(type, pointer(memmgr(null, n * type.size)), i32(n));
@@ -38,7 +38,7 @@ for (int i = 0; i < a.length; i += 1) {
 
 // +/
 
-/+ TODO: any members default initialization.
+/+ TODO: members default initialization.
 struct M {
 	static const int A = 9;
 	//~ static const int _A;		// error: uninitialized constant
@@ -101,20 +101,22 @@ double y1 = sqr1(x*x+x);		//
 double y2 = sqr2(x*x+x);		// should produce the same code as above
 //~ +/
 
-//~ /+ BUG: convert char slice to string 
-const char str1[] = "alma a fa alatt nyari piros alma";
-const char str2[] = ['a', 'l', 'm', 'a', 0];
-string str3 = "alma";
+/+ BUG: convert char slice to string
+const char str1[] = "alma a fa alatt nyari piros alma";		// char[32]
+const char str2[] = ['a', 'l', 'm', 'a', 0];				// char[5]
+char str3[] = "alma a fa alatt nyari piros alma";			// char[<32>]
+char str4[] = str2;											// char[<5>]
 
-string str5 = string(str2);		//~ OK
-string str4 = string(str1);		//~ BUG
+string str5 = "alma";
+string str6 = string(str2);		//~ OK
+string str7 = string(str1);		//~ OK
 
 // makeing slices from strings (substring)
 //~ char slice1[] = emit(struct, ref(str2), i32(2));
 //~ char slice2[] = emit(struct, i32.add, ref(str2), i32(2), i32(2));
 //~ +/
 
-/+ DONE: static casting pointers
+/+ BUG: static casting pointers
 pointer x = emit(pointer, ref("erZKJVDlaknjsdvkSDNVlk"));
 string str = emit(string, ref(x));
 //~ println(emit(string, ref(x)));
@@ -129,7 +131,7 @@ void testArr(double x[]) {
 define TestArr(double x[16]) = testArr(x);
 
 double x[16] = 1.;
-//~ double x[18] = {1};
+//~ double x[18] = [1];
 
 testArr(x);
 TestArr(x);
@@ -177,12 +179,12 @@ refs.f();
 
 //~ +/
 
-/+ BUG: function returning reference or string type.
+//~ /+ BUG: function returning reference or string type.
 //~ define sizeof(typename type) = int(type.size);
 //~ define new(typename type) = memmgr(null, type.size);
 
 struct ComplexByVal {double re; double im;}
-struct &ComplexByRef {double re; double im;}
+struct ComplexByRef: object {double re; double im;}
 
 //~ void print(ComplexByRef val) { print("%F", val.re); print(", "); print("%F", val.im); print("\n"); }
 
@@ -201,7 +203,7 @@ ComplexByRef v2 = new(ComplexByRef);
 ComplexByRef v3 = emit(ComplexByRef, i32(-1));
 //~ ComplexByRef v4 = ComplexByRef(2, -3);
 
-//~ v2.re = v1.re;
+v2.re = v1.re;
 //~ v3 = v2;
 //~ v2 = null;
 

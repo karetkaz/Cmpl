@@ -105,6 +105,7 @@ typedef enum {
 	TYPE_flt = TYPE_f64,
 	TYPE_str = TYPE_ptr,
 
+	ATTR_mask   = 0xf00,		// mask
 	ATTR_stat   = 0x400,		// static
 	ATTR_const  = 0x800,		// constant
 	//ATTR_paral  = 0x100,		// parallel
@@ -121,14 +122,21 @@ typedef enum {
 		CAST_vid    = 0x000001;		// void;
 		CAST_bit    = 0x000002;		// bool;
 		CAST_i32    = 0x000003;		// int32, int16, int8
+
 		// ...
 		// alias    = 0x000000;		// invalid at runtime.
+
+		KIND_typ
 		typename    = 0x000010;		// struct metadata info.
+
+		KIND_fun
 		function    = 0x000020;		// function
+
+		KIND_var
 		variable    = 0x000030;		// functions and typenames are also variables
 
-		attr_const  = 0x000040;
-		attr_static = 0x000080;
+		ATTR_const  = 0x000040;
+		ATTR_static = 0x000080;
 	}*/
 } ccToken;
 struct tok_inf {
@@ -177,6 +185,7 @@ typedef enum {
 	b32_bit_sar = 3 << 6,
 
 	vm_size = sizeof(int),	// size of data element on stack
+	rt_size = 8,//sizeof(void*),
 	vm_regs = 255	// maximum registers for dup, set, pop, ...
 } vmOpcode;
 struct opc_inf{
@@ -220,6 +229,7 @@ typedef struct libc {	// library call
 /// Abstract Syntax Tree Node
 typedef struct astNode *astn;
 
+// TODO: split into 2 structs one for runtime and another for compiler.
 /// Symbol node types and variables
 struct symNode {
 	char*	name;		// symbol name
@@ -271,37 +281,34 @@ struct astNode {
 	symn		type;				// typeof() return type of operator
 	astn		next;				// next statement, do not use for preorder
 	union {
-		union {						// TYPE_xxx: constant
-			int64_t     cint;		// const: integer
-			float64_t	cflt;		// const: float
-			//~ char*	cstr;		// const: use instead: '.ref.name'
-		} con;
-		struct {					// STMT_xxx: statement
+		int64_t cint;				// constant integer value
+		float64_t cflt;				// constant floating point value
+		struct {			// STMT_xxx: statement
 			astn	stmt;			// statement / then block
 			astn	step;			// increment / else block
 			astn	test;			// condition: if, for
 			astn	init;			// for statement init
 		} stmt;
-		struct {					// OPER_xxx: operator
-			astn	rhso;			// right hand side operand
-			astn	lhso;			// left hand side operand
-			astn	test;			// ?: operator condition
-			uint32_t prec;			// precedence
-		} op;
-		struct {					// TYPE_ref: identifyer
+		struct {			// TYPE_ref: identifyer
 			char*	name;			// name of identifyer
 			symn	link;			// variable
 			astn	used;			// next used
 			int32_t hash;			// hash code for 'name'
 		} ref;
-		struct {					// STMT_brk, STMT_con
+		struct {			// OPER_xxx: operator
+			astn	rhso;			// right hand side operand
+			astn	lhso;			// left hand side operand
+			astn	test;			// ?: operator condition
+			uint32_t prec;			// precedence
+		} op;
+		struct {				// STMT_brk, STMT_con
 			long offs;
 			long stks;				// stack size
 		} go2;
 		struct {					// STMT_beg: list
 			astn head;
 			astn tail;
-		} list;
+		} lst;
 	};
 	char*		file;				// file name of the token belongs to
 	uint32_t	line;				// line position of token

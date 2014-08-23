@@ -28,7 +28,7 @@ double d1 = Im(Complex(2., 5.));
 double d2 = Re(Complex(2., 5.));
 //~ */
 
-/* TODO: function members initialization
+//~ /* TODO: function members initialization
 
 int32 f3(int a, int b) {
 	/+static int32 f4(int a, int b) {
@@ -87,7 +87,7 @@ y = ss[1];
 //~ print(ss[1]);
 // */
 
-//~ /* TODO: array.isNullOrEmpty()
+/* TODO: array.isNullOrEmpty()
 bool isNullOrEmpty(int a[]) {
 	if (a == null)
 		result = true;
@@ -95,14 +95,18 @@ bool isNullOrEmpty(int a[]) {
 		result = true;
 }
 
-//~ int val_null[] = null;
+//TODO: int val_null[] = null;
 int val_empty[0];
 int val_nonempty[10] = [9];
 
-//~ bool res_true1 = isNullOrEmpty(null);
-//~ bool res_true2 = isNullOrEmpty(val_null);
+//TODO: bool res_true1 = isNullOrEmpty(null);
+//TODO: bool res_true2 = isNullOrEmpty(val_null);
 bool res_true3 = isNullOrEmpty(val_empty);
 bool res_false = isNullOrEmpty(val_nonempty);
+//TODO: assert(res_true1);
+//TODO: assert(res_true2);
+assert(res_true3);
+assert(!res_false);
 //~ */
 
 /* TEST: xrgb
@@ -124,7 +128,7 @@ xrgb b = emit(xrgb, i32(0x2f3f1f));
 
 xrgbi32 r;
 /+ TODO: initializations
-xrgbi32 r1 = {val : 0};
+xrgbi32 r1 = {val: 0};
 xrgbi32 r2 = {
 	r: Math.min(a.r + b.r, 255),
 	g: Math.min(a.g + b.g, 255),
@@ -133,9 +137,9 @@ xrgbi32 r2 = {
 };
 // +/
 
-r.rgb.r = Math.min(a.r + b.r, 255);
-r.rgb.g = Math.min(a.g + b.g, 255);
-r.rgb.b = Math.min(a.b + b.b, 255);
+r.rgb.r = Math.min(int32(a.r + b.r), 255);
+r.rgb.g = Math.min(int32(a.g + b.g), 255);
+r.rgb.b = Math.min(int32(a.b + b.b), 255);
 // */
 
 /+ test: print the content of memory :)

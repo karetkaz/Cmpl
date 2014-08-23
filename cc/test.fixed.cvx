@@ -13,14 +13,10 @@ static struct Fixed {
 		FractBits = 16;
 
 		fxpmask = (1 << FractBits) - 1;
-
-		fxp_nan = 0x80000000;
-		fxp_max = 0x7fffffff;
-		fxp_min = -fxp_max;
 		fxp_one = 1 << FractBits;
 
-		fxp_d2r = 0x000477d1 >> (24 - FractBits);		// pi / 180 : degrees to radians
 		fxp_r2d = 0x394bb834 >> (24 - FractBits);		// 180 / pi : radians to degrees
+		fxp_d2r = 0x000477d1 >> (24 - FractBits);		// pi / 180 : degrees to radians
 
 		fxp_ln2 = 0x00b17217 >> (24 - FractBits);		// .6931471805599453 : natural logarithm (2)
 		fxp_lg2 = 0x004d104d >> (24 - FractBits);		// .3010299956639812 : decimal logarithm (2)
@@ -30,6 +26,10 @@ static struct Fixed {
 		fxp_mpi = 0x3243f6a8 >> (28 - FractBits);
 		fxp_2pi = 0x3243f6a8 >> (28 - FractBits - 1);
 		fxp_pi2 = 0x3243f6a8 >> (28 - FractBits + 1);
+
+		fxp_nan = 0x80000000;
+		fxp_max = 0x7fffffff;
+		fxp_min = -fxp_max;
 	}
 
 	const define asFixed(const int32 val) = emit(fixed, i32(val));

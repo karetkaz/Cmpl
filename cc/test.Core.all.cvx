@@ -172,7 +172,7 @@ color C5 = color(1, 5, 205);
 
 enum colors: color {
 	c5 = color(0.1, .5, 1.);
-	none = color(-1);
+	transparent = color(-1);
 }
 color c5 = colors.c5;
 
@@ -200,20 +200,22 @@ void sort(int arr[]) {
 	}
 }
 
-void qsort1(int array[]) {
+void qsort(int array[]) {
 	static void qsort(int array[], int low, int high) {
-		struct Qsort {
-			int array[];
-			int low;
-			int high;
-			int pivot;
-		}
 		int i := low;
 		int j := high;
 		int pivot := array[low + (high-low) / 2];
-		Qsort args = Qsort(array, low, high, pivot);
-		debug(variant(&args));
-		//~ trace("pivot", variant(&pivot));
+		static if (0) {
+			struct Qsort {
+				int array[];
+				int low;
+				int high;
+				int pivot;
+			}
+			Qsort args = Qsort(array, low, high, pivot);
+			debug(variant(&args));
+			//~ trace("pivot", variant(&pivot));
+		}
 
 		for ( ; i <= j; ) {
 			for ( ; array[i] < pivot; i += 1) {}
@@ -242,7 +244,7 @@ int bsearch(int arr[], int elem) {
 	int hi = arr.length;
 
 	result = -1;
-	for (;lo < hi;) {
+	for ( ;lo < hi; ) {
 		int mid = lo + ((hi - lo) / 2);
 		int val = arr[mid];
 
@@ -274,7 +276,7 @@ int test_arr_max = maximum(arr2);
 int test_arr_toFind = arr2[arr2.length / 2];
 
 debug("unsorted", variant(arr2));
-qsort1(arr2);
+qsort(arr2);
 debug("sorted", variant(arr2));
 
 int test_arr_index = bsearch(arr2, test_arr_toFind);
@@ -513,7 +515,7 @@ int32x8 neg(const int32x8 &b) {
 	result.i8 = opNeg(b.i8);
 }
 
-int32x8 add(const int32x8 &a, const int32x8 &b, bool &carryInOut) {
+int32x8 add(const int32x8 &a, const int32x8 &b, bool &&carryInOut) {
 	int64 sum;
 	int64 ovf = 0xffffffff;
 	int64 carry = carryInOut;
@@ -538,16 +540,14 @@ int32x8 add(const int32x8 &a, const int32x8 &b, bool &carryInOut) {
 	carryInOut = sum > ovf;
 }
 int32x8 add(const int32x8 &a, const int32x8 &b) {
-	bool carry = false;
-	result = add(a, b, &carry);
+	result = add(a, b, null);
 }
 int32x8 add(const int32x8 &a, int32 b) {
-	bool carry = false;
 	int32x8 bx8 = int32x8(b);
-	result = add(a, &bx8, &carry);
+	result = add(a, &bx8, null);
 }
 
-int32x8 sub(const int32x8 &a, const int32x8 &b, bool &carryInOut) {
+int32x8 sub(const int32x8 &a, const int32x8 &b, bool &&carryInOut) {
 	int64 sum;
 	int64 ovf = 0;
 	int64 carry = carryInOut;
@@ -575,13 +575,12 @@ int32x8 sub(const int32x8 &a, const int32x8 &b) {
 	result = sub(a, b, &carry);
 }
 int32x8 sub(const int32x8 &a, int32 b) {
-	bool carry = false;
 	int32x8 bx8 = int32x8(b);
-	result = sub(a, &bx8, &carry);
+	result = sub(a, &bx8, null);
 }
 
 
-int32x8 mul(const int32x8 &a, const int32x8 &b, int32x8 &hi) {
+int32x8 mul(const int32x8 &a, const int32x8 &b, int32x8 &&hi) {
 	
 }
 int32x8 mul(int32x8 &a, int32 b);

@@ -273,7 +273,7 @@ char* mapstr(ccState cc, char* str, unsigned len/* = -1U*/, unsigned hash/* = -1
 		hash = rehash(str, len) % TBLS;
 	}
 
-	dieif (str[len - 1] != 0, "FixMe: %s[%d]", str, len);
+	dieif(str[len - 1] != 0, "FixMe: %s[%d]", str, len);
 	for (next = cc->strt[hash]; next; next = next->next) {
 		int cmp = memcmp(next->data, str, len);
 		if (cmp == 0) {
@@ -959,7 +959,7 @@ static int readTok(ccState cc, astn tok) {
 				}
 
 				tok->kind = TYPE_int;
-				tok->con.cint = val;
+				tok->cint = val;
 			}
 		} break;
 		read_idf: {			// [a-zA-Z_][a-zA-Z0-9_]*
@@ -1202,16 +1202,16 @@ static int readTok(ccState cc, astn tok) {
 				}
 				else {
 					error(cc->s, tok->file, tok->line, "invalid suffix in numeric constant '%s'", suffix);
-					tok->kind = TYPE_any;
+					tok->kind = TOKN_err;
 				}
 			}
 			if (flt != 0) {	// float
 				tok->kind = TYPE_flt;
-				tok->con.cflt = f64v;
+				tok->cflt = f64v;
 			}
 			else {			// integer
 				tok->kind = TYPE_int;
-				tok->con.cint = i64v;
+				tok->cint = i64v;
 			}
 		} break;
 	}
@@ -1487,7 +1487,7 @@ static int mkConst(astn ast, ccToken cast) {
 	}
 
 	ast->kind = tmp.kind;
-	ast->con = tmp.con;
+	ast->cint = tmp.cint;
 
 	switch (ast->cst2 = cast) {
 		default:
@@ -1500,20 +1500,20 @@ static int mkConst(astn ast, ccToken cast) {
 			return 0;
 
 		case TYPE_bit:
-			ast->con.cint = constbol(ast);
+			ast->cint = constbol(ast);
 			ast->kind = TYPE_int;
 			break;
 
 		case TYPE_u32:
 		case TYPE_i32:
 		case TYPE_i64:
-			ast->con.cint = constint(ast);
+			ast->cint = constint(ast);
 			ast->kind = TYPE_int;
 			break;
 
 		case TYPE_f32:
 		case TYPE_f64:
-			ast->con.cflt = constflt(ast);
+			ast->cflt = constflt(ast);
 			ast->kind = TYPE_flt;
 			break;
 	}
@@ -2095,7 +2095,8 @@ static astn decl_init(ccState cc, symn var) {
 				}
 
 				if (mkcon && !mkConst(var->init, cast)) {
-					if (!isConst(var->init)) {
+					//* TOTO: constant variables do not ned to be initialized with constants.
+					if (var->cast != TYPE_ref && !isConst(var->init)) {
 						warn(cc->s, 1, var->file, var->line, "probably non constant initialization of `%-T`", var);
 					}
 				}
@@ -2199,14 +2200,14 @@ astn decl_var(ccState cc, astn* argv, int mode) {
 					if (eval(&val, init) == TYPE_int) {
 						// add static const length property to array type.
 						addLength(cc, typ, init);
-						typ->size = (int)val.con.cint * typ->type->size;
-						typ->offs = (int)val.con.cint;
+						typ->size = (int)val.cint * typ->type->size;
+						typ->offs = (int)val.cint;
 						typ->cast = TYPE_ref;
 						typ->init = init;
 						ref->cast = 0;
 
 						dynarr = 0;
-						if (val.con.cint < 0) {
+						if (val.cint < 0) {
 							error(cc->s, init->file, init->line, "positive integer constant expected, got `%+k`", init);
 						}
 					}
@@ -2249,8 +2250,8 @@ astn decl_var(ccState cc, astn* argv, int mode) {
 					if (eval(&val, init) == TYPE_int) {
 						//~ ArraySize
 						addLength(cc, typ, init);
-						typ->size = (int)val.con.cint * typ->type->size;
-						typ->offs = (int)val.con.cint;
+						typ->size = (int)val.cint * typ->type->size;
+						typ->offs = (int)val.cint;
 						typ->init = init;
 					}
 					else {
@@ -2418,11 +2419,6 @@ static astn decl(ccState cc, int mode) {
 		int cast = TYPE_rec;
 		symn base = NULL;
 
-		if (skip(cc, OPER_and)) {
-			cast = TYPE_ref;
-			byref = 1;
-		}
-
 		if (!(tag = next(cc, TYPE_ref))) {	// name?
 			tag = newnode(cc, TYPE_ref);
 			//~ tag->type = s->type_vid;
@@ -2469,9 +2465,21 @@ static astn decl(ccState cc, int mode) {
 				else if (isType(tok)) {
 					base = linkOf(tok);
 					cast = base->cast;
-					if (skiptok(cc, STMT_do, 1)) {
-						backTok(cc, newnode(cc, STMT_end));
-						backTok(cc, newnode(cc, STMT_beg));
+					if (cast == TYPE_ref) {
+						byref = 1;
+						if ((Attr & ATTR_stat) != 0) {
+							error(cc->s, cc->file, cc->line, "static structures can not be extend");
+						}
+					}
+					else {
+						if (skip(cc, STMT_do)) {
+							warn(cc->s, 1, tag->file, tag->line, "deprecated declaration of `%k`", tag);
+							backTok(cc, newnode(cc, STMT_end));
+							backTok(cc, newnode(cc, STMT_beg));
+						}
+						else {
+							error(cc->s, tag->file, tag->line, "must extend a reference type, not `%+T`", base);
+						}
 					}
 				}
 				else {
@@ -2483,7 +2491,7 @@ static astn decl(ccState cc, int mode) {
 			}
 		}
 
-		if (skip(cc, STMT_beg)) {			// body
+		if (skiptok(cc, STMT_beg, 1)) {			// body
 
 			def = declare(cc, ATTR_stat | ATTR_const | TYPE_rec, tag, cc->type_rec);
 
@@ -2543,9 +2551,6 @@ static astn decl(ccState cc, int mode) {
 			}
 			redefine(cc, def);
 		}
-		else {
-			skiptok(cc, STMT_beg, 1);
-		}
 
 		if (byref && Attr == ATTR_stat) {
 			error(cc->s, tag->file, tag->line, "alignment can not be applied to this struct");
@@ -2569,10 +2574,7 @@ static astn decl(ccState cc, int mode) {
 			astn val = expr(cc, TYPE_def);
 			if (val != NULL) {
 				def = declare(cc, TYPE_def, tag, val->type);
-				if (isType(val)) {
-					cc->pfmt = def;
-				}
-				else {
+				if (!isType(val)) {
 					if (isConst(val)) {
 						def->stat = 1;
 						def->cnst = 1;
@@ -2680,8 +2682,8 @@ static astn decl(ccState cc, int mode) {
 
 					// result is the first argument
 					result->offs = sizeOf(result);
-					ref->offs = result->offs + 
-					fixargs(ref, vm_size, -result->offs);
+					// TODO: ref->stat = 1;
+					ref->size = result->offs + fixargs(ref, vm_size, -result->offs);
 				}
 
 				// reinstall all args
