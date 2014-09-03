@@ -155,7 +155,7 @@ void mouseHandler(int btn, int x, int y) {
 	ox = x;
 	oy = y;
 
-	static const define toRadians(double x) = double(x * Math.pi / 180.);
+	define toRadians(double x) = double(x * Math.pi / 180.);
 	enum: double {
 		moveSpeed = .08;
 		//~ rotateSpeed = moveSpeed * Math.pi / 180.;

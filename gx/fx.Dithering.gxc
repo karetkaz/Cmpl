@@ -13,7 +13,7 @@ string fileName = "media/images/download.jpg";
 //~ string fileName = "media/images/nol.bmp";
 
 enum Dithering: int32 {
-	None = '0';
+	Threshold = '0';
 	Bayer = 'B';
 	SteinbergFalse = '2';
 	Steinberg = '3';
@@ -37,7 +37,7 @@ gxSurf dither(gxSurf img, bool grayscale, uint32 colors, Dithering method) {
 	define toRgb(int r, int g, int b) = int(rgbClamp(r, g, b));
 	define toGray(int col) = int(grayClamp(col));
 
-	if (method == Dithering.None) {
+	if (method == Dithering.Threshold) {
 		if (grayscale) {
 			for (int y = 0; y < height; y += 1) {
 				for (int x = 0; x < width; x += 1) {
@@ -304,13 +304,13 @@ gxSurf dither(gxSurf img, bool grayscale, uint32 colors, Dithering method) {
 	}
 }
 
-int maxcolors = 1;
-int grayscale = !true;
-Dithering method = Dithering.Bayer;
+int maxcolors = 3;
+int grayscale = true;
+Dithering method = Dithering.Stucki;
 method = Dithering.Steinberg;
-//~ method = Dithering.SteinbergFalse;
-//~ method = Dithering.Bayer;
-//~ method = Dithering.None;
+method = Dithering.SteinbergFalse;
+method = Dithering.Bayer;
+//~ method = Dithering.Threshold;
 
 define workOnOffscreen = !true;
 

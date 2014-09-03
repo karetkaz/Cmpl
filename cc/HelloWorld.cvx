@@ -1,1 +1,12 @@
-println("Hello World");
+//~ println("Hello World");
+
+//~ struct hex32: int32;		//%%08x
+//~ struct hex64: int64;		//%%016X
+//~ int64 k = 9223372036854775807;
+//~ hex64 e = 922337203685477580865476;
+bool e = int32(0);
+
+//~ hex64 nn = 9;
+//~ hex64 n = 922337203685477580;
+//~ hex64 x = int64(0x7fffffffffffffff - nn) / 10;
+//~ bool overflow = n > x;

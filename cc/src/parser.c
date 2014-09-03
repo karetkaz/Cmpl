@@ -98,6 +98,7 @@ static int readChr(ccState cc) {
 		return chr;
 	}
 
+	// fill in the buffer.
 	if (cc->fin._cnt <= 4 && fillBuf(cc) <= 0) {
 		return -1;
 	}
@@ -105,23 +106,23 @@ static int readChr(ccState cc) {
 	chr = *cc->fin._ptr;
 	if (chr == '\n' || chr == '\r') {
 
-		// threat 'cr', 'lf' and 'cr + lf' as lf
+		// threat 'cr', 'lf' and 'cr + lf' as new line (lf: '\n')
 		if (chr == '\r' && cc->fin._ptr[1] == '\n') {
 			cc->fin._cnt -= 1;
 			cc->fin._ptr += 1;
 			cc->fpos += 1;
 		}
 
-		// next line
+		// advance to next line
 		if (cc->line > 0) {
 			cc->line += 1;
 		}
 
+		// save where the next line begins.
 		cc->lpos = cc->fpos + 1;
 		chr = '\n';
 	}
 
-	//~ if (cc->file && cc->line) {prerr("", "%s:%d: %c", cc->file, cc->line, chr);}
 	cc->fin._cnt -= 1;
 	cc->fin._ptr += 1;
 	cc->fpos += 1;
@@ -477,6 +478,7 @@ static int readTok(ccState cc, astn tok) {
 			const int line = cc->line;		// comment begin line
 			const int next = peekChr(cc);	// comment begin char
 
+			// line comment
 			if (skipChr(cc, '/')) {
 				int fmt = skipChr(cc, '%');
 
@@ -491,58 +493,38 @@ static int readTok(ccState cc, astn tok) {
 					chr = readChr(cc);
 				}
 				if (chr == -1) {
-					warn(cc->s, 9, cc->file, line, "no newline at end of file (chars left: %d)", cc->fin._cnt);
+					warn(cc->s, 9, cc->file, line, "no newline at end of file");
 				}
 				else if (cc->line != line + 1) {
 					warn(cc->s, 9, cc->file, line, "multi-line comment: `%s`", ptr);
 				}
 
 				// record print format if comment is on the same line as the symbol.
-				// example: struct hex32: int32; //%hex32(%0x8x)
+				// example: struct hex32: int32; //%%0x8x
 				if (fmt && cc->pfmt && cc->pfmt->line == line) {
 					*ptr++ = 0;
 					cc->pfmt->pfmt = mapstr(cc, beg, ptr - beg, -1);
 				}
 			}
-			else if (next == '*') {
+
+			// block comment
+			else if (next == '*' || next == '+') {
 				int level = 0;
 
 				while (chr != -1) {
 					int prev_chr = chr;
 					chr = readChr(cc);
 
-					if (prev_chr == '/' && chr == '*') {
+					if (prev_chr == '/' && chr == next) {
 						level += 1;
-						chr = 0;	// disable /*/
-						if (level > 1) {
-							warn(cc->s, 9, cc->file, cc->line, "\"/*\" within comment");
+						if (level > 1 && next == '*') {
+							warn(cc->s, 9, cc->file, cc->line, "ignoring nested comment");
+							level = 1;
 						}
+						chr = 0;	// disable reading as valid comment: /*/ and /+/
 					}
 
-					if (prev_chr == '*' && chr == '/') {
-						level -= 1;
-						break;
-					}
-				}
-
-				if (chr == -1) {
-					error(cc->s, cc->file, line, "unterminated comment");
-				}
-				chr = readChr(cc);
-			}
-			else if (next == '+') {
-				int level = 0;
-
-				while (chr != -1) {
-					int prev_chr = chr;
-					chr = readChr(cc);
-
-					if (prev_chr == '/' && chr == '+') {
-						level += 1;
-						chr = 0;	// disable /+/
-					}
-
-					if (prev_chr == '+' && chr == '/') {
+					if (prev_chr == next && chr == '/') {
 						level -= 1;
 						if (level == 0) {
 							break;
@@ -551,15 +533,17 @@ static int readTok(ccState cc, astn tok) {
 				}
 
 				if (chr == -1) {
-					error(cc->s, cc->file, line, "unterminated comment");
+					error(cc->s, cc->file, line, "unterminated block comment");
 				}
 				chr = readChr(cc);
 			}
+
+			// print format reset
 			cc->pfmt = NULL;
 		}
 
-		if (chr == 0) {
-			warn(cc->s, 5, cc->file, cc->line, "null character(s) ignored");
+		if (chr_map[chr & 0xff] == CNTRL) {
+			warn(cc->s, 5, cc->file, cc->line, "ignoring controll character: `%c`", chr);
 			while (chr == 0) {
 				chr = readChr(cc);
 			}
@@ -584,11 +568,11 @@ static int readTok(ccState cc, astn tok) {
 	// scan
 	if (chr != -1) switch (chr) {
 		default:
-			if (chr_map[chr & 0xff] & (ALPHA|UNDER)) {
-				goto read_idf;
-			}
 			if (chr_map[chr & 0xff] & DIGIT) {
 				goto read_num;
+			}
+			if (chr_map[chr & 0xff] & CWORD) {
+				goto read_idf;
 			}
 			error(cc->s, cc->file, cc->line, "invalid character: '%c'", chr);
 			tok->kind = TOKN_err;
@@ -695,7 +679,7 @@ static int readTok(ccState cc, astn tok) {
 				tok->kind = OPER_shl;
 				break;
 			}
-			else if (chr == '=') {
+			if (chr == '=') {
 				readChr(cc);
 				tok->kind = OPER_leq;
 				break;
@@ -793,7 +777,7 @@ static int readTok(ccState cc, astn tok) {
 					break;
 
 				// new line reached
-				if (chr == '\n' && multi_line == 0)
+				if (chr == '\n' && !multi_line)
 					break;
 
 				// escape sequence
@@ -913,14 +897,15 @@ static int readTok(ccState cc, astn tok) {
 							chr = 0;
 							break;
 
-						// just for christmas.
 						case '\n':
-							// start multi line string.
-							if (start_char == '"' && beg == ptr) {
-								multi_line = 1;
+							// start multi line string or continue on next line.
+							if (start_char == '"') {
+								if (beg == ptr) {
+									multi_line = 1;
+								}
+								// wrap on next line.
+								continue;
 							}
-							// wraps on next line.
-							continue;
 					}
 				}
 
@@ -968,7 +953,7 @@ static int readTok(ccState cc, astn tok) {
 				int type;
 			}
 			keywords[] = {
-				// Warning: sort keyword lines (SciTE can do it)
+				// Warning: sort keyword list by name
 				//~ {"operator", OPER_def},
 				{"break", STMT_brk},
 				{"const", ATTR_const},
@@ -1067,34 +1052,27 @@ static int readTok(ccState cc, astn tok) {
 
 			//~ ([0-9a-fA-F])*
 			while (chr != -1) {
-				int value = chr;
-				if (value >= '0' && value <= '9') {
-					value -= '0';
+				int value = radix;
+				if (chr >= '0' && chr <= '9') {
+					value = chr - '0';
 				}
-				else if (value >= 'a' && value <= 'f') {
-					value -= 'a' - 10;
+				else if (chr >= 'a' && chr <= 'f') {
+					value = chr - 'a' + 10;
 				}
-				else if (value >= 'A' && value <= 'F') {
-					value -= 'A' - 10;
+				else if (chr >= 'A' && chr <= 'F') {
+					value = chr - 'A' + 10;
 				}
-				else {
+
+				if (value >= radix) {
 					break;
 				}
 
-				if (value > radix) {
-					break;
-				}
-
-				if (i64v > (int64_t)(0x7fffffffffffffffULL / 10)) {
-					ovrf = radix == 10;
-				}
-
-				i64v *= radix;
-				i64v += value;
-
-				if (i64v < 0 && radix == 10) {
+				// check overflow
+				if (radix == 10 && i64v > (0x7fffffffffffffffLL - value) / radix) {
 					ovrf = 1;
 				}
+
+				i64v = i64v * radix + value;
 
 				*ptr++ = chr;
 				chr = readChr(cc);
@@ -1147,11 +1125,8 @@ static int readTok(ccState cc, astn tok) {
 					ovrf = 0;
 					suffix = ptr;
 					while (chr >= '0' && chr <= '9') {
-						if (val > 0x7fffffff / 10) {
-							ovrf = 1;
-						}
 						val = val * 10 + (chr - '0');
-						if ((signed)val < 0) {
+						if (val > 1024) {
 							ovrf = 1;
 						}
 
@@ -1162,7 +1137,7 @@ static int readTok(ccState cc, astn tok) {
 					if (suffix == ptr) {
 						error(cc->s, tok->file, tok->line, "no exponent in numeric constant");
 					}
-					else if (ovrf || val > 1024) {
+					else if (ovrf) {
 						warn(cc->s, 4, cc->file, cc->line, "exponent overflow");
 					}
 
@@ -1566,8 +1541,8 @@ static astn type(ccState cc/* , int mode */) {	// type(.type)*
 }
 
 static astn stmt(ccState, int mode);	// parse statement		(mode: enable decl)
+static astn decl(ccState, int mode);	// parse declaration	(mode: enable spec)
 //~ astn args(ccState, int mode);		// parse arguments		(mode: ...)
-//~ astn decl(ccState, int mode);		// parse declaration	(mode: enable spec)
 //~ astn unit(ccState, int mode);		// parse unit			(mode: script/unit)
 
 /**
@@ -1972,13 +1947,275 @@ static astn args(ccState cc, int mode) {
 	return root;
 }
 
-/**
+/** parse an alias declaration.
+ * @brief parse the declaration of an alias/inline expression.
+ * @param cc compiler context.
+ * @return root of declaration.
+ */
+static astn decl_alias(ccState cc) {
+	astn tag = NULL;
+	symn def = NULL;
+	symn typ = NULL;
+
+	if (!skiptok(cc, TYPE_def, 1)) {	// 'define'
+		trace("%+k", tag);
+		return NULL;
+	}
+
+	if (!(tag = next(cc, TYPE_ref))) {	// name?
+		error(cc->s, cc->file, cc->line, "Identifyer expected");
+		skiptok(cc, STMT_do, 1);
+		return NULL;
+	}
+
+	if (skip(cc, ASGN_set)) {				// const:   define PI = 3.14...;
+		// can not call decl_init
+		// TODO: check if locals are used.
+		astn val = expr(cc, TYPE_def);
+		if (val != NULL) {
+			def = declare(cc, TYPE_def, tag, val->type);
+			if (!isType(val)) {
+				if (isConst(val)) {
+					def->stat = 1;
+					def->cnst = 1;
+				}
+				else if (isStatic(cc, val)) {
+					def->stat = 1;
+				}
+				def->init = val;
+			}
+			typ = def->type;
+		}
+		else {
+			error(cc->s, cc->file, cc->line, "expression expected");
+		}
+	}
+	else if (skip(cc, PNCT_lp)) {			// inline:  define isNan(float64 x) = x != x;
+		astn init = NULL;
+		symn param;
+
+		def = declare(cc, TYPE_def, tag, NULL);
+		def->name = NULL; // disable lookup as variable.
+
+		enter(cc, NULL);
+		args(cc, TYPE_def);
+		skiptok(cc, PNCT_rp, 1);
+
+		if (skip(cc, ASGN_set)) {
+			// define sqr(int a) = (a * a);
+			if ((init = expr(cc, TYPE_def))) {
+				typ = init->type;
+			}
+		}
+
+		if (!(param = leave(cc, def, 0))) {
+			param = cc->void_tag->ref.link;
+		}
+
+		def->name = tag->ref.name;
+		def->stat = isStatic(cc, init);
+		def->cnst = isConst(init);
+		def->type = typ;
+		def->prms = param;
+		def->init = init;
+		def->call = 1;
+
+		//* TODO: in-out parameters: remove
+		// TODO: this should go to fixargs
+		for (param = def->prms; param; param = param->next) {
+			// is explicitly set to be cached.
+			if (param->cast == TYPE_ref) {
+				param->cast = param->type->cast;
+			}
+			else {
+				int used = usages(param) - 1;
+				// warn to cache if it is used more than once
+				if (used > 1) {
+					warn(cc->s, 8, param->file, param->line, "parameter `%T` may be cached (used %d times in expression)", param, used);
+				}
+				else {
+					param->kind = TYPE_def;
+				}
+			}
+		}// */
+
+		if (init == NULL) {
+			error(cc->s, cc->file, cc->line, "expression expected");
+		}
+	}
+	else {
+		error(cc->s, tag->file, tag->line, "typename excepted");
+		return NULL;
+	}
+
+	if (!skiptok(cc, STMT_do, 1)) {
+		trace("%+k", tag);
+		return NULL;
+	}
+
+	tag->kind = TYPE_def;
+	tag->type = typ;
+	tag->ref.link = def;
+	return tag;
+}
+
+/** parse a struct declaration.
+ * @brief parse the declaration of a structure.
+ * @param cc compiler context.
+ * @param attr attributes: static or const.
+ * @return root of declaration.
+ */
+static astn decl_struct(ccState cc, int Attr) {
+	astn tok, tag = NULL;
+	symn def = NULL;
+	symn base = NULL;
+	int byref = 0;
+	int pack = vm_size;
+	int cast = TYPE_rec;
+
+	if (!skiptok(cc, TYPE_rec, 1)) {
+		trace("%+k", tag);
+		return NULL;
+	}
+
+	if (!(tag = next(cc, TYPE_ref))) {	// name?
+		tag = newnode(cc, TYPE_ref);
+		tag->file = cc->file;
+		tag->line = cc->line;
+	}
+
+	if (skip(cc, PNCT_cln)) {			// ':' basetype or packing
+		if ((tok = expr(cc, TYPE_def))) {
+			if (tok->kind == TYPE_int) {
+				if (Attr == ATTR_stat) {
+					error(cc->s, cc->file, cc->line, "alignment can not be applied to static struct");
+				}
+				else switch (constint(tok)) {
+					default:
+						error(cc->s, tok->file, tok->line, "alignment must be a small power of two, not %k", tok);
+						break;
+
+					case 0:		// union.
+						pack = 0;
+						break;
+
+					case 1:
+						pack = 1;
+						break;
+
+					case 2:
+						pack = 2;
+						break;
+
+					case 4:
+						pack = 4;
+						break;
+
+					case 8:
+						pack = 8;
+						break;
+
+					case 16:
+						pack = 16;
+						break;
+				}
+			}
+			else if (isType(tok)) {
+				base = linkOf(tok);
+				cast = base->cast;
+				if (cast == TYPE_ref) {
+					byref = 1;
+					if ((Attr & ATTR_stat) != 0) {
+						error(cc->s, cc->file, cc->line, "static structures can not be extend");
+					}
+				}
+				else {
+					if (skip(cc, STMT_do)) {
+						warn(cc->s, 1, tag->file, tag->line, "deprecated declaration of `%k`", tag);
+						backTok(cc, newnode(cc, STMT_end));
+						backTok(cc, newnode(cc, STMT_beg));
+					}
+					else {
+						error(cc->s, tag->file, tag->line, "must extend a reference type, not `%+T`", base);
+					}
+				}
+			}
+			else {
+				error(cc->s, cc->file, cc->line, "alignment must be an integer constant");
+			}
+		}
+		else {
+			error(cc->s, cc->file, cc->line, "alignment must be an integer constant, got `%k`", peekTok(cc, 0));
+		}
+	}
+
+	if (!skiptok(cc, STMT_beg, 1)) {	// '{'
+		trace("%+k", tag);
+		return NULL;
+	}
+
+	def = declare(cc, ATTR_stat | ATTR_const | TYPE_rec, tag, cc->type_rec);
+	enter(cc, tag);
+
+	while (peekTok(cc, 0)) {
+		trloop("%k", peekTok(cc, 0));
+
+		if (peekTok(cc, STMT_end)) {
+			break;
+		}
+
+		if (!decl(cc, 0)) {
+			error(cc->s, cc->file, cc->line, "declaration expected, got: `%+k`", peekTok(cc, 0));
+			skiptok(cc, STMT_do, 0);
+		}
+	}
+
+	def->flds = leave(cc, def, (Attr & ATTR_stat) != 0);
+	def->prms = def->flds;
+	def->size = fixargs(def, pack, 0);
+	if (base != NULL) {
+		def->size += base->size;
+		def->pfmt = base->pfmt;
+		cc->pfmt = def;
+	}
+	def->cast = cast;
+	if ((Attr & ATTR_stat) != 0) {
+		// make uninstantiable
+		def->cast = TYPE_vid;
+	}
+	else {
+		if (def->flds && pack == vm_size && !byref) {
+			ctorArg(cc, def);
+		}
+		else {
+			warn(cc->s, 15, def->file, def->line, "default constructor not generated for: `%T`", def);
+		}
+
+		if (!def->flds && !def->type) {
+			warn(cc->s, 2, cc->file, cc->line, "empty declaration");
+		}
+	}
+
+	if (byref && Attr == ATTR_stat) {
+		error(cc->s, tag->file, tag->line, "alignment can not be applied static struct: `%?T`", def);
+	}
+
+	if (!skiptok(cc, STMT_end, 1)) {	// '}'
+		trace("%+k", tag);
+		return tag;
+	}
+
+	tag->type = def;
+	return tag;
+}
+
+/** parse initialization of a declaration.
  * @brief parse the initializer of a declaration.
  * @param cc compiler context.
  * @param var the declared variable symbol.
  * @return the initializer expression.
  */
-static astn decl_init(ccState cc, symn var) {
+static astn init_var(ccState cc, symn var) {
 	if (skip(cc, ASGN_set)) {
 		symn typ = var->type;
 		ccToken cast = var->cast;
@@ -2114,7 +2351,109 @@ static astn decl_init(ccState cc, symn var) {
 	return var->init;
 }
 
-/**
+/** parse an enum declaration.
+ * @brief parse the declaration of an enumeration.
+ * @param cc compiler context.
+ * @return root of declaration.
+ */
+static astn decl_enum(ccState cc) {
+	astn tok, tag = NULL;
+
+	symn def = NULL;
+	symn base = cc->type_i32;
+
+	int enuminc = 1;
+	int64_t lastval = -1;
+
+	if (!skiptok(cc, ENUM_kwd, 1)) {	// enum
+		trace("%+k", tag);
+		return NULL;
+	}
+
+	tag = next(cc, TYPE_ref);
+
+	if (skip(cc, PNCT_cln)) {			// ':' base type
+		base = NULL;
+		if ((tok = expr(cc, TYPE_def))) {
+			if (isType(tok)) {
+				base = linkOf(tok);
+			}
+			else {
+				error(cc->s, cc->file, cc->line, "typename expected, got `%k`", tok);
+			}
+		}
+		else {
+			error(cc->s, cc->file, cc->line, "typename expected, got `%k`", peekTok(cc, 0));
+		}
+		enuminc = base && (base->cast == TYPE_i32 || base->cast == TYPE_i64);
+	}
+
+	if (!skiptok(cc, STMT_beg, 1)) {	// '{'
+		trace("%+k", tag);
+		return NULL;
+	}
+
+	if (tag != NULL) {
+		// make a new type based on base.
+		def = declare(cc, ATTR_stat | ATTR_const | TYPE_rec, tag, base);
+		tag->kind = TYPE_def;
+		enter(cc, tag);
+	}
+
+	while (peekTok(cc, 0)) {			// name = value;
+		trloop("%k", peek(cc));
+
+		if (peekTok(cc, STMT_end)) {
+			break;
+		}
+
+		if ((tok = next(cc, TYPE_ref))) {
+			// HACK: declare as a variable to be assignable, then revert it to be an alias.
+			symn ref = declare(cc, TYPE_ref, tok, base);
+			ref->stat = ref->cnst = 1;
+			redefine(cc, ref);
+
+			if (init_var(cc, ref)) {
+				if (!isConst(ref->init)) {
+					warn(cc->s, 2, ref->file, ref->line, "constant expected, got: `%+k`", ref->init);
+				}
+				else if (enuminc) {
+					lastval = constint(ref->init);
+				}
+			}
+			else if (enuminc) {
+				ref->init = intnode(cc, lastval += 1);
+				ref->init->type = base;
+			}
+			else {
+				error(cc->s, ref->file, ref->line, "constant expected");
+			}
+			ref->kind = TYPE_def;
+		}
+		skiptok(cc, STMT_do, 1);
+	}
+
+	if (def != NULL) {
+		def->flds = leave(cc, def, 1);
+		def->prms = base->prms;
+		def->cast = ENUM_kwd;
+	}
+
+	if (!skiptok(cc, STMT_end, 1)) {	// '}'
+		trace("%+k", tag);
+		return NULL;
+	}
+
+	if (tag == NULL) {
+		tag = newnode(cc, TYPE_def);
+		tag->ref.link = base;
+		tag->type = base;
+	}
+
+	return tag;
+}
+
+/** parse the declaration of a variable or function.
  * @brief parse the declaration of a variable or function.
  * @param cc compiler context.
  * @param argv out parameter for function arguments.
@@ -2122,195 +2461,199 @@ static astn decl_init(ccState cc, symn var) {
  * @return parsed syntax tree.
  */
 astn decl_var(ccState cc, astn* argv, int mode) {
+	symn typ, ref = NULL;
 	astn tag = NULL;
-	if ((tag = type(cc))) {
-		symn ref = NULL;
-		symn typ = tag->type;
+	int inout, byref;
 
-		int inout = skip(cc, OPER_lnd);
-		int byref = inout || skip(cc, OPER_and);
+	if (!(tag = type(cc))) {
+		trace("%+k", tag);
+		return NULL;
+	}
+	typ = tag->type;
 
-		if (byref && typ->cast == TYPE_ref) {
-			warn(cc->s, 2, tag->file, tag->line, "ignoring &, %-T is already a reference type", typ);
+	inout = skip(cc, OPER_lnd);
+	byref = inout || skip(cc, OPER_and);
+
+	if (byref && typ->cast == TYPE_ref) {
+		warn(cc->s, 2, tag->file, tag->line, "ignoring &, %-T is already a reference type", typ);
+	}
+
+	if (!(tag = next(cc, TYPE_ref))) {
+		if (mode != TYPE_def) {
+			trace("id expected, not `%k` at(%s:%u)", peekTok(cc, 0), cc->file, cc->line);
+			return NULL;
+		}
+		tag = tagnode(cc, "");
+	}
+
+	ref = declare(cc, TYPE_ref, tag, typ);
+	ref->size = byref ? vm_size : sizeOf(typ);
+
+	if (argv != NULL) {
+		*argv = NULL;
+	}
+
+	if (skip(cc, PNCT_lp)) {			// int a(...)
+		astn argroot;
+		enter(cc, tag);
+		argroot = args(cc, TYPE_ref);
+		ref->prms = leave(cc, ref, 0);
+		skiptok(cc, PNCT_rp, 1);
+
+		ref->size = vm_size;
+		ref->call = 1;
+
+		if (ref->prms == NULL) {
+			ref->prms = cc->void_tag->ref.link;
+			argroot = cc->void_tag;
 		}
 
-		if (!(tag = next(cc, TYPE_ref))) {
-			if (mode != TYPE_def) {
-				trace("id expected, not `%k` at(%s:%u)", peekTok(cc, 0), cc->file, cc->line);
-				return NULL;
-			}
-			tag = tagnode(cc, "");
+		if (argv) {
+			*argv = argroot;
 		}
 
-		ref = declare(cc, TYPE_ref, tag, typ);
-		ref->size = byref ? vm_size : sizeOf(typ);
-
-		if (argv != NULL) {
-			*argv = NULL;
+		if (inout || byref) {
+			// int& find(int array[], int element);
+			// int&& find(int array[], int element);
+			error(cc->s, tag->file, tag->line, "TODO: declaration returning reference: `%+T`", ref);
 		}
+		byref = 0;
+	}
 
-		if (skip(cc, PNCT_lp)) {			// int a(...)
-			astn argroot;
-			enter(cc, tag);
-			argroot = args(cc, TYPE_ref);
-			ref->prms = leave(cc, ref, 0);
-			skiptok(cc, PNCT_rp, 1);
+	if (skip(cc, PNCT_lc)) {			// int a[...]
+		symn arr = newdefn(cc, TYPE_arr);
+		symn tmp = arr;
+		symn base = typ;
+		int dynarr = 1;		// dynamic sized array: slice
 
-			ref->size = vm_size;
-			ref->call = 1;
+		tmp->type = typ;
+		tmp->size = -1;
+		typ = tmp;
 
-			if (ref->prms == NULL) {
-				ref->prms = cc->void_tag->ref.link;
-				argroot = cc->void_tag;
+		ref->type = typ;
+		tag->type = typ;
+		//~ arr->offs = vmOffset(cc->s, arr);
+		//~ arr->stat = 1;
+
+		if (!peekTok(cc, PNCT_rc)) {
+			struct astNode val;
+			astn init = expr(cc, TYPE_def);
+			typ->init = init;
+
+			if (init != NULL) {
+				if (eval(&val, init) == TYPE_int) {
+					// add static const length property to array type.
+					addLength(cc, typ, init);
+					typ->size = (int)val.cint * typ->type->size;
+					typ->offs = (int)val.cint;
+					typ->cast = TYPE_ref;
+					typ->init = init;
+					ref->cast = 0;
+
+					dynarr = 0;
+					if (val.cint < 0) {
+						error(cc->s, init->file, init->line, "positive integer constant expected, got `%+k`", init);
+					}
+				}
+				else {
+					error(cc->s, init->file, init->line, "integer constant expected declaring array `%T`", ref);
+				}
 			}
-
-			if (argv) {
-				*argv = argroot;
-			}
-
-			if (inout || byref) {
-				// int& find(int array[], int element);
-				// int&& find(int array[], int element);
-				error(cc->s, tag->file, tag->line, "TODO: declaration returning reference: `%+T`", ref);
-			}
-			byref = 0;
 		}
+		if (dynarr) {
+			// add dynamic length property to array type.
+			symn len = addLength(cc, typ, NULL);
+			dieif(len == NULL, "FixMe");
+			ref->size = 2 * vm_size;	// slice is a struct {pointer data, int32 length}
+			ref->cast = TYPE_arr;
+			len->offs = vm_size;		// offset for length.
+			typ->cast = TYPE_arr;
+		}
+		else {
+			typ->cast = TYPE_ref;
+			typ->stat = 1;
+		}
+		skiptok(cc, PNCT_rc, 1);
 
-		if (skip(cc, PNCT_lc)) {			// int a[...]
-			symn arr = newdefn(cc, TYPE_arr);
-			symn tmp = arr;
-			symn base = typ;
-			int dynarr = 1;		// dynamic sized array: slice
-
-			tmp->type = typ;
+		// Multi dimensional arrays
+		while (skip(cc, PNCT_lc)) {
+			tmp = newdefn(cc, TYPE_arr);
+			trloop("%k", peekTok(cc, 0));
+			tmp->type = typ->type;
+			//~ typ->decl = tmp;
+			tmp->decl = typ;
+			typ->type = tmp;
 			tmp->size = -1;
+			//~ tmp->offs = vmOffset(cc->s, tmp);
+			//~ tmp->stat = 1;
 			typ = tmp;
-
-			ref->type = typ;
-			tag->type = typ;
-			//~ arr->offs = vmOffset(cc->s, arr);
-			//~ arr->stat = 1;
 
 			if (!peekTok(cc, PNCT_rc)) {
 				struct astNode val;
 				astn init = expr(cc, TYPE_def);
-				typ->init = init;
-
-				if (init != NULL) {
-					if (eval(&val, init) == TYPE_int) {
-						// add static const length property to array type.
-						addLength(cc, typ, init);
-						typ->size = (int)val.cint * typ->type->size;
-						typ->offs = (int)val.cint;
-						typ->cast = TYPE_ref;
-						typ->init = init;
-						ref->cast = 0;
-
-						dynarr = 0;
-						if (val.cint < 0) {
-							error(cc->s, init->file, init->line, "positive integer constant expected, got `%+k`", init);
-						}
-					}
-					else {
-						error(cc->s, init->file, init->line, "integer constant expected declaring array `%T`", ref);
-					}
+				if (eval(&val, init) == TYPE_int) {
+					//~ ArraySize
+					addLength(cc, typ, init);
+					typ->size = (int)val.cint * typ->type->size;
+					typ->offs = (int)val.cint;
+					typ->init = init;
+				}
+				else {
+					error(cc->s, init->file, init->line, "integer constant expected");
 				}
 			}
-			if (dynarr) {
+			if (typ->init == NULL) {
 				// add dynamic length property to array type.
 				symn len = addLength(cc, typ, NULL);
 				dieif(len == NULL, "FixMe");
 				ref->size = 2 * vm_size;	// slice is a struct {pointer data, int32 length}
 				ref->cast = TYPE_arr;
-				len->offs = vm_size;		// offset for length.
+				len->offs = vm_size;		// offset of length property.
 				typ->cast = TYPE_arr;
 			}
 			else {
 				typ->cast = TYPE_ref;
 				typ->stat = 1;
 			}
+
+			if (dynarr != (typ->init == NULL)) {
+				error(cc->s, ref->file, ref->line, "invalid mixing of dynamic sized arrays");
+			}
+
 			skiptok(cc, PNCT_rc, 1);
-
-			// Multi dimensional arrays
-			while (skip(cc, PNCT_lc)) {
-				tmp = newdefn(cc, TYPE_arr);
-				trloop("%k", peekTok(cc, 0));
-				tmp->type = typ->type;
-				//~ typ->decl = tmp;
-				tmp->decl = typ;
-				typ->type = tmp;
-				tmp->size = -1;
-				//~ tmp->offs = vmOffset(cc->s, tmp);
-				//~ tmp->stat = 1;
-				typ = tmp;
-
-				if (!peekTok(cc, PNCT_rc)) {
-					struct astNode val;
-					astn init = expr(cc, TYPE_def);
-					if (eval(&val, init) == TYPE_int) {
-						//~ ArraySize
-						addLength(cc, typ, init);
-						typ->size = (int)val.cint * typ->type->size;
-						typ->offs = (int)val.cint;
-						typ->init = init;
-					}
-					else {
-						error(cc->s, init->file, init->line, "integer constant expected");
-					}
-				}
-				if (typ->init == NULL) {
-					// add dynamic length property to array type.
-					symn len = addLength(cc, typ, NULL);
-					dieif(len == NULL, "FixMe");
-					ref->size = 2 * vm_size;	// slice is a struct {pointer data, int32 length}
-					ref->cast = TYPE_arr;
-					len->offs = vm_size;		// offset of length property.
-					typ->cast = TYPE_arr;
-				}
-				else {
-					typ->cast = TYPE_ref;
-					typ->stat = 1;
-				}
-
-				if (dynarr != (typ->init == NULL)) {
-					error(cc->s, ref->file, ref->line, "invalid mixing of dynamic sized arrays");
-				}
-
-				skiptok(cc, PNCT_rc, 1);
-			}
-
-			ref->prms = base;	// fixme (temporarly used)
-			dynarr = base->size;
-			for (; typ; typ = typ->decl) {
-				typ->size = (dynarr *= typ->offs);
-				//~ typ->offs = vmOffset(cc->s, typ);
-			}
-			ref->size = byref ? vm_size : sizeOf(arr);
-
-			if (inout || byref || base->cast == TYPE_ref) {
-				// int& a[200] a contains 200 references to integers
-				// int&& a[200] a contains 200 references to integers
-				error(cc->s, tag->file, tag->line, "TODO: declaring array of references: `%+T`", ref);
-			}
-			if (ref->call) {
-				// int rgbCopy(int a, int b)[8] = [rgbCpy, rgbAnd, ...];
-				error(cc->s, tag->file, tag->line, "TODO: declaring array of functions: `%+T`", ref);
-			}
-			byref = 0;
 		}
 
-		/* TODO: in-out parameters
-		if (inout) {
-			ref->cast = TYPE_def;
+		ref->prms = base;	// fixme (temporarly used)
+		dynarr = base->size;
+		for (; typ; typ = typ->decl) {
+			typ->size = (dynarr *= typ->offs);
+			//~ typ->offs = vmOffset(cc->s, typ);
 		}
-		else */if (byref) {
-			ref->cast = TYPE_ref;
+		ref->size = byref ? vm_size : sizeOf(arr);
+
+		if (inout || byref || base->cast == TYPE_ref) {
+			// int& a[200] a contains 200 references to integers
+			// int&& a[200] a contains 200 references to integers
+			error(cc->s, tag->file, tag->line, "TODO: declaring array of references: `%+T`", ref);
 		}
+		if (ref->call) {
+			// int rgbCopy(int a, int b)[8] = [rgbCpy, rgbAnd, ...];
+			error(cc->s, tag->file, tag->line, "TODO: declaring array of functions: `%+T`", ref);
+		}
+		byref = 0;
+	}
+
+	/* TODO: in-out parameters
+	if (inout) {
+		ref->cast = TYPE_def;
+	}
+	else */if (byref) {
+		ref->cast = TYPE_ref;
 	}
 	return tag;
 }
 
-/**
+/** parse a declaration.
  * @brief parse the declaration of an alias, enum, struct, variable or function.
  * @param cc compiler context.
  * @param argv out parameter for function arguments.
@@ -2321,340 +2664,30 @@ static astn decl(ccState cc, int mode) {
 	int Attr = qual(cc, ATTR_const | ATTR_stat);
 	int line = cc->line;
 	char* file = cc->file;
-	astn tok, tag = NULL;
-	symn def = NULL;
+	astn tag = NULL;
 
-	if (skip(cc, ENUM_kwd)) {			// enum
-		symn base = cc->type_i32;
+	if (peekTok(cc, TYPE_def)) {				// define
+		if ((tag = decl_alias(cc)) != NULL) {
 
-		tag = next(cc, TYPE_ref);
+			//? enable static and const qualifiers
+			//~ Attr &= ~(ATTR_stat | ATTR_const);
 
-		if (skip(cc, PNCT_cln)) {		// base type
-			base = NULL;
-			if ((tok = expr(cc, TYPE_def))) {
-				if (isType(tok)) {
-					base = linkOf(tok);
-				}
-				else {
-					error(cc->s, cc->file, cc->line, "typename expected, got `%k`", tok);
-				}
-			}
-			else {
-				error(cc->s, cc->file, cc->line, "typename expected, got `%k`", peekTok(cc, 0));
-			}
+			redefine(cc, tag->ref.link);
 		}
-
-		if (skip(cc, STMT_beg)) {		// constant list
-			int enuminc = base && (base->cast == TYPE_i32 || base->cast == TYPE_i64);
-			int64_t lastval = -1;
-
-			if (tag != NULL) {
-				// make a new type based on base.
-				def = declare(cc, ATTR_stat | ATTR_const | TYPE_rec, tag, base);
-				tag->kind = TYPE_def;
-				enter(cc, tag);
-			}
-			else {
-				def = base;
-			}
-
-			while (peekTok(cc, 0)) {
-				trloop("%k", peek(cc));
-				if (peekTok(cc, STMT_end)) {
-					break;
-				}
-
-				if ((tok = next(cc, TYPE_ref))) {
-					// HACK: declare as a variable to be assignable, then revert it to be an alias.
-					symn ref = declare(cc, TYPE_ref, tok, base);
-					ref->stat = ref->cnst = 1;
-					redefine(cc, ref);
-
-					if (decl_init(cc, ref)) {
-						if (!isConst(ref->init)) {
-							warn(cc->s, 2, ref->file, ref->line, "constant expected, got: `%+k`", ref->init);
-						}
-						else if (enuminc) {
-							lastval = constint(ref->init);
-						}
-					}
-					else if (enuminc) {
-						ref->init = intnode(cc, lastval += 1);
-						ref->init->type = base;
-					}
-					else {
-						error(cc->s, ref->file, ref->line, "constant expected");
-					}
-					ref->kind = TYPE_def;
-					// TODO: enum: make it of enum type ?
-					//~ ref->type = def;
-				}
-				skiptok(cc, STMT_do, 1);
-			}
-			if (!skiptok(cc, STMT_end, 1)) {
-				trace("%+k", tag);
-				return NULL;
-			}
-
-			if (tag != NULL) {
-				def->flds = leave(cc, def, 1);
-				def->prms = base->prms;
-				def->cast = ENUM_kwd;
-				redefine(cc, def);
-			}
-		}
-		else {
-			skiptok(cc, STMT_do, 1);
-		}
-		if (tag == NULL) {
-			tag = newnode(cc, TYPE_def);
-			tag->ref.link = base;
-			tag->type = base;
-		}
-		//~ Attr &= ~(0);		// disable all qualifiers
 	}
-	else if (skip(cc, TYPE_rec)) {		// struct
-		int byref = 0;
-		int pack = vm_size;
-		int cast = TYPE_rec;
-		symn base = NULL;
-
-		if (!(tag = next(cc, TYPE_ref))) {	// name?
-			tag = newnode(cc, TYPE_ref);
-			//~ tag->type = s->type_vid;
-			tag->file = cc->file;
-			tag->line = cc->line;
+	else if (peekTok(cc, ENUM_kwd)) {			// enum
+		if ((tag = decl_enum(cc)) != NULL) {
+			redefine(cc, tag->ref.link);
 		}
-
-		if (skip(cc, PNCT_cln)) {			// basetype or packing
-			if ((tok = expr(cc, TYPE_def))) {
-				if (tok->kind == TYPE_int) {
-					if (Attr == ATTR_stat) {
-						error(cc->s, cc->file, cc->line, "alignment can not be applied to static struct");
-					}
-					else switch ((int)constint(tok)) {
-						default:
-							error(cc->s, tok->file, tok->line, "alignment must be a small power of two, not %k", tok);
-							break;
-
-						case  0:		// union.
-							pack =  0;
-							break;
-
-						case  1:
-							pack =  1;
-							break;
-
-						case  2:
-							pack =  2;
-							break;
-
-						case  4:
-							pack =  4;
-							break;
-
-						case  8:
-							pack =  8;
-							break;
-
-						case 16:
-							pack = 16;
-							break;
-					}
-				}
-				else if (isType(tok)) {
-					base = linkOf(tok);
-					cast = base->cast;
-					if (cast == TYPE_ref) {
-						byref = 1;
-						if ((Attr & ATTR_stat) != 0) {
-							error(cc->s, cc->file, cc->line, "static structures can not be extend");
-						}
-					}
-					else {
-						if (skip(cc, STMT_do)) {
-							warn(cc->s, 1, tag->file, tag->line, "deprecated declaration of `%k`", tag);
-							backTok(cc, newnode(cc, STMT_end));
-							backTok(cc, newnode(cc, STMT_beg));
-						}
-						else {
-							error(cc->s, tag->file, tag->line, "must extend a reference type, not `%+T`", base);
-						}
-					}
-				}
-				else {
-					error(cc->s, cc->file, cc->line, "alignment must be an integer constant");
-				}
-			}
-			else {
-				error(cc->s, cc->file, cc->line, "alignment must be an integer constant, got `%k`", peekTok(cc, 0));
-			}
-		}
-
-		if (skiptok(cc, STMT_beg, 1)) {			// body
-
-			def = declare(cc, ATTR_stat | ATTR_const | TYPE_rec, tag, cc->type_rec);
-
-			enter(cc, tag);
-			//~ install(s, "class", ATTR_stat | ATTR_const | TYPE_def, 0, type_ptr, lnknode(s, def));
-
-			while (peekTok(cc, 0)) {
-				trloop("%k", peekTok(cc, 0));
-				if (peekTok(cc, STMT_end)) {
-					break;
-				}
-
-				if ((tok = decl(cc, 0))) {
-					symn ref = tok->ref.link;
-					if (Attr == ATTR_stat) {
-						warn(cc->s, 10, ref->file, ref->line, "declaration is static: `%+k`", tok);
-						ref->stat = 1;
-					}
-				}
-				else {
-					error(cc->s, cc->file, cc->line, "declaration expected, got: `%+k`", peekTok(cc, 0));
-					skiptok(cc, STMT_do, 0);
-				}
-			}
-
-			if (!skiptok(cc, STMT_end, 1)) {
-				trace("%+k", tag);
-				return tag;
-			}
-
-			def->flds = leave(cc, def, (Attr & ATTR_stat) != 0);
-			def->prms = def->flds;
-			def->size = fixargs(def, pack, 0);
-			if (base != NULL) {
-				def->size += base->size;
-				def->pfmt = base->pfmt;
-				cc->pfmt = def;
-			}
-			def->cast = cast;
-			if (Attr == ATTR_stat) {
-				Attr &= ~ATTR_stat;
-
-				// make uninstantiable
-				def->cast = TYPE_vid;
-			}
-			else {
-				if (def->flds && pack == vm_size && !byref) {
-					ctorArg(cc, def);
-				}
-				else {
-					warn(cc->s, 15, def->file, def->line, "default constructor not generated for struct `%T`", def);
-				}
-
-				if (!def->flds && !def->type) {
-					warn(cc->s, 2, cc->file, cc->line, "empty declaration");
-				}
-			}
-			redefine(cc, def);
-		}
-
-		if (byref && Attr == ATTR_stat) {
-			error(cc->s, tag->file, tag->line, "alignment can not be applied to this struct");
-		}
-
-		Attr &= ~(ATTR_stat);		// enable static structures
-		tag->type = def;
 	}
-	else if (skip(cc, TYPE_def)) {		// define
-		symn typ = NULL;
+	else if (peekTok(cc, TYPE_rec)) {			// struct
+		if ((tag = decl_struct(cc, Attr)) != NULL) {
 
-		if (!(tag = next(cc, TYPE_ref))) {	// name?
-			error(cc->s, cc->file, cc->line, "Identifyer expected");
-			skiptok(cc, STMT_do, 1);
-			return NULL;
+			// static structures are valid
+			Attr &= ~(ATTR_stat);
+
+			redefine(cc, tag->ref.link);
 		}
-
-		if (skip(cc, ASGN_set)) {				// const:   define PI = 3.14...;
-			// can not call decl_init
-			// TODO: check if locals are used.
-			astn val = expr(cc, TYPE_def);
-			if (val != NULL) {
-				def = declare(cc, TYPE_def, tag, val->type);
-				if (!isType(val)) {
-					if (isConst(val)) {
-						def->stat = 1;
-						def->cnst = 1;
-					}
-					else if (isStatic(cc, val)) {
-						def->stat = 1;
-					}
-					def->init = val;
-				}
-				typ = def->type;
-			}
-			else {
-				error(cc->s, cc->file, cc->line, "expression expected");
-			}
-		}
-		else if (skip(cc, PNCT_lp)) {			// inline:  define isNan(float64 x) = x != x;
-			astn init = NULL;
-			symn param;
-
-			def = declare(cc, TYPE_def, tag, NULL);
-			def->name = NULL; // disable lookup as variable.
-
-			enter(cc, NULL);
-			args(cc, TYPE_def);
-			skiptok(cc, PNCT_rp, 1);
-
-			if (skip(cc, ASGN_set)) {
-				// define sqr(int a) = (a * a);
-				if ((init = expr(cc, TYPE_def))) {
-					typ = init->type;
-				}
-			}
-
-			if (!(param = leave(cc, def, 0))) {
-				param = cc->void_tag->ref.link;
-			}
-
-			def->name = tag->ref.name;
-			def->stat = isStatic(cc, init);
-			def->cnst = isConst(init);
-			def->type = typ;
-			def->prms = param;
-			def->init = init;
-			def->call = 1;
-
-			//* TODO: in-out parameters: remove
-			// TODO: this should go to fixargs
-			for (param = def->prms; param; param = param->next) {
-				// is explicitly set to be cached.
-				if (param->cast == TYPE_ref) {
-					param->cast = param->type->cast;
-				}
-				else {
-					int used = usages(param) - 1;
-					// warn to cache if it is used more than once
-					if (used > 1) {
-						warn(cc->s, 8, param->file, param->line, "parameter `%T` may be cached (used %d times in expression)", param, used);
-					}
-					else {
-						param->kind = TYPE_def;
-					}
-				}
-			}// */
-
-			if (init == NULL) {
-				error(cc->s, cc->file, cc->line, "expression expected");
-			}
-		}
-		else {
-			error(cc->s, tag->file, tag->line, "typename excepted");
-		}
-
-		skiptok(cc, STMT_do, 1);
-
-		tag->kind = TYPE_def;
-		tag->type = typ;
-		tag->ref.link = def;
-
-		Attr &= ~(ATTR_stat | ATTR_const);		// enable static and const qualifiers
-		redefine(cc, def);
 	}
 	else if ((tag = decl_var(cc, NULL, 0))) {	// variable, function, ...
 		symn typ = tag->type;
@@ -2726,12 +2759,6 @@ static astn decl(ccState cc, int mode) {
 			 */
 			else if (ref->call) {
 				ref->size = vm_size;
-				// TODO
-				//~ ref->cast = TYPE_ref;
-				//~ Attr |= ATTR_stat;
-				//~ if (peekTok(cc, ASGN_set)) {
-					//~ Attr |= ATTR_const;
-				//~ }
 			}
 
 			// variable or function initialization.
@@ -2742,7 +2769,7 @@ static astn decl(ccState cc, int mode) {
 				if (Attr & ATTR_const) {
 					ref->cnst = 1;
 				}
-				if (!decl_init(cc, ref)) {
+				if (!init_var(cc, ref)) {
 					trace("%+k", tag);
 					return NULL;
 				}
@@ -2763,21 +2790,15 @@ static astn decl(ccState cc, int mode) {
 		skiptok(cc, STMT_do, 1);
 
 		// TODO: functions type == return type
-		if (typ->cast == TYPE_vid && !ref->call) {
+		if (typ->cast == TYPE_vid && !ref->call) {	// void x;
 			error(cc->s, ref->file, ref->line, "invalid variable declaration of type `%+T`", typ);
 		}
 
 		if (Attr & ATTR_stat) {
-			if (ref->init && !ref->call && !(isStatic(cc, ref->init) || isConst(ref->init))) {
-				warn(cc->s, 1, ref->file, ref->line, "probably invalid static variable initialization `%+T`", ref);
-			}
 			ref->stat = 1;
 		}
 
 		if (Attr & ATTR_const) {
-			if (ref->kind == TYPE_ref && ref->stat && ref->init == NULL) {
-				error(cc->s, ref->file, ref->line, "uninitialized constant `%+T`", ref);
-			}
 			ref->cnst = 1;
 		}
 

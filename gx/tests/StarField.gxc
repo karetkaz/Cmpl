@@ -6,7 +6,7 @@ enum Window {
 }
 
 struct Star {
-	static define speed = 1;
+	define speed = 1;
 	double xpos;
 	double ypos;
 	double zpos;

@@ -1,9 +1,9 @@
 // tokens and opcodes
 #ifdef TOKDEF
-/* #define TOKDEF(NAME, TYPE, opArgs, STR) {KIND, TYPE, SIZE, STR},
+/* #define TOKDEF(NAME, TYPE, ARGS, STR) {KIND, TYPE, SIZE, STR},
 	NAME: name
-	TYPE: oprator priority
-	opArgs: if != 0 then operator
+	TYPE: typesize / oprator priority
+	ARGS: if != 0 then operator
 */
 TOKDEF(TYPE_any, 0x00, 0, ".err")		// alias, define, error
 TOKDEF(TYPE_vid, 0x00, 0, ".vid")		// void
@@ -32,7 +32,7 @@ TOKDEF(STMT_if,  0x00, 0, "if")			// stmt: if then else
 TOKDEF(STMT_els, 0x00, 0, "else")		// ????
 TOKDEF(STMT_brk, 0x00, 0, "break")		// stmt: break
 TOKDEF(STMT_con, 0x00, 0, "continue")	// stmt: continue
-TOKDEF(STMT_ret, 0x00, 0, "return")	// stmt: return
+TOKDEF(STMT_ret, 0x00, 0, "return")		// stmt: return
 TOKDEF(STMT_end, 0x00, 0, ".end")		// destruct calls ?
 
 //~ Operators ==================================================================
@@ -90,6 +90,7 @@ TOKDEF(OPER_com, 0x01, 2, ",")			// a, b
 
 TOKDEF(EMIT_opc, 0x00, 0, "emit")		// opcodes in emit(args...)
 TOKDEF(ENUM_kwd, 0x00, 0, "enum")		// enum keyword
+//~ TOKDEF(USING_kwd, 0x00, 0, "using")		// using keyword
 //~ TOKDEF(OPER_kwd, 0x00, 0, "operator")
 
 TOKDEF(QUAL_par, 0x00, 0, "parallel")
@@ -122,8 +123,8 @@ TOKDEF(ASGN_pow, 0x0a, 2, OP, "**=")		// a **= b
 
 //~ TOKDEF(OPER_go2, 0x00, 0, 2, "goto")
 
-//~ TOKDEF(OPER_swi, 0x00, 0, 2, "switch")
-//~ TOKDEF(OPER_cas, 0x00, 0, 2, "case")
+//~ TOKDEF(OPER_swc, 0x00, 0, 2, "switch")
+//~ TOKDEF(OPER_cse, 0x00, 0, 2, "case")
 //? TOKDEF(OPER_def, 0x00, 0, 2, "default")		// or use else ?
 
 //~ TOKDEF(OPER_wht, 0x00, 0, 2, "while")		// while '(' <expr>')' <stmt> => for(;<expr>;) <stmt>

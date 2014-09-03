@@ -140,7 +140,7 @@ void drawCB() {
 			}
 		}
 		zoomSurf(offScreen, null, tmp, null, 1);
-	}// */
+	}
 }
 
 void mouseHandler(int btn, int x, int y) {
@@ -151,7 +151,7 @@ void mouseHandler(int btn, int x, int y) {
 	ox = x;
 	oy = y;
 
-	static const define toRadians(double x) = double(x * Math.pi / 180.);
+	define toRadians(double degrees) = double(degrees * Math.pi / 180.);
 	enum: double {
 		moveSpeed = .08;
 		//~ rotateSpeed = moveSpeed * Math.pi / 180.;

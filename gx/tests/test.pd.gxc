@@ -266,11 +266,11 @@ vec4f tunnel0(double x, double y) {
 		}
 	}
 
-	static define tex2d(gxSurf src, double x, double y) = getPixel(src, imgcoord(x, width(src)), imgcoord(y, height(src)));
-	static define tex2d(gxSurf src, double u, double v, double w) = rgbscale(tex2d(src, u, v), w);
-	//~ static define tex2d(gxSurf src, double u, double v, double w) = tex2d(src, u, v);
+	define tex2d(gxSurf src, double x, double y) = getPixel(src, imgcoord(x, width(src)), imgcoord(y, height(src)));
+	define tex2d(gxSurf src, double u, double v, double w) = rgbscale(tex2d(src, u, v), w);
+	//~ define tex2d(gxSurf src, double u, double v, double w) = tex2d(src, u, v);
 
-	static define nz(double x) = Math.nz(x, 1e-200);
+	define nz(double x) = Math.nz(x, 1e-200);
 
 	const static gxSurf srcImg = gxSurf("media/images/download.jpg");
 
@@ -286,7 +286,7 @@ vec4f tunnel0(double x, double y) {
 	result = rgb2vec4f(tex2d(srcImg, u, v, 2 * r));
 }
 
-setup(&time, tunnel0);
+setup(&time, yinyang);
 //~ setup(&time, yinyang);
 //~ setup(&time, Perlin.Noise2f);
 //~ Gui.exitLoop();

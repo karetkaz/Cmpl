@@ -22,7 +22,7 @@ static void dumpTree(state rt, astn ast, int offsStart, int offsEnd) {
 	dbg.init = ast;
 	dbg.offs = offsStart;
 	dbg.size = offsEnd - offsStart;
-	dump(rt, dump_ast | dump_asm | 0x1ff, &dbg, "");
+	dump(rt, dump_ast | dump_asm | 0x1ff, &dbg);
 }
 #endif
 
@@ -1359,7 +1359,7 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 				dbg.init = ast;
 				dbg.offs = ipdbg;
 				dbg.size = emitopc(rt, markIP) - ipdbg;
-				dump(rt, dump_ast | dump_asm | 0x1ff, &dbg, "");
+				dump(rt, dump_ast | dump_asm | 0x1ff, &dbg);
 			}
 			dieif(ast->op.lhso->cst2 != ast->op.rhso->cst2, "RemMe", ast);
 			dieif(ret != castOf(ast->type), "RemMe");
@@ -1559,102 +1559,22 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 		} break;
 		//#}
 		//#{ TVAL
-		case TYPE_int: switch (get) {
-			default:
-				error(rt, ast->file, ast->line, "invalid cast of `%+k:`", ast);
-				debug("invalid cast: to (%t) '%+k'", get, ast);
+		case TYPE_int:
+			if (!emiti64(rt, ast->cint)) {
+				trace("%+k", ast);
 				return TYPE_any;
+			}
+			ret = TYPE_i64;
+			break;
 
-			case TYPE_vid:
-				// void(0);
-				return TYPE_vid;
-
-			case TYPE_bit:
-				if (!emiti32(rt, ast->cint != 0)) {
-					trace("%+k", ast);
-					return TYPE_any;
-				}
-				return TYPE_u32;
-
-			case TYPE_u32:
-			case TYPE_i32:
-				if (!emiti32(rt, (int32_t)ast->cint)) {
-					trace("%+k", ast);
-					return TYPE_any;
-				}
-				ret = TYPE_i32;
-				break;
-				//~ return TYPE_i32;//TODO: get?
-
-			case TYPE_i64:
-				if (!emiti64(rt, (int64_t)ast->cint)) {
-					trace("%+k", ast);
-					return TYPE_any;
-				}
-				return TYPE_i64;
-
-			case TYPE_f32:
-				if (!emitf32(rt, (float32_t)ast->cint)) {
-					trace("%+k", ast);
-					return TYPE_any;
-				}
-				return TYPE_f32;
-
-			case TYPE_f64:
-				if (!emitf64(rt, (float64_t)ast->cint)) {
-					trace("%+k", ast);
-					return TYPE_any;
-				}
-				return TYPE_f64;
-
-		} break;
-		case TYPE_flt: switch (get) {
-			default:
-				error(rt, ast->file, ast->line, "invalid cast of `%+k:`", ast);
-				debug("invalid cast: to (%t) '%+k'", get, ast);
+		case TYPE_flt:
+			if (!emitf64(rt, ast->cflt)) {
+				trace("%+k", ast);
 				return TYPE_any;
+			}
+			ret = TYPE_f64;
+			break;
 
-			case TYPE_vid:
-				// void(0.15);
-				return TYPE_vid;
-
-			case TYPE_bit:
-				if (!emiti32(rt, ast->cflt != 0.)) {
-					trace("%+k", ast);
-					return TYPE_any;
-				}
-				return TYPE_u32;
-
-			case TYPE_u32:
-			case TYPE_i32:
-				if (!emiti32(rt, (int32_t)ast->cflt)) {
-					trace("%+k", ast);
-					return TYPE_any;
-				}
-				return TYPE_i32;//TODO: get?
-
-			case TYPE_i64:
-				if (!emiti64(rt, (int64_t)ast->cflt)) {
-					trace("%+k", ast);
-					return TYPE_any;
-				}
-				return TYPE_i64;
-
-			case TYPE_f32:
-				if (!emitf32(rt, (float32_t)ast->cflt)) {
-					trace("%+k", ast);
-					return TYPE_any;
-				}
-				return TYPE_f32;
-
-			case TYPE_f64:
-				if (!emitf64(rt, (float64_t)ast->cflt)) {
-					trace("%+k", ast);
-					return TYPE_any;
-				}
-				return TYPE_f64;
-
-		} break;
 		case TYPE_str: switch (get) {
 			default:
 				error(rt, ast->file, ast->line, "invalid cast of `%+k:`", ast);
@@ -2444,6 +2364,10 @@ int gencode(state rt, int mode) {
 
 			dieif(var->offs != 0, "offset %06x for: %+T", var->offs, var);
 
+			if (var->cnst && var->init == NULL) {
+				error(cc->s, var->file, var->line, "uninitialized constant `%+T`", var);
+			}
+
 			if (var->call && var->cast != TYPE_ref) {
 				int seg = emitopc(rt, markIP);
 
@@ -2575,11 +2499,13 @@ int gencode(state rt, int mode) {
 	}
 
 	// application exit point: exit(0)
-	rt->vm.px = emiti32(rt, 0);
+	rt->vm.px = emitopc(rt, opc_ldz1);
 	emitint(rt, opc_libc, 0);
 
 	// program entry point
 	rt->vm.pc = Lmain;
+
+	dieif(rt->gdef != rt->defs, "globals are not the same with defs");
 
 	rt->init->file = NULL;
 	rt->init->line = 0;

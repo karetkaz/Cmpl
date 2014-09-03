@@ -917,7 +917,7 @@ static int ratHND(int btn, int mx, int my) {
 
 static int dbgCon(state rt, int pu, void* ip, long* bp, int ss) {
 	int IP = ((char*)ip) - ((char*)rt->_mem);
-	dump(rt, 0, NULL, ">exec:[sp%02d:%08x]@%9.*A\n", ss, bp + ss, IP, ip);
+	fputfmt(rt, 0, NULL, ">exec:[sp%02d:%08x]@%9.*A\n", ss, bp + ss, IP, ip);
 	//~ fputfmt(stdout, ">exec:[sp%02d:%08x]@%9.*A\n", ss, bp + ss, IP, ip);
 	return 0;
 }

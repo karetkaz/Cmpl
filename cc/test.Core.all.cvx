@@ -594,7 +594,7 @@ int32x8 mul(int32x8 &a, int32 b);
 
 int32x8 i32x8_a = int32x8(-10);
 //~ int32x8 i32x8_b = int32x8(1);
-int32x8 i32x8_c = sub(&i32x8_a, -19);
+//~ int32x8 i32x8_c = sub(&i32x8_a, -19);
 
 }
 }

@@ -32,7 +32,8 @@ const struct tok_inf tok_tbl[255] = {
 	//~ {0}
 };
 const struct opc_inf opc_tbl[255] = {
-	#define OPCDEF(NAME, CODE, SIZE, CHCK, DIFF, MNEM) {CODE, SIZE, CHCK, DIFF, MNEM},
+	//~ #define OPCDEF(NAME, CODE, SIZE, CHCK, DIFF, MNEM) {CODE, SIZE, CHCK, DIFF, MNEM},
+	#define OPCDEF(NAME, CODE, SIZE, CHCK, DIFF, MNEM) {CODE, SIZE, CHCK, DIFF, "`"#NAME"`"},
 	#include "defs.inl"
 	//~ {0}
 };
@@ -124,7 +125,7 @@ void* rtAlloc(state rt, void* ptr, unsigned size) {
 		last->prev = NULL;
 
 		rt->vm.heap = heap;
-		perr(rt, 0, NULL, 0, "init memmgr(chunk size: %d)", sizeof(struct memchunk));
+		perr(rt, 0, NULL, 0, "init memmgr(heap size: %d, chunk size: %d)", rt->_end - rt->_beg, sizeof(struct memchunk));
 	}
 
 	// realloc or free.

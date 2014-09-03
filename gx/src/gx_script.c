@@ -1489,7 +1489,8 @@ int ccCompile(char *src, int argc, char* argv[], int (*dbg)(state rt, int pu, vo
 		logFILE(rt, stdout);
 		ccAddCode(rt, stdwl, __FILE__, __LINE__ , "");
 		gencode(rt, 0);
-		dump(rt, dump_sym | 0x33, NULL, "#api: replace(`^([^:]*).*$`, `\\1`)\n");
+		fprintf(stdout, "#api: replace(`^([^:]*).*$`, `\\1`)\n");
+		dump(rt, dump_sym | 0x33, NULL);
 		return 0;
 	}
 
@@ -1524,9 +1525,14 @@ int ccCompile(char *src, int argc, char* argv[], int (*dbg)(state rt, int pu, vo
 		}
 
 		if (ccDmp && logfile(rt, ccDmp) == 0) {
-			dump(rt, dump_sym | 0xf2, NULL, "\ntags:\n");
-			//~ dump(rt, dump_ast | 0xff, NULL, "\ncode:\n");
-			dump(rt, dump_asm | 0xf9, NULL, "\ndasm:\n");
+			//~ "\ntags:\n"
+			dump(rt, dump_sym | 0xf2, NULL);
+
+			//~ "\ncode:\n"
+			//~ dump(rt, dump_ast | 0xff, NULL);
+
+			//~ "\ndasm:\n"
+			dump(rt, dump_asm | 0xf9, NULL);
 		}
 
 		//~ rt->dbg->dbug = dbg;

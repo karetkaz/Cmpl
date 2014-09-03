@@ -397,6 +397,7 @@ int program(int argc, char* argv[]) {
 					error(rt, NULL, 0, "invalid level '%s'", str);
 					return 0;
 				}
+				gen_code &= ~cgen_opti;
 				gen_code |= level & cgen_opti;
 			}
 		}
@@ -575,27 +576,27 @@ int program(int argc, char* argv[]) {
 		}
 	}
 
-	// print top of stack as a type or var.
-	if (stk_dump != NULL) {
-		ccState cc = ccOpen(rt, NULL, 0, stk_dump);
-		if (cc != NULL) {
-			astn ast = decl_var(cc, NULL, TYPE_def);
-			printvars = linkOf(ast);
-			if (printvars != NULL) {
-				printvars->name = "sp";	// stack pointer
-			}
-			else {
-				error(rt, NULL, 0, "error in debug print format `%s`", stk_dump);
-			}
-			ccDone(cc);
-		}
-	}
-
 	// if no error generate code and execute
 	if (rt->errc == 0) {
 		FILE *out = rt->logf;
 		if (out == NULL) {
 			out = stdout;
+		}
+
+		// compile the type for the debuger
+		if (stk_dump != NULL) {
+			ccState cc = ccOpen(rt, NULL, 0, stk_dump);
+			if (cc != NULL) {
+				astn ast = decl_var(cc, NULL, TYPE_def);
+				printvars = linkOf(ast);
+				if (printvars != NULL) {
+					printvars->name = "sp";	// stack pointer
+				}
+				else {
+					error(rt, NULL, 0, "error in debug print format `%s`", stk_dump);
+				}
+				ccDone(cc);
+			}
 		}
 
 		// generate variables and vm code.
@@ -644,7 +645,7 @@ int program(int argc, char* argv[]) {
 			if (dbg != NULL && rt->dbg != NULL) {
 				rt->dbg->dbug = dbg;
 			}
-			//~ fputfmt(out, "\n>==-- exec:\n");
+			fputfmt(out, "\n>==-- exec:\n");
 			result = execute(rt, NULL, rt->_size / 4);
 			if (var_dump >= 0) {
 

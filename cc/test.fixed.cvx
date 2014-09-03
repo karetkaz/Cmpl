@@ -32,9 +32,9 @@ static struct Fixed {
 		fxp_min = -fxp_max;
 	}
 
-	const define asFixed(const int32 val) = emit(fixed, i32(val));
-	const define toFixed(const int32 val) = emit(fixed, i32(val << FractBits));
-	const define toFixed(const float64 val) = emit(fixed, int32(val * (1 << FractBits)));
+	define asFixed(const int32 val) = emit(fixed, i32(val));
+	define toFixed(const int32 val) = emit(fixed, i32(val << FractBits));
+	define toFixed(const float64 val) = emit(fixed, int32(val * (1 << FractBits)));
 
 	define mul(int32 lhs, int32 rhs, int __fixp) = int32(int64.Sar(int64(lhs) * rhs, __fixp));
 	define div(int32 lhs, int32 rhs, int __fixp) = int32(int64.Shl(int64(lhs), __fixp) / rhs);

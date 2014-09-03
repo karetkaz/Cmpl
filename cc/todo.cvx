@@ -25,7 +25,7 @@ struct Biorithm {
 //~ println(millis());
 //~ */
 
-//~ /* System.io
+/* System.io
 
 define byte = uint8;
 struct Stream: object {
@@ -107,7 +107,19 @@ string decodedFile = "out.txt";
 debug("file", variant(decodedFile));
 // +/
 
-define foo(int &a, int &b) = a * a + 2 * a * b + b * b;
-int a = 6;
-int b = 6;
-int c = foo(a, b);
+//~ define foo(int &a, int &b) = a * a + 2 * a * b + b * b;
+//~ int a = 6;
+//~ int b = 6;
+//~ int c = foo(a, b);
+
+enum x:int64{
+	a;b;c;
+};
+
+int A = x.a;
+int B = x.b;
+int C = x.c;
+
+static struct alma:1 {
+
+}

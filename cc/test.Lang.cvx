@@ -41,7 +41,7 @@ int32 f3(int a, int b) {
 struct Struct {
 	//~ int32 &r[1];
 	int32 f1(int a, int b) = f3;
-	//~ int32 f2(int a, int b) = null;
+	int32 f2(int a, int b) = null;
 	int32 f3(int a, int b) {
 		return a < b ? a : b;
 	}

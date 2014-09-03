@@ -6,11 +6,26 @@
 
 void g2_drawline(gx_Surf surf, int x0, int y0, int x1, int y1, long col) {
 	//~ TODO : replace Bresenham with DDA, resolve clipping 
-	int dx, dy, sx, sy, r;
-	dx = x1 - x0;
-	dy = y1 - y0;
-	if (dx < 0) { dx = -dx;  sx = -1; } else sx = 1;
-	if (dy < 0) { dy = -dy;  sy = -1; } else sy = 1;
+	int sx, sy, r;
+	int dx = x1 - x0;
+	int dy = y1 - y0;
+
+	if (dx < 0) {
+		dx = -dx;
+		sx = -1;
+	}
+	else {
+		sx = 1;
+	}
+
+	if (dy < 0) {
+		dy = -dy;
+		sy = -1;
+	}
+	else {
+		sy = 1;
+	}
+
 	if (dx > dy) {
 		r = dx >> 1;
 		while (x0 != x1) {
@@ -21,7 +36,8 @@ void g2_drawline(gx_Surf surf, int x0, int y0, int x1, int y1, long col) {
 			}
 			x0 += sx;
 		}
-	} else {
+	}
+	else {
 		r = dy >> 1;
 		while (y0 != y1) {
 			gx_setpixel(surf, x0, y0, col);
@@ -44,49 +60,97 @@ void gx_drawrect(gx_Surf dst, int x0, int y0, int x1, int y1, long col) {
 
 void g2_drawoval(gx_Surf s, int x0, int y0, int x1, int y1, long c/* , long fg */) {
 	int dx, dy, sx, sy, r;
-	if (x0 > x1) {x0 ^= x1; x1 ^= x0; x0 ^= x1;}
-	if (y0 > y1) {y0 ^= y1; y1 ^= y0; y0 ^= y1;}
-	dx = x1 - x0; dy = y1 - y0;
-	x1 = x0 += dx >> 1; x0 +=dx & 1;
-	dx += dx & 1; dy += dy & 1;
-	sx = dx * dx; sy = dy * dy;
+	if (x0 > x1) {
+		x0 ^= x1;
+		x1 ^= x0;
+		x0 ^= x1;
+	}
+	if (y0 > y1) {
+		y0 ^= y1;
+		y1 ^= y0;
+		y0 ^= y1;
+	}
+	dx = x1 - x0;
+	dy = y1 - y0;
+
+	x1 = x0 += dx >> 1;
+	x0 += dx & 1;
+
+	dx += dx & 1;
+	dy += dy & 1;
+
+	sx = dx * dx;
+	sy = dy * dy;
 	r = sx * dy >> 2;
-	dx = 0; dy = r << 1;
+
+	dx = 0;
+	dy = r << 1;
+
 	while (y0 < y1) {
-		gx_setpixel(s, x0, y0, c); gx_setpixel(s, x0, y1, c);
-		gx_setpixel(s, x1, y0, c); gx_setpixel(s, x1, y1, c);
+		gx_setpixel(s, x0, y0, c);
+		gx_setpixel(s, x0, y1, c);
+		gx_setpixel(s, x1, y0, c);
+		gx_setpixel(s, x1, y1, c);
+
 		if (r >= 0) {
-			x0--; x1++;
+			x0 -= 1;
+			x1 += 1;
 			r -= dx += sy;
 		}
+
 		if (r < 0) {
-			y0++; y1--;
+			y0 += 1;
+			y1 -= 1;
 			r += dy -= sx;
 		}
 	}
-	gx_setpixel(s, x0, y0, c); gx_setpixel(s, x0, y1, c);
-	gx_setpixel(s, x1, y0, c); gx_setpixel(s, x1, y1, c);
+	gx_setpixel(s, x0, y0, c);
+	gx_setpixel(s, x0, y1, c);
+	gx_setpixel(s, x1, y0, c);
+	gx_setpixel(s, x1, y1, c);
 	//~ */
 }
 void g2_filloval(gx_Surf s, int x0, int y0, int x1, int y1, long c/* , long fg */) {
 	int dx, dy, sx, sy, r;
-	if (x0 > x1) {x0 ^= x1; x1 ^= x0; x0 ^= x1;}
-	if (y0 > y1) {y0 ^= y1; y1 ^= y0; y0 ^= y1;}
-	dx = x1 - x0; dy = y1 - y0;
-	x1 = x0 += dx >> 1; x0 +=dx & 1;
-	dx += dx & 1; dy += dy & 1;
-	sx = dx * dx; sy = dy * dy;
+	if (x0 > x1) {
+		x0 ^= x1;
+		x1 ^= x0;
+		x0 ^= x1;
+	}
+	if (y0 > y1) {
+		y0 ^= y1;
+		y1 ^= y0;
+		y0 ^= y1;
+	}
+	dx = x1 - x0;
+	dy = y1 - y0;
+
+	x1 = x0 += dx >> 1;
+	x0 +=dx & 1;
+
+	dx += dx & 1;
+	dy += dy & 1;
+
+	sx = dx * dx;
+	sy = dy * dy;
+
 	r = sx * dy >> 2;
-	dx = 0; dy = r << 1;
+	dx = 0;
+	dy = r << 1;
+
 	while (y0 < y1) {
 		gx_fillrect(s, x0, y0, x0 + 1, y1, c);
 		gx_fillrect(s, x1, y0, x1 + 1, y1, c);
+
 		if (r >= 0) {
-			x0--; x1++;
+			x0 -= 1;
+			x1 += 1;
 			r -= dx += sy;
 		}
+
 		if (r < 0) {
-			y0++; y1--;
+			y0 += 1;
+			y1 -= 1;
 			r += dy -= sx;
 		}
 	}
@@ -95,36 +159,42 @@ void g2_filloval(gx_Surf s, int x0, int y0, int x1, int y1, long c/* , long fg *
 }
 
 void gx_drawbez2(gx_Surf dst, int x0, int y0, int x1, int y1, int x2, int y2, long col) {
-	int px_2, px_1, px_0 = x0;
-	int py_2, py_1, py_0 = y0;
 	double t, dt = 1. / 128;
-	px_1 = 2 * (x1 - x0);
-	py_1 = 2 * (y1 - y0);
-	px_2 = x2 - 2 * x1 + x0;
-	py_2 = y2 - 2 * y1 + y0;
+
+	int px_0 = x0;
+	int py_0 = y0;
+	int px_1 = 2 * (x1 - x0);
+	int py_1 = 2 * (y1 - y0);
+	int px_2 = x2 - 2 * x1 + x0;
+	int py_2 = y2 - 2 * y1 + y0;
+
 	for (t = dt; t < 1; t += dt) {
-		x1 = (((px_2)*t + px_1)*t + px_0);
-		y1 = (((py_2)*t + py_1)*t + py_0);
+		x1 = (px_2 * t + px_1) * t + px_0;
+		y1 = (py_2 * t + py_1) * t + py_0;
 		g2_drawline(dst, x0, y0, x1, y1, col);
-		x0 = x1; y0 = y1;
+		x0 = x1;
+		y0 = y1;
 	}
 	g2_drawline(dst, x0, y0, x2, y2, col);
 }
 void gx_drawbez3(gx_Surf dst, int x0, int y0, int x1, int y1, int x2, int y2, int x3, int y3, long col) {
-	int px_3, px_2, px_1, px_0 = x0;
-	int py_3, py_2, py_1, py_0 = y0;
 	double t, dt = 1. / 128;
-	px_1 = 3 * (x1 - x0);
-	py_1 = 3 * (y1 - y0);
-	px_2 = 3 * (x2 - x1) - px_1;
-	py_2 = 3 * (y2 - y1) - py_1;
-	px_3 = x3 - px_2 - px_1 - px_0;
-	py_3 = y3 - py_2 - py_1 - py_0;
+
+	int px_0 = x0;
+	int py_0 = y0;
+	int px_1 = 3 * (x1 - x0);
+	int py_1 = 3 * (y1 - y0);
+	int px_2 = 3 * (x2 - x1) - px_1;
+	int py_2 = 3 * (y2 - y1) - py_1;
+	int px_3 = x3 - px_2 - px_1 - px_0;
+	int py_3 = y3 - py_2 - py_1 - py_0;
+
 	for (t = dt; t < 1; t += dt) {
-		x1 = ((((px_3)*t + px_2)*t + px_1)*t + px_0);
-		y1 = ((((py_3)*t + py_2)*t + py_1)*t + py_0);
+		x1 = ((px_3 * t + px_2) * t + px_1) * t + px_0;
+		y1 = ((py_3 * t + py_2) * t + py_1) * t + py_0;
 		g2_drawline(dst, x0, y0, x1, y1, col);
-		x0 = x1; y0 = y1;
+		x0 = x1;
+		y0 = y1;
 	}
 	g2_drawline(dst, x0, y0, x3, y3, col);
 }

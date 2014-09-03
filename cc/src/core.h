@@ -21,7 +21,7 @@
 	5: print non pre-mapped strings, non static types
 	6: print static casts generated with emit
 */
-//~ #define DEBUGGING 1
+//~ #define DEBUGGING 3
 
 // enable paralell execution stuff
 //~ #define MAXPROCSEXEC 1
@@ -108,7 +108,7 @@ typedef enum {
 	ATTR_mask   = 0xf00,		// mask
 	ATTR_stat   = 0x400,		// static
 	ATTR_const  = 0x800,		// constant
-	//ATTR_paral  = 0x100,		// parallel
+	//~ ATTR_paral  = 0x100,		// parallel
 
 	stmt_NoDefs = 0x100,		// disable typedefs in stmt.
 	stmt_NoRefs = 0x200,		// disable variables in stmt.

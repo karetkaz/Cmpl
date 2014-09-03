@@ -153,6 +153,14 @@ static inline void* getip(state rt, int pos) {
 	return (void*)(rt->_mem + pos);
 }
 
+static inline void rollbackPc(state rt) {
+	bcde ip = getip(rt, rt->vm.pc);
+	if ((void*)ip != rt->_beg) {
+		rt->_beg = (memptr)ip;
+		rt->vm.ss -= opc_tbl[ip->opc].diff;
+	}
+}
+
 int vmOffset(state rt, void* ptr) {
 	dieif(!isValidOffset(rt, ptr), "invalid reference(%06x)", ((unsigned char*)ptr - rt->_mem));
 	return ptr ? (unsigned char*)ptr - rt->_mem : 0;
@@ -329,39 +337,33 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 	}
 
 	// Optimize
-	if (rt->vm.opti > 1) {
+	if (rt->vm.opti > 0) {
 		if (0) {
 		}
 
-		/*else if (opc == opc_ldz1) {
-			ip = getip(s, s->pc);
-			if (ip->opc == opc_ldz1) {
-				opc = opc_ldz2;
-				s->cs = s->pc;
-				s->ss -= 1;
-			}
-		}
-		else if (opc == opc_ldz2) {
-			ip = getip(s, s->pc);
-			if (ip->opc == opc_ldz2) {
-				opc = opc_ldz4;
-				s->cs = s->pc;
-				s->ss -= 2;
-			}
-		}*/
-
+		/* ldzs are not optimized, uncomment when vm does constant evaluations.
 		else if (opc == opc_ldc4) {
 			if (arg.i8 == 0) {
 				opc = opc_ldz1;
+				ip = getip(rt, rt->vm.pc);
+				if (ip->opc == opc_ldz1) {
+					opc = opc_ldz2;
+					rollbackPc(rt);
+				}
 			}
 		}
 		else if (opc == opc_ldc8) {
 			if (arg.i8 == 0) {
 				opc = opc_ldz2;
+				ip = getip(rt, rt->vm.pc);
+				if (ip->opc == opc_ldz2) {
+					opc = opc_ldz4;
+					rollbackPc(rt);
+				}
 			}
 		}
 
-		/*else if (opc == opc_ldi1) {
+		/ *else if (opc == opc_ldi1) {
 			ip = getip(rt, rt->vm.pc);
 			if (ip->opc == opc_ldsp && ((ip->rel & (vm_size-1)) == 0) && ((ip->rel / vm_size) < vm_regs)) {
 				arg.i4 = ip->rel / vm_size;
@@ -386,14 +388,12 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 			if (ip->opc == opc_ldsp && ((ip->rel & (vm_size-1)) == 0) && ((ip->rel / vm_size) < vm_regs)) {
 				arg.i4 = ip->rel / vm_size;
 				opc = opc_dup1;
-				rt->_beg = (memptr)ip;
-				rt->vm.ss -= 1;
+				rollbackPc(rt);
 			}
 			else if (ip->opc == opc_ldcr && ip->arg.u4 < 0x00ffffff) {
 				arg.i8 = ip->arg.u4;
 				opc = opc_ld32;
-				rt->_beg = (memptr)ip;
-				rt->vm.ss -= 1;
+				rollbackPc(rt);
 			}
 		}
 		else if (opc == opc_sti4) {
@@ -401,14 +401,12 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 			if (ip->opc == opc_ldsp && ((ip->rel & (vm_size-1)) == 0) && ((ip->rel / vm_size) < vm_regs)) {
 				arg.i4 = ip->rel / vm_size;
 				opc = opc_set1;
-				rt->_beg = (memptr)ip;
-				rt->vm.ss -= 1;
+				rollbackPc(rt);
 			}
 			else if (ip->opc == opc_ldcr && ip->arg.u4 < 0x00ffffff) {
 				arg.i8 = ip->arg.u4;
 				opc = opc_st32;
-				rt->_beg = (memptr)ip;
-				rt->vm.ss -= 1;
+				rollbackPc(rt);
 			}
 		}
 
@@ -417,14 +415,12 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 			if (ip->opc == opc_ldsp && ((ip->rel & (vm_size-1)) == 0) && ((ip->rel / vm_size) < vm_regs)) {
 				arg.i4 = ip->rel / vm_size;
 				opc = opc_dup2;
-				rt->_beg = (memptr)ip;
-				rt->vm.ss -= 1;
+				rollbackPc(rt);
 			}
 			else if (ip->opc == opc_ldcr && ip->arg.u4 < 0x00ffffff) {
 				arg.i8 = ip->arg.u4;
 				opc = opc_ld64;
-				rt->_beg = (memptr)ip;
-				rt->vm.ss -= 1;
+				rollbackPc(rt);
 			}
 		}
 		else if (opc == opc_sti8) {
@@ -432,14 +428,12 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 			if (ip->opc == opc_ldsp && ((ip->rel & (vm_size-1)) == 0) && ((ip->rel / vm_size) < vm_regs)) {
 				arg.i4 = ip->rel / vm_size;
 				opc = opc_set2;
-				rt->_beg = (memptr)ip;
-				rt->vm.ss -= 1;
+				rollbackPc(rt);
 			}
 			else if (ip->opc == opc_ldcr && ip->arg.u4 < 0x00ffffff) {
 				arg.i8 = ip->arg.u4;
 				opc = opc_st64;
-				rt->_beg = (memptr)ip;
-				rt->vm.ss -= 1;
+				rollbackPc(rt);
 			}
 		}
 
@@ -448,8 +442,7 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 			if (ip->opc == opc_ldsp && ((ip->rel & (vm_size-1)) == 0) && ((ip->rel / vm_size) <= vm_regs)) {
 				arg.i4 = ip->rel / vm_size;
 				opc = opc_dup4;
-				rt->_beg = (memptr)ip;
-				rt->vm.ss -= 1;
+				rollbackPc(rt);
 			}
 		}
 		else if (opc == opc_stiq) {
@@ -457,12 +450,47 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 			if (ip->opc == opc_ldsp && ((ip->rel & (vm_size-1)) == 0) && ((ip->rel / vm_size) <= vm_regs)) {
 				arg.i4 = ip->rel / vm_size;
 				opc = opc_set4;
-				rt->_beg = (memptr)ip;
-				rt->vm.ss -= 1;
+				rollbackPc(rt);
 			}
 		}
 
-		// arithmetic
+		// shl, shr, sar, and with immediate value.
+		else if (opc == b32_shl) {
+			ip = getip(rt, rt->vm.pc);
+			if (ip->opc == opc_ldc4) {
+				arg.i4 = b32_bit_shl | (ip->arg.i4 & 0x3f);
+				opc = b32_bit;
+				rollbackPc(rt);
+			}
+		}
+		else if (opc == b32_shr) {
+			ip = getip(rt, rt->vm.pc);
+			if (ip->opc == opc_ldc4) {
+				arg.i4 = b32_bit_shr | (ip->arg.i4 & 0x3f);
+				opc = b32_bit;
+				rollbackPc(rt);
+			}
+		}
+		else if (opc == b32_sar) {
+			ip = getip(rt, rt->vm.pc);
+			if (ip->opc == opc_ldc4) {
+				arg.i4 = b32_bit_sar | (ip->arg.i4 & 0x3f);
+				opc = b32_bit;
+				rollbackPc(rt);
+			}
+		}
+		else if (opc == b32_and) {
+			ip = getip(rt, rt->vm.pc);
+			if (ip->opc == opc_ldc4) {
+				if ((ip->arg.i4 & (ip->arg.i4 + 1)) == 0) {
+					arg.i4 = b32_bit_and | (bitsf(ip->arg.i4 + 1) & 0x3f);
+					opc = b32_bit;
+					rollbackPc(rt);
+				}
+			}
+		}
+
+		/* TODO: eval Arithmetic using vm.
 		else if (opc == opc_not) {
 			ip = getip(rt, rt->vm.pc);
 			if (ip->opc == opc_not) {
@@ -524,9 +552,8 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 			if (ip->opc == opc_ldc4) {
 				arg.i8 = ip->arg.i4;
 				if (arg.rel == arg.i8) {
-					rt->_beg = (memptr)ip;
-					rt->vm.ss -= 1;
 					opc = opc_inc;
+					rollbackPc(rt);
 				}
 			}
 		}
@@ -535,9 +562,8 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 			if (ip->opc == opc_ldc4) {
 				arg.i8 = -ip->arg.i4;
 				if (arg.rel == arg.i8) {
-					rt->_beg = (memptr)ip;
-					rt->vm.ss -= 1;
 					opc = opc_inc;
+					rollbackPc(rt);
 				}
 			}
 		}
@@ -583,55 +609,156 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 			}
 		}
 
-		// shl, shr, and
-		else if (opc == b32_shl) {
+		// TODO: eval Conversions using vm.
+		else if (opc == u32_i64) {
 			ip = getip(rt, rt->vm.pc);
+			//~ if (ip->opc == opc_ldz2) { ... }
 			if (ip->opc == opc_ldc4) {
-				rt->_beg = (memptr)ip;
-				rt->vm.ss -= 1;
-				arg.i4 = b32_bit_shl | (ip->arg.i4 & 0x3f);
-				opc = b32_bit;
+				arg.i8 = ip->arg.u4;
+				opc = opc_ldc8;
+				rollbackPc(rt);
 			}
 		}
-		else if (opc == b32_shr) {
+		else if (opc == i32_bol) {
 			ip = getip(rt, rt->vm.pc);
 			if (ip->opc == opc_ldc4) {
-				rt->_beg = (memptr)ip;
-				rt->vm.ss -= 1;
-				arg.i4 = b32_bit_shr | (ip->arg.i4 & 0x3f);
-				opc = b32_bit;
+				arg.i8 = ip->arg.i4 != 0;
+				opc = opc_ldc4;
+				rollbackPc(rt);
 			}
 		}
-		else if (opc == b32_sar) {
+		else if (opc == i32_f32) {
 			ip = getip(rt, rt->vm.pc);
 			if (ip->opc == opc_ldc4) {
-				rt->_beg = (memptr)ip;
-				rt->vm.ss -= 1;
-				arg.i4 = b32_bit_sar | (ip->arg.i4 & 0x3f);
-				opc = b32_bit;
+				arg.f4 = ip->arg.i4;
+				opc = opc_ldc4;
+				rollbackPc(rt);
+				dieif(ip->arg.i4 != arg.f4, "inexact cast: %d => %f", ip->arg.i4, arg.f4);
 			}
 		}
-		else if (opc == b32_and) {
-			ip = getip(rt, rt->vm.pc);
-			if (ip->opc == opc_ldc4) {
-				if ((ip->arg.i4 & (ip->arg.i4 + 1)) == 0) {
-					rt->_beg = (memptr)ip;
-					rt->vm.ss -= 1;
-					arg.i4 = b32_bit_and | (bitsf(ip->arg.i4 + 1) & 0x3f);
-					opc = b32_bit;
-				}
-			}
-		}
-
 		else if (opc == i32_i64) {
 			ip = getip(rt, rt->vm.pc);
 			if (ip->opc == opc_ldc4) {
-				rt->_beg = (memptr)ip;
-				rt->vm.ss -= 1;
 				arg.i8 = ip->arg.i4;
 				opc = opc_ldc8;
+				rollbackPc(rt);
 			}
 		}
+		else if (opc == i32_f64) {
+			ip = getip(rt, rt->vm.pc);
+			if (ip->opc == opc_ldc4) {
+				arg.f8 = ip->arg.i4;
+				opc = opc_ldc8;
+				rollbackPc(rt);
+				dieif(ip->arg.i4 != arg.f8, "inexact cast: %d => %F", ip->arg.i4, arg.f8);
+			}
+		}
+		else if (opc == i64_i32) {
+			ip = getip(rt, rt->vm.pc);
+			if (ip->opc == opc_ldc8) {
+				arg.i8 = ip->arg.i8;
+				opc = opc_ldc4;
+				rollbackPc(rt);
+				dieif(ip->arg.i8 != arg.i4, "inexact cast: %D => %d", ip->arg.i8, arg.i4);
+			}
+		}
+		else if (opc == i64_f32) {
+			ip = getip(rt, rt->vm.pc);
+			if (ip->opc == opc_ldc8) {
+				arg.f4 = ip->arg.i8;
+				opc = opc_ldc4;
+				rollbackPc(rt);
+				dieif(ip->arg.i8 != arg.f4, "inexact cast: %D => %f", ip->arg.i8, arg.f4);
+			}
+		}
+		else if (opc == i64_bol) {
+			ip = getip(rt, rt->vm.pc);
+			if (ip->opc == opc_ldc8) {
+				arg.i8 = ip->arg.i8 != 0;
+				opc = opc_ldc4;
+				rollbackPc(rt);
+			}
+		}
+		else if (opc == i64_f64) {
+			ip = getip(rt, rt->vm.pc);
+			if (ip->opc == opc_ldc8) {
+				arg.f8 = ip->arg.i8;
+				opc = opc_ldc8;
+				rollbackPc(rt);
+				dieif(ip->arg.i8 != arg.f8, "inexact cast: %D => %F", ip->arg.i8, arg.f8);
+			}
+		}
+		else if (opc == f32_i32) {
+			ip = getip(rt, rt->vm.pc);
+			if (ip->opc == opc_ldc4) {
+				arg.i8 = ip->arg.f4;
+				opc = opc_ldc4;
+				rollbackPc(rt);
+				dieif(ip->arg.f4 != arg.i4, "inexact cast: %f => %d", ip->arg.f4, arg.i4);
+			}
+		}
+		else if (opc == f32_bol) {
+			ip = getip(rt, rt->vm.pc);
+			if (ip->opc == opc_ldc4) {
+				arg.i8 = ip->arg.f4 != 0;
+				opc = opc_ldc4;
+				rollbackPc(rt);
+			}
+		}
+		else if (opc == f32_i64) {
+			ip = getip(rt, rt->vm.pc);
+			if (ip->opc == opc_ldc4) {
+				arg.i8 = ip->arg.f4;
+				opc = opc_ldc8;
+				rollbackPc(rt);
+				dieif(ip->arg.f4 != arg.i8, "inexact cast: %f => %D", ip->arg.f4, arg.i8);
+			}
+		}
+		else if (opc == f32_f64) {
+			ip = getip(rt, rt->vm.pc);
+			if (ip->opc == opc_ldc4) {
+				arg.f8 = ip->arg.f4;
+				opc = opc_ldc8;
+				rollbackPc(rt);
+				dieif(ip->arg.f4 != arg.f8, "inexact cast: %f => %F", ip->arg.f4, arg.f8);
+			}
+		}
+		else if (opc == f64_i32) {
+			ip = getip(rt, rt->vm.pc);
+			if (ip->opc == opc_ldc4) {
+				arg.i8 = ip->arg.f8;
+				opc = opc_ldc4;
+				rollbackPc(rt);
+				dieif(ip->arg.f8 != arg.i4, "inexact cast: %F => %d", ip->arg.f8, arg.i4);
+			}
+		}
+		else if (opc == f64_f32) {
+			ip = getip(rt, rt->vm.pc);
+			if (ip->opc == opc_ldc4) {
+				arg.f4 = ip->arg.f8;
+				opc = opc_ldc4;
+				rollbackPc(rt);
+				dieif(ip->arg.f8 != arg.i4, "inexact cast: %F => %f", ip->arg.f8, arg.f4);
+			}
+		}
+		else if (opc == f64_i64) {
+			ip = getip(rt, rt->vm.pc);
+			if (ip->opc == opc_ldc4) {
+				arg.i8 = ip->arg.f8;
+				opc = opc_ldc8;
+				rollbackPc(rt);
+				dieif(ip->arg.f8 != arg.i4, "inexact cast: %F => %D", ip->arg.f8, arg.i8);
+			}
+		}
+		else if (opc == f64_bol) {
+			ip = getip(rt, rt->vm.pc);
+			if (ip->opc == opc_ldc4) {
+				arg.i8 = ip->arg.f8 != 0;
+				opc = opc_ldc4;
+				rollbackPc(rt);
+			}
+		}
+		// */
 
 		/* mul, div, mod
 		else if (opc == u32_mod) {
@@ -705,6 +832,7 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 				return rt->vm.pc;
 			}
 		}*/
+
 	}
 
 	ip = (bcde)rt->_beg;
