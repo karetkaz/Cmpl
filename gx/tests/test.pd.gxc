@@ -1,8 +1,8 @@
 // Procedural drawing demos.
 enum Window {
 	draw = RenderMode.swap_buff;
-	resx = 512;
-	resy = 512;
+	resx = 812;
+	resy = 812;
 	//~ resx = 512*2;
 	//~ resy = 512*2;
 }
@@ -144,19 +144,19 @@ vec4f blob2d(double x, double y) {
 	//~ the centre point for each blob
 	vec2d move1 = vec2d(cos(time * 4.5) * 0.4, sin(time * 1.5) * 0.4);
 	vec2d move2 = vec2d(cos(time * 2.0) * 0.4, sin(time * 3.0) * 0.4);
-	//~ vec2d move3 = vec2d(cos(time * 7.0) * 0.4, sin(time * 2.0) * 0.4);
+	vec2d move3 = vec2d(cos(time * 7.0) * 0.4, sin(time * 2.0) * 0.4);
 	//~ vec2d move4 = vec2d(cos(time * 2.0) * 0.4, sin(time * 4.3) * 0.4);
 
 	//~ radius for each blob
 	double r1 = dot(sub(p, move1), sub(p, move1)) * 8;
 	double r2 = dot(sub(p, move2), sub(p, move2)) * 16;
-	//~ double r3 = dot(sub(p, move3), sub(p, move3)) * 32;
+	double r3 = dot(sub(p, move3), sub(p, move3)) * 32;
 	//~ double r4 = dot(sub(p, move4), sub(p, move4)) * 64;
 
 	//~ sum the meatballs
 	double metaball = (1.0 / Math.max(r1, 1.)) + (1.0 / Math.max(r2, 1.));
-	//~ metaball += 1.0 / max(r3, 1.);
-	//~ metaball += 1.0 / max(r4, 1.);
+	metaball += 1.0 / Math.max(r3, 1.);
+	//~ metaball += 1.0 / Math.max(r4, 1.);
 
 	//~ alter the cut-off power
 	//~ set the output color

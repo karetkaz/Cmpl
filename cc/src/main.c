@@ -332,7 +332,7 @@ static int importLib(state rt, const char* path) {
 static symn printvars = NULL;
 //~ static int haltVerbose(libcArgs rt);
 static void printGlobals(FILE* out, state rt, int all);
-static int dbgCon(state, int pu, void* ip, long* sp, int ss);
+static int dbgCon(state, int pu, void* ip, void* sp, int ss, char* err);
 
 int program(int argc, char* argv[]) {
 	char* stdlib = (char*)STDLIB;
@@ -362,7 +362,7 @@ int program(int argc, char* argv[]) {
 
 	char* amem = paddptr(mem, rt_size);
 	state rt = rtInit(amem, sizeof(mem) - (amem - mem));
-	int (*dbg)(state, int pu, void* ip, long* sp, int ss) = NULL;
+	int (*dbg)(state, int pu, void* ip, void* sp, int ss, char* err) = NULL;
 
 	if (rt == NULL) {
 		fatal("initializing runtime context.");
@@ -794,12 +794,18 @@ static void printGlobals(FILE* out, state rt, int all) {
 	return 0;
 }*/
 
-static int dbgCon(state rt, int pu, void* ip, long* sp, int ss) {
+static int dbgCon(state rt, int pu, void* ip, void* sp, int ss, char* err) {
 	static char buff[1024];
 	static char cmd = 'N';
 	dbgInfo dbg;
 	char* arg;
 	int IP;
+
+	if (err != NULL) {
+		error(rt, NULL, 0, "exec: %s(%?d):[sp%02d]@%.*A rw@%06x", err, pu, ss, vmOffset(rt, ip), ip);
+		logTrace(rt, 1, -1, 100);
+		return -1;
+	}
 
 	if (ip == NULL) {
 		return 0;
@@ -814,7 +820,7 @@ static int dbgCon(state rt, int pu, void* ip, long* sp, int ss) {
 		fputfmt(stdout, "\n");
 	}
 
-	IP = ((char*)ip) - ((char*)rt->_mem);
+	IP = vmOffset(rt, ip);
 	dbg = getCodeMapping(rt, IP);
 	if (dbg != NULL) {
 		int32_t SP = ss > 0 ? *(int32_t*)sp : 0xbadbad;
@@ -908,7 +914,7 @@ static int dbgCon(state rt, int pu, void* ip, long* sp, int ss) {
 			case 's' : {
 				int i;
 				for (i = 0; i < ss; i++) {
-					stkval* v = (stkval*)&sp[i];
+					stkval* v = (stkval*)&((long*)sp)[i];
 					fputfmt(stdout, "\tsp(%d): {i32(%d), f32(%g), i64(%D), f64(%G)}\n", i, v->i4, v->f4, v->i8, v->f8);
 				}
 			} break;

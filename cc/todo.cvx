@@ -25,7 +25,7 @@ struct Biorithm {
 //~ println(millis());
 //~ */
 
-/* System.io
+//~ /+ System.io
 
 define byte = uint8;
 struct Stream: object {
@@ -41,6 +41,11 @@ struct OutputStream: Stream {
 	const void flush(Stream stream);
 }
 
+/** extending a class
+ a class can be extended from another class, or from an object.
+ by extendig from a class, the size of the extended class will be the base class + the size of new fields.
+ by extendig from an object, the new class will have a reference to that instance.
+*/
 //?: struct FileInputStream: InputStream(File.close, File.read) {const File stream;}
 
 struct FileInputStream: InputStream {
@@ -52,7 +57,8 @@ struct FileInputStream: InputStream {
 int sizeofFileInputStream = sizeof(FileInputStream);
 FileInputStream fis = emit(FileInputStream, memmgr(null, sizeof(FileInputStream)));
 
-/*struct Stream: InputStream + OutputStream;
+
+/+struct Stream: InputStream + OutputStream;
 	> TeeStream: Stream
 	> PipeStream: Stream
 	> NetworkStream: Stream
@@ -99,8 +105,8 @@ struct File: Path {
 struct Directory: Path {
 	list, make, remove(recursive)
 }
-
-*/
+//~ +/
+//~ +/
 
 /+ TODO: vs studio BUG
 string decodedFile = "out.txt";
@@ -112,14 +118,9 @@ debug("file", variant(decodedFile));
 //~ int b = 6;
 //~ int c = foo(a, b);
 
-enum x:int64{
-	a;b;c;
-};
-
-int A = x.a;
-int B = x.b;
-int C = x.c;
-
-static struct alma:1 {
-
+int a() {
+	int b() {
+		return 'b';
+	}
+	return 'a';
 }

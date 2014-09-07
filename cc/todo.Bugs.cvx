@@ -3,11 +3,15 @@
 //~ BUG: function with empty body does not generate the return instruction.
 //~ BUG: array of references
 //~ BUG: void alma(int a) {static int A = a;}
-/+~ BUG: it is posible to declare functions with (? different type ?) arguments:
-	void setzero(int vec[4]) {...}
-	void setzero(int vec[]) {...}
-//~ +/
+/+~ FIXED: it is posible to declare functions with (? different type ?) arguments:
+	void setzero(int vec[]) {}
+	void setzero(int vec[5]) {}
 
+//~ +/
+//~ /+~ BUG: invalid slice size
+int arr2[15];			// array
+int arr3[] = arr2;		// slice
+//~ +/
 //! TODO: assign null to array: int a[] = null;
 //! TODO: assign null to variant: variant var = null;
 //! TODO: varargs: int min(int first, int rest...) {...}
@@ -179,7 +183,7 @@ refs.f();
 
 //~ +/
 
-//~ /+ BUG: function returning reference or string type.
+/+ BUG: function returning reference or string type.
 //~ define sizeof(typename type) = int(type.size);
 //~ define new(typename type) = memmgr(null, type.size);
 

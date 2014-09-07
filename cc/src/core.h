@@ -237,8 +237,8 @@ struct symNode {
 	int32_t	line;		// declared on line
 	int32_t	colp;		// declared on column
 	int32_t nest;		// declaration level
-	int32_t	size;		// type var or function size.
-	int32_t	offs;		// address of variable.
+	int32_t	size;		// variable or function size.
+	int32_t	offs;		// address of variable or function.
 
 	symn	type;		// base type of TYPE_ref/TYPE_arr/function (void, int, float, struct, ...)
 
@@ -347,6 +347,7 @@ typedef struct dbgInfo {
 /// Compiler context
 struct ccStateRec {
 	state	s;
+	symn	gdef;		// all static variables and functions
 	symn	defs;		// all definitions
 	libc	libc;		// installed libcalls
 	symn	func;		// functions level stack
@@ -416,7 +417,7 @@ struct ccStateRec {
 // TODO: merge this somehow with libcArgs and cell into exeState
 struct dbgStateRec {
 
-	int (*dbug)(state, int pu, void* ip, long* sptr, int scnt);
+	int (*dbug)(state, int pu, void* ip, void* sp, int ss, char* err);
 	struct arrBuffer codeMap;
 };
 
@@ -736,9 +737,10 @@ dbgInfo dbgMapCode(state rt, astn ast, int start, int end);
 
 int logTrace(state rt, int ident, int startlevel, int tracelevel);
 //~ disable warning messages
-#ifdef _MSC_VER
+/*???: #ifdef _MSC_VER
 #pragma warning(disable: 4996)
 #endif
+*/
 
 static inline void _abort() {
 	//~ abort();

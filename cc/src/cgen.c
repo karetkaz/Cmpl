@@ -2262,10 +2262,10 @@ int gencode(state rt, int mode) {
 	 *		// ...
 	 *	}
 	 */
-	if (rt->gdef != NULL) {
+	if (cc->gdef != NULL) {
 		symn ng, pg = NULL;
 
-		for (ng = rt->gdef; ng; ng = ng->gdef) {
+		for (ng = cc->gdef; ng; ng = ng->gdef) {
 			symn Ng, Pg = NULL;
 
 			for (Ng = ng; Ng; Ng = Ng->gdef) {
@@ -2283,7 +2283,7 @@ int gencode(state rt, int mode) {
 					pg->gdef = Ng;
 				}
 				else {
-					rt->gdef = Ng;
+					cc->gdef = Ng;
 					break;
 				}
 				ng = pg;
@@ -2304,7 +2304,7 @@ int gencode(state rt, int mode) {
 		dieif(rt->_beg >= rt->_end, "memory overrun");
 
 		for (lc = cc->libc; lc; lc = lc->next) {
-			// relocate libcall offsets to be uniq.
+			// relocate libcall offsets to be unique.
 			lc->sym->offs = vmOffset(rt, &calls[lc->pos]);
 			lc->sym->size = sizeof(struct libc);
 			calls[lc->pos] = *lc;
@@ -2348,7 +2348,7 @@ int gencode(state rt, int mode) {
 		astn staticinitializers = newnode(cc, STMT_beg);
 
 		// generate global and static variables & functions
-		for (var = rt->gdef; var; var = var->gdef) {
+		for (var = cc->gdef; var; var = var->gdef) {
 
 			// exclude null
 			if (var == rt->cc->null_ref)
@@ -2372,7 +2372,7 @@ int gencode(state rt, int mode) {
 				int seg = emitopc(rt, markIP);
 
 				if (!var->init) {
-					debug("`%T` will be skipped", var);
+					dieif(1, "`%T` will be skipped", var);
 					continue;
 				}
 
@@ -2505,8 +2505,9 @@ int gencode(state rt, int mode) {
 	// program entry point
 	rt->vm.pc = Lmain;
 
-	dieif(rt->gdef != rt->defs, "globals are not the same with defs");
+	dieif(rt->defs != cc->gdef, "globals are not the same with defs");
 
+	// buils the initialization function.
 	rt->init->file = NULL;
 	rt->init->line = 0;
 	rt->init->kind = TYPE_ref;

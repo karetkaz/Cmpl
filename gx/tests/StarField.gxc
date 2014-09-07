@@ -1,8 +1,8 @@
 // star field
 enum Window {
 	draw = RenderMode.swap_buff;
-	resx = 512;
-	resy = 512;
+	resx = 812;
+	resy = 812;
 }
 
 struct Star {
@@ -80,7 +80,7 @@ void drawCB() {
 		}
 
 		define ps = Math.max(int32(0x200 / stars[i].zpos), 2);
-		fillRect(offScreen, tempx, tempy, tempx + ps, tempy + ps, 0xffffff);
+		fillOval(offScreen, tempx, tempy, tempx + ps, tempy + ps, 0xffffff);
 	}
 
 }

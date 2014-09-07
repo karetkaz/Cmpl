@@ -490,7 +490,7 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 			}
 		}
 
-		/* TODO: eval Arithmetic using vm.
+		//* TODO: eval Arithmetic using vm.
 		else if (opc == opc_not) {
 			ip = getip(rt, rt->vm.pc);
 			if (ip->opc == opc_not) {
@@ -609,7 +609,7 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 			}
 		}
 
-		// TODO: eval Conversions using vm.
+		//* TODO: eval Conversions using vm.
 		else if (opc == u32_i64) {
 			ip = getip(rt, rt->vm.pc);
 			//~ if (ip->opc == opc_ldz2) { ... }
@@ -659,7 +659,8 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 				arg.i8 = ip->arg.i8;
 				opc = opc_ldc4;
 				rollbackPc(rt);
-				dieif(ip->arg.i8 != arg.i4, "inexact cast: %D => %d", ip->arg.i8, arg.i4);
+				//TODO: dieif(ip->arg.i8 != arg.i4, "inexact cast: %D => %d", ip->arg.i8, arg.i4);
+				dieif(ip->arg.i8 != arg.i4 && ip->arg.i8 != arg.u4, "inexact cast: %D => %d", ip->arg.i8, arg.i4);
 			}
 		}
 		else if (opc == i64_f32) {
@@ -957,14 +958,6 @@ static inline void logProc(cell pu, int cp, char* msg) {
 	(void)msg;
 }
 
-// TODO: to be removed.
-//~ static inline void dbugerr2(state rt, char* error_msg, int error_code, cell cpu, void* ip, int ss) {
-static inline void dbugerr2(state rt, char *file, int line, char* error_msg, int error_code, cell cpu, void* ip, int ss) {
-	error(rt, file, line, "exec: %s(%?d):[sp%02d]@%.*A rw@%06x", error_msg, error_code, ss, vmOffset(rt, ip), ip);
-	logTrace(rt, 1, -1, 100);
-	(void)cpu;
-}
-#define dbugerr(rt, error_msg, error_code, cpu, ip, ss) dbugerr2(rt, __FILE__, __LINE__, error_msg, error_code, cpu, ip, ss)
 /// Try to start a new child cell for task.
 static inline int task(cell pu, int n, int master, int cl) {
 	// find an empty cell
@@ -1057,13 +1050,15 @@ static inline int dotrace(state rt, void* ip, void* sp) {
 }
 
 /// Private dummy debug function.
-static int dbgDummy(state rt, int pu, void *ip, long* sp, int ss) {
-	return 0;
-	(void)rt;
-	(void)pu;
-	(void)ip;
+static int dbgDummy(state rt, int pu, void *ip, void* sp, int ss, char* err) {
+	if (err != NULL) {
+		// TODO: get file and line from debug information.
+		error(rt, NULL, 0, "exec: %s(%?d):[sp%02d]@%.*A rw@%06x", err, pu, ss, vmOffset(rt, ip), ip);
+		logTrace(rt, 1, -1, 100);
+		return -1;
+	}
 	(void)sp;
-	(void)ss;
+	return 0;
 }
 
 /**
@@ -1072,9 +1067,10 @@ static int dbgDummy(state rt, int pu, void *ip, long* sp, int ss) {
  * @param pu Cell to execute on.
  * @param fun Executing function.
  * @param extra Extra data for libcalls.
+ * @param dbg function which is executed after each instruction or on error.
  * @return Error code of execution, 0 on success.
  */
-static int exec(state rt, cell pu, symn fun, void* extra) {
+static int exec(state rt, cell pu, symn fun, void* extra, int dbg(state, int pu, void *ip, void* sp, int ss, char* err)) {
 	int err_code = 0;
 
 	const int cc = 1;
@@ -1085,15 +1081,18 @@ static int exec(state rt, cell pu, symn fun, void* extra) {
 	const memptr mp = (void*)rt->_mem;
 	const stkptr st = (void*)(pu->bp + pu->ss);
 
-	if (rt->dbg != NULL) {
+	// run in debug mode if the specified function is not null or 
+	if (rt->dbg != NULL || dbg != NULL) {
 		const stkptr spMin = (stkptr)(pu->bp);
 		const stkptr spMax = (stkptr)(pu->bp + pu->ss);
 		const bcde ipMin = (bcde)(rt->_mem + rt->vm.ro);
 		const bcde ipMax = (bcde)(rt->_mem + rt->vm.px + 2);
-		int (*dbg) (state, int pu, void *ip, long* sptr, int scnt) = rt->dbg->dbug;
 
 		if (dbg == NULL) {
-			dbg = dbgDummy;
+			dbg = rt->dbg->dbug;
+			if (dbg == NULL) {
+				dbg = dbgDummy;
+			}
 		}
 		// invoked function will return with a ret instruction
 		dotrace(rt, NULL, pu->sp);
@@ -1102,49 +1101,44 @@ static int exec(state rt, cell pu, symn fun, void* extra) {
 			register stkptr sp = (stkptr)pu->sp;
 
 			if (ip >= ipMax || ip < ipMin) {
-				dbugerr(rt, "invalid instruction pointer", vmOffset(rt, ip), pu, ip, st - sp);
-				return -10;
+				err_code = vmOffset(rt, ip);
+				return dbg(rt, err_code, ip, sp, pu->ss, "invalid instruction pointer");
 			}
 			if (sp > spMax || sp < spMin) {
-				dbugerr(rt, "invalid stack pointer", vmOffset(rt, sp), pu, ip, st - sp);
-				return -11;
+				err_code = vmOffset(rt, sp);
+				return dbg(rt, err_code, ip, sp, pu->ss, "invalid stack pointer");
 			}
-			if (dbg(rt, 0, ip, (long*)sp, st - sp)) {
+			if ((err_code = dbg(rt, 0, ip, sp, st - sp, NULL)) != 0) {
 				// execution aborted
-				return -9;
+				return err_code;
 			}
 			switch (ip->opc) {
 				dbg_stop_vm:	// halt virtual machine
 					return 0;
 
 				dbg_error_opc:
-					dbugerr(rt, "invalid opcode", err_code, pu, ip, st - sp);
-					return -1;
+					return dbg(rt, err_code, ip, sp, pu->ss, "invalid opcode");
 
 				dbg_error_ovf:
-					dbugerr(rt, "stack overflow", err_code, pu, ip, st - sp);
-					return -2;
+					return dbg(rt, err_code, ip, sp, pu->ss, "stack overflow");
 
 				dbg_error_trace_ovf:
-					dbugerr(rt, "trace overflow", err_code, pu, ip, st - sp);
-					return -2;
+					return dbg(rt, err_code, ip, sp, pu->ss, "trace overflow");
 
 				dbg_error_mem:
-					dbugerr(rt, "segmentation fault", err_code, pu, ip, st - sp);
-					return -3;
+					return dbg(rt, err_code, ip, sp, pu->ss, "segmentation fault");
 
 				dbg_error_div_flt:
-					dbugerr(rt, "division by zero", err_code, pu, ip, st - sp);
+					dbg(rt, err_code, ip, sp, pu->ss, "division by zero");
 					// continue execution on floating point division by zero.
 					break;
 
 				dbg_error_div:
-					dbugerr(rt, "division by zero", err_code, pu, ip, st - sp);
-					return -4;
+					return dbg(rt, err_code, ip, sp, pu->ss, "division by zero");
 
 				dbg_error_libc:
 					error(rt, NULL, 0, "%d returned by libcall[%d]: %+T", err_code, ip->rel, libcvec[ip->rel].sym);
-					return -5;
+					return dbg(rt, err_code, ip, sp, pu->ss, "libcall error");
 
 				#define NEXT(__IP, __SP, __CHK) pu->sp -= vm_size * (__SP); pu->ip += (__IP);
 				#define STOP(__ERR, __CHK, __ERC) do {if (__CHK) {err_code = __ERC; goto dbg_##__ERR;}} while(0)
@@ -1153,10 +1147,11 @@ static int exec(state rt, cell pu, symn fun, void* extra) {
 				#include "code.inl"
 			}
 		}
+		return 0;
 	}
 
 	// code for maximum execution speed
-	else for ( ; ; ) {
+	for ( ; ; ) {
 		register bcde ip = (bcde)pu->ip;
 		register stkptr sp = (stkptr)pu->sp;
 		switch (ip->opc) {
@@ -1164,29 +1159,24 @@ static int exec(state rt, cell pu, symn fun, void* extra) {
 				return 0;
 
 			error_opc:
-				dbugerr(rt, "invalid opcode", err_code, pu, ip, st - sp);
-				return -1;
+				return dbgDummy(rt, err_code, ip, sp, pu->ss, "invalid opcode");
 
 			error_ovf:
-				dbugerr(rt, "stack overflow", err_code, pu, ip, st - sp);
-				return -2;
+				return dbgDummy(rt, err_code, ip, sp, pu->ss, "stack overflow");
 
 			error_mem:
-				dbugerr(rt, "segmentation fault", err_code, pu, ip, st - sp);
-				return -3;
+				return dbgDummy(rt, err_code, ip, sp, pu->ss, "segmentation fault");
 
 			error_div_flt:
-				dbugerr(rt, "division by zero", err_code, pu, ip, st - sp);
+				dbgDummy(rt, err_code, ip, sp, pu->ss, "division by zero");
 				// continue execution on floating point division by zero.
 				break;
 
 			error_div:
-				dbugerr(rt, "division by zero", err_code, pu, ip, st - sp);
-				return -4;
+				return dbgDummy(rt, err_code, ip, sp, pu->ss, "division by zero");
 
 			error_libc:
-				error(rt, NULL, 0, "%d returned by libcall[%d]: %+T", err_code, ip->rel, libcvec[ip->rel].sym);
-				return err_code;
+				return dbgDummy(rt, err_code, ip, sp, pu->ss, "libcall error");
 
 			#define NEXT(__IP, __SP, __CHK) {pu->sp -= vm_size * (__SP); pu->ip += (__IP);}
 			#define STOP(__ERR, __CHK, __ERC) if (__CHK) {err_code = __ERC; goto __ERR;}
@@ -1227,7 +1217,7 @@ int invoke(state rt, symn fun, void* res, void* args, void* extra) {
 
 	pu->ip = getip(rt, fun->offs);
 
-	result = exec(rt, pu, fun, extra);
+	result = exec(rt, pu, fun, extra, NULL);
 	if (result == 0 && res != NULL) {
 		memcpy(res, resp, ressize);
 	}
@@ -1241,7 +1231,7 @@ int invoke(state rt, symn fun, void* res, void* args, void* extra) {
 	return result;
 }
 int execute(state rt, void* extra, int ss) {
-	// TODO: cells should be in runtimes read only memory?
+	// TODO: cells should be in runtime read only memory?
 	cell pu;
 
 	// invalidate compiler
@@ -1273,7 +1263,7 @@ int execute(state rt, void* extra, int ss) {
 	}
 
 	// TODO argc, argv
-	return exec(rt, pu, rt->init, extra);
+	return exec(rt, pu, rt->init, extra, NULL);
 }
 
 
@@ -1601,6 +1591,7 @@ void fputval(state rt, FILE* fout, symn var, stkval* ref, int level, int mode) {
 			if (fmt != NULL) {
 				switch (typ->size) {
 					default:
+						// there should be no formated(<=> builtin) type matching none of this size.
 						fputfmt(fout, "!-!@%?c%06x, size: %d", var->stat ? 0 : '+', var->offs, var->size);
 						break;
 
@@ -1667,6 +1658,7 @@ void fputval(state rt, FILE* fout, symn var, stkval* ref, int level, int mode) {
 				fputfmt(fout, "\n%I}", level);
 			}
 			else {
+				// empty struct.
 				fputfmt(fout, "@%?c%06x, size: %d", var->stat ? 0 : '+', var->offs, var->size);
 			}
 		} break;

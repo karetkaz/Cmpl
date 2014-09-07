@@ -36,14 +36,12 @@ void meshGen(gxSurf heihgtMap) {
 	}
 }
 
-define division = 512/2;
+define division = 512/4;
 string img = "media/images/hm.jpg";
-//~ string img = "C:/Users/User/Desktop/disp.jpg";
-//~ string tex = "C:/Users/User/Desktop/disp.jpg";
 define resize(gxSurf src, int width, int height) = zoomSurf(gxSurf(width, height), null, src, null, 1);
 
 meshGen(resize(gxSurf(img), division, division));
-//~ mesh.Texture(gxSurf(tex));
+//~ mesh.Texture(gxSurf(img));
 
 mesh.Center(2);
 mesh.Normalize(0);

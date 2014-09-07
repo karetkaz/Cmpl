@@ -187,9 +187,23 @@ void setupBiorithm(int _daysToShow, Date _now, Date _birth) {
 		ob = btn;
 	}
 
+	void onKey(int32 btn, int32 ext) {
+		if (btn == 27) {
+			Gui.exitLoop();
+		}
+		if (btn == '[') {
+			pos -= Window.resx / 2;
+			reDraw = true;
+		}
+		if (btn == ']') {
+			pos += Window.resx / 2;
+			reDraw = true;
+		}
+	}
 	// set callbacks and initialize static variables
 	Gui.setDrawCallback(onDrawScreen);
 	Gui.setMouseHandler(onMouseAction);
+	Gui.setKeyboardHandler(onKey);
 	daysToShow = _daysToShow;
 	birth = _birth;
 	now = _now;

@@ -356,10 +356,12 @@ static symn promote(symn lht, symn rht) {
 				case TYPE_bit:
 				case TYPE_int:
 					//~ TODO: bool + int is bool; if sizeof(bool) == 4
-					if (lht->cast == TYPE_bit && lht->size == rht->size)
+					if (lht->cast == TYPE_bit && lht->size == rht->size) {
 						result = rht;
-					else
+					}
+					else {
 						result = lht->size >= rht->size ? lht : rht;
+					}
 					break;
 
 				case TYPE_flt:
@@ -618,7 +620,7 @@ symn lookup(ccState cc, symn sym, astn ref, astn args, int raise) {
 								isBasicCast = 1;
 							}
 							// variant(variable)
-							else if (sym2 == cc->s->type_var) {
+							else if (sym2 == cc->type_var) {
 								isBasicCast = 1;
 							}
 							break;
@@ -750,8 +752,9 @@ symn declare(ccState s, ccToken kind, astn tag, symn typ) {
 				break;
 
 			case TYPE_rec:			// typedefn struct
-				if (typ != NULL)
+				if (typ != NULL) {
 					def->size = typ->size;
+				}
 				break;
 
 			case TYPE_def:			// typename
@@ -816,8 +819,9 @@ long sizeOf(symn sym) {
 
 		case EMIT_opc:
 		//~ case TYPE_rec:
-			if (sym->cast == TYPE_ref)
+			if (sym->cast == TYPE_ref) {
 				return vm_size;
+			}
 			return sym->size;
 		case TYPE_def:
 		case TYPE_ref: switch (sym->cast) {
@@ -1563,7 +1567,7 @@ int fixargs(symn sym, int align, int stbeg) {
 
 		//~ HACK: static sized array types are passed by reference.
 		if (isCall && arg->type->kind == TYPE_arr) {
-			if (arg->type->init == NULL) {		//~ dinamic size arrays are passed by pointer+length
+			if (arg->type->init == NULL) {		//~ dinamic size arrays are passed as pointer+length
 				arg->cast = TYPE_arr;
 				arg->size = 2 * vm_size;
 			}
@@ -1660,8 +1664,8 @@ symn leave(ccState cc, symn dcl, int mkstatic) {
 
 		if (!cc->siff) {
 			if (sym->stat && sym->gdef == NULL) {
-				sym->gdef = rt->gdef;
-				rt->gdef = sym;
+				sym->gdef = cc->gdef;
+				cc->gdef = sym;
 			}
 		}
 

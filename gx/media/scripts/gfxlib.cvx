@@ -299,20 +299,8 @@ gxSurf tileSurf(gxSurf dst, int x, int y, gxSurf src, gxRect &roi) {
 }
 
 //#{ lookup table manipulations
-/* How it should be implemented ...
-void blendLut(int count, gxClut &lut, int ControlColors...) {
 
-	if (count > 256)
-		count = 256;
-
-	lut.count = count;
-	int dt = (ControlColors.Length - 1 << 16) / count;
-	for (int i = 0; i < count; i += 1) {
-		int t = i * dt;
-		lut.data[i] = rgbLerp16(ControlColors[t >> 16], ControlColors[(t >> 16) + 1], t & 0xffff);
-	}
-}*/
-
+//TODO: void blendLut(int count, gxClut &lut, int Colors...)
 void blendLut(int count, gxClut &lut, int Colors[]) {
 
 	if (count > 256)
@@ -327,6 +315,7 @@ void blendLut(int count, gxClut &lut, int Colors[]) {
 		lut.data[i] = rgbLerp16(c1, c2, t & 0xffff);
 	}
 }
+//TODO: define blendLut(gxClut &lut, int Colors[]) = blendLut(256, lut, Colors);
 void blendLut(gxClut &lut, int Colors[]) {
 	blendLut(256, lut, Colors);
 }
@@ -352,9 +341,9 @@ void lutBrightnessContrastGamma(gxClut &lut, int brightness, int contrast, doubl
 	double gval = 1. / gamma;
 	double cval = (255 + contrast) / 255.;
 
-	//~ bool doR = true;
-	//~ bool doG = true;
-	//~ bool doB = true;
+	//~ const bool doR = true;
+	//~ const bool doG = true;
+	//~ const bool doB = true;
 
 	lut.count = 256;
 	for (int idx = 0; idx < 256; idx += 1) {
@@ -375,11 +364,11 @@ gxSurf lut2Surf(gxSurf dst, gxClut &lut, int bg) {
 	if (width(dst) == 256) {
 		int imgheight = height(dst);
 		fillRect(result, 0, 0, 32768, 32768, bg);
-		for(int j = 0; j < 256; j += 1) {
+		for (int j = 0; j < 256; j += 1) {
 			//~ gx_vline(result, j, 255-lut->data[j].a, 256, k);
-			setPixel(result, j, (imgheight * (255-rch(lut.data[j]))) / 255, r);
-			setPixel(result, j, (imgheight * (255-gch(lut.data[j]))) / 255, g);
-			setPixel(result, j, (imgheight * (255-bch(lut.data[j]))) / 255, b);
+			setPixel(result, j, (imgheight * (255 - rch(lut.data[j]))) / 255, r);
+			setPixel(result, j, (imgheight * (255 - gch(lut.data[j]))) / 255, g);
+			setPixel(result, j, (imgheight * (255 - bch(lut.data[j]))) / 255, b);
 		}
 	}
 }
@@ -457,7 +446,7 @@ void meshGen(int sdiv, bool sclosed, int tdiv, bool tclosed, void pos(double &x,
 
 				define usev3 = true;
 
-				static if (usev3) {		// slower
+				static if (usev3) {		// slower (struct implementation)
 
 					struct Vec3{double x; double y; double z;}
 
@@ -490,7 +479,7 @@ void meshGen(int sdiv, bool sclosed, int tdiv, bool tclosed, void pos(double &x,
 					mesh.Nrm(vtx, n.x, n.y, n.z);
 					mesh.Tex(vtx, s, t);
 				}
-				static if (!usev3) {	// faster
+				static if (!usev3) {	// faster (array implementation)
 					double p[3];
 					double n[3];
 					double ds[3];

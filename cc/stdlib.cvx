@@ -1063,7 +1063,7 @@ int bitswp(uint32 x) {
 static if (importstd.print) {
 
 define print(bool arg)      = print(arg ? "true" : "false");
-define print(char arg)      = print("%c", int64(arg));
+//~ define print(char arg)      = print("%c", int64(arg));
 define print(int8 arg)      = print("%d", int64(arg));
 define print(int16 arg)     = print("%d", int64(arg));
 define print(int32 arg)     = print("%d", int64(arg));
@@ -1077,7 +1077,7 @@ define print(float64 arg)   = print("%F", emit(i64, f64(arg)));
 define println()            = print("\n");
 //~ define println(bool arg)    = print("%d\n", int64(arg));
 define println(bool arg)    = print(arg ? "true\n" : "false\n");
-define println(char arg)    = print("%c\n", int64(arg));
+//~ define println(char arg)    = print("%c\n", int64(arg));
 define println(int8 arg)    = print("%d\n", int64(arg));
 define println(int16 arg)   = print("%d\n", int64(arg));
 define println(int32 arg)   = print("%d\n", int64(arg));

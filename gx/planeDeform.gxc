@@ -5,8 +5,8 @@ enum Window {
 	resy = 512;
 }
 
-//~ gxSurf srcImg = gxSurf("media/images/download.jpg");
-gxSurf srcImg = gxSurf("media/images/nol.bmp");
+gxSurf srcImg = gxSurf("media/images/download.jpg");
+//~ gxSurf srcImg = gxSurf("media/images/nol.bmp");
 
 define WIDTH  = 128;
 define HEIGHT = WIDTH;
@@ -33,6 +33,76 @@ define tex2d(gxSurf src, float64 u, float64 v, float64 w) = rgbscale(tex2d(src, 
 
 define nz(float64 x) = Math.nz(x, 1e-20);
 define atan(float64 x, float64 y) = atan2(x, y);
+
+void setup(rgb _func(float64 x, float64 y, float64 t)) {
+
+	static rgb func(float64 x, float64 y, float64 t) = null;
+	static int64 begTime;
+
+	static int mouseX = Window.resx / 2;
+	static int mouseY = Window.resy / 2;
+
+	static bool snapshot = false;
+	static bool animate = true;
+
+	void mouseCB(int btn, int x, int y) {
+		static int omb = 0;
+
+		if (btn != omb) {
+			if (btn == 0) { // onRelase(btn:1)
+				//~ debug("button released", variant(&animate));
+				snapshot = !(animate = !animate);
+			}
+		}
+		if (btn == 1 && omb == 1) {
+			mouseX = x;
+			mouseY = y;
+			animate = true;
+		}
+		omb = btn;
+	}
+
+	// for each frame
+	void drawCB() {
+		float64 time = (millis() - begTime) / 1000.;
+
+		if (snapshot) {
+			animate = false;
+			snapshot = false;
+			int64 start = millis();
+			for (int yi = 0; yi < Window.resy; yi += 1) {
+				float64 y = double(yi - mouseY) / Window.resy * 2;
+				for (int xi = 0; xi < Window.resx; xi += 1) {
+					float64 x = double(xi - mouseX) / Window.resx * 2;
+					setPixel(offScreen, xi, yi, int(func(x, y, time)));
+				}
+			}
+			//~ bmpWrite(offScreen, "out-2.bmp");
+		}
+		if (animate) {
+			float64 cx = (mouseX * WIDTH / Window.resx);
+			float64 cy = (mouseY * HEIGHT / Window.resy);
+			for (int yi = 0; yi < HEIGHT; yi += 1) {
+				float64 y = (yi - cy) / HEIGHT * 2;
+				for (int xi = 0; xi < WIDTH; xi += 1) {
+					float64 x = (xi - cx) / WIDTH * 2;
+					setPixel(dstImg, xi, yi, int(func(x, y, time)));
+				}
+			}
+			zoomSurf(offScreen, null, dstImg, null, 1);
+			// post a redraw for animation
+			Gui.Repaint();
+
+		}
+	}
+
+	func = _func;
+	begTime = millis();
+	Gui.setDrawCallback(drawCB);
+	Gui.setMouseHandler(mouseCB);
+}
+
+/// functions for animations.
 
 rgb plasma_x(float64 x, float64 y, float64 time) {
 	//~ time *= .2;
@@ -239,100 +309,4 @@ rgb blob2d(float64 x, float64 y, float64 time) {
 	return gray(Math.clamp(pow(metaball, 8.0), 0., 1.));
 }
 
-void setup(rgb _func(float64 x, float64 y, float64 t)) {
-
-	static rgb func(float64 x, float64 y, float64 t) = null;
-	static int64 begTime;
-
-	static int mouseX = Window.resx / 2;
-	static int mouseY = Window.resy / 2;
-
-	static bool snapshot = false;
-	static bool animate = true;
-
-	void mouseCB(int btn, int x, int y) {
-		static int omb = 0;
-
-		if (btn != omb) {
-			if (btn == 0) { // onRelase(btn:1)
-				//~ debug("button released", variant(&animate));
-				snapshot = !(animate = !animate);
-			}
-		}
-		if (btn == 1 && omb == 1) {
-			mouseX = x;
-			mouseY = y;
-			animate = true;
-		}
-		omb = btn;
-	}
-
-	// for each frame
-	void drawCB() {
-		float64 time = (millis() - begTime) / 1000.;
-
-		if (snapshot) {
-			animate = false;
-			snapshot = false;
-			int64 start = millis();
-			for (int yi = 0; yi < Window.resy; yi += 1) {
-				float64 y = double(yi - mouseY) / Window.resy * 2;
-				for (int xi = 0; xi < Window.resx; xi += 1) {
-					float64 x = double(xi - mouseX) / Window.resx * 2;
-					setPixel(offScreen, xi, yi, int(func(x, y, time)));
-				}
-			}
-			//~ bmpWrite(offScreen, "out-2.bmp");
-		}
-		if (animate) {
-			float64 cx = (mouseX * WIDTH / Window.resx);
-			float64 cy = (mouseY * HEIGHT / Window.resy);
-			for (int yi = 0; yi < HEIGHT; yi += 1) {
-				float64 y = (yi - cy) / HEIGHT * 2;
-				for (int xi = 0; xi < WIDTH; xi += 1) {
-					float64 x = (xi - cx) / WIDTH * 2;
-					setPixel(dstImg, xi, yi, int(func(x, y, time)));
-				}
-			}
-			zoomSurf(offScreen, null, dstImg, null, 1);
-			// post a redraw for animation
-			Gui.Repaint();
-
-		}
-	}
-
-/*
-	static void mouseHandler(int btn, int x, int y) {
-		if (btn == 1) {
-			mouseX = x;
-			mouseY = y;
-		}
-	}
-
-	static void onDraw() {
-
-		float64 time = (millis() - begTime) / 1000.;
-		float64 cx = (mouseX * WIDTH / Window.resx);
-		float64 cy = (mouseY * HEIGHT / Window.resy);
-
-		//~ debug("time", variant(&time));
-		for (int yi = 0; yi < HEIGHT; yi += 1) {
-			float64 y = (yi - cy) / HEIGHT * 2;
-			for (int xi = 0; xi < WIDTH; xi += 1) {
-				float64 x = (xi - cx) / WIDTH * 2;
-				setPixel(dstImg, xi, yi, int(func(x, y, time)));
-			}
-		}
-
-		zoomSurf(offScreen, null, dstImg, null, 1);
-		// post a redraw for animation
-		Gui.Repaint();
-	}
-*/
-	func = _func;
-	begTime = millis();
-	Gui.setDrawCallback(drawCB);
-	Gui.setMouseHandler(mouseCB);
-}
-
-setup(vortex);
+setup(tunnel0);

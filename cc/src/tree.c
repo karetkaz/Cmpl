@@ -770,7 +770,7 @@ symn linkOf(astn ast) {
 		return linkOf(ast->op.lhso);
 	}
 
-	if ((ast->kind == TYPE_ref/* || ast->kind == TYPE_def*/) && ast->ref.link) {
+	if ((ast->kind == TYPE_ref || ast->kind == TYPE_def) && ast->ref.link) {
 		// skip type defs
 		symn lnk = ast->ref.link;
 		if (lnk->kind == TYPE_def && lnk->init != NULL && lnk->init->kind == TYPE_ref) {

@@ -19,10 +19,10 @@ struct hex32: int32;		//%%08x
 struct hex64: int64;		//%%016X
 struct bin32: int32;		//%%032b
 
-define print(hex32 arg) = print("%08x", int64(arg));
-define println(hex32 arg) = print("%08x\n", int64(arg));
-define print(hex64 arg) = print("%08X", int64(arg));
-define println(hex64 arg) = print("%016X\n", int64(arg));
+//~ define print(hex32 arg) = print("%08x", int64(arg));
+//~ define println(hex32 arg) = print("%08x\n", int64(arg));
+//~ define print(hex64 arg) = print("%08X", int64(arg));
+//~ define println(hex64 arg) = print("%016X\n", int64(arg));
 }
 
 static if (Test.Emit) {

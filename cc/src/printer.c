@@ -1459,7 +1459,7 @@ void dump(state rt, int mode, symn sym) {
 			fputfmt(logf, "}\n");
 		}
 		else {
-			for (sym = rt->gdef; sym; sym = sym->gdef) {
+			for (sym = rt->defs; sym; sym = sym->gdef) {
 				if (sym->kind == TYPE_ref && sym->call) {
 					symn param;
 					fputfmt(logf, "%-T [@%06x: %d] {\n", sym, sym->offs, sym->size);

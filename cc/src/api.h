@@ -56,7 +56,6 @@ struct stateRec {
 	FILE* logf;		// log file
 
 	symn  defs;		// global variables and functions
-	symn  gdef;		// TDOO: check if this is really needed: all static variables and functions
 	symn  init;		// the main initializer function.
 
 	// virtual machine state
@@ -91,7 +90,7 @@ struct stateRec {
 	 *  + break point lists
 	 */
 	dbgState dbg;
-	symn type_var;	// TODO: to be removed
+	symn type_var;	// TODO: to be removed, used only for printing.
 
 	/**
 	 * @brief External library support.

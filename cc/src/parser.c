@@ -65,7 +65,7 @@ Lexical elements
 
 //#{~~~~~~~~~ Input ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/**
+/** Fill some characters from the file.
  * @brief fill the memory buffer from file.
  * @param cc compiler context.
  * @return number of characters in buffer.
@@ -86,7 +86,7 @@ static int fillBuf(ccState cc) {
 	return cc->fin._cnt;
 }
 
-/**
+/** Read the next character.
  * @brief read the next character from input stream.
  * @param cc compiler context.
  * @return the next character or -1 on end, or error.
@@ -129,7 +129,7 @@ static int readChr(ccState cc) {
 	return chr;
 }
 
-/**
+/** Peek the next character.
  * @brief peek the next character from input stream.
  * @param cc compiler context.
  * @return the next character or -1 on end, or error.
@@ -141,7 +141,7 @@ static int peekChr(ccState cc) {
 	return cc->_chr;
 }
 
-/**
+/** Skip the next character.
  * @brief read the next character from input stream if it maches param chr.
  * @param cc compiler context.
  * @param chr filter: 0 matches everithing.
@@ -154,7 +154,7 @@ static int skipChr(ccState cc, int chr) {
 	return 0;
 }
 
-/**
+/** Push back a character.
  * @brief putback the character chr to be read next time.
  * @param cc compiler context.
  * @param chr the character to be pushed back.
@@ -168,7 +168,7 @@ static int backChr(ccState cc, int chr) {
 
 //#{~~~~~~~~~ Lexer ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-/**
+/** Calculate hash of string.
  * @brief calculate the hash of a string.
  * @param str string to be hashed.
  * @param len length of string.
@@ -254,7 +254,7 @@ unsigned rehash(const char* str, unsigned len) {
 	return hs ^ 0xffffffff;
 }
 
-/**
+/** Add string to string table.
  * @brief add string to string table.
  * @param cc compiler context.
  * @param str the string to be mapped.
@@ -312,7 +312,7 @@ char* mapstr(ccState cc, char* str, unsigned len/* = -1U*/, unsigned hash/* = -1
 	return str;
 }
 
-/**
+/** Read the next token.
  * @brief read the next token from input.
  * @param cc compiler context.
  * @param tok out parameter to be filled with data.
@@ -1194,7 +1194,7 @@ static int readTok(ccState cc, astn tok) {
 	return tok->kind;
 }
 
-/**
+/** Push back a token.
  * @brief put back token to be read next time.
  * @param cc compiler context.
  * @param tok the token to be pushed back.
@@ -1204,7 +1204,7 @@ static void backTok(ccState cc, astn tok) {
 	cc->_tok = tok;
 }
 
-/**
+/** Peek the next token.
  * @brief peek the next token from input.
  * @param cc compiler context.
  * @param kind filter: 0 matches everithing.
@@ -1225,7 +1225,7 @@ static astn peekTok(ccState cc, ccToken kind) {
 	return NULL;
 }
 
-/**
+/** Read the next token.
  * @brief read the next token from input.
  * @param cc compiler context.
  * @param kind filter: 0 matches everithing.
@@ -1241,7 +1241,7 @@ static astn next(ccState cc, ccToken kind) {
 	return 0;
 }
 
-/**
+/** Skip the next token.
  * @brief skip the next token.
  * @param cc compiler context.
  * @param kind filter: 0 matches everithing.
@@ -1299,7 +1299,7 @@ static int skiptok(ccState cc, ccToken kind, int raise) {
 }
 //#}
 
-/**
+/** Construct arguments.
  * @brief construct a new node for function arguments
  * @param cc compiler context.
  * @param lhs arguments or first argument.
@@ -1318,7 +1318,7 @@ static inline astn tagnode(ccState cc, char* id) {
 		if (ast != NULL) {
 			int slen = strlen(id);
 			ast->kind = TYPE_ref;
-			ast->type = ast->ref.link = 0;
+			ast->type = ast->ref.link = NULL;
 			ast->ref.hash = rehash(id, slen + 1) % TBLS;
 			ast->ref.name = mapstr(cc, id, slen + 1, ast->ref.hash);
 		}
@@ -1326,7 +1326,7 @@ static inline astn tagnode(ccState cc, char* id) {
 	return ast;
 }
 
-/**
+/** Add length property.
  * @brief add length property to array type
  * @param cc compiler context.
  * @param sym the symbol of the array.
@@ -1363,43 +1363,55 @@ static symn addLength(ccState cc, symn sym, astn init) {
 
 //~ TODO: move to type.c, does not work as expected.
 static void redefine(ccState cc, symn sym) {
+	struct astNode tag;
 	symn ptr;
 
-	if (!sym)
+	if (sym == NULL) {
 		return;
+	}
 
+	tag.kind = TYPE_ref;
+	// checking symbols with the same hash code.
 	for (ptr = sym->next; ptr; ptr = ptr->next) {
 		symn arg1 = ptr->prms;
 		symn arg2 = sym->prms;
 
-		if (!ptr->name)
+		// there should be no anonimus declarationd with this hash
+		if (ptr->name == NULL)
 			continue;
 
+		// may override default initializer
 		if (sym->call != ptr->call)
 			continue;
 
+		// hash may match but name be different.
 		if (strcmp(sym->name, ptr->name) != 0)
 			continue;
 
 		while (arg1 && arg2) {
-			if (arg1->type != arg2->type)
-				break;
-			if (arg1->call != arg2->call)
-				break;
+			tag.ref.link = arg1;
+			tag.type = arg1->type;
+			if (!canAssign(cc, arg2, &tag, 1)) {
+				tag.ref.link = arg2;
+				tag.type = arg2->type;
+				if (!canAssign(cc, arg1, &tag, 1)) {
+					break;
+				}
+			}
 			arg1 = arg1->next;
 			arg2 = arg2->next;
 		}
 
-		if (sym->call && (arg1 || arg2))
-			continue;
-
-		break;
+		if (arg1 == NULL && arg2 == NULL) {
+			break;
+		}
 	}
 
-	if (ptr && (ptr->nest >= sym->nest)) {
+	if (ptr != NULL && (ptr->nest >= sym->nest)) {
 		error(cc->s, sym->file, sym->line, "redefinition of `%-T`", sym);
-		if (ptr->file && ptr->line)
+		if (ptr->file && ptr->line) {
 			info(cc->s, ptr->file, ptr->line, "first defined here as `%-T`", ptr);
+		}
 	}
 }
 
@@ -2286,6 +2298,7 @@ static astn init_var(ccState cc, symn var) {
 				}
 
 				// int a[] = {1, 2, 3, 4, 5, 6};
+				// TODO:! var initialization parsing should not modify the variable.
 				if (base == typ->type && typ->init == NULL && var->cnst) {
 					typ->init = intnode(cc, nelem);
 					// ArraySize
@@ -2318,10 +2331,8 @@ static astn init_var(ccState cc, symn var) {
 					}
 				}
 
-				if (var->cast == TYPE_arr && var->init->kind == TYPE_str) {
-					//~ trace("alma %t: %T", var->cast, var);
-					//~ dieif(var->cast != TYPE_ref, "Error");
-					//~ var->cast = TYPE_ref;
+				// TODO:! var initialization parsing should not modify the variable.
+				if (var->cast == TYPE_arr) {
 					var->size = 2 * vm_size;
 				}
 
@@ -2370,7 +2381,7 @@ static astn decl_enum(ccState cc) {
 		return NULL;
 	}
 
-	tag = next(cc, TYPE_ref);
+	tag = next(cc, TYPE_ref);			// name
 
 	if (skip(cc, PNCT_cln)) {			// ':' base type
 		base = NULL;
@@ -2773,11 +2784,10 @@ static astn decl(ccState cc, int mode) {
 					trace("%+k", tag);
 					return NULL;
 				}
-				if (ref->size == 0) {
-					dieif(ref->size == 0, "FixMe: %+T", ref);
-				}
+
 			}
 		}
+		dieif(!ref->call && ref->size == 0, "FixMe: %-T", ref);
 
 		// for (int a : range(10, 20)) ...
 		if ((mode & decl_ItDecl) != 0) {
@@ -2992,73 +3002,78 @@ static astn stmt(ccState cc, int mode) {
 		if (!skip(cc, STMT_do)) {		// init or iterate
 			node->stmt.init = decl(cc, decl_NoDefs|decl_ItDecl);
 
-			if (!node->stmt.init) {
+			if (node->stmt.init == NULL) {
 				node->stmt.init = expr(cc, TYPE_vid);
 				skiptok(cc, STMT_do, 1);
 			}
-			//~ for (int a : range(0, 60)) {...}
 			else if (skip(cc, PNCT_cln)) {		// iterate
+				//~ for (Type value : iterable) {...}
 				astn iton = expr(cc, TYPE_vid); // iterate on expression
 
-				if (iton && iton->type) {
-					// iterator constructor: `iterator(range)`
-					astn tok = tagnode(cc, "iterator");
-					symn loc = cc->deft[tok->ref.hash];
-					symn sym = lookup(cc, loc, tok, iton, 0);
+				dieif(node->stmt.init->kind != TYPE_def, "declaration expected");
 
-					// next(.it, a);
+				if (iton != NULL && iton->type != NULL) {
+					// iterator step function.
 					astn itNext = NULL;
+					// variable to iterate with.
+					astn itVar = node->stmt.init;
+
+					// iterator initializer: `iterator(iterable)`
+					astn itCtor = tagnode(cc, "iterator");
+					symn sym = lookup(cc, cc->deft[itCtor->ref.hash], itCtor, iton, 0);
 
 					if (sym != NULL) {
-						// for (rangeIterator it : range(10, 40)) ...
-						if (sym->type == node->stmt.init->type) {
-							astn itVar = node->stmt.init;
+						// iterator constructor: `iterator(iterable)`
+						astn itInit = opnode(cc, OPER_fnc, itCtor, iton);
+						itInit->type = sym->type;
 
-							symn x = itVar->ref.link;	// TODO: linkOf(ast->stmt.init);
-							x->init = opnode(cc, OPER_fnc, tok, iton);
-							x->init->type = sym->type;
-							x->size = sym->type->size;
-							x->cast = TYPE_rec;
+						// for (Iterator it : iterable) ...
+						if (sym->type == itVar->type) {
+
+							// initialize iterator: Iterator it = iterator(iterable);
+							symn x = linkOf(itVar);
+							x->init = itInit;
 							sym = x;
 
-							itVar->kind = TYPE_def;
-							itVar->next = NULL;
-							// make the `next(it)` test
+							// iterate using the iterator function: `bool next(Iterator &it)`
 							itNext = opnode(cc, OPER_fnc, tagnode(cc, "next"), opnode(cc, OPER_adr, NULL, tagnode(cc, itVar->ref.name)));
 						}
+						// for (Type value : iterable) ...
 						else {
-							astn itVar = tagnode(cc, ".it");
-							astn itVal = node->stmt.init;
 
-							if (itVar != NULL) {
-								symn x = declare(cc, TYPE_ref, itVar, sym->type);
-								x->init = opnode(cc, OPER_fnc, tok, iton);
-								x->init->type = sym->type;
-								x->size = sym->type->size;
-								x->cast = TYPE_rec;
+							// declare iterator: Iterator .it = iterator(iterable);
+							astn itTmp = tagnode(cc, ".it");
+							symn x = declare(cc, TYPE_ref, itTmp, sym->type);
+							x->init = itInit;
+							sym = x;
 
-								itVar->kind = TYPE_def;
-								itVar->file = itVal->file;
-								itVar->line = itVal->line;
-								itVar->next = NULL;
-								itVal->next = itVar;
-								sym = x;
-							}
-
+							// make for statement initializer a block having 2 declarations.
 							node->stmt.init = newnode(cc, STMT_beg);
-							node->stmt.init->stmt.stmt = itVal;
 							node->stmt.init->type = cc->type_vid;
 							node->stmt.init->cst2 = TYPE_rec;
 
-							// make the `next(it, a)` test
-							itNext = opnode(cc, OPER_fnc, tagnode(cc, "next"), opnode(cc, OPER_com, opnode(cc, OPER_adr, NULL, tagnode(cc, itVar->ref.name)), opnode(cc, OPER_adr, NULL, tagnode(cc, itVal->ref.name))));
+							// set the 2 declaration in the block.
+							node->stmt.init->stmt.stmt = itVar;
+							itVar->next = itTmp;
+							itTmp->next = NULL;
+
+							// make node
+							itTmp->kind = TYPE_def;
+							itTmp->file = itVar->file;
+							itTmp->line = itVar->line;
+
+							// iterate using the iterator function: `bool next(Iterator &it, Type &&value)`
+							itNext = opnode(cc, OPER_fnc, tagnode(cc, "next"),
+											opnode(cc, OPER_com,
+												   opnode(cc, OPER_adr, NULL, tagnode(cc, itTmp->ref.name)),
+												   opnode(cc, OPER_adr, NULL, tagnode(cc, itVar->ref.name))));
 						}
 					}
 
 					if (itNext == NULL || !typecheck(cc, NULL, sym->init)) {
 						itNext = opnode(cc, OPER_fnc, tagnode(cc, "next"), NULL);
 						error(cc->s, node->file, node->line, "iterator not defined for `%T`", iton->type);
-						info(cc->s, node->file, node->line, "a function `%k(%T)` should be declared", tok, iton->type);
+						info(cc->s, node->file, node->line, "a function `%k(%T)` should be declared", itCtor, iton->type);
 					}
 					else if (typecheck(cc, NULL, itNext) != cc->type_bol) {
 						error(cc->s, node->file, node->line, "iterator not found for `%+k`: %+k", iton, itNext);

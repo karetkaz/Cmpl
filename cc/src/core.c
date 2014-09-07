@@ -345,15 +345,10 @@ int ccSymValFlt(symn sym, double* res) {
 
 /// Lookup symbol by offset; @see state.api.mapsym
 symn mapsym(state rt, int offs, int callsOnly) {
-	//ptrdiff_t offs = (unsigned char*)ptr - rt->_mem;
 	symn sym = NULL;
 
-	// TODO: symbols are saved to read only memory.
-	/*if (offs < 0 || offs > rt->vm.pc) {
-		trace("invalid offset: %06x", offs);
-		return NULL;
-	}*/
-	for (sym = rt->gdef; sym; sym = sym->gdef) {
+	dieif (offs < 0 || offs > rt->vm.px, "invalid offset: %06x", offs);
+	for (sym = rt->defs; sym; sym = sym->gdef) {
 		if (callsOnly && !sym->call) {
 			continue;
 		}
@@ -361,7 +356,6 @@ symn mapsym(state rt, int offs, int callsOnly) {
 			if (!callsOnly && offs != sym->offs) {
 				continue;
 			}
-			//~ trace("%+T", sym);
 			return sym;
 		}
 	}
@@ -803,8 +797,8 @@ ccState ccInit(state rt, int mode, int onHalt(libcArgs)) {
 	rt->cc = cc;
 
 	rt->defs = NULL;
-	rt->gdef = NULL;
 	cc->defs = NULL;
+	cc->gdef = NULL;
 
 	cc->_chr = -1;
 
