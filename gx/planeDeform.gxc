@@ -309,4 +309,4 @@ rgb blob2d(float64 x, float64 y, float64 time) {
 	return gray(Math.clamp(pow(metaball, 8.0), 0., 1.));
 }
 
-setup(tunnel0);
+setup(magma);

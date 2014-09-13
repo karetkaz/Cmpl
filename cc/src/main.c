@@ -490,7 +490,7 @@ int program(int argc, char* argv[]) {
 		}
 
 		// temp
-		else if (strcmp(arg, "-std") == 0) {		// override stdlib file
+		else if (strncmp(arg, "-std", 4) == 0) {		// override stdlib file
 			stdlib = arg + 4;
 		}
 		else if (strncmp(arg, "--", 2) == 0) {		// exclude stdlib, do not gen code, ...
@@ -627,8 +627,9 @@ int program(int argc, char* argv[]) {
 					info(rt, NULL, 0, "symbol not found: %s", str_tree);
 				}
 			}
-			fputfmt(out, "\n>==-- code:\n");
+			fputfmt(out, "\n>==-- /* code.xml:\n");
 			dump(rt, dump_ast | (out_tree & 0x0ff), sym);
+			fputfmt(out, "*/\n");
 		}
 		if (out_dasm >= 0) {
 			symn sym = NULL;
@@ -657,6 +658,9 @@ int program(int argc, char* argv[]) {
 				//~ rtAlloc(rt->rt, NULL, 0);
 			}
 		}
+	}
+	else {
+		result = rt->errc;
 	}
 
 	// close log file

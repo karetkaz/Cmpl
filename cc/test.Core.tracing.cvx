@@ -63,7 +63,7 @@ void f4(double x, debugInfo &info, int maxRecursiveCalls) {
 
 int n = 9;
 testFunction(f3, pointer(&n));
-int a = 9;
+//~ int a = 9;
 //~ debugInfo info = debugInfo("fail", 1, 2, 3);
 //~ testFunction2(f4, n, info);
 //~ +/

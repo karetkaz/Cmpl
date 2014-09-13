@@ -1710,7 +1710,7 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 			if (var->kind == TYPE_ref) {
 
 				// skip initialized static variables and function
-				if (var->stat && var->offs && !rt->cc->init) {
+				if (var->stat && var->offs && (var->call || !rt->cc->init)) {
 					trace("already initialized: %+T", var);
 					return TYPE_vid;
 				}
@@ -2198,7 +2198,7 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 
 	// zero extend ...
 	if (get == TYPE_u32) {
-		debug("zero extend: to (%k)[%t->%t] '%-T'", ast, ret, get, ast->type);
+		debug("zero extend[%t->%t]: %-T %+k", ret, get, ast->type, ast);
 		switch (ast->type->size) {
 			default:
 				error(rt, ast->file, ast->line, "Error zero extending `%+k` of size: %d", ast, ast->type->size);
@@ -2316,7 +2316,7 @@ int gencode(state rt, int mode) {
 	#ifdef DEBUGGING
 	if (DEBUGGING > 6) {
 		symn var;
-		for (var = rt->gdef; var != NULL; var = var->gdef) {
+		for (var = rt->defs; var != NULL; var = var->gdef) {
 			trace("global: @%06x: %+T", var->offs, var);
 		}
 	}
@@ -2368,6 +2368,10 @@ int gencode(state rt, int mode) {
 				error(cc->s, var->file, var->line, "uninitialized constant `%+T`", var);
 			}
 
+			if (var->call && var->init == NULL) {
+				error(cc->s, var->file, var->line, "uninimplemented function `%+T`", var);
+			}
+
 			if (var->call && var->cast != TYPE_ref) {
 				int seg = emitopc(rt, markIP);
 
@@ -2397,7 +2401,7 @@ int gencode(state rt, int mode) {
 					cc->jmps = cc->jmps->next;
 				}
 				var->size = emitopc(rt, markIP) - seg;
-				var->init = NULL;
+				//~ var->init = NULL;
 				var->stat = 1;
 			}
 			else {
@@ -2514,6 +2518,7 @@ int gencode(state rt, int mode) {
 	rt->init->call = 1;
 	rt->init->offs = Lmain;
 	rt->init->size = emitopc(rt, markIP) - Lmain;
+	rt->init->init = cc->root;
 
 	rt->_end = rt->_mem + rt->_size;
 	if (rt->dbg != NULL) {

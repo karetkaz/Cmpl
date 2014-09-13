@@ -21,7 +21,7 @@
 	5: print non pre-mapped strings, non static types
 	6: print static casts generated with emit
 */
-//~ #define DEBUGGING 3
+//~ #define DEBUGGING 1
 
 // enable paralell execution stuff
 //~ #define MAXPROCSEXEC 1
@@ -745,5 +745,7 @@ int logTrace(state rt, int ident, int startlevel, int tracelevel);
 static inline void _abort() {
 	//~ abort();
 }
+
+#define ERR_ASSIGN_TO_CONST "asignment of constant variable `%+k`"
 
 #endif

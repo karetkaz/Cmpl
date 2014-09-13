@@ -652,7 +652,7 @@ static void install_emit(ccState cc, int mode) {
 				swz[i].name = mapstr(cc, (char*)rt->_beg, -1, -1);
 				swz[i].node = intnode(cc, i);
 			}
-			if ((typ = install(cc, "swz", TYPE_rec, 0, 0, NULL, NULL))) {
+			if ((typ = install(cc, "swz", ATTR_stat | ATTR_const | TYPE_rec, 0, 0, NULL, NULL))) {
 				ccBegin(rt, NULL);
 				for (i = 0; i < 256; i += 1) {
 					install(cc, swz[i].name, EMIT_opc, 0, p4x_swz, type_v4f, swz[i].node);

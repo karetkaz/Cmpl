@@ -947,15 +947,15 @@ enum importstd: bool {
 
 static if (importstd.bits2) {
 
-define Lo64(int64 a) = int32(a);					// Lo32 part
-define Hi64(int64 a) = Lo64(int64.Shr(a, 32));		// Hi32 part
-define Lo32(int32 a) = int32(a & 0xffff);			// Lo16 part
-define Hi32(int32 a) = Lo32(a >> 16);				// Hi16 part
-define Lo16(int32 a) = int32(a & 0xff);				// Lo16 part
-define Hi16(int32 a) = Lo16(a >> 8);				// Hi16 part
+define Lo32(int64 a) = int32(a);					// Lo32 part
+define Hi32(int64 a) = Lo32(int64.Shr(a, 32));		// Hi32 part
+define Lo16(int32 a) = int32(a & 0xffff);			// Lo16 part
+define Hi16(int32 a) = Lo16(a >> 16);				// Hi16 part
+define Lo8(int32 a) = int32(a & 0xff);				// Lo16 part
+define Hi8(int32 a) = Lo8(a >> 8);					// Hi16 part
 
+//~ define sxt64(int32 a) = int64(int32(a));			// sign extend
 //~ define zxt64(int32 a) = int64(uint32(a));			// zero extend
-//~ define sxt64(int32 a) = int64(a);					// sign extend
 
 /** bit scan reverse
  * get the index of the highest bit
@@ -1237,8 +1237,8 @@ public static Complex Csch(Complex a) {
 
 static if (importstd.vec2d) {
 struct vec2d {
-	float64 x;
-	float64 y;
+	const float64 x;
+	const float64 y;
 }
 
 define add(vec2d x, vec2d y) = emit(vec2d, v2d.add, vec2d(y), vec2d(x));

@@ -1,10 +1,10 @@
 // test date functions
-char buff[1024] = [0];
-string str = string(buff);
+char format_date_buff[1024] = [0];
+string format_date_str = string(format_date_buff);
 
 //~ Date now = DateFromTime(time());
 //~ Date.Parts parts = Date.ToParts(now.days);
 
-//~ format(buff, "%Y.%m.%d %H:%M:%S", DateFromTime(time()));
-format(buff, "%A %d %B %Y", DateFromTime(time()));
+//~ format(format_date_buff, "%Y.%m.%d %H:%M:%S", DateFromTime(time()));
+format(format_date_buff, "%A %d %B %Y", DateFromTime(time()));
 

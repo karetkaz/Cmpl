@@ -66,7 +66,7 @@ for(int i = 0; i < 150000; i += 1) {
 	//~ debug("random value", variant(&currand));
 }
 //~ debug("random maximum", variant(&maxrand));
-struct float64_fmt: float64;	//%%e
+struct float64_fmt: float64{};	//%%e
 
 //~ BUG: a should be initialized after the loop execution.
 float64_fmt a = maxrand;

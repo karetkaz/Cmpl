@@ -13,11 +13,11 @@ enum Test {
 }
 
 static if (true) {
-struct hex8: int8;			//%%02x
-struct hex16: int16;		//%%04x
-struct hex32: int32;		//%%08x
-struct hex64: int64;		//%%016X
-struct bin32: int32;		//%%032b
+struct hex8: int8{};		//%%02x
+struct hex16: int16{};		//%%04x
+struct hex32: int32{};		//%%08x
+struct hex64: int64{};		//%%016X
+struct bin32: int32{};		//%%032b
 
 //~ define print(hex32 arg) = print("%08x", int64(arg));
 //~ define println(hex32 arg) = print("%08x\n", int64(arg));
@@ -420,7 +420,7 @@ static if (Test.Math & 0x04) {		// matrix multiply
 // Matrix Multiply
 
 define dim = 7;
-struct scalar: float64;		//%%.1f
+struct scalar: float64{};		//%%.1f
 scalar m1[dim][dim];
 scalar m2[dim][dim];
 scalar m3[dim][dim];
@@ -583,7 +583,7 @@ int32x8 sub(const int32x8 &a, int32 b) {
 int32x8 mul(const int32x8 &a, const int32x8 &b, int32x8 &&hi) {
 	
 }
-int32x8 mul(int32x8 &a, int32 b);
+//~ int32x8 mul(int32x8 &a, int32 b);
 
 //~ i32x8 div(i32x8 &a, i32x8 &b, i32x8 &rem);
 //~ i32x8 div(i32x8 &a, i32x8 &b, i32x8 &rem);

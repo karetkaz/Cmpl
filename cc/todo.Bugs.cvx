@@ -3,15 +3,12 @@
 //~ BUG: function with empty body does not generate the return instruction.
 //~ BUG: array of references
 //~ BUG: void alma(int a) {static int A = a;}
-/+~ FIXED: it is posible to declare functions with (? different type ?) arguments:
-	void setzero(int vec[]) {}
-	void setzero(int vec[5]) {}
-
-//~ +/
-//~ /+~ BUG: invalid slice size
+/+~ BUG: invalid slice size
 int arr2[15];			// array
 int arr3[] = arr2;		// slice
 //~ +/
+int a() {
+}
 //! TODO: assign null to array: int a[] = null;
 //! TODO: assign null to variant: variant var = null;
 //! TODO: varargs: int min(int first, int rest...) {...}
@@ -25,7 +22,7 @@ int arr3[] = arr2;		// slice
 
 
 /+ TODO: Array allocation and assignment
-define new(typename type, int32 n) = emit(type, pointer(memmgr(null, n * type.size)), i32(n));
+define new(typename type, int32 n) = emit(type[], pointer(memmgr(null, n * type.size)), i32(n));
 
 int b[] = new(int, 10);
 //~ b = new(int, 10);
@@ -50,10 +47,10 @@ struct M {
 	static int B = 9;
 	static int _B;
 
-	const int a = 0;			// warn: unimplemented usage
+	const int a = 0;			// warn: unimplemented yet
 	const int _a;
 
-	int b = 0;					// warn: unimplemented usage
+	int b = 0;					// warn: unimplemented yet
 	int _b;
 
 }
@@ -105,7 +102,7 @@ double y1 = sqr1(x*x+x);		//
 double y2 = sqr2(x*x+x);		// should produce the same code as above
 //~ +/
 
-/+ BUG: convert char slice to string
+/+ TODO: convert char slice to string
 const char str1[] = "alma a fa alatt nyari piros alma";		// char[32]
 const char str2[] = ['a', 'l', 'm', 'a', 0];				// char[5]
 char str3[] = "alma a fa alatt nyari piros alma";			// char[<32>]
@@ -120,9 +117,9 @@ string str7 = string(str1);		//~ OK
 //~ char slice2[] = emit(struct, i32.add, ref(str2), i32(2), i32(2));
 //~ +/
 
-/+ BUG: static casting pointers
+/+ BUG: pointer(pointer) ersults reference of reference
 pointer x = emit(pointer, ref("erZKJVDlaknjsdvkSDNVlk"));
-string str = emit(string, ref(x));
+string str = emit(string, pointer(x));
 //~ println(emit(string, ref(x)));
 //~ +/
 
@@ -193,7 +190,7 @@ struct ComplexByRef: object {double re; double im;}
 //~ void print(ComplexByRef val) { print("%F", val.re); print(", "); print("%F", val.im); print("\n"); }
 
 /+ TODO: 
-ComplexByRef ComplexByRef(double re, double im) {
+ComplexByRef ComplexByRefFn(double re, double im) {
 	//~ pointer p = memmgr(null, sizeof(ComplexByRef));
 	//~ result = ComplexByRef(p);
 	result = new(ComplexByRef);
@@ -254,17 +251,17 @@ static const Biorithm biorithms2[] = {
 //~ printsize(biorithms2);
 //~ */
 
-/* BUG: should not be able to declare these 2 functions.
-void idnMat14x4(float64 mat[]) {
-	trace("this");
+/* FIXED: should not be able to declare these 2 functions.
+void idnMat4x4(float64 mat[]) {
+	trace(null);
 	float64 diag = 1;
 	for (int i = 0; i < mat.length; i += 1) {
 		mat[i] = i & 3 ? 0 : diag;
 	}
 }
 
-void idnMat14x4(float64 mat[16]) {
-	trace("this");
+void _idnMat4x4(float64 mat[16]) {
+	trace(null);
 	float64 diag = 1;
 	for (int i = 0; i < mat.length; i += 1) {
 		mat[i] = i & 3 ? 0 : diag;
@@ -274,12 +271,8 @@ void idnMat14x4(float64 mat[16]) {
 float64 mat1[16];
 float64 mat2[] = mat1;
 
-idnMat14x4(mat1);
-idnMat14x4(mat2);
-//~ idnMat14x4_1(mat1);
-//~ idnMat14x4_2(mat1);
-//~ idnMat14x4_1(mat2);		// ERROR: this should not compile
-//~ idnMat14x4_2(mat2);
+idnMat4x4(mat1);
+idnMat4x4(mat2);		// ERROR: if using idnMat4x4(float64 mat[16])
 
 // */
 

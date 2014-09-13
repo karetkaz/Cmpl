@@ -111,7 +111,7 @@ void setup(double &time, vec4f pixelCB(double x, double y)) {
 			internals.time = .5 * clocks2Sec(clock() - begTime);
 
 			//~ evalSurf(offScreen, null, internals.pixelCB);
-			zoomSurf(offScreen, null, evalSurf(tmpImg, null, internals.pixelCB), null, 1);
+			zoomSurf2(offScreen, null, evalSurf(tmpImg, null, internals.pixelCB), null, 1);
 
 			// post a redraw for animation
 			Gui.Repaint();

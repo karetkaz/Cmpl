@@ -70,8 +70,8 @@ void drawCB() {
 		}
 
 		//~ compute 3D positions
-		tempx = (stars[i].xpos / stars[i].zpos) + centerx;
-		tempy = (stars[i].ypos / stars[i].zpos) + centery;
+		tempx = centerx + (stars[i].xpos / stars[i].zpos);
+		tempy = centery + (stars[i].ypos / stars[i].zpos);
 
 		//~ check if a star leaves the screen
 		if (tempx < 0 || tempx >= Window.resx || tempy < 0 || tempy >= Window.resy) {
@@ -79,7 +79,7 @@ void drawCB() {
 			continue;
 		}
 
-		define ps = Math.max(int32(0x200 / stars[i].zpos), 2);
+		const int ps = Math.max(int32(0x200 / stars[i].zpos), 2);
 		fillOval(offScreen, tempx, tempy, tempx + ps, tempy + ps, 0xffffff);
 	}
 

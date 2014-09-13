@@ -119,8 +119,7 @@ symn install(ccState s, const char* name, ccToken kind, ccToken cast, unsigned s
 	dieif(!s || !name || !kind, "FixMe(s, %s, %t)", name, kind);
 
 	if ((kind & 0xff) == TYPE_rec) {
-		logif((kind & ATTR_stat) == 0, "typename %s is not declared static", name);
-		logif((kind & ATTR_const) == 0, "typename %s is not declared constant", name);
+		logif((kind & (ATTR_stat | ATTR_const)) != (ATTR_stat | ATTR_const), "symbol `%s` should be declared as static and constant", name);
 		kind |= ATTR_stat | ATTR_const;
 	}
 
@@ -1388,7 +1387,7 @@ symn typecheck(ccState s, symn loc, astn ast) {
 			}
 
 			if (var->cnst) {
-				error(s->s, ast->file, ast->line, "asignment of constant variable `%+k`", ast);
+				error(s->s, ast->file, ast->line, ERR_ASSIGN_TO_CONST, ast);
 			}
 			if (lht->cast != ENUM_kwd && rht->cast == ENUM_kwd) {
 				rht = rht->type;

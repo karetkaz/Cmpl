@@ -245,18 +245,19 @@ static void fputast(FILE* fout, char *esc[], astn ast, int mode, int level) {
 				if (rlev > 0) {
 					fputast(fout, esc, ast->stmt.stmt, mode, 0xf);
 				}
-				fputchr(fout, ';');
+				fputstr(fout, esc, ";");
 				break;
 			}
 
 			if (ast->stmt.stmt->kind == TYPE_def) {
 				fputast(fout, esc, ast->stmt.stmt, mode, level);
-				fputstr(fout, esc, "\n");
+				fputstr(fout, esc, ";");
+				//~ fputstr(fout, esc, "\n");
 			}
 			else {
 				fputfmt(fout, "%I", no_iden ? 0 : level);
 				fputast(fout, esc, ast->stmt.stmt, mode, 0xf);
-				fputstr(fout, esc, ";\n");
+				fputstr(fout, esc, ";");
 			}
 		} break;
 		case STMT_beg: {
@@ -269,8 +270,9 @@ static void fputast(FILE* fout, char *esc[], astn ast, int mode, int level) {
 			fputfmt(fout, "%I%{\n", no_iden ? 0 : level);
 			for (list = ast->stmt.stmt; list; list = list->next) {
 				fputast(fout, esc, list, mode & ~noIden, level + 1);
+				fputfmt(fout, ";\n", level);
 			}
-			fputfmt(fout, "%I} %-T\n", level, ast->type);
+			fputfmt(fout, "%I}\n", level);
 		} break;
 		case STMT_if: {
 			if (rlev == 0) {
@@ -1466,6 +1468,7 @@ void dump(state rt, int mode, symn sym) {
 					for (param = sym->flds; param; param = param->next) {
 						fputfmt(logf, "\t.local %-T [@%06x, size:%d, cast:%t]\n", param, param->offs, param->size, param->cast);
 					}
+					fputast(logf, NULL, sym->init, 2, 1);
 					fputasm(rt, logf, sym->offs, sym->offs + sym->size, 0x100 | (mode & 0xff));
 					fputfmt(logf, "}\n");
 				}
