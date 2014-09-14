@@ -1,10 +1,8 @@
 // Procedural drawing demos.
 enum Window {
 	draw = RenderMode.swap_buff;
-	resx = 812;
-	resy = 812;
-	//~ resx = 512*2;
-	//~ resy = 512*2;
+	resx = 512;
+	resy = 512;
 }
 
 void zoomSurf2(gxSurf dst, gxRect &rect, gxSurf src, gxRect &roi, int mode) {
@@ -20,10 +18,12 @@ void zoomSurf2(gxSurf dst, gxRect &rect, gxSurf src, gxRect &roi, int mode) {
 			srec.h -= roi.y;
 			srec.y = roi.y;
 		}
-		if (roi.w < srec.w)
+		if (roi.w < srec.w) {
 			srec.w = roi.w;
-		if (roi.h < srec.h)
+		}
+		if (roi.h < srec.h) {
 			srec.h = roi.h;
+		}
 	}
 
 	if (rect != null) {
@@ -111,7 +111,7 @@ void setup(double &time, vec4f pixelCB(double x, double y)) {
 			internals.time = .5 * clocks2Sec(clock() - begTime);
 
 			//~ evalSurf(offScreen, null, internals.pixelCB);
-			zoomSurf2(offScreen, null, evalSurf(tmpImg, null, internals.pixelCB), null, 1);
+			zoomSurf(offScreen, null, evalSurf(tmpImg, null, internals.pixelCB), null, 1);
 
 			// post a redraw for animation
 			Gui.Repaint();

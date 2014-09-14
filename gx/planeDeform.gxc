@@ -14,8 +14,9 @@ gxSurf dstImg = gxSurf(WIDTH, HEIGHT);
 
 float64 imgcoord(float64 val, int resolution) {
 	result = val * resolution;
-	if ((result %= resolution) < 0)
+	if ((result %= resolution) < 0) {
 		result += resolution;
+	}
 }
 
 int rgbscale(int col, float64 s) {

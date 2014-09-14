@@ -694,12 +694,6 @@ int main(int argc, char* argv[]) {
 	//setbuf(stdout, NULL);
 	//setbuf(stderr, NULL);
 	return program(argc, argv);
-
-	// TODO: what is wrong here ?
-	//~ state rt = rtInit(mem, sizeof(mem));
-	//~ importLib(rt, "test.gl/gl.dll");
-	//~ closeLibs();
-	//~ return 0;
 }
 
 static void printGlobals(FILE* out, state rt, int all) {

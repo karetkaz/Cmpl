@@ -1310,6 +1310,24 @@ static inline astn argnode(ccState cc, astn lhs, astn rhs) {
 	return lhs ? opnode(cc, OPER_com, lhs, rhs) : rhs;
 }
 
+/** Construct block node.
+ * @brief construct a new node for block of statements
+ * @param cc compiler context.
+ * @param node next argument.
+ * @return if lhs is null return (rhs) else return (lhs, rhs).
+ */
+static inline astn blockNode(ccState cc, astn node) {
+	astn block = newnode(cc, STMT_beg);
+	block->cst2 = TYPE_vid;
+	block->type = cc->type_vid;
+	if (node != NULL) {
+		block->file = node->file;
+		block->line = node->line;
+		block->stmt.stmt = node;
+	}
+	return block;
+}
+
 /** Construct reference node.
  * @brief construct a new node for variables.
  * @param cc compiler context.
@@ -1482,6 +1500,10 @@ static int mkConst(astn ast, ccToken cast) {
 
 	dieif(!ast, "FixMe");
 
+	if (cast == TYPE_any) {
+		cast = ast->cst2;
+	}
+
 	if (!eval(&tmp, ast)) {
 		debug("%+k", ast);
 		return 0;
@@ -1492,7 +1514,7 @@ static int mkConst(astn ast, ccToken cast) {
 
 	switch (ast->cst2 = cast) {
 		default:
-			fatal("FixMe");
+			fatal("FixMe: %+k: %t", ast, cast);
 			return 0;
 
 		case TYPE_vid:
@@ -2093,13 +2115,6 @@ static astn init_var(ccState cc, symn var) {
 					trace("%t", cast);
 					return NULL;
 				}
-
-				if (mkcon && !mkConst(var->init, cast)) {
-					//* TOTO: constant variables do not ned to be initialized with constants.
-					if (var->cast != TYPE_ref && !isConst(var->init)) {
-						warn(cc->s, 1, var->file, var->line, "probably non constant initialization of `%-T`", var);
-					}
-				}
 			}
 			else {
 				error(cc->s, var->file, var->line, "invalid initialization `%-T` := `%+k`", var, var->init);
@@ -2291,7 +2306,7 @@ static astn decl_enum(ccState cc) {
 			redefine(cc, ref);
 
 			if (init_var(cc, ref)) {
-				if (!isConst(ref->init)) {
+				if (!mkConst(ref->init, TYPE_any)) {
 					warn(cc->s, 2, ref->file, ref->line, "constant expected, got: `%+k`", ref->init);
 				}
 				else if (enuminc) {
@@ -2915,17 +2930,17 @@ static astn stmt(ccState cc, int mode) {
 
 	// scan the statement
 	if (skip(cc, STMT_do)) {				// ;
-		warn(cc->s, 2, cc->file, cc->line, "extra ';' found.");
+		warn(cc->s, 2, cc->file, cc->line, "empty statement `;`.");
 	}
 	else if ((node = next(cc, STMT_beg))) {	// { ... }
-		astn blk;
 		int newscope = !mode;
+		astn blk;
 
 		if (newscope) {
 			enter(cc, node);
 		}
 
-		if ((blk = block(cc, 0))) {
+		if ((blk = block(cc, 0)) != NULL) {
 			node->stmt.stmt = blk;
 			node->type = cc->type_vid;
 			node->cst2 = qual;
@@ -2937,11 +2952,11 @@ static astn stmt(ccState cc, int mode) {
 			node = 0;
 		}
 
-		skiptok(cc, STMT_end, 1);
-
 		if (newscope) {
 			leave(cc, NULL, 0);
 		}
+
+		skiptok(cc, STMT_end, 1);
 	}
 	else if ((node = next(cc, STMT_if ))) {	// if (...)
 		int siffalse = cc->siff;
@@ -2951,15 +2966,13 @@ static astn stmt(ccState cc, int mode) {
 		node->stmt.test = expr(cc, TYPE_bit);
 		skiptok(cc, PNCT_rp, 1);
 
-		if (peekTok(cc, STMT_do)) {
-			warn(cc->s, 2, cc->file, cc->line, "if statement is empty.");
-		}
-
+		// static if (true) does not need entering a new scope.
+		// every declaration should be available outside if.
 		if (qual == ATTR_stat) {
 			struct astNode value;
 			if (!eval(&value, node->stmt.test) || !peekTok(cc, STMT_beg)) {
 				error(cc->s, node->file, node->line, "invalid static if construct");
-				return 0;
+				trace("%+k", peekTok(cc, 0));
 			}
 			if (constbol(&value)) {
 				newscope = 0;
@@ -2971,28 +2984,55 @@ static astn stmt(ccState cc, int mode) {
 		if (newscope) {
 			enter(cc, node);
 		}
+		node->stmt.stmt = stmt(cc, 1);	// no new scope & disable decl
+		if (node->stmt.stmt != NULL) {	// suggest using `if (...) {...}`
+			switch (node->stmt.stmt->kind) {
+				default:
+					warn(cc->s, 4, cc->file, cc->line, WARN_USE_BLOCK_STATEMENT, node->stmt.stmt);
+					node->stmt.stmt = blockNode(cc, node->stmt.stmt);
+					break;
 
-		node->stmt.stmt = stmt(cc, 1);	// no new scope / no decl
-
-		if (skip(cc, STMT_els)) {
+				// do not sugest using block statement for return, break and continue.
+				case STMT_beg:
+				case STMT_ret:
+				case STMT_brk:
+				case STMT_con:
+					break;
+			}
+		}
+		if (skip(cc, STMT_els)) {		// optionally parse else part
 			if (newscope) {
 				leave(cc, NULL, 0);
 				enter(cc, node);
 			}
 			node->stmt.step = stmt(cc, 1);
+			if (node->stmt.step != NULL) {
+				switch (node->stmt.step->kind) {
+					default:
+						warn(cc->s, 4, cc->file, cc->line, WARN_USE_BLOCK_STATEMENT, node->stmt.step);
+						node->stmt.step = blockNode(cc, node->stmt.step);
+						break;
+
+					// do not sugest using block statement for else part if it is a block or if statement.
+					case STMT_beg:
+					case STMT_if:
+						break;
+				}
+			}
 		}
+		if (newscope) {
+			leave(cc, NULL, 0);
+		}
+
 
 		node->type = cc->type_vid;
 		node->cst2 = qual;
 		qual = 0;
 
-		if (newscope) {
-			leave(cc, NULL, 0);
-		}
-
 		cc->siff = siffalse;
 	}
 	else if ((node = next(cc, STMT_for))) {	// for (...)
+
 		enter(cc, node);
 		skiptok(cc, PNCT_lp, 1);
 		if (!skip(cc, STMT_do)) {		// init or iterate
@@ -3061,9 +3101,11 @@ static astn stmt(ccState cc, int mode) {
 
 							// iterate using the iterator function: `bool next(Iterator &it, Type &&value)`
 							itStep = opnode(cc, OPER_fnc, itNext,
-											opnode(cc, OPER_com,
-												   opnode(cc, OPER_adr, NULL, tagnode(cc, itTmp->ref.name)),
-												   opnode(cc, OPER_adr, NULL, tagnode(cc, itVar->ref.name))));
+								opnode(cc, OPER_com,
+									opnode(cc, OPER_adr, NULL, tagnode(cc, itTmp->ref.name)),
+									opnode(cc, OPER_adr, NULL, tagnode(cc, itVar->ref.name))
+								)
+							);
 						}
 					}
 
@@ -3111,12 +3153,18 @@ static astn stmt(ccState cc, int mode) {
 			node->stmt.step = expr(cc, TYPE_vid);
 			skiptok(cc, PNCT_rp, 1);
 		}
-
 		node->stmt.stmt = stmt(cc, 1);	// no new scope & disable decl
+		if (node->stmt.stmt != NULL) {	// suggest using `for (...) {...}`
+			if (node->stmt.stmt->kind != STMT_beg) {
+				warn(cc->s, 4, cc->file, cc->line, WARN_USE_BLOCK_STATEMENT, node->stmt.stmt);
+				node->stmt.stmt = blockNode(cc, node->stmt.stmt);
+			}
+		}
+		leave(cc, NULL, 0);
+
 		node->type = cc->type_vid;
 		node->cst2 = qual;
 		qual = 0;
-		leave(cc, NULL, 0);
 	}
 	else if ((node = next(cc, STMT_brk))) {	// break;
 		node->type = cc->type_vid;
@@ -3144,7 +3192,6 @@ static astn stmt(ccState cc, int mode) {
 				node->stmt.stmt = opnode(cc, ASGN_set, lnknode(cc, result), val);
 				node->stmt.stmt->type = val->type;
 				if (!typecheck(cc, NULL, node->stmt.stmt)) {
-				//if (!canAssign(cc, result, val, 0)) {
 					error(cc->s, val->file, val->line, "invalid return value: `%+k`", val);
 				}
 			}
@@ -3160,11 +3207,6 @@ static astn stmt(ccState cc, int mode) {
 		}
 	}
 	else if ((node = expr(cc, TYPE_vid))) {	// expression
-		//~ astn tmp = newnode(cc, STMT_do);
-		//~ tmp->file = node->file;
-		//~ tmp->line = node->line;
-		//~ tmp->type = cc->type_vid;
-		//~ tmp->stmt.stmt = node;
 		skiptok(cc, STMT_do, 1);
 		switch (node->kind) {
 			default:
@@ -3175,7 +3217,6 @@ static astn stmt(ccState cc, int mode) {
 			case ASGN_set:
 				break;
 		}
-		//~ node = tmp;
 	}
 	else if ((node = peekTok(cc, 0))) {
 		error(cc->s, node->file, node->line, "unexpected token: `%k`", node);

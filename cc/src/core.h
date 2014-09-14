@@ -75,7 +75,7 @@
 #define offsetOf(__TYPE, __FIELD) ((size_t) &((__TYPE)0)->__FIELD)
 
 enum Format {
-	noIden = 0x1000,		// TODO: to be removed: use -level instead.
+	//~ noIden = 0x1000,		// TODO: to be removed: use -level instead.
 	//~ noName = 0x2000,
 
 	alPars = 0x0100,
@@ -259,7 +259,6 @@ struct symNode {
 		//~ uint32_t	cast:8;
 		uint32_t	memb:1;		// member operator (push the object by ref first)
 		uint32_t	call:1;		// callable (function/definition) <=> TODO: prms != NULL
-		//~ uint32_t	rsvd:1;		// reserved
 		uint32_t	cnst:1;		// constant
 		uint32_t	stat:1;		// static
 		uint32_t _padd:28;		// declaration level
@@ -747,5 +746,6 @@ static inline void _abort() {
 }
 
 #define ERR_ASSIGN_TO_CONST "asignment of constant variable `%+k`"
+#define WARN_USE_BLOCK_STATEMENT "statement should be a block statement {%+k}."
 
 #endif

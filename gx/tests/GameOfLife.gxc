@@ -53,8 +53,9 @@ void drawCB() {
 
 	if (reDraw) {
 		nextGeneration(pop55);
-		if (reDraw == 1)
+		if (reDraw == 1) {
 			reDraw = 0;
+		}
 		gen += 1;
 	}
 	zoomSurf(offScreen, null, pop55, null, 0);

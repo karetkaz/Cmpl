@@ -8,16 +8,19 @@ enum Window {
 bool reDraw = true;
 
 void drawTree(gxSurf g, int x1, int y1, double angle, int depth) {
+	define Length = 10;
+	define Angle = 20;
+
 	if (depth == 0) {
 		return;
 	}
 
-	int x2 = x1 + int(Math.Cos(Math.deg2rad(angle)) * depth * 10.0);
-	int y2 = y1 + int(Math.Sin(Math.deg2rad(angle)) * depth * 10.0);
+	int x2 = x1 + int(Math.Cos(Math.deg2rad(angle)) * depth * Length);
+	int y2 = y1 + int(Math.Sin(Math.deg2rad(angle)) * depth * Length);
 
 	drawLine(g, x1, y1, x2, y2, 0);
-	drawTree(g, x2, y2, angle - 30, depth - 1);
-	drawTree(g, x2, y2, angle + 30, depth - 1);
+	drawTree(g, x2, y2, angle - Angle, depth - 1);
+	drawTree(g, x2, y2, angle + Angle, depth - 1);
 	//~ Gui.Repaint(true);
 }
 

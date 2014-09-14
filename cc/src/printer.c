@@ -77,13 +77,15 @@ static char** escapeXml() {
 }
 
 static void fputsym(FILE* fout, char *esc[], symn sym, int mode, int level) {
-	int no_iden = mode & noIden;	// internal use
 	int pr_type = mode & prType;
 	int pr_init = mode & prInit;
 	int pr_qual = mode & prQual;
 	int rlev = mode & 0xf;
-	if (level < 0) {
-		no_iden = 1;
+
+	if (level > 0) {
+		fputfmt(fout, "%I", level);
+	}
+	else {
 		level = -level;
 	}
 
@@ -119,7 +121,7 @@ static void fputsym(FILE* fout, char *esc[], symn sym, int mode, int level) {
 					*sp++ = typ;
 					typ = typ->type;
 				}
-				fputsym(fout, esc, typ, mode, level);
+				fputsym(fout, esc, typ, mode, -level);
 
 				for (p = bp; p < sp; ++p) {
 					typ = *p;
@@ -144,15 +146,16 @@ static void fputsym(FILE* fout, char *esc[], symn sym, int mode, int level) {
 				break;
 			}
 
-			fputfmt(fout, "%Istruct %?s {\n", no_iden ? 0 : level, sym->name);
+			fputfmt(fout, "struct %?s {\n", sym->name);
 
 			for (arg = sym->flds; arg; arg = arg->next) {
 				fputsym(fout, esc, arg, mode & ~prQual, level + 1);
-				if (arg->kind != TYPE_rec)		// nested struct
+				if (arg->kind != TYPE_rec) {		// nested struct
 					fputstr(fout, esc, ";\n");
+				}
 			}
 
-			fputfmt(fout, "%I}\n", no_iden ? 0 : level);
+			fputfmt(fout, "%I}\n", level);
 
 			break;
 		}
@@ -164,8 +167,6 @@ static void fputsym(FILE* fout, char *esc[], symn sym, int mode, int level) {
 				break;
 			}
 
-			fputfmt(fout, "%I", no_iden ? 0 : level);
-
 			if (pr_type) switch (sym->kind) {
 				case TYPE_rec:
 					fputstr(fout, esc, "struct ");
@@ -173,7 +174,7 @@ static void fputsym(FILE* fout, char *esc[], symn sym, int mode, int level) {
 
 				default:
 					if (sym->type) {
-						fputsym(fout, esc, sym->type, noIden | pr_qual, 0);
+						fputsym(fout, esc, sym->type, pr_qual, -1);
 						if (sym->name && *sym->name) {
 							fputchr(fout, ' ');
 						}
@@ -228,10 +229,16 @@ static void fputsym(FILE* fout, char *esc[], symn sym, int mode, int level) {
 }
 
 static void fputast(FILE* fout, char *esc[], astn ast, int mode, int level) {
-	int no_iden = mode & noIden;	// internal use
 	int nl_body = mode & nlBody;	// '\n'? { ...
 	int nl_elif = mode & nlElIf;	// ...}'\n'else '\n'? if ...
 	int rlev = mode & 0xf;
+
+	if (level > 0) {
+		fputfmt(fout, "%I", level);
+	}
+	else {
+		level = -level;
+	}
 
 	if (ast == NULL) {
 		fputstr(fout, esc, "(null)");
@@ -241,24 +248,7 @@ static void fputast(FILE* fout, char *esc[], astn ast, int mode, int level) {
 	switch (ast->kind) {
 		//#{ STMT
 		case STMT_do: {
-			if (rlev < 2) {
-				if (rlev > 0) {
-					fputast(fout, esc, ast->stmt.stmt, mode, 0xf);
-				}
-				fputstr(fout, esc, ";");
-				break;
-			}
-
-			if (ast->stmt.stmt->kind == TYPE_def) {
-				fputast(fout, esc, ast->stmt.stmt, mode, level);
-				fputstr(fout, esc, ";");
-				//~ fputstr(fout, esc, "\n");
-			}
-			else {
-				fputfmt(fout, "%I", no_iden ? 0 : level);
-				fputast(fout, esc, ast->stmt.stmt, mode, 0xf);
-				fputstr(fout, esc, ";");
-			}
+			fputast(fout, esc, ast->stmt.stmt, mode, -level);
 		} break;
 		case STMT_beg: {
 			astn list;
@@ -267,10 +257,19 @@ static void fputast(FILE* fout, char *esc[], astn ast, int mode, int level) {
 				break;
 			}
 
-			fputfmt(fout, "%I%{\n", no_iden ? 0 : level);
+			fputstr(fout, esc, "{\n");
 			for (list = ast->stmt.stmt; list; list = list->next) {
-				fputast(fout, esc, list, mode & ~noIden, level + 1);
-				fputfmt(fout, ";\n", level);
+				fputast(fout, esc, list, mode, level + 1);
+				switch(list->kind) {
+					case STMT_if:
+					case STMT_for:
+					case STMT_beg:
+						break;
+
+					default:
+						fputstr(fout, esc, ";\n");
+						break;
+				}
 			}
 			fputfmt(fout, "%I}\n", level);
 		} break;
@@ -278,10 +277,6 @@ static void fputast(FILE* fout, char *esc[], astn ast, int mode, int level) {
 			if (rlev == 0) {
 				fputstr(fout, esc, "if");
 				break;
-			}
-
-			if (!no_iden && level) {
-				fputfmt(fout, "%I", level);
 			}
 
 			switch (ast->cst2) {
@@ -296,7 +291,7 @@ static void fputast(FILE* fout, char *esc[], astn ast, int mode, int level) {
 			}
 
 			fputstr(fout, esc, "if (");
-			fputast(fout, esc, ast->stmt.test, mode | noIden, 0xf);
+			fputast(fout, esc, ast->stmt.test, mode, -0xf);
 			fputstr(fout, esc, ")");
 
 			if (rlev < 2) {
@@ -307,7 +302,7 @@ static void fputast(FILE* fout, char *esc[], astn ast, int mode, int level) {
 				int kind = ast->stmt.stmt->kind;
 				if (!nl_body && kind == STMT_beg) {
 					fputstr(fout, esc, " ");
-					fputast(fout, esc, ast->stmt.stmt, mode | noIden, level);
+					fputast(fout, esc, ast->stmt.stmt, mode, -level);
 				}
 				else {
 					fputstr(fout, esc, "\n");
@@ -323,11 +318,11 @@ static void fputast(FILE* fout, char *esc[], astn ast, int mode, int level) {
 				int kind = ast->stmt.step->kind;
 				if (!nl_body && (kind == STMT_beg)) {
 					fputfmt(fout, "%Ielse ", level);
-					fputast(fout, esc, ast->stmt.step, mode | noIden, level);
+					fputast(fout, esc, ast->stmt.step, mode, -level);
 				}
 				else if (!nl_elif && (kind == STMT_if)) {
 					fputfmt(fout, "%Ielse ", level);
-					fputast(fout, esc, ast->stmt.step, mode | noIden, level);
+					fputast(fout, esc, ast->stmt.step, mode, -level);
 				}
 				else {
 					fputfmt(fout, "%Ielse\n", level);
@@ -346,7 +341,6 @@ static void fputast(FILE* fout, char *esc[], astn ast, int mode, int level) {
 				break;
 			}
 
-			fputfmt(fout, "%I", no_iden ? 0 : level);
 			switch (ast->cst2) {
 				default:
 					trace("%+k", ast);
@@ -364,17 +358,17 @@ static void fputast(FILE* fout, char *esc[], astn ast, int mode, int level) {
 
 			fputstr(fout, esc, "for (");
 			if (ast->stmt.init) {
-				fputast(fout, esc, ast->stmt.init, 1 | noIden, 0x0);
+				fputast(fout, esc, ast->stmt.init, 1, -0xf);
 			}
 
 			fputstr(fout, esc, "; ");
 			if (ast->stmt.test) {
-				fputast(fout, esc, ast->stmt.test, 1 | noIden, 0xf);
+				fputast(fout, esc, ast->stmt.test, 1, -0xf);
 			}
 
 			fputstr(fout, esc, "; ");
 			if (ast->stmt.step) {
-				fputast(fout, esc, ast->stmt.step, 1 | noIden, 0xf);
+				fputast(fout, esc, ast->stmt.step, 1, -0xf);
 			}
 
 			fputstr(fout, esc, ")");
@@ -383,7 +377,7 @@ static void fputast(FILE* fout, char *esc[], astn ast, int mode, int level) {
 				int kind = ast->stmt.stmt->kind;
 				if (!nl_body && kind == STMT_beg) {
 					fputstr(fout, esc, " ");
-					fputast(fout, esc, ast->stmt.stmt, mode | noIden, level);
+					fputast(fout, esc, ast->stmt.stmt, mode, -level);
 				}
 				else {
 					fputstr(fout, esc, "\n");
@@ -414,7 +408,6 @@ static void fputast(FILE* fout, char *esc[], astn ast, int mode, int level) {
 				break;
 			}
 
-			fputfmt(fout, "%I", no_iden ? 0 : level);
 			switch (ast->cst2) {
 				default:
 					trace("%+k", ast);
@@ -437,30 +430,10 @@ static void fputast(FILE* fout, char *esc[], astn ast, int mode, int level) {
 			break;
 		}
 		case STMT_ret: {
-			if (rlev < 2) {
-				fputstr(fout, esc, "return");
-				if (rlev > 0) {
-					if (ast->stmt.stmt != NULL) {
-						fputstr(fout, esc, " (");
-						fputast(fout, esc, ast->stmt.stmt, mode | noIden, 0xf);
-						fputchr(fout, ')');
-					}
-				}
-				break;
-			}
-
-			fputfmt(fout, "%I", no_iden ? 0 : level);
-			switch (ast->cst2) {
-				default:
-					trace("%+k", ast);
-				case TYPE_any:
-					break;
-			}
 			fputstr(fout, esc, "return");
-			if (ast->stmt.stmt) {
-				fputstr(fout, esc, " (");
-				fputast(fout, esc, ast->stmt.stmt, mode | noIden, 0xf);
-				fputchr(fout, ')');
+			if (rlev > 0 && ast->stmt.stmt) {
+				fputstr(fout, esc, " ");
+				fputast(fout, esc, ast->stmt.stmt, mode, -0xf);
 			}
 			break;
 		}
@@ -473,7 +446,7 @@ static void fputast(FILE* fout, char *esc[], astn ast, int mode, int level) {
 				}
 				fputchr(fout, '(');
 				if (rlev && ast->op.rhso != NULL) {
-					fputast(fout, esc, ast->op.rhso, mode, 0x0f);
+					fputast(fout, esc, ast->op.rhso, mode, -0xf);
 				}
 				fputchr(fout, ')');
 			}
@@ -488,7 +461,7 @@ static void fputast(FILE* fout, char *esc[], astn ast, int mode, int level) {
 				fputast(fout, esc, ast->op.lhso, mode, 0);
 				fputchr(fout, '[');
 				if (rlev && ast->op.rhso!= NULL) {
-					fputast(fout, esc, ast->op.rhso, mode, 0);
+					fputast(fout, esc, ast->op.rhso, mode, -0xf);
 				}
 				fputchr(fout, ']');
 			}
@@ -540,8 +513,8 @@ static void fputast(FILE* fout, char *esc[], astn ast, int mode, int level) {
 
 		case ASGN_set: {	// '='
 			if (rlev > 0) {
-				int pre = ast->kind & 0xf;
-				int putparen = (level < 0 ? -level : level) < pre;
+				int pre = tok_tbl[ast->kind].type & 0x0f;
+				int putparen = level < pre;
 
 				if (mode & prCast) {
 					fputsym(fout, esc, ast->type, prQual, 0);
@@ -553,7 +526,7 @@ static void fputast(FILE* fout, char *esc[], astn ast, int mode, int level) {
 				}
 
 				if (ast->op.lhso != NULL) {
-					fputast(fout, esc, ast->op.lhso, mode, pre);
+					fputast(fout, esc, ast->op.lhso, mode, -pre);
 					fputchr(fout, ' ');
 				}
 
@@ -564,7 +537,7 @@ static void fputast(FILE* fout, char *esc[], astn ast, int mode, int level) {
 					fputchr(fout, ' ');
 				}
 
-				fputast(fout, esc, ast->op.rhso, mode, pre);
+				fputast(fout, esc, ast->op.rhso, mode, -pre);
 
 				if (putparen) {
 					fputchr(fout, ')');
@@ -608,9 +581,9 @@ static void fputast(FILE* fout, char *esc[], astn ast, int mode, int level) {
 
 		case OPER_com: {
 			if (rlev > 0) {
-				fputast(fout, esc, ast->op.lhso, mode, OPER_com);
+				fputast(fout, esc, ast->op.lhso, mode, -OPER_com);
 				fputstr(fout, esc, ", ");
-				fputast(fout, esc, ast->op.rhso, mode, OPER_com);
+				fputast(fout, esc, ast->op.rhso, mode, -OPER_com);
 			}
 			else {
 				fputchr(fout, ',');
@@ -620,11 +593,11 @@ static void fputast(FILE* fout, char *esc[], astn ast, int mode, int level) {
 
 		case OPER_sel: {	// '?:'
 			if (rlev > 0) {
-				fputast(fout, esc, ast->op.test, mode, OPER_sel);
+				fputast(fout, esc, ast->op.test, mode, -OPER_sel);
 				fputstr(fout, esc, " ? ");
-				fputast(fout, esc, ast->op.lhso, mode, OPER_sel);
+				fputast(fout, esc, ast->op.lhso, mode, -OPER_sel);
 				fputstr(fout, esc, " : ");
-				fputast(fout, esc, ast->op.rhso, mode, OPER_sel);
+				fputast(fout, esc, ast->op.rhso, mode, -OPER_sel);
 			}
 			else {
 				fputstr(fout, esc, "?:");
@@ -657,7 +630,7 @@ static void fputast(FILE* fout, char *esc[], astn ast, int mode, int level) {
 
 		case TYPE_def: {
 			if (ast->ref.link) {
-				fputsym(fout, esc, ast->ref.link, mode|prInit|prType, level);
+				fputsym(fout, esc, ast->ref.link, mode|prInit|prType, -level);
 			}
 			else {
 				fputstr(fout, esc, ast->ref.name);
@@ -771,12 +744,12 @@ static void FPUTFMT(FILE* fout, char *esc[], const char* msg, va_list ap) {
 							mode = prQual | 1;
 							break;
 					}
-					fputsym(fout, esc, sym, mode, prc);
+					fputsym(fout, esc, sym, mode, prc < 0 ? prc : -prc);
 					continue;
 				}
 
 				case 'k': {		// node
-					int mode = noIden;
+					int mode = 0;
 					astn ast = va_arg(ap, astn);
 
 					if (ast == NULL && nil) {
@@ -792,16 +765,16 @@ static void FPUTFMT(FILE* fout, char *esc[], const char* msg, va_list ap) {
 							break;
 
 						case '-':
-							mode = noIden | 2;
+							mode = 2;
 							break;
 
 						case '+':
-							mode = noIden | 1;
-							prc = 0x0f;
+							mode = 1;
+							prc = 0xf;
 							break;
 					}
 
-					fputast(fout, esc, ast, mode, prc);
+					fputast(fout, esc, ast, mode, prc < 0 ? prc : -prc);
 					continue;
 				}
 
@@ -1067,7 +1040,7 @@ static void dumpsym(FILE* fout, symn sym, int mode) {
 	int print_line = mode & prLine;		// print file and location.
 	int print_type = mode & prType;		// print type of symbol.
 	int print_init = mode & prInit;		// print initializer of symbol.
-	int print_qual = mode & prQual;		// print qualified name of symbol.
+	//~ int print_qual = mode & prQual;		// print qualified name of symbol.
 	int print_info = 1;
 	int print_used = 0;
 	mode &= 0x0f;
@@ -1129,14 +1102,12 @@ static void dumpsym(FILE* fout, symn sym, int mode) {
 
 		// qualified base type(s)
 		if (print_type && ptr->type) {
-			fputstr(fout, NULL, ": ");
-			fputsym(fout, NULL, ptr->type, print_qual, 0);
+			fputfmt(fout, ": %-T", ptr->type);
 		}
 
 		// initializer
 		if (print_init && ptr->init && ptr->kind != TYPE_ref) {
-			fputstr(fout, NULL, " = ");
-			fputast(fout, NULL, ptr->init, noIden | 1, 0xf0);
+			fputfmt(fout, " = %+k", ptr->init);
 		}
 
 		if (print_info) {

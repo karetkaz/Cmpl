@@ -456,6 +456,7 @@ static void install_type(ccState cc, int mode) {
 	if (type_var != NULL) {
 		install(cc, "var", ATTR_const | TYPE_def, 0, 0, type_var, NULL);
 	}
+	(void)type_obj;
 }
 
 // install emit operator

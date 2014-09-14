@@ -7,8 +7,6 @@
 int arr2[15];			// array
 int arr3[] = arr2;		// slice
 //~ +/
-int a() {
-}
 //! TODO: assign null to array: int a[] = null;
 //! TODO: assign null to variant: variant var = null;
 //! TODO: varargs: int min(int first, int rest...) {...}
@@ -21,6 +19,14 @@ int a() {
 //? TODO: separate struct and unoin declaration
 
 
+/+~ FIXED: double initialization of global variable.
+int init() {
+	static int a1 = init();
+	debug("initialize", variant.null, 1, 25);
+	return 9;
+}
+int a2 = init();
+//~ +/
 /+ TODO: Array allocation and assignment
 define new(typename type, int32 n) = emit(type[], pointer(memmgr(null, n * type.size)), i32(n));
 

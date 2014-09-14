@@ -1538,7 +1538,7 @@ int ccCompile(char *src, int argc, char* argv[], int (*dbg)(state rt, int pu, vo
 		//~ rt->dbg->dbug = dbg;
 	}
 
-	logFILE(rt, stderr);
+	logFILE(rt, stdout);
 
 	return err;// || execute(rt, NULL);
 }

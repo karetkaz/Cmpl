@@ -953,9 +953,6 @@ int fixjump(state rt, int src, int dst, int stc) {
 // TODO: to be removed.
 static inline void logProc(cell pu, int cp, char* msg) {
 	trace("%s: {pu:%d, ip:%x, bp:%x, sp:%x, stacksize:%d, parent:%d, childs:%d}", msg, cp, pu[cp].ip, pu[cp].bp, pu[cp].sp, pu[cp].ss, pu[cp].pp, pu[cp].cp);
-	(void)pu;
-	(void)cp;
-	(void)msg;
 }
 
 /// Try to start a new child cell for task.

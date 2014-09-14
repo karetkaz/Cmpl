@@ -2277,6 +2277,7 @@ int gencode(state rt, int mode) {
 
 			//~ this must be generated before sym;
 			if (Ng) {
+				//~ dieif(1, "Ng: %-T", Ng);
 				Pg->gdef = Ng->gdef;	// remove
 				Ng->gdef = ng;
 				if (pg) {
@@ -2437,11 +2438,12 @@ int gencode(state rt, int mode) {
 
 				dieif(rt->_beg >= rt->_end, "Error");
 
-				if (var->init != NULL) {
+				// TODO: recheck double initialization fix: var->nest > 0
+				if (var->init != NULL && var->nest > 0) {
 					astn init = newnode(cc, TYPE_def);
 
 					if (var->cnst && !isConst(var->init)) {
-						warn(rt, 1, var->file, var->line, "non constant initialization of static variable `%-T`", var);
+						warn(rt, 16, var->file, var->line, "non constant initialization of static variable `%-T`", var);
 					}
 
 					//~ make initialization from initializer

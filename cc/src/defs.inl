@@ -26,7 +26,7 @@ TOKDEF(TYPE_ref, 0x00, 0, ".ref")		// type: variable, cast: by reference
 //~ Statements =================================================================
 //! keep beg the first and end the last statement token
 TOKDEF(STMT_beg, 0x00, 0, ".beg")		// stmt: list {...}
-TOKDEF(STMT_do,  0x00, 0, ".do")		// stmt: decl / expr
+TOKDEF(STMT_do,  0x00, 0, ";")			// stmt: with a statement
 TOKDEF(STMT_for, 0x00, 0, "for")		// stmt: for, while, repeat
 TOKDEF(STMT_if,  0x00, 0, "if")			// stmt: if then else
 TOKDEF(STMT_els, 0x00, 0, "else")		// ????

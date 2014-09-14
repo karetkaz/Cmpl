@@ -58,12 +58,15 @@ void mouseCB(int btn, int x, int y) {
 }
 void drawCB() {
 	int color = 0;
-	if (mbtn & 1)
+	if (mbtn & 1) {
 		color |= 0xff0000;
-	if (mbtn & 2)
+	}
+	if (mbtn & 2) {
 		color |= 0x00ff00;
-	if (mbtn & 4)
+	}
+	if (mbtn & 4) {
 		color |= 0x0000ff;
+	}
 	fillRect(offScreen, 0, 0, Window.resx, Window.resy, color);
 }
 
