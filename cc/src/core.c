@@ -32,8 +32,8 @@ const struct tok_inf tok_tbl[255] = {
 	//~ {0}
 };
 const struct opc_inf opc_tbl[255] = {
-	//~ #define OPCDEF(NAME, CODE, SIZE, CHCK, DIFF, MNEM) {CODE, SIZE, CHCK, DIFF, MNEM},
-	#define OPCDEF(NAME, CODE, SIZE, CHCK, DIFF, MNEM) {CODE, SIZE, CHCK, DIFF, "`"#NAME"`"},
+	#define OPCDEF(NAME, CODE, SIZE, CHCK, DIFF, MNEM) {CODE, SIZE, CHCK, DIFF, MNEM},
+	//~ #define OPCDEF(NAME, CODE, SIZE, CHCK, DIFF, MNEM) {CODE, SIZE, CHCK, DIFF, "`"#NAME"`"},
 	#include "defs.inl"
 	//~ {0}
 };

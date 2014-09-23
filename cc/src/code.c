@@ -1173,6 +1173,7 @@ static int exec(state rt, cell pu, symn fun, void* extra, int dbg(state, int pu,
 				return dbgDummy(rt, err_code, ip, sp, pu->ss, "division by zero");
 
 			error_libc:
+				//~ return dbgDummy(rt, err_code, ip, sp, pu->ss, libcvec[ip->rel].sym->name);
 				return dbgDummy(rt, err_code, ip, sp, pu->ss, "libcall error");
 
 			#define NEXT(__IP, __SP, __CHK) {pu->sp -= vm_size * (__SP); pu->ip += (__IP);}

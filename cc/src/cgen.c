@@ -2277,7 +2277,6 @@ int gencode(state rt, int mode) {
 
 			//~ this must be generated before sym;
 			if (Ng) {
-				//~ dieif(1, "Ng: %-T", Ng);
 				Pg->gdef = Ng->gdef;	// remove
 				Ng->gdef = ng;
 				if (pg) {

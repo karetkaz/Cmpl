@@ -8,3 +8,4 @@ string format_date_str = string(format_date_buff);
 //~ format(format_date_buff, "%Y.%m.%d %H:%M:%S", DateFromTime(time()));
 format(format_date_buff, "%A %d %B %Y", DateFromTime(time()));
 
+int eq = compare("..a", "..b");

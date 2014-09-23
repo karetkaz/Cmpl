@@ -1392,6 +1392,7 @@ static symn addLength(ccState cc, symn sym, astn init) {
  * @param cc compiler context.
  * @param sym symbol to check.
  */
+//~ TODO: move to type.c.
 static void redefine(ccState cc, symn sym) {
 	struct astNode tag;
 	symn ptr;
@@ -1443,8 +1444,6 @@ static void redefine(ccState cc, symn sym) {
 			info(cc->s, ptr->file, ptr->line, "first defined here as `%-T`", ptr);
 		}
 	}
-
-	
 }
 
 /** TODO: to be deleted. replace with js like initialization.
@@ -2930,7 +2929,7 @@ static astn stmt(ccState cc, int mode) {
 
 	// scan the statement
 	if (skip(cc, STMT_do)) {				// ;
-		warn(cc->s, 2, cc->file, cc->line, "empty statement `;`.");
+		warn(cc->s, 2, cc->file, cc->line, WARN_EMPTY_STATEMENT);
 	}
 	else if ((node = next(cc, STMT_beg))) {	// { ... }
 		int newscope = !mode;

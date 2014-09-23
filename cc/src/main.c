@@ -517,7 +517,7 @@ int program(int argc, char* argv[]) {
 	}
 
 	// intstall standard libraries.
-	if (!ccAddUnit(rt, install_stdc, 0, stdlib)) {
+	if (!ccAddUnit(rt, install_stdc, 3, stdlib)) {
 		error(rt, NULL, 0, "error registering standard libs");
 		logfile(rt, NULL);
 		return -6;

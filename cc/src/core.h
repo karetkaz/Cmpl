@@ -747,5 +747,6 @@ static inline void _abort() {
 
 #define ERR_ASSIGN_TO_CONST "asignment of constant variable `%+k`"
 #define WARN_USE_BLOCK_STATEMENT "statement should be a block statement {%+k}."
+#define WARN_EMPTY_STATEMENT "empty statement `;`."
 
 #endif

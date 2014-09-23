@@ -1,0 +1,163 @@
+//~ format integer numbers
+
+// convert number to string
+
+int readFlags(string format, int spos, FormatFlags &outValue) {
+	int chr = format[spos];
+	if (chr == '%') {
+		chr = format[spos += 1];
+		if (chr == '%') {
+			return spos;
+		}
+
+		int sgnChr = 0;
+		if (chr == '-' || chr == '+') {
+			sgnChr = chr;
+			chr = format[spos += 1];
+		}
+
+		int padChr = ' ';
+		if (chr == '0') {
+			padChr = chr;
+			chr = format[spos += 1];
+		}
+
+		int padLen = 0;
+		for (;chr >= '0' && chr <= '9';) {
+			padLen = padLen * 10 + chr - '0';
+			chr = format[spos += 1];
+		}
+
+		int maxLen = 10;
+		if (chr == '.') {
+			maxLen = 0;
+			chr = format[spos += 1];
+			for ( ;chr >= '0' && chr <= '9'; ) {
+				maxLen = maxLen * 10 + chr - '0';
+				chr = format[spos += 1];
+			}
+		}
+
+	}
+	return spos;
+}
+
+int format2(char output[], int pos, FormatFlags &flags, int rad, int32 value) {
+	static const FormatFlags default = FormatFlags(0, ' ', 0, 0, 'd');
+	static const char digits[] = "0123456789abcdefghijklmnopqrstuvwxyz";
+
+	if (flags == null) {
+		flags = default;
+	}
+
+	assert(rad > 0 && rad < digits.length);
+
+	char temp[80];
+	int end = temp.length;
+	int sgnChr = flags.sgnChr;
+
+	if (value < 0) {
+		value = -value;
+		sgnChr = '-';
+	}
+
+	temp[end -= 1] = 0;
+	for ( ; value > 0; value /= rad) {
+		temp[end -= 1] = digits[value % rad];
+	}
+	if (temp[end] == 0) {
+		temp[end -= 1] = '0';
+	}
+	if (padChr && sgnChr) {
+		dst[pos] = flags.sgnChr;
+		pos += 1;
+	}
+
+	int strLen = temp.length - end;
+	int padLen = flags.padLen;
+
+	int max = pos + padLen - strLen + 1;
+	if (max > output.length) {
+		max = output.length - 1;
+	}
+	for (; pos < max; pos += 1) {
+		output[pos] = flags.padChr;
+	}
+
+	max = pos + strLen;
+	if (max > output.length) {
+		max = output.length - 1;
+	}
+
+	for (; pos < max; pos += 1) {
+		output[pos] = temp[end];
+		end += 1;
+	}
+	return pos - 1;
+}
+
+/**
+ * Format integer to text
+ * @param output write output to this buffer
+ * @param format format string
+ *  	%b format as binary
+ *  	%o format as octal
+ *  	%d format as decimal
+ *  	%x format as hexadecimal
+ *  	%i format as custom radix
+ *  	null defaults to: "%d"
+ * @param value date to format
+ */
+int format2(char output[], string format, int value) {
+	int pos = 0;
+	if (format == null) {
+		format = "%d";
+	}
+	int spos = 0;
+	for (int chr; chr = format[spos]; spos += 1) {
+		if (chr == '%') {
+			FormatFlags flags;
+			spos += readFlags(format, spos, &flags);
+			chr = flags.fmtChr;
+
+			int radix = 10;
+			if (chr == 'b') {
+				radix = 2;
+			}
+			else if (chr == 'o') {
+				radix = 8;
+			}
+			else if (chr == 'd') {
+				radix = 10;
+			}
+			else if (chr == 'x') {
+				radix = 16;
+			}
+			else if (chr == 'i') {
+				radix = flags.maxLen;
+			}
+
+			pos = format2(output, pos, &flags, radix, value);
+		}
+		else if (pos < output.length) {
+			output[pos] = chr;
+			pos += 1;
+		}
+	}
+
+	if (pos >= output.length) {
+		pos = output.length - 1;
+	}
+	output[pos] = 0;
+	return pos;
+}
+
+
+char buff[512];
+string str = string(buff);
+format(buff, "value: %d = 0x%08x = 0b%032b = [%.5i]5", 0x20928374);
+assert(equals(str, "value: 546472820 = 0x20928374 = 0b00100000100100101000001101110100 = [2104344112240]5"));
+
+//~ format(buff, "%0d", 0);
+//~ assert(equals("0", str));
+//~ debug(string(buff));

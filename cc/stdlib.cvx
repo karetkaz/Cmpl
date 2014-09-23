@@ -715,6 +715,16 @@ struct Date {
 		SecondsPerDay = 60 * MinutesPerDay;
 	}// */
 
+	struct Duration {
+		int64 value;
+
+		define millis(int64 value) = int64(value);
+		define seconds(int64 value) = int64(value * MillisPerSecond);
+		define minutes(int64 value) = int64(value * MillisPerMinute);
+		define hours(int64 value) = int64(value * MillisPerHour);
+		define days(int64 value) = int64(value * MillisPerDay);
+		define weeks(int64 value) = int64(value * MillisPerWeek);
+	}
 	/** Converting between time units
 	 * TimeUnit.MINUTE.convert(60, TimeUnit.HOUR) = 1;	// 60 minutes result in one hour.
 	 * /
@@ -1483,7 +1493,7 @@ static if (importstd.strUtils) {
 
 /// length of the string
 int strlen(string str) {
-	for (result = 0; str[result]; result += 1) ;
+	for (result = 0; str[result]; result += 1) {}
 }
 
 define umin(uint32 a, uint32 b) = Math.min(a, b);
@@ -1528,26 +1538,80 @@ int strrchr(string str, int chr, int max) {
 	}
 }
 
+/// Compare two strings
+int compare(string a, string b) {
+	int i = result = 0;
+	for (; a[i]; i += 1) {
+		result = a[i] - b[i];
+		if (result != 0) {
+			break;
+		}
+	}
+	return a[i] - b[i];
+}
+int compare2(string a, string b) {
+	result = 0;
+	for (int i = 0; result == 0; i += 1) {
+		result = a[i] - b[i];
+		if (a[i] == 0) {
+			break;
+		}
+	}
+	return result;
+}
+define equals(string a, string b) = bool(compare(a, b) == 0);
+
 // convert number to string
 struct FormatFlags {
-	int sgnChr;	// should be one of: 0, '-', '+'
-	int padChr;	// padding character: 0, '0'
-	int padLen;	// padding length
-	int maxLen;	// maximum length
-	int fmtChr; // format char
-	int radix;
+	const int sgnChr;	// should be one of: 0, '-', '+'
+	const int padChr;	// padding character: 0, '0'
+	const int padLen;	// padding length
+	const int maxLen;	// maximum length
+	const int fmtChr;	// format char
 }
 
-// TODO: extend this function as in format.itoa(...)
-int format(char output[], int pos, FormatFlags &flags, uint32 value) {
+int format(char output[], int pos, FormatFlags &flags, int rad, uint32 value) {
+	static const FormatFlags default = FormatFlags(0, ' ', 0, 0, 'd');
 	static const char digits[] = "0123456789abcdefghijklmnopqrstuvwxyz";
-	static FormatFlags default = FormatFlags(0, ' ', 0, 0, 'd', 10);
+
+	/* TODO: extend this function as commented
+
+	static int _itoa(char dst[], uint32 num, int rad, int pos, FormatFlags &flags) {
+		if (num == 0) {
+			int dstLen = dst.length;
+			int padChr = flags.padChr;
+			int padLen = flags.padLen;
+
+			if (padChr && flags.sgnChr && pos < dstLen) {
+				dst[pos] = flags.sgnChr;
+				pos += 1;
+			}
+
+			if (padChr == 0) {
+				padChr = ' ';
+			}
+
+			for (int i = 0; i < padLen; i += 1) {
+				if (pos < dstLen) {
+					dst[pos] = padChr;
+				}
+				pos += 1;
+			}
+			return pos;
+		}
+
+		flags.padLen -= 1;
+		pos = _itoa(dst, num / rad, rad, pos, &flags);
+		if (pos < dst.length) {
+			dst[pos] = digits[num % rad];
+		}
+		result = pos + 1;
+	}*/
 
 	if (flags == null) {
 		flags = default;
 	}
 
-	int rad = flags.radix;
 	assert(rad > 0 && rad < digits.length);
 
 	char temp[80];
@@ -1596,41 +1660,7 @@ int format(char output[], int pos, FormatFlags &flags, uint32 value) {
  *  	null defaults to: "%d"
  * @param value date to format
  */
-int format(char buff[], string format, int value) {
-	static const char digits[] = "0123456789abcdefghijklmnopqrstuvwxyz";
-
-	static int _itoa(char dst[], uint32 num, int rad, int pos, FormatFlags &flags) {
-		if (num == 0) {
-			int dstLen = dst.length;
-			int padChr = flags.padChr;
-			int padLen = flags.padLen;
-
-			if (padChr && flags.sgnChr && pos < dstLen) {
-				dst[pos] = flags.sgnChr;
-				pos += 1;
-			}
-
-			if (padChr == 0) {
-				padChr = ' ';
-			}
-
-			for (int i = 0; i < padLen; i += 1) {
-				if (pos < dstLen) {
-					dst[pos] = padChr;
-				}
-				pos += 1;
-			}
-			return pos;
-		}
-
-		flags.padLen -= 1;
-		pos = _itoa(dst, num / rad, rad, pos, &flags);
-		if (pos < dst.length) {
-			dst[pos] = digits[num % rad];
-		}
-		result = pos + 1;
-	}
-
+int format(char output[], string format, int value) {
 	int pos = 0;
 	if (format == null) {
 		format = "%d";
@@ -1641,8 +1671,8 @@ int format(char buff[], string format, int value) {
 			//~ spos += readFlags(format, spos, &flags);
 			chr = format[spos += 1];
 			if (chr == '%') {
-				if (pos < buff.length) {
-					buff[pos] = chr;
+				if (pos < output.length) {
+					output[pos] = chr;
 					pos += 1;
 				}
 				continue;
@@ -1708,21 +1738,19 @@ int format(char buff[], string format, int value) {
 				}
 			}
 
-			assert(rad > 0 && rad < digits.length);
-			FormatFlags flags = FormatFlags(sgnChr, padChr, padLen, maxLen, chr, rad);
-			pos = _itoa(buff, val, rad, pos, &flags);
-
+			FormatFlags flags = FormatFlags(sgnChr, padChr, padLen, maxLen, chr);
+			pos = format(output, pos, &flags, rad, val);
 		}// */
-		else if (pos < buff.length) {
-			buff[pos] = chr;
+		else if (pos < output.length) {
+			output[pos] = chr;
 			pos += 1;
 		}
 	}
 
-	if (pos >= buff.length) {
-		pos = buff.length - 1;
+	if (pos >= output.length) {
+		pos = output.length - 1;
 	}
-	buff[pos] = 0;
+	output[pos] = 0;
 	return pos;
 }
 
@@ -1739,7 +1767,7 @@ int format(char buff[], string format, int value) {
 void format(char output[], string format, Date value) {
 	Date.Parts parts = Date.ToParts(value.days);
 
-	int strcat(char output[], int pos, string value) {
+	static int strcat(char output[], int pos, string value) {
 		int len = strlen(value);
 		for (result = 0; result < len; result += 1) {
 			if (pos >= output.length) {
@@ -1801,6 +1829,31 @@ void format(char output[], string format, Date value) {
 		}
 
 		//#{
+			//~ FORMAT	 What it is replaced by
+			//~ %a	 abbreviated weekday name
+			//~ %A	 full weekday name
+			//~ %b	 abbreviated month name
+			//~ %B	 full month name
+			//~ %c	 appropriate date and time representation
+			//~ %d	 day of the month (01-31)
+			//~ %H	 hour of the day (00-23)
+			//~ %I	 hour of the day (01-12)
+			//~ %j	 day of the year (001-366)
+			//~ %m	 month of the year (01-12)
+			//~ %M	 minute of the hour (00-59)
+			//~ %p	 AM/PM designator
+			//~ %S	 second of the minute (00-61)
+			//~ %U	 week number of the year where Sunday is the first day of week 1 (00-53)
+			//~ %w	 weekday where Sunday is day 0 (0-6)
+			//~ %W	 week number of the year where Monday is the first day of week 1 (00-53)
+			//~ %x	 appropriate date representation
+			//~ %X	 appropriate time representation
+			//~ %y	 year without century (00-99)
+			//~ %Y	 year with century
+			//~ %Z	 time zone (possibly abbreviated) or no characters if time zone isunavailable
+			//~ %%	 %
+			//~ Returns the number of characters stored into str not including the terminating null character. On error zero is returned.
+
 			//~ FORMAT  controls the output.  Interpreted sequences are:
 			//~ %%      a literal %
 			//~ %a      locale's abbreviated weekday name (e.g., Sun)
@@ -1955,18 +2008,18 @@ void format(char output[], string format, Date value) {
 			}
 		}
 		else if (chr == 'w') {//~ %w	Weekday as a decimal number, where 0 is Sunday and 6 is Saturday.	0, 1, ..., 6
-			FormatFlags flags = FormatFlags(sgnChr, padChr, padLen, maxLen, chr, 10);
-			pos = format(output, pos, &flags, parts.dayOfWeek);
+			FormatFlags flags = FormatFlags(sgnChr, padChr, padLen, maxLen, chr);
+			pos = format(output, pos, &flags, 10, parts.dayOfWeek);
 		}
 		else if (chr == 'd') {//~ %d	Day of the month as a decimal number.		01, 02, ..., 31
 			if (padLen < 0) {padLen = 2; padChr = '0';}
-			FormatFlags flags = FormatFlags(sgnChr, padChr, padLen, maxLen, chr, 10);
-			pos = format(output, pos, &flags, parts.dayOfMonth);
+			FormatFlags flags = FormatFlags(sgnChr, padChr, padLen, maxLen, chr);
+			pos = format(output, pos, &flags, 10, parts.dayOfMonth);
 		}
 		else if (chr == 'j') {//~ %j	Day of the year as a decimal number.		001, 002, ..., 366
 			if (padLen < 0) {padLen = 3; padChr = '0';}
-			FormatFlags flags = FormatFlags(sgnChr, padChr, padLen, maxLen, chr, 10);
-			pos = format(output, pos, &flags, parts.dayOfYear);
+			FormatFlags flags = FormatFlags(sgnChr, padChr, padLen, maxLen, chr);
+			pos = format(output, pos, &flags, 10, parts.dayOfYear);
 		}
 
 		else if (chr == 'b' || chr == 'B') {//~ %a	Month as locale’s name.
@@ -2018,17 +2071,17 @@ void format(char output[], string format, Date value) {
 		}
 		else if (chr == 'm') {//~ %m	Month as a decimal number.					01, 02, ..., 12
 			if (padLen < 0) {padLen = 2; padChr = '0';}
-			FormatFlags flags = FormatFlags(sgnChr, padChr, padLen, maxLen, chr, 10);
-			pos = format(output, pos, &flags, parts.month);
+			FormatFlags flags = FormatFlags(sgnChr, padChr, padLen, maxLen, chr);
+			pos = format(output, pos, &flags, 10, parts.month);
 		}
 
 		else if (chr == 'y') {//~ %y	Year without century as a decimal number.	0, 1, ..., 99
-			FormatFlags flags = FormatFlags(sgnChr, padChr, padLen, maxLen, chr, 10);
-			pos = format(output, pos, &flags, parts.year % 100);
+			FormatFlags flags = FormatFlags(sgnChr, padChr, padLen, maxLen, chr);
+			pos = format(output, pos, &flags, 10, parts.year % 100);
 		}
 		else if (chr == 'Y') {//~ %Y	Year with century as a decimal number.		1970, 1988, 2001, 2013
-			FormatFlags flags = FormatFlags(sgnChr, padChr, padLen, maxLen, chr, 10);
-			pos = format(output, pos, &flags, parts.year);
+			FormatFlags flags = FormatFlags(sgnChr, padChr, padLen, maxLen, chr);
+			pos = format(output, pos, &flags, 10, parts.year);
 		}
 		else {
 			if (pos < output.length - 1) {
@@ -2070,7 +2123,6 @@ define string(char chr) = emit(string, (chrStrings[chr]));
 
 define string(char arr[]) = emit(string, (arr));
 define variant(string str) = emit(variant, (str), (string));
-
 }
 
 // these should be something like emit
