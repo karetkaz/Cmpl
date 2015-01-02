@@ -1,4 +1,4 @@
-//~ /* TEST: function reference initialization
+/* BUG: function reference initialization
 float64 Sum(float64 data[]) = Math.Sum;
 float64 Mean(float64 data[]) = Math.Mean;
 
@@ -6,6 +6,9 @@ float64 data[3] = [1, 2, 3];
 
 float64 sum = Sum(data);
 float64 mean = Mean(data);
+
+assert(sum == 6);
+assert(mean == 2);
 //~ */
 
 //~ /* TEST: invoke functions ...
@@ -53,6 +56,7 @@ if (method != null) {
 // +/
 
 //~ */
+
 //~ /* TEST: Closure like constructs ...
 
 struct Closure { int64 call(Closure &c, int64 n); int64 data; int32 invoked; /+...+/ }

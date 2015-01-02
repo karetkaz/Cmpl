@@ -40,17 +40,8 @@ enum importgfx: bool {
 }
 
 static if (importgfx.rgbUtils) {
-struct rgb:1 {
-	int8 b;
-	int8 g;
-	int8 r;
-	int8 x;
-}
 
-define int(rgb value) = emit(int, (value));
-define asrgb(int value) = emit(rgb, (value));
-
-define __rgb(int r, int g, int b) = emit(rgb, i32((r << 16) | (g << 8) | b));
+define __rgb(int r, int g, int b) = int32((r << 16) | (g << 8) | b);
 define rgbClamp(int r, int g, int b) = __rgb(Math.clamp(r, 0, 255), Math.clamp(g, 0, 255), Math.clamp(b, 0, 255));
 define rgbAnd(int r, int g, int b) = __rgb(r & 255, g & 255, b & 255);
 
@@ -75,9 +66,20 @@ define bch(int col) = int32(col & 0xff);
 // get the luminosity of the color
 define lum(int c) = int((rch(c) * 76 + gch(c) * 150 + bch(c) * 29) >> 8);
 
+struct rgb:1 {
+	int8 b;
+	int8 g;
+	int8 r;
+	int8 x;
+}
+
+define int32(rgb value) = emit(int, rgb(value));
+define asrgb(int32 value) = emit(rgb, int32(value));
+define asrgb(int r, int g, int b) = emit(rgb, rgb(r, g, b));
+
 static if (importstd.vec4f) {
 define rgb2vec4f(int32 col) = vec4f(rch(col) / 255., gch(col) / 255., bch(col) / 255.);
-define rgb(vec4f &col) = rgb(int(col.x * 255), int(col.y * 255), int(col.z * 255));
+define asrgb(vec4f &col) = rgb(int(col.x * 255), int(col.y * 255), int(col.z * 255));
 }
 
 //~ linear interpolation: assuming t is in [0, 1) * 65535
@@ -219,12 +221,7 @@ gxSurf openImg(gxSurf dst, string fileName) {
 			}
 		}
 	}
-	// assert(ext != 0, "error opening file `", fileName, "`");
-	if (ext != 0) {
-		print("error opening file `");
-		print(fileName);
-		print("`\n");
-	}
+	assert(ext == 0, "error opening file", variant(fileName));
 	result = dst;
 }
 define gxSurf(string fileName) = openImg(newSurf(0, 0), fileName);
@@ -270,7 +267,7 @@ void evalSurf2(gxSurf dst, gxRect &roi, vec4f eval(double x, double y)) {
 	for (int y = rect.y; y < rect.y + rect.h; y += 1) {
 		double x01 = 0;
 		for (int x = rect.x; x < rect.x + rect.w; x += 1) {
-			setPixel(dst, x, y, int(rgb(eval(x01, y01))));
+			setPixel(dst, x, y, int32(asrgb(eval(x01, y01))));
 			x01 += dx;
 		}
 		y01 += dy;
@@ -347,7 +344,7 @@ void lutBrightnessContrastGamma(gxClut &lut, int brightness, int contrast, doubl
 
 	lut.count = 256;
 	for (int idx = 0; idx < 256; idx += 1) {
-		int val = Math.clamp(brightness + int(255 * (cval * (pow(idx / 255., gval) - .5) + .5)), 0, 255);
+		int val = Math.clamp(brightness + int(255 * (cval * (float64.pow(idx / 255., gval) - .5) + .5)), 0, 255);
 		//~ lut.data[idx] = (doR ? val : idx) << 16 | (doG ? val : idx) << 8 | (doB ? val : idx);
 		lut.data[idx] = val << 16 | val << 8 | val;
 	}
@@ -398,7 +395,7 @@ static struct Mouse {
 	int dblClick(dblClickState &old, int btn, int x, int y) {
 		result = 0;
 		if (btn == 1 && old.btn == 0) {	// on click
-			int64 now = millis();
+			int64 now = System.millis();
 			if (x == old.x && y == old.y) {
 				if ((now - old.time) / 1000. < .5) {
 					result = old.cnt += 1;
@@ -473,7 +470,7 @@ void meshGen(int sdiv, bool sclosed, int tdiv, bool tclosed, void pos(double &x,
 					dt = div(sub(p, dt), epsilon);
 
 					Vec3 n = cross(ds, dt);
-					n = divnz(n, sqrt(dot(n, n)));
+					n = divnz(n, float64.sqrt(dot(n, n)));
 
 					mesh.Pos(vtx, p.x, p.y, p.z);
 					mesh.Nrm(vtx, n.x, n.y, n.z);
@@ -501,7 +498,7 @@ void meshGen(int sdiv, bool sclosed, int tdiv, bool tclosed, void pos(double &x,
 					n[2] = ds[0] * dt[1] - ds[1] * dt[0];
 
 					define sqr(double x) = double(x * x);
-					double len = sqrt(sqr(n[0]) + sqr(n[1]) + sqr(n[2]));
+					double len = float64.sqrt(sqr(n[0]) + sqr(n[1]) + sqr(n[2]));
 					if (len != 0) {
 						n[0] /= len;
 						n[1] /= len;
@@ -584,8 +581,13 @@ gxSurf Mandel(gxSurf dst, gxClut &lut, double QMin, double QMax, double PMin, do
 			setPixel(dst, sx, sy, lut.data[k]);
 		}
 		if (resx > 1000) {
-			print("line(%d", sy);
-			print(") of %d\n", resy);
+			/*struct Info {
+				int currentLine;
+				int numberOfLines;
+			}
+			Info info = Info(sy, resy);
+			debug("done", variant(&info));
+			// */
 		}
 	}
 	result = dst;
@@ -636,7 +638,7 @@ void setupPicView(gxSurf vImg, bool vFit) {
 			reDraw = false;
 		}
 		static if (inertial_pan) {
-			int64 now = millis();
+			int64 now = System.millis();
 			if (inertial_time < now) {
 				inertial_pan_x = Math.clamp(inertial_pan_x, -inertial_pan, inertial_pan) / inertial_speed;
 				inertial_pan_y = Math.clamp(inertial_pan_y, -inertial_pan, inertial_pan) / inertial_speed;
@@ -676,14 +678,14 @@ void setupPicView(gxSurf vImg, bool vFit) {
 			static int32 oox = 0;
 			static int32 ooy = 0;
 			if (btn == 1 && ob == 0) {	// on press
-				ot = millis();
+				ot = System.millis();
 				inertial_pan_x = 0;
 				inertial_pan_y = 0;
 				oox = x;
 				ooy = y;
 			}
 			if (btn == 0 && ob == 1) {	// on relase
-				int64 time = millis() - ot;
+				int64 time = System.millis() - ot;
 				if (time < 350) {
 					inertial_time = 0;
 					inertial_pan_x = (oox - x) / (time / 100.);

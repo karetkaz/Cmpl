@@ -47,7 +47,7 @@ void drawCB() {
 
 	Gui.Repaint();
 	static int64 beg = -1;
-	int64 now = millis();
+	int64 now = System.millis();
 	//~ /* limit speed to 20 fps
 	if ((now - beg) / 1000. <= 1./25) {
 		static if (Options.do2d) {

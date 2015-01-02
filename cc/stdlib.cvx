@@ -1,8 +1,14 @@
+//~ #sed 's/^\([^:)]*\).*$/\1\2/g' $(FileNameExt)
+//~ #grep -o '^[^:)]*\()\:[^:]*\)\?' $(FileNameExt)
+
 /**
  * standard library extension
  */
 
-/** 
+define rand(int min, int max) = int(min + System.rand() % (max - min));
+define rand(double min, double max) = double(min + (System.rand() / float64(RAND_MAX)) * (max - min));
+
+/**
  * 
  */
 static struct Math {
@@ -108,7 +114,7 @@ static struct Math {
 	// TODO: remove me
 	define nz(float64 val1, float64 val2) = float64(val1 ? val1 : val2);
 
-	define hypot(float64 x, float64 y) = sqrt(x * x + y * y);
+	define hypot(float64 x, float64 y) = float64.sqrt(x * x + y * y);
 
 	//TODO: float64 eval(float64 x, float64 poly...) {...}
 	define eval(float64 x, float64 a0, float64 a1) = (a0 + x * a1);
@@ -377,10 +383,10 @@ Number.prototype.log10 = function(){return Math.log(this) / Math.LN10;};
 		}
 
 		if (x > 21) {
-			return exp(x) / 2;
+			return float64.exp(x) / 2;
 		}
 		if (x > 0.5) {
-			result := (exp(x) - exp(-x)) / 2;
+			result := (float64.exp(x) - float64.exp(-x)) / 2;
 		}
 		else {
 			float64 sq := x * x;
@@ -401,10 +407,10 @@ Number.prototype.log10 = function(){return Math.log(this) / Math.LN10;};
 			x = -x;
 		}
 		if (x > 21) {
-			result =  exp(x) / 2;
+			result =  float64.exp(x) / 2;
 		}
 		else {
-			result = (exp(x) + exp(-x)) / 2;
+			result = (float64.exp(x) + float64.exp(-x)) / 2;
 		}
 	}
 
@@ -427,12 +433,12 @@ Number.prototype.log10 = function(){return Math.log(this) / Math.LN10;};
 			return nan; // special case
 		}
 
-		result = sqrt(1 - x * x);
+		result = float64.sqrt(1 - x * x);
 		if (x > 0.7) {
-			result = pi / 2 - atan2(result, x);
+			result = pi / 2 - float64.atan2(result, x);
 		}
 		else {
-			result = atan2(x, result);
+			result = float64.atan2(x, result);
 		}
 
 		if (sign) {
@@ -491,29 +497,30 @@ static struct Perlin {
 
 	void init() {
 		int i;
+		System.srand(System.time());
 		define sqr(float x) = float(x * x);
 		for (i = 0; i < B ; i += 1) {
 			p[i] = i;
 
-			g1[i] = float((rand() % (B + B)) - B) / B;
+			g1[i] = float((System.rand() % (B + B)) - B) / B;
 
 			for (int j = 0 ; j < 2 ; j += 1) {
-				g2[i][j] = float((rand() % (B + B)) - B) / B;
+				g2[i][j] = float((System.rand() % (B + B)) - B) / B;
 			}
 
 			//~ normalize2(g2[i]);
-			float n2 = sqrt(sqr(g2[i][0]) + sqr(g2[i][1]));
+			float n2 = float64.sqrt(sqr(g2[i][0]) + sqr(g2[i][1]));
 			if (n2 != 0) {
 				g2[i][0] /= n2;
 				g2[i][1] /= n2;
 			}
 
 			for (int j = 0 ; j < 3 ; j += 1) {
-				g3[i][j] = float((rand() % (B + B)) - B) / B;
+				g3[i][j] = float((System.rand() % (B + B)) - B) / B;
 			}
 
 			//~ normalize3(g3[i]);
-			float n3 = sqrt(sqr(g3[i][0]) + sqr(g3[i][1]) + sqr(g3[i][1]));
+			float n3 = float64.sqrt(sqr(g3[i][0]) + sqr(g3[i][1]) + sqr(g3[i][1]));
 			if (n3 != 0) {
 				g3[i][0] /= n3;
 				g3[i][1] /= n3;
@@ -523,7 +530,7 @@ static struct Perlin {
 
 		for ( ; i -= 1; ) {
 			int k = p[i];
-			int j = rand() % B;
+			int j = System.rand() % B;
 			p[i] = p[j];
 			p[j] = k;
 		}
@@ -780,8 +787,8 @@ struct Date {
 		}
 	}// */
 
-	static const int DaysToMonth365[] = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365];
-	static const int DaysToMonth366[] = [0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335, 366];
+	static const int DaysToMonth365[13] = {0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365};
+	static const int DaysToMonth366[13] = {0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335, 366};
 
 	static bool IsLeapYear(int year) {
 		if (year % 4 == 0) {
@@ -1070,57 +1077,6 @@ int bitswp(uint32 x) {
 }
 
 }
-static if (importstd.print) {
-
-define print(bool arg)      = print(arg ? "true" : "false");
-//~ define print(char arg)      = print("%c", int64(arg));
-define print(int8 arg)      = print("%d", int64(arg));
-define print(int16 arg)     = print("%d", int64(arg));
-define print(int32 arg)     = print("%d", int64(arg));
-define print(int64 arg)     = print("%D", int64(arg));
-define print(uint8 arg)     = print("%d", int64(arg));
-define print(uint16 arg)    = print("%d", int64(arg));
-define print(uint32 arg)    = print("%d", int64(arg));
-define print(float32 arg)   = print("%f", emit(i64, f64(arg)));
-define print(float64 arg)   = print("%F", emit(i64, f64(arg)));
-
-define println()            = print("\n");
-//~ define println(bool arg)    = print("%d\n", int64(arg));
-define println(bool arg)    = print(arg ? "true\n" : "false\n");
-//~ define println(char arg)    = print("%c\n", int64(arg));
-define println(int8 arg)    = print("%d\n", int64(arg));
-define println(int16 arg)   = print("%d\n", int64(arg));
-define println(int32 arg)   = print("%d\n", int64(arg));
-define println(int64 arg)   = print("%D\n", int64(arg));
-define println(uint8 arg)   = print("%d\n", int64(arg));
-define println(uint16 arg)  = print("%d\n", int64(arg));
-define println(uint32 arg)  = print("%d\n", int64(arg));
-define println(float32 arg) = print("%f\n", emit(i64, f64(arg)));
-define println(float64 arg) = print("%F\n", emit(i64, f64(arg)));
-
-define print(string fmt, int8 arg)    = print(fmt, int64(arg));
-define print(string fmt, int16 arg)   = print(fmt, int64(arg));
-define print(string fmt, int32 arg)   = print(fmt, int64(arg));
-define print(string fmt, uint8 arg)   = print(fmt, int64(arg));
-define print(string fmt, uint16 arg)  = print(fmt, int64(arg));
-define print(string fmt, uint32 arg)  = print(fmt, int64(arg));
-define print(string fmt, float32 arg) = print(fmt, emit(i64, f64(arg)));
-define print(string fmt, float64 arg) = print(fmt, emit(i64, f64(arg)));
-
-void println(string arg) {print(arg); print("\n");}
-define putchr(int chr) = print("%c", int64(chr));
-
-define rand(int32 max) = int32(rand() % max);
-define rand(int32 min, int32 max) = int32(min + rand(max - min));
-
-define rand(int64 max) = int64((int64(rand()) * rand()) % max);
-define rand(int64 min, int64 max) = int64(min + rand(max - min));
-
-define rand2FloatValue = 0xffffff;
-define rand(float64 max) = float64((max * rand(rand2FloatValue)) / rand2FloatValue);
-define rand(float64 min, float64 max) = float64(min + rand(max - min));
-
-}
 
 static if (importstd.complex) {
 struct Complex {
@@ -1170,7 +1126,7 @@ Complex div(Complex a, Complex b) {
 }
 
 define abs(Complex a) = Math.hypot(a.re, a.im);
-define arg(Complex a) = atan2(a.re, a.im);
+define arg(Complex a) = float64.atan2(a.re, a.im);
 
 define re(Complex a) = float64(a.re);		// a must be an rvalue.
 define im(Complex a) = float64(a.im);
@@ -1182,9 +1138,9 @@ Complex inv(Complex a) {
 
 define conj(Complex a) = Complex(a.re, -a.im);
 
-define exp(Complex a) = Complex(exp(a.re) * cos(a.im), exp(a.re) * sin(a.im));
+define exp(Complex a) = Complex(float64.exp(a.re) * float64.cos(a.im), float64.exp(a.re) * float64.sin(a.im));
 
-define log(Complex a) = Complex(log(abs(a)), arg(a));
+define log(Complex a) = Complex(float64.log(abs(a)), arg(a));
 
 Complex pow(Complex a, Complex b) {
 	/*
@@ -1201,16 +1157,16 @@ Complex pow(Complex a, Complex b) {
 	//~ */
 
 	float64 r = Math.hypot(a.im, a.re);
-	float64 t = atan2(a.im, a.re);
-	float64 u = b.re * t + b.im * log(r);
-	float64 v = pow(r, b.re) * exp(-b.im * t);
-	return Complex(v * cos(u), v * sin(u));
+	float64 t = float64.atan2(a.im, a.re);
+	float64 u = b.re * t + b.im * float64.log(r);
+	float64 v = float64.pow(r, b.re) * float64.exp(-b.im * t);
+	return Complex(v * float64.cos(u), v * float64.sin(u));
 }
 
 define pow(Complex a, float64 b) = pow(a, Complex(b));
 
-define sin(Complex a) = Complex(sin(a.re) * Math.Cosh(a.im), cos(a.re) * Math.Sinh(a.im));
-define cos(Complex a) = Complex(cos(a.re) * Math.Cosh(a.im),-sin(a.re) * Math.Sinh(a.im));
+define sin(Complex a) = Complex(float64.sin(a.re) * Math.Cosh(a.im), float64.cos(a.re) * Math.Sinh(a.im));
+define cos(Complex a) = Complex(float64.cos(a.re) * Math.Cosh(a.im),-float64.sin(a.re) * Math.Sinh(a.im));
 define tan(Complex a) = div(sin(a), cos(a));
 
 /+ More Trig ... ???
@@ -1261,20 +1217,6 @@ define max(vec2d x, vec2d y) = emit(vec2d, v2d.max, vec2d(y), vec2d(x));
 define ceq(vec2d x, vec2d y) = emit(v2d.equ, vec2d(y), vec2d(x));
 
 define dot(vec2d &x, vec2d &y) = float64(x.x * y.x + x.y * y.y);
-
-static if (importstd.print) {
-void print(vec2d v) {
-	print("vec2d(");
-	print(v.x);
-	print(", ");
-	print(v.y);
-	println(")");
-}
-void println(vec2d v) {
-	print(v);
-	println();
-}
-}
 }
 static if (importstd.vec4f) {
 struct vec4f {
@@ -1318,9 +1260,9 @@ define cross(vec4f &a, vec4f &b) = vec4f(a.y * b.z - a.z * b.y, a.z * b.x - a.x 
 
 define lerp(float32 t, vec4f lhs, vec4f rhs) = vec4f(Math.lerp(t, lhs.x, rhs.x), Math.lerp(t, lhs.y, rhs.y), Math.lerp(t, lhs.z, rhs.z), Math.lerp(t, lhs.w, rhs.w));
 
-define len(vec4f v) = sqrt(dp3(v, v));
+define len(vec4f v) = float64.sqrt(dp3(v, v));
 define eval(vec4f v, float32 x) = float32((((v.w * x + v.z) * x + v.y) * x) + v.x);
-define normalize(vec4f a) = div(a, vec4f(float32(sqrt(dp3(a, a)))));
+define normalize(vec4f a) = div(a, vec4f(float32(float64.sqrt(dp3(a, a)))));
 
 //~ operator float32(vec4f vec) = float32(vec.w);
 define float32(vec4f &vec) = float32(vec.w);
@@ -1332,24 +1274,6 @@ define float32(vec4f &vec) = float32(vec.w);
 //~ operator (vec4f x) * (vec4f y) = emit(vec4f, v4f.mul, vec4f(y), vec4f(x));
 //~ operator (vec4f x) / (vec4f y) = emit(vec4f, v4f.div, vec4f(y), vec4f(x));
 //~ operator (vec4f x) % (vec4f y) = emit(vec4f, v4f.mod, vec4f(y), vec4f(x));
-
-static if (importstd.print) {
-void print(vec4f v) {
-	print("vec4f(");
-	print(v.x);
-	print(", ");
-	print(v.y);
-	print(", ");
-	print(v.z);
-	print(", ");
-	print(v.w);
-	print(")");
-}
-void println(vec4f v) {
-	print(v);
-	println();
-}
-}
 }
 static if (importstd.mat4f) {
 struct mat4f {
@@ -1436,23 +1360,6 @@ void transpose2(mat4f &mat) {
 	//~ swap(&mat.w.w, &mat.w.w);	same
 }
 
-static if (importstd.print) {
-void print(mat4f v) {
-	print("mat4f(");
-	print(v.x);
-	print(", ");
-	print(v.y);
-	print(", ");
-	print(v.z);
-	print(", ");
-	print(v.w);
-	print(")");
-}
-void println(mat4f v) {
-	print(v);
-	println();
-}
-}
 }
 
 //#{ debuging ...
@@ -1464,7 +1371,7 @@ static struct Debug {
 		debug = 3;
 
 		notrace = 0;
-		deftrace = 25;
+		deftrace = 125;
 	}
 
 	//~ int Priority = verbose;
@@ -2125,8 +2032,12 @@ define string(char arr[]) = emit(string, (arr));
 define variant(string str) = emit(variant, (str), (string));
 }
 
+define realloc(pointer ptr, int size) = memmgr(ptr, size);
+define malloc(int size) = memmgr(null, size);
+define free(pointer ptr) = memmgr(ptr, 0);
+
 // these should be something like emit
-define new(typename type) = memmgr(null, type.size);
+//~ define new(typename type) = memmgr(null, type.size);
 //~ define new(typename type, int32 n) = memmgr(null, type.size * n);
 
 // creates a slice: {data, length}

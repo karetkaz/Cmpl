@@ -1074,7 +1074,7 @@ int main(int argc, char* argv[]) {
 
 	if (rt != NULL) {
 		int64_t ticks = timenow();
-		e = execute(rt, NULL, sizeof(mem)/4);
+		e = execute(rt, NULL, sizeof(mem)/3);
 		//~ debug("vmExecute(): %d\tTime: %f", e, ticksinsecs(ticks));
 		debug("vmExecute(Exit code: %d, Time: %.3f)", e, ticksinsecs(ticks));
 		if (e != 0) {
@@ -1122,7 +1122,7 @@ int main(int argc, char* argv[]) {
 				}
 				else {
 					int64_t ticks = timenow();
-					e = execute(rt, NULL, sizeof(mem)/4);
+					e = execute(rt, NULL, sizeof(mem)/3);
 					debug("vmExecute(): %d\tTime: %g", e, ticksinsecs(ticks));
 				}
 			} break;

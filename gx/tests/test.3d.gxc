@@ -17,8 +17,8 @@ mesh.Normalize(0);
 static if (true) {			// use custom mouseHandler
 
 mat4f matrix_Rotation(vec4f &dir, float ang) {
-	float sin_t = sin(ang);
-	float cos_t = cos(ang);
+	float sin_t = float64.sin(ang);
+	float cos_t = float64.cos(ang);
 	float one_c = 1. - cos_t;
 	vec4f tmp = mul(dir, sin_t);
 
@@ -84,7 +84,7 @@ void camera_Rotate(vec4f &dir, vec4f &orbit, float ang) {
 		return;
 
 	vec4f dir2 = sub(orbit, camera.Pos);
-	float dist = sqrt(dp3(dir2, dir2));
+	float dist = float64.sqrt(dp3(dir2, dir2));
 
 	define lookAtOrbit = !true;
 	static if (!lookAtOrbit) {	// camera will just rotate arund orbit

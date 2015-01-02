@@ -21,7 +21,7 @@
 	5: print non pre-mapped strings, non static types
 	6: print static casts generated with emit
 */
-//~ #define DEBUGGING 1
+#define DEBUGGING 0
 
 // enable paralell execution stuff
 //~ #define MAXPROCSEXEC 1
@@ -105,10 +105,11 @@ typedef enum {
 	TYPE_flt = TYPE_f64,
 	TYPE_str = TYPE_ptr,
 
+	KIND_mask   = 0x0ff,		// mask
 	ATTR_mask   = 0xf00,		// mask
 	ATTR_stat   = 0x400,		// static
 	ATTR_const  = 0x800,		// constant
-	//~ ATTR_paral  = 0x100,		// parallel
+	ATTR_paral  = 0x100,		// parallel
 
 	stmt_NoDefs = 0x100,		// disable typedefs in stmt.
 	stmt_NoRefs = 0x200,		// disable variables in stmt.
@@ -246,7 +247,7 @@ struct symNode {
 	//~ TODO: temporarly array variable base type
 	symn	prms;		// tail of flds: struct nonstatic fields / function paramseters
 
-	symn	decl;		// declaring symbol: struct, function, ...
+	symn	decl;		// declaring symbol (defined in ...): struct, function, ...
 	symn	next;		// next symbol: field / param / ... / (in scope table)
 
 	ccToken	kind;		// TYPE_def / TYPE_rec / TYPE_ref / TYPE_arr
@@ -537,7 +538,7 @@ symn declare(ccState, ccToken kind, astn tag, symn typ);
  * @param strict Strict mode: casts are not enabled.
  * @return cast of the assignmet if it can be done.
  */
-int canAssign(ccState, symn rhs, astn val, int strict);
+ccToken canAssign(ccState, symn rhs, astn val, int strict);
 
 /**
  * @brief Lookup an identifier.
@@ -564,10 +565,10 @@ symn typecheck(ccState, symn loc, astn ast);
  * @param spos Size of base / return.
  * @return Size of struct / functions param size.
  */
-int fixargs(symn sym, int align, int spos);
+int fixargs(symn sym, unsigned int align, int spos);
 
 ccToken castOf(symn typ);
-ccToken castTo(astn ast, ccToken tyId);
+ccToken castTo(astn ast, ccToken castTo);
 
 /// skip the next token.
 int skip(ccState, ccToken kind);
@@ -663,14 +664,14 @@ symn linkOf(astn ast);
 int eval(astn res, astn ast);
 
 /// Allocate a symbol node.
-symn newdefn(ccState, int kind);
+symn newdefn(ccState, ccToken kind);
 /// Allocate a tree node.
-astn newnode(ccState, int kind);
+astn newnode(ccState, ccToken kind);
 /// Consume node, so it may be reused.
 void eatnode(ccState, astn ast);
 
 /// Allocate an operator tree node.
-astn opnode(ccState, int kind, astn lhs, astn rhs);
+astn opnode(ccState, ccToken kind, astn lhs, astn rhs);
 /// Allocate node whitch is a link to a reference
 astn lnknode(ccState, symn ref);
 
@@ -736,10 +737,10 @@ dbgInfo dbgMapCode(state rt, astn ast, int start, int end);
 
 int logTrace(state rt, int ident, int startlevel, int tracelevel);
 //~ disable warning messages
-/*???: #ifdef _MSC_VER
+#ifdef _MSC_VER
+// C4996: The POSIX ...
 #pragma warning(disable: 4996)
 #endif
-*/
 
 static inline void _abort() {
 	//~ abort();
@@ -748,5 +749,6 @@ static inline void _abort() {
 #define ERR_ASSIGN_TO_CONST "asignment of constant variable `%+k`"
 #define WARN_USE_BLOCK_STATEMENT "statement should be a block statement {%+k}."
 #define WARN_EMPTY_STATEMENT "empty statement `;`."
+#define WARN_INVALID_EXPRESSION_STATEMENT "expression statement expected"
 
 #endif

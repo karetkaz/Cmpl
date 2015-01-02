@@ -118,7 +118,7 @@ struct xrgb: 1 {
 }
 struct xrgbi32: 0 {
 	xrgb rgb;
-	int32 val;	//%0x%08x
+	int32 val;	//%#%08x
 }
 
 xrgb a = emit(xrgb, i32(0x801f008f));

@@ -111,7 +111,7 @@ void* rtAlloc(state rt, void* ptr, unsigned size) {
 
 	const int minAllocationSize = sizeof(struct memchunk);
 	memchunk chunk = (memchunk)((char*)ptr - offsetOf(memchunk, data));
-	unsigned allocsize = padded(size + minAllocationSize, minAllocationSize);
+	unsigned allocSize = padded(size + minAllocationSize, minAllocationSize);
 
 	// memory manager is not initialized, initialize it first
 	if (rt->vm.heap == NULL) {
@@ -178,9 +178,9 @@ void* rtAlloc(state rt, void* ptr, unsigned size) {
 			chunk->prev = NULL;
 			chunk = NULL;
 		}
-		else if (allocsize < chunksize) {			// shrink
+		else if (allocSize < chunksize) {			// shrink
 			memchunk next = chunk->next;
-			memchunk free = (memchunk)((char*)chunk + allocsize);
+			memchunk free = (memchunk)((char*)chunk + allocSize);
 
 			// do not make a free unaligned block (realoc 161 to 160 bytes)
 			if (((char*)next - (char*)free) > minAllocationSize) {
@@ -216,11 +216,11 @@ void* rtAlloc(state rt, void* ptr, unsigned size) {
 
 			// check if block is free.
 			if (chunk->prev == NULL && next) {
-				unsigned chunksize = (char*)next - (char*)chunk - allocsize;
-				if (allocsize < chunksize) {
-					int diff = chunksize - allocsize;
+				unsigned chunksize = (char*)next - (char*)chunk - allocSize;
+				if (allocSize < chunksize) {
+					int diff = chunksize - allocSize;
 					if (diff > minAllocationSize) {
-						memchunk free = (memchunk)((char*)chunk + allocsize);
+						memchunk free = (memchunk)((char*)chunk + allocSize);
 						chunk->next = free;
 						free->prev = NULL;
 						free->next = next;
@@ -240,7 +240,7 @@ void* rtAlloc(state rt, void* ptr, unsigned size) {
 	// debug
 	if (0 || (ptr == NULL && size == 0)) {
 		memchunk mem;
-		perr(rt, 0, NULL, 0, "memmgr(%06x, %d): %06x; chunk[%06x, size: %d]", vmOffset(rt, ptr), size, vmOffset(rt, chunk ? chunk->data : NULL), vmOffset(rt, chunk), allocsize);
+		perr(rt, 0, NULL, 0, "memmgr(%06x, %d): %06x; chunk[%06x, size: %d]", vmOffset(rt, ptr), size, vmOffset(rt, chunk ? chunk->data : NULL), vmOffset(rt, chunk), allocSize);
 		for (mem = rt->vm.heap; mem; mem = mem->next) {
 			char *status = mem->prev ? "used" : "free";
 			if (mem->next) {

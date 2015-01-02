@@ -97,7 +97,6 @@ gxSurf histo(gxSurf dst, gxSurf src, bool rgb) {
 		zoomSurf(dst, null, result, null, 1);
 		delSurf(result);
 		result = dst;
-		println("histogram width not 256, resizing ...");
 	}
 }
 

@@ -14,12 +14,12 @@ void doLinearGradient(gxRect roi, bool repeat) {
 	static double dx;
 	static double dy;
 
-	vec4f pixelCB(double x, double y) {
+	static vec4f pixelCB(double x, double y) {
 		double c = l * (dx * (x - x0) + dy * (y - y0));
 		result = vec4f(float32(c));
 	}
 
-	vec4f pixelModCB(double x, double y) {
+	static vec4f pixelModCB(double x, double y) {
 		double c = l * (dx * (x - x0) + dy * (y - y0));
 		if ((c %= 1) < 0) {c += 1;}
 		result = vec4f(float32(c));
@@ -50,7 +50,7 @@ void doConicalGradient(gxRect roi) {
 
 	static vec4f ColorCB(double x, double y) {
 
-		double ang = a - atan2(x - rix, y - riy);
+		double ang = a - float64.atan2(x - rix, y - riy);
 
 		if (ang < 0) {
 			ang += 2 * Math.pi;
@@ -66,7 +66,7 @@ void doConicalGradient(gxRect roi) {
 
 	rix = roi.x / w;
 	riy = roi.y / h;
-	a = atan2(roi.w / w, roi.h / h);
+	a = float64.atan2(roi.w / w, roi.h / h);
 	evalSurf(offScreen, null, ColorCB);
 }
 
@@ -76,10 +76,9 @@ static gxClut lut;
 //~ int Colors[4] = [0xff0000, 0x00ff00, 0x0000ff, 0xff0000];//, 0x00ff00, 0x0000ff, 0xff0000;
 
 //~ blendLut(256, &lut, Colors);
-blendLut(256, &lut, 0xffffff, 0x000000);
-//~ blendLut(lut, 0xff0000, 0x00ff00, 0x0000ff);
-//~ blendLut(lut, 0xff0000, 0x00ff00, 0x0000ff, 0xff0000);
-//~ zoomSurf(offScreen, null, lutSurf(gxSurf(256, 256), lut, 0), null, 0);
+//~ blendLut(256, &lut, 0xffffff, 0x000000);
+//~ blendLut(256, &lut, 0xff0000, 0x00ff00, 0x0000ff);
+blendLut(256, &lut, 0xff0000, 0x00ff00, 0x0000ff, 0xff0000);
 //~ saveLut(lut, "a.bmp");
 
 int type = Gradient.Linear;
@@ -127,10 +126,10 @@ void drawCB() {
 		//~ doLinearGradient(roi, true);
 		//~ doConicalGradient(roi);
 
-		//~ gradSurf(offScreen, &roi, &lut, Gradient.Repeat | type);
-		gradSurf(offScreen, &roi, &lut, type);
+		gradSurf(offScreen, &roi, &lut, Gradient.Repeat | type);
+		//~ gradSurf(offScreen, &roi, &lut, type);
 		drawRect(offScreen, &roi, 0xff00ff);
-		drawLine(offScreen, roi.x, roi.y, roi.x + roi.w, roi.y + roi.h, 0xff00ff);
+		//~ drawLine(offScreen, roi.x, roi.y, roi.x + roi.w, roi.y + roi.h, 0xff00ff);
 		reDraw = false;
 	}
 }

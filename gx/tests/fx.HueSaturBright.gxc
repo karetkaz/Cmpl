@@ -51,8 +51,8 @@ void mouseCB(int btn, int x, int y) {
 
 mat4f matHue(float val) {
 	//assert(val >= 0 && val <= 2*pi);
-	float cV = cos(val);
-	float sV = sin(val);
+	float cV = float64.cos(val);
+	float sV = float64.sin(val);
 	float lR = 0.213;
 	float lG = 0.715;
 	float lB = 0.072;

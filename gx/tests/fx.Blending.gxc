@@ -155,7 +155,7 @@ static struct BlendMode {
 		define OP(float32 Base, float32 Blend) = (
 			Blend < float32(.5)
 				? (2 * Base * Blend + Base * Base * (1 - 2 * Blend))
-				: (sqrt(Base) * (2 * Blend - 1) + 2 * Base * (1 - Blend))
+				: (float64.sqrt(Base) * (2 * Blend - 1) + 2 * Base * (1 - Blend))
 		);
 		result = vec4f(OP(Base.x, Blend.x), OP(Base.y, Blend.y), OP(Base.z, Blend.z), OP(Base.w, Blend.w));
 	}

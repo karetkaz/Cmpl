@@ -1401,6 +1401,7 @@ static void redefine(ccState cc, symn sym) {
 		return;
 	}
 
+	memset(&tag, 0, sizeof(tag));
 	tag.kind = TYPE_ref;
 	// checking symbols with the same hash code.
 	for (ptr = sym->next; ptr; ptr = ptr->next) {
@@ -2008,11 +2009,19 @@ static astn init_var(ccState cc, symn var) {
 		int arrayInit = 0;
 
 		if (typ->kind == TYPE_arr) {
-			arrayInit = skip(cc, PNCT_lc);
+			if (skip(cc, STMT_beg)) {
+				arrayInit = STMT_end;
+			}
+			else if (skip(cc, PNCT_lc)) {
+				arrayInit = PNCT_rc;
+			}
+			else if (skip(cc, PNCT_lp)) {
+				arrayInit = PNCT_rp;
+			}
 		}
 		var->init = expr(cc, TYPE_def);
 		if (arrayInit) {
-			skiptok(cc, PNCT_rc, 1);
+			skiptok(cc, arrayInit, 1);
 		}
 
 		if (var->init != NULL) {
@@ -2737,6 +2746,7 @@ static astn decl(ccState cc, int mode) {
 
 				// reinstall all args
 				for (tmp = ref->prms; tmp; tmp = tmp->next) {
+					//~ TODO: make just a symlink to the symbol, not a copy of it.
 					//~ TODO: install(cc, tmp->name, TYPE_def, 0, 0, tmp->type, tmp->used);
 					symn arg = install(cc, tmp->name, TYPE_ref, 0, 0, NULL, NULL);
 					if (arg != NULL) {
@@ -3209,7 +3219,7 @@ static astn stmt(ccState cc, int mode) {
 		skiptok(cc, STMT_do, 1);
 		switch (node->kind) {
 			default:
-				warn(cc->s, 1, node->file, node->line, "expression statement expected");
+				warn(cc->s, 1, node->file, node->line, WARN_INVALID_EXPRESSION_STATEMENT, node);
 				break;
 
 			case OPER_fnc:

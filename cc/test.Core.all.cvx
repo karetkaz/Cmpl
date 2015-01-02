@@ -25,6 +25,9 @@ struct bin32: int32{};		//%%032b
 //~ define println(hex64 arg) = print("%016X\n", int64(arg));
 }
 
+// random seed
+System.srand(System.time());
+
 static if (Test.Emit) {
 /+ emit is something like watcoms inline assembly:
  +	#pragma aux (parm [edi] [eax] [edx] value [edi] modify exact [xmm0]) __mul_packed_4float =\
@@ -83,18 +86,19 @@ define mul_simd(Complex &a, Complex &b) = emit(Complex,
 //~ assert(Cr == mul_simd(Ca, Cb));
 //~ assert(Cr == mul_sisd(Ca, Cb));
 
-int clock_simd = clock();
+int clock_simd = System.clock();
 for (int i = 0; i < times2exec; i += 1) {
 	Complex c = mul_simd(Ca, Cb);
 }
-clock_simd = clock() - clock_simd;
+clock_simd = System.clock() - clock_simd;
 
-int clock_sisd = clock();
+int clock_sisd = System.clock();
 for (int i = 0; i < times2exec; i += 1) {
 	Complex c = mul_sisd(Ca, Cb);
 }
-clock_sisd = clock() - clock_sisd;
+clock_sisd = System.clock() - clock_sisd;
 
+define clocks2Sec(int ticks) = double(ticks) / CLOCKS_PER_SEC;
 double seconds_simd = clocks2Sec(clock_simd);
 double seconds_sisd = clocks2Sec(clock_sisd);
 }
@@ -262,7 +266,7 @@ int bsearch(int arr[], int elem) {
 
 void randomize(int arr[], int max) {
 	for (int i = 0; i < arr.length; i += 1) {
-		arr[i] = rand() % max;
+		arr[i] = System.rand() % max;
 	}
 }
 
@@ -291,8 +295,8 @@ static if (Test.Type & 0x20) {		// enum
 static if (Test.Call) {
 static if (Test.Call & 0x01) {		// nested functions
 int bar(int a) {
-	int foo(int b) {
-		int abc() { return 1; }
+	static int foo(int b) {
+		static int abc() { return 1; }
 		return b + abc();
 	}
 	return foo(a);
@@ -381,14 +385,14 @@ for (int i = 1; i <= factorial_n; i += 1) {
 
 //~ /* random floats
 float32 frand() {
-	uint32 randnum = rand() * rand();
+	uint32 randnum = System.rand() * System.rand();
 	float32 tmp = emit(float32, i32((randnum >> 9 ) | 0x3f800000));
 	return tmp - 1;
 }
 
 float64 drand() {
-	uint32 randnum1 = rand() * rand();
-	uint32 randnum2 = rand() * rand();
+	uint32 randnum1 = System.rand() * System.rand();
+	uint32 randnum2 = System.rand() * System.rand();
 	float64 tmp = emit(float64, i32(randnum1), i32((randnum2 >> 12) | 0x3ff00000));
 	return tmp - 1;
 }
@@ -397,8 +401,9 @@ float64 maxrand = -1;
 for(int i = 0; i < 30; i += 1) {
 	float64 currand = drand();
 
-	if (maxrand < currand)
+	if (maxrand < currand) {
 		maxrand = currand;
+	}
 
 	//~ debug("random value", variant(&currand));
 }
@@ -409,12 +414,12 @@ debug("random maximum", variant(&maxrand));
 static if (Test.Math & 0x02) {		// lib functions
 	double x = Math.pi / 2;
 	double absx = Math.abs(-x);
-	double sinx = sin(x);
-	double cosx = cos(x);
-	double tanx = tan(x);
-	double logx = log(x);
-	double expx = exp(x);
-	double powx = pow(2, 8);
+	double sinx = float64.sin(x);
+	double cosx = float64.cos(x);
+	double tanx = float64.tan(x);
+	double logx = float64.log(x);
+	double expx = float64.exp(x);
+	double powx = float64.pow(2, 8);
 }
 static if (Test.Math & 0x04) {		// matrix multiply
 // Matrix Multiply
@@ -432,7 +437,7 @@ for (int i = 0; i < dim; i += 1) {
 	}
 } // +/
 
-//~ /+ Compute
+//~ /+ Compute: matrix multiply
 parallel for (int i = 0; i < dim; i += 1) {
 	for (int j = 0; j < dim; j += 1) {
 		m3[i][j] = 0;
@@ -440,17 +445,6 @@ parallel for (int i = 0; i < dim; i += 1) {
 			m3[i][j] += m1[i][k] * m2[k][j];
 		}
 	}
-} // +/
-
-/+ Print
-for (int i = 0; i < dim; i += 1) {
-	for (int j = 0; j < dim; j += 1) {
-		if (j != 0) {
-			putchr(' ');
-		}
-		print(m3[i][j]);
-	}
-	putchr('\n');
 } // +/
 }
 static if (Test.Call & 0x08) {		// 256 bit(8x32bit) integer
@@ -467,17 +461,6 @@ struct int32x8 {
 
 define int32x8(int32 i0) = emit(int32x8, dupp.x1, dupp.x2, dupp.x2, dupp.x1, i32.shr, i32(31), dupp.x1, i32(i0));
 define int32x8(uint32 i0) = emit(int32x8, dupp.x1, dupp.x2, dupp.x2, dupp.x1, i32(0), i32(i0));
-
-void println(int32x8 &x) {
-	print("%d, ", x.i1);
-	print("%d, ", x.i2);
-	print("%d, ", x.i3);
-	print("%d, ", x.i4);
-	print("%d, ", x.i5);
-	print("%d, ", x.i6);
-	print("%d, ", x.i7);
-	print("%d\n", x.i8);
-}
 
 //~ define sxt64(int32 a) = int64(int32(a));			// sign extend
 define zxt64(int32 a) = int64(uint32(a));			// zero extend
@@ -593,8 +576,9 @@ int32x8 mul(const int32x8 &a, const int32x8 &b, int32x8 &&hi) {
 //~ i32x8 mod(i32x8 &a, int32  b) {div(a, b, result);}
 
 int32x8 i32x8_a = int32x8(-10);
-//~ int32x8 i32x8_b = int32x8(1);
-//~ int32x8 i32x8_c = sub(&i32x8_a, -19);
+int32x8 i32x8_b = int32x8(1);
+//~ BUG: rewrites the next variable.
+int32x8 i32x8_c = sub(&i32x8_a, &i32x8_b);
 
 }
 }

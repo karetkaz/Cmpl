@@ -341,8 +341,8 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 		if (0) {
 		}
 
-		/* ldzs are not optimized, uncomment when vm does constant evaluations.
-		else if (opc == opc_ldc4) {
+		/* TODO: ldzs are not optimized, uncomment when vm does constant evaluations.
+		else if (opc == opc_lc32) {
 			if (arg.i8 == 0) {
 				opc = opc_ldz1;
 				ip = getip(rt, rt->vm.pc);
@@ -352,7 +352,7 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 				}
 			}
 		}
-		else if (opc == opc_ldc8) {
+		else if (opc == opc_lc64) {
 			if (arg.i8 == 0) {
 				opc = opc_ldz2;
 				ip = getip(rt, rt->vm.pc);
@@ -390,7 +390,7 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 				opc = opc_dup1;
 				rollbackPc(rt);
 			}
-			else if (ip->opc == opc_ldcr && ip->arg.u4 < 0x00ffffff) {
+			else if (ip->opc == opc_lref && ip->arg.u4 < 0x00ffffff) {
 				arg.i8 = ip->arg.u4;
 				opc = opc_ld32;
 				rollbackPc(rt);
@@ -403,7 +403,7 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 				opc = opc_set1;
 				rollbackPc(rt);
 			}
-			else if (ip->opc == opc_ldcr && ip->arg.u4 < 0x00ffffff) {
+			else if (ip->opc == opc_lref && ip->arg.u4 < 0x00ffffff) {
 				arg.i8 = ip->arg.u4;
 				opc = opc_st32;
 				rollbackPc(rt);
@@ -417,7 +417,7 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 				opc = opc_dup2;
 				rollbackPc(rt);
 			}
-			else if (ip->opc == opc_ldcr && ip->arg.u4 < 0x00ffffff) {
+			else if (ip->opc == opc_lref && ip->arg.u4 < 0x00ffffff) {
 				arg.i8 = ip->arg.u4;
 				opc = opc_ld64;
 				rollbackPc(rt);
@@ -430,7 +430,7 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 				opc = opc_set2;
 				rollbackPc(rt);
 			}
-			else if (ip->opc == opc_ldcr && ip->arg.u4 < 0x00ffffff) {
+			else if (ip->opc == opc_lref && ip->arg.u4 < 0x00ffffff) {
 				arg.i8 = ip->arg.u4;
 				opc = opc_st64;
 				rollbackPc(rt);
@@ -457,7 +457,7 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 		// shl, shr, sar, and with immediate value.
 		else if (opc == b32_shl) {
 			ip = getip(rt, rt->vm.pc);
-			if (ip->opc == opc_ldc4) {
+			if (ip->opc == opc_lc32) {
 				arg.i4 = b32_bit_shl | (ip->arg.i4 & 0x3f);
 				opc = b32_bit;
 				rollbackPc(rt);
@@ -465,7 +465,7 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 		}
 		else if (opc == b32_shr) {
 			ip = getip(rt, rt->vm.pc);
-			if (ip->opc == opc_ldc4) {
+			if (ip->opc == opc_lc32) {
 				arg.i4 = b32_bit_shr | (ip->arg.i4 & 0x3f);
 				opc = b32_bit;
 				rollbackPc(rt);
@@ -473,7 +473,7 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 		}
 		else if (opc == b32_sar) {
 			ip = getip(rt, rt->vm.pc);
-			if (ip->opc == opc_ldc4) {
+			if (ip->opc == opc_lc32) {
 				arg.i4 = b32_bit_sar | (ip->arg.i4 & 0x3f);
 				opc = b32_bit;
 				rollbackPc(rt);
@@ -481,7 +481,7 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 		}
 		else if (opc == b32_and) {
 			ip = getip(rt, rt->vm.pc);
-			if (ip->opc == opc_ldc4) {
+			if (ip->opc == opc_lc32) {
 				if ((ip->arg.i4 & (ip->arg.i4 + 1)) == 0) {
 					arg.i4 = b32_bit_and | (bitsf(ip->arg.i4 + 1) & 0x3f);
 					opc = b32_bit;
@@ -506,7 +506,7 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 				ip->opc = opc_nop;
 				return rt->vm.pc;
 			}
-			if (ip->opc == opc_ldc4) {
+			if (ip->opc == opc_lc32) {
 				ip->arg.i4 = -ip->arg.i4;
 				return rt->vm.pc;
 			}
@@ -518,7 +518,7 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 				ip->opc = opc_nop;
 				return rt->vm.pc;
 			}
-			if (ip->opc == opc_ldc8) {
+			if (ip->opc == opc_lc64) {
 				ip->arg.i8 = -ip->arg.i8;
 				return rt->vm.pc;
 			}
@@ -530,7 +530,7 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 				ip->opc = opc_nop;
 				return rt->vm.pc;
 			}
-			if (ip->opc == opc_ldc4) {
+			if (ip->opc == opc_lc32) {
 				ip->arg.f4 = -ip->arg.f4;
 				return rt->vm.pc;
 			}
@@ -542,14 +542,14 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 				ip->opc = opc_nop;
 				return rt->vm.pc;
 			}
-			if (ip->opc == opc_ldc8) {
+			if (ip->opc == opc_lc64) {
 				ip->arg.f8 = -ip->arg.f8;
 				return rt->vm.pc;
 			}
 		}
 		else if (opc == i32_add) {
 			ip = getip(rt, rt->vm.pc);
-			if (ip->opc == opc_ldc4) {
+			if (ip->opc == opc_lc32) {
 				arg.i8 = ip->arg.i4;
 				if (arg.rel == arg.i8) {
 					opc = opc_inc;
@@ -559,7 +559,7 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 		}
 		else if (opc == i32_sub) {
 			ip = getip(rt, rt->vm.pc);
-			if (ip->opc == opc_ldc4) {
+			if (ip->opc == opc_lc32) {
 				arg.i8 = -ip->arg.i4;
 				if (arg.rel == arg.i8) {
 					opc = opc_inc;
@@ -594,7 +594,7 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 					return rt->vm.pc;
 				}
 			}
-			else if (ip->opc == opc_ldcr) {
+			else if (ip->opc == opc_lref) {
 				stkval tmp;
 				if (arg.i8 < 0) {
 					// global variable bound error.
@@ -613,51 +613,51 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 		else if (opc == u32_i64) {
 			ip = getip(rt, rt->vm.pc);
 			//~ if (ip->opc == opc_ldz2) { ... }
-			if (ip->opc == opc_ldc4) {
+			if (ip->opc == opc_lc32) {
 				arg.i8 = ip->arg.u4;
-				opc = opc_ldc8;
+				opc = opc_lc64;
 				rollbackPc(rt);
 			}
 		}
 		else if (opc == i32_bol) {
 			ip = getip(rt, rt->vm.pc);
-			if (ip->opc == opc_ldc4) {
+			if (ip->opc == opc_lc32) {
 				arg.i8 = ip->arg.i4 != 0;
-				opc = opc_ldc4;
+				opc = opc_lc32;
 				rollbackPc(rt);
 			}
 		}
 		else if (opc == i32_f32) {
 			ip = getip(rt, rt->vm.pc);
-			if (ip->opc == opc_ldc4) {
+			if (ip->opc == opc_lc32) {
 				arg.f4 = ip->arg.i4;
-				opc = opc_ldc4;
+				opc = opc_lf32;
 				rollbackPc(rt);
 				dieif(ip->arg.i4 != arg.f4, "inexact cast: %d => %f", ip->arg.i4, arg.f4);
 			}
 		}
 		else if (opc == i32_i64) {
 			ip = getip(rt, rt->vm.pc);
-			if (ip->opc == opc_ldc4) {
+			if (ip->opc == opc_lc32) {
 				arg.i8 = ip->arg.i4;
-				opc = opc_ldc8;
+				opc = opc_lc64;
 				rollbackPc(rt);
 			}
 		}
 		else if (opc == i32_f64) {
 			ip = getip(rt, rt->vm.pc);
-			if (ip->opc == opc_ldc4) {
+			if (ip->opc == opc_lc32) {
 				arg.f8 = ip->arg.i4;
-				opc = opc_ldc8;
+				opc = opc_lf64;
 				rollbackPc(rt);
 				dieif(ip->arg.i4 != arg.f8, "inexact cast: %d => %F", ip->arg.i4, arg.f8);
 			}
 		}
 		else if (opc == i64_i32) {
 			ip = getip(rt, rt->vm.pc);
-			if (ip->opc == opc_ldc8) {
+			if (ip->opc == opc_lc64) {
 				arg.i8 = ip->arg.i8;
-				opc = opc_ldc4;
+				opc = opc_lc32;
 				rollbackPc(rt);
 				//TODO: dieif(ip->arg.i8 != arg.i4, "inexact cast: %D => %d", ip->arg.i8, arg.i4);
 				dieif(ip->arg.i8 != arg.i4 && ip->arg.i8 != arg.u4, "inexact cast: %D => %d", ip->arg.i8, arg.i4);
@@ -665,97 +665,97 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 		}
 		else if (opc == i64_f32) {
 			ip = getip(rt, rt->vm.pc);
-			if (ip->opc == opc_ldc8) {
+			if (ip->opc == opc_lc64) {
 				arg.f4 = ip->arg.i8;
-				opc = opc_ldc4;
+				opc = opc_lf32;
 				rollbackPc(rt);
 				dieif(ip->arg.i8 != arg.f4, "inexact cast: %D => %f", ip->arg.i8, arg.f4);
 			}
 		}
 		else if (opc == i64_bol) {
 			ip = getip(rt, rt->vm.pc);
-			if (ip->opc == opc_ldc8) {
+			if (ip->opc == opc_lc64) {
 				arg.i8 = ip->arg.i8 != 0;
-				opc = opc_ldc4;
+				opc = opc_lc32;
 				rollbackPc(rt);
 			}
 		}
 		else if (opc == i64_f64) {
 			ip = getip(rt, rt->vm.pc);
-			if (ip->opc == opc_ldc8) {
+			if (ip->opc == opc_lc64) {
 				arg.f8 = ip->arg.i8;
-				opc = opc_ldc8;
+				opc = opc_lf64;
 				rollbackPc(rt);
 				dieif(ip->arg.i8 != arg.f8, "inexact cast: %D => %F", ip->arg.i8, arg.f8);
 			}
 		}
 		else if (opc == f32_i32) {
 			ip = getip(rt, rt->vm.pc);
-			if (ip->opc == opc_ldc4) {
+			if (ip->opc == opc_lf32) {
 				arg.i8 = ip->arg.f4;
-				opc = opc_ldc4;
+				opc = opc_lc32;
 				rollbackPc(rt);
 				dieif(ip->arg.f4 != arg.i4, "inexact cast: %f => %d", ip->arg.f4, arg.i4);
 			}
 		}
 		else if (opc == f32_bol) {
 			ip = getip(rt, rt->vm.pc);
-			if (ip->opc == opc_ldc4) {
+			if (ip->opc == opc_lf32) {
 				arg.i8 = ip->arg.f4 != 0;
-				opc = opc_ldc4;
+				opc = opc_lc32;
 				rollbackPc(rt);
 			}
 		}
 		else if (opc == f32_i64) {
 			ip = getip(rt, rt->vm.pc);
-			if (ip->opc == opc_ldc4) {
+			if (ip->opc == opc_lf32) {
 				arg.i8 = ip->arg.f4;
-				opc = opc_ldc8;
+				opc = opc_lc64;
 				rollbackPc(rt);
 				dieif(ip->arg.f4 != arg.i8, "inexact cast: %f => %D", ip->arg.f4, arg.i8);
 			}
 		}
 		else if (opc == f32_f64) {
 			ip = getip(rt, rt->vm.pc);
-			if (ip->opc == opc_ldc4) {
+			if (ip->opc == opc_lf32) {
 				arg.f8 = ip->arg.f4;
-				opc = opc_ldc8;
+				opc = opc_lf64;
 				rollbackPc(rt);
 				dieif(ip->arg.f4 != arg.f8, "inexact cast: %f => %F", ip->arg.f4, arg.f8);
 			}
 		}
 		else if (opc == f64_i32) {
 			ip = getip(rt, rt->vm.pc);
-			if (ip->opc == opc_ldc4) {
+			if (ip->opc == opc_lf64) {
 				arg.i8 = ip->arg.f8;
-				opc = opc_ldc4;
+				opc = opc_lc32;
 				rollbackPc(rt);
 				dieif(ip->arg.f8 != arg.i4, "inexact cast: %F => %d", ip->arg.f8, arg.i4);
 			}
 		}
 		else if (opc == f64_f32) {
 			ip = getip(rt, rt->vm.pc);
-			if (ip->opc == opc_ldc4) {
+			if (ip->opc == opc_lf64) {
 				arg.f4 = ip->arg.f8;
-				opc = opc_ldc4;
+				opc = opc_lf32;
 				rollbackPc(rt);
-				dieif(ip->arg.f8 != arg.i4, "inexact cast: %F => %f", ip->arg.f8, arg.f4);
+				dieif(ip->arg.f8 != arg.f4, "inexact cast: %F => %f", ip->arg.f8, arg.f4);
 			}
 		}
 		else if (opc == f64_i64) {
 			ip = getip(rt, rt->vm.pc);
-			if (ip->opc == opc_ldc4) {
+			if (ip->opc == opc_lf64) {
 				arg.i8 = ip->arg.f8;
-				opc = opc_ldc8;
+				opc = opc_lc64;
 				rollbackPc(rt);
-				dieif(ip->arg.f8 != arg.i4, "inexact cast: %F => %D", ip->arg.f8, arg.i8);
+				dieif(ip->arg.f8 != arg.i8, "inexact cast: %F => %D", ip->arg.f8, arg.i8);
 			}
 		}
 		else if (opc == f64_bol) {
 			ip = getip(rt, rt->vm.pc);
-			if (ip->opc == opc_ldc4) {
+			if (ip->opc == opc_lf64) {
 				arg.i8 = ip->arg.f8 != 0;
-				opc = opc_ldc4;
+				opc = opc_lc32;
 				rollbackPc(rt);
 			}
 		}
@@ -764,7 +764,7 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 		/* mul, div, mod
 		else if (opc == u32_mod) {
 			ip = getip(s, s->vm.pc);
-			if (ip->opc == opc_ldc4) {
+			if (ip->opc == opc_lc32) {
 				int x = ip->arg.i4;
 				// if constant contains only one bit
 				if (x > 0 && lobit(x) == x) {
@@ -775,7 +775,7 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 		}
 		else if (opc == u32_div) {
 			ip = getip(s, s->vm.pc);
-			if (ip->opc == opc_ldc4) {
+			if (ip->opc == opc_lc32) {
 				int x = ip->arg.i4;
 				// if constant contains only one bit
 				if (x > 0 && lobit(x) == x) {
@@ -1362,23 +1362,23 @@ void fputopc(FILE* fout, unsigned char* ptr, int len, int offs, state rt) {
 			fputfmt(fout, " sp(%d)", ip->idx);
 			break;
 
-		case opc_ldc4:
+		case opc_lc32:
 			fputfmt(fout, " %d", ip->arg.i4);
 			break;
 
-		case opc_ldc8:
+		case opc_lc64:
 			fputfmt(fout, " %D", ip->arg.i8);
 			break;
 
-		case opc_ldcf:
+		case opc_lf32:
 			fputfmt(fout, " %f", ip->arg.f4);
 			break;
 
-		case opc_ldcF:
+		case opc_lf64:
 			fputfmt(fout, " %F", ip->arg.f8);
 			break;
 
-		case opc_ldcr: {
+		case opc_lref: {
 			fputfmt(fout, " %x", ip->arg.u4);
 			if (rt != NULL) {
 				symn sym = mapsym(rt, ip->arg.u4, 0);

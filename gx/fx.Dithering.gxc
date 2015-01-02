@@ -19,14 +19,15 @@ enum Dithering: int32 {
 	Steinberg = '3';
 	Stucki = '5';
 }
-gxSurf dither(gxSurf img, bool grayscale, uint32 colors, Dithering method) {
+gxSurf dither(gxSurf img, bool grayscale, uint32 levels, Dithering method) {
 
-	if (colors >= 256) {
+	if (levels >= 256) {
 		//~ dithering = Dithering.None;
-		colors = 256;
+		levels = 256;
 	}
 	int cols[256];
 
+	int colors = levels - 1;
 	for (int i = 0; i < cols.length; i += 1) {
 		cols[i] = (i * (colors+1) / cols.length) * (cols.length / colors);
 	}
@@ -234,6 +235,7 @@ gxSurf dither(gxSurf img, bool grayscale, uint32 colors, Dithering method) {
 					setPixel(img, x + 0, y + 2, rgbError(getPixel(img, x + 0, y + 2), 4));
 					setPixel(img, x + 1, y + 2, rgbError(getPixel(img, x + 1, y + 2), 2));
 					setPixel(img, x + 2, y + 2, rgbError(getPixel(img, x + 2, y + 2), 1));
+
 				}
 			}
 		}
@@ -252,9 +254,8 @@ gxSurf dither(gxSurf img, bool grayscale, uint32 colors, Dithering method) {
 		];
 
 		// TODO: simplify
-		int levels = colors - 1;
-		for (int i = 0; i < colors; i += 1) {
-			cols[i] = i * 255 / levels;
+		for (int i = 0; i < levels; i += 1) {
+			cols[i] = i * 255 / colors;
 		}
 
 		static void bayer(int &num2, int &num3, int col, int levels) {
@@ -267,12 +268,11 @@ gxSurf dither(gxSurf img, bool grayscale, uint32 colors, Dithering method) {
 		if (grayscale) {
 			for (int y = 0; y < height; y += 1) {
 				for (int x = 0; x < width; x += 1) {
-					define d = 64;
 					int col = lum(getPixel(img, x, y));
 					int num2;
 					int num3;
 
-					bayer(&num2, &num3, col, levels);
+					bayer(&num2, &num3, col, colors);
 					int gray = cols[(num3 + (num2 > Pattern[x & 7][y & 7]))];
 
 					setPixel(img, x, y, toGray(gray));
@@ -286,13 +286,13 @@ gxSurf dither(gxSurf img, bool grayscale, uint32 colors, Dithering method) {
 					int num2;
 					int num3;
 
-					bayer(&num2, &num3, rch(col), levels);
+					bayer(&num2, &num3, rch(col), colors);
 					int colr = cols[(num3 + (num2 > Pattern[x & 7][y & 7]))];
 
-					bayer(&num2, &num3, gch(col), levels);
+					bayer(&num2, &num3, gch(col), colors);
 					int colg = cols[(num3 + (num2 > Pattern[x & 7][y & 7]))];
 
-					bayer(&num2, &num3, bch(col), levels);
+					bayer(&num2, &num3, bch(col), colors);
 					int colb = cols[(num3 + (num2 > Pattern[x & 7][y & 7]))];
 
 					setPixel(img, x, y, toRgb(colr, colg, colb));
@@ -304,24 +304,24 @@ gxSurf dither(gxSurf img, bool grayscale, uint32 colors, Dithering method) {
 	}
 }
 
-int maxcolors = 3;
+int maxcolors = 8;
 int grayscale = true;
 Dithering method = Dithering.Stucki;
 method = Dithering.Steinberg;
 method = Dithering.SteinbergFalse;
-method = Dithering.Bayer;
+//~ method = Dithering.Bayer;
 //~ method = Dithering.Threshold;
 
-define workOnOffscreen = !true;
+define workOnOffscreen = true;
 
 static if(workOnOffscreen) {
 //~ vec4f makegray(float64 x, float64 y) {return vec4f(Math.min(x, y));}
-vec4f makegray(float64 x, float64 y) {return vec4f(x * y);}
+vec4f makegray(float64 x, float64 y) {return vec4f(float64.sqrt(x * y));}
 evalSurf(offScreen, null, makegray);
 
 bmpWrite(offScreen, "out/image.bmp");
-
 dither(offScreen, grayscale, maxcolors, method);
+bmpWrite(offScreen, "out/dithered.bmp");
 
 }
 static if(!workOnOffscreen) {

@@ -73,7 +73,7 @@ struct stateRec {
 		int	sm;			// exec: - / cgen: minimum stack size
 		int	su;			// exec: - / cgen: stack access (parallel processing)
 
-		int	opti;		// exec: - / cgen: optimization levevel
+		int	opti;		// exec: - / cgen: optimization level
 	} vm;
 
 	/**

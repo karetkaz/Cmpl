@@ -60,21 +60,23 @@ Gui.setMouseHandler(mouseCB);
 Gui.setDrawCallback(drawCB);
 
 roi = gxRect(0, 0, Window.resx, Window.resy);
-double s = sqrt(magRadius * magRadius - magFactor * magFactor);
+double s = float64.sqrt(magRadius * magRadius - magFactor * magFactor);
 for (int y = -magRadius; y < magRadius; y += 1) {
 	for (int x = -magRadius ;x < magRadius; x += 1) {
 		double a = x;
 		double b = y;
 		if (x * x + y * y <= s * s) {
-			double z = sqrt(magRadius*magRadius - x*x - y*y);
+			double z = float64.sqrt(magRadius*magRadius - x*x - y*y);
 			if (z > 0) {
 				a = x * (magRadius / magFactor) / z;
-				if (Math.abs(a) > Math.abs(x))
+				if (Math.abs(a) > Math.abs(x)) {
 					a = x;
+				}
 
 				b = y * (magRadius / magFactor) / z;
-				if (Math.abs(b) > Math.abs(y))
+				if (Math.abs(b) > Math.abs(y)) {
 					b = y;
+				}
 			}
 		}
 		//~ magnCoeff[y + magRadius][x + magRadius].x = a;

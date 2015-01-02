@@ -74,7 +74,7 @@ void ccExtEnd(state, symn sym, int mode);
 void ccEnd(state, symn sym);
 
 /// Install a native function; @see state.api.ccAddCall
-symn ccAddCall(state, int libc(libcArgs), void* data, const char* proto);
+symn ccAddCall(state, int call(libcArgs), void* data, const char* proto);
 
 /// Install a type; @see state.api.ccAddType
 symn ccAddType(state, const char* name, unsigned size, int refType);

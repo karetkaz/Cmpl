@@ -9,7 +9,7 @@ source code representation using abstract syntax tree
 #include <math.h>
 #include "core.h"
 
-astn newnode(ccState cc, int kind) {
+astn newnode(ccState cc, ccToken kind) {
 	state rt = cc->s;
 	astn ast = 0;
 	if (cc->tokp) {
@@ -33,7 +33,7 @@ void eatnode(ccState s, astn ast) {
 }
 
 
-astn opnode(ccState s, int kind, astn lhs, astn rhs) {
+astn opnode(ccState s, ccToken kind, astn lhs, astn rhs) {
 	astn result = newnode(s, kind);
 	if (result == NULL) {
 		return NULL;
@@ -262,7 +262,7 @@ int isType(astn ast) {
 //~ TODO: eval should use cgen and vmExec
 int eval(astn res, astn ast) {
 	symn type = NULL;
-	ccToken cast = TYPE_any;
+	ccToken cast;
 	struct astNode lhs, rhs;
 
 	if (ast == NULL)
@@ -334,9 +334,10 @@ int eval(astn res, astn ast) {
 			return eval(res, ast->op.rhso);
 
 		case OPER_fnc: {
-			astn lhs = ast->op.lhso;
+			astn func = ast->op.lhso;
 
-			if (lhs && !isType(lhs))
+			// evaluate only type casts.
+			if (func && !isType(func))
 				return 0;
 
 			if (!eval(res, ast->op.rhso))

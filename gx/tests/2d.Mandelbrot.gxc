@@ -98,18 +98,28 @@ void drawCB() {
 		reDraw = 0;
 	}
 	if (reDraw == 1) {
-		int32 start = clock();
+		int32 start = System.clock();
 		//~ Mandel(offScreen, &mandelLut, QMin, QMax, PMin, PMax);
 		Mandel(mand, &mandelLut, QMin, QMax, PMin, PMax);
 		copySurf(offScreen, 0, 0, mand, null);
 		double QSize = QMax - QMin;
 		double PSize = PMax - PMin;
 
-		print("Mandel(%F", QMin + QSize / 2);
-		print(" ± %E", QSize / 2);
-		print(", %F", PMin + PSize / 2);
-		print(" ± %E", PSize / 2);
-		print("): time: %F\n", clocks2Sec(clock() - start));
+		struct Info {
+			float64 x;//%%F
+			float64 y;//%%F
+			float64 w;//%%E
+			float64 h;//%%E
+			float64 time;
+		}
+		Info info = Info(QMin + QSize / 2, PMin + PSize / 2, QSize / 2, PSize / 2, (System.clock() - start) / float64(CLOCKS_PER_SEC));
+		debug("Mandelbrot", variant(&info));
+		/* TODO: debug("Mandelbrot", variant({
+			x: QMin + QSize / 2;
+			y: PMin + PSize / 2;
+			w: QSize / 2;
+			h: PSize / 2;
+		}));*/
 
 		reDraw = 0;
 	}

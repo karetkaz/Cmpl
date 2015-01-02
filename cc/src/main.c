@@ -355,7 +355,7 @@ int program(int argc, char* argv[]) {
 	char* str_dasm = NULL;
 
 	char* logf = NULL;			// logger filename
-	//~ char* outf = NULL;			// output filename
+	FILE* dmpf = stdout;		// dump file
 
 	int warn = wl;
 	int result = 0;
@@ -576,91 +576,93 @@ int program(int argc, char* argv[]) {
 		}
 	}
 
-	// if no error generate code and execute
-	if (rt->errc == 0) {
-		FILE *out = rt->logf;
-		if (out == NULL) {
-			out = stdout;
-		}
-
-		// compile the type for the debuger
-		if (stk_dump != NULL) {
-			ccState cc = ccOpen(rt, NULL, 0, stk_dump);
-			if (cc != NULL) {
-				astn ast = decl_var(cc, NULL, TYPE_def);
-				printvars = linkOf(ast);
-				if (printvars != NULL) {
-					printvars->name = "sp";	// stack pointer
-				}
-				else {
-					error(rt, NULL, 0, "error in debug print format `%s`", stk_dump);
-				}
-				ccDone(cc);
+	// compile the given type for the debuging
+	if (stk_dump != NULL) {
+		ccState cc = ccOpen(rt, NULL, 0, stk_dump);
+		if (cc != NULL) {
+			astn ast = decl_var(cc, NULL, TYPE_def);
+			printvars = linkOf(ast);
+			if (printvars != NULL) {
+				printvars->name = "sp";	// stack pointer
 			}
-		}
-
-		// generate variables and vm code.
-		if ((gen_code || run_code) && !gencode(rt, gen_code)) {
-			logfile(rt, NULL);
-			closeLibs();
-			return rt->errc;
-		}
-
-		if (out_tags >= 0) {
-			symn sym = NULL;
-			if (str_tags != NULL) {
-				sym = ccFindSym(rt->cc, NULL, str_tags);
-				if (sym == NULL) {
-					info(rt, NULL, 0, "symbol not found: %s", str_tags);
-				}
+			else {
+				// TODO: should this rise error or just warn?
+				error(rt, NULL, 0, "error in debug print format `%s`", stk_dump);
 			}
-			//~ dump(rt, dump_sym | (out_tags & 0x0ff), sym, "\ntags:\n#api: replace(`^([^:]*).*$`, `\\1`)\n");
-			fputfmt(out, "\n>==-- tags:\n");
-			fputfmt(out, "#api: replace(`^([^:)]*([)][:][^:]+)?).*$`, `\\1`)\n");
-			dump(rt, dump_sym | (out_tags & 0x0ff), sym);
-		}
-		if (out_tree >= 0) {
-			symn sym = NULL;
-			if (str_tree != NULL) {
-				sym = ccFindSym(rt->cc, NULL, str_tree);
-				if (sym == NULL) {
-					info(rt, NULL, 0, "symbol not found: %s", str_tree);
-				}
-			}
-			fputfmt(out, "\n>==-- /* code.xml:\n");
-			dump(rt, dump_ast | (out_tree & 0x0ff), sym);
-			fputfmt(out, "*/\n");
-		}
-		if (out_dasm >= 0) {
-			symn sym = NULL;
-			if (str_dasm != NULL) {
-				sym = ccFindSym(rt->cc, NULL, str_dasm);
-				if (sym == NULL) {
-					info(rt, NULL, 0, "symbol not found: %s", str_dasm);
-				}
-			}
-			fputfmt(out, "\n>==-- dasm:\n");
-			dump(rt, dump_asm | (out_dasm & 0x0ff), sym);
-		}
-		if (run_code != 0) {
-			if (dbg != NULL && rt->dbg != NULL) {
-				rt->dbg->dbug = dbg;
-			}
-			fputfmt(out, "\n>==-- exec:\n");
-			result = execute(rt, NULL, rt->_size / 4);
-			if (var_dump >= 0) {
-
-				fputfmt(out, "\n>==-- vars:\n");
-				printGlobals(out, rt, var_dump);
-				//~ logTrace(rt->rt, 1, 0, 20);
-
-				// show allocated memory chunks.
-				//~ rtAlloc(rt->rt, NULL, 0);
-			}
+			ccDone(cc);
 		}
 	}
-	else {
-		result = rt->errc;
+
+	// generate code only if needed and there are no compilation errors
+	if ((gen_code || run_code) && rt->errc == 0) {
+		// generate variables and vm code.
+		if (!gencode(rt, gen_code)) {
+			// show dump, but do not execute broken code.
+			//error(rt, NULL, 0, "error generating code");
+			run_code = 0;
+		}
+	}
+
+	if (rt->logf != NULL) {
+		dmpf = rt->logf;
+	}
+
+	if (out_tags >= 0) {
+		symn sym = NULL;
+		if (str_tags != NULL) {
+			sym = ccFindSym(rt->cc, NULL, str_tags);
+			if (sym == NULL) {
+				info(rt, NULL, 0, "symbol not found: %s", str_tags);
+			}
+		}
+		//~ dump(rt, dump_sym | (out_tags & 0x0ff), sym, "\ntags:\n#api: replace(`^([^:]*).*$`, `\\1`)\n");
+		fputfmt(dmpf, "\n>==-- tags:\n");
+		fputfmt(dmpf, "#api: replace(`^([^:)]*([)][:][^:]+)?).*$`, `\\1`)\n");
+		dump(rt, dump_sym | (out_tags & 0x0ff), sym);
+	}
+	if (out_tree >= 0) {
+		symn sym = NULL;
+		if (str_tree != NULL) {
+			sym = ccFindSym(rt->cc, NULL, str_tree);
+			if (sym == NULL) {
+				info(rt, NULL, 0, "symbol not found: %s", str_tree);
+			}
+		}
+		fputfmt(dmpf, "\n>==-- /* code.xml:\n");
+		dump(rt, dump_ast | (out_tree & 0x0ff), sym);
+		fputfmt(dmpf, "*/\n");
+	}
+	if (out_dasm >= 0) {
+		symn sym = NULL;
+		if (str_dasm != NULL) {
+			sym = ccFindSym(rt->cc, NULL, str_dasm);
+			if (sym == NULL) {
+				info(rt, NULL, 0, "symbol not found: %s", str_dasm);
+			}
+		}
+		fputfmt(dmpf, "\n>==-- dasm:\n");
+		dump(rt, dump_asm | (out_dasm & 0x0ff), sym);
+	}
+
+	// run code if there is no error.
+	if (run_code != 0 && rt->errc == 0) {
+		if (dbg != NULL && rt->dbg != NULL) {
+			rt->dbg->dbug = dbg;
+		}
+		fputfmt(dmpf, "\n>==-- exec:\n");
+		result = execute(rt, NULL, rt->_size / 4);
+		if (var_dump >= 0) {
+
+			fputfmt(dmpf, "\n>==-- vars:\n");
+			printGlobals(dmpf, rt, var_dump);
+
+			//~ fputfmt(dmpf, "\n>==-- trace:\n");
+			//~ logTrace(rt, 1, 0, 20);
+
+			// show allocated memory chunks.
+			fputfmt(dmpf, "\n>==-- heap:\n");
+			rtAlloc(rt, NULL, 0);
+		}
 	}
 
 	// close log file
@@ -797,11 +799,11 @@ static int dbgCon(state rt, int pu, void* ip, void* sp, int ss, char* err) {
 	static char cmd = 'N';
 	dbgInfo dbg;
 	char* arg;
-	int IP;
+	int i, IP;
 
 	if (err != NULL) {
 		error(rt, NULL, 0, "exec: %s(%?d):[sp%02d]@%.*A rw@%06x", err, pu, ss, vmOffset(rt, ip), ip);
-		logTrace(rt, 1, -1, 100);
+		logTrace(rt, 1, 0, 100);
 		return -1;
 	}
 
@@ -822,16 +824,16 @@ static int dbgCon(state rt, int pu, void* ip, void* sp, int ss, char* err) {
 	dbg = getCodeMapping(rt, IP);
 	if (dbg != NULL) {
 		int32_t SP = ss > 0 ? *(int32_t*)sp : 0xbadbad;
-		fputfmt(stdout, "%s:%d:exec:[%06x sp(%02d): %08x] %9.*A\n", dbg->file, dbg->line, IP, ss, SP, IP, ip);
+		fputfmt(stdout, "%s:%d:exec:[%06x sp(%02d): %08x] %9.*A", dbg->file, dbg->line, IP, ss, SP, IP, ip);
 	}
 	else {
-		fputfmt(stdout, ">exec:[%06x sp(%02d)] %9.*A\n", IP, ss, IP, ip);
+		fputfmt(stdout, ">exec:[%06x sp(%02d)] %9.*A", IP, ss, IP, ip);
 	}
 
 	if (cmd != 'N') for ( ; ; ) {
 		if (fgets(buff, sizeof(buff), stdin) == NULL) {
 			// Can not read from stdin
-			// continue
+			fputfmt(stdout, "\n");
 			cmd = 'N';
 			return 0;
 		}
@@ -848,7 +850,7 @@ static int dbgCon(state rt, int pu, void* ip, void* sp, int ss, char* err) {
 			cmd = 'p';
 		}
 		else if ((arg = parsecmd(buff, "step", " "))) {
-			if (*arg == 0) {	// step = step over
+			if (*arg == 0) {	// step == step over
 				cmd = 'n';
 			}
 			else if (strcmp(arg, "over") == 0) {
@@ -883,6 +885,7 @@ static int dbgCon(state rt, int pu, void* ip, void* sp, int ss, char* err) {
 			default:
 				fputfmt(stdout, "invalid command '%c'", cmd);
 				break;
+
 			case 0:
 				break;
 
@@ -906,17 +909,20 @@ static int dbgCon(state rt, int pu, void* ip, void* sp, int ss, char* err) {
 			} break;
 
 			// trace
-			case 't' : {
-			} break;
+			case 't' :
+				logTrace(rt, 1, 0, 20);
+				break;
 
-			case 's' : {
-				int i;
+			case 's' :
 				for (i = 0; i < ss; i++) {
 					stkval* v = (stkval*)&((long*)sp)[i];
 					fputfmt(stdout, "\tsp(%d): {i32(%d), f32(%g), i64(%D), f64(%G)}\n", i, v->i4, v->f4, v->i8, v->f8);
 				}
-			} break;
+				break;
 		}
+	}
+	else {
+		fputfmt(stdout, "\n");
 	}
 	return 0;
 	(void)pu;

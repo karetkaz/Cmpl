@@ -97,7 +97,7 @@ TODO's:
 #include "core.h"
 #include <string.h>
 
-symn newdefn(ccState s, int kind) {
+symn newdefn(ccState s, ccToken kind) {
 	state rt = s->s;
 	symn def = NULL;
 
@@ -388,7 +388,7 @@ static symn promote(symn lht, symn rht) {
 	return result;
 }
 
-int canAssign(ccState cc, symn var, astn val, int strict) {
+ccToken canAssign(ccState cc, symn var, astn val, int strict) {
 	symn lnk = linkOf(val);
 	symn typ = var;
 	symn cast;
@@ -1545,7 +1545,7 @@ symn typecheck(ccState s, symn loc, astn ast) {
 	return result;
 }
 
-int fixargs(symn sym, int align, int stbeg) {
+int fixargs(symn sym, unsigned int align, int stbeg) {
 	symn arg;
 	int stdiff = 0;
 	int isCall = sym->call;

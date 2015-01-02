@@ -71,15 +71,15 @@ void zoomSurf2(gxSurf dst, gxRect &rect, gxSurf src, gxRect &roi, int mode) {
 	}
 }
 
-define atan2f(float x, float y) = atan2(x, y);
-define sqrtf(float x) = sqrt(x);
-define sinf(float x) = sin(x);
+define atan2f(float x, float y) = float64.atan2(x, y);
+define sqrtf(float x) = float64.sqrt(x);
+define sinf(float x) = float64.sin(x);
 define fabsf(float x) = Math.abs(x);
-define cosf(float x) = cos(x);
+define cosf(float x) = float64.cos(x);
 define pi = Math.pi;
 
 void setup(double &time, vec4f pixelCB(double x, double y)) {
-	define WIDTH = 256/3;
+	define WIDTH = 128;
 	define HEIGHT = WIDTH;
 	static gxSurf tmpImg = gxSurf(WIDTH, HEIGHT);
 
@@ -93,22 +93,22 @@ void setup(double &time, vec4f pixelCB(double x, double y)) {
 
 	static Internals internals;
 
-	static int32 begTime = clock();
+	static int32 begTime = System.millis();
 
 	// for each frame
-	void drawCB() {
+	static void drawCB() {
 		if (snapshot) {
 			animate = false;
 			snapshot = false;
-			int64 start = millis();
+			int64 start = System.millis();
 			evalSurf(offScreen, null, internals.pixelCB);
-			float64 time = (millis() - start) / 1000.;
+			float64 time = (System.millis() - start) / 1000.;
 			debug("evaluation time in seconds", variant(&time));
 			//~ bmpWrite(offScreen, "out-2.bmp");
 		}
 		if (animate) {
 			// application time spent in processor
-			internals.time = .5 * clocks2Sec(clock() - begTime);
+			internals.time = .0005 * double(System.millis() - begTime);
 
 			//~ evalSurf(offScreen, null, internals.pixelCB);
 			zoomSurf(offScreen, null, evalSurf(tmpImg, null, internals.pixelCB), null, 1);
@@ -117,7 +117,7 @@ void setup(double &time, vec4f pixelCB(double x, double y)) {
 			Gui.Repaint();
 		}
 	}
-	void mouseCB(int btn, int x, int y) {
+	static void mouseCB(int btn, int x, int y) {
 		static int omb = 0;
 		if (omb == 1 && btn == 0) { // onRelase(btn:1)
 			snapshot = true;
@@ -134,7 +134,7 @@ void setup(double &time, vec4f pixelCB(double x, double y)) {
 	Gui.setMouseHandler(mouseCB);
 }
 
-double aspect = 1.33;
+double aspect = 1;//.33;
 double time;
 
 vec4f blob2d(double x, double y) {
@@ -142,14 +142,14 @@ vec4f blob2d(double x, double y) {
 	vec2d p = vec2d(2 * x - 1, 2 * y - 1);
 
 	//~ the centre point for each blob
-	vec2d move1 = vec2d(cos(time * 4.5) * 0.4, sin(time * 1.5) * 0.4);
-	vec2d move2 = vec2d(cos(time * 2.0) * 0.4, sin(time * 3.0) * 0.4);
-	vec2d move3 = vec2d(cos(time * 7.0) * 0.4, sin(time * 2.0) * 0.4);
-	//~ vec2d move4 = vec2d(cos(time * 2.0) * 0.4, sin(time * 4.3) * 0.4);
+	vec2d move1 = vec2d(float64.cos(time * 4.5) * 0.4, float64.sin(time * 1.5) * 0.4);
+	vec2d move2 = vec2d(float64.cos(time * 2.0) * 0.4, float64.sin(time * 3.0) * 0.4);
+	vec2d move3 = vec2d(float64.cos(time * 7.0) * 0.4, float64.sin(time * 2.0) * 0.4);
+	//~ vec2d move4 = vec2d(float64.cos(time * 2.0) * 0.4, float64.sin(time * 4.3) * 0.4);
 
 	//~ radius for each blob
-	double r1 = dot(sub(p, move1), sub(p, move1)) * 8;
-	double r2 = dot(sub(p, move2), sub(p, move2)) * 16;
+	double r1 = dot(sub(p, move1), sub(p, move1)) * 22;
+	double r2 = dot(sub(p, move2), sub(p, move2)) * 26;
 	double r3 = dot(sub(p, move3), sub(p, move3)) * 32;
 	//~ double r4 = dot(sub(p, move4), sub(p, move4)) * 64;
 
@@ -160,14 +160,14 @@ vec4f blob2d(double x, double y) {
 
 	//~ alter the cut-off power
 	//~ set the output color
-	result = vec4f(float32(Math.clamp(pow(metaball, 8.0), 0., 1.)));
+	result = vec4f(float32(Math.clamp(float64.pow(metaball, 8.0), 0., 1.)));
 }
 
 vec4f yinyang(double x, double y) {
 	float64 nx = -1 + 2 * x;
 	float64 ny = -1 + 2 * y;
-	x = (nx*cos(time) - ny*sin(time));
-	y = (nx*sin(time) + ny*cos(time));
+	x = (nx * float64.cos(time) - ny * float64.sin(time));
+	y = (nx * float64.sin(time) + ny * float64.cos(time));
 	float64 h = x*x + y*y;
 	if (h < 1.) {
 		float64 d = Math.abs(y) - h;
@@ -248,45 +248,9 @@ vec4f eye(double x, double y) {
 	result = lerp(f, cOjo, cPiel);
 }
 
-vec4f tunnel0(double x, double y) {
-
-	static int rgbscale(int col, double s) {
-		define fixp = 16;
-		int scale = s * (1 << fixp);
-		int r = Math.clamp(rch(col) * scale >> fixp, 0, 255);
-		int g = Math.clamp(gch(col) * scale >> fixp, 0, 255);
-		int b = Math.clamp(bch(col) * scale >> fixp, 0, 255);
-		result = int(rgb(r, g, b));
-	}
-
-	static double imgcoord(double val, int resolution) {
-		result = val * resolution;
-		if ((result %= resolution) < 0) {
-			result += resolution;
-		}
-	}
-
-	define tex2d(gxSurf src, double x, double y) = getPixel(src, imgcoord(x, width(src)), imgcoord(y, height(src)));
-	define tex2d(gxSurf src, double u, double v, double w) = rgbscale(tex2d(src, u, v), w);
-	//~ define tex2d(gxSurf src, double u, double v, double w) = tex2d(src, u, v);
-
-	define nz(double x) = Math.nz(x, 1e-200);
-
-	const static gxSurf srcImg = gxSurf("media/images/download.jpg");
-
-	x = 1. - x * 2;
-	y = 1. - y * 2;
-
-	double a = atan2(y, x);
-	double r = Math.hypot(x, y);
-
-	double u = .2 * time + .1 / nz(r);
-	double v = a / pi;
-
-	result = rgb2vec4f(tex2d(srcImg, u, v, 2 * r));
-}
-
-setup(&time, yinyang);
+//~ setup(&time, eye);
+setup(&time, blob2d);
 //~ setup(&time, yinyang);
+
 //~ setup(&time, Perlin.Noise2f);
 //~ Gui.exitLoop();

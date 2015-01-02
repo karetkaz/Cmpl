@@ -33,7 +33,11 @@ define tex2d(gxSurf src, float64 u, float64 v, float64 w) = rgbscale(tex2d(src, 
 //~ define tex2d(gxSurf src, float64 u, float64 v, float64 w) = tex2d(src, u, v);
 
 define nz(float64 x) = Math.nz(x, 1e-20);
-define atan(float64 x, float64 y) = atan2(x, y);
+define sin(float64 x) = float64.sin(x);
+define cos(float64 x) = float64.cos(x);
+define sqrt(float64 x) = float64.sqrt(x);
+define pow(float64 x, float64 y) = float64.pow(x, y);
+define atan(float64 x, float64 y) = float64.atan2(x, y);
 
 void setup(rgb _func(float64 x, float64 y, float64 t)) {
 
@@ -46,7 +50,7 @@ void setup(rgb _func(float64 x, float64 y, float64 t)) {
 	static bool snapshot = false;
 	static bool animate = true;
 
-	void mouseCB(int btn, int x, int y) {
+	static void mouseCB(int btn, int x, int y) {
 		static int omb = 0;
 
 		if (btn != omb) {
@@ -56,26 +60,25 @@ void setup(rgb _func(float64 x, float64 y, float64 t)) {
 			}
 		}
 		if (btn == 1 && omb == 1) {
-			mouseX = x;
-			mouseY = y;
+			//~ mouseX = x;
+			//~ mouseY = y;
 			animate = true;
 		}
 		omb = btn;
 	}
 
 	// for each frame
-	void drawCB() {
-		float64 time = (millis() - begTime) / 1000.;
-
+	static void drawCB() {
+		float64 time = (System.millis() - begTime) / 1000.;
 		if (snapshot) {
 			animate = false;
 			snapshot = false;
-			int64 start = millis();
+			int64 start = System.millis();
 			for (int yi = 0; yi < Window.resy; yi += 1) {
 				float64 y = double(yi - mouseY) / Window.resy * 2;
 				for (int xi = 0; xi < Window.resx; xi += 1) {
 					float64 x = double(xi - mouseX) / Window.resx * 2;
-					setPixel(offScreen, xi, yi, int(func(x, y, time)));
+					setPixel(offScreen, xi, yi, int32(func(x, y, time)));
 				}
 			}
 			//~ bmpWrite(offScreen, "out-2.bmp");
@@ -87,18 +90,17 @@ void setup(rgb _func(float64 x, float64 y, float64 t)) {
 				float64 y = (yi - cy) / HEIGHT * 2;
 				for (int xi = 0; xi < WIDTH; xi += 1) {
 					float64 x = (xi - cx) / WIDTH * 2;
-					setPixel(dstImg, xi, yi, int(func(x, y, time)));
+					setPixel(dstImg, xi, yi, int32(func(x, y, time)));
 				}
 			}
 			zoomSurf(offScreen, null, dstImg, null, 1);
 			// post a redraw for animation
 			Gui.Repaint();
-
 		}
 	}
 
 	func = _func;
-	begTime = millis();
+	begTime = System.millis();
 	Gui.setDrawCallback(drawCB);
 	Gui.setMouseHandler(mouseCB);
 }
@@ -115,7 +117,7 @@ rgb plasma_x(float64 x, float64 y, float64 time) {
 	float64 c1 = Math.abs(sin(mov1+time)/2.+mov2/2.-mov1-mov2+time);
 	float64 c2 = Math.abs(sin(c1+sin(mov0/1000.+time)+sin(y/40.+time)+sin((x+y)/100.)*3.));
 	float64 c3 = Math.abs(sin(c2+cos(mov1+mov2+c2)+cos(mov2)+sin(x/1000.)));
-	return rgb(c1, c2, c3);
+	return asrgb(c1, c2, c3);
 }
 rgb plasma(float64 x, float64 y, float64 time) {
 	//~ time *= .2;
@@ -127,7 +129,7 @@ rgb plasma(float64 x, float64 y, float64 time) {
 	float64 cy = y + .5 * cos(time/3.0);
 	v += sin(sqrt(100*(cx*cx+cy*cy)+1)+time);
 	v = v/2.0;
-	return rgb(v, v, v);
+	return asrgb(v, v, v);
 }
 
 rgb stereographic0(float64 x, float64 y, float64 time) {
@@ -307,7 +309,28 @@ rgb blob2d(float64 x, float64 y, float64 time) {
 
 	//~ alter the cut-off power
 	//~ set the output color
-	return gray(Math.clamp(pow(metaball, 8.0), 0., 1.));
+	return asrgb(gray(Math.clamp(pow(metaball, 8.0), 0., 1.)));
 }
 
-setup(magma);
+rgb GoodSinus(float64 x, float64 y, float64 time) {
+	//~ time *= .5;
+	vec2d pos = vec2d(2 * x - x, 2 * y - y);
+	float64 color = 0.0;
+	float64 s = 1.0;
+
+	static float64 length(vec2d vec) {
+		return float64.sqrt(vec.x * vec.x + vec.y * vec.y);
+	}
+
+	for (int i = 0; i < 10; i += 1) {
+		float64 fi = float64(i);
+		float64 t = float64.atan2(pos.x, pos.y) + time * 0.02 * fi;
+		float64 len = (0.0002 * fi) / Math.nz(Math.abs(length(pos) - (0.5 + float64.sin(t * (3.0 + fi)) * (0.2 - fi * float64.sin(time + fi) * 0.01))), 1e-10);
+		color += len * (1.0 - fi / 20.0);
+	}
+
+	color += length(pos) * 0.1;
+	return asrgb(rgb(color*2, color*2, color*4));
+}
+
+setup(GoodSinus);

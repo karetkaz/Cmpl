@@ -4,7 +4,7 @@ enum Window {
 	resx = 800;
 	resy = 560;
 	padding = 5;
-	lineHeight = 26;
+	lineHeight = 20;
 }
 
 struct Biorithm {
@@ -14,7 +14,7 @@ struct Biorithm {
 	string label;
 }
 
-const Biorithm biorithms[] = [
+const Biorithm biorithms[] = {
 	Biorithm(0x5050ff, 23,  0, "Physical - Fizikai %d%%"),
 	Biorithm(0xff0000, 28,  0, "Emotional - Erzelmi %d%%"),
 	Biorithm(0x00ff00, 33,  0, "Intellectual - Szellemi %d%%"),
@@ -22,7 +22,7 @@ const Biorithm biorithms[] = [
 	Biorithm(0x6f6f6f, 23, 33, "Mastery - Iranyitas %d%%"),
 	Biorithm(0xfeab00, 23, 28, "Passion - Szenvedely %d%%"),
 	Biorithm(0x9466db, 28, 33, "Wisdom - Bolcsesseg %d%%")
-];
+};
 
 void drawBiorithm(gxSurf dst, int daysToShow, double now, Date birth, Biorithm biorithms[]) {
 
@@ -39,8 +39,8 @@ void drawBiorithm(gxSurf dst, int daysToShow, double now, Date birth, Biorithm b
 			for (int i = 0; i <= 2. * precision * daysToShow; i += 1) {
 				double t = days + (double(i) / precision) - daysToShow;
 				double x = Window.resx * (i / (2. * precision * daysToShow));
-				double y1 = Window.resy * (1 - sin(t % p1 / p1 * 2 * Math.pi)) / 2;
-				double y2 = Window.resy * (1 - sin(t % p2 / p2 * 2 * Math.pi)) / 2;
+				double y1 = Window.resy * (1 - float64.sin(t % p1 / p1 * 2 * Math.pi)) / 2;
+				double y2 = Window.resy * (1 - float64.sin(t % p2 / p2 * 2 * Math.pi)) / 2;
 				double y = (y1 + y2) / 2;
 
 				if (i > 0) {
@@ -58,7 +58,7 @@ void drawBiorithm(gxSurf dst, int daysToShow, double now, Date birth, Biorithm b
 			for (int i = 0; i <= 2. * precision * daysToShow; i += 1) {
 				double t = days + (double(i) / precision) - daysToShow;
 				double x = Window.resx * (i / (2. * precision * daysToShow));
-				double y = Window.resy * (1 - sin(2 * Math.pi * t / p1)) / 2;
+				double y = Window.resy * (1 - float64.sin(2 * Math.pi * t / p1)) / 2;
 				if (i > 0) {
 					drawLine(dst, lx, ly, x, y, br.color);
 					if (i == precision * daysToShow) {
@@ -120,14 +120,14 @@ void setupBiorithm(int _daysToShow, Date _now, Date _birth) {
 	static double inertial_pan_x = 0;
 	static double inertial_pan_y = 0;
 
-	void onDrawScreen() {
+	static void onDrawScreen() {
 		if (reDraw) {
 			double nowPos = now.days + double(pos * daysToShow) / (Window.resx / 2);
 			drawBiorithm(offScreen, daysToShow, nowPos, birth, biorithms);
 			reDraw = false;
 		}
 		static if (inertial_pan) {
-			int64 now = millis();
+			int64 now = System.millis();
 			if (inertial_time < now) {
 				inertial_pan_x = Math.clamp(inertial_pan_x, -inertial_pan, inertial_pan) / inertial_speed;
 				inertial_pan_y = Math.clamp(inertial_pan_y, -inertial_pan, inertial_pan) / inertial_speed;
@@ -144,7 +144,7 @@ void setupBiorithm(int _daysToShow, Date _now, Date _birth) {
 		}
 	}
 
-	void onMouseAction(int btn, int x, int y) {
+	static void onMouseAction(int btn, int x, int y) {
 		static int ox = 0;
 		static int oy = 0;
 		static int ob = 0;
@@ -164,14 +164,14 @@ void setupBiorithm(int _daysToShow, Date _now, Date _birth) {
 			static int32 oox = 0;
 			static int32 ooy = 0;
 			if (btn == 1 && ob == 0) {	// on press
-				ot = millis();
+				ot = System.millis();
 				inertial_pan_x = 0;
 				inertial_pan_y = 0;
 				oox = x;
 				ooy = y;
 			}
 			if (btn == 0 && ob == 1) {	// on relase
-				int64 now = millis();
+				int64 now = System.millis();
 				if (now - ot < 500) {
 					inertial_time = 0;
 					inertial_pan_x = oox - x;
@@ -187,7 +187,7 @@ void setupBiorithm(int _daysToShow, Date _now, Date _birth) {
 		ob = btn;
 	}
 
-	void onKey(int32 btn, int32 ext) {
+	static void onKey(int32 btn, int32 ext) {
 		if (btn == 27) {
 			Gui.exitLoop();
 		}
@@ -211,11 +211,11 @@ void setupBiorithm(int _daysToShow, Date _now, Date _birth) {
 }
 
 //~ Date Now = Date(2012, 11, 10);
-Date Now = DateFromTime(time());
+Date Now = DateFromTime(System.time());
 define daysToShow = 15;
 
 //~ setupBiorithm(daysToShow, Now, Date(1984, 8, 30));
 setupBiorithm(daysToShow, Now, Date(1983, 5,  2));
 
-long now = millis();
+long now = System.millis();
 debug("now", variant(&now));

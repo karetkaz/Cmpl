@@ -193,16 +193,16 @@ case opc_ldz4: NEXT(1, +4, 0) {
 	SP(-4, i4) = 0;
 #endif
 } break;
-case opc_ldcf: // temporary opc
-case opc_ldcr: // temporary opc
-case opc_ldc4: NEXT(5, +1, 0) {
+case opc_lf32: // temporary opc
+case opc_lref: // temporary opc
+case opc_lc32: NEXT(5, +1, 0) {
 #ifdef EXEC
 	STOP(error_ovf, ovf(pu), -1);
 	SP(-1, i4) = ip->arg.i4;
 #endif
 } break;
-case opc_ldcF: // temporary opc
-case opc_ldc8: NEXT(9, +2, 0) {
+case opc_lf64: // temporary opc
+case opc_lc64: NEXT(9, +2, 0) {
 #ifdef EXEC
 	STOP(error_ovf, ovf(pu), -1);
 	SP(-2, i8) = ip->arg.i8;

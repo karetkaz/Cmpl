@@ -7,7 +7,7 @@ enum Window {
 
 define PI = Math.pi;
 
-define toCartesian(Complex &x) = Complex(x.re * cos(x.im), x.re * sin(x.im));
+define toCartesian(Complex &x) = Complex(x.re * float64.cos(x.im), x.re * float64.sin(x.im));
 define toPolar(Complex &x) = Complex(abs(x), arg(x));
 
 define AbsMod(const double &val, double &mod) = ((val < 0 ? val + mod : val) % mod);
@@ -29,11 +29,12 @@ vec4f rgbOp(double x, double y) {
 
 	//~ z = sin(toPolar(z));
 	//~ z = sin(sin(toPolar(z)));
+	//~ z = toCartesian(cos(toPolar(z)));
 	//~ z = toCartesian(sin(toPolar(z)));
 	//~ z = sin(toCartesian(sin(toPolar(z))));
 	//~ z = sin(toCartesian(sin(toCartesian(sin(z)))));
 	//~ z = sin(sin(sin(toCartesian(z))));
-	//~ z = add(z, div(pow(z, 4), sub(sin(pow(z, 3)), 1)));
+	//~ z = mul(z, .5); z = div(pow(z, 3), sub(sin(pow(z, 7)), 1));
 
 	z = sin(z);
 	return Domain(z, 1);

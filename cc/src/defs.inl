@@ -11,7 +11,7 @@ TOKDEF(TYPE_bit, 0x04, 0, ".bit")		// bool
 TOKDEF(TYPE_i32, 0x04, 0, ".i32")		// int8, int16, int32
 TOKDEF(TYPE_u32, 0x04, 0, ".u32")		// uint8, uint16, uint32
 TOKDEF(TYPE_i64, 0x08, 0, ".i64")		// int64
-TOKDEF(TYPE_u64, 0x08, 0, ".u64")		// uint64: no vm support yet
+//~ TOKDEF(TYPE_u64, 0x08, 0, ".u64")		// uint64: no vm support yet
 TOKDEF(TYPE_f32, 0x04, 0, ".f32")		// float32
 TOKDEF(TYPE_f64, 0x08, 0, ".f64")		// float64
 TOKDEF(TYPE_ptr, 0x04, 0, ".ptr")		// pointer, string, ...
@@ -163,7 +163,7 @@ OPCDEF(opc___0e, 0x0e, 0, 0,  0, NULL)			//
 OPCDEF(opc___0f, 0x0f, 0, 0,  0, NULL)			//
 
 //~ stk ========================================================================
-OPCDEF(opc_spc,  0x10, 4, 9,  9, "spc")			// SP += arg.rel;
+OPCDEF(opc_spc,  0x10, 4, 9,  9, "stack")		// SP += arg.rel;
 OPCDEF(opc___11, 0x11, 0, 0,  0, NULL)			//
 OPCDEF(opc_dup1, 0x12, 2, 9, +1, "dup.x1")		// push(sp(arg.1: 3));			[…, a, b, c, d => […, a, b, c, d, a;
 OPCDEF(opc_dup2, 0x13, 2, 9, +2, "dup.x2")		// push(sp(arg.1: 3))x2;		[…, a, b, c, d => […, a, b, c, d, a, b;
@@ -171,14 +171,14 @@ OPCDEF(opc_dup4, 0x14, 2, 9, +4, "dup.x4")		// push(sp(arg.1: 3))x4;		[…, a, b
 OPCDEF(opc_set1, 0x15, 2, 9, +9, "set.x1")		// 
 OPCDEF(opc_set2, 0x16, 2, 9, +9, "set.x2")		// 
 OPCDEF(opc_set4, 0x17, 2, 9, +9, "set.x4")		// 
-OPCDEF(opc_ldz1, 0x18, 1, 0, +1, "load.z32")		// push(0);				[…, a, b, c => […, a, b, c, 0;
-OPCDEF(opc_ldz2, 0x19, 1, 0, +2, "load.z64")		// push(0, 0);			[…, a, b, c => […, a, b, c, 0, 0;
+OPCDEF(opc_ldz1, 0x18, 1, 0, +1, "load.z32")	// push(0);				[…, a, b, c => […, a, b, c, 0;
+OPCDEF(opc_ldz2, 0x19, 1, 0, +2, "load.z64")	// push(0, 0);			[…, a, b, c => […, a, b, c, 0, 0;
 OPCDEF(opc_ldz4, 0x1a, 1, 0, +4, "load.z128")	// push(0, 0, 0, 0);	[…, a, b, c => […, a, b, c, 0, 0, 0, 0;
-OPCDEF(opc_ldc4, 0x1b, 5, 0, +1, "load.c32")		// push(arg.b4: 2);		[…, a, b, c => […, a, b, c, 2;
-OPCDEF(opc_ldc8, 0x1c, 9, 0, +2, "load.c64")		// push(arg.b8: 2);		[…, a, b, c => […, a, b, c, 0, 2;
-OPCDEF(opc_ldcf, 0x1d, 5, 0, +1, "load.f32")		// temporary opcode
-OPCDEF(opc_ldcF, 0x1e, 9, 0, +2, "load.f64")		// temporary opcode
-OPCDEF(opc_ldcr, 0x1f, 5, 0, +1, "load.ref")		// temporary opcode
+OPCDEF(opc_lc32, 0x1b, 5, 0, +1, "load.c32")	// push(arg.b4: 2);		[…, a, b, c => […, a, b, c, 2;
+OPCDEF(opc_lc64, 0x1c, 9, 0, +2, "load.c64")	// push(arg.b8: 2);		[…, a, b, c => […, a, b, c, 0, 2;
+OPCDEF(opc_lf32, 0x1d, 5, 0, +1, "load.f32")	// temporary opcode
+OPCDEF(opc_lf64, 0x1e, 9, 0, +2, "load.f64")	// temporary opcode
+OPCDEF(opc_lref, 0x1f, 5, 0, +1, "load.ref")	// temporary opcode
 
 //~ mem ========================================================================
 OPCDEF(opc_ldi1, 0x20, 1, 1, +0, "load.i8")			// copy(sp, sp(0), 1);				[…, a, b, c => […, a, b, *(int8*)c;

@@ -3,11 +3,11 @@ define test = 4;
 enum Window {
 	draw = RenderMode.swap_buff;
 
-	resx = 1440;
-	resy = 900;
+	//~ resx = 1440;
+	//~ resy = 900;
 
-	//~ resx = 800;
-	//~ resy = 800;
+	resx = 800;
+	resy = 800;
 
 	//~ resx = 512;
 	//~ resy = 512;
@@ -54,7 +54,14 @@ static if (test == 1) {		// mouse
 int mbtn = 0;
 void mouseCB(int btn, int x, int y) {
 	mbtn = btn;
-	print("mouseHnd(btn = "); print("%08x", btn); print(", x = "); print(x); print(", y = "); print(y); print(")\n");
+	struct Info {
+		int button;
+		int x;
+		int y;
+	}
+	Info info = Info(btn, x, y);
+	debug("MouseCallBack", variant(&info));
+	//~ print("mouseHnd(btn = "); print("%08x", btn); print(", x = "); print(x); print(", y = "); print(y); print(")\n");
 }
 void drawCB() {
 	int color = 0;
@@ -247,7 +254,7 @@ gxSurf back = gxSurf(Window.resx, Window.resy);
 gxSurf mand = gxSurf(Window.resx, Window.resy);
 
 void drawCB() {
-	int rgbMax(int dst, int src) {
+	static int rgbMax(int dst, int src) {
 		define op(int a, int b) = Math.max(a, b);
 		int r = op(rch(dst), rch(src));
 		int g = op(gch(dst), gch(src));
@@ -373,8 +380,8 @@ void keyCB(int btn, int ext) {
 	if (btn == 27) {
 		Gui.exitLoop();
 	}
-	print("state[%d]: ", ext);
-	print("button: `%d`\n", btn);
+	//~ print("state[%d]: ", ext);
+	//~ print("button: `%d`\n", btn);
 }
 
 Gui.setKeyboardHandler(keyCB);

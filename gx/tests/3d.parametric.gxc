@@ -16,10 +16,10 @@ void peak(double &x, double &y, double &z, double s01, double t01) {
 	define tmax = +H;
 	double s = Math.lerp(s01, smin, smax);
 	double t = Math.lerp(t01, tmin, tmax);
-	double sst = sqrt(s*s + t*t);
+	double sst = float64.sqrt(s*s + t*t);
 	x = s / H;
 	y = t / H;
-	z = h / H * sin(sst) / sst;
+	z = h / H * float64.sin(sst) / sst;
 }
 void drop(double &x, double &y, double &z, double s01, double t01) {
 	define sdiv = 128;
@@ -34,9 +34,9 @@ void drop(double &x, double &y, double &z, double s01, double t01) {
 	double s = Math.lerp(s01, smin, smax);
 	double t = Math.lerp(t01, tmin, tmax);
 
-	x = .5 * (1 - cos(s)) * sin(s) * cos(t);
-	y = .5 * (1 - cos(s)) * sin(s) * sin(t);
-	z = cos(s);
+	x = .5 * (1 - float64.cos(s)) * float64.sin(s) * float64.cos(t);
+	y = .5 * (1 - float64.cos(s)) * float64.sin(s) * float64.sin(t);
+	z = float64.cos(s);
 
 	//~ double W = s / (2 * pi);
 	//~ x = W * cos(N * s) * (1 + cos(t));
@@ -57,9 +57,9 @@ void shell(double &x, double &y, double &z, double s01, double t01) {
 	double t = Math.lerp(t01, tmin, tmax);
 
 	double W = s / (2 * pi);
-	x = W * cos(N * s) * (1 + cos(t));
-	y = W * sin(N * s) * (1 + cos(t));
-	z = W * sin(t) + H * (W * W);
+	x = W * float64.cos(N * s) * (1 + float64.cos(t));
+	y = W * float64.sin(N * s) * (1 + float64.cos(t));
+	z = W * float64.sin(t) + H * (W * W);
 }
 void ellipse(double &x, double &y, double &z, double s01, double t01) {
 	define X = 1;
@@ -73,9 +73,9 @@ void ellipse(double &x, double &y, double &z, double s01, double t01) {
 	double s = Math.lerp(s01, smin, smax);
 	double t = Math.lerp(t01, tmin, tmax);
 
-	x = X * cos(t) * cos(s);
-	y = Y * cos(t) * sin(s);
-	z = Z * sin(t);
+	x = X * float64.cos(t) * float64.cos(s);
+	y = Y * float64.cos(t) * float64.sin(s);
+	z = Z * float64.sin(t);
 }
 void cilinder(double &x, double &y, double &z, double s01, double t01) {
 	define X = 1;
@@ -89,8 +89,8 @@ void cilinder(double &x, double &y, double &z, double s01, double t01) {
 	double s = Math.lerp(s01, smin, smax);
 	double t = Math.lerp(t01, tmin, tmax);
 
-	x = cos(t);
-	y = sin(t);
+	x = float64.cos(t);
+	y = float64.sin(t);
 	z = -s;
 }
 void OPXor(double &x, double &y, double &z, double s01, double t01) {

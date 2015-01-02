@@ -1,55 +1,41 @@
-
-define realloc(pointer ptr, int size) = memmgr(ptr, size);
-define malloc(int size) = memmgr(null, size);
-define free(pointer ptr) = memmgr(ptr, 0);
+//~ memory allocation tests
 
 struct intptr: 0 { int32 int; pointer ptr; }
 
-void testDeallocation(bool reAlloc, int test) {
-	//~ pointer p1 = malloc(160);
-	//~ pointer p2 = malloc(161);
-	//~ pointer p3 = malloc(160);
+void testDeallocation(int allocMegs, int reallocMegs, int freeOrder) {
+	pointer p1 = malloc(1 << allocMegs);
+	pointer p2 = malloc(2 << allocMegs);
+	pointer p3 = malloc(3 << allocMegs);
 
-	define size = 10;
-	pointer p1 = malloc(1 << size);
-	pointer p2 = malloc(2 << size);
-	pointer p3 = malloc(3 << size);
-
-	if (reAlloc) {
-		define size = 8;
-		p1 = realloc(p1, 1 << size);
-		p2 = realloc(p2, 2 << size);
-		p3 = realloc(p3, 3 << size);
+	//~ memmgr(null, 0);
+	if (reallocMegs > 0) {
+		p1 = realloc(p1, 1 << reallocMegs);
+		p2 = realloc(p2, 2 << reallocMegs);
+		p3 = realloc(p3, 3 << reallocMegs);
 	}
 
-	struct intptr: 0 { int32 int; pointer ptr; }
-	//~ define intptr(pointer ptr) = emit(intptr, pointer(ptr));
-	//~ intptr i[3] = { emit(intptr, pointer(p1)), emit(intptr, pointer(p2)), emit(intptr, pointer(p3)) };
-
-	memmgr(null, 0);
-	//~ debug("ppointers", 1, 0, variant(i));
-
-	if (test == 1) {
+	//~ memmgr(null, 0);
+	if (freeOrder == 1) {
 		p3 = free(p3);
 		p2 = free(p2);
 		p1 = free(p1);
 	}
-	else if (test == 2) {
+	else if (freeOrder == 2) {
 		p3 = free(p3);
 		p1 = free(p1);
 		p2 = free(p2);
 	}
-	else if (test == 3) {
+	else if (freeOrder == 3) {
 		p2 = free(p2);
 		p3 = free(p3);
 		p1 = free(p1);
 	}
-	else if (test == 4) {
+	else if (freeOrder == 4) {
 		p2 = free(p2);
 		p1 = free(p1);
 		p3 = free(p3);
 	}
-	else if (test == 5) {
+	else if (freeOrder == 5) {
 		p1 = free(p1);
 		p2 = free(p2);
 		p3 = free(p3);
@@ -58,17 +44,17 @@ void testDeallocation(bool reAlloc, int test) {
 }
 
 memmgr(null, 0);
-testDeallocation(false, 1);
-testDeallocation(false, 2);
-testDeallocation(false, 3);
-testDeallocation(false, 4);
-testDeallocation(false, 5);
+testDeallocation(10, 8, 1);
+testDeallocation(10, 8, 2);
+testDeallocation(10, 8, 3);
+testDeallocation(10, 8, 4);
+testDeallocation(10, 8, 5);
 memmgr(null, 0);
-testDeallocation(true, 1);
-testDeallocation(true, 2);
-testDeallocation(true, 3);
-testDeallocation(true, 4);
-testDeallocation(true, 5);
+testDeallocation(10, 8, 1);
+testDeallocation(10, 8, 2);
+testDeallocation(10, 8, 3);
+testDeallocation(10, 8, 4);
+testDeallocation(10, 8, 5);
 memmgr(null, 0);
 
 //~ intptr p2;

@@ -18,8 +18,35 @@ int arr3[] = arr2;		// slice
 //? TODO: threat errors as warnings inside static if false branch
 //? TODO: separate struct and unoin declaration
 
+/+ FIXED: function parameter matching
+struct debugInfo {
+	string func;
+	double x;
+	double expected;
+	double got;
+}
 
-/+~ FIXED: double initialization of global variable.
+void testFunction1(void cb(int n, debugInfo info), int n, debugInfo &info) {
+	cb(n, info);
+}
+void testFunction2(void cb(int n, debugInfo &info), int n, debugInfo &info) {
+	cb(n, info);
+}
+void testFunction(int n, debugInfo &info) {
+	if (n < 0) {
+		debug("stack trace :-)", variant.null, 1, 25);
+		return;
+	}
+	testFunction1(testFunction, n - 1, info);
+	testFunction2(testFunction, n - 1, info);
+}
+
+debugInfo info = debugInfo("fail", 1, 2, 3);
+testFunction(2, &info);
+//~ +/
+
+/+ FIXED: double initialization of global variable.
+// there should be only 2 trace('initialize')
 int init() {
 	static int a1 = init();
 	debug("initialize", variant.null, 1, 25);
@@ -27,22 +54,23 @@ int init() {
 }
 int a2 = init();
 //~ +/
-/+ TODO: Array allocation and assignment
-define new(typename type, int32 n) = emit(type[], pointer(memmgr(null, n * type.size)), i32(n));
 
-int b[] = new(int, 10);
-//~ b = new(int, 10);
-//~ int c[] = new(int, 10);
+/+ TODO: Array allocation and assignment
+//~ define n = 19;
+//~ int b[] = emit(struct, memmgr(null, n * 4), i32(n));
+
+//~ define new(typename $type, int32 n) = emit(type[], memmgr(null, n * type.size), i32(n));
+//~ int b[] = new(int, 10);
+//~ int c[];
+//~ c = new(int, 10);
 //~ b = c;
 
-/+
-int a[][];
-a = new(int[], 10);
+/+ then
+int a[][] = new(int[], 10);
 for (int i = 0; i < a.length; i += 1) {
 	a[i] = new(int, 10);
 }
 // +/
-
 // +/
 
 /+ TODO: members default initialization.
@@ -67,16 +95,32 @@ M m = M(6, 6, 9, 9);
 m.B = 69;			// warn: access wia instance reference
 m._b = 69;
 
-//~ int &ref_m_a = m.a;	// TODO: hacked: warn if const/nonconst ref assignment.
-//~ ref_m_a = 666;
+int &ref_m_a = m.a;	// TODO: hacked: warn if const/nonconst ref assignment.
+ref_m_a = 666;
 
 // +/
 
-/+ DONE: stack underflow(18): dup.x1 sp(255)
+/+ FIXED: stack underflow(18): dup.x1 sp(255)
 vec4f Screen(vec4f Base, vec4f Blend) {
 	result = sub(1, mul(sub(1, Base), sub(1, Blend)));
 }
 //~ +/
+
+//~ int nullArr[] = null;
+//~ variant nullVar = null;
+
+const int a0[4][4] = {
+	1,2,3,4,
+	1,2,3,4,
+	1,2,3,4
+};
+//~ const int a1[1] = {1};
+//~ int a2[4] = [1, 2, 3, 4];
+//~ const int a3[] = [1, 2, 3, 4];
+//~ char result[1024] = ['a'];
+//~ int a4[] = a1;//{1, 2, 3, 4};
+//~ int aaa = void;
+//~ int bbb = 9;
 
 /+ BUG: accessing elements of dynamic size vectors in structures
 struct slice_in_struct {
@@ -87,6 +131,7 @@ slice_in_struct slice_in_struct_fn(int a[]) {
 }
 
 const int a[] = [1, 2, 3, 4];
+int b[] = [1, 2, 3, 4];
 
 slice_in_struct it1 = slice_in_struct(a);
 

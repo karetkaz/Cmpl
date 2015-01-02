@@ -475,14 +475,14 @@ double float_test2 = Math.Cos(float_value);
 double fixed_test2 = float64(Fixed.Cos(fixed(float_value)));
 assertEquals("Cos", Math.Cos(float_value), Fixed.Cos(fixed(float_value)));
 
-double float_test3 = tan(float_value);
+double float_test3 = float64.tan(float_value);
 double fixed_test3 = float64(Fixed.Tan(fixed(float_value)));
 assertEquals("Tan", Math.Tan(float_value), Fixed.Tan(fixed(float_value)));
 
-double float_test4 = pow(float_value, .5);
+double float_test4 = float64.pow(float_value, .5);
 double fixed_test4 = float64(Fixed.Sqrt(fixed(float_value)));
-assertEquals("Sqrt", pow(float_value, .5), Fixed.Sqrt(fixed(float_value)));
+assertEquals("Sqrt", float64.pow(float_value, .5), Fixed.Sqrt(fixed(float_value)));
 
-double float_test5 = pow(2, float_value);
+double float_test5 = float64.pow(2, float_value);
 double fixed_test5 = float64(Fixed.fxp2xp(fixed(float_value)));
-assertEquals("exp2", pow(2, float_value), Fixed.fxp2xp(fixed(float_value)));
+assertEquals("exp2", float64.pow(2, float_value), Fixed.fxp2xp(fixed(float_value)));

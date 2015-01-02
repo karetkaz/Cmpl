@@ -55,6 +55,7 @@ int format2(char output[], int pos, FormatFlags &flags, int rad, int32 value) {
 	char temp[80];
 	int end = temp.length;
 	int sgnChr = flags.sgnChr;
+	int padChr = flags.padChr;
 
 	if (value < 0) {
 		value = -value;
@@ -69,7 +70,7 @@ int format2(char output[], int pos, FormatFlags &flags, int rad, int32 value) {
 		temp[end -= 1] = '0';
 	}
 	if (padChr && sgnChr) {
-		dst[pos] = flags.sgnChr;
+		output[pos] = flags.sgnChr;
 		pos += 1;
 	}
 
@@ -155,7 +156,7 @@ int format2(char output[], string format, int value) {
 
 char buff[512];
 string str = string(buff);
-format(buff, "value: %d = 0x%08x = 0b%032b = [%.5i]5", 0x20928374);
+format2(buff, "value: %d = 0x%08x = 0b%032b = [%.5i]5", 0x20928374);
 assert(equals(str, "value: 546472820 = 0x20928374 = 0b00100000100100101000001101110100 = [2104344112240]5"));
 
 //~ format(buff, "%0d", 0);

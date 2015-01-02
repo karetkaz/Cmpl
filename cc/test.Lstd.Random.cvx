@@ -42,8 +42,8 @@ float64 nextFloat64(Random &random) {
 }
 
 float64 drand() {
-	uint32 randnum1 = rand() * rand();
-	uint32 randnum2 = rand() * rand();
+	uint32 randnum1 = System.rand() * System.rand();
+	uint32 randnum2 = System.rand() * System.rand();
 	float64 tmp = emit(float64, i32(randnum1), i32((randnum2 >> 12) | 0x3ff00000));
 	return tmp - 1;
 }
@@ -58,17 +58,11 @@ for(int i = 0; i < 150000; i += 1) {
 	//~ float64 currand = drand();
 
 	//~ int32 currand = nextInt32(&rnd);
-	//~ int32 currand = rand();
+	//~ int32 currand = System.rand();
 
-	if (maxrand < currand)
+	if (maxrand < currand) {
 		maxrand = currand;
+	}
 
 	//~ debug("random value", variant(&currand));
 }
-//~ debug("random maximum", variant(&maxrand));
-struct float64_fmt: float64{};	//%%e
-
-//~ BUG: a should be initialized after the loop execution.
-float64_fmt a = maxrand;
-debug("random maximum", variant(&a));
-
