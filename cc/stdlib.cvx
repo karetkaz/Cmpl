@@ -298,7 +298,6 @@ Number.prototype.log10 = function(){return Math.log(this) / Math.LN10;};
 		return temp1 / temp2;
 	}
 
-	//~ sin, cos, tan, asin, acos, atan, atan2
 	// Sin returns the sine of arg.
 	define Sin(float64 arg) = sincos(arg, 0);
 

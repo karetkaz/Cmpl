@@ -332,7 +332,7 @@ static int importLib(state rt, const char* path) {
 static symn printvars = NULL;
 //~ static int haltVerbose(libcArgs rt);
 static void printGlobals(FILE* out, state rt, int all);
-static int dbgCon(state, int pu, void* ip, void* sp, int ss, char* err);
+static int dbgConsole(state, int pu, void* ip, void* sp, int ss, char* err);
 
 int program(int argc, char* argv[]) {
 	char* stdlib = (char*)STDLIB;
@@ -419,7 +419,7 @@ int program(int argc, char* argv[]) {
 			if (*str == 'd') {
 
 				gen_code |= cgen_info;
-				dbg = dbgCon;
+				dbg = dbgConsole;
 
 				if (str[1] == ':') {
 					stk_dump = str + 2;
@@ -615,9 +615,8 @@ int program(int argc, char* argv[]) {
 				info(rt, NULL, 0, "symbol not found: %s", str_tags);
 			}
 		}
-		//~ dump(rt, dump_sym | (out_tags & 0x0ff), sym, "\ntags:\n#api: replace(`^([^:]*).*$`, `\\1`)\n");
 		fputfmt(dmpf, "\n>==-- tags:\n");
-		fputfmt(dmpf, "#api: replace(`^([^:)]*([)][:][^:]+)?).*$`, `\\1`)\n");
+		fputfmt(dmpf, "#api: replace(`^([^:)<#>]*([)]+[:][^:]+)?).*$`, `\\1`)\n");
 		dump(rt, dump_sym | (out_tags & 0x0ff), sym);
 	}
 	if (out_tree >= 0) {
@@ -738,63 +737,7 @@ static void printGlobals(FILE* out, state rt, int all) {
 	}
 }
 
-/*static int haltVerbose(libcArgs rt) {
-	symn var;
-	FILE *out = stdout;
-
-	// print the global variables and their values,
-	// only when returning from execution of function <init>
-	if (rt->fun != rt->rt->init) {
-		return 0;
-	}
-
-	if (rt->rt->logf != NULL) {
-		out = rt->rt->logf;
-	}
-	fputfmt(out, "\n");
-	for (var = rt->rt->defs; var; var = var->next) {
-		char* ofs;
-
-		// exclude types
-		if (var->kind != TYPE_ref)
-			continue;
-
-		// exclude functions
-		if (var->call)
-			continue;
-
-		// exclude null
-		if (var->offs == 0)
-			continue;
-
-		if (var->file && var->line) {
-			fputfmt(out, "%s:%u:%u: ", var->file, var->line, var->colp);
-		}
-		else {
-			//~ fputfmt(out, "var: ");
-		}
-
-		if (var->stat) {
-			// static variable.
-			ofs = (char*)rt->rt->_mem + var->offs;
-		}
-		else {
-			// argument or local variable.
-			ofs = (char*)rt->retv + rt->fun->prms->offs - var->offs;
-		}
-
-		fputval(rt->rt, out, var, (stkval*)ofs, 0, prQual|prType);
-		fputc('\n', out);
-	}
-	//~ logTrace(rt->rt, 1, 0, 20);
-
-	// show allocated memory chunks.
-	//~ rtAlloc(rt->rt, NULL, 0);
-
-	return 0;
-}*/
-
-static int dbgCon(state rt, int pu, void* ip, void* sp, int ss, char* err) {
+static int dbgConsole(state rt, int pu, void* ip, void* sp, int ss, char* err) {
 	static char buff[1024];
 	static char cmd = 'N';
 	dbgInfo dbg;

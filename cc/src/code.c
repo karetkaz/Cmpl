@@ -127,6 +127,7 @@ struct cell {
 	unsigned int	ss;			// stack size
 	unsigned int	cp;			// child procs (join == 0)
 	unsigned int	pp;			// parent proc (main == 0)
+	int _padd_x64;
 };
 
 struct trace {

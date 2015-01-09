@@ -1439,7 +1439,8 @@ void dump(state rt, int mode, symn sym) {
 					for (param = sym->flds; param; param = param->next) {
 						fputfmt(logf, "\t.local %-T [@%06x, size:%d, cast:%t]\n", param, param->offs, param->size, param->cast);
 					}
-					fputast(logf, NULL, sym->init, 2, 1);
+					//~ fputast(logf, NULL, sym->init, 2, 1);
+					fputfmt(logf, "\t.ast %15.1k\n", sym->init);
 					fputasm(rt, logf, sym->offs, sym->offs + sym->size, 0x100 | (mode & 0xff));
 					fputfmt(logf, "}\n");
 				}

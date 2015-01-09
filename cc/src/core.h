@@ -185,7 +185,7 @@ typedef enum {
 	b32_bit_shr = 2 << 6,
 	b32_bit_sar = 3 << 6,
 
-	vm_size = sizeof(int),	// size of data element on stack
+	vm_size = 4,//sizeof(int),	// size of data element on stack
 	rt_size = 8,//sizeof(void*),
 	vm_regs = 255	// maximum registers for dup, set, pop, ...
 } vmOpcode;
@@ -224,7 +224,7 @@ typedef struct libc {	// library call
 	void *data;	// user data for this function
 	symn sym;
 	int chk, pop;
-	int pos;
+	size_t pos;
 } *libc;
 
 /// Abstract Syntax Tree Node
@@ -236,7 +236,6 @@ struct symNode {
 	char*	name;		// symbol name
 	char*	file;		// declared in file
 	int32_t	line;		// declared on line
-	int32_t	colp;		// declared on column
 	int32_t nest;		// declaration level
 	int32_t	size;		// variable or function size.
 	int32_t	offs;		// address of variable or function.
@@ -252,6 +251,7 @@ struct symNode {
 
 	ccToken	kind;		// TYPE_def / TYPE_rec / TYPE_ref / TYPE_arr
 	ccToken	cast;		// casts to type(TYPE_(bit, vid, ref, u32, i32, i64, f32, f64, p4x)).
+	int32_t	colp;		// declared on column
 
 	union {				// Attributes
 		uint32_t	Attr;
@@ -293,13 +293,13 @@ struct astNode {
 			char*	name;			// name of identifyer
 			symn	link;			// variable
 			astn	used;			// next used
-			int32_t hash;			// hash code for 'name'
+			size_t	hash;			// hash code for 'name'
 		} ref;
 		struct {			// OPER_xxx: operator
 			astn	rhso;			// right hand side operand
 			astn	lhso;			// left hand side operand
 			astn	test;			// ?: operator condition
-			uint32_t prec;			// precedence
+			size_t	prec;			// precedence
 		} op;
 		struct {				// STMT_brk, STMT_con
 			long offs;
@@ -313,7 +313,6 @@ struct astNode {
 	char*		file;				// file name of the token belongs to
 	uint32_t	line;				// line position of token
 	uint32_t	colp;				// column position
-	uint32_t	padd;				// --padding
 };
 
 struct arrBuffer {
@@ -321,6 +320,7 @@ struct arrBuffer {
 	int esz;		// element size
 	int cap;		// capacity
 	int cnt;		// length
+	int _padd_x64;
 };
 int initBuff(struct arrBuffer* buff, int initsize, int elemsize);
 void* setBuff(struct arrBuffer* buff, int idx, void* data);
@@ -341,7 +341,7 @@ typedef struct dbgInfo {
 	// position in code
 	int start;
 	int end;
-
+	int _padd_x64;
 } *dbgInfo;
 
 /// Compiler context
@@ -366,12 +366,12 @@ struct ccStateRec {
 	int		maxlevel;		// max nest level: modified by ?
 	int		siff:1;		// inside a static if false
 	int		init:1;		// initialize static variables ?
-	int		_pad:30;	//
+	int		_padd:30;	//
 
 	char*	file;		// current file name
 	int		line;		// current line number
 	int		lpos;		// current line position
-	int		fpos;		// current file position
+	size_t	fpos;		// current file position
 	//~ current column = fpos - lpos
 
 	struct {				// Lexer
@@ -379,10 +379,11 @@ struct ccStateRec {
 		astn	tokp;			// list of reusable tokens
 		astn	_tok;			// one token look-ahead
 		int		_chr;			// one char look-ahead
+		int		_padd_x64;
 		struct {				// Input
 			int		nest;		// nesting level on open.
 			int		_fin;		// file handle
-			int		_cnt;		// chars left in buffer
+			size_t	_cnt;		// chars left in buffer
 			char*	_ptr;		// pointer parsing trough source
 			uint8_t	_buf[1024];	// memory file buffer
 		} fin;
@@ -410,7 +411,7 @@ struct ccStateRec {
 
 	//~ symn	libc_mem;		// memory manager libcall: memmgr(pointer oldOffset, int newSize);
 	symn	libc_dbg;		// debug function libcall: debug(string message, int level, int maxTrace, variant values);
-	int32_t	libc_dbg_idx;	// debug function index
+	size_t	libc_dbg_idx;	// debug function index
 };
 
 /// Debuger context

@@ -198,7 +198,7 @@ static int FILE_close(libcArgs args) {    // void close(File file);
 	return 0;
 }
 static int FILE_stream(libcArgs args) {    // File std[in, out, err];
-	int stream = (int) args->data;
+	size_t stream = (size_t) args->data;
 	switch (stream) {
 		default:
 			break;
@@ -478,7 +478,7 @@ int install_stdc(state rt) {
 		// TODO: include some of the compiler functions for reflection. (lookup, exec?, ...)
 	};
 	struct {
-		int value;
+		int64_t value;
 		char* name;
 	}
 	constants[] = {

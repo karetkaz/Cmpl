@@ -74,6 +74,7 @@ struct stateRec {
 		int	su;			// exec: - / cgen: stack access (parallel processing)
 
 		int	opti;		// exec: - / cgen: optimization level
+		int	_padd_x64;
 	} vm;
 
 	/**

@@ -950,7 +950,7 @@ static int readTok(ccState cc, astn tok) {
 		read_idf: {			// [a-zA-Z_][a-zA-Z0-9_]*
 			static const struct {
 				char* name;
-				int type;
+				size_t type;
 			}
 			keywords[] = {
 				// Warning: sort keyword list by name
