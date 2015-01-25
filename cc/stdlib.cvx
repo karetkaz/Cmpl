@@ -1361,6 +1361,8 @@ void transpose2(mat4f &mat) {
 
 }
 
+define variant(typename type, pointer value) = emit(variant, pointer(value), typename(type));
+
 //#{ debuging ...
 static struct Debug {
 	enum: int {
@@ -2027,8 +2029,9 @@ static char chrStrings[256][2];// = (){
 define string(char chr) = emit(string, (chrStrings[chr]));
 //});// */
 
-define string(char arr[]) = emit(string, (arr));
+define string(char arr[]) = emit(string, pointer(arr));
 define variant(string str) = emit(variant, (str), (string));
+//~ define variant(string str) = variant(string, pointer(str));
 }
 
 define realloc(pointer ptr, int size) = memmgr(ptr, size);
@@ -2046,5 +2049,4 @@ define free(pointer ptr) = memmgr(ptr, 0);
 //~ define variant(int64 value) = emit(variant, ref(value), typename(int64));
 //~ define variant(float32 value) = emit(variant, ref(value), typename(float32));
 //~ define variant(float64 value) = emit(variant, ref(value), typename(float64));
-define variant(typename type, pointer value) = emit(variant, value, type);
 define sizeof(typename type) = int(type.size);

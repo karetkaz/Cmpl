@@ -40,7 +40,7 @@ enum {
  * @param size the size of memory in bytes to be used.
  * @return runtime context.
  */
-state rtInit(void* mem, unsigned size);
+state rtInit(void* mem, size_t size);
 
 // logging
 void logFILE(state, FILE *file);			// set logger
@@ -145,22 +145,22 @@ int gencode(state, int mode);
  * @todo argc(int) argument count from main.
  * @todo argv(char*[]) arguments from main.
  */
-int execute(state, void* extra, int ss);
+int execute(state, void* extra, size_t ss);
 
 /// Invoke a function; @see state.api.invoke
 int invoke(state, symn fun, void* ret, void* args, void* extra);
 
 /// Lookup symbol by offset; @see state.api.mapsym
-symn mapsym(state, int offs, int callsOnly);
+symn mapsym(state, size_t offs, int callsOnly);
 symn getsym(state, void* offs);
 
 /// Alloc, resize or free memory; @see state.api.rtAlloc
-void* rtAlloc(state, void* ptr, unsigned size);
+void* rtAlloc(state, void* ptr, size_t size);
 
 static inline void* paddptr(void *offs, unsigned align) {
 	return (void*)(((ptrdiff_t)offs + (align - 1)) & ~(ptrdiff_t)(align - 1));
 }
-static inline int padded(int offs, unsigned align) {
+static inline size_t padded(size_t offs, unsigned align) {
 	return (offs + (align - 1)) & ~(align - 1);
 }
 

@@ -737,6 +737,8 @@ static void FPUTFMT(FILE* fout, char *esc[], const char* msg, va_list ap) {
 					}
 
 					switch (sgn) {
+						default:
+							break;
 						case '-':
 							mode = prType | prQual | 1;
 							break;
@@ -760,6 +762,9 @@ static void FPUTFMT(FILE* fout, char *esc[], const char* msg, va_list ap) {
 					}
 
 					switch (sgn) {
+						default:
+							break;
+
 						case 0:
 							mode = len;
 							break;
@@ -789,7 +794,7 @@ static void FPUTFMT(FILE* fout, char *esc[], const char* msg, va_list ap) {
 					}
 
 					if (arg < tok_last) {
-						str = (char*)tok_tbl[arg].name;
+						str = tok_tbl[arg].name;
 					}
 					else {
 						char *con = arg & ATTR_const ? "const " : "";
@@ -908,7 +913,7 @@ static void FPUTFMT(FILE* fout, char *esc[], const char* msg, va_list ap) {
 					}
 
 					if (chr == 'd' && (int32_t)num < 0) {
-						num = -(int32_t)num;
+						num = (uint32_t) -num;
 						neg = -1;
 					}
 
@@ -934,7 +939,7 @@ static void FPUTFMT(FILE* fout, char *esc[], const char* msg, va_list ap) {
 					}
 
 					if (chr == 'D' && (int64_t)num < 0) {
-						num = -(int64_t)num;
+						num = (uint64_t) -num;
 						neg = -1;
 					}
 					str = fmtuns(buff, sizeof(buff), prc, 10, num);
@@ -961,7 +966,7 @@ static void FPUTFMT(FILE* fout, char *esc[], const char* msg, va_list ap) {
 					}
 
 					if ((len = msg - fmt - 1) < 1020) {
-						memcpy(buff, fmt, len);
+						memcpy(buff, fmt, (size_t) len);
 						buff[len++] = chr;
 						buff[len++] = 0;
 						//~ TODO: replace fprintf
@@ -1060,7 +1065,7 @@ static void dumpsym(FILE* fout, symn sym, int mode) {
 				if (mode > 4) {
 					*++sp = ptr->flds;
 				}
-				tch = "def";
+				tch = "alias";
 				break;
 
 			// typename/array
@@ -1069,19 +1074,19 @@ static void dumpsym(FILE* fout, symn sym, int mode) {
 				if (mode > 1) {
 					*++sp = ptr->flds;
 				}
-				tch = "typ";
+				tch = "typename";
 				break;
 
 			// variable/function
 			case TYPE_ref:
-				tch = "var";
+				tch = "variable";
 				if (mode > 3 && ptr->call && ptr->prms) {
 					*++sp = ptr->prms;
 				}
 				break;
 
 			case EMIT_opc:
-				tch = "opc";
+				tch = "opcode";
 				if (mode > 2) {
 					*++sp = ptr->flds;
 				}
@@ -1113,15 +1118,15 @@ static void dumpsym(FILE* fout, symn sym, int mode) {
 		if (print_info) {
 			fputfmt(fout, ": [%c%06x", ptr->stat ? '@' : '+', ptr->offs);
 			fputfmt(fout, ", size: %d", ptr->size);
-			fputfmt(fout, ", kind: %s", tch);
-
-			if (ptr->cnst) {
-				fputfmt(fout, ", const");
-			}
+			fputfmt(fout, ", kind:");
 
 			if (ptr->stat) {
-				fputfmt(fout, ", static");
+				fputfmt(fout, " %s", "static");
 			}
+			if (ptr->cnst) {
+				fputfmt(fout, " %s", "const");
+			}
+			fputfmt(fout, " %s", tch);
 
 			if (ptr->cast != 0) {
 				fputfmt(fout, ", cast: %t", ptr->cast);

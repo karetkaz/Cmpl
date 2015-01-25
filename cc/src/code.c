@@ -6,7 +6,6 @@
 code emmiting, executing and formatting
 *******************************************************************************/
 #include <string.h>
-#include <stdarg.h>
 #include <math.h>
 #include "core.h"
 
@@ -124,10 +123,9 @@ struct cell {
 	unsigned char	*sp;		// Stack pointer -(bp + ss)
 
 	// multiproc
-	unsigned int	ss;			// stack size
+	size_t			ss;			// stack size
 	unsigned int	cp;			// child procs (join == 0)
 	unsigned int	pp;			// parent proc (main == 0)
-	int _padd_x64;
 };
 
 struct trace {
@@ -147,7 +145,7 @@ static inline int isValidOffset(state rt, void* ptr) {
 }
 
 // TODO: to be removed.
-static inline void* getip(state rt, int pos) {
+static inline void* getip(state rt, size_t pos) {
 	if (pos == 0) {
 		return NULL;
 	}
@@ -162,13 +160,13 @@ static inline void rollbackPc(state rt) {
 	}
 }
 
-int vmOffset(state rt, void* ptr) {
+size_t vmOffset(state rt, void* ptr) {
 	dieif(!isValidOffset(rt, ptr), "invalid reference(%06x)", ((unsigned char*)ptr - rt->_mem));
 	return ptr ? (unsigned char*)ptr - rt->_mem : 0;
 }
 
 // base function emiting an ocode, see header
-int emitarg(state rt, vmOpcode opc, stkval arg) {
+size_t emitarg(state rt, vmOpcode opc, stkval arg) {
 	libc libcvec = rt->vm.libv;
 	bcde ip = (bcde)rt->_beg;
 
@@ -484,7 +482,7 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 			ip = getip(rt, rt->vm.pc);
 			if (ip->opc == opc_lc32) {
 				if ((ip->arg.i4 & (ip->arg.i4 + 1)) == 0) {
-					arg.i4 = b32_bit_and | (bitsf(ip->arg.i4 + 1) & 0x3f);
+					arg.i4 = b32_bit_and | (bitsf(ip->arg.u4 + 1) & 0x3f);
 					opc = b32_bit;
 					rollbackPc(rt);
 				}
@@ -693,7 +691,7 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 		else if (opc == f32_i32) {
 			ip = getip(rt, rt->vm.pc);
 			if (ip->opc == opc_lf32) {
-				arg.i8 = ip->arg.f4;
+				arg.i8 = (int64_t) ip->arg.f4;
 				opc = opc_lc32;
 				rollbackPc(rt);
 				dieif(ip->arg.f4 != arg.i4, "inexact cast: %f => %d", ip->arg.f4, arg.i4);
@@ -710,7 +708,7 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 		else if (opc == f32_i64) {
 			ip = getip(rt, rt->vm.pc);
 			if (ip->opc == opc_lf32) {
-				arg.i8 = ip->arg.f4;
+				arg.i8 = (int64_t) ip->arg.f4;
 				opc = opc_lc64;
 				rollbackPc(rt);
 				dieif(ip->arg.f4 != arg.i8, "inexact cast: %f => %D", ip->arg.f4, arg.i8);
@@ -728,7 +726,7 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 		else if (opc == f64_i32) {
 			ip = getip(rt, rt->vm.pc);
 			if (ip->opc == opc_lf64) {
-				arg.i8 = ip->arg.f8;
+				arg.i8 = (int64_t) ip->arg.f8;
 				opc = opc_lc32;
 				rollbackPc(rt);
 				dieif(ip->arg.f8 != arg.i4, "inexact cast: %F => %d", ip->arg.f8, arg.i4);
@@ -737,7 +735,7 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 		else if (opc == f64_f32) {
 			ip = getip(rt, rt->vm.pc);
 			if (ip->opc == opc_lf64) {
-				arg.f4 = ip->arg.f8;
+				arg.f4 = (float32_t) ip->arg.f8;
 				opc = opc_lf32;
 				rollbackPc(rt);
 				dieif(ip->arg.f8 != arg.f4, "inexact cast: %F => %f", ip->arg.f8, arg.f4);
@@ -746,7 +744,7 @@ int emitarg(state rt, vmOpcode opc, stkval arg) {
 		else if (opc == f64_i64) {
 			ip = getip(rt, rt->vm.pc);
 			if (ip->opc == opc_lf64) {
-				arg.i8 = ip->arg.f8;
+				arg.i8 = (int64_t) ip->arg.f8;
 				opc = opc_lc64;
 				rollbackPc(rt);
 				dieif(ip->arg.f8 != arg.i8, "inexact cast: %F => %D", ip->arg.f8, arg.i8);
@@ -930,6 +928,7 @@ int fixjump(state rt, int src, int dst, int stc) {
 				//TODO: dieif(ip->dl > vm_regs, "FixMe");
 				dieif(ip->dl != stc / 4, "FixMe");
 				dieif(ip->cl != dst - src, "FixMe");
+				//TODO: dieif(ip->dl > vm_regs, "FixMe");
 				return 1;
 
 			//~ case opc_ldsp:
@@ -975,7 +974,7 @@ static inline int task(cell pu, int n, int master, int cl) {
 
 		pu[slave].ip = pu[master].ip;
 		pu[slave].sp = pu[slave].bp + pu[slave].ss - cl;
-		memcpy(pu[slave].sp, pu[master].sp, cl);
+		memcpy(pu[slave].sp, pu[master].sp, (size_t) cl);
 
 		logProc(pu, master, "master");
 		logProc(pu, slave, "slave");
@@ -1048,7 +1047,7 @@ static inline int dotrace(state rt, void* ip, void* sp) {
 }
 
 /// Private dummy debug function.
-static int dbgDummy(state rt, int pu, void *ip, void* sp, int ss, char* err) {
+static int dbgDummy(state rt, int pu, void *ip, void* sp, size_t ss, char* err) {
 	if (err != NULL) {
 		// TODO: get file and line from debug information.
 		error(rt, NULL, 0, "exec: %s(%?d):[sp%02d]@%.*A rw@%06x", err, pu, ss, vmOffset(rt, ip), ip);
@@ -1068,14 +1067,14 @@ static int dbgDummy(state rt, int pu, void *ip, void* sp, int ss, char* err) {
  * @param dbg function which is executed after each instruction or on error.
  * @return Error code of execution, 0 on success.
  */
-static int exec(state rt, cell pu, symn fun, void* extra, int dbg(state, int pu, void *ip, void* sp, int ss, char* err)) {
+static int exec(state rt, cell pu, symn fun, void* extra, int dbg(state, int pu, void *ip, void* sp, size_t ss, char* err)) {
 	int err_code = 0;
 
 	const int cc = 1;
 	const libc libcvec = rt->vm.libv;
 
-	const int ms = rt->_size;			// memory size
-	const int ro = rt->vm.ro;			// read only region
+	const size_t ms = rt->_size;			// memory size
+	const size_t ro = rt->vm.ro;			// read only region
 	const memptr mp = (void*)rt->_mem;
 	const stkptr st = (void*)(pu->bp + pu->ss);
 
@@ -1195,7 +1194,7 @@ int invoke(state rt, symn fun, void* res, void* args, void* extra) {
 
 	// result is the first param
 	// TODO: ressize = fun->prms->size;
-	int ressize = sizeOf(fun->type);
+	size_t ressize = sizeOf(fun->type);
 	void* resp = NULL;
 	int result = 0;
 
@@ -1218,7 +1217,7 @@ int invoke(state rt, symn fun, void* res, void* args, void* extra) {
 
 	result = exec(rt, pu, fun, extra, NULL);
 	if (result == 0 && res != NULL) {
-		memcpy(res, resp, ressize);
+		memcpy(res, resp, (size_t) ressize);
 	}
 
 	//~ dieif(pu->sp < sp, "Error");
@@ -1229,7 +1228,7 @@ int invoke(state rt, symn fun, void* res, void* args, void* extra) {
 
 	return result;
 }
-int execute(state rt, void* extra, int ss) {
+int execute(state rt, void* extra, size_t ss) {
 	// TODO: cells should be in runtime read only memory?
 	cell pu;
 
@@ -1266,7 +1265,7 @@ int execute(state rt, void* extra, int ss) {
 }
 
 
-void fputopc(FILE* fout, unsigned char* ptr, int len, int offs, state rt) {
+void fputopc(FILE* fout, unsigned char* ptr, size_t len, size_t offs, state rt) {
 	int i;
 	bcde ip = (bcde)ptr;
 
@@ -1275,23 +1274,23 @@ void fputopc(FILE* fout, unsigned char* ptr, int len, int offs, state rt) {
 	if (len > 1 && len < opc_tbl[ip->opc].size) {
 		for (i = 0; i < len - 2; i++) {
 			if (i < opc_tbl[ip->opc].size) {
-				fprintf(fout, "%02x ", ptr[i]);
+				fputfmt(fout, "%02x ", ptr[i]);
 			}
 			else {
-				fprintf(fout, "   ");
+				fputfmt(fout, "   ");
 			}
 		}
 		if (i < opc_tbl[ip->opc].size) {
-			fprintf(fout, "%02x... ", ptr[i]);
+			fputfmt(fout, "%02x... ", ptr[i]);
 		}
 	}
 	else {
 		for (i = 0; i < len; i++) {
 			if (i < opc_tbl[ip->opc].size) {
-				fprintf(fout, "%02x ", ptr[i]);
+				fputfmt(fout, "%02x ", ptr[i]);
 			}
 			else {
-				fprintf(fout, "   ");
+				fputfmt(fout, "   ");
 			}
 		}
 	}
@@ -1304,25 +1303,28 @@ void fputopc(FILE* fout, unsigned char* ptr, int len, int offs, state rt) {
 	}
 
 	switch (ip->opc) {
+		default:
+			break;
+
 		case opc_inc:
 		case opc_spc:
 		case opc_ldsp:
 		case opc_move:
-			fprintf(fout, " %+d", ip->rel);
+			fputfmt(fout, " %+d", ip->rel);
 			break;
 
 		case opc_mad:
-			fprintf(fout, " %d", ip->rel);
+			fputfmt(fout, " %d", ip->rel);
 			break;
 
 		case opc_jmp:
 		case opc_jnz:
 		case opc_jz:
 			if (offs < 0) {
-				fprintf(fout, " %+d", ip->rel);
+				fputfmt(fout, " %+d", ip->rel);
 			}
 			else {
-				fprintf(fout, " @%06x", offs + ip->rel);
+				fputfmt(fout, " @%06x", offs + ip->rel);
 			}
 			break;
 
@@ -1331,7 +1333,7 @@ void fputopc(FILE* fout, unsigned char* ptr, int len, int offs, state rt) {
 				fputfmt(fout, " %d, %d", ip->dl, ip->cl);
 			}
 			else {
-				fprintf(fout, " %d, .%06x", ip->dl, offs + ip->cl);
+				fputfmt(fout, " %d, .%06x", ip->dl, offs + ip->cl);
 			}
 			break;
 
@@ -1340,17 +1342,24 @@ void fputopc(FILE* fout, unsigned char* ptr, int len, int offs, state rt) {
 			break;
 
 		case b32_bit: switch (ip->idx & 0xc0) {
+			default:
+				fatal("Error");
+				break;
+
 			case b32_bit_and:
-				fprintf(fout, "and 0x%03x", (1 << (ip->idx & 0x3f)) - 1);
+				fputfmt(fout, "and 0x%03x", (1 << (ip->idx & 0x3f)) - 1);
 				break;
+
 			case b32_bit_shl:
-				fprintf(fout, "shl 0x%03x", ip->idx & 0x3f);
+				fputfmt(fout, "shl 0x%03x", ip->idx & 0x3f);
 				break;
+
 			case b32_bit_shr:
-				fprintf(fout, "shr 0x%03x", ip->idx & 0x3f);
+				fputfmt(fout, "shr 0x%03x", ip->idx & 0x3f);
 				break;
+
 			case b32_bit_sar:
-				fprintf(fout, "sar 0x%03x", ip->idx & 0x3f);
+				fputfmt(fout, "sar 0x%03x", ip->idx & 0x3f);
 				break;
 		} break;
 
@@ -1394,7 +1403,7 @@ void fputopc(FILE* fout, unsigned char* ptr, int len, int offs, state rt) {
 		case opc_st32:
 		case opc_ld64:
 		case opc_st64:
-			fprintf(fout, " %x", ip->rel);
+			fputfmt(fout, " %x", ip->rel);
 			if (rt != NULL) {
 				symn sym = mapsym(rt, ip->rel, 0);
 				if (sym != NULL) {
@@ -1435,12 +1444,12 @@ void fputopc(FILE* fout, unsigned char* ptr, int len, int offs, state rt) {
 			char c2 = "xyzw"[ip->idx >> 2 & 3];
 			char c3 = "xyzw"[ip->idx >> 4 & 3];
 			char c4 = "xyzw"[ip->idx >> 6 & 3];
-			fprintf(fout, " %c%c%c%c(%02x)", c1, c2, c3, c4, ip->idx);
+			fputfmt(fout, " %c%c%c%c(%02x)", c1, c2, c3, c4, ip->idx);
 		} break;
 	}
 }
-void fputasm(state rt, FILE* fout, int beg, int end, int mode) {
-	int i, is = 12345;
+void fputasm(state rt, FILE* fout, size_t beg, size_t end, int mode) {
+	size_t i, is;
 
 	if (end == -1) {
 		end = rt->_beg - rt->_mem;
@@ -1476,8 +1485,12 @@ void fputasm(state rt, FILE* fout, int beg, int end, int mode) {
 		}
 
 		switch (mode & 0x30) {
+			default:
+				fatal("Error");
+				break;
+
 			case 0x00: // relative offsets
-				fputopc(fout, (void*)ip, mode & 0xf, -1, rt);
+				fputopc(fout, (void*)ip, mode & 0xf, -1U, rt);
 				break;
 
 			case 0x10: // local offsets
@@ -1579,8 +1592,8 @@ void fputval(state rt, FILE* fout, symn var, stkval* ref, int level, int mode) {
 		fputfmt(fout, "BadRef@%06x", var->offs);
 	}
 	else if (typ == rt->type_var) {		// TODO: temp only.
-		typ = getip(rt, ref->var.type);
-		ref = getip(rt, ref->var.data);
+		ref = getip(rt, (size_t) ref->var.value);
+		typ = getip(rt, (size_t) ref->var.type);
 		fputfmt(fout, "%+T, ", typ);
 		fputval(rt, fout, typ, ref, level, prType);
 	}
@@ -1807,7 +1820,6 @@ static void traceArgs(state rt, symn fun, char *file, int line, void* sp, int id
 	}
 }
 
-//~ TODO: void dumpTrace(state rt, int tracelevel, int flags)
 int logTrace(state rt, int ident, int startlevel, int tracelevel) {
 	int i, pos, isOutput = 0;
 	cell pu = rt->vm.cell;
@@ -1820,9 +1832,8 @@ int logTrace(state rt, int ident, int startlevel, int tracelevel) {
 	if (tracelevel > pos) {
 		tracelevel = pos;
 	}
-	// i = 1: skip debug function.
 	for (i = startlevel; i < tracelevel; ++i) {
-		int pc = vmOffset(rt, tr[pos - i].ip);
+		size_t pc = vmOffset(rt, tr[pos - i].ip);
 		dbgInfo trInfo = getCodeMapping(rt, pc);
 		signed char *sp = tr[pos - i - 1].sp;
 		symn fun = mapsym(rt, pc, 1);
@@ -1872,7 +1883,7 @@ int vmTest() {
 		int IS, CHK, DIFF;
 		int NEXT = 0;
 
-		switch (ip->opc = i) {
+		switch (ip->opc = (uint8_t) i) {
 			error_opc:
 				if (opc_tbl[i].name == NULL) {
 					// skip unimplemented instruction.

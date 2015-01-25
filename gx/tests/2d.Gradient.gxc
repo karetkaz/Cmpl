@@ -126,7 +126,8 @@ void drawCB() {
 		//~ doLinearGradient(roi, true);
 		//~ doConicalGradient(roi);
 
-		gradSurf(offScreen, &roi, &lut, Gradient.Repeat | type);
+		bool repeat = true;
+		gradSurf(offScreen, &roi, &lut, type, repeat);
 		//~ gradSurf(offScreen, &roi, &lut, type);
 		drawRect(offScreen, &roi, 0xff00ff);
 		//~ drawLine(offScreen, roi.x, roi.y, roi.x + roi.w, roi.y + roi.h, 0xff00ff);

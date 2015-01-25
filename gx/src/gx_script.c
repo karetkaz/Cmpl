@@ -867,8 +867,12 @@ static int surfCall(libcArgs rt) {
 			gx_Rect roi = popref(rt);
 			gx_Clut lut = popref(rt);
 			int mode = popi32(rt);
+			int repeat = popi32(rt);
 			gx_Surf sdst = getSurf(dst);
 
+			if (repeat) {
+				mode |= gradient_rep;
+			}
 			if (sdst) {
 				gx_gradsurf(sdst, roi, lut, mode);
 				reti32(rt, dst);
@@ -1227,7 +1231,7 @@ Surf[] = {
 
 	{surfCall, surfOpCmatSurf,		"gxSurf cmatSurf(gxSurf dst, gxRect &roi, mat4f &mat);"},
 	{surfCall, surfOpClutSurf,		"gxSurf clutSurf(gxSurf dst, gxRect &roi, gxClut &lut);"},
-	{surfCall, surfOpGradSurf,		"gxSurf gradSurf(gxSurf dst, gxRect &roi, gxClut &lut, int mode);"},
+	{surfCall, surfOpGradSurf,		"gxSurf gradSurf(gxSurf dst, gxRect &roi, gxClut &lut, int mode, bool repeat);"},
 	{surfCall, surfOpBlurSurf,		"gxSurf blurSurf(gxSurf dst, gxRect &roi, int radius);"},
 
 	{surfCall, surfOpBmpRead,		"gxSurf readBmp(gxSurf dst, string fileName);"},
@@ -1387,7 +1391,6 @@ int ccCompile(char *src, int argc, char* argv[], int (*dbg)(state rt, int pu, vo
 		err = err || !ccDefInt(rt, "Square", gradient_sqr);
 		err = err || !ccDefInt(rt, "Conical", gradient_con);
 		err = err || !ccDefInt(rt, "Spiral", gradient_spr);
-		err = err || !ccDefInt(rt, "Repeat", gradient_rep);
 		ccEnd(rt, cls);
 	}
 

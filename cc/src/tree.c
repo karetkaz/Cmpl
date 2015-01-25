@@ -54,7 +54,7 @@ astn lnknode(ccState s, symn ref) {
 	result->type = ref->kind == TYPE_ref ? ref->type : ref;
 	result->ref.name = ref->name;
 	result->ref.link = ref;
-	result->ref.hash = -1;//rehash(ref->name, -1) % TBLS;
+	result->ref.hash = -1U;
 	result->cst2 = ref->cast;
 	return result;
 	//return ref->used;
@@ -75,7 +75,7 @@ astn fltnode(ccState s, float64_t v) {
 }
 astn strnode(ccState s, char* v) {
 	astn ast = newnode(s, TYPE_str);
-	ast->ref.hash = -1;
+	ast->ref.hash = -1U;
 	ast->ref.name = v;
 	return ast;
 }

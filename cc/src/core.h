@@ -75,10 +75,6 @@
 #define offsetOf(__TYPE, __FIELD) ((size_t) &((__TYPE)0)->__FIELD)
 
 enum Format {
-	//~ noIden = 0x1000,		// TODO: to be removed: use -level instead.
-	//~ noName = 0x2000,
-
-	alPars = 0x0100,
 	nlBody = 0x0400,
 	nlElIf = 0x0800,
 
@@ -211,7 +207,8 @@ typedef union {		// on stack value type
 	float64_t	f8;
 	int32_t		rel:24;
 	struct {int32_t data; int32_t length;} arr;	// slice
-	struct {int32_t data; int32_t type;} var;	// variant
+	struct {int32_t value; int32_t type;} var;	// variant
+	struct {int32_t func; int32_t vars;} del;	// delegate
 } stkval;
 
 typedef struct list {	// linked list
@@ -237,8 +234,9 @@ struct symNode {
 	char*	file;		// declared in file
 	int32_t	line;		// declared on line
 	int32_t nest;		// declaration level
-	int32_t	size;		// variable or function size.
-	int32_t	offs;		// address of variable or function.
+	int32_t	colp;		// declared on column
+	size_t	size;		// variable or function size.
+	size_t	offs;		// address of variable or function.
 
 	symn	type;		// base type of TYPE_ref/TYPE_arr/function (void, int, float, struct, ...)
 
@@ -251,7 +249,6 @@ struct symNode {
 
 	ccToken	kind;		// TYPE_def / TYPE_rec / TYPE_ref / TYPE_arr
 	ccToken	cast;		// casts to type(TYPE_(bit, vid, ref, u32, i32, i64, f32, f64, p4x)).
-	int32_t	colp;		// declared on column
 
 	union {				// Attributes
 		uint32_t	Attr;
@@ -279,7 +276,10 @@ struct astNode {
 	ccToken		kind;				// code: TYPE_ref, OPER_???
 	ccToken		cst2;				// casts to: (void, bool, int32, int64, float32, float64, reference, value)
 	symn		type;				// typeof() return type of operator
-	astn		next;				// next statement, do not use for preorder
+	astn		next;				// next statement, next usage, do not use for preorder
+	char*		file;				// file name of the token belongs to
+	int32_t		line;				// line position of token
+	int32_t		colp;				// column position
 	union {
 		int64_t cint;				// constant integer value
 		float64_t cflt;				// constant floating point value
@@ -301,18 +301,15 @@ struct astNode {
 			astn	test;			// ?: operator condition
 			size_t	prec;			// precedence
 		} op;
-		struct {				// STMT_brk, STMT_con
-			long offs;
-			long stks;				// stack size
+		struct {			// STMT_brk, STMT_con
+			size_t offs;
+			size_t stks;			// stack size
 		} go2;
-		struct {					// STMT_beg: list
+		struct {			// STMT_beg: list
 			astn head;
 			astn tail;
 		} lst;
 	};
-	char*		file;				// file name of the token belongs to
-	uint32_t	line;				// line position of token
-	uint32_t	colp;				// column position
 };
 
 struct arrBuffer {
@@ -320,7 +317,6 @@ struct arrBuffer {
 	int esz;		// element size
 	int cap;		// capacity
 	int cnt;		// length
-	int _padd_x64;
 };
 int initBuff(struct arrBuffer* buff, int initsize, int elemsize);
 void* setBuff(struct arrBuffer* buff, int idx, void* data);
@@ -339,9 +335,8 @@ typedef struct dbgInfo {
 	int line;
 
 	// position in code
-	int start;
-	int end;
-	int _padd_x64;
+	size_t start;
+	size_t end;
 } *dbgInfo;
 
 /// Compiler context
@@ -379,7 +374,6 @@ struct ccStateRec {
 		astn	tokp;			// list of reusable tokens
 		astn	_tok;			// one token look-ahead
 		int		_chr;			// one char look-ahead
-		int		_padd_x64;
 		struct {				// Input
 			int		nest;		// nesting level on open.
 			int		_fin;		// file handle
@@ -418,7 +412,7 @@ struct ccStateRec {
 // TODO: merge this somehow with libcArgs and cell into exeState
 struct dbgStateRec {
 
-	int (*dbug)(state, int pu, void* ip, void* sp, int ss, char* err);
+	int (*dbug)(state, int pu, void* ip, void* sp, size_t ss, char* err);
 	struct arrBuffer codeMap;
 };
 
@@ -480,7 +474,7 @@ void fputfmt(FILE *fout, const char *msg, ...);
  *    positive or zero value forces absolute offsets. (ex: jmp @0255d0)
  * @param rt Runtime context (optional).
  */
-void fputopc(FILE *fout, unsigned char* ptr, int len, int offs, state rt);
+void fputopc(FILE *fout, unsigned char* ptr, size_t len, size_t offs, state rt);
 
 /**
  * @brief Print instructions to the output stream.
@@ -496,7 +490,7 @@ void fputopc(FILE *fout, unsigned char* ptr, int len, int offs, state rt);
  *     0x80: TODO: show source code.
  *     0xf00: identation
  */
-void fputasm(state, FILE *fout, int beg, int end, int mode);
+void fputasm(state, FILE *fout, size_t beg, size_t end, int mode);
 
 /** TODO: to be renamed and moved.
  * @brief Print the value of a variable at runtime.
@@ -644,7 +638,7 @@ int usages(symn sym);
  * @param sym Symbol to be checked.
  * @return Syze of type or variable.
  */
-long sizeOf(symn sym);
+size_t sizeOf(symn sym);
 
 /**
  * @brief Get the symbol(variable) linked to expression.
@@ -689,8 +683,8 @@ int64_t constint(astn ast);
 float64_t constflt(astn ast);
 
 
-unsigned rehash(const char* str, unsigned size);
-char* mapstr(ccState cc, char *str, unsigned size/* = -1U*/, unsigned hash/* = -1U*/);
+unsigned rehash(const char* str, size_t size);
+char* mapstr(ccState cc, char *str, size_t size/* = -1U*/, unsigned hash/* = -1U*/);
 
 //  VM: execution + debuging.
 
@@ -700,7 +694,7 @@ char* mapstr(ccState cc, char *str, unsigned size/* = -1U*/, unsigned hash/* = -
  * @return The internal offset.
  * @note Aborts if ptr is not null and not inside the context.
  */
-int vmOffset(state, void *ptr);
+size_t vmOffset(state, void *ptr);
 
 /**
  * @brief Emit an instruction.
@@ -709,7 +703,7 @@ int vmOffset(state, void *ptr);
  * @param arg Argument.
  * @return Program counter.
  */
-int emitarg(state, vmOpcode opc, stkval arg);
+size_t emitarg(state, vmOpcode opc, stkval arg);
 
 /**
  * @brief Emit an instruction with int argument.
@@ -718,7 +712,7 @@ int emitarg(state, vmOpcode opc, stkval arg);
  * @param arg Integer argument.
  * @return Program counter.
  */
-int emitint(state, vmOpcode opc, int64_t arg);
+size_t emitint(state, vmOpcode opc, int64_t arg);
 
 /**
  * @brief Fix a jump instruction.
@@ -733,8 +727,8 @@ int fixjump(state, int src, int dst, int stc);
 
 // Debuging.
 
-dbgInfo getCodeMapping(state rt, int position);
-dbgInfo dbgMapCode(state rt, astn ast, int start, int end);
+dbgInfo getCodeMapping(state rt, size_t position);
+dbgInfo dbgMapCode(state rt, astn ast, size_t start, size_t end);
 
 int logTrace(state rt, int ident, int startlevel, int tracelevel);
 //~ disable warning messages

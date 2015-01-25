@@ -1,24 +1,34 @@
-variant var0Null = variant(&null);			// TODO: BUG
-variant varNull = variant(null);
-variant varVariant = variant(&varNull);	// this is interresting ...
-variant var2Variant = variant(&varVariant);	// this is interresting ...
-
 int32 &nullInt = null;
 variant varNullInt = variant(&nullInt);
-int32 zeroInt = 0;
-variant varZeroInt = variant(&zeroInt);
+int32 intValue = 55;
+variant varInt = variant(&intValue);
+int32 &refInt = &intValue;
+variant varIntRef = variant(refInt);
+pointer ptrInt = pointer(&intValue);
+variant varIntPtr = variant(int32, ptrInt);
 
-string infoString = "blah";
-variant varString = variant(&infoString);
+vec4f vec4fValue = vec4f(1,2,3,4);
+variant varVec4f = variant(&vec4fValue);
+vec4f &refVec4f = vec4fValue;
+variant varVec4fRef = variant(refVec4f);
+vec4f &nullVec4f = null;
+variant varNullVec4f = variant(nullVec4f);
 
-string infoNullStr = null;
-variant varNullStr = variant(&infoNullStr);
-
-vec4f vector4f = vec4f(1,2,3,4);
-variant varStruct = variant(&vector4f);
+string valString = "blah";
+variant varString = variant(&valString);
+string nullStr = null;
+variant varNullStr = variant(&nullStr);
 
 int intArray[9] = 6;
-variant varArray = variant(&intArray);
-
+variant varArray = variant(intArray);
 int intSlice[] = intArray;
-variant varSlice = variant(&intSlice);
+variant varSlice = variant(intSlice);
+
+//~ TODO: int nullSlice[] = null;
+//~ TODO: variant varNullSlice = variant(nullSlice);
+//~ TODO: variant nullVariant = null;
+
+variant var0Null = variant(&null);			// BUG: variant(string, string(null))
+variant varNullVariant = variant(null);
+variant varVariant = variant(&varInt);	// this is interresting ...
+variant var2Variant = variant(&varVariant);	// this is interresting ...

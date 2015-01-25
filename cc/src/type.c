@@ -47,9 +47,9 @@ Basic types
 	@null: emit(pointer, i32(0));
 
 Derived data types:
-	slice: struct {const pointer data; const int length;}
-	[TODO] variant: struct &variant {const typename type; const byte data[0];}
-	[TODO] delegate: struct {const pointer function; const pointer data;}
+	slice: struct {const pointer array; const int length;}
+	variant: struct variant {const pointer value; const typename type;}
+	TODO: delegate: struct delegate {const pointer function; const pointer closure;}
 
 User defined types:
 	pointers arrays and slices:
@@ -95,7 +95,6 @@ TODO's:
 *******************************************************************************/
 
 #include "core.h"
-#include <string.h>
 
 symn newdefn(ccState s, ccToken kind) {
 	state rt = s->s;
@@ -124,7 +123,7 @@ symn install(ccState s, const char* name, ccToken kind, ccToken cast, unsigned s
 	}
 
 	if ((def = newdefn(s, kind & 0xff))) {
-		unsigned length = strlen(name) + 1;
+		size_t length = strlen(name) + 1;
 		unsigned hash = rehash(name, length) % TBLS;
 		def->name = mapstr(s, (char*)name, length, hash);
 		def->nest = s->nest;
@@ -212,7 +211,7 @@ static symn installref(state rt, const char* prot, astn* argv) {
 	if ((result = root->ref.link)) {
 		dieif(result->kind != TYPE_ref, "FixMe");
 		*argv = args;
-		result->cast = 0;
+		result->cast = TYPE_any;
 	}
 
 	rt->cc->warn = warn;
@@ -234,7 +233,7 @@ symn ccAddCall(state rt, int libc(libcArgs), void* data, const char* proto) {
 		struct libc* lc = NULL;
 		symn link = newdefn(rt->cc, EMIT_opc);
 		astn libcinit;
-		int libcpos = rt->cc->libc ? rt->cc->libc->pos + 1 : 0;
+		size_t libcpos = rt->cc->libc ? rt->cc->libc->pos + 1 : 0;
 
 		dieif(rt->_end - rt->_beg < (ptrdiff_t)sizeof(struct libc), "FixMe");
 
@@ -327,6 +326,8 @@ symn ccAddCall(state rt, int libc(libcArgs), void* data, const char* proto) {
 // promote
 static inline int castkind(int cast) {
 	switch (cast) {
+		default:
+			break;
 		case TYPE_vid:
 			return TYPE_vid;
 		case TYPE_bit:
@@ -350,8 +351,12 @@ static symn promote(symn lht, symn rht) {
 			result = lht;
 		}
 		else switch (castkind(rht->cast)) {
+			default:
+				break;
 			case TYPE_bit:
 			case TYPE_int: switch (castkind(lht->cast)) {
+				default:
+					break;
 				case TYPE_bit:
 				case TYPE_int:
 					//~ TODO: bool + int is bool; if sizeof(bool) == 4
@@ -369,6 +374,8 @@ static symn promote(symn lht, symn rht) {
 
 			} break;
 			case TYPE_flt: switch (castkind(lht->cast)) {
+				default:
+					break;
 				case TYPE_bit:
 				case TYPE_int:
 					result = rht;
@@ -502,7 +509,7 @@ ccToken canAssign(ccState cc, symn var, astn val, int strict) {
 		memset(&atag, 0, sizeof(atag));
 		atag.kind = TYPE_ref;
 		atag.type = vty ? vty->type : NULL;
-		atag.cst2 = atag.type ? atag.type->cast : 0;
+		atag.cst2 = atag.type ? atag.type->cast : TYPE_any;
 		atag.ref.link = NULL;
 		atag.ref.name = ".generated token";
 
@@ -545,7 +552,7 @@ ccToken canAssign(ccState cc, symn var, astn val, int strict) {
 		}
 	}
 
-	debug("invalid assignment %-T := %-T(%+k): (%?s:%?d:%t)", var, val->type, val, val->file, val->line, typ->cast);
+	debug("invalid assignment %-T := %-T(%+k)", var, val->type, val);
 	return TYPE_any;
 }
 
@@ -733,7 +740,7 @@ symn declare(ccState s, ccToken kind, astn tag, symn typ) {
 		return 0;
 	}
 
-	def = install(s, tag->ref.name, kind, 0, 0, typ, NULL);
+	def = install(s, tag->ref.name, kind, TYPE_any, 0, typ, NULL);
 
 	if (def != NULL) {
 
@@ -803,7 +810,7 @@ int usages(symn sym) {
 }
 
 //~ TODO: this should be calculated by fixargs() and replaced by (var|typ)->size
-long sizeOf(symn sym) {
+size_t sizeOf(symn sym) {
 	if (sym) switch (sym->kind) {
 		default:
 			break;
@@ -868,14 +875,16 @@ ccToken castOf(symn typ) {
 			return typ->cast;
 	}
 	debug("failed(%t): %?-T", typ ? typ->kind : 0, typ);
-	return 0;
+	return TYPE_any;
 }
 ccToken castTo(astn ast, ccToken cto) {
-	ccToken atc = 0;
-	if (!ast) return 0;
+	ccToken atc = TYPE_any;
+	if (!ast) {
+		return TYPE_any;
+	}
 	//~ TODO: check validity / Remove function
 
-	atc = ast->type ? ast->type->cast : 0;
+	atc = ast->type ? ast->type->cast : TYPE_any;
 	if (cto != atc) switch (cto) {
 		case TYPE_any:
 			return atc;
@@ -913,15 +922,15 @@ ccToken castTo(astn ast, ccToken cto) {
 	//~ debug("cast `%+k` to (%t)", ast, cto);
 	return ast->cst2 = cto;
 }
-static int typeTo(astn ast, symn type) {
-	if (!ast) return 0;
+static ccToken typeTo(astn ast, symn type) {
+	if (!ast) return TYPE_any;
 
 	//~ TODO: check validity / Remove function
 
 	while (ast->kind == OPER_com) {
 		if (!typeTo(ast->op.rhso, type)) {
 			trace("%k", ast);
-			return 0;
+			return TYPE_any;
 		}
 		ast = ast->op.lhso;
 	}
@@ -1164,7 +1173,7 @@ symn typecheck(ccState s, symn loc, astn ast) {
 			}
 			if (lht->cast && rht->cast) {
 				symn typ = promote(lht, rht);
-				int cast = castOf(typ);
+				ccToken cast = castOf(typ);
 				if (!castTo(ast->op.lhso, cast)) {
 					trace("%+k", ast);
 					return 0;
@@ -1361,7 +1370,7 @@ symn typecheck(ccState s, symn loc, astn ast) {
 			}
 			if (lht->cast && rht->cast) {
 				symn typ = promote(lht, rht);
-				int cast = castOf(typ);
+				ccToken cast = castOf(typ);
 				if (!castTo(ast->op.lhso, cast)) {
 					trace("%+k", ast);
 					return 0;
@@ -1548,7 +1557,7 @@ symn typecheck(ccState s, symn loc, astn ast) {
 
 int fixargs(symn sym, unsigned int align, int stbeg) {
 	symn arg;
-	int stdiff = 0;
+	size_t stdiff = 0;
 	int isCall = sym->call;
 	for (arg = sym->prms; arg; arg = arg->next) {
 

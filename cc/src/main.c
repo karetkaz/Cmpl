@@ -32,8 +32,6 @@ application [global options] [local options]...
 //~ (wcl386 -cc -q -ei -6s -d0  -fe=../main *.c) && (rm -f *.o *.obj *.err)
 #include <stdlib.h>
 #include <string.h>
-#include <ctype.h>
-#include <math.h>
 #include "core.h"
 
 // enable dynamic dll/so lib loading
@@ -64,6 +62,8 @@ static char* parsei32(const char* str, int32_t* res, int radix) {
 			sign = -1;
 		case '+':
 			str += 1;
+		default:
+			break;
 	}
 
 	if (radix == 0) {		// detect
@@ -217,7 +217,7 @@ static int testFunction(libcArgs rt) {
 static const char* pluginLibInstall = "ccvmInit";
 static const char* pluginLibDestroy = "ccvmDone";
 
-static int installDll(state rt, int ccApiMain(state rt)) {
+static int installDll(state rt, int ccApiMain(state)) {
 	return ccApiMain(rt);
 }
 
@@ -330,9 +330,8 @@ static int importLib(state rt, const char* path) {
 #endif
 
 static symn printvars = NULL;
-//~ static int haltVerbose(libcArgs rt);
 static void printGlobals(FILE* out, state rt, int all);
-static int dbgConsole(state, int pu, void* ip, void* sp, int ss, char* err);
+static int dbgConsole(state, int pu, void* ip, void* sp, size_t ss, char* err);
 
 int program(int argc, char* argv[]) {
 	char* stdlib = (char*)STDLIB;
@@ -362,7 +361,7 @@ int program(int argc, char* argv[]) {
 
 	char* amem = paddptr(mem, rt_size);
 	state rt = rtInit(amem, sizeof(mem) - (amem - mem));
-	int (*dbg)(state, int pu, void* ip, void* sp, int ss, char* err) = NULL;
+	int (*dbg)(state, int pu, void* ip, void* sp, size_t ss, char* err) = NULL;
 
 	if (rt == NULL) {
 		fatal("initializing runtime context.");
@@ -407,7 +406,6 @@ int program(int argc, char* argv[]) {
 			char* str = arg + 2;
 
 			if (*str == 'v') {
-				//~ onHalt = haltVerbose;
 				var_dump = 0;
 				str += 1;
 			}
@@ -580,8 +578,7 @@ int program(int argc, char* argv[]) {
 	if (stk_dump != NULL) {
 		ccState cc = ccOpen(rt, NULL, 0, stk_dump);
 		if (cc != NULL) {
-			astn ast = decl_var(cc, NULL, TYPE_def);
-			printvars = linkOf(ast);
+			printvars = linkOf(decl_var(cc, NULL, TYPE_def));
 			if (printvars != NULL) {
 				printvars->name = "sp";	// stack pointer
 			}
@@ -737,12 +734,12 @@ static void printGlobals(FILE* out, state rt, int all) {
 	}
 }
 
-static int dbgConsole(state rt, int pu, void* ip, void* sp, int ss, char* err) {
+static int dbgConsole(state rt, int pu, void* ip, void* sp, size_t ss, char* err) {
 	static char buff[1024];
 	static char cmd = 'N';
 	dbgInfo dbg;
 	char* arg;
-	int i, IP;
+	size_t i, IP;
 
 	if (err != NULL) {
 		error(rt, NULL, 0, "exec: %s(%?d):[sp%02d]@%.*A rw@%06x", err, pu, ss, vmOffset(rt, ip), ip);

@@ -348,13 +348,13 @@ void bitsget(int bitsize, bool signed, int64 &min, int64 &max) {
 }
 
 int bitsize = 10;   //%%d
-hex64 min;
-hex64 max;
+hex64 smin;
+hex64 smax;
 hex64 umin;
 hex64 umax;
 
-bitsget(bitsize, true, &min, &max);
-bitsget(bitsize, !true, &umin, &umax);
+bitsget(bitsize, true, &smin, &smax);
+bitsget(bitsize, false, &umin, &umax);
 
 //~ assert(umin == 0);
 //~ assert(umin != min);

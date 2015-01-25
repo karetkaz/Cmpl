@@ -64,17 +64,16 @@ struct stateRec {
 		void* cell;		// execution unit(s)
 		void* heap;		// TODO: remove: use _beg, and _end
 
-		int	pc;			// exec: entry point / cgen: prev program counter
-		int	px;			// exec: exit point / cgen: program counter
+		size_t pc;			// exec: entry point / cgen: prev program counter
+		size_t px;			// exec: exit point / cgen: program counter
 
-		int	ro;			// exec: read only memory / cgen: function parameters
-		int	ss;			// exec: stack size / cgen: current stack size
+		size_t ro;			// exec: read only memory / cgen: function parameters
+		size_t ss;			// exec: stack size / cgen: current stack size
 
-		int	sm;			// exec: - / cgen: minimum stack size
-		int	su;			// exec: - / cgen: stack access (parallel processing)
+		size_t sm;			// exec: - / cgen: minimum stack size
+		size_t su;			// exec: - / cgen: stack access (parallel processing)
 
-		int	opti;		// exec: - / cgen: optimization level
-		int	_padd_x64;
+		int  opti;		// exec: - / cgen: optimization level
 	} vm;
 
 	/**
@@ -244,14 +243,14 @@ struct stateRec {
 		 * 		size >  0 && ptr != null: realloc
 		 * @note Invocation to execute must preceed this call.
 		 */
-		void* (*const rtAlloc)(state, void* ptr, unsigned size);
+		void* (*const rtAlloc)(state, void* ptr, size_t size);
 	} api;
 
 	// memory related
 	unsigned char *_beg;		// cc: permanent memory (increments); vm: TODO: heap free memory
 	unsigned char *_end;		// cc: temporary memory (decrements); vm: TODO: heap used memory
 
-	const long _size;			// size of total memory
+	const size_t _size;			// size of total memory
 	unsigned char _mem[];		// this is where the memory begins.
 };
 
@@ -263,7 +262,7 @@ struct stateRec {
  * @param size Size of the argument to copy to result.
  * @return Pointer where the result is located or copied.
  */
-static inline void* argval(libcArgs args, int offset, void *result, int size) {
+static inline void* argval(libcArgs args, size_t offset, void *result, size_t size) {
 	// if result is not null copy
 	if (result != NULL) {
 		memcpy(result, args->argv + offset, size);
@@ -286,14 +285,14 @@ static inline void* argsym(libcArgs args, int offs) { return args->rt->api.getsy
 #undef argval
 
 /**
- * @brief Set the value of a libcall.
+ * @brief Set the return value of a libcall.
  * @param args Libcall arguments context.
  * @param result Pointer containing the result value.
  * @param size Size of the argument to copy to result.
  * @return Pointer where the result is located or copied.
  * @note May invalidate some of the arguments.
  */
-static inline void* setret(libcArgs args, void *result, int size) {
+static inline void* setret(libcArgs args, void *result, size_t size) {
 	if (result != NULL) {
 		memcpy(args->retv, result, size);
 	}

@@ -81,6 +81,8 @@ void setup(rgb _func(float64 x, float64 y, float64 t)) {
 					setPixel(offScreen, xi, yi, int32(func(x, y, time)));
 				}
 			}
+			double renderTime = (System.millis() - start) / 1000.;
+			debug("render finished", variant(&renderTime));
 			//~ bmpWrite(offScreen, "out-2.bmp");
 		}
 		if (animate) {

@@ -89,7 +89,7 @@ static int b64shl(libcArgs args) {
 static int b64shr(libcArgs args) {
 	uint64_t x = (uint64_t) argi64(args, 0);
 	int32_t y = argi32(args, 8);
-	reti64(args, x >> y);
+	reti64(args, (int64_t) (x >> y));
 	return 0;
 }
 static int b64sar(libcArgs args) {
@@ -236,7 +236,7 @@ static int FILE_read(libcArgs rt) {	// int read(File &f, uint8 buff[])
 	FILE *file = arghnd(rt, argpos(&argc, sizeof(FILE *)));
 	char *buff = argref(rt, argpos(&argc, vm_size));
 	int len = argi32(rt, argpos(&argc, vm_size));
-	reti32(rt, fread(buff, len, 1, file));
+	reti32(rt, fread(buff, (size_t) len, 1, file));
 	return 0;
 }
 static int FILE_gets(libcArgs args) {	// int fgets(File &f, uint8 buff[])
@@ -271,7 +271,7 @@ static int FILE_write(libcArgs args) {	// int write(File &f, uint8 buff[])
 	char *buff = argref(args, argpos(&argc, vm_size));
 	int len = argi32(args, argpos(&argc, vm_size));
 	debugFILE("Buff: %08x[%d], File: %x", buff, len, file);
-	len = fwrite(buff, len, 1, file);
+	len = fwrite(buff, (size_t) len, 1, file);
 	reti32(args, len);
 	return 0;
 }
@@ -345,17 +345,6 @@ int sysMillis(libcArgs args) {
 	return 0;
 }
 
-int sysPutStr(libcArgs args) {
-	fputs(argref(args, 0), stdout);
-	return 0;
-}
-int sysPutFmt(libcArgs args) {
-	char *fmt = argref(args, 0);
-	int64_t arg = argi64(args, 4);
-	fputfmt(stdout, fmt, arg);
-	return 0;
-}
-
 static int sysDebug(libcArgs args) {
 	state rt = args->rt;
 	char *file = argref(args, 0 * vm_size);
@@ -416,7 +405,7 @@ static int sysDebug(libcArgs args) {
 static int sysMemMgr(libcArgs rt) {
 	void* old = argref(rt, 0);
 	int size = argi32(rt, 4);
-	void* res = rtAlloc(rt->rt, old, (unsigned) size);
+	void* res = rtAlloc(rt->rt, old, (size_t) size);
 	reti32(rt, vmOffset(rt->rt, res));
 	return 0;
 }
@@ -424,7 +413,7 @@ static int sysMemCpy(libcArgs rt) {
 	void* dest = argref(rt, 0 * vm_size);
 	void* src = argref(rt, 1 * vm_size);
 	int size = argi32(rt, 2 * vm_size);
-	void* res = memcpy(dest, src, size);
+	void* res = memcpy(dest, src, (size_t) size);
 	reti32(rt, vmOffset(rt->rt, res));
 	return 0;
 }
@@ -432,7 +421,7 @@ static int sysMemSet(libcArgs rt) {
 	void* dest = argref(rt, 0 * vm_size);
 	int value = argi32(rt, 1 * vm_size);
 	int size = argi32(rt, 2 * vm_size);
-	void* res = memset(dest, value, size);
+	void* res = memset(dest, value, (size_t) size);
 	reti32(rt, vmOffset(rt->rt, res));
 	return 0;
 }

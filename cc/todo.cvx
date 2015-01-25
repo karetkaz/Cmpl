@@ -62,6 +62,7 @@ int a() {
 }
 */
 
+/*
 struct int32x8 {
 	int32 i8;	//%%08x
 	int32 i7;	//%%08x
@@ -115,3 +116,24 @@ int32x8 i32x8_a = int32x8(-10);
 int32x8 i32x8_b = int32x8(1);
 //~ BUG: rewrites the next variable.
 int32x8 i32x8_c = add(&i32x8_a, &i32x8_b);
+*/
+
+string infoString = "blah";
+pointer ptrString = pointer(infoString);
+string infoStringPtr = ptrString;
+variant varString = variant(&infoString);
+variant varStringType = variant(string, ptrString);
+variant varStringType2 = variant(string, pointer(infoString));
+
+int value = 1234;
+int &refValue = value;
+
+pointer ptrValue = pointer(&value);
+pointer ptrRefValue = pointer(refValue);
+variant varValue = variant(&value);
+variant varRefValue = variant(refValue);
+
+int &i1 = ptrValue;
+int &i2 = ptrRefValue;
+int &i3 = pointer(varValue);
+int &i4 = pointer(varRefValue);

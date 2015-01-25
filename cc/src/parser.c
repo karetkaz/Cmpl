@@ -60,7 +60,6 @@ Lexical elements
 
 #include <string.h>
 #include <fcntl.h>
-#include <math.h>
 #include "core.h"
 
 //#{~~~~~~~~~ Input ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -70,10 +69,10 @@ Lexical elements
  * @param cc compiler context.
  * @return number of characters in buffer.
  */
-static int fillBuf(ccState cc) {
+static size_t fillBuf(ccState cc) {
 	if (cc->fin._fin >= 0) {
 		unsigned char* base = cc->fin._buf + cc->fin._cnt;
-		int l, size = sizeof(cc->fin._buf) - cc->fin._cnt;
+		size_t l, size = sizeof(cc->fin._buf) - cc->fin._cnt;
 		memcpy(cc->fin._buf, cc->fin._ptr, cc->fin._cnt);
 		cc->fin._cnt += l = read(cc->fin._fin, base, size);
 		if (l == 0) {
@@ -174,7 +173,7 @@ static int backChr(ccState cc, int chr) {
  * @param len length of string.
  * @return hash code of the input.
  */
-unsigned rehash(const char* str, unsigned len) {
+unsigned rehash(const char* str, size_t len) {
 	static unsigned const crc_tab[256] = {
 		0x00000000, 0x77073096, 0xEE0E612C, 0x990951BA,
 		0x076DC419, 0x706AF48F, 0xE963A535, 0x9E6495A3,
@@ -262,7 +261,7 @@ unsigned rehash(const char* str, unsigned len) {
  * @param hash precalculated hashcode, -1 recalculates.
  * @return the mapped string in the string table.
  */
-char* mapstr(ccState cc, char* str, unsigned len/* = -1U*/, unsigned hash/* = -1U*/) {
+char* mapstr(ccState cc, char* str, size_t len/* = -1U*/, unsigned hash/* = -1U*/) {
 	state rt = cc->s;
 	list newn, next, prev = 0;
 
@@ -503,7 +502,7 @@ static int readTok(ccState cc, astn tok) {
 				// example: struct hex32: int32; //%%0x8x
 				if (fmt && cc->pfmt && cc->pfmt->line == line) {
 					*ptr++ = 0;
-					cc->pfmt->pfmt = mapstr(cc, beg, ptr - beg, -1);
+					cc->pfmt->pfmt = mapstr(cc, beg, ptr - beg, -1U);
 				}
 			}
 
@@ -950,7 +949,7 @@ static int readTok(ccState cc, astn tok) {
 		read_idf: {			// [a-zA-Z_][a-zA-Z0-9_]*
 			static const struct {
 				char* name;
-				size_t type;
+				ccToken type;
 			}
 			keywords[] = {
 				// Warning: sort keyword list by name
@@ -1120,6 +1119,8 @@ static int readTok(ccState cc, astn tok) {
 						case '+':
 							*ptr++ = chr;
 							chr = readChr(cc);
+						default:
+							break;
 					}
 
 					ovrf = 0;
@@ -1212,7 +1213,7 @@ static void backTok(ccState cc, astn tok) {
  */
 static astn peekTok(ccState cc, ccToken kind) {
 	if (cc->_tok == NULL) {
-		cc->_tok = newnode(cc, 0);
+		cc->_tok = newnode(cc, TOKN_err);
 		if (!readTok(cc, cc->_tok)) {
 			eatnode(cc, cc->_tok);
 			cc->_tok = NULL;
@@ -1248,7 +1249,7 @@ static astn next(ccState cc, ccToken kind) {
  * @return true if token was skipped.
  */
 int skip(ccState cc, ccToken kind) {
-	astn ast = peekTok(cc, 0);
+	astn ast = peekTok(cc, TYPE_any);
 	if (!ast || (kind && ast->kind != kind)) {
 		return 0;
 	}
@@ -1258,20 +1259,20 @@ int skip(ccState cc, ccToken kind) {
 }
 
 // TODO: to be removed.
-static int test(ccState cc) {
-	astn tok = peekTok(cc, 0);
-	return tok ? tok->kind : 0;
+static ccToken test(ccState cc) {
+	astn tok = peekTok(cc, TYPE_any);
+	return tok ? tok->kind : TYPE_any;
 }
 
 // TODO: rename, review.
-static int skiptok(ccState cc, ccToken kind, int raise) {
+static ccToken skiptok(ccState cc, ccToken kind, int raise) {
 	if (!skip(cc, kind)) {
 		if (raise) {
-			if (!peekTok(cc, 0)) {
+			if (!peekTok(cc, TYPE_any)) {
 				error(cc->s, cc->file, cc->line, "unexpected end of file, `%t` excepted", kind);
 			}
 			else {
-				error(cc->s, cc->file, cc->line, "`%t` excepted, got `%k`", kind, peekTok(cc, 0));
+				error(cc->s, cc->file, cc->line, "`%t` excepted, got `%k`", kind, peekTok(cc, TYPE_any));
 			}
 		}
 
@@ -1283,17 +1284,22 @@ static int skiptok(ccState cc, ccToken kind, int raise) {
 				break;
 
 			default:
-				return 0;
+				return TYPE_any;
 		}
 		while (!skip(cc, kind)) {
 			//~ debug("skipping('%k')", peek(s));
-			if (skip(cc, STMT_do)) return 0;
-			if (skip(cc, STMT_end)) return 0;
-			if (skip(cc, PNCT_rp)) return 0;
-			if (skip(cc, PNCT_rc)) return 0;
-			if (!skip(cc, 0)) return 0;		// eof?
+			if (skip(cc, STMT_do))
+				return TYPE_any;
+			if (skip(cc, STMT_end))
+				return TYPE_any;
+			if (skip(cc, PNCT_rp))
+				return TYPE_any;
+			if (skip(cc, PNCT_rc))
+				return TYPE_any;
+			if (!skip(cc, TYPE_any))
+				return TYPE_any;		// eof?
 		}
-		return 0;
+		return TYPE_any;
 	}
 	return kind;
 }
@@ -1339,7 +1345,7 @@ static inline astn tagnode(ccState cc, char* name) {
 	if (cc != NULL && name != NULL) {
 		ast = newnode(cc, TYPE_ref);
 		if (ast != NULL) {
-			int slen = strlen(name);
+			size_t slen = strlen(name);
 			ast->kind = TYPE_ref;
 			ast->file = cc->file;
 			ast->line = cc->line;
@@ -1373,7 +1379,7 @@ static symn addLength(ccState cc, symn sym, astn init) {
 	symn result = NULL;
 
 	enter(cc, NULL);
-	result = install(cc, "length", kind, 0, 0, cc->type_i32, init);
+	result = install(cc, "length", kind, TYPE_i32, vm_size, cc->type_i32, init);
 	sym->flds = leave(cc, sym, 0);
 	dieif(sym->flds != result, "FixMe");
 
@@ -1454,7 +1460,7 @@ static void redefine(ccState cc, symn sym) {
  * @return the constructors symbol.
  */
 static symn ctorArg(ccState cc, symn rec) {
-	symn ctor = install(cc, rec->name, TYPE_def, 0, 0, rec, NULL);
+	symn ctor = install(cc, rec->name, TYPE_def, TYPE_any, 0, rec, NULL);
 	if (ctor != NULL) {
 		astn root = NULL;
 		symn arg, newarg;
@@ -1603,7 +1609,7 @@ static int qual(ccState cc, int mode) {
 	int result = 0;
 	astn ast;
 
-	while ((ast = peekTok(cc, 0))) {
+	while ((ast = peekTok(cc, TYPE_any))) {
 		trloop("%k", peekTok(cc, 0));
 		switch (ast->kind) {
 
@@ -1619,7 +1625,7 @@ static int qual(ccState cc, int mode) {
 					error(cc->s, ast->file, ast->line, "qualifier `%t` declared more than once", ast);
 				}
 				result |= ATTR_const;
-				skip(cc, 0);
+				skip(cc, TYPE_any);
 				break;
 
 			case ATTR_stat:
@@ -1630,7 +1636,7 @@ static int qual(ccState cc, int mode) {
 					error(cc->s, ast->file, ast->line, "qualifier `%t` declared more than once", ast);
 				}
 				result |= ATTR_stat;
-				skip(cc, 0);
+				skip(cc, TYPE_any);
 				break;
 		}
 	}
@@ -1654,12 +1660,12 @@ static astn expr(ccState cc, int mode) {
 	int level = 0;						// precedence, top of sym
 
 	sym[level] = 0;
-	if (!peekTok(cc, 0)) {
+	if (!peekTok(cc, TYPE_any)) {
 		trace("null");
 		return NULL;
 	}
 
-	while ((tok = next(cc, 0))) {					// parse
+	while ((tok = next(cc, TYPE_any))) {					// parse
 		int pri = level << 4;
 		trloop("%k", peek(cc));
 		// statements are not allowed in expressions !!!!
@@ -1841,7 +1847,7 @@ static astn expr(ccState cc, int mode) {
 			case '[': missing = "']'"; break;
 			case '?': missing = "':'"; break;
 		}
-		error(cc->s, cc->file, cc->line, "missing %s, %k", missing, peekTok(cc, 0));
+		error(cc->s, cc->file, cc->line, "missing %s, %k", missing, peekTok(cc, TYPE_any));
 	}
 	else if (prec > buff) {							// build
 		astn* ptr;
@@ -1977,7 +1983,7 @@ static astn args(ccState cc, int mode) {
 		return cc->void_tag;
 	}
 
-	while (peekTok(cc, 0)) {
+	while (peekTok(cc, TYPE_any)) {
 		int attr = qual(cc, ATTR_const);
 		astn arg = decl_var(cc, NULL, mode);
 
@@ -2006,7 +2012,7 @@ static astn init_var(ccState cc, symn var) {
 		symn typ = var->type;
 		ccToken cast = var->cast;
 		int mkcon = var->cnst;
-		int arrayInit = 0;
+		ccToken arrayInit = TYPE_any;
 
 		if (typ->kind == TYPE_arr) {
 			if (skip(cc, STMT_beg)) {
@@ -2020,7 +2026,7 @@ static astn init_var(ccState cc, symn var) {
 			}
 		}
 		var->init = expr(cc, TYPE_def);
-		if (arrayInit) {
+		if (arrayInit != TYPE_any) {
 			skiptok(cc, arrayInit, 1);
 		}
 
@@ -2043,7 +2049,7 @@ static astn init_var(ccState cc, symn var) {
 				int nelem = 1;
 
 				// TODO: base should not be stored in var->args !!!
-				cast = base ? base->cast : 0;
+				cast = base ? base->cast : TYPE_any;
 
 				if (base == typ->type && typ->init == NULL) {
 					mkcon = 0;
@@ -2085,7 +2091,7 @@ static astn init_var(ccState cc, symn var) {
 					typ->init = intnode(cc, nelem);
 					// ArraySize
 					typ->size = nelem * typ->type->size;
-					typ->offs = nelem;
+					typ->offs = (size_t) nelem;
 					typ->cast = TYPE_ref;
 					typ->stat = 1;
 					var->cast = TYPE_any;
@@ -2106,8 +2112,8 @@ static astn init_var(ccState cc, symn var) {
 				// assign enum variable to base type.
 				if (var->cast != ENUM_kwd && var->init->type->cast == ENUM_kwd) {
 					astn ast = var->init;
-					symn typ = ast->type->type;
-					if (!castTo(ast, castOf(ast->type = typ))) {
+					symn eTyp = ast->type->type;
+					if (!castTo(ast, castOf(ast->type = eTyp))) {
 						trace("%+k", ast);
 						return NULL;
 					}
@@ -2279,7 +2285,7 @@ static astn decl_enum(ccState cc) {
 			}
 		}
 		else {
-			error(cc->s, cc->file, cc->line, "typename expected, got `%k`", peekTok(cc, 0));
+			error(cc->s, cc->file, cc->line, "typename expected, got `%k`", peekTok(cc, TYPE_any));
 		}
 		enuminc = base && (base->cast == TYPE_i32 || base->cast == TYPE_i64);
 	}
@@ -2300,7 +2306,7 @@ static astn decl_enum(ccState cc) {
 		tag->type = base;
 	}
 
-	while (peekTok(cc, 0)) {			// enum members
+	while (peekTok(cc, TYPE_any)) {			// enum members
 		trloop("%k", peek(cc));
 
 		if (peekTok(cc, STMT_end)) {
@@ -2361,7 +2367,7 @@ static astn decl_struct(ccState cc, int Attr) {
 	astn tok, tag;
 
 	int byref = 0;
-	int pack = vm_size;
+	unsigned int pack = vm_size;
 
 	if (!skiptok(cc, TYPE_rec, 1)) {	// 'struct'
 		trace("%+k", peekTok(cc, 0));
@@ -2379,7 +2385,7 @@ static astn decl_struct(ccState cc, int Attr) {
 				else if (Attr == ATTR_stat) {
 					error(cc->s, cc->file, cc->line, "alignment can not be applied to static struct");
 				}
-				pack = (int32_t)tok->cint;
+				pack = (unsigned int) tok->cint;
 			}
 			else if (isType(tok)) {
 				base = linkOf(tok);
@@ -2389,7 +2395,7 @@ static astn decl_struct(ccState cc, int Attr) {
 			}
 		}
 		else {
-			error(cc->s, cc->file, cc->line, "alignment must be an integer constant, got `%k`", peekTok(cc, 0));
+			error(cc->s, cc->file, cc->line, "alignment must be an integer constant, got `%k`", peekTok(cc, TYPE_any));
 		}
 	}
 
@@ -2408,7 +2414,7 @@ static astn decl_struct(ccState cc, int Attr) {
 	tag->kind = TYPE_def;
 	enter(cc, tag);
 
-	while (peekTok(cc, 0)) {			// struct members
+	while (peekTok(cc, TYPE_any)) {			// struct members
 		trloop("%k", peekTok(cc, 0));
 
 		if (peekTok(cc, STMT_end)) {
@@ -2416,7 +2422,7 @@ static astn decl_struct(ccState cc, int Attr) {
 		}
 
 		if (!decl(cc, 0)) {
-			error(cc->s, cc->file, cc->line, "declaration expected, got: `%+k`", peekTok(cc, 0));
+			error(cc->s, cc->file, cc->line, "declaration expected, got: `%+k`", peekTok(cc, TYPE_any));
 			skiptok(cc, STMT_do, 0);
 		}
 	}
@@ -2569,11 +2575,11 @@ astn decl_var(ccState cc, astn* argv, int mode) {
 				if (eval(&val, init) == TYPE_int) {
 					// add static const length property to array type.
 					addLength(cc, typ, init);
-					typ->size = (int)val.cint * typ->type->size;
-					typ->offs = (int)val.cint;
+					typ->size = (int) val.cint * typ->type->size;
+					typ->offs = (size_t) val.cint;
 					typ->cast = TYPE_ref;
 					typ->init = init;
-					ref->cast = 0;
+					ref->cast = TYPE_any;
 
 					dynarr = 0;
 					if (val.cint < 0) {
@@ -2619,8 +2625,8 @@ astn decl_var(ccState cc, astn* argv, int mode) {
 				if (eval(&val, init) == TYPE_int) {
 					//~ ArraySize
 					addLength(cc, typ, init);
-					typ->size = (int)val.cint * typ->type->size;
-					typ->offs = (int)val.cint;
+					typ->size = (int) val.cint * typ->type->size;
+					typ->offs = (size_t) val.cint;
 					typ->init = init;
 				}
 				else {
@@ -2748,7 +2754,7 @@ static astn decl(ccState cc, int mode) {
 				for (tmp = ref->prms; tmp; tmp = tmp->next) {
 					//~ TODO: make just a symlink to the symbol, not a copy of it.
 					//~ TODO: install(cc, tmp->name, TYPE_def, 0, 0, tmp->type, tmp->used);
-					symn arg = install(cc, tmp->name, TYPE_ref, 0, 0, NULL, NULL);
+					symn arg = install(cc, tmp->name, TYPE_ref, TYPE_any, 0, NULL, NULL);
 					if (arg != NULL) {
 						arg->type = tmp->type;
 						arg->flds = tmp->flds;
@@ -2853,13 +2859,15 @@ static astn block(ccState cc, int mode) {
 	astn head = NULL;
 	astn tail = NULL;
 
-	while (peekTok(cc, 0)) {
+	while (peekTok(cc, TYPE_any)) {
 		int stop = 0;
 		astn node;
 		trloop("%k", peekTok(cc, 0));
 
 		switch (test(cc)) {
-			case 0 :	// end of file
+			default:
+				break;
+			case TYPE_any :	// end of file
 			case PNCT_rp :
 			case PNCT_rc :
 			case STMT_end :
@@ -2894,19 +2902,21 @@ static astn block(ccState cc, int mode) {
  */
 static astn stmt(ccState cc, int mode) {
 	astn node = NULL;
-	int qual = 0;			// static | parallel
+	ccToken qual = TYPE_any;			// static | parallel
 
 	//~ invalid start of statement
 	switch (test(cc)) {
+		default:
+			break;
 		case STMT_end:
 		case PNCT_rp:
 		case PNCT_rc:
 		case 0:	// end of file
 			trace("%+k", peekTok(cc, 0));
-			skiptok(cc, 0, 1);
+			skiptok(cc, TYPE_any, 1);
 			return NULL;
 	}
-	if (!peekTok(cc, 0)) {
+	if (!peekTok(cc, TYPE_any)) {
 		trace("null");
 		return NULL;
 	}
@@ -2953,7 +2963,7 @@ static astn stmt(ccState cc, int mode) {
 			node->stmt.stmt = blk;
 			node->type = cc->type_vid;
 			node->cst2 = qual;
-			qual = 0;
+			qual = TYPE_any;
 		}
 		else {
 			// eat code like: {{;{;};{}{}}}
@@ -3036,7 +3046,7 @@ static astn stmt(ccState cc, int mode) {
 
 		node->type = cc->type_vid;
 		node->cst2 = qual;
-		qual = 0;
+		qual = TYPE_any;
 
 		cc->siff = siffalse;
 	}
@@ -3173,7 +3183,7 @@ static astn stmt(ccState cc, int mode) {
 
 		node->type = cc->type_vid;
 		node->cst2 = qual;
-		qual = 0;
+		qual = TYPE_any;
 	}
 	else if ((node = next(cc, STMT_brk))) {	// break;
 		node->type = cc->type_vid;
@@ -3227,7 +3237,7 @@ static astn stmt(ccState cc, int mode) {
 				break;
 		}
 	}
-	else if ((node = peekTok(cc, 0))) {
+	else if ((node = peekTok(cc, TYPE_any))) {
 		error(cc->s, node->file, node->line, "unexpected token: `%k`", node);
 		skiptok(cc, STMT_do, 1);
 	}
@@ -3273,7 +3283,7 @@ static int source(ccState cc, int isFile, char* src) {
 			return -1;
 		}
 
-		cc->file = mapstr(cc, src, -1, -1);
+		cc->file = mapstr(cc, src, -1U, -1U);
 		cc->line = 1;
 
 		if (fillBuf(cc) > 2) {
@@ -3310,11 +3320,9 @@ static astn parse(ccState cc, int asUnit, int warn) {
 	cc->warn = warn;
 
 	if (0) {
-		astn root = NULL;
 		astn ast, prev = NULL;
-		while ((ast = next(cc, 0))) {
+		while ((ast = next(cc, TYPE_any))) {
 			if (prev == NULL) {
-				root = ast;
 				prev = ast;
 			}
 			else {
@@ -3322,7 +3330,7 @@ static astn parse(ccState cc, int asUnit, int warn) {
 			}
 			prev = ast;
 		}
-		backTok(cc, root);
+		backTok(cc, prev);
 	}
 
 	if ((root = block(cc, 0))) {
@@ -3353,8 +3361,8 @@ static astn parse(ccState cc, int asUnit, int warn) {
 		}
 		cc->root = root;
 
-		if (peekTok(cc, 0)) {
-			error(cc->s, cc->file, cc->line, "unexpected token: %k", peekTok(cc, 0));
+		if (peekTok(cc, TYPE_any)) {
+			error(cc->s, cc->file, cc->line, "unexpected token: %k", peekTok(cc, TYPE_any));
 			return 0;
 		}
 
@@ -3384,7 +3392,7 @@ ccState ccOpen(state rt, char* file, int line, char* text) {
 	}
 
 	if (file != NULL) {
-		rt->cc->file = mapstr(rt->cc, file, -1, -1);
+		rt->cc->file = mapstr(rt->cc, file, -1U, -1U);
 	}
 	else {
 		rt->cc->file = NULL;
@@ -3424,7 +3432,7 @@ int ccDone(ccState cc) {
 		return -1;
 
 	// check no token left to read
-	if ((ast = peekTok(cc, 0))) {
+	if ((ast = peekTok(cc, TYPE_any))) {
 		error(cc->s, ast->file, ast->line, "unexpected: `%k`", ast);
 		return -1;
 	}

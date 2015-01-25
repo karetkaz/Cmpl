@@ -171,7 +171,7 @@ vec4f yinyang(double x, double y) {
 	float64 h = x*x + y*y;
 	if (h < 1.) {
 		float64 d = Math.abs(y) - h;
-		float64 a = d - 0.23;
+		float64 a = d - 0.03;
 		float64 b = h - 1.00;
 		float64 c = Math.sign(a * b * (y + x + (y - x) * Math.sign(d)));
 
@@ -249,8 +249,8 @@ vec4f eye(double x, double y) {
 }
 
 //~ setup(&time, eye);
-setup(&time, blob2d);
-//~ setup(&time, yinyang);
+//~ setup(&time, blob2d);
+setup(&time, yinyang);
 
 //~ setup(&time, Perlin.Noise2f);
 //~ Gui.exitLoop();
