@@ -1448,17 +1448,15 @@ int strrchr(string str, int chr, int max) {
 
 /// Compare two strings
 int compare(string a, string b) {
-	int i = result = 0;
-	for (; a[i]; i += 1) {
+	/*for ( ; a[i]; i += 1) {
 		result = a[i] - b[i];
 		if (result != 0) {
 			break;
 		}
 	}
 	return a[i] - b[i];
-}
-int compare2(string a, string b) {
-	result = 0;
+	*/
+	result = 0;	// TODO: this should be set by callee
 	for (int i = 0; result == 0; i += 1) {
 		result = a[i] - b[i];
 		if (a[i] == 0) {
@@ -1471,15 +1469,15 @@ define equals(string a, string b) = bool(compare(a, b) == 0);
 
 // convert number to string
 struct FormatFlags {
-	const int sgnChr;	// should be one of: 0, '-', '+'
-	const int padChr;	// padding character: 0, '0'
+	const char sgnChr;	// should be one of: 0, '-', '+'
+	const char padChr;	// padding character: 0, '0'
+	const char fmtChr;	// format char
 	const int padLen;	// padding length
 	const int maxLen;	// maximum length
-	const int fmtChr;	// format char
 }
 
 int format(char output[], int pos, FormatFlags &flags, int rad, uint32 value) {
-	static const FormatFlags default = FormatFlags(0, ' ', 0, 0, 'd');
+	static const FormatFlags default = FormatFlags(0, ' ', 'd', 0, 0);
 	static const char digits[] = "0123456789abcdefghijklmnopqrstuvwxyz";
 
 	/* TODO: extend this function as commented
@@ -1524,6 +1522,9 @@ int format(char output[], int pos, FormatFlags &flags, int rad, uint32 value) {
 
 	char temp[80];
 	int end = temp.length;
+	int sgnChr = flags.sgnChr;
+	int padChr = flags.padChr;
+
 
 	temp[end -= 1] = 0;
 	for ( ; value > 0; value /= rad) {
@@ -1576,7 +1577,6 @@ int format(char output[], string format, int value) {
 	int spos = 0;
 	for (int chr; chr = format[spos]; spos += 1) {
 		if (chr == '%') {
-			//~ spos += readFlags(format, spos, &flags);
 			chr = format[spos += 1];
 			if (chr == '%') {
 				if (pos < output.length) {
@@ -1646,7 +1646,7 @@ int format(char output[], string format, int value) {
 				}
 			}
 
-			FormatFlags flags = FormatFlags(sgnChr, padChr, padLen, maxLen, chr);
+			FormatFlags flags = FormatFlags(sgnChr, padChr, chr, padLen, maxLen);
 			pos = format(output, pos, &flags, rad, val);
 		}// */
 		else if (pos < output.length) {
@@ -1916,17 +1916,17 @@ void format(char output[], string format, Date value) {
 			}
 		}
 		else if (chr == 'w') {//~ %w	Weekday as a decimal number, where 0 is Sunday and 6 is Saturday.	0, 1, ..., 6
-			FormatFlags flags = FormatFlags(sgnChr, padChr, padLen, maxLen, chr);
+			FormatFlags flags = FormatFlags(sgnChr, padChr, chr, padLen, maxLen);
 			pos = format(output, pos, &flags, 10, parts.dayOfWeek);
 		}
 		else if (chr == 'd') {//~ %d	Day of the month as a decimal number.		01, 02, ..., 31
 			if (padLen < 0) {padLen = 2; padChr = '0';}
-			FormatFlags flags = FormatFlags(sgnChr, padChr, padLen, maxLen, chr);
+			FormatFlags flags = FormatFlags(sgnChr, padChr, chr, padLen, maxLen);
 			pos = format(output, pos, &flags, 10, parts.dayOfMonth);
 		}
 		else if (chr == 'j') {//~ %j	Day of the year as a decimal number.		001, 002, ..., 366
 			if (padLen < 0) {padLen = 3; padChr = '0';}
-			FormatFlags flags = FormatFlags(sgnChr, padChr, padLen, maxLen, chr);
+			FormatFlags flags = FormatFlags(sgnChr, padChr, chr, padLen, maxLen);
 			pos = format(output, pos, &flags, 10, parts.dayOfYear);
 		}
 
@@ -1979,16 +1979,16 @@ void format(char output[], string format, Date value) {
 		}
 		else if (chr == 'm') {//~ %m	Month as a decimal number.					01, 02, ..., 12
 			if (padLen < 0) {padLen = 2; padChr = '0';}
-			FormatFlags flags = FormatFlags(sgnChr, padChr, padLen, maxLen, chr);
+			FormatFlags flags = FormatFlags(sgnChr, padChr, chr, padLen, maxLen);
 			pos = format(output, pos, &flags, 10, parts.month);
 		}
 
 		else if (chr == 'y') {//~ %y	Year without century as a decimal number.	0, 1, ..., 99
-			FormatFlags flags = FormatFlags(sgnChr, padChr, padLen, maxLen, chr);
+			FormatFlags flags = FormatFlags(sgnChr, padChr, chr, padLen, maxLen);
 			pos = format(output, pos, &flags, 10, parts.year % 100);
 		}
 		else if (chr == 'Y') {//~ %Y	Year with century as a decimal number.		1970, 1988, 2001, 2013
-			FormatFlags flags = FormatFlags(sgnChr, padChr, padLen, maxLen, chr);
+			FormatFlags flags = FormatFlags(sgnChr, padChr, chr, padLen, maxLen);
 			pos = format(output, pos, &flags, 10, parts.year);
 		}
 		else {

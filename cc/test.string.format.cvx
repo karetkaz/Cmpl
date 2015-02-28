@@ -1,13 +1,12 @@
 //~ format integer numbers
 
 // convert number to string
-
-int readFlags(string format, int spos, FormatFlags &outValue) {
+FormatFlags readFlags(string format, int &spos) {
 	int chr = format[spos];
 	if (chr == '%') {
 		chr = format[spos += 1];
 		if (chr == '%') {
-			return spos;
+			return FormatFlags(0, 0, 0, 0, 0);
 		}
 
 		int sgnChr = 0;
@@ -38,63 +37,9 @@ int readFlags(string format, int spos, FormatFlags &outValue) {
 			}
 		}
 
+		return FormatFlags(sgnChr, padChr, chr, padLen, maxLen);
 	}
-	return spos;
-}
-
-int format2(char output[], int pos, FormatFlags &flags, int rad, int32 value) {
-	static const FormatFlags default = FormatFlags(0, ' ', 0, 0, 'd');
-	static const char digits[] = "0123456789abcdefghijklmnopqrstuvwxyz";
-
-	if (flags == null) {
-		flags = default;
-	}
-
-	assert(rad > 0 && rad < digits.length);
-
-	char temp[80];
-	int end = temp.length;
-	int sgnChr = flags.sgnChr;
-	int padChr = flags.padChr;
-
-	if (value < 0) {
-		value = -value;
-		sgnChr = '-';
-	}
-
-	temp[end -= 1] = 0;
-	for ( ; value > 0; value /= rad) {
-		temp[end -= 1] = digits[value % rad];
-	}
-	if (temp[end] == 0) {
-		temp[end -= 1] = '0';
-	}
-	if (padChr && sgnChr) {
-		output[pos] = flags.sgnChr;
-		pos += 1;
-	}
-
-	int strLen = temp.length - end;
-	int padLen = flags.padLen;
-
-	int max = pos + padLen - strLen + 1;
-	if (max > output.length) {
-		max = output.length - 1;
-	}
-	for (; pos < max; pos += 1) {
-		output[pos] = flags.padChr;
-	}
-
-	max = pos + strLen;
-	if (max > output.length) {
-		max = output.length - 1;
-	}
-
-	for (; pos < max; pos += 1) {
-		output[pos] = temp[end];
-		end += 1;
-	}
-	return pos - 1;
+	return FormatFlags(0, 0, 0, 0, 0);
 }
 
 /**
@@ -117,8 +62,7 @@ int format2(char output[], string format, int value) {
 	int spos = 0;
 	for (int chr; chr = format[spos]; spos += 1) {
 		if (chr == '%') {
-			FormatFlags flags;
-			spos += readFlags(format, spos, &flags);
+			FormatFlags flags = readFlags(format, &spos);
 			chr = flags.fmtChr;
 
 			int radix = 10;
@@ -138,7 +82,7 @@ int format2(char output[], string format, int value) {
 				radix = flags.maxLen;
 			}
 
-			pos = format2(output, pos, &flags, radix, value);
+			pos = format(output, pos, &flags, radix, value);
 		}
 		else if (pos < output.length) {
 			output[pos] = chr;

@@ -1,0 +1,173 @@
+// Image histogram demo.
+enum Window {
+	draw = RenderMode.swap_buff;
+	//~ resx = 512;
+	//~ resy = resx;
+}
+
+//~ string fileName = "media/images/David.png";
+string fileName = "media/images/lenaRGB.png";
+//~ string fileName = "media/images/download.jpg";
+//~ string fileName = "media/images/dino-blue.jpg";
+//~ string fileName = "media/images/Earth.jpg";
+//~ string fileName = "media/images/nol.bmp";
+
+//~ define resize(gxSurf src, int width, int height) = zoomSurf(gxSurf(width, height), null, src, null, 1);
+
+gxSurf histo1 = gxSurf(256, 128);
+gxSurf histo2 = gxSurf(256, 128);
+gxSurf image = gxSurf(fileName);
+
+gxSurf histo(gxSurf dst, gxSurf src, bool rgb) {
+
+	result = dst;
+	bool resize = false;
+
+	if (width(dst) != 256) {
+		result = gxSurf(256, height(dst));
+		resize = true;
+	}
+
+	int histoHeight = height(result);
+	int imgh = height(src);
+	int imgw = width(src);
+	int histoR[256];
+	int histoG[256];
+	int histoB[256];
+	int histoL[256];
+
+	// init
+	for (int i = 0; i < 256; i += 1) {
+		histoR[i] = 0;
+		histoG[i] = 0;
+		histoB[i] = 0;
+		histoL[i] = 0;
+	}
+
+	// set
+	for (int y = 0; y < imgh; y += 1) {
+		for (int x = 0; x < imgw; x += 1) {
+			int c1 = getPixel(src, x, y);
+			histoR[rch(c1)] += 1;
+			histoG[gch(c1)] += 1;
+			histoB[bch(c1)] += 1;
+			histoL[lum(c1)] += 1;
+		}
+	}
+
+	int maxRgb = 0;
+	for (int i = 0; i < 256; i += 1) {
+		maxRgb = Math.max(histoR[i], maxRgb);
+		maxRgb = Math.max(histoG[i], maxRgb);
+		maxRgb = Math.max(histoB[i], maxRgb);
+		maxRgb = Math.max(histoL[i], maxRgb);
+	}
+
+	// fill
+	int y2 = histoHeight;
+	fillRect(result, 0, 0, 35536, 35536, 0);
+
+	for (int x = 0; x < 256; x += 1) {
+		enum {
+			colR = 0xff0000;
+			colG = 0x00ff00;
+			colB = 0x0000ff;
+		}
+
+		define histoHeight(int n, int max) = int((histoHeight * n) / max);
+		int rsize = histoHeight(histoR[x], maxRgb);
+		int gsize = histoHeight(histoG[x], maxRgb);
+		int bsize = histoHeight(histoB[x], maxRgb);
+		int lsize = histoHeight(histoL[x], maxRgb);
+
+		if (rgb) {
+			for (int y = 0; y < histoHeight; y += 1) {
+				int col = colR * (y < rsize) | colG * (y < gsize) | colB * (y < bsize);
+				setPixel(result, x, histoHeight - y, col);
+			}
+		}
+		else {
+			fillRect(result, x, y2 - rsize, x+1, y2, colR);
+			fillRect(result, x, y2 - gsize, x+1, y2, colG);
+			fillRect(result, x, y2 - bsize, x+1, y2, colB);
+			fillRect(result, x, y2 - lsize, x+1, y2, 0xffffff);
+		}
+	}
+
+	if (resize) {// (result != dst) {
+		zoomSurf(dst, null, result, null, 1);
+		delSurf(result);
+		result = dst;
+	}
+}
+
+gxSurf equalize(gxSurf dst, gxSurf src) {
+
+	result = dst;
+	bool resize = false;
+
+	if (width(dst) != 256) {
+		result = gxSurf(256, height(dst));
+		resize = true;
+	}
+
+	int histoHeight = height(result);
+	int imgh = height(src);
+	int imgw = width(src);
+	const int pixels = imgw * imgh;
+	int histoR[256];
+	int histoG[256];
+	int histoB[256];
+
+	// init
+	for (int i = 0; i < 256; i += 1) {
+		histoR[i] = 0;
+		histoG[i] = 0;
+		histoB[i] = 0;
+	}
+
+	// set
+	for (int y = 0; y < imgh; y += 1) {
+		for (int x = 0; x < imgw; x += 1) {
+			int c1 = getPixel(src, x, y);
+			histoR[rch(c1)] += 1;
+			histoG[gch(c1)] += 1;
+			histoB[bch(c1)] += 1;
+		}
+	}
+
+	int transR[256];
+	int transG[256];
+	int transB[256];
+	for (int i = 0; i < 256; i+=1) {
+		// Clear the variable of sum.
+		int sumR = 0;
+		int sumG = 0;
+		int sumB = 0;
+		// The length of the gray degree.
+		for (int j = 0; j <= i; j += 1) {
+			// The sum of gray degree.
+			sumR += histoR[j];
+			sumG += histoG[j];
+			sumB += histoB[j];
+		}
+		transR[i] = ( 255 * sumR / pixels);
+		transG[i] = ( 255 * sumG / pixels);
+		transB[i] = ( 255 * sumB / pixels);
+	}
+
+	for (int y = 0; y < imgh; y += 1) {
+		for (int x = 0; x < imgw; x += 1) {
+			int c1 = getPixel(src, x, y);
+			int r = transR[rch(c1)];
+			int g = transG[gch(c1)];
+			int b = transB[bch(c1)];
+			setPixel(dst, x, y, rgb(r, g, b));
+		}
+	}
+}
+
+equalize(offScreen, image);
+//~ copySurf(offScreen, 0, 0, image, null);
+copySurf(offScreen, width(offScreen) - width(histo1) - 10, 10 + 0 * (height(histo1) + 2), histo(histo1, image, !true), null, .2, null);
+copySurf(offScreen, width(offScreen) - width(histo2) - 10, 10 + 1 * (height(histo1) + 2), histo(histo2, offScreen, !true), null, .2, null);

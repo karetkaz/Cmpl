@@ -17,7 +17,7 @@ define resize(gxSurf src, int width, int height) = zoomSurf(gxSurf(width, height
 
 gxSurf image0 = gxSurf(Window.resx, Window.resy);
 
-define useGradient = true;
+define useGradient = !true;
 static if (useGradient) {
 gxClut lut1;
 gxClut lut2;
@@ -234,4 +234,4 @@ void mouseCB(int btn, int x, int y) {
 Gui.setDrawCallback(drawCB);
 Gui.setMouseHandler(mouseCB);
 copySurf(image0, 0, 0, image1, null);					// atmasoljuk siman a kepet
-copySurf(image0, 0, 0, image2, null, 1, BlendMode.Overlay);		// atmasoljuk a fuggvenny segitsegevel a kepet
+copySurf(image0, 0, 0, image2, null, 1, BlendMode.Lighten);		// atmasoljuk a fuggvenny segitsegevel a kepet

@@ -38,7 +38,7 @@ static inline size_t stkoffs(state rt, size_t size) {
 static inline void memswap(void* _a, void* _b, size_t size) {
 	register char *a = _a;
 	register char *b = _b;
-	register char *end = _a + size;
+	register char *end = a + size;
 	while (a < end) {
 		char c = *a;
 		*a = *b;
@@ -509,6 +509,12 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 			size_t ippar = 0;
 			astn ptr;
 
+			#ifdef DEBUGGING
+			// process qualifier
+			if (stmt_qual == TYPE_vid) {
+				stmt_qual = TYPE_any;
+			}
+			#endif
 			if (ast->cst2 == QUAL_par) {
 				ippar = emitopc(rt, opc_task);
 				rt->vm.su = 0;
@@ -582,7 +588,7 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 				// so, code will be generated as: if (true) { sin(pi/4); }
 				struct astNode block;
 
-				memset(&block, 0, sizeof(struct astNode));
+				memset(&block, 0, sizeof(block));
 				block.kind = STMT_beg;
 				block.type = rt->cc->type_vid;
 
@@ -2373,7 +2379,7 @@ int gencode(state rt, int mode) {
 				var->stat = 1;
 			}
 			else {
-				int padd = rt_size;
+				unsigned padd = rt_size;
 				dieif(var->offs != 0, "Error %-T", var);
 				dieif(var->size == 0, "Error %-T", var);	// instance of void ?
 				dieif(var->size != sizeOf(var), "size error: %-T: %d / %d", var, var->size, sizeOf(var));

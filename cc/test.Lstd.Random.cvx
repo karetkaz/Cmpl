@@ -48,11 +48,12 @@ float64 drand() {
 	return tmp - 1;
 }
 
-
-int64 seed = 1400565045904;//millis();
+/*
+int64 seed = 1400565045904;
 Random rnd = Random(seed);
 
-float64 maxrand = -1;	//%%e
+float64 minRand = 0;	//%%.8f
+float64 maxRand = 0;	//%%.8f
 for(int i = 0; i < 250000; i += 1) {
 	float64 currand = nextFloat64(&rnd);
 	//~ float64 currand = drand();
@@ -60,9 +61,26 @@ for(int i = 0; i < 250000; i += 1) {
 	//~ int32 currand = nextInt32(&rnd);
 	//~ int32 currand = System.rand();
 
-	if (maxrand < currand) {
-		maxrand = currand;
+	if (maxRand < currand) {
+		maxRand = currand;
+	}
+
+	if (minRand > currand) {
+		minRand = currand;
 	}
 
 	//~ debug("random value", variant(&currand));
 }
+//~ */
+
+int count_inside = 0;
+define iterations = 100000;
+Random rand = Random(System.time());
+for (int i = 0; i < iterations; i += 1) {
+	float64 x = nextFloat64(&rand) * 2 - 1;
+	float64 y = nextFloat64(&rand) * 2 - 1;
+	if (Math.hypot(x, y) < 1) {
+		count_inside += 1;
+	}
+}
+float64 pi = 1. * count_inside / iterations;

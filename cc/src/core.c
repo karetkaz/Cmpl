@@ -237,7 +237,7 @@ void* rtAlloc(state rt, void* ptr, size_t size) {
 		chunk = NULL;
 	}
 
-	#if defined(DEBUGGING) && DEBUGGING > 1
+	#if defined(DEBUGGING)
 	if (ptr == NULL && size == 0) {
 		memchunk mem;
 		perr(rt, 0, NULL, 0, "memmgr(%06x, %d): %06x; chunk[%06x, size: %d]", vmOffset(rt, ptr), size, vmOffset(rt, chunk ? chunk->data : NULL), vmOffset(rt, chunk), allocSize);
@@ -320,8 +320,8 @@ symn ccFindSym(ccState cc, symn in, char* name) {
 	struct astNode ast;
 	memset(&ast, 0, sizeof(struct astNode));
 	ast.kind = TYPE_ref;
-	ast.ref.hash = rehash(name, -1U);
 	ast.ref.name = name;
+	ast.ref.hash = rehash(name, -1U) % TBLS;
 	return lookup(cc, in ? in->flds : cc->s->defs, &ast, NULL, 1);
 }
 
@@ -830,7 +830,7 @@ ccState ccInit(state rt, int mode, int onHalt(libcArgs)) {
 	if (cc->emit_opc && (cc->emit_tag = newnode(cc, TYPE_ref))) {
 		cc->emit_tag->ref.link = cc->emit_opc;
 		cc->emit_tag->ref.name = "emit";
-		cc->emit_tag->ref.hash = -1U;
+		cc->emit_tag->ref.hash = (unsigned) -1;
 	}
 
 	install_base(rt, mode);

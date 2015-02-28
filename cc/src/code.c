@@ -629,7 +629,7 @@ size_t emitarg(state rt, vmOpcode opc, stkval arg) {
 		else if (opc == i32_f32) {
 			ip = getip(rt, rt->vm.pc);
 			if (ip->opc == opc_lc32) {
-				arg.f4 = ip->arg.i4;
+				arg.f4 = (float32_t) ip->arg.i4;
 				opc = opc_lf32;
 				rollbackPc(rt);
 				dieif(ip->arg.i4 != arg.f4, "inexact cast: %d => %f", ip->arg.i4, arg.f4);
@@ -665,7 +665,7 @@ size_t emitarg(state rt, vmOpcode opc, stkval arg) {
 		else if (opc == i64_f32) {
 			ip = getip(rt, rt->vm.pc);
 			if (ip->opc == opc_lc64) {
-				arg.f4 = ip->arg.i8;
+				arg.f4 = (float32_t) ip->arg.i8;
 				opc = opc_lf32;
 				rollbackPc(rt);
 				dieif(ip->arg.i8 != arg.f4, "inexact cast: %D => %f", ip->arg.i8, arg.f4);
@@ -682,7 +682,7 @@ size_t emitarg(state rt, vmOpcode opc, stkval arg) {
 		else if (opc == i64_f64) {
 			ip = getip(rt, rt->vm.pc);
 			if (ip->opc == opc_lc64) {
-				arg.f8 = ip->arg.i8;
+				arg.f8 = (float64_t) ip->arg.i8;
 				opc = opc_lf64;
 				rollbackPc(rt);
 				dieif(ip->arg.i8 != arg.f8, "inexact cast: %D => %F", ip->arg.i8, arg.f8);
@@ -852,7 +852,7 @@ size_t emitarg(state rt, vmOpcode opc, stkval arg) {
 				trace("max 2 megs can be allocated on stack, not(%D)", arg.i8);
 				return 0;
 			}
-			dieif(ip->rel != arg.i8, "FixMe");
+			dieif(ip->rel != arg.i8, "Error");
 			break;
 
 		case opc_st64:
@@ -875,7 +875,7 @@ size_t emitarg(state rt, vmOpcode opc, stkval arg) {
 		case opc_move:
 		case opc_inc:
 		case opc_mad:
-			dieif(ip->rel != arg.i8, "FixMe");
+			dieif(ip->rel != arg.i8, "Error");
 			break;
 
 		default:
@@ -923,9 +923,8 @@ int fixjump(state rt, int src, int dst, int stc) {
 				fatal("FixMe");
 				break;
 			case opc_task:
-				ip->dl = stc / 4;
-				ip->cl = dst - src;
-				//TODO: dieif(ip->dl > vm_regs, "FixMe");
+				ip->dl = (uint8_t) (stc / 4);
+				ip->cl = (uint16_t) (dst - src);
 				dieif(ip->dl != stc / 4, "FixMe");
 				dieif(ip->cl != dst - src, "FixMe");
 				//TODO: dieif(ip->dl > vm_regs, "FixMe");
@@ -1067,7 +1066,7 @@ static int dbgDummy(state rt, int pu, void *ip, void* sp, size_t ss, char* err) 
  * @param dbg function which is executed after each instruction or on error.
  * @return Error code of execution, 0 on success.
  */
-static int exec(state rt, cell pu, symn fun, void* extra, int dbg(state, int pu, void *ip, void* sp, size_t ss, char* err)) {
+static int exec(state rt, cell pu, symn fun, void* extra, int dbg(state, int, void*, void*, size_t, char*)) {
 	int err_code = 0;
 
 	const int cc = 1;
@@ -1211,7 +1210,7 @@ int invoke(state rt, symn fun, void* res, void* args, void* extra) {
 	}
 
 	// return here: vm->px: program exit
-	*(int*)(pu->sp -= vm_size) = rt->vm.px;
+	*(size_t *)(pu->sp -= vm_size) = rt->vm.px;
 
 	pu->ip = getip(rt, fun->offs);
 
@@ -1592,8 +1591,8 @@ void fputval(state rt, FILE* fout, symn var, stkval* ref, int level, int mode) {
 		fputfmt(fout, "BadRef@%06x", var->offs);
 	}
 	else if (typ == rt->type_var) {		// TODO: temp only.
-		ref = getip(rt, (size_t) ref->var.value);
 		typ = getip(rt, (size_t) ref->var.type);
+		ref = getip(rt, (size_t) ref->var.value);
 		fputfmt(fout, "%+T, ", typ);
 		fputval(rt, fout, typ, ref, level, prType);
 	}
@@ -1821,7 +1820,8 @@ static void traceArgs(state rt, symn fun, char *file, int line, void* sp, int id
 }
 
 int logTrace(state rt, int ident, int startlevel, int tracelevel) {
-	int i, pos, isOutput = 0;
+	size_t pos;
+	int i, isOutput = 0;
 	cell pu = rt->vm.cell;
 	trace tr = (trace)pu->bp;
 

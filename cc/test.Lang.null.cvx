@@ -1,1 +1,1 @@
-int n = 99;string TEST = "Fixed point math.";string nullStr = null;int &nullInt = null;double nullFun(double a) = Math.Tan;nullFun = null;
+int n = 99;string TEST = "Fixed point math.";string nullStr = null;int &nullInt = null;double nullFun(double a) = Math.Tan;nullFun = null;	//todo: this should be not possible.

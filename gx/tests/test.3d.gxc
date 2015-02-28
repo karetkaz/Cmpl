@@ -7,8 +7,8 @@ enum Window {
 
 define pi = Math.pi;
 
-mesh.Read("media/meshes/dchair.obj", "media/images/download.jpg");
-//~ mesh.Read("media/meshes/ut2k4/FlackCannon.obj", "media/meshes/ut2k4/FlackCannon.png");
+//~ mesh.Read("media/meshes/dchair.obj", "media/images/download.jpg");
+mesh.Read("media/meshes/ut2k4/FlackCannon.obj", "media/meshes/ut2k4/FlackCannon.png");
 
 mesh.Center(2);
 mesh.Normalize(0);

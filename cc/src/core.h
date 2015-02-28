@@ -35,7 +35,7 @@
 // hash table size
 #define TBLS 512
 
-#define prerr(__DBG, __MSG, ...) do { fputfmt(stdout, "%s:%d: "__DBG": %s: "__MSG"\n", __FILE__, __LINE__, __FUNCTION__, ##__VA_ARGS__); } while(0)
+#define prerr(__DBG, __MSG, ...) do { fputfmt(stdout, "%s:%d: "__DBG": %s: "__MSG"\n", __FILE__, __LINE__, __FUNCTION__, ##__VA_ARGS__); _break(); } while(0)
 
 #ifdef DEBUGGING
 #define logif(__EXP, msg, ...) do {if (__EXP) prerr("todo", msg, ##__VA_ARGS__);} while(0)
@@ -281,6 +281,7 @@ struct astNode {
 	int32_t		line;				// line position of token
 	int32_t		colp;				// column position
 	union {
+        char *cstr;
 		int64_t cint;				// constant integer value
 		float64_t cflt;				// constant floating point value
 		struct {			// STMT_xxx: statement
@@ -291,9 +292,9 @@ struct astNode {
 		} stmt;
 		struct {			// TYPE_ref: identifyer
 			char*	name;			// name of identifyer
+			unsigned hash;			// hash code for 'name'
 			symn	link;			// variable
 			astn	used;			// next used
-			size_t	hash;			// hash code for 'name'
 		} ref;
 		struct {			// OPER_xxx: operator
 			astn	rhso;			// right hand side operand
@@ -411,7 +412,6 @@ struct ccStateRec {
 /// Debuger context
 // TODO: merge this somehow with libcArgs and cell into exeState
 struct dbgStateRec {
-
 	int (*dbug)(state, int pu, void* ip, void* sp, size_t ss, char* err);
 	struct arrBuffer codeMap;
 };
@@ -740,6 +740,8 @@ int logTrace(state rt, int ident, int startlevel, int tracelevel);
 static inline void _abort() {
 	//~ abort();
 }
+
+static inline void _break() {}
 
 #define ERR_ASSIGN_TO_CONST "asignment of constant variable `%+k`"
 #define WARN_USE_BLOCK_STATEMENT "statement should be a block statement {%+k}."

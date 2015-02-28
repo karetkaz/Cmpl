@@ -210,12 +210,9 @@ void setupBiorithm(int _daysToShow, Date _now, Date _birth) {
 	pos = 0;
 }
 
-//~ Date Now = Date(2012, 11, 10);
-Date Now = DateFromTime(System.time());
 define daysToShow = 15;
+Date Now = DateFromTime(System.time());
 
 //~ setupBiorithm(daysToShow, Now, Date(1984, 8, 30));
 setupBiorithm(daysToShow, Now, Date(1983, 5,  2));
-
-long now = System.millis();
-debug("now", variant(&now));
+//~ setupBiorithm(daysToShow, Now, Date(1991, 11, 10));

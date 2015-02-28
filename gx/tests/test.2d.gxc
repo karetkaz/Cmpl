@@ -1,5 +1,5 @@
 // 2d todo demos.
-define test = 4;
+define test = 5;
 enum Window {
 	draw = RenderMode.swap_buff;
 

@@ -822,14 +822,14 @@ size_t sizeOf(symn sym) {
 		case TYPE_rec:
 		case TYPE_arr:
 			// TODO:
-			return sym->size;//* sizeOf(sym->type);
+			return (size_t) sym->size;//* sizeOf(sym->type);
 
 		case EMIT_opc:
 		//~ case TYPE_rec:
 			if (sym->cast == TYPE_ref) {
 				return vm_size;
 			}
-			return sym->size;
+			return (size_t) sym->size;
 		case TYPE_def:
 		case TYPE_ref: switch (sym->cast) {
 				case TYPE_ref:

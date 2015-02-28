@@ -243,7 +243,7 @@ unsigned rehash(const char* str, size_t len) {
 
 	register unsigned hs = 0xffffffff;
 
-	if (str) {
+	if (str != NULL) {
 		if (len == (unsigned)(-1))
 			len = strlen(str) + 1;
 		while (len-- > 0)
@@ -2367,7 +2367,7 @@ static astn decl_struct(ccState cc, int Attr) {
 	astn tok, tag;
 
 	int byref = 0;
-	unsigned int pack = vm_size;
+	unsigned pack = vm_size;
 
 	if (!skiptok(cc, TYPE_rec, 1)) {	// 'struct'
 		trace("%+k", peekTok(cc, 0));
@@ -2385,7 +2385,7 @@ static astn decl_struct(ccState cc, int Attr) {
 				else if (Attr == ATTR_stat) {
 					error(cc->s, cc->file, cc->line, "alignment can not be applied to static struct");
 				}
-				pack = (unsigned int) tok->cint;
+				pack = (unsigned) tok->cint;
 			}
 			else if (isType(tok)) {
 				base = linkOf(tok);
