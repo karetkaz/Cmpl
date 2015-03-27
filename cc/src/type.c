@@ -305,7 +305,7 @@ symn ccAddCall(state rt, int libc(libcArgs), void* data, const char* proto) {
 
 		lc->chk = stdiff / 4;
 
-		stdiff -= sizeOf(sym->type);
+		stdiff -= sizeOf(sym->type, 1);
 		lc->pop = stdiff / 4;
 
 		// make non reference parameters symbolic by default
@@ -769,6 +769,7 @@ symn declare(ccState s, ccToken kind, astn tag, symn typ) {
 				tag->kind = kind & 0xff;
 				if (typ != NULL) {
 					def->cast = typ->cast;
+					def->size = sizeOf(typ, 1);
 				}
 				break;
 		}
@@ -810,7 +811,7 @@ int usages(symn sym) {
 }
 
 //~ TODO: this should be calculated by fixargs() and replaced by (var|typ)->size
-size_t sizeOf(symn sym) {
+size_t sizeOf(symn sym, int varSize) {
 	if (sym) switch (sym->kind) {
 		default:
 			break;
@@ -819,26 +820,33 @@ size_t sizeOf(symn sym) {
 		//~ case TYPE_int:
 		//~ case TYPE_flt:
 
-		case TYPE_rec:
-		case TYPE_arr:
-			// TODO:
-			return (size_t) sym->size;//* sizeOf(sym->type);
-
 		case EMIT_opc:
-		//~ case TYPE_rec:
 			if (sym->cast == TYPE_ref) {
 				return vm_size;
 			}
 			return (size_t) sym->size;
+
+		case TYPE_rec:
+		case TYPE_arr: switch (sym->cast) {
+			case TYPE_ref: if (varSize) {
+				return vm_size;
+			}
+			case TYPE_arr: if (varSize) {
+				return 2 * vm_size;
+			}
+			default:
+				return sym->size;
+		}
+
 		case TYPE_def:
 		case TYPE_ref: switch (sym->cast) {
-				case TYPE_ref:
-					return vm_size;
-				case TYPE_arr:
-					return 2 * vm_size;
-				default:
-					return sizeOf(sym->type);
-			}
+			case TYPE_ref:
+				return vm_size;
+			case TYPE_arr:
+				return 2 * vm_size;
+			default:
+				return sizeOf(sym->type, 0);
+		}
 	}
 	fatal("failed(%t): %-T", sym ? sym->kind : 0, sym);
 	return 0;
@@ -1555,7 +1563,7 @@ symn typecheck(ccState s, symn loc, astn ast) {
 	return result;
 }
 
-int fixargs(symn sym, unsigned int align, int stbeg) {
+size_t fixargs(symn sym, unsigned int align, size_t base) {
 	symn arg;
 	size_t stdiff = 0;
 	int isCall = sym->call;
@@ -1572,22 +1580,27 @@ int fixargs(symn sym, unsigned int align, int stbeg) {
 			arg->cast = TYPE_ref;
 		}
 
-		arg->size = sizeOf(arg);
+		arg->size = sizeOf(arg, 1);
+
+		//TODO: remove check: dynamic size arrays are represented as pointer+length
+		if (arg->type->kind == TYPE_arr && arg->type->init == NULL) {
+			dieif(arg->size != 2 * vm_size, "Error");
+			dieif(arg->cast != TYPE_arr, "Error");
+			//arg->size = 2 * vm_size;
+			//arg->cast = TYPE_arr;
+		}
 
 		//~ HACK: static sized array types are passed by reference.
 		if (isCall && arg->type->kind == TYPE_arr) {
-			if (arg->type->init == NULL) {		//~ dinamic size arrays are passed as pointer+length
-				arg->cast = TYPE_arr;
-				arg->size = 2 * vm_size;
-			}
-			else {								//~ static size arrays are passed as pointer
+			//~ static size arrays are passed as pointer
+			if (arg->type->init != NULL) {
 				arg->cast = TYPE_ref;
 				arg->size = vm_size;
 			}
 		}
 
 		arg->nest = 0;
-		arg->offs = align ? stbeg + stdiff : stbeg;
+		arg->offs = align ? base + stdiff : base;
 		stdiff += padded(arg->size, align);
 
 		if (align == 0 && stdiff < arg->size) {

@@ -432,8 +432,11 @@ static void fputast(FILE* fout, char *esc[], astn ast, int mode, int level) {
 		case STMT_ret: {
 			fputstr(fout, esc, "return");
 			if (rlev > 0 && ast->stmt.stmt) {
+				astn ret = ast->stmt.stmt;
 				fputstr(fout, esc, " ");
-				fputast(fout, esc, ast->stmt.stmt, mode, -0xf);
+				// `return 3;` is modified to `return result = 3;`
+				dieif(ret->kind != ASGN_set, "Error");
+				fputast(fout, esc, ret->op.rhso, mode, -0xf);
 			}
 			break;
 		}

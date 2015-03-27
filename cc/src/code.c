@@ -1193,7 +1193,7 @@ int invoke(state rt, symn fun, void* res, void* args, void* extra) {
 
 	// result is the first param
 	// TODO: ressize = fun->prms->size;
-	size_t ressize = sizeOf(fun->type);
+	size_t ressize = sizeOf(fun->type, 1);
 	void* resp = NULL;
 	int result = 0;
 
@@ -1516,10 +1516,10 @@ void fputval(state rt, FILE* fout, symn var, stkval* ref, int level, int mode) {
 	symn typ = var;
 	char* fmt = var->pfmt;
 
+
 	static int initStatic = 1;
 	static struct symNode func;	// for printig only
 	static struct symNode type;	// for printig only
-	//~ static struct symNode defn;	// for printig only
 
 	if (initStatic) {
 		initStatic = 0;
@@ -1529,9 +1529,6 @@ void fputval(state rt, FILE* fout, symn var, stkval* ref, int level, int mode) {
 
 		func = *rt->defs;
 		func.name = "<function>";
-
-		//~ defn = *rt->defs;
-		//~ defn.name = "<inline>";
 	}
 
 	if (level > 0) {
@@ -1553,7 +1550,6 @@ void fputval(state rt, FILE* fout, symn var, stkval* ref, int level, int mode) {
 		//~ fputfmt(fout, ": ");
 	}
 	else if (var->kind == TYPE_def) {
-		//~ typ = &defn;
 		fmt = NULL;
 		mode = 0;
 	}
@@ -1590,12 +1586,16 @@ void fputval(state rt, FILE* fout, symn var, stkval* ref, int level, int mode) {
 	else if (!isValidOffset(rt, ref)) {	// invalid offset.
 		fputfmt(fout, "BadRef@%06x", var->offs);
 	}
+	else if (typ == rt->type_str) {
+		fputfmt(fout, fmt, ref);
+	}
 	else if (typ == rt->type_var) {		// TODO: temp only.
 		typ = getip(rt, (size_t) ref->var.type);
 		ref = getip(rt, (size_t) ref->var.value);
 		fputfmt(fout, "%+T, ", typ);
 		fputval(rt, fout, typ, ref, level, prType);
 	}
+
 	else switch (typ->kind) {
 		case TYPE_rec: {
 			int n = 0;
@@ -1680,12 +1680,6 @@ void fputval(state rt, FILE* fout, symn var, stkval* ref, int level, int mode) {
 			int elementsOnNewLine = 0;
 			int arrayHasMoreElements = 0;
 
-			if (fmt != NULL) {
-				// TODO: printing strings ...
-				fputfmt(fout, fmt, ref);
-				break;
-			}
-
 			//~ fputfmt(fout, "@%06x", vmOffset(rt, ref));
 			if (typ->cast != TYPE_arr) { // TODO: OR USE: if (typ->stat) {
 				// static array
@@ -1725,7 +1719,7 @@ void fputval(state rt, FILE* fout, symn var, stkval* ref, int level, int mode) {
 					fputfmt(fout, " ");
 				}
 
-				fputval(rt, fout, base, (stkval*)((char*)ref + i * sizeOf(base)), elementsOnNewLine ? level + 1 : -level, 0);
+				fputval(rt, fout, base, (stkval*)((char*)ref + i * sizeOf(base, 0)), elementsOnNewLine ? level + 1 : -level, 0);
 			}
 
 			if (arrayHasMoreElements) {

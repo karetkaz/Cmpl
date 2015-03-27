@@ -510,8 +510,8 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 			astn ptr;
 
 			#ifdef DEBUGGING
-			// process qualifier
-			if (stmt_qual == TYPE_vid) {
+			// TODO: a block may return nothing or the contained declarations(foreach may have 2 init declarations.)
+			if (stmt_qual == TYPE_vid || stmt_qual == TYPE_rec) {
 				stmt_qual = TYPE_any;
 			}
 			#endif
@@ -780,7 +780,7 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 		//#{ OPERATORS
 		case OPER_fnc: {	// '()' emit/call/cast
 			size_t stktop = stkoffs(rt, 0);
-			size_t stkret = stkoffs(rt, sizeOf(ast->type));
+			size_t stkret = stkoffs(rt, sizeOf(ast->type, 1));
 			astn argv = ast->op.rhso;
 			symn var = linkOf(ast->op.lhso);
 
@@ -946,8 +946,8 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 							param->init = an;
 						}
 						else {
-							size_t stktop = stkoffs(rt, sizeOf(param));
-							chachedArgSize += sizeOf(param);
+							size_t stktop = stkoffs(rt, sizeOf(param, 1));
+							chachedArgSize += sizeOf(param, 1);
 							warn(rt, 16, ast->file, ast->line, "caching argument used %d times: %+T: %+k", useCount, param, arg);
 							if (!cgen(rt, an, param->cast == TYPE_def ? param->type->cast : param->cast)) {
 								trace("%+k", arg);
@@ -984,8 +984,8 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 							trace("error");
 							return TYPE_any;
 						}
-						if (!emitint(rt, opc_sti, sizeOf(ast->type))) {
-							error(rt, ast->file, ast->line, "store indirect: %T:%d of `%+k`", ast->type, sizeOf(ast->type), ast);
+						if (!emitint(rt, opc_sti, sizeOf(ast->type, 1))) {
+							error(rt, ast->file, ast->line, "store indirect: %T:%d of `%+k`", ast->type, sizeOf(ast->type, 1), ast);
 							return TYPE_any;
 						}
 					}
@@ -1007,7 +1007,7 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 
 			// push Result, Arguments
 			if (var && !istype(var) && var != rt->cc->emit_opc && var->call) {
-				if (sizeOf(var->type) && !emitint(rt, opc_spc, sizeOf(var->type))) {
+				if (sizeOf(var->type, 1) && !emitint(rt, opc_spc, sizeOf(var->type, 1))) {
 					trace("%+k", ast);
 					return TYPE_any;
 				}
@@ -1090,6 +1090,7 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 		} break;
 		case OPER_idx: {	// '[]'
 			int r;
+			size_t esize;
 			if (!(r = cgen(rt, ast->op.lhso, TYPE_ref))) {
 				trace("%+k", ast);
 				return TYPE_any;
@@ -1101,26 +1102,26 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 				}
 			}
 
+			esize = sizeOf(ast->type, 0);	// size of array element
 			if (rt->vm.opti && eval(&tmp, ast->op.rhso) == TYPE_int) {
-				size_t offs = sizeOf(ast->type) * (int)constint(&tmp);
+				size_t offs = sizeOf(ast->type, 0) * (int)constint(&tmp);
 				if (!emitinc(rt, offs)) {
 					trace("%+k", ast);
 					return TYPE_any;
 				}
 			}
 			else {
-				size_t size = sizeOf(ast->type);	// size of array element
 				if (!cgen(rt, ast->op.rhso, TYPE_u32)) {
 					trace("%+k", ast);
 					return TYPE_any;
 				}
-				if (size > 1) {
-					if (!emitint(rt, opc_mad, size)) {
+				if (esize > 1) {
+					if (!emitint(rt, opc_mad, esize)) {
 						trace("%+k", ast);
 						return TYPE_any;
 					}
 				}
-				else if (size == 1) {
+				else if (esize == 1) {
 					if (!emitopc(rt, i32_add)) {
 						trace("%+k", ast);
 						return TYPE_any;
@@ -1136,7 +1137,7 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 				return TYPE_ref;
 
 			// ve need the value on that position (this can be a ref).
-			if (!emitint(rt, opc_ldi, sizeOf(ast->type))) {
+			if (!emitint(rt, opc_ldi, esize)) {
 				trace("%+k", ast);
 				return TYPE_any;
 			}
@@ -1196,7 +1197,7 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 				return TYPE_ref;
 			}
 
-			if (!emitint(rt, opc_ldi, sizeOf(ast->type))) {
+			if (!emitint(rt, opc_ldi, sizeOf(ast->type, 1))) {
 				trace("%+k", ast);
 				return TYPE_any;
 			}
@@ -1488,7 +1489,7 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 
 		case ASGN_set: {	// ':='
 			// TODO: ast->type->size;
-			size_t size = sizeOf(ast->type);
+			size_t size = sizeOf(ast->type, 1);
 			ccToken refAssign = TYPE_ref;
 
 			dieif(size == 0, "Error: %+k", ast);
@@ -1598,12 +1599,12 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 		case TYPE_ref: {					// use (var, func, define)
 			symn typ = ast->type;			// type
 			symn var = ast->ref.link;		// link
-			// TODO: ast->type->size;
-			size_t size = sizeOf(typ);
+			// TODO: use ast->type->size;
+			size_t size = sizeOf(typ, 1);
 
 			dieif(typ == NULL, "Error");
 			dieif(var == NULL, "Error");
-			//~ TODO: dieif(size != var->size, "Error: %d / %d: %-T", size, var->size, var);
+			//TODO: size: dieif(size != typ->size, "Error: %-T: %d / %d", var, size, typ->size);
 
 			switch (var->kind) {
 				default:
@@ -1692,7 +1693,7 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 		case TYPE_def: {					// new (var, func, define)
 			symn typ = ast->type;
 			symn var = ast->ref.link;
-			size_t size = padded((size_t) sizeOf(var), vm_size);
+			size_t size = padded((size_t) sizeOf(var, 1), vm_size);
 			size_t stktop = stkoffs(rt, size);
 
 			dieif(typ == NULL, "Error");
@@ -1751,7 +1752,7 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 						dieif(!base, "Error %+k", ast);
 
 						got = base->cast;
-						esize = sizeOf(base);
+						esize = sizeOf(base, 1);
 
 						// int a[8] = {0, ...};
 						while (val->kind == OPER_com) {
@@ -1948,7 +1949,7 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 
 				// alloc locally a block of the size of the type;
 				else if (var->offs == 0) {
-					logif(var->size != sizeOf(typ), "size error: %T(%d, %d)", var, var->size, sizeOf(typ));
+					logif(var->size != sizeOf(typ, 0), "size error: %T(%d, %d)", var, var->size, sizeOf(typ, 0));
 					if (!emitint(rt, opc_spc, size)) {
 						trace("%+k", ast);
 						return TYPE_any;
@@ -2375,15 +2376,16 @@ int gencode(state rt, int mode) {
 					cc->jmps = cc->jmps->next;
 				}
 				var->size = emitopc(rt, markIP) - seg;
-				//~ var->init = NULL;
 				var->stat = 1;
 			}
 			else {
 				unsigned padd = rt_size;
-				dieif(var->offs != 0, "Error %-T", var);
-				dieif(var->size == 0, "Error %-T", var);	// instance of void ?
-				dieif(var->size != sizeOf(var), "size error: %-T: %d / %d", var, var->size, sizeOf(var));
-				var->size = sizeOf(var);
+				dieif(var->size <= 0, "Error %-T", var);	// instance of void ?
+				dieif(var->offs != 0, "Error %-T", var);	// already generated ?
+
+				// TODO: size of variable should be known here.
+				dieif(var->size != sizeOf(var, 1), "size error: %-T: %d / %d", var, var->size, sizeOf(var, 1));
+				var->size = sizeOf(var, 1);
 
 				// align the memory of the variable. speeding up the read and write of it.
 				if (var->size >= 16) {

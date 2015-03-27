@@ -181,7 +181,7 @@ static inline int argpos(int *argp, int size) {
 
 #define debugFILE(msg, ...) //prerr("debug", msg, ##__VA_ARGS__)
 
-static int FILE_open(libcArgs args) {    // File Open(char filename[]);
+static int FILE_open(libcArgs args) {       // File Open(char filename[]);
 	int argc = 0;
 	char *mode = args->data;
 	char *name = argref(args, argpos(&argc, vm_size));
@@ -191,13 +191,13 @@ static int FILE_open(libcArgs args) {    // File Open(char filename[]);
 	debugFILE("Name: %s, Mode: %s, File: %x", name, mode, file);
 	return file == NULL;
 }
-static int FILE_close(libcArgs args) {    // void close(File file);
+static int FILE_close(libcArgs args) {      // void close(File file);
 	FILE *file = arghnd(args, 0);
 	debugFILE("File: %x", file);
 	fclose(file);
 	return 0;
 }
-static int FILE_stream(libcArgs args) {    // File std[in, out, err];
+static int FILE_stream(libcArgs args) {     // File std[in, out, err];
 	size_t stream = (size_t) args->data;
 	switch (stream) {
 		default:
@@ -231,7 +231,7 @@ static int FILE_peek(libcArgs rt) {
 	reti32(rt, chr);
 	return 0;
 }
-static int FILE_read(libcArgs rt) {	// int read(File &f, uint8 buff[])
+static int FILE_read(libcArgs rt) {         // int read(File &f, uint8 buff[])
 	int argc = 0;
 	FILE *file = arghnd(rt, argpos(&argc, sizeof(FILE *)));
 	char *buff = argref(rt, argpos(&argc, vm_size));
@@ -239,7 +239,7 @@ static int FILE_read(libcArgs rt) {	// int read(File &f, uint8 buff[])
 	reti32(rt, fread(buff, (size_t) len, 1, file));
 	return 0;
 }
-static int FILE_gets(libcArgs args) {	// int fgets(File &f, uint8 buff[])
+static int FILE_gets(libcArgs args) {       // int fgets(File &f, uint8 buff[])
 	int argc = 0;
 	FILE *file = arghnd(args, argpos(&argc, sizeof(FILE *)));
 	char *buff = argref(args, argpos(&argc, vm_size));
@@ -265,7 +265,7 @@ static int FILE_putc(libcArgs args) {
 	reti32(args, putc(data, file));
 	return 0;
 }
-static int FILE_write(libcArgs args) {	// int write(File &f, uint8 buff[])
+static int FILE_write(libcArgs args) {      // int write(File &f, uint8 buff[])
 	int argc = 0;
 	FILE *file = arghnd(args, argpos(&argc, sizeof(FILE *)));
 	char *buff = argref(args, argpos(&argc, vm_size));
@@ -317,30 +317,30 @@ static inline int64_t timeMillis() {
 }
 #endif
 
-int sysExit(libcArgs args) {
+static int sysExit(libcArgs args) {
 	exit(argi32(args, 0));
 	return 0;
 }
 
-int sysRand(libcArgs args) {
+static int sysRand(libcArgs args) {
 	reti32(args, rand());
 	return 0;
 }
-int sysSRand(libcArgs args) {
+static int sysSRand(libcArgs args) {
 	int seed = argi32(args, 0);
 	srand((unsigned) seed);
 	return 0;
 }
 
-int sysTime(libcArgs args) {
+static int sysTime(libcArgs args) {
 	reti32(args, (int) time(NULL));
 	return 0;
 }
-int sysClock(libcArgs args) {
+static int sysClock(libcArgs args) {
 	reti32(args, clock());
 	return 0;
 }
-int sysMillis(libcArgs args) {
+static int sysMillis(libcArgs args) {
 	reti64(args, timeMillis());
 	return 0;
 }
@@ -385,9 +385,11 @@ static int sysDebug(libcArgs args) {
 			isOutput = 1;
 		}
 
+		// add a new line to the output.
 		if (isOutput) {
 			fputfmt(rt->logf, "\n");
 		}
+
 		// print stack trace skipping this function
 		if (traceLevel > 0) {
 			logTrace(rt, 1, 1, traceLevel);
@@ -444,7 +446,7 @@ int install_stdc(state rt) {
 		{f64sqrt,  "float64 sqrt(float64 x);"},
 		{f64atan2, "float64 atan2(float64 x, float64 y);"},
 	},
-	bit64[] = {		// 64 bit integer operations
+	bit64[] = {			// 64 bit integer operations
 		{b64not, "int64 Not(int64 Value);"},
 		{b64and, "int64 And(int64 Lhs, int64 Rhs);"},
 		{b64ior, "int64  Or(int64 Lhs, int64 Rhs);"},
@@ -453,9 +455,8 @@ int install_stdc(state rt) {
 		{b64shr, "int64 Shr(int64 Value, int Count);"},
 		{b64sar, "int64 Sar(int64 Value, int Count);"},
 	},
-	misc[] = {		// IO/MEM/EXIT
+	misc[] = {			// IO/MEM/EXIT
 
-		// {sysMemMgr,		"pointer malloc(pointer ptr, int32 size);"},
 		{sysExit,		"void exit(int32 code);"},
 		{sysSRand,		"void srand(int32 seed);"},
 		{sysRand,		"int32 rand();"},
@@ -489,14 +490,14 @@ int install_stdc(state rt) {
 		}
 	}
 
-	if (!err && rt->cc->type_ptr != NULL) {		// realloc, malloc, free.
+	if (!err && rt->cc->type_ptr != NULL) {		// realloc, malloc, free, memset, memcpy
 		if(!ccAddCall(rt, sysMemMgr, NULL, "pointer memmgr(pointer ptr, int32 size);")) {
 			err = 3;
 		}
-		if(!ccAddCall(rt, sysMemCpy, NULL, "pointer memcpy(pointer dest, pointer src, int32 size);")) {
+		if(!ccAddCall(rt, sysMemSet, NULL, "pointer memset(pointer dest, int value, int32 size);")) {
 			err = 3;
 		}
-		if(!ccAddCall(rt, sysMemSet, NULL, "pointer memset(pointer dest, int value, int32 size);")) {
+		if(!ccAddCall(rt, sysMemCpy, NULL, "pointer memcpy(pointer dest, pointer src, int32 size);")) {
 			err = 3;
 		}
 	}
@@ -526,7 +527,7 @@ int install_stdc(state rt) {
 		ccEnd(rt, rt->cc->type_i64);
 	}
 
-	// add extra operations fo float64 as functions
+	// add math functions to float64 as functions
 	if (!err && rt->cc->type_f64 && !rt->cc->type_f64->flds) {
 		ccBegin(rt, NULL);
 		for (i = 0; i < lengthOf(math64); i += 1) {

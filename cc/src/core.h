@@ -21,7 +21,7 @@
 	5: print non pre-mapped strings, non static types
 	6: print static casts generated with emit
 */
-#define DEBUGGING 0
+//~ #define DEBUGGING 1
 
 // enable paralell execution stuff
 //~ #define MAXPROCSEXEC 1
@@ -557,10 +557,10 @@ symn typecheck(ccState, symn loc, astn ast);
  * @brief Fix structure member offsets / function arguments.
  * @param sym Symbol of struct or function.
  * @param align Alignment of members.
- * @param spos Size of base / return.
+ * @param base Size of base / return.
  * @return Size of struct / functions param size.
  */
-int fixargs(symn sym, unsigned int align, int spos);
+size_t fixargs(symn sym, unsigned int align, size_t base);
 
 ccToken castOf(symn typ);
 ccToken castTo(astn ast, ccToken castTo);
@@ -636,9 +636,10 @@ int usages(symn sym);
 /** TODO: to be deleted; sym->size should be used instead.
  * @brief Get the size of the symbol.
  * @param sym Symbol to be checked.
- * @return Syze of type or variable.
+ * @param varSize if the type is reference type return the size of a reference.
+ * @return Size of type or variable.
  */
-size_t sizeOf(symn sym);
+size_t sizeOf(symn sym, int varSize);
 
 /**
  * @brief Get the symbol(variable) linked to expression.

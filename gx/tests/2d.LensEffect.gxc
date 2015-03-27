@@ -84,3 +84,5 @@ for (int y = -magRadius; y < magRadius; y += 1) {
 		magnCoeff[y + magRadius][x + magRadius] = vec2d(a, b);
 	}
 }
+
+//~ debug(variant(&magnCoeff));

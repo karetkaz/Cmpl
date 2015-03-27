@@ -1,30 +1,4 @@
-// --s -gd2 -asm29 -l out/asm.cvx -xv -w9 "todo.cvx"
-/* BUG: array decl
-struct Biorithm {
-	int color;
-	int period;
-	int period2;
-	string label;
-}
-//~ Biorithm biorithm = Biorithm(0x5050ff, 23,  0, "Physical - Fizikai %d%%");
-
-//~ / * TODO:
-//~ Biorithm biorithms[] = [
-//~ const Biorithm biorithms[7] = [
-//~ const Biorithm biorithms[] = [
-	Biorithm(0x5050ff, 23,  0, "Physical - Fizikai %d%%"),
-	Biorithm(0xff0000, 28,  0, "Emotional - Erzelmi %d%%"),
-	Biorithm(0x00ff00, 33,  0, "Intellectual - Szellemi %d%%"),
-	Biorithm(0xdadada, 38,  0, "Intuitive - Megerzes %d%%"),
-	Biorithm(0x6f6f6f, 23, 33, "Mastery - Iranyitas %d%%"),
-	Biorithm(0xfeab00, 23, 28, "Passion - Szenvedely %d%%"),
-	Biorithm(0x9466db, 28, 33, "Wisdom - Bolcsesseg %d%%")
-];
-
-//~ println(millis());
-//~ */
-
-/* TO DELETE
+//~ /* TO DELETE
 struct arr{
 	int c1[] = "123";
 	int c2[3] = {'1', '2', '3'};
@@ -41,7 +15,7 @@ int b(int a[2]) {
 	return a.length;
 }
 
-static const int DaysToMonth365[13] = {0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365};
+static const int DaysToMonth365[] = {0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365};
 //~ */
 
 /+ TODO: vs studio BUG
@@ -60,64 +34,9 @@ int a() {
 	}
 	return 'a';
 }
-*/
+//~ */
 
 /*
-struct int32x8 {
-	int32 i8;	//%%08x
-	int32 i7;	//%%08x
-	int32 i6;	//%%08x
-	int32 i5;	//%%08x
-	int32 i4;	//%%08x
-	int32 i3;	//%%08x
-	int32 i2;	//%%08x
-	int32 i1;	//%%08x
-}
-
-define int32x8(int32 i0) = emit(int32x8, dupp.x1, dupp.x2, dupp.x2, dupp.x1, i32.shr, i32(31), dupp.x1, i32(i0));
-define int32x8(uint32 i0) = emit(int32x8, dupp.x1, dupp.x2, dupp.x2, dupp.x1, i32(0), i32(i0));
-
-//~ define sxt64(int32 a) = int64(int32(a));			// sign extend
-define zxt64(int32 a) = int64(uint32(a));			// zero extend
-
-int32x8 add(const int32x8 &a, const int32x8 &b, bool &&carryInOut) {
-	int64 sum;
-	int64 ovf = 0xffffffff;
-	int64 carry = carryInOut;
-
-	define opAdd(int a, int b) = int32(sum = zxt64(a) + zxt64(b) + carry);
-
-	result.i1 = opAdd(a.i1, b.i1);
-	carry = sum > ovf;
-	result.i2 = opAdd(a.i2, b.i2);
-	carry = sum > ovf;
-	result.i3 = opAdd(a.i3, b.i3);
-	carry = sum > ovf;
-	result.i4 = opAdd(a.i4, b.i4);
-	carry = sum > ovf;
-	result.i5 = opAdd(a.i5, b.i5);
-	carry = sum > ovf;
-	result.i6 = opAdd(a.i6, b.i6);
-	carry = sum > ovf;
-	result.i7 = opAdd(a.i7, b.i7);
-	carry = sum > ovf;
-	result.i8 = opAdd(a.i8, b.i8);
-	carryInOut = sum > ovf;
-}
-int32x8 add(const int32x8 &a, const int32x8 &b) {
-	return add(a, b, null);
-}
-int32x8 add(const int32x8 &a, int32 b) {
-	int32x8 bx8 = int32x8(b);
-	result = add(a, &bx8, null);
-}
-
-int32x8 i32x8_a = int32x8(-10);
-int32x8 i32x8_b = int32x8(1);
-//~ BUG: rewrites the next variable.
-int32x8 i32x8_c = add(&i32x8_a, &i32x8_b);
-*/
-
 string infoString = "blah";
 pointer ptrString = pointer(infoString);
 string infoStringPtr = ptrString;
@@ -135,5 +54,7 @@ variant varRefValue = variant(refValue);
 
 int &i1 = ptrValue;
 int &i2 = ptrRefValue;
+// BUG: value should be 1234
 int &i3 = pointer(varValue);
 int &i4 = pointer(varRefValue);
+//~ */

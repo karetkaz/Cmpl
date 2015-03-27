@@ -2067,7 +2067,7 @@ static astn init_var(ccState cc, symn var) {
 					}
 					if (mkcon && !mkConst(val, cast)) {
 						trace("canAssignCast(%-T, %+k, %t)", base, val, cast);
-						return NULL;
+						//~ return NULL;
 					}
 					init = init->op.lhso;
 					nelem += 1;
@@ -2082,7 +2082,7 @@ static astn init_var(ccState cc, symn var) {
 				}
 				if (mkcon && !mkConst(init, cast)) {
 					trace("canAssignCast(%-T, %+k, %t)", base, init, cast);
-					return NULL;
+					//~ return NULL;
 				}
 
 				// int a[] = {1, 2, 3, 4, 5, 6};
@@ -2100,7 +2100,8 @@ static astn init_var(ccState cc, symn var) {
 					addLength(cc, typ, typ->init);
 				}
 				else if (typ->init == NULL) {
-					error(cc->s, var->file, var->line, "invalid initialization `%+k`", var->init);
+					// can not initialize a slice with values.
+					error(cc->s, var->file, var->line, "invalid slice initialization `%+k`", var->init);
 					return NULL;
 				}
 				var->init->type = var->prms;
@@ -2164,7 +2165,7 @@ static astn decl_alias(ccState cc) {
 		return NULL;
 	}
 
-	if (skip(cc, ASGN_set)) {				// const:   define PI = 3.14...;
+	if (skip(cc, ASGN_set)) {				// const: define PI = 3.14...;
 		// can not call decl_init
 		// TODO: check if locals are used.
 		astn val = expr(cc, TYPE_def);
@@ -2186,7 +2187,7 @@ static astn decl_alias(ccState cc) {
 			error(cc->s, cc->file, cc->line, "expression expected");
 		}
 	}
-	else if (skip(cc, PNCT_lp)) {			// inline:  define isNan(float64 x) = x != x;
+	else if (skip(cc, PNCT_lp)) {			// inline: define isNan(float64 x) = x != x;
 		astn init = NULL;
 		symn param;
 
@@ -2363,7 +2364,7 @@ static astn decl_enum(ccState cc) {
  * @return root of declaration.
  */
 static astn decl_struct(ccState cc, int Attr) {
-	symn def = NULL, base = NULL;
+	symn type = NULL, base = NULL;
 	astn tok, tag;
 
 	int byref = 0;
@@ -2410,7 +2411,7 @@ static astn decl_struct(ccState cc, int Attr) {
 		tag->kind = TYPE_def;
 		enter(cc, tag);
 	}
-	def = declare(cc, ATTR_stat | ATTR_const | TYPE_rec, tag, cc->type_rec);
+	type = declare(cc, ATTR_stat | ATTR_const | TYPE_rec, tag, cc->type_rec);
 	tag->kind = TYPE_def;
 	enter(cc, tag);
 
@@ -2427,9 +2428,9 @@ static astn decl_struct(ccState cc, int Attr) {
 		}
 	}
 
-	def->flds = leave(cc, def, (Attr & ATTR_stat) != 0);
-	def->prms = def->flds;
-	def->size = fixargs(def, pack, 0);
+	type->flds = leave(cc, type, (Attr & ATTR_stat) != 0);
+	type->prms = type->flds;
+	type->size = fixargs(type, pack, 0);
 
 	if (!skiptok(cc, STMT_end, 1)) {	// '}'
 		trace("%+k", peekTok(cc, 0));
@@ -2437,36 +2438,34 @@ static astn decl_struct(ccState cc, int Attr) {
 	}
 
 	if (base != NULL) {
-		def->size += base->size;
-		def->pfmt = base->pfmt;
-		cc->pfmt = def;
-		def->cast = base->cast;
+		type->size += base->size;
+		type->pfmt = base->pfmt;
+		cc->pfmt = type;
+		type->cast = base->cast;
 	}
 	else {
-		def->cast = TYPE_rec;
+		type->cast = TYPE_rec;
 	}
 
-	if ((Attr & ATTR_stat) != 0 || def->size == 0) {
+	if ((Attr & ATTR_stat) != 0 || type->size == 0) {
 		// make uninstantiable
-		def->cast = TYPE_vid;
+		type->cast = TYPE_vid;
 	}
 	else {
-		if (def->flds && pack == vm_size && !byref) {
-			ctorArg(cc, def);
+		if (type->flds && pack == vm_size && !byref) {
+			ctorArg(cc, type);
 		}
 
-		if (!def->flds && !def->type) {
+		if (!type->flds && !type->type) {
 			warn(cc->s, 2, cc->file, cc->line, "empty declaration");
 		}
 	}
 
 	// Error checking
 	if (base && base->cast != TYPE_ref) {
-		// TODO: to be removed: declarations like: struct hex32: int32;
+		// TODO: to be removed: declarations like: struct hex32: int32 { };
 		if (skip(cc, STMT_do)) {
 			warn(cc->s, 1, tag->file, tag->line, "deprecated declaration of `%k`", tag);
-			backTok(cc, newnode(cc, STMT_end));
-			backTok(cc, newnode(cc, STMT_beg));
 		}
 		else {
 			error(cc->s, tag->file, tag->line, "must extend a reference type, not `%+T`", base);
@@ -2505,8 +2504,11 @@ astn decl_var(ccState cc, astn* argv, int mode) {
 	inout = skip(cc, OPER_lnd);
 	byref = inout || skip(cc, OPER_and);
 
-	if (byref && typ->cast == TYPE_ref) {
-		warn(cc->s, 2, tag->file, tag->line, "ignoring &, %-T is already a reference type", typ);
+	if (typ->cast == TYPE_ref) {
+		if (byref) {
+			warn(cc->s, 2, tag->file, tag->line, "ignoring &, %-T is already a reference type", typ);
+		}
+		//byref = 1;
 	}
 
 	if (!(tag = next(cc, TYPE_ref))) {
@@ -2518,7 +2520,7 @@ astn decl_var(ccState cc, astn* argv, int mode) {
 	}
 
 	ref = declare(cc, TYPE_ref, tag, typ);
-	ref->size = byref ? vm_size : sizeOf(typ);
+	ref->size = byref ? (size_t) vm_size : sizeOf(typ, 1);
 
 	if (argv != NULL) {
 		*argv = NULL;
@@ -2531,8 +2533,8 @@ astn decl_var(ccState cc, astn* argv, int mode) {
 		ref->prms = leave(cc, ref, 0);
 		skiptok(cc, PNCT_rp, 1);
 
-		ref->size = vm_size;
 		ref->call = 1;
+		ref->size = vm_size;
 
 		if (ref->prms == NULL) {
 			ref->prms = cc->void_tag->ref.link;
@@ -2567,11 +2569,11 @@ astn decl_var(ccState cc, astn* argv, int mode) {
 		//~ arr->stat = 1;
 
 		if (!peekTok(cc, PNCT_rc)) {
-			struct astNode val;
 			astn init = expr(cc, TYPE_def);
 			typ->init = init;
 
 			if (init != NULL) {
+				struct astNode val;
 				if (eval(&val, init) == TYPE_int) {
 					// add static const length property to array type.
 					addLength(cc, typ, init);
@@ -2657,10 +2659,10 @@ astn decl_var(ccState cc, astn* argv, int mode) {
 		ref->prms = base;	// fixme (temporarly used)
 		dynarr = base->size;
 		for (; typ; typ = typ->decl) {
-			typ->size = (dynarr *= typ->offs);
+			typ->size = (size_t) (dynarr *= typ->offs);
 			//~ typ->offs = vmOffset(cc->s, typ);
 		}
-		ref->size = byref ? vm_size : sizeOf(arr);
+		ref->size = byref ? (size_t) vm_size : sizeOf(arr, 0);
 
 		if (inout || byref || base->cast == TYPE_ref) {
 			// int& a[200] a contains 200 references to integers
@@ -2738,14 +2740,14 @@ static astn decl(ccState cc, int mode) {
 				ref->gdef = cc->func;
 				cc->func = ref;
 
-				result = install(cc, "result", TYPE_ref, TYPE_any, sizeOf(typ), typ, NULL);
+				result = install(cc, "result", TYPE_ref, TYPE_any, sizeOf(typ, 1), typ, NULL);
 				ref->flds = result;
 
 				if (result) {
 					result->decl = ref;
 
 					// result is the first argument
-					result->offs = sizeOf(result);
+					result->offs = sizeOf(result, 1);
 					// TODO: ref->stat = 1;
 					ref->size = result->offs + fixargs(ref, vm_size, -result->offs);
 				}
@@ -2808,7 +2810,7 @@ static astn decl(ccState cc, int mode) {
 
 			}
 		}
-		dieif(!ref->call && ref->size == 0, "FixMe: %-T", ref);
+		//TODO: ?removed: dieif(!ref->call && ref->size == 0, "FixMe: %-T", ref);
 
 		// for (int a : range(10, 20)) ...
 		if ((mode & decl_ItDecl) != 0) {

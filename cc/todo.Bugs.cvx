@@ -107,22 +107,6 @@ vec4f Screen(vec4f Base, vec4f Blend) {
 }
 //~ +/
 
-//~ int nullArr[] = null;
-//~ variant nullVar = null;
-
-const int a0[4][4] = {
-	1,2,3,4,
-	1,2,3,4,
-	1,2,3,4
-};
-//~ const int a1[1] = {1};
-//~ int a2[4] = [1, 2, 3, 4];
-//~ const int a3[] = [1, 2, 3, 4];
-//~ char result[1024] = ['a'];
-//~ int a4[] = a1;//{1, 2, 3, 4};
-//~ int aaa = void;
-//~ int bbb = 9;
-
 /+ BUG: accessing elements of dynamic size vectors in structures
 struct slice_in_struct {
 	int slice[];
@@ -605,4 +589,3 @@ string-tagcloud
 string-unpack-code
 string-validate-input
 //~ +/
-

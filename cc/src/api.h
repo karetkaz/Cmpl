@@ -62,7 +62,7 @@ struct stateRec {
 	struct {
 		void* libv;		// libcall vector
 		void* cell;		// execution unit(s)
-		void* heap;		// TODO: remove: use _beg, and _end
+		void* heap;		// heap
 
 		size_t pc;			// exec: entry point / cgen: prev program counter
 		size_t px;			// exec: exit point / cgen: program counter
@@ -91,6 +91,7 @@ struct stateRec {
 	 */
 	dbgState dbg;
 	symn type_var;	// TODO: to be removed, used only for printing.
+	symn type_str;	// TODO: to be removed, used only for printing.
 
 	/**
 	 * @brief External library support.
@@ -247,8 +248,8 @@ struct stateRec {
 	} api;
 
 	// memory related
-	unsigned char *_beg;		// cc: permanent memory (increments); vm: TODO: heap free memory
-	unsigned char *_end;		// cc: temporary memory (decrements); vm: TODO: heap used memory
+	unsigned char *_beg;		// permanent memory (increments)
+	unsigned char *_end;		// temporary memory (decrements)
 
 	const size_t _size;			// size of total memory
 	unsigned char _mem[];		// this is where the memory begins.

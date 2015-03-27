@@ -123,9 +123,6 @@ void* rtAlloc(state rt, void* ptr, size_t size) {
 		last->prev = NULL;
 
 		rt->vm.heap = heap;
-		#if defined(DEBUGGING) && DEBUGGING > 1
-		perr(rt, 0, NULL, 0, "init memmgr(heap size: %d, chunk size: %d)", rt->_end - rt->_beg, sizeof(struct memchunk));
-		#endif
 	}
 
 	// realloc or free.
@@ -240,7 +237,7 @@ void* rtAlloc(state rt, void* ptr, size_t size) {
 	#if defined(DEBUGGING)
 	if (ptr == NULL && size == 0) {
 		memchunk mem;
-		perr(rt, 0, NULL, 0, "memmgr(%06x, %d): %06x; chunk[%06x, size: %d]", vmOffset(rt, ptr), size, vmOffset(rt, chunk ? chunk->data : NULL), vmOffset(rt, chunk), allocSize);
+		perr(rt, 0, NULL, 0, "memmgr(heap size: %d, chunk size: %d)", rt->_end - rt->_beg, sizeof(struct memchunk));
 		for (mem = rt->vm.heap; mem; mem = mem->next) {
 			char *status = mem->prev ? "used" : "free";
 			if (mem->next) {
@@ -450,6 +447,8 @@ static void install_type(ccState cc, int mode) {
 	//~ TODO: struct string: char[] { ... }, temporarly string is alias for char[]
 	cc->type_str = install(cc, "string", ATTR_stat | ATTR_const | TYPE_arr, TYPE_ref, vm_size, type_chr, NULL);
 	cc->type_str->pfmt = "\"%s\"";
+	cc->s->type_str = cc->type_str;
+
 
 	// hack: strings are static sized arrays.
 	cc->type_str->init = intnode(cc, -1);
@@ -820,9 +819,10 @@ ccState ccInit(state rt, int mode, int onHalt(libcArgs)) {
 
 	// install a void arg for functions with no arguments
 	if (cc->type_vid && (cc->void_tag = newnode(cc, TYPE_ref))) {
-		enter(cc, NULL);
-		cc->void_tag->ref.name = "";
 		cc->void_tag->next = NULL;
+		cc->void_tag->ref.name = "";
+
+		enter(cc, NULL);
 		declare(cc, TYPE_ref, cc->void_tag, cc->type_vid);
 		leave(cc, NULL, 0);
 	}

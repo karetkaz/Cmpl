@@ -312,7 +312,7 @@ method = Dithering.SteinbergFalse;
 //~ method = Dithering.Bayer;
 //~ method = Dithering.Threshold;
 
-define workOnOffscreen = true;
+define workOnOffscreen = !true;
 
 static if(workOnOffscreen) {
 //~ vec4f makegray(float64 x, float64 y) {return vec4f(Math.min(x, y));}
