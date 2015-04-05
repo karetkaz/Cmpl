@@ -1272,7 +1272,7 @@ int evalMesh(mesh msh, int sdiv, int tdiv, char *src, char *file, int line) {
 	// optimize on max level, and generate global variables on stack
 	if (err || !gencode(rt, cgen_glob | 0xff)) {
 		debug("error compiling(%d), see `%s`", err, logf);
-		logfile(rt, NULL);
+		logfile(rt, NULL, 0);
 		return -3;
 	}
 
@@ -1291,7 +1291,7 @@ int evalMesh(mesh msh, int sdiv, int tdiv, char *src, char *file, int line) {
 	//~ */
 
 	// close log
-	logfile(rt, NULL);
+	logfile(rt, NULL, 0);
 
 	#define findint(__ENV, __NAME, _OUT_VAL) ccSymValInt(ccFindSym(__ENV, NULL, __NAME), _OUT_VAL)
 	#define findflt(__ENV, __NAME, _OUT_VAL) ccSymValFlt(ccFindSym(__ENV, NULL, __NAME), _OUT_VAL)

@@ -22,8 +22,8 @@ v2 = coord.X;			// ok.
 v2 = e2;				// ok.
 
 //~ coord e3 = v1;			// error: enum variable can be assigned only from a value from the enumeration.
-//~ e3 = v1;				// error.
 //~ coord e0;				// TODO: error: enum variable must be initialized.
+//~ e0 = v1;				// error.
 
 //~ bool b1 = e1 == e2;
 //~ bool b2 = e1 == v1;
@@ -33,10 +33,24 @@ v2 = e2;				// ok.
 // using enum values in expressions.
 enum Window {
 	width = 90;
+	height = 90;
 	height1 = 2 * width;
 	height2 = width * 2;
 }
+
 define min(int x, int y) = int(x < y ? x : y);
+
 int x = 3 * Window.width;
 int y = Window.height2 * 3;
+
+int pixels = Window.width * Window.height;
+
 int cpos = min(x, Window.width) * y / Window.width;
+
+Window ww = Window.width;
+Window wh = Window.height;
+
+//~ bool b1 = ww == wh;
+bool b2 = ww == 90;
+bool b3 = 90 == wh;
+bool b4 = 90 == 90;

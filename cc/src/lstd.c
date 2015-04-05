@@ -214,6 +214,10 @@ static int FILE_stream(libcArgs args) {     // File std[in, out, err];
 		case 2:
 			rethnd(args, stderr);
 			return 0;
+
+		case 3:
+			rethnd(args, args->rt->logf);
+			return 0;
 	}
 
 	debugFILE("error opening stream: %x", stream);
@@ -573,6 +577,7 @@ int install_file(state rt) {
 		err = err || !ccAddCall(rt, FILE_stream, (void*)0, "File StdIn;");
 		err = err || !ccAddCall(rt, FILE_stream, (void*)1, "File StdOut;");
 		err = err || !ccAddCall(rt, FILE_stream, (void*)2, "File StdErr;");
+		err = err || !ccAddCall(rt, FILE_stream, (void*)3, "File DbgOut;");
 
 		//~ err = err || !ccAddCall(rt, FILE_mkdirs, NULL, "bool mkdirs(char path[]);");
 		//~ err = err || !ccAddCall(rt, FILE_exists, NULL, "bool Exists(char path[]);");

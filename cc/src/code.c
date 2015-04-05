@@ -632,7 +632,7 @@ size_t emitarg(state rt, vmOpcode opc, stkval arg) {
 				arg.f4 = (float32_t) ip->arg.i4;
 				opc = opc_lf32;
 				rollbackPc(rt);
-				dieif(ip->arg.i4 != arg.f4, "inexact cast: %d => %f", ip->arg.i4, arg.f4);
+				logif(ip->arg.i4 != arg.f4, "inexact cast: %d => %f", ip->arg.i4, arg.f4);
 			}
 		}
 		else if (opc == i32_i64) {
@@ -649,7 +649,7 @@ size_t emitarg(state rt, vmOpcode opc, stkval arg) {
 				arg.f8 = ip->arg.i4;
 				opc = opc_lf64;
 				rollbackPc(rt);
-				dieif(ip->arg.i4 != arg.f8, "inexact cast: %d => %F", ip->arg.i4, arg.f8);
+				logif(ip->arg.i4 != arg.f8, "inexact cast: %d => %F", ip->arg.i4, arg.f8);
 			}
 		}
 		else if (opc == i64_i32) {
@@ -658,8 +658,8 @@ size_t emitarg(state rt, vmOpcode opc, stkval arg) {
 				arg.i8 = ip->arg.i8;
 				opc = opc_lc32;
 				rollbackPc(rt);
-				//TODO: dieif(ip->arg.i8 != arg.i4, "inexact cast: %D => %d", ip->arg.i8, arg.i4);
-				dieif(ip->arg.i8 != arg.i4 && ip->arg.i8 != arg.u4, "inexact cast: %D => %d", ip->arg.i8, arg.i4);
+				//TODO: logif(ip->arg.i8 != arg.i4, "inexact cast: %D => %d", ip->arg.i8, arg.i4);
+				logif(ip->arg.i8 != arg.i4 && ip->arg.i8 != arg.u4, "inexact cast: %D => %d", ip->arg.i8, arg.i4);
 			}
 		}
 		else if (opc == i64_f32) {
@@ -668,7 +668,7 @@ size_t emitarg(state rt, vmOpcode opc, stkval arg) {
 				arg.f4 = (float32_t) ip->arg.i8;
 				opc = opc_lf32;
 				rollbackPc(rt);
-				dieif(ip->arg.i8 != arg.f4, "inexact cast: %D => %f", ip->arg.i8, arg.f4);
+				logif(ip->arg.i8 != arg.f4, "inexact cast: %D => %f", ip->arg.i8, arg.f4);
 			}
 		}
 		else if (opc == i64_bol) {
@@ -685,7 +685,7 @@ size_t emitarg(state rt, vmOpcode opc, stkval arg) {
 				arg.f8 = (float64_t) ip->arg.i8;
 				opc = opc_lf64;
 				rollbackPc(rt);
-				dieif(ip->arg.i8 != arg.f8, "inexact cast: %D => %F", ip->arg.i8, arg.f8);
+				logif(ip->arg.i8 != arg.f8, "inexact cast: %D => %F", ip->arg.i8, arg.f8);
 			}
 		}
 		else if (opc == f32_i32) {
@@ -694,7 +694,7 @@ size_t emitarg(state rt, vmOpcode opc, stkval arg) {
 				arg.i8 = (int64_t) ip->arg.f4;
 				opc = opc_lc32;
 				rollbackPc(rt);
-				dieif(ip->arg.f4 != arg.i4, "inexact cast: %f => %d", ip->arg.f4, arg.i4);
+				logif(ip->arg.f4 != arg.i4, "inexact cast: %f => %d", ip->arg.f4, arg.i4);
 			}
 		}
 		else if (opc == f32_bol) {
@@ -711,7 +711,7 @@ size_t emitarg(state rt, vmOpcode opc, stkval arg) {
 				arg.i8 = (int64_t) ip->arg.f4;
 				opc = opc_lc64;
 				rollbackPc(rt);
-				dieif(ip->arg.f4 != arg.i8, "inexact cast: %f => %D", ip->arg.f4, arg.i8);
+				logif(ip->arg.f4 != arg.i8, "inexact cast: %f => %D", ip->arg.f4, arg.i8);
 			}
 		}
 		else if (opc == f32_f64) {
@@ -720,7 +720,7 @@ size_t emitarg(state rt, vmOpcode opc, stkval arg) {
 				arg.f8 = ip->arg.f4;
 				opc = opc_lf64;
 				rollbackPc(rt);
-				dieif(ip->arg.f4 != arg.f8, "inexact cast: %f => %F", ip->arg.f4, arg.f8);
+				logif(ip->arg.f4 != arg.f8, "inexact cast: %f => %F", ip->arg.f4, arg.f8);
 			}
 		}
 		else if (opc == f64_i32) {
@@ -729,7 +729,7 @@ size_t emitarg(state rt, vmOpcode opc, stkval arg) {
 				arg.i8 = (int64_t) ip->arg.f8;
 				opc = opc_lc32;
 				rollbackPc(rt);
-				dieif(ip->arg.f8 != arg.i4, "inexact cast: %F => %d", ip->arg.f8, arg.i4);
+				logif(ip->arg.f8 != arg.i4, "inexact cast: %F => %d", ip->arg.f8, arg.i4);
 			}
 		}
 		else if (opc == f64_f32) {
@@ -738,7 +738,7 @@ size_t emitarg(state rt, vmOpcode opc, stkval arg) {
 				arg.f4 = (float32_t) ip->arg.f8;
 				opc = opc_lf32;
 				rollbackPc(rt);
-				dieif(ip->arg.f8 != arg.f4, "inexact cast: %F => %f", ip->arg.f8, arg.f4);
+				logif(ip->arg.f8 != arg.f4, "inexact cast: %F => %f", ip->arg.f8, arg.f4);
 			}
 		}
 		else if (opc == f64_i64) {
@@ -747,7 +747,7 @@ size_t emitarg(state rt, vmOpcode opc, stkval arg) {
 				arg.i8 = (int64_t) ip->arg.f8;
 				opc = opc_lc64;
 				rollbackPc(rt);
-				dieif(ip->arg.f8 != arg.i8, "inexact cast: %F => %D", ip->arg.f8, arg.i8);
+				logif(ip->arg.f8 != arg.i8, "inexact cast: %F => %D", ip->arg.f8, arg.i8);
 			}
 		}
 		else if (opc == f64_bol) {

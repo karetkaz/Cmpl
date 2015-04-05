@@ -1389,6 +1389,7 @@ define trace(string message, variant inspect) = debug(message, inspect, Debug.de
 
 define abort() = debug(null, variant.null, Debug.abort, Debug.deftrace);
 define abort(string message) = debug(message, variant.null, Debug.abort, Debug.deftrace);
+define abort(string message, variant inspect) = debug(message, inspect, Debug.abort, Debug.deftrace);
 
 define assert(bool &condition) = debug("assertion failed!", variant.null, condition ? 0 : Debug.abort, Debug.deftrace);
 define assert(bool condition, string message) = debug(message, variant.null, condition ? 0 : Debug.abort, Debug.deftrace);

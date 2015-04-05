@@ -1827,6 +1827,16 @@ static astn expr(ccState cc, int mode) {
 			case OPER_com: {		// ','
 				if (unary)
 					error(cc->s, tok->file, tok->line, "syntax error before '%k'", tok);
+				// skip trailing commas
+				switch (test(cc)) {
+					case STMT_end:
+					case PNCT_rc:
+					case PNCT_rp:
+						warn(cc->s, 1, tok->file, tok->line, "skipping trailing comma before `%k`", peekTok(cc, 0));
+						continue;
+					default:
+						break;
+				}
 				unary = 1;
 			} goto tok_op;
 		}
@@ -3196,29 +3206,30 @@ static astn stmt(ccState cc, int mode) {
 		skiptok(cc, STMT_do, 1);
 	}
 	else if ((node = next(cc, STMT_ret))) {	// return;
-		symn result = cc->func->flds;
 		node->type = cc->type_vid;
-
-		if (!peekTok(cc, STMT_do)) {
-			astn val = expr(cc, TYPE_vid);		// do lookup
-			if (val == NULL) {/* error */}
-			else if (val->kind == TYPE_ref && val->ref.link == result) {
-				// skip 'return result;' statements
-			}
-			else if (result->type == cc->type_vid && val->type == result->type) {
-				// return void expression from a function returning void.
-				node->stmt.stmt = val;
-			}
-			else {
-				node->stmt.stmt = opnode(cc, ASGN_set, lnknode(cc, result), val);
-				node->stmt.stmt->type = val->type;
-				if (!typecheck(cc, NULL, node->stmt.stmt)) {
-					error(cc->s, val->file, val->line, "invalid return value: `%+k`", val);
+		if (cc->func != NULL) {
+			symn result = cc->func->flds;
+			if (!peekTok(cc, STMT_do)) {
+				astn val = expr(cc, TYPE_vid);		// do lookup
+				if (val == NULL) {/* error */ }
+				else if (val->kind == TYPE_ref && val->ref.link == result) {
+					// skip 'return result;' statements
+				}
+				else if (result->type == cc->type_vid && val->type == result->type) {
+					// return void expression from a function returning void.
+					node->stmt.stmt = val;
+				}
+				else {
+					node->stmt.stmt = opnode(cc, ASGN_set, lnknode(cc, result), val);
+					node->stmt.stmt->type = val->type;
+					if (!typecheck(cc, NULL, node->stmt.stmt)) {
+						error(cc->s, val->file, val->line, "invalid return value: `%+k`", val);
+					}
 				}
 			}
-		}
-		else if (result->type != cc->type_vid) {
-			warn(cc->s, 4, cc->file, cc->line, "returning from function with no value");
+			else if (result->type != cc->type_vid) {
+				warn(cc->s, 4, cc->file, cc->line, "returning from function with no value");
+			}
 		}
 		skiptok(cc, STMT_do, 1);
 	}

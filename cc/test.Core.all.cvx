@@ -12,19 +12,6 @@ enum Test {
 //	Misc = ~0x0;
 }
 
-static if (true) {
-struct hex8: int8 {};		//%%02x
-struct hex16: int16 {};		//%%04x
-struct hex32: int32 {};		//%%08x
-struct hex64: int64 {};		//%%016X
-struct bin32: int32 {};		//%%032b
-
-//~ define print(hex32 arg) = print("%08x", int64(arg));
-//~ define println(hex32 arg) = print("%08x\n", int64(arg));
-//~ define print(hex64 arg) = print("%08X", int64(arg));
-//~ define println(hex64 arg) = print("%016X\n", int64(arg));
-}
-
 // random seed
 System.srand(System.time());
 
@@ -39,7 +26,7 @@ static if (Test.Emit & 0x01) {		// some basic emit examples
 float32 res1 = emit(float32, f32.div, f32(2), f32(Math.pi));
 float64 res2 = emit(f64.neg, f64(Math.pi));
 float32 res3 = emit(i32, f32(Math.pi));
-hex32 res4 = emit(i32, f32(Math.pi));
+int32 res4 = emit(i32, f32(Math.pi));
 }
 static if (Test.Emit & 0x02) {		// more basic emit examples
 define shl(int32 value, int count) = emit(i32.shl, i32(count), i32(value));
@@ -56,9 +43,9 @@ define mad(float32 a, float32 b, float32 c) = emit(f32.add, f32.mul, f32(a), f32
 define mad(float64 a, float64 b, float64 c) = emit(f64.add, f64.mul, f64(a), f64(b), f64(c));	// a * b + c
 //~ define mad(int32 size, int32 index, int32 offset) = emit(u32.mad, i32(size), i32(index), i32(offset));
 
-hex32 a = -0x8989;
-hex32 a1 = shr(uint32(a), 8);
-hex32 a2 = shr(int32(a), 8);
+int32 a = -0x8989;
+int32 a1 = shr(uint32(a), 8);
+int32 a2 = shr(int32(a), 8);
 
 float32 X1 = mad(2, 3, 4000);
 float32 X2 = mad(float32(2), float32(3), float32(4000));
@@ -204,42 +191,42 @@ void sort(int arr[]) {
 	}
 }
 
-void qsort(int array[]) {
-	static void qsort(int array[], int low, int high) {
-		int i := low;
-		int j := high;
-		int pivot := array[low + (high-low) / 2];
-		static if (0) {
-			struct Qsort {
-				int array[];
-				int low;
-				int high;
-				int pivot;
-			}
-			Qsort args = Qsort(array, low, high, pivot);
-			debug(variant(&args));
-			//~ trace("pivot", variant(&pivot));
+static void qsort(int array[], int low, int high) {
+	int pivot := array[low + (high - low) / 2];
+	static if (0) {
+		struct Qsort {
+			int array[];
+			int low;
+			int high;
+			int pivot;
 		}
+		Qsort args = Qsort(array, low, high, pivot);
+		debug(variant(&args));
+		//~ trace("pivot", variant(&pivot));
+	}
 
-		for ( ; i <= j; ) {
-			for ( ; array[i] < pivot; i += 1) {}
-			for ( ; array[j] > pivot; j -= 1) {}
+	int i := low;
+	int j := high;
+	for ( ; i <= j; ) {
+		for ( ; array[i] < pivot; i += 1) {}
+		for ( ; array[j] > pivot; j -= 1) {}
 
-			if (i <= j) {
-				int temp := array[i];
-				array[i] := array[j];
-				array[j] := temp;
-				i += 1;
-				j -= 1;
-			}
-		}
-		if (low < j) {
-			qsort(array, low, j);
-		}
-		if (i < high) {
-			qsort(array, i, high);
+		if (i <= j) {
+			int temp := array[i];
+			array[i] := array[j];
+			array[j] := temp;
+			i += 1;
+			j -= 1;
 		}
 	}
+	if (low < j) {
+		qsort(array, low, j);
+	}
+	if (i < high) {
+		qsort(array, i, high);
+	}
+}
+void qsort(int array[]) {
 	return qsort(array, 0, array.length - 1);
 }
 
@@ -332,10 +319,10 @@ assert(getArrayElementDef(2, 1, 2, 3) == 3);
 static if (Test.Bits) {
 static if (Test.Bits & 0x01) {		// compute bits
 
-bin32 test_bit1_value = 100;
-bin32 test_bit1_bitlo = bitlo(test_bit1_value);
-bin32 test_bit1_bithi = bithi(test_bit1_value);
-bin32 test_bit1_bswap = bitswp(test_bit1_value);
+int32 test_bit1_value = 100;
+int32 test_bit1_bitlo = bitlo(test_bit1_value);
+int32 test_bit1_bithi = bithi(test_bit1_value);
+int32 test_bit1_bswap = bitswp(test_bit1_value);
 int32 test_bit1_bitcnt = bitcnt(test_bit1_value);
 int32 test_bit1_bitsf = bitsf(test_bit1_value);
 int32 test_bit1_bitsr = bitsr(test_bit1_value);
@@ -347,11 +334,11 @@ void bitsget(int bitsize, bool signed, int64 &min, int64 &max) {
 	max = int64.And(min - 1, mask);
 }
 
-int bitsize = 12;   //%%d
-hex64 smin;
-hex64 smax;
-hex64 umin;
-hex64 umax;
+int bitsize = 19;   //%%d
+int64 smin;
+int64 smax;
+int64 umin;
+int64 umax;
 
 bitsget(bitsize, true, &smin, &smax);
 bitsget(bitsize, false, &umin, &umax);
@@ -577,7 +564,6 @@ int32x8 mul(const int32x8 &a, const int32x8 &b, int32x8 &&hi) {
 
 int32x8 i32x8_a = int32x8(-10);
 int32x8 i32x8_b = int32x8(1);
-//~ BUG: rewrites the next variable.
 int32x8 i32x8_c = sub(&i32x8_a, &i32x8_b);
 
 }

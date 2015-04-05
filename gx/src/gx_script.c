@@ -12,7 +12,7 @@
 #include "pvmc.h"
 #include <assert.h>
 
-//#{ old style
+//#{ old style arguments
 static inline void* poparg(libcArgs rt, void *result, int size) {
 	// if result is not null copy
 	if (result != NULL) {
@@ -26,6 +26,7 @@ static inline void* poparg(libcArgs rt, void *result, int size) {
 }
 
 #define poparg(__ARGV, __TYPE) (((__TYPE*)((__ARGV)->argv += ((sizeof(__TYPE) + 3) & ~3)))[-1])
+static inline void* pophnd(libcArgs rt) { return poparg(rt, void*); }
 static inline int32_t popi32(libcArgs rt) { return poparg(rt, int32_t); }
 static inline int64_t popi64(libcArgs rt) { return poparg(rt, int64_t); }
 static inline float32_t popf32(libcArgs rt) { return poparg(rt, float32_t); }
@@ -90,6 +91,7 @@ surfOpClutSurf,
 surfOpCmatSurf,
 surfOpGradSurf,
 surfOpBlurSurf,
+surfOpOilPaint,
 
 surfOpNewSurf,
 surfOpDelSurf,
@@ -233,33 +235,39 @@ static int surfGetPixfp(libcArgs rt) {
 	return -1;
 }
 static int surfCall(libcArgs rt) {
+	gx_Surf surf;
 	switch ((surfFunc)rt->data) {
-		case surfOpGetWidth: {
-			gx_Surf surf = getSurf(popi32(rt));
-			reti32(rt, surf->width);
-			return 0;
-		} break;
-		case surfOpGetHeight: {
-			gx_Surf surf = getSurf(popi32(rt));
-			reti32(rt, surf->height);
-			return 0;
-		} break;
+		case surfOpGetWidth:
+			surf = getSurf(popi32(rt));
+			if (surf != NULL) {
+				reti32(rt, surf->width);
+				return 0;
+			}
+			break;
+		case surfOpGetHeight:
+			surf = getSurf(popi32(rt));
+			if (surf != NULL) {
+				reti32(rt, surf->height);
+				return 0;
+			}
+			break;
+		case surfOpGetDepth:
+			surf = getSurf(popi32(rt));
+			if (surf != NULL) {
+				reti32(rt, surf->depth);
+				return 0;
+			}
+			break;
 
-		case surfOpGetDepth: {
-			gx_Surf surf = getSurf(popi32(rt));
-			reti32(rt, surf->depth);
-			return 0;
-		} break;
-
-		case surfOpClipRect: {
-			gx_Surf surf = getSurf(popi32(rt));
-			gx_Rect rect = argref(rt, 0);
-			if (surf) {
+		case surfOpClipRect:
+			surf = getSurf(popi32(rt));
+			if (surf != NULL) {
+				gx_Rect rect = popref(rt);
 				void *ptr = gx_cliprect(surf, rect);
 				reti32(rt, ptr != NULL);
+				return 0;
 			}
-			return 0;
-		} break;
+			break;
 
 		/*case surfOpGetPixfp: {
 			gx_Surf surf;
@@ -323,9 +331,9 @@ static int surfCall(libcArgs rt) {
 			}
 		}*/
 
-		case surfOpDrawLine: {
-			gx_Surf surf;
-			if ((surf = getSurf(popi32(rt)))) {
+		case surfOpDrawLine:
+			surf = getSurf(popi32(rt));
+			if (surf != NULL) {
 				int x0 = popi32(rt);
 				int y0 = popi32(rt);
 				int x1 = popi32(rt);
@@ -334,10 +342,10 @@ static int surfCall(libcArgs rt) {
 				g2_drawline(surf, x0, y0, x1, y1, col);
 				return 0;
 			}
-		} break;
-		case surfOpDrawRect: {
-			gx_Surf surf;
-			if ((surf = getSurf(popi32(rt)))) {
+			break;
+		case surfOpDrawRect:
+			surf = getSurf(popi32(rt));
+			if (surf != NULL) {
 				int x0 = popi32(rt);
 				int y0 = popi32(rt);
 				int x1 = popi32(rt);
@@ -346,10 +354,10 @@ static int surfCall(libcArgs rt) {
 				gx_drawrect(surf, x0, y0, x1, y1, col);
 				return 0;
 			}
-		} break;
-		case surfOpFillRect: {
-			gx_Surf surf;
-			if ((surf = getSurf(popi32(rt)))) {
+			break;
+		case surfOpFillRect:
+			surf = getSurf(popi32(rt));
+			if (surf != NULL) {
 				int x0 = popi32(rt);
 				int y0 = popi32(rt);
 				int x1 = popi32(rt);
@@ -358,10 +366,10 @@ static int surfCall(libcArgs rt) {
 				gx_fillrect(surf, x0, y0, x1, y1, col);
 				return 0;
 			}
-		} break;
-		case surfOpDrawOval: {
-			gx_Surf surf;
-			if ((surf = getSurf(popi32(rt)))) {
+			break;
+		case surfOpDrawOval:
+			surf = getSurf(popi32(rt));
+			if (surf != NULL) {
 				int x0 = popi32(rt);
 				int y0 = popi32(rt);
 				int x1 = popi32(rt);
@@ -370,10 +378,10 @@ static int surfCall(libcArgs rt) {
 				g2_drawoval(surf, x0, y0, x1, y1, col);
 				return 0;
 			}
-		} break;
-		case surfOpFillOval: {
-			gx_Surf surf;
-			if ((surf = getSurf(popi32(rt)))) {
+			break;
+		case surfOpFillOval:
+			surf = getSurf(popi32(rt));
+			if (surf != NULL) {
 				int x0 = popi32(rt);
 				int y0 = popi32(rt);
 				int x1 = popi32(rt);
@@ -382,10 +390,10 @@ static int surfCall(libcArgs rt) {
 				g2_filloval(surf, x0, y0, x1, y1, col);
 				return 0;
 			}
-		} break;
-		case surfOpDrawText: {
-			gx_Surf surf;
-			if ((surf = getSurf(popi32(rt)))) {
+			break;
+		case surfOpDrawText:
+			surf = getSurf(popi32(rt));
+			if (surf != NULL) {
 				int x0 = popi32(rt);
 				int y0 = popi32(rt);
 				char *str = popstr(rt);
@@ -393,7 +401,7 @@ static int surfCall(libcArgs rt) {
 				gx_drawText(surf, x0, y0, &font, str, col);
 				return 0;
 			}
-		} break;
+			break;
 
 		case surfOpCopySurf: {		// gxSurf copySurf(gxSurf dst, int x, int y, gxSurf src, gxRect &roi);
 			gxSurfHnd dst = popi32(rt);
@@ -892,10 +900,155 @@ static int surfCall(libcArgs rt) {
 				return 0;
 			}
 		} break;
+		case surfOpOilPaint: {		// gxSurf oilPaint(gxSurf dst, gxRect &roi, int radius, intensity);
+			gxSurfHnd dst = popi32(rt);
+			gx_Rect roi = popref(rt);
+			int radius = popi32(rt);
+			int intensity = popi32(rt);
+
+			gx_Surf sdst = getSurf(dst);
+
+			if (sdst != NULL) {
+				int gx_oilPaintSurf(gx_Surf image, gx_Rect roi, int radius, int intensity);
+				gx_oilPaintSurf(sdst, roi, radius, intensity);
+				reti32(rt, dst);
+				return 0;
+			}
+		} break;
 	}
 	return -1;
 }
 //#}#endregion
+
+int gx_oilPaintSurf(gx_Surf image, gx_Rect roi, int radius, int intensity) {
+	const int w = image->width;
+	const int h = image->height;
+	struct gx_Surf temp;
+
+	/*bool inRange(int cx, int cy, int i, int j) {
+		static int sqrt(int a) {
+			int rem = 0;
+			int root = 0;
+			for (int i = 0; i < 16; i += 1) {
+				root <<= 1;
+				rem <<= 2;
+				rem += a >> 30;
+				a <<= 2;
+				if (root < rem) {
+					root += 1;
+					rem -= root;
+					root += 1;
+				}
+			}
+			return root >> 1;
+		}
+		static int32 sqrt2(int32 x) {
+			int32 testDiv;
+			int32 root = 0;			// Clear root
+			int32 remHi = 0;		// Clear high part of partial remainder
+			int32 remLo = x;		// Get argument into low part of partial remainder
+			int32 count = 16;		// Load loop counter
+
+			for (; count; count -= 1) {
+				remHi = (remHi << 2) | (remLo >> 30);		// get 2 bits of arg
+				remLo <<= 2;
+				root <<= 1;							// Get ready for the next bit in the root
+				testDiv = (root << 1) + 1;			// Test radical
+				if (remHi >= testDiv) {
+					remHi -= testDiv;
+					root += 1;
+				}
+			}
+			return root;
+		}
+		cx -= i;
+		cy -= j;
+		double d = double.sqrt(cx * cx + cy * cy);
+		return d < radius;
+		//~ return sqrt(cx * cx + cy * cy) < radius;
+	}*/
+	int averageR[256];
+	int averageG[256];
+	int averageB[256];
+	int intensityCount[256];
+
+	int x, y, i, j;
+	temp.width = w;
+	temp.height = h;
+	temp.depth = 32;
+	temp.scanLen = 0;
+	if (intensity > 256) {
+		return -1;
+	}
+	if (gx_initSurf(&temp, 0, 0, 0) != 0) {
+		return -1;
+	}
+
+	for (y = 0; y < h; y += 1) {
+		int top = y - radius;
+		int bottom = y + radius;
+		if (top < 0) top = 0;
+		if (bottom >= h) bottom = h - 1;
+
+		//~ debug("processing line", variant(&y));
+
+		for (x = 0; x < w; x += 1) {
+			int left = x - radius;
+			int right = x + radius;
+			if (left < 0) left = 0;
+			if (right >= w) right = w - 1;
+
+			for (i = 0; i < intensity; i += 1) {
+				averageR[i] = 0;
+				averageG[i] = 0;
+				averageB[i] = 0;
+				intensityCount[i] = 0;
+			}
+
+			for (j = top; j <= bottom; j += 1) {
+				for (i = left; i <= right; i += 1) {
+					//~ if (!inRange(x, y, i, j))
+						//~ continue;
+
+					argb rgb = rgbval(gx_getpixel(image, i, j));
+
+					int r = rgb.r;
+					int g = rgb.g;
+					int b = rgb.b;
+					int intensityIndex = (r + g + b) * intensity / 765;
+
+					intensityCount[intensityIndex] += 1;
+					averageR[intensityIndex] += r;
+					averageG[intensityIndex] += g;
+					averageB[intensityIndex] += b;
+
+				}
+			}
+
+			int maxIndex = 0;
+			int curMax = intensityCount[maxIndex];
+			for (i = 1; i < intensity; i += 1) {
+				if (curMax < intensityCount[i]) {
+					curMax = intensityCount[i];
+					maxIndex = i;
+				}
+			}
+
+			if (curMax > 0) {
+				//~ int rgb = int(rgbClamp(sumR[maxIndex] / curMax, sumG[maxIndex] / curMax, sumB[maxIndex] / curMax));
+				//~ setPixel(dest, row, col, rgb);
+				int r = averageR[maxIndex] / curMax;
+				int g = averageG[maxIndex] / curMax;
+				int b = averageB[maxIndex] / curMax;
+
+				gx_setpixel(&temp, x, y, rgbrgb(r, g, b).val);
+			}
+		}
+	}
+	gx_copysurf(image, 0, 0, &temp, NULL, 0);
+	gx_doneSurf(&temp);
+	return 0;
+}
 
 //#{#region Mesh & Camera
 typedef enum {
@@ -1053,13 +1206,9 @@ static int camCall(libcArgs rt) {
 		}
 
 		case camOpLookAt: {		// cam.lookAt(vec4f eye, vec4f at, vec4f up)
-			struct vector campos, camat, camup;
-			vector camPos = poparg(rt, &campos, sizeof(struct vector));	// eye
-			vector camAt = poparg(rt, &camat, sizeof(struct vector));	// target
-			vector camUp = poparg(rt, &camup, sizeof(struct vector));	// up
-			//~ vector camPos = popref(s);
-			//~ vector camAt = popref(s);
-			//~ vector camUp = popref(s);
+			vector camPos = poparg(rt, NULL, sizeof(struct vector));	// eye
+			vector camAt = poparg(rt, NULL, sizeof(struct vector));	// target
+			vector camUp = poparg(rt, NULL, sizeof(struct vector));	// up
 			camset(cam, camPos, camAt, camUp);
 			return 0;
 		}
@@ -1233,6 +1382,7 @@ Surf[] = {
 	{surfCall, surfOpClutSurf,		"gxSurf clutSurf(gxSurf dst, gxRect &roi, gxClut &lut);"},
 	{surfCall, surfOpGradSurf,		"gxSurf gradSurf(gxSurf dst, gxRect &roi, gxClut &lut, int mode, bool repeat);"},
 	{surfCall, surfOpBlurSurf,		"gxSurf blurSurf(gxSurf dst, gxRect &roi, int radius);"},
+	{surfCall, surfOpOilPaint,		"gxSurf oilPaintSurf(gxSurf dst, gxRect &roi, int radius, int intensity);"},
 
 	{surfCall, surfOpBmpRead,		"gxSurf readBmp(gxSurf dst, string fileName);"},
 	{surfCall, surfOpJpgRead,		"gxSurf readJpg(gxSurf dst, string fileName);"},
@@ -1355,7 +1505,7 @@ int ccCompile(char *src, int argc, char* argv[], int (*dbg)(state rt, int pu, vo
 	if (rt == NULL)
 		return -29;
 
-	if (ccLog && logfile(rt, ccLog) != 0) {
+	if (ccLog && logfile(rt, ccLog, 0) != 0) {
 		debug("can not open file `%s`\n", ccLog);
 		return -2;
 	}
@@ -1500,7 +1650,7 @@ int ccCompile(char *src, int argc, char* argv[], int (*dbg)(state rt, int pu, vo
 	if (err || !gencode(rt, dbg ? cgen_info | 3 : 3)) {
 		if (ccLog) {
 			debug("error compiling(%d), see ligfile: `%s`", err, ccLog);
-			logfile(rt, NULL);
+			logfile(rt, NULL, 0);
 		}
 		err = -3;
 	}
@@ -1527,7 +1677,7 @@ int ccCompile(char *src, int argc, char* argv[], int (*dbg)(state rt, int pu, vo
 			}
 		}
 
-		if (ccDmp && logfile(rt, ccDmp) == 0) {
+		if (ccDmp && logfile(rt, ccDmp, 0) == 0) {
 			//~ "\ntags:\n"
 			dump(rt, dump_sym | 0xf2, NULL);
 

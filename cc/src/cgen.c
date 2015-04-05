@@ -476,8 +476,9 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 	if (get == TYPE_any)
 		get = ast->cst2;
 
-	if (!(got = ast->type->cast))
+	if (!(got = ast->type->cast)) {
 		got = ast->type->kind;
+	}
 
 	#ifdef DEBUGGING
 	// take care of qualified statements `static if` ...
@@ -1605,6 +1606,11 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 			dieif(typ == NULL, "Error");
 			dieif(var == NULL, "Error");
 			//TODO: size: dieif(size != typ->size, "Error: %-T: %d / %d", var, size, typ->size);
+
+			// the enumeration is used as a value: `int pixels = Window.width * Window.height;`
+			if (get != got && got == ENUM_kwd) {
+				got = typ->type->cast;
+			}
 
 			switch (var->kind) {
 				default:

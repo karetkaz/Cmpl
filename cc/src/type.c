@@ -324,23 +324,27 @@ symn ccAddCall(state rt, int libc(libcArgs), void* data, const char* proto) {
 //#}
 
 // promote
-static inline int castkind(int cast) {
-	switch (cast) {
-		default:
-			break;
-		case TYPE_vid:
-			return TYPE_vid;
-		case TYPE_bit:
-			return TYPE_bit;
-		case TYPE_u32:
-		case TYPE_i32:
-		case TYPE_i64:
-			return TYPE_int;
-		case TYPE_f32:
-		case TYPE_f64:
-			return TYPE_flt;
-		case TYPE_ref:
-			return TYPE_ref;
+static inline int castkind(symn typ) {
+	if (typ != NULL) {
+		switch (typ->cast) {
+			default:
+				break;
+			case ENUM_kwd:
+				return castkind(typ->type);
+			case TYPE_vid:
+				return TYPE_vid;
+			case TYPE_bit:
+				return TYPE_bit;
+			case TYPE_u32:
+			case TYPE_i32:
+			case TYPE_i64:
+				return TYPE_int;
+			case TYPE_f32:
+			case TYPE_f64:
+				return TYPE_flt;
+			case TYPE_ref:
+				return TYPE_ref;
+		}
 	}
 	return 0;
 }
@@ -350,11 +354,11 @@ static symn promote(symn lht, symn rht) {
 		if (lht == rht) {
 			result = lht;
 		}
-		else switch (castkind(rht->cast)) {
+		else switch (castkind(rht)) {
 			default:
 				break;
 			case TYPE_bit:
-			case TYPE_int: switch (castkind(lht->cast)) {
+			case TYPE_int: switch (castkind(lht)) {
 				default:
 					break;
 				case TYPE_bit:
@@ -373,7 +377,7 @@ static symn promote(symn lht, symn rht) {
 					break;
 
 			} break;
-			case TYPE_flt: switch (castkind(lht->cast)) {
+			case TYPE_flt: switch (castkind(lht)) {
 				default:
 					break;
 				case TYPE_bit:
@@ -953,7 +957,7 @@ symn typecheck(ccState s, symn loc, astn ast) {
 	astn dot = NULL;
 	symn sym = 0;
 
-	dieif(!ast, "FixMe");
+	dieif(ast == NULL, "FixMe");
 
 	ast->cst2 = TYPE_any;
 	switch (ast->kind) {

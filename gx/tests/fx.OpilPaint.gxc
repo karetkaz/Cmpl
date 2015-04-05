@@ -7,8 +7,8 @@ enum Window {
 	resy = 760;
 }
 
-string fileName = "media/images/David.png";
-//~ string fileName = "media/images/forest.jpg";
+//~ string fileName = "media/images/David.png";
+string fileName = "media/images/forest.jpg";
 //~ string fileName = "media/images/lenaRGB.png";
 //~ string fileName = "media/images/download.jpg";
 //~ string fileName = "/media/Data/Pictures/Canon/2006/2006_04_17 - Banya/IMG_0086.JPG";
@@ -17,19 +17,18 @@ string fileName = "media/images/David.png";
 //~ string fileName = "media/images/nol.bmp";
 
 gxSurf image = gxSurf(fileName);
+define radius = 3;
+define intensityLevels = 24;
 
 static if (!true) {
-	define radius = 10;
-	define intensity_level = 24;
-
 	const int w = width(image);
 	const int h = height(image);
 	gxSurf dest = gxSurf(w, h);
 
-	int intensity_count[intensity_level];
-	int sumR[intensity_level];
-	int sumG[intensity_level];
-	int sumB[intensity_level];
+	int intensity_count[intensityLevels];
+	int sumR[intensityLevels];
+	int sumG[intensityLevels];
+	int sumB[intensityLevels];
 
 	for(int col = radius; col < (h - radius); col += 1) {
 		debug("processing line", variant(&col));
@@ -47,7 +46,7 @@ static if (!true) {
 					int r = rch(rgb);
 					int g = gch(rgb);
 					int b = bch(rgb);
-					int current_intensity = ((r + g + b) * intensity_level / 3) / 255;
+					int current_intensity = ((r + g + b) * intensityLevels / 3) / 255;
 					intensity_count[current_intensity] += 1;
 					sumR[current_intensity] += r;
 					sumG[current_intensity] += g;
@@ -58,7 +57,7 @@ static if (!true) {
 			/* The highest intensity neighbouring pixels are averaged out to get the exact color. */
 			int maxIndex = 0;
 			int curMax = intensity_count[0];
-			for (int i = 1; i < intensity_level; i += 1) {
+			for (int i = 1; i < intensityLevels; i += 1) {
 				if (curMax < intensity_count[i]) {
 					curMax = intensity_count[i];
 					maxIndex = i;
@@ -74,11 +73,7 @@ static if (!true) {
 	copySurf(image, 0, 0, dest, null);
 	delSurf(dest);
 }
-static if (true) {
-
-	define radius = 10;
-	define intensityLevels = 20;
-
+static if (!true) {
 	const int w = width(image);
 	const int h = height(image);
 	gxSurf dest = gxSurf(w, h);
@@ -134,7 +129,7 @@ static if (true) {
 		int top = Math.max(0, y - radius);
 		int bottom = Math.min(y + radius, h - 1);
 
-		debug("processing line", variant(&y));
+		//~ debug("processing line", variant(&y));
 
 		for (int x = 0; x < w; x += 1) {
 			int left = Math.max(0, x - radius);
@@ -191,5 +186,6 @@ static if (true) {
 	delSurf(dest);
 }
 
+oilPaintSurf(image, null, radius, intensityLevels);
 //~ fillSurf(image, null, effectFp);
 setupPicView(image, true);

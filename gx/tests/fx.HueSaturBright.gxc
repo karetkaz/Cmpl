@@ -49,17 +49,11 @@ void mouseCB(int btn, int x, int y) {
 	oy = y;
 }
 
-mat4f matHue(float val) {
-	//assert(val >= 0 && val <= 2*pi);
-	float cV = float64.cos(val);
-	float sV = float64.sin(val);
-	float lR = 0.213;
-	float lG = 0.715;
-	float lB = 0.072;
-	result.x = vec4f(lR+cV*(1-lR)+sV*(   -lR), lG+cV*(   -lG)+sV*( -lG), lB+cV*( -lB)+sV*(1 - lB),0.);
-	result.y = vec4f(lR+cV*(0-lR)+sV*(0.1430), lG+cV*(1 - lG)+sV*(0.14), lB+cV*( -lB)+sV*(-0.283),0.);
-	result.z = vec4f(lR+cV*(0-lR)+sV*(lR - 1), lG+cV*(   -lG)+sV*(  lG), lB+cV*(1-lB)+sV*(    lB),0.);
-	result.w = vec4f(0., 0., 0., 1.);
+mat4f matLuminosity(float val) {
+	result.x = vec4f(1., 0., 0., val);
+	result.y = vec4f(0., 1., 0., val);
+	result.z = vec4f(0., 0., 1., val);
+	result.w = vec4f(0., 0., 0.,  1.);
 }
 mat4f matSaturation(float val) {
 	//~ val between 0, 3
@@ -76,11 +70,17 @@ mat4f matSaturation(float val) {
 	result.z = vec4f(R, G, B + val, 0.);
 	result.w = vec4f(0., 0., 0., 1.);
 }
-mat4f matLuminosity(float val) {
-	result.x = vec4f(1., 0., 0., val);
-	result.y = vec4f(0., 1., 0., val);
-	result.z = vec4f(0., 0., 1., val);
-	result.w = vec4f(0., 0., 0.,  1.);
+mat4f matHue(float val) {
+	//~ assert(val >= 0 && val <= 2 * Math.pi);
+	define lR = 0.213;
+	define lG = 0.715;
+	define lB = 0.072;
+	float cV = float64.cos(val);
+	float sV = float64.sin(val);
+	result.x = vec4f(lR+cV*(1-lR)+sV*(   -lR), lG+cV*(   -lG)+sV*( -lG), lB+cV*( -lB)+sV*(1 - lB),0.);
+	result.y = vec4f(lR+cV*(0-lR)+sV*(0.1430), lG+cV*(1 - lG)+sV*(0.14), lB+cV*( -lB)+sV*(-0.283),0.);
+	result.z = vec4f(lR+cV*(0-lR)+sV*(lR - 1), lG+cV*(   -lG)+sV*(  lG), lB+cV*(1-lB)+sV*(    lB),0.);
+	result.w = vec4f(0., 0., 0., 1.);
 }
 
 mat4f cmatHSL(float hue, float sat, float lum) {
@@ -102,7 +102,6 @@ mat4f cmatHSL(float hue, float sat, float lum) {
 
 	tmp = matHue(hue);
 	result = mul(&result, &tmp);
-	//~ result = mul(&result, matHue(hue));
 }
 
 void drawCB() {

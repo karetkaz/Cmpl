@@ -1,4 +1,4 @@
-// TODO: HACK: 0 alignment disables constructor creation
+// HACK: 0 alignment disables constructor creation
 struct fixed:0 {
 	int32 value;
 }
@@ -86,12 +86,13 @@ static struct Fixed {
 		for (int i = 1; i < p.length; i += 1) {
 			result = add(p[i], mul(result, x));
 		}
+		return result;
 	}
 	fixed eval4(fixed x, const fixed p[4]) {
-		result.value = p[0].value;
-		result.value = p[1].value + mul(result.value, x.value, FractBits);
-		result.value = p[2].value + mul(result.value, x.value, FractBits);
-		result.value = p[3].value + mul(result.value, x.value, FractBits);
+		result = p[0];
+		result = add(p[1], mul(result, x));
+		result = add(p[2], mul(result, x));
+		result = add(p[3], mul(result, x));
 	}
 
 	fixed fxp2xp(fixed x) {

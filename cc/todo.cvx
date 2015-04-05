@@ -1,4 +1,4 @@
-//~ /* TO DELETE
+/* TO DELETE
 struct arr{
 	int c1[] = "123";
 	int c2[3] = {'1', '2', '3'};

@@ -21,7 +21,7 @@ const Biorithm biorithms[] = {
 	Biorithm(0xdadada, 38,  0, "Intuitive - Megerzes %d%%"),
 	Biorithm(0x6f6f6f, 23, 33, "Mastery - Iranyitas %d%%"),
 	Biorithm(0xfeab00, 23, 28, "Passion - Szenvedely %d%%"),
-	Biorithm(0x9466db, 28, 33, "Wisdom - Bolcsesseg %d%%")
+	Biorithm(0x9466db, 28, 33, "Wisdom - Bolcsesseg %d%%"),
 };
 
 void drawBiorithm(gxSurf dst, int daysToShow, double now, Date birth, Biorithm biorithms[]) {
@@ -114,7 +114,7 @@ void setupBiorithm(int _daysToShow, Date _now, Date _birth) {
 	static int daysToShow;
 	static bool reDraw = true;
 
-	define inertial_pan = 300.;
+	define inertial_pan = 30.;
 	define inertial_speed = 1.01;
 	static int64 inertial_time = 0;
 	static double inertial_pan_x = 0;
@@ -186,8 +186,7 @@ void setupBiorithm(int _daysToShow, Date _now, Date _birth) {
 
 	static void onKey(int32 btn, int32 ext) {
 		if (btn == 27) {
-			//Gui.exitLoop();
-			assert(false);
+			Gui.exitLoop();
 		}
 		if (btn == '[') {
 			pos -= Window.resx / 2;

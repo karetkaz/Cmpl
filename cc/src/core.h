@@ -21,7 +21,7 @@
 	5: print non pre-mapped strings, non static types
 	6: print static casts generated with emit
 */
-//~ #define DEBUGGING 1
+#define DEBUGGING 0
 
 // enable paralell execution stuff
 //~ #define MAXPROCSEXEC 1
@@ -40,7 +40,7 @@
 #ifdef DEBUGGING
 #define logif(__EXP, msg, ...) do {if (__EXP) prerr("todo", msg, ##__VA_ARGS__);} while(0)
 #if DEBUGGING > 0	// enable debug
-#define trace(msg, ...) do { prerr("trace", msg, ##__VA_ARGS__); } while(0)
+#define trace(msg, ...) do { prerr("trace", msg, ##__VA_ARGS__); _break(); } while(0)
 #define trloop(msg, ...) //do { prerr("trace", msg, ##__VA_ARGS__); } while(0)
 #else
 #define trace(msg, ...) do {} while(0)
@@ -739,7 +739,9 @@ int logTrace(state rt, int ident, int startlevel, int tracelevel);
 #endif
 
 static inline void _abort() {
-	//~ abort();
+#ifndef DEBUGGING
+	abort();
+#endif
 }
 
 static inline void _break() {}

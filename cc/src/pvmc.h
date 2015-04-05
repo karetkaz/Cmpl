@@ -44,7 +44,7 @@ state rtInit(void* mem, size_t size);
 
 // logging
 void logFILE(state, FILE *file);			// set logger
-int logfile(state, char *file);				// set logger
+int logfile(state, char *file, int append);	// set logger
 void dump(state, int dumpWhat, symn);
 
 // compile

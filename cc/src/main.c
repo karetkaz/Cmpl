@@ -353,6 +353,7 @@ int program(int argc, char* argv[]) {
 	int out_dasm = -1;
 	char* str_dasm = NULL;
 
+	int log_append = 0;				// start with a new file
 	char* logf = NULL;			// logger filename
 	FILE* dmpf = stdout;		// dump file
 
@@ -428,7 +429,12 @@ int program(int argc, char* argv[]) {
 		}
 
 		// output file
-		else if (strcmp(arg, "-l") == 0) {			// log
+		else if (strncmp(arg, "-l", 2) == 0) {		// log
+			// append to existing log
+			if (arg[2] == 'a') {
+				log_append = 1;
+			}
+
 			if (++argi >= argc || logf) {
 				error(rt, NULL, 0, "log file not specified");
 				return -1;
@@ -502,7 +508,7 @@ int program(int argc, char* argv[]) {
 	}
 
 	// open log file (global option)
-	if (logf && logfile(rt, logf) != 0) {
+	if (logf && logfile(rt, logf, log_append) != 0) {
 		error(rt, NULL, 0, "can not open log file: `%s`", logf);
 		return -1;
 	}
@@ -510,21 +516,21 @@ int program(int argc, char* argv[]) {
 	// intstall base type system.
 	if (!ccInit(rt, creg_def, NULL)) {
 		error(rt, NULL, 0, "error registering base types");
-		logfile(rt, NULL);
+		logfile(rt, NULL, 0);
 		return -6;
 	}
 
 	// intstall standard libraries.
 	if (!ccAddUnit(rt, install_stdc, 3, stdlib)) {
 		error(rt, NULL, 0, "error registering standard libs");
-		logfile(rt, NULL);
+		logfile(rt, NULL, 0);
 		return -6;
 	}
 
 	// intstall file libraries.
 	if (!ccAddUnit(rt, install_file, 0, NULL)) {
 		error(rt, NULL, 0, "error registering file libs");
-		logfile(rt, NULL);
+		logfile(rt, NULL, 0);
 		return -6;
 	}
 
@@ -662,7 +668,7 @@ int program(int argc, char* argv[]) {
 	}
 
 	// close log file
-	logfile(rt, NULL);
+	logfile(rt, NULL, 0);
 	closeLibs();
 	return result;
 }

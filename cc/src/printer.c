@@ -253,6 +253,10 @@ static void fputast(FILE* fout, char *esc[], astn ast, int mode, int level) {
 		case STMT_beg: {
 			astn list;
 			if (rlev < 2) {
+				if (rlev < 1) {
+					fputstr(fout, esc, "{");
+					break;
+				}
 				fputstr(fout, esc, "{ ... }");
 				break;
 			}
@@ -440,6 +444,13 @@ static void fputast(FILE* fout, char *esc[], astn ast, int mode, int level) {
 			}
 			break;
 		}
+		case STMT_end:
+			fputstr(fout, esc, "}");
+			if (rlev > 1) {
+				// TODO: print list of variables to be freed.
+				fputstr(fout, esc, "// delete [...]");
+			}
+			break;
 		//#}
 		//#{ OPER
 		case OPER_fnc: {	// '()'
@@ -1376,12 +1387,12 @@ void logFILE(state rt, FILE* file) {
 	rt->logf = file;
 }
 
-int logfile(state rt, char* file) {
+int logfile(state rt, char* file, int append) {
 
 	logFILE(rt, NULL);
 
 	if (file != NULL) {
-		rt->logf = fopen(file, "wb");
+		rt->logf = fopen(file, append ? "ab" : "wb");
 		if (rt->logf == NULL) {
 			return -1;
 		}
