@@ -73,7 +73,7 @@ static if (!true) {
 	copySurf(image, 0, 0, dest, null);
 	delSurf(dest);
 }
-static if (!true) {
+static if (true) {
 	const int w = width(image);
 	const int h = height(image);
 	gxSurf dest = gxSurf(w, h);
@@ -186,6 +186,6 @@ static if (!true) {
 	delSurf(dest);
 }
 
-oilPaintSurf(image, null, radius, intensityLevels);
+//~ oilPaintSurf(image, null, radius, intensityLevels);
 //~ fillSurf(image, null, effectFp);
 setupPicView(image, true);

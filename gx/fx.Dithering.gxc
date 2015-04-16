@@ -331,13 +331,13 @@ int gs = grayscale ? 'g' : 'c';
 int h1 = hex(maxcolors >> 4);
 int h2 = hex(maxcolors);
 
-uint8 filename[34] = ['o','u','t','/','o','u','t','[',gs,'x',h1, h2,'_',emit(char, (method)),']','.','b','m','p',0];
 
 gxSurf image = gxSurf(fileName);
 dither(image, grayscale, maxcolors, method);
 
-//~ debug(string(filename));
+uint8 filename[34] = ['o','u','t','/','o','u','t','[',gs,'x',h1, h2,'_',emit(char, (method)),']','.','b','m','p',0];
 bmpWrite(image, string(filename));
+debug("Image saved", variant(string(filename)));
 
 //~ image = tileSurf(gxSurf(4000, 4000), 0, 0, image, null);
 setupPicView(image, false);
