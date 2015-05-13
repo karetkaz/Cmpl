@@ -18,6 +18,7 @@ int arr3[] = arr2;		// slice
 //? TODO: static if else part
 //? TODO: threat errors as warnings inside static if false branch
 //? TODO: separate struct and unoin declaration
+//? TODO: variable.struct should return the type of variable.
 
 /+ FIXED: function parameter matching
 struct debugInfo {

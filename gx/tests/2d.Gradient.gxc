@@ -8,25 +8,25 @@ enum Window {
 bool reDraw = true;
 
 void doLinearGradient(gxRect roi, bool repeat) {
-	static double l;
-	static double x0;
-	static double y0;
-	static double dx;
-	static double dy;
+	static float l;
+	static float x0;
+	static float y0;
+	static float dx;
+	static float dy;
 
-	static vec4f pixelCB(double x, double y) {
-		double c = l * (dx * (x - x0) + dy * (y - y0));
-		result = vec4f(float32(c));
+	static vec4f pixelCB(float x, float y) {
+		float c = l * (dx * (x - x0) + dy * (y - y0));
+		result = vec4f(c);
 	}
 
-	static vec4f pixelModCB(double x, double y) {
-		double c = l * (dx * (x - x0) + dy * (y - y0));
+	static vec4f pixelModCB(float x, float y) {
+		float c = l * (dx * (x - x0) + dy * (y - y0));
 		if ((c %= 1) < 0) {c += 1;}
-		result = vec4f(float32(c));
+		result = vec4f(c);
 	}
 
-	double w = width(offScreen);
-	double h = height(offScreen);
+	float w = width(offScreen);
+	float h = height(offScreen);
 
 	x0 = roi.x / w;
 	y0 = roi.y / h;
@@ -44,13 +44,13 @@ void doLinearGradient(gxRect roi, bool repeat) {
 }
 
 void doConicalGradient(gxRect roi) {
-	static double a;
-	static double rix;
-	static double riy;
+	static float a;
+	static float rix;
+	static float riy;
 
-	static vec4f ColorCB(double x, double y) {
+	static vec4f ColorCB(float x, float y) {
 
-		double ang = a - float64.atan2(x - rix, y - riy);
+		float ang = a - float.atan2(x - rix, y - riy);
 
 		if (ang < 0) {
 			ang += 2 * Math.pi;
@@ -58,15 +58,15 @@ void doConicalGradient(gxRect roi) {
 
 		ang %= 2 * Math.pi;
 
-		result = vec4f(float32(.5 / Math.pi * ang));
+		result = vec4f(float(.5 / Math.pi * ang));
 	}
 
-	double w = width(offScreen);
-	double h = height(offScreen);
+	float w = width(offScreen);
+	float h = height(offScreen);
 
 	rix = roi.x / w;
 	riy = roi.y / h;
-	a = float64.atan2(roi.w / w, roi.h / h);
+	a = float.atan2(roi.w / w, roi.h / h);
 	evalSurf(offScreen, null, ColorCB);
 }
 

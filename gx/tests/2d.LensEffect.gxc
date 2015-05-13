@@ -32,8 +32,8 @@ void mouseCB(int btn, int x, int y) {
 		roi.x = Math.clamp(roi.x + ox - x, 0, bgresx - roi.w);
 		roi.y = Math.clamp(roi.y + oy - y, 0, bgresy - roi.h);
 	}
-	ox = x;
-	oy = y;
+	ox := x;
+	oy := y;
 }
 void drawCB() {
 	if (reDraw) {

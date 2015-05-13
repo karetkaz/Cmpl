@@ -569,7 +569,7 @@ static int surfCall(libcArgs rt) {
 			return 0;
 		} break;
 
-		case surfOpEvalFpCB: {		// gxSurf evalSurf(gxSurf dst, gxRect &roi, vec4f callBack(double x, double y));
+		case surfOpEvalFpCB: {		// gxSurf evalSurf(gxSurf dst, gxRect &roi, vec4f callBack(float x, float y));
 			state rt_ = rt->rt;
 			gxSurfHnd dst = popi32(rt);
 			gx_Rect roi = popref(rt);
@@ -578,8 +578,8 @@ static int surfCall(libcArgs rt) {
 			gx_Surf sdst = getSurf(dst);
 
 			// step in x, and y direction
-			double dx01 = 1. / sdst->width;
-			double dy01 = 1. / sdst->height;
+			float dx01 = 1. / sdst->width;
+			float dy01 = 1. / sdst->height;
 
 			static int first = 1;
 			if (roi && first) {
@@ -588,13 +588,13 @@ static int surfCall(libcArgs rt) {
 			}
 			if (sdst && callback) {
 				int sx, sy;
-				double x01, y01;			// x and y in [0, 1)
+				float x01, y01;			// x and y in [0, 1)
 				char *cBuffY = sdst->basePtr;
 				for (y01 = sy = 0; sy < sdst->height; sy += 1, y01 += dy01) {
 					long *cBuff = (long*)cBuffY;
 					cBuffY += sdst->scanLen;
 					for (x01 = sx = 0; sx < sdst->width; sx += 1, x01 += dx01) {
-						struct {float64_t x, y;} args = {x01, y01};
+						struct {float32_t x, y;} args = {x01, y01};
 						struct vector result;
 						if (invoke(rt_, callback, &result, &args, NULL) != 0) {
 							//~ dump(s, dump_sym | dump_asm, callback, "error:&-T\n", callback);
@@ -640,14 +640,14 @@ static int surfCall(libcArgs rt) {
 			reti32(rt, dst);
 			return 0;
 		} break;
-		case surfOpCopyFpCB: {		// gxSurf copySurf(gxSurf dst, int x, int y, gxSurf src, gxRect &roi, float64 alpha, vec4f callBack(vec4f dst, vec4f src));
+		case surfOpCopyFpCB: {		// gxSurf copySurf(gxSurf dst, int x, int y, gxSurf src, gxRect &roi, float alpha, vec4f callBack(vec4f dst, vec4f src));
 			state rt_ = rt->rt;
 			gxSurfHnd dst = popi32(rt);
 			int x = popi32(rt);
 			int y = popi32(rt);
 			gxSurfHnd src = popi32(rt);
 			gx_Rect roi = popref(rt);
-			double alpha = popf64(rt);
+			float alpha = popf32(rt);
 			symn callback = popsym(rt);
 
 			gx_Surf sdst = getSurf(dst);
@@ -1393,8 +1393,8 @@ Surf[] = {
 	{surfCall, surfOpDelSurf,		"void delSurf(gxSurf surf);"},
 
 	{surfCall, surfOpFillFpCB,		"gxSurf fillSurf(gxSurf dst, gxRect &roi, vec4f callBack(vec4f col));"},
-	{surfCall, surfOpEvalFpCB,		"gxSurf evalSurf(gxSurf dst, gxRect &roi, vec4f callBack(double x, double y));"},
-	{surfCall, surfOpCopyFpCB,		"gxSurf copySurf(gxSurf dst, int x, int y, gxSurf src, gxRect &roi, double alpha, vec4f callBack(vec4f dst, vec4f src));"},
+	{surfCall, surfOpEvalFpCB,		"gxSurf evalSurf(gxSurf dst, gxRect &roi, vec4f callBack(float x, float y));"},
+	{surfCall, surfOpCopyFpCB,		"gxSurf copySurf(gxSurf dst, int x, int y, gxSurf src, gxRect &roi, float alpha, vec4f callBack(vec4f dst, vec4f src));"},
 
 	{surfCall, surfOpFillPxCB,		"gxSurf fillSurfrgb(gxSurf dst, gxRect &roi, int callBack(int col));"},
 	{surfCall, surfOpEvalPxCB,		"gxSurf evalSurfrgb(gxSurf dst, gxRect &roi, int callBack(int x, int y));"},

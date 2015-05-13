@@ -76,9 +76,11 @@ static struct Fixed {
 		return result;
 	}
 	uint32 gettbl(const uint16 tbl[257], int32 x) {
-		uint32 idx = (x >> (FractBits -  8)) & 0x00ff;
+		uint32 idx = (x >> (FractBits - 8)) & 0xff;
+		result = tbl[idx];
+		// fine tune result by interpolating with the next entry in the table.
 		uint32 lrp = (x << (24 - FractBits)) & 0xffff;
-		result = (tbl[idx] << 16) + lrp * (tbl[idx + 1] - tbl[idx]);
+		result = (result << 16) + lrp * (tbl[idx + 1] - result);
 	}
 
 	fixed eval(fixed x, const fixed p[]) {

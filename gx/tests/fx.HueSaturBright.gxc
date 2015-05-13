@@ -7,10 +7,10 @@ enum Window {
 
 //~ string fileName = "media/images/David.png";
 //~ string fileName = "media/images/lenaRGB.png";
-string fileName = "media/images/download.jpg";
+//~ string fileName = "media/images/download.jpg";
 //~ string fileName = "media/images/dino-blue.jpg";
 //~ string fileName = "media/images/Earth.jpg";
-//~ string fileName = "media/images/nol.bmp";
+string fileName = "media/images/nol.bmp";
 
 define useNativeImpl = true;
 gxSurf img = gxSurf(fileName);

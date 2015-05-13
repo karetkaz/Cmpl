@@ -96,6 +96,9 @@ typedef enum {
 	#include "defs.inl"
 	tok_last,
 
+	OPER_beg = OPER_fnc,
+	OPER_end = OPER_com,
+
 	TOKN_err = TYPE_any,
 	TYPE_int = TYPE_i64,
 	TYPE_flt = TYPE_f64,
@@ -566,7 +569,13 @@ ccToken castOf(symn typ);
 ccToken castTo(astn ast, ccToken castTo);
 
 /// skip the next token.
+astn next(ccState, ccToken kind);
 int skip(ccState, ccToken kind);
+ccToken test(ccState);
+void backTok(ccState, astn tok);
+astn peekTok(ccState, ccToken kind);
+ccToken skiptok(ccState, ccToken kind, int raise);
+int source(ccState, int isFile, char* src);
 
 //~ astn expr(ccState, int mode);		// parse expression	(mode: typecheck)
 //~ astn decl(ccState, int mode);		// parse declaration	(mode: enable defs(: struct, define, ...))
@@ -696,6 +705,16 @@ char* mapstr(ccState cc, char *str, size_t size/* = -1U*/, unsigned hash/* = -1U
  * @note Aborts if ptr is not null and not inside the context.
  */
 size_t vmOffset(state, void *ptr);
+
+/**
+ * @brief Check for an instruction at the given offset.
+ * @param offs Offset of the opcode.
+ * @param opc Opcode to check.
+ * @param arg Copy the argument of the opcode.
+ * @return non zero if at the given location the opc was found.
+ * @note Aborts if opc is not valid.
+ */
+int optimizeAssign(state, size_t offsBegin, size_t offsEnd);
 
 /**
  * @brief Emit an instruction.

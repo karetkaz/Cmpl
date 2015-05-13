@@ -58,3 +58,6 @@ int &i2 = ptrRefValue;
 int &i3 = pointer(varValue);
 int &i4 = pointer(varRefValue);
 //~ */
+
+for (int64 i = 0; i < 200; i += 1) {
+}

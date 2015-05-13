@@ -40,7 +40,6 @@ static int f64pow(libcArgs args) {
 	float64_t x = argf64(args, 0);
 	float64_t y = argf64(args, 8);
 	retf64(args, pow(x, y));
-	//~ debug("pow(%g, %g) := %g", x, y, pow(x, y));
 	return 0;
 }
 static int f64sqrt(libcArgs args) {
@@ -52,6 +51,49 @@ static int f64atan2(libcArgs args) {
 	float64_t x = argf64(args, 0);
 	float64_t y = argf64(args, 8);
 	retf64(args, atan2(x, y));
+	return 0;
+}
+
+static int f32sin(libcArgs args) {
+	float32_t x = argf32(args, 0);
+	retf32(args, sinf(x));
+	return 0;
+}
+static int f32cos(libcArgs args) {
+	float32_t x = argf32(args, 0);
+	retf32(args, cosf(x));
+	return 0;
+}
+static int f32tan(libcArgs args) {
+	float32_t x = argf32(args, 0);
+	retf32(args, tanf(x));
+	return 0;
+}
+static int f32log(libcArgs args) {
+	float32_t x = argf32(args, 0);
+	retf32(args, logf(x));
+	return 0;
+}
+static int f32exp(libcArgs args) {
+	float32_t x = argf32(args, 0);
+	retf32(args, expf(x));
+	return 0;
+}
+static int f32pow(libcArgs args) {
+	float32_t x = argf32(args, 0);
+	float32_t y = argf32(args, 4);
+	retf32(args, powf(x, y));
+	return 0;
+}
+static int f32sqrt(libcArgs args) {
+	float32_t x = argf32(args, 0);
+	retf32(args, sqrtf(x));
+	return 0;
+}
+static int f32atan2(libcArgs args) {
+	float32_t x = argf32(args, 0);
+	float32_t y = argf32(args, 4);
+	retf32(args, atan2f(x, y));
 	return 0;
 }
 //#}#endregion
@@ -440,7 +482,7 @@ int install_stdc(state rt) {
 		int (*fun)(libcArgs);
 		char* def;
 	}
-	math64[] = {		// sin, cos, sqrt, ...
+	flt64[] = {		// sin, cos, sqrt, ...
 		{f64sin,   "float64 sin(float64 x);"},
 		{f64cos,   "float64 cos(float64 x);"},
 		{f64tan,   "float64 tan(float64 x);"},
@@ -449,6 +491,16 @@ int install_stdc(state rt) {
 		{f64pow,   "float64 pow(float64 x, float64 y);"},
 		{f64sqrt,  "float64 sqrt(float64 x);"},
 		{f64atan2, "float64 atan2(float64 x, float64 y);"},
+	},
+	flt32[] = {		// sin, cos, sqrt, ...
+		{f32sin,   "float32 sin(float32 x);"},
+		{f32cos,   "float32 cos(float32 x);"},
+		{f32tan,   "float32 tan(float32 x);"},
+		{f32log,   "float32 log(float32 x);"},
+		{f32exp,   "float32 exp(float32 x);"},
+		{f32pow,   "float32 pow(float32 x, float32 y);"},
+		{f32sqrt,  "float32 sqrt(float32 x);"},
+		{f32atan2, "float32 atan2(float32 x, float32 y);"},
 	},
 	bit64[] = {			// 64 bit integer operations
 		{b64not, "int64 Not(int64 Value);"},
@@ -534,13 +586,24 @@ int install_stdc(state rt) {
 	// add math functions to float64 as functions
 	if (!err && rt->cc->type_f64 && !rt->cc->type_f64->flds) {
 		ccBegin(rt, NULL);
-		for (i = 0; i < lengthOf(math64); i += 1) {
-			if (!ccAddCall(rt, math64[i].fun, NULL, math64[i].def)) {
+		for (i = 0; i < lengthOf(flt64); i += 1) {
+			if (!ccAddCall(rt, flt64[i].fun, NULL, flt64[i].def)) {
 				err = 6;
 				break;
 			}
 		}
 		ccEnd(rt, rt->cc->type_f64);
+	}
+	// add math functions to float32 as functions
+	if (!err && rt->cc->type_f32 && !rt->cc->type_f32->flds) {
+		ccBegin(rt, NULL);
+		for (i = 0; i < lengthOf(flt32); i += 1) {
+			if (!ccAddCall(rt, flt32[i].fun, NULL, flt32[i].def)) {
+				err = 7;
+				break;
+			}
+		}
+		ccEnd(rt, rt->cc->type_f32);
 	}
 
 	return err;

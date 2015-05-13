@@ -961,6 +961,8 @@ enum importstd: bool {
 	strUtils = true;
 }
 
+define variant(typename type, pointer value) = emit(variant, pointer(value), typename(type));
+
 static if (importstd.bits2) {
 
 define Lo32(int64 a) = int32(a);					// Lo32 part
@@ -1361,8 +1363,6 @@ void transpose2(mat4f &mat) {
 
 }
 
-define variant(typename type, pointer value) = emit(variant, pointer(value), typename(type));
-
 //#{ debuging ...
 static struct Debug {
 	enum: int {
@@ -1610,6 +1610,8 @@ int format(char output[], string format, int value) {
 				maxLen = 0;
 				chr = format[spos += 1];
 				for ( ;chr >= '0' && chr <= '9'; ) {
+					debug("chr", variant(char, pointer(&chr)));
+					debug("maxLen", variant(&maxLen));
 					maxLen = maxLen * 10 + chr - '0';
 					chr = format[spos += 1];
 				}

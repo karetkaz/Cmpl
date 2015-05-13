@@ -5,80 +5,9 @@ enum Window {
 	resy = 512;
 }
 
-void zoomSurf2(gxSurf dst, gxRect &rect, gxSurf src, gxRect &roi, int mode) {
-	gxRect srec = gxRect(0, 0, width(src), height(src));
-	gxRect drec = gxRect(0, 0, width(dst), height(dst));
-
-	if (roi != null) {
-		if (roi.x > 0) {
-			srec.w -= roi.x;
-			srec.x = roi.x;
-		}
-		if (roi.y > 0) {
-			srec.h -= roi.y;
-			srec.y = roi.y;
-		}
-		if (roi.w < srec.w) {
-			srec.w = roi.w;
-		}
-		if (roi.h < srec.h) {
-			srec.h = roi.h;
-		}
-	}
-
-	if (rect != null) {
-		drec = rect;
-	}
-
-	if (drec.w <= 0 || drec.h <= 0)
-		return;
-
-	if (srec.w <= 0 || srec.h <= 0)
-		return;
-
-	double x0 = 0;
-	double y0 = 0;
-	double dx = double(srec.w - 0) / (drec.w - 0);
-	double dy = double(srec.h - 0) / (drec.h - 0);
-	if (drec.x < 0) {
-		x0 = -drec.x;
-	}
-
-	if (drec.y < 0) {
-		y0 = -drec.y;
-	}
-
-	if (clipRect(dst, &drec)) {
-
-		//~ if (dx & 0xfffe0000 || dy & 0xfffe0000) {	// if downsampling use nearest neigbor
-		//~ if (abs(dx) > 1 || abs(dy) > 1) {	// downsampling
-			//~ mode = 0;
-		//~ }
-
-		x0 = x0 * dx + srec.x;
-		y0 = y0 * dy + srec.y;
-
-		double sy = y0;
-		for (int y = 0; y < drec.h; y += 1) {
-			double sx = x0;
-			for (int x = 0; x < drec.w; x += 1) {
-				//~ setPixel(dst, drec.x + x, drec.y + y, getPixel(src, int(sx), int(sy)));
-				setPixel(dst, drec.x + x, drec.y + y, getPixel(src, sx, sy));
-				sx += dx;
-			}
-			sy += dy;
-		}
-	}
-}
-
-define atan2f(float x, float y) = float64.atan2(x, y);
-define sqrtf(float x) = float64.sqrt(x);
-define sinf(float x) = float64.sin(x);
-define fabsf(float x) = Math.abs(x);
-define cosf(float x) = float64.cos(x);
 define pi = Math.pi;
 
-void setup(double &time, vec4f pixelCB(double x, double y)) {
+void setup(float &time, vec4f pixelCB(float x, float y)) {
 	define WIDTH = 128;
 	define HEIGHT = WIDTH;
 	static gxSurf tmpImg = gxSurf(WIDTH, HEIGHT);
@@ -87,8 +16,8 @@ void setup(double &time, vec4f pixelCB(double x, double y)) {
 	static bool animate = true;
 
 	struct Internals {
-		double &time;
-		vec4f pixelCB(double x, double y);
+		float &time;
+		vec4f pixelCB(float x, float y);
 	}
 
 	static Internals internals;
@@ -102,13 +31,13 @@ void setup(double &time, vec4f pixelCB(double x, double y)) {
 			snapshot = false;
 			int64 start = System.millis();
 			evalSurf(offScreen, null, internals.pixelCB);
-			float64 time = (System.millis() - start) / 1000.;
+			float time = float(System.millis() - start) / 1000;
 			debug("evaluation time in seconds", variant(&time));
 			//~ bmpWrite(offScreen, "out-2.bmp");
 		}
 		if (animate) {
 			// application time spent in processor
-			internals.time = .0005 * double(System.millis() - begTime);
+			internals.time = .0005 * float(System.millis() - begTime);
 
 			//~ evalSurf(offScreen, null, internals.pixelCB);
 			zoomSurf(offScreen, null, evalSurf(tmpImg, null, internals.pixelCB), null, 1);
@@ -134,72 +63,72 @@ void setup(double &time, vec4f pixelCB(double x, double y)) {
 	Gui.setMouseHandler(mouseCB);
 }
 
-double aspect = 1;//.33;
-double time;
+const float aspect = 1;//.33;
+float time;
 
-vec4f blob2d(double x, double y) {
+vec4f blob2d(float x, float y) {
 
 	vec2d p = vec2d(2 * x - 1, 2 * y - 1);
 
 	//~ the centre point for each blob
-	vec2d move1 = vec2d(float64.cos(time * 4.5) * 0.4, float64.sin(time * 1.5) * 0.4);
-	vec2d move2 = vec2d(float64.cos(time * 2.0) * 0.4, float64.sin(time * 3.0) * 0.4);
-	vec2d move3 = vec2d(float64.cos(time * 7.0) * 0.4, float64.sin(time * 2.0) * 0.4);
-	//~ vec2d move4 = vec2d(float64.cos(time * 2.0) * 0.4, float64.sin(time * 4.3) * 0.4);
+	vec2d move1 = vec2d(float.cos(time * 4.5) * 0.4, float.sin(time * 1.5) * 0.4);
+	vec2d move2 = vec2d(float.cos(time * 2.0) * 0.4, float.sin(time * 3.0) * 0.4);
+	vec2d move3 = vec2d(float.cos(time * 7.0) * 0.4, float.sin(time * 2.0) * 0.4);
+	//~ vec2d move4 = vec2d(float.cos(time * 2.0) * 0.4, float.sin(time * 4.3) * 0.4);
 
 	//~ radius for each blob
-	double r1 = dot(sub(p, move1), sub(p, move1)) * 22;
-	double r2 = dot(sub(p, move2), sub(p, move2)) * 26;
-	double r3 = dot(sub(p, move3), sub(p, move3)) * 32;
-	//~ double r4 = dot(sub(p, move4), sub(p, move4)) * 64;
+	float r1 = dot(sub(p, move1), sub(p, move1)) * 22;
+	float r2 = dot(sub(p, move2), sub(p, move2)) * 26;
+	float r3 = dot(sub(p, move3), sub(p, move3)) * 32;
+	//~ float r4 = dot(sub(p, move4), sub(p, move4)) * 64;
 
 	//~ sum the meatballs
-	double metaball = (1.0 / Math.max(r1, 1.)) + (1.0 / Math.max(r2, 1.));
+	float metaball = (1.0 / Math.max(r1, 1.)) + (1.0 / Math.max(r2, 1.));
 	metaball += 1.0 / Math.max(r3, 1.);
 	//~ metaball += 1.0 / Math.max(r4, 1.);
 
 	//~ alter the cut-off power
 	//~ set the output color
-	result = vec4f(float32(Math.clamp(float64.pow(metaball, 8.0), 0., 1.)));
+	result = vec4f(float(Math.clamp(float.pow(metaball, 8.0), float(0), float(1))));
 }
 
-vec4f yinyang(double x, double y) {
-	float64 nx = -1 + 2 * x;
-	float64 ny = -1 + 2 * y;
-	x = (nx * float64.cos(time) - ny * float64.sin(time));
-	y = (nx * float64.sin(time) + ny * float64.cos(time));
-	float64 h = x*x + y*y;
+vec4f yinyang(float x, float y) {
+	float nx = -1 + 2 * x;
+	float ny = -1 + 2 * y;
+	x = (nx * float.cos(time) - ny * float.sin(time));
+	y = (nx * float.sin(time) + ny * float.cos(time));
+	float h = x*x + y*y;
 	if (h < 1.) {
-		float64 d = Math.abs(y) - h;
-		float64 a = d - 0.23;
-		float64 b = h - 1.00;
-		float64 c = Math.sign(a * b * (y + x + (y - x) * Math.sign(d)));
+		float d = Math.abs(y) - h;
+		float a = d - 0.23;
+		float b = h - 1.00;
+		float c = Math.sign(a * b * (y + x + (y - x) * Math.sign(d)));
 
 		c = Math.lerp(Math.smooth(0.98, 1.00, h), c, 0.0);
 		c = Math.lerp(Math.smooth(1.00, 1.02, h), c, 1.0);
-		result = vec4f(float32(c));
+		result = vec4f(float(c));
 	}
 	else {
-		result = vec4f(float32(1));
+		result = vec4f(float(1));
 	}
 }
 define smoothstep(float t, float a, float b) = Math.smooth(t, a, b);
 
-vec4f eye(double x, double y) {
+vec4f eye(float x, float y) {
 	static void colscale(vec4f &x, float s) {
 		x = vec4f(x.x * s, x.y * s, x.z * s);
 	}
 
 	static vec4f interior(float x, float y, float b) {
 		// ezt nem tudom mire jo
-		define noise2f(float32 x, float32 y, int xx, int yy) = Perlin.Noise(x, y);
+		define noise2f(float x, float y, int xx, int yy) = Perlin.Noise(x, y);
 
 		x -= 0.10f; y += 0.05f;
 		float rx = 2.0f*(x-0.5f)*aspect;
 		float ry = 2.0f*(y-0.5f);
-		float a = atan2f(ry, rx);
+		float a = float.atan2(ry, rx);
 		float e = rx*rx + ry*ry;
-		float r = sqrtf(e);
+		float r = float.sqrt(e);
 
 		vec4f fue = vec4f(1.0f, 1.0f, 1.0f);
 		// blood
@@ -226,8 +155,8 @@ vec4f eye(double x, double y) {
 		colscale(&result, ri);
 
 		// reflecion
-		float r3 = sqrtf(r*r*r);
-		float re = noise2f(2.0f+4.0f*r3*cosf(a), 4.0f*r3*sinf(a), 256, 256);
+		float r3 = float.sqrt(r*r*r);
+		float re = noise2f(2.0f+4.0f*r3*float.cos(a), 4.0f*r3*float.sin(a), 256, 256);
 		re = 0.8f*smoothstep(re, 0.1f, 0.5f);
 		result.x += re*(1.0f-result.x);
 		result.y += re*(1.0f-result.y);
@@ -240,17 +169,17 @@ vec4f eye(double x, double y) {
 
 	//~ float rx = 2.0f*(x - 0.5f)*aspect;
 	float ry = 2.0f*(y - 0.5f);
-	float h = 3.0f*sqrtf(x*x*x)*(1.0f-x);
-	float e = fabsf(ry) - h;
+	float h = 3.0f*float.sqrt(x*x*x)*(1.0f-x);
+	float e = Math.abs(ry) - h;
 	float f = smoothstep( e, 0.0f, 0.01f);
 	vec4f cOjo = interior(x, y, 0);
-	vec4f cPiel = vec4f(float32(0));//skin(x, y);
+	vec4f cPiel = vec4f(float(0));//skin(x, y);
 	result = lerp(f, cOjo, cPiel);
 }
 
-//~ setup(&time, eye);
+setup(&time, eye);
 //~ setup(&time, blob2d);
-setup(&time, yinyang);
+//~ setup(&time, yinyang);
 
 //~ setup(&time, Perlin.Noise2f);
 //~ Gui.exitLoop();

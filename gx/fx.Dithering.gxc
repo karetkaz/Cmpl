@@ -312,11 +312,10 @@ method = Dithering.SteinbergFalse;
 //~ method = Dithering.Bayer;
 //~ method = Dithering.Threshold;
 
-define workOnOffscreen = !true;
+define workOnOffscreen = true;
 
 static if(workOnOffscreen) {
-//~ vec4f makegray(float64 x, float64 y) {return vec4f(Math.min(x, y));}
-vec4f makegray(float64 x, float64 y) {return vec4f(float64.sqrt(x * y));}
+vec4f makegray(float32 x, float32 y) {return vec4f(float32.sqrt(x * y));}
 evalSurf(offScreen, null, makegray);
 
 bmpWrite(offScreen, "out/image.bmp");

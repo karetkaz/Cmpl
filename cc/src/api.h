@@ -78,7 +78,7 @@ struct stateRec {
 
 	/**
 	 * @brief Compiler context.
-	 * @note After code was generated this is set to null.
+     * @note After code generation is seted to null.
 	 */
 	ccState cc;
 

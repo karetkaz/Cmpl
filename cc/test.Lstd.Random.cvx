@@ -1,3 +1,5 @@
+// test random number generator
+
 struct Random {
 	//~ http://www.codeproject.com/Articles/25172/Simple-Random-Number-Generation
 	//~ http://iquilezles.org/www/articles/sfrand/sfrand.htm

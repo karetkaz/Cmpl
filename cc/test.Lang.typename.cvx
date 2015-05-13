@@ -1,3 +1,5 @@
+// test typename
+
 struct ss {
 	int32 x;
 	int32 y;
@@ -55,9 +57,6 @@ if (t == Complex) {
 if (Complex == t) {
 	debug("Complex");
 }
-//~ +/
-
-//? TODO: variable.struct should return the type of variable.
 //~ +/
 
 /* test: Arrays, Pointers, References Alloc

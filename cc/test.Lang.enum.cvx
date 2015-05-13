@@ -1,3 +1,5 @@
+// test how enum should work
+
 struct vec3f {
 	float x;
 	float y;

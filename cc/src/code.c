@@ -165,6 +165,100 @@ size_t vmOffset(state rt, void* ptr) {
 	return ptr ? (unsigned char*)ptr - rt->_mem : 0;
 }
 
+/**
+ * @brief Check for an instruction at the given offset.
+ * @param offs Offset of the opcode.
+ * @param opc Opcode to check.
+ * @param arg Copy the argument of the opcode.
+ * @return non zero if at the given location the opc was found.
+ * @note Aborts if opc is not valid.
+ */
+static int checkOcp(state rt, size_t offs, vmOpcode opc, stkval *arg) {
+	bcde ip = getip(rt, offs);
+	if (opc >= opc_last) {
+		fatal("invalid opc(0x%x)", opc);
+		return 0;
+	}
+	if (ip->opc == opc) {
+		if (arg != NULL) {
+			arg->i8 = ip->arg.i8;
+		}
+		return 1;
+	}
+	return 0;
+}
+
+static int removeOpc(state rt, size_t offs) {
+	if (offs >= rt->vm.ro && offs <= rt->vm.pc) {
+		bcde ip = getip(rt, offs);
+		unsigned char *dst = (unsigned char *)ip;
+		size_t size = opc_tbl[ip->opc].size;
+		memcpy(dst, dst + size, rt->_beg - dst);
+		rt->_beg -= size;
+		rt->vm.pc = rt->_beg - rt->_mem;
+		return 1;
+	}
+	return 0;
+}
+
+int optimizeAssign(state rt, size_t offsBegin, size_t offsEnd) {
+	stkval arg;
+	//~ dieif(rt->vm.pc != offsEnd, "Error %d != %d", rt->vm.px, offsEnd);
+	if (checkOcp(rt, offsBegin, opc_dup1, &arg)) {
+		//~ logif(1, "speed up for (int32 i = 0; i < 10, i += 1) ...");
+		//~ dumpTree(rt, NULL, offsBegin, offsEnd);
+
+		// dupplicate top of stack then set top of stack
+		if (arg.u1 != 0) {
+			return 0;
+		}
+		if (!checkOcp(rt, offsEnd, opc_set1, &arg)) {
+			return 0;
+		}
+		if (arg.u1 != 1) {
+			return 0;
+		}
+		if (!removeOpc(rt, offsEnd)) {
+			// TODO: error or fatal
+			trace("%+k", ast);
+			return 0;
+		}
+		if (!removeOpc(rt, offsBegin)) {
+			// TODO: error or fatal
+			trace("%+k", ast);
+			return 0;
+		}
+		return 1;
+	}// */
+	if (checkOcp(rt, offsBegin, opc_dup2, &arg)) {
+		//~ logif(1, "speed up for (int32 i = 0; i < 10, i += 1) ...");
+		//~ dumpTree(rt, NULL, offsBegin, offsEnd);
+
+		// dupplicate top of stack then set top of stack
+		if (arg.u1 != 0) {
+			return 0;
+		}
+		if (!checkOcp(rt, offsEnd, opc_set2, &arg)) {
+			return 0;
+		}
+		if (arg.u1 != 2) {
+			return 0;
+		}
+		if (!removeOpc(rt, offsEnd)) {
+			// TODO: error or fatal
+			trace("%+k", ast);
+			return 0;
+		}
+		if (!removeOpc(rt, offsBegin)) {
+			// TODO: error or fatal
+			trace("%+k", ast);
+			return 0;
+		}
+		return 1;
+	}
+	return 0;
+}
+
 // base function emiting an ocode, see header
 size_t emitarg(state rt, vmOpcode opc, stkval arg) {
 	libc libcvec = rt->vm.libv;
@@ -330,7 +424,7 @@ size_t emitarg(state rt, vmOpcode opc, stkval arg) {
 		arg.i8 = -arg.i8;
 	}
 
-	if (opc > opc_last) {
+	if (opc >= opc_last) {
 		fatal("invalid opc(0x%x, 0x%X)", opc, arg.i8);
 		return 0;
 	}

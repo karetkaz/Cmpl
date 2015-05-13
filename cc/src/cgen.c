@@ -30,7 +30,7 @@ static void dumpTree(state rt, astn ast, size_t offsStart, size_t offsEnd) {
  * @return the position of variable on stack.
  */
 static inline size_t stkoffs(state rt, size_t size) {
-	dieif(size < 0, "Error");
+    dieif(size < 0, "Error");
 	return padded(size, vm_size) + rt->vm.ss * vm_size;
 }
 
@@ -1492,6 +1492,7 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 			// TODO: ast->type->size;
 			size_t size = sizeOf(ast->type, 1);
 			ccToken refAssign = TYPE_ref;
+			int codeBegin, codeEnd;
 
 			dieif(size == 0, "Error: %+k", ast);
 
@@ -1506,6 +1507,7 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 				}
 			}
 
+			codeBegin = emitopc(rt, markIP);
 			if (!cgen(rt, ast->op.rhso, got)) {
 				trace("%+k", ast);
 				return TYPE_any;
@@ -1531,6 +1533,7 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 				got = get;
 			}
 
+			codeEnd = emitopc(rt, markIP);
 			if (!cgen(rt, ast->op.lhso, refAssign)) {
 				trace("%+k", ast);
 				return TYPE_any;
@@ -1538,6 +1541,16 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 			if (!emitint(rt, opc_sti, size)) {
 				trace("%+k", ast);
 				return TYPE_any;
+			}
+
+			// optimize assignments .
+			if (ast->op.rhso->kind >= OPER_beg && ast->op.rhso->kind <= OPER_end) {
+				if (ast->op.lhso == ast->op.rhso->op.lhso) {
+					// HACK: speed up for (int i = 0; i < 10, i += 1) ...
+					if (optimizeAssign(rt, codeBegin, codeEnd)) {
+						logif(DEBUGGING > 1, "assignment optimized: %+k", ast);
+					}
+				}
 			}
 		} break;
 		//#}
@@ -2294,7 +2307,7 @@ int gencode(state rt, int mode) {
 		dieif(rt->_beg >= rt->_end, "memory overrun");
 
 		for (lc = cc->libc; lc; lc = lc->next) {
-			// relocate libcall offsets to be unique.
+			// relocate libcall offsets to be unique and debugable.
 			lc->sym->offs = vmOffset(rt, &calls[lc->pos]);
 			lc->sym->size = sizeof(struct libc);
 			calls[lc->pos] = *lc;
@@ -2461,7 +2474,7 @@ int gencode(state rt, int mode) {
 		}
 	}
 
-	Lmain = rt->_beg - rt->_mem;
+	Lmain = emitopc(rt, markIP);
 	if (cc->root != NULL) {
 		rt->vm.sm = rt->vm.ss = 0;
 
@@ -2484,7 +2497,9 @@ int gencode(state rt, int mode) {
 		}
 	}
 
+	// TODO: if the main function exists generate: exit(main());
 	// application exit point: exit(0)
+	// !needed when invoking functions inside vm.
 	rt->vm.px = emitopc(rt, opc_ldz1);
 	emitint(rt, opc_libc, 0);
 
