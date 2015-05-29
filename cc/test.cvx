@@ -1,5 +1,5 @@
-define wrap = 80;
-define chars = 95;
+inline wrap = 80;
+inline chars = 95;
 char result[1024];
 //~ string text = string(result);
 

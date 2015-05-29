@@ -8,9 +8,9 @@
  * STOP(__ERR, __CHK, __ERC)
  * EXEC if execution is needed.
  * TRACE(__IP, __SP) trace functions.
- * 
- * 
- * 
+ *
+ *
+ *
 */
 
 #define SP(__POS, __TYP) (((stkval*)((stkptr)sp + (__POS)))->__TYP)
@@ -212,7 +212,7 @@ case opc_lc64: NEXT(9, +2, 0) {
 //#{ 0x2?: MEM		// Memory
 case opc_ldi1: NEXT(1, -0, 1) {
 #ifdef EXEC
-	int mem = SP(0, i4);
+	size_t mem = SP(0, i4);
 	STOP(error_mem, mem <= 0, mem);
 	STOP(error_mem, mem > ms - 1, mem);
 	//~ STOP(error_mem, !aligned(mem, 1), mem);
@@ -221,7 +221,7 @@ case opc_ldi1: NEXT(1, -0, 1) {
 } break;
 case opc_ldi2: NEXT(1, -0, 1) {
 #ifdef EXEC
-	int mem = SP(0, i4);
+	size_t mem = SP(0, i4);
 	STOP(error_mem, mem <= 0, mem);
 	STOP(error_mem, mem > ms - 2, mem);
 	//~ STOP(error_mem, !aligned(mem, 2), mem);
@@ -230,7 +230,7 @@ case opc_ldi2: NEXT(1, -0, 1) {
 } break;
 case opc_ldi4: NEXT(1, -0, 1) {
 #ifdef EXEC
-	int mem = SP(0, i4);
+	size_t mem = SP(0, i4);
 	STOP(error_mem, mem <= 0, mem);
 	STOP(error_mem, mem > ms - 4, mem);
 	//~ STOP(error_mem, !aligned(mem, 4), mem);
@@ -239,7 +239,7 @@ case opc_ldi4: NEXT(1, -0, 1) {
 } break;
 case opc_ldi8: NEXT(1, +1, 1) {
 #ifdef EXEC
-	int mem = SP(0, i4);
+	size_t mem = SP(0, i4);
 	STOP(error_ovf, ovf(pu), -1);
 	STOP(error_mem, mem <= 0, mem);
 	STOP(error_mem, mem > ms - 8, mem);
@@ -249,7 +249,7 @@ case opc_ldi8: NEXT(1, +1, 1) {
 } break;
 case opc_ldiq: NEXT(1, +3, 1) {
 #ifdef EXEC
-	int mem = SP(0, i4);
+	size_t mem = SP(0, i4);
 	STOP(error_ovf, ovf(pu), -1);
 	STOP(error_mem, mem <= 0, mem);
 	STOP(error_mem, mem > ms - 16, mem);
@@ -259,7 +259,7 @@ case opc_ldiq: NEXT(1, +3, 1) {
 } break;
 case opc_sti1: NEXT(1, -2, 2) {
 #ifdef EXEC
-	int mem = SP(0, i4);
+	size_t mem = SP(0, i4);
 	STOP(error_mem, mem < ro, mem);
 	STOP(error_mem, mem > ms - 1, mem);
 	//~ STOP(error_mem, !aligned(mem, 1), mem);
@@ -268,7 +268,7 @@ case opc_sti1: NEXT(1, -2, 2) {
 } break;
 case opc_sti2: NEXT(1, -2, 2) {
 #ifdef EXEC
-	int mem = SP(0, i4);
+	size_t mem = SP(0, i4);
 	STOP(error_mem, mem < ro, mem);
 	STOP(error_mem, mem > ms - 2, mem);
 	//~ STOP(error_mem, !aligned(mem, 2), mem);
@@ -277,7 +277,7 @@ case opc_sti2: NEXT(1, -2, 2) {
 } break;
 case opc_sti4: NEXT(1, -2, 2) {
 #ifdef EXEC
-	int mem = SP(0, i4);
+	size_t mem = SP(0, i4);
 	STOP(error_mem, mem < ro, mem);
 	STOP(error_mem, mem > ms - 4, mem);
 	//~ STOP(error_mem, !aligned(mem, 4), mem);
@@ -286,7 +286,7 @@ case opc_sti4: NEXT(1, -2, 2) {
 } break;
 case opc_sti8: NEXT(1, -3, 3) {
 #ifdef EXEC
-	int mem = SP(0, i4);
+	size_t mem = SP(0, i4);
 	STOP(error_mem, mem < ro, mem);
 	STOP(error_mem, mem > ms - 8, mem);
 	//~ STOP(error_mem, !aligned(mem, 8), mem);
@@ -295,7 +295,7 @@ case opc_sti8: NEXT(1, -3, 3) {
 } break;
 case opc_stiq: NEXT(1, -5, 5) {
 #ifdef EXEC
-	int mem = SP(0, i4);
+	size_t mem = SP(0, i4);
 	STOP(error_mem, mem < ro, mem);
 	STOP(error_mem, mem > ms - 16, mem);
 	//~ STOP(error_mem, !aligned(mem, 16), mem);
@@ -304,7 +304,7 @@ case opc_stiq: NEXT(1, -5, 5) {
 } break;
 case opc_ld32: NEXT(4, +1, 0) {
 #ifdef EXEC
-	int mem = ip->rel;
+	size_t mem = ip->rel;
 	STOP(error_mem, mem <= 0, mem);
 	STOP(error_mem, mem > ms - 4, mem);
 	//~ STOP(error_mem, !aligned(mem, 4), mem);
@@ -313,7 +313,7 @@ case opc_ld32: NEXT(4, +1, 0) {
 } break;
 case opc_ld64: NEXT(4, +2, 0) {
 #ifdef EXEC
-	int mem = ip->rel;
+	size_t mem = ip->rel;
 	STOP(error_mem, mem <= 0, mem);
 	STOP(error_mem, mem > ms - 8, mem);
 	//~ STOP(error_mem, !aligned(mem, 8), mem);
@@ -322,7 +322,7 @@ case opc_ld64: NEXT(4, +2, 0) {
 } break;
 case opc_st32: NEXT(4, -1, 1) {
 #ifdef EXEC
-	int mem = ip->rel;
+	size_t mem = ip->rel;
 	STOP(error_mem, mem < ro, mem);
 	STOP(error_mem, mem > ms - 4, mem);
 	//~ STOP(error_mem, !aligned(mem, 4), mem);
@@ -331,7 +331,7 @@ case opc_st32: NEXT(4, -1, 1) {
 } break;
 case opc_st64: NEXT(4, -2, 2) {
 #ifdef EXEC
-	int mem = ip->rel;
+	size_t mem = ip->rel;
 	STOP(error_mem, mem < ro, mem);
 	STOP(error_mem, mem > ms - 8, mem);
 	//~ STOP(error_mem, !aligned(mem, 8), mem);
@@ -340,7 +340,7 @@ case opc_st64: NEXT(4, -2, 2) {
 } break;
 case opc_move: NEXT(4, -2, 2) {
 #ifdef EXEC
-	int si, di;
+	size_t si, di;
 	int cnt = ip->rel;
 
 	if (cnt < 0) {
@@ -815,7 +815,7 @@ case v4f_max: NEXT(1, -4, 8) {
 } break;
 case v4f_dp3: NEXT(1, -7, 8) {
 #if defined(EXEC)
-	SP(7, f4) = 
+	SP(7, f4) =
 	SP(4, f4) * SP(0, f4) +
 	SP(5, f4) * SP(1, f4) +
 	SP(6, f4) * SP(2, f4);
@@ -823,7 +823,7 @@ case v4f_dp3: NEXT(1, -7, 8) {
 } break;
 case v4f_dph: NEXT(1, -7, 8) {
 #if defined(EXEC)
-	SP(7, f4) += 
+	SP(7, f4) +=
 	SP(4, f4) * SP(0, f4) +
 	SP(5, f4) * SP(1, f4) +
 	SP(6, f4) * SP(2, f4);
@@ -831,7 +831,7 @@ case v4f_dph: NEXT(1, -7, 8) {
 } break;
 case v4f_dp4: NEXT(1, -7, 8) {
 #if defined(EXEC)
-	SP(7, f4) = 
+	SP(7, f4) =
 	SP(4, f4) * SP(0, f4) +
 	SP(5, f4) * SP(1, f4) +
 	SP(6, f4) * SP(2, f4) +

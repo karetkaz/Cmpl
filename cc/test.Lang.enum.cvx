@@ -40,7 +40,7 @@ enum Window {
 	height2 = width * 2;
 }
 
-define min(int x, int y) = int(x < y ? x : y);
+inline min(int x, int y) = int(x < y ? x : y);
 
 int x = 3 * Window.width;
 int y = Window.height2 * 3;

@@ -30,7 +30,7 @@ static void dumpTree(state rt, astn ast, size_t offsStart, size_t offsEnd) {
  * @return the position of variable on stack.
  */
 static inline size_t stkoffs(state rt, size_t size) {
-    dieif(size < 0, "Error");
+	dieif(size > rt->_size, "Error(expected: %d, actual: %d)", rt->_size, size);
 	return padded(size, vm_size) + rt->vm.ss * vm_size;
 }
 
@@ -666,6 +666,7 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 		} break;
 		case STMT_for: {
 			astn jl = rt->cc->jmps;
+			size_t lincr;
 			size_t jstep, lcont, lbody, lbreak;
 			size_t stbreak, stpos = stkoffs(rt, 0);
 
@@ -693,6 +694,7 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 				return TYPE_any;
 			}
 
+			lincr = emitopc(rt, markIP);
 			fixjump(rt, jstep, emitopc(rt, markIP), -1);
 			if (ast->stmt.test) {
 				if (!cgen(rt, ast->stmt.test, TYPE_bit)) {
@@ -713,6 +715,18 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 
 			lbreak = emitopc(rt, markIP);
 			stbreak = stkoffs(rt, 0);
+
+			if (rt->dbg != NULL) {
+				if (lcont < lincr) {
+					dbgMapCode(rt, ast->stmt.step, lcont, lincr);
+				}
+				if (lincr < lbreak) {
+					dbgMapCode(rt, ast->stmt.test, lincr, lbreak);
+				}
+				/*if (lcont < lbreak) {
+					dbgMapCode(rt, ast, lcont, lbreak);
+				}*/
+			}
 
 			while (rt->cc->jmps != jl) {
 				astn jmp = rt->cc->jmps;
@@ -1145,35 +1159,36 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 		} break;
 		case OPER_dot: {	// '.'
 			// TODO: this should work as indexing
-			symn var = linkOf(ast->op.rhso);
+			symn object = linkOf(ast->op.lhso);
+			symn member = linkOf(ast->op.rhso);
 			int lhsstat = isType(ast->op.lhso);
 
-			if (!var) {
+			if (!object || !member) {
 				trace("%+k", ast);
 				return TYPE_any;
 			}
 
-			if (!var->stat && lhsstat) {
-				error(rt, ast->file, ast->line, "An object reference is required to access the member `%+T`", var);
+			if (!member->stat && lhsstat) {
+				error(rt, ast->file, ast->line, "An object reference is required to access the member `%+T`", member);
 				return TYPE_any;
 			}
-			if (var->stat) {
-				if (!lhsstat/* && var->kind == TYPE_ref*/) {
-					warn(rt, 5, ast->file, ast->line, "accessing static member using instance variable `%+T`", var);
+			if (member->stat) {
+				if (!lhsstat && object->kind != TYPE_arr) {
+					warn(rt, 5, ast->file, ast->line, "accessing static member using instance variable `%+T`/ %+T", member, object->type);
 				}
 				return cgen(rt, ast->op.rhso, get);
 			}
 
-			if (var->memb) {
+			if (member->memb) {
 				if (!cgen(rt, ast->op.lhso, TYPE_ref)) {
 					trace("%+k", ast);
 					return TYPE_any;
 				}
 				return cgen(rt, ast->op.rhso, get);
 			}
-			if (var->kind == TYPE_def) {
+			if (member->kind == TYPE_def) {
 				// static array length is of this type
-				debug("%+T: %t", var, get);
+				debug("%+T: %t", member, get);
 				return cgen(rt, ast->op.rhso, get);
 			}
 
@@ -1182,12 +1197,12 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 				return TYPE_any;
 			}
 
-			if (!emitinc(rt, var->offs)) {
+			if (!emitinc(rt, member->offs)) {
 				trace("%+k", ast);
 				return TYPE_any;
 			}
 
-			if (var->cast == TYPE_ref) {
+			if (member->cast == TYPE_ref) {
 				if (!emitint(rt, opc_ldi, vm_size)) {
 					trace("%+k", ast);
 					return TYPE_any;
@@ -1203,7 +1218,6 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 				return TYPE_any;
 			}
 		} break;
-
 		case OPER_not:		// '!'
 		case OPER_adr:		// '&'
 		case OPER_pls:		// '+'
@@ -2377,7 +2391,7 @@ int gencode(state rt, int mode) {
 				rt->cc->init = 0;
 				rt->vm.sm = 0;
 				fixjump(rt, 0, 0, vm_size + var->size);
-				//TODO: why?: 
+				//TODO: why?:
 				rt->vm.ro = stkoffs(rt, 0);
 				rt->vm.sm = rt->vm.ss;		// leave return address on stack
 

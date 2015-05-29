@@ -452,8 +452,14 @@ static int read_obj(mesh msh, const char* file) {
 			continue;
 		}
 
-		//~ if (readKVP(buff, "p", NULL, ws)) continue;		// Point
-		//~ if (readKVP(buff, "l", NULL, ws)) continue;		// Line
+		if (readKVP(buff, "p", NULL, ws)) {		// Point
+			fprintf(stderr, "unsuported line: `%s`\n", buff);
+			continue;
+		}
+		if (readKVP(buff, "l", NULL, ws)) {		// Line
+			fprintf(stderr, "unsuported line: `%s`\n", buff);
+			continue;
+		}
 		//~ if (readKVP(buff, "curv", NULL, ws)) continue;		// Curve
 		//~ if (readKVP(buff, "curv2", NULL, ws)) continue;		// 2D curve
 		//~ if (readKVP(buff, "surf", NULL, ws)) continue;		// Surface

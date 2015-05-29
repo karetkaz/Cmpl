@@ -54,7 +54,7 @@ astn lnknode(ccState s, symn ref) {
 	result->type = ref->kind == TYPE_ref ? ref->type : ref;
 	result->ref.name = ref->name;
 	result->ref.link = ref;
-	result->ref.hash = (unsigned) -1;
+	result->ref.hash = -1;
 	result->cst2 = ref->cast;
 	return result;
 	//return ref->used;
@@ -75,7 +75,7 @@ astn fltnode(ccState s, float64_t v) {
 }
 astn strnode(ccState s, char* v) {
 	astn ast = newnode(s, TYPE_str);
-	ast->ref.hash = (unsigned) -1;
+	ast->ref.hash = -1;
 	ast->ref.name = v;
 	return ast;
 }
@@ -183,6 +183,7 @@ int isStatic(ccState cc, astn ast) {
 			symn typ = ast->type;			// type
 			symn var = ast->ref.link;		// link
 			dieif(!typ || !var, "FixMe");
+			// TODO: global variables are not always static.
 			return var->stat || var->nest > cc->nest;
 		}
 
@@ -391,7 +392,7 @@ int eval(astn res, astn ast) {
 
 			if (!eval(res, ast->op.rhso))
 				return 0;
-			
+
 			switch (res->kind) {
 
 				default:
@@ -533,7 +534,7 @@ int eval(astn res, astn ast) {
 
 			if (!eval(&rhs, ast->op.rhso))
 				return 0;
-			
+
 			dieif(lhs.kind != rhs.kind, "eval operator %k (%t, %t): %t", ast, lhs.kind, rhs.kind, ast->cst2);
 
 			res->kind = TYPE_bit;
@@ -691,7 +692,7 @@ int eval(astn res, astn ast) {
 		case OPER_sel:
 			if (!eval(&lhs, ast->op.test))
 				return 0;
-			
+
 			return eval(res, lhs.cint ? ast->op.lhso : ast->op.rhso);
 
 		case ASGN_set:

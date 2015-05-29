@@ -23,11 +23,11 @@ void f2(int arg, string b) {
 
 // */
 
-//~ define trace(string message) = debug(message, 3, 25, variant.null);
-//~ define trace(string message, variant value) = debug(message, 3, 25, value);
+//~ inline trace(string message) = debug(message, 3, 25, variant.null);
+//~ inline trace(string message, variant value) = debug(message, 3, 25, value);
 
 //~ /+ test: debug and trace info
-//~ define trace(string message) = debug(message, 3, 25, variant.null);
+//~ inline trace(string message) = debug(message, 3, 25, variant.null);
 
 struct debugInfo {
 	string func;

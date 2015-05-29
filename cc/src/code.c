@@ -181,7 +181,7 @@ static int checkOcp(state rt, size_t offs, vmOpcode opc, stkval *arg) {
 	}
 	if (ip->opc == opc) {
 		if (arg != NULL) {
-			arg->i8 = ip->arg.i8;
+			*arg = ip->arg;
 		}
 		return 1;
 	}
@@ -201,6 +201,36 @@ static int removeOpc(state rt, size_t offs) {
 	return 0;
 }
 
+static int decrementStackAccess(state rt, size_t offsBegin, size_t offsEnd, int count) {
+	size_t offs;
+	for (offs = offsBegin; offs < offsEnd; ) {
+		register bcde ip = getip(rt, offs);
+		switch (ip->opc) {
+			case opc_set1:
+			case opc_set2:
+			case opc_set4:
+			case opc_dup1:
+			case opc_dup2:
+			case opc_dup4:
+				ip->idx -= count;
+				break;
+			case opc_ldsp:
+				ip->rel -= count * vm_size;
+				break;
+		}
+		switch (ip->opc) {
+			__ERROR:
+				fatal("%.*A", offs, ip);
+				return 0;
+
+			#define NEXT(__IP, __SP, __CHK) offs += __IP;
+			#define STOP(__ERR, __CHK, __ERC) do {if (__CHK) {goto __ERROR;}} while(0)
+			#include "code.inl"
+		}
+	}
+	return 1;
+}
+
 int optimizeAssign(state rt, size_t offsBegin, size_t offsEnd) {
 	stkval arg;
 	//~ dieif(rt->vm.pc != offsEnd, "Error %d != %d", rt->vm.px, offsEnd);
@@ -218,18 +248,21 @@ int optimizeAssign(state rt, size_t offsBegin, size_t offsEnd) {
 		if (arg.u1 != 1) {
 			return 0;
 		}
+
 		if (!removeOpc(rt, offsEnd)) {
-			// TODO: error or fatal
-			trace("%+k", ast);
+			fatal("%.*A", offsEnd, getip(rt, offsEnd));
 			return 0;
 		}
 		if (!removeOpc(rt, offsBegin)) {
-			// TODO: error or fatal
-			trace("%+k", ast);
+			fatal("%.*A", offsEnd, getip(rt, offsEnd));
+			return 0;
+		}
+		if (!decrementStackAccess(rt, offsBegin, offsEnd, 1)) {
+			fatal("%.*A", offsBegin, getip(rt, offsBegin));
 			return 0;
 		}
 		return 1;
-	}// */
+	}
 	if (checkOcp(rt, offsBegin, opc_dup2, &arg)) {
 		//~ logif(1, "speed up for (int32 i = 0; i < 10, i += 1) ...");
 		//~ dumpTree(rt, NULL, offsBegin, offsEnd);
@@ -245,13 +278,15 @@ int optimizeAssign(state rt, size_t offsBegin, size_t offsEnd) {
 			return 0;
 		}
 		if (!removeOpc(rt, offsEnd)) {
-			// TODO: error or fatal
-			trace("%+k", ast);
+			fatal("%.*A", offsEnd, getip(rt, offsEnd));
 			return 0;
 		}
 		if (!removeOpc(rt, offsBegin)) {
-			// TODO: error or fatal
-			trace("%+k", ast);
+			fatal("%.*A", offsEnd, getip(rt, offsEnd));
+			return 0;
+		}
+		if (!decrementStackAccess(rt, offsBegin, offsEnd, 2)) {
+			fatal("%.*A", offsBegin, getip(rt, offsBegin));
 			return 0;
 		}
 		return 1;
@@ -316,7 +351,7 @@ size_t emitarg(state rt, vmOpcode opc, stkval arg) {
 	else if (opc == opc_ldi) {
 		ip = getip(rt, rt->vm.pc);
 		if (ip->opc == opc_ldsp) {
-			int vardist = (ip->rel + arg.i4) / 4;
+			size_t vardist = (ip->rel + arg.i4) / 4;
 			if (rt->vm.su < vardist)
 				rt->vm.su = vardist;
 		}
@@ -365,7 +400,7 @@ size_t emitarg(state rt, vmOpcode opc, stkval arg) {
 	else if (opc == opc_sti) {
 		ip = getip(rt, rt->vm.pc);
 		if (ip->opc == opc_ldsp) {
-			int vardist = (ip->rel + arg.i4) / 4;
+			size_t vardist = (ip->rel + arg.i4) / 4;
 			if (rt->vm.su < vardist)
 				rt->vm.su = vardist;
 		}
@@ -1046,6 +1081,9 @@ int fixjump(state rt, int src, int dst, int stc) {
 // TODO: to be removed.
 static inline void logProc(cell pu, int cp, char* msg) {
 	trace("%s: {pu:%d, ip:%x, bp:%x, sp:%x, stacksize:%d, parent:%d, childs:%d}", msg, cp, pu[cp].ip, pu[cp].bp, pu[cp].sp, pu[cp].ss, pu[cp].pp, pu[cp].cp);
+	(void)pu;
+	(void)cp;
+	(void)msg;
 }
 
 /// Try to start a new child cell for task.
@@ -1171,7 +1209,7 @@ static int exec(state rt, cell pu, symn fun, void* extra, int dbg(state, int, vo
 	const memptr mp = (void*)rt->_mem;
 	const stkptr st = (void*)(pu->bp + pu->ss);
 
-	// run in debug mode if the specified function is not null or 
+	// run in debug mode if the specified function is not null or
 	if (rt->dbg != NULL || dbg != NULL) {
 		const stkptr spMin = (stkptr)(pu->bp);
 		const stkptr spMax = (stkptr)(pu->bp + pu->ss);
@@ -1316,7 +1354,7 @@ int invoke(state rt, symn fun, void* res, void* args, void* extra) {
 	//~ dieif(pu->sp < sp, "Error");
 	dieif(pu->tp != tp, "Error diff(%d) @%-T", pu->tp - tp, fun);
 	pu->ip = ip;
-	pu->sp = sp;	// 
+	pu->sp = sp;	//
 	pu->tp = tp;	// during exec we may return from code.
 
 	return result;
@@ -1359,7 +1397,7 @@ int execute(state rt, void* extra, size_t ss) {
 
 
 void fputopc(FILE* fout, unsigned char* ptr, size_t len, size_t offs, state rt) {
-	int i;
+	size_t i;
 	bcde ip = (bcde)ptr;
 
 	//~ write data as bytes
@@ -1413,7 +1451,7 @@ void fputopc(FILE* fout, unsigned char* ptr, size_t len, size_t offs, state rt) 
 		case opc_jmp:
 		case opc_jnz:
 		case opc_jz:
-			if (offs < 0) {
+			if (offs == (size_t)-1) {
 				fputfmt(fout, " %+d", ip->rel);
 			}
 			else {
@@ -1422,7 +1460,7 @@ void fputopc(FILE* fout, unsigned char* ptr, size_t len, size_t offs, state rt) 
 			break;
 
 		case opc_task:
-			if (offs < 0) {
+			if (offs == (size_t)-1) {
 				fputfmt(fout, " %d, %d", ip->dl, ip->cl);
 			}
 			else {
@@ -1544,7 +1582,7 @@ void fputopc(FILE* fout, unsigned char* ptr, size_t len, size_t offs, state rt) 
 void fputasm(state rt, FILE* fout, size_t beg, size_t end, int mode) {
 	size_t i, is;
 
-	if (end == -1) {
+	if (end == (size_t)-1) {
 		end = rt->_beg - rt->_mem;
 	}
 
@@ -1583,7 +1621,7 @@ void fputasm(state rt, FILE* fout, size_t beg, size_t end, int mode) {
 				break;
 
 			case 0x00: // relative offsets
-				fputopc(fout, (void*)ip, mode & 0xf, -1U, rt);
+				fputopc(fout, (void*)ip, mode & 0xf, -1, rt);
 				break;
 
 			case 0x10: // local offsets
@@ -1831,7 +1869,7 @@ void fputval(state rt, FILE* fout, symn var, stkval* ref, int level, int mode) {
 			fputfmt(fout, "]");
 			break;
 		}
-		case TYPE_def: 
+		case TYPE_def:
 			fputfmt(fout, "%+T: %+T", typ, typ->type);
 			break;
 		default:
@@ -1908,7 +1946,7 @@ static void traceArgs(state rt, symn fun, char *file, int line, void* sp, int id
 }
 
 int logTrace(state rt, int ident, int startlevel, int tracelevel) {
-	size_t pos;
+	int pos;
 	int i, isOutput = 0;
 	cell pu = rt->vm.cell;
 	trace tr = (trace)pu->bp;

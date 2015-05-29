@@ -3,8 +3,8 @@
 /* TODO: caching arguments
 float x1 = 9;
 static float x2 = 9;
-define inc(float x) = float(x + 1);
-define sqr(float x) = float(x * x);
+inline inc(float x) = float(x + 1);
+inline sqr(float x) = float(x * x);
 float inc0 = inc(9.);	// inline: used only once
 float inc1 = inc(x1);	// inline: used only once
 float inc2 = inc(x2);	// inline: used only once
@@ -20,8 +20,8 @@ Complex C1 = mul(Ca, Cb);
 Complex C2 = mul(Ca, Complex(2., 5.));
 Complex C3 = neg(Complex(2., 5.));
 
-define Re(Complex &a) = (a.re);
-define Im(Complex &a) = (a.im);
+inline Re(Complex &a) = (a.re);
+inline Im(Complex &a) = (a.im);
 Complex C4 = Complex(Im(Complex(2., 5.)), 0.);
 Complex C5 = Complex(3., Im(Complex(2., 5.)));
 double d1 = Im(Complex(2., 5.));

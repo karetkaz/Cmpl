@@ -29,19 +29,19 @@ float32 res3 = emit(i32, f32(Math.pi));
 int32 res4 = emit(i32, f32(Math.pi));
 }
 static if (Test.Emit & 0x02) {		// more basic emit examples
-define shl(int32 value, int count) = emit(i32.shl, i32(count), i32(value));
-define shr(int32 value, int count) = emit(i32.shr, i32(count), i32(value));
-define shr(uint32 value, int count) = emit(u32.shr, i32(count), i32(value));
+inline shl(int32 value, int count) = emit(i32.shl, i32(count), i32(value));
+inline shr(int32 value, int count) = emit(i32.shr, i32(count), i32(value));
+inline shr(uint32 value, int count) = emit(u32.shr, i32(count), i32(value));
 
-define add(float32 a, float32 b) = emit(f32.add, f32(b), f32(a));
-define sub(float32 a, float32 b) = emit(f32.sub, f32(b), f32(a));
-define mul(float32 a, float32 b) = emit(f32.mul, f32(b), f32(a));
-define div(float32 a, float32 b) = emit(f32.div, f32(b), f32(a));
-define mod(float32 a, float32 b) = emit(f32.mod, f32(b), f32(a));
+inline add(float32 a, float32 b) = emit(f32.add, f32(b), f32(a));
+inline sub(float32 a, float32 b) = emit(f32.sub, f32(b), f32(a));
+inline mul(float32 a, float32 b) = emit(f32.mul, f32(b), f32(a));
+inline div(float32 a, float32 b) = emit(f32.div, f32(b), f32(a));
+inline mod(float32 a, float32 b) = emit(f32.mod, f32(b), f32(a));
 
-define mad(float32 a, float32 b, float32 c) = emit(f32.add, f32.mul, f32(a), f32(b), f32(c));	// a * b + c
-define mad(float64 a, float64 b, float64 c) = emit(f64.add, f64.mul, f64(a), f64(b), f64(c));	// a * b + c
-//~ define mad(int32 size, int32 index, int32 offset) = emit(u32.mad, i32(size), i32(index), i32(offset));
+inline mad(float32 a, float32 b, float32 c) = emit(f32.add, f32.mul, f32(a), f32(b), f32(c));	// a * b + c
+inline mad(float64 a, float64 b, float64 c) = emit(f64.add, f64.mul, f64(a), f64(b), f64(c));	// a * b + c
+//~ inline mad(int32 size, int32 index, int32 offset) = emit(u32.mad, i32(size), i32(index), i32(offset));
 
 int32 a = -0x8989;
 int32 a1 = shr(uint32(a), 8);
@@ -54,7 +54,7 @@ float32 X3 = mad(2., 3., 4000.);
 }
 static if (Test.Emit & 0x04) {		// Complex multiplication
 
-define times2exec = -10000000;
+inline times2exec = -10000000;
 
 Complex Ca = Complex(3., 4.);
 Complex Cb = Complex(2., 5.);
@@ -62,9 +62,9 @@ Complex Cr = mul(Ca, Cb);
 
 static if (times2exec > 0) {
 
-define mul_sisd(Complex &a, Complex &b) = Complex(a.re * b.re - a.im * b.im, a.re * b.im + a.im * b.re);
+inline mul_sisd(Complex &a, Complex &b) = Complex(a.re * b.re - a.im * b.im, a.re * b.im + a.im * b.re);
 
-define mul_simd(Complex &a, Complex &b) = emit(Complex,
+inline mul_simd(Complex &a, Complex &b) = emit(Complex,
 	f64.sub, v2d.mul, f64(b.im), f64(b.re), f64(a.im), f64(a.re),	// re = a.re * b.re - a.im * b.im
 	f64.add, v2d.mul, Complex(b), f64(a.im), f64(a.re)	// im = a.re * b.im + a.im * b.re;
 );
@@ -85,7 +85,7 @@ for (int i = 0; i < times2exec; i += 1) {
 }
 clock_sisd = System.clock() - clock_sisd;
 
-define clocks2Sec(int ticks) = double(ticks) / CLOCKS_PER_SEC;
+inline clocks2Sec(int ticks) = double(ticks) / CLOCKS_PER_SEC;
 double seconds_simd = clocks2Sec(clock_simd);
 double seconds_sisd = clocks2Sec(clock_sisd);
 }
@@ -101,10 +101,10 @@ vec4f v3 = emit(vec4f, swz.xywz, vec4f(v1));
 static if (Test.Type) {
 static if (Test.Type & 0x01) {		// lookup test
 
-define int1 = int(1990);
-define int1() = int(1995);
-define int1(int32 _) = int(2010);
-define int1(float64 _) = int(2015);
+inline int1 = int(1990);
+inline int1() = int(1995);
+inline int1(int32 _) = int(2010);
+inline int1(float64 _) = int(2015);
 
 int32 _int1 = int1;			// 1990
 int32 _int2 = int1();		// 1995
@@ -148,12 +148,12 @@ struct color:0 {
 	bgra col;	//%
 }
 
-define color(int32 c) = emit(color, i32(c));
-define color(int32 a, int32 r, int32 g, int32 b) = color(int32(((a & 0xff) << 24) | ((r & 0xff) << 16) | ((g & 0xff) << 8) | ((b & 0xff) << 0)));
-define color(float64 a, float64 r, float64 g, float64 b) = color(int32(a*255), int32(r*255), int32(g*255), int32(b*255));
+inline color(int32 c) = emit(color, i32(c));
+inline color(int32 a, int32 r, int32 g, int32 b) = color(int32(((a & 0xff) << 24) | ((r & 0xff) << 16) | ((g & 0xff) << 8) | ((b & 0xff) << 0)));
+inline color(float64 a, float64 r, float64 g, float64 b) = color(int32(a*255), int32(r*255), int32(g*255), int32(b*255));
 
-define color(int32 r, int32 g, int32 b) = color(int32(255), r, g, b);
-define color(float64 r, float64 g, float64 b) = color(float64(1), r, g, b);
+inline color(int32 r, int32 g, int32 b) = color(int32(255), r, g, b);
+inline color(float64 r, float64 g, float64 b) = color(float64(1), r, g, b);
 
 color C1 = color(0xcafebabd);
 color C2 = color(0xca, 0xfe, 0xba, 0xbc);
@@ -266,9 +266,9 @@ int test_arr_max = maximum(arr2);
 
 int test_arr_toFind = arr2[arr2.length / 2];
 
-debug("unsorted", variant(arr2));
+debug("unsorted", variant(arr3));
 qsort(arr2);
-debug("sorted", variant(arr2));
+debug("sorted", variant(arr3));
 
 int test_arr_index = bsearch(arr2, test_arr_toFind);
 
@@ -310,7 +310,7 @@ int getArrayElement(uint32 index, int a1, int a2, int a3) {
 	return getArrayElement(index, array);
 }
 
-define getArrayElementDef(uint32 index, int a1, int a2, int a3) = getArrayElement(index, a1, a2, a3);
+inline getArrayElementDef(uint32 index, int a1, int a2, int a3) = getArrayElement(index, a1, a2, a3);
 assert(getArrayElementDef(0, 1, 2, 3) == 1);
 assert(getArrayElementDef(1, 1, 2, 3) == 2);
 assert(getArrayElementDef(2, 1, 2, 3) == 3);
@@ -355,7 +355,7 @@ static if (Test.Math & 0x01) {		// functions
 double math_e = 1.;
 {
 	double tmp = 1.;
-	define eps = 1e-50;
+	inline eps = 1e-50;
 	for (int i = 1; tmp > eps; i += 1) {
 		math_e += tmp /= i;
 	}
@@ -363,7 +363,7 @@ double math_e = 1.;
 // */
 
 //~ /* calculate factorial of a number
-define factorial_n = 16;
+inline factorial_n = 16;
 int64 factorial = 1;
 for (int i = 1; i <= factorial_n; i += 1) {
 	factorial *= i;
@@ -411,8 +411,8 @@ static if (Test.Math & 0x02) {		// lib functions
 static if (Test.Math & 0x04) {		// matrix multiply
 // Matrix Multiply
 
-define dim = 7;
-define scalar = float32;
+inline dim = 7;
+inline scalar = float32;
 scalar m1[dim][dim];		//%%.1f
 scalar m2[dim][dim];
 scalar m3[dim][dim];
@@ -446,11 +446,11 @@ struct int32x8 {
 	int32 i1;	//%%08x
 }
 
-define int32x8(int32 i0) = emit(int32x8, dupp.x1, dupp.x2, dupp.x2, dupp.x1, i32.shr, i32(31), dupp.x1, i32(i0));
-define int32x8(uint32 i0) = emit(int32x8, dupp.x1, dupp.x2, dupp.x2, dupp.x1, i32(0), i32(i0));
+inline int32x8(int32 i0) = emit(int32x8, dupp.x1, dupp.x2, dupp.x2, dupp.x1, i32.shr, i32(31), dupp.x1, i32(i0));
+inline int32x8(uint32 i0) = emit(int32x8, dupp.x1, dupp.x2, dupp.x2, dupp.x1, i32(0), i32(i0));
 
-//~ define sxt64(int32 a) = int64(int32(a));			// sign extend
-define zxt64(int32 a) = int64(uint32(a));			// zero extend
+//~ inline sxt64(int32 a) = int64(int32(a));			// sign extend
+inline zxt64(int32 a) = int64(uint32(a));			// zero extend
 
 int32x8 cmt(const int32x8 &b) {
 	result.i1 = ~b.i1;
@@ -467,7 +467,7 @@ int32x8 neg(const int32x8 &b) {
 	int64 ovf = 0;
 	int64 carry = 0;
 
-	define opNeg(int b) = int32(sum = ovf - zxt64(b) - carry);
+	inline opNeg(int b) = int32(sum = ovf - zxt64(b) - carry);
 	result.i1 = opNeg(b.i1);
 	carry = sum < ovf;
 	result.i2 = opNeg(b.i2);
@@ -490,7 +490,7 @@ int32x8 add(const int32x8 &a, const int32x8 &b, bool &&carryInOut) {
 	int64 ovf = 0xffffffff;
 	int64 carry = carryInOut;
 
-	define opAdd(int a, int b) = int32(sum = zxt64(a) + zxt64(b) + carry);
+	inline opAdd(int a, int b) = int32(sum = zxt64(a) + zxt64(b) + carry);
 
 	result.i1 = opAdd(a.i1, b.i1);
 	carry = sum > ovf;
@@ -522,7 +522,7 @@ int32x8 sub(const int32x8 &a, const int32x8 &b, bool &&carryInOut) {
 	int64 ovf = 0;
 	int64 carry = carryInOut;
 
-	define opSub(int a, int b) = int32(sum = zxt64(a) - zxt64(b) - carry);
+	inline opSub(int a, int b) = int32(sum = zxt64(a) - zxt64(b) - carry);
 	result.i1 = opSub(a.i1, b.i1);
 	carry = sum < ovf;
 	result.i2 = opSub(a.i2, b.i2);

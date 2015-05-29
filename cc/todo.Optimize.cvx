@@ -82,7 +82,7 @@ long testRetLong0() {
 //~ +/
 
 /+ add to System ...
-enum Arch {
+enum Arch { // ARMv6, ARMv7, x64, x86
 	arm
 	?armf
 	i386
@@ -91,12 +91,16 @@ enum Arch {
 
 enum Os: string {
 	Windows = "Windows";
+	Darwin = "Darwin";
 	Linux = "Linux";
-	Mac = "Mac";
+}
+
+enum Config {
+	Release
+	Debug
 }
 
 Arch arch = Arch.?
-char name[] = "Windows"|"Linux"|"Mac"|"Unknown"
 
 boolean bigEndian = false;
 
@@ -154,19 +158,19 @@ struct Fixed(int FractBits): 0 {
 		fxp_pi2 = 0x3243f6a8 >> (28 - FractBits + 1);
 	}
 
-	static const define asFixed(const int32 val) = emit(Fixed, i32(val));
-	static const define toFixed(const int32 val) = emit(Fixed, i32(val << FractBits));
-	static const define toFixed(const float64 val) = emit(Fixed, int32(val * (1 << FractBits)));
+	static const inline asFixed(const int32 val) = emit(Fixed, i32(val));
+	static const inline toFixed(const int32 val) = emit(Fixed, i32(val << FractBits));
+	static const inline toFixed(const float64 val) = emit(Fixed, int32(val * (1 << FractBits)));
 
-	static define add(fixed ^lhs, fixed ^rhs) = asFixed(lhs.value + rhs.value);
-	static define sub(fixed ^lhs, fixed ^rhs) = asFixed(lhs.value - rhs.value);
-	static define mul(fixed ^lhs, fixed ^rhs) = asFixed(int64.Sar(int64(lhs.value) * rhs.value, FractBits));
-	static define mul(fixed ^lhs, int32 rhs) = asFixed(lhs.value * rhs);
-	static define mul(int32 lhs, fixed ^rhs) = asFixed(lhs * rhs.value);
-	static define div(fixed ^lhs, fixed ^rhs) = asFixed(int64.Shl(lhs.value, FractBits) / rhs.value);
-	static define div(fixed ^lhs, int32 rhs) = asFixed(lhs.value / rhs);
-	static define mod(fixed ^lhs, fixed ^rhs) = asFixed(lhs.value % rhs.value);
-	static define inv(fixed rhs) = div(asFixed(fxp_one), rhs);
+	static inline add(fixed ^lhs, fixed ^rhs) = asFixed(lhs.value + rhs.value);
+	static inline sub(fixed ^lhs, fixed ^rhs) = asFixed(lhs.value - rhs.value);
+	static inline mul(fixed ^lhs, fixed ^rhs) = asFixed(int64.Sar(int64(lhs.value) * rhs.value, FractBits));
+	static inline mul(fixed ^lhs, int32 rhs) = asFixed(lhs.value * rhs);
+	static inline mul(int32 lhs, fixed ^rhs) = asFixed(lhs * rhs.value);
+	static inline div(fixed ^lhs, fixed ^rhs) = asFixed(int64.Shl(lhs.value, FractBits) / rhs.value);
+	static inline div(fixed ^lhs, int32 rhs) = asFixed(lhs.value / rhs);
+	static inline mod(fixed ^lhs, fixed ^rhs) = asFixed(lhs.value % rhs.value);
+	static inline inv(fixed rhs) = div(asFixed(fxp_one), rhs);
 	...
 
 	// using ?
@@ -338,8 +342,8 @@ struct View {
 	Style style;
 	Rect position;	// calc by the layout
 
-	define width = style.width;
-	define height = style.height;
+	inline width = style.width;
+	inline height = style.height;
 
 	bool enabled;
 	bool focusable;

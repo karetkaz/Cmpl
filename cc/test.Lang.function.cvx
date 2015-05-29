@@ -60,10 +60,10 @@ if (method != null) {
 //~ /* TEST: Closure like constructs ...
 
 struct Closure { int64 call(Closure &c, int64 n); int64 data; int32 invoked; /+...+/ }
-define Closure(int64 call(Closure &c, int64 n), int64 data) = Closure(call, data, 0);
+inline Closure(int64 call(Closure &c, int64 n), int64 data) = Closure(call, data, 0);
 
 int64 Invoke(Closure &c, int64 n) { return c.call(&c, n); }
-//TODO: why is `Closure &&c` cached ?: define Invoke(Closure &&c, int64 n) = c.call(&c, n);
+//TODO: why is `Closure &&c` cached ?: inline Invoke(Closure &&c, int64 n) = c.call(&c, n);
 // TODO: operator (Closure c)(int64 n) = c.call(c, n);
 
 int64 countdown(Closure &c, int64 n) {

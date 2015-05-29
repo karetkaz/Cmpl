@@ -1,65 +1,12 @@
 /*******************************************************************************
- *   File: parse.c
+ *   File: lexer.c
  *   Date: 2011/06/23
- *   Desc: input, lexer and parser
+ *   Desc: input and lexer
  *******************************************************************************
 
 Lexical elements
 
-	Comments:
-		line comments: //
-		block comments: / * ... * / and nestable /+ ... +/
-
-	Tokens:
-		Identifiers: variable or type names.
-
-			identifier = (letter)+
-
-		Keywords:
-			break,
-			const,
-			continue,
-			define,
-			else,
-			emit,
-			enum,
-			for,
-			if,
-			?module,
-			operator,
-			parallel,
-			return,
-			static,
-			struct
-
-		Operators and Delimiters:
-			+ - * / % . ,
-			~ & | ^ >> <<
-			&& ||
-			! == != < <= > >=
-			= := += -= *= /= %= &= |= ^= >>= <<=
-			( ) [ ] { } ? : ;
-
-		Integer and Floating-point literals:
-			bin_lit = '0'[bB][01]+
-			oct_lit = '0'[oO][0-7]+
-			hex_lit = '0'[xX][0-9a-fA-F]+
-			decimal_lit = [1-9][0-9]*
-			floating_lit = decimal_lit (('.'[0-9]*) | )([eE]([+-]?)[0-9]+)
-
-		Character and String literals:
-			char_lit = \'[^\'\n]*
-			string_lit = \"[^\"\n]*
 */
-
-//~ #if !(defined _MSC_VER)
-//~ #include <unistd.h>
-//~ #else
-//~ #include <io.h>
-//~ #endif
-
-//~ #include <string.h>
-//~ #include <fcntl.h>
 #include "core.h"
 
 /** Construct arguments.
@@ -1516,7 +1463,7 @@ static astn decl(ccState cc, int mode) {
 					// result is the first argument
 					result->offs = sizeOf(result, 1);
 					// TODO: ref->stat = 1;
-					ref->size = result->offs + fixargs(ref, vm_size, -result->offs);
+					ref->size = result->offs + fixargs(ref, vm_size, 0 -result->offs);
 				}
 
 				// reinstall all args
@@ -2108,7 +2055,7 @@ ccState ccOpen(state rt, char* file, int line, char* text) {
 	}
 
 	if (file != NULL) {
-		rt->cc->file = mapstr(rt->cc, file, -1U, -1U);
+		rt->cc->file = mapstr(rt->cc, file, -1, -1);
 	}
 	else {
 		rt->cc->file = NULL;

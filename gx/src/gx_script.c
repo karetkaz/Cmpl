@@ -79,6 +79,8 @@ surfOpGetHeight,
 surfOpClipRect,
 
 surfOpDrawLine,
+surfOpDrawBez2,
+surfOpDrawBez3,
 surfOpDrawRect,
 surfOpFillRect,
 surfOpDrawOval,
@@ -132,7 +134,7 @@ static gxSurfHnd newSurf(int w, int h) {
 }
 
 static void delSurf(gxSurfHnd hnd) {
-	if (hnd == -1U)
+	if (hnd == -1)
 		return;
 
 	if (!hnd || hnd > surfCount)
@@ -340,6 +342,36 @@ static int surfCall(libcArgs rt) {
 				int y1 = popi32(rt);
 				int col = popi32(rt);
 				g2_drawline(surf, x0, y0, x1, y1, col);
+				return 0;
+			}
+			break;
+		case surfOpDrawBez2:
+			surf = getSurf(popi32(rt));
+			if (surf != NULL) {
+				int x0 = popi32(rt);
+				int y0 = popi32(rt);
+				int x1 = popi32(rt);
+				int y1 = popi32(rt);
+				int x2 = popi32(rt);
+				int y2 = popi32(rt);
+				int col = popi32(rt);
+				g2_drawbez2(surf, x0, y0, x1, y1, x2, y2, col);
+				return 0;
+			}
+			break;
+		case surfOpDrawBez3:
+			surf = getSurf(popi32(rt));
+			if (surf != NULL) {
+				int x0 = popi32(rt);
+				int y0 = popi32(rt);
+				int x1 = popi32(rt);
+				int y1 = popi32(rt);
+				int x2 = popi32(rt);
+				int y2 = popi32(rt);
+				int x3 = popi32(rt);
+				int y3 = popi32(rt);
+				int col = popi32(rt);
+				g2_drawbez3(surf, x0, y0, x1, y1, x2, y2, x3, y3, col);
 				return 0;
 			}
 			break;
@@ -1369,6 +1401,8 @@ Surf[] = {
 	//~ {surfCall, surfOpSetPixel,		"void setPixel(gxSurf dst, int x, int y, int col);"},
 
 	{surfCall, surfOpDrawLine,		"void drawLine(gxSurf dst, int x0, int y0, int x1, int y1, int col);"},
+	{surfCall, surfOpDrawBez2,		"void drawBezier(gxSurf dst, int x0, int y0, int x1, int y1, int x2, int y2, int col);"},
+	{surfCall, surfOpDrawBez3,		"void drawBezier(gxSurf dst, int x0, int y0, int x1, int y1, int x2, int y2, int x3, int y3, int col);"},
 	{surfCall, surfOpDrawRect,		"void drawRect(gxSurf dst, int x0, int y0, int x1, int y1, int col);"},
 	{surfCall, surfOpFillRect,		"void fillRect(gxSurf dst, int x0, int y0, int x1, int y1, int col);"},
 	{surfCall, surfOpDrawOval,		"void drawOval(gxSurf dst, int x0, int y0, int x1, int y1, int col);"},
@@ -1523,7 +1557,7 @@ int ccCompile(char *src, int argc, char* argv[], int (*dbg)(state rt, int pu, vo
 			"int32 w;//%width(%d)\n"
 			"int32 h;//%height(%d)\n"
 		"}\n"
-		"define gxRect(int w, int h) = gxRect(0, 0, w, h);\n"
+		"inline gxRect(int w, int h) = gxRect(0, 0, w, h);\n"
 		"\n"
 		"\n"
 		"// Color Look Up Table (Palette) structure\n"
@@ -1563,7 +1597,7 @@ int ccCompile(char *src, int argc, char* argv[], int (*dbg)(state rt, int pu, vo
 			}
 		}
 		err = err || !ccAddCode(rt, stdwl, __FILE__, __LINE__ + 1,
-			"define Repaint() = Repaint(false);\n"
+			"inline Repaint() = Repaint(false);\n"
 		);
 		ccEnd(rt, cls);
 	}

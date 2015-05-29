@@ -21,7 +21,7 @@
 	5: print non pre-mapped strings, non static types
 	6: print static casts generated with emit
 */
-#define DEBUGGING 0
+//~ #define DEBUGGING 2
 
 // enable paralell execution stuff
 //~ #define MAXPROCSEXEC 1
@@ -223,8 +223,8 @@ typedef struct libc {	// library call
 	int (*call)(libcArgs);
 	void *data;	// user data for this function
 	symn sym;
-	int chk, pop;
-	size_t pos;
+	size_t pos, chk;
+	int pop;
 } *libc;
 
 /// Abstract Syntax Tree Node
@@ -284,7 +284,7 @@ struct astNode {
 	int32_t		line;				// line position of token
 	int32_t		colp;				// column position
 	union {
-        char *cstr;
+		char *cstr;
 		int64_t cint;				// constant integer value
 		float64_t cflt;				// constant floating point value
 		struct {			// STMT_xxx: statement
@@ -694,7 +694,7 @@ float64_t constflt(astn ast);
 
 
 unsigned rehash(const char* str, size_t size);
-char* mapstr(ccState cc, char *str, size_t size/* = -1U*/, unsigned hash/* = -1U*/);
+char* mapstr(ccState cc, char *str, size_t size/* = -1*/, unsigned hash/* = -1*/);
 
 //  VM: execution + debuging.
 

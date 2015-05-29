@@ -230,13 +230,12 @@ int gx_zoomsurf(gx_Surf dst, gx_Rect rect, gx_Surf src, gx_Rect roi, int lin);
 
 
 void g2_drawline(gx_Surf dst, int x0, int y0, int x1, int y1, long col);
+void g2_drawbez2(gx_Surf dst, int x0, int y0, int x1, int y1, int x2, int y2, long col);
+void g2_drawbez3(gx_Surf dst, int x0, int y0, int x1, int y1, int x2, int y2, int x3, int y3, long col);
 void gx_drawrect(gx_Surf dst, int x0, int y0, int x1, int y1, long col);
-//~ void gx_drawoval(gx_Surf dst, int x0, int y0, int x1, int y1, long col);
 
-void g2_drawoval(gx_Surf s, int x0, int y0, int x1, int y1, long c/* , long fg */);
-void g2_filloval(gx_Surf s, int x0, int y0, int x1, int y1, long c/* , long fg */);
-void gx_drawbez2(gx_Surf dst, int x0, int y0, int x1, int y1, int x2, int y2, long col);
-void gx_drawbez3(gx_Surf dst, int x0, int y0, int x1, int y1, int x2, int y2, int x3, int y3, long col);
+void g2_drawoval(gx_Surf s, int x0, int y0, int x1, int y1, long col);
+void g2_filloval(gx_Surf s, int x0, int y0, int x1, int y1, long col);
 
 void gx_clipText(gx_Rect roi, gx_Surf fnt, const char *str);
 void gx_drawChar(gx_Surf dst, int x, int y, gx_Surf fnt, unsigned chr, long col);

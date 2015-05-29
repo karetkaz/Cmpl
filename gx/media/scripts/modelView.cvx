@@ -20,8 +20,8 @@ string texture = properties.texture;
 	}
 }// */
 
-define objSize = 2;
-define eyePos = vec4f(0, 0, 2 * objSize);
+inline objSize = 2;
+inline eyePos = vec4f(0, 0, 2 * objSize);
 
 void mouseHandler(int btn, int x, int y) {
 	static const vec4f orbit = vec4f(0, 0, 0, 0);
@@ -32,9 +32,9 @@ void mouseHandler(int btn, int x, int y) {
 	ox = x;
 	oy = y;
 
-	define moveSpeed = .08;
-	define rotateSpeed = moveSpeed * Math.pi / 180.;
-	define rotateSpeed2 = 10 * rotateSpeed;
+	inline moveSpeed = .08;
+	inline rotateSpeed = moveSpeed * Math.pi / 180.;
+	inline rotateSpeed2 = 10 * rotateSpeed;
 
 	if (Mouse.dblClick(btn, x, y)) {
 		Mouse.dblClick(-1, 0, 0);

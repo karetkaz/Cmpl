@@ -58,10 +58,10 @@ int a2 = init();
 //~ +/
 
 /+ TODO: Array allocation and assignment
-//~ define n = 19;
+//~ inline n = 19;
 //~ int b[] = emit(struct, memmgr(null, n * 4), i32(n));
 
-//~ define new(typename $type, int32 n) = emit(type[], memmgr(null, n * type.size), i32(n));
+//~ inline new(typename $type, int32 n) = emit(type[], memmgr(null, n * type.size), i32(n));
 //~ int b[] = new(int, 10);
 //~ int c[];
 //~ c = new(int, 10);
@@ -117,7 +117,7 @@ slice_in_struct slice_in_struct_fn(int a[]) {
 }
 
 const int a[] = [1, 2, 3, 4];
-int b[] = [1, 2, 3, 4];
+int b[4] = [1, 2, 3, 4];
 
 slice_in_struct it1 = slice_in_struct(a);
 
@@ -126,14 +126,14 @@ slice_in_struct it2 = slice_in_struct_fn(a);
 
 //~ print("\n");
 
-//FixMe: 
-int xxx = it1.slice[0];
+//FixMe: int xxx = it1.slice[0];
+assert(it1.slice[0] == a[0]);
 
 //~ +/
 
 /+ TODO: inlineing ...
-define sqr1(float64 x) = x * x;
-define sqr2(float64 x) = sqr1(x);
+inline sqr1(float64 x) = x * x;
+inline sqr2(float64 x) = sqr1(x);
 double x = 9;
 double y1 = sqr1(x*x+x);		// 
 double y2 = sqr2(x*x+x);		// should produce the same code as above
@@ -166,7 +166,7 @@ void testArr(double x[]) {
 	x[3] = 8;
 }
 
-define TestArr(double x[16]) = testArr(x);
+inline TestArr(double x[16]) = testArr(x);
 
 double x[16] = 1.;
 //~ double x[18] = [1];
@@ -218,8 +218,8 @@ refs.f();
 //~ +/
 
 /+ BUG: function returning reference or string type.
-//~ define sizeof(typename type) = int(type.size);
-//~ define new(typename type) = memmgr(null, type.size);
+//~ inline sizeof(typename type) = int(type.size);
+//~ inline new(typename type) = memmgr(null, type.size);
 
 struct ComplexByVal {double re; double im;}
 struct ComplexByRef: object {double re; double im;}
@@ -320,8 +320,8 @@ idnMat4x4(mat2);		// ERROR: if using idnMat4x4(float64 mat[16])
 //~ associative arrays: maps
 	//~ int stringMap[string];		stringMap[]
 
-//~ recursively define:
-	//~ define fact(int64 n) = (n * fact(n - 1));
+//~ recursively inline:
+	//~ inline fact(int64 n) = (n * fact(n - 1));
 
 //~ ?: operator short form (non zero):
 	//~ int b = a || 10; => int b = a != 0 ? a : 10;
@@ -340,14 +340,14 @@ idnMat4x4(mat2);		// ERROR: if using idnMat4x4(float64 mat[16])
 //~ +/
 
 /+ TODO: cast operators
- + define-s are implicit
+ + inline-s are implicit
  + operator-s are explicit
  + 
  + struct float3 { float x; float y; float z; }
  + struct float4 { float x; float y; float z; float w; }
  + 
  + and:
- + define float3(float4 x) = float3(x.x, x.y, x.z);
+ + inline float3(float4 x) = float3(x.x, x.y, x.z);
  + operator float4(float3 x) = float4(x.x, x.y, x.z, 0.);
  +
  + then:
@@ -377,17 +377,17 @@ void free(pointer &&ref) {
 }
 
 // invoke in the global namespace, the void function with a as argument
-define void(var &&a) = void(assert(typename.invoke(null, null, "void", a)));
+inline void(var &&a) = void(assert(typename.invoke(null, null, "void", a)));
 
-define void(int8 &&a)    = void(0);
-define void(int16 &&a)   = void(0);
-define void(int32 &&a)   = void(0);
-define void(int64 &&a)   = void(0);
-define void(uint8 &&a)   = void(0);
-define void(uint16 &&a)  = void(0);
-define void(uint32 &&a)  = void(0);
-define void(float32 &&a) = void(0);
-define void(float64 &&a) = void(0);
+inline void(int8 &&a)    = void(0);
+inline void(int16 &&a)   = void(0);
+inline void(int32 &&a)   = void(0);
+inline void(int64 &&a)   = void(0);
+inline void(uint8 &&a)   = void(0);
+inline void(uint16 &&a)  = void(0);
+inline void(uint32 &&a)  = void(0);
+inline void(float32 &&a) = void(0);
+inline void(float64 &&a) = void(0);
 //~ +/
 
 /+ Reflect
@@ -454,7 +454,7 @@ bool instanceof(TypeInfo &ty, var obj) {
 	return ty;
 }
 
-define lookUp(TypeInfo &type, int level, string name) = lookUp(type, level, name, null);
+inline lookUp(TypeInfo &type, int level, string name) = lookUp(type, level, name, null);
 
 TypeInfo& lookUp(TypeInfo &type, int level, string name, variant args...) {
 
@@ -560,6 +560,34 @@ assert(invoke(obj, res, "a") && res == obj.a);							// res := cls.a;
 // invoke function with arguments
 assert(invoke(cls, res, "M1", a1, a2) && res == cls.M1(a1, a2));		// res = cls.M1(a1, a2);
 
+
+bool IsAssignable(TypeInfo typeInfo) {
+	if (typeInfo == null)
+		return false;
+
+	if (this == typeInfo)
+		return true;
+
+	// If c is a subclass of this class, then c can be cast to this type.
+	if (typeInfo.IsSubclassOf(this))
+		return true;
+
+	if (this.IsInterface)
+	{
+		return typeInfo.ImplementInterface(this);
+	}
+	else if (IsGenericParameter)
+	{
+		Type[] constraints = GetGenericParameterConstraints();
+		for (int i = 0; i < constraints.Length; i++)
+			if (!constraints[i].IsAssignableFrom(typeInfo))
+				return false;
+
+		return true;
+	}
+
+	return false;
+}
 //~ +/
 
 /+ BenchMarks

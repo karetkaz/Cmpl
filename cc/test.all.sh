@@ -13,8 +13,8 @@ for file in $*
 do
 	echo "**** running test: $file"
 	echo>>$logFile "**** running test: $file"
-	#~ ./main>>$logFile -gd-2 -xv -w0 $file
-	./main -la $logFile -gd2 -xv -w0 $file
+	#~ ./main -la $logFile -gd2 -xv -w0 $file
+	./main -gd2 -xv -w0 $file
 	if [ "$?" -ne "0" ]; then
 		echo "******** failed: $file"
 	fi

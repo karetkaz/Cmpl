@@ -107,7 +107,7 @@ void* rtAlloc(state rt, void* ptr, size_t size) {
 		//~ struct memchunk* free_skip;	// TODO: next free whitch 2x biger tahan this
 	} *memchunk;
 
-	const size_t minAllocationSize = sizeof(struct memchunk);
+	const ptrdiff_t minAllocationSize = sizeof(struct memchunk);
 	memchunk chunk = (memchunk)((char*)ptr - offsetOf(memchunk, data));
 	size_t allocSize = padded(size + minAllocationSize, minAllocationSize);
 
@@ -287,7 +287,7 @@ symn ccDefInt(state rt, char* name, int64_t value) {
 		trace("%x, %s, %D", rt, name, value);
 		return NULL;
 	}
-	name = mapstr(rt->cc, name, -1U, -1U);
+	name = mapstr(rt->cc, name, -1, -1);
 	return install(rt->cc, name, TYPE_def, TYPE_int, 0, rt->cc->type_i32, intnode(rt->cc, value));
 }
 /// Declare float constant; @see state.api.ccDefFlt
@@ -296,7 +296,7 @@ symn ccDefFlt(state rt, char* name, double value) {
 		trace("%x, %s, %F", rt, name, value);
 		return NULL;
 	}
-	name = mapstr(rt->cc, name, -1U, -1U);
+	name = mapstr(rt->cc, name, -1, -1);
 	return install(rt->cc, name, TYPE_def, TYPE_flt, 0, rt->cc->type_f64, fltnode(rt->cc, value));
 }
 /// Declare string constant; @see state.api.ccDefStr
@@ -305,9 +305,9 @@ symn ccDefStr(state rt, char* name, char* value) {
 		trace("%x, %s, %s", rt, name, value);
 		return NULL;
 	}
-	name = mapstr(rt->cc, name, -1U, -1U);
+	name = mapstr(rt->cc, name, -1, -1);
 	if (value != NULL) {
-		value = mapstr(rt->cc, value, -1U, -1U);
+		value = mapstr(rt->cc, value, -1, -1);
 	}
 	return install(rt->cc, name, TYPE_def, TYPE_str, 0, rt->cc->type_str, strnode(rt->cc, value));
 }
@@ -318,7 +318,7 @@ symn ccFindSym(ccState cc, symn in, char* name) {
 	memset(&ast, 0, sizeof(struct astNode));
 	ast.kind = TYPE_ref;
 	ast.ref.name = name;
-	ast.ref.hash = rehash(name, -1U) % TBLS;
+	ast.ref.hash = rehash(name, -1) % TBLS;
 	return lookup(cc, in ? in->flds : cc->s->defs, &ast, NULL, 1);
 }
 
@@ -344,8 +344,7 @@ int ccSymValFlt(symn sym, double* res) {
 /// Lookup symbol by offset; @see state.api.mapsym
 symn mapsym(state rt, size_t offs, int callsOnly) {
 	symn sym = NULL;
-
-	dieif (offs < 0 || offs > rt->vm.px, "invalid offset: %06x", offs);
+	dieif(offs > rt->vm.px, "invalid offset: %06x", offs);
 	for (sym = rt->defs; sym; sym = sym->gdef) {
 		if (callsOnly && !sym->call) {
 			continue;
@@ -650,7 +649,7 @@ static void install_emit(ccState cc, int mode) {
 				rt->_beg[3] = (unsigned char) "xyzw"[(i >> 6) & 3];
 				rt->_beg[4] = 0;
 
-				swz[i].name = mapstr(cc, (char*)rt->_beg, -1U, -1U);
+				swz[i].name = mapstr(cc, (char*)rt->_beg, -1, -1);
 				swz[i].node = intnode(cc, i);
 			}
 			if ((typ = install(cc, "swz", ATTR_stat | ATTR_const | TYPE_rec, TYPE_any, 0, NULL, NULL))) {
@@ -830,7 +829,7 @@ ccState ccInit(state rt, int mode, int onHalt(libcArgs)) {
 	if (cc->emit_opc && (cc->emit_tag = newnode(cc, TYPE_ref))) {
 		cc->emit_tag->ref.link = cc->emit_opc;
 		cc->emit_tag->ref.name = "emit";
-		cc->emit_tag->ref.hash = (unsigned) -1;
+		cc->emit_tag->ref.hash = -1;
 	}
 
 	install_base(rt, mode);

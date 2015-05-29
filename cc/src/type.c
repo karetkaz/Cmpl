@@ -491,7 +491,6 @@ ccToken canAssign(ccState cc, symn var, astn val, int strict) {
 
 	// assign enum.
 	if (lnk && lnk->cast == ENUM_kwd) {
-		// 
 		if (typ == lnk->type->type) {
 			return lnk->type->type->cast;
 		}
@@ -1448,7 +1447,7 @@ symn typecheck(ccState s, symn loc, astn ast) {
 		case TYPE_ref:
 			ref = ast;
 			if (ast->ref.link != NULL) {
-                if (ast->ref.hash == (unsigned)-1) {
+				if (ast->ref.hash == -1) {
 					return ast->type;
 				}
 			}

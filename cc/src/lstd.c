@@ -392,16 +392,16 @@ static int sysMillis(libcArgs args) {
 }
 
 static int sysDebug(libcArgs args) {
+	long* argv = (long*)(long(*)[7])args->argv;
+	prerr("debug", "%-T -> [%d, %d, %d, %d, %d, %d, %d]", args->fun, argv[0], argv[1], argv[2], argv[3], argv[4], argv[5], argv[6]);
 	state rt = args->rt;
-	char *file = argref(args, 0 * vm_size);
+	char* file = argref(args, 0 * vm_size);
 	int line = argi32(args, 1 * vm_size);
-	char *message = argref(args, 2 * vm_size);
-	void *varRef = argref(args, 3 * vm_size);
+	char* message = argref(args, 2 * vm_size);
+	void* varRef = argref(args, 3 * vm_size);
 	symn varType = argref(args, 4 * vm_size);
 	int logLevel = argi32(args, 5 * vm_size);
 	int traceLevel = argi32(args, 6 * vm_size);
-	//~ long *argv = (long*)args->argv;
-	//~ fatal("args: [%d, %d, %d, %d, %d, %d, %d]", argv[0], argv[1], argv[2], argv[3], argv[4], argv[5], argv[6]);
 
 	// skip logLevel 0
 	if (rt->logf != NULL && logLevel != 0) {
@@ -477,7 +477,9 @@ static int sysMemSet(libcArgs rt) {
 
 int install_stdc(state rt) {
 	symn nsp = NULL;		// namespace
-	int i, err = 0;
+	int err = 0;
+	size_t i;
+
 	struct {
 		int (*fun)(libcArgs);
 		char* def;

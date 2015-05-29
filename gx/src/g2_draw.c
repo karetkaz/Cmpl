@@ -158,7 +158,7 @@ void g2_filloval(gx_Surf s, int x0, int y0, int x1, int y1, long c/* , long fg *
 	gx_fillrect(s, x1, y0, x1 + 1, y1, c);
 }
 
-void gx_drawbez2(gx_Surf dst, int x0, int y0, int x1, int y1, int x2, int y2, long col) {
+void g2_drawbez2(gx_Surf dst, int x0, int y0, int x1, int y1, int x2, int y2, long col) {
 	double t, dt = 1. / 128;
 
 	int px_0 = x0;
@@ -177,7 +177,7 @@ void gx_drawbez2(gx_Surf dst, int x0, int y0, int x1, int y1, int x2, int y2, lo
 	}
 	g2_drawline(dst, x0, y0, x2, y2, col);
 }
-void gx_drawbez3(gx_Surf dst, int x0, int y0, int x1, int y1, int x2, int y2, int x3, int y3, long col) {
+void g2_drawbez3(gx_Surf dst, int x0, int y0, int x1, int y1, int x2, int y2, int x3, int y3, long col) {
 	double t, dt = 1. / 128;
 
 	int px_0 = x0;

@@ -1,4 +1,4 @@
-// Brightness, contrast, gamma demo.
+// Sunflower demo.
 enum Window {
 	draw = RenderMode.swap_buff;
 	resx = 512;

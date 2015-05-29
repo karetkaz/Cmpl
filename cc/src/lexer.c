@@ -1,3 +1,56 @@
+/*******************************************************************************
+ *   File: lexer.c
+ *   Date: 2011/06/23
+ *   Desc: input and lexer
+ *******************************************************************************
+
+Lexical elements
+
+	Comments:
+		line comments: //
+		block comments: / * ... * / and nestable /+ ... +/
+
+	Tokens:
+		Identifiers: variable or type names.
+
+			identifier = (letter)+
+
+		Keywords:
+			break,
+			const,
+			continue,
+			else,
+			emit,
+			enum,
+			for,
+			if,
+			inline,
+			operator,
+			parallel,
+			return,
+			static,
+			struct
+
+		Operators and Delimiters:
+			+ - * / % . ,
+			~ & | ^ >> <<
+			&& ||
+			! == != < <= > >=
+			= := += -= *= /= %= &= |= ^= >>= <<=
+			( ) [ ] { } ? : ;
+
+		Integer and Floating-point literals:
+			bin_lit = '0'[bB][01]+
+			oct_lit = '0'[oO][0-7]+
+			hex_lit = '0'[xX][0-9a-fA-F]+
+			decimal_lit = [1-9][0-9]*
+			floating_lit = decimal_lit (('.'[0-9]*) | )([eE]([+-]?)[0-9]+)
+
+		Character and String literals:
+			char_lit = \'[^\'\n]*
+			string_lit = \"[^\"\n]*
+*/
+
 #if !(defined _MSC_VER)
 #include <unistd.h>
 #else
@@ -9,6 +62,7 @@
 #include "core.h"
 
 //#{~~~~~~~~~ Input ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+// used mostly by the lexer
 
 /** Fill some characters from the file.
  * @brief fill the memory buffer from file.
@@ -109,9 +163,63 @@ static int backChr(ccState cc, int chr) {
 	dieif(cc->_chr != -1, "can not put back more than one character");
 	return cc->_chr = chr;
 }
-//#}
 
-//#{~~~~~~~~~ Lexer ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/**
+ * @brief set source(file or string) to be parsed.
+ * @param cc compiler context.
+ * @param src file name or text to pe parsed.
+ * @param isFile src is a filename.
+ * @return boolean value of success.
+ */
+int source(ccState cc, int isFile, char* src) {
+	if (cc->fin._fin > 3) {
+		// close previous opened file
+		close(cc->fin._fin);
+	}
+
+	cc->fin._fin = -1;
+	cc->fin._ptr = 0;
+	cc->fin._cnt = 0;
+	cc->_chr = -1;
+	cc->_tok = 0;
+
+	cc->file = NULL;
+	cc->line = 0;
+
+	if (isFile && src != NULL) {
+#ifdef __WATCOMC__
+		if ((cc->fin._fin = open(src, O_RDONLY|O_BINARY)) <= 0)
+#else
+		if ((cc->fin._fin = open(src, O_RDONLY)) <= 0)
+#endif
+		{
+			return -1;
+		}
+
+		cc->file = mapstr(cc, src, -1, -1);
+		cc->line = 1;
+
+		if (fillBuf(cc) > 2) {
+			// skip first line if it begins with: #!
+			if (cc->fin._ptr[0] == '#' && cc->fin._ptr[1] == '!') {
+				int chr = readChr(cc);
+				while (chr != -1) {
+					if (chr == '\n') {
+						break;
+					}
+					chr = readChr(cc);
+				}
+			}
+		}
+	}
+	else if (src != NULL) {
+		cc->fin._ptr = src;
+		cc->fin._cnt = strlen(src);
+	}
+	return 0;
+}
+
+//#}
 
 /** Calculate hash of string.
  * @brief calculate the hash of a string.
@@ -190,7 +298,7 @@ unsigned rehash(const char* str, size_t len) {
 	register unsigned hs = 0xffffffff;
 
 	if (str != NULL) {
-		if (len == (unsigned)(-1))
+		if (len == -1)
 			len = strlen(str) + 1;
 		while (len-- > 0)
 			hs = (hs >> 8) ^ crc_tab[(hs ^ (*str++)) & 0xff];
@@ -207,15 +315,15 @@ unsigned rehash(const char* str, size_t len) {
  * @param hash precalculated hashcode, -1 recalculates.
  * @return the mapped string in the string table.
  */
-char* mapstr(ccState cc, char* str, size_t len/* = -1U*/, unsigned hash/* = -1U*/) {
+char* mapstr(ccState cc, char* str, size_t len/* = -1*/, unsigned hash/* = -1*/) {
 	state rt = cc->s;
 	list newn, next, prev = 0;
 
-	if (len == (unsigned)(-1)) {
+	if (len == -1) {
 		len = strlen(str) + 1;
 	}
 
-	if (hash == (unsigned)(-1)) {
+	if (hash == -1) {
 		hash = rehash(str, len) % TBLS;
 	}
 
@@ -448,7 +556,7 @@ static int readTok(ccState cc, astn tok) {
 				// example: struct hex32: int32; //%%0x8x
 				if (fmt && cc->pfmt && cc->pfmt->line == line) {
 					*ptr++ = 0;
-					cc->pfmt->pfmt = mapstr(cc, beg, ptr - beg, -1U);
+					cc->pfmt->pfmt = mapstr(cc, beg, ptr - beg, -1);
 				}
 			}
 
@@ -903,12 +1011,12 @@ static int readTok(ccState cc, astn tok) {
 				{"break", STMT_brk},
 				{"const", ATTR_const},
 				{"continue", STMT_con},
-				{"define", TYPE_def},
 				{"else", STMT_els},
 				{"emit", EMIT_opc},
 				{"enum", ENUM_kwd},
 				{"for", STMT_for},
 				{"if", STMT_if},
+				{"inline", TYPE_def},
 				{"parallel", QUAL_par},
 				{"return", STMT_ret},
 				{"static", ATTR_stat},
@@ -1248,59 +1356,4 @@ ccToken skiptok(ccState cc, ccToken kind, int raise) {
 		return TYPE_any;
 	}
 	return kind;
-}
-//#}
-
-/**
- * @brief set source(file or string) to be parsed.
- * @param cc compiler context.
- * @param src file name or text to pe parsed.
- * @param isFile src is a filename.
- * @return boolean value of success.
- */
-int source(ccState cc, int isFile, char* src) {
-	if (cc->fin._fin > 3) {
-		// close previous opened file
-		close(cc->fin._fin);
-	}
-
-	cc->fin._fin = -1;
-	cc->fin._ptr = 0;
-	cc->fin._cnt = 0;
-	cc->_chr = -1;
-	cc->_tok = 0;
-
-	cc->file = NULL;
-	cc->line = 0;
-
-	if (isFile && src != NULL) {
-#ifdef __WATCOMC__
-		if ((cc->fin._fin = open(src, O_RDONLY|O_BINARY)) <= 0) {
-#else
-		if ((cc->fin._fin = open(src, O_RDONLY)) <= 0) {
-#endif
-			return -1;
-		}
-
-		cc->file = mapstr(cc, src, -1U, -1U);
-		cc->line = 1;
-
-		if (fillBuf(cc) > 2) {
-			// skip first line if it begins with: #!
-			if (cc->fin._ptr[0] == '#' && cc->fin._ptr[1] == '!') {
-				int chr = readChr(cc);
-				while (chr != -1) {
-					if (chr == '\n') {
-						break;
-					}
-					chr = readChr(cc);
-				}
-			}
-		}
-	}
-	else if (src != NULL) {
-		cc->fin._ptr = src;
-		cc->fin._cnt = strlen(src);
-	}
-	return 0;
 }

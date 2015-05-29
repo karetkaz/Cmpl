@@ -927,7 +927,7 @@ static void FPUTFMT(FILE* fout, char *esc[], const char* msg, va_list ap) {
 					}
 
 					if (chr == 'd' && (int32_t)num < 0) {
-						num = (uint32_t) -num;
+						num = (uint32_t) 0 -num;
 						neg = -1;
 					}
 
@@ -953,7 +953,7 @@ static void FPUTFMT(FILE* fout, char *esc[], const char* msg, va_list ap) {
 					}
 
 					if (chr == 'D' && (int64_t)num < 0) {
-						num = (uint64_t) -num;
+						num = (uint64_t) 0 -num;
 						neg = -1;
 					}
 					str = fmtuns(buff, sizeof(buff), prc, 10, num);
