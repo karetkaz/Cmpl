@@ -21,7 +21,7 @@
 	5: print non pre-mapped strings, non static types
 	6: print static casts generated with emit
 */
-//~ #define DEBUGGING 2
+#define DEBUGGING 0
 
 // enable paralell execution stuff
 //~ #define MAXPROCSEXEC 1
@@ -334,9 +334,12 @@ typedef struct dbgInfo {
 	// the declared symbol.
 	symn decl;
 
-	// position in file
+	// position in file.
 	char* file;
 	int line;
+
+	// break execution?
+	int bp;
 
 	// position in code
 	size_t start;
@@ -415,7 +418,10 @@ struct ccStateRec {
 /// Debuger context
 // TODO: merge this somehow with libcArgs and cell into exeState
 struct dbgStateRec {
-	int (*dbug)(state, int pu, void* ip, void* sp, size_t ss, char* err);
+	//~ size_t breakAt;		// break if pc is equal
+	size_t breakLt;		// break if pc is less than
+	size_t breakGt;		// break if pc is greater than
+	int (*dbug)(state, int pu, void* ip, void* sp, size_t ss, char* err, size_t fp);
 	struct arrBuffer codeMap;
 };
 
@@ -707,12 +713,11 @@ char* mapstr(ccState cc, char *str, size_t size/* = -1*/, unsigned hash/* = -1*/
 size_t vmOffset(state, void *ptr);
 
 /**
- * @brief Check for an instruction at the given offset.
- * @param offs Offset of the opcode.
- * @param opc Opcode to check.
- * @param arg Copy the argument of the opcode.
- * @return non zero if at the given location the opc was found.
- * @note Aborts if opc is not valid.
+ * @brief Optimize an assigment by removing extra copy of the value if it is on the top of the stack.
+ * @param Runtime context.
+ * @param offsBegin Begin of the byte code.
+ * @param offsEnd End of the byte code.
+ * @return non zero if the code was optimized.
  */
 int optimizeAssign(state, size_t offsBegin, size_t offsEnd);
 
@@ -747,6 +752,7 @@ int fixjump(state, int src, int dst, int stc);
 
 // Debuging.
 
+dbgInfo findCodeMapping(state rt, char* file, int line);
 dbgInfo getCodeMapping(state rt, size_t position);
 dbgInfo dbgMapCode(state rt, astn ast, size_t start, size_t end);
 

@@ -914,6 +914,20 @@ void freeBuff(struct arrBuffer* buff) {
 	buff->esz = 0;
 }
 
+dbgInfo findCodeMapping(state rt, char* file, int line) {
+	if (rt->dbg != NULL) {
+		int i;
+		for (i = 0; i < rt->dbg->codeMap.cnt; ++i) {
+			dbgInfo result = getBuff(&rt->dbg->codeMap, i);
+			if (result->file && strcmp(file, result->file) == 0) {
+				if (line == result->line) {
+					return result;
+				}
+			}
+		}
+	}
+	return NULL;
+}
 dbgInfo getCodeMapping(state rt, size_t position) {
 	if (rt->dbg != NULL) {
 		int i;
@@ -949,6 +963,7 @@ dbgInfo dbgMapCode(state rt, astn ast, size_t start, size_t end) {
 			result->line = ast->line;
 			result->start = start;
 			result->end = end;
+			result->bp = 0;
 		}
 	}
 	return result;

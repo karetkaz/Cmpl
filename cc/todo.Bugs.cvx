@@ -3,6 +3,7 @@
 //~ BUG: function with empty body does not generate the return instruction.
 //~ BUG: array of references
 //~ BUG: void alma(int a) {static int A = a;}
+//~ BUG: test.it.files.cvx:82 change `for (char str[70] : file2)` with `for (double str[70] : file2)`
 /+~ BUG: invalid slice size
 int arr2[15];			// array
 int arr3[] = arr2;		// slice

@@ -45,8 +45,8 @@ void drawCB() {
 		drawBezier(offScreen, positions[0].x, positions[0].y, positions[1].x, positions[1].y, positions[2].x, positions[2].y, 0xff00ff);
 	}
 	static if (points == 4) {
-		//~ drawLine(offScreen, positions[0].x, positions[0].y, positions[1].x, positions[1].y, gray(128));
-		//~ drawLine(offScreen, positions[2].x, positions[2].y, positions[3].x, positions[3].y, gray(128));
+		drawLine(offScreen, positions[0].x, positions[0].y, positions[1].x, positions[1].y, gray(128));
+		drawLine(offScreen, positions[2].x, positions[2].y, positions[3].x, positions[3].y, gray(128));
 		drawBezier(offScreen, positions[0].x, positions[0].y, positions[1].x, positions[1].y, positions[2].x, positions[2].y, positions[3].x, positions[3].y, 0xff00ff);
 	}
 	reDraw = false;

@@ -1011,6 +1011,7 @@ static int readTok(ccState cc, astn tok) {
 				{"break", STMT_brk},
 				{"const", ATTR_const},
 				{"continue", STMT_con},
+				{"define", TYPE_def},
 				{"else", STMT_els},
 				{"emit", EMIT_opc},
 				{"enum", ENUM_kwd},

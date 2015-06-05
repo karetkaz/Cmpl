@@ -1562,7 +1562,7 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 				if (ast->op.lhso == ast->op.rhso->op.lhso) {
 					// HACK: speed up for (int i = 0; i < 10, i += 1) ...
 					if (optimizeAssign(rt, codeBegin, codeEnd)) {
-						logif(DEBUGGING > 1, "assignment optimized: %+k", ast);
+						debug("assignment optimized: %+k", ast);
 					}
 				}
 			}
@@ -1736,7 +1736,7 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 
 				// skip initialized static variables and function
 				if (var->stat && var->offs && (var->call || !rt->cc->init)) {
-					trace("already initialized: %+T", var);
+					debug("already initialized: %+T", var);
 					return TYPE_vid;
 				}
 

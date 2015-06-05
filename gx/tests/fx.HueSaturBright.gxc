@@ -12,7 +12,7 @@ enum Window {
 //~ string fileName = "media/images/Earth.jpg";
 string fileName = "media/images/nol.bmp";
 
-define useNativeImpl = true;
+define useNativeImpl = !true;
 gxSurf img = gxSurf(fileName);
 
 int brightness = 0;
@@ -122,7 +122,7 @@ void drawCB() {
 				result = dph(mat, col);
 			}
 			fillSurf(offScreen, null, pixelCB);
-			/*fillSurf(offScreen, null, function vec4f(vec4f col) {
+			/*fillSurf(offScreen, null, inline vec4f(vec4f col) {
 				result = dph(mat, col);
 			});*/
 		}

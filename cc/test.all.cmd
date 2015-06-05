@@ -8,10 +8,10 @@ REM ~ compile flags
 SET flags=-gd2 -x -asm19 -w9
 REM ~ SET flags=-gd2 -x -w0
 
-SET logFile=log.mingw.cvx
-SET logFile32=log.vs32.cvx
-SET logFile64=log.vs64.cvx
-SET vsDir=..\proj\vs.2013\Release\
+SET logFile=out/log.mingw.cvx
+SET logFile32=out/log.vs32.cvx
+SET logFile64=out/log.vs64.cvx
+REM ~ SET vsDir=..\proj\vs.2013\Release\
 
 echo>%logFile%
 FOR %%f IN (%files%) DO IF EXIST %%f (

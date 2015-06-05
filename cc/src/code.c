@@ -201,9 +201,23 @@ static int removeOpc(state rt, size_t offs) {
 	return 0;
 }
 
+static size_t nextIp(state rt, size_t offs) {
+	register bcde ip = getip(rt, offs);
+	switch (ip->opc) {
+		__ERROR:
+			fatal("%.*A", offs, ip);
+			return 0;
+
+		#define NEXT(__IP, __SP, __CHK) offs += __IP;
+		#define STOP(__ERR, __CHK, __ERC) do {if (__CHK) {goto __ERROR;}} while(0)
+		#include "code.inl"
+	}
+	return offs;
+}
+
 static int decrementStackAccess(state rt, size_t offsBegin, size_t offsEnd, int count) {
 	size_t offs;
-	for (offs = offsBegin; offs < offsEnd; ) {
+	for (offs = offsBegin; offs < offsEnd; offs = nextIp(rt, offs)) {
 		register bcde ip = getip(rt, offs);
 		switch (ip->opc) {
 			case opc_set1:
@@ -217,15 +231,6 @@ static int decrementStackAccess(state rt, size_t offsBegin, size_t offsEnd, int 
 			case opc_ldsp:
 				ip->rel -= count * vm_size;
 				break;
-		}
-		switch (ip->opc) {
-			__ERROR:
-				fatal("%.*A", offs, ip);
-				return 0;
-
-			#define NEXT(__IP, __SP, __CHK) offs += __IP;
-			#define STOP(__ERR, __CHK, __ERC) do {if (__CHK) {goto __ERROR;}} while(0)
-			#include "code.inl"
 		}
 	}
 	return 1;
@@ -1022,7 +1027,7 @@ size_t emitarg(state rt, vmOpcode opc, stkval arg) {
 
 		#define STOP(__ERR, __CHK, __ERC) if (__CHK) goto __ERR
 		#define NEXT(__IP, __SP, __CHK)\
-			STOP(error_stc, rt->vm.ss < (__CHK), -1);\
+			STOP(error_stc, (ssize_t)rt->vm.ss < (ssize_t)(__CHK), -1);\
 			rt->vm.ss += (__SP);\
 			rt->_beg += (__IP);
 		#include "code.inl"
@@ -1178,7 +1183,7 @@ static inline int dotrace(state rt, void* ip, void* sp) {
 }
 
 /// Private dummy debug function.
-static int dbgDummy(state rt, int pu, void *ip, void* sp, size_t ss, char* err) {
+static int dbgDummy(state rt, int pu, void *ip, void* sp, size_t ss, char* err, size_t fp) {
 	if (err != NULL) {
 		// TODO: get file and line from debug information.
 		error(rt, NULL, 0, "exec: %s(%?d):[sp%02d]@%.*A rw@%06x", err, pu, ss, vmOffset(rt, ip), ip);
@@ -1186,6 +1191,7 @@ static int dbgDummy(state rt, int pu, void *ip, void* sp, size_t ss, char* err) 
 		return -1;
 	}
 	(void)sp;
+	(void)fp;
 	return 0;
 }
 
@@ -1198,8 +1204,8 @@ static int dbgDummy(state rt, int pu, void *ip, void* sp, size_t ss, char* err) 
  * @param dbg function which is executed after each instruction or on error.
  * @return Error code of execution, 0 on success.
  */
-static int exec(state rt, cell pu, symn fun, void* extra, int dbg(state, int, void*, void*, size_t, char*)) {
-	int err_code = 0;
+static int exec(state rt, cell pu, symn fun, void* extra, int dbg(state, int, void*, void*, size_t, char*, size_t)) {
+	size_t err_code = 0;
 
 	const int cc = 1;
 	const libc libcvec = rt->vm.libv;
@@ -1230,13 +1236,13 @@ static int exec(state rt, cell pu, symn fun, void* extra, int dbg(state, int, vo
 
 			if (ip >= ipMax || ip < ipMin) {
 				err_code = vmOffset(rt, ip);
-				return dbg(rt, err_code, ip, sp, pu->ss, "invalid instruction pointer");
+				return dbg(rt, err_code, ip, sp, pu->ss, "invalid instruction pointer", err_code);
 			}
 			if (sp > spMax || sp < spMin) {
 				err_code = vmOffset(rt, sp);
-				return dbg(rt, err_code, ip, sp, pu->ss, "invalid stack pointer");
+				return dbg(rt, err_code, ip, sp, pu->ss, "invalid stack pointer", err_code);
 			}
-			if ((err_code = dbg(rt, 0, ip, sp, st - sp, NULL)) != 0) {
+			if ((err_code = dbg(rt, 0, ip, sp, st - sp, NULL, 0)) != 0) {
 				// execution aborted
 				return err_code;
 			}
@@ -1245,28 +1251,28 @@ static int exec(state rt, cell pu, symn fun, void* extra, int dbg(state, int, vo
 					return 0;
 
 				dbg_error_opc:
-					return dbg(rt, err_code, ip, sp, pu->ss, "invalid opcode");
+					return dbg(rt, err_code, ip, sp, pu->ss, "invalid opcode", err_code);
 
 				dbg_error_ovf:
-					return dbg(rt, err_code, ip, sp, pu->ss, "stack overflow");
+					return dbg(rt, err_code, ip, sp, pu->ss, "stack overflow", err_code);
 
 				dbg_error_trace_ovf:
-					return dbg(rt, err_code, ip, sp, pu->ss, "trace overflow");
+					return dbg(rt, err_code, ip, sp, pu->ss, "trace overflow", err_code);
 
 				dbg_error_mem:
-					return dbg(rt, err_code, ip, sp, pu->ss, "segmentation fault");
+					return dbg(rt, err_code, ip, sp, pu->ss, "segmentation fault", err_code);
 
 				dbg_error_div_flt:
-					dbg(rt, err_code, ip, sp, pu->ss, "division by zero");
+					dbg(rt, err_code, ip, sp, pu->ss, "division by zero", err_code);
 					// continue execution on floating point division by zero.
 					break;
 
 				dbg_error_div:
-					return dbg(rt, err_code, ip, sp, pu->ss, "division by zero");
+					return dbg(rt, err_code, ip, sp, pu->ss, "division by zero", err_code);
 
 				dbg_error_libc:
 					error(rt, NULL, 0, "%d returned by libcall[%d]: %+T", err_code, ip->rel, libcvec[ip->rel].sym);
-					return dbg(rt, err_code, ip, sp, pu->ss, "libcall error");
+					return dbg(rt, err_code, ip, sp, pu->ss, "libcall error", libcvec[ip->rel].sym->offs);
 
 				#define NEXT(__IP, __SP, __CHK) pu->sp -= vm_size * (__SP); pu->ip += (__IP);
 				#define STOP(__ERR, __CHK, __ERC) do {if (__CHK) {err_code = __ERC; goto dbg_##__ERR;}} while(0)
@@ -1280,32 +1286,32 @@ static int exec(state rt, cell pu, symn fun, void* extra, int dbg(state, int, vo
 
 	// code for maximum execution speed
 	for ( ; ; ) {
-		register bcde ip = (bcde)pu->ip;
-		register stkptr sp = (stkptr)pu->sp;
+		register const bcde const ip = (bcde)pu->ip;
+		register const stkptr sp = (stkptr)pu->sp;
 		switch (ip->opc) {
 			stop_vm:	// halt virtual machine
 				return 0;
 
 			error_opc:
-				return dbgDummy(rt, err_code, ip, sp, pu->ss, "invalid opcode");
+				return dbgDummy(rt, err_code, ip, sp, pu->ss, "invalid opcode", err_code);
 
 			error_ovf:
-				return dbgDummy(rt, err_code, ip, sp, pu->ss, "stack overflow");
+				return dbgDummy(rt, err_code, ip, sp, pu->ss, "stack overflow", err_code);
 
 			error_mem:
-				return dbgDummy(rt, err_code, ip, sp, pu->ss, "segmentation fault");
+				return dbgDummy(rt, err_code, ip, sp, pu->ss, "segmentation fault", err_code);
 
 			error_div_flt:
-				dbgDummy(rt, err_code, ip, sp, pu->ss, "division by zero");
+				dbgDummy(rt, err_code, ip, sp, pu->ss, "division by zero", err_code);
 				// continue execution on floating point division by zero.
 				break;
 
 			error_div:
-				return dbgDummy(rt, err_code, ip, sp, pu->ss, "division by zero");
+				return dbgDummy(rt, err_code, ip, sp, pu->ss, "division by zero", err_code);
 
 			error_libc:
 				//~ return dbgDummy(rt, err_code, ip, sp, pu->ss, libcvec[ip->rel].sym->name);
-				return dbgDummy(rt, err_code, ip, sp, pu->ss, "libcall error");
+				return dbgDummy(rt, err_code, ip, sp, pu->ss, "libcall error", libcvec[ip->rel].sym->offs);
 
 			#define NEXT(__IP, __SP, __CHK) {pu->sp -= vm_size * (__SP); pu->ip += (__IP);}
 			#define STOP(__ERR, __CHK, __ERC) if (__CHK) {err_code = __ERC; goto __ERR;}

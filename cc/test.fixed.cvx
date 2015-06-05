@@ -465,7 +465,6 @@ inline assertEquals(string f, float64 a, fixed b) = assert(assertInfo(f, a, floa
 
 //~ double fixed_test0 = float64(Fixed.add(fixed(2.225), fixed(3)));
 
-
 double float_value = Math.pi / 3;
 double fixed_value = float64(fixed(float_value));
 assertEquals("Cmp", float_value, fixed(float_value));
