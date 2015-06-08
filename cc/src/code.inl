@@ -22,7 +22,7 @@ case opc_nop:  NEXT(1, 0, 0) {
 } break;
 case opc_ldsp: NEXT(4, +1, 0) {
 #ifdef EXEC
-	STOP(error_ovf, ovf(pu), vmOffset(rt, ip));
+	STOP(error_ovf, ovf(pu), -1);
 	SP(-1, i4) = (memptr)sp - mp + ip->rel;
 #endif
 } break;
@@ -121,11 +121,11 @@ case opc_mad:  NEXT(4, -1, 2) {
 //#{ 0x1?: STK		// Stack
 case opc_spc:  NEXT(4, 0, 0) {
 	int sm = ip->rel / vm_size;
-	STOP(error_opc, ip->rel & (vm_size - 1), vmOffset(rt, ip));
+	STOP(error_opc, ip->rel & (vm_size - 1), -1);
 	if (sm > 0) {
 		NEXT(0, sm, 0);
 #ifdef EXEC
-		STOP(error_ovf, ovf(pu), vmOffset(rt, ip));
+		STOP(error_ovf, ovf(pu), -1);
 #endif
 	}
 	else {
@@ -134,19 +134,19 @@ case opc_spc:  NEXT(4, 0, 0) {
 } break;
 case opc_dup1: NEXT(2, +1, ip->idx) {
 #ifdef EXEC
-	STOP(error_ovf, ovf(pu), vmOffset(rt, ip));
+	STOP(error_ovf, ovf(pu), -1);
 	SP(-1, i4) = SP(ip->idx, i4);
 #endif
 } break;
 case opc_dup2: NEXT(2, +2, ip->idx) {
 #ifdef EXEC
-	STOP(error_ovf, ovf(pu), vmOffset(rt, ip));
+	STOP(error_ovf, ovf(pu), -1);
 	SP(-2, i8) = SP(ip->idx, i8);
 #endif
 } break;
 case opc_dup4: NEXT(2, +4, ip->idx) {
 #ifdef EXEC
-	STOP(error_ovf, ovf(pu), vmOffset(rt, ip));
+	STOP(error_ovf, ovf(pu), -1);
 	SP(-4, u4) = SP(ip->idx + 0, u4);
 	SP(-3, u4) = SP(ip->idx + 1, u4);
 	SP(-2, u4) = SP(ip->idx + 2, u4);
@@ -173,20 +173,20 @@ case opc_set4: NEXT(2, ip->idx <= 4 ? -ip->idx : -4, ip->idx) {
 } break;
 case opc_ldz1: NEXT(1, +1, 0) {
 #ifdef EXEC
-	STOP(error_ovf, ovf(pu), vmOffset(rt, ip));
+	STOP(error_ovf, ovf(pu), -1);
 	SP(-1, i4) = 0;
 #endif
 } break;
 case opc_ldz2: NEXT(1, +2, 0) {
 #ifdef EXEC
-	STOP(error_ovf, ovf(pu), vmOffset(rt, ip));
+	STOP(error_ovf, ovf(pu), -1);
 	SP(-1, i4) = 0;
 	SP(-2, i4) = 0;
 #endif
 } break;
 case opc_ldz4: NEXT(1, +4, 0) {
 #ifdef EXEC
-	STOP(error_ovf, ovf(pu), vmOffset(rt, ip));
+	STOP(error_ovf, ovf(pu), -1);
 	SP(-1, i4) = 0;
 	SP(-2, i4) = 0;
 	SP(-3, i4) = 0;
@@ -197,14 +197,14 @@ case opc_lf32: // temporary opc
 case opc_lref: // temporary opc
 case opc_lc32: NEXT(5, +1, 0) {
 #ifdef EXEC
-	STOP(error_ovf, ovf(pu), vmOffset(rt, ip));
+	STOP(error_ovf, ovf(pu), -1);
 	SP(-1, i4) = ip->arg.i4;
 #endif
 } break;
 case opc_lf64: // temporary opc
 case opc_lc64: NEXT(9, +2, 0) {
 #ifdef EXEC
-	STOP(error_ovf, ovf(pu), vmOffset(rt, ip));
+	STOP(error_ovf, ovf(pu), -1);
 	SP(-2, i8) = ip->arg.i8;
 #endif
 } break;
@@ -240,7 +240,7 @@ case opc_ldi4: NEXT(1, -0, 1) {
 case opc_ldi8: NEXT(1, +1, 1) {
 #ifdef EXEC
 	size_t mem = SP(0, i4);
-	STOP(error_ovf, ovf(pu), vmOffset(rt, ip));
+	STOP(error_ovf, ovf(pu), -1);
 	STOP(error_mem, mem <= 0, mem);
 	STOP(error_mem, mem > ms - 8, mem);
 	//~ STOP(error_mem, !aligned(mem, 8), mem);
@@ -250,7 +250,7 @@ case opc_ldi8: NEXT(1, +1, 1) {
 case opc_ldiq: NEXT(1, +3, 1) {
 #ifdef EXEC
 	size_t mem = SP(0, i4);
-	STOP(error_ovf, ovf(pu), vmOffset(rt, ip));
+	STOP(error_ovf, ovf(pu), -1);
 	STOP(error_mem, mem <= 0, mem);
 	STOP(error_mem, mem > ms - 16, mem);
 	//~ STOP(error_mem, !aligned(mem, 16), mem);
@@ -444,7 +444,7 @@ case b32_bit: NEXT(2, -0, 1) {
 		case b32_bit_shl: SP(0, u4) <<= ip->idx & 0x3f; break;
 		case b32_bit_shr: SP(0, u4) >>= ip->idx & 0x3f; break;
 		case b32_bit_sar: SP(0, i4) >>= ip->idx & 0x3f; break;
-		default: STOP(error_opc, 1, vmOffset(rt, ip));
+		default: STOP(error_opc, 1, -1);
 	}
 #endif
 } break;
@@ -590,13 +590,13 @@ case f32_bol: NEXT(1, -0, 1) {
 } break;
 case f32_i64: NEXT(1, +1, 1) {
 #if defined(EXEC)
-	STOP(error_ovf, ovf(pu), vmOffset(rt, ip));
+	STOP(error_ovf, ovf(pu), -1);
 	SP(-1, i8) = (int64_t)SP(0, f4);
 #endif
 } break;
 case f32_f64: NEXT(1, +1, 1) {
 #if defined(EXEC)
-	STOP(error_ovf, ovf(pu), vmOffset(rt, ip));
+	STOP(error_ovf, ovf(pu), -1);
 	SP(-1, f8) = SP(0, f4);
 #endif
 } break;
@@ -913,7 +913,7 @@ case v2d_max: NEXT(1, -4, 8) {
 //~ 0xd?: ???		// ext i32+i64
 //~ 0xe?: ???		// ext f32+f64
 //~ 0xf?: ???		// ext vec+pck
-default: STOP(error_opc, 1, vmOffset(rt, ip));
+default: STOP(error_opc, 1, -1);
 //#}-----------------------------------------------------------------------------
 
 #undef SP

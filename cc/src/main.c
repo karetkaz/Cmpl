@@ -18,7 +18,7 @@ application [global options] [local options]...
 
 		-api[<hex>][.<sym>]		output symbols
 		-asm[<hex>][.<fun>]		output assembly
-		-ast[<hex>]				output syntax tree
+		-ast[<hex>]				TEMP: output syntax tree
 
 		--[s|c]*				TEMP: skip: stdlib | code geration
 
@@ -332,7 +332,7 @@ static int importLib(state rt, const char* path) {
 
 static symn printvars = NULL;
 static void printGlobals(FILE* out, state rt, int all);
-static int dbgConsole(state, int pu, void* ip, void* sp, size_t ss, char* err, size_t fp);
+static int dbgConsole(state, int pu, void* ip, void* sp, size_t ss, char* err);
 
 int program(int argc, char* argv[]) {
 	char* stdlib = (char*)STDLIB;
@@ -363,7 +363,7 @@ int program(int argc, char* argv[]) {
 
 	char* amem = paddptr(mem, rt_size);
 	state rt = rtInit(amem, sizeof(mem) - (amem - mem));
-	int (*dbg)(state, int pu, void* ip, void* sp, size_t ss, char* err, size_t fp) = NULL;
+	int (*dbg)(state, int pu, void* ip, void* sp, size_t ss, char* err) = NULL;
 
 	// max 32 break points
 	char* bp_file[32];
@@ -659,7 +659,6 @@ int program(int argc, char* argv[]) {
 		fputfmt(dmpf, "\n>==-- tags:\n");
 		fputfmt(dmpf, "#api: replace(`^([^:)<#>]*([)]+[:][^:]+)?).*$`, `\\1`)\n");
 		dump(rt, dump_sym | (out_tags & 0x0ff), sym);
-		fputfmt(dmpf, "// */\n");
 	}
 	if (out_tree >= 0) {
 		symn sym = NULL;
@@ -671,7 +670,7 @@ int program(int argc, char* argv[]) {
 		}
 		fputfmt(dmpf, "\n>/*-- code.xml:\n");
 		dump(rt, dump_ast | (out_tree & 0x0ff), sym);
-		fputfmt(dmpf, "// */\n");
+		fputfmt(dmpf, "*/\n");
 	}
 	if (out_dasm >= 0) {
 		symn sym = NULL;
@@ -683,7 +682,7 @@ int program(int argc, char* argv[]) {
 		}
 		fputfmt(dmpf, "\n>/*-- code.asm{pc: %06x, px: %06x}:\n", rt->vm.pc, rt->vm.px);
 		dump(rt, dump_asm | (out_dasm & 0x0ff), sym);
-		fputfmt(dmpf, "// */\n");
+		fputfmt(dmpf, "*/\n");
 	}
 
 	// run code if there is no error.
@@ -695,21 +694,21 @@ int program(int argc, char* argv[]) {
 		}
 		fputfmt(dmpf, "\n>/*-- exec:\n");
 		result = execute(rt, NULL, rt->_size / 4);
-		fputfmt(dmpf, "\n// */\n");
+		fputfmt(dmpf, "*/\n");
 		if (var_dump >= 0) {
 
 			fputfmt(dmpf, "\n>/*-- vars:\n");
 			printGlobals(dmpf, rt, var_dump);
-			fputfmt(dmpf, "// */\n");
+			fputfmt(dmpf, "*/\n");
 
 			//~ fputfmt(dmpf, "\n>/*-- trace:\n");
 			//~ logTrace(rt, 1, 0, 20);
-			fputfmt(dmpf, "// */\n");
+			//~ fputfmt(dmpf, "*/\n");
 
 			// show allocated memory chunks.
 			fputfmt(dmpf, "\n>/*-- heap:\n");
 			rtAlloc(rt, NULL, 0);
-			fputfmt(dmpf, "// */\n");
+			fputfmt(dmpf, "*/\n");
 		}
 	}
 
@@ -786,7 +785,7 @@ static void printGlobals(FILE* out, state rt, int all) {
 	}
 }
 
-static int dbgConsole(state rt, int pu, void* ip, void* sp, size_t ss, char* err, size_t fp) {
+static int dbgConsole(state rt, int pu, void* ip, void* sp, size_t ss, char* err) {
 	/* commands
 	 *   \0: break and read command
 	 *   r: break on next breakpoint (continue)
@@ -799,8 +798,8 @@ static int dbgConsole(state rt, int pu, void* ip, void* sp, size_t ss, char* err
 	 *   t: trace (print callstack)
 	 */
 	static char lastCommand = 'r';
-	dbgInfo dbg = NULL;
 	char buff[1024];
+	dbgInfo dbg = NULL;
 	int brk = 0;
 	size_t i;
 
@@ -817,22 +816,20 @@ static int dbgConsole(state rt, int pu, void* ip, void* sp, size_t ss, char* err
 	}// */
 
 	i = vmOffset(rt, ip);
-	dbg = getCodeMapping(rt, i);
-	if (err != NULL) {
-		// error executing opcode or libcall: abort execution
-		brk = 1;
-	}
-	else if (i < rt->dbg->breakLt) {
-		// scheduled break
-		brk = 2;
-	}
-	else if (i > rt->dbg->breakGt) {
-		// scheduled break
-		brk = 3;
-	}
-	else if (dbg != NULL) {
-		// check breakpoint hit
-		if (dbg->bp && i == dbg->start) {
+	if (rt->dbg != NULL) {
+		dbg = getCodeMapping(rt, i);
+		if (dbg != NULL) {
+			if (dbg->bp && i == dbg->start) {
+				brk = 1;
+			}
+			else if (i < rt->dbg->breakLt) {
+				brk = 2;
+			}
+			else if (i > rt->dbg->breakGt) {
+				brk = 3;
+			}
+		}
+		if (err != NULL) {
 			brk = 4;
 		}
 	}
@@ -844,18 +841,13 @@ static int dbgConsole(state rt, int pu, void* ip, void* sp, size_t ss, char* err
 
 	// print current opcode
 	if (dbg != NULL && dbg->file != NULL && dbg->line > 0) {
-		fputfmt(stdout, "%s:%d:", dbg->file, dbg->line);
-	}
-	if (err != NULL) {
 		int32_t SP = ss > 0 ? *(int32_t*)sp : 0xbadbad;
-		fputfmt(stdout, "exec:%s:[%06x sp(%02d): %08x] %9.*A\n", err, i, ss, SP, i, ip);
+		fputfmt(stdout, "%s:%d:exec:[%06x sp(%02d): %08x] %9.*A\n", dbg->file, dbg->line, i, ss, SP, i, ip);
 	}
 	else {
 		int32_t SP = ss > 0 ? *(int32_t*)sp : 0xbadbad;
 		fputfmt(stdout, "exec:[%06x sp(%02d): %08x] %9.*A\n", i, ss, SP, i, ip);
 	}
-	logTrace(rt, 1, 0, 256);
-	//~ logTrace(rt, 1, 0, 100);
 
 	for ( ; ; ) {
 		char* arg = NULL;

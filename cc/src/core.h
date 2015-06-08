@@ -21,7 +21,7 @@
 	5: print non pre-mapped strings, non static types
 	6: print static casts generated with emit
 */
-#define DEBUGGING 0
+//~ #define DEBUGGING 2
 
 // enable paralell execution stuff
 //~ #define MAXPROCSEXEC 1
@@ -421,7 +421,7 @@ struct dbgStateRec {
 	//~ size_t breakAt;		// break if pc is equal
 	size_t breakLt;		// break if pc is less than
 	size_t breakGt;		// break if pc is greater than
-	int (*dbug)(state, int pu, void* ip, void* sp, size_t ss, char* err, size_t fp);
+	int (*dbug)(state, int pu, void* ip, void* sp, size_t ss, char* err);
 	struct arrBuffer codeMap;
 };
 

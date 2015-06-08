@@ -439,8 +439,7 @@ static void fputast(FILE* fout, char *esc[], astn ast, int mode, int level) {
 				astn ret = ast->stmt.stmt;
 				fputstr(fout, esc, " ");
 				// `return 3;` is modified to `return result = 3;`
-				logif(ret->kind != ASGN_set && ret->kind != OPER_fnc, "Error");
-				logif(ret->kind == OPER_fnc && ret->type && ret->type->cast != TYPE_vid, "Error");
+				dieif(ret->kind != ASGN_set, "Error");
 				fputast(fout, esc, ret->op.rhso, mode, -0xf);
 			}
 			break;
