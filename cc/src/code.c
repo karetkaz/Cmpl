@@ -1183,14 +1183,15 @@ static inline int dotrace(state rt, void* ip, void* sp) {
 }
 
 /// Private dummy debug function.
-static int dbgDummy(state rt, int pu, void *ip, void* sp, size_t ss, char* err) {
-	if (err != NULL) {
+static int dbgDummy(state rt, int pu, void *ip, void* sp, size_t ss, vmError err, size_t fp) {
+	if (err != noError) {
 		// TODO: get file and line from debug information.
 		error(rt, NULL, 0, "exec: %s(%?d):[sp%02d]@%.*A rw@%06x", err, pu, ss, vmOffset(rt, ip), ip);
-		logTrace(rt, 1, -1, 100);
+		logTrace(rt, NULL, 1, -1, 100);
 		return -1;
 	}
 	(void)sp;
+	(void)fp;
 	return 0;
 }
 
@@ -1203,8 +1204,8 @@ static int dbgDummy(state rt, int pu, void *ip, void* sp, size_t ss, char* err) 
  * @param dbg function which is executed after each instruction or on error.
  * @return Error code of execution, 0 on success.
  */
-static int exec(state rt, cell pu, symn fun, void* extra, int dbg(state, int, void*, void*, size_t, char*)) {
-	int err_code = 0;
+static int exec(state rt, cell pu, symn fun, void* extra, int dbg(state, int, void*, void*, size_t, vmError, size_t)) {
+	size_t err_code = 0;
 
 	const int cc = 1;
 	const libc libcvec = rt->vm.libv;
@@ -1234,14 +1235,12 @@ static int exec(state rt, cell pu, symn fun, void* extra, int dbg(state, int, vo
 			register stkptr sp = (stkptr)pu->sp;
 
 			if (ip >= ipMax || ip < ipMin) {
-				err_code = vmOffset(rt, ip);
-				return dbg(rt, err_code, ip, sp, pu->ss, "invalid instruction pointer");
+				return dbg(rt, 0, ip, sp, pu->ss, invalidIP, vmOffset(rt, ip));
 			}
 			if (sp > spMax || sp < spMin) {
-				err_code = vmOffset(rt, sp);
-				return dbg(rt, err_code, ip, sp, pu->ss, "invalid stack pointer");
+				return dbg(rt, 0, ip, sp, pu->ss, invalidSP, vmOffset(rt, sp));
 			}
-			if ((err_code = dbg(rt, 0, ip, sp, st - sp, NULL)) != 0) {
+			if ((err_code = dbg(rt, 0, ip, sp, st - sp, noError, 0)) != 0) {
 				// execution aborted
 				return err_code;
 			}
@@ -1250,28 +1249,28 @@ static int exec(state rt, cell pu, symn fun, void* extra, int dbg(state, int, vo
 					return 0;
 
 				dbg_error_opc:
-					return dbg(rt, err_code, ip, sp, pu->ss, "invalid opcode");
+					return dbg(rt, err_code, ip, sp, pu->ss, invalidOpcode, err_code);
 
 				dbg_error_ovf:
-					return dbg(rt, err_code, ip, sp, pu->ss, "stack overflow");
+					return dbg(rt, err_code, ip, sp, pu->ss, stackOverflow, err_code);
 
 				dbg_error_trace_ovf:
-					return dbg(rt, err_code, ip, sp, pu->ss, "trace overflow");
+					return dbg(rt, err_code, ip, sp, pu->ss, traceOverflow, err_code);
 
 				dbg_error_mem:
-					return dbg(rt, err_code, ip, sp, pu->ss, "segmentation fault");
+					return dbg(rt, err_code, ip, sp, pu->ss, segmentationFault, err_code);
 
 				dbg_error_div_flt:
-					dbg(rt, err_code, ip, sp, pu->ss, "division by zero");
+					dbg(rt, err_code, ip, sp, pu->ss, divisionByZero, err_code);
 					// continue execution on floating point division by zero.
 					break;
 
 				dbg_error_div:
-					return dbg(rt, err_code, ip, sp, pu->ss, "division by zero");
+					return dbg(rt, err_code, ip, sp, pu->ss, divisionByZero, err_code);
 
 				dbg_error_libc:
-					error(rt, NULL, 0, "%d returned by libcall[%d]: %+T", err_code, ip->rel, libcvec[ip->rel].sym);
-					return dbg(rt, err_code, ip, sp, pu->ss, "libcall error");
+					//~ error(rt, __FILE__, __LINE__, "%d returned by libcall[%d]: %+T", err_code, ip->rel, libcvec[ip->rel].sym);
+					return dbg(rt, err_code, ip, sp, pu->ss, libCallError, libcvec[ip->rel].sym->offs);
 
 				#define NEXT(__IP, __SP, __CHK) pu->sp -= vm_size * (__SP); pu->ip += (__IP);
 				#define STOP(__ERR, __CHK, __ERC) do {if (__CHK) {err_code = __ERC; goto dbg_##__ERR;}} while(0)
@@ -1285,32 +1284,31 @@ static int exec(state rt, cell pu, symn fun, void* extra, int dbg(state, int, vo
 
 	// code for maximum execution speed
 	for ( ; ; ) {
-		register bcde ip = (bcde)pu->ip;
-		register stkptr sp = (stkptr)pu->sp;
+		register const bcde const ip = (bcde)pu->ip;
+		register const stkptr sp = (stkptr)pu->sp;
 		switch (ip->opc) {
 			stop_vm:	// halt virtual machine
 				return 0;
 
 			error_opc:
-				return dbgDummy(rt, err_code, ip, sp, pu->ss, "invalid opcode");
+				return dbgDummy(rt, err_code, ip, sp, pu->ss, invalidOpcode, err_code);
 
 			error_ovf:
-				return dbgDummy(rt, err_code, ip, sp, pu->ss, "stack overflow");
+				return dbgDummy(rt, err_code, ip, sp, pu->ss, stackOverflow, err_code);
 
 			error_mem:
-				return dbgDummy(rt, err_code, ip, sp, pu->ss, "segmentation fault");
+				return dbgDummy(rt, err_code, ip, sp, pu->ss, segmentationFault, err_code);
 
 			error_div_flt:
-				dbgDummy(rt, err_code, ip, sp, pu->ss, "division by zero");
+				dbgDummy(rt, err_code, ip, sp, pu->ss, divisionByZero, err_code);
 				// continue execution on floating point division by zero.
 				break;
 
 			error_div:
-				return dbgDummy(rt, err_code, ip, sp, pu->ss, "division by zero");
+				return dbgDummy(rt, err_code, ip, sp, pu->ss, divisionByZero, err_code);
 
 			error_libc:
-				//~ return dbgDummy(rt, err_code, ip, sp, pu->ss, libcvec[ip->rel].sym->name);
-				return dbgDummy(rt, err_code, ip, sp, pu->ss, "libcall error");
+				return dbgDummy(rt, err_code, ip, sp, pu->ss, libCallError, libcvec[ip->rel].sym->offs);
 
 			#define NEXT(__IP, __SP, __CHK) {pu->sp -= vm_size * (__SP); pu->ip += (__IP);}
 			#define STOP(__ERR, __CHK, __ERC) if (__CHK) {err_code = __ERC; goto __ERR;}
@@ -1887,12 +1885,17 @@ void fputval(state rt, FILE* fout, symn var, stkval* ref, int level, int mode) {
 }
 
 
-static void traceArgs(state rt, symn fun, char *file, int line, void* sp, int ident) {
+static void traceArgs(state rt, FILE *outf, symn fun, char *file, int line, void* sp, int ident) {
 	symn sym;
 	int printFileLine = 0;
 
-	file = file ? file : "native.code";
-	fputfmt(rt->logf, "%I%s:%u: %?T", ident, file, line, fun);
+	if (outf == NULL) {
+		outf = rt->logf;
+	}
+	if (file == NULL) {
+		file = "native.code";
+	}
+	fputfmt(outf, "%I%s:%u: %?T", ident, file, line, fun);
 	if (ident < 0) {
 		printFileLine = 1;
 		ident = -ident;
@@ -1903,10 +1906,10 @@ static void traceArgs(state rt, symn fun, char *file, int line, void* sp, int id
 	if (fun->prms != NULL && fun->prms != rt->defs) {
 		int firstArg = 1;
 		if (ident > 0) {
-			fputfmt(rt->logf, "(");
+			fputfmt(outf, "(");
 		}
 		else {
-			fputfmt(rt->logf, "\n");
+			fputfmt(outf, "\n");
 		}
 		for (sym = fun->prms; sym; sym = sym->next) {
 			void *offs;
@@ -1920,7 +1923,7 @@ static void traceArgs(state rt, symn fun, char *file, int line, void* sp, int id
 			*/
 
 			if (firstArg == 0) {
-				fputfmt(rt->logf, ", ");
+				fputfmt(outf, ", ");
 			}
 			else {
 				firstArg = 0;
@@ -1928,10 +1931,10 @@ static void traceArgs(state rt, symn fun, char *file, int line, void* sp, int id
 
 			if (printFileLine) {
 				if (sym->file != NULL && sym->line != 0) {
-					fputfmt(rt->logf, "%I%s:%u: ", ident, sym->file, sym->line);
+					fputfmt(outf, "%I%s:%u: ", ident, sym->file, sym->line);
 				}
 				else {
-					fputfmt(rt->logf, "%I", ident);
+					fputfmt(outf, "%I", ident);
 				}
 			}
 			dieif(sym->stat, "Error");
@@ -1939,23 +1942,26 @@ static void traceArgs(state rt, symn fun, char *file, int line, void* sp, int id
 			// 1 * vm_size holds the return value of the function.
 			offs = (char*)sp + fun->prms->offs + 1 * vm_size - sym->offs;
 
-			fputval(rt, rt->logf, sym, offs, -ident, 0);
+			fputval(rt, outf, sym, offs, -ident, 0);
 		}
 		if (ident > 0) {
-			fputfmt(rt->logf, ")");
+			fputfmt(outf, ")");
 		}
 		else {
-			fputfmt(rt->logf, "\n");
+			fputfmt(outf, "\n");
 		}
 	}
 }
 
-int logTrace(state rt, int ident, int startlevel, int tracelevel) {
+int logTrace(state rt, FILE *outf, int ident, int startlevel, int tracelevel) {
 	int pos;
 	int i, isOutput = 0;
 	cell pu = rt->vm.cell;
 	trace tr = (trace)pu->bp;
 
+	if (outf == NULL) {
+		outf = rt->logf;
+	}
 	if (rt->dbg == NULL) {
 		return 0;
 	}
@@ -1981,21 +1987,21 @@ int logTrace(state rt, int ident, int startlevel, int tracelevel) {
 		}
 
 		if (isOutput > 0) {
-			fputc('\n', rt->logf);
+			fputc('\n', outf);
 		}
-		traceArgs(rt, fun, file, line, sp, ident);
+		traceArgs(rt, outf, fun, file, line, sp, ident);
 		isOutput += 1;
 	}
 	if (i < pos) {
 		if (isOutput > 0) {
-			fputc('\n', rt->logf);
+			fputc('\n', outf);
 		}
-		fputfmt(rt->logf, "%I... %d more", ident, pos - i);
+		fputfmt(outf, "%I... %d more", ident, pos - i);
 		isOutput += 1;
 	}
 
 	if (isOutput) {
-		fputc('\n', rt->logf);
+		fputc('\n', outf);
 	}
 	return isOutput;
 }

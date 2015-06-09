@@ -21,7 +21,7 @@
 	5: print non pre-mapped strings, non static types
 	6: print static casts generated with emit
 */
-//~ #define DEBUGGING 2
+#define DEBUGGING 0
 
 // enable paralell execution stuff
 //~ #define MAXPROCSEXEC 1
@@ -196,6 +196,21 @@ struct opc_inf{
 	char *const name;	// mnemonic for the opcode
 };
 extern const struct opc_inf opc_tbl[255];
+
+typedef enum {
+	noError,
+	invalidIP,
+	invalidSP,
+	invalidOpcode,	// illegalInstruction
+	stackOverflow,
+	traceOverflow,
+	divisionByZero,
+	libCallError,
+	segmentationFault
+	//~ + ArrayBoundsExceeded
+	//~ + divisionByZeroFloat
+	//~ + divisionByZeroInteger
+} vmError;
 
 typedef union {		// on stack value type
 	int8_t		i1;
@@ -421,7 +436,7 @@ struct dbgStateRec {
 	//~ size_t breakAt;		// break if pc is equal
 	size_t breakLt;		// break if pc is less than
 	size_t breakGt;		// break if pc is greater than
-	int (*dbug)(state, int pu, void* ip, void* sp, size_t ss, char* err);
+	int (*dbug)(state, int pu, void* ip, void* sp, size_t ss, vmError error, size_t fp);
 	struct arrBuffer codeMap;
 };
 
@@ -756,7 +771,7 @@ dbgInfo findCodeMapping(state rt, char* file, int line);
 dbgInfo getCodeMapping(state rt, size_t position);
 dbgInfo dbgMapCode(state rt, astn ast, size_t start, size_t end);
 
-int logTrace(state rt, int ident, int startlevel, int tracelevel);
+int logTrace(state rt, FILE *out, int ident, int startlevel, int tracelevel);
 //~ disable warning messages
 #ifdef _MSC_VER
 // C4996: The POSIX ...

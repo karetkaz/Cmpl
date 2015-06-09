@@ -2,7 +2,7 @@
 
 #~ files to compile
 files="test.*.cvx"
-files="test.it.files.cvx"
+#~ files="test.it.files.cvx"
 
 #~ compile flags
 #~ TODO: flags=-gd2 -x -w0

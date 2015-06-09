@@ -385,7 +385,7 @@ float64 drand() {
 }
 
 float64 maxrand = -1;
-for(int i = 0; i < 300000; i += 1) {
+for(int i = 0; i < 3000; i += 1) {
 	float64 currand = drand();
 
 	if (maxrand < currand) {

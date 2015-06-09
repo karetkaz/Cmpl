@@ -5,13 +5,13 @@ REM ~ SET files="test.*.cvx"
 SET files="test.it.files.cvx"
 
 REM ~ compile flags
-SET flags=-gd2 -x -asm19 -w9
+SET flags=-gd2 -x -apiff -astff -asmf9 -w9
 REM ~ SET flags=-gd2 -x -w0
 
-SET logFile=out/log.mingw.cvx
+SET logFile=c:/temp/log.mingw.cvx
 SET logFile32=out/log.vs32.cvx
 SET logFile64=out/log.vs64.cvx
-SET vsDir=..\proj\vs.2013\Release\
+REM ~ SET vsDir=..\proj\vs.2013\Release\
 
 echo>%logFile%
 FOR %%f IN (%files%) DO IF EXIST %%f (
