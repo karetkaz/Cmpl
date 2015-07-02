@@ -1,7 +1,7 @@
 // Brightness, contrast, gamma demo.
 enum Window {
 	draw = RenderMode.swap_buff;
-	resx = 1512;
+	resx = 512;
 	resy = resx;
 }
 

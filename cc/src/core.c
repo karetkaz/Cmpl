@@ -37,38 +37,37 @@ const struct opc_inf opc_tbl[255] = {
 };
 
 /// Initialize runtime context; @see header
-state rtInit(void* mem, size_t size) {
-	state rt = mem;
+state rtInit(void* _mem, size_t size) {
+	state rt = _mem;
 
-	/*TODO: dynamic memory allocation
-	if (mem == NULL) {
-		mem = malloc(size);
-		rt = mem;
+	if (rt == NULL) {
+		rt = malloc(size);
+		logif(rt == NULL, ERR_INTERNAL_ERROR);
 	}
-	// */
 
-	dieif(rt == NULL, "internal error");
-	memset(mem, 0, sizeof(struct stateRec));
+	if (rt != NULL) {
+		memset(rt, 0, sizeof(struct stateRec));
 
-	*(void**)&rt->api.ccBegin = ccBegin;
-	*(void**)&rt->api.ccDefInt = ccDefInt;
-	*(void**)&rt->api.ccDefFlt = ccDefFlt;
-	*(void**)&rt->api.ccDefStr = ccDefStr;
-	*(void**)&rt->api.ccAddType = ccAddType;
-	*(void**)&rt->api.ccAddCall = ccAddCall;
-	*(void**)&rt->api.ccAddCode = ccAddCode;
-	*(void**)&rt->api.ccEnd = ccEnd;
-	//~ rt->api.ccSymFind = ccSymFind;
-	*(void**)&rt->api.getsym = getsym;
-	*(void**)&rt->api.invoke = invoke;
-	*(void**)&rt->api.rtAlloc = rtAlloc;
+		*(void**)&rt->api.ccBegin = ccBegin;
+		*(void**)&rt->api.ccDefInt = ccDefInt;
+		*(void**)&rt->api.ccDefFlt = ccDefFlt;
+		*(void**)&rt->api.ccDefStr = ccDefStr;
+		*(void**)&rt->api.ccAddType = ccAddType;
+		*(void**)&rt->api.ccAddCall = ccAddCall;
+		*(void**)&rt->api.ccAddCode = ccAddCode;
+		*(void**)&rt->api.ccEnd = ccEnd;
+		//~ rt->api.ccSymFind = ccSymFind;
+		*(void**)&rt->api.getsym = getsym;
+		*(void**)&rt->api.invoke = invoke;
+		*(void**)&rt->api.rtAlloc = rtAlloc;
 
-	*(size_t*)&rt->_size = size - sizeof(struct stateRec);
-	rt->_end = rt->_mem + rt->_size;
-	rt->_beg = rt->_mem;
+		*(size_t*)&rt->_size = size - sizeof(struct stateRec);
+		rt->_end = rt->_mem + rt->_size;
+		rt->_beg = rt->_mem;
 
-	logFILE(rt, stdout);
-	rt->cc = NULL;
+		logFILE(rt, stdout);
+		rt->cc = NULL;
+	}
 	return rt;
 }
 
@@ -642,7 +641,10 @@ static void install_emit(ccState cc, int mode) {
 				astn node;
 			} swz[256];
 			for (i = 0; i < lengthOf(swz); i += 1) {
-				dieif(rt->_end - rt->_beg < 5, "memory overrun");
+				if (rt->_end - rt->_beg < 5) {
+					trace(ERR_MEMORY_OVERRUN);
+					return;
+				}
 				rt->_beg[0] = (unsigned char) "xyzw"[(i >> 0) & 3];
 				rt->_beg[1] = (unsigned char) "xyzw"[(i >> 2) & 3];
 				rt->_beg[2] = (unsigned char) "xyzw"[(i >> 4) & 3];
@@ -790,7 +792,11 @@ ccState ccInit(state rt, int mode, int onHalt(libcArgs)) {
 	rt->_end -= sizeof(struct ccStateRec);
 	rt->_beg += 1;	// HACK: make first symbol start not at null.
 
-	dieif(rt->_end < rt->_beg, "memory overrun");
+	if (rt->_end < rt->_beg) {
+		trace(ERR_MEMORY_OVERRUN);
+		return NULL;
+	}
+
 	memset(rt->_end, 0, sizeof(struct ccStateRec));
 
 	cc->s = rt;
@@ -846,6 +852,7 @@ int initBuff(struct arrBuffer* buff, int initsize, int elemsize) {
 	return setBuff(buff, initsize, NULL) != NULL;
 }
 void* setBuff(struct arrBuffer* buff, int idx, void* data) {
+	void* newPtr;
 	int pos = idx * buff->esz;
 
 	//~ void* ptr = getBuff(buff, idx);
@@ -855,7 +862,13 @@ void* setBuff(struct arrBuffer* buff, int idx, void* data) {
 		if (pos > 2 * buff->cap) {
 			buff->cap = pos << 1;
 		}
-		buff->ptr = realloc(buff->ptr, (size_t) buff->cap);
+		newPtr = realloc(buff->ptr, (size_t)buff->cap);
+		if (newPtr != NULL) {
+			buff->ptr = newPtr;
+		}
+		else {
+			freeBuff(buff);
+		}
 	}
 
 	if (buff->cnt >= idx) {
@@ -869,6 +882,7 @@ void* setBuff(struct arrBuffer* buff, int idx, void* data) {
 	return buff->ptr ? buff->ptr + pos : NULL;
 }
 void* insBuff(struct arrBuffer* buff, int idx, void* data) {
+	void* newPtr;
 	int pos = idx * buff->esz;
 	int newCap = buff->cnt * buff->esz;
 	if (newCap < pos) {
@@ -881,7 +895,13 @@ void* insBuff(struct arrBuffer* buff, int idx, void* data) {
 			buff->cap = newCap;
 		}
 		buff->cap *= 2;
-		buff->ptr = realloc(buff->ptr, (size_t) buff->cap);
+		newPtr = realloc(buff->ptr, (size_t) buff->cap);
+		if (newPtr != NULL) {
+			buff->ptr = newPtr;
+		}
+		else {
+			freeBuff(buff);
+		}
 	}
 
 	if (idx < buff->cnt) {

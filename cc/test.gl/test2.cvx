@@ -1,0 +1,522 @@
+//~ LIBGL_ALWAYS_INDIRECT=1 ../main ...
+
+void fun3D(double &x, double &y, double &z, double &nx, double &ny, double &nz, void fun3d(double &x, double &y, double &z, double s01, double t01), double s, double t, double eps) {
+	struct vec3 {
+		double x;
+		double y;
+		double z;
+	}
+	vec3 p;
+	vec3 ds;
+	vec3 dt;
+	fun3d(&p.x, &p.y, &p.z, s, t);
+	x = p.x;
+	y = p.y;
+	z = p.z;
+	fun3d(&ds.x, &ds.y, &ds.z, s + eps, t);
+	fun3d(&dt.x, &dt.y, &dt.z, s, t + eps);
+	ds.x = (p.x - ds.x) / eps;
+	ds.y = (p.y - ds.y) / eps;
+	ds.z = (p.z - ds.z) / eps;
+	dt.x = (p.x - dt.x) / eps;
+	dt.y = (p.y - dt.y) / eps;
+	dt.z = (p.z - dt.z) / eps;
+
+	// normal is cross product
+	nx = ds.y * dt.z - ds.z * dt.y;
+	ny = ds.z * dt.x - ds.x * dt.z;
+	nz = ds.x * dt.y - ds.y * dt.x;
+
+	// normalize
+	double len = nx * nx + ny * ny + nz * nz;
+	if (len > 0) {
+		len = float64.sqrt(len);
+		nx /= len;
+		ny /= len;
+		nz /= len;
+	}
+}
+
+// make color from a normal
+void nrm2col(double &r, double &g, double &b, double x, double y, double z) {
+	// normal has elements in the [-1,1] interval, transform it to [0, 1]
+	r = .5 * (x + 1);
+	g = .5 * (y + 1);
+	b = .5 * (z + 1);
+}
+
+static struct MeshGenerators {
+
+	void ellipse(double &x, double &y, double &z, double s01, double t01) {
+		inline X = 4;
+		inline Y = 4;
+		inline Z = 4;
+
+		inline smin = 0.;
+		inline smax = 2 * Math.pi;
+
+		inline tmin = -Math.pi / 2;
+		inline tmax = +Math.pi / 2;
+
+		double s = Math.lerp(s01, smin, smax);
+		double t = Math.lerp(t01, tmin, tmax);
+
+		x = X * float64.cos(t) * float64.cos(s);
+		y = Y * float64.cos(t) * float64.sin(s);
+		z = Z * float64.sin(t);
+	}
+
+	void ellipse2(double &x, double &y, double &z, double s01, double t01) {
+		//~ http://mathworld.wolfram.com/SphericalCoordinates.html
+		inline X = 4;
+		inline Y = 4;
+		inline Z = 4;
+
+		inline smin = 0.;
+		inline smax = Math.pi;
+
+		inline tmin = 0.;
+		inline tmax = 2 * Math.pi;
+
+		double s = Math.lerp(s01, smin, smax);
+		double t = Math.lerp(t01, tmin, tmax);
+
+		x = X * float64.cos(t) * float64.sin(s);
+		y = Y * float64.sin(t) * float64.sin(s);
+		z = Z * float64.cos(s);
+	}
+
+	void shell(double &x, double &y, double &z, double s01, double t01) {
+		inline N = 5;
+		inline H = 3;
+		inline tmin = -Math.pi;
+		inline tmax = +Math.pi;
+		inline smin = 0.;
+		inline smax = 2. * Math.pi;
+
+		double s = Math.lerp(s01, smin, smax);
+		double t = Math.lerp(t01, tmin, tmax);
+
+		double W = s / (2 * Math.pi);
+		x = W * float64.cos(N * s) * (1 + float64.cos(t));
+		y = W * float64.sin(N * s) * (1 + float64.cos(t));
+		z = W * float64.sin(t) + H * (W * W);
+	}
+
+	void apple(double &x, double &y, double &z, double s01, double t01) {
+		inline tmin = -Math.pi;
+		inline tmax = +Math.pi;
+		inline smin = 0.;
+		inline smax = 2 * Math.pi;
+
+		double s = Math.lerp(s01, smin, smax);
+		double t = Math.lerp(t01, tmin, tmax);
+
+		inline R1 = 4.0;
+		inline R2 = 3.8;
+
+		x = float64.cos(s) * (R1 + R2 * float64.cos(t)) + float64.pow((t / Math.pi), 100);
+		y = float64.sin(s) * (R1 + R2 * float64.cos(t)) + .25 * float64.cos(5 * s);
+		z = -2.3 * float64.log(1 - t * 0.3157) + 6 * float64.sin(t) + 2 * float64.cos(t);
+
+		inline scale = 1./2;
+		x *= scale;
+		y *= scale;
+		z *= scale;
+	}
+
+}
+
+inline eps = 1e-13;
+
+/* TODO: internal mesh
+struct &Mesh {
+	vec4f vertices[];
+	vec4f normals[];
+	vec4f colors[];
+
+	int32 triangles[];
+	int32 lines[];
+}
+
+int SetVertex(Mesh mesh, int idx, vec4f pos, vec4f nrm, vec4f col) {
+	if (mesh.pos == null || mesh.pos.length < idx) {
+		mesh.pos.length = idx * 2;
+	}
+}
+
+inline AddVertex(Mesh mesh, vec4f pos, vec4f nrm, vec4v col) = SetVertex(mesh, pos.length, pos, nrm, col);
+
+Mesh m = new(Mesh);
+//~ */
+
+mat4f matrix_Rotation(vec4f &dir, float ang) {
+	float sin_t = float64.sin(ang);
+	float cos_t = float64.cos(ang);
+	float one_c = 1. - cos_t;
+	vec4f tmp = mul(dir, sin_t);
+
+	float xx = dir.x * dir.x;
+	float yy = dir.y * dir.y;
+	float zz = dir.z * dir.z;
+	float xy = dir.x * dir.y;
+	float xz = dir.x * dir.z;
+	float yz = dir.y * dir.z;
+
+	result.x.x = one_c * xx + cos_t;
+	result.x.y = one_c * xy - tmp.z;
+	result.x.z = one_c * xz + tmp.y;
+	result.x.w = 0;
+
+	result.y.x = one_c * xy + tmp.z;
+	result.y.y = one_c * yy + cos_t;
+	result.y.z = one_c * yz - tmp.x;
+	result.y.w = 0;
+
+	result.z.x = one_c * xz - tmp.y;
+	result.z.y = one_c * yz + tmp.x;
+	result.z.z = one_c * zz + cos_t;
+	result.z.w = 0;
+
+	result.w = vec4f(0., 0., 0., 1.);
+}
+mat4f matrix_Translation(vec4f &dir, float cnt) {
+	vec4f tmp = mul(dir, vec4f(cnt));
+
+	result.x = vec4f(1, 0, 0, tmp.x);
+	result.y = vec4f(0, 1, 0, tmp.y);
+	result.z = vec4f(0, 0, 1, tmp.z);
+	result.w = vec4f(0, 0, 0, tmp.w);
+}
+
+// TODO: fake object
+static struct camera {
+	vec4f Up;
+	vec4f Right;
+	vec4f Forward;
+	vec4f Position;
+
+	void Rotate(vec4f &dir, vec4f &orbit, float ang) {
+		if (ang != 0) {
+			mat4f tmp = matrix_Rotation(dir, ang);
+
+			Forward = normalize(dp3(tmp, Forward));
+			Right = normalize(dp3(tmp, Right));
+			Up = cross(Forward, Right);
+
+			if (orbit != null) {
+				vec4f dir2 = sub(orbit, Position);
+				float dist = float64.sqrt(dp3(dir2, dir2));
+
+				inline lookAtOrbit = true;
+				static if (!lookAtOrbit) {	// camera will just rotate arund orbit
+					vec4f x = normalize(dph(tmp, dir2));
+					tmp = matrix_Translation(&x, -dist);
+				}
+
+				static if (lookAtOrbit) {	// camera will rotate and look at orbit
+					tmp = matrix_Translation(&Forward, dist);
+				}
+
+				Position = dph(tmp, orbit);
+			}
+		}
+	}
+	void Move(vec4f &dir, float step) {
+		Position = add(Position, mul(dir, step));
+	}
+
+	void ToMatrix(double mat[16]) {
+
+		inline Mat(int row, int col, double val) = void(mat[col * 4 + row] = val);
+
+		Mat(0, 0, Right.x);
+		Mat(0, 1, Right.y);
+		Mat(0, 2, Right.z);
+		Mat(0, 3, -dp3(Right, Position));
+
+		Mat(1, 0, Up.x);
+		Mat(1, 1, Up.y);
+		Mat(1, 2, Up.z);
+		Mat(1, 3, -dp3(Up, Position));
+
+		Mat(2, 0, Forward.x);
+		Mat(2, 1, Forward.y);
+		Mat(2, 2, Forward.z);
+		Mat(2, 3, -dp3(Forward, Position));
+
+		Mat(3, 0, 0);
+		Mat(3, 1, 0);
+		Mat(3, 2, 0);
+		Mat(3, 3, 1);
+	}
+
+	void LookAt(vec4f eye, vec4f tgt, vec4f up) {
+		Position = eye;
+		Forward = normalize(sub(eye, tgt));
+		Right = normalize(cross(up, Forward));
+		Up = cross(Forward, Right);
+	}
+}
+
+// TODO: fake object
+static struct mesh {
+	inline resolution = 128;
+	vec4f colors[resolution * resolution];
+	vec4f normals[resolution * resolution];
+	vec4f vertices[resolution * resolution];
+
+	void init(void fun3d(double &x, double &y, double &z, double s01, double t01)) {
+		for (int ti = 0; ti < resolution; ti += 1) {
+			double t = ti / double(resolution);
+			for (int si = 0; si < resolution; si += 1) {
+				double s = si / double(resolution);
+
+				double px;
+				double py;
+				double pz;
+				double nx;
+				double ny;
+				double nz;
+				double r;
+				double g;
+				double b;
+
+				fun3D(&px, &py, &pz, &nx, &ny, &nz, fun3d, s, t, eps);
+				nrm2col(&r, &g, &b, nx, ny, nz);
+				colors[resolution * (ti + 0) + si + 0] = vec4f(r, g, b);
+				normals[resolution * (ti + 0) + si + 0] = vec4f(nx, ny, nz);
+				vertices[resolution * (ti + 0) + si + 0] = vec4f(px, py, pz);
+			}
+		}
+	}
+	void plot() {
+		gl.Begin(gl.Points);
+		for (int i = 0; i < vertices.length; i += 1) {
+			vec4f &col = &colors[i];
+			vec4f &nrm = &normals[i];
+			vec4f &pos = &vertices[i];
+			gl.Color(col.x, col.y, col.z);
+			gl.Normal(nrm.x, nrm.y, nrm.z);
+			gl.Vertex(pos.x, pos.y, pos.z);
+		}
+		gl.End();
+	}
+	void wire() {
+		for (int i = 0; i < vertices.length - resolution - 1; i += 1) {
+			vec4f pos;
+			vec4f nrm;
+			vec4f col;
+
+			gl.Begin(gl.LineStrip);
+
+			pos = &vertices[i + 0];
+			nrm = &normals[i + 0];
+			col = &colors[i + 0];
+
+			gl.Color(col.x, col.y, col.z);
+			gl.Normal(nrm.x, nrm.y, nrm.z);
+			gl.Vertex(pos.x, pos.y, pos.z);
+
+			pos = &vertices[i + 1];
+			nrm = &normals[i + 1];
+			col = &colors[i + 1];
+
+			gl.Color(col.x, col.y, col.z);
+			gl.Normal(nrm.x, nrm.y, nrm.z);
+			gl.Vertex(pos.x, pos.y, pos.z);
+
+			pos = &vertices[i + resolution + 1];
+			nrm = &normals[i + resolution + 1];
+			col = &colors[i + resolution + 1];
+
+			gl.Color(col.x, col.y, col.z);
+			gl.Normal(nrm.x, nrm.y, nrm.z);
+			gl.Vertex(pos.x, pos.y, pos.z);
+
+			pos = &vertices[i + resolution];
+			nrm = &normals[i + resolution];
+			col = &colors[i + resolution];
+
+			gl.Color(col.x, col.y, col.z);
+			gl.Normal(nrm.x, nrm.y, nrm.z);
+			gl.Vertex(pos.x, pos.y, pos.z);
+
+			gl.End();
+		}
+	}
+	void draw() {
+		for (int i = 0; i < vertices.length - resolution - 1; i += 1) {
+			const vec4f &col00 = colors[i];
+			const vec4f &nrm00 = normals[i];
+			const vec4f &pos00 = vertices[i];
+			const vec4f &col01 = colors[i + 1];
+			const vec4f &nrm01 = normals[i + 1];
+			const vec4f &pos01 = vertices[i + 1];
+			const vec4f &col10 = colors[i + resolution];
+			const vec4f &nrm10 = normals[i + resolution];
+			const vec4f &pos10 = vertices[i + resolution];
+			const vec4f &col11 = colors[i + resolution + 1];
+			const vec4f &nrm11 = normals[i + resolution + 1];
+			const vec4f &pos11 = vertices[i + resolution + 1];
+
+			gl.Begin(gl.Quads);
+
+			gl.Color(col00.x, col00.y, col00.z);
+			gl.Normal(nrm00.x, nrm00.y, nrm00.z);
+			gl.Vertex(pos00.x, pos00.y, pos00.z);
+
+			gl.Color(col01.x, col01.y, col01.z);
+			gl.Normal(nrm01.x, nrm01.y, nrm01.z);
+			gl.Vertex(pos01.x, pos01.y, pos01.z);
+
+			gl.Color(col11.x, col11.y, col11.z);
+			gl.Normal(nrm11.x, nrm11.y, nrm11.z);
+			gl.Vertex(pos11.x, pos11.y, pos11.z);
+
+			gl.Color(col10.x, col10.y, col10.z);
+			gl.Normal(nrm10.x, nrm10.y, nrm10.z);
+			gl.Vertex(pos10.x, pos10.y, pos10.z);
+
+			gl.End();
+		}
+	}
+}
+
+int mode = 3;
+void keyHandler(int key) {
+	if (key == 27) {
+		//~ System.Exit(0);
+		glut.LeaveMainLoop();
+	}
+	else if (key == ' ') {
+		struct Camera {
+			vec4f Up;
+			vec4f Right;
+			vec4f Forward;
+			vec4f Position;
+		}
+		Camera cam = Camera(camera.Up, camera.Right, camera.Forward, camera.Position);
+		debug("Camera", variant(&cam));
+	}
+	else if (key == '\t') {
+		mode = ((mode & 0x03) + 1) & 0x03;
+		glut.PostRedisplay();
+	}
+	else {
+		//~ print("keyboard(%d)\n", int64(key));
+	}
+}
+
+void mouseHandler(int btn, int x, int y) {
+	static int ox;
+	static int oy;
+	float dx = x - ox;
+	float dy = y - oy;
+	ox = x;
+	oy = y;
+
+	inline moveSlow = .08;
+	inline rotateSlow = moveSlow * Math.pi / 180.;
+	inline rotateFast = 10 * rotateSlow;
+
+	if (btn == 1) {	// orbit the camera
+		vec4f orbit = vec4f(0., 0., 0., 0.);
+		if (dx != 0) {
+			camera.Rotate(&camera.Up, &orbit, dx * rotateFast);
+		}
+		if (dy != 0) {
+			camera.Rotate(&camera.Right, &orbit, dy * rotateFast);
+		}
+	}
+	if (btn == 2) {	// rotate the camera
+		// if no orbit is given, orbit will be the camera position.
+		const vec4f &orbit = null;//camera.Position;
+		if (dx != 0) {
+			camera.Rotate(&camera.Up, orbit, dx * rotateSlow);
+		}
+		if (dy != 0) {
+			camera.Rotate(&camera.Right, orbit, dy * rotateSlow);
+		}
+	}
+	if (btn == 3) {	// move forward / back
+		camera.Move(&camera.Forward, dy * moveSlow);
+	}
+	if (btn != 0) {
+		glut.PostRedisplay();
+	}
+}
+
+void reshape(int x, int y) {
+	gl.Viewport(0, 0, x, y);
+	struct Rect {
+		int x;
+		int y;
+		int w;
+		int h;
+	}
+	Rect traceInfo = Rect(3, 7, x, y);
+	trace("reshape", variant(&traceInfo));
+	glut.PostRedisplay();
+}
+
+void display() {
+
+	static void func(double &x, double &y, double &z, double s01, double t01) = MeshGenerators.apple;
+
+	float64 glMat[16];
+	camera.ToMatrix(glMat);
+
+	gl.Clear(gl.ColorBuffer | gl.DepthBuffer);
+
+	gl.Enable(gl.DepthTest);
+	//~ gl.Enable(gl.LineSmooth);
+	gl.Enable(gl.CullFace);
+	gl.CullFace(gl.Back);
+	gl.MatrixMode(gl.Modelview);
+
+	gl.LoadIdentity();
+	gl.Frustum(-1, 1, -1, 1, 10, 200);
+	gl.MultMatrix(glMat);
+
+	if (mode == 1) {
+		mesh.plot();
+	}
+	else if (mode == 2) {
+		mesh.wire();
+	}
+	else if (mode == 3) {
+		mesh.draw();
+	}
+	gl.Flush();
+
+	static if (!true) {	// fps
+		static int clk = 0;
+		static int fps = 0;
+
+		fps += 1;
+		int now = System.time();
+		if (clk != now) {
+			debug("fps", variant(&fps));
+			clk = now;
+			fps = 0;
+		}
+		glut.PostRedisplay();
+	}
+}
+
+mesh.init(MeshGenerators.apple);
+camera.LookAt(
+	vec4f(0, 0, 42, 0),
+	vec4f(0, 0, 0, 0),
+	vec4f(0, 1, 0, 0)
+);
+
+glut.OnMouse(mouseHandler);
+glut.OnMotion(mouseHandler);
+glut.OnKeyboard(keyHandler);
+glut.OnReshape(reshape);
+glut.OnDisplay(display);
+
+// this wont let vmExec to return.
+glut.MainLoop(500, 500);

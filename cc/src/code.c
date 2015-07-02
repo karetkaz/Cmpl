@@ -76,11 +76,12 @@ struct bcde {
 			void* lhs = sp + ip->ext.lhs;
 			void* rhs = sp + ip->ext.rhs;
 
+			// check stack
 			CHKSTK(ip->ext.res);
 			CHKSTK(ip->ext.lhs);
 			CHKSTK(ip->ext.rhs);
 
-			// if there is an indirection
+			// memory indirection
 			switch (ip->ext.mem) {
 				case 0:
 					break;
@@ -304,7 +305,7 @@ size_t emitarg(state rt, vmOpcode opc, stkval arg) {
 	libc libcvec = rt->vm.libv;
 	bcde ip = (bcde)rt->_beg;
 
-	dieif((unsigned char*)ip + 16 >= rt->_end, "memory overrun");
+	dieif((unsigned char*)ip + 16 >= rt->_end, ERR_MEMORY_OVERRUN);
 
 	/* TODO: set max stack used.
 	switch (opc) {
@@ -1027,7 +1028,7 @@ size_t emitarg(state rt, vmOpcode opc, stkval arg) {
 
 		#define STOP(__ERR, __CHK, __ERC) if (__CHK) goto __ERR
 		#define NEXT(__IP, __SP, __CHK)\
-			STOP(error_stc, rt->vm.ss < (__CHK), -1);\
+			STOP(error_stc, (ptrdiff_t)rt->vm.ss < (ptrdiff_t)(__CHK), -1);\
 			rt->vm.ss += (__SP);\
 			rt->_beg += (__IP);
 		#include "code.inl"
@@ -1044,8 +1045,6 @@ size_t emitarg(state rt, vmOpcode opc, stkval arg) {
 		rt->vm.sm = rt->vm.ss;
 	}
 
-	logif(DEBUGGING > 3, ">cgen:[sp%02d]@%9.*A", rt->vm.ss, rt->vm.pc, ip);
-
 	return rt->vm.pc;
 }
 int fixjump(state rt, int src, int dst, int stc) {
@@ -1054,8 +1053,9 @@ int fixjump(state rt, int src, int dst, int stc) {
 		bcde ip = getip(rt, src);
 		if (src) switch (ip->opc) {
 			default:
-				fatal("FixMe");
-				break;
+				fatal(ERR_INTERNAL_ERROR);
+				return 0;
+
 			case opc_task:
 				ip->dl = (uint8_t) (stc / 4);
 				ip->cl = (uint16_t) (dst - src);
@@ -1079,7 +1079,7 @@ int fixjump(state rt, int src, int dst, int stc) {
 		return 1;
 	}
 
-	fatal("FixMe");
+	fatal(ERR_INTERNAL_ERROR);
 	return 0;
 }
 
@@ -1164,19 +1164,15 @@ static inline int dotrace(state rt, void* ip, void* sp) {
 			return 0;
 		}
 		pu->tp -= sizeof(struct trace);
-		//~ logif(1, "pop trace (%d)", (pu->tp - pu->bp) / sizeof(struct trace));
 	}
 	else {
 		trace tp = (trace)pu->tp;
-		//~ if ((pu->sp - pu->tp) > -sizeof(struct trace)) {
-		//~ if (pu->tp + sizeof(struct trace) >= pu->sp) {
 		if (ovf(pu)) {
 			debug("tp: %d - sp: %d", pu->tp - pu->bp, pu->sp - pu->bp);
 			return 0;
 		}
 		tp->ip = ip;
 		tp->sp = sp;
-		//~ logif(1, "add to trace(%d): %-T", (pu->tp - pu->bp) / sizeof(struct trace), mapsym(rt, vmOffset(rt, ip), 1));
 		pu->tp += sizeof(struct trace);
 	}
 	return 1;
@@ -1185,8 +1181,8 @@ static inline int dotrace(state rt, void* ip, void* sp) {
 /// Private dummy debug function.
 static int dbgDummy(state rt, int pu, void *ip, void* sp, size_t ss, vmError err, size_t fp) {
 	if (err != noError) {
-		// TODO: get file and line from debug information.
-		error(rt, NULL, 0, "exec: %s(%?d):[sp%02d]@%.*A rw@%06x", err, pu, ss, vmOffset(rt, ip), ip);
+		// TODO: get file and line from debug information ?
+		error(rt, NULL, 0, "exec: %d(%?d):[sp%02d]@%.*A rw@%06x", err, pu, ss, vmOffset(rt, ip), ip);
 		logTrace(rt, NULL, 1, -1, 100);
 		return -1;
 	}
@@ -1231,17 +1227,18 @@ static int exec(state rt, cell pu, symn fun, void* extra, int dbg(state, int, vo
 		// invoked function will return with a ret instruction
 		dotrace(rt, NULL, pu->sp);
 		for ( ; ; ) {
-			register bcde ip = (bcde)pu->ip;
-			register stkptr sp = (stkptr)pu->sp;
+			register const bcde ip = (bcde)pu->ip;
+			register const stkptr sp = (stkptr)pu->sp;
 
 			if (ip >= ipMax || ip < ipMin) {
-				return dbg(rt, 0, ip, sp, pu->ss, invalidIP, vmOffset(rt, ip));
+				dbg(rt, 0, ip, sp, pu->ss, invalidIP, vmOffset(rt, ip));
+				return invalidIP;
 			}
 			if (sp > spMax || sp < spMin) {
 				return dbg(rt, 0, ip, sp, pu->ss, invalidSP, vmOffset(rt, sp));
 			}
 			if ((err_code = dbg(rt, 0, ip, sp, st - sp, noError, 0)) != 0) {
-				// execution aborted
+				// abort execution from debuging
 				return err_code;
 			}
 			switch (ip->opc) {
@@ -1284,7 +1281,7 @@ static int exec(state rt, cell pu, symn fun, void* extra, int dbg(state, int, vo
 
 	// code for maximum execution speed
 	for ( ; ; ) {
-		register const bcde const ip = (bcde)pu->ip;
+		register const bcde ip = (bcde)pu->ip;
 		register const stkptr sp = (stkptr)pu->sp;
 		switch (ip->opc) {
 			stop_vm:	// halt virtual machine
@@ -1330,7 +1327,7 @@ int invoke(state rt, symn fun, void* res, void* args, void* extra) {
 	// TODO: ressize = fun->prms->size;
 	size_t ressize = sizeOf(fun->type, 1);
 	void* resp = NULL;
-	int result = 0;
+	int result;
 
 	dieif(fun->kind != TYPE_ref || !fun->call, "FixMe");
 
@@ -1350,12 +1347,10 @@ int invoke(state rt, symn fun, void* res, void* args, void* extra) {
 	pu->ip = getip(rt, fun->offs);
 
 	result = exec(rt, pu, fun, extra, NULL);
-	if (result == 0 && res != NULL) {
+	if (result == noError && res != NULL) {
 		memcpy(res, resp, (size_t) ressize);
 	}
 
-	//~ dieif(pu->sp < sp, "Error");
-	dieif(pu->tp != tp, "Error diff(%d) @%-T", pu->tp - tp, fun);
 	pu->ip = ip;
 	pu->sp = sp;	//
 	pu->tp = tp;	// during exec we may return from code.
@@ -1477,8 +1472,8 @@ void fputopc(FILE* fout, unsigned char* ptr, size_t len, size_t offs, state rt) 
 
 		case b32_bit: switch (ip->idx & 0xc0) {
 			default:
-				fatal("Error");
-				break;
+				fatal(ERR_INTERNAL_ERROR);
+				return;
 
 			case b32_bit_and:
 				fputfmt(fout, "and 0x%03x", (1 << (ip->idx & 0x3f)) - 1);
@@ -1620,8 +1615,8 @@ void fputasm(state rt, FILE* fout, size_t beg, size_t end, int mode) {
 
 		switch (mode & 0x30) {
 			default:
-				fatal("Error");
-				break;
+				fatal(ERR_INTERNAL_ERROR);
+				return;
 
 			case 0x00: // relative offsets
 				fputopc(fout, (void*)ip, mode & 0xf, -1, rt);

@@ -39,7 +39,7 @@ application [global options] [local options]...
 #define USEPLUGINS
 
 // default values
-static const int wl = 9;			// warning level
+static const int wl = 19;			// warning level
 static const int ol = 2;			// optimize level
 static char mem[128 << 20];			// runtime memory
 
@@ -252,11 +252,13 @@ static int importLib(state rt, const char* path) {
 		void *destroy = (void*)GetProcAddress(library, pluginLibDestroy);
 		if (install != NULL) {
 			struct pluginLib *lib = malloc(sizeof(struct pluginLib));
-			result = installDll(rt, install);
-			lib->next = pluginLibs;
-			lib->onClose = destroy;
-			lib->lib = library;
-			pluginLibs = lib;
+			if (lib != NULL) {
+				result = installDll(rt, install);
+				lib->lib = library;
+				lib->onClose = destroy;
+				lib->next = pluginLibs;
+				pluginLibs = lib;
+			}
 		}
 		else {
 			result = -2;
@@ -371,7 +373,7 @@ int program(int argc, char* argv[]) {
 	int bp_size = 0;
 
 	if (rt == NULL) {
-		fatal("initializing runtime context.");
+		fatal("initializing runtime context");
 		return -1;
 	}
 
@@ -657,7 +659,7 @@ int program(int argc, char* argv[]) {
 			}
 		}
 		fputfmt(dmpf, "\n>/*-- tags:\n");
-		fputfmt(dmpf, "#api: replace(`^([^:)<#>]*([)]+[:][^:]+)?).*$`, `\\1`)\n");
+		//~ fputfmt(dmpf, "#api: replace(`^([^:)<#>]*([)]+[:][^:]+)?).*$`, `\\1`)\n");
 		dump(rt, dump_sym | (out_tags & 0x0ff), sym);
 		fputfmt(dmpf, "// */\n");
 	}
@@ -704,7 +706,7 @@ int program(int argc, char* argv[]) {
 
 			//~ fputfmt(dmpf, "\n>/*-- trace:\n");
 			//~ logTrace(rt, NULL, 1, 0, 20);
-			fputfmt(dmpf, "// */\n");
+			//~ fputfmt(dmpf, "// */\n");
 
 			// show allocated memory chunks.
 			fputfmt(dmpf, "\n>/*-- heap:\n");

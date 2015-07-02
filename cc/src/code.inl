@@ -386,13 +386,13 @@ case u32_mul: NEXT(1, -1, 2) {
 } break;
 case u32_div: NEXT(1, -1, 2) {
 #if defined(EXEC)
-	STOP(error_div, SP(0, u4) == 0, -1);
+	STOP(error_div, SP(0, u4) == 0, vmOffset(rt, ip));
 	SP(1, u4) /= SP(0, u4);
 #endif
 } break;
 case u32_mod: NEXT(1, -1, 2) {
 #if defined(EXEC)
-	STOP(error_div, SP(0, u4) == 0, -1);
+	STOP(error_div, SP(0, u4) == 0, vmOffset(rt, ip));
 	SP(1, u4) %= SP(0, u4);
 #endif
 } break;
@@ -484,13 +484,13 @@ case i32_mul: NEXT(1, -1, 2) {
 } break;
 case i32_div: NEXT(1, -1, 2) {
 #if defined(EXEC)
-	STOP(error_div, SP(0, i4) == 0, -1);
+	STOP(error_div, SP(0, i4) == 0, vmOffset(rt, ip));
 	SP(1, i4) /= SP(0, i4);
 #endif
 } break;
 case i32_mod: NEXT(1, -1, 2) {
 #if defined(EXEC)
-	STOP(error_div, SP(0, i4) == 0, -1);
+	STOP(error_div, SP(0, i4) == 0, vmOffset(rt, ip));
 	SP(1, i4) %= SP(0, i4);
 #endif
 } break;
@@ -554,13 +554,13 @@ case f32_mul: NEXT(1, -1, 2) {
 case f32_div: NEXT(1, -1, 2) {
 #if defined(EXEC)
 	SP(1, f4) /= SP(0, f4);
-	STOP(error_div_flt, SP(0, f4) == 0., -1);
+	STOP(error_div_flt, SP(0, f4) == 0., vmOffset(rt, ip));
 #endif
 } break;
 case f32_mod: NEXT(1, -1, 2) {
 #if defined(EXEC)
 	SP(1, f4) = fmodf(SP(1, f4), SP(0, f4));
-	STOP(error_div_flt, SP(0, f4) == 0, -1);
+	STOP(error_div_flt, SP(0, f4) == 0, vmOffset(rt, ip));
 #endif
 } break;
 case f32_ceq: NEXT(1, -1, 2) {
@@ -624,13 +624,13 @@ case i64_mul: NEXT(1, -2, 4) {
 } break;
 case i64_div: NEXT(1, -2, 4) {
 #if defined(EXEC)
-	STOP(error_div, SP(0, i8) == 0, -1);
+	STOP(error_div, SP(0, i8) == 0, vmOffset(rt, ip));
 	SP(2, i8) /= SP(0, i8);
 #endif
 } break;
 case i64_mod: NEXT(1, -2, 4) {
 #if defined(EXEC)
-	STOP(error_div, SP(0, i8) == 0, -1);
+	STOP(error_div, SP(0, i8) == 0, vmOffset(rt, ip));
 	SP(2, i8) %= SP(0, i8);
 #endif
 } break;
@@ -694,13 +694,13 @@ case f64_mul: NEXT(1, -2, 4) {
 case f64_div: NEXT(1, -2, 4) {
 #if defined(EXEC)
 	SP(2, f8) /= SP(0, f8);
-	STOP(error_div_flt, SP(0, f8) == 0., -1);
+	STOP(error_div_flt, SP(0, f8) == 0., vmOffset(rt, ip));
 #endif
 } break;
 case f64_mod: NEXT(1, -2, 4) {
 #if defined(EXEC)
 	SP(2, f8) = fmod(SP(2, f8), SP(0, f8));
-	STOP(error_div_flt, SP(0, f8) == 0, -1);
+	STOP(error_div_flt, SP(0, f8) == 0, vmOffset(rt, ip));
 #endif
 } break;
 case f64_ceq: NEXT(1, -3, 4) {

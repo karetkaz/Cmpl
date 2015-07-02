@@ -1,4 +1,4 @@
-// Sunflower demo.
+// bezier demo.
 enum Window {
 	draw = RenderMode.swap_buff | RenderMode.zero_cbuf;
 	resx = 512;

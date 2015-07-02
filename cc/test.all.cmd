@@ -1,12 +1,12 @@
 @ECHO OFF
 
+cd tests
 REM ~ files to compile
-REM ~ SET files="test.*.cvx"
-SET files="test.it.files.cvx"
+SET files="test.*.cvx"
 
 REM ~ compile flags
 SET flags=-gd2 -x -apiff -astff -asmf9 -w9
-REM ~ SET flags=-gd2 -x -w0
+SET flags=-gd2 -x -w0
 
 SET logFile=c:/temp/log.mingw.cvx
 SET logFile32=out/log.vs32.cvx

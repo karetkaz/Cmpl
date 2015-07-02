@@ -1,0 +1,106 @@
+//~ LIBGL_ALWAYS_INDIRECT=1 ../main ...
+struct pp {
+	float x;
+	float y;
+}
+
+const pp pos[] = {
+	pp(0, 1),
+	pp(-1, -1),
+	//~ pp(1, -1),
+	//~ pp(1, -1),
+	pp(1, -1)
+};
+
+int maxx = 0;
+int maxy = 0;
+int _pos = 0;
+
+inline DEBUG = false;
+
+void mouse(int btn, int x, int y) {
+	if (_pos > 0) {
+		btn = _pos;
+	}
+	if (btn > 0 && btn <= pos.length) {
+		pos[btn-1].x = -(1 - x / (.5 * maxx));
+		pos[btn-1].y = 1 - y / (.5 * maxy);
+		glut.PostRedisplay();
+	}
+
+	static if (DEBUG) {
+		struct Mouse {
+			int btn;
+			int x;
+			int y;
+		}
+		Mouse dbg = Mouse(btn, x, y);
+		trace("debug", variant(&dbg));
+	}
+}
+
+void keyboard(int key) {
+	if (key >= '1' && key <= '9') {
+		_pos = key - '0';
+	}
+	if (key == '`' || key == '0') {
+		_pos = 0;
+	}
+	if (key == 27) {
+		//~ System.exit(0);
+		glut.LeaveMainLoop();
+	}
+	debug("keyboard", variant(&key));
+}
+void reshape(int x, int y) {
+	maxx = x;
+	maxy = y;
+	gl.Viewport(0, 0, x, y);
+	glut.PostRedisplay();
+
+	static if (DEBUG) {
+		struct Reshape {
+			int x;
+			int y;
+		}
+		Reshape dbg = Reshape(x, y);
+		trace("debug", variant(&dbg));
+	}
+}
+
+void display() {
+	gl.Clear(gl.ColorBuffer);
+	gl.Begin(gl.Polygon);
+	for (int i = 0; i < pos.length; i += 1) {
+		gl.Color(i == 0, i == 1, i == 2);
+		gl.Vertex(pos[i].x, pos[i].y, 0);
+	}
+	gl.End();
+	gl.Flush();
+
+	static if (!true) {	// fps
+		static int clk = 0;
+		static int fps = 0;
+
+		fps += 1;
+		int now = System.time();
+		if (clk != now) {
+			debug("fps", variant(&fps));
+			clk = now;
+			fps = 0;
+		}
+		glut.PostRedisplay();
+	}
+
+	//~ print("display\n");
+}
+
+glut.OnMouse(mouse);
+glut.OnMotion(mouse);
+glut.OnKeyboard(keyboard);
+glut.OnReshape(reshape);
+
+glut.OnDisplay(display);
+
+// this wont let wmExec to exit.
+glut.MainLoop(500, 500);

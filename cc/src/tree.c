@@ -19,9 +19,12 @@ astn newnode(ccState cc, ccToken kind) {
 
 	// allocate memory from temporary storage.
 	rt->_end -= sizeof(struct astNode);
-	ast = (astn)rt->_end;
-	dieif(rt->_beg >= rt->_end, "memory overrun");
+	if (rt->_beg >= rt->_end) {
+		trace(ERR_MEMORY_OVERRUN);
+		return NULL;
+	}
 
+	ast = (astn)rt->_end;
 	memset(ast, 0, sizeof(struct astNode));
 	ast->kind = kind;
 	return ast;
@@ -35,48 +38,51 @@ void eatnode(ccState s, astn ast) {
 
 astn opnode(ccState s, ccToken kind, astn lhs, astn rhs) {
 	astn result = newnode(s, kind);
-	if (result == NULL) {
-		return NULL;
+	if (result != NULL) {
+		//~ TODO: dieif(tok_inf[kind].args == 0, "Erroro");
+		result->op.lhso = lhs;
+		result->op.rhso = rhs;
 	}
-	//~ TODO: dieif(tok_inf[kind].args == 0, "Erroro");
-	result->op.lhso = lhs;
-	result->op.rhso = rhs;
 	return result;
 }
 
 astn lnknode(ccState s, symn ref) {
 	astn result = newnode(s, TYPE_ref);
 
-	if (result == NULL) {
-		return NULL;
+	if (result != NULL) {
+		result->type = ref->kind == TYPE_ref ? ref->type : ref;
+		result->ref.name = ref->name;
+		result->ref.link = ref;
+		result->ref.hash = -1;
+		result->cst2 = ref->cast;
 	}
-
-	result->type = ref->kind == TYPE_ref ? ref->type : ref;
-	result->ref.name = ref->name;
-	result->ref.link = ref;
-	result->ref.hash = -1;
-	result->cst2 = ref->cast;
 	return result;
-	//return ref->used;
 }
 
 /// make a constant valued node
 astn intnode(ccState s, int64_t v) {
 	astn ast = newnode(s, TYPE_int);
-	ast->type = s->type_i32;
-	ast->cint = v;
+	if (ast != NULL) {
+		ast->type = s->type_i32;
+		ast->cint = v;
+	}
 	return ast;
 }
 astn fltnode(ccState s, float64_t v) {
 	astn ast = newnode(s, TYPE_flt);
-	ast->type = s->type_f64;
-	ast->cflt = v;
+	if (ast != NULL) {
+		ast->type = s->type_f64;
+		ast->cflt = v;
+	}
 	return ast;
 }
 astn strnode(ccState s, char* v) {
 	astn ast = newnode(s, TYPE_str);
-	ast->ref.hash = -1;
-	ast->ref.name = v;
+	if (ast != NULL) {
+		ast->type = s->type_str;
+		ast->ref.hash = -1;
+		ast->ref.name = v;
+	}
 	return ast;
 }
 
@@ -90,7 +96,7 @@ int32_t constbol(astn ast) {
 		default:
 			break;
 	}
-	fatal("not a constant %t: %+k", ast->kind, ast);
+	fatal("not a constant %+k", ast);
 	return 0;
 }
 int64_t constint(astn ast) {
@@ -108,7 +114,7 @@ int64_t constint(astn ast) {
 		default:
 			break;
 	}
-	fatal("not a constant %t: %+k", ast->kind, ast);
+	fatal("not a constant %+k", ast);
 	return 0;
 }
 float64_t constflt(astn ast) {
@@ -120,7 +126,7 @@ float64_t constflt(astn ast) {
 		default:
 			break;
 	}
-	fatal("not a constant %t: %+k", ast->kind, ast);
+	fatal("not a constant %+k", ast);
 	return 0;
 }
 
@@ -182,7 +188,10 @@ int isStatic(ccState cc, astn ast) {
 		case TYPE_ref: {					// use (var, func, define)
 			symn typ = ast->type;			// type
 			symn var = ast->ref.link;		// link
-			dieif(!typ || !var, "FixMe");
+			if (typ == NULL || var == NULL) {
+				fatal(ERR_INTERNAL_ERROR);
+				return 0;
+			}
 			// TODO: global variables are not always static.
 			return var->stat || var->nest > cc->nest;
 		}
@@ -322,7 +331,7 @@ int eval(astn res, astn ast) {
 
 	switch (ast->kind) {
 		default:
-			fatal("FixMe %t: %+k", ast->kind, ast);
+			fatal(ERR_INTERNAL_ERROR);
 			return 0;
 
 		case OPER_com:
@@ -455,7 +464,7 @@ int eval(astn res, astn ast) {
 					switch (ast->kind) {
 
 						default:
-							fatal("FixMe");
+							fatal(ERR_INTERNAL_ERROR);
 							return 0;
 
 						case OPER_add:
@@ -495,7 +504,7 @@ int eval(astn res, astn ast) {
 					switch (ast->kind) {
 
 						default:
-							fatal("FixMe: %+k", ast);
+							fatal(ERR_INTERNAL_ERROR);
 							return 0;
 
 						case OPER_add:
@@ -546,7 +555,7 @@ int eval(astn res, astn ast) {
 					switch (ast->kind) {
 
 						default:
-							fatal("FixMe");
+							fatal(ERR_INTERNAL_ERROR);
 							return 0;
 
 						case OPER_neq:
@@ -578,7 +587,7 @@ int eval(astn res, astn ast) {
 					switch (ast->kind) {
 
 						default:
-							fatal("FixMe");
+							fatal(ERR_INTERNAL_ERROR);
 							return 0;
 
 						case OPER_neq:
@@ -635,7 +644,7 @@ int eval(astn res, astn ast) {
 					switch (ast->kind) {
 
 						default:
-							fatal("FixMe");
+							fatal(ERR_INTERNAL_ERROR);
 							return 0;
 
 						case OPER_shr:
@@ -676,7 +685,7 @@ int eval(astn res, astn ast) {
 			res->kind = TYPE_bit;
 			switch (ast->kind) {
 				default:
-					fatal("FixMe");
+					fatal(ERR_INTERNAL_ERROR);
 					return 0;
 
 				case OPER_lor:
@@ -712,7 +721,7 @@ int eval(astn res, astn ast) {
 
 	if (cast != res->kind) switch (cast) {
 		default:
-			fatal("FixMe");
+			fatal(ERR_INTERNAL_ERROR);
 			return 0;
 
 		case TYPE_vid:
@@ -738,7 +747,7 @@ int eval(astn res, astn ast) {
 
 	switch (res->kind) {
 		default:
-			fatal("FixMe %t", res->kind);
+			fatal(ERR_INTERNAL_ERROR);
 			res->type = NULL;
 			return 0;
 

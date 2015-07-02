@@ -1,7 +1,7 @@
 #!/bin/sh
- #~ "./tests/*.gxc"
+
 if [ "$#" -eq 0 ]; then
-	xterm -e "$0" "./*.gxc ./tests/*.gxc"
+	xterm -e "$0" "./tests/*.gxc"
 	exit
 fi
 logFile=out/test.all.log

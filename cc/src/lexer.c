@@ -160,7 +160,10 @@ static int skipChr(ccState cc, int chr) {
  * @return the character pushed back.
  */
 static int backChr(ccState cc, int chr) {
-	dieif(cc->_chr != -1, "can not put back more than one character");
+	if(cc->_chr != -1) {
+		fatal("can not put back more than one character");
+		return -1;
+	}
 	return cc->_chr = chr;
 }
 
@@ -322,12 +325,19 @@ char* mapstr(ccState cc, char* str, size_t len/* = -1*/, unsigned hash/* = -1*/)
 	if (len == -1) {
 		len = strlen(str) + 1;
 	}
+	else if (str[len - 1] != 0) {
+		fatal(ERR_INTERNAL_ERROR);
+		return NULL;
+	}
 
 	if (hash == -1) {
 		hash = rehash(str, len) % TBLS;
 	}
+	else if (hash >= TBLS) {
+		fatal(ERR_INTERNAL_ERROR);
+		return NULL;
+	}
 
-	dieif(str[len - 1] != 0, "FixMe: %s[%d]", str, len);
 	for (next = cc->strt[hash]; next; next = next->next) {
 		int cmp = memcmp(next->data, str, len);
 		if (cmp == 0) {
@@ -339,7 +349,10 @@ char* mapstr(ccState cc, char* str, size_t len/* = -1*/, unsigned hash/* = -1*/)
 		prev = next;
 	}
 
-	dieif(rt->_beg >= rt->_end - (sizeof(struct list) + len), "memory overrun");
+	if (rt->_beg >= rt->_end - (sizeof(struct list) + len)) {
+		trace(ERR_MEMORY_OVERRUN);
+		return NULL;
+	}
 	if (str != (char *)rt->_beg) {
 		// copy data from constants ?
 		memcpy(rt->_beg, str, len + 1);
@@ -1246,7 +1259,12 @@ static int readTok(ccState cc, astn tok) {
 			}
 		} break;
 	}
-	dieif(ptr >= end, "mem overrun %t", tok->kind);
+
+	if (ptr >= end) {
+		trace(ERR_MEMORY_OVERRUN);
+		return TOKN_err;
+	}
+
 	return tok->kind;
 }
 
@@ -1342,7 +1360,6 @@ ccToken skiptok(ccState cc, ccToken kind, int raise) {
 				return TYPE_any;
 		}
 		while (!skip(cc, kind)) {
-			//~ debug("skipping('%k')", peek(s));
 			if (skip(cc, STMT_do))
 				return TYPE_any;
 			if (skip(cc, STMT_end))

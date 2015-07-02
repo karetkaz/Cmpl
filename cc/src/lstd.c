@@ -450,6 +450,29 @@ static int sysDebug(libcArgs args) {
 
 	return 0;
 }
+static int sysTryExec(libcArgs args) {
+	state rt = args->rt;
+	symn callBack = argsym(args, 0 * vm_size);
+	int32_t argptr = argi32(args, 1 * vm_size);
+	if (callBack != NULL) {
+		int result;
+		int oldValue;
+		#pragma pack(push, 4)
+		struct {
+			int32_t argptr;
+		}
+		args2 = {
+			.argptr = argptr
+		};
+		#pragma pack(pop)
+		oldValue = rt->dbg->checked;
+		rt->dbg->checked = 1;
+		result = invoke(rt, callBack, NULL, &args2, NULL);
+		rt->dbg->checked = oldValue;
+		reti32(args, result);
+	}
+	return 0;
+}
 
 static int sysMemMgr(libcArgs rt) {
 	void* old = argref(rt, 0);
@@ -545,6 +568,12 @@ int install_stdc(state rt) {
 		rt->cc->libc_dbg = ccAddCall(rt, sysDebug, NULL, "void debug(string message, variant inspect, int level, int maxTrace);");
 		rt->cc->libc_dbg_idx = rt->cc->libc_dbg->offs;
 		if (rt->cc->libc_dbg == NULL) {
+			err = 2;
+		}
+	}
+
+	if (!err && rt->cc->type_ptr != NULL) {		// tryExecute
+		if(!ccAddCall(rt, sysTryExec, NULL, "int tryExec(void function(pointer args), pointer args);")) {
 			err = 2;
 		}
 	}

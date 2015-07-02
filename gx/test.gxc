@@ -1,0 +1,142 @@
+// 
+enum Window {
+	draw = RenderMode.swap_buff;
+
+	//~ draw = (RenderMode.drawFill) &(~RenderMode.cull_all);
+	resy = 256;
+	resx = resy*2;
+}
+
+//~ mesh.Init(0);
+//~ mesh.Pos(0, 1, 0, 0);
+//~ mesh.Pos(1, 0, 1, 0);
+//~ mesh.Pos(2, 0, 0, 1);
+//~ mesh.AddFace(0, 1, 2);
+//~ //mesh.Normalize(0);
+//~ mesh.Center(1);
+
+
+int count = 0;
+int maxused = 0;
+int colors[256];
+int coloru[256];
+
+void loadFromFile(string fileName) {
+	gxSurf srcImg = gxSurf(fileName);
+	int w = width(srcImg);
+	int h = height(srcImg);
+	for (int y = 0; y < h; y += 1) {
+		for (int x = 0; x < w; x += 1) {
+			int i = 0;
+			int color = getPixel(srcImg, x, y);
+			for (i = 0; i < count; i += 1) {
+				if (colors[i] == color) {
+					coloru[i] += 1;
+					if (maxused < coloru[i]) {
+						maxused = coloru[i];
+					}
+					break;
+				}
+			}
+			if (i >= count && count < colors.length) {
+				colors[count] = color;
+				coloru[count] = 1;
+				count += 1;
+			}
+		}
+	}
+}
+void sortByLuminosity(bool reverse) {
+	int multCmp = reverse ? -1 : 1;
+	for (int i = 0; i < count; i += 1) {
+		for (int j = i + 1; j < count; j += 1) {
+			int icmp = lum(colors[i]);
+			int jcmp = lum(colors[j]);
+			if ((icmp - jcmp) * multCmp < 0) {
+				int tmp = colors[i];
+				colors[i] = colors[j];
+				colors[j] = tmp;
+				tmp = coloru[i];
+				coloru[i] = coloru[j];
+				coloru[j] = tmp;
+			}
+		}
+	}
+}
+void sortByUsage() {
+	for (int i = 0; i < count; i += 1) {
+		for (int j = i + 1; j < count; j += 1) {
+			int icmp = coloru[i];
+			int jcmp = coloru[j];
+			if (icmp > jcmp) {
+				int tmp = colors[i];
+				colors[i] = colors[j];
+				colors[j] = tmp;
+				tmp = coloru[i];
+				coloru[i] = coloru[j];
+				coloru[j] = tmp;
+			}
+		}
+	}
+}
+
+void averageColors() {
+	for (int i = 0; i < count; i += 2) {
+		int col1 = colors[i];
+		int col2 = colors[i+1];
+		int use1 = coloru[i];
+		int use2 = coloru[i+1];
+		colors[i / 2] = rgbLerp(col1, col2, double(Math.abs(use1-use2)) / (use1 + use2));
+	}
+	count /= 2;
+}
+
+void drawCB() {
+	gxSurf lutMap = gxSurf(count, 1);
+	for (int x = 0; x < count; x += 1) {
+		setPixel(lutMap, x, 0, colors[x]);
+	}
+	zoomSurf(offScreen, null, lutMap, null, 0);
+	delSurf(lutMap);
+}
+void mouseCB(int btn, int x, int y) {
+	static int omb = 0;
+
+	if (btn == 0 && omb == 1 && count > 1) {
+		int cpos = Math.min(x, Window.resx) * count / Window.resx;
+		count -= 1;
+		for (int i = cpos; i < count; i += 1) {
+			colors[i] = colors[i+1];
+		}
+	}
+	if (btn == 0 && omb == 2) {
+		debug("colors", variant(&colors));
+		/*for (int i = 0; i < count; i += 1) {
+			print(", 0x%06x", colors[i]);
+		}
+		println();
+		*/
+	}
+	omb = btn;
+}
+Gui.setMouseHandler(mouseCB);
+Gui.setDrawCallback(drawCB);
+
+//~ loadFromFile("/home/kmz/Desktop/chackra.bmp");
+//~ sortByUsage();
+
+//~ sortByLuminosity(false);
+//~ averageColors();
+//~ averageColors();
+//~ averageColors();
+//~ averageColors();
+//~ sortByLuminosity(true);
+
+//~ /*
+const int saved[] = [0xb4c6fc, 0xbce6fc, 0x4183b7, 0xb4fcfc, 0xb4f5fc, 0xa9f2fb, 0x9ce4f8, 0x7bc2e2, 0x6cb2dd, 0x68a8da, 0x5391c5, 0xa4e0f9, 0x84cdeb, 0x7abbf6, 0x93d8f7, 0x9cdbfb, 0xa7e8fb, 0x79bce6, 0x84c4f1, 0x6ba7e9, 0x447cbc, 0x629fd5, 0x74b2e1, 0x5490d9, 0x8fcff6, 0x447bc9, 0xbcd6fc, 0x346cac, 0x84bbf4, 0x205ca4, 0x618ce2, 0x2a5bb0, 0x1c46ac, 0x7ab2f0, 0x3973b8, 0x3a6dc1, 0x6095d0, 0x4273c9, 0x040e64, 0x6aa0e8, 0x5286d5, 0x436a9a, 0x9cccfc, 0x6195e0, 0x4473b3, 0x94c4fb, 0x5285c1, 0xaad4fc, 0x77a8e2, 0x6c9fdb, 0x2c5b9e, 0x527ec8, 0x1c4c94, 0xb4defc, 0x2c54b2, 0x527eb2, 0xa6cafc, 0xa5c0fc, 0x2a4ca7, 0x446bc6, 0x91bcf9, 0x6c94f5, 0x7797e4, 0x8599e1, 0x11368f, 0x2546a7, 0x3364a8, 0x84a1f2, 0x436cad, 0x657ab1, 0x2a4c93, 0x1b4591, 0x2b5398, 0x5479df, 0x84a8f4, 0x5278c8, 0x5070d6, 0x6c8ce4, 0x6c95e2, 0x143b7b, 0x5077b1, 0x6c95cf, 0x7aa0f2, 0x0b2c73, 0x9cbcfa, 0x3b64c1, 0x1b447d, 0x5c7bdf, 0x79a8f0, 0x4e69c2, 0x142674, 0x3a5cb3, 0x84b1f1, 0x6084e2, 0x618bce, 0x3a5c9c, 0x20348c, 0x426398, 0x516fae, 0x6184cd, 0x4464c0, 0x5070c3, 0x7895cd, 0x6c8cd0, 0x84a7e1, 0x1c1e60, 0x4264ac, 0x84b1e3, 0x2b4f7e, 0x0b2b59, 0x6183ba, 0x8ca8f3, 0x78a0de, 0x668bbb, 0x5c779f, 0x123474, 0x5c7ac8, 0x203d91, 0x3855b0, 0x081549, 0x374c91, 0x0b1b32, 0x203571, 0x8fb2f1, 0x445c9a, 0x445db2, 0x395497, 0x445594, 0x4e61a4, 0x5c79b2, 0x133360, 0x4d59a0, 0x2c3d91, 0x223c76, 0x374da7, 0x051d6c, 0x84a0dd, 0x8596cc, 0x5c6ac1, 0x4e60b9, 0x092471, 0x5e71c1, 0x142d71, 0x354590, 0x6c85b9, 0x5c70ab, 0x667cc3, 0x040547, 0x8ea8e0, 0x4454af, 0x6471a5, 0x0a2454, 0x1f2d70, 0x284490, 0x040528, 0x7584b6, 0x091c4a, 0x2a447a, 0x6c85cc, 0x9cb3f0, 0x8ea1df, 0x080d27, 0x0c2342, 0x14233d, 0x21345d, 0x040309, 0x44547d, 0x142451, 0x384c7b, 0x4f68a9, 0x070b16, 0x364477, 0x768dcc, 0x140d19];
+for (int i = 0; i < saved.length; i+=1) {
+	colors[i] = saved[i];
+}
+count = saved.length;
+sortByLuminosity(false);
+//~ */

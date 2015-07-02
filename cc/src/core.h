@@ -13,15 +13,15 @@
 #include "pvmc.h"
 
 /* debug level:
-	0: no debug info
-	1: print trace messages
+	0: show where error is raised
+	1: trace the root of errors
 	2: print debug messages
+
 	3: print generated assembly for statements with errors;
 	4: print generated assembly
 	5: print non pre-mapped strings, non static types
-	6: print static casts generated with emit
 */
-#define DEBUGGING 0
+//#define DEBUGGING 0
 
 // enable paralell execution stuff
 //~ #define MAXPROCSEXEC 1
@@ -37,27 +37,26 @@
 
 #define prerr(__DBG, __MSG, ...) do { fputfmt(stdout, "%s:%d: "__DBG": %s: "__MSG"\n", __FILE__, __LINE__, __FUNCTION__, ##__VA_ARGS__); _break(); } while(0)
 
-#ifdef DEBUGGING
+#ifndef DEBUGGING
+#define logif(__EXP, msg, ...) do {} while(0)
+#define trace(msg, ...) do {} while(0)
+#define trloop(msg, ...) do {} while(0)
+#define debug(msg, ...) do {} while(0)
+#else
 #define logif(__EXP, msg, ...) do {if (__EXP) prerr("todo", msg, ##__VA_ARGS__);} while(0)
-#if DEBUGGING > 0	// enable debug
+
+#if DEBUGGING > 0	// enable trace
 #define trace(msg, ...) do { prerr("trace", msg, ##__VA_ARGS__); _break(); } while(0)
 #define trloop(msg, ...) //do { prerr("trace", msg, ##__VA_ARGS__); } while(0)
 #else
 #define trace(msg, ...) do {} while(0)
 #define trloop(msg, ...) do {} while(0)
 #endif
-#if DEBUGGING > 1	// enable trace errors
+#if DEBUGGING > 1	// enable debug
 #define debug(msg, ...) do { prerr("debug", msg, ##__VA_ARGS__); } while(0)
 #else
 #define debug(msg, ...) do {} while(0)
 #endif
-
-#else
-#define logif(__EXP, msg, ...) do {} while(0)
-#define trace(msg, ...) do {} while(0)
-#define trloop(msg, ...) do {} while(0)
-#define debug(msg, ...) do {} while(0)
-
 #endif
 
 // internal errors (not aborting!?)
@@ -189,10 +188,10 @@ typedef enum {
 	vm_regs = 255	// maximum registers for dup, set, pop, ...
 } vmOpcode;
 struct opc_inf{
-	int const code;		// opcode value (0..255)
-	int const size;		// length of opcode with args
-	int const chck;		// minimum elements on stack before execution
-	int const diff;		// stack size difference after execution
+	signed int const code;		// opcode value (0..255)
+	unsigned int const size;	// length of opcode with args
+	signed int const chck;		// minimum elements on stack before execution
+	signed int const diff;		// stack size difference after execution
 	char *const name;	// mnemonic for the opcode
 };
 extern const struct opc_inf opc_tbl[255];
@@ -434,6 +433,7 @@ struct ccStateRec {
 // TODO: merge this somehow with libcArgs and cell into exeState
 struct dbgStateRec {
 	//~ size_t breakAt;		// break if pc is equal
+	int checked;		// execution is inside an try catch
 	size_t breakLt;		// break if pc is less than
 	size_t breakGt;		// break if pc is greater than
 	int (*dbug)(state, int pu, void* ip, void* sp, size_t ss, vmError error, size_t fp);
@@ -654,7 +654,7 @@ int isType(astn ast);
  * @param sym Symbol to be checked.
  * @return true or false.
  */
-int istype(symn sym);
+int istype(const symn sym);
 
 /**
  * @brief Get how many time a symbol was used.
@@ -786,6 +786,8 @@ static inline void _abort() {
 
 static inline void _break() {}
 
+#define ERR_INTERNAL_ERROR "Internal Error"
+#define ERR_MEMORY_OVERRUN "Memory Overrun"
 #define ERR_ASSIGN_TO_CONST "asignment of constant variable `%+k`"
 #define WARN_USE_BLOCK_STATEMENT "statement should be a block statement {%+k}."
 #define WARN_EMPTY_STATEMENT "empty statement `;`."

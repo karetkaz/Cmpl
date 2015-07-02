@@ -248,10 +248,9 @@ struct stateRec {
 	} api;
 
 	// memory related
+	const size_t _size;			// size of available memory
 	unsigned char *_beg;		// permanent memory (increments)
 	unsigned char *_end;		// temporary memory (decrements)
-
-	const size_t _size;			// size of total memory
 	unsigned char _mem[];		// this is where the memory begins.
 };
 

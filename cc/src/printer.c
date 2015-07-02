@@ -77,6 +77,13 @@ static char** escapeXml() {
 }
 
 static void fputsym(FILE* fout, char *esc[], symn sym, int mode, int level) {
+	void typeQual(FILE* fout, symn sym) {
+		if (sym->decl != NULL) {
+			typeQual(fout, sym->decl);
+		}
+		fputsym(fout, NULL, sym, 0, 0);
+		fputchr(fout, '.');
+	}
 	int pr_type = mode & prType;
 	int pr_init = mode & prInit;
 	int pr_qual = mode & prQual;
@@ -135,12 +142,7 @@ static void fputsym(FILE* fout, char *esc[], symn sym, int mode, int level) {
 			symn arg;
 			if (rlev < 2) {
 				if (pr_qual && sym->decl) {
-					symn typ = sym->decl;
-					while (typ != NULL) {
-						fputsym(fout, esc, typ, 0, 0);
-						fputchr(fout, '.');
-						typ = typ->decl;
-					}
+					typeQual(fout, sym->decl);
 				}
 				fputstr(fout, esc, sym->name);
 				break;
@@ -223,8 +225,8 @@ static void fputsym(FILE* fout, char *esc[], symn sym, int mode, int level) {
 		}
 
 		default:
-			fatal("FixMe(%s:%k)", sym->name, sym->kind);
-			break;
+			fatal(ERR_INTERNAL_ERROR);
+			return;
 	}
 }
 
@@ -398,8 +400,8 @@ static void fputast(FILE* fout, char *esc[], astn ast, int mode, int level) {
 			if (rlev < 2) {
 				switch (ast->kind) {
 					default:
-						fatal("FixMe");
-						break;
+						fatal(ERR_INTERNAL_ERROR);
+						return;
 
 					case STMT_con:
 						fputstr(fout, esc, "continue");
@@ -420,8 +422,8 @@ static void fputast(FILE* fout, char *esc[], astn ast, int mode, int level) {
 			}
 			switch (ast->kind) {
 				default:
-					fatal("FixMe");
-					break;
+					fatal(ERR_INTERNAL_ERROR);
+					return;
 
 				case STMT_con:
 					fputstr(fout, esc, "continue;\n");
@@ -439,8 +441,8 @@ static void fputast(FILE* fout, char *esc[], astn ast, int mode, int level) {
 				astn ret = ast->stmt.stmt;
 				fputstr(fout, esc, " ");
 				// `return 3;` is modified to `return result = 3;`
-				logif(ret->kind != ASGN_set && ret->kind != OPER_fnc, "Error");
-				logif(ret->kind == OPER_fnc && ret->type && ret->type->cast != TYPE_vid, "Error");
+				logif(ret->kind != ASGN_set && ret->kind != OPER_fnc, ERR_INTERNAL_ERROR);
+				logif(ret->kind == OPER_fnc && ret->type && ret->type->cast != TYPE_vid, ERR_INTERNAL_ERROR);
 				fputast(fout, esc, ret->op.rhso, mode, -0xf);
 			}
 			break;
@@ -559,7 +561,9 @@ static void fputast(FILE* fout, char *esc[], astn ast, int mode, int level) {
 				}
 			}
 			else switch (ast->kind) {
-				default: fatal("FixMe");
+				default:
+					fatal(ERR_INTERNAL_ERROR);
+					return;
 				case OPER_dot: fputstr(fout, esc, "."); break;		// '.'
 				case OPER_adr: fputstr(fout, esc, "&"); break;		// '&'
 				case OPER_pls: fputstr(fout, esc, "+"); break;		// '+'
@@ -1061,7 +1065,7 @@ static void dumpsym(FILE* fout, symn sym, int mode) {
 	int print_type = mode & prType;		// print type of symbol.
 	int print_init = mode & prInit;		// print initializer of symbol.
 	//~ int print_qual = mode & prQual;		// print qualified name of symbol.
-	int print_info = 1;
+	int print_info = 0;
 	int print_used = 0;
 	mode &= 0x0f;
 
@@ -1166,6 +1170,64 @@ static void dumpsym(FILE* fout, symn sym, int mode) {
 	}
 }
 
+static void dumpapi(FILE* fout, symn sym) {
+	symn ptr, bp[TOKS], *sp = bp;
+
+	for (*sp = sym; sp >= bp;) {
+		if (!(ptr = *sp)) {
+			--sp;
+			continue;
+		}
+		*sp = ptr->next;
+
+		switch (ptr->kind) {
+
+			// constant
+			case TYPE_def:
+				/* if (ptr->call && ptr->prms) {
+					*++sp = ptr->prms;
+				} */
+				*++sp = ptr->flds;
+				break;
+
+			// array/typename
+			case TYPE_arr:
+			case TYPE_rec:
+				*++sp = ptr->flds;
+				break;
+
+			// variable/function
+			case TYPE_ref:
+				if (ptr->call) {
+					*++sp = ptr->flds;
+				}
+				/* if (ptr->call && ptr->prms) {
+					*++sp = ptr->prms;
+				} */
+				break;
+
+			case EMIT_opc:
+				*++sp = ptr->flds;
+				break;
+
+			default:
+				trace("psym:%d:%T['%t']", ptr->kind, ptr, ptr->kind);
+				break;
+		}
+
+		// qualified name with arguments
+		fputsym(fout, NULL, ptr, prQual | 1, 0);
+
+		if (ptr->call && ptr->type) {
+			fputstr(fout, NULL, ": ");
+			fputsym(fout, NULL, ptr->type, prQual | 1, 0);
+		}
+
+		fputchr(fout, '\n');
+		fflush(fout);
+	}
+}
+
 static void dumpxml(FILE* fout, astn ast, int mode, int level, const char* text) {
 	char **escape = escapeXml();
 	if (ast == NULL) {
@@ -1190,8 +1252,8 @@ static void dumpxml(FILE* fout, astn ast, int mode, int level, const char* text)
 
 	switch (ast->kind) {
 		default:
-			fatal("FixMe %t", ast->kind);
-			break;
+			fatal(ERR_INTERNAL_ERROR);
+			return;
 
 		//#{ STMT
 		case STMT_do:
@@ -1318,7 +1380,7 @@ static void dumpxml(FILE* fout, astn ast, int mode, int level, const char* text)
 			astn init = var ? var->init : NULL;
 			symn fields = var ? var->flds : NULL;
 
-			fputesc(fout, escape, " tyc=\"%?t\" name=\"%+T\"", var->cast, var);
+			fputesc(fout, escape, " tyc=\"%?t\" name=\"%+T\"", var ? var->cast : TYPE_any, var);
 			if (fields || init) {
 				fputesc(fout, escape, ">\n");
 			}
@@ -1423,7 +1485,41 @@ void dump(state rt, int mode, symn sym) {
 			dumpsym(logf, sym, level);
 		}
 		else {
-			dumpsym(logf, rt->defs, level);
+			if (level == 0) {
+				dumpapi(logf, rt->defs);
+			}
+			else if (level == 1) {
+				for (sym = rt->defs; sym; sym = sym->defs) {
+					fputfmt(logf, "%-T: %-T\n", sym, sym->type);
+				}
+			}
+			else if (level == 2) {
+				for (sym = rt->defs; sym; sym = sym->gdef) {
+					fputfmt(logf, "%-T: %-T\n", sym, sym->type);
+				}
+			}
+			else if (level == 3) {
+				for (sym = rt->defs; sym; sym = sym->next) {
+					fputfmt(logf, "%-T: %-T\n", sym, sym->type);
+				}
+			}
+			else if (level == -1) {
+				for (sym = rt->defs; sym; sym = sym->next) {
+					// qualified name with arguments
+					fputsym(logf, NULL, sym, prQual | 1, 0);
+
+					if (sym->call && sym->type) {
+						fputstr(logf, NULL, ": ");
+						fputsym(logf, NULL, sym->type, prQual | 1, 0);
+					}
+
+					fputchr(logf, '\n');
+					fflush(logf);
+				}
+			}
+			else {
+				dumpsym(logf, rt->defs, level);
+			}
 		}
 	}
 

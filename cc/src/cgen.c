@@ -61,8 +61,8 @@ static size_t emitidx(state rt, vmOpcode opc, size_t arg) {
 
 	switch (opc) {
 		default:
-			fatal("Error");
-			break;
+			fatal(ERR_INTERNAL_ERROR);
+			return 0;
 
 		case opc_drop:
 		case opc_ldsp:
@@ -491,7 +491,7 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 	switch (ast->kind) {
 
 		default:
-			fatal("Error: %t: %+k", ast->kind, ast);
+			fatal(ERR_INTERNAL_ERROR);
 			return TYPE_any;
 
 		//#{ STATEMENTS
@@ -1043,10 +1043,8 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 					argv = argv->op.lhso;
 				}
 
+				// static casting with emit: int32 i = emit(int32, float32(3.14));
 				if (var == rt->cc->emit_opc && isType(argv)) {
-					#if defined DEBUGGING && DEBUGGING > 5
-					debug("static casting with emit: %+k @(%s: %d)", ast, ast->file, ast->line);
-					#endif
 					break;
 				}
 
@@ -1188,7 +1186,7 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 			}
 			if (member->kind == TYPE_def) {
 				// static array length is of this type
-				debug("%+T: %t", member, get);
+				debug("accessing inline field %+T: %+k", member, ast);
 				return cgen(rt, ast->op.rhso, get);
 			}
 
@@ -1226,7 +1224,7 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 			vmOpcode opc;
 			switch (ast->kind) {
 				default:
-					fatal("Error");
+					fatal(ERR_INTERNAL_ERROR);
 					return TYPE_any;
 
 				case OPER_adr:
@@ -1278,7 +1276,7 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 			#endif
 			switch (ast->kind) {
 				default:
-					fatal("Error");
+					fatal(ERR_INTERNAL_ERROR);
 					return TYPE_any;
 
 				case OPER_add:
@@ -1380,7 +1378,7 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 			// TODO: short circuit && and ||
 			switch (ast->kind) {
 				default:
-					fatal("Error");
+					fatal(ERR_INTERNAL_ERROR);
 					return TYPE_any;
 
 				case OPER_lnd:
@@ -1597,8 +1595,7 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 
 		case TYPE_str: switch (get) {
 			default:
-				error(rt, ast->file, ast->line, "invalid cast of `%+k:`", ast);
-				debug("invalid cast: to (%t) '%+k'", get, ast);
+				error(rt, ast->file, ast->line, "invalid cast of `%+k`", ast);
 				return TYPE_any;
 
 			case TYPE_vid:
@@ -1736,7 +1733,7 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 
 				// skip initialized static variables and function
 				if (var->stat && var->offs && (var->call || !rt->cc->init)) {
-					debug("already initialized: %+T", var);
+					debug("variable already initialized: %+T", var);
 					return TYPE_vid;
 				}
 
@@ -2224,7 +2221,7 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 
 	// zero extend ...
 	if (get == TYPE_u32) {
-		debug("zero extend[%t->%t]: %-T %+k", got, get, ast->type, ast);
+		debug("zero extend[%t->%t]: %-T %+k (%s:%d)", got, get, ast->type, ast, ast->file, ast->line);
 		switch (ast->type->size) {
 			default:
 				trace("Invalid cast(%t -> %t): %+k", got, get, ast);
@@ -2318,7 +2315,7 @@ int gencode(state rt, int mode) {
 
 		calls = (libc)(rt->_beg = paddptr(rt->_beg, rt_size));
 		rt->_beg += sizeof(struct libc) * (cc->libc->pos + 1);
-		dieif(rt->_beg >= rt->_end, "memory overrun");
+		dieif(rt->_beg >= rt->_end, ERR_MEMORY_OVERRUN);
 
 		for (lc = cc->libc; lc; lc = lc->next) {
 			// relocate libcall offsets to be unique and debugable.
@@ -2335,7 +2332,7 @@ int gencode(state rt, int mode) {
 		rt->dbg = (dbgState)(rt->_beg = paddptr(rt->_beg, rt_size));
 		rt->_beg += sizeof(struct dbgStateRec);
 
-		dieif(rt->_beg >= rt->_end, "memory overrun");
+		dieif(rt->_beg >= rt->_end, ERR_MEMORY_OVERRUN);
 		memset(rt->dbg, 0, sizeof(struct dbgStateRec));
 
 		initBuff(&rt->dbg->codeMap, 128, sizeof(struct dbgInfo));
@@ -2437,7 +2434,8 @@ int gencode(state rt, int mode) {
 					padd = 1;
 				}
 				else {
-					fatal("Error %-T", var);
+					fatal(ERR_INTERNAL_ERROR);
+					return 0;
 				}
 
 				rt->_beg = paddptr(rt->_beg, padd);

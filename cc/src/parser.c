@@ -208,14 +208,17 @@ static symn ctorArg(ccState cc, symn rec) {
 static int mkConst(astn ast, ccToken cast) {
 	struct astNode tmp;
 
-	dieif(!ast, "FixMe");
+	if (ast == NULL) {
+		fatal(ERR_INTERNAL_ERROR);
+		return 0;
+	}
 
 	if (cast == TYPE_any) {
 		cast = ast->cst2;
 	}
 
 	if (!eval(&tmp, ast)) {
-		debug("%+k", ast);
+		trace("%+k", ast);
 		return 0;
 	}
 
@@ -224,7 +227,7 @@ static int mkConst(astn ast, ccToken cast) {
 
 	switch (ast->cst2 = cast) {
 		default:
-			fatal("FixMe: %+k: %t", ast, cast);
+			fatal(ERR_INTERNAL_ERROR);
 			return 0;
 
 		case TYPE_vid:
@@ -555,8 +558,9 @@ static astn expr(ccState cc, int mode) {
 		char* missing = "expression";
 		if (level) switch (sym[level]) {
 			default:
-				fatal("FixMe");
-				break;
+				fatal(ERR_INTERNAL_ERROR);
+				return NULL;
+
 			case '(': missing = "')'"; break;
 			case '[': missing = "']'"; break;
 			case '?': missing = "':'"; break;
@@ -577,13 +581,13 @@ static astn expr(ccState cc, int mode) {
 			else if (tok_tbl[tok->kind].argc) {		// oper
 				int argc = tok_tbl[tok->kind].argc;
 				if ((lhs -= argc) < buff) {
-					fatal("FixMe");
-					return 0;
+					fatal(ERR_INTERNAL_ERROR);
+					return NULL;
 				}
 				switch (argc) {
 					default:
-						fatal("FixMe");
-						break;
+						fatal(ERR_INTERNAL_ERROR);
+						return NULL;
 
 					case 1:
 						//~ tok->op.test = NULL;
@@ -619,7 +623,7 @@ static astn expr(ccState cc, int mode) {
 						astn tmp = NULL;
 						switch (tok->kind) {
 							default:
-								fatal("FixMe");
+								fatal(ERR_INTERNAL_ERROR);
 								return NULL;
 
 							case ASGN_add:
@@ -680,7 +684,7 @@ static astn expr(ccState cc, int mode) {
 		}
 		cc->root = root;
 	}
-	dieif(mode == 0, "internal error");
+	dieif(mode == 0, ERR_INTERNAL_ERROR);
 	return tok;
 }
 
@@ -1210,7 +1214,7 @@ astn decl_var(ccState cc, astn* argv, int mode) {
 	int inout, byref;
 
 	if (!(tag = type(cc))) {
-		debug("%+k", peekTok(cc, 0));
+		trace("%+k", peekTok(cc, 0));
 		return NULL;
 	}
 	typ = tag->type;
@@ -2040,30 +2044,30 @@ static astn parse(ccState cc, int asUnit, int warn) {
 
 /// @see: header
 ccState ccOpen(state rt, char* file, int line, char* text) {
-	ccState result = rt->cc;
+	ccState cc = rt->cc;
 
-	if (result == NULL) {
+	if (cc == NULL) {
 		// initilaize only once.
-		result = ccInit(rt, creg_def, NULL);
-		if (result == NULL) {
+		cc = ccInit(rt, creg_def, NULL);
+		if (cc == NULL) {
 			return NULL;
 		}
 	}
 
-	if (source(rt->cc, text == NULL, text ? text : file) != 0) {
+	if (source(cc, text == NULL, text ? text : file) != 0) {
 		return NULL;
 	}
 
 	if (file != NULL) {
-		rt->cc->file = mapstr(rt->cc, file, -1, -1);
+		cc->file = mapstr(cc, file, -1, -1);
 	}
 	else {
-		rt->cc->file = NULL;
+		cc->file = NULL;
 	}
 
-	rt->cc->fin.nest = rt->cc->nest;
-	rt->cc->line = line;
-	return result;
+	cc->fin.nest = cc->nest;
+	cc->line = line;
+	return cc;
 }
 
 /// Compile file or text; @see state.api.ccAddCode
