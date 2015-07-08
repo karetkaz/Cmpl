@@ -343,15 +343,12 @@ int ccSymValFlt(symn sym, double* res) {
 /// Lookup symbol by offset; @see state.api.mapsym
 symn mapsym(state rt, size_t offs, int callsOnly) {
 	symn sym = NULL;
-	dieif(offs > rt->vm.px, "invalid offset: %06x", offs);
+	dieif(offs > rt->vm.px + px_size, "invalid offset: %06x", offs);
 	for (sym = rt->defs; sym; sym = sym->gdef) {
 		if (callsOnly && !sym->call) {
 			continue;
 		}
 		if (offs >= sym->offs && offs < sym->offs + sym->size) {
-			if (!callsOnly && offs != sym->offs) {
-				continue;
-			}
 			return sym;
 		}
 	}
@@ -361,7 +358,11 @@ symn mapsym(state rt, size_t offs, int callsOnly) {
 // TODO: to be removed
 symn getsym(state rt, void* offs) {
 	size_t vmoffs = vmOffset(rt, offs);
-	return mapsym(rt, vmoffs, 0);
+	symn sym = mapsym(rt, vmoffs, 0);
+	if (sym != NULL && sym->offs == vmoffs) {
+		return sym;
+	}
+	return NULL;
 }
 
 //#}

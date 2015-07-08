@@ -452,6 +452,7 @@ static int sysDebug(libcArgs args) {
 }
 static int sysTryExec(libcArgs args) {
 	state rt = args->rt;
+	dbgState dbg = rt->dbg;
 	symn callBack = argsym(args, 0 * vm_size);
 	int32_t argptr = argi32(args, 1 * vm_size);
 	if (callBack != NULL) {
@@ -465,10 +466,15 @@ static int sysTryExec(libcArgs args) {
 			.argptr = argptr
 		};
 		#pragma pack(pop)
-		oldValue = rt->dbg->checked;
-		rt->dbg->checked = 1;
+		// TODO: checked and unchecked errors should be handled the same way in debug and release mode.
+		if (dbg != NULL) {
+			oldValue = dbg->checked;
+			dbg->checked = 1;
+		}
 		result = invoke(rt, callBack, NULL, &args2, NULL);
-		rt->dbg->checked = oldValue;
+		if (dbg != NULL) {
+			dbg->checked = oldValue;
+		}
 		reti32(args, result);
 	}
 	return 0;

@@ -1569,8 +1569,8 @@ size_t fixargs(symn sym, unsigned int align, size_t base) {
 
 		//TODO: remove check: dynamic size arrays are represented as pointer+length
 		if (arg->type->kind == TYPE_arr && arg->type->init == NULL) {
-			dieif(arg->size != 2 * vm_size, "Error");
-			dieif(arg->cast != TYPE_arr, "Error");
+			dieif(arg->size != 2 * vm_size, ERR_INTERNAL_ERROR);
+			dieif(arg->cast != TYPE_arr, ERR_INTERNAL_ERROR);
 			//arg->size = 2 * vm_size;
 			//arg->cast = TYPE_arr;
 		}

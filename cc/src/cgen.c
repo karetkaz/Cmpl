@@ -151,7 +151,7 @@ static size_t emitopr(state rt, vmOpcode opc, ccToken type) {
 	}
 	else if (opc == opc_cne) {
 		if (!emitopr(rt, opc_ceq, type)) {
-			trace("Error");
+			trace(ERR_INTERNAL_ERROR);
 			return 0;
 		}
 		opc = opc_not;
@@ -182,7 +182,7 @@ static size_t emitopr(state rt, vmOpcode opc, ccToken type) {
 	}
 	else if (opc == opc_cge) {
 		if (!emitopr(rt, opc_clt, type)) {
-			trace("Error");
+			trace(ERR_INTERNAL_ERROR);
 			return 0;
 		}
 		opc = opc_not;
@@ -213,7 +213,7 @@ static size_t emitopr(state rt, vmOpcode opc, ccToken type) {
 	}
 	else if (opc == opc_cle) {
 		if (!emitopr(rt, opc_cgt, type)) {
-			trace("Error");
+			trace(ERR_INTERNAL_ERROR);
 			return 0;
 		}
 		opc = opc_not;
@@ -470,8 +470,8 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 	struct astNode tmp;
 	ccToken got = TYPE_any;
 
-	dieif(ast == NULL, "Error");
-	dieif(ast->type == NULL, "Error");
+	dieif(ast == NULL, ERR_INTERNAL_ERROR);
+	dieif(ast->type == NULL, ERR_INTERNAL_ERROR);
 
 	if (get == TYPE_any)
 		get = ast->cst2;
@@ -547,7 +547,7 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 			if (get == TYPE_vid && stpos != stkoffs(rt, 0)) {
 				// TODO: call destructor for variables
 				if (!emitidx(rt, opc_drop, stpos)) {
-					trace("error");
+					trace(ERR_INTERNAL_ERROR);
 					return TYPE_any;
 				}
 			}
@@ -562,7 +562,7 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 			size_t stpos = stkoffs(rt, 0);
 			int tt = eval(&tmp, ast->stmt.test);
 
-			dieif(get != TYPE_vid, "Error");
+			dieif(get != TYPE_vid, ERR_INTERNAL_ERROR);
 
 			if (ast->cst2 == ATTR_stat) {
 				if (ast->stmt.step || !tt) {
@@ -670,7 +670,7 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 			size_t jstep, lcont, lbody, lbreak;
 			size_t stbreak, stpos = stkoffs(rt, 0);
 
-			dieif(get != TYPE_vid, "Error");
+			dieif(get != TYPE_vid, ERR_INTERNAL_ERROR);
 
 			if (ast->stmt.init && !cgen(rt, ast->stmt.init, TYPE_vid)) {
 				trace("%+k", ast);
@@ -753,13 +753,13 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 
 			//~ TODO: destruct(ast->stmt.test)
 			if (stpos != stkoffs(rt, 0)) {
-				dieif(!emitidx(rt, opc_drop, stpos), "Error");
+				dieif(!emitidx(rt, opc_drop, stpos), ERR_INTERNAL_ERROR);
 			}
 		} break;
 		case STMT_con:
 		case STMT_brk: {
 			size_t offs;
-			dieif(get != TYPE_vid, "Error");
+			dieif(get != TYPE_vid, ERR_INTERNAL_ERROR);
 			if (!(offs = emitopc(rt, opc_jmp))) {
 				trace("%+k", ast);
 				return TYPE_any;
@@ -778,7 +778,7 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 				trace("%+k", ast);
 				return TYPE_any;
 			}
-			dieif(get != TYPE_vid, "Error");
+			dieif(get != TYPE_vid, ERR_INTERNAL_ERROR);
 			if (get == TYPE_vid && rt->vm.ro != stkoffs(rt, 0)) {
 				if (!emitidx(rt, opc_drop, rt->vm.ro)) {
 					trace("leve %d", rt->vm.ro);
@@ -979,7 +979,7 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 						an = an->next;
 						param = param->next;
 					}
-					dieif(an || param, "Error");
+					dieif(an || param, ERR_INTERNAL_ERROR);
 				}
 
 				if (var->init) {
@@ -996,7 +996,7 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 					logif(chachedArgSize != stkoffs(rt, 0) - stkret, "%+T(%d%+d): %+k", ast->type, stkret, stkoffs(rt, 0)-stkret, ast);
 					if (get != TYPE_vid) {
 						if (!emitidx(rt, opc_ldsp, stkret)) {	// get stack
-							trace("error");
+							trace(ERR_INTERNAL_ERROR);
 							return TYPE_any;
 						}
 						if (!emitint(rt, opc_sti, sizeOf(ast->type, 1))) {
@@ -1027,7 +1027,7 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 					return TYPE_any;
 				}
 				// result size on stack
-				dieif(stkret != stkoffs(rt, 0), "Error");
+				dieif(stkret != stkoffs(rt, 0), ERR_INTERNAL_ERROR);
 			}
 			if (argv != NULL) {
 				astn argl = NULL;
@@ -1235,7 +1235,7 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 					opc = opc_neg;
 					break;
 				case OPER_not:
-					dieif(got != TYPE_bit, "Error");
+					dieif(got != TYPE_bit, ERR_INTERNAL_ERROR);
 					opc = opc_not;
 					break;
 				case OPER_cmt:
@@ -1407,7 +1407,7 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 			/*astn jmp1 = 0, jmp2 = 0;
 			switch (ast->kind) {
 				default:
-					fatal("Error");
+					fatal(ERR_INTERNAL_ERROR);
 					return 0;
 
 				case OPER_lnd:
@@ -1513,7 +1513,7 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 				//~ assign a reference type by reference
 				if (typ->kind == TYPE_rec && typ->cast == TYPE_ref) {
 					trace("reference assignment: %+k", ast);
-					dieif(got != TYPE_ref, "Error");
+					dieif(got != TYPE_ref, ERR_INTERNAL_ERROR);
 					refAssign = ASGN_set;
 					size = vm_size;
 				}
@@ -1528,7 +1528,7 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 			if (get != TYPE_vid) {
 				/* TODO: int &a = b = 9;
 				in case when: int &a = b = 9;
-				dieif(get == TYPE_ref, "Error");
+				dieif(get == TYPE_ref, ERR_INTERNAL_ERROR);
 				*/
 				// in case a = b = sum(2, 700);
 				// dupplicate the result
@@ -1627,8 +1627,8 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 			// TODO: use ast->type->size;
 			size_t size = sizeOf(typ, 1);
 
-			dieif(typ == NULL, "Error");
-			dieif(var == NULL, "Error");
+			dieif(typ == NULL, ERR_INTERNAL_ERROR);
+			dieif(var == NULL, ERR_INTERNAL_ERROR);
 			//TODO: size: dieif(size != typ->size, "Error: %-T: %d / %d", var, size, typ->size);
 
 			// the enumeration is used as a value: `int pixels = Window.width * Window.height;`
@@ -1700,7 +1700,7 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 					}
 				} break;
 				case EMIT_opc:
-					dieif(get == TYPE_ref, "Error");
+					dieif(get == TYPE_ref, ERR_INTERNAL_ERROR);
 					if (!emitint(rt, (vmOpcode)var->offs, var->init ? constint(var->init) : 0)) {
 						error(rt, ast->file, ast->line, "error emiting opcode: %+k", ast);
 						if (stkoffs(rt, 0) > 0) {
@@ -1726,8 +1726,8 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 			size_t size = padded((size_t) sizeOf(var, 1), vm_size);
 			size_t stktop = stkoffs(rt, size);
 
-			dieif(typ == NULL, "Error");
-			dieif(var == NULL, "Error");
+			dieif(typ == NULL, ERR_INTERNAL_ERROR);
+			dieif(var == NULL, ERR_INTERNAL_ERROR);
 
 			if (var->kind == TYPE_ref) {
 
@@ -1995,7 +1995,7 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 				}
 			}
 
-			dieif(get != TYPE_vid, "Error");
+			dieif(get != TYPE_vid, ERR_INTERNAL_ERROR);
 			get = got = TYPE_vid;
 		} break;
 
@@ -2442,7 +2442,7 @@ int gencode(state rt, int mode) {
 				var->offs = vmOffset(rt, rt->_beg);
 				rt->_beg += var->size;
 
-				dieif(rt->_beg >= rt->_end, "Error");
+				dieif(rt->_beg >= rt->_end, ERR_INTERNAL_ERROR);
 
 				// TODO: recheck double initialization fix(var->nest > 0)
 				if (var->init != NULL && var->nest > 0) {
@@ -2478,7 +2478,7 @@ int gencode(state rt, int mode) {
 
 		// initialize static non global variables
 		if (staticinitializers && staticinitializers->lst.tail) {
-			dieif(cc->root == NULL || cc->root->kind != STMT_beg, "Error");
+			dieif(cc->root == NULL || cc->root->kind != STMT_beg, ERR_INTERNAL_ERROR);
 			staticinitializers->lst.tail->next = cc->root->stmt.stmt;
 			cc->root->stmt.stmt = staticinitializers->lst.head;
 			//~ staticinitializers->list.tail->next = cc->root->stmt.stmt;
@@ -2493,18 +2493,18 @@ int gencode(state rt, int mode) {
 		// enable static var initialization
 		rt->cc->init = 1;
 
-		dieif(cc->root->kind != STMT_beg, "Error");
+		dieif(cc->root->kind != STMT_beg, ERR_INTERNAL_ERROR);
 
 		// TYPE_vid clears the stack
 		if (!cgen(rt, cc->root, gstat ? TYPE_vid : TYPE_any)) {
-			trace("Error");
+			trace(ERR_INTERNAL_ERROR);
 			return 0;
 		}
 
 		while (cc->jmps) {
 			error(rt, NULL, 0, "invalid jump: `%k`", cc->jmps);
 			cc->jmps = cc->jmps->next;
-			trace("Error");
+			trace(ERR_INTERNAL_ERROR);
 			return 0;
 		}
 	}

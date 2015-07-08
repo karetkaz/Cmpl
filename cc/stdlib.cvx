@@ -1,6 +1,3 @@
-//~ #sed 's/^\([^:)]*\).*$/\1\2/g' $(FileNameExt)
-//~ #grep -o '^[^:)]*\()\:[^:]*\)\?' $(FileNameExt)
-
 /**
  * standard library extension
  */

@@ -228,7 +228,7 @@ static int installDll(state rt, int ccApiMain(state)) {
 static struct pluginLib {
 	struct pluginLib *next;		// next plugin
 	void(*onClose)();
-	HANDLE lib;					// 
+	HANDLE lib;					//
 } *pluginLibs = NULL;
 static void closeLibs() {
 	while (pluginLibs != NULL) {
@@ -272,7 +272,7 @@ static int importLib(state rt, const char* path) {
 static struct pluginLib {
 	struct pluginLib *next;		// next plugin
 	void (*onClose)();
-	void *lib;					// 
+	void *lib;					//
 } *pluginLibs = NULL;
 static void closeLibs() {
 	while (pluginLibs != NULL) {
@@ -802,6 +802,7 @@ static int dbgConsole(state rt, int pu, void* ip, void* sp, size_t ss, vmError e
 	 */
 	static char lastCommand = 'r';
 	dbgInfo dbg = NULL;
+	symn fun = NULL;
 	char buff[1024];
 	int brk = 0;
 	size_t i;
@@ -812,6 +813,7 @@ static int dbgConsole(state rt, int pu, void* ip, void* sp, size_t ss, vmError e
 	}// */
 
 	i = vmOffset(rt, ip);
+	fun = mapsym(rt, i, 0);
 	dbg = getCodeMapping(rt, i);
 	if (err != noError) {
 		// error executing opcode or libcall: abort execution
@@ -837,36 +839,66 @@ static int dbgConsole(state rt, int pu, void* ip, void* sp, size_t ss, vmError e
 		return 0;
 	}
 
-	// print the error message
-	symn sym = mapsym(rt, fp, 0);
-	switch (err) {
-		case noError:
-			break;
-		case libCallError:
-			fputfmt(stdout, "External call returned an error [@%06x]: @%+T\n", fp, sym);
-			break;
-		case stackOverflow:
-			//Unhandled exception at 0x010BAA67 in cc.exe : 0xC00000FD : Stack overflow(parameters : 0x00000000, 0x00822000).
-			fputfmt(stdout, "Stack Overflow at %+T\n", sym);
-			break;
-		default:
-			//Unhandled exception at 0x0140AA67 in cc.exe : 0xC00000FD : Stack overflow(parameters : 0x00000000, 0x00F52000).
-			//Unhandled exception at 0x010D409C in cc.exe : 0xC0000005 : Access violation writing location 0x00000000.
-			//Unhandled exception at 0x00F3AA67 in cc.exe : 0xC0000005 : Access violation reading location 0x00C90000.
-			fputfmt(stdout, "%IError[@%06x]: %s @%+T\n", 1, fp, "Unknown error", sym);
-			break;
+	// print the error message in case of unhandled errors
+	if (!rt->dbg->checked) {
+		char *errorType = "Unknown error";
+		switch (err) {
+			case noError:
+				errorType = NULL;
+				break;
+
+			case invalidIP:
+				errorType = "Invalid instruction pointer";
+				break;
+			case invalidSP:
+				errorType = "Invalid stack pointer";
+				break;
+
+			case invalidOpcode:	// illegalInstruction
+				errorType = "Invalid instruction";
+				break;
+
+			case traceOverflow:
+			case stackOverflow:
+				errorType = "Stack Overflow";
+				break;
+
+			case divisionByZero:
+				errorType = "Division by Zero";
+				break;
+
+			case libCallError:
+				errorType = "External call error";
+				//fputfmt(stdout, "External call returned an error [@%06x]: @%+T\n", fp, mapsym(rt, fp, 1));
+				//errorType = NULL;
+				break;
+
+			case segmentationFault:
+				errorType = "Illegal memory access";
+				break;
+
+			default:
+				//Unhandled exception at 0x0140AA67 in cc.exe : 0xC00000FD : Stack overflow(parameters : 0x00000000, 0x00F52000).
+				//Unhandled exception at 0x00F3AA67 in cc.exe : 0xC0000005 : Access violation reading location 0x00C90000.
+				//Unhandled exception at 0x010D409C in cc.exe : 0xC0000005 : Access violation writing location 0x00000000.
+				errorType = "Unknown error";
+				break;
+		}
+
+		// print error type
+		if (errorType != NULL && fun != NULL) {
+			fputfmt(stdout, "%s in function: %+T <+%06x>\n", errorType, fun, i - fun->offs);
+		}
+
+		// print current opcode
+		if (dbg != NULL && dbg->file != NULL && dbg->line > 0) {
+			fputfmt(stdout, "%s:%d: ", dbg->file, dbg->line);
+		}
+		// print current opcode
+		fputfmt(stdout, "exec: .%06x: %9.*A\n", i, i, ip);
+
+		logTrace(rt, stdout, 1, -1, 256);
 	}
-
-	// print current opcode
-	if (dbg != NULL && dbg->file != NULL && dbg->line > 0) {
-		fputfmt(stdout, "%s:%d: ", dbg->file, dbg->line);
-	}
-	//~ fputfmt(stdout, "exec:[ip: %06x sp: %02d] %9.*A\n", i, ss, i, ip);
-	fputfmt(stdout, "exec: .%06x: %9.*A\n", i, i, ip);
-	// */
-
-	logTrace(rt, stdout, 1, -1, 256);
-
 	for ( ; ; ) {
 		char* arg = NULL;
 		char cmd = lastCommand;

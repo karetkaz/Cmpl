@@ -24,11 +24,19 @@ void throws(pointer args) {
 	int j = 3 / i;
 }
 
+void aborts(pointer args) {
+	abort();
+}
+
 int arg = 0;
 
+//~ abort();
+//~ throws(null);
 //~ throws(pointer(&arg));
-int error = tryExec(throws, pointer(&arg));
-debug("tryExec returned", variant(&error), 1, 0);
+//~ aborts(pointer(&arg));
+int errorMEM = tryExec(throws, null);
+int errorDIV = tryExec(throws, pointer(&arg));
+int errorLIB = tryExec(aborts, pointer(&arg));
 
 /+ TODO: vs studio BUG
 string decodedFile = "out.txt";

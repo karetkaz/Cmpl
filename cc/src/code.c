@@ -987,7 +987,7 @@ size_t emitarg(state rt, vmOpcode opc, stkval arg) {
 				trace("max 2 megs can be allocated on stack, not(%D)", arg.i8);
 				return 0;
 			}
-			dieif(ip->rel != arg.i8, "Error");
+			dieif(ip->rel != arg.i8, ERR_INTERNAL_ERROR);
 			break;
 
 		case opc_st64:
@@ -997,20 +997,20 @@ size_t emitarg(state rt, vmOpcode opc, stkval arg) {
 				return 0;
 			}*/
 			//~ dieif((ip->rel & 7) != 0, "Error @ip @%06x", vmOffset(rt, ip));
-			dieif(ip->rel != arg.i8, "Error");
+			dieif(ip->rel != arg.i8, ERR_INTERNAL_ERROR);
 			break;
 
 		case opc_st32:
 		case opc_ld32:
-			dieif((ip->rel & 3) != 0, "Error");
-			dieif(ip->rel != arg.i8, "Error");
+			dieif((ip->rel & 3) != 0, ERR_INTERNAL_ERROR);
+			dieif(ip->rel != arg.i8, ERR_INTERNAL_ERROR);
 			break;
 
 		case opc_ldsp:
 		case opc_move:
 		case opc_inc:
 		case opc_mad:
-			dieif(ip->rel != arg.i8, "Error");
+			dieif(ip->rel != arg.i8, ERR_INTERNAL_ERROR);
 			break;
 
 		default:
@@ -1235,7 +1235,8 @@ static int exec(state rt, cell pu, symn fun, void* extra, int dbg(state, int, vo
 				return invalidIP;
 			}
 			if (sp > spMax || sp < spMin) {
-				return dbg(rt, 0, ip, sp, pu->ss, invalidSP, vmOffset(rt, sp));
+				dbg(rt, 0, ip, sp, pu->ss, invalidSP, vmOffset(rt, sp));
+				return invalidSP;
 			}
 			if ((err_code = dbg(rt, 0, ip, sp, st - sp, noError, 0)) != 0) {
 				// abort execution from debuging
@@ -1246,16 +1247,20 @@ static int exec(state rt, cell pu, symn fun, void* extra, int dbg(state, int, vo
 					return 0;
 
 				dbg_error_opc:
-					return dbg(rt, err_code, ip, sp, pu->ss, invalidOpcode, err_code);
+					dbg(rt, err_code, ip, sp, pu->ss, invalidOpcode, err_code);
+					return invalidOpcode;
 
 				dbg_error_ovf:
-					return dbg(rt, err_code, ip, sp, pu->ss, stackOverflow, err_code);
+					dbg(rt, err_code, ip, sp, pu->ss, stackOverflow, err_code);
+					return stackOverflow;
 
 				dbg_error_trace_ovf:
-					return dbg(rt, err_code, ip, sp, pu->ss, traceOverflow, err_code);
+					dbg(rt, err_code, ip, sp, pu->ss, traceOverflow, err_code);
+					return traceOverflow;
 
 				dbg_error_mem:
-					return dbg(rt, err_code, ip, sp, pu->ss, segmentationFault, err_code);
+					dbg(rt, err_code, ip, sp, pu->ss, segmentationFault, err_code);
+					return segmentationFault;
 
 				dbg_error_div_flt:
 					dbg(rt, err_code, ip, sp, pu->ss, divisionByZero, err_code);
@@ -1263,11 +1268,13 @@ static int exec(state rt, cell pu, symn fun, void* extra, int dbg(state, int, vo
 					break;
 
 				dbg_error_div:
-					return dbg(rt, err_code, ip, sp, pu->ss, divisionByZero, err_code);
+					dbg(rt, err_code, ip, sp, pu->ss, divisionByZero, err_code);
+					return divisionByZero;
 
 				dbg_error_libc:
 					//~ error(rt, __FILE__, __LINE__, "%d returned by libcall[%d]: %+T", err_code, ip->rel, libcvec[ip->rel].sym);
-					return dbg(rt, err_code, ip, sp, pu->ss, libCallError, libcvec[ip->rel].sym->offs);
+					dbg(rt, err_code, ip, sp, pu->ss, libCallError, libcvec[ip->rel].sym->offs);
+					return libCallError;
 
 				#define NEXT(__IP, __SP, __CHK) pu->sp -= vm_size * (__SP); pu->ip += (__IP);
 				#define STOP(__ERR, __CHK, __ERC) do {if (__CHK) {err_code = __ERC; goto dbg_##__ERR;}} while(0)
@@ -1288,13 +1295,16 @@ static int exec(state rt, cell pu, symn fun, void* extra, int dbg(state, int, vo
 				return 0;
 
 			error_opc:
-				return dbgDummy(rt, err_code, ip, sp, pu->ss, invalidOpcode, err_code);
+				dbgDummy(rt, err_code, ip, sp, pu->ss, invalidOpcode, err_code);
+				return invalidOpcode;
 
 			error_ovf:
-				return dbgDummy(rt, err_code, ip, sp, pu->ss, stackOverflow, err_code);
+				dbgDummy(rt, err_code, ip, sp, pu->ss, stackOverflow, err_code);
+				return stackOverflow;
 
 			error_mem:
-				return dbgDummy(rt, err_code, ip, sp, pu->ss, segmentationFault, err_code);
+				dbgDummy(rt, err_code, ip, sp, pu->ss, segmentationFault, err_code);
+				return segmentationFault;
 
 			error_div_flt:
 				dbgDummy(rt, err_code, ip, sp, pu->ss, divisionByZero, err_code);
@@ -1302,10 +1312,12 @@ static int exec(state rt, cell pu, symn fun, void* extra, int dbg(state, int, vo
 				break;
 
 			error_div:
-				return dbgDummy(rt, err_code, ip, sp, pu->ss, divisionByZero, err_code);
+				dbgDummy(rt, err_code, ip, sp, pu->ss, divisionByZero, err_code);
+				return divisionByZero;
 
 			error_libc:
-				return dbgDummy(rt, err_code, ip, sp, pu->ss, libCallError, libcvec[ip->rel].sym->offs);
+				dbgDummy(rt, err_code, ip, sp, pu->ss, libCallError, libcvec[ip->rel].sym->offs);
+				return libCallError;
 
 			#define NEXT(__IP, __SP, __CHK) {pu->sp -= vm_size * (__SP); pu->ip += (__IP);}
 			#define STOP(__ERR, __CHK, __ERC) if (__CHK) {err_code = __ERC; goto __ERR;}
@@ -1896,8 +1908,8 @@ static void traceArgs(state rt, FILE *outf, symn fun, char *file, int line, void
 		ident = -ident;
 	}
 
-	dieif(sp == NULL, "Error");
-	dieif(fun == NULL, "Error");
+	dieif(sp == NULL, ERR_INTERNAL_ERROR);
+	dieif(fun == NULL, ERR_INTERNAL_ERROR);
 	if (fun->prms != NULL && fun->prms != rt->defs) {
 		int firstArg = 1;
 		if (ident > 0) {
@@ -1932,7 +1944,7 @@ static void traceArgs(state rt, FILE *outf, symn fun, char *file, int line, void
 					fputfmt(outf, "%I", ident);
 				}
 			}
-			dieif(sym->stat, "Error");
+			dieif(sym->stat, ERR_INTERNAL_ERROR);
 
 			// 1 * vm_size holds the return value of the function.
 			offs = (char*)sp + fun->prms->offs + 1 * vm_size - sym->offs;

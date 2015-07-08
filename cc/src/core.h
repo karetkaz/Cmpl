@@ -184,6 +184,7 @@ typedef enum {
 	b32_bit_sar = 3 << 6,
 
 	vm_size = 4,//sizeof(int),	// size of data element on stack
+	px_size = 5,// size in bytes of the exit instruction exit(0)
 	rt_size = 8,//sizeof(void*),
 	vm_regs = 255	// maximum registers for dup, set, pop, ...
 } vmOpcode;
@@ -657,7 +658,7 @@ int isType(astn ast);
 int istype(const symn sym);
 
 /**
- * @brief Get how many time a symbol was used.
+ * @brief Get how many time a symbol was referenced.
  * @param sym Symbol to be checked.
  * @return Usage count including declaration.
  */
