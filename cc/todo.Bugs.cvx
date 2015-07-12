@@ -414,13 +414,12 @@ enum TypeCode: int32 {
 	TYPE_rec = 0x00000010;		// typename
 	TYPE_fun = 0x00000020;		// function
 	TYPE_ref = 0x00000030;		// variable: functions and typenames are also variables
+
 	ATTR_sta = 0x00000040;		// static attribute
 	ATTR_con = 0x00000080;		// constant attribute
-
 	ATTR_par = 0x00000100;		// ?parrallel
-	ATTR_snc = 0x00000200;		// ?synchronized
-	ATTR_ref = 0x00000400;		// ?indirect
-	ATTR_prv = 0x00000800;		// ?private
+	ATTR_ref = 0x00000200;		// ?indirect
+	ATTR_prv = 0x00000400;		// ?private
 }
 
 struct TypeInfo {
@@ -438,10 +437,10 @@ struct TypeInfo {
 	int8  cast;			// casts to ...
 	int16 attr;			// attributes
 
-	//~ get typename = bool((this.kind & 0xf) != TYPE_ref);
-	//~ get constant = bool(this.kind & ATTR_con);
-	//~ get indirect = bool(this.kind & ATTR_ind);
-	//~ get function = bool(this.kind & ATTR_fun);
+	//~ operator (TypeInfo &this).typename = bool((this.kind & 0xf) != TYPE_ref);
+	//~ operator (TypeInfo &this).constant = bool(this.kind & ATTR_con == ATTR_con);
+	//~ operator (TypeInfo &this).indirect = bool(this.kind & ATTR_ind == ATTR_ind);
+	//~ operator (TypeInfo &this).function = bool(this.kind & ATTR_fun == );
 }
 
 //~ class typename: TypeInfo;

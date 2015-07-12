@@ -21,7 +21,7 @@
 	4: print generated assembly
 	5: print non pre-mapped strings, non static types
 */
-//#define DEBUGGING 0
+#define DEBUGGING 0
 
 // enable paralell execution stuff
 //~ #define MAXPROCSEXEC 1
@@ -206,7 +206,8 @@ typedef enum {
 	traceOverflow,
 	divisionByZero,
 	libCallError,
-	segmentationFault
+	segmentationFault // TODO: separate read and write
+	//~ executionAborted		// execution aborted by debuger
 	//~ + ArrayBoundsExceeded
 	//~ + divisionByZeroFloat
 	//~ + divisionByZeroInteger
