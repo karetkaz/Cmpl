@@ -614,7 +614,7 @@ static void conv_abgr2argb(unsigned char* dst, unsigned char* src, int cnt) {
 }
 #pragma pack(push, 8)
 #pragma GCC diagnostic ignored "-Wpadded"
-#include "lib/libjpeg/jpeg.h"
+#include "jpeg.h"
 int gx_loadJPG(gx_Surf dst, const char* src, int depth) {
 	void (*conv_2xrgb)(unsigned char* dst, unsigned char* src, int cnt) = NULL;
 	unsigned char* tmpbuff;		// bitmap temp buffer
@@ -721,7 +721,7 @@ int gx_loadJPG(gx_Surf dst, const char* src, int depth) {
 }
 #pragma pack ( pop )
 
-#include "lib/libpng/png.h"
+#include "png.h"
 int gx_loadPNG(gx_Surf dst, const char* src, int depth) {
 	void (*conv_2xrgb)(unsigned char* dst, unsigned char* src, int cnt) = NULL;
 	unsigned char* tmpbuff = gx_buff;	// bitmap temp buffer

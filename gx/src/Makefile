@@ -1,37 +1,39 @@
 CCSRCDIR=../../cc/src/
-#~ CCSRCDIR=../../cc/src/
 GXSRCDIR=./
+OUTDIR=../out
 OBJDIR=../out/obj
-LIBDIR=../out/
 BINDIR=../
 BINARY=main
 
-OUTEXE=-o
-#~ CFLAGS=-Wall -Wpadded -g3 -ggdb
+ARH=-m32
 CFLAGS=-Wall -Wpadded -g0 -Os
 
-ARH=-m32
 CCC=gcc $(ARH)
 LNK=gcc $(ARH)
-#~ DBG=nemiver
-AS=nasm -f elf
+AS=nasm -f elf32
 MK=make
 MKDIR=mkdir -p
-LIBS=$(LIBDIR)libjpeg.a $(LIBDIR)libpng.a $(LIBDIR)raster.o
 SYSLIBS=-lm -lX11
 
+ifneq "$(ARH)" "-m32"
+	LIBDIR=../out/lnx64
+else
+	LIBDIR=../out/lnx32
+endif
+
 ifeq "$(OS)" "Windows_NT"
-	LIBS=$(LIBDIR)libjpeg.win.a $(LIBDIR)libpng.win.a $(LIBDIR)raster.win.o
+	ifneq "$(ARH)" "-m32"
+		LIBDIR=../out/win64
+	else
+		LIBDIR=../out/win32
+	endif
 	SYSLIBS=-lm -lgdi32
 	AS=nasm -f coff --prefix _
 	MK=mingw32-make
 	MKDIR=mkdir
 endif
 
-#~ ifeq ($(shell uname -m),x86_64)
-	#~ LIBS=$(LIBDIR)libjpeg.x64.a $(LIBDIR)libpng.x64.a
-	#~ AS=nasm -f elf64
-#~ endif
+LIBS=$(LIBDIR)/libjpeg.a $(LIBDIR)/libpng.a $(LIBDIR)/raster.o
 
 OBJS=\
 	$(OBJDIR)/tree.o\
@@ -55,8 +57,10 @@ OBJS=\
 #~ rebuild:clean build
 #~ build:$(OBJDIR)
 
-build:$(OBJDIR) $(LIBS) $(OBJS)
-	$(LNK) $(OUTEXE)$(BINDIR)main $(OBJS) $(LIBS) $(SYSLIBS)
+build:$(OBJDIR) $(OBJS)
+	$(LNK) -o $(BINDIR)main $(OBJS) $(LIBS) $(SYSLIBS)
+
+libs: $(LIBS)
 
 clean:
 	rm -f $(OBJS)
@@ -64,27 +68,22 @@ clean:
 $(OBJDIR):
 	$(MKDIR) "$(OBJDIR)"
 
-$(LIBDIR)libjpeg.a:
-	$(MK) -C lib/libjpeg
-$(LIBDIR)libjpeg.win.a:
-	$(MK) -C lib/libjpeg
-$(LIBDIR)libjpeg.x64.a:
-	$(MK) -C lib/libjpeg
+$(LIBDIR):
+	$(MKDIR) "$(LIBDIR)"
 
-$(LIBDIR)libpng.a:
-	$(MK) -C lib/libpng
-$(LIBDIR)libpng.win.a:
-	$(MK) -C lib/libpng
-$(LIBDIR)libpng.x64.a:
-	$(MK) -C lib/libjpeg
+$(LIBDIR)/libjpeg.a: $(LIBDIR)
+	$(MK) -C ../libs/libjpeg
+	mv $(OUTDIR)/libjpeg.a $(LIBDIR)/libjpeg.a
 
-$(LIBDIR)raster.o: $(GXSRCDIR)/raster.asm
-	$(AS) '$<' -o '$@'
-$(LIBDIR)raster.win.o: $(GXSRCDIR)/raster.asm
+$(LIBDIR)/libpng.a: $(LIBDIR)
+	$(MK) -C ../libs/libpng
+	mv $(OUTDIR)/libpng.a $(LIBDIR)/libpng.a
+
+$(LIBDIR)/raster.o: $(GXSRCDIR)/raster.asm $(LIBDIR)
 	$(AS) '$<' -o '$@'
 
 $(OBJDIR)/%.o: $(GXSRCDIR)%.c
-	$(CCC) -c $(CFLAGS) -I '$(CCSRCDIR)' '$<' -o '$@'
+	$(CCC) -c $(CFLAGS) -I '../libs/libjpeg' -I '../libs/libpng' -I '$(CCSRCDIR)' '$<' -o '$@'
 
 $(OBJDIR)/%.o: $(CCSRCDIR)%.c
 	$(CCC) -c $(CFLAGS) -I '$(CCSRCDIR)' '$<' -o '$@'
