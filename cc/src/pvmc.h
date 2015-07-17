@@ -154,6 +154,9 @@ int invoke(state, symn fun, void* ret, void* args, void* extra);
 symn mapsym(state, size_t offs, int callsOnly);
 symn getsym(state, void* offs);
 
+/// Check if at the given offset a resource string is located.
+char* getResStr(state rt, size_t offs);
+
 /// Alloc, resize or free memory; @see state.api.rtAlloc
 void* rtAlloc(state, void* ptr, size_t size);
 

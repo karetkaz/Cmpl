@@ -76,14 +76,15 @@ static char** escapeXml() {
 	return escape;
 }
 
-static void fputsym(FILE* fout, char *esc[], symn sym, int mode, int level) {
-	void typeQual(FILE* fout, symn sym) {
-		if (sym->decl != NULL) {
-			typeQual(fout, sym->decl);
-		}
-		fputsym(fout, NULL, sym, 0, 0);
-		fputchr(fout, '.');
+static void fputsym(FILE* fout, char *esc[], symn sym, int mode, int level);
+static void typeQual(FILE* fout, symn sym) {
+	if (sym->decl != NULL) {
+		typeQual(fout, sym->decl);
 	}
+	fputsym(fout, NULL, sym, 0, 0);
+	fputchr(fout, '.');
+}
+static void fputsym(FILE* fout, char *esc[], symn sym, int mode, int level) {
 	int pr_type = mode & prType;
 	int pr_init = mode & prInit;
 	int pr_qual = mode & prQual;
@@ -247,6 +248,18 @@ static void fputast(FILE* fout, char *esc[], astn ast, int mode, int level) {
 		return;
 	}
 
+	if (rlev >= 2) {
+		if ((ast->cst2 & ATTR_stat) != 0) {
+			fputstr(fout, esc, "static ");
+		}
+		if ((ast->cst2 & ATTR_const) != 0) {
+			fputstr(fout, esc, "const ");
+		}
+		if ((ast->cst2 & ATTR_paral) != 0) {
+			fputstr(fout, esc, "parallel ");
+		}
+	}
+
 	switch (ast->kind) {
 		//#{ STMT
 		case STMT_do: {
@@ -283,17 +296,6 @@ static void fputast(FILE* fout, char *esc[], astn ast, int mode, int level) {
 			if (rlev == 0) {
 				fputstr(fout, esc, "if");
 				break;
-			}
-
-			switch (ast->cst2) {
-				default:
-					trace("%+k", ast);
-				case TYPE_any:
-					break;
-
-				case ATTR_stat:
-					fputstr(fout, esc, "static ");
-					break;
 			}
 
 			fputstr(fout, esc, "if (");
@@ -345,21 +347,6 @@ static void fputast(FILE* fout, char *esc[], astn ast, int mode, int level) {
 					fputfmt(fout, " (%?+ k; %?+k; %?+k)", ast->stmt.init, ast->stmt.test, ast->stmt.step);
 				}
 				break;
-			}
-
-			switch (ast->cst2) {
-				default:
-					trace("%+k", ast);
-				case TYPE_any:
-					break;
-
-				case ATTR_stat:
-					fputstr(fout, esc, "static ");
-					break;
-
-				case QUAL_par:
-					fputstr(fout, esc, "parallel ");
-					break;
 			}
 
 			fputstr(fout, esc, "for (");
@@ -440,7 +427,7 @@ static void fputast(FILE* fout, char *esc[], astn ast, int mode, int level) {
 			if (rlev > 0 && ast->stmt.stmt) {
 				astn ret = ast->stmt.stmt;
 				fputstr(fout, esc, " ");
-				// `return 3;` is modified to `return result = 3;`
+				// `return 3;` is modified to `return (result = 3);`
 				logif(ret->kind != ASGN_set && ret->kind != OPER_fnc, ERR_INTERNAL_ERROR);
 				logif(ret->kind == OPER_fnc && ret->type && ret->type->cast != TYPE_vid, ERR_INTERNAL_ERROR);
 				fputast(fout, esc, ret->op.rhso, mode, -0xf);

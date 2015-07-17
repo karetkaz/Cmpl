@@ -145,14 +145,6 @@ static inline int isValidOffset(state rt, void* ptr) {
 	return 1;
 }
 
-// TODO: to be removed.
-static inline void* getip(state rt, size_t pos) {
-	if (pos == 0) {
-		return NULL;
-	}
-	return (void*)(rt->_mem + pos);
-}
-
 static inline void rollbackPc(state rt) {
 	bcde ip = getip(rt, rt->vm.pc);
 	if ((void*)ip != rt->_beg) {
@@ -1272,7 +1264,6 @@ static int exec(state rt, cell pu, symn fun, void* extra, int dbg(state, int, vo
 					return divisionByZero;
 
 				dbg_error_libc:
-					//~ error(rt, __FILE__, __LINE__, "%d returned by libcall[%d]: %+T", err_code, ip->rel, libcvec[ip->rel].sym);
 					dbg(rt, err_code, ip, sp, pu->ss, libCallError, libcvec[ip->rel].sym->offs);
 					return libCallError;
 
@@ -1534,7 +1525,17 @@ void fputopc(FILE* fout, unsigned char* ptr, size_t len, size_t offs, state rt) 
 			if (rt != NULL) {
 				symn sym = mapsym(rt, ip->arg.u4, 0);
 				if (sym != NULL) {
-					fputfmt(fout, ": %+T: %T", sym, sym->type);
+					fputfmt(fout, ": %+T", sym);
+					if (ip->arg.u4 > sym->offs) {
+						fputfmt(fout, "<+%06x>", ip->arg.u4 - sym->offs);
+					}
+					fputfmt(fout, ": %T", sym->type);
+				}
+				else {
+					char *str = getResStr(rt, ip->arg.u4);
+					if (str != NULL) {
+						fputfmt(fout, ": \"%s\"", str);
+					}
 				}
 			}
 			break;
@@ -1548,7 +1549,17 @@ void fputopc(FILE* fout, unsigned char* ptr, size_t len, size_t offs, state rt) 
 			if (rt != NULL) {
 				symn sym = mapsym(rt, ip->rel, 0);
 				if (sym != NULL) {
-					fputfmt(fout, ": %+T: %T", sym, sym->type);
+					fputfmt(fout, ": %+T", sym);
+					if (ip->rel > sym->offs) {
+						fputfmt(fout, "<+%06x>", ip->rel - sym->offs);
+					}
+					fputfmt(fout, ": %T", sym->type);
+				}
+				else {
+					char *str = getResStr(rt, ip->rel);
+					if (str != NULL) {
+						fputfmt(fout, ": \"%s\"", str);
+					}
 				}
 			}
 			break;

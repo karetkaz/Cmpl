@@ -719,6 +719,15 @@ float64_t constflt(astn ast);
 unsigned rehash(const char* str, size_t size);
 char* mapstr(ccState cc, char *str, size_t size/* = -1*/, unsigned hash/* = -1*/);
 
+// TODO: to be removed.
+/// returns a pointer to an offset inside the vm.
+static inline void* getip(state rt, size_t offset) {
+	if (offset == 0) {
+		return NULL;
+	}
+	return (void*)(rt->_mem + offset);
+}
+
 //  VM: execution + debuging.
 
 /**

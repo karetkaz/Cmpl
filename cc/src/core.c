@@ -365,6 +365,20 @@ symn getsym(state rt, void* offs) {
 	return NULL;
 }
 
+char* getResStr(state rt, size_t offs) {
+	int i;
+	char *str = getip(rt, offs);
+	for (i = 0; i < TBLS; i += 1) {
+		list lst;
+		for (lst = rt->cc->strt[i]; lst; lst = lst->next) {
+			if (str == (char*)lst->data) {
+				return str;
+			}
+		}
+	}
+	return NULL;
+}
+
 //#}
 
 // install type system

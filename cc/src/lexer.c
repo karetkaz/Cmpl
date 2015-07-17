@@ -1030,8 +1030,8 @@ static int readTok(ccState cc, astn tok) {
 				{"enum", ENUM_kwd},
 				{"for", STMT_for},
 				{"if", STMT_if},
-				{"inline", TYPE_def},
-				{"parallel", QUAL_par},
+				{"inline", TYPE_def},	// TODO: remove alias for define
+				{"parallel", ATTR_paral},
 				{"return", STMT_ret},
 				{"static", ATTR_stat},
 				{"struct", TYPE_rec}

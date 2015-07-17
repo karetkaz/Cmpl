@@ -1654,11 +1654,11 @@ static astn stmt(ccState cc, int mode) {
 		}
 		node = NULL;
 	}
-	else if ((node = next(cc, QUAL_par))) {		// 'parallel' ('{' | 'for')
+	else if ((node = next(cc, ATTR_paral))) {		// 'parallel' ('{' | 'for')
 		switch (test(cc)) {
 			case STMT_beg:		// parallel task
 			case STMT_for:		// parallel loop
-				qual = QUAL_par;
+				qual = ATTR_paral;
 				break;
 			default:
 				backTok(cc, node);

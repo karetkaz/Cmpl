@@ -516,7 +516,7 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 				stmt_qual = TYPE_any;
 			}
 			#endif
-			if (ast->cst2 == QUAL_par) {
+			if (ast->cst2 == ATTR_paral) {
 				ippar = emitopc(rt, opc_task);
 				rt->vm.su = 0;
 
