@@ -23,17 +23,20 @@ void aborts(pointer args) {
 }
 
 void throws(pointer args) {
-	debug("throws", variant.null, 1, 0);
+	debug("throws.enter", variant.null, 1, 0);
 	int &i = args;
 	int j = 3 / i;
+	debug("throws.leave", variant.null, 1, 0);
 }
 
 int arg = 0;
+int arg2 = 1;
 
 //~ abort();
 //~ throws(null);
 //~ throws(pointer(&arg));
 //~ aborts(pointer(&arg));
+int errorOK = tryExec(throws, pointer(&arg2));
 int errorMEM = tryExec(throws, null);
 int errorDIV = tryExec(throws, pointer(&arg));
 int errorLIB = tryExec(aborts, pointer(&arg));
