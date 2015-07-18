@@ -35,7 +35,7 @@
 // hash table size
 #define TBLS 512
 
-#define prerr(__DBG, __MSG, ...) do { fputfmt(stdout, "%s:%d: "__DBG": %s: "__MSG"\n", __FILE__, __LINE__, __FUNCTION__, ##__VA_ARGS__); _break(); } while(0)
+#define prerr(__DBG, __MSG, ...) do { fputfmt(stdout, "%s:%u: "__DBG": %s: "__MSG"\n", __FILE__, __LINE__, __FUNCTION__, ##__VA_ARGS__); _break(); } while(0)
 
 #ifndef DEBUGGING
 #define logif(__EXP, msg, ...) do {} while(0)
@@ -587,6 +587,13 @@ symn typecheck(ccState, symn loc, astn ast);
  * @return Size of struct / functions param size.
  */
 size_t fixargs(symn sym, unsigned int align, size_t base);
+
+/**
+ * @brief Add usage of the symbol.
+ * @param sym Symbol typename or variable.
+ * @param tag The node of the usage.
+ */
+void addUsage(symn sym, astn tag);
 
 ccToken castOf(symn typ);
 ccToken castTo(astn ast, ccToken castTo);

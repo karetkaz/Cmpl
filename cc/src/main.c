@@ -41,7 +41,7 @@ application [global options] [local options]...
 // default values
 static const int wl = 19;			// warning level
 static const int ol = 2;			// optimize level
-static char mem[128 << 20];			// runtime memory
+static char mem[1 << 20];			// runtime memory
 
 const char* STDLIB = "stdlib.cvx";		// standard library
 
@@ -892,7 +892,7 @@ static int dbgConsole(state rt, int pu, void* ip, void* sp, size_t ss, vmError e
 
 		// print current opcode
 		if (dbg != NULL && dbg->file != NULL && dbg->line > 0) {
-			fputfmt(stdout, "%s:%d: ", dbg->file, dbg->line);
+			fputfmt(stdout, "%s:%u: ", dbg->file, dbg->line);
 		}
 		// print current opcode
 		fputfmt(stdout, "exec: .%06x: %9.*A\n", i, i, ip);

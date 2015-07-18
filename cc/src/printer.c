@@ -12,8 +12,8 @@
 #include <string.h>
 #include "core.h"
 
-//~ #define fputstr(__OUT, __STR) fputs(__STR, __OUT)
-#define fputchr(__OUT, __CHR) fputc(__CHR, __OUT)
+static void fputsym(FILE*, char *[], symn, int, int);
+static inline int fputchr(FILE* stream, int chr) { return fputc(chr, stream); }
 
 static char* fmtuns(char* dst, int max, int prc, int radix, uint64_t num) {
 	char* ptr = dst + max;
@@ -76,158 +76,14 @@ static char** escapeXml() {
 	return escape;
 }
 
-static void fputsym(FILE* fout, char *esc[], symn sym, int mode, int level);
-static void typeQual(FILE* fout, symn sym) {
-	if (sym->decl != NULL) {
-		typeQual(fout, sym->decl);
+static void fputqal(FILE* fout, char *esc[], symn sym, int mode) {
+	if (sym != NULL && sym->decl != NULL) {
+		fputqal(fout, esc, sym->decl, 1);
 	}
+
 	fputsym(fout, NULL, sym, 0, 0);
-	fputchr(fout, '.');
-}
-static void fputsym(FILE* fout, char *esc[], symn sym, int mode, int level) {
-	int pr_type = mode & prType;
-	int pr_init = mode & prInit;
-	int pr_qual = mode & prQual;
-	int rlev = mode & 0xf;
-
-	if (level > 0) {
-		fputfmt(fout, "%I", level);
-	}
-	else {
-		level = -level;
-	}
-
-	if (sym == NULL) {
-		fputstr(fout, esc, "(null)");
-		return;
-	}
-
-	switch (sym->kind) {
-
-		case EMIT_opc: {
-			if (sym->name) {
-				if (pr_qual && sym->decl) {
-					fputsym(fout, esc , sym->decl, mode, 0);
-					fputchr(fout, '.');
-				}
-				fputstr(fout, esc, sym->name);
-			}
-
-			if (sym->init) {
-				fputfmt(fout, "(%+k)", sym->init);
-			}
-
-			break;
-		}
-
-		case TYPE_arr: {
-			if (sym->name == NULL) {
-				symn bp[TBLS], *sp = bp, *p;
-
-				symn typ = sym;
-				while (typ->kind == TYPE_arr) {
-					*sp++ = typ;
-					typ = typ->type;
-				}
-				fputsym(fout, esc, typ, mode, -level);
-
-				for (p = bp; p < sp; ++p) {
-					typ = *p;
-					fputfmt(fout, "[%?+k]", typ->init);
-				}
-				return;
-			}
-			// fall TYPE_rec
-		}
-		case TYPE_rec: {
-			symn arg;
-			if (rlev < 2) {
-				if (pr_qual && sym->decl) {
-					typeQual(fout, sym->decl);
-				}
-				fputstr(fout, esc, sym->name);
-				break;
-			}
-
-			fputfmt(fout, "struct %?s {\n", sym->name);
-
-			for (arg = sym->flds; arg; arg = arg->next) {
-				fputsym(fout, esc, arg, mode & ~prQual, level + 1);
-				if (arg->kind != TYPE_rec) {		// nested struct
-					fputstr(fout, esc, ";\n");
-				}
-			}
-
-			fputfmt(fout, "%I}\n", level);
-
-			break;
-		}
-
-		case TYPE_def:
-		case TYPE_ref: {
-			if (rlev < 1) {
-				fputstr(fout, esc, sym->name);
-				break;
-			}
-
-			if (pr_type) switch (sym->kind) {
-				case TYPE_rec:
-					fputstr(fout, esc, "struct ");
-					break;
-
-				default:
-					if (sym->type) {
-						fputsym(fout, esc, sym->type, pr_qual, -1);
-						if (sym->name && *sym->name) {
-							fputchr(fout, ' ');
-						}
-						switch (sym->cast) {
-							default:
-								break;
-
-							// value type by reference
-							case TYPE_ref:
-								if (!sym->call && sym->type->cast != TYPE_ref)
-									fputchr(fout, '&');
-								break;
-
-							//~ case TYPE_def:
-								//~ fputchr(fout, '&&');
-								//~ break;
-						}
-					}
-					break;
-			}
-
-			if (sym->name && *sym->name) {
-				if (pr_qual && sym->decl) {
-					fputsym(fout, esc, sym->decl, prQual, 0);
-					fputchr(fout, '.');
-				}
-				fputstr(fout, esc, sym->name);
-			}
-
-			if (rlev > 0 && sym->call) {
-				symn arg = sym->prms;
-				fputchr(fout, '(');
-				while (arg) {
-					fputsym(fout, esc, arg, prType | 1, 0);
-					if ((arg = arg->next))
-						fputstr(fout, esc, ", ");
-				}
-				fputchr(fout, ')');
-			}
-
-			if (pr_init && sym->init) {
-				fputfmt(fout, " = %+k", sym->init);
-			}
-
-			break;
-		}
-
-		default:
-			fatal(ERR_INTERNAL_ERROR);
-			return;
+	if (mode != 0) {
+		fputchr(fout, '.');
 	}
 }
 
@@ -676,6 +532,154 @@ static void fputast(FILE* fout, char *esc[], astn ast, int mode, int level) {
 	}
 }
 
+static void fputsym(FILE* fout, char *esc[], symn sym, int mode, int level) {
+	int pr_type = mode & prType;
+	int pr_init = mode & prInit;
+	int pr_qual = mode & prQual;
+	int rlev = mode & 0xf;
+
+	if (level > 0) {
+		fputfmt(fout, "%I", level);
+	}
+	else {
+		level = -level;
+	}
+
+	if (sym == NULL) {
+		fputstr(fout, esc, "(null)");
+		return;
+	}
+
+	switch (sym->kind) {
+
+		case EMIT_opc: {
+			if (sym->name) {
+				if (pr_qual && sym->decl) {
+					fputsym(fout, esc , sym->decl, mode, 0);
+					fputchr(fout, '.');
+				}
+				fputstr(fout, esc, sym->name);
+			}
+
+			if (sym->init) {
+				fputfmt(fout, "(%+k)", sym->init);
+			}
+
+			break;
+		}
+
+		case TYPE_arr: {
+			if (sym->name == NULL) {
+				symn bp[TBLS], *sp = bp, *p;
+
+				symn typ = sym;
+				while (typ->kind == TYPE_arr) {
+					*sp++ = typ;
+					typ = typ->type;
+				}
+				fputsym(fout, esc, typ, mode, -level);
+
+				for (p = bp; p < sp; ++p) {
+					typ = *p;
+					fputfmt(fout, "[%?+k]", typ->init);
+				}
+				return;
+			}
+			// fall TYPE_rec
+		}
+		case TYPE_rec: {
+			symn arg;
+			if (rlev < 2) {
+				if (pr_qual && sym->decl) {
+					fputqal(fout, esc, sym->decl, 1);
+				}
+				fputstr(fout, esc, sym->name);
+				break;
+			}
+
+			fputfmt(fout, "struct %?s {\n", sym->name);
+
+			for (arg = sym->flds; arg; arg = arg->next) {
+				fputsym(fout, esc, arg, mode & ~prQual, level + 1);
+				if (arg->kind != TYPE_rec) {		// nested struct
+					fputstr(fout, esc, ";\n");
+				}
+			}
+
+			fputfmt(fout, "%I}\n", level);
+
+			break;
+		}
+
+		case TYPE_def:
+		case TYPE_ref: {
+			if (rlev < 1) {
+				fputstr(fout, esc, sym->name);
+				break;
+			}
+
+			if (pr_type) switch (sym->kind) {
+				case TYPE_rec:
+					fputstr(fout, esc, "struct ");
+					break;
+
+				default:
+					if (sym->type) {
+						fputsym(fout, esc, sym->type, pr_qual, -1);
+						if (sym->name && *sym->name) {
+							fputchr(fout, ' ');
+						}
+						switch (sym->cast) {
+							default:
+								break;
+
+							// value type by reference
+							case TYPE_ref:
+								if (!sym->call && sym->type->cast != TYPE_ref)
+									fputchr(fout, '&');
+								break;
+
+							//~ case TYPE_def:
+								//~ fputchr(fout, '&&');
+								//~ break;
+						}
+					}
+					break;
+			}
+
+			if (sym->name && *sym->name) {
+				if (pr_qual && sym->decl) {
+					fputsym(fout, esc, sym->decl, prQual, 0);
+					fputchr(fout, '.');
+				}
+				fputstr(fout, esc, sym->name);
+			}
+
+			if (rlev > 0 && sym->call) {
+				symn arg = sym->prms;
+				fputchr(fout, '(');
+				while (arg) {
+					fputsym(fout, esc, arg, prType | 1, 0);
+					if ((arg = arg->next))
+						fputstr(fout, esc, ", ");
+				}
+				fputchr(fout, ')');
+			}
+
+			if (pr_init && sym->init) {
+				fputstr(fout, esc, " = ");
+				fputast(fout, esc, sym->init, 1, 0);
+			}
+
+			break;
+		}
+
+		default:
+			fatal(ERR_INTERNAL_ERROR);
+			return;
+	}
+}
+
 static void FPUTFMT(FILE* fout, char *esc[], const char* msg, va_list ap) {
 	char buff[1024], chr;
 
@@ -1029,13 +1033,7 @@ static void fputesc(FILE* fout, char *esc[], const char* msg, ...) {
 
 /** print symbols
  * output looks like:
- * file:line:kind:?prot:name:type
- * file: is the file name of decl
- * line: is the line number of decl
- * kind:
- *	'^': typename(dcl)
- *	'#': constant(def)
- *	'$': variable(ref)
+ * file:line:name:type:
  * @param mode
  * :	mode & 0x80: print file:line
  * :	mode & 0x40: print init
@@ -1051,9 +1049,9 @@ static void dumpsym(FILE* fout, symn sym, int mode) {
 	int print_line = mode & prLine;		// print file and location.
 	int print_type = mode & prType;		// print type of symbol.
 	int print_init = mode & prInit;		// print initializer of symbol.
-	//~ int print_qual = mode & prQual;		// print qualified name of symbol.
-	int print_info = 0;
-	int print_used = 0;
+	int print_qual = mode & prQual;		// print qualified name of symbol.
+	int print_info = 1;
+	int print_usage = 1;
 	mode &= 0x0f;
 
 	for (*sp = sym; sp >= bp;) {
@@ -1109,7 +1107,7 @@ static void dumpsym(FILE* fout, symn sym, int mode) {
 		}
 
 		// qualified name with arguments
-		fputsym(fout, NULL, ptr, prQual | 1, 0);
+		fputsym(fout, NULL, ptr, print_qual | 1, 0);
 
 		// qualified base type(s)
 		if (print_type && ptr->type) {
@@ -1144,11 +1142,20 @@ static void dumpsym(FILE* fout, symn sym, int mode) {
 		fputchr(fout, '\n');
 		fflush(fout);
 
-		if (print_used) {
-			astn used;
-			for (used = ptr->used; used; used = used->ref.used) {
-				fputfmt(fout, "%s:%d: referenced(%t) as `%+k`\n", used->file, used->line, used->cst2, used);
+		if (print_usage) {
+			astn usage;
+			int maxusages = 1000;
+			for (usage = ptr->used; usage; usage = usage->ref.used) {
+				fputfmt(fout, "%I", 1);
+				if (usage->file && usage->line) {
+					fputfmt(fout, "%s:%u: ", usage->file, usage->line);
+				}
+				fputfmt(fout, "referenced as `%+k`\n", usage);
+				if ((maxusages -= 1) < 0) {
+					break;
+				}
 			}
+			fflush(fout);
 		}
 
 		if (mode == 0) {
@@ -1171,10 +1178,9 @@ static void dumpapi(FILE* fout, symn sym) {
 
 			// constant
 			case TYPE_def:
-				/* if (ptr->call && ptr->prms) {
+				/*if (ptr->call && ptr->prms) {
 					*++sp = ptr->prms;
-				} */
-				*++sp = ptr->flds;
+				}*/
 				break;
 
 			// array/typename
@@ -1185,12 +1191,9 @@ static void dumpapi(FILE* fout, symn sym) {
 
 			// variable/function
 			case TYPE_ref:
-				if (ptr->call) {
-					*++sp = ptr->flds;
-				}
-				/* if (ptr->call && ptr->prms) {
+				/*if (ptr->call && ptr->prms) {
 					*++sp = ptr->prms;
-				} */
+				}*/
 				break;
 
 			case EMIT_opc:
@@ -1213,6 +1216,153 @@ static void dumpapi(FILE* fout, symn sym) {
 		fputchr(fout, '\n');
 		fflush(fout);
 	}
+}
+
+static void dumpjsapi(FILE* fout, symn sym) {
+	int firstSym = 1;
+	symn ptr, bp[TOKS], *sp = bp;
+	char **esc = escapeStr();
+
+	static const char* KEY_KIND = "kind";
+	static const char* KEY_FILE = "file";
+	static const char* KEY_LINE = "line";
+	static const char* KEY_NAME = "name";
+	static const char* KEY_PROTO = "proto";
+	static const char* KEY_DECL = "declaredIn";
+	static const char* KEY_TYPE = "type";
+	//~ static const char* KEY_INIT = "init";
+	static const char* KEY_ARGS = "args";
+	static const char* KEY_CONST = "const";
+	static const char* KEY_STAT = "static";
+	//~ static const char* KEY_PARLEL = "parallel";
+	static const char* KEY_CAST = "cast";
+	static const char* KEY_SIZE = "size";
+	static const char* KEY_OFFS = "offs";
+
+	static const char* VAL_TRUE = "true";
+	static const char* VAL_FALSE = "false";
+
+	fputstr(fout, NULL, "var data = [{\n");
+	for (*sp = sym; sp >= bp;) {
+		char *kind = NULL;
+		if (!(ptr = *sp)) {
+			--sp;
+			continue;
+		}
+		*sp = ptr->next;
+
+		switch (ptr->kind) {
+
+			// constant
+			case TYPE_def:
+				*++sp = ptr->flds;
+				kind = "alias";
+				break;
+
+			// array/typename
+			case TYPE_arr:
+			case TYPE_rec:
+				*++sp = ptr->flds;
+				kind = "typename";
+				break;
+
+			// variable/function
+			case TYPE_ref:
+				/*if (ptr->call && ptr->prms) {
+					*++sp = ptr->prms;
+				}*/
+				kind = "reference";
+				break;
+
+			case EMIT_opc:
+				*++sp = ptr->flds;
+				kind = "opcode";
+				break;
+
+			default:
+				trace("psym:%d:%T['%t']", ptr->kind, ptr, ptr->kind);
+				break;
+		}
+
+		if (firstSym) {
+			firstSym = 0;
+		}
+		else {
+			fputstr(fout, NULL, "}, {\n");
+		}
+
+		fputesc(fout, esc, "\t%s : '%s", KEY_KIND, kind);
+		fputstr(fout, NULL, "',\n");
+
+		fputesc(fout, esc, "\t%s : '", KEY_NAME);
+		fputsym(fout, esc, ptr, 0, 0);
+		fputstr(fout, NULL, "',\n");
+
+		fputesc(fout, esc, "\t%s : '", KEY_PROTO);
+		fputsym(fout, esc, ptr, prQual|1, 0);
+		fputstr(fout, NULL, "',\n");
+
+		if (ptr->decl != NULL) {
+			fputesc(fout, esc, "\t%s : '", KEY_DECL);
+			fputqal(fout, esc, ptr->decl, 0);
+			fputstr(fout, NULL, "',\n");
+		}
+
+		if (ptr->type != NULL) {
+			fputesc(fout, esc, "\t%s : '%T',", KEY_TYPE, ptr->type);
+			fputstr(fout, NULL, "\n");
+		}
+		if (ptr->file != NULL) {
+			fputesc(fout, esc, "\t%s : '%s',", KEY_FILE, ptr->file);
+			fputstr(fout, NULL, "\n");
+		}
+		if (ptr->line != 0) {
+			fputesc(fout, esc, "\t%s : '%u',", KEY_LINE, ptr->line);
+			fputstr(fout, NULL, "\n");
+		}
+		if (ptr->init != NULL) {
+			// TODO: escaping does noty work right
+			//fputesc(fout, esc, "\t%s : '%+k',", KEY_INIT, ptr->init);
+			//fputstr(fout, NULL, "\n");
+		}
+
+		if (ptr->call && ptr->prms) {
+			int firstArg = 1;
+			symn arg;
+			fputesc(fout, NULL, "\t%s : [{\n", KEY_ARGS);
+			for (arg = ptr->prms; arg; arg = arg->next) {
+				if (firstArg) {
+					firstArg = 0;
+				}
+				else {
+					fputstr(fout, NULL, "\t}, {\n");
+				}
+				fputesc(fout, esc, "\t\t%s : '", KEY_NAME);
+				fputsym(fout, esc, arg, 0, 0);
+				fputstr(fout, NULL, "',\n");
+				if (arg->type != NULL) {
+					fputesc(fout, esc, "\t\t%s : '%T", KEY_TYPE, arg->type);
+					fputstr(fout, NULL, "',\n");
+				}
+
+
+			}
+
+			fputstr(fout, NULL, "\t}],\n");
+		}
+
+		if (ptr->cast != 0) {
+			fputesc(fout, NULL, "\t%s : '", KEY_CAST);
+			fputesc(fout, esc, "%t", ptr->cast);
+			fputesc(fout, NULL, "',\n");
+		}
+		fputesc(fout, NULL, "\t%s : %u,\n", KEY_SIZE, ptr->size);
+		fputesc(fout, NULL, "\t%s : %u,\n", KEY_OFFS, ptr->offs);
+		fputesc(fout, NULL, "\t%s : %s,\n", KEY_CONST, ptr->cnst ? VAL_TRUE : VAL_FALSE);
+		fputesc(fout, NULL, "\t%s : %s\n", KEY_STAT, ptr->stat ? VAL_TRUE : VAL_FALSE);
+		// no parallel symbols!!! fputesc(fout, NULL, "\t%s : %s,\n", KEY_PARLEL, ptr->stat ? VAL_TRUE : VAL_FALSE);
+	}
+	fputstr(fout, NULL, "\n}];");
 }
 
 static void dumpxml(FILE* fout, astn ast, int mode, int level, const char* text) {
@@ -1476,21 +1626,27 @@ void dump(state rt, int mode, symn sym) {
 				dumpapi(logf, rt->defs);
 			}
 			else if (level == 1) {
+				dumpsym(logf, rt->defs, -1);
+			}
+			else if (level == 2) {
+				dumpjsapi(logf, rt->defs);
+			}
+			else if (level == 6) {
 				for (sym = rt->defs; sym; sym = sym->defs) {
 					fputfmt(logf, "%-T: %-T\n", sym, sym->type);
 				}
 			}
-			else if (level == 2) {
+			else if (level == 7) {
 				for (sym = rt->defs; sym; sym = sym->gdef) {
 					fputfmt(logf, "%-T: %-T\n", sym, sym->type);
 				}
 			}
-			else if (level == 3) {
+			else if (level == 8) {
 				for (sym = rt->defs; sym; sym = sym->next) {
 					fputfmt(logf, "%-T: %-T\n", sym, sym->type);
 				}
 			}
-			else if (level == -1) {
+			else if (level == 9) {
 				for (sym = rt->defs; sym; sym = sym->next) {
 					// qualified name with arguments
 					fputsym(logf, NULL, sym, prQual | 1, 0);
@@ -1610,7 +1766,7 @@ void perr(state rt, int level, const char* file, int line, const char* msg, ...)
 	}
 
 	if (file != NULL && line > 0) {
-		fputfmt(logFile, "%s:%d: ", file, line);
+		fputfmt(logFile, "%s:%u: ", file, line);
 	}
 
 	if (level > 0) {

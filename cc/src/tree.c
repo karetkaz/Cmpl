@@ -20,7 +20,7 @@ astn newnode(ccState cc, ccToken kind) {
 	// allocate memory from temporary storage.
 	rt->_end -= sizeof(struct astNode);
 	if (rt->_beg >= rt->_end) {
-		trace(ERR_MEMORY_OVERRUN);
+		fatal(ERR_MEMORY_OVERRUN);
 		return NULL;
 	}
 

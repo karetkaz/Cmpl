@@ -189,7 +189,6 @@ symn ccAddType(state rt, const char* name, unsigned size, int refType) {
 }
 
 //#{ libc.c ---------------------------------------------------------------------
-//~ TODO: installref should go to type.c
 static symn installref(state rt, const char* prot, astn* argv) {
 	astn root, args;
 	symn result = NULL;
@@ -403,6 +402,28 @@ static symn promote(symn lht, symn rht) {
 
 	//~ logif(DEBUGGING > 4 && result == NULL, "promote failed(%T, %T)", lht, rht);
 	return result;
+}
+
+void addUsage(symn sym, astn tag) {
+	if (sym == NULL || tag == NULL) {
+		return;
+	}
+	if (tag->ref.used != NULL) {
+		#ifdef DEBUGGING
+		astn usage;
+		for (usage = sym->used; usage; usage = usage->ref.used) {
+			if (usage == tag) {
+				break;
+			}
+		}
+		dieif(usage == NULL, "usage not found in the list: %+k(%s:%u:%u)", tag, tag->file, tag->line, tag->colp);
+		#endif
+		return;
+	}
+	if (sym->used != tag) {
+		tag->ref.used = sym->used;
+		sym->used = tag;
+	}
 }
 
 ccToken canAssign(ccState cc, symn var, astn val, int strict) {
@@ -778,6 +799,7 @@ symn declare(ccState s, ccToken kind, astn tag, symn typ) {
 				}
 				break;
 		}
+		addUsage(def, tag);
 	}
 
 	return def;
@@ -1533,10 +1555,7 @@ symn typecheck(ccState s, symn loc, astn ast) {
 			ref->type = result;
 			ast->type = result;
 
-			if (sym->used != ref) {
-				ref->ref.used = sym->used;
-				sym->used = ref;
-			}
+			addUsage(sym, ref);
 
 			if (dot != NULL) {
 				dot->type = result;

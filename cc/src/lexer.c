@@ -350,7 +350,7 @@ char* mapstr(ccState cc, char* str, size_t len/* = -1*/, unsigned hash/* = -1*/)
 	}
 
 	if (rt->_beg >= rt->_end - (sizeof(struct list) + len)) {
-		trace(ERR_MEMORY_OVERRUN);
+		fatal(ERR_MEMORY_OVERRUN);
 		return NULL;
 	}
 	if (str != (char *)rt->_beg) {
@@ -624,6 +624,10 @@ static int readTok(ccState cc, astn tok) {
 
 	ptr = beg = (char*)cc->s->_beg;
 	cc->pfmt = NULL;
+
+	if (tok == NULL) {
+		return TOKN_err;
+	}
 
 	// our token begins here
 	memset(tok, 0, sizeof(*tok));
@@ -1261,7 +1265,7 @@ static int readTok(ccState cc, astn tok) {
 	}
 
 	if (ptr >= end) {
-		trace(ERR_MEMORY_OVERRUN);
+		fatal(ERR_MEMORY_OVERRUN);
 		return TOKN_err;
 	}
 
@@ -1274,8 +1278,10 @@ static int readTok(ccState cc, astn tok) {
  * @param tok the token to be pushed back.
  */
 void backTok(ccState cc, astn tok) {
-	tok->next = cc->_tok;
-	cc->_tok = tok;
+	if (tok != NULL) {
+		tok->next = cc->_tok;
+		cc->_tok = tok;
+	}
 }
 
 /** Peek the next token.

@@ -1624,10 +1624,10 @@ void fputasm(state rt, FILE* fout, size_t beg, size_t end, int mode) {
 		if (dbg != NULL) {
 			if (dbg->start == i && dbg->stmt) {
 				if ((mode & 0x30) != 0) {
-					fputfmt(fout, "%s:%d: [%06x-%06x): %+k\n", dbg->file, dbg->line, dbg->start - 0, dbg->end - 0, dbg->stmt);
+					fputfmt(fout, "%s:%u: [%06x-%06x): %+k\n", dbg->file, dbg->line, dbg->start - 0, dbg->end - 0, dbg->stmt);
 				}
 				else {
-					fputfmt(fout, "%s:%d: %+k\n", dbg->file, dbg->line, dbg->stmt);
+					fputfmt(fout, "%s:%u: %+k\n", dbg->file, dbg->line, dbg->stmt);
 				}
 			}
 		}

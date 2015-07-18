@@ -262,14 +262,14 @@ static int mkConst(astn ast, ccToken cast) {
 //~ TODO: to be deleted: use expr instead, then check if it is a typename.
 static astn type(ccState cc/* , int mode */) {	// type(.type)*
 	symn def = NULL;
-	astn tok, list = NULL;
+	astn tok, typ = NULL;
 	while ((tok = next(cc, TYPE_ref))) {
 
 		symn loc = def ? def->flds : cc->deft[tok->ref.hash];
 		symn sym = lookup(cc, loc, tok, NULL, 0);
 
-		tok->next = list;
-		list = tok;
+		tok->next = typ;
+		typ = tok;
 
 		def = sym;
 
@@ -279,26 +279,27 @@ static astn type(ccState cc/* , int mode */) {	// type(.type)*
 		}
 
 		if ((tok = next(cc, OPER_dot))) {
-			tok->next = list;
-			list = tok;
+			tok->next = typ;
+			typ = tok;
 		}
 		else
 			break;
 
 	}
-	if (!def && list) {
-		while (list) {
-			astn back = list;
-			list = list->next;
+	if (!def && typ) {
+		while (typ) {
+			astn back = typ;
+			typ = typ->next;
 			backTok(cc, back);
 			//~ trace("not a type `%k`", back);
 		}
-		list = NULL;
+		typ = NULL;
 	}
-	else if (list) {
-		list->type = def;
+	else if (typ) {
+		typ->type = def;
+		addUsage(def, typ);
 	}
-	return list;
+	return typ;
 }
 
 static astn stmt(ccState, int mode);	// parse statement		(mode: enable decl)

@@ -657,7 +657,7 @@ static void install_emit(ccState cc, int mode) {
 			} swz[256];
 			for (i = 0; i < lengthOf(swz); i += 1) {
 				if (rt->_end - rt->_beg < 5) {
-					trace(ERR_MEMORY_OVERRUN);
+					fatal(ERR_MEMORY_OVERRUN);
 					return;
 				}
 				rt->_beg[0] = (unsigned char) "xyzw"[(i >> 0) & 3];
@@ -808,7 +808,7 @@ ccState ccInit(state rt, int mode, int onHalt(libcArgs)) {
 	rt->_beg += 1;	// HACK: make first symbol start not at null.
 
 	if (rt->_end < rt->_beg) {
-		trace(ERR_MEMORY_OVERRUN);
+		fatal(ERR_MEMORY_OVERRUN);
 		return NULL;
 	}
 
