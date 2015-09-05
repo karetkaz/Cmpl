@@ -439,7 +439,7 @@ static int sysDebug(libcArgs args) {
 
 		// print stack trace skipping this function
 		if (traceLevel > 0) {
-			logTrace(rt, NULL, 1, 1, traceLevel);
+			logTrace(rt, NULL, 1, 0, traceLevel);
 		}
 	}
 

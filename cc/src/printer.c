@@ -13,6 +13,7 @@
 #include "core.h"
 
 static void fputsym(FILE*, char *[], symn, int, int);
+static void fputesc(FILE* fout, char *esc[], const char* msg, ...);
 static inline int fputchr(FILE* stream, int chr) { return fputc(chr, stream); }
 
 static char* fmtuns(char* dst, int max, int prc, int radix, uint64_t num) {
@@ -54,6 +55,7 @@ static char** escapeStr() {
 		//~ escape['a'] = "`$!>a<!$`";
 		escape['\n'] = "\\n";
 		escape['\r'] = "\\r";
+		escape['\t'] = "\\t";
 		escape['\''] = "\\'";
 		escape['\"'] = "\\\"";
 		initialized = 1;
@@ -146,7 +148,7 @@ static void fputast(FILE* fout, char *esc[], astn ast, int mode, int level) {
 						break;
 				}
 			}
-			fputfmt(fout, "%I}\n", level);
+			fputesc(fout, esc, "%I%s", level, "}\n");
 		} break;
 		case STMT_if: {
 			if (rlev == 0) {
@@ -181,15 +183,15 @@ static void fputast(FILE* fout, char *esc[], astn ast, int mode, int level) {
 			if (ast->stmt.step != NULL) {
 				int kind = ast->stmt.step->kind;
 				if (!nl_body && (kind == STMT_beg)) {
-					fputfmt(fout, "%Ielse ", level);
+					fputesc(fout, esc, "%I%s", level, "else ");
 					fputast(fout, esc, ast->stmt.step, mode, -level);
 				}
 				else if (!nl_elif && (kind == STMT_if)) {
-					fputfmt(fout, "%Ielse ", level);
+					fputesc(fout, esc, "%I%s", level, "else ");
 					fputast(fout, esc, ast->stmt.step, mode, -level);
 				}
 				else {
-					fputfmt(fout, "%Ielse\n", level);
+					fputesc(fout, esc, "%I%s", level, "else ");
 					fputast(fout, esc, ast->stmt.step, mode, level + (kind != STMT_beg));
 				}
 			}
@@ -200,7 +202,7 @@ static void fputast(FILE* fout, char *esc[], astn ast, int mode, int level) {
 			if (rlev < 2) {
 				fputstr(fout, esc, "for");
 				if (rlev > 0) {
-					fputfmt(fout, " (%?+ k; %?+k; %?+k)", ast->stmt.init, ast->stmt.test, ast->stmt.step);
+					fputesc(fout, esc, " (%?+ k; %?+k; %?+k)", ast->stmt.init, ast->stmt.test, ast->stmt.step);
 				}
 				break;
 			}
@@ -473,21 +475,21 @@ static void fputast(FILE* fout, char *esc[], astn ast, int mode, int level) {
 			break;
 
 		case TYPE_bit:
-			fputfmt(fout, "%U", ast->cint);
+			fputesc(fout, esc, "%U", ast->cint);
 			break;
 
 		case TYPE_int:
-			fputfmt(fout, "%D", ast->cint);
+			fputesc(fout, esc, "%D", ast->cint);
 			break;
 
 		case TYPE_flt:
-			fputfmt(fout, "%F", ast->cflt);
+			fputesc(fout, esc, "%F", ast->cflt);
 			break;
 
 		case TYPE_str:
-			fputchr(fout, '\'');
+			fputstr(fout, esc, "\'");
 			fputstr(fout, escapeStr(), ast->ref.name);
-			fputchr(fout, '\'');
+			fputstr(fout, esc, "\'");
 			break;
 
 		case TYPE_def: {
@@ -527,7 +529,7 @@ static void fputast(FILE* fout, char *esc[], astn ast, int mode, int level) {
 			break;
 
 		default:
-			fputfmt(fout, "%t(0x%02x)", ast->kind, ast->kind);
+			fputesc(fout, esc, "%t(0x%02x)", ast->kind, ast->kind);
 			break;
 	}
 }
@@ -597,7 +599,7 @@ static void fputsym(FILE* fout, char *esc[], symn sym, int mode, int level) {
 				break;
 			}
 
-			fputfmt(fout, "struct %?s {\n", sym->name);
+			fputesc(fout, esc, "struct %?s {\n", sym->name);
 
 			for (arg = sym->flds; arg; arg = arg->next) {
 				fputsym(fout, esc, arg, mode & ~prQual, level + 1);
@@ -606,7 +608,7 @@ static void fputsym(FILE* fout, char *esc[], symn sym, int mode, int level) {
 				}
 			}
 
-			fputfmt(fout, "%I}\n", level);
+			fputesc(fout, esc, "%I}\n", level);
 
 			break;
 		}
@@ -1001,7 +1003,7 @@ static void FPUTFMT(FILE* fout, char *esc[], const char* msg, va_list ap) {
 					break;
 			}
 
-			if (str) {
+			if (str != NULL) {
 				len -= strlen(str);
 
 				if (pad == 0) {
@@ -1016,6 +1018,9 @@ static void FPUTFMT(FILE* fout, char *esc[], const char* msg, va_list ap) {
 				fputstr(fout, esc, str);
 			}
 		}
+		/*else if (esc && esc[chr & 255]) {
+			fputstr(fout, NULL, esc[chr & 255]);
+		}*/
 		else {
 			fputchr(fout, chr);
 		}
@@ -1230,7 +1235,7 @@ static void dumpjsapi(FILE* fout, symn sym) {
 	static const char* KEY_PROTO = "proto";
 	static const char* KEY_DECL = "declaredIn";
 	static const char* KEY_TYPE = "type";
-	//~ static const char* KEY_INIT = "init";
+	static const char* KEY_INIT = "init";
 	static const char* KEY_ARGS = "args";
 	static const char* KEY_CONST = "const";
 	static const char* KEY_STAT = "static";
@@ -1250,6 +1255,10 @@ static void dumpjsapi(FILE* fout, symn sym) {
 			continue;
 		}
 		*sp = ptr->next;
+
+		if (ptr->file == NULL) {
+			continue;
+		}
 
 		switch (ptr->kind) {
 
@@ -1321,9 +1330,13 @@ static void dumpjsapi(FILE* fout, symn sym) {
 			fputstr(fout, NULL, "\n");
 		}
 		if (ptr->init != NULL) {
-			// TODO: escaping does noty work right
+			// TODO: escaping does not work right
 			//fputesc(fout, esc, "\t%s : '%+k',", KEY_INIT, ptr->init);
 			//fputstr(fout, NULL, "\n");
+			fputesc(fout, esc, "\t%s : '", KEY_INIT);
+			fputast(fout, esc, ptr->init, -1, 0);
+			fputstr(fout, NULL, "',\n");
+
 		}
 
 		if (ptr->call && ptr->prms) {

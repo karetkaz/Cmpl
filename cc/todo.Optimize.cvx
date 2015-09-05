@@ -89,7 +89,7 @@ enum Arch { // ARMv6, ARMv7, x64, x86
 	x86_64 | amd64
 }
 
-enum Os: string {
+enum Platform: string {
 	Windows = "Windows";
 	Darwin = "Darwin";
 	Linux = "Linux";

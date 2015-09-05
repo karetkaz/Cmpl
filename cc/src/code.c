@@ -116,12 +116,12 @@ struct bcde {
 #pragma pack(pop)
 
 struct cell {
-	unsigned char	*ip;		// Instruction pointer
+	memptr ip;		// Instruction pointer
 
 	// Stack
-	unsigned char	*bp;		// Stack base
-	unsigned char	*tp;		// Trace pointer +(bp)
-	unsigned char	*sp;		// Stack pointer -(bp + ss)
+	memptr bp;		// Stack base
+	memptr tp;		// Trace pointer +(bp)
+	memptr sp;		// Stack pointer -(bp + ss)
 
 	// multiproc
 	size_t			ss;			// stack size
@@ -130,8 +130,9 @@ struct cell {
 };
 
 struct trace {
-	unsigned char	*ip;		// Instruction pointer
-	signed char	*sp;			// Stack pointer
+	memptr caller;      // Instruction pointer of caller
+	memptr callee;      // Instruction pointer of callee
+	stkptr sp;      // Stack pointer
 };
 
 /// Check if the pointer is inside the vm.
@@ -1121,7 +1122,7 @@ static int sync(cell pu, int cp, int wait) {
 	// slave proc
 	if (pp != cp) {
 		if (pu[cp].cp == 0) {
-			//~ trace("stop slave(%d).", cp);
+			//~ trace("slave(%d): stop.", cp);
 			pu[cp].ip = NULL;
 			pu[pp].cp -= 1;
 			return 1;
@@ -1145,7 +1146,7 @@ static inline int ovf(cell pu) {
 }
 
 // TODO: to be renamed; manages function call stack traces
-static inline int dotrace(state rt, void* ip, void* sp) {
+static inline int dotrace(state rt, void* caller, void* callee, void* sp) {
 	cell pu = rt->vm.cell;
 	if (rt->dbg == NULL) {
 		return 0;
@@ -1156,16 +1157,22 @@ static inline int dotrace(state rt, void* ip, void* sp) {
 			return 0;
 		}
 		pu->tp -= sizeof(struct trace);
+		//~ prerr("TRACE", "leave(%d) %T", (pu->tp - pu->bp) / sizeof(struct trace), mapsym(rt, vmOffset(rt, ((trace)pu->tp)->callee), 1));
 	}
 	else {
+		//~ symn callerSym = mapsym(rt, vmOffset(rt, caller), 1);
+		//~ symn calleeSym = mapsym(rt, vmOffset(rt, callee), 1);
+		//~ int callerOffs = callerSym ? vmOffset(rt, caller) - callerSym->offs : 0xbadbad;
 		trace tp = (trace)pu->tp;
 		if (ovf(pu)) {
 			debug("tp: %d - sp: %d", pu->tp - pu->bp, pu->sp - pu->bp);
 			return 0;
 		}
-		tp->ip = ip;
+		tp->caller = caller;
+		tp->callee = callee;
 		tp->sp = sp;
 		pu->tp += sizeof(struct trace);
+		//~ prerr("TRACE", "enter(%d) %T : <%T+%06x> @%06x", (pu->tp - pu->bp) / sizeof(struct trace), calleeSym, callerSym, callerOffs, vmOffset(rt, pu->ip));
 	}
 	return 1;
 }
@@ -1216,8 +1223,9 @@ static int exec(state rt, cell pu, symn fun, void* extra, int dbg(state, int, vo
 				dbg = dbgDummy;
 			}
 		}
-		// invoked function will return with a ret instruction
-		dotrace(rt, NULL, pu->sp);
+		// invoked function(from external code) will return with a ret instruction, removing trace info
+		dotrace(rt, NULL, getip(rt, fun->offs), pu->sp);
+
 		for ( ; ; ) {
 			register const bcde ip = (bcde)pu->ip;
 			register const stkptr sp = (stkptr)pu->sp;
@@ -1270,7 +1278,7 @@ static int exec(state rt, cell pu, symn fun, void* extra, int dbg(state, int, vo
 				#define NEXT(__IP, __SP, __CHK) pu->sp -= vm_size * (__SP); pu->ip += (__IP);
 				#define STOP(__ERR, __CHK, __ERC) do {if (__CHK) {err_code = __ERC; goto dbg_##__ERR;}} while(0)
 				#define EXEC
-				#define TRACE(__IP, __SP) do { if (!dotrace(rt, __IP, __SP)) goto dbg_error_trace_ovf; } while(0)
+				#define TRACE(__CALLER, __CALLEE, __SP) do { if (!dotrace(rt, __CALLER, __CALLEE, __SP)) goto dbg_error_trace_ovf; } while(0)
 				#include "code.inl"
 			}
 		}
@@ -1609,6 +1617,7 @@ void fputasm(state rt, FILE* fout, size_t beg, size_t end, int mode) {
 
 	for (i = beg; i < end; i += is) {
 		bcde ip = getip(rt, i);
+		symn sym = mapsym(rt, i, 0);
 		dbgInfo dbg = getCodeMapping(rt, i);
 
 		switch (ip->opc) {
@@ -1656,7 +1665,7 @@ void fputasm(state rt, FILE* fout, size_t beg, size_t end, int mode) {
 				break;
 
 			case 0x30: // global + local offsets
-				fputfmt(fout, ".%06x <+%06x>: ", i, i - beg);
+				fputfmt(fout, ".%06x <%?T+%d>: ", i, sym, i - beg);
 				fputopc(fout, (void*)ip, mode & 0xf, i - beg, rt);
 				break;
 		}
@@ -1988,16 +1997,13 @@ int logTrace(state rt, FILE *outf, int ident, int startlevel, int tracelevel) {
 		tracelevel = pos;
 	}
 	for (i = startlevel; i < tracelevel; ++i) {
-		size_t pc = vmOffset(rt, tr[pos - i].ip);
-		dbgInfo trInfo = getCodeMapping(rt, pc);
-		signed char *sp = tr[pos - i - 1].sp;
-		symn fun = mapsym(rt, pc, 1);
+		dbgInfo trInfo = getCodeMapping(rt, vmOffset(rt, tr[pos - i].caller));
+		symn fun = mapsym(rt, vmOffset(rt, tr[pos - i - 1].callee), 1);
+		stkptr sp = tr[pos - i - 1].sp;
 		char *file = NULL;
 		int line = 0;
 
-		if (fun == NULL) {
-			continue;
-		}
+		dieif(fun == NULL, ERR_INTERNAL_ERROR);
 
 		if (trInfo != NULL) {
 			file = trInfo->file;
