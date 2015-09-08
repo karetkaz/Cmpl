@@ -1,6 +1,5 @@
 #include <stdio.h>
 #include <string.h>
-#include <malloc.h>
 #include "g2_surf.h"
 
 #define BMP_RLE 0x01

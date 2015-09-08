@@ -1,7 +1,5 @@
 #include <math.h>
-#include <time.h>
 #include <stdio.h>
-#include <string.h>
 #include <stdlib.h>
 #include "g2_surf.h"
 #include "g3_draw.h"
