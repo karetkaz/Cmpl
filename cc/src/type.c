@@ -1451,7 +1451,7 @@ symn typecheck(ccState s, symn loc, astn ast) {
 		case TYPE_ref:
 			ref = ast;
 			if (ast->ref.link != NULL) {
-				if (ast->ref.hash == -1) {
+				if (ast->ref.hash == (unsigned)-1) {
 					return ast->type;
 				}
 			}

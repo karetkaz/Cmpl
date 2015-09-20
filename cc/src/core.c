@@ -40,7 +40,7 @@ const struct opc_inf opc_tbl[255] = {
 state rtInit(void* _mem, size_t size) {
 	state rt = _mem;
 
-	if (rt == NULL) {
+	if (rt == NULL && size > sizeof(struct stateRec)) {
 		rt = malloc(size);
 		logif(rt == NULL, ERR_INTERNAL_ERROR);
 	}
@@ -949,11 +949,11 @@ void freeBuff(struct arrBuffer* buff) {
 	buff->esz = 0;
 }
 
-dbgInfo findCodeMapping(state rt, char* file, int line) {
+dbgInfo getDbgStatement(state rt, char* file, int line) {
 	if (rt->dbg != NULL) {
 		int i;
-		for (i = 0; i < rt->dbg->codeMap.cnt; ++i) {
-			dbgInfo result = getBuff(&rt->dbg->codeMap, i);
+		for (i = 0; i < rt->dbg->statements.cnt; ++i) {
+			dbgInfo result = getBuff(&rt->dbg->statements, i);
 			if (result->file && strcmp(file, result->file) == 0) {
 				if (line == result->line) {
 					return result;
@@ -963,42 +963,87 @@ dbgInfo findCodeMapping(state rt, char* file, int line) {
 	}
 	return NULL;
 }
-dbgInfo getCodeMapping(state rt, size_t position) {
+dbgInfo mapDbgStatement(state rt, size_t position) {
 	if (rt->dbg != NULL) {
 		int i;
-		for (i = 0; i < rt->dbg->codeMap.cnt; ++i) {
-			dbgInfo result = getBuff(&rt->dbg->codeMap, i);
+		dbgInfo result = (dbgInfo)rt->dbg->statements.ptr;
+		for (i = 0; i < rt->dbg->statements.cnt; ++i) {
 			if (position >= result->start) {
 				if (position < result->end) {
 					return result;
 				}
 			}
+			result++;
 		}
 	}
 	return NULL;
 }
-dbgInfo dbgMapCode(state rt, astn ast, size_t start, size_t end) {
+dbgInfo addDbgStatement(state rt, size_t start, size_t end, astn tag) {
 	dbgInfo result = NULL;
 	if (rt->dbg != NULL) {
 		int i;
-		for (i = 0; i < rt->dbg->codeMap.cnt; ++i) {
-			result = getBuff(&rt->dbg->codeMap, i);
+		for (i = 0; i < rt->dbg->statements.cnt; ++i) {
+			result = getBuff(&rt->dbg->statements, i);
 			if (start <= result->start) {
 				break;
 			}
 		}
 
 		if (result == NULL || start != result->start) {
-			result = insBuff(&rt->dbg->codeMap, i, NULL);
+			result = insBuff(&rt->dbg->statements, i, NULL);
 		}
 
 		if (result != NULL) {
-			result->stmt = ast;
-			result->file = ast->file;
-			result->line = ast->line;
+			memset(result, 0, rt->dbg->statements.esz);
+			if (tag != NULL) {
+				result->stmt = tag;
+				result->file = tag->file;
+				result->line = tag->line;
+			}
 			result->start = start;
 			result->end = end;
-			result->bp = 0;
+		}
+	}
+	return result;
+}
+
+dbgInfo mapDbgFunction(state rt, size_t position) {
+	if (rt->dbg != NULL) {
+		int i;
+		dbgInfo result = (dbgInfo)rt->dbg->functions.ptr;
+		for (i = 0; i < rt->dbg->functions.cnt; ++i) {
+			if (position >= result->start) {
+				if (position < result->end) {
+					return result;
+				}
+			}
+			result++;
+		}
+	}
+	return NULL;
+}
+dbgInfo addDbgFunction(state rt, symn fun) {
+	dbgInfo result = NULL;
+	if (rt->dbg != NULL && fun != NULL) {
+		int i = rt->dbg->functions.cnt;
+		for (i = 0; i < rt->dbg->functions.cnt; ++i) {
+			result = getBuff(&rt->dbg->functions, i);
+			if (fun->offs <= result->start) {
+				break;
+			}
+		}
+
+		if (result == NULL || fun->offs != result->start) {
+			result = insBuff(&rt->dbg->functions, i, NULL);
+		}
+
+		if (result != NULL) {
+			memset(result, 0, rt->dbg->functions.esz);
+			result->decl = fun;
+			result->file = fun->file;
+			result->line = fun->line;
+			result->start = fun->offs;
+			result->end = fun->offs + fun->size;
 		}
 	}
 	return result;

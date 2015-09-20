@@ -33,6 +33,7 @@ application [global options] [local options]...
 //~ (wcl386 -cc -q -ei -6s -d0  -fe=../main *.c) && (rm -f *.o *.obj *.err)
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include "core.h"
 
 // enable dynamic dll/so lib loading
@@ -41,7 +42,7 @@ application [global options] [local options]...
 // default values
 static const int wl = 19;			// warning level
 static const int ol = 2;			// optimize level
-static char mem[1 << 20];			// runtime memory
+static char mem[8 << 20];			// runtime memory
 
 const char* STDLIB = "stdlib.cvx";		// standard library
 
@@ -639,7 +640,7 @@ int program(int argc, char* argv[]) {
 		for (i = 0; i < bp_size; ++i) {
 			char *file = bp_file[i];
 			int line = bp_line[i];
-			dbgInfo dbg = findCodeMapping(rt, file, line);
+			dbgInfo dbg = getDbgStatement(rt, file, line);
 			if (dbg != NULL) {
 				dbg->bp = 1;
 			}
@@ -693,7 +694,7 @@ int program(int argc, char* argv[]) {
 		if (dbg != NULL && rt->dbg != NULL) {
 			rt->dbg->dbug = dbg;
 			rt->dbg->breakLt = rt->vm.ro;
-			rt->dbg->breakGt = rt->vm.px + 1 + 4;
+			rt->dbg->breakGt = rt->vm.px + px_size;
 		}
 		fputfmt(dmpf, "\n>/*-- exec:\n");
 		result = execute(rt, NULL, rt->_size / 4);
@@ -707,6 +708,48 @@ int program(int argc, char* argv[]) {
 			//~ fputfmt(dmpf, "\n>/*-- trace:\n");
 			//~ logTrace(rt, NULL, 1, 0, 20);
 			//~ fputfmt(dmpf, "// */\n");
+
+			fputfmt(dmpf, "\n>/*-- trace:\n");
+			if (rt->dbg) {
+				int n = rt->dbg->functions.cnt;
+				dbgInfo dbg = (dbgInfo)rt->dbg->functions.ptr;
+				while (n > 0) {
+					if (dbg->hits) {
+						symn sym = dbg->decl;
+						if (sym == NULL) {
+							sym = mapsym(rt, dbg->start, 1);
+						}
+						fputfmt(dmpf, "%s:%u:[.%06x, .%06x): <%?T> hits(%D), time(%D%?+D / %.3F%?+.3F ms)\n"
+							, dbg->file, dbg->line, dbg->start, dbg->end, sym
+							, (int64_t)dbg->hits, (int64_t)dbg->funcTime, (int64_t)dbg->diffTime
+							, dbg->funcTime / (double)CLOCKS_PER_SEC, dbg->diffTime / (double)CLOCKS_PER_SEC
+						);
+					}
+					dbg++;
+					n--;
+				}
+				fputfmt(dmpf, ">//-- trace.statements:\n");
+				n = rt->dbg->statements.cnt;
+				dbg = (dbgInfo)rt->dbg->statements.ptr;
+				while (n > 0) {
+					int symOffs = 0;
+					symn sym = dbg->decl;
+					if (sym == NULL) {
+						sym = mapsym(rt, dbg->start, 1);
+					}
+					if (sym != NULL) {
+						symOffs = dbg->start - sym->offs;
+					}
+                    fputfmt(dmpf, "%s:%u:[.%06x, .%06x): <%?T+%d> hits(%D), time(%D%?+D / %.3F%?+.3F ms)\n"
+                        , dbg->file, dbg->line, dbg->start, dbg->end, sym, symOffs
+                        , (int64_t)dbg->hits, (int64_t)dbg->funcTime, (int64_t)dbg->diffTime
+                        , dbg->funcTime / (double)CLOCKS_PER_SEC, dbg->diffTime / (double)CLOCKS_PER_SEC
+                    );
+					dbg++;
+					n--;
+				}
+			}
+			fputfmt(dmpf, "// */\n");
 
 			// show allocated memory chunks.
 			fputfmt(dmpf, "\n>/*-- heap:\n");
@@ -814,7 +857,7 @@ static int dbgConsole(state rt, int pu, void* ip, void* sp, size_t ss, vmError e
 
 	i = vmOffset(rt, ip);
 	fun = mapsym(rt, i, 0);
-	dbg = getCodeMapping(rt, i);
+	dbg = mapDbgStatement(rt, i);
 	if (err != noError) {
 		// error executing opcode or libcall: abort execution
 		brk = 1;
@@ -981,7 +1024,7 @@ static int dbgConsole(state rt, int pu, void* ip, void* sp, size_t ss, vmError e
 			case 'r' :		// resume
 				if (rt->dbg && dbg) {
 					rt->dbg->breakLt = rt->vm.ro;
-					rt->dbg->breakGt = rt->vm.px + 1 + 4;
+					rt->dbg->breakGt = rt->vm.px + px_size;
 				}
 				lastCommand = 'r';
 				return 0;
@@ -1036,4 +1079,5 @@ static int dbgConsole(state rt, int pu, void* ip, void* sp, size_t ss, vmError e
 	}
 	return 0;
 	(void)pu;
+	(void)fp;
 }

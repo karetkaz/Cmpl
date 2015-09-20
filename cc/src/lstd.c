@@ -331,6 +331,7 @@ static int FILE_flush(libcArgs args) {
 //#}#endregion
 
 //#{#region system functions (exit, rand, clock, debug)
+
 #if (defined __WATCOMC__) || (defined _MSC_VER)
 #include <Windows.h>
 static inline int64_t timeMillis() {
@@ -351,7 +352,11 @@ static inline int64_t timeMillis() {
 	GetSystemTimeAsFileTime(&time.ftime);
 	return (time.time - kTimeEpoc) / kTimeScaler;
 }
+static inline void sleepMillis(int64_t milliseconds) {
+	Sleep(milliseconds);
+}
 #else
+#include <time.h>
 #include <sys/time.h>
 static inline int64_t timeMillis() {
 	int64_t now;
@@ -360,6 +365,12 @@ static inline int64_t timeMillis() {
 	now = tv.tv_sec * (uint64_t)1000;
 	now += tv.tv_usec / (uint64_t)1000;
 	return now;
+}
+static inline void sleepMillis(int64_t milliseconds) {
+    struct timespec ts;
+    ts.tv_sec = milliseconds / 1000;
+    ts.tv_nsec = (milliseconds % 1000) * 1000000;
+    nanosleep(&ts, NULL);
 }
 #endif
 
@@ -388,6 +399,10 @@ static int sysClock(libcArgs args) {
 }
 static int sysMillis(libcArgs args) {
 	reti64(args, timeMillis());
+	return 0;
+}
+static int sysMSleep(libcArgs args) {
+	sleepMillis(argi64(args, 0));
 	return 0;
 }
 
@@ -552,6 +567,7 @@ int install_stdc(state rt) {
 		{sysTime,		"int32 time();"},
 		{sysClock,		"int32 clock();"},
 		{sysMillis,		"int64 millis();"},
+		{sysMSleep,		"void sleep(int64 millis);"},
 
 		// TODO: include some of the compiler functions for reflection. (lookup, exec?, ...)
 	};

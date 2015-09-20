@@ -7,6 +7,7 @@ code emmiting, executing and formatting
 *******************************************************************************/
 #include <string.h>
 #include <math.h>
+#include <time.h>
 #include "core.h"
 
 #ifdef __WATCOMC__
@@ -132,7 +133,9 @@ struct cell {
 struct trace {
 	memptr caller;      // Instruction pointer of caller
 	memptr callee;      // Instruction pointer of callee
-	stkptr sp;      // Stack pointer
+	clock_t func;       // time when the function was invoked
+	clock_t stmt;       // time when the statement execution started
+	stkptr sp;          // Stack pointer
 };
 
 /// Check if the pointer is inside the vm.
@@ -1147,22 +1150,67 @@ static inline int ovf(cell pu) {
 
 // TODO: to be renamed; manages function call stack traces
 static inline int dotrace(state rt, void* caller, void* callee, void* sp) {
+	clock_t now = clock();
 	cell pu = rt->vm.cell;
 	if (rt->dbg == NULL) {
 		return 0;
 	}
 	if (sp == NULL) {
+		trace tp;
+		int64_t diff;
+		int recursive = 0;
 		if (pu->tp - pu->bp < (ptrdiff_t)sizeof(struct trace)) {
 			debug("tp: %d - sp: %d", pu->tp - pu->bp, pu->sp - pu->bp);
 			return 0;
 		}
 		pu->tp -= sizeof(struct trace);
-		//~ prerr("TRACE", "leave(%d) %T", (pu->tp - pu->bp) / sizeof(struct trace), mapsym(rt, vmOffset(rt, ((trace)pu->tp)->callee), 1));
+		for (tp = (trace)pu->bp; tp < (trace)pu->tp; tp++) {
+			if (tp->callee == ((trace)pu->tp)->callee) {
+				recursive = 1;
+				break;
+			}
+		}
+		tp = (trace)pu->tp;
+		size_t callerOffs = vmOffset(rt, tp->caller);
+		dbgInfo calleeFunc = mapDbgFunction(rt, vmOffset(rt, tp->callee));
+		dbgInfo callerFunc = mapDbgFunction(rt, callerOffs);
+		dbgInfo callerStmt = mapDbgStatement(rt, callerOffs);
+		if (callerFunc == NULL || calleeFunc == NULL) {
+			char *text = "";
+			if (callerFunc == NULL && calleeFunc == NULL) {
+				text = "";
+			}
+			else if (callerFunc == NULL) {
+				text = " caller";
+			}
+			if (calleeFunc == NULL) {
+				text = " callee";
+			}
+			fatal("no%s debug information for: %T@%06x", text, mapsym(rt, callerOffs, 0), callerOffs);
+		}
+		diff = now - tp->func;
+		if (calleeFunc != NULL) {
+			calleeFunc->hits += 1;
+			if (!recursive) {
+				calleeFunc->funcTime += diff;
+			}
+		}
+		if (callerFunc != NULL) {
+			if (!recursive) {
+				callerFunc->diffTime -= diff;
+			}
+		}
+		if (callerStmt != NULL) {
+			if (!recursive) {
+				callerStmt->diffTime -= diff;
+			}
+			else {
+				callerStmt->funcTime -= diff;
+			}
+		}
+		//~ prerr("TRACE", "leave(%d) %T, time: %D", (pu->tp - pu->bp) / sizeof(struct trace), mapsym(rt, vmOffset(rt, tp->callee), 1), diff);
 	}
 	else {
-		//~ symn callerSym = mapsym(rt, vmOffset(rt, caller), 1);
-		//~ symn calleeSym = mapsym(rt, vmOffset(rt, callee), 1);
-		//~ int callerOffs = callerSym ? vmOffset(rt, caller) - callerSym->offs : 0xbadbad;
 		trace tp = (trace)pu->tp;
 		if (ovf(pu)) {
 			debug("tp: %d - sp: %d", pu->tp - pu->bp, pu->sp - pu->bp);
@@ -1170,9 +1218,9 @@ static inline int dotrace(state rt, void* caller, void* callee, void* sp) {
 		}
 		tp->caller = caller;
 		tp->callee = callee;
+		tp->func = now;
 		tp->sp = sp;
 		pu->tp += sizeof(struct trace);
-		//~ prerr("TRACE", "enter(%d) %T : <%T+%06x> @%06x", (pu->tp - pu->bp) / sizeof(struct trace), calleeSym, callerSym, callerOffs, vmOffset(rt, pu->ip));
 	}
 	return 1;
 }
@@ -1215,7 +1263,7 @@ static int exec(state rt, cell pu, symn fun, void* extra, int dbg(state, int, vo
 		const stkptr spMin = (stkptr)(pu->bp);
 		const stkptr spMax = (stkptr)(pu->bp + pu->ss);
 		const bcde ipMin = (bcde)(rt->_mem + rt->vm.ro);
-		const bcde ipMax = (bcde)(rt->_mem + rt->vm.px + 2);
+		const bcde ipMax = (bcde)(rt->_mem + rt->vm.px + px_size);
 
 		if (dbg == NULL) {
 			dbg = rt->dbg->dbug;
@@ -1224,11 +1272,15 @@ static int exec(state rt, cell pu, symn fun, void* extra, int dbg(state, int, vo
 			}
 		}
 		// invoked function(from external code) will return with a ret instruction, removing trace info
-		dotrace(rt, NULL, getip(rt, fun->offs), pu->sp);
+		dotrace(rt, libcvec, getip(rt, fun->offs), pu->sp);
 
 		for ( ; ; ) {
 			register const bcde ip = (bcde)pu->ip;
 			register const stkptr sp = (stkptr)pu->sp;
+
+			const trace tp = (trace)pu->tp - 1;
+			const size_t pc = vmOffset(rt, ip);
+			const dbgInfo stmt = mapDbgStatement(rt, pc);
 
 			if (ip >= ipMax || ip < ipMin) {
 				dbg(rt, 0, ip, sp, pu->ss, invalidIP, vmOffset(rt, ip));
@@ -1241,6 +1293,27 @@ static int exec(state rt, cell pu, symn fun, void* extra, int dbg(state, int, vo
 			if ((err_code = dbg(rt, 0, ip, sp, st - sp, noError, 0)) != 0) {
 				// abort execution from debuging
 				return err_code;
+			}
+			if (stmt > 0) {
+				clock_t now = clock();
+				if (stmt != NULL) {
+					if (pc == stmt->start) {
+						tp->stmt = now;
+						/* TODO: remove: print start executing statement
+						symn sym = NULL;
+						int symOffs = 0;
+						if (stmt != NULL) {
+							if (sym == NULL) {
+								sym = mapsym(rt, stmt->start, 1);
+							}
+							if (sym != NULL) {
+								symOffs = stmt->start - sym->offs;
+							}
+						}
+						fputfmt(stdout, "%s:%?u:enter[%06x, %06x): %06x <%?T+%d>: %A, hits(%D), time: %D\n", stmt->file, stmt->line, stmt->start, stmt->end, vmOffset(rt, ip), sym, symOffs, ip, stmt->hits, (int64_t)now);
+						//~ */
+					}
+				}
 			}
 			switch (ip->opc) {
 				dbg_stop_vm:	// halt virtual machine
@@ -1280,6 +1353,29 @@ static int exec(state rt, cell pu, symn fun, void* extra, int dbg(state, int, vo
 				#define EXEC
 				#define TRACE(__CALLER, __CALLEE, __SP) do { if (!dotrace(rt, __CALLER, __CALLEE, __SP)) goto dbg_error_trace_ovf; } while(0)
 				#include "code.inl"
+			}
+			if (stmt != NULL) {
+				size_t pc = vmOffset(rt, pu->ip);
+				const trace tp2 = (trace)pu->tp - 1;
+				if ((memptr)ip != tp2->caller) {
+					if (pc < stmt->start || pc >= stmt->end) {
+						clock_t now = clock();
+						stmt->hits += 1;
+						stmt->funcTime += now - tp->stmt;
+						/* TODO: remove: print end executing statement
+						symn sym = NULL;
+						int symOffs = 0;
+						if (sym == NULL) {
+							sym = mapsym(rt, stmt->start, 1);
+						}
+						if (sym != NULL) {
+							symOffs = stmt->start - sym->offs;
+						}
+						fputfmt(stdout, "%s:%?u:leave[%06x, %06x): %06x <%?T+%d>: %A, hits(%D), time: %D - %D = %D\n", stmt->file, stmt->line, stmt->start, stmt->end, vmOffset(rt, ip), sym, symOffs, ip, stmt->hits, (int64_t)now, (int64_t)tp->stmt, (int64_t)now - (int64_t)tp->stmt);
+						sym = NULL;
+						// */
+					}
+				}
 			}
 		}
 		return 0;
@@ -1618,7 +1714,7 @@ void fputasm(state rt, FILE* fout, size_t beg, size_t end, int mode) {
 	for (i = beg; i < end; i += is) {
 		bcde ip = getip(rt, i);
 		symn sym = mapsym(rt, i, 0);
-		dbgInfo dbg = getCodeMapping(rt, i);
+		dbgInfo dbg = mapDbgStatement(rt, i);
 
 		switch (ip->opc) {
 			error_opc:
@@ -1997,7 +2093,7 @@ int logTrace(state rt, FILE *outf, int ident, int startlevel, int tracelevel) {
 		tracelevel = pos;
 	}
 	for (i = startlevel; i < tracelevel; ++i) {
-		dbgInfo trInfo = getCodeMapping(rt, vmOffset(rt, tr[pos - i].caller));
+		dbgInfo trInfo = mapDbgStatement(rt, vmOffset(rt, tr[pos - i].caller));
 		symn fun = mapsym(rt, vmOffset(rt, tr[pos - i - 1].callee), 1);
 		stkptr sp = tr[pos - i - 1].sp;
 		char *file = NULL;

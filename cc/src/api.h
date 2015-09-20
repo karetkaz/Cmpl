@@ -3,7 +3,6 @@
 
 #include <stdio.h>
 #include <string.h>
-#include <stddef.h>
 
 #ifdef _MSC_VER
 typedef signed char			int8_t;
@@ -17,6 +16,7 @@ typedef unsigned long long	uint64_t;
 #define inline __inline
 #else
 #include <stdint.h>
+#include <stddef.h>
 #endif
 typedef float float32_t;
 typedef double float64_t;
@@ -78,7 +78,7 @@ struct stateRec {
 
 	/**
 	 * @brief Compiler context.
-     * @note After code generation is seted to null.
+	 * @note After code generation is seted to null.
 	 */
 	ccState cc;
 

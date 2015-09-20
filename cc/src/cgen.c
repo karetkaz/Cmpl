@@ -536,7 +536,7 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 				if (rt->dbg != NULL) {
 					size_t ipEnd = emitopc(rt, markIP);
 					if (ipdbg < ipEnd && ptr->kind != STMT_beg) {
-						dbgMapCode(rt, ptr, ipdbg, ipEnd);
+						addDbgStatement(rt, ipdbg, ipEnd, ptr);
 					}
 				}
 			}
@@ -718,13 +718,13 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 
 			if (rt->dbg != NULL) {
 				if (lcont < lincr) {
-					dbgMapCode(rt, ast->stmt.step, lcont, lincr);
+					addDbgStatement(rt, lcont, lincr, ast->stmt.step);
 				}
 				if (lincr < lbreak) {
-					dbgMapCode(rt, ast->stmt.test, lincr, lbreak);
+					addDbgStatement(rt, lincr, lbreak, ast->stmt.test);
 				}
 				/*if (lcont < lbreak) {
-					dbgMapCode(rt, ast, lcont, lbreak);
+					addDbgSatement(rt, lcont, lbreak, ast);
 				}*/
 			}
 
@@ -2309,6 +2309,18 @@ int gencode(state rt, int mode) {
 	// used memeory by metadata (string constants and typeinfos)
 	Lmeta = rt->_beg - rt->_mem;
 
+	// debuginfo
+	if (mode & cgen_info) {
+		rt->dbg = (dbgState)(rt->_beg = paddptr(rt->_beg, rt_size));
+		rt->_beg += sizeof(struct dbgStateRec);
+
+		dieif(rt->_beg >= rt->_end, ERR_MEMORY_OVERRUN);
+		memset(rt->dbg, 0, sizeof(struct dbgStateRec));
+
+		initBuff(&rt->dbg->functions, 128, sizeof(struct dbgInfo));
+		initBuff(&rt->dbg->statements, 128, sizeof(struct dbgInfo));
+	}
+
 	// libcalls
 	if (cc->libc != NULL) {
 		libc lc, calls;
@@ -2322,20 +2334,11 @@ int gencode(state rt, int mode) {
 			lc->sym->offs = vmOffset(rt, &calls[lc->pos]);
 			lc->sym->size = sizeof(struct libc);
 			calls[lc->pos] = *lc;
+			if (rt->dbg != NULL) {
+				addDbgFunction(rt, lc->sym);
+			}
 		}
-
 		rt->vm.libv = calls;
-	}
-
-	// debuginfo
-	if (mode & cgen_info) {
-		rt->dbg = (dbgState)(rt->_beg = paddptr(rt->_beg, rt_size));
-		rt->_beg += sizeof(struct dbgStateRec);
-
-		dieif(rt->_beg >= rt->_end, ERR_MEMORY_OVERRUN);
-		memset(rt->dbg, 0, sizeof(struct dbgStateRec));
-
-		initBuff(&rt->dbg->codeMap, 128, sizeof(struct dbgInfo));
 	}
 
 	//~ read only memory ends here.
@@ -2407,6 +2410,10 @@ int gencode(state rt, int mode) {
 				}
 				var->size = emitopc(rt, markIP) - seg;
 				var->stat = 1;
+
+				if (rt->dbg != NULL) {
+					addDbgFunction(rt, var);
+				}
 			}
 			else {
 				unsigned padd = rt_size;
@@ -2532,7 +2539,7 @@ int gencode(state rt, int mode) {
 	rt->_end = rt->_mem + rt->_size;
 	if (rt->dbg != NULL) {
 		int i, j;
-		struct arrBuffer *codeMap = &rt->dbg->codeMap;
+		struct arrBuffer *codeMap = &rt->dbg->statements;
 		for (i = 0; i < codeMap->cnt; ++i) {
 			for (j = i; j < codeMap->cnt; ++j) {
 				dbgInfo a = getBuff(codeMap, i);
@@ -2547,6 +2554,7 @@ int gencode(state rt, int mode) {
 				}
 			}
 		}
+		addDbgFunction(rt, rt->init);
 	}
 
 	return rt->errc == 0;

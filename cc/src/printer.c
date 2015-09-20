@@ -979,6 +979,17 @@ static void FPUTFMT(FILE* fout, char *esc[], const char* msg, va_list ap) {
 
 					if ((len = msg - fmt - 1) < 1020) {
 						memcpy(buff, fmt, (size_t) len);
+						if (buff[1] == '?') {
+							len -= 1;
+							memcpy(buff+1, buff+2, (size_t) len - 1);
+						}
+						if (buff[1] == '-' || buff[1] == '+') {
+							len -= 1;
+							memcpy(buff+1, buff+2, (size_t) len - 1);
+							if (num >= 0) {
+								fprintf(fout, "+");
+							}
+						}
 						buff[len++] = chr;
 						buff[len++] = 0;
 						//~ TODO: replace fprintf

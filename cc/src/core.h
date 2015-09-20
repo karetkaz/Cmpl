@@ -24,9 +24,10 @@
 #define DEBUGGING 0
 
 // enable paralell execution stuff
-//~ #define MAXPROCSEXEC 1
+//~ #define VM_MAX_PROCS 1
 
 // maximum elements to print from an array
+// TODO: rename: LOG_MAX_ITEMS
 #define MAX_ARR_PRINT 100
 
 // maximum tokens in expressions & nesting level
@@ -188,7 +189,7 @@ typedef enum {
 	rt_size = 8,//sizeof(void*),
 	vm_regs = 255	// maximum registers for dup, set, pop, ...
 } vmOpcode;
-struct opc_inf{
+struct opc_inf {
 	signed int const code;		// opcode value (0..255)
 	unsigned int const size;	// length of opcode with args
 	signed int const chck;		// minimum elements on stack before execution
@@ -197,7 +198,7 @@ struct opc_inf{
 };
 extern const struct opc_inf opc_tbl[255];
 
-typedef enum {
+typedef enum {		// vm errors
 	noError,
 	invalidIP,
 	invalidSP,
@@ -231,8 +232,8 @@ typedef union {		// on stack value type
 } stkval;
 
 typedef struct list {	// linked list
-	struct list*	next;
-	unsigned char*	data;
+	struct list*    next;
+	unsigned char*  data;
 } *list;
 typedef struct libc {	// library call
 	struct libc *next;	// next
@@ -357,6 +358,11 @@ typedef struct dbgInfo {
 	// break execution?
 	int bp;
 
+	// trace information
+	int64_t diffTime;  // time spent executing other functions
+	int64_t funcTime;  // time spent in function
+	int64_t hits;
+
 	// position in code
 	size_t start;
 	size_t end;
@@ -439,20 +445,21 @@ struct dbgStateRec {
 	size_t breakLt;		// break if pc is less than
 	size_t breakGt;		// break if pc is greater than
 	int (*dbug)(state, int pu, void* ip, void* sp, size_t ss, vmError error, size_t fp);
-	struct arrBuffer codeMap;
+	struct arrBuffer functions;
+	struct arrBuffer statements;
 };
 
 /**
- * @brief Print formated text to the output stream.
+ * @brief Print formatted text to the output stream.
  * @param fout Output stream.
  * @param msg Format text.
  * @param ... Format variables.
  * @note %(\?)?[+-]?[0 ]?([1-9][0-9]*)?(.(\*)|([1-9][0-9]*))?[tTkKAIbBoOxXuUdDfFeEsScC]
  *    skip: (\?)? skip printing if variable is null or zero (prints pad character if specified.)
  *    sign: [+-]? sign flag / alignment.
- *    padd: [0 ]? padd character.
+ *    padd: [0 ]? padding character.
  *    len:  ([1-9][0-9]*)? length
- *    offs: (.(*)|([1-9][0-9]*))? precent or offset.
+ *    offs: (.(*)|([1-9][0-9]*))? percent or offset.
  *
  *    T: symbol
  *      +: expand function
@@ -462,7 +469,7 @@ struct dbgStateRec {
  *      -: ?
  *    t: kind
  *    A: instruction (asm)
- *    I: ident
+ *    I: indent
  *    b: 32 bit bin value
  *    B: 64 bit bin value
  *    o: 32 bit oct value
@@ -485,7 +492,7 @@ struct dbgStateRec {
  *    +-
  *        oOuU: ignored
  *        bBxX: lowerCase / upperCase
- *        dDfFeE: putsign /
+ *        dDfFeE: forceSign /
  *
  */
 void fputfmt(FILE *fout, const char *msg, ...);
@@ -785,9 +792,11 @@ int fixjump(state, int src, int dst, int stc);
 
 // Debuging.
 
-dbgInfo findCodeMapping(state rt, char* file, int line);
-dbgInfo getCodeMapping(state rt, size_t position);
-dbgInfo dbgMapCode(state rt, astn ast, size_t start, size_t end);
+dbgInfo getDbgStatement(state rt, char* file, int line);
+dbgInfo mapDbgStatement(state rt, size_t position);
+dbgInfo addDbgStatement(state rt, size_t start, size_t end, astn tag);
+dbgInfo mapDbgFunction(state rt, size_t position);
+dbgInfo addDbgFunction(state rt, symn fun);
 
 int logTrace(state rt, FILE *out, int ident, int startlevel, int tracelevel);
 //~ disable warning messages

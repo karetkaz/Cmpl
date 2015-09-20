@@ -1,9 +1,7 @@
 //~ http://pyopengl.sourceforge.net/documentation/manual-3.0/index.html
 //~ sudo apt-get install freeglut3:i386
 #include "api.h"
-#include <stdio.h>
 #include <stdlib.h>
-#include <stdarg.h>
 #include <GL/glut.h>
 
 #define debugGL(msg, ...) fprintf(stdout, "%s:%d:debug:"msg"\n", __FILE__, __LINE__, ##__VA_ARGS__)
