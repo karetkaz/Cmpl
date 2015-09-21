@@ -5,7 +5,7 @@ cd tests
 files="test.*.cvx"
 
 #~ compile flags
-flags="-gd2 -x -astff -asm39 -w9"
+flags="-gd2 -x -apiff -astff -asm39 -wa"
 flags="-gd2 -x -w0"
 
 logFile=../out/log.gcc.cvx

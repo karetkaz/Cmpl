@@ -261,7 +261,7 @@ static void fputast(FILE* fout, char *esc[], astn ast, int mode, int level) {
 
 			switch (ast->cst2) {
 				default:
-					trace("%+k", ast);
+					traceAst(ast);
 				case TYPE_any:
 					break;
 			}
@@ -529,7 +529,7 @@ static void fputast(FILE* fout, char *esc[], astn ast, int mode, int level) {
 			break;
 
 		default:
-			fputesc(fout, esc, "%t(0x%02x)", ast->kind, ast->kind);
+			fputesc(fout, esc, "%K(0x%02x)", ast->kind, ast->kind);
 			break;
 	}
 }
@@ -795,7 +795,7 @@ static void FPUTFMT(FILE* fout, char *esc[], const char* msg, va_list ap) {
 					continue;
 				}
 
-				case 't': {		// token kind
+				case 'K': {		// token kind
 					unsigned arg = va_arg(ap, unsigned);
 
 					if (arg == 0 && nil) {
@@ -1046,140 +1046,6 @@ static void fputesc(FILE* fout, char *esc[], const char* msg, ...) {
 	va_end(ap);
 }
 
-
-/** print symbols
- * output looks like:
- * file:line:name:type:
- * @param mode
- * :	mode & 0x80: print file:line
- * :	mode & 0x40: print init
- * :	mode & 0x20: print qualified symbol type names: Math.sin(double x): Math.double
- * :	mode & 0x10: print type
- * :	mode & 0x0f: print level:
- * :		0: this symbol only;
- * :		1: this symbol only;
-**/
-static void dumpsym(FILE* fout, symn sym, int mode) {
-	symn ptr, bp[TOKS], *sp = bp;
-
-	int print_line = mode & prLine;		// print file and location.
-	int print_type = mode & prType;		// print type of symbol.
-	int print_init = mode & prInit;		// print initializer of symbol.
-	int print_qual = mode & prQual;		// print qualified name of symbol.
-	int print_info = 1;
-	int print_usage = 1;
-	mode &= 0x0f;
-
-	for (*sp = sym; sp >= bp;) {
-		char* tch = "";
-		if (!(ptr = *sp)) {
-			--sp;
-			continue;
-		}
-		*sp = ptr->next;
-
-		switch (ptr->kind) {
-
-			// constant
-			case TYPE_def:
-				if (mode > 4) {
-					*++sp = ptr->flds;
-				}
-				tch = "alias";
-				break;
-
-			// typename/array
-			case TYPE_arr:
-			case TYPE_rec:
-				if (mode > 1) {
-					*++sp = ptr->flds;
-				}
-				tch = "typename";
-				break;
-
-			// variable/function
-			case TYPE_ref:
-				tch = "variable";
-				if (mode > 3 && ptr->call && ptr->prms) {
-					*++sp = ptr->prms;
-				}
-				break;
-
-			case EMIT_opc:
-				tch = "opcode";
-				if (mode > 2) {
-					*++sp = ptr->flds;
-				}
-				break;
-
-			default:
-				trace("psym:%d:%T['%t']", ptr->kind, ptr, ptr->kind);
-				tch = "err";
-				break;
-		}
-
-		if (print_line && ptr->file && ptr->line) {
-			fputfmt(fout, "%s:%u: ", ptr->file, ptr->line);
-		}
-
-		// qualified name with arguments
-		fputsym(fout, NULL, ptr, print_qual | 1, 0);
-
-		// qualified base type(s)
-		if (print_type && ptr->type) {
-			fputfmt(fout, ": %-T", ptr->type);
-		}
-
-		// initializer
-		if (print_init && ptr->init && ptr->kind != TYPE_ref) {
-			fputfmt(fout, " = %+k", ptr->init);
-		}
-
-		if (print_info) {
-			fputfmt(fout, ": [%c%06x", ptr->stat ? '@' : '+', ptr->offs);
-			fputfmt(fout, ", size: %d", ptr->size);
-			fputfmt(fout, ", kind:");
-
-			if (ptr->stat) {
-				fputfmt(fout, " %s", "static");
-			}
-			if (ptr->cnst) {
-				fputfmt(fout, " %s", "const");
-			}
-			fputfmt(fout, " %s", tch);
-
-			if (ptr->cast != 0) {
-				fputfmt(fout, ", cast: %t", ptr->cast);
-			}
-
-			fputstr(fout, NULL, "]");
-		}
-
-		fputchr(fout, '\n');
-		fflush(fout);
-
-		if (print_usage) {
-			astn usage;
-			int maxusages = 1000;
-			for (usage = ptr->used; usage; usage = usage->ref.used) {
-				fputfmt(fout, "%I", 1);
-				if (usage->file && usage->line) {
-					fputfmt(fout, "%s:%u: ", usage->file, usage->line);
-				}
-				fputfmt(fout, "referenced as `%+k`\n", usage);
-				if ((maxusages -= 1) < 0) {
-					break;
-				}
-			}
-			fflush(fout);
-		}
-
-		if (mode == 0) {
-			break;
-		}
-	}
-}
-
 static void dumpapi(FILE* fout, symn sym) {
 	symn ptr, bp[TOKS], *sp = bp;
 
@@ -1217,7 +1083,7 @@ static void dumpapi(FILE* fout, symn sym) {
 				break;
 
 			default:
-				trace("psym:%d:%T['%t']", ptr->kind, ptr, ptr->kind);
+				trace("psym:%d:%T['%K']", ptr->kind, ptr, ptr->kind);
 				break;
 		}
 
@@ -1300,7 +1166,7 @@ static void dumpjsapi(FILE* fout, symn sym) {
 				break;
 
 			default:
-				trace("psym:%d:%T['%t']", ptr->kind, ptr, ptr->kind);
+				trace("psym:%d:%T['%K']", ptr->kind, ptr, ptr->kind);
 				break;
 		}
 
@@ -1377,7 +1243,7 @@ static void dumpjsapi(FILE* fout, symn sym) {
 
 		if (ptr->cast != 0) {
 			fputesc(fout, NULL, "\t%s : '", KEY_CAST);
-			fputesc(fout, esc, "%t", ptr->cast);
+			fputesc(fout, esc, "%K", ptr->cast);
 			fputesc(fout, NULL, "',\n");
 		}
 		fputesc(fout, NULL, "\t%s : %u,\n", KEY_SIZE, ptr->size);
@@ -1395,14 +1261,14 @@ static void dumpxml(FILE* fout, astn ast, int mode, int level, const char* text)
 		return;
 	}
 
-	fputesc(fout, escape, "%I<%s op=\"%t\"", level, text, ast->kind);
+	fputesc(fout, escape, "%I<%s op=\"%K\"", level, text, ast->kind);
 
 	if ((mode & prType) != 0) {
 		fputesc(fout, escape, " type=\"%?T\"", ast->type);
 	}
 
 	if ((mode & prCast) != 0) {
-		fputesc(fout, escape, " cast=\"%?t\"", ast->cst2);
+		fputesc(fout, escape, " cast=\"%?K\"", ast->cst2);
 	}
 
 	if ((mode & prLine) != 0) {
@@ -1541,7 +1407,7 @@ static void dumpxml(FILE* fout, astn ast, int mode, int level, const char* text)
 			astn init = var ? var->init : NULL;
 			symn fields = var ? var->flds : NULL;
 
-			fputesc(fout, escape, " tyc=\"%?t\" name=\"%+T\"", var ? var->cast : TYPE_any, var);
+			fputesc(fout, escape, " tyc=\"%?K\" name=\"%+T\"", var ? var->cast : TYPE_any, var);
 			if (fields || init) {
 				fputesc(fout, escape, ">\n");
 			}
@@ -1567,12 +1433,12 @@ static void dumpxml(FILE* fout, astn ast, int mode, int level, const char* text)
 				}
 
 				for (def = fields; def; def = def->next) {
-					fputesc(fout, escape, "%I<%s op=\"%t\"", level + 1, argn, def->kind, def);
+					fputesc(fout, escape, "%I<%s op=\"%K\"", level + 1, argn, def->kind, def);
 					if (mode & prType) {
 						fputesc(fout, escape, " type=\"%?T\"", def->type);
 					}
 					if (mode & prCast) {
-						fputesc(fout, escape, " cast=\"%?t\"", def->cast);
+						fputesc(fout, escape, " cast=\"%?K\"", def->cast);
 					}
 					if (mode & prLine) {
 						// && def->file && def->line) {
@@ -1633,6 +1499,7 @@ void fputfmt(FILE* fout, const char* msg, ...) {
 	va_end(ap);
 }
 
+//~ /* TODO: remove
 void dump(state rt, int mode, symn sym) {
 	int level = mode & 0xff;
 	FILE* logf = rt->logf;
@@ -1641,19 +1508,19 @@ void dump(state rt, int mode, symn sym) {
 		return;
 	}
 
-	if (mode & dump_sym && rt->defs != NULL) {
+	if (mode & dump_api && rt->defs != NULL) {
 		if (sym != NULL) {
-			dumpsym(logf, sym, level);
+			dumpapi(logf, sym);
 		}
 		else {
 			if (level == 0) {
 				dumpapi(logf, rt->defs);
 			}
 			else if (level == 1) {
-				dumpsym(logf, rt->defs, -1);
+				dumpjsapi(logf, rt->defs);
 			}
 			else if (level == 2) {
-				dumpjsapi(logf, rt->defs);
+				//~ dumpsym(logf, rt->defs, -1);
 			}
 			else if (level == 6) {
 				for (sym = rt->defs; sym; sym = sym->defs) {
@@ -1685,7 +1552,7 @@ void dump(state rt, int mode, symn sym) {
 				}
 			}
 			else {
-				dumpsym(logf, rt->defs, level);
+				dumpapi(logf, rt->defs);
 			}
 		}
 	}
@@ -1708,7 +1575,7 @@ void dump(state rt, int mode, symn sym) {
 			if (sym->kind == TYPE_ref && sym->call) {
 				symn param;
 				for (param = sym->flds; param; param = param->next) {
-					fputfmt(logf, "\t.local %-T [@%06x, size:%d, cast:%t]\n", param, param->offs, param->size, param->cast);
+					fputfmt(logf, "\t.local %-T [@%06x, size:%d, cast:%K]\n", param, param->offs, param->size, param->cast);
 				}
 				fputasm(rt, logf, sym->offs, sym->offs + sym->size, 0x100 | (mode & 0xff));
 			}
@@ -1720,7 +1587,7 @@ void dump(state rt, int mode, symn sym) {
 					symn param;
 					fputfmt(logf, "%-T [@%06x: %d] {\n", sym, sym->offs, sym->size);
 					for (param = sym->flds; param; param = param->next) {
-						fputfmt(logf, "\t.local %-T [@%06x, size:%d, cast:%t]\n", param, param->offs, param->size, param->cast);
+						fputfmt(logf, "\t.local %-T [@%06x, size:%d, cast:%K]\n", param, param->offs, param->size, param->cast);
 					}
 					//~ fputast(logf, NULL, sym->init, 2, 1);
 					fputfmt(logf, "\t.ast %15.1k\n", sym->init);
@@ -1760,7 +1627,7 @@ void dump(state rt, int mode, symn sym) {
 			fputchr(logf, "0123456789abcdef"[val >>  0 & 0x0f]);
 		}
 	}
-}
+}// */
 
 void perr(state rt, int level, const char* file, int line, const char* msg, ...) {
 	int warnLevel = rt && rt->cc ? rt->cc->warn : 0;

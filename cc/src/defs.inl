@@ -5,7 +5,7 @@
 	TYPE: typesize / oprator priority
 	ARGS: if != 0 then operator
 */
-TOKDEF(TYPE_any, 0x00, 0, ".err")                // alias, define, error
+TOKDEF(TYPE_any, 0x00, 0, ".nil")                // alias, define, error
 TOKDEF(TYPE_vid, 0x00, 0, ".vid")                // void
 TOKDEF(TYPE_bit, 0x04, 0, ".bit")                // bool
 TOKDEF(TYPE_i32, 0x04, 0, ".i32")                // int8, int16, int32

@@ -301,10 +301,12 @@ unsigned rehash(const char* str, size_t len) {
 	register unsigned hs = 0xffffffff;
 
 	if (str != NULL) {
-		if (len == (unsigned)-1)
+		if (len == (size_t)-1)
 			len = strlen(str) + 1;
-		while (len-- > 0)
-			hs = (hs >> 8) ^ crc_tab[(hs ^ (*str++)) & 0xff];
+		while (len-- > 0) {
+            int pos = hs ^ (*str++);
+			hs = (hs >> 8) ^ crc_tab[(uint8_t)pos];
+		}
 	}
 
 	return hs ^ 0xffffffff;
@@ -322,7 +324,7 @@ char* mapstr(ccState cc, char* str, size_t len/* = -1*/, unsigned hash/* = -1*/)
 	state rt = cc->s;
 	list newn, next, prev = 0;
 
-	if (len == (unsigned)-1) {
+	if (len == (size_t)-1) {
 		len = strlen(str) + 1;
 	}
 	else if (str[len - 1] != 0) {
@@ -1348,10 +1350,10 @@ ccToken skiptok(ccState cc, ccToken kind, int raise) {
 	if (!skip(cc, kind)) {
 		if (raise) {
 			if (!peekTok(cc, TYPE_any)) {
-				error(cc->s, cc->file, cc->line, "unexpected end of file, `%t` excepted", kind);
+				error(cc->s, cc->file, cc->line, "unexpected end of file, `%K` excepted", kind);
 			}
 			else {
-				error(cc->s, cc->file, cc->line, "`%t` excepted, got `%k`", kind, peekTok(cc, TYPE_any));
+				error(cc->s, cc->file, cc->line, "`%K` excepted, got `%k`", kind, peekTok(cc, TYPE_any));
 			}
 		}
 

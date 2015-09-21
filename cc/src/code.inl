@@ -28,9 +28,9 @@ case opc_ldsp: NEXT(4, +1, 0) {
 } break;
 case opc_call: NEXT(1, -0, 1) {
 #ifdef EXEC
-	int retip = pu->ip - mp;
+	size_t retip = pu->ip - mp;
 	pu->ip = mp + SP(0, u4);
-	SP(0, u4) = retip;
+	SP(0, u4) = (uint32_t)retip;
 #ifdef TRACE
 	TRACE(ip, pu->ip, sp);
 #endif

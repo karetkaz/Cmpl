@@ -28,7 +28,7 @@ enum {
 	cgen_info = 0x0200,		// generate debug info
 
 	// dump(dump_xxx | (level & 0xff))
-	dump_sym = 0x0100,
+	dump_api = 0x0100,
 	dump_ast = 0x0200,
 	dump_asm = 0x0400,
 	dump_bin = 0x0800

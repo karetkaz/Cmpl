@@ -346,16 +346,21 @@ int program(int argc, char* argv[]) {
 	int run_code = 0;	// true/false: exec
 
 	char* stk_dump = NULL;	// dump top of stack
-	int var_dump = -1;	// dump variables after execution.
+	int val_dump = -1;	// dump variable values after execution.
+	int sym_dump = -1;	// dump variables and functions.
+	int ast_dump = -1;	// dump abstract syntax tree.
+	int asm_dump = -1;	// dump disassembly.
 
-	int out_tree = -1;
-	char* str_tree = NULL;
+	enum {
+		sym_attr = 0x01,   // size, kind, attributes, initializer, ...
+		sym_refs = 0x02,   // dump usage references of variable
+		sym_prms = 0x04,   // print params
+		sym_code = 0x08,   // dump all symbols
 
-	int out_tags = -1;
-	char* str_tags = NULL;
-
-	int out_dasm = -1;
-	char* str_dasm = NULL;
+		asm_lofs = 0x10,   // local offsets
+		asm_gofs = 0x20,   // global offsets
+		asm_data = 0x0f,   // print 0-15 bytes as hex code
+	};
 
 	int log_append = 0;				// start with a new file
 	char* logf = NULL;			// logger filename
@@ -416,11 +421,11 @@ int program(int argc, char* argv[]) {
 			char* str = arg + 2;
 
 			if (*str == 'v') {
-				var_dump = 0;
+				val_dump = 0;
 				str += 1;
 			}
 			else if (*str == 'V') {
-				var_dump = 1;
+				val_dump = 1;
 				str += 1;
 			}
 
@@ -463,43 +468,34 @@ int program(int argc, char* argv[]) {
 			level = 0x32;
 			if (arg[4]) {
 				char* ptr = parsei32(arg + 4, &level, 16);
-				if (*ptr == '.') {
-					str_tags = ptr + 1;
-				}
-				else if (*ptr) {
+				if (*ptr) {
 					error(rt, NULL, 0, "invalid argument '%s'\n", arg);
 					return 0;
 				}
 			}
-			out_tags = level;
+			sym_dump = level;
 		}
 		else if (strncmp(arg, "-ast", 4) == 0) {	// tree
 			level = 0x7f;
 			if (arg[4]) {
 				char* ptr = parsei32(arg + 4, &level, 16);
-				if (*ptr == '.') {
-					str_tree = ptr + 1;
-				}
-				else if (*ptr) {
+				if (*ptr) {
 					error(rt, NULL, 0, "invalid argument '%s'\n", arg);
 					return 0;
 				}
 			}
-			out_tree = level;
+			ast_dump = level;
 		}
 		else if (strncmp(arg, "-asm", 4) == 0) {	// dasm
 			level = 0x29;	// 2 use global offset, 9 characters for bytecode hexview
 			if (arg[4]) {
 				char* ptr = parsei32(arg + 4, &level, 16);
-				if (*ptr == '.') {
-					str_dasm = ptr + 1;
-				}
-				else if (*ptr) {
+				if (*ptr) {
 					error(rt, NULL, 0, "invalid argument '%s'\n", arg);
 					return 0;
 				}
 			}
-			out_dasm = level;
+			asm_dump = level;
 		}
 
 		// temp
@@ -651,42 +647,144 @@ int program(int argc, char* argv[]) {
 		dmpf = rt->logf;
 	}
 
-	if (out_tags >= 0) {
-		symn sym = NULL;
-		if (str_tags != NULL) {
-			sym = ccFindSym(rt->cc, NULL, str_tags);
-			if (sym == NULL) {
-				info(rt, NULL, 0, "symbol not found: %s", str_tags);
+	if (sym_dump >= 0 || ast_dump >= 0 || asm_dump >= 0) {
+		static const int identExt = 1;
+		symn sym, bp[TOKS], *sp = bp;
+		FILE* fout = rt->logf;
+		char *typ = "";
+
+		for (*sp = rt->defs; sp >= bp;) {
+			if (!(sym = *sp)) {
+				--sp;
+				continue;
 			}
-		}
-		fputfmt(dmpf, "\n>/*-- tags:\n");
-		//~ fputfmt(dmpf, "#api: replace(`^([^:)<#>]*([)]+[:][^:]+)?).*$`, `\\1`)\n");
-		dump(rt, dump_sym | (out_tags & 0x0ff), sym);
-		fputfmt(dmpf, "// */\n");
-	}
-	if (out_tree >= 0) {
-		symn sym = NULL;
-		if (str_tree != NULL) {
-			sym = ccFindSym(rt->cc, NULL, str_tree);
-			if (sym == NULL) {
-				info(rt, NULL, 0, "symbol not found: %s", str_tree);
+			*sp = sym->next;
+
+			switch (sym->kind) {
+
+				// inline/constant
+				case TYPE_def:
+					typ = "alias";
+					/* print params of inline expressions
+					if (sym->call && sym->prms) {
+						*++sp = sym->prms;
+					}// */
+					break;
+
+				// array/typename
+				case TYPE_arr:
+				case TYPE_rec:
+					typ = "typename";
+					*++sp = sym->flds;
+					break;
+
+				// variable/function
+				case TYPE_ref:
+					typ = "variable";
+					/* print params of functions
+					if (sym->call && sym->prms) {
+						*++sp = sym->prms;
+					}
+					// */
+					break;
+
+				case EMIT_opc:
+					typ = "opcode";
+					//~ *++sp = sym->flds;
+					break;
+
+				default:
+					typ = "!!!";
+					trace("psym:%d:%T['%K']", sym->kind, sym, sym->kind);
+					break;
 			}
-		}
-		fputfmt(dmpf, "\n>/*-- code.xml:\n");
-		dump(rt, dump_ast | (out_tree & 0x0ff), sym);
-		fputfmt(dmpf, "// */\n");
-	}
-	if (out_dasm >= 0) {
-		symn sym = NULL;
-		if (str_dasm != NULL) {
-			sym = ccFindSym(rt->cc, NULL, str_dasm);
-			if (sym == NULL) {
-				info(rt, NULL, 0, "symbol not found: %s", str_dasm);
+
+			// pfrint symbol definition location
+			if (sym->file != NULL && sym->line > 0) {
+				fputfmt(fout, "%s:%u: ", sym->file, sym->line);
 			}
+			else if (sym_dump & sym_code) {
+				continue;
+			}
+
+			// print qualified name with arguments
+			fputfmt(fout, "%+T: %+T{\n", sym, sym->type);
+
+			// explain params of the function
+			if (sym_dump >= 0 && sym_dump & sym_prms) {
+				symn param;
+				for (param = sym->prms; param; param = param->next) {
+					fputfmt(fout, "%I.param %T: %?+T (@%06x+%d->%K)\n", identExt, param, param->type, param->offs, param->size, param->cast);
+				}
+			}
+
+			// print symbol info (kind, size, offset, ...)
+			if (sym_dump >= 0 && sym_dump & sym_attr) {
+				fputfmt(fout, "%I.kind:%?s%?s %s %?K\n", identExt
+					, sym->stat ? " static" : ""
+					, sym->cnst ? " const" : ""
+					, typ, sym->cast
+				);
+				fputfmt(fout, "%I.offset: %06x\n", identExt, sym->offs);
+				fputfmt(fout, "%I.size: %d\n", identExt, sym->size);
+				//~ fputfmt(fout, "%I.init: %?-k\n", identExt, sym->init);
+			}
+
+			if (ast_dump >= 0 && sym->init != NULL) {
+				fputfmt(fout, "%I.init: %?-k", identExt, sym->init, identExt);
+				if (sym->init->kind != STMT_beg) {
+					fputfmt(fout, "\n");
+				}
+				//~ fputast(fout, NULL, sym->init, ast_dump & 0xff, identExt);
+			}
+
+			// print disassembly of the function
+			if (asm_dump >= 0) {
+				if (sym->cast == TYPE_ref) {
+					fputfmt(fout, "}\n");
+					fflush(fout);
+					continue;
+				}
+				if (sym->kind != TYPE_ref || !sym->call) {
+					fputfmt(fout, "}\n");
+					fflush(fout);
+					continue;
+				}
+				fputfmt(fout, "%I.asm [@%06x: %d] {\n", identExt, sym->offs, sym->size);
+				//~ fputfmt(fout, "\t.ast %15.1k\n", sym->init);
+				fputasm(rt, fout, sym->offs, sym->offs + sym->size, (identExt << 8) | (asm_dump & 0xff));
+				fputfmt(fout, "}\n");
+			}
+
+			// print usages of symbol
+			if (sym_dump >= 0 && sym_dump & sym_refs) {
+				astn usage;
+				int usages = 0;
+				int extUsages = 0;
+				for (usage = sym->used; usage; usage = usage->ref.used) {
+					if (usage->file && usage->line) {
+						int referenced = !(usage->file == sym->file && usage->line == sym->line);
+						fputfmt(fout, "%I%s:%u: %s as `%+k`\n", identExt, usage->file, usage->line, referenced ? "referenced" : "defined", usage);
+						#ifdef LOG_MAX_ITEMS
+						if ((usages += 1) > LOG_MAX_ITEMS) {
+							break;
+						}
+						#endif
+					}
+					else {
+						extUsages += 1;
+					}
+				}
+				if (extUsages > 0) {
+					fputfmt(fout, "%Iexternal references: %d\n", identExt, extUsages);
+				}
+				(void)usages;
+			}
+
+			fputfmt(fout, "}\n");
+			fflush(fout);
 		}
-		fputfmt(dmpf, "\n>/*-- code.asm{pc: %06x, px: %06x}:\n", rt->vm.pc, rt->vm.px);
-		dump(rt, dump_asm | (out_dasm & 0x0ff), sym);
-		fputfmt(dmpf, "// */\n");
+
 	}
 
 	// run code if there is no error.
@@ -699,10 +797,10 @@ int program(int argc, char* argv[]) {
 		fputfmt(dmpf, "\n>/*-- exec:\n");
 		result = execute(rt, NULL, rt->_size / 4);
 		fputfmt(dmpf, "\n// */\n");
-		if (var_dump >= 0) {
+		if (val_dump >= 0) {
 
 			fputfmt(dmpf, "\n>/*-- vars:\n");
-			printGlobals(dmpf, rt, var_dump);
+			printGlobals(dmpf, rt, val_dump);
 			fputfmt(dmpf, "// */\n");
 
 			//~ fputfmt(dmpf, "\n>/*-- trace:\n");
@@ -740,11 +838,11 @@ int program(int argc, char* argv[]) {
 					if (sym != NULL) {
 						symOffs = dbg->start - sym->offs;
 					}
-                    fputfmt(dmpf, "%s:%u:[.%06x, .%06x): <%?T+%d> hits(%D), time(%D%?+D / %.3F%?+.3F ms)\n"
-                        , dbg->file, dbg->line, dbg->start, dbg->end, sym, symOffs
-                        , (int64_t)dbg->hits, (int64_t)dbg->funcTime, (int64_t)dbg->diffTime
-                        , dbg->funcTime / (double)CLOCKS_PER_SEC, dbg->diffTime / (double)CLOCKS_PER_SEC
-                    );
+						fputfmt(dmpf, "%s:%u:[.%06x, .%06x): <%?T+%d> hits(%D), time(%D%?+D / %.3F%?+.3F ms)\n"
+							, dbg->file, dbg->line, dbg->start, dbg->end, sym, symOffs
+							, (int64_t)dbg->hits, (int64_t)dbg->funcTime, (int64_t)dbg->diffTime
+							, dbg->funcTime / (double)CLOCKS_PER_SEC, dbg->diffTime / (double)CLOCKS_PER_SEC
+						);
 					dbg++;
 					n--;
 				}

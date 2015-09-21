@@ -728,7 +728,7 @@ symn lookup(ccState cc, symn sym, astn ref, astn args, int raise) {
 
 		found += 1;
 		// if we are here then sym is found, but it has implicit cast in it
-		debug("%+k%s is probably %-T%s:%t", ref, args ? "()" : "", sym, sym->call ? "()" : "", sym->kind);
+		debug("%+k%s is probably %-T%s:%K", ref, args ? "()" : "", sym, sym->call ? "()" : "", sym->kind);
 	}
 
 	if (sym == NULL && best) {
@@ -875,7 +875,7 @@ size_t sizeOf(symn sym, int varSize) {
 				return sizeOf(sym->type, 0);
 		}
 	}
-	fatal("failed(%t): %-T", sym ? sym->kind : 0, sym);
+	fatal("failed(%K): %-T", sym ? sym->kind : 0, sym);
 	return 0;
 }
 
@@ -909,7 +909,7 @@ ccToken castOf(symn typ) {
 				return TYPE_ptr;
 			return typ->cast;
 	}
-	debug("failed(%t): %?-T", typ ? typ->kind : 0, typ);
+	debug("failed(%K): %?-T", typ ? typ->kind : 0, typ);
 	return TYPE_any;
 }
 ccToken castTo(astn ast, ccToken cto) {
@@ -950,7 +950,7 @@ ccToken castTo(astn ast, ccToken cto) {
 
 		default:
 		error:
-			debug("cast(%+k) to %t/%t", ast, cto, atc);
+			debug("cast(%+k) to %K/%K", ast, cto, atc);
 			//~ return 0;
 			break;
 	}
@@ -963,7 +963,7 @@ static ccToken typeTo(astn ast, symn type) {
 
 	while (ast->kind == OPER_com) {
 		if (!typeTo(ast->op.rhso, type)) {
-			trace("%k", ast);
+			traceAst(ast);
 			return TYPE_any;
 		}
 		ast = ast->op.lhso;
@@ -996,7 +996,7 @@ symn typecheck(ccState s, symn loc, astn ast) {
 			if (fun == NULL) {
 				symn rht = typecheck(s, NULL, ast->op.rhso);
 				if (!rht || !castTo(ast->op.rhso, castOf(rht))) {
-					trace("%+k", ast);
+					traceAst(ast);
 					return NULL;
 				}
 				return ast->type = rht;
@@ -1013,7 +1013,7 @@ symn typecheck(ccState s, symn loc, astn ast) {
 					astn arg = args->op.rhso;
 					if (!typecheck(s, lin, arg)) {
 						if (!lin || !typecheck(s, NULL, arg)) {
-							trace("arg(%+k)", arg);
+							traceAst(arg);
 							return NULL;
 						}
 						if (!(arg->kind == OPER_fnc && istype(linkOf(arg->op.lhso)))) {
@@ -1040,7 +1040,7 @@ symn typecheck(ccState s, symn loc, astn ast) {
 				}
 				else if (!typecheck(s, lin, args)) {
 					if (!lin || !typecheck(s, NULL, args)) {
-						trace("arg(%+k)", args);
+						traceAst(args);
 						return NULL;
 					}
 					// emit's first arg can be a type (static cast)
@@ -1061,7 +1061,7 @@ symn typecheck(ccState s, symn loc, astn ast) {
 			if (fun) switch (fun->kind) {
 				case OPER_dot: 	// math.isNan ???
 					if (!(loc = typecheck(s, loc, fun->op.lhso))) {
-						trace("%+k", ast);
+						traceAst(ast);
 						return NULL;
 					}
 					dot = fun;
@@ -1074,7 +1074,7 @@ symn typecheck(ccState s, symn loc, astn ast) {
 						arg->cst2 = arg->type->cast;
 					}
 					if (!(loc = typecheck(s, loc, fun))) {
-						trace("%+k", ast);
+						traceAst(ast);
 						return NULL;
 					}
 					return ast->type = args ? args->type : NULL;
@@ -1097,11 +1097,11 @@ symn typecheck(ccState s, symn loc, astn ast) {
 		case OPER_dot: {
 			sym = typecheck(s, loc, ast->op.lhso);
 			if (sym == NULL) {
-				trace("%+k", ast);
+				traceAst(ast);
 				return NULL;
 			}
 			if (!castTo(ast->op.lhso, TYPE_ref)) {
-				trace("%+k", ast);
+				traceAst(ast);
 				return NULL;
 			}
 
@@ -1113,15 +1113,15 @@ symn typecheck(ccState s, symn loc, astn ast) {
 			symn rht = typecheck(s, loc, ast->op.rhso);
 
 			if (!lht || !rht) {
-				trace("%+k", ast);
+				traceAst(ast);
 				return NULL;
 			}
 			if (!castTo(ast->op.lhso, TYPE_ref)) {
-				trace("%+k", ast);
+				traceAst(ast);
 				return NULL;
 			}
 			if (!castTo(ast->op.rhso, TYPE_int)) {
-				trace("%+k", ast);
+				traceAst(ast);
 				return NULL;
 			}
 
@@ -1138,7 +1138,7 @@ symn typecheck(ccState s, symn loc, astn ast) {
 			ccToken cast;
 
 			if (!rht || loc) {
-				trace("%+k", ast);
+				traceAst(ast);
 				return NULL;
 			}
 			if ((cast = typeTo(ast, rht))) {
@@ -1148,7 +1148,7 @@ symn typecheck(ccState s, symn loc, astn ast) {
 					ast->cst2 = TYPE_bit;
 				}
 				if (!castTo(ast->op.rhso, cast)) {
-					trace("%+k", ast);
+					traceAst(ast);
 					return NULL;
 				}
 				switch (cast) {
@@ -1183,22 +1183,22 @@ symn typecheck(ccState s, symn loc, astn ast) {
 			symn rht = typecheck(s, loc, ast->op.rhso);
 
 			if (!lht || !rht || loc) {
-				trace("%+k", ast);
+				traceAst(ast);
 				return NULL;
 			}
 			if (lht->cast && rht->cast) {
 				symn typ = promote(lht, rht);
 				ccToken cast = castOf(typ);
 				if (!castTo(ast->op.lhso, cast)) {
-					trace("%+k", ast);
+					traceAst(ast);
 					return NULL;
 				}
 				if (!castTo(ast->op.rhso, cast)) {
-					trace("%+k", ast);
+					traceAst(ast);
 					return NULL;
 				}
 				if (!castTo(ast, cast)) {
-					trace("%+k", ast);
+					traceAst(ast);
 					return NULL;
 				}
 				return ast->type = typ;
@@ -1216,16 +1216,16 @@ symn typecheck(ccState s, symn loc, astn ast) {
 			ccToken cast;
 
 			if (!lht || !rht || loc) {
-				trace("%+k", ast);
+				traceAst(ast);
 				return NULL;
 			}
 			if ((cast = typeTo(ast, promote(lht, rht)))) {
 				if (!castTo(ast->op.lhso, cast)) {
-					trace("%+k", ast);
+					traceAst(ast);
 					return NULL;
 				}
 				if (!castTo(ast->op.rhso, cast)) {
-					trace("%+k", ast);
+					traceAst(ast);
 					return NULL;
 				}
 				switch (cast) {
@@ -1258,7 +1258,7 @@ symn typecheck(ccState s, symn loc, astn ast) {
 			ccToken cast = TYPE_any;
 
 			if (!lht || !rht || loc) {
-				trace("%+k", ast);
+				traceAst(ast);
 				return NULL;
 			}
 
@@ -1289,14 +1289,14 @@ symn typecheck(ccState s, symn loc, astn ast) {
 				else if (rht->cast == ENUM_kwd) {
 					rht = rht->type;
 					if (!typeTo(ast->op.rhso, rht)) {
-						trace("%+k", ast);
+						traceAst(ast);
 						return NULL;
 					}
 				}
 				else if (lht->cast == ENUM_kwd) {
 					lht = lht->type;
 					if (!typeTo(ast->op.lhso, lht)) {
-						trace("%+k", ast);
+						traceAst(ast);
 						return NULL;
 					}
 				}
@@ -1304,15 +1304,15 @@ symn typecheck(ccState s, symn loc, astn ast) {
 
 			if (cast || (cast = castOf(promote(lht, rht)))) {
 				if (!typeTo(ast, s->type_bol)) {
-					trace("%+k", ast);
+					traceAst(ast);
 					return NULL;
 				}
 				if (!castTo(ast->op.lhso, cast)) {
-					trace("%+k", ast);
+					traceAst(ast);
 					return NULL;
 				}
 				if (!castTo(ast->op.rhso, cast)) {
-					trace("%+k", ast);
+					traceAst(ast);
 					return NULL;
 				}
 				return ast->type;
@@ -1328,16 +1328,16 @@ symn typecheck(ccState s, symn loc, astn ast) {
 			ccToken cast;
 
 			if (!lht || !rht || loc) {
-				trace("%+k", ast);
+				traceAst(ast);
 				return NULL;
 			}
 			if ((cast = typeTo(ast, promote(lht, rht)))) {
 				if (!castTo(ast->op.lhso, TYPE_bit)) {
-					trace("%+k", ast);
+					traceAst(ast);
 					return NULL;
 				}
 				if (!castTo(ast->op.rhso, TYPE_bit)) {
-					trace("%+k", ast);
+					traceAst(ast);
 					return NULL;
 				}
 				ast->type = s->type_bol;
@@ -1353,20 +1353,20 @@ symn typecheck(ccState s, symn loc, astn ast) {
 			ccToken cast;
 
 			if (!cmp || !lht || !rht || loc) {
-				trace("%+k", ast);
+				traceAst(ast);
 				return NULL;
 			}
 			if ((cast = typeTo(ast, promote(lht, rht)))) {
 				if (!castTo(ast->op.test, TYPE_bit)) {
-					trace("%+k", ast);
+					traceAst(ast);
 					return NULL;
 				}
 				if (!castTo(ast->op.lhso, cast)) {
-					trace("%+k", ast);
+					traceAst(ast);
 					return NULL;
 				}
 				if (!castTo(ast->op.rhso, cast)) {
-					trace("%+k", ast);
+					traceAst(ast);
 					return NULL;
 				}
 				return ast->type;
@@ -1380,18 +1380,18 @@ symn typecheck(ccState s, symn loc, astn ast) {
 			symn rht = typecheck(s, loc, ast->op.rhso);
 
 			if (!lht || !rht || loc) {
-				trace("%+k", ast);
+				traceAst(ast);
 				return NULL;
 			}
 			if (lht->cast && rht->cast) {
 				symn typ = promote(lht, rht);
 				ccToken cast = castOf(typ);
 				if (!castTo(ast->op.lhso, cast)) {
-					trace("%+k", ast);
+					traceAst(ast);
 					return NULL;
 				}
 				if (!castTo(ast->op.rhso, cast)) {
-					trace("%+k", ast);
+					traceAst(ast);
 					return NULL;
 				}
 				return ast->type = typ;
@@ -1407,7 +1407,7 @@ symn typecheck(ccState s, symn loc, astn ast) {
 			ccToken cast;
 
 			if (!lht || !rht || !var || loc) {
-				trace("%+k", ast);
+				traceAst(ast);
 				return NULL;
 			}
 
@@ -1417,24 +1417,24 @@ symn typecheck(ccState s, symn loc, astn ast) {
 			if (lht->cast != ENUM_kwd && rht->cast == ENUM_kwd) {
 				rht = rht->type;
 				if (!typeTo(ast->op.rhso, rht)) {
-					trace("%+k", ast);
+					traceAst(ast);
 					return NULL;
 				}
 			}
 			if (!(cast = canAssign(s, lht, ast->op.rhso, 0))) {
-				trace("%+k", ast);
+				traceAst(ast);
 				return NULL;
 			}
 			if (!castTo(ast->op.rhso, cast)) {
-				trace("%+k", ast);
+				traceAst(ast);
 				return NULL;
 			}
 			if (!castTo(ast->op.lhso, cast)) {
-				trace("%+k", ast);
+				traceAst(ast);
 				return NULL;
 			}
 			/*if (!castTo(ast, cast)) {
-				trace("%+k", ast);
+				traceAst(ast);
 				return NULL;
 			}*/
 
@@ -1464,7 +1464,7 @@ symn typecheck(ccState s, symn loc, astn ast) {
 		case TYPE_flt:
 		case TYPE_str: {
 			if (loc) {
-				trace("%+k", ast);
+				traceAst(ast);
 				return NULL;
 			}
 			switch (ast->kind) {
@@ -1510,7 +1510,7 @@ symn typecheck(ccState s, symn loc, astn ast) {
 			//~ TODO: hack: type cast if one argument
 			if (istype(sym) && args && !args->next) {			// cast
 				if (!castTo(args, sym->cast)) {
-					trace("%k: %t", args, sym->cast);
+					trace("%k: %K", args, sym->cast);
 					return NULL;
 				}
 			}
@@ -1521,14 +1521,14 @@ symn typecheck(ccState s, symn loc, astn ast) {
 
 				while (param && argval) {
 					if (!castTo(argval, castOf(param->type))) {
-						trace("%+k: %t", argval, castOf(param->type));
+						trace("%+k: %K", argval, castOf(param->type));
 						return NULL;
 					}
 
 					// TODO: review
 					if (param->cast == TYPE_ref || argval->type->cast == TYPE_ref) {
 						if (!castTo(argval, param->cast)) {
-							trace("%k: %t", argval, param->cast);
+							trace("%k: %K", argval, param->cast);
 							return NULL;
 						}
 					}

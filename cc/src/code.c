@@ -51,7 +51,7 @@ typedef struct bcde *bcde;
 
 /// bytecode processor
 typedef struct cell *cell;
-typedef struct trace *trace;
+typedef struct traceRec *tracePtr;
 
 #pragma pack(push, 1)
 struct bcde {
@@ -130,7 +130,7 @@ struct cell {
 	unsigned int	pp;			// parent proc (main == 0)
 };
 
-struct trace {
+struct traceRec {
 	memptr caller;      // Instruction pointer of caller
 	memptr callee;      // Instruction pointer of callee
 	clock_t func;       // time when the function was invoked
@@ -1156,21 +1156,21 @@ static inline int dotrace(state rt, void* caller, void* callee, void* sp) {
 		return 0;
 	}
 	if (sp == NULL) {
-		trace tp;
+		tracePtr tp;
 		int64_t diff;
 		int recursive = 0;
-		if (pu->tp - pu->bp < (ptrdiff_t)sizeof(struct trace)) {
+		if (pu->tp - pu->bp < (ptrdiff_t)sizeof(struct traceRec)) {
 			debug("tp: %d - sp: %d", pu->tp - pu->bp, pu->sp - pu->bp);
 			return 0;
 		}
-		pu->tp -= sizeof(struct trace);
-		for (tp = (trace)pu->bp; tp < (trace)pu->tp; tp++) {
-			if (tp->callee == ((trace)pu->tp)->callee) {
+		pu->tp -= sizeof(struct traceRec);
+		for (tp = (tracePtr)pu->bp; tp < (tracePtr)pu->tp; tp++) {
+			if (tp->callee == ((tracePtr)pu->tp)->callee) {
 				recursive = 1;
 				break;
 			}
 		}
-		tp = (trace)pu->tp;
+		tp = (tracePtr)pu->tp;
 		size_t callerOffs = vmOffset(rt, tp->caller);
 		dbgInfo calleeFunc = mapDbgFunction(rt, vmOffset(rt, tp->callee));
 		dbgInfo callerFunc = mapDbgFunction(rt, callerOffs);
@@ -1208,10 +1208,10 @@ static inline int dotrace(state rt, void* caller, void* callee, void* sp) {
 				callerStmt->funcTime -= diff;
 			}
 		}
-		//~ prerr("TRACE", "leave(%d) %T, time: %D", (pu->tp - pu->bp) / sizeof(struct trace), mapsym(rt, vmOffset(rt, tp->callee), 1), diff);
+		//~ prerr("TRACE", "leave(%d) %T, time: %D", (pu->tp - pu->bp) / sizeof(traceRec), mapsym(rt, vmOffset(rt, tp->callee), 1), diff);
 	}
 	else {
-		trace tp = (trace)pu->tp;
+		tracePtr tp = (tracePtr)pu->tp;
 		if (ovf(pu)) {
 			debug("tp: %d - sp: %d", pu->tp - pu->bp, pu->sp - pu->bp);
 			return 0;
@@ -1220,7 +1220,7 @@ static inline int dotrace(state rt, void* caller, void* callee, void* sp) {
 		tp->callee = callee;
 		tp->func = now;
 		tp->sp = sp;
-		pu->tp += sizeof(struct trace);
+		pu->tp += sizeof(struct traceRec);
 	}
 	return 1;
 }
@@ -1278,7 +1278,7 @@ static int exec(state rt, cell pu, symn fun, void* extra, int dbg(state, int, vo
 			register const bcde ip = (bcde)pu->ip;
 			register const stkptr sp = (stkptr)pu->sp;
 
-			const trace tp = (trace)pu->tp - 1;
+			const tracePtr tp = (tracePtr)pu->tp - 1;
 			const size_t pc = vmOffset(rt, ip);
 			const dbgInfo stmt = mapDbgStatement(rt, pc);
 
@@ -1356,7 +1356,7 @@ static int exec(state rt, cell pu, symn fun, void* extra, int dbg(state, int, vo
 			}
 			if (stmt != NULL) {
 				size_t pc = vmOffset(rt, pu->ip);
-				const trace tp2 = (trace)pu->tp - 1;
+				const tracePtr tp2 = (tracePtr)pu->tp - 1;
 				if ((memptr)ip != tp2->caller) {
 					if (pc < stmt->start || pc >= stmt->end) {
 						clock_t now = clock();
@@ -1951,9 +1951,9 @@ void fputval(state rt, FILE* fout, symn var, stkval* ref, int level, int mode) {
 				fputfmt(fout, "<%d>[", n);
 			}
 
-			#ifdef MAX_ARR_PRINT
-			if (n > MAX_ARR_PRINT) {
-				n = MAX_ARR_PRINT;
+			#ifdef LOG_MAX_ITEMS
+			if (n > LOG_MAX_ITEMS) {
+				n = LOG_MAX_ITEMS;
 				arrayHasMoreElements = 1;
 			}
 			#endif
@@ -1999,7 +1999,7 @@ void fputval(state rt, FILE* fout, symn var, stkval* ref, int level, int mode) {
 			fputfmt(fout, "%+T: %+T", typ, typ->type);
 			break;
 		default:
-			fputfmt(fout, "%+T[ERROR(%t)]", typ, typ->kind);
+			fputfmt(fout, "%+T[ERROR(%K)]", typ, typ->kind);
 			break;
 	}
 	if (mode & prType) {
@@ -2077,10 +2077,10 @@ static void traceArgs(state rt, FILE *outf, symn fun, char *file, int line, void
 }
 
 int logTrace(state rt, FILE *outf, int ident, int startlevel, int tracelevel) {
-	int pos;
+	size_t pos;
 	int i, isOutput = 0;
 	cell pu = rt->vm.cell;
-	trace tr = (trace)pu->bp;
+	tracePtr tr = (tracePtr)pu->bp;
 
 	if (outf == NULL) {
 		outf = rt->logf;
@@ -2088,7 +2088,7 @@ int logTrace(state rt, FILE *outf, int ident, int startlevel, int tracelevel) {
 	if (rt->dbg == NULL) {
 		return 0;
 	}
-	pos = ((trace)pu->tp) - tr - 1;
+	pos = ((tracePtr)pu->tp) - tr - 1;
 	if (tracelevel > pos) {
 		tracelevel = pos;
 	}

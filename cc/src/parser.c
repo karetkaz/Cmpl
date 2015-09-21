@@ -218,7 +218,7 @@ static int mkConst(astn ast, ccToken cast) {
 	}
 
 	if (!eval(&tmp, ast)) {
-		trace("%+k", ast);
+		traceAst(ast);
 		return 0;
 	}
 
@@ -330,7 +330,7 @@ static int qual(ccState cc, int mode) {
 					return result;
 
 				if (result & ATTR_const) {
-					error(cc->s, ast->file, ast->line, "qualifier `%t` declared more than once", ast);
+					error(cc->s, ast->file, ast->line, "qualifier `%K` declared more than once", ast);
 				}
 				result |= ATTR_const;
 				skip(cc, TYPE_any);
@@ -341,7 +341,7 @@ static int qual(ccState cc, int mode) {
 					return result;
 
 				if (result & ATTR_stat) {
-					error(cc->s, ast->file, ast->line, "qualifier `%t` declared more than once", ast);
+					error(cc->s, ast->file, ast->line, "qualifier `%K` declared more than once", ast);
 				}
 				result |= ATTR_stat;
 				skip(cc, TYPE_any);
@@ -777,30 +777,30 @@ static astn init_var(ccState cc, symn var) {
 				while (init->kind == OPER_com) {
 					astn val = init->op.rhso;
 					if (!canAssign(cc, base, val, 0)) {
-						trace("canAssignCast(%-T, %+k, %t)", base, val, cast);
+						trace("canAssignCast(%-T, %+k, %K)", base, val, cast);
 						return NULL;
 					}
 					if (!castTo(val, cast)) {
-						trace("canAssignCast(%-T, %+k, %t)", base, val, cast);
+						trace("canAssignCast(%-T, %+k, %K)", base, val, cast);
 						return NULL;
 					}
 					if (mkcon && !mkConst(val, cast)) {
-						trace("canAssignCast(%-T, %+k, %t)", base, val, cast);
+						trace("canAssignCast(%-T, %+k, %K)", base, val, cast);
 						//~ return NULL;
 					}
 					init = init->op.lhso;
 					nelem += 1;
 				}
 				if (!canAssign(cc, base, init, 0)) {
-					trace("canAssignArray(%-T, %+k, %t)", base, init, cast);
+					trace("canAssignArray(%-T, %+k, %K)", base, init, cast);
 					return NULL;
 				}
 				if (!castTo(init, cast)) {
-					trace("canAssignCast(%-T, %+k, %t)", base, init, cast);
+					trace("canAssignCast(%-T, %+k, %K)", base, init, cast);
 					return NULL;
 				}
 				if (mkcon && !mkConst(init, cast)) {
-					trace("canAssignCast(%-T, %+k, %t)", base, init, cast);
+					trace("canAssignCast(%-T, %+k, %K)", base, init, cast);
 					//~ return NULL;
 				}
 
@@ -834,7 +834,7 @@ static astn init_var(ccState cc, symn var) {
 					astn ast = var->init;
 					symn eTyp = ast->type->type;
 					if (!castTo(ast, castOf(ast->type = eTyp))) {
-						trace("%+k", ast);
+						traceAst(ast);
 						return NULL;
 					}
 				}
@@ -846,7 +846,7 @@ static astn init_var(ccState cc, symn var) {
 
 				//~ trace("%+T -> %t (%s:%u)", var, cast, var->file, var->line);
 				if (!castTo(var->init, cast)) {
-					trace("%t", cast);
+					trace("%K", cast);
 					return NULL;
 				}
 			}
@@ -874,7 +874,7 @@ static astn decl_alias(ccState cc) {
 	symn typ = NULL;
 
 	if (!skiptok(cc, TYPE_def, 1)) {	// 'define'
-		trace("%+k", tag);
+		traceAst(tag);
 		return NULL;
 	}
 
@@ -965,7 +965,7 @@ static astn decl_alias(ccState cc) {
 	}
 
 	if (!skiptok(cc, STMT_do, 1)) {
-		trace("%+k", tag);
+		traceAst(tag);
 		return NULL;
 	}
 
@@ -988,7 +988,7 @@ static astn decl_enum(ccState cc) {
 	int64_t lastval = -1;
 
 	if (!skiptok(cc, ENUM_kwd, 1)) {	// 'enum'
-		trace("%+k", peekTok(cc, 0));
+		traceAst(peekTok(cc, 0));
 		return NULL;
 	}
 
@@ -1011,7 +1011,7 @@ static astn decl_enum(ccState cc) {
 	}
 
 	if (!skiptok(cc, STMT_beg, 1)) {	// '{'
-		trace("%+k", peekTok(cc, 0));
+		traceAst(peekTok(cc, 0));
 		return NULL;
 	}
 
@@ -1066,7 +1066,7 @@ static astn decl_enum(ccState cc) {
 	}
 
 	if (!skiptok(cc, STMT_end, 1)) {	// '}'
-		trace("%+k", tag);
+		traceAst(tag);
 		return NULL;
 	}
 
@@ -1090,7 +1090,7 @@ static astn decl_struct(ccState cc, int Attr) {
 	unsigned pack = vm_size;
 
 	if (!skiptok(cc, TYPE_rec, 1)) {	// 'struct'
-		trace("%+k", peekTok(cc, 0));
+		traceAst(peekTok(cc, 0));
 		return NULL;
 	}
 
@@ -1120,7 +1120,7 @@ static astn decl_struct(ccState cc, int Attr) {
 	}
 
 	if (!skiptok(cc, STMT_beg, 1)) {	// '{'
-		trace("%+k", peekTok(cc, 0));
+		traceAst(peekTok(cc, 0));
 		return NULL;
 	}
 
@@ -1152,7 +1152,7 @@ static astn decl_struct(ccState cc, int Attr) {
 	type->size = fixargs(type, pack, 0);
 
 	if (!skiptok(cc, STMT_end, 1)) {	// '}'
-		trace("%+k", peekTok(cc, 0));
+		traceAst(peekTok(cc, 0));
 		return tag;
 	}
 
@@ -1215,7 +1215,7 @@ astn decl_var(ccState cc, astn* argv, int mode) {
 	int inout, byref;
 
 	if (!(tag = type(cc))) {
-		trace("%+k", peekTok(cc, 0));
+		traceAst(peekTok(cc, 0));
 		return NULL;
 	}
 	typ = tag->type;
@@ -1523,7 +1523,7 @@ static astn decl(ccState cc, int mode) {
 					ref->cnst = 1;
 				}
 				if (!init_var(cc, ref)) {
-					trace("%+k", tag);
+					traceAst(tag);
 					return NULL;
 				}
 
@@ -1633,7 +1633,7 @@ static astn stmt(ccState cc, int mode) {
 		case PNCT_rp:
 		case PNCT_rc:
 		case 0:	// end of file
-			trace("%+k", peekTok(cc, 0));
+			traceAst(peekTok(cc, 0));
 			skiptok(cc, TYPE_any, 1);
 			return NULL;
 	}
@@ -1712,7 +1712,7 @@ static astn stmt(ccState cc, int mode) {
 			struct astNode value;
 			if (!eval(&value, node->stmt.test) || !peekTok(cc, STMT_beg)) {
 				error(cc->s, node->file, node->line, "invalid static if construct");
-				trace("%+k", peekTok(cc, 0));
+				traceAst(peekTok(cc, 0));
 			}
 			if (constbol(&value)) {
 				newscope = 0;

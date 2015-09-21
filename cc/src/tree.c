@@ -284,7 +284,7 @@ int eval(astn res, astn ast) {
 	type = ast->type;
 	switch (ast->cst2) {
 		default:
-			trace("(%+k):%t(%s:%u)", ast, ast->cst2, ast->file, ast->line);
+			trace("(%+k):%K(%s:%u)", ast, ast->cst2, ast->file, ast->line);
 			return 0;
 
 		case TYPE_bit:
@@ -453,7 +453,7 @@ int eval(astn res, astn ast) {
 			if (!eval(&rhs, ast->op.rhso))
 				return 0;
 
-			dieif(lhs.kind != rhs.kind, "eval operator %k (%t, %t): %t", ast, lhs.kind, rhs.kind, ast->cst2);
+			dieif(lhs.kind != rhs.kind, "eval operator %k (%K, %K): %K", ast, lhs.kind, rhs.kind, ast->cst2);
 
 			switch (rhs.kind) {
 				default:
@@ -544,7 +544,7 @@ int eval(astn res, astn ast) {
 			if (!eval(&rhs, ast->op.rhso))
 				return 0;
 
-			dieif(lhs.kind != rhs.kind, "eval operator %k (%t, %t): %t", ast, lhs.kind, rhs.kind, ast->cst2);
+			dieif(lhs.kind != rhs.kind, "eval operator %k (%K, %K): %K", ast, lhs.kind, rhs.kind, ast->cst2);
 
 			res->kind = TYPE_bit;
 			switch (rhs.kind) {
@@ -631,12 +631,12 @@ int eval(astn res, astn ast) {
 				return 0;
 			}
 
-			dieif(lhs.kind != rhs.kind, "eval operator %k (%t, %t): %t", ast, lhs.kind, rhs.kind, ast->cst2);
+			dieif(lhs.kind != rhs.kind, "eval operator %k (%K, %K): %K", ast, lhs.kind, rhs.kind, ast->cst2);
 
 			switch (rhs.kind) {
 
 				default:
-					trace("eval(%+k) : %t", ast->op.rhso, rhs.kind);
+					trace("eval(%+k) : %K", ast->op.rhso, rhs.kind);
 					return 0;
 
 				case TYPE_int:
@@ -680,7 +680,7 @@ int eval(astn res, astn ast) {
 			if (!eval(&rhs, ast->op.rhso))
 				return 0;
 
-			dieif(lhs.kind != rhs.kind, "eval operator %k (%t, %t): %t", ast, lhs.kind, rhs.kind, ast->cst2);
+			dieif(lhs.kind != rhs.kind, "eval operator %k (%K, %K): %K", ast, lhs.kind, rhs.kind, ast->cst2);
 
 			res->kind = TYPE_bit;
 			switch (ast->kind) {

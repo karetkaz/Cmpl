@@ -26,9 +26,9 @@
 // enable paralell execution stuff
 //~ #define VM_MAX_PROCS 1
 
-// maximum elements to print from an array
-// TODO: rename: LOG_MAX_ITEMS
-#define MAX_ARR_PRINT 100
+// maximum elements to print (references, stacktrace, arrayEelements)
+// undefine to print all
+#define LOG_MAX_ITEMS 100
 
 // maximum tokens in expressions & nesting level
 #define TOKS 2048
@@ -59,6 +59,8 @@
 #define debug(msg, ...) do {} while(0)
 #endif
 #endif
+
+#define traceAst(__AST) do { prerr("trace", "%+k", __AST); _break(); } while(0)
 
 // internal errors (not aborting!?)
 //~ #define fatal(msg, ...) do { prerr("internal error", msg, ##__VA_ARGS__); abort(); } while(0)
@@ -815,7 +817,8 @@ static inline void _break() {}
 
 #define ERR_INTERNAL_ERROR "Internal Error"
 #define ERR_MEMORY_OVERRUN "Memory Overrun"
-#define ERR_ASSIGN_TO_CONST "asignment of constant variable `%+k`"
+#define ERR_ASSIGN_TO_CONST "assignment of constant variable `%+k`"
+
 #define WARN_USE_BLOCK_STATEMENT "statement should be a block statement {%+k}."
 #define WARN_EMPTY_STATEMENT "empty statement `;`."
 #define WARN_INVALID_EXPRESSION_STATEMENT "expression statement expected"
