@@ -1164,8 +1164,9 @@ static inline int dotrace(state rt, void* caller, void* callee, void* sp) {
 			return 0;
 		}
 		pu->tp -= sizeof(struct traceRec);
+		callee = ((tracePtr)pu->tp)->callee;
 		for (tp = (tracePtr)pu->bp; tp < (tracePtr)pu->tp; tp++) {
-			if (tp->callee == ((tracePtr)pu->tp)->callee) {
+			if (callee == tp->callee) {
 				recursive = 1;
 				break;
 			}
@@ -1208,7 +1209,12 @@ static inline int dotrace(state rt, void* caller, void* callee, void* sp) {
 				callerStmt->funcTime -= diff;
 			}
 		}
-		//~ prerr("TRACE", "leave(%d) %T, time: %D", (pu->tp - pu->bp) / sizeof(traceRec), mapsym(rt, vmOffset(rt, tp->callee), 1), diff);
+		/* print trace leave
+		prerr("TRACE", "leave(@%D, %d) %T, time: %D(%D-%D)", (int64_t)now
+			, (pu->tp - pu->bp) / sizeof(struct traceRec)
+			, mapsym(rt, vmOffset(rt, tp->callee), 1)
+			, (int64_t)diff, (int64_t)now, (int64_t)tp->func);
+		 // */
 	}
 	else {
 		tracePtr tp = (tracePtr)pu->tp;
@@ -1220,6 +1226,7 @@ static inline int dotrace(state rt, void* caller, void* callee, void* sp) {
 		tp->callee = callee;
 		tp->func = now;
 		tp->sp = sp;
+		//prerr("TRACE", "enter(@%D, %d) %T", (int64_t)now, (pu->tp - pu->bp) / sizeof(struct traceRec), mapsym(rt, vmOffset(rt, callee), 1));
 		pu->tp += sizeof(struct traceRec);
 	}
 	return 1;
@@ -1294,7 +1301,7 @@ static int exec(state rt, cell pu, symn fun, void* extra, int dbg(state, int, vo
 				// abort execution from debuging
 				return err_code;
 			}
-			if (stmt > 0) {
+			if (stmt != NULL) {
 				clock_t now = clock();
 				if (stmt != NULL) {
 					if (pc == stmt->start) {
@@ -1501,7 +1508,7 @@ int execute(state rt, void* extra, size_t ss) {
 }
 
 
-void fputopc(FILE* fout, unsigned char* ptr, size_t len, size_t offs, state rt) {
+void fputasm(FILE* fout, unsigned char* ptr, size_t len, size_t offs, state rt) {
 	size_t i;
 	bcde ip = (bcde)ptr;
 
@@ -1704,17 +1711,18 @@ void fputopc(FILE* fout, unsigned char* ptr, size_t len, size_t offs, state rt) 
 		} break;
 	}
 }
-void fputasm(state rt, FILE* fout, size_t beg, size_t end, int mode) {
-	size_t i, is;
+void dumpasm(state rt, FILE* fout, symn sym, int mode) {
+	int indent = (mode & 0xf00) >> 8;
+	int prSym = (mode & prAsmSyms) != 0;
+	int prStmt = (mode & prAsmStmt) != 0;
 
-	if (end == (size_t)-1) {
-		end = rt->_beg - rt->_mem;
-	}
+	size_t is, i = sym->offs;
+	size_t end = i + sym->size;
 
-	for (i = beg; i < end; i += is) {
+	for (; i < end; i += is) {
+		size_t offs = -1;
 		bcde ip = getip(rt, i);
 		symn sym = mapsym(rt, i, 0);
-		dbgInfo dbg = mapDbgStatement(rt, i);
 
 		switch (ip->opc) {
 			error_opc:
@@ -1726,46 +1734,43 @@ void fputasm(state rt, FILE* fout, size_t beg, size_t end, int mode) {
 			#include "code.inl"
 		}
 
-		if (dbg != NULL) {
-			if (dbg->start == i && dbg->stmt) {
+		if (prStmt) {
+			dbgInfo dbg = mapDbgStatement(rt, i);
+			if (dbg != NULL && dbg->start == i && dbg->stmt) {
 				if ((mode & 0x30) != 0) {
-					fputfmt(fout, "%s:%u: [%06x-%06x): %+k\n", dbg->file, dbg->line, dbg->start - 0, dbg->end - 0, dbg->stmt);
+					fputfmt(fout, "%I%s:%u: [%06x-%06x): %t\n", indent, dbg->file, dbg->line, dbg->start - 0, dbg->end - 0, dbg->stmt);
 				}
 				else {
-					fputfmt(fout, "%s:%u: %+k\n", dbg->file, dbg->line, dbg->stmt);
+					fputfmt(fout, "%I%s:%u: %t\n", indent, dbg->file, dbg->line, dbg->stmt);
 				}
 			}
 		}
 
-		if (mode & 0xf00) {
-			fputfmt(fout, "%I", (mode & 0xf00) >> 8);
+		if (indent) {
+			fputfmt(fout, "%I", indent);
 		}
 
-		switch (mode & 0x30) {
-			default:
-				fatal(ERR_INTERNAL_ERROR);
-				return;
-
-			case 0x00: // relative offsets
-				fputopc(fout, (void*)ip, mode & 0xf, -1, rt);
+		switch (mode & (prAsmOffs|prAsmAddr)) {
+			default: // relative offsets
 				break;
 
-			case 0x10: // local offsets
-				fputfmt(fout, "+%06x: ", i - beg);
-				fputopc(fout, (void*)ip, mode & 0xf, i - beg, rt);
+			case prAsmOffs: // local offsets
+				offs = i - sym->offs;
+				fputfmt(fout, "<%?.0T+%d>: ", prSym ? sym : NULL, offs);
 				break;
 
-			case 0x20: // global offsets
-				fputfmt(fout, ".%06x: ", i);
-				fputopc(fout, (void*)ip, mode & 0xf, i, rt);
+			case prAsmAddr: // global offsets
+				offs = i;
+				fputfmt(fout, ".%06x: ", offs);
 				break;
 
-			case 0x30: // global + local offsets
-				fputfmt(fout, ".%06x <%?T+%d>: ", i, sym, i - beg);
-				fputopc(fout, (void*)ip, mode & 0xf, i - beg, rt);
+			case prAsmOffs + prAsmAddr: // global + local offsets
+				offs = i - sym->offs;
+				fputfmt(fout, ".%06x <%?.0T+%d>: ", i, prSym ? sym : NULL, offs);
 				break;
 		}
 
+		fputasm(fout, (void*)ip, mode & 0xf, offs, prSym ? rt : NULL);
 		fputc('\n', fout);
 	}
 }
@@ -1822,7 +1827,7 @@ void fputval(state rt, FILE* fout, symn var, stkval* ref, int level, int mode) {
 				byref = '&';
 			}
 		}
-		if (mode & prQual) {
+		if (mode & prSymQual) {
 			fputfmt(fout, "%+T%?c: ", var, byref);
 		}
 		else {

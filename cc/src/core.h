@@ -21,7 +21,7 @@
 	4: print generated assembly
 	5: print non pre-mapped strings, non static types
 */
-#define DEBUGGING 0
+#define DEBUGGING 8
 
 // enable paralell execution stuff
 //~ #define VM_MAX_PROCS 1
@@ -60,7 +60,7 @@
 #endif
 #endif
 
-#define traceAst(__AST) do { prerr("trace", "%+k", __AST); _break(); } while(0)
+#define traceAst(__AST) do { prerr("trace", "%+t", __AST); _break(); } while(0)
 
 // internal errors (not aborting!?)
 //~ #define fatal(msg, ...) do { prerr("internal error", msg, ##__VA_ARGS__); abort(); } while(0)
@@ -77,19 +77,25 @@
 #define offsetOf(__TYPE, __FIELD) ((size_t) &((__TYPE)0)->__FIELD)
 
 enum Format {
-	nlBody = 0x0400,
-	nlElIf = 0x0800,
+	nlAstBody = 0x0400,
+	nlAstElIf = 0x0800,
 
 	// sym & ast & val
 	prType = 0x0010,
 
-	prQual = 0x0020,
-	prCast = 0x0020,
+	prSymQual = 0x0020,
+	prAstCast = 0x0020,
 
-	prInit = 0x0040,
+	prSymInit = 0x0040,
 
-	//~ prArgs = 0x0080,
-	prLine = 0x0080
+//	prAsmCode = 0x000f, // print code bytes (0-15)
+	prAsmAddr = 0x0010, // print global address (@0x003d8c)
+	prAsmOffs = 0x0020, // print relative offset (<wirite+157>)
+	prAsmSyms = 0x0040, // use symbol names instead of addresses
+	prAsmStmt = 0x0080, // print source code statements
+
+//	prArgs = 0x0080,
+//	prXMLLine = 0x0080
 };
 
 // Tokens - CC
@@ -469,7 +475,7 @@ struct dbgStateRec {
  *    k: ast
  *      +: expand statements
  *      -: ?
- *    t: kind
+ *    K: kind
  *    A: instruction (asm)
  *    I: indent
  *    b: 32 bit bin value
@@ -498,6 +504,7 @@ struct dbgStateRec {
  *
  */
 void fputfmt(FILE *fout, const char *msg, ...);
+void fputesc(FILE* fout, const char *esc[], const char* msg, ...);
 
 /**
  * @brief Print an instruction to the output stream.
@@ -509,7 +516,7 @@ void fputfmt(FILE *fout, const char *msg, ...);
  *    positive or zero value forces absolute offsets. (ex: jmp @0255d0)
  * @param rt Runtime context (optional).
  */
-void fputopc(FILE *fout, unsigned char* ptr, size_t len, size_t offs, state rt);
+void fputasm(FILE *fout, unsigned char* ptr, size_t len, size_t offs, state rt);
 
 /**
  * @brief Print instructions to the output stream.
@@ -525,7 +532,7 @@ void fputopc(FILE *fout, unsigned char* ptr, size_t len, size_t offs, state rt);
  *     0x80: TODO: show source code.
  *     0xf00: identation
  */
-void fputasm(state, FILE *fout, size_t beg, size_t end, int mode);
+void dumpasm(state, FILE *fout, symn sym, int mode);
 
 /** TODO: to be renamed and moved.
  * @brief Print the value of a variable at runtime.
@@ -817,10 +824,15 @@ static inline void _break() {}
 
 #define ERR_INTERNAL_ERROR "Internal Error"
 #define ERR_MEMORY_OVERRUN "Memory Overrun"
-#define ERR_ASSIGN_TO_CONST "assignment of constant variable `%+k`"
+#define ERR_ASSIGN_TO_CONST "assignment of constant variable `%+t`"
+#define ERR_SYNTAX_ERR_BEFORE "syntax error before token '%t'"
+#define ERR_CONST_INIT "invalid constant initialization `%+t`"
 
-#define WARN_USE_BLOCK_STATEMENT "statement should be a block statement {%+k}."
+#define WARN_USE_BLOCK_STATEMENT "statement should be a block statement {%+t}."
 #define WARN_EMPTY_STATEMENT "empty statement `;`."
+#define WARN_TRAILING_COMMA "skipping trailing comma before `%t`"
 #define WARN_INVALID_EXPRESSION_STATEMENT "expression statement expected"
+
+#define FATAL_UNIMPLEMENTED_OPERATOR "operator %t (%T, %T): %+t"
 
 #endif

@@ -304,8 +304,7 @@ unsigned rehash(const char* str, size_t len) {
 		if (len == (size_t)-1)
 			len = strlen(str) + 1;
 		while (len-- > 0) {
-            int pos = hs ^ (*str++);
-			hs = (hs >> 8) ^ crc_tab[(uint8_t)pos];
+			hs = (hs >> 8) ^ crc_tab[(uint8_t)(hs ^ (*str++))];
 		}
 	}
 
@@ -1353,7 +1352,7 @@ ccToken skiptok(ccState cc, ccToken kind, int raise) {
 				error(cc->s, cc->file, cc->line, "unexpected end of file, `%K` excepted", kind);
 			}
 			else {
-				error(cc->s, cc->file, cc->line, "`%K` excepted, got `%k`", kind, peekTok(cc, TYPE_any));
+				error(cc->s, cc->file, cc->line, "`%K` excepted, got `%t`", kind, peekTok(cc, TYPE_any));
 			}
 		}
 

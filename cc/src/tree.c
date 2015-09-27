@@ -96,7 +96,7 @@ int32_t constbol(astn ast) {
 		default:
 			break;
 	}
-	fatal("not a constant %+k", ast);
+	fatal("not a constant %+t", ast);
 	return 0;
 }
 int64_t constint(astn ast) {
@@ -114,7 +114,7 @@ int64_t constint(astn ast) {
 		default:
 			break;
 	}
-	fatal("not a constant %+k", ast);
+	fatal("not a constant %+t", ast);
 	return 0;
 }
 float64_t constflt(astn ast) {
@@ -126,7 +126,7 @@ float64_t constflt(astn ast) {
 		default:
 			break;
 	}
-	fatal("not a constant %+k", ast);
+	fatal("not a constant %+t", ast);
 	return 0;
 }
 
@@ -209,7 +209,7 @@ int isConst(astn ast) {
 
 		while (ast->kind == OPER_com) {
 			if (!isConst(ast->op.rhso)) {
-				debug("%+k", ast);
+				debug("%+t", ast);
 				return 0;
 			}
 			ast = ast->op.lhso;
@@ -243,7 +243,7 @@ int isConst(astn ast) {
 		}
 	}
 
-	debug("%+k", ast);
+	debug("%+t", ast);
 	return 0;
 }
 
@@ -265,7 +265,7 @@ int isType(astn ast) {
 		return istype(ast->ref.link);
 	}
 
-	//~ trace("%t(%+k):(%d)", ast->kind, ast, ast->line);
+	//~ trace("%K(%+t):(%d)", ast->kind, ast, ast->line);
 	return 0;
 }
 
@@ -284,7 +284,7 @@ int eval(astn res, astn ast) {
 	type = ast->type;
 	switch (ast->cst2) {
 		default:
-			trace("(%+k):%K(%s:%u)", ast, ast->cst2, ast->file, ast->line);
+			trace("(%+t):%K(%s:%u)", ast, ast->cst2, ast->file, ast->line);
 			return 0;
 
 		case TYPE_bit:
@@ -423,7 +423,7 @@ int eval(astn res, astn ast) {
 			if (!eval(res, ast->op.rhso))
 				return 0;
 
-			logif(ast->cst2 != TYPE_bit, "FixMe %+k", ast);
+			dieif(ast->cst2 != TYPE_bit, "FixMe %+t", ast);
 
 			switch (res->kind) {
 
@@ -453,7 +453,7 @@ int eval(astn res, astn ast) {
 			if (!eval(&rhs, ast->op.rhso))
 				return 0;
 
-			dieif(lhs.kind != rhs.kind, "eval operator %k (%K, %K): %K", ast, lhs.kind, rhs.kind, ast->cst2);
+			dieif(lhs.kind != rhs.kind, "eval operator %t (%K, %K): %K", ast, lhs.kind, rhs.kind, ast->cst2);
 
 			switch (rhs.kind) {
 				default:
@@ -481,7 +481,7 @@ int eval(astn res, astn ast) {
 
 						case OPER_div:
 							if (rhs.cint == 0) {
-								error(NULL, NULL, 0, "Division by zero: %+k", ast);
+								error(NULL, NULL, 0, "Division by zero: %+t", ast);
 								res->cint = 0;
 								break;
 							}
@@ -490,7 +490,7 @@ int eval(astn res, astn ast) {
 
 						case OPER_mod:
 							if (rhs.cint == 0) {
-								error(NULL, NULL, 0, "Division by zero: %+k", ast);
+								error(NULL, NULL, 0, "Division by zero: %+t", ast);
 								res->cint = 0;
 								break;
 							}
@@ -544,7 +544,7 @@ int eval(astn res, astn ast) {
 			if (!eval(&rhs, ast->op.rhso))
 				return 0;
 
-			dieif(lhs.kind != rhs.kind, "eval operator %k (%K, %K): %K", ast, lhs.kind, rhs.kind, ast->cst2);
+			dieif(lhs.kind != rhs.kind, "eval operator %t (%K, %K): %K", ast, lhs.kind, rhs.kind, ast->cst2);
 
 			res->kind = TYPE_bit;
 			switch (rhs.kind) {
@@ -631,12 +631,12 @@ int eval(astn res, astn ast) {
 				return 0;
 			}
 
-			dieif(lhs.kind != rhs.kind, "eval operator %k (%K, %K): %K", ast, lhs.kind, rhs.kind, ast->cst2);
+			dieif(lhs.kind != rhs.kind, "eval operator %t (%K, %K): %K", ast, lhs.kind, rhs.kind, ast->cst2);
 
 			switch (rhs.kind) {
 
 				default:
-					trace("eval(%+k) : %K", ast->op.rhso, rhs.kind);
+					trace("eval(%+t) : %K", ast->op.rhso, rhs.kind);
 					return 0;
 
 				case TYPE_int:
@@ -680,7 +680,7 @@ int eval(astn res, astn ast) {
 			if (!eval(&rhs, ast->op.rhso))
 				return 0;
 
-			dieif(lhs.kind != rhs.kind, "eval operator %k (%K, %K): %K", ast, lhs.kind, rhs.kind, ast->cst2);
+			dieif(lhs.kind != rhs.kind, "eval operator %t (%K, %K): %K", ast, lhs.kind, rhs.kind, ast->cst2);
 
 			res->kind = TYPE_bit;
 			switch (ast->kind) {
@@ -790,6 +790,6 @@ symn linkOf(astn ast) {
 		return lnk;
 	}
 
-	//~ trace("%t(%+k)", ast->kind, ast);
+	//~ trace("%K(%+t)", ast->kind, ast);
 	return NULL;
 }

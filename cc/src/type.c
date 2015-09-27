@@ -211,7 +211,7 @@ static symn installref(state rt, const char* prot, astn* argv) {
 
 	dieif(ccDone(rt->cc) != 0, "FixMe");
 
-	dieif(root->kind != TYPE_ref, "FixMe %+k", root);
+	dieif(root->kind != TYPE_ref, "FixMe %+t", root);
 
 	if ((result = root->ref.link)) {
 		dieif(result->kind != TYPE_ref, "FixMe");
@@ -416,7 +416,7 @@ void addUsage(symn sym, astn tag) {
 				break;
 			}
 		}
-		dieif(usage == NULL, "usage not found in the list: %+k(%s:%u:%u)", tag, tag->file, tag->line, tag->colp);
+		dieif(usage == NULL, "usage not found in the list: %+t(%s:%u:%u)", tag, tag->file, tag->line, tag->colp);
 		#endif
 		return;
 	}
@@ -582,7 +582,7 @@ ccToken canAssign(ccState cc, symn var, astn val, int strict) {
 		}
 	}
 
-	debug("%-T := %-T(%+k)", var, val->type, val);
+	debug("%-T := %-T(%+t)", var, val->type, val);
 	return TYPE_any;
 }
 
@@ -707,7 +707,7 @@ symn lookup(ccState cc, symn sym, astn ref, astn args, int raise) {
 			}
 
 			if (sym->call && (argval || param)) {
-				debug("%-T(%+k, %-T)", sym, argval, param);
+				debug("%-T(%+t, %-T)", sym, argval, param);
 				continue;
 			}
 		}
@@ -715,7 +715,7 @@ symn lookup(ccState cc, symn sym, astn ref, astn args, int raise) {
 		dieif(cc->func && cc->func->nest != cc->maxlevel - 1, "FIXME %d, %d", cc->func->nest, cc->maxlevel);
 		// TODO: sym->decl && sym->decl->call && sym->decl != s->func
 		if (cc->func && !cc->siff && cc->func->gdef && sym->nest && !sym->stat && sym->nest < cc->maxlevel) {
-			error(cc->s, ref->file, ref->line, "invalid use of local symbol `%k`.", ref);
+			error(cc->s, ref->file, ref->line, "invalid use of local symbol `%t`.", ref);
 		}
 
 		// perfect match
@@ -728,7 +728,7 @@ symn lookup(ccState cc, symn sym, astn ref, astn args, int raise) {
 
 		found += 1;
 		// if we are here then sym is found, but it has implicit cast in it
-		debug("%+k%s is probably %-T%s:%K", ref, args ? "()" : "", sym, sym->call ? "()" : "", sym->kind);
+		debug("%+t%s is probably %-T%s:%K", ref, args ? "()" : "", sym, sym->call ? "()" : "", sym->kind);
 	}
 
 	if (sym == NULL && best) {
@@ -740,7 +740,7 @@ symn lookup(ccState cc, symn sym, astn ref, astn args, int raise) {
 
 	if (sym == NULL && asref) {
 		if (found == 1 || cc->siff) {
-			debug("as ref `%-T`(%?+k)(%d)", asref, args, ref->line);
+			debug("as ref `%-T`(%?+t)(%d)", asref, args, ref->line);
 			sym = asref;
 		}
 		else if (raise) {
@@ -762,7 +762,7 @@ symn declare(ccState s, ccToken kind, astn tag, symn typ) {
 	symn def;
 
 	if (!tag || tag->kind != TYPE_ref) {
-		trace("declare: astn('%k') is null or not an identifyer", tag);
+		fatal("%+t must be an identifier", tag);
 		return 0;
 	}
 
@@ -950,7 +950,7 @@ ccToken castTo(astn ast, ccToken cto) {
 
 		default:
 		error:
-			debug("cast(%+k) to %K/%K", ast, cto, atc);
+			debug("cast(%+t) to %K/%K", ast, cto, atc);
 			//~ return 0;
 			break;
 	}
@@ -1018,12 +1018,12 @@ symn typecheck(ccState s, symn loc, astn ast) {
 						}
 						if (!(arg->kind == OPER_fnc && istype(linkOf(arg->op.lhso)))) {
 							if (arg->type->cast == TYPE_ref) {
-								warn(s->s, 2, arg->file, arg->line, "argument `%+k` is passed by reference", arg);
+								warn(s->s, 2, arg->file, arg->line, "argument `%+t` is passed by reference", arg);
 							}
 							else {
-								warn(s->s, 2, arg->file, arg->line, "argument `%+k` is passed by value: %-T", arg, arg->type);
+								warn(s->s, 2, arg->file, arg->line, "argument `%+t` is passed by value: %-T", arg, arg->type);
 							}
-							//~ warn(s->s, 2, arg->file, arg->line, "emit type cast expected: '%+k'", arg);
+							//~ warn(s->s, 2, arg->file, arg->line, "emit type cast expected: '%+t'", arg);
 						}
 					}
 
@@ -1046,12 +1046,12 @@ symn typecheck(ccState s, symn loc, astn ast) {
 					// emit's first arg can be a type (static cast)
 					if (!isType(args) && !(args->kind == OPER_fnc && istype(linkOf(args)))) {
 						if (args->type->cast == TYPE_ref) {
-							warn(s->s, 2, args->file, args->line, "argument `%+k` is passed by reference", args);
+							warn(s->s, 2, args->file, args->line, "argument `%+t` is passed by reference", args);
 						}
 						else {
-							warn(s->s, 2, args->file, args->line, "argument `%+k` is passed by value: %-T", args, args->type);
+							warn(s->s, 2, args->file, args->line, "argument `%+t` is passed by value: %-T", args, args->type);
 						}
-						//~ warn(s->s, 2, args->file, args->line, "emit type cast expected: '%+k'", args);
+						//~ warn(s->s, 2, args->file, args->line, "emit type cast expected: '%+t'", args);
 					}
 				}
 
@@ -1166,12 +1166,12 @@ symn typecheck(ccState s, symn loc, astn ast) {
 							return ast->type;
 
 						ast->type = 0;
-						error(s->s, ast->file, ast->line, "invalid cast(%+k)", ast);
+						error(s->s, ast->file, ast->line, "invalid cast(%+t)", ast);
 						return NULL;
 				}
 				return ast->type;
 			}
-			fatal("operator %k (%T): %+k", ast, rht, ast);
+			fatal(FATAL_UNIMPLEMENTED_OPERATOR, ast, NULL, rht, ast);
 		} break;
 
 		case OPER_add:		// '+'
@@ -1203,7 +1203,7 @@ symn typecheck(ccState s, symn loc, astn ast) {
 				}
 				return ast->type = typ;
 			}
-			fatal("operator %k (%T, %T): %+k", ast, lht, rht, ast);
+			fatal(FATAL_UNIMPLEMENTED_OPERATOR, ast, lht, rht, ast);
 		} break;
 
 		case OPER_shl:		// '>>'
@@ -1240,11 +1240,11 @@ symn typecheck(ccState s, symn loc, astn ast) {
 					case TYPE_f32:
 					case TYPE_f64:
 						ast->type = 0;
-						error(s->s, ast->file, ast->line, "invalid cast(%+k)", ast);
+						error(s->s, ast->file, ast->line, "invalid cast(%+t)", ast);
 						return NULL;
 				}
 			}
-			fatal("operator %k (%T %T): %+k", ast, lht, rht, ast);
+			fatal(FATAL_UNIMPLEMENTED_OPERATOR, ast, lht, rht, ast);
 		} break;
 
 		case OPER_equ:		// '=='
@@ -1318,7 +1318,7 @@ symn typecheck(ccState s, symn loc, astn ast) {
 				return ast->type;
 			}
 
-			fatal("operator %k (%-T, %-T): %+k", ast, lht, rht, ast);
+			fatal(FATAL_UNIMPLEMENTED_OPERATOR, ast, lht, rht, ast);
 		} break;
 
 		case OPER_lor:		// '&&'
@@ -1343,7 +1343,7 @@ symn typecheck(ccState s, symn loc, astn ast) {
 				ast->type = s->type_bol;
 				return ast->type;
 			}
-			fatal("operator %k (%T %T): %+k", ast, lht, rht, ast);
+			fatal(FATAL_UNIMPLEMENTED_OPERATOR, ast, lht, rht, ast);
 		} break;
 
 		case OPER_sel: {	// '?:'
@@ -1371,7 +1371,7 @@ symn typecheck(ccState s, symn loc, astn ast) {
 				}
 				return ast->type;
 			}
-			fatal("operator %k (%T %T): %+k", ast, lht, rht, ast);
+			fatal(FATAL_UNIMPLEMENTED_OPERATOR, ast, lht, rht, ast);
 		} break;
 
 		case OPER_com: {	// ','
@@ -1396,7 +1396,7 @@ symn typecheck(ccState s, symn loc, astn ast) {
 				}
 				return ast->type = typ;
 			}
-			fatal("operator %k (%T, %T): %+k", ast, lht, rht, ast);
+			fatal(FATAL_UNIMPLEMENTED_OPERATOR, ast, lht, rht, ast);
 		} break;
 
 		// operator set
@@ -1493,7 +1493,7 @@ symn typecheck(ccState s, symn loc, astn ast) {
 
 				case TYPE_def:
 					result = sym->type;
-					//~ debug("%T:%T in `%+k` (%d)", sym, result, ast, ast->line);
+					//~ debug("%T:%T in `%+t` (%d)", sym, result, ast, ast->line);
 					break;
 
 				case EMIT_opc:
@@ -1510,7 +1510,7 @@ symn typecheck(ccState s, symn loc, astn ast) {
 			//~ TODO: hack: type cast if one argument
 			if (istype(sym) && args && !args->next) {			// cast
 				if (!castTo(args, sym->cast)) {
-					trace("%k: %K", args, sym->cast);
+					trace("%t: %K", args, sym->cast);
 					return NULL;
 				}
 			}
@@ -1521,14 +1521,14 @@ symn typecheck(ccState s, symn loc, astn ast) {
 
 				while (param && argval) {
 					if (!castTo(argval, castOf(param->type))) {
-						trace("%+k: %K", argval, castOf(param->type));
+						trace("%+t: %K", argval, castOf(param->type));
 						return NULL;
 					}
 
 					// TODO: review
 					if (param->cast == TYPE_ref || argval->type->cast == TYPE_ref) {
 						if (!castTo(argval, param->cast)) {
-							trace("%k: %K", argval, param->cast);
+							trace("%t: %K", argval, param->cast);
 							return NULL;
 						}
 					}
@@ -1537,7 +1537,7 @@ symn typecheck(ccState s, symn loc, astn ast) {
 					if (param->cast == TYPE_ref && argval->type->cast != TYPE_ref) {
 						symn lnk = argval->kind == TYPE_ref ? argval->ref.link : NULL;
 						if (argval->kind != OPER_adr && lnk && lnk->cast != TYPE_ref && lnk->type->cast != TYPE_ref) {
-							warn(s->s, 2, argval->file, argval->line, "argument `%+k` is not explicitly passed by reference", argval);
+							warn(s->s, 2, argval->file, argval->line, "argument `%+t` is not explicitly passed by reference", argval);
 						}
 					}
 

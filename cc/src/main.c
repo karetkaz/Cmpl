@@ -192,27 +192,16 @@ static int evalexp(state rt, char* text) {
 
 	ccDone(cc);
 
-	fputfmt(cc->s->logf, "eval(`%+k`) = ", ast);
+	fputfmt(cc->s->logf, "eval(`%+t`) = ", ast);
 
 	if (ast && typ && tid) {
-		fputfmt(cc->s->logf, "%T(%k)\n", typ, &res);
+		fputfmt(cc->s->logf, "%T(%t)\n", typ, &res);
 		return 0;
 	}
 
 	fputfmt(cc->s->logf, "ERROR(typ:`%T`, tid:%d)\n", typ, tid);
 
 	return -1;
-}
-
-// void testFunction(void cb(pointer n), pointer n)
-static int testFunction(libcArgs rt) {
-	symn cb = argsym(rt, 0);
-	if (cb != NULL) {
-		struct {int n;} args;
-		args.n = argi32(rt, 4);
-		return invoke(rt->rt, cb, NULL, &args, NULL);
-	}
-	return 0;
 }
 
 #if defined(USEPLUGINS)
@@ -337,6 +326,267 @@ static symn printvars = NULL;
 static void printGlobals(FILE* out, state rt, int all);
 static int dbgConsole(state, int pu, void* ip, void* sp, size_t ss, vmError err, size_t fp);
 
+static void dumpJsAst(FILE* fout, astn ast, const char *kind, int indent) {
+	static const char **esc = NULL;
+	static const char* KEY_KIND = "kind";
+	static const char* KEY_CAST = "cast";
+	static const char* KEY_FILE = "file";
+	static const char* KEY_LINE = "line";
+	static const char* KEY_TYPE = "type";
+	static const char* KEY_STMT = "stmt";
+	static const char* KEY_INIT = "init";
+	static const char* KEY_TEST = "test";
+	static const char* KEY_THEN = "then";
+	static const char* KEY_STEP = "step";
+	static const char* KEY_ELSE = "else";
+	static const char* KEY_ARGS = "args";
+	static const char* KEY_LHSO = "lval";
+	static const char* KEY_RHSO = "rval";
+	static const char* KEY_VALUE = "value";
+
+	if (esc == NULL) {
+		// layzy initialize on first function call
+		static const char *esc_js[256];
+		memset(esc_js, 0, sizeof(esc_js));
+		esc_js['\n'] = "\\n";
+		esc_js['\r'] = "\\r";
+		esc_js['\t'] = "\\t";
+		esc_js['\''] = "\\'";
+		esc_js['\"'] = "\\\"";
+		esc = esc_js;
+	}
+	if (ast == NULL) {
+		return;
+	}
+	if (kind != NULL) {
+		fputesc(fout, esc, "%I%s: { // %t\n", indent - 1, kind, ast);
+	}
+
+	fputesc(fout, esc, "%I%s: '%K',\n", indent, KEY_KIND, ast->kind);
+	if (ast->type != NULL) {
+		fputesc(fout, esc, "%I%s: '%T',\n", indent, KEY_TYPE, ast->type);
+	}
+	if (ast->cst2 != TYPE_any) {
+		fputesc(fout, esc, "%I%s: '%K',\n", indent, KEY_CAST, ast->cst2);
+	}
+	if (ast->file != NULL) {
+		fputesc(fout, esc, "%I%s: '%s',\n", indent, KEY_FILE, ast->file);
+	}
+	if (ast->line != 0) {
+		fputesc(fout, esc, "%I%s: '%u',\n", indent, KEY_LINE, ast->line);
+	}
+	switch (ast->kind) {
+		default:
+			fatal(ERR_INTERNAL_ERROR);
+			fatal("%K", ast->kind);
+			return;
+		//#{ STMT
+		case STMT_do:
+			dumpJsAst(fout, ast->stmt.stmt, KEY_STMT, indent + 1);
+			break;
+
+		case STMT_beg: {
+			astn list;
+			fputesc(fout, esc, "%I%s: [{", indent, KEY_STMT);
+			for (list = ast->stmt.stmt; list; list = list->next) {
+				if (list != ast->stmt.stmt) {
+					fputesc(fout, esc, "%I}, {", indent, list);
+				}
+				fputesc(fout, esc, " // %t\n", list);
+				dumpJsAst(fout, list, NULL, indent + 1);
+			}
+			fputesc(fout, esc, "%I}],\n", indent);
+			break;
+		}
+
+		case STMT_if:
+			dumpJsAst(fout, ast->stmt.test, KEY_TEST, indent + 1);
+			dumpJsAst(fout, ast->stmt.stmt, KEY_THEN, indent + 1);
+			dumpJsAst(fout, ast->stmt.step, KEY_ELSE, indent + 1);
+			break;
+
+		case STMT_for:
+			dumpJsAst(fout, ast->stmt.init, KEY_INIT, indent + 1);
+			dumpJsAst(fout, ast->stmt.test, KEY_TEST, indent + 1);
+			dumpJsAst(fout, ast->stmt.step, KEY_STEP, indent + 1);
+			dumpJsAst(fout, ast->stmt.stmt, KEY_STMT, indent + 1);
+			break;
+
+		case STMT_con:
+		case STMT_brk:
+			break;
+
+		case STMT_ret:
+			dumpJsAst(fout, ast->stmt.stmt, KEY_STMT, indent + 1);
+			break;
+
+		//#}
+		//#{ OPER
+		case OPER_fnc: {	// '()'
+			astn args = ast->op.rhso;
+			fputesc(fout, esc, "%I%s: [{", indent, KEY_ARGS);
+			if (args != NULL) {
+				while (args && args->kind == OPER_com) {
+					if (args != ast->stmt.stmt) {
+						fputesc(fout, esc, "%I}, {", indent);
+					}
+					fputesc(fout, esc, " // %t\n", args->op.rhso);
+					dumpJsAst(fout, args->op.rhso, NULL, indent + 1);
+					args = args->op.lhso;
+				}
+				if (args != ast->stmt.stmt) {
+					fputesc(fout, esc, "%I}, {", indent, args);
+				}
+				fputesc(fout, esc, " // %t\n", args);
+				dumpJsAst(fout, args, NULL, indent + 1);
+			}
+			fputesc(fout, esc, "%I}],\n", indent);
+			break;
+		}
+
+		case OPER_dot:		// '.'
+		case OPER_idx:		// '[]'
+
+		case OPER_adr:		// '&'
+		case OPER_pls:		// '+'
+		case OPER_mns:		// '-'
+		case OPER_cmt:		// '~'
+		case OPER_not:		// '!'
+
+		case OPER_add:		// '+'
+		case OPER_sub:		// '-'
+		case OPER_mul:		// '*'
+		case OPER_div:		// '/'
+		case OPER_mod:		// '%'
+
+		case OPER_shl:		// '>>'
+		case OPER_shr:		// '<<'
+		case OPER_and:		// '&'
+		case OPER_ior:		// '|'
+		case OPER_xor:		// '^'
+
+		case OPER_equ:		// '=='
+		case OPER_neq:		// '!='
+		case OPER_lte:		// '<'
+		case OPER_leq:		// '<='
+		case OPER_gte:		// '>'
+		case OPER_geq:		// '>='
+
+		case OPER_lnd:		// '&&'
+		case OPER_lor:		// '||'
+		case OPER_sel:		// '?:'
+
+		case OPER_com:		// ','
+
+		case ASGN_set:		// '='
+			dumpJsAst(fout, ast->op.test, KEY_TEST, indent + 1);
+			dumpJsAst(fout, ast->op.lhso, KEY_LHSO, indent + 1);
+			dumpJsAst(fout, ast->op.rhso, KEY_RHSO, indent + 1);
+			break;
+
+		//#}
+		//#{ TVAL
+		case EMIT_opc:
+			//~ fputesc(fout, escape, " />\n", text);
+			//~ break;
+
+		case TYPE_int:
+		case TYPE_flt:
+		case TYPE_str:
+
+		case TYPE_ref:
+		case TYPE_def:	// TODO: see dumpxml
+			fputesc(fout, esc, "%I%s: \"%t\"\n", indent, KEY_VALUE, ast);
+			break;
+
+		//#}
+	}
+
+	if (kind != NULL) {
+		fputesc(fout, esc, "%I},\n", indent - 1);
+		//~ fputesc(fout, esc, "%I%s: {", indent - 1, kind);
+	}
+}
+static void dumpJsSym(FILE* fout, symn ptr, const char *kind, int indent) {
+	static const char **esc = NULL;
+
+	static const char* KEY_KIND = "kind";
+	static const char* KEY_FILE = "file";
+	static const char* KEY_LINE = "line";
+	static const char* KEY_NAME = "name";
+	static const char* KEY_PROTO = "proto";
+	static const char* KEY_DECL = "declaredIn";
+	static const char* KEY_TYPE = "type";
+	static const char* KEY_INIT = "init";
+	static const char* KEY_ARGS = "args";
+	static const char* KEY_CONST = "const";
+	static const char* KEY_STAT = "static";
+	//~ static const char* KEY_PARLEL = "parallel";
+	static const char* KEY_CAST = "cast";
+	static const char* KEY_SIZE = "size";
+	static const char* KEY_OFFS = "offs";
+
+	static const char* VAL_TRUE = "true";
+	static const char* VAL_FALSE = "false";
+
+	static const char* KIND_PARAM = "param";
+
+	if (esc == NULL) {
+		// layzy initialize on first function call
+		static const char *esc_js[256];
+		memset(esc_js, 0, sizeof(esc_js));
+		esc_js['\n'] = "\\n";
+		esc_js['\r'] = "\\r";
+		esc_js['\t'] = "\\t";
+		esc_js['\''] = "\\'";
+		esc_js['\"'] = "\\\"";
+		esc = esc_js;
+	}
+
+	fputesc(fout, esc, "%I%s: '%s',\n", indent, KEY_KIND, kind);
+	fputesc(fout, esc, "%I%s: '%.0T',\n", indent, KEY_NAME, ptr);
+	fputesc(fout, esc, "%I%s: '%+T',\n", indent, KEY_PROTO, ptr);
+
+	if (ptr->decl != NULL) {
+		fputesc(fout, esc, "%I%s: '%+T',\n", indent, KEY_DECL, ptr->decl);
+	}
+
+	if (ptr->type != NULL) {
+		fputesc(fout, esc, "%I%s: '%T',\n", indent, KEY_TYPE, ptr->type);
+	}
+	if (ptr->file != NULL) {
+		fputesc(fout, esc, "%I%s: '%s',\n", indent, KEY_FILE, ptr->file);
+	}
+	if (ptr->line != 0) {
+		fputesc(fout, esc, "%I%s: '%u',\n", indent, KEY_LINE, ptr->line);
+	}
+	if (ptr->init != NULL) {
+		//~ fputesc(fout, esc, "%I%s: '%+t'\n", indent, KEY_INIT, ptr->init);
+		dumpJsAst(fout, ptr->init, KEY_INIT, indent + 1);
+	}
+
+	if (ptr->call && ptr->prms) {
+		symn arg;
+		fputesc(fout, NULL, "%I%s: [{", indent, KEY_ARGS);
+		for (arg = ptr->prms; arg; arg = arg->next) {
+			if (arg != ptr->prms) {
+				fputesc(fout, NULL, "%I}, {", indent);
+			}
+			fputesc(fout, NULL, " // %+T: %+T\n", arg, arg->type);
+			dumpJsSym(fout, arg, KIND_PARAM, indent + 1);
+		}
+		fputesc(fout, NULL, "%I}],\n", indent);
+	}
+	if (ptr->cast != 0) {
+		fputesc(fout, NULL, "%I%s: '%K',\n", indent, KEY_CAST, ptr->cast);
+	}
+	fputesc(fout, NULL, "%I%s: %u,\n", indent, KEY_SIZE, ptr->size);
+	fputesc(fout, NULL, "%I%s: %u,\n", indent, KEY_OFFS, ptr->offs);
+	fputesc(fout, NULL, "%I%s: %s,\n", indent, KEY_CONST, ptr->cnst ? VAL_TRUE : VAL_FALSE);
+	fputesc(fout, NULL, "%I%s: %s\n", indent, KEY_STAT, ptr->stat ? VAL_TRUE : VAL_FALSE);
+	// no parallel symbols!!! fputesc(fout, NULL, "%I%s: %s,\n", indent, KEY_PARLEL, ptr->stat ? VAL_TRUE : VAL_FALSE);
+}
+
 int program(int argc, char* argv[]) {
 	char* stdlib = (char*)STDLIB;
 
@@ -350,12 +600,13 @@ int program(int argc, char* argv[]) {
 	int sym_dump = -1;	// dump variables and functions.
 	int ast_dump = -1;	// dump abstract syntax tree.
 	int asm_dump = -1;	// dump disassembly.
+	int bin_dump = -1;	// dump binary.
+	int api_dump = 0;	// dump api for scite / json.
 
 	enum {
 		sym_attr = 0x01,   // size, kind, attributes, initializer, ...
 		sym_refs = 0x02,   // dump usage references of variable
 		sym_prms = 0x04,   // print params
-		sym_code = 0x08,   // dump all symbols
 
 		asm_lofs = 0x10,   // local offsets
 		asm_gofs = 0x20,   // global offsets
@@ -473,6 +724,9 @@ int program(int argc, char* argv[]) {
 					return 0;
 				}
 			}
+			else {
+				api_dump = 2;
+			}
 			sym_dump = level;
 		}
 		else if (strncmp(arg, "-ast", 4) == 0) {	// tree
@@ -496,6 +750,17 @@ int program(int argc, char* argv[]) {
 				}
 			}
 			asm_dump = level;
+		}
+		else if (strncmp(arg, "-bin", 4) == 0) {	// dasm
+			level = 16;	// default value: characters per line
+			if (arg[4]) {
+				char* ptr = parsei32(arg + 4, &level, 16);
+				if (*ptr) {
+					error(rt, NULL, 0, "invalid argument '%s'\n", arg);
+					return 0;
+				}
+			}
+			bin_dump = level;
 		}
 
 		// temp
@@ -538,9 +803,6 @@ int program(int argc, char* argv[]) {
 		logfile(rt, NULL, 0);
 		return -6;
 	}
-
-	// TODO: to be removed: function for testing purpouses.
-	ccAddCall(rt, testFunction, NULL, "void testFunction(void cb(pointer args), pointer args);");
 
 	// compile and import files / modules
 	for (; argi < argc; ++argi) {
@@ -653,7 +915,18 @@ int program(int argc, char* argv[]) {
 		FILE* fout = rt->logf;
 		char *typ = "";
 
+		if (api_dump && (ast_dump >= 0 || asm_dump >= 0)) {
+			// invalidate api dump if assembly or syntax tree dump is requested.
+			api_dump = 0;
+		}
+
+		if (api_dump == 2) {
+			fputfmt(fout, "var api = [\n");
+		}
+
 		for (*sp = rt->defs; sp >= bp;) {
+			int dumpAst = 0;
+			int dumpAsm = 0;
 			if (!(sym = *sp)) {
 				--sp;
 				continue;
@@ -661,7 +934,6 @@ int program(int argc, char* argv[]) {
 			*sp = sym->next;
 
 			switch (sym->kind) {
-
 				// inline/constant
 				case TYPE_def:
 					typ = "alias";
@@ -690,7 +962,7 @@ int program(int argc, char* argv[]) {
 
 				case EMIT_opc:
 					typ = "opcode";
-					//~ *++sp = sym->flds;
+					*++sp = sym->flds;
 					break;
 
 				default:
@@ -699,24 +971,56 @@ int program(int argc, char* argv[]) {
 					break;
 			}
 
-			// pfrint symbol definition location
-			if (sym->file != NULL && sym->line > 0) {
-				fputfmt(fout, "%s:%u: ", sym->file, sym->line);
-			}
-			else if (sym_dump & sym_code) {
+			if (api_dump) {
+				if (api_dump == 2) {
+					if (sym != rt->defs) {
+						//~ fputfmt(fout, "}, {\n");
+					}
+					fputfmt(fout, "{ // %+T: %+T\n", sym, sym->type);
+					dumpJsSym(fout, sym, typ, 1);
+					fputfmt(fout, "},\n", sym);
+				}
+				else {
+					// api dump for SciTE.
+					fputfmt(fout, "%+T", sym);
+					if (sym->call && sym->kind != TYPE_ref) {
+						fputfmt(fout, ": %+T", sym->type);
+					}
+					fputfmt(fout, "\n");
+				}
+				fflush(fout);
 				continue;
 			}
 
-			// print qualified name with arguments
-			fputfmt(fout, "%+T: %+T{\n", sym, sym->type);
-
-			// explain params of the function
-			if (sym_dump >= 0 && sym_dump & sym_prms) {
-				symn param;
-				for (param = sym->prms; param; param = param->next) {
-					fputfmt(fout, "%I.param %T: %?+T (@%06x+%d->%K)\n", identExt, param, param->type, param->offs, param->size, param->cast);
+			if (asm_dump >= 0 && sym->call && sym->kind == TYPE_ref) {
+				if (sym->cast != TYPE_ref) {
+					// function reference may point to null or another function.
+					dumpAsm = asm_dump;
 				}
 			}
+			if (ast_dump >= 0 && sym->init != NULL) {
+				dumpAst = ast_dump;
+			}
+
+			// filter symbols by request.
+			if (sym_dump < 0) {
+				// skip builtin symbols if not requested (with '-api').
+				if (sym->file == NULL && sym->line == 0) {
+					continue;
+				}
+				// skip symbol if there is nothing to dump.
+				if (!dumpAsm && !dumpAst) {
+					continue;
+				}
+			}
+
+			// print symbol definition location
+			if (sym->file != NULL && sym->line > 0) {
+				fputfmt(fout, "%s:%u: ", sym->file, sym->line);
+			}
+
+			// print qualified name with arguments
+			fputfmt(fout, "%+T: %+T {\n", sym, sym->type);
 
 			// print symbol info (kind, size, offset, ...)
 			if (sym_dump >= 0 && sym_dump & sym_attr) {
@@ -727,33 +1031,28 @@ int program(int argc, char* argv[]) {
 				);
 				fputfmt(fout, "%I.offset: %06x\n", identExt, sym->offs);
 				fputfmt(fout, "%I.size: %d\n", identExt, sym->size);
-				//~ fputfmt(fout, "%I.init: %?-k\n", identExt, sym->init);
 			}
 
-			if (ast_dump >= 0 && sym->init != NULL) {
-				fputfmt(fout, "%I.init: %?-k", identExt, sym->init, identExt);
+			// explain params of the function
+			if (sym_dump >= 0 && sym_dump & sym_prms) {
+				symn param;
+				for (param = sym->prms; param; param = param->next) {
+					fputfmt(fout, "%I.param %T: %?+T (@%06x+%d->%K)\n", identExt, param, param->type, param->offs, param->size, param->cast);
+				}
+			}
+
+			if (dumpAst != 0) {
+				fputfmt(fout, "%I.syntaxTree: %?-1.*t", identExt, dumpAst, sym->init);
 				if (sym->init->kind != STMT_beg) {
 					fputfmt(fout, "\n");
 				}
-				//~ fputast(fout, NULL, sym->init, ast_dump & 0xff, identExt);
 			}
 
 			// print disassembly of the function
-			if (asm_dump >= 0) {
-				if (sym->cast == TYPE_ref) {
-					fputfmt(fout, "}\n");
-					fflush(fout);
-					continue;
-				}
-				if (sym->kind != TYPE_ref || !sym->call) {
-					fputfmt(fout, "}\n");
-					fflush(fout);
-					continue;
-				}
-				fputfmt(fout, "%I.asm [@%06x: %d] {\n", identExt, sym->offs, sym->size);
-				//~ fputfmt(fout, "\t.ast %15.1k\n", sym->init);
-				fputasm(rt, fout, sym->offs, sym->offs + sym->size, (identExt << 8) | (asm_dump & 0xff));
-				fputfmt(fout, "}\n");
+			if (dumpAsm != 0) {
+				fputfmt(fout, "%I.assembly [@%06x: %d] {\n", identExt, sym->offs, sym->size);
+				dumpasm(rt, fout, sym, ((identExt + 1) << 8) | (asm_dump & 0xff));
+				fputfmt(fout, "%I}\n", identExt);
 			}
 
 			// print usages of symbol
@@ -764,7 +1063,7 @@ int program(int argc, char* argv[]) {
 				for (usage = sym->used; usage; usage = usage->ref.used) {
 					if (usage->file && usage->line) {
 						int referenced = !(usage->file == sym->file && usage->line == sym->line);
-						fputfmt(fout, "%I%s:%u: %s as `%+k`\n", identExt, usage->file, usage->line, referenced ? "referenced" : "defined", usage);
+						fputfmt(fout, "%I%s:%u: %s as `%+t`\n", identExt, usage->file, usage->line, referenced ? "referenced" : "defined", usage);
 						#ifdef LOG_MAX_ITEMS
 						if ((usages += 1) > LOG_MAX_ITEMS) {
 							break;
@@ -785,6 +1084,37 @@ int program(int argc, char* argv[]) {
 			fflush(fout);
 		}
 
+		if (api_dump == 2) {
+			fputfmt(fout, "];\n", sym);
+		}
+	}
+
+	if (bin_dump > 0) {
+		size_t i, max = rt->_beg - rt->_mem;
+
+		FILE* fout = rt->logf;
+
+		for (i = 0; i < max; i += 1) {
+			int val = rt->_mem[i];
+			if (((i % bin_dump) == 0) && i != 0) {
+				unsigned int j = i - bin_dump;
+				fputfmt(fout, " ");
+				for ( ; j < i; j += 1) {
+					int chr = rt->_mem[j];
+
+					if (chr < 32 || chr > 127)
+						chr = '.';
+
+					fputfmt(fout, "%c", chr);
+				}
+				fputfmt(fout, "\n");
+			}
+			else if (i != 0) {
+				fputfmt(fout, " ");
+			}
+			fputfmt(fout, "%c", "0123456789abcdef"[val >> 16 & 0x0f]);
+			fputfmt(fout, "%c", "0123456789abcdef"[val >>  0 & 0x0f]);
+		}
 	}
 
 	// run code if there is no error.
@@ -817,7 +1147,7 @@ int program(int argc, char* argv[]) {
 						if (sym == NULL) {
 							sym = mapsym(rt, dbg->start, 1);
 						}
-						fputfmt(dmpf, "%s:%u:[.%06x, .%06x): <%?T> hits(%D), time(%D%?+D / %.3F%?+.3F ms)\n"
+						fputfmt(dmpf, "%s:%u:[.%06x, .%06x): <%?.0T> hits(%D), time(%D%?+D / %.3F%?+.3F ms)\n"
 							, dbg->file, dbg->line, dbg->start, dbg->end, sym
 							, (int64_t)dbg->hits, (int64_t)dbg->funcTime, (int64_t)dbg->diffTime
 							, dbg->funcTime / (double)CLOCKS_PER_SEC, dbg->diffTime / (double)CLOCKS_PER_SEC
@@ -838,7 +1168,7 @@ int program(int argc, char* argv[]) {
 					if (sym != NULL) {
 						symOffs = dbg->start - sym->offs;
 					}
-						fputfmt(dmpf, "%s:%u:[.%06x, .%06x): <%?T+%d> hits(%D), time(%D%?+D / %.3F%?+.3F ms)\n"
+						fputfmt(dmpf, "%s:%u:[.%06x, .%06x): <%?.0T+%d> hits(%D), time(%D%?+D / %.3F%?+.3F ms)\n"
 							, dbg->file, dbg->line, dbg->start, dbg->end, sym, symOffs
 							, (int64_t)dbg->hits, (int64_t)dbg->funcTime, (int64_t)dbg->diffTime
 							, dbg->funcTime / (double)CLOCKS_PER_SEC, dbg->diffTime / (double)CLOCKS_PER_SEC
@@ -924,7 +1254,7 @@ static void printGlobals(FILE* out, state rt, int all) {
 			continue;
 		}
 
-		fputval(rt, out, var, (stkval*)ofs, 0, prQual|prType);
+		fputval(rt, out, var, (stkval*)ofs, 0, prSymQual |prType);
 		fputc('\n', out);
 	}
 }
@@ -942,20 +1272,13 @@ static int dbgConsole(state rt, int pu, void* ip, void* sp, size_t ss, vmError e
 	 *   t: trace (print callstack)
 	 */
 	static char lastCommand = 'r';
-	dbgInfo dbg = NULL;
-	symn fun = NULL;
 	char buff[1024];
+
 	int brk = 0;
-	size_t i;
+	size_t i = vmOffset(rt, ip);
+	symn fun = mapsym(rt, i, 0);
+	dbgInfo dbg = mapDbgStatement(rt, i);
 
-	/*/ exit
-	if (ip == NULL) {
-		return 0;
-	}// */
-
-	i = vmOffset(rt, ip);
-	fun = mapsym(rt, i, 0);
-	dbg = mapDbgStatement(rt, i);
 	if (err != noError) {
 		// error executing opcode or libcall: abort execution
 		brk = 1;
