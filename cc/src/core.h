@@ -21,7 +21,7 @@
 	4: print generated assembly
 	5: print non pre-mapped strings, non static types
 */
-#define DEBUGGING 8
+#define DEBUGGING 0
 
 // enable paralell execution stuff
 //~ #define VM_MAX_PROCS 1
@@ -89,9 +89,8 @@ enum Format {
 	prSymInit = 0x0040,
 
 //	prAsmCode = 0x000f, // print code bytes (0-15)
-	prAsmAddr = 0x0010, // print global address (@0x003d8c)
-	prAsmOffs = 0x0020, // print relative offset (<wirite+157>)
-	prAsmSyms = 0x0040, // use symbol names instead of addresses
+	prAsmAddr = 0x0010, // print global address: (@0x003d8c)
+	prAsmSyms = 0x0040, // use symbol names instead of addresses: <main+80>
 	prAsmStmt = 0x0080, // print source code statements
 
 //	prArgs = 0x0080,
@@ -516,23 +515,17 @@ void fputesc(FILE* fout, const char *esc[], const char* msg, ...);
  *    positive or zero value forces absolute offsets. (ex: jmp @0255d0)
  * @param rt Runtime context (optional).
  */
-void fputasm(FILE *fout, unsigned char* ptr, size_t len, size_t offs, state rt);
+void fputasm(FILE* fout, void *ptr, int mode, state rt);
 
 /**
- * @brief Print instructions to the output stream.
+ * @brief Iterate over instructions.
  * @param Runtime context.
- * @param fout Output stream.
- * @param beg First instruction offset.
- * @param end Last instruction offset.
- * @param mode Flags for printing
- *     0x0f: Length mask for instruction hex display (code bytes).
- *     0x10: use local absolute offsets (0 ... end - beg).
- *     0x20: use global absolute offsets (beg ... end).
- *     0x40: TODO: show symbol names.
- *     0x80: TODO: show source code.
- *     0xf00: identation
+ * @param offsBegin First instruction offset.
+ * @param offsEnd Last instruction offset.
+ * @param extra Extra arguments for callback.
+ * @param action Callback executed on each instruction.
  */
-void dumpasm(state, FILE *fout, symn sym, int mode);
+void iterateAsm(state rt, size_t offsBegin, size_t offsEnd, void *extra, int action(void *extra, size_t offs, void* ip));
 
 /** TODO: to be renamed and moved.
  * @brief Print the value of a variable at runtime.
@@ -822,8 +815,10 @@ static inline void _abort() {
 
 static inline void _break() {}
 
+// TODO: Extract all error and warnings messages.
 #define ERR_INTERNAL_ERROR "Internal Error"
 #define ERR_MEMORY_OVERRUN "Memory Overrun"
+
 #define ERR_ASSIGN_TO_CONST "assignment of constant variable `%+t`"
 #define ERR_SYNTAX_ERR_BEFORE "syntax error before token '%t'"
 #define ERR_CONST_INIT "invalid constant initialization `%+t`"

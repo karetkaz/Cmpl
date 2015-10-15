@@ -1,0 +1,26 @@
+//~ #open src/code.c
+//~ #open src/main.c
+
+
+//~ int64 i = 9;
+//~ int32 j = 9;
+//~ static int k = 19;
+void function(int n) {
+	for (int i = 0; i < n; i += 1) {}
+}
+
+define N = 3;
+for (int32 i = 0; i < N; i += 1) parallel {
+//~ for (int32 i = 0; i < N; print("\n%d", 1000 * (i += 1))) parallel {
+	function(100);
+	print("--%03d: ", i*100);
+	//~ /+
+	for (int32 j = 0; j < N; j += 1) parallel {
+		function(1000000);
+		print(" %d", i * N + j + 1);
+	}// +/
+	println();
+}
+emit(join);
+//~ function(10000);
+//~ print("\n");

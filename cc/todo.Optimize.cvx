@@ -64,7 +64,7 @@ void testRetVoid4() {
 }
 
 void testRetVoid5() {
-	return void(sin(3.14/3));
+	return void((3.14/3));
 }
 
 long testRetLong0() {
@@ -106,36 +106,13 @@ boolean bigEndian = false;
 
 //~ +/
 
-/+ ? Templates ?
-static struct Array(struct Type) {
-	int bSearch(Type array[], Type element) {
-		...
-	}
-	int indexOf(Type array[], Type element) {
-		...
-	}
-	...
-	operator (Type array[]).bSearch(Type element) = bSearch;
-	operator (Type array[]).indexOf(Type element) = indexOf;
-	/+ instantiating:
-
-	case1:
-		using Array(int);
-
-	case2:
-		int array[200] = ...;
-		using (Array(int)) {
-			int x = array.indexOf(30);
-		}
-
-	case3:
-		struct IntArray: Array(int);
-
-	+/
-}
+/+ ? Templates see Collections and streams ?
 
 struct Fixed(int FractBits): 0 {
-	assert(FractBits >= 0 && FractBits <= 24)
+	static if (FractBits < 0 || FractBits > 24) {
+		error: invalid fraction bits;
+	}
+
 	int32 value;
 
 	enum: int32 {
@@ -172,11 +149,7 @@ struct Fixed(int FractBits): 0 {
 	static inline mod(fixed ^lhs, fixed ^rhs) = asFixed(lhs.value % rhs.value);
 	static inline inv(fixed rhs) = div(asFixed(fxp_one), rhs);
 	...
-
-	// using ?
-	int fxp12_pi = Fixed(12).toFixed(3.14).value;
 }
-
 //~ +/
 
 /+ initialization (type and variable)
@@ -186,9 +159,9 @@ struct Fixed(int FractBits): 0 {
 
 //~ typename strty = string;
 //~ typename complex = Complex;
-//~ Complex c1 = Complex(10, 20);
-//~ Complex c2 = {re: 10, im:20};	// short
-//~ Complex c2 = Complex{re: 10, im:20};
+//~ Complex c1 = Complex(10, 20);         // constructor
+//~ Complex c2 = {re: 10, im:20};         // auto literal
+//~ Complex c2 = Complex {re: 10, im:20}; // typed literal
 
 struct Person {
 	LastName: string,
@@ -419,24 +392,17 @@ struct Alarm {
 	// 
 	int repeat;
 	enum: int {
-		repeatDaily   = 0x10000;
-		repeatWeekly  = 0x10000;
-		repeatMonthly = 0x10000;
+		repeatDaily     = 0x10000;
+		repeatWeekly    = 0x10000;
+		repeatMonthly   = 0x10000;
 
-		repeatDayMon  = 0x00001;
-		repeatDayTue  = 0x00002;
-		repeatDayWed  = 0x00004;
-		repeatDayThu  = 0x00008;
-		repeatDayFri  = 0x00010;
-		repeatDaySat  = 0x00020;
-		repeatDaySun  = 0x00040;
+		repeatDaylyMon  = 0x00001;
+		repeatDaylyTue  = 0x00002;
+		repeatDaylyWed  = 0x00004;
+		repeatDaylyThu  = 0x00008;
+		repeatDaylyFri  = 0x00010;
+		repeatDaylySat  = 0x00020;
+		repeatDaylySun  = 0x00040;
 	}
 }
-
-struct Verbosity { enum Level {
-	NoOutput = 0,
-	Quiet,
-	Normal
-}; };
-
 */

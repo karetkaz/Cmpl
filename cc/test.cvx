@@ -19,27 +19,41 @@ static const int DaysToMonth365[] = {0, 31, 59, 90, 120, 151, 181, 212, 243, 273
 //~ */
 
 void aborts(pointer args) {
-	abort();
+	debug("abort", variant.null, -1, 512);
+}
+
+void abort2(int recurse, typename typ, pointer ptr, void fun(pointer ptr)) {
+	if (recurse > 0) {
+		abort2(recurse - 1, typ, ptr, fun);
+	}
+	debug("abort", variant.null, -1, 512);
 }
 
 void throws(pointer args) {
 	debug("throws.enter", variant.null, 1, 0);
 	int &i = args;
 	int j = 3 / i;
-	debug("throws.leave", variant.null, 1, 0);
+	debug("throws.leave", variant.null, 1, 100);
 }
 
-int arg = 0;
+int tryExec2(void function(pointer args), pointer arguments) {
+	function(arguments);
+	return 0;
+}
+
+int arg[10];// = 0;
 int arg2 = 1;
+
+//~ abort2(10, double, pointer(&arg[4]), aborts);
 
 //~ abort();
 //~ throws(null);
 //~ throws(pointer(&arg));
 //~ aborts(pointer(&arg));
-int errorOK = tryExec(throws, pointer(&arg2));
-int errorMEM = tryExec(throws, null);
-int errorDIV = tryExec(throws, pointer(&arg));
-int errorLIB = tryExec(aborts, pointer(&arg));
+int errorOK  = tryExec(throws, pointer(&arg2));
+//~ int errorMEM = tryExec(throws, null);
+//~ int errorDIV = tryExec(throws, pointer(&arg));
+//~ int errorLIB = tryExec(aborts, pointer(&arg));
 
 /+ TODO: vs studio BUG
 string decodedFile = "out.txt";

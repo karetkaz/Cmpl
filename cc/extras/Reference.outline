@@ -1,0 +1,94 @@
+1. Introduction
+
+2. Type system
+	builtin types
+		void
+		bool
+		int8
+		int16
+		int32
+		int64
+		uint8
+		uint16
+		uint32
+		float32
+		float64
+		pointer
+		variant
+		typename
+	array types
+		Pointers (Unknown-size arrays)
+		Arrays (Fixed-size arrays)
+		Slices (Dynamic-size arrays)
+		Maps (Associative arrays)
+	record types
+		packed
+		objects
+	function types?
+	aliases
+	enumerations
+	Assignability
+	Initializations
+		default values
+		default field values
+	Integer Promotions
+
+3. Lexical structure
+	Comments
+	Identifiers
+	Keywords
+	Operators
+		precedence table
+	Integer and floating-point literals
+	Character and string literals
+		Escape sequences
+		Multiline Strings
+
+4. Expressions
+	Values
+		Literals
+		Constants
+	Identifiers
+	Unary expressions
+	Binary expressions
+		Arithmetic expressions
+		Relational expressions
+		Logical expressions [TODO]
+		Assignment expressions
+	Ternary expressions
+
+5. Declarations
+	Aliasing {#}
+	Enumerations {E}
+		enumeration constructor => Type system/Initialization
+		enumeration implementation
+	Structs and Unions {S}
+		static
+		packed
+		extended
+		initialization
+	Variables and Functions {&}
+		Initialization
+	Operators and Properties {±} [TODO]
+		Type conversion operator
+		Unary, binary operators
+		Property operators
+
+6. Statements
+	Block Statement
+	`if` statement
+	`for` statement
+	`break` statement
+	`continue` statement
+	`return` statement
+	Declaration statement
+	Expression statement
+
+7. Library reference
+	The `emit` builtin function.
+	the `debug` builtin function.
+	Constant evaluation [TODO vm way]
+	Compilation memory management
+	Exception handling
+	Library reference
+	To be implemented

@@ -66,6 +66,10 @@ static struct Math {
 	inline sign(float32 x) = (x ? x < 0 ? -1 : 1 : 0);
 	inline sign(float64 x) = (x ? x < 0 ? -1 : 1 : 0);
 
+	float32 mod(float32 x, float32 y) {
+		return x >= 0 ? x % y : (x % y + abs(y)) % y;
+	}
+
 	float64 floor(float64 x) {
 		modf(x, &result);
 		return result;

@@ -368,6 +368,9 @@ symn getsym(state rt, void* offs) {
 char* getResStr(state rt, size_t offs) {
 	int i;
 	char *str = getip(rt, offs);
+	if (rt->cc == NULL) {
+		return NULL;
+	}
 	for (i = 0; i < TBLS; i += 1) {
 		list lst;
 		for (lst = rt->cc->strt[i]; lst; lst = lst->next) {
@@ -409,7 +412,6 @@ static void install_type(ccState cc, int mode) {
 
 	if (mode & creg_tptr) {
 		type_ptr = install(cc,  "pointer", ATTR_stat | ATTR_const | TYPE_rec, TYPE_ref, vm_size, type_rec, NULL);
-		type_ptr->pfmt = "@%06x";
 		cc->null_ref = install(cc, "null", ATTR_stat | ATTR_const | TYPE_ref, TYPE_any, vm_size, type_ptr, NULL);
 	}
 	type_obj = install(cc, "object", ATTR_stat | ATTR_const | TYPE_rec, TYPE_ref, 0, type_rec, NULL);

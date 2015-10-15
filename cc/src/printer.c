@@ -4,8 +4,8 @@
  *   Desc: logging & dumping
  *******************************************************************************
  logging:
-	ast formated printig,
-	sym formated printig,
+	ast formatted printing.
+	sym formatted printing.
 	...
 *******************************************************************************/
 #include <stdarg.h>
@@ -62,33 +62,42 @@ static void fputstr(FILE* fout, const char *esc[], char* str) {
 	}
 }
 
+/// print qualified typename
 static void fputqal(FILE* fout, const char *esc[], symn sym, int mode) {
 	if (sym != NULL && sym->decl != NULL) {
-		fputqal(fout, esc, sym->decl, 1);
+		fputqal(fout, esc, sym->decl, mode);
 	}
 
-	fputsym(fout, NULL, sym, 0, 0);
-	if (mode != 0) {
-		fputchr(fout, '.');
-	}
+	fputsym(fout, NULL, sym, mode, 0);
+	fputchr(fout, '.');
 }
 
-static void fputast(FILE* fout, const char *esc[], astn ast, int mode, int level) {
+/// print array type
+static void fputarr(FILE* fout, const char *esc[], symn sym, int mode) {
+	if (sym != NULL && sym->kind == TYPE_arr) {
+		fputarr(fout, esc, sym->type, mode);
+		fputfmt(fout, "[%?+t]", sym->init);
+		return;
+	}
+	fputsym(fout, esc, sym, mode, 0);
+}
+
+static void fputast(FILE* fout, const char *esc[], astn ast, int mode, int indent) {
 	int nlElse = 1;                 // (' ' | '\n%I') 'else' ...
 	int nlBody = mode & nlAstBody;  // (' ' | '\n%I')'{' ...
 	int nlElif = mode & nlAstElIf;  // ... 'else' (' ' | '\n%I') 'if' ...
 	int rlev = mode & 0xf;
 
-	if (level > 0) {
-		fputfmt(fout, "%I", level);
-	}
-	else {
-		level = -level;
-	}
-
 	if (ast == NULL) {
 		fputstr(fout, esc, "(null)");
 		return;
+	}
+
+	if (indent > 0) {
+		fputfmt(fout, "%I", indent);
+	}
+	else {
+		indent = -indent;
 	}
 
 	if (rlev >= 2) {
@@ -106,7 +115,7 @@ static void fputast(FILE* fout, const char *esc[], astn ast, int mode, int level
 	switch (ast->kind) {
 		//#{ STMT
 		case STMT_do: {
-			fputast(fout, esc, ast->stmt.stmt, mode, -level);
+			fputast(fout, esc, ast->stmt.stmt, mode, -indent);
 		} break;
 		case STMT_beg: {
 			astn list;
@@ -121,7 +130,7 @@ static void fputast(FILE* fout, const char *esc[], astn ast, int mode, int level
 
 			fputstr(fout, esc, "{\n");
 			for (list = ast->stmt.stmt; list; list = list->next) {
-				fputast(fout, esc, list, mode, level + 1);
+				fputast(fout, esc, list, mode, indent + 1);
 				switch(list->kind) {
 					case STMT_if:
 					case STMT_for:
@@ -133,7 +142,7 @@ static void fputast(FILE* fout, const char *esc[], astn ast, int mode, int level
 						break;
 				}
 			}
-			fputesc(fout, esc, "%I%s", level, "}\n");
+			fputesc(fout, esc, "%I%s", indent, "}\n");
 		} break;
 		case STMT_if: {
 			if (rlev == 0) {
@@ -153,11 +162,11 @@ static void fputast(FILE* fout, const char *esc[], astn ast, int mode, int level
 				int kind = ast->stmt.stmt->kind;
 				if (kind == STMT_beg && nlBody) {
 					fputstr(fout, esc, "\n");
-					fputast(fout, esc, ast->stmt.stmt, mode, level + (kind != STMT_beg));
+					fputast(fout, esc, ast->stmt.stmt, mode, indent + (kind != STMT_beg));
 				}
 				else {
 					fputstr(fout, esc, " ");
-					fputast(fout, esc, ast->stmt.stmt, mode, -level);
+					fputast(fout, esc, ast->stmt.stmt, mode, -indent);
 				}
 			}
 			else {
@@ -172,16 +181,16 @@ static void fputast(FILE* fout, const char *esc[], astn ast, int mode, int level
 					//~ fputesc(fout, esc, "\n");
 				}
 				if (kind == STMT_if && nlElif) {
-					fputesc(fout, esc, "%I%s\n", level, "else");
-					fputast(fout, esc, ast->stmt.step, mode, level + (kind != STMT_beg));
+					fputesc(fout, esc, "%I%s\n", indent, "else");
+					fputast(fout, esc, ast->stmt.step, mode, indent + (kind != STMT_beg));
 				}
 				else if (kind == STMT_beg && nlBody) {
-					fputesc(fout, esc, "%I%s\n", level, "else");
-					fputast(fout, esc, ast->stmt.step, mode, level + (kind != STMT_beg));
+					fputesc(fout, esc, "%I%s\n", indent, "else");
+					fputast(fout, esc, ast->stmt.step, mode, indent + (kind != STMT_beg));
 				}
 				else {
-					fputesc(fout, esc, "%I%s ", level, "else");
-					fputast(fout, esc, ast->stmt.step, mode, -level);
+					fputesc(fout, esc, "%I%s ", indent, "else");
+					fputast(fout, esc, ast->stmt.step, mode, -indent);
 				}
 			}
 			break;
@@ -216,11 +225,11 @@ static void fputast(FILE* fout, const char *esc[], astn ast, int mode, int level
 				int kind = ast->stmt.stmt->kind;
 				if (kind == STMT_beg && nlBody) {
 					fputstr(fout, esc, "\n");
-					fputast(fout, esc, ast->stmt.stmt, mode, level + (kind != STMT_beg));
+					fputast(fout, esc, ast->stmt.stmt, mode, indent + (kind != STMT_beg));
 				}
 				else {
 					fputstr(fout, esc, " ");
-					fputast(fout, esc, ast->stmt.stmt, mode, -level);
+					fputast(fout, esc, ast->stmt.stmt, mode, -indent);
 				}
 			}
 			else {
@@ -364,7 +373,7 @@ static void fputast(FILE* fout, const char *esc[], astn ast, int mode, int level
 		case ASGN_set: {	// '='
 			if (rlev > 0) {
 				int pre = tok_tbl[ast->kind].type & 0x0f;
-				int putparen = level < pre;
+				int putparen = indent < pre;
 
 				if (mode & prAstCast) {
 					fputsym(fout, esc, ast->type, prSymQual, 0);
@@ -482,7 +491,7 @@ static void fputast(FILE* fout, const char *esc[], astn ast, int mode, int level
 
 		case TYPE_def: {
 			if (ast->ref.link) {
-				fputsym(fout, esc, ast->ref.link, mode| prSymInit |prType, -level);
+				fputsym(fout, esc, ast->ref.link, mode| prSymInit |prType, -indent);
 			}
 			else {
 				fputstr(fout, esc, ast->ref.name);
@@ -522,22 +531,34 @@ static void fputast(FILE* fout, const char *esc[], astn ast, int mode, int level
 	}
 }
 
-static void fputsym(FILE* fout, const char *esc[], symn sym, int mode, int level) {
+static void fputsym(FILE* fout, const char *esc[], symn sym, int mode, int indent) {
 	int pr_type = mode & prType;
 	int pr_init = mode & prSymInit;
 	int pr_qual = mode & prSymQual;
 	int rlev = mode & 0xf;
 
-	if (level > 0) {
-		fputfmt(fout, "%I", level);
-	}
-	else {
-		level = -level;
-	}
-
 	if (sym == NULL) {
 		fputstr(fout, esc, "(null)");
 		return;
+	}
+
+	if (indent > 0) {
+		fputfmt(fout, "%I", indent);
+	}
+	else {
+		indent = -indent;
+	}
+
+	if (rlev >= 2) {
+		if ((sym->cast & ATTR_stat) != 0) {
+			fputstr(fout, esc, "static ");
+		}
+		if ((sym->cast & ATTR_const) != 0) {
+			fputstr(fout, esc, "const ");
+		}
+		if ((sym->cast & ATTR_paral) != 0) {
+			fputstr(fout, esc, "parallel ");
+		}
 	}
 
 	switch (sym->kind) {
@@ -545,34 +566,19 @@ static void fputsym(FILE* fout, const char *esc[], symn sym, int mode, int level
 		case EMIT_opc: {
 			if (sym->name) {
 				if (pr_qual && sym->decl) {
-					fputsym(fout, esc , sym->decl, mode, 0);
-					fputchr(fout, '.');
+					fputqal(fout, esc, sym->decl, mode);
 				}
 				fputstr(fout, esc, sym->name);
 			}
-
 			if (sym->init) {
 				fputfmt(fout, "(%+t)", sym->init);
 			}
-
 			break;
 		}
 
 		case TYPE_arr: {
 			if (sym->name == NULL) {
-				symn bp[TBLS], *sp = bp, *p;
-
-				symn typ = sym;
-				while (typ->kind == TYPE_arr) {
-					*sp++ = typ;
-					typ = typ->type;
-				}
-				fputsym(fout, esc, typ, mode, -level);
-
-				for (p = bp; p < sp; ++p) {
-					typ = *p;
-					fputfmt(fout, "[%?+t]", typ->init);
-				}
+				fputarr(fout, esc, sym, mode);
 				return;
 			}
 			// fall TYPE_rec
@@ -581,22 +587,21 @@ static void fputsym(FILE* fout, const char *esc[], symn sym, int mode, int level
 			symn arg;
 			if (rlev < 2) {
 				if (pr_qual && sym->decl) {
-					fputqal(fout, esc, sym->decl, 1);
+					fputqal(fout, esc, sym->decl, mode);
 				}
 				fputstr(fout, esc, sym->name);
 				break;
 			}
 
-			fputesc(fout, esc, "struct %?s {\n", sym->name);
+			fputesc(fout, esc, "struct %?s %s", sym->name, "{\n");
 
 			for (arg = sym->flds; arg; arg = arg->next) {
-				fputsym(fout, esc, arg, mode & ~prSymQual, level + 1);
+				fputsym(fout, esc, arg, mode & ~prSymQual, indent + 1);
 				if (arg->kind != TYPE_rec) {		// nested struct
 					fputstr(fout, esc, ";\n");
 				}
 			}
-
-			fputesc(fout, esc, "%I}\n", level);
+			fputesc(fout, esc, "%I%s", indent, "}");
 
 			break;
 		}
@@ -753,7 +758,7 @@ static void FPUTFMT(FILE* fout, const char *esc[], const char* msg, va_list ap) 
 							break;
 					}
 					if (prc < 0) {
-						prc = 1;
+						prc = 0;
 					}
 					fputsym(fout, esc, sym, prc, len);
 					continue;
@@ -826,7 +831,7 @@ static void FPUTFMT(FILE* fout, const char *esc[], const char* msg, va_list ap) 
 						break;
 					}
 
-					fputasm(fout, opc, len, prc, NULL);
+					fputasm(fout, opc, prc, NULL);
 					continue;
 				}
 
@@ -1340,4 +1345,338 @@ void perr(state rt, int level, const char* file, int line, const char* msg, ...)
 	fputchr(logFile, '\n');
 	fflush(logFile);
 	va_end(argp);
+}
+
+// dump
+static void dumpJsAst(FILE* fout, astn ast, const char *kind, int indent) {
+	static const char **esc = NULL;
+	static const char* KEY_KIND = "kind";
+	static const char* KEY_CAST = "cast";
+	static const char* KEY_FILE = "file";
+	static const char* KEY_LINE = "line";
+	static const char* KEY_TYPE = "type";
+	static const char* KEY_STMT = "stmt";
+	static const char* KEY_INIT = "init";
+	static const char* KEY_TEST = "test";
+	static const char* KEY_THEN = "then";
+	static const char* KEY_STEP = "step";
+	static const char* KEY_ELSE = "else";
+	static const char* KEY_ARGS = "args";
+	static const char* KEY_LHSO = "lval";
+	static const char* KEY_RHSO = "rval";
+	static const char* KEY_VALUE = "value";
+	static const char* FMT_COMMENT = " // %t\n";
+
+	if (esc == NULL) {
+		// layzy initialize on first function call
+		static const char *esc_js[256];
+		memset(esc_js, 0, sizeof(esc_js));
+		esc_js['\n'] = "\\n";
+		esc_js['\r'] = "\\r";
+		esc_js['\t'] = "\\t";
+		esc_js['\''] = "\\'";
+		esc_js['\"'] = "\\\"";
+		esc = esc_js;
+	}
+	if (ast == NULL) {
+		return;
+	}
+	if (kind != NULL) {
+		fputesc(fout, esc, "%I%s: {", indent - 1, kind);
+		fputesc(fout, NULL, FMT_COMMENT, ast);
+	}
+
+	fputesc(fout, esc, "%I%s: '%K',\n", indent, KEY_KIND, ast->kind);
+	if (ast->type != NULL) {
+		fputesc(fout, esc, "%I%s: '%T',\n", indent, KEY_TYPE, ast->type);
+	}
+	if (ast->cst2 != TYPE_any) {
+		fputesc(fout, esc, "%I%s: '%K',\n", indent, KEY_CAST, ast->cst2);
+	}
+	if (ast->file != NULL) {
+		fputesc(fout, esc, "%I%s: '%s',\n", indent, KEY_FILE, ast->file);
+	}
+	if (ast->line != 0) {
+		fputesc(fout, esc, "%I%s: '%u',\n", indent, KEY_LINE, ast->line);
+	}
+	switch (ast->kind) {
+		default:
+			fatal(ERR_INTERNAL_ERROR);
+			fatal("%K", ast->kind);
+			return;
+			//#{ STMT
+		case STMT_do:
+			dumpJsAst(fout, ast->stmt.stmt, KEY_STMT, indent + 1);
+			break;
+
+		case STMT_beg: {
+			astn list;
+			fputesc(fout, esc, "%I%s: [{", indent, KEY_STMT);
+			for (list = ast->stmt.stmt; list; list = list->next) {
+				if (list != ast->stmt.stmt) {
+					fputesc(fout, esc, "%I}, {", indent, list);
+				}
+				fputesc(fout, NULL, FMT_COMMENT, list);
+				dumpJsAst(fout, list, NULL, indent + 1);
+			}
+			fputesc(fout, esc, "%I}],\n", indent);
+			break;
+		}
+
+		case STMT_if:
+			dumpJsAst(fout, ast->stmt.test, KEY_TEST, indent + 1);
+			dumpJsAst(fout, ast->stmt.stmt, KEY_THEN, indent + 1);
+			dumpJsAst(fout, ast->stmt.step, KEY_ELSE, indent + 1);
+			break;
+
+		case STMT_for:
+			dumpJsAst(fout, ast->stmt.init, KEY_INIT, indent + 1);
+			dumpJsAst(fout, ast->stmt.test, KEY_TEST, indent + 1);
+			dumpJsAst(fout, ast->stmt.step, KEY_STEP, indent + 1);
+			dumpJsAst(fout, ast->stmt.stmt, KEY_STMT, indent + 1);
+			break;
+
+		case STMT_con:
+		case STMT_brk:
+			break;
+
+		case STMT_ret:
+			dumpJsAst(fout, ast->stmt.stmt, KEY_STMT, indent + 1);
+			break;
+
+			//#}
+			//#{ OPER
+		case OPER_fnc: {	// '()'
+			astn args = ast->op.rhso;
+			fputesc(fout, esc, "%I%s: [{", indent, KEY_ARGS);
+			if (args != NULL) {
+				while (args && args->kind == OPER_com) {
+					if (args != ast->stmt.stmt) {
+						fputesc(fout, esc, "%I}, {", indent);
+					}
+					fputesc(fout, NULL, FMT_COMMENT, args->op.rhso);
+					dumpJsAst(fout, args->op.rhso, NULL, indent + 1);
+					args = args->op.lhso;
+				}
+				if (args != ast->stmt.stmt) {
+					fputesc(fout, esc, "%I}, {", indent, args);
+				}
+				fputesc(fout, NULL, FMT_COMMENT, args);
+				dumpJsAst(fout, args, NULL, indent + 1);
+			}
+			fputesc(fout, esc, "%I}],\n", indent);
+			break;
+		}
+
+		case OPER_dot:		// '.'
+		case OPER_idx:		// '[]'
+
+		case OPER_adr:		// '&'
+		case OPER_pls:		// '+'
+		case OPER_mns:		// '-'
+		case OPER_cmt:		// '~'
+		case OPER_not:		// '!'
+
+		case OPER_add:		// '+'
+		case OPER_sub:		// '-'
+		case OPER_mul:		// '*'
+		case OPER_div:		// '/'
+		case OPER_mod:		// '%'
+
+		case OPER_shl:		// '>>'
+		case OPER_shr:		// '<<'
+		case OPER_and:		// '&'
+		case OPER_ior:		// '|'
+		case OPER_xor:		// '^'
+
+		case OPER_equ:		// '=='
+		case OPER_neq:		// '!='
+		case OPER_lte:		// '<'
+		case OPER_leq:		// '<='
+		case OPER_gte:		// '>'
+		case OPER_geq:		// '>='
+
+		case OPER_lnd:		// '&&'
+		case OPER_lor:		// '||'
+		case OPER_sel:		// '?:'
+
+		case OPER_com:		// ','
+
+		case ASGN_set:		// '='
+			dumpJsAst(fout, ast->op.test, KEY_TEST, indent + 1);
+			dumpJsAst(fout, ast->op.lhso, KEY_LHSO, indent + 1);
+			dumpJsAst(fout, ast->op.rhso, KEY_RHSO, indent + 1);
+			break;
+
+			//#}
+			//#{ TVAL
+		case EMIT_opc:
+			//~ fputesc(fout, escape, " />\n", text);
+			//~ break;
+
+		case TYPE_int:
+		case TYPE_flt:
+		case TYPE_str:
+
+		case TYPE_ref:
+		case TYPE_def:	// TODO: see dumpxml
+			fputesc(fout, esc, "%I%s: \"%t\"\n", indent, KEY_VALUE, ast);
+			break;
+
+			//#}
+	}
+
+	if (kind != NULL) {
+		fputesc(fout, esc, "%I},\n", indent - 1);
+		//~ fputesc(fout, esc, "%I%s: {", indent - 1, kind);
+	}
+}
+static void dumpJsSym(FILE* fout, symn ptr, const char *kind, int indent) {
+	static const char **esc = NULL;
+
+	static const char* KEY_KIND = "kind";
+	static const char* KEY_FILE = "file";
+	static const char* KEY_LINE = "line";
+	static const char* KEY_NAME = "name";
+	static const char* KEY_PROTO = "proto";
+	static const char* KEY_DECL = "declaredIn";
+	static const char* KEY_TYPE = "type";
+	static const char* KEY_INIT = "init";
+	static const char* KEY_ARGS = "args";
+	static const char* KEY_CONST = "const";
+	static const char* KEY_STAT = "static";
+	//~ static const char* KEY_PARLEL = "parallel";
+	static const char* KEY_CAST = "cast";
+	static const char* KEY_SIZE = "size";
+	static const char* KEY_OFFS = "offs";
+
+	static const char* VAL_TRUE = "true";
+	static const char* VAL_FALSE = "false";
+
+	static const char* KIND_PARAM = "param";
+	static const char* FMT_COMMENT = " // %+T: %+T\n";
+
+	if (esc == NULL) {
+		// layzy initialize on first function call
+		static const char *esc_js[256];
+		memset(esc_js, 0, sizeof(esc_js));
+		esc_js['\n'] = "\\n";
+		esc_js['\r'] = "\\r";
+		esc_js['\t'] = "\\t";
+		esc_js['\''] = "\\'";
+		esc_js['\"'] = "\\\"";
+		esc = esc_js;
+	}
+
+	fputesc(fout, esc, "%I%s: '%s',\n", indent, KEY_KIND, kind);
+	fputesc(fout, esc, "%I%s: '%T',\n", indent, KEY_NAME, ptr);
+	fputesc(fout, esc, "%I%s: '%+T',\n", indent, KEY_PROTO, ptr);
+
+	if (ptr->decl != NULL) {
+		fputesc(fout, esc, "%I%s: '%+T',\n", indent, KEY_DECL, ptr->decl);
+	}
+
+	if (ptr->type != NULL) {
+		fputesc(fout, esc, "%I%s: '%T',\n", indent, KEY_TYPE, ptr->type);
+	}
+	if (ptr->file != NULL) {
+		fputesc(fout, esc, "%I%s: '%s',\n", indent, KEY_FILE, ptr->file);
+	}
+	if (ptr->line != 0) {
+		fputesc(fout, esc, "%I%s: '%u',\n", indent, KEY_LINE, ptr->line);
+	}
+	if (ptr->init != NULL) {
+		fputesc(fout, esc, "%I%s: '%+t',\n", indent, "code", ptr->init);
+		dumpJsAst(fout, ptr->init, KEY_INIT, indent + 1);
+	}
+
+	if (ptr->call && ptr->prms) {
+		symn arg;
+		fputesc(fout, NULL, "%I%s: [{", indent, KEY_ARGS);
+		for (arg = ptr->prms; arg; arg = arg->next) {
+			if (arg != ptr->prms) {
+				fputesc(fout, NULL, "%I}, {", indent);
+			}
+			fputesc(fout, NULL, FMT_COMMENT, arg, arg->type);
+			dumpJsSym(fout, arg, KIND_PARAM, indent + 1);
+		}
+		fputesc(fout, NULL, "%I}],\n", indent);
+	}
+	if (ptr->cast != 0) {
+		fputesc(fout, NULL, "%I%s: '%K',\n", indent, KEY_CAST, ptr->cast);
+	}
+	fputesc(fout, NULL, "%I%s: %u,\n", indent, KEY_SIZE, ptr->size);
+	fputesc(fout, NULL, "%I%s: %u,\n", indent, KEY_OFFS, ptr->offs);
+	fputesc(fout, NULL, "%I%s: %s,\n", indent, KEY_CONST, ptr->cnst ? VAL_TRUE : VAL_FALSE);
+	fputesc(fout, NULL, "%I%s: %s\n", indent, KEY_STAT, ptr->stat ? VAL_TRUE : VAL_FALSE);
+	// no parallel symbols!!! fputesc(fout, NULL, "%I%s: %s,\n", indent, KEY_PARLEL, ptr->stat ? VAL_TRUE : VAL_FALSE);
+}
+
+void dump(state rt, void *extra, void customPrinter(void *extra, symn sym)) {
+	FILE* fout = rt->logf;
+	char *typ = "";
+	symn sym, bp[TOKS], *sp = bp;
+	if (customPrinter == NULL) {
+		fputfmt(fout, "var api = [\n");
+	}
+	for (*sp = rt->defs; sp >= bp;) {
+		if (!(sym = *sp)) {
+			--sp;
+			continue;
+		}
+		*sp = sym->next;
+
+		switch (sym->kind) {
+			// inline/constant
+			case TYPE_def:
+				typ = "alias";
+				/* print params of inline expressions
+				if (sym->call && sym->prms) {
+					*++sp = sym->prms;
+				}// */
+				break;
+
+				// array/typename
+			case TYPE_arr:
+			case TYPE_rec:
+				typ = "typename";
+				*++sp = sym->flds;
+				break;
+
+				// variable/function
+			case TYPE_ref:
+				typ = "variable";
+				/* print params of functions
+				if (sym->call && sym->prms) {
+					*++sp = sym->prms;
+				}
+				// */
+				break;
+
+			case EMIT_opc:
+				typ = "opcode";
+				*++sp = sym->flds;
+				break;
+
+			default:
+				typ = "!ERROR!";
+				trace("psym:%d:%T['%K']", sym->kind, sym, sym->kind);
+				break;
+		}
+
+		if (customPrinter != NULL) {
+			customPrinter(extra, sym);
+		}
+		else {
+			fputfmt(fout, "{ // %+T: %+T\n", sym, sym->type);
+			dumpJsSym(fout, sym, typ, 1);
+			fputfmt(fout, "},\n", sym);
+			fflush(fout);
+			continue;
+		}
+		fflush(fout);
+	}
+	if (customPrinter == NULL) {
+		fputfmt(fout, "];\n");
+	}
 }

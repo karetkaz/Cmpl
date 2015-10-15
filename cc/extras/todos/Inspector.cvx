@@ -1,0 +1,50 @@
+struct DosDate {int16 Value;}
+struct DosTime {int16 Value;}
+struct DosDateTime {int16 date;int16 time;}
+
+define bitsOf(int value, int from, int count) = int((value >> count) & ((1 << count) - 1));
+
+define day(DosDate dt)   = int(bitsOf(dt.Value,  0, 6) + 1);
+define month(DosDate dt) = int(bitsOf(dt.Value,  6, 5) + 1);
+define year(DosDate dt)  = int(bitsOf(dt.Value, 11, 5));
+define sec(DosTime dt)   = int(bitsOf(dt.Value,  0, 5) * 2);
+define min(DosTime dt)   = int(bitsOf(dt.Value,  5, 6));
+define hour(DosTime dt)  = int(bitsOf(dt.Value, 12, 5));
+
+//~ define string(DosDate &dt) = formatstr("%04d.%02d.%02d", year(dt), month(dt), day(dt));
+//~ define string(DosTime &dt) = formatstr("%02d:%02d:%02d", hour(dt), min(dt), sec(dt));
+//~ define string(DosDateTime &dt) = formatstr("%04d.%02d.%02d %02d:%02d:%02d", year(dt.date), month(dt.date), day(dt.date), hour(dt.time), min(dt.time), sec(dt.time));
+
+struct Inspector: 0 {
+	int8	SignedByte;
+	uint8	UnsignedByte;
+	int16	SignedShort;
+	uint16	UnsignedShort;
+	int32	SignedInt;
+	uint32	UnsignedInt;
+	int64	SignedLong;
+	//~ uint64	UnsignedLong;
+	float32	Float;
+	float64	Double;
+	pointer Pointer;
+
+	DosTime	dosTime;
+	DosDate	dosDate;
+	DosDateTime dosDateTime;
+
+	uint32	time_t;
+	char	str[256];		// %%s
+}
+
+define value = 123456789123456;
+
+int32 valueInt = value;
+int64 valueLong = value;
+float32 valueFloat = value;
+float64 valueDouble = value;
+
+char text[] = "void2";
+
+Inspector &inspector = pointer(&text);
+//~ Inspector &inspector = pointer(&valueDouble);
+//~ Inspector &inspector = emit(pointer, int32(2));

@@ -5,17 +5,17 @@ cd tests
 files="test.*.cvx"
 
 #~ compile flags
-flags="-gd2 -x -apiff -astff -asm39 -wa"
-flags="-gd2 -x -w0"
+flags="-gd2 -x -apiff -astff -asm39 -w100"
+#~ flags="-gd2 -x -w15"
 
-logFile=../out/log.gcc.cvx
-
-echo>$logFile
+logFile=out/dump
+#~ echo>$logFile
 for file in $files
 do
 	echo "**** running test: $file"
-	echo>>$logFile "**** running test: $file"
-	../main -std../stdlib.cvx -la $logFile $flags $file
+	#~ echo>>$logFile "**** running test: $file"
+	#~ ../main -std../stdlib.cvx -la $logFile $flags $file
+	../main -std../stdlib.cvx -l $logFile.$file $flags $file
 	if [ "$?" -ne "0" ]; then
 		echo "******** failed: $file"
 	fi

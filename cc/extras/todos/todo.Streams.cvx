@@ -1,0 +1,96 @@
+define byte = uint8;
+
+// abstract class
+struct Stream: object {
+	const void close(Stream stream);
+}
+
+struct InputStream: Stream {
+	const int read(InputStream stream, byte values[]);
+}
+
+struct OutputStream: Stream {
+	const int write(OutputStream stream, byte values[]);
+	const void flush(OutputStream stream);
+}
+
+/** extending a class
+ a class can be extended from another class, or from an object.
+ by extendig from a class, the size of the extended class will be the base class + the size of new fields.
+ by extendig from an object, the new class will have a reference to that instance.
+*/
+
+struct FileInputStream: InputStream {
+	const File file;
+
+	/* TODO: override methods by simple initialization
+	close: void(FileInputStream stream) {
+		File.close(stream.file);
+	}
+
+	read: int(FileInputStream stream, byte values[]) {
+		return File.read(stream.file, values);
+	}
+
+	// initializer
+	operator FileInputStream(File file) = FileInputStream {
+		file: file;
+	}
+	// */
+}
+
+int sizeofFileInputStream = sizeof(FileInputStream);
+//~ FileInputStream fis = {file: File.Open("string.cvx")};
+//~ FileInputStream fis = emit(FileInputStream, memmgr(null, sizeof(FileInputStream)));
+
+
+/+struct Stream: InputStream + OutputStream;
+	> TeeStream: Stream
+	> PipeStream: Stream
+	> NetworkStream: Stream
+
+struct RandomAccessStream: Stream {long seek(long offset, Direction dir);}
+	> FileStream: RandomAccessStream {FileStream open(String file);}
+	> MemoryStream: RandomAccessStream
+
+struct Encoder {InputStream stream; bool closeStream; int read(Encoder, byte[]);}
+struct Decoder {OutputStream stream; bool closeStream; int write(Decoder, byte[]);}
+	> Base64
+	> Url
+
+struct TextReader {InputStream stream; bool closeStream; int read(TextReader, char[]);}
+	> Latin1Reader
+	> AsciiReader
+	> Utf7Reader
+	> Utf8Reader
+
+struct TextWriter {OutputStream stream; bool closeStream; int write(TextWriter, char[]);}
+	> Latin1Writer
+	> AsciiWriter
+	> Utf7Writer
+	> Utf8Writer
+
+struct Path {
+	exists
+	isFile
+	isDirectory
+	isHidden
+
+	parent
+	isAbsolute
+	canRead,write,execute,...
+	permissions
+}
+
+struct File: Path {
+	open = InputStream(FileStream.open(path), true);
+	//openText = Utf8Reader(InputStream(FileStream.open(path)));
+	create = OutputStream(FileStream.open(path), true);
+	append = OutputStream(FileStream.open(path), true);
+	size;
+}
+
+struct Directory: Path {
+	list, make, remove(recursive)
+}
+//~ +/

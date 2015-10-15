@@ -27,7 +27,7 @@ application [global options] [local options]...
 		-L<file>				load library (.so|.dll)
 		-C<file>				compile source
 		-b<int>					breakpoint on line
-		<file>					if file extension is (.so|.dll) load as libraray else compile
+		<file>					if file extension is (.so|.dll) load as library else compile
 */
 
 //~ (wcl386 -cc -q -ei -6s -d0  -fe=../main *.c) && (rm -f *.o *.obj *.err)
@@ -40,9 +40,9 @@ application [global options] [local options]...
 #define USEPLUGINS
 
 // default values
-static const int wl = 19;			// warning level
-static const int ol = 2;			// optimize level
-static char mem[8 << 20];			// runtime memory
+static const int wl = 19;			// default warning level
+static const int ol = 2;			// default optimization level
+static char mem[8 << 20];			// 8MB runtime memory
 
 const char* STDLIB = "stdlib.cvx";		// standard library
 
@@ -180,26 +180,22 @@ static void usage(char* prog) {
 static int evalexp(state rt, char* text) {
 	struct astNode res;
 	astn ast = NULL;
-	symn typ = NULL;
 	int tid = 0;
 
 	ccState cc = ccInit(rt, creg_def, NULL);
-	ccOpen(cc->s, NULL, 0, text);
+	ccAddCode(cc->s, wl, NULL, 0, text);
 
-	//ast = expr(cc, TYPE_def);
-	typ = typecheck(cc, NULL, ast);
+	ast = cc->root->stmt.stmt;
 	tid = eval(&res, ast);
-
-	ccDone(cc);
 
 	fputfmt(cc->s->logf, "eval(`%+t`) = ", ast);
 
-	if (ast && typ && tid) {
-		fputfmt(cc->s->logf, "%T(%t)\n", typ, &res);
+	if (ast && ast->type && tid) {
+		fputfmt(cc->s->logf, "%T(%t)\n", ast->type, &res);
 		return 0;
 	}
 
-	fputfmt(cc->s->logf, "ERROR(typ:`%T`, tid:%d)\n", typ, tid);
+	fputfmt(cc->s->logf, "ERROR(typ:`%T`, tid:%d)\n", ast->type, tid);
 
 	return -1;
 }
@@ -213,7 +209,6 @@ static int installDll(state rt, int ccApiMain(state)) {
 }
 
 #if (defined(WIN32) || defined(_WIN32))
-
 #include <windows.h>
 static struct pluginLib {
 	struct pluginLib *next;		// next plugin
@@ -256,7 +251,6 @@ static int importLib(state rt, const char* path) {
 	}
 	return result;
 }
-
 #elif (defined(__linux__))
 #include <dlfcn.h>
 static struct pluginLib {
@@ -299,7 +293,6 @@ static int importLib(state rt, const char* path) {
 	return result;
 }
 #else
-
 static void closeLibs() {}
 static int importLib(state rt, const char* path) {
 	(void)rt;
@@ -309,9 +302,7 @@ static int importLib(state rt, const char* path) {
 	error(rt, path, 1, "dynamic linking is not available in this build.");
 	return -1;
 }
-
 #endif
-
 #else
 static void closeLibs() {}
 static int importLib(state rt, const char* path) {
@@ -322,278 +313,153 @@ static int importLib(state rt, const char* path) {
 }
 #endif
 
+static int printerrors = 1;
 static symn printvars = NULL;
+// forward
 static void printGlobals(FILE* out, state rt, int all);
 static int dbgConsole(state, int pu, void* ip, void* sp, size_t ss, vmError err, size_t fp);
 
-static void dumpJsAst(FILE* fout, astn ast, const char *kind, int indent) {
-	static const char **esc = NULL;
-	static const char* KEY_KIND = "kind";
-	static const char* KEY_CAST = "cast";
-	static const char* KEY_FILE = "file";
-	static const char* KEY_LINE = "line";
-	static const char* KEY_TYPE = "type";
-	static const char* KEY_STMT = "stmt";
-	static const char* KEY_INIT = "init";
-	static const char* KEY_TEST = "test";
-	static const char* KEY_THEN = "then";
-	static const char* KEY_STEP = "step";
-	static const char* KEY_ELSE = "else";
-	static const char* KEY_ARGS = "args";
-	static const char* KEY_LHSO = "lval";
-	static const char* KEY_RHSO = "rval";
-	static const char* KEY_VALUE = "value";
+enum {
+	sym_attr = 0x01,   // size, kind, attributes, initializer, ...
+	sym_refs = 0x02,   // dump usage references of variable
+	sym_prms = 0x04,   // print params
 
-	if (esc == NULL) {
-		// layzy initialize on first function call
-		static const char *esc_js[256];
-		memset(esc_js, 0, sizeof(esc_js));
-		esc_js['\n'] = "\\n";
-		esc_js['\r'] = "\\r";
-		esc_js['\t'] = "\\t";
-		esc_js['\''] = "\\'";
-		esc_js['\"'] = "\\\"";
-		esc = esc_js;
-	}
-	if (ast == NULL) {
-		return;
-	}
-	if (kind != NULL) {
-		fputesc(fout, esc, "%I%s: { // %t\n", indent - 1, kind, ast);
+	//~ asm_locl = 0x10,   // local offsets
+	//~ asm_glob = 0x20,   // global offsets
+	//~ asm_data = 0x0f,   // print 0-15 bytes as hex code
+};
+typedef struct {
+	state rt;
+	int indent;
+	int sym_dump;
+	int ast_dump;
+	int asm_dump;
+} customPrinterExtra;
+
+static int dumpAsmCb(customPrinterExtra *extra, size_t offs, void* ip) {
+	FILE *fout = extra->rt->logf;
+	dbgInfo dbg = mapDbgStatement(extra->rt, offs);
+	if (dbg != NULL && dbg->stmt != NULL && dbg->start == offs) {
+		if ((extra->asm_dump & 0x30) != 0) {
+			fputfmt(fout, "%I%s:%u: [%06x-%06x): %t\n", extra->indent, dbg->file, dbg->line, dbg->start, dbg->end, dbg->stmt);
+		}
+		else {
+			fputfmt(fout, "%I%s:%u: %t\n", extra->indent, dbg->file, dbg->line, dbg->stmt);
+		}
 	}
 
-	fputesc(fout, esc, "%I%s: '%K',\n", indent, KEY_KIND, ast->kind);
-	if (ast->type != NULL) {
-		fputesc(fout, esc, "%I%s: '%T',\n", indent, KEY_TYPE, ast->type);
+	fputfmt(fout, "%I", extra->indent);
+	fputasm(fout, ip, extra->asm_dump, extra->rt);
+	fputfmt(fout, "\n");
+	return 1;
+}
+
+static void customPrinter(customPrinterExtra *extra, symn sym) {
+	int dumpAsm = 0;
+	int dumpAst = 0;
+	int identExt = extra->indent;
+	FILE *fout = extra->rt->logf;
+
+	if (extra->asm_dump >= 0 && sym->call && sym->kind == TYPE_ref) {
+		if (sym->cast != TYPE_ref) {
+			// function reference may point to null or another function.
+			dumpAsm = extra->asm_dump;
+		}
 	}
-	if (ast->cst2 != TYPE_any) {
-		fputesc(fout, esc, "%I%s: '%K',\n", indent, KEY_CAST, ast->cst2);
+	if (extra->ast_dump >= 0 && sym->init != NULL) {
+		dumpAst = extra->ast_dump;
 	}
-	if (ast->file != NULL) {
-		fputesc(fout, esc, "%I%s: '%s',\n", indent, KEY_FILE, ast->file);
-	}
-	if (ast->line != 0) {
-		fputesc(fout, esc, "%I%s: '%u',\n", indent, KEY_LINE, ast->line);
-	}
-	switch (ast->kind) {
-		default:
-			fatal(ERR_INTERNAL_ERROR);
-			fatal("%K", ast->kind);
+
+	// filter symbols by request.
+	if (extra->sym_dump < 0) {
+		// skip builtin symbols if not requested (with '-api').
+		if (sym->file == NULL && sym->line == 0) {
 			return;
-		//#{ STMT
-		case STMT_do:
-			dumpJsAst(fout, ast->stmt.stmt, KEY_STMT, indent + 1);
-			break;
+		}
+		// skip symbol if there is nothing to dump.
+		if (!dumpAsm && !dumpAst) {
+			return;
+		}
+	}
 
-		case STMT_beg: {
-			astn list;
-			fputesc(fout, esc, "%I%s: [{", indent, KEY_STMT);
-			for (list = ast->stmt.stmt; list; list = list->next) {
-				if (list != ast->stmt.stmt) {
-					fputesc(fout, esc, "%I}, {", indent, list);
-				}
-				fputesc(fout, esc, " // %t\n", list);
-				dumpJsAst(fout, list, NULL, indent + 1);
-			}
-			fputesc(fout, esc, "%I}],\n", indent);
-			break;
+	// print qualified name with arguments
+	fputfmt(fout, "%+T: %+T {\n", sym, sym->type);
+
+	// print symbol info (kind, size, offset, ...)
+	if (extra->sym_dump >= 0 && extra->sym_dump & sym_attr) {
+		// print symbol definition location
+		if (sym->file != NULL && sym->line > 0) {
+			fputfmt(fout, "%I.definition: %s:%u\n", identExt, sym->file, sym->line);
 		}
 
-		case STMT_if:
-			dumpJsAst(fout, ast->stmt.test, KEY_TEST, indent + 1);
-			dumpJsAst(fout, ast->stmt.stmt, KEY_THEN, indent + 1);
-			dumpJsAst(fout, ast->stmt.step, KEY_ELSE, indent + 1);
-			break;
+		fputfmt(fout, "%I.kind:%?s%?s %K->%K\n", identExt
+			, sym->stat ? " static" : ""
+			, sym->cnst ? " const" : ""
+			, sym->kind, sym->cast
+		);
+		fputfmt(fout, "%I.offset: %06x\n", identExt, sym->offs);
+		fputfmt(fout, "%I.size: %d\n", identExt, sym->size);
+	}
 
-		case STMT_for:
-			dumpJsAst(fout, ast->stmt.init, KEY_INIT, indent + 1);
-			dumpJsAst(fout, ast->stmt.test, KEY_TEST, indent + 1);
-			dumpJsAst(fout, ast->stmt.step, KEY_STEP, indent + 1);
-			dumpJsAst(fout, ast->stmt.stmt, KEY_STMT, indent + 1);
-			break;
-
-		case STMT_con:
-		case STMT_brk:
-			break;
-
-		case STMT_ret:
-			dumpJsAst(fout, ast->stmt.stmt, KEY_STMT, indent + 1);
-			break;
-
-		//#}
-		//#{ OPER
-		case OPER_fnc: {	// '()'
-			astn args = ast->op.rhso;
-			fputesc(fout, esc, "%I%s: [{", indent, KEY_ARGS);
-			if (args != NULL) {
-				while (args && args->kind == OPER_com) {
-					if (args != ast->stmt.stmt) {
-						fputesc(fout, esc, "%I}, {", indent);
-					}
-					fputesc(fout, esc, " // %t\n", args->op.rhso);
-					dumpJsAst(fout, args->op.rhso, NULL, indent + 1);
-					args = args->op.lhso;
-				}
-				if (args != ast->stmt.stmt) {
-					fputesc(fout, esc, "%I}, {", indent, args);
-				}
-				fputesc(fout, esc, " // %t\n", args);
-				dumpJsAst(fout, args, NULL, indent + 1);
-			}
-			fputesc(fout, esc, "%I}],\n", indent);
-			break;
+	// explain params of the function
+	if (extra->sym_dump >= 0 && extra->sym_dump & sym_prms) {
+		symn param;
+		for (param = sym->prms; param; param = param->next) {
+			fputfmt(fout, "%I.param %T: %?+T (@%06x+%d->%K)\n", identExt, param, param->type, param->offs, param->size, param->cast);
 		}
-
-		case OPER_dot:		// '.'
-		case OPER_idx:		// '[]'
-
-		case OPER_adr:		// '&'
-		case OPER_pls:		// '+'
-		case OPER_mns:		// '-'
-		case OPER_cmt:		// '~'
-		case OPER_not:		// '!'
-
-		case OPER_add:		// '+'
-		case OPER_sub:		// '-'
-		case OPER_mul:		// '*'
-		case OPER_div:		// '/'
-		case OPER_mod:		// '%'
-
-		case OPER_shl:		// '>>'
-		case OPER_shr:		// '<<'
-		case OPER_and:		// '&'
-		case OPER_ior:		// '|'
-		case OPER_xor:		// '^'
-
-		case OPER_equ:		// '=='
-		case OPER_neq:		// '!='
-		case OPER_lte:		// '<'
-		case OPER_leq:		// '<='
-		case OPER_gte:		// '>'
-		case OPER_geq:		// '>='
-
-		case OPER_lnd:		// '&&'
-		case OPER_lor:		// '||'
-		case OPER_sel:		// '?:'
-
-		case OPER_com:		// ','
-
-		case ASGN_set:		// '='
-			dumpJsAst(fout, ast->op.test, KEY_TEST, indent + 1);
-			dumpJsAst(fout, ast->op.lhso, KEY_LHSO, indent + 1);
-			dumpJsAst(fout, ast->op.rhso, KEY_RHSO, indent + 1);
-			break;
-
-		//#}
-		//#{ TVAL
-		case EMIT_opc:
-			//~ fputesc(fout, escape, " />\n", text);
-			//~ break;
-
-		case TYPE_int:
-		case TYPE_flt:
-		case TYPE_str:
-
-		case TYPE_ref:
-		case TYPE_def:	// TODO: see dumpxml
-			fputesc(fout, esc, "%I%s: \"%t\"\n", indent, KEY_VALUE, ast);
-			break;
-
-		//#}
 	}
 
-	if (kind != NULL) {
-		fputesc(fout, esc, "%I},\n", indent - 1);
-		//~ fputesc(fout, esc, "%I%s: {", indent - 1, kind);
-	}
-}
-static void dumpJsSym(FILE* fout, symn ptr, const char *kind, int indent) {
-	static const char **esc = NULL;
-
-	static const char* KEY_KIND = "kind";
-	static const char* KEY_FILE = "file";
-	static const char* KEY_LINE = "line";
-	static const char* KEY_NAME = "name";
-	static const char* KEY_PROTO = "proto";
-	static const char* KEY_DECL = "declaredIn";
-	static const char* KEY_TYPE = "type";
-	static const char* KEY_INIT = "init";
-	static const char* KEY_ARGS = "args";
-	static const char* KEY_CONST = "const";
-	static const char* KEY_STAT = "static";
-	//~ static const char* KEY_PARLEL = "parallel";
-	static const char* KEY_CAST = "cast";
-	static const char* KEY_SIZE = "size";
-	static const char* KEY_OFFS = "offs";
-
-	static const char* VAL_TRUE = "true";
-	static const char* VAL_FALSE = "false";
-
-	static const char* KIND_PARAM = "param";
-
-	if (esc == NULL) {
-		// layzy initialize on first function call
-		static const char *esc_js[256];
-		memset(esc_js, 0, sizeof(esc_js));
-		esc_js['\n'] = "\\n";
-		esc_js['\r'] = "\\r";
-		esc_js['\t'] = "\\t";
-		esc_js['\''] = "\\'";
-		esc_js['\"'] = "\\\"";
-		esc = esc_js;
-	}
-
-	fputesc(fout, esc, "%I%s: '%s',\n", indent, KEY_KIND, kind);
-	fputesc(fout, esc, "%I%s: '%.0T',\n", indent, KEY_NAME, ptr);
-	fputesc(fout, esc, "%I%s: '%+T',\n", indent, KEY_PROTO, ptr);
-
-	if (ptr->decl != NULL) {
-		fputesc(fout, esc, "%I%s: '%+T',\n", indent, KEY_DECL, ptr->decl);
-	}
-
-	if (ptr->type != NULL) {
-		fputesc(fout, esc, "%I%s: '%T',\n", indent, KEY_TYPE, ptr->type);
-	}
-	if (ptr->file != NULL) {
-		fputesc(fout, esc, "%I%s: '%s',\n", indent, KEY_FILE, ptr->file);
-	}
-	if (ptr->line != 0) {
-		fputesc(fout, esc, "%I%s: '%u',\n", indent, KEY_LINE, ptr->line);
-	}
-	if (ptr->init != NULL) {
-		//~ fputesc(fout, esc, "%I%s: '%+t'\n", indent, KEY_INIT, ptr->init);
-		dumpJsAst(fout, ptr->init, KEY_INIT, indent + 1);
-	}
-
-	if (ptr->call && ptr->prms) {
-		symn arg;
-		fputesc(fout, NULL, "%I%s: [{", indent, KEY_ARGS);
-		for (arg = ptr->prms; arg; arg = arg->next) {
-			if (arg != ptr->prms) {
-				fputesc(fout, NULL, "%I}, {", indent);
-			}
-			fputesc(fout, NULL, " // %+T: %+T\n", arg, arg->type);
-			dumpJsSym(fout, arg, KIND_PARAM, indent + 1);
+	if (dumpAst != 0) {
+		fputfmt(fout, "%I.syntaxTree: %?-1.*t", identExt, dumpAst, sym->init);
+		if (sym->init->kind != STMT_beg) {
+			fputfmt(fout, "\n");
 		}
-		fputesc(fout, NULL, "%I}],\n", indent);
 	}
-	if (ptr->cast != 0) {
-		fputesc(fout, NULL, "%I%s: '%K',\n", indent, KEY_CAST, ptr->cast);
+
+	// print disassembly of the function
+	if (dumpAsm != 0) {
+		fputfmt(fout, "%I.assembly [@%06x: %d] {\n", identExt, sym->offs, sym->size);
+		iterateAsm(extra->rt, sym->offs, sym->offs + sym->size, extra, (void*)dumpAsmCb);
+		fputfmt(fout, "%I}\n", identExt);
 	}
-	fputesc(fout, NULL, "%I%s: %u,\n", indent, KEY_SIZE, ptr->size);
-	fputesc(fout, NULL, "%I%s: %u,\n", indent, KEY_OFFS, ptr->offs);
-	fputesc(fout, NULL, "%I%s: %s,\n", indent, KEY_CONST, ptr->cnst ? VAL_TRUE : VAL_FALSE);
-	fputesc(fout, NULL, "%I%s: %s\n", indent, KEY_STAT, ptr->stat ? VAL_TRUE : VAL_FALSE);
-	// no parallel symbols!!! fputesc(fout, NULL, "%I%s: %s,\n", indent, KEY_PARLEL, ptr->stat ? VAL_TRUE : VAL_FALSE);
+
+	// print usages of symbol
+	if (extra->sym_dump >= 0 && extra->sym_dump & sym_refs) {
+		astn usage;
+		int usages = 0;
+		int extUsages = 0;
+		fputfmt(fout, "%I.references: {\n", identExt);
+		for (usage = sym->used; usage; usage = usage->ref.used) {
+			if (usage->file && usage->line) {
+				int referenced = !(usage->file == sym->file && usage->line == sym->line);
+				fputfmt(fout, "%I%s:%u: %s as `%+t`\n", identExt, usage->file, usage->line, referenced ? "referenced" : "defined", usage);
+				#ifdef LOG_MAX_ITEMS
+				if ((usages += 1) > LOG_MAX_ITEMS) {
+					break;
+				}
+				#endif
+			}
+			else {
+				extUsages += 1;
+			}
+		}
+		if (extUsages > 0) {
+			fputfmt(fout, "%Iexternal references: %d\n", identExt, extUsages);
+		}
+		fputfmt(fout, "%I}\n", identExt);
+		(void)usages;
+	}
+
+	fputfmt(fout, "}\n");
 }
 
-int program(int argc, char* argv[]) {
+static int program(int argc, char* argv[]) {
 	char* stdlib = (char*)STDLIB;
 
 	// compile, run, debug, ...
 	int level = -1, argi;
 	int gen_code = ol;	// optimize_level, debug_info, ...
-	int run_code = 0;	// true/false: exec
+	int run_code = 0;	// quit, exec, debug
 
 	char* stk_dump = NULL;	// dump top of stack
 	int val_dump = -1;	// dump variable values after execution.
@@ -603,17 +469,7 @@ int program(int argc, char* argv[]) {
 	int bin_dump = -1;	// dump binary.
 	int api_dump = 0;	// dump api for scite / json.
 
-	enum {
-		sym_attr = 0x01,   // size, kind, attributes, initializer, ...
-		sym_refs = 0x02,   // dump usage references of variable
-		sym_prms = 0x04,   // print params
-
-		asm_lofs = 0x10,   // local offsets
-		asm_gofs = 0x20,   // global offsets
-		asm_data = 0x0f,   // print 0-15 bytes as hex code
-	};
-
-	int log_append = 0;				// start with a new file
+	int log_append = 0;			// start with a new file
 	char* logf = NULL;			// logger filename
 	FILE* dmpf = stdout;		// dump file
 
@@ -622,7 +478,6 @@ int program(int argc, char* argv[]) {
 
 	char* amem = paddptr(mem, rt_size);
 	state rt = rtInit(amem, sizeof(mem) - (amem - mem));
-	int (*dbg)(state, int pu, void* ip, void* sp, size_t ss, vmError err, size_t fp) = NULL;
 
 	// max 32 break points
 	char* bp_file[32];
@@ -680,17 +535,19 @@ int program(int argc, char* argv[]) {
 				str += 1;
 			}
 
-			if (*str == 'd') {
+			if (*str == 'd' || *str == 'D') {
 
 				gen_code |= cgen_info;
-				dbg = dbgConsole;
+				run_code = *str == 'd' ? 2 : 3;
 
 				if (str[1] == ':') {
 					stk_dump = str + 2;
 					str += 1;
 				}
 			}
-			run_code = 1;
+			else {
+				run_code = 1;
+			}
 		}
 
 		// output file
@@ -725,7 +582,7 @@ int program(int argc, char* argv[]) {
 				}
 			}
 			else {
-				api_dump = 2;
+				api_dump = 1;
 			}
 			sym_dump = level;
 		}
@@ -762,16 +619,20 @@ int program(int argc, char* argv[]) {
 			}
 			bin_dump = level;
 		}
+		else if (strncmp(arg, "-std", 4) == 0) {		// override stdlib file
+			if (arg[4] != 0) {
+				stdlib = arg + 4;
+			}
+			else {
+				// diasble standard library
+				stdlib = NULL;
+			}
+		}
 
 		// temp
-		else if (strncmp(arg, "-std", 4) == 0) {		// override stdlib file
-			stdlib = arg + 4;
-		}
-		else if (strncmp(arg, "--", 2) == 0) {		// exclude stdlib, do not gen code, ...
+		else if (strncmp(arg, "--", 2) == 0) {		// do not generate code, ...
 			if (strchr(arg, 'c'))
 				gen_code = 0;
-			if (strchr(arg, 's'))
-				stdlib = NULL;
 		}
 
 		else break;
@@ -791,7 +652,7 @@ int program(int argc, char* argv[]) {
 	}
 
 	// intstall standard libraries.
-	if (!ccAddUnit(rt, install_stdc, 3, stdlib)) {
+	if (!ccAddUnit(rt, install_stdc, api_dump ? 0 : 3, stdlib)) {
 		error(rt, NULL, 0, "error registering standard libs");
 		logfile(rt, NULL, 0);
 		return -6;
@@ -827,7 +688,7 @@ int program(int argc, char* argv[]) {
 				}
 			}
 		}
-		else if (strncmp(arg, "-b", 2) == 0) {		// warning level for file
+		else if (strncmp(arg, "-b", 2) == 0) {		// break points for file
 			int line = 0;
 			if (bp_size > lengthOf(bp_file)) {
 				error(rt, NULL, 0, "maximum 32 breakponts are available.");
@@ -910,182 +771,22 @@ int program(int argc, char* argv[]) {
 	}
 
 	if (sym_dump >= 0 || ast_dump >= 0 || asm_dump >= 0) {
-		static const int identExt = 1;
-		symn sym, bp[TOKS], *sp = bp;
-		FILE* fout = rt->logf;
-		char *typ = "";
-
 		if (api_dump && (ast_dump >= 0 || asm_dump >= 0)) {
 			// invalidate api dump if assembly or syntax tree dump is requested.
 			api_dump = 0;
 		}
-
-		if (api_dump == 2) {
-			fputfmt(fout, "var api = [\n");
+		if (api_dump) {
+			dump(rt, NULL, NULL);
 		}
-
-		for (*sp = rt->defs; sp >= bp;) {
-			int dumpAst = 0;
-			int dumpAsm = 0;
-			if (!(sym = *sp)) {
-				--sp;
-				continue;
-			}
-			*sp = sym->next;
-
-			switch (sym->kind) {
-				// inline/constant
-				case TYPE_def:
-					typ = "alias";
-					/* print params of inline expressions
-					if (sym->call && sym->prms) {
-						*++sp = sym->prms;
-					}// */
-					break;
-
-				// array/typename
-				case TYPE_arr:
-				case TYPE_rec:
-					typ = "typename";
-					*++sp = sym->flds;
-					break;
-
-				// variable/function
-				case TYPE_ref:
-					typ = "variable";
-					/* print params of functions
-					if (sym->call && sym->prms) {
-						*++sp = sym->prms;
-					}
-					// */
-					break;
-
-				case EMIT_opc:
-					typ = "opcode";
-					*++sp = sym->flds;
-					break;
-
-				default:
-					typ = "!!!";
-					trace("psym:%d:%T['%K']", sym->kind, sym, sym->kind);
-					break;
-			}
-
-			if (api_dump) {
-				if (api_dump == 2) {
-					if (sym != rt->defs) {
-						//~ fputfmt(fout, "}, {\n");
-					}
-					fputfmt(fout, "{ // %+T: %+T\n", sym, sym->type);
-					dumpJsSym(fout, sym, typ, 1);
-					fputfmt(fout, "},\n", sym);
-				}
-				else {
-					// api dump for SciTE.
-					fputfmt(fout, "%+T", sym);
-					if (sym->call && sym->kind != TYPE_ref) {
-						fputfmt(fout, ": %+T", sym->type);
-					}
-					fputfmt(fout, "\n");
-				}
-				fflush(fout);
-				continue;
-			}
-
-			if (asm_dump >= 0 && sym->call && sym->kind == TYPE_ref) {
-				if (sym->cast != TYPE_ref) {
-					// function reference may point to null or another function.
-					dumpAsm = asm_dump;
-				}
-			}
-			if (ast_dump >= 0 && sym->init != NULL) {
-				dumpAst = ast_dump;
-			}
-
-			// filter symbols by request.
-			if (sym_dump < 0) {
-				// skip builtin symbols if not requested (with '-api').
-				if (sym->file == NULL && sym->line == 0) {
-					continue;
-				}
-				// skip symbol if there is nothing to dump.
-				if (!dumpAsm && !dumpAst) {
-					continue;
-				}
-			}
-
-			// print symbol definition location
-			if (sym->file != NULL && sym->line > 0) {
-				fputfmt(fout, "%s:%u: ", sym->file, sym->line);
-			}
-
-			// print qualified name with arguments
-			fputfmt(fout, "%+T: %+T {\n", sym, sym->type);
-
-			// print symbol info (kind, size, offset, ...)
-			if (sym_dump >= 0 && sym_dump & sym_attr) {
-				fputfmt(fout, "%I.kind:%?s%?s %s %?K\n", identExt
-					, sym->stat ? " static" : ""
-					, sym->cnst ? " const" : ""
-					, typ, sym->cast
-				);
-				fputfmt(fout, "%I.offset: %06x\n", identExt, sym->offs);
-				fputfmt(fout, "%I.size: %d\n", identExt, sym->size);
-			}
-
-			// explain params of the function
-			if (sym_dump >= 0 && sym_dump & sym_prms) {
-				symn param;
-				for (param = sym->prms; param; param = param->next) {
-					fputfmt(fout, "%I.param %T: %?+T (@%06x+%d->%K)\n", identExt, param, param->type, param->offs, param->size, param->cast);
-				}
-			}
-
-			if (dumpAst != 0) {
-				fputfmt(fout, "%I.syntaxTree: %?-1.*t", identExt, dumpAst, sym->init);
-				if (sym->init->kind != STMT_beg) {
-					fputfmt(fout, "\n");
-				}
-			}
-
-			// print disassembly of the function
-			if (dumpAsm != 0) {
-				fputfmt(fout, "%I.assembly [@%06x: %d] {\n", identExt, sym->offs, sym->size);
-				dumpasm(rt, fout, sym, ((identExt + 1) << 8) | (asm_dump & 0xff));
-				fputfmt(fout, "%I}\n", identExt);
-			}
-
-			// print usages of symbol
-			if (sym_dump >= 0 && sym_dump & sym_refs) {
-				astn usage;
-				int usages = 0;
-				int extUsages = 0;
-				for (usage = sym->used; usage; usage = usage->ref.used) {
-					if (usage->file && usage->line) {
-						int referenced = !(usage->file == sym->file && usage->line == sym->line);
-						fputfmt(fout, "%I%s:%u: %s as `%+t`\n", identExt, usage->file, usage->line, referenced ? "referenced" : "defined", usage);
-						#ifdef LOG_MAX_ITEMS
-						if ((usages += 1) > LOG_MAX_ITEMS) {
-							break;
-						}
-						#endif
-					}
-					else {
-						extUsages += 1;
-					}
-				}
-				if (extUsages > 0) {
-					fputfmt(fout, "%Iexternal references: %d\n", identExt, extUsages);
-				}
-				(void)usages;
-			}
-
-			fputfmt(fout, "}\n");
-			fflush(fout);
-		}
-
-		if (api_dump == 2) {
-			fputfmt(fout, "];\n", sym);
+		else {
+			customPrinterExtra dumpExtra = {
+				.sym_dump = sym_dump,
+				.ast_dump = ast_dump,
+				.asm_dump = asm_dump,
+				.indent = 1,
+				.rt = rt
+			};
+			dump(rt, &dumpExtra, (void*)customPrinter);
 		}
 	}
 
@@ -1119,10 +820,17 @@ int program(int argc, char* argv[]) {
 
 	// run code if there is no error.
 	if (run_code != 0 && rt->errc == 0) {
-		if (dbg != NULL && rt->dbg != NULL) {
-			rt->dbg->dbug = dbg;
-			rt->dbg->breakLt = rt->vm.ro;
-			rt->dbg->breakGt = rt->vm.px + px_size;
+		if (rt->dbg != NULL && run_code > 1) {
+			rt->dbg->dbug = run_code > 1 ? dbgConsole : NULL;
+			if (run_code > 2) {
+				// break on every instruction
+				rt->dbg->breakLt = rt->vm.px + px_size;
+				rt->dbg->breakGt = rt->vm.ro;
+			}
+			else {
+				rt->dbg->breakLt = rt->vm.ro;
+				rt->dbg->breakGt = rt->vm.px + px_size;
+			}
 		}
 		fputfmt(dmpf, "\n>/*-- exec:\n");
 		result = execute(rt, NULL, rt->_size / 4);
@@ -1147,7 +855,7 @@ int program(int argc, char* argv[]) {
 						if (sym == NULL) {
 							sym = mapsym(rt, dbg->start, 1);
 						}
-						fputfmt(dmpf, "%s:%u:[.%06x, .%06x): <%?.0T> hits(%D), time(%D%?+D / %.3F%?+.3F ms)\n"
+						fputfmt(dmpf, "%s:%u:[.%06x, .%06x): <%?T> hits(%D), time(%D%?+D / %.3F%?+.3F ms)\n"
 							, dbg->file, dbg->line, dbg->start, dbg->end, sym
 							, (int64_t)dbg->hits, (int64_t)dbg->funcTime, (int64_t)dbg->diffTime
 							, dbg->funcTime / (double)CLOCKS_PER_SEC, dbg->diffTime / (double)CLOCKS_PER_SEC
@@ -1168,7 +876,7 @@ int program(int argc, char* argv[]) {
 					if (sym != NULL) {
 						symOffs = dbg->start - sym->offs;
 					}
-						fputfmt(dmpf, "%s:%u:[.%06x, .%06x): <%?.0T+%d> hits(%D), time(%D%?+D / %.3F%?+.3F ms)\n"
+						fputfmt(dmpf, "%s:%u:[.%06x, .%06x): <%?T+%d> hits(%D), time(%D%?+D / %.3F%?+.3F ms)\n"
 							, dbg->file, dbg->line, dbg->start, dbg->end, sym, symOffs
 							, (int64_t)dbg->hits, (int64_t)dbg->funcTime, (int64_t)dbg->diffTime
 							, dbg->funcTime / (double)CLOCKS_PER_SEC, dbg->diffTime / (double)CLOCKS_PER_SEC
@@ -1273,17 +981,20 @@ static int dbgConsole(state rt, int pu, void* ip, void* sp, size_t ss, vmError e
 	 */
 	static char lastCommand = 'r';
 	char buff[1024];
+	customPrinterExtra dumpExtra = {
+		.asm_dump = 0x30,
+		.sym_dump = -1,
+		.ast_dump = -1,
+		.indent = 1,
+		.rt = rt
+	};
 
 	int brk = 0;
 	size_t i = vmOffset(rt, ip);
 	symn fun = mapsym(rt, i, 0);
 	dbgInfo dbg = mapDbgStatement(rt, i);
 
-	if (err != noError) {
-		// error executing opcode or libcall: abort execution
-		brk = 1;
-	}
-	else if (i < rt->dbg->breakLt) {
+	if (i < rt->dbg->breakLt) {
 		// scheduled break
 		brk = 2;
 	}
@@ -1299,16 +1010,15 @@ static int dbgConsole(state rt, int pu, void* ip, void* sp, size_t ss, vmError e
 	}
 
 	// no need to break, continue execution.
-	if (brk == 0) {
+	if (err == noError && brk == 0) {
 		return 0;
 	}
 
 	// print the error message in case of unhandled errors
-	if (!rt->dbg->checked) {
-		char *errorType = "Unknown error";
+	if (1 || printerrors || !rt->dbg->checked) {
+		char *errorType = NULL;
 		switch (err) {
 			case noError:
-				errorType = NULL;
 				break;
 
 			case invalidIP:
@@ -1350,18 +1060,20 @@ static int dbgConsole(state rt, int pu, void* ip, void* sp, size_t ss, vmError e
 		}
 
 		// print error type
-		if (errorType != NULL && fun != NULL) {
-			fputfmt(stdout, "%s in function: %+T <+%06x>\n", errorType, fun, i - fun->offs);
+		if (errorType != NULL) {
+			int funOffs = i;
+			if (fun != NULL) {
+				funOffs = i - fun->offs;
+			}
+			fputfmt(stdout, "%s in function: <%T+%06x>\n", errorType, fun, funOffs);
 		}
 
-		// print current opcode
+		// print current file position
 		if (dbg != NULL && dbg->file != NULL && dbg->line > 0) {
 			fputfmt(stdout, "%s:%u: ", dbg->file, dbg->line);
 		}
-		// print current opcode
-		fputfmt(stdout, "exec: .%06x: %9.*A\n", i, i, ip);
-
-		logTrace(rt, stdout, 1, -1, 256);
+		// print current instruction
+		dumpAsmCb(&dumpExtra, i, ip);
 	}
 	for ( ; ; ) {
 		char* arg = NULL;
@@ -1440,23 +1152,23 @@ static int dbgConsole(state rt, int pu, void* ip, void* sp, size_t ss, vmError e
 			case 0:
 				break;
 
-			case 'q' :		// abort
+			case 'q':		// abort
 				return -1;
-			case 'r' :		// resume
+			case 'r':		// resume
 				if (rt->dbg && dbg) {
 					rt->dbg->breakLt = rt->vm.ro;
 					rt->dbg->breakGt = rt->vm.px + px_size;
 				}
 				lastCommand = 'r';
 				return 0;
-			case 'a' :		// step over opcode
+			case 'a':		// step over opcode
 				if (rt->dbg && dbg) {
 					rt->dbg->breakLt = dbg->start;
 					rt->dbg->breakGt = dbg->start;
 				}
 				lastCommand = 'a';
 				return 0;
-			case 'n' :		// step over line
+			case 'n':		// step over line
 				if (rt->dbg && dbg) {
 					rt->dbg->breakLt = dbg->start;
 					rt->dbg->breakGt = dbg->end;
@@ -1465,23 +1177,20 @@ static int dbgConsole(state rt, int pu, void* ip, void* sp, size_t ss, vmError e
 				return 0;
 
 			// print
-			case 'p' :
+			case 'p':
 				if (*arg == 0) {
 					// print top of stack
-					if (ss > 0) {
-						if (printvars != NULL) {
-							fputfmt(stdout, "\tsp(%d/%d): ", 0, ss);
-							fputval(rt, stdout, printvars, (stkval*)sp, 0, prType);
-							fputfmt(stdout, "\n");
-						}
+					if (ss > 0 && printvars != NULL) {
+						fputfmt(stdout, "\tsp(%d/%d): ", 0, ss);
+						fputval(rt, stdout, printvars, (stkval*)sp, 0, prType);
+						fputfmt(stdout, "\n");
 					}
 					else {
 						for (i = 0; i < ss; i++) {
 							stkval* v = (stkval*)&((long*)sp)[i];
-							fputfmt(stdout, "\tsp(%d): {i32(%d), f32(%g), i64(%D), f64(%G)}\n", i, v->i4, v->f4, v->i8, v->f8);
+							fputfmt(stdout, "\tsp(%d): {0x%08x, i32(%d), f32(%f), i64(%D), f64(%F)}\n", i, v->i4, v->i4, v->f4, v->i8, v->f8);
 						}
 					}
-					// vmTags(rt, (void*)sptr, slen, 0);
 				}
 				else {
 					symn sym = ccFindSym(rt->cc, NULL, arg);
@@ -1493,7 +1202,7 @@ static int dbgConsole(state rt, int pu, void* ip, void* sp, size_t ss, vmError e
 				break;
 
 			// trace
-			case 't' :
+			case 't':
 				logTrace(rt, stdout, 1, 0, 20);
 				break;
 		}

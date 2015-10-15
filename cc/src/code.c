@@ -296,6 +296,23 @@ int optimizeAssign(state rt, size_t offsBegin, size_t offsEnd) {
 	return 0;
 }
 
+void iterateAsm(state rt, size_t offsBegin, size_t offsEnd, void *extra, int callBack(void *extra, size_t offs, void* ip)) {
+	size_t is, offs;
+	for (offs = offsBegin; offs < offsEnd; offs += is) {
+		register bcde ip = getip(rt, offs);
+		switch (ip->opc) {
+			error_opc:
+				error(rt, NULL, 0, "invalid opcode: %02x `%A`", ip->opc, ip);
+				return;
+
+			#define NEXT(__IP, __SP, __CHK) {if (__IP) is = (__IP);}
+			#define STOP(__ERR, __CHK, __ERC) if (__CHK) goto __ERR
+			#include "code.inl"
+		}
+		callBack(extra, offs, ip);
+	}
+}
+
 // base function emiting an ocode, see header
 size_t emitarg(state rt, vmOpcode opc, stkval arg) {
 	libc libcvec = rt->vm.libv;
@@ -1327,32 +1344,32 @@ static int exec(state rt, cell pu, symn fun, void* extra, int dbg(state, int, vo
 					return 0;
 
 				dbg_error_opc:
-					dbg(rt, err_code, ip, sp, pu->ss, invalidOpcode, err_code);
+					dbg(rt, err_code, ip, sp, st - sp, invalidOpcode, err_code);
 					return invalidOpcode;
 
 				dbg_error_ovf:
-					dbg(rt, err_code, ip, sp, pu->ss, stackOverflow, err_code);
+					dbg(rt, err_code, ip, sp, st - sp, stackOverflow, err_code);
 					return stackOverflow;
 
 				dbg_error_trace_ovf:
-					dbg(rt, err_code, ip, sp, pu->ss, traceOverflow, err_code);
+					dbg(rt, err_code, ip, sp, st - sp, traceOverflow, err_code);
 					return traceOverflow;
 
 				dbg_error_mem:
-					dbg(rt, err_code, ip, sp, pu->ss, segmentationFault, err_code);
+					dbg(rt, err_code, ip, sp, st - sp, segmentationFault, err_code);
 					return segmentationFault;
 
 				dbg_error_div_flt:
-					dbg(rt, err_code, ip, sp, pu->ss, divisionByZero, err_code);
+					dbg(rt, err_code, ip, sp, st - sp, divisionByZero, err_code);
 					// continue execution on floating point division by zero.
 					break;
 
 				dbg_error_div:
-					dbg(rt, err_code, ip, sp, pu->ss, divisionByZero, err_code);
+					dbg(rt, err_code, ip, sp, st - sp, divisionByZero, err_code);
 					return divisionByZero;
 
 				dbg_error_libc:
-					dbg(rt, err_code, ip, sp, pu->ss, libCallError, libcvec[ip->rel].sym->offs);
+					dbg(rt, err_code, ip, sp, st - sp, libCallError, libcvec[ip->rel].sym->offs);
 					return libCallError;
 
 				#define NEXT(__IP, __SP, __CHK) pu->sp -= vm_size * (__SP); pu->ip += (__IP);
@@ -1507,30 +1524,62 @@ int execute(state rt, void* extra, size_t ss) {
 	return exec(rt, pu, rt->init, extra, NULL);
 }
 
-
-void fputasm(FILE* fout, unsigned char* ptr, size_t len, size_t offs, state rt) {
-	size_t i;
+// TODO: ADD const char *esc[] ?
+void fputasm(FILE* fout, void *ptr, int mode, state rt) {
 	bcde ip = (bcde)ptr;
+	int i, len = mode & 0x0f;
+	size_t offs = (size_t)ptr;
+	char *fmt_addr = " .%06x"; // "0x%08x";
+	char *fmt_offs = " <%T+%d>";
+	symn sym = NULL;
+
+	if (rt != NULL) {
+		offs = vmOffset(rt, ptr);
+		if (mode & prAsmSyms) {
+			sym = mapsym(rt, offs, 0);
+		}
+	}
+
+	if (mode & prAsmAddr) {
+		if (sym != NULL) {
+			size_t symOffs = offs - sym->offs;
+			fputfmt(fout, fmt_offs + 1, sym, symOffs);
+
+			int paddLen = 3 + (symOffs != 0);
+			while (symOffs > 0) {
+				symOffs /= 10;
+				paddLen -= 1;
+			}
+			if (paddLen < 0) {
+				paddLen = 0;
+			}
+			fputfmt(fout, "% I", paddLen);
+		}
+		else {
+			fputfmt(fout, fmt_addr + 1, offs);
+		}
+		fputfmt(fout, ": ");
+	}
 
 	//~ write data as bytes
 	//~ TODO: symplify this
 	if (len > 1 && len < opc_tbl[ip->opc].size) {
 		for (i = 0; i < len - 2; i++) {
 			if (i < opc_tbl[ip->opc].size) {
-				fputfmt(fout, "%02x ", ptr[i]);
+				fputfmt(fout, "%02x ", ((unsigned char*)ptr)[i]);
 			}
 			else {
 				fputfmt(fout, "   ");
 			}
 		}
 		if (i < opc_tbl[ip->opc].size) {
-			fputfmt(fout, "%02x... ", ptr[i]);
+			fputfmt(fout, "%02x... ", ((unsigned char*)ptr)[i]);
 		}
 	}
 	else {
 		for (i = 0; i < len; i++) {
 			if (i < opc_tbl[ip->opc].size) {
-				fputfmt(fout, "%02x ", ptr[i]);
+				fputfmt(fout, "%02x ", ((unsigned char*)ptr)[i]);
 			}
 			else {
 				fputfmt(fout, "   ");
@@ -1563,22 +1612,25 @@ void fputasm(FILE* fout, unsigned char* ptr, size_t len, size_t offs, state rt) 
 		case opc_jmp:
 		case opc_jnz:
 		case opc_jz:
-			if (offs == (size_t)-1) {
-				fputfmt(fout, " %+d", ip->rel);
+		case opc_task: {
+			if (ip->opc == opc_task) {
+				fputfmt(fout, " %d,", ip->dl);
+				i = ip->cl;
 			}
 			else {
-				fputfmt(fout, " @%06x", offs + ip->rel);
+				i = ip->rel;
 			}
-			break;
-
-		case opc_task:
-			if (offs == (size_t)-1) {
-				fputfmt(fout, " %d, %d", ip->dl, ip->cl);
+			if (sym != NULL) {
+				fputfmt(fout, fmt_offs, sym, offs + i - sym->offs);
+			}
+			else if (mode & prAsmAddr) {
+				fputfmt(fout, fmt_addr, offs + i);
 			}
 			else {
-				fputfmt(fout, " %d, .%06x", ip->dl, offs + ip->cl);
+				fputfmt(fout, " %+d", i);
 			}
 			break;
+		}
 
 		case opc_sync:
 			fputfmt(fout, " %d", ip->idx);
@@ -1631,74 +1683,57 @@ void fputasm(FILE* fout, unsigned char* ptr, size_t len, size_t offs, state rt) 
 			fputfmt(fout, " %F", ip->arg.f8);
 			break;
 
-		case opc_lref: {
-			fputfmt(fout, " %x", ip->arg.u4);
-			if (rt != NULL) {
-				symn sym = mapsym(rt, ip->arg.u4, 0);
-				if (sym != NULL) {
-					fputfmt(fout, ": %+T", sym);
-					if (ip->arg.u4 > sym->offs) {
-						fputfmt(fout, "<+%06x>", ip->arg.u4 - sym->offs);
-					}
-					fputfmt(fout, ": %T", sym->type);
-				}
-				else {
-					char *str = getResStr(rt, ip->arg.u4);
-					if (str != NULL) {
-						fputfmt(fout, ": \"%s\"", str);
-					}
-				}
-			}
-			break;
-		}
-
 		case opc_ld32:
 		case opc_st32:
 		case opc_ld64:
 		case opc_st64:
-			fputfmt(fout, " %x", ip->rel);
+		case opc_lref:
+			if (ip->opc == opc_lref) {
+				offs = ip->arg.u4;
+			}
+			else {
+				offs = ip->rel;
+			}
+
+			if (ip->opc == opc_libc) {
+				fputfmt(fout, "(%d)", offs);
+			}
+			else {
+				fputfmt(fout, fmt_addr, offs);
+			}
 			if (rt != NULL) {
-				symn sym = mapsym(rt, ip->rel, 0);
+				symn sym = mapsym(rt, offs, 0);
 				if (sym != NULL) {
-					fputfmt(fout, ": %+T", sym);
-					if (ip->rel > sym->offs) {
-						fputfmt(fout, "<+%06x>", ip->rel - sym->offs);
-					}
-					fputfmt(fout, ": %T", sym->type);
+					fputfmt(fout, "; %+T%?+d", sym, offs - sym->offs);
 				}
 				else {
-					char *str = getResStr(rt, ip->rel);
+					char *str = getResStr(rt, offs);
 					if (str != NULL) {
-						fputfmt(fout, ": \"%s\"", str);
+						fputfmt(fout, "; \"%s\"", str);
 					}
 				}
 			}
 			break;
 
 		case opc_libc:
+			offs = ip->rel;
+			fputfmt(fout, "(%d)", offs);
+
 			if (rt != NULL) {
 				libc lc = NULL;
-				if (rt->cc && rt->cc->libc) {
-					lc = rt->cc->libc;
-					while (lc) {
-						if (lc->pos == ip->idx) {
+				if (rt->cc != NULL) {
+					for (lc = rt->cc->libc; lc; lc = lc->next) {
+						if (lc->pos == offs) {
 							break;
 						}
-						lc = lc->next;
 					}
 				}
 				else if (rt->vm.libv) {
-					lc = &((libc)rt->vm.libv)[ip->idx];
+					lc = &((libc)rt->vm.libv)[offs];
 				}
 				if (lc && lc->sym) {
-					fputfmt(fout, "(%d): %+T: %T", ip->idx, lc->sym, lc->sym->type);
+					fputfmt(fout, ": %+T", lc->sym);
 				}
-				else {
-					fputfmt(fout, "(%d)", ip->idx);
-				}
-			}
-			else {
-				fputfmt(fout, "(%d)", ip->idx);
 			}
 			break;
 
@@ -1711,74 +1746,10 @@ void fputasm(FILE* fout, unsigned char* ptr, size_t len, size_t offs, state rt) 
 		} break;
 	}
 }
-void dumpasm(state rt, FILE* fout, symn sym, int mode) {
-	int indent = (mode & 0xf00) >> 8;
-	int prSym = (mode & prAsmSyms) != 0;
-	int prStmt = (mode & prAsmStmt) != 0;
-
-	size_t is, i = sym->offs;
-	size_t end = i + sym->size;
-
-	for (; i < end; i += is) {
-		size_t offs = -1;
-		bcde ip = getip(rt, i);
-		symn sym = mapsym(rt, i, 0);
-
-		switch (ip->opc) {
-			error_opc:
-				error(rt, NULL, 0, "invalid opcode: %02x `%A`", ip->opc, ip);
-				return;
-
-			#define NEXT(__IP, __SP, __CHK) {if (__IP) is = (__IP);}
-			#define STOP(__ERR, __CHK, __ERC) if (__CHK) goto __ERR
-			#include "code.inl"
-		}
-
-		if (prStmt) {
-			dbgInfo dbg = mapDbgStatement(rt, i);
-			if (dbg != NULL && dbg->start == i && dbg->stmt) {
-				if ((mode & 0x30) != 0) {
-					fputfmt(fout, "%I%s:%u: [%06x-%06x): %t\n", indent, dbg->file, dbg->line, dbg->start - 0, dbg->end - 0, dbg->stmt);
-				}
-				else {
-					fputfmt(fout, "%I%s:%u: %t\n", indent, dbg->file, dbg->line, dbg->stmt);
-				}
-			}
-		}
-
-		if (indent) {
-			fputfmt(fout, "%I", indent);
-		}
-
-		switch (mode & (prAsmOffs|prAsmAddr)) {
-			default: // relative offsets
-				break;
-
-			case prAsmOffs: // local offsets
-				offs = i - sym->offs;
-				fputfmt(fout, "<%?.0T+%d>: ", prSym ? sym : NULL, offs);
-				break;
-
-			case prAsmAddr: // global offsets
-				offs = i;
-				fputfmt(fout, ".%06x: ", offs);
-				break;
-
-			case prAsmOffs + prAsmAddr: // global + local offsets
-				offs = i - sym->offs;
-				fputfmt(fout, ".%06x <%?.0T+%d>: ", i, prSym ? sym : NULL, offs);
-				break;
-		}
-
-		fputasm(fout, (void*)ip, mode & 0xf, offs, prSym ? rt : NULL);
-		fputc('\n', fout);
-	}
-}
 
 void fputval(state rt, FILE* fout, symn var, stkval* ref, int level, int mode) {
 	symn typ = var;
 	char* fmt = var->pfmt;
-
 
 	static int initStatic = 1;
 	static struct symNode func;	// for printig only
@@ -1832,10 +1803,6 @@ void fputval(state rt, FILE* fout, symn var, stkval* ref, int level, int mode) {
 		}
 		else {
 			fputfmt(fout, "%T%?c: ", var, byref);
-		}
-		if (var->call) {
-			// print return type.
-			fputfmt(fout, "%+T: ", var->type);
 		}
 	}
 
@@ -1932,8 +1899,13 @@ void fputval(state rt, FILE* fout, symn var, stkval* ref, int level, int mode) {
 				fputfmt(fout, "\n%I}", level);
 			}
 			else {
-				// empty struct.
-				fputfmt(fout, "@%?c%06x, size: %d", var->stat ? 0 : '+', var->offs, var->size);
+				// empty struct, typename, function, pointer
+				size_t offs = vmOffset(rt, ref);
+				symn sym = mapsym(rt, offs, 0);
+				if (sym != NULL) {
+					offs = offs - sym->offs;
+				}
+				fputfmt(fout, "<%?T%?+d@%06x>", sym, (int32_t)offs, vmOffset(rt, ref));
 			}
 		} break;
 		case TYPE_arr: {
@@ -2000,8 +1972,8 @@ void fputval(state rt, FILE* fout, symn var, stkval* ref, int level, int mode) {
 			fputfmt(fout, "]");
 			break;
 		}
-		case TYPE_def:
-			fputfmt(fout, "%+T: %+T", typ, typ->type);
+		case TYPE_def: 
+			fputfmt(fout, "%T: %+T", typ, typ->type);
 			break;
 		default:
 			fputfmt(fout, "%+T[ERROR(%K)]", typ, typ->kind);
@@ -2040,15 +2012,7 @@ static void traceArgs(state rt, FILE *outf, symn fun, char *file, int line, void
 			fputfmt(outf, "\n");
 		}
 		for (sym = fun->prms; sym; sym = sym->next) {
-			void *offs;
-
-			/* fun->prms should contain only function parameters.
-			if (sym->call)
-			continue;
-
-			if (sym->kind != TYPE_ref)
-			continue;
-			*/
+			char *offs = (char*)sp;
 
 			if (firstArg == 0) {
 				fputfmt(outf, ", ");
@@ -2067,10 +2031,15 @@ static void traceArgs(state rt, FILE *outf, symn fun, char *file, int line, void
 			}
 			dieif(sym->stat, ERR_INTERNAL_ERROR);
 
-			// 1 * vm_size holds the return value of the function.
-			offs = (char*)sp + fun->prms->offs + 1 * vm_size - sym->offs;
-
-			fputval(rt, outf, sym, offs, -ident, 0);
+			if (fun->kind == TYPE_ref) {
+				// vm_size holds the return value of the function.
+				offs += vm_size + fun->prms->offs - sym->offs;
+				fputval(rt, outf, sym, (void*)offs, -ident, 0);
+			}
+			else {
+				// TODO: find the offsets of arguments for libcalls.
+				fputfmt(outf, "%-T: %T", sym, sym->type);
+			}
 		}
 		if (ident > 0) {
 			fputfmt(outf, ")");

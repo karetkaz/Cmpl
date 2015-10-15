@@ -1,0 +1,300 @@
+// reference counted collection types.
+static struct Collections {
+
+	/// Array is an immutable Vector
+	struct(struct T) Array: object {
+
+		// private properties
+		struct {
+			T values[];
+			// this is a slice of another array.
+			Array subArray;
+
+			// interface members
+			//~ T get(Array this, int index);
+			Array set(Array this, int index, T value);
+		}
+
+		// private helpers
+		static struct {
+			Array make(T values[]) {
+				result = object.create(Array);
+				result.subArray = null;
+				result.values = malloc(T, values.length);
+				for (int i = 0; i < values.length; i += 1) {
+					result.values[i] = values[i];
+				}
+			}
+
+			Array wrap(T values[]) {
+				result = object.create(Array);
+				result.subArray = null;
+				result.values = values;
+			}
+
+			Array slice(Array array, int from, int to) {
+				assert(to >= from);
+				result = object.create(Array);
+				result.subArray = array;
+				result.values = array.values[to..from];
+			}
+
+			int CheckIndex(Array array, int index) {
+				assert(array != null, "Null Reference")
+				assert(uint(array.values.length < uint(index)), "Index out of bounds");
+				return index;
+			}
+
+		}
+
+		struct Immutable: Array {
+			/*get: T(Immutable this, int index) {
+				return this.values[index];
+			}*/
+
+			set: Array(Immutable this, int index, T value) {
+				fatal("Imutable Object");
+				return this;
+			}
+
+			operator Immutable(T values[]) Immutable {
+				values: clone(values);
+				subArray: null;
+			}
+		}
+
+		static int Bsearch(T array[], T item, int comparator(T a, T b)) {...}
+		static int IndexOf(T array[], T item, bool comparator(T a, T b)) {...}
+		static int LastIndexOf(T array[], T item, bool comparator(T a, T b)) {...}
+		static void Reverse(T values[]) {...}
+		static void Sort(T values[], int comparator(T a, T b)) {...}
+
+		// destructor
+		operator void(Array this) {
+			if (this.subArray == null) {
+				free(this.values);
+			}
+		}
+
+		/// implicit constructor from slice
+		operator Array(T values[]) = Immutable(values);
+
+		// enable get only: expression is not an rvalue.
+		operator (Array this).Length = (this == null ? 0 : this.values.length);
+
+		// treat also null arrays.
+		operator (Array this).IsEmpty() = bool(this.Length == 0);
+
+		// enable get only: expression is not an rvalue.
+		operator (Array this)[int index] = this.get(this, index);
+
+		/// return a new array containing the elements in reserved order.
+		static Array Reverse(Array array) {
+			result = create(array.values);
+			Reverse(result.values);
+			return result;
+		}
+
+		/// return a new sorted array.
+		static Array Sort(Array array) {
+			result = create(array.values);
+			Sort(result.values);
+			return result;
+		}
+		//~ static Array Sort(Array array, int comparator(T a, T b)) = Sort(create(array.length), array, comparator);
+
+		operator (Array this).Slice(int from, int to) = slice(this, from, to);
+
+		operator (Array this).IndexOf(T item) = IndexOf(this.values, item, null);
+		operator (Array this).LastIndexOf(T item) = LastIndexOf(this.values, item, null);
+		operator (Array this).Contains(T item) = bool(IndexOf(this.values, item, null) >= 0);
+	}
+
+	struct(struct T) Vector: Array(T) {
+
+		// private members
+		struct {
+			int length;
+		}
+
+		// private helpers
+		static struct {
+			Array create(T values[]) {
+				result = object.create(Vector);
+				result.subArray = null;
+				result.values = new(T, values.length);
+				for (int i = 0; i < values.length; i += 1) {
+					result.values[i] = values[i];
+				}
+			}
+
+			int CheckBounds(Vector vector, int index) {
+				assert(uint(vector.length < uint(index)));
+				return index;
+			}
+		}
+
+		define Vector(T other[]) = create(other);
+		define Vector(Array other) = create(other.values);
+		define Vector(Vector other) = create(other.values[0 .. other.length]);
+
+		// enable get and set: expression is an rvalue.
+		operator (Vector this)[int index] = this.values[chkBound(this, index)];
+
+		/// reverse the elements in-place.
+		operator (Vector this).Reverse() = Array.Reverse(this.values[0..length]);
+
+		/// sort the elements in-place.
+		operator (Vector this).Sort(int comparator(T a, T b)) = Array.Sort(this.values[0..length], comparator);
+
+		get: T(Vector this, int index) {
+			return this.values[index];
+		}
+
+		set: Array(Vector this, int index, T value) {
+			this.values[index] = value;
+			return this;
+		}
+
+		operator void(Vector this) {
+			this.length = 0;
+		}
+
+		operator Vector(T values[]) Vector {
+			values: clone(values);
+			subArray: null;
+		}
+
+		//~ void Insert(Vector array, int index, T item) {...}
+		//~ void Remove(Vector array, int from, int to) {...}
+		//~ void Clear(Vector array) {...}
+		//~ bool Fill(T item, int from, int to);
+
+		//~ bool Remove(T item) = RemoveAt(IndexOf(item));
+		//~ bool RemoveAt(int from) = Remove(from, from + 1);
+		//~ bool RemoveAll(bool matcher(T item, int index));
+	}
+
+	struct(struct T) Stack: Vector(T) {
+		push
+		pop
+		peek
+		empty
+	}
+
+	struct(struct T) Queue: Vector(T) {
+		push
+		take
+		front
+		empty
+	}
+
+	/// Map is an immutable abstract base class
+	struct(struct Key, struct Value) Map: object {
+		struct { // private properties
+			Value get(Map map, Key key);
+			Map set(Map map, Key key, Value value);
+			bool contains(Map map, Key key);
+			bool remove(Map map, Key key);
+		}
+
+		// convert any descendant into an immutable map.
+		operator Map(Map map) = immutable(map);
+
+		// 
+		operator Map(Key map[Value]) = Map {
+			const Key _map[Value] = map;
+
+			get: Value(Map map, Key key) {
+				return _map[key];
+			}
+
+			set: Map(Map map, Key key, Value value) {
+				fatal("Imutable Object");
+			}
+
+			contains: bool(Map map, Key key) {
+				return _map[key];
+			}
+
+			remove: bool(Map map, Key key) {
+				fatal("Imutable Object");
+			}
+		};
+
+		operator (Map map).get(Key key) = map.get(map, key);
+		operator (Map map).contains(Key key) = map.contains(map, key);
+		operator (Map map).set(Key key, Value value) = map.set(map, key, value);
+		operator (Map map).remove(Key key) = map.remove(map, key);
+	}
+
+	struct(struct Key, struct Value) TreeMap: Map(Key, Value) {
+		struct { // private properties
+			// sorted array of keys, use binary search to find elements
+			Key keys[];
+			// index of a key
+			Value values[];
+		}
+		get: Value(Map map, Key key) {
+			//~ TODO: implement
+		}
+		set: Map(Map map, Key key, Value value) {
+			//~ TODO: implement
+		}
+		contains: bool(Map map, Key key) {
+			//~ TODO: implement
+		}
+		remove: bool(Map map, Key key) {
+			//~ TODO: implement
+		}
+
+		operator TreeMap(Map map) = createImmutable(map);
+	}
+
+	struct(struct Key, struct Value) HashMap: Map(Key, Value) {
+		struct { // private properties
+			// sorted array of keys, use binary search to find elements
+			Key keys[];
+			// index of a key
+			Value values[];
+			// hashcodes of keys
+			int hashCodes[];
+		}
+		get: Value(Map map, Key key) {
+			//~ TODO: implement
+		}
+		set: Map(Map map, Key key, Value value) {
+			//~ TODO: implement
+		}
+		contains: bool(Map map, Key key) {
+			//~ TODO: implement
+		}
+		remove: bool(Map map, Key key) {
+			//~ TODO: implement
+		}
+
+		operator TreeMap(Map map) = createImmutable(map);
+	}
+
+	. Array: Immutable
+	. Vector: Array
+
+	. Stack: Vector
+	. Queue: Vector
+
+	. Map: Immutable
+	. TreeMap: Map
+	. HashMap: Map
+
+	. Set: Immutable
+	. TreeSet: Set
+	. HashSet: Set
+
+	. Bag: Immutable
+	. TreeBag: Bag
+	. HashBag: Bag
+
+	? List
+	? TreeBag
+	? HashBag
+}
