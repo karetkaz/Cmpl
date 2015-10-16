@@ -114,7 +114,7 @@ static void fputast(FILE* fout, const char *esc[], astn ast, int mode, int inden
 
 	switch (ast->kind) {
 		//#{ STMT
-		case STMT_do: {
+		case STMT_end: {
 			fputast(fout, esc, ast->stmt.stmt, mode, -indent);
 		} break;
 		case STMT_beg: {
@@ -289,13 +289,6 @@ static void fputast(FILE* fout, const char *esc[], astn ast, int mode, int inden
 			}
 			break;
 		}
-		case STMT_end:
-			fputstr(fout, esc, "}");
-			if (rlev > 1) {
-				// TODO: print list of variables to be freed.
-				fputstr(fout, esc, "// delete [...]");
-			}
-			break;
 		//#}
 		//#{ OPER
 		case OPER_fnc: {	// '()'
@@ -1079,7 +1072,7 @@ static void FPUTFMT(FILE* fout, const char *esc[], const char* msg, va_list ap) 
 			return;
 
 		//#{ STMT
-		case STMT_do:
+		case STMT_end:
 			fputesc(fout, escape, " stmt=\"%?+t\">\n", ast);
 			dumpxml(fout, ast->stmt.stmt, mode, level + 1, "expr");
 			fputesc(fout, escape, "%I</%s>\n", level, text);
@@ -1367,6 +1360,9 @@ static void dumpJsAst(FILE* fout, astn ast, const char *kind, int indent) {
 	static const char* KEY_VALUE = "value";
 	static const char* FMT_COMMENT = " // %t\n";
 
+	if (ast == NULL) {
+		return;
+	}
 	if (esc == NULL) {
 		// layzy initialize on first function call
 		static const char *esc_js[256];
@@ -1377,9 +1373,6 @@ static void dumpJsAst(FILE* fout, astn ast, const char *kind, int indent) {
 		esc_js['\''] = "\\'";
 		esc_js['\"'] = "\\\"";
 		esc = esc_js;
-	}
-	if (ast == NULL) {
-		return;
 	}
 	if (kind != NULL) {
 		fputesc(fout, esc, "%I%s: {", indent - 1, kind);
@@ -1404,11 +1397,7 @@ static void dumpJsAst(FILE* fout, astn ast, const char *kind, int indent) {
 			fatal(ERR_INTERNAL_ERROR);
 			fatal("%K", ast->kind);
 			return;
-			//#{ STMT
-		case STMT_do:
-			dumpJsAst(fout, ast->stmt.stmt, KEY_STMT, indent + 1);
-			break;
-
+		//#{ STMT
 		case STMT_beg: {
 			astn list;
 			fputesc(fout, esc, "%I%s: [{", indent, KEY_STMT);
@@ -1438,14 +1427,17 @@ static void dumpJsAst(FILE* fout, astn ast, const char *kind, int indent) {
 
 		case STMT_con:
 		case STMT_brk:
+			//fputesc(fout, esc, "%I%s: %d,\n", indent, KEY_OFFS, ast->go2.offs);
+			//fputesc(fout, esc, "%I%s: %d,\n", indent, KEY_ARGS, ast->go2.stks);
 			break;
 
+		case STMT_end:
 		case STMT_ret:
 			dumpJsAst(fout, ast->stmt.stmt, KEY_STMT, indent + 1);
 			break;
 
-			//#}
-			//#{ OPER
+		//#}
+		//#{ OPER
 		case OPER_fnc: {	// '()'
 			astn args = ast->op.rhso;
 			fputesc(fout, esc, "%I%s: [{", indent, KEY_ARGS);
@@ -1503,13 +1495,13 @@ static void dumpJsAst(FILE* fout, astn ast, const char *kind, int indent) {
 		case OPER_com:		// ','
 
 		case ASGN_set:		// '='
-			dumpJsAst(fout, ast->op.test, KEY_TEST, indent + 1);
+			dumpJsAst(fout, ast->op.test, KEY_TEST, indent + 1);	// not null for operator ?:
 			dumpJsAst(fout, ast->op.lhso, KEY_LHSO, indent + 1);
 			dumpJsAst(fout, ast->op.rhso, KEY_RHSO, indent + 1);
 			break;
 
-			//#}
-			//#{ TVAL
+		//#}
+		//#{ TVAL
 		case EMIT_opc:
 			//~ fputesc(fout, escape, " />\n", text);
 			//~ break;
@@ -1523,7 +1515,7 @@ static void dumpJsAst(FILE* fout, astn ast, const char *kind, int indent) {
 			fputesc(fout, esc, "%I%s: \"%t\"\n", indent, KEY_VALUE, ast);
 			break;
 
-			//#}
+		//#}
 	}
 
 	if (kind != NULL) {

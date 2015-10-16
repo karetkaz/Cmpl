@@ -1024,6 +1024,7 @@ static int dbgConsole(state rt, int pu, void* ip, void* sp, size_t ss, vmError e
 			case invalidIP:
 				errorType = "Invalid instruction pointer";
 				break;
+
 			case invalidSP:
 				errorType = "Invalid stack pointer";
 				break;
@@ -1043,12 +1044,14 @@ static int dbgConsole(state rt, int pu, void* ip, void* sp, size_t ss, vmError e
 
 			case libCallError:
 				errorType = "External call error";
-				//fputfmt(stdout, "External call returned an error [@%06x]: @%+T\n", fp, mapsym(rt, fp, 1));
-				//errorType = NULL;
 				break;
 
-			case segmentationFault:
-				errorType = "Illegal memory access";
+			case memReadError:
+				errorType = "Access violation reading memory";
+				break;
+
+			case memWriteError:
+				errorType = "Access violation writing memory";
 				break;
 
 			default:

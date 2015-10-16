@@ -11,7 +11,7 @@ void stackOverflow(int x) {
 	int a[] = emit(struct, pointer(null), int(0));
 	//~ debug("Fatal error", variant(&info), -1, 0);
 	//~ int8 fasterStackOverflow[8 << 20 - 1];
-	//~ a[0] = x;
+	a[0] = x;
 	stackOverflow(x + 1);
 }
 //~ debug("Fatal error", variant(&info), -1, 0);

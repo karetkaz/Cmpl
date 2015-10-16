@@ -7,7 +7,7 @@ void f(int &arg) {
 	}
 	int n2 = arg - 1;
 	f(&n2);
-	//~ testFunction(emit(struct, ref(f)), pointer(n2));
+	//~ tryExec(emit(struct, ref(f)), pointer(n2));
 }
 
 int N = 4;
@@ -46,11 +46,11 @@ void f3(pointer maxRecursiveCalls) {
 	if ((n2 % 6) != 0) {
 		return f3(pointer(&n2));
 	}
-	testFunction(f3, pointer(&n2));
+	tryExec(f3, pointer(&n2));
 }
 
-//~ BUG: void testFunction2(void cb(double x, debugInfo info, int n), int n, debugInfo &info) {
-void testFunction2(void cb(double x, debugInfo &info, int n), int n, debugInfo info) {
+//~ BUG: void tryExec2(void cb(double x, debugInfo info, int n), int n, debugInfo &info) {
+void tryExec2(void cb(double x, debugInfo &info, int n), int n, debugInfo info) {
 	cb(n * 3.14, &info, n);
 }
 void f4(double x, debugInfo &info, int maxRecursiveCalls) {
@@ -58,12 +58,12 @@ void f4(double x, debugInfo &info, int maxRecursiveCalls) {
 		trace("stack trace :)");
 		return;
 	}
-	testFunction2(f4, maxRecursiveCalls - 1, info);
+	tryExec2(f4, maxRecursiveCalls - 1, info);
 }
 
 int n = 9;
-testFunction(f3, pointer(&n));
+tryExec(f3, pointer(&n));
 //~ int a = 9;
 //~ debugInfo info = debugInfo("fail", 1, 2, 3);
-//~ testFunction2(f4, n, info);
+//~ tryExec2(f4, n, info);
 //~ +/

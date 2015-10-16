@@ -1355,9 +1355,13 @@ static int exec(state rt, cell pu, symn fun, void* extra, int dbg(state, int, vo
 					dbg(rt, err_code, ip, sp, st - sp, traceOverflow, err_code);
 					return traceOverflow;
 
-				dbg_error_mem:
-					dbg(rt, err_code, ip, sp, st - sp, segmentationFault, err_code);
-					return segmentationFault;
+				dbg_error_mem_read:
+					dbg(rt, err_code, ip, sp, st - sp, memReadError, err_code);
+					return memReadError;
+
+				dbg_error_mem_write:
+					dbg(rt, err_code, ip, sp, st - sp, memWriteError, err_code);
+					return memWriteError;
 
 				dbg_error_div_flt:
 					dbg(rt, err_code, ip, sp, st - sp, divisionByZero, err_code);
@@ -1421,9 +1425,13 @@ static int exec(state rt, cell pu, symn fun, void* extra, int dbg(state, int, vo
 				dbgDummy(rt, err_code, ip, sp, pu->ss, stackOverflow, err_code);
 				return stackOverflow;
 
-			error_mem:
-				dbgDummy(rt, err_code, ip, sp, pu->ss, segmentationFault, err_code);
-				return segmentationFault;
+			error_mem_read:
+				dbgDummy(rt, err_code, ip, sp, pu->ss, memReadError, err_code);
+				return memReadError;
+
+			error_mem_write:
+				dbgDummy(rt, err_code, ip, sp, pu->ss, memWriteError, err_code);
+				return memWriteError;
 
 			error_div_flt:
 				dbgDummy(rt, err_code, ip, sp, pu->ss, divisionByZero, err_code);
@@ -1778,8 +1786,8 @@ void fputval(state rt, FILE* fout, symn var, stkval* ref, int level, int mode) {
 
 		//~ fputfmt(fout, "@%06x", vmOffset(rt, ref));
 		if (var != typ && var->cast == TYPE_ref && ref != NULL) {	// indirect reference
-			//~ fputfmt(fout, "->@%06x", vmOffset(rt, ref));
 			ref = getip(rt, ref->u4);
+			//~ fputfmt(fout, "->@%06x", vmOffset(rt, ref));
 		}
 		//~ fputfmt(fout, ": ");
 	}

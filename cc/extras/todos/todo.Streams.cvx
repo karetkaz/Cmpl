@@ -43,7 +43,6 @@ int sizeofFileInputStream = sizeof(FileInputStream);
 //~ FileInputStream fis = {file: File.Open("string.cvx")};
 //~ FileInputStream fis = emit(FileInputStream, memmgr(null, sizeof(FileInputStream)));
 
-
 /+struct Stream: InputStream + OutputStream;
 	> TeeStream: Stream
 	> PipeStream: Stream
@@ -53,8 +52,8 @@ struct RandomAccessStream: Stream {long seek(long offset, Direction dir);}
 	> FileStream: RandomAccessStream {FileStream open(String file);}
 	> MemoryStream: RandomAccessStream
 
-struct Encoder {InputStream stream; bool closeStream; int read(Encoder, byte[]);}
-struct Decoder {OutputStream stream; bool closeStream; int write(Decoder, byte[]);}
+struct Encoder {OutputStream stream; bool closeStream; int write(Encoder, byte[]);}
+struct Decoder {InputStream stream; bool closeStream; int read(Decoder, byte[]);}
 	> Base64
 	> Url
 

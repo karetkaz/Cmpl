@@ -13,16 +13,16 @@ static void dumpTree(state rt, astn ast, size_t offsStart, size_t offsEnd) {
 #if defined(DEBUGGING) && DEBUGGING > 1
 	struct symNode dbg;
 	if (rt->logf != NULL) {
-	memset(&dbg, 0, sizeof(dbg));
+		memset(&dbg, 0, sizeof(dbg));
 		dbg.kind = TYPE_ref;
 		dbg.name = "error";
 		dbg.call = 1;
 		dbg.init = ast;
 		dbg.offs = offsStart;
 		dbg.size = offsEnd - offsStart;
-		//dump(rt, dump_ast | dump_asm | 0x1ff, &dbg);
 		//dumpxml(rt->logf, ast, 0xff, 0, "code");
-		dumpasm(rt, rt->logf, &dbg, 0x1d9);
+		// TODO: dump for single symbol
+		// dump(rt, NULL, NULL);
 	}
 #endif
 }
@@ -499,16 +499,6 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 			return TYPE_any;
 
 		//#{ STATEMENTS
-		case STMT_do: {	// expr statement
-			size_t stpos = stkoffs(rt, 0);
-			if (!cgen(rt, ast->stmt.stmt, TYPE_vid)) {
-				traceAst(ast);
-				return TYPE_any;
-			}
-			if (stpos > stkoffs(rt, 0)) {
-				error(rt, ast->file, ast->line, "statement underflows stack: %+t", ast->stmt.stmt);
-			}
-		} break;
 		case STMT_beg: {	// {} or function body
 			size_t stpos = stkoffs(rt, 0);
 			size_t ippar = 0;
@@ -557,6 +547,98 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 				fixjump(rt, ippar, emitopc(rt, markIP), rt->vm.su * vm_size);
 				emitint(rt, opc_sync, 0);
 				debug("parallel data on stack: %d", rt->vm.su);
+			}
+		} break;
+		case STMT_for: {
+			astn jl = rt->cc->jmps;
+			size_t lincr;
+			size_t jstep, lcont, lbody, lbreak;
+			size_t stbreak, stpos = stkoffs(rt, 0);
+
+			dieif(get != TYPE_vid, ERR_INTERNAL_ERROR);
+
+			if (ast->stmt.init && !cgen(rt, ast->stmt.init, TYPE_vid)) {
+				traceAst(ast);
+				return TYPE_any;
+			}
+
+			if (!(jstep = emitopc(rt, opc_jmp))) {		// continue;
+				traceAst(ast);
+				return TYPE_any;
+			}
+
+			lbody = emitopc(rt, markIP);
+			if (ast->stmt.stmt && !cgen(rt, ast->stmt.stmt, TYPE_vid)) {
+				traceAst(ast);
+				return TYPE_any;
+			}
+
+			lcont = emitopc(rt, markIP);
+			if (ast->stmt.step && !cgen(rt, ast->stmt.step, TYPE_vid)) {
+				traceAst(ast);
+				return TYPE_any;
+			}
+
+			lincr = emitopc(rt, markIP);
+			fixjump(rt, jstep, emitopc(rt, markIP), -1);
+			if (ast->stmt.test) {
+				if (!cgen(rt, ast->stmt.test, TYPE_bit)) {
+					traceAst(ast);
+					return TYPE_any;
+				}
+				if (!emitint(rt, opc_jnz, lbody)) {		// continue;
+					traceAst(ast);
+					return TYPE_any;
+				}
+			}
+			else {
+				if (!emitint(rt, opc_jmp, lbody)) {		// continue;
+					traceAst(ast);
+					return TYPE_any;
+				}
+			}
+
+			lbreak = emitopc(rt, markIP);
+			stbreak = stkoffs(rt, 0);
+
+			if (rt->dbg != NULL) {
+				if (lcont < lincr) {
+					addDbgStatement(rt, lcont, lincr, ast->stmt.step);
+				}
+				if (lincr < lbreak) {
+					addDbgStatement(rt, lincr, lbreak, ast->stmt.test);
+				}
+				/*if (lcont < lbreak) {
+					addDbgSatement(rt, lcont, lbreak, ast);
+				}*/
+			}
+
+			while (rt->cc->jmps != jl) {
+				astn jmp = rt->cc->jmps;
+				rt->cc->jmps = jmp->next;
+
+				if (jmp->go2.stks != stbreak) {
+					error(rt, jmp->file, jmp->line, "`%t` statement is invalid due to previous variable declaration within loop", jmp);
+					return TYPE_any;
+				}
+				switch (jmp->kind) {
+					default :
+						error(rt, jmp->file, jmp->line, "invalid goto statement: %t", jmp);
+						return TYPE_any;
+
+					case STMT_brk:
+						fixjump(rt, jmp->go2.offs, lbreak, jmp->go2.stks);
+						break;
+
+					case STMT_con:
+						fixjump(rt, jmp->go2.offs, lcont, jmp->go2.stks);
+						break;
+				}
+			}
+
+			//~ TODO: destruct(ast->stmt.test)
+			if (stpos != stkoffs(rt, 0)) {
+				dieif(!emitidx(rt, opc_drop, stpos), ERR_INTERNAL_ERROR);
 			}
 		} break;
 		case STMT_if:  {
@@ -666,98 +748,6 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 			//~ TODO: destruct(ast->stmt.test)
 			dieif(stpos != stkoffs(rt, 0), "invalid stacksize(%d:%d) in statement %+t", stkoffs(rt, 0), stpos, ast);
 		} break;
-		case STMT_for: {
-			astn jl = rt->cc->jmps;
-			size_t lincr;
-			size_t jstep, lcont, lbody, lbreak;
-			size_t stbreak, stpos = stkoffs(rt, 0);
-
-			dieif(get != TYPE_vid, ERR_INTERNAL_ERROR);
-
-			if (ast->stmt.init && !cgen(rt, ast->stmt.init, TYPE_vid)) {
-				traceAst(ast);
-				return TYPE_any;
-			}
-
-			if (!(jstep = emitopc(rt, opc_jmp))) {		// continue;
-				traceAst(ast);
-				return TYPE_any;
-			}
-
-			lbody = emitopc(rt, markIP);
-			if (ast->stmt.stmt && !cgen(rt, ast->stmt.stmt, TYPE_vid)) {
-				traceAst(ast);
-				return TYPE_any;
-			}
-
-			lcont = emitopc(rt, markIP);
-			if (ast->stmt.step && !cgen(rt, ast->stmt.step, TYPE_vid)) {
-				traceAst(ast);
-				return TYPE_any;
-			}
-
-			lincr = emitopc(rt, markIP);
-			fixjump(rt, jstep, emitopc(rt, markIP), -1);
-			if (ast->stmt.test) {
-				if (!cgen(rt, ast->stmt.test, TYPE_bit)) {
-					traceAst(ast);
-					return TYPE_any;
-				}
-				if (!emitint(rt, opc_jnz, lbody)) {		// continue;
-					traceAst(ast);
-					return TYPE_any;
-				}
-			}
-			else {
-				if (!emitint(rt, opc_jmp, lbody)) {		// continue;
-					traceAst(ast);
-					return TYPE_any;
-				}
-			}
-
-			lbreak = emitopc(rt, markIP);
-			stbreak = stkoffs(rt, 0);
-
-			if (rt->dbg != NULL) {
-				if (lcont < lincr) {
-					addDbgStatement(rt, lcont, lincr, ast->stmt.step);
-				}
-				if (lincr < lbreak) {
-					addDbgStatement(rt, lincr, lbreak, ast->stmt.test);
-				}
-				/*if (lcont < lbreak) {
-					addDbgSatement(rt, lcont, lbreak, ast);
-				}*/
-			}
-
-			while (rt->cc->jmps != jl) {
-				astn jmp = rt->cc->jmps;
-				rt->cc->jmps = jmp->next;
-
-				if (jmp->go2.stks != stbreak) {
-					error(rt, jmp->file, jmp->line, "`%t` statement is invalid due to previous variable declaration within loop", jmp);
-					return TYPE_any;
-				}
-				switch (jmp->kind) {
-					default :
-						error(rt, jmp->file, jmp->line, "invalid goto statement: %t", jmp);
-						return TYPE_any;
-
-					case STMT_brk:
-						fixjump(rt, jmp->go2.offs, lbreak, jmp->go2.stks);
-						break;
-
-					case STMT_con:
-						fixjump(rt, jmp->go2.offs, lcont, jmp->go2.stks);
-						break;
-				}
-			}
-
-			//~ TODO: destruct(ast->stmt.test)
-			if (stpos != stkoffs(rt, 0)) {
-				dieif(!emitidx(rt, opc_drop, stpos), ERR_INTERNAL_ERROR);
-			}
-		} break;
 		case STMT_con:
 		case STMT_brk: {
 			size_t offs;
@@ -772,6 +762,16 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 
 			ast->next = rt->cc->jmps;
 			rt->cc->jmps = ast;
+		} break;
+		case STMT_end: {	// expr statement
+			size_t stpos = stkoffs(rt, 0);
+			if (!cgen(rt, ast->stmt.stmt, TYPE_vid)) {
+				traceAst(ast);
+				return TYPE_any;
+			}
+			if (stpos > stkoffs(rt, 0)) {
+				error(rt, ast->file, ast->line, "statement underflows stack: %+t", ast->stmt.stmt);
+			}
 		} break;
 		case STMT_ret: {
 			//~ TODO: declared reference variables should be freed.
@@ -1506,7 +1506,7 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 				symn typ = ast->op.lhso->type;
 				//~ assign a reference type by reference
 				if (typ->kind == TYPE_rec && typ->cast == TYPE_ref) {
-					trace("reference assignment: %+t", ast);
+					debug("reference assignment: %+t", ast);
 					dieif(got != TYPE_ref, ERR_INTERNAL_ERROR);
 					refAssign = ASGN_set;
 					size = vm_size;
@@ -1742,7 +1742,7 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 
 					// string a = null;		// initialization with null
 					else if (rt->cc->null_ref == linkOf(val)) {
-						trace("assigning null: %-T", var);
+						debug("assigning null: %-T", var);
 						val->cst2 = got = TYPE_ref;
 					}
 
@@ -2240,7 +2240,7 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 	}
 
 	#ifdef DEBUGGING
-	logif(stmt_qual != 0, "unimplemented qualified statement `%-t`: %?K", ast, stmt_qual);
+	logif(stmt_qual != 0, "unimplemented qualified statement %?K: %t", stmt_qual, ast);
 	#endif
 
 	return got;
@@ -2459,7 +2459,7 @@ int gencode(state rt, int mode) {
 					init->cst2 = var->cast;
 					init->ref.link = var;
 
-					init = opnode(cc, STMT_do, NULL, init);
+					init = opnode(cc, STMT_end, NULL, init);
 					init->type = cc->type_vid;
 					init->file = var->file;
 					init->line = var->line;

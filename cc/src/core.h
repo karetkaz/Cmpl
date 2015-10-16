@@ -21,7 +21,7 @@
 	4: print generated assembly
 	5: print non pre-mapped strings, non static types
 */
-#define DEBUGGING 0
+//~ #define DEBUGGING 0
 
 // enable paralell execution stuff
 //~ #define VM_MAX_PROCS 1
@@ -41,26 +41,25 @@
 #ifndef DEBUGGING
 #define logif(__EXP, msg, ...) do {} while(0)
 #define trace(msg, ...) do {} while(0)
-#define trloop(msg, ...) do {} while(0)
+#define traceAst(__AST) do {} while(0)
+#define traceLoop(msg, ...) do {} while(0)
 #define debug(msg, ...) do {} while(0)
 #else
 #define logif(__EXP, msg, ...) do {if (__EXP) prerr("todo", msg, ##__VA_ARGS__);} while(0)
 
 #if DEBUGGING > 0	// enable trace
 #define trace(msg, ...) do { prerr("trace", msg, ##__VA_ARGS__); _break(); } while(0)
-#define trloop(msg, ...) //do { prerr("trace", msg, ##__VA_ARGS__); } while(0)
 #else
 #define trace(msg, ...) do {} while(0)
-#define trloop(msg, ...) do {} while(0)
 #endif
 #if DEBUGGING > 1	// enable debug
 #define debug(msg, ...) do { prerr("debug", msg, ##__VA_ARGS__); } while(0)
 #else
 #define debug(msg, ...) do {} while(0)
 #endif
+#define traceAst(__AST) do { trace("%+t", __AST); _break(); } while(0)
+#define traceLoop(msg, ...) //do { prerr("trace", msg, ##__VA_ARGS__); } while(0)
 #endif
-
-#define traceAst(__AST) do { prerr("trace", "%+t", __AST); _break(); } while(0)
 
 // internal errors (not aborting!?)
 //~ #define fatal(msg, ...) do { prerr("internal error", msg, ##__VA_ARGS__); abort(); } while(0)
@@ -213,8 +212,9 @@ typedef enum {		// vm errors
 	stackOverflow,
 	traceOverflow,
 	divisionByZero,
-	libCallError,
-	segmentationFault // TODO: separate read and write
+	memReadError,
+	memWriteError,
+	libCallError
 	//~ executionAborted		// execution aborted by debuger
 	//~ + ArrayBoundsExceeded
 	//~ + divisionByZeroFloat

@@ -657,7 +657,7 @@ static int readTok(ccState cc, astn tok) {
 			break;
 
 		case ';':
-			tok->kind = STMT_do;
+			tok->kind = STMT_end;
 			break;
 
 		case ',':
@@ -677,7 +677,7 @@ static int readTok(ccState cc, astn tok) {
 			break;
 
 		case '}':
-			tok->kind = STMT_end;
+			tok->kind = PNCT_rcb;
 			break;
 
 		case ']':
@@ -1030,7 +1030,7 @@ static int readTok(ccState cc, astn tok) {
 				{"const", ATTR_const},
 				{"continue", STMT_con},
 				{"define", TYPE_def},
-				{"else", STMT_els},
+				{"else", ELSE_kwd},
 				{"emit", EMIT_opc},
 				{"enum", ENUM_kwd},
 				{"for", STMT_for},
@@ -1357,8 +1357,8 @@ ccToken skiptok(ccState cc, ccToken kind, int raise) {
 		}
 
 		switch (kind) {
-			case STMT_do:
 			case STMT_end:
+			case PNCT_rcb:
 			case PNCT_rp:
 			case PNCT_rc:
 				break;
@@ -1367,9 +1367,9 @@ ccToken skiptok(ccState cc, ccToken kind, int raise) {
 				return TYPE_any;
 		}
 		while (!skip(cc, kind)) {
-			if (skip(cc, STMT_do))
-				return TYPE_any;
 			if (skip(cc, STMT_end))
+				return TYPE_any;
+			if (skip(cc, PNCT_rcb))
 				return TYPE_any;
 			if (skip(cc, PNCT_rp))
 				return TYPE_any;

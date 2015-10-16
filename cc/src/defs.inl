@@ -26,14 +26,15 @@ TOKDEF(TYPE_ref, 0x00, 0, ".ref")                // type: variable, cast: by ref
 //~ Statements =================================================================
 //! keep STMT_beg the first and STMT_end the last statement token
 TOKDEF(STMT_beg, 0x00, 0, ".beg")                // stmt: list {...}
-TOKDEF(STMT_do,  0x00, 0, ";")                   // stmt: with a statement
+
 TOKDEF(STMT_for, 0x00, 0, "for")                 // stmt: for, while, repeat
 TOKDEF(STMT_if,  0x00, 0, "if")                  // stmt: if then else
-TOKDEF(STMT_els, 0x00, 0, "else")                // ????
-TOKDEF(STMT_brk, 0x00, 0, "break")               // stmt: break
+
 TOKDEF(STMT_con, 0x00, 0, "continue")            // stmt: continue
+TOKDEF(STMT_brk, 0x00, 0, "break")               // stmt: break
+
 TOKDEF(STMT_ret, 0x00, 0, "return")              // stmt: return
-TOKDEF(STMT_end, 0x00, 0, ".end")                // destruct calls ?
+TOKDEF(STMT_end, 0x00, 0, ";")                   // stmt: expression
 
 //~ Operators ==================================================================
 TOKDEF(OPER_fnc, 0x0f, 2, ".call")               // a(x): function call, cast, emit, ctor = <typename>(args...), dtor ?= void(<typename> &&variable), ...
@@ -88,15 +89,17 @@ TOKDEF(OPER_com, 0x01, 2, ",")                   // a, b
 
 //~ temp =======================================================================
 
-TOKDEF(PNCT_lc , 0x00, 0, "[")                   // curlies
-TOKDEF(PNCT_rc , 0x00, 0, "]")
-TOKDEF(PNCT_lp , 0x00, 0, "(")                   // parentheses
-TOKDEF(PNCT_rp , 0x00, 0, ")")
+TOKDEF(PNCT_lp , 0x00, 0, "(")                   // Left parenthesis
+TOKDEF(PNCT_rp , 0x00, 0, ")")                   // Right parenthesis
+TOKDEF(PNCT_lc , 0x00, 0, "[")                   // Left square bracket
+TOKDEF(PNCT_rc , 0x00, 0, "]")                   // Right square bracket
+TOKDEF(PNCT_rcb, 0x00, 0, "}")                   // Right curly bracket
 TOKDEF(PNCT_qst, 0x00, 0, "?")                   // question mark
 TOKDEF(PNCT_cln, 0x00, 0, ":")                   // colon
 
 TOKDEF(EMIT_opc, 0x00, 0, "emit")                // opcodes in emit(args...)
 TOKDEF(ENUM_kwd, 0x00, 0, "enum")                // enum keyword
+TOKDEF(ELSE_kwd, 0x00, 0, "else")                // else keyword
 
 //~ TOKDEF(USNG_kwd, 0x00, 0, "using")
 //~ TOKDEF(OPER_kwd, 0x00, 0, "operator")

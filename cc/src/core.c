@@ -343,7 +343,11 @@ int ccSymValFlt(symn sym, double* res) {
 /// Lookup symbol by offset; @see state.api.mapsym
 symn mapsym(state rt, size_t offs, int callsOnly) {
 	symn sym = NULL;
-	dieif(offs > rt->vm.px + px_size, "invalid offset: %06x", offs);
+	dieif(offs > rt->_size, "invalid offset: %06x", offs);
+	if (offs > rt->vm.px + px_size) {
+		// local variable on stack ?
+		return NULL;
+	}
 	for (sym = rt->defs; sym; sym = sym->gdef) {
 		if (callsOnly && !sym->call) {
 			continue;

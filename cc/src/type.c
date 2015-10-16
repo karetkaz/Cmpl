@@ -207,7 +207,7 @@ static symn installref(state rt, const char* prot, astn* argv) {
 
 	dieif(root == NULL, "error declaring: %s", prot);
 
-	dieif(!skip(rt->cc, STMT_do), "`;` expected declaring: %s", prot);
+	dieif(!skip(rt->cc, STMT_end), "`;` expected declaring: %s", prot);
 
 	dieif(ccDone(rt->cc) != 0, "FixMe");
 

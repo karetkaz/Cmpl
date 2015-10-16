@@ -1374,8 +1374,8 @@ static struct Debug {
 
 		notrace = 0;
 		defTrace = 125;
-		abortTrace = 0;//defTrace;
-		assertTrace = 0;//defTrace;
+		abortTrace = defTrace;
+		assertTrace = defTrace;
 	}
 
 	//~ int Priority = verbose;
