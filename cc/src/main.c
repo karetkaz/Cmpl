@@ -1,33 +1,51 @@
 /* command line options
 application [global options] [local options]...
 
-	<global options>:
-		-g[d][-]<int>			generate
-			d:					generate debug info
-			-:					generate globals on stack
-			int:				optimization level, max 255
+<global options>:
+    -std<file>              specify custom standard library file.
+                            empty file name disables std library compilation.
 
-		-x[v][d|D[:<type>]]		execute
-			v:					print global variable values
-			d|D:				debug application
-			<type>				print top of stack as it would be a variable of type
-				ex: -xd:int32[20]
+    -log <file>             set logger for: errors, warnings, runtime logging
+    +out <file>             set output for: api, assembly, abstract syntax tree, coverage, call tree
 
-		-l <file>				logger
-		-o <file>				output
+    +doc[<hex>]             dump documentation
+    -api[<hex>]             dump symbols
+    -ast[<hex>]             dump syntax tree
+    -asm[<hex>]             dump assembly
+    +cov[<hex>]             dump profiling: coverage, method, call tree
 
-		-api[<hex>][.<sym>]		output symbols
-		-asm[<hex>][.<fun>]		output assembly
-		-ast[<hex>]				output syntax tree
+    -run                    run without: debug information, stacktrace, bounds checking, ...
+    -dbg[<hex>][*]          run with attached debugger, break on uncaught errors
+        a                   break on caught errors
+        s                   break on startup
+        t                   print profiler results
+        h                   print allocated heap memory
+        v                   print global variable values
 
-		--[s|c]*				TEMP: skip: stdlib | code geration
+<local options>:
+    <file>                  if file extension is (.so|.dll) load as library else compile
+    -b<int>                 break point on <int> line in current file
+    -d<int>                 trace point on <int> line in current file
+    -w[a|x|<hex>]           set or disable warning level for current file
 
-	<local options>:
-		-w[a|x|<hex>]			set warning level
-		-L<file>				load library (.so|.dll)
-		-C<file>				compile source
-		-b<int>					breakpoint on line
-		<file>					if file extension is (.so|.dll) load as library else compile
+examples:
+>app -out api.js -api
+    dump builtin symbols to api.js file (types, functions, variables, aliases)
+
+>app -run test.tracing.ccc
+    dump builtin symbols to api.js file (types, functions, variables, aliases)
+
+?
+>app -dbg -lgl.so -w0 gl.ccc -w0 test.ccc -wx -b12 -b15 -d19
+        execute in debug mode
+        import gl.so
+            with no warnings
+        compile gl.ccc
+            with no warnings
+        compile test.ccc
+            treating all warnings as errors
+            break execution on lines 12 and 15
+            print stacktrace when line 19 is executing
 */
 
 //~ (wcl386 -cc -q -ei -6s -d0  -fe=../main *.c) && (rm -f *.o *.obj *.err)
@@ -40,11 +58,10 @@ application [global options] [local options]...
 #define USEPLUGINS
 
 // default values
-static const int wl = 19;			// default warning level
-static const int ol = 2;			// default optimization level
-static char mem[8 << 20];			// 8MB runtime memory
-
-const char* STDLIB = "stdlib.cvx";		// standard library
+static const int wl = 15;           // default warning level
+static const int ol = 2;            // default optimization level
+static char mem[8 << 20];           // 8MB runtime memory
+const char* STDLIB = "stdlib.cvx";  // standard library
 
 #ifdef __linux__
 #define stricmp(__STR1, __STR2) strcasecmp(__STR1, __STR2)
@@ -150,10 +167,9 @@ static char* parsecmd(char* ptr, const char* cmd, const char* sws) {
 	return ptr;
 }
 
-static void usage(char* prog) {
+static void usage(char* app) {
 	FILE *out = stdout;
-	fputfmt(out, "Usage: %s =<eval expression>\n", prog);
-	fputfmt(out, "Usage: %s <global options> <local options>*\n", prog);
+	fputfmt(out, "Usage: %s <global options> <local options>*\n", app);
 
 	fputfmt(out, "	<global options>:\n");
 	fputfmt(out, "		-O<int>		optimize\n");
@@ -175,29 +191,6 @@ static void usage(char* prog) {
 	fputfmt(out,"		-L<file>	import plugin (.so|.dll)\n");
 	fputfmt(out,"		-C<file>	compile source\n");
 	fputfmt(out,"		<file>		if file extension is (.so|.dll) import else compile\n");
-}
-
-static int evalexp(state rt, char* text) {
-	struct astNode res;
-	astn ast = NULL;
-	int tid = 0;
-
-	ccState cc = ccInit(rt, creg_def, NULL);
-	ccAddCode(cc->s, wl, NULL, 0, text);
-
-	ast = cc->root->stmt.stmt;
-	tid = eval(&res, ast);
-
-	fputfmt(cc->s->logf, "eval(`%+t`) = ", ast);
-
-	if (ast && ast->type && tid) {
-		fputfmt(cc->s->logf, "%T(%t)\n", ast->type, &res);
-		return 0;
-	}
-
-	fputfmt(cc->s->logf, "ERROR(typ:`%T`, tid:%d)\n", ast->type, tid);
-
-	return -1;
 }
 
 #if defined(USEPLUGINS)
@@ -313,11 +306,11 @@ static int importLib(state rt, const char* path) {
 }
 #endif
 
-static int printerrors = 1;
-static symn printvars = NULL;
-// forward
+// forward functions
 static void printGlobals(FILE* out, state rt, int all);
 static int dbgConsole(state, int pu, void* ip, void* sp, size_t ss, vmError err, size_t fp);
+extern int vmTest();
+extern int vmHelp();
 
 enum {
 	sym_attr = 0x01,   // size, kind, attributes, initializer, ...
@@ -327,6 +320,13 @@ enum {
 	//~ asm_locl = 0x10,   // local offsets
 	//~ asm_glob = 0x20,   // global offsets
 	//~ asm_data = 0x0f,   // print 0-15 bytes as hex code
+
+	brk_fatal = 0x010,	// break on uncaught error
+	brk_error = 0x020,	// break on caught error
+	brk_start = 0x040,	// break on start
+	dmp_time  = 0x100,	// print profiler results
+	dmp_heap  = 0x400,	// print allocated heap memory
+	dmp_vars  = 0x200,	// print global variable values
 };
 typedef struct {
 	state rt;
@@ -335,7 +335,6 @@ typedef struct {
 	int ast_dump;
 	int asm_dump;
 } customPrinterExtra;
-
 static int dumpAsmCb(customPrinterExtra *extra, size_t offs, void* ip) {
 	FILE *fout = extra->rt->logf;
 	dbgInfo dbg = mapDbgStatement(extra->rt, offs);
@@ -456,32 +455,28 @@ static void customPrinter(customPrinterExtra *extra, symn sym) {
 static int program(int argc, char* argv[]) {
 	char* stdlib = (char*)STDLIB;
 
-	// compile, run, debug, ...
-	int level = -1, argi;
-	int gen_code = ol;	// optimize_level, debug_info, ...
-	int run_code = 0;	// quit, exec, debug
+	int i, errors = 0;
 
-	char* stk_dump = NULL;	// dump top of stack
-	int val_dump = -1;	// dump variable values after execution.
+	// compile, run, debug, profile, ...
+	int gen_code = cgen_info | ol;	// optimize_level, debug_info, ...
+	int run_code = -1;	// quit, exec, debug
 	int sym_dump = -1;	// dump variables and functions.
 	int ast_dump = -1;	// dump abstract syntax tree.
 	int asm_dump = -1;	// dump disassembly.
-	int bin_dump = -1;	// dump binary.
-	int api_dump = 0;	// dump api for scite / json.
 
-	int log_append = 0;			// start with a new file
 	char* logf = NULL;			// logger filename
 	FILE* dmpf = stdout;		// dump file
 
-	int warn = wl;
-	int result = 0;
+	char* cccf = NULL;			// compile filename
+	int warn;
 
 	char* amem = paddptr(mem, rt_size);
 	state rt = rtInit(amem, sizeof(mem) - (amem - mem));
 
-	// max 32 break points
+	// TODO: max 32 break points ?
 	char* bp_file[32];
 	int bp_line[32];
+	int bp_type[32];
 	int bp_size = 0;
 
 	if (rt == NULL) {
@@ -489,137 +484,15 @@ static int program(int argc, char* argv[]) {
 		return -1;
 	}
 
-	// evaluate constant expression.
-	if (argc == 2 && *argv[1] == '=') {
-		return evalexp(rt, argv[1] + 1);
-	}
-
 	// porcess global options
-	for (argi = 1; argi < argc; ++argi) {
-		char* arg = argv[argi];
+	for (i = 1; i < argc; ++i) {
+		char* arg = argv[i];
 
-		// generate code
-		if (strncmp(arg, "-g", 2) == 0) {			// generate code
-			char* str = arg + 2;
-
-			if (*str == 'd') {
-				// generate debug info
-				gen_code |= cgen_info;
-				str += 1;
-			}
-			if (*str == '-') {
-				// generate globals on stack
-				gen_code |= cgen_glob;
-				str += 1;
-			}
-			if (*str) {
-				if (!parsei32(str, &level, 10)) {
-					error(rt, NULL, 0, "invalid level '%s'", str);
-					return 0;
-				}
-				gen_code &= ~cgen_opti;
-				gen_code |= level & cgen_opti;
-			}
-		}
-
-		// execute code
-		else if (strncmp(arg, "-x", 2) == 0) {		// execute(&| debug)
-			char* str = arg + 2;
-
-			if (*str == 'v') {
-				val_dump = 0;
-				str += 1;
-			}
-			else if (*str == 'V') {
-				val_dump = 1;
-				str += 1;
-			}
-
-			if (*str == 'd' || *str == 'D') {
-
-				gen_code |= cgen_info;
-				run_code = *str == 'd' ? 2 : 3;
-
-				if (str[1] == ':') {
-					stk_dump = str + 2;
-					str += 1;
-				}
-			}
-			else {
-				run_code = 1;
-			}
-		}
-
-		// output file
-		else if (strncmp(arg, "-l", 2) == 0) {		// log
-			// append to existing log
-			if (arg[2] == 'a') {
-				log_append = 1;
-			}
-
-			if (++argi >= argc || logf) {
-				error(rt, NULL, 0, "log file not specified");
+		if (strncmp(arg, "-std", 4) == 0) {		// override stdlib file
+			if (stdlib != (char*)STDLIB) {
+				error(rt, NULL, 0, "argument specified multiple times: %s", arg);
 				return -1;
 			}
-			logf = argv[argi];
-		}
-		/*else if (strcmp(arg, "-o") == 0) {		// out
-			if (++argi >= argc || outf) {
-				error(rt, NULL, 0, "output file not specified");
-				return -1;
-			}
-			outf = argv[argi];
-		}*/
-
-		// output what
-		else if (strncmp(arg, "-api", 4) == 0) {	// tags
-			level = 0x32;
-			if (arg[4]) {
-				char* ptr = parsei32(arg + 4, &level, 16);
-				if (*ptr) {
-					error(rt, NULL, 0, "invalid argument '%s'\n", arg);
-					return 0;
-				}
-			}
-			else {
-				api_dump = 1;
-			}
-			sym_dump = level;
-		}
-		else if (strncmp(arg, "-ast", 4) == 0) {	// tree
-			level = 0x7f;
-			if (arg[4]) {
-				char* ptr = parsei32(arg + 4, &level, 16);
-				if (*ptr) {
-					error(rt, NULL, 0, "invalid argument '%s'\n", arg);
-					return 0;
-				}
-			}
-			ast_dump = level;
-		}
-		else if (strncmp(arg, "-asm", 4) == 0) {	// dasm
-			level = 0x29;	// 2 use global offset, 9 characters for bytecode hexview
-			if (arg[4]) {
-				char* ptr = parsei32(arg + 4, &level, 16);
-				if (*ptr) {
-					error(rt, NULL, 0, "invalid argument '%s'\n", arg);
-					return 0;
-				}
-			}
-			asm_dump = level;
-		}
-		else if (strncmp(arg, "-bin", 4) == 0) {	// dasm
-			level = 16;	// default value: characters per line
-			if (arg[4]) {
-				char* ptr = parsei32(arg + 4, &level, 16);
-				if (*ptr) {
-					error(rt, NULL, 0, "invalid argument '%s'\n", arg);
-					return 0;
-				}
-			}
-			bin_dump = level;
-		}
-		else if (strncmp(arg, "-std", 4) == 0) {		// override stdlib file
 			if (arg[4] != 0) {
 				stdlib = arg + 4;
 			}
@@ -629,17 +502,105 @@ static int program(int argc, char* argv[]) {
 			}
 		}
 
-		// temp
-		else if (strncmp(arg, "--", 2) == 0) {		// do not generate code, ...
-			if (strchr(arg, 'c'))
-				gen_code = 0;
+		// output file
+		else if (strcmp(arg, "-log") == 0) {		// log
+			if (++i >= argc || logf) {
+				error(rt, NULL, 0, "log file not specified");
+				return -1;
+			}
+			logf = argv[i];
+		}
+		/*else if (strcmp(arg, "-out") == 0) {		// out
+			if (++i >= argc || outf) {
+				error(rt, NULL, 0, "dump file not specified");
+				return -1;
+			}
+			outf = argv[i];
+		}*/
+
+		// output what
+		else if (strncmp(arg, "-api", 4) == 0) {	// tags
+			if (sym_dump != -1) {
+				error(rt, NULL, 0, "argument specified multiple times: %s", arg);
+				return -1;
+			}
+			sym_dump = -2;
+			if (arg[4] != 0) {
+				char* ptr = parsei32(arg + 4, &sym_dump, 16);
+				if (*ptr) {
+					error(rt, NULL, 0, "invalid argument '%s'\n", arg);
+					return -1;
+				}
+			}
+		}
+		else if (strncmp(arg, "-ast", 4) == 0) {	// tree
+			if (ast_dump != -1) {
+				error(rt, NULL, 0, "argument specified multiple times: %s", arg);
+				return -1;
+			}
+			ast_dump = 0x7f;
+			if (arg[4] != 0) {
+				char* ptr = parsei32(arg + 4, &ast_dump, 16);
+				if (*ptr) {
+					error(rt, NULL, 0, "invalid argument '%s'\n", arg);
+					return -1;
+				}
+			}
+		}
+		else if (strncmp(arg, "-asm", 4) == 0) {	// dasm
+			if (asm_dump != -1) {
+				error(rt, NULL, 0, "argument specified multiple times: %s", arg);
+				return -1;
+			}
+			asm_dump = 0x29;	// 2 use global offset, 9 characters for bytecode hexview
+			if (arg[4] != 0) {
+				char* ptr = parsei32(arg + 4, &asm_dump, 16);
+				if (*ptr) {
+					error(rt, NULL, 0, "invalid argument '%s'\n", arg);
+					return -1;
+				}
+			}
 		}
 
+		else if (strncmp(arg, "-dbg", 4) == 0) {	// break into debuger if ...
+			char *brk = arg + 4;
+			if (run_code != -1) {
+				error(rt, NULL, 0, "argument specified multiple times: %s", arg);
+			}
+			if (*brk >= '0' && *brk <= '9') {
+				brk = parsei32(brk, &gen_code, 16);
+			}
+			run_code = brk_fatal;
+			if (strchr(brk, 'a')) {
+				run_code |= brk_error;
+			}
+			if (strchr(brk, 's')) {
+				run_code |= brk_start;
+			}
+			if (strchr(brk, 'v')) {
+				run_code |= dmp_vars;
+			}
+			if (strchr(brk, 'h')) {
+				run_code |= dmp_heap;
+			}
+			if (strchr(brk, 't')) {
+				run_code |= dmp_time;
+			}
+		}
+		else if (strcmp(arg, "-run") == 0) {		// execute code in release mode
+			if (run_code != -1) {
+				error(rt, NULL, 0, "argument specified multiple times: %s", arg);
+			}
+			gen_code = ol;
+			run_code = 0;
+		}
+
+		// no more global options
 		else break;
 	}
 
 	// open log file (global option)
-	if (logf && logfile(rt, logf, log_append) != 0) {
+	if (logf && logfile(rt, logf, 0) != 0) {
 		error(rt, NULL, 0, "can not open log file: `%s`", logf);
 		return -1;
 	}
@@ -651,14 +612,14 @@ static int program(int argc, char* argv[]) {
 		return -6;
 	}
 
-	// intstall standard libraries.
-	if (!ccAddUnit(rt, install_stdc, api_dump ? 0 : 3, stdlib)) {
+	// intstall standard library.
+	if (!ccAddUnit(rt, install_stdc, sym_dump == -2 ? 0 : 3, stdlib)) {
 		error(rt, NULL, 0, "error registering standard libs");
 		logfile(rt, NULL, 0);
 		return -6;
 	}
 
-	// intstall file libraries.
+	// intstall file operations.
 	if (!ccAddUnit(rt, install_file, 0, NULL)) {
 		error(rt, NULL, 0, "error registering file libs");
 		logfile(rt, NULL, 0);
@@ -666,116 +627,98 @@ static int program(int argc, char* argv[]) {
 	}
 
 	// compile and import files / modules
-	for (; argi < argc; ++argi) {
-		char* arg = argv[argi];
-		if (*arg != '-') {
-			int i;
-			char* ext = strrchr(arg, '.');
-			if (ext && (streq(ext, ".so") || streq(ext, ".dll"))) {
-				int resultCode = importLib(rt, arg);
-				if (resultCode != 0) {
-					error(rt, NULL, 0, "error(%d) importing library `%s`", resultCode, arg);
-				}
-			}
-			else if (!ccAddCode(rt, warn, arg, 1, NULL)) {
-				error(rt, NULL, 0, "error compiling source `%s`", arg);
-			}
-			if (bp_size > 0) {
-				for (i = bp_size - 1; i >= 0; i -= 1) {
-					if (bp_file[i] == NULL) {
-						bp_file[i] = arg;
+	for (warn = -1; i <= argc; ++i) {
+		char* arg = argv[i];
+		if (i == argc || *arg != '-') {
+			if (cccf != NULL) {
+				char* ext = strrchr(cccf, '.');
+				if (ext && (streq(ext, ".so") || streq(ext, ".dll"))) {
+					int resultCode = importLib(rt, cccf);
+					if (resultCode != 0) {
+						error(rt, NULL, 0, "error(%d) importing library `%s`", resultCode, cccf);
 					}
 				}
+				else if (!ccAddCode(rt, warn == -1 ? wl : warn, cccf, 1, NULL)) {
+					error(rt, NULL, 0, "error compiling source `%s`", arg);
+				}
+				cccf = NULL;
 			}
-		}
-		else if (strncmp(arg, "-b", 2) == 0) {		// break points for file
-			int line = 0;
-			if (bp_size > lengthOf(bp_file)) {
-				error(rt, NULL, 0, "maximum 32 breakponts are available.");
-				return 1;
-			}
-			if (*parsei32(arg + 2, &line, 10)) {
-				error(rt, NULL, 0, "invalid warning level '%s'", arg + 2);
-				return 1;
-			}
-			bp_file[bp_size] = NULL;
-			bp_line[bp_size] = line;
-			bp_size += 1;
-		}
-		else if (strncmp(arg, "-w", 2) == 0) {		// warning level for file
-			if (strcmp(arg, "-wx") == 0)
-				warn = -1;
-			else if (strcmp(arg, "-wa") == 0)
-				warn = 32;
-			else if (*parsei32(arg + 2, &warn, 10)) {
-				error(rt, NULL, 0, "invalid warning level '%s'", arg + 2);
-				return 1;
-			}
-		}
-		else if (strncmp(arg, "-L", 2) == 0) {		// import library
-			char* str = arg + 2;
-			int resultCode = importLib(rt, str);
-			if (resultCode != 0) {
-				error(rt, NULL, 0, "error(%d) importing library `%s`", resultCode, arg);
-			}
-		}
-		else if (strncmp(arg, "-C", 2) == 0) {		// compile source
-			char* str = arg + 2;
-			if (!ccAddCode(rt, warn, str, 1, NULL)) {
-				error(rt, NULL, 0, "error compiling source `%s`", arg);
-			}
+			cccf = arg;
+			warn = -1;
 		}
 		else {
-			error(rt, NULL, 0, "invalid option: `%s`", arg);
-		}
-	}
-
-	// compile the given type for the debuging
-	if (stk_dump != NULL) {
-		ccState cc = ccOpen(rt, NULL, 0, stk_dump);
-		if (cc != NULL) {
-			printvars = linkOf(decl_var(cc, NULL, TYPE_def));
-			if (printvars != NULL) {
-				printvars->name = "sp";	// stack pointer
+			if (cccf == NULL) {
+				error(rt, NULL, 0, "argument `%s` must be preceded by a file", arg);
+			}
+			if (arg[1] == 'w') {		// warning level for file
+				if (warn != -1) {
+					info(rt, NULL, 0, "argument overwrites previous value: %d", warn);
+				}
+				if (strcmp(arg, "-wx") == 0) {
+					warn = -2;
+				}
+				else if (strcmp(arg, "-wa") == 0) {
+					warn = 32;
+				}
+				else if (*parsei32(arg + 2, &warn, 10)) {
+					error(rt, NULL, 0, "invalid warning level '%s'", arg + 2);
+				}
+			}
+			else if (arg[1] == 'b' || arg[1] == 't') {
+				int line = 0;
+				if (bp_size > lengthOf(bp_file)) {
+					info(rt, NULL, 0, "can not add more than %d breakponts.", lengthOf(bp_file));
+				}
+				if (*parsei32(arg + 2, &line, 10)) {
+					error(rt, NULL, 0, "invalid line number `%s`", arg + 2);
+				}
+				bp_file[bp_size] = cccf;
+				bp_line[bp_size] = line;
+				bp_type[bp_size] = arg[1];
+				bp_size += 1;
 			}
 			else {
-				// TODO: should this rise error or just warn?
-				error(rt, NULL, 0, "error in debug print format `%s`", stk_dump);
+				error(rt, NULL, 0, "invalid option: `%s`", arg);
 			}
-			ccDone(cc);
 		}
 	}
 
+	errors = rt->errc;
+
 	// generate code only if needed and there are no compilation errors
-	if ((gen_code || run_code) && rt->errc == 0) {
-		int i;
-		// generate variables and vm code.
+	if (errors == 0 && (gen_code || run_code >= 0)) {
 		if (!gencode(rt, gen_code)) {
 			// show dump, but do not execute broken code.
 			//error(rt, NULL, 0, "error generating code");
-			run_code = 0;
+			errors += 1;
 		}
 		// set breakpoints
 		for (i = 0; i < bp_size; ++i) {
 			char *file = bp_file[i];
 			int line = bp_line[i];
+			int type = bp_type[i];
 			dbgInfo dbg = getDbgStatement(rt, file, line);
 			if (dbg != NULL) {
-				dbg->bp = 1;
+				dbg->bp = type;
+				//info(rt, NULL, 0, "%s:%u: breakpoint", file, line);
+			}
+			else {
+				info(rt, NULL, 0, "%s:%u: invalid breakpoint", file, line);
 			}
 		}
 	}
 
+	// TODO: dump and log file should be different.
 	if (rt->logf != NULL) {
 		dmpf = rt->logf;
 	}
 
-	if (sym_dump >= 0 || ast_dump >= 0 || asm_dump >= 0) {
-		if (api_dump && (ast_dump >= 0 || asm_dump >= 0)) {
+	if (sym_dump != -1 || ast_dump >= 0 || asm_dump >= 0) {
+		if (sym_dump == -2 && (ast_dump >= 0 || asm_dump >= 0)) {
 			// invalidate api dump if assembly or syntax tree dump is requested.
-			api_dump = 0;
+			sym_dump = -1;
 		}
-		if (api_dump) {
+		if (sym_dump == -2) {
 			dump(rt, NULL, NULL);
 		}
 		else {
@@ -790,61 +733,28 @@ static int program(int argc, char* argv[]) {
 		}
 	}
 
-	if (bin_dump > 0) {
-		size_t i, max = rt->_beg - rt->_mem;
-
-		FILE* fout = rt->logf;
-
-		for (i = 0; i < max; i += 1) {
-			int val = rt->_mem[i];
-			if (((i % bin_dump) == 0) && i != 0) {
-				unsigned int j = i - bin_dump;
-				fputfmt(fout, " ");
-				for ( ; j < i; j += 1) {
-					int chr = rt->_mem[j];
-
-					if (chr < 32 || chr > 127)
-						chr = '.';
-
-					fputfmt(fout, "%c", chr);
-				}
-				fputfmt(fout, "\n");
-			}
-			else if (i != 0) {
-				fputfmt(fout, " ");
-			}
-			fputfmt(fout, "%c", "0123456789abcdef"[val >> 16 & 0x0f]);
-			fputfmt(fout, "%c", "0123456789abcdef"[val >>  0 & 0x0f]);
-		}
-	}
-
-	// run code if there is no error.
-	if (run_code != 0 && rt->errc == 0) {
+	// run code if there are no compilation errors.
+	if (errors == 0 && run_code >= 0) {
 		if (rt->dbg != NULL && run_code > 1) {
-			rt->dbg->dbug = run_code > 1 ? dbgConsole : NULL;
-			if (run_code > 2) {
-				// break on every instruction
-				rt->dbg->breakLt = rt->vm.px + px_size;
-				rt->dbg->breakGt = rt->vm.ro;
+			if (run_code & (brk_fatal|brk_error|brk_start)) {
+				rt->dbg->dbug = dbgConsole;
+			}
+			if (run_code & brk_start) {
+				// break on first instruction
+				rt->dbg->breakAt = rt->vm.pc;
+				rt->dbg->breakLt = rt->vm.ro;
+				rt->dbg->breakGt = rt->vm.px + px_size;
 			}
 			else {
+				rt->dbg->breakAt = 0;
 				rt->dbg->breakLt = rt->vm.ro;
 				rt->dbg->breakGt = rt->vm.px + px_size;
 			}
 		}
 		fputfmt(dmpf, "\n>/*-- exec:\n");
-		result = execute(rt, NULL, rt->_size / 4);
+		errors = execute(rt, NULL, rt->_size / 4);
 		fputfmt(dmpf, "\n// */\n");
-		if (val_dump >= 0) {
-
-			fputfmt(dmpf, "\n>/*-- vars:\n");
-			printGlobals(dmpf, rt, val_dump);
-			fputfmt(dmpf, "// */\n");
-
-			//~ fputfmt(dmpf, "\n>/*-- trace:\n");
-			//~ logTrace(rt, NULL, 1, 0, 20);
-			//~ fputfmt(dmpf, "// */\n");
-
+		if (run_code & dmp_time) {
 			fputfmt(dmpf, "\n>/*-- trace:\n");
 			if (rt->dbg) {
 				int n = rt->dbg->functions.cnt;
@@ -876,20 +786,26 @@ static int program(int argc, char* argv[]) {
 					if (sym != NULL) {
 						symOffs = dbg->start - sym->offs;
 					}
-						fputfmt(dmpf, "%s:%u:[.%06x, .%06x): <%?T+%d> hits(%D), time(%D%?+D / %.3F%?+.3F ms)\n"
-							, dbg->file, dbg->line, dbg->start, dbg->end, sym, symOffs
-							, (int64_t)dbg->hits, (int64_t)dbg->funcTime, (int64_t)dbg->diffTime
-							, dbg->funcTime / (double)CLOCKS_PER_SEC, dbg->diffTime / (double)CLOCKS_PER_SEC
-						);
+					fputfmt(dmpf, "%s:%u:[.%06x, .%06x): <%?T+%d> hits(%D), time(%D%?+D / %.3F%?+.3F ms)\n"
+						, dbg->file, dbg->line, dbg->start, dbg->end, sym, symOffs
+						, (int64_t)dbg->hits, (int64_t)dbg->funcTime, (int64_t)dbg->diffTime
+						, dbg->funcTime / (double)CLOCKS_PER_SEC, dbg->diffTime / (double)CLOCKS_PER_SEC
+					);
 					dbg++;
 					n--;
 				}
 			}
 			fputfmt(dmpf, "// */\n");
-
+		}
+		if (run_code & dmp_heap) {
 			// show allocated memory chunks.
 			fputfmt(dmpf, "\n>/*-- heap:\n");
 			rtAlloc(rt, NULL, 0);
+			fputfmt(dmpf, "// */\n");
+		}
+		if (run_code & dmp_vars) {
+			fputfmt(dmpf, "\n>/*-- vars:\n");
+			printGlobals(dmpf, rt, 0);
 			fputfmt(dmpf, "// */\n");
 		}
 	}
@@ -897,11 +813,8 @@ static int program(int argc, char* argv[]) {
 	// close log file
 	logfile(rt, NULL, 0);
 	closeLibs();
-	return result;
+	return errors;
 }
-
-extern int vmTest();
-extern int vmHelp();
 
 int main(int argc, char* argv[]) {
 	if (argc < 2) {
@@ -994,31 +907,39 @@ static int dbgConsole(state rt, int pu, void* ip, void* sp, size_t ss, vmError e
 	symn fun = mapsym(rt, i, 0);
 	dbgInfo dbg = mapDbgStatement(rt, i);
 
-	if (i < rt->dbg->breakLt) {
+	if (err != noError) {
+		brk = '!';
+	}
+	else if (i == rt->dbg->breakAt) {
 		// scheduled break
-		brk = 2;
+		brk = '=';
+	}
+	else if (i < rt->dbg->breakLt) {
+		// scheduled break
+		brk = '<';
 	}
 	else if (i > rt->dbg->breakGt) {
 		// scheduled break
-		brk = 3;
+		brk = '>';
 	}
 	else if (dbg != NULL) {
 		// check breakpoint hit
 		if (dbg->bp && i == dbg->start) {
-			brk = 4;
+			brk = '+';
 		}
 	}
 
 	// no need to break, continue execution.
-	if (err == noError && brk == 0) {
+	if (brk == 0) {
 		return 0;
 	}
 
 	// print the error message in case of unhandled errors
-	if (1 || printerrors || !rt->dbg->checked) {
+	if (1 || !rt->dbg->checked) {
 		char *errorType = NULL;
 		switch (err) {
 			case noError:
+				errorType = "Breakpoint";
 				break;
 
 			case invalidIP:
@@ -1029,7 +950,7 @@ static int dbgConsole(state rt, int pu, void* ip, void* sp, size_t ss, vmError e
 				errorType = "Invalid stack pointer";
 				break;
 
-			case invalidOpcode:	// illegalInstruction
+			case illegalInstruction:
 				errorType = "Invalid instruction";
 				break;
 
@@ -1042,8 +963,8 @@ static int dbgConsole(state rt, int pu, void* ip, void* sp, size_t ss, vmError e
 				errorType = "Division by Zero";
 				break;
 
-			case libCallError:
-				errorType = "External call error";
+			case libCallAbort:
+				errorType = "External call abort";
 				break;
 
 			case memReadError:
@@ -1068,21 +989,18 @@ static int dbgConsole(state rt, int pu, void* ip, void* sp, size_t ss, vmError e
 			if (fun != NULL) {
 				funOffs = i - fun->offs;
 			}
+			// print current file position
+			if (dbg != NULL && dbg->file != NULL && dbg->line > 0) {
+				fputfmt(stdout, "%s:%u: ", dbg->file, dbg->line);
+			}
 			fputfmt(stdout, "%s in function: <%T+%06x>\n", errorType, fun, funOffs);
 		}
-
-		// print current file position
-		if (dbg != NULL && dbg->file != NULL && dbg->line > 0) {
-			fputfmt(stdout, "%s:%u: ", dbg->file, dbg->line);
-		}
-		// print current instruction
-		dumpAsmCb(&dumpExtra, i, ip);
 	}
 	for ( ; ; ) {
 		char* arg = NULL;
 		char cmd = lastCommand;
 
-		fputfmt(stdout, "(dbg[%?c])", cmd);
+		fputfmt(stdout, ">dbg[%?c%?c]: ", brk, cmd);
 		if (fgets(buff, sizeof(buff), stdin) == NULL) {
 			// Can not read from stdin
 			fputfmt(stdout, "can not read from standard input, continue\n");
@@ -1158,7 +1076,8 @@ static int dbgConsole(state rt, int pu, void* ip, void* sp, size_t ss, vmError e
 			case 'q':		// abort
 				return -1;
 			case 'r':		// resume
-				if (rt->dbg && dbg) {
+				if (rt->dbg) {
+					rt->dbg->breakAt = 0;
 					rt->dbg->breakLt = rt->vm.ro;
 					rt->dbg->breakGt = rt->vm.px + px_size;
 				}
@@ -1166,6 +1085,7 @@ static int dbgConsole(state rt, int pu, void* ip, void* sp, size_t ss, vmError e
 				return 0;
 			case 'a':		// step over opcode
 				if (rt->dbg && dbg) {
+					rt->dbg->breakAt = 0;
 					rt->dbg->breakLt = dbg->start;
 					rt->dbg->breakGt = dbg->start;
 				}
@@ -1173,6 +1093,7 @@ static int dbgConsole(state rt, int pu, void* ip, void* sp, size_t ss, vmError e
 				return 0;
 			case 'n':		// step over line
 				if (rt->dbg && dbg) {
+					rt->dbg->breakAt = 0;
 					rt->dbg->breakLt = dbg->start;
 					rt->dbg->breakGt = dbg->end;
 				}
@@ -1183,16 +1104,9 @@ static int dbgConsole(state rt, int pu, void* ip, void* sp, size_t ss, vmError e
 			case 'p':
 				if (*arg == 0) {
 					// print top of stack
-					if (ss > 0 && printvars != NULL) {
-						fputfmt(stdout, "\tsp(%d/%d): ", 0, ss);
-						fputval(rt, stdout, printvars, (stkval*)sp, 0, prType);
-						fputfmt(stdout, "\n");
-					}
-					else {
-						for (i = 0; i < ss; i++) {
-							stkval* v = (stkval*)&((long*)sp)[i];
-							fputfmt(stdout, "\tsp(%d): {0x%08x, i32(%d), f32(%f), i64(%D), f64(%F)}\n", i, v->i4, v->i4, v->f4, v->i8, v->f8);
-						}
+					for (i = 0; i < ss; i++) {
+						stkval* v = (stkval*)&((long*)sp)[i];
+						fputfmt(stdout, "\tsp(%d): {0x%08x, i32(%d), f32(%f), i64(%D), f64(%F)}\n", i, v->i4, v->i4, v->f4, v->i8, v->f8);
 					}
 				}
 				else {
@@ -1202,6 +1116,11 @@ static int dbgConsole(state rt, int pu, void* ip, void* sp, size_t ss, vmError e
 						fputval(rt, stdout, sym, (stkval*)sp, 0, prType);
 					}
 				}
+				break;
+
+			// instruction
+			case 's':
+				dumpAsmCb(&dumpExtra, i, ip);
 				break;
 
 			// trace

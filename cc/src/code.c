@@ -1252,8 +1252,43 @@ static inline int dotrace(state rt, void* caller, void* callee, void* sp) {
 /// Private dummy debug function.
 static int dbgDummy(state rt, int pu, void *ip, void* sp, size_t ss, vmError err, size_t fp) {
 	if (err != noError) {
+		char *errorStr = NULL;
+		switch (err) {
+			case noError:
+				break;
+
+			case invalidIP:
+				errorStr = "InvalidIP";
+				break;
+
+			case invalidSP:
+				errorStr = "InvalidSP";
+				break;
+
+			case illegalInstruction:
+				errorStr = "IllegalInstruction";
+				break;
+
+			case traceOverflow:
+			case stackOverflow:
+				errorStr = "StackOverflow";
+				break;
+
+			case divisionByZero:
+				errorStr = "DivisionByZero";
+				break;
+
+			case libCallAbort:
+				errorStr = "ExternalCallAbort";
+				break;
+
+			case memReadError:
+			case memWriteError:
+				errorStr = "InvalidMemoryAcces";
+				break;
+		}
 		// TODO: get file and line from debug information ?
-		error(rt, NULL, 0, "exec: %d(%?d):[sp%02d]@%.*A rw@%06x", err, pu, ss, vmOffset(rt, ip), ip);
+		error(rt, NULL, 0, "%s executing: %.0A @%06x", errorStr, ip, vmOffset(rt, ip));
 		logTrace(rt, NULL, 1, -1, 100);
 		return -1;
 	}
@@ -1344,8 +1379,8 @@ static int exec(state rt, cell pu, symn fun, void* extra, int dbg(state, int, vo
 					return 0;
 
 				dbg_error_opc:
-					dbg(rt, err_code, ip, sp, st - sp, invalidOpcode, err_code);
-					return invalidOpcode;
+					dbg(rt, err_code, ip, sp, st - sp, illegalInstruction, err_code);
+					return illegalInstruction;
 
 				dbg_error_ovf:
 					dbg(rt, err_code, ip, sp, st - sp, stackOverflow, err_code);
@@ -1373,8 +1408,8 @@ static int exec(state rt, cell pu, symn fun, void* extra, int dbg(state, int, vo
 					return divisionByZero;
 
 				dbg_error_libc:
-					dbg(rt, err_code, ip, sp, st - sp, libCallError, libcvec[ip->rel].sym->offs);
-					return libCallError;
+					dbg(rt, err_code, ip, sp, st - sp, libCallAbort, libcvec[ip->rel].sym->offs);
+					return libCallAbort;
 
 				#define NEXT(__IP, __SP, __CHK) pu->sp -= vm_size * (__SP); pu->ip += (__IP);
 				#define STOP(__ERR, __CHK, __ERC) do {if (__CHK) {err_code = __ERC; goto dbg_##__ERR;}} while(0)
@@ -1418,8 +1453,8 @@ static int exec(state rt, cell pu, symn fun, void* extra, int dbg(state, int, vo
 				return 0;
 
 			error_opc:
-				dbgDummy(rt, err_code, ip, sp, pu->ss, invalidOpcode, err_code);
-				return invalidOpcode;
+				dbgDummy(rt, err_code, ip, sp, pu->ss, illegalInstruction, err_code);
+				return illegalInstruction;
 
 			error_ovf:
 				dbgDummy(rt, err_code, ip, sp, pu->ss, stackOverflow, err_code);
@@ -1443,8 +1478,8 @@ static int exec(state rt, cell pu, symn fun, void* extra, int dbg(state, int, vo
 				return divisionByZero;
 
 			error_libc:
-				dbgDummy(rt, err_code, ip, sp, pu->ss, libCallError, libcvec[ip->rel].sym->offs);
-				return libCallError;
+				dbgDummy(rt, err_code, ip, sp, pu->ss, libCallAbort, libcvec[ip->rel].sym->offs);
+				return libCallAbort;
 
 			#define NEXT(__IP, __SP, __CHK) {pu->sp -= vm_size * (__SP); pu->ip += (__IP);}
 			#define STOP(__ERR, __CHK, __ERC) if (__CHK) {err_code = __ERC; goto __ERR;}

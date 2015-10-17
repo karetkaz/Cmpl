@@ -30,30 +30,34 @@ void abort2(int recurse, typename typ, pointer ptr, void fun(pointer ptr)) {
 }
 
 void throws(pointer args) {
-	debug("throws.enter", variant.null, 1, 0);
+	//~ debug("throws.enter", variant.null, 1, 0);
 	int &i = args;
 	int j = 3 / i;
-	debug("throws.leave", variant.null, 1, 100);
+	if (i >= 0) {
+		abort2(i, double, args, aborts);
+	}
+	//~ debug("throws.leave", variant.null, 1, 100);
 }
 
-int tryExec2(void function(pointer args), pointer arguments) {
-	function(arguments);
-	return 0;
+int arg0 = 0;
+int arg1 = 1;
+int arg2 = -1;
+
+define useTryCatch = true;
+static if (useTryCatch) {
+	define Exec(pointer args, void action(pointer args)) = tryExec(args, action);
+}
+static if (!useTryCatch) {
+	int Exec(pointer args, void action(pointer args)) {
+		action(args);
+		return 0;
+	}
 }
 
-int arg[10];// = 0;
-int arg2 = 1;
-
-//~ abort2(10, double, pointer(&arg[4]), aborts);
-
-//~ abort();
-//~ throws(null);
-//~ throws(pointer(&arg));
-//~ aborts(pointer(&arg));
-int errorOK  = tryExec(throws, pointer(&arg2));
-//~ int errorMEM = tryExec(throws, null);
-//~ int errorDIV = tryExec(throws, pointer(&arg));
-//~ int errorLIB = tryExec(aborts, pointer(&arg));
+int errorOK  = Exec(pointer(&arg2), throws);
+int errorMEM = Exec(pointer(null), throws);
+int errorDIV = Exec(pointer(&arg0), throws);
+int errorLIB = Exec(pointer(&arg1), aborts);
 
 /+ TODO: vs studio BUG
 string decodedFile = "out.txt";

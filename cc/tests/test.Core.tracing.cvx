@@ -6,8 +6,8 @@ void f(int &arg) {
 		return;
 	}
 	int n2 = arg - 1;
-	f(&n2);
-	//~ tryExec(emit(struct, ref(f)), pointer(n2));
+	//~ f(&n2);
+	tryExec(pointer(n2), emit(struct, ref(f)));
 }
 
 int N = 4;
@@ -46,7 +46,7 @@ void f3(pointer maxRecursiveCalls) {
 	if ((n2 % 6) != 0) {
 		return f3(pointer(&n2));
 	}
-	tryExec(f3, pointer(&n2));
+	tryExec(pointer(&n2), f3);
 }
 
 //~ BUG: void tryExec2(void cb(double x, debugInfo info, int n), int n, debugInfo &info) {
@@ -62,7 +62,7 @@ void f4(double x, debugInfo &info, int maxRecursiveCalls) {
 }
 
 int n = 9;
-tryExec(f3, pointer(&n));
+tryExec(pointer(&n), f3);
 //~ int a = 9;
 //~ debugInfo info = debugInfo("fail", 1, 2, 3);
 //~ tryExec2(f4, n, info);

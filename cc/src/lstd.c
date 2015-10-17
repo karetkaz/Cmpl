@@ -469,23 +469,22 @@ static int sysDebug(libcArgs args) {
 static int sysTryExec(libcArgs args) {
 	state rt = args->rt;
 	dbgState dbg = rt->dbg;
-	symn callBack = argsym(args, 0 * vm_size);
-	if (callBack != NULL) {
+	int argval = argi32(args, 0 * vm_size);
+	symn action = argsym(args, 1 * vm_size);
+	if (action != NULL) {
 		int result;
 		#pragma pack(push, 4)
-		struct { int32_t ptr; } cbArg = {
-			.ptr = argi32(args, 1 * vm_size)
-		};
+		struct { int32_t ptr; } cbArg = { .ptr = argval };
 		#pragma pack(pop)
 		// TODO: checked and unchecked errors should be handled the same way in debug and release mode.
 		if (dbg != NULL) {
 			int oldValue = dbg->checked;
 			dbg->checked = 1;
-			result = invoke(rt, callBack, NULL, &cbArg, NULL);
+			result = invoke(rt, action, NULL, &cbArg, NULL);
 			dbg->checked = oldValue;
 		}
 		else {
-			result = invoke(rt, callBack, NULL, &cbArg, NULL);
+			result = invoke(rt, action, NULL, &cbArg, NULL);
 		}
 		reti32(args, result);
 	}
@@ -592,7 +591,7 @@ int install_stdc(state rt) {
 	}
 
 	if (!err && rt->cc->type_ptr != NULL) {		// tryExecute
-		if(!ccAddCall(rt, sysTryExec, NULL, "int tryExec(void function(pointer args), pointer args);")) {
+		if(!ccAddCall(rt, sysTryExec, NULL, "int tryExec(pointer args, void action(pointer args));")) {
 			err = 2;
 		}
 	}

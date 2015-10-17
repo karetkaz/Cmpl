@@ -23,9 +23,9 @@ enum {
 	creg_min  = creg_tptr + creg_tvar + creg_emit,
 
 	// gencode(cgen_xxx | (level & 0xff))
-	cgen_opti = 0x00ff,		// optimze code generation
-	cgen_glob = 0x0100,		// generate globals on stack
-	cgen_info = 0x0200,		// generate debug info
+	cgen_opti = 0x000f,		// code generation optimization level
+	cgen_glob = 0x0010,		// generate globals on stack
+	cgen_info = 0x0020,		// generate debug information
 };
 
 /**

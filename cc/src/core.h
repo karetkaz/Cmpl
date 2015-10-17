@@ -27,11 +27,11 @@
 //~ #define VM_MAX_PROCS 1
 
 // maximum elements to print (references, stacktrace, arrayEelements)
-// undefine to print all
+// undefine to print everithing
 #define LOG_MAX_ITEMS 100
 
 // maximum tokens in expressions & nesting level
-#define TOKS 2048
+#define TOKS 1024
 
 // hash table size
 #define TBLS 512
@@ -208,17 +208,15 @@ typedef enum {		// vm errors
 	noError,
 	invalidIP,
 	invalidSP,
-	invalidOpcode,	// illegalInstruction
 	stackOverflow,
 	traceOverflow,
-	divisionByZero,
 	memReadError,
 	memWriteError,
-	libCallError
+	divisionByZero,
+	illegalInstruction,
+	libCallAbort
 	//~ executionAborted		// execution aborted by debuger
 	//~ + ArrayBoundsExceeded
-	//~ + divisionByZeroFloat
-	//~ + divisionByZeroInteger
 } vmError;
 
 typedef union {		// on stack value type
@@ -447,8 +445,8 @@ struct ccStateRec {
 /// Debuger context
 // TODO: merge this somehow with libcArgs and cell into exeState
 struct dbgStateRec {
-	//~ size_t breakAt;		// break if pc is equal
 	int checked;		// execution is inside an try catch
+	size_t breakAt;		// break if pc is equal
 	size_t breakLt;		// break if pc is less than
 	size_t breakGt;		// break if pc is greater than
 	int (*dbug)(state, int pu, void* ip, void* sp, size_t ss, vmError error, size_t fp);

@@ -29,7 +29,7 @@ typedef struct symNode *symn;			// symbol
 typedef struct stateRec *state;			// runtimeContext
 typedef struct ccStateRec *ccState; 	// compilerContext
 typedef struct dbgStateRec *dbgState;	// debugContext
-typedef struct libcArgsRec *libcArgs;	// libcall
+typedef struct libcArgsRec *libcArgs;	// libcallContext
 
 /**
  * @brief Native function invocation arguments.
