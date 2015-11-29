@@ -2,6 +2,7 @@
 #define CC_BASE_H 2
 
 #include "api.h"
+#include "core.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -39,7 +40,6 @@ state rtInit(void* mem, size_t size);
 // logging
 void logFILE(state, FILE *file);			// set logger
 int logfile(state, char *file, int append);	// set logger
-void dump(state rt, void *extra, void customPrinter(void*, symn));
 
 // compile
 /**
@@ -132,17 +132,17 @@ int gencode(state, int mode);
 /**
  * @brief Execute the compiled script.
  * @param Runtime context.
+ * @param ss Stack size in bytes.
  * @param extra Extra data for libcalls.
- * @param ss stack size in bytes.
  * @return Error code of execution, 0 on success.
  * @todo units number of execution units to run on.
  * @todo argc(int) argument count from main.
  * @todo argv(char*[]) arguments from main.
  */
-int execute(state, void* extra, size_t ss);
+int execute(state, size_t ss, void *extra);
 
 /// Invoke a function; @see state.api.invoke
-int invoke(state, symn fun, void* ret, void* args, void* extra);
+int invoke(state, symn fun, void *ret, void* args, void *extra);
 
 /// Lookup symbol by offset; @see state.api.mapsym
 symn mapsym(state, size_t offs, int callsOnly);

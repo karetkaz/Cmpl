@@ -10,6 +10,7 @@
 #define CC_CORE_H 2
 
 #include <stdlib.h>
+#include <time.h>
 #include "pvmc.h"
 
 /* debug level:
@@ -87,7 +88,7 @@ enum Format {
 
 	prSymInit = 0x0040,
 
-//	prAsmCode = 0x000f, // print code bytes (0-15)
+	prAsmCode = 0x000f, // print code bytes (0-15)
 	prAsmAddr = 0x0010, // print global address: (@0x003d8c)
 	prAsmSyms = 0x0040, // use symbol names instead of addresses: <main+80>
 	prAsmStmt = 0x0080, // print source code statements
@@ -214,8 +215,8 @@ typedef enum {		// vm errors
 	memWriteError,
 	divisionByZero,
 	illegalInstruction,
-	libCallAbort
-	//~ executionAborted		// execution aborted by debuger
+	libCallAbort,
+	executionAborted		// execution aborted by debuger
 	//~ + ArrayBoundsExceeded
 } vmError;
 
@@ -364,13 +365,11 @@ typedef struct dbgInfo {
 	int bp;
 
 	// trace information
-	int64_t diffTime;  // time spent executing other functions
-	int64_t funcTime;  // time spent in function
-	int64_t hits;
+	int64_t total, self;  // time spent executing functions
+	int64_t hits, exec;  // count function executions
 
 	// position in code
-	size_t start;
-	size_t end;
+	size_t start, end;
 } *dbgInfo;
 
 /// Compiler context
@@ -446,13 +445,17 @@ struct ccStateRec {
 // TODO: merge this somehow with libcArgs and cell into exeState
 struct dbgStateRec {
 	int checked;		// execution is inside an try catch
-	size_t breakAt;		// break if pc is equal
-	size_t breakLt;		// break if pc is less than
-	size_t breakGt;		// break if pc is greater than
-	int (*dbug)(state, int pu, void* ip, void* sp, size_t ss, vmError error, size_t fp);
+	customContext context;
+	int (*dbug)(customContext ctx, vmError, size_t ss, void* sp, void* caller, void* callee);
 	struct arrBuffer functions;
 	struct arrBuffer statements;
 };
+
+/**
+ * @brief Dump symbols
+ * TODO: DocMe
+ */
+void dump(state rt, customContext ctx, void action(customContext, symn));
 
 /**
  * @brief Print formatted text to the output stream.
@@ -523,7 +526,7 @@ void fputasm(FILE* fout, void *ptr, int mode, state rt);
  * @param extra Extra arguments for callback.
  * @param action Callback executed on each instruction.
  */
-void iterateAsm(state rt, size_t offsBegin, size_t offsEnd, void *extra, int action(void *extra, size_t offs, void* ip));
+void iterateAsm(state rt, size_t offsBegin, size_t offsEnd, customContext extra, int action(customContext, size_t offs, void* ip));
 
 /** TODO: to be renamed and moved.
  * @brief Print the value of a variable at runtime.

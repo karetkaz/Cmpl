@@ -62,14 +62,16 @@ static void fputstr(FILE* fout, const char *esc[], char* str) {
 	}
 }
 
-/// print qualified typename
-static void fputqal(FILE* fout, const char *esc[], symn sym, int mode) {
-	if (sym != NULL && sym->decl != NULL) {
-		fputqal(fout, esc, sym->decl, mode);
+/// print qualified name
+static void fputqal(FILE* fout, const char *esc[], symn sym) {
+	if (sym == NULL) {
+		return;
 	}
-
-	fputsym(fout, NULL, sym, mode, 0);
-	fputchr(fout, '.');
+	if (sym->decl != NULL) {
+		fputqal(fout, esc, sym->decl);
+		fputchr(fout, '.');
+	}
+	fputstr(fout, esc, sym->name);
 }
 
 /// print array type
@@ -528,7 +530,9 @@ static void fputsym(FILE* fout, const char *esc[], symn sym, int mode, int inden
 	int pr_type = mode & prType;
 	int pr_init = mode & prSymInit;
 	int pr_qual = mode & prSymQual;
-	int rlev = mode & 0xf;
+	int pr_attr = 1;//mode & prSymAttr;
+	int pr_args = (mode & 0xf) > 0;//mode & prSymArgs;
+	int pr_body = (mode & 0xf) > 6;//mode & prSymArgs;
 
 	if (sym == NULL) {
 		fputstr(fout, esc, "(null)");
@@ -542,7 +546,7 @@ static void fputsym(FILE* fout, const char *esc[], symn sym, int mode, int inden
 		indent = -indent;
 	}
 
-	if (rlev >= 2) {
+	if (pr_attr && sym->cast) {
 		if ((sym->cast & ATTR_stat) != 0) {
 			fputstr(fout, esc, "static ");
 		}
@@ -554,15 +558,18 @@ static void fputsym(FILE* fout, const char *esc[], symn sym, int mode, int inden
 		}
 	}
 
+	if (sym->name && *sym->name) {
+		if (pr_qual) {
+			fputqal(fout, esc, sym);
+		}
+		else {
+			fputstr(fout, esc, sym->name);
+		}
+	}
+
 	switch (sym->kind) {
 
 		case EMIT_opc: {
-			if (sym->name) {
-				if (pr_qual && sym->decl) {
-					fputqal(fout, esc, sym->decl, mode);
-				}
-				fputstr(fout, esc, sym->name);
-			}
 			if (sym->init) {
 				fputfmt(fout, "(%+t)", sym->init);
 			}
@@ -577,88 +584,45 @@ static void fputsym(FILE* fout, const char *esc[], symn sym, int mode, int inden
 			// fall TYPE_rec
 		}
 		case TYPE_rec: {
-			symn arg;
-			if (rlev < 2) {
-				if (pr_qual && sym->decl) {
-					fputqal(fout, esc, sym->decl, mode);
+			if (pr_body) {
+				symn arg;
+				fputesc(fout, esc, ": struct %s", "{\n");
+
+				for (arg = sym->flds; arg; arg = arg->next) {
+					fputsym(fout, esc, arg, mode & ~prSymQual, indent + 1);
+					if (arg->kind != TYPE_rec) {		// nested struct
+						fputstr(fout, esc, ";\n");
+					}
 				}
-				fputstr(fout, esc, sym->name);
-				break;
+				fputesc(fout, esc, "%I%s", indent, "}");
 			}
-
-			fputesc(fout, esc, "struct %?s %s", sym->name, "{\n");
-
-			for (arg = sym->flds; arg; arg = arg->next) {
-				fputsym(fout, esc, arg, mode & ~prSymQual, indent + 1);
-				if (arg->kind != TYPE_rec) {		// nested struct
-					fputstr(fout, esc, ";\n");
-				}
-			}
-			fputesc(fout, esc, "%I%s", indent, "}");
-
 			break;
 		}
 
 		case TYPE_def:
 		case TYPE_ref: {
-			if (rlev < 1) {
-				fputstr(fout, esc, sym->name);
-				break;
-			}
-
-			if (pr_type) switch (sym->kind) {
-				case TYPE_rec:
-					fputstr(fout, esc, "struct ");
-					break;
-
-				default:
-					if (sym->type) {
-						fputsym(fout, esc, sym->type, pr_qual, -1);
-						if (sym->name && *sym->name) {
-							fputchr(fout, ' ');
-						}
-						switch (sym->cast) {
-							default:
-								break;
-
-							// value type by reference
-							case TYPE_ref:
-								if (!sym->call && sym->type->cast != TYPE_ref)
-									fputchr(fout, '&');
-								break;
-
-							//~ case TYPE_def:
-								//~ fputchr(fout, '&&');
-								//~ break;
-						}
-					}
-					break;
-			}
-
-			if (sym->name && *sym->name) {
-				if (pr_qual && sym->decl) {
-					fputsym(fout, esc, sym->decl, prSymQual, 0);
-					fputchr(fout, '.');
-				}
-				fputstr(fout, esc, sym->name);
-			}
-
-			if (rlev > 0 && sym->call) {
+			if (pr_args && sym->call) {
 				symn arg = sym->prms;
 				fputchr(fout, '(');
-				while (arg) {
-					fputsym(fout, esc, arg, prType | 1, 0);
-					if ((arg = arg->next))
-						fputstr(fout, esc, ", ");
+				// TODO: check cc->void_tag?
+				if (arg && arg->name && *arg->name) {
+					for ( ; arg; arg = arg->next) {
+						if (arg != sym->prms) {
+							fputstr(fout, esc, ", ");
+						}
+						fputsym(fout, esc, arg, mode & ~prSymQual, 0);
+					}
 				}
 				fputchr(fout, ')');
 			}
-
+			if (pr_type && sym->type) {
+				fputstr(fout, esc, ": ");
+				fputsym(fout, esc, sym->type, 0, 0);
+			}
 			if (pr_init && sym->init) {
 				fputstr(fout, esc, " = ");
 				fputast(fout, esc, sym->init, 1, 0);
 			}
-
 			break;
 		}
 
@@ -740,10 +704,10 @@ static void FPUTFMT(FILE* fout, const char *esc[], const char* msg, va_list ap) 
 							break;
 						case '-':
 							len = -len;
-							/*if (prc < 0) {
+							if (prc < 0) {
 								prc = prType | prSymQual | 1;
 							}
-							break;*/
+							break;
 						case '+':
 							if (prc < 0) {
 								prc = prSymQual | 1;
@@ -751,7 +715,7 @@ static void FPUTFMT(FILE* fout, const char *esc[], const char* msg, va_list ap) 
 							break;
 					}
 					if (prc < 0) {
-						prc = 0;
+						prc = prSymQual;
 					}
 					fputsym(fout, esc, sym, prc, len);
 					continue;
@@ -1341,276 +1305,10 @@ void perr(state rt, int level, const char* file, int line, const char* msg, ...)
 }
 
 // dump
-static void dumpJsAst(FILE* fout, astn ast, const char *kind, int indent) {
-	static const char **esc = NULL;
-	static const char* KEY_KIND = "kind";
-	static const char* KEY_CAST = "cast";
-	static const char* KEY_FILE = "file";
-	static const char* KEY_LINE = "line";
-	static const char* KEY_TYPE = "type";
-	static const char* KEY_STMT = "stmt";
-	static const char* KEY_INIT = "init";
-	static const char* KEY_TEST = "test";
-	static const char* KEY_THEN = "then";
-	static const char* KEY_STEP = "step";
-	static const char* KEY_ELSE = "else";
-	static const char* KEY_ARGS = "args";
-	static const char* KEY_LHSO = "lval";
-	static const char* KEY_RHSO = "rval";
-	static const char* KEY_VALUE = "value";
-	static const char* FMT_COMMENT = " // %t\n";
-
-	if (ast == NULL) {
-		return;
-	}
-	if (esc == NULL) {
-		// layzy initialize on first function call
-		static const char *esc_js[256];
-		memset(esc_js, 0, sizeof(esc_js));
-		esc_js['\n'] = "\\n";
-		esc_js['\r'] = "\\r";
-		esc_js['\t'] = "\\t";
-		esc_js['\''] = "\\'";
-		esc_js['\"'] = "\\\"";
-		esc = esc_js;
-	}
-	if (kind != NULL) {
-		fputesc(fout, esc, "%I%s: {", indent - 1, kind);
-		fputesc(fout, NULL, FMT_COMMENT, ast);
-	}
-
-	fputesc(fout, esc, "%I%s: '%K',\n", indent, KEY_KIND, ast->kind);
-	if (ast->type != NULL) {
-		fputesc(fout, esc, "%I%s: '%T',\n", indent, KEY_TYPE, ast->type);
-	}
-	if (ast->cst2 != TYPE_any) {
-		fputesc(fout, esc, "%I%s: '%K',\n", indent, KEY_CAST, ast->cst2);
-	}
-	if (ast->file != NULL) {
-		fputesc(fout, esc, "%I%s: '%s',\n", indent, KEY_FILE, ast->file);
-	}
-	if (ast->line != 0) {
-		fputesc(fout, esc, "%I%s: '%u',\n", indent, KEY_LINE, ast->line);
-	}
-	switch (ast->kind) {
-		default:
-			fatal(ERR_INTERNAL_ERROR);
-			fatal("%K", ast->kind);
-			return;
-		//#{ STMT
-		case STMT_beg: {
-			astn list;
-			fputesc(fout, esc, "%I%s: [{", indent, KEY_STMT);
-			for (list = ast->stmt.stmt; list; list = list->next) {
-				if (list != ast->stmt.stmt) {
-					fputesc(fout, esc, "%I}, {", indent, list);
-				}
-				fputesc(fout, NULL, FMT_COMMENT, list);
-				dumpJsAst(fout, list, NULL, indent + 1);
-			}
-			fputesc(fout, esc, "%I}],\n", indent);
-			break;
-		}
-
-		case STMT_if:
-			dumpJsAst(fout, ast->stmt.test, KEY_TEST, indent + 1);
-			dumpJsAst(fout, ast->stmt.stmt, KEY_THEN, indent + 1);
-			dumpJsAst(fout, ast->stmt.step, KEY_ELSE, indent + 1);
-			break;
-
-		case STMT_for:
-			dumpJsAst(fout, ast->stmt.init, KEY_INIT, indent + 1);
-			dumpJsAst(fout, ast->stmt.test, KEY_TEST, indent + 1);
-			dumpJsAst(fout, ast->stmt.step, KEY_STEP, indent + 1);
-			dumpJsAst(fout, ast->stmt.stmt, KEY_STMT, indent + 1);
-			break;
-
-		case STMT_con:
-		case STMT_brk:
-			//fputesc(fout, esc, "%I%s: %d,\n", indent, KEY_OFFS, ast->go2.offs);
-			//fputesc(fout, esc, "%I%s: %d,\n", indent, KEY_ARGS, ast->go2.stks);
-			break;
-
-		case STMT_end:
-		case STMT_ret:
-			dumpJsAst(fout, ast->stmt.stmt, KEY_STMT, indent + 1);
-			break;
-
-		//#}
-		//#{ OPER
-		case OPER_fnc: {	// '()'
-			astn args = ast->op.rhso;
-			fputesc(fout, esc, "%I%s: [{", indent, KEY_ARGS);
-			if (args != NULL) {
-				while (args && args->kind == OPER_com) {
-					if (args != ast->stmt.stmt) {
-						fputesc(fout, esc, "%I}, {", indent);
-					}
-					fputesc(fout, NULL, FMT_COMMENT, args->op.rhso);
-					dumpJsAst(fout, args->op.rhso, NULL, indent + 1);
-					args = args->op.lhso;
-				}
-				if (args != ast->stmt.stmt) {
-					fputesc(fout, esc, "%I}, {", indent, args);
-				}
-				fputesc(fout, NULL, FMT_COMMENT, args);
-				dumpJsAst(fout, args, NULL, indent + 1);
-			}
-			fputesc(fout, esc, "%I}],\n", indent);
-			break;
-		}
-
-		case OPER_dot:		// '.'
-		case OPER_idx:		// '[]'
-
-		case OPER_adr:		// '&'
-		case OPER_pls:		// '+'
-		case OPER_mns:		// '-'
-		case OPER_cmt:		// '~'
-		case OPER_not:		// '!'
-
-		case OPER_add:		// '+'
-		case OPER_sub:		// '-'
-		case OPER_mul:		// '*'
-		case OPER_div:		// '/'
-		case OPER_mod:		// '%'
-
-		case OPER_shl:		// '>>'
-		case OPER_shr:		// '<<'
-		case OPER_and:		// '&'
-		case OPER_ior:		// '|'
-		case OPER_xor:		// '^'
-
-		case OPER_equ:		// '=='
-		case OPER_neq:		// '!='
-		case OPER_lte:		// '<'
-		case OPER_leq:		// '<='
-		case OPER_gte:		// '>'
-		case OPER_geq:		// '>='
-
-		case OPER_lnd:		// '&&'
-		case OPER_lor:		// '||'
-		case OPER_sel:		// '?:'
-
-		case OPER_com:		// ','
-
-		case ASGN_set:		// '='
-			dumpJsAst(fout, ast->op.test, KEY_TEST, indent + 1);	// not null for operator ?:
-			dumpJsAst(fout, ast->op.lhso, KEY_LHSO, indent + 1);
-			dumpJsAst(fout, ast->op.rhso, KEY_RHSO, indent + 1);
-			break;
-
-		//#}
-		//#{ TVAL
-		case EMIT_opc:
-			//~ fputesc(fout, escape, " />\n", text);
-			//~ break;
-
-		case TYPE_int:
-		case TYPE_flt:
-		case TYPE_str:
-
-		case TYPE_ref:
-		case TYPE_def:	// TODO: see dumpxml
-			fputesc(fout, esc, "%I%s: \"%t\"\n", indent, KEY_VALUE, ast);
-			break;
-
-		//#}
-	}
-
-	if (kind != NULL) {
-		fputesc(fout, esc, "%I},\n", indent - 1);
-		//~ fputesc(fout, esc, "%I%s: {", indent - 1, kind);
-	}
-}
-static void dumpJsSym(FILE* fout, symn ptr, const char *kind, int indent) {
-	static const char **esc = NULL;
-
-	static const char* KEY_KIND = "kind";
-	static const char* KEY_FILE = "file";
-	static const char* KEY_LINE = "line";
-	static const char* KEY_NAME = "name";
-	static const char* KEY_PROTO = "proto";
-	static const char* KEY_DECL = "declaredIn";
-	static const char* KEY_TYPE = "type";
-	static const char* KEY_INIT = "init";
-	static const char* KEY_ARGS = "args";
-	static const char* KEY_CONST = "const";
-	static const char* KEY_STAT = "static";
-	//~ static const char* KEY_PARLEL = "parallel";
-	static const char* KEY_CAST = "cast";
-	static const char* KEY_SIZE = "size";
-	static const char* KEY_OFFS = "offs";
-
-	static const char* VAL_TRUE = "true";
-	static const char* VAL_FALSE = "false";
-
-	static const char* KIND_PARAM = "param";
-	static const char* FMT_COMMENT = " // %+T: %+T\n";
-
-	if (esc == NULL) {
-		// layzy initialize on first function call
-		static const char *esc_js[256];
-		memset(esc_js, 0, sizeof(esc_js));
-		esc_js['\n'] = "\\n";
-		esc_js['\r'] = "\\r";
-		esc_js['\t'] = "\\t";
-		esc_js['\''] = "\\'";
-		esc_js['\"'] = "\\\"";
-		esc = esc_js;
-	}
-
-	fputesc(fout, esc, "%I%s: '%s',\n", indent, KEY_KIND, kind);
-	fputesc(fout, esc, "%I%s: '%T',\n", indent, KEY_NAME, ptr);
-	fputesc(fout, esc, "%I%s: '%+T',\n", indent, KEY_PROTO, ptr);
-
-	if (ptr->decl != NULL) {
-		fputesc(fout, esc, "%I%s: '%+T',\n", indent, KEY_DECL, ptr->decl);
-	}
-
-	if (ptr->type != NULL) {
-		fputesc(fout, esc, "%I%s: '%T',\n", indent, KEY_TYPE, ptr->type);
-	}
-	if (ptr->file != NULL) {
-		fputesc(fout, esc, "%I%s: '%s',\n", indent, KEY_FILE, ptr->file);
-	}
-	if (ptr->line != 0) {
-		fputesc(fout, esc, "%I%s: '%u',\n", indent, KEY_LINE, ptr->line);
-	}
-	if (ptr->init != NULL) {
-		fputesc(fout, esc, "%I%s: '%+t',\n", indent, "code", ptr->init);
-		dumpJsAst(fout, ptr->init, KEY_INIT, indent + 1);
-	}
-
-	if (ptr->call && ptr->prms) {
-		symn arg;
-		fputesc(fout, NULL, "%I%s: [{", indent, KEY_ARGS);
-		for (arg = ptr->prms; arg; arg = arg->next) {
-			if (arg != ptr->prms) {
-				fputesc(fout, NULL, "%I}, {", indent);
-			}
-			fputesc(fout, NULL, FMT_COMMENT, arg, arg->type);
-			dumpJsSym(fout, arg, KIND_PARAM, indent + 1);
-		}
-		fputesc(fout, NULL, "%I}],\n", indent);
-	}
-	if (ptr->cast != 0) {
-		fputesc(fout, NULL, "%I%s: '%K',\n", indent, KEY_CAST, ptr->cast);
-	}
-	fputesc(fout, NULL, "%I%s: %u,\n", indent, KEY_SIZE, ptr->size);
-	fputesc(fout, NULL, "%I%s: %u,\n", indent, KEY_OFFS, ptr->offs);
-	fputesc(fout, NULL, "%I%s: %s,\n", indent, KEY_CONST, ptr->cnst ? VAL_TRUE : VAL_FALSE);
-	fputesc(fout, NULL, "%I%s: %s\n", indent, KEY_STAT, ptr->stat ? VAL_TRUE : VAL_FALSE);
-	// no parallel symbols!!! fputesc(fout, NULL, "%I%s: %s,\n", indent, KEY_PARLEL, ptr->stat ? VAL_TRUE : VAL_FALSE);
-}
-
-void dump(state rt, void *extra, void customPrinter(void *extra, symn sym)) {
-	FILE* fout = rt->logf;
-	char *typ = "";
+void dump(state rt, customContext ctx, void customPrinter(customContext, symn)) {
+	FILE*out = rt->logf;
 	symn sym, bp[TOKS], *sp = bp;
-	if (customPrinter == NULL) {
-		fputfmt(fout, "var api = [\n");
-	}
+
 	for (*sp = rt->defs; sp >= bp;) {
 		if (!(sym = *sp)) {
 			--sp;
@@ -1621,54 +1319,42 @@ void dump(state rt, void *extra, void customPrinter(void *extra, symn sym)) {
 		switch (sym->kind) {
 			// inline/constant
 			case TYPE_def:
-				typ = "alias";
 				/* print params of inline expressions
 				if (sym->call && sym->prms) {
 					*++sp = sym->prms;
 				}// */
 				break;
 
-				// array/typename
+			// array/typename
 			case TYPE_arr:
 			case TYPE_rec:
-				typ = "typename";
 				*++sp = sym->flds;
 				break;
 
-				// variable/function
+			// variable/function
 			case TYPE_ref:
-				typ = "variable";
-				/* print params of functions
-				if (sym->call && sym->prms) {
-					*++sp = sym->prms;
+				/* print function private members ?
+				if (sym->call && sym->flds) {
+					*++sp = sym->flds;
 				}
 				// */
 				break;
 
 			case EMIT_opc:
-				typ = "opcode";
 				*++sp = sym->flds;
 				break;
 
 			default:
-				typ = "!ERROR!";
-				trace("psym:%d:%T['%K']", sym->kind, sym, sym->kind);
+				fatal(ERR_INTERNAL_ERROR);
 				break;
 		}
 
 		if (customPrinter != NULL) {
-			customPrinter(extra, sym);
+			customPrinter(ctx, sym);
 		}
 		else {
-			fputfmt(fout, "{ // %+T: %+T\n", sym, sym->type);
-			dumpJsSym(fout, sym, typ, 1);
-			fputfmt(fout, "},\n", sym);
-			fflush(fout);
-			continue;
+			fputfmt(out, "%-T: %T\n", sym, sym->type);
 		}
-		fflush(fout);
-	}
-	if (customPrinter == NULL) {
-		fputfmt(fout, "];\n");
+		fflush(out);
 	}
 }

@@ -19,14 +19,14 @@ static const int DaysToMonth365[] = {0, 31, 59, 90, 120, 151, 181, 212, 243, 273
 //~ */
 
 void aborts(pointer args) {
-	debug("abort", variant.null, -1, 512);
+	//~ debug("abort", variant.null, -1, 512);
 }
 
 void abort2(int recurse, typename typ, pointer ptr, void fun(pointer ptr)) {
 	if (recurse > 0) {
 		abort2(recurse - 1, typ, ptr, fun);
 	}
-	debug("abort", variant.null, -1, 512);
+	debug("abort2", variant.null, -1, 512);
 }
 
 void throws(pointer args) {
@@ -40,7 +40,7 @@ void throws(pointer args) {
 }
 
 int arg0 = 0;
-int arg1 = 1;
+int arg1 = 40;
 int arg2 = -1;
 
 define useTryCatch = true;
@@ -54,10 +54,11 @@ static if (!useTryCatch) {
 	}
 }
 
-int errorOK  = Exec(pointer(&arg2), throws);
-int errorMEM = Exec(pointer(null), throws);
-int errorDIV = Exec(pointer(&arg0), throws);
-int errorLIB = Exec(pointer(&arg1), aborts);
+int errorOK   = Exec(pointer(&arg2), throws);
+int errorDIV  = Exec(pointer(&arg0), throws);
+int errorLIB  = Exec(pointer(&arg1), throws);
+int errorLIB2 = Exec(pointer(&arg1), aborts);
+int errorMEM  = Exec(pointer(null), throws);
 
 /+ TODO: vs studio BUG
 string decodedFile = "out.txt";

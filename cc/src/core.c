@@ -38,10 +38,16 @@ const struct opc_inf opc_tbl[255] = {
 
 /// Initialize runtime context; @see header
 state rtInit(void* _mem, size_t size) {
-	state rt = _mem;
+	state rt = paddptr(_mem, rt_size);
+
+	if (rt != _mem) {
+		size_t diff = (char*)rt - (char*)_mem;
+		//~ fatal("runtime memory pardded with %d bytes", (int)diff);
+		size -= diff;
+	}
 
 	if (rt == NULL && size > sizeof(struct stateRec)) {
-		rt = malloc(size);
+		rt = _mem = malloc(size);
 		logif(rt == NULL, ERR_INTERNAL_ERROR);
 	}
 
@@ -986,9 +992,9 @@ dbgInfo mapDbgStatement(state rt, size_t position) {
 }
 dbgInfo addDbgStatement(state rt, size_t start, size_t end, astn tag) {
 	dbgInfo result = NULL;
-	if (rt->dbg != NULL) {
-		int i;
-		for (i = 0; i < rt->dbg->statements.cnt; ++i) {
+	if (rt->dbg != NULL && start < end) {
+		int i = 0;
+		for ( ; i < rt->dbg->statements.cnt; ++i) {
 			result = getBuff(&rt->dbg->statements, i);
 			if (start <= result->start) {
 				break;
@@ -1031,7 +1037,7 @@ dbgInfo mapDbgFunction(state rt, size_t position) {
 dbgInfo addDbgFunction(state rt, symn fun) {
 	dbgInfo result = NULL;
 	if (rt->dbg != NULL && fun != NULL) {
-		int i = rt->dbg->functions.cnt;
+		int i;
 		for (i = 0; i < rt->dbg->functions.cnt; ++i) {
 			result = getBuff(&rt->dbg->functions, i);
 			if (fun->offs <= result->start) {

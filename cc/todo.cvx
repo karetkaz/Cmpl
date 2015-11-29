@@ -14,14 +14,14 @@ int arr3[] = arr2;		// slice
 //! TODO: varargs: int min(int first, int rest...) {...}
 //! TODO: js like initialization of structs: Complex a = {re: 0, im: 1};
 //! TODO: inout parameters: `bool next(typename &it, typename &&out)` + iteration over struct members.
-//? TODO: assign variable to variant: variant var = a;
+//? TODO: assign explicitly a variable to variant: variant v = a;
 
 //? TODO: static if else part
 //? TODO: threat errors as warnings inside static if false branch
 //? TODO: separate struct and unoin declaration
 //? TODO: variable.struct should return the type of variable.
 
-/+ FIXED: function parameter matching
+//~ /+ FIXED: function parameter matching
 struct debugInfo {
 	string func;
 	double x;
@@ -315,18 +315,21 @@ idnMat4x4(mat2);		// ERROR: if using idnMat4x4(float64 mat[16])
 // */
 
 /+ TODO: nice to have
-//~ arrays of functions
-	//~ int alma(int h)[10];
+arrays of functions
+	int blendModes(int a, int b)[16] = {...};
 
-//~ associative arrays: maps
-	//~ int stringMap[string];		stringMap[]
+function enumerations
+	enum BlendMode: int(int a, int b) {...}
 
-//~ recursively inline:
-	//~ inline fact(int64 n) = (n * fact(n - 1));
+associative arrays: maps
+	int stringMap[string];		stringMap[]
 
-//~ ?: operator short form (non zero):
-	//~ int b = a || 10; => int b = a != 0 ? a : 10;
-	//~ int b = a ?: 10; => int b = a != 0 ? a : 10;
+recursive inlining:
+	inline fact(int64 n) = (n * fact(n - 1));
+
+?: operator short form (non zero):
+	int b = a || 10; => int b = bool(a) ? a : 10;
+	int b = a ?: 10; => int b = bool(a) ? a : 10;
 
 //~ +/
 /+ TODO: nameless struct variable
@@ -389,6 +392,7 @@ inline void(uint16 &&a)  = void(0);
 inline void(uint32 &&a)  = void(0);
 inline void(float32 &&a) = void(0);
 inline void(float64 &&a) = void(0);
+inline void(object &&o)  = void(object.destroy(o));
 //~ +/
 
 /+ Reflect

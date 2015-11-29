@@ -8,6 +8,7 @@ code emmiting, executing and formatting
 #include <string.h>
 #include <math.h>
 #include <time.h>
+#include <stddef.h>
 #include "core.h"
 
 #ifdef __WATCOMC__
@@ -296,7 +297,7 @@ int optimizeAssign(state rt, size_t offsBegin, size_t offsEnd) {
 	return 0;
 }
 
-void iterateAsm(state rt, size_t offsBegin, size_t offsEnd, void *extra, int callBack(void *extra, size_t offs, void* ip)) {
+void iterateAsm(state rt, size_t offsBegin, size_t offsEnd, customContext ctx, int callBack(customContext, size_t offs, void* ip)) {
 	size_t is, offs;
 	for (offs = offsBegin; offs < offsEnd; offs += is) {
 		register bcde ip = getip(rt, offs);
@@ -309,7 +310,7 @@ void iterateAsm(state rt, size_t offsBegin, size_t offsEnd, void *extra, int cal
 			#define STOP(__ERR, __CHK, __ERC) if (__CHK) goto __ERR
 			#include "code.inl"
 		}
-		callBack(extra, offs, ip);
+		callBack(ctx, offs, ip);
 	}
 }
 
@@ -1135,7 +1136,7 @@ static inline int task(cell pu, int n, int master, int cl) {
 }
 
 /// Wait for child cells to halt.
-static int sync(cell pu, int cp, int wait) {
+static inline int sync(cell pu, int cp, int wait) {
 	int pp = pu[cp].pp;
 	logProc(pu, cp, "join");
 
@@ -1165,74 +1166,69 @@ static inline int ovf(cell pu) {
 	return (pu->sp - pu->tp) < 0;
 }
 
-// TODO: to be renamed; manages function call stack traces
-static inline int dotrace(state rt, void* caller, void* callee, void* sp) {
+/** manage function call stack traces
+ * @param state runtime context
+ * @param sp tack pointer (for tracing arguments
+ * @param caller the address of the caller, NULL on start and end.
+ * @param callee the called function adress, -1 on leave.
+ * @param extra TO BE REMOVED
+ */
+static inline int traceCall(state rt, void* sp, void* caller, void* callee) {
 	clock_t now = clock();
 	cell pu = rt->vm.cell;
 	if (rt->dbg == NULL) {
 		return 0;
 	}
-	if (sp == NULL) {
+	// trace execute statement
+	if (callee == NULL) {
+		fatal(ERR_INTERNAL_ERROR);
+	}
+	// trace leave function
+	else if ((ptrdiff_t)callee < 0) {
 		tracePtr tp;
-		int64_t diff;
 		int recursive = 0;
 		if (pu->tp - pu->bp < (ptrdiff_t)sizeof(struct traceRec)) {
 			debug("tp: %d - sp: %d", pu->tp - pu->bp, pu->sp - pu->bp);
 			return 0;
 		}
 		pu->tp -= sizeof(struct traceRec);
-		callee = ((tracePtr)pu->tp)->callee;
+
 		for (tp = (tracePtr)pu->bp; tp < (tracePtr)pu->tp; tp++) {
-			if (callee == tp->callee) {
+			if (tp->callee == ((tracePtr)pu->tp)->callee) {
 				recursive = 1;
 				break;
 			}
 		}
 		tp = (tracePtr)pu->tp;
+
+		clock_t ticks = now - tp->func;
 		size_t callerOffs = vmOffset(rt, tp->caller);
 		dbgInfo calleeFunc = mapDbgFunction(rt, vmOffset(rt, tp->callee));
 		dbgInfo callerFunc = mapDbgFunction(rt, callerOffs);
-		dbgInfo callerStmt = mapDbgStatement(rt, callerOffs);
-		if (callerFunc == NULL || calleeFunc == NULL) {
-			char *text = "";
-			if (callerFunc == NULL && calleeFunc == NULL) {
-				text = "";
-			}
-			else if (callerFunc == NULL) {
-				text = " caller";
-			}
-			if (calleeFunc == NULL) {
-				text = " callee";
-			}
-			fatal("no%s debug information for: %T@%06x", text, mapsym(rt, callerOffs, 0), callerOffs);
-		}
-		diff = now - tp->func;
+		//dbgInfo callerStmt = mapDbgStatement(rt, callerOffs);
 		if (calleeFunc != NULL) {
-			calleeFunc->hits += 1;
+			calleeFunc->exec += 1;
 			if (!recursive) {
-				calleeFunc->funcTime += diff;
+				calleeFunc->total += ticks;
 			}
+			calleeFunc->self += ticks;
 		}
 		if (callerFunc != NULL) {
-			if (!recursive) {
-				callerFunc->diffTime -= diff;
-			}
+			callerFunc->self -= ticks;
 		}
+		/* TODO: update caller statement times
 		if (callerStmt != NULL) {
 			if (!recursive) {
-				callerStmt->diffTime -= diff;
+				callerStmt->self -= ticks;
 			}
 			else {
-				callerStmt->funcTime -= diff;
+				callerStmt->total -= ticks;
 			}
-		}
-		/* print trace leave
-		prerr("TRACE", "leave(@%D, %d) %T, time: %D(%D-%D)", (int64_t)now
-			, (pu->tp - pu->bp) / sizeof(struct traceRec)
-			, mapsym(rt, vmOffset(rt, tp->callee), 1)
-			, (int64_t)diff, (int64_t)now, (int64_t)tp->func);
-		 // */
+		}*/
+
+		rt->dbg->dbug(rt->dbg->context, noError, (pu->tp - pu->bp) / sizeof(struct traceRec), sp, caller, callee);
 	}
+	// trace enter function
 	else {
 		tracePtr tp = (tracePtr)pu->tp;
 		if (ovf(pu)) {
@@ -1243,14 +1239,19 @@ static inline int dotrace(state rt, void* caller, void* callee, void* sp) {
 		tp->callee = callee;
 		tp->func = now;
 		tp->sp = sp;
-		//prerr("TRACE", "enter(@%D, %d) %T", (int64_t)now, (pu->tp - pu->bp) / sizeof(struct traceRec), mapsym(rt, vmOffset(rt, callee), 1));
+		dbgInfo calleeFunc = mapDbgFunction(rt, vmOffset(rt, tp->callee));
+		if (calleeFunc != NULL) {
+			calleeFunc->hits += 1;
+		}
+
+		rt->dbg->dbug(rt->dbg->context, noError, (pu->tp - pu->bp) / sizeof(struct traceRec), sp, caller, callee);
 		pu->tp += sizeof(struct traceRec);
 	}
 	return 1;
 }
 
 /// Private dummy debug function.
-static int dbgDummy(state rt, int pu, void *ip, void* sp, size_t ss, vmError err, size_t fp) {
+static int dbgDummy(state ctx, vmError err, void *ip, void* sp, size_t ss) {
 	if (err != noError) {
 		char *errorStr = NULL;
 		switch (err) {
@@ -1282,18 +1283,22 @@ static int dbgDummy(state rt, int pu, void *ip, void* sp, size_t ss, vmError err
 				errorStr = "ExternalCallAbort";
 				break;
 
+			case executionAborted:
+				errorStr = "ExternalCallAbort";
+				break;
+
 			case memReadError:
 			case memWriteError:
 				errorStr = "InvalidMemoryAcces";
 				break;
 		}
 		// TODO: get file and line from debug information ?
-		error(rt, NULL, 0, "%s executing: %.0A @%06x", errorStr, ip, vmOffset(rt, ip));
-		logTrace(rt, NULL, 1, -1, 100);
+		error(ctx, NULL, 0, "%s executing: %.0A @%06x", errorStr, ip, vmOffset(ctx, ip));
+		//~ logTrace(rt, NULL, 1, -1, 100);
 		return -1;
 	}
 	(void)sp;
-	(void)fp;
+	(void)ss;
 	return 0;
 }
 
@@ -1306,9 +1311,7 @@ static int dbgDummy(state rt, int pu, void *ip, void* sp, size_t ss, vmError err
  * @param dbg function which is executed after each instruction or on error.
  * @return Error code of execution, 0 on success.
  */
-static int exec(state rt, cell pu, symn fun, void* extra, int dbg(state, int, void*, void*, size_t, vmError, size_t)) {
-	size_t err_code = 0;
-
+static int exec(state rt, cell pu, symn fun, void *extra) {
 	const int cc = 1;
 	const libc libcvec = rt->vm.libv;
 
@@ -1317,21 +1320,23 @@ static int exec(state rt, cell pu, symn fun, void* extra, int dbg(state, int, vo
 	const memptr mp = (void*)rt->_mem;
 	const stkptr st = (void*)(pu->bp + pu->ss);
 
-	// run in debug mode if the specified function is not null or
-	if (rt->dbg != NULL || dbg != NULL) {
+	// run in debug of profile mode
+	if (rt->dbg != NULL) {
+		vmError errorCode = noError;
+		const void *oldTP = pu->tp;
 		const stkptr spMin = (stkptr)(pu->bp);
 		const stkptr spMax = (stkptr)(pu->bp + pu->ss);
 		const bcde ipMin = (bcde)(rt->_mem + rt->vm.ro);
 		const bcde ipMax = (bcde)(rt->_mem + rt->vm.px + px_size);
+		int (*dbg)(customContext, vmError, size_t, void*, void*, void*) = rt->dbg->dbug;
+		customContext ctx = rt->dbg->context;
 
 		if (dbg == NULL) {
-			dbg = rt->dbg->dbug;
-			if (dbg == NULL) {
-				dbg = dbgDummy;
-			}
+			ctx = (void*)rt;
+			dbg = (void*)dbgDummy;
 		}
 		// invoked function(from external code) will return with a ret instruction, removing trace info
-		dotrace(rt, libcvec, getip(rt, fun->offs), pu->sp);
+		traceCall(rt, pu->sp, NULL, getip(rt, fun->offs));
 
 		for ( ; ; ) {
 			register const bcde ip = (bcde)pu->ip;
@@ -1342,89 +1347,94 @@ static int exec(state rt, cell pu, symn fun, void* extra, int dbg(state, int, vo
 			const dbgInfo stmt = mapDbgStatement(rt, pc);
 
 			if (ip >= ipMax || ip < ipMin) {
-				dbg(rt, 0, ip, sp, pu->ss, invalidIP, vmOffset(rt, ip));
+				dbg(ctx, invalidIP, st - sp, sp, ip, NULL);
 				return invalidIP;
 			}
 			if (sp > spMax || sp < spMin) {
-				dbg(rt, 0, ip, sp, pu->ss, invalidSP, vmOffset(rt, sp));
+				dbg(ctx, invalidSP, st - sp, sp, ip, NULL);
 				return invalidSP;
 			}
-			if ((err_code = dbg(rt, 0, ip, sp, st - sp, noError, 0)) != 0) {
+			if (dbg(ctx, noError, st - sp, sp, ip, NULL) != 0) {
 				// abort execution from debuging
-				return err_code;
+				return executionAborted;
 			}
 			if (stmt != NULL) {
-				clock_t now = clock();
-				if (stmt != NULL) {
-					if (pc == stmt->start) {
-						tp->stmt = now;
-						/* TODO: remove: print start executing statement
-						symn sym = NULL;
-						int symOffs = 0;
-						if (stmt != NULL) {
-							if (sym == NULL) {
-								sym = mapsym(rt, stmt->start, 1);
-							}
-							if (sym != NULL) {
-								symOffs = stmt->start - sym->offs;
-							}
+				if (pc == stmt->start) {
+					clock_t now = clock();
+					stmt->hits += 1;
+					tp->stmt = now;
+					/* TODO: remove: print start executing statement
+					symn sym = NULL;
+					int symOffs = 0;
+					if (stmt != NULL) {
+						if (sym == NULL) {
+							sym = mapsym(rt, stmt->start, 1);
 						}
-						fputfmt(stdout, "%s:%?u:enter[%06x, %06x): %06x <%?T+%d>: %A, hits(%D), time: %D\n", stmt->file, stmt->line, stmt->start, stmt->end, vmOffset(rt, ip), sym, symOffs, ip, stmt->hits, (int64_t)now);
-						//~ */
+						if (sym != NULL) {
+							symOffs = stmt->start - sym->offs;
+						}
 					}
+					//~ fputfmt(stdout, "%s:%?u:enter[%06x, %06x): %06x <%?T+%d>: %A, hits(%D), time: %D\n", stmt->file, stmt->line, stmt->start, stmt->end, vmOffset(rt, ip), sym, symOffs, ip, stmt->hits, (int64_t)now);
+					fputfmt(stdout, "%s:%?u:enter@%D <%?T+%d> %.A\n", stmt->file, stmt->line, (int64_t)now, sym, symOffs, ip);
+					//~ */
 				}
 			}
 			switch (ip->opc) {
 				dbg_stop_vm:	// halt virtual machine
-					return 0;
+					dbg(ctx, errorCode, st - sp, sp, ip, NULL);
+					while (pu->tp != oldTP) {
+						traceCall(rt, NULL, NULL, (void*)-2);
+						//pu->tp = oldTP;	// during exec we may return from code.
+					}
+					return errorCode;
 
 				dbg_error_opc:
-					dbg(rt, err_code, ip, sp, st - sp, illegalInstruction, err_code);
-					return illegalInstruction;
+					errorCode = illegalInstruction;
+					goto dbg_stop_vm;
 
 				dbg_error_ovf:
-					dbg(rt, err_code, ip, sp, st - sp, stackOverflow, err_code);
-					return stackOverflow;
+					errorCode = stackOverflow;
+					goto dbg_stop_vm;
 
 				dbg_error_trace_ovf:
-					dbg(rt, err_code, ip, sp, st - sp, traceOverflow, err_code);
-					return traceOverflow;
+					errorCode = traceOverflow;
+					goto dbg_stop_vm;
 
 				dbg_error_mem_read:
-					dbg(rt, err_code, ip, sp, st - sp, memReadError, err_code);
-					return memReadError;
+					errorCode = memReadError;
+					goto dbg_stop_vm;
 
 				dbg_error_mem_write:
-					dbg(rt, err_code, ip, sp, st - sp, memWriteError, err_code);
-					return memWriteError;
+					errorCode = memWriteError;
+					goto dbg_stop_vm;
 
 				dbg_error_div_flt:
-					dbg(rt, err_code, ip, sp, st - sp, divisionByZero, err_code);
+					dbg(ctx, divisionByZero, st - sp, sp, ip, NULL);
 					// continue execution on floating point division by zero.
 					break;
 
 				dbg_error_div:
-					dbg(rt, err_code, ip, sp, st - sp, divisionByZero, err_code);
-					return divisionByZero;
+					errorCode = divisionByZero;
+					goto dbg_stop_vm;
 
 				dbg_error_libc:
-					dbg(rt, err_code, ip, sp, st - sp, libCallAbort, libcvec[ip->rel].sym->offs);
-					return libCallAbort;
+					errorCode = libCallAbort;
+					goto dbg_stop_vm;
 
 				#define NEXT(__IP, __SP, __CHK) pu->sp -= vm_size * (__SP); pu->ip += (__IP);
-				#define STOP(__ERR, __CHK, __ERC) do {if (__CHK) {err_code = __ERC; goto dbg_##__ERR;}} while(0)
+				#define STOP(__ERR, __CHK, __ERC) do {if (__CHK) {goto dbg_##__ERR;}} while(0)
 				#define EXEC
-				#define TRACE(__CALLER, __CALLEE, __SP) do { if (!dotrace(rt, __CALLER, __CALLEE, __SP)) goto dbg_error_trace_ovf; } while(0)
+				#define TRACE(__SP, __CALLER, __CALLEE) do { if (!traceCall(rt, __SP, __CALLER, __CALLEE)) goto dbg_error_trace_ovf; } while(0)
 				#include "code.inl"
 			}
 			if (stmt != NULL) {
-				size_t pc = vmOffset(rt, pu->ip);
 				const tracePtr tp2 = (tracePtr)pu->tp - 1;
 				if ((memptr)ip != tp2->caller) {
+					size_t pc = vmOffset(rt, pu->ip);
 					if (pc < stmt->start || pc >= stmt->end) {
 						clock_t now = clock();
-						stmt->hits += 1;
-						stmt->funcTime += now - tp->stmt;
+						stmt->exec += 1;
+						stmt->total += now - tp->stmt;
 						/* TODO: remove: print end executing statement
 						symn sym = NULL;
 						int symOffs = 0;
@@ -1434,7 +1444,8 @@ static int exec(state rt, cell pu, symn fun, void* extra, int dbg(state, int, vo
 						if (sym != NULL) {
 							symOffs = stmt->start - sym->offs;
 						}
-						fputfmt(stdout, "%s:%?u:leave[%06x, %06x): %06x <%?T+%d>: %A, hits(%D), time: %D - %D = %D\n", stmt->file, stmt->line, stmt->start, stmt->end, vmOffset(rt, ip), sym, symOffs, ip, stmt->hits, (int64_t)now, (int64_t)tp->stmt, (int64_t)now - (int64_t)tp->stmt);
+						//~ fputfmt(stdout, "%s:%?u:leave[%06x, %06x): %06x <%?T+%d>: %A, hits(%D), time: %D - %D = %D\n", stmt->file, stmt->line, stmt->start, stmt->end, vmOffset(rt, ip), sym, symOffs, ip, stmt->hits, (int64_t)now, (int64_t)tp->stmt, (int64_t)now - (int64_t)tp->stmt);
+						fputfmt(stdout, "%s:%?u:leave@%D: %D <%?T+%d> %.A\n", stmt->file, stmt->line, (int64_t)now, (int64_t)(now - tp->stmt), sym, symOffs, ip);
 						sym = NULL;
 						// */
 					}
@@ -1453,36 +1464,37 @@ static int exec(state rt, cell pu, symn fun, void* extra, int dbg(state, int, vo
 				return 0;
 
 			error_opc:
-				dbgDummy(rt, err_code, ip, sp, pu->ss, illegalInstruction, err_code);
+				dbgDummy(rt, illegalInstruction, ip, sp, pu->ss);
 				return illegalInstruction;
 
 			error_ovf:
-				dbgDummy(rt, err_code, ip, sp, pu->ss, stackOverflow, err_code);
+				dbgDummy(rt, stackOverflow, ip, sp, pu->ss);
 				return stackOverflow;
 
 			error_mem_read:
-				dbgDummy(rt, err_code, ip, sp, pu->ss, memReadError, err_code);
+				dbgDummy(rt, memReadError, ip, sp, pu->ss);
 				return memReadError;
 
 			error_mem_write:
-				dbgDummy(rt, err_code, ip, sp, pu->ss, memWriteError, err_code);
+				dbgDummy(rt, memWriteError, ip, sp, pu->ss);
 				return memWriteError;
 
 			error_div_flt:
-				dbgDummy(rt, err_code, ip, sp, pu->ss, divisionByZero, err_code);
+				dbgDummy(rt, divisionByZero, ip, sp, pu->ss);
 				// continue execution on floating point division by zero.
 				break;
 
 			error_div:
-				dbgDummy(rt, err_code, ip, sp, pu->ss, divisionByZero, err_code);
+				dbgDummy(rt, divisionByZero, ip, sp, pu->ss);
 				return divisionByZero;
 
 			error_libc:
-				dbgDummy(rt, err_code, ip, sp, pu->ss, libCallAbort, libcvec[ip->rel].sym->offs);
+				dbgDummy(rt, libCallAbort, ip, sp, pu->ss);
 				return libCallAbort;
 
 			#define NEXT(__IP, __SP, __CHK) {pu->sp -= vm_size * (__SP); pu->ip += (__IP);}
-			#define STOP(__ERR, __CHK, __ERC) if (__CHK) {err_code = __ERC; goto __ERR;}
+			#define STOP(__ERR, __CHK, __ERC) do {if (__CHK) {goto __ERR;}} while(0)
+			#define TRACE(__SP, __CALLER, __CALLEE)
 			#define EXEC
 			#include "code.inl"
 		}
@@ -1520,18 +1532,21 @@ int invoke(state rt, symn fun, void* res, void* args, void* extra) {
 
 	pu->ip = getip(rt, fun->offs);
 
-	result = exec(rt, pu, fun, extra, NULL);
+	result = exec(rt, pu, fun, extra);
 	if (result == noError && res != NULL) {
 		memcpy(res, resp, (size_t) ressize);
 	}
 
 	pu->ip = ip;
 	pu->sp = sp;	//
-	pu->tp = tp;	// during exec we may return from code.
+	if (pu->tp != tp) {
+		fatal(ERR_INTERNAL_ERROR);
+		pu->tp = tp;	// during exec we may return from code.
+	}
 
 	return result;
 }
-int execute(state rt, void* extra, size_t ss) {
+int execute(state rt, size_t ss, void *extra) {
 	// TODO: cells should be in runtime read only memory?
 	cell pu;
 
@@ -1564,13 +1579,13 @@ int execute(state rt, void* extra, size_t ss) {
 	}
 
 	// TODO argc, argv
-	return exec(rt, pu, rt->init, extra, NULL);
+	return exec(rt, pu, rt->init, extra);
 }
 
 // TODO: ADD const char *esc[] ?
 void fputasm(FILE* fout, void *ptr, int mode, state rt) {
 	bcde ip = (bcde)ptr;
-	int i, len = mode & 0x0f;
+	int i, len = mode & prAsmCode;
 	size_t offs = (size_t)ptr;
 	char *fmt_addr = " .%06x"; // "0x%08x";
 	char *fmt_offs = " <%T+%d>";
@@ -1842,10 +1857,10 @@ void fputval(state rt, FILE* fout, symn var, stkval* ref, int level, int mode) {
 			}
 		}
 		if (mode & prSymQual) {
-			fputfmt(fout, "%+T%?c: ", var, byref);
+			fputfmt(fout, "%T%?c: ", var, byref);
 		}
 		else {
-			fputfmt(fout, "%T%?c: ", var, byref);
+			fputfmt(fout, "%.T%?c: ", var, byref);
 		}
 	}
 
@@ -2081,7 +2096,9 @@ static void traceArgs(state rt, FILE *outf, symn fun, char *file, int line, void
 			}
 			else {
 				// TODO: find the offsets of arguments for libcalls.
-				fputfmt(outf, "%-T: %T", sym, sym->type);
+				//offs += sym->offs;
+				//fputval(rt, outf, sym, (void*)offs, -ident, 0);
+				fputfmt(outf, "%.T: %T", sym, sym->type);
 			}
 		}
 		if (ident > 0) {

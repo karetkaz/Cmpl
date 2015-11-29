@@ -59,7 +59,7 @@ bool next(File &file, char buff[]) {
 	return true;
 }
 
-inline testFile = "test.it.files.cvx";
+inline testFile = "tests/test.it.files.cvx";
 inline printin = !false;
 
 //~ /+ iterate file by chars

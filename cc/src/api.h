@@ -17,6 +17,7 @@ typedef unsigned long long	uint64_t;
 #else
 #include <stdint.h>
 #include <stddef.h>
+
 #endif
 typedef float float32_t;
 typedef double float64_t;
@@ -25,11 +26,12 @@ typedef double float64_t;
 extern "C" {
 #endif
 
-typedef struct symNode *symn;			// symbol
-typedef struct stateRec *state;			// runtimeContext
-typedef struct ccStateRec *ccState; 	// compilerContext
-typedef struct dbgStateRec *dbgState;	// debugContext
-typedef struct libcArgsRec *libcArgs;	// libcallContext
+typedef struct symNode *symn;					// symbol
+typedef struct stateRec *state;					// runtimeContext
+typedef struct ccStateRec *ccState; 			// compilerContext
+typedef struct dbgStateRec *dbgState;			// debugContext
+typedef struct libcArgsRec *libcArgs;			// libcallContext
+typedef struct customContext *customContext;	//
 
 /**
  * @brief Native function invocation arguments.
@@ -41,7 +43,7 @@ struct libcArgsRec {
 
 	symn  fun;		// invoked function
 	void* data;		// static data for function (passed to install)
-	void* extra;	// extra data for function (passed to execute or invoke)
+	customContext extra;	// extra data for function (passed to execute or invoke)
 
 	void* retv;		// result of function
 	char* argv;		// arguments for function
@@ -229,7 +231,7 @@ struct stateRec {
 		 * @usage see @getsym example.
 		 * @note Invocation to execute must preceed this call.
 		 */
-		int (*const invoke)(state, symn fun, void* res, void* args, void* extra);
+		int (*const invoke)(state, symn fun, void* res, void* args, customContext extra);
 
 		/**
 		 * @brief Allocate or free memory inside the vm.

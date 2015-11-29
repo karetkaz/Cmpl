@@ -1,0 +1,283 @@
+<html>
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" type="text/css" href="Inspector.css">
+<script type="application/javascript" src="Inspector.js"></script>
+<script type="application/javascript" src="jsLibs/jsData.js"></script>
+<script>
+
+var data = Instrument();
+
+function setActiveTab(tab, node, contentWriter) {
+	var tabs = document.getElementById('tabs').children;
+	var elements = document.getElementById('content').children;
+	for (var i = 0; i < tabs.length; i++) {
+		var element = tabs[i];
+		if (element === tab) {
+			element.classList.add('active');
+		}
+		else {
+			element.classList.remove('active');
+		}
+	}
+	for (var i = 0; i < elements.length; i++) {
+		var element = elements[i];
+		if (element === node.parentElement) {
+			element.classList.add('active');
+		}
+		else {
+			element.classList.remove('active');
+		}
+	}
+	if (contentWriter != null) {
+		var text, args = [];
+		for (i = 2; i < arguments.length; ++i) {
+			args[i - 2] = arguments[i];
+		}
+		text = contentWriter.apply(this, args);
+		if (text !== undefined) {
+			node.innerText = text;
+		}
+	}
+}
+
+function fileChanged(input, tab, loading, chart, tree) {
+	if (input.files.length !== 1) {
+		return;
+	}
+	setActiveTab(tab, loading);
+	data.loadFile(input.files[0], function() {
+		setActiveTab(tab, chart, function() {
+			displayCallTree(chart, tree)
+		});
+	});
+}
+
+function displayCallTree(chart, callTree, focus) {
+	var samples = data.getSamples();
+	var tree = (focus && focus.__proto__);
+	if (tree != null) {
+		tree = {
+			enter: tree.enter,
+			leave: tree.leave,
+			calltree: [tree]
+		}
+	}
+	tree = extendCallTree(tree || samples);
+
+	function extendCallTree(obj) {
+		var i, ct, result = Object.create(obj);
+		if (obj.calltree != null) {
+			ct = [];
+			for (i = 0; i < obj.calltree.length; ++i) {
+				ct.push(extendCallTree(obj.calltree[i]));
+			}
+			Object.defineProperty(result, 'calltree', {value: ct});
+		}
+		return result;
+	}
+
+	function walkCallTree(node, depth, action) {
+		if (node.calltree != null) {
+			for (var i = 0; i < node.calltree.length; ++i) {
+				var child = node.calltree[i];
+				action(child, depth, node);
+				walkCallTree(child, depth + 1, action);
+			}
+		}
+	}
+
+	if (chart != null) {
+		var chartWidth = chart.clientWidth;
+		var timeScale = chartWidth / (tree.leave - tree.enter);
+		var heightScale = 2 + parseFloat(getComputedStyle(chart).fontSize);
+		var maxDepth = 100;//(chart.clientHeight) / heightScale - 1;
+		var minTime = 0;//(tree.leave - tree.enter) / 5000;	// 0.05%
+
+		callTree.innerHTML = '';
+		chart.innerHTML = '';
+
+		var row = document.createElement("tr");
+		var func, hits, selfTime, totalTime;
+		row.appendChild(hits = document.createElement("th"));
+		row.appendChild(selfTime = document.createElement("th"));
+		row.appendChild(totalTime = document.createElement("th"));
+		row.appendChild(func = document.createElement("th"));
+		hits.innerText = "Hits";
+		selfTime.innerText = "Self Time";
+		totalTime.innerText = "Total Time";
+		func.innerText = "Function";
+		callTree.appendChild(row);
+
+		walkCallTree(tree, 0, function(node, depth) {
+			var left = timeScale * (node.enter - tree.enter);
+			var right = timeScale * (tree.leave - node.leave);
+			var funct = node.func || { name: '??' };
+			var sample = samples.samples[funct.offs] || {};	// make everithing undefined if function is not found
+			var title = 'Function: ' + funct.name + ' @' + funct.offs
+					+ '\nHit Count: ' + node.hits
+					+ '\nSelf Ticks: ' + node.self
+					+ '\nSelf Cost: ' + (node.self * 100 / (tree.leave - tree.enter)).toFixed(2) + '%'
+					+ '\nTotal Ticks: ' + node.total
+					+ '\nTotal Cost: ' + (node.total * 100 / (tree.leave - tree.enter)).toFixed(2) + '%'
+					+ '\nGlobal Hit Count: ' + sample.hits
+					+ '\nGlobal Self Ticks: ' + sample.self
+					+ '\nGlobal Self Cost: ' + (sample.self * 100 / (samples.leave - samples.enter)).toFixed(2) + '%'
+					+ '\nGlobal Total Ticks: ' + sample.total
+					+ '\nGlobal Total Cost: ' + (sample.total * 100 / (samples.leave - samples.enter)).toFixed(2) + '%'
+					+ '\n' + funct.proto;
+
+			var expanded = '⏷'; // ▽ ▾ ▿ ◢ ◢ ⏷ ▼
+			var colapsed = '⏵'; // ▷ ▸ ▹ ◥ ◿ ⏵ ▶
+
+			// add to call chart
+			if (depth < maxDepth && timeScale * node.total > .3) {
+				var div = document.createElement("div");
+				chart.appendChild(div);
+
+				div.innerText = '\u00A0' + funct.name;
+
+				div.style.left = left;
+				div.style.right = right;
+				div.style.top = depth * heightScale + 1;
+				div.style.height = heightScale - 1;
+				div.title = title;
+				node.htmlChartNode = div;
+				div.onclick = function() {
+					var n;
+					if (node.htmlTreeNode != null) {
+						for (n = node.caller; n != null; n = n.caller) {
+							if (n.htmlExpander && n.htmlExpander.innerText === colapsed) {
+								n.htmlExpander.innerText = expanded;
+								walkCallTree(n, 0, function(node, depth) {
+									// expand only one depth
+									if (node.htmlTreeNode == null || depth > 0) {
+										return;
+									}
+									node.htmlTreeNode.style.display = '';
+								});
+							}
+						}
+						node.htmlTreeNode.scrollIntoView(!true);
+						node.htmlTreeNode.classList.add('hover');
+						setTimeout(function() {
+							node.htmlTreeNode.classList.remove('hover');
+						}, 500);
+					}
+				}
+				div.ondblclick = function(e) {
+					displayCallTree(chart, callTree, node);
+				};
+			}
+
+			// add to call tree
+			if (node.total > minTime) {
+				var row = document.createElement("tr");
+				var func, hits, selfTime, totalTime;
+				row.appendChild(hits = document.createElement("td"));
+				row.appendChild(selfTime = document.createElement("td"));
+				row.appendChild(totalTime = document.createElement("td"));
+				row.appendChild(func = document.createElement("td"));
+
+				hits.innerText = node.hits;
+				selfTime.innerText = node.self + ' / ' + (node.self * 100 / (tree.leave - tree.enter)).toFixed(2) + '%';
+				totalTime.innerText = node.total + ' / ' + (node.total * 100 / (tree.leave - tree.enter)).toFixed(2) + '%';
+
+				node.htmlTreeNode = row;		// add a reference to the table row
+				node.htmlExpander = null;
+
+				walkCallTree(node, 0, function(childNode, depth) {
+					if (childNode.total > minTime && depth >= 0) {
+						if (node.htmlExpander == null) {
+							node.htmlExpander = document.createElement("span");
+						}
+					}
+				});
+
+				if (node.htmlExpander !== null) {
+					func.appendChild(node.htmlExpander);
+					node.htmlExpander.innerText = expanded;
+					node.htmlExpander.onclick = function(event) {
+						if (node.htmlExpander.innerText === colapsed) {
+							node.htmlExpander.innerText = expanded;
+							walkCallTree(node, 0, function(node, depth) {
+								// expand only one depth
+								if (node.htmlTreeNode == null || (!event.ctrlKey && depth > 0)) {
+									return;
+								}
+								node.htmlTreeNode.style.display = '';
+								if (event.ctrlKey && node.htmlExpander != null) {
+									node.htmlExpander.innerText = expanded;
+								}
+							});
+						}
+						else {
+							node.htmlExpander.innerText = colapsed;
+							walkCallTree(node, 0, function(node, depth) {
+								// collapse each subnode
+								if (node.htmlTreeNode == null) {
+									return;
+								}
+								node.htmlTreeNode.style.display = 'none';
+								if (node.htmlExpander != null) {
+									node.htmlExpander.innerText = colapsed;
+								}
+							});
+						}
+					}
+				}
+				else {
+					func.appendChild(document.createElement("span"));
+				}
+
+				func.appendChild(document.createTextNode(funct.proto));
+				func.style.paddingLeft = depth + 'em';
+				row.title = title;
+				row.onmouseenter = function(e) {
+					if (node.htmlChartNode != null) {
+						node.htmlChartNode.classList.add('hover');
+					}
+				};
+				row.onmouseleave = function(e) {
+					if (node.htmlChartNode != null) {
+						node.htmlChartNode.classList.remove('hover');
+					}
+				};
+				row.ondblclick = function(e) {
+					displayCallTree(chart, callTree, node);
+				};
+				callTree.appendChild(row);
+			}
+		});
+	}
+}
+
+function printCallTree() {
+	return toJsString(data.getSamples(), '\n');
+}
+
+</script>
+</head>
+<body style="overflow:auto">
+  <div id="tabs">
+	<input id="filedata" onchange="fileChanged(this, call_tree_tab, loading, call_chart_data, call_tree_data);" type="file">
+	<span id="call_tree_tab" onClick="setActiveTab(this, call_chart_data);" onDblClick="displayCallTree(call_chart_data, call_tree_data);">CallTree</span>
+	<span onClick="setActiveTab(this, code, printCallTree);">CallInfo</span>
+	<span onClick="setActiveTab(this, code, data.api.getSciteApi);">SciteApi</span>
+	<span onClick="setActiveTab(this, code, data.api.getAll);">Symbols</span>
+	<span onClick="setActiveTab(this, search);">Search</span>
+  </div>
+  <div id="content">
+	<div><h1 id="loading">Loading data ...</h1></div>
+	<div>
+		<div id="call_chart_data"></div>
+		<div id="call_tree_tool_bar"></div>
+		<table>
+			<tbody id="call_tree_data"></tbody>
+		</table>
+	</div>
+	<div><pre id="code"></pre></div>
+	<div><pre id="search"></pre></div>
+  </div>
+</body>
+</html>

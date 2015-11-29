@@ -385,7 +385,7 @@ float64 drand() {
 }
 
 float64 maxrand = -1;
-for(int i = 0; i < 3000; i += 1) {
+for(int i = 0; i < 30; i += 1) {
 	float64 currand = drand();
 
 	if (maxrand < currand) {
@@ -417,22 +417,25 @@ scalar m1[dim][dim];		//%%.1f
 scalar m2[dim][dim];
 scalar m3[dim][dim];
 
-//~ /+ Initialize
-for (int i = 0; i < dim; i += 1) {
-	for (int j = 0; j < dim; j += 1) {
-		m1[i][j] = m2[i][j] = (i == j) + 1;
-	}
-} // +/
-
-//~ /+ Compute: matrix multiply
-parallel for (int i = 0; i < dim; i += 1) {
-	for (int j = 0; j < dim; j += 1) {
-		m3[i][j] = 0;
-		for (int k = 0; k < dim; k += 1) {
-			m3[i][j] += m1[i][k] * m2[k][j];
+void multiplyMatrix() {
+	//~ /+ Initialize
+	for (int i = 0; i < dim; i += 1) {
+		for (int j = 0; j < dim; j += 1) {
+			m1[i][j] = m2[i][j] = (i == j) + 1;
 		}
-	}
-} // +/
+	} // +/
+
+	//~ /+ Compute: matrix multiply
+	parallel for (int i = 0; i < dim; i += 1) {
+		for (int j = 0; j < dim; j += 1) {
+			m3[i][j] = 0;
+			for (int k = 0; k < dim; k += 1) {
+				m3[i][j] += m1[i][k] * m2[k][j];
+			}
+		}
+	} // +/
+}
+multiplyMatrix();
 }
 static if (Test.Call & 0x08) {		// 256 bit(8x32bit) integer
 struct int32x8 {

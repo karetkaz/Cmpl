@@ -332,7 +332,7 @@ static int FILE_flush(libcArgs args) {
 
 //#{#region system functions (exit, rand, clock, debug)
 
-#if (defined __WATCOMC__) || (defined _MSC_VER)
+#if (defined __WATCOMC__) || (defined _MSC_VER) || (defined __WIN32)
 #include <Windows.h>
 static inline int64_t timeMillis() {
 	static const int64_t kTimeEpoc = 116444736000000000LL;
@@ -356,7 +356,6 @@ static inline void sleepMillis(int64_t milliseconds) {
 	Sleep(milliseconds);
 }
 #else
-#include <time.h>
 #include <sys/time.h>
 static inline int64_t timeMillis() {
 	int64_t now;
@@ -480,7 +479,7 @@ static int sysTryExec(libcArgs args) {
 		if (dbg != NULL) {
 			int oldValue = dbg->checked;
 			dbg->checked = 1;
-			result = invoke(rt, action, NULL, &cbArg, NULL);
+			result = invoke(rt, action, NULL, &cbArg, args->extra);
 			dbg->checked = oldValue;
 		}
 		else {

@@ -520,16 +520,15 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 				#endif
 			}
 			for (ptr = ast->stmt.stmt; ptr; ptr = ptr->next) {
-				size_t ipdbg = emitopc(rt, markIP);
+				size_t ipStart = emitopc(rt, markIP);
 				if (!cgen(rt, ptr, TYPE_vid)) {		// we will free stack on scope close
-					dumpTree(rt, ptr, ipdbg, emitopc(rt, markIP));
+					size_t ipEnd = emitopc(rt, markIP);
+					dumpTree(rt, ptr, ipStart, ipEnd);
 					error(rt, ptr->file, ptr->line, "emitting statement `%+t`", ptr);
 				}
-				if (rt->dbg != NULL) {
+				if (ptr->kind != STMT_beg) {
 					size_t ipEnd = emitopc(rt, markIP);
-					if (ipdbg < ipEnd && ptr->kind != STMT_beg) {
-						addDbgStatement(rt, ipdbg, ipEnd, ptr);
-					}
+					addDbgStatement(rt, ipStart, ipEnd, ptr);
 				}
 			}
 			if (ast->cst2 == TYPE_rec) {
@@ -601,17 +600,8 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 			lbreak = emitopc(rt, markIP);
 			stbreak = stkoffs(rt, 0);
 
-			if (rt->dbg != NULL) {
-				if (lcont < lincr) {
-					addDbgStatement(rt, lcont, lincr, ast->stmt.step);
-				}
-				if (lincr < lbreak) {
-					addDbgStatement(rt, lincr, lbreak, ast->stmt.test);
-				}
-				/*if (lcont < lbreak) {
-					addDbgSatement(rt, lcont, lbreak, ast);
-				}*/
-			}
+			addDbgStatement(rt, lcont, lincr, ast->stmt.step);
+			addDbgStatement(rt, lincr, lbreak, ast->stmt.test);
 
 			while (rt->cc->jmps != jl) {
 				astn jmp = rt->cc->jmps;
@@ -2299,7 +2289,7 @@ int gencode(state rt, int mode) {
 		}
 	}
 
-	// used memeory by metadata (string constants and typeinfos)
+	// set used memeory by metadata (string constants and typeinfos)
 	Lmeta = rt->_beg - rt->_mem;
 
 	// debuginfo
@@ -2327,9 +2317,7 @@ int gencode(state rt, int mode) {
 			lc->sym->offs = vmOffset(rt, &calls[lc->pos]);
 			lc->sym->size = sizeof(struct libc);
 			calls[lc->pos] = *lc;
-			if (rt->dbg != NULL) {
-				addDbgFunction(rt, lc->sym);
-			}
+			addDbgFunction(rt, lc->sym);
 		}
 		rt->vm.libv = calls;
 	}
@@ -2404,9 +2392,7 @@ int gencode(state rt, int mode) {
 				var->size = emitopc(rt, markIP) - seg;
 				var->stat = 1;
 
-				if (rt->dbg != NULL) {
-					addDbgFunction(rt, var);
-				}
+				addDbgFunction(rt, var);
 			}
 			else {
 				unsigned padd = rt_size;

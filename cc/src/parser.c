@@ -945,7 +945,7 @@ static astn decl_alias(ccState cc) {
 				int used = usages(param) - 1;
 				// warn to cache if it is used more than once
 				if (used > 1) {
-					warn(cc->s, 8, param->file, param->line, "parameter `%T` may be cached (used %d times in expression)", param, used);
+					warn(cc->s, 16, param->file, param->line, "parameter `%T` may be cached (used %d times in expression)", param, used);
 				}
 				else {
 					param->kind = TYPE_def;

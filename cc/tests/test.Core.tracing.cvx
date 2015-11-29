@@ -7,7 +7,7 @@ void f(int &arg) {
 	}
 	int n2 = arg - 1;
 	//~ f(&n2);
-	tryExec(pointer(n2), emit(struct, ref(f)));
+	tryExec(pointer(&n2), emit(struct, ref(f)));
 }
 
 int N = 4;

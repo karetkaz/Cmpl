@@ -7,7 +7,7 @@
  * }
  * STOP(__ERR, __CHK, __ERC)
  * EXEC if execution is needed.
- * TRACE(__IP, __SP) trace functions.
+ * TRACE(__SP, __CALLER, __CALLEE) trace functions.
  *
  *
  *
@@ -31,17 +31,13 @@ case opc_call: NEXT(1, -0, 1) {
 	size_t retip = pu->ip - mp;
 	pu->ip = mp + SP(0, u4);
 	SP(0, u4) = (uint32_t)retip;
-#ifdef TRACE
-	TRACE(ip, pu->ip, sp);
-#endif
+	TRACE(sp, ip, pu->ip);
 #endif
 } break;
 case opc_jmpi: NEXT(1, -1, 1) {
 #ifdef EXEC
 	pu->ip = mp + SP(0, u4);
-#ifdef TRACE
-	TRACE(NULL, NULL, NULL);
-#endif
+	TRACE(sp, ip, (void*)-1);
 #endif
 } break;
 case opc_jmp:  NEXT(4, -0, 0) {
@@ -93,13 +89,10 @@ case opc_libc: NEXT(4, -libcvec[ip->rel].pop, libcvec[ip->rel].chk) {
 		args.retv = (char *)st;
 	}
 
-#ifdef TRACE
-	TRACE(ip, libcall, pu->sp);
-#endif
+	TRACE(sp, ip, libcall);
 	exitCode = libcall->call(&args);
-#ifdef TRACE
-	TRACE(NULL, NULL, NULL);
-#endif
+	TRACE(sp, ip, (void*)-1);
+
 	STOP(error_libc, exitCode != 0, exitCode);
 	STOP(stop_vm, ip->rel == 0, 0);			// Halt();
 #endif
