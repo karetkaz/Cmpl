@@ -7,7 +7,7 @@
 Lexical elements
 
 */
-#include "core.h"
+#include "internal.h"
 
 /** Construct arguments.
  * @brief construct a new node for function arguments

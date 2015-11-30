@@ -22,7 +22,7 @@ the core:
 *******************************************************************************/
 #include <string.h>
 #include <stdlib.h>
-#include "core.h"
+#include "internal.h"
 
 const struct tok_inf tok_tbl[255] = {
 	#define TOKDEF(NAME, TYPE, SIZE, STR) {TYPE, SIZE, STR},

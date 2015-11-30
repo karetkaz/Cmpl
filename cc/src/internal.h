@@ -9,9 +9,8 @@
 #ifndef CC_CORE_H
 #define CC_CORE_H 2
 
-#include <stdlib.h>
-#include <time.h>
-#include "pvmc.h"
+#include "ccstd.h"
+#include <stdlib.h> // abort
 
 /* debug level:
 	0: show where error is raised
@@ -22,7 +21,7 @@
 	4: print generated assembly
 	5: print non pre-mapped strings, non static types
 */
-//~ #define DEBUGGING 0
+//~ #define DEBUGGING 100
 
 // enable paralell execution stuff
 //~ #define VM_MAX_PROCS 1

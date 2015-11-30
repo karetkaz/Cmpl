@@ -7,7 +7,7 @@ source code representation using abstract syntax tree
 *******************************************************************************/
 #include <string.h>
 #include <math.h>
-#include "core.h"
+#include "internal.h"
 
 astn newnode(ccState cc, ccToken kind) {
 	state rt = cc->s;

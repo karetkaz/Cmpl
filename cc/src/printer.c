@@ -10,7 +10,7 @@
 *******************************************************************************/
 #include <stdarg.h>
 #include <string.h>
-#include "core.h"
+#include "internal.h"
 
 static void fputsym(FILE*, const char *[], symn, int, int);
 static inline int fputchr(FILE* stream, int chr) { return fputc(chr, stream); }

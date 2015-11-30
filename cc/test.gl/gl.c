@@ -1,6 +1,6 @@
 //~ http://pyopengl.sourceforge.net/documentation/manual-3.0/index.html
 //~ sudo apt-get install freeglut3:i386
-#include "api.h"
+#include "ccapi.h"
 #include <stdlib.h>
 #include <GL/glut.h>
 
@@ -351,7 +351,7 @@ int ccvmInit(state _rt) {
 	};
 
 	struct {
-		int64_t value;
+		size_t value;
 		char *name;
 	}
 	defsGl[] = {

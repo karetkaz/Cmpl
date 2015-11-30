@@ -9,7 +9,7 @@
 #include "g3_draw.h"
 #include "drv_gui.h"
 
-#include "core.h"
+#include "internal.h"
 #include <assert.h>
 
 //#{ old style arguments

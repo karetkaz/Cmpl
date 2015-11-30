@@ -59,7 +59,7 @@ examples:
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#include "core.h"
+#include "internal.h"
 
 // enable dynamic dll/so lib loading
 #define USEPLUGINS

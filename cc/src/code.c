@@ -9,7 +9,7 @@ code emmiting, executing and formatting
 #include <math.h>
 #include <time.h>
 #include <stddef.h>
-#include "core.h"
+#include "internal.h"
 
 #ifdef __WATCOMC__
 #pragma disable_message(124);

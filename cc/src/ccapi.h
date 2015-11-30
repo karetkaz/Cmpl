@@ -1,8 +1,8 @@
 #ifndef CC_API_H
 #define CC_API_H 2
 
-#include <stdio.h>
-#include <string.h>
+#include <stdio.h> // FILE
+#include <string.h> // memcpy
 
 #ifdef _MSC_VER
 typedef signed char			int8_t;

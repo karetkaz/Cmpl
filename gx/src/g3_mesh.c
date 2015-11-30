@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include "g2_surf.h"
 #include "g3_draw.h"
-#include "core.h"
+#include "internal.h"
 
 #ifdef __linux__
 #define stricmp(__STR1, __STR2) strcasecmp(__STR1, __STR2)
@@ -1151,8 +1151,6 @@ typedef struct userData {
 	int isPos, isNrm;
 	double pos[3], nrm[3];
 } *userData;
-
-#include "pvmc.h"
 
 static int getS(libcArgs rt) {
 	userData d = rt->extra;

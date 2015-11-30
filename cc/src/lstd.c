@@ -8,7 +8,7 @@ basic math, debug, and system functions
 #include <math.h>
 #include <time.h>
 #include <stdlib.h>
-#include "core.h"
+#include "internal.h"
 
 //#{#region math functions
 static int f64sin(libcArgs args) {
@@ -565,7 +565,7 @@ int install_stdc(state rt) {
 		// TODO: include some of the compiler functions for reflection. (lookup, exec?, ...)
 	};
 	struct {
-		int64_t value;
+		size_t value;
 		char* name;
 	}
 	constants[] = {

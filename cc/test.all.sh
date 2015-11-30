@@ -13,7 +13,7 @@ flags="-profile"
 logFile=out/log.test.log
 dumpPrefix=out/profile
 
-cat>$logFile
+#~ cat>$logFile
 for file in $files
 do
 	testName=${file%.cvx}

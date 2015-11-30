@@ -94,7 +94,7 @@ TODO's:
 
 *******************************************************************************/
 
-#include "core.h"
+#include "internal.h"
 
 symn newdefn(ccState s, ccToken kind) {
 	state rt = s->s;

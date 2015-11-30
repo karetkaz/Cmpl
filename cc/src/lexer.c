@@ -59,7 +59,7 @@ Lexical elements
 
 #include <string.h>
 #include <fcntl.h>
-#include "core.h"
+#include "internal.h"
 
 //#{~~~~~~~~~ Input ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // used mostly by the lexer

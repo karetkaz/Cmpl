@@ -1,7 +1,7 @@
 #ifndef CC_BASE_H
 #define CC_BASE_H 2
 
-#include "api.h"
+#include "ccapi.h"
 
 #ifdef __cplusplus
 extern "C" {
