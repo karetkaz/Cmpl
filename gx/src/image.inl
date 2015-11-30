@@ -80,7 +80,7 @@ typedef int (*bmplnwriter)(FILE*, unsigned char*, unsigned);
 size_t FRead(void *ptr, size_t size, size_t nmemb, FILE *stream) {
 	int cnt = fread(ptr, size, nmemb, stream);
 	if (nmemb != cnt)
-		debug("xxx");
+		gx_debug("xxx");
 	return cnt;
 }
 

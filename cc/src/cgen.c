@@ -8,25 +8,6 @@ description:
 #include <string.h>
 #include "core.h"
 
-// utility function for debugging only.
-static void dumpTree(state rt, astn ast, size_t offsStart, size_t offsEnd) {
-#if defined(DEBUGGING) && DEBUGGING > 1
-	struct symNode dbg;
-	if (rt->logf != NULL) {
-		memset(&dbg, 0, sizeof(dbg));
-		dbg.kind = TYPE_ref;
-		dbg.name = "error";
-		dbg.call = 1;
-		dbg.init = ast;
-		dbg.offs = offsStart;
-		dbg.size = offsEnd - offsStart;
-		//dumpxml(rt->logf, ast, 0xff, 0, "code");
-		// TODO: dump for single symbol
-		// dump(rt, NULL, NULL);
-	}
-#endif
-}
-
 /**
  * @brief get absolute position on stack, of relative offset
  * @param rt Runtime context.
@@ -522,9 +503,8 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 			for (ptr = ast->stmt.stmt; ptr; ptr = ptr->next) {
 				size_t ipStart = emitopc(rt, markIP);
 				if (!cgen(rt, ptr, TYPE_vid)) {		// we will free stack on scope close
-					size_t ipEnd = emitopc(rt, markIP);
-					dumpTree(rt, ptr, ipStart, ipEnd);
 					error(rt, ptr->file, ptr->line, "emitting statement `%+t`", ptr);
+					return TYPE_any;
 				}
 				if (ptr->kind != STMT_beg) {
 					size_t ipEnd = emitopc(rt, markIP);

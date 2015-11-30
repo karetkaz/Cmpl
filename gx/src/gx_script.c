@@ -9,7 +9,7 @@
 #include "g3_draw.h"
 #include "drv_gui.h"
 
-#include "pvmc.h"
+#include "core.h"
 #include <assert.h>
 
 //#{ old style arguments
@@ -66,7 +66,6 @@ extern char *ccStd;//"src/stdlib.gxc";	// stdlib script file (from gx.ini)
 extern char *ccGfx;//"src/gfxlib.gxc";	// gfxlib script file (from gx.ini)
 extern char *ccLog;//"out/debug.out";
 extern char *ccDmp;//"out/dump.out";
-extern int ccDbg;
 
 //#{#region Surfaces
 typedef enum {
@@ -156,7 +155,7 @@ static gx_Surf getSurf(gxSurfHnd hnd) {
 	if (surfaces[hnd - 1].depth) {
 		return &surfaces[hnd - 1];
 	}
-	debug("getSurf(%d): null", hnd);
+	gx_debug("getSurf(%d): null", hnd);
 	return NULL;
 }
 
@@ -480,7 +479,7 @@ static int surfCall(libcArgs rt) {
 			static int first = 1;
 			if (roi && first) {
 				first = 0;
-				debug("Unimplemented: evalSurf called with a roi");
+				gx_debug("Unimplemented: evalSurf called with a roi");
 			}
 			if (sdst && callback) {
 				int sx, sy;
@@ -512,7 +511,7 @@ static int surfCall(libcArgs rt) {
 			static int first = 1;
 			if (roi && first) {
 				first = 0;
-				debug("Unimplemented: fillSurf called with a roi");
+				gx_debug("Unimplemented: fillSurf called with a roi");
 			}
 			if (sdst && callback) {
 				int sx, sy;
@@ -616,7 +615,7 @@ static int surfCall(libcArgs rt) {
 			static int first = 1;
 			if (roi && first) {
 				first = 0;
-				debug("Unimplemented: evalSurf called with a roi");
+				gx_debug("Unimplemented: evalSurf called with a roi");
 			}
 			if (sdst && callback) {
 				int sx, sy;
@@ -650,7 +649,7 @@ static int surfCall(libcArgs rt) {
 			static int first = 1;
 			if (roi && first) {
 				first = 0;
-				debug("Unimplemented: fillSurf called with a roi");
+				gx_debug("Unimplemented: fillSurf called with a roi");
 			}
 			if (sdst && callback) {
 				int sx, sy;
@@ -809,7 +808,7 @@ static int surfCall(libcArgs rt) {
 				char *fileName = popstr(rt);
 				int error = gx_loadBMP(surf, fileName, 32);
 				reti32(rt, dst);
-				//~ debug("gx_readBMP(%s):%d;", fileName, error);
+				//~ gx_debug("gx_readBMP(%s):%d;", fileName, error);
 				return error;
 			}
 		} break;
@@ -819,7 +818,7 @@ static int surfCall(libcArgs rt) {
 			if ((surf = getSurf(dst))) {
 				char *fileName = popstr(rt);
 				int error = gx_loadJPG(surf, fileName, 32);
-				//~ debug("readJpg(%s):%d;", fileName, error);
+				//~ gx_debug("readJpg(%s):%d;", fileName, error);
 				reti32(rt, dst);
 				return error;
 			}
@@ -831,7 +830,7 @@ static int surfCall(libcArgs rt) {
 				char *fileName = popstr(rt);
 				int result = gx_loadPNG(surf, fileName, 32);
 				reti32(rt, dst);
-				//~ debug("gx_readPng(%s):%d;", fileName, result);
+				//~ gx_debug("gx_readPng(%s):%d;", fileName, result);
 				return result;
 			}
 		} break;
@@ -1022,7 +1021,7 @@ int gx_oilPaintSurf(gx_Surf image, gx_Rect roi, int radius, int intensity) {
 		if (top < 0) top = 0;
 		if (bottom >= h) bottom = h - 1;
 
-		//~ debug("processing line", variant(&y));
+		//~ gx_debug("processing line", variant(&y));
 
 		for (x = 0; x < w; x += 1) {
 			int left = x - radius;
@@ -1182,7 +1181,7 @@ static int meshCall(libcArgs rt) {
 		}
 		msh.map = getSurf(popi32(rt));
 		msh.freeTex = 0;
-		//~ debug("msh.map = %p", msh.map);
+		//~ gx_debug("msh.map = %p", msh.map);
 		//~ textureMesh(&msh, popstr(s));
 		return 0;
 	}
@@ -1530,7 +1529,7 @@ char* strncatesc(char *dst, int max, char* src) {
 #define snprintf(__DST, __MAX, __FMT, ...)  sprintf_s(__DST, __MAX, __FMT, ##__VA_ARGS__)
 #endif
 
-int ccCompile(char *src, int argc, char* argv[], int (*dbg)(state rt, int pu, void* ip, long* bp, int ss)) {
+int ccCompile(char *src, int argc, char* argv[], int dbg(customContext, vmError, size_t ss, void* sp, void* caller, void* callee)) {
 	symn cls = NULL;
 	const int stdwl = 0;
 	const int srcwl = 9;
@@ -1540,12 +1539,12 @@ int ccCompile(char *src, int argc, char* argv[], int (*dbg)(state rt, int pu, vo
 		return -29;
 
 	if (ccLog && logfile(rt, ccLog, 0) != 0) {
-		debug("can not open file `%s`\n", ccLog);
+		gx_debug("can not open file `%s`\n", ccLog);
 		return -2;
 	}
 
 	if (!ccInit(rt, creg_def, NULL)) {
-		debug("Internal error\n");
+		gx_debug("Internal error\n");
 		return -1;
 	}
 
@@ -1677,52 +1676,51 @@ int ccCompile(char *src, int argc, char* argv[], int (*dbg)(state rt, int pu, vo
 		ccAddCode(rt, stdwl, __FILE__, __LINE__ , "");
 		gencode(rt, 0);
 		fprintf(stdout, "#api: replace(`^([^:]*).*$`, `\\1`)\n");
-		dump(rt, dump_sym | 0x33, NULL);
+		//~ dump(rt, dump_sym | 0x33, NULL);
 		return 0;
 	}
 
 	if (err || !gencode(rt, dbg ? cgen_info | 3 : 3)) {
 		if (ccLog) {
-			debug("error compiling(%d), see ligfile: `%s`", err, ccLog);
+			gx_debug("error compiling(%d), see ligfile: `%s`", err, ccLog);
 			logfile(rt, NULL, 0);
 		}
 		err = -3;
 	}
 
 	if (err == 0) {
-		int tmp = 0;
 		symn cls;
 		ccState cc = rt->cc;
 
 		draw = 0;
-		if (ccSymValInt(ccFindSym(cc, NULL, "VmDebug"), &tmp)) {
-			ccDbg = tmp != 0;
-		}
 
 		if ((cls = ccFindSym(cc, NULL, "Window"))) {
 			if (!ccSymValInt(ccFindSym(cc, cls, "resx"), &resx)) {
-				//~ debug("using default value for resx: %d", resx);
+				//~ gx_debug("using default value for resx: %d", resx);
 			}
 			if (!ccSymValInt(ccFindSym(cc, cls, "resy"), &resy)) {
-				//~ debug("using default value for resy: %d", resy);
+				//~ gx_debug("using default value for resy: %d", resy);
 			}
 			if (!ccSymValInt(ccFindSym(cc, cls, "draw"), &draw)) {
-				//~ debug("using default value for renderType: 0x%08x", draw);
+				//~ gx_debug("using default value for renderType: 0x%08x", draw);
 			}
 		}
 
 		if (ccDmp && logfile(rt, ccDmp, 0) == 0) {
 			//~ "\ntags:\n"
-			dump(rt, dump_sym | 0xf2, NULL);
+			//~ dump(rt, dump_sym | 0xf2, NULL);
 
 			//~ "\ncode:\n"
 			//~ dump(rt, dump_ast | 0xff, NULL);
 
 			//~ "\ndasm:\n"
-			dump(rt, dump_asm | 0xf9, NULL);
+			//~ dump(rt, dump_asm | 0xf9, NULL);
 		}
 
-		//~ rt->dbg->dbug = dbg;
+		if (rt->dbg != NULL) {
+			rt->dbg->context = (void*)rt;
+			rt->dbg->dbug = dbg;
+		}
 	}
 
 	logFILE(rt, stdout);

@@ -205,21 +205,6 @@ struct opc_inf {
 };
 extern const struct opc_inf opc_tbl[255];
 
-typedef enum {		// vm errors
-	noError,
-	invalidIP,
-	invalidSP,
-	stackOverflow,
-	traceOverflow,
-	memReadError,
-	memWriteError,
-	divisionByZero,
-	illegalInstruction,
-	libCallAbort,
-	executionAborted		// execution aborted by debuger
-	//~ + ArrayBoundsExceeded
-} vmError;
-
 typedef union {		// on stack value type
 	int8_t		i1;
 	int16_t		i2;

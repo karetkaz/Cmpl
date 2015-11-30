@@ -1226,7 +1226,9 @@ static inline int traceCall(state rt, void* sp, void* caller, void* callee) {
 			}
 		}*/
 
-		rt->dbg->dbug(rt->dbg->context, noError, (pu->tp - pu->bp) / sizeof(struct traceRec), sp, caller, callee);
+		if (rt->dbg->dbug != NULL) {
+			rt->dbg->dbug(rt->dbg->context, noError, (pu->tp - pu->bp) / sizeof(struct traceRec), sp, caller, callee);
+		}
 	}
 	// trace enter function
 	else {
@@ -1244,7 +1246,9 @@ static inline int traceCall(state rt, void* sp, void* caller, void* callee) {
 			calleeFunc->hits += 1;
 		}
 
-		rt->dbg->dbug(rt->dbg->context, noError, (pu->tp - pu->bp) / sizeof(struct traceRec), sp, caller, callee);
+		if (rt->dbg->dbug != NULL) {
+			rt->dbg->dbug(rt->dbg->context, noError, (pu->tp - pu->bp) / sizeof(struct traceRec), sp, caller, callee);
+		}
 		pu->tp += sizeof(struct traceRec);
 	}
 	return 1;

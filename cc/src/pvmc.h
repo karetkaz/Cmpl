@@ -2,7 +2,6 @@
 #define CC_BASE_H 2
 
 #include "api.h"
-#include "core.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -28,6 +27,21 @@ enum {
 	cgen_glob = 0x0010,		// generate globals on stack
 	cgen_info = 0x0020,		// generate debug information
 };
+
+typedef enum {		// vm errors
+	noError,
+	invalidIP,
+	invalidSP,
+	stackOverflow,
+	traceOverflow,
+	memReadError,
+	memWriteError,
+	divisionByZero,
+	illegalInstruction,
+	libCallAbort,
+	executionAborted		// execution aborted by debuger
+	//~ + ArrayBoundsExceeded
+} vmError;
 
 /**
  * @brief Initialize runtime context.

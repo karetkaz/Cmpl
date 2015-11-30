@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include "g2_surf.h"
 #include "g3_draw.h"
+#include "core.h"
 
 #ifdef __linux__
 #define stricmp(__STR1, __STR2) strcasecmp(__STR1, __STR2)
@@ -201,7 +202,7 @@ int addseg(mesh msh, int p1, int p2) {
 }
 int addtri(mesh msh, int p1, int p2, int p3) {
 	if (p1 >= msh->vtxcnt || p2 >= msh->vtxcnt || p3 >= msh->vtxcnt) {
-		debug("addTri(%d, %d, %d)", p1, p2, p3);
+		gx_debug("addTri(%d, %d, %d)", p1, p2, p3);
 		return -1;
 	}
 
@@ -250,7 +251,7 @@ static int prgDefCB(float prec) {return 0;}
 static float precent(int i, int n) {return 100. * i / n;}
 //~ static float roundto(float x, int n) {double muldiv = pow(10, n); return round(x * muldiv) / muldiv;}
 
-struct growBuffer {
+/*struct growBuffer {
 	char *ptr;
 	int max;
 	//~ int cnt;
@@ -261,7 +262,7 @@ static void* growBuff(struct growBuffer* buff, int idx) {
 	if (pos >= buff->max) {
 		buff->max = pos << 1;
 		//~ while (pos >= buff->max) buff->max <<= 1;
-		//~ debug("realloc(%x, %d, %d):%d", buff->ptr, buff->esz, buff->max, idx);
+		//~ gx_debug("realloc(%x, %d, %d):%d", buff->ptr, buff->esz, buff->max, idx);
 		buff->ptr = realloc(buff->ptr, buff->max);
 	}
 	return buff->ptr ? buff->ptr + pos : NULL;
@@ -276,7 +277,7 @@ static void initBuff(struct growBuffer* buff, int initsize, int elemsize) {
 	buff->max = initsize;
 	buff->esz = elemsize;
 	growBuff(buff, initsize);
-}
+}*/
 
 //~ static float freadf32(FILE *fin) {float result;fread(&result, sizeof(result), 1, fin);return result;}
 static char* freadstr(char buff[], int maxlen, FILE *fin) {
@@ -303,8 +304,8 @@ static int read_obj(mesh msh, const char* file) {
 	char buff[65536];
 	int posi = 0, texi = 0;
 	int nrmi = 0, line = 0;
-	struct growBuffer nrmb;
-	struct growBuffer texb;
+	struct arrBuffer nrmb;
+	struct arrBuffer texb;
 
 	if (!(fin = fopen(file, "rb")))
 		return -1;
@@ -360,8 +361,8 @@ static int read_obj(mesh msh, const char* file) {
 			continue;
 		}
 		if ((ptr = readKVP(buff, "vt", NULL, ws))) {	// Texture vertices
-			float *vtx = growBuff(&texb, texi);
-			if (!vtx) {debug("memory"); break;}
+			float *vtx = setBuff(&texb, texi, NULL);
+			if (!vtx) {gx_debug("memory"); break;}
 
 			sscanf(ptr, "%f%f", vtx + 0, vtx + 1);
 			if (vtx[0] < 0) vtx[0] = -vtx[0];
@@ -377,8 +378,8 @@ static int read_obj(mesh msh, const char* file) {
 			continue;
 		}
 		if ((ptr = readKVP(buff, "vn", NULL, ws))) {	// Vertex normals
-			float *vtx = growBuff(&nrmb, nrmi);
-			if (!vtx) {debug("memory"); break;}
+			float *vtx = setBuff(&nrmb, nrmi, NULL);
+			if (!vtx) {gx_debug("memory"); break;}
 
 			sscanf(ptr, "%f%f%f", vtx + 0, vtx + 1, vtx + 2);
 			nrmi += 1;
@@ -420,7 +421,7 @@ static int read_obj(mesh msh, const char* file) {
 					}
 				}
 
-				//~ debug("face fragment: vtx(%d), nrm(%d), tex(%d) `%s`", v[i], vn[i], vt[i], ptr);
+				//~ gx_debug("face fragment: vtx(%d), nrm(%d), tex(%d) `%s`", v[i], vn[i], vt[i], ptr);
 
 				if (v[i]) v[i] += v[i] < 0 ? posi : -1;
 				if (vn[i]) vn[i] += vn[i] < 0 ? nrmi : -1;
@@ -432,10 +433,10 @@ static int read_obj(mesh msh, const char* file) {
 				if (vt[i] > texi || vt[i] < 0) vt[i] = 0;
 
 				if (texi) {
-					setvtxFV(msh, v[i], NULL, NULL, growBuff(&texb, vt[i]));
+					setvtxFV(msh, v[i], NULL, NULL, getBuff(&texb, vt[i]));
 				}
 				if (nrmi) {
-					setvtxFV(msh, v[i], NULL, growBuff(&nrmb, vn[i]), NULL);
+					setvtxFV(msh, v[i], NULL, getBuff(&nrmb, vn[i]), NULL);
 				}
 			}
 
@@ -679,8 +680,8 @@ static int read_3ds(mesh msh, const char* file) {
 					//#}
 				//#}
 			//#} Main chunk
-			case 0x4d4d: break;//debug("Main chunk"); break;
-				case 0x3d3d: break;//debug("3D editor chunk"); break;
+			case 0x4d4d: break;//gx_debug("Main chunk"); break;
+				case 0x3d3d: break;//gx_debug("3D editor chunk"); break;
 					//~ case 0x0100: // One unit
 					//~ case 0x1100: // Background bitmap
 					//~ case 0x1101: // Use background bitmap
@@ -713,7 +714,7 @@ static int read_3ds(mesh msh, const char* file) {
 						vtxi = posi;
 						//objName = objName;
 						(void)objName;
-						//~ debug("Object: '%s'", objName);
+						//~ gx_debug("Object: '%s'", objName);
 					} break;
 					case 0x4100: break;	// Triangular mesh
 					case 0x4110: {		// Vertices list
@@ -724,7 +725,7 @@ static int read_3ds(mesh msh, const char* file) {
 							if (fread(dat, sizeof(float), 3, fin) != 3)
 								goto invChunk;
 							if (setvtxFV(msh, vtxi + i, dat, NULL, NULL) < 0) return 1;
-							//~ debug("pos[%d](%f, %f, %f)", vtxi + i, dat[0], dat[1], dat[2]);
+							//~ gx_debug("pos[%d](%f, %f, %f)", vtxi + i, dat[0], dat[1], dat[2]);
 						}
 						posi += qty;
 					} break;
@@ -737,7 +738,7 @@ static int read_3ds(mesh msh, const char* file) {
 									goto invChunk;
 								addtri(msh, vtxi + dat[0], vtxi + dat[1], vtxi + dat[2]);
 							}
-							//~ debug("faces: %d, %d, %d", vtxi, posi, texi);
+							//~ gx_debug("faces: %d, %d, %d", vtxi, posi, texi);
 					} break;
 					case 0x4130:		// Faces material list
 						goto skipchunk;
@@ -762,7 +763,7 @@ static int read_3ds(mesh msh, const char* file) {
 					goto skipchunk;
 			invChunk:
 			default:
-				debug("unknown Chunk: ID: 0x%04x; Len: %d", chunk_id, chunk_len);
+				gx_debug("unknown Chunk: ID: 0x%04x; Len: %d", chunk_id, chunk_len);
 			skipchunk:
 				fseek(fin, chunk_len - 6, SEEK_CUR);
 				break;
@@ -782,7 +783,7 @@ static int save_obj(mesh msh, const char* file) {
 	//~ const int prec = 2;
 
 	if (!(out = fopen(file, "wt"))) {
-		debug("fopen(%s, 'wt')", file);
+		gx_debug("fopen(%s, 'wt')", file);
 		return -1;
 	}
 
@@ -845,7 +846,7 @@ int readMesh(mesh msh, const char* file) {
 	if (stricmp(ext, "3ds") == 0)
 		return read_3ds(msh, file);
 
-	//~ debug("mesh '%s' not found", file);
+	//~ gx_debug("mesh '%s' not found", file);
 	return -9;
 }
 int saveMesh(mesh msh, const char* file) {
@@ -854,7 +855,7 @@ int saveMesh(mesh msh, const char* file) {
 	if (strcmp(ext, "obj") == 0)
 		return save_obj(msh, file);
 
-	debug("invalid extension");
+	gx_debug("invalid extension");
 	return -9;
 }
 
@@ -1243,7 +1244,7 @@ int evalMesh(mesh msh, int sdiv, int tdiv, char *src, char *file, int line) {
 
 	// pointers, variants and emit are not needed.
 	if (!ccInit(rt, creg_base, NULL)) {
-		debug("Internal error\n");
+		gx_debug("Internal error\n");
 		return -1;
 	}
 
@@ -1276,7 +1277,7 @@ int evalMesh(mesh msh, int sdiv, int tdiv, char *src, char *file, int line) {
 
 	// optimize on max level, and generate global variables on stack
 	if (err || !gencode(rt, cgen_glob | 0xff)) {
-		debug("error compiling(%d), see `%s`", err, logf);
+		gx_debug("error compiling(%d), see `%s`", err, logf);
 		logfile(rt, NULL, 0);
 		return -3;
 	}
@@ -1319,8 +1320,8 @@ int evalMesh(mesh msh, int sdiv, int tdiv, char *src, char *file, int line) {
 	//~ cs = lookup_nz(env->cc, "closedS");
 	//~ ct = lookup_nz(env->cc, "closedT");
 
-	//~ debug("s(min:%lf, max:%lf, div:%d%s)", ud.smin, ud.smax, sdiv, /* cs ? ", closed" : */ "");
-	//~ debug("t(min:%lf, max:%lf, div:%d%s)", ud.tmin, ud.tmax, tdiv, /* ct ? ", closed" : */ "");
+	//~ gx_debug("s(min:%lf, max:%lf, div:%d%s)", ud.smin, ud.smax, sdiv, /* cs ? ", closed" : */ "");
+	//~ gx_debug("t(min:%lf, max:%lf, div:%d%s)", ud.tmin, ud.tmax, tdiv, /* ct ? ", closed" : */ "");
 	//~ vmInfo(env->vm);
 
 	ds = 1. / (sdiv - 1);
@@ -1338,8 +1339,8 @@ int evalMesh(mesh msh, int sdiv, int tdiv, char *src, char *file, int line) {
 			ud.s = s;
 			ud.t = t;
 			ud.isNrm = 0;
-			if (execute(rt, &ud, stacksize) != 0) {
-				debug("error");
+			if (execute(rt, stacksize, &ud) != 0) {
+				gx_debug("error");
 				return -4;
 			}
 			dv3cpy(pos, ud.pos);
@@ -1350,16 +1351,16 @@ int evalMesh(mesh msh, int sdiv, int tdiv, char *src, char *file, int line) {
 			else {
 				ud.s = s + epsilon;
 				ud.t = t;
-				if (execute(rt, &ud, stacksize) != 0) {
-					debug("error");
+				if (execute(rt, stacksize, &ud) != 0) {
+					gx_debug("error");
 					return -5;
 				}
 				dv3cpy(ds, ud.pos);
 
 				ud.s = s;
 				ud.t = t + epsilon;
-				if (execute(rt, &ud, stacksize) != 0) {
-					debug("error");
+				if (execute(rt, stacksize, &ud) != 0) {
+					gx_debug("error");
 					return -6;
 				}
 				dv3cpy(dt, ud.pos);

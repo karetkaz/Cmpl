@@ -5,7 +5,7 @@ application [global options] [local options]...
   -std<file>            specify custom standard library file.
                         empty file name disables std library compilation.
 
-  -log[/*] <file>       set logger for: compilation errors and warnings, runtime debug messages
+  -log[/ *] <file>      set logger for: compilation errors and warnings, runtime debug messages
     /a                  append to the log file
 
   -dump[.?] <file>      set output for: dump(symbols, assembly, abstract syntax tree, coverage, call tree)
@@ -18,13 +18,13 @@ application [global options] [local options]...
 
   -run                  run without: debug information, stacktrace, bounds checking, ...
 
-  -debug[<hex>][/*]     run with attached debugger, break on uncaught errors
+  -debug[<hex>][/ *]    run with attached debugger, break on uncaught errors
     <hex>               custom optimization level for code generation
     /a                  break on caught errors
     /s                  break on startup
     /v                  print global variable values
 
-  -profile[/*]          run code with profiler: coverage, method tracing
+  -profile[/ *]         run code with profiler: coverage, method tracing
 +   /c                  dump call tree
 +   /m                  dump allocated heap memory
     without c or m dump will contain only execution times and hit count of functions and statements.

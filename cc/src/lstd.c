@@ -416,28 +416,26 @@ static int sysDebug(libcArgs args) {
 	int traceLevel = argi32(args, 6 * vm_size);
 
 	//~ long* argv = (long*)(long(*)[7])args->argv;
-	//~ prerr("debug", "%-T -> [%d, %d, %d, %d, %d, %d, %d]", args->fun, argv[0], argv[1], argv[2], argv[3], argv[4], argv[5], argv[6]);
-
-	// skip logLevel 0
+	// skip if logging is diabled or logLevel is 0
 	if (rt->logf != NULL && logLevel != 0) {
 		int isOutput = 0;
 
-		if (!(message || (varRef && varType))) {
-			message = "";
-		}
-		// position where the function was invoked
+		// print valid code position (where the function was invoked).
 		if (file != NULL && line > 0) {
 			fputfmt(rt->logf, "%s:%u", file, line);
 			isOutput = 1;
 		}
 
-		// the message to be printed
+		// print the message
 		if (message != NULL) {
-			fputfmt(rt->logf, ": %s", message);
+			if (isOutput) {
+				fputfmt(rt->logf, ": ");
+			}
+			fputfmt(rt->logf, "%s", message);
 			isOutput = 1;
 		}
 
-		// specified object
+		// print the value of the object (handy to inspect values).
 		if (varType != NULL && varRef != NULL) {
 			if (isOutput) {
 				fputfmt(rt->logf, ": ");
@@ -446,7 +444,7 @@ static int sysDebug(libcArgs args) {
 			isOutput = 1;
 		}
 
-		// add a new line to the output.
+		// add a line ending to the output.
 		if (isOutput) {
 			fputfmt(rt->logf, "\n");
 		}
@@ -459,7 +457,7 @@ static int sysDebug(libcArgs args) {
 
 	// abort the execution
 	if (logLevel < 0) {
-		return logLevel;
+		return executionAborted;
 	}
 
 	return 0;

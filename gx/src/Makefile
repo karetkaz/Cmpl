@@ -6,7 +6,9 @@ BINDIR=../
 BINARY=main
 
 ARH=-m32
-CFLAGS=-Wall -Wpadded -g0 -Os
+#~ CFLAGS=-Wall -Wpadded -g0 -Os
+#~ CFLAGS=-pipe -g -Wall -Wpadded -g3 -ggdb
+CFLAGS=-pipe -g -Wall
 
 CCC=gcc $(ARH)
 LNK=gcc $(ARH)

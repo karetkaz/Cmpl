@@ -920,9 +920,9 @@ int g3_drawmesh(gx_Surf dst, mesh msh, matrix objm, camera cam, int draw, double
 			case draw_fill: {
 				draw_triangle(dst, pos, col, lit, i1, i2, i3, img);
 				if (draw & temp_debug) {
-					debug("p1: %f, %f, %f", pos[i1].x, pos[i1].y, pos[i1].z);
-					debug("p2: %f, %f, %f", pos[i2].x, pos[i2].y, pos[i2].z);
-					debug("p3: %f, %f, %f", pos[i3].x, pos[i3].y, pos[i3].z);
+					gx_debug("p1: %f, %f, %f", pos[i1].x, pos[i1].y, pos[i1].z);
+					gx_debug("p2: %f, %f, %f", pos[i2].x, pos[i2].y, pos[i2].z);
+					gx_debug("p3: %f, %f, %f", pos[i3].x, pos[i3].y, pos[i3].z);
 				}
 			} break;
 		}

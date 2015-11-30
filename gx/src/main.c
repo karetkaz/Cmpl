@@ -36,7 +36,6 @@ char *ccStd = NULL;//"src/stdlib.gxc";	// stdlib script file (from gx.ini)
 char *ccGfx = NULL;//"src/gfxlib.gxc";	// gfxlib script file (from gx.ini)
 char *ccLog = NULL;//"out/debug.out";
 char *ccDmp = NULL;//"out/dump.out";
-int ccDbg = 1;
 
 char *obj = NULL;		// object filename
 char *tex = NULL;		// texture filename
@@ -328,7 +327,7 @@ void readIni(char *file) {
 
 			*arg = 0;
 			if (arg - ptr > (ptrdiff_t)sizeof(sectName)) {
-				debug("section name too large");
+				gx_debug("section name too large");
 				abort();
 			}
 			//~ arg = ptr + 1;
@@ -356,7 +355,7 @@ void readIni(char *file) {
 				//~ strncpy(ptr, "setPos(x, y, z);\n", cnt);
 				strncpy(ptr, "", cnt);
 				ptr += strlen(ptr) + 1;
-				//~ debug("recorded function: `%s`", fun);
+				//~ gx_debug("recorded function: `%s`", fun);
 				//~ fun = NULL;
 			}
 
@@ -395,7 +394,7 @@ void readIni(char *file) {
 				ptr += strlen(ptr);
 			}
 
-			//~ debug("%s", arg);
+			//~ gx_debug("%s", arg);
 			continue;
 		}
 
@@ -409,29 +408,29 @@ void readIni(char *file) {
 		if (section == objmtl) {
 			if ((arg = readKVP(ptr, "Ka", "=", is))) {
 				if (*readVec(arg, &msh.mtl.ambi, 1))
-					debug("invalid format: %s(%d): %s", file, line, arg);
+					gx_debug("invalid format: %s(%d): %s", file, line, arg);
 				continue;
 			}
 			if ((arg = readKVP(ptr, "Kd", "=", is))) {
 				if (*readVec(arg, &msh.mtl.diff, 1))
-					debug("invalid format: %s(%d): %s", file, line, arg);
+					gx_debug("invalid format: %s(%d): %s", file, line, arg);
 				continue;
 			}
 			if ((arg = readKVP(ptr, "Ks", "=", is))) {
 				if (*readVec(arg, &msh.mtl.spec, 1))
-					debug("invalid format: %s(%d): %s", file, line, arg);
+					gx_debug("invalid format: %s(%d): %s", file, line, arg);
 				continue;
 			}
 			if ((arg = readKVP(ptr, "KS", "=", is))) {
 				if (*readF32(arg, &msh.mtl.spow))
-					debug("invalid format: %s(%d): %s", file, line, arg);
+					gx_debug("invalid format: %s(%d): %s", file, line, arg);
 				continue;
 			}
 			//~ union vector ambi;		// Ambient
 			//~ union vector diff;		// Diffuse
 			//~ union vector spec;		// Specular
 			//~ union vector emis;		// Emissive
-			debug("invalid light param: %s(%d): %s", file, line, ptr);
+			gx_debug("invalid light param: %s(%d): %s", file, line, ptr);
 		}
 		if (section == objlit) {
 
@@ -442,34 +441,34 @@ void readIni(char *file) {
 
 			if ((arg = readKVP(ptr, "pos", "=", is))) {
 				if (*readVec(arg, &lit->pos, 1))
-					debug("invalid format: %s(%d): %s", file, line, arg);
+					gx_debug("invalid format: %s(%d): %s", file, line, arg);
 				continue;
 			}
 			if ((arg = readKVP(ptr, "dir", "=", is))) {
 				if (*readVec(arg, &lit->dir, 0))
-					debug("invalid format: %s(%d): %s", file, line, arg);
+					gx_debug("invalid format: %s(%d): %s", file, line, arg);
 				continue;
 			}
 
 			if ((arg = readKVP(ptr, "Ka", "=", is))) {
 				if (*readVec(arg, &lit->ambi, 1))
-					debug("invalid format: %s(%d): %s", file, line, arg);
+					gx_debug("invalid format: %s(%d): %s", file, line, arg);
 				continue;
 			}
 			if ((arg = readKVP(ptr, "Kd", "=", is))) {
 				if (*readVec(arg, &lit->diff, 1))
-					debug("invalid format: %s(%d): %s", file, line, arg);
+					gx_debug("invalid format: %s(%d): %s", file, line, arg);
 				continue;
 			}
 			if ((arg = readKVP(ptr, "Ks", "=", is))) {
 				if (*readVec(arg, &lit->spec, 0))
-					debug("invalid format: %s(%d): %s", file, line, arg);
+					gx_debug("invalid format: %s(%d): %s", file, line, arg);
 				continue;
 			}
 
 			if ((arg = readKVP(ptr, "attn", "=", is))) {
 				if (*readVec(arg, &lit->attn, 0))
-					debug("invalid format: %s(%d): %s", file, line, arg);
+					gx_debug("invalid format: %s(%d): %s", file, line, arg);
 				continue;
 			}
 			if ((arg = readKVP(ptr, "spot", "=", is))) {
@@ -479,11 +478,11 @@ void readIni(char *file) {
 					continue;
 				if (!*(arg = readF32(arg, &lit->sExp)))
 					continue;
-				debug("invalid format: %s(%d): %s", file, line, arg);
+				gx_debug("invalid format: %s(%d): %s", file, line, arg);
 				continue;
 			}
 
-			debug("invalid light param: %s(%d): %s", file, line, ptr);
+			gx_debug("invalid light param: %s(%d): %s", file, line, ptr);
 		}
 
 		if (section == object) {
@@ -512,17 +511,17 @@ void readIni(char *file) {
 			// temporary
 			if ((arg = readKVP(ptr, "object.size", "=", is))) {
 				if (*readFlt(arg, &O))
-					debug("invalid number: %s", arg);
+					gx_debug("invalid number: %s", arg);
 				continue;
 			}
 			if ((arg = readKVP(ptr, "normal.size", "=", is))) {
 				if (*readFlt(arg, &NormalSize))
-					debug("invalid number: %s", arg);
+					gx_debug("invalid number: %s", arg);
 				continue;
 			}
 			if ((arg = readKVP(ptr, "lights.size", "=", is))) {
 				if (*readFlt(arg, &lightsize))
-					debug("invalid number: %s", arg);
+					gx_debug("invalid number: %s", arg);
 				continue;
 			}
 		}
@@ -537,41 +536,41 @@ void readIni(char *file) {
 			if ((arg = readKVP(ptr, "screen.width", "=", is))) {
 				char *end = readI32(arg, &resx);
 				if (*end)
-					debug("invalid number: %s:%d", arg, *end);
+					gx_debug("invalid number: %s:%d", arg, *end);
 				continue;
 			}
 			if ((arg = readKVP(ptr, "screen.height", "=", is))) {
 				if (*readI32(arg, &resy))
-					debug("invalid number: %s", arg);
+					gx_debug("invalid number: %s", arg);
 				continue;
 			}
 			/* TODO
 			if ((arg = readKVP(ptr, "speed", "=", is))) {
 				if (*readFlt(arg, &speed))
-					debug("invalid number: %s", arg);
+					gx_debug("invalid number: %s", arg);
 				continue;
 			}// */
 			if ((arg = readKVP(ptr, "frustum.fovy", "=", is))) {
 				if (*readFlt(arg, &F_fovy))
-					debug("invalid number: %s", arg);
+					gx_debug("invalid number: %s", arg);
 				continue;
 			}
 
 			if ((arg = readKVP(ptr, "frustum.near", "=", is))) {
 				if (*readFlt(arg, &F_near))
-					debug("invalid number: %s", arg);
+					gx_debug("invalid number: %s", arg);
 				continue;
 			}
 
 			if ((arg = readKVP(ptr, "frustum.far", "=", is))) {
 				if (*readFlt(arg, &F_far))
-					debug("invalid number: %s", arg);
+					gx_debug("invalid number: %s", arg);
 				continue;
 			}
 
 			if ((arg = readKVP(ptr, "epsilon", "=", is))) {
 				if (*readFlt(arg, &epsilon))
-					debug("invalid number: %s", arg);
+					gx_debug("invalid number: %s", arg);
 				continue;
 			}
 
@@ -620,7 +619,7 @@ void readIni(char *file) {
 					le->next = extmgr;
 					extmgr = le;
 					ptr += sizeof(struct strlist);
-					//~ debug("open(%s): `%s`", ext, arg);
+					//~ gx_debug("open(%s): `%s`", ext, arg);
 				}
 				continue;
 			}
@@ -634,8 +633,8 @@ void readIni(char *file) {
 		msh.lit = userLights;
 	}
 	//~ for (arg = temp; arg < ptr; arg += 1) {putc(*arg, stdout);}
-	//~ debug("ini size: %d", ptr - temp);
-	//~ debug("%s", obj);
+	//~ gx_debug("ini size: %d", ptr - temp);
+	//~ gx_debug("%s", obj);
 }
 
 static int textureMesh(mesh msh, char *tex) {
@@ -650,7 +649,7 @@ static int textureMesh(mesh msh, char *tex) {
 			res = gx_loadJPG(msh->map, tex, 32);
 		if (stricmp(ext, "png") == 0)
 			res = gx_loadPNG(msh->map, tex, 32);
-		debug("ReadText('%s'): %d", tex, res);
+		gx_debug("ReadText('%s'): %d", tex, res);
 	}
 	return res;
 }
@@ -660,7 +659,7 @@ int readorevalMesh(mesh msh, char *src, int line, char *tex, int div) {
 	if (src != NULL) {
 		res = textureMesh(msh, tex);
 		res = (line && *src == ';') ? evalMesh(msh, div, div, src + 1, ini, line) : readMesh(msh, src);
-		debug("readorevalMesh('%s', %s): %d\tTime: %g", *src != ';' ? src : "`script`", tex ? tex : "", res, ticksinsecs(ticks));
+		gx_debug("readorevalMesh('%s', %s): %d\tTime: %g", *src != ';' ? src : "`script`", tex ? tex : "", res, ticksinsecs(ticks));
 	}
 	return res;
 }
@@ -691,12 +690,12 @@ void meshInfo(mesh msh) {
 	//~ printf("tri cnt : %d / %d\n", msh->tricnt, msh->maxtri);
 }
 
-#include "pvmc.h"
+#include "core.h"
 extern state rt;
 extern symn renderMethod;
 extern symn mouseCallBack;
 extern symn keyboardCallBack;
-extern int ccCompile(char *src, int argc, char* argv[], int dbgCon(state rt, int pu, void* ip, long* bp, int ss));
+extern int ccCompile(char *src, int argc, char* argv[], int dbg(state, vmError, size_t ss, void* sp, void* caller, void* callee));
 
 enum Events {
 	doReload = 10,
@@ -843,7 +842,7 @@ static int kbdHND(int key, int state) {
 			//~ return doNormalize;
 
 		default:
-			debug("kbdHND(key(%d), lkey(%8s))", key, my_itoa(buff, state, 10, 0));
+			gx_debug("kbdHND(key(%d), lkey(%8s))", key, my_itoa(buff, state, 10, 0));
 			break;
 
 	}
@@ -915,19 +914,22 @@ static int ratHND(int btn, int mx, int my) {
 		}
 }
 
-static int dbgCon(state rt, int pu, void* ip, long* bp, int ss) {
-	int IP = ((char*)ip) - ((char*)rt->_mem);
-	fputfmt(rt, 0, NULL, ">exec:[sp%02d:%08x]@%9.*A\n", ss, bp + ss, IP, ip);
-	//~ fputfmt(stdout, ">exec:[sp%02d:%08x]@%9.*A\n", ss, bp + ss, IP, ip);
+static int dbgCon(state rt, vmError err, size_t ss, void* sp, void* caller, void* callee) {
+	//~ int IP = ((char*)caller) - ((char*)rt->_mem);
+	if (callee != NULL) {
+		return 0;
+	}
+	fputfmt(stdout, ">exec:[sp%02d:%016X]@ %.A\n", ss, *(int64_t*)sp, caller);
+	//~ fputfmt(stdout, ">exec: %.A\n", caller);
 	return 0;
 }
 
-static int dbgDummy(state rt, int pu, void* ip, long* bp, int ss) {
+static int dbgDummy(state rt, vmError err, size_t ss, void* sp, void* caller, void* callee) {
 	return 0;
 }
 
 int main(int argc, char* argv[]) {
-	int (*dbg)(state rt, int pu, void* ip, long* bp, int ss) = NULL;
+	int (*dbg)(state, vmError, size_t ss, void* sp, void* caller, void* callee) = NULL;
 	static char mem[16 << 20];		// 16MB memory for vm & compiler
 
 	struct matrix proj[1], view[1];
@@ -988,7 +990,7 @@ int main(int argc, char* argv[]) {
 			if (argc == 2) {
 				// need help ?
 				rt = rtInit(mem, sizeof(mem));
-				ccCompile(NULL, 0, NULL, dbg);
+				ccCompile(NULL, 0, NULL, NULL);
 				gx_doneSurf(&offs);
 				freeMesh(&mshLightPoint);
 				freeMesh(&msh);
@@ -1011,7 +1013,7 @@ int main(int argc, char* argv[]) {
 			char* arg = argv[1];
 			char* ext = fext(arg);
 			script = findext(ext);
-			debug("opening file(%s with %s): %s", ext, script, arg);
+			gx_debug("opening file(%s with %s): %s", ext, script, arg);
 
 			if (script == NULL) {
 				obj = arg;
@@ -1039,7 +1041,7 @@ int main(int argc, char* argv[]) {
 
 	memset(&font, 0, sizeof(font));
 	if (fnt && (e = gx_loadFNT(&font, fnt))) {
-		debug("Cannot open font '%s': %d\n", fnt, e);
+		gx_debug("Cannot open font '%s': %d\n", fnt, e);
 	}
 
 	if (script != NULL) {
@@ -1048,7 +1050,7 @@ int main(int argc, char* argv[]) {
 
 		ticks = timenow();
 		e = ccCompile(script, argc, argv, dbg);
-		debug("ccCompile(Exit code: %d, Time: %.3f)", e, ticksinsecs(ticks));
+		gx_debug("ccCompile(Exit code: %d, Time: %.3f)", e, ticksinsecs(ticks));
 
 		if (e != 0) {
 			freeMesh(&mshLightPoint);
@@ -1058,7 +1060,7 @@ int main(int argc, char* argv[]) {
 	}
 
 	if ((e = g3_init(&offs, resx, resy))) {
-		debug("Error: %d\n", e);
+		gx_debug("Error: %d\n", e);
 		gx_doneSurf(&font);
 		gx_doneSurf(&offs);
 		freeMesh(&msh);
@@ -1074,9 +1076,9 @@ int main(int argc, char* argv[]) {
 
 	if (rt != NULL) {
 		int64_t ticks = timenow();
-		e = execute(rt, NULL, sizeof(mem)/3);
-		//~ debug("vmExecute(): %d\tTime: %f", e, ticksinsecs(ticks));
-		debug("vmExecute(Exit code: %d, Time: %.3f)", e, ticksinsecs(ticks));
+		e = execute(rt, sizeof(mem)/3, NULL);
+		//~ gx_debug("vmExecute(): %d\tTime: %f", e, ticksinsecs(ticks));
+		gx_debug("vmExecute(Exit code: %d, Time: %.3f)", e, ticksinsecs(ticks));
 		if (e != 0) {
 			gx_doneSurf(&offs);
 			gx_doneSurf(&font);
@@ -1115,35 +1117,35 @@ int main(int argc, char* argv[]) {
 			case doReload: {
 				readIni(ini);
 				if (rt == NULL) {
-					debug("reloading mesh: %s", obj);
+					gx_debug("reloading mesh: %s", obj);
 					readorevalMesh(&msh, obj, objLn, tex, 64);
 					centMesh(&msh, O);
 					meshInfo(&msh);
 				}
 				else {
 					int64_t ticks = timenow();
-					e = execute(rt, NULL, sizeof(mem)/3);
-					debug("vmExecute(): %d\tTime: %g", e, ticksinsecs(ticks));
+					e = execute(rt, sizeof(mem)/3, NULL);
+					gx_debug("vmExecute(): %d\tTime: %g", e, ticksinsecs(ticks));
 				}
 			} break;
 
 			case doSaveImage:
-				debug("Saving screeen ...");
+				gx_debug("Saving screeen ...");
 				gx_saveBMP("screen.bmp", &offs, 0);
 				break;
 
 			case doNormalize:
-				debug("Normalizing mesh ...");
+				gx_debug("Normalizing mesh ...");
 				normMesh(&msh, 0);
 				break;
 
 			case doOptimize:
-				debug("Optimizing mesh ...");
+				gx_debug("Optimizing mesh ...");
 				optiMesh(&msh, epsilon, osdProgress);
 				break;
 
 			case doSaveMesh:
-				debug("Saving mesh ...");
+				gx_debug("Saving mesh ...");
 				saveMesh(&msh, "mesh.obj");
 				break;
 			

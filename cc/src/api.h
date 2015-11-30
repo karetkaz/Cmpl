@@ -43,7 +43,7 @@ struct libcArgsRec {
 
 	symn  fun;		// invoked function
 	void* data;		// static data for function (passed to install)
-	customContext extra;	// extra data for function (passed to execute or invoke)
+	void* extra;	// extra data for function (passed to execute or invoke)
 
 	void* retv;		// result of function
 	char* argv;		// arguments for function

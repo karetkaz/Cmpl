@@ -1282,7 +1282,7 @@ void perr(state rt, int level, const char* file, int line, const char* msg, ...)
 		return;
 	}
 
-	if (rt && rt->cc && !file) {
+	if (rt && rt->cc && file == NULL) {
 		file = rt->cc->file;
 	}
 
