@@ -6,8 +6,8 @@
  *
  *
 *******************************************************************************/
-#ifndef CC_CORE_H
-#define CC_CORE_H 2
+#ifndef CC_INTERNAL_H
+#define CC_INTERNAL_H 2
 
 #include "ccstd.h"
 #include <stdlib.h> // abort
@@ -227,7 +227,7 @@ typedef struct list {	// linked list
 } *list;
 typedef struct libc {	// library call
 	struct libc *next;	// next
-	int (*call)(libcArgs);
+	int (*call)(libcContext);
 	void *data;	// user data for this function
 	symn sym;
 	size_t pos, chk;
@@ -357,8 +357,8 @@ typedef struct dbgInfo {
 } *dbgInfo;
 
 /// Compiler context
-struct ccStateRec {
-	state	s;
+struct ccContextRec {
+	rtContext	s;
 	symn	gdef;		// all static variables and functions
 	symn	defs;		// all definitions
 	libc	libc;		// installed libcalls
@@ -421,25 +421,20 @@ struct ccStateRec {
 	symn	emit_opc;		// emit intrinsic function, or whatever it is.
 
 	//~ symn	libc_mem;		// memory manager libcall: memmgr(pointer oldOffset, int newSize);
-	symn	libc_dbg;		// debug function libcall: debug(string message, int level, int maxTrace, variant values);
+	symn	libc_dbg;		// debug function libcall: debug(string message, variant inspect, int level, int maxTrace);
 	size_t	libc_dbg_idx;	// debug function index
 };
 
 /// Debuger context
-// TODO: merge this somehow with libcArgs and cell into exeState
-struct dbgStateRec {
+// TODO: merge this somehow with libcContext and cell into exeState
+struct dbgContextRec {
+	rtContext rt;
+	void* extra;		// extra data for debuger
 	int checked;		// execution is inside an try catch
-	customContext context;
-	int (*dbug)(customContext ctx, vmError, size_t ss, void* sp, void* caller, void* callee);
 	struct arrBuffer functions;
 	struct arrBuffer statements;
+	int (*function)(dbgContext ctx, vmError, size_t ss, void* sp, void* caller, void* callee);
 };
-
-/**
- * @brief Dump symbols
- * TODO: DocMe
- */
-void dump(state rt, customContext ctx, void action(customContext, symn));
 
 /**
  * @brief Print formatted text to the output stream.
@@ -500,7 +495,13 @@ void fputesc(FILE* fout, const char *esc[], const char* msg, ...);
  *    positive or zero value forces absolute offsets. (ex: jmp @0255d0)
  * @param rt Runtime context (optional).
  */
-void fputasm(FILE* fout, void *ptr, int mode, state rt);
+void fputasm(FILE* fout, void *ptr, int mode, rtContext rt);
+
+/**
+ * @brief Dump all accessible symbols
+ * TODO: DocMe
+ */
+void iterateApi(rtContext rt, customContext ctx, void action(customContext, symn));
 
 /**
  * @brief Iterate over instructions.
@@ -510,7 +511,7 @@ void fputasm(FILE* fout, void *ptr, int mode, state rt);
  * @param extra Extra arguments for callback.
  * @param action Callback executed on each instruction.
  */
-void iterateAsm(state rt, size_t offsBegin, size_t offsEnd, customContext extra, int action(customContext, size_t offs, void* ip));
+void iterateAsm(rtContext rt, size_t offsBegin, size_t offsEnd, customContext extra, void action(customContext, size_t offs, void* ip));
 
 /** TODO: to be renamed and moved.
  * @brief Print the value of a variable at runtime.
@@ -520,10 +521,10 @@ void iterateAsm(state rt, size_t offsBegin, size_t offsEnd, customContext extra,
  * @param ref Base offset of variable.
  * @param level Identation level. (Used for members and arrays)
  */
-void fputval(state, FILE *fout, symn var, stkval* ref, int level, int mode);
+void fputval(rtContext, FILE *fout, symn var, stkval* ref, int level, int mode);
 
 // program error
-void perr(state rt, int level, const char *file, int line, const char *msg, ...);
+void perr(rtContext rt, int level, const char *file, int line, const char *msg, ...);
 
 /**
  * @brief Install a new symbol: alias, type, variable or function.
@@ -535,7 +536,7 @@ void perr(state rt, int level, const char *file, int line, const char *msg, ...)
  * @param init Initializer, function body, alias link.
  * @return The symbol.
  */
-symn install(ccState, const char* name, ccToken kind, ccToken cast, unsigned size, symn type, astn init);
+symn install(ccContext, const char* name, ccToken kind, ccToken cast, unsigned size, symn type, astn init);
 
 /**
  * @brief Install a new symbol: alias, type, variable or function.
@@ -544,7 +545,7 @@ symn install(ccState, const char* name, ccToken kind, ccToken cast, unsigned siz
  * @param typ Type of symbol.
  * @return The symbol.
  */
-symn declare(ccState, ccToken kind, astn tag, symn typ);
+symn declare(ccContext, ccToken kind, astn tag, symn typ);
 
 /**
  * @brief check if a value can be assigned to a symbol.
@@ -553,7 +554,7 @@ symn declare(ccState, ccToken kind, astn tag, symn typ);
  * @param strict Strict mode: casts are not enabled.
  * @return cast of the assignmet if it can be done.
  */
-ccToken canAssign(ccState, symn rhs, astn val, int strict);
+ccToken canAssign(ccContext, symn rhs, astn val, int strict);
 
 /**
  * @brief Lookup an identifier.
@@ -563,7 +564,7 @@ ccToken canAssign(ccState, symn rhs, astn val, int strict);
  * @param raise may raise error if more than one result found.
  * @return Symbol found.
  */
-symn lookup(ccState, symn sym, astn ast, astn args, int raise);
+symn lookup(ccContext, symn sym, astn ast, astn args, int raise);
 
 /** TODO: to be renamed to something like `fixtype`.
  * @brief Type Check an expression.
@@ -571,7 +572,7 @@ symn lookup(ccState, symn sym, astn ast, astn args, int raise);
  * @param ast Tree to check.
  * @return Type of expression.
  */
-symn typecheck(ccState, symn loc, astn ast);
+symn typecheck(ccContext, symn loc, astn ast);
 
 /**
  * @brief Fix structure member offsets / function arguments.
@@ -593,23 +594,23 @@ ccToken castOf(symn typ);
 ccToken castTo(astn ast, ccToken castTo);
 
 /// skip the next token.
-astn next(ccState, ccToken kind);
-int skip(ccState, ccToken kind);
-ccToken test(ccState);
-void backTok(ccState, astn tok);
-astn peekTok(ccState, ccToken kind);
-ccToken skiptok(ccState, ccToken kind, int raise);
-int source(ccState, int isFile, char* src);
+astn next(ccContext, ccToken kind);
+int skip(ccContext, ccToken kind);
+ccToken test(ccContext);
+void backTok(ccContext, astn tok);
+astn peekTok(ccContext, ccToken kind);
+ccToken skiptok(ccContext, ccToken kind, int raise);
+int source(ccContext, int isFile, char* src);
 
-//~ astn expr(ccState, int mode);		// parse expression	(mode: typecheck)
-//~ astn decl(ccState, int mode);		// parse declaration	(mode: enable defs(: struct, define, ...))
-//~ astn stmt(ccState, int mode);		// parse statement	(mode: enable decl/enter new scope)
-astn decl_var(ccState, astn *args, int mode);
+//~ astn expr(ccContext, int mode);		// parse expression	(mode: typecheck)
+//~ astn decl(ccContext, int mode);		// parse declaration	(mode: enable defs(: struct, define, ...))
+//~ astn stmt(ccContext, int mode);		// parse statement	(mode: enable decl/enter new scope)
+astn decl_var(ccContext, astn *args, int mode);
 
 /// Enter a new scope.
-void enter(ccState, astn ast);
+void enter(ccContext, astn ast);
 /// Leave current scope.
-symn leave(ccState, symn def, int mkstatic);
+symn leave(ccContext, symn def, int mkstatic);
 
 /**
  * @brief Open a file or text for compilation.
@@ -617,17 +618,17 @@ symn leave(ccState, symn def, int mkstatic);
  * @param file file name of input.
  * @param line first line of input.
  * @param text if not null, this will be compiled instead of the file.
- * @return compiler state or null on error.
+ * @return compiler context or null on error.
  * @note invokes ccInit if not initialized.
  */
-ccState ccOpen(state rt, char* file, int line, char* source);
+ccContext ccOpen(rtContext rt, char* file, int line, char* source);
 
 /**
  * @brief Close input file, ensuring it ends correctly.
  * @param cc compiler context.
  * @return number of errors.
  */
-int ccDone(ccState cc);
+int ccDone(ccContext cc);
 
 
 /** TODO: to be deleted; lookup should handle static expressions.
@@ -636,7 +637,7 @@ int ccDone(ccState cc);
  * @param ast Abstract syntax tree to be checked.
  * @return true or false.
  */
-int isStatic(ccState, astn ast);
+int isStatic(ccContext, astn ast);
 
 /**
  * @brief Check if an expression is constant.
@@ -693,23 +694,23 @@ symn linkOf(astn ast);
 int eval(astn res, astn ast);
 
 /// Allocate a symbol node.
-symn newdefn(ccState, ccToken kind);
+symn newdefn(ccContext, ccToken kind);
 /// Allocate a tree node.
-astn newnode(ccState, ccToken kind);
+astn newnode(ccContext, ccToken kind);
 /// Consume node, so it may be reused.
-void eatnode(ccState, astn ast);
+void eatnode(ccContext, astn ast);
 
 /// Allocate an operator tree node.
-astn opnode(ccState, ccToken kind, astn lhs, astn rhs);
+astn opnode(ccContext, ccToken kind, astn lhs, astn rhs);
 /// Allocate node whitch is a link to a reference
-astn lnknode(ccState, symn ref);
+astn lnknode(ccContext, symn ref);
 
 /// Allocate a constant integer node.
-astn intnode(ccState, int64_t v);
+astn intnode(ccContext, int64_t v);
 /// Allocate a constant float node.
-astn fltnode(ccState, float64_t v);
+astn fltnode(ccContext, float64_t v);
 /// Allocate a constant string node.
-astn strnode(ccState, char *v);
+astn strnode(ccContext, char *v);
 
 
 int32_t constbol(astn ast);
@@ -718,11 +719,11 @@ float64_t constflt(astn ast);
 
 
 unsigned rehash(const char* str, size_t size);
-char* mapstr(ccState cc, char *str, size_t size/* = -1*/, unsigned hash/* = -1*/);
+char* mapstr(ccContext cc, char *str, size_t size/* = -1*/, unsigned hash/* = -1*/);
 
 // TODO: to be removed.
 /// returns a pointer to an offset inside the vm.
-static inline void* getip(state rt, size_t offset) {
+static inline void* getip(rtContext rt, size_t offset) {
 	if (offset == 0) {
 		return NULL;
 	}
@@ -737,7 +738,7 @@ static inline void* getip(state rt, size_t offset) {
  * @return The internal offset.
  * @note Aborts if ptr is not null and not inside the context.
  */
-size_t vmOffset(state, void *ptr);
+size_t vmOffset(rtContext, void *ptr);
 
 /**
  * @brief Optimize an assigment by removing extra copy of the value if it is on the top of the stack.
@@ -746,7 +747,7 @@ size_t vmOffset(state, void *ptr);
  * @param offsEnd End of the byte code.
  * @return non zero if the code was optimized.
  */
-int optimizeAssign(state, size_t offsBegin, size_t offsEnd);
+int optimizeAssign(rtContext, size_t offsBegin, size_t offsEnd);
 
 /**
  * @brief Emit an instruction.
@@ -755,7 +756,7 @@ int optimizeAssign(state, size_t offsBegin, size_t offsEnd);
  * @param arg Argument.
  * @return Program counter.
  */
-size_t emitarg(state, vmOpcode opc, stkval arg);
+size_t emitarg(rtContext, vmOpcode opc, stkval arg);
 
 /**
  * @brief Emit an instruction with int argument.
@@ -764,7 +765,7 @@ size_t emitarg(state, vmOpcode opc, stkval arg);
  * @param arg Integer argument.
  * @return Program counter.
  */
-size_t emitint(state, vmOpcode opc, int64_t arg);
+size_t emitint(rtContext, vmOpcode opc, int64_t arg);
 
 /**
  * @brief Fix a jump instruction.
@@ -774,18 +775,18 @@ size_t emitint(state, vmOpcode opc, int64_t arg);
  * @param stc Fix also stack size.
  * @return
  */
-int fixjump(state, int src, int dst, int stc);
+int fixjump(rtContext, int src, int dst, int stc);
 
 
 // Debuging.
 
-dbgInfo getDbgStatement(state rt, char* file, int line);
-dbgInfo mapDbgStatement(state rt, size_t position);
-dbgInfo addDbgStatement(state rt, size_t start, size_t end, astn tag);
-dbgInfo mapDbgFunction(state rt, size_t position);
-dbgInfo addDbgFunction(state rt, symn fun);
+dbgInfo getDbgStatement(rtContext rt, char* file, int line);
+dbgInfo mapDbgStatement(rtContext rt, size_t position);
+dbgInfo addDbgStatement(rtContext rt, size_t start, size_t end, astn tag);
+dbgInfo mapDbgFunction(rtContext rt, size_t position);
+dbgInfo addDbgFunction(rtContext rt, symn fun);
 
-int logTrace(state rt, FILE *out, int ident, int startlevel, int tracelevel);
+void logTrace(rtContext rt, FILE *out, int ident, int startlevel, int tracelevel);
 //~ disable warning messages
 #ifdef _MSC_VER
 // C4996: The POSIX ...

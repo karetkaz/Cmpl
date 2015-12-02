@@ -73,7 +73,7 @@ case opc_sync: NEXT(2, -0, 0) {
 case opc_libc: NEXT(4, -libcvec[ip->rel].pop, libcvec[ip->rel].chk) {
 #ifdef EXEC
 	int exitCode;
-	struct libcArgsRec args;
+	struct libcContextRec args;
 	libc libcall = &libcvec[ip->rel];
 
 	args.rt = rt;

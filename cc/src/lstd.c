@@ -11,86 +11,86 @@ basic math, debug, and system functions
 #include "internal.h"
 
 //#{#region math functions
-static int f64sin(libcArgs args) {
+static int f64sin(libcContext args) {
 	float64_t x = argf64(args, 0);
 	retf64(args, sin(x));
 	return 0;
 }
-static int f64cos(libcArgs args) {
+static int f64cos(libcContext args) {
 	float64_t x = argf64(args, 0);
 	retf64(args, cos(x));
 	return 0;
 }
-static int f64tan(libcArgs args) {
+static int f64tan(libcContext args) {
 	float64_t x = argf64(args, 0);
 	retf64(args, tan(x));
 	return 0;
 }
-static int f64log(libcArgs args) {
+static int f64log(libcContext args) {
 	float64_t x = argf64(args, 0);
 	retf64(args, log(x));
 	return 0;
 }
-static int f64exp(libcArgs args) {
+static int f64exp(libcContext args) {
 	float64_t x = argf64(args, 0);
 	retf64(args, exp(x));
 	return 0;
 }
-static int f64pow(libcArgs args) {
+static int f64pow(libcContext args) {
 	float64_t x = argf64(args, 0);
 	float64_t y = argf64(args, 8);
 	retf64(args, pow(x, y));
 	return 0;
 }
-static int f64sqrt(libcArgs args) {
+static int f64sqrt(libcContext args) {
 	float64_t x = argf64(args, 0);
 	retf64(args, sqrt(x));
 	return 0;
 }
-static int f64atan2(libcArgs args) {
+static int f64atan2(libcContext args) {
 	float64_t x = argf64(args, 0);
 	float64_t y = argf64(args, 8);
 	retf64(args, atan2(x, y));
 	return 0;
 }
 
-static int f32sin(libcArgs args) {
+static int f32sin(libcContext args) {
 	float32_t x = argf32(args, 0);
 	retf32(args, sinf(x));
 	return 0;
 }
-static int f32cos(libcArgs args) {
+static int f32cos(libcContext args) {
 	float32_t x = argf32(args, 0);
 	retf32(args, cosf(x));
 	return 0;
 }
-static int f32tan(libcArgs args) {
+static int f32tan(libcContext args) {
 	float32_t x = argf32(args, 0);
 	retf32(args, tanf(x));
 	return 0;
 }
-static int f32log(libcArgs args) {
+static int f32log(libcContext args) {
 	float32_t x = argf32(args, 0);
 	retf32(args, logf(x));
 	return 0;
 }
-static int f32exp(libcArgs args) {
+static int f32exp(libcContext args) {
 	float32_t x = argf32(args, 0);
 	retf32(args, expf(x));
 	return 0;
 }
-static int f32pow(libcArgs args) {
+static int f32pow(libcContext args) {
 	float32_t x = argf32(args, 0);
 	float32_t y = argf32(args, 4);
 	retf32(args, powf(x, y));
 	return 0;
 }
-static int f32sqrt(libcArgs args) {
+static int f32sqrt(libcContext args) {
 	float32_t x = argf32(args, 0);
 	retf32(args, sqrtf(x));
 	return 0;
 }
-static int f32atan2(libcArgs args) {
+static int f32atan2(libcContext args) {
 	float32_t x = argf32(args, 0);
 	float32_t y = argf32(args, 4);
 	retf32(args, atan2f(x, y));
@@ -99,42 +99,42 @@ static int f32atan2(libcArgs args) {
 //#}#endregion
 
 //#{#region bit operations
-static int b64not(libcArgs args) {
+static int b64not(libcContext args) {
 	int64_t x = argi64(args, 0);
 	reti64(args, ~x);
 	return 0;
 }
-static int b64and(libcArgs args) {
+static int b64and(libcContext args) {
 	int64_t x = argi64(args, 0);
 	int64_t y = argi64(args, 8);
 	reti64(args, x & y);
 	return 0;
 }
-static int b64ior(libcArgs args) {
+static int b64ior(libcContext args) {
 	int64_t x = argi64(args, 0);
 	int64_t y = argi64(args, 8);
 	reti64(args, x | y);
 	return 0;
 }
-static int b64xor(libcArgs args) {
+static int b64xor(libcContext args) {
 	int64_t x = argi64(args, 0);
 	int64_t y = argi64(args, 8);
 	reti64(args, x ^ y);
 	return 0;
 }
-static int b64shl(libcArgs args) {
+static int b64shl(libcContext args) {
 	int64_t x = argi64(args, 0);
 	int32_t y = argi32(args, 8);
 	reti64(args, x << y);
 	return 0;
 }
-static int b64shr(libcArgs args) {
+static int b64shr(libcContext args) {
 	uint64_t x = (uint64_t) argi64(args, 0);
 	int32_t y = argi32(args, 8);
 	reti64(args, (int64_t) (x >> y));
 	return 0;
 }
-static int b64sar(libcArgs args) {
+static int b64sar(libcContext args) {
 	int64_t x = argi64(args, 0);
 	int32_t y = argi32(args, 8);
 	reti64(args, x >> y);
@@ -142,7 +142,7 @@ static int b64sar(libcArgs args) {
 }
 
 /* unused bit operations
-static int b32cnt(libcArgs args) {
+static int b32cnt(libcContext args) {
 	uint32_t x = (uint32_t) argi32(args, 0);
 	x -= ((x >> 1) & 0x55555555);
 	x = (((x >> 2) & 0x33333333) + (x & 0x33333333));
@@ -151,7 +151,7 @@ static int b32cnt(libcArgs args) {
 	reti32(args, x & 0x3f);
 	return 0;
 }
-static int b32sf(libcArgs args) {
+static int b32sf(libcContext args) {
 	int32_t result = 0;
 	uint32_t x = (uint32_t) argi32(args, 0);
 	if ((x & 0x0000ffff) == 0) { result += 16; x >>= 16; }
@@ -162,7 +162,7 @@ static int b32sf(libcArgs args) {
 	reti32(args, x ? result : -1);
 	return 0;
 }
-static int b32sr(libcArgs args) {
+static int b32sr(libcContext args) {
 	int32_t result = 0;
 	uint32_t x = (uint32_t) argi32(args, 0);
 	if ((x & 0xffff0000) != 0) { result += 16; x >>= 16; }
@@ -173,7 +173,7 @@ static int b32sr(libcArgs args) {
 	reti32(args, x ? result : -1);
 	return 0;
 }
-static int b32hi(libcArgs args) {
+static int b32hi(libcContext args) {
 	uint32_t x = (uint32_t) argi32(args, 0);
 	x |= x >> 1;
 	x |= x >> 2;
@@ -183,12 +183,12 @@ static int b32hi(libcArgs args) {
 	reti32(args, x - (x >> 1));
 	return 0;
 }
-static int b32lo(libcArgs args) {
+static int b32lo(libcContext args) {
 	int32_t x = argi32(args, 0);
 	reti32(args, x & -x);
 	return 0;
 }
-static int b32swap(libcArgs args) {
+static int b32swap(libcContext args) {
 	uint32_t x = (uint32_t) argi32(args, 0);
 	x = ((x >> 1) & 0x55555555) | ((x & 0x55555555) << 1);
 	x = ((x >> 2) & 0x33333333) | ((x & 0x33333333) << 2);
@@ -197,14 +197,14 @@ static int b32swap(libcArgs args) {
 	reti64(args, (x >> 16) | (x << 16));
 	return 0;
 }
-static int b32zxt(libcArgs args) {
+static int b32zxt(libcContext args) {
 	uint32_t val = (uint32_t) argi32(args, 0);
 	int32_t ofs = (uint32_t) argi32(args, 4);
 	int32_t cnt = (uint32_t) argi32(args, 8);
 	reti32(args, (val << 32 - (ofs + cnt)) >> (32 - cnt));
 	return 0;
 }
-static int b32sxt(libcArgs args) {
+static int b32sxt(libcContext args) {
 	int32_t val = (uint32_t) argi32(args, 0);
 	int32_t ofs = (uint32_t) argi32(args, 4);
 	int32_t cnt = (uint32_t) argi32(args, 8);
@@ -223,7 +223,7 @@ static inline int argpos(int *argp, int size) {
 
 #define debugFILE(msg, ...) //prerr("debug", msg, ##__VA_ARGS__)
 
-static int FILE_open(libcArgs args) {       // File Open(char filename[]);
+static int FILE_open(libcContext args) {       // File Open(char filename[]);
 	int argc = 0;
 	char *mode = args->data;
 	char *name = argref(args, argpos(&argc, vm_size));
@@ -233,13 +233,13 @@ static int FILE_open(libcArgs args) {       // File Open(char filename[]);
 	debugFILE("Name: %s, Mode: %s, File: %x", name, mode, file);
 	return file == NULL;
 }
-static int FILE_close(libcArgs args) {      // void close(File file);
+static int FILE_close(libcContext args) {      // void close(File file);
 	FILE *file = arghnd(args, 0);
 	debugFILE("File: %x", file);
 	fclose(file);
 	return 0;
 }
-static int FILE_stream(libcArgs args) {     // File std[in, out, err];
+static int FILE_stream(libcContext args) {     // File std[in, out, err];
 	size_t stream = (size_t) args->data;
 	switch (stream) {
 		default:
@@ -266,18 +266,18 @@ static int FILE_stream(libcArgs args) {     // File std[in, out, err];
 	return 1;
 }
 
-static int FILE_getc(libcArgs rt) {
+static int FILE_getc(libcContext rt) {
 	FILE *file = arghnd(rt, 0);
 	reti32(rt, fgetc(file));
 	return 0;
 }
-static int FILE_peek(libcArgs rt) {
+static int FILE_peek(libcContext rt) {
 	FILE *file = arghnd(rt, 0);
 	int chr = ungetc(getc(file), file);
 	reti32(rt, chr);
 	return 0;
 }
-static int FILE_read(libcArgs rt) {         // int read(File &f, uint8 buff[])
+static int FILE_read(libcContext rt) {         // int read(File &f, uint8 buff[])
 	int argc = 0;
 	FILE *file = arghnd(rt, argpos(&argc, sizeof(FILE *)));
 	char *buff = argref(rt, argpos(&argc, vm_size));
@@ -285,7 +285,7 @@ static int FILE_read(libcArgs rt) {         // int read(File &f, uint8 buff[])
 	reti32(rt, fread(buff, (size_t) len, 1, file));
 	return 0;
 }
-static int FILE_gets(libcArgs args) {       // int fgets(File &f, uint8 buff[])
+static int FILE_gets(libcContext args) {       // int fgets(File &f, uint8 buff[])
 	int argc = 0;
 	FILE *file = arghnd(args, argpos(&argc, sizeof(FILE *)));
 	char *buff = argref(args, argpos(&argc, vm_size));
@@ -303,7 +303,7 @@ static int FILE_gets(libcArgs args) {       // int fgets(File &f, uint8 buff[])
 	return 0;
 }
 
-static int FILE_putc(libcArgs args) {
+static int FILE_putc(libcContext args) {
 	int argc = 0;
 	FILE *file = arghnd(args, argpos(&argc, sizeof(FILE *)));
 	int data = argi32(args, argpos(&argc, vm_size));
@@ -311,7 +311,7 @@ static int FILE_putc(libcArgs args) {
 	reti32(args, putc(data, file));
 	return 0;
 }
-static int FILE_write(libcArgs args) {      // int write(File &f, uint8 buff[])
+static int FILE_write(libcContext args) {      // int write(File &f, uint8 buff[])
 	int argc = 0;
 	FILE *file = arghnd(args, argpos(&argc, sizeof(FILE *)));
 	char *buff = argref(args, argpos(&argc, vm_size));
@@ -322,7 +322,7 @@ static int FILE_write(libcArgs args) {      // int write(File &f, uint8 buff[])
 	return 0;
 }
 
-static int FILE_flush(libcArgs args) {
+static int FILE_flush(libcContext args) {
 	FILE *file = arghnd(args, 0);
 	debugFILE("File: %x", file);
 	fflush(file);
@@ -373,40 +373,40 @@ static inline void sleepMillis(int64_t milliseconds) {
 }
 #endif
 
-static int sysExit(libcArgs args) {
+static int sysExit(libcContext args) {
 	exit(argi32(args, 0));
 	return 0;
 }
 
-static int sysRand(libcArgs args) {
+static int sysRand(libcContext args) {
 	reti32(args, rand());
 	return 0;
 }
-static int sysSRand(libcArgs args) {
+static int sysSRand(libcContext args) {
 	int seed = argi32(args, 0);
 	srand((unsigned) seed);
 	return 0;
 }
 
-static int sysTime(libcArgs args) {
+static int sysTime(libcContext args) {
 	reti32(args, (int) time(NULL));
 	return 0;
 }
-static int sysClock(libcArgs args) {
+static int sysClock(libcContext args) {
 	reti32(args, clock());
 	return 0;
 }
-static int sysMillis(libcArgs args) {
+static int sysMillis(libcContext args) {
 	reti64(args, timeMillis());
 	return 0;
 }
-static int sysMSleep(libcArgs args) {
+static int sysMSleep(libcContext args) {
 	sleepMillis(argi64(args, 0));
 	return 0;
 }
 
-static int sysDebug(libcArgs args) {
-	state rt = args->rt;
+static int sysDebug(libcContext args) {
+	rtContext rt = args->rt;
 	char* file = argref(args, 0 * vm_size);
 	int line = argi32(args, 1 * vm_size);
 	char* message = argref(args, 2 * vm_size);
@@ -463,9 +463,9 @@ static int sysDebug(libcArgs args) {
 	return 0;
 }
 
-static int sysTryExec(libcArgs args) {
-	state rt = args->rt;
-	dbgState dbg = rt->dbg;
+static int sysTryExec(libcContext args) {
+	rtContext rt = args->rt;
+	dbgContext dbg = rt->dbg;
 	int argval = argi32(args, 0 * vm_size);
 	symn action = argsym(args, 1 * vm_size);
 	if (action != NULL) {
@@ -488,14 +488,14 @@ static int sysTryExec(libcArgs args) {
 	return 0;
 }
 
-static int sysMemMgr(libcArgs rt) {
+static int sysMemMgr(libcContext rt) {
 	void* old = argref(rt, 0);
 	int size = argi32(rt, 4);
 	void* res = rtAlloc(rt->rt, old, (size_t) size);
 	reti32(rt, vmOffset(rt->rt, res));
 	return 0;
 }
-static int sysMemCpy(libcArgs rt) {
+static int sysMemCpy(libcContext rt) {
 	void* dest = argref(rt, 0 * vm_size);
 	void* src = argref(rt, 1 * vm_size);
 	int size = argi32(rt, 2 * vm_size);
@@ -503,7 +503,7 @@ static int sysMemCpy(libcArgs rt) {
 	reti32(rt, vmOffset(rt->rt, res));
 	return 0;
 }
-static int sysMemSet(libcArgs rt) {
+static int sysMemSet(libcContext rt) {
 	void* dest = argref(rt, 0 * vm_size);
 	int value = argi32(rt, 1 * vm_size);
 	int size = argi32(rt, 2 * vm_size);
@@ -513,13 +513,13 @@ static int sysMemSet(libcArgs rt) {
 }
 //#}#endregion
 
-int install_stdc(state rt) {
+int install_stdc(rtContext rt) {
 	symn nsp = NULL;		// namespace
 	int err = 0;
 	size_t i;
 
 	struct {
-		int (*fun)(libcArgs);
+		int (*fun)(libcContext);
 		char* def;
 	}
 	flt64[] = {		// sin, cos, sqrt, ...
@@ -656,7 +656,7 @@ int install_stdc(state rt) {
 	return err;
 }
 
-int install_file(state rt) {
+int install_file(rtContext rt) {
 	symn file_nsp = ccAddType(rt, "File", sizeof(FILE*), 0);
 	int err = file_nsp == NULL;
 

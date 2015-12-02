@@ -10,10 +10,12 @@ files="tests/test.*.cvx"
 #~ flags="-debug"
 flags="-profile"
 
-logFile=out/log.test.log
-dumpPrefix=out/profile
+outDir=out/test
+logFile=$outDir/log.test.log
+dumpPrefix=$outDir/profile
 
-#~ cat>$logFile
+rm -f $logFile
+mkdir -p $outDir
 for file in $files
 do
 	testName=${file%.cvx}

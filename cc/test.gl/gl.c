@@ -7,7 +7,7 @@
 #define debugGL(msg, ...) fprintf(stdout, "%s:%d:debug:"msg"\n", __FILE__, __LINE__, ##__VA_ARGS__)
 
 //#{ gl wrapper functions
-static int glFun_Viewport(libcArgs rt) {
+static int glFun_Viewport(libcContext rt) {
 	int x = argi32(rt, 4 * 0);
 	int y = argi32(rt, 4 * 1);
 	int w = argi32(rt, 4 * 2);
@@ -15,41 +15,41 @@ static int glFun_Viewport(libcArgs rt) {
 	glViewport(x, y, w, h);
 	return 0;
 }
-static int glFun_ShadeModel(libcArgs rt) {
+static int glFun_ShadeModel(libcContext rt) {
 	glShadeModel(argi32(rt, 0));
 	return 0;
 }
-static int glFun_CullFace(libcArgs rt) {
+static int glFun_CullFace(libcContext rt) {
 	glCullFace(argi32(rt, 0));
 	return 0;
 }
-static int glFun_Enable(libcArgs rt) {
+static int glFun_Enable(libcContext rt) {
 	glEnable(argi32(rt, 0));
 	return 0;
 }
-static int glFun_Disable(libcArgs rt) {
+static int glFun_Disable(libcContext rt) {
 	glDisable(argi32(rt, 0));
 	return 0;
 }
-static int glFun_Clear(libcArgs rt) {
+static int glFun_Clear(libcContext rt) {
 	glClear(argi32(rt, 0));
 	return 0;
 }
-static int glFun_Flush(libcArgs rt) {
+static int glFun_Flush(libcContext rt) {
 	glFlush();
 	return 0;
 }
 
-static int glFun_Begin(libcArgs rt) {
+static int glFun_Begin(libcContext rt) {
 	glBegin(argi32(rt, 0));
 	return 0;
 }
-static int glFun_End(libcArgs rt) {
+static int glFun_End(libcContext rt) {
 	glEnd();
 	return 0;
 }
 
-static int glFun_Vertex(libcArgs rt) {
+static int glFun_Vertex(libcContext rt) {
 	float x = argf32(rt, 4 * 0);
 	float y = argf32(rt, 4 * 1);
 	float z = argf32(rt, 4 * 2);
@@ -57,7 +57,7 @@ static int glFun_Vertex(libcArgs rt) {
 	glVertex4f(x, y, z, w);
 	return 0;
 }
-static int glFun_Normal(libcArgs rt) {
+static int glFun_Normal(libcContext rt) {
 	float x = argf32(rt, 4 * 0);
 	float y = argf32(rt, 4 * 1);
 	float z = argf32(rt, 4 * 2);
@@ -65,7 +65,7 @@ static int glFun_Normal(libcArgs rt) {
 	glNormal3f(x, y, z);
 	return 0;
 }
-static int glFun_Color(libcArgs rt) {
+static int glFun_Color(libcContext rt) {
 	float r = argf32(rt, 4 * 0);
 	float g = argf32(rt, 4 * 1);
 	float b = argf32(rt, 4 * 2);
@@ -75,12 +75,12 @@ static int glFun_Color(libcArgs rt) {
 }
 
 // matrix operations
-static int glFun_MatrixMode(libcArgs rt) {
+static int glFun_MatrixMode(libcContext rt) {
 	glMatrixMode(argi32(rt, 0));
 	return 0;
 }
 
-static int glFun_Frustum(libcArgs rt) {
+static int glFun_Frustum(libcContext rt) {
 	GLdouble left   = argf64(rt, 8 * 0);
 	GLdouble right  = argf64(rt, 8 * 1);
 	GLdouble bottom = argf64(rt, 8 * 2);
@@ -90,7 +90,7 @@ static int glFun_Frustum(libcArgs rt) {
 	glFrustum(left, right, bottom, top, znear, zfar);
 	return 0;
 }
-static int glFun_Ortho(libcArgs rt) {
+static int glFun_Ortho(libcContext rt) {
 	GLdouble left   = argf64(rt, 8 * 0);
 	GLdouble right  = argf64(rt, 8 * 1);
 	GLdouble bottom = argf64(rt, 8 * 2);
@@ -101,30 +101,30 @@ static int glFun_Ortho(libcArgs rt) {
 	return 0;
 }
 
-static int glFun_LoadMatrix(libcArgs rt) {		// LoadMatrix(double x[16])
+static int glFun_LoadMatrix(libcContext rt) {		// LoadMatrix(double x[16])
 	double* ptr = argref(rt, 0);
 	glLoadMatrixd(ptr);
 	return 0;
 }
-static int glFun_MultMatrix(libcArgs rt) {		// MultMatrix(double x[16])
+static int glFun_MultMatrix(libcContext rt) {		// MultMatrix(double x[16])
 	double* ptr = argref(rt, 0);
 	glMultMatrixd(ptr);
 	return 0;
 }
-static int glFun_LoadIdentity(libcArgs rt) {
+static int glFun_LoadIdentity(libcContext rt) {
 	glLoadIdentity();
 	return 0;
 }
-static int glFun_PushMatrix(libcArgs rt) {
+static int glFun_PushMatrix(libcContext rt) {
 	glPushMatrix();
 	return 0;
 }
-static int glFun_PopMatrix(libcArgs rt) {
+static int glFun_PopMatrix(libcContext rt) {
 	glPopMatrix();
 	return 0;
 }
 
-static int glFun_Rotate(libcArgs rt) {
+static int glFun_Rotate(libcContext rt) {
 	GLdouble angle = argf64(rt, 8 * 0);
 	GLdouble x = argf64(rt, 8 * 1);
 	GLdouble y = argf64(rt, 8 * 2);
@@ -132,14 +132,14 @@ static int glFun_Rotate(libcArgs rt) {
 	glRotated(angle, x, y, z);
 	return 0;
 }
-static int glFun_Scale(libcArgs rt) {
+static int glFun_Scale(libcContext rt) {
 	GLdouble x = argf64(rt, 8 * 0);
 	GLdouble y = argf64(rt, 8 * 1);
 	GLdouble z = argf64(rt, 8 * 2);
 	glScaled(x, y, z);
 	return 0;
 }
-static int glFun_Translate(libcArgs rt) {
+static int glFun_Translate(libcContext rt) {
 	GLdouble x = argf64(rt, 8 * 0);
 	GLdouble y = argf64(rt, 8 * 1);
 	GLdouble z = argf64(rt, 8 * 2);
@@ -149,7 +149,7 @@ static int glFun_Translate(libcArgs rt) {
 //#} opengl api
 
 //#{ glu wrapper functions
-static int gluFun_LookAt(libcArgs rt) {
+static int gluFun_LookAt(libcContext rt) {
 	GLdouble eyex = argf64(rt, 8 * 0);
 	GLdouble eyey = argf64(rt, 8 * 1);
 	GLdouble eyez = argf64(rt, 8 * 2);
@@ -170,7 +170,7 @@ static int gluFun_LookAt(libcArgs rt) {
 //#{ glut handlers
 static int btn = 0;
 
-static state rt = NULL;
+static rtContext rt = NULL;
 
 // script side callback functions
 static symn onMouse = NULL;
@@ -235,39 +235,39 @@ static void reshape(int x, int y) {
 //#}
 
 //#{ glut wrapper functions
-static int glutFun_DisplayCB(libcArgs rt) {
+static int glutFun_DisplayCB(libcContext rt) {
 	onDisplay = argsym(rt, 0);
 	return 0;
 }
-static int glutFun_ReshapeCB(libcArgs rt) {
+static int glutFun_ReshapeCB(libcContext rt) {
 	onReshape = argsym(rt, 0);
 	return 0;
 }
-static int glutFun_MouseCB(libcArgs rt) {
+static int glutFun_MouseCB(libcContext rt) {
 	onMouse = argsym(rt, 0);
 	return 0;
 }
-static int glutFun_MotionCB(libcArgs rt) {
+static int glutFun_MotionCB(libcContext rt) {
 	onMotion = argsym(rt, 0);
 	return 0;
 }
-static int glutFun_KeyboardCB(libcArgs rt) {
+static int glutFun_KeyboardCB(libcContext rt) {
 	onKeyboard = argsym(rt, 0);
 	return 0;
 }
 
-static int glutFun_Reshape(libcArgs rt) {
+static int glutFun_Reshape(libcContext rt) {
 	int width = argi32(rt, 0);
 	int height = argi32(rt, 4);
 	glutReshapeWindow(width, height);
 	return 0;
 }
-static int glutFun_PostRedisplay(libcArgs rt) {
+static int glutFun_PostRedisplay(libcContext rt) {
 	glutPostRedisplay();
 	return 0;
 }
 
-static int glutFun_MainLoop(libcArgs rt) {
+static int glutFun_MainLoop(libcContext rt) {
 	int argc = 0;
 	char* argv[] = {""};
 	int width = argi32(rt, 0);
@@ -284,7 +284,7 @@ static int glutFun_MainLoop(libcArgs rt) {
 	glutMainLoop();
 	return 0;
 }
-static int glutFun_ExitLoop(libcArgs rt) {
+static int glutFun_ExitLoop(libcContext rt) {
 	//~ glutLeaveMainLoop();
 	exit(0);
 	return 0;
@@ -294,10 +294,10 @@ static int glutFun_ExitLoop(libcArgs rt) {
 #ifdef _WIN32
 __declspec( dllexport )
 #endif
-int ccvmInit(state _rt) {
+int ccvmInit(rtContext _rt) {
 
 	struct {
-		int (*fun)(libcArgs);
+		int (*fun)(libcContext);
 		char *def;
 	}
 	libcGl[] = {

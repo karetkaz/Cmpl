@@ -1220,7 +1220,7 @@ static void FPUTFMT(FILE* fout, const char *esc[], const char* msg, va_list ap) 
 }// */
 
 
-void logFILE(state rt, FILE* file) {
+void logFILE(rtContext rt, FILE* file) {
 
 	if (rt->closelog != 0) {
 		fclose(rt->logf);
@@ -1230,7 +1230,7 @@ void logFILE(state rt, FILE* file) {
 	rt->logf = file;
 }
 
-int logfile(state rt, char* file, int append) {
+int logfile(rtContext rt, char* file, int append) {
 
 	logFILE(rt, NULL);
 
@@ -1259,7 +1259,7 @@ void fputesc(FILE* fout, const char *esc[], const char* msg, ...) {
 	va_end(ap);
 }
 
-void perr(state rt, int level, const char* file, int line, const char* msg, ...) {
+void perr(rtContext rt, int level, const char* file, int line, const char* msg, ...) {
 	int warnLevel = rt && rt->cc ? rt->cc->warn : 0;
 	FILE *logFile = rt ? rt->logf : stdout;
 	const char **esc = NULL;
@@ -1305,7 +1305,7 @@ void perr(state rt, int level, const char* file, int line, const char* msg, ...)
 }
 
 // dump
-void dump(state rt, customContext ctx, void customPrinter(customContext, symn)) {
+void iterateApi(rtContext rt, customContext ctx, void customPrinter(customContext, symn)) {
 	FILE*out = rt->logf;
 	symn sym, bp[TOKS], *sp = bp;
 

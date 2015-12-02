@@ -37,8 +37,8 @@ const struct opc_inf opc_tbl[255] = {
 };
 
 /// Initialize runtime context; @see header
-state rtInit(void* _mem, size_t size) {
-	state rt = paddptr(_mem, rt_size);
+rtContext rtInit(void* _mem, size_t size) {
+	rtContext rt = paddptr(_mem, rt_size);
 
 	if (rt != _mem) {
 		size_t diff = (char*)rt - (char*)_mem;
@@ -46,13 +46,13 @@ state rtInit(void* _mem, size_t size) {
 		size -= diff;
 	}
 
-	if (rt == NULL && size > sizeof(struct stateRec)) {
+	if (rt == NULL && size > sizeof(struct rtContextRec)) {
 		rt = _mem = malloc(size);
 		logif(rt == NULL, ERR_INTERNAL_ERROR);
 	}
 
 	if (rt != NULL) {
-		memset(rt, 0, sizeof(struct stateRec));
+		memset(rt, 0, sizeof(struct rtContextRec));
 
 		*(void**)&rt->api.ccBegin = ccBegin;
 		*(void**)&rt->api.ccDefInt = ccDefInt;
@@ -67,7 +67,7 @@ state rtInit(void* _mem, size_t size) {
 		*(void**)&rt->api.invoke = invoke;
 		*(void**)&rt->api.rtAlloc = rtAlloc;
 
-		*(size_t*)&rt->_size = size - sizeof(struct stateRec);
+		*(size_t*)&rt->_size = size - sizeof(struct rtContextRec);
 		rt->_end = rt->_mem + rt->_size;
 		rt->_beg = rt->_mem;
 
@@ -77,8 +77,8 @@ state rtInit(void* _mem, size_t size) {
 	return rt;
 }
 
-/// Allocate, resize or free memory; @see state.api.rtAlloc
-void* rtAlloc(state rt, void* ptr, size_t size) {
+/// Allocate, resize or free memory; @see rtContext.api.rtAlloc
+void* rtAlloc(rtContext rt, void* ptr, size_t size) {
 	/* memory manager
 	 * using one linked list containing both used and unused memory chunks.
 	 * The idea is when allocating a block of memory we always must to traverse the list of chunks.
@@ -257,8 +257,8 @@ void* rtAlloc(state rt, void* ptr, size_t size) {
 }
 
 //#{ symbols: install and query
-/// Begin a namespace; @see state.api.ccBegin
-symn ccBegin(state rt, const char* cls) {
+/// Begin a namespace; @see rtContext.api.ccBegin
+symn ccBegin(rtContext rt, const char* cls) {
 	symn result = NULL;
 	if (rt->cc != NULL) {
 		if (cls != NULL) {
@@ -272,7 +272,7 @@ symn ccBegin(state rt, const char* cls) {
 }
 
 /// Close a namespace; @see header
-void ccExtEnd(state rt, symn cls, int mode) {
+void ccExtEnd(rtContext rt, symn cls, int mode) {
 	if (cls != NULL) {
 		symn fields = leave(rt->cc, cls, (mode & ATTR_stat) != 0);
 		if (mode & 1) {
@@ -281,13 +281,13 @@ void ccExtEnd(state rt, symn cls, int mode) {
 		cls->flds = fields;
 	}
 }
-/// Close a namespace; @see state.api.ccEnd
-void ccEnd(state rt, symn cls) {
+/// Close a namespace; @see rtContext.api.ccEnd
+void ccEnd(rtContext rt, symn cls) {
 	ccExtEnd(rt, cls, ATTR_stat);
 }
 
-/// Declare int constant; @see state.api.ccDefInt
-symn ccDefInt(state rt, char* name, int64_t value) {
+/// Declare int constant; @see rtContext.api.ccDefInt
+symn ccDefInt(rtContext rt, char* name, int64_t value) {
 	if (!rt || !rt->cc || !name) {
 		trace("%x, %s, %D", rt, name, value);
 		return NULL;
@@ -295,8 +295,8 @@ symn ccDefInt(state rt, char* name, int64_t value) {
 	name = mapstr(rt->cc, name, -1, -1);
 	return install(rt->cc, name, TYPE_def, TYPE_int, 0, rt->cc->type_i32, intnode(rt->cc, value));
 }
-/// Declare float constant; @see state.api.ccDefFlt
-symn ccDefFlt(state rt, char* name, double value) {
+/// Declare float constant; @see rtContext.api.ccDefFlt
+symn ccDefFlt(rtContext rt, char* name, double value) {
 	if (!rt || !rt->cc || !name) {
 		trace("%x, %s, %F", rt, name, value);
 		return NULL;
@@ -304,8 +304,8 @@ symn ccDefFlt(state rt, char* name, double value) {
 	name = mapstr(rt->cc, name, -1, -1);
 	return install(rt->cc, name, TYPE_def, TYPE_flt, 0, rt->cc->type_f64, fltnode(rt->cc, value));
 }
-/// Declare string constant; @see state.api.ccDefStr
-symn ccDefStr(state rt, char* name, char* value) {
+/// Declare string constant; @see rtContext.api.ccDefStr
+symn ccDefStr(rtContext rt, char* name, char* value) {
 	if (!rt || !rt->cc || !name) {
 		trace("%x, %s, %s", rt, name, value);
 		return NULL;
@@ -318,7 +318,7 @@ symn ccDefStr(state rt, char* name, char* value) {
 }
 
 /// Find symbol by name; @see header
-symn ccFindSym(ccState cc, symn in, char* name) {
+symn ccFindSym(ccContext cc, symn in, char* name) {
 	struct astNode ast;
 	memset(&ast, 0, sizeof(struct astNode));
 	ast.kind = TYPE_ref;
@@ -346,8 +346,8 @@ int ccSymValFlt(symn sym, double* res) {
 	return 0;
 }
 
-/// Lookup symbol by offset; @see state.api.mapsym
-symn mapsym(state rt, size_t offs, int callsOnly) {
+/// Lookup symbol by offset; @see rtContext.api.mapsym
+symn mapsym(rtContext rt, size_t offs, int callsOnly) {
 	symn sym = NULL;
 	dieif(offs > rt->_size, "invalid offset: %06x", offs);
 	if (offs > rt->vm.px + px_size) {
@@ -366,7 +366,7 @@ symn mapsym(state rt, size_t offs, int callsOnly) {
 }
 
 // TODO: to be removed
-symn getsym(state rt, void* offs) {
+symn getsym(rtContext rt, void* offs) {
 	size_t vmoffs = vmOffset(rt, offs);
 	symn sym = mapsym(rt, vmoffs, 0);
 	if (sym != NULL && sym->offs == vmoffs) {
@@ -375,7 +375,7 @@ symn getsym(state rt, void* offs) {
 	return NULL;
 }
 
-char* getResStr(state rt, size_t offs) {
+char* getResStr(rtContext rt, size_t offs) {
 	int i;
 	char *str = getip(rt, offs);
 	if (rt->cc == NULL) {
@@ -395,7 +395,7 @@ char* getResStr(state rt, size_t offs) {
 //#}
 
 // install type system
-static void install_type(ccState cc, int mode) {
+static void install_type(ccContext cc, int mode) {
 	symn type_rec, type_vid, type_bol, type_ptr = NULL, type_var = NULL;
 	symn type_i08, type_i16, type_i32, type_i64;
 	symn type_u08, type_u16, type_u32;
@@ -485,8 +485,8 @@ static void install_type(ccState cc, int mode) {
 }
 
 // install emit operator
-static void install_emit(ccState cc, int mode) {
-	state rt = cc->s;
+static void install_emit(ccContext cc, int mode) {
+	rtContext rt = cc->s;
 	symn typ = NULL;
 	symn type_v4f = NULL;
 
@@ -694,11 +694,11 @@ static void install_emit(ccState cc, int mode) {
 }
 
 /// Private dummy on exit function.
-static int haltDummy(libcArgs args) {
+static int haltDummy(libcContext args) {
 	(void)args;
 	return 0;
 }
-static int typenameGetName(libcArgs args) {
+static int typenameGetName(libcContext args) {
 	symn sym = argsym(args, 0);
 	if (sym == NULL) {
 		return 1;
@@ -706,7 +706,7 @@ static int typenameGetName(libcArgs args) {
 	reti32(args, vmOffset(args->rt, sym->name));
 	return 0;
 }
-static int typenameGetFile(libcArgs args) {
+static int typenameGetFile(libcContext args) {
 	symn sym = argsym(args, 0);
 	if (sym == NULL) {
 		return 1;
@@ -714,7 +714,7 @@ static int typenameGetFile(libcArgs args) {
 	reti32(args, vmOffset(args->rt, sym->file));
 	return 0;
 }
-static int typenameGetBase(libcArgs args) {
+static int typenameGetBase(libcContext args) {
 	symn sym = argsym(args, 0);
 	if (sym == NULL) {
 		return 1;
@@ -729,9 +729,9 @@ static int typenameGetBase(libcArgs args) {
  + @param level warning level.
  + @param file additional file extending module
  */
-static int install_base(state rt, int mode) {
+static int install_base(rtContext rt, int mode) {
 	int error = 0;
-	ccState cc = rt->cc;
+	ccContext cc = rt->cc;
 
 	//~ TODO: temporarly add null to variant type.
 	if (rt->cc->type_var && !rt->cc->type_var->flds) {
@@ -808,15 +808,15 @@ static int install_base(state rt, int mode) {
 }
 
 /// Initialze compiler context; @see header
-ccState ccInit(state rt, int mode, int onHalt(libcArgs)) {
-	ccState cc;
+ccContext ccInit(rtContext rt, int mode, int onHalt(libcContext)) {
+	ccContext cc;
 
-	dieif(rt->cc != NULL, "Compiler state already initialzed.");
+	dieif(rt->cc != NULL, "Compiler context already initialzed.");
 	dieif(rt->_beg != rt->_mem, "Compiler initialization failed.");
 	dieif(rt->_end != rt->_mem + rt->_size, "Compiler initialization failed.");
 
-	cc = (ccState)(rt->_end - sizeof(struct ccStateRec));
-	rt->_end -= sizeof(struct ccStateRec);
+	cc = (ccContext)(rt->_end - sizeof(struct ccContextRec));
+	rt->_end -= sizeof(struct ccContextRec);
 	rt->_beg += 1;	// HACK: make first symbol start not at null.
 
 	if (rt->_end < rt->_beg) {
@@ -824,7 +824,7 @@ ccState ccInit(state rt, int mode, int onHalt(libcArgs)) {
 		return NULL;
 	}
 
-	memset(rt->_end, 0, sizeof(struct ccStateRec));
+	memset(rt->_end, 0, sizeof(struct ccContextRec));
 
 	cc->s = rt;
 	rt->cc = cc;
@@ -961,7 +961,7 @@ void freeBuff(struct arrBuffer* buff) {
 	buff->esz = 0;
 }
 
-dbgInfo getDbgStatement(state rt, char* file, int line) {
+dbgInfo getDbgStatement(rtContext rt, char* file, int line) {
 	if (rt->dbg != NULL) {
 		int i;
 		for (i = 0; i < rt->dbg->statements.cnt; ++i) {
@@ -975,7 +975,7 @@ dbgInfo getDbgStatement(state rt, char* file, int line) {
 	}
 	return NULL;
 }
-dbgInfo mapDbgStatement(state rt, size_t position) {
+dbgInfo mapDbgStatement(rtContext rt, size_t position) {
 	if (rt->dbg != NULL) {
 		int i;
 		dbgInfo result = (dbgInfo)rt->dbg->statements.ptr;
@@ -990,7 +990,7 @@ dbgInfo mapDbgStatement(state rt, size_t position) {
 	}
 	return NULL;
 }
-dbgInfo addDbgStatement(state rt, size_t start, size_t end, astn tag) {
+dbgInfo addDbgStatement(rtContext rt, size_t start, size_t end, astn tag) {
 	dbgInfo result = NULL;
 	if (rt->dbg != NULL && start < end) {
 		int i = 0;
@@ -1019,7 +1019,7 @@ dbgInfo addDbgStatement(state rt, size_t start, size_t end, astn tag) {
 	return result;
 }
 
-dbgInfo mapDbgFunction(state rt, size_t position) {
+dbgInfo mapDbgFunction(rtContext rt, size_t position) {
 	if (rt->dbg != NULL) {
 		int i;
 		dbgInfo result = (dbgInfo)rt->dbg->functions.ptr;
@@ -1034,7 +1034,7 @@ dbgInfo mapDbgFunction(state rt, size_t position) {
 	}
 	return NULL;
 }
-dbgInfo addDbgFunction(state rt, symn fun) {
+dbgInfo addDbgFunction(rtContext rt, symn fun) {
 	dbgInfo result = NULL;
 	if (rt->dbg != NULL && fun != NULL) {
 		int i;

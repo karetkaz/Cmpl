@@ -96,8 +96,8 @@ TODO's:
 
 #include "internal.h"
 
-symn newdefn(ccState s, ccToken kind) {
-	state rt = s->s;
+symn newdefn(ccContext s, ccToken kind) {
+	rtContext rt = s->s;
 	symn def = NULL;
 
 	rt->_beg = paddptr(rt->_beg, 8);
@@ -115,7 +115,7 @@ symn newdefn(ccState s, ccToken kind) {
 }
 
 /// install a symbol(typename or variable)
-symn install(ccState s, const char* name, ccToken kind, ccToken cast, unsigned size, symn type, astn init) {
+symn install(ccContext s, const char* name, ccToken kind, ccToken cast, unsigned size, symn type, astn init) {
 	symn def;
 
 	if (s == NULL || name == NULL || kind == TYPE_any) {
@@ -182,14 +182,14 @@ symn install(ccState s, const char* name, ccToken kind, ccToken cast, unsigned s
 	return def;
 }
 
-/// Install a type; @see state.api.ccAddType
-symn ccAddType(state rt, const char* name, unsigned size, int refType) {
+/// Install a type; @see rtContext.api.ccAddType
+symn ccAddType(rtContext rt, const char* name, unsigned size, int refType) {
 	//~ dieif(!rt->cc, "FixMe");
 	return install(rt->cc, name, ATTR_stat | ATTR_const | TYPE_rec, refType ? TYPE_ref : TYPE_rec, size, rt->cc->type_rec, NULL);
 }
 
 //#{ libc.c ---------------------------------------------------------------------
-static symn installref(state rt, const char* prot, astn* argv) {
+static symn installref(rtContext rt, const char* prot, astn* argv) {
 	astn root, args;
 	symn result = NULL;
 	int warn, errc = rt->errc;
@@ -223,8 +223,8 @@ static symn installref(state rt, const char* prot, astn* argv) {
 	return errc == rt->errc ? result : NULL;
 }
 
-/// Install a native function; @see state.api.ccAddCall
-symn ccAddCall(state rt, int libc(libcArgs), void* data, const char* proto) {
+/// Install a native function; @see rtContext.api.ccAddCall
+symn ccAddCall(rtContext rt, int libc(libcContext), void* data, const char* proto) {
 	symn param, sym = NULL;
 	int stdiff = 0;
 	astn args = NULL;
@@ -426,7 +426,7 @@ void addUsage(symn sym, astn tag) {
 	}
 }
 
-ccToken canAssign(ccState cc, symn var, astn val, int strict) {
+ccToken canAssign(ccContext cc, symn var, astn val, int strict) {
 	symn lnk = linkOf(val);
 	symn typ = var;
 	symn cast;
@@ -587,7 +587,7 @@ ccToken canAssign(ccState cc, symn var, astn val, int strict) {
 }
 
 //~ TODO: !!! args are linked in a list by next !!??
-symn lookup(ccState cc, symn sym, astn ref, astn args, int raise) {
+symn lookup(ccContext cc, symn sym, astn ref, astn args, int raise) {
 	symn asref = 0;
 	symn best = 0;
 	int found = 0;
@@ -758,7 +758,7 @@ symn lookup(ccState cc, symn sym, astn ref, astn args, int raise) {
 }
 
 //~ TODO: we should handle redefinition in this function
-symn declare(ccState s, ccToken kind, astn tag, symn typ) {
+symn declare(ccContext s, ccToken kind, astn tag, symn typ) {
 	symn def;
 
 	if (!tag || tag->kind != TYPE_ref) {
@@ -972,7 +972,7 @@ static ccToken typeTo(astn ast, symn type) {
 	return castTo(ast, castOf(ast->type = type));
 }
 
-symn typecheck(ccState s, symn loc, astn ast) {
+symn typecheck(ccContext s, symn loc, astn ast) {
 	astn ref = 0, args = 0;
 	symn result = NULL;
 	astn dot = NULL;
@@ -1621,36 +1621,13 @@ size_t fixargs(symn sym, unsigned int align, size_t base) {
 }
 
 //~ scoping
-void enter(ccState cc, astn ast) {
-	//~ dieif(!s->_cnt, "FixMe: invalid ccState");
+void enter(ccContext cc, astn ast) {
 	cc->nest += 1;
-
-	/* using(type)
-	if (with != NULL) {
-		with = with->args;
-
-		while (with) {
-			install(s, with->name, TYPE_def, 0, with, NULL);
-
-			/ *
-			int h = rehash(with->name, -1) % TBLS;
-
-			with->uses = with->next;
-
-			with->nest = s->nest;
-
-			with->next = s->deft[h];
-			s->deft[h] = with;
-
-			// * /
-			with = with->next;
-		}
-	}// */
 	(void)ast;
 }
-symn leave(ccState cc, symn dcl, int mkstatic) {
+symn leave(ccContext cc, symn dcl, int mkstatic) {
 	int i;
-	state rt = cc->s;
+	rtContext rt = cc->s;
 	symn result = NULL;
 
 	cc->nest -= 1;

@@ -140,7 +140,7 @@ struct traceRec {
 };
 
 /// Check if the pointer is inside the vm.
-static inline int isValidOffset(state rt, void* ptr) {
+static inline int isValidOffset(rtContext rt, void* ptr) {
 	if ((unsigned char*)ptr > rt->_mem + rt->_size) {
 		return 0;
 	}
@@ -150,7 +150,7 @@ static inline int isValidOffset(state rt, void* ptr) {
 	return 1;
 }
 
-static inline void rollbackPc(state rt) {
+static inline void rollbackPc(rtContext rt) {
 	bcde ip = getip(rt, rt->vm.pc);
 	if ((void*)ip != rt->_beg) {
 		rt->_beg = (memptr)ip;
@@ -158,7 +158,7 @@ static inline void rollbackPc(state rt) {
 	}
 }
 
-size_t vmOffset(state rt, void* ptr) {
+size_t vmOffset(rtContext rt, void* ptr) {
 	dieif(!isValidOffset(rt, ptr), "invalid reference(%06x)", ((unsigned char*)ptr - rt->_mem));
 	return ptr ? (unsigned char*)ptr - rt->_mem : 0;
 }
@@ -171,7 +171,7 @@ size_t vmOffset(state rt, void* ptr) {
  * @return non zero if at the given location the opc was found.
  * @note Aborts if opc is not valid.
  */
-static int checkOcp(state rt, size_t offs, vmOpcode opc, stkval *arg) {
+static int checkOcp(rtContext rt, size_t offs, vmOpcode opc, stkval *arg) {
 	bcde ip = getip(rt, offs);
 	if (opc >= opc_last) {
 		fatal("invalid opc(0x%x)", opc);
@@ -186,7 +186,7 @@ static int checkOcp(state rt, size_t offs, vmOpcode opc, stkval *arg) {
 	return 0;
 }
 
-static int removeOpc(state rt, size_t offs) {
+static int removeOpc(rtContext rt, size_t offs) {
 	if (offs >= rt->vm.ro && offs <= rt->vm.pc) {
 		bcde ip = getip(rt, offs);
 		unsigned char *dst = (unsigned char *)ip;
@@ -199,7 +199,7 @@ static int removeOpc(state rt, size_t offs) {
 	return 0;
 }
 
-static size_t nextIp(state rt, size_t offs) {
+static size_t nextIp(rtContext rt, size_t offs) {
 	register bcde ip = getip(rt, offs);
 	switch (ip->opc) {
 		__ERROR:
@@ -213,7 +213,7 @@ static size_t nextIp(state rt, size_t offs) {
 	return offs;
 }
 
-static int decrementStackAccess(state rt, size_t offsBegin, size_t offsEnd, int count) {
+static int decrementStackAccess(rtContext rt, size_t offsBegin, size_t offsEnd, int count) {
 	size_t offs;
 	for (offs = offsBegin; offs < offsEnd; offs = nextIp(rt, offs)) {
 		register bcde ip = getip(rt, offs);
@@ -234,7 +234,7 @@ static int decrementStackAccess(state rt, size_t offsBegin, size_t offsEnd, int 
 	return 1;
 }
 
-int optimizeAssign(state rt, size_t offsBegin, size_t offsEnd) {
+int optimizeAssign(rtContext rt, size_t offsBegin, size_t offsEnd) {
 	stkval arg;
 	//~ dieif(rt->vm.pc != offsEnd, "Error %d != %d", rt->vm.px, offsEnd);
 	if (checkOcp(rt, offsBegin, opc_dup1, &arg)) {
@@ -297,7 +297,7 @@ int optimizeAssign(state rt, size_t offsBegin, size_t offsEnd) {
 	return 0;
 }
 
-void iterateAsm(state rt, size_t offsBegin, size_t offsEnd, customContext ctx, int callBack(customContext, size_t offs, void* ip)) {
+void iterateAsm(rtContext rt, size_t offsBegin, size_t offsEnd, customContext ctx, void action(customContext, size_t offs, void* ip)) {
 	size_t is, offs;
 	for (offs = offsBegin; offs < offsEnd; offs += is) {
 		register bcde ip = getip(rt, offs);
@@ -310,12 +310,12 @@ void iterateAsm(state rt, size_t offsBegin, size_t offsEnd, customContext ctx, i
 			#define STOP(__ERR, __CHK, __ERC) if (__CHK) goto __ERR
 			#include "code.inl"
 		}
-		callBack(ctx, offs, ip);
+		action(ctx, offs, ip);
 	}
 }
 
 // base function emiting an ocode, see header
-size_t emitarg(state rt, vmOpcode opc, stkval arg) {
+size_t emitarg(rtContext rt, vmOpcode opc, stkval arg) {
 	libc libcvec = rt->vm.libv;
 	bcde ip = (bcde)rt->_beg;
 
@@ -1061,7 +1061,7 @@ size_t emitarg(state rt, vmOpcode opc, stkval arg) {
 
 	return rt->vm.pc;
 }
-int fixjump(state rt, int src, int dst, int stc) {
+int fixjump(rtContext rt, int src, int dst, int stc) {
 	dieif(stc > 0 && stc & 3, "FixMe");
 	if (src >= 0) {
 		bcde ip = getip(rt, src);
@@ -1167,13 +1167,13 @@ static inline int ovf(cell pu) {
 }
 
 /** manage function call stack traces
- * @param state runtime context
+ * @param rt runtime context
  * @param sp tack pointer (for tracing arguments
  * @param caller the address of the caller, NULL on start and end.
  * @param callee the called function adress, -1 on leave.
  * @param extra TO BE REMOVED
  */
-static inline int traceCall(state rt, void* sp, void* caller, void* callee) {
+static inline int traceCall(rtContext rt, void* sp, void* caller, void* callee) {
 	clock_t now = clock();
 	cell pu = rt->vm.cell;
 	if (rt->dbg == NULL) {
@@ -1226,8 +1226,8 @@ static inline int traceCall(state rt, void* sp, void* caller, void* callee) {
 			}
 		}*/
 
-		if (rt->dbg->dbug != NULL) {
-			rt->dbg->dbug(rt->dbg->context, noError, (pu->tp - pu->bp) / sizeof(struct traceRec), sp, caller, callee);
+		if (rt->dbg->function != NULL) {
+			rt->dbg->function(rt->dbg, noError, (pu->tp - pu->bp) / sizeof(struct traceRec), sp, caller, callee);
 		}
 	}
 	// trace enter function
@@ -1246,8 +1246,8 @@ static inline int traceCall(state rt, void* sp, void* caller, void* callee) {
 			calleeFunc->hits += 1;
 		}
 
-		if (rt->dbg->dbug != NULL) {
-			rt->dbg->dbug(rt->dbg->context, noError, (pu->tp - pu->bp) / sizeof(struct traceRec), sp, caller, callee);
+		if (rt->dbg->function != NULL) {
+			rt->dbg->function(rt->dbg, noError, (pu->tp - pu->bp) / sizeof(struct traceRec), sp, caller, callee);
 		}
 		pu->tp += sizeof(struct traceRec);
 	}
@@ -1255,7 +1255,7 @@ static inline int traceCall(state rt, void* sp, void* caller, void* callee) {
 }
 
 /// Private dummy debug function.
-static int dbgDummy(state ctx, vmError err, void *ip, void* sp, size_t ss) {
+static int dbgDummy(dbgContext ctx, vmError err, size_t ss, void* sp, void* caller, void* callee) {
 	if (err != noError) {
 		char *errorStr = NULL;
 		switch (err) {
@@ -1274,7 +1274,6 @@ static int dbgDummy(state ctx, vmError err, void *ip, void* sp, size_t ss) {
 				errorStr = "IllegalInstruction";
 				break;
 
-			case traceOverflow:
 			case stackOverflow:
 				errorStr = "StackOverflow";
 				break;
@@ -1296,11 +1295,10 @@ static int dbgDummy(state ctx, vmError err, void *ip, void* sp, size_t ss) {
 				errorStr = "InvalidMemoryAcces";
 				break;
 		}
-		// TODO: get file and line from debug information ?
-		error(ctx, NULL, 0, "%s executing: %.0A @%06x", errorStr, ip, vmOffset(ctx, ip));
-		//~ logTrace(rt, NULL, 1, -1, 100);
-		return -1;
+		error(ctx->rt, NULL, 0, "%s executing: %.0A @%06x", errorStr, caller, vmOffset(ctx->rt, caller));
+		return executionAborted;
 	}
+	(void)callee;
 	(void)sp;
 	(void)ss;
 	return 0;
@@ -1315,10 +1313,11 @@ static int dbgDummy(state ctx, vmError err, void *ip, void* sp, size_t ss) {
  * @param dbg function which is executed after each instruction or on error.
  * @return Error code of execution, 0 on success.
  */
-static int exec(state rt, cell pu, symn fun, void *extra) {
+static vmError exec(rtContext rt, cell pu, symn fun, void *extra) {
 	const int cc = 1;
 	const libc libcvec = rt->vm.libv;
 
+	vmError errorCode = noError;
 	const size_t ms = rt->_size;			// memory size
 	const size_t ro = rt->vm.ro;			// read only region
 	const memptr mp = (void*)rt->_mem;
@@ -1326,18 +1325,16 @@ static int exec(state rt, cell pu, symn fun, void *extra) {
 
 	// run in debug of profile mode
 	if (rt->dbg != NULL) {
-		vmError errorCode = noError;
 		const void *oldTP = pu->tp;
 		const stkptr spMin = (stkptr)(pu->bp);
 		const stkptr spMax = (stkptr)(pu->bp + pu->ss);
 		const bcde ipMin = (bcde)(rt->_mem + rt->vm.ro);
 		const bcde ipMax = (bcde)(rt->_mem + rt->vm.px + px_size);
-		int (*dbg)(customContext, vmError, size_t, void*, void*, void*) = rt->dbg->dbug;
-		customContext ctx = rt->dbg->context;
+
+		int (*dbg)(dbgContext, vmError, size_t, void*, void*, void*) = rt->dbg->function;
 
 		if (dbg == NULL) {
-			ctx = (void*)rt;
-			dbg = (void*)dbgDummy;
+			dbg = dbgDummy;
 		}
 		// invoked function(from external code) will return with a ret instruction, removing trace info
 		traceCall(rt, pu->sp, NULL, getip(rt, fun->offs));
@@ -1351,14 +1348,14 @@ static int exec(state rt, cell pu, symn fun, void *extra) {
 			const dbgInfo stmt = mapDbgStatement(rt, pc);
 
 			if (ip >= ipMax || ip < ipMin) {
-				dbg(ctx, invalidIP, st - sp, sp, ip, NULL);
+				dbg(rt->dbg, invalidIP, st - sp, sp, ip, NULL);
 				return invalidIP;
 			}
 			if (sp > spMax || sp < spMin) {
-				dbg(ctx, invalidSP, st - sp, sp, ip, NULL);
+				dbg(rt->dbg, invalidSP, st - sp, sp, ip, NULL);
 				return invalidSP;
 			}
-			if (dbg(ctx, noError, st - sp, sp, ip, NULL) != 0) {
+			if (dbg(rt->dbg, noError, st - sp, sp, ip, NULL) != 0) {
 				// abort execution from debuging
 				return executionAborted;
 			}
@@ -1385,7 +1382,7 @@ static int exec(state rt, cell pu, symn fun, void *extra) {
 			}
 			switch (ip->opc) {
 				dbg_stop_vm:	// halt virtual machine
-					dbg(ctx, errorCode, st - sp, sp, ip, NULL);
+					dbg(rt->dbg, errorCode, st - sp, sp, ip, NULL);
 					while (pu->tp != oldTP) {
 						traceCall(rt, NULL, NULL, (void*)-2);
 						//pu->tp = oldTP;	// during exec we may return from code.
@@ -1397,11 +1394,8 @@ static int exec(state rt, cell pu, symn fun, void *extra) {
 					goto dbg_stop_vm;
 
 				dbg_error_ovf:
-					errorCode = stackOverflow;
-					goto dbg_stop_vm;
-
 				dbg_error_trace_ovf:
-					errorCode = traceOverflow;
+					errorCode = stackOverflow;
 					goto dbg_stop_vm;
 
 				dbg_error_mem_read:
@@ -1413,7 +1407,7 @@ static int exec(state rt, cell pu, symn fun, void *extra) {
 					goto dbg_stop_vm;
 
 				dbg_error_div_flt:
-					dbg(ctx, divisionByZero, st - sp, sp, ip, NULL);
+					dbg(rt->dbg, divisionByZero, st - sp, sp, ip, NULL);
 					// continue execution on floating point division by zero.
 					break;
 
@@ -1456,7 +1450,7 @@ static int exec(state rt, cell pu, symn fun, void *extra) {
 				}
 			}
 		}
-		return 0;
+		return errorCode;
 	}
 
 	// code for maximum execution speed
@@ -1465,36 +1459,42 @@ static int exec(state rt, cell pu, symn fun, void *extra) {
 		register const stkptr sp = (stkptr)pu->sp;
 		switch (ip->opc) {
 			stop_vm:	// halt virtual machine
-				return 0;
+				if (errorCode != noError) {
+					struct dbgContextRec dbg = { .rt = rt };
+					dbgDummy(&dbg, errorCode, st - sp, sp, ip, NULL);
+				}
+				return errorCode;
 
 			error_opc:
-				dbgDummy(rt, illegalInstruction, ip, sp, pu->ss);
-				return illegalInstruction;
+				errorCode = illegalInstruction;
+				goto stop_vm;
 
 			error_ovf:
-				dbgDummy(rt, stackOverflow, ip, sp, pu->ss);
-				return stackOverflow;
+				errorCode = stackOverflow;
+				goto stop_vm;
 
 			error_mem_read:
-				dbgDummy(rt, memReadError, ip, sp, pu->ss);
-				return memReadError;
+				errorCode = memReadError;
+				goto stop_vm;
 
 			error_mem_write:
-				dbgDummy(rt, memWriteError, ip, sp, pu->ss);
-				return memWriteError;
+				errorCode = memWriteError;
+				goto stop_vm;
 
-			error_div_flt:
-				dbgDummy(rt, divisionByZero, ip, sp, pu->ss);
+			error_div_flt: {
+					struct dbgContextRec dbg = { .rt = rt };
+					dbgDummy(&dbg, divisionByZero, st - sp, sp, ip, NULL);
+				}
 				// continue execution on floating point division by zero.
 				break;
 
 			error_div:
-				dbgDummy(rt, divisionByZero, ip, sp, pu->ss);
-				return divisionByZero;
+				errorCode = divisionByZero;
+				goto stop_vm;
 
 			error_libc:
-				dbgDummy(rt, libCallAbort, ip, sp, pu->ss);
-				return libCallAbort;
+				errorCode = libCallAbort;
+				goto stop_vm;
 
 			#define NEXT(__IP, __SP, __CHK) {pu->sp -= vm_size * (__SP); pu->ip += (__IP);}
 			#define STOP(__ERR, __CHK, __ERC) do {if (__CHK) {goto __ERR;}} while(0)
@@ -1503,11 +1503,11 @@ static int exec(state rt, cell pu, symn fun, void *extra) {
 			#include "code.inl"
 		}
 	}
-	return 0;
+	return errorCode;
 }
 
 
-int invoke(state rt, symn fun, void* res, void* args, void* extra) {
+vmError invoke(rtContext rt, symn fun, void* res, void* args, void* extra) {
 	cell pu = rt->vm.cell;
 	unsigned char *ip = pu->ip;
 	unsigned char *sp = pu->sp;
@@ -1517,7 +1517,7 @@ int invoke(state rt, symn fun, void* res, void* args, void* extra) {
 	// TODO: ressize = fun->prms->size;
 	size_t ressize = sizeOf(fun->type, 1);
 	void* resp = NULL;
-	int result;
+	vmError result;
 
 	dieif(fun->kind != TYPE_ref || !fun->call, "FixMe");
 
@@ -1550,7 +1550,7 @@ int invoke(state rt, symn fun, void* res, void* args, void* extra) {
 
 	return result;
 }
-int execute(state rt, size_t ss, void *extra) {
+vmError execute(rtContext rt, size_t ss, void *extra) {
 	// TODO: cells should be in runtime read only memory?
 	cell pu;
 
@@ -1579,17 +1579,16 @@ int execute(state rt, size_t ss, void *extra) {
 
 	if (pu->bp > pu->sp) {
 		error(rt, NULL, 0, "invalid statck size");
-		return -99;
+		return stackOverflow;
 	}
 
-	// TODO argc, argv
 	return exec(rt, pu, rt->init, extra);
 }
 
 // TODO: ADD const char *esc[] ?
-void fputasm(FILE* fout, void *ptr, int mode, state rt) {
+void fputasm(FILE* fout, void *ptr, int mode, rtContext rt) {
 	bcde ip = (bcde)ptr;
-	int i, len = mode & prAsmCode;
+	size_t i, len = mode & prAsmCode;
 	size_t offs = (size_t)ptr;
 	char *fmt_addr = " .%06x"; // "0x%08x";
 	char *fmt_offs = " <%T+%d>";
@@ -1809,7 +1808,8 @@ void fputasm(FILE* fout, void *ptr, int mode, state rt) {
 	}
 }
 
-void fputval(state rt, FILE* fout, symn var, stkval* ref, int level, int mode) {
+// TODO: ADD const char *esc[] ?
+void fputval(rtContext rt, FILE* fout, symn var, stkval* ref, int level, int mode) {
 	symn typ = var;
 	char* fmt = var->pfmt;
 
@@ -1979,7 +1979,7 @@ void fputval(state rt, FILE* fout, symn var, stkval* ref, int level, int mode) {
 
 			//~ fputfmt(fout, "@%06x", vmOffset(rt, ref));
 			if (typ->cast != TYPE_arr) { // TODO: OR USE: if (typ->stat) {
-				// static array
+				// fixed size array
 				dieif(n % base->size != 0, "FixMe");
 				fputfmt(fout, "[");
 				n /= base->size;
@@ -2000,10 +2000,6 @@ void fputval(state rt, FILE* fout, symn var, stkval* ref, int level, int mode) {
 			if (base->kind == TYPE_arr) {
 				elementsOnNewLine = 1;
 			}
-
-			//~ if (base->kind == TYPE_rec && base->prms) {
-				//~ elementsOnNewLine = 1;
-			//~ }
 
 			for (i = 0; i < n; ++i) {
 				if (i > 0) {
@@ -2046,8 +2042,7 @@ void fputval(state rt, FILE* fout, symn var, stkval* ref, int level, int mode) {
 	}
 }
 
-
-static void traceArgs(state rt, FILE *outf, symn fun, char *file, int line, void* sp, int ident) {
+static void traceArgs(rtContext rt, FILE *outf, symn fun, char *file, int line, void* sp, int ident) {
 	symn sym;
 	int printFileLine = 0;
 
@@ -2102,7 +2097,7 @@ static void traceArgs(state rt, FILE *outf, symn fun, char *file, int line, void
 				// TODO: find the offsets of arguments for libcalls.
 				//offs += sym->offs;
 				//fputval(rt, outf, sym, (void*)offs, -ident, 0);
-				fputfmt(outf, "%.T: %T", sym, sym->type);
+				fputfmt(outf, "%.T: %.T", sym, sym->type);
 			}
 		}
 		if (ident > 0) {
@@ -2114,9 +2109,8 @@ static void traceArgs(state rt, FILE *outf, symn fun, char *file, int line, void
 	}
 }
 
-int logTrace(state rt, FILE *outf, int ident, int startlevel, int tracelevel) {
-	size_t pos;
-	int i, isOutput = 0;
+void logTrace(rtContext rt, FILE *outf, int ident, int startlevel, int tracelevel) {
+	int i, pos, isOutput = 0;
 	cell pu = rt->vm.cell;
 	tracePtr tr = (tracePtr)pu->bp;
 
@@ -2124,7 +2118,7 @@ int logTrace(state rt, FILE *outf, int ident, int startlevel, int tracelevel) {
 		outf = rt->logf;
 	}
 	if (rt->dbg == NULL) {
-		return 0;
+		return;
 	}
 	pos = ((tracePtr)pu->tp) - tr - 1;
 	if (tracelevel > pos) {
@@ -2161,7 +2155,6 @@ int logTrace(state rt, FILE *outf, int ident, int startlevel, int tracelevel) {
 	if (isOutput) {
 		fputc('\n', outf);
 	}
-	return isOutput;
 }
 
 #if defined DEBUGGING
@@ -2189,17 +2182,17 @@ int vmTest() {
 				break;
 
 			error_len:
-				fputfmt(out, "invalid opcode size 0x%02x: '%A': expected: %d, found: %d\n", i, ip, opc_tbl[i].size, IS);
+				fputfmt(out, "invalid opcode size 0x%02x: '%.A': expected: %d, found: %d\n", i, ip, opc_tbl[i].size, IS);
 				err += 1;
 				break;
 
 			error_chk:
-				fputfmt(out, "stack check 0x%02x: '%A': expected: %d, found: %d\n", i, ip, opc_tbl[i].chck, CHK);
+				fputfmt(out, "stack check 0x%02x: '%.A': expected: %d, found: %d\n", i, ip, opc_tbl[i].chck, CHK);
 				err += 1;
 				break;
 
 			error_dif:
-				fputfmt(out, "stack difference 0x%02x: '%A': expected: %d, found: %d\n", i, ip, opc_tbl[i].diff, DIFF);
+				fputfmt(out, "stack difference 0x%02x: '%.A': expected: %d, found: %d\n", i, ip, opc_tbl[i].diff, DIFF);
 				err += 1;
 				break;
 
@@ -2223,7 +2216,7 @@ int vmTest() {
 		}
 
 		if (NEXT > 1 && i != opc_spc) {
-			fputfmt(out, "More than one NEXT: opcode 0x%02x: '%A'\n", i, ip);
+			fputfmt(out, "More than one NEXT: opcode 0x%02x: '%.A'\n", i, ip);
 		}
 	}
 	return err;

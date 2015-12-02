@@ -9,7 +9,7 @@ description:
 #include "internal.h"
 
 // utility function for debugging only.
-static void dumpTree(state rt, astn ast, size_t offsStart, size_t offsEnd) {
+static void dumpTree(rtContext rt, astn ast, size_t offsStart, size_t offsEnd) {
 #if defined(DEBUGGING) && DEBUGGING > 1
 	struct symNode dbg;
 	if (rt->logf != NULL) {
@@ -24,6 +24,11 @@ static void dumpTree(state rt, astn ast, size_t offsStart, size_t offsEnd) {
 		// TODO: dump for single symbol
 		// dump(rt, NULL, NULL);
 	}
+#else
+	(void)rt;
+	(void)ast;
+	(void)offsStart;
+	(void)offsEnd;
 #endif
 }
 
@@ -33,7 +38,7 @@ static void dumpTree(state rt, astn ast, size_t offsStart, size_t offsEnd) {
  * @param size size of variable.
  * @return the position of variable on stack.
  */
-static inline size_t stkoffs(state rt, size_t size) {
+static inline size_t stkoffs(rtContext rt, size_t size) {
 	dieif(size > rt->_size, "Error(expected: %d, actual: %d)", rt->_size, size);
 	return padded(size, vm_size) + rt->vm.ss * vm_size;
 }
@@ -52,14 +57,14 @@ static inline void memswap(void* _a, void* _b, size_t size) {
 	}
 }
 
-size_t emitint(state rt, vmOpcode opc, int64_t arg) {
+size_t emitint(rtContext rt, vmOpcode opc, int64_t arg) {
 	stkval tmp;
 	tmp.i8 = arg;
 	return emitarg(rt, opc, tmp);
 }
 
 /// Emit an instruction indexing nth stack element.
-static size_t emitidx(state rt, vmOpcode opc, size_t arg) {
+static size_t emitidx(rtContext rt, vmOpcode opc, size_t arg) {
 	stkval tmp;
 	tmp.i8 = rt->vm.ss * vm_size - arg;
 
@@ -94,41 +99,41 @@ static size_t emitidx(state rt, vmOpcode opc, size_t arg) {
 }
 
 /// Emit an instruction without argument.
-static inline size_t emitopc(state rt, vmOpcode opc) {
+static inline size_t emitopc(rtContext rt, vmOpcode opc) {
 	stkval arg;
 	arg.i8 = 0;
 	return emitarg(rt, opc, arg);
 }
 
 /// Increment the top of stack.
-static inline size_t emitinc(state rt, size_t arg) {
+static inline size_t emitinc(rtContext rt, size_t arg) {
 	return emitint(rt, opc_inc, arg);
 }
 
 // emiting constant values.
-static inline size_t emiti32(state rt, int32_t arg) {
+static inline size_t emiti32(rtContext rt, int32_t arg) {
 	stkval tmp;
 	tmp.i8 = arg;
 	return emitarg(rt, opc_lc32, tmp);
 }
-static inline size_t emiti64(state rt, int64_t arg) {
+static inline size_t emiti64(rtContext rt, int64_t arg) {
 	stkval tmp;
 	tmp.i8 = arg;
 	return emitarg(rt, opc_lc64, tmp);
 }
-static inline size_t emitf64(state rt, float64_t arg) {
+static inline size_t emitf64(rtContext rt, float64_t arg) {
 	stkval tmp;
 	tmp.f8 = arg;
 	return emitarg(rt, opc_lf64, tmp);
 }
-static inline size_t emitref(state rt, void* arg) {
+static inline size_t emitref(rtContext rt, void* arg) {
 	stkval tmp;
 	tmp.i8 = vmOffset(rt, arg);
 	return emitarg(rt, opc_lref, tmp);
 }
 
 // emit operator(add, sub, mul, ...), based on type
-static size_t emitopr(state rt, vmOpcode opc, ccToken type) {
+static size_t emitopr(rtContext rt, vmOpcode opc, ccToken type) {
 	// comparation
 	if (opc == opc_ceq) switch (type) {
 		default:
@@ -452,7 +457,7 @@ static size_t emitopr(state rt, vmOpcode opc, ccToken type) {
  * @param var Variable to be used.
  * @return Program counter.
  */
-static inline size_t emitvar(state rt, symn var) {
+static inline size_t emitvar(rtContext rt, symn var) {
 	if (!var->stat) {
 		return emitidx(rt, opc_ldsp, var->offs);
 	}
@@ -466,7 +471,7 @@ static inline size_t emitvar(state rt, symn var) {
  * @param get Override node cast.
  * @return Should be get || cast of ast node.
  */
-static ccToken cgen(state rt, astn ast, ccToken get) {
+static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 	#ifdef DEBUGGING
 	ccToken stmt_qual = TYPE_any;
 	#endif
@@ -2236,15 +2241,15 @@ static ccToken cgen(state rt, astn ast, ccToken get) {
 	return got;
 }
 
-int gencode(state rt, int mode) {
-	ccState cc = rt->cc;
+int gencode(rtContext rt, int mode) {
+	ccContext cc = rt->cc;
 	size_t Lmain, Lmeta;
 
 	// make global variables static ?
 	int gstat = (mode & cgen_glob) == 0;
 
 	dieif(rt->errc, "can not generate code");
-	dieif(cc == NULL, "compiler state invalid");
+	dieif(cc == NULL, "no compiler context");
 
 	// leave the global scope.
 	rt->init = ccAddType(rt, "<init>", 0, 0);
@@ -2294,12 +2299,13 @@ int gencode(state rt, int mode) {
 
 	// debuginfo
 	if (mode & cgen_info) {
-		rt->dbg = (dbgState)(rt->_beg = paddptr(rt->_beg, rt_size));
-		rt->_beg += sizeof(struct dbgStateRec);
+		rt->dbg = (dbgContext)(rt->_beg = paddptr(rt->_beg, rt_size));
+		rt->_beg += sizeof(struct dbgContextRec);
 
 		dieif(rt->_beg >= rt->_end, ERR_MEMORY_OVERRUN);
-		memset(rt->dbg, 0, sizeof(struct dbgStateRec));
+		memset(rt->dbg, 0, sizeof(struct dbgContextRec));
 
+		rt->dbg->rt = rt;
 		initBuff(&rt->dbg->functions, 128, sizeof(struct dbgInfo));
 		initBuff(&rt->dbg->statements, 128, sizeof(struct dbgInfo));
 	}

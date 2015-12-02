@@ -16,7 +16,7 @@ Lexical elements
  * @param rhs next argument.
  * @return if lhs is null return (rhs) else return (lhs, rhs).
  */
-static inline astn argnode(ccState cc, astn lhs, astn rhs) {
+static inline astn argnode(ccContext cc, astn lhs, astn rhs) {
 	return lhs ? opnode(cc, OPER_com, lhs, rhs) : rhs;
 }
 
@@ -26,7 +26,7 @@ static inline astn argnode(ccState cc, astn lhs, astn rhs) {
  * @param node next argument.
  * @return if lhs is null return (rhs) else return (lhs, rhs).
  */
-static inline astn blockNode(ccState cc, astn node) {
+static inline astn blockNode(ccContext cc, astn node) {
 	astn block = newnode(cc, STMT_beg);
 	block->cst2 = TYPE_vid;
 	block->type = cc->type_vid;
@@ -44,7 +44,7 @@ static inline astn blockNode(ccState cc, astn node) {
  * @param name name of the node.
  * @return the new node.
  */
-static inline astn tagnode(ccState cc, char* name) {
+static inline astn tagnode(ccContext cc, char* name) {
 	astn ast = NULL;
 	if (cc != NULL && name != NULL) {
 		ast = newnode(cc, TYPE_ref);
@@ -71,7 +71,7 @@ static inline astn tagnode(ccState cc, char* name) {
  *     null for dynamic length arrays
  * @return symbol of the length property.
  */
-static symn addLength(ccState cc, symn sym, astn init) {
+static symn addLength(ccContext cc, symn sym, astn init) {
 	/* TODO: review return value.
 	 *
 	 * dynamic array size kind: ATTR_const | TYPE_ref
@@ -103,7 +103,7 @@ static symn addLength(ccState cc, symn sym, astn init) {
  * @param sym symbol to check.
  */
 //~ TODO: move to type.c.
-static void redefine(ccState cc, symn sym) {
+static void redefine(ccContext cc, symn sym) {
 	struct astNode tag;
 	symn ptr;
 
@@ -163,7 +163,7 @@ static void redefine(ccState cc, symn sym) {
  * @param rec the record.
  * @return the constructors symbol.
  */
-static symn ctorArg(ccState cc, symn rec) {
+static symn ctorArg(ccContext cc, symn rec) {
 	symn ctor = install(cc, rec->name, TYPE_def, TYPE_any, 0, rec, NULL);
 	if (ctor != NULL) {
 		astn root = NULL;
@@ -260,7 +260,7 @@ static int mkConst(astn ast, ccToken cast) {
 //#{~~~~~~~~~ Parser ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 //~ TODO: to be deleted: use expr instead, then check if it is a typename.
-static astn type(ccState cc/* , int mode */) {	// type(.type)*
+static astn type(ccContext cc/* , int mode */) {	// type(.type)*
 	symn def = NULL;
 	astn tok, typ = NULL;
 	while ((tok = next(cc, TYPE_ref))) {
@@ -301,10 +301,10 @@ static astn type(ccState cc/* , int mode */) {	// type(.type)*
 	return typ;
 }
 
-static astn stmt(ccState, int mode);	// parse statement		(mode: enable decl)
-static astn decl(ccState, int mode);	// parse declaration	(mode: enable spec)
-//~ astn args(ccState, int mode);		// parse arguments		(mode: ...)
-//~ astn unit(ccState, int mode);		// parse unit			(mode: script/unit)
+static astn stmt(ccContext, int mode);	// parse statement		(mode: enable decl)
+static astn decl(ccContext, int mode);	// parse declaration	(mode: enable spec)
+//~ astn args(ccContext, int mode);		// parse arguments		(mode: ...)
+//~ astn unit(ccContext, int mode);		// parse unit			(mode: script/unit)
 
 /** Parse qualifiers.
  * @brief scan for qualifiers: const static ?paralell
@@ -312,7 +312,7 @@ static astn decl(ccState, int mode);	// parse declaration	(mode: enable spec)
  * @param mode scannable qualifiers.
  * @return qualifiers.
  */
-static int qual(ccState cc, int mode) {
+static int qual(ccContext cc, int mode) {
 	int result = 0;
 	astn ast;
 
@@ -356,7 +356,7 @@ static int qual(ccState cc, int mode) {
  * @param mode
  * @return
  */
-static astn expr(ccState cc, int mode) {
+static astn expr(ccContext cc, int mode) {
 	astn buff[TOKS], tok;
 	const astn* base = buff + TOKS;
 	astn* prec = (astn*)base;
@@ -693,7 +693,7 @@ static astn expr(ccState cc, int mode) {
  * @param mode
  * @return expression tree.
  */
-static astn args(ccState cc, int mode) {
+static astn args(ccContext cc, int mode) {
 	astn root = NULL;
 
 	if (peekTok(cc, PNCT_rp)) {
@@ -724,7 +724,7 @@ static astn args(ccState cc, int mode) {
  * @param var the declared variable symbol.
  * @return the initializer expression.
  */
-static astn init_var(ccState cc, symn var) {
+static astn init_var(ccContext cc, symn var) {
 	if (skip(cc, ASGN_set)) {
 		symn typ = var->type;
 		ccToken cast = var->cast;
@@ -866,7 +866,7 @@ static astn init_var(ccState cc, symn var) {
  * @param cc compiler context.
  * @return root of declaration.
  */
-static astn decl_alias(ccState cc) {
+static astn decl_alias(ccContext cc) {
 	astn tag = NULL;
 	symn def = NULL;
 	symn typ = NULL;
@@ -978,7 +978,7 @@ static astn decl_alias(ccState cc) {
  * @param cc compiler context.
  * @return root of declaration.
  */
-static astn decl_enum(ccState cc) {
+static astn decl_enum(ccContext cc) {
 	symn def = NULL, base = cc->type_i32;
 	astn tok, tag;
 
@@ -1080,7 +1080,7 @@ static astn decl_enum(ccState cc) {
  * @param attr attributes: static or const.
  * @return root of declaration.
  */
-static astn decl_struct(ccState cc, int Attr) {
+static astn decl_struct(ccContext cc, int Attr) {
 	symn type = NULL, base = NULL;
 	astn tok, tag;
 
@@ -1207,7 +1207,7 @@ static astn decl_struct(ccState cc, int Attr) {
  * @param mode
  * @return parsed syntax tree.
  */
-astn decl_var(ccState cc, astn* argv, int mode) {
+astn decl_var(ccContext cc, astn* argv, int mode) {
 	symn typ, ref = NULL;
 	astn tag = NULL;
 	int inout, byref;
@@ -1410,7 +1410,7 @@ astn decl_var(ccState cc, astn* argv, int mode) {
  * @param mode
  * @return parsed syntax tree.
  */
-static astn decl(ccState cc, int mode) {
+static astn decl(ccContext cc, int mode) {
 	int Attr = qual(cc, ATTR_const | ATTR_stat);
 	int line = cc->line;
 	char* file = cc->file;
@@ -1573,7 +1573,7 @@ static astn decl(ccState cc, int mode) {
  * @param mode raise error if (decl / stmt) found
  * @return parsed syntax tree.
  */
-static astn block(ccState cc, int mode) {
+static astn block(ccContext cc, int mode) {
 	astn head = NULL;
 	astn tail = NULL;
 
@@ -1618,7 +1618,7 @@ static astn block(ccState cc, int mode) {
  * @param mode
  * @return parsed syntax tree.
  */
-static astn stmt(ccState cc, int mode) {
+static astn stmt(ccContext cc, int mode) {
 	astn node = NULL;
 	ccToken qual = TYPE_any;			// static | parallel
 
@@ -1978,7 +1978,7 @@ static astn stmt(ccState cc, int mode) {
  * @param warn
  * @return
  */
-static astn parse(ccState cc, int asUnit, int warn) {
+static astn parse(ccContext cc, int asUnit, int warn) {
 	astn root, oldRoot = cc->root;
 	int level = cc->nest;
 
@@ -2041,8 +2041,8 @@ static astn parse(ccState cc, int asUnit, int warn) {
 }
 
 /// @see: header
-ccState ccOpen(state rt, char* file, int line, char* text) {
-	ccState cc = rt->cc;
+ccContext ccOpen(rtContext rt, char* file, int line, char* text) {
+	ccContext cc = rt->cc;
 
 	if (cc == NULL) {
 		// initilaize only once.
@@ -2068,9 +2068,9 @@ ccState ccOpen(state rt, char* file, int line, char* text) {
 	return cc;
 }
 
-/// Compile file or text; @see state.api.ccAddCode
-int ccAddCode(state rt, int warn, char* file, int line, char* text) {
-	ccState cc = ccOpen(rt, file, line, text);
+/// Compile file or text; @see rtContext.api.ccAddCode
+int ccAddCode(rtContext rt, int warn, char* file, int line, char* text) {
+	ccContext cc = ccOpen(rt, file, line, text);
 	if (cc == NULL) {
 		error(rt, NULL, 0, "can not open: %s", file);
 		return 0;
@@ -2080,7 +2080,7 @@ int ccAddCode(state rt, int warn, char* file, int line, char* text) {
 }
 
 /// @see: header
-int ccAddUnit(state rt, int unit(state), int warn, char *file) {
+int ccAddUnit(rtContext rt, int unit(rtContext), int warn, char *file) {
 	int unitCode = unit(rt);
 	if (unitCode == 0 && file != NULL) {
 		return ccAddCode(rt, warn, file, 1, NULL);
@@ -2089,7 +2089,7 @@ int ccAddUnit(state rt, int unit(state), int warn, char *file) {
 }
 
 /// @see: header
-int ccDone(ccState cc) {
+int ccDone(ccContext cc) {
 	astn ast;
 
 	// not initialized

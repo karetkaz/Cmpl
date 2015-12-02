@@ -9,8 +9,8 @@ source code representation using abstract syntax tree
 #include <math.h>
 #include "internal.h"
 
-astn newnode(ccState cc, ccToken kind) {
-	state rt = cc->s;
+astn newnode(ccContext cc, ccToken kind) {
+	rtContext rt = cc->s;
 	astn ast = 0;
 	if (cc->tokp) {
 		ast = cc->tokp;
@@ -29,14 +29,14 @@ astn newnode(ccState cc, ccToken kind) {
 	ast->kind = kind;
 	return ast;
 }
-void eatnode(ccState s, astn ast) {
+void eatnode(ccContext s, astn ast) {
 	if (!ast) return;
 	ast->next = s->tokp;
 	s->tokp = ast;
 }
 
 
-astn opnode(ccState s, ccToken kind, astn lhs, astn rhs) {
+astn opnode(ccContext s, ccToken kind, astn lhs, astn rhs) {
 	astn result = newnode(s, kind);
 	if (result != NULL) {
 		//~ TODO: dieif(tok_inf[kind].args == 0, "Erroro");
@@ -46,7 +46,7 @@ astn opnode(ccState s, ccToken kind, astn lhs, astn rhs) {
 	return result;
 }
 
-astn lnknode(ccState s, symn ref) {
+astn lnknode(ccContext s, symn ref) {
 	astn result = newnode(s, TYPE_ref);
 
 	if (result != NULL) {
@@ -60,7 +60,7 @@ astn lnknode(ccState s, symn ref) {
 }
 
 /// make a constant valued node
-astn intnode(ccState s, int64_t v) {
+astn intnode(ccContext s, int64_t v) {
 	astn ast = newnode(s, TYPE_int);
 	if (ast != NULL) {
 		ast->type = s->type_i32;
@@ -68,7 +68,7 @@ astn intnode(ccState s, int64_t v) {
 	}
 	return ast;
 }
-astn fltnode(ccState s, float64_t v) {
+astn fltnode(ccContext s, float64_t v) {
 	astn ast = newnode(s, TYPE_flt);
 	if (ast != NULL) {
 		ast->type = s->type_f64;
@@ -76,7 +76,7 @@ astn fltnode(ccState s, float64_t v) {
 	}
 	return ast;
 }
-astn strnode(ccState s, char* v) {
+astn strnode(ccContext s, char* v) {
 	astn ast = newnode(s, TYPE_str);
 	if (ast != NULL) {
 		ast->type = s->type_str;
@@ -131,7 +131,7 @@ float64_t constflt(astn ast) {
 }
 
 
-int isStatic(ccState cc, astn ast) {
+int isStatic(ccContext cc, astn ast) {
 	if (ast) switch (ast->kind) {
 		default:
 			return 0;

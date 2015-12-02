@@ -69,7 +69,7 @@ Lexical elements
  * @param cc compiler context.
  * @return number of characters in buffer.
  */
-static size_t fillBuf(ccState cc) {
+static size_t fillBuf(ccContext cc) {
 	if (cc->fin._fin >= 0) {
 		unsigned char* base = cc->fin._buf + cc->fin._cnt;
 		size_t l, size = sizeof(cc->fin._buf) - cc->fin._cnt;
@@ -90,7 +90,7 @@ static size_t fillBuf(ccState cc) {
  * @param cc compiler context.
  * @return the next character or -1 on end, or error.
  */
-static int readChr(ccState cc) {
+static int readChr(ccContext cc) {
 	int chr = cc->_chr;
 	if (chr != -1) {
 		cc->_chr = -1;
@@ -133,7 +133,7 @@ static int readChr(ccState cc) {
  * @param cc compiler context.
  * @return the next character or -1 on end, or error.
  */
-static int peekChr(ccState cc) {
+static int peekChr(ccContext cc) {
 	if (cc->_chr == -1) {
 		cc->_chr = readChr(cc);
 	}
@@ -146,7 +146,7 @@ static int peekChr(ccState cc) {
  * @param chr filter: 0 matches everithing.
  * @return the character skiped.
  */
-static int skipChr(ccState cc, int chr) {
+static int skipChr(ccContext cc, int chr) {
 	if (!chr || chr == peekChr(cc)) {
 		return readChr(cc);
 	}
@@ -159,7 +159,7 @@ static int skipChr(ccState cc, int chr) {
  * @param chr the character to be pushed back.
  * @return the character pushed back.
  */
-static int backChr(ccState cc, int chr) {
+static int backChr(ccContext cc, int chr) {
 	if(cc->_chr != -1) {
 		fatal("can not put back more than one character");
 		return -1;
@@ -174,7 +174,7 @@ static int backChr(ccState cc, int chr) {
  * @param isFile src is a filename.
  * @return boolean value of success.
  */
-int source(ccState cc, int isFile, char* src) {
+int source(ccContext cc, int isFile, char* src) {
 	if (cc->fin._fin > 3) {
 		// close previous opened file
 		close(cc->fin._fin);
@@ -319,8 +319,8 @@ unsigned rehash(const char* str, size_t len) {
  * @param hash precalculated hashcode, -1 recalculates.
  * @return the mapped string in the string table.
  */
-char* mapstr(ccState cc, char* str, size_t len/* = -1*/, unsigned hash/* = -1*/) {
-	state rt = cc->s;
+char* mapstr(ccContext cc, char* str, size_t len/* = -1*/, unsigned hash/* = -1*/) {
+	rtContext rt = cc->s;
 	list newn, next, prev = 0;
 
 	if (len == (size_t)-1) {
@@ -385,7 +385,7 @@ char* mapstr(ccState cc, char* str, size_t len/* = -1*/, unsigned hash/* = -1*/)
  * @param tok out parameter to be filled with data.
  * @return the kind of token, TOKN_err (0) if error occurred.
  */
-static int readTok(ccState cc, astn tok) {
+static int readTok(ccContext cc, astn tok) {
 	enum {
 		OTHER = 0x00000000,
 
@@ -1278,7 +1278,7 @@ static int readTok(ccState cc, astn tok) {
  * @param cc compiler context.
  * @param tok the token to be pushed back.
  */
-void backTok(ccState cc, astn tok) {
+void backTok(ccContext cc, astn tok) {
 	if (tok != NULL) {
 		tok->next = cc->_tok;
 		cc->_tok = tok;
@@ -1291,7 +1291,7 @@ void backTok(ccState cc, astn tok) {
  * @param kind filter: 0 matches everithing.
  * @return next token, or null.
  */
-astn peekTok(ccState cc, ccToken kind) {
+astn peekTok(ccContext cc, ccToken kind) {
 	if (cc->_tok == NULL) {
 		cc->_tok = newnode(cc, TOKN_err);
 		if (!readTok(cc, cc->_tok)) {
@@ -1312,7 +1312,7 @@ astn peekTok(ccState cc, ccToken kind) {
  * @param kind filter: 0 matches everithing.
  * @return next token, or null.
  */
-astn next(ccState cc, ccToken kind) {
+astn next(ccContext cc, ccToken kind) {
 	if (peekTok(cc, kind)) {
 		astn ast = cc->_tok;
 		cc->_tok = ast->next;
@@ -1328,7 +1328,7 @@ astn next(ccState cc, ccToken kind) {
  * @param kind filter: 0 matches everithing.
  * @return true if token was skipped.
  */
-int skip(ccState cc, ccToken kind) {
+int skip(ccContext cc, ccToken kind) {
 	astn ast = peekTok(cc, TYPE_any);
 	if (!ast || (kind && ast->kind != kind)) {
 		return 0;
@@ -1339,13 +1339,13 @@ int skip(ccState cc, ccToken kind) {
 }
 
 // TODO: to be removed.
-ccToken test(ccState cc) {
+ccToken test(ccContext cc) {
 	astn tok = peekTok(cc, TYPE_any);
 	return tok ? tok->kind : TYPE_any;
 }
 
 // TODO: rename, review.
-ccToken skiptok(ccState cc, ccToken kind, int raise) {
+ccToken skiptok(ccContext cc, ccToken kind, int raise) {
 	if (!skip(cc, kind)) {
 		if (raise) {
 			if (!peekTok(cc, TYPE_any)) {

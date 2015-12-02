@@ -27,32 +27,35 @@ extern "C" {
 #endif
 
 typedef struct symNode *symn;					// symbol
-typedef struct stateRec *state;					// runtimeContext
-typedef struct ccStateRec *ccState; 			// compilerContext
-typedef struct dbgStateRec *dbgState;			// debugContext
-typedef struct libcArgsRec *libcArgs;			// libcallContext
-typedef struct customContext *customContext;	//
+typedef struct rtContextRec *rtContext;			// runtimeContext
+typedef struct ccContextRec *ccContext; 		// compilerContext
+typedef struct dbgContextRec *dbgContext;		// debugContext
+
+typedef struct libcContextRec *libcContext;		// libcallContext -> runtimeContext
+typedef struct customContextRec *customContext;	// customContext -> debugContext
 
 /**
- * @brief Native function invocation arguments.
- * @note Setting the return value may invalidate some of the arguments.
- * (The return value and the arguments begin at the same memory location.)
+ * @brief Runtime error codes
  */
-struct libcArgsRec {
-	state rt;		// runtime context
+typedef enum {
+	noError,
+	invalidIP,
+	invalidSP,
+	stackOverflow,
+	memReadError,
+	memWriteError,
+	divisionByZero,
+	illegalInstruction,
+	libCallAbort,
+	executionAborted		// execution aborted by debuger
+	//~ + ArrayBoundsExceeded
+} vmError;
 
-	symn  fun;		// invoked function
-	void* data;		// static data for function (passed to install)
-	void* extra;	// extra data for function (passed to execute or invoke)
-
-	void* retv;		// result of function
-	char* argv;		// arguments for function
-};
 
 /**
  * @brief Runtime context
  */
-struct stateRec {
+struct rtContextRec {
 	int   errc;		// error count
 	int   closelog;	// close the log file
 	FILE* logf;		// log file
@@ -82,7 +85,7 @@ struct stateRec {
 	 * @brief Compiler context.
 	 * @note After code generation is seted to null.
 	 */
-	ccState cc;
+	ccContext cc;
 
 	/**
 	 * @brief Debug context.
@@ -91,7 +94,9 @@ struct stateRec {
 	 *  * code line mapping
 	 *  + break point lists
 	 */
-	dbgState dbg;
+	dbgContext dbg;
+
+	// TODO: remove variant and string typename symbols
 	symn type_var;	// TODO: to be removed, used only for printing.
 	symn type_str;	// TODO: to be removed, used only for printing.
 
@@ -106,7 +111,7 @@ struct stateRec {
 		 * @param name Name of the namespace.
 		 * @return Defined symbol, null on error.
 		 */
-		symn (*const ccBegin)(state, char* name);
+		symn (*const ccBegin)(rtContext, char* name);
 
 		/**
 		 * @brief Define a(n) integer, floating point or string constant.
@@ -115,9 +120,9 @@ struct stateRec {
 		 * @param value Value of the constant.
 		 * @return Defined symbol, null on error.
 		 */
-		symn (*const ccDefInt)(state, char* name, int64_t value);
-		symn (*const ccDefFlt)(state, char* name, float64_t value);
-		symn (*const ccDefStr)(state, char* name, char* value);
+		symn (*const ccDefInt)(rtContext, char* name, int64_t value);
+		symn (*const ccDefFlt)(rtContext, char* name, float64_t value);
+		symn (*const ccDefStr)(rtContext, char* name, char* value);
 
 		/**
 		 * @brief Add a type to the runtime.
@@ -128,7 +133,7 @@ struct stateRec {
 		 * @return Defined symbol, null on error.
 		 * @see: lstd.File;
 		 */
-		symn (*const ccAddType)(state, const char* name, unsigned size, int refType);
+		symn (*const ccAddType)(rtContext, const char* name, unsigned size, int refType);
 
 		/**
 		 * @brief Add a native function (libcall) to the runtime.
@@ -138,7 +143,7 @@ struct stateRec {
 		 * @param proto Prototype of the function. (Must end with ';')
 		 * @return Defined symbol, null on error.
 		 * @usage see also: test.gl/gl.c
-			static int f64sin(libcArgs rt) {
+			static int f64sin(libcContext rt) {
 				float64_t x = argf64(rt, 0);	// get first argument
 				retf64(rt, sin(x));				// set the return value
 				return 0;						// no runtime error in call
@@ -148,7 +153,7 @@ struct stateRec {
 				return 0;
 			}
 		 */
-		symn (*const ccAddCall)(state, int libc(libcArgs), void* extra, const char* proto);
+		symn (*const ccAddCall)(rtContext, vmError libc(libcContext), void* extra, const char* proto);
 
 		/**
 		 * @brief Compile the given file or text block.
@@ -159,7 +164,7 @@ struct stateRec {
 		 * @param text If not null, this will be compiled instead of the file.
 		 * @return Boolean value of success.
 		 */
-		int (*const ccAddCode)(state, int warn, char *file, int line, char *code);
+		int (*const ccAddCode)(rtContext, int warn, char *file, int line, char *code);
 
 		/**
 		 * @brief Close the namespace.
@@ -167,16 +172,16 @@ struct stateRec {
 		 * @param cls Namespace to be closed. (The returned by ccBegin.)
 		 * @note Makes all declared variables static.
 		*/
-		void (*const ccEnd)(state, symn cls);
+		void (*const ccEnd)(rtContext, symn cls);
 
 		/* Find a symbol by name.
 		 * 
-		symn (*const ccSymFind)(ccState cc, symn in, char *name);
+		symn (*const ccSymFind)(ccContext cc, symn in, char *name);
 		 */
 
 		/* offset of a pointer in the vm
 		 * 
-		int (*const vmOffset)(state, void *ptr);
+		int (*const vmOffset)(rtContext, void *ptr);
 		 */
 
 		/**
@@ -188,7 +193,7 @@ struct stateRec {
 
 			static symn onMouse = NULL;
 
-			static int setMouseCb(libcArgs rt) {
+			static int setMouseCb(libcContext rt) {
 				void* fun = argref(rt, 0);
 
 				// unregister event callback
@@ -216,9 +221,9 @@ struct stateRec {
 			if (!rt->api.ccAddCall(rt, setMouseCb, NULL, "void setMouseCallback(void Callback(int32 b, int32 x, int32 y);")) {
 				error...
 			}
-		 * TODO: symn (*const vmSymbol)(state, int offset);
+		 * TODO: symn (*const vmSymbol)(rtContext, int offset);
 		 */
-		symn (*const getsym)(state, void *ptr);
+		symn (*const getsym)(rtContext, void *ptr);
 
 		/**
 		 * @brief Invoke a function inside the vm.
@@ -231,7 +236,7 @@ struct stateRec {
 		 * @usage see @getsym example.
 		 * @note Invocation to execute must preceed this call.
 		 */
-		int (*const invoke)(state, symn fun, void* res, void* args, customContext extra);
+		vmError (*const invoke)(rtContext, symn fun, void* res, void* args, void* extra);
 
 		/**
 		 * @brief Allocate or free memory inside the vm.
@@ -246,7 +251,7 @@ struct stateRec {
 		 * 		size >  0 && ptr != null: realloc
 		 * @note Invocation to execute must preceed this call.
 		 */
-		void* (*const rtAlloc)(state, void* ptr, size_t size);
+		void* (*const rtAlloc)(rtContext, void* ptr, size_t size);
 	} api;
 
 	// memory related
@@ -257,6 +262,22 @@ struct stateRec {
 };
 
 /**
+ * @brief Native function invocation arguments.
+ * @note Setting the return value may invalidate some of the arguments.
+ * (The return value and the arguments begin at the same memory location.)
+ */
+struct libcContextRec {
+	rtContext rt;		// runtime context
+
+	symn  fun;		// invoked function
+	void* data;		// static data for function (passed to install)
+	void* extra;	// extra data for function (passed to execute or invoke)
+
+	void* retv;		// result of function
+	char* argv;		// arguments for function
+};
+
+/**
  * @brief Get the value of a libcall argument.
  * @param args Libcall arguments context.
  * @param offset Relative offset of argument.
@@ -264,7 +285,7 @@ struct stateRec {
  * @param size Size of the argument to copy to result.
  * @return Pointer where the result is located or copied.
  */
-static inline void* argval(libcArgs args, size_t offset, void *result, size_t size) {
+static inline void* argval(libcContext args, size_t offset, void *result, size_t size) {
 	// if result is not null copy
 	if (result != NULL) {
 		memcpy(result, args->argv + offset, size);
@@ -277,13 +298,13 @@ static inline void* argval(libcArgs args, size_t offset, void *result, size_t si
 
 // speed up of getting arguments of known types.
 #define argval(__ARGV, __OFFS, __TYPE) (*(__TYPE*)((__ARGV)->argv + (__OFFS)))
-static inline int32_t argi32(libcArgs args, int offs) { return argval(args, offs, int32_t); }
-static inline int64_t argi64(libcArgs args, int offs) { return argval(args, offs, int64_t); }
-static inline float32_t argf32(libcArgs args, int offs) { return argval(args, offs, float32_t); }
-static inline float64_t argf64(libcArgs args, int offs) { return argval(args, offs, float64_t); }
-static inline void* arghnd(libcArgs args, int offs) { return argval(args, offs, void*); }
-static inline void* argref(libcArgs args, int offs) { int32_t p = argval(args, offs, int32_t); return p ? args->rt->_mem + p : NULL; }
-static inline void* argsym(libcArgs args, int offs) { return args->rt->api.getsym(args->rt, argref(args, offs)); }
+static inline int32_t argi32(libcContext args, int offs) { return argval(args, offs, int32_t); }
+static inline int64_t argi64(libcContext args, int offs) { return argval(args, offs, int64_t); }
+static inline float32_t argf32(libcContext args, int offs) { return argval(args, offs, float32_t); }
+static inline float64_t argf64(libcContext args, int offs) { return argval(args, offs, float64_t); }
+static inline void* arghnd(libcContext args, int offs) { return argval(args, offs, void*); }
+static inline void* argref(libcContext args, int offs) { int32_t p = argval(args, offs, int32_t); return p ? args->rt->_mem + p : NULL; }
+static inline void* argsym(libcContext args, int offs) { return args->rt->api.getsym(args->rt, argref(args, offs)); }
 #undef argval
 
 /**
@@ -294,7 +315,7 @@ static inline void* argsym(libcArgs args, int offs) { return args->rt->api.getsy
  * @return Pointer where the result is located or copied.
  * @note May invalidate some of the arguments.
  */
-static inline void* setret(libcArgs args, void *result, size_t size) {
+static inline void* setret(libcContext args, void *result, size_t size) {
 	if (result != NULL) {
 		memcpy(args->retv, result, size);
 	}
@@ -303,12 +324,12 @@ static inline void* setret(libcArgs args, void *result, size_t size) {
 
 // speed up of setting result of known types.
 #define setret(__ARGV, __TYPE, __VAL) (*(__TYPE*)(__ARGV)->retv = (__TYPE)(__VAL))
-static inline void reti32(libcArgs args, int32_t val) { setret(args, int32_t, val); }
-static inline void reti64(libcArgs args, int64_t val) { setret(args, int64_t, val); }
-static inline void retf32(libcArgs args, float32_t val) { setret(args, float32_t, val); }
-static inline void retf64(libcArgs args, float64_t val) { setret(args, float64_t, val); }
-static inline void rethnd(libcArgs args, void* val) { setret(args, void*, val); }
-//~ static inline void retref(libcArgs args, void* val) { setret(args, void*, vmOffset(args->rt, val)); }
+static inline void reti32(libcContext args, int32_t val) { setret(args, int32_t, val); }
+static inline void reti64(libcContext args, int64_t val) { setret(args, int64_t, val); }
+static inline void retf32(libcContext args, float32_t val) { setret(args, float32_t, val); }
+static inline void retf64(libcContext args, float64_t val) { setret(args, float64_t, val); }
+static inline void rethnd(libcContext args, void* val) { setret(args, void*, val); }
+//~ static inline void retref(libcContext args, void* val) { setret(args, void*, vmOffset(args->rt, val)); }
 #undef setret
 
 #ifdef __cplusplus

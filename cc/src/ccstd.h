@@ -28,32 +28,17 @@ enum {
 	cgen_info = 0x0020,		// generate debug information
 };
 
-typedef enum {		// vm errors
-	noError,
-	invalidIP,
-	invalidSP,
-	stackOverflow,
-	traceOverflow,
-	memReadError,
-	memWriteError,
-	divisionByZero,
-	illegalInstruction,
-	libCallAbort,
-	executionAborted		// execution aborted by debuger
-	//~ + ArrayBoundsExceeded
-} vmError;
-
 /**
  * @brief Initialize runtime context.
  * @param mem optionally use this memory.
  * @param size the size of memory in bytes to be used.
  * @return runtime context.
  */
-state rtInit(void* mem, size_t size);
+rtContext rtInit(void* mem, size_t size);
 
 // logging
-void logFILE(state, FILE *file);			// set logger
-int logfile(state, char *file, int append);	// set logger
+void logFILE(rtContext, FILE *file);			// set logger
+int logfile(rtContext, char *file, int append);	// set logger
 
 // compile
 /**
@@ -61,34 +46,34 @@ int logfile(state, char *file, int append);	// set logger
  * @param runtime context.
  * @param mode see the enum abowe
  * @param onHalt function to be executed when execution terminates.
- * @return compiler state.
+ * @return compiler context.
  * @note installs: base types, emit, builtin functions
  */
-ccState ccInit(state, int mode, int onHalt(libcArgs));
+ccContext ccInit(rtContext, int mode, int onHalt(libcContext));
 
-/// Begin a namespace; @see state.api.ccBegin
-symn ccBegin(state, const char *cls);
+/// Begin a namespace; @see rtContext.api.ccBegin
+symn ccBegin(rtContext, const char *cls);
 
-/// Declare int constant; @see state.api.ccDefInt
-symn ccDefInt(state, char *name, int64_t value);
-/// Declare float constant; @see state.api.ccDefFlt
-symn ccDefFlt(state, char *name, double value);
-/// Declare string constant; @see state.api.ccDefStr
-symn ccDefStr(state, char *name, char* value);
+/// Declare int constant; @see rtContext.api.ccDefInt
+symn ccDefInt(rtContext, char *name, int64_t value);
+/// Declare float constant; @see rtContext.api.ccDefFlt
+symn ccDefFlt(rtContext, char *name, double value);
+/// Declare string constant; @see rtContext.api.ccDefStr
+symn ccDefStr(rtContext, char *name, char* value);
 
 /// Close a namespace extended.
-void ccExtEnd(state, symn sym, int mode);
-/// Close a namespace; @see state.api.ccEnd
-void ccEnd(state, symn sym);
+void ccExtEnd(rtContext, symn sym, int mode);
+/// Close a namespace; @see rtContext.api.ccEnd
+void ccEnd(rtContext, symn sym);
 
-/// Install a native function; @see state.api.ccAddCall
-symn ccAddCall(state, int call(libcArgs), void* data, const char* proto);
+/// Install a native function; @see rtContext.api.ccAddCall
+symn ccAddCall(rtContext, int call(libcContext), void* data, const char* proto);
 
-/// Install a type; @see state.api.ccAddType
-symn ccAddType(state, const char* name, unsigned size, int refType);
+/// Install a type; @see rtContext.api.ccAddType
+symn ccAddType(rtContext, const char* name, unsigned size, int refType);
 
-/// Compile file or text; @see state.api.ccAddCode
-int ccAddCode(state, int warn, char *file, int line, char *text);
+/// Compile file or text; @see rtContext.api.ccAddCode
+int ccAddCode(rtContext, int warn, char *file, int line, char *text);
 
 /**
  * @brief Execute the unit function then optionally compile the file.
@@ -98,7 +83,7 @@ int ccAddCode(state, int warn, char *file, int line, char *text);
  * @param file additional file to be compiled with this unit.
  * @return boolean value of success.
  */
-int ccAddUnit(state, int unit(state), int warn, char *file);
+int ccAddUnit(rtContext, int unit(rtContext), int warn, char *file);
 
 /**
  * @brief Find symbol by name.
@@ -107,7 +92,7 @@ int ccAddUnit(state, int unit(state), int warn, char *file);
  * @param name name of the symbol to be found.
  * @return the first found symbol.
  */
-symn ccFindSym(ccState, symn in, char *name);
+symn ccFindSym(ccContext, symn in, char *name);
 
 /** TODO: to be removed
  * @brief get the int value of constant symbol.
@@ -128,20 +113,20 @@ int ccSymValFlt(symn sym, double* res);
  * io, mem, math, ...
  * @param Runtime context.
  */
-int install_stdc(state);
+int install_stdc(rtContext);
 
 /** Instal file functions.
  * open, read, delete, ...
  * @param Runtime context.
  */
-int install_file(state);
+int install_file(rtContext);
 
 /** Generate executable bytecode.
  * @param Runtime context.
  * @param mode see@(cgen_opti, cgen_info, cgen_glob)
  * @return boolean value of success.
  */
-int gencode(state, int mode);
+int gencode(rtContext, int mode);
 
 /**
  * @brief Execute the compiled script.
@@ -153,20 +138,20 @@ int gencode(state, int mode);
  * @todo argc(int) argument count from main.
  * @todo argv(char*[]) arguments from main.
  */
-int execute(state, size_t ss, void *extra);
+vmError execute(rtContext, size_t ss, void *extra);
 
-/// Invoke a function; @see state.api.invoke
-int invoke(state, symn fun, void *ret, void* args, void *extra);
+/// Invoke a function; @see rtContext.api.invoke
+vmError invoke(rtContext, symn fun, void *ret, void* args, void *extra);
 
-/// Lookup symbol by offset; @see state.api.mapsym
-symn mapsym(state, size_t offs, int callsOnly);
-symn getsym(state, void* offs);
+/// Lookup symbol by offset; @see rtContext.api.mapsym
+symn mapsym(rtContext, size_t offs, int callsOnly);
+symn getsym(rtContext, void* offs);
 
 /// Check if at the given offset a resource string is located.
-char* getResStr(state rt, size_t offs);
+char* getResStr(rtContext rt, size_t offs);
 
-/// Alloc, resize or free memory; @see state.api.rtAlloc
-void* rtAlloc(state, void* ptr, size_t size);
+/// Alloc, resize or free memory; @see rtContext.api.rtAlloc
+void* rtAlloc(rtContext, void* ptr, size_t size);
 
 static inline void* paddptr(void *offs, unsigned align) {
 	return (void*)(((ptrdiff_t)offs + (align - 1)) & ~(ptrdiff_t)(align - 1));
