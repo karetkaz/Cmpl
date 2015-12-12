@@ -65,15 +65,16 @@ function displayCallTree(chart, callTree, focus) {
 	}
 	tree = extendCallTree(tree || samples);
 
-	function extendCallTree(obj) {
+	function extendCallTree(obj, parent) {
 		var i, ct, result = Object.create(obj);
 		if (obj.calltree != null) {
 			ct = [];
 			for (i = 0; i < obj.calltree.length; ++i) {
-				ct.push(extendCallTree(obj.calltree[i]));
+				ct.push(extendCallTree(obj.calltree[i], result));
 			}
 			Object.defineProperty(result, 'calltree', {value: ct});
 		}
+		Object.defineProperty(result, 'parent', {value: parent});
 		return result;
 	}
 
@@ -110,49 +111,35 @@ function displayCallTree(chart, callTree, focus) {
 		callTree.appendChild(row);
 
 		walkCallTree(tree, 0, function(node, depth) {
+			var expandable = false;
 			var left = timeScale * (node.enter - tree.enter);
 			var right = timeScale * (tree.leave - node.leave);
+
 			var funct = node.func || { name: '??' };
 			var sample = samples.samples[funct.offs] || {};	// make everithing undefined if function is not found
+
+			var globalTime = samples.leave - samples.enter;
+			var callSelfCost = (node.self * 100 / globalTime).toFixed(2);
+			var callTotalCost = (node.total * 100 / globalTime).toFixed(2);
+			var sampleSelfCost = (sample.self * 100 / globalTime).toFixed(2);
+			var sampleTotalCost = (sample.total * 100 / globalTime).toFixed(2);
+
 			var title = 'Function: ' + funct.name + ' @' + funct.offs
-					+ '\nHit Count: ' + node.hits
-					+ '\nSelf Ticks: ' + node.self
-					+ '\nSelf Cost: ' + (node.self * 100 / (tree.leave - tree.enter)).toFixed(2) + '%'
-					+ '\nTotal Ticks: ' + node.total
-					+ '\nTotal Cost: ' + (node.total * 100 / (tree.leave - tree.enter)).toFixed(2) + '%'
-					+ '\nGlobal Hit Count: ' + sample.hits
-					+ '\nGlobal Self Ticks: ' + sample.self
-					+ '\nGlobal Self Cost: ' + (sample.self * 100 / (samples.leave - samples.enter)).toFixed(2) + '%'
-					+ '\nGlobal Total Ticks: ' + sample.total
-					+ '\nGlobal Total Cost: ' + (sample.total * 100 / (samples.leave - samples.enter)).toFixed(2) + '%'
-					+ '\n' + funct.proto;
-
-			/*Big ones:
-			U+25B2 (Black up-pointing triangle ▲)
-			U+25BC (Black down-pointing triangle ▼)
-			U+25C0 (Black left-pointing triangle ◀)
-			U+25B6 (Black right-pointing triangle ▶)
-
-			Big white ones:
-			U+25B3 (White up-pointing triangle △)
-			U+25BD (White down-pointing triangle ▽)
-			U+25C1 (White left-pointing triangle ◁)
-			U+25B7 (White right-pointing triangle ▷)
-
-			There is also some smalller triangles:
-			U+25B4 (Black up-pointing small triangle ▴)
-			U+25C2 (Black left-pointing small triangle ◂)
-			U+25BE (Black down-pointing small triangle ▾)
-			U+25B8 (Black right-pointing small triangle ▸)
-
-			Also some white ones:
-			U+25C3 (White left-pointing small triangle ◃)
-			U+25BF (White down-pointing small triangle ▿)
-			U+25B9 (White right-pointing small triangle ▹)
-			U+25B5 (White up-pointing small triangle ▵)
-			*/
-			var expanded = '▾'; // ▽ ▾ ▿ ◢ ◢ ⏷ ▼
-			var colapsed = '▸'; // ▷ ▸ ▹ ◥ ◿ ⏵ ▶
+			if (sample.hits > 1) {
+				title += '\nHit Count: ' + node.hits + ' / ' + sample.hits;
+				title += '\nSelf Cost: ' + callSelfCost + '% / ' + sampleSelfCost + '%';
+				title += '\nSelf Ticks: ' + node.self + ' / ' + sample.self;
+				title += '\nTotal Cost: ' + callTotalCost + '% / ' + sampleTotalCost + '%';
+				title += '\nTotal Ticks: ' + node.total + ' / ' + sample.total;
+			}
+			else {
+				title += '\nHit Count: ' + sample.hits;
+				title += '\nSelf Cost: ' + sampleSelfCost + '%';
+				title += '\nSelf Ticks: ' + sample.self;
+				title += '\nTotal Cost: ' + sampleTotalCost + '%';
+				title += '\nTotal Ticks: ' + sample.total;
+			}
+			title += '\n' + funct.proto;
 
 			// add to call chart
 			if (depth < maxDepth && timeScale * node.total > .3) {
@@ -170,16 +157,9 @@ function displayCallTree(chart, callTree, focus) {
 				div.onclick = function() {
 					var n;
 					if (node.htmlTreeNode != null) {
-						for (n = node.caller; n != null; n = n.caller) {
-							if (n.htmlExpander && n.htmlExpander.innerText === colapsed) {
-								n.htmlExpander.innerText = expanded;
-								walkCallTree(n, 0, function(node, depth) {
-									// expand only one depth
-									if (node.htmlTreeNode == null || depth > 0) {
-										return;
-									}
-									node.htmlTreeNode.style.display = '';
-								});
+						for (n = node; n != null; n = n.parent) {
+							if (n.htmlTreeNode != null) {
+								n.htmlTreeNode.style.display = '';
 							}
 						}
 						node.htmlTreeNode.scrollIntoView(!true);
@@ -204,58 +184,68 @@ function displayCallTree(chart, callTree, focus) {
 				row.appendChild(func = document.createElement("td"));
 
 				hits.innerText = node.hits;
-				selfTime.innerText = node.self + ' / ' + (node.self * 100 / (tree.leave - tree.enter)).toFixed(2) + '%';
-				totalTime.innerText = node.total + ' / ' + (node.total * 100 / (tree.leave - tree.enter)).toFixed(2) + '%';
+				//selfTime.innerText = callSelfCost + '%';
+				//totalTime.innerText = callTotalCost + '%';
+				selfTime.innerText = (node.self * 100 / (tree.leave - tree.enter)).toFixed(2) + '%';
+				totalTime.innerText = (node.total * 100 / (tree.leave - tree.enter)).toFixed(2) + '%';
+
 
 				node.htmlTreeNode = row;		// add a reference to the table row
-				node.htmlExpander = null;
 
+				// check if the node has subcalls
 				walkCallTree(node, 0, function(childNode, depth) {
 					if (childNode.total > minTime && depth >= 0) {
-						if (node.htmlExpander == null) {
-							node.htmlExpander = document.createElement("span");
-						}
+						expandable = true;
 					}
 				});
 
-				if (node.htmlExpander !== null) {
-					func.appendChild(node.htmlExpander);
-					node.htmlExpander.innerText = expanded;
-					node.htmlExpander.onclick = function(event) {
-						if (node.htmlExpander.innerText === colapsed) {
-							node.htmlExpander.innerText = expanded;
+				if (expandable) {
+					// expanded by default.
+					func.classList.add("expanded");
+
+					// bind the function to toggle expand
+					row.callTreeShow = function(expand) {
+						if (!expandable) {
+							return false;
+						}
+						func.classList.remove("collapsed");
+						func.classList.remove("expanded");
+						func.classList.add(expand ? "expanded" : "collapsed");
+						return true;
+					}
+
+					func.onclick = function(event) {
+						if (func.classList.contains("collapsed")) {
+							row.callTreeShow(true);
 							walkCallTree(node, 0, function(node, depth) {
 								// expand only one depth
 								if (node.htmlTreeNode == null || (!event.ctrlKey && depth > 0)) {
 									return;
 								}
 								node.htmlTreeNode.style.display = '';
-								if (event.ctrlKey && node.htmlExpander != null) {
-									node.htmlExpander.innerText = expanded;
-								}
+								/*if (event.ctrlKey && node.htmlExpander != null) {
+									node.htmlTreeNode.innerText = expanded;
+								}*/
 							});
 						}
 						else {
-							node.htmlExpander.innerText = colapsed;
+							row.callTreeShow(false);
 							walkCallTree(node, 0, function(node, depth) {
 								// collapse each subnode
 								if (node.htmlTreeNode == null) {
 									return;
 								}
 								node.htmlTreeNode.style.display = 'none';
-								if (node.htmlExpander != null) {
-									node.htmlExpander.innerText = colapsed;
+								if (node.htmlTreeNode.callTreeShow != null) {
+									node.htmlTreeNode.callTreeShow(false);
 								}
 							});
 						}
 					}
 				}
-				else {
-					func.appendChild(document.createElement("span"));
-				}
 
 				func.appendChild(document.createTextNode(funct.proto));
-				func.style.paddingLeft = depth + 'em';
+				func.style.paddingLeft = (expandable ? depth : depth + 1) + 'em';
 				row.title = title;
 				row.onmouseenter = function(e) {
 					if (node.htmlChartNode != null) {
@@ -266,9 +256,6 @@ function displayCallTree(chart, callTree, focus) {
 					if (node.htmlChartNode != null) {
 						node.htmlChartNode.classList.remove('hover');
 					}
-				};
-				row.ondblclick = function(e) {
-					displayCallTree(chart, callTree, node);
 				};
 				callTree.appendChild(row);
 			}

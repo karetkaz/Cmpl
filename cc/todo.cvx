@@ -37,7 +37,7 @@ void testFunction2(void cb(int n, debugInfo &info), int n, debugInfo &info) {
 }
 void testFunction(int n, debugInfo &info) {
 	if (n < 0) {
-		debug("stack trace :-)", variant.null, 1, 25);
+		debug("stack trace :-)", variant(null), 1, 25);
 		return;
 	}
 	testFunction1(testFunction, n - 1, info);
@@ -52,7 +52,7 @@ testFunction(2, &info);
 // there should be only 2 trace('initialize')
 int init() {
 	static int a1 = init();
-	debug("initialize", variant.null, 1, 25);
+	debug("initialize", variant(null), 1, 25);
 	return 9;
 }
 int a2 = init();
@@ -395,7 +395,7 @@ inline void(float64 &&a) = void(0);
 inline void(object &&o)  = void(object.destroy(o));
 //~ +/
 
-/+ Reflect
+//~ /+ TODO: Reflection
 enum TypeCode: int32 {
 	CAST_any = 0x00000000;		// invalid, error, ...
 	CAST_vid = 0x00000001;		// void;
@@ -427,15 +427,15 @@ enum TypeCode: int32 {
 }
 
 struct TypeInfo {
-	pointer file;		// declared in file (cstr)
+	char* file;			// declared in file (cstr)
 	int32 line;			// declared on line
-	pointer name;		// typename (cstr)
+	char* name;			// typename (cstr)
 	int32 offs;			// offset
 	int32 size;			// size
 
 	TypeInfo &base;		// function return type, typename base, variable type
 	TypeInfo &args;		// function arguments, typename fields, ?
-	TypeInfo &next;		// next type, argument, field
+	TypeInfo &next;		// next type, member, parameter
 
 	int8  kind;			// ref(var / fun), type,
 	int8  cast;			// casts to ...
@@ -447,151 +447,147 @@ struct TypeInfo {
 	//~ operator (TypeInfo &this).function = bool(this.kind & ATTR_fun == );
 }
 
-//~ class typename: TypeInfo;
-//~ class variable: TypeInfo;
-
-bool instanceof(TypeInfo &ty, var obj) {
-	TypeInfo &oty = obj.type;
-	while (ty && ty != oty) {
-		ty = ty.base;
+bool instanceOf(variant obj, typename typ) {
+	typename objTyp = obj.type;
+	while (objTyp != null) {
+		if (objTyp === typ) {
+			return true;
+		}
+		objTyp = objTyp.base;
 	}
-	return ty;
+	return false;
 }
 
-inline lookUp(TypeInfo &type, int level, string name) = lookUp(type, level, name, null);
+variant invoke(variant obj, int flags, string name, variant args...) {
+	bool lookUpFunc = args !== null;
+	bool lookUpStatic = false;
+	typename type = obj.type;
 
-TypeInfo& lookUp(TypeInfo &type, int level, string name, variant args...) {
+	if (type === typename) {
+		// obj is a type not a variable
+		lookUpStatic = true;
+		type = obj.data;
+	}
 
-	bool func = args != null;
+	// loop on each hierarchy class
+	for ( ; type && level > 0; ) {
 
-	while (type && level > 0 && type.code != TYPE_ref) {
+		if (type.code != TYPE_rec) {
+			break;
+		}
 
-		for (TypeInfo arg : type.args) {
+		for (typename field : type.args) {
 
-			// skip defines, consts, ...
-			if (arg.code != TYPE_ref)
+			// filter out inlines, values, ...
+			if (field.code != TYPE_ref)
 				continue;
 
-			// lookup only variables or functions
-			if (arg.call != func)
+			// filter by type
+			if (field.call != lookUpFunc)
 				continue;
 
-			if (arg.name != name)
+			// filter by name
+			if (field.name != name)
 				continue;
 
-			if (func) {
+			if (lookUpFunc) {
 				int i = 0;
-				for (TypeInfo &param : arg.args) {
+				typename params = field.args;
+				for (variant arg : args) {
 
-					if (i >= args.Length)
+					if (i >= params.Length)
 						break;
 
-					if (param.load) ...		// by ref
-					if (param.call) ...		// argument is a funtion: (byref must be set)
-
-					if (!canAssign(param, args[i]))
+					if (!canAssign(params[i], arg))
 						break;
 
-					if (param.type != args[i].type)		// check return types
-						break;
-
-					if (!param.Vararg)
+					if (!params[i].Vararg)
 						i += 1;
 				}
 
+				// filter by args
 				if (i != args.Length)
 					continue;
 			}
-			return arg;
+
+			pointer offset = field.offset(obj);
+
+			// invoke method ?
+			if (offset != null && lookUpFunc) {
+				uint8 st[4096];			// this is on top of stack
+
+				// clear stacks result space
+				memset(pointer(&st), Method.type.size);
+
+				for (int i = 0; i < Method.args.length; i += 1) {
+					typename arg = Method.args[i];
+
+					if (arg.offset > st.length)
+						return variant(null, null);
+
+					memcpy(pointer(&st[arg.offset]), arg.data, arg.size);
+				}
+
+				emit(call, pointer(offset));
+
+				return variant.dupp(Method.type, pointer(&st));
+			}
+
+			// return reference
+			return variant(field.type, offset);
 		}
 
 		// base class has this member ?
 		type = type.base;
 		level -= 1;
 	}
-	return null;
+	return variant(null, null);
 }
 
-bool invoke(var obj, var &&res, string name, var args...) {
-	TypeInfo class = obj.type == TypeInfo ? &obj.data : obj.type;
-	TypeInfo Method = lookUp(type, -1, name, args);
-
-	if (Method != null && Method.offset > 0) {
-		uint8 stop[4096];			// this is on top of stack
-		pointer st = pointer(stop);
-
-		memset(st, Method.type.size);	// clear result
-
-		for (int i = 0; i < Method.args.length; i += 1) {
-			TypeInfo marg = Method.args[i];
-
-			if (marg.offset > stop.length)
-				return false;
-
-			memcpy(st + marg.offset, args[i].data, marg.size);
-		}
-
-		emit(call, u32(Method.offset));
-
-		res.type = Method.type;
-		res.data = malloc(Method.type.size);
-		memcpy(res.data, st, Method.type.size);
-		//~ or short: res = variant(Method.type, st);
-
-		return true;
-	}
-	return false;
+variant lookup(variant obj, int flags, string name) {
+	return invoke(obj, level, name, null...);
 }
 
 struct cls {
-	static int32 c;
+	static int F(int a, int b) { return a + b; }
+	int f(int a, int b) = F;
+	static int32 A = 66;
 	int32 a;
 	int32 b;
-	static int M1(int a, int b) {return a + b;}
 }
 
-var a1 = var(34);
-var a2 = var(4);
-var res;
-cls obj;
+cls obj = {
+	a: 9l;
+	b: 88;
+};
 
-// get and set value of static member
-assert(invoke(cls, res, "c") && res == cls.c);							// res := cls.c;
-//~ assert(invoke(cls, res, "c", a1) && cls.c == a1 && res == a1);			// res := (cls.c := a1);
-// get and set value of object member
-assert(invoke(obj, res, "a") && res == obj.a);							// res := cls.a;
-//~ assert(invoke(obj, res, "a", a2) && obj.a == a2 && res == a2);			// res := (obj.a := a2);
-// invoke function with arguments
-assert(invoke(cls, res, "M1", a1, a2) && res == cls.M1(a1, a2));		// res = cls.M1(a1, a2);
+// lookup field 'A' in the class
+var var_A = lookup(cls, 0, "A");
+// lookup field 'a' in the instance
+var var_a = lookup(obj, 0, "a");
 
+int32 val_2 = 98;
 
-bool IsAssignable(TypeInfo typeInfo) {
-	if (typeInfo == null)
-		return false;
+assert(var_A.type === int32);
+assert(var_a.type === int32);
 
-	if (this == typeInfo)
-		return true;
-
-	// If c is a subclass of this class, then c can be cast to this type.
-	if (typeInfo.IsSubclassOf(this))
-		return true;
-
-	if (this.IsInterface)
-	{
-		return typeInfo.ImplementInterface(this);
-	}
-	else if (IsGenericParameter)
-	{
-		Type[] constraints = GetGenericParameterConstraints();
-		for (int i = 0; i < constraints.Length; i++)
-			if (!constraints[i].IsAssignableFrom(typeInfo))
-				return false;
-
-		return true;
-	}
-
-	return false;
+bool setValue(variant v, int32 value) {
+	int32 &data = int32(v);
+	data = value;
+	return true;
 }
+
+// get, set and invoke static member
+assert(val_2 != cls.A);
+assert(int32(var_A) == cls.A);
+assert(setValue(var_A, val_2) && val_2 == cls.A);
+assert(int32(invoke(cls, 0, "F", obj.a, obj.b)) == cls.F(obj.a, obj.b));
+
+// get, set and invoke object member
+assert(val_2 != obj.a);
+assert(int32(var_a) == obj.a);
+assert(setValue(var_a, val_2) && val_2 == obj.a);
+assert(int32(invoke(obj, 0, "f", obj.a, obj.b)) == obj.f(obj.a, obj.b));
 //~ +/
 
 /+ BenchMarks

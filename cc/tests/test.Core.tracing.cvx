@@ -1,7 +1,7 @@
 //~ /*/~ Trace native calls
 void f(int &arg) {
 	if (arg <= 0) {
-		debug("stack trace :-)", variant.null, 3, 256);
+		debug("stack trace :-)", variant(null), 3, 256);
 		//~ trace("stack trace :-)");
 		return;
 	}

@@ -18,15 +18,20 @@ application [global options] [local options]...
 
   -run                  run without: debug information, stacktrace, bounds checking, ...
 
-  -debug[<hex>][/ *]    run with attached debugger, break on uncaught errors
+  -debug[<hex>][/ *]    run with attached debugger, break on uncaught errors and breakpoints
     <hex>               custom optimization level for code generation
     /a                  break on caught errors
     /s                  break on startup
-    /v                  print global variable values
+
+    /v                  dump global variable values
+    /V                  dump global variable values (all, including functions)
+    /h                  dump allocated heap memory
+    /c                  dump function statistics
+    /C                  dump function statistics (all including statement level stats)
 
   -profile[/ *]         run code with profiler: coverage, method tracing
 +   /c                  dump call tree
-+   /m                  dump allocated heap memory
++   /h                  dump allocated heap memory
     without c or m dump will contain only execution times and hit count of functions and statements.
 
 <local options>: filename followed by swithes
@@ -42,17 +47,16 @@ examples:
 >app -run test.tracing.ccc
     compile and execute the file `test.tracing.ccc`
 
-?
 >app -debug -gl.so -w0 gl.ccc -w0 test.ccc -wx -b12 -b15 -d19
-        execute in debug mode
-        import `gl.so`
-            with no warnings
-        compile `gl.ccc`
-            with no warnings
-        compile `test.ccc`
-            treating all warnings as errors
-            break execution on lines 12 and 15
-            print stacktrace when line 19 is hit
+    execute in debug mode
+    import `gl.so`
+        with no warnings
+    compile `gl.ccc`
+        with no warnings
+    compile `test.ccc`
+        treating all warnings as errors
+        break execution on lines 12 and 15
+        print stacktrace when line 19 is hit
 */
 
 //~ (wcl386 -cc -q -ei -6s -d0  -fe=../main *.c) && (rm -f *.o *.obj *.err)
@@ -185,7 +189,7 @@ static void usage(char* app) {
 	fputfmt(out,"\n");
 	fputfmt(out, "    -run           execute\n");
 	fputfmt(out, "    -debug         execute with debugerr\n");
-	fputfmt(out, "    -profile       execute\n");
+	fputfmt(out, "    -profile       execute with code profiling\n");
 	fputfmt(out,"\n");
 	fputfmt(out,"    -api[<hex>]     dump symbols\n");
 	fputfmt(out,"    -asm[<hex>]     dump assembly\n");
@@ -484,7 +488,7 @@ static void conDumpAsm(customContext extra, size_t offs, void* ip) {
 static void conDumpApi(customContext extra, symn sym) {
 	int dumpAsm = 0;
 	int dumpAst = 0;
-	int identExt = extra->indent;
+	int identExt = 0;//extra->indent;
 	FILE *out = extra->out;
 
 	if (extra->asm_dump >= 0 && sym->call && sym->kind == TYPE_ref) {
@@ -564,7 +568,7 @@ static void conDumpApi(customContext extra, symn sym) {
 		for (usage = sym->used; usage; usage = usage->ref.used) {
 			if (usage->file && usage->line) {
 				int referenced = !(usage->file == sym->file && usage->line == sym->line);
-				fputfmt(out, "%I%s:%u: %s as `%+t`\n", identExt, usage->file, usage->line, referenced ? "referenced" : "defined", usage);
+				fputfmt(out, "%I%s:%u: %s as `%+t`\n", identExt + 1, usage->file, usage->line, referenced ? "referenced" : "defined", usage);
 				#ifdef LOG_MAX_ITEMS
 				if ((usages += 1) > LOG_MAX_ITEMS) {
 					break;
@@ -576,7 +580,7 @@ static void conDumpApi(customContext extra, symn sym) {
 			}
 		}
 		if (extUsages > 0) {
-			fputfmt(out, "%Iexternal references: %d\n", identExt, extUsages);
+			fputfmt(out, "%Iexternal references: %d\n", identExt + 1, extUsages);
 		}
 		fputfmt(out, "%I}\n", identExt);
 		(void)usages;

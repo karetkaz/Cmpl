@@ -17,19 +17,19 @@ static struct Collections {
 
 		// private helpers
 		static struct {
-			Array make(T values[]) {
+			Array create(bool wrap, T values[]) {
 				result = object.create(Array);
-				result.subArray = null;
-				result.values = malloc(T, values.length);
-				for (int i = 0; i < values.length; i += 1) {
-					result.values[i] = values[i];
+				if (wrap) {
+					result.subArray = result;
+					result.values = values;
 				}
-			}
-
-			Array wrap(T values[]) {
-				result = object.create(Array);
-				result.subArray = null;
-				result.values = values;
+				else {// make a copy
+					result.subArray = null;
+					result.values = malloc(T, values.length);
+					for (int i = 0; i < values.length; i += 1) {
+						result.values[i] = values[i];
+					}
+				}
 			}
 
 			Array slice(Array array, int from, int to) {
@@ -43,23 +43,6 @@ static struct Collections {
 				assert(array != null, "Null Reference")
 				assert(uint(array.values.length < uint(index)), "Index out of bounds");
 				return index;
-			}
-
-		}
-
-		struct Immutable: Array {
-			/*get: T(Immutable this, int index) {
-				return this.values[index];
-			}*/
-
-			set: Array(Immutable this, int index, T value) {
-				fatal("Imutable Object");
-				return this;
-			}
-
-			operator Immutable(T values[]) Immutable {
-				values: clone(values);
-				subArray: null;
 			}
 		}
 
@@ -77,7 +60,7 @@ static struct Collections {
 		}
 
 		/// implicit constructor from slice
-		operator Array(T values[]) = Immutable(values);
+		operator Array(T values[]) = create(false, values);
 
 		// enable get only: expression is not an rvalue.
 		operator (Array this).Length = (this == null ? 0 : this.values.length);
@@ -90,14 +73,14 @@ static struct Collections {
 
 		/// return a new array containing the elements in reserved order.
 		static Array Reverse(Array array) {
-			result = create(array.values);
+			result = create(false, array.values);
 			Reverse(result.values);
 			return result;
 		}
 
 		/// return a new sorted array.
 		static Array Sort(Array array) {
-			result = create(array.values);
+			result = create(false, array.values);
 			Sort(result.values);
 			return result;
 		}
@@ -114,12 +97,12 @@ static struct Collections {
 
 		// private members
 		struct {
-			int length;
+			int length = 0;
 		}
 
 		// private helpers
 		static struct {
-			Array create(T values[]) {
+			Vector create(T values[]) {
 				result = object.create(Vector);
 				result.subArray = null;
 				result.values = new(T, values.length);

@@ -22,11 +22,11 @@ do
 	dumpFile=$dumpPrefix${testName#tests/test}.cvx
 	dumpFileJs=$dumpPrefix${testName#tests/test}.json
 
-	echo "!** running test: $file"
+	echo "! running test: $file"
 	#~ echo>>$logFile "**** running test: $file"
 	./main -log/a $logFile -dump.json $dumpFileJs $flags $file
 	#~ ./main -dump.json $dumpFileJs $flags $file
 	if [ "$?" -ne "0" ]; then
-		echo ">** test failed: $file"
+		echo "$file:1: test failed!"
 	fi
 done

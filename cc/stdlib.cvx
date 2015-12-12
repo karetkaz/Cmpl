@@ -1386,26 +1386,23 @@ static struct Debug {
 		assertTrace = defTrace;
 	}
 
-	//~ int Priority = verbose;
-	//~ inline setPriority(int priority) = void(Priority = priority);
-
 	//~ inline print(int priority, string message) = void(Priority <= priority ? debug(message, null, null, 0, 1) : void(0));
 }
 
 inline debug(string message, variant inspect) = debug(message, inspect, Debug.debug, Debug.notrace);
-inline debug(string message) = debug(message, variant.null, Debug.debug, Debug.notrace);
+inline debug(string message) = debug(message, variant(null), Debug.debug, Debug.notrace);
 inline debug(variant inspect) = debug(null, inspect, Debug.debug, Debug.notrace);
 
 inline trace(string message, variant inspect) = debug(message, inspect, Debug.debug, Debug.defTrace);
-inline trace(string message) = debug(message, variant.null, Debug.debug, Debug.defTrace);
+inline trace(string message) = debug(message, variant(null), Debug.debug, Debug.defTrace);
 
 inline abort(string message, variant inspect) = debug(message, inspect, Debug.abort, Debug.abortTrace);
-inline abort(string message) = debug(message, variant.null, Debug.abort, Debug.abortTrace);
-inline abort() = debug("execution aborted!", variant.null, Debug.abort, Debug.abortTrace);
+inline abort(string message) = debug(message, variant(null), Debug.abort, Debug.abortTrace);
+inline abort() = debug("execution aborted!", variant(null), Debug.abort, Debug.abortTrace);
 
 inline assert(bool condition, string message, variant inspect) = debug(message, inspect, condition ? 0 : Debug.abort, Debug.assertTrace);
-inline assert(bool condition, string message) = debug(message, variant.null, condition ? 0 : Debug.abort, Debug.assertTrace);
-inline assert(bool condition) = debug("assertion failed!", variant.null, condition ? 0 : Debug.abort, Debug.assertTrace);
+inline assert(bool condition, string message) = debug(message, variant(null), condition ? 0 : Debug.abort, Debug.assertTrace);
+inline assert(bool condition) = debug("assertion failed!", variant(null), condition ? 0 : Debug.abort, Debug.assertTrace);
 
 //~ TODO: inline assert(bool condition) = void(condition ? void(0) : abort("assertion failed!"));
 //#}

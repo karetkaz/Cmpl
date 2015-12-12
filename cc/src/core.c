@@ -130,7 +130,7 @@ void* rtAlloc(rtContext rt, void* ptr, size_t size) {
 		rt->vm.heap = heap;
 	}
 
-	// realloc or free.
+	// chop or free.
 	if (ptr != NULL) {
 		size_t chunksize = chunk->next ? ((char*)chunk->next - (char*)chunk) : 0;
 
@@ -180,7 +180,7 @@ void* rtAlloc(rtContext rt, void* ptr, size_t size) {
 			chunk->prev = NULL;
 			chunk = NULL;
 		}
-		else if (allocSize < chunksize) {			// shrink
+		else if (allocSize < chunksize) {			// chop
 			memchunk next = chunk->next;
 			memchunk free = (memchunk)((char*)chunk + allocSize);
 
@@ -203,12 +203,11 @@ void* rtAlloc(rtContext rt, void* ptr, size_t size) {
 				}
 			}
 		}
-		else {										// grow
+		else {										// grow: reallocation to a bigger chunk is not supported.
 			error(rt, __FILE__, __LINE__, "can not grow allocated chunk (unimplemented).");
 			chunk = NULL;
 		}
 	}
-
 	// allocate.
 	else if (size > 0) {
 		memchunk prev = chunk = rt->vm.heap;
@@ -733,14 +732,6 @@ static int install_base(rtContext rt, int mode) {
 	int error = 0;
 	ccContext cc = rt->cc;
 
-	//~ TODO: temporarly add null to variant type.
-	if (rt->cc->type_var && !rt->cc->type_var->flds) {
-		ccBegin(rt, NULL);
-		//~ install(cc, "null", ATTR_const | ATTR_stat | TYPE_def, TYPE_i64, 2 * vm_size, rt->cc->type_var, intnode(cc, 0));
-		install(cc, "null", ATTR_const | ATTR_stat | TYPE_def, TYPE_any, 2 * vm_size, rt->cc->type_var, NULL);
-		ccEnd(rt, rt->cc->type_var);
-	}
-
 	// 4 reflection
 	if (cc->type_rec && (mode & creg_tvar)) {
 		symn arg = NULL;
@@ -798,7 +789,7 @@ static int install_base(rtContext rt, int mode) {
 		error = error || !ccAddCall(rt, typeFunction, (void*)typeOpGetFile, "variant setValue(typename field, variant value)");
 		error = error || !ccAddCall(rt, typeFunction, (void*)typeOpGetFile, "variant getValue(typename field)");
 
-		install(cc, "typename[] lookup(variant &obj, int options, string name, variant args...)");
+		install(cc, "typename lookup(variant &obj, int options, string name, variant args...)");
 		install(cc, "variant invoke(variant &obj, int options, string name, variant args...)");
 		install(cc, "bool canassign(typename toType, variant value, bool canCast)");
 		install(cc, "bool instanceof(typename &type, variant obj)");

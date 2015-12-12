@@ -60,7 +60,7 @@ html body {
 
 #call_chart_data {
 	position: absolute;
-	overflow: visible;
+	overflow: hidden;
 	top: 0;
 	left: 0;
 	right: 0;
@@ -90,20 +90,6 @@ html body {
 #call_tree_data th,
 #call_tree_data td {
 	text-align: right;
-	padding-right: 1em;
-}
-/* Function name and expander */
-#call_tree_data th:last-child,
-#call_tree_data td:last-child {
-	text-align: left;
-	padding-right: 0;
-}
-/* Function expander */
-#call_tree_data td:last-child>span:first-child {
-	cursor: pointer;
-	display: inline-block;
-	min-width: 1em;
-	padding-right: 5px;
 }
 /* Highlightings */
 #call_tree_data>tr:hover,
@@ -112,3 +98,53 @@ html body {
 #call_chart_data>div.hover {
 	background-color: yellowgreen;
 }
+
+/*Big ones:
+U+25B2 (Black up-pointing triangle ▲)
+U+25BC (Black down-pointing triangle ▼)
+U+25C0 (Black left-pointing triangle ◀)
+U+25B6 (Black right-pointing triangle ▶)
+
+Big white ones:
+U+25B3 (White up-pointing triangle △)
+U+25BD (White down-pointing triangle ▽)
+U+25C1 (White left-pointing triangle ◁)
+U+25B7 (White right-pointing triangle ▷)
+
+There is also some smalller triangles:
+U+25B4 (Black up-pointing small triangle ▴)
+U+25C2 (Black left-pointing small triangle ◂)
+U+25BE (Black down-pointing small triangle ▾)
+U+25B8 (Black right-pointing small triangle ▸)
+
+Also some white ones:
+U+25C3 (White left-pointing small triangle ◃)
+U+25BF (White down-pointing small triangle ▿)
+U+25B9 (White right-pointing small triangle ▹)
+U+25B5 (White up-pointing small triangle ▵)
+*/
+
+/*
+◢  black lower right triangle Unicode code point: U+25E2
+◿  lower right triangle Unicode code point: U+25FF
+
+◥  black upper right triangle Unicode code point: U+25E5
+◹  upper right triangle Unicode code point: U+25F9
+*/
+
+/* Function name / expander */
+#call_tree_data th:last-child,
+#call_tree_data td:last-child {
+	text-align: left;
+}
+
+#call_tree_data td:last-child::before {
+	cursor: pointer;
+	padding: .3em;
+	zoom:0.8;
+}
+
+.expanded::before { content: "◿"; }
+.collapsed::before { content: "◹"; }
+.expanded:hover::before { content: "◢"; }
+.collapsed:hover::before { content: "◥"; }

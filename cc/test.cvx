@@ -26,7 +26,7 @@ void abort2(int recurse, typename typ, pointer ptr, void fun(pointer ptr)) {
 	if (recurse > 0) {
 		abort2(recurse - 1, typ, ptr, fun);
 	}
-	debug("abort2", variant.null, -1, 512);
+	debug("abort2", variant(null), -1, 512);
 }
 
 void throws(pointer args) {
