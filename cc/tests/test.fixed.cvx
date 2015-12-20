@@ -444,7 +444,7 @@ struct assertInfo {
 int test(const assertInfo info, double eps) {
 	// not a number case
 	if (info.expected != info.expected) {
-		return info.retfixed.value == Fixed.fxp_nan ? 0 : Debug.debug;
+		return info.retfixed.value == Fixed.fxp_nan ? 0 : raise.debug;
 	}
 
 	// infinity case
@@ -453,13 +453,16 @@ int test(const assertInfo info, double eps) {
 		if (retFixed == Fixed.fxp_nan) {return 0;}
 		//~ if (retFixed == Fixed.fxp_max) {return 0;}
 		//~ if (retFixed == Fixed.fxp_min) {return 0;}
-		return Debug.debug;
+		return raise.debug;
 	}
 
-	return Math.abs(info.returned - info.expected) < eps ? 0 : Debug.debug;
+	if (Math.abs(info.returned - info.expected) < eps) {
+		return 0;
+	}
+	return raise.debug;
 }
 
-inline assert(const assertInfo &info) = debug("test failed", variant(&info), test(info, 1e-3), Debug.notrace);
+inline assert(const assertInfo &info) = raise(test(info, 1e-3), "test failed", variant(&info), raise.noTrace);
 inline assertEquals(string f, float64 a, fixed b) = assert(assertInfo(f, a, float64(b), b));
 //~ inline assertEquals(string f, float64 a, fixed b) = void(0);
 

@@ -21,7 +21,7 @@
 	4: print generated assembly
 	5: print non pre-mapped strings, non static types
 */
-//~ #define DEBUGGING 100
+//~ #define DEBUGGING 1
 
 // enable paralell execution stuff
 //~ #define VM_MAX_PROCS 1
@@ -358,35 +358,36 @@ typedef struct dbgInfo {
 
 /// Compiler context
 struct ccContextRec {
-	rtContext	s;
+	rtContext	rt;
 	symn	gdef;		// all static variables and functions
 	symn	defs;		// all definitions
 	libc	libc;		// installed libcalls
 	symn	func;		// functions level stack
 	astn	root;		// statements
 
-	// lists
+	// lists and tables
 	astn	jmps;		// list of break and continue statements to fix
 	//~ symn	free;		// variables that needs to be freed
-
 	list	strt[TBLS];		// string hash table
 	symn	deft[TBLS];		// symbol hash stack
 	//~ astn	scope[TBLS];		// current scope + expression scope, string literal, ...
 	int		nest;		// nest level: modified by (enter/leave)
 
 	int		warn;		// warning level
-	int		maxlevel;		// max nest level: modified by ?
+	int		maxlevel;		// max nest level: disables lookup of variables outside the current function.
 	int		siff:1;		// inside a static if false
 	int		init:1;		// initialize static variables ?
 	int		_padd:30;	//
 
+	// Parser
 	char*	file;		// current file name
 	int		line;		// current line number
 	int		lpos;		// current line position
 	size_t	fpos;		// current file position
 	//~ current column = fpos - lpos
 
-	struct {				// Lexer
+	// Lexer
+	struct {
 		symn	pfmt;			// Warning set to -1 to record.
 		astn	tokp;			// list of reusable tokens
 		astn	_tok;			// one token look-ahead
@@ -400,6 +401,7 @@ struct ccContextRec {
 		} fin;
 	};
 
+	// Type cache
 	astn	void_tag;		// no parameter of type void
 	astn	emit_tag;		// "emit"
 
@@ -426,7 +428,6 @@ struct ccContextRec {
 };
 
 /// Debuger context
-// TODO: merge this somehow with libcContext and cell into exeState
 struct dbgContextRec {
 	rtContext rt;
 	void* extra;		// extra data for debuger

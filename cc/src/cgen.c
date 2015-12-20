@@ -12,7 +12,7 @@ description:
 static void dumpTree(rtContext rt, astn ast, size_t offsStart, size_t offsEnd) {
 #if defined(DEBUGGING) && DEBUGGING > 1
 	struct symNode dbg;
-	if (rt->logf != NULL) {
+	if (rt->logFile != NULL) {
 		memset(&dbg, 0, sizeof(dbg));
 		dbg.kind = TYPE_ref;
 		dbg.name = "error";
@@ -639,7 +639,7 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 		case STMT_if:  {
 			size_t jmpt = 0, jmpf = 0;
 			size_t stpos = stkoffs(rt, 0);
-			int tt = eval(&tmp, ast->stmt.test);
+			ccToken tt = eval(&tmp, ast->stmt.test);
 
 			dieif(get != TYPE_vid, ERR_INTERNAL_ERROR);
 
@@ -669,8 +669,8 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 				struct astNode block;
 
 				memset(&block, 0, sizeof(block));
-				block.kind = STMT_beg;
 				block.type = rt->cc->type_vid;
+				block.kind = STMT_beg;
 
 				if (ast->stmt.stmt && ast->stmt.step) {		// if then else
 					if (!cgen(rt, ast->stmt.test, TYPE_bit)) {
@@ -2248,12 +2248,12 @@ int gencode(rtContext rt, int mode) {
 	// make global variables static ?
 	int gstat = (mode & cgen_glob) == 0;
 
-	dieif(rt->errc, "can not generate code");
+	dieif(rt->errCount, "can not generate code");
 	dieif(cc == NULL, "no compiler context");
 
 	// leave the global scope.
-	rt->init = ccAddType(rt, "<init>", 0, 0);
-	rt->defs = leave(rt->cc, NULL, gstat);
+	rt->main = ccAddType(rt, "<init>", 0, 0);
+	rt->vars = leave(rt->cc, NULL, gstat);
 
 	/* reorder the initialization of static variables and functions.
 	 * TODO: optimize code.
@@ -2336,7 +2336,7 @@ int gencode(rtContext rt, int mode) {
 	rt->vm.opti = mode & cgen_opti;
 
 	// static variables & functions
-	if (rt->defs != NULL) {
+	if (rt->vars != NULL) {
 		symn var;
 
 		// we will append the list of declarations here.
@@ -2360,11 +2360,11 @@ int gencode(rtContext rt, int mode) {
 			dieif(var->offs != 0, "offset %06x for: %+T", var->offs, var);
 
 			if (var->cnst && var->init == NULL) {
-				error(cc->s, var->file, var->line, "uninitialized constant `%+T`", var);
+				error(cc->rt, var->file, var->line, "uninitialized constant `%+T`", var);
 			}
 
 			if (var->call && var->init == NULL) {
-				error(cc->s, var->file, var->line, "uninimplemented function `%+T`", var);
+				error(cc->rt, var->file, var->line, "uninimplemented function `%+T`", var);
 			}
 
 			if (var->call && var->cast != TYPE_ref) {
@@ -2510,16 +2510,16 @@ int gencode(rtContext rt, int mode) {
 	// program entry point
 	rt->vm.pc = Lmain;
 
-	dieif(rt->defs != cc->gdef, "globals are not the same with defs");
+	dieif(rt->vars != cc->gdef, "globals are not the same with defs");
 
 	// buils the initialization function.
-	rt->init->file = NULL;
-	rt->init->line = 0;
-	rt->init->kind = TYPE_ref;
-	rt->init->call = 1;
-	rt->init->offs = Lmain;
-	rt->init->size = emitopc(rt, markIP) - Lmain;
-	rt->init->init = cc->root;
+	rt->main->file = NULL;
+	rt->main->line = 0;
+	rt->main->kind = TYPE_ref;
+	rt->main->call = 1;
+	rt->main->offs = Lmain;
+	rt->main->size = emitopc(rt, markIP) - Lmain;
+	rt->main->init = cc->root;
 
 	rt->_end = rt->_mem + rt->_size;
 	if (rt->dbg != NULL) {
@@ -2539,9 +2539,9 @@ int gencode(rtContext rt, int mode) {
 				}
 			}
 		}
-		addDbgFunction(rt, rt->init);
+		addDbgFunction(rt, rt->main);
 	}
 
-	return rt->errc == 0;
+	return rt->errCount == 0;
 	(void)Lmeta;
 }

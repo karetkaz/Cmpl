@@ -429,7 +429,7 @@ static void conDumpStatus(customContext ctx, int all) {
 	if (ctx->run_dump & dmp_vars) {
 		symn var;
 		fputfmt(out, "\n/*-- vars:\n");
-		for (var = rt->defs; var; var = var->next) {
+		for (var = rt->vars; var; var = var->next) {
 			char* ofs = NULL;
 
 			// exclude typenames
@@ -1135,7 +1135,7 @@ static void jsonDumpApi(customContext ctx, symn sym) {
 		esc = esc_js;
 	}
 
-	if (sym != ctx->rt->defs) {
+	if (sym != ctx->rt->vars) {
 		// not the first symbol
 		fputfmt(fout, ", ");
 	}
@@ -1195,11 +1195,11 @@ static int jsonProfile(dbgContext ctx, vmError error, size_t ss, void* sp, void*
 			fputfmt(out, "% I% 6d,-1%s\n", ss, now, ss ? ", " : " ");
 			if (ss == 0) {
 				fputfmt(out, "],\n");
-				if (ctx->rt->dbg) {
+				if (ctx) {
 					int i;
-					int covFunc = 0, nFunc = ctx->rt->dbg->functions.cnt;
-					int covStmt = 0, nStmt = ctx->rt->dbg->statements.cnt;
-					dbgInfo dbg = (dbgInfo) ctx->rt->dbg->functions.ptr;
+					int covFunc = 0, nFunc = ctx->functions.cnt;
+					int covStmt = 0, nStmt = ctx->statements.cnt;
+					dbgInfo dbg = (dbgInfo) ctx->functions.ptr;
 					fputesc(out, esc, "%I\"%s\": [{\n", indent + 1, "functions");
 					for (i = 0; i < nFunc; ++i, dbg++) {
 						symn sym = dbg->decl;
@@ -1229,7 +1229,7 @@ static int jsonProfile(dbgContext ctx, vmError error, size_t ss, void* sp, void*
 
 					fputesc(out, esc, "%I}],\n", indent + 1);
 					fputesc(out, esc, "%I\"%s\": [{\n", indent + 1, "statements");
-					dbg = (dbgInfo) ctx->rt->dbg->statements.ptr;
+					dbg = (dbgInfo) ctx->statements.ptr;
 					for (i = 0; i < nStmt; ++i, dbg++) {
 						size_t symOffs = 0;
 						symn sym = dbg->decl;
@@ -1259,8 +1259,8 @@ static int jsonProfile(dbgContext ctx, vmError error, size_t ss, void* sp, void*
 					}
 					fputesc(out, esc, "%I}],\n", indent + 1);
 					fputesc(out, esc, "%I\"%s\": %d,\n", indent + 1, "ticksPerSec", CLOCKS_PER_SEC);
-					fputesc(out, esc, "%I\"%s\": %d,\n", indent + 1, "functionCount", ctx->rt->dbg->functions.cnt);
-					fputesc(out, esc, "%I\"%s\": %d\n", indent + 1, "statementCount", ctx->rt->dbg->statements.cnt);
+					fputesc(out, esc, "%I\"%s\": %d,\n", indent + 1, "functionCount", ctx->functions.cnt);
+					fputesc(out, esc, "%I\"%s\": %d\n", indent + 1, "statementCount", ctx->statements.cnt);
 					//~ conDumpProfile(stdout, ctx->rt, 0);
 				}
 				fputfmt(out, "%I}\n", indent);
@@ -1604,7 +1604,7 @@ static int program(int argc, char* argv[]) {
 		}
 	}
 
-	errors = rt->errc;
+	errors = rt->errCount;
 
 	// generate code only if needed and there are no compilation errors
 	if (errors == 0 && gen_code != -1) {
@@ -1695,9 +1695,11 @@ static int program(int argc, char* argv[]) {
 	if (dmpf != NULL) {
 		fclose(dmpf);
 	}
+
 	// close log file
 	logfile(rt, NULL, 0);
 	closeLibs();
+
 	return errors;
 }
 

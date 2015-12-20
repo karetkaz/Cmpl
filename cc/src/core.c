@@ -71,6 +71,8 @@ rtContext rtInit(void* _mem, size_t size) {
 		rt->_end = rt->_mem + rt->_size;
 		rt->_beg = rt->_mem;
 
+		rt->logLevel = 7;
+
 		logFILE(rt, stdout);
 		rt->cc = NULL;
 	}
@@ -323,7 +325,7 @@ symn ccFindSym(ccContext cc, symn in, char* name) {
 	ast.kind = TYPE_ref;
 	ast.ref.name = name;
 	ast.ref.hash = rehash(name, -1) % TBLS;
-	return lookup(cc, in ? in->flds : cc->s->defs, &ast, NULL, 1);
+	return lookup(cc, in ? in->flds : cc->rt->vars, &ast, NULL, 1);
 }
 
 // TODO: to be removed
@@ -353,7 +355,7 @@ symn mapsym(rtContext rt, size_t offs, int callsOnly) {
 		// local variable on stack ?
 		return NULL;
 	}
-	for (sym = rt->defs; sym; sym = sym->gdef) {
+	for (sym = rt->vars; sym; sym = sym->gdef) {
 		if (callsOnly && !sym->call) {
 			continue;
 		}
@@ -453,7 +455,7 @@ static void install_type(ccContext cc, int mode) {
 	cc->type_f64 = type_f64;
 	cc->type_ptr = type_ptr;
 	cc->type_var = type_var;
-	cc->s->type_var = type_var;
+	cc->rt->type_var = type_var;
 
 	// aliases.
 	install(cc, "int",    ATTR_stat | ATTR_const | TYPE_def, TYPE_any, 0, type_i32, NULL);
@@ -471,7 +473,7 @@ static void install_type(ccContext cc, int mode) {
 	//~ TODO: struct string: char[] { ... }, temporarly string is alias for char[]
 	cc->type_str = install(cc, "string", ATTR_stat | ATTR_const | TYPE_arr, TYPE_ref, vm_size, type_chr, NULL);
 	cc->type_str->pfmt = "\"%s\"";
-	cc->s->type_str = cc->type_str;
+	cc->rt->type_str = cc->type_str;
 
 
 	// hack: strings are static sized arrays.
@@ -485,7 +487,7 @@ static void install_type(ccContext cc, int mode) {
 
 // install emit operator
 static void install_emit(ccContext cc, int mode) {
-	rtContext rt = cc->s;
+	rtContext rt = cc->rt;
 	symn typ = NULL;
 	symn type_v4f = NULL;
 
@@ -525,7 +527,7 @@ static void install_emit(ccContext cc, int mode) {
 			// dupplicate the second and or third 32bit element on stack
 			//~ install(cc, "x1_1", EMIT_opc, TYPE_any, opc_dup1, cc->type_i32, intnode(cc, 1));
 			//~ install(cc, "x1_2", EMIT_opc, TYPE_any, opc_dup1, cc->type_i32, intnode(cc, 2));
-			ccEnd(cc->s, typ);
+			ccEnd(cc->rt, typ);
 		}
 		if ((typ = ccBegin(rt, "load")) != NULL) {
 			// load zero
@@ -692,7 +694,7 @@ static void install_emit(ccContext cc, int mode) {
 	}
 }
 
-/// Private dummy on exit function.
+/// private dummy on exit function.
 static int haltDummy(libcContext args) {
 	(void)args;
 	return 0;
@@ -817,10 +819,10 @@ ccContext ccInit(rtContext rt, int mode, int onHalt(libcContext)) {
 
 	memset(rt->_end, 0, sizeof(struct ccContextRec));
 
-	cc->s = rt;
+	cc->rt = rt;
 	rt->cc = cc;
 
-	rt->defs = NULL;
+	rt->vars = NULL;
 	cc->defs = NULL;
 	cc->gdef = NULL;
 

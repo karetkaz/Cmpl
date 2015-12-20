@@ -320,7 +320,7 @@ unsigned rehash(const char* str, size_t len) {
  * @return the mapped string in the string table.
  */
 char* mapstr(ccContext cc, char* str, size_t len/* = -1*/, unsigned hash/* = -1*/) {
-	rtContext rt = cc->s;
+	rtContext rt = cc->rt;
 	list newn, next, prev = 0;
 
 	if (len == (size_t)-1) {
@@ -533,7 +533,7 @@ static int readTok(ccContext cc, astn tok) {
 		/* 177    */	CNTRL,		// del
 		/* 200     */	OTHER,
 	};
-	const char* end = (char*)cc->s->_end;
+	const char* end = (char*)cc->rt->_end;
 
 	char* beg = NULL;
 	char* ptr = NULL;
@@ -550,7 +550,7 @@ static int readTok(ccContext cc, astn tok) {
 				int fmt = skipChr(cc, '%');
 
 				chr = readChr(cc);
-				ptr = beg = (char*)cc->s->_beg;
+				ptr = beg = (char*)cc->rt->_beg;
 
 				while (ptr < end && chr != -1) {
 					if (chr == '\n') {
@@ -560,10 +560,10 @@ static int readTok(ccContext cc, astn tok) {
 					chr = readChr(cc);
 				}
 				if (chr == -1) {
-					warn(cc->s, 9, cc->file, line, "no newline at end of file");
+					warn(cc->rt, 9, cc->file, line, "no newline at end of file");
 				}
 				else if (cc->line != line + 1) {
-					warn(cc->s, 9, cc->file, line, "multi-line comment: `%s`", ptr);
+					warn(cc->rt, 9, cc->file, line, "multi-line comment: `%s`", ptr);
 				}
 
 				// record print format if comment is on the same line as the symbol.
@@ -585,7 +585,7 @@ static int readTok(ccContext cc, astn tok) {
 					if (prev_chr == '/' && chr == next) {
 						level += 1;
 						if (level > 1 && next == '*') {
-							warn(cc->s, 9, cc->file, cc->line, "ignoring nested comment");
+							warn(cc->rt, 9, cc->file, cc->line, "ignoring nested comment");
 							level = 1;
 						}
 						chr = 0;	// disable reading as valid comment: /*/ and /+/
@@ -600,7 +600,7 @@ static int readTok(ccContext cc, astn tok) {
 				}
 
 				if (chr == -1) {
-					error(cc->s, cc->file, line, "unterminated block comment");
+					error(cc->rt, cc->file, line, "unterminated block comment");
 				}
 				chr = readChr(cc);
 			}
@@ -610,7 +610,7 @@ static int readTok(ccContext cc, astn tok) {
 		}
 
 		if (chr_map[chr & 0xff] == CNTRL) {
-			warn(cc->s, 5, cc->file, cc->line, "ignoring controll character: `%c`", chr);
+			warn(cc->rt, 5, cc->file, cc->line, "ignoring controll character: `%c`", chr);
 			while (chr == 0) {
 				chr = readChr(cc);
 			}
@@ -623,7 +623,7 @@ static int readTok(ccContext cc, astn tok) {
 		chr = readChr(cc);
 	}
 
-	ptr = beg = (char*)cc->s->_beg;
+	ptr = beg = (char*)cc->rt->_beg;
 	cc->pfmt = NULL;
 
 	if (tok == NULL) {
@@ -645,7 +645,7 @@ static int readTok(ccContext cc, astn tok) {
 			if (chr_map[chr & 0xff] & CWORD) {
 				goto read_idf;
 			}
-			error(cc->s, cc->file, cc->line, "invalid character: '%c'", chr);
+			error(cc->rt, cc->file, cc->line, "invalid character: '%c'", chr);
 			tok->kind = TOKN_err;
 			break;
 
@@ -925,7 +925,7 @@ static int readTok(ccContext cc, astn tok) {
 								}
 							}
 							if (oct & 0xffffff00) {
-								warn(cc->s, 4, cc->file, cc->line, "octal escape sequence overflow");
+								warn(cc->rt, 4, cc->file, cc->line, "octal escape sequence overflow");
 							}
 							chr = oct & 0xff;
 							break;
@@ -944,7 +944,7 @@ static int readTok(ccContext cc, astn tok) {
 								hex1 -= 'A' - 10;
 							}
 							else {
-								error(cc->s, cc->file, cc->line, "hex escape sequence invalid");
+								error(cc->rt, cc->file, cc->line, "hex escape sequence invalid");
 								break;
 							}
 							if (hex2 >= '0' && hex2 <= '9') {
@@ -957,14 +957,14 @@ static int readTok(ccContext cc, astn tok) {
 								hex2 -= 'A' - 10;
 							}
 							else {
-								error(cc->s, cc->file, cc->line, "hex escape sequence invalid");
+								error(cc->rt, cc->file, cc->line, "hex escape sequence invalid");
 								break;
 							}
 							chr = hex1 << 4 | hex2;
 							break;
 
 						default:
-							error(cc->s, cc->file, cc->line, "invalid escape sequence '\\%c'", chr);
+							error(cc->rt, cc->file, cc->line, "invalid escape sequence '\\%c'", chr);
 							chr = 0;
 							break;
 
@@ -986,7 +986,7 @@ static int readTok(ccContext cc, astn tok) {
 			*ptr++ = 0;
 
 			if (chr != start_char) {
-				error(cc->s, cc->file, cc->line, "unclosed %s literal", start_char == '"' ? "string" : "character");
+				error(cc->rt, cc->file, cc->line, "unclosed %s literal", start_char == '"' ? "string" : "character");
 				return tok->kind = TOKN_err;
 			}
 
@@ -999,15 +999,15 @@ static int readTok(ccContext cc, astn tok) {
 				int val = 0;
 
 				if (ptr == beg) {
-					error(cc->s, cc->file, cc->line, "empty character constant");
+					error(cc->rt, cc->file, cc->line, "empty character constant");
 					return tok->kind = TOKN_err;
 				}
 				if (ptr > beg + vm_size + 1) {
-					warn(cc->s, 1, cc->file, cc->line, "character constant truncated");
+					warn(cc->rt, 1, cc->file, cc->line, "character constant truncated");
 				}
 				//~ TODO: size of char is type_chr->size, not sizeof(char)
 				else if (ptr > beg + sizeof(char) + 1) {
-					warn(cc->s, 5, cc->file, cc->line, "multi character constant");
+					warn(cc->rt, 5, cc->file, cc->line, "multi character constant");
 				}
 
 				for (ptr = beg; *ptr; ++ptr) {
@@ -1151,7 +1151,7 @@ static int readTok(ccContext cc, astn tok) {
 			}
 
 			if (ovrf != 0) {
-				warn(cc->s, 4, cc->file, cc->line, "value overflow");
+				warn(cc->rt, 4, cc->file, cc->line, "value overflow");
 			}
 
 			//~ ('.'[0-9]*)? ([eE]([+-]?)[0-9]+)?
@@ -1209,10 +1209,10 @@ static int readTok(ccContext cc, astn tok) {
 					}
 
 					if (suffix == ptr) {
-						error(cc->s, tok->file, tok->line, "no exponent in numeric constant");
+						error(cc->rt, tok->file, tok->line, "no exponent in numeric constant");
 					}
 					else if (ovrf) {
-						warn(cc->s, 4, cc->file, cc->line, "exponent overflow");
+						warn(cc->rt, 4, cc->file, cc->line, "exponent overflow");
 					}
 
 					while (val) {		// pow(10, val);
@@ -1250,7 +1250,7 @@ static int readTok(ccContext cc, astn tok) {
 					flt = 1;
 				}
 				else {
-					error(cc->s, tok->file, tok->line, "invalid suffix in numeric constant '%s'", suffix);
+					error(cc->rt, tok->file, tok->line, "invalid suffix in numeric constant '%s'", suffix);
 					tok->kind = TOKN_err;
 				}
 			}
@@ -1349,10 +1349,10 @@ ccToken skiptok(ccContext cc, ccToken kind, int raise) {
 	if (!skip(cc, kind)) {
 		if (raise) {
 			if (!peekTok(cc, TYPE_any)) {
-				error(cc->s, cc->file, cc->line, "unexpected end of file, `%K` excepted", kind);
+				error(cc->rt, cc->file, cc->line, "unexpected end of file, `%K` excepted", kind);
 			}
 			else {
-				error(cc->s, cc->file, cc->line, "`%K` excepted, got `%t`", kind, peekTok(cc, TYPE_any));
+				error(cc->rt, cc->file, cc->line, "`%K` excepted, got `%t`", kind, peekTok(cc, TYPE_any));
 			}
 		}
 

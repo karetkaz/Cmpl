@@ -258,7 +258,7 @@ static int FILE_stream(libcContext args) {     // File std[in, out, err];
 			return 0;
 
 		case 3:
-			rethnd(args, args->rt->logf);
+			rethnd(args, args->rt->logFile);
 			return 0;
 	}
 
@@ -405,54 +405,69 @@ static int sysMSleep(libcContext args) {
 	return 0;
 }
 
-static int sysDebug(libcContext args) {
+enum {
+	raise_error = -1,	// log and raise executionAborted.
+	raise_skip = 0,	// continue execution.
+	raise_warn = 1,	// log and continue execution.
+	raise_info = 2,	// log and continue execution.
+	raise_debug = 3,	// log only if executing with debuger.
+	raise_verbose = 4	// log only if executing with debuger.
+};
+// void raise(int logLevel, string message, variant inspect, int logTrace);
+static int sysRaise(libcContext args) {
 	rtContext rt = args->rt;
 	char* file = argref(args, 0 * vm_size);
 	int line = argi32(args, 1 * vm_size);
-	char* message = argref(args, 2 * vm_size);
-	void* varRef = argref(args, 3 * vm_size);
-	symn varType = argref(args, 4 * vm_size);
-	int logLevel = argi32(args, 5 * vm_size);
-	int traceLevel = argi32(args, 6 * vm_size);
+	int logLevel = argi32(args, 2 * vm_size);
+	char* message = argref(args, 3 * vm_size);
+	void* varRef = argref(args, 4 * vm_size);
+	symn varType = argref(args, 5 * vm_size);
+	int maxTrace = argi32(args, 6 * vm_size);
+	int isOutput = 0;
+
+	// logging disabled or log level not reached.
+	if (rt->logFile == NULL || logLevel > rt->logLevel || !logLevel) {
+		return 0;
+	}
+	/* skip debug logs if not in debug mode.
+	if (rt->dbg == NULL && logLevel >= raise_debug) {
+		return 0;
+	}*/
 
 	//~ long* argv = (long*)(long(*)[7])args->argv;
-	// skip if logging is diabled or logLevel is 0
-	if (rt->logf != NULL && logLevel != 0) {
-		int isOutput = 0;
 
-		// print valid code position (where the function was invoked).
-		if (file != NULL && line > 0) {
-			fputfmt(rt->logf, "%s:%u", file, line);
-			isOutput = 1;
-		}
+	// print valid code position (where the function was invoked).
+	if (file != NULL && line > 0) {
+		fputfmt(rt->logFile, "%s:%u", file, line);
+		isOutput = 1;
+	}
 
-		// print the message
-		if (message != NULL) {
-			if (isOutput) {
-				fputfmt(rt->logf, ": ");
-			}
-			fputfmt(rt->logf, "%s", message);
-			isOutput = 1;
-		}
-
-		// print the value of the object (handy to inspect values).
-		if (varType != NULL && varRef != NULL) {
-			if (isOutput) {
-				fputfmt(rt->logf, ": ");
-			}
-			fputval(rt, rt->logf, varType, varRef, 0, prType);
-			isOutput = 1;
-		}
-
-		// add a line ending to the output.
+	// print the message
+	if (message != NULL) {
 		if (isOutput) {
-			fputfmt(rt->logf, "\n");
+			fputfmt(rt->logFile, ": ");
 		}
+		fputfmt(rt->logFile, "%s", message);
+		isOutput = 1;
+	}
 
-		// print stack trace skipping this function
-		if (traceLevel > 0) {
-			logTrace(rt, NULL, 1, 0, traceLevel);
+	// print the value of the object (handy to inspect values).
+	if (varType != NULL && varRef != NULL) {
+		if (isOutput) {
+			fputfmt(rt->logFile, ": ");
 		}
+		fputval(rt, rt->logFile, varType, varRef, 0, prType);
+		isOutput = 1;
+	}
+
+	// add a line ending to the output.
+	if (isOutput) {
+		fputfmt(rt->logFile, "\n");
+	}
+
+	// print stack trace skipping this function
+	if (maxTrace > 0) {
+		logTrace(rt, NULL, 1, 0, maxTrace);
 	}
 
 	// abort the execution
@@ -571,19 +586,41 @@ int install_stdc(rtContext rt) {
 	constants[] = {
 			{CLOCKS_PER_SEC, "CLOCKS_PER_SEC"},
 			{RAND_MAX, "RAND_MAX"},
+	},
+	logLevels[] = {
+		{raise_error, "error"},
+		{raise_skip, "skip"},
+		{raise_warn, "warn"},
+		{raise_info, "info"},
+		{raise_debug, "debug"},
+		{raise_verbose, "verbose"},
+		// trace levels
+		{0, "noTrace"},
+		{128, "defTrace"},
 	};
 
 	for (i = 0; i < lengthOf(constants); i += 1) {
 		if (!ccDefInt(rt, constants[i].name, constants[i].value)) {
 			err = 1;
+			break;
 		}
 	}
 
 	if (!err && rt->cc->type_var != NULL) {		// debug, trace, assert, fatal, ...
-		rt->cc->libc_dbg = ccAddCall(rt, sysDebug, NULL, "void debug(string message, variant inspect, int level, int maxTrace);");
+		rt->cc->libc_dbg = ccAddCall(rt, sysRaise, NULL, "void raise(int level, string message, variant inspect, int maxTrace);");
 		rt->cc->libc_dbg_idx = rt->cc->libc_dbg->offs;
 		if (rt->cc->libc_dbg == NULL) {
 			err = 2;
+		}
+		if (!err && rt->cc->libc_dbg) {
+			nsp = ccBegin(rt, "raise");
+			for (i = 0; i < lengthOf(logLevels); i += 1) {
+				if (!ccDefInt(rt, logLevels[i].name, logLevels[i].value)) {
+					err = 1;
+					break;
+				}
+			}
+			ccEnd(rt, nsp);
 		}
 	}
 

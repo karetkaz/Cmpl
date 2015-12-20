@@ -1221,13 +1221,13 @@ static void FPUTFMT(FILE* fout, const char *esc[], const char* msg, va_list ap) 
 
 
 void logFILE(rtContext rt, FILE* file) {
-
-	if (rt->closelog != 0) {
-		fclose(rt->logf);
-		rt->closelog = 0;
+	// close previous opened file
+	if (rt->logClose != 0) {
+		fclose(rt->logFile);
+		rt->logClose = 0;
 	}
 
-	rt->logf = file;
+	rt->logFile = file;
 }
 
 int logfile(rtContext rt, char* file, int append) {
@@ -1235,11 +1235,11 @@ int logfile(rtContext rt, char* file, int append) {
 	logFILE(rt, NULL);
 
 	if (file != NULL) {
-		rt->logf = fopen(file, append ? "ab" : "wb");
-		if (rt->logf == NULL) {
+		rt->logFile = fopen(file, append ? "ab" : "wb");
+		if (rt->logFile == NULL) {
 			return -1;
 		}
-		rt->closelog = 1;
+		rt->logClose = 1;
 	}
 
 	return 0;
@@ -1261,7 +1261,7 @@ void fputesc(FILE* fout, const char *esc[], const char* msg, ...) {
 
 void perr(rtContext rt, int level, const char* file, int line, const char* msg, ...) {
 	int warnLevel = rt && rt->cc ? rt->cc->warn : 0;
-	FILE *logFile = rt ? rt->logf : stdout;
+	FILE *logFile = rt ? rt->logFile : stdout;
 	const char **esc = NULL;
 
 	va_list argp;
@@ -1275,7 +1275,7 @@ void perr(rtContext rt, int level, const char* file, int line, const char* msg, 
 		}
 	}
 	else if (rt != NULL) {
-		rt->errc += 1;
+		rt->errCount += 1;
 	}
 
 	if (logFile == NULL) {
@@ -1306,10 +1306,10 @@ void perr(rtContext rt, int level, const char* file, int line, const char* msg, 
 
 // dump
 void iterateApi(rtContext rt, customContext ctx, void customPrinter(customContext, symn)) {
-	FILE*out = rt->logf;
+	FILE*out = rt->logFile;
 	symn sym, bp[TOKS], *sp = bp;
 
-	for (*sp = rt->defs; sp >= bp;) {
+	for (*sp = rt->vars; sp >= bp;) {
 		if (!(sym = *sp)) {
 			--sp;
 			continue;

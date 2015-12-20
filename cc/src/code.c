@@ -1582,7 +1582,7 @@ vmError execute(rtContext rt, size_t ss, void *extra) {
 		return stackOverflow;
 	}
 
-	return exec(rt, pu, rt->init, extra);
+	return exec(rt, pu, rt->main, extra);
 }
 
 // TODO: ADD const char *esc[] ?
@@ -1820,10 +1820,10 @@ void fputval(rtContext rt, FILE* fout, symn var, stkval* ref, int level, int mod
 	if (initStatic) {
 		initStatic = 0;
 
-		type = *rt->defs;
+		type = *rt->vars;
 		type.name = "<typename>";
 
-		func = *rt->defs;
+		func = *rt->vars;
 		func.name = "<function>";
 	}
 
@@ -2047,7 +2047,7 @@ static void traceArgs(rtContext rt, FILE *outf, symn fun, char *file, int line, 
 	int printFileLine = 0;
 
 	if (outf == NULL) {
-		outf = rt->logf;
+		outf = rt->logFile;
 	}
 	if (file == NULL) {
 		file = "native.code";
@@ -2060,7 +2060,7 @@ static void traceArgs(rtContext rt, FILE *outf, symn fun, char *file, int line, 
 
 	dieif(sp == NULL, ERR_INTERNAL_ERROR);
 	dieif(fun == NULL, ERR_INTERNAL_ERROR);
-	if (fun->prms != NULL && fun->prms != rt->defs) {
+	if (fun->prms != NULL && fun->prms != rt->vars) {
 		int firstArg = 1;
 		if (ident > 0) {
 			fputfmt(outf, "(");
@@ -2115,7 +2115,7 @@ void logTrace(rtContext rt, FILE *outf, int ident, int startlevel, int traceleve
 	tracePtr tr = (tracePtr)pu->bp;
 
 	if (outf == NULL) {
-		outf = rt->logf;
+		outf = rt->logFile;
 	}
 	if (rt->dbg == NULL) {
 		return;

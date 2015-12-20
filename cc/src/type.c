@@ -97,7 +97,7 @@ TODO's:
 #include "internal.h"
 
 symn newdefn(ccContext s, ccToken kind) {
-	rtContext rt = s->s;
+	rtContext rt = s->rt;
 	symn def = NULL;
 
 	rt->_beg = paddptr(rt->_beg, 8);
@@ -158,7 +158,7 @@ symn install(ccContext s, const char* name, ccToken kind, ccToken cast, unsigned
 			//~ case TYPE_ptr:
 			case TYPE_arr:	// string
 			case TYPE_rec:
-				def->offs = vmOffset(s->s, def);
+				def->offs = vmOffset(s->rt, def);
 				//~ def->pack = size;
 				break;
 
@@ -176,8 +176,8 @@ symn install(ccContext s, const char* name, ccToken kind, ccToken cast, unsigned
 		def->next = s->deft[hash];
 		s->deft[hash] = def;
 
-		def->defs = s->s->defs;
-		s->s->defs = def;
+		def->defs = s->rt->vars;
+		s->rt->vars = def;
 	}
 	return def;
 }
@@ -192,7 +192,7 @@ symn ccAddType(rtContext rt, const char* name, unsigned size, int refType) {
 static symn installref(rtContext rt, const char* prot, astn* argv) {
 	astn root, args;
 	symn result = NULL;
-	int warn, errc = rt->errc;
+	int warn, errc = rt->errCount;
 
 	if (!ccOpen(rt, NULL, 0, (char*)prot)) {
 		trace("FixMe");
@@ -220,7 +220,7 @@ static symn installref(rtContext rt, const char* prot, astn* argv) {
 	}
 
 	rt->cc->warn = warn;
-	return errc == rt->errc ? result : NULL;
+	return errc == rt->errCount ? result : NULL;
 }
 
 /// Install a native function; @see rtContext.api.ccAddCall
@@ -610,7 +610,7 @@ symn lookup(ccContext cc, symn sym, astn ref, astn args, int raise) {
 		astn argval = args;				// arguments
 		symn param = sym->prms;			// parameters
 
-		// there are nameless symbols: functions, arrays.
+		// exclude nameless symbols: arrays, inline functions.
 		if (sym->name == NULL)
 			continue;
 
@@ -715,7 +715,7 @@ symn lookup(ccContext cc, symn sym, astn ref, astn args, int raise) {
 		dieif(cc->func && cc->func->nest != cc->maxlevel - 1, "FIXME %d, %d", cc->func->nest, cc->maxlevel);
 		// TODO: sym->decl && sym->decl->call && sym->decl != s->func
 		if (cc->func && !cc->siff && cc->func->gdef && sym->nest && !sym->stat && sym->nest < cc->maxlevel) {
-			error(cc->s, ref->file, ref->line, "invalid use of local symbol `%t`.", ref);
+			error(cc->rt, ref->file, ref->line, "invalid use of local symbol `%t`.", ref);
 		}
 
 		// perfect match
@@ -733,7 +733,7 @@ symn lookup(ccContext cc, symn sym, astn ref, astn args, int raise) {
 
 	if (sym == NULL && best) {
 		if (found > 1) {
-			warn(cc->s, 2, ref->file, ref->line, "using overload `%-T` of %d declared symbols.", best, found);
+			warn(cc->rt, 2, ref->file, ref->line, "using overload `%-T` of %d declared symbols.", best, found);
 		}
 		sym = best;
 	}
@@ -744,7 +744,7 @@ symn lookup(ccContext cc, symn sym, astn ref, astn args, int raise) {
 			sym = asref;
 		}
 		else if (raise) {
-			error(cc->s, ref->file, ref->line, "there are %d overloads for `%T`", found, asref);
+			error(cc->rt, ref->file, ref->line, "there are %d overloads for `%T`", found, asref);
 		}
 	}
 
@@ -1018,10 +1018,10 @@ symn typecheck(ccContext s, symn loc, astn ast) {
 						}
 						if (!(arg->kind == OPER_fnc && istype(linkOf(arg->op.lhso)))) {
 							if (arg->type->cast == TYPE_ref) {
-								warn(s->s, 2, arg->file, arg->line, "argument `%+t` is passed by reference", arg);
+								warn(s->rt, 2, arg->file, arg->line, "argument `%+t` is passed by reference", arg);
 							}
 							else {
-								warn(s->s, 2, arg->file, arg->line, "argument `%+t` is passed by value: %-T", arg, arg->type);
+								warn(s->rt, 2, arg->file, arg->line, "argument `%+t` is passed by value: %-T", arg, arg->type);
 							}
 							//~ warn(s->s, 2, arg->file, arg->line, "emit type cast expected: '%+t'", arg);
 						}
@@ -1046,10 +1046,10 @@ symn typecheck(ccContext s, symn loc, astn ast) {
 					// emit's first arg can be a type (static cast)
 					if (!isType(args) && !(args->kind == OPER_fnc && istype(linkOf(args)))) {
 						if (args->type->cast == TYPE_ref) {
-							warn(s->s, 2, args->file, args->line, "argument `%+t` is passed by reference", args);
+							warn(s->rt, 2, args->file, args->line, "argument `%+t` is passed by reference", args);
 						}
 						else {
-							warn(s->s, 2, args->file, args->line, "argument `%+t` is passed by value: %-T", args, args->type);
+							warn(s->rt, 2, args->file, args->line, "argument `%+t` is passed by value: %-T", args, args->type);
 						}
 						//~ warn(s->s, 2, args->file, args->line, "emit type cast expected: '%+t'", args);
 					}
@@ -1166,7 +1166,7 @@ symn typecheck(ccContext s, symn loc, astn ast) {
 							return ast->type;
 
 						ast->type = 0;
-						error(s->s, ast->file, ast->line, "invalid cast(%+t)", ast);
+						error(s->rt, ast->file, ast->line, "invalid cast(%+t)", ast);
 						return NULL;
 				}
 				return ast->type;
@@ -1240,7 +1240,7 @@ symn typecheck(ccContext s, symn loc, astn ast) {
 					case TYPE_f32:
 					case TYPE_f64:
 						ast->type = 0;
-						error(s->s, ast->file, ast->line, "invalid cast(%+t)", ast);
+						error(s->rt, ast->file, ast->line, "invalid cast(%+t)", ast);
 						return NULL;
 				}
 			}
@@ -1412,7 +1412,7 @@ symn typecheck(ccContext s, symn loc, astn ast) {
 			}
 
 			if (var->cnst) {
-				error(s->s, ast->file, ast->line, ERR_ASSIGN_TO_CONST, ast);
+				error(s->rt, ast->file, ast->line, ERR_ASSIGN_TO_CONST, ast);
 			}
 			if (lht->cast != ENUM_kwd && rht->cast == ENUM_kwd) {
 				rht = rht->type;
@@ -1537,7 +1537,7 @@ symn typecheck(ccContext s, symn loc, astn ast) {
 					if (param->cast == TYPE_ref && argval->type->cast != TYPE_ref) {
 						symn lnk = argval->kind == TYPE_ref ? argval->ref.link : NULL;
 						if (argval->kind != OPER_adr && lnk && lnk->cast != TYPE_ref && lnk->type->cast != TYPE_ref) {
-							warn(s->s, 2, argval->file, argval->line, "argument `%+t` is not explicitly passed by reference", argval);
+							warn(s->rt, 2, argval->file, argval->line, "argument `%+t` is not explicitly passed by reference", argval);
 						}
 					}
 
@@ -1627,7 +1627,7 @@ void enter(ccContext cc, astn ast) {
 }
 symn leave(ccContext cc, symn dcl, int mkstatic) {
 	int i;
-	rtContext rt = cc->s;
+	rtContext rt = cc->rt;
 	symn result = NULL;
 
 	cc->nest -= 1;
@@ -1642,11 +1642,11 @@ symn leave(ccContext cc, symn dcl, int mkstatic) {
 	}
 
 	// clear from stack
-	while (rt->defs && cc->nest < rt->defs->nest) {
-		symn sym = rt->defs;
+	while (rt->vars && cc->nest < rt->vars->nest) {
+		symn sym = rt->vars;
 
 		// pop from stack
-		rt->defs = sym->defs;
+		rt->vars = sym->defs;
 
 		sym->next = NULL;
 
@@ -1657,7 +1657,7 @@ symn leave(ccContext cc, symn dcl, int mkstatic) {
 			sym->stat = 1;
 		}
 		if (!sym->stat && !cc->siff && sym->call && sym->init && sym->init->kind == STMT_beg) {
-			warn(cc->s, 1, sym->file, sym->line, "marking function to be static: `%-T`", sym);
+			warn(cc->rt, 1, sym->file, sym->line, "marking function to be static: `%-T`", sym);
 			sym->stat = 1;
 		}
 
@@ -1676,7 +1676,7 @@ symn leave(ccContext cc, symn dcl, int mkstatic) {
 		if (dcl != NULL && dcl->kind == TYPE_rec) {
 			dieif(dcl->call, "FixMe");
 			if (sym->kind == TYPE_ref && !sym->stat && sym->init) {
-				warn(cc->s, 8, sym->file, sym->line, "ignoring initialization of non static member `%+T`", sym);
+				warn(cc->rt, 8, sym->file, sym->line, "ignoring initialization of non static member `%+T`", sym);
 			}
 		}
 

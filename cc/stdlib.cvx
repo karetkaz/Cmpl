@@ -1373,12 +1373,12 @@ void transpose2(mat4f &mat) {
 }
 
 //#{ debuging ...
-static struct Debug {
+/*static struct Debug {
 	enum: int {
-		abort = -1;
+		//~ abort = -1;
 		//~ quiet = 0;
 		//~ print = 1;
-		debug = 3;
+		//~ debug = 3;
 
 		notrace = 0;
 		defTrace = 125;
@@ -1387,22 +1387,22 @@ static struct Debug {
 	}
 
 	//~ inline print(int priority, string message) = void(Priority <= priority ? debug(message, null, null, 0, 1) : void(0));
-}
+}*/
 
-inline debug(string message, variant inspect) = debug(message, inspect, Debug.debug, Debug.notrace);
-inline debug(string message) = debug(message, variant(null), Debug.debug, Debug.notrace);
-inline debug(variant inspect) = debug(null, inspect, Debug.debug, Debug.notrace);
+inline debug(string message, variant inspect) = raise(raise.debug, message, inspect, raise.noTrace);
+inline debug(string message) = raise(raise.debug, message, variant(null), raise.noTrace);
+inline debug(variant inspect) = raise(raise.debug, null, inspect, raise.noTrace);
 
-inline trace(string message, variant inspect) = debug(message, inspect, Debug.debug, Debug.defTrace);
-inline trace(string message) = debug(message, variant(null), Debug.debug, Debug.defTrace);
+inline trace(string message, variant inspect) = raise(raise.debug, message, inspect, raise.defTrace);
+inline trace(string message) = raise(raise.debug, message, variant(null), raise.defTrace);
 
-inline abort(string message, variant inspect) = debug(message, inspect, Debug.abort, Debug.abortTrace);
-inline abort(string message) = debug(message, variant(null), Debug.abort, Debug.abortTrace);
-inline abort() = debug("execution aborted!", variant(null), Debug.abort, Debug.abortTrace);
+inline abort(string message, variant inspect) = raise(raise.error, message, inspect, raise.defTrace);
+inline abort(string message) = raise(raise.error, message, variant(null), raise.defTrace);
+inline abort() = raise(raise.error, "execution aborted!", variant(null), raise.defTrace);
 
-inline assert(bool condition, string message, variant inspect) = debug(message, inspect, condition ? 0 : Debug.abort, Debug.assertTrace);
-inline assert(bool condition, string message) = debug(message, variant(null), condition ? 0 : Debug.abort, Debug.assertTrace);
-inline assert(bool condition) = debug("assertion failed!", variant(null), condition ? 0 : Debug.abort, Debug.assertTrace);
+inline assert(bool condition, string message, variant inspect) = raise(condition ? 0 : raise.error, message, inspect, raise.defTrace);
+inline assert(bool condition, string message) = raise(condition ? 0 : raise.error, message, variant(null), raise.defTrace);
+inline assert(bool condition) = raise(condition ? 0 : raise.error, "assertion failed!", variant(null), raise.defTrace);
 
 //~ TODO: inline assert(bool condition) = void(condition ? void(0) : abort("assertion failed!"));
 //#}

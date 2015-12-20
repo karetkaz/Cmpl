@@ -10,7 +10,7 @@ source code representation using abstract syntax tree
 #include "internal.h"
 
 astn newnode(ccContext cc, ccToken kind) {
-	rtContext rt = cc->s;
+	rtContext rt = cc->rt;
 	astn ast = 0;
 	if (cc->tokp) {
 		ast = cc->tokp;

@@ -56,24 +56,29 @@ typedef enum {
  * @brief Runtime context
  */
 struct rtContextRec {
-	int   errc;		// error count
-	int   closelog;	// close the log file
-	FILE* logf;		// log file
+	int32_t  errCount;		// error count
+	uint32_t logLevel:3;	// runtime logging level (0-7)
+	uint32_t logClose:1;	// close log file
+	//uint32_t genConst:1;	// do not fold const expressions
+	//uint32_t genBasic:1;	// do not optimize instructions
+	//uint32_t genGStat:1;	// generate globals on stack
+	uint32_t padFlags:28;
+	FILE *logFile;		// log file
 
-	symn  defs;		// global variables and functions
-	symn  init;		// the main initializer function.
+	symn  vars;		// global variables and functions
+	symn  main;		// the main initializer function
 
 	// virtual machine state
 	struct {
 		void* libv;		// libcall vector
 		void* cell;		// execution unit(s)
-		void* heap;		// heap
+		void* heap;		// heap memory
 
 		size_t pc;			// exec: entry point / cgen: prev program counter
 		size_t px;			// exec: exit point / cgen: program counter
 
 		size_t ro;			// exec: read only memory / cgen: function parameters
-		size_t ss;			// exec: stack size / cgen: current stack size
+		size_t ss;			// exec: stack size / cgen: stack size
 
 		size_t sm;			// exec: - / cgen: minimum stack size
 		size_t su;			// exec: - / cgen: stack access (parallel processing)
@@ -92,7 +97,7 @@ struct rtContextRec {
 	 * this holds:
 	 *  * debugger function
 	 *  * code line mapping
-	 *  + break point lists
+	 *  * break point lists
 	 */
 	dbgContext dbg;
 
@@ -100,7 +105,7 @@ struct rtContextRec {
 	symn type_var;	// TODO: to be removed, used only for printing.
 	symn type_str;	// TODO: to be removed, used only for printing.
 
-	/**
+	/** TODO: extract to a different struct
 	 * @brief External library support.
 	 * @note If a function returns error, the error was reported.
 	 */
