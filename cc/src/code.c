@@ -1565,6 +1565,7 @@ vmError execute(rtContext rt, size_t ss, void *extra) {
 	rt->_end -= sizeof(struct cell);
 	rt->vm.cell = pu = (void*)rt->_end;
 
+	rt->vm.ss = ss;
 	rt->_end -= ss;
 
 	pu->cp = 0;
@@ -2204,7 +2205,7 @@ int vmTest() {
 				if ((__IP) && opc_tbl[i].size != (__IP)) {\
 					goto error_len;\
 				}\
-				if (opc_tbl[i].chck != 9 && opc_tbl[i].chck != (__CHK)) {\
+				if (opc_tbl[i].chck != 9 && opc_tbl[i].chck != (int)(__CHK)) {\
 					goto error_chk;\
 				}\
 				if (opc_tbl[i].diff != 9 && opc_tbl[i].diff != (__DIFF)) {\

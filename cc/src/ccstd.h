@@ -151,7 +151,7 @@ symn getsym(rtContext, void* offs);
 char* getResStr(rtContext rt, size_t offs);
 
 /// Alloc, resize or free memory; @see rtContext.api.rtAlloc
-void* rtAlloc(rtContext, void* ptr, size_t size);
+void* rtAlloc(rtContext, void* ptr, size_t size, void dbg(rtContext rt, void* mem, size_t size, int used));
 
 static inline void* paddptr(void *offs, unsigned align) {
 	return (void*)(((ptrdiff_t)offs + (align - 1)) & ~(ptrdiff_t)(align - 1));

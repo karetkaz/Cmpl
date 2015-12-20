@@ -506,7 +506,7 @@ static int sysTryExec(libcContext args) {
 static int sysMemMgr(libcContext rt) {
 	void* old = argref(rt, 0);
 	int size = argi32(rt, 4);
-	void* res = rtAlloc(rt->rt, old, (size_t) size);
+	void* res = rtAlloc(rt->rt, old, (size_t) size, NULL);
 	reti32(rt, vmOffset(rt->rt, res));
 	return 0;
 }

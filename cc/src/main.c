@@ -356,6 +356,15 @@ struct customContextRec {
 };
 
 // text output
+static void conDumpHeap(rtContext rt, void* ptr, size_t size, int free) {
+	customContext ctx = rt->dbg->extra;
+	if (ctx == NULL) {
+		return;
+	}
+	FILE *out = ctx->out;
+	fputfmt(out, "!%s chunk @%06x; size: %d\n", free ? "used" : "free", vmOffset(rt, ptr), size);
+}
+
 static void conDumpStatus(customContext ctx, int all) {
 	FILE *out = ctx->out;
 	rtContext rt = ctx->rt;
@@ -422,7 +431,7 @@ static void conDumpStatus(customContext ctx, int all) {
 	if (ctx->run_dump & dmp_heap) {
 		// show allocated memory chunks.
 		fputfmt(out, "\n/*-- heap:\n");
-		rtAlloc(ctx->rt, NULL, 0);
+		rtAlloc(ctx->rt, NULL, 0, conDumpHeap);
 		fputfmt(out, "// */\n");
 	}
 
@@ -1452,9 +1461,6 @@ static int program(int argc, char* argv[]) {
 				error(rt, NULL, 0, "argument specified multiple times: %s", arg);
 			}
 			run_code = brk_fatal;
-			if (*arg2 && *arg2 != '/') {
-				arg2 = parsei32(arg2, &gen_code, 10);
-			}
 			while (*arg2 == '/') {
 				switch (arg2[1]) {
 					default:
