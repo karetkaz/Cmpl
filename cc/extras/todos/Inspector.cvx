@@ -45,6 +45,6 @@ float64 valueDouble = value;
 
 char text[] = "void2";
 
-Inspector &inspector = pointer(&text);
+Inspector &inspector = pointer(text);
 //~ Inspector &inspector = pointer(&valueDouble);
 //~ Inspector &inspector = emit(pointer, int32(2));

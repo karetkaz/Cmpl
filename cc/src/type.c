@@ -26,8 +26,10 @@ Basic types
 	float64
 
 	pointer
+	variant
 	typename		// compilers internal type reprezentation structure
-	?function
+	?function       //
+    object          // base class of all reference types.
 
 #typedefs
 	@int: alias for int32
@@ -184,7 +186,6 @@ symn install(ccContext s, const char* name, ccToken kind, ccToken cast, unsigned
 
 /// Install a type; @see rtContext.api.ccAddType
 symn ccAddType(rtContext rt, const char* name, unsigned size, int refType) {
-	//~ dieif(!rt->cc, "FixMe");
 	return install(rt->cc, name, ATTR_stat | ATTR_const | TYPE_rec, refType ? TYPE_ref : TYPE_rec, size, rt->cc->type_rec, NULL);
 }
 
@@ -302,6 +303,9 @@ symn ccAddCall(rtContext rt, int libc(libcContext), void* data, const char* prot
 		sym->kind = TYPE_def;
 		sym->init = libcinit;
 		sym->offs = libcpos;
+		// TODO: libcall should be static
+		//sym->stat = 1;
+		//sym->cnst = 1;
 
 		lc->call = libc;
 		lc->data = data;
@@ -400,7 +404,6 @@ static symn promote(symn lht, symn rht) {
 		result = rht;
 	}
 
-	//~ logif(DEBUGGING > 4 && result == NULL, "promote failed(%T, %T)", lht, rht);
 	return result;
 }
 
@@ -409,7 +412,7 @@ void addUsage(symn sym, astn tag) {
 		return;
 	}
 	if (tag->ref.used != NULL) {
-		#ifdef DEBUGGING
+		#ifdef DEBUGGING	// extra check: if this node is linked (.used) it must be in the list
 		astn usage;
 		for (usage = sym->used; usage; usage = usage->ref.used) {
 			if (usage == tag) {

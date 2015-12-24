@@ -1373,21 +1373,6 @@ void transpose2(mat4f &mat) {
 }
 
 //#{ debuging ...
-/*static struct Debug {
-	enum: int {
-		//~ abort = -1;
-		//~ quiet = 0;
-		//~ print = 1;
-		//~ debug = 3;
-
-		notrace = 0;
-		defTrace = 125;
-		abortTrace = defTrace;
-		assertTrace = defTrace;
-	}
-
-	//~ inline print(int priority, string message) = void(Priority <= priority ? debug(message, null, null, 0, 1) : void(0));
-}*/
 
 inline debug(string message, variant inspect) = raise(raise.debug, message, inspect, raise.noTrace);
 inline debug(string message) = raise(raise.debug, message, variant(null), raise.noTrace);

@@ -19,7 +19,7 @@ static const int DaysToMonth365[] = {0, 31, 59, 90, 120, 151, 181, 212, 243, 273
 //~ */
 
 void aborts(pointer args) {
-	//~ debug("abort", variant.null, -1, 512);
+	abort();
 }
 
 void abort2(int recurse, typename typ, pointer ptr, void fun(pointer ptr)) {
@@ -44,6 +44,12 @@ int arg0 = 0;
 int arg1 = 40;
 int arg2 = -1;
 
+struct Type1 {
+	int value[1000];
+}
+
+//~ Type1 errorEmit = emit(Type1, int(rand(0, 88)), int(rand(23, 87)), int(rand(10, 990)), int(rand(100, 999)), int(rand(0, 1)));
+
 define useTryCatch = true;
 static if (useTryCatch) {
 	define Exec(pointer args, void action(pointer args)) = tryExec(args, action);
@@ -58,7 +64,7 @@ static if (!useTryCatch) {
 int errorOK   = Exec(pointer(&arg2), throws);
 int errorDIV  = Exec(pointer(&arg0), throws);
 int errorLIB  = Exec(pointer(&arg1), throws);
-int errorLIB2 = Exec(pointer(&arg1), aborts);
+int errorLIB2 = Exec(pointer(&arg0), aborts);
 int errorMEM  = Exec(pointer(null), throws);
 
 /+ TODO: vs studio BUG

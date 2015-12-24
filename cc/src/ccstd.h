@@ -13,19 +13,15 @@ enum {
 
 	creg_tptr = 0x0001 | creg_base,		// pointers and memory manager
 	creg_tvar = 0x0002 | creg_base,		// variants and reflection
+	creg_tobj = 0x0004 | creg_base,		// classes and inheritance
 
 	creg_emit = 0x0100 | creg_base,		// emit thingie: emit(...)
 	creg_eopc = 0x0200 | creg_emit,		// emit opcodes: emit.i32.add
 	creg_eswz = 0x0400 | creg_eopc,		// swizzle constants: emit.swz.(xxxx, ... xyzw, ... wwww)
 
 	// register defaults if ccInit not invoked explicitly.
-	creg_def  = creg_tptr + creg_tvar + creg_eswz,
-	creg_min  = creg_tptr + creg_tvar + creg_emit,
-
-	// gencode(cgen_xxx | (level & 0xff))
-	cgen_opti = 0x000f,		// code generation optimization level
-	cgen_glob = 0x0010,		// generate globals on stack
-	cgen_info = 0x0020,		// generate debug information
+	creg_def  = creg_tptr + creg_tvar + creg_tobj + creg_eswz,
+	creg_min  = creg_tptr + creg_tvar + creg_tobj + creg_emit,
 };
 
 /**

@@ -70,7 +70,6 @@ examples:
 
 // default values
 static const int wl = 15;           // default warning level
-static const int ol = 2;            // default optimization level
 static char mem[8 << 20];           // 8MB runtime memory
 const char* STDLIB = "stdlib.cvx";  // standard library
 
@@ -356,7 +355,7 @@ struct customContextRec {
 };
 
 // text output
-static void conDumpHeap(rtContext rt, void* ptr, size_t size, int free) {
+static void conDumpMem(rtContext rt, void* ptr, size_t size, int free) {
 	customContext ctx = rt->dbg->extra;
 	if (ctx == NULL) {
 		return;
@@ -364,10 +363,30 @@ static void conDumpHeap(rtContext rt, void* ptr, size_t size, int free) {
 	FILE *out = ctx->out;
 	fputfmt(out, "!%s chunk @%06x; size: %d\n", free ? "used" : "free", vmOffset(rt, ptr), size);
 }
+static void conDumpAsm(customContext extra, size_t offs, void* ip) {
+	FILE *fout = extra->out;
+	dbgInfo dbg = mapDbgStatement(extra->rt, offs);
+	if (dbg != NULL && dbg->stmt != NULL && dbg->start == offs) {
+		if ((extra->asm_dump & 0x30) != 0) {
+			fputfmt(fout, "%I%s:%u: [%06x-%06x): %t\n", extra->indent, dbg->file, dbg->line, dbg->start, dbg->end, dbg->stmt);
+		}
+		else {
+			fputfmt(fout, "%I%s:%u: %t\n", extra->indent, dbg->file, dbg->line, dbg->stmt);
+		}
+	}
+
+	fputfmt(fout, "%I", extra->indent);
+	fputasm(fout, ip, extra->asm_dump, extra->rt);
+	fputfmt(fout, "\n");
+}
 
 static void conDumpStatus(customContext ctx, int all) {
 	FILE *out = ctx->out;
 	rtContext rt = ctx->rt;
+
+	if (ctx->run_dump < 0) {
+		return;
+	}
 
 	if (ctx->run_dump & dmp_prof) {
 		fputfmt(out, "\n/*-- trace:\n");
@@ -431,7 +450,7 @@ static void conDumpStatus(customContext ctx, int all) {
 	if (ctx->run_dump & dmp_heap) {
 		// show allocated memory chunks.
 		fputfmt(out, "\n/*-- heap:\n");
-		rtAlloc(ctx->rt, NULL, 0, conDumpHeap);
+		rtAlloc(ctx->rt, NULL, 0, conDumpMem);
 		fputfmt(out, "// */\n");
 	}
 
@@ -478,31 +497,16 @@ static void conDumpStatus(customContext ctx, int all) {
 	}
 }
 
-static void conDumpAsm(customContext extra, size_t offs, void* ip) {
-	FILE *fout = extra->out;
-	dbgInfo dbg = mapDbgStatement(extra->rt, offs);
-	if (dbg != NULL && dbg->stmt != NULL && dbg->start == offs) {
-		if ((extra->asm_dump & 0x30) != 0) {
-			fputfmt(fout, "%I%s:%u: [%06x-%06x): %t\n", extra->indent, dbg->file, dbg->line, dbg->start, dbg->end, dbg->stmt);
-		}
-		else {
-			fputfmt(fout, "%I%s:%u: %t\n", extra->indent, dbg->file, dbg->line, dbg->stmt);
-		}
-	}
-
-	fputfmt(fout, "%I", extra->indent);
-	fputasm(fout, ip, extra->asm_dump, extra->rt);
-	fputfmt(fout, "\n");
-}
 static void conDumpApi(customContext extra, symn sym) {
-	int dumpAsm = 0;
-	int dumpAst = 0;
+	int dumpApi = extra->sym_dump;
+	int dumpAsm = -1;
+	int dumpAst = -1;
 	int identExt = 0;//extra->indent;
 	FILE *out = extra->out;
 
 	if (extra->asm_dump >= 0 && sym->call && sym->kind == TYPE_ref) {
+		// dump function implementations, not references to functions.
 		if (sym->cast != TYPE_ref) {
-			// function reference may point to null or another function.
 			dumpAsm = extra->asm_dump;
 		}
 	}
@@ -511,27 +515,25 @@ static void conDumpApi(customContext extra, symn sym) {
 	}
 
 	// filter symbols by request.
-	if (extra->sym_dump < 0) {
+	if (dumpApi <= 0 && dumpAsm < 0 && dumpAst < 0) {
 		// skip builtin symbols if not requested (with '-api').
 		if (sym->file == NULL && sym->line == 0) {
 			return;
 		}
+
 		// skip symbol if there is nothing to dump.
-		if (!dumpAsm && !dumpAst) {
+		if (dumpApi < 0 && dumpAsm < 0 && dumpAst < 0) {
 			return;
 		}
-	}
-
-	if (extra->sym_dump == 0) {
 		fputfmt(out, "%+T: %+T\n", sym, sym->type);
 		return;
 	}
 
-	// print qualified name with arguments
+	// print qualified name with arguments and type
 	fputfmt(out, "%+T: %+T {\n", sym, sym->type);
 
 	// print symbol info (kind, size, offset, ...)
-	if (extra->sym_dump >= 0 && extra->sym_dump & sym_attr) {
+	if (dumpApi >= 0 && dumpApi & sym_attr) {
 		// print symbol definition location
 		if (sym->file != NULL && sym->line > 0) {
 			fputfmt(out, "%I.definition: %s:%u\n", identExt, sym->file, sym->line);
@@ -547,29 +549,29 @@ static void conDumpApi(customContext extra, symn sym) {
 	}
 
 	// explain params of the function
-	if (extra->sym_dump >= 0 && extra->sym_dump & sym_prms) {
+	if (dumpApi >= 0 && dumpApi & sym_prms) {
 		symn param;
 		for (param = sym->prms; param; param = param->next) {
-			fputfmt(out, "%I.param %T: %?+T (@%06x+%d->%K)\n", identExt, param, param->type, param->offs, param->size, param->cast);
+			fputfmt(out, "%I.param %.T: %?T (@%06x+%d->%K)\n", identExt, param, param->type, param->offs, param->size, param->cast);
 		}
 	}
 
-	if (dumpAst != 0) {
-		fputfmt(out, "%I.syntaxTree: %?-1.*t", identExt, dumpAst, sym->init);
+	if (dumpAst >= 0) {
+		fputfmt(out, "%I.syntaxTree: %?.*t", identExt, dumpAst, sym->init);
 		if (sym->init->kind != STMT_beg) {
 			fputfmt(out, "\n");
 		}
 	}
 
 	// print disassembly of the function
-	if (dumpAsm != 0) {
+	if (dumpAsm >= 0) {
 		fputfmt(out, "%I.assembly [@%06x: %d] {\n", identExt, sym->offs, sym->size);
 		iterateAsm(extra->rt, sym->offs, sym->offs + sym->size, extra, conDumpAsm);
 		fputfmt(out, "%I}\n", identExt);
 	}
 
 	// print usages of symbol
-	if (extra->sym_dump >= 0 && extra->sym_dump & sym_refs) {
+	if (dumpApi >= 0 && dumpApi & sym_refs) {
 		astn usage;
 		int usages = 0;
 		int extUsages = 0;
@@ -736,6 +738,7 @@ static int conDebug(dbgContext ctx, vmError error, size_t ss, void* sp, void* ca
 				fputfmt(out, "%s:%u: ", dbg->file, dbg->line);
 			}
 			fputfmt(out, "%s in function: <%T+%06x>\n", errorType, fun, funOffs);
+			logTrace(rt, out, 1, 0, 20);
 		}
 	}
 	for ( ; ; ) {
@@ -1296,8 +1299,7 @@ static int program(int argc, char* argv[]) {
 
 	int i, errors = 0;
 
-	// compile, optimize, run, debug, profile, ...
-	int gen_code = cgen_info | ol;	// optimize_level, debug_info, ...
+	// compile, run, debug, profile, ...
 	int run_code = -1;	// run, debug, profile
 
 	int sym_dump = -1;	// dump variables and functions.
@@ -1378,7 +1380,7 @@ static int program(int argc, char* argv[]) {
 				error(rt, NULL, 0, "argument specified multiple times: %s", arg);
 				return -1;
 			}
-			sym_dump = 0xff;
+			sym_dump = 0;
 			if (*arg2) {
 				arg2 = parsei32(arg2, &sym_dump, 16);
 			}
@@ -1448,12 +1450,11 @@ static int program(int argc, char* argv[]) {
 			if (run_code != -1) {
 				error(rt, NULL, 0, "argument specified multiple times: %s", arg);
 			}
-			gen_code = ol;
-			run_code = 0;
 			if (*arg2) {
 				error(rt, NULL, 0, "invalid argument '%s'\n", arg);
 				return -1;
 			}
+			run_code = 0;
 		}
 		else if (strncmp(arg, "-debug", 6) == 0) {		// break into debuger on ...
 			char *arg2 = arg + 6;
@@ -1484,6 +1485,25 @@ static int program(int argc, char* argv[]) {
 
 					case 'h':
 						run_code |= dmp_heap;
+						arg2 += 2;
+						break;
+
+					case 'C':
+						rt->genCFold = 1;
+						arg2 += 2;
+						break;
+					case 'B':
+						rt->genBasic = 1;
+						arg2 += 2;
+						break;
+					case 'L':
+						// FIXME: this causes the stacktrace to have invalid functions
+						rt->genLocal = 1;
+						arg2 += 2;
+						break;
+					case 'F':
+						// FIXME: this causes bad behavior
+						rt->genForInc = 1;
 						arg2 += 2;
 						break;
 				}
@@ -1613,10 +1633,10 @@ static int program(int argc, char* argv[]) {
 	errors = rt->errCount;
 
 	// generate code only if needed and there are no compilation errors
-	if (errors == 0 && gen_code != -1) {
-		if (!gencode(rt, gen_code)) {
-			// show dump, but do not execute broken code.
-			//error(rt, NULL, 0, "error generating code");
+	if (errors == 0) {
+		int debug = run_code & (brk_fatal | brk_error | brk_start | dmp_prof);
+		if (!gencode(rt, debug != 0)) {
+			trace("error generating code");
 			errors += 1;
 		}
 		// set breakpoints
@@ -1715,14 +1735,12 @@ int main(int argc, char* argv[]) {
 		return 0;
 	}
 	if (argc == 2) {
-		#if DEBUGGING > 0
 		if (strcmp(argv[1], "-vmTest") == 0) {
 			return vmTest();
 		}
 		if (strcmp(argv[1], "-vmHelp") == 0) {
 			return vmHelp();
 		}
-		#endif
 		if (strcmp(argv[1], "--help") == 0) {
 			usage(*argv);
 			return 0;

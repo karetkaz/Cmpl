@@ -71,7 +71,12 @@ static void fputqal(FILE* fout, const char *esc[], symn sym) {
 		fputqal(fout, esc, sym->decl);
 		fputchr(fout, '.');
 	}
-	fputstr(fout, esc, sym->name);
+	if (sym->name != NULL) {
+		fputstr(fout, esc, sym->name);
+	}
+	else {
+		fputstr(fout, esc, "?");
+	}
 }
 
 /// print array type

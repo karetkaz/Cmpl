@@ -485,9 +485,8 @@ size_t emitarg(rtContext rt, vmOpcode opc, stkval arg) {
 	}
 
 	// Optimize
-	if (rt->vm.opti > 0) {
-		if (0) {
-		}
+	if (!rt->genBasic) {
+		if (0) {}
 
 		/* TODO: ldzs are not optimized, uncomment when vm does constant evaluations.
 		else if (opc == opc_lc32) {
@@ -1033,11 +1032,11 @@ size_t emitarg(rtContext rt, vmOpcode opc, stkval arg) {
 
 	switch (opc) {
 		error_opc:
-			error(rt, NULL, 0, "invalid opcode: %.*A", rt->vm.pc, ip);
+			error(rt, NULL, 0, "invalid opcode: %.A @%06x", ip, rt->vm.pc);
 			return 0;
 
 		error_stc:
-			error(rt, NULL, 0, "stack underflow(%d): %.*A", rt->vm.ss, rt->vm.pc, ip);
+			error(rt, NULL, 0, "stack underflow(%d): %.A @%06x", rt->vm.ss, ip, rt->vm.pc);
 			return 0;
 
 		#define STOP(__ERR, __CHK, __ERC) if (__CHK) goto __ERR
@@ -1263,39 +1262,36 @@ static int dbgDummy(dbgContext ctx, vmError err, size_t ss, void* sp, void* call
 				break;
 
 			case invalidIP:
-				errorStr = "InvalidIP";
+				errorStr = "Invalid instruction pointer";
 				break;
 
 			case invalidSP:
-				errorStr = "InvalidSP";
+				errorStr = "Invalid stack pointer";
 				break;
 
 			case illegalInstruction:
-				errorStr = "IllegalInstruction";
+				errorStr = "Illegal instruction";
 				break;
 
 			case stackOverflow:
-				errorStr = "StackOverflow";
+				errorStr = "Stack overflow";
 				break;
 
 			case divisionByZero:
-				errorStr = "DivisionByZero";
+				errorStr = "Division by zero";
 				break;
 
 			case libCallAbort:
-				errorStr = "ExternalCallAbort";
-				break;
-
 			case executionAborted:
-				errorStr = "ExternalCallAbort";
+				errorStr = "Native call aborted";
 				break;
 
 			case memReadError:
 			case memWriteError:
-				errorStr = "InvalidMemoryAcces";
+				errorStr = "Invalid memory acces";
 				break;
 		}
-		error(ctx->rt, NULL, 0, "%s executing: %.0A @%06x", errorStr, caller, vmOffset(ctx->rt, caller));
+		error(ctx->rt, NULL, 0, "%s executing instruction: %.A @%06x", errorStr, caller, vmOffset(ctx->rt, caller));
 		return executionAborted;
 	}
 	(void)callee;
@@ -2158,7 +2154,6 @@ void logTrace(rtContext rt, FILE *outf, int ident, int startlevel, int traceleve
 	}
 }
 
-#if defined DEBUGGING
 int vmTest() {
 	int i, err = 0;
 	FILE *out = stdout;
@@ -2261,4 +2256,3 @@ int vmHelp() {
 	}
 	return err;
 }
-#endif

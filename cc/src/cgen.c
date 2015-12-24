@@ -8,11 +8,17 @@ description:
 #include <string.h>
 #include "internal.h"
 
-// utility function for debugging only.
+//#{ utility function for debugging only.
+static void asmDump(customContext ctx, size_t offs, void *ip) {
+	prerr("emit", ".%06x %.9A", offs, ip);
+	(void)ctx;
+}
 static void dumpTree(rtContext rt, astn ast, size_t offsStart, size_t offsEnd) {
-#if defined(DEBUGGING) && DEBUGGING > 1
-	struct symNode dbg;
+#if DEBUGGING >= 3	// print generated code.
+	iterateAsm(rt, offsStart, offsEnd, NULL, asmDump);
+	/* TODO: export dump symbol to consloe function.
 	if (rt->logFile != NULL) {
+		struct symNode dbg;
 		memset(&dbg, 0, sizeof(dbg));
 		dbg.kind = TYPE_ref;
 		dbg.name = "error";
@@ -20,17 +26,22 @@ static void dumpTree(rtContext rt, astn ast, size_t offsStart, size_t offsEnd) {
 		dbg.init = ast;
 		dbg.offs = offsStart;
 		dbg.size = offsEnd - offsStart;
+		dumpSymbol(rt, &dbg,
+			0xff,	// dumpSym
+			0xff,	// dumpAst
+			0x79	// dumpAsm
+		);
 		//dumpxml(rt->logf, ast, 0xff, 0, "code");
-		// TODO: dump for single symbol
-		// dump(rt, NULL, NULL);
-	}
+	}// */
 #else
 	(void)rt;
-	(void)ast;
 	(void)offsStart;
 	(void)offsEnd;
+	(void)asmDump;
 #endif
+	(void)ast;
 }
+//#}
 
 /**
  * @brief get absolute position on stack, of relative offset
@@ -472,7 +483,7 @@ static inline size_t emitvar(rtContext rt, symn var) {
  * @return Should be get || cast of ast node.
  */
 static ccToken cgen(rtContext rt, astn ast, ccToken get) {
-	#ifdef DEBUGGING
+	#ifdef DEBUGGING	// extra check: every statement qualifier must be processed.
 	ccToken stmt_qual = TYPE_any;
 	#endif
 
@@ -489,7 +500,7 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 		got = ast->type->kind;
 	}
 
-	#ifdef DEBUGGING
+	#ifdef DEBUGGING	// extra check: every statement qualifier must be processed.
 	// take care of qualified statements `static if` ...
 	if (ast->kind >= STMT_beg && ast->kind <= STMT_end) {
 		stmt_qual = ast->cst2;
@@ -509,7 +520,7 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 			size_t ippar = 0;
 			astn ptr;
 
-			#ifdef DEBUGGING
+			#ifdef DEBUGGING	// extra check: statement qualifier processed.
 			// TODO: a block may return nothing or the contained declarations(foreach may have 2 init declarations.)
 			if (stmt_qual == TYPE_vid || stmt_qual == TYPE_rec) {
 				stmt_qual = TYPE_any;
@@ -519,16 +530,15 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 				ippar = emitopc(rt, opc_task);
 				rt->vm.su = 0;
 
-				#ifdef DEBUGGING
-				// process qualifier
+				#ifdef DEBUGGING	// extra check: statement qualifier processed.
 				stmt_qual = TYPE_any;
 				#endif
 			}
 			for (ptr = ast->stmt.stmt; ptr; ptr = ptr->next) {
 				size_t ipStart = emitopc(rt, markIP);
 				if (!cgen(rt, ptr, TYPE_vid)) {		// we will free stack on scope close
-					dumpTree(rt, ptr, ipStart, emitopc(rt, markIP));
 					error(rt, ptr->file, ptr->line, "emitting statement `%+t`", ptr);
+					dumpTree(rt, ptr, ipStart, emitopc(rt, markIP));
 					return TYPE_any;
 				}
 				if (ptr->kind != STMT_beg) {
@@ -648,15 +658,14 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 					error(rt, ast->file, ast->line, "invalid static if construct: %s", !tt ? "can not evaluate" : "else part is invalid");
 					return TYPE_any;
 				}
-				#ifdef DEBUGGING
-				// qualifier processed
+				#ifdef DEBUGGING	// extra check: statement qualifier processed.
 				stmt_qual = TYPE_any;
 				#endif
 			}
 
-			if (tt && (rt->vm.opti || ast->cst2 == ATTR_stat)) {	// static if then else
+			if (tt && ast->cst2 == ATTR_stat) {	// static if then else
 				astn gen = constbol(&tmp) ? ast->stmt.stmt : ast->stmt.step;
-				if (gen && !cgen(rt, gen, TYPE_any)) {	// leave the stack
+				if (gen != NULL && !cgen(rt, gen, TYPE_any)) {	// leave the stack
 					traceAst(gen);
 					return TYPE_any;
 				}
@@ -672,7 +681,19 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 				block.type = rt->cc->type_vid;
 				block.kind = STMT_beg;
 
-				if (ast->stmt.stmt && ast->stmt.step) {		// if then else
+				if (tt != TYPE_any && !rt->genCFold) {	// if (const)
+					block.stmt.stmt = constbol(&tmp) ? ast->stmt.stmt : ast->stmt.step;
+					if (block.stmt.stmt != NULL) {
+						if (!cgen(rt, &block, TYPE_vid)) {
+							traceAst(ast);
+							return TYPE_any;
+						}
+					}
+					else {
+						warn(rt, 2, ast->file, ast->line, "no code will be generated for statement: %+t", ast);
+					}
+				}
+				else if (ast->stmt.stmt && ast->stmt.step) {		// if then else
 					if (!cgen(rt, ast->stmt.test, TYPE_bit)) {
 						traceAst(ast);
 						return TYPE_any;
@@ -918,7 +939,7 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 							arg = def->init;
 						}// */
 						// try to evaluate as a constant.
-						if (rt->vm.opti && eval(&tmp, arg)) {
+						if (!rt->genCFold && eval(&tmp, arg)) {
 							arg = &tmp;
 						}
 
@@ -1113,7 +1134,7 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 			}
 
 			esize = sizeOf(ast->type, 0);	// size of array element
-			if (rt->vm.opti && eval(&tmp, ast->op.rhso) == TYPE_int) {
+			if (!rt->genCFold && eval(&tmp, ast->op.rhso) == TYPE_int) {
 				size_t offs = sizeOf(ast->type, 0) * (int)constint(&tmp);
 				if (!emitinc(rt, offs)) {
 					traceAst(ast);
@@ -1268,7 +1289,7 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 		case OPER_div:		// '/'
 		case OPER_mod: {	// '%'
 			vmOpcode opc;
-			#ifdef DEBUGGING
+			#ifdef DEBUGGING	// extra check: 
 			size_t ipdbg = emitopc(rt, markIP);
 			#endif
 			switch (ast->kind) {
@@ -1340,8 +1361,7 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 				return TYPE_any;
 			}
 
-			#ifdef DEBUGGING
-			// these must be true
+			#ifdef DEBUGGING	// extra check: validate some conditions.
 			if (ast->op.lhso->cst2 != ast->op.rhso->cst2) {
 				dumpTree(rt, ast, ipdbg, emitopc(rt, markIP));
 			}
@@ -1431,7 +1451,13 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 			rt->cc->jmps = jmp2;
 			// */
 
-			#ifdef DEBUGGING
+			#ifdef DEBUGGING	// extra check: validate some conditions.
+			//~ dieif(ast->op.lhso->cst2 != ast->op.rhso->cst2, "RemMe");
+			dieif(ast->op.lhso->cst2 != TYPE_bit, "RemMe");
+			dieif(ast->op.lhso->cst2 != TYPE_bit, "RemMe");
+			dieif(got != castOf(ast->type), "RemMe");
+			dieif(got != TYPE_bit, "RemMe");
+			#endif
 			if (rt->cc->warn > 0) {
 				static int firstTimeShowOnly = 1;
 				if (firstTimeShowOnly) {
@@ -1439,17 +1465,10 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 					firstTimeShowOnly = 0;
 				}
 			}
-			// these must be true
-			//~ dieif(ast->op.lhso->cst2 != ast->op.rhso->cst2, "RemMe");
-			dieif(ast->op.lhso->cst2 != TYPE_bit, "RemMe");
-			dieif(ast->op.lhso->cst2 != TYPE_bit, "RemMe");
-			dieif(got != castOf(ast->type), "RemMe");
-			dieif(got != TYPE_bit, "RemMe");
-			#endif
 		} break;
 		case OPER_sel: {	// '?:'
 			size_t jmpt, jmpf;
-			if (rt->vm.opti && eval(&tmp, ast->op.test)) {
+			if (!rt->genCFold && eval(&tmp, ast->op.test)) {
 				if (!cgen(rt, constbol(&tmp) ? ast->op.lhso : ast->op.rhso, TYPE_any)) {
 					traceAst(ast);
 					return TYPE_any;
@@ -1546,7 +1565,7 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 
 			// optimize assignments .
 			if (ast->op.rhso->kind >= OPER_beg && ast->op.rhso->kind <= OPER_end) {
-				if (ast->op.lhso == ast->op.rhso->op.lhso) {
+				if (ast->op.lhso == ast->op.rhso->op.lhso && rt->genForInc) {
 					// HACK: speed up for (int i = 0; i < 10, i += 1) ...
 					if (optimizeAssign(rt, codeBegin, codeEnd)) {
 						debug("assignment optimized: %+t", ast);
@@ -2234,7 +2253,7 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 		}
 	}
 
-	#ifdef DEBUGGING
+	#ifdef DEBUGGING	// extra check: every statement qualifier must be processed.
 	logif(stmt_qual != 0, "unimplemented qualified statement %?K: %t", stmt_qual, ast);
 	#endif
 
@@ -2246,7 +2265,7 @@ int gencode(rtContext rt, int mode) {
 	size_t Lmain, Lmeta;
 
 	// make global variables static ?
-	int gstat = (mode & cgen_glob) == 0;
+	int gstat = !rt->genLocal;
 
 	dieif(rt->errCount, "can not generate code");
 	dieif(cc == NULL, "no compiler context");
@@ -2298,7 +2317,7 @@ int gencode(rtContext rt, int mode) {
 	Lmeta = rt->_beg - rt->_mem;
 
 	// debuginfo
-	if (mode & cgen_info) {
+	if (mode != 0) {
 		rt->dbg = (dbgContext)(rt->_beg = paddptr(rt->_beg, rt_size));
 		rt->_beg += sizeof(struct dbgContextRec);
 
@@ -2333,8 +2352,6 @@ int gencode(rtContext rt, int mode) {
 	rt->vm.ro = rt->_beg - rt->_mem;
 
 	// TODO: generate functions first
-	rt->vm.opti = mode & cgen_opti;
-
 	// static variables & functions
 	if (rt->vars != NULL) {
 		symn var;

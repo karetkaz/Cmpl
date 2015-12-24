@@ -13,13 +13,10 @@
 #include <stdlib.h> // abort
 
 /* debug level:
-	0: show where error is raised
-	1: trace the root of errors
-	2: print debug messages
-
-	3: print generated assembly for statements with errors;
-	4: print generated assembly
-	5: print non pre-mapped strings, non static types
+	0: show where errors were raised
+	1: trace errors to their root
+	2: include debug messages
+	3: print generated assembly for statements with errors
 */
 //~ #define DEBUGGING 1
 
@@ -38,32 +35,33 @@
 
 #define prerr(__DBG, __MSG, ...) do { fputfmt(stdout, "%s:%u: "__DBG": %s: "__MSG"\n", __FILE__, __LINE__, __FUNCTION__, ##__VA_ARGS__); _break(); } while(0)
 
-#ifndef DEBUGGING
-#define logif(__EXP, msg, ...) do {} while(0)
+#ifndef DEBUGGING	// disable compiler debuging
+
+#define debug(msg, ...) do {} while(0)
 #define trace(msg, ...) do {} while(0)
 #define traceAst(__AST) do {} while(0)
 #define traceLoop(msg, ...) do {} while(0)
-#define debug(msg, ...) do {} while(0)
-#else
-#define logif(__EXP, msg, ...) do {if (__EXP) prerr("todo", msg, ##__VA_ARGS__);} while(0)
+#define logif(__EXP, msg, ...) do {} while(0)
 
-#if DEBUGGING > 0	// enable trace
-#define trace(msg, ...) do { prerr("trace", msg, ##__VA_ARGS__); _break(); } while(0)
 #else
-#define trace(msg, ...) do {} while(0)
-#endif
-#if DEBUGGING > 1	// enable debug
+
+#if DEBUGGING >= 2	// enable debug
 #define debug(msg, ...) do { prerr("debug", msg, ##__VA_ARGS__); } while(0)
 #else
 #define debug(msg, ...) do {} while(0)
 #endif
+#if DEBUGGING >= 1	// enable trace
+#define trace(msg, ...) do { prerr("trace", msg, ##__VA_ARGS__); _break(); } while(0)
+#else
+#define trace(msg, ...) do {} while(0)
+#endif
 #define traceAst(__AST) do { trace("%+t", __AST); _break(); } while(0)
-#define traceLoop(msg, ...) //do { prerr("trace", msg, ##__VA_ARGS__); } while(0)
+#define traceLoop(msg, ...) //do { trace("trace", msg, ##__VA_ARGS__); } while(0)
+#define logif(__EXP, msg, ...) do {if (__EXP) prerr("todo", msg, ##__VA_ARGS__);} while(0)
+
 #endif
 
-// internal errors (not aborting!?)
-//~ #define fatal(msg, ...) do { prerr("internal error", msg, ##__VA_ARGS__); abort(); } while(0)
-//~ #define dieif(__EXP, msg, ...) do {if (__EXP) { prerr("internal error("#__EXP")", msg, ##__VA_ARGS__); abort(); }} while(0)
+// internal errors
 #define fatal(msg, ...) do { prerr("internal error", msg, ##__VA_ARGS__); _abort(); } while(0)
 #define dieif(__EXP, msg, ...) do {if (__EXP) { prerr("internal error("#__EXP")", msg, ##__VA_ARGS__); _abort(); }} while(0)
 
@@ -72,6 +70,7 @@
 #define warn(__ENV, __LEVEL, __FILE, __LINE, msg, ...) do { perr(__ENV, __LEVEL, __FILE, __LINE, msg, ##__VA_ARGS__); } while(0)
 #define info(__ENV, __FILE, __LINE, msg, ...) do { warn(__ENV, 0, __FILE, __LINE, msg, ##__VA_ARGS__); } while(0)
 
+// helper macros
 #define lengthOf(__ARRAY) (sizeof(__ARRAY) / sizeof(*(__ARRAY)))
 #define offsetOf(__TYPE, __FIELD) ((size_t) &((__TYPE)0)->__FIELD)
 
@@ -795,7 +794,7 @@ void logTrace(rtContext rt, FILE *out, int ident, int startlevel, int tracelevel
 #endif
 
 static inline void _abort() {
-#ifndef DEBUGGING
+#ifndef DEBUGGING	// abort on first internal error
 	abort();
 #endif
 }

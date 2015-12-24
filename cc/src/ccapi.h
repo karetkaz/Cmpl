@@ -48,7 +48,7 @@ typedef enum {
 	illegalInstruction,
 	libCallAbort,
 	executionAborted		// execution aborted by debuger
-	//~ + ArrayBoundsExceeded
+	//+ ArrayBoundsExceeded
 } vmError;
 
 
@@ -59,10 +59,12 @@ struct rtContextRec {
 	int32_t  errCount;		// error count
 	uint32_t logLevel:3;	// runtime logging level (0-7)
 	uint32_t logClose:1;	// close log file
-	//uint32_t genConst:1;	// do not fold const expressions
-	//uint32_t genBasic:1;	// do not optimize instructions
-	//uint32_t genGStat:1;	// generate globals on stack
-	uint32_t padFlags:28;
+	// disable code generation optimization
+	uint32_t genCFold:1;	// do not fold const expressions
+	uint32_t genBasic:1;	// do not optimize instructions
+	uint32_t genForInc:1;	// do not optimize for expression shortener
+	uint32_t genLocal:1;	// generate globals on stack
+	uint32_t padFlags:24;
 	FILE *logFile;		// log file
 
 	symn  vars;		// global variables and functions
@@ -82,8 +84,6 @@ struct rtContextRec {
 
 		size_t sm;			// exec: - / cgen: minimum stack size
 		size_t su;			// exec: - / cgen: stack access (parallel processing)
-
-		int  opti;		// exec: - / cgen: optimization level
 	} vm;
 
 	/**
