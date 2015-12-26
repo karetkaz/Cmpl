@@ -18,7 +18,7 @@
 	2: include debug messages
 	3: print generated assembly for statements with errors
 */
-//~ #define DEBUGGING 1
+#define DEBUGGING 1
 
 // enable paralell execution stuff
 //~ #define VM_MAX_PROCS 1
@@ -88,8 +88,7 @@ enum Format {
 
 	prAsmCode = 0x000f, // print code bytes (0-15)
 	prAsmAddr = 0x0010, // print global address: (@0x003d8c)
-	prAsmSyms = 0x0040, // use symbol names instead of addresses: <main+80>
-	prAsmStmt = 0x0080, // print source code statements
+	prAsmName = 0x0040, // use symbol names instead of addresses: <main+80>
 
 //	prArgs = 0x0080,
 //	prXMLLine = 0x0080
@@ -429,8 +428,8 @@ struct ccContextRec {
 /// Debuger context
 struct dbgContextRec {
 	rtContext rt;
-	void* extra;		// extra data for debuger
-	int checked;		// execution is inside an try catch
+	userContext extra;		// extra data for debuger
+	int checked;			// execution is inside an try catch
 	struct arrBuffer functions;
 	struct arrBuffer statements;
 	int (*function)(dbgContext ctx, vmError, size_t ss, void* sp, void* caller, void* callee);
@@ -501,7 +500,7 @@ void fputasm(FILE* fout, void *ptr, int mode, rtContext rt);
  * @brief Dump all accessible symbols
  * TODO: DocMe
  */
-void iterateApi(rtContext rt, customContext ctx, void action(customContext, symn));
+void iterateApi(rtContext rt, userContext ctx, void action(userContext, symn));
 
 /**
  * @brief Iterate over instructions.
@@ -511,7 +510,7 @@ void iterateApi(rtContext rt, customContext ctx, void action(customContext, symn
  * @param extra Extra arguments for callback.
  * @param action Callback executed on each instruction.
  */
-void iterateAsm(rtContext rt, size_t offsBegin, size_t offsEnd, customContext extra, void action(customContext, size_t offs, void* ip));
+void iterateAsm(rtContext rt, size_t offsBegin, size_t offsEnd, userContext extra, void action(userContext, size_t offs, void* ip));
 
 /** TODO: to be renamed and moved.
  * @brief Print the value of a variable at runtime.

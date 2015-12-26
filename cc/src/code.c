@@ -297,7 +297,7 @@ int optimizeAssign(rtContext rt, size_t offsBegin, size_t offsEnd) {
 	return 0;
 }
 
-void iterateAsm(rtContext rt, size_t offsBegin, size_t offsEnd, customContext ctx, void action(customContext, size_t offs, void* ip)) {
+void iterateAsm(rtContext rt, size_t offsBegin, size_t offsEnd, userContext ctx, void action(userContext, size_t offs, void* ip)) {
 	size_t is, offs;
 	for (offs = offsBegin; offs < offsEnd; offs += is) {
 		register bcde ip = getip(rt, offs);
@@ -485,7 +485,7 @@ size_t emitarg(rtContext rt, vmOpcode opc, stkval arg) {
 	}
 
 	// Optimize
-	if (!rt->genBasic) {
+	if (rt->fastInstr) {
 		if (0) {}
 
 		/* TODO: ldzs are not optimized, uncomment when vm does constant evaluations.
@@ -537,10 +537,12 @@ size_t emitarg(rtContext rt, vmOpcode opc, stkval arg) {
 				opc = opc_dup1;
 				rollbackPc(rt);
 			}
-			else if (ip->opc == opc_lref && ip->arg.u4 < 0x00ffffff) {
+			else if (ip->opc == opc_lref) {
 				arg.i8 = ip->arg.u4;
-				opc = opc_ld32;
-				rollbackPc(rt);
+				if (arg.i8 == arg.rel) {
+					opc = opc_ld32;
+					rollbackPc(rt);
+				}
 			}
 		}
 		else if (opc == opc_sti4) {
@@ -550,10 +552,12 @@ size_t emitarg(rtContext rt, vmOpcode opc, stkval arg) {
 				opc = opc_set1;
 				rollbackPc(rt);
 			}
-			else if (ip->opc == opc_lref && ip->arg.u4 < 0x00ffffff) {
+			else if (ip->opc == opc_lref) {
 				arg.i8 = ip->arg.u4;
-				opc = opc_st32;
-				rollbackPc(rt);
+				if (arg.i8 == arg.rel) {
+					opc = opc_st32;
+					rollbackPc(rt);
+				}
 			}
 		}
 
@@ -564,10 +568,12 @@ size_t emitarg(rtContext rt, vmOpcode opc, stkval arg) {
 				opc = opc_dup2;
 				rollbackPc(rt);
 			}
-			else if (ip->opc == opc_lref && ip->arg.u4 < 0x00ffffff) {
+			else if (ip->opc == opc_lref) {
 				arg.i8 = ip->arg.u4;
-				opc = opc_ld64;
-				rollbackPc(rt);
+				if (arg.i8 == arg.rel) {
+					opc = opc_ld64;
+					rollbackPc(rt);
+				}
 			}
 		}
 		else if (opc == opc_sti8) {
@@ -577,10 +583,12 @@ size_t emitarg(rtContext rt, vmOpcode opc, stkval arg) {
 				opc = opc_set2;
 				rollbackPc(rt);
 			}
-			else if (ip->opc == opc_lref && ip->arg.u4 < 0x00ffffff) {
+			else if (ip->opc == opc_lref) {
 				arg.i8 = ip->arg.u4;
-				opc = opc_st64;
-				rollbackPc(rt);
+				if (arg.i8 == arg.rel) {
+					opc = opc_st64;
+					rollbackPc(rt);
+				}
 			}
 		}
 
@@ -1585,7 +1593,7 @@ vmError execute(rtContext rt, size_t ss, void *extra) {
 // TODO: ADD const char *esc[] ?
 void fputasm(FILE* fout, void *ptr, int mode, rtContext rt) {
 	bcde ip = (bcde)ptr;
-	size_t i, len = mode & prAsmCode;
+	size_t i, len = (size_t) mode & prAsmCode;
 	size_t offs = (size_t)ptr;
 	char *fmt_addr = " .%06x"; // "0x%08x";
 	char *fmt_offs = " <%T+%d>";
@@ -1593,7 +1601,7 @@ void fputasm(FILE* fout, void *ptr, int mode, rtContext rt) {
 
 	if (rt != NULL) {
 		offs = vmOffset(rt, ptr);
-		if (mode & prAsmSyms) {
+		if (mode & prAsmAddr && mode & prAsmName) {
 			sym = mapsym(rt, offs, 0);
 		}
 	}
@@ -1620,7 +1628,7 @@ void fputasm(FILE* fout, void *ptr, int mode, rtContext rt) {
 	}
 
 	//~ write data as bytes
-	//~ TODO: symplify this
+	//~ TODO: simplify this
 	if (len > 1 && len < opc_tbl[ip->opc].size) {
 		for (i = 0; i < len - 2; i++) {
 			if (i < opc_tbl[ip->opc].size) {
@@ -1660,9 +1668,6 @@ void fputasm(FILE* fout, void *ptr, int mode, rtContext rt) {
 		case opc_spc:
 		case opc_ldsp:
 		case opc_move:
-			fputfmt(fout, " %+d", ip->rel);
-			break;
-
 		case opc_mad:
 			fputfmt(fout, " %d", ip->rel);
 			break;
@@ -1676,9 +1681,9 @@ void fputasm(FILE* fout, void *ptr, int mode, rtContext rt) {
 				i = ip->cl;
 			}
 			else {
-				i = ip->rel;
+				i = (size_t) ip->rel;
 			}
-			if (sym != NULL) {
+			if (sym != NULL && mode & prAsmAddr) {
 				fputfmt(fout, fmt_offs, sym, offs + i - sym->offs);
 			}
 			else if (mode & prAsmAddr) {
@@ -1750,15 +1755,10 @@ void fputasm(FILE* fout, void *ptr, int mode, rtContext rt) {
 				offs = ip->arg.u4;
 			}
 			else {
-				offs = ip->rel;
+				offs = (size_t) ip->rel;
 			}
 
-			if (ip->opc == opc_libc) {
-				fputfmt(fout, "(%d)", offs);
-			}
-			else {
-				fputfmt(fout, fmt_addr, offs);
-			}
+			fputfmt(fout, fmt_addr, offs);
 			if (rt != NULL) {
 				symn sym = mapsym(rt, offs, 0);
 				if (sym != NULL) {
@@ -1774,7 +1774,7 @@ void fputasm(FILE* fout, void *ptr, int mode, rtContext rt) {
 			break;
 
 		case opc_libc:
-			offs = ip->rel;
+			offs = (size_t) ip->rel;
 			fputfmt(fout, "(%d)", offs);
 
 			if (rt != NULL) {

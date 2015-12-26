@@ -73,9 +73,10 @@ rtContext rtInit(void* _mem, size_t size) {
 
 		rt->logLevel = 7;
 		//
-		rt->genCFold = 0;
-		rt->genBasic = 0;
-		rt->genForInc = 1;
+		rt->foldConst = 1;
+		rt->fastInstr = 1;
+		rt->fastAssign = 0;
+		rt->genGlobals = 1;
 
 		logFILE(rt, stdout);
 		rt->cc = NULL;
@@ -422,14 +423,14 @@ static void install_type(ccContext cc, int mode) {
 
 	type_chr = install(cc,     "char", ATTR_stat | ATTR_const | TYPE_rec, TYPE_u32,       1, type_rec, NULL);
 
-	if (mode & creg_tptr) {
+	if (mode & install_ptr) {
 		type_ptr = install(cc, "pointer", ATTR_stat | ATTR_const | TYPE_rec, TYPE_ref, 1 * vm_size, type_rec, NULL);
 	}
-	if (mode & creg_tvar) {
+	if (mode & install_var) {
 		// TODO: variant should cast to TYPE_var
 		type_var = install(cc, "variant", ATTR_stat | ATTR_const | TYPE_rec, TYPE_rec, 2 * vm_size, type_rec, NULL);
 	}
-	if (mode & creg_tobj) {
+	if (mode & install_obj) {
 		type_obj = install(cc,  "object", ATTR_stat | ATTR_const | TYPE_rec, TYPE_ref, 2 * vm_size, type_rec, NULL);
 	    //~ type = install(cc,"function", ATTR_stat | ATTR_const | TYPE_rec, TYPE_ref, 2 * vm_size, type_rec, NULL);
 	}
@@ -492,7 +493,7 @@ static void install_emit(ccContext cc, int mode) {
 	// TODO: emit is a keyword ???
 	cc->emit_opc = install(cc, "emit", EMIT_opc, TYPE_any, 0, NULL, NULL);
 
-	if (cc->emit_opc && (mode & creg_eopc) == creg_eopc) {
+	if (cc->emit_opc && (mode & installEopc) == installEopc) {
 
 		symn u32, i32, i64, f32, f64, v4f, v2d;
 
@@ -660,7 +661,7 @@ static void install_emit(ccContext cc, int mode) {
 			ccEnd(rt, typ);
 		}
 
-		if ((mode & creg_eswz) == creg_eswz) {
+		if ((mode & installEswz) == installEswz) {
 			unsigned i;
 			struct {
 				char* name;
@@ -733,7 +734,7 @@ static int install_base(rtContext rt, int mode) {
 	ccContext cc = rt->cc;
 
 	// 4 reflection
-	if (cc->type_rec && (mode & creg_tvar)) {
+	if (cc->type_rec && (mode & install_var)) {
 		symn arg = NULL;
 		enter(cc, NULL);
 		if ((arg = install(cc, "line", ATTR_const | TYPE_ref, TYPE_any, vm_size, cc->type_i32, NULL))) {

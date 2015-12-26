@@ -13,7 +13,7 @@
 #include <assert.h>
 
 //#{ old style arguments
-static inline void* poparg(libcArgs rt, void *result, int size) {
+static inline void* poparg(libcContext rt, void *result, int size) {
 	// if result is not null copy
 	if (result != NULL) {
 		memcpy(result, rt->argv, size);
@@ -26,19 +26,19 @@ static inline void* poparg(libcArgs rt, void *result, int size) {
 }
 
 #define poparg(__ARGV, __TYPE) (((__TYPE*)((__ARGV)->argv += ((sizeof(__TYPE) + 3) & ~3)))[-1])
-static inline void* pophnd(libcArgs rt) { return poparg(rt, void*); }
-static inline int32_t popi32(libcArgs rt) { return poparg(rt, int32_t); }
-static inline int64_t popi64(libcArgs rt) { return poparg(rt, int64_t); }
-static inline float32_t popf32(libcArgs rt) { return poparg(rt, float32_t); }
-static inline float64_t popf64(libcArgs rt) { return poparg(rt, float64_t); }
+static inline void* pophnd(libcContext rt) { return poparg(rt, void*); }
+static inline int32_t popi32(libcContext rt) { return poparg(rt, int32_t); }
+static inline int64_t popi64(libcContext rt) { return poparg(rt, int64_t); }
+static inline float32_t popf32(libcContext rt) { return poparg(rt, float32_t); }
+static inline float64_t popf64(libcContext rt) { return poparg(rt, float64_t); }
 #undef poparg
 
-static inline void* popref(libcArgs rt) { int32_t p = popi32(rt); return p ? rt->rt->_mem + p : NULL; }
-static inline void* popsym(libcArgs rt) { int32_t p = popi32(rt); return p ? mapsym(rt->rt, p, 0) : NULL; }
-static inline char* popstr(libcArgs rt) { return popref(rt); }
+static inline void* popref(libcContext rt) { int32_t p = popi32(rt); return p ? rt->rt->_mem + p : NULL; }
+static inline void* popsym(libcContext rt) { int32_t p = popi32(rt); return p ? mapsym(rt->rt, p, 0) : NULL; }
+static inline char* popstr(libcContext rt) { return popref(rt); }
 //#}
 
-state rt = NULL;
+rtContext rt = NULL;
 symn renderMethod = NULL;
 symn mouseCallBack = NULL;
 symn keyboardCallBack = NULL;
@@ -169,7 +169,7 @@ void surfDone() {
 	}
 }
 
-static int surfSetPixel(libcArgs rt) {
+static int surfSetPixel(libcContext rt) {
 	gx_Surf surf;
 	if ((surf = getSurf(popi32(rt)))) {
 		unsigned rowy;
@@ -198,7 +198,7 @@ static int surfSetPixel(libcArgs rt) {
 	}
 	return -1;
 }
-static int surfGetPixel(libcArgs rt) {
+static int surfGetPixel(libcContext rt) {
 	gx_Surf surf;
 	if ((surf = getSurf(popi32(rt)))) {
 		unsigned rowy;
@@ -225,7 +225,7 @@ static int surfGetPixel(libcArgs rt) {
 	}
 	return -1;
 }
-static int surfGetPixfp(libcArgs rt) {
+static int surfGetPixfp(libcContext rt) {
 	gx_Surf surf;
 	if ((surf = getSurf(popi32(rt)))) {
 		double x = popf64(rt);
@@ -235,7 +235,7 @@ static int surfGetPixfp(libcArgs rt) {
 	}
 	return -1;
 }
-static int surfCall(libcArgs rt) {
+static int surfCall(libcContext rt) {
 	gx_Surf surf;
 	switch ((surfFunc)rt->data) {
 		case surfOpGetWidth:
@@ -468,7 +468,7 @@ static int surfCall(libcArgs rt) {
 		} break;
 
 		case surfOpEvalPxCB: {		// gxSurf evalSurfrgb(gxSurf dst, gxRect &roi, int callBack(int x, int y));
-			state rt_ = rt->rt;
+			rtContext rt_ = rt->rt;
 			gxSurfHnd dst = popi32(rt);
 			gx_Rect roi = popref(rt);
 			symn callback = popsym(rt);
@@ -501,7 +501,7 @@ static int surfCall(libcArgs rt) {
 			return 0;
 		} break;
 		case surfOpFillPxCB: {		// gxSurf fillSurfrgb(gxSurf dst, gxRect &roi, int callBack(int col));
-			state rt_ = rt->rt;
+			rtContext rt_ = rt->rt;
 			gxSurfHnd dst = popi32(rt);
 			gx_Rect roi = popref(rt);
 			symn callback = popsym(rt);
@@ -532,7 +532,7 @@ static int surfCall(libcArgs rt) {
 			return 0;
 		} break;
 		case surfOpCopyPxCB: {		// gxSurf copySurfrgb(gxSurf dst, int x, int y, gxSurf src, gxRect &roi, int callBack(int dst, int src));
-			state rt_ = rt->rt;
+			rtContext rt_ = rt->rt;
 			gxSurfHnd dst = popi32(rt);
 			int x = popi32(rt);
 			int y = popi32(rt);
@@ -601,7 +601,7 @@ static int surfCall(libcArgs rt) {
 		} break;
 
 		case surfOpEvalFpCB: {		// gxSurf evalSurf(gxSurf dst, gxRect &roi, vec4f callBack(float x, float y));
-			state rt_ = rt->rt;
+			rtContext rt_ = rt->rt;
 			gxSurfHnd dst = popi32(rt);
 			gx_Rect roi = popref(rt);
 			symn callback = popsym(rt);
@@ -639,7 +639,7 @@ static int surfCall(libcArgs rt) {
 			return 0;
 		} break;
 		case surfOpFillFpCB: {		// gxSurf fillSurf(gxSurf dst, gxRect &roi, vec4f callBack(vec4f col));
-			state rt_ = rt->rt;
+			rtContext rt_ = rt->rt;
 			gxSurfHnd dst = popi32(rt);
 			gx_Rect roi = popref(rt);
 			symn callback = popsym(rt);
@@ -672,7 +672,7 @@ static int surfCall(libcArgs rt) {
 			return 0;
 		} break;
 		case surfOpCopyFpCB: {		// gxSurf copySurf(gxSurf dst, int x, int y, gxSurf src, gxRect &roi, float alpha, vec4f callBack(vec4f dst, vec4f src));
-			state rt_ = rt->rt;
+			rtContext rt_ = rt->rt;
 			gxSurfHnd dst = popi32(rt);
 			int x = popi32(rt);
 			int y = popi32(rt);
@@ -1109,7 +1109,7 @@ typedef enum {
 	meshOpInfo,			// void meshInfo()
 	meshOphasNrm,		// bool hasNormals
 } meshFunc;
-static int meshCall(libcArgs rt) {
+static int meshCall(libcContext rt) {
 	meshFunc fun = (meshFunc)rt->data;
 	if (fun == meshOpSetPos) {		// void meshPos(int Index, double x, double y, double z);
 		double pos[3];
@@ -1220,7 +1220,7 @@ typedef enum {
 	camOpRotate,
 	camOpLookAt,
 } camFunc;
-static int camCall(libcArgs rt) {
+static int camCall(libcContext rt) {
 	switch ((camFunc)rt->data) {
 		case camOpMove: {
 			vector dir = popref(rt);
@@ -1291,7 +1291,7 @@ typedef enum {
 	objOpRotate,
 	objOpSelected,
 }objFunc;
-static int objCall(libcArgs rt) {
+static int objCall(libcContext rt) {
 
 	switch((objFunc)rt->data) {
 		case objOpSelected: {
@@ -1337,7 +1337,7 @@ typedef enum {
 	miscOpSetCbKeyboard,
 	miscOpSetCbRender,
 } miscFunc;
-static int miscCall(libcArgs rt) {
+static int miscCall(libcContext rt) {
 	switch ((miscFunc)rt->data) {
 		case miscSetExitLoop: {
 			draw = 0;
@@ -1375,7 +1375,7 @@ static int miscCall(libcArgs rt) {
 }
 
 struct {
-	int (*fun)(libcArgs);
+	int (*fun)(libcContext);
 	int data;
 	char* def;
 }* def,
@@ -1543,6 +1543,9 @@ int ccCompile(char *src, int argc, char* argv[], int dbg(customContext, vmError,
 		return -2;
 	}
 
+	// TODO: bug generating faster code
+	rt->genForInc = 0;
+
 	if (!ccInit(rt, creg_def, NULL)) {
 		gx_debug("Internal error\n");
 		return -1;
@@ -1680,7 +1683,7 @@ int ccCompile(char *src, int argc, char* argv[], int dbg(customContext, vmError,
 		return 0;
 	}
 
-	if (err || !gencode(rt, dbg ? cgen_info | 3 : 3)) {
+	if (err || !gencode(rt, dbg != NULL)) {
 		if (ccLog) {
 			gx_debug("error compiling(%d), see ligfile: `%s`", err, ccLog);
 			logfile(rt, NULL, 0);
@@ -1690,7 +1693,7 @@ int ccCompile(char *src, int argc, char* argv[], int dbg(customContext, vmError,
 
 	if (err == 0) {
 		symn cls;
-		ccState cc = rt->cc;
+		ccContext cc = rt->cc;
 
 		draw = 0;
 
@@ -1718,8 +1721,8 @@ int ccCompile(char *src, int argc, char* argv[], int dbg(customContext, vmError,
 		}
 
 		if (rt->dbg != NULL) {
-			rt->dbg->context = (void*)rt;
-			rt->dbg->dbug = dbg;
+			//~ rt->dbg->extra = (void*)rt;
+			//~ rt->dbg->function = dbg;
 		}
 	}
 

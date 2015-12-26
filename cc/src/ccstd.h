@@ -9,19 +9,19 @@ extern "C" {
 
 enum {
 	// ccInit
-	creg_base = 0x0000,					// type system only
+	installBase = 0x0000,                       // basic type system only
 
-	creg_tptr = 0x0001 | creg_base,		// pointers and memory manager
-	creg_tvar = 0x0002 | creg_base,		// variants and reflection
-	creg_tobj = 0x0004 | creg_base,		// classes and inheritance
+	install_ptr = 0x0001,                       // pointers and memory manager
+	install_var = 0x0002,                       // variants and reflection
+	install_obj = 0x0004,                       // classes and inheritance
 
-	creg_emit = 0x0100 | creg_base,		// emit thingie: emit(...)
-	creg_eopc = 0x0200 | creg_emit,		// emit opcodes: emit.i32.add
-	creg_eswz = 0x0400 | creg_eopc,		// swizzle constants: emit.swz.(xxxx, ... xyzw, ... wwww)
+	installEmit = 0x0010 | installBase,         // emit thingie: emit(...)
+	installEopc = 0x0020 | installEmit,         // emit opcodes: emit.i32.add
+	installEswz = 0x0040 | installEopc,         // swizzle constants: emit.swz.(xxxx, ... xyzw, ... wwww)
 
 	// register defaults if ccInit not invoked explicitly.
-	creg_def  = creg_tptr + creg_tvar + creg_tobj + creg_eswz,
-	creg_min  = creg_tptr + creg_tvar + creg_tobj + creg_emit,
+	install_def = install_ptr + install_var + install_obj + installEopc,
+	install_all = install_ptr + install_var + install_obj + installEswz,
 };
 
 /**

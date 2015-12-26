@@ -3,14 +3,13 @@
 #~ cd tests
 #~ files to compile
 files="tests/test.*.cvx"
-#~ files="tests/2d.Mandala.gxc"
 
-#~ compile flags -apiff -astff -asm39"
-#~ flags="-api -ast -asm"
-#~ flags="-run"
-flags="-debug/C/B/L/F"
-flags="-asm -debug/F"
+#~ compile flags
+flags="-api -ast -asm"
+#~ flags="-debug/C/B/L/F"
+#~ flags="-debug/v"
 flags="-profile"
+#~ flags="-run"
 
 outDir=out/test
 logFile=$outDir/log.test.log
@@ -28,8 +27,8 @@ do
 	echo "! running test: $file"
 	#~ echo>>$logFile "**** running test: $file"
 	#~ ./main -log/a $logFile -dump.json $dumpFileJs $flags $file
-	#~ ./main -dump.json $dumpFileJs $flags $file
-	./main -dump $dumpFile -log/a $logFile $flags $file
+	#~ ./main -log/a $logFile -dump $dumpFile $flags $file
+	./main -dump.json $dumpFileJs $flags $file
 	if [ "$?" -ne "0" ]; then
 		echo "$file:1: test failed!"
 	fi

@@ -1152,17 +1152,17 @@ typedef struct userData {
 	double pos[3], nrm[3];
 } *userData;
 
-static int getS(libcArgs rt) {
+static int getS(libcContext rt) {
 	userData d = rt->extra;
 	retf64(rt, lerp(d->smin, d->smax, d->s));
 	return 0;
 }
-static int getT(libcArgs rt) {
+static int getT(libcContext rt) {
 	userData d = rt->extra;
 	retf64(rt, lerp(d->tmin, d->tmax, d->t));
 	return 0;
 }
-static int setPos(libcArgs rt) {
+static int setPos(libcContext rt) {
 	userData d = rt->extra;
 	d->pos[0] = argf64(rt, 8 * 0);
 	d->pos[1] = argf64(rt, 8 * 1);
@@ -1170,7 +1170,7 @@ static int setPos(libcArgs rt) {
 	d->isPos = 1;
 	return 0;
 }
-static int setNrm(libcArgs rt) {
+static int setNrm(libcContext rt) {
 	userData d = rt->extra;
 	d->nrm[0] = argf64(rt, 8 * 0);
 	d->nrm[1] = argf64(rt, 8 * 1);
@@ -1179,48 +1179,48 @@ static int setNrm(libcArgs rt) {
 	return 0;
 }
 
-static int f64abs(libcArgs rt) {
+static int f64abs(libcContext rt) {
 	float64_t x = argf64(rt, 0);
 	retf64(rt, fabs(x));
 	return 0;
 }
-static int f64sin(libcArgs rt) {
+static int f64sin(libcContext rt) {
 	float64_t x = argf64(rt, 0);
 	retf64(rt, sin(x));
 	return 0;
 }
-static int f64cos(libcArgs rt) {
+static int f64cos(libcContext rt) {
 	float64_t x = argf64(rt, 0);
 	retf64(rt, cos(x));
 	return 0;
 }
-static int f64tan(libcArgs rt) {
+static int f64tan(libcContext rt) {
 	float64_t x = argf64(rt, 0);
 	retf64(rt, tan(x));
 	return 0;
 }
-static int f64log(libcArgs rt) {
+static int f64log(libcContext rt) {
 	float64_t x = argf64(rt, 0);
 	retf64(rt, log(x));
 	return 0;
 }
-static int f64exp(libcArgs rt) {
+static int f64exp(libcContext rt) {
 	float64_t x = argf64(rt, 0);
 	retf64(rt, exp(x));
 	return 0;
 }
-static int f64pow(libcArgs rt) {
+static int f64pow(libcContext rt) {
 	float64_t x = argf64(rt, 0);
 	float64_t y = argf64(rt, 8);
 	retf64(rt, pow(x, y));
 	return 0;
 }
-static int f64sqrt(libcArgs rt) {
+static int f64sqrt(libcContext rt) {
 	float64_t x = argf64(rt, 0);
 	retf64(rt, sqrt(x));
 	return 0;
 }
-static int f64atan2(libcArgs rt) {
+static int f64atan2(libcContext rt) {
 	float64_t x = argf64(rt, 0);
 	float64_t y = argf64(rt, 8);
 	retf64(rt, atan2(x, y));
@@ -1229,7 +1229,7 @@ static int f64atan2(libcArgs rt) {
 
 int evalMesh(mesh msh, int sdiv, int tdiv, char *src, char *file, int line) {
 	static char mem[32 << 10];		// 32K memory
-	state rt = rtInit(mem, sizeof(mem));
+	rtContext rt = rtInit(mem, sizeof(mem));
 	struct userData ud;
 	const int warnlevel = 2;
 	const int stacksize = sizeof(mem) / 2;
@@ -1274,7 +1274,7 @@ int evalMesh(mesh msh, int sdiv, int tdiv, char *src, char *file, int line) {
 	// */
 
 	// optimize on max level, and generate global variables on stack
-	if (err || !gencode(rt, cgen_glob | 0xff)) {
+	if (err || !gencode(rt, 0)) {
 		gx_debug("error compiling(%d), see `%s`", err, logf);
 		logfile(rt, NULL, 0);
 		return -3;

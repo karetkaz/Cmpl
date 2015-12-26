@@ -2046,7 +2046,7 @@ ccContext ccOpen(rtContext rt, char* file, int line, char* text) {
 
 	if (cc == NULL) {
 		// initilaize only once.
-		cc = ccInit(rt, creg_def, NULL);
+		cc = ccInit(rt, install_def, NULL);
 		if (cc == NULL) {
 			return NULL;
 		}

@@ -9,13 +9,13 @@ description:
 #include "internal.h"
 
 //#{ utility function for debugging only.
-static void asmDump(customContext ctx, size_t offs, void *ip) {
+static void asmDump(userContext ctx, size_t offs, void *ip) {
 	prerr("emit", ".%06x %.9A", offs, ip);
 	(void)ctx;
 }
 static void dumpTree(rtContext rt, astn ast, size_t offsStart, size_t offsEnd) {
 #if DEBUGGING >= 3	// print generated code.
-	iterateAsm(rt, offsStart, offsEnd, NULL, asmDump);
+	iterateAsm(rt, offsStart, offsEnd+1, NULL, asmDump);
 	/* TODO: export dump symbol to consloe function.
 	if (rt->logFile != NULL) {
 		struct symNode dbg;
@@ -681,7 +681,7 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 				block.type = rt->cc->type_vid;
 				block.kind = STMT_beg;
 
-				if (tt != TYPE_any && !rt->genCFold) {	// if (const)
+				if (tt != TYPE_any && rt->foldConst) {	// if (const)
 					block.stmt.stmt = constbol(&tmp) ? ast->stmt.stmt : ast->stmt.step;
 					if (block.stmt.stmt != NULL) {
 						if (!cgen(rt, &block, TYPE_vid)) {
@@ -902,7 +902,7 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 
 			// inline expansion
 			if (var && var->kind == TYPE_def) {
-				int chachedArgSize = 0;
+				size_t chachedArgSize = 0;
 				symn param = var->prms;
 
 				if (argv != NULL) {
@@ -939,7 +939,7 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 							arg = def->init;
 						}// */
 						// try to evaluate as a constant.
-						if (!rt->genCFold && eval(&tmp, arg)) {
+						if (rt->foldConst && eval(&tmp, arg)) {
 							arg = &tmp;
 						}
 
@@ -1134,7 +1134,7 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 			}
 
 			esize = sizeOf(ast->type, 0);	// size of array element
-			if (!rt->genCFold && eval(&tmp, ast->op.rhso) == TYPE_int) {
+			if (rt->foldConst && eval(&tmp, ast->op.rhso) == TYPE_int) {
 				size_t offs = sizeOf(ast->type, 0) * (int)constint(&tmp);
 				if (!emitinc(rt, offs)) {
 					traceAst(ast);
@@ -1468,7 +1468,7 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 		} break;
 		case OPER_sel: {	// '?:'
 			size_t jmpt, jmpf;
-			if (!rt->genCFold && eval(&tmp, ast->op.test)) {
+			if (rt->foldConst && eval(&tmp, ast->op.test)) {
 				if (!cgen(rt, constbol(&tmp) ? ast->op.lhso : ast->op.rhso, TYPE_any)) {
 					traceAst(ast);
 					return TYPE_any;
@@ -1565,7 +1565,7 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 
 			// optimize assignments .
 			if (ast->op.rhso->kind >= OPER_beg && ast->op.rhso->kind <= OPER_end) {
-				if (ast->op.lhso == ast->op.rhso->op.lhso && rt->genForInc) {
+				if (ast->op.lhso == ast->op.rhso->op.lhso && rt->fastAssign) {
 					// HACK: speed up for (int i = 0; i < 10, i += 1) ...
 					if (optimizeAssign(rt, codeBegin, codeEnd)) {
 						debug("assignment optimized: %+t", ast);
@@ -1750,12 +1750,12 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 					astn val = var->init;
 
 					// ... a = emit(...);	// initialization with emit
-					if (val->type == rt->cc->emit_opc) {
+					if (rt->cc->emit_opc && val->type == rt->cc->emit_opc) {
 						got = get;
 					}
 
 					// string a = null;		// initialization with null
-					else if (rt->cc->null_ref == linkOf(val)) {
+					else if (rt->cc->null_ref && rt->cc->null_ref == linkOf(val)) {
 						debug("assigning null: %-T", var);
 						val->cst2 = got = TYPE_ref;
 					}
@@ -2264,15 +2264,15 @@ int gencode(rtContext rt, int mode) {
 	ccContext cc = rt->cc;
 	size_t Lmain, Lmeta;
 
-	// make global variables static ?
-	int gstat = !rt->genLocal;
+	// make global variables static
+	int gStatic = rt->genGlobals;
 
 	dieif(rt->errCount, "can not generate code");
 	dieif(cc == NULL, "no compiler context");
 
 	// leave the global scope.
 	rt->main = ccAddType(rt, "<init>", 0, 0);
-	rt->vars = leave(rt->cc, NULL, gstat);
+	rt->vars = leave(rt->cc, NULL, gStatic);
 
 	/* reorder the initialization of static variables and functions.
 	 * TODO: optimize code.
@@ -2505,7 +2505,7 @@ int gencode(rtContext rt, int mode) {
 		dieif(cc->root->kind != STMT_beg, ERR_INTERNAL_ERROR);
 
 		// TYPE_vid clears the stack
-		if (!cgen(rt, cc->root, gstat ? TYPE_vid : TYPE_any)) {
+		if (!cgen(rt, cc->root, gStatic ? TYPE_vid : TYPE_any)) {
 			trace(ERR_INTERNAL_ERROR);
 			return 0;
 		}

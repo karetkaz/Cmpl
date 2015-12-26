@@ -29,10 +29,9 @@ extern "C" {
 typedef struct symNode *symn;					// symbol
 typedef struct rtContextRec *rtContext;			// runtimeContext
 typedef struct ccContextRec *ccContext; 		// compilerContext
-typedef struct dbgContextRec *dbgContext;		// debugContext
-
-typedef struct libcContextRec *libcContext;		// libcallContext -> runtimeContext
-typedef struct customContextRec *customContext;	// customContext -> debugContext
+typedef struct dbgContextRec *dbgContext;		// debuggerContext
+typedef struct libcContextRec *libcContext;		// nativeCallContext
+typedef struct userContextRec *userContext;		// customUserContext
 
 /**
  * @brief Runtime error codes
@@ -57,14 +56,15 @@ typedef enum {
  */
 struct rtContextRec {
 	int32_t  errCount;		// error count
+	// disable code generation optimization
+	int32_t foldConst:1;	// fold constant expressions (3 + 4 => 7)
+	int32_t fastInstr:1;	// replace some instructions with a faster or shorter version (load 1, add => inc 1)
+	int32_t fastAssign:1;	// remove dup and set instructions when modifying the last declared variable.
+	int32_t genGlobals:1;	// generate global variables as static variables
+	int32_t padFlags:24;
+
 	uint32_t logLevel:3;	// runtime logging level (0-7)
 	uint32_t logClose:1;	// close log file
-	// disable code generation optimization
-	uint32_t genCFold:1;	// do not fold const expressions
-	uint32_t genBasic:1;	// do not optimize instructions
-	uint32_t genForInc:1;	// do not optimize for expression shortener
-	uint32_t genLocal:1;	// generate globals on stack
-	uint32_t padFlags:24;
 	FILE *logFile;		// log file
 
 	symn  vars;		// global variables and functions

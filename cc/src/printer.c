@@ -1310,10 +1310,8 @@ void perr(rtContext rt, int level, const char* file, int line, const char* msg, 
 }
 
 // dump
-void iterateApi(rtContext rt, customContext ctx, void customPrinter(customContext, symn)) {
-	FILE*out = rt->logFile;
+void iterateApi(rtContext rt, userContext ctx, void customPrinter(userContext, symn)) {
 	symn sym, bp[TOKS], *sp = bp;
-
 	for (*sp = rt->vars; sp >= bp;) {
 		if (!(sym = *sp)) {
 			--sp;
@@ -1358,8 +1356,12 @@ void iterateApi(rtContext rt, customContext ctx, void customPrinter(customContex
 			customPrinter(ctx, sym);
 		}
 		else {
+			FILE *out = rt->logFile;
 			fputfmt(out, "%-T: %T\n", sym, sym->type);
+			fflush(out);
 		}
-		fflush(out);
+	}
+	if (customPrinter != NULL) {
+		customPrinter(ctx, NULL);
 	}
 }

@@ -691,11 +691,11 @@ void meshInfo(mesh msh) {
 }
 
 #include "ccstd.h"
-extern state rt;
+extern rtContext rt;
 extern symn renderMethod;
 extern symn mouseCallBack;
 extern symn keyboardCallBack;
-extern int ccCompile(char *src, int argc, char* argv[], int dbg(state, vmError, size_t ss, void* sp, void* caller, void* callee));
+extern int ccCompile(char *src, int argc, char* argv[], int dbg(rtContext, vmError, size_t ss, void* sp, void* caller, void* callee));
 
 enum Events {
 	doReload = 10,
@@ -914,7 +914,7 @@ static int ratHND(int btn, int mx, int my) {
 		}
 }
 
-static int dbgCon(state rt, vmError err, size_t ss, void* sp, void* caller, void* callee) {
+static int dbgCon(rtContext rt, vmError err, size_t ss, void* sp, void* caller, void* callee) {
 	//~ int IP = ((char*)caller) - ((char*)rt->_mem);
 	if (callee != NULL) {
 		return 0;
@@ -924,12 +924,12 @@ static int dbgCon(state rt, vmError err, size_t ss, void* sp, void* caller, void
 	return 0;
 }
 
-static int dbgDummy(state rt, vmError err, size_t ss, void* sp, void* caller, void* callee) {
+static int dbgDummy(rtContext rt, vmError err, size_t ss, void* sp, void* caller, void* callee) {
 	return 0;
 }
 
 int main(int argc, char* argv[]) {
-	int (*dbg)(state, vmError, size_t ss, void* sp, void* caller, void* callee) = NULL;
+	int (*dbg)(rtContext, vmError, size_t ss, void* sp, void* caller, void* callee) = NULL;
 	static char mem[16 << 20];		// 16MB memory for vm & compiler
 
 	struct matrix proj[1], view[1];
@@ -1271,7 +1271,7 @@ int main(int argc, char* argv[]) {
 
 	if (rt != NULL) {
 		// debug vm memmory alocations.
-		rtAlloc(rt, NULL, 0);
+		rtAlloc(rt, NULL, 0, NULL);
 	}
 
 	doneWin();

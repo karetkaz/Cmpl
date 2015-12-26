@@ -1,23 +1,5 @@
-/* TO DELETE
-struct arr{
-	int c1[] = "123";
-	int c2[3] = {'1', '2', '3'};
-}
-int c1[] = "123";
-int c2[3] = {'1', '2', '3'};
-
-arr a = arr(c1, c2);
-int l1 = c1.length;
-int l2 = c2.length;
-int l3 = a.c1.length;
-int l4 = a.c2.length;
-int b(int a[2]) {
-	return a.length;
-}
-
-static const int DaysToMonth365[] = {0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365};
-//~ */
-
+//~ int a = 33;
+//~ /* try catch errors
 void aborts(pointer args) {
 	abort();
 }
@@ -41,14 +23,8 @@ void throws(pointer args) {
 }
 
 int arg0 = 0;
-int arg1 = 40;
+int arg1 = 4;
 int arg2 = -1;
-
-struct Type1 {
-	int value[1000];
-}
-
-//~ Type1 errorEmit = emit(Type1, int(rand(0, 88)), int(rand(23, 87)), int(rand(10, 990)), int(rand(100, 999)), int(rand(0, 1)));
 
 define useTryCatch = true;
 static if (useTryCatch) {
@@ -61,11 +37,37 @@ static if (!useTryCatch) {
 	}
 }
 
+// no error
 int errorOK   = Exec(pointer(&arg2), throws);
-int errorDIV  = Exec(pointer(&arg0), throws);
-int errorLIB  = Exec(pointer(&arg1), throws);
-int errorLIB2 = Exec(pointer(&arg0), aborts);
+// null pointer
 int errorMEM  = Exec(pointer(null), throws);
+// divison by zero
+int errorDIV  = Exec(pointer(&arg0), throws);
+// abort execution
+int errorLIB  = Exec(pointer(&arg1), throws);
+// abort execution
+int errorLIB2 = Exec(pointer(&arg0), aborts);
+//~ */
+
+/* TO DELETE
+struct arr{
+	int c1[] = "123";
+	int c2[3] = {'1', '2', '3'};
+}
+int c1[] = "123";
+int c2[3] = {'1', '2', '3'};
+
+arr a = arr(c1, c2);
+int l1 = c1.length;
+int l2 = c2.length;
+int l3 = a.c1.length;
+int l4 = a.c2.length;
+int b(int a[2]) {
+	return a.length;
+}
+
+static const int DaysToMonth365[] = {0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365};
+//~ */
 
 /+ TODO: vs studio BUG
 string decodedFile = "out.txt";
