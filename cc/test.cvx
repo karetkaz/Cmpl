@@ -1,3 +1,5 @@
+//~ #open src/main.c
+
 //~ int a = 33;
 //~ /* try catch errors
 void aborts(pointer args) {
@@ -22,10 +24,6 @@ void throws(pointer args) {
 	//~ debug("throws.leave", variant.null, 1, 100);
 }
 
-int arg0 = 0;
-int arg1 = 4;
-int arg2 = -1;
-
 define useTryCatch = true;
 static if (useTryCatch) {
 	define Exec(pointer args, void action(pointer args)) = tryExec(args, action);
@@ -37,16 +35,19 @@ static if (!useTryCatch) {
 	}
 }
 
+int arg0 = 0;
+int arg2 = 2;
+int argK = -1;
 // no error
-int errorOK   = Exec(pointer(&arg2), throws);
+int errorOK   = Exec(pointer(&argK), throws);
 // null pointer
 int errorMEM  = Exec(pointer(null), throws);
 // divison by zero
 int errorDIV  = Exec(pointer(&arg0), throws);
-// abort execution
-int errorLIB  = Exec(pointer(&arg1), throws);
-// abort execution
-int errorLIB2 = Exec(pointer(&arg0), aborts);
+//~ // abort execution
+int errorLIB  = Exec(pointer(&arg2), throws);
+//~ // abort execution
+int errorLIB2 = Exec(pointer(&arg2), aborts);
 //~ */
 
 /* TO DELETE

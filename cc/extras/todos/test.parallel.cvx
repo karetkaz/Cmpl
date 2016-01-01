@@ -1,7 +1,3 @@
-//~ #open src/code.c
-//~ #open src/main.c
-
-
 //~ int64 i = 9;
 //~ int32 j = 9;
 //~ static int k = 19;

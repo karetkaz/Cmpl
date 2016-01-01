@@ -119,25 +119,35 @@ function displayCallTree(chart, callTree, focus) {
 			var sample = samples.samples[funct.offs] || {};	// make everithing undefined if function is not found
 
 			var globalTime = samples.leave - samples.enter;
-			var callSelfCost = (node.self * 100 / globalTime).toFixed(2);
-			var callTotalCost = (node.total * 100 / globalTime).toFixed(2);
-			var sampleSelfCost = (sample.self * 100 / globalTime).toFixed(2);
-			var sampleTotalCost = (sample.total * 100 / globalTime).toFixed(2);
 
-			var title = 'Function: ' + funct.name + ' @' + funct.offs
+			var callSelfCost = (node.self * 100 / globalTime).toFixed(2) + ' %';
+			var callTotalCost = (node.total * 100 / globalTime).toFixed(2) + ' %';
+			var sampleSelfCost = (sample.self * 100 / globalTime).toFixed(2) + ' %';
+			var sampleTotalCost = (sample.total * 100 / globalTime).toFixed(2) + ' %';
+
+			var callSelfTime = (node.self * 1000 / samples.ticksPerSec).toFixed(2) + ' ms';
+			var callTotalTime = (node.total * 1000 / samples.ticksPerSec).toFixed(2) + ' ms';
+			var sampleSelfTime = (sample.self * 1000 / samples.ticksPerSec).toFixed(2) + ' ms';
+			var sampleTotalTime = (sample.total * 1000 / samples.ticksPerSec).toFixed(2) + ' ms';
+
+			var funcPos = ' <@' + funct.offs + '>';
+			if (funct.file && funct.line) {
+				funcPos = '(' + funct.file + ':' + funct.line + ')';
+			}
+			var title = 'Function: ' + funct.name + funcPos;
 			if (sample.hits > 1) {
 				title += '\nHit Count: ' + node.hits + ' / ' + sample.hits;
-				title += '\nSelf Cost: ' + callSelfCost + '% / ' + sampleSelfCost + '%';
-				title += '\nSelf Ticks: ' + node.self + ' / ' + sample.self;
-				title += '\nTotal Cost: ' + callTotalCost + '% / ' + sampleTotalCost + '%';
-				title += '\nTotal Ticks: ' + node.total + ' / ' + sample.total;
+				title += '\nSelf Cost: ' + callSelfCost + ' / ' + sampleSelfCost;
+				title += '\nSelf Time: ' + callSelfTime + ' / ' + sampleSelfTime;
+				title += '\nTotal Cost: ' + callTotalCost + ' / ' + sampleTotalCost;
+				title += '\nTotal Time: ' + callTotalTime + ' / ' + sampleTotalTime;
 			}
 			else {
 				title += '\nHit Count: ' + sample.hits;
-				title += '\nSelf Cost: ' + sampleSelfCost + '%';
-				title += '\nSelf Ticks: ' + sample.self;
-				title += '\nTotal Cost: ' + sampleTotalCost + '%';
-				title += '\nTotal Ticks: ' + sample.total;
+				title += '\nSelf Cost: ' + sampleSelfCost;
+				title += '\nSelf Time: ' + sampleSelfTime;
+				title += '\nTotal Cost: ' + sampleTotalCost;
+				title += '\nTotal Time: ' + sampleTotalTime;
 			}
 			title += '\n' + funct.proto;
 
@@ -184,10 +194,11 @@ function displayCallTree(chart, callTree, focus) {
 				row.appendChild(func = document.createElement("td"));
 
 				hits.innerText = node.hits;
-				//selfTime.innerText = callSelfCost + '%';
-				//totalTime.innerText = callTotalCost + '%';
-				selfTime.innerText = (node.self * 100 / (tree.leave - tree.enter)).toFixed(2) + '%';
-				totalTime.innerText = (node.total * 100 / (tree.leave - tree.enter)).toFixed(2) + '%';
+				//selfTime.innerText = callSelfCost;
+				//totalTime.innerText = callTotalCost;
+				// use local precentages
+				selfTime.innerText = (node.self * 100 / (tree.leave - tree.enter)).toFixed(2) + ' %';
+				totalTime.innerText = (node.total * 100 / (tree.leave - tree.enter)).toFixed(2) + ' %';
 
 
 				node.htmlTreeNode = row;		// add a reference to the table row

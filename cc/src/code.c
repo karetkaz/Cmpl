@@ -1762,12 +1762,12 @@ void fputasm(FILE* fout, void *ptr, int mode, rtContext rt) {
 			if (rt != NULL) {
 				symn sym = mapsym(rt, offs, 0);
 				if (sym != NULL) {
-					fputfmt(fout, "; %+T%?+d", sym, offs - sym->offs);
+					fputfmt(fout, " ;%+T%?+d", sym, offs - sym->offs);
 				}
 				else {
 					char *str = getResStr(rt, offs);
 					if (str != NULL) {
-						fputfmt(fout, "; \"%s\"", str);
+						fputfmt(fout, " ;\"%s\"", str);
 					}
 				}
 			}
@@ -1790,7 +1790,7 @@ void fputasm(FILE* fout, void *ptr, int mode, rtContext rt) {
 					lc = &((libc)rt->vm.libv)[offs];
 				}
 				if (lc && lc->sym) {
-					fputfmt(fout, ": %+T", lc->sym);
+					fputfmt(fout, " ;%+T", lc->sym);
 				}
 			}
 			break;

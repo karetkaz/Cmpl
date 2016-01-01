@@ -124,82 +124,65 @@ function Instrument() {
 		return samples;
 	}
 
+	function symToString(sym, qual, type) {
+		var result = '';
+		if (sym.declaredIn && qual === true) {
+			result += sym.declaredIn + '.';
+		}
+		result += sym.name;
+		if (sym.args !== undefined) {
+			result += '(';
+			if (!(sym.args.length === 1 && sym.args[0].size == 0)) {
+				for (var i = 0; i < sym.args.length; i += 1) {
+					if (i > 0) {
+						result += ', ';
+					}
+					result += symToString(sym.args[i], false, true);
+				}
+			}
+			result += ')';
+		}
+		if (type === true) {
+			result += ": " + sym.type;
+		}
+		return result;
+	}
+
 	function getSciteApi() {
-		var scite_api = '';
+		var result = '';
 
 		if (data == null) {
 			return 'No data available!';
 		}
 
-		function writeSym(sym) {
-			if (sym.declaredIn && sym.kind !== 'param') {
-				scite_api += sym.declaredIn + '.';
-			}
-			scite_api += sym.name;
-			if (sym.args !== undefined) {
-				scite_api += '(';
-				if (!(sym.args.length === 1 && sym.args[0].size == 0)) {
-					for (var i = 0; i < sym.args.length; i += 1) {
-						if (i > 0) {
-							scite_api += ', ';
-						}
-						writeSym(sym.args[i]);
-					}
-				}
-				scite_api += ')';
-			}
-			if (sym.args !== undefined || sym.kind === 'param') {
-				// Scite handles only function return types
-				scite_api += ": " + sym.type;
-			}
-		}
-
-		var api = data.symbols;
+		var api = data.symbols || [];
 		for (var i = 0; i < api.length; i += 1) {
 			var sym = api[i];
 			/*if (sym.kind === 'opcode') {
 				continue;
 			}*/
-			writeSym(sym);
-			scite_api += '\n';
+			result += symToString(sym, true, sym.args !== undefined);
+			result += '\n';
 		}
-		return scite_api;
+		return result;
 	}
 
 	function getFiltered(checkSymbol) {
-		var scite_api = '';
+		var result = '';
 		if (data == null) {
 			return 'No data available!';
 		}
 
-		var api = data.symbols;
+		var api = data.symbols || [];
 		for (var i = 0; i < api.length; i += 1) {
 			var sym = api[i];
 			if (!checkSymbol(sym)) {
 				continue;
 			}
-			if (sym.declaredIn != undefined) {
-				scite_api += sym.declaredIn + '.';
-			}
-			scite_api += sym.name;
-			if (sym.args !== undefined) {
-				scite_api += '(';
-				if (!(sym.args.length === 1 && sym.args[0].size == 0)) {
-					for (var j = 0; j < sym.args.length; j += 1) {
-						var arg = sym.args[j];
-						if (j > 0) {
-							scite_api += ', ';
-						}
-						scite_api += arg.type + ' ';
-						scite_api += arg.name;
-						scite_api += ": " + arg.type;
-					}
-				}
-				scite_api += ')';
-			}
-			scite_api += ": " + sym.type + '\n';
+			result += symToString(sym, true, true);
+			result += '\n';
 		}
-		return scite_api;
+		return result;
 	}
 
 	return {
@@ -247,23 +230,12 @@ function Instrument() {
 					samples: {},
 					calltree: null,
 					//excluded: ['Halt', 'ToDays'],
+					ticksPerSec: data.profile.ticksPerSec
 				}];;
 
 				functions = Object.create(null);	// empty object no prototype.
 				for (var i = 0; i < data.profile.functions.length; ++i) {
-					var symbol = data.profile.functions[i].symbol;
-					/*if (!symbol.static) {
-						continue;
-					}*/
-					if (symbol.offs == 0) {
-						//continue;
-					}
-					if (symbol.kind === '.rec') {
-						//continue;
-					}
-					if (symbol.kind === 'emit') {
-						//continue;
-					}
+					var symbol = data.profile.functions[i];
 					functions[symbol.offs] = symbol;
 				}
 

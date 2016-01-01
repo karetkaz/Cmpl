@@ -37,10 +37,10 @@ void testFunction2(void cb(int n, debugInfo &info), int n, debugInfo &info) {
 }
 void testFunction(int n, debugInfo &info) {
 	if (n < 0) {
-		debug("stack trace :-)", variant(null), 1, 25);
+		trace("stack trace :-)");
 		return;
 	}
-	testFunction1(testFunction, n - 1, info);
+	//~ testFunction1(testFunction, n - 1, info);
 	testFunction2(testFunction, n - 1, info);
 }
 
@@ -395,7 +395,7 @@ inline void(float64 &&a) = void(0);
 inline void(object &&o)  = void(object.destroy(o));
 //~ +/
 
-//~ /+ TODO: Reflection
+/+ TODO: Reflection
 enum TypeCode: int32 {
 	CAST_any = 0x00000000;		// invalid, error, ...
 	CAST_vid = 0x00000001;		// void;

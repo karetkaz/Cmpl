@@ -26,9 +26,9 @@ do
 
 	echo "! running test: $file"
 	#~ echo>>$logFile "**** running test: $file"
-	#~ ./main -log/a $logFile -dump.json $dumpFileJs $flags $file
+	./main -log/a $logFile -dump.json $dumpFileJs $flags $file
 	#~ ./main -log/a $logFile -dump $dumpFile $flags $file
-	./main -dump.json $dumpFileJs $flags $file
+	#~ ./main -dump.json $dumpFileJs $flags $file
 	if [ "$?" -ne "0" ]; then
 		echo "$file:1: test failed!"
 	fi

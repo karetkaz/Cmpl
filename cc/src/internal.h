@@ -18,7 +18,7 @@
 	2: include debug messages
 	3: print generated assembly for statements with errors
 */
-#define DEBUGGING 1
+//~ #define DEBUGGING 1
 
 // enable paralell execution stuff
 //~ #define VM_MAX_PROCS 1
