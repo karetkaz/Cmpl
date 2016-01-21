@@ -1,0 +1,94 @@
+// test array features
+
+void sort(int arr[]) {
+	for (int i = 0; i < arr.length - 1; i += 1) {
+		for (int j = i + 1; j < arr.length; j += 1) {
+			if (arr[i] > arr[j]) {
+				int tmp = arr[i];
+				arr[i] = arr[j];
+				arr[j] = tmp;
+			}
+		}
+	}
+}
+
+void qsort(int array[]) {
+	define showDebug = 0;
+
+	static if (showDebug) {
+		debug(variant(array));
+	}
+	static void qsort(int array[], int low, int high) {
+		int pivot := array[low + (high - low) / 2];
+		int i := low;
+		int j := high;
+		for ( ; i <= j; ) {
+			for ( ; array[i] < pivot; i += 1) {}
+			for ( ; array[j] > pivot; j -= 1) {}
+
+			if (i <= j) {
+				int temp := array[i];
+				array[i] := array[j];
+				array[j] := temp;
+				i += 1;
+				j -= 1;
+			}
+		}
+		if (low < j) {
+			qsort(array, low, j);
+		}
+		if (i < high) {
+			qsort(array, i, high);
+		}
+		static if (showDebug) {
+			struct Qsort {
+				int low;
+				int high;
+				int pivot;
+				int values[];
+				int pivotValue;
+			}
+			Qsort args = Qsort(low, high, low + (high - low) / 2, array, pivot);
+			trace(variant(&args));
+		}
+	}
+	return qsort(array, 0, array.length - 1);
+}
+
+int bsearch(int arr[], int elem) {
+	int lo = 0;
+	int hi = arr.length;
+
+	result = -1;
+	for ( ;lo < hi; ) {
+		int mid = lo + ((hi - lo) / 2);
+		int val = arr[mid];
+
+		if (val == elem) {
+			return mid;
+		}
+		else if (val > elem) {
+			hi = mid;
+		}
+		else {
+			lo = mid + 1;
+		}
+	}
+}
+
+void randomize(int arr[], int max) {
+	System.srand(System.time());
+	for (int i = 0; i < arr.length; i += 1) {
+		arr[i] = System.rand() % max;
+	}
+}
+
+int arr2[50];			// array
+
+randomize(arr2, 50);
+
+int test_arr_value = arr2[arr2.length / 2];
+
+qsort(arr2);
+
+int test_arr_index = bsearch(arr2, test_arr_value);
