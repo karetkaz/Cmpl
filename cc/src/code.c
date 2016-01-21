@@ -1232,9 +1232,8 @@ static inline int traceCall(rtContext rt, void* sp, void* caller, void* callee) 
 				callerStmt->total -= ticks;
 			}
 		}*/
-
-		if (rt->dbg->function != NULL) {
-			rt->dbg->function(rt->dbg, noError, (pu->tp - pu->bp) / sizeof(struct traceRec), sp, caller, callee);
+		if (rt->dbg->profile != NULL) {
+			rt->dbg->profile(rt->dbg, (pu->tp - pu->bp) / sizeof(struct traceRec), caller, callee, now);
 		}
 	}
 	// trace enter function
@@ -1253,8 +1252,8 @@ static inline int traceCall(rtContext rt, void* sp, void* caller, void* callee) 
 			calleeFunc->hits += 1;
 		}
 
-		if (rt->dbg->function != NULL) {
-			rt->dbg->function(rt->dbg, noError, (pu->tp - pu->bp) / sizeof(struct traceRec), sp, caller, callee);
+		if (rt->dbg->profile != NULL) {
+			rt->dbg->profile(rt->dbg, (pu->tp - pu->bp) / sizeof(struct traceRec), caller, callee, now);
 		}
 		pu->tp += sizeof(struct traceRec);
 	}
@@ -1262,7 +1261,7 @@ static inline int traceCall(rtContext rt, void* sp, void* caller, void* callee) 
 }
 
 /// Private dummy debug function.
-static int dbgDummy(dbgContext ctx, vmError err, size_t ss, void* sp, void* caller, void* callee) {
+static int dbgDummy(dbgContext ctx, vmError err, size_t ss, void* sp, void* ip) {
 	if (err != noError) {
 		char *errorStr = NULL;
 		switch (err) {
@@ -1299,10 +1298,9 @@ static int dbgDummy(dbgContext ctx, vmError err, size_t ss, void* sp, void* call
 				errorStr = "Invalid memory acces";
 				break;
 		}
-		error(ctx->rt, NULL, 0, "%s executing instruction: %.A @%06x", errorStr, caller, vmOffset(ctx->rt, caller));
+		error(ctx->rt, NULL, 0, "%s executing instruction: %.A @%06x", errorStr, ip, vmOffset(ctx->rt, ip));
 		return executionAborted;
 	}
-	(void)callee;
 	(void)sp;
 	(void)ss;
 	return 0;
@@ -1335,7 +1333,7 @@ static vmError exec(rtContext rt, cell pu, symn fun, void *extra) {
 		const bcde ipMin = (bcde)(rt->_mem + rt->vm.ro);
 		const bcde ipMax = (bcde)(rt->_mem + rt->vm.px + px_size);
 
-		int (*dbg)(dbgContext, vmError, size_t, void*, void*, void*) = rt->dbg->function;
+		int (*dbg)(dbgContext, vmError, size_t, void*, void*) = rt->dbg->debug;
 
 		if (dbg == NULL) {
 			dbg = dbgDummy;
@@ -1352,14 +1350,14 @@ static vmError exec(rtContext rt, cell pu, symn fun, void *extra) {
 			const dbgInfo stmt = mapDbgStatement(rt, pc);
 
 			if (ip >= ipMax || ip < ipMin) {
-				dbg(rt->dbg, invalidIP, st - sp, sp, ip, NULL);
+				dbg(rt->dbg, invalidIP, st - sp, sp, ip);
 				return invalidIP;
 			}
 			if (sp > spMax || sp < spMin) {
-				dbg(rt->dbg, invalidSP, st - sp, sp, ip, NULL);
+				dbg(rt->dbg, invalidSP, st - sp, sp, ip);
 				return invalidSP;
 			}
-			if (dbg(rt->dbg, noError, st - sp, sp, ip, NULL) != 0) {
+			if (dbg(rt->dbg, noError, st - sp, sp, ip) != 0) {
 				// abort execution from debuging
 				return executionAborted;
 			}
@@ -1386,7 +1384,7 @@ static vmError exec(rtContext rt, cell pu, symn fun, void *extra) {
 			}
 			switch (ip->opc) {
 				dbg_stop_vm:	// halt virtual machine
-					dbg(rt->dbg, errorCode, st - sp, sp, ip, NULL);
+					dbg(rt->dbg, errorCode, st - sp, sp, ip);
 					while (pu->tp != oldTP) {
 						traceCall(rt, NULL, NULL, (void*)-2);
 						//pu->tp = oldTP;	// during exec we may return from code.
@@ -1411,7 +1409,7 @@ static vmError exec(rtContext rt, cell pu, symn fun, void *extra) {
 					goto dbg_stop_vm;
 
 				dbg_error_div_flt:
-					dbg(rt->dbg, divisionByZero, st - sp, sp, ip, NULL);
+					dbg(rt->dbg, divisionByZero, st - sp, sp, ip);
 					// continue execution on floating point division by zero.
 					break;
 
@@ -1465,7 +1463,7 @@ static vmError exec(rtContext rt, cell pu, symn fun, void *extra) {
 			stop_vm:	// halt virtual machine
 				if (errorCode != noError) {
 					struct dbgContextRec dbg = { .rt = rt };
-					dbgDummy(&dbg, errorCode, st - sp, sp, ip, NULL);
+					dbgDummy(&dbg, errorCode, st - sp, sp, ip);
 				}
 				return errorCode;
 
@@ -1487,7 +1485,7 @@ static vmError exec(rtContext rt, cell pu, symn fun, void *extra) {
 
 			error_div_flt: {
 					struct dbgContextRec dbg = { .rt = rt };
-					dbgDummy(&dbg, divisionByZero, st - sp, sp, ip, NULL);
+					dbgDummy(&dbg, divisionByZero, st - sp, sp, ip);
 				}
 				// continue execution on floating point division by zero.
 				break;
@@ -1869,11 +1867,13 @@ void fputval(rtContext rt, FILE* fout, symn var, stkval* ref, int level, int mod
 		fputfmt(fout, "%-T(", typ);
 	}
 
-	if (ref == NULL) {					// null reference.
-		fputfmt(fout, "null");
-	}
-	else if (!isValidOffset(rt, ref)) {	// invalid offset.
+	if (!isValidOffset(rt, ref)) {
+		// invalid offset.
 		fputfmt(fout, "BadRef@%06x", var->offs);
+	}
+	else if (ref == NULL) {
+		// null reference.
+		fputfmt(fout, "null");
 	}
 	else if (typ == rt->type_str) {
 		fputfmt(fout, fmt, ref);
@@ -1884,7 +1884,6 @@ void fputval(rtContext rt, FILE* fout, symn var, stkval* ref, int level, int mod
 		fputfmt(fout, "%+T, ", typ);
 		fputval(rt, fout, typ, ref, level, prType);
 	}
-
 	else switch (typ->kind) {
 		case TYPE_rec: {
 			int n = 0;
@@ -2057,7 +2056,7 @@ static void traceArgs(rtContext rt, FILE *outf, symn fun, char *file, int line, 
 
 	dieif(sp == NULL, ERR_INTERNAL_ERROR);
 	dieif(fun == NULL, ERR_INTERNAL_ERROR);
-	if (fun->prms != NULL && fun->prms != rt->vars) {
+	if (fun->prms != NULL/* && fun->prms != rt->vars*/) {
 		int firstArg = 1;
 		if (ident > 0) {
 			fputfmt(outf, "(");

@@ -1687,7 +1687,7 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 					if (get != TYPE_ref) {
 						if (get == TYPE_arr && got == TYPE_arr) {
 							//~ info(rt, ast->file, ast->line, "assign to array from %K @ %+t", ret, ast);
-							size = 8;
+							size = 2 * vm_size;
 						}
 
 						if (!emitint(rt, opc_ldi, size)) {
@@ -1766,8 +1766,7 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 					}
 
 					// int a[3] = {1,2,3};	// array initialization by elements
-					// FIXME: if valuetype is arrays base type
-					if (typ->kind == TYPE_arr && var->prms == val->type) {
+					if (typ->kind == TYPE_arr && var->arrB == val->type) {
 						size_t i, esize;
 						symn base = typ;
 						astn tmp = NULL;
@@ -1775,7 +1774,7 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 						int ninit = 0;
 
 						// TODO: base should not be stored in var->args !!!
-						while (base && base != var->prms) {
+						while (base && base != var->arrB) {
 							if (base->init == NULL) {
 								break;
 							}

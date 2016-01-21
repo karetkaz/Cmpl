@@ -338,42 +338,42 @@ static void conDumpRun(userContext cctx) {
 				sym = mapsym(rt, fun->start, 1);
 			}
 			fputfmt(out,
-					"%s:%u:[.%06x, .%06x): <%?T> hits(%D/%D), time(%D%?+D / %.3F%?+.3F ms)\n", fun->file,
-					fun->line, fun->start, fun->end, sym, (int64_t) fun->hits, (int64_t) fun->exec,
-					(int64_t) fun->total, (int64_t) -(fun->total - fun->self),
-					fun->total / (double) CLOCKS_PER_SEC, -(fun->total - fun->self) / (double) CLOCKS_PER_SEC
+				"%s:%u:[.%06x, .%06x): <%?T> hits(%D/%D), time(%D%?+D / %.3F%?+.3F ms)\n", fun->file,
+				fun->line, fun->start, fun->end, sym, (int64_t) fun->hits, (int64_t) fun->exec,
+				(int64_t) fun->total, (int64_t) -(fun->total - fun->self),
+				fun->total / (double) CLOCKS_PER_SEC, -(fun->total - fun->self) / (double) CLOCKS_PER_SEC
 			);
 		}
 
 		if (all) {
 			fputfmt(out, ">//-- profile.statements:\n");
-			fun = (dbgInfo) rt->dbg->statements.ptr;
-			for (i = 0; i < nStmt; ++i, fun++) {
-				size_t symOffs = 0;
-				symn sym = fun->decl;
-				if (fun->hits == 0) {
-					continue;
-				}
-				covStmt += 1;
-				if (sym == NULL) {
-					sym = mapsym(rt, fun->start, 1);
-				}
-				if (sym != NULL) {
-					symOffs = fun->start - sym->offs;
-				}
+		}
+		fun = (dbgInfo) rt->dbg->statements.ptr;
+		for (i = 0; i < nStmt; ++i, fun++) {
+			size_t symOffs = 0;
+			symn sym = fun->decl;
+			if (fun->hits == 0) {
+				continue;
+			}
+			covStmt += 1;
+			if (sym == NULL) {
+				sym = mapsym(rt, fun->start, 1);
+			}
+			if (sym != NULL) {
+				symOffs = fun->start - sym->offs;
+			}
+			if (all) {
 				fputfmt(out,
-						"%s:%u:[.%06x, .%06x): <%?T+%d> hits(%D/%D), time(%D%?+D / %.3F%?+.3F ms)\n", fun->file,
-						fun->line, fun->start, fun->end, sym, symOffs, (int64_t) fun->hits, (int64_t) fun->exec,
-						(int64_t) fun->total, (int64_t) -(fun->total - fun->self),
-						fun->total / (double) CLOCKS_PER_SEC, -(fun->total - fun->self) / (double) CLOCKS_PER_SEC
+					"%s:%u:[.%06x, .%06x): <%?T+%d> hits(%D/%D), time(%D%?+D / %.3F%?+.3F ms)\n", fun->file,
+					fun->line, fun->start, fun->end, sym, symOffs, (int64_t) fun->hits, (int64_t) fun->exec,
+					(int64_t) fun->total, (int64_t) -(fun->total - fun->self),
+					fun->total / (double) CLOCKS_PER_SEC, -(fun->total - fun->self) / (double) CLOCKS_PER_SEC
 				);
 			}
-
-			fputfmt(out, "//-- coverage(functions: %.2f%%, statements: %.2f%%)\n",
-					covFunc * 100. / nFunc, covStmt * 100. / nStmt);
-			fputfmt(out, "//-- coverage(functions: %d/%d, statements: %d/%d)\n",
-					covFunc, nFunc, covStmt, nStmt);
 		}
+
+		fputfmt(out, "//-- coverage(functions: %.2f%%(%d/%d), statements: %.2f%%(%d/%d))\n",
+			covFunc * 100. / nFunc, covFunc, nFunc, covStmt * 100. / nStmt, covStmt, nStmt);
 
 		fputfmt(out, "// */\n");
 	}
@@ -516,30 +516,23 @@ static void conDumpApi(userContext extra, symn sym) {
 	fputfmt(out, "}\n");
 }
 
-static int conProfile(dbgContext ctx, vmError error, size_t ss, void* sp, void* caller, void* callee) {
-	if (callee != NULL && error == noError) {
-		userContext usr = ctx->extra;
-
+static int conProfile(dbgContext ctx, size_t ss, void* caller, void* callee, clock_t ticks) {
+	if (callee != NULL) {
+		userContext cc = ctx->extra;
 		if ((ptrdiff_t) callee < 0) {
-			//~ clock_t now = clock();
-			//~ fputfmt(usr->out, "% I< %d\n", ss, now);
-			// last return
-			if (ss == 0) {
-				conDumpRun(usr);
-			}
+			fputfmt(cc->out, "% I< %d\n", ss, ticks);
 		}
-		/*else if (usr->dmpCallTree) {
+		else {
 			rtContext rt = ctx->rt;
 			size_t offs = vmOffset(rt, callee);
-			fputfmt(usr->out, "% I> %d,0x%06x %?T\n", ss, now, offs, mapsym(rt, offs, 1));
-		}*/
+			fputfmt(cc->out, "% I> %d,0x%06x %?T\n", ss, ticks, offs, mapsym(rt, offs, 1));
+		}
 	}
 	(void)caller;
-	(void)error;
-	(void)sp;
+	(void)ticks;
 	return 0;
 }
-static int conDebug(dbgContext dbg, const vmError error, size_t ss, void* sp, void* caller, void* callee) {
+static int conDebug(dbgContext dbg, const vmError error, size_t ss, void* sp, void* ip) {
 	enum {
 		dbgAbort = 'q',		// stop debuging
 		dbgResume = 'r',	// break on next breakpoint or error
@@ -559,19 +552,18 @@ static int conDebug(dbgContext dbg, const vmError error, size_t ss, void* sp, vo
 	FILE *out = stdout;
 	int breakMode = 0;
 	char *breakCause = NULL;
-	size_t offs = vmOffset(rt, caller);
+	size_t offs = vmOffset(rt, ip);
 	symn fun = mapsym(rt, offs, 0);
 	dbgInfo dbgStmt = mapDbgStatement(rt, offs);
 
-	if (callee != NULL && error == noError) {
+	/*if (callee != NULL && error == noError) {
 		int returns = (ptrdiff_t) callee < 0;
 		// last return
 		if (returns && ss == 0) {
-			conDumpRun(usr);
 		}
-		/* first call
+		/ * first call
 		else if (ss == 0) {
-		}*/
+		}* /
 
 		switch (usr->dbgCommand) {
 			// TODO: test implementation: (step in / step out)
@@ -589,8 +581,8 @@ static int conDebug(dbgContext dbg, const vmError error, size_t ss, void* sp, vo
 		}
 		return 0;
 	}
-
-	else if (error != noError) {
+	else */
+	if (error != noError) {
 		switch (error) {
 			default:
 				breakCause = "Unknown error";
@@ -696,7 +688,7 @@ static int conDebug(dbgContext dbg, const vmError error, size_t ss, void* sp, vo
 	for ( ; breakMode & dbg_pause; ) {
 		int cmd = -1;
 		char* arg = NULL;
-		fputfmt(out, ">dbg[%?c] %.A: ", usr->dbgCommand, caller);
+		fputfmt(out, ">dbg[%?c] %.A: ", usr->dbgCommand, ip);
 		if (fgets(buff, sizeof(buff), stdin) == NULL) {
 			// Can not read from stdin
 			fputfmt(out, "can not read from standard input, resuming\n");
@@ -786,7 +778,7 @@ static int conDebug(dbgContext dbg, const vmError error, size_t ss, void* sp, vo
 				break;
 
 			case dbgPrintOpcode:
-				conDumpAsm(usr, vmOffset(rt, caller), caller);
+				conDumpAsm(usr, vmOffset(rt, ip), ip);
 				break;
 
 			case dbgPrintValues:
@@ -1162,15 +1154,14 @@ static void jsonDumpApi(userContext ctx, symn sym) {
 	}*/
 }
 
-static int jsonProfile(dbgContext ctx, vmError error, size_t ss, void* sp, void* caller, void* callee) {
-	if (callee != NULL && error == noError) {
+static int jsonProfile(dbgContext ctx, size_t ss, void* caller, void* callee, clock_t ticks) {
+	if (callee != NULL) {
 		userContext cc = ctx->extra;
 		FILE *out = cc->out;
-		time_t now = clock();
 		const int indent = cc->indent;
 		const char **esc = NULL;
 		if ((ptrdiff_t)callee < 0) {
-			fputfmt(out, "\n% I% 6d,-1%s", ss, now, ss ? "," : "");
+			fputfmt(out, "\n% I% 6d,-1%s", ss, ticks, ss ? "," : "");
 			if (ss == 0) {
 				int i;
 				int covFunc = 0, nFunc = ctx->functions.cnt;
@@ -1250,12 +1241,10 @@ static int jsonProfile(dbgContext ctx, vmError error, size_t ss, void* sp, void*
 				fputesc(out, esc, "%I\"\": \"%s\"\n", indent + 1, "callTree array is constructed from a tick(timestamp) followed by a function offset, if the offset is negative it represents a return from a function instead of a call.");
 				fputesc(out, esc, "%I, \"callTree\": [", indent + 1);
 			}
-			fputesc(out, esc, "\n% I% 6d,%d,", ss, now, offs);
+			fputesc(out, esc, "\n% I% 6d,%d,", ss, ticks, offs);
 		}
 	}
 	(void)caller;
-	(void)error;
-	(void)sp;
 	return 0;
 }
 
@@ -1882,18 +1871,23 @@ static int program(int argc, char* argv[]) {
 			rt->dbg->extra = &extra;
 			// set debugger of profiler
 			if (run_code == debug) {
-				rt->dbg->function = conDebug;
+				rt->dbg->debug = conDebug;
+				rt->dbg->profile = NULL;
 				if (extra.breakNext != 0) {
 					// break on first instruction
 					extra.breakNext = rt->vm.pc;
 				}
 			}
 			else if (run_code == profile) {
+				rt->dbg->debug = NULL;
 				// set call tree dump method
-				rt->dbg->function = (dumpFun == jsonDumpApi) ? &jsonProfile : &conProfile;
+				rt->dbg->profile = (dumpFun == jsonDumpApi) ? &jsonProfile : &conProfile;
 			}
 		}
 		errors = execute(rt, rt->_size / 4, NULL);
+		if (dumpFun != jsonDumpApi) {
+			conDumpRun(&extra);
+		}
 	}
 
 	if (dumpFun == jsonDumpApi) {

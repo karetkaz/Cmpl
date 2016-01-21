@@ -762,7 +762,7 @@ static astn init_var(ccContext cc, symn var) {
 			// assigning to an array
 			else if (arrayInit) {
 				astn init = var->init;
-				symn base = var->prms;
+				symn base = var->arrB;
 				int nelem = 1;
 
 				// TODO: base should not be stored in var->args !!!
@@ -821,7 +821,7 @@ static astn init_var(ccContext cc, symn var) {
 					error(cc->rt, var->file, var->line, "invalid slice initialization `%+t`", var->init);
 					return NULL;
 				}
-				var->init->type = var->prms;
+				var->init->type = var->arrB;
 			}
 
 			// check if value can be assigned to variable.
@@ -1373,7 +1373,7 @@ astn decl_var(ccContext cc, astn* argv, int mode) {
 			skiptok(cc, PNCT_rc, 1);
 		}
 
-		ref->prms = base;	// fixme (temporarly used)
+		ref->arrB = base;
 		dynarr = base->size;
 		for (; typ; typ = typ->decl) {
 			typ->size = (size_t) (dynarr *= typ->offs);
@@ -1478,6 +1478,7 @@ static astn decl(ccContext cc, int mode) {
 						arg->type = tmp->type;
 						arg->flds = tmp->flds;
 						arg->prms = tmp->prms;
+						arg->arrB = tmp->arrB;
 						arg->cast = tmp->cast;
 						arg->size = tmp->size;
 						arg->offs = tmp->offs;

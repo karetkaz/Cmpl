@@ -10,26 +10,23 @@ Types are special kind of variables.
 Basic types
 
 	void
-
 	bool
-
 	int8
 	int16
 	int32
 	int64
-
 	uint8
 	uint16
 	uint32
-
+	+uint64
 	float32
 	float64
 
 	pointer
 	variant
-	typename		// compilers internal type reprezentation structure
+	typename        // compilers internal type reprezentation structure
 	?function       //
-    object          // base class of all reference types.
+	object          // base class of all reference types.
 
 #typedefs
 	@int: alias for int32
@@ -38,7 +35,6 @@ Basic types
 	@double: alias for float64
 
 	@char: alias for uint8 / uint16
-	@string: alias for char[]
 
 	@var: variant
 	@array: variant[]
@@ -75,24 +71,30 @@ User defined types:
 		ex: for struct Complex {double re; double im};
 		will be defined:
 			define Complex(double re, double im) = emit(Complex, double(re), double(im));
-			define Complex(pointer ptr) = emit(Complex&, ref(ptr));
 			define Complex(variant var) = emit(Complex&, ref(var.type == Complex ? &var.data : null));
 
 	function
 
 TODO's:
 	struct initialization:
-		struct alma {
+		struct Demo {
+			// normal member variable
 			int32 a;
-			int32 b;
-			int64 x;
+
+			// constant member variable, compiler error if not initialized when a new instance is created.
+			const int32 b;
+
+			// global variable hidden in this class.
+			static int32 c;
+
+			// global variable, compiler error if not initialized when declared.
+			static const int32 d = 0;
 		}
-		alma a1 = {a: 12, x: 88};
-		alma a2 = alma(12, 0, 88);
+		Demo a = {a: 12, b: 88};
+		Demo b = Demo(12, 88);
 	array initialization:
-		alma a1[] = [alma(1,2,3), alma(2,2,3), ...]
-		alma a1[] = [alma(1,2,3), alma(2,2,3), ...]
-		alma a1[] = alma[]{alma(1,2,3), ...}
+		Demo a1[] = {Demo(1,2), Demo(2,3), ...};
+		? Demo a3[] = [Demo]{Demo(1,2), Demo(2,3), ...}
 
 *******************************************************************************/
 
@@ -332,7 +334,7 @@ symn ccAddCall(rtContext rt, int libc(libcContext), void* data, const char* prot
 }
 //#}
 
-// promote
+// promote: determine the type of a OP b
 static inline int castkind(symn typ) {
 	if (typ != NULL) {
 		switch (typ->cast) {
@@ -617,7 +619,7 @@ symn lookup(ccContext cc, symn sym, astn ref, astn args, int raise) {
 		if (sym->name == NULL)
 			continue;
 
-		// check name
+		// exclude non matching names
 		if (strcmp(sym->name, ref->ref.name) != 0)
 			continue;
 
@@ -631,7 +633,7 @@ symn lookup(ccContext cc, symn sym, astn ref, astn args, int raise) {
 			continue;
 		}
 
-		if (args) {
+		if (args != NULL) {
 			if (!sym->call) {
 				// TODO: enable basic type casts: float32(1)
 				int isBasicCast = 0;
@@ -703,7 +705,7 @@ symn lookup(ccContext cc, symn sym, astn ref, astn args, int raise) {
 					hascast += 1;
 				}
 
-				// TODO: hascast += argval->cst2 != 0;
+				// TODO: hascast += argget->cst2 != 0;
 
 				argval = argval->next;
 				param = param->next;
@@ -1062,7 +1064,7 @@ symn typecheck(ccContext s, symn loc, astn ast) {
 			}
 
 			if (fun) switch (fun->kind) {
-				case OPER_dot: 	// math.isNan ???
+				case OPER_dot: 	// Math.isNan ???
 					if (!(loc = typecheck(s, loc, fun->op.lhso))) {
 						traceAst(ast);
 						return NULL;
@@ -1486,10 +1488,9 @@ symn typecheck(ccContext s, symn loc, astn ast) {
 			sym = loc->flds;
 		}
 
-		if ((sym = lookup(s, sym, ref, args, 1))) {
-
+		if ((sym = lookup(s, sym, ref, args, 1)) != NULL) {
 			// using function args
-			if (sym) switch (sym->kind) {
+			switch (sym->kind) {
 				default:
 					fatal(ERR_INTERNAL_ERROR);
 					return NULL;
@@ -1510,7 +1511,7 @@ symn typecheck(ccContext s, symn loc, astn ast) {
 					break;
 			}
 
-			//~ TODO: hack: type cast if one argument
+			//~ TODO: HACK: type cast with one argument
 			if (istype(sym) && args && !args->next) {			// cast
 				if (!castTo(args, sym->cast)) {
 					trace("%t: %K", args, sym->cast);

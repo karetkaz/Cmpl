@@ -16,6 +16,11 @@ int arr3[] = arr2;		// slice
 //! TODO: inout parameters: `bool next(typename &it, typename &&out)` + iteration over struct members.
 //? TODO: assign explicitly a variable to variant: variant v = a;
 
+//! TODO: functions may have attached static members, helping lookup args: raise.error => raise(error, "error").
+/*! TODO: aliases to types and functions inherit fields and args, they may be extended later from c.
+	emit.i32 should be an alias to int32, and extended with opcodes [add, ...], available only in emit.i32
+*/
+
 //? TODO: static if else part
 //? TODO: threat errors as warnings inside static if false branch
 //? TODO: separate struct and unoin declaration

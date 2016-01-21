@@ -153,6 +153,7 @@ struct rtContextRec {
 				retf64(rt, sin(x));				// set the return value
 				return 0;						// no runtime error in call
 			}
+		 	...
 			if (!rt->api.ccAddCall(rt, f64sin, NULL, "float64 sin(float64 x);")) {
 				// error reported, terminate here the execution.
 				return 0;
@@ -179,18 +180,8 @@ struct rtContextRec {
 		*/
 		void (*const ccEnd)(rtContext, symn cls);
 
-		/* Find a symbol by name.
-		 * 
-		symn (*const ccSymFind)(ccContext cc, symn in, char *name);
-		 */
-
-		/* offset of a pointer in the vm
-		 * 
-		int (*const vmOffset)(rtContext, void *ptr);
-		 */
-
 		/**
-		 * @brief Find a static symbol by offset.
+		 * @brief Lookup a static symbol by offset.
 		 * @param Runtime context.
 		 * @param ptr Pointer to the variable.
 		 * @note Usefull for callbacks.
@@ -226,9 +217,14 @@ struct rtContextRec {
 			if (!rt->api.ccAddCall(rt, setMouseCb, NULL, "void setMouseCallback(void Callback(int32 b, int32 x, int32 y);")) {
 				error...
 			}
-		 * TODO: symn (*const vmSymbol)(rtContext, int offset);
+		 * TODO? symn (*const vmSymbol)(rtContext, int offset);
 		 */
 		symn (*const getsym)(rtContext, void *ptr);
+
+		/* @brief Lookup a static symbol by name.
+		 *
+		 */
+		// TODO: symn (*const ccFindSym)(ccContext cc, symn in, char *name);
 
 		/**
 		 * @brief Invoke a function inside the vm.
@@ -290,7 +286,7 @@ struct libcContextRec {
  * @param size Size of the argument to copy to result.
  * @return Pointer where the result is located or copied.
  */
-static inline void* argval(libcContext args, size_t offset, void *result, size_t size) {
+static inline void* argget(libcContext args, size_t offset, void *result, size_t size) {
 	// if result is not null copy
 	if (result != NULL) {
 		memcpy(result, args->argv + offset, size);
@@ -302,25 +298,25 @@ static inline void* argval(libcContext args, size_t offset, void *result, size_t
 }
 
 // speed up of getting arguments of known types.
-#define argval(__ARGV, __OFFS, __TYPE) (*(__TYPE*)((__ARGV)->argv + (__OFFS)))
-static inline int32_t argi32(libcContext args, int offs) { return argval(args, offs, int32_t); }
-static inline int64_t argi64(libcContext args, int offs) { return argval(args, offs, int64_t); }
-static inline float32_t argf32(libcContext args, int offs) { return argval(args, offs, float32_t); }
-static inline float64_t argf64(libcContext args, int offs) { return argval(args, offs, float64_t); }
-static inline void* arghnd(libcContext args, int offs) { return argval(args, offs, void*); }
-static inline void* argref(libcContext args, int offs) { int32_t p = argval(args, offs, int32_t); return p ? args->rt->_mem + p : NULL; }
+#define argget(__ARGV, __OFFS, __TYPE) (*(__TYPE*)((__ARGV)->argv + (__OFFS)))
+static inline int32_t argi32(libcContext args, int offs) { return argget(args, offs, int32_t); }
+static inline int64_t argi64(libcContext args, int offs) { return argget(args, offs, int64_t); }
+static inline float32_t argf32(libcContext args, int offs) { return argget(args, offs, float32_t); }
+static inline float64_t argf64(libcContext args, int offs) { return argget(args, offs, float64_t); }
+static inline void* arghnd(libcContext args, int offs) { return argget(args, offs, void*); }
+static inline void* argref(libcContext args, int offs) { int32_t p = argget(args, offs, int32_t); return p ? args->rt->_mem + p : NULL; }
 static inline void* argsym(libcContext args, int offs) { return args->rt->api.getsym(args->rt, argref(args, offs)); }
-#undef argval
+#undef argget
 
 /**
- * @brief Set the return value of a libcall.
- * @param args Libcall arguments context.
+ * @brief Set the return value of a wrapped native call.
+ * @param args arguments context.
  * @param result Pointer containing the result value.
  * @param size Size of the argument to copy to result.
  * @return Pointer where the result is located or copied.
  * @note May invalidate some of the arguments.
  */
-static inline void* setret(libcContext args, void *result, size_t size) {
+static inline void* retset(libcContext args, void *result, size_t size) {
 	if (result != NULL) {
 		memcpy(args->retv, result, size);
 	}
@@ -328,14 +324,14 @@ static inline void* setret(libcContext args, void *result, size_t size) {
 }
 
 // speed up of setting result of known types.
-#define setret(__ARGV, __TYPE, __VAL) (*(__TYPE*)(__ARGV)->retv = (__TYPE)(__VAL))
-static inline void reti32(libcContext args, int32_t val) { setret(args, int32_t, val); }
-static inline void reti64(libcContext args, int64_t val) { setret(args, int64_t, val); }
-static inline void retf32(libcContext args, float32_t val) { setret(args, float32_t, val); }
-static inline void retf64(libcContext args, float64_t val) { setret(args, float64_t, val); }
-static inline void rethnd(libcContext args, void* val) { setret(args, void*, val); }
-//~ static inline void retref(libcContext args, void* val) { setret(args, void*, vmOffset(args->rt, val)); }
-#undef setret
+#define retset(__ARGV, __TYPE, __VAL) (*(__TYPE*)(__ARGV)->retv = (__TYPE)(__VAL))
+static inline void reti32(libcContext args, int32_t val) { retset(args, int32_t, val); }
+static inline void reti64(libcContext args, int64_t val) { retset(args, int64_t, val); }
+static inline void retf32(libcContext args, float32_t val) { retset(args, float32_t, val); }
+static inline void retf64(libcContext args, float64_t val) { retset(args, float64_t, val); }
+static inline void rethnd(libcContext args, void* val) { retset(args, void*, val); }
+//~ static inline void retref(libcContext args, void* val) { retset(args, void*, vmOffset(args->rt, val)); }
+#undef retset
 
 #ifdef __cplusplus
 }

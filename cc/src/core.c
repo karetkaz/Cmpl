@@ -37,17 +37,17 @@ const struct opc_inf opc_tbl[255] = {
 };
 
 /// Initialize runtime context; @see header
-rtContext rtInit(void* _mem, size_t size) {
-	rtContext rt = paddptr(_mem, rt_size);
+rtContext rtInit(void* mem, size_t size) {
+	rtContext rt = paddptr(mem, rt_size);
 
-	if (rt != _mem) {
-		size_t diff = (char*)rt - (char*)_mem;
+	if (rt != mem) {
+		size_t diff = (char*)rt - (char*) mem;
 		//~ fatal("runtime memory pardded with %d bytes", (int)diff);
 		size -= diff;
 	}
 
 	if (rt == NULL && size > sizeof(struct rtContextRec)) {
-		rt = _mem = malloc(size);
+		rt = malloc(size);
 		logif(rt == NULL, ERR_INTERNAL_ERROR);
 	}
 
@@ -62,7 +62,6 @@ rtContext rtInit(void* _mem, size_t size) {
 		*(void**)&rt->api.ccAddCall = ccAddCall;
 		*(void**)&rt->api.ccAddCode = ccAddCode;
 		*(void**)&rt->api.ccEnd = ccEnd;
-		//~ rt->api.ccSymFind = ccSymFind;
 		*(void**)&rt->api.getsym = getsym;
 		*(void**)&rt->api.invoke = invoke;
 		*(void**)&rt->api.rtAlloc = rtAlloc;
@@ -479,7 +478,7 @@ static void install_type(ccContext cc, int mode) {
 	cc->type_str->init = intnode(cc, -1); // hack: strings are static sized arrays with a length of -1.
 	cc->type_str->pfmt = "\"%s\"";
 
-    // Add variant and string to the runtime context, for printing purposes.
+	// Add variant and string to the runtime context, for printing purposes.
 	cc->rt->type_str = cc->type_str;
 	cc->rt->type_var = type_var;
 }
@@ -550,7 +549,6 @@ static void install_emit(ccContext cc, int mode) {
 			install(cc, "i128", EMIT_opc, TYPE_any, opc_stiq, cc->type_vid, NULL);
 			ccEnd(rt, typ);
 		}
-
 
 		if ((typ = u32) != NULL) {
 			ccBegin(rt, NULL);

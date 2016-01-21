@@ -7,7 +7,7 @@ files="tests/test.*.cvx"
 #~ compile flags
 flags="-api -ast -asm"
 #~ flags="-debug/C/B/L/F"
-#~ flags="-debug/v"
+flags="-debug/g"
 flags="-profile"
 #~ flags="-run"
 

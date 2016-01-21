@@ -12,13 +12,14 @@
 #include "ccstd.h"
 #include <stdlib.h> // abort
 
-/* debug level:
+/* debugging the compiler:
 	0: show where errors were raised
 	1: trace errors to their root
 	2: include debug messages
 	3: print generated assembly for statements with errors
+ 	if not defined no extra messages and extra checks are performed.
 */
-//~ #define DEBUGGING 1
+#define DEBUGGING 1
 
 // enable paralell execution stuff
 //~ #define VM_MAX_PROCS 1
@@ -241,16 +242,16 @@ struct symNode {
 	char*	name;		// symbol name
 	char*	file;		// declared in file
 	int32_t	line;		// declared on line
-	int32_t nest;		// declaration level
-	int32_t	colp;		// declared on column
 	size_t	size;		// variable or function size.
 	size_t	offs;		// address of variable or function.
+	int32_t nest, colp; // declared on column and level
 
 	symn	type;		// base type of TYPE_ref/TYPE_arr/function (void, int, float, struct, ...)
 
-	symn	flds;		// all fields: static + nonstatic fields / function return value + parameters
+	symn	flds;		// all fields: static + non static fields / function return value + parameters
+	symn	prms;		// tail of flds: struct non static fields / function parameters
 	//~ TODO: temporarly array variable base type
-	symn	prms;		// tail of flds: struct nonstatic fields / function paramseters
+	symn	arrB;		// tail of flds: struct non static fields / function parameters
 
 	symn	decl;		// declaring symbol (defined in ...): struct, function, ...
 	symn	next;		// next symbol: field / param / ... / (in scope table)
@@ -429,10 +430,11 @@ struct ccContextRec {
 struct dbgContextRec {
 	rtContext rt;
 	userContext extra;		// extra data for debuger
+	int (*debug)(dbgContext ctx, vmError, size_t ss, void* sp, void* ip);
+	int (*profile)(dbgContext ctx, size_t ss, void* caller, void* callee, time_t now);
 	int checked;			// execution is inside an try catch
 	struct arrBuffer functions;
 	struct arrBuffer statements;
-	int (*function)(dbgContext ctx, vmError, size_t ss, void* sp, void* caller, void* callee);
 };
 
 /**
@@ -690,7 +692,7 @@ symn linkOf(astn ast);
  * @param ast Abstract syntax tree to be evaluated.
  * @return Type of result: [TYPE_err, TYPE_bit, TYPE_int, TYPE_flt, TYPE_str]
  */
-int eval(astn res, astn ast);
+ccToken eval(astn res, astn ast);
 
 /// Allocate a symbol node.
 symn newdefn(ccContext, ccToken kind);

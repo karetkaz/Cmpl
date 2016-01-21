@@ -270,7 +270,7 @@ int isType(astn ast) {
 }
 
 //~ TODO: eval should use cgen and vmExec
-int eval(astn res, astn ast) {
+ccToken eval(astn res, astn ast) {
 	symn type = NULL;
 	ccToken cast;
 	struct astNode lhs, rhs;

@@ -1,17 +1,81 @@
 define byte = uint8;
 
-// abstract class
-struct Stream: object {
+// abstract classes
+struct Closeable: object {
+	const void close(Closeable closeable);
+}
+
+struct Stream {
+	const void seek(Stream stream);
+	const void read(Stream stream);
+	const void write(Stream stream);
+	const void flush(Stream stream);
 	const void close(Stream stream);
+	/+ subclasses:
+		FileStream
+		PipedStream
+		SocketStream
+		MemoryStream
+	+/
 }
 
-struct InputStream: Stream {
-	const int read(InputStream stream, byte values[]);
+struct ByteReader: Closeable {  // InputStream
+	const int read(ByteReader reader, byte bytes[]);
+	/+ subclasses?
+		CopyReader
+		FileReader
+		PipedReader
+		SocketReader
+		MemoryReader
+	+/
 }
 
-struct OutputStream: Stream {
-	const int write(OutputStream stream, byte values[]);
-	const void flush(OutputStream stream);
+struct ByteWriter: Closeable {  // OutputStream
+	const int write(ByteWriter writer, byte bytes[]);
+	const void flush(ByteWriter writer);
+	/+ subclasses?
+	 ?	CopyWriter
+		FileWriter
+		PipedWriter
+		SocketWriter
+		MemoryWriter
+	+/
+}
+
+struct TextReader: Closeable {
+	const int read(TextReader reader, char text[]);
+	ByteReader byteReader;
+	bool closeByteReader;
+	/+ subclasses:
+		Latin1, Ascii, Utf7, Utf8 - Decoder OR Reader
+	+/
+}
+
+struct TextWriter: Closeable {
+	const int write(TextWriter writer, char text[]);
+	const void flush(TextWriter writer);
+	/+ subclasses:
+		Latin1, Ascii, Utf7, Utf8 - Encoder OR Writer
+	+/
+}
+
+struct CopyReader: ByteReader {  // Tee
+	ByteReader source;
+	ByteWriter copy;
+	class: {
+		read: int(ByteReader this, byte bytes[]) {
+			result = this.source.read(bytes);
+			if (result > 0) {
+				this.copy.write(bytes[0 .. result]);
+			}
+			return result;
+		};
+		close: void(CopyReader this) {
+			this.source.close();
+			this.copy.flush();
+			this.copy.close();
+		}
+	}
 }
 
 /** extending a class
@@ -43,31 +107,12 @@ int sizeofFileInputStream = sizeof(FileInputStream);
 //~ FileInputStream fis = {file: File.Open("string.cvx")};
 //~ FileInputStream fis = emit(FileInputStream, memmgr(null, sizeof(FileInputStream)));
 
-/+struct Stream: InputStream + OutputStream;
-	> TeeStream: Stream
-	> PipeStream: Stream
-	> NetworkStream: Stream
-
-struct RandomAccessStream: Stream {long seek(long offset, Direction dir);}
-	> FileStream: RandomAccessStream {FileStream open(String file);}
-	> MemoryStream: RandomAccessStream
-
+/+
 struct Encoder {OutputStream stream; bool closeStream; int write(Encoder, byte[]);}
 struct Decoder {InputStream stream; bool closeStream; int read(Decoder, byte[]);}
 	> Base64
 	> Url
 
-struct TextReader {InputStream stream; bool closeStream; int read(TextReader, char[]);}
-	> Latin1Reader
-	> AsciiReader
-	> Utf7Reader
-	> Utf8Reader
-
-struct TextWriter {OutputStream stream; bool closeStream; int write(TextWriter, char[]);}
-	> Latin1Writer
-	> AsciiWriter
-	> Utf7Writer
-	> Utf8Writer
 
 struct Path {
 	exists
