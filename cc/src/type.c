@@ -100,25 +100,80 @@ TODO's:
 
 #include "internal.h"
 
-symn newdefn(ccContext s, ccToken kind) {
-	rtContext rt = s->rt;
-	symn def = NULL;
+static symn promote(symn lht, symn rht);
+static ccToken typeTo(astn ast, symn type);
 
-	rt->_beg = paddptr(rt->_beg, 8);
-	if(rt->_beg >= rt->_end) {
-		fatal(ERR_INTERNAL_ERROR);
-		return NULL;
-	}
-
-	def = (symn)rt->_beg;
-	rt->_beg += sizeof(struct symNode);
-	memset(def, 0, sizeof(struct symNode));
-	def->kind = kind;
-
-	return def;
+/// Enter a new scope.
+void enter(ccContext cc, astn ast) {
+	cc->nest += 1;
+	(void)ast;
 }
 
-/// install a symbol(typename or variable)
+/// Leave current scope.
+symn leave(ccContext cc, symn dcl, int mode) {
+	int i;
+	rtContext rt = cc->rt;
+	symn result = NULL;
+
+	cc->nest -= 1;
+
+	// clear from table
+	for (i = 0; i < TBLS; i++) {
+		symn def = cc->deft[i];
+		while (def && def->nest > cc->nest) {
+			def = def->next;
+		}
+		cc->deft[i] = def;
+	}
+
+	// clear from stack
+	while (rt->vars && cc->nest < rt->vars->nest) {
+		symn sym = rt->vars;
+
+		// pop from stack
+		rt->vars = sym->defs;
+
+		sym->next = NULL;
+
+		// declared in: (structure, function or wathever)
+		sym->decl = dcl ? dcl : cc->func;
+
+		if (mode & ATTR_stat) {
+			sym->stat = 1;
+		}
+		if (!sym->stat && !cc->siff && sym->call && sym->init && sym->init->kind == STMT_beg) {
+			warn(cc->rt, 1, sym->file, sym->line, "marking function to be static: `%-T`", sym);
+			sym->stat = 1;
+		}
+
+		// if not inside a static if, link to all
+		sym->defs = cc->defs;
+		cc->defs = sym;
+
+		if (!cc->siff) {
+			if (sym->stat && sym->gdef == NULL) {
+				sym->gdef = cc->gdef;
+				cc->gdef = sym;
+			}
+		}
+
+		// TODO: any field can have default value.
+		if (dcl != NULL && dcl->kind == TYPE_rec) {
+			dieif(dcl->call, "FixMe");
+			if (sym->kind == TYPE_ref && !sym->stat && sym->init) {
+				warn(cc->rt, 8, sym->file, sym->line, "ignoring initialization of non static member `%+T`", sym);
+			}
+		}
+
+		sym->next = result;
+		result = sym;
+	}
+	//cc->defs = defs;
+
+	return result;
+}
+
+/// Install a symbol(typename or variable)
 symn install(ccContext s, const char* name, ccToken kind, ccToken cast, unsigned size, symn type, astn init) {
 	symn def;
 
@@ -186,249 +241,819 @@ symn install(ccContext s, const char* name, ccToken kind, ccToken cast, unsigned
 	return def;
 }
 
-/// Install a type; @see rtContext.api.ccAddType
-symn ccAddType(rtContext rt, const char* name, unsigned size, int refType) {
-	return install(rt->cc, name, ATTR_stat | ATTR_const | TYPE_rec, refType ? TYPE_ref : TYPE_rec, size, rt->cc->type_rec, NULL);
-}
+//~ TODO: we should handle redefinition in this function
+symn declare(ccContext s, ccToken kind, astn tag, symn typ) {
+	symn def;
 
-//#{ libc.c ---------------------------------------------------------------------
-static symn installref(rtContext rt, const char* prot, astn* argv) {
-	astn root, args;
-	symn result = NULL;
-	int warn, errc = rt->errCount;
-
-	if (!ccOpen(rt, NULL, 0, (char*)prot)) {
-		trace("FixMe");
-		return NULL;
+	if (!tag || tag->kind != TYPE_ref) {
+		fatal("%+t must be an identifier", tag);
+		return 0;
 	}
 
-	warn = rt->cc->warn;
+	def = install(s, tag->ref.name, kind, TYPE_any, 0, typ, NULL);
 
-	// enable all warnings
-	rt->cc->warn = 9;
-	root = decl_var(rt->cc, &args, decl_NoDefs | decl_NoInit);
+	if (def != NULL) {
 
-	dieif(root == NULL, "error declaring: %s", prot);
+		def->file = tag->file;
+		def->line = tag->line;
+		def->colp = tag->colp;
+		def->used = tag;
 
-	dieif(!skip(rt->cc, STMT_end), "`;` expected declaring: %s", prot);
+		tag->type = typ;
+		tag->ref.link = def;
 
-	dieif(ccDone(rt->cc) != 0, "FixMe");
+		tag->kind = TYPE_def;
+		switch (kind & 0xff) {
+			default:
+				fatal(ERR_INTERNAL_ERROR);
+				return NULL;
 
-	dieif(root->kind != TYPE_ref, "FixMe %+t", root);
+			case TYPE_rec:			// typedefn struct
+				if (typ != NULL) {
+					def->size = typ->size;
+				}
+				break;
 
-	if ((result = root->ref.link)) {
-		dieif(result->kind != TYPE_ref, "FixMe");
-		*argv = args;
-		result->cast = TYPE_any;
+			case TYPE_def:			// typename
+			case TYPE_ref:			// variable
+				tag->kind = kind & 0xff;
+				if (typ != NULL) {
+					def->cast = typ->cast;
+					def->size = sizeOf(typ, 1);
+				}
+				break;
+		}
+		addUsage(def, tag);
 	}
 
-	rt->cc->warn = warn;
-	return errc == rt->errCount ? result : NULL;
+	return def;
 }
 
-/// Install a native function; @see rtContext.api.ccAddCall
-symn ccAddCall(rtContext rt, int libc(libcContext), void* data, const char* proto) {
-	symn param, sym = NULL;
-	int stdiff = 0;
-	astn args = NULL;
+//~ TODO: !!! args are linked in a list by next !!??
+symn lookup(ccContext cc, symn sym, astn ref, astn args, int raise) {
+	symn asref = 0;
+	symn best = 0;
+	int found = 0;
 
-	dieif(libc == NULL || !proto, "FixMe");
+	dieif(!ref || ref->kind != TYPE_ref, "FixMe");
 
-	//~ from: int64 zxt(int64 val, int offs, int bits);
-	//~ make: define zxt(int64 val, int offs, int bits) = emit(int64, libc(25), i64(val), i32(offs), i32(bits));
+	// linearize args
+	/*if (args && args->kind == OPER_com) {
+		astn next = NULL;
+		while (args->kind == OPER_com) {
+			args->op.rhso->next = next;
+			next = args->op.rhso;
+			args = args->op.lhso;
+		}
+		args->next = next;
+	}// */
 
-	if ((sym = installref(rt, proto, &args))) {
-		struct libc* lc = NULL;
-		symn link = newdefn(rt->cc, EMIT_opc);
-		astn libcinit;
-		size_t libcpos = rt->cc->libc ? rt->cc->libc->pos + 1 : 0;
+	for (; sym; sym = sym->next) {
+		int hascast = 0;
+		astn argval = args;				// arguments
+		symn param = sym->prms;			// parameters
 
-		dieif(rt->_end - rt->_beg < (ptrdiff_t)sizeof(struct libc), "FixMe");
+		// exclude nameless symbols: arrays, inline functions.
+		if (sym->name == NULL)
+			continue;
 
-		rt->_end -= sizeof(struct libc);
-		lc = (struct libc*)rt->_end;
-		lc->next = rt->cc->libc;
-		rt->cc->libc = lc;
+		// exclude non matching names
+		if (strcmp(sym->name, ref->ref.name) != 0)
+			continue;
 
-		link->name = "libc";
-		link->offs = opc_libc;
-		link->type = sym->type;
-		link->init = intnode(rt->cc, libcpos);
+		if (!args && sym->call) {
+			// keep the first match.
+			if (sym->kind == TYPE_ref) {
+				if (asref == NULL)
+					asref = sym;
+				found += 1;
+			}
+			continue;
+		}
 
-		libcinit = lnknode(rt->cc, link);
-		stdiff = fixargs(sym, vm_size, 0);
+		if (args != NULL) {
+			if (!sym->call) {
+				// TODO: enable basic type casts: float32(1)
+				int isBasicCast = 0;
 
-		// glue the new libcinit argument
-		if (args && args != rt->cc->void_tag) {
-			astn narg = newnode(rt->cc, OPER_com);
-			astn arg = args;
-			narg->op.lhso = libcinit;
+				symn sym2 = sym;
+				while (sym2 != NULL) {
+					if (sym2->kind != TYPE_def)
+						break;
+					if (sym2->init)
+						break;
+					sym2 = sym2->type;
+				}
 
-			if (1) {
-				symn s = NULL;
-				astn arg = args;
-				while (arg->kind == OPER_com) {
-					astn n = arg->op.rhso;
-					s = linkOf(n);
-					arg = arg->op.lhso;
-					if (s && n) {
-						n->cst2 = s->cast;
+				if (!args->next && sym2 != NULL && isType(sym2)) {
+					switch(sym2->cast) {
+						default:
+							break;
+						case TYPE_rec:
+							// Complex x = Complex(Complex(3,4));
+							if (sym2 == args->type) {
+								isBasicCast = 1;
+							}
+								// variant(variable)
+							else if (sym2 == cc->type_var) {
+								isBasicCast = 1;
+							}
+							break;
+
+						case TYPE_ref:
+							// enable pointer(ref) and typename(ref)
+							if (sym2 == cc->type_ptr || sym2 == cc->type_rec) {
+								isBasicCast = 1;
+							}
+							break;
+
+						case TYPE_vid:
+							// void(0);
+							if (sym2 == cc->type_vid) {
+								isBasicCast = 1;
+							}
+							break;
+						case TYPE_bit:
+						case TYPE_u32:
+						case TYPE_i32:
+						case TYPE_i64:
+						case TYPE_f32:
+						case TYPE_f64:
+							isBasicCast = 1;
+							break;
 					}
 				}
-				s = linkOf(arg);
-				if (s && arg) {
-					arg->cst2 = s->cast;
-				}
+
+				if (!isBasicCast)
+					continue;
 			}
 
-			if (arg->kind == OPER_com) {
-				while (arg->op.lhso->kind == OPER_com) {
-					arg = arg->op.lhso;
+			while (argval && param) {
+
+				if (!canAssign(cc, param, argval, 0)) {
+					break;
 				}
-				narg->op.rhso = arg->op.lhso;
-				arg->op.lhso = narg;
+
+				// if null is passed by ref it will be as a cast
+				if (argval->kind == TYPE_ref && argval->ref.link == cc->null_ref) {
+					hascast += 1;
+				}
+
+				else if (!canAssign(cc, param, argval, 1)) {
+					hascast += 1;
+				}
+
+				// TODO: hascast += argget->cst2 != 0;
+
+				argval = argval->next;
+				param = param->next;
 			}
-			else {
-				narg->op.rhso = args;
-				args = narg;
+
+			if (sym->call && (argval || param)) {
+				debug("%-T(%+t, %-T)", sym, argval, param);
+				continue;
 			}
 		}
-		else {
-			args = libcinit;
+
+		dieif(cc->func && cc->func->nest != cc->maxlevel - 1, "FIXME %d, %d", cc->func->nest, cc->maxlevel);
+		// TODO: sym->decl && sym->decl->call && sym->decl != s->func
+		if (cc->func && !cc->siff && cc->func->gdef && sym->nest && !sym->stat && sym->nest < cc->maxlevel) {
+			error(cc->rt, ref->file, ref->line, "invalid use of local symbol `%t`.", ref);
 		}
 
-		libcinit = newnode(rt->cc, OPER_fnc);
-		libcinit->op.lhso = rt->cc->emit_tag;
-		libcinit->type = sym->type;
-		libcinit->op.rhso = args;
+		// perfect match
+		if (hascast == 0)
+			break;
 
-		sym->kind = TYPE_def;
-		sym->init = libcinit;
-		sym->offs = libcpos;
-		// TODO: libcall should be static
-		//sym->stat = 1;
-		//sym->cnst = 1;
+		// keep first match
+		if (!best)
+			best = sym;
 
-		lc->call = libc;
-		lc->data = data;
-		lc->pos = libcpos;
-		lc->sym = sym;
+		found += 1;
+		// if we are here then sym is found, but it has implicit cast in it
+		debug("%+t%s is probably %-T%s:%K", ref, args ? "()" : "", sym, sym->call ? "()" : "", sym->kind);
+	}
 
-		lc->chk = stdiff / 4;
+	if (sym == NULL && best) {
+		if (found > 1) {
+			warn(cc->rt, 2, ref->file, ref->line, "using overload `%-T` of %d declared symbols.", best, found);
+		}
+		sym = best;
+	}
 
-		stdiff -= sizeOf(sym->type, 1);
-		lc->pop = stdiff / 4;
-
-		// make non reference parameters symbolic by default
-		for (param = sym->prms; param; param = param->next) {
-			if (param->cast != TYPE_ref && !param->call) {
-				param->kind = TYPE_def;
-			}
+	if (sym == NULL && asref) {
+		if (found == 1 || cc->siff) {
+			debug("as ref `%-T`(%?+t)(%d)", asref, args, ref->line);
+			sym = asref;
+		}
+		else if (raise) {
+			error(cc->rt, ref->file, ref->line, "there are %d overloads for `%T`", found, asref);
 		}
 	}
-	else {
-		error(rt, NULL, 0, "install(`%s`)", proto);
+
+	if (sym != NULL) {
+		if (sym->kind == TYPE_def && !sym->init) {
+			sym = sym->type;
+		}
 	}
 
 	return sym;
 }
-//#}
 
-// promote: determine the type of a OP b
-static inline int castkind(symn typ) {
-	if (typ != NULL) {
-		switch (typ->cast) {
-			default:
-				break;
-			case ENUM_kwd:
-				return castkind(typ->type);
-			case TYPE_vid:
-				return TYPE_vid;
-			case TYPE_bit:
-				return TYPE_bit;
-			case TYPE_u32:
-			case TYPE_i32:
-			case TYPE_i64:
-				return TYPE_int;
-			case TYPE_f32:
-			case TYPE_f64:
-				return TYPE_flt;
-			case TYPE_ref:
-				return TYPE_ref;
-		}
+symn typeCheck(ccContext s, symn loc, astn ast) {
+	astn ref = 0, args = 0;
+	symn result = NULL;
+	astn dot = NULL;
+	symn sym = 0;
+
+	if (ast == NULL) {
+		fatal(ERR_INTERNAL_ERROR);
+		return NULL;
 	}
-	return 0;
-}
-static symn promote(symn lht, symn rht) {
-	symn result = 0;
-	if (lht && rht) {
-		if (lht == rht) {
-			result = lht;
-		}
-		else switch (castkind(rht)) {
-			default:
-				break;
-			case TYPE_bit:
-			case TYPE_int: switch (castkind(lht)) {
-				default:
-					break;
-				case TYPE_bit:
-				case TYPE_int:
-					//~ TODO: bool + int is bool; if sizeof(bool) == 4
-					if (lht->cast == TYPE_bit && lht->size == rht->size) {
-						result = rht;
+
+	ast->cst2 = TYPE_any;
+	switch (ast->kind) {
+		default:
+			fatal(ERR_INTERNAL_ERROR);
+			return NULL;
+
+		case OPER_fnc: {
+			astn fun = ast->op.lhso;
+			args = ast->op.rhso;
+
+			if (fun == NULL) {
+				symn rht = typeCheck(s, NULL, ast->op.rhso);
+				if (!rht || !castTo(ast->op.rhso, castOf(rht))) {
+					traceAst(ast);
+					return NULL;
+				}
+				return ast->type = rht;
+			}
+			if (args != NULL) {
+				astn linearize = NULL;
+				symn lin = NULL;
+
+				if (fun->kind == EMIT_opc) {
+					lin = s->emit_opc;
+				}
+
+				while (args->kind == OPER_com) {
+					astn arg = args->op.rhso;
+					if (!typeCheck(s, lin, arg)) {
+						if (!lin || !typeCheck(s, NULL, arg)) {
+							traceAst(arg);
+							return NULL;
+						}
+						if (!(arg->kind == OPER_fnc && isType(linkOf(arg->op.lhso)))) {
+							if (arg->type->cast == TYPE_ref) {
+								warn(s->rt, 2, arg->file, arg->line, "argument `%+t` is passed by reference", arg);
+							}
+							else {
+								warn(s->rt, 2, arg->file, arg->line, "argument `%+t` is passed by value: %-T", arg,
+									 arg->type);
+							}
+							//~ warn(s->s, 2, arg->file, arg->line, "emit type cast expected: '%+t'", arg);
+						}
 					}
-					else {
-						result = lht->size >= rht->size ? lht : rht;
+
+					args->op.rhso->next = linearize;
+					linearize = args->op.rhso;
+					args = args->op.lhso;
+				}
+
+				if (lin && args && args->kind == TYPE_rec) {
+					//emit's first arg is 'struct'
+					args->kind = TYPE_ref;
+					args->type = s->emit_opc;
+					args->ref.link = s->emit_opc;
+				}
+				else if (!typeCheck(s, lin, args)) {
+					if (!lin || !typeCheck(s, NULL, args)) {
+						traceAst(args);
+						return NULL;
 					}
-					break;
+					// emit's first arg can be a type (static cast)
+					if (!isTypeExpr(args) && !(args->kind == OPER_fnc && isType(linkOf(args)))) {
+						if (args->type->cast == TYPE_ref) {
+							warn(s->rt, 2, args->file, args->line, "argument `%+t` is passed by reference", args);
+						}
+						else {
+							warn(s->rt, 2, args->file, args->line, "argument `%+t` is passed by value: %-T", args,
+								 args->type);
+						}
+						//~ warn(s->s, 2, args->file, args->line, "emit type cast expected: '%+t'", args);
+					}
+				}
 
-				case TYPE_flt:
-					result = lht;
-					break;
+				args->next = linearize;
+			}
 
-			} break;
-			case TYPE_flt: switch (castkind(lht)) {
-				default:
-					break;
-				case TYPE_bit:
-				case TYPE_int:
-					result = rht;
-					break;
+			if (fun) switch (fun->kind) {
+					case OPER_dot: 	// Math.isNan ???
+						if (!(loc = typeCheck(s, loc, fun->op.lhso))) {
+							traceAst(ast);
+							return NULL;
+						}
+						dot = fun;
+						ref = fun->op.rhso;
+						break;
 
-				case TYPE_flt:
-					result = lht->size >= rht->size ? lht : rht;
-					break;
-			} break;
+					case EMIT_opc: {
+						astn arg;
+						for (arg = args; arg; arg = arg->next) {
+							arg->cst2 = arg->type->cast;
+						}
+						if (!(loc = typeCheck(s, loc, fun))) {
+							traceAst(ast);
+							return NULL;
+						}
+						return ast->type = args ? args->type : NULL;
+					}
+
+					case TYPE_ref:
+						ref = ast->op.lhso;
+						break;
+
+					default:
+						fatal(ERR_INTERNAL_ERROR);
+						return NULL;
+				}
+
+			if (args == NULL) {
+				args = s->void_tag;
+			}
+
+		} break;
+		case OPER_dot: {
+			sym = typeCheck(s, loc, ast->op.lhso);
+			if (sym == NULL) {
+				traceAst(ast);
+				return NULL;
+			}
+			if (!castTo(ast->op.lhso, TYPE_ref)) {
+				traceAst(ast);
+				return NULL;
+			}
+
+			loc = sym;
+			ref = ast->op.rhso;
+		} break;
+		case OPER_idx: {
+			symn lht = typeCheck(s, loc, ast->op.lhso);
+			symn rht = typeCheck(s, loc, ast->op.rhso);
+
+			if (!lht || !rht) {
+				traceAst(ast);
+				return NULL;
+			}
+			if (!castTo(ast->op.lhso, TYPE_ref)) {
+				traceAst(ast);
+				return NULL;
+			}
+			if (!castTo(ast->op.rhso, TYPE_int)) {
+				traceAst(ast);
+				return NULL;
+			}
+
+			// base type of array;
+			return ast->type = lht->type;
+		} break;
+
+		case OPER_adr:		// '&'
+		case OPER_pls:		// '+'
+		case OPER_mns:		// '-'
+		case OPER_cmt:		// '~'
+		case OPER_not: {	// '!'
+			symn rht = typeCheck(s, loc, ast->op.rhso);
+			ccToken cast;
+
+			if (!rht || loc) {
+				traceAst(ast);
+				return NULL;
+			}
+			if ((cast = typeTo(ast, rht))) {
+				ast->type = rht;
+				if (ast->kind == OPER_not) {
+					ast->type = s->type_bol;
+					ast->cst2 = TYPE_bit;
+				}
+				if (!castTo(ast->op.rhso, cast)) {
+					traceAst(ast);
+					return NULL;
+				}
+				switch (cast) {
+					default:
+						break;
+
+					case TYPE_u32:
+					case TYPE_i32:
+					case TYPE_i64:
+						return ast->type;
+
+					case TYPE_f32:
+					case TYPE_f64:
+						if (ast->kind != OPER_cmt)
+							return ast->type;
+
+						ast->type = 0;
+						error(s->rt, ast->file, ast->line, "invalid cast(%+t)", ast);
+						return NULL;
+				}
+				return ast->type;
+			}
+			fatal(FATAL_UNIMPLEMENTED_OPERATOR, ast, NULL, rht, ast);
+		} break;
+
+		case OPER_add:		// '+'
+		case OPER_sub:		// '-'
+		case OPER_mul:		// '*'
+		case OPER_div:		// '/'
+		case OPER_mod: {	// '%'
+			symn lht = typeCheck(s, loc, ast->op.lhso);
+			symn rht = typeCheck(s, loc, ast->op.rhso);
+
+			if (!lht || !rht || loc) {
+				traceAst(ast);
+				return NULL;
+			}
+			if (lht->cast && rht->cast) {
+				symn typ = promote(lht, rht);
+				ccToken cast = castOf(typ);
+				if (!castTo(ast->op.lhso, cast)) {
+					traceAst(ast);
+					return NULL;
+				}
+				if (!castTo(ast->op.rhso, cast)) {
+					traceAst(ast);
+					return NULL;
+				}
+				if (!castTo(ast, cast)) {
+					traceAst(ast);
+					return NULL;
+				}
+				return ast->type = typ;
+			}
+			fatal(FATAL_UNIMPLEMENTED_OPERATOR, ast, lht, rht, ast);
+		} break;
+
+		case OPER_shl:		// '>>'
+		case OPER_shr:		// '<<'
+		case OPER_and:		// '&'
+		case OPER_ior:		// '|'
+		case OPER_xor: {	// '^'
+			symn lht = typeCheck(s, loc, ast->op.lhso);
+			symn rht = typeCheck(s, loc, ast->op.rhso);
+			ccToken cast;
+
+			if (!lht || !rht || loc) {
+				traceAst(ast);
+				return NULL;
+			}
+			if ((cast = typeTo(ast, promote(lht, rht)))) {
+				if (!castTo(ast->op.lhso, cast)) {
+					traceAst(ast);
+					return NULL;
+				}
+				if (!castTo(ast->op.rhso, cast)) {
+					traceAst(ast);
+					return NULL;
+				}
+				switch (cast) {
+					default:
+						break;
+
+					case TYPE_u32:
+					case TYPE_i32:
+					case TYPE_i64:
+						return ast->type;
+
+					case TYPE_f32:
+					case TYPE_f64:
+						ast->type = 0;
+						error(s->rt, ast->file, ast->line, "invalid cast(%+t)", ast);
+						return NULL;
+				}
+			}
+			fatal(FATAL_UNIMPLEMENTED_OPERATOR, ast, lht, rht, ast);
+		} break;
+
+		case OPER_equ:		// '=='
+		case OPER_neq:		// '!='
+		case OPER_lte:		// '<'
+		case OPER_leq:		// '<='
+		case OPER_gte:		// '>'
+		case OPER_geq: {	// '>='
+			symn lht = typeCheck(s, loc, ast->op.lhso);
+			symn rht = typeCheck(s, loc, ast->op.rhso);
+			ccToken cast = TYPE_any;
+
+			if (!lht || !rht || loc) {
+				traceAst(ast);
+				return NULL;
+			}
+
+			if (ast->kind == OPER_equ || ast->kind == OPER_neq) {
+				symn lhl = ast->op.lhso->kind == TYPE_ref ? ast->op.lhso->ref.link : NULL;
+				symn rhl = ast->op.rhso->kind == TYPE_ref ? ast->op.rhso->ref.link : NULL;
+
+				if (lhl == s->null_ref && rhl == s->null_ref)
+					cast = TYPE_ref;
+
+				else if (lhl == s->null_ref && rhl && (rhl->cast == TYPE_ref || rhl->cast == TYPE_arr))
+					cast = TYPE_ref;
+
+				else if (rhl == s->null_ref && lhl && (lhl->cast == TYPE_ref || lhl->cast == TYPE_arr))
+					cast = TYPE_ref;
+
+				// bool isint32 = type == int32;
+				if (rhl == rht && lht == s->type_rec) {
+					cast = TYPE_ref;
+				}
+				if (lhl == lht && rht == s->type_rec) {
+					cast = TYPE_ref;
+				}// * /
+
+				// comparing enum variables
+				if (rht->cast == ENUM_kwd && lht->cast == ENUM_kwd) {
+				}
+				else if (rht->cast == ENUM_kwd) {
+					rht = rht->type;
+					if (!typeTo(ast->op.rhso, rht)) {
+						traceAst(ast);
+						return NULL;
+					}
+				}
+				else if (lht->cast == ENUM_kwd) {
+					lht = lht->type;
+					if (!typeTo(ast->op.lhso, lht)) {
+						traceAst(ast);
+						return NULL;
+					}
+				}
+			}
+
+			if (cast || (cast = castOf(promote(lht, rht)))) {
+				if (!typeTo(ast, s->type_bol)) {
+					traceAst(ast);
+					return NULL;
+				}
+				if (!castTo(ast->op.lhso, cast)) {
+					traceAst(ast);
+					return NULL;
+				}
+				if (!castTo(ast->op.rhso, cast)) {
+					traceAst(ast);
+					return NULL;
+				}
+				return ast->type;
+			}
+
+			fatal(FATAL_UNIMPLEMENTED_OPERATOR, ast, lht, rht, ast);
+		} break;
+
+		case OPER_lor:		// '&&'
+		case OPER_lnd: {	// '||'
+			symn lht = typeCheck(s, loc, ast->op.lhso);
+			symn rht = typeCheck(s, loc, ast->op.rhso);
+			ccToken cast;
+
+			if (!lht || !rht || loc) {
+				traceAst(ast);
+				return NULL;
+			}
+			if ((cast = typeTo(ast, promote(lht, rht)))) {
+				if (!castTo(ast->op.lhso, TYPE_bit)) {
+					traceAst(ast);
+					return NULL;
+				}
+				if (!castTo(ast->op.rhso, TYPE_bit)) {
+					traceAst(ast);
+					return NULL;
+				}
+				ast->type = s->type_bol;
+				return ast->type;
+			}
+			fatal(FATAL_UNIMPLEMENTED_OPERATOR, ast, lht, rht, ast);
+		} break;
+
+		case OPER_sel: {	// '?:'
+			symn cmp = typeCheck(s, loc, ast->op.test);
+			symn lht = typeCheck(s, loc, ast->op.lhso);
+			symn rht = typeCheck(s, loc, ast->op.rhso);
+			ccToken cast;
+
+			if (!cmp || !lht || !rht || loc) {
+				traceAst(ast);
+				return NULL;
+			}
+			if ((cast = typeTo(ast, promote(lht, rht)))) {
+				if (!castTo(ast->op.test, TYPE_bit)) {
+					traceAst(ast);
+					return NULL;
+				}
+				if (!castTo(ast->op.lhso, cast)) {
+					traceAst(ast);
+					return NULL;
+				}
+				if (!castTo(ast->op.rhso, cast)) {
+					traceAst(ast);
+					return NULL;
+				}
+				return ast->type;
+			}
+			fatal(FATAL_UNIMPLEMENTED_OPERATOR, ast, lht, rht, ast);
+		} break;
+
+		case OPER_com: {	// ','
+			symn lht = typeCheck(s, loc, ast->op.lhso);
+			symn rht = typeCheck(s, loc, ast->op.rhso);
+
+			if (!lht || !rht || loc) {
+				traceAst(ast);
+				return NULL;
+			}
+			if (lht->cast && rht->cast) {
+				symn typ = promote(lht, rht);
+				ccToken cast = castOf(typ);
+				if (!castTo(ast->op.lhso, cast)) {
+					traceAst(ast);
+					return NULL;
+				}
+				if (!castTo(ast->op.rhso, cast)) {
+					traceAst(ast);
+					return NULL;
+				}
+				return ast->type = typ;
+			}
+			fatal(FATAL_UNIMPLEMENTED_OPERATOR, ast, lht, rht, ast);
+		} break;
+
+			// operator set
+		case ASGN_set: {	// ':='
+			symn lht = typeCheck(s, loc, ast->op.lhso);
+			symn rht = typeCheck(s, loc, ast->op.rhso);
+			symn var = linkOf(ast->op.lhso);
+			ccToken cast;
+
+			if (!lht || !rht || !var || loc) {
+				traceAst(ast);
+				return NULL;
+			}
+
+			if (var->cnst) {
+				error(s->rt, ast->file, ast->line, ERR_ASSIGN_TO_CONST, ast);
+			}
+			if (lht->cast != ENUM_kwd && rht->cast == ENUM_kwd) {
+				rht = rht->type;
+				if (!typeTo(ast->op.rhso, rht)) {
+					traceAst(ast);
+					return NULL;
+				}
+			}
+			if (!(cast = canAssign(s, lht, ast->op.rhso, 0))) {
+				traceAst(ast);
+				return NULL;
+			}
+			if (!castTo(ast->op.rhso, cast)) {
+				traceAst(ast);
+				return NULL;
+			}
+			if (!castTo(ast->op.lhso, cast)) {
+				traceAst(ast);
+				return NULL;
+			}
+			/*if (!castTo(ast, cast)) {
+				traceAst(ast);
+				return NULL;
+			}*/
+
+			/*/ HACK: arrays of references dont casts to ref.
+			if (lht->kind == TYPE_arr) {// && lht->type->cast == TYPE_ref) {
+				ast->op.rhso->cst2 = TYPE_any;
+			}*/
+
+			ast->type = lht;
+			return ast->type;
+		} break;
+
+			// operator get
+		case TYPE_ref:
+			ref = ast;
+			if (ast->ref.link != NULL) {
+				if (ast->ref.hash == (unsigned)-1) {
+					return ast->type;
+				}
+			}
+			break;
+
+		case EMIT_opc:
+			return ast->type = s->emit_opc;
+
+		case TYPE_int:
+		case TYPE_flt:
+		case TYPE_str: {
+			if (loc) {
+				traceAst(ast);
+				return NULL;
+			}
+			switch (ast->kind) {
+				case TYPE_int: return typeTo(ast, s->type_i32) ? s->type_i32 : NULL;
+				case TYPE_flt: return typeTo(ast, s->type_f64) ? s->type_f64 : NULL;
+				case TYPE_str: return typeTo(ast, s->type_str) ? s->type_str : NULL;
+				default: break;
+			}
+		} break;
+	}
+
+	if (ref && ref != s->void_tag) {
+		sym = s->deft[ref->ref.hash];
+
+		if (loc != NULL) {
+			sym = loc->flds;
 		}
-	}
-	else if (rht) {
-		result = rht;
-	}
 
-	return result;
-}
+		if ((sym = lookup(s, sym, ref, args, 1)) != NULL) {
+			// using function args
+			switch (sym->kind) {
+				default:
+					fatal(ERR_INTERNAL_ERROR);
+					return NULL;
 
-void addUsage(symn sym, astn tag) {
-	if (sym == NULL || tag == NULL) {
-		return;
-	}
-	if (tag->ref.used != NULL) {
-		#ifdef DEBUGGING	// extra check: if this node is linked (.used) it must be in the list
-		astn usage;
-		for (usage = sym->used; usage; usage = usage->ref.used) {
-			if (usage == tag) {
-				break;
+				case TYPE_def:
+					result = sym->type;
+					//~ debug("%T:%T in `%+t` (%d)", sym, result, ast, ast->line);
+					break;
+
+				case EMIT_opc:
+				case TYPE_ref:
+					result = sym->type;
+					break;
+
+				case TYPE_arr:
+				case TYPE_rec:
+					result = sym;
+					break;
+			}
+
+			//~ TODO: HACK: type cast with one argument
+			if (isType(sym) && args && !args->next) {			// cast
+				if (!castTo(args, sym->cast)) {
+					trace("%t: %K", args, sym->cast);
+					return NULL;
+				}
+			}
+
+			if (sym->call) {
+				astn argval = args;			// argument
+				symn param = sym->prms;		// parameter
+
+				while (param && argval) {
+					if (!castTo(argval, castOf(param->type))) {
+						trace("%+t: %K", argval, castOf(param->type));
+						return NULL;
+					}
+
+					// TODO: review
+					if (param->cast == TYPE_ref || argval->type->cast == TYPE_ref) {
+						if (!castTo(argval, param->cast)) {
+							trace("%t: %K", argval, param->cast);
+							return NULL;
+						}
+					}
+
+					// if swap(a, b) is written instad of swap(&a, &b)
+					if (param->cast == TYPE_ref && argval->type->cast != TYPE_ref) {
+						symn lnk = argval->kind == TYPE_ref ? argval->ref.link : NULL;
+						if (argval->kind != OPER_adr && lnk && lnk->cast != TYPE_ref && lnk->type->cast != TYPE_ref) {
+							warn(s->rt, 2, argval->file, argval->line,
+								 "argument `%+t` is not explicitly passed by reference", argval);
+						}
+					}
+
+					param = param->next;
+					argval = argval->next;
+				}
+
+				if (!args) {
+					result = s->type_ptr;
+				}
+			}
+
+			ref->kind = TYPE_ref;
+			ref->ref.link = sym;
+			ref->type = result;
+			ast->type = result;
+
+			addUsage(sym, ref);
+
+			if (dot != NULL) {
+				dot->type = result;
 			}
 		}
-		dieif(usage == NULL, "usage not found in the list: %+t(%s:%u:%u)", tag, tag->file, tag->line, tag->colp);
-		#endif
-		return;
+		else
+			s->root = ref;
 	}
-	if (sym->used != tag) {
-		tag->ref.used = sym->used;
-		sym->used = tag;
-	}
+	return result;
 }
 
 ccToken canAssign(ccContext cc, symn var, astn val, int strict) {
@@ -591,249 +1216,29 @@ ccToken canAssign(ccContext cc, symn var, astn val, int strict) {
 	return TYPE_any;
 }
 
-//~ TODO: !!! args are linked in a list by next !!??
-symn lookup(ccContext cc, symn sym, astn ref, astn args, int raise) {
-	symn asref = 0;
-	symn best = 0;
-	int found = 0;
-
-	dieif(!ref || ref->kind != TYPE_ref, "FixMe");
-
-	// linearize args
-	/*if (args && args->kind == OPER_com) {
-		astn next = NULL;
-		while (args->kind == OPER_com) {
-			args->op.rhso->next = next;
-			next = args->op.rhso;
-			args = args->op.lhso;
-		}
-		args->next = next;
-	}// */
-
-	for (; sym; sym = sym->next) {
-		int hascast = 0;
-		astn argval = args;				// arguments
-		symn param = sym->prms;			// parameters
-
-		// exclude nameless symbols: arrays, inline functions.
-		if (sym->name == NULL)
-			continue;
-
-		// exclude non matching names
-		if (strcmp(sym->name, ref->ref.name) != 0)
-			continue;
-
-		if (!args && sym->call) {
-			// keep the first match.
-			if (sym->kind == TYPE_ref) {
-				if (asref == NULL)
-					asref = sym;
-				found += 1;
-			}
-			continue;
-		}
-
-		if (args != NULL) {
-			if (!sym->call) {
-				// TODO: enable basic type casts: float32(1)
-				int isBasicCast = 0;
-
-				symn sym2 = sym;
-				while (sym2 != NULL) {
-					if (sym2->kind != TYPE_def)
-						break;
-					if (sym2->init)
-						break;
-					sym2 = sym2->type;
-				}
-
-				if (!args->next && sym2 != NULL && istype(sym2)) {
-					switch(sym2->cast) {
-						default:
-							break;
-						case TYPE_rec:
-							// Complex x = Complex(Complex(3,4));
-							if (sym2 == args->type) {
-								isBasicCast = 1;
-							}
-							// variant(variable)
-							else if (sym2 == cc->type_var) {
-								isBasicCast = 1;
-							}
-							break;
-
-						case TYPE_ref:
-							// enable pointer(ref) and typename(ref)
-							if (sym2 == cc->type_ptr || sym2 == cc->type_rec) {
-								isBasicCast = 1;
-							}
-							break;
-
-						case TYPE_vid:
-							// void(0);
-							if (sym2 == cc->type_vid) {
-								isBasicCast = 1;
-							}
-							break;
-						case TYPE_bit:
-						case TYPE_u32:
-						case TYPE_i32:
-						case TYPE_i64:
-						case TYPE_f32:
-						case TYPE_f64:
-							isBasicCast = 1;
-							break;
-					}
-				}
-
-				if (!isBasicCast)
-					continue;
-			}
-
-			while (argval && param) {
-
-				if (!canAssign(cc, param, argval, 0)) {
-					break;
-				}
-
-				// if null is passed by ref it will be as a cast
-				if (argval->kind == TYPE_ref && argval->ref.link == cc->null_ref) {
-					hascast += 1;
-				}
-
-				else if (!canAssign(cc, param, argval, 1)) {
-					hascast += 1;
-				}
-
-				// TODO: hascast += argget->cst2 != 0;
-
-				argval = argval->next;
-				param = param->next;
-			}
-
-			if (sym->call && (argval || param)) {
-				debug("%-T(%+t, %-T)", sym, argval, param);
-				continue;
-			}
-		}
-
-		dieif(cc->func && cc->func->nest != cc->maxlevel - 1, "FIXME %d, %d", cc->func->nest, cc->maxlevel);
-		// TODO: sym->decl && sym->decl->call && sym->decl != s->func
-		if (cc->func && !cc->siff && cc->func->gdef && sym->nest && !sym->stat && sym->nest < cc->maxlevel) {
-			error(cc->rt, ref->file, ref->line, "invalid use of local symbol `%t`.", ref);
-		}
-
-		// perfect match
-		if (hascast == 0)
-			break;
-
-		// keep first match
-		if (!best)
-			best = sym;
-
-		found += 1;
-		// if we are here then sym is found, but it has implicit cast in it
-		debug("%+t%s is probably %-T%s:%K", ref, args ? "()" : "", sym, sym->call ? "()" : "", sym->kind);
+void addUsage(symn sym, astn tag) {
+	if (sym == NULL || tag == NULL) {
+		return;
 	}
-
-	if (sym == NULL && best) {
-		if (found > 1) {
-			warn(cc->rt, 2, ref->file, ref->line, "using overload `%-T` of %d declared symbols.", best, found);
-		}
-		sym = best;
-	}
-
-	if (sym == NULL && asref) {
-		if (found == 1 || cc->siff) {
-			debug("as ref `%-T`(%?+t)(%d)", asref, args, ref->line);
-			sym = asref;
-		}
-		else if (raise) {
-			error(cc->rt, ref->file, ref->line, "there are %d overloads for `%T`", found, asref);
-		}
-	}
-
-	if (sym != NULL) {
-		if (sym->kind == TYPE_def && !sym->init) {
-			sym = sym->type;
-		}
-	}
-
-	return sym;
-}
-
-//~ TODO: we should handle redefinition in this function
-symn declare(ccContext s, ccToken kind, astn tag, symn typ) {
-	symn def;
-
-	if (!tag || tag->kind != TYPE_ref) {
-		fatal("%+t must be an identifier", tag);
-		return 0;
-	}
-
-	def = install(s, tag->ref.name, kind, TYPE_any, 0, typ, NULL);
-
-	if (def != NULL) {
-
-		def->file = tag->file;
-		def->line = tag->line;
-		def->colp = tag->colp;
-		def->used = tag;
-
-		tag->type = typ;
-		tag->ref.link = def;
-
-		tag->kind = TYPE_def;
-		switch (kind & 0xff) {
-			default:
-				fatal(ERR_INTERNAL_ERROR);
-				return NULL;
-
-			case TYPE_rec:			// typedefn struct
-				if (typ != NULL) {
-					def->size = typ->size;
-				}
+	if (tag->ref.used != NULL) {
+#ifdef DEBUGGING	// extra check: if this node is linked (.used) it must be in the list
+		astn usage;
+		for (usage = sym->used; usage; usage = usage->ref.used) {
+			if (usage == tag) {
 				break;
-
-			case TYPE_def:			// typename
-			case TYPE_ref:			// variable
-				tag->kind = kind & 0xff;
-				if (typ != NULL) {
-					def->cast = typ->cast;
-					def->size = sizeOf(typ, 1);
-				}
-				break;
-		}
-		addUsage(def, tag);
-	}
-
-	return def;
-}
-
-int istype(const symn sym) {
-	if (sym == NULL) {
-		return 0;
-	}
-
-	switch (sym->kind) {
-		default:
-			break;
-
-		case TYPE_arr:
-		case TYPE_rec:
-			return sym->kind;
-
-		case TYPE_def:
-			if (sym->init == NULL) {
-				return istype(sym->type);
 			}
-			break;
+		}
+		dieif(usage == NULL, "usage not found in the list: %+t(%s:%u:%u)", tag, tag->file, tag->line, tag->colp);
+#endif
+		return;
 	}
-	//~ trace("%T is not a type", sym);
-	return 0;
+	if (sym->used != tag) {
+		tag->ref.used = sym->used;
+		sym->used = tag;
+	}
 }
 
-int usages(symn sym) {
+int countUsages(symn sym) {
 	int result = 0;
 	astn usage;
 	for (usage = sym->used; usage; usage = usage->ref.used) {
@@ -842,129 +1247,84 @@ int usages(symn sym) {
 	return result;
 }
 
-//~ TODO: this should be calculated by fixargs() and replaced by (var|typ)->size
-size_t sizeOf(symn sym, int varSize) {
-	if (sym) switch (sym->kind) {
-		default:
-			break;
-		//~ case TYPE_vid:
-		//~ case TYPE_bit:
-		//~ case TYPE_int:
-		//~ case TYPE_flt:
-
-		case EMIT_opc:
-			if (sym->cast == TYPE_ref) {
-				return vm_size;
-			}
-			return (size_t) sym->size;
-
-		case TYPE_rec:
-		case TYPE_arr: switch (sym->cast) {
-			case TYPE_ref: if (varSize) {
-				return vm_size;
-			}
-			case TYPE_arr: if (varSize) {
-				return 2 * vm_size;
-			}
+// TODO: remove function
+static inline ccToken castKind(symn typ) {
+	if (typ != NULL) {
+		switch (typ->cast) {
 			default:
-				return sym->size;
-		}
-
-		case TYPE_def:
-		case TYPE_ref: switch (sym->cast) {
-			case TYPE_ref:
-				return vm_size;
-			case TYPE_arr:
-				return 2 * vm_size;
-			default:
-				return sizeOf(sym->type, 0);
-		}
-	}
-	fatal("failed(%K): %-T", sym ? sym->kind : 0, sym);
-	return 0;
-}
-
-/** Cast
- * returns one of (TYPE_bit, ref, u32, i32, i64, f32, f64)
-**/
-ccToken castOf(symn typ) {
-	if (typ) switch (typ->kind) {
-
-		default:
-			break;
-
-		case TYPE_def:
-			return castOf(typ->type);
-
-		//~ case TYPE_vid:
-			//~ return typ->kind;
-
-		case TYPE_arr:
-			// static sized arrays cast to pointer
-			if (typ->init == NULL)
-				return TYPE_arr;
-			return TYPE_ref;
-
-		case EMIT_opc:
-			return typ->cast;
-
-		case TYPE_rec:
-			// refFix
-			if (typ->cast == TYPE_ref)
-				return TYPE_ptr;
-			return typ->cast;
-	}
-	debug("failed(%K): %?-T", typ ? typ->kind : 0, typ);
-	return TYPE_any;
-}
-ccToken castTo(astn ast, ccToken cto) {
-	ccToken atc = TYPE_any;
-	if (!ast) {
-		return TYPE_any;
-	}
-	//~ TODO: check validity / Remove function
-
-	atc = ast->type ? ast->type->cast : TYPE_any;
-	if (cto != atc) switch (cto) {
-		case TYPE_any:
-			return atc;
-
-		case TYPE_vid:		// void(true): can cast 2 to void !!!
-		case TYPE_bit:
-		case TYPE_u32:
-		case TYPE_i32:
-		case TYPE_i64:
-		case TYPE_f32:
-		case TYPE_f64: switch (atc) {
-			//~ case TYPE_vid:
+				break;
+			case ENUM_kwd:
+				return castKind(typ->type);
+			case TYPE_vid:
+				return TYPE_vid;
 			case TYPE_bit:
+				return TYPE_bit;
 			case TYPE_u32:
 			case TYPE_i32:
 			case TYPE_i64:
+				return TYPE_int;
 			case TYPE_f32:
 			case TYPE_f64:
-				break;
-
-			default:
-				goto error;
-		} break;
-
-		case TYPE_ref:
-		case TYPE_arr:
-			break;
-
-		default:
-		error:
-			debug("cast(%+t) to %K/%K", ast, cto, atc);
-			//~ return 0;
-			break;
+				return TYPE_flt;
+			case TYPE_ref:
+				return TYPE_ref;
+		}
 	}
-	return ast->cst2 = cto;
+	return TYPE_any;
 }
+// determine the resulting type of a OP b
+static symn promote(symn lht, symn rht) {
+	symn result = 0;
+	if (lht && rht) {
+		if (lht == rht) {
+			result = lht;
+		}
+		else switch (castKind(rht)) {
+				default:
+					break;
+				case TYPE_bit:
+				case TYPE_int: switch (castKind(lht)) {
+						default:
+							break;
+						case TYPE_bit:
+						case TYPE_int:
+							//~ TODO: bool + int is bool; if sizeof(bool) == 4
+							if (lht->cast == TYPE_bit && lht->size == rht->size) {
+								result = rht;
+							}
+							else {
+								result = lht->size >= rht->size ? lht : rht;
+							}
+							break;
+
+						case TYPE_flt:
+							result = lht;
+							break;
+
+					} break;
+				case TYPE_flt: switch (castKind(lht)) {
+						default:
+							break;
+						case TYPE_bit:
+						case TYPE_int:
+							result = rht;
+							break;
+
+						case TYPE_flt:
+							result = lht->size >= rht->size ? lht : rht;
+							break;
+					} break;
+			}
+	}
+	else if (rht) {
+		result = rht;
+	}
+
+	return result;
+}
+//~ TODO: check / remove function
 static ccToken typeTo(astn ast, symn type) {
 	if (!ast) return TYPE_any;
-
-	//~ TODO: check validity / Remove function
 
 	while (ast->kind == OPER_com) {
 		if (!typeTo(ast->op.rhso, type)) {
@@ -975,719 +1335,4 @@ static ccToken typeTo(astn ast, symn type) {
 	}
 
 	return castTo(ast, castOf(ast->type = type));
-}
-
-symn typecheck(ccContext s, symn loc, astn ast) {
-	astn ref = 0, args = 0;
-	symn result = NULL;
-	astn dot = NULL;
-	symn sym = 0;
-
-	if (ast == NULL) {
-		fatal(ERR_INTERNAL_ERROR);
-		return NULL;
-	}
-
-	ast->cst2 = TYPE_any;
-	switch (ast->kind) {
-		default:
-			fatal(ERR_INTERNAL_ERROR);
-			return NULL;
-
-		case OPER_fnc: {
-			astn fun = ast->op.lhso;
-			args = ast->op.rhso;
-
-			if (fun == NULL) {
-				symn rht = typecheck(s, NULL, ast->op.rhso);
-				if (!rht || !castTo(ast->op.rhso, castOf(rht))) {
-					traceAst(ast);
-					return NULL;
-				}
-				return ast->type = rht;
-			}
-			if (args != NULL) {
-				astn linearize = NULL;
-				symn lin = NULL;
-
-				if (fun->kind == EMIT_opc) {
-					lin = s->emit_opc;
-				}
-
-				while (args->kind == OPER_com) {
-					astn arg = args->op.rhso;
-					if (!typecheck(s, lin, arg)) {
-						if (!lin || !typecheck(s, NULL, arg)) {
-							traceAst(arg);
-							return NULL;
-						}
-						if (!(arg->kind == OPER_fnc && istype(linkOf(arg->op.lhso)))) {
-							if (arg->type->cast == TYPE_ref) {
-								warn(s->rt, 2, arg->file, arg->line, "argument `%+t` is passed by reference", arg);
-							}
-							else {
-								warn(s->rt, 2, arg->file, arg->line, "argument `%+t` is passed by value: %-T", arg, arg->type);
-							}
-							//~ warn(s->s, 2, arg->file, arg->line, "emit type cast expected: '%+t'", arg);
-						}
-					}
-
-					args->op.rhso->next = linearize;
-					linearize = args->op.rhso;
-					args = args->op.lhso;
-				}
-
-				if (lin && args && args->kind == TYPE_rec) {
-					//emit's first arg is 'struct'
-					args->kind = TYPE_ref;
-					args->type = s->emit_opc;
-					args->ref.link = s->emit_opc;
-				}
-				else if (!typecheck(s, lin, args)) {
-					if (!lin || !typecheck(s, NULL, args)) {
-						traceAst(args);
-						return NULL;
-					}
-					// emit's first arg can be a type (static cast)
-					if (!isType(args) && !(args->kind == OPER_fnc && istype(linkOf(args)))) {
-						if (args->type->cast == TYPE_ref) {
-							warn(s->rt, 2, args->file, args->line, "argument `%+t` is passed by reference", args);
-						}
-						else {
-							warn(s->rt, 2, args->file, args->line, "argument `%+t` is passed by value: %-T", args, args->type);
-						}
-						//~ warn(s->s, 2, args->file, args->line, "emit type cast expected: '%+t'", args);
-					}
-				}
-
-				args->next = linearize;
-			}
-
-			if (fun) switch (fun->kind) {
-				case OPER_dot: 	// Math.isNan ???
-					if (!(loc = typecheck(s, loc, fun->op.lhso))) {
-						traceAst(ast);
-						return NULL;
-					}
-					dot = fun;
-					ref = fun->op.rhso;
-					break;
-
-				case EMIT_opc: {
-					astn arg;
-					for (arg = args; arg; arg = arg->next) {
-						arg->cst2 = arg->type->cast;
-					}
-					if (!(loc = typecheck(s, loc, fun))) {
-						traceAst(ast);
-						return NULL;
-					}
-					return ast->type = args ? args->type : NULL;
-				}
-
-				case TYPE_ref:
-					ref = ast->op.lhso;
-					break;
-
-				default:
-					fatal(ERR_INTERNAL_ERROR);
-					return NULL;
-			}
-
-			if (args == NULL) {
-				args = s->void_tag;
-			}
-
-		} break;
-		case OPER_dot: {
-			sym = typecheck(s, loc, ast->op.lhso);
-			if (sym == NULL) {
-				traceAst(ast);
-				return NULL;
-			}
-			if (!castTo(ast->op.lhso, TYPE_ref)) {
-				traceAst(ast);
-				return NULL;
-			}
-
-			loc = sym;
-			ref = ast->op.rhso;
-		} break;
-		case OPER_idx: {
-			symn lht = typecheck(s, loc, ast->op.lhso);
-			symn rht = typecheck(s, loc, ast->op.rhso);
-
-			if (!lht || !rht) {
-				traceAst(ast);
-				return NULL;
-			}
-			if (!castTo(ast->op.lhso, TYPE_ref)) {
-				traceAst(ast);
-				return NULL;
-			}
-			if (!castTo(ast->op.rhso, TYPE_int)) {
-				traceAst(ast);
-				return NULL;
-			}
-
-			// base type of array;
-			return ast->type = lht->type;
-		} break;
-
-		case OPER_adr:		// '&'
-		case OPER_pls:		// '+'
-		case OPER_mns:		// '-'
-		case OPER_cmt:		// '~'
-		case OPER_not: {	// '!'
-			symn rht = typecheck(s, loc, ast->op.rhso);
-			ccToken cast;
-
-			if (!rht || loc) {
-				traceAst(ast);
-				return NULL;
-			}
-			if ((cast = typeTo(ast, rht))) {
-				ast->type = rht;
-				if (ast->kind == OPER_not) {
-					ast->type = s->type_bol;
-					ast->cst2 = TYPE_bit;
-				}
-				if (!castTo(ast->op.rhso, cast)) {
-					traceAst(ast);
-					return NULL;
-				}
-				switch (cast) {
-					default:
-						break;
-
-					case TYPE_u32:
-					case TYPE_i32:
-					case TYPE_i64:
-						return ast->type;
-
-					case TYPE_f32:
-					case TYPE_f64:
-						if (ast->kind != OPER_cmt)
-							return ast->type;
-
-						ast->type = 0;
-						error(s->rt, ast->file, ast->line, "invalid cast(%+t)", ast);
-						return NULL;
-				}
-				return ast->type;
-			}
-			fatal(FATAL_UNIMPLEMENTED_OPERATOR, ast, NULL, rht, ast);
-		} break;
-
-		case OPER_add:		// '+'
-		case OPER_sub:		// '-'
-		case OPER_mul:		// '*'
-		case OPER_div:		// '/'
-		case OPER_mod: {	// '%'
-			symn lht = typecheck(s, loc, ast->op.lhso);
-			symn rht = typecheck(s, loc, ast->op.rhso);
-
-			if (!lht || !rht || loc) {
-				traceAst(ast);
-				return NULL;
-			}
-			if (lht->cast && rht->cast) {
-				symn typ = promote(lht, rht);
-				ccToken cast = castOf(typ);
-				if (!castTo(ast->op.lhso, cast)) {
-					traceAst(ast);
-					return NULL;
-				}
-				if (!castTo(ast->op.rhso, cast)) {
-					traceAst(ast);
-					return NULL;
-				}
-				if (!castTo(ast, cast)) {
-					traceAst(ast);
-					return NULL;
-				}
-				return ast->type = typ;
-			}
-			fatal(FATAL_UNIMPLEMENTED_OPERATOR, ast, lht, rht, ast);
-		} break;
-
-		case OPER_shl:		// '>>'
-		case OPER_shr:		// '<<'
-		case OPER_and:		// '&'
-		case OPER_ior:		// '|'
-		case OPER_xor: {	// '^'
-			symn lht = typecheck(s, loc, ast->op.lhso);
-			symn rht = typecheck(s, loc, ast->op.rhso);
-			ccToken cast;
-
-			if (!lht || !rht || loc) {
-				traceAst(ast);
-				return NULL;
-			}
-			if ((cast = typeTo(ast, promote(lht, rht)))) {
-				if (!castTo(ast->op.lhso, cast)) {
-					traceAst(ast);
-					return NULL;
-				}
-				if (!castTo(ast->op.rhso, cast)) {
-					traceAst(ast);
-					return NULL;
-				}
-				switch (cast) {
-					default:
-						break;
-
-					case TYPE_u32:
-					case TYPE_i32:
-					case TYPE_i64:
-						return ast->type;
-
-					case TYPE_f32:
-					case TYPE_f64:
-						ast->type = 0;
-						error(s->rt, ast->file, ast->line, "invalid cast(%+t)", ast);
-						return NULL;
-				}
-			}
-			fatal(FATAL_UNIMPLEMENTED_OPERATOR, ast, lht, rht, ast);
-		} break;
-
-		case OPER_equ:		// '=='
-		case OPER_neq:		// '!='
-		case OPER_lte:		// '<'
-		case OPER_leq:		// '<='
-		case OPER_gte:		// '>'
-		case OPER_geq: {	// '>='
-			symn lht = typecheck(s, loc, ast->op.lhso);
-			symn rht = typecheck(s, loc, ast->op.rhso);
-			ccToken cast = TYPE_any;
-
-			if (!lht || !rht || loc) {
-				traceAst(ast);
-				return NULL;
-			}
-
-			if (ast->kind == OPER_equ || ast->kind == OPER_neq) {
-				symn lhl = ast->op.lhso->kind == TYPE_ref ? ast->op.lhso->ref.link : NULL;
-				symn rhl = ast->op.rhso->kind == TYPE_ref ? ast->op.rhso->ref.link : NULL;
-
-				if (lhl == s->null_ref && rhl == s->null_ref)
-					cast = TYPE_ref;
-
-				else if (lhl == s->null_ref && rhl && (rhl->cast == TYPE_ref || rhl->cast == TYPE_arr))
-					cast = TYPE_ref;
-
-				else if (rhl == s->null_ref && lhl && (lhl->cast == TYPE_ref || lhl->cast == TYPE_arr))
-					cast = TYPE_ref;
-
-				// bool isint32 = type == int32;
-				if (rhl == rht && lht == s->type_rec) {
-					cast = TYPE_ref;
-				}
-				if (lhl == lht && rht == s->type_rec) {
-					cast = TYPE_ref;
-				}// * /
-
-				// comparing enum variables
-				if (rht->cast == ENUM_kwd && lht->cast == ENUM_kwd) {
-				}
-				else if (rht->cast == ENUM_kwd) {
-					rht = rht->type;
-					if (!typeTo(ast->op.rhso, rht)) {
-						traceAst(ast);
-						return NULL;
-					}
-				}
-				else if (lht->cast == ENUM_kwd) {
-					lht = lht->type;
-					if (!typeTo(ast->op.lhso, lht)) {
-						traceAst(ast);
-						return NULL;
-					}
-				}
-			}
-
-			if (cast || (cast = castOf(promote(lht, rht)))) {
-				if (!typeTo(ast, s->type_bol)) {
-					traceAst(ast);
-					return NULL;
-				}
-				if (!castTo(ast->op.lhso, cast)) {
-					traceAst(ast);
-					return NULL;
-				}
-				if (!castTo(ast->op.rhso, cast)) {
-					traceAst(ast);
-					return NULL;
-				}
-				return ast->type;
-			}
-
-			fatal(FATAL_UNIMPLEMENTED_OPERATOR, ast, lht, rht, ast);
-		} break;
-
-		case OPER_lor:		// '&&'
-		case OPER_lnd: {	// '||'
-			symn lht = typecheck(s, loc, ast->op.lhso);
-			symn rht = typecheck(s, loc, ast->op.rhso);
-			ccToken cast;
-
-			if (!lht || !rht || loc) {
-				traceAst(ast);
-				return NULL;
-			}
-			if ((cast = typeTo(ast, promote(lht, rht)))) {
-				if (!castTo(ast->op.lhso, TYPE_bit)) {
-					traceAst(ast);
-					return NULL;
-				}
-				if (!castTo(ast->op.rhso, TYPE_bit)) {
-					traceAst(ast);
-					return NULL;
-				}
-				ast->type = s->type_bol;
-				return ast->type;
-			}
-			fatal(FATAL_UNIMPLEMENTED_OPERATOR, ast, lht, rht, ast);
-		} break;
-
-		case OPER_sel: {	// '?:'
-			symn cmp = typecheck(s, loc, ast->op.test);
-			symn lht = typecheck(s, loc, ast->op.lhso);
-			symn rht = typecheck(s, loc, ast->op.rhso);
-			ccToken cast;
-
-			if (!cmp || !lht || !rht || loc) {
-				traceAst(ast);
-				return NULL;
-			}
-			if ((cast = typeTo(ast, promote(lht, rht)))) {
-				if (!castTo(ast->op.test, TYPE_bit)) {
-					traceAst(ast);
-					return NULL;
-				}
-				if (!castTo(ast->op.lhso, cast)) {
-					traceAst(ast);
-					return NULL;
-				}
-				if (!castTo(ast->op.rhso, cast)) {
-					traceAst(ast);
-					return NULL;
-				}
-				return ast->type;
-			}
-			fatal(FATAL_UNIMPLEMENTED_OPERATOR, ast, lht, rht, ast);
-		} break;
-
-		case OPER_com: {	// ','
-			//~ TODO: FixMe
-			symn lht = typecheck(s, loc, ast->op.lhso);
-			symn rht = typecheck(s, loc, ast->op.rhso);
-
-			if (!lht || !rht || loc) {
-				traceAst(ast);
-				return NULL;
-			}
-			if (lht->cast && rht->cast) {
-				symn typ = promote(lht, rht);
-				ccToken cast = castOf(typ);
-				if (!castTo(ast->op.lhso, cast)) {
-					traceAst(ast);
-					return NULL;
-				}
-				if (!castTo(ast->op.rhso, cast)) {
-					traceAst(ast);
-					return NULL;
-				}
-				return ast->type = typ;
-			}
-			fatal(FATAL_UNIMPLEMENTED_OPERATOR, ast, lht, rht, ast);
-		} break;
-
-		// operator set
-		case ASGN_set: {	// ':='
-			symn lht = typecheck(s, loc, ast->op.lhso);
-			symn rht = typecheck(s, loc, ast->op.rhso);
-			symn var = linkOf(ast->op.lhso);
-			ccToken cast;
-
-			if (!lht || !rht || !var || loc) {
-				traceAst(ast);
-				return NULL;
-			}
-
-			if (var->cnst) {
-				error(s->rt, ast->file, ast->line, ERR_ASSIGN_TO_CONST, ast);
-			}
-			if (lht->cast != ENUM_kwd && rht->cast == ENUM_kwd) {
-				rht = rht->type;
-				if (!typeTo(ast->op.rhso, rht)) {
-					traceAst(ast);
-					return NULL;
-				}
-			}
-			if (!(cast = canAssign(s, lht, ast->op.rhso, 0))) {
-				traceAst(ast);
-				return NULL;
-			}
-			if (!castTo(ast->op.rhso, cast)) {
-				traceAst(ast);
-				return NULL;
-			}
-			if (!castTo(ast->op.lhso, cast)) {
-				traceAst(ast);
-				return NULL;
-			}
-			/*if (!castTo(ast, cast)) {
-				traceAst(ast);
-				return NULL;
-			}*/
-
-			/*/ HACK: arrays of references dont casts to ref.
-			if (lht->kind == TYPE_arr) {// && lht->type->cast == TYPE_ref) {
-				ast->op.rhso->cst2 = TYPE_any;
-			}*/
-
-			ast->type = lht;
-			return ast->type;
-		} break;
-
-		// operator get
-		case TYPE_ref:
-			ref = ast;
-			if (ast->ref.link != NULL) {
-				if (ast->ref.hash == (unsigned)-1) {
-					return ast->type;
-				}
-			}
-			break;
-
-		case EMIT_opc:
-			return ast->type = s->emit_opc;
-
-		case TYPE_int:
-		case TYPE_flt:
-		case TYPE_str: {
-			if (loc) {
-				traceAst(ast);
-				return NULL;
-			}
-			switch (ast->kind) {
-				case TYPE_int: return typeTo(ast, s->type_i32) ? s->type_i32 : NULL;
-				case TYPE_flt: return typeTo(ast, s->type_f64) ? s->type_f64 : NULL;
-				case TYPE_str: return typeTo(ast, s->type_str) ? s->type_str : NULL;
-				default: break;
-			}
-		} break;
-	}
-
-	if (ref && ref != s->void_tag) {
-		sym = s->deft[ref->ref.hash];
-
-		if (loc != NULL) {
-			sym = loc->flds;
-		}
-
-		if ((sym = lookup(s, sym, ref, args, 1)) != NULL) {
-			// using function args
-			switch (sym->kind) {
-				default:
-					fatal(ERR_INTERNAL_ERROR);
-					return NULL;
-
-				case TYPE_def:
-					result = sym->type;
-					//~ debug("%T:%T in `%+t` (%d)", sym, result, ast, ast->line);
-					break;
-
-				case EMIT_opc:
-				case TYPE_ref:
-					result = sym->type;
-					break;
-
-				case TYPE_arr:
-				case TYPE_rec:
-					result = sym;
-					break;
-			}
-
-			//~ TODO: HACK: type cast with one argument
-			if (istype(sym) && args && !args->next) {			// cast
-				if (!castTo(args, sym->cast)) {
-					trace("%t: %K", args, sym->cast);
-					return NULL;
-				}
-			}
-
-			if (sym->call) {
-				astn argval = args;			// argument
-				symn param = sym->prms;		// parameter
-
-				while (param && argval) {
-					if (!castTo(argval, castOf(param->type))) {
-						trace("%+t: %K", argval, castOf(param->type));
-						return NULL;
-					}
-
-					// TODO: review
-					if (param->cast == TYPE_ref || argval->type->cast == TYPE_ref) {
-						if (!castTo(argval, param->cast)) {
-							trace("%t: %K", argval, param->cast);
-							return NULL;
-						}
-					}
-
-					// if swap(a, b) is written instad of swap(&a, &b)
-					if (param->cast == TYPE_ref && argval->type->cast != TYPE_ref) {
-						symn lnk = argval->kind == TYPE_ref ? argval->ref.link : NULL;
-						if (argval->kind != OPER_adr && lnk && lnk->cast != TYPE_ref && lnk->type->cast != TYPE_ref) {
-							warn(s->rt, 2, argval->file, argval->line, "argument `%+t` is not explicitly passed by reference", argval);
-						}
-					}
-
-					param = param->next;
-					argval = argval->next;
-				}
-
-				if (!args) {
-					result = s->type_ptr;
-				}
-			}
-
-			ref->kind = TYPE_ref;
-			ref->ref.link = sym;
-			ref->type = result;
-			ast->type = result;
-
-			addUsage(sym, ref);
-
-			if (dot != NULL) {
-				dot->type = result;
-			}
-		}
-		else
-			s->root = ref;
-	}
-	return result;
-}
-
-size_t fixargs(symn sym, unsigned int align, size_t base) {
-	symn arg;
-	size_t stdiff = 0;
-	int isCall = sym->call;
-	for (arg = sym->prms; arg; arg = arg->next) {
-
-		if (arg->kind != TYPE_ref)
-			continue;
-
-		if (arg->stat)
-			continue;
-
-		// functions are byRef in structs and params
-		if (arg->call) {
-			arg->cast = TYPE_ref;
-		}
-
-		arg->size = sizeOf(arg, 1);
-
-		//TODO: remove check: dynamic size arrays are represented as pointer+length
-		if (arg->type->kind == TYPE_arr && arg->type->init == NULL) {
-			dieif(arg->size != 2 * vm_size, ERR_INTERNAL_ERROR);
-			dieif(arg->cast != TYPE_arr, ERR_INTERNAL_ERROR);
-			//arg->size = 2 * vm_size;
-			//arg->cast = TYPE_arr;
-		}
-
-		//~ HACK: static sized array types are passed by reference.
-		if (isCall && arg->type->kind == TYPE_arr) {
-			//~ static size arrays are passed as pointer
-			if (arg->type->init != NULL) {
-				arg->cast = TYPE_ref;
-				arg->size = vm_size;
-			}
-		}
-
-		arg->nest = 0;
-		arg->offs = align ? base + stdiff : base;
-		stdiff += padded(arg->size, align);
-
-		if (align == 0 && stdiff < arg->size) {
-			stdiff = arg->size;
-		}
-	}
-	//~ because args are evaluated from right to left
-	if (isCall) {
-		for (arg = sym->prms; arg; arg = arg->next) {
-			arg->offs = stdiff - arg->offs;
-		}
-	}
-	return stdiff;
-}
-
-//~ scoping
-void enter(ccContext cc, astn ast) {
-	cc->nest += 1;
-	(void)ast;
-}
-symn leave(ccContext cc, symn dcl, int mkstatic) {
-	int i;
-	rtContext rt = cc->rt;
-	symn result = NULL;
-
-	cc->nest -= 1;
-
-	// clear from table
-	for (i = 0; i < TBLS; i++) {
-		symn def = cc->deft[i];
-		while (def && def->nest > cc->nest) {
-			def = def->next;
-		}
-		cc->deft[i] = def;
-	}
-
-	// clear from stack
-	while (rt->vars && cc->nest < rt->vars->nest) {
-		symn sym = rt->vars;
-
-		// pop from stack
-		rt->vars = sym->defs;
-
-		sym->next = NULL;
-
-		// declared in: (structure, function or wathever)
-		sym->decl = dcl ? dcl : cc->func;
-
-		if (mkstatic) {
-			sym->stat = 1;
-		}
-		if (!sym->stat && !cc->siff && sym->call && sym->init && sym->init->kind == STMT_beg) {
-			warn(cc->rt, 1, sym->file, sym->line, "marking function to be static: `%-T`", sym);
-			sym->stat = 1;
-		}
-
-		// if not inside a static if, link to all
-		sym->defs = cc->defs;
-		cc->defs = sym;
-
-		if (!cc->siff) {
-			if (sym->stat && sym->gdef == NULL) {
-				sym->gdef = cc->gdef;
-				cc->gdef = sym;
-			}
-		}
-
-		// TODO: any field can have default value.
-		if (dcl != NULL && dcl->kind == TYPE_rec) {
-			dieif(dcl->call, "FixMe");
-			if (sym->kind == TYPE_ref && !sym->stat && sym->init) {
-				warn(cc->rt, 8, sym->file, sym->line, "ignoring initialization of non static member `%+T`", sym);
-			}
-		}
-
-		sym->next = result;
-		result = sym;
-	}
-	//cc->defs = defs;
-
-	return result;
 }

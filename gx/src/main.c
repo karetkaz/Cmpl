@@ -690,7 +690,7 @@ void meshInfo(mesh msh) {
 	//~ printf("tri cnt : %d / %d\n", msh->tricnt, msh->maxtri);
 }
 
-#include "ccstd.h"
+#include "vmCore.h"
 extern rtContext rt;
 extern symn renderMethod;
 extern symn mouseCallBack;

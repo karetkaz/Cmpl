@@ -41,30 +41,30 @@ enum importgfx: bool {
 
 static if (importgfx.rgbUtils) {
 
-inline __rgb(int r, int g, int b) = int32((r << 16) | (g << 8) | b);
-inline rgbClamp(int r, int g, int b) = __rgb(Math.clamp(r, 0, 255), Math.clamp(g, 0, 255), Math.clamp(b, 0, 255));
-inline rgbAnd(int r, int g, int b) = __rgb(r & 255, g & 255, b & 255);
+define __rgb(int r, int g, int b) = int32((r << 16) | (g << 8) | b);
+define rgbClamp(int r, int g, int b) = __rgb(Math.clamp(r, 0, 255), Math.clamp(g, 0, 255), Math.clamp(b, 0, 255));
+define rgbAnd(int r, int g, int b) = __rgb(r & 255, g & 255, b & 255);
 
-inline __gray(int c) = __rgb(c, c, c);
-inline grayClamp(int c) = __gray(Math.clamp(c, 0, 255));
-inline grayAnd(int c) = __gray(c & 255);
+define __gray(int c) = __rgb(c, c, c);
+define grayClamp(int c) = __gray(Math.clamp(c, 0, 255));
+define grayAnd(int c) = __gray(c & 255);
 
-inline rgb(int r, int g, int b) = rgbAnd(r, g, b);
-inline gray(int c) = grayAnd(c);
+define rgb(int r, int g, int b) = rgbAnd(r, g, b);
+define gray(int c) = grayAnd(c);
 
-inline rgb(float64 r, float64 g, float64 b) = rgbClamp(r * 255, g * 255, b * 255);
-inline rgb(float32 r, float32 g, float32 b) = rgbClamp(r * 255, g * 255, b * 255);
-inline gray(float64 c) = grayClamp(c * 255);
-inline gray(float32 c) = grayClamp(c * 255);
+define rgb(float64 r, float64 g, float64 b) = rgbClamp(r * 255, g * 255, b * 255);
+define rgb(float32 r, float32 g, float32 b) = rgbClamp(r * 255, g * 255, b * 255);
+define gray(float64 c) = grayClamp(c * 255);
+define gray(float32 c) = grayClamp(c * 255);
 
 // get the Red channel of the color
-inline rch(int col) = int32((col >> 16) & 0xff);
+define rch(int col) = int32((col >> 16) & 0xff);
 // get the Green channel of the color
-inline gch(int col) = int32((col >> 8) & 0xff);
+define gch(int col) = int32((col >> 8) & 0xff);
 // get the Blue channel of the color
-inline bch(int col) = int32(col & 0xff);
+define bch(int col) = int32(col & 0xff);
 // get the luminosity of the color
-inline lum(int c) = int((rch(c) * 76 + gch(c) * 150 + bch(c) * 29) >> 8);
+define lum(int c) = int((rch(c) * 76 + gch(c) * 150 + bch(c) * 29) >> 8);
 
 struct rgb:1 {
 	int8 b;
@@ -73,13 +73,13 @@ struct rgb:1 {
 	int8 x;
 }
 
-inline int32(rgb value) = emit(int, rgb(value));
-inline asrgb(int32 value) = emit(rgb, int32(value));
-inline asrgb(int r, int g, int b) = emit(rgb, rgb(r, g, b));
+define int32(rgb value) = emit(int, rgb(value));
+define asrgb(int32 value) = emit(rgb, int32(value));
+define asrgb(int r, int g, int b) = emit(rgb, rgb(r, g, b));
 
 static if (importstd.vec4f) {
-inline rgb2vec4f(int32 col) = vec4f(rch(col) / 255., gch(col) / 255., bch(col) / 255.);
-inline asrgb(vec4f &col) = rgb(int(col.x * 255), int(col.y * 255), int(col.z * 255));
+define rgb2vec4f(int32 col) = vec4f(rch(col) / 255., gch(col) / 255., bch(col) / 255.);
+define asrgb(vec4f &col) = rgb(int(col.x * 255), int(col.y * 255), int(col.z * 255));
 }
 
 //~ linear interpolation: assuming t is in [0, 1) * 65535
@@ -124,7 +124,7 @@ int rgbDiv(int c1, int c2) {
 }
 
 int rgbLerp16(int c1, int c2, int t) {
-	inline lrpfix16(int x, int y) = int(x + (t * (y - x) >> 16));
+	define lrpfix16(int x, int y) = int(x + (t * (y - x) >> 16));
 
 	int r = lrpfix16(rch(c1), rch(c2));
 	int g = lrpfix16(gch(c1), gch(c2));
@@ -178,13 +178,13 @@ vec4f Hsv2Rgb(vec4f hsv) {
 
 }
 
-inline gxSurf() = newSurf(0, 0);
-//~ inline gxSurf(int dim) = newSurf(dim, dim);
-inline gxSurf(int width, int height) = newSurf(width, height);
-inline gxSurf(gxSurf copy) = copySurf(newSurf(width(copy), height(copy)), 0, 0, copy, null);
+define gxSurf() = newSurf(0, 0);
+//~ define gxSurf(int dim) = newSurf(dim, dim);
+define gxSurf(int width, int height) = newSurf(width, height);
+define gxSurf(gxSurf copy) = copySurf(newSurf(width(copy), height(copy)), 0, 0, copy, null);
 
-inline fillRect(gxSurf dst, gxRect roi, int col) = fillRect(dst, roi.x, roi.y, roi.x + roi.w, roi.y + roi.h, col);
-inline drawRect(gxSurf dst, gxRect roi, int col) = drawRect(dst, roi.x, roi.y, roi.x + roi.w, roi.y + roi.h, col);
+define fillRect(gxSurf dst, gxRect roi, int col) = fillRect(dst, roi.x, roi.y, roi.x + roi.w, roi.y + roi.h, col);
+define drawRect(gxSurf dst, gxRect roi, int col) = drawRect(dst, roi.x, roi.y, roi.x + roi.w, roi.y + roi.h, col);
 
 gxSurf openImg(gxSurf dst, string fileName) {
 	int ext = strlen(fileName);
@@ -224,7 +224,7 @@ gxSurf openImg(gxSurf dst, string fileName) {
 	assert(ext == 0, "error opening file", variant(fileName));
 	result = dst;
 }
-inline gxSurf(string fileName) = openImg(newSurf(0, 0), fileName);
+define gxSurf(string fileName) = openImg(newSurf(0, 0), fileName);
 
 bool clipRect2(gxSurf src, gxRect &roi) {
 	int minx = 0;
@@ -312,7 +312,7 @@ void blendLut(int count, gxClut &lut, int Colors[]) {
 		lut.data[i] = rgbLerp16(c1, c2, t & 0xffff);
 	}
 }
-//TODO: inline blendLut(gxClut &lut, int Colors[]) = blendLut(256, lut, Colors);
+//TODO: define blendLut(gxClut &lut, int Colors[]) = blendLut(256, lut, Colors);
 void blendLut(gxClut &lut, int Colors[]) {
 	blendLut(256, lut, Colors);
 }
@@ -330,9 +330,9 @@ void blendLut(int count, gxClut &lut, int c1, int c2, int c3, int c4) {
 	blendLut(count, lut, Colors);
 }
 
-//~ inline blendLut(gxClut &lut, int c1, int c2) = blendLut(256, lut, c1, c2);
-//~ inline blendLut(gxClut &lut, int c1, int c2, int c3) = blendLut(256, lut, c1, c2, c3);
-//~ inline blendLut(gxClut &lut, int c1, int c2, int c3, int c4) = blendLut(256, lut, c1, c2, c3, c4);
+//~ define blendLut(gxClut &lut, int c1, int c2) = blendLut(256, lut, c1, c2);
+//~ define blendLut(gxClut &lut, int c1, int c2, int c3) = blendLut(256, lut, c1, c2, c3);
+//~ define blendLut(gxClut &lut, int c1, int c2, int c3, int c4) = blendLut(256, lut, c1, c2, c3, c4);
 
 void lutBrightnessContrastGamma(gxClut &lut, int brightness, int contrast, double gamma) {
 	double gval = 1. / gamma;
@@ -371,7 +371,7 @@ gxSurf lut2Surf(gxSurf dst, gxClut &lut, int bg) {
 }
 
 /*void saveLut(gxClut &lut, string fileName) {
-	inline size = 256;
+	define size = 256;
 	gxSurf surf = gxSurf(size, size);
 	for (int y = 0; y < size; y += 1) {
 		for (int x = 0; x < size; x += 1) {
@@ -441,23 +441,23 @@ void meshGen(int sdiv, bool sclosed, int tdiv, bool tclosed, void pos(double &x,
 			for (int j = 0; j < sdiv; j += 1) {
 				double s = j / sDiv;
 
-				inline usev3 = true;
+				define usev3 = true;
 
 				static if (usev3) {		// slower (struct implementation)
 
 					struct Vec3{double x; double y; double z;}
 
-					//~ inline add(Vec3 &a, Vec3 &b) = Vec3(a.x + b.x, a.y + b.y, a.z + b.z);
-					//~ inline mul(Vec3 &a, Vec3 &b) = Vec3(a.x * b.x, a.y * b.y, a.z * b.z);
-					//~ inline div(Vec3 &a, Vec3 &b) = Vec3(a.x / b.x, a.y / b.y, a.z / b.z);
+					//~ define add(Vec3 &a, Vec3 &b) = Vec3(a.x + b.x, a.y + b.y, a.z + b.z);
+					//~ define mul(Vec3 &a, Vec3 &b) = Vec3(a.x * b.x, a.y * b.y, a.z * b.z);
+					//~ define div(Vec3 &a, Vec3 &b) = Vec3(a.x / b.x, a.y / b.y, a.z / b.z);
 
-					inline sub(Vec3 &a, Vec3 &b) = Vec3(a.x - b.x, a.y - b.y, a.z - b.z);
-					inline div(Vec3 &a, double b) = Vec3(a.x / b, a.y / b, a.z / b);
+					define sub(Vec3 &a, Vec3 &b) = Vec3(a.x - b.x, a.y - b.y, a.z - b.z);
+					define div(Vec3 &a, double b) = Vec3(a.x / b, a.y / b, a.z / b);
 
-					inline dot(Vec3 a, Vec3 b) = double(a.x * b.x + a.y * b.y + a.z * b.z);
-					inline cross(Vec3 a, Vec3 b) = Vec3(a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x);
-					//~ inline divnz(Vec3 a, double b) = Vec3(b ? a.x / b : a.x, b ? a.y / b : a.y, b ? a.z / b : a.z);
-					inline divnz(Vec3 a, double b) = Vec3(b ? div(a, b) : a);
+					define dot(Vec3 a, Vec3 b) = double(a.x * b.x + a.y * b.y + a.z * b.z);
+					define cross(Vec3 a, Vec3 b) = Vec3(a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x);
+					//~ define divnz(Vec3 a, double b) = Vec3(b ? a.x / b : a.x, b ? a.y / b : a.y, b ? a.z / b : a.z);
+					define divnz(Vec3 a, double b) = Vec3(b ? div(a, b) : a);
 
 					Vec3 p;
 					Vec3 ds;
@@ -497,7 +497,7 @@ void meshGen(int sdiv, bool sclosed, int tdiv, bool tclosed, void pos(double &x,
 					n[1] = ds[2] * dt[0] - ds[0] * dt[2];
 					n[2] = ds[0] * dt[1] - ds[1] * dt[0];
 
-					inline sqr(double x) = double(x * x);
+					define sqr(double x) = double(x * x);
 					double len = float64.sqrt(sqr(n[0]) + sqr(n[1]) + sqr(n[2]));
 					if (len != 0) {
 						n[0] /= len;
@@ -537,16 +537,16 @@ void meshGen(int sdiv, bool sclosed, int tdiv, bool tclosed, void pos(double &x,
 	}
 }
 
-inline meshGen(int sdiv, int tdiv, void pos(double &x, double &y, double &z, double s, double t)) = meshGen(sdiv, true, tdiv, true, pos, 1e-10);
-//~ inline meshGen(int sdiv, int tdiv, void pos(double &x, double &y, double &z, double s, double t), double epsilon) = meshGen(sdiv, true, tdiv, true, pos, epsilon);
-inline meshGen(int div, void pos(double &x, double &y, double &z, double s, double t), double epsilon) = meshGen(div, true, div, true, pos, epsilon);
-inline meshGen(int div, void pos(double &x, double &y, double &z, double s, double t)) = meshGen(div, true, div, true, pos, 1e-10);
+define meshGen(int sdiv, int tdiv, void pos(double &x, double &y, double &z, double s, double t)) = meshGen(sdiv, true, tdiv, true, pos, 1e-10);
+//~ define meshGen(int sdiv, int tdiv, void pos(double &x, double &y, double &z, double s, double t), double epsilon) = meshGen(sdiv, true, tdiv, true, pos, epsilon);
+define meshGen(int div, void pos(double &x, double &y, double &z, double s, double t), double epsilon) = meshGen(div, true, div, true, pos, epsilon);
+define meshGen(int div, void pos(double &x, double &y, double &z, double s, double t)) = meshGen(div, true, div, true, pos, 1e-10);
 
 //#}
 
 gxSurf Mandel(gxSurf dst, gxClut &lut, double QMin, double QMax, double PMin, double PMax) {
 
-	inline M = 4.;			// It. Limit
+	define M = 4.;			// It. Limit
 
 	int kmax = lut.count;
 	int resx = width(dst);
@@ -606,8 +606,8 @@ void setupPicView(gxSurf vImg, bool vFit) {
 	static bool clear = false;
 	static bool fit = false;
 
-	inline inertial_pan = 25.;
-	inline inertial_speed = 1.01;
+	define inertial_pan = 25.;
+	define inertial_speed = 1.01;
 	static int64 inertial_time = 0;
 	static double inertial_pan_x = 0;
 	static double inertial_pan_y = 0;

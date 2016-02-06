@@ -6,7 +6,7 @@ struct fixed:0 {
 // TODO: struct Fixed(int FractBits) { ... }
 static struct Fixed {
 	// constants
-	//~ inline FractBits = 24;
+	//~ define FractBits = 24;
 
 	enum: int32 {
 
@@ -32,22 +32,22 @@ static struct Fixed {
 		fxp_min = -fxp_max;
 	}
 
-	inline asFixed(const int32 val) = emit(fixed, i32(val));
-	inline toFixed(const int32 val) = emit(fixed, i32(val << FractBits));
-	inline toFixed(const float64 val) = emit(fixed, int32(val * (1 << FractBits)));
+	define asFixed(const int32 val) = emit(fixed, int32(val));
+	define toFixed(const int32 val) = emit(fixed, int32(val << FractBits));
+	define toFixed(const float64 val) = emit(fixed, int32(val * (1 << FractBits)));
 
-	inline mul(int32 lhs, int32 rhs, int __fixp) = int32(int64.Sar(int64(lhs) * rhs, __fixp));
-	inline div(int32 lhs, int32 rhs, int __fixp) = int32(int64.Shl(int64(lhs), __fixp) / rhs);
+	define mul(int32 lhs, int32 rhs, int __fixp) = int32(int64.Sar(int64(lhs) * rhs, __fixp));
+	define div(int32 lhs, int32 rhs, int __fixp) = int32(int64.Shl(int64(lhs), __fixp) / rhs);
 
-	inline add(fixed &lhs, fixed &rhs) = asFixed(lhs.value + rhs.value);
-	inline sub(fixed &lhs, fixed &rhs) = asFixed(lhs.value - rhs.value);
-	inline mul(fixed &lhs, fixed &rhs) = asFixed(mul(lhs.value, rhs.value, FractBits));
-	inline mul(fixed &lhs, int32 rhs) = asFixed(lhs.value * rhs);
-	inline mul(int32 lhs, fixed &rhs) = asFixed(lhs * rhs.value);
-	inline div(fixed &lhs, fixed &rhs) = asFixed(div(lhs.value, rhs.value, FractBits));
-	inline div(fixed &lhs, int32 rhs) = asFixed(lhs.value / rhs);
-	inline mod(fixed &lhs, fixed &rhs) = asFixed(lhs.value % rhs.value);
-	inline inv(fixed rhs) = div(asFixed(fxp_one), rhs);
+	define add(fixed &lhs, fixed &rhs) = asFixed(lhs.value + rhs.value);
+	define sub(fixed &lhs, fixed &rhs) = asFixed(lhs.value - rhs.value);
+	define mul(fixed &lhs, fixed &rhs) = asFixed(mul(lhs.value, rhs.value, FractBits));
+	define mul(fixed &lhs, int32 rhs) = asFixed(lhs.value * rhs);
+	define mul(int32 lhs, fixed &rhs) = asFixed(lhs * rhs.value);
+	define div(fixed &lhs, fixed &rhs) = asFixed(div(lhs.value, rhs.value, FractBits));
+	define div(fixed &lhs, int32 rhs) = asFixed(lhs.value / rhs);
+	define mod(fixed &lhs, fixed &rhs) = asFixed(lhs.value % rhs.value);
+	define inv(fixed rhs) = div(asFixed(fxp_one), rhs);
 
 	uint32 bsr(uint32 x) {		// scan bit reverse (first bit = 31 (msb))
 		if (x == 0) {
@@ -255,16 +255,16 @@ static struct Fixed {
 	}
 
 	//~ ln(x) := ln2 * l2(x);
-	inline Ln(fixed x) = mul(fxp_ln2, fxplg2(x));
+	define Ln(fixed x) = mul(fxp_ln2, fxplg2(x));
 
 	//~ ln(x) := lg2 * l2(x);
-	inline Lg(fixed x) = mul(fxp_lg2, fxplg2(x));
+	define Lg(fixed x) = mul(fxp_lg2, fxplg2(x));
 
 	//~ e ** x = 2 ** (l2e * x)
-	inline Exp(fixed x) = fxp2xp(mul(fxp_l2e, x));
+	define Exp(fixed x) = fxp2xp(mul(fxp_l2e, x));
 
 	//~ 10 ** x = 2 ** (l2t * x)
-	//~ inline Txp(fixed x) = fxp2xp(mul(fxp_l2t, x));
+	//~ define Txp(fixed x) = fxp2xp(mul(fxp_l2t, x));
 
 	fixed Sqrt(fixed x) {
 		if (x.value < 0) {
@@ -429,10 +429,10 @@ long fxpatanh(long x) {
 // */
 }
 
-inline fixed(int32 val) = Fixed.toFixed(val);
-inline fixed(float64 val) = Fixed.toFixed(val);
-inline int32(fixed &val) = int(val.value >> Fixed.FractBits);
-inline float64(fixed &val) = double(val.value / double(1 << Fixed.FractBits));
+define fixed(int32 val) = Fixed.toFixed(val);
+define fixed(float64 val) = Fixed.toFixed(val);
+define int32(fixed &val) = int(val.value >> Fixed.FractBits);
+define float64(fixed &val) = double(val.value / double(1 << Fixed.FractBits));
 
 struct assertInfo {
 	string  function;
@@ -462,9 +462,9 @@ int test(const assertInfo info, double eps) {
 	return raise.debug;
 }
 
-inline assert(const assertInfo &info) = raise(test(info, 1e-3), "test failed", variant(&info), raise.noTrace);
-inline assertEquals(string f, float64 a, fixed b) = assert(assertInfo(f, a, float64(b), b));
-//~ inline assertEquals(string f, float64 a, fixed b) = void(0);
+define assert(const assertInfo &info) = raise(test(info, 1e-3), "test failed", variant(&info), raise.noTrace);
+define assertEquals(string f, float64 a, fixed b) = assert(assertInfo(f, a, float64(b), b));
+//~ define assertEquals(string f, float64 a, fixed b) = void(0);
 
 //~ double fixed_test0 = float64(Fixed.add(fixed(2.225), fixed(3)));
 

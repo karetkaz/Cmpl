@@ -18,16 +18,16 @@ MKDIR=mkdir -p
 SYSLIBS=-lm -lX11
 
 ifneq "$(ARH)" "-m32"
-	LIBDIR=../out/lnx64
+	LIBDIR=../libs/lnx64
 else
-	LIBDIR=../out/lnx32
+	LIBDIR=../libs/lnx32
 endif
 
 ifeq "$(OS)" "Windows_NT"
 	ifneq "$(ARH)" "-m32"
-		LIBDIR=../out/win64
+		LIBDIR=../libs/win64
 	else
-		LIBDIR=../out/win32
+		LIBDIR=../libs/win32
 	endif
 	SYSLIBS=-lm -lgdi32
 	AS=nasm -f coff --prefix _

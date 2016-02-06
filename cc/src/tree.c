@@ -9,6 +9,24 @@ source code representation using abstract syntax tree
 #include <math.h>
 #include "internal.h"
 
+symn newdefn(ccContext cc, ccToken kind) {
+	rtContext rt = cc->rt;
+	symn def = NULL;
+
+	rt->_beg = paddptr(rt->_beg, 8);
+	if(rt->_beg >= rt->_end) {
+		fatal(ERR_INTERNAL_ERROR);
+		return NULL;
+	}
+
+	def = (symn)rt->_beg;
+	rt->_beg += sizeof(struct symNode);
+	memset(def, 0, sizeof(struct symNode));
+	def->kind = kind;
+
+	return def;
+}
+
 astn newnode(ccContext cc, ccToken kind) {
 	rtContext rt = cc->rt;
 	astn ast = 0;
@@ -29,26 +47,41 @@ astn newnode(ccContext cc, ccToken kind) {
 	ast->kind = kind;
 	return ast;
 }
-void eatnode(ccContext s, astn ast) {
+
+void eatnode(ccContext cc, astn ast) {
 	if (!ast) return;
-	ast->next = s->tokp;
-	s->tokp = ast;
+	ast->next = cc->tokp;
+	cc->tokp = ast;
 }
 
-
-astn opnode(ccContext s, ccToken kind, astn lhs, astn rhs) {
-	astn result = newnode(s, kind);
-	if (result != NULL) {
-		//~ TODO: dieif(tok_inf[kind].args == 0, "Erroro");
-		result->op.lhso = lhs;
-		result->op.rhso = rhs;
+/// make a constant valued node
+astn intnode(ccContext cc, int64_t v) {
+	astn ast = newnode(cc, TYPE_int);
+	if (ast != NULL) {
+		ast->type = cc->type_i32;
+		ast->cint = v;
 	}
-	return result;
+	return ast;
 }
-
-astn lnknode(ccContext s, symn ref) {
-	astn result = newnode(s, TYPE_ref);
-
+astn fltnode(ccContext cc, float64_t v) {
+	astn ast = newnode(cc, TYPE_flt);
+	if (ast != NULL) {
+		ast->type = cc->type_f64;
+		ast->cflt = v;
+	}
+	return ast;
+}
+astn strnode(ccContext cc, char* v) {
+	astn ast = newnode(cc, TYPE_str);
+	if (ast != NULL) {
+		ast->type = cc->type_str;
+		ast->ref.hash = -1;
+		ast->ref.name = v;
+	}
+	return ast;
+}
+astn lnknode(ccContext cc, symn ref) {
+	astn result = newnode(cc, TYPE_ref);
 	if (result != NULL) {
 		result->type = ref->kind == TYPE_ref ? ref->type : ref;
 		result->ref.name = ref->name;
@@ -58,218 +91,66 @@ astn lnknode(ccContext s, symn ref) {
 	}
 	return result;
 }
-
-/// make a constant valued node
-astn intnode(ccContext s, int64_t v) {
-	astn ast = newnode(s, TYPE_int);
-	if (ast != NULL) {
-		ast->type = s->type_i32;
-		ast->cint = v;
+astn opnode(ccContext cc, ccToken kind, astn lhs, astn rhs) {
+	astn result = newnode(cc, kind);
+	if (result != NULL) {
+		//~ TODO: dieif(tok_inf[kind].args == 0, "Erroro");
+		result->op.lhso = lhs;
+		result->op.rhso = rhs;
 	}
-	return ast;
-}
-astn fltnode(ccContext s, float64_t v) {
-	astn ast = newnode(s, TYPE_flt);
-	if (ast != NULL) {
-		ast->type = s->type_f64;
-		ast->cflt = v;
-	}
-	return ast;
-}
-astn strnode(ccContext s, char* v) {
-	astn ast = newnode(s, TYPE_str);
-	if (ast != NULL) {
-		ast->type = s->type_str;
-		ast->ref.hash = -1;
-		ast->ref.name = v;
-	}
-	return ast;
+	return result;
 }
 
+/// get value of constant node
 int32_t constbol(astn ast) {
-	if (ast) switch (ast->kind) {
-		case TYPE_bit:
-		case TYPE_int:
-			return ast->cint != 0;
-		case TYPE_flt:
-			return ast->cflt != 0;
-		default:
-			break;
+	if (ast != NULL) {
+		switch (ast->kind) {
+			case TYPE_bit:
+			case TYPE_int:
+				return ast->cint != 0;
+			case TYPE_flt:
+				return ast->cflt != 0;
+			default:
+				break;
+		}
 	}
 	fatal("not a constant %+t", ast);
 	return 0;
 }
 int64_t constint(astn ast) {
-	if (ast) switch (ast->kind) {
-		case TYPE_int:
-			return (int64_t)ast->cint;
-		case TYPE_flt:
-			return (int64_t)ast->cflt;
-		/*case TYPE_ref: {
-			symn lnk = ast->ref.link;
-			if (lnk && lnk->kind == TYPE_def) {
-				return constint(lnk->init);
-			}
-		}*/
-		default:
-			break;
+	if (ast != NULL) {
+		switch (ast->kind) {
+			case TYPE_int:
+				return (int64_t)ast->cint;
+			case TYPE_flt:
+				return (int64_t)ast->cflt;
+				/*case TYPE_ref: {
+					symn lnk = ast->ref.link;
+					if (lnk && lnk->kind == TYPE_def) {
+						return constint(lnk->init);
+					}
+				}*/
+			default:
+				break;
+		}
 	}
 	fatal("not a constant %+t", ast);
 	return 0;
 }
 float64_t constflt(astn ast) {
-	if (ast) switch (ast->kind) {
-		case TYPE_int:
-			return (float64_t)ast->cint;
-		case TYPE_flt:
-			return (float64_t)ast->cflt;
-		default:
-			break;
+	if (ast) {
+		switch (ast->kind) {
+			case TYPE_int:
+				return (float64_t)ast->cint;
+			case TYPE_flt:
+				return (float64_t)ast->cflt;
+			default:
+				break;
+		}
 	}
 	fatal("not a constant %+t", ast);
 	return 0;
 }
-
-
-int isStatic(ccContext cc, astn ast) {
-	if (ast) switch (ast->kind) {
-		default:
-			return 0;
-
-		//#{ OPER
-		case OPER_fnc:		// '()' emit/call/cast
-		case OPER_idx:		// '[]'
-		case OPER_dot:		// '.'
-			return 0;
-
-		case OPER_com:
-		case OPER_not:		// '!'
-		case OPER_pls:		// '+'
-		case OPER_mns:		// '-'
-		case OPER_cmt:		// '~'
-			return isStatic(cc, ast->op.rhso);
-
-		case OPER_shl:		// '>>'
-		case OPER_shr:		// '<<'
-		case OPER_and:		// '&'
-		case OPER_ior:		// '|'
-		case OPER_xor:		// '^'
-
-		case OPER_equ:		// '=='
-		case OPER_neq:		// '!='
-		case OPER_lte:		// '<'
-		case OPER_leq:		// '<='
-		case OPER_gte:		// '>'
-		case OPER_geq:		// '>='
-
-		case OPER_add:		// '+'
-		case OPER_sub:		// '-'
-		case OPER_mul:		// '*'
-		case OPER_div:		// '/'
-		case OPER_mod:		// '%'
-			return isStatic(cc, ast->op.lhso) && isStatic(cc, ast->op.rhso);
-
-		case OPER_lnd:		// '&&'
-		case OPER_lor:		// '||'
-			return isStatic(cc, ast->op.lhso) && isStatic(cc, ast->op.rhso);
-
-		case OPER_sel:		// '?:'
-			return isStatic(cc, ast->op.test) && isStatic(cc, ast->op.lhso) && isStatic(cc, ast->op.rhso);
-
-		case ASGN_set:		// ':='
-			return 0;
-		//#}
-		//#{ TVAL
-		case TYPE_int:
-		case TYPE_flt:
-		case TYPE_str:
-			return 1;
-
-		case TYPE_ref: {					// use (var, func, define)
-			symn typ = ast->type;			// type
-			symn var = ast->ref.link;		// link
-			if (typ == NULL || var == NULL) {
-				fatal(ERR_INTERNAL_ERROR);
-				return 0;
-			}
-			// TODO: global variables are not always static.
-			return var->stat || var->nest > cc->nest;
-		}
-
-		//~ case TYPE_def:					// new (var, func, define)
-		//~ case EMIT_opc:
-		//#}
-	}
-	return 0;
-}
-
-int isConst(astn ast) {
-	if (ast != NULL) {
-		struct astNode tmp;
-
-		while (ast->kind == OPER_com) {
-			if (!isConst(ast->op.rhso)) {
-				debug("%+t", ast);
-				return 0;
-			}
-			ast = ast->op.lhso;
-		}
-
-		if (eval(&tmp, ast)) {
-			return 1;
-		}
-
-		if (ast->kind == OPER_fnc) {
-			// check if it is an initializer or a pure function
-			symn ref = linkOf(ast->op.lhso);
-			if (ref && !ref->cnst) {
-				return 0;
-			}
-
-			// check if arguments are constants
-			return isConst(ast->op.rhso);
-		}
-
-		else if (ast->kind == TYPE_ref) {
-			symn ref = linkOf(ast);
-			if (ref && ref->cnst) {
-				return 1;
-			}
-		}
-
-		// string constant is constant
-		else if (ast->kind == TYPE_str) {
-			return 1;
-		}
-	}
-
-	debug("%+t", ast);
-	return 0;
-}
-
-int isType(astn ast) {
-	if (!ast) return 0;
-
-	if (ast->kind == EMIT_opc) {
-		return 0;
-	}
-
-	if (ast->kind == OPER_dot) {
-		if (isType(ast->op.lhso)) {
-			return isType(ast->op.rhso);
-		}
-		return 0;
-	}
-
-	if (ast->kind == TYPE_ref) {
-		return istype(ast->ref.link);
-	}
-
-	//~ trace("%K(%+t):(%d)", ast->kind, ast, ast->line);
-	return 0;
-}
-
-//~ TODO: eval should use cgen and vmExec
 ccToken eval(astn res, astn ast) {
 	symn type = NULL;
 	ccToken cast;
@@ -291,15 +172,15 @@ ccToken eval(astn res, astn ast) {
 			cast = TYPE_bit;
 			break;
 
-		//~ case TYPE_int:
+			//~ case TYPE_int:
 		case TYPE_i32:
 		case TYPE_u32:
 		case TYPE_i64:
-		//case TYPE_u64:
+			//case TYPE_u64:
 			cast = TYPE_int;
 			break;
 
-		//~ case TYPE_flt:
+			//~ case TYPE_flt:
 		case TYPE_f32:
 		case TYPE_f64:
 			cast = TYPE_flt;
@@ -339,7 +220,7 @@ ccToken eval(astn res, astn ast) {
 			return 0;
 
 		case OPER_dot:
-			if (!isType(ast->op.lhso))
+			if (!isTypeExpr(ast->op.lhso))
 				return 0;
 			return eval(res, ast->op.rhso);
 
@@ -347,7 +228,7 @@ ccToken eval(astn res, astn ast) {
 			astn func = ast->op.lhso;
 
 			// evaluate only type casts.
-			if (func && !isType(func))
+			if (func && !isTypeExpr(func))
 				return 0;
 
 			if (!eval(res, ast->op.rhso))
@@ -411,10 +292,10 @@ ccToken eval(astn res, astn ast) {
 					res->cint = ~res->cint;
 					break;
 
-				/*case TYPE_flt:
-					res->cflt = 1. / res->cflt;
-					break;
-				//? */
+					/*case TYPE_flt:
+						res->cflt = 1. / res->cflt;
+						break;
+					//? */
 			}
 			break;
 
@@ -705,45 +586,45 @@ ccToken eval(astn res, astn ast) {
 			return eval(res, lhs.cint ? ast->op.lhso : ast->op.rhso);
 
 		case ASGN_set:
-		//~ case ASGN_add:
-		//~ case ASGN_sub:
-		//~ case ASGN_mul:
-		//~ case ASGN_div:
-		//~ case ASGN_mod:
-		//~ case ASGN_shl:
-		//~ case ASGN_shr:
-		//~ case ASGN_and:
-		//~ case ASGN_ior:
-		//~ case ASGN_xor:
+			//~ case ASGN_add:
+			//~ case ASGN_sub:
+			//~ case ASGN_mul:
+			//~ case ASGN_div:
+			//~ case ASGN_mod:
+			//~ case ASGN_shl:
+			//~ case ASGN_shr:
+			//~ case ASGN_and:
+			//~ case ASGN_ior:
+			//~ case ASGN_xor:
 		case EMIT_opc:
 			return 0;
 	}
 
 	if (cast != res->kind) switch (cast) {
-		default:
-			fatal(ERR_INTERNAL_ERROR);
-			return 0;
+			default:
+				fatal(ERR_INTERNAL_ERROR);
+				return 0;
 
-		case TYPE_vid:
-		case TYPE_any:
-		case TYPE_rec:
-			break;
+			case TYPE_vid:
+			case TYPE_any:
+			case TYPE_rec:
+				break;
 
-		case TYPE_bit:
-			res->cint = constbol(res);
-			res->kind = TYPE_int;
-			break;
+			case TYPE_bit:
+				res->cint = constbol(res);
+				res->kind = TYPE_int;
+				break;
 
-		case TYPE_int:
-			res->cint = constint(res);
-			res->kind = TYPE_int;
-			break;
+			case TYPE_int:
+				res->cint = constint(res);
+				res->kind = TYPE_int;
+				break;
 
-		case TYPE_flt:
-			res->cflt = constflt(res);
-			res->kind = TYPE_flt;
-			break;
-	}
+			case TYPE_flt:
+				res->cflt = constflt(res);
+				res->kind = TYPE_flt;
+				break;
+		}
 
 	switch (res->kind) {
 		default:
@@ -763,7 +644,9 @@ ccToken eval(astn res, astn ast) {
 }
 
 symn linkOf(astn ast) {
-	if (!ast) return 0;
+	if (ast == NULL) {
+		return NULL;
+	}
 
 	if (ast->kind == EMIT_opc) {
 		return ast->type;
@@ -793,3 +676,294 @@ symn linkOf(astn ast) {
 	//~ trace("%K(%+t)", ast->kind, ast);
 	return NULL;
 }
+
+int isType(symn sym) {
+	if (sym == NULL) {
+		return 0;
+	}
+
+	switch (sym->kind) {
+		default:
+			break;
+
+		case TYPE_arr:
+		case TYPE_rec:
+			return sym->kind;
+
+		case TYPE_def:
+			if (sym->init == NULL) {
+				return isType(sym->type);
+			}
+			break;
+	}
+	//~ trace("%T is not a type", sym);
+	return 0;
+}
+
+int isTypeExpr(astn ast) {
+	if (ast == NULL) {
+		return 0;
+	}
+
+	if (ast->kind == EMIT_opc) {
+		return 0;
+	}
+
+	if (ast->kind == OPER_dot) {
+		if (isTypeExpr(ast->op.lhso)) {
+			return isTypeExpr(ast->op.rhso);
+		}
+		return 0;
+	}
+
+	if (ast->kind == TYPE_ref) {
+		return isType(ast->ref.link);
+	}
+
+	//~ trace("%K(%+t):(%d)", ast->kind, ast, ast->line);
+	return 0;
+}
+
+int isConstExpr(astn ast) {
+	struct astNode tmp;
+	if (ast == NULL) {
+		return 0;
+	}
+
+	// array initializer or function arguments
+	while (ast->kind == OPER_com) {
+		if (!isConstExpr(ast->op.rhso)) {
+			debug("%+t", ast);
+			return 0;
+		}
+		ast = ast->op.lhso;
+	}
+
+	if (eval(&tmp, ast)) {
+		return 1;
+	}
+
+	if (ast->kind == OPER_fnc) {
+		// check if it is an initializer or a pure function
+		symn ref = linkOf(ast->op.lhso);
+		if (ref && !ref->cnst) {
+			return 0;
+		}
+
+		// check if arguments are constants
+		return isConstExpr(ast->op.rhso);
+	}
+
+	else if (ast->kind == TYPE_ref) {
+		symn ref = linkOf(ast);
+		if (ref && ref->cnst) {
+			return 1;
+		}
+	}
+
+		// string constant is constant
+	else if (ast->kind == TYPE_str) {
+		return 1;
+	}
+
+	traceAst(ast);
+	return 0;
+}
+
+int isStaticExpr(ccContext cc, astn ast) {
+	if (ast == NULL) {
+		return 0;
+	}
+	switch (ast->kind) {
+		default:
+			break;
+
+		//#{ OPER
+		case OPER_fnc:		// '()' emit/call/cast
+		case OPER_idx:		// '[]'
+		case OPER_dot:		// '.'
+			return 0;
+
+		case OPER_com:
+		case OPER_not:		// '!'
+		case OPER_pls:		// '+'
+		case OPER_mns:		// '-'
+		case OPER_cmt:		// '~'
+			return isStaticExpr(cc, ast->op.rhso);
+
+		case OPER_shl:		// '>>'
+		case OPER_shr:		// '<<'
+		case OPER_and:		// '&'
+		case OPER_ior:		// '|'
+		case OPER_xor:		// '^'
+
+		case OPER_equ:		// '=='
+		case OPER_neq:		// '!='
+		case OPER_lte:		// '<'
+		case OPER_leq:		// '<='
+		case OPER_gte:		// '>'
+		case OPER_geq:		// '>='
+
+		case OPER_add:		// '+'
+		case OPER_sub:		// '-'
+		case OPER_mul:		// '*'
+		case OPER_div:		// '/'
+		case OPER_mod:		// '%'
+			return isStaticExpr(cc, ast->op.lhso) && isStaticExpr(cc, ast->op.rhso);
+
+		case OPER_lnd:		// '&&'
+		case OPER_lor:		// '||'
+			return isStaticExpr(cc, ast->op.lhso) && isStaticExpr(cc, ast->op.rhso);
+
+		case OPER_sel:		// '?:'
+			return isStaticExpr(cc, ast->op.test) && isStaticExpr(cc, ast->op.lhso) && isStaticExpr(cc, ast->op.rhso);
+
+		case ASGN_set:		// ':='
+			return 0;
+		//#}
+		//#{ TVAL
+		case TYPE_int:
+		case TYPE_flt:
+		case TYPE_str:
+			return 1;
+
+		case TYPE_ref: {					// use (var, func, define)
+			symn typ = ast->type;			// type
+			symn var = ast->ref.link;		// link
+			if (typ == NULL || var == NULL) {
+				fatal(ERR_INTERNAL_ERROR);
+				return 0;
+			}
+			// TODO: global variables are not always static.
+			return var->stat || var->nest > cc->nest;
+		}
+
+		//~ case TYPE_def:					// new (var, func, define)
+		//~ case EMIT_opc:
+		//#}
+	}
+	traceAst(ast);
+	return 0;
+}
+
+ccToken castOf(symn typ) {
+	if (typ == NULL) {
+		return TYPE_any;
+	}
+	switch (typ->kind) {
+
+		default:
+			break;
+
+		case TYPE_def:
+			return castOf(typ->type);
+
+			//~ case TYPE_vid:
+			//~ return typ->kind;
+
+		case TYPE_arr:
+			// static sized arrays cast to pointer
+			if (typ->init == NULL)
+				return TYPE_arr;
+			return TYPE_ref;
+
+		case EMIT_opc:
+			return typ->cast;
+
+		case TYPE_rec:
+			// refFix
+			if (typ->cast == TYPE_ref)
+				return TYPE_ptr;
+			return typ->cast;
+	}
+	debug("failed(%K): %?-T", typ ? typ->kind : 0, typ);
+	return TYPE_any;
+}
+
+ccToken castTo(astn ast, ccToken cto) {
+	ccToken atc = TYPE_any;
+	if (!ast) {
+		return TYPE_any;
+	}
+
+	atc = ast->type ? ast->type->cast : TYPE_any;
+	if (cto != atc) switch (cto) {
+		case TYPE_any:
+			return atc;
+
+		case TYPE_vid:		// void(true): can cast 2 to void !!!
+		case TYPE_bit:
+		case TYPE_u32:
+		case TYPE_i32:
+		case TYPE_i64:
+		case TYPE_f32:
+		case TYPE_f64: switch (atc) {
+			//~ case TYPE_vid:
+			case TYPE_bit:
+			case TYPE_u32:
+			case TYPE_i32:
+			case TYPE_i64:
+			case TYPE_f32:
+			case TYPE_f64:
+				break;
+
+			default:
+				goto error;
+		} break;
+
+		case TYPE_ref:
+		case TYPE_arr:
+			break;
+
+		default:
+		error:
+			debug("cast(%+t) to %K/%K", ast, cto, atc);
+			//~ return 0;
+			break;
+	}
+	return ast->cst2 = cto;
+}
+
+size_t sizeOf(symn sym, int varSize) {
+	if (sym != NULL) {
+		switch (sym->kind) {
+			default:
+				break;
+				//~ case TYPE_vid:
+				//~ case TYPE_bit:
+				//~ case TYPE_int:
+				//~ case TYPE_flt:
+
+			case EMIT_opc:
+				if (sym->cast == TYPE_ref) {
+					return vm_size;
+				}
+				return (size_t) sym->size;
+
+			case TYPE_rec:
+			case TYPE_arr: switch (sym->cast) {
+					case TYPE_ref: if (varSize) {
+							return vm_size;
+						}
+					case TYPE_arr: if (varSize) {
+							return 2 * vm_size;
+						}
+					default:
+						return sym->size;
+				}
+
+			case TYPE_def:
+			case TYPE_ref: switch (sym->cast) {
+					case TYPE_ref:
+						return vm_size;
+					case TYPE_arr:
+						return 2 * vm_size;
+					default:
+						return sizeOf(sym->type, 0);
+				}
+		}
+	}
+	fatal("failed(%K): %-T", sym ? sym->kind : 0, sym);
+	return 0;
+}
+

@@ -1,3 +1,7 @@
+/**
+ * Plugin sources should include only this header file.
+ */
+
 #ifndef CC_API_H
 #define CC_API_H 2
 
@@ -61,30 +65,15 @@ struct rtContextRec {
 	int32_t fastInstr:1;	// replace some instructions with a faster or shorter version (load 1, add => inc 1)
 	int32_t fastAssign:1;	// remove dup and set instructions when modifying the last declared variable.
 	int32_t genGlobals:1;	// generate global variables as static variables
-	int32_t padFlags:24;
+	int32_t padFlags:23;
 
 	uint32_t logLevel:3;	// runtime logging level (0-7)
 	uint32_t logClose:1;	// close log file
+	uint32_t freeMem:1;		// release memory
 	FILE *logFile;		// log file
 
 	symn  vars;		// global variables and functions
 	symn  main;		// the main initializer function
-
-	// virtual machine state
-	struct {
-		void* libv;		// libcall vector
-		void* cell;		// execution unit(s)
-		void* heap;		// heap memory
-
-		size_t pc;			// exec: entry point / cgen: prev program counter
-		size_t px;			// exec: exit point / cgen: program counter
-
-		size_t ro;			// exec: read only memory / cgen: function parameters
-		size_t ss;			// exec: stack size / cgen: stack size
-
-		size_t sm;			// exec: - / cgen: minimum stack size
-		size_t su;			// exec: - / cgen: stack access (parallel processing)
-	} vm;
 
 	/**
 	 * @brief Compiler context.
@@ -105,6 +94,22 @@ struct rtContextRec {
 	symn type_var;	// TODO: to be removed, used only for printing.
 	symn type_str;	// TODO: to be removed, used only for printing.
 
+	// virtual machine state
+	struct {
+		void* libv;		// libcall vector
+		void* cell;		// execution unit(s)
+		void* heap;		// heap memory
+
+		size_t pc;			// exec: entry point / cgen: prev program counter
+		size_t px;			// exec: exit point / cgen: program counter
+
+		size_t ro;			// exec: read only memory / cgen: function parameters
+		size_t ss;			// exec: stack size / cgen: stack size
+
+		size_t sm;			// exec: - / cgen: minimum stack size
+		size_t su;			// exec: - / cgen: stack access (parallel processing)
+	} vm;
+
 	/** TODO: extract to a different struct
 	 * @brief External library support.
 	 * @note If a function returns error, the error was reported.
@@ -116,7 +121,15 @@ struct rtContextRec {
 		 * @param name Name of the namespace.
 		 * @return Defined symbol, null on error.
 		 */
-		symn (*const ccBegin)(rtContext, char* name);
+		symn (*const ccBegin)(rtContext, const char* name);
+
+		/**
+		 * @brief Close the namespace.
+		 * @param Runtime context.
+		 * @param cls Namespace to be closed. (The returned by ccBegin.)
+		 * @note Makes all declared variables static.
+		*/
+		void (*const ccEnd)(rtContext, symn cls, int mode);
 
 		/**
 		 * @brief Define a(n) integer, floating point or string constant.
@@ -125,9 +138,9 @@ struct rtContextRec {
 		 * @param value Value of the constant.
 		 * @return Defined symbol, null on error.
 		 */
-		symn (*const ccDefInt)(rtContext, char* name, int64_t value);
-		symn (*const ccDefFlt)(rtContext, char* name, float64_t value);
-		symn (*const ccDefStr)(rtContext, char* name, char* value);
+		symn (*const ccDefInt)(rtContext, const char* name, int64_t value);
+		symn (*const ccDefFlt)(rtContext, const char* name, float64_t value);
+		symn (*const ccDefStr)(rtContext, const char* name, char* value);
 
 		/**
 		 * @brief Add a type to the runtime.
@@ -138,7 +151,7 @@ struct rtContextRec {
 		 * @return Defined symbol, null on error.
 		 * @see: lstd.File;
 		 */
-		symn (*const ccAddType)(rtContext, const char* name, unsigned size, int refType);
+		symn (*const ccDefType)(rtContext, const char* name, unsigned size, int refType);
 
 		/**
 		 * @brief Add a native function (libcall) to the runtime.
@@ -154,12 +167,12 @@ struct rtContextRec {
 				return 0;						// no runtime error in call
 			}
 		 	...
-			if (!rt->api.ccAddCall(rt, f64sin, NULL, "float64 sin(float64 x);")) {
+			if (!rt->api.ccDefCall(rt, f64sin, NULL, "float64 sin(float64 x);")) {
 				// error reported, terminate here the execution.
 				return 0;
 			}
 		 */
-		symn (*const ccAddCall)(rtContext, vmError libc(libcContext), void* extra, const char* proto);
+		symn (*const ccDefCall)(rtContext, vmError libc(libcContext), void* extra, const char* proto);
 
 		/**
 		 * @brief Compile the given file or text block.
@@ -170,15 +183,35 @@ struct rtContextRec {
 		 * @param text If not null, this will be compiled instead of the file.
 		 * @return Boolean value of success.
 		 */
-		int (*const ccAddCode)(rtContext, int warn, char *file, int line, char *code);
+		int (*const ccDefCode)(rtContext, int warn, char *file, int line, char *code);
 
 		/**
-		 * @brief Close the namespace.
+		 * @brief Invoke a function inside the vm.
 		 * @param Runtime context.
-		 * @param cls Namespace to be closed. (The returned by ccBegin.)
-		 * @note Makes all declared variables static.
-		*/
-		void (*const ccEnd)(rtContext, symn cls);
+		 * @param fun Symbol of the function.
+		 * @param res Result value of the invoked function. (May be null.)
+		 * @param args Arguments for the fuction. (May be null.)
+		 * @param extra Extra data for each libcall executed from here.
+		 * @return Error code of execution. (0 means success.)
+		 * @usage see @rtFindSym example.
+		 * @note Invocation to execute must preceed this call.
+		 */
+		vmError (*const invoke)(rtContext, symn fun, void* res, void* args, void* extra);
+
+		/**
+		 * @brief Allocate or free memory inside the vm.
+		 * @param Runtime context.
+		 * @param ptr Allocated memory address in the vm, or null.
+		 * @param size New size to reallocate or 0 to free memory.
+		 * @return Pointer to the allocated memory.
+		 * cases:
+		 * 		size == 0 && ptr == null: nothing
+		 * 		size == 0 && ptr != null: free
+		 * 		size >  0 && ptr == null: alloc
+		 * 		size >  0 && ptr != null: realloc
+		 * @note Invocation to execute must preceed this call.
+		 */
+		void* (*const rtAlloc)(rtContext, void* ptr, size_t size);
 
 		/**
 		 * @brief Lookup a static symbol by offset.
@@ -199,7 +232,7 @@ struct rtContextRec {
 				}
 
 				// register event callback using the symbol of the function.
-				onMouse = rt->api.getsym(rt, fun);
+				onMouse = rt->api.rtFindSym(rt, fun);
 
 				// runtime error if symbol is not valid.
 				return onMouse != NULL;
@@ -214,45 +247,11 @@ struct rtContextRec {
 			}
 
 			// expose the callback register function to the compiler
-			if (!rt->api.ccAddCall(rt, setMouseCb, NULL, "void setMouseCallback(void Callback(int32 b, int32 x, int32 y);")) {
+			if (!rt->api.ccDefCall(rt, setMouseCb, NULL, "void setMouseCallback(void Callback(int32 b, int32 x, int32 y);")) {
 				error...
 			}
-		 * TODO? symn (*const vmSymbol)(rtContext, int offset);
 		 */
-		symn (*const getsym)(rtContext, void *ptr);
-
-		/* @brief Lookup a static symbol by name.
-		 *
-		 */
-		// TODO: symn (*const ccFindSym)(ccContext cc, symn in, char *name);
-
-		/**
-		 * @brief Invoke a function inside the vm.
-		 * @param Runtime context.
-		 * @param fun Symbol of the function.
-		 * @param res Result value of the invoked function. (May be null.)
-		 * @param args Arguments for the fuction. (May be null.)
-		 * @param extra Extra data for each libcall executed from here.
-		 * @return Error code of execution. (0 means success.)
-		 * @usage see @getsym example.
-		 * @note Invocation to execute must preceed this call.
-		 */
-		vmError (*const invoke)(rtContext, symn fun, void* res, void* args, void* extra);
-
-		/**
-		 * @brief Allocate or free memory inside the vm.
-		 * @param Runtime context.
-		 * @param ptr Allocated memory address in the vm, or null.
-		 * @param size New size to reallocate or 0 to free memory.
-		 * @return Pointer to the allocated memory.
-		 * cases:
-		 * 		size == 0 && ptr == null: nothing
-		 * 		size == 0 && ptr != null: free
-		 * 		size >  0 && ptr == null: alloc
-		 * 		size >  0 && ptr != null: realloc
-		 * @note Invocation to execute must preceed this call.
-		 */
-		void* (*const rtAlloc)(rtContext, void* ptr, size_t size);
+		symn (*const rtFindSym)(rtContext, void *ptr);
 	} api;
 
 	// memory related
@@ -268,14 +267,11 @@ struct rtContextRec {
  * (The return value and the arguments begin at the same memory location.)
  */
 struct libcContextRec {
-	rtContext rt;		// runtime context
-
-	symn  fun;		// invoked function
-	void* data;		// static data for function (passed to install)
-	void* extra;	// extra data for function (passed to execute or invoke)
-
-	void* retv;		// result of function
-	char* argv;		// arguments for function
+	const rtContext rt;     // runtime context
+	void* const extra;      // extra data for function (passed to execute or invoke)
+	void* const data;       // static data for function (passed to install)
+	char* const argv;       // arguments for function
+	void* const retv;		// result of function
 };
 
 /**
@@ -292,7 +288,7 @@ static inline void* argget(libcContext args, size_t offset, void *result, size_t
 		memcpy(result, args->argv + offset, size);
 	}
 	else {
-		result = args->argv + offset;
+		result = (void*)(args->argv + offset);
 	}
 	return result;
 }
@@ -305,7 +301,8 @@ static inline float32_t argf32(libcContext args, int offs) { return argget(args,
 static inline float64_t argf64(libcContext args, int offs) { return argget(args, offs, float64_t); }
 static inline void* arghnd(libcContext args, int offs) { return argget(args, offs, void*); }
 static inline void* argref(libcContext args, int offs) { int32_t p = argget(args, offs, int32_t); return p ? args->rt->_mem + p : NULL; }
-static inline void* argsym(libcContext args, int offs) { return args->rt->api.getsym(args->rt, argref(args, offs)); }
+// TODO: remove argsym
+static inline void* argsym(libcContext args, int offs) { return args->rt->api.rtFindSym(args->rt, argref(args, offs)); }
 #undef argget
 
 /**
@@ -330,7 +327,6 @@ static inline void reti64(libcContext args, int64_t val) { retset(args, int64_t,
 static inline void retf32(libcContext args, float32_t val) { retset(args, float32_t, val); }
 static inline void retf64(libcContext args, float64_t val) { retset(args, float64_t, val); }
 static inline void rethnd(libcContext args, void* val) { retset(args, void*, val); }
-//~ static inline void retref(libcContext args, void* val) { retset(args, void*, vmOffset(args->rt, val)); }
 #undef retset
 
 #ifdef __cplusplus

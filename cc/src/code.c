@@ -19,6 +19,12 @@ static inline double fmodf(float x, float y) {
 }
 #endif
 
+const struct opc_inf opc_tbl[255] = {
+	#define OPCDEF(NAME, CODE, SIZE, CHCK, DIFF, MNEM) {CODE, SIZE, CHCK, DIFF, MNEM},
+	#include "defs.inl"
+};
+
+
 /// Bit scan forward. (get the index of the highest bit seted)
 static inline int32_t bitsf(uint32_t x) {
 	int result = 0;
@@ -297,9 +303,9 @@ int optimizeAssign(rtContext rt, size_t offsBegin, size_t offsEnd) {
 	return 0;
 }
 
-void iterateAsm(rtContext rt, size_t offsBegin, size_t offsEnd, userContext ctx, void action(userContext, size_t offs, void* ip)) {
+void dumpAsm(rtContext rt, size_t start, size_t end, userContext ctx, void action(userContext, size_t offs, void *ip)) {
 	size_t is, offs;
-	for (offs = offsBegin; offs < offsEnd; offs += is) {
+	for (offs = start; offs < end; offs += is) {
 		register bcde ip = getip(rt, offs);
 		switch (ip->opc) {
 			error_opc:
@@ -1210,9 +1216,9 @@ static inline int traceCall(rtContext rt, void* sp, void* caller, void* callee) 
 
 		clock_t ticks = now - tp->func;
 		size_t callerOffs = vmOffset(rt, tp->caller);
-		dbgInfo calleeFunc = mapDbgFunction(rt, vmOffset(rt, tp->callee));
-		dbgInfo callerFunc = mapDbgFunction(rt, callerOffs);
-		//dbgInfo callerStmt = mapDbgStatement(rt, callerOffs);
+		dbgn calleeFunc = mapDbgFunction(rt, vmOffset(rt, tp->callee));
+		dbgn callerFunc = mapDbgFunction(rt, callerOffs);
+		//dbgn callerStmt = mapDbgStatement(rt, callerOffs);
 		if (calleeFunc != NULL) {
 			calleeFunc->exec += 1;
 			if (!recursive) {
@@ -1247,7 +1253,7 @@ static inline int traceCall(rtContext rt, void* sp, void* caller, void* callee) 
 		tp->callee = callee;
 		tp->func = now;
 		tp->sp = sp;
-		dbgInfo calleeFunc = mapDbgFunction(rt, vmOffset(rt, tp->callee));
+		dbgn calleeFunc = mapDbgFunction(rt, vmOffset(rt, tp->callee));
 		if (calleeFunc != NULL) {
 			calleeFunc->hits += 1;
 		}
@@ -1347,7 +1353,7 @@ static vmError exec(rtContext rt, cell pu, symn fun, void *extra) {
 
 			const tracePtr tp = (tracePtr)pu->tp - 1;
 			const size_t pc = vmOffset(rt, ip);
-			const dbgInfo stmt = mapDbgStatement(rt, pc);
+			const dbgn stmt = mapDbgStatement(rt, pc);
 
 			if (ip >= ipMax || ip < ipMin) {
 				dbg(rt->dbg, invalidIP, st - sp, sp, ip);
@@ -1371,7 +1377,7 @@ static vmError exec(rtContext rt, cell pu, symn fun, void *extra) {
 					int symOffs = 0;
 					if (stmt != NULL) {
 						if (sym == NULL) {
-							sym = mapsym(rt, stmt->start, 1);
+							sym = rtFindSym(rt, stmt->start, 1);
 						}
 						if (sym != NULL) {
 							symOffs = stmt->start - sym->offs;
@@ -1439,7 +1445,7 @@ static vmError exec(rtContext rt, cell pu, symn fun, void *extra) {
 						symn sym = NULL;
 						int symOffs = 0;
 						if (sym == NULL) {
-							sym = mapsym(rt, stmt->start, 1);
+							sym = rtFindSym(rt, stmt->start, 1);
 						}
 						if (sym != NULL) {
 							symOffs = stmt->start - sym->offs;
@@ -1588,8 +1594,7 @@ vmError execute(rtContext rt, size_t ss, void *extra) {
 	return exec(rt, pu, rt->main, extra);
 }
 
-// TODO: ADD const char *esc[] ?
-void fputasm(FILE* fout, void *ptr, int mode, rtContext rt) {
+void fputAsm(FILE *out, const char *esc[], rtContext rt, void *ptr, int mode) {
 	bcde ip = (bcde)ptr;
 	size_t i, len = (size_t) mode & prAsmCode;
 	size_t offs = (size_t)ptr;
@@ -1600,14 +1605,14 @@ void fputasm(FILE* fout, void *ptr, int mode, rtContext rt) {
 	if (rt != NULL) {
 		offs = vmOffset(rt, ptr);
 		if (mode & prAsmAddr && mode & prAsmName) {
-			sym = mapsym(rt, offs, 0);
+			sym = rtFindSym(rt, offs, 0);
 		}
 	}
 
 	if (mode & prAsmAddr) {
 		if (sym != NULL) {
 			size_t symOffs = offs - sym->offs;
-			fputfmt(fout, fmt_offs + 1, sym, symOffs);
+			fputFmt(out, esc, fmt_offs + 1, sym, symOffs);
 
 			int paddLen = 3 + (symOffs != 0);
 			while (symOffs > 0) {
@@ -1617,12 +1622,12 @@ void fputasm(FILE* fout, void *ptr, int mode, rtContext rt) {
 			if (paddLen < 0) {
 				paddLen = 0;
 			}
-			fputfmt(fout, "% I", paddLen);
+			fputFmt(out, esc, "% I", paddLen);
 		}
 		else {
-			fputfmt(fout, fmt_addr + 1, offs);
+			fputFmt(out, esc, fmt_addr + 1, offs);
 		}
-		fputfmt(fout, ": ");
+		fputFmt(out, esc, ": ");
 	}
 
 	//~ write data as bytes
@@ -1630,32 +1635,32 @@ void fputasm(FILE* fout, void *ptr, int mode, rtContext rt) {
 	if (len > 1 && len < opc_tbl[ip->opc].size) {
 		for (i = 0; i < len - 2; i++) {
 			if (i < opc_tbl[ip->opc].size) {
-				fputfmt(fout, "%02x ", ((unsigned char*)ptr)[i]);
+				fputFmt(out, esc, "%02x ", ((unsigned char*)ptr)[i]);
 			}
 			else {
-				fputfmt(fout, "   ");
+				fputFmt(out, esc, "   ");
 			}
 		}
 		if (i < opc_tbl[ip->opc].size) {
-			fputfmt(fout, "%02x... ", ((unsigned char*)ptr)[i]);
+			fputFmt(out, esc, "%02x... ", ((unsigned char*)ptr)[i]);
 		}
 	}
 	else {
 		for (i = 0; i < len; i++) {
 			if (i < opc_tbl[ip->opc].size) {
-				fputfmt(fout, "%02x ", ((unsigned char*)ptr)[i]);
+				fputFmt(out, esc, "%02x ", ((unsigned char*)ptr)[i]);
 			}
 			else {
-				fputfmt(fout, "   ");
+				fputFmt(out, esc, "   ");
 			}
 		}
 	}
 
 	if (opc_tbl[ip->opc].name != NULL) {
-		fputs(opc_tbl[ip->opc].name, fout);
+		fputFmt(out, esc, "%s", opc_tbl[ip->opc].name);
 	}
 	else {
-		fputfmt(fout, "opc.x%02x", ip->opc);
+		fputFmt(out, esc, "opc.x%02x", ip->opc);
 	}
 
 	switch (ip->opc) {
@@ -1667,7 +1672,7 @@ void fputasm(FILE* fout, void *ptr, int mode, rtContext rt) {
 		case opc_ldsp:
 		case opc_move:
 		case opc_mad:
-			fputfmt(fout, " %d", ip->rel);
+			fputFmt(out, esc, " %d", ip->rel);
 			break;
 
 		case opc_jmp:
@@ -1675,26 +1680,26 @@ void fputasm(FILE* fout, void *ptr, int mode, rtContext rt) {
 		case opc_jz:
 		case opc_task: {
 			if (ip->opc == opc_task) {
-				fputfmt(fout, " %d,", ip->dl);
+				fputFmt(out, esc, " %d,", ip->dl);
 				i = ip->cl;
 			}
 			else {
 				i = (size_t) ip->rel;
 			}
 			if (sym != NULL && mode & prAsmAddr) {
-				fputfmt(fout, fmt_offs, sym, offs + i - sym->offs);
+				fputFmt(out, esc, fmt_offs, sym, offs + i - sym->offs);
 			}
 			else if (mode & prAsmAddr) {
-				fputfmt(fout, fmt_addr, offs + i);
+				fputFmt(out, esc, fmt_addr, offs + i);
 			}
 			else {
-				fputfmt(fout, " %+d", i);
+				fputFmt(out, esc, " %+d", i);
 			}
 			break;
 		}
 
 		case opc_sync:
-			fputfmt(fout, " %d", ip->idx);
+			fputFmt(out, esc, " %d", ip->idx);
 			break;
 
 		case b32_bit: switch (ip->idx & 0xc0) {
@@ -1703,19 +1708,19 @@ void fputasm(FILE* fout, void *ptr, int mode, rtContext rt) {
 				return;
 
 			case b32_bit_and:
-				fputfmt(fout, "and 0x%03x", (1 << (ip->idx & 0x3f)) - 1);
+				fputFmt(out, esc, "%s 0x%03x", "and", (1 << (ip->idx & 0x3f)) - 1);
 				break;
 
 			case b32_bit_shl:
-				fputfmt(fout, "shl 0x%03x", ip->idx & 0x3f);
+				fputFmt(out, esc, "%s 0x%03x", "shl", ip->idx & 0x3f);
 				break;
 
 			case b32_bit_shr:
-				fputfmt(fout, "shr 0x%03x", ip->idx & 0x3f);
+				fputFmt(out, esc, "%s 0x%03x", "shr", ip->idx & 0x3f);
 				break;
 
 			case b32_bit_sar:
-				fputfmt(fout, "sar 0x%03x", ip->idx & 0x3f);
+				fputFmt(out, esc, "%s 0x%03x", "sar", ip->idx & 0x3f);
 				break;
 		} break;
 
@@ -1725,23 +1730,23 @@ void fputasm(FILE* fout, void *ptr, int mode, rtContext rt) {
 		case opc_set1:
 		case opc_set2:
 		case opc_set4:
-			fputfmt(fout, " sp(%d)", ip->idx);
+			fputFmt(out, esc, " sp(%d)", ip->idx);
 			break;
 
 		case opc_lc32:
-			fputfmt(fout, " %d", ip->arg.i4);
+			fputFmt(out, esc, " %d", ip->arg.i4);
 			break;
 
 		case opc_lc64:
-			fputfmt(fout, " %D", ip->arg.i8);
+			fputFmt(out, esc, " %D", ip->arg.i8);
 			break;
 
 		case opc_lf32:
-			fputfmt(fout, " %f", ip->arg.f4);
+			fputFmt(out, esc, " %f", ip->arg.f4);
 			break;
 
 		case opc_lf64:
-			fputfmt(fout, " %F", ip->arg.f8);
+			fputFmt(out, esc, " %F", ip->arg.f8);
 			break;
 
 		case opc_ld32:
@@ -1756,16 +1761,23 @@ void fputasm(FILE* fout, void *ptr, int mode, rtContext rt) {
 				offs = (size_t) ip->rel;
 			}
 
-			fputfmt(fout, fmt_addr, offs);
+			fputFmt(out, esc, fmt_addr, offs);
 			if (rt != NULL) {
-				symn sym = mapsym(rt, offs, 0);
+				symn sym = rtFindSym(rt, offs, 0);
 				if (sym != NULL) {
-					fputfmt(fout, " ;%+T%?+d", sym, offs - sym->offs);
+					fputFmt(out, esc, " ;%+T%?+d", sym, offs - sym->offs);
 				}
-				else {
-					char *str = getResStr(rt, offs);
-					if (str != NULL) {
-						fputfmt(fout, " ;\"%s\"", str);
+				else if (rt->cc != NULL) {
+					char *str = getip(rt, offs);
+					for (i = 0; i < TBLS; i += 1) {
+						list lst;
+						for (lst = rt->cc->strt[i]; lst; lst = lst->next) {
+							if (str == (char*)lst->data) {
+								fputFmt(out, esc, " ;\"%s\"", str);
+								i = TBLS;
+								break;
+							}
+						}
 					}
 				}
 			}
@@ -1773,7 +1785,7 @@ void fputasm(FILE* fout, void *ptr, int mode, rtContext rt) {
 
 		case opc_libc:
 			offs = (size_t) ip->rel;
-			fputfmt(fout, "(%d)", offs);
+			fputFmt(out, esc, "(%d)", offs);
 
 			if (rt != NULL) {
 				libc lc = NULL;
@@ -1788,7 +1800,7 @@ void fputasm(FILE* fout, void *ptr, int mode, rtContext rt) {
 					lc = &((libc)rt->vm.libv)[offs];
 				}
 				if (lc && lc->sym) {
-					fputfmt(fout, " ;%+T", lc->sym);
+					fputFmt(out, esc, " ;%+T", lc->sym);
 				}
 			}
 			break;
@@ -1798,13 +1810,12 @@ void fputasm(FILE* fout, void *ptr, int mode, rtContext rt) {
 			char c2 = "xyzw"[ip->idx >> 2 & 3];
 			char c3 = "xyzw"[ip->idx >> 4 & 3];
 			char c4 = "xyzw"[ip->idx >> 6 & 3];
-			fputfmt(fout, " %c%c%c%c(%02x)", c1, c2, c3, c4, ip->idx);
+			fputFmt(out, esc, " %c%c%c%c(%02x)", c1, c2, c3, c4, ip->idx);
 		} break;
 	}
 }
 
-// TODO: ADD const char *esc[] ?
-void fputval(rtContext rt, FILE* fout, symn var, stkval* ref, int level, int mode) {
+void fputVal(FILE *out, const char *esc[], rtContext rt, symn var, stkval *ref, int mode, int indent) {
 	symn typ = var;
 	char* fmt = var->pfmt;
 
@@ -1822,23 +1833,23 @@ void fputval(rtContext rt, FILE* fout, symn var, stkval* ref, int level, int mod
 		func.name = "<function>";
 	}
 
-	if (level > 0) {
-		fputfmt(fout, "%I", level);
+	if (indent > 0) {
+		fputFmt(out, esc, "%I", indent);
 	}
 	else {
-		level = -level;
+		indent = -indent;
 	}
 
 	if (var->kind == TYPE_ref) {
 		typ = var->call ? &func : var->type;
 		fmt = var->pfmt ? var->pfmt : typ->pfmt;
 
-		//~ fputfmt(fout, "@%06x", vmOffset(rt, ref));
+		//~ fputfmt(out, "@%06x", vmOffset(rt, ref));
 		if (var != typ && var->cast == TYPE_ref && ref != NULL) {	// indirect reference
 			ref = getip(rt, ref->u4);
-			//~ fputfmt(fout, "->@%06x", vmOffset(rt, ref));
+			//~ fputfmt(out, "->@%06x", vmOffset(rt, ref));
 		}
-		//~ fputfmt(fout, ": ");
+		//~ fputfmt(out, ": ");
 	}
 	else if (var->kind == TYPE_def) {
 		fmt = NULL;
@@ -1856,33 +1867,33 @@ void fputval(rtContext rt, FILE* fout, symn var, stkval* ref, int level, int mod
 			}
 		}
 		if (mode & prSymQual) {
-			fputfmt(fout, "%T%?c: ", var, byref);
+			fputFmt(out, esc, "%T%?c: ", var, byref);
 		}
 		else {
-			fputfmt(fout, "%.T%?c: ", var, byref);
+			fputFmt(out, esc, "%.T%?c: ", var, byref);
 		}
 	}
 
 	if (mode & prType) {
-		fputfmt(fout, "%-T(", typ);
+		fputFmt(out, esc, "%-T(", typ);
 	}
 
 	if (!isValidOffset(rt, ref)) {
 		// invalid offset.
-		fputfmt(fout, "BadRef@%06x", var->offs);
+		fputFmt(out, esc, "BadRef@%06x", var->offs);
 	}
 	else if (ref == NULL) {
 		// null reference.
-		fputfmt(fout, "null");
+		fputFmt(out, esc, "null");
 	}
 	else if (typ == rt->type_str) {
-		fputfmt(fout, fmt, ref);
+		fputFmt(out, esc, fmt, ref);
 	}
 	else if (typ == rt->type_var) {		// TODO: temp only.
 		typ = getip(rt, (size_t) ref->var.type);
 		ref = getip(rt, (size_t) ref->var.value);
-		fputfmt(fout, "%+T, ", typ);
-		fputval(rt, fout, typ, ref, level, prType);
+		fputFmt(out, esc, "%+T, ", typ);
+		fputVal(out, esc, rt, typ, ref, prType, indent);
 	}
 	else switch (typ->kind) {
 		case TYPE_rec: {
@@ -1891,53 +1902,53 @@ void fputval(rtContext rt, FILE* fout, symn var, stkval* ref, int level, int mod
 				switch (typ->size) {
 					default:
 						// there should be no formated(<=> builtin) type matching none of this size.
-						fputfmt(fout, "!-!@%?c%06x, size: %d", var->stat ? 0 : '+', var->offs, var->size);
+						fputFmt(out, esc, "!-!@%?c%06x, size: %d", var->stat ? 0 : '+', var->offs, var->size);
 						break;
 
 					case 1:
 						if (typ->cast == TYPE_u32) {
-							fputfmt(fout, fmt, ref->u1);
+							fputFmt(out, esc, fmt, ref->u1);
 						}
 						else {
-							fputfmt(fout, fmt, ref->i1);
+							fputFmt(out, esc, fmt, ref->i1);
 						}
 						break;
 
 					case 2:
 						if (typ->cast == TYPE_u32) {
-							fputfmt(fout, fmt, ref->u2);
+							fputFmt(out, esc, fmt, ref->u2);
 						}
 						else {
-							fputfmt(fout, fmt, ref->i2);
+							fputFmt(out, esc, fmt, ref->i2);
 						}
 						break;
 
 					case 4:
 						if (typ->cast == TYPE_f32) {
-							fputfmt(fout, fmt, ref->f4);
+							fputFmt(out, esc, fmt, ref->f4);
 						}
 						else if (typ->cast == TYPE_u32) {
 							// force zero extend (may sign extend to int64 ?).
-							fputfmt(fout, fmt, ref->u4);
+							fputFmt(out, esc, fmt, ref->u4);
 						}
 						else {
-							fputfmt(fout, fmt, ref->i4);
+							fputFmt(out, esc, fmt, ref->i4);
 						}
 						break;
 
 					case 8:
 						if (typ->cast == TYPE_f64) {
-							fputfmt(fout, fmt, ref->f8);
+							fputFmt(out, esc, fmt, ref->f8);
 						}
 						else {
-							fputfmt(fout, fmt, ref->i8);
+							fputFmt(out, esc, fmt, ref->i8);
 						}
 						break;
 				}
 			}
 			else if (typ->prms != NULL) {
 				symn tmp;
-				fputfmt(fout, "{");
+				fputFmt(out, esc, "{");
 				for (tmp = typ->prms; tmp; tmp = tmp->next) {
 
 					if (tmp->stat || tmp->kind != TYPE_ref)
@@ -1947,23 +1958,23 @@ void fputval(rtContext rt, FILE* fout, symn var, stkval* ref, int level, int mod
 						continue;
 
 					if (n > 0) {
-						fputfmt(fout, ",");
+						fputFmt(out, esc, ",");
 					}
 
-					fputfmt(fout, "\n");
-					fputval(rt, fout, tmp, (void*)((char*)ref + tmp->offs), level + 1, prType);
+					fputFmt(out, esc, "\n");
+					fputVal(out, esc, rt, tmp, (void *) ((char *) ref + tmp->offs), prType, indent + 1);
 					n += 1;
 				}
-				fputfmt(fout, "\n%I}", level);
+				fputFmt(out, esc, "\n%I}", indent);
 			}
 			else {
 				// empty struct, typename, function, pointer
 				size_t offs = vmOffset(rt, ref);
-				symn sym = mapsym(rt, offs, 0);
+				symn sym = rtFindSym(rt, offs, 0);
 				if (sym != NULL) {
 					offs = offs - sym->offs;
 				}
-				fputfmt(fout, "<%?T%?+d@%06x>", sym, (int32_t)offs, vmOffset(rt, ref));
+				fputFmt(out, esc, "<%?T%?+d@%06x>", sym, (int32_t)offs, vmOffset(rt, ref));
 			}
 		} break;
 		case TYPE_arr: {
@@ -1973,17 +1984,17 @@ void fputval(rtContext rt, FILE* fout, symn var, stkval* ref, int level, int mod
 			int elementsOnNewLine = 0;
 			int arrayHasMoreElements = 0;
 
-			//~ fputfmt(fout, "@%06x", vmOffset(rt, ref));
+			//~ fputFmt(out, esc, "@%06x", vmOffset(rt, ref));
 			if (typ->cast != TYPE_arr) { // TODO: OR USE: if (typ->stat) {
 				// fixed size array
 				dieif(n % base->size != 0, "FixMe");
-				fputfmt(fout, "[");
+				fputFmt(out, esc, "[");
 				n /= base->size;
 			}
 			else {
 				n = ref->arr.length;
 				ref = (stkval*)(rt->_mem + ref->u4);
-				fputfmt(fout, "<%d>[", n);
+				fputFmt(out, esc, "<%d>[", n);
 			}
 
 			#ifdef LOG_MAX_ITEMS
@@ -1999,56 +2010,56 @@ void fputval(rtContext rt, FILE* fout, symn var, stkval* ref, int level, int mod
 
 			for (i = 0; i < n; ++i) {
 				if (i > 0) {
-					fputfmt(fout, ",");
+					fputFmt(out, esc, ",");
 				}
 				if (elementsOnNewLine) {
-					fputfmt(fout, "\n");
+					fputFmt(out, esc, "\n");
 				}
 				else if (i > 0) {
-					fputfmt(fout, " ");
+					fputFmt(out, esc, " ");
 				}
 
-				fputval(rt, fout, base, (stkval*)((char*)ref + i * sizeOf(base, 0)), elementsOnNewLine ? level + 1 : -level, 0);
+				fputVal(out, esc, rt, base, (stkval *) ((char *) ref + i * sizeOf(base, 0)), 0, elementsOnNewLine ? indent + 1 : -indent);
 			}
 
 			if (arrayHasMoreElements) {
 				if (elementsOnNewLine) {
-					fputfmt(fout, ",\n%I...", level + 1);
+					fputFmt(out, esc, ",\n%I...", indent + 1);
 				}
 				else {
-					fputfmt(fout, ", ...");
+					fputFmt(out, esc, ", ...");
 				}
 			}
 
 			if (elementsOnNewLine) {
-				fputfmt(fout, "\n%I", level);
+				fputFmt(out, esc, "\n%I", indent);
 			}
-			fputfmt(fout, "]");
+			fputFmt(out, esc, "]");
 			break;
 		}
-		case TYPE_def: 
-			fputfmt(fout, "%T: %+T", typ, typ->type);
+		case TYPE_def:
+			fputFmt(out, esc, "%T: %+T", typ, typ->type);
 			break;
 		default:
-			fputfmt(fout, "%+T[ERROR(%K)]", typ, typ->kind);
+			fputFmt(out, esc, "%+T[ERROR(%K)]", typ, typ->kind);
 			break;
 	}
 	if (mode & prType) {
-		fputfmt(fout, ")");
+		fputFmt(out, esc, ")");
 	}
 }
 
-static void traceArgs(rtContext rt, FILE *outf, symn fun, char *file, int line, void* sp, int ident) {
+static void traceArgs(rtContext rt, FILE *out, symn fun, char *file, int line, void* sp, int ident) {
 	symn sym;
 	int printFileLine = 0;
 
-	if (outf == NULL) {
-		outf = rt->logFile;
+	if (out == NULL) {
+		out = rt->logFile;
 	}
 	if (file == NULL) {
 		file = "native.code";
 	}
-	fputfmt(outf, "%I%s:%u: %?T", ident, file, line, fun);
+	fputfmt(out, "%I%s:%u: %?T", ident, file, line, fun);
 	if (ident < 0) {
 		printFileLine = 1;
 		ident = -ident;
@@ -2059,16 +2070,16 @@ static void traceArgs(rtContext rt, FILE *outf, symn fun, char *file, int line, 
 	if (fun->prms != NULL/* && fun->prms != rt->vars*/) {
 		int firstArg = 1;
 		if (ident > 0) {
-			fputfmt(outf, "(");
+			fputfmt(out, "(");
 		}
 		else {
-			fputfmt(outf, "\n");
+			fputfmt(out, "\n");
 		}
 		for (sym = fun->prms; sym; sym = sym->next) {
 			char *offs = (char*)sp;
 
 			if (firstArg == 0) {
-				fputfmt(outf, ", ");
+				fputfmt(out, ", ");
 			}
 			else {
 				firstArg = 0;
@@ -2076,10 +2087,10 @@ static void traceArgs(rtContext rt, FILE *outf, symn fun, char *file, int line, 
 
 			if (printFileLine) {
 				if (sym->file != NULL && sym->line != 0) {
-					fputfmt(outf, "%I%s:%u: ", ident, sym->file, sym->line);
+					fputfmt(out, "%I%s:%u: ", ident, sym->file, sym->line);
 				}
 				else {
-					fputfmt(outf, "%I", ident);
+					fputfmt(out, "%I", ident);
 				}
 			}
 			dieif(sym->stat, ERR_INTERNAL_ERROR);
@@ -2087,42 +2098,42 @@ static void traceArgs(rtContext rt, FILE *outf, symn fun, char *file, int line, 
 			if (fun->kind == TYPE_ref) {
 				// vm_size holds the return value of the function.
 				offs += vm_size + fun->prms->offs - sym->offs;
-				fputval(rt, outf, sym, (void*)offs, -ident, 0);
+				fputVal(out, NULL, rt, sym, (void *) offs, 0, -ident);
 			}
 			else {
 				// TODO: find the offsets of arguments for libcalls.
 				//offs += sym->offs;
-				//fputval(rt, outf, sym, (void*)offs, -ident, 0);
-				fputfmt(outf, "%.T: %.T", sym, sym->type);
+				//fputVal(rt, out, sym, (void*)offs, -ident, 0);
+				fputfmt(out, "%.T: %.T", sym, sym->type);
 			}
 		}
 		if (ident > 0) {
-			fputfmt(outf, ")");
+			fputfmt(out, ")");
 		}
 		else {
-			fputfmt(outf, "\n");
+			fputfmt(out, "\n");
 		}
 	}
 }
 
-void logTrace(rtContext rt, FILE *outf, int ident, int startlevel, int tracelevel) {
+void logTrace(rtContext rt, FILE *out, int indent, int startLevel, int traceLevel) {
 	int i, pos, isOutput = 0;
 	cell pu = rt->vm.cell;
 	tracePtr tr = (tracePtr)pu->bp;
 
-	if (outf == NULL) {
-		outf = rt->logFile;
+	if (out == NULL) {
+		out = rt->logFile;
 	}
 	if (rt->dbg == NULL) {
 		return;
 	}
 	pos = ((tracePtr)pu->tp) - tr - 1;
-	if (tracelevel > pos) {
-		tracelevel = pos;
+	if (traceLevel > pos) {
+		traceLevel = pos;
 	}
-	for (i = startlevel; i < tracelevel; ++i) {
-		dbgInfo trInfo = mapDbgStatement(rt, vmOffset(rt, tr[pos - i].caller));
-		symn fun = mapsym(rt, vmOffset(rt, tr[pos - i - 1].callee), 1);
+	for (i = startLevel; i < traceLevel; ++i) {
+		dbgn trInfo = mapDbgStatement(rt, vmOffset(rt, tr[pos - i].caller));
+		symn fun = rtFindSym(rt, vmOffset(rt, tr[pos - i - 1].callee), 1);
 		stkptr sp = tr[pos - i - 1].sp;
 		char *file = NULL;
 		int line = 0;
@@ -2135,21 +2146,21 @@ void logTrace(rtContext rt, FILE *outf, int ident, int startlevel, int traceleve
 		}
 
 		if (isOutput > 0) {
-			fputc('\n', outf);
+			fputc('\n', out);
 		}
-		traceArgs(rt, outf, fun, file, line, sp, ident);
+		traceArgs(rt, out, fun, file, line, sp, indent);
 		isOutput += 1;
 	}
 	if (i < pos) {
 		if (isOutput > 0) {
-			fputc('\n', outf);
+			fputc('\n', out);
 		}
-		fputfmt(outf, "%I... %d more", ident, pos - i);
+		fputfmt(out, "%I... %d more", indent, pos - i);
 		isOutput += 1;
 	}
 
 	if (isOutput) {
-		fputc('\n', outf);
+		fputc('\n', out);
 	}
 }
 

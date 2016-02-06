@@ -11,86 +11,86 @@ basic math, debug, and system functions
 #include "internal.h"
 
 //#{#region math functions
-static int f64sin(libcContext args) {
+static vmError f64sin(libcContext args) {
 	float64_t x = argf64(args, 0);
 	retf64(args, sin(x));
 	return 0;
 }
-static int f64cos(libcContext args) {
+static vmError f64cos(libcContext args) {
 	float64_t x = argf64(args, 0);
 	retf64(args, cos(x));
 	return 0;
 }
-static int f64tan(libcContext args) {
+static vmError f64tan(libcContext args) {
 	float64_t x = argf64(args, 0);
 	retf64(args, tan(x));
 	return 0;
 }
-static int f64log(libcContext args) {
+static vmError f64log(libcContext args) {
 	float64_t x = argf64(args, 0);
 	retf64(args, log(x));
 	return 0;
 }
-static int f64exp(libcContext args) {
+static vmError f64exp(libcContext args) {
 	float64_t x = argf64(args, 0);
 	retf64(args, exp(x));
 	return 0;
 }
-static int f64pow(libcContext args) {
+static vmError f64pow(libcContext args) {
 	float64_t x = argf64(args, 0);
 	float64_t y = argf64(args, 8);
 	retf64(args, pow(x, y));
 	return 0;
 }
-static int f64sqrt(libcContext args) {
+static vmError f64sqrt(libcContext args) {
 	float64_t x = argf64(args, 0);
 	retf64(args, sqrt(x));
 	return 0;
 }
-static int f64atan2(libcContext args) {
+static vmError f64atan2(libcContext args) {
 	float64_t x = argf64(args, 0);
 	float64_t y = argf64(args, 8);
 	retf64(args, atan2(x, y));
 	return 0;
 }
 
-static int f32sin(libcContext args) {
+static vmError f32sin(libcContext args) {
 	float32_t x = argf32(args, 0);
 	retf32(args, sinf(x));
 	return 0;
 }
-static int f32cos(libcContext args) {
+static vmError f32cos(libcContext args) {
 	float32_t x = argf32(args, 0);
 	retf32(args, cosf(x));
 	return 0;
 }
-static int f32tan(libcContext args) {
+static vmError f32tan(libcContext args) {
 	float32_t x = argf32(args, 0);
 	retf32(args, tanf(x));
 	return 0;
 }
-static int f32log(libcContext args) {
+static vmError f32log(libcContext args) {
 	float32_t x = argf32(args, 0);
 	retf32(args, logf(x));
 	return 0;
 }
-static int f32exp(libcContext args) {
+static vmError f32exp(libcContext args) {
 	float32_t x = argf32(args, 0);
 	retf32(args, expf(x));
 	return 0;
 }
-static int f32pow(libcContext args) {
+static vmError f32pow(libcContext args) {
 	float32_t x = argf32(args, 0);
 	float32_t y = argf32(args, 4);
 	retf32(args, powf(x, y));
 	return 0;
 }
-static int f32sqrt(libcContext args) {
+static vmError f32sqrt(libcContext args) {
 	float32_t x = argf32(args, 0);
 	retf32(args, sqrtf(x));
 	return 0;
 }
-static int f32atan2(libcContext args) {
+static vmError f32atan2(libcContext args) {
 	float32_t x = argf32(args, 0);
 	float32_t y = argf32(args, 4);
 	retf32(args, atan2f(x, y));
@@ -99,42 +99,42 @@ static int f32atan2(libcContext args) {
 //#}#endregion
 
 //#{#region bit operations
-static int b64not(libcContext args) {
+static vmError b64not(libcContext args) {
 	int64_t x = argi64(args, 0);
 	reti64(args, ~x);
 	return 0;
 }
-static int b64and(libcContext args) {
+static vmError b64and(libcContext args) {
 	int64_t x = argi64(args, 0);
 	int64_t y = argi64(args, 8);
 	reti64(args, x & y);
 	return 0;
 }
-static int b64ior(libcContext args) {
+static vmError b64ior(libcContext args) {
 	int64_t x = argi64(args, 0);
 	int64_t y = argi64(args, 8);
 	reti64(args, x | y);
 	return 0;
 }
-static int b64xor(libcContext args) {
+static vmError b64xor(libcContext args) {
 	int64_t x = argi64(args, 0);
 	int64_t y = argi64(args, 8);
 	reti64(args, x ^ y);
 	return 0;
 }
-static int b64shl(libcContext args) {
+static vmError b64shl(libcContext args) {
 	int64_t x = argi64(args, 0);
 	int32_t y = argi32(args, 8);
 	reti64(args, x << y);
 	return 0;
 }
-static int b64shr(libcContext args) {
+static vmError b64shr(libcContext args) {
 	uint64_t x = (uint64_t) argi64(args, 0);
 	int32_t y = argi32(args, 8);
 	reti64(args, (int64_t) (x >> y));
 	return 0;
 }
-static int b64sar(libcContext args) {
+static vmError b64sar(libcContext args) {
 	int64_t x = argi64(args, 0);
 	int32_t y = argi32(args, 8);
 	reti64(args, x >> y);
@@ -223,7 +223,7 @@ static inline int argpos(int *argp, int size) {
 
 #define debugFILE(msg, ...) //prerr("debug", msg, ##__VA_ARGS__)
 
-static int FILE_open(libcContext args) {       // File Open(char filename[]);
+static vmError FILE_open(libcContext args) {       // File Open(char filename[]);
 	int argc = 0;
 	char *mode = args->data;
 	char *name = argref(args, argpos(&argc, vm_size));
@@ -233,13 +233,13 @@ static int FILE_open(libcContext args) {       // File Open(char filename[]);
 	debugFILE("Name: %s, Mode: %s, File: %x", name, mode, file);
 	return file == NULL;
 }
-static int FILE_close(libcContext args) {      // void close(File file);
+static vmError FILE_close(libcContext args) {      // void close(File file);
 	FILE *file = arghnd(args, 0);
 	debugFILE("File: %x", file);
 	fclose(file);
 	return 0;
 }
-static int FILE_stream(libcContext args) {     // File std[in, out, err];
+static vmError FILE_stream(libcContext args) {     // File std[in, out, err];
 	size_t stream = (size_t) args->data;
 	switch (stream) {
 		default:
@@ -266,18 +266,18 @@ static int FILE_stream(libcContext args) {     // File std[in, out, err];
 	return 1;
 }
 
-static int FILE_getc(libcContext rt) {
+static vmError FILE_getc(libcContext rt) {
 	FILE *file = arghnd(rt, 0);
 	reti32(rt, fgetc(file));
 	return 0;
 }
-static int FILE_peek(libcContext rt) {
+static vmError FILE_peek(libcContext rt) {
 	FILE *file = arghnd(rt, 0);
 	int chr = ungetc(getc(file), file);
 	reti32(rt, chr);
 	return 0;
 }
-static int FILE_read(libcContext rt) {         // int read(File &f, uint8 buff[])
+static vmError FILE_read(libcContext rt) {         // int read(File &f, uint8 buff[])
 	int argc = 0;
 	FILE *file = arghnd(rt, argpos(&argc, sizeof(FILE *)));
 	char *buff = argref(rt, argpos(&argc, vm_size));
@@ -285,7 +285,7 @@ static int FILE_read(libcContext rt) {         // int read(File &f, uint8 buff[]
 	reti32(rt, fread(buff, (size_t) len, 1, file));
 	return 0;
 }
-static int FILE_gets(libcContext args) {       // int fgets(File &f, uint8 buff[])
+static vmError FILE_gets(libcContext args) {       // int fgets(File &f, uint8 buff[])
 	int argc = 0;
 	FILE *file = arghnd(args, argpos(&argc, sizeof(FILE *)));
 	char *buff = argref(args, argpos(&argc, vm_size));
@@ -303,7 +303,7 @@ static int FILE_gets(libcContext args) {       // int fgets(File &f, uint8 buff[
 	return 0;
 }
 
-static int FILE_putc(libcContext args) {
+static vmError FILE_putc(libcContext args) {
 	int argc = 0;
 	FILE *file = arghnd(args, argpos(&argc, sizeof(FILE *)));
 	int data = argi32(args, argpos(&argc, vm_size));
@@ -311,7 +311,7 @@ static int FILE_putc(libcContext args) {
 	reti32(args, putc(data, file));
 	return 0;
 }
-static int FILE_write(libcContext args) {      // int write(File &f, uint8 buff[])
+static vmError FILE_write(libcContext args) {      // int write(File &f, uint8 buff[])
 	int argc = 0;
 	FILE *file = arghnd(args, argpos(&argc, sizeof(FILE *)));
 	char *buff = argref(args, argpos(&argc, vm_size));
@@ -322,7 +322,7 @@ static int FILE_write(libcContext args) {      // int write(File &f, uint8 buff[
 	return 0;
 }
 
-static int FILE_flush(libcContext args) {
+static vmError FILE_flush(libcContext args) {
 	FILE *file = arghnd(args, 0);
 	debugFILE("File: %x", file);
 	fflush(file);
@@ -373,34 +373,34 @@ static inline void sleepMillis(int64_t milliseconds) {
 }
 #endif
 
-static int sysExit(libcContext args) {
+static vmError sysExit(libcContext args) {
 	exit(argi32(args, 0));
 	return 0;
 }
 
-static int sysRand(libcContext args) {
+static vmError sysRand(libcContext args) {
 	reti32(args, rand());
 	return 0;
 }
-static int sysSRand(libcContext args) {
+static vmError sysSRand(libcContext args) {
 	int seed = argi32(args, 0);
 	srand((unsigned) seed);
 	return 0;
 }
 
-static int sysTime(libcContext args) {
+static vmError sysTime(libcContext args) {
 	reti32(args, (int) time(NULL));
 	return 0;
 }
-static int sysClock(libcContext args) {
+static vmError sysClock(libcContext args) {
 	reti32(args, clock());
 	return 0;
 }
-static int sysMillis(libcContext args) {
+static vmError sysMillis(libcContext args) {
 	reti64(args, timeMillis());
 	return 0;
 }
-static int sysMSleep(libcContext args) {
+static vmError sysMSleep(libcContext args) {
 	sleepMillis(argi64(args, 0));
 	return 0;
 }
@@ -414,7 +414,7 @@ enum {
 	raise_verbose = 4	// log only if executing with debuger.
 };
 // void raise(int logLevel, string message, variant inspect, int logTrace);
-static int sysRaise(libcContext args) {
+static vmError sysRaise(libcContext args) {
 	rtContext rt = args->rt;
 	char* file = argref(args, 0 * vm_size);
 	int line = argi32(args, 1 * vm_size);
@@ -427,11 +427,11 @@ static int sysRaise(libcContext args) {
 
 	// logging disabled or log level not reached.
 	if (rt->logFile == NULL || logLevel > rt->logLevel || !logLevel) {
-		return 0;
+		return noError;
 	}
 	/* skip debug logs if not in debug mode.
 	if (rt->dbg == NULL && logLevel >= raise_debug) {
-		return 0;
+		return noError;
 	}*/
 
 	//~ long* argv = (long*)(long(*)[7])args->argv;
@@ -456,7 +456,7 @@ static int sysRaise(libcContext args) {
 		if (isOutput) {
 			fputfmt(rt->logFile, ": ");
 		}
-		fputval(rt, rt->logFile, varType, varRef, 0, prType);
+		fputVal(rt->logFile, NULL, rt, varType, varRef, prType, 0);
 		isOutput = 1;
 	}
 
@@ -475,10 +475,10 @@ static int sysRaise(libcContext args) {
 		return executionAborted;
 	}
 
-	return 0;
+	return noError;
 }
 
-static int sysTryExec(libcContext args) {
+static vmError sysTryExec(libcContext args) {
 	rtContext rt = args->rt;
 	dbgContext dbg = rt->dbg;
 	int argval = argi32(args, 0 * vm_size);
@@ -500,41 +500,41 @@ static int sysTryExec(libcContext args) {
 		}
 		reti32(args, result);
 	}
-	return 0;
+	return noError;
 }
 
-static int sysMemMgr(libcContext rt) {
+static vmError sysMemMgr(libcContext rt) {
 	void* old = argref(rt, 0);
 	int size = argi32(rt, 4);
 	void* res = rtAlloc(rt->rt, old, (size_t) size, NULL);
 	reti32(rt, vmOffset(rt->rt, res));
-	return 0;
+	return noError;
 }
-static int sysMemCpy(libcContext rt) {
+static vmError sysMemCpy(libcContext rt) {
 	void* dest = argref(rt, 0 * vm_size);
 	void* src = argref(rt, 1 * vm_size);
 	int size = argi32(rt, 2 * vm_size);
 	void* res = memcpy(dest, src, (size_t) size);
 	reti32(rt, vmOffset(rt->rt, res));
-	return 0;
+	return noError;
 }
-static int sysMemSet(libcContext rt) {
+static vmError sysMemSet(libcContext rt) {
 	void* dest = argref(rt, 0 * vm_size);
 	int value = argi32(rt, 1 * vm_size);
 	int size = argi32(rt, 2 * vm_size);
 	void* res = memset(dest, value, (size_t) size);
 	reti32(rt, vmOffset(rt->rt, res));
-	return 0;
+	return noError;
 }
 //#}#endregion
 
-int install_stdc(rtContext rt) {
+int ccUnitStdc(rtContext rt) {
 	symn nsp = NULL;		// namespace
 	int err = 0;
 	size_t i;
 
 	struct {
-		int (*fun)(libcContext);
+		vmError (*fun)(libcContext);
 		char* def;
 	}
 	flt64[] = {		// sin, cos, sqrt, ...
@@ -580,7 +580,7 @@ int install_stdc(rtContext rt) {
 		// TODO: include some of the compiler functions for reflection. (lookup, exec?, ...)
 	};
 	struct {
-		size_t value;
+		int64_t value;
 		char* name;
 	}
 	constants[] = {
@@ -607,7 +607,7 @@ int install_stdc(rtContext rt) {
 	}
 
 	if (!err && rt->cc->type_var != NULL) {		// debug, trace, assert, fatal, ...
-		rt->cc->libc_dbg = ccAddCall(rt, sysRaise, NULL, "void raise(int level, string message, variant inspect, int maxTrace);");
+		rt->cc->libc_dbg = ccDefCall(rt, sysRaise, NULL, "void raise(int level, string message, variant inspect, int maxTrace);");
 		rt->cc->libc_dbg_idx = rt->cc->libc_dbg->offs;
 		if (rt->cc->libc_dbg == NULL) {
 			err = 2;
@@ -620,24 +620,24 @@ int install_stdc(rtContext rt) {
 					break;
 				}
 			}
-			ccEnd(rt, nsp);
+			ccEnd(rt, nsp, ATTR_stat);
 		}
 	}
 
 	if (!err && rt->cc->type_ptr != NULL) {		// tryExecute
-		if(!ccAddCall(rt, sysTryExec, NULL, "int tryExec(pointer args, void action(pointer args));")) {
+		if(!ccDefCall(rt, sysTryExec, NULL, "int tryExec(pointer args, void action(pointer args));")) {
 			err = 2;
 		}
 	}
 
 	if (!err && rt->cc->type_ptr != NULL) {		// realloc, malloc, free, memset, memcpy
-		if(!ccAddCall(rt, sysMemMgr, NULL, "pointer memmgr(pointer ptr, int32 size);")) {
+		if(!ccDefCall(rt, sysMemMgr, NULL, "pointer memmgr(pointer ptr, int32 size);")) {
 			err = 3;
 		}
-		if(!ccAddCall(rt, sysMemSet, NULL, "pointer memset(pointer dest, int value, int32 size);")) {
+		if(!ccDefCall(rt, sysMemSet, NULL, "pointer memset(pointer dest, int value, int32 size);")) {
 			err = 3;
 		}
-		if(!ccAddCall(rt, sysMemCpy, NULL, "pointer memcpy(pointer dest, pointer src, int32 size);")) {
+		if(!ccDefCall(rt, sysMemCpy, NULL, "pointer memcpy(pointer dest, pointer src, int32 size);")) {
 			err = 3;
 		}
 	}
@@ -645,90 +645,90 @@ int install_stdc(rtContext rt) {
 	// System.Exit(int code), ...
 	if (!err && (nsp = ccBegin(rt, "System"))) {
 		for (i = 0; i < lengthOf(misc); i += 1) {
-			if (!ccAddCall(rt, misc[i].fun, NULL, misc[i].def)) {
+			if (!ccDefCall(rt, misc[i].fun, NULL, misc[i].def)) {
 				err = 4;
 				break;
 			}
 		}
 		//~ install(cc, "Arguments", TYPE_arr, 0, 0);	// string Args[];
 		//~ install(cc, "Enviroment", TYPE_def, 0, 0);	// string Env[string];
-		ccEnd(rt, nsp);
+		ccEnd(rt, nsp, ATTR_stat);
 	}
 
 	// Add bitwise operations to int64 as functions
 	if (!err && rt->cc->type_i64 && !rt->cc->type_i64->flds) {
 		ccBegin(rt, NULL);
 		for (i = 0; i < lengthOf(bit64); i += 1) {
-			if (!ccAddCall(rt, bit64[i].fun, NULL, bit64[i].def)) {
+			if (!ccDefCall(rt, bit64[i].fun, NULL, bit64[i].def)) {
 				err = 5;
 				break;
 			}
 		}
-		ccEnd(rt, rt->cc->type_i64);
+		ccEnd(rt, rt->cc->type_i64, ATTR_stat);
 	}
 
 	// add math functions to float64 as functions
 	if (!err && rt->cc->type_f64 && !rt->cc->type_f64->flds) {
 		ccBegin(rt, NULL);
 		for (i = 0; i < lengthOf(flt64); i += 1) {
-			if (!ccAddCall(rt, flt64[i].fun, NULL, flt64[i].def)) {
+			if (!ccDefCall(rt, flt64[i].fun, NULL, flt64[i].def)) {
 				err = 6;
 				break;
 			}
 		}
-		ccEnd(rt, rt->cc->type_f64);
+		ccEnd(rt, rt->cc->type_f64, ATTR_stat);
 	}
 	// add math functions to float32 as functions
 	if (!err && rt->cc->type_f32 && !rt->cc->type_f32->flds) {
 		ccBegin(rt, NULL);
 		for (i = 0; i < lengthOf(flt32); i += 1) {
-			if (!ccAddCall(rt, flt32[i].fun, NULL, flt32[i].def)) {
+			if (!ccDefCall(rt, flt32[i].fun, NULL, flt32[i].def)) {
 				err = 7;
 				break;
 			}
 		}
-		ccEnd(rt, rt->cc->type_f32);
+		ccEnd(rt, rt->cc->type_f32, ATTR_stat);
 	}
 
 	return err;
 }
 
-int install_file(rtContext rt) {
-	symn file_nsp = ccAddType(rt, "File", sizeof(FILE*), 0);
+int ccUnitFile(rtContext rt) {
+	symn file_nsp = ccDefType(rt, "File", sizeof(FILE*), 0);
 	int err = file_nsp == NULL;
 
 	if (file_nsp != NULL) {
 		ccBegin(rt, NULL);
 
-		err = err || !ccAddCall(rt, FILE_open, "r", "File Open(char path[]);");
-		err = err || !ccAddCall(rt, FILE_open, "w", "File Create(char path[]);");
-		err = err || !ccAddCall(rt, FILE_open, "a", "File Append(char path[]);");
+		err = err || !ccDefCall(rt, FILE_open, "r", "File Open(char path[]);");
+		err = err || !ccDefCall(rt, FILE_open, "w", "File Create(char path[]);");
+		err = err || !ccDefCall(rt, FILE_open, "a", "File Append(char path[]);");
 
-		err = err || !ccAddCall(rt, FILE_peek, NULL, "int Peek(File file);");
-		err = err || !ccAddCall(rt, FILE_getc, NULL, "int Read(File file);");
-		err = err || !ccAddCall(rt, FILE_read, NULL, "int Read(File file, uint8 buff[]);");
-		err = err || !ccAddCall(rt, FILE_gets, NULL, "int ReadLine(File file, uint8 buff[]);");
+		err = err || !ccDefCall(rt, FILE_peek, NULL, "int Peek(File file);");
+		err = err || !ccDefCall(rt, FILE_getc, NULL, "int Read(File file);");
+		err = err || !ccDefCall(rt, FILE_read, NULL, "int Read(File file, uint8 buff[]);");
+		err = err || !ccDefCall(rt, FILE_gets, NULL, "int ReadLine(File file, uint8 buff[]);");
 
-		err = err || !ccAddCall(rt, FILE_putc, NULL, "int Write(File file, uint8 byte);");
-		err = err || !ccAddCall(rt, FILE_write, NULL, "int Write(File file, uint8 buff[]);");
+		err = err || !ccDefCall(rt, FILE_putc, NULL, "int Write(File file, uint8 byte);");
+		err = err || !ccDefCall(rt, FILE_write, NULL, "int Write(File file, uint8 buff[]);");
 
-		//~ err = err || !ccAddCall(rt, FILE_puts, NULL, "int puts(char buff[], File file);");
-		//~ err = err || !ccAddCall(rt, FILE_ungetc, NULL, "int ungetc(int chr, File file);");
+		//~ err = err || !ccDefCall(rt, FILE_puts, NULL, "int puts(char buff[], File file);");
+		//~ err = err || !ccDefCall(rt, FILE_ungetc, NULL, "int ungetc(int chr, File file);");
 
-		err = err || !ccAddCall(rt, FILE_flush, NULL, "void Flush(File file);");
-		err = err || !ccAddCall(rt, FILE_close, NULL, "void Close(File file);");
+		err = err || !ccDefCall(rt, FILE_flush, NULL, "void Flush(File file);");
+		err = err || !ccDefCall(rt, FILE_close, NULL, "void Close(File file);");
 
-		//~ err = err || !ccAddCall(rt, FILE_memory, (void*)0, "File MemIn(char data[]);");
-		//~ err = err || !ccAddCall(rt, FILE_memory, (void*)1, "File MemOut(char data[]);");
+		//~ err = err || !ccDefCall(rt, FILE_memory, (void*)0, "File MemIn(char data[]);");
+		//~ err = err || !ccDefCall(rt, FILE_memory, (void*)1, "File MemOut(char data[]);");
 
-		err = err || !ccAddCall(rt, FILE_stream, (void*)0, "File StdIn;");
-		err = err || !ccAddCall(rt, FILE_stream, (void*)1, "File StdOut;");
-		err = err || !ccAddCall(rt, FILE_stream, (void*)2, "File StdErr;");
-		err = err || !ccAddCall(rt, FILE_stream, (void*)3, "File DbgOut;");
+		err = err || !ccDefCall(rt, FILE_stream, (void *) 0, "File StdIn;");
+		err = err || !ccDefCall(rt, FILE_stream, (void *) 1, "File StdOut;");
+		err = err || !ccDefCall(rt, FILE_stream, (void *) 2, "File StdErr;");
+		err = err || !ccDefCall(rt, FILE_stream, (void *) 3, "File DbgOut;");
 
-		//~ err = err || !ccAddCall(rt, FILE_mkdirs, NULL, "bool mkdirs(char path[]);");
-		//~ err = err || !ccAddCall(rt, FILE_exists, NULL, "bool Exists(char path[]);");
-		//~ err = err || !ccAddCall(rt, FILE_delete, NULL, "bool Delete(char path[]);");
+		//~ err = err || !ccDefCall(rt, FILE_mkdirs, NULL, "bool mkdirs(char path[]);");
+		//~ err = err || !ccDefCall(rt, FILE_exists, NULL, "bool Exists(char path[]);");
+		//~ err = err || !ccDefCall(rt, FILE_delete, NULL, "bool Delete(char path[]);");
 
 		/* struct Path& {
 		 *		int64 size;		// size of file or directory
@@ -741,11 +741,11 @@ int install_file(rtContext rt) {
 		 *		...
 		 * }
 
-		err = err || !ccAddCall(rt, FILE_properties, NULL, "Path Path(char path[]);");
+		err = err || !ccDefCall(rt, FILE_properties, NULL, "Path Path(char path[]);");
 
 		 */
 
-		ccEnd(rt, file_nsp);
+		ccEnd(rt, file_nsp, ATTR_stat);
 	}
 
 	return err;

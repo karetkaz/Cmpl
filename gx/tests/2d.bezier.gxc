@@ -10,7 +10,7 @@ struct Position {
 	int y;
 }
 
-inline points = 4;
+define points = 4;
 Position positions[points];
 
 bool reDraw = true;
@@ -35,7 +35,7 @@ void mouseCB(int btn, int x, int y) {
 }
 
 void drawCB() {
-	inline drawOval(gxSurf dst, Position &p, int s, int color) = drawOval(offScreen, p.x - s / 2, p.y - s / 2, p.x + s / 2, p.y + s / 2, color);
+	define drawOval(gxSurf dst, Position &p, int s, int color) = drawOval(offScreen, p.x - s / 2, p.y - s / 2, p.x + s / 2, p.y + s / 2, color);
 
 	for (int i = 0; i < positions.length; i += 1) {
 		drawOval(offScreen, positions[i], 5, 0xffffff);

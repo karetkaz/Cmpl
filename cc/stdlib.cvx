@@ -2,8 +2,8 @@
  * standard library extension file
  */
 
-inline rand(int min, int max) = int(min + System.rand() % (max - min));
-inline rand(double min, double max) = double(min + (System.rand() / float64(RAND_MAX)) * (max - min));
+define rand(int min, int max) = int(min + System.rand() % (max - min));
+define rand(double min, double max) = double(min + (System.rand() / float64(RAND_MAX)) * (max - min));
 
 /**
  * 
@@ -43,28 +43,28 @@ static struct Math {
 		return result;
 	}
 
-	inline isNan(float64 x) = bool(x != x);
-	inline isNan(float32 x) = bool(x != x);
+	define isNan(float64 x) = bool(x != x);
+	define isNan(float32 x) = bool(x != x);
 
-	inline isInf(float64 x) = bool(x != 0 && x == 2 * x);
-	inline isInf(float32 x) = bool(x != 0 && x == 2 * x);
+	define isInf(float64 x) = bool(x != 0 && x == 2 * x);
+	define isInf(float32 x) = bool(x != 0 && x == 2 * x);
 
 	// (x == x) && ((x == 0) || (x != 2 * x));
-	inline isFinite(float64 x) = bool(x - x == 0);
-	inline isFinite(float32 x) = bool(x - x == 0);
+	define isFinite(float64 x) = bool(x - x == 0);
+	define isFinite(float32 x) = bool(x - x == 0);
 
 	//#{
-	inline abs(int32 x) = (x < 0 ? -x : x);
-	inline abs(int64 x) = (x < 0 ? -x : x);
-	inline abs(uint32 x) = x;
-	inline abs(float32 x) = (x < 0 ? -x : x);
-	inline abs(float64 x) = (x < 0 ? -x : x);
+	define abs(int32 x) = (x < 0 ? -x : x);
+	define abs(int64 x) = (x < 0 ? -x : x);
+	define abs(uint32 x) = x;
+	define abs(float32 x) = (x < 0 ? -x : x);
+	define abs(float64 x) = (x < 0 ? -x : x);
 
-	inline sign(int32 x) = (x ? x < 0 ? -1 : 1 : 0);
-	inline sign(int64 x) = (x ? x < 0 ? -1 : 1 : 0);
-	inline sign(uint32 x) = (x ? 1 : 0);
-	inline sign(float32 x) = (x ? x < 0 ? -1 : 1 : 0);
-	inline sign(float64 x) = (x ? x < 0 ? -1 : 1 : 0);
+	define sign(int32 x) = (x ? x < 0 ? -1 : 1 : 0);
+	define sign(int64 x) = (x ? x < 0 ? -1 : 1 : 0);
+	define sign(uint32 x) = (x ? 1 : 0);
+	define sign(float32 x) = (x ? x < 0 ? -1 : 1 : 0);
+	define sign(float64 x) = (x ? x < 0 ? -1 : 1 : 0);
 
 	float32 mod(float32 x, float32 y) {
 		return x >= 0 ? x % y : (x % y + abs(y)) % y;
@@ -74,57 +74,57 @@ static struct Math {
 		modf(x, &result);
 		return result;
 	}
-	inline floor(float32 x) = float32(floor(float64(x)));
+	define floor(float32 x) = float32(floor(float64(x)));
 
-	inline ceil(float64 x) = -floor(-x);
-	inline ceil(float32 x) = float32(ceil(float64(-x)));
+	define ceil(float64 x) = -floor(-x);
+	define ceil(float32 x) = float32(ceil(float64(-x)));
 
-	inline round(float64 x) = floor(x + .5);
-	inline round(float32 x) = float32(round(float64(x)));
+	define round(float64 x) = floor(x + .5);
+	define round(float32 x) = float32(round(float64(x)));
 
-	inline max(int32 a, int32 b) = (a > b ? a : b);
-	inline max(int64 a, int64 b) = (a > b ? a : b);
-	inline max(uint32 a, uint32 b) = (a > b ? a : b);
-	inline max(float32 a, float32 b) = (a > b ? a : b);
-	inline max(float64 a, float64 b) = (a > b ? a : b);
+	define max(int32 a, int32 b) = (a > b ? a : b);
+	define max(int64 a, int64 b) = (a > b ? a : b);
+	define max(uint32 a, uint32 b) = (a > b ? a : b);
+	define max(float32 a, float32 b) = (a > b ? a : b);
+	define max(float64 a, float64 b) = (a > b ? a : b);
 
-	inline min(int32 a, int32 b) = (a < b ? a : b);
-	inline min(int64 a, int64 b) = (a < b ? a : b);
-	inline min(uint32 a, uint32 b) = (a < b ? a : b);
-	inline min(float32 a, float32 b) = (a < b ? a : b);
-	inline min(float64 a, float64 b) = (a < b ? a : b);
+	define min(int32 a, int32 b) = (a < b ? a : b);
+	define min(int64 a, int64 b) = (a < b ? a : b);
+	define min(uint32 a, uint32 b) = (a < b ? a : b);
+	define min(float32 a, float32 b) = (a < b ? a : b);
+	define min(float64 a, float64 b) = (a < b ? a : b);
 
-	//~ inline clamp(int32 t, int32 a, int32 b) = min(max(t, a), b);
-	inline clamp(int32 t, int32 a, int32 b) = (t < a ? a : t > b ? b : t);
-	inline clamp(float32 t, float32 a, float32 b) = (t < a ? a : t > b ? b : t);
-	inline clamp(float64 t, float64 a, float64 b) = (t < a ? a : t > b ? b : t);
+	//~ define clamp(int32 t, int32 a, int32 b) = min(max(t, a), b);
+	define clamp(int32 t, int32 a, int32 b) = (t < a ? a : t > b ? b : t);
+	define clamp(float32 t, float32 a, float32 b) = (t < a ? a : t > b ? b : t);
+	define clamp(float64 t, float64 a, float64 b) = (t < a ? a : t > b ? b : t);
 
-	inline lerp(float32 t, float32 a, float32 b) = (a + t * (b - a));
-	inline lerp(float64 t, float64 a, float64 b) = (a + t * (b - a));
+	define lerp(float32 t, float32 a, float32 b) = (a + t * (b - a));
+	define lerp(float64 t, float64 a, float64 b) = (a + t * (b - a));
 
-	inline smooth(float32 t) = (t * t * (3 - 2 * t));
-	inline smooth(float64 t) = (t * t * (3 - 2 * t));
-	inline smooth(float32 t, float32 a, float32 b) = smooth(clamp((t - a) / (b - a), float32(0), float32(1)));
-	inline smooth(float64 t, float64 a, float64 b) = smooth(clamp((t - a) / (b - a), float64(0), float64(1)));
+	define smooth(float32 t) = (t * t * (3 - 2 * t));
+	define smooth(float64 t) = (t * t * (3 - 2 * t));
+	define smooth(float32 t, float32 a, float32 b) = smooth(clamp((t - a) / (b - a), float32(0), float32(1)));
+	define smooth(float64 t, float64 a, float64 b) = smooth(clamp((t - a) / (b - a), float64(0), float64(1)));
 
-	inline absMod(int32 val, int32 mod) = ((val < 0 ? val + mod : val) % mod);
-	inline absMod(float32 val, float32 mod) = ((val < 0 ? val + mod : val) % mod);
-	inline absMod(float64 val, float64 mod) = ((val < 0 ? val + mod : val) % mod);
+	define absMod(int32 val, int32 mod) = ((val < 0 ? val + mod : val) % mod);
+	define absMod(float32 val, float32 mod) = ((val < 0 ? val + mod : val) % mod);
+	define absMod(float64 val, float64 mod) = ((val < 0 ? val + mod : val) % mod);
 
 
 	// TODO: remove me
-	inline nz(float64 val1, float64 val2) = float64(val1 ? val1 : val2);
+	define nz(float64 val1, float64 val2) = float64(val1 ? val1 : val2);
 
-	inline hypot(float64 x, float64 y) = float64.sqrt(x * x + y * y);
+	define hypot(float64 x, float64 y) = float64.sqrt(x * x + y * y);
 
 	//TODO: float64 eval(float64 x, float64 poly...) {...}
-	inline eval(float64 x, float64 a0, float64 a1) = (a0 + x * a1);
-	inline eval(float64 x, float64 a0, float64 a1, float64 a2) = (a0 + x * eval(x, a1, a2));
-	inline eval(float64 x, float64 a0, float64 a1, float64 a2, float64 a3) = (a0 + x * eval(x, a1, a2, a3));
-	inline eval(float64 x, float64 a0, float64 a1, float64 a2, float64 a3, float64 a4) = (a0 + x * eval(x, a1, a2, a3, a4));
-	inline eval(float64 x, float64 a0, float64 a1, float64 a2, float64 a3, float64 a4, float64 a5) = (a0 + x * eval(x, a1, a2, a3, a4, a5));
-	inline eval(float64 x, float64 a0, float64 a1, float64 a2, float64 a3, float64 a4, float64 a5, float64 a6) = (a0 + x * eval(x, a1, a2, a3, a4, a5, a6));
-	inline eval(float64 x, float64 a0, float64 a1, float64 a2, float64 a3, float64 a4, float64 a5, float64 a6, float64 a7) = (a0 + x * eval(x, a1, a2, a3, a4, a5, a6, a7));
+	define eval(float64 x, float64 a0, float64 a1) = (a0 + x * a1);
+	define eval(float64 x, float64 a0, float64 a1, float64 a2) = (a0 + x * eval(x, a1, a2));
+	define eval(float64 x, float64 a0, float64 a1, float64 a2, float64 a3) = (a0 + x * eval(x, a1, a2, a3));
+	define eval(float64 x, float64 a0, float64 a1, float64 a2, float64 a3, float64 a4) = (a0 + x * eval(x, a1, a2, a3, a4));
+	define eval(float64 x, float64 a0, float64 a1, float64 a2, float64 a3, float64 a4, float64 a5) = (a0 + x * eval(x, a1, a2, a3, a4, a5));
+	define eval(float64 x, float64 a0, float64 a1, float64 a2, float64 a3, float64 a4, float64 a5, float64 a6) = (a0 + x * eval(x, a1, a2, a3, a4, a5, a6));
+	define eval(float64 x, float64 a0, float64 a1, float64 a2, float64 a3, float64 a4, float64 a5, float64 a6, float64 a7) = (a0 + x * eval(x, a1, a2, a3, a4, a5, a6, a7));
 
 /+ TODO
 //~ float64 abs(float64 x);
@@ -300,10 +300,10 @@ Number.prototype.log10 = function(){return Math.log(this) / Math.LN10;};
 	}
 
 	// Sin returns the sine of arg.
-	inline Sin(float64 arg) = sincos(arg, 0);
+	define Sin(float64 arg) = sincos(arg, 0);
 
 	// Cos returns the cosine of arg.
-	inline Cos(float64 arg) = sincos(abs(arg), 1);
+	define Cos(float64 arg) = sincos(abs(arg), 1);
 
 	// Tan returns the tangent of arg.
 	float64 Tan(float64 arg) {
@@ -450,7 +450,7 @@ Number.prototype.log10 = function(){return Math.log(this) / Math.LN10;};
 		Special case is:
 		Acos(x) = NaN if x < -1 or x > 1
 	*/
-	inline Acos(float64 x) = (pi / 2 - Asin(x));
+	define Acos(float64 x) = (pi / 2 - Asin(x));
 
 	/* arccosine of x
 		Absolute error <= 6.7e-5.
@@ -474,19 +474,19 @@ Number.prototype.log10 = function(){return Math.log(this) / Math.LN10;};
 		result = negate * 3.14159265358979 + result;
 	}*/
 
-	inline deg2rad(float64 x) = float64(x * pi / 180);
-	inline rad2deg(float64 x) = float64(x * 180 / pi);
+	define deg2rad(float64 x) = float64(x * pi / 180);
+	define rad2deg(float64 x) = float64(x * 180 / pi);
 }
 
 /** Perlin noise
  * 
  */
 static struct Perlin {
-	inline B = 0x100;
-	inline BM = 0xff;
-	inline N = 0x1000;
-	inline NP = 12;   // 2^N
-	inline NM = 0xfff;
+	define B = 0x100;
+	define BM = 0xff;
+	define N = 0x1000;
+	define NP = 12;   // 2^N
+	define NM = 0xfff;
 
 	int p[B + B + 2];
 	float g3[B + B + 2][3];
@@ -498,7 +498,7 @@ static struct Perlin {
 	void init() {
 		int i;
 		System.srand(System.time());
-		inline sqr(float x) = float(x * x);
+		define sqr(float x) = float(x * x);
 		for (i = 0; i < B ; i += 1) {
 			p[i] = i;
 
@@ -555,8 +555,8 @@ static struct Perlin {
 		r1 = r0 - 1.;
 	}
 
-	inline smooth(float32 t) = Math.smooth(t);
-	inline lerp(float32 t, float32 a, float32 b) = Math.lerp(t, a, b);
+	define smooth(float32 t) = Math.smooth(t);
+	define lerp(float32 t, float32 a, float32 b) = Math.lerp(t, a, b);
 
 	float Noise1f(float x) {
 		int bx0;
@@ -610,7 +610,7 @@ static struct Perlin {
 		float sx = smooth(rx0);
 		float sy = smooth(ry0);
 
-		inline at2(float rx, float ry, int i) = float(rx * g2[i][0] + ry * g2[i][1]);
+		define at2(float rx, float ry, int i) = float(rx * g2[i][0] + ry * g2[i][1]);
 
 		float a = lerp(sx, at2(rx0, ry0, b00), at2(rx1, ry0, b10));
 		float b = lerp(sx, at2(rx0, ry1, b01), at2(rx1, ry1, b11));
@@ -653,7 +653,7 @@ static struct Perlin {
 		float sy = smooth(ry0);
 		float sz = smooth(rz0);
 
-		inline at3(float rx, float ry, float rz, int i) = float(rx * g3[i][0] + ry * g3[i][1] + rz * g3[i][2]);
+		define at3(float rx, float ry, float rz, int i) = float(rx * g3[i][0] + ry * g3[i][1] + rz * g3[i][2]);
 
 		float a;
 		float b;
@@ -685,9 +685,9 @@ static struct Perlin {
 		result = lerp(sz, c, d);
 	}
 
-	inline Noise(float x) = Noise1f(x);
-	inline Noise(float x, float y) = Noise2f(x, y);
-	inline Noise(float x, float y, float z) = Noise3f(x, y, z);
+	define Noise(float x) = Noise1f(x);
+	define Noise(float x, float y) = Noise2f(x, y);
+	define Noise(float x, float y, float z) = Noise3f(x, y, z);
 }
 
 struct Date {
@@ -725,12 +725,12 @@ struct Date {
 	struct Duration {
 		int64 value;
 
-		inline millis(int64 value) = int64(value);
-		inline seconds(int64 value) = int64(value * MillisPerSecond);
-		inline minutes(int64 value) = int64(value * MillisPerMinute);
-		inline hours(int64 value) = int64(value * MillisPerHour);
-		inline days(int64 value) = int64(value * MillisPerDay);
-		inline weeks(int64 value) = int64(value * MillisPerWeek);
+		define millis(int64 value) = int64(value);
+		define seconds(int64 value) = int64(value * MillisPerSecond);
+		define minutes(int64 value) = int64(value * MillisPerMinute);
+		define hours(int64 value) = int64(value * MillisPerHour);
+		define days(int64 value) = int64(value * MillisPerDay);
+		define weeks(int64 value) = int64(value * MillisPerWeek);
 	}
 	/** Converting between time units
 	 * TimeUnit.MINUTE.convert(60, TimeUnit.HOUR) = 1;	// 60 minutes result in one hour.
@@ -946,15 +946,15 @@ struct Date {
 		day = parts.dayOfMonth;
 	}
 
-	inline Parts(int n) = ToParts(n);
+	define Parts(int n) = ToParts(n);
 	//~ Date.Parts dateParts = Date.ToParts(Date.ToDays(2613, 8, 15));
 	//~ debug("Date", Date.Parts, pointer(dateParts), 0, 1);
 }
-inline Date(int year, int month, int day) = Date(Date.ToDays(year, month, day));
+define Date(int year, int month, int day) = Date(Date.ToDays(year, month, day));
 
 Date DateFromTime(int time) {
-	static const int _1970 = Date.ToDays(1970, 1, 1);
-	result = Date(_1970 + (time / Date.SecondsPerDay));
+	static const int _1970 = 719162;// Date.ToDays(1970, 1, 1);
+	return Date(_1970 + (time / Date.SecondsPerDay));
 }
 
 enum importstd: bool {
@@ -970,19 +970,19 @@ enum importstd: bool {
 	strUtils = true;
 }
 
-inline variant(typename type, pointer value) = emit(variant, pointer(value), typename(type));
+define variant(typename type, pointer value) = emit(variant, pointer(value), typename(type));
 
 static if (importstd.bits2) {
 
-inline Lo32(int64 a) = int32(a);					// Lo32 part
-inline Hi32(int64 a) = Lo32(int64.Shr(a, 32));		// Hi32 part
-inline Lo16(int32 a) = int32(a & 0xffff);			// Lo16 part
-inline Hi16(int32 a) = Lo16(a >> 16);				// Hi16 part
-inline Lo8(int32 a) = int32(a & 0xff);				// Lo16 part
-inline Hi8(int32 a) = Lo8(a >> 8);					// Hi16 part
+define Lo32(int64 a) = int32(a);					// Lo32 part
+define Hi32(int64 a) = Lo32(int64.Shr(a, 32));		// Hi32 part
+define Lo16(int32 a) = int32(a & 0xffff);			// Lo16 part
+define Hi16(int32 a) = Lo16(a >> 16);				// Hi16 part
+define Lo8(int32 a) = int32(a & 0xff);				// Lo16 part
+define Hi8(int32 a) = Lo8(a >> 8);					// Hi16 part
 
-//~ inline sxt64(int32 a) = int64(int32(a));			// sign extend
-//~ inline zxt64(int32 a) = int64(uint32(a));			// zero extend
+//~ define sxt64(int32 a) = int64(int32(a));			// sign extend
+//~ define zxt64(int32 a) = int64(uint32(a));			// zero extend
 
 /** bit scan reverse
  * get the index of the highest bit
@@ -1094,26 +1094,26 @@ struct Complex {
 	const float64 im;
 }
 
-//~ inline Complex(float64 re, float64 im) = emit(Complex, f64(re), f64(im));
-inline Complex(float64 &re) = Complex(re, float64(0));
+//~ define Complex(float64 re, float64 im) = emit(Complex, float64(re), float64(im));
+define Complex(float64 &re) = Complex(re, float64(0));
 
-inline neg(Complex a) = emit(Complex, v2d.neg, Complex(a));
+define neg(Complex a) = emit(Complex, neg.p2d, Complex(a));
 
-inline add(Complex a, Complex b) = emit(Complex, v2d.add, Complex(b), Complex(a));
-inline add(Complex a, float64 b) = emit(Complex, v2d.add, f64(b), f64(0), Complex(a));
-inline add(float64 a, Complex b) = emit(Complex, v2d.add, Complex(b), f64(a), f64(0));
+define add(Complex a, Complex b) = emit(Complex, add.p2d, Complex(b), Complex(a));
+define add(Complex a, float64 b) = emit(Complex, add.p2d, float64(b), float64(0), Complex(a));
+define add(float64 a, Complex b) = emit(Complex, add.p2d, Complex(b), float64(a), float64(0));
 
-inline sub(Complex a, Complex b) = emit(Complex, v2d.sub, Complex(b), Complex(a));
-inline sub(Complex a, float64 b) = emit(Complex, v2d.sub, f64(b), f64(0), Complex(a));
-inline sub(float64 a, Complex b) = emit(Complex, v2d.sub, Complex(b), f64(a), f64(0));
+define sub(Complex a, Complex b) = emit(Complex, sub.p2d, Complex(b), Complex(a));
+define sub(Complex a, float64 b) = emit(Complex, sub.p2d, float64(b), float64(0), Complex(a));
+define sub(float64 a, Complex b) = emit(Complex, sub.p2d, Complex(b), float64(a), float64(0));
 
-inline mul(Complex a, Complex b) = emit(Complex,
-	f64.sub, v2d.mul, f64(b.im), f64(b.re), f64(a.im), f64(a.re),	// re = a.re * b.re - a.im * b.im
-	f64.add, v2d.mul, Complex(b), f64(a.im), f64(a.re)				// im = a.re * b.im + a.im * b.re;
-	//~ f64.add, v2d.mul, f64(b.re), f64(b.im), f64(a.im), f64(a.re)	// im = a.re * b.im + a.im * b.re;
+define mul(Complex a, Complex b) = emit(Complex,
+	sub.f64, mul.p2d, float64(b.im), float64(b.re), float64(a.im), float64(a.re),	// re = a.re * b.re - a.im * b.im
+	add.f64, mul.p2d, Complex(b), float64(a.im), float64(a.re)				// im = a.re * b.im + a.im * b.re;
+	//~ f64.add, mul.p2d, float64(b.re), float64(b.im), float64(a.im), float64(a.re)	// im = a.re * b.im + a.im * b.re;
 );
-inline mul(Complex a, float64 b) = emit(Complex, v2d.mul, dupp.x2, f64(b), Complex(a));
-inline mul(float64 a, Complex b) = emit(Complex, v2d.mul, Complex(b), dupp.x2, f64(a));
+define mul(Complex a, float64 b) = emit(Complex, mul.p2d, dupp.x2, float64(b), Complex(a));
+define mul(float64 a, Complex b) = emit(Complex, mul.p2d, Complex(b), dupp.x2, float64(a));
 
 Complex div(Complex a, Complex b) {
 	// Adapted from Numerical Recipes in C - The Art of Scientific Computing
@@ -1135,22 +1135,22 @@ Complex div(Complex a, Complex b) {
 	}
 }
 
-inline abs(Complex a) = Math.hypot(a.re, a.im);
-inline arg(Complex a) = float64.atan2(a.re, a.im);
+define abs(Complex a) = Math.hypot(a.re, a.im);
+define arg(Complex a) = float64.atan2(a.re, a.im);
 
-inline re(Complex a) = float64(a.re);		// a must be an rvalue.
-inline im(Complex a) = float64(a.im);
+define re(Complex a) = float64(a.re);		// a must be an rvalue.
+define im(Complex a) = float64(a.im);
 
 Complex inv(Complex a) {
 	float64 d = (a.re * a.re + a.im * a.im);
 	return Complex(+a.re / d, -a.im / d);
 }
 
-inline conj(Complex a) = Complex(a.re, -a.im);
+define conj(Complex a) = Complex(a.re, -a.im);
 
-inline exp(Complex a) = Complex(float64.exp(a.re) * float64.cos(a.im), float64.exp(a.re) * float64.sin(a.im));
+define exp(Complex a) = Complex(float64.exp(a.re) * float64.cos(a.im), float64.exp(a.re) * float64.sin(a.im));
 
-inline log(Complex a) = Complex(float64.log(abs(a)), arg(a));
+define log(Complex a) = Complex(float64.log(abs(a)), arg(a));
 
 Complex pow(Complex a, Complex b) {
 	/*
@@ -1173,11 +1173,11 @@ Complex pow(Complex a, Complex b) {
 	return Complex(v * float64.cos(u), v * float64.sin(u));
 }
 
-inline pow(Complex a, float64 b) = pow(a, Complex(b));
+define pow(Complex a, float64 b) = pow(a, Complex(b));
 
-inline sin(Complex a) = Complex(float64.sin(a.re) * Math.Cosh(a.im), float64.cos(a.re) * Math.Sinh(a.im));
-inline cos(Complex a) = Complex(float64.cos(a.re) * Math.Cosh(a.im),-float64.sin(a.re) * Math.Sinh(a.im));
-inline tan(Complex a) = div(sin(a), cos(a));
+define sin(Complex a) = Complex(float64.sin(a.re) * Math.Cosh(a.im), float64.cos(a.re) * Math.Sinh(a.im));
+define cos(Complex a) = Complex(float64.cos(a.re) * Math.Cosh(a.im),-float64.sin(a.re) * Math.Sinh(a.im));
+define tan(Complex a) = div(sin(a), cos(a));
 
 /+ More Trig ... ???
 public static Complex Cot(Complex a) {
@@ -1217,16 +1217,16 @@ struct vec2d {
 	const float64 y;
 }
 
-inline add(vec2d x, vec2d y) = emit(vec2d, v2d.add, vec2d(y), vec2d(x));
-inline sub(vec2d x, vec2d y) = emit(vec2d, v2d.sub, vec2d(y), vec2d(x));
-inline mul(vec2d x, vec2d y) = emit(vec2d, v2d.mul, vec2d(y), vec2d(x));
-inline div(vec2d x, vec2d y) = emit(vec2d, v2d.div, vec2d(y), vec2d(x));
+define add(vec2d x, vec2d y) = emit(vec2d, add.p2d, vec2d(y), vec2d(x));
+define sub(vec2d x, vec2d y) = emit(vec2d, sub.p2d, vec2d(y), vec2d(x));
+define mul(vec2d x, vec2d y) = emit(vec2d, mul.p2d, vec2d(y), vec2d(x));
+define div(vec2d x, vec2d y) = emit(vec2d, div.p2d, vec2d(y), vec2d(x));
 
-inline min(vec2d x, vec2d y) = emit(vec2d, v2d.min, vec2d(y), vec2d(x));
-inline max(vec2d x, vec2d y) = emit(vec2d, v2d.max, vec2d(y), vec2d(x));
-inline ceq(vec2d x, vec2d y) = emit(v2d.equ, vec2d(y), vec2d(x));
+define min(vec2d x, vec2d y) = emit(vec2d, min.p2d, vec2d(y), vec2d(x));
+define max(vec2d x, vec2d y) = emit(vec2d, max.p2d, vec2d(y), vec2d(x));
+define ceq(vec2d x, vec2d y) = emit(ceq.p2d, vec2d(y), vec2d(x));
 
-inline dot(vec2d &x, vec2d &y) = float64(x.x * y.x + x.y * y.y);
+define dot(vec2d &x, vec2d &y) = float64(x.x * y.x + x.y * y.y);
 }
 static if (importstd.vec4f) {
 struct vec4f {
@@ -1236,54 +1236,54 @@ struct vec4f {
 	float32 w;
 }
 
-inline vec4f(float32 x, float32 y, float32 z) = emit(vec4f, f32(x), f32(y), f32(z), f32(0));
-inline vec4f(float32 val) = emit(vec4f, dupp.x2, dupp.x1, f32(val));
-//~ inline vec4f(vec4f v) = emit(vec4f, vec4f(v));
+define vec4f(float32 x, float32 y, float32 z) = emit(vec4f, float32(x), float32(y), float32(z), float32(0));
+define vec4f(float32 val) = emit(vec4f, dupp.x2, dupp.x1, float32(val));
+//~ define vec4f(vec4f v) = emit(vec4f, vec4f(v));
 
-inline neg(vec4f rhs) = emit(vec4f, v4f.neg, vec4f(rhs));
-inline add(vec4f lhs, vec4f rhs) = emit(vec4f, v4f.add, vec4f(rhs), vec4f(lhs));
-inline add(float32 a, vec4f b) = add(vec4f(a), b);
-inline add(vec4f a, float32 b) = add(a, vec4f(b));
-inline sub(vec4f lhs, vec4f rhs) = emit(vec4f, v4f.sub, vec4f(rhs), vec4f(lhs));
-inline sub(float32 a, vec4f b) = sub(vec4f(a), b);
-inline sub(vec4f a, float32 b) = sub(a, vec4f(b));
-inline mul(vec4f lhs, vec4f rhs) = emit(vec4f, v4f.mul, vec4f(rhs), vec4f(lhs));
-inline mul(float32 a, vec4f b) = mul(vec4f(a), b);
-inline mul(vec4f a, float32 b) = mul(a, vec4f(b));
-inline div(vec4f lhs, vec4f rhs) = emit(vec4f, v4f.div, vec4f(rhs), vec4f(lhs));
-inline div(float32 a, vec4f b) = div(vec4f(a), b);
-inline div(vec4f a, float32 b) = div(a, vec4f(b));
+define neg(vec4f rhs) = emit(vec4f, neg.p4f, vec4f(rhs));
+define add(vec4f lhs, vec4f rhs) = emit(vec4f, add.p4f, vec4f(rhs), vec4f(lhs));
+define add(float32 a, vec4f b) = add(vec4f(a), b);
+define add(vec4f a, float32 b) = add(a, vec4f(b));
+define sub(vec4f lhs, vec4f rhs) = emit(vec4f, sub.p4f, vec4f(rhs), vec4f(lhs));
+define sub(float32 a, vec4f b) = sub(vec4f(a), b);
+define sub(vec4f a, float32 b) = sub(a, vec4f(b));
+define mul(vec4f lhs, vec4f rhs) = emit(vec4f, mul.p4f, vec4f(rhs), vec4f(lhs));
+define mul(float32 a, vec4f b) = mul(vec4f(a), b);
+define mul(vec4f a, float32 b) = mul(a, vec4f(b));
+define div(vec4f lhs, vec4f rhs) = emit(vec4f, div.p4f, vec4f(rhs), vec4f(lhs));
+define div(float32 a, vec4f b) = div(vec4f(a), b);
+define div(vec4f a, float32 b) = div(a, vec4f(b));
 
-inline min(vec4f x, vec4f y) = emit(vec4f, v4f.min, vec4f(y), vec4f(x));
-inline max(vec4f x, vec4f y) = emit(vec4f, v4f.max, vec4f(y), vec4f(x));
-inline ceq(vec4f x, vec4f y) = emit(v4f.equ, vec4f(y), vec4f(x));
+define min(vec4f x, vec4f y) = emit(vec4f, min.p4f, vec4f(y), vec4f(x));
+define max(vec4f x, vec4f y) = emit(vec4f, max.p4f, vec4f(y), vec4f(x));
+define ceq(vec4f x, vec4f y) = emit(ceq.p4f, vec4f(y), vec4f(x));
 
-inline mad(vec4f a, vec4f b, vec4f c) = emit(vec4f, v4f.add, v4f.mul, vec4f(a), vec4f(b), vec4f(c));	// a * b + c
+define mad(vec4f a, vec4f b, vec4f c) = emit(vec4f, add.p4f, mul.p4f, vec4f(a), vec4f(b), vec4f(c));	// a * b + c
 
-//~ inline dp3(vec4f lhs, vec4f rhs) = rhs.x * lhs.x + rhs.y * lhs.y + rhs.z * lhs.z;
-inline dp3(vec4f lhs, vec4f rhs) = emit(v4f.dp3, vec4f(rhs), vec4f(lhs));
-//~ inline dp4(vec4f lhs, vec4f rhs) = rhs.x * lhs.x + rhs.y * lhs.y + rhs.z * lhs.z + rhs.w * lhs.w;
-inline dp4(vec4f lhs, vec4f rhs) = emit(v4f.dp4, vec4f(rhs), vec4f(lhs));
-//~ inline dph(vec4f lhs, vec4f rhs) = rhs.x * lhs.x + rhs.y * lhs.y + rhs.z * lhs.z + rhs.w;
-inline dph(vec4f lhs, vec4f rhs) = emit(v4f.dph, vec4f(rhs), vec4f(lhs));
-inline cross(vec4f &a, vec4f &b) = vec4f(a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x);
+//~ define dp3(vec4f lhs, vec4f rhs) = rhs.x * lhs.x + rhs.y * lhs.y + rhs.z * lhs.z;
+define dp3(vec4f lhs, vec4f rhs) = emit(float32, p4x.dp3, vec4f(rhs), vec4f(lhs));
+//~ define dp4(vec4f lhs, vec4f rhs) = rhs.x * lhs.x + rhs.y * lhs.y + rhs.z * lhs.z + rhs.w * lhs.w;
+define dp4(vec4f lhs, vec4f rhs) = emit(float32, p4x.dp4, vec4f(rhs), vec4f(lhs));
+//~ define dph(vec4f lhs, vec4f rhs) = rhs.x * lhs.x + rhs.y * lhs.y + rhs.z * lhs.z + rhs.w;
+define dph(vec4f lhs, vec4f rhs) = emit(float32, p4x.dph, vec4f(rhs), vec4f(lhs));
+define cross(vec4f &a, vec4f &b) = vec4f(a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x);
 
-inline lerp(float32 t, vec4f lhs, vec4f rhs) = vec4f(Math.lerp(t, lhs.x, rhs.x), Math.lerp(t, lhs.y, rhs.y), Math.lerp(t, lhs.z, rhs.z), Math.lerp(t, lhs.w, rhs.w));
+define lerp(float32 t, vec4f lhs, vec4f rhs) = vec4f(Math.lerp(t, lhs.x, rhs.x), Math.lerp(t, lhs.y, rhs.y), Math.lerp(t, lhs.z, rhs.z), Math.lerp(t, lhs.w, rhs.w));
 
-inline len(vec4f v) = float64.sqrt(dp3(v, v));
-inline eval(vec4f v, float32 x) = float32((((v.w * x + v.z) * x + v.y) * x) + v.x);
-inline normalize(vec4f a) = div(a, vec4f(float32(float64.sqrt(dp3(a, a)))));
+define len(vec4f v) = float64.sqrt(dp3(v, v));
+define eval(vec4f v, float32 x) = float32((((v.w * x + v.z) * x + v.y) * x) + v.x);
+define normalize(vec4f a) = div(a, vec4f(float32(float64.sqrt(dp3(a, a)))));
 
 //~ operator float32(vec4f vec) = float32(vec.w);
-inline float32(vec4f &vec) = float32(vec.w);
-//~ inline bool(vec4f vec) = bool(vec.x && vec.y && vec.z && vec.w);
+define float32(vec4f &vec) = float32(vec.w);
+//~ define bool(vec4f vec) = bool(vec.x && vec.y && vec.z && vec.w);
 
-//~ operator - (vec4f x) = emit(vec4f, v4f.neg, vec4f(x));
-//~ operator (vec4f x) + (vec4f y) = emit(vec4f, v4f.add, vec4f(y), vec4f(x));
-//~ operator (vec4f x) - (vec4f y) = emit(vec4f, v4f.sub, vec4f(y), vec4f(x));
-//~ operator (vec4f x) * (vec4f y) = emit(vec4f, v4f.mul, vec4f(y), vec4f(x));
-//~ operator (vec4f x) / (vec4f y) = emit(vec4f, v4f.div, vec4f(y), vec4f(x));
-//~ operator (vec4f x) % (vec4f y) = emit(vec4f, v4f.mod, vec4f(y), vec4f(x));
+//~ operator - (vec4f x) = emit(vec4f, neg.p4f, vec4f(x));
+//~ operator (vec4f x) + (vec4f y) = emit(vec4f, add.p4f, vec4f(y), vec4f(x));
+//~ operator (vec4f x) - (vec4f y) = emit(vec4f, sub.p4f, vec4f(y), vec4f(x));
+//~ operator (vec4f x) * (vec4f y) = emit(vec4f, mul.p4f, vec4f(y), vec4f(x));
+//~ operator (vec4f x) / (vec4f y) = emit(vec4f, div.p4f, vec4f(y), vec4f(x));
+//~ operator (vec4f x) % (vec4f y) = emit(vec4f, mod.p4f, vec4f(y), vec4f(x));
 }
 static if (importstd.mat4f) {
 struct mat4f {
@@ -1293,17 +1293,20 @@ struct mat4f {
 	vec4f w;
 }
 
-inline mat4f(
+define mat4f(
 	float64 m11, float64 m12, float64 m13, float64 m14,
 	float64 m21, float64 m22, float64 m23, float64 m24,
 	float64 m31, float64 m32, float64 m33, float64 m34,
 	float64 m41, float64 m42, float64 m43, float64 m44)
-//~ = mat4f(vec4f(m11, m12, m13, m14), vec4f(m21, m22, m23, m24), vec4f(m31, m32, m33, m34), vec4f(m41, m42, m43, m44));
-= emit(mat4f, f32(m11), f32(m12), f32(m13), f32(m14), f32(m21), f32(m22), f32(m23), f32(m24), f32(m31), f32(m32), f32(m33), f32(m34), f32(m41), f32(m42), f32(m43), f32(m44));
+= emit(mat4f, 
+	float32(m11), float32(m12), float32(m13), float32(m14),
+	float32(m21), float32(m22), float32(m23), float32(m24),
+	float32(m31), float32(m32), float32(m33), float32(m34),
+	float32(m41), float32(m42), float32(m43), float32(m44));
 
-inline dp3(mat4f &mat, vec4f vec) = vec4f(dp3(mat.x, vec), dp3(mat.y, vec), dp3(mat.z, vec), float32(1));
-inline dp4(mat4f &mat, vec4f vec) = vec4f(dp4(mat.x, vec), dp4(mat.y, vec), dp4(mat.z, vec), dp4(mat.w, vec));
-inline dph(mat4f &mat, vec4f vec) = vec4f(dph(mat.x, vec), dph(mat.y, vec), dph(mat.z, vec), dph(mat.w, vec));
+define dp3(mat4f &mat, vec4f vec) = vec4f(dp3(mat.x, vec), dp3(mat.y, vec), dp3(mat.z, vec), float32(1));
+define dp4(mat4f &mat, vec4f vec) = vec4f(dp4(mat.x, vec), dp4(mat.y, vec), dp4(mat.z, vec), dp4(mat.w, vec));
+define dph(mat4f &mat, vec4f vec) = vec4f(dph(mat.x, vec), dph(mat.y, vec), dph(mat.z, vec), dph(mat.w, vec));
 
 mat4f mul(mat4f &lhs, mat4f &rhs) {
 
@@ -1374,22 +1377,23 @@ void transpose2(mat4f &mat) {
 
 //#{ debuging ...
 
-inline debug(string message, variant inspect) = raise(raise.debug, message, inspect, raise.noTrace);
-inline debug(string message) = raise(raise.debug, message, variant(null), raise.noTrace);
-inline debug(variant inspect) = raise(raise.debug, null, inspect, raise.noTrace);
+define debug(string message, variant inspect) = raise(raise.debug, message, inspect, raise.noTrace);
+define debug(string message) = raise(raise.debug, message, variant(null), raise.noTrace);
+define debug(variant inspect) = raise(raise.debug, null, inspect, raise.noTrace);
 
-inline trace(string message, variant inspect) = raise(raise.debug, message, inspect, raise.defTrace);
-inline trace(string message) = raise(raise.debug, message, variant(null), raise.defTrace);
+define trace(string message, variant inspect) = raise(raise.debug, message, inspect, raise.defTrace);
+define trace(string message) = raise(raise.debug, message, variant(null), raise.defTrace);
+define trace(variant inspect) = raise(raise.debug, null, inspect, raise.defTrace);
 
-inline abort(string message, variant inspect) = raise(raise.error, message, inspect, raise.defTrace);
-inline abort(string message) = raise(raise.error, message, variant(null), raise.defTrace);
-inline abort() = raise(raise.error, "execution aborted!", variant(null), raise.defTrace);
+define abort(string message, variant inspect) = raise(raise.error, message, inspect, raise.defTrace);
+define abort(string message) = raise(raise.error, message, variant(null), raise.defTrace);
+define abort() = raise(raise.error, "execution aborted!", variant(null), raise.defTrace);
 
-inline assert(bool condition, string message, variant inspect) = raise(condition ? 0 : raise.error, message, inspect, raise.defTrace);
-inline assert(bool condition, string message) = raise(condition ? 0 : raise.error, message, variant(null), raise.defTrace);
-inline assert(bool condition) = raise(condition ? 0 : raise.error, "assertion failed!", variant(null), raise.defTrace);
+define assert(bool condition, string message, variant inspect) = raise(condition ? 0 : raise.error, message, inspect, raise.defTrace);
+define assert(bool condition, string message) = raise(condition ? 0 : raise.error, message, variant(null), raise.defTrace);
+define assert(bool condition) = raise(condition ? 0 : raise.error, "assertion failed!", variant(null), raise.defTrace);
 
-//~ TODO: inline assert(bool condition) = void(condition ? void(0) : abort("assertion failed!"));
+//~ TODO: define assert(bool condition) = void(condition ? void(0) : abort("assertion failed!"));
 //#}
 
 static if (importstd.strUtils) {
@@ -1399,7 +1403,9 @@ int strlen(string str) {
 	for (result = 0; str[result]; result += 1) {}
 }
 
-inline umin(uint32 a, uint32 b) = Math.min(a, b);
+define umin(uint32 a, uint32 b) = Math.min(a, b);
+
+define isWhite(char chr) = bool(chr == ' ');
 
 /// the first occurenec of a char in string
 int strchr(string str, int chr) {
@@ -1460,96 +1466,76 @@ int compare(string a, string b) {
 	}
 	return result;
 }
-inline equals(string a, string b) = bool(compare(a, b) == 0);
+define equals(string a, string b) = bool(compare(a, b) == 0);
 
 // convert number to string
 struct FormatFlags {
-	const char sgnChr;	// should be one of: 0, '-', '+'
+	const int radix;	// radix
+	const char sign;	// should be one of: 0, '-', '+'
 	const char padChr;	// padding character: 0, '0'
-	const char fmtChr;	// format char
 	const int padLen;	// padding length
-	const int maxLen;	// maximum length
+	const int precision;	// padding length
 }
 
-int format(char output[], int pos, FormatFlags &flags, int rad, uint32 value) {
-	static const FormatFlags default = FormatFlags(0, ' ', 'd', 0, 0);
-	static const char digits[] = "0123456789abcdefghijklmnopqrstuvwxyz";
+int format(char output[], int pos, FormatFlags &format, uint32 value) {
+	static const char radixDigits[] = "0123456789abcdefghijklmnopqrstuvwxyz";
+	static const FormatFlags default = FormatFlags(10, '\0', '\0', 0, 0);
 
-	/* TODO: extend this function as commented
+	int len = 0;
+	char digits[80];
 
-	static int _itoa(char dst[], uint32 num, int rad, int pos, FormatFlags &flags) {
-		if (num == 0) {
-			int dstLen = dst.length;
-			int padChr = flags.padChr;
-			int padLen = flags.padLen;
+	if (format == null) {
+		format = default;
+	}
+	int radix = format.radix;
+	assert(radix > 1 && radix < radixDigits.length);
 
-			if (padChr && flags.sgnChr && pos < dstLen) {
-				dst[pos] = flags.sgnChr;
+	// print digits in reverse order
+	for ( ; value > 0; value /= radix) {
+		digits[len += 1] = radixDigits[value % radix];
+	}
+	if (len == 0) {
+		digits[len += 1] = '0';
+	}
+
+	int maxLen = format.padLen - len;
+
+	char padChr = format.padChr;
+	if (padChr == '\0') {
+		padChr = ' ';
+	}
+
+	// print sign value
+	if (format.sign != '\0') {
+		maxLen -= 1;
+		if (isWhite(padChr)) {
+			// if padding character is whitespace padd before sign
+			for ( ; maxLen > 0; maxLen -= 1) {
+				assert(pos < output.length);
+				output[pos] = padChr;
 				pos += 1;
 			}
-
-			if (padChr == 0) {
-				padChr = ' ';
-			}
-
-			for (int i = 0; i < padLen; i += 1) {
-				if (pos < dstLen) {
-					dst[pos] = padChr;
-				}
-				pos += 1;
-			}
-			return pos;
 		}
-
-		flags.padLen -= 1;
-		pos = _itoa(dst, num / rad, rad, pos, &flags);
-		if (pos < dst.length) {
-			dst[pos] = digits[num % rad];
-		}
-		result = pos + 1;
-	}*/
-
-	if (flags == null) {
-		flags = default;
+		assert(pos < output.length);
+		output[pos] = format.sign;
+		pos += 1;
 	}
 
-	assert(rad > 0 && rad < digits.length);
-
-	char temp[80];
-	int end = temp.length;
-	int sgnChr = flags.sgnChr;
-	int padChr = flags.padChr;
-
-
-	temp[end -= 1] = 0;
-	for ( ; value > 0; value /= rad) {
-		temp[end -= 1] = digits[value % rad];
-	}
-	if (temp[end] == 0) {
-		temp[end -= 1] = '0';
+	// print padding
+	for ( ; maxLen > 0; maxLen -= 1) {
+		assert(pos < output.length);
+		output[pos] = padChr;
+		pos += 1;
 	}
 
-	int strLen = temp.length - end;
-	int padLen = flags.padLen;
-
-	int max = pos + padLen - strLen + 1;
-	if (max > output.length) {
-		max = output.length - 1;
-	}
-	for (; pos < max; pos += 1) {
-		output[pos] = flags.padChr;
+	// print digits
+	for (int i = 0; i < len; i += 1) {
+		assert(i < output.length);
+		output[pos] = digits[len - i];
+		pos += 1;
 	}
 
-	max = pos + strLen;
-	if (max > output.length) {
-		max = output.length - 1;
-	}
-
-	for (; pos < max; pos += 1) {
-		output[pos] = temp[end];
-		end += 1;
-	}
-	return pos - 1;
+	return pos;
 }
 
 /**
@@ -1599,14 +1585,11 @@ int format(char output[], string format, int value) {
 				chr = format[spos += 1];
 			}
 
-			int maxLen = 10;
+			int precision = 0;
 			if (chr == '.') {
-				maxLen = 0;
 				chr = format[spos += 1];
 				for ( ;chr >= '0' && chr <= '9'; ) {
-					debug("chr", variant(char, pointer(&chr)));
-					debug("maxLen", variant(&maxLen));
-					maxLen = maxLen * 10 + chr - '0';
+					precision = precision * 10 + chr - '0';
 					chr = format[spos += 1];
 				}
 			}
@@ -1626,7 +1609,7 @@ int format(char output[], string format, int value) {
 				rad = 16;
 			}
 			else if (chr == 'i') {
-				rad = maxLen;
+				rad = precision;
 			}
 
 			int val = value;
@@ -1643,8 +1626,8 @@ int format(char output[], string format, int value) {
 				}
 			}
 
-			FormatFlags flags = FormatFlags(sgnChr, padChr, chr, padLen, maxLen);
-			pos = format(output, pos, &flags, rad, val);
+			FormatFlags flags = FormatFlags(rad, sgnChr, padChr, padLen, precision);
+			pos = format(output, pos, &flags, val);
 		}// */
 		else if (pos < output.length) {
 			output[pos] = chr;
@@ -1723,12 +1706,12 @@ void format(char output[], string format, Date value) {
 			}
 		}
 
-		int maxLen = 10;
+		int precision = 10;
 		if (chr == '.') {
-			maxLen = 0;
+			precision = 0;
 			chr = format[spos += 1];
 			for (;chr >= '0' && chr <= '9';) {
-				maxLen = maxLen * 10 + chr - '0';
+				precision = precision * 10 + chr - '0';
 				chr = format[spos += 1];
 			}
 		}
@@ -1913,18 +1896,18 @@ void format(char output[], string format, Date value) {
 			}
 		}
 		else if (chr == 'w') {//~ %w	Weekday as a decimal number, where 0 is Sunday and 6 is Saturday.	0, 1, ..., 6
-			FormatFlags flags = FormatFlags(sgnChr, padChr, chr, padLen, maxLen);
-			pos = format(output, pos, &flags, 10, parts.dayOfWeek);
+			FormatFlags flags = FormatFlags(10, sgnChr, padChr, padLen, precision);
+			pos = format(output, pos, &flags, parts.dayOfWeek);
 		}
 		else if (chr == 'd') {//~ %d	Day of the month as a decimal number.		01, 02, ..., 31
 			if (padLen < 0) {padLen = 2; padChr = '0';}
-			FormatFlags flags = FormatFlags(sgnChr, padChr, chr, padLen, maxLen);
-			pos = format(output, pos, &flags, 10, parts.dayOfMonth);
+			FormatFlags flags = FormatFlags(10, sgnChr, padChr, padLen, precision);
+			pos = format(output, pos, &flags, parts.dayOfMonth);
 		}
 		else if (chr == 'j') {//~ %j	Day of the year as a decimal number.		001, 002, ..., 366
 			if (padLen < 0) {padLen = 3; padChr = '0';}
-			FormatFlags flags = FormatFlags(sgnChr, padChr, chr, padLen, maxLen);
-			pos = format(output, pos, &flags, 10, parts.dayOfYear);
+			FormatFlags flags = FormatFlags(10, sgnChr, padChr, padLen, precision);
+			pos = format(output, pos, &flags, parts.dayOfYear);
 		}
 
 		else if (chr == 'b' || chr == 'B') {//~ %a	Month as locale’s name.
@@ -1976,17 +1959,17 @@ void format(char output[], string format, Date value) {
 		}
 		else if (chr == 'm') {//~ %m	Month as a decimal number.					01, 02, ..., 12
 			if (padLen < 0) {padLen = 2; padChr = '0';}
-			FormatFlags flags = FormatFlags(sgnChr, padChr, chr, padLen, maxLen);
-			pos = format(output, pos, &flags, 10, parts.month);
+			FormatFlags flags = FormatFlags(10, sgnChr, padChr, padLen, precision);
+			pos = format(output, pos, &flags, parts.month);
 		}
 
 		else if (chr == 'y') {//~ %y	Year without century as a decimal number.	0, 1, ..., 99
-			FormatFlags flags = FormatFlags(sgnChr, padChr, chr, padLen, maxLen);
-			pos = format(output, pos, &flags, 10, parts.year % 100);
+			FormatFlags flags = FormatFlags(10, sgnChr, padChr, padLen, precision);
+			pos = format(output, pos, &flags, parts.year % 100);
 		}
 		else if (chr == 'Y') {//~ %Y	Year with century as a decimal number.		1970, 1988, 2001, 2013
-			FormatFlags flags = FormatFlags(sgnChr, padChr, chr, padLen, maxLen);
-			pos = format(output, pos, &flags, 10, parts.year);
+			FormatFlags flags = FormatFlags(10, sgnChr, padChr, padLen, precision);
+			pos = format(output, pos, &flags, parts.year);
 		}
 		else {
 			if (pos < output.length - 1) {
@@ -2023,27 +2006,27 @@ static char chrStrings[256][2];// = (){
 		chrStrings[i][0] = i;
 		chrStrings[i][1] = 0;
 	}
-inline string(char chr) = emit(string, (chrStrings[chr]));
+define string(char chr) = emit(string, (chrStrings[chr]));
 //});// */
 
-inline string(char arr[]) = emit(string, pointer(arr));
-inline variant(string str) = emit(variant, (str), (string));
-//~ inline variant(string str) = variant(string, pointer(str));
+define string(char arr[]) = emit(string, pointer(arr));
+define variant(string str) = emit(variant, (str), (string));
+//~ define variant(string str) = variant(string, pointer(str));
 }
 
-inline realloc(pointer ptr, int size) = memmgr(ptr, size);
-inline malloc(int size) = memmgr(null, size);
-inline free(pointer ptr) = memmgr(ptr, 0);
+define realloc(pointer ptr, int size) = memmgr(ptr, size);
+define malloc(int size) = memmgr(null, size);
+define free(pointer ptr) = memmgr(ptr, 0);
 
 // these should be something like emit
-//~ inline new(typename type) = memmgr(null, type.size);
-//~ inline new(typename type, int32 n) = memmgr(null, type.size * n);
+//~ define new(typename type) = memmgr(null, type.size);
+//~ define new(typename type, int32 n) = memmgr(null, type.size * n);
 
 // creates a slice: {data, length}
-//~ inline Array(typename type, int32 n) = emit(struct, ref(memmgr(null, type.size * n)), i32(n));
-//~ inline variant(string str) = emit(variant, ref(str), typename(string));
-//~ inline variant(int32 value) = emit(variant, ref(value), typename(int32));
-//~ inline variant(int64 value) = emit(variant, ref(value), typename(int64));
-//~ inline variant(float32 value) = emit(variant, ref(value), typename(float32));
-//~ inline variant(float64 value) = emit(variant, ref(value), typename(float64));
-inline sizeof(typename type) = int(type.size);
+//~ define Array(typename type, int32 n) = emit(struct, ref(memmgr(null, type.size * n)), i32(n));
+//~ define variant(string str) = emit(variant, ref(str), typename(string));
+//~ define variant(int32 value) = emit(variant, ref(value), typename(int32));
+//~ define variant(int64 value) = emit(variant, ref(value), typename(int64));
+//~ define variant(float32 value) = emit(variant, ref(value), typename(float32));
+//~ define variant(float64 value) = emit(variant, ref(value), typename(float64));
+define sizeof(typename type) = int(type.size);

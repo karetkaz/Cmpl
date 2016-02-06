@@ -21,12 +21,14 @@ int arr3[] = arr2;		// slice
 	emit.i32 should be an alias to int32, and extended with opcodes [add, ...], available only in emit.i32
 */
 
+// TODO: warning taking the lvalue of a constant: // int &radix = flags.radix;
+
 //? TODO: static if else part
 //? TODO: threat errors as warnings inside static if false branch
 //? TODO: separate struct and unoin declaration
 //? TODO: variable.struct should return the type of variable.
 
-//~ /+ FIXED: function parameter matching
+/+ FIXED: function parameter matching
 struct debugInfo {
 	string func;
 	double x;
@@ -338,14 +340,31 @@ recursive inlining:
 
 //~ +/
 /+ TODO: nameless struct variable
-	struct color: 0 {
-		int32 value;
-		auto color = struct:1 {
-			r: uint8;
-			g: uint8;
-			b: uint8;
-		}
+struct color: 0 {
+	value: int32;
+	color: struct: 1 {
+		r: uint8;
+		g: uint8;
+		b: uint8;
 	}
+	enum: color {
+		Red = new Color(1, 0, 0, 1);
+		Green = new Color(0, 1, 0, 1);
+		Blue = new Color(0, 0, 1, 1);
+		Purple = new Color(1, 0, 1, 1);
+		White = new Color(1, 1, 1, 1);
+		Black = new Color(0, 0, 0, 1);
+		Yellow = new Color(1, 1, 0, 1);
+		Grey = new Color(.6f, .6f, .6f, 1);
+		Clear = new Color(1, 1, 1, 0);
+		DarkGrey = new Color(.8f, .8f, .85f, 1);
+		Sky = new Color(102f / 255f, 152f / 255f, 1f, 1f);
+		Zero = new Color(0f, 0f, 0f, 0f);
+		Silver = System.Drawing.Color.Silver;
+		Orange = System.Drawing.Color.Orange;
+		DarkGreen = System.Drawing.Color.DarkGreen;
+	}
+}
 //~ +/
 
 /+ TODO: cast operators

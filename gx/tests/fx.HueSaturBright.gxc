@@ -131,13 +131,13 @@ void drawCB() {
 			int y = 0;
 			define dy = 12;
 			char txt[1024];
-			string str = emit(string, ref(txt));
+			string str = string(txt);
 
-			format(txt, "brightness: %d", brightness);
+			format(txt, "brightness: %+d", brightness);
 			drawText(offScreen, 0, y, str, -1);
 			y += dy;
 
-			format(txt, "saturation: %d", saturation);
+			format(txt, "saturation: %+d", saturation);
 			drawText(offScreen, 0, y, str, -1);
 			y += dy;
 

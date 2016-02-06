@@ -27,19 +27,18 @@ FormatFlags readFlags(string format, int &spos) {
 			chr = format[spos += 1];
 		}
 
-		int maxLen = 10;
+		int precision = 0;
 		if (chr == '.') {
-			maxLen = 0;
 			chr = format[spos += 1];
 			for ( ;chr >= '0' && chr <= '9'; ) {
-				maxLen = maxLen * 10 + chr - '0';
+				precision = precision * 10 + chr - '0';
 				chr = format[spos += 1];
 			}
 		}
 
-		return FormatFlags(sgnChr, padChr, chr, padLen, maxLen);
+		return FormatFlags(10, sgnChr, padChr, padLen, precision);
 	}
-	return FormatFlags(0, 0, 0, 0, 0);
+	return FormatFlags(10, 0, 0, 0, 0);
 }
 
 /**
@@ -60,12 +59,12 @@ int format2(char output[], string format, int value) {
 		format = "%d";
 	}
 	int spos = 0;
-	for (int chr; chr = format[spos]; spos += 1) {
+	for (char chr; chr = format[spos]; spos += 1) {
 		if (chr == '%') {
 			FormatFlags flags = readFlags(format, &spos);
-			chr = flags.fmtChr;
+			chr = format[spos];
 
-			int radix = 10;
+			int &radix = flags.radix;
 			if (chr == 'b') {
 				radix = 2;
 			}
@@ -79,10 +78,14 @@ int format2(char output[], string format, int value) {
 				radix = 16;
 			}
 			else if (chr == 'i') {
-				radix = flags.maxLen;
+				assert(flags.precision > 1, "radix must be at least 2");
+				radix = flags.precision;
+			}
+			else {
+				abort("invalid format character", variant(&chr));
 			}
 
-			pos = format(output, pos, &flags, radix, value);
+			pos = format(output, pos, &flags, value);
 		}
 		else if (pos < output.length) {
 			output[pos] = chr;
@@ -100,7 +103,7 @@ int format2(char output[], string format, int value) {
 
 char buff[512];
 string str = string(buff);
-format(buff, "value: %d = 0x%08x = 0b%032b = [%.5i]5", 0x20928374);
+format2(buff, "value: %d = 0x%08x = 0b%032b = [%.5i]5", 0x20928374);
 assert(equals(str, "value: 546472820 = 0x20928374 = 0b00100000100100101000001101110100 = [2104344112240]5"));
 
 //~ format(buff, "%0d", 0);

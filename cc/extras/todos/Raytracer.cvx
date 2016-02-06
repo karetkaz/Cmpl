@@ -5,7 +5,7 @@ struct Camera {
 	vec4f forward;
 	vec4f position;
 
-	static Camera lookAt({vec4f position, vec4f target, vec4f up}) {
+	static Camera lookAt({vec4f position; vec4f target; vec4f up}) {
 		result.forward = normalize(sub(target, position));
 		result.right = normalize(crs(up, result.forward));
 		result.up = crs(result.forward, result.right);

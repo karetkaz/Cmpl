@@ -32,7 +32,7 @@ void drawBiorithm(gxSurf dst, int daysToShow, double now, Date birth, Biorithm b
 		double days = now - birth.days;
 		double precent = 0;
 
-		inline precision = 3;
+		define precision = 3;
 		if (br.period2) {
 			double p1 = br.period;
 			double p2 = br.period2;
@@ -114,8 +114,8 @@ void setupBiorithm(int _daysToShow, Date _now, Date _birth) {
 	static int daysToShow;
 	static bool reDraw = true;
 
-	inline inertial_pan = 30.;
-	inline inertial_speed = 1.01;
+	define inertial_pan = 30.;
+	define inertial_speed = 1.01;
 	static int64 inertial_time = 0;
 	static double inertial_pan_x = 0;
 
@@ -207,7 +207,7 @@ void setupBiorithm(int _daysToShow, Date _now, Date _birth) {
 	pos = 0;
 }
 
-inline daysToShow = 15;
+define daysToShow = 15;
 Date Now = DateFromTime(System.time());
 
 //~ setupBiorithm(daysToShow, Now, Date(1984, 8, 30));

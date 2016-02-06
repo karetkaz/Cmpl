@@ -9,6 +9,11 @@ Lexical elements
 */
 #include "internal.h"
 
+const struct tok_inf tok_tbl[255] = {
+	#define TOKDEF(NAME, TYPE, SIZE, STR) {TYPE, SIZE, STR},
+	#include "defs.inl"
+};
+
 /** Construct arguments.
  * @brief construct a new node for function arguments
  * @param cc compiler context.
@@ -157,12 +162,74 @@ static void redefine(ccContext cc, symn sym) {
 	}
 }
 
-/** TODO: to be deleted. replace with js like initialization.
+/**
+ * @brief Fix structure member offsets / function arguments.
+ * @param sym Symbol of struct or function.
+ * @param align Alignment of members.
+ * @param base Size of base / return.
+ * @return Size of struct / functions param size.
+ */
+// TODO: remove (should be handled by leave)
+static size_t fixargs(symn sym, unsigned int align, size_t base) {
+	symn arg;
+	size_t stdiff = 0;
+	int isCall = sym->call;
+	for (arg = sym->prms; arg; arg = arg->next) {
+
+		if (arg->kind != TYPE_ref)
+			continue;
+
+		if (arg->stat)
+			continue;
+
+		// functions are byRef in structs and params
+		if (arg->call) {
+			arg->cast = TYPE_ref;
+		}
+
+		arg->size = sizeOf(arg, 1);
+
+		//TODO: remove check: dynamic size arrays are represented as pointer+length
+		if (arg->type->kind == TYPE_arr && arg->type->init == NULL) {
+			dieif(arg->size != 2 * vm_size, ERR_INTERNAL_ERROR);
+			dieif(arg->cast != TYPE_arr, ERR_INTERNAL_ERROR);
+			//arg->size = 2 * vm_size;
+			//arg->cast = TYPE_arr;
+		}
+
+		//~ HACK: static sized array types are passed by reference.
+		if (isCall && arg->type->kind == TYPE_arr) {
+			//~ static size arrays are passed as pointer
+			if (arg->type->init != NULL) {
+				arg->cast = TYPE_ref;
+				arg->size = vm_size;
+			}
+		}
+
+		arg->nest = 0;
+		arg->offs = align ? base + stdiff : base;
+		stdiff += padded(arg->size, align);
+
+		if (align == 0 && stdiff < arg->size) {
+			stdiff = arg->size;
+		}
+	}
+	//~ because args are evaluated from right to left
+	if (isCall) {
+		for (arg = sym->prms; arg; arg = arg->next) {
+			arg->offs = stdiff - arg->offs;
+		}
+	}
+	return stdiff;
+}
+
+/**
  * @brief make constructor using fields as arguments.
  * @param cc compiler context.
  * @param rec the record.
  * @return the constructors symbol.
  */
+// TODO: to be deleted. replace with new initialization.
 static symn ctorArg(ccContext cc, symn rec) {
 	symn ctor = install(cc, rec->name, TYPE_def, TYPE_any, 0, rec, NULL);
 	if (ctor != NULL) {
@@ -259,52 +326,11 @@ static int mkConst(astn ast, ccToken cast) {
 
 //#{~~~~~~~~~ Parser ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-//~ TODO: to be deleted: use expr instead, then check if it is a typename.
-static astn type(ccContext cc/* , int mode */) {	// type(.type)*
-	symn def = NULL;
-	astn tok, typ = NULL;
-	while ((tok = next(cc, TYPE_ref))) {
-
-		symn loc = def ? def->flds : cc->deft[tok->ref.hash];
-		symn sym = lookup(cc, loc, tok, NULL, 0);
-
-		tok->next = typ;
-		typ = tok;
-
-		def = sym;
-
-		if (!istype(sym)) {
-			def = NULL;
-			break;
-		}
-
-		if ((tok = next(cc, OPER_dot))) {
-			tok->next = typ;
-			typ = tok;
-		}
-		else
-			break;
-
-	}
-	if (!def && typ) {
-		while (typ) {
-			astn back = typ;
-			typ = typ->next;
-			backTok(cc, back);
-		}
-		typ = NULL;
-	}
-	else if (typ) {
-		typ->type = def;
-		addUsage(def, typ);
-	}
-	return typ;
-}
-
 static astn stmt(ccContext, int mode);	// parse statement		(mode: enable decl)
 static astn decl(ccContext, int mode);	// parse declaration	(mode: enable spec)
 //~ astn args(ccContext, int mode);		// parse arguments		(mode: ...)
 //~ astn unit(ccContext, int mode);		// parse unit			(mode: script/unit)
+static astn decl_var(ccContext cc, astn* argv, int mode);
 
 /** Parse qualifiers.
  * @brief scan for qualifiers: const static ?paralell
@@ -348,6 +374,48 @@ static int qual(ccContext cc, int mode) {
 	}
 
 	return result;
+}
+
+//~ TODO: to be deleted: use expr instead, then check if it is a typename.
+static astn type(ccContext cc/* , int mode */) {	// type(.type)*
+	symn def = NULL;
+	astn tok, typ = NULL;
+	while ((tok = next(cc, TYPE_ref))) {
+
+		symn loc = def ? def->flds : cc->deft[tok->ref.hash];
+		symn sym = lookup(cc, loc, tok, NULL, 0);
+
+		tok->next = typ;
+		typ = tok;
+
+		def = sym;
+
+		if (!isType(sym)) {
+			def = NULL;
+			break;
+		}
+
+		if ((tok = next(cc, OPER_dot))) {
+			tok->next = typ;
+			typ = tok;
+		}
+		else
+			break;
+
+	}
+	if (!def && typ) {
+		while (typ) {
+			astn back = typ;
+			typ = typ->next;
+			backTok(cc, back);
+		}
+		typ = NULL;
+	}
+	else if (typ) {
+		typ->type = def;
+		addUsage(def, typ);
+	}
+	return typ;
 }
 
 /** TODO: remove typechecking.
@@ -673,7 +741,7 @@ static astn expr(ccContext cc, int mode) {
 	if (mode && tok) {								// check
 		astn root = cc->root;
 		cc->root = NULL;
-		if (!typecheck(cc, NULL, tok)) {
+		if (!typeCheck(cc, NULL, tok)) {
 			if (cc->root != NULL) {
 				error(cc->rt, tok->file, tok->line, "invalid expression: `%+t` in `%+t`", cc->root, tok);
 			}
@@ -749,7 +817,7 @@ static astn init_var(ccContext cc, symn var) {
 
 		if (var->init != NULL) {
 
-			//~ TODO: try to typecheck the same as using ASGN_set
+			//~ TODO: try to type check the same as using ASGN_set
 			// assigning an emit expression: ... x = emit(struct, ...)
 			if (var->init->type == cc->emit_opc) {
 				var->init->type = var->type;
@@ -888,12 +956,12 @@ static astn decl_alias(ccContext cc) {
 		astn val = expr(cc, TYPE_def);
 		if (val != NULL) {
 			def = declare(cc, TYPE_def, tag, val->type);
-			if (!isType(val)) {
-				if (isConst(val)) {
+			if (!isTypeExpr(val)) {
+				if (isConstExpr(val)) {
 					def->stat = 1;
 					def->cnst = 1;
 				}
-				else if (isStatic(cc, val)) {
+				else if (isStaticExpr(cc, val)) {
 					def->stat = 1;
 				}
 				def->init = val;
@@ -927,8 +995,8 @@ static astn decl_alias(ccContext cc) {
 		}
 
 		def->name = tag->ref.name;
-		def->stat = isStatic(cc, init);
-		def->cnst = isConst(init);
+		def->stat = isStaticExpr(cc, init);
+		def->cnst = isConstExpr(init);
 		def->type = typ;
 		def->prms = param;
 		def->init = init;
@@ -942,10 +1010,11 @@ static astn decl_alias(ccContext cc) {
 				param->cast = param->type->cast;
 			}
 			else {
-				int used = usages(param) - 1;
+				int used = countUsages(param) - 1;
 				// warn to cache if it is used more than once
 				if (used > 1) {
-					warn(cc->rt, 16, param->file, param->line, "parameter `%T` may be cached (used %d times in expression)", param, used);
+					warn(cc->rt, 16, param->file, param->line,
+						 "parameter `%T` may be cached (used %d times in expression)", param, used);
 				}
 				else {
 					param->kind = TYPE_def;
@@ -995,7 +1064,7 @@ static astn decl_enum(ccContext cc) {
 	if (skip(cc, PNCT_cln)) {			// ':' type
 		base = NULL;
 		if ((tok = expr(cc, TYPE_def))) {
-			if (isType(tok)) {
+			if (isTypeExpr(tok)) {
 				base = linkOf(tok);
 			}
 			else {
@@ -1058,7 +1127,7 @@ static astn decl_enum(ccContext cc) {
 	}
 
 	if (def != NULL) {
-		def->flds = leave(cc, def, 1);
+		def->flds = leave(cc, def, ATTR_stat);
 		def->prms = base->prms;
 		def->cast = ENUM_kwd;
 	}
@@ -1105,7 +1174,7 @@ static astn decl_struct(ccContext cc, int Attr) {
 				}
 				pack = (unsigned) tok->cint;
 			}
-			else if (isType(tok)) {
+			else if (isTypeExpr(tok)) {
 				base = linkOf(tok);
 			}
 			else {
@@ -1125,8 +1194,6 @@ static astn decl_struct(ccContext cc, int Attr) {
 	if (tag == NULL) {
 		error(cc->rt, cc->file, cc->line, "identifier expected");
 		tag = tagnode(cc, ".anonymous");
-		tag->kind = TYPE_def;
-		enter(cc, tag);
 	}
 	type = declare(cc, ATTR_stat | ATTR_const | TYPE_rec, tag, cc->type_rec);
 	tag->kind = TYPE_def;
@@ -1145,7 +1212,7 @@ static astn decl_struct(ccContext cc, int Attr) {
 		}
 	}
 
-	type->flds = leave(cc, type, (Attr & ATTR_stat) != 0);
+	type->flds = leave(cc, type, Attr & ATTR_stat);
 	type->prms = type->flds;
 	type->size = fixargs(type, pack, 0);
 
@@ -1207,7 +1274,7 @@ static astn decl_struct(ccContext cc, int Attr) {
  * @param mode
  * @return parsed syntax tree.
  */
-astn decl_var(ccContext cc, astn* argv, int mode) {
+static astn decl_var(ccContext cc, astn* argv, int mode) {
 	symn typ, ref = NULL;
 	astn tag = NULL;
 	int inout, byref;
@@ -1685,7 +1752,7 @@ static astn stmt(ccContext cc, int mode) {
 			qual = TYPE_any;
 		}
 		else {
-			// eat code like: {{;{;};{}{}}}
+			// remove nodes like: {{;{;};{}{}}}
 			eatnode(cc, node);
 			node = 0;
 		}
@@ -1847,12 +1914,12 @@ static astn stmt(ccContext cc, int mode) {
 						}
 					}
 
-					if (itStep == NULL || !typecheck(cc, NULL, sym->init)) {
+					if (itStep == NULL || !typeCheck(cc, NULL, sym->init)) {
 						itStep = opnode(cc, OPER_fnc, tagnode(cc, "next"), NULL);
 						error(cc->rt, node->file, node->line, "iterator not defined for `%T`", iton->type);
 						info(cc->rt, node->file, node->line, "a function `%t(%T)` should be declared", itCtor, iton->type);
 					}
-					else if (typecheck(cc, NULL, itStep) != cc->type_bol) {
+					else if (typeCheck(cc, NULL, itStep) != cc->type_bol) {
 						error(cc->rt, node->file, node->line, "iterator not found for `%+t`: %+t", iton, itStep);
 						if (itStep->op.rhso->kind == OPER_com) {
 							info(cc->rt, node->file, node->line, "a function `%t(%T &, %T): %T` should be declared", itStep->op.lhso, itStep->op.rhso->op.lhso->type, itStep->op.rhso->op.rhso->type, cc->type_bol);
@@ -1929,7 +1996,7 @@ static astn stmt(ccContext cc, int mode) {
 				else {
 					node->stmt.stmt = opnode(cc, ASGN_set, lnknode(cc, result), val);
 					node->stmt.stmt->type = val->type;
-					if (!typecheck(cc, NULL, node->stmt.stmt)) {
+					if (!typeCheck(cc, NULL, node->stmt.stmt)) {
 						error(cc->rt, val->file, val->line, "invalid return value: `%+t`", val);
 					}
 				}
@@ -2041,8 +2108,16 @@ static astn parse(ccContext cc, int asUnit, int warn) {
 	return root;
 }
 
-/// @see: header
-ccContext ccOpen(rtContext rt, char* file, int line, char* text) {
+/**
+ * @brief Open a file or text for compilation.
+ * @param rt runtime context.
+ * @param file file name of input.
+ * @param line first line of input.
+ * @param text if not null, this will be compiled instead of the file.
+ * @return compiler context or null on error.
+ * @note invokes ccInit if not initialized.
+ */
+static ccContext ccOpen(rtContext rt, char* file, int line, char* text) {
 	ccContext cc = rt->cc;
 
 	if (cc == NULL) {
@@ -2069,28 +2144,12 @@ ccContext ccOpen(rtContext rt, char* file, int line, char* text) {
 	return cc;
 }
 
-/// Compile file or text; @see rtContext.api.ccAddCode
-int ccAddCode(rtContext rt, int warn, char* file, int line, char* text) {
-	ccContext cc = ccOpen(rt, file, line, text);
-	if (cc == NULL) {
-		error(rt, NULL, 0, "can not open: %s", file);
-		return 0;
-	}
-	parse(cc, 0, warn);
-	return ccDone(cc) == 0;
-}
-
-/// @see: header
-int ccAddUnit(rtContext rt, int unit(rtContext), int warn, char *file) {
-	int unitCode = unit(rt);
-	if (unitCode == 0 && file != NULL) {
-		return ccAddCode(rt, warn, file, 1, NULL);
-	}
-	return unitCode == 0;
-}
-
-/// @see: header
-int ccDone(ccContext cc) {
+/**
+ * @brief Close input file, ensuring it ends correctly.
+ * @param cc compiler context.
+ * @return number of errors.
+ */
+static int ccDone(ccContext cc) {
 	astn ast;
 
 	// not initialized
@@ -2114,4 +2173,165 @@ int ccDone(ccContext cc) {
 
 	// return errors
 	return cc->rt->errCount;
+}
+
+/// Compile file or text; @see rtContext.api.ccDefCode
+int ccDefCode(rtContext rt, int warn, char *file, int line, char *text) {
+	ccContext cc = ccOpen(rt, file, line, text);
+	if (cc == NULL) {
+		error(rt, NULL, 0, "can not open: %s", file);
+		return 0;
+	}
+	parse(cc, 0, warn);
+	return ccDone(cc) == 0;
+}
+
+/// @see: header
+int ccAddUnit(rtContext rt, int unit(rtContext), int warn, char *file) {
+	int unitCode = unit(rt);
+	if (unitCode == 0 && file != NULL) {
+		return ccDefCode(rt, warn, file, 1, NULL);
+	}
+	return unitCode == 0;
+}
+
+static symn installref(rtContext rt, const char* prot, astn* argv) {
+	astn root, args;
+	symn result = NULL;
+	int warn, errc = rt->errCount;
+
+	if (!ccOpen(rt, NULL, 0, (char*)prot)) {
+		trace("FixMe");
+		return NULL;
+	}
+
+	warn = rt->cc->warn;
+
+	// enable all warnings
+	rt->cc->warn = 9;
+	root = decl_var(rt->cc, &args, decl_NoDefs | decl_NoInit);
+
+	dieif(root == NULL, "error declaring: %s", prot);
+
+	dieif(!skip(rt->cc, STMT_end), "`;` expected declaring: %s", prot);
+
+	dieif(ccDone(rt->cc) != 0, "FixMe");
+
+	dieif(root->kind != TYPE_ref, "FixMe %+t", root);
+
+	if ((result = root->ref.link)) {
+		dieif(result->kind != TYPE_ref, "FixMe");
+		*argv = args;
+		result->cast = TYPE_any;
+	}
+
+	rt->cc->warn = warn;
+	return errc == rt->errCount ? result : NULL;
+}
+
+/// Install a native function; @see rtContext.api.ccDefCall
+symn ccDefCall(rtContext rt, vmError libc(libcContext), void *data, const char *proto) {
+	symn param, sym = NULL;
+	int stdiff = 0;
+	astn args = NULL;
+
+	dieif(libc == NULL || !proto, "FixMe");
+
+	//~ from: int64 zxt(int64 val, int offs, int bits);
+	//~ make: define zxt(int64 val, int offs, int bits) = emit(int64, libc(25), i64(val), i32(offs), i32(bits));
+
+	if ((sym = installref(rt, proto, &args))) {
+		struct libc* lc = NULL;
+		symn link = newdefn(rt->cc, EMIT_opc);
+		astn libcinit;
+		size_t libcpos = rt->cc->libc ? rt->cc->libc->pos + 1 : 0;
+
+		dieif(rt->_end - rt->_beg < (ptrdiff_t)sizeof(struct libc), "FixMe");
+
+		rt->_end -= sizeof(struct libc);
+		lc = (struct libc*)rt->_end;
+		lc->next = rt->cc->libc;
+		rt->cc->libc = lc;
+
+		link->name = "libc";
+		link->offs = opc_libc;
+		link->type = sym->type;
+		link->init = intnode(rt->cc, libcpos);
+
+		libcinit = lnknode(rt->cc, link);
+		stdiff = fixargs(sym, vm_size, 0);
+
+		// glue the new libcinit argument
+		if (args && args != rt->cc->void_tag) {
+			astn narg = newnode(rt->cc, OPER_com);
+			astn arg = args;
+			narg->op.lhso = libcinit;
+
+			if (1) {
+				symn s = NULL;
+				astn arg = args;
+				while (arg->kind == OPER_com) {
+					astn n = arg->op.rhso;
+					s = linkOf(n);
+					arg = arg->op.lhso;
+					if (s && n) {
+						n->cst2 = s->cast;
+					}
+				}
+				s = linkOf(arg);
+				if (s && arg) {
+					arg->cst2 = s->cast;
+				}
+			}
+
+			if (arg->kind == OPER_com) {
+				while (arg->op.lhso->kind == OPER_com) {
+					arg = arg->op.lhso;
+				}
+				narg->op.rhso = arg->op.lhso;
+				arg->op.lhso = narg;
+			}
+			else {
+				narg->op.rhso = args;
+				args = narg;
+			}
+		}
+		else {
+			args = libcinit;
+		}
+
+		libcinit = newnode(rt->cc, OPER_fnc);
+		libcinit->op.lhso = rt->cc->emit_tag;
+		libcinit->type = sym->type;
+		libcinit->op.rhso = args;
+
+		sym->kind = TYPE_def;
+		sym->init = libcinit;
+		sym->offs = libcpos;
+		// TODO: libcall should be static
+		//sym->stat = 1;
+		//sym->cnst = 1;
+
+		lc->call = libc;
+		lc->data = data;
+		lc->pos = libcpos;
+		lc->sym = sym;
+
+		lc->chk = stdiff / 4;
+
+		stdiff -= sizeOf(sym->type, 1);
+		lc->pop = stdiff / 4;
+
+		// make non reference parameters symbolic by default
+		for (param = sym->prms; param; param = param->next) {
+			if (param->cast != TYPE_ref && !param->call) {
+				param->kind = TYPE_def;
+			}
+		}
+	}
+	else {
+		error(rt, NULL, 0, "install(`%s`)", proto);
+	}
+
+	return sym;
 }

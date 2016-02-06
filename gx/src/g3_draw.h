@@ -160,6 +160,7 @@ void bboxMesh(mesh msh, vector min, vector max);
 void centMesh(mesh msh, scalar size);
 void normMesh(mesh msh, scalar tol);
 int setvtxDV(mesh msh, int idx, double pos[3], double nrm[3], double tex[2], long col);
+int addvtxDV(mesh msh, double pos[3], double nrm[3], double tex[2]);
 
 int addseg(mesh msh, int p1, int p2);
 int addtri(mesh msh, int p1, int p2, int p3);

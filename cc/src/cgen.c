@@ -68,13 +68,12 @@ static inline void memswap(void* _a, void* _b, size_t size) {
 	}
 }
 
-size_t emitint(rtContext rt, vmOpcode opc, int64_t arg) {
-	stkval tmp;
-	tmp.i8 = arg;
-	return emitarg(rt, opc, tmp);
+size_t emitint(rtContext rt, vmOpcode opc, int64_t value) {
+	stkval arg = { .i8 = value };
+	return emitarg(rt, opc, arg);
 }
 
-/// Emit an instruction indexing nth stack element.
+/// Emit an instruction indexing nth element on stack.
 static size_t emitidx(rtContext rt, vmOpcode opc, size_t arg) {
 	stkval tmp;
 	tmp.i8 = rt->vm.ss * vm_size - arg;
@@ -111,36 +110,32 @@ static size_t emitidx(rtContext rt, vmOpcode opc, size_t arg) {
 
 /// Emit an instruction without argument.
 static inline size_t emitopc(rtContext rt, vmOpcode opc) {
-	stkval arg;
-	arg.i8 = 0;
+	stkval arg = { .i8 = 0 };
 	return emitarg(rt, opc, arg);
 }
 
 /// Increment the top of stack.
-static inline size_t emitinc(rtContext rt, size_t arg) {
-	return emitint(rt, opc_inc, arg);
+static inline size_t emitinc(rtContext rt, size_t value) {
+	stkval arg = { .i8 = value };
+	return emitarg(rt, opc_inc, arg);
 }
 
-// emiting constant values.
-static inline size_t emiti32(rtContext rt, int32_t arg) {
-	stkval tmp;
-	tmp.i8 = arg;
-	return emitarg(rt, opc_lc32, tmp);
+// emit constant values.
+static inline size_t emiti32(rtContext rt, int32_t value) {
+	stkval arg = { .i8 = value };
+	return emitarg(rt, opc_lc32, arg);
 }
-static inline size_t emiti64(rtContext rt, int64_t arg) {
-	stkval tmp;
-	tmp.i8 = arg;
-	return emitarg(rt, opc_lc64, tmp);
+static inline size_t emiti64(rtContext rt, int64_t value) {
+	stkval arg = { .i8 = value };
+	return emitarg(rt, opc_lc64, arg);
 }
-static inline size_t emitf64(rtContext rt, float64_t arg) {
-	stkval tmp;
-	tmp.f8 = arg;
-	return emitarg(rt, opc_lf64, tmp);
+static inline size_t emitf64(rtContext rt, float64_t value) {
+	stkval arg = { .f8 = value };
+	return emitarg(rt, opc_lf64, arg);
 }
-static inline size_t emitref(rtContext rt, void* arg) {
-	stkval tmp;
-	tmp.i8 = vmOffset(rt, arg);
-	return emitarg(rt, opc_lref, tmp);
+static inline size_t emitref(rtContext rt, void* value) {
+	stkval arg = { .i8 = vmOffset(rt, value) };
+	return emitarg(rt, opc_lref, arg);
 }
 
 // emit operator(add, sub, mul, ...), based on type
@@ -623,7 +618,8 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 				rt->cc->jmps = jmp->next;
 
 				if (jmp->go2.stks != stbreak) {
-					error(rt, jmp->file, jmp->line, "`%t` statement is invalid due to previous variable declaration within loop", jmp);
+					error(rt, jmp->file, jmp->line,
+						  "`%t` statement is invalid due to previous variable declaration within loop", jmp);
 					return TYPE_any;
 				}
 				switch (jmp->kind) {
@@ -655,7 +651,8 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 
 			if (ast->cst2 == ATTR_stat) {
 				if (ast->stmt.step || !tt) {
-					error(rt, ast->file, ast->line, "invalid static if construct: %s", !tt ? "can not evaluate" : "else part is invalid");
+					error(rt, ast->file, ast->line, "invalid static if construct: %s",
+						  !tt ? "can not evaluate" : "else part is invalid");
 					return TYPE_any;
 				}
 				#ifdef DEBUGGING	// extra check: statement qualifier processed.
@@ -847,17 +844,20 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 						switch (object->cast) {
 							default:
 								if (argv->kind != OPER_adr && object->type->cast != TYPE_ref) {
-									warn(rt, 2, argv->file, argv->line, "argument `%+t` is not explicitly passed by reference", argv);
+									warn(rt, 2, argv->file, argv->line,
+										 "argument `%+t` is not explicitly passed by reference", argv);
 								}
 								break;
 
 							case TYPE_arr:	// from slice
-								warn(rt, 2, argv->file, argv->line, "converting `%+t` to %-T discards length property", argv, ast->type);
+								warn(rt, 2, argv->file, argv->line, "converting `%+t` to %-T discards length property",
+									 argv, ast->type);
 								//~ TODO: loadIndirect = 1;
 								break;
 
 							case TYPE_var:	// from variant
-								warn(rt, 2, argv->file, argv->line, "converting `%+t` to %-T discards type property", argv, ast->type);
+								warn(rt, 2, argv->file, argv->line, "converting `%+t` to %-T discards type property",
+									 argv, ast->type);
 								//~ TODO: loadIndirect = 1;
 								break;
 
@@ -921,7 +921,7 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 
 					while (an && param) {
 						int inlineArg = param->cast == TYPE_def;
-						int useCount = usages(param) - 1;
+						int useCount = countUsages(param) - 1;
 						astn arg = an;
 
 						// TODO: skip over aliases?
@@ -973,7 +973,8 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 						inlineArg = 0;
 						if (inlineArg || param->kind == TYPE_def) {
 							if (param->cast != TYPE_def) {
-								warn(rt, 16, ast->file, ast->line, "inlineing(%d) argument used %d times: %+T: %+t", inlineArg, useCount, param, arg);
+								warn(rt, 16, ast->file, ast->line, "inlineing(%d) argument used %d times: %+T: %+t",
+									 inlineArg, useCount, param, arg);
 							}
 							//~ param->kind = TYPE_def;
 							param->init = an;
@@ -981,7 +982,8 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 						else {
 							size_t stktop = stkoffs(rt, sizeOf(param, 1));
 							chachedArgSize += sizeOf(param, 1);
-							warn(rt, 16, ast->file, ast->line, "caching argument used %d times: %+T: %+t", useCount, param, arg);
+							warn(rt, 16, ast->file, ast->line, "caching argument used %d times: %+T: %+t", useCount,
+								 param, arg);
 							if (!cgen(rt, an, param->cast == TYPE_def ? param->type->cast : param->cast)) {
 								traceAst(arg);
 								return TYPE_any;
@@ -990,7 +992,8 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 							param->offs = stkoffs(rt, 0);
 							//~ param->kind = TYPE_ref;
 							if (stktop != param->offs) {
-								error(rt, ast->file, ast->line, "invalid size: %d <> got(%d): `%+t`", stktop, param->offs, param);
+								error(rt, ast->file, ast->line, "invalid size: %d <> got(%d): `%+t`", stktop,
+									  param->offs, param);
 								return TYPE_any;
 							}
 						}
@@ -1018,7 +1021,8 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 							return TYPE_any;
 						}
 						if (!emitint(rt, opc_sti, sizeOf(ast->type, 1))) {
-							error(rt, ast->file, ast->line, "store indirect: %T:%d of `%+t`", ast->type, sizeOf(ast->type, 1), ast);
+							error(rt, ast->file, ast->line, "store indirect: %T:%d of `%+t`", ast->type,
+								  sizeOf(ast->type, 1), ast);
 							return TYPE_any;
 						}
 					}
@@ -1039,7 +1043,7 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 			}
 
 			// push Result, Arguments
-			if (var && !istype(var) && var != rt->cc->emit_opc && var->call) {
+			if (var && !isType(var) && var != rt->cc->emit_opc && var->call) {
 				if (sizeOf(var->type, 1) && !emitint(rt, opc_spc, sizeOf(var->type, 1))) {
 					traceAst(ast);
 					return TYPE_any;
@@ -1062,7 +1066,7 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 				}
 
 				// static casting with emit: int32 i = emit(int32, float32(3.14));
-				if (var == rt->cc->emit_opc && isType(argv)) {
+				if (var == rt->cc->emit_opc && isTypeExpr(argv)) {
 					break;
 				}
 
@@ -1083,7 +1087,7 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 
 			if (var == rt->cc->emit_opc) {		// emit()
 			}
-			else if (istype(var)) {				// cast()
+			else if (isType(var)) {				// cast()
 				dieif(stkret != stkoffs(rt, 0), "Error: %+t", ast);
 				if (!argv || argv != ast->op.rhso) {
 					warn(rt, 1, ast->file, ast->line, "multiple values, array ?: '%+t'", ast);
@@ -1177,7 +1181,7 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 			// TODO: this should work as indexing
 			symn object = linkOf(ast->op.lhso);
 			symn member = linkOf(ast->op.rhso);
-			int lhsstat = isType(ast->op.lhso);
+			int lhsstat = isTypeExpr(ast->op.lhso);
 
 			if (!object || !member) {
 				traceAst(ast);
@@ -1190,7 +1194,8 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 			}
 			if (member->stat) {
 				if (!lhsstat && object->kind != TYPE_arr) {
-					warn(rt, 5, ast->file, ast->line, "accessing static member using instance variable `%+T`/ %+T", member, object->type);
+					warn(rt, 5, ast->file, ast->line, "accessing static member using instance variable `%+T`/ %+T",
+						 member, object->type);
 				}
 				return cgen(rt, ast->op.rhso, get);
 			}
@@ -1968,7 +1973,8 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 					if (var->offs == 0) {		// create local variable
 						var->offs = stkoffs(rt, 0);
 						if (stktop != var->offs) {
-							error(rt, ast->file, ast->line, "invalid initializer size: %d diff(%d): `%+t`", stktop, stktop - var->offs, ast);
+							error(rt, ast->file, ast->line, "invalid initializer size: %d diff(%d): `%+t`", stktop,
+								  stktop - var->offs, ast);
 							return TYPE_any;
 						}
 					}
@@ -2270,8 +2276,8 @@ int gencode(rtContext rt, int mode) {
 	dieif(cc == NULL, "no compiler context");
 
 	// leave the global scope.
-	rt->main = ccAddType(rt, "<init>", 0, 0);
-	rt->vars = leave(rt->cc, NULL, gStatic);
+	rt->main = ccDefType(rt, ".main", 0, 0);
+	rt->vars = ccEnd(rt, NULL, gStatic);
 
 	/* reorder the initialization of static variables and functions.
 	 * TODO: optimize code.
@@ -2324,8 +2330,8 @@ int gencode(rtContext rt, int mode) {
 		memset(rt->dbg, 0, sizeof(struct dbgContextRec));
 
 		rt->dbg->rt = rt;
-		initBuff(&rt->dbg->functions, 128, sizeof(struct dbgInfo));
-		initBuff(&rt->dbg->statements, 128, sizeof(struct dbgInfo));
+		initBuff(&rt->dbg->functions, 128, sizeof(struct dbgNode));
+		initBuff(&rt->dbg->statements, 128, sizeof(struct dbgNode));
 	}
 
 	// libcalls
@@ -2456,7 +2462,7 @@ int gencode(rtContext rt, int mode) {
 				if (var->init != NULL && var->nest > 0) {
 					astn init = newnode(cc, TYPE_def);
 
-					if (var->cnst && !isConst(var->init)) {
+					if (var->cnst && !isConstExpr(var->init)) {
 						warn(rt, 16, var->file, var->line, "non constant initialization of static variable `%-T`", var);
 					}
 
@@ -2543,14 +2549,14 @@ int gencode(rtContext rt, int mode) {
 		struct arrBuffer *codeMap = &rt->dbg->statements;
 		for (i = 0; i < codeMap->cnt; ++i) {
 			for (j = i; j < codeMap->cnt; ++j) {
-				dbgInfo a = getBuff(codeMap, i);
-				dbgInfo b = getBuff(codeMap, j);
+				dbgn a = getBuff(codeMap, i);
+				dbgn b = getBuff(codeMap, j);
 				if (a->end > b->end) {
-					memswap(a, b, sizeof(struct dbgInfo));
+					memswap(a, b, sizeof(struct dbgNode));
 				}
 				else if (a->end == b->end) {
 					if (a->start < b->start) {
-						memswap(a, b, sizeof(struct dbgInfo));
+						memswap(a, b, sizeof(struct dbgNode));
 					}
 				}
 			}

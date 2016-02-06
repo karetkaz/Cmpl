@@ -69,6 +69,11 @@ vec4f sepiaFp2(vec4f c) {
 	);
 }
 
+vec4f sepiaFp3(vec4f col) {
+	float y = 0.3 * col.x + 0.59 * col.y + 0.11 * col.z;
+	return vec4f(y + 0.15, y + 0.07, y - 0.12, 1.0);
+}
+
 //~ setupPicView(image, true);
-fillSurf(image, null, sepiaFp);
+fillSurf(image, null, sepiaFp3);
 setupPicView(image, true);

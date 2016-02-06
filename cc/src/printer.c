@@ -12,7 +12,6 @@
 #include <string.h>
 #include "internal.h"
 
-static void fputsym(FILE*, const char *[], symn, int, int);
 static inline int fputchr(FILE* stream, int chr) { return fputc(chr, stream); }
 
 static const char** escapeStr() {
@@ -86,22 +85,22 @@ static void fputarr(FILE* fout, const char *esc[], symn sym, int mode) {
 		fputfmt(fout, "[%?+t]", sym->init);
 		return;
 	}
-	fputsym(fout, esc, sym, mode, 0);
+	fputSym(fout, esc, sym, mode, 0);
 }
 
-static void fputast(FILE* fout, const char *esc[], astn ast, int mode, int indent) {
+void fputAst(FILE *out, const char *esc[], astn ast, int mode, int indent) {
 	int nlElse = 1;                 // (' ' | '\n%I') 'else' ...
 	int nlBody = mode & nlAstBody;  // (' ' | '\n%I')'{' ...
 	int nlElif = mode & nlAstElIf;  // ... 'else' (' ' | '\n%I') 'if' ...
 	int rlev = mode & 0xf;
 
 	if (ast == NULL) {
-		fputstr(fout, esc, "(null)");
+		fputstr(out, esc, "(null)");
 		return;
 	}
 
 	if (indent > 0) {
-		fputfmt(fout, "%I", indent);
+		fputfmt(out, "%I", indent);
 	}
 	else {
 		indent = -indent;
@@ -109,35 +108,35 @@ static void fputast(FILE* fout, const char *esc[], astn ast, int mode, int inden
 
 	if (rlev >= 2) {
 		if ((ast->cst2 & ATTR_stat) != 0) {
-			fputstr(fout, esc, "static ");
+			fputstr(out, esc, "static ");
 		}
 		if ((ast->cst2 & ATTR_const) != 0) {
-			fputstr(fout, esc, "const ");
+			fputstr(out, esc, "const ");
 		}
 		if ((ast->cst2 & ATTR_paral) != 0) {
-			fputstr(fout, esc, "parallel ");
+			fputstr(out, esc, "parallel ");
 		}
 	}
 
 	switch (ast->kind) {
 		//#{ STMT
 		case STMT_end: {
-			fputast(fout, esc, ast->stmt.stmt, mode, -indent);
+			fputAst(out, esc, ast->stmt.stmt, mode, -indent);
 		} break;
 		case STMT_beg: {
 			astn list;
 			if (rlev < 2) {
 				if (rlev < 1) {
-					fputstr(fout, esc, "{");
+					fputstr(out, esc, "{");
 					break;
 				}
-				fputstr(fout, esc, "{...}");
+				fputstr(out, esc, "{...}");
 				break;
 			}
 
-			fputstr(fout, esc, "{\n");
+			fputstr(out, esc, "{\n");
 			for (list = ast->stmt.stmt; list; list = list->next) {
-				fputast(fout, esc, list, mode, indent + 1);
+				fputAst(out, esc, list, mode, indent + 1);
 				switch(list->kind) {
 					case STMT_if:
 					case STMT_for:
@@ -145,21 +144,21 @@ static void fputast(FILE* fout, const char *esc[], astn ast, int mode, int inden
 						break;
 
 					default:
-						fputstr(fout, esc, ";\n");
+						fputstr(out, esc, ";\n");
 						break;
 				}
 			}
-			fputesc(fout, esc, "%I%s", indent, "}\n");
+			fputFmt(out, esc, "%I%s", indent, "}\n");
 		} break;
 		case STMT_if: {
 			if (rlev == 0) {
-				fputstr(fout, esc, "if");
+				fputstr(out, esc, "if");
 				break;
 			}
 
-			fputstr(fout, esc, "if (");
-			fputast(fout, esc, ast->stmt.test, mode, -0xf);
-			fputstr(fout, esc, ")");
+			fputstr(out, esc, "if (");
+			fputAst(out, esc, ast->stmt.test, mode, -0xf);
+			fputstr(out, esc, ")");
 
 			if (rlev < 2) {
 				break;
@@ -168,16 +167,16 @@ static void fputast(FILE* fout, const char *esc[], astn ast, int mode, int inden
 			if (ast->stmt.stmt != NULL) {
 				int kind = ast->stmt.stmt->kind;
 				if (kind == STMT_beg && nlBody) {
-					fputstr(fout, esc, "\n");
-					fputast(fout, esc, ast->stmt.stmt, mode, indent + (kind != STMT_beg));
+					fputstr(out, esc, "\n");
+					fputAst(out, esc, ast->stmt.stmt, mode, indent + (kind != STMT_beg));
 				}
 				else {
-					fputstr(fout, esc, " ");
-					fputast(fout, esc, ast->stmt.stmt, mode, -indent);
+					fputstr(out, esc, " ");
+					fputAst(out, esc, ast->stmt.stmt, mode, -indent);
 				}
 			}
 			else {
-				fputstr(fout, esc, ";\n");
+				fputstr(out, esc, ";\n");
 			}
 
 			// if else part
@@ -185,62 +184,62 @@ static void fputast(FILE* fout, const char *esc[], astn ast, int mode, int inden
 				int kind = ast->stmt.step->kind;
 				if (nlElse) {
 					// we already have this new line
-					//~ fputesc(fout, esc, "\n");
+					//~ fputFmt(out, esc, "\n");
 				}
 				if (kind == STMT_if && nlElif) {
-					fputesc(fout, esc, "%I%s\n", indent, "else");
-					fputast(fout, esc, ast->stmt.step, mode, indent + (kind != STMT_beg));
+					fputFmt(out, esc, "%I%s\n", indent, "else");
+					fputAst(out, esc, ast->stmt.step, mode, indent + (kind != STMT_beg));
 				}
 				else if (kind == STMT_beg && nlBody) {
-					fputesc(fout, esc, "%I%s\n", indent, "else");
-					fputast(fout, esc, ast->stmt.step, mode, indent + (kind != STMT_beg));
+					fputFmt(out, esc, "%I%s\n", indent, "else");
+					fputAst(out, esc, ast->stmt.step, mode, indent + (kind != STMT_beg));
 				}
 				else {
-					fputesc(fout, esc, "%I%s ", indent, "else");
-					fputast(fout, esc, ast->stmt.step, mode, -indent);
+					fputFmt(out, esc, "%I%s ", indent, "else");
+					fputAst(out, esc, ast->stmt.step, mode, -indent);
 				}
 			}
 			break;
 		}
 		case STMT_for: {
 			if (rlev < 2) {
-				fputstr(fout, esc, "for");
+				fputstr(out, esc, "for");
 				if (rlev > 0) {
-					fputesc(fout, esc, " (%?+ t; %?+t; %?+t)", ast->stmt.init, ast->stmt.test, ast->stmt.step);
+					fputFmt(out, esc, " (%?+ t; %?+t; %?+t)", ast->stmt.init, ast->stmt.test, ast->stmt.step);
 				}
 				break;
 			}
 
-			fputstr(fout, esc, "for (");
+			fputstr(out, esc, "for (");
 			if (ast->stmt.init) {
-				fputast(fout, esc, ast->stmt.init, 1, -0xf);
+				fputAst(out, esc, ast->stmt.init, 1, -0xf);
 			}
 
-			fputstr(fout, esc, "; ");
+			fputstr(out, esc, "; ");
 			if (ast->stmt.test) {
-				fputast(fout, esc, ast->stmt.test, 1, -0xf);
+				fputAst(out, esc, ast->stmt.test, 1, -0xf);
 			}
 
-			fputstr(fout, esc, "; ");
+			fputstr(out, esc, "; ");
 			if (ast->stmt.step) {
-				fputast(fout, esc, ast->stmt.step, 1, -0xf);
+				fputAst(out, esc, ast->stmt.step, 1, -0xf);
 			}
 
-			fputstr(fout, esc, ")");
+			fputstr(out, esc, ")");
 
 			if (ast->stmt.stmt != NULL) {
 				int kind = ast->stmt.stmt->kind;
 				if (kind == STMT_beg && nlBody) {
-					fputstr(fout, esc, "\n");
-					fputast(fout, esc, ast->stmt.stmt, mode, indent + (kind != STMT_beg));
+					fputstr(out, esc, "\n");
+					fputAst(out, esc, ast->stmt.stmt, mode, indent + (kind != STMT_beg));
 				}
 				else {
-					fputstr(fout, esc, " ");
-					fputast(fout, esc, ast->stmt.stmt, mode, -indent);
+					fputstr(out, esc, " ");
+					fputAst(out, esc, ast->stmt.stmt, mode, -indent);
 				}
 			}
 			else {
-				fputstr(fout, esc, ";\n");
+				fputstr(out, esc, ";\n");
 			}
 			break;
 		}
@@ -253,11 +252,11 @@ static void fputast(FILE* fout, const char *esc[], astn ast, int mode, int inden
 						return;
 
 					case STMT_con:
-						fputstr(fout, esc, "continue");
+						fputstr(out, esc, "continue");
 						break;
 
 					case STMT_brk:
-						fputstr(fout, esc, "break");
+						fputstr(out, esc, "break");
 						break;
 				}
 				break;
@@ -275,24 +274,24 @@ static void fputast(FILE* fout, const char *esc[], astn ast, int mode, int inden
 					return;
 
 				case STMT_con:
-					fputstr(fout, esc, "continue;\n");
+					fputstr(out, esc, "continue;\n");
 					break;
 
 				case STMT_brk:
-					fputstr(fout, esc, "break;\n");
+					fputstr(out, esc, "break;\n");
 					break;
 			}
 			break;
 		}
 		case STMT_ret: {
-			fputstr(fout, esc, "return");
+			fputstr(out, esc, "return");
 			if (rlev > 0 && ast->stmt.stmt) {
 				astn ret = ast->stmt.stmt;
-				fputstr(fout, esc, " ");
+				fputstr(out, esc, " ");
 				// `return 3;` is modified to `return (result = 3);`
 				logif(ret->kind != ASGN_set && ret->kind != OPER_fnc, ERR_INTERNAL_ERROR);
 				logif(ret->kind == OPER_fnc && ret->type && ret->type->cast != TYPE_vid, ERR_INTERNAL_ERROR);
-				fputast(fout, esc, ret->op.rhso, mode, -0xf);
+				fputAst(out, esc, ret->op.rhso, mode, -0xf);
 			}
 			break;
 		}
@@ -301,43 +300,43 @@ static void fputast(FILE* fout, const char *esc[], astn ast, int mode, int inden
 		case OPER_fnc: {	// '()'
 			if (rlev > 0) {
 				if (ast->op.lhso != NULL) {
-					fputast(fout, esc, ast->op.lhso, mode, 0);
+					fputAst(out, esc, ast->op.lhso, mode, 0);
 				}
-				fputchr(fout, '(');
+				fputchr(out, '(');
 				if (rlev && ast->op.rhso != NULL) {
-					fputast(fout, esc, ast->op.rhso, mode, -0xf);
+					fputAst(out, esc, ast->op.rhso, mode, -0xf);
 				}
-				fputchr(fout, ')');
+				fputchr(out, ')');
 			}
 			else {
-				fputstr(fout, esc, "()");
+				fputstr(out, esc, "()");
 			}
 			break;
 		}
 
 		case OPER_idx: {	// '[]'
 			if (rlev > 0) {
-				fputast(fout, esc, ast->op.lhso, mode, 0);
-				fputchr(fout, '[');
+				fputAst(out, esc, ast->op.lhso, mode, 0);
+				fputchr(out, '[');
 				if (rlev && ast->op.rhso!= NULL) {
-					fputast(fout, esc, ast->op.rhso, mode, -0xf);
+					fputAst(out, esc, ast->op.rhso, mode, -0xf);
 				}
-				fputchr(fout, ']');
+				fputchr(out, ']');
 			}
 			else {
-				fputstr(fout, esc, "[]");
+				fputstr(out, esc, "[]");
 			}
 			break;
 		}
 
 		case OPER_dot: {	// '.'
 			if (rlev > 0) {
-				fputast(fout, esc, ast->op.lhso, mode, 0);
-				fputchr(fout, '.');
-				fputast(fout, esc, ast->op.rhso, mode, 0);
+				fputAst(out, esc, ast->op.lhso, mode, 0);
+				fputchr(out, '.');
+				fputAst(out, esc, ast->op.rhso, mode, 0);
 			}
 			else {
-				fputchr(fout, '.');
+				fputchr(out, '.');
 			}
 			break;
 		}
@@ -376,162 +375,162 @@ static void fputast(FILE* fout, const char *esc[], astn ast, int mode, int inden
 				int putparen = indent < pre;
 
 				if (mode & prAstCast) {
-					fputsym(fout, esc, ast->type, prSymQual, 0);
+					fputSym(out, esc, ast->type, prSymQual, 0);
 					putparen = 1;
 				}
 
 				if (putparen) {
-					fputchr(fout, '(');
+					fputchr(out, '(');
 				}
 
 				if (ast->op.lhso != NULL) {
-					fputast(fout, esc, ast->op.lhso, mode, -pre);
-					fputchr(fout, ' ');
+					fputAst(out, esc, ast->op.lhso, mode, -pre);
+					fputchr(out, ' ');
 				}
 
-				fputast(fout, esc, ast, 0, 0);
+				fputAst(out, esc, ast, 0, 0);
 
 				// in case of unary operators: '-a' not '- a'
 				if (ast->op.lhso != NULL) {
-					fputchr(fout, ' ');
+					fputchr(out, ' ');
 				}
 
-				fputast(fout, esc, ast->op.rhso, mode, -pre);
+				fputAst(out, esc, ast->op.rhso, mode, -pre);
 
 				if (putparen) {
-					fputchr(fout, ')');
+					fputchr(out, ')');
 				}
 			}
 			else switch (ast->kind) {
 				default:
 					fatal(ERR_INTERNAL_ERROR);
 					return;
-				case OPER_dot: fputstr(fout, esc, "."); break;		// '.'
-				case OPER_adr: fputstr(fout, esc, "&"); break;		// '&'
-				case OPER_pls: fputstr(fout, esc, "+"); break;		// '+'
-				case OPER_mns: fputstr(fout, esc, "-"); break;		// '-'
-				case OPER_cmt: fputstr(fout, esc, "~"); break;		// '~'
-				case OPER_not: fputstr(fout, esc, "!"); break;		// '!'
+				case OPER_dot: fputstr(out, esc, "."); break;		// '.'
+				case OPER_adr: fputstr(out, esc, "&"); break;		// '&'
+				case OPER_pls: fputstr(out, esc, "+"); break;		// '+'
+				case OPER_mns: fputstr(out, esc, "-"); break;		// '-'
+				case OPER_cmt: fputstr(out, esc, "~"); break;		// '~'
+				case OPER_not: fputstr(out, esc, "!"); break;		// '!'
 
-				case OPER_shr: fputstr(fout, esc, ">>"); break;		// '>>'
-				case OPER_shl: fputstr(fout, esc, "<<"); break;		// '<<'
-				case OPER_and: fputstr(fout, esc, "&"); break;		// '&'
-				case OPER_ior: fputstr(fout, esc, "|"); break;		// '|'
-				case OPER_xor: fputstr(fout, esc, "^"); break;		// '^'
+				case OPER_shr: fputstr(out, esc, ">>"); break;		// '>>'
+				case OPER_shl: fputstr(out, esc, "<<"); break;		// '<<'
+				case OPER_and: fputstr(out, esc, "&"); break;		// '&'
+				case OPER_ior: fputstr(out, esc, "|"); break;		// '|'
+				case OPER_xor: fputstr(out, esc, "^"); break;		// '^'
 
-				case OPER_equ: fputstr(fout, esc, "=="); break;		// '=='
-				case OPER_neq: fputstr(fout, esc, "!="); break;		// '!='
-				case OPER_lte: fputstr(fout, esc, "<"); break;		// '<'
-				case OPER_leq: fputstr(fout, esc, "<="); break;		// '<='
-				case OPER_gte: fputstr(fout, esc, ">"); break;		// '>'
-				case OPER_geq: fputstr(fout, esc, ">="); break;		// '>='
+				case OPER_equ: fputstr(out, esc, "=="); break;		// '=='
+				case OPER_neq: fputstr(out, esc, "!="); break;		// '!='
+				case OPER_lte: fputstr(out, esc, "<"); break;		// '<'
+				case OPER_leq: fputstr(out, esc, "<="); break;		// '<='
+				case OPER_gte: fputstr(out, esc, ">"); break;		// '>'
+				case OPER_geq: fputstr(out, esc, ">="); break;		// '>='
 
-				case OPER_add: fputstr(fout, esc, "+"); break;		// '+'
-				case OPER_sub: fputstr(fout, esc, "-"); break;		// '-'
-				case OPER_mul: fputstr(fout, esc, "*"); break;		// '*'
-				case OPER_div: fputstr(fout, esc, "/"); break;		// '/'
-				case OPER_mod: fputstr(fout, esc, "%"); break;		// '%'
+				case OPER_add: fputstr(out, esc, "+"); break;		// '+'
+				case OPER_sub: fputstr(out, esc, "-"); break;		// '-'
+				case OPER_mul: fputstr(out, esc, "*"); break;		// '*'
+				case OPER_div: fputstr(out, esc, "/"); break;		// '/'
+				case OPER_mod: fputstr(out, esc, "%"); break;		// '%'
 
-				case OPER_lnd: fputstr(fout, esc, "&&"); break;		// '&'
-				case OPER_lor: fputstr(fout, esc, "||"); break;		// '|'
+				case OPER_lnd: fputstr(out, esc, "&&"); break;		// '&'
+				case OPER_lor: fputstr(out, esc, "||"); break;		// '|'
 
-				case ASGN_set: fputstr(fout, esc, "="); break;		// ':='
+				case ASGN_set: fputstr(out, esc, "="); break;		// ':='
 			}
 			break;
 		}
 
 		case OPER_com: {
 			if (rlev > 0) {
-				fputast(fout, esc, ast->op.lhso, mode, -OPER_com);
-				fputstr(fout, esc, ", ");
-				fputast(fout, esc, ast->op.rhso, mode, -OPER_com);
+				fputAst(out, esc, ast->op.lhso, mode, -OPER_com);
+				fputstr(out, esc, ", ");
+				fputAst(out, esc, ast->op.rhso, mode, -OPER_com);
 			}
 			else {
-				fputchr(fout, ',');
+				fputchr(out, ',');
 			}
 			break;
 		}
 
 		case OPER_sel: {	// '?:'
 			if (rlev > 0) {
-				fputast(fout, esc, ast->op.test, mode, -OPER_sel);
-				fputstr(fout, esc, " ? ");
-				fputast(fout, esc, ast->op.lhso, mode, -OPER_sel);
-				fputstr(fout, esc, " : ");
-				fputast(fout, esc, ast->op.rhso, mode, -OPER_sel);
+				fputAst(out, esc, ast->op.test, mode, -OPER_sel);
+				fputstr(out, esc, " ? ");
+				fputAst(out, esc, ast->op.lhso, mode, -OPER_sel);
+				fputstr(out, esc, " : ");
+				fputAst(out, esc, ast->op.rhso, mode, -OPER_sel);
 			}
 			else {
-				fputstr(fout, esc, "?:");
+				fputstr(out, esc, "?:");
 			}
 			break;
 		}
 		//#}
 		//#{ TVAL
 		case EMIT_opc:
-			fputstr(fout, esc, "emit");
+			fputstr(out, esc, "emit");
 			break;
 
 		case TYPE_bit:
-			fputesc(fout, esc, "%U", ast->cint);
+			fputFmt(out, esc, "%U", ast->cint);
 			break;
 
 		case TYPE_int:
-			fputesc(fout, esc, "%D", ast->cint);
+			fputFmt(out, esc, "%D", ast->cint);
 			break;
 
 		case TYPE_flt:
-			fputesc(fout, esc, "%F", ast->cflt);
+			fputFmt(out, esc, "%F", ast->cflt);
 			break;
 
 		case TYPE_str:
-			fputstr(fout, esc, "\'");
-			fputstr(fout, escapeStr(), ast->ref.name);
-			fputstr(fout, esc, "\'");
+			fputstr(out, esc, "\'");
+			fputstr(out, escapeStr(), ast->ref.name);
+			fputstr(out, esc, "\'");
 			break;
 
 		case TYPE_def: {
 			if (ast->ref.link) {
-				fputsym(fout, esc, ast->ref.link, mode| prSymInit |prType, -indent);
+				fputSym(out, esc, ast->ref.link, mode | prSymInit | prType, -indent);
 			}
 			else {
-				fputstr(fout, esc, ast->ref.name);
+				fputstr(out, esc, ast->ref.name);
 			}
 			break;
 		}
 		case TYPE_ref: {
 			if (ast->ref.link) {
-				fputsym(fout, esc, ast->ref.link, 0, 0);
+				fputSym(out, esc, ast->ref.link, 0, 0);
 			}
 			else {
-				fputstr(fout, esc, ast->ref.name);
+				fputstr(out, esc, ast->ref.name);
 			}
 			break;
 		}
 		//#}
 
 		case PNCT_lc:
-			fputchr(fout, '[');
+			fputchr(out, '[');
 			break;
 
 		case PNCT_rc:
-			fputchr(fout, ']');
+			fputchr(out, ']');
 			break;
 
 		case PNCT_lp:
-			fputchr(fout, '(');
+			fputchr(out, '(');
 			break;
 
 		case PNCT_rp:
-			fputchr(fout, ')');
+			fputchr(out, ')');
 			break;
 
 		default:
-			fputesc(fout, esc, "%K(0x%02x)", ast->kind, ast->kind);
+			fputFmt(out, esc, "%K(0x%02x)", ast->kind, ast->kind);
 			break;
 	}
 }
 
-static void fputsym(FILE* fout, const char *esc[], symn sym, int mode, int indent) {
+void fputSym(FILE *out, const char *esc[], symn sym, int mode, int indent) {
 	int pr_type = mode & prType;
 	int pr_init = mode & prSymInit;
 	int pr_qual = mode & prSymQual;
@@ -540,12 +539,12 @@ static void fputsym(FILE* fout, const char *esc[], symn sym, int mode, int inden
 	int pr_body = (mode & 0xf) > 6;//mode & prSymArgs;
 
 	if (sym == NULL) {
-		fputstr(fout, esc, "(null)");
+		fputstr(out, esc, "(null)");
 		return;
 	}
 
 	if (indent > 0) {
-		fputfmt(fout, "%I", indent);
+		fputfmt(out, "%I", indent);
 	}
 	else {
 		indent = -indent;
@@ -553,22 +552,22 @@ static void fputsym(FILE* fout, const char *esc[], symn sym, int mode, int inden
 
 	if (pr_attr && sym->cast) {
 		if ((sym->cast & ATTR_stat) != 0) {
-			fputstr(fout, esc, "static ");
+			fputstr(out, esc, "static ");
 		}
 		if ((sym->cast & ATTR_const) != 0) {
-			fputstr(fout, esc, "const ");
+			fputstr(out, esc, "const ");
 		}
 		if ((sym->cast & ATTR_paral) != 0) {
-			fputstr(fout, esc, "parallel ");
+			fputstr(out, esc, "parallel ");
 		}
 	}
 
 	if (sym->name && *sym->name) {
 		if (pr_qual) {
-			fputqal(fout, esc, sym);
+			fputqal(out, esc, sym);
 		}
 		else {
-			fputstr(fout, esc, sym->name);
+			fputstr(out, esc, sym->name);
 		}
 	}
 
@@ -576,14 +575,14 @@ static void fputsym(FILE* fout, const char *esc[], symn sym, int mode, int inden
 
 		case EMIT_opc: {
 			if (sym->init) {
-				fputfmt(fout, "(%+t)", sym->init);
+				fputfmt(out, "(%+t)", sym->init);
 			}
 			break;
 		}
 
 		case TYPE_arr: {
 			if (sym->name == NULL) {
-				fputarr(fout, esc, sym, mode);
+				fputarr(out, esc, sym, mode);
 				return;
 			}
 			// fall TYPE_rec
@@ -591,15 +590,15 @@ static void fputsym(FILE* fout, const char *esc[], symn sym, int mode, int inden
 		case TYPE_rec: {
 			if (pr_body) {
 				symn arg;
-				fputesc(fout, esc, ": struct %s", "{\n");
+				fputFmt(out, esc, ": struct %s", "{\n");
 
 				for (arg = sym->flds; arg; arg = arg->next) {
-					fputsym(fout, esc, arg, mode & ~prSymQual, indent + 1);
+					fputSym(out, esc, arg, mode & ~prSymQual, indent + 1);
 					if (arg->kind != TYPE_rec) {		// nested struct
-						fputstr(fout, esc, ";\n");
+						fputstr(out, esc, ";\n");
 					}
 				}
-				fputesc(fout, esc, "%I%s", indent, "}");
+				fputFmt(out, esc, "%I%s", indent, "}");
 			}
 			break;
 		}
@@ -608,25 +607,25 @@ static void fputsym(FILE* fout, const char *esc[], symn sym, int mode, int inden
 		case TYPE_ref: {
 			if (pr_args && sym->call) {
 				symn arg = sym->prms;
-				fputchr(fout, '(');
+				fputchr(out, '(');
 				// TODO: check cc->void_tag?
 				if (arg && arg->name && *arg->name) {
 					for ( ; arg; arg = arg->next) {
 						if (arg != sym->prms) {
-							fputstr(fout, esc, ", ");
+							fputstr(out, esc, ", ");
 						}
-						fputsym(fout, esc, arg, mode & ~prSymQual, 0);
+						fputSym(out, esc, arg, mode & ~prSymQual, 0);
 					}
 				}
-				fputchr(fout, ')');
+				fputchr(out, ')');
 			}
 			if (pr_type && sym->type) {
-				fputstr(fout, esc, ": ");
-				fputsym(fout, esc, sym->type, 0, 0);
+				fputstr(out, esc, ": ");
+				fputSym(out, esc, sym->type, 0, 0);
 			}
 			if (pr_init && sym->init) {
-				fputstr(fout, esc, " = ");
-				fputast(fout, esc, sym->init, 1, 0);
+				fputstr(out, esc, " = ");
+				fputAst(out, esc, sym->init, 1, 0);
 			}
 			break;
 		}
@@ -722,7 +721,7 @@ static void FPUTFMT(FILE* fout, const char *esc[], const char* msg, va_list ap) 
 					if (prc < 0) {
 						prc = prSymQual;
 					}
-					fputsym(fout, esc, sym, prc, len);
+					fputSym(fout, esc, sym, prc, len);
 					continue;
 				}
 
@@ -751,7 +750,7 @@ static void FPUTFMT(FILE* fout, const char *esc[], const char* msg, va_list ap) 
 					if (prc < 0) {
 						prc = 1;
 					}
-					fputast(fout, esc, ast, prc, len);
+					fputAst(fout, esc, ast, prc, len);
 					continue;
 				}
 
@@ -793,7 +792,7 @@ static void FPUTFMT(FILE* fout, const char *esc[], const char* msg, va_list ap) 
 						break;
 					}
 
-					fputasm(fout, opc, prc, NULL);
+					fputAsm(fout, esc, NULL, opc, prc);
 					continue;
 				}
 
@@ -1053,7 +1052,7 @@ static void FPUTFMT(FILE* fout, const char *esc[], const char* msg, va_list ap) 
 			for (list = ast->stmt.stmt; list; list = list->next) {
 				dumpxml(fout, list, mode, level + 1, "stmt");
 			}
-			fputesc(fout, escape, "%I</%s>\n", level, text);
+			fputFmt(fout, escape, "%I</%s>\n", level, text);
 			break;
 		}
 
@@ -1250,21 +1249,21 @@ int logfile(rtContext rt, char* file, int append) {
 	return 0;
 }
 
-void fputfmt(FILE* fout, const char* msg, ...) {
+void fputFmt(FILE *out, const char *esc[], const char *fmt, ...) {
 	va_list ap;
-	va_start(ap, msg);
-	FPUTFMT(fout, NULL, msg, ap);
+	va_start(ap, fmt);
+	FPUTFMT(out, esc, fmt, ap);
 	va_end(ap);
 }
 
-void fputesc(FILE* fout, const char *esc[], const char* msg, ...) {
+void fputfmt(FILE*out, const char*fmt, ...) {
 	va_list ap;
-	va_start(ap, msg);
-	FPUTFMT(fout, esc, msg, ap);
+	va_start(ap, fmt);
+	FPUTFMT(out, NULL, fmt, ap);
 	va_end(ap);
 }
 
-void perr(rtContext rt, int level, const char* file, int line, const char* msg, ...) {
+void ccError(rtContext rt, int level, const char *file, int line, const char *msg, ...) {
 	int warnLevel = rt && rt->cc ? rt->cc->warn : 0;
 	FILE *logFile = rt ? rt->logFile : stdout;
 	const char **esc = NULL;
@@ -1310,7 +1309,7 @@ void perr(rtContext rt, int level, const char* file, int line, const char* msg, 
 }
 
 // dump
-void iterateApi(rtContext rt, userContext ctx, void customPrinter(userContext, symn)) {
+void dumpApi(rtContext rt, userContext ctx, void customPrinter(userContext, symn)) {
 	symn sym, bp[TOKS], *sp = bp;
 	for (*sp = rt->vars; sp >= bp;) {
 		if (!(sym = *sp)) {

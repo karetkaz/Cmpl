@@ -73,21 +73,14 @@ case opc_sync: NEXT(2, -0, 0) {
 case opc_libc: NEXT(4, -libcvec[ip->rel].pop, libcvec[ip->rel].chk) {
 #ifdef EXEC
 	int exitCode;
-	struct libcContextRec args;
 	libc libcall = &libcvec[ip->rel];
-
-	args.rt = rt;
-	args.fun = libcall->sym;
-	args.data = libcall->data;
-	args.extra = extra;
-
-	args.argv = (char*)sp;
-	args.retv = (char*)((stkptr)sp + libcall->pop);
-
-	if (ip->rel == 0) {
-		args.fun = fun;
-		args.retv = (char *)st;
-	}
+	struct libcContextRec args = {
+		.rt = rt,
+		.extra = extra,
+		.data = libcall->data,
+		.argv = (char*)sp,
+		.retv = (char*)((stkptr)sp + libcall->pop)
+	};
 
 	TRACE(sp, ip, libcall);
 	exitCode = libcall->call(&args);
@@ -422,7 +415,6 @@ case b32_sar: NEXT(1, -1, 2) {
 	SP(1, i4) >>= SP(0, i4);
 #endif
 } break;
-//~ case u32__3d:
 case u32_i64: NEXT(1, +1, 1) {
 #if defined(EXEC)
 	SP(-1, i8) = SP(0, u4);
@@ -730,7 +722,7 @@ case f64_bol: NEXT(1, -1, 2) {
 #endif
 } break;
 //#}
-//#{ 0x8?: PF4		// Vector
+//#{ 0x8?: P4F		// packed 4 floats
 case v4f_neg: NEXT(1, -0, 4) {
 #if defined(EXEC)
 	SP(0, f4) = -SP(0, f4);
@@ -830,7 +822,7 @@ case v4f_dp4: NEXT(1, -7, 8) {
 #endif
 } break;
 //#}
-//#{ 0x9?: PD2		// Complex
+//#{ 0x9?: PD2		// packed 2 doubles
 case v2d_neg: NEXT(1, -0, 4) {
 #if defined(EXEC)
 	SP(0, f8) = -SP(0, f8);
@@ -903,8 +895,10 @@ case v2d_max: NEXT(1, -4, 8) {
 //~ 0xc?: ???		//
 //~ 0xd?: ???		// ext i32+i64
 //~ 0xe?: ???		// ext f32+f64
-//~ 0xf?: ???		// ext vec+pck
-default: STOP(error_opc, 1, vmOffset(rt, ip));
+//~ 0xf?: ???		// ext p4x
+default:
+	STOP(error_opc, 1, vmOffset(rt, ip));
+	break;
 //#}-----------------------------------------------------------------------------
 
 #undef SP

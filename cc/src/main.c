@@ -231,10 +231,6 @@ static inline int hasAssembly(symn sym) {
 	return 0;
 }
 
-// enable dynamic dll/so lib loading
-#define USEPLUGINS
-#include "libs.inl"
-
 // forward functions
 extern int vmTest();
 extern int vmHelp();
@@ -293,13 +289,13 @@ static void conDumpMem(rtContext rt, void* ptr, size_t size, int used) {
 	fputfmt(out, "!%s chunk @%06x; size: %d\n", used ? "used" : "free", vmOffset(rt, ptr), size);
 }
 static void conDumpAsm(userContext extra, size_t offs, void* ip) {
-	FILE *fout = extra->out;
+	FILE *out = extra->out;
 
 	if (extra->dmpAsmStmt && extra->rt->cc) {
-		dbgInfo dbg = mapDbgStatement(extra->rt, offs);
+		dbgn dbg = mapDbgStatement(extra->rt, offs);
 		if (dbg != NULL && dbg->stmt != NULL && dbg->start == offs) {
-			fputfmt(fout, "%I%s:%u: %t\n", extra->indent, dbg->file, dbg->line, dbg->stmt);
-			//fputfmt(fout, "%I%s:%u: [%06x-%06x): %t\n", extra->indent, dbg->file, dbg->line, dbg->start, dbg->end, dbg->stmt);
+			fputfmt(out, "%I%s:%u: %t\n", extra->indent, dbg->file, dbg->line, dbg->stmt);
+			//fputFmt(out, NULL, "%I%s:%u: [%06x-%06x): %t\n", extra->indent, dbg->file, dbg->line, dbg->start, dbg->end, dbg->stmt);
 		}
 	}
 
@@ -310,10 +306,10 @@ static void conDumpAsm(userContext extra, size_t offs, void* ip) {
 	if (extra->dmpAsmName) {
 		mode |= prAsmAddr | prAsmName;
 	}
-	//~ fputfmt(fout, "%I%.*A\n", extra->indent, mode, ip);
-	fputfmt(fout, "%I", extra->indent);
-	fputasm(fout, ip, mode, extra->rt);
-	fputfmt(fout, "\n");
+	//~ fputFmt(out, NULL, "%I%.*A\n", extra->indent, mode, ip);
+	fputFmt(out, NULL, "%I", extra->indent);
+	fputAsm(out, NULL, extra->rt, ip, mode);
+	fputFmt(out, NULL, "\n");
 }
 static void conDumpRun(userContext cctx) {
 	rtContext rt = cctx->rt;
@@ -323,10 +319,10 @@ static void conDumpRun(userContext cctx) {
 	if (cctx->dmpProf != 0) {
 		int covFunc = 0, nFunc = dbg->functions.cnt;
 		int covStmt = 0, nStmt = dbg->statements.cnt;
-		dbgInfo fun = (dbgInfo) dbg->functions.ptr;
+		dbgn fun = (dbgn) dbg->functions.ptr;
 		int i, all = cctx->dmpProf > 1;
 
-		fputfmt(out, "\n/*-- profile:\n");
+		fputfmt(out, "\n/*-- Profile:\n");
 
 		for (i = 0; i < nFunc; ++i, fun++) {
 			symn sym = fun->decl;
@@ -335,7 +331,7 @@ static void conDumpRun(userContext cctx) {
 			}
 			covFunc += 1;
 			if (sym == NULL) {
-				sym = mapsym(rt, fun->start, 1);
+				sym = rtFindSym(rt, fun->start, 1);
 			}
 			fputfmt(out,
 				"%s:%u:[.%06x, .%06x): <%?T> hits(%D/%D), time(%D%?+D / %.3F%?+.3F ms)\n", fun->file,
@@ -346,9 +342,9 @@ static void conDumpRun(userContext cctx) {
 		}
 
 		if (all) {
-			fputfmt(out, ">//-- profile.statements:\n");
+			fputfmt(out, "\n//-- statements:\n");
 		}
-		fun = (dbgInfo) rt->dbg->statements.ptr;
+		fun = (dbgn) rt->dbg->statements.ptr;
 		for (i = 0; i < nStmt; ++i, fun++) {
 			size_t symOffs = 0;
 			symn sym = fun->decl;
@@ -357,7 +353,7 @@ static void conDumpRun(userContext cctx) {
 			}
 			covStmt += 1;
 			if (sym == NULL) {
-				sym = mapsym(rt, fun->start, 1);
+				sym = rtFindSym(rt, fun->start, 1);
 			}
 			if (sym != NULL) {
 				symOffs = fun->start - sym->offs;
@@ -372,23 +368,16 @@ static void conDumpRun(userContext cctx) {
 			}
 		}
 
-		fputfmt(out, "//-- coverage(functions: %.2f%%(%d/%d), statements: %.2f%%(%d/%d))\n",
+		fputfmt(out, "\n//-- coverage(functions: %.2f%%(%d/%d), statements: %.2f%%(%d/%d))\n",
 			covFunc * 100. / nFunc, covFunc, nFunc, covStmt * 100. / nStmt, covStmt, nStmt);
 
-		fputfmt(out, "// */\n");
-	}
-
-	if (cctx->dmpHeap != 0) {
-		// show allocated memory chunks.
-		fputfmt(out, "\n/*-- heap:\n");
-		rtAlloc(rt, NULL, 0, conDumpMem);
 		fputfmt(out, "// */\n");
 	}
 
 	if (cctx->dmpGlob != 0) {
 		symn var;
 		int all = cctx->dmpGlob > 1;
-		fputfmt(out, "\n/*-- vars:\n");
+		fputfmt(out, "\n/*-- Globals:\n");
 		for (var = rt->vars; var; var = var->next) {
 			char* ofs = NULL;
 
@@ -422,17 +411,25 @@ static void conDumpRun(userContext cctx) {
 				continue;
 			}
 
-			fputval(rt, out, var, (stkval*)ofs, 0, prSymQual |prType);
+			fputVal(out, NULL, rt, var, (stkval *) ofs, prSymQual | prType, 0);
 			fputc('\n', out);
 		}
+		fputfmt(out, "// */\n");
+	}
+
+	if (cctx->dmpHeap != 0) {
+		// show allocated memory chunks.
+		fputfmt(out, "\n/*-- Allocations:\n");
+		rtAlloc(rt, NULL, 0, conDumpMem);
 		fputfmt(out, "// */\n");
 	}
 }
 
 static void conDumpApi(userContext extra, symn sym) {
-	int dumpAsm = 0;
+	int dmpAsm = 0;
 	int dumpAst = -1;
 	int identExt = 0;//extra->indent;
+	int dumpExtraData = 0;
 	FILE *out = extra->out;
 
 	if (sym == NULL) {
@@ -445,31 +442,38 @@ static void conDumpApi(userContext extra, symn sym) {
 		dumpAst = extra->dumpAst;
 	}
 	if (extra->dmpAsm && hasAssembly(sym)) {
-		dumpAsm = 1;
+		dmpAsm = 1;
 	}
 
 	if (sym->file == NULL && sym->line == 0 && !extra->dmpApiAll) {
 		return;
 	}
-	if (!extra->dmpApi && !dumpAsm && dumpAst < 0) {
+	if (!extra->dmpApi && !dmpAsm && dumpAst < 0) {
 		return;
 	}
 
 	// print qualified name with arguments and type
-	fputfmt(out, "%+T: %+T {\n", sym, sym->type);
+	fputfmt(out, "%+T: %+T", sym, sym->type);
 
 	// print symbol info (kind, size, offset, ...)
 	if (extra->dmpApiInfo) {
+		if (!dumpExtraData) {
+			fputfmt(out, " {\n");
+			dumpExtraData = 1;
+		}
 		// print symbol definition location
 		if (sym->file != NULL && sym->line > 0) {
 			fputfmt(out, "%I.definition: %s:%u\n", identExt, sym->file, sym->line);
 		}
 
-		fputfmt(out, "%I.kind:%?s%?s %K->%K\n", identExt
+		fputfmt(out, "%I.kind:%?s%?s %K\n", identExt
 			, sym->stat ? " static" : ""
 			, sym->cnst ? " const" : ""
-			, sym->kind, sym->cast
+			, sym->kind
 		);
+		if (sym->cast != TYPE_any) {
+			fputfmt(out, "%I.casts: %K\n", identExt, sym->cast);
+		}
 		fputfmt(out, "%I.offset: %06x\n", identExt, sym->offs);
 		fputfmt(out, "%I.size: %d\n", identExt, sym->size);
 	}
@@ -477,12 +481,20 @@ static void conDumpApi(userContext extra, symn sym) {
 	// explain params of the function
 	if (extra->dmpApiPrms) {
 		symn param;
+		if (!dumpExtraData) {
+			fputfmt(out, " {\n");
+			dumpExtraData = 1;
+		}
 		for (param = sym->prms; param; param = param->next) {
 			fputfmt(out, "%I.param %.T: %?T (@%06x+%d->%K)\n", identExt, param, param->type, param->offs, param->size, param->cast);
 		}
 	}
 
 	if (dumpAst >= 0) {
+		if (!dumpExtraData) {
+			fputfmt(out, " {\n");
+			dumpExtraData = 1;
+		}
 		fputfmt(out, "%I.syntaxTree: %?.*t", identExt, dumpAst, sym->init);
 		if (sym->init->kind != STMT_beg) {
 			fputfmt(out, "\n");
@@ -490,15 +502,23 @@ static void conDumpApi(userContext extra, symn sym) {
 	}
 
 	// print disassembly of the function
-	if (dumpAsm != 0) {
+	if (dmpAsm != 0) {
+		if (!dumpExtraData) {
+			fputfmt(out, " {\n");
+			dumpExtraData = 1;
+		}
 		fputfmt(out, "%I.assembly: [@%06x: %d]\n", identExt, sym->offs, sym->size);
-		iterateAsm(extra->rt, sym->offs, sym->offs + sym->size, extra, conDumpAsm);
+		dumpAsm(extra->rt, sym->offs, sym->offs + sym->size, extra, conDumpAsm);
 	}
 
 	// print usages of symbol
 	if (extra->dmpApiUsed) {
 		astn usage;
 		int extUsages = 0;
+		if (!dumpExtraData) {
+			fputfmt(out, " {\n");
+			dumpExtraData = 1;
+		}
 		fputfmt(out, "%I.references:\n", identExt);
 		for (usage = sym->used; usage; usage = usage->ref.used) {
 			if (usage->file && usage->line) {
@@ -513,7 +533,10 @@ static void conDumpApi(userContext extra, symn sym) {
 			fputfmt(out, "%Iexternal references: %d\n", identExt + 1, extUsages);
 		}
 	}
-	fputfmt(out, "}\n");
+	if (dumpExtraData) {
+		fputfmt(out, "}");
+	}
+	fputfmt(out, "\n");
 }
 
 static int conProfile(dbgContext ctx, size_t ss, void* caller, void* callee, clock_t ticks) {
@@ -525,7 +548,7 @@ static int conProfile(dbgContext ctx, size_t ss, void* caller, void* callee, clo
 		else {
 			rtContext rt = ctx->rt;
 			size_t offs = vmOffset(rt, callee);
-			fputfmt(cc->out, "% I> %d,0x%06x %?T\n", ss, ticks, offs, mapsym(rt, offs, 1));
+			fputfmt(cc->out, "% I> %d,0x%06x %?T\n", ss, ticks, offs, rtFindSym(rt, offs, 1));
 		}
 	}
 	(void)caller;
@@ -553,8 +576,8 @@ static int conDebug(dbgContext dbg, const vmError error, size_t ss, void* sp, vo
 	int breakMode = 0;
 	char *breakCause = NULL;
 	size_t offs = vmOffset(rt, ip);
-	symn fun = mapsym(rt, offs, 0);
-	dbgInfo dbgStmt = mapDbgStatement(rt, offs);
+	symn fun = rtFindSym(rt, offs, 0);
+	dbgn dbgStmt = mapDbgStatement(rt, offs);
 
 	/*if (callee != NULL && error == noError) {
 		int returns = (ptrdiff_t) callee < 0;
@@ -790,10 +813,10 @@ static int conDebug(dbgContext dbg, const vmError error, size_t ss, void* sp, vo
 					}
 				}
 				else {
-					symn sym = ccFindSym(rt->cc, NULL, arg);
+					symn sym = ccLookupSym(rt->cc, NULL, arg);
 					fputfmt(out, "arg:%T", sym);
 					if (sym && sym->kind == TYPE_ref && !sym->stat) {
-						fputval(rt, out, sym, (stkval*)sp, 0, prType);
+						fputVal(out, NULL, rt, sym, (stkval *) sp, prType, 0);
 					}
 				}
 				break;
@@ -804,6 +827,10 @@ static int conDebug(dbgContext dbg, const vmError error, size_t ss, void* sp, vo
 
 static void dumpSciTEApi(userContext extra, symn sym) {
 	FILE *out = extra->out;
+	if (sym == NULL) {
+		// last symbol
+		return;
+	}
 	if (sym->prms != NULL && sym->call) {
 		fputfmt(out, "%-T", sym);
 	}
@@ -849,51 +876,51 @@ static void jsonDumpSym(FILE *out, const char **esc, symn ptr, const char *kind,
 		return;
 	}
 	if (kind != NULL) {
-		fputesc(out, esc, FMT_START, indent - 1, kind, ptr);
+		fputFmt(out, esc, FMT_START, indent - 1, kind, ptr);
 	}
 
-	fputesc(out, esc, "%I\"%s\": \"%-T\"\n", indent, KEY_PROTO, ptr);
-	fputesc(out, esc, "%I, \"%s\": \"%K\"\n", indent, KEY_KIND, ptr->kind);
-	fputesc(out, esc, "%I, \"%s\": \"%.T\"\n", indent, KEY_NAME, ptr);
+	fputFmt(out, esc, "%I\"%s\": \"%-T\"\n", indent, KEY_PROTO, ptr);
+	fputFmt(out, esc, "%I, \"%s\": \"%K\"\n", indent, KEY_KIND, ptr->kind);
+	fputFmt(out, esc, "%I, \"%s\": \"%.T\"\n", indent, KEY_NAME, ptr);
 	if (ptr->decl != NULL) {
-		fputesc(out, esc, "%I, \"%s\": \"%?T\"\n", indent, KEY_DECL, ptr->decl);
+		fputFmt(out, esc, "%I, \"%s\": \"%?T\"\n", indent, KEY_DECL, ptr->decl);
 	}
 
 	if (ptr->type != NULL) {
-		fputesc(out, esc, "%I, \"%s\": \"%T\"\n", indent, KEY_TYPE, ptr->type);
+		fputFmt(out, esc, "%I, \"%s\": \"%T\"\n", indent, KEY_TYPE, ptr->type);
 	}
 	if (ptr->file != NULL) {
-		fputesc(out, esc, "%I, \"%s\": \"%s\"\n", indent, KEY_FILE, ptr->file);
+		fputFmt(out, esc, "%I, \"%s\": \"%s\"\n", indent, KEY_FILE, ptr->file);
 	}
 	if (ptr->line != 0) {
-		fputesc(out, esc, "%I, \"%s\": %u\n", indent, KEY_LINE, ptr->line);
+		fputFmt(out, esc, "%I, \"%s\": %u\n", indent, KEY_LINE, ptr->line);
 	}
 	if (ptr->init != NULL) {
-		//~ fputesc(out, esc, "%I, \"%s\": \"%+t\"\n", indent, KEY_CODE, ptr->init);
+		//~ fputFmt(out, esc, "%I, \"%s\": \"%+t\"\n", indent, KEY_CODE, ptr->init);
 	}
 
 	if (ptr->call && ptr->prms) {
 		symn arg;
-		fputesc(out, NULL, "%I, \"%s\": [{\n", indent, KEY_ARGS);
+		fputFmt(out, NULL, "%I, \"%s\": [{\n", indent, KEY_ARGS);
 		for (arg = ptr->prms; arg; arg = arg->next) {
 			if (arg != ptr->prms) {
-				fputesc(out, NULL, FMT_NEXT, indent);
+				fputFmt(out, NULL, FMT_NEXT, indent);
 			}
-			//~ fputesc(out, NULL, FMT_COMMENT, arg, arg->type);
+			//~ fputFmt(out, NULL, FMT_COMMENT, arg, arg->type);
 			jsonDumpSym(out, esc, arg, NULL, indent + 1);
 		}
-		fputesc(out, NULL, "%I}]\n", indent);
+		fputFmt(out, NULL, "%I}]\n", indent);
 	}
 	if (ptr->cast != 0) {
-		fputesc(out, NULL, "%I, \"%s\": \"%K\"\n", indent, KEY_CAST, ptr->cast);
+		fputFmt(out, NULL, "%I, \"%s\": \"%K\"\n", indent, KEY_CAST, ptr->cast);
 	}
-	fputesc(out, esc, "%I, \"%s\": %u\n", indent, KEY_SIZE, ptr->size);
-	fputesc(out, esc, "%I, \"%s\": %u\n", indent, KEY_OFFS, ptr->offs);
-	fputesc(out, esc, "%I, \"%s\": %s\n", indent, KEY_CONST, ptr->cnst ? VAL_TRUE : VAL_FALSE);
-	fputesc(out, esc, "%I, \"%s\": %s\n", indent, KEY_STAT, ptr->stat ? VAL_TRUE : VAL_FALSE);
-	// no parallel symbols!!! fputesc(out, NULL, "%I, \"%s\": %s\n", indent, KEY_PARLEL, ptr->stat ? VAL_TRUE : VAL_FALSE);
+	fputFmt(out, esc, "%I, \"%s\": %u\n", indent, KEY_SIZE, ptr->size);
+	fputFmt(out, esc, "%I, \"%s\": %u\n", indent, KEY_OFFS, ptr->offs);
+	fputFmt(out, esc, "%I, \"%s\": %s\n", indent, KEY_CONST, ptr->cnst ? VAL_TRUE : VAL_FALSE);
+	fputFmt(out, esc, "%I, \"%s\": %s\n", indent, KEY_STAT, ptr->stat ? VAL_TRUE : VAL_FALSE);
+	// no parallel symbols!!! fputFmt(out, NULL, "%I, \"%s\": %s\n", indent, KEY_PARLEL, ptr->stat ? VAL_TRUE : VAL_FALSE);
 	if (kind != NULL) {
-		fputesc(out, esc, FMT_END, indent - 1);
+		fputFmt(out, esc, FMT_END, indent - 1);
 	}
 }
 static void jsonDumpAst(FILE *out, const char **esc, astn ast, const char *kind, int indent) {
@@ -919,23 +946,23 @@ static void jsonDumpAst(FILE *out, const char **esc, astn ast, const char *kind,
 		return;
 	}
 	if (kind != NULL) {
-		fputesc(out, esc, "%I, \"%s\": {\n", indent, kind);
+		fputFmt(out, esc, "%I, \"%s\": {\n", indent, kind);
 	}
 
-	fputesc(out, esc, "%I\"%s\": \"%t\"\n", indent + 1, KEY_PROTO, ast);
+	fputFmt(out, esc, "%I\"%s\": \"%t\"\n", indent + 1, KEY_PROTO, ast);
 
-	fputesc(out, esc, "%I, \"%s\": \"%K\"\n", indent + 1, KEY_KIND, ast->kind);
+	fputFmt(out, esc, "%I, \"%s\": \"%K\"\n", indent + 1, KEY_KIND, ast->kind);
 	if (ast->type != NULL) {
-		fputesc(out, esc, "%I, \"%s\": \"%T\"\n", indent + 1, KEY_TYPE, ast->type);
+		fputFmt(out, esc, "%I, \"%s\": \"%T\"\n", indent + 1, KEY_TYPE, ast->type);
 	}
 	if (ast->cst2 != TYPE_any) {
-		fputesc(out, esc, "%I, \"%s\": \"%K\"\n", indent + 1, KEY_CAST, ast->cst2);
+		fputFmt(out, esc, "%I, \"%s\": \"%K\"\n", indent + 1, KEY_CAST, ast->cst2);
 	}
 	if (ast->file != NULL) {
-		fputesc(out, esc, "%I, \"%s\": \"%s\"\n", indent + 1, KEY_FILE, ast->file);
+		fputFmt(out, esc, "%I, \"%s\": \"%s\"\n", indent + 1, KEY_FILE, ast->file);
 	}
 	if (ast->line != 0) {
-		fputesc(out, esc, "%I, \"%s\": %u\n", indent + 1, KEY_LINE, ast->line);
+		fputFmt(out, esc, "%I, \"%s\": %u\n", indent + 1, KEY_LINE, ast->line);
 	}
 	switch (ast->kind) {
 		default:
@@ -945,15 +972,15 @@ static void jsonDumpAst(FILE *out, const char **esc, astn ast, const char *kind,
 		//#{ STMT
 		case STMT_beg: {
 			astn list;
-			fputesc(out, esc, "%I, \"%s\": [{\n", indent + 1, KEY_STMT);
+			fputFmt(out, esc, "%I, \"%s\": [{\n", indent + 1, KEY_STMT);
 			for (list = ast->stmt.stmt; list; list = list->next) {
 				if (list != ast->stmt.stmt) {
-					fputesc(out, esc, "%I}, {\n", indent + 1, list);
+					fputFmt(out, esc, "%I}, {\n", indent + 1, list);
 				}
-				//~ fputesc(out, NULL, FMT_COMMENT, list);
+				//~ fputFmt(out, NULL, FMT_COMMENT, list);
 				jsonDumpAst(out, esc, list, NULL, indent + 1);
 			}
-			fputesc(out, esc, "%I}]\n", indent + 1);
+			fputFmt(out, esc, "%I}]\n", indent + 1);
 			break;
 		}
 
@@ -972,8 +999,8 @@ static void jsonDumpAst(FILE *out, const char **esc, astn ast, const char *kind,
 
 		case STMT_con:
 		case STMT_brk:
-			//fputesc(out, esc, "%I, \"%s\": %d\n", indent, KEY_OFFS, ast->go2.offs);
-			//fputesc(out, esc, "%I, \"%s\": %d\n", indent, KEY_ARGS, ast->go2.stks);
+			//fputFmt(out, esc, "%I, \"%s\": %d\n", indent, KEY_OFFS, ast->go2.offs);
+			//fputFmt(out, esc, "%I, \"%s\": %d\n", indent, KEY_ARGS, ast->go2.stks);
 			break;
 
 		case STMT_end:
@@ -985,21 +1012,21 @@ static void jsonDumpAst(FILE *out, const char **esc, astn ast, const char *kind,
 		//#{ OPER
 		case OPER_fnc: {	// '()'
 			astn args = ast->op.rhso;
-			fputesc(out, esc, "%I, \"%s\": [{\n", indent + 1, KEY_ARGS);
+			fputFmt(out, esc, "%I, \"%s\": [{\n", indent + 1, KEY_ARGS);
 			if (args != NULL) {
 				while (args && args->kind == OPER_com) {
 					if (args != ast->stmt.stmt) {
-						fputesc(out, esc, "%I}, {\n", indent + 1);
+						fputFmt(out, esc, "%I}, {\n", indent + 1);
 					}
 					jsonDumpAst(out, esc, args->op.rhso, NULL, indent + 1);
 					args = args->op.lhso;
 				}
 				if (args != ast->stmt.stmt) {
-					fputesc(out, esc, "%I}, {\n", indent + 1, args);
+					fputFmt(out, esc, "%I}, {\n", indent + 1, args);
 				}
 				jsonDumpAst(out, esc, args, NULL, indent + 1);
 			}
-			fputesc(out, esc, "%I}]\n", indent + 1);
+			fputFmt(out, esc, "%I}]\n", indent + 1);
 			break;
 		}
 
@@ -1046,7 +1073,7 @@ static void jsonDumpAst(FILE *out, const char **esc, astn ast, const char *kind,
 		//#}
 		//#{ TVAL
 		case EMIT_opc:
-			//~ fputesc(out, escape, " />\n", text);
+			//~ fputFmt(out, escape, " />\n", text);
 			//~ break;
 
 		case TYPE_int:
@@ -1055,14 +1082,14 @@ static void jsonDumpAst(FILE *out, const char **esc, astn ast, const char *kind,
 
 		case TYPE_ref:
 		case TYPE_def:	// TODO: see dumpxml
-			fputesc(out, esc, "%I, \"%s\": \"%t\"\n", indent + 1, KEY_VALUE, ast);
+			fputFmt(out, esc, "%I, \"%s\": \"%t\"\n", indent + 1, KEY_VALUE, ast);
 			break;
 
 		//#}
 	}
 
 	if (kind != NULL) {
-		fputesc(out, esc, "%I}\n", indent);
+		fputFmt(out, esc, "%I}\n", indent);
 	}
 }
 static void jsonDumpAsm(userContext ctx, size_t offs, void *ip) {
@@ -1075,10 +1102,10 @@ static void jsonDumpAsm(userContext ctx, size_t offs, void *ip) {
 
 	FILE *out = ctx->out;
 	int indent = ctx->indent + 1;
-	fputesc(out, NULL, FMT_START, indent, ip);
-	fputesc(out, NULL, "%I, \"%s\": %u\n", indent + 1, KEY_OFFS, offs);
-	fputesc(out, NULL, "%I, \"%s\": \"%.A\"\n", indent + 1, KEY_INSN, ip);
-	fputesc(out, NULL, FMT_END, indent);
+	fputFmt(out, NULL, FMT_START, indent, ip);
+	fputFmt(out, NULL, "%I, \"%s\": %u\n", indent + 1, KEY_OFFS, offs);
+	fputFmt(out, NULL, "%I, \"%s\": \"%.A\"\n", indent + 1, KEY_INSN, ip);
+	fputFmt(out, NULL, FMT_END, indent);
 }
 static void jsonDumpApi(userContext ctx, symn sym) {
 	FILE *fout = ctx->out;
@@ -1098,9 +1125,13 @@ static void jsonDumpApi(userContext ctx, symn sym) {
 		esc = esc_json;
 	}
 
+	if (!ctx->dmpApi && !ctx->dmpAsm && ctx->dumpAst < 0) {
+		return;
+	}
+
 	if (sym == ctx->rt->vars) {
 		// first symbol
-		fputesc(fout, esc, "\n%I\"%s\": [{\n", indent, JSON_KEY_API);
+		fputFmt(fout, esc, "\n%I\"%s\": [{\n", indent, JSON_KEY_API);
 	}
 	else if (sym != NULL) {
 		// not the first symbol
@@ -1122,7 +1153,7 @@ static void jsonDumpApi(userContext ctx, symn sym) {
 	// export assembly
 	if (ctx->dmpAsm && hasAssembly(sym)) {
 		fputfmt(fout, "%I, \"%s\": [null\n", indent + 1, "asm");
-		iterateAsm(ctx->rt, sym->offs, sym->offs + sym->size, ctx, jsonDumpAsm);
+		dumpAsm(ctx->rt, sym->offs, sym->offs + sym->size, ctx, jsonDumpAsm);
 		fputfmt(fout, "%I]\n", indent + 1);
 	}
 
@@ -1166,11 +1197,11 @@ static int jsonProfile(dbgContext ctx, size_t ss, void* caller, void* callee, cl
 				int i;
 				int covFunc = 0, nFunc = ctx->functions.cnt;
 				int covStmt = 0, nStmt = ctx->statements.cnt;
-				dbgInfo dbg = (dbgInfo) ctx->functions.ptr;
+				dbgn dbg = (dbgn) ctx->functions.ptr;
 
 				fputfmt(out, "]\n");
 
-				fputesc(out, esc, "%I, \"%s\": [{\n", indent + 1, "functions");
+				fputFmt(out, esc, "%I, \"%s\": [{\n", indent + 1, "functions");
 				for (i = 0; i < nFunc; ++i, dbg++) {
 					symn sym = dbg->decl;
 					if (dbg->hits == 0) {
@@ -1179,26 +1210,26 @@ static int jsonProfile(dbgContext ctx, size_t ss, void* caller, void* callee, cl
 					}
 					covFunc += 1;
 					if (sym == NULL) {
-						sym = mapsym(ctx->rt, dbg->start, 1);
+						sym = rtFindSym(ctx->rt, dbg->start, 1);
 					}
 					if (covFunc > 1) {
-						fputesc(out, esc, "%I}, {\n", indent + 1);
+						fputFmt(out, esc, "%I}, {\n", indent + 1);
 					}
 					jsonDumpSym(out, esc, sym, NULL, indent + 2);
-					fputesc(out, esc, "%I, \"%s\": %d\n", indent + 2, "time", dbg->self);
-					fputesc(out, esc, "%I, \"%s\": %d\n", indent + 2, "total", dbg->total);
-					fputesc(out, esc, "%I, \"%s\": %d\n", indent + 2, "hits", dbg->hits);
-					fputesc(out, esc, "%I, \"%s\": %d\n", indent + 2, "fails", dbg->exec - dbg->hits);
+					fputFmt(out, esc, "%I, \"%s\": %d\n", indent + 2, "time", dbg->self);
+					fputFmt(out, esc, "%I, \"%s\": %d\n", indent + 2, "total", dbg->total);
+					fputFmt(out, esc, "%I, \"%s\": %d\n", indent + 2, "hits", dbg->hits);
+					fputFmt(out, esc, "%I, \"%s\": %d\n", indent + 2, "fails", dbg->exec - dbg->hits);
 					if (dbg->file != NULL && dbg->line > 0) {
-						fputesc(out, esc, "%I, \"%s\": \"%s\"\n", indent + 2, "file", dbg->file);
-						fputesc(out, esc, "%I, \"%s\": %d\n", indent + 2, "line", dbg->line);
+						fputFmt(out, esc, "%I, \"%s\": \"%s\"\n", indent + 2, "file", dbg->file);
+						fputFmt(out, esc, "%I, \"%s\": %d\n", indent + 2, "line", dbg->line);
 					}
-					//~ fputesc(out, esc, "\n");
+					//~ fputFmt(out, esc, "\n");
 				}
-				fputesc(out, esc, "%I}]\n", indent + 1);
+				fputFmt(out, esc, "%I}]\n", indent + 1);
 
-				fputesc(out, esc, "%I, \"%s\": [{\n", indent + 1, "statements");
-				dbg = (dbgInfo) ctx->statements.ptr;
+				fputFmt(out, esc, "%I, \"%s\": [{\n", indent + 1, "statements");
+				dbg = (dbgn) ctx->statements.ptr;
 				for (i = 0; i < nStmt; ++i, dbg++) {
 					size_t symOffs = 0;
 					symn sym = dbg->decl;
@@ -1207,41 +1238,42 @@ static int jsonProfile(dbgContext ctx, size_t ss, void* caller, void* callee, cl
 					}
 					covStmt += 1;
 					if (sym == NULL) {
-						sym = mapsym(ctx->rt, dbg->start, 1);
+						sym = rtFindSym(ctx->rt, dbg->start, 1);
 					}
 					if (sym != NULL) {
 						symOffs = dbg->start - sym->offs;
 					}
 					if (covStmt > 1) {
-						fputesc(out, esc, "%I}, {\n", indent + 1);
+						fputFmt(out, esc, "%I}, {\n", indent + 1);
 					}
-					fputesc(out, esc, "%I\"%s\": \"%?T+%d\"\n", indent + 2, "", sym, symOffs);
-					fputesc(out, esc, "%I, \"%s\": %d\n", indent + 2, "offs", dbg->start);
-					fputesc(out, esc, "%I, \"%s\": %d\n", indent + 2, "time", dbg->self);
-					fputesc(out, esc, "%I, \"%s\": %d\n", indent + 2, "total", dbg->total);
-					fputesc(out, esc, "%I, \"%s\": %d\n", indent + 2, "hits", dbg->hits);
-					fputesc(out, esc, "%I, \"%s\": %d\n", indent + 2, "fails", dbg->exec - dbg->hits);
+					fputFmt(out, esc, "%I\"%s\": \"%?T+%d\"\n", indent + 2, "", sym, symOffs);
+					fputFmt(out, esc, "%I, \"%s\": %d\n", indent + 2, "offs", dbg->start);
+					fputFmt(out, esc, "%I, \"%s\": %d\n", indent + 2, "time", dbg->self);
+					fputFmt(out, esc, "%I, \"%s\": %d\n", indent + 2, "total", dbg->total);
+					fputFmt(out, esc, "%I, \"%s\": %d\n", indent + 2, "hits", dbg->hits);
+					fputFmt(out, esc, "%I, \"%s\": %d\n", indent + 2, "fails", dbg->exec - dbg->hits);
 					if (dbg->file != NULL && dbg->line > 0) {
-						fputesc(out, esc, "%I, \"%s\": \"%s\"\n", indent + 2, "file", dbg->file);
-						fputesc(out, esc, "%I, \"%s\": %d\n", indent + 2, "line", dbg->line);
+						fputFmt(out, esc, "%I, \"%s\": \"%s\"\n", indent + 2, "file", dbg->file);
+						fputFmt(out, esc, "%I, \"%s\": %d\n", indent + 2, "line", dbg->line);
 					}
 				}
-				fputesc(out, esc, "%I}]\n", indent + 1);
+				fputFmt(out, esc, "%I}]\n", indent + 1);
 
-				fputesc(out, esc, "%I, \"%s\": %d\n", indent + 1, "ticksPerSec", CLOCKS_PER_SEC);
-				fputesc(out, esc, "%I, \"%s\": %d\n", indent + 1, "functionCount", ctx->functions.cnt);
-				fputesc(out, esc, "%I, \"%s\": %d\n", indent + 1, "statementCount", ctx->statements.cnt);
-				fputfmt(out, "%I}\n", indent);
+				fputFmt(out, esc, "%I, \"%s\": %d\n", indent + 1, "ticksPerSec", CLOCKS_PER_SEC);
+				fputFmt(out, esc, "%I, \"%s\": %d\n", indent + 1, "functionCount", ctx->functions.cnt);
+				fputFmt(out, esc, "%I, \"%s\": %d\n", indent + 1, "statementCount", ctx->statements.cnt);
+				fputfmt(out, "%I}", indent);
 			}
 		}
 		else {
 			size_t offs = vmOffset(ctx->rt, callee);
 			if (ss == 0) {
-				fputesc(out, esc, "\n%I%s\"%s\": {\n", indent, cc->dmpApi ? ", " : "", JSON_KEY_RUN);
-				fputesc(out, esc, "%I\"\": \"%s\"\n", indent + 1, "callTree array is constructed from a tick(timestamp) followed by a function offset, if the offset is negative it represents a return from a function instead of a call.");
-				fputesc(out, esc, "%I, \"callTree\": [", indent + 1);
+				fputFmt(out, esc, "\n%I%s\"%s\": {\n", indent, cc->dmpApi ? ", " : "", JSON_KEY_RUN);
+				fputFmt(out, esc, "%I\"\": \"%s\"\n", indent + 1,
+						"callTree array is constructed from a tick(timestamp) followed by a function offset, if the offset is negative it represents a return from a function instead of a call.");
+				fputFmt(out, esc, "%I, \"callTree\": [", indent + 1);
 			}
-			fputesc(out, esc, "\n% I% 6d,%d,", ss, ticks, offs);
+			fputFmt(out, esc, "\n% I% 6d,%d,", ss, ticks, offs);
 		}
 	}
 	(void)caller;
@@ -1725,14 +1757,14 @@ static int program(int argc, char* argv[]) {
 	// intstall standard library.
 	if (settings.stdLibs) {
 		// intstall standard library.
-		if (!ccAddUnit(rt, install_stdc, wl, stdLib)) {
+		if (!ccAddUnit(rt, ccUnitStdc, wl, stdLib)) {
 			error(rt, NULL, 0, "error registering standard library");
 			logfile(rt, NULL, 0);
 			return -6;
 		}
 
 		// intstall file operations.
-		if (settings.stdLibs && !ccAddUnit(rt, install_file, wl, NULL)) {
+		if (settings.stdLibs && !ccAddUnit(rt, ccUnitFile, wl, NULL)) {
 			error(rt, NULL, 0, "error registering file library");
 			logfile(rt, NULL, 0);
 			return -6;
@@ -1751,7 +1783,7 @@ static int program(int argc, char* argv[]) {
 						error(rt, NULL, 0, "error(%d) importing library `%s`", resultCode, ccFile);
 					}
 				}
-				else if (!ccAddCode(rt, warn == -1 ? wl : warn, ccFile, 1, NULL)) {
+				else if (!ccDefCode(rt, warn == -1 ? wl : warn, ccFile, 1, NULL)) {
 					error(rt, NULL, 0, "error compiling source `%s`", arg);
 				}
 				ccFile = NULL;
@@ -1841,7 +1873,7 @@ static int program(int argc, char* argv[]) {
 			char *file = bp_file[i];
 			int line = bp_line[i];
 			int type = bp_type[i];
-			dbgInfo dbg = getDbgStatement(rt, file, line);
+			dbgn dbg = getDbgStatement(rt, file, line);
 			if (dbg != NULL) {
 				dbg->bp = type;
 				//info(rt, NULL, 0, "%s:%u: breakpoint", file, line);
@@ -1861,8 +1893,8 @@ static int program(int argc, char* argv[]) {
 	if (dumpFun == jsonDumpApi) {
 		fputfmt(extra.out, "{");
 	}
-	if (dumpFun != NULL && (extra.dmpApi != 0 || extra.dmpAsm != 0 || extra.dumpAst >= 0)) {
-		iterateApi(rt, &extra, dumpFun);
+	if (dumpFun != NULL) {
+		dumpApi(rt, &extra, dumpFun);
 	}
 
 	// run code if there are no compilation errors.
@@ -1891,15 +1923,15 @@ static int program(int argc, char* argv[]) {
 	}
 
 	if (dumpFun == jsonDumpApi) {
-		fputfmt(extra.out, "}\n");
+		fputfmt(extra.out, "\n}\n");
 	}
 	if (dumpFile != NULL) {
 		fclose(dumpFile);
 	}
 
-	// close log file
-	logfile(rt, NULL, 0);
+	// release resources
 	closeLibs();
+	rtClose(rt);
 
 	return errors;
 }

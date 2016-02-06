@@ -16,7 +16,10 @@ string fileName = "media/images/forest.jpg";
 //~ string fileName = "media/images/Earth.jpg";
 //~ string fileName = "media/images/nol.bmp";
 
-gxSurf image = gxSurf(fileName);
+define resize(gxSurf src, int width, int height) = zoomSurf(gxSurf(width, height), null, src, null, 1);
+
+gxSurf image = resize(gxSurf(fileName), 320, 240);
+
 define radius = 3;
 define intensityLevels = 24;
 

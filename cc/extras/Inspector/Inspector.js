@@ -123,53 +123,34 @@ function Instrument() {
 		return samples;
 	}
 
-	function symToString(sym, qual, type) {
-		var result = '';
-		if (sym.declaredIn && qual === true) {
-			result += sym.declaredIn + '.';
-		}
-		result += sym.name;
-		if (sym.args !== undefined) {
-			result += '(';
-			if (!(sym.args.length === 1 && sym.args[0].size == 0)) {
-				for (var i = 0; i < sym.args.length; i += 1) {
-					if (i > 0) {
-						result += ', ';
-					}
-					result += symToString(sym.args[i], false, true);
-				}
-			}
-			result += ')';
-		}
-		if (type === true) {
-			result += ": " + sym.type;
-		}
-		return result;
-	}
-
-	function getSciteApi() {
-		var result = '';
-
-		if (data == null) {
-			return 'No data available!';
-		}
-
-		var api = data.symbols || [];
-		for (var i = 0; i < api.length; i += 1) {
-			var sym = api[i];
-			/*if (sym.kind === 'opcode') {
-				continue;
-			}*/
-			result += symToString(sym, true, sym.args !== undefined);
-			result += '\n';
-		}
-		return result;
-	}
-
 	function getFiltered(checkSymbol) {
 		var result = '';
 		if (data == null) {
 			return 'No data available!';
+		}
+
+		function symToString(sym, qual, type) {
+			var result = '';
+			if (sym.declaredIn && qual === true) {
+				result += sym.declaredIn + '.';
+			}
+			result += sym.name;
+			if (sym.args !== undefined) {
+				result += '(';
+				if (!(sym.args.length === 1 && sym.args[0].size == 0)) {
+					for (var i = 0; i < sym.args.length; i += 1) {
+						if (i > 0) {
+							result += ', ';
+						}
+						result += symToString(sym.args[i], false, true);
+					}
+				}
+				result += ')';
+			}
+			if (type === true) {
+				result += ": " + sym.type;
+			}
+			return result;
 		}
 
 		var api = data.symbols || [];
@@ -185,6 +166,16 @@ function Instrument() {
 	}
 
     function loadData(dataIn) {
+    	if (dataIn.profile == null) {
+    		dataIn.profile = {
+    			callTree: [],
+    			functions: [],
+				statements: [], 
+				ticksPerSec: -1, 
+				functionCount: 0, 
+				statementCount: 0
+    		};
+    	}
         var i, j, calls = [{
             enter: +Infinity,
             leave: -Infinity,
@@ -226,33 +217,6 @@ function Instrument() {
 
 	return {
 		api: {
-			getSciteApi: getSciteApi,
-			/*getTypenames: function() {
-				return getFiltered(function(sym) {
-					return sym.kind === '.rec';
-				});
-			},
-			getVariables: function() {
-				return getFiltered(function(sym) {
-					if (sym.args !== undefined) {
-						return false;
-					}
-					return sym.kind === '.ref';
-				});
-			},
-			getFunctions: function() {
-				return getFiltered(function(sym) {
-					if (sym.args === undefined) {
-						return false;
-					}
-					return sym.kind === '.ref';
-				});
-			},
-			getOpcodes: function() {
-				return getFiltered(function(sym) {
-					return sym.kind === 'emit';
-				});
-			},*/
 			getAll: function () {
 				return getFiltered(function(sym) {
 					return true;
@@ -275,7 +239,7 @@ function Instrument() {
 					if (opcodes && sym.kind === 'emit') {
 						return true;
 					}
-					//console.log("symbol was filtered: " + sym.proto);
+					console.log("symbol was filtered: " + sym.proto);
 					return false;
 				});
 			}

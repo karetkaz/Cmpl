@@ -36,7 +36,8 @@ OBJS=\
 	$(OBJDIR)/code.o\
 	$(OBJDIR)/cgen.o\
 	$(OBJDIR)/core.o\
-	$(OBJDIR)/main.o
+	$(OBJDIR)/main.o\
+	$(OBJDIR)/plugin.o
 
 #~ SOURCES=a.c b.c
 #~ OBJECTS=$(SOURCES:.cpp=.o)

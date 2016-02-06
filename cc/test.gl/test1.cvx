@@ -16,7 +16,7 @@ int maxx = 0;
 int maxy = 0;
 int _pos = 0;
 
-inline DEBUG = false;
+define DEBUG = false;
 
 void mouse(int btn, int x, int y) {
 	if (_pos > 0) {

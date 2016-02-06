@@ -1,5 +1,5 @@
 // test math functions
-inline epsilon = 1e-14;
+define epsilon = 1e-14;
 
 const float64 vf[] = [
 	4.9790119248836735e+00,
@@ -61,8 +61,8 @@ struct Info {
 	double returned;//%%.50f
 }
 
-inline assert(bool condition, const Info &dbginf) = raise(condition ? 0 : raise.debug, "test failed", variant(&dbginf), raise.noTrace);
-inline assert(string func, double arg, double ret, double exp, int i) = assert(Math.abs(exp - ret) < epsilon, Info(i, func, arg, ret, exp));
+define assert(bool condition, const Info &dbginf) = raise(condition ? 0 : raise.debug, "test failed", variant(&dbginf), raise.noTrace);
+define assert(string func, double arg, double ret, double exp, int i) = assert(Math.abs(exp - ret) < epsilon, Info(i, func, arg, ret, exp));
 
 for (int i = 0; i < vf.length; i += 1) {
 	float64 x = vf[i];

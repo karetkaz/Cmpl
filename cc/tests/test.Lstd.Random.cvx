@@ -32,21 +32,21 @@ int64 nextInt64(Random &random) {
 
 float32 nextFloat32(Random &random) {
 	uint32 randnum = nextInt32(random);
-	result = emit(float32, i32((randnum >> 9) | 0x3f800000));
+	result = emit(float32, int32((randnum >> 9) | 0x3f800000));
 	return result - 1;
 }
 
 float64 nextFloat64(Random &random) {
 	uint32 randnum1 = nextInt32(random);
 	uint32 randnum2 = nextInt32(random);
-	result = emit(float64, i32(randnum1), i32((randnum2 >> 12) | 0x3ff00000));
+	result = emit(float64, int32(randnum1), int32((randnum2 >> 12) | 0x3ff00000));
 	return result - 1;
 }
 
 float64 drand() {
 	uint32 randnum1 = System.rand() * System.rand();
 	uint32 randnum2 = System.rand() * System.rand();
-	float64 tmp = emit(float64, i32(randnum1), i32((randnum2 >> 12) | 0x3ff00000));
+	float64 tmp = emit(float64, int32(randnum1), int32((randnum2 >> 12) | 0x3ff00000));
 	return tmp - 1;
 }
 
@@ -76,7 +76,7 @@ for(int i = 0; i < 250000; i += 1) {
 //~ */
 
 int count_inside = 0;
-inline iterations = 100;
+define iterations = 100;
 Random rand = Random(System.time());
 for (int i = 0; i < iterations; i += 1) {
 	float64 x = nextFloat64(&rand) * 2 - 1;

@@ -4,13 +4,12 @@
 #include <stdlib.h>
 #include "g2_surf.h"
 #include "g3_draw.h"
-#include "internal.h"
+#include "vmCore.h"
+#include "ccCore.h"
 
 #ifdef __linux__
 #define stricmp(__STR1, __STR2) strcasecmp(__STR1, __STR2)
 #endif
-
-extern double epsilon;
 
 static inline int HIBIT(unsigned int x) {
 	int res = 0;
@@ -251,7 +250,7 @@ static int prgDefCB(float prec) {return 0;}
 static float precent(int i, int n) {return 100. * i / n;}
 //~ static float roundto(float x, int n) {double muldiv = pow(10, n); return round(x * muldiv) / muldiv;}
 
-/*struct growBuffer {
+struct growBuffer {
 	char *ptr;
 	int max;
 	//~ int cnt;
@@ -277,7 +276,7 @@ static void initBuff(struct growBuffer* buff, int initsize, int elemsize) {
 	buff->max = initsize;
 	buff->esz = elemsize;
 	growBuff(buff, initsize);
-}*/
+}//*/
 
 //~ static float freadf32(FILE *fin) {float result;fread(&result, sizeof(result), 1, fin);return result;}
 static char* freadstr(char buff[], int maxlen, FILE *fin) {
@@ -304,8 +303,8 @@ static int read_obj(mesh msh, const char* file) {
 	char buff[65536];
 	int posi = 0, texi = 0;
 	int nrmi = 0, line = 0;
-	struct arrBuffer nrmb;
-	struct arrBuffer texb;
+	struct growBuffer nrmb;
+	struct growBuffer texb;
 
 	if (!(fin = fopen(file, "rb")))
 		return -1;
@@ -361,7 +360,7 @@ static int read_obj(mesh msh, const char* file) {
 			continue;
 		}
 		if ((ptr = readKVP(buff, "vt", NULL, ws))) {	// Texture vertices
-			float *vtx = setBuff(&texb, texi, NULL);
+			float *vtx = growBuff(&texb, texi);
 			if (!vtx) {gx_debug("memory"); break;}
 
 			sscanf(ptr, "%f%f", vtx + 0, vtx + 1);
@@ -378,7 +377,7 @@ static int read_obj(mesh msh, const char* file) {
 			continue;
 		}
 		if ((ptr = readKVP(buff, "vn", NULL, ws))) {	// Vertex normals
-			float *vtx = setBuff(&nrmb, nrmi, NULL);
+			float *vtx = growBuff(&nrmb, nrmi);
 			if (!vtx) {gx_debug("memory"); break;}
 
 			sscanf(ptr, "%f%f%f", vtx + 0, vtx + 1, vtx + 2);
@@ -433,10 +432,10 @@ static int read_obj(mesh msh, const char* file) {
 				if (vt[i] > texi || vt[i] < 0) vt[i] = 0;
 
 				if (texi) {
-					setvtxFV(msh, v[i], NULL, NULL, getBuff(&texb, vt[i]));
+					setvtxFV(msh, v[i], NULL, NULL, growBuff(&texb, vt[i]));
 				}
 				if (nrmi) {
-					setvtxFV(msh, v[i], NULL, getBuff(&nrmb, vn[i]), NULL);
+					setvtxFV(msh, v[i], NULL, growBuff(&nrmb, vn[i]), NULL);
 				}
 			}
 
@@ -1099,292 +1098,3 @@ void optiMesh(mesh msh, scalar tol, int prgCB(float prec)) {
 
 	//~ for (j = 0; j < n; j += 1) vecnrm(&msh->vtxptr[j].nrm, &msh->vtxptr[j].nrm);
 }// */
-
-static inline double lerp(double a, double b, double t) {return a + t * (b - a);}
-
-inline double  dv3dot(double lhs[3], double rhs[3]) {
-	return lhs[0] * rhs[0] + lhs[1] * rhs[1] + lhs[2] * rhs[2];
-}
-inline double* dv3cpy(double dst[3], double src[3]) {
-	dst[0] = src[0];
-	dst[1] = src[1];
-	dst[2] = src[2];
-	return dst;
-}
-inline double* dv3sca(double dst[3], double src[3], double rhs) {
-	dst[0] = src[0] * rhs;
-	dst[1] = src[1] * rhs;
-	dst[2] = src[2] * rhs;
-	return dst;
-}
-inline double* dv3sub(double dst[3], double lhs[3], double rhs[3]) {
-	dst[0] = lhs[0] - rhs[0];
-	dst[1] = lhs[1] - rhs[1];
-	dst[2] = lhs[2] - rhs[2];
-	return dst;
-}
-inline double* dv3crs(double dst[3], double lhs[3], double rhs[3]) {
-	dst[0] = lhs[1] * rhs[2] - lhs[2] * rhs[1];
-	dst[1] = lhs[2] * rhs[0] - lhs[0] * rhs[2];
-	dst[2] = lhs[0] * rhs[1] - lhs[1] * rhs[0];
-	return dst;
-}
-inline double* dv3nrm(double dst[3], double src[3]) {
-	double len = dv3dot(src, src);
-	if (len > 0) {
-		//~ len = 1. / sqrt(len);
-		//~ dst[0] = src[0] * len;
-		//~ dst[1] = src[1] * len;
-		//~ dst[2] = src[2] * len;
-		len = sqrt(len);
-		dst[0] = src[0] / len;
-		dst[1] = src[1] / len;
-		dst[2] = src[2] / len;
-	}
-	return dst;
-}
-
-#if 1 // eval mesh with scripting support
-typedef struct userData {
-	double s, smin, smax;
-	double t, tmin, tmax;
-	int isPos, isNrm;
-	double pos[3], nrm[3];
-} *userData;
-
-static int getS(libcContext rt) {
-	userData d = rt->extra;
-	retf64(rt, lerp(d->smin, d->smax, d->s));
-	return 0;
-}
-static int getT(libcContext rt) {
-	userData d = rt->extra;
-	retf64(rt, lerp(d->tmin, d->tmax, d->t));
-	return 0;
-}
-static int setPos(libcContext rt) {
-	userData d = rt->extra;
-	d->pos[0] = argf64(rt, 8 * 0);
-	d->pos[1] = argf64(rt, 8 * 1);
-	d->pos[2] = argf64(rt, 8 * 2);
-	d->isPos = 1;
-	return 0;
-}
-static int setNrm(libcContext rt) {
-	userData d = rt->extra;
-	d->nrm[0] = argf64(rt, 8 * 0);
-	d->nrm[1] = argf64(rt, 8 * 1);
-	d->nrm[2] = argf64(rt, 8 * 2);
-	d->isNrm = 1;
-	return 0;
-}
-
-static int f64abs(libcContext rt) {
-	float64_t x = argf64(rt, 0);
-	retf64(rt, fabs(x));
-	return 0;
-}
-static int f64sin(libcContext rt) {
-	float64_t x = argf64(rt, 0);
-	retf64(rt, sin(x));
-	return 0;
-}
-static int f64cos(libcContext rt) {
-	float64_t x = argf64(rt, 0);
-	retf64(rt, cos(x));
-	return 0;
-}
-static int f64tan(libcContext rt) {
-	float64_t x = argf64(rt, 0);
-	retf64(rt, tan(x));
-	return 0;
-}
-static int f64log(libcContext rt) {
-	float64_t x = argf64(rt, 0);
-	retf64(rt, log(x));
-	return 0;
-}
-static int f64exp(libcContext rt) {
-	float64_t x = argf64(rt, 0);
-	retf64(rt, exp(x));
-	return 0;
-}
-static int f64pow(libcContext rt) {
-	float64_t x = argf64(rt, 0);
-	float64_t y = argf64(rt, 8);
-	retf64(rt, pow(x, y));
-	return 0;
-}
-static int f64sqrt(libcContext rt) {
-	float64_t x = argf64(rt, 0);
-	retf64(rt, sqrt(x));
-	return 0;
-}
-static int f64atan2(libcContext rt) {
-	float64_t x = argf64(rt, 0);
-	float64_t y = argf64(rt, 8);
-	retf64(rt, atan2(x, y));
-	return 0;
-}
-
-int evalMesh(mesh msh, int sdiv, int tdiv, char *src, char *file, int line) {
-	static char mem[32 << 10];		// 32K memory
-	rtContext rt = rtInit(mem, sizeof(mem));
-	struct userData ud;
-	const int warnlevel = 2;
-	const int stacksize = sizeof(mem) / 2;
-
-	char *logf = NULL;//"dump.evalMesh.txt";
-
-	int i, j, err = 0;
-
-	double s, t, ds, dt;	// 0 .. 1
-
-	// pointers, variants and emit are not needed.
-	if (!ccInit(rt, creg_base, NULL)) {
-		gx_debug("Internal error\n");
-		return -1;
-	}
-
-	err = err || !ccAddCall(rt, getS, NULL,     "float64 gets();");
-	err = err || !ccAddCall(rt, getT, NULL,     "float64 gett();");
-	err = err || !ccAddCall(rt, setPos, NULL,   "void setPos(float64 x, float64 y, float64 z);");
-	err = err || !ccAddCall(rt, setNrm, NULL,   "void setNrm(float64 x, float64 y, float64 z);");
-	err = err || !ccAddCall(rt, f64abs, NULL,   "float64 abs(float64 x);");
-	err = err || !ccAddCall(rt, f64sin, NULL,   "float64 sin(float64 x);");
-	err = err || !ccAddCall(rt, f64cos, NULL,   "float64 cos(float64 x);");
-	err = err || !ccAddCall(rt, f64tan, NULL,   "float64 tan(float64 x);");
-	err = err || !ccAddCall(rt, f64log, NULL,   "float64 log(float64 x);");
-	err = err || !ccAddCall(rt, f64exp, NULL,   "float64 exp(float64 x);");
-	err = err || !ccAddCall(rt, f64sqrt, NULL,  "float64 sqrt(float64 x);");
-	err = err || !ccAddCall(rt, f64atan2, NULL, "float64 atan(float64 x, float64 y);");
-	err = err || !ccAddCall(rt, f64pow, NULL,   "float64 pow(float64 x, float64 y);");
-	err = err || !ccDefFlt(rt, "pi", 3.14159265358979323846264338327950288419716939937510582097494459);
-	err = err || !ccDefFlt(rt, "e",  2.71828182845904523536028747135266249775724709369995957496696763);
-
-	err = err || !ccAddCode(rt, 0, __FILE__, __LINE__ + 1,
-		"const double s = gets();\n"
-		"const double t = gett();\n"
-		"float64 x = s;\n"
-		"float64 y = t;\n"
-		"float64 z = float64(0);\n"
-	);
-	err = err || !ccAddCode(rt, warnlevel, file, line, src);
-	err = err || !ccAddCode(rt, warnlevel, __FILE__, __LINE__, "setPos(x, y, z);\n");
-	// */
-
-	// optimize on max level, and generate global variables on stack
-	if (err || !gencode(rt, 0)) {
-		gx_debug("error compiling(%d), see `%s`", err, logf);
-		logfile(rt, NULL, 0);
-		return -3;
-	}
-
-	/* dump
-	fputfmt(stdout, "init(ro: %d"
-		", ss: %d, sm: %d, pc: %d, px: %d"
-		", size.meta: %d, size.code: %d, size.data: %d"
-		//~ ", pos: %d"
-	");\n", rt->vm.ro, rt->vm.ss, rt->vm.sm, rt->vm.pc, rt->vm.px, rt->vm.size.meta, rt->vm.size.code, rt->vm.size.data, rt->vm.pos);
-
-	logfile(rt, "dump.bin");
-	dump(rt, dump_sym | 0x01, NULL, "\ntags:\n");
-	dump(rt, dump_ast | 0x00, NULL, "\ncode:\n");
-	dump(rt, dump_asm | 0x19, NULL, "\ndasm:\n");
-	dump(rt, dump_bin | 0x10, NULL, "\ndump:\n");
-	//~ */
-
-	// close log
-	logfile(rt, NULL, 0);
-
-	#define findint(__ENV, __NAME, _OUT_VAL) ccSymValInt(ccFindSym(__ENV, NULL, __NAME), _OUT_VAL)
-	#define findflt(__ENV, __NAME, _OUT_VAL) ccSymValFlt(ccFindSym(__ENV, NULL, __NAME), _OUT_VAL)
-
-	if (findint(rt->cc, "division", &tdiv)) {
-		sdiv = tdiv;
-	}
-
-	ud.smin = ud.tmin = 0;
-	ud.smax = ud.tmax = 1;
-
-	findflt(rt->cc, "smin", &ud.smin);
-	findflt(rt->cc, "smax", &ud.smax);
-	findint(rt->cc, "sdiv", &sdiv);
-
-	findflt(rt->cc, "tmin", &ud.tmin);
-	findflt(rt->cc, "tmax", &ud.tmax);
-	findint(rt->cc, "tdiv", &tdiv);
-
-	//~ cs = lookup_nz(env->cc, "closedS");
-	//~ ct = lookup_nz(env->cc, "closedT");
-
-	//~ gx_debug("s(min:%lf, max:%lf, div:%d%s)", ud.smin, ud.smax, sdiv, /* cs ? ", closed" : */ "");
-	//~ gx_debug("t(min:%lf, max:%lf, div:%d%s)", ud.tmin, ud.tmax, tdiv, /* ct ? ", closed" : */ "");
-	//~ vmInfo(env->vm);
-
-	ds = 1. / (sdiv - 1);
-	dt = 1. / (tdiv - 1);
-	msh->hasTex = msh->hasNrm = 1;
-	msh->tricnt = msh->vtxcnt = 0;
-
-	for (t = 0, j = 0; j < tdiv; t += dt, ++j) {
-		for (s = 0, i = 0; i < sdiv; s += ds, ++i) {
-			double pos[3], nrm[3], tex[2];
-			double ds[3], dt[3];
-			tex[0] = t;
-			tex[1] = s;
-
-			ud.s = s;
-			ud.t = t;
-			ud.isNrm = 0;
-			if (execute(rt, stacksize, &ud) != 0) {
-				gx_debug("error");
-				return -4;
-			}
-			dv3cpy(pos, ud.pos);
-
-			if (ud.isNrm) {
-				dv3nrm(nrm, ud.nrm);
-			}
-			else {
-				ud.s = s + epsilon;
-				ud.t = t;
-				if (execute(rt, stacksize, &ud) != 0) {
-					gx_debug("error");
-					return -5;
-				}
-				dv3cpy(ds, ud.pos);
-
-				ud.s = s;
-				ud.t = t + epsilon;
-				if (execute(rt, stacksize, &ud) != 0) {
-					gx_debug("error");
-					return -6;
-				}
-				dv3cpy(dt, ud.pos);
-
-				ds[0] = (pos[0] - ds[0]) / epsilon;
-				ds[1] = (pos[1] - ds[1]) / epsilon;
-				ds[2] = (pos[2] - ds[2]) / epsilon;
-				dt[0] = (pos[0] - dt[0]) / epsilon;
-				dt[1] = (pos[1] - dt[1]) / epsilon;
-				dt[2] = (pos[2] - dt[2]) / epsilon;
-				dv3nrm(nrm, dv3crs(nrm, ds, dt));
-			}
-
-			addvtxDV(msh, pos, nrm, tex);
-		}
-	}
-
-	for (j = 0; j < tdiv - 1; ++j) {
-		int l1 = j * sdiv;
-		int l2 = l1 + sdiv;
-		for (i = 0; i < sdiv - 1; ++i) {
-			int v1 = l1 + i, v2 = v1 + 1;
-			int v4 = l2 + i, v3 = v4 + 1;
-			addquad(msh, v1, v2, v3, v4);
-		}
-	}
-	return 0;
-}
-#endif

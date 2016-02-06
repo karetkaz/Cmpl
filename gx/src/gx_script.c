@@ -12,6 +12,8 @@
 #include "internal.h"
 #include <assert.h>
 
+extern double epsilon;
+
 //#{ old style arguments
 static inline void* poparg(libcContext rt, void *result, int size) {
 	// if result is not null copy
@@ -21,11 +23,11 @@ static inline void* poparg(libcContext rt, void *result, int size) {
 	else {
 		result = rt->argv;
 	}
-	rt->argv += padded(size, 4);
+	*(char**)&rt->argv += padded(size, 4);
 	return result;
 }
 
-#define poparg(__ARGV, __TYPE) (((__TYPE*)((__ARGV)->argv += ((sizeof(__TYPE) + 3) & ~3)))[-1])
+#define poparg(__ARGV, __TYPE) (((__TYPE*)(*(char**)&((__ARGV)->argv) += ((sizeof(__TYPE) + 3) & ~3)))[-1])
 static inline void* pophnd(libcContext rt) { return poparg(rt, void*); }
 static inline int32_t popi32(libcContext rt) { return poparg(rt, int32_t); }
 static inline int64_t popi64(libcContext rt) { return poparg(rt, int64_t); }
@@ -34,7 +36,7 @@ static inline float64_t popf64(libcContext rt) { return poparg(rt, float64_t); }
 #undef poparg
 
 static inline void* popref(libcContext rt) { int32_t p = popi32(rt); return p ? rt->rt->_mem + p : NULL; }
-static inline void* popsym(libcContext rt) { int32_t p = popi32(rt); return p ? mapsym(rt->rt, p, 0) : NULL; }
+static inline void* popsym(libcContext rt) { int32_t p = popi32(rt); return p ? rtFindSym(rt->rt, p, 0) : NULL; }
 static inline char* popstr(libcContext rt) { return popref(rt); }
 //#}
 
@@ -169,7 +171,7 @@ void surfDone() {
 	}
 }
 
-static int surfSetPixel(libcContext rt) {
+static vmError surfSetPixel(libcContext rt) {
 	gx_Surf surf;
 	if ((surf = getSurf(popi32(rt)))) {
 		unsigned rowy;
@@ -178,27 +180,27 @@ static int surfSetPixel(libcContext rt) {
 		int col = popi32(rt);
 		//~ /* this way is faster
 		if ((unsigned)x >= (unsigned)surf->width || (unsigned)y >= (unsigned)surf->height) {
-			return 0;
+			return noError;
 		}
 
 		rowy = y * surf->scanLen;
 		if (surf->depth == 32) {
 			uint32_t *ptr = (uint32_t*)((char*)surf->basePtr + rowy);
 			ptr[x] = col;
-			return 0;
+			return noError;
 		}
 		else if (surf->depth == 8) {
 			uint8_t *ptr = (uint8_t*)((char*)surf->basePtr + rowy);
 			ptr[x] = col;
-			return 0;
+			return noError;
 		}// */
 
 		//~ gx_setpixel(surf, x, y, col);
-		//~ return 0;
+		//~ return noError;
 	}
-	return -1;
+	return executionAborted;
 }
-static int surfGetPixel(libcContext rt) {
+static vmError surfGetPixel(libcContext rt) {
 	gx_Surf surf;
 	if ((surf = getSurf(popi32(rt)))) {
 		unsigned rowy;
@@ -207,56 +209,56 @@ static int surfGetPixel(libcContext rt) {
 		//~ /* but this way is faster
 		if ((unsigned)x >= (unsigned)surf->width || (unsigned)y >= (unsigned)surf->height) {
 			reti32(rt, 0);
-			return 0;
+			return noError;
 		}
 		rowy = y * surf->scanLen;
 		if (surf->depth == 32) {
 			uint32_t *ptr = (uint32_t*)((char*)surf->basePtr + rowy);
 			reti32(rt, ptr[x]);
-			return 0;
+			return noError;
 		}
 		else if (surf->depth == 8) {
 			uint8_t *ptr = (uint8_t*)((char*)surf->basePtr + rowy);
 			reti32(rt, ptr[x]);
-			return 0;
+			return noError;
 		}// */
 		//~ reti32(rt, gx_getpixel(surf, x, y));
-		//~ return 0;
+		//~ return noError;
 	}
-	return -1;
+	return executionAborted;
 }
-static int surfGetPixfp(libcContext rt) {
+static vmError surfGetPixfp(libcContext rt) {
 	gx_Surf surf;
 	if ((surf = getSurf(popi32(rt)))) {
 		double x = popf64(rt);
 		double y = popf64(rt);
 		reti32(rt, gx_getpix16(surf, x * 65535, y * 65535, 1));
-		return 0;
+		return noError;
 	}
-	return -1;
+	return executionAborted;
 }
-static int surfCall(libcContext rt) {
+static vmError surfCall(libcContext rt) {
 	gx_Surf surf;
 	switch ((surfFunc)rt->data) {
 		case surfOpGetWidth:
 			surf = getSurf(popi32(rt));
 			if (surf != NULL) {
 				reti32(rt, surf->width);
-				return 0;
+				return noError;
 			}
 			break;
 		case surfOpGetHeight:
 			surf = getSurf(popi32(rt));
 			if (surf != NULL) {
 				reti32(rt, surf->height);
-				return 0;
+				return noError;
 			}
 			break;
 		case surfOpGetDepth:
 			surf = getSurf(popi32(rt));
 			if (surf != NULL) {
 				reti32(rt, surf->depth);
-				return 0;
+				return noError;
 			}
 			break;
 
@@ -266,7 +268,7 @@ static int surfCall(libcContext rt) {
 				gx_Rect rect = popref(rt);
 				void *ptr = gx_cliprect(surf, rect);
 				reti32(rt, ptr != NULL);
-				return 0;
+				return noError;
 			}
 			break;
 
@@ -276,7 +278,7 @@ static int surfCall(libcContext rt) {
 				double x = popf64(rt);
 				double y = popf64(rt);
 				reti32(rt, gx_getpix16(surf, x * 65535, y * 65535, 1));
-				return 0;
+				return noError;
 			}
 		}
 		case surfOpGetPixel: {
@@ -285,22 +287,22 @@ static int surfCall(libcContext rt) {
 				int x = popi32(rt);
 				int y = popi32(rt);
 				//~ reti32(rt, gx_getpixel(surf, x, y));
-				//~ return 0;
+				//~ return noError;
 				/ * but this way is faster
 				if ((unsigned)x >= (unsigned)surf->width || (unsigned)y >= (unsigned)surf->height) {
 					reti32(rt, 0);
-					return 0;
+					return noError;
 				}
 				int rowy = y * surf->scanLen;
 				if (surf->depth == 32) {
 					uint32_t *ptr = (uint32_t*)((char*)surf->basePtr + rowy);
 					reti32(rt, ptr[x]);
-					return 0;
+					return noError;
 				}
 				else if (surf->depth == 8) {
 					uint8_t *ptr = (uint8_t*)((char*)surf->basePtr + rowy);
 					reti32(rt, ptr[x]);
-					return 0;
+					return noError;
 				}// * /
 			}
 		}
@@ -312,23 +314,23 @@ static int surfCall(libcContext rt) {
 				int col = popi32(rt);
 				//~ / * this way is faster
 				if ((unsigned)x >= (unsigned)surf->width || (unsigned)y >= (unsigned)surf->height) {
-					return 0;
+					return noError;
 				}
 
 				unsigned rowy = y * (unsigned)surf->scanLen;
 				if (surf->depth == 32) {
 					uint32_t *ptr = (uint32_t*)((char*)surf->basePtr + rowy);
 					ptr[x] = col;
-					return 0;
+					return noError;
 				}
 				else if (surf->depth == 8) {
 					uint8_t *ptr = (uint8_t*)((char*)surf->basePtr + rowy);
 					ptr[x] = col;
-					return 0;
+					return noError;
 				}// * /
 
 				//~ gx_setpixel(surf, x, y, col);
-				//~ return 0;
+				//~ return noError;
 			}
 		}*/
 
@@ -341,7 +343,7 @@ static int surfCall(libcContext rt) {
 				int y1 = popi32(rt);
 				int col = popi32(rt);
 				g2_drawline(surf, x0, y0, x1, y1, col);
-				return 0;
+				return noError;
 			}
 			break;
 		case surfOpDrawBez2:
@@ -355,7 +357,7 @@ static int surfCall(libcContext rt) {
 				int y2 = popi32(rt);
 				int col = popi32(rt);
 				g2_drawbez2(surf, x0, y0, x1, y1, x2, y2, col);
-				return 0;
+				return noError;
 			}
 			break;
 		case surfOpDrawBez3:
@@ -371,7 +373,7 @@ static int surfCall(libcContext rt) {
 				int y3 = popi32(rt);
 				int col = popi32(rt);
 				g2_drawbez3(surf, x0, y0, x1, y1, x2, y2, x3, y3, col);
-				return 0;
+				return noError;
 			}
 			break;
 		case surfOpDrawRect:
@@ -383,7 +385,7 @@ static int surfCall(libcContext rt) {
 				int y1 = popi32(rt);
 				int col = popi32(rt);
 				gx_drawrect(surf, x0, y0, x1, y1, col);
-				return 0;
+				return noError;
 			}
 			break;
 		case surfOpFillRect:
@@ -395,7 +397,7 @@ static int surfCall(libcContext rt) {
 				int y1 = popi32(rt);
 				int col = popi32(rt);
 				gx_fillrect(surf, x0, y0, x1, y1, col);
-				return 0;
+				return noError;
 			}
 			break;
 		case surfOpDrawOval:
@@ -407,7 +409,7 @@ static int surfCall(libcContext rt) {
 				int y1 = popi32(rt);
 				int col = popi32(rt);
 				g2_drawoval(surf, x0, y0, x1, y1, col);
-				return 0;
+				return noError;
 			}
 			break;
 		case surfOpFillOval:
@@ -419,7 +421,7 @@ static int surfCall(libcContext rt) {
 				int y1 = popi32(rt);
 				int col = popi32(rt);
 				g2_filloval(surf, x0, y0, x1, y1, col);
-				return 0;
+				return noError;
 			}
 			break;
 		case surfOpDrawText:
@@ -430,7 +432,7 @@ static int surfCall(libcContext rt) {
 				char *str = popstr(rt);
 				int col = popi32(rt);
 				gx_drawText(surf, x0, y0, &font, str, col);
-				return 0;
+				return noError;
 			}
 			break;
 
@@ -448,7 +450,7 @@ static int surfCall(libcContext rt) {
 				gx_copysurf(sdst, x, y, ssrc, roi, 0);
 			}
 			reti32(rt, dst);
-			return 0;
+			return noError;
 		} break;
 		case surfOpZoomSurf: {		// gxSurf zoomSurf(gxSurf dst, gxRect &rect, gxSurf src, gxRect &roi, int mode)
 			gxSurfHnd dst = popi32(rt);
@@ -464,7 +466,7 @@ static int surfCall(libcContext rt) {
 			}
 			//~ else dst = 0;
 			reti32(rt, dst);
-			return 0;
+			return noError;
 		} break;
 
 		case surfOpEvalPxCB: {		// gxSurf evalSurfrgb(gxSurf dst, gxRect &roi, int callBack(int x, int y));
@@ -491,14 +493,14 @@ static int surfCall(libcContext rt) {
 						struct {int32_t x, y;} args = {sx, sy};
 						if (invoke(rt_, callback, &cBuff[sx], &args, NULL) != 0) {
 							//~ dump(s, dump_sym | dump_asm, callback, "error:&-T\n", callback);
-							return -1;
+							return executionAborted;
 						}
 					}
 				}
 			}
 
 			reti32(rt, dst);
-			return 0;
+			return noError;
 		} break;
 		case surfOpFillPxCB: {		// gxSurf fillSurfrgb(gxSurf dst, gxRect &roi, int callBack(int col));
 			rtContext rt_ = rt->rt;
@@ -523,13 +525,13 @@ static int surfCall(libcContext rt) {
 						struct {int32_t col;} args = {cBuff[sx]};
 						if (invoke(rt_, callback, &cBuff[sx], &args, NULL) != 0) {
 							//~ dump(s, dump_sym | dump_asm, callback, "error:&-T\n", callback);
-							return -1;
+							return executionAborted;
 						}
 					}
 				}
 			}
 			reti32(rt, dst);
-			return 0;
+			return noError;
 		} break;
 		case surfOpCopyPxCB: {		// gxSurf copySurfrgb(gxSurf dst, int x, int y, gxSurf src, gxRect &roi, int callBack(int dst, int src));
 			rtContext rt_ = rt->rt;
@@ -554,7 +556,7 @@ static int surfCall(libcContext rt) {
 				clip.h = roi ? roi->h : ssrc->height;
 
 				if(!(sptr = (char*)gx_cliprect(ssrc, &clip)))
-					return 0;
+					return noError;
 
 				clip.x = x;
 				clip.y = y;
@@ -564,7 +566,7 @@ static int surfCall(libcContext rt) {
 					clip.h -= clip.y;
 
 				if(!(dptr = (char*)gx_cliprect(sdst, &clip)))
-					return 0;
+					return noError;
 
 				if (callback) {
 					x1 = clip.x + clip.w;
@@ -576,7 +578,7 @@ static int surfCall(libcContext rt) {
 							struct {int32_t dst, src;} args = {*cbdst, *cbsrc};
 							if (invoke(rt_, callback, cbdst, &args, NULL) != 0) {
 								//~ dump(s, dump_sym | dump_asm, callback, "error:&-T\n", callback);
-								return -1;
+								return executionAborted;
 							}
 							cbdst += 1;
 							cbsrc += 1;
@@ -597,7 +599,7 @@ static int surfCall(libcContext rt) {
 
 			}
 			reti32(rt, dst);
-			return 0;
+			return noError;
 		} break;
 
 		case surfOpEvalFpCB: {		// gxSurf evalSurf(gxSurf dst, gxRect &roi, vec4f callBack(float x, float y));
@@ -629,14 +631,14 @@ static int surfCall(libcContext rt) {
 						struct vector result;
 						if (invoke(rt_, callback, &result, &args, NULL) != 0) {
 							//~ dump(s, dump_sym | dump_asm, callback, "error:&-T\n", callback);
-							return -1;
+							return executionAborted;
 						}
 						cBuff[sx] = vecrgb(&result).col;
 					}
 				}
 			}
 			reti32(rt, dst);
-			return 0;
+			return noError;
 		} break;
 		case surfOpFillFpCB: {		// gxSurf fillSurf(gxSurf dst, gxRect &roi, vec4f callBack(vec4f col));
 			rtContext rt_ = rt->rt;
@@ -662,14 +664,14 @@ static int surfCall(libcContext rt) {
 						struct vector args = vecldc(rgbval(cBuff[sx]));
 						if (invoke(rt_, callback, &result, &args, NULL) != 0) {
 							//~ dump(s, dump_sym | dump_asm, callback, "error:&-T\n", callback);
-							return -1;
+							return executionAborted;
 						}
 						cBuff[sx] = vecrgb(&result).col;
 					}
 				}
 			}
 			reti32(rt, dst);
-			return 0;
+			return noError;
 		} break;
 		case surfOpCopyFpCB: {		// gxSurf copySurf(gxSurf dst, int x, int y, gxSurf src, gxRect &roi, float alpha, vec4f callBack(vec4f dst, vec4f src));
 			rtContext rt_ = rt->rt;
@@ -696,7 +698,7 @@ static int surfCall(libcContext rt) {
 				clip.h = roi ? roi->h : ssrc->height;
 
 				if(!(sptr = (char*)gx_cliprect(ssrc, &clip)))
-					return 0;
+					return noError;
 
 				clip.x = x;
 				clip.y = y;
@@ -705,7 +707,7 @@ static int surfCall(libcContext rt) {
 				if (clip.y < 0)
 					clip.h -= y;
 				if(!(dptr = (char*)gx_cliprect(sdst, &clip)))
-					return 0;
+					return noError;
 
 				if (callback) {
 					x1 = clip.x + clip.w;
@@ -724,7 +726,7 @@ static int surfCall(libcContext rt) {
 								args.dst = vecldc(rgbval(*cbdst));
 								args.src = vecldc(rgbval(*cbsrc));
 								if (invoke(rt_, callback, &result, &args, NULL) != 0) {
-									return -1;
+									return executionAborted;
 								}
 								*(argb*)cbdst = rgbmix16(*(argb*)cbdst, vecrgb(&result), alpha16);
 								cbdst += 1;
@@ -747,7 +749,7 @@ static int surfCall(libcContext rt) {
 								args.dst = vecldc(rgbval(*cbdst));
 								args.src = vecldc(rgbval(*cbsrc));
 								if (invoke(rt_, callback, &result, &args, NULL) != 0) {
-									return -1;
+									return executionAborted;
 								}
 								*cbdst = vecrgb(&result).col;
 								cbdst += 1;
@@ -786,7 +788,7 @@ static int surfCall(libcContext rt) {
 
 			}
 			reti32(rt, dst);
-			return 0;
+			return noError;
 		} break;
 
 		case surfOpNewSurf: {
@@ -794,11 +796,11 @@ static int surfCall(libcContext rt) {
 			int h = popi32(rt);
 			gxSurfHnd hnd = newSurf(w, h);
 			reti32(rt, hnd);
-			return 0;
+			return noError;
 		} break;
 		case surfOpDelSurf: {
 			delSurf(popi32(rt));
-			return 0;
+			return noError;
 		} break;
 
 		case surfOpBmpRead: {
@@ -809,7 +811,7 @@ static int surfCall(libcContext rt) {
 				int error = gx_loadBMP(surf, fileName, 32);
 				reti32(rt, dst);
 				//~ gx_debug("gx_readBMP(%s):%d;", fileName, error);
-				return error;
+				return error ? executionAborted : noError;
 			}
 		} break;
 		case surfOpJpgRead: {
@@ -818,9 +820,9 @@ static int surfCall(libcContext rt) {
 			if ((surf = getSurf(dst))) {
 				char *fileName = popstr(rt);
 				int error = gx_loadJPG(surf, fileName, 32);
-				//~ gx_debug("readJpg(%s):%d;", fileName, error);
 				reti32(rt, dst);
-				return error;
+				//~ gx_debug("readJpg(%s):%d;", fileName, error);
+				return error ? executionAborted : noError;
 			}
 		} break;
 		case surfOpPngRead: {
@@ -828,17 +830,19 @@ static int surfCall(libcContext rt) {
 			gxSurfHnd dst = popi32(rt);
 			if ((surf = getSurf(dst))) {
 				char *fileName = popstr(rt);
-				int result = gx_loadPNG(surf, fileName, 32);
+				int error = gx_loadPNG(surf, fileName, 32);
 				reti32(rt, dst);
-				//~ gx_debug("gx_readPng(%s):%d;", fileName, result);
-				return result;
+				//~ gx_debug("gx_readPng(%s):%d;", fileName, error);
+				return error ? executionAborted : noError;
 			}
 		} break;
 		case surfOpBmpWrite: {
 			gx_Surf surf;
 			if ((surf = getSurf(popi32(rt)))) {
 				char *fileName = popstr(rt);
-				return gx_saveBMP(fileName, surf, 0);
+				int error = gx_saveBMP(fileName, surf, 0);
+				//~ gx_debug("gx_saveBMP(%s):%d;", fileName, error);
+				return error ? executionAborted : noError;
 			}
 		} break;
 
@@ -852,7 +856,7 @@ static int surfCall(libcContext rt) {
 				gx_clutsurf(sdst, roi, lut);
 			}
 			reti32(rt, dst);
-			return 0;
+			return noError;
 		} break;
 		case surfOpCmatSurf: {		// gxSurf cmatSurf(gxSurf dst, gxRect &roi, mat4f &mat);
 			gxSurfHnd dst = popi32(rt);
@@ -867,7 +871,7 @@ static int surfCall(libcContext rt) {
 				char *dptr;
 
 				if (sdst->depth != 32)
-					return -1;
+					return executionAborted;
 
 				rect.x = roi ? roi->x : 0;
 				rect.y = roi ? roi->y : 0;
@@ -875,7 +879,7 @@ static int surfCall(libcContext rt) {
 				rect.h = roi ? roi->h : sdst->height;
 
 				if(!(dptr = gx_cliprect(sdst, &rect)))
-					return -2;
+					return executionAborted;
 
 				for (i = 0; i < 16; i += 1) {
 					fxpmat[i] = mat->d[i] * (1 << 16);
@@ -899,7 +903,7 @@ static int surfCall(libcContext rt) {
 				}
 			}
 			reti32(rt, dst);
-			return 0;
+			return noError;
 		} break;
 		case surfOpGradSurf: {		// gxSurf gradSurf(gxSurf dst, gxRect &roi, gxClut &lut, int mode);
 			gxSurfHnd dst = popi32(rt);
@@ -915,7 +919,7 @@ static int surfCall(libcContext rt) {
 			if (sdst) {
 				gx_gradsurf(sdst, roi, lut, mode);
 				reti32(rt, dst);
-				return 0;
+				return noError;
 			}
 		} break;
 		case surfOpBlurSurf: {		// gxSurf blurSurf(gxSurf dst, gxRect &roi, int radius);
@@ -928,7 +932,7 @@ static int surfCall(libcContext rt) {
 			if (sdst) {
 				gx_blursurf(sdst, roi, radius);
 				reti32(rt, dst);
-				return 0;
+				return noError;
 			}
 		} break;
 		case surfOpOilPaint: {		// gxSurf oilPaint(gxSurf dst, gxRect &roi, int radius, intensity);
@@ -943,11 +947,11 @@ static int surfCall(libcContext rt) {
 				int gx_oilPaintSurf(gx_Surf image, gx_Rect roi, int radius, int intensity);
 				gx_oilPaintSurf(sdst, roi, radius, intensity);
 				reti32(rt, dst);
-				return 0;
+				return noError;
 			}
 		} break;
 	}
-	return -1;
+	return executionAborted;
 }
 //#}#endregion
 
@@ -1109,7 +1113,7 @@ typedef enum {
 	meshOpInfo,			// void meshInfo()
 	meshOphasNrm,		// bool hasNormals
 } meshFunc;
-static int meshCall(libcContext rt) {
+static vmError meshCall(libcContext rt) {
 	meshFunc fun = (meshFunc)rt->data;
 	if (fun == meshOpSetPos) {		// void meshPos(int Index, double x, double y, double z);
 		double pos[3];
@@ -1118,7 +1122,7 @@ static int meshCall(libcContext rt) {
 		pos[1] = popf64(rt);
 		pos[2] = popf64(rt);
 		setvtxDV(&msh, idx, pos, NULL, NULL, 0xff00ff);
-		return 0;
+		return noError;
 	}
 	if (fun == meshOpSetNrm) {		// void meshNrm(int Index, double x, double y, double z);
 		double nrm[3];
@@ -1127,7 +1131,7 @@ static int meshCall(libcContext rt) {
 		nrm[1] = popf64(rt);
 		nrm[2] = popf64(rt);
 		setvtxDV(&msh, idx, NULL, nrm, NULL, 0xff00ff);
-		return 0;
+		return noError;
 	}
 	//~ case meshOpGetPos: {		// vec3f meshPos(int Index)
 	//~ case meshOpGetNrm: {		// vec3f meshNrm(int Index)
@@ -1137,7 +1141,7 @@ static int meshCall(libcContext rt) {
 		pos[0] = popf64(rt);
 		pos[1] = popf64(rt);
 		setvtxDV(&msh, idx, NULL, NULL, pos, 0xff00ff);
-		return 0;
+		return noError;
 	}
 	//~ case meshOpGetTex: {		// vec2f meshTex(int Index)
 	//~ case meshOpSetTri: {		// int meshSetTri(int t, int p1, int p2, int p3)
@@ -1146,7 +1150,7 @@ static int meshCall(libcContext rt) {
 		int p2 = popi32(rt);
 		int p3 = popi32(rt);
 		addtri(&msh, p1, p2, p3);
-		return 0;
+		return noError;
 	}
 	if (fun == meshOpAddQuad) {
 		int p1 = popi32(rt);
@@ -1156,7 +1160,7 @@ static int meshCall(libcContext rt) {
 		//~ addtri(&msh, p1, p2, p3);
 		//~ addtri(&msh, p3, p4, p1);
 		addquad(&msh, p1, p2, p3, p4);
-		return 0;
+		return noError;
 	}
 	//~ case meshOpSetSeg: {		// int meshSetSeg(int t, int p1, int p2)
 	//~ case meshOpAddSeg: {		// int meshAddSeg(int p1, int p2)
@@ -1165,15 +1169,15 @@ static int meshCall(libcContext rt) {
 
 	if (fun == meshOpInfo) {				// void meshInfo();
 		meshInfo(&msh);
-		return 0;
+		return noError;
 	}
 	if (fun == meshOphasNrm) {				// bool hasNormals;
 		reti32(rt, msh.hasNrm);
-		return 0;
+		return noError;
 	}
 	if (fun == meshOpInit) {			// int meshInit(int Capacity);
 		reti32(rt, initMesh(&msh, popi32(rt)));
-		return 0;
+		return noError;
 	}
 	if (fun == meshOpTexture) {
 		if (msh.freeTex && msh.map) {
@@ -1183,28 +1187,28 @@ static int meshCall(libcContext rt) {
 		msh.freeTex = 0;
 		//~ gx_debug("msh.map = %p", msh.map);
 		//~ textureMesh(&msh, popstr(s));
-		return 0;
+		return noError;
 	}
 	if (fun == meshOpRead) {			// int meshRead(string file);
 		char* mesh = popstr(rt);
 		char* tex = popstr(rt);
 		reti32(rt, readorevalMesh(&msh, mesh, 0, tex, 0));
-		return 0;
+		return noError;
 	}
 	if (fun == meshOpSave) {			// int meshSave(string file);
 		reti32(rt, saveMesh(&msh, popstr(rt)));
-		return 0;
+		return noError;
 	}
 	if (fun == meshOpCenter) {		// void Center(float size);
 		centMesh(&msh, popf32(rt));
-		return 0;
+		return noError;
 	}
 	if (fun == meshOpNormalize) {		// void Normalize(double epsilon);
 		normMesh(&msh, popf32(rt));
-		return 0;
+		return noError;
 	}
 
-	return -1;
+	return executionAborted;
 }
 
 typedef enum {
@@ -1220,20 +1224,20 @@ typedef enum {
 	camOpRotate,
 	camOpLookAt,
 } camFunc;
-static int camCall(libcContext rt) {
+static vmError camCall(libcContext rt) {
 	switch ((camFunc)rt->data) {
 		case camOpMove: {
 			vector dir = popref(rt);
 			float32_t cnt = popf32(rt);
 			cammov(cam, dir, cnt);
-			return 0;
+			return noError;
 		}
 		case camOpRotate: {
 			vector dir = popref(rt);
 			vector orb = popref(rt);
 			float32_t cnt = popf32(rt);
 			camrot(cam, dir, orb, cnt);
-			return 0;
+			return noError;
 		}
 
 		case camOpLookAt: {		// cam.lookAt(vec4f eye, vec4f at, vec4f up)
@@ -1241,49 +1245,49 @@ static int camCall(libcContext rt) {
 			vector camAt = poparg(rt, NULL, sizeof(struct vector));	// target
 			vector camUp = poparg(rt, NULL, sizeof(struct vector));	// up
 			camset(cam, camPos, camAt, camUp);
-			return 0;
+			return noError;
 		}
 
 		//#ifndef _MSC_VER
 		case camGetPos: {
-			setret(rt, &cam->pos, sizeof(struct vector));
-			return 0;
+			retset(rt, &cam->pos, sizeof(struct vector));
+			return noError;
 		}
 		case camSetPos: {
 			poparg(rt, &cam->pos, sizeof(struct vector));
-			return 0;
+			return noError;
 		}
 
 		case camGetUp: {
-			setret(rt, &cam->dirU, sizeof(struct vector));
-			return 0;
+			retset(rt, &cam->dirU, sizeof(struct vector));
+			return noError;
 		}
 		case camSetUp: {
 			poparg(rt, &cam->dirU, sizeof(struct vector));
-			return 0;
+			return noError;
 		}
 
 		case camGetRight: {
-			setret(rt, &cam->dirR, sizeof(struct vector));
-			return 0;
+			retset(rt, &cam->dirR, sizeof(struct vector));
+			return noError;
 		}
 		case camSetRight: {
 			poparg(rt, &cam->dirR, sizeof(struct vector));
-			return 0;
+			return noError;
 		}
 
 		case camGetForward: {
-			setret(rt, &cam->dirF, sizeof(struct vector));
-			return 0;
+			retset(rt, &cam->dirF, sizeof(struct vector));
+			return noError;
 		}
 		//#endif
 
 		case camSetForward: {
 			poparg(rt, &cam->dirF, sizeof(struct vector));
-			return 0;
+			return noError;
 		}
 	}
-	return -1;
+	return executionAborted;
 }
 
 typedef enum {
@@ -1291,12 +1295,12 @@ typedef enum {
 	objOpRotate,
 	objOpSelected,
 }objFunc;
-static int objCall(libcContext rt) {
+static vmError objCall(libcContext rt) {
 
 	switch((objFunc)rt->data) {
 		case objOpSelected: {
 			reti32(rt, getobjvec(0) != NULL);
-			return 0;
+			return noError;
 		}
 
 		case objOpMove: {
@@ -1310,7 +1314,7 @@ static int objCall(libcContext rt) {
 				matmul(&tmp, &tmp1, &tmp2);
 				matvph(P, &tmp, P);
 			}
-			return 0;
+			return noError;
 		}
 		case objOpRotate: {
 			vector N;		// normal vector
@@ -1323,10 +1327,10 @@ static int objCall(libcContext rt) {
 				matmul(&tmp, &tmp1, &tmp2);
 				vecnrm(N, matvp3(N, &tmp, N));
 			}
-			return 0;
+			return noError;
 		}
 	}
-	return -1;
+	return executionAborted;
 }
 //#}#endregion
 
@@ -1337,11 +1341,11 @@ typedef enum {
 	miscOpSetCbKeyboard,
 	miscOpSetCbRender,
 } miscFunc;
-static int miscCall(libcContext rt) {
+static vmError miscCall(libcContext rt) {
 	switch ((miscFunc)rt->data) {
 		case miscSetExitLoop: {
 			draw = 0;
-			return 0;
+			return noError;
 		}
 
 		case miscOpFlipScreen: {
@@ -1352,30 +1356,30 @@ static int miscCall(libcContext rt) {
 			else {
 				draw |= post_swap;
 			}
-			return 0;
+			return noError;
 		}
 
 		case miscOpSetCbMouse: {
 			mouseCallBack = popsym(rt);
-			return 0;
+			return noError;
 		}
 
 		case miscOpSetCbKeyboard: {
 			keyboardCallBack = popsym(rt);
-			return 0;
+			return noError;
 		}
 
 		case miscOpSetCbRender: {
 			renderMethod = popsym(rt);
-			return 0;
+			return noError;
 		}
 
 	}
-	return -1;
+	return executionAborted;
 }
 
 struct {
-	int (*fun)(libcContext);
+	vmError (*fun)(libcContext);
 	int data;
 	char* def;
 }* def,
@@ -1529,7 +1533,26 @@ char* strncatesc(char *dst, int max, char* src) {
 #define snprintf(__DST, __MAX, __FMT, ...)  sprintf_s(__DST, __MAX, __FMT, ##__VA_ARGS__)
 #endif
 
-int ccCompile(char *src, int argc, char* argv[], int dbg(customContext, vmError, size_t ss, void* sp, void* caller, void* callee)) {
+// TODO: to be removed
+int ccSymValInt(symn sym, int* res) {
+	struct astNode ast;
+	if (sym && eval(&ast, sym->init)) {
+		*res = (int)constint(&ast);
+		return 1;
+	}
+	return 0;
+}
+// TODO: to be removed
+int ccSymValFlt(symn sym, double* res) {
+	struct astNode ast;
+	if (sym && eval(&ast, sym->init)) {
+		*res = constflt(&ast);
+		return 1;
+	}
+	return 0;
+}
+
+int ccCompile(char *src, int argc, char* argv[], int dbg(userContext, vmError, size_t ss, void* sp, void* caller, void* callee)) {
 	symn cls = NULL;
 	const int stdwl = 0;
 	const int srcwl = 9;
@@ -1543,23 +1566,20 @@ int ccCompile(char *src, int argc, char* argv[], int dbg(customContext, vmError,
 		return -2;
 	}
 
-	// TODO: bug generating faster code
-	rt->genForInc = 0;
-
-	if (!ccInit(rt, creg_def, NULL)) {
+	if (!ccInit(rt, install_def, NULL)) {
 		gx_debug("Internal error\n");
 		return -1;
 	}
 
 	//#{ inlined here for libcall functions
-	err = err || !ccAddCode(rt, stdwl, __FILE__, __LINE__ + 1,
+	err = err || !ccDefCode(rt, stdwl, __FILE__, __LINE__ + 1,
 		"struct gxRect {\n"
 			"int32 x;//%x(%d)\n"
 			"int32 y;//%y(%d)\n"
 			"int32 w;//%width(%d)\n"
 			"int32 h;//%height(%d)\n"
 		"}\n"
-		"inline gxRect(int w, int h) = gxRect(0, 0, w, h);\n"
+		"define gxRect(int w, int h) = gxRect(0, 0, w, h);\n"
 		"\n"
 		"\n"
 		"// Color Look Up Table (Palette) structure\n"
@@ -1577,15 +1597,15 @@ int ccCompile(char *src, int argc, char* argv[], int dbg(customContext, vmError,
 		err = err || !ccDefInt(rt, "Square", gradient_sqr);
 		err = err || !ccDefInt(rt, "Conical", gradient_con);
 		err = err || !ccDefInt(rt, "Spiral", gradient_spr);
-		ccEnd(rt, cls);
+		ccEnd(rt, cls, ATTR_stat);
 	}
 
 	// install standard library calls
-	err = err || !ccAddUnit(rt, install_stdc, stdwl, ccStd);
-	err = err || !ccAddType(rt, "gxSurf", sizeof(gxSurfHnd), 0);
+	err = err || !ccAddUnit(rt, ccUnitStdc, stdwl, ccStd);
+	err = err || !ccDefType(rt, "gxSurf", sizeof(gxSurfHnd), 0);
 
 	for (i = 0; i < sizeof(Surf) / sizeof(*Surf); i += 1) {
-		symn libc = ccAddCall(rt, Surf[i].fun, (void*)Surf[i].data, Surf[i].def);
+		symn libc = ccDefCall(rt, Surf[i].fun, (void*)Surf[i].data, Surf[i].def);
 		if (libc == NULL) {
 			return -1;
 		}
@@ -1593,49 +1613,49 @@ int ccCompile(char *src, int argc, char* argv[], int dbg(customContext, vmError,
 
 	if ((cls = ccBegin(rt, "Gui"))) {
 		for (i = 0; i < sizeof(Gui) / sizeof(*Gui); i += 1) {
-			symn libc = ccAddCall(rt, Gui[i].fun, (void*)Gui[i].data, Gui[i].def);
+			symn libc = ccDefCall(rt, Gui[i].fun, (void*)Gui[i].data, Gui[i].def);
 			if (libc == NULL) {
 				return -1;
 			}
 		}
-		err = err || !ccAddCode(rt, stdwl, __FILE__, __LINE__ + 1,
-			"inline Repaint() = Repaint(false);\n"
+		err = err || !ccDefCode(rt, stdwl, __FILE__, __LINE__ + 1,
+			"define Repaint() = Repaint(false);\n"
 		);
-		ccEnd(rt, cls);
+		ccEnd(rt, cls, ATTR_stat);
 	}
 	if ((cls = ccBegin(rt, "mesh"))) {
 		for (i = 0; i < sizeof(Mesh) / sizeof(*Mesh); i += 1) {
-			symn libc = ccAddCall(rt, Mesh[i].fun, (void*)Mesh[i].data, Mesh[i].def);
+			symn libc = ccDefCall(rt, Mesh[i].fun, (void*)Mesh[i].data, Mesh[i].def);
 			if (libc == NULL) {
 				return -1;
 			}
 		}
-		ccEnd(rt, cls);
+		ccEnd(rt, cls, ATTR_stat);
 	}
 	if ((cls = ccBegin(rt, "camera"))) {
 		for (i = 0; i < sizeof(Cam) / sizeof(*Cam); i += 1) {
-			symn libc = ccAddCall(rt, Cam[i].fun, (void*)Cam[i].data, Cam[i].def);
+			symn libc = ccDefCall(rt, Cam[i].fun, (void*)Cam[i].data, Cam[i].def);
 			if (libc == NULL) {
 				return -1;
 			}
 		}
-		ccEnd(rt, cls);
+		ccEnd(rt, cls, ATTR_stat);
 	}
 	if ((cls = ccBegin(rt, "selection"))) {
 		for (i = 0; i < sizeof(Obj) / sizeof(*Obj); i += 1) {
-			symn libc = ccAddCall(rt, Obj[i].fun, (void*)Obj[i].data, Obj[i].def);
+			symn libc = ccDefCall(rt, Obj[i].fun, (void*)Obj[i].data, Obj[i].def);
 			if (libc == NULL) {
 				return -1;
 			}
 		}
-		ccEnd(rt, cls);
+		ccEnd(rt, cls, ATTR_stat);
 	}
 
-	err = err || !ccAddCode(rt, stdwl, __FILE__, __LINE__, "gxSurf offScreen = emit(gxSurf, i32(-1));");
+	err = err || !ccDefCode(rt, stdwl, __FILE__, __LINE__, "gxSurf offScreen = emit(gxSurf, int32(-1));");
 
 	// it is not an error if library name is not set(NULL)
 	if (err == 0 && ccGfx) {
-		err = !ccAddCode(rt, stdwl, ccGfx, 1, NULL);
+		err = !ccDefCode(rt, stdwl, ccGfx, 1, NULL);
 	}
 
 	if (src != NULL) {
@@ -1647,7 +1667,7 @@ int ccCompile(char *src, int argc, char* argv[], int dbg(customContext, vmError,
 			if ((subcls = ccBegin(rt, "screen"))) {
 				err = err || !ccDefInt(rt, "width", resx);
 				err = err || !ccDefInt(rt, "height", resy);
-				ccEnd(rt, subcls);
+				ccEnd(rt, subcls, ATTR_stat);
 			}
 
 			if (!err && obj != NULL) {
@@ -1656,32 +1676,35 @@ int ccCompile(char *src, int argc, char* argv[], int dbg(customContext, vmError,
 			if (!err && tex != NULL) {
 				err = !ccDefStr(rt, "texture", strnesc(tmp, sizeof(tmp), tex));
 			}
-			ccEnd(rt, cls);
+			ccEnd(rt, cls, ATTR_stat);
 		}
 
 		/* TODO: add args
 		snprintf(tmp, sizeof(tmp), "string args[%d];", argc);
-		err = err || !ccAddCode(rt, stdwl, __FILE__, __LINE__ , tmp);
+		err = err || !ccDefCode(rt, stdwl, __FILE__, __LINE__ , tmp);
 		for (i = 0; i < argc; i += 1) {
 			snprintf(tmp, sizeof(tmp), "args[%d] = \"%s\";", i, strnesc(tmpf, sizeof(tmpf), argv[i]));
-			err = err || !ccAddCode(rt, stdwl, __FILE__, __LINE__ , tmp);
+			err = err || !ccDefCode(rt, stdwl, __FILE__, __LINE__ , tmp);
 		}// */
 		//~ snprintf(tmp, sizeof(tmp), "string filename = \"%s\";", i, strnesc(tmpf, sizeof(tmpf), argv[i]));
-		//~ err = err || !ccAddCode(rt, stdwl, __FILE__, __LINE__ , tmp);
+		//~ err = err || !ccDefCode(rt, stdwl, __FILE__, __LINE__ , tmp);
 		if (argc == 2) {
 			//~ err = err || !ccDefStr(rt, "script", strnesc(tmp, sizeof(tmp), argv[0]));
 			err = err || !ccDefStr(rt, "filename", strnesc(tmp, sizeof(tmp), argv[1]));
 		}
-		err = err || !ccAddCode(rt, srcwl, src, 1, NULL);
+		err = err || !ccDefCode(rt, srcwl, src, 1, NULL);
 	}
 	else {
 		logFILE(rt, stdout);
-		ccAddCode(rt, stdwl, __FILE__, __LINE__ , "");
+		ccDefCode(rt, stdwl, __FILE__, __LINE__ , "");
 		gencode(rt, 0);
 		fprintf(stdout, "#api: replace(`^([^:]*).*$`, `\\1`)\n");
 		//~ dump(rt, dump_sym | 0x33, NULL);
 		return 0;
 	}
+
+		// TODO: bug generating faster code
+	rt->fastAssign = 0;
 
 	if (err || !gencode(rt, dbg != NULL)) {
 		if (ccLog) {
@@ -1697,14 +1720,14 @@ int ccCompile(char *src, int argc, char* argv[], int dbg(customContext, vmError,
 
 		draw = 0;
 
-		if ((cls = ccFindSym(cc, NULL, "Window"))) {
-			if (!ccSymValInt(ccFindSym(cc, cls, "resx"), &resx)) {
+		if ((cls = ccLookupSym(cc, NULL, "Window"))) {
+			if (!ccSymValInt(ccLookupSym(cc, cls, "resx"), &resx)) {
 				//~ gx_debug("using default value for resx: %d", resx);
 			}
-			if (!ccSymValInt(ccFindSym(cc, cls, "resy"), &resy)) {
+			if (!ccSymValInt(ccLookupSym(cc, cls, "resy"), &resy)) {
 				//~ gx_debug("using default value for resy: %d", resy);
 			}
-			if (!ccSymValInt(ccFindSym(cc, cls, "draw"), &draw)) {
+			if (!ccSymValInt(ccLookupSym(cc, cls, "draw"), &draw)) {
 				//~ gx_debug("using default value for renderType: 0x%08x", draw);
 			}
 		}
@@ -1730,3 +1753,293 @@ int ccCompile(char *src, int argc, char* argv[], int dbg(customContext, vmError,
 
 	return err;// || execute(rt, NULL);
 }
+
+#if 1 // eval mesh with scripting support
+
+static inline double lerp(double a, double b, double t) {return a + t * (b - a);}
+
+inline double  dv3dot(double lhs[3], double rhs[3]) {
+	return lhs[0] * rhs[0] + lhs[1] * rhs[1] + lhs[2] * rhs[2];
+}
+inline double* dv3cpy(double dst[3], double src[3]) {
+	dst[0] = src[0];
+	dst[1] = src[1];
+	dst[2] = src[2];
+	return dst;
+}
+inline double* dv3sca(double dst[3], double src[3], double rhs) {
+	dst[0] = src[0] * rhs;
+	dst[1] = src[1] * rhs;
+	dst[2] = src[2] * rhs;
+	return dst;
+}
+inline double* dv3sub(double dst[3], double lhs[3], double rhs[3]) {
+	dst[0] = lhs[0] - rhs[0];
+	dst[1] = lhs[1] - rhs[1];
+	dst[2] = lhs[2] - rhs[2];
+	return dst;
+}
+inline double* dv3crs(double dst[3], double lhs[3], double rhs[3]) {
+	dst[0] = lhs[1] * rhs[2] - lhs[2] * rhs[1];
+	dst[1] = lhs[2] * rhs[0] - lhs[0] * rhs[2];
+	dst[2] = lhs[0] * rhs[1] - lhs[1] * rhs[0];
+	return dst;
+}
+inline double* dv3nrm(double dst[3], double src[3]) {
+	double len = dv3dot(src, src);
+	if (len > 0) {
+		//~ len = 1. / sqrt(len);
+		//~ dst[0] = src[0] * len;
+		//~ dst[1] = src[1] * len;
+		//~ dst[2] = src[2] * len;
+		len = sqrt(len);
+		dst[0] = src[0] / len;
+		dst[1] = src[1] / len;
+		dst[2] = src[2] / len;
+	}
+	return dst;
+}
+
+typedef struct userData {
+	double s, smin, smax;
+	double t, tmin, tmax;
+	int isPos, isNrm;
+	double pos[3], nrm[3];
+} *userData;
+
+static vmError getS(libcContext rt) {
+	userData d = rt->extra;
+	retf64(rt, lerp(d->smin, d->smax, d->s));
+	return noError;
+}
+static vmError getT(libcContext rt) {
+	userData d = rt->extra;
+	retf64(rt, lerp(d->tmin, d->tmax, d->t));
+	return noError;
+}
+static vmError setPos(libcContext rt) {
+	userData d = rt->extra;
+	d->pos[0] = argf64(rt, 8 * 0);
+	d->pos[1] = argf64(rt, 8 * 1);
+	d->pos[2] = argf64(rt, 8 * 2);
+	d->isPos = 1;
+	return noError;
+}
+static vmError setNrm(libcContext rt) {
+	userData d = rt->extra;
+	d->nrm[0] = argf64(rt, 8 * 0);
+	d->nrm[1] = argf64(rt, 8 * 1);
+	d->nrm[2] = argf64(rt, 8 * 2);
+	d->isNrm = 1;
+	return noError;
+}
+
+static vmError f64abs(libcContext rt) {
+	float64_t x = argf64(rt, 0);
+	retf64(rt, fabs(x));
+	return noError;
+}
+static vmError f64sin(libcContext rt) {
+	float64_t x = argf64(rt, 0);
+	retf64(rt, sin(x));
+	return noError;
+}
+static vmError f64cos(libcContext rt) {
+	float64_t x = argf64(rt, 0);
+	retf64(rt, cos(x));
+	return noError;
+}
+static vmError f64tan(libcContext rt) {
+	float64_t x = argf64(rt, 0);
+	retf64(rt, tan(x));
+	return noError;
+}
+static vmError f64log(libcContext rt) {
+	float64_t x = argf64(rt, 0);
+	retf64(rt, log(x));
+	return noError;
+}
+static vmError f64exp(libcContext rt) {
+	float64_t x = argf64(rt, 0);
+	retf64(rt, exp(x));
+	return noError;
+}
+static vmError f64pow(libcContext rt) {
+	float64_t x = argf64(rt, 0);
+	float64_t y = argf64(rt, 8);
+	retf64(rt, pow(x, y));
+	return noError;
+}
+static vmError f64sqrt(libcContext rt) {
+	float64_t x = argf64(rt, 0);
+	retf64(rt, sqrt(x));
+	return noError;
+}
+static vmError f64atan2(libcContext rt) {
+	float64_t x = argf64(rt, 0);
+	float64_t y = argf64(rt, 8);
+	retf64(rt, atan2(x, y));
+	return noError;
+}
+
+int evalMesh(mesh msh, int sdiv, int tdiv, char *src, char *file, int line) {
+	static char mem[32 << 10];		// 32K memory
+	rtContext rt = rtInit(mem, sizeof(mem));
+	struct userData ud;
+	const int warnlevel = 2;
+	const int stacksize = sizeof(mem) / 2;
+
+	char *logf = NULL;//"dump.evalMesh.txt";
+
+	int i, j, err = 0;
+
+	double s, t, ds, dt;	// 0 .. 1
+
+	// pointers, variants and emit are not needed.
+	if (!ccInit(rt, installBase, NULL)) {
+		gx_debug("Internal error\n");
+		return -1;
+	}
+
+	err = err || !ccDefCall(rt, getS, NULL,     "float64 gets();");
+	err = err || !ccDefCall(rt, getT, NULL,     "float64 gett();");
+	err = err || !ccDefCall(rt, setPos, NULL,   "void setPos(float64 x, float64 y, float64 z);");
+	err = err || !ccDefCall(rt, setNrm, NULL,   "void setNrm(float64 x, float64 y, float64 z);");
+	err = err || !ccDefCall(rt, f64abs, NULL,   "float64 abs(float64 x);");
+	err = err || !ccDefCall(rt, f64sin, NULL,   "float64 sin(float64 x);");
+	err = err || !ccDefCall(rt, f64cos, NULL,   "float64 cos(float64 x);");
+	err = err || !ccDefCall(rt, f64tan, NULL,   "float64 tan(float64 x);");
+	err = err || !ccDefCall(rt, f64log, NULL,   "float64 log(float64 x);");
+	err = err || !ccDefCall(rt, f64exp, NULL,   "float64 exp(float64 x);");
+	err = err || !ccDefCall(rt, f64sqrt, NULL,  "float64 sqrt(float64 x);");
+	err = err || !ccDefCall(rt, f64atan2, NULL, "float64 atan(float64 x, float64 y);");
+	err = err || !ccDefCall(rt, f64pow, NULL,   "float64 pow(float64 x, float64 y);");
+	err = err || !ccDefFlt(rt, "pi", 3.14159265358979323846264338327950288419716939937510582097494459);
+	err = err || !ccDefFlt(rt, "e",  2.71828182845904523536028747135266249775724709369995957496696763);
+
+	err = err || !ccDefCode(rt, 0, __FILE__, __LINE__ + 1,
+		"const double s = gets();\n"
+		"const double t = gett();\n"
+		"float64 x = s;\n"
+		"float64 y = t;\n"
+		"float64 z = float64(0);\n"
+	);
+	err = err || !ccDefCode(rt, warnlevel, file, line, src);
+	err = err || !ccDefCode(rt, warnlevel, __FILE__, __LINE__, "setPos(x, y, z);\n");
+	// */
+
+	// optimize on max level, and generate global variables on stack
+	if (err || !gencode(rt, 0)) {
+		gx_debug("error compiling(%d), see `%s`", err, logf);
+		logfile(rt, NULL, 0);
+		return -3;
+	}
+
+	/* dump
+	fputfmt(stdout, "init(ro: %d"
+		", ss: %d, sm: %d, pc: %d, px: %d"
+		", size.meta: %d, size.code: %d, size.data: %d"
+		//~ ", pos: %d"
+	");\n", rt->vm.ro, rt->vm.ss, rt->vm.sm, rt->vm.pc, rt->vm.px, rt->vm.size.meta, rt->vm.size.code, rt->vm.size.data, rt->vm.pos);
+
+	logfile(rt, "dump.bin");
+	dump(rt, dump_sym | 0x01, NULL, "\ntags:\n");
+	dump(rt, dump_ast | 0x00, NULL, "\ncode:\n");
+	dump(rt, dump_asm | 0x19, NULL, "\ndasm:\n");
+	dump(rt, dump_bin | 0x10, NULL, "\ndump:\n");
+	//~ */
+
+	// close log
+	logfile(rt, NULL, 0);
+
+	#define findint(__ENV, __NAME, _OUT_VAL) ccSymValInt(ccLookupSym(__ENV, NULL, __NAME), _OUT_VAL)
+	#define findflt(__ENV, __NAME, _OUT_VAL) ccSymValFlt(ccLookupSym(__ENV, NULL, __NAME), _OUT_VAL)
+
+	if (findint(rt->cc, "division", &tdiv)) {
+		sdiv = tdiv;
+	}
+
+	ud.smin = ud.tmin = 0;
+	ud.smax = ud.tmax = 1;
+
+	findflt(rt->cc, "smin", &ud.smin);
+	findflt(rt->cc, "smax", &ud.smax);
+	findint(rt->cc, "sdiv", &sdiv);
+
+	findflt(rt->cc, "tmin", &ud.tmin);
+	findflt(rt->cc, "tmax", &ud.tmax);
+	findint(rt->cc, "tdiv", &tdiv);
+
+	//~ cs = lookup_nz(env->cc, "closedS");
+	//~ ct = lookup_nz(env->cc, "closedT");
+
+	//~ gx_debug("s(min:%lf, max:%lf, div:%d%s)", ud.smin, ud.smax, sdiv, /* cs ? ", closed" : */ "");
+	//~ gx_debug("t(min:%lf, max:%lf, div:%d%s)", ud.tmin, ud.tmax, tdiv, /* ct ? ", closed" : */ "");
+	//~ vmInfo(env->vm);
+
+	ds = 1. / (sdiv - 1);
+	dt = 1. / (tdiv - 1);
+	msh->hasTex = msh->hasNrm = 1;
+	msh->tricnt = msh->vtxcnt = 0;
+
+	for (t = 0, j = 0; j < tdiv; t += dt, ++j) {
+		for (s = 0, i = 0; i < sdiv; s += ds, ++i) {
+			double pos[3], nrm[3], tex[2];
+			double ds[3], dt[3];
+			tex[0] = t;
+			tex[1] = s;
+
+			ud.s = s;
+			ud.t = t;
+			ud.isNrm = 0;
+			if (execute(rt, stacksize, &ud) != 0) {
+				gx_debug("error");
+				return -4;
+			}
+			dv3cpy(pos, ud.pos);
+
+			if (ud.isNrm) {
+				dv3nrm(nrm, ud.nrm);
+			}
+			else {
+				ud.s = s + epsilon;
+				ud.t = t;
+				if (execute(rt, stacksize, &ud) != 0) {
+					gx_debug("error");
+					return -5;
+				}
+				dv3cpy(ds, ud.pos);
+
+				ud.s = s;
+				ud.t = t + epsilon;
+				if (execute(rt, stacksize, &ud) != 0) {
+					gx_debug("error");
+					return -6;
+				}
+				dv3cpy(dt, ud.pos);
+
+				ds[0] = (pos[0] - ds[0]) / epsilon;
+				ds[1] = (pos[1] - ds[1]) / epsilon;
+				ds[2] = (pos[2] - ds[2]) / epsilon;
+				dt[0] = (pos[0] - dt[0]) / epsilon;
+				dt[1] = (pos[1] - dt[1]) / epsilon;
+				dt[2] = (pos[2] - dt[2]) / epsilon;
+				dv3nrm(nrm, dv3crs(nrm, ds, dt));
+			}
+
+			addvtxDV(msh, pos, nrm, tex);
+		}
+	}
+
+	for (j = 0; j < tdiv - 1; ++j) {
+		int l1 = j * sdiv;
+		int l2 = l1 + sdiv;
+		for (i = 0; i < sdiv - 1; ++i) {
+			int v1 = l1 + i, v2 = v1 + 1;
+			int v4 = l2 + i, v3 = v4 + 1;
+			addquad(msh, v1, v2, v3, v4);
+		}
+	}
+	return 0;
+}
+#endif

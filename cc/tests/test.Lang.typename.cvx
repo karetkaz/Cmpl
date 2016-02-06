@@ -20,7 +20,7 @@ int n2 = sizeof(ss.ss);
 
 // typename and type informations
 
-inline Xxx = ss.ss;		// alias
+define Xxx = ss.ss;		// alias
 typename type = ss.ss;	// variable
 
 Xxx a = ss.ss(5, 6);

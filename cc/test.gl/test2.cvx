@@ -48,15 +48,15 @@ void nrm2col(double &r, double &g, double &b, double x, double y, double z) {
 static struct MeshGenerators {
 
 	void ellipse(double &x, double &y, double &z, double s01, double t01) {
-		inline X = 4;
-		inline Y = 4;
-		inline Z = 4;
+		define X = 4;
+		define Y = 4;
+		define Z = 4;
 
-		inline smin = 0.;
-		inline smax = 2 * Math.pi;
+		define smin = 0.;
+		define smax = 2 * Math.pi;
 
-		inline tmin = -Math.pi / 2;
-		inline tmax = +Math.pi / 2;
+		define tmin = -Math.pi / 2;
+		define tmax = +Math.pi / 2;
 
 		double s = Math.lerp(s01, smin, smax);
 		double t = Math.lerp(t01, tmin, tmax);
@@ -68,15 +68,15 @@ static struct MeshGenerators {
 
 	void ellipse2(double &x, double &y, double &z, double s01, double t01) {
 		//~ http://mathworld.wolfram.com/SphericalCoordinates.html
-		inline X = 4;
-		inline Y = 4;
-		inline Z = 4;
+		define X = 4;
+		define Y = 4;
+		define Z = 4;
 
-		inline smin = 0.;
-		inline smax = Math.pi;
+		define smin = 0.;
+		define smax = Math.pi;
 
-		inline tmin = 0.;
-		inline tmax = 2 * Math.pi;
+		define tmin = 0.;
+		define tmax = 2 * Math.pi;
 
 		double s = Math.lerp(s01, smin, smax);
 		double t = Math.lerp(t01, tmin, tmax);
@@ -87,12 +87,12 @@ static struct MeshGenerators {
 	}
 
 	void shell(double &x, double &y, double &z, double s01, double t01) {
-		inline N = 5;
-		inline H = 3;
-		inline tmin = -Math.pi;
-		inline tmax = +Math.pi;
-		inline smin = 0.;
-		inline smax = 2. * Math.pi;
+		define N = 5;
+		define H = 3;
+		define tmin = -Math.pi;
+		define tmax = +Math.pi;
+		define smin = 0.;
+		define smax = 2. * Math.pi;
 
 		double s = Math.lerp(s01, smin, smax);
 		double t = Math.lerp(t01, tmin, tmax);
@@ -104,22 +104,22 @@ static struct MeshGenerators {
 	}
 
 	void apple(double &x, double &y, double &z, double s01, double t01) {
-		inline tmin = -Math.pi;
-		inline tmax = +Math.pi;
-		inline smin = 0.;
-		inline smax = 2 * Math.pi;
+		define tmin = -Math.pi;
+		define tmax = +Math.pi;
+		define smin = 0.;
+		define smax = 2 * Math.pi;
 
 		double s = Math.lerp(s01, smin, smax);
 		double t = Math.lerp(t01, tmin, tmax);
 
-		inline R1 = 4.0;
-		inline R2 = 3.8;
+		define R1 = 4.0;
+		define R2 = 3.8;
 
 		x = float64.cos(s) * (R1 + R2 * float64.cos(t)) + float64.pow((t / Math.pi), 100);
 		y = float64.sin(s) * (R1 + R2 * float64.cos(t)) + .25 * float64.cos(5 * s);
 		z = -2.3 * float64.log(1 - t * 0.3157) + 6 * float64.sin(t) + 2 * float64.cos(t);
 
-		inline scale = 1./2;
+		define scale = 1./2;
 		x *= scale;
 		y *= scale;
 		z *= scale;
@@ -127,7 +127,7 @@ static struct MeshGenerators {
 
 }
 
-inline eps = 1e-13;
+define eps = 1e-13;
 
 /* TODO: internal mesh
 struct &Mesh {
@@ -145,7 +145,7 @@ int SetVertex(Mesh mesh, int idx, vec4f pos, vec4f nrm, vec4f col) {
 	}
 }
 
-inline AddVertex(Mesh mesh, vec4f pos, vec4f nrm, vec4v col) = SetVertex(mesh, pos.length, pos, nrm, col);
+define AddVertex(Mesh mesh, vec4f pos, vec4f nrm, vec4v col) = SetVertex(mesh, pos.length, pos, nrm, col);
 
 Mesh m = new(Mesh);
 //~ */
@@ -208,7 +208,7 @@ static struct camera {
 				vec4f dir2 = sub(orbit, Position);
 				float dist = float64.sqrt(dp3(dir2, dir2));
 
-				inline lookAtOrbit = true;
+				define lookAtOrbit = true;
 				static if (!lookAtOrbit) {	// camera will just rotate arund orbit
 					vec4f x = normalize(dph(tmp, dir2));
 					tmp = matrix_Translation(&x, -dist);
@@ -228,7 +228,7 @@ static struct camera {
 
 	void ToMatrix(double mat[16]) {
 
-		inline Mat(int row, int col, double val) = void(mat[col * 4 + row] = val);
+		define Mat(int row, int col, double val) = void(mat[col * 4 + row] = val);
 
 		Mat(0, 0, Right.x);
 		Mat(0, 1, Right.y);
@@ -261,7 +261,7 @@ static struct camera {
 
 // TODO: fake object
 static struct mesh {
-	inline resolution = 128;
+	define resolution = 128;
 	vec4f colors[resolution * resolution];
 	vec4f normals[resolution * resolution];
 	vec4f vertices[resolution * resolution];
@@ -416,9 +416,9 @@ void mouseHandler(int btn, int x, int y) {
 	ox = x;
 	oy = y;
 
-	inline moveSlow = .08;
-	inline rotateSlow = moveSlow * Math.pi / 180.;
-	inline rotateFast = 10 * rotateSlow;
+	define moveSlow = .08;
+	define rotateSlow = moveSlow * Math.pi / 180.;
+	define rotateFast = 10 * rotateSlow;
 
 	if (btn == 1) {	// orbit the camera
 		vec4f orbit = vec4f(0., 0., 0., 0.);

@@ -5,18 +5,23 @@
 files="tests/test.*.cvx"
 
 #~ compile flags
-flags="-api -ast -asm"
-#~ flags="-debug/C/B/L/F"
-flags="-debug/g"
 flags="-profile"
 #~ flags="-run"
 
 outDir=out/test
-logFile=$outDir/log.test.log
-dumpPrefix=$outDir/profile
+logFile=$outDir/tests.log
+apiFile=$outDir/dump.api.cvx
+apiFileJs=$outDir/dump.api.json
+dumpPrefix=$outDir/prof
 
 rm -f $logFile
 mkdir -p $outDir
+
+#~ export api
+./main -debug/L/P/G/h -api/a/d/p/u -asm/a/n/s -astFF -dump $apiFile
+./main -api -ast -asm -dump.json $apiFileJs
+
+#~ run each test
 for file in $files
 do
 	testName=${file%.cvx}

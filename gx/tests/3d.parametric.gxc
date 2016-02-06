@@ -5,15 +5,15 @@ enum Window {
 	resy = 512;
 }
 
-inline pi = Math.pi;
+define pi = Math.pi;
 
 void peak(double &x, double &y, double &z, double s01, double t01) {
-	inline H = 20.;
-	inline h = 10.;
-	inline smin = -H;
-	inline smax = +H;
-	inline tmin = -H;
-	inline tmax = +H;
+	define H = 20.;
+	define h = 10.;
+	define smin = -H;
+	define smax = +H;
+	define tmin = -H;
+	define tmax = +H;
 	double s = Math.lerp(s01, smin, smax);
 	double t = Math.lerp(t01, tmin, tmax);
 	double sst = float64.sqrt(s*s + t*t);
@@ -22,14 +22,14 @@ void peak(double &x, double &y, double &z, double s01, double t01) {
 	z = h / H * float64.sin(sst) / sst;
 }
 void drop(double &x, double &y, double &z, double s01, double t01) {
-	inline sdiv = 128;
-	inline tdiv = 32;
-	inline N = 5;
-	inline H = 3;
-	inline tmin = 0.;
-	inline tmax = 2 * pi;
-	inline smin = 0.;
-	inline smax = pi;
+	define sdiv = 128;
+	define tdiv = 32;
+	define N = 5;
+	define H = 3;
+	define tmin = 0.;
+	define tmax = 2 * pi;
+	define smin = 0.;
+	define smax = pi;
 
 	double s = Math.lerp(s01, smin, smax);
 	double t = Math.lerp(t01, tmin, tmax);
@@ -44,14 +44,14 @@ void drop(double &x, double &y, double &z, double s01, double t01) {
 	//~ z = W * sin(t) + H * (W * W);
 }
 void shell(double &x, double &y, double &z, double s01, double t01) {
-	inline sdiv = 128;
-	inline tdiv = 32;
-	inline N = 5;
-	inline H = 3;
-	inline tmin = -pi;
-	inline tmax = +pi;
-	inline smin = 0.;
-	inline smax = 2. * pi;
+	define sdiv = 128;
+	define tdiv = 32;
+	define N = 5;
+	define H = 3;
+	define tmin = -pi;
+	define tmax = +pi;
+	define smin = 0.;
+	define smax = 2. * pi;
 
 	double s = Math.lerp(s01, smin, smax);
 	double t = Math.lerp(t01, tmin, tmax);
@@ -62,13 +62,13 @@ void shell(double &x, double &y, double &z, double s01, double t01) {
 	z = W * float64.sin(t) + H * (W * W);
 }
 void ellipse(double &x, double &y, double &z, double s01, double t01) {
-	inline X = 1;
-	inline Y = 1;
-	inline Z = 1;
-	inline smin = 0.;
-	inline smax = 2 * pi;
-	inline tmin = -pi / 2;
-	inline tmax = +pi / 2;
+	define X = 1;
+	define Y = 1;
+	define Z = 1;
+	define smin = 0.;
+	define smax = 2 * pi;
+	define tmin = -pi / 2;
+	define tmax = +pi / 2;
 
 	double s = Math.lerp(s01, smin, smax);
 	double t = Math.lerp(t01, tmin, tmax);
@@ -78,13 +78,13 @@ void ellipse(double &x, double &y, double &z, double s01, double t01) {
 	z = Z * float64.sin(t);
 }
 void cilinder(double &x, double &y, double &z, double s01, double t01) {
-	inline X = 1;
-	inline Y = 1;
-	inline Z = 1;
-	inline smin = 0.;
-	inline smax = 2.;
-	inline tmin = 0.;
-	inline tmax = 2*pi;
+	define X = 1;
+	define Y = 1;
+	define Z = 1;
+	define smin = 0.;
+	define smax = 2.;
+	define tmin = 0.;
+	define tmax = 2*pi;
 
 	double s = Math.lerp(s01, smin, smax);
 	double t = Math.lerp(t01, tmin, tmax);
@@ -94,23 +94,23 @@ void cilinder(double &x, double &y, double &z, double s01, double t01) {
 	z = -s;
 }
 void OPXor(double &x, double &y, double &z, double s01, double t01) {
-	inline H = float64(10);
+	define H = float64(10);
 	x = Math.lerp(1 - s01, -H, H);
 	y = Math.lerp(1 - t01, -H, H);
 	z = double(int(255 * s01) ^ int(255 * t01)) / (256 / (2*H));
 }
 
 void OPPerlin(double &x, double &y, double &z, double s01, double t01) {
-	inline H = float64(10);
-	inline M = float64(10);
+	define H = float64(10);
+	define M = float64(10);
 	x = Math.lerp(1 - s01, -H, H);
 	y = Math.lerp(1 - t01, -H, H);
 	z = Perlin.Noise(Math.lerp(s01, 0., M), Math.lerp(t01, 0., M));
 }
 
-inline divisionM = 2;
-inline divisionS = divisionM * 64;
-inline divisionT = divisionM * 64;
+define divisionM = 2;
+define divisionS = divisionM * 64;
+define divisionT = divisionM * 64;
 
 //~ meshGen(divisionM*8, divisionM, shell);
 mesh.Texture(gxSurf("media/images/download.jpg"));

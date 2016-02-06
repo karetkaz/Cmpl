@@ -319,7 +319,7 @@ unsigned rehash(const char* str, size_t len) {
  * @param hash precalculated hashcode, -1 recalculates.
  * @return the mapped string in the string table.
  */
-char* mapstr(ccContext cc, char* str, size_t len/* = -1*/, unsigned hash/* = -1*/) {
+char* mapstr(ccContext cc, const char* str, size_t len/* = -1*/, unsigned hash/* = -1*/) {
 	rtContext rt = cc->rt;
 	list newn, next, prev = 0;
 
@@ -376,7 +376,7 @@ char* mapstr(ccContext cc, char* str, size_t len/* = -1*/, unsigned hash/* = -1*
 	newn->next = next;
 	newn->data = (unsigned char*)str;
 
-	return str;
+	return (char*)str;
 }
 
 /** Read the next token.
@@ -645,7 +645,7 @@ static int readTok(ccContext cc, astn tok) {
 			if (chr_map[chr & 0xff] & CWORD) {
 				goto read_idf;
 			}
-			error(cc->rt, cc->file, cc->line, "invalid character: '%c'", chr);
+				error(cc->rt, cc->file, cc->line, "invalid character: '%c'", chr);
 			tok->kind = TOKN_err;
 			break;
 
@@ -1035,7 +1035,6 @@ static int readTok(ccContext cc, astn tok) {
 				{"enum", ENUM_kwd},
 				{"for", STMT_for},
 				{"if", STMT_if},
-				{"inline", TYPE_def},	// TODO: remove alias for define
 				{"parallel", ATTR_paral},
 				{"return", STMT_ret},
 				{"static", ATTR_stat},

@@ -1,7 +1,7 @@
 // iterating through files ...
 
 // make files iterable :)
-inline iterator(File &file) = (file);
+define iterator(File &file) = (file);
 
 void print(string str) {
 	static File stdOut = File.DbgOut;
@@ -59,8 +59,8 @@ bool next(File &file, char buff[]) {
 	return true;
 }
 
-inline testFile = "tests/test.it.files.cvx";
-inline printin = !false;
+define testFile = "tests/test.it.files.cvx";
+define printin = !false;
 
 //~ /+ iterate file by chars
 File file1 = File.Open(testFile);
