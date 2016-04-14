@@ -129,7 +129,7 @@ struct rtContextRec {
 		 * @param cls Namespace to be closed. (The returned by ccBegin.)
 		 * @note Makes all declared variables static.
 		*/
-		void (*const ccEnd)(rtContext, symn cls, int mode);
+		void (*const ccEnd)(rtContext, symn cls);
 
 		/**
 		 * @brief Define a(n) integer, floating point or string constant.

@@ -2294,6 +2294,11 @@ int gencode(rtContext rt, int mode) {
 		for (ng = cc->gdef; ng; ng = ng->gdef) {
 			symn Ng, Pg = NULL;
 
+			if (ng->call && ng->cast == TYPE_ref) {
+				// skip non functions
+				continue;
+			}
+
 			for (Ng = ng; Ng != NULL; Ng = Ng->gdef) {
 				if (Ng->decl == ng) {
 					break;
@@ -2303,6 +2308,7 @@ int gencode(rtContext rt, int mode) {
 
 			//~ this must be generated before sym;
 			if (Ng) {
+				trace("global `%T` must be generated before `%T`", Ng, ng);
 				Pg->gdef = Ng->gdef;	// remove
 				Ng->gdef = ng;
 				if (pg) {

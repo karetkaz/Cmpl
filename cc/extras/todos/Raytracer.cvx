@@ -5,10 +5,10 @@ struct Camera {
 	vec4f forward;
 	vec4f position;
 
-	static Camera lookAt({vec4f position; vec4f target; vec4f up}) {
-		result.forward = normalize(sub(target, position));
-		result.right = normalize(crs(up, result.forward));
-		result.up = crs(result.forward, result.right);
+	Camera lookAt({vec4f position; vec4f target; vec4f up}) {
+		result.forward = normalize(target - position);
+		result.right = normalize(cross(up, result.forward));
+		result.up = cross(result.forward, result.right);
 		result.position = position;
 	}
 }
@@ -90,6 +90,15 @@ struct Scene {
 		}
 		return result;
 	}
+
+	void render(const Scene &this, int width, int height, void action(int x, int y, int color)) {
+		for (int y = 0; y < height; y += 1) {
+			for (int x = 0; x < width; x += 1) {
+				// TODO: shade
+				action(x, y, x ^ y);
+			}
+		}
+	}
 }
 
 Scene scene = {
@@ -121,3 +130,6 @@ Scene scene = {
 		};
 	];
 };
+
+Bitmap bitmap = Bitmap(1024, 1024);
+scene.render(bitmap.width, bitmap.height, bitmap.setPixel);

@@ -175,10 +175,10 @@ static struct Collections {
 	/// Map is an immutable abstract base class
 	struct(struct Key, struct Value) Map: object {
 		struct { // private properties
-			Value get(Map map, Key key);
-			Map set(Map map, Key key, Value value);
-			bool contains(Map map, Key key);
-			bool remove(Map map, Key key);
+			const bool has(Map map, Key key);
+			const Value get(Map map, Key key);
+			const Map put(Map map, Key key, Value value);
+			const bool remove(Map map, Key key);
 		}
 
 		// convert any descendant into an immutable map.
@@ -188,6 +188,10 @@ static struct Collections {
 		operator Map(Key map[Value]) = Map {
 			const Key _map[Value] = map;
 
+			has: bool(Map map, Key key) {
+				return _map[key];
+			}
+
 			get: Value(Map map, Key key) {
 				return _map[key];
 			}
@@ -196,18 +200,14 @@ static struct Collections {
 				fatal("Imutable Object");
 			}
 
-			contains: bool(Map map, Key key) {
-				return _map[key];
-			}
-
 			remove: bool(Map map, Key key) {
 				fatal("Imutable Object");
 			}
 		};
 
+		operator (Map map).has(Key key) = map.has(map, key);
 		operator (Map map).get(Key key) = map.get(map, key);
-		operator (Map map).contains(Key key) = map.contains(map, key);
-		operator (Map map).set(Key key, Value value) = map.set(map, key, value);
+		operator (Map map).put(Key key, Value value) = map.put(map, key, value);
 		operator (Map map).remove(Key key) = map.remove(map, key);
 	}
 
@@ -218,13 +218,13 @@ static struct Collections {
 			// index of a key
 			Value values[];
 		}
+		has: bool(Map map, Key key) {
+			//~ TODO: implement
+		}
 		get: Value(Map map, Key key) {
 			//~ TODO: implement
 		}
 		set: Map(Map map, Key key, Value value) {
-			//~ TODO: implement
-		}
-		contains: bool(Map map, Key key) {
 			//~ TODO: implement
 		}
 		remove: bool(Map map, Key key) {
@@ -249,7 +249,7 @@ static struct Collections {
 		set: Map(Map map, Key key, Value value) {
 			//~ TODO: implement
 		}
-		contains: bool(Map map, Key key) {
+		has: bool(Map map, Key key) {
 			//~ TODO: implement
 		}
 		remove: bool(Map map, Key key) {

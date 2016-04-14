@@ -7,15 +7,6 @@ enum Window {
 	resx = resy*2;
 }
 
-//~ mesh.Init(0);
-//~ mesh.Pos(0, 1, 0, 0);
-//~ mesh.Pos(1, 0, 1, 0);
-//~ mesh.Pos(2, 0, 0, 1);
-//~ mesh.AddFace(0, 1, 2);
-//~ //mesh.Normalize(0);
-//~ mesh.Center(1);
-
-
 int count = 0;
 int maxused = 0;
 int colors[256];

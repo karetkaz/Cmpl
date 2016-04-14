@@ -1,7 +1,7 @@
 // TODO:
 struct string: object {
 
-	struct Builder {
+	struct Builder: object {
 		define defSize = 256;
 		string cache = null;
 		char data[];
@@ -123,9 +123,28 @@ struct string: object {
 		}
 	}
 
-	enum CompareOptions {
-		None = 0;
-		IgnoreCase = 1;
+	// enumerate comparator functions
+	enum Comparator: int(string a, string b) {
+		caseSensitive = int(string a, string b) {
+			int maxLength = Math.min(a.length, b.length);
+			for (int i = 0; i < maxLength; i += 1) {
+				result = a[i] - b[i];
+				if (result != 0) {
+					return result;
+				}
+			}
+			return 0;
+		}
+		caseIgnore = int(string a, string b) {
+			int maxLength = Math.min(a.length, b.length);
+			for (int i = 0; i < maxLength; i += 1) {
+				result = toLowerCase(a[i]) - toLowerCase(b[i]);
+				if (result != 0) {
+					return result;
+				}
+			}
+			return 0;
+		}
 	}
 
 	// private members

@@ -28,6 +28,16 @@ struct ByteReader: Closeable {  // InputStream
 		SocketReader
 		MemoryReader
 	+/
+	static int read(ByteReader reader) {
+		byte bytes[1];
+		result = reader.read(reader, bytes);
+		if (result > 0) {
+			result = bytes[0];
+		}
+		return result;
+	}
+	operator(ByteReader reader).read(byte bytes[]) = reader.read(reader, bytes);
+	operator(ByteReader reader).read() = read(reader);
 }
 
 struct ByteWriter: Closeable {  // OutputStream
@@ -60,8 +70,8 @@ struct TextWriter: Closeable {
 }
 
 struct CopyReader: ByteReader {  // Tee
-	ByteReader source;
-	ByteWriter copy;
+	const ByteReader source;
+	const ByteWriter copy;
 	class: {
 		read: int(ByteReader this, byte bytes[]) {
 			result = this.source.read(bytes);
@@ -72,7 +82,6 @@ struct CopyReader: ByteReader {  // Tee
 		};
 		close: void(CopyReader this) {
 			this.source.close();
-			this.copy.flush();
 			this.copy.close();
 		}
 	}
@@ -88,12 +97,14 @@ struct FileInputStream: InputStream {
 	const File file;
 
 	/* TODO: override methods by simple initialization
-	close: void(FileInputStream stream) {
-		File.close(stream.file);
-	}
+	struct {
+		close: void(FileInputStream stream) {
+			File.close(stream.file);
+		}
 
-	read: int(FileInputStream stream, byte values[]) {
-		return File.read(stream.file, values);
+		read: int(FileInputStream stream, byte values[]) {
+			return File.read(stream.file, values);
+		}
 	}
 
 	// initializer

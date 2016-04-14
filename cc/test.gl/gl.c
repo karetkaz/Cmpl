@@ -1,6 +1,6 @@
 //~ http://pyopengl.sourceforge.net/documentation/manual-3.0/index.html
 //~ sudo apt-get install freeglut3:i386
-#include "ccapi.h"
+#include "plugin.h"
 #include <stdlib.h>
 #include <GL/glut.h>
 
@@ -301,11 +301,11 @@ int ccvmInit(rtContext _rt) {
 		char *def;
 	}
 	libcGl[] = {
-		{glFun_Viewport,		"void Viewport(int x, int y, int width, int height);"},
-		{glFun_Enable,			"void Enable(int32 mode);"},
-		{glFun_Disable,			"void Disable(int32 mode);"},
-		{glFun_ShadeModel,		"void ShadeModel(int mode);"},
-		{glFun_CullFace,		"void CullFace(int mode);"},
+		{glFun_Viewport,        "void Viewport(int x, int y, int width, int height);"},
+		{glFun_Enable,          "void Enable(int32 mode);"},
+		{glFun_Disable,         "void Disable(int32 mode);"},
+		{glFun_ShadeModel,      "void ShadeModel(int mode);"},
+		{glFun_CullFace,        "void CullFace(int mode);"},
 
 		{glFun_Clear,			"void Clear(int32 Buffer);"},
 		{glFun_Begin,			"void Begin(int32 Primitive);"},
@@ -411,13 +411,13 @@ int ccvmInit(rtContext _rt) {
 		}
 
 		for (i = 0; i < sizeof(libcGl) / sizeof(*libcGl); i += 1) {
-			if (!rt->api.ccAddCall(rt, libcGl[i].fun, NULL, libcGl[i].def)) {
+			if (!rt->api.ccDefCall(rt, libcGl[i].fun, NULL, libcGl[i].def)) {
 				return -1;
 			}
 		}
 
 		//~ add some inlines
-		if (!rt->api.ccAddCode(rt, 0, __FILE__, __LINE__ + 1,
+		if (!rt->api.ccDefCode(rt, 0, __FILE__, __LINE__ + 1,
 			"define Vertex(float32 x, float32 y, float32 z) = Vertex(x, y, z, 1.);\n"
 			"define Color(float32 r, float32 g, float32 b) = Color(r, g, b, 1.);\n"
 		)) {
@@ -436,7 +436,7 @@ int ccvmInit(rtContext _rt) {
 			}
 		}
 		for (i = 0; i < sizeof(libcGlu) / sizeof(*libcGlu); i += 1) {
-			if (!rt->api.ccAddCall(rt, libcGlu[i].fun, NULL, libcGlu[i].def)) {
+			if (!rt->api.ccDefCall(rt, libcGlu[i].fun, NULL, libcGlu[i].def)) {
 				return -2;
 			}
 		}
@@ -452,7 +452,7 @@ int ccvmInit(rtContext _rt) {
 			}
 		}
 		for (i = 0; i < sizeof(libcGlut) / sizeof(*libcGlut); i += 1) {
-			if (!rt->api.ccAddCall(rt, libcGlut[i].fun, NULL, libcGlut[i].def)) {
+			if (!rt->api.ccDefCall(rt, libcGlut[i].fun, NULL, libcGlut[i].def)) {
 				return -3;
 			}
 		}

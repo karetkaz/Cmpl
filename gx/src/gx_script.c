@@ -1758,34 +1758,34 @@ int ccCompile(char *src, int argc, char* argv[], int dbg(userContext, vmError, s
 
 static inline double lerp(double a, double b, double t) {return a + t * (b - a);}
 
-inline double  dv3dot(double lhs[3], double rhs[3]) {
+static inline double  dv3dot(double lhs[3], double rhs[3]) {
 	return lhs[0] * rhs[0] + lhs[1] * rhs[1] + lhs[2] * rhs[2];
 }
-inline double* dv3cpy(double dst[3], double src[3]) {
+static inline double* dv3cpy(double dst[3], double src[3]) {
 	dst[0] = src[0];
 	dst[1] = src[1];
 	dst[2] = src[2];
 	return dst;
 }
-inline double* dv3sca(double dst[3], double src[3], double rhs) {
+static inline double* dv3sca(double dst[3], double src[3], double rhs) {
 	dst[0] = src[0] * rhs;
 	dst[1] = src[1] * rhs;
 	dst[2] = src[2] * rhs;
 	return dst;
 }
-inline double* dv3sub(double dst[3], double lhs[3], double rhs[3]) {
+static inline double* dv3sub(double dst[3], double lhs[3], double rhs[3]) {
 	dst[0] = lhs[0] - rhs[0];
 	dst[1] = lhs[1] - rhs[1];
 	dst[2] = lhs[2] - rhs[2];
 	return dst;
 }
-inline double* dv3crs(double dst[3], double lhs[3], double rhs[3]) {
+static inline double* dv3crs(double dst[3], double lhs[3], double rhs[3]) {
 	dst[0] = lhs[1] * rhs[2] - lhs[2] * rhs[1];
 	dst[1] = lhs[2] * rhs[0] - lhs[0] * rhs[2];
 	dst[2] = lhs[0] * rhs[1] - lhs[1] * rhs[0];
 	return dst;
 }
-inline double* dv3nrm(double dst[3], double src[3]) {
+static inline double* dv3nrm(double dst[3], double src[3]) {
 	double len = dv3dot(src, src);
 	if (len > 0) {
 		//~ len = 1. / sqrt(len);

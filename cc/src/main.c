@@ -265,7 +265,8 @@ struct userContextRec {
 	unsigned dmpProf:2;
 	unsigned dmpHeap:2;
 	unsigned dmpGlob:2;
-	signed padFlags:17;
+	unsigned hasOut:1;
+	signed padFlags:16;
 
 	// debug
 	int breakCaught;    // pause debugger on caught error
@@ -1132,6 +1133,7 @@ static void jsonDumpApi(userContext ctx, symn sym) {
 	if (sym == ctx->rt->vars) {
 		// first symbol
 		fputFmt(fout, esc, "\n%I\"%s\": [{\n", indent, JSON_KEY_API);
+		ctx->hasOut = 1;
 	}
 	else if (sym != NULL) {
 		// not the first symbol
@@ -1268,7 +1270,7 @@ static int jsonProfile(dbgContext ctx, size_t ss, void* caller, void* callee, cl
 		else {
 			size_t offs = vmOffset(ctx->rt, callee);
 			if (ss == 0) {
-				fputFmt(out, esc, "\n%I%s\"%s\": {\n", indent, cc->dmpApi ? ", " : "", JSON_KEY_RUN);
+				fputFmt(out, esc, "\n%I%s\"%s\": {\n", indent, cc->hasOut ? ", " : "", JSON_KEY_RUN);
 				fputFmt(out, esc, "%I\"\": \"%s\"\n", indent + 1,
 						"callTree array is constructed from a tick(timestamp) followed by a function offset, if the offset is negative it represents a return from a function instead of a call.");
 				fputFmt(out, esc, "%I, \"callTree\": [", indent + 1);
@@ -1337,6 +1339,7 @@ static int program(int argc, char* argv[]) {
 		.dumpAst = -1,
 
 		.out = stdout,
+		.hasOut = 0,
 		.indent = 0,
 
 		.rt = NULL

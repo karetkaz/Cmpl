@@ -8,7 +8,7 @@
 int arr2[15];			// array
 int arr3[] = arr2;		// slice
 //~ +/
-//! TODO: variant should cast to TYPE_var
+//! TODO: variant should cast to CAST_var
 //! TODO: assign null to slice: int a[] = null;
 //! TODO: assign null to variant: variant var = null;
 //! TODO: varargs: int min(int first, int rest...) {...}
@@ -419,9 +419,9 @@ inline void(float64 &&a) = void(0);
 inline void(object &&o)  = void(object.destroy(o));
 //~ +/
 
-/+ TODO: Reflection
+//~ /+ TODO: Reflection
 enum TypeCode: int32 {
-	CAST_any = 0x00000000;		// invalid, error, ...
+	KIND_any = 0x00000000;		// inline (/ error at runtime)
 	CAST_vid = 0x00000001;		// void;
 	CAST_bit = 0x00000002;		// bool;
 	CAST_i32 = 0x00000003;		// int32, int16, int8
@@ -431,29 +431,25 @@ enum TypeCode: int32 {
 	CAST_f32 = 0x00000007;		// float32
 	CAST_f64 = 0x00000008;		// float64
 	CAST_ptr = 0x00000009;		// pointer, reference
-
 	CAST_arr = 0x0000000a;		// slice: struct {size, data}
 	CAST_var = 0x0000000b;		// variant: struct {type, data}
-	CAST___d = 0x0000000d;		// 
-	CAST___e = 0x0000000e;		// 
-	CAST___f = 0x0000000f;		// 
-
-	TYPE_def = 0x00000000;		// inline (/ error at runtime)
-	TYPE_rec = 0x00000010;		// typename
-	TYPE_fun = 0x00000020;		// function
-	TYPE_ref = 0x00000030;		// variable: functions and typenames are also variables
+	CAST___c = 0x0000000c;		//
+	CAST___d = 0x0000000d;		//
+	CAST___e = 0x0000000e;		//
+	CAST___f = 0x0000000f;		//
+	KIND_typ = 0x00000010;		// typename
+	KIND_fun = 0x00000020;		// function
+	KIND_var = 0x00000030;		// variable: functions and typenames are also variables
 
 	ATTR_sta = 0x00000040;		// static attribute
 	ATTR_con = 0x00000080;		// constant attribute
 	ATTR_par = 0x00000100;		// ?parrallel
-	ATTR_ref = 0x00000200;		// ?indirect
-	ATTR_prv = 0x00000400;		// ?private
 }
 
 struct TypeInfo {
-	char* file;			// declared in file (cstr)
+	char* file;			// declared in file (char[*])
 	int32 line;			// declared on line
-	char* name;			// typename (cstr)
+	char* name;			// typename (char[*])
 	int32 offs;			// offset
 	int32 size;			// size
 
@@ -465,10 +461,10 @@ struct TypeInfo {
 	int8  cast;			// casts to ...
 	int16 attr;			// attributes
 
-	//~ operator (TypeInfo &this).typename = bool((this.kind & 0xf) != TYPE_ref);
+	//~ operator (TypeInfo &this).typename = bool((this.kind & 0xf) != KIND_var);
+	//~ operator (TypeInfo &this).function = bool((this.kind & 0xf) == KIND_fun);
 	//~ operator (TypeInfo &this).constant = bool(this.kind & ATTR_con == ATTR_con);
 	//~ operator (TypeInfo &this).indirect = bool(this.kind & ATTR_ind == ATTR_ind);
-	//~ operator (TypeInfo &this).function = bool(this.kind & ATTR_fun == );
 }
 
 bool instanceOf(variant obj, typename typ) {
@@ -496,14 +492,14 @@ variant invoke(variant obj, int flags, string name, variant args...) {
 	// loop on each hierarchy class
 	for ( ; type && level > 0; ) {
 
-		if (type.code != TYPE_rec) {
+		if (type.code != KIND_typ) {
 			break;
 		}
 
 		for (typename field : type.args) {
 
 			// filter out inlines, values, ...
-			if (field.code != TYPE_ref)
+			if (field.code != KIND_var)
 				continue;
 
 			// filter by type

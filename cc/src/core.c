@@ -197,6 +197,10 @@ void *rtAlloc(rtContext rt, void* ptr, size_t size, void dbg(rtContext rt, void*
 	return chunk ? chunk->data : NULL;
 }
 
+static void ccEndApi(rtContext rt, symn cls) {
+	ccEnd(rt, cls, ATTR_stat);
+}
+
 static void *rtAllocApi(rtContext rt, void* ptr, size_t size) {
 	return rtAlloc(rt, ptr, size, NULL);
 }
@@ -229,7 +233,7 @@ rtContext rtInit(void* mem, size_t size) {
 		memset(rt, 0, sizeof(struct rtContextRec));
 
 		*(void**)&rt->api.ccBegin = ccBegin;
-		*(void**)&rt->api.ccEnd = ccEnd;
+		*(void**)&rt->api.ccEnd = ccEndApi;
 
 		*(void**)&rt->api.ccDefInt = ccDefInt;
 		*(void**)&rt->api.ccDefFlt = ccDefFlt;
