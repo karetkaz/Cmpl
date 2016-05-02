@@ -22,7 +22,7 @@ void setup(float &time, vec4f pixelCB(float x, float y)) {
 
 	static Internals internals;
 
-	static int32 begTime = System.millis();
+	static int64 begTime = System.millis();
 
 	// for each frame
 	static void drawCB() {
@@ -177,9 +177,9 @@ vec4f eye(float x, float y) {
 	result = lerp(f, cOjo, cPiel);
 }
 
-setup(&time, eye);
+//~ setup(&time, eye);
 //~ setup(&time, blob2d);
-//~ setup(&time, yinyang);
+setup(&time, yinyang);
 
 //~ setup(&time, Perlin.Noise2f);
 //~ Gui.exitLoop();

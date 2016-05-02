@@ -944,9 +944,9 @@ dbgn getDbgStatement(rtContext rt, char* file, int line) {
 }
 dbgn mapDbgStatement(rtContext rt, size_t position) {
 	if (rt->dbg != NULL) {
-		int i;
 		dbgn result = (dbgn)rt->dbg->statements.ptr;
-		for (i = 0; i < rt->dbg->statements.cnt; ++i) {
+		int i, n = rt->dbg->statements.cnt;
+		for (i = 0; i < n; ++i) {
 			if (position >= result->start) {
 				if (position < result->end) {
 					return result;
@@ -988,9 +988,9 @@ dbgn addDbgStatement(rtContext rt, size_t start, size_t end, astn tag) {
 
 dbgn mapDbgFunction(rtContext rt, size_t position) {
 	if (rt->dbg != NULL) {
-		int i;
 		dbgn result = (dbgn)rt->dbg->functions.ptr;
-		for (i = 0; i < rt->dbg->functions.cnt; ++i) {
+		int i, n = rt->dbg->functions.cnt;
+		for (i = 0; i < n; ++i) {
 			if (position >= result->start) {
 				if (position < result->end) {
 					return result;

@@ -186,9 +186,10 @@ static XGCValues gcvalues;
 static int create_window(int width, int height) {
 
 	static Atom wmDelete;
-	void *fb32 = NULL;
 
 	if (!window) {
+
+		int defaultDepth = DefaultDepth(display, DefaultScreen(display));
 
 		window = XCreateSimpleWindow(display, XDefaultRootWindow(display), 100, 100, width, height, 2, BlackPixel(display, 0), WhitePixel(display, 0));
 
@@ -205,8 +206,7 @@ static int create_window(int width, int height) {
 
 		XFlush(display);
 
-		g_image = XCreateImage(display, DefaultVisual(display, DefaultScreen(display)), DefaultDepth(display, DefaultScreen(display)), ZPixmap, 0, (char *)fb32, width, height, 32, width * 4);
-
+		g_image = XCreateImage(display, NULL, defaultDepth, ZPixmap, 0, NULL, width, height, 32, width * 4);
 		gc = XCreateGC(display, window, GCForeground, &gcvalues);
 
 		XSizeHints *size_hints = XAllocSizeHints();

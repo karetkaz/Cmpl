@@ -1353,7 +1353,7 @@ static vmError exec(rtContext rt, cell pu, symn fun, void *extra) {
 
 			const tracePtr tp = (tracePtr)pu->tp - 1;
 			const size_t pc = vmOffset(rt, ip);
-			const dbgn stmt = mapDbgStatement(rt, pc);
+			const dbgn stmt = NULL;//mapDbgStatement(rt, pc);
 
 			if (ip >= ipMax || ip < ipMin) {
 				dbg(rt->dbg, invalidIP, st - sp, sp, ip);

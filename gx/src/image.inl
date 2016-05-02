@@ -76,8 +76,7 @@ typedef struct {	// CUR_BMP		BITMAPINFOHEADER
 typedef int (*bmplnreader)(unsigned char*, FILE*, unsigned);
 typedef int (*bmplnwriter)(FILE*, unsigned char*, unsigned);
 
-//~ static inline FRead()
-size_t FRead(void *ptr, size_t size, size_t nmemb, FILE *stream) {
+static inline size_t FRead(void *ptr, size_t size, size_t nmemb, FILE *stream) {
 	int cnt = fread(ptr, size, nmemb, stream);
 	if (nmemb != cnt)
 		gx_debug("xxx");
@@ -221,9 +220,6 @@ static int bmpwln_08rle(FILE* dst, unsigned char* src, unsigned cnt) {return -1;
 
 //	open / save image formats
 
-// TODO: delme
-unsigned char gx_buff[65536*4];
-
 int gx_readBMP(gx_Surf dst, FILE* fin, int depth) {
 	struct gx_Clut bmppal;			// bitmap palette
 	bmplnreader	bmplrd;			// bitmap line reader
@@ -231,16 +227,19 @@ int gx_readBMP(gx_Surf dst, FILE* fin, int depth) {
 	BMP_INF		bmpinf;			// bitmap info header
 	int			bmplsz;			// bitmap line size
 	char*		ptr;			// ptr to surface line
-	char*		tmpbuff;		// bitmap temp buffer
+	char	tmpbuff[65535*4];	// bitmap temp buffer
 	cblt_proc	convln;			// color convereter rutine
+
+	// check for valid depths
 	switch (depth) {
-		case  8 :
-		case 15 :
-		case 16 :
-		case 24 :
-		case 32 :break;
-		//~ case -1 : depth = 32; break;
-		default : return 7;
+		default:
+			return 7;
+		case 32:
+		case 24:
+		case 16:
+		case 15:
+		case 8:
+			break;
 	}
 
 	FRead(&bmphdr, sizeof(BMP_HDR), 1, fin);
@@ -302,20 +301,14 @@ int gx_readBMP(gx_Surf dst, FILE* fin, int depth) {
 	if (!(convln = gx_getcbltf(cblt_conv, depth, bmpinf.depth < 8 ? 8 : bmpinf.depth))) {
 		return 6;
 	}
-	dst->depth  = depth;
-	dst->width  = bmpinf.width;
-	dst->height = bmpinf.height;
-	dst->scanLen = 0;
-
-	if (gx_initSurf(dst, NULL, depth == 8 ? &bmppal : NULL, SURF_DNTCLR)) {
+	if (gx_initSurf(dst, bmpinf.width, bmpinf.height, depth, Surf_recycle)) {
 		return 8;
+	}
+	if (depth == 8) {
+		dst->CLUTPtr = &bmppal;
 	}
 
 	bmplsz = ((bmpinf.depth * bmpinf.width >> 3) + 3) & (~3);
-	/*if (!(tmpbuff = (char*) malloc(bmplsz))) {
-		return 9;
-	}//*/
-	tmpbuff = (char*)gx_buff;
 	ptr = (char*)dst->basePtr + dst->scanLen * dst->height;
 	fseek(fin, bmphdr.imgstart, SEEK_SET);
 	while (bmpinf.height--) {
@@ -323,7 +316,6 @@ int gx_readBMP(gx_Surf dst, FILE* fin, int depth) {
 		bmplrd((unsigned char*)tmpbuff, fin, bmplsz);
 		gx_callcbltf(convln, ptr, tmpbuff, bmpinf.width, &bmppal);
 	}
-	//~ free(tmpbuff);
 	return 0;
 }
 
@@ -343,7 +335,7 @@ int gx_saveBMP(const char* dst, gx_Surf src, int flags) {
 	BMP_INF		bmpinf;			// bitmap info header
 	int		bmplsz;			// bitmap line size
 	FILE*		fout;			// bitmap output file
-	char*		tmpbuff;		// bitmap temp buffer
+	char	tmpbuff[65535*4];	// bitmap temp buffer
 	char*		ptr;			// surface line ptr
 	cblt_proc	convln;			// color convereter rutine
 	memset(&bmphdr, 0, sizeof(BMP_HDR));
@@ -408,11 +400,6 @@ int gx_saveBMP(const char* dst, gx_Surf src, int flags) {
 	bmphdr.filesize = bmphdr.imgstart + bmpinf.imgsize;
 	if (!(convln = gx_getcbltf(cblt_conv, bmpinf.depth < 8 ? 8 : bmpinf.depth, src->depth))) return 3;
 	if (!(fout = fopen(dst,"wb"))) return 1;
-	/*if (!(tmpbuff = (char*) malloc(bmplsz))) {
-		fclose(fout);
-		return 4;
-	}//*/
-	tmpbuff = (char*)gx_buff;
 	fwrite(&bmphdr, sizeof(BMP_HDR), 1, fout);
 	fwrite(&bmpinf, bmphdr.hdrsize-4, 1, fout);
 	fwrite(&bmppal.data, bmppal.count, 4, fout);
@@ -421,7 +408,6 @@ int gx_saveBMP(const char* dst, gx_Surf src, int flags) {
 		gx_callcbltf(convln, tmpbuff, ptr -= src->scanLen, bmpinf.width, &bmppal);
 		bmplwr(fout, (unsigned char*)tmpbuff, bmplsz);
 	}
-	//~ free(tmpbuff);
 	fclose(fout);
 	return 0;
 }
@@ -616,7 +602,8 @@ static void conv_abgr2argb(unsigned char* dst, unsigned char* src, int cnt) {
 #include "jpeg.h"
 int gx_loadJPG(gx_Surf dst, const char* src, int depth) {
 	void (*conv_2xrgb)(unsigned char* dst, unsigned char* src, int cnt) = NULL;
-	unsigned char* tmpbuff;		// bitmap temp buffer
+	unsigned char buff[65535*4];		// bitmap temp buffer
+	unsigned char *tmpbuff = buff;
 	unsigned char* ptr;			// ptr to surface line
 	FILE*		fin;
 
@@ -685,21 +672,11 @@ int gx_loadJPG(gx_Surf dst, const char* src, int depth) {
 		return 6;
 	}
 
-	dst->depth  = depth;
-	dst->width  = cinfo.output_width;
-	dst->height = cinfo.output_height;
-	dst->scanLen = 0;
-	if (gx_initSurf(dst, 0, 0, SURF_DNTCLR)) {
+	if (gx_initSurf(dst, cinfo.output_width, cinfo.output_height, depth, Surf_recycle)) {
 		fclose(fin);
 		return 8;
 	}
-	/*if (!(tmpbuff = (char*) malloc(bmplsz))) {
-		fclose(fin);
-		return 9;
-	}//*/
-
 	/* Step 6: while (scan lines remain to be read) */
-	tmpbuff = (unsigned char*)gx_buff;
 	ptr = (void*)dst->basePtr;
 	while (cinfo.output_scanline < cinfo.output_height) {
 		(void) jpeg_read_scanlines(&cinfo, &tmpbuff, 1);
@@ -707,7 +684,6 @@ int gx_loadJPG(gx_Surf dst, const char* src, int depth) {
 		//~ gx_callcbltf(convln, ptr, tmpbuff, dst->width, NULL);
 		ptr += dst->scanLen;
 	}
-	//~ free(tmpbuff);
 
 	/* Step 7: Finish decompression */
 	(void) jpeg_finish_decompress(&cinfo);
@@ -723,11 +699,11 @@ int gx_loadJPG(gx_Surf dst, const char* src, int depth) {
 #include "png.h"
 int gx_loadPNG(gx_Surf dst, const char* src, int depth) {
 	void (*conv_2xrgb)(unsigned char* dst, unsigned char* src, int cnt) = NULL;
-	unsigned char* tmpbuff = gx_buff;	// bitmap temp buffer
+	unsigned char tmpbuff[65535*4];	// bitmap temp buffer
 	unsigned char* ptr;			// ptr to surface line
 	FILE*		fin;
 
-	int			pngdepth = 0;
+	int			pngwidth, pngheight, pngdepth = 0;
 	int			color_type, bit_depth;
 
 	// 8 is the maximum size that can be checked
@@ -772,15 +748,14 @@ int gx_loadPNG(gx_Surf dst, const char* src, int depth) {
 
 	png_read_info(png_ptr, info_ptr);
 
-	dst->width = png_get_image_width(png_ptr, info_ptr);
-	dst->height = png_get_image_height(png_ptr, info_ptr);
+	pngwidth = png_get_image_width(png_ptr, info_ptr);
+	pngheight = png_get_image_height(png_ptr, info_ptr);
 	//~ color_type = png_get_color_type(png_ptr, info_ptr);
-	dst->depth = depth;
 	bit_depth = png_get_bit_depth(png_ptr, info_ptr);
 	pngdepth = bit_depth * png_get_channels(png_ptr, info_ptr);
 	color_type = png_get_color_type(png_ptr, info_ptr);
-	dst->scanLen = 0;
-	if (gx_initSurf(dst, 0, 0, SURF_DNTCLR)) {
+	//gx_destroySurf(dst, 1);
+	if (gx_initSurf(dst, pngwidth, pngheight, depth, Surf_recycle)) {
 		fclose(fin);
 		return 8;
 	}

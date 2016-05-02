@@ -642,13 +642,13 @@ static int textureMesh(mesh msh, char *tex) {
 	if (tex != NULL) {
 		char *ext = fext(tex);
 		msh->freeTex = 1;
-		msh->map = gx_createSurf(0, 0, 0, 0);
+		msh->map = gx_createSurf(0, 0, 32, 0);
 		if (stricmp(ext, "bmp") == 0)
-			res = gx_loadBMP(msh->map, tex, 32);
+			res = gx_loadBMP(msh->map, tex, msh->map->depth);
 		if (stricmp(ext, "jpg") == 0)
-			res = gx_loadJPG(msh->map, tex, 32);
+			res = gx_loadJPG(msh->map, tex, msh->map->depth);
 		if (stricmp(ext, "png") == 0)
-			res = gx_loadPNG(msh->map, tex, 32);
+			res = gx_loadPNG(msh->map, tex, msh->map->depth);
 		gx_debug("ReadText('%s'): %d", tex, res);
 	}
 	return res;
@@ -695,7 +695,7 @@ extern rtContext rt;
 extern symn renderMethod;
 extern symn mouseCallBack;
 extern symn keyboardCallBack;
-extern int ccCompile(char *src, int argc, char* argv[], int dbg(rtContext, vmError, size_t ss, void* sp, void* caller, void* callee));
+extern int ccCompile(char *src, int argc, char* argv[], int dbg(dbgContext, vmError, size_t, void*, void*));
 
 enum Events {
 	doReload = 10,
@@ -914,22 +914,21 @@ static int ratHND(int btn, int mx, int my) {
 		}
 }
 
-static int dbgCon(rtContext rt, vmError err, size_t ss, void* sp, void* caller, void* callee) {
-	//~ int IP = ((char*)caller) - ((char*)rt->_mem);
-	if (callee != NULL) {
+static int dbgCon(dbgContext rt, vmError err, size_t ss, void* sp, void* ip) {
+	if (ip != NULL) {
 		return 0;
 	}
-	fputfmt(stdout, ">exec:[sp%02d:%016X]@ %.A\n", ss, *(int64_t*)sp, caller);
+	fputfmt(stdout, ">exec:[sp%02d:%016X]@ %.A\n", ss, *(int64_t*)sp, ip);
 	//~ fputfmt(stdout, ">exec: %.A\n", caller);
 	return 0;
 }
 
-static int dbgDummy(rtContext rt, vmError err, size_t ss, void* sp, void* caller, void* callee) {
+static int dbgDummy(dbgContext rt, vmError err, size_t ss, void* sp, void* ip) {
 	return 0;
 }
 
 int main(int argc, char* argv[]) {
-	int (*dbg)(rtContext, vmError, size_t ss, void* sp, void* caller, void* callee) = NULL;
+	int (*dbg)(dbgContext, vmError, size_t, void*, void*) = NULL;
 	static char mem[16 << 20];		// 16MB memory for vm & compiler
 
 	struct matrix proj[1], view[1];
@@ -991,7 +990,7 @@ int main(int argc, char* argv[]) {
 				// need help ?
 				rt = rtInit(mem, sizeof(mem));
 				ccCompile(NULL, 0, NULL, NULL);
-				gx_doneSurf(&offs);
+				gx_destroySurf(&offs);
 				freeMesh(&mshLightPoint);
 				freeMesh(&msh);
 				return 0;
@@ -1061,15 +1060,15 @@ int main(int argc, char* argv[]) {
 
 	if ((e = g3_init(&offs, resx, resy))) {
 		gx_debug("Error: %d\n", e);
-		gx_doneSurf(&font);
-		gx_doneSurf(&offs);
+		gx_destroySurf(&font);
+		gx_destroySurf(&offs);
 		freeMesh(&msh);
 		return 2;
 	}
 	if (initWin(draw ? &offs : NULL, &flip, &peekMsg, ratHND, kbdHND)) {
 		printf("Cannot init surface\n");
-		gx_doneSurf(&font);
-		gx_doneSurf(&offs);
+		gx_destroySurf(&font);
+		gx_destroySurf(&offs);
 		freeMesh(&msh);
 		return 1;
 	}
@@ -1080,8 +1079,8 @@ int main(int argc, char* argv[]) {
 		//~ gx_debug("vmExecute(): %d\tTime: %f", e, ticksinsecs(ticks));
 		gx_debug("vmExecute(Exit code: %d, Time: %.3f)", e, ticksinsecs(ticks));
 		if (e != 0) {
-			gx_doneSurf(&offs);
-			gx_doneSurf(&font);
+			gx_destroySurf(&offs);
+			gx_destroySurf(&font);
 			freeMesh(&mshLightPoint);
 			freeMesh(&msh);
 			return 22;
@@ -1222,28 +1221,28 @@ int main(int argc, char* argv[]) {
 				int ln;
 				struct gx_Rect box;
 				sprintf(str, "Object size: %g, tvx:%d, tri:%d, seg:%d%s%s", O, msh.vtxcnt, msh.tricnt, msh.segcnt, msh.hasTex ? ", tex" : "", msh.hasNrm ? ", nrm" : "");
-				gx_clipText(&box, &font, str);
+				g2_clipText(&box, &font, str);
 				ln = -box.h;
-				gx_drawText(&offs, offs.width - box.w - 10, ln += box.h, &font, str, 0xffffffff);
+				g2_drawText(&offs, offs.width - box.w - 10, ln += box.h, &font, str, 0xffffffff);
 
 				sprintf(str, "camera(%g, %g, %g)", cam->pos.x, cam->pos.y, cam->pos.z);
-				gx_clipText(&box, &font, str);
-				gx_drawText(&offs, offs.width - box.w - 10, ln += box.h, &font, str, 0xffffffff);
+				g2_clipText(&box, &font, str);
+				g2_drawText(&offs, offs.width - box.w - 10, ln += box.h, &font, str, 0xffffffff);
 
 				if (getobjvec(0)) {
 					vector P = getobjvec(0);
 					vector N = getobjvec(1);
 					//~ sprintf(str, "light[%d].pos(%g, %g, %g); cos(%g), exp(%g)", rm-Lights, rm->pos.x, rm->pos.y, rm->pos.z, rm->sCos, rm->sExp);
 					sprintf(str, "object: P(%.3f, %.3f, %.3f), N(%.3f, %.3f, %.3f)", P->x, P->y, P->z, N->x, N->y, N->z);
-					gx_clipText(&box, &font, str); gx_drawText(&offs, offs.width - box.w - 10, ln += box.h, &font, str, 0xffffffff);
+					g2_clipText(&box, &font, str); g2_drawText(&offs, offs.width - box.w - 10, ln += box.h, &font, str, 0xffffffff);
 					//~ sprintf(str, "camera1(%g, %g, %g)", cam1.pos.x, cam1.pos.y, cam1.pos.z);
 					//~ gx_drawText(&offs, SCRW - 8*strlen(str)-10, ln += box.h, &font, str, 0xffffffff);
 				}
 				for (l = userLights; l; l = l->next) {
 					argb lcol = vecrgb(&l->ambi);
 					sprintf(str, "light %d : %s", e, l->attr & L_on ? "On" : "Off");
-					gx_clipText(&box, &font, str);
-					gx_drawText(&offs, offs.width - box.w - 10, ln += box.h, &font, str, lcol.val);
+					g2_clipText(&box, &font, str);
+					g2_drawText(&offs, offs.width - box.w - 10, ln += box.h, &font, str, lcol.val);
 				}
 			}
 		}
@@ -1262,8 +1261,8 @@ int main(int argc, char* argv[]) {
 
 	}
 
-	gx_doneSurf(&font);
-	gx_doneSurf(&offs);
+	gx_destroySurf(&font);
+	gx_destroySurf(&offs);
 	freeMesh(&mshLightPoint);
 	//~ freeMesh(&mshLightSpot);
 	//~ freeMesh(&mshLightDir);

@@ -119,12 +119,7 @@ static gxSurfHnd newSurf(int w, int h) {
 	gxSurfHnd hnd = 0;
 	while (hnd < surfCount) {
 		if (!surfaces[hnd].depth) {
-			surfaces[hnd].width = w;
-			surfaces[hnd].height = h;
-			surfaces[hnd].depth = 32;
-			surfaces[hnd].scanLen = 0;
-			if (gx_initSurf(&surfaces[hnd], 0, 0, 0) == 0) {
-				//~ if (cpy != NULL) gx_zoomsurf(&surfaces[hnd], NULL, cpy, NULL, 0);
+			if (gx_initSurf(&surfaces[hnd], w, h, 32, Surf_recycle) == 0) {
 				return hnd + 1;
 			}
 			break;
@@ -142,7 +137,7 @@ static void delSurf(gxSurfHnd hnd) {
 		return;
 
 	if (surfaces[hnd - 1].depth) {
-		gx_doneSurf(&surfaces[hnd - 1]);
+		gx_destroySurf(&surfaces[hnd - 1]);
 		surfaces[hnd - 1].depth = 0;
 	}
 }
@@ -165,7 +160,7 @@ void surfDone() {
 	gxSurfHnd hnd = 0;
 	while (hnd < surfCount) {
 		if (surfaces[hnd].depth) {
-			gx_doneSurf(&surfaces[hnd]);
+			gx_destroySurf(&surfaces[hnd]);
 		}
 		hnd += 1;
 	}
@@ -178,7 +173,7 @@ static vmError surfSetPixel(libcContext rt) {
 		int x = popi32(rt);
 		int y = popi32(rt);
 		int col = popi32(rt);
-		//~ /* this way is faster
+
 		if ((unsigned)x >= (unsigned)surf->width || (unsigned)y >= (unsigned)surf->height) {
 			return noError;
 		}
@@ -193,7 +188,7 @@ static vmError surfSetPixel(libcContext rt) {
 			uint8_t *ptr = (uint8_t*)((char*)surf->basePtr + rowy);
 			ptr[x] = col;
 			return noError;
-		}// */
+		}
 
 		//~ gx_setpixel(surf, x, y, col);
 		//~ return noError;
@@ -206,7 +201,7 @@ static vmError surfGetPixel(libcContext rt) {
 		unsigned rowy;
 		int x = popi32(rt);
 		int y = popi32(rt);
-		//~ /* but this way is faster
+
 		if ((unsigned)x >= (unsigned)surf->width || (unsigned)y >= (unsigned)surf->height) {
 			reti32(rt, 0);
 			return noError;
@@ -221,7 +216,8 @@ static vmError surfGetPixel(libcContext rt) {
 			uint8_t *ptr = (uint8_t*)((char*)surf->basePtr + rowy);
 			reti32(rt, ptr[x]);
 			return noError;
-		}// */
+		}
+
 		//~ reti32(rt, gx_getpixel(surf, x, y));
 		//~ return noError;
 	}
@@ -240,6 +236,13 @@ static vmError surfGetPixfp(libcContext rt) {
 static vmError surfCall(libcContext rt) {
 	gx_Surf surf;
 	switch ((surfFunc)rt->data) {
+		case surfOpGetDepth:
+			surf = getSurf(popi32(rt));
+			if (surf != NULL) {
+				reti32(rt, surf->depth);
+				return noError;
+			}
+			break;
 		case surfOpGetWidth:
 			surf = getSurf(popi32(rt));
 			if (surf != NULL) {
@@ -254,13 +257,6 @@ static vmError surfCall(libcContext rt) {
 				return noError;
 			}
 			break;
-		case surfOpGetDepth:
-			surf = getSurf(popi32(rt));
-			if (surf != NULL) {
-				reti32(rt, surf->depth);
-				return noError;
-			}
-			break;
 
 		case surfOpClipRect:
 			surf = getSurf(popi32(rt));
@@ -271,68 +267,6 @@ static vmError surfCall(libcContext rt) {
 				return noError;
 			}
 			break;
-
-		/*case surfOpGetPixfp: {
-			gx_Surf surf;
-			if ((surf = getSurf(popi32(rt)))) {
-				double x = popf64(rt);
-				double y = popf64(rt);
-				reti32(rt, gx_getpix16(surf, x * 65535, y * 65535, 1));
-				return noError;
-			}
-		}
-		case surfOpGetPixel: {
-			gx_Surf surf;
-			if ((surf = getSurf(popi32(rt)))) {
-				int x = popi32(rt);
-				int y = popi32(rt);
-				//~ reti32(rt, gx_getpixel(surf, x, y));
-				//~ return noError;
-				/ * but this way is faster
-				if ((unsigned)x >= (unsigned)surf->width || (unsigned)y >= (unsigned)surf->height) {
-					reti32(rt, 0);
-					return noError;
-				}
-				int rowy = y * surf->scanLen;
-				if (surf->depth == 32) {
-					uint32_t *ptr = (uint32_t*)((char*)surf->basePtr + rowy);
-					reti32(rt, ptr[x]);
-					return noError;
-				}
-				else if (surf->depth == 8) {
-					uint8_t *ptr = (uint8_t*)((char*)surf->basePtr + rowy);
-					reti32(rt, ptr[x]);
-					return noError;
-				}// * /
-			}
-		}
-		case surfOpSetPixel: {
-			gx_Surf surf;
-			if ((surf = getSurf(popi32(rt)))) {
-				int x = popi32(rt);
-				int y = popi32(rt);
-				int col = popi32(rt);
-				//~ / * this way is faster
-				if ((unsigned)x >= (unsigned)surf->width || (unsigned)y >= (unsigned)surf->height) {
-					return noError;
-				}
-
-				unsigned rowy = y * (unsigned)surf->scanLen;
-				if (surf->depth == 32) {
-					uint32_t *ptr = (uint32_t*)((char*)surf->basePtr + rowy);
-					ptr[x] = col;
-					return noError;
-				}
-				else if (surf->depth == 8) {
-					uint8_t *ptr = (uint8_t*)((char*)surf->basePtr + rowy);
-					ptr[x] = col;
-					return noError;
-				}// * /
-
-				//~ gx_setpixel(surf, x, y, col);
-				//~ return noError;
-			}
-		}*/
 
 		case surfOpDrawLine:
 			surf = getSurf(popi32(rt));
@@ -384,7 +318,7 @@ static vmError surfCall(libcContext rt) {
 				int x1 = popi32(rt);
 				int y1 = popi32(rt);
 				int col = popi32(rt);
-				gx_drawrect(surf, x0, y0, x1, y1, col);
+				g2_drawrect(surf, x0, y0, x1, y1, col);
 				return noError;
 			}
 			break;
@@ -396,7 +330,7 @@ static vmError surfCall(libcContext rt) {
 				int x1 = popi32(rt);
 				int y1 = popi32(rt);
 				int col = popi32(rt);
-				gx_fillrect(surf, x0, y0, x1, y1, col);
+				g2_fillrect(surf, x0, y0, x1, y1, col);
 				return noError;
 			}
 			break;
@@ -431,12 +365,12 @@ static vmError surfCall(libcContext rt) {
 				int y0 = popi32(rt);
 				char *str = popstr(rt);
 				int col = popi32(rt);
-				gx_drawText(surf, x0, y0, &font, str, col);
+				g2_drawText(surf, x0, y0, &font, str, col);
 				return noError;
 			}
 			break;
 
-		case surfOpCopySurf: {		// gxSurf copySurf(gxSurf dst, int x, int y, gxSurf src, gxRect &roi);
+		case surfOpCopySurf: {
 			gxSurfHnd dst = popi32(rt);
 			int x = popi32(rt);
 			int y = popi32(rt);
@@ -447,12 +381,12 @@ static vmError surfCall(libcContext rt) {
 			gx_Surf ssrc = getSurf(src);
 
 			if (sdst && ssrc) {
-				gx_copysurf(sdst, x, y, ssrc, roi, 0);
+				gx_copysurf(sdst, x, y, ssrc, roi);
+				reti32(rt, dst);
+				return noError;
 			}
-			reti32(rt, dst);
-			return noError;
 		} break;
-		case surfOpZoomSurf: {		// gxSurf zoomSurf(gxSurf dst, gxRect &rect, gxSurf src, gxRect &roi, int mode)
+		case surfOpZoomSurf: {
 			gxSurfHnd dst = popi32(rt);
 			gx_Rect rect = popref(rt);
 			gxSurfHnd src = popi32(rt);
@@ -463,10 +397,9 @@ static vmError surfCall(libcContext rt) {
 
 			if (sdst && ssrc) {
 				gx_zoomsurf(sdst, rect, ssrc, roi, mode);
+				reti32(rt, dst);
+				return noError;
 			}
-			//~ else dst = 0;
-			reti32(rt, dst);
-			return noError;
 		} break;
 
 		case surfOpEvalPxCB: {		// gxSurf evalSurfrgb(gxSurf dst, gxRect &roi, int callBack(int x, int y));
@@ -474,7 +407,6 @@ static vmError surfCall(libcContext rt) {
 			gxSurfHnd dst = popi32(rt);
 			gx_Rect roi = popref(rt);
 			symn callback = popsym(rt);
-			//~ fputfmt(stdout, "callback is: %-T\n", callback);
 
 			gx_Surf sdst = getSurf(dst);
 
@@ -719,12 +651,10 @@ static vmError surfCall(libcContext rt) {
 							long* cbsrc = (long*)sptr;
 							for (x = clip.x; x < x1; x += 1) {
 								struct vector result;
-								struct {struct vector dst, src;} args;/* = {
-									vecldc(rgbval(*cbdst)),
-									vecldc(rgbval(*cbsrc))
-								};// */
-								args.dst = vecldc(rgbval(*cbdst));
-								args.src = vecldc(rgbval(*cbsrc));
+								struct {struct vector dst, src;} args = {
+									.dst = vecldc(rgbval(*cbdst)),
+									.src = vecldc(rgbval(*cbsrc))
+								};
 								if (invoke(rt_, callback, &result, &args, NULL) != 0) {
 									return executionAborted;
 								}
@@ -846,7 +776,7 @@ static vmError surfCall(libcContext rt) {
 			}
 		} break;
 
-		case surfOpClutSurf: {		// gxSurf clutSurf(gxSurf dst, gxRect &roi, gxClut &lut);
+		case surfOpClutSurf: {
 			gxSurfHnd dst = popi32(rt);
 			gx_Rect roi = popref(rt);
 			gx_Clut lut = popref(rt);
@@ -854,9 +784,36 @@ static vmError surfCall(libcContext rt) {
 
 			if (sdst && lut) {
 				gx_clutsurf(sdst, roi, lut);
+				reti32(rt, dst);
+				return noError;
 			}
-			reti32(rt, dst);
-			return noError;
+		} break;
+		case surfOpGradSurf: {
+			gxSurfHnd dst = popi32(rt);
+			gx_Rect roi = popref(rt);
+			gx_Clut lut = popref(rt);
+			int mode = popi32(rt);
+			int repeat = popi32(rt);
+			gx_Surf sdst = getSurf(dst);
+
+			if (sdst) {
+				gx_gradsurf(sdst, roi, lut, mode, repeat);
+				reti32(rt, dst);
+				return noError;
+			}
+		} break;
+		case surfOpBlurSurf: {
+			gxSurfHnd dst = popi32(rt);
+			gx_Rect roi = popref(rt);
+			int radius = popi32(rt);
+
+			gx_Surf sdst = getSurf(dst);
+
+			if (sdst) {
+				gx_blursurf(sdst, roi, radius);
+				reti32(rt, dst);
+				return noError;
+			}
 		} break;
 		case surfOpCmatSurf: {		// gxSurf cmatSurf(gxSurf dst, gxRect &roi, mat4f &mat);
 			gxSurfHnd dst = popi32(rt);
@@ -904,36 +861,6 @@ static vmError surfCall(libcContext rt) {
 			}
 			reti32(rt, dst);
 			return noError;
-		} break;
-		case surfOpGradSurf: {		// gxSurf gradSurf(gxSurf dst, gxRect &roi, gxClut &lut, int mode);
-			gxSurfHnd dst = popi32(rt);
-			gx_Rect roi = popref(rt);
-			gx_Clut lut = popref(rt);
-			int mode = popi32(rt);
-			int repeat = popi32(rt);
-			gx_Surf sdst = getSurf(dst);
-
-			if (repeat) {
-				mode |= gradient_rep;
-			}
-			if (sdst) {
-				gx_gradsurf(sdst, roi, lut, mode);
-				reti32(rt, dst);
-				return noError;
-			}
-		} break;
-		case surfOpBlurSurf: {		// gxSurf blurSurf(gxSurf dst, gxRect &roi, int radius);
-			gxSurfHnd dst = popi32(rt);
-			gx_Rect roi = popref(rt);
-			int radius = popi32(rt);
-
-			gx_Surf sdst = getSurf(dst);
-
-			if (sdst) {
-				gx_blursurf(sdst, roi, radius);
-				reti32(rt, dst);
-				return noError;
-			}
 		} break;
 		case surfOpOilPaint: {		// gxSurf oilPaint(gxSurf dst, gxRect &roi, int radius, intensity);
 			gxSurfHnd dst = popi32(rt);
@@ -1008,14 +935,10 @@ int gx_oilPaintSurf(gx_Surf image, gx_Rect roi, int radius, int intensity) {
 	int intensityCount[256];
 
 	int x, y, i, j;
-	temp.width = w;
-	temp.height = h;
-	temp.depth = 32;
-	temp.scanLen = 0;
 	if (intensity > 256) {
 		return -1;
 	}
-	if (gx_initSurf(&temp, 0, 0, 0) != 0) {
+	if (gx_initSurf(&temp, w, h, 32, Surf_2ds) != 0) {
 		return -1;
 	}
 
@@ -1080,8 +1003,8 @@ int gx_oilPaintSurf(gx_Surf image, gx_Rect roi, int radius, int intensity) {
 			}
 		}
 	}
-	gx_copysurf(image, 0, 0, &temp, NULL, 0);
-	gx_doneSurf(&temp);
+	gx_copysurf(image, 0, 0, &temp, NULL);
+	gx_destroySurf(&temp);
 	return 0;
 }
 
@@ -1185,8 +1108,6 @@ static vmError meshCall(libcContext rt) {
 		}
 		msh.map = getSurf(popi32(rt));
 		msh.freeTex = 0;
-		//~ gx_debug("msh.map = %p", msh.map);
-		//~ textureMesh(&msh, popstr(s));
 		return noError;
 	}
 	if (fun == meshOpRead) {			// int meshRead(string file);
@@ -1380,114 +1301,114 @@ static vmError miscCall(libcContext rt) {
 
 struct {
 	vmError (*fun)(libcContext);
-	int data;
-	char* def;
+	void *data;
+	char *def;
 }* def,
 Gui[] = {
-	{miscCall, miscSetExitLoop,		"void exitLoop();"},
-	{miscCall, miscOpFlipScreen,	"void Repaint(bool forceNow);"},
-	{miscCall, miscOpSetCbMouse,	"void setMouseHandler(void handler(int btn, int x, int y));"},
-	{miscCall, miscOpSetCbKeyboard,	"void setKeyboardHandler(void handler(int btn, int ext));"},
-	{miscCall, miscOpSetCbRender,	"void setDrawCallback(void callback());"},
+	{miscCall, (void*)miscSetExitLoop,		"void exitLoop();"},
+	{miscCall, (void*)miscOpFlipScreen,	"void Repaint(bool forceNow);"},
+	{miscCall, (void*)miscOpSetCbMouse,	"void setMouseHandler(void handler(int btn, int x, int y));"},
+	{miscCall, (void*)miscOpSetCbKeyboard,	"void setKeyboardHandler(void handler(int btn, int ext));"},
+	{miscCall, (void*)miscOpSetCbRender,	"void setDrawCallback(void callback());"},
 },
 Surf[] = {
-	{surfCall, surfOpGetWidth,		"int width(gxSurf dst);"},
-	{surfCall, surfOpGetHeight,	"int height(gxSurf dst);"},
-	{surfCall, surfOpGetDepth,	"int depth(gxSurf dst);"},
-	{surfCall, surfOpClipRect,		"bool clipRect(gxSurf surf, gxRect &rect);"},
+	{surfCall, (void*)surfOpGetWidth,		"int width(gxSurf dst);"},
+	{surfCall, (void*)surfOpGetHeight,	"int height(gxSurf dst);"},
+	{surfCall, (void*)surfOpGetDepth,	"int depth(gxSurf dst);"},
+	{surfCall, (void*)surfOpClipRect,		"bool clipRect(gxSurf surf, gxRect &rect);"},
 
-	{surfGetPixel, 0,			"int getPixel(gxSurf dst, int x, int y);"},
-	{surfGetPixfp, 0,			"int getPixel(gxSurf dst, double x, double y);"},
-	{surfSetPixel, 0,			"void setPixel(gxSurf dst, int x, int y, int col);"},
-	//~ {surfCall, surfOpGetPixel,		"int getPixel(gxSurf dst, int x, int y);"},
-	//~ {surfCall, surfOpGetPixfp,		"int getPixel(gxSurf dst, double x, double y);"},
-	//~ {surfCall, surfOpSetPixel,		"void setPixel(gxSurf dst, int x, int y, int col);"},
+	{surfGetPixel, NULL,			"int getPixel(gxSurf dst, int x, int y);"},
+	{surfGetPixfp, NULL,			"int getPixel(gxSurf dst, double x, double y);"},
+	{surfSetPixel, NULL,			"void setPixel(gxSurf dst, int x, int y, int col);"},
+	//~ {surfCall, (void*)surfOpGetPixel,		"int getPixel(gxSurf dst, int x, int y);"},
+	//~ {surfCall, (void*)surfOpGetPixfp,		"int getPixel(gxSurf dst, double x, double y);"},
+	//~ {surfCall, (void*)surfOpSetPixel,		"void setPixel(gxSurf dst, int x, int y, int col);"},
 
-	{surfCall, surfOpDrawLine,		"void drawLine(gxSurf dst, int x0, int y0, int x1, int y1, int col);"},
-	{surfCall, surfOpDrawBez2,		"void drawBezier(gxSurf dst, int x0, int y0, int x1, int y1, int x2, int y2, int col);"},
-	{surfCall, surfOpDrawBez3,		"void drawBezier(gxSurf dst, int x0, int y0, int x1, int y1, int x2, int y2, int x3, int y3, int col);"},
-	{surfCall, surfOpDrawRect,		"void drawRect(gxSurf dst, int x0, int y0, int x1, int y1, int col);"},
-	{surfCall, surfOpFillRect,		"void fillRect(gxSurf dst, int x0, int y0, int x1, int y1, int col);"},
-	{surfCall, surfOpDrawOval,		"void drawOval(gxSurf dst, int x0, int y0, int x1, int y1, int col);"},
-	{surfCall, surfOpFillOval,		"void fillOval(gxSurf dst, int x0, int y0, int x1, int y1, int col);"},
-	{surfCall, surfOpDrawText,		"void drawText(gxSurf dst, int x0, int y0, string text, int col);"},
+	{surfCall, (void*)surfOpDrawLine,		"void drawLine(gxSurf dst, int x0, int y0, int x1, int y1, int col);"},
+	{surfCall, (void*)surfOpDrawBez2,		"void drawBezier(gxSurf dst, int x0, int y0, int x1, int y1, int x2, int y2, int col);"},
+	{surfCall, (void*)surfOpDrawBez3,		"void drawBezier(gxSurf dst, int x0, int y0, int x1, int y1, int x2, int y2, int x3, int y3, int col);"},
+	{surfCall, (void*)surfOpDrawRect,		"void drawRect(gxSurf dst, int x0, int y0, int x1, int y1, int col);"},
+	{surfCall, (void*)surfOpFillRect,		"void fillRect(gxSurf dst, int x0, int y0, int x1, int y1, int col);"},
+	{surfCall, (void*)surfOpDrawOval,		"void drawOval(gxSurf dst, int x0, int y0, int x1, int y1, int col);"},
+	{surfCall, (void*)surfOpFillOval,		"void fillOval(gxSurf dst, int x0, int y0, int x1, int y1, int col);"},
+	{surfCall, (void*)surfOpDrawText,		"void drawText(gxSurf dst, int x0, int y0, string text, int col);"},
 
-	{surfCall, surfOpCopySurf,		"gxSurf copySurf(gxSurf dst, int x, int y, gxSurf src, gxRect &roi);"},
-	{surfCall, surfOpZoomSurf,		"gxSurf zoomSurf(gxSurf dst, gxRect &rect, gxSurf src, gxRect &roi, int mode);"},
+	{surfCall, (void*)surfOpCopySurf,		"gxSurf copySurf(gxSurf dst, int x, int y, gxSurf src, gxRect &roi);"},
+	{surfCall, (void*)surfOpZoomSurf,		"gxSurf zoomSurf(gxSurf dst, gxRect &rect, gxSurf src, gxRect &roi, int mode);"},
 
-	{surfCall, surfOpCmatSurf,		"gxSurf cmatSurf(gxSurf dst, gxRect &roi, mat4f &mat);"},
-	{surfCall, surfOpClutSurf,		"gxSurf clutSurf(gxSurf dst, gxRect &roi, gxClut &lut);"},
-	{surfCall, surfOpGradSurf,		"gxSurf gradSurf(gxSurf dst, gxRect &roi, gxClut &lut, int mode, bool repeat);"},
-	{surfCall, surfOpBlurSurf,		"gxSurf blurSurf(gxSurf dst, gxRect &roi, int radius);"},
-	{surfCall, surfOpOilPaint,		"gxSurf oilPaintSurf(gxSurf dst, gxRect &roi, int radius, int intensity);"},
+	{surfCall, (void*)surfOpCmatSurf,		"gxSurf cmatSurf(gxSurf dst, gxRect &roi, mat4f &mat);"},
+	{surfCall, (void*)surfOpClutSurf,		"gxSurf clutSurf(gxSurf dst, gxRect &roi, gxClut &lut);"},
+	{surfCall, (void*)surfOpGradSurf,		"gxSurf gradSurf(gxSurf dst, gxRect &roi, gxClut &lut, int mode, bool repeat);"},
+	{surfCall, (void*)surfOpBlurSurf,		"gxSurf blurSurf(gxSurf dst, gxRect &roi, int radius);"},
+	{surfCall, (void*)surfOpOilPaint,		"gxSurf oilPaintSurf(gxSurf dst, gxRect &roi, int radius, int intensity);"},
 
-	{surfCall, surfOpBmpRead,		"gxSurf readBmp(gxSurf dst, string fileName);"},
-	{surfCall, surfOpJpgRead,		"gxSurf readJpg(gxSurf dst, string fileName);"},
-	{surfCall, surfOpPngRead,		"gxSurf readPng(gxSurf dst, string fileName);"},
-	{surfCall, surfOpBmpWrite,		"void bmpWrite(gxSurf src, string fileName);"},
+	{surfCall, (void*)surfOpBmpRead,		"gxSurf readBmp(gxSurf dst, string fileName);"},
+	{surfCall, (void*)surfOpJpgRead,		"gxSurf readJpg(gxSurf dst, string fileName);"},
+	{surfCall, (void*)surfOpPngRead,		"gxSurf readPng(gxSurf dst, string fileName);"},
+	{surfCall, (void*)surfOpBmpWrite,		"void bmpWrite(gxSurf src, string fileName);"},
 
-	{surfCall, surfOpNewSurf,		"gxSurf newSurf(int width, int height);"},
-	{surfCall, surfOpDelSurf,		"void delSurf(gxSurf surf);"},
+	{surfCall, (void*)surfOpNewSurf,		"gxSurf newSurf(int width, int height);"},
+	{surfCall, (void*)surfOpDelSurf,		"void delSurf(gxSurf surf);"},
 
-	{surfCall, surfOpFillFpCB,		"gxSurf fillSurf(gxSurf dst, gxRect &roi, vec4f callBack(vec4f col));"},
-	{surfCall, surfOpEvalFpCB,		"gxSurf evalSurf(gxSurf dst, gxRect &roi, vec4f callBack(float x, float y));"},
-	{surfCall, surfOpCopyFpCB,		"gxSurf copySurf(gxSurf dst, int x, int y, gxSurf src, gxRect &roi, float alpha, vec4f callBack(vec4f dst, vec4f src));"},
+	{surfCall, (void*)surfOpFillFpCB,		"gxSurf fillSurf(gxSurf dst, gxRect &roi, vec4f callBack(vec4f col));"},
+	{surfCall, (void*)surfOpEvalFpCB,		"gxSurf evalSurf(gxSurf dst, gxRect &roi, vec4f callBack(float x, float y));"},
+	{surfCall, (void*)surfOpCopyFpCB,		"gxSurf copySurf(gxSurf dst, int x, int y, gxSurf src, gxRect &roi, float alpha, vec4f callBack(vec4f dst, vec4f src));"},
 
-	{surfCall, surfOpFillPxCB,		"gxSurf fillSurfrgb(gxSurf dst, gxRect &roi, int callBack(int col));"},
-	{surfCall, surfOpEvalPxCB,		"gxSurf evalSurfrgb(gxSurf dst, gxRect &roi, int callBack(int x, int y));"},
-	{surfCall, surfOpCopyPxCB,		"gxSurf copySurfrgb(gxSurf dst, int x, int y, gxSurf src, gxRect &roi, int callBack(int dst, int src));"},
+	{surfCall, (void*)surfOpFillPxCB,		"gxSurf fillSurfrgb(gxSurf dst, gxRect &roi, int callBack(int col));"},
+	{surfCall, (void*)surfOpEvalPxCB,		"gxSurf evalSurfrgb(gxSurf dst, gxRect &roi, int callBack(int x, int y));"},
+	{surfCall, (void*)surfOpCopyPxCB,		"gxSurf copySurfrgb(gxSurf dst, int x, int y, gxSurf src, gxRect &roi, int callBack(int dst, int src));"},
 
 },
 // 3d
 Mesh[] = {
-	{meshCall, meshOpSetPos,		"void Pos(int Index, double x, double y, double z);"},
-	{meshCall, meshOpSetNrm,		"void Nrm(int Index, double x, double y, double z);"},
-	{meshCall, meshOpSetTex,		"void Tex(int Index, double s, double t);"},
-	//~ {meshCall, meshOpGetPos,		"vec4f Pos(int Index);"},
-	//~ {meshCall, meshOpGetNrm,		"vec4f Nrm(int Index);"},
-	//~ {meshCall, meshOpGetTex,		"vec2f Tex(int Index);"},
-	//~ {meshCall, meshOpSetTri,		"int SetTri(int t, int p1, int p2, int p3);"},
-	{meshCall, meshOpAddTri,		"void AddFace(int p1, int p2, int p3);"},
-	{meshCall, meshOpAddQuad,		"void AddFace(int p1, int p2, int p3, int p4);"},
-	//~ {meshCall, meshOpSetSeg,		"int SetSeg(int t, int p1, int p2);"},
-	//~ {meshCall, meshOpAddSeg,		"int AddSeg(int p1, int p2);"},
-	//~ {meshCall, meshOpGetFlags,		"int Flags;"},
-	//~ {meshCall, meshOpSetFlags,		"int Flags(int Value);"},
-	//~ {meshCall, meshOpGetTex,		"gxSurf Texture;"},
-	{meshCall, meshOpTexture,		"int Texture(gxSurf image);"},
-	{meshCall, meshOpInit,			"int Init(int Capacity);"},
-	{meshCall, meshOpRead,			"int Read(string file, string texture);"},
-	{meshCall, meshOpSave,			"int Save(string file);"},
-	{meshCall, meshOpCenter,		"void Center(float32 Resize);"},
-	{meshCall, meshOpNormalize,	"void Normalize(float32 Epsilon);"},
-	{meshCall, meshOpInfo,			"void Info();"},
-	{meshCall, meshOphasNrm,		"bool hasNormals;"},
+	{meshCall, (void*)meshOpSetPos,		"void Pos(int Index, double x, double y, double z);"},
+	{meshCall, (void*)meshOpSetNrm,		"void Nrm(int Index, double x, double y, double z);"},
+	{meshCall, (void*)meshOpSetTex,		"void Tex(int Index, double s, double t);"},
+	//~ {meshCall, (void*)meshOpGetPos,		"vec4f Pos(int Index);"},
+	//~ {meshCall, (void*)meshOpGetNrm,		"vec4f Nrm(int Index);"},
+	//~ {meshCall, (void*)meshOpGetTex,		"vec2f Tex(int Index);"},
+	//~ {meshCall, (void*)meshOpSetTri,		"int SetTri(int t, int p1, int p2, int p3);"},
+	{meshCall, (void*)meshOpAddTri,		"void AddFace(int p1, int p2, int p3);"},
+	{meshCall, (void*)meshOpAddQuad,		"void AddFace(int p1, int p2, int p3, int p4);"},
+	//~ {meshCall, (void*)meshOpSetSeg,		"int SetSeg(int t, int p1, int p2);"},
+	//~ {meshCall, (void*)meshOpAddSeg,		"int AddSeg(int p1, int p2);"},
+	//~ {meshCall, (void*)meshOpGetFlags,		"int Flags;"},
+	//~ {meshCall, (void*)meshOpSetFlags,		"int Flags(int Value);"},
+	//~ {meshCall, (void*)meshOpGetTex,		"gxSurf Texture;"},
+	{meshCall, (void*)meshOpTexture,		"int Texture(gxSurf image);"},
+	{meshCall, (void*)meshOpInit,			"int Init(int Capacity);"},
+	{meshCall, (void*)meshOpRead,			"int Read(string file, string texture);"},
+	{meshCall, (void*)meshOpSave,			"int Save(string file);"},
+	{meshCall, (void*)meshOpCenter,		"void Center(float32 Resize);"},
+	{meshCall, (void*)meshOpNormalize,	"void Normalize(float32 Epsilon);"},
+	{meshCall, (void*)meshOpInfo,			"void Info();"},
+	{meshCall, (void*)meshOphasNrm,		"bool hasNormals;"},
 	//~ */
 },
 Cam[] = {
-	{camCall, camGetPos,			"vec4f Pos;"},
-	{camCall, camGetUp,			"vec4f Up;"},
-	{camCall, camGetRight,			"vec4f Right;"},
-	{camCall, camGetForward,		"vec4f Forward;"},
+	{camCall, (void*)camGetPos,			"vec4f Pos;"},
+	{camCall, (void*)camGetUp,			"vec4f Up;"},
+	{camCall, (void*)camGetRight,		"vec4f Right;"},
+	{camCall, (void*)camGetForward,		"vec4f Forward;"},
 
-	{camCall, camSetPos,			"void Pos(vec4f v);"},
-	{camCall, camSetUp,			"void Up(vec4f v);"},
-	{camCall, camSetRight,			"void Right(vec4f v);"},
-	{camCall, camSetForward,		"void Forward(vec4f v);"},
+	{camCall, (void*)camSetPos,			"void Pos(vec4f v);"},
+	{camCall, (void*)camSetUp,			"void Up(vec4f v);"},
+	{camCall, (void*)camSetRight,		"void Right(vec4f v);"},
+	{camCall, (void*)camSetForward,		"void Forward(vec4f v);"},
 
-	{camCall, camOpMove,			"void Move(vec4f &direction, float32 cnt);"},
-	{camCall, camOpRotate,			"void Rotate(vec4f &direction, vec4f &orbit, float32 cnt);"},
-	{camCall, camOpLookAt,			"void LookAt(vec4f eye, vec4f at, vec4f up);"},
+	{camCall, (void*)camOpMove,			"void Move(vec4f &direction, float32 cnt);"},
+	{camCall, (void*)camOpRotate,		"void Rotate(vec4f &direction, vec4f &orbit, float32 cnt);"},
+	{camCall, (void*)camOpLookAt,		"void LookAt(vec4f eye, vec4f at, vec4f up);"},
 	// */
 },
 Obj[] = {
-	//~ {objCall, objGetPos,			"vec4f Pos;"},
-	//~ {objCall, objSetPos,			"void Pos(vec4f v);"},
-	//~ {objCall, objGetNrm,			"vec4f Nrm;"},
-	//~ {objCall, objSetNrm,			"void Nrm(vec4f v);"},
-	{objCall, objOpMove,			"void Move(float32 dx, float32 dy);"},
-	{objCall, objOpRotate,			"void Rotate(float32 dx, float32 dy);"},
-	{objCall, objOpSelected,		"bool object;"},
+	//~ {objCall, (void*)objGetPos,			"vec4f Pos;"},
+	//~ {objCall, (void*)objSetPos,			"void Pos(vec4f v);"},
+	//~ {objCall, (void*)objGetNrm,			"vec4f Nrm;"},
+	//~ {objCall, (void*)objSetNrm,			"void Nrm(vec4f v);"},
+	{objCall, (void*)objOpMove,			"void Move(float32 dx, float32 dy);"},
+	{objCall, (void*)objOpRotate,			"void Rotate(float32 dx, float32 dy);"},
+	{objCall, (void*)objOpSelected,		"bool object;"},
 	// */
 };
 
@@ -1552,7 +1473,7 @@ int ccSymValFlt(symn sym, double* res) {
 	return 0;
 }
 
-int ccCompile(char *src, int argc, char* argv[], int dbg(userContext, vmError, size_t ss, void* sp, void* caller, void* callee)) {
+int ccCompile(char *src, int argc, char* argv[], int dbg(dbgContext, vmError, size_t, void*, void*)) {
 	symn cls = NULL;
 	const int stdwl = 0;
 	const int srcwl = 9;
@@ -1745,7 +1666,7 @@ int ccCompile(char *src, int argc, char* argv[], int dbg(userContext, vmError, s
 
 		if (rt->dbg != NULL) {
 			//~ rt->dbg->extra = (void*)rt;
-			//~ rt->dbg->function = dbg;
+			rt->dbg->debug = dbg;
 		}
 	}
 
@@ -1883,7 +1804,7 @@ static vmError f64atan2(libcContext rt) {
 }
 
 int evalMesh(mesh msh, int sdiv, int tdiv, char *src, char *file, int line) {
-	static char mem[32 << 10];		// 32K memory
+	static char mem[320 << 10];		// 320K memory
 	rtContext rt = rtInit(mem, sizeof(mem));
 	struct userData ud;
 	const int warnlevel = 2;

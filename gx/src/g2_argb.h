@@ -46,18 +46,4 @@ static inline argb rgbmix16(argb lhs, argb rhs, int fpa16) {
 	res.r = rhs.r + ((tmp + (tmp >> 16) + 1) >> 16);
 	return res;
 }
-
-typedef enum gradient_type {		// gradient types
-	gradient_lin = 0x000000,		// Linear
-	gradient_rad = 0x010000,		// Radial (elliptical)
-	gradient_sqr = 0x020000,		// Square
-	gradient_con = 0x030000,		// Conical
-	gradient_spr = 0x040000,		// Spiral
-	gradient_max = 0x040000,		// last gradient type
-	gradient_TYP = 0x070000,		// mask to get type of gradient
-
-	gradient_rep = 0x080000,		// repeat
-} gradient_type;
-gx_extern int gx_gradsurf(gx_Surf dst, gx_Rect roi, gx_Clut lut, int gradtype);
-
 #endif

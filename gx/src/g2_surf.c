@@ -3,62 +3,61 @@
 #include "g2_surf.h"
 
 
-int gx_initSurf(gx_Surf s, gx_Clip clip, gx_Clut clut, int flags) {
-	int tmp = s->depth;
-
-	s->flags = 0;
-	s->pixeLen = tmp == 8 ? 1 : tmp == 16 ? 2 : tmp == 24 ? 3 : tmp == 32 ? 4 : 0;
-
-	if (!s->scanLen)
-		s->scanLen = s->pixeLen * s->width;
-
-	if ((flags & SURF_NO_MEM) == 0) {
-
-		tmp = s->scanLen * s->height;
-		if ((s->basePtr = malloc(tmp))) {
-
-			if ((flags & SURF_DNTCLR) == 0)
-				memset(s->basePtr, 0, tmp);
-			s->flags |= Surf_mem;
-		}
-		else
+int gx_initSurf(gx_Surf surf, unsigned width, unsigned height, unsigned depth, surfFlags flags) {
+	switch (depth) {
+		default:
 			return -1;
+
+		case 32:
+			surf->scanLen = width * 4;
+			surf->pixeLen = 4;
+			break;
+
+		case 24:
+			surf->scanLen = width * 3;
+			surf->pixeLen = 3;
+			break;
+
+		case 16:
+		case 15:
+			surf->scanLen = width * 2;
+			surf->pixeLen = 2;
+			break;
+
+		case 8:
+			surf->scanLen = width;
+			surf->pixeLen = 1;
+			break;
 	}
-	else
-		s->basePtr = 0;
-	/*if (clut && (flags & SURF_CPYPAL)) {
-		if ((s->clutPtr = malloc(sizeof(struct gx_Clut)))) {
-			memcpy(s->clutPtr, clut, sizeof(struct gx_Clut));
-			s->flags |= SURF_DELLUT;
-		} else return -2;
-	} else s->clutPtr = clut;
-	if (clip && (flags & SURF_CPYCLP)) {
-		if ((s->clipPtr = (gx_Clip)malloc(sizeof(struct gx_Clip)))) {
-			memcpy(s->clipPtr, clip, sizeof(struct gx_Clip));
-			s->flags |= SURF_DELCLP;
-		} else return -3;
-	} else s->clipPtr = clip;
-	//~ s->movePtr = s->offsPtr = 0;
-	//~ gx_initdraw(s, rop2_cpy);*/
+
+	surf->width = width;
+	surf->height = height;
+	surf->depth = depth;
+	surf->flags = 0;
+
+	if (flags & Surf_recycle && surf->basePtr != NULL) {
+		if (surf->flags & Surf_freeData) {
+			surf->flags &= ~Surf_freeData;
+			free(surf->basePtr);
+		}
+		surf->basePtr = NULL;
+	}
+
+	if (height > 0) {
+		int size = surf->scanLen * height;
+		if ((surf->basePtr = malloc(size))) {
+			surf->flags |= Surf_freeData;
+		}
+		else {
+			return -1;
+		}
+	}
+	else {
+		surf->basePtr = 0;
+	}
 	return 0;
 }
-
-gx_Surf gx_createSurf(unsigned width, unsigned height, unsigned depth, int flags) {
-	gx_Surf surf = (gx_Surf)malloc(sizeof(struct gx_Surf));
-	if (surf) {
-		surf->width = width;
-		surf->height = height;
-		surf->depth = depth;
-		surf->scanLen = 0;
-		if (gx_initSurf(surf, 0, 0, flags)) {
-			free(surf);
-			return 0;
-		}
-	}
-	return surf;
-}
-
-int gx_asubSurf(gx_Surf dst, gx_Surf src, gx_Rect roi) {
+int gx_attachSurf(gx_Surf dst, gx_Surf src, gx_Rect roi) {
 	char *basePtr;
 	struct gx_Rect clip;
 
@@ -67,14 +66,15 @@ int gx_asubSurf(gx_Surf dst, gx_Surf src, gx_Rect roi) {
 		clip.w = src->width;
 		clip.h = src->height;
 	}
-	else
+	else {
 		clip = *roi;
+	}
 
 	if ((basePtr = gx_cliprect(src, &clip))) {
 		dst->clipPtr = NULL;
 		dst->width = clip.w;
 		dst->height = clip.h;
-		dst->flags = src->flags & ~Surf_mem;
+		dst->flags = src->flags & ~Surf_freeData;
 		dst->depth = src->depth;
 		dst->pixeLen = src->pixeLen;
 		dst->scanLen = src->scanLen;
@@ -82,7 +82,6 @@ int gx_asubSurf(gx_Surf dst, gx_Surf src, gx_Rect roi) {
 
 		switch (src->flags & SurfMask) {
 			case Surf_3ds:
-				//~ dst->lutLPtr = (void*)(((char*)dst->lutLPtr) + ((char*)basePtr - (char*)src->basePtr));
 				dst->tempPtr = basePtr + (src->tempPtr - src->basePtr);
 				break;
 
@@ -94,45 +93,30 @@ int gx_asubSurf(gx_Surf dst, gx_Surf src, gx_Rect roi) {
 	return basePtr != NULL;
 }
 
-/*gx_Surf gx_attachSurf(gx_Surf src, gx_Rect roi) {
-	struct gx_Rect clip;
-	void*	basePtr;
-	gx_Surf surf = 0;
-
-	if (roi == NULL) {
-		clip.x = clip.y = 0;
-		clip.w = src->width;
-		clip.h = src->height;
-	}
-	else
-		clip = *roi;
-
-	// TODO: use sub surf init
-	if ((basePtr = gx_cliprect(src, &clip))) {
-		if ((surf = (gx_Surf)malloc(sizeof(struct gx_Surf)))) {
-			*surf = *src;
-			surf->basePtr = basePtr;
-			surf->flags &= ~Surf_mem;
+gx_Surf gx_createSurf(unsigned width, unsigned height, unsigned depth, surfFlags flags) {
+	gx_Surf surf = (gx_Surf)malloc(sizeof(struct gx_Surf));
+	if (surf) {
+		if (gx_initSurf(surf, width, height, depth, flags)) {
+			free(surf);
+			return NULL;
 		}
+		surf->flags |= Surf_freeSurf;
 	}
 	return surf;
-}// */
-
-
-
-void gx_doneSurf(gx_Surf surf) {
-	if (surf->basePtr && (surf->flags & Surf_mem)) {
-		free(surf->basePtr);
-		surf->basePtr = 0;
+}
+void gx_destroySurf(gx_Surf surf) {
+	if (surf->flags & Surf_freeData) {
+		surf->flags &= ~Surf_freeData;
+		if (surf->basePtr != NULL) {
+			free(surf->basePtr);
+		}
+	}
+	surf->basePtr = NULL;
+	if (surf->flags & Surf_freeSurf) {
+		surf->flags &= ~Surf_freeSurf;
+		free(surf);
 	}
 }
-
-void gx_destroySurf(gx_Surf surf) {
-	gx_doneSurf(surf);
-	free(surf);
-}
-
-
 
 void* gx_cliprect(gx_Surf surf, gx_Rect roi) {
 	gx_Clip clp = gx_getclip(surf);
@@ -158,179 +142,337 @@ void* gx_cliprect(gx_Surf surf, gx_Rect roi) {
 	return gx_getpaddr(surf, roi->x, roi->y);
 }
 
-
-
-static inline int min(int a, int b) {return a < b ? a : b;}
-static inline int max(int a, int b) {return a > b ? a : b;}
-static inline long rch(long xrgb) {return xrgb >> 16 & 0xff;}
-static inline long gch(long xrgb) {return xrgb >>  8 & 0xff;}
-static inline long bch(long xrgb) {return xrgb >>  0 & 0xff;}
-static inline long __rgb(int r, int g, int b) {return r << 16 | g << 8 | b;}
-
-int gx_blursurf(gx_Surf img, gx_Rect roi, int radius) {
-
-	int w = img->width;
-	int h = img->height;
-	int wm = w - 1;
-	int hm = h - 1;
-
-	int wh = w * h;
-	int maxwh = max(w, h);
-	int div = 2 * radius + 1;
-
-	int x, y, i, yi = 0;
-	int *r, *g, *b, *vmin, *vmax, *dv;
-
-	if (radius < 1)
-		return -1;
-
-	if (roi != NULL)
-		return -2;
-
-	r = malloc(sizeof(int) * wh);
-	g = malloc(sizeof(int) * wh);
-	b = malloc(sizeof(int) * wh);
-	vmin = malloc(sizeof(int) * maxwh);
-	vmax = malloc(sizeof(int) * maxwh);
-	dv = malloc(sizeof(int) * 256 * div);
-
-
-	for (i = 0; i < 256 * div; i += 1) {
-		dv[i] = i / div;
+void g2_drawrect(gx_Surf surf, int x1, int y1, int x2, int y2, long color) {
+	g2_fillrect(surf, x1, y1, x2, y1 + 1, color);
+	g2_fillrect(surf, x1, y2, x2 + 1, y2 + 1, color);
+	g2_fillrect(surf, x1, y1, x1 + 1, y2, color);
+	g2_fillrect(surf, x2, y1, x2 + 1, y2, color);
+}
+void g2_fillrect(gx_Surf surf, int x1, int y1, int x2, int y2, long color) {
+	gx_Clip roi = gx_getclip(surf);
+	if (x1 > x2) {
+		int x = x1;
+		x1 = x2;
+		x2 = x;
 	}
-
-	for (y = 0; y < h; y += 1) {
-		int rsum = 0;
-		int gsum = 0;
-		int bsum = 0;
-
-		for (i = -radius; i <= radius; i += 1) {
-			int p = gx_getpixel(img, min(wm, max(i, 0)), y);
-			rsum += rch(p);
-			gsum += gch(p);
-			bsum += bch(p);
-		}
-
-		for (x = 0; x < w; x += 1) {
-			int p1, p2;
-			r[yi] = dv[rsum];
-			g[yi] = dv[gsum];
-			b[yi] = dv[bsum];
-
-			if (y == 0) {
-				vmin[x] = min(x + radius + 1, wm);
-				vmax[x] = max(x - radius, 0);
-			}
-
-			p1 = gx_getpixel(img, vmin[x], y);
-			p2 = gx_getpixel(img, vmax[x], y);
-
-			rsum += rch(p1) - rch(p2);
-			gsum += gch(p1) - gch(p2);
-			bsum += bch(p1) - bch(p2);
-
-			yi += 1;
+	if (x1 < roi->xmin) {
+		x1 = roi->xmin;
+	}
+	if (x2 > roi->xmax) {
+		x2 = roi->xmax;
+	}
+	if (y1 > y2) {
+		int y = y1;
+		y1 = y2;
+		y2 = y;
+	}
+	if (y1 < roi->ymin) {
+		y1 = roi->ymin;
+	}
+	if (y2 > roi->ymax) {
+		y2 = roi->ymax;
+	}
+	// TODO: optimize for hline, vline and pixel.
+	// TODO: for hline and block use cblt_proc(void* dst, void* src, unsigned count, void* extra);
+	for (int y = y1; y < y2; y++) {
+		for (int x = x1; x < x2; x++) {
+			gx_setpixel(surf, x, y, color);
 		}
 	}
-
-	for (x = 0; x < w; x += 1) {
-		int rsum = 0;
-		int gsum = 0;
-		int bsum = 0;
-		int yp = -radius * w;
-
-		for (i = -radius; i <= radius; i += 1) {
-			int xy = max(0, yp) + x;
-			rsum += r[xy];
-			gsum += g[xy];
-			bsum += b[xy];
-			yp += w;
-		}
-
-		for (y = 0; y < h; y += 1) {
-			int p1, p2;
-			gx_setpixel(img, x, y, __rgb(dv[rsum], dv[gsum], dv[bsum]));
-
-			if (x == 0) {
-				vmin[y] = min(y + radius + 1, hm) * w;
-				vmax[y] = max(y - radius, 0) * w;
-			}
-
-			p1 = x + vmin[y];
-			p2 = x + vmax[y];
-
-			rsum += r[p1] - r[p2];
-			gsum += g[p1] - g[p2];
-			bsum += b[p1] - b[p2];
-		}
-	}
-
-	free(r);
-	free(g);
-	free(b);
-	free(vmin);
-	free(vmax);
-	free(dv);
-	return 0;
 }
 
-int gx_clutsurf(gx_Surf dst, gx_Rect roi, gx_Clut lut) {
-	argb* lutd = lut->data;
-	struct gx_Rect rect;
-	char *dptr;
-
-	if (dst->depth != 32)
-		return -1;
-
-	rect.x = roi ? roi->x : 0;
-	rect.y = roi ? roi->y : 0;
-	rect.w = roi ? roi->w : dst->width;
-	rect.h = roi ? roi->h : dst->height;
-
-	if(!(dptr = gx_cliprect(dst, &rect)))
-		return -2;
-
-	while (rect.h--) {
-		int x;
-		argb *cBuff = (argb*)dptr;
-		for (x = 0; x < rect.w; x += 1) {
-			//~ cBuff->a = lutd[cBuff->a].a;
-			cBuff->r = lutd[cBuff->r].r;
-			cBuff->g = lutd[cBuff->g].g;
-			cBuff->b = lutd[cBuff->b].b;
-			cBuff += 1;
-		}
-		dptr += dst->scanLen;
+void g2_drawoval(gx_Surf surf, int x1, int y1, int x2, int y2, long color) {
+	int dx, dy, sx, sy, r;
+	if (x1 > x2) {
+		x1 ^= x2;
+		x2 ^= x1;
+		x1 ^= x2;
 	}
+	if (y1 > y2) {
+		y1 ^= y2;
+		y2 ^= y1;
+		y1 ^= y2;
+	}
+	dx = x2 - x1;
+	dy = y2 - y1;
 
-	return 0;
+	x2 = x1 += dx >> 1;
+	x1 += dx & 1;
+
+	dx += dx & 1;
+	dy += dy & 1;
+
+	sx = dx * dx;
+	sy = dy * dy;
+	r = sx * dy >> 2;
+
+	dx = 0;
+	dy = r << 1;
+
+	while (y1 < y2) {
+		gx_setpixel(surf, x1, y1, color);
+		gx_setpixel(surf, x1, y2, color);
+		gx_setpixel(surf, x2, y1, color);
+		gx_setpixel(surf, x2, y2, color);
+
+		if (r >= 0) {
+			x1 -= 1;
+			x2 += 1;
+			r -= dx += sy;
+		}
+
+		if (r < 0) {
+			y1 += 1;
+			y2 -= 1;
+			r += dy -= sx;
+		}
+	}
+	gx_setpixel(surf, x1, y1, color);
+	gx_setpixel(surf, x1, y2, color);
+	gx_setpixel(surf, x2, y1, color);
+	gx_setpixel(surf, x2, y2, color);
+}
+void g2_filloval(gx_Surf surf, int x1, int y1, int x2, int y2, long color) {
+	int dx, dy, sx, sy, r;
+	if (x1 > x2) {
+		x1 ^= x2;
+		x2 ^= x1;
+		x1 ^= x2;
+	}
+	if (y1 > y2) {
+		y1 ^= y2;
+		y2 ^= y1;
+		y1 ^= y2;
+	}
+	dx = x2 - x1;
+	dy = y2 - y1;
+
+	x2 = x1 += dx >> 1;
+	x1 +=dx & 1;
+
+	dx += dx & 1;
+	dy += dy & 1;
+
+	sx = dx * dx;
+	sy = dy * dy;
+
+	r = sx * dy >> 2;
+	dx = 0;
+	dy = r << 1;
+
+	while (y1 < y2) {
+		g2_fillrect(surf, x1, y1, x1 + 1, y2, color);
+		g2_fillrect(surf, x2, y1, x2 + 1, y2, color);
+
+		if (r >= 0) {
+			x1 -= 1;
+			x2 += 1;
+			r -= dx += sy;
+		}
+
+		if (r < 0) {
+			y1 += 1;
+			y2 -= 1;
+			r += dy -= sx;
+		}
+	}
+	g2_fillrect(surf, x1, y1, x1 + 1, y2, color);
+	g2_fillrect(surf, x2, y1, x2 + 1, y2, color);
 }
 
-int gx_fillsurf(gx_Surf dst, gx_Rect roi, cblt_mode mode, long col) {
-	register char *dptr;
-	register void (*cblt)();
+void g2_drawline(gx_Surf surf, int x1, int y1, int x2, int y2, long color) {
+	//~ TODO : replace Bresenham with DDA, resolve clipping
+	int sx, sy, r;
+	int dx = x2 - x1;
+	int dy = y2 - y1;
+
+	if (dx < 0) {
+		dx = -dx;
+		sx = -1;
+	}
+	else {
+		sx = 1;
+	}
+
+	if (dy < 0) {
+		dy = -dy;
+		sy = -1;
+	}
+	else {
+		sy = 1;
+	}
+
+	if (dx > dy) {
+		r = dx >> 1;
+		while (x1 != x2) {
+			gx_setpixel(surf, x1, y1, color);
+			if ((r += dy) > dx) {
+				y1 += sy;
+				r -= dx;
+			}
+			x1 += sx;
+		}
+	}
+	else {
+		r = dy >> 1;
+		while (y1 != y2) {
+			gx_setpixel(surf, x1, y1, color);
+			if ((r+=dx) > dy) {
+				x1 += sx;
+				r -= dy;
+			}
+			y1 += sy;
+		}
+	}
+	gx_setpixel(surf, x1, y1, color);
+}
+void g2_drawbez2(gx_Surf surf, int x1, int y1, int x2, int y2, int x3, int y3, long color) {
+	double t, dt = 1. / 128;
+
+	int px_0 = x1;
+	int py_0 = y1;
+	int px_1 = 2 * (x2 - x1);
+	int py_1 = 2 * (y2 - y1);
+	int px_2 = x3 - 2 * x2 + x1;
+	int py_2 = y3 - 2 * y2 + y1;
+
+	for (t = dt; t < 1; t += dt) {
+		x2 = (px_2 * t + px_1) * t + px_0;
+		y2 = (py_2 * t + py_1) * t + py_0;
+		g2_drawline(surf, x1, y1, x2, y2, color);
+		x1 = x2;
+		y1 = y2;
+	}
+	g2_drawline(surf, x1, y1, x3, y3, color);
+}
+void g2_drawbez3(gx_Surf surf, int x1, int y1, int x2, int y2, int x3, int y3, int x4, int y4, long color) {
+	double t, dt = 1. / 128;
+
+	int px_0 = x1;
+	int py_0 = y1;
+	int px_1 = 3 * (x2 - x1);
+	int py_1 = 3 * (y2 - y1);
+	int px_2 = 3 * (x3 - x2) - px_1;
+	int py_2 = 3 * (y3 - y2) - py_1;
+	int px_3 = x4 - px_2 - px_1 - px_0;
+	int py_3 = y4 - py_2 - py_1 - py_0;
+
+	for (t = dt; t < 1; t += dt) {
+		x2 = ((px_3 * t + px_2) * t + px_1) * t + px_0;
+		y2 = ((py_3 * t + py_2) * t + py_1) * t + py_0;
+		g2_drawline(surf, x1, y1, x2, y2, color);
+		x1 = x2;
+		y1 = y2;
+	}
+	g2_drawline(surf, x1, y1, x4, y4, color);
+}
+
+void g2_clipText(gx_Rect rect, gx_Surf font, const char *text) {
+	struct gx_FDIR face;
+	int chr, H = 0, W = 0;
+
+	if ((font->flags & SurfMask) != Surf_fnt) {
+		return;
+	}
+	if (!font->basePtr) {
+		return;
+	}
+
+	rect->w = rect->h = 0;
+
+	while ((chr = (*text++ & 255))) {
+		face = font->LLUTPtr->data[chr];
+
+		if (H < font->LLUTPtr->height)
+			H = font->LLUTPtr->height;
+
+		switch (*text) {
+			case '\r': text += text[1] == '\n';
+			case '\n': rect->h += H; W = 0; break;
+
+			//~ case '\t': wln += 8; break;
+
+			default:
+				W += face.width;
+		}
+
+		if (rect->w < W)
+			rect->w = W;
+		if (rect->h < H)
+			rect->h = H;
+	}
+}
+void g2_drawChar(gx_Surf surf, int x, int y, gx_Surf font, unsigned chr, long color) {
+	struct gx_FDIR face;
 	struct gx_Rect clip;
+	void (*cblt)() = 0;
+	char *dptr, *sptr;
 
-	clip.x = roi ? roi->x : 0;
-	clip.y = roi ? roi->y : 0;
-	clip.w = roi ? roi->w : dst->width;
-	clip.h = roi ? roi->h : dst->height;
-
-	if(!(dptr = gx_cliprect(dst, &clip)))
-		return -1;
-
-	if(!(cblt = gx_getcbltf(cblt_fill, dst->depth, 0)))
-		return 1;
-
-	while (clip.h--) {
-		gx_callcbltf(cblt, dptr, NULL, clip.w, (void*)col);
-		dptr += dst->scanLen;
+	if ((font->flags & SurfMask) != Surf_fnt) {
+		return;
+	}
+	if (!font->basePtr) {
+		return;
 	}
 
-	return 0;
+	face = font->LLUTPtr->data[chr & 255];
+
+	clip.x = x + face.pad_x;
+	clip.y = y + face.pad_y;
+	clip.w = face.width;
+	clip.h = font->LLUTPtr->height;
+	if (clip.w <= 0 || clip.h <= 0) return;
+
+	if (!(dptr = (char*)gx_cliprect(surf, &clip))) return;
+	sptr = (char*)face.basePtr;// + (clip.y - y) * face.width + (clip.x - x);
+
+	extern void colset_32mix(void);
+	switch (surf->depth) {
+		case 32:
+			cblt = colset_32mix;
+			break;
+		default:
+			return;
+	}
+
+	while (clip.h-- > 0) {
+		gx_callcbltf(cblt, dptr, sptr, clip.w, (void*)color);
+		dptr += surf->scanLen;
+		sptr += face.width;
+	}
+}
+void g2_drawText(gx_Surf surf, int x, int y, gx_Surf font, const char *text, long color) {
+	int x0 = x;
+
+	if ((font->flags & SurfMask) != Surf_fnt) {
+		return;
+	}
+	if (!font->basePtr) {
+		return;
+	}
+
+	while (*text) {
+		unsigned chr = *text++;
+		switch (chr) {
+			case '\r':
+				if (*text == '\n') text++;
+				// fall
+			case '\n':
+				y += font->LLUTPtr->height;
+				x = x0;
+				break;
+
+			//~ case '\t': wln += 8; break;
+
+			default:
+				g2_drawChar(surf, x, y, font, chr, color);
+				x += font->LLUTPtr->data[chr].width;
+				break;
+		}
+	}
 }
 
-int gx_copysurf(gx_Surf dst, int x, int y, gx_Surf src, gx_Rect roi, cblt_mode mode) {
+int gx_copysurf(gx_Surf surf, int x, int y, gx_Surf src, gx_Rect roi) {
 	register char *dptr, *sptr;
 	register void (*cblt)();
 	struct gx_Rect clip;
@@ -340,54 +482,35 @@ int gx_copysurf(gx_Surf dst, int x, int y, gx_Surf src, gx_Rect roi, cblt_mode m
 	clip.w = roi ? roi->w : src->width;
 	clip.h = roi ? roi->h : src->height;
 
-	if (!(sptr = gx_cliprect(src, &clip)))
+	if (!(sptr = gx_cliprect(src, &clip))) {
 		return -1;
+	}
 
 	clip.x = x; clip.y = y;
-	if(!(dptr = gx_cliprect(dst, &clip)))
+	if(!(dptr = gx_cliprect(surf, &clip))) {
 		return -1;
-
-
-	switch (mode) {
-		case cblt_cpy : {
-			if(!(cblt = gx_getcbltf(cblt_conv, dst->depth, src->depth)))
-				return -1;
-		} break;
-		case cblt_and : {
-			if (dst->depth != src->depth)
-				return -1;
-			if(!(cblt = gx_getcbltf(cblt_copy, dst->depth, cblt_and)))
-				return -1;
-		} break;
-		case cblt_or  : {
-			if (dst->depth != src->depth)
-				return -1;
-			if(!(cblt = gx_getcbltf(cblt_copy, dst->depth, cblt_or)))
-				return -1;
-		} break;
-		case cblt_xor : {
-			if (dst->depth != src->depth)
-				return -1;
-			if(!(cblt = gx_getcbltf(cblt_conv, dst->depth, cblt_xor)))
-				return -1;
-		} break;
-		default : return -1;
 	}
+
+	if(!(cblt = gx_getcbltf(cblt_conv, surf->depth, src->depth)))
+		return -1;
 
 	while (clip.h--) {
 		gx_callcbltf(cblt, dptr, sptr, clip.w, NULL);
-		dptr += dst->scanLen;
+		dptr += surf->scanLen;
 		sptr += src->scanLen;
 	}
 
 	return 0;
 }
-
-int gx_zoomsurf(gx_Surf dst, gx_Rect rect, gx_Surf src, gx_Rect roi, int lin) {
+int gx_zoomsurf(gx_Surf surf, gx_Rect rect, gx_Surf src, gx_Rect roi, int linear) {
 	struct gx_Rect drec, srec;
 	long dx, dy, sx, sy, x, y;
 	long x0 = 0, y0 = 0;
 	char *dptr;
+
+	if (surf->depth != src->depth) {
+		return -2;
+	}
 
 	srec.x = srec.y = 0;
 	srec.w = src->width;
@@ -407,26 +530,24 @@ int gx_zoomsurf(gx_Surf dst, gx_Rect rect, gx_Surf src, gx_Rect roi, int lin) {
 		if (roi->h < srec.h)
 			srec.h = roi->h;
 	}
-	if (rect == 0) {
+	if (rect == NULL) {
 		drec.x = drec.y = 0;
-		drec.w = dst->width;
-		drec.h = dst->height;
+		drec.w = surf->width;
+		drec.h = surf->height;
 	}
-	else
+	else {
 		drec = *rect;
+	}
 
-	if (drec.w <= 0 || drec.h <= 0)
+	if (drec.w <= 0 || drec.h <= 0) {
 		return -1;
-	if (srec.w <= 0 || srec.h <= 0)
+	}
+	if (srec.w <= 0 || srec.h <= 0) {
 		return -1;
+	}
 
-	//~ if (drec.x < 0)
-		//~ drec.w += drec.x;
-	//~ if (drec.y < 0)
-		//~ drec.h += drec.y;
-
-	dx = ((srec.w - 0) << 16) / (drec.w - 0);
-	dy = ((srec.h - 0) << 16) / (drec.h - 0);
+	dx = (srec.w << 16) / drec.w;
+	dy = (srec.h << 16) / drec.h;
 
 	if (drec.x < 0) {
 		x0 = -drec.x;
@@ -436,72 +557,46 @@ int gx_zoomsurf(gx_Surf dst, gx_Rect rect, gx_Surf src, gx_Rect roi, int lin) {
 		y0 = -drec.y;
 	}
 
-	if (!(dptr = gx_cliprect(dst, &drec)))
+	if (!(dptr = gx_cliprect(surf, &drec))) {
 		return -1;
+	}
 
 	// if downsampling use nearest neigbor
 	if (dx & 0xfffe0000 || dy & 0xfffe0000) {
-		lin = 0;
+		linear = 0;
 	}
 
 	x0 = x0 * dx + (srec.x << 16);
 	y0 = y0 * dy + (srec.y << 16);
 
-	for (y = 0, sy = y0; y < drec.h; ++y, sy += dy) {
-		long *ptr = (long*)dptr;
-		for (x = 0, sx = x0; x < drec.w; ++x, sx += dx) {
-			*ptr++ = gx_getpix16(src, sx, sy, lin);
-			//~ gx_setpixel(dst, drec.x + x, drec.y + y, gx_getpix16(src, sx, sy, lin));
+	if (surf->depth == 32) {
+		for (y = 0, sy = y0; y < drec.h; ++y, sy += dy) {
+			long *ptr = (void*)dptr;
+			for (x = 0, sx = x0; x < drec.w; ++x, sx += dx) {
+				*ptr++ = gx_getpix16(src, sx, sy, linear);
+			}
+			dptr += surf->scanLen;
 		}
-		dptr += dst->scanLen;
+	}
+	else if (surf->depth == 8) {
+		for (y = 0, sy = y0; y < drec.h; ++y, sy += dy) {
+			char *ptr = (void*)dptr;
+			for (x = 0, sx = x0; x < drec.w; ++x, sx += dx) {
+				*ptr++ = gx_getpix16(src, sx, sy, linear);
+			}
+			dptr += surf->scanLen;
+		}
+	}
+	else {
+		for (y = 0, sy = y0; y < drec.h; ++y, sy += dy) {
+			for (x = 0, sx = x0; x < drec.w; ++x, sx += dx) {
+				gx_setpixel(surf, drec.x + x, drec.y + y, gx_getpix16(src, sx, sy, linear));
+			}
+		}
 	}
 
 	return 0;
 }
-
-
-
-/*void gx_drawCurs(gx_Surf dst, int x, int y, gx_Surf cur, int hide) {
-	//~ extern void colcpy_32mix();
-
-	char *d, *s, *dptr, *sptr, tmp[32*32*4];		// 4096 bytes
-	struct gx_Rect clp;
-	void (*rdbfn)();
-	void (*wtbfn)();
-
-	if (cur->flags && SURF_ID_GET != SURF_ID_CUR) return;
-
-	rdbfn = gx_getcbltf(cblt_conv, 32, dst->depth);
-	wtbfn = gx_getcbltf(cblt_conv, dst->depth, 32);
-	if (rdbfn == 0 || wtbfn == 0) return;
-
-	x -= cur->hotSpot.x;
-	y -= cur->hotSpot.y;
-	clp.x = x; clp.y = y;
-	clp.w = cur->width;
-	clp.h = cur->height;
-
-	dptr = (char*)gx_cliprect(dst, &clp);
-	sptr = (char*)gx_getpaddr(cur, clp.x - x, clp.y - y);
-	if (clp.w <= 0 || clp.h <= 0) return;
-	if (dptr == 0  ||  sptr == 0) return;
-
-	if (hide & 1) for (d = dptr, s = sptr, y = 0; y < clp.h; ++y) {
-		gx_callcbltf(rdbfn, s, d, clp.w, NULL);
-		d += dst->scanLen; s += cur->scanLen;
-	}
-	if (hide & (2|4)) {
-		if (hide & 2) {
-			memcpy(tmp, cur->basePtr, 32*32*4);
-			gx_callcbltf(colcpy_32mix, tmp, cur->tempPtr, 32*32, NULL);
-			sptr = tmp + (sptr - (char*)cur->basePtr);
-		}
-		for (d = dptr, s = sptr, y = 0; y < clp.h; ++y) {
-			gx_callcbltf(wtbfn, d, s, clp.w, NULL);
-			d += dst->scanLen; s += cur->scanLen;
-		}
-	}
-}// */
 
 int gx_loadFNT(gx_Surf dst, const char* fontfile) {
 	gx_Llut lut;
@@ -520,8 +615,8 @@ int gx_loadFNT(gx_Surf dst, const char* fontfile) {
 	}
 
 	dst->basePtr = ptr;
-	dst->lutLPtr = (gx_Llut)(ptr + 8 * fsize);
-	dst->flags = Surf_mem | Surf_fnt;
+	dst->LLUTPtr = (gx_Llut)(ptr + 8 * fsize);
+	dst->flags = Surf_freeData | Surf_fnt;
 
 	for (i = 0; i < fsize; ++i, ptr += 8) {
 		ptr[0] = (tmp[i] & 0X80) ? 255 : 0;
@@ -535,7 +630,7 @@ int gx_loadFNT(gx_Surf dst, const char* fontfile) {
 	}
 
 	ptr = dst->basePtr;
-	lut = dst->lutLPtr;
+	lut = dst->LLUTPtr;
 	lut->unused = 256;
 	lut->height = fsize >> 8;
 	fsize = 8 * lut->height;
@@ -555,145 +650,26 @@ int gx_loadFNT(gx_Surf dst, const char* fontfile) {
 	return 0;
 }
 
-void gx_drawChar(gx_Surf dst, int x, int y, gx_Surf fnt, unsigned chr, long col) {
-	struct gx_FDIR face;
+/*int gx_fillsurf(gx_Surf surf, gx_Rect rect, long color) {
+	register char *dptr;
+	register void (*cblt)();
 	struct gx_Rect clip;
-	void (*cblt)() = 0;
-	char *dptr, *sptr;
 
-	if (!fnt->basePtr)
-		return;
+	clip.x = rect ? rect->x : 0;
+	clip.y = rect ? rect->y : 0;
+	clip.w = rect ? rect->w : surf->width;
+	clip.h = rect ? rect->h : surf->height;
 
-	//~ if (fnt->flags & SurfMask != Surf_fnt) return;
+	if(!(dptr = gx_cliprect(surf, &clip)))
+		return -1;
 
-	face = fnt->lutLPtr->data[chr & 255];
+	if(!(cblt = gx_getcbltf(cblt_fill, surf->depth, 0)))
+		return 1;
 
-	clip.x = x + face.pad_x;
-	clip.y = y + face.pad_y;
-	clip.w = face.width;
-	clip.h = fnt->lutLPtr->height;
-	if (clip.w <= 0 || clip.h <= 0) return;
-
-	if (!(dptr = (char*)gx_cliprect(dst, &clip))) return;
-	sptr = (char*)face.basePtr;// + (clip.y - y) * face.width + (clip.x - x);
-
-	switch (dst->depth) {
-		extern void colset_32mix(void);
-		extern void colset_24mix(void);
-		extern void colset_16mix(void);
-		extern void colset_08mix(void);
-		case 32 : cblt = colset_32mix; break;
-		default : return;
+	while (clip.h--) {
+		gx_callcbltf(cblt, dptr, NULL, clip.w, (void*)color);
+		dptr += surf->scanLen;
 	}
 
-	while (clip.h-- > 0) {
-		gx_callcbltf(cblt, dptr, sptr, clip.w, (void*)col);
-		dptr += dst->scanLen;
-		sptr += face.width;
-	}
-}
-
-void gx_drawText(gx_Surf dst, int x, int y, gx_Surf fnt, const char *str, long col) {
-	int x0 = x;
-
-	if (!fnt->basePtr)
-		return;
-
-	while (*str) {
-		unsigned chr = *str++;
-		switch (chr) {
-			case '\r':
-				if (*str == '\n') str++;
-				// fall
-			case '\n':
-				y += fnt->lutLPtr->height;
-				x = x0;
-				break;
-
-			//~ case '\t': wln += 8; break;
-
-			default:
-				gx_drawChar(dst, x, y, fnt, chr, col);
-				x += fnt->lutLPtr->data[chr].width;
-				break;
-		}
-	}
-}
-
-void gx_clipText(gx_Rect roi, gx_Surf fnt, const char *str) {
-	struct gx_FDIR face;
-	int chr, H = 0, W = 0;
-
-	if (!fnt->basePtr)
-		return;
-
-	roi->w = roi->h = 0;
-
-	while ((chr = (*str++ & 255))) {
-		face = fnt->lutLPtr->data[chr];
-
-		if (H < fnt->lutLPtr->height)
-			H = fnt->lutLPtr->height;
-
-		switch (*str) {
-			case '\r': str += str[1] == '\n';
-			case '\n': roi->h += H; W = 0; break;
-
-			//~ case '\t': wln += 8; break;
-
-			default:
-				W += face.width;
-		}
-
-		if (roi->w < W)
-			roi->w = W;
-		if (roi->h < H)
-			roi->h = H;
-	}
-}
-
-
-
-/*pattern gx_patt[] = {
-	{0xff, 0xff, 0x00, 0x00, 0xff, 0xff, 0x00, 0x00},	//  0 |	====	line
-	{0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80},	//  1 |	 / /	liteslash
-	{0x07, 0x0e, 0x1c, 0x38, 0x70, 0xe0, 0xc1, 0x83},	//  2 |	////	slash
-	{0x07, 0x83, 0xc1, 0xe0, 0x70, 0x38, 0x1c, 0x0e},	//  3 |	\\\\	bkslash
-	{0x5a, 0x2d, 0x96, 0x4b, 0xa5, 0xd2, 0x69, 0xb4},	//  4 |	 \ \	litebkslash
-	{0xff, 0x88, 0x88, 0x88, 0xff, 0x88, 0x88, 0x88},	//  5 |		hatch
-	{0x18, 0x24, 0x42, 0x81, 0x81, 0x42, 0x24, 0x18},	//  6 |	xxxx	xhatch
-	{0xcc, 0x33, 0xcc, 0x33, 0xcc, 0x33, 0xcc, 0x33},	//  7 |		interleave
-	{0x80, 0x00, 0x08, 0x00, 0x80, 0x00, 0x08, 0x00},	//  8 |		widedot
-	{0x88, 0x00, 0x22, 0x00, 0x88, 0x00, 0x22, 0x00},	//  9 |		closedot
-	{0xBB, 0x5F, 0xAE, 0x5D, 0xBA, 0x75, 0xEA, 0xF5},	// 10 | Bricks
-	{0xAA, 0x7D, 0xC6, 0x47, 0xC6, 0x7F, 0xBE, 0x55},	// 11 | Buttons
-	{0x78, 0x31, 0x13, 0x87, 0xe1, 0xc8, 0x8c, 0x1e},	// 12 | Cargo Net
-	{0x52, 0x29, 0x84, 0x42, 0x94, 0x29, 0x42, 0x84},	// 13 | Circuits
-	{0x28, 0x44, 0x92, 0xAB, 0xD6, 0x6C, 0x38, 0x10},	// 14 | Cobblestones
-	{0x82, 0x01, 0x01, 0x01, 0xAB, 0x55, 0xAA, 0x55},	// 15 | Colosseum
-	{0x1E, 0x8C, 0xD8, 0xFD, 0xBF, 0x1B, 0x31, 0x78},	// 16 | Daisies
-	{0x3E, 0x07, 0xE1, 0x07, 0x3E, 0x70, 0xC3, 0x70},	// 17 | Dizzy
-	{0x56, 0x59, 0xA6, 0x9A, 0x65, 0x95, 0x6A, 0xA9},	// 18 | Field Effect
-	{0xFE, 0x02, 0xFA, 0x8A, 0xBA, 0xA2, 0xBE, 0x80},	// 19 | Key
-	{0xEF, 0xEF, 0x0E, 0xFE, 0xFE, 0xFE, 0xE0, 0xEF},	// 20 | Live Wire
-	{0xF0, 0xF0, 0xF0, 0xF0, 0xAA, 0x55, 0xAA, 0x55},	// 21 | Palid
-	{0xD7, 0x93, 0x28, 0xD7, 0x28, 0x93, 0xD5, 0xD7},	// 22 | Rounder
-	{0xE1, 0x2A, 0x25, 0x92, 0x55, 0x98, 0x3E, 0xF7},	// 23 | Scales
-	{0xAE, 0x4D, 0xEF, 0xFF, 0x08, 0x4D, 0xAE, 0x4D},	// 24 | Stone
-	{0xF8, 0x74, 0x22, 0x47, 0x8F, 0x17, 0x22, 0x71},	// 25 | Thatches
-	{0x45, 0x82, 0x01, 0x00, 0x01, 0x82, 0x45, 0xAA},	// 26 | Tile
-	{0x87, 0x07, 0x06, 0x04, 0x00, 0xF7, 0xE7, 0xC7},	// 27 | Triangles
-	{0x4D, 0x9A, 0x08, 0x55, 0xEF, 0x9A, 0x4D, 0x9A},	// 28 | Waffl's Revenge
-	{0x7f, 0x41, 0x41, 0x41, 0x41, 0x41, 0x7f, 0x00},	// 29
-	{0x00, 0x50, 0x72, 0x20, 0x00, 0x05, 0x27, 0x02},	// 30
-	{0x20, 0x50, 0x88, 0x50, 0x20, 0x00, 0x00, 0x00},	// 31
-	{0x02, 0x07, 0x07, 0x02, 0x20, 0x50, 0x50, 0x20},	// 32
-	{0xe0, 0x80, 0x8e, 0x88, 0xea, 0x0a, 0x0e, 0x00},	// 33
-	{0x82, 0x44, 0x28, 0x11, 0x28, 0x44, 0x82, 0x01},	// 34
-	{0x40, 0xc0, 0xc8, 0x78, 0x78, 0x48, 0x00, 0x00},	// 35
-	{0x14, 0x0c, 0xc8, 0x79, 0x9e, 0x13, 0x30, 0x28},	// 36
-	{0xf8, 0x74, 0x22, 0x47, 0x8f, 0x17, 0x22, 0x0b},	// 37
-	{0x00, 0x00, 0x54, 0x7c, 0x7c, 0x38, 0x92, 0x0c},	// 38
-	{0x00, 0x00, 0x00, 0x00, 0x80, 0x80, 0x80, 0xf0},	// 39
-	{0x88, 0x54, 0x22, 0x45, 0x88, 0x15, 0x22, 0x51}	// 40
-};// */
+	return 0;
+}*/

@@ -66,7 +66,7 @@ examples:
 >app -run test.tracing.ccc
     compile and execute the file `test.tracing.ccc`
 
->app -debug -gl.so -w0 gl.ccc -w0 test.ccc -wx -b12 -b15 -b/t19
+>app -debug gl.so -w0 gl.ccc -w0 test.ccc -wx -b12 -b15 -b/t19
     execute in debug mode
     import `gl.so`
         with no warnings
@@ -1188,13 +1188,19 @@ static void jsonDumpApi(userContext ctx, symn sym) {
 }
 
 static int jsonProfile(dbgContext ctx, size_t ss, void* caller, void* callee, clock_t ticks) {
+	static const int prettyPrint = 1;
 	if (callee != NULL) {
 		userContext cc = ctx->extra;
 		FILE *out = cc->out;
 		const int indent = cc->indent;
 		const char **esc = NULL;
 		if ((ptrdiff_t)callee < 0) {
-			fputfmt(out, "\n% I% 6d,-1%s", ss, ticks, ss ? "," : "");
+			if (prettyPrint) {
+				fputfmt(out, "\n% I%d,-1%s", ss, ticks, ss ? "," : "");
+			}
+			else {
+				fputfmt(out, "%d,-1%s", ticks, ss ? "," : "");
+			}
 			if (ss == 0) {
 				int i;
 				int covFunc = 0, nFunc = ctx->functions.cnt;
@@ -1275,7 +1281,12 @@ static int jsonProfile(dbgContext ctx, size_t ss, void* caller, void* callee, cl
 						"callTree array is constructed from a tick(timestamp) followed by a function offset, if the offset is negative it represents a return from a function instead of a call.");
 				fputFmt(out, esc, "%I, \"callTree\": [", indent + 1);
 			}
-			fputFmt(out, esc, "\n% I% 6d,%d,", ss, ticks, offs);
+			if (prettyPrint) {
+				fputFmt(out, esc, "\n% I%d,%d,", ss, ticks, offs);
+			}
+			else {
+				fputFmt(out, esc, "%d,%d,", ss, ticks, offs);
+			}
 		}
 	}
 	(void)caller;

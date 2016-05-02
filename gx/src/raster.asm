@@ -1,12 +1,11 @@
 ; low level raster operations
 
-global gx_getpaddr		; void* gx_getpaddr(gx_Surf, int, int);					Get Pixel Address
-global gx_getpixel		; long	gx_getpixel(gx_Surf, int, int);					Get Pixel
-global gx_getpix16		; long	gx_getpnear(gx_Surf, fixed16, fixed16, filter);			Get Pixel
+;global gx_getpaddr		; void* gx_getpaddr(gx_Surf, int, int);					Get Pixel Address
+;global gx_getpixel		; long	gx_getpixel(gx_Surf, int, int);					Get Pixel
+;global gx_setpixel		; void	gx_setpixel(gx_Surf, int, int, long);				Set Pixel
+;global gx_getpix16		; long	gx_getpnear(gx_Surf, fixed16, fixed16, filter);			Get Pixel
+;global gx_fillrect		; void	gx_fillrect(gx_Surf, int x1, int y1, int x2, int y2, long);	Block (fill rect)
 
-global gx_setpixel		; void	gx_setpixel(gx_Surf, int, int, long);				Set Pixel
-; global gx_setpline		; void	gx_setpline(gx_Surf, int x1, int y, int x2, long, Pattern);	Pattern Line
-global gx_fillrect		; void	gx_fillrect(gx_Surf, int x1, int y1, int x2, int y2, long);	Block (fill rect)
 global gx_getcbltf		; gx_cbltf gx_getcbltf(cbltf_type, int depth, int opbpp);
 global gx_callcbltf		; void gx_callcbltf(gx_cbltf, void*, void*, unsigned, void*);
 

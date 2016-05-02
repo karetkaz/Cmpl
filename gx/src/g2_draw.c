@@ -2,201 +2,152 @@
 #include "g2_surf.h"
 #include "math.h"
 
-#include "image.inl"
+#include <stdlib.h>
 
-void g2_drawline(gx_Surf surf, int x0, int y0, int x1, int y1, long col) {
-	//~ TODO : replace Bresenham with DDA, resolve clipping 
-	int sx, sy, r;
-	int dx = x1 - x0;
-	int dy = y1 - y0;
+static inline int min(int a, int b) {return a < b ? a : b;}
+static inline int max(int a, int b) {return a > b ? a : b;}
+static inline long rch(long xrgb) {return xrgb >> 16 & 0xff;}
+static inline long gch(long xrgb) {return xrgb >>  8 & 0xff;}
+static inline long bch(long xrgb) {return xrgb >>  0 & 0xff;}
+static inline long __rgb(int r, int g, int b) {return r << 16 | g << 8 | b;}
 
-	if (dx < 0) {
-		dx = -dx;
-		sx = -1;
-	}
-	else {
-		sx = 1;
+int gx_blursurf(gx_Surf img, gx_Rect roi, int radius) {
+
+	int w = img->width;
+	int h = img->height;
+	int wm = w - 1;
+	int hm = h - 1;
+
+	int wh = w * h;
+	int maxwh = max(w, h);
+	int div = 2 * radius + 1;
+
+	int x, y, i, yi = 0;
+	int *r, *g, *b, *vmin, *vmax, *dv;
+
+	if (radius < 1)
+		return -1;
+
+	if (roi != NULL)
+		return -2;
+
+	r = malloc(sizeof(int) * wh);
+	g = malloc(sizeof(int) * wh);
+	b = malloc(sizeof(int) * wh);
+	vmin = malloc(sizeof(int) * maxwh);
+	vmax = malloc(sizeof(int) * maxwh);
+	dv = malloc(sizeof(int) * 256 * div);
+
+
+	for (i = 0; i < 256 * div; i += 1) {
+		dv[i] = i / div;
 	}
 
-	if (dy < 0) {
-		dy = -dy;
-		sy = -1;
-	}
-	else {
-		sy = 1;
-	}
+	for (y = 0; y < h; y += 1) {
+		int rsum = 0;
+		int gsum = 0;
+		int bsum = 0;
 
-	if (dx > dy) {
-		r = dx >> 1;
-		while (x0 != x1) {
-			gx_setpixel(surf, x0, y0, col);
-			if ((r += dy) > dx) {
-				y0 += sy;
-				r -= dx;
+		for (i = -radius; i <= radius; i += 1) {
+			int p = gx_getpixel(img, min(wm, max(i, 0)), y);
+			rsum += rch(p);
+			gsum += gch(p);
+			bsum += bch(p);
+		}
+
+		for (x = 0; x < w; x += 1) {
+			int p1, p2;
+			r[yi] = dv[rsum];
+			g[yi] = dv[gsum];
+			b[yi] = dv[bsum];
+
+			if (y == 0) {
+				vmin[x] = min(x + radius + 1, wm);
+				vmax[x] = max(x - radius, 0);
 			}
-			x0 += sx;
+
+			p1 = gx_getpixel(img, vmin[x], y);
+			p2 = gx_getpixel(img, vmax[x], y);
+
+			rsum += rch(p1) - rch(p2);
+			gsum += gch(p1) - gch(p2);
+			bsum += bch(p1) - bch(p2);
+
+			yi += 1;
 		}
 	}
-	else {
-		r = dy >> 1;
-		while (y0 != y1) {
-			gx_setpixel(surf, x0, y0, col);
-			if ((r+=dx) > dy) {
-				x0 += sx;
-				r -= dy;
+
+	for (x = 0; x < w; x += 1) {
+		int rsum = 0;
+		int gsum = 0;
+		int bsum = 0;
+		int yp = -radius * w;
+
+		for (i = -radius; i <= radius; i += 1) {
+			int xy = max(0, yp) + x;
+			rsum += r[xy];
+			gsum += g[xy];
+			bsum += b[xy];
+			yp += w;
+		}
+
+		for (y = 0; y < h; y += 1) {
+			int p1, p2;
+			gx_setpixel(img, x, y, __rgb(dv[rsum], dv[gsum], dv[bsum]));
+
+			if (x == 0) {
+				vmin[y] = min(y + radius + 1, hm) * w;
+				vmax[y] = max(y - radius, 0) * w;
 			}
-			y0 += sy;
+
+			p1 = x + vmin[y];
+			p2 = x + vmax[y];
+
+			rsum += r[p1] - r[p2];
+			gsum += g[p1] - g[p2];
+			bsum += b[p1] - b[p2];
 		}
 	}
-	gx_setpixel(surf, x0, y0, col);
+
+	free(r);
+	free(g);
+	free(b);
+	free(vmin);
+	free(vmax);
+	free(dv);
+	return 0;
 }
-void gx_drawrect(gx_Surf dst, int x0, int y0, int x1, int y1, long col) {
-	//~ gx_setblock(dst, x0, y0, x1, y1, col);
-	gx_fillrect(dst, x0, y0, x1, y0 + 1, col);
-	gx_fillrect(dst, x0, y1, x1 + 1, y1 + 1, col);
-	gx_fillrect(dst, x0, y0, x0 + 1, y1, col);
-	gx_fillrect(dst, x1, y0, x1 + 1, y1, col);
-}
 
-void g2_drawoval(gx_Surf s, int x0, int y0, int x1, int y1, long c/* , long fg */) {
-	int dx, dy, sx, sy, r;
-	if (x0 > x1) {
-		x0 ^= x1;
-		x1 ^= x0;
-		x0 ^= x1;
-	}
-	if (y0 > y1) {
-		y0 ^= y1;
-		y1 ^= y0;
-		y0 ^= y1;
-	}
-	dx = x1 - x0;
-	dy = y1 - y0;
+int gx_clutsurf(gx_Surf dst, gx_Rect roi, gx_Clut lut) {
+	argb* lutd = lut->data;
+	struct gx_Rect rect;
+	char *dptr;
 
-	x1 = x0 += dx >> 1;
-	x0 += dx & 1;
+	if (dst->depth != 32)
+		return -1;
 
-	dx += dx & 1;
-	dy += dy & 1;
+	rect.x = roi ? roi->x : 0;
+	rect.y = roi ? roi->y : 0;
+	rect.w = roi ? roi->w : dst->width;
+	rect.h = roi ? roi->h : dst->height;
 
-	sx = dx * dx;
-	sy = dy * dy;
-	r = sx * dy >> 2;
+	if(!(dptr = gx_cliprect(dst, &rect)))
+		return -2;
 
-	dx = 0;
-	dy = r << 1;
-
-	while (y0 < y1) {
-		gx_setpixel(s, x0, y0, c);
-		gx_setpixel(s, x0, y1, c);
-		gx_setpixel(s, x1, y0, c);
-		gx_setpixel(s, x1, y1, c);
-
-		if (r >= 0) {
-			x0 -= 1;
-			x1 += 1;
-			r -= dx += sy;
+	while (rect.h--) {
+		int x;
+		argb *cBuff = (argb*)dptr;
+		for (x = 0; x < rect.w; x += 1) {
+			//~ cBuff->a = lutd[cBuff->a].a;
+			cBuff->r = lutd[cBuff->r].r;
+			cBuff->g = lutd[cBuff->g].g;
+			cBuff->b = lutd[cBuff->b].b;
+			cBuff += 1;
 		}
-
-		if (r < 0) {
-			y0 += 1;
-			y1 -= 1;
-			r += dy -= sx;
-		}
+		dptr += dst->scanLen;
 	}
-	gx_setpixel(s, x0, y0, c);
-	gx_setpixel(s, x0, y1, c);
-	gx_setpixel(s, x1, y0, c);
-	gx_setpixel(s, x1, y1, c);
-	//~ */
-}
-void g2_filloval(gx_Surf s, int x0, int y0, int x1, int y1, long c/* , long fg */) {
-	int dx, dy, sx, sy, r;
-	if (x0 > x1) {
-		x0 ^= x1;
-		x1 ^= x0;
-		x0 ^= x1;
-	}
-	if (y0 > y1) {
-		y0 ^= y1;
-		y1 ^= y0;
-		y0 ^= y1;
-	}
-	dx = x1 - x0;
-	dy = y1 - y0;
 
-	x1 = x0 += dx >> 1;
-	x0 +=dx & 1;
-
-	dx += dx & 1;
-	dy += dy & 1;
-
-	sx = dx * dx;
-	sy = dy * dy;
-
-	r = sx * dy >> 2;
-	dx = 0;
-	dy = r << 1;
-
-	while (y0 < y1) {
-		gx_fillrect(s, x0, y0, x0 + 1, y1, c);
-		gx_fillrect(s, x1, y0, x1 + 1, y1, c);
-
-		if (r >= 0) {
-			x0 -= 1;
-			x1 += 1;
-			r -= dx += sy;
-		}
-
-		if (r < 0) {
-			y0 += 1;
-			y1 -= 1;
-			r += dy -= sx;
-		}
-	}
-	gx_fillrect(s, x0, y0, x0 + 1, y1, c);
-	gx_fillrect(s, x1, y0, x1 + 1, y1, c);
-}
-
-void g2_drawbez2(gx_Surf dst, int x0, int y0, int x1, int y1, int x2, int y2, long col) {
-	double t, dt = 1. / 128;
-
-	int px_0 = x0;
-	int py_0 = y0;
-	int px_1 = 2 * (x1 - x0);
-	int py_1 = 2 * (y1 - y0);
-	int px_2 = x2 - 2 * x1 + x0;
-	int py_2 = y2 - 2 * y1 + y0;
-
-	for (t = dt; t < 1; t += dt) {
-		x1 = (px_2 * t + px_1) * t + px_0;
-		y1 = (py_2 * t + py_1) * t + py_0;
-		g2_drawline(dst, x0, y0, x1, y1, col);
-		x0 = x1;
-		y0 = y1;
-	}
-	g2_drawline(dst, x0, y0, x2, y2, col);
-}
-void g2_drawbez3(gx_Surf dst, int x0, int y0, int x1, int y1, int x2, int y2, int x3, int y3, long col) {
-	double t, dt = 1. / 128;
-
-	int px_0 = x0;
-	int py_0 = y0;
-	int px_1 = 3 * (x1 - x0);
-	int py_1 = 3 * (y1 - y0);
-	int px_2 = 3 * (x2 - x1) - px_1;
-	int py_2 = 3 * (y2 - y1) - py_1;
-	int px_3 = x3 - px_2 - px_1 - px_0;
-	int py_3 = y3 - py_2 - py_1 - py_0;
-
-	for (t = dt; t < 1; t += dt) {
-		x1 = ((px_3 * t + px_2) * t + px_1) * t + px_0;
-		y1 = ((py_3 * t + py_2) * t + py_1) * t + py_0;
-		g2_drawline(dst, x0, y0, x1, y1, col);
-		x0 = x1;
-		y0 = y1;
-	}
-	g2_drawline(dst, x0, y0, x3, y3, col);
+	return 0;
 }
 
 //#{	Gradient fill
@@ -248,7 +199,7 @@ static double gradient_spr_factor(struct gradient_data* g) {
 	return len + ang;
 }
 
-int gx_gradsurf(gx_Surf dst, gx_Rect roi, gx_Clut lut, int gradtype/* , cmix mix, int alphaANDflagsANDgradtype */) {
+int gx_gradsurf(gx_Surf dst, gx_Rect roi, gx_Clut lut, gradient_type gradtype, int repeat) {
 	gx_Clip clp = gx_getclip(dst);
 	struct gradient_data g;
 	argb *p = lut->data;
@@ -269,10 +220,7 @@ int gx_gradsurf(gx_Surf dst, gx_Rect roi, gx_Clut lut, int gradtype/* , cmix mix
 		g.y = dst->height;
 	}
 
-	if (!(dptr = (char*)gx_getpaddr(dst, clp->l, clp->t)))
-		return -2;
-
-	switch (gradtype & gradient_TYP) {
+	switch (gradtype) {
 		default:
 			return -3;
 
@@ -298,19 +246,23 @@ int gx_gradsurf(gx_Surf dst, gx_Rect roi, gx_Clut lut, int gradtype/* , cmix mix
 		case gradient_con:
 			g.a = atan2(g.x, g.y) + F64_MPI;
 			g.gf = gradient_con_factor;
-			gradtype |= gradient_rep;
+			repeat = 1;
 			break;
 
 		case gradient_spr:
 			g.a = atan2(g.x, g.y) + F64_MPI;
 			g.l = 1. / sqrt(g.x*g.x + g.y*g.y);
 			g.gf = gradient_spr_factor;
-			gradtype |= gradient_rep;
+			repeat = 1;
 			break;
 
 	}
 
-	if (gradtype & gradient_rep) {
+	if (!(dptr = (char*)gx_getpaddr(dst, clp->l, clp->t))) {
+		return -2;
+	}
+
+	if (repeat) {
 		for(g.y = clp->t; g.y < clp->b; ++g.y) {
 			register argb* d = (argb*)dptr;
 			for(g.x = clp->l; g.x < clp->r; ++g.x) {
@@ -335,7 +287,8 @@ int gx_gradsurf(gx_Surf dst, gx_Rect roi, gx_Clut lut, int gradtype/* , cmix mix
 		}
 	}
 	return 0;
-
 }
 
 //#}	Gradient fill */
+
+#include "image.inl"
