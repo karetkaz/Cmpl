@@ -641,12 +641,12 @@ static void FPUTFMT(FILE* fout, const char *esc[], const char* msg, va_list ap) 
 
 	while ((chr = *msg++)) {
 		if (chr == '%') {
-			char  nil = 0;    // [?]? skip on null || zero value
-			char  sgn = 0;    // [+-]?
-			char  pad = 0;    // 0?
-			long  len = 0;    // ([0-9]*)? length / indent
-			long  prc = -1;   // (.('*')|([0-9])*)? precision / mode
-			char* str = NULL; // the string to be printed
+			char nil = 0;    // [?]? skip on null || zero value
+			char sgn = 0;    // [+-]?
+			char pad = 0;    // 0?
+			int  len = 0;    // ([0-9]*)? length / indent
+			int  prc = -1;   // (.('*')|([0-9])*)? precision / mode
+			char *str = NULL; // the string to be printed
 
 			const char*	fmt = msg - 1;		// start of format string
 

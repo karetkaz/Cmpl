@@ -50,8 +50,8 @@ static inline int32_t bitsf(uint32_t x) {
 	return x ? result : -1;
 }
 
-typedef uint8_t* memptr;
-typedef uint32_t* stkptr;
+typedef uint8_t *memptr;
+typedef uint32_t *stkptr;
 
 /// bytecode instruction
 typedef struct bcde *bcde;
@@ -224,6 +224,8 @@ static int decrementStackAccess(rtContext rt, size_t offsBegin, size_t offsEnd, 
 	for (offs = offsBegin; offs < offsEnd; offs = nextIp(rt, offs)) {
 		register bcde ip = getip(rt, offs);
 		switch (ip->opc) {
+			default:
+				break;
 			case opc_set1:
 			case opc_set2:
 			case opc_set4:
@@ -303,7 +305,7 @@ int optimizeAssign(rtContext rt, size_t offsBegin, size_t offsEnd) {
 	return 0;
 }
 
-void dumpAsm(rtContext rt, size_t start, size_t end, userContext ctx, void action(userContext, size_t offs, void *ip)) {
+void dumpAsm(rtContext rt, size_t start, size_t end, userContext ctx, void action(userContext, size_t, void*)) {
 	size_t is, offs;
 	for (offs = start; offs < end; offs += is) {
 		register bcde ip = getip(rt, offs);
@@ -1006,7 +1008,7 @@ size_t emitarg(rtContext rt, vmOpcode opc, stkval arg) {
 	// post checks
 	if ((opc == opc_jmp || opc == opc_jnz || opc == opc_jz) && arg.i8 != 0) {
 		ip->rel -= rt->vm.pc;
-		logif((ip->rel + rt->vm.pc) != arg.i8, "FixMe");
+		logif((ip->rel + rt->vm.pc) != arg.sz, "FixMe");
 	}
 	else switch (opc) {
 		case opc_spc:
@@ -1325,7 +1327,7 @@ static vmError exec(rtContext rt, cell pu, symn fun, void *extra) {
 	const int cc = 1;
 	const libc libcvec = rt->vm.libv;
 
-	vmError errorCode = noError;
+	vmError execError = noError;
 	const size_t ms = rt->_size;			// memory size
 	const size_t ro = rt->vm.ro;			// read only region
 	const memptr mp = (void*)rt->_mem;
@@ -1390,28 +1392,28 @@ static vmError exec(rtContext rt, cell pu, symn fun, void *extra) {
 			}
 			switch (ip->opc) {
 				dbg_stop_vm:	// halt virtual machine
-					dbg(rt->dbg, errorCode, st - sp, sp, ip);
+					dbg(rt->dbg, execError, st - sp, sp, ip);
 					while (pu->tp != oldTP) {
 						traceCall(rt, NULL, NULL, (void*)-2);
 						//pu->tp = oldTP;	// during exec we may return from code.
 					}
-					return errorCode;
+					return execError;
 
 				dbg_error_opc:
-					errorCode = illegalInstruction;
+					execError = illegalInstruction;
 					goto dbg_stop_vm;
 
 				dbg_error_ovf:
 				dbg_error_trace_ovf:
-					errorCode = stackOverflow;
+					execError = stackOverflow;
 					goto dbg_stop_vm;
 
 				dbg_error_mem_read:
-					errorCode = memReadError;
+					execError = memReadError;
 					goto dbg_stop_vm;
 
 				dbg_error_mem_write:
-					errorCode = memWriteError;
+					execError = memWriteError;
 					goto dbg_stop_vm;
 
 				dbg_error_div_flt:
@@ -1420,11 +1422,11 @@ static vmError exec(rtContext rt, cell pu, symn fun, void *extra) {
 					break;
 
 				dbg_error_div:
-					errorCode = divisionByZero;
+					execError = divisionByZero;
 					goto dbg_stop_vm;
 
 				dbg_error_libc:
-					errorCode = libCallAbort;
+					execError = libCallAbort;
 					goto dbg_stop_vm;
 
 				#define NEXT(__IP, __SP, __CHK) pu->sp -= vm_size * (__SP); pu->ip += (__IP);
@@ -1458,7 +1460,7 @@ static vmError exec(rtContext rt, cell pu, symn fun, void *extra) {
 				}
 			}
 		}
-		return errorCode;
+		return execError;
 	}
 
 	// code for maximum execution speed
@@ -1467,26 +1469,26 @@ static vmError exec(rtContext rt, cell pu, symn fun, void *extra) {
 		register const stkptr sp = (stkptr)pu->sp;
 		switch (ip->opc) {
 			stop_vm:	// halt virtual machine
-				if (errorCode != noError) {
+				if (execError != noError) {
 					struct dbgContextRec dbg = { .rt = rt };
-					dbgDummy(&dbg, errorCode, st - sp, sp, ip);
+					dbgDummy(&dbg, execError, st - sp, sp, ip);
 				}
-				return errorCode;
+				return execError;
 
 			error_opc:
-				errorCode = illegalInstruction;
+				execError = illegalInstruction;
 				goto stop_vm;
 
 			error_ovf:
-				errorCode = stackOverflow;
+				execError = stackOverflow;
 				goto stop_vm;
 
 			error_mem_read:
-				errorCode = memReadError;
+				execError = memReadError;
 				goto stop_vm;
 
 			error_mem_write:
-				errorCode = memWriteError;
+				execError = memWriteError;
 				goto stop_vm;
 
 			error_div_flt: {
@@ -1497,11 +1499,11 @@ static vmError exec(rtContext rt, cell pu, symn fun, void *extra) {
 				break;
 
 			error_div:
-				errorCode = divisionByZero;
+				execError = divisionByZero;
 				goto stop_vm;
 
 			error_libc:
-				errorCode = libCallAbort;
+				execError = libCallAbort;
 				goto stop_vm;
 
 			#define NEXT(__IP, __SP, __CHK) {pu->sp -= vm_size * (__SP); pu->ip += (__IP);}
@@ -1511,7 +1513,7 @@ static vmError exec(rtContext rt, cell pu, symn fun, void *extra) {
 			#include "code.inl"
 		}
 	}
-	return errorCode;
+	return execError;
 }
 
 
@@ -1540,7 +1542,7 @@ vmError invoke(rtContext rt, symn fun, void* res, void* args, void* extra) {
 	}
 
 	// return here: vm->px: program exit
-	*(size_t *)(pu->sp -= vm_size) = rt->vm.px;
+	*(stkptr)(pu->sp -= vm_size) = rt->vm.px;
 
 	pu->ip = getip(rt, fun->offs);
 
@@ -2116,18 +2118,26 @@ static void traceArgs(rtContext rt, FILE *out, symn fun, char *file, int line, v
 	}
 }
 
-void logTrace(rtContext rt, FILE *out, int indent, int startLevel, int traceLevel) {
-	int i, pos, isOutput = 0;
+void logTrace(dbgContext dbg, FILE *out, int indent, int startLevel, int traceLevel) {
+	int i, isOutput = 0;
+	size_t pos;
+	if (dbg == NULL) {
+		return;
+	}
+
+	rtContext rt = dbg->rt;
 	cell pu = rt->vm.cell;
 	tracePtr tr = (tracePtr)pu->bp;
 
 	if (out == NULL) {
 		out = rt->logFile;
 	}
-	if (rt->dbg == NULL) {
-		return;
-	}
+
 	pos = ((tracePtr)pu->tp) - tr - 1;
+	if (pos < 1) {
+		// TODO: check why we have 0
+		pos = 1;
+	}
 	if (traceLevel > pos) {
 		traceLevel = pos;
 	}

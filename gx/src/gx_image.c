@@ -1,74 +1,66 @@
 #include <stdio.h>
 #include <string.h>
-#include "g2_surf.h"
+#include "gx_surf.h"
 
-#define BMP_RLE 0x01
 #define BMP_OS2 0x02
 
 #pragma pack ( push, 1 )
 typedef struct {	// BMP_HDR
-	unsigned short	manfact;
-	unsigned long	filesize;
-	unsigned long	version;
-	unsigned long	imgstart;
-	unsigned long	hdrsize;
+	uint16_t manfact;
+	uint32_t filesize;
+	uint32_t version;
+	uint32_t imgstart;
+	uint32_t hdrsize;
 } BMP_HDR;
 
 typedef struct {	// BMP_INF
-	unsigned long	width;
-	unsigned long	height;
-	unsigned short	planes;
-	unsigned short	depth;
-	unsigned long	encoding;		// 0:no compression;1: RLE 8 bit;2: RLE 4 bit
-	unsigned long	imgsize;
-	unsigned long	hdpi;
-	unsigned long	vdpi;
-	unsigned long	usedcol;
-	unsigned long	impcol;
-	unsigned char	b_enc;
-	unsigned char	g_enc;
-	unsigned char	r_enc;
-	unsigned char	filler;
+	uint32_t width;
+	uint32_t height;
+	uint16_t planes;
+	uint16_t depth;
+	uint32_t encoding;		// 0:no compression;1: RLE 8 bit;2: RLE 4 bit
+	uint32_t imgsize;
+	uint32_t hdpi;
+	uint32_t vdpi;
+	uint32_t usedcol;
+	uint32_t impcol;
+	uint8_t b_enc;
+	uint8_t g_enc;
+	uint8_t r_enc;
+	uint8_t filler;
 	// os/2 2+
-	unsigned char	res_889[24];
+	uint8_t res_889[24];
 } BMP_INF;
 
-typedef struct {	// BMP_INF2
-	unsigned short	width;
-	unsigned short	height;
-	unsigned short	planes;
-	unsigned short	depth;
-}BMPINF2;
-
 typedef struct {	// CUR_HDR
-	unsigned short	idreserved;
-	unsigned short	idtype;
-	unsigned short	idcount;
+	uint16_t idreserved;
+	uint16_t idtype;
+	uint16_t idcount;
 } CUR_HDR;
 
 typedef struct {	// CUR_DIR		CURSORDIRENTRY
-	unsigned char	width;
-	unsigned char	height;
-	unsigned char	colorcount;
-	unsigned char	breserved;
-	unsigned short	hotspotx;
-	unsigned short	hotspoty;
-	unsigned long	lbytesinres;
-	unsigned long	imageoffset;
+	uint8_t width;
+	uint8_t height;
+	uint8_t colorcount;
+	uint8_t breserved;
+	uint16_t hotspotx;
+	uint16_t hotspoty;
+	uint32_t lbytesinres;
+	uint32_t imageoffset;
 } CUR_DIR;
 
 typedef struct {	// CUR_BMP		BITMAPINFOHEADER
-	unsigned long	size;
-	signed   long	width;
-	signed   long	height;
-	unsigned short	planes;
-	unsigned short	depth;
-	unsigned long	encoding;
-	unsigned long	imgsize;
-	signed   long	hdpi;
-	signed   long	vdpi;
-	unsigned long	usedcol;
-	unsigned long	impcol;
+	uint32_t size;
+	int32_t width;
+	int32_t height;
+	uint16_t planes;
+	uint16_t depth;
+	uint32_t encoding;
+	uint32_t imgsize;
+	int32_t hdpi;
+	int32_t vdpi;
+	uint32_t usedcol;
+	uint32_t impcol;
 } CUR_BMP;
 
 #pragma pack(pop)
@@ -77,7 +69,7 @@ typedef int (*bmplnreader)(unsigned char*, FILE*, unsigned);
 typedef int (*bmplnwriter)(FILE*, unsigned char*, unsigned);
 
 static inline size_t FRead(void *ptr, size_t size, size_t nmemb, FILE *stream) {
-	int cnt = fread(ptr, size, nmemb, stream);
+	size_t cnt = fread(ptr, size, nmemb, stream);
 	if (nmemb != cnt)
 		gx_debug("xxx");
 	return cnt;
@@ -121,8 +113,6 @@ static int bmprln_04raw(unsigned char* dst, FILE* src, unsigned cnt) {
 	}
 	return 1;
 }
-
-//~ static int bmprln_01rle(unsigned char* dst, FILE* src, unsigned cnt) ;
 
 static int bmprln_04rle(unsigned char* dst, FILE* src, unsigned cnt) {
 	for (;;) {
@@ -215,9 +205,6 @@ static int bmpwln_04raw(FILE* dst, unsigned char* src, unsigned cnt) {
 	return 1;
 }
 
-static int bmpwln_04rle(FILE* dst, unsigned char* src, unsigned cnt) {return -1;} // TODO
-static int bmpwln_08rle(FILE* dst, unsigned char* src, unsigned cnt) {return -1;} // TODO
-
 //	open / save image formats
 
 int gx_readBMP(gx_Surf dst, FILE* fin, int depth) {
@@ -227,7 +214,7 @@ int gx_readBMP(gx_Surf dst, FILE* fin, int depth) {
 	BMP_INF		bmpinf;			// bitmap info header
 	int			bmplsz;			// bitmap line size
 	char*		ptr;			// ptr to surface line
-	char	tmpbuff[65535*4];	// bitmap temp buffer
+	unsigned char tmpbuff[65535*4];	// bitmap temp buffer
 	cblt_proc	convln;			// color convereter rutine
 
 	// check for valid depths
@@ -243,86 +230,121 @@ int gx_readBMP(gx_Surf dst, FILE* fin, int depth) {
 	}
 
 	FRead(&bmphdr, sizeof(BMP_HDR), 1, fin);
-	switch (bmphdr.manfact) {		// Validid Bitmap Formats
-		//~ case 'MB' : break;		// BM -               
-		//~ case 'AB' : break;		// BA - Bitmap Array
-		//~ case 'IC' : break;		// CI - Cursor Icon
-		//~ case 'PC' : break;		// CP -
-		//~ case 'CI' : break;		// IC -
-		//~ case 'TP' : break;		// PT - Pointer
+	switch (bmphdr.manfact) {
+		default:
+			return 2;
 
-		case 0x4d42: break;		// BM -               
-		case 0x4142: break;		// BA - Bitmap Array
-		case 0x4943: break;		// CI - Cursor Icon
-		case 0x5043: break;		// CP -
-		case 0x4349: break;		// IC -
-		case 0x5450: break;		// PT - Pointer
+		// Validid Bitmap Formats
+		case 0x4d42:		// BM -
+		case 0x4142:		// BA - Bitmap Array
+		case 0x4943:		// CI - Cursor Icon
+		case 0x5043:		// CP -
+		case 0x4349:		// IC -
+		case 0x5450:		// PT - Pointer
+			break;
 
-		default   : return 2;
 	}
-	FRead(&bmpinf, bmphdr.hdrsize-4, 1, fin);
+
+	FRead(&bmpinf, bmphdr.hdrsize - 4, 1, fin);
 	switch (bmphdr.hdrsize) {
-		/*case 12: {
+		default:
+			return 3;
+
+		case 40:		// Windows;
+		case 64:		// OS/2 2+;
+			break;
+
+		/*case 12:		// OS/2 1.x;
+			typedef struct {
+				uint16_t width;
+				uint16_t height;
+				uint16_t planes;
+				uint16_t depth;
+			} BMPINF2;
+
 			bmpinf.depth = (*(BMPINF2*)&bmpinf).depth;
 			bmpinf.planes = (*(BMPINF2*)&bmpinf).planes;
 			bmpinf.height = (*(BMPINF2*)&bmpinf).height;
 			bmpinf.width = (*(BMPINF2*)&bmpinf).width;
-		} break;			// */// OS/2 1.x;
-		case 40: break;		// Windows;
-		case 64: break;		// OS/2 2+;
-		default: return 3;
+			break;
+		// */
 	}
+
 	switch (bmpinf.depth) {
-		case  1: {
-			FRead(&bmppal.data, sizeof(argb), 2, fin);
-			bmplrd = bmprln_01raw;
-			bmppal.count = 2;
-		} break;
-		case  4: {
-			FRead(&bmppal.data, sizeof(argb),  16, fin);
-			bmplrd = bmprln_04raw;
-			bmppal.count = 16;
-		} break;
-		case  8: {
+		default:
+			return 4;
+
+		case 24:
+		case 32:
+			bmplrd = bmprln_raw;
+			break;
+
+		case 8:
 			FRead(&bmppal.data, sizeof(argb), 256, fin);
 			bmplrd = bmprln_raw;
 			bmppal.count = 256;
-		} break;
-		case 24: bmplrd = bmprln_raw; break;
-		case 32: bmplrd = bmprln_raw; break;
-		default: return 4;
+			break;
+
+		case 4:
+			FRead(&bmppal.data, sizeof(argb),  16, fin);
+			bmplrd = bmprln_04raw;
+			bmppal.count = 16;
+			break;
+
+		case 1:
+			FRead(&bmppal.data, sizeof(argb), 2, fin);
+			bmplrd = bmprln_01raw;
+			bmppal.count = 2;
+			break;
 	}
 	switch (bmpinf.encoding) {
-		case  0: break;		// no compression
-		case  1: bmplrd = bmprln_08rle; break;
-		case  2: bmplrd = bmprln_04rle; break;
-		default: return 5;
+		default:
+			return 5;
+
+		case 2:
+			bmplrd = bmprln_04rle;
+			break;
+
+		case 1:
+			bmplrd = bmprln_08rle;
+			break;
+
+		case 0:		// no compression
+			break;
 	}
-	if (!(convln = gx_getcbltf(cblt_conv, depth, bmpinf.depth < 8 ? 8 : bmpinf.depth))) {
+
+	if (!(convln = gx_getcbltf(depth, bmpinf.depth < 8 ? 8 : bmpinf.depth))) {
 		return 6;
 	}
+
 	if (gx_initSurf(dst, bmpinf.width, bmpinf.height, depth, Surf_recycle)) {
 		return 8;
 	}
+
 	if (depth == 8) {
+		// TODO: allocate paletteand copy palette
 		dst->CLUTPtr = &bmppal;
 	}
 
 	bmplsz = ((bmpinf.depth * bmpinf.width >> 3) + 3) & (~3);
 	ptr = (char*)dst->basePtr + dst->scanLen * dst->height;
 	fseek(fin, bmphdr.imgstart, SEEK_SET);
+
 	while (bmpinf.height--) {
 		ptr -= dst->scanLen;
-		bmplrd((unsigned char*)tmpbuff, fin, bmplsz);
-		gx_callcbltf(convln, ptr, tmpbuff, bmpinf.width, &bmppal);
+		bmplrd(tmpbuff, fin, bmplsz);
+		convln(ptr, tmpbuff, bmppal.data, bmpinf.width);
 	}
+
 	return 0;
 }
 
 int gx_loadBMP(gx_Surf surf, const char* src, int depth) {
 	int res;
 	FILE *fin = fopen(src, "rb");
-	if (!fin) return -1;
+	if (fin == NULL) {
+		return -1;
+	}
 	res = gx_readBMP(surf, fin, depth);
 	fclose(fin);
 	return res;
@@ -341,53 +363,59 @@ int gx_saveBMP(const char* dst, gx_Surf src, int flags) {
 	memset(&bmphdr, 0, sizeof(BMP_HDR));
 	memset(&bmpinf, 0, sizeof(BMP_INF));
 	memset(&bmppal, 0, sizeof(struct gx_Clut));
-	flags &= ~BMP_RLE;				// not implemented	//TODO
 	switch (src->depth) {
-		case  8 : {
-			/*if (src->clutPtr) {
-				memcpy(&bmppal, src->clutPtr, sizeof(gx_Clut));
-				if (bmppal.count <= 16)
-					if (bmppal.count == 2)
-						bmpinf.depth = 1;
-					else bmpinf.depth = 4;
-				else bmpinf.depth = 8;
+		default:
+			return 2;
+
+		case 32:
+		case 24:
+		case 16:
+		case 15:
+			bmplwr = bmpwln_raw;
+			bmpinf.depth = 24;
+			break;
+
+		case 8:
+			if (src->CLUTPtr != NULL) {
+				memcpy(&bmppal, src->CLUTPtr, sizeof(bmppal));
+				if (bmppal.count <= 2) {
+					bmpinf.depth = 1;
+				}
+				else if (bmppal.count <= 16) {
+					bmpinf.depth = 4;
+				}
+				else {
+					bmpinf.depth = 8;
+				}
 			}
-			else // */
-			{
+			else {	// use gray palette
 				for (bmplsz = 0; bmplsz < 256; ++bmplsz) {
-					bmppal.data[bmplsz].a = 255;
-					bmppal.data[bmplsz].r = bmplsz;
-					bmppal.data[bmplsz].g = bmplsz;
-					bmppal.data[bmplsz].b = bmplsz;
+					bmppal.data[bmplsz] = __argb(255, bmplsz, bmplsz, bmplsz);
 				}
 				bmppal.count = 256;
 				bmpinf.depth = 8;
 			}
 			switch (bmpinf.depth) {
-				case 1 : bmplwr = bmpwln_01raw; break;
-				case 4 : {
-					if (flags & BMP_RLE) {
-						bmpinf.encoding = 2;
+				case 1:
+					bmplwr = bmpwln_01raw;
+					break;
+
+				case 4:
+					bmplwr = bmpwln_04raw;
+					/*if (flags & BMP_RLE) {
 						bmplwr = bmpwln_04rle;
-					}
-					else
-						bmplwr = bmpwln_04raw;
-				} break;
-				case 8 : {
-					if (flags & BMP_RLE) {
-						bmpinf.encoding = 1;
+						bmpinf.encoding = 2;
+					}*/
+					break;
+				case 8:
+					bmplwr = bmpwln_raw;
+					/*if (flags & BMP_RLE) {
 						bmplwr = bmpwln_08rle;
-					}
-					else
-						bmplwr = bmpwln_raw;
-				} break;
+						bmpinf.encoding = 1;
+					}*/
+					break;
 			}
-		}break;// */
-		case 15 :
-		case 16 :
-		case 24 :
-		case 32 : bmpinf.depth = 24; bmplwr = bmpwln_raw; break;
-		default : return 2;
+			break;
 	}
 	bmpinf.width = src->width;
 	bmpinf.height = src->height;
@@ -398,14 +426,21 @@ int gx_saveBMP(const char* dst, gx_Surf src, int flags) {
 	bmphdr.hdrsize = (flags & BMP_OS2) ? 64 : 40;
 	bmphdr.imgstart = sizeof(BMP_HDR)-4 + bmphdr.hdrsize + (bmppal.count << 2);
 	bmphdr.filesize = bmphdr.imgstart + bmpinf.imgsize;
-	if (!(convln = gx_getcbltf(cblt_conv, bmpinf.depth < 8 ? 8 : bmpinf.depth, src->depth))) return 3;
-	if (!(fout = fopen(dst,"wb"))) return 1;
+
+	if (!(convln = gx_getcbltf(bmpinf.depth < 8 ? 8 : bmpinf.depth, src->depth))) {
+		return 3;
+	}
+
+	if (!(fout = fopen(dst,"wb"))) {
+		return 1;
+	}
+
 	fwrite(&bmphdr, sizeof(BMP_HDR), 1, fout);
 	fwrite(&bmpinf, bmphdr.hdrsize-4, 1, fout);
 	fwrite(&bmppal.data, bmppal.count, 4, fout);
 	ptr = (char*)src->basePtr + src->height * src->scanLen;
 	while (bmpinf.height--) {
-		gx_callcbltf(convln, tmpbuff, ptr -= src->scanLen, bmpinf.width, &bmppal);
+		convln(tmpbuff, ptr -= src->scanLen, &bmppal, bmpinf.width);
 		bmplwr(fout, (unsigned char*)tmpbuff, bmplsz);
 	}
 	fclose(fout);
@@ -513,99 +548,12 @@ int gx_saveBMP(const char* dst, gx_Surf src, int flags) {
 	return 0;
 }// */
 
-#if 0 || !defined(_MSC_VER)
-
-//~ int conv_rgb2xrgb(void* dst, void* src, int cnt){}
-/* reciclable
-static void conv_1bw2xrgb(char* dst, char* src, int cnt) {
-	while (cnt >= 0) {
-		int col = *src;
-		dst[0] = dst[1] = dst[2] = ~(((col >> 7) & 0x01) -1);
-		dst += 4;
-		dst[0] = dst[1] = dst[2] = ~(((col >> 6) & 0x01) -1);
-		dst += 4;
-		dst[0] = dst[1] = dst[2] = ~(((col >> 5) & 0x01) -1);
-		dst += 4;
-		dst[0] = dst[1] = dst[2] = ~(((col >> 4) & 0x01) -1);
-		dst += 4;
-		dst[0] = dst[1] = dst[2] = ~(((col >> 3) & 0x01) -1);
-		dst += 4;
-		dst[0] = dst[1] = dst[2] = ~(((col >> 2) & 0x01) -1);
-		dst += 4;
-		dst[0] = dst[1] = dst[2] = ~(((col >> 1) & 0x01) -1);
-		dst += 4;
-		dst[0] = dst[1] = dst[2] = ~(((col >> 0) & 0x01) -1);
-		dst += 4;
-		src += 1;
-		cnt -= 8;
-	}
-}
-static void conv_2bw2xrgb(char* dst, char* src, int cnt) {
-	while (cnt >= 0) {
-		int col = *src;
-		dst[0] = dst[1] = dst[2] = ((col >> 6) & 0x03) << 6;
-		dst += 4;
-		dst[0] = dst[1] = dst[2] = ((col >> 4) & 0x03) << 6;
-		dst += 4;
-		dst[0] = dst[1] = dst[2] = ((col >> 2) & 0x03) << 6;
-		dst += 4;
-		dst[0] = dst[1] = dst[2] = ((col >> 0) & 0x03) << 6;
-		dst += 4;
-		src += 1;
-		cnt -= 4;
-	}
-}
-static void conv_4bw2xrgb(char* dst, char* src, int cnt) {
-	while (cnt >= 0) {
-		int col = *src;
-		dst[0] = dst[1] = dst[2] = ((col >> 4) & 0x0f) << 4;
-		dst += 4;
-		dst[0] = dst[1] = dst[2] = ((col >> 0) & 0x0f) << 4;
-		dst += 4;
-		src += 1;
-		cnt -= 2;
-	}
-}
-// */
-static void conv_8bw2xrgb(unsigned char* dst, unsigned char* src, int cnt) {
-	while (cnt >= 0) {
-		dst[0] = dst[1] = dst[2] = src[0];
-		dst += 4;
-		src += 1;
-		cnt -= 1;
-	}
-}
-static void conv_bgr2xrgb(unsigned char* dst, unsigned char* src, int cnt) {
-	while (cnt >= 0) {
-		dst[0] = src[2];
-		dst[1] = src[1];
-		dst[2] = src[0];
-		dst += 4;
-		src += 3;
-		cnt -= 1;
-	}
-}
-static void conv_abgr2argb(unsigned char* dst, unsigned char* src, int cnt) {
-	while (cnt >= 0) {
-		//*(int*)dst = *(int*)src;
-		dst[0] = src[2];
-		dst[1] = src[1];
-		dst[2] = src[0];
-		dst[3] = src[3];
-		dst += 4;
-		src += 4;
-		cnt -= 1;
-	}
-}
-#pragma pack(push, 8)
-#pragma GCC diagnostic ignored "-Wpadded"
 #include "jpeg.h"
 int gx_loadJPG(gx_Surf dst, const char* src, int depth) {
-	void (*conv_2xrgb)(unsigned char* dst, unsigned char* src, int cnt) = NULL;
-	unsigned char buff[65535*4];		// bitmap temp buffer
+	unsigned char *ptr, buff[65535*4];		// bitmap temp buffer
 	unsigned char *tmpbuff = buff;
-	unsigned char* ptr;			// ptr to surface line
-	FILE*		fin;
+	cblt_proc conv_2xrgb = NULL;
+	FILE *fin;
 
 	/* This struct contains the JPEG decompression parameters and pointers to
 	 * working space (which is allocated as needed by the JPEG library).
@@ -617,6 +565,10 @@ int gx_loadJPG(gx_Surf dst, const char* src, int depth) {
 	 */
 	struct jpeg_error_mgr jerr;
 	/* More stuff */
+
+	if (depth != 32) {
+		return -2;
+	}
 
 	/* In this example we want to open the input file before doing anything else,
 	* so that the setjmp() error recovery below can assume the file is open.
@@ -652,22 +604,22 @@ int gx_loadJPG(gx_Surf dst, const char* src, int depth) {
 	/* Step 5: Start decompressor */
 	(void) jpeg_start_decompress(&cinfo);
 
-	if (depth == 32) switch (cinfo.jpeg_color_space) {
+	switch (cinfo.jpeg_color_space) {
 		case JCS_UNKNOWN:	/* error/unspecified */
 			break;
 
 		case JCS_GRAYSCALE:	/* monochrome */
-			conv_2xrgb = conv_8bw2xrgb;
+			conv_2xrgb = colcpy_32_08;
 			break;
 
 		case JCS_RGB:		/* red/green/blue */
 		case JCS_YCbCr:		/* Y/Cb/Cr (also known as YUV) */
 		case JCS_CMYK:		/* C/M/Y/K */
 		case JCS_YCCK:		/* Y/Cb/Cr/K */
-			conv_2xrgb = conv_bgr2xrgb;
+			conv_2xrgb = colcpy_32_bgr;
 			break;
 	}
-	if (!conv_2xrgb) {
+	if (conv_2xrgb == NULL) {
 		fclose(fin);
 		return 6;
 	}
@@ -680,8 +632,7 @@ int gx_loadJPG(gx_Surf dst, const char* src, int depth) {
 	ptr = (void*)dst->basePtr;
 	while (cinfo.output_scanline < cinfo.output_height) {
 		(void) jpeg_read_scanlines(&cinfo, &tmpbuff, 1);
-		conv_2xrgb(ptr, tmpbuff, dst->width);
-		//~ gx_callcbltf(convln, ptr, tmpbuff, dst->width, NULL);
+		conv_2xrgb(ptr, tmpbuff, NULL, dst->width);
 		ptr += dst->scanLen;
 	}
 
@@ -694,17 +645,16 @@ int gx_loadJPG(gx_Surf dst, const char* src, int depth) {
 	fclose(fin);
 	return 0;
 }
-#pragma pack ( pop )
+
 
 #include "png.h"
 int gx_loadPNG(gx_Surf dst, const char* src, int depth) {
-	void (*conv_2xrgb)(unsigned char* dst, unsigned char* src, int cnt) = NULL;
-	unsigned char tmpbuff[65535*4];	// bitmap temp buffer
-	unsigned char* ptr;			// ptr to surface line
-	FILE*		fin;
+	unsigned char *ptr, tmpbuff[65535*4];	// bitmap temp buffer
+	cblt_proc conv_2xrgb = NULL;
+	FILE *fin;
 
-	int			pngwidth, pngheight, pngdepth = 0;
-	int			color_type, bit_depth;
+	int pngwidth, pngheight, pngdepth = 0;
+	int color_type, bit_depth;
 
 	// 8 is the maximum size that can be checked
 	png_structp png_ptr;
@@ -712,14 +662,21 @@ int gx_loadPNG(gx_Surf dst, const char* src, int depth) {
 	int y, number_of_passes;
 	unsigned char header[8];
 
+	if (depth != 32) {
+		return -2;
+	}
+
 	/* open file and test for it being a png */
-	if ((fin = fopen(src, "rb")) == NULL)
+	if ((fin = fopen(src, "rb")) == NULL) {
 		return -1;
+	}
 
 	y = fread(header, 1, 8, fin);
 
-	if (y != 8 || png_sig_cmp(header, 0, 8))
+	if (y != 8 || png_sig_cmp(header, 0, 8)) {
+		fclose(fin);
 		return -2;
+	}
 
 	/* initialize stuff */
 	png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
@@ -754,25 +711,37 @@ int gx_loadPNG(gx_Surf dst, const char* src, int depth) {
 	bit_depth = png_get_bit_depth(png_ptr, info_ptr);
 	pngdepth = bit_depth * png_get_channels(png_ptr, info_ptr);
 	color_type = png_get_color_type(png_ptr, info_ptr);
-	//gx_destroySurf(dst, 1);
+
 	if (gx_initSurf(dst, pngwidth, pngheight, depth, Surf_recycle)) {
 		fclose(fin);
 		return 8;
 	}
 
-	// todo: if palette is present ????
-	if (depth == 32) switch (pngdepth) {
-		//~ case 1: conv_2xrgb = conv_1bw2xrgb; break;
-		//~ case 2: conv_2xrgb = conv_2bw2xrgb; break;
-		//~ case 4: conv_2xrgb = conv_4bw2xrgb; break;
-		//~ case 8: conv_2xrgb = conv_gray2xrgb; break;
-		default: conv_2xrgb = conv_bgr2xrgb; break;
-		case 32: conv_2xrgb = conv_abgr2argb; break;
+	switch (pngdepth) {
+		default:
+			break;
+
+		case 32:
+			conv_2xrgb = colcpy_32_abgr;
+			break;
+
+		case 24:
+			conv_2xrgb = colcpy_32_bgr;
+			break;
+
+		case 8:
+		case 4:
+		case 2:
+		case 1:
+			// png_set_expand convers gray and paletted colors
+			conv_2xrgb = colcpy_32_bgr;
+			break;
 	}
-	if (!conv_2xrgb) {
+
+	if (conv_2xrgb == NULL) {
 		fclose(fin);
 		return 6;
-	}// */
+	}
 
 	number_of_passes = png_set_interlace_handling(png_ptr);
 	if (color_type == PNG_COLOR_TYPE_PALETTE)
@@ -800,7 +769,7 @@ int gx_loadPNG(gx_Surf dst, const char* src, int depth) {
 		ptr = (void*)dst->basePtr;
 		for (y = 0; y < dst->height; y += 1) {
 			png_read_row(png_ptr, tmpbuff, NULL);
-			conv_2xrgb(ptr, tmpbuff, dst->width);
+			conv_2xrgb(ptr, tmpbuff, NULL, dst->width);
 			ptr += dst->scanLen;
 		}
 		number_of_passes -= 1;
@@ -812,10 +781,3 @@ int gx_loadPNG(gx_Surf dst, const char* src, int depth) {
 	fclose(fin);
 	return 0;
 }
-
-#else
-int gx_loadJPG(gx_Surf dst, const char* src, int depth) {return -1;}
-int gx_loadPNG(gx_Surf dst, const char* src, int depth) {return -1;}
-
-#endif
-//##############################################################################

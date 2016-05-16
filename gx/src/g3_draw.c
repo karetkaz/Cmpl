@@ -1,7 +1,7 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include "g2_surf.h"
+#include "gx_surf.h"
 #include "g3_draw.h"
 
 //~ /* frustum tests
@@ -82,53 +82,13 @@ static inline vector mappos(vector dst, matrix mat, vector src) {
 	return dst;
 }
 
-static inline argb nrmrgb(vector src) {
-	argb res;
-	res.r = (src->r + 1.) * 127;
-	res.g = (src->g + 1.) * 127;
-	res.b = (src->b + 1.) * 127;
-	return res;
-}
+static inline uint32_t sca2fix(double __VAL, int __FIX) {return ((uint32_t)((__VAL) * (1 << (__FIX))));}
+static inline uint32_t projx(gx_Surf dst, vector p, int sca) {return sca2fix((dst->width - 1) * (1 + p->x) / 2, sca);}
+static inline uint32_t projy(gx_Surf dst, vector p) {return sca2fix((dst->height - 1) * (1 - p->y) / 2, 0);}
+static inline uint32_t projz(vector p) {return sca2fix((1 - p->z) / 2, 24);}
 
-static inline long sca2fix(double __VAL, int __FIX) {return ((long)((__VAL) * (1 << (__FIX))));}
-static inline long projx(gx_Surf dst, vector p, int sca) {return sca2fix((dst->width - 1) * (1 + p->x) / 2, sca);}
-static inline long projy(gx_Surf dst, vector p) {return sca2fix((dst->height - 1) * (1 - p->y) / 2, 0);}
-static inline long projz(gx_Surf dst, vector p) {return sca2fix((1 - p->z) / 2, 24);}
-
-int g3_init(gx_Surf offs, int w, int h) {
-	static struct gx_Clip rec;
-	int memsize = 0;
-	void *cBuff, *zBuff;
-	rec.xmin = memsize;
-	rec.ymin = memsize;
-	rec.xmax = w - memsize;
-	rec.ymax = h - memsize;
-	memsize = w * h * sizeof(long);
-
-	if (w * h > (0x7fffffff / (2 * sizeof(long)))) {
-		return -1;
-	}
-
-	if (!(cBuff = malloc(2 * memsize))) {
-		return -1;
-	}
-
-	zBuff = (unsigned long *) cBuff + w * h;
-
-	offs->clipPtr = &rec;
-	offs->width = w;
-	offs->height = h;
-	offs->flags = Surf_3ds;
-	offs->depth = 32;
-	offs->pixeLen = 4;
-	offs->scanLen = w*4;
-	offs->basePtr = cBuff;
-	offs->tempPtr = zBuff;
-	return 0;
-}
-
-static inline int testZ(gx_Surf dst, unsigned long z, int offs) {
-	unsigned long *zBuff = (void*)dst->tempPtr;
+static inline int testZ(gx_Surf dst, uint32_t z, int offs) {
+	uint32_t *zBuff = (void*)dst->tempPtr;
 	if (zBuff[offs] > z) {
 		zBuff[offs] = z;
 		return 1;
@@ -140,8 +100,8 @@ static inline int getoffs(gx_Surf dst, int x, int y) {
 	return y * (dst->scanLen / 4) + x;
 }
 
-void g3_setpixel(gx_Surf dst, int x, int y, unsigned z, long c) {
-	long *cBuff = (void*)dst->basePtr;
+void g3_setpixel(gx_Surf dst, int x, int y, unsigned z, uint32_t c) {
+	uint32_t *cBuff = (void*)dst->basePtr;
 	int offs = getoffs(dst, x, y);
 	const gx_Clip roi = gx_getclip(dst);
 	if (y < roi->ymin || y >= roi->ymax) return;
@@ -213,13 +173,13 @@ static int g3_clipline(gx_Clip roi, int *x1, int *y1, int *z1, int *x2, int *y2,
 
 //~ ----------------------------------------------------------------------------
 void g3_putpixel(gx_Surf dst, vector p, int c) {
-	long x = projx(dst, p, 0);
-	long y = projy(dst, p);
-	long z = projz(dst, p);
+	int32_t x = projx(dst, p, 0);
+	int32_t y = projy(dst, p);
+	int32_t z = projz(p);
 	g3_setpixel(dst, x, y, z, c);
 }
 
-/*void g3_drawlineA(gx_Surf dst, vector p1, vector p2, long c0) {		// TODO
+/*void g3_drawlineA(gx_Surf dst, vector p1, vector p2, uint32_t c0) {		// TODO
 	struct gx_Clip roi = *gx_getclip(dst);
 	argb c;
 	int x, y, z = 0, zs=0;
@@ -231,11 +191,11 @@ void g3_putpixel(gx_Surf dst, vector p, int c) {
 
 	x1 = projx(dst, p1, 0);
 	y1 = projy(dst, p1);
-	z1 = projz(dst, p1);
+	z1 = projz(p1);
 
 	x2 = projx(dst, p2, 0);
 	y2 = projy(dst, p2);
-	z2 = projz(dst, p2);
+	z2 = projz(p2);
 
 	dx = x2 - x1; dy = y2 - y1;
 	roi.xmax -= 1;
@@ -258,7 +218,7 @@ void g3_putpixel(gx_Surf dst, vector p, int c) {
 			g3_setpixel(dst, x1, y, z, c.val);
 	}
 	else {
-		long xs = (((x2 - x1) << 16) / (y2 - y1));
+		int32_t xs = (((x2 - x1) << 16) / (y2 - y1));
 		if ((xs >> 16) == (xs >> 31)) {							// fixme
 			zs = (z2 - (z = z1)) / dy;
 			x = (x1 << 16) - (x1 > x2);
@@ -269,7 +229,7 @@ void g3_putpixel(gx_Surf dst, vector p, int c) {
 			}
 		}
 		else if (x1 < x2) {
-			long ys = (((y2 - y1) << 16) / (x2 - x1));
+			int32_t ys = (((y2 - y1) << 16) / (x2 - x1));
 			zs = (z2 - (z = z1)) / dx;
 			y = (y1 << 16);
 			for (x = x1; x <= x2; x++, y += ys, z += zs) {
@@ -279,7 +239,7 @@ void g3_putpixel(gx_Surf dst, vector p, int c) {
 			}
 		}
 		else {
-			long ys = (((y2 - y1) << 16) / (x1 - x2));
+			int32_t ys = (((y2 - y1) << 16) / (x1 - x2));
 			zs = (z2 - (z = z1)) / dx;
 			y = (y1 << 16);
 			for (x = x1; x >= x2; x--, y += ys, z += zs) {
@@ -291,18 +251,18 @@ void g3_putpixel(gx_Surf dst, vector p, int c) {
 	}
 }*/
 
-void g3_drawline(gx_Surf dst, vector p1, vector p2, long c) {		// Bresenham
-	long sx = 1, dx;
-	long sy = 1, dy;
-	long zs = 0, e;
+void g3_drawline(gx_Surf dst, vector p1, vector p2, uint32_t c) {		// Bresenham
+	int32_t sx = 1, dx;
+	int32_t sy = 1, dy;
+	int32_t zs = 0, e;
 
 	int x1 = projx(dst, p1, 0);
 	int y1 = projy(dst, p1);
-	int z1 = projz(dst, p1);
+	int z1 = projz(p1);
 
 	int x2 = projx(dst, p2, 0);
 	int y2 = projy(dst, p2);
-	int z2 = projz(dst, p2);
+	int z2 = projz(p2);
 
 	if ((dy = y2 - y1) < 0) {
 		dy = -dy;
@@ -343,17 +303,17 @@ void g3_drawline(gx_Surf dst, vector p1, vector p2, long c) {		// Bresenham
 }
 
 typedef struct ssds {
-	long x;
-	long z;
-	long s;
-	long t;
+	int32_t x;
+	int32_t z;
+	int32_t s;
+	int32_t t;
 	argb c;
 } *ssds;// */
 typedef struct edge {
-	long x, dx, z, dz;		//
-	long s, ds, t, dt;		// texture
-	long r, dr, g, dg, b, db;	// RGB color
-	//~ long sz, dsz, tz, dtz, rz, drz;
+	int32_t x, dx, z, dz;		//
+	int32_t s, ds, t, dt;		// texture
+	int32_t r, dr, g, dg, b, db;	// RGB color
+	//~ int32_t sz, dsz, tz, dtz, rz, drz;
 	//~ float A, dA, S0, S1, T0, T1, Z0, Z1;
 	//~ union vector pos, dp;
 	//~ union vector nrm, dn;
@@ -437,8 +397,9 @@ static inline void init_frag(edge e, edge l, edge r, int len, int skip) {
 	e->dn.z = (r->nrm.z - (e->nrm.z = l->nrm.z)) / len;
 	*/
 
-	if (skip > 0)
+	if (skip > 0) {
 		edge_skip(e, skip);
+	}
 
 }
 static inline void init_edge(edge e, ssds s1, ssds s2, int len, int skip) {
@@ -468,15 +429,10 @@ static inline void init_edge(edge e, ssds s1, ssds s2, int len, int skip) {
 	e->T0 = t1 / 65535.; e->T1 = t2 / 65535.;
 	*/
 
-	if (skip > 0)
+	if (skip > 0) {
 		edge_skip(e, skip);
+	}
 }// */
-
-static inline int rgbclamp(int val) {
-	if (val > 255) val = 255;
-	if (val < 0) val = 0;
-	return val;
-}
 
 static void draw_tri_part(gx_Surf dst, gx_Clip roi, edge l, edge r, int swap, int y1, int y2, gx_Surf img) {
 	struct edge v;
@@ -503,10 +459,11 @@ static void draw_tri_part(gx_Surf dst, gx_Clip roi, edge l, edge r, int swap, in
 					argb *cBuff = (void*)dst->basePtr;
 					if (img) {
 						//~ argb tex;tex.val = gx_getpixel(img, v.s >> 16, v.t >> 16);
-						argb tex;tex.val = gx_getpix16(img, v.s, v.t, 1);
-						cBuff[offs].b = rgbclamp((v.b >> 15) + tex.b);
-						cBuff[offs].g = rgbclamp((v.g >> 15) + tex.g);
-						cBuff[offs].r = rgbclamp((v.r >> 15) + tex.r);
+						argb tex;
+						tex.val = gx_getpix16(img, v.s, v.t, 1);
+						cBuff[offs].b = clamp_col((v.b >> 15) + tex.b);
+						cBuff[offs].g = clamp_col((v.g >> 15) + tex.g);
+						cBuff[offs].r = clamp_col((v.r >> 15) + tex.r);
 					}
 					else {
 						cBuff[offs].b = v.b >> 16;
@@ -525,7 +482,7 @@ static void draw_tri_part(gx_Surf dst, gx_Clip roi, edge l, edge r, int swap, in
 static void draw_triangle(gx_Surf dst, vector p, texcol tc, texcol lc, int i1, int i2, int i3, gx_Surf img) {
 	gx_Clip roi = gx_getclip(dst);
 
-	long y1, y2, y3;
+	int32_t y1, y2, y3;
 
 	// sort by y
 	if (p[i1].y < p[i3].y) {
@@ -550,8 +507,8 @@ static void draw_triangle(gx_Surf dst, vector p, texcol tc, texcol lc, int i1, i
 
 	if (y1 < y3) {				// clip (y)
 		int y = roi->ymin;
-		long dy1 = 0, dy2 = 0;
-		long ly1 = 0, ly2 = 0;
+		int dy1 = 0, dy2 = 0;
+		int ly1 = 0, ly2 = 0;
 
 		struct edge v1, v2;
 		struct ssds s1, s2, s3;
@@ -560,9 +517,9 @@ static void draw_triangle(gx_Surf dst, vector p, texcol tc, texcol lc, int i1, i
 		s2.x = projx(dst, p + i2, 16);
 		s3.x = projx(dst, p + i3, 16);
 
-		s1.z = projz(dst, p + i1);
-		s2.z = projz(dst, p + i2);
-		s3.z = projz(dst, p + i3);
+		s1.z = projz(p + i1);
+		s2.z = projz(p + i2);
+		s3.z = projz(p + i3);
 
 		s1.c.col = s2.c.col = s3.c.col = 0;//x00ffffff;
 		s1.s = s2.s = s3.s = 0;
@@ -801,11 +758,11 @@ void g3_drawOXYZ(gx_Surf dst, camera cam, double n) {
 
 int g3_drawmesh(gx_Surf dst, mesh msh, matrix objm, camera cam, int draw, double norm) {
 	gx_Surf img = NULL;
-	const long line_col = 0xffffff;
-	const long norm_col = 0xff0000;
-	const long edit_col = 0xff00ff;
+	const int32_t line_col = 0xffffff;
+	const int32_t norm_col = 0xff0000;
+	const int32_t edit_col = 0xff00ff;
 
-	unsigned i, tricnt = 0;
+	long i, tricnt = 0;
 	struct vector v[8];
 	struct matrix tmp[3];
 	matrix proj, view;
@@ -817,14 +774,16 @@ int g3_drawmesh(gx_Surf dst, mesh msh, matrix objm, camera cam, int draw, double
 	texcol lit = 0, col = tmpcolarr;
 
 	//~ objm = NULL;
-	if (msh->vtxcnt > MAXVTX)
+	if (msh->vtxcnt > MAXVTX) {
 		return -1;
+	}
 
 	//~ World*Wiew*Proj
 	view = cammat(tmp, cam);
 
-	if (objm)
+	if (objm != NULL) {
 		view = matmul(tmp + 1, tmp, objm);
+	}
 	proj = matmul(tmp + 2, &cam->proj, view);
 
 	if (draw & draw_tex) {
@@ -851,7 +810,7 @@ int g3_drawmesh(gx_Surf dst, mesh msh, matrix objm, camera cam, int draw, double
 			struct vector Col = msh->mtl.emis;
 			vector V = msh->pos + i;
 			vector N = msh->nrm + i;	// normalVec
-			if (objm) {
+			if (objm != NULL) {
 				V = matvph(v+1, objm, V);	// vertexPos
 				N = matvph(v+0, objm, N);	// vertexPos
 			}
@@ -863,33 +822,40 @@ int g3_drawmesh(gx_Surf dst, mesh msh, matrix objm, camera cam, int draw, double
 		else if (norm != 0) {
 			tmpcolarr[i].rgb = nrmrgb(msh->nrm + i);
 		}
-		else if (draw & draw_tex) {
-			if (msh->hasTex && img) {
+		else if ((draw & draw_tex) != 0) {
+			if (msh->hasTex && img != NULL) {
 				int s = col[i].s * (img->width - 1);
 				int t = col[i].t * (img->height - 1);
 				tmpcolarr[i].val = gx_getpix16(img, s, t, 0);
 			}
-			else tmpcolarr[i] = msh->tex[i];
+			else {
+				tmpcolarr[i] = msh->tex[i];
+			}
 		}
 		else {
 			tmpcolarr[i].rgb = nrmrgb(msh->nrm + i);
 		}
 	}
 
-	if (dst == NULL)
+	if (dst == NULL) {
 		return 0;
+	}
 
 	frustum_get(v, proj);
 
 	for (i = 0; i < msh->tricnt; i += 1) {		// draw
-		long i1 = msh->triptr[i].i1;
-		long i2 = msh->triptr[i].i2;
-		long i3 = msh->triptr[i].i3;
+		int32_t i1 = msh->triptr[i].i1;
+		int32_t i2 = msh->triptr[i].i2;
+		int32_t i3 = msh->triptr[i].i3;
 
-		if (!ftest_triangle(v, msh->pos + i1, msh->pos + i2, msh->pos + i3)) continue;
+		if (!ftest_triangle(v, msh->pos + i1, msh->pos + i2, msh->pos + i3)) {
+			continue;
+		}
 
 		// drop degenerated triangles
-		if (pos[i1].w <= 0 || pos[i2].w <= 0 || pos[i3].w <= 0) continue;
+		if (pos[i1].w <= 0 || pos[i2].w <= 0 || pos[i3].w <= 0) {
+			continue;
+		}
 
 		switch (draw & cull_mode) {				// culling faces(FIXME)
 			default: return 0;
@@ -900,13 +866,22 @@ int g3_drawmesh(gx_Surf dst, mesh msh, matrix objm, camera cam, int draw, double
 				float fA = (f[i2].x - f[i1].x) * (f[i3].y - f[i1].y);
 				float fB = (f[i2].y - f[i1].y) * (f[i3].x - f[i1].x);
 				switch (draw & cull_mode) {
-					case cull_back: if (fA >= fB) continue; break;
-					case cull_front: if (fA <= fB) continue; break;
+					case cull_back:
+						if (fA >= fB) {
+							continue;
+						}
+						break;
+					case cull_front:
+						if (fA <= fB) {
+							continue;
+						}
+						break;
 				}
 			}
 		}
 		switch (draw & draw_mode) {
-			default : return 0;
+			default:
+				return 0;
 			case draw_plot: {
 				g3_putpixel(dst, pos + i1, col[i1].val);
 				g3_putpixel(dst, pos + i2, col[i2].val);
@@ -929,8 +904,8 @@ int g3_drawmesh(gx_Surf dst, mesh msh, matrix objm, camera cam, int draw, double
 		tricnt += 1;
 	}
 	for (i = 0; i < msh->segcnt; i += 1) {		// draw segs
-		long i1 = msh->segptr[i].p1;
-		long i2 = msh->segptr[i].p2;
+		int32_t i1 = msh->segptr[i].p1;
+		int32_t i2 = msh->segptr[i].p2;
 		g3_drawline(dst, pos + i1, pos + i2, line_col);
 	}
 
@@ -943,17 +918,17 @@ int g3_drawmesh(gx_Surf dst, mesh msh, matrix objm, camera cam, int draw, double
 		}
 	}
 	if (msh->hlplt > 0 && msh->hlplt <= msh->vtxcnt) {
-		const long s2 = 3;
+		const int32_t s2 = 3;
 		vector p = pos + msh->hlplt - 1;
-		long x = projx(dst, p, 0);
-		long y = projy(dst, p);
+		int32_t x = projx(dst, p, 0);
+		int32_t y = projy(dst, p);
 		g2_drawoval(dst, x - s2, y - s2, x + s2, y + s2, edit_col);
 	}
 	return tricnt;
 }
 
 int g3_drawbbox(gx_Surf dst, mesh msh, matrix objm, camera cam) {
-	const long bbox_col = 0xff00ff;
+	const int32_t bbox_col = 0xff00ff;
 
 	//~ unsigned i, tricnt = 0;
 	struct vector v[8];

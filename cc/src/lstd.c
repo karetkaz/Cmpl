@@ -434,8 +434,6 @@ static vmError sysRaise(libcContext args) {
 		return noError;
 	}*/
 
-	//~ long* argv = (long*)(long(*)[7])args->argv;
-
 	// print valid code position (where the function was invoked).
 	if (file != NULL && line > 0) {
 		fputfmt(rt->logFile, "%s:%u", file, line);
@@ -466,8 +464,8 @@ static vmError sysRaise(libcContext args) {
 	}
 
 	// print stack trace skipping this function
-	if (maxTrace > 0) {
-		logTrace(rt, NULL, 1, 0, maxTrace);
+	if (rt->dbg && maxTrace > 0) {
+		logTrace(rt->dbg, NULL, 1, 0, maxTrace);
 	}
 
 	// abort the execution

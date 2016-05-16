@@ -1,4 +1,4 @@
-#include "g2_surf.h"
+#include "gx_surf.h"
 
 typedef int (*peek_msg)(int);
 typedef int (*flip_scr)(gx_Surf, int);

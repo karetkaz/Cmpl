@@ -1,16 +1,8 @@
 // scripting support
-#include <math.h>
-#include <stdio.h>
-#include <stdint.h>
-#include <string.h>
-#include <stdlib.h>
-#include "g2_surf.h"
-#include "g2_argb.h"
-#include "g3_draw.h"
-#include "drv_gui.h"
 
+#include "gx_gui.h"
+#include "g3_draw.h"
 #include "internal.h"
-#include <assert.h>
 
 extern double epsilon;
 
@@ -23,7 +15,7 @@ static inline void* poparg(libcContext rt, void *result, int size) {
 	else {
 		result = rt->argv;
 	}
-	*(char**)&rt->argv += padded(size, 4);
+	*(char**)&rt->argv += padded(size, vm_size);
 	return result;
 }
 
@@ -71,49 +63,49 @@ extern char *ccDmp;//"out/dump.out";
 
 //#{#region Surfaces
 typedef enum {
-surfOpGetDepth,
-surfOpGetWidth,
-surfOpGetHeight,
-//~ surfOpGetPixel,
-//~ surfOpGetPixfp,
-//~ surfOpSetPixel,
-surfOpClipRect,
+	surfOpGetDepth,
+	surfOpGetWidth,
+	surfOpGetHeight,
+	//~ surfOpGetPixel,
+	//~ surfOpGetPixfp,
+	//~ surfOpSetPixel,
+	surfOpClipRect,
 
-surfOpDrawLine,
-surfOpDrawBez2,
-surfOpDrawBez3,
-surfOpDrawRect,
-surfOpFillRect,
-surfOpDrawOval,
-surfOpFillOval,
-surfOpDrawText,
+	surfOpDrawLine,
+	surfOpDrawBez2,
+	surfOpDrawBez3,
+	surfOpDrawRect,
+	surfOpFillRect,
+	surfOpDrawOval,
+	surfOpFillOval,
+	surfOpDrawText,
 
-surfOpCopySurf,
-surfOpZoomSurf,
-surfOpClutSurf,
-surfOpCmatSurf,
-surfOpGradSurf,
-surfOpBlurSurf,
-surfOpOilPaint,
+	surfOpCopySurf,
+	surfOpZoomSurf,
+	surfOpClutSurf,
+	surfOpCmatSurf,
+	surfOpGradSurf,
+	surfOpBlurSurf,
+	surfOpOilPaint,
 
-surfOpNewSurf,
-surfOpDelSurf,
+	surfOpNewSurf,
+	surfOpDelSurf,
 
-surfOpBmpRead,
-surfOpJpgRead,
-surfOpPngRead,
-surfOpBmpWrite,
+	surfOpBmpRead,
+	surfOpJpgRead,
+	surfOpPngRead,
+	surfOpBmpWrite,
 
-surfOpEvalFpCB,
-surfOpFillFpCB,
-surfOpCopyFpCB,
-surfOpEvalPxCB,
-surfOpFillPxCB,
-surfOpCopyPxCB,
+	surfOpEvalFpCB,
+	surfOpFillFpCB,
+	surfOpCopyFpCB,
+	surfOpEvalPxCB,
+	surfOpFillPxCB,
+	surfOpCopyPxCB,
 } surfFunc;
 typedef uint32_t gxSurfHnd;
 static struct gx_Surf surfaces[256];
-static int surfCount = sizeof(surfaces) / sizeof(*surfaces);
+static size_t surfCount = sizeof(surfaces) / sizeof(*surfaces);
 
 static gxSurfHnd newSurf(int w, int h) {
 	gxSurfHnd hnd = 0;
@@ -130,7 +122,7 @@ static gxSurfHnd newSurf(int w, int h) {
 }
 
 static void delSurf(gxSurfHnd hnd) {
-	if (hnd == -1)
+	if (hnd == (gxSurfHnd)-1)
 		return;
 
 	if (!hnd || hnd > surfCount)
@@ -143,7 +135,7 @@ static void delSurf(gxSurfHnd hnd) {
 }
 
 static gx_Surf getSurf(gxSurfHnd hnd) {
-	if (hnd == -1)
+	if (hnd == (gxSurfHnd)-1)
 		return &offs;
 
 	if (!hnd || hnd > surfCount)
@@ -416,15 +408,16 @@ static vmError surfCall(libcContext rt) {
 				gx_debug("Unimplemented: evalSurf called with a roi");
 			}
 			if (sdst && callback) {
-				int sx, sy;
+				//int sx, sy;
+				#pragma pack(push, 4)
+				struct { int32_t x, y; } args;
+				#pragma pack(pop)
 				char *cBuffY = sdst->basePtr;
-				for (sy = 0; sy < sdst->height; sy += 1) {
-					long *cBuff = (long*)cBuffY;
+				for (args.y = 0; args.y < sdst->height; args.y += 1) {
+					uint32_t *cBuff = (uint32_t*)cBuffY;
 					cBuffY += sdst->scanLen;
-					for (sx = 0; sx < sdst->width; sx += 1) {
-						struct {int32_t x, y;} args = {sx, sy};
-						if (invoke(rt_, callback, &cBuff[sx], &args, NULL) != 0) {
-							//~ dump(s, dump_sym | dump_asm, callback, "error:&-T\n", callback);
+					for (args.x = 0; args.x < sdst->width; args.x += 1) {
+						if (invoke(rt_, callback, &cBuff[args.x], &args, NULL) != 0) {
 							return executionAborted;
 						}
 					}
@@ -451,12 +444,10 @@ static vmError surfCall(libcContext rt) {
 				int sx, sy;
 				char *cBuffY = sdst->basePtr;
 				for (sy = 0; sy < sdst->height; sy += 1) {
-					long *cBuff = (long*)cBuffY;
+					uint32_t *cBuff = (uint32_t*)cBuffY;
 					cBuffY += sdst->scanLen;
 					for (sx = 0; sx < sdst->width; sx += 1) {
-						struct {int32_t col;} args = {cBuff[sx]};
-						if (invoke(rt_, callback, &cBuff[sx], &args, NULL) != 0) {
-							//~ dump(s, dump_sym | dump_asm, callback, "error:&-T\n", callback);
+						if (invoke(rt_, callback, &cBuff[sx], &cBuff[sx], NULL) != 0) {
 							return executionAborted;
 						}
 					}
@@ -504,12 +495,16 @@ static vmError surfCall(libcContext rt) {
 					x1 = clip.x + clip.w;
 					y1 = clip.y + clip.h;
 					for (y = clip.y; y < y1; y += 1) {
-						long* cbdst = (long*)dptr;
-						long* cbsrc = (long*)sptr;
+						uint32_t* cbdst = (uint32_t*)dptr;
+						uint32_t* cbsrc = (uint32_t*)sptr;
 						for (x = clip.x; x < x1; x += 1) {
-							struct {int32_t dst, src;} args = {*cbdst, *cbsrc};
+							#pragma pack(push, 4)
+							struct {int32_t dst, src;} args = {
+								.dst = *cbdst,
+								.src = *cbsrc
+							};
+							#pragma pack(pop)
 							if (invoke(rt_, callback, cbdst, &args, NULL) != 0) {
-								//~ dump(s, dump_sym | dump_asm, callback, "error:&-T\n", callback);
 								return executionAborted;
 							}
 							cbdst += 1;
@@ -553,16 +548,16 @@ static vmError surfCall(libcContext rt) {
 			}
 			if (sdst && callback) {
 				int sx, sy;
-				float x01, y01;			// x and y in [0, 1)
+				#pragma pack(push, 4)
+				struct { float32_t x, y; } args;
+				#pragma pack(pop)
 				char *cBuffY = sdst->basePtr;
-				for (y01 = sy = 0; sy < sdst->height; sy += 1, y01 += dy01) {
-					long *cBuff = (long*)cBuffY;
+				for (args.y = sy = 0; sy < sdst->height; sy += 1, args.y += dy01) {
+					uint32_t *cBuff = (uint32_t*)cBuffY;
 					cBuffY += sdst->scanLen;
-					for (x01 = sx = 0; sx < sdst->width; sx += 1, x01 += dx01) {
-						struct {float32_t x, y;} args = {x01, y01};
+					for (args.x = sx = 0; sx < sdst->width; sx += 1, args.x += dx01) {
 						struct vector result;
-						if (invoke(rt_, callback, &result, &args, NULL) != 0) {
-							//~ dump(s, dump_sym | dump_asm, callback, "error:&-T\n", callback);
+						if (invoke(rt_, callback, &result, &args, NULL) != noError) {
 							return executionAborted;
 						}
 						cBuff[sx] = vecrgb(&result).col;
@@ -589,7 +584,7 @@ static vmError surfCall(libcContext rt) {
 				int sx, sy;
 				char *cBuffY = sdst->basePtr;
 				for (sy = 0; sy < sdst->height; sy += 1) {
-					long *cBuff = (long*)cBuffY;
+					uint32_t *cBuff = (uint32_t*)cBuffY;
 					cBuffY += sdst->scanLen;
 					for (sx = 0; sx < sdst->width; sx += 1) {
 						struct vector result;
@@ -644,40 +639,18 @@ static vmError surfCall(libcContext rt) {
 				if (callback) {
 					x1 = clip.x + clip.w;
 					y1 = clip.y + clip.h;
-					if (alpha > 0 && alpha < 1) {
-						int alpha16 = alpha * (1 << 16);
+					if (alpha >= 1) {
 						for (y = clip.y; y < y1; y += 1) {
-							long* cbdst = (long*)dptr;
-							long* cbsrc = (long*)sptr;
+							uint32_t* cbdst = (uint32_t*)dptr;
+							uint32_t* cbsrc = (uint32_t*)sptr;
 							for (x = clip.x; x < x1; x += 1) {
 								struct vector result;
-								struct {struct vector dst, src;} args = {
-									.dst = vecldc(rgbval(*cbdst)),
-									.src = vecldc(rgbval(*cbsrc))
+								#pragma pack(push, 4)
+								struct { struct vector dst, src; } args = {
+										.dst = vecldc(rgbval(*cbdst)),
+										.src = vecldc(rgbval(*cbsrc))
 								};
-								if (invoke(rt_, callback, &result, &args, NULL) != 0) {
-									return executionAborted;
-								}
-								*(argb*)cbdst = rgbmix16(*(argb*)cbdst, vecrgb(&result), alpha16);
-								cbdst += 1;
-								cbsrc += 1;
-							}
-							dptr += sdst->scanLen;
-							sptr += ssrc->scanLen;
-						}
-					}
-					else if (alpha >= 1){
-						for (y = clip.y; y < y1; y += 1) {
-							long* cbdst = (long*)dptr;
-							long* cbsrc = (long*)sptr;
-							for (x = clip.x; x < x1; x += 1) {
-								struct vector result;
-								struct {struct vector dst, src;} args;/* = {
-									vecldc(rgbval(*cbdst)),
-									vecldc(rgbval(*cbsrc))
-								};// */
-								args.dst = vecldc(rgbval(*cbdst));
-								args.src = vecldc(rgbval(*cbsrc));
+								#pragma pack(pop)
 								if (invoke(rt_, callback, &result, &args, NULL) != 0) {
 									return executionAborted;
 								}
@@ -689,17 +662,23 @@ static vmError surfCall(libcContext rt) {
 							sptr += ssrc->scanLen;
 						}
 					}
-				}
-				else {
-					x1 = clip.x + clip.w;
-					y1 = clip.y + clip.h;
-					if (alpha > 0 && alpha < 1) {
-						int alpha16 = alpha * (1 << 16);
+					else if (alpha > 0) {
+						int alpha255 = (int)(alpha * 255);
 						for (y = clip.y; y < y1; y += 1) {
-							long* cbdst = (long*)dptr;
-							long* cbsrc = (long*)sptr;
+							uint32_t *cbdst = (uint32_t*)dptr;
+							uint32_t* cbsrc = (uint32_t*)sptr;
 							for (x = clip.x; x < x1; x += 1) {
-								*(argb*)cbdst = rgbmix16(*(argb*)cbdst, *(argb*)cbsrc, alpha16);
+								struct vector result;
+								#pragma pack(push, 4)
+								struct { struct vector dst, src; } args = {
+									.dst = vecldc(rgbval(*cbdst)),
+									.src = vecldc(rgbval(*cbsrc))
+								};
+								#pragma pack(pop)
+								if (invoke(rt_, callback, &result, &args, NULL) != 0) {
+									return executionAborted;
+								}
+								*cbdst = gx_mixcolor(*cbdst, vecrgb(&result).col, alpha255);
 								cbdst += 1;
 								cbsrc += 1;
 							}
@@ -707,15 +686,38 @@ static vmError surfCall(libcContext rt) {
 							sptr += ssrc->scanLen;
 						}
 					}
-					else if (alpha >= 1) {
+					else {
+						// alpha <= 0, so do nothing
+					}
+				}
+				else {
+					x1 = clip.x + clip.w;
+					y1 = clip.y + clip.h;
+					if (alpha >= 1) {
 						for (y = clip.y; y < y1; y += 1) {
 							memcpy(dptr, sptr, 4 * clip.w);
 							dptr += sdst->scanLen;
 							sptr += ssrc->scanLen;
 						}
 					}
+					else if (alpha > 0 && alpha < 1) {
+						int alpha255 = (int)(alpha * 255);
+						for (y = clip.y; y < y1; y += 1) {
+							uint32_t *cbdst = (uint32_t*)dptr;
+							uint32_t* cbsrc = (uint32_t*)sptr;
+							for (x = clip.x; x < x1; x += 1) {
+								*cbdst = gx_mixcolor(*cbdst, *cbsrc, alpha255);
+								cbdst += 1;
+								cbsrc += 1;
+							}
+							dptr += sdst->scanLen;
+							sptr += ssrc->scanLen;
+						}
+					}
+					else {
+						// alpha <= 0, so do nothing
+					}
 				}
-
 			}
 			reti32(rt, dst);
 			return noError;
@@ -853,7 +855,7 @@ static vmError surfCall(libcContext rt) {
 						int go = (r * fxpmat[ 4] + g * fxpmat[ 5] + b * fxpmat[ 6] + 256*fxpmat[ 7]) >> 16;
 						int bo = (r * fxpmat[ 8] + g * fxpmat[ 9] + b * fxpmat[10] + 256*fxpmat[11]) >> 16;
 						//~ cBuff->a = (r * fxpmat[12] + g * fxpmat[13] + b * fxpmat[14] + a * fxpmat[15]) >> 16;
-						*cBuff = rgbclamp(ro, go, bo);
+						*cBuff = clamp_rgb(ro, go, bo);
 						cBuff += 1;
 					}
 					dptr += sdst->scanLen;
@@ -993,7 +995,7 @@ int gx_oilPaintSurf(gx_Surf image, gx_Rect roi, int radius, int intensity) {
 			}
 
 			if (curMax > 0) {
-				//~ int rgb = int(rgbClamp(sumR[maxIndex] / curMax, sumG[maxIndex] / curMax, sumB[maxIndex] / curMax));
+				//~ int rgb = int(clamp_rgb(sumR[maxIndex] / curMax, sumG[maxIndex] / curMax, sumB[maxIndex] / curMax));
 				//~ setPixel(dest, row, col, rgb);
 				int r = averageR[maxIndex] / curMax;
 				int g = averageG[maxIndex] / curMax;
@@ -1005,6 +1007,7 @@ int gx_oilPaintSurf(gx_Surf image, gx_Rect roi, int radius, int intensity) {
 	}
 	gx_copysurf(image, 0, 0, &temp, NULL);
 	gx_destroySurf(&temp);
+	(void)roi;
 	return 0;
 }
 
@@ -1454,30 +1457,39 @@ char* strncatesc(char *dst, int max, char* src) {
 #define snprintf(__DST, __MAX, __FMT, ...)  sprintf_s(__DST, __MAX, __FMT, ##__VA_ARGS__)
 #endif
 
-// TODO: to be removed
-int ccSymValInt(symn sym, int* res) {
+symn ccSymValInt(ccContext cc, char *name, symn cls, int *result) {
 	struct astNode ast;
-	if (sym && eval(&ast, sym->init)) {
-		*res = (int)constint(&ast);
-		return 1;
+	symn sym = ccLookupSym(cc, cls, name);
+	if (!sym || !eval(&ast, sym->init)) {
+		return NULL;
 	}
-	return 0;
+
+	if (result != NULL) {
+		*result = (int) constint(&ast);
+	}
+
+	return sym;
 }
-// TODO: to be removed
-int ccSymValFlt(symn sym, double* res) {
+
+symn ccSymValFlt(ccContext cc, char *name, symn cls, double* result) {
 	struct astNode ast;
-	if (sym && eval(&ast, sym->init)) {
-		*res = constflt(&ast);
-		return 1;
+	symn sym = ccLookupSym(cc, cls, name);
+	if (!sym || !eval(&ast, sym->init)) {
+		return NULL;
 	}
-	return 0;
+
+	if (result != NULL) {
+		*result = constflt(&ast);
+	}
+	return sym;
 }
 
 int ccCompile(char *src, int argc, char* argv[], int dbg(dbgContext, vmError, size_t, void*, void*)) {
 	symn cls = NULL;
 	const int stdwl = 0;
 	const int srcwl = 9;
-	int i, err = 0;
+	int err = 0;
+	size_t i;
 
 	if (rt == NULL)
 		return -29;
@@ -1642,13 +1654,13 @@ int ccCompile(char *src, int argc, char* argv[], int dbg(dbgContext, vmError, si
 		draw = 0;
 
 		if ((cls = ccLookupSym(cc, NULL, "Window"))) {
-			if (!ccSymValInt(ccLookupSym(cc, cls, "resx"), &resx)) {
+			if (!ccSymValInt(cc, "resx", cls, &resx)) {
 				//~ gx_debug("using default value for resx: %d", resx);
 			}
-			if (!ccSymValInt(ccLookupSym(cc, cls, "resy"), &resy)) {
+			if (!ccSymValInt(cc, "resy", cls, &resy)) {
 				//~ gx_debug("using default value for resy: %d", resy);
 			}
-			if (!ccSymValInt(ccLookupSym(cc, cls, "draw"), &draw)) {
+			if (!ccSymValInt(cc, "draw", cls, &draw)) {
 				//~ gx_debug("using default value for renderType: 0x%08x", draw);
 			}
 		}
@@ -1677,7 +1689,7 @@ int ccCompile(char *src, int argc, char* argv[], int dbg(dbgContext, vmError, si
 
 #if 1 // eval mesh with scripting support
 
-static inline double lerp(double a, double b, double t) {return a + t * (b - a);}
+static inline double lerp(double a, double b, double t) { return a + t * (b - a); }
 
 static inline double  dv3dot(double lhs[3], double rhs[3]) {
 	return lhs[0] * rhs[0] + lhs[1] * rhs[1] + lhs[2] * rhs[2];
@@ -1721,12 +1733,12 @@ static inline double* dv3nrm(double dst[3], double src[3]) {
 	return dst;
 }
 
-typedef struct userData {
+typedef struct {
 	double s, smin, smax;
 	double t, tmin, tmax;
 	int isPos, isNrm;
 	double pos[3], nrm[3];
-} *userData;
+} userDataRec, *userData;
 
 static vmError getS(libcContext rt) {
 	userData d = rt->extra;
@@ -1804,11 +1816,14 @@ static vmError f64atan2(libcContext rt) {
 }
 
 int evalMesh(mesh msh, int sdiv, int tdiv, char *src, char *file, int line) {
-	static char mem[320 << 10];		// 320K memory
+
+	char mem[64 << 10];		// 128K memory
+	size_t stackSize = sizeof(mem) / 2;
 	rtContext rt = rtInit(mem, sizeof(mem));
-	struct userData ud;
+	ccContext cc = ccInit(rt, installBase, NULL);
+
+	userDataRec ud;
 	const int warnlevel = 2;
-	const int stacksize = sizeof(mem) / 2;
 
 	char *logf = NULL;//"dump.evalMesh.txt";
 
@@ -1817,7 +1832,7 @@ int evalMesh(mesh msh, int sdiv, int tdiv, char *src, char *file, int line) {
 	double s, t, ds, dt;	// 0 .. 1
 
 	// pointers, variants and emit are not needed.
-	if (!ccInit(rt, installBase, NULL)) {
+	if (cc == NULL) {
 		gx_debug("Internal error\n");
 		return -1;
 	}
@@ -1850,11 +1865,27 @@ int evalMesh(mesh msh, int sdiv, int tdiv, char *src, char *file, int line) {
 	// */
 
 	// optimize on max level, and generate global variables on stack
+	rt->fastInstr = 1;
+	rt->fastAssign = 1;
+	rt->genGlobals = 0;
 	if (err || !gencode(rt, 0)) {
 		gx_debug("error compiling(%d), see `%s`", err, logf);
 		logfile(rt, NULL, 0);
 		return -3;
 	}
+
+	ud.smin = ud.tmin = 0;
+	ud.smax = ud.tmax = 1;
+	if (ccSymValInt(cc, "division", NULL, &tdiv)) {
+		sdiv = tdiv;
+	}
+	ccSymValFlt(cc, "smin", NULL, &ud.smin);
+	ccSymValFlt(cc, "smax", NULL, &ud.smax);
+	ccSymValInt(cc, "sdiv", NULL, &sdiv);
+
+	ccSymValFlt(cc, "tmin", NULL, &ud.tmin);
+	ccSymValFlt(cc, "tmax", NULL, &ud.tmax);
+	ccSymValInt(cc, "tdiv", NULL, &tdiv);
 
 	/* dump
 	fputfmt(stdout, "init(ro: %d"
@@ -1873,23 +1904,8 @@ int evalMesh(mesh msh, int sdiv, int tdiv, char *src, char *file, int line) {
 	// close log
 	logfile(rt, NULL, 0);
 
-	#define findint(__ENV, __NAME, _OUT_VAL) ccSymValInt(ccLookupSym(__ENV, NULL, __NAME), _OUT_VAL)
-	#define findflt(__ENV, __NAME, _OUT_VAL) ccSymValFlt(ccLookupSym(__ENV, NULL, __NAME), _OUT_VAL)
-
-	if (findint(rt->cc, "division", &tdiv)) {
-		sdiv = tdiv;
-	}
-
-	ud.smin = ud.tmin = 0;
-	ud.smax = ud.tmax = 1;
-
-	findflt(rt->cc, "smin", &ud.smin);
-	findflt(rt->cc, "smax", &ud.smax);
-	findint(rt->cc, "sdiv", &sdiv);
-
-	findflt(rt->cc, "tmin", &ud.tmin);
-	findflt(rt->cc, "tmax", &ud.tmax);
-	findint(rt->cc, "tdiv", &tdiv);
+	//#define findint(__ENV, __NAME, _OUT_VAL) ccSymValInt(ccLookupSym(__ENV, NULL, __NAME), _OUT_VAL)
+	//#define findflt(__ENV, __NAME, _OUT_VAL) ccSymValFlt(ccLookupSym(__ENV, NULL, __NAME), _OUT_VAL)
 
 	//~ cs = lookup_nz(env->cc, "closedS");
 	//~ ct = lookup_nz(env->cc, "closedT");
@@ -1913,7 +1929,7 @@ int evalMesh(mesh msh, int sdiv, int tdiv, char *src, char *file, int line) {
 			ud.s = s;
 			ud.t = t;
 			ud.isNrm = 0;
-			if (execute(rt, stacksize, &ud) != 0) {
+			if (execute(rt, stackSize, &ud) != 0) {
 				gx_debug("error");
 				return -4;
 			}
@@ -1925,7 +1941,7 @@ int evalMesh(mesh msh, int sdiv, int tdiv, char *src, char *file, int line) {
 			else {
 				ud.s = s + epsilon;
 				ud.t = t;
-				if (execute(rt, stacksize, &ud) != 0) {
+				if (execute(rt, stackSize, &ud) != 0) {
 					gx_debug("error");
 					return -5;
 				}
@@ -1933,7 +1949,7 @@ int evalMesh(mesh msh, int sdiv, int tdiv, char *src, char *file, int line) {
 
 				ud.s = s;
 				ud.t = t + epsilon;
-				if (execute(rt, stacksize, &ud) != 0) {
+				if (execute(rt, stackSize, &ud) != 0) {
 					gx_debug("error");
 					return -6;
 				}

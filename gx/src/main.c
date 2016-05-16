@@ -1,13 +1,10 @@
 #include <math.h>
 #include <stdio.h>
-#include <stdint.h>
 #include <string.h>
-#include <stddef.h>
 #include <stdlib.h>
-#include "g2_surf.h"
-#include "g2_argb.h"
+#include "gx_surf.h"
 #include "g3_draw.h"
-#include "drv_gui.h"
+#include "gx_gui.h"
 
 #ifdef __linux__
 #define stricmp(__STR1, __STR2) strcasecmp(__STR1, __STR2)
@@ -268,7 +265,7 @@ void readIni(char *file) {
 	//~ char *fun = NULL;
 
 	Light lit = NULL;
-	int litidx = 0;
+	size_t litidx = 0;
 
 	// todo: use me
 	char *ltS, *ltD;
@@ -626,7 +623,7 @@ void readIni(char *file) {
 		}
 	}
 	if (litidx > 0) {
-		int i = 0;
+		size_t i = 0;
 		for (i = 0; i + 1 < litidx; i++) {
 			userLights[i].next = &userLights[i+1];
 		}
@@ -684,10 +681,8 @@ void meshInfo(mesh msh) {
 	bboxMesh(msh, &min, &max);
 	printf("box min : %f, %f, %f\n", min.x, min.y, min.z);
 	printf("box max : %f, %f, %f\n", max.x, max.y, max.z);
-	printf("vtx cnt : %d / %d\n", msh->vtxcnt, msh->maxvtx);
-	printf("tri cnt : %d / %d\n", msh->tricnt, msh->maxtri);
-	//~ printf("vtx cnt : %d / %d\n", msh->vtxcnt, msh->maxvtx);
-	//~ printf("tri cnt : %d / %d\n", msh->tricnt, msh->maxtri);
+	printf("vtx cnt : %ld / %ld\n", msh->vtxcnt, msh->maxvtx);
+	printf("tri cnt : %ld / %ld\n", msh->tricnt, msh->maxtri);
 }
 
 #include "vmCore.h"
@@ -710,8 +705,13 @@ static int kbdHND(int key, int state) {
 	const scalar sca = 8;
 	if (keyboardCallBack) {
 		int result = 0;
-		//~ struct {int key, state;} args = {key, state};
-		invoke(rt, keyboardCallBack, NULL, &key, NULL);
+		#pragma pack(push, 4)
+		struct {int32_t key, state;} args = {
+			.key = key,
+			.state = state
+		};
+		#pragma pack(pop)
+		invoke(rt, keyboardCallBack, NULL, &args, NULL);
 		return result;
 	}
 	else switch (key) {
@@ -852,8 +852,14 @@ static int kbdHND(int key, int state) {
 static int ratHND(int btn, int mx, int my) {
 	if (mouseCallBack) {
 		int result = 0;
-		//~ struct {int btn, x, y;} args = {btn, mx, my};
-		invoke(rt, mouseCallBack, NULL, &btn, NULL);
+		#pragma pack(push, 4)
+		struct { int32_t btn, x, y; } args = {
+			.btn = btn,
+			.x = mx,
+			.y = my
+		};
+		#pragma pack(pop)
+		invoke(rt, mouseCallBack, NULL, &args, NULL);
 		return result;
 	}
 	else {// native mouse handler.
@@ -914,16 +920,54 @@ static int ratHND(int btn, int mx, int my) {
 		}
 }
 
-static int dbgCon(dbgContext rt, vmError err, size_t ss, void* sp, void* ip) {
-	if (ip != NULL) {
-		return 0;
-	}
-	fputfmt(stdout, ">exec:[sp%02d:%016X]@ %.A\n", ss, *(int64_t*)sp, ip);
-	//~ fputfmt(stdout, ">exec: %.A\n", caller);
-	return 0;
-}
+static int dbgTrace(dbgContext ctx, vmError err, size_t ss, void* sp, void* ip) {
+	FILE *out = stdout;
+	if (err != noError) {
+		char *errorStr = NULL;
+		switch (err) {
+			case noError:
+				break;
 
-static int dbgDummy(dbgContext rt, vmError err, size_t ss, void* sp, void* ip) {
+			case invalidIP:
+				errorStr = "Invalid instruction pointer";
+				break;
+
+			case invalidSP:
+				errorStr = "Invalid stack pointer";
+				break;
+
+			case illegalInstruction:
+				errorStr = "Illegal instruction";
+				break;
+
+			case stackOverflow:
+				errorStr = "Stack overflow";
+				break;
+
+			case divisionByZero:
+				errorStr = "Division by zero";
+				break;
+
+			case libCallAbort:
+			case executionAborted:
+				errorStr = "Native call aborted";
+				break;
+
+			case memReadError:
+			case memWriteError:
+				errorStr = "Invalid memory acces";
+				break;
+		}
+		//error(ctx->rt, NULL, 0, "%s executing instruction: %.A @%06x", errorStr, ip, vmOffset(ctx->rt, ip));
+		fputfmt(out, "[ERROR]: %s executing instruction: %.A\n", errorStr, ip);
+		logTrace(ctx, out, 0, 0, 20);
+		return executionAborted;
+	}
+	else {
+		//fputfmt(stdout, ">exec:[sp%02d:%016X]@ %.A\n", ss, *(int64_t*)sp, ip);
+	}
+	(void)sp;
+	(void)ss;
 	return 0;
 }
 
@@ -998,10 +1042,7 @@ int main(int argc, char* argv[]) {
 			else {
 				char* swithces = argv[1] + 2;
 				if (strrchr(swithces, 'd') != NULL) {
-					dbg = dbgDummy;
-				}
-				if (strrchr(swithces, 'D') != NULL) {
-					dbg = dbgCon;
+					dbg = dbgTrace;
 				}
 				script = argv[2];
 				argv += 2;
@@ -1058,13 +1099,16 @@ int main(int argc, char* argv[]) {
 		}
 	}
 
-	if ((e = g3_init(&offs, resx, resy))) {
+	if ((e = gx_initSurf(&offs, resx, resy, 32, Surf_3ds))) {
+	//if ((e = g3_init(&offs, resx, resy))) {
 		gx_debug("Error: %d\n", e);
 		gx_destroySurf(&font);
 		gx_destroySurf(&offs);
 		freeMesh(&msh);
 		return 2;
 	}
+
+
 	if (initWin(draw ? &offs : NULL, &flip, &peekMsg, ratHND, kbdHND)) {
 		printf("Cannot init surface\n");
 		gx_destroySurf(&font);
@@ -1210,7 +1254,7 @@ int main(int argc, char* argv[]) {
 				int *cBuff = (void*)offs.basePtr;
 				int *zBuff = (void*)offs.tempPtr;
 				for(e = 0; e < offs.width * offs.height; e += 1) {
-					long z = zBuff[e];
+					int32_t z = zBuff[e];
 					z = (z >> 16) & 0xff;
 					//~ z = (z >> 15) & 0x1ff;
 					//~ if (z < 256) z = ~z & 0xff;
@@ -1220,7 +1264,7 @@ int main(int argc, char* argv[]) {
 			if (draw & disp_info) {
 				int ln;
 				struct gx_Rect box;
-				sprintf(str, "Object size: %g, tvx:%d, tri:%d, seg:%d%s%s", O, msh.vtxcnt, msh.tricnt, msh.segcnt, msh.hasTex ? ", tex" : "", msh.hasNrm ? ", nrm" : "");
+				sprintf(str, "Object size: %g, tvx:%ld, tri:%ld, seg:%ld%s%s", O, msh.vtxcnt, msh.tricnt, msh.segcnt, msh.hasTex ? ", tex" : "", msh.hasNrm ? ", nrm" : "");
 				g2_clipText(&box, &font, str);
 				ln = -box.h;
 				g2_drawText(&offs, offs.width - box.w - 10, ln += box.h, &font, str, 0xffffffff);
@@ -1250,7 +1294,7 @@ int main(int argc, char* argv[]) {
 		if (fps.cnt == 0) {
 			//~ int col = fps.fps < 30 ? 0xff0000 : fps.fps < 50 ? 0xffff00 : 0x00ff00;
 			//~ sprintf(str, "tvx:%d, tri:%d/%d, fps: %d", msh.vtxcnt, tris, msh.tricnt, fps.fps);
-			sprintf(str, "FPS: %d, Vertices: %d, Polygons: %d/%d", fps.fps, msh.vtxcnt, tris, msh.tricnt);
+			sprintf(str, "FPS: %d, Vertices: %ld, Polygons: %d/%ld", fps.fps, msh.vtxcnt, tris, msh.tricnt);
 			setCaption(str);
 		}
 		if (draw & swap_buff) {

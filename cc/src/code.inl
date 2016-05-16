@@ -72,7 +72,7 @@ case opc_sync: NEXT(2, -0, 0) {
 } break;
 case opc_libc: NEXT(4, -libcvec[ip->rel].pop, libcvec[ip->rel].chk) {
 #ifdef EXEC
-	int exitCode;
+	vmError libcError;
 	libc libcall = &libcvec[ip->rel];
 	struct libcContextRec args = {
 		.rt = rt,
@@ -83,10 +83,10 @@ case opc_libc: NEXT(4, -libcvec[ip->rel].pop, libcvec[ip->rel].chk) {
 	};
 
 	TRACE(sp, ip, libcall);
-	exitCode = libcall->call(&args);
+	libcError = libcall->call(&args);
 	TRACE(sp, ip, (void*)-1);
 
-	STOP(error_libc, exitCode != 0, exitCode);
+	STOP(error_libc, libcError != 0, libcError);
 	STOP(stop_vm, ip->rel == 0, 0);			// Halt();
 #endif
 } break;

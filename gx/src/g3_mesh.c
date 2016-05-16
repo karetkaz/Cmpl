@@ -1,11 +1,7 @@
-#include <math.h>
-#include <stdio.h>
-#include <string.h>
+#include "g3_mesh.h"
+
 #include <stdlib.h>
-#include "g2_surf.h"
-#include "g3_draw.h"
-#include "vmCore.h"
-#include "ccCore.h"
+#include <string.h>
 
 #ifdef __linux__
 #define stricmp(__STR1, __STR2) strcasecmp(__STR1, __STR2)
@@ -34,7 +30,7 @@ scalar backface(vector N, vector p1, vector p2, vector p3) {
 	return vecdp3(N, p1);
 }
 
-int freeMesh(mesh msh) {
+void freeMesh(mesh msh) {
 	msh->maxtri = msh->tricnt = 0;
 	msh->maxvtx = msh->vtxcnt = 0;
 	free(msh->pos);
@@ -53,10 +49,10 @@ int freeMesh(mesh msh) {
 		msh->map = 0;
 	}
 	free(msh->triptr);
+	free(msh->segptr);
 	msh->triptr = 0;
-	return 0;
 }
-int initMesh(mesh msh, int n) {
+long initMesh(mesh msh, long n) {
 
 	msh->hlplt = -1;
 	msh->tricnt = 0;
@@ -84,14 +80,13 @@ int initMesh(mesh msh, int n) {
 	msh->tex = malloc(sizeof(struct texcol) * msh->maxvtx);
 
 	if (!msh->triptr || !msh->pos || !msh->nrm || !msh->tex) {
-		//~ freeMesh(msh);
 		return -1;
 	}
 
-	return 0;
+	return n;
 }
 
-/*int setgrp(mesh msh, int idx) {
+/*long setgrp(mesh msh, long idx) {
 	if (idx >= msh->maxgrp) {
 		msh->maxgrp = HIBIT(idx) * 2;
 		msh->grpptr = realloc(msh->pos, sizeof(struct grp*) * msh->maxgrp);
@@ -102,7 +97,7 @@ int initMesh(mesh msh, int n) {
 	}
 	return idx;
 }*/
-int getvtx(mesh msh, int idx) {
+long getvtx(mesh msh, long idx) {
 	if (idx >= msh->maxvtx) {
 		msh->maxvtx = HIBIT(idx) * 2;
 		msh->pos = (vector)realloc(msh->pos, sizeof(struct vector) * msh->maxvtx);
@@ -116,7 +111,7 @@ int getvtx(mesh msh, int idx) {
 	return idx;
 }
 
-int setvtxD(mesh msh, int idx, int atr, double x, double y, double z) {
+long setvtxD(mesh msh, long idx, int atr, double x, double y, double z) {
 	struct vector tmp[1];
 
 	if (getvtx(msh, idx) < 0)
@@ -139,7 +134,7 @@ int setvtxD(mesh msh, int idx, int atr, double x, double y, double z) {
 	return idx;
 }
 
-int setvtxDV(mesh msh, int idx, double pos[3], double nrm[3], double tex[2], long col) {
+long setvtxDV(mesh msh, long idx, double pos[3], double nrm[3], double tex[2], long col) {
 	if (getvtx(msh, idx) < 0) {
 		return -1;
 	}
@@ -157,13 +152,14 @@ int setvtxDV(mesh msh, int idx, double pos[3], double nrm[3], double tex[2], lon
 		msh->tex[idx].t = tex[1] * 65535.;
 	}
 
+	(void)col;
 	return idx;
 }
-int addvtxDV(mesh msh, double pos[3], double nrm[3], double tex[2]) {
+long addvtxDV(mesh msh, double pos[3], double nrm[3], double tex[2]) {
 	return setvtxDV(msh, msh->vtxcnt, pos, nrm, tex, 0);
 }
 
-int setvtxFV(mesh msh, int idx, float pos[3], float nrm[3], float tex[2]) {
+long setvtxFV(mesh msh, long idx, float pos[3], float nrm[3], float tex[2]) {
 	if (getvtx(msh, idx) < 0) {
 		return -1;
 	}
@@ -179,11 +175,11 @@ int setvtxFV(mesh msh, int idx, float pos[3], float nrm[3], float tex[2]) {
 	}
 	return idx;
 }
-int addvtxFV(mesh msh, float pos[3], float nrm[3], float tex[2]) {
+long addvtxFV(mesh msh, float pos[3], float nrm[3], float tex[2]) {
 	return setvtxFV(msh, msh->vtxcnt, pos, nrm, tex);
 }
 
-int addseg(mesh msh, int p1, int p2) {
+long addseg(mesh msh, long p1, long p2) {
 	if (p1 >= msh->vtxcnt || p2 >= msh->vtxcnt)
 		return -1;
 
@@ -199,9 +195,9 @@ int addseg(mesh msh, int p1, int p2) {
 	msh->segptr[msh->segcnt].p2 = p2;
 	return msh->segcnt++;
 }
-int addtri(mesh msh, int p1, int p2, int p3) {
+long addtri(mesh msh, long p1, long p2, long p3) {
 	if (p1 >= msh->vtxcnt || p2 >= msh->vtxcnt || p3 >= msh->vtxcnt) {
-		gx_debug("addTri(%d, %d, %d)", p1, p2, p3);
+		gx_debug("addTri(%ld, %ld, %ld)", p1, p2, p3);
 		return -1;
 	}
 
@@ -217,7 +213,7 @@ int addtri(mesh msh, int p1, int p2, int p3) {
 	if (msh->tricnt >= msh->maxtri) {
 		msh->triptr = (struct tri*)realloc(msh->triptr, sizeof(struct tri) * (msh->maxtri <<= 1));
 		if (msh->triptr == NULL) {
-			return -2;
+			return -1;
 		}
 	}
 	msh->triptr[msh->tricnt].i1 = p1;
@@ -225,8 +221,8 @@ int addtri(mesh msh, int p1, int p2, int p3) {
 	msh->triptr[msh->tricnt].i3 = p3;
 	return msh->tricnt++;
 }
-int addquad(mesh msh, int p1, int p2, int p3, int p4) {
-	if (addtri(msh, p1, p2, p3) >= 0) {
+long addquad(mesh msh, long p1, long p2, long p3, long p4) {
+	if (addtri(msh, p1, p2, p3) != -1) {
 		return addtri(msh, p3, p4, p1);
 	}
 	return -1;
@@ -246,8 +242,8 @@ static int vtxcmp(mesh msh, int i, int j, scalar tol) {
 
 void normMesh(mesh msh, scalar tol);
 
-static int prgDefCB(float prec) {return 0;}
-static float precent(int i, int n) {return 100. * i / n;}
+static int prgDefCB(float prec) { (void)prec; return 0; }
+static float precent(int i, int n) { return 100. * i / n; }
 //~ static float roundto(float x, int n) {double muldiv = pow(10, n); return round(x * muldiv) / muldiv;}
 
 struct growBuffer {
@@ -778,8 +774,7 @@ static int read_3ds(mesh msh, const char* file) {
 }
 static int save_obj(mesh msh, const char* file) {
 	FILE* out;
-	unsigned i;
-	//~ const int prec = 2;
+	long i;
 
 	if (!(out = fopen(file, "wt"))) {
 		gx_debug("fopen(%s, 'wt')", file);
@@ -791,8 +786,9 @@ static int save_obj(mesh msh, const char* file) {
 		vector nrm = msh->nrm + i;
 		scalar s = msh->tex[i].s / 65535.;
 		scalar t = msh->tex[i].t / 65535.;
-		if (msh->hasTex && msh->hasNrm)
-			fprintf(out, "#vertex: %d\n", i);
+		if (msh->hasTex && msh->hasNrm) {
+			fprintf(out, "#vertex: %ld\n", i);
+		}
 		//~ fprintf(out, "v  %.*g %.*g %.*g\n", prec, pos->x, prec, pos->y, prec, pos->z);
 		//~ fprintf(out, "v  %g %g %g\n", roundto(pos->x, prec), roundto(pos->y, prec), roundto(pos->z, prec));
 		fprintf(out, "v  %g %g %g\n", pos->x, pos->y, pos->z);
@@ -859,7 +855,7 @@ int saveMesh(mesh msh, const char* file) {
 }
 
 void bboxMesh(mesh msh, vector min, vector max) {
-	unsigned i;
+	long i;
 	if (msh->vtxcnt == 0) {
 		vecldf(min, 0, 0, 0, 0);
 		vecldf(max, 0, 0, 0, 0);
@@ -875,7 +871,7 @@ void bboxMesh(mesh msh, vector min, vector max) {
 }
 
 void centMesh(mesh msh, scalar size) {
-	unsigned i;
+	long i;
 	struct vector min, max, use;
 
 	bboxMesh(msh, &min, &max);
@@ -908,7 +904,7 @@ void centMesh(mesh msh, scalar size) {
  */
 void normMesh(mesh msh, scalar tolerance) {
 	struct vector tmp;
-	unsigned i, j;
+	long i, j;
 	for (i = 0; i < msh->vtxcnt; i += 1)
 		vecldf(&msh->nrm[i], 0, 0, 0, 1);
 
@@ -1071,7 +1067,7 @@ void sdivMesh(mesh msh, int smooth) {
 // */
 
 void optiMesh(mesh msh, scalar tol, int prgCB(float prec)) {
-	unsigned i, j, k, n;
+	long i, j, k, n;
 	if (prgCB == NULL)
 		prgCB = prgDefCB;
 	prgCB(0);

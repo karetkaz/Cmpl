@@ -704,7 +704,7 @@ static int conDebug(dbgContext dbg, const vmError error, size_t ss, void* sp, vo
 		}
 		fputfmt(out, "%s in function: <%T+%06x>\n", breakCause, fun, funOffs);
 		if (breakMode & dbg_trace) {
-			logTrace(rt, out, 1, 0, 20);
+			logTrace(dbg, out, 1, 0, 20);
 		}
 	}
 
@@ -798,7 +798,7 @@ static int conDebug(dbgContext dbg, const vmError error, size_t ss, void* sp, vo
 				return 0;
 
 			case dbgPrintTrace:
-				logTrace(rt, out, 1, 0, 20);
+				logTrace(dbg, out, 1, 0, 20);
 				break;
 
 			case dbgPrintOpcode:

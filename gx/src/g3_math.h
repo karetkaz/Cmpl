@@ -1,5 +1,11 @@
 /* tyni vector and matrix library */
+
+#ifndef __3D_MATH
+#define __3D_MATH
+
 #include <math.h>
+#include <stddef.h>
+#include "gx_color.h"
 
 typedef float scalar;
 
@@ -19,7 +25,7 @@ typedef struct vector {
 		scalar a;
 	};
 	};
-} *vector; //, *color, *position, *normal;
+} *vector;
 
 typedef struct matrix {
 	union {
@@ -85,11 +91,13 @@ typedef enum {				// swizzle
 	xzww = 0xf8, yzww = 0xf9, zzww = 0xfa, wzww = 0xfb, xwww = 0xfc, ywww = 0xfd, zwww = 0xfe, wwww = 0xff
 } vswzop;
 
+static inline scalar toRad(scalar deg) { return deg * (M_PI / 180); }
+
 //#################################  COLOR8  ###################################
 /*/#{
 typedef union color8_t {				// bool vect || byte vect || argb
-	unsigned long val;
-	unsigned char v[4];
+	unsigned int32_t val;
+	unsigned int8_t v[4];
 	struct {
 		unsigned char	b;
 		unsigned char	g;
@@ -139,7 +147,7 @@ argb argbxor(argb lhs, argb rhs) {
 
 argb argbadd(argb lhs, argb rhs) {
 	argb res;
-	register long tmp;
+	register int tmp;
 	res.b = (tmp = lhs.b + rhs.b) > 255 ? 255 : tmp;
 	res.g = (tmp = lhs.g + rhs.g) > 255 ? 255 : tmp;
 	res.r = (tmp = lhs.r + rhs.r) > 255 ? 255 : tmp;
@@ -149,7 +157,7 @@ argb argbadd(argb lhs, argb rhs) {
 
 argb argbsub(argb lhs, argb rhs) {
 	argb res;
-	register long tmp;
+	register int tmp;
 	res.b = (tmp = lhs.b - rhs.b) < 0 ? 0 : tmp;
 	res.g = (tmp = lhs.g - rhs.g) < 0 ? 0 : tmp;
 	res.r = (tmp = lhs.r - rhs.r) < 0 ? 0 : tmp;
@@ -159,7 +167,7 @@ argb argbsub(argb lhs, argb rhs) {
 
 argb argbmul(argb lhs, argb rhs) {
 	argb res;
-	register long tmp;
+	register int tmp;
 	res.b = ((tmp = lhs.b * rhs.b) + (tmp >> 8) + 1) >> 8;
 	res.g = ((tmp = lhs.g * rhs.g) + (tmp >> 8) + 1) >> 8;
 	res.r = ((tmp = lhs.r * rhs.r) + (tmp >> 8) + 1) >> 8;
@@ -205,7 +213,7 @@ argb argbmax(argb lhs, argb rhs) {
 
 argb argbmix(argb lhs, argb rhs, unsigned char cnt) {
 	argb res;
-	register long tmp;
+	register int tmp;
 	res.b = rhs.b + (((tmp = (lhs.b - rhs.b) * cnt) + (tmp >> 8) + 1) >> 8);
 	res.g = rhs.g + (((tmp = (lhs.g - rhs.g) * cnt) + (tmp >> 8) + 1) >> 8);
 	res.r = rhs.r + (((tmp = (lhs.r - rhs.r) * cnt) + (tmp >> 8) + 1) >> 8);
@@ -386,15 +394,6 @@ static inline vector vecnrm(vector dst, vector src) {
 	return dst;
 }
 
-static inline argb vecrgb(vector src) {
-	argb res;
-	res.r = src->r < 0 ? 0 : src->r > 1 ? 255 : (src->r * 255);
-	res.g = src->g < 0 ? 0 : src->g > 1 ? 255 : (src->g * 255);
-	res.b = src->b < 0 ? 0 : src->b > 1 ? 255 : (src->b * 255);
-	//~ res.a = src->a < 0 ? 0 : src->a > 1 ? 255 : (src->a * 255);
-	return res;
-}
-
 static inline struct vector vecldc(argb col) {
 	struct vector result;
 	result.r = col.r / 255.;
@@ -402,6 +401,14 @@ static inline struct vector vecldc(argb col) {
 	result.b = col.b / 255.;
 	result.a = col.a / 255.;
 	return result;
+}
+
+static inline argb vecrgb(vector src) {
+	return clamp_rgb(src->r * 255, src->g * 255, src->b * 255);
+}
+
+static inline argb nrmrgb(vector src) {
+	return clamp_rgb((src->r + 1.) * 127, (src->g + 1.) * 127, (src->b + 1.) * 127);
 }
 
 static inline vector vecrfl(vector dst, vector dir, vector nrm) {	// reflect
@@ -832,3 +839,5 @@ static inline matrix cammat(matrix mat, camera cam) {
 	vecldf(&mat->w, 0., 0., 0., 1.);
 	return mat;
 }
+
+#endif

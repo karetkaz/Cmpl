@@ -1,12 +1,8 @@
 #!/bin/sh
 
-if [ "$#" -eq 0 ]; then
-	xterm -e "$0" "./tests/*.gxc"
-	exit
-fi
 logFile=out/test.all.log
 echo>$logFile
-for file in $*
+for file in ./tests/*.gxc
 do
 	echo "**** running test: $file"
 	echo>>$logFile "**** running test: $file"

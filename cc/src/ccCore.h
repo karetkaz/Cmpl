@@ -53,7 +53,7 @@ typedef enum {
 		function    = 0x000020;		// function
 
 		KIND_var
-		variable    = 0x000030;		// functions and typenames are also variables
+		variable    = 0x000030;		// functions and types are also variables
 
 		ATTR_const  = 0x000040;
 		ATTR_static = 0x000080;
@@ -70,11 +70,11 @@ enum {
 	// ccInit
 	installBase = 0x0000,                       // basic type system only
 
-	install_ptr = 0x0001,                       // pointers and memory manager
-	install_var = 0x0002,                       // variants and reflection
-	install_obj = 0x0004,                       // classes and inheritance
+	install_ptr = 0x0001,                       // pointers and malloc(memory manager)
+	install_var = 0x0002,                       // variants and reflection(runtime type system)
+	install_obj = 0x0004,                       // classes and inheritance(counted references)
 
-	installEmit = 0x0010 | installBase,         // emit thingie: emit(...)
+	installEmit = 0x0010 | installBase,         // emit intrinsic: emit(...)
 	installEopc = 0x0020 | installEmit,         // emit opcodes: emit.i32.add
 	installEswz = 0x0040 | installEopc,         // swizzle constants: emit.swz.(xxxx, ... xyzw, ... wwww)
 

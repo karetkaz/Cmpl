@@ -48,10 +48,10 @@ typedef enum {
 	b32_bit_shr = 2 << 6,
 	b32_bit_sar = 3 << 6,
 
-	vm_size = 4,//sizeof(int),	// size of data element on stack
-			px_size = 5,// size in bytes of the exit instruction exit(0)
-			rt_size = 8,//sizeof(void*),
-			vm_regs = 255	// maximum registers for dup, set, pop, ...
+	vm_size = 4,// sizeof(int),	// size of data element on stack
+	px_size = 5,// size in bytes of the exit instruction exit(0)
+	rt_size = 8,// sizeof(void*), // value used to padd pointers
+	vm_regs = 255	// maximum registers for dup, set, pop, ...
 } vmOpcode;
 struct opc_inf {
 	signed int const code;		// opcode value (0..255)
@@ -73,6 +73,7 @@ typedef union {		// on stack value type
 	//uint64_t	u8;
 	float32_t	f4;
 	float64_t	f8;
+	size_t		sz;
 	int32_t		rel:24;
 	struct {int32_t data; int32_t length;} arr;	// slice
 	struct {int32_t value; int32_t type;} var;	// variant
@@ -189,7 +190,7 @@ int fixjump(rtContext, int src, int dst, int stc);
 /**
  * print stack trace
  */
-void logTrace(rtContext rt, FILE *out, int indent, int startLevel, int traceLevel);
+void logTrace(dbgContext rt, FILE *out, int indent, int startLevel, int traceLevel);
 
 /**
  * @brief Print formatted text to the output stream.

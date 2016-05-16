@@ -271,7 +271,7 @@ struct libcContextRec {
 	void* const extra;      // extra data for function (passed to execute or invoke)
 	void* const data;       // static data for function (passed to install)
 	char* const argv;       // arguments for function
-	void* const retv;		// result of function
+	void* const retv;       // result of function
 };
 
 /**

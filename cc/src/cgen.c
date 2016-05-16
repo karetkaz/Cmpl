@@ -8,6 +8,9 @@ description:
 #include <string.h>
 #include "internal.h"
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wmany-braces-around-scalar-init"
+
 //#{ utility function for debugging only.
 static void asmDump(userContext ctx, size_t offs, void *ip) {
 	prerr("emit", ".%06x %.9A", offs, ip);
@@ -75,8 +78,7 @@ size_t emitint(rtContext rt, vmOpcode opc, int64_t value) {
 
 /// Emit an instruction indexing nth element on stack.
 static size_t emitidx(rtContext rt, vmOpcode opc, size_t arg) {
-	stkval tmp;
-	tmp.i8 = rt->vm.ss * vm_size - arg;
+	stkval tmp = { .i8 = rt->vm.ss * vm_size - arg };
 
 	switch (opc) {
 		default:
@@ -93,15 +95,20 @@ static size_t emitidx(rtContext rt, vmOpcode opc, size_t arg) {
 		case opc_set1:
 		case opc_set2:
 		case opc_set4:
-			tmp.i8 /= vm_size;
+			tmp.sz /= vm_size;
 			break;
 	}
 
-	if (tmp.i8 > vm_regs) {
+
+	if (tmp.sz != tmp.i8) {
 		trace("opc_x%02x(%D(%d))", opc, tmp.i8, arg);
 		return 0;
 	}
-	if (tmp.i8 > rt->vm.ss * vm_size) {
+	if (tmp.sz > vm_regs) {
+		trace("opc_x%02x(%D(%d))", opc, tmp.i8, arg);
+		return 0;
+	}
+	if (tmp.sz > rt->vm.ss * vm_size) {
 		trace("opc_x%02x(%D(%d))", opc, tmp.i8, arg);
 		return 0;
 	}
@@ -2573,3 +2580,5 @@ int gencode(rtContext rt, int mode) {
 	return rt->errCount == 0;
 	(void)Lmeta;
 }
+
+#pragma clang diagnostic pop
