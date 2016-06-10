@@ -526,7 +526,7 @@ static vmError sysMemSet(libcContext rt) {
 }
 //#}#endregion
 
-int ccUnitStdc(rtContext rt) {
+int ccLibStdc(rtContext rt) {
 	symn nsp = NULL;		// namespace
 	int err = 0;
 	size_t i;
@@ -691,7 +691,7 @@ int ccUnitStdc(rtContext rt) {
 	return err;
 }
 
-int ccUnitFile(rtContext rt) {
+int ccLibFile(rtContext rt) {
 	symn file_nsp = ccDefType(rt, "File", sizeof(FILE*), 0);
 	int err = file_nsp == NULL;
 

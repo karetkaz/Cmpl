@@ -278,16 +278,35 @@ struct userContextRec {
 };
 
 // text output
-static void conDumpMem(rtContext rt, void* ptr, size_t size, int used) {
+static void conDumpMem(rtContext rt, void *ptr, size_t size, char *kind) {
 	userContext ctx = rt->dbg->extra;
+	char *unit = "bytes";
+	float value = 0;
 	if (ctx == NULL) {
 		return;
 	}
 	FILE *out = ctx->out;
-	if (!used && ctx->dmpHeap == 1) {
+	if (!kind && ctx->dmpHeap == 1) {
 		return;
 	}
-	fputfmt(out, "!%s chunk @%06x; size: %d\n", used ? "used" : "free", vmOffset(rt, ptr), size);
+
+	if (size > (1 << 30)) {
+		unit = "Gb";
+		value = size;
+		value /= (1 << 30);
+	}
+	else if (size > (1 << 20)) {
+		unit = "Mb";
+		value = size;
+		value /= (1 << 20);
+	}
+	else if (size > (1 << 10)) {
+		unit = "Kb";
+		value = size;
+		value /= (1 << 10);
+	}
+
+	fputfmt(out, "memory[%s] @%06x; size: %d(%?.1f%s)\n", kind, vmOffset(rt, ptr), size, value, unit);
 }
 static void conDumpAsm(userContext extra, size_t offs, void* ip) {
 	FILE *out = extra->out;
@@ -421,6 +440,9 @@ static void conDumpRun(userContext cctx) {
 	if (cctx->dmpHeap != 0) {
 		// show allocated memory chunks.
 		fputfmt(out, "\n/*-- Allocations:\n");
+		conDumpMem(rt, NULL, rt->vm.ss, "stack");
+		conDumpMem(rt, rt->_mem, rt->vm.px + px_size, "code");
+		conDumpMem(rt, rt->_beg, rt->_end - rt->_beg, "heap");
 		rtAlloc(rt, NULL, 0, conDumpMem);
 		fputfmt(out, "// */\n");
 	}
@@ -1771,14 +1793,14 @@ static int program(int argc, char* argv[]) {
 	// intstall standard library.
 	if (settings.stdLibs) {
 		// intstall standard library.
-		if (!ccAddUnit(rt, ccUnitStdc, wl, stdLib)) {
+		if (!ccAddLib(rt, ccLibStdc, wl, stdLib)) {
 			error(rt, NULL, 0, "error registering standard library");
 			logfile(rt, NULL, 0);
 			return -6;
 		}
 
 		// intstall file operations.
-		if (settings.stdLibs && !ccAddUnit(rt, ccUnitFile, wl, NULL)) {
+		if (settings.stdLibs && !ccAddLib(rt, ccLibFile, wl, NULL)) {
 			error(rt, NULL, 0, "error registering file library");
 			logfile(rt, NULL, 0);
 			return -6;
@@ -1797,7 +1819,7 @@ static int program(int argc, char* argv[]) {
 						error(rt, NULL, 0, "error(%d) importing library `%s`", resultCode, ccFile);
 					}
 				}
-				else if (!ccDefCode(rt, warn == -1 ? wl : warn, ccFile, 1, NULL)) {
+				else if (!ccAddUnit(rt, warn == -1 ? wl : warn, ccFile, 1, NULL)) {
 					error(rt, NULL, 0, "error compiling source `%s`", arg);
 				}
 				ccFile = NULL;

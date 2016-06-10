@@ -123,14 +123,75 @@ int gencode(rtContext, int mode);
  */
 vmError execute(rtContext, size_t ss, void *extra);
 
-/// Invoke a function; @see rtContext.api.invoke
+/**
+ * @brief Invoke a function inside the vm.
+ * @param Runtime context.
+ * @param fun Symbol of the function.
+ * @param res Result value of the invoked function. (May be null.)
+ * @param args Arguments for the fuction. (May be null.)
+ * @param extra Extra data for each libcall executed from here.
+ * @return Error code of execution. (0 means success.)
+ * @usage see @rtFindSym example.
+ * @note Invocation to execute must preceed this call.
+ */
 vmError invoke(rtContext, symn fun, void *ret, void* args, void *extra);
 
-/// Lookup symbol by offset; @see rtContext.api.rtFindSym
+/**
+ * @brief Lookup a static symbol by offset.
+ * @param Runtime context.
+ * @param ptr Pointer to the variable.
+ * @param callsOnly lookup only functions (always true from api calls).
+ * @note Usefull for callbacks.
+ * @usage see also: test.gl/gl.c
+
+	static symn onMouse = NULL;
+
+	static int setMouseCb(libcContext rt) {
+		void* fun = argref(rt, 0);
+
+		// unregister event callback
+		if (fun == NULL) {
+			onMouse = NULL;
+			return 0;
+		}
+
+		// register event callback using the symbol of the function.
+		onMouse = rt->api.rtFindSym(rt, fun);
+
+		// runtime error if symbol is not valid.
+		return onMouse != NULL;
+	}
+
+	static int mouseCb(int btn, int x, int y) {
+		if (onMouse != NULL && rt != NULL) {
+			// invoke the callback with arguments.
+			struct {int32_t btn, x, y;} args = {btn, x, y};
+			rt->api.invoke(rt, onMouse, NULL, &args, NULL);
+		}
+	}
+
+	// expose the callback register function to the compiler
+	if (!rt->api.ccDefCall(rt, setMouseCb, NULL, "void setMouseCallback(void Callback(int32 b, int32 x, int32 y);")) {
+		error...
+	}
+ */
 symn rtFindSym(rtContext, size_t offs, int callsOnly);
 
-/// Alloc, resize or free memory; @see rtContext.api.rtAlloc
-void* rtAlloc(rtContext, void* ptr, size_t size, void dbg(rtContext rt, void* mem, size_t size, int used));
+/**
+ * @brief Allocate or free memory inside the vm.
+ * @param Runtime context.
+ * @param ptr Allocated memory address in the vm, or null.
+ * @param size New size to reallocate or 0 to free memory.
+ * @param dbg debug memory callback to be invoked for each memory block (feature is disabled for plugins).
+ * @return Pointer to the allocated memory.
+ * cases:
+ * 		size == 0 && ptr == null: debug
+ * 		size == 0 && ptr != null: free
+ * 		size >  0 && ptr == null: alloc
+ * 		size >  0 && ptr != null: realloc
+ * @note Invocation to execute must preceed this call.
+ */
+void* rtAlloc(rtContext, void* ptr, size_t size, void dbg(rtContext rt, void* mem, size_t size, char *kind));
 
 /// returns a pointer to an offset inside the vm.
 // TODO: to be removed.

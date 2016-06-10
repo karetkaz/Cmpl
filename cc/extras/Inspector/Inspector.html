@@ -3,603 +3,68 @@
 <meta charset="UTF-8">
 <link rel="stylesheet" type="text/css" href="Inspector.css">
 <script type="application/javascript" src="Inspector.js"></script>
-<script>
-
-var data = Instrument();
-
-function setActiveTab(tab, ext, node, contentWriter) {
-	var tabs = document.getElementById('tabs').children;
-	var elements = document.getElementById('content').children;
-	for (var i = 0; i < tabs.length; i++) {
-		var element = tabs[i];
-		if (element === tab) {
-			element.classList.add('active');
-		}
-		else if (element === ext) {
-			element.classList.add('active');
-		}
-		else {
-			element.classList.remove('active');
-		}
-	}
-	for (var i = 0; i < elements.length; i++) {
-		var element = elements[i];
-		if (element === node.parentElement) {
-			element.classList.add('active');
-		}
-		else {
-			element.classList.remove('active');
-		}
-	}
-	if (contentWriter != null) {
-		var text, args = [];
-		for (i = 4; i < arguments.length; ++i) {
-			args[i - 4] = arguments[i];
-		}
-		text = contentWriter.apply(this, args);
-		if (text != null && node != null) {
-			node.innerText = text;
-		}
-	}
-}
-
-function fileChanged(input, tab, ext, loading, chartDiv, tree) {
-	if (input.files.length !== 1) {
-		return;
-	}
-	setActiveTab(tab, ext, loading);
-	data.loadFile(input.files[0], function() {
-		setActiveTab(tab, ext, chartDiv, displayCallTree, chartDiv, tree);
-	});
-}
-
-function displayCallTree(chartDiv, treeDiv, focus) {
-	var samples = data.getSamples();
-	var tree = (focus && focus.__proto__);
-	if (tree != null) {
-		tree = {
-			enter: tree.enter,
-			leave: tree.leave,
-			calltree: [tree]
-		}
-	}
-	tree = extendCallTree(tree || samples);
-
-	function extendCallTree(obj, parent) {
-		var i, ct, result = Object.create(obj);
-		if (obj.calltree != null) {
-			ct = [];
-			for (i = 0; i < obj.calltree.length; ++i) {
-				ct.push(extendCallTree(obj.calltree[i], result));
-			}
-			Object.defineProperty(result, 'calltree', {value: ct});
-		}
-		Object.defineProperty(result, 'parent', {value: parent});
-		return result;
-	}
-
-	function walkCallTree(node, depth, action) {
-		if (node.calltree != null) {
-			for (var i = 0; i < node.calltree.length; ++i) {
-				var child = node.calltree[i];
-				action(child, depth, node);
-				walkCallTree(child, depth + 1, action);
-			}
-		}
-	}
-
-	if (chartDiv != null) {
-		var chartWidth = chartDiv.clientWidth;
-		var timeScale = chartWidth / (tree.leave - tree.enter);
-		var heightScale = 2 + parseFloat(getComputedStyle(chartDiv).fontSize);
-		var maxDepth = 100;//(chartDiv.clientHeight) / heightScale - 1;
-		var minTime = 0;//(tree.leave - tree.enter) / 5000;	// 0.05%
-
-		treeDiv.innerHTML = '';
-		chartDiv.innerHTML = '';
-
-		var row = document.createElement("tr");
-		var func, hits, selfTime, totalTime;
-		row.appendChild(hits = document.createElement("th"));
-		row.appendChild(selfTime = document.createElement("th"));
-		row.appendChild(totalTime = document.createElement("th"));
-		row.appendChild(func = document.createElement("th"));
-		hits.innerText = "Hits";
-		selfTime.innerText = "Self Time";
-		totalTime.innerText = "Total Time";
-		func.innerText = "Function";
-		treeDiv.appendChild(row);
-
-		treeDiv.expandTree = function(expand, all) {
-			tree.calltree[0].expandTree(expand, all);
-		}
-
-		walkCallTree(tree, 0, function(node, depth) {
-			var chartRow, treeRow, expandable = false;
-			var left = timeScale * (node.enter - tree.enter);
-			var right = timeScale * (tree.leave - node.leave);
-
-			var funct = node.func || { name: '??' };
-			var sample = samples.samples[funct.offs] || {};	// make everithing undefined if function is not found
-
-			var globalTime = samples.leave - samples.enter;
-
-			var callSelfCost = (node.self * 100 / globalTime).toFixed(2) + '%';
-			var callTotalCost = (node.total * 100 / globalTime).toFixed(2) + '%';
-			var sampleSelfCost = (sample.self * 100 / globalTime).toFixed(2) + '%';
-			var sampleTotalCost = (sample.total * 100 / globalTime).toFixed(2) + '%';
-
-			var callSelfTime = (node.self * 1000 / samples.ticksPerSec).toFixed(2) + ' ms';
-			var callTotalTime = (node.total * 1000 / samples.ticksPerSec).toFixed(2) + ' ms';
-			var sampleSelfTime = (sample.self * 1000 / samples.ticksPerSec).toFixed(2) + ' ms';
-			var sampleTotalTime = (sample.total * 1000 / samples.ticksPerSec).toFixed(2) + ' ms';
-
-			/* show ticks instead of millis ?
-			callSelfTime = node.self + ' ticks';
-			callTotalTime = node.total + ' ticks';
-			sampleSelfTime = sample.self + ' ticks';
-			sampleTotalTime = sample.total + ' ticks';
-			// */
-
-
-			var funcPos = ' <@' + funct.offs + '>';
-			if (funct.file && funct.line) {
-				funcPos = '(' + funct.file + ':' + funct.line + ')';
-			}
-			var title = 'Function: ' + funct.name + funcPos;
-			if (sample.hits > 1) {
-				title += '\nHit Count: ' + node.hits + ' / ' + sample.hits;
-				title += '\nSelf Cost: ' + callSelfCost + ' / ' + sampleSelfCost;
-				title += '\nSelf Time: ' + callSelfTime + ' / ' + sampleSelfTime;
-				title += '\nTotal Cost: ' + callTotalCost + ' / ' + sampleTotalCost;
-				title += '\nTotal Time: ' + callTotalTime + ' / ' + sampleTotalTime;
-			}
-			else {
-				title += '\nHit Count: ' + sample.hits;
-				title += '\nSelf Cost: ' + sampleSelfCost;
-				title += '\nSelf Time: ' + sampleSelfTime;
-				title += '\nTotal Cost: ' + sampleTotalCost;
-				title += '\nTotal Time: ' + sampleTotalTime;
-			}
-			title += '\n' + funct.proto;
-
-			// add to call chartDiv
-			if (depth < maxDepth && timeScale * node.total > .3) {
-				chartRow = document.createElement("div");
-				chartDiv.appendChild(chartRow);
-
-				chartRow.innerText = '\xa0' + funct.name;
-
-				chartRow.style.left = left;
-				chartRow.style.right = right;
-				chartRow.style.top = depth * heightScale + 1;
-				chartRow.style.height = heightScale - 1;
-				chartRow.title = title;
-				//node.htmlChartRow = chartRow;
-				chartRow.onclick = function() {
-					node.showTree(true, true);
-				}
-				chartRow.ondblclick = function(e) {
-					displayCallTree(chartDiv, treeDiv, node);
-				};
-			}
-
-			// add to call tree
-			if (node.total > minTime) {
-				var func, hits, selfTime, totalTime;
-				treeRow = document.createElement("tr");
-				treeRow.appendChild(hits = document.createElement("td"));
-				treeRow.appendChild(selfTime = document.createElement("td"));
-				treeRow.appendChild(totalTime = document.createElement("td"));
-				treeRow.appendChild(func = document.createElement("td"));
-
-				hits.innerText = node.hits;
-				//selfTime.innerText = callSelfCost;
-				//totalTime.innerText = callTotalCost;
-				// use local precentages
-				selfTime.innerText = (node.self * 100 / (tree.leave - tree.enter)).toFixed(2) + '%';
-				totalTime.innerText = (node.total * 100 / (tree.leave - tree.enter)).toFixed(2) + '%';
-
-				node.htmlTreeRow = treeRow;		// add a reference to the table row
-
-				// check if the node has subcalls
-				//expandable = node.calltree && node.calltree.length > 0;
-				expandable = node.calltree != null;
-
-				node.isExpanded = function() {
-					//return func.classList.contains("expanded");
-					if (func.classList.contains("expanded")) {
-						if (this.parent.isExpanded == null) {
-							return true;
-						}
-						return this.parent.isExpanded();
-					}
-					return false;
-					// */
-				}
-
-				node.showTree = function(show, highlight) {
-					var n;
-					if (show == false) {
-						treeRow.style.display = 'none';
-						return;
-					}
-
-					// show parent nodes
-					for (n = node; n != null; n = n.parent) {
-						if (n.htmlTreeRow != null) {
-							n.htmlTreeRow.style.display = '';
-						}
-					}
-					if (highlight) {
-						treeRow.scrollIntoView(!true);
-						treeRow.classList.add('hover');
-						setTimeout(function() {
-							treeRow.classList.remove('hover');
-						}, 500);
-					}
-
-				}
-				node.expandTree = function(expand, recursive, expandOnly) {
-					var n;
-					if (expandable) {
-						// set expanded or colapsed
-						func.classList.remove("expanded");
-						func.classList.remove("collapsed");
-						func.classList.add(expand ? "expanded" : "collapsed");
-					}
-
-					if (expandOnly !== true) {
-						walkCallTree(node, 0, function(node, depth, parent) {
-							node.showTree(expand && parent.isExpanded());
-							if (recursive && node.expandTree) {
-								node.expandTree(expand, recursive, true);
-							}
-						});
-					}
-				}
-				if (expandable) {
-					// expanded by default.
-					func.classList.add("expanded");
-					func.onclick = function(event) {
-						var expand = func.classList.contains("collapsed");
-						node.expandTree(expand, event.ctrlKey);
-					}
-				}
-
-				func.appendChild(document.createTextNode(funct.proto));
-				func.style.paddingLeft = depth + 'em';
-				treeRow.title = title;
-				treeRow.onmouseenter = function(e) {
-					node.highlightInChart(true);
-				};
-				treeRow.onmouseleave = function(e) {
-					node.highlightInChart(false);
-				};
-				treeDiv.appendChild(treeRow);
-			}
-
-			node.highlightInChart = function(active) {
-				if (chartRow == null) {
-					return;
-				}
-				if (active) {
-					chartRow.classList.add('hover');
-				}
-				else {
-					chartRow.classList.remove('hover');
-				}
-			}
-
-
-		});
-	}
-}
-
-function printCallTree() {
-	return toJsString(data.getSamples(), '\n');
-}
-
-function printApi() {
-	var types = document.getElementById('apiTyp').checked;
-	var funcs = document.getElementById('apiFun').checked;
-	var vars = document.getElementById('apiVar').checked;
-	var defs = document.getElementById('apiDef').checked;
-	var opcodes = document.getElementById('apiOpc').checked;
-	return data.api.getFiltered(types, funcs, vars, defs, opcodes);
-}
-
-</script>
+<script type="application/javascript" src="Inspector.ui.js"></script>
 </head>
-<body style="overflow:auto">
-	<div id="tabs">
-		<input onchange="fileChanged(this, tabProfile, extProfile, loading, callChart, callTree);" type="file">
-		<span id="tabApi" onClick="setActiveTab(tabApi, extApi, code, printApi);">Api</span>
-		<span id="tabProfile" onClick="setActiveTab(this, extProfile, callChart);">Profile</span>
-		<span id="tabSamples" onClick="setActiveTab(this, null, code, printCallTree);">Samples</span>
-		<span id="tabCoverage" onClick="setActiveTab(this, null, todo);">Coverage</span>
+<body id="dropFileArea" style="overflow:auto">
+	<header id="tabs">
+		<label class="left open_file">
+			<input id="dropFileInput" type="file" style="display:none;" onchange="loadFile(this, tabProfile, extProfile);">
+			<span id="file_name">Load File</span>
+		</label>
+		<span class="left" id="tabSymbols" onClick="setActiveTab(this, extSymbols, code, printSymbols);">Symbols</span>
+		<span class="left" id="tabSamples" onClick="setActiveTab(this, null, code, printSamples);">Samples</span>
+		<span class="left" id="tabProfile" onClick="setActiveTab(this, extProfile, callChart);">Profile</span>
 
-		<div class="ext" id="extApi">
-			<!--input type="button" onclick="setActiveTab(tabApi, extApi, code, data.api.getSciteApi);" value="Scite"/-->
-			<label><input id="apiTyp" type="checkbox" checked="true" onchange="setActiveTab(tabApi, extApi, code, printApi);"/>Types</label>
-			<label><input id="apiFun" type="checkbox" checked="true" onchange="setActiveTab(tabApi, extApi, code, printApi);"/>Functions</label>
-			<label><input id="apiVar" type="checkbox" checked="true" onchange="setActiveTab(tabApi, extApi, code, printApi);"/>Variables</label>
-			<label><input id="apiDef" type="checkbox" checked="true" onchange="setActiveTab(tabApi, extApi, code, printApi);"/>Inlines</label>
-			<label><input id="apiOpc" type="checkbox" checked="true" onchange="setActiveTab(tabApi, extApi, code, printApi);"/>Opcodes</label>
+		<div class="ext left" id="extSymbols">
+			<label><input id="apiTyp" type="checkbox" checked onchange="setActiveTab(tabSymbols, extSymbols, code, printSymbols);"/> Types</label>
+			<label><input id="apiFun" type="checkbox" checked onchange="setActiveTab(tabSymbols, extSymbols, code, printSymbols);"/> Functions</label>
+			<label><input id="apiVar" type="checkbox" checked onchange="setActiveTab(tabSymbols, extSymbols, code, printSymbols);"/> Variables</label>
+			<label><input id="apiDef" type="checkbox" checked onchange="setActiveTab(tabSymbols, extSymbols, code, printSymbols);"/> Inlines</label>
+			<label><input id="apiOpc" type="checkbox" onchange="setActiveTab(tabSymbols, extSymbols, code, printSymbols);"/> Opcodes</label>
 		</div>
 
-		<div class="ext" id="extProfile">
-			<input type="button" onclick="setActiveTab(tabProfile, extProfile, callChart, displayCallTree, callChart, callTree);" value="Reset"/>
+		<div class="ext left" id="extProfile">
+			<label><input id="profTree" type="radio" name="profMode" onchange="setActiveTab(tabProfile, extProfile, callTree);" /> Tree</label>
+			<label><input id="profChrt" type="radio" name="profMode" onchange="setActiveTab(tabProfile, extProfile, callChart);" checked /> Chart</label>
+			<input type="button" onclick="setActiveTab(tabProfile, extProfile, null, displayCallTree, callChart, callTree);" value="Reset"/>
 			<input type="button" onclick="callTree.expandTree(false, true);" value="-"/>
 			<input type="button" onclick="callTree.expandTree(true, true);" value="+"/>
-			<!--label><input type="checkbox" onchange="setActiveTab(tabProfile, extProfile, this.checked ? code : callChart, this.checked ? printCallTree : null);"/>TextMode</label-->
 		</div>
-		<input class="right" onsubmit="setActiveTab(null, null, search);" placeholder="Search">
-	</div>
+
+		<input class="filter right" onchange="setActiveTab(null, null);" placeholder="Filter">
+	</header>
 	<div id="content">
-	<div class="fixed"><h1 id="loading">Loading data ...</h1></div>
-	<div class="fixed">
-		<div id="callChart"></div>
-		<table>
-			<tbody id="callTree"></tbody>
-		</table>
+		<div class="fixed mesage"><h1 id="loading">Loading file ...</h1></div>
+		<div class="fixed mesage"><h1 id="loaded">File loaded.</h1></div>
+		<div class="fixed mesage"><h1 id="error">Error loading file.</h1></div>
+		<!--div class="fixed">
+			<div id="callChart"></div>
+			<table id="callTree"></table>
+		</div-->
+		<div class="">
+			<table id="callTree"></table>
+		</div>
+		<div class="fixed">
+			<div id="callChart"></div>
+		</div>
+		<div><pre id="code"></pre></div>
+		<div class="fixed"><h1 id="todo">to do ...</h1></div>
 	</div>
-	<div><pre id="code"></pre></div>
-	<div class="fixed">
-		<h1 id="todo">to do ...</h1>
-	</div>
-	</div>
+	<span id="tooltip" onclick="void(this.classList.add('gone'));"></span>
 </body>
-<script>
-setActiveTab(tabProfile, extProfile, callChart, function(){
-	data.loadData({
-		profile: {
-			callTree: [22139, 184456, 22321, 183886, 22343, 157140, 22351, -1, 22384, 157140, 22389, -1, 22421, 157140, 22426, -1, 22458, 157140, 22464, -1, 22495, 157140, 22501, -1, 22532, 157140, 22538, -1, 22570, 157140, 22576, -1, 22607, 157140, 22613, -1, 22645, 157140, 22650, -1, 22682, 157140, 22687, -1, 22719, 157140, 22725, -1, 22756, 157140, 22762, -1, 22794, 157140, 22799, -1, 22831, 157140, 22836, -1, 22868, 157140, 22874, -1, 22905, 157140, 22911, -1, 22942, 157140, 22947, -1, 22979, 157140, 22984, -1, 23016, 157140, 23021, -1, 23053, 157140, 23058, -1, 23090, 157140, 23095, -1, 23127, 157140, 23132, -1, 23164, 157140, 23169, -1, 23200, 157140, 23206, -1, 23237, 157140, 23243, -1, 23274, 157140, 23279, -1, 23311, 157140, 23316, -1, 23348, 157140, 23353, -1, 23385, 157140, 23390, -1, 23422, 157140, 23427, -1, 23459, 157140, 23464, -1, 23495, 157140, 23501, -1, 23550, 157140, 23557, -1, 23589, 157140, 23595, -1, 23626, 157140, 23632, -1, 23664, 157140, 23669, -1, 23701, 157140, 23707, -1, 23738, 157140, 23744, -1, 23776, 157140, 23781, -1, 23813, 157140, 23819, -1, 23850, 157140, 23856, -1, 23887, 157140, 23893, -1, 23924, 157140, 23930, -1, 23962, 157140, 23968, -1, 24000, 157140, 24005, -1, 24037, 157140, 24042, -1, 24074, 157140, 24080, -1, 24111, 157140, 24117, -1, 24149, 157140, 24154, -1, 24186, 157140, 24191, -1, 24224, 157140, 24229, -1, 24261, 157140, 24266, -1, 24298, 157140, 24304, -1, 24336, 157140, 24341, -1, 24373, 157140, 24379, -1, 24410, 157140, 24416, -1, 24448, 157140, 24453, -1, 24485, 157140, 24491, -1, 24522, 157140, 24528, -1, 24560, 157140, 24565, -1, 24597, 157140, 24603, -1, 24634, 157140, 24640, -1, 24672, 157140, 24677, -1, 24709, 157140, 24714, -1, 24746, 157140, 24752, -1, 24784, 157140, 24789, -1, 24821, 157140, 24827, -1, 24858, 157140, 24864, -1, 24896, 157140, 24902, -1, 24934, 157140, 24939, -1, 24971, 157140, 24977, -1, 25009, 157140, 25014, -1, 25046, 157140, 25051, -1, 25083, 157140, 25089, -1, 25121, 157140, 25126, -1, 25158, 157140, 25164, -1, 25196, 157140, 25201, -1, 25233, 157140, 25239, -1, 25270, 157140, 25276, -1, 25307, 157140, 25313, -1, 25345, 157140, 25350, -1, 25382, 157140, 25387, -1, 25419, 157140, 25425, -1, 25456, 157140, 25462, -1, 25494, 157140, 25499, -1, 25531, 157140, 25537, -1, 25568, 157140, 25574, -1, 25605, 157140, 25611, -1, 25643, 157140, 25648, -1, 25680, 157140, 25686, -1, 25717, 157140, 25723, -1, 25755, 157140, 25760, -1, 25792, 157140, 25798, -1, 25830, 157140, 25835, -1, 25867, 157140, 25873, -1, 25905, 157140, 25910, -1, 25942, 157140, 25948, -1, 25979, 157140, 25985, -1, 26017, 157140, 26022, -1, 26054, 157140, 26060, -1, 26091, 157140, 26097, -1, 26129, 157140, 26134, -1, 26166, 157140, 26171, -1, 26203, 157140, 26209, -1, 26240, 157140, 26246, -1, 26278, 157140, 26284, -1, 26315, 157140, 26320, -1, 26352, 157140, 26358, -1, 26389, 157140, 26395, -1, 26426, 157140, 26432, -1, 26463, 157140, 26469, -1, 26500, 157140, 26506, -1, 26537, 157140, 26542, -1, 26573, 157140, 26579, -1, 26610, 157140, 26615, -1, 26646, 157140, 26651, -1, 26683, 157140, 26688, -1, 26719, 157140, 26724, -1, 26756, 157140, 26761, -1, 26792, 157140, 26798, -1, 26829, 157140, 26834, -1, 26865, 157140, 26871, -1, 26902, 157140, 26907, -1, 26938, 157140, 26944, -1, 26975, 157140, 26980, -1, 27011, 157140, 27017, -1, 27048, 157140, 27053, -1, 27084, 157140, 27090, -1, 27123, -1, 27153, 183755, 27178, 183543, 29909, 183543, 30249, 183543, 30539, 183543, 30761, 183543, 30922, -1, 30946, 183543, 31124, -1, 31136, -1, 31160, 183543, 31322, -1, 31334, -1, 31358, 183543, 31519, -1, 31532, -1, 31556, 183543, 35318, 183543, 37904, 183543, 38867, 183543, 39221, 183543, 39386, 183543, 39551, -1, 39565, -1, 39589, 183543, 39908, 183543, 40080, 183543, 40303, -1, 40314, -1, 40336, 183543, 40474, -1, 40485, -1, 40495, -1, 40518, 183543, 41166, 183543, 41479, 183543, 41835, 183543, 42139, 183543, 42277, -1, 42299, 183543, 42437, -1, 42448, -1, 42470, 183543, 42700, 183543, 42871, 183543, 43028, 183543, 43166, -1, 43177, -1, 43188, -1, 43206, -1, 43216, -1, 43227, -1, 43250, 183543, 43609, 183543, 43775, -1, 43798, 183543, 44102, 183543, 44323, 183543, 44489, 183543, 44706, -1, 44716, -1, 44727, -1, 44749, 183543, 44897, -1, 44909, -1, 44919, -1, 44930, -1, 44940, -1, 44962, 183543, 46457, 183543, 46997, 183543, 47586, 183543, 47830, 183543, 47997, 183543, 48146, 183543, 48295, -1, 48313, -1, 48324, -1, 48346, 183543, 48481, -1, 48491, -1, 48514, 183543, 48839, 183543, 49203, 183543, 49453, 183543, 49763, 183543, 49899, -1, 49922, 183543, 50077, 183543, 50227, -1, 50238, -1, 50249, -1, 50260, -1, 50282, 183543, 50437, 183543, 50587, -1, 50598, -1, 50609, -1, 50627, -1, 50637, -1, 50660, 183543, 50810, 183543, 50961, -1, 50979, -1, 50989, -1, 51012, 183543, 51864, 183543, 52165, 183543, 52476, 183543, 52678, 183543, 52824, 183543, 52956, -1, 52973, -1, 52990, -1, 53011, 183543, 53172, 183543, 53332, -1, 53342, -1, 53352, -1, 53369, -1, 53390, 183543, 53846, 183543, 54386, 183543, 55023, 183543, 55334, 183543, 55676, 183543, 55919, 183543, 56190, 183543, 56384, 183543, 56524, 183543, 56663, -1, 56680, -1, 56697, -1, 56718, 183543, 56845, -1, 56855, -1, 56872, -1, 56893, 183543, 57032, -1, 57042, -1, 57063, 183543, 57202, -1, 57212, -1, 57233, 183543, 57489, 183543, 57628, -1, 57648, 183543, 57882, 183543, 58109, 183543, 58248, -1, 58269, 183543, 58469, 183543, 58595, -1, 58616, 183543, 58742, -1, 58753, -1, 58763, -1, 58773, -1, 58782, -1, 58792, -1, 58813, 183543, 58939, -1, 58949, -1, 58959, -1, 58969, -1, 58979, -1, 58988, -1, 59009, 183543, 60177, 183543, 60633, 183543, 60762, -1, 60783, 183543, 61388, 183543, 61768, 183543, 61928, -1, 61949, 183543, 62149, 183543, 62309, -1, 62330, 183543, 62557, 183543, 62687, -1, 62697, -1, 62707, -1, 62717, -1, 62739, 183543, 63004, 183543, 63204, 183543, 63355, 183543, 63497, -1, 63523, -1, 63546, 183543, 63752, 183543, 63900, -1, 63920, 183543, 64043, -1, 64053, -1, 64062, -1, 64078, -1, 64088, -1, 64097, -1, 64117, 183543, 64579, 183543, 64893, 183543, 65018, -1, 65039, 183543, 65280, 183543, 65405, -1, 65425, 183543, 65693, 183543, 65892, 183543, 66016, -1, 66037, 183543, 66174, -1, 66184, -1, 66204, 183543, 66329, -1, 66339, -1, 66348, -1, 66358, -1, 66378, 183543, 66600, 183543, 66812, 183543, 66940, -1, 66960, 183543, 67091, 183543, 67210, -1, 67226, -1, 67235, -1, 67251, -1, 67260, -1, 67269, -1, 67278, -1, 67288, -1, 67295, -1, 67311, 183780, 67581, -1, 67594, 156832, 67598, -1, 67602, -1], 
-			functions: [{
-				proto: "Halt(Code: int32): void", 
-				kind: ".def", 
-				name: "Halt", 
-				type: "void", 
-				args: [{
-					proto: "Halt.Code: int32", 
-					kind: ".def", 
-					name: "Code", 
-					declaredIn: "Halt", 
-					type: "int32", 
-					cast: ".i32", 
-					size: 4, 
-					offs: 4, 
-					const: false, 
-					static: false
-				}], 
-				size: 28, 
-				offs: 156832, 
-				const: false, 
-				static: true, 
-				time: 4, 
-				total: 4, 
-				hits: 1, 
-				fails: 0
-			}, {
-				proto: "System.rand(): int32", 
-				kind: ".def", 
-				name: "rand", 
-				declaredIn: "System", 
-				type: "int32", 
-				args: [{
-					proto: ": void", 
-					kind: ".def", 
-					name: "", 
-					type: "void", 
-					cast: ".vid", 
-					size: 0, 
-					offs: 0, 
-					const: false, 
-					static: false
-				}], 
-				size: 28, 
-				offs: 157140, 
-				const: false, 
-				static: true, 
-				time: 712, 
-				total: 712, 
-				hits: 128, 
-				fails: 0
-			}, {
-				proto: "qsort.qsort(array: int32[], low: int32, high: int32): void", 
-				kind: ".ref", 
-				name: "qsort", 
-				declaredIn: "qsort", 
-				type: "void", 
-				file: "tests/test.Core.qsort.cvx", 
-				line: 16, 
-				args: [{
-					proto: "qsort.qsort.array: int32[]", 
-					kind: ".ref", 
-					name: "array", 
-					declaredIn: "qsort.qsort", 
-					type: "int32[]", 
-					file: "tests/test.Core.qsort.cvx", 
-					line: 16, 
-					cast: ".arr", 
-					size: 8, 
-					offs: 16, 
-					const: false, 
-					static: false
-				}, {
-					proto: "qsort.qsort.low: int32", 
-					kind: ".ref", 
-					name: "low", 
-					declaredIn: "qsort.qsort", 
-					type: "int32", 
-					file: "tests/test.Core.qsort.cvx", 
-					line: 16, 
-					cast: ".i32", 
-					size: 4, 
-					offs: 8, 
-					const: false, 
-					static: false
-				}, {
-					proto: "qsort.qsort.high: int32", 
-					kind: ".ref", 
-					name: "high", 
-					declaredIn: "qsort.qsort", 
-					type: "int32", 
-					file: "tests/test.Core.qsort.cvx", 
-					line: 16, 
-					cast: ".i32", 
-					size: 4, 
-					offs: 4, 
-					const: false, 
-					static: false
-				}], 
-				cast: ".vid", 
-				size: 212, 
-				offs: 183543, 
-				const: false, 
-				static: true, 
-				time: 40110, 
-				total: 40110, 
-				hits: 116, 
-				fails: 0
-			}, {
-				proto: "qsort(array: int32[]): void", 
-				kind: ".ref", 
-				name: "qsort", 
-				type: "void", 
-				file: "tests/test.Core.qsort.cvx", 
-				line: 15, 
-				args: [{
-					proto: "qsort.array: int32[]", 
-					kind: ".ref", 
-					name: "array", 
-					declaredIn: "qsort", 
-					type: "int32[]", 
-					file: "tests/test.Core.qsort.cvx", 
-					line: 15, 
-					cast: ".arr", 
-					size: 8, 
-					offs: 8, 
-					const: false, 
-					static: false
-				}], 
-				cast: ".vid", 
-				size: 25, 
-				offs: 183755, 
-				const: false, 
-				static: true, 
-				time: 32, 
-				total: 40142, 
-				hits: 1, 
-				fails: 0
-			}, {
-				proto: "bsearch(arr: int32[], elem: int32): int32", 
-				kind: ".ref", 
-				name: "bsearch", 
-				type: "int32", 
-				file: "tests/test.Core.qsort.cvx", 
-				line: 54, 
-				args: [{
-					proto: "bsearch.arr: int32[]", 
-					kind: ".ref", 
-					name: "arr", 
-					declaredIn: "bsearch", 
-					type: "int32[]", 
-					file: "tests/test.Core.qsort.cvx", 
-					line: 54, 
-					cast: ".arr", 
-					size: 8, 
-					offs: 16, 
-					const: false, 
-					static: false
-				}, {
-					proto: "bsearch.elem: int32", 
-					kind: ".ref", 
-					name: "elem", 
-					declaredIn: "bsearch", 
-					type: "int32", 
-					file: "tests/test.Core.qsort.cvx", 
-					line: 54, 
-					cast: ".i32", 
-					size: 4, 
-					offs: 8, 
-					const: false, 
-					static: false
-				}], 
-				cast: ".i32", 
-				size: 106, 
-				offs: 183780, 
-				const: false, 
-				static: true, 
-				time: 270, 
-				total: 270, 
-				hits: 1, 
-				fails: 0
-			}, {
-				proto: "randomize(arr: int32[], max: int32): void", 
-				kind: ".ref", 
-				name: "randomize", 
-				type: "void", 
-				file: "tests/test.Core.qsort.cvx", 
-				line: 75, 
-				args: [{
-					proto: "randomize.arr: int32[]", 
-					kind: ".ref", 
-					name: "arr", 
-					declaredIn: "randomize", 
-					type: "int32[]", 
-					file: "tests/test.Core.qsort.cvx", 
-					line: 75, 
-					cast: ".arr", 
-					size: 8, 
-					offs: 12, 
-					const: false, 
-					static: false
-				}, {
-					proto: "randomize.max: int32", 
-					kind: ".ref", 
-					name: "max", 
-					declaredIn: "randomize", 
-					type: "int32", 
-					file: "tests/test.Core.qsort.cvx", 
-					line: 75, 
-					cast: ".i32", 
-					size: 4, 
-					offs: 4, 
-					const: false, 
-					static: false
-				}], 
-				cast: ".vid", 
-				size: 43, 
-				offs: 183886, 
-				const: false, 
-				static: true, 
-				time: 4090, 
-				total: 4802, 
-				hits: 1, 
-				fails: 0
-			}, {
-				proto: "<init>(): typename", 
-				kind: ".ref", 
-				name: "<init>", 
-				type: "typename", 
-				cast: ".rec", 
-				size: 415, 
-				offs: 184456, 
-				const: true, 
-				static: true, 
-				time: 245, 
-				total: 45463, 
-				hits: 1, 
-				fails: 0
-			}], 
-			statements: [], 
-			ticksPerSec: 1000000, 
-			functionCount: 107, 
-			statementCount: 744
-		}
-	});
-	displayCallTree(callChart, callTree);
-});
+<script type="application/javascript">
+with(document.getElementById("dropFileArea")) {
+	ondragover = function () {
+		return false;
+	};
+	ondragend = function () {
+		return false;
+	};
+	ondrop = function (e) {
+		e.preventDefault();
+		dropFileInput.files = e.dataTransfer.files;
+		return true;
+	}
+}
 </script>
 </html>

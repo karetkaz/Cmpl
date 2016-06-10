@@ -417,7 +417,7 @@ int ccvmInit(rtContext _rt) {
 		}
 
 		//~ add some inlines
-		if (!rt->api.ccDefCode(rt, 0, __FILE__, __LINE__ + 1,
+		if (!rt->api.ccAddUnit(rt, 0, __FILE__, __LINE__ + 1,
 			"define Vertex(float32 x, float32 y, float32 z) = Vertex(x, y, z, 1.);\n"
 			"define Color(float32 r, float32 g, float32 b) = Color(r, g, b, 1.);\n"
 		)) {

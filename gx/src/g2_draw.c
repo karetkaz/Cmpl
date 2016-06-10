@@ -160,9 +160,9 @@ void g2_drawrect(gx_Surf surf, int x1, int y1, int x2, int y2, uint32_t color) {
 }
 void g2_fillrect(gx_Surf surf, int x1, int y1, int x2, int y2, uint32_t color) {
 	gx_Clip roi = gx_getclip(surf);
-    int x, y;
+	int x, y;
 	if (x1 > x2) {
-        x = x1;
+		x = x1;
 		x1 = x2;
 		x2 = x;
 	}
@@ -173,7 +173,7 @@ void g2_fillrect(gx_Surf surf, int x1, int y1, int x2, int y2, uint32_t color) {
 		x2 = roi->xmax;
 	}
 	if (y1 > y2) {
-        y = y1;
+		y = y1;
 		y1 = y2;
 		y2 = y;
 	}
@@ -184,9 +184,9 @@ void g2_fillrect(gx_Surf surf, int x1, int y1, int x2, int y2, uint32_t color) {
 		y2 = roi->ymax;
 	}
 	// TODO: optimize for hline, vline and pixel.
-    // TODO: for hline and block use cblt_proc(void* dst, void* src, void* extra, unsigned count);
-    for (y = y1; y < y2; y++) {
-        for (x = x1; x < x2; x++) {
+	// TODO: for hline and block use cblt_proc(void* dst, void* src, void* extra, unsigned count);
+	for (y = y1; y < y2; y++) {
+		for (x = x1; x < x2; x++) {
 			gx_setpixel(surf, x, y, color);
 		}
 	}

@@ -409,23 +409,23 @@ struct Email {
 	string subject;
 	Part body;
 }
-Email email {
-	to: ["testTo"];
-	from = "testFrom";
-	subject = "html/plain alternative"
+Email email = {
+	to: {"testTo1", "testTo2", "testTo3"};
+	from: "testFrom";
+	subject: "html/plain alternative";
 	body: MultiPart {
-		headers: {"Content-Type": "multipart/alternative"}
-		parts: [
-			TextPart {
+		headers{ "Content-Type": "multipart/alternative" };
+		parts{
+			TextPart{
 				// put plain text first as backup
 				// headers: {"Content-Type": "text/plain"};
-				text: "this is bold and italics!"
+				text: "this is bold and italics!";
 			};
-			TextPart {
+			TextPart{
 				// put html part last as best alternative
-				headers: {"Content-Type": "text/html"};
+				headers { "Content-Type": "text/html" };
 				text: "this is <b>bold</b> and <i>italics</i>!";
-			}
+			};
 		]
 	}
 }

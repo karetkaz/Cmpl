@@ -20,15 +20,46 @@ gxClut lut;
 
 int brightness = 0;
 int contrast = 0;
-int gamma = 100;
 
 bool reDraw = true;
 bool reCalc = true;
 
+void lutBrightnessContrast(gxClut &lut, double easeIn(double ratio), double brightness, double contrast) {
+
+	define processRed = true;
+	define processGreen = true;
+	define processBlue = true;
+
+	lut.count = 256;
+	for (int idx = 0; idx < 256; idx += 1) {
+		double value = idx / 255.;
+		if (easeIn != null) {
+			if (contrast < 0) {
+				value = Math.lerp(-contrast, value, Easing.easeOutIn(easeIn, value));
+			} else {
+				value = Math.lerp(contrast, value, Easing.easeInOut(easeIn, value));
+			}
+			if (brightness < 0) {
+				value = Math.lerp(-brightness, value, easeIn(value));
+			} else {
+				value = Math.lerp(brightness, value, Easing.easeOut(easeIn, value));
+			}
+		} else {
+			value = brightness + (contrast + 1) * (value - .5) + .5;
+		}
+
+		int val = Math.clamp(int(value * 255), 0, 255);
+		lut.data[idx] = (processRed ? val : idx) << 16
+					  | (processGreen ? val : idx) << 8
+					  | (processBlue ? val : idx);
+	}
+}
+
 void mouseCB(int btn, int x, int y) {
 	static int old_btn = -1;
-	//~ static int old_x = -1;
+	static int old_x = -1;
 	static int old_y = -1;
+	int d = old_y - y;
 
 	if (Mouse.dblClick(btn, x, y)) {
 		// disable multi clicks
@@ -36,20 +67,17 @@ void mouseCB(int btn, int x, int y) {
 		// reset values
 		brightness = 0;
 		contrast = 0;
-		gamma = 100;
 		reDraw = true;
 	}
 
 	if (old_btn != btn) {
 		if (btn == 0) {
-			// on button release recalculate histogram.
 			reCalc = true;
 		}
 		old_btn = btn;
 		reDraw = true;
 	}
 	if (old_y != y) {
-		int d = old_y - y;
 		if (btn == 1) {
 			brightness += d;
 			reDraw = true;
@@ -58,61 +86,28 @@ void mouseCB(int btn, int x, int y) {
 			contrast += d;
 			reDraw = true;
 		}
-		if (btn == 3) {		// left + right
-			reDraw = true;
-			gamma += d;
-		}
 		old_y = y;
 	}
-	//~ old_x = x;
+	old_x = x;
 }
 
 void drawCB() {
 	if (reDraw) {
-		zoomSurf(offScreen, null, img, null, 1);
+		zoomSurf(offScreen, null, img, null, 0);
 
-		brightness = Math.clamp(brightness, -255, 255);
-		contrast = Math.clamp(contrast, -512, 512);
-		gamma = Math.clamp(gamma, 1, 1000);
+		brightness = Math.clamp(brightness, -256, 256);
+		contrast = Math.clamp(contrast, -256, 256);
 
-		lutBrightnessContrastGamma(&lut, brightness, contrast, gamma / 100.);
-
-		static if (useNativeImpl) {
-			clutSurf(offScreen, null, &lut);
-		}
-		static if (!useNativeImpl) {
-			//~ /* techniq 1
-			static int pixelCB(int col) {
-				result = int(__rgb(
-					rch(lut.data[rch(col)]),
-					gch(lut.data[gch(col)]),
-					bch(lut.data[bch(col)])
-				));
-			}
-			fillSurfrgb(offScreen, null, pixelCB);
-			//~ */
-			/* techniq 2
-			int w = width(offScreen);
-			int h = height(offScreen);
-			for (int j = 0; j < h; j += 1) {
-				for (int i = 0; i < w; i += 1) {
-					int col = getPixel(offScreen, i, j);
-					setPixel(offScreen, i, j, int(__rgb(
-						rch(lut.data[rch(col)]),
-						gch(lut.data[gch(col)]),
-						bch(lut.data[bch(col)])
-					)));
-				}
-			}//~ */
-		}
+		lutBrightnessContrast(&lut, Easing.Circ, brightness / 255., contrast / 255.);
+		clutSurf(offScreen, null, &lut);
 
 		if (reCalc) {
 			histoLut(&histogram, offScreen, true);
 			reCalc = false;
 		}
 
-		copySurf(offScreen, Window.resx - 266, 10, lut2Surf(lui, &histogram, true), null);
-		copySurf(offScreen, Window.resx - 266, 130, lut2Surf(lui, &lut, false), null);
+		copySurf(offScreen, Window.resx - 266, 10, lut2Surf(lui, &lut, false), null);
+		copySurf(offScreen, Window.resx - 266, 130, lut2Surf(lui, &histogram, true), null);
 
 		static if (true) {
 			int y = 0;
@@ -126,16 +121,11 @@ void drawCB() {
 			format(txt, "contrast: %+d", contrast);
 			drawText(offScreen, 0, y, string(txt), -1);
 			y += dy;
-
-			format(txt, "gamma: %d", gamma);
-			drawText(offScreen, 0, y, string(txt), -1);
-			y += dy;
 		}
+
 		reDraw = false;
 	}
 }
-
-//~ histo.init(offScreen, false, -10, 130, 128);
 
 Gui.setMouseHandler(mouseCB);
 Gui.setDrawCallback(drawCB);

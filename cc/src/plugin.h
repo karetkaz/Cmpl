@@ -111,147 +111,37 @@ struct rtContextRec {
 	} vm;
 
 	/** TODO: extract to a different struct
-	 * @brief External library support.
-	 * @note If a function returns error, the error was reported.
+	 * @brief External library API support.
 	 */
 	struct {
-		/**
-		 * @brief Begin a namespace (static struct).
-		 * @param Runtime context.
-		 * @param name Name of the namespace.
-		 * @return Defined symbol, null on error.
-		 */
+		/// Begin a namespace; @see Core#ccBegin
 		symn (*const ccBegin)(rtContext, const char* name);
-
-		/**
-		 * @brief Close the namespace.
-		 * @param Runtime context.
-		 * @param cls Namespace to be closed. (The returned by ccBegin.)
-		 * @note Makes all declared variables static.
-		*/
+		/// Close a namespace; @see Core#ccEnd
 		void (*const ccEnd)(rtContext, symn cls);
 
-		/**
-		 * @brief Define a(n) integer, floating point or string constant.
-		 * @param Runtime context.
-		 * @param name Name of the constant.
-		 * @param value Value of the constant.
-		 * @return Defined symbol, null on error.
-		 */
+		/// Declare int constant; @see Core#ccDefInt
 		symn (*const ccDefInt)(rtContext, const char* name, int64_t value);
+		/// Declare float constant; @see Core#ccDefFlt
 		symn (*const ccDefFlt)(rtContext, const char* name, float64_t value);
+		/// Declare string constant; @see Core#ccDefStr
 		symn (*const ccDefStr)(rtContext, const char* name, char* value);
 
-		/**
-		 * @brief Add a type to the runtime.
-		 * @param Runtime context.
-		 * @param name Name of the type.
-		 * @param size Size of the type.
-		 * @param refType Value indicating ByRef or ByValue.
-		 * @return Defined symbol, null on error.
-		 * @see: lstd.File;
-		 */
+		/// Declare a typename; @see Core#ccDefType
 		symn (*const ccDefType)(rtContext, const char* name, unsigned size, int refType);
-
-		/**
-		 * @brief Add a native function (libcall) to the runtime.
-		 * @param Runtime context.
-		 * @param libc The c function.
-		 * @param data Extra user data for the function.
-		 * @param proto Prototype of the function. (Must end with ';')
-		 * @return Defined symbol, null on error.
-		 * @usage see also: test.gl/gl.c
-			static int f64sin(libcContext rt) {
-				float64_t x = argf64(rt, 0);	// get first argument
-				retf64(rt, sin(x));				// set the return value
-				return 0;						// no runtime error in call
-			}
-		 	...
-			if (!rt->api.ccDefCall(rt, f64sin, NULL, "float64 sin(float64 x);")) {
-				// error reported, terminate here the execution.
-				return 0;
-			}
-		 */
+		/// Declare a native function; @see Core#ccDefCall
 		symn (*const ccDefCall)(rtContext, vmError libc(libcContext), void* extra, const char* proto);
 
-		/**
-		 * @brief Compile the given file or text block.
-		 * @param Runtime context.
-		 * @param warn Warning level.
-		 * @param file File name of input.
-		 * @param line First line of input.
-		 * @param text If not null, this will be compiled instead of the file.
-		 * @return Boolean value of success.
-		 */
-		int (*const ccDefCode)(rtContext, int warn, char *file, int line, char *code);
+		/// Compile file or text; @see Core#ccAddUnit
+		int (*const ccAddUnit)(rtContext, int warn, char *file, int line, char *code);
 
-		/**
-		 * @brief Invoke a function inside the vm.
-		 * @param Runtime context.
-		 * @param fun Symbol of the function.
-		 * @param res Result value of the invoked function. (May be null.)
-		 * @param args Arguments for the fuction. (May be null.)
-		 * @param extra Extra data for each libcall executed from here.
-		 * @return Error code of execution. (0 means success.)
-		 * @usage see @rtFindSym example.
-		 * @note Invocation to execute must preceed this call.
-		 */
+		/// Lookup symbol by offset; @see Core#rtFindSym
+		symn (*const rtFindSym)(rtContext, void *ptr);
+
+		/// Invoke a function; @see Core#invoke
 		vmError (*const invoke)(rtContext, symn fun, void* res, void* args, void* extra);
 
-		/**
-		 * @brief Allocate or free memory inside the vm.
-		 * @param Runtime context.
-		 * @param ptr Allocated memory address in the vm, or null.
-		 * @param size New size to reallocate or 0 to free memory.
-		 * @return Pointer to the allocated memory.
-		 * cases:
-		 * 		size == 0 && ptr == null: nothing
-		 * 		size == 0 && ptr != null: free
-		 * 		size >  0 && ptr == null: alloc
-		 * 		size >  0 && ptr != null: realloc
-		 * @note Invocation to execute must preceed this call.
-		 */
+		/// Alloc, resize or free memory; @see Core#rtAlloc
 		void* (*const rtAlloc)(rtContext, void* ptr, size_t size);
-
-		/**
-		 * @brief Lookup a static symbol by offset.
-		 * @param Runtime context.
-		 * @param ptr Pointer to the variable.
-		 * @note Usefull for callbacks.
-		 * @usage see also: test.gl/gl.c
-
-			static symn onMouse = NULL;
-
-			static int setMouseCb(libcContext rt) {
-				void* fun = argref(rt, 0);
-
-				// unregister event callback
-				if (fun == NULL) {
-					onMouse = NULL;
-					return 0;
-				}
-
-				// register event callback using the symbol of the function.
-				onMouse = rt->api.rtFindSym(rt, fun);
-
-				// runtime error if symbol is not valid.
-				return onMouse != NULL;
-			}
-
-			static int mouseCb(int btn, int x, int y) {
-				if (onMouse != NULL && rt != NULL) {
-					// invoke the callback with arguments.
-					struct {int32_t btn, x, y;} args = {btn, x, y};
-					rt->api.invoke(rt, onMouse, NULL, &args, NULL);
-				}
-			}
-
-			// expose the callback register function to the compiler
-			if (!rt->api.ccDefCall(rt, setMouseCb, NULL, "void setMouseCallback(void Callback(int32 b, int32 x, int32 y);")) {
-				error...
-			}
-		 */
-		symn (*const rtFindSym)(rtContext, void *ptr);
 	} api;
 
 	// memory related

@@ -25,7 +25,7 @@ the core:
 #include "internal.h"
 
 /// Allocate, resize or free memory; @see rtContext.api.rtAlloc
-void *rtAlloc(rtContext rt, void* ptr, size_t size, void dbg(rtContext rt, void* mem, size_t size, int used)) {
+void *rtAlloc(rtContext rt, void* ptr, size_t size, void dbg(rtContext rt, void* mem, size_t size, char *kind)) {
 	/* memory manager
 	 * using one linked list containing both used and unused memory chunks.
 	 * The idea is when allocating a block of memory we always must to traverse the list of chunks.
@@ -55,13 +55,13 @@ void *rtAlloc(rtContext rt, void* ptr, size_t size, void dbg(rtContext rt, void*
 		struct memchunk* prev;		// null for free chunks
 		struct memchunk* next;		// next chunk
 		char data[];				// here begins the user data
-		//~ struct memchunk* free;		// TODO: next free chunk oredered by size
-		//~ struct memchunk* free_skip;	// TODO: next free whitch 2x biger tahan this
+		//~ struct memchunk* free;		// TODO: next free chunk ordered by size
+		//~ struct memchunk* free_skip;	// TODO: next free which is 2x bigger than this
 	} *memchunk;
 
 	const ptrdiff_t minAllocationSize = sizeof(struct memchunk);
-	memchunk chunk = (memchunk)((char*)ptr - offsetOf(memchunk, data));
 	size_t allocSize = padded(size + minAllocationSize, minAllocationSize);
+	memchunk chunk = (memchunk)((char*)ptr - offsetOf(memchunk, data));
 
 	// memory manager is not initialized, initialize it first
 	if (rt->vm.heap == NULL) {
@@ -79,7 +79,7 @@ void *rtAlloc(rtContext rt, void* ptr, size_t size, void dbg(rtContext rt, void*
 
 	// chop or free.
 	if (ptr != NULL) {
-		size_t chunksize = chunk->next ? ((char*)chunk->next - (char*)chunk) : 0;
+		size_t chunkSize = chunk->next ? ((char*)chunk->next - (char*)chunk) : 0;
 
 		if ((unsigned char*)ptr < rt->_beg || (unsigned char*)ptr > rt->_end) {
 			dieif((unsigned char*)ptr < rt->_beg, "invalid heap reference(%06x)", vmOffset(rt, ptr));
@@ -114,7 +114,7 @@ void *rtAlloc(rtContext rt, void* ptr, size_t size, void dbg(rtContext rt, void*
 				}
 			}
 
-			// merge with previos block if free
+			// merge with previous block if free
 			if (prev && prev->prev == NULL) {
 				chunk = prev;
 				chunk->next = next;
@@ -123,15 +123,15 @@ void *rtAlloc(rtContext rt, void* ptr, size_t size, void dbg(rtContext rt, void*
 				}
 			}
 
-			// mark as unused.
+			// mark chunk as free.
 			chunk->prev = NULL;
 			chunk = NULL;
 		}
-		else if (allocSize < chunksize) {			// chop
+		else if (allocSize < chunkSize) {			// chop
 			memchunk next = chunk->next;
 			memchunk free = (memchunk)((char*)chunk + allocSize);
 
-			// do not make a free unaligned block (realoc 161 to 160 bytes)
+			// do not make a free unaligned block (realloc 161 to 160 bytes)
 			if (((char*)next - (char*)free) > minAllocationSize) {
 				chunk->next = free;
 				free->next = next;
@@ -150,7 +150,7 @@ void *rtAlloc(rtContext rt, void* ptr, size_t size, void dbg(rtContext rt, void*
 				}
 			}
 		}
-		else {										// grow: reallocation to a bigger chunk is not supported.
+		else { // grow: reallocation to a bigger chunk is not supported.
 			error(rt, __FILE__, __LINE__, "can not grow allocated chunk (unimplemented).");
 			chunk = NULL;
 		}
@@ -159,14 +159,14 @@ void *rtAlloc(rtContext rt, void* ptr, size_t size, void dbg(rtContext rt, void*
 	else if (size > 0) {
 		memchunk prev = chunk = rt->vm.heap;
 
-		while (chunk) {
+		while (chunk != NULL) {
 			memchunk next = chunk->next;
 
 			// check if block is free.
-			if (chunk->prev == NULL && next) {
-				size_t chunksize = (char*)next - (char*)chunk - allocSize;
-				if (allocSize < chunksize) {
-					ptrdiff_t diff = chunksize - allocSize;
+			if (chunk->prev == NULL && next != NULL) {
+				size_t chunkSize = (char*)next - (char*)chunk - allocSize;
+				if (allocSize < chunkSize) {
+					ptrdiff_t diff = chunkSize - allocSize;
 					if (diff > minAllocationSize) {
 						memchunk free = (memchunk)((char*)chunk + allocSize);
 						chunk->next = free;
@@ -188,7 +188,7 @@ void *rtAlloc(rtContext rt, void* ptr, size_t size, void dbg(rtContext rt, void*
 			for (mem = rt->vm.heap; mem; mem = mem->next) {
 				if (mem->next) {
 					int size = (char*)mem->next - (char*)mem - sizeof(struct memchunk);
-					dbg(rt, mem->data, size, mem->prev != NULL);
+					dbg(rt, mem->data, size, mem->prev != NULL ? "used" : "free");
 				}
 			}
 		}
@@ -241,7 +241,7 @@ rtContext rtInit(void* mem, size_t size) {
 
 		*(void**)&rt->api.ccDefType = ccDefType;
 		*(void**)&rt->api.ccDefCall = ccDefCall;
-		*(void**)&rt->api.ccDefCode = ccDefCode;
+		*(void**)&rt->api.ccAddUnit = ccAddUnit;
 
 		*(void**)&rt->api.invoke = invoke;
 		*(void**)&rt->api.rtAlloc = rtAllocApi;

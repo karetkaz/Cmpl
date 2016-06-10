@@ -1,12 +1,16 @@
 #!/bin/sh
 
+#~ rebuild project
+make -C src clean build
+
 #~ cd tests
 #~ files to compile
 files="tests/test.*.cvx"
 
 #~ compile flags
+flags="-run"
+flags="-debug"
 flags="-profile"
-#~ flags="-run"
 
 outDir=out/test
 logFile=$outDir/tests.log

@@ -8,39 +8,19 @@ description:
 #include <string.h>
 #include "internal.h"
 
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wmany-braces-around-scalar-init"
-
 //#{ utility function for debugging only.
-static void asmDump(userContext ctx, size_t offs, void *ip) {
-	prerr("emit", ".%06x %.9A", offs, ip);
-	(void)ctx;
-}
-static void dumpTree(rtContext rt, astn ast, size_t offsStart, size_t offsEnd) {
+void dmpDbg(rtContext rt, astn ast, size_t offsStart, size_t offsEnd) {
 #if DEBUGGING >= 3	// print generated code.
-	iterateAsm(rt, offsStart, offsEnd+1, NULL, asmDump);
-	/* TODO: export dump symbol to consloe function.
-	if (rt->logFile != NULL) {
-		struct symNode dbg;
-		memset(&dbg, 0, sizeof(dbg));
-		dbg.kind = TYPE_ref;
-		dbg.name = "error";
-		dbg.call = 1;
-		dbg.init = ast;
-		dbg.offs = offsStart;
-		dbg.size = offsEnd - offsStart;
-		dumpSymbol(rt, &dbg,
-			0xff,	// dumpSym
-			0xff,	// dumpAst
-			0x79	// dumpAsm
-		);
-		//dumpxml(rt->logf, ast, 0xff, 0, "code");
-	}// */
+	prerr("ast", "%s:%u: %t", ast->file, ast->line, ast);
+	for (size_t pc = offsStart; pc < offsEnd; ) {
+		unsigned char* ip = getip(rt, pc);
+		prerr("asm", "%.6x: %9A", pc, ip);
+		pc += opc_tbl[*ip].size;
+	}
 #else
 	(void)rt;
 	(void)offsStart;
 	(void)offsEnd;
-	(void)asmDump;
 #endif
 	(void)ast;
 }
@@ -70,6 +50,9 @@ static inline void memswap(void* _a, void* _b, size_t size) {
 		b += 1;
 	}
 }
+
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wmany-braces-around-scalar-init"
 
 size_t emitint(rtContext rt, vmOpcode opc, int64_t value) {
 	stkval arg = { .i8 = value };
@@ -140,10 +123,18 @@ static inline size_t emitf64(rtContext rt, float64_t value) {
 	stkval arg = { .f8 = value };
 	return emitarg(rt, opc_lf64, arg);
 }
+
+// emit a size value 32 or 64 bit constant based on vm size
+static inline size_t emitofs(rtContext rt, size_t value) {
+	stkval arg = { .i8 = value };
+	return emitarg(rt, vm_size == (4) ? opc_lc32 : opc_lc64, arg);
+}
+// emit a size value 32 or 64 bit constant based on vm size
 static inline size_t emitref(rtContext rt, void* value) {
 	stkval arg = { .i8 = vmOffset(rt, value) };
 	return emitarg(rt, opc_lref, arg);
 }
+#pragma clang diagnostic pop
 
 // emit operator(add, sub, mul, ...), based on type
 static size_t emitopr(rtContext rt, vmOpcode opc, ccToken type) {
@@ -540,7 +531,7 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 				size_t ipStart = emitopc(rt, markIP);
 				if (!cgen(rt, ptr, TYPE_vid)) {		// we will free stack on scope close
 					error(rt, ptr->file, ptr->line, "emitting statement `%+t`", ptr);
-					dumpTree(rt, ptr, ipStart, emitopc(rt, markIP));
+					dmpDbg(rt, ptr, ipStart, emitopc(rt, markIP));
 					return TYPE_any;
 				}
 				if (ptr->kind != STMT_beg) {
@@ -1375,7 +1366,7 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 
 			#ifdef DEBUGGING	// extra check: validate some conditions.
 			if (ast->op.lhso->cst2 != ast->op.rhso->cst2) {
-				dumpTree(rt, ast, ipdbg, emitopc(rt, markIP));
+				dmpDbg(rt, ast, ipdbg, emitopc(rt, markIP));
 			}
 			dieif(ast->op.lhso->cst2 != ast->op.rhso->cst2, "RemMe", ast);
 			dieif(got != castOf(ast->type), "RemMe");
@@ -2580,5 +2571,3 @@ int gencode(rtContext rt, int mode) {
 	return rt->errCount == 0;
 	(void)Lmeta;
 }
-
-#pragma clang diagnostic pop

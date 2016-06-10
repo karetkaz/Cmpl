@@ -1,8 +1,12 @@
 #!/bin/sh
 
+#~ rebuild project
+make -C src clean build
+
+files="./tests/*.gxc"
 logFile=out/test.all.log
 echo>$logFile
-for file in ./tests/*.gxc
+for file in $files
 do
 	echo "**** running test: $file"
 	echo>>$logFile "**** running test: $file"

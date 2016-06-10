@@ -93,37 +93,97 @@ enum {
  */
 ccContext ccInit(rtContext, int mode, vmError onHalt(libcContext));
 
-/// Begin a namespace; @see rtContext.api.ccBegin
+/**
+ * @brief Begin a namespace (static struct).
+ * @param Runtime context.
+ * @param name Name of the namespace.
+ * @return Defined symbol, null on error.
+ */
 symn ccBegin(rtContext, const char *name);
-
-/// Close a namespace; @see rtContext.api.ccEnd
+/**
+ * @brief Close the namespace.
+ * @param Runtime context.
+ * @param cls Namespace to be closed. (The returned by ccBegin.)
+ * @note Makes all declared variables static.
+*/
 symn ccEnd(rtContext, symn sym, int mode);
 
-/// Declare int constant; @see rtContext.api.ccDefInt
+/**
+ * @brief Define an integer constant.
+ * @param Runtime context.
+ * @param name Name of the constant.
+ * @param value Value of the constant.
+ * @return Defined symbol, null on error.
+ */
 symn ccDefInt(rtContext, const char *name, int64_t value);
-/// Declare float constant; @see rtContext.api.ccDefFlt
+/**
+ * @brief Define a floating point constant.
+ * @param Runtime context.
+ * @param name Name of the constant.
+ * @param value Value of the constant.
+ * @return Defined symbol, null on error.
+ */
 symn ccDefFlt(rtContext, const char *name, double value);
-/// Declare string constant; @see rtContext.api.ccDefStr
+/**
+ * @brief Define a string constant.
+ * @param Runtime context.
+ * @param name Name of the constant.
+ * @param value Value of the constant.
+ * @return Defined symbol, null on error.
+ */
 symn ccDefStr(rtContext, const char *name, char* value);
 
-/// Declare a type; @see rtContext.api.ccDefType
+/**
+ * @brief Add a type to the runtime.
+ * @param Runtime context.
+ * @param name Name of the type.
+ * @param size Size of the type.
+ * @param refType Value indicating ByRef or ByValue.
+ * @return Defined symbol, null on error.
+ * @see: lstd.File;
+ */
 symn ccDefType(rtContext, const char* name, unsigned size, int refType);
-
-/// Declare a native function; @see rtContext.api.ccDefCall
+/**
+ * @brief Add a native function (libcall) to the runtime.
+ * @param Runtime context.
+ * @param libc The c function.
+ * @param data Extra user data for the function.
+ * @param proto Prototype of the function. (Must end with ';')
+ * @return Defined symbol, null on error.
+ * @usage see also: test.gl/gl.c
+	static int f64sin(libcContext rt) {
+		float64_t x = argf64(rt, 0);	// get first argument
+		retf64(rt, sin(x));				// set the return value
+		return 0;						// no runtime error in call
+	}
+	...
+	if (!rt->api.ccDefCall(rt, f64sin, NULL, "float64 sin(float64 x);")) {
+		// error reported, terminate here the execution.
+		return 0;
+	}
+ */
 symn ccDefCall(rtContext, vmError call(libcContext), void *data, const char *proto);
 
-/// Compile file or text; @see rtContext.api.ccDefCode
-int ccDefCode(rtContext, int warn, char *file, int line, char *text);
-
 /**
- * @brief Execute the unit function then optionally compile the file.
+ * @brief Compile the given file or text block.
+ * @param Runtime context.
+ * @param warn Warning level.
+ * @param file File name of input.
+ * @param line First line of input.
+ * @param text If not null, this will be compiled instead of the file.
+ * @return the root node of the compilation unit.
+ */
+astn ccAddUnit(rtContext, int warn, char *file, int line, char *text);
+
+/** Add a module / library
+ * @brief Execute the libInit function then optionally compile the unit.
  * @param runtime context.
  * @param warn warning level.
  * @param unit function installing types and native functions.
- * @param file additional file to be compiled with this unit.
+ * @param unit additional file to be compiled with this library.
  * @return boolean value of success.
  */
-int ccAddUnit(rtContext, int unit(rtContext), int warn, char *file);
+int ccAddLib(rtContext, int libInit(rtContext), int warn, char *unit);
 
 /**
  * @brief Find symbol by name.
@@ -135,9 +195,9 @@ int ccAddUnit(rtContext, int unit(rtContext), int warn, char *file);
 symn ccLookupSym(ccContext, symn in, char *name);
 
 /// standard functions
-int ccUnitStdc(rtContext);
+int ccLibStdc(rtContext);
 /// file access
-int ccUnitFile(rtContext);
+int ccLibFile(rtContext);
 
 #ifdef __cplusplus
 }

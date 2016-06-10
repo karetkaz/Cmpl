@@ -374,13 +374,7 @@ OPCDEF(p4d___f,  0x9f, 0, 0, -0, NULL)           // undefined
 
 //~ ext ========================================================================f
 
-
-//~ abs, sat, nrm
-//~ sin, cos, exp, log, lrp, pow
-
-//~ adc, sbb, rot,
-
-/* opcodes
+/* arithmetic operations table
 	bit: b32/b64
 	num: i32/i64/f32/f64
 	vec: v4f/v2d/...
@@ -409,15 +403,58 @@ OPCDEF(p4d___f,  0x9f, 0, 0, -0, NULL)           // undefined
 	bit.ext32(byte arg): mask, shl, shr, sar with constant.
 //~ */
 
-/* opc_ext argc = 3(24bit): [mem:2][res:8][lhs:7][rhs:7]
-	uint32_t mem:2;		// mem access
-	uint32_t res:8;		// res
-	uint32_t lhs:7;		// lhs
-	uint32_t rhs:7;		// rhs
+/* extended fast opcodes
+	opc_ext argc = 3(24bit): [mem:2][res:8][lhs:7][rhs:7]
+	struct {                // extended: 4 bytes `res := lhs OP rhs`
+		uint32_t mem:2;     // indirect memory access
+		uint32_t res:8;     // res
+		uint32_t lhs:7;     // lhs
+		uint32_t rhs:7;     // rhs
+	} ext;
+	/+ --8<-------------------------------------------
+	void* res = sp + ip->ext.res;
+	void* lhs = sp + ip->ext.lhs;
+	void* rhs = sp + ip->ext.rhs;
 
+	// check stack
+	CHKSTK(ip->ext.res);
+	CHKSTK(ip->ext.lhs);
+	CHKSTK(ip->ext.rhs);
+
+	// memory indirection
+	switch (ip->ext.mem) {
+		case 0:
+			// no indirection
+			break;
+		case 1:
+			CHKMEM_W(*(int**)res);
+			res = *(void**)res;
+			break;
+		case 2:
+			CHKMEM_R(*(int**)lhs);
+			lhs = *(void**)lhs;
+			break;
+		case 3:
+			CHKMEM_R(*(int**)rhs);
+			rhs = *(void**)rhs;
+			break;
+	}
+
+	switch (ip->opc) {
+		case ext_neg: *(type*)res = -(*(type*)rhs); break;
+		case ext_add: *(type*)res = (*(type*)lhs) + (*(type*)rhs); break;
+		case ext_sub: *(type*)res = (*(type*)lhs) - (*(type*)rhs); break;
+		case ext_mul: *(type*)res = (*(type*)lhs) * (*(type*)rhs); break;
+		case ext_div: *(type*)res = (*(type*)lhs) / (*(type*)rhs); break;
+		case ext_mod: *(type*)res = (*(type*)lhs) % (*(type*)rhs); break;
+		case ext_..1: res = lhs ... rhs; break;
+		case ext_..2: res = lhs ... rhs; break;
+	}
+	// +/ --8<----------------------------------------
 //~ */
 
-/* opc_p4i argc = 1(8bit): [sat:1][uns:1][typ:2][opc:4]
+/* extended packed
+	opc_p4i argc = 1(8bit): [sat:1][uns:1][typ:2][opc:4]
 	bit:[0-1, 2: type, unsigned]
 		00:	i8[16]
 		01:	i16[8]

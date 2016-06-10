@@ -202,7 +202,7 @@ int gx_gradsurf(gx_Surf dst, gx_Rect roi, gx_Clut lut, gradient_type gradtype, i
 	if (dst->depth != 32)
 		return -1;
 
-	if (roi) {
+	if (roi != NULL) {
 		g.sx = roi->x;
 		g.sy = roi->y;
 		g.x = roi->w ? roi->w : 1;

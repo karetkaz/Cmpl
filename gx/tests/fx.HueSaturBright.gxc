@@ -6,32 +6,44 @@ enum Window {
 }
 
 //~ string fileName = "media/images/David.png";
-//~ string fileName = "media/images/lenaRGB.png";
+string fileName = "media/images/lenaRGB.png";
 //~ string fileName = "media/images/download.jpg";
 //~ string fileName = "media/images/dino-blue.jpg";
 //~ string fileName = "media/images/Earth.jpg";
-string fileName = "media/images/nol.bmp";
+//~ string fileName = "media/images/nol.bmp";
 
 define useNativeImpl = true;
 gxSurf img = gxSurf(fileName);
+gxSurf lui = gxSurf(256, 100);
+gxClut histogram;
+mat4f mat;
 
 int brightness = 0;
 int saturation = 0;
 int hue = 0;
-mat4f mat;
 
 bool reDraw = true;
+bool reCalc = true;
 
 void mouseCB(int btn, int x, int y) {
-	static int ox;
-	static int oy;
-	int d = oy - y;
+	static int old_btn;
+	static int old_x;
+	static int old_y;
+	int d = old_y - y;
 	if (Mouse.dblClick(btn, x, y)) {
 		Mouse.dblClick(-1, 0, 0);			// disable multi clicks
 		reDraw = true;
 		brightness = 0;
 		saturation = 0;
 		hue = 0;
+	}
+	if (old_btn != btn) {
+		if (btn == 0) {
+			// on button release recalculate histogram.
+			reCalc = true;
+		}
+		old_btn = btn;
+		reDraw = true;
 	}
 	if (btn == 1) {
 		reDraw = true;
@@ -45,8 +57,8 @@ void mouseCB(int btn, int x, int y) {
 		reDraw = true;
 		hue += d;
 	}
-	ox = x;
-	oy = y;
+	old_x = x;
+	old_y = y;
 }
 
 mat4f matLuminosity(float val) {
@@ -122,10 +134,17 @@ void drawCB() {
 				result = dph(mat, col);
 			}
 			fillSurf(offScreen, null, pixelCB);
-			/*fillSurf(offScreen, null, inline vec4f(vec4f col) {
+			/*TODO: fillSurf(offScreen, null, inline vec4f(vec4f col) {
 				result = dph(mat, col);
 			});*/
 		}
+
+		if (reCalc) {
+			histoLut(&histogram, offScreen, true);
+			reCalc = false;
+		}
+
+		copySurf(offScreen, Window.resx - 266, 10, lut2Surf(lui, &histogram, true), null);
 
 		static if (true) {
 			int y = 0;

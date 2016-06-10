@@ -72,53 +72,6 @@ struct bcde {
 			uint8_t  dl;	// data to to be copied to stack
 			uint16_t cl;	// code to to be executed paralel: 0 means fork
 		};
-		/* TODO: extended opcodes
-		struct {				// extended: 4 bytes `res := lhs OP rhs`
-			uint32_t mem:2;		// mem access
-			uint32_t res:8;		// res
-			uint32_t lhs:7;		// lhs
-			uint32_t rhs:7;		// rhs
-
-			/+ --8<-------------------------------------------
-			void* res = sp + ip->ext.res;
-			void* lhs = sp + ip->ext.lhs;
-			void* rhs = sp + ip->ext.rhs;
-
-			// check stack
-			CHKSTK(ip->ext.res);
-			CHKSTK(ip->ext.lhs);
-			CHKSTK(ip->ext.rhs);
-
-			// memory indirection
-			switch (ip->ext.mem) {
-				case 0:
-					break;
-				case 1:
-					CHKMEM_W(*(int**)res);
-					res = *(void**)res;
-					break;
-				case 2:
-					CHKMEM_R(*(int**)lhs);
-					lhs = *(void**)lhs;
-					break;
-				case 3:
-					CHKMEM_R(*(int**)rhs);
-					rhs = *(void**)rhs;
-					break;
-			}
-
-			switch (ip->opc) {
-				case ext_neg: *(type*)res = -(*(type*)rhs); break;
-				case ext_add: *(type*)res = (*(type*)lhs) + (*(type*)rhs); break;
-				case ext_sub: *(type*)res = (*(type*)lhs) - (*(type*)rhs); break;
-				case ext_mul: *(type*)res = (*(type*)lhs) * (*(type*)rhs); break;
-				case ext_div: *(type*)res = (*(type*)lhs) / (*(type*)rhs); break;
-				case ext_mod: *(type*)res = (*(type*)lhs) % (*(type*)rhs); break;
-				case ext_..1: res = lhs ... rhs; break;
-				case ext_..2: res = lhs ... rhs; break;
-			}
-			// +/ --8<----------------------------------------
-		} ext;// */
 	};
 };
 #pragma pack(pop)

@@ -500,7 +500,21 @@ void dumpAsm(rtContext rt, size_t start, size_t end, userContext extra, void act
 void ccError(rtContext rt, int level, const char *file, int line, const char *msg, ...);
 
 //             *** General
+/** Calculate hash of string.
+ * @brief calculate the hash of a string.
+ * @param str string to be hashed.
+ * @param len length of string.
+ * @return hash code of the input.
+ */
 unsigned rehash(const char* str, size_t size);
+/** Add string to string table.
+ * @brief add string to string table.
+ * @param cc compiler context.
+ * @param str the string to be mapped.
+ * @param len the length of the string, -1 recalculates using strlen.
+ * @param hash precalculated hashcode, -1 recalculates.
+ * @return the mapped string in the string table.
+ */
 char* mapstr(ccContext cc, const char *str, size_t size/* = -1*/, unsigned hash/* = -1*/);
 
 static inline void* paddptr(void *offs, unsigned align) {

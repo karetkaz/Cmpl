@@ -2149,7 +2149,7 @@ static ccContext ccOpen(rtContext rt, char* file, int line, char* text) {
  * @param cc compiler context.
  * @return number of errors.
  */
-static int ccDone(ccContext cc) {
+static int ccClose(ccContext cc) {
 	astn ast;
 
 	// not initialized
@@ -2176,23 +2176,26 @@ static int ccDone(ccContext cc) {
 }
 
 /// Compile file or text; @see rtContext.api.ccDefCode
-int ccDefCode(rtContext rt, int warn, char *file, int line, char *text) {
+astn ccAddUnit(rtContext rt, int warn, char *file, int line, char *text) {
 	ccContext cc = ccOpen(rt, file, line, text);
 	if (cc == NULL) {
 		error(rt, NULL, 0, "can not open: %s", file);
 		return 0;
 	}
-	parse(cc, 0, warn);
-	return ccDone(cc) == 0;
+	astn unit = parse(cc, 0, warn);
+	if (ccClose(cc) != 0) {
+		return NULL;
+	}
+	return unit;
 }
 
 /// @see: header
-int ccAddUnit(rtContext rt, int unit(rtContext), int warn, char *file) {
-	int unitCode = unit(rt);
-	if (unitCode == 0 && file != NULL) {
-		return ccDefCode(rt, warn, file, 1, NULL);
+int ccAddLib(rtContext rt, int libInit(rtContext), int warn, char *file) {
+	int errorCode = libInit(rt);
+	if (errorCode == 0 && file != NULL) {
+		return ccAddUnit(rt, warn, file, 1, NULL) != NULL;
 	}
-	return unitCode == 0;
+	return errorCode == 0;
 }
 
 static symn installref(rtContext rt, const char* prot, astn* argv) {
@@ -2215,7 +2218,7 @@ static symn installref(rtContext rt, const char* prot, astn* argv) {
 
 	dieif(!skip(rt->cc, STMT_end), "`;` expected declaring: %s", prot);
 
-	dieif(ccDone(rt->cc) != 0, "FixMe");
+	dieif(ccClose(rt->cc) != 0, "FixMe");
 
 	dieif(root->kind != TYPE_ref, "FixMe %+t", root);
 

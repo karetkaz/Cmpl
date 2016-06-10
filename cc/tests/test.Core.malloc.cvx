@@ -43,19 +43,16 @@ void testDeallocation(int allocMegs, int reallocMegs, int freeOrder) {
 	//~ memmgr(null, 0);
 }
 
-memmgr(null, 0);
 testDeallocation(10, 8, 1);
 testDeallocation(10, 8, 2);
 testDeallocation(10, 8, 3);
 testDeallocation(10, 8, 4);
 testDeallocation(10, 8, 5);
-memmgr(null, 0);
 testDeallocation(10, 8, 1);
 testDeallocation(10, 8, 2);
 testDeallocation(10, 8, 3);
 testDeallocation(10, 8, 4);
 testDeallocation(10, 8, 5);
-memmgr(null, 0);
 
 //~ intptr p2;
 //~ pointer p = malloc(100);

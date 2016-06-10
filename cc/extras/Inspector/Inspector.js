@@ -14,7 +14,7 @@ function Instrument() {
 			caller: null,
 			calltree: null,
 			//offs: id,
-			func: functions[id],
+			func: functions[id] || {}
 		};
 
 		var samples = calls[0];
@@ -29,16 +29,16 @@ function Instrument() {
 				console.log('invalid offset: ' + id);
 			}
 			var sample = samples.samples[id] || (samples.samples[id] = {
-				func: functions[id],
-				hits: 0,
-				self: 0,
-				total: 0,
-				get others() {
-					return this.total - this.self;
-				},
-				callers: {},
-				callees: {},
-			});
+					func: functions[id] || {},
+					hits: 0,
+					self: 0,
+					total: 0,
+					get others() {
+						return this.total - this.self;
+					},
+					callers: {},
+					callees: {}
+				});
 			if (sample.hits != null) {
 				sample.hits += 1;
 			}
@@ -90,7 +90,7 @@ function Instrument() {
 
 		// compute global information
 		if (samples.samples != null) {
-			var sample = samples.samples[calleeId];
+			var sample = samples.samples[calleeId] || {};
 			// update time spent in function
 			if (sample.total != null && !recursive) {
 				sample.total += time;
@@ -165,65 +165,82 @@ function Instrument() {
 		return result;
 	}
 
-    function loadData(dataIn) {
-    	if (dataIn.profile == null) {
-    		dataIn.profile = {
-    			callTree: [],
-    			functions: [],
-				statements: [], 
-				ticksPerSec: -1, 
-				functionCount: 0, 
+	function loadData(dataIn) {
+		data = dataIn;
+
+		if (data.profile == null) {
+			data.profile = {
+				callTree: [],
+				ticksPerSec: -1,
+				functions: [],
+				functionCount: 0,
+				statements: [],
 				statementCount: 0
-    		};
-    	}
-        var i, j, calls = [{
-            enter: +Infinity,
-            leave: -Infinity,
-            samples: {},
-            calltree: null,
-            //excluded: ['Halt', 'ToDays'],
-            ticksPerSec: dataIn.profile.ticksPerSec
-        }];;
+			};
+		}
+		if (data.profile.ctFunIndex === undefined) {
+			data.profile.ctFunIndex = 0;
+		}
+		if (data.profile.ctTickIndex === undefined) {
+			data.profile.ctTickIndex = 1;
+		}
 
-        data = dataIn;
-        var functions = Object.create(null);	// empty object no prototype.
-        for (var i = 0; i < dataIn.profile.functions.length; ++i) {
-            var symbol = dataIn.profile.functions[i];
-            functions[symbol.offs] = symbol;
-        }
+		var i, calls = [{
+			enter: +Infinity,
+			leave: -Infinity,
+			samples: {},
+			calltree: null,
+			//excluded: ['Halt', 'ToDays'],
+			ticksPerSec: data.profile.ticksPerSec
+		}];
 
-        samples = null;
-        for (i = 0; i < dataIn.profile.callTree.length; i += 2) {
-            var time = dataIn.profile.callTree[i + 0];
-            var offs = dataIn.profile.callTree[i + 1];
+		var caller, callee, functions = Object.create(null);	// empty object without prototype.
 
-            if (offs !== -1) {
-                var callee = enter(calls, functions, offs, time);
-                calls.push(callee);
-            }
-            else {
-                var callee = calls.pop();
-                var caller = calls[calls.length - 1];
-                leave(calls, caller, callee, time);
-                Object.freeze(callee);
-            }
-        }
+		for (i = 0; i < data.profile.functions.length; ++i) {
+			var symbol = data.profile.functions[i];
+			functions[symbol.offs] = symbol;
+		}
 
-        if (calls.length === 1) {
-            samples = calls.pop();
-            Object.freeze(samples);
-        }
-    }
+		samples = null;
+		for (i = 0; i < data.profile.callTree.length; i += 2) {
+			var time = data.profile.callTree[i + data.profile.ctFunIndex];
+			var offs = data.profile.callTree[i + data.profile.ctTickIndex];
+
+			if (offs !== -1) {
+				callee = enter(calls, functions, offs, time);
+				calls.push(callee);
+			}
+			else {
+				callee = calls.pop();
+				caller = calls[calls.length - 1];
+				leave(calls, caller, callee, time);
+				Object.freeze(callee);
+			}
+		}
+
+		while (calls.length > 0) {
+			samples = calls.pop();
+			if (calls.length > 1) {
+				caller = calls[calls.length - 1];
+				leave(calls, caller, samples, 0);
+			}
+			Object.freeze(samples);
+		}
+		if (calls.length === 1) {
+			samples = calls.pop();
+			Object.freeze(samples);
+		}
+	}
 
 	return {
 		api: {
-			getAll: function () {
-				return getFiltered(function(sym) {
+			getAll: function() {
+				return getFiltered(function() {
 					return true;
 				});
 			},
-			getFiltered: function (types, funcs, vars, defs, opcodes) {
-				return getFiltered(function(sym) {
+			getFiltered: function(types, funcs, vars, defs, opcodes) {
+				return getFiltered(function (sym) {
 					if (types && sym.kind === '.rec') {
 						return true;
 					}
@@ -246,10 +263,18 @@ function Instrument() {
 		},
 		loadFile: function(file, action) {
 			var reader = new FileReader();
-			reader.onload = function(){
-				loadData(JSON.parse(reader.result));
-				if (action != null) {
-					action();
+			reader.onload = function() {
+				try {
+					loadData(JSON.parse(reader.result));
+					if (action != null) {
+						action(null);
+					}
+				}
+				catch (error) {
+					console.log(error);
+					if (action != null) {
+						action(error);
+					}
 				}
 			};
 			reader.readAsText(file);
@@ -257,73 +282,6 @@ function Instrument() {
 		getSamples: getSamples,
 
 		// to be removed
-		loadData: loadData,
+		loadData: loadData
 	}
-}
-
-function toJsString(obj, prefix) {
-	var objects = [];	// prevent recursion
-	function toJsStringRecursive(obj, prefix) {
-		if (obj === null || obj === undefined) {
-			return obj === null ? 'null' : 'undefined';
-		}
-		if (obj.constructor === Function) {
-			//~ return 'function' + obj.toString().match(/\(.*\)/) + ' { ... }';
-			return null;
-		}
-		if (obj.constructor === Object) {
-			if (objects.indexOf(obj) >= 0) {
-				return null;
-			}
-			var result = '';
-			var prefix2 = '';
-			if (prefix === null || prefix === undefined) {
-				prefix = '';
-			}
-			else if (prefix !== '') {
-				prefix2 = prefix + '  ';
-			}
-			objects.push(obj);
-			for (var key in obj) {
-				var inner = toJsStringRecursive(obj[key], prefix2);
-				if (inner !== null) {
-					if (result !== '') {
-						result += ', ';
-					}
-					result += prefix2 + key + ': ' + inner;
-				}
-			}
-			if (prefix !== '' && result.indexOf(prefix) == 0) {
-				result += prefix;
-			}
-			return '{' + result + '}';
-		}
-		if (obj.constructor === Array) {
-			var result = '';
-			if (prefix === null || prefix === undefined) {
-				prefix = '';
-			}
-			for (var idx = 0; idx < obj.length; idx += 1) {
-				var inner = toJsStringRecursive(obj[idx], prefix);
-				if (inner !== null) {
-					if (result !== '') {
-						result += ', ';
-					}
-					result += inner;
-				}
-			}
-			if (prefix !== '' && result.indexOf(prefix) == 0) {
-				result += prefix;
-			}
-			return '[' + result + ']';
-		}
-
-		if (obj.constructor === String) {
-			return '"' + obj.toString().replace(/\"/g, '\\"') + '"';
-		}
-
-		// Boolean, Number, Date, Math, RegExp, Global, ... ???
-		return obj.toString();
-	}
-	return toJsStringRecursive(obj, prefix);
 }

@@ -1,121 +1,115 @@
-html body {
-	overflow: hidden;
+html, body, table {
 	padding: 0;
 	margin: 0;
 }
 
 .left {
-	display: inline-block;
 	float: left;
 }
 .right {
-	display: inline-block;
 	float: right;
 }
 .reset {
 	clear: both;
 }
+.gone {
+	display: none !important;
+}
 
 /* tab tool bar */
 #tabs {
-	display: block;
-	position: absolute;
 	top: 0;
 	left: 0;
 	right: 0;
-	height: 1.6em;
+	height: 2em;
+	position: fixed;
+	background-color: #f3f3f3;
+	border-bottom: .2em solid #ccc;
+}
+#tabs * {
+	margin: 0;
 	padding-left: .5em;
 	padding-right: .5em;
-	border-bottom: .1em solid #ccc;
-	background-color: #f3f3f3;
 }
-#tabs>* {
-	display: inline-block;
-	padding-top: .3em;
-	padding-left: .3em;
-	padding-right: .3em;
-	padding-bottom: .1em;
-	bottom: 0;
-}
-#tabs>input {
-	margin-top: .3em;
-	padding: 0;
-}
-#tabs>span {
+#tabs > * {
+	height: 100%;
+    line-height: 2em;
+	margin-bottom: -.2em;
 	border-bottom: .2em solid transparent;
+}
+
+#tabs>label.open_file {
+	cursor: pointer;
+	width: 12em;
+	overflow: hidden;
+	background-color: #bbc;
+	border-bottom-color: #bbc;
+}
+
+#tabs>span {
 	cursor: pointer;
 }
 #tabs>span:hover {
 	background-color: #ccc;
+	border-bottom-color: #bbc;
 }
 #tabs>span.active {
-	border-bottom: .2em solid #99c;
+	border-bottom-color: #99c;
+}
+#tabs>.filter {
+	border: none;
 }
 
 /* extension tool bar */
 #tabs>.ext {
 	display: none;
-	padding: 0;
-	margin: 0;
 }
 #tabs>.ext.active {
-	display: inline-block;
+	display: block;
 }
 #tabs>.ext.active::before {
-	margin-left: 1em;
-	display: inline-block;
-	content: "|"
+	float: left;
+	content: "|";
 }
 
 #content {
-	display: block;
-	position: absolute;
-	top: 1.6em;
-	left: 0;
-	right: 0;
-	bottom: 0;
-	padding: 0px;
-	margin-top: .1em;
-}
-#content>div {
-	display: none;
-	position: absolute;
-	overflow-y: scroll;
 	top: 0;
 	left: 0;
 	right: 0;
 	bottom: 0;
 	padding: 0;
 }
+#content>div {
+	display: none;
+	margin: .2em;
+	margin-top: 2.3em;
+	overflow: auto;
+}
 #content>div.fixed {
-	overflow-y: hidden;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	position: fixed;
+	overflow: hidden;
 }
 #content>div.active {
 	display: block;
 }
 
-#loading {
+.mesage {
 	text-align: center;
 }
-
-#todo {
-	text-align: center;
-}
-
-#code {
-	margin: 0;
-	padding:.5em;
-}
-
-#callChart {
-	position: absolute;
+#tooltip {
+	background-color: white;
+	display: inline-block;
+	position: fixed;
 	overflow: hidden;
-	top: 0;
-	left: 0;
+	border: 1px solid gray;
+	padding: .5em;
+	margin: .5em;
+	bottom: 0;
 	right: 0;
-	bottom: 80%;
-	margin: 0;
-	background-color: #f3f3f3;
 }
 #callChart>div {
 	overflow: hidden;
@@ -125,27 +119,23 @@ html body {
 }
 
 #callTree {
-	position: absolute;
-	overflow-y: scroll;
-	top: 20%;
-	left: 0;
-	right: 0;
-	bottom: 0;
-	padding: 8px;
-	margin: 0;
+	width: 100%;
+    border-spacing: 0;
 }
 
 /* HitCount, SelfTime, TotalTime */
 #callTree th,
 #callTree td {
 	text-align: right;
+	padding: 5px;
+	border-bottom: 1px solid #ddd;
 }
 /* Highlightings */
 #callTree>tr:hover,
 #callTree>tr.hover,
 #callChart>div:hover,
 #callChart>div.hover {
-	background-color: yellowgreen;
+	background-color: #eee;
 }
 
 /* Function name / expander */

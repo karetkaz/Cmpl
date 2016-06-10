@@ -6,7 +6,7 @@ LIBDIR=../libs
 BINDIR=../
 BINARY=main
 
-ARH=-m32
+ARH=-m64
 #~ CFLAGS=-Wall -Wpadded -g0 -Os
 #~ CFLAGS=-pipe -g -Wall -Wpadded -g3 -ggdb
 CFLAGS=-pipe -g -Wall
