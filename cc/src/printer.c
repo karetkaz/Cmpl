@@ -80,7 +80,7 @@ static void fputqal(FILE* fout, const char *esc[], symn sym) {
 
 /// print array type
 static void fputarr(FILE* fout, const char *esc[], symn sym, int mode) {
-	if (sym != NULL && sym->kind == TYPE_arr) {
+	if (sym != NULL && sym->kind == CAST_arr) {
 		fputarr(fout, esc, sym->type, mode);
 		fputfmt(fout, "[%?+t]", sym->init);
 		return;
@@ -112,14 +112,14 @@ void fputAst(FILE *out, const char *esc[], astn ast, int mode, int indent) {
 		indent = -indent;
 	}
 
-	if (pr_attr && ast->cst2) {
-		if ((ast->cst2 & ATTR_stat) != 0) {
+	if (pr_attr && ast->cast) {
+		if ((ast->cast & ATTR_stat) != 0) {
 			fputstr(out, esc, "static ");
 		}
-		if ((ast->cst2 & ATTR_const) != 0) {
+		if ((ast->cast & ATTR_const) != 0) {
 			fputstr(out, esc, "const ");
 		}
-		if ((ast->cst2 & ATTR_paral) != 0) {
+		if ((ast->cast & ATTR_paral) != 0) {
 			fputstr(out, esc, "parallel ");
 		}
 	}
@@ -298,7 +298,7 @@ void fputAst(FILE *out, const char *esc[], astn ast, int mode, int indent) {
 				fputstr(out, esc, " ");
 				// `return 3;` is modified to `return (result = 3);`
 				logif(ret->kind != ASGN_set && ret->kind != OPER_fnc, ERR_INTERNAL_ERROR);
-				logif(ret->kind == OPER_fnc && ret->type && ret->type->cast != TYPE_vid, ERR_INTERNAL_ERROR);
+				logif(ret->kind == OPER_fnc && ret->type && ret->type->cast != CAST_vid, ERR_INTERNAL_ERROR);
 				fputAst(out, esc, ret->op.rhso, mode, exprLevel);
 			}
 			fputstr(out, esc, ";\n");
@@ -434,7 +434,7 @@ void fputAst(FILE *out, const char *esc[], astn ast, int mode, int indent) {
 		}
 		//#}
 		//#{ TVAL
-		case TYPE_bit:
+		case CAST_bit:
 			fputFmt(out, esc, "%U", ast->cint);
 			break;
 
@@ -453,7 +453,7 @@ void fputAst(FILE *out, const char *esc[], astn ast, int mode, int indent) {
 			break;
 
 		case TYPE_def:
-		case TYPE_ref:
+		case CAST_ref:
 			if (ast->ref.link != NULL) {
 				if (kind == TYPE_def) {
 					fputSym(out, esc, ast->ref.link, mode & ~prSymQual, -indent);
@@ -527,7 +527,7 @@ void fputSym(FILE *out, const char *esc[], symn sym, int mode, int indent) {
 			break;
 		}
 
-		case TYPE_arr: {
+		case CAST_arr: {
 			if (sym->name == NULL) {
 				fputarr(out, esc, sym, mode);
 				return;
@@ -551,7 +551,7 @@ void fputSym(FILE *out, const char *esc[], symn sym, int mode, int indent) {
 		}
 
 		case TYPE_def:
-		case TYPE_ref: {
+		case CAST_ref: {
 			if (pr_args && sym->call) {
 				symn arg = sym->prms;
 				fputchr(out, '(');
@@ -1041,13 +1041,13 @@ void dumpApi(rtContext rt, userContext ctx, void customPrinter(userContext, symn
 				break;
 
 			// array/typename
-			case TYPE_arr:
+			case CAST_arr:
 			case TYPE_rec:
 				*++sp = sym->flds;
 				break;
 
 			// variable/function
-			case TYPE_ref:
+			case CAST_ref:
 				/* print function private members ?
 				if (sym->call && sym->flds) {
 					*++sp = sym->flds;

@@ -205,9 +205,9 @@ static void usage(char* app) {
 }
 
 static inline int hasAssembly(symn sym) {
-	if (sym->call && sym->kind == TYPE_ref) {
+	if (sym->call && sym->kind == CAST_ref) {
 		// exclude references to functions.
-		if (sym->cast != TYPE_ref) {
+		if (sym->cast != CAST_ref) {
 			return 1;
 		}
 	}
@@ -374,8 +374,8 @@ static void jsonDumpAst(FILE *out, const char **esc, astn ast, const char *kind,
 	if (ast->type != NULL) {
 		fputFmt(out, esc, "%I, \"%s\": \"%T\"\n", indent + 1, KEY_TYPE, ast->type);
 	}
-	if (ast->cst2 != TYPE_any) {
-		fputFmt(out, esc, "%I, \"%s\": \"%K\"\n", indent + 1, KEY_CAST, ast->cst2);
+	if (ast->cast != TYPE_any) {
+		fputFmt(out, esc, "%I, \"%s\": \"%K\"\n", indent + 1, KEY_CAST, ast->cast);
 	}
 	if (ast->file != NULL) {
 		fputFmt(out, esc, "%I, \"%s\": \"%s\"\n", indent + 1, KEY_FILE, ast->file);
@@ -499,7 +499,7 @@ static void jsonDumpAst(FILE *out, const char **esc, astn ast, const char *kind,
 		case TYPE_flt:
 		case TYPE_str:
 
-		case TYPE_ref:
+		case CAST_ref:
 		case TYPE_def:	// TODO: see dumpxml
 			fputFmt(out, esc, "%I, \"%s\": \"%t\"\n", indent + 1, KEY_VALUE, ast);
 			break;
@@ -809,7 +809,7 @@ static void conDumpRun(userContext cctx) {
 			char* ofs = NULL;
 
 			// exclude typenames
-			if (var->kind != TYPE_ref)
+			if (var->kind != CAST_ref)
 				continue;
 
 			// exclude functions
@@ -1250,7 +1250,7 @@ static int conDebug(dbgContext dbg, const vmError error, size_t ss, void* sp, vo
 				else {
 					symn sym = ccLookupSym(rt->cc, NULL, arg);
 					fputfmt(out, "arg:%T", sym);
-					if (sym && sym->kind == TYPE_ref && !sym->stat) {
+					if (sym && sym->kind == CAST_ref && !sym->stat) {
 						fputVal(out, NULL, rt, sym, (stkval *) sp, prSymType, 0);
 					}
 				}

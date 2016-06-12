@@ -81,13 +81,13 @@ astn strnode(ccContext cc, char* v) {
 	return ast;
 }
 astn lnknode(ccContext cc, symn ref) {
-	astn result = newnode(cc, TYPE_ref);
+	astn result = newnode(cc, CAST_ref);
 	if (result != NULL) {
-		result->type = ref->kind == TYPE_ref ? ref->type : ref;
+		result->type = ref->kind == CAST_ref ? ref->type : ref;
 		result->ref.name = ref->name;
 		result->ref.link = ref;
 		result->ref.hash = -1;
-		result->cst2 = ref->cast;
+		result->cast = ref->cast;
 	}
 	return result;
 }
@@ -105,7 +105,7 @@ astn wrapStmt(ccContext cc, astn node) {
 	astn result = newnode(cc, STMT_end);
 	if (result != NULL) {
 		result->type = cc->type_vid;
-		result->cst2 = TYPE_any;
+		result->cast = TYPE_any;
 		result->file = node->file;
 		result->line = node->line;
 		result->stmt.stmt = node;
@@ -116,7 +116,7 @@ astn wrapStmt(ccContext cc, astn node) {
 int32_t constbol(astn ast) {
 	if (ast != NULL) {
 		switch (ast->kind) {
-			case TYPE_bit:
+			case CAST_bit:
 			case TYPE_int:
 				return ast->cint != 0;
 			case TYPE_flt:
@@ -135,7 +135,7 @@ int64_t constint(astn ast) {
 				return (int64_t)ast->cint;
 			case TYPE_flt:
 				return (int64_t)ast->cflt;
-				/*case TYPE_ref: {
+				/*case CAST_ref: {
 					symn lnk = ast->ref.link;
 					if (lnk && lnk->kind == TYPE_def) {
 						return constint(lnk->init);
@@ -174,26 +174,26 @@ ccToken eval(astn res, astn ast) {
 		res = &rhs;
 
 	type = ast->type;
-	switch (ast->cst2) {
+	switch (ast->cast) {
 		default:
-			trace("(%+t):%K(%s:%u)", ast, ast->cst2, ast->file, ast->line);
+			trace("(%+t):%K(%s:%u)", ast, ast->cast, ast->file, ast->line);
 			return 0;
 
-		case TYPE_bit:
-			cast = TYPE_bit;
+		case CAST_bit:
+			cast = CAST_bit;
 			break;
 
 			//~ case TYPE_int:
-		case TYPE_i32:
-		case TYPE_u32:
-		case TYPE_i64:
+		case CAST_i32:
+		case CAST_u32:
+		case CAST_i64:
 			//case TYPE_u64:
 			cast = TYPE_int;
 			break;
 
 			//~ case TYPE_flt:
-		case TYPE_f32:
-		case TYPE_f64:
+		case CAST_f32:
+		case CAST_f64:
 			cast = TYPE_flt;
 			break;
 
@@ -205,19 +205,19 @@ ccToken eval(astn res, astn ast) {
 				case TYPE_int:
 				case TYPE_flt:
 				case TYPE_str:
-					cast = ast->cst2;
+					cast = ast->cast;
 					break;
 			}
 			break;
 			//*/
 
-		case TYPE_arr:
-		case TYPE_ref:
-		case TYPE_vid:
+		case CAST_arr:
+		case CAST_ref:
+		case CAST_vid:
 			return 0;
 
 		case TYPE_any:
-			cast = ast->cst2;
+			cast = ast->cast;
 			break;
 	}
 
@@ -256,7 +256,7 @@ ccToken eval(astn res, astn ast) {
 			*res = *ast;
 			break;
 
-		case TYPE_ref: {
+		case CAST_ref: {
 			symn var = ast->ref.link;		// link
 			if (var && var->kind == TYPE_def && var->init) {
 				type = var->type;
@@ -315,7 +315,7 @@ ccToken eval(astn res, astn ast) {
 			if (!eval(res, ast->op.rhso))
 				return 0;
 
-			dieif(ast->cst2 != TYPE_bit, "FixMe %+t", ast);
+			dieif(ast->cast != CAST_bit, "FixMe %+t", ast);
 
 			switch (res->kind) {
 
@@ -345,7 +345,7 @@ ccToken eval(astn res, astn ast) {
 			if (!eval(&rhs, ast->op.rhso))
 				return 0;
 
-			dieif(lhs.kind != rhs.kind, "eval operator %t (%K, %K): %K", ast, lhs.kind, rhs.kind, ast->cst2);
+			dieif(lhs.kind != rhs.kind, "eval operator %t (%K, %K): %K", ast, lhs.kind, rhs.kind, ast->cast);
 
 			switch (rhs.kind) {
 				default:
@@ -436,9 +436,9 @@ ccToken eval(astn res, astn ast) {
 			if (!eval(&rhs, ast->op.rhso))
 				return 0;
 
-			dieif(lhs.kind != rhs.kind, "eval operator %t (%K, %K): %K", ast, lhs.kind, rhs.kind, ast->cst2);
+			dieif(lhs.kind != rhs.kind, "eval operator %t (%K, %K): %K", ast, lhs.kind, rhs.kind, ast->cast);
 
-			res->kind = TYPE_bit;
+			res->kind = CAST_bit;
 			switch (rhs.kind) {
 				default:
 					return 0;
@@ -523,7 +523,7 @@ ccToken eval(astn res, astn ast) {
 				return 0;
 			}
 
-			dieif(lhs.kind != rhs.kind, "eval operator %t (%K, %K): %K", ast, lhs.kind, rhs.kind, ast->cst2);
+			dieif(lhs.kind != rhs.kind, "eval operator %t (%K, %K): %K", ast, lhs.kind, rhs.kind, ast->cast);
 
 			switch (rhs.kind) {
 
@@ -572,9 +572,9 @@ ccToken eval(astn res, astn ast) {
 			if (!eval(&rhs, ast->op.rhso))
 				return 0;
 
-			dieif(lhs.kind != rhs.kind, "eval operator %t (%K, %K): %K", ast, lhs.kind, rhs.kind, ast->cst2);
+			dieif(lhs.kind != rhs.kind, "eval operator %t (%K, %K): %K", ast, lhs.kind, rhs.kind, ast->cast);
 
-			res->kind = TYPE_bit;
+			res->kind = CAST_bit;
 			switch (ast->kind) {
 				default:
 					fatal(ERR_INTERNAL_ERROR);
@@ -616,12 +616,12 @@ ccToken eval(astn res, astn ast) {
 				fatal(ERR_INTERNAL_ERROR);
 				return 0;
 
-			case TYPE_vid:
+			case CAST_vid:
 			case TYPE_any:
 			case TYPE_rec:
 				break;
 
-			case TYPE_bit:
+			case CAST_bit:
 				res->cint = constbol(res);
 				res->kind = TYPE_int;
 				break;
@@ -643,7 +643,7 @@ ccToken eval(astn res, astn ast) {
 			res->type = NULL;
 			return 0;
 
-		case TYPE_bit:
+		case CAST_bit:
 		case TYPE_int:
 		case TYPE_flt:
 		case TYPE_str:
@@ -675,10 +675,10 @@ symn linkOf(astn ast) {
 		return linkOf(ast->op.lhso);
 	}
 
-	if ((ast->kind == TYPE_ref || ast->kind == TYPE_def) && ast->ref.link) {
+	if ((ast->kind == CAST_ref || ast->kind == TYPE_def) && ast->ref.link) {
 		// skip type defs
 		symn lnk = ast->ref.link;
-		if (lnk->kind == TYPE_def && lnk->init != NULL && lnk->init->kind == TYPE_ref) {
+		if (lnk->kind == TYPE_def && lnk->init != NULL && lnk->init->kind == CAST_ref) {
 			lnk = linkOf(lnk->init);
 		}
 		return lnk;
@@ -697,7 +697,7 @@ int isType(symn sym) {
 		default:
 			break;
 
-		case TYPE_arr:
+		case CAST_arr:
 		case TYPE_rec:
 			return sym->kind;
 
@@ -727,7 +727,7 @@ int isTypeExpr(astn ast) {
 		return 0;
 	}
 
-	if (ast->kind == TYPE_ref) {
+	if (ast->kind == CAST_ref) {
 		return isType(ast->ref.link);
 	}
 
@@ -765,7 +765,7 @@ int isConstExpr(astn ast) {
 		return isConstExpr(ast->op.rhso);
 	}
 
-	else if (ast->kind == TYPE_ref) {
+	else if (ast->kind == CAST_ref) {
 		symn ref = linkOf(ast);
 		if (ref && ref->cnst) {
 			return 1;
@@ -838,7 +838,7 @@ int isStaticExpr(ccContext cc, astn ast) {
 		case TYPE_str:
 			return 1;
 
-		case TYPE_ref: {					// use (var, func, define)
+		case CAST_ref: {					// use (var, func, define)
 			symn typ = ast->type;			// type
 			symn var = ast->ref.link;		// link
 			if (typ == NULL || var == NULL) {
@@ -869,21 +869,21 @@ ccToken castOf(symn typ) {
 		case TYPE_def:
 			return castOf(typ->type);
 
-			//~ case TYPE_vid:
+			//~ case CAST_vid:
 			//~ return typ->kind;
 
-		case TYPE_arr:
+		case CAST_arr:
 			// static sized arrays cast to pointer
 			if (typ->init == NULL)
-				return TYPE_arr;
-			return TYPE_ref;
+				return CAST_arr;
+			return CAST_ref;
 
 		case EMIT_opc:
 			return typ->cast;
 
 		case TYPE_rec:
 			// refFix
-			if (typ->cast == TYPE_ref)
+			if (typ->cast == CAST_ref)
 				return TYPE_ptr;
 			return typ->cast;
 	}
@@ -902,28 +902,28 @@ ccToken castTo(astn ast, ccToken cto) {
 		case TYPE_any:
 			return atc;
 
-		case TYPE_vid:		// void(true): can cast 2 to void !!!
-		case TYPE_bit:
-		case TYPE_u32:
-		case TYPE_i32:
-		case TYPE_i64:
-		case TYPE_f32:
-		case TYPE_f64: switch (atc) {
-			//~ case TYPE_vid:
-			case TYPE_bit:
-			case TYPE_u32:
-			case TYPE_i32:
-			case TYPE_i64:
-			case TYPE_f32:
-			case TYPE_f64:
+		case CAST_vid:		// void(true): can cast 2 to void !!!
+		case CAST_bit:
+		case CAST_u32:
+		case CAST_i32:
+		case CAST_i64:
+		case CAST_f32:
+		case CAST_f64: switch (atc) {
+			//~ case CAST_vid:
+			case CAST_bit:
+			case CAST_u32:
+			case CAST_i32:
+			case CAST_i64:
+			case CAST_f32:
+			case CAST_f64:
 				break;
 
 			default:
 				goto error;
 		} break;
 
-		case TYPE_ref:
-		case TYPE_arr:
+		case CAST_ref:
+		case CAST_arr:
 			break;
 
 		default:
@@ -932,7 +932,7 @@ ccToken castTo(astn ast, ccToken cto) {
 			//~ return 0;
 			break;
 	}
-	return ast->cst2 = cto;
+	return ast->cast = cto;
 }
 
 size_t sizeOf(symn sym, int varSize) {
@@ -940,23 +940,23 @@ size_t sizeOf(symn sym, int varSize) {
 		switch (sym->kind) {
 			default:
 				break;
-				//~ case TYPE_vid:
-				//~ case TYPE_bit:
+				//~ case CAST_vid:
+				//~ case CAST_bit:
 				//~ case TYPE_int:
 				//~ case TYPE_flt:
 
 			case EMIT_opc:
-				if (sym->cast == TYPE_ref) {
+				if (sym->cast == CAST_ref) {
 					return vm_size;
 				}
 				return (size_t) sym->size;
 
 			case TYPE_rec:
-			case TYPE_arr: switch (sym->cast) {
-					case TYPE_ref: if (varSize) {
+			case CAST_arr: switch (sym->cast) {
+					case CAST_ref: if (varSize) {
 							return vm_size;
 						}
-					case TYPE_arr: if (varSize) {
+					case CAST_arr: if (varSize) {
 							return 2 * vm_size;
 						}
 					default:
@@ -964,10 +964,10 @@ size_t sizeOf(symn sym, int varSize) {
 				}
 
 			case TYPE_def:
-			case TYPE_ref: switch (sym->cast) {
-					case TYPE_ref:
+			case CAST_ref: switch (sym->cast) {
+					case CAST_ref:
 						return vm_size;
-					case TYPE_arr:
+					case CAST_arr:
 						return 2 * vm_size;
 					default:
 						return sizeOf(sym->type, 0);

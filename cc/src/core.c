@@ -319,40 +319,40 @@ static void install_type(ccContext cc, int mode) {
 	symn type_f32, type_f64;
 	symn type_obj, type_chr;
 
-	type_rec = install(cc, "typename", ATTR_stat | ATTR_const | TYPE_rec, TYPE_ref,      0, NULL, NULL);
+	type_rec = install(cc, "typename", ATTR_stat | ATTR_const | TYPE_rec, CAST_ref,      0, NULL, NULL);
 
 	// TODO: !cycle: typename is instance of typename
 	type_rec->type = type_rec;
 
-	type_vid = install(cc,     "void", ATTR_stat | ATTR_const | TYPE_rec, TYPE_vid,       0, type_rec, NULL);
-	type_bol = install(cc,     "bool", ATTR_stat | ATTR_const | TYPE_rec, TYPE_bit, vm_size, type_rec, NULL);
-	type_i08 = install(cc,     "int8", ATTR_stat | ATTR_const | TYPE_rec, TYPE_i32,       1, type_rec, NULL);
-	type_i16 = install(cc,    "int16", ATTR_stat | ATTR_const | TYPE_rec, TYPE_i32,       2, type_rec, NULL);
-	type_i32 = install(cc,    "int32", ATTR_stat | ATTR_const | TYPE_rec, TYPE_i32,       4, type_rec, NULL);
-	type_i64 = install(cc,    "int64", ATTR_stat | ATTR_const | TYPE_rec, TYPE_i64,       8, type_rec, NULL);
-	type_u08 = install(cc,    "uint8", ATTR_stat | ATTR_const | TYPE_rec, TYPE_u32,       1, type_rec, NULL);
-	type_u16 = install(cc,   "uint16", ATTR_stat | ATTR_const | TYPE_rec, TYPE_u32,       2, type_rec, NULL);
-	type_u32 = install(cc,   "uint32", ATTR_stat | ATTR_const | TYPE_rec, TYPE_u32,       4, type_rec, NULL);
+	type_vid = install(cc,     "void", ATTR_stat | ATTR_const | TYPE_rec, CAST_vid,       0, type_rec, NULL);
+	type_bol = install(cc,     "bool", ATTR_stat | ATTR_const | TYPE_rec, CAST_bit, vm_size, type_rec, NULL);
+	type_i08 = install(cc,     "int8", ATTR_stat | ATTR_const | TYPE_rec, CAST_i32,       1, type_rec, NULL);
+	type_i16 = install(cc,    "int16", ATTR_stat | ATTR_const | TYPE_rec, CAST_i32,       2, type_rec, NULL);
+	type_i32 = install(cc,    "int32", ATTR_stat | ATTR_const | TYPE_rec, CAST_i32,       4, type_rec, NULL);
+	type_i64 = install(cc,    "int64", ATTR_stat | ATTR_const | TYPE_rec, CAST_i64,       8, type_rec, NULL);
+	type_u08 = install(cc,    "uint8", ATTR_stat | ATTR_const | TYPE_rec, CAST_u32,       1, type_rec, NULL);
+	type_u16 = install(cc,   "uint16", ATTR_stat | ATTR_const | TYPE_rec, CAST_u32,       2, type_rec, NULL);
+	type_u32 = install(cc,   "uint32", ATTR_stat | ATTR_const | TYPE_rec, CAST_u32,       4, type_rec, NULL);
 	// type_ = install(cc,   "uint64", ATTR_stat | ATTR_const | TYPE_rec, TYPE_u64,       8, type_rec, NULL);
-	type_f32 = install(cc,  "float32", ATTR_stat | ATTR_const | TYPE_rec, TYPE_f32,       4, type_rec, NULL);
-	type_f64 = install(cc,  "float64", ATTR_stat | ATTR_const | TYPE_rec, TYPE_f64,       8, type_rec, NULL);
+	type_f32 = install(cc,  "float32", ATTR_stat | ATTR_const | TYPE_rec, CAST_f32,       4, type_rec, NULL);
+	type_f64 = install(cc,  "float64", ATTR_stat | ATTR_const | TYPE_rec, CAST_f64,       8, type_rec, NULL);
 
-	type_chr = install(cc,     "char", ATTR_stat | ATTR_const | TYPE_rec, TYPE_u32,       1, type_rec, NULL);
+	type_chr = install(cc,     "char", ATTR_stat | ATTR_const | TYPE_rec, CAST_u32,       1, type_rec, NULL);
 
 	if (mode & install_ptr) {
-		type_ptr = install(cc, "pointer", ATTR_stat | ATTR_const | TYPE_rec, TYPE_ref, 1 * vm_size, type_rec, NULL);
+		type_ptr = install(cc, "pointer", ATTR_stat | ATTR_const | TYPE_rec, CAST_ref, 1 * vm_size, type_rec, NULL);
 	}
 	if (mode & install_var) {
-		// TODO: variant should cast to TYPE_var
+		// TODO: variant should cast to CAST_var
 		type_var = install(cc, "variant", ATTR_stat | ATTR_const | TYPE_rec, TYPE_rec, 2 * vm_size, type_rec, NULL);
 	}
 	if (mode & install_obj) {
-		type_obj = install(cc,  "object", ATTR_stat | ATTR_const | TYPE_rec, TYPE_ref, 2 * vm_size, type_rec, NULL);
-		//~ type = install(cc,"function", ATTR_stat | ATTR_const | TYPE_rec, TYPE_ref, 2 * vm_size, type_rec, NULL);
+		type_obj = install(cc,  "object", ATTR_stat | ATTR_const | TYPE_rec, CAST_ref, 2 * vm_size, type_rec, NULL);
+		//~ type = install(cc,"function", ATTR_stat | ATTR_const | TYPE_rec, CAST_ref, 2 * vm_size, type_rec, NULL);
 	}
 
 	if (type_ptr != NULL) {
-		cc->null_ref = install(cc, "null", ATTR_stat | ATTR_const | TYPE_ref, TYPE_any, vm_size, type_ptr, NULL);
+		cc->null_ref = install(cc, "null", ATTR_stat | ATTR_const | CAST_ref, TYPE_any, vm_size, type_ptr, NULL);
 	}
 
 	type_vid->pfmt = NULL;
@@ -391,7 +391,7 @@ static void install_type(ccContext cc, int mode) {
 	install(cc, "false",  ATTR_stat | ATTR_const | TYPE_def, TYPE_any, 0, type_bol, intnode(cc, 0));
 
 	//~ TODO: struct string: char[] { ... }, temporarily string is alias for char[*]
-	cc->type_str = install(cc, "string", ATTR_stat | ATTR_const | TYPE_arr, TYPE_ref, vm_size, type_chr, NULL);
+	cc->type_str = install(cc, "string", ATTR_stat | ATTR_const | CAST_arr, CAST_ref, vm_size, type_chr, NULL);
 	cc->type_str->init = intnode(cc, -1); // hack: strings are static sized arrays with a length of -1.
 	cc->type_str->pfmt = "\"%s\"";
 
@@ -626,21 +626,21 @@ static int install_base(rtContext rt, int mode) {
 	if (cc->type_rec && (mode & install_var)) {
 		symn arg = NULL;
 		ccBegin(rt, NULL);
-		if ((arg = install(cc, "line", ATTR_const | TYPE_ref, TYPE_any, vm_size, cc->type_i32, NULL))) {
+		if ((arg = install(cc, "line", ATTR_const | CAST_ref, TYPE_any, vm_size, cc->type_i32, NULL))) {
 			arg->offs = offsetOf(symn, line);
 		}
 		else {
 			error = 1;
 		}
 
-		if ((arg = install(cc, "size", ATTR_const | TYPE_ref, TYPE_any, vm_size, cc->type_i32, NULL))) {
+		if ((arg = install(cc, "size", ATTR_const | CAST_ref, TYPE_any, vm_size, cc->type_i32, NULL))) {
 			arg->offs = offsetOf(symn, size);
 		}
 		else {
 			error = 1;
 		}
 
-		if ((arg = install(cc, "offset", ATTR_const | TYPE_ref, TYPE_any, vm_size, cc->type_i32, NULL))) {
+		if ((arg = install(cc, "offset", ATTR_const | CAST_ref, TYPE_any, vm_size, cc->type_i32, NULL))) {
 			arg->offs = offsetOf(symn, offs);
 			arg->pfmt = "@%06x";
 		}
@@ -730,19 +730,19 @@ ccContext ccInit(rtContext rt, int mode, vmError onHalt(libcContext)) {
 	ccDefCall(rt, onHalt ? onHalt : haltDummy, NULL, "void Halt(int Code);");
 
 	cc->root->type = cc->type_vid;
-	cc->root->cst2 = TYPE_any;
+	cc->root->cast = TYPE_any;
 
 	// install a void arg for functions with no arguments
-	if (cc->type_vid && (cc->void_tag = newnode(cc, TYPE_ref))) {
+	if (cc->type_vid && (cc->void_tag = newnode(cc, CAST_ref))) {
 		cc->void_tag->next = NULL;
 		cc->void_tag->ref.name = "";
 
 		ccBegin(rt, NULL);
-		declare(cc, TYPE_ref, cc->void_tag, cc->type_vid);
+		declare(cc, CAST_ref, cc->void_tag, cc->type_vid);
 		ccEnd(rt, NULL, 0);
 	}
 
-	if (cc->emit_opc && (cc->emit_tag = newnode(cc, TYPE_ref))) {
+	if (cc->emit_opc && (cc->emit_tag = newnode(cc, CAST_ref))) {
 		cc->emit_tag->ref.link = cc->emit_opc;
 		cc->emit_tag->ref.name = "emit";
 		cc->emit_tag->ref.hash = -1;
@@ -758,7 +758,7 @@ symn ccBegin(rtContext rt, const char *name) {
 	symn result = NULL;
 	if (rt->cc != NULL) {
 		if (name != NULL) {
-			result = install(rt->cc, name, ATTR_stat | ATTR_const | TYPE_rec, TYPE_vid, 0, rt->cc->type_vid, NULL);
+			result = install(rt->cc, name, ATTR_stat | ATTR_const | TYPE_rec, CAST_vid, 0, rt->cc->type_vid, NULL);
 		}
 		enter(rt->cc, NULL);
 	}
@@ -811,14 +811,14 @@ symn ccDefStr(rtContext rt, const char* name, char* value) {
 
 /// Install a type; @see rtContext.api.ccDefType
 symn ccDefType(rtContext rt, const char* name, unsigned size, int refType) {
-	return install(rt->cc, name, ATTR_stat | ATTR_const | TYPE_rec, refType ? TYPE_ref : TYPE_rec, size, rt->cc->type_rec, NULL);
+	return install(rt->cc, name, ATTR_stat | ATTR_const | TYPE_rec, refType ? CAST_ref : TYPE_rec, size, rt->cc->type_rec, NULL);
 }
 
 /// Find symbol by name; @see header
 symn ccLookupSym(ccContext cc, symn in, char *name) {
 	struct astNode ast;
 	memset(&ast, 0, sizeof(struct astNode));
-	ast.kind = TYPE_ref;
+	ast.kind = CAST_ref;
 	ast.ref.name = name;
 	ast.ref.hash = rehash(name, -1) % TBLS;
 	return lookup(cc, in ? in->flds : cc->rt->vars, &ast, NULL, 1);

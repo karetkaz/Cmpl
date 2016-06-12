@@ -33,7 +33,7 @@ static inline astn argnode(ccContext cc, astn lhs, astn rhs) {
  */
 static inline astn blockNode(ccContext cc, astn node) {
 	astn block = newnode(cc, STMT_beg);
-	block->cst2 = TYPE_vid;
+	block->cast = CAST_vid;
 	block->type = cc->type_vid;
 	if (node != NULL) {
 		block->file = node->file;
@@ -52,10 +52,10 @@ static inline astn blockNode(ccContext cc, astn node) {
 static inline astn tagnode(ccContext cc, char* name) {
 	astn ast = NULL;
 	if (cc != NULL && name != NULL) {
-		ast = newnode(cc, TYPE_ref);
+		ast = newnode(cc, CAST_ref);
 		if (ast != NULL) {
 			size_t slen = strlen(name);
-			ast->kind = TYPE_ref;
+			ast->kind = CAST_ref;
 			ast->file = cc->file;
 			ast->line = cc->line;
 			ast->type = NULL;
@@ -79,16 +79,16 @@ static inline astn tagnode(ccContext cc, char* name) {
 static symn addLength(ccContext cc, symn sym, astn init) {
 	/* TODO: review return value.
 	 *
-	 * dynamic array size kind: ATTR_const | TYPE_ref
+	 * dynamic array size kind: ATTR_const | CAST_ref
 	 * static array size kind: ATTR_stat | ATTR_const | TYPE_def
 	 *     using static we get the warning accessing static member through instance.
 	 */
-	ccToken kind = ATTR_const | (init != NULL ? TYPE_def : TYPE_ref);
+	ccToken kind = ATTR_const | (init != NULL ? TYPE_def : CAST_ref);
 	symn args = sym->flds;
 	symn result = NULL;
 
 	enter(cc, NULL);
-	result = install(cc, "length", kind, TYPE_i32, vm_size, cc->type_i32, init);
+	result = install(cc, "length", kind, CAST_i32, vm_size, cc->type_i32, init);
 	sym->flds = leave(cc, sym, 0);
 	dieif(sym->flds != result, "FixMe");
 
@@ -117,7 +117,7 @@ static void redefine(ccContext cc, symn sym) {
 	}
 
 	memset(&tag, 0, sizeof(tag));
-	tag.kind = TYPE_ref;
+	tag.kind = CAST_ref;
 	// checking symbols with the same hash code.
 	for (ptr = sym->next; ptr; ptr = ptr->next) {
 		symn arg1 = ptr->prms;
@@ -176,7 +176,7 @@ static size_t fixargs(symn sym, unsigned int align, size_t base) {
 	int isCall = sym->call;
 	for (arg = sym->prms; arg; arg = arg->next) {
 
-		if (arg->kind != TYPE_ref)
+		if (arg->kind != CAST_ref)
 			continue;
 
 		if (arg->stat)
@@ -184,24 +184,24 @@ static size_t fixargs(symn sym, unsigned int align, size_t base) {
 
 		// functions are byRef in structs and params
 		if (arg->call) {
-			arg->cast = TYPE_ref;
+			arg->cast = CAST_ref;
 		}
 
 		arg->size = sizeOf(arg, 1);
 
 		//TODO: remove check: dynamic size arrays are represented as pointer+length
-		if (arg->type->kind == TYPE_arr && arg->type->init == NULL) {
+		if (arg->type->kind == CAST_arr && arg->type->init == NULL) {
 			dieif(arg->size != 2 * vm_size, ERR_INTERNAL_ERROR);
-			dieif(arg->cast != TYPE_arr, ERR_INTERNAL_ERROR);
+			dieif(arg->cast != CAST_arr, ERR_INTERNAL_ERROR);
 			//arg->size = 2 * vm_size;
-			//arg->cast = TYPE_arr;
+			//arg->cast = CAST_arr;
 		}
 
 		//~ HACK: static sized array types are passed by reference.
-		if (isCall && arg->type->kind == TYPE_arr) {
+		if (isCall && arg->type->kind == CAST_arr) {
 			//~ static size arrays are passed as pointer
 			if (arg->type->init != NULL) {
-				arg->cast = TYPE_ref;
+				arg->cast = CAST_ref;
 				arg->size = vm_size;
 			}
 		}
@@ -243,11 +243,11 @@ static symn ctorArg(ccContext cc, symn rec) {
 			if (arg->stat)
 				continue;
 
-			if (arg->kind != TYPE_ref)
+			if (arg->kind != CAST_ref)
 				continue;
 
 			newarg = install(cc, arg->name, TYPE_def, arg->type->cast, 0, arg->type, NULL);
-			//~ newarg = install(cc, arg->name, TYPE_ref, TYPE_rec, 0, arg->type, NULL);
+			//~ newarg = install(cc, arg->name, CAST_ref, TYPE_rec, 0, arg->type, NULL);
 			//~ newarg->cast = arg->type->cast;
 
 			if (newarg != NULL) {
@@ -256,7 +256,7 @@ static symn ctorArg(ccContext cc, symn rec) {
 				newarg->prms = arg->prms;
 
 				tag = lnknode(cc, newarg);
-				tag->cst2 = arg->cast;
+				tag->cast = arg->cast;
 				root = argnode(cc, root, tag);
 			}
 		}
@@ -281,7 +281,7 @@ static int mkConst(astn ast, ccToken cast) {
 	}
 
 	if (cast == TYPE_any) {
-		cast = ast->cst2;
+		cast = ast->cast;
 	}
 
 	if (!eval(&tmp, ast)) {
@@ -292,30 +292,30 @@ static int mkConst(astn ast, ccToken cast) {
 	ast->kind = tmp.kind;
 	ast->cint = tmp.cint;
 
-	switch (ast->cst2 = cast) {
+	switch (ast->cast = cast) {
 		default:
 			fatal(ERR_INTERNAL_ERROR);
 			return 0;
 
-		case TYPE_vid:
+		case CAST_vid:
 		case TYPE_any:
 		case TYPE_rec:
 			return 0;
 
-		case TYPE_bit:
+		case CAST_bit:
 			ast->cint = constbol(ast);
 			ast->kind = TYPE_int;
 			break;
 
-		case TYPE_u32:
-		case TYPE_i32:
-		case TYPE_i64:
+		case CAST_u32:
+		case CAST_i32:
+		case CAST_i64:
 			ast->cint = constint(ast);
 			ast->kind = TYPE_int;
 			break;
 
-		case TYPE_f32:
-		case TYPE_f64:
+		case CAST_f32:
+		case CAST_f64:
 			ast->cflt = constflt(ast);
 			ast->kind = TYPE_flt;
 			break;
@@ -380,7 +380,7 @@ static int qual(ccContext cc, int mode) {
 static astn type(ccContext cc/* , int mode */) {	// type(.type)*
 	symn def = NULL;
 	astn tok, typ = NULL;
-	while ((tok = next(cc, TYPE_ref))) {
+	while ((tok = next(cc, CAST_ref))) {
 
 		symn loc = def ? def->flds : cc->deft[tok->ref.hash];
 		symn sym = lookup(cc, loc, tok, NULL, 0);
@@ -799,7 +799,7 @@ static astn init_var(ccContext cc, symn var) {
 		int mkcon = var->cnst;
 		ccToken arrayInit = TYPE_any;
 
-		if (typ->kind == TYPE_arr) {
+		if (typ->kind == CAST_arr) {
 			if (skip(cc, STMT_beg)) {
 				arrayInit = PNCT_rcb;
 			}
@@ -821,7 +821,7 @@ static astn init_var(ccContext cc, symn var) {
 			// assigning an emit expression: ... x = emit(struct, ...)
 			if (var->init->type == cc->emit_opc) {
 				var->init->type = var->type;
-				var->init->cst2 = cast;
+				var->init->cast = cast;
 				if (mkcon) {
 					error(cc->rt, var->file, var->line, ERR_CONST_INIT, var->init);
 				}
@@ -877,7 +877,7 @@ static astn init_var(ccContext cc, symn var) {
 					// ArraySize
 					typ->size = nelem * typ->type->size;
 					typ->offs = (size_t) nelem;
-					typ->cast = TYPE_ref;
+					typ->cast = CAST_ref;
 					typ->stat = 1;
 					var->cast = TYPE_any;
 					var->size = typ->size;
@@ -893,7 +893,7 @@ static astn init_var(ccContext cc, symn var) {
 			}
 
 			// check if value can be assigned to variable.
-			if (canAssign(cc, var, var->init, cast == TYPE_ref)) {
+			if (canAssign(cc, var, var->init, cast == CAST_ref)) {
 
 				// assign enum variable to base type.
 				if (var->cast != ENUM_kwd && var->init->type->cast == ENUM_kwd) {
@@ -906,7 +906,7 @@ static astn init_var(ccContext cc, symn var) {
 				}
 
 				// TODO:! var initialization parsing should not modify the variable.
-				if (var->cast == TYPE_arr) {
+				if (var->cast == CAST_arr) {
 					var->size = 2 * vm_size;
 				}
 
@@ -944,7 +944,7 @@ static astn decl_alias(ccContext cc) {
 		return NULL;
 	}
 
-	if (!(tag = next(cc, TYPE_ref))) {	// name?
+	if (!(tag = next(cc, CAST_ref))) {	// name?
 		error(cc->rt, cc->file, cc->line, "Identifyer expected");
 		skiptok(cc, STMT_end, 1);
 		return NULL;
@@ -1006,7 +1006,7 @@ static astn decl_alias(ccContext cc) {
 		// TODO: this should go to fixargs
 		for (param = def->prms; param; param = param->next) {
 			// is explicitly set to be cached.
-			if (param->cast == TYPE_ref) {
+			if (param->cast == CAST_ref) {
 				param->cast = param->type->cast;
 			}
 			else {
@@ -1059,7 +1059,7 @@ static astn decl_enum(ccContext cc) {
 		return NULL;
 	}
 
-	tag = next(cc, TYPE_ref);			// ref?
+	tag = next(cc, CAST_ref);			// ref?
 
 	if (skip(cc, PNCT_cln)) {			// ':' type
 		base = NULL;
@@ -1074,7 +1074,7 @@ static astn decl_enum(ccContext cc) {
 		else {
 			error(cc->rt, cc->file, cc->line, "typename expected, got `%t`", peekTok(cc, TYPE_any));
 		}
-		enuminc = base && (base->cast == TYPE_i32 || base->cast == TYPE_i64);
+		enuminc = base && (base->cast == CAST_i32 || base->cast == CAST_i64);
 	}
 
 	if (!skiptok(cc, STMT_beg, 1)) {	// '{'
@@ -1100,9 +1100,9 @@ static astn decl_enum(ccContext cc) {
 			break;
 		}
 
-		if ((tok = next(cc, TYPE_ref))) {
+		if ((tok = next(cc, CAST_ref))) {
 			// HACK: declare as a variable to be assignable, then revert it to be an alias.
-			symn ref = declare(cc, TYPE_ref, tok, base);
+			symn ref = declare(cc, CAST_ref, tok, base);
 			ref->stat = ref->cnst = 1;
 			redefine(cc, ref);
 
@@ -1161,7 +1161,7 @@ static astn decl_struct(ccContext cc, int Attr) {
 		return NULL;
 	}
 
-	tag = next(cc, TYPE_ref);			// ref
+	tag = next(cc, CAST_ref);			// ref
 
 	if (skip(cc, PNCT_cln)) {			// ':' type or pack
 		if ((tok = expr(cc, TYPE_def))) {
@@ -1233,7 +1233,7 @@ static astn decl_struct(ccContext cc, int Attr) {
 
 	if ((Attr & ATTR_stat) != 0 || type->size == 0) {
 		// make uninstantiable
-		type->cast = TYPE_vid;
+		type->cast = CAST_vid;
 	}
 	else {
 		if (type->flds && pack == vm_size && !byref) {
@@ -1246,7 +1246,7 @@ static astn decl_struct(ccContext cc, int Attr) {
 	}
 
 	// Error checking
-	if (base && base->cast != TYPE_ref) {
+	if (base && base->cast != CAST_ref) {
 		// TODO: to be removed: declarations like: struct hex32: int32 { };
 		if (skip(cc, STMT_end)) {
 			warn(cc->rt, 1, tag->file, tag->line, "deprecated declaration of `%t`", tag);
@@ -1288,14 +1288,14 @@ static astn decl_var(ccContext cc, astn* argv, int mode) {
 	inout = skip(cc, OPER_all);
 	byref = inout || skip(cc, OPER_and);
 
-	if (typ->cast == TYPE_ref) {
+	if (typ->cast == CAST_ref) {
 		if (byref) {
 			warn(cc->rt, 2, tag->file, tag->line, "ignoring &, %-T is already a reference type", typ);
 		}
 		//byref = 1;
 	}
 
-	if (!(tag = next(cc, TYPE_ref))) {
+	if (!(tag = next(cc, CAST_ref))) {
 		if (mode != TYPE_def) {
 			trace("id expected, not `%t` at(%s:%u)", peekTok(cc, 0), cc->file, cc->line);
 			return NULL;
@@ -1303,7 +1303,7 @@ static astn decl_var(ccContext cc, astn* argv, int mode) {
 		tag = tagnode(cc, "");
 	}
 
-	ref = declare(cc, TYPE_ref, tag, typ);
+	ref = declare(cc, CAST_ref, tag, typ);
 	ref->size = byref ? (size_t) vm_size : sizeOf(typ, 1);
 
 	if (argv != NULL) {
@@ -1313,7 +1313,7 @@ static astn decl_var(ccContext cc, astn* argv, int mode) {
 	if (skip(cc, PNCT_lp)) {			// int a(...)
 		astn argroot;
 		enter(cc, tag);
-		argroot = args(cc, TYPE_ref);
+		argroot = args(cc, CAST_ref);
 		ref->prms = leave(cc, ref, 0);
 		skiptok(cc, PNCT_rp, 1);
 
@@ -1338,7 +1338,7 @@ static astn decl_var(ccContext cc, astn* argv, int mode) {
 	}
 
 	if (skip(cc, PNCT_lc)) {			// int a[...]
-		symn arr = newdefn(cc, TYPE_arr);
+		symn arr = newdefn(cc, CAST_arr);
 		symn tmp = arr;
 		symn base = typ;
 		int dynarr = 1;		// dynamic sized array: slice
@@ -1363,7 +1363,7 @@ static astn decl_var(ccContext cc, astn* argv, int mode) {
 					addLength(cc, typ, init);
 					typ->size = (int) val.cint * typ->type->size;
 					typ->offs = (size_t) val.cint;
-					typ->cast = TYPE_ref;
+					typ->cast = CAST_ref;
 					typ->init = init;
 					ref->cast = TYPE_any;
 
@@ -1382,19 +1382,19 @@ static astn decl_var(ccContext cc, astn* argv, int mode) {
 			symn len = addLength(cc, typ, NULL);
 			dieif(len == NULL, "FixMe");
 			ref->size = 2 * vm_size;	// slice is a struct {pointer data, int32 length}
-			ref->cast = TYPE_arr;
+			ref->cast = CAST_arr;
 			len->offs = vm_size;		// offset for length.
-			typ->cast = TYPE_arr;
+			typ->cast = CAST_arr;
 		}
 		else {
-			typ->cast = TYPE_ref;
+			typ->cast = CAST_ref;
 			typ->stat = 1;
 		}
 		skiptok(cc, PNCT_rc, 1);
 
 		// Multi dimensional arrays
 		while (skip(cc, PNCT_lc)) {
-			tmp = newdefn(cc, TYPE_arr);
+			tmp = newdefn(cc, CAST_arr);
 			traceLoop("%t", peekTok(cc, 0));
 			tmp->type = typ->type;
 			//~ typ->decl = tmp;
@@ -1424,12 +1424,12 @@ static astn decl_var(ccContext cc, astn* argv, int mode) {
 				symn len = addLength(cc, typ, NULL);
 				dieif(len == NULL, "FixMe");
 				ref->size = 2 * vm_size;	// slice is a struct {pointer data, int32 length}
-				ref->cast = TYPE_arr;
+				ref->cast = CAST_arr;
 				len->offs = vm_size;		// offset of length property.
-				typ->cast = TYPE_arr;
+				typ->cast = CAST_arr;
 			}
 			else {
-				typ->cast = TYPE_ref;
+				typ->cast = CAST_ref;
 				typ->stat = 1;
 			}
 
@@ -1448,7 +1448,7 @@ static astn decl_var(ccContext cc, astn* argv, int mode) {
 		}
 		ref->size = byref ? (size_t) vm_size : sizeOf(arr, 0);
 
-		if (inout || byref || base->cast == TYPE_ref) {
+		if (inout || byref || base->cast == CAST_ref) {
 			// int& a[200] a contains 200 references to integers
 			// int&& a[200] a contains 200 references to integers
 			error(cc->rt, tag->file, tag->line, "TODO: declaring array of references: `%+T`", ref);
@@ -1465,7 +1465,7 @@ static astn decl_var(ccContext cc, astn* argv, int mode) {
 		ref->cast = TYPE_def;
 	}
 	else */if (byref) {
-		ref->cast = TYPE_ref;
+		ref->cast = CAST_ref;
 	}
 	return tag;
 }
@@ -1524,7 +1524,7 @@ static astn decl(ccContext cc, int mode) {
 				ref->gdef = cc->func;
 				cc->func = ref;
 
-				result = install(cc, "result", TYPE_ref, TYPE_any, sizeOf(typ, 1), typ, NULL);
+				result = install(cc, "result", CAST_ref, TYPE_any, sizeOf(typ, 1), typ, NULL);
 				ref->flds = result;
 
 				if (result) {
@@ -1540,7 +1540,7 @@ static astn decl(ccContext cc, int mode) {
 				for (tmp = ref->prms; tmp; tmp = tmp->next) {
 					//~ TODO: make just a symlink to the symbol, not a copy of it.
 					//~ TODO: install(cc, tmp->name, TYPE_def, 0, 0, tmp->type, tmp->used);
-					symn arg = install(cc, tmp->name, TYPE_ref, TYPE_any, 0, NULL, NULL);
+					symn arg = install(cc, tmp->name, CAST_ref, TYPE_any, 0, NULL, NULL);
 					if (arg != NULL) {
 						arg->type = tmp->type;
 						arg->flds = tmp->flds;
@@ -1583,7 +1583,7 @@ static astn decl(ccContext cc, int mode) {
 			// variable or function initialization.
 			if (peekTok(cc, ASGN_set)) {
 				if (ref->call) {
-					ref->cast = TYPE_ref;
+					ref->cast = CAST_ref;
 				}
 				if (Attr & ATTR_const) {
 					ref->cnst = 1;
@@ -1608,7 +1608,7 @@ static astn decl(ccContext cc, int mode) {
 		skiptok(cc, STMT_end, 1);
 
 		// TODO: functions type == return type
-		if (typ->cast == TYPE_vid && !ref->call) {	// void x;
+		if (typ->cast == CAST_vid && !ref->call) {	// void x;
 			error(cc->rt, ref->file, ref->line, "invalid variable declaration of type `%+T`", typ);
 		}
 
@@ -1748,7 +1748,7 @@ static astn stmt(ccContext cc, int mode) {
 		if ((blk = block(cc, 0)) != NULL) {
 			node->stmt.stmt = blk;
 			node->type = cc->type_vid;
-			node->cst2 = qual;
+			node->cast = qual;
 			qual = TYPE_any;
 		}
 		else {
@@ -1768,7 +1768,7 @@ static astn stmt(ccContext cc, int mode) {
 		int newscope = 1;
 
 		skiptok(cc, PNCT_lp, 1);
-		node->stmt.test = expr(cc, TYPE_bit);
+		node->stmt.test = expr(cc, CAST_bit);
 		skiptok(cc, PNCT_rp, 1);
 
 		// static if (true) does not need entering a new scope.
@@ -1831,7 +1831,7 @@ static astn stmt(ccContext cc, int mode) {
 
 
 		node->type = cc->type_vid;
-		node->cst2 = qual;
+		node->cast = qual;
 		qual = TYPE_any;
 
 		cc->siff = siffalse;
@@ -1844,12 +1844,12 @@ static astn stmt(ccContext cc, int mode) {
 			node->stmt.init = decl(cc, decl_NoDefs|decl_ItDecl);
 
 			if (node->stmt.init == NULL) {
-				node->stmt.init = expr(cc, TYPE_vid);
+				node->stmt.init = expr(cc, CAST_vid);
 				skiptok(cc, STMT_end, 1);
 			}
 			else if (skip(cc, PNCT_cln)) {		// iterate
 				//~ for (Type value : iterable) {...}
-				astn iton = expr(cc, TYPE_vid); // iterate on expression
+				astn iton = expr(cc, CAST_vid); // iterate on expression
 
 				dieif(node->stmt.init->kind != TYPE_def, "declaration expected");
 
@@ -1885,14 +1885,14 @@ static astn stmt(ccContext cc, int mode) {
 
 							// declare iterator: Iterator .it = iterator(iterable);
 							astn itTmp = tagnode(cc, ".it");
-							symn x = declare(cc, TYPE_ref, itTmp, sym->type);
+							symn x = declare(cc, CAST_ref, itTmp, sym->type);
 							x->init = itInit;
 							sym = x;
 
 							// make for statement initializer a block having 2 declarations.
 							node->stmt.init = newnode(cc, STMT_beg);
 							node->stmt.init->type = cc->type_vid;
-							node->stmt.init->cst2 = TYPE_rec;
+							node->stmt.init->cast = TYPE_rec;
 
 							// set the 2 declaration in the block.
 							node->stmt.init->stmt.stmt = itVar;
@@ -1931,18 +1931,18 @@ static astn stmt(ccContext cc, int mode) {
 					else {
 						symn itFunNext = linkOf(itStep);
 						if (itFunNext != NULL && itFunNext->prms != NULL) {
-							if (itFunNext->prms->cast != TYPE_ref) {
+							if (itFunNext->prms->cast != CAST_ref) {
 								error(cc->rt, itFunNext->file, itFunNext->line, "iterator arguments are not by ref");
 							}
-							if (itFunNext->prms->next && (itFunNext->prms->next->cast != TYPE_ref && itFunNext->prms->next->cast != TYPE_arr)) {
+							if (itFunNext->prms->next && (itFunNext->prms->next->cast != CAST_ref && itFunNext->prms->next->cast != CAST_arr)) {
 								error(cc->rt, itFunNext->file, itFunNext->line, "iterator arguments are not by ref");
 							}
 						}
 					}
 
-					itStep->cst2 = TYPE_bit;
+					itStep->cast = CAST_bit;
 					node->stmt.test = itStep;
-					sym->init->cst2 = TYPE_rec;
+					sym->init->cast = TYPE_rec;
 				}
 				if (qual == ATTR_stat) {
 					error(cc->rt, node->file, node->line, "invalid use of static iteration");
@@ -1951,11 +1951,11 @@ static astn stmt(ccContext cc, int mode) {
 			}
 		}
 		if (!skip(cc, STMT_end)) {		// test
-			node->stmt.test = expr(cc, TYPE_bit);
+			node->stmt.test = expr(cc, CAST_bit);
 			skiptok(cc, STMT_end, 1);
 		}
 		if (!skip(cc, PNCT_rp)) {		// incr
-			node->stmt.step = expr(cc, TYPE_vid);
+			node->stmt.step = expr(cc, CAST_vid);
 			skiptok(cc, PNCT_rp, 1);
 		}
 		node->stmt.stmt = stmt(cc, 1);	// no new scope & disable decl
@@ -1968,7 +1968,7 @@ static astn stmt(ccContext cc, int mode) {
 		leave(cc, NULL, 0);
 
 		node->type = cc->type_vid;
-		node->cst2 = qual;
+		node->cast = qual;
 		qual = TYPE_any;
 	}
 	else if ((node = next(cc, STMT_brk))) {	// break;
@@ -1984,9 +1984,9 @@ static astn stmt(ccContext cc, int mode) {
 		if (cc->func != NULL) {
 			symn result = cc->func->flds;
 			if (!peekTok(cc, STMT_end)) {
-				astn val = expr(cc, TYPE_vid);		// do lookup
+				astn val = expr(cc, CAST_vid);		// do lookup
 				if (val == NULL) {/* error */ }
-				else if (val->kind == TYPE_ref && val->ref.link == result) {
+				else if (val->kind == CAST_ref && val->ref.link == result) {
 					// skip 'return result;' statements
 				}
 				else if (result->type == cc->type_vid && val->type == result->type) {
@@ -2012,7 +2012,7 @@ static astn stmt(ccContext cc, int mode) {
 			error(cc->rt, node->file, node->line, "unexpected declaration `%+t`", node);
 		}
 	}
-	else if ((node = expr(cc, TYPE_vid))) {	// expression
+	else if ((node = expr(cc, CAST_vid))) {	// expression
 		skiptok(cc, STMT_end, 1);
 		switch (node->kind) {
 			default:
@@ -2074,7 +2074,7 @@ static astn parse(ccContext cc, int asUnit, int warn) {
 			unit->type = cc->type_vid;
 			unit->file = cc->file;
 			unit->line = 1;
-			unit->cst2 = TYPE_vid;
+			unit->cast = CAST_vid;
 			unit->stmt.stmt = root;
 			root = unit;
 		}
@@ -2221,10 +2221,10 @@ static symn installref(rtContext rt, const char* prot, astn* argv) {
 
 	dieif(ccClose(rt->cc) != 0, "FixMe");
 
-	dieif(root->kind != TYPE_ref, "FixMe %+t", root);
+	dieif(root->kind != CAST_ref, "FixMe %+t", root);
 
 	if ((result = root->ref.link)) {
-		dieif(result->kind != TYPE_ref, "FixMe");
+		dieif(result->kind != CAST_ref, "FixMe");
 		*argv = args;
 		result->cast = TYPE_any;
 	}
@@ -2279,12 +2279,12 @@ symn ccDefCall(rtContext rt, vmError libc(libcContext), void *data, const char *
 					s = linkOf(n);
 					arg = arg->op.lhso;
 					if (s && n) {
-						n->cst2 = s->cast;
+						n->cast = s->cast;
 					}
 				}
 				s = linkOf(arg);
 				if (s && arg) {
-					arg->cst2 = s->cast;
+					arg->cast = s->cast;
 				}
 			}
 
@@ -2328,7 +2328,7 @@ symn ccDefCall(rtContext rt, vmError libc(libcContext), void *data, const char *
 
 		// make non reference parameters symbolic by default
 		for (param = sym->prms; param; param = param->next) {
-			if (param->cast != TYPE_ref && !param->call) {
+			if (param->cast != CAST_ref && !param->call) {
 				param->kind = TYPE_def;
 			}
 		}

@@ -137,95 +137,95 @@ static inline size_t emitref(rtContext rt, void* value) {
 #pragma clang diagnostic pop
 
 // emit operator(add, sub, mul, ...), based on type
-static size_t emitopr(rtContext rt, vmOpcode opc, ccToken type) {
+static size_t emitopr(rtContext rt, vmOpcode opc, ccToken cast) {
 	// comparation
-	if (opc == opc_ceq) switch (type) {
+	if (opc == opc_ceq) switch (cast) {
 		default:
 			break;
 
-		case TYPE_bit:
-		case TYPE_ref:
-		case TYPE_u32:
-		case TYPE_i32:
+		case CAST_bit:
+		case CAST_ref:
+		case CAST_u32:
+		case CAST_i32:
 			opc = i32_ceq;
 			break;
 
-		case TYPE_f32:
+		case CAST_f32:
 			opc = f32_ceq;
 			break;
 
-		case TYPE_i64:
+		case CAST_i64:
 			opc = i64_ceq;
 			break;
 
-		case TYPE_f64:
+		case CAST_f64:
 			opc = f64_ceq;
 			break;
 	}
 	else if (opc == opc_cne) {
-		if (!emitopr(rt, opc_ceq, type)) {
+		if (!emitopr(rt, opc_ceq, cast)) {
 			trace(ERR_INTERNAL_ERROR);
 			return 0;
 		}
 		opc = opc_not;
 	}
-	else if (opc == opc_clt) switch (type) {
+	else if (opc == opc_clt) switch (cast) {
 		default:
 			break;
 
-		case TYPE_u32:
+		case CAST_u32:
 			opc = u32_clt;
 			break;
 
-		case TYPE_i32:
+		case CAST_i32:
 			opc = i32_clt;
 			break;
 
-		case TYPE_f32:
+		case CAST_f32:
 			opc = f32_clt;
 			break;
 
-		case TYPE_i64:
+		case CAST_i64:
 			opc = i64_clt;
 			break;
 
-		case TYPE_f64:
+		case CAST_f64:
 			opc = f64_clt;
 			break;
 	}
 	else if (opc == opc_cge) {
-		if (!emitopr(rt, opc_clt, type)) {
+		if (!emitopr(rt, opc_clt, cast)) {
 			trace(ERR_INTERNAL_ERROR);
 			return 0;
 		}
 		opc = opc_not;
 	}
-	else if (opc == opc_cgt) switch (type) {
+	else if (opc == opc_cgt) switch (cast) {
 		default:
 			break;
 
-		case TYPE_u32:
+		case CAST_u32:
 			opc = u32_cgt;
 			break;
 
-		case TYPE_i32:
+		case CAST_i32:
 			opc = i32_cgt;
 			break;
 
-		case TYPE_f32:
+		case CAST_f32:
 			opc = f32_cgt;
 			break;
 
-		case TYPE_i64:
+		case CAST_i64:
 			opc = i64_cgt;
 			break;
 
-		case TYPE_f64:
+		case CAST_f64:
 			opc = f64_cgt;
 			break;
 	}
 	else if (opc == opc_cle) {
-		if (!emitopr(rt, opc_cgt, type)) {
+		if (!emitopr(rt, opc_cgt, cast)) {
 			trace(ERR_INTERNAL_ERROR);
 			return 0;
 		}
@@ -233,221 +233,221 @@ static size_t emitopr(rtContext rt, vmOpcode opc, ccToken type) {
 	}
 
 	// arithmetic
-	else if (opc == opc_neg) switch (type) {
+	else if (opc == opc_neg) switch (cast) {
 		default:
 			break;
 
-		case TYPE_u32:
-		case TYPE_i32:
+		case CAST_u32:
+		case CAST_i32:
 			opc = i32_neg;
 			break;
 
-		case TYPE_i64:
+		case CAST_i64:
 			opc = i64_neg;
 			break;
 
-		case TYPE_f32:
+		case CAST_f32:
 			opc = f32_neg;
 			break;
 
-		case TYPE_f64:
+		case CAST_f64:
 			opc = f64_neg;
 			break;
 	}
-	else if (opc == opc_add) switch (type) {
+	else if (opc == opc_add) switch (cast) {
 		default:
 			break;
 
-		case TYPE_u32:
-		case TYPE_i32:
+		case CAST_u32:
+		case CAST_i32:
 			opc = i32_add;
 			break;
 
-		case TYPE_i64:
+		case CAST_i64:
 			opc = i64_add;
 			break;
 
-		case TYPE_f32:
+		case CAST_f32:
 			opc = f32_add;
 			break;
 
-		case TYPE_f64:
+		case CAST_f64:
 			opc = f64_add;
 			break;
 	}
-	else if (opc == opc_sub) switch (type) {
+	else if (opc == opc_sub) switch (cast) {
 		default:
 			break;
 
-		case TYPE_u32:
-		case TYPE_i32:
+		case CAST_u32:
+		case CAST_i32:
 			opc = i32_sub;
 			break;
 
-		case TYPE_i64:
+		case CAST_i64:
 			opc = i64_sub;
 			break;
 
-		case TYPE_f32:
+		case CAST_f32:
 			opc = f32_sub;
 			break;
 
-		case TYPE_f64:
+		case CAST_f64:
 			opc = f64_sub;
 			break;
 	}
-	else if (opc == opc_mul) switch (type) {
+	else if (opc == opc_mul) switch (cast) {
 		default:
 			break;
 
-		case TYPE_u32:
+		case CAST_u32:
 			opc = u32_mul;
 			break;
 
-		case TYPE_i32:
+		case CAST_i32:
 			opc = i32_mul;
 			break;
 
-		case TYPE_i64:
+		case CAST_i64:
 			opc = i64_mul;
 			break;
 
-		case TYPE_f32:
+		case CAST_f32:
 			opc = f32_mul;
 			break;
 
-		case TYPE_f64:
+		case CAST_f64:
 			opc = f64_mul;
 			break;
 	}
-	else if (opc == opc_div) switch (type) {
+	else if (opc == opc_div) switch (cast) {
 		default:
 			break;
 
-		case TYPE_u32:
+		case CAST_u32:
 			opc = u32_div;
 			break;
 
-		case TYPE_i32:
+		case CAST_i32:
 			opc = i32_div;
 			break;
 
-		case TYPE_i64:
+		case CAST_i64:
 			opc = i64_div;
 			break;
 
-		case TYPE_f32:
+		case CAST_f32:
 			opc = f32_div;
 			break;
 
-		case TYPE_f64:
+		case CAST_f64:
 			opc = f64_div;
 			break;
 	}
-	else if (opc == opc_mod) switch (type) {
+	else if (opc == opc_mod) switch (cast) {
 		default:
 			break;
 
-		case TYPE_u32:
+		case CAST_u32:
 			opc = u32_mod;
 			break;
 
-		case TYPE_i32:
+		case CAST_i32:
 			opc = i32_mod;
 			break;
 
-		case TYPE_i64:
+		case CAST_i64:
 			opc = i64_mod;
 			break;
 
-		case TYPE_f32:
+		case CAST_f32:
 			opc = f32_mod;
 			break;
 
-		case TYPE_f64:
+		case CAST_f64:
 			opc = f64_mod;
 			break;
 	}
 
 	// bit operations
-	else if (opc == opc_cmt) switch (type) {
+	else if (opc == opc_cmt) switch (cast) {
 		default:
 			break;
 
-		case TYPE_u32:
-		case TYPE_i32:
+		case CAST_u32:
+		case CAST_i32:
 			opc = b32_cmt;
 			break;
 
-		/*case TYPE_i64:
+		/*case CAST_i64:
 			opc = b64_cmt;
 			break;// */
 	}
-	else if (opc == opc_shl) switch (type) {
+	else if (opc == opc_shl) switch (cast) {
 		default:
 			break;
 
-		case TYPE_u32:
-		case TYPE_i32:
+		case CAST_u32:
+		case CAST_i32:
 			opc = b32_shl;
 			break;
 
-		/*case TYPE_i64:
+		/*case CAST_i64:
 			opc = b64_shl;
 			break;// */
 	}
-	else if (opc == opc_shr) switch (type) {
+	else if (opc == opc_shr) switch (cast) {
 		default:
 			break;
 
-		case TYPE_u32:
+		case CAST_u32:
 			opc = b32_shr;
 			break;
 
-		case TYPE_i32:
+		case CAST_i32:
 			opc = b32_sar;
 			break;
 
-		/*case TYPE_i64:
+		/*case CAST_i64:
 			opc = b64_sar;
 			break;// */
 	}
-	else if (opc == opc_and) switch (type) {
+	else if (opc == opc_and) switch (cast) {
 		default:
 			break;
 
-		case TYPE_u32:
-		case TYPE_i32:
+		case CAST_u32:
+		case CAST_i32:
 			opc = b32_and;
 			break;
 
-		/*case TYPE_i64:
+		/*case CAST_i64:
 			opc = b64_and;
 			break;// */
 	}
-	else if (opc == opc_ior) switch (type) {
+	else if (opc == opc_ior) switch (cast) {
 		default:
 			break;
 
-		case TYPE_u32:
-		case TYPE_i32:
+		case CAST_u32:
+		case CAST_i32:
 			opc = b32_ior;
 			break;
 
-		/*case TYPE_i64:
+		/*case CAST_i64:
 			opc = b64_ior;
 			break;// */
 	}
-	else if (opc == opc_xor) switch (type) {
+	else if (opc == opc_xor) switch (cast) {
 		default:
 			break;
 
-		case TYPE_u32:
-		case TYPE_i32:
+		case CAST_u32:
+		case CAST_i32:
 			opc = b32_xor;
 			break;
 
-		/*case TYPE_i64:
+		/*case CAST_i64:
 			opc = b64_xor;
 			break;// */
 	}
@@ -487,7 +487,7 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 	dieif(ast->type == NULL, ERR_INTERNAL_ERROR);
 
 	if (get == TYPE_any)
-		get = ast->cst2;
+		get = ast->cast;
 
 	if (!(got = ast->type->cast)) {
 		got = ast->type->kind;
@@ -496,7 +496,7 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 	#ifdef DEBUGGING	// extra check: every statement qualifier must be processed.
 	// take care of qualified statements `static if` ...
 	if (ast->kind >= STMT_beg && ast->kind <= STMT_end) {
-		stmt_qual = ast->cst2;
+		stmt_qual = ast->cast;
 	}
 	#endif
 
@@ -515,11 +515,11 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 
 			#ifdef DEBUGGING	// extra check: statement qualifier processed.
 			// TODO: a block may return nothing or the contained declarations(foreach may have 2 init declarations.)
-			if (stmt_qual == TYPE_vid || stmt_qual == TYPE_rec) {
+			if (stmt_qual == CAST_vid || stmt_qual == TYPE_rec) {
 				stmt_qual = TYPE_any;
 			}
 			#endif
-			if (ast->cst2 == ATTR_paral) {
+			if (ast->cast == ATTR_paral) {
 				ippar = emitopc(rt, opc_task);
 				rt->vm.su = 0;
 
@@ -529,7 +529,7 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 			}
 			for (ptr = ast->stmt.stmt; ptr; ptr = ptr->next) {
 				size_t ipStart = emitopc(rt, markIP);
-				if (!cgen(rt, ptr, TYPE_vid)) {		// we will free stack on scope close
+				if (!cgen(rt, ptr, CAST_vid)) {		// we will free stack on scope close
 					error(rt, ptr->file, ptr->line, "emitting statement `%+t`", ptr);
 					dmpDbg(rt, ptr, ipStart, emitopc(rt, markIP));
 					return TYPE_any;
@@ -539,11 +539,11 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 					addDbgStatement(rt, ipStart, ipEnd, ptr);
 				}
 			}
-			if (ast->cst2 == TYPE_rec) {
+			if (ast->cast == TYPE_rec) {
 				debug("%K", get);
 				get = TYPE_any;
 			}
-			if (get == TYPE_vid && stpos != stkoffs(rt, 0)) {
+			if (get == CAST_vid && stpos != stkoffs(rt, 0)) {
 				// TODO: call destructor for variables
 				if (!emitidx(rt, opc_drop, stpos)) {
 					trace(ERR_INTERNAL_ERROR);
@@ -562,9 +562,9 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 			size_t jstep, lcont, lbody, lbreak;
 			size_t stbreak, stpos = stkoffs(rt, 0);
 
-			dieif(get != TYPE_vid, ERR_INTERNAL_ERROR);
+			dieif(get != CAST_vid, ERR_INTERNAL_ERROR);
 
-			if (ast->stmt.init && !cgen(rt, ast->stmt.init, TYPE_vid)) {
+			if (ast->stmt.init && !cgen(rt, ast->stmt.init, CAST_vid)) {
 				traceAst(ast);
 				return TYPE_any;
 			}
@@ -575,13 +575,13 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 			}
 
 			lbody = emitopc(rt, markIP);
-			if (ast->stmt.stmt && !cgen(rt, ast->stmt.stmt, TYPE_vid)) {
+			if (ast->stmt.stmt && !cgen(rt, ast->stmt.stmt, CAST_vid)) {
 				traceAst(ast);
 				return TYPE_any;
 			}
 
 			lcont = emitopc(rt, markIP);
-			if (ast->stmt.step && !cgen(rt, ast->stmt.step, TYPE_vid)) {
+			if (ast->stmt.step && !cgen(rt, ast->stmt.step, CAST_vid)) {
 				traceAst(ast);
 				return TYPE_any;
 			}
@@ -589,7 +589,7 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 			lincr = emitopc(rt, markIP);
 			fixjump(rt, jstep, emitopc(rt, markIP), -1);
 			if (ast->stmt.test) {
-				if (!cgen(rt, ast->stmt.test, TYPE_bit)) {
+				if (!cgen(rt, ast->stmt.test, CAST_bit)) {
 					traceAst(ast);
 					return TYPE_any;
 				}
@@ -645,9 +645,9 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 			size_t stpos = stkoffs(rt, 0);
 			ccToken tt = eval(&tmp, ast->stmt.test);
 
-			dieif(get != TYPE_vid, ERR_INTERNAL_ERROR);
+			dieif(get != CAST_vid, ERR_INTERNAL_ERROR);
 
-			if (ast->cst2 == ATTR_stat) {
+			if (ast->cast == ATTR_stat) {
 				if (ast->stmt.step || !tt) {
 					error(rt, ast->file, ast->line, "invalid static if construct: %s",
 						  !tt ? "can not evaluate" : "else part is invalid");
@@ -658,7 +658,7 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 				#endif
 			}
 
-			if (tt && ast->cst2 == ATTR_stat) {	// static if then else
+			if (tt && ast->cast == ATTR_stat) {	// static if then else
 				astn gen = constbol(&tmp) ? ast->stmt.stmt : ast->stmt.step;
 				if (gen != NULL && !cgen(rt, gen, TYPE_any)) {	// leave the stack
 					traceAst(gen);
@@ -679,7 +679,7 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 				if (tt != TYPE_any && rt->foldConst) {	// if (const)
 					block.stmt.stmt = constbol(&tmp) ? ast->stmt.stmt : ast->stmt.step;
 					if (block.stmt.stmt != NULL) {
-						if (!cgen(rt, &block, TYPE_vid)) {
+						if (!cgen(rt, &block, CAST_vid)) {
 							traceAst(ast);
 							return TYPE_any;
 						}
@@ -689,7 +689,7 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 					}
 				}
 				else if (ast->stmt.stmt && ast->stmt.step) {		// if then else
-					if (!cgen(rt, ast->stmt.test, TYPE_bit)) {
+					if (!cgen(rt, ast->stmt.test, CAST_bit)) {
 						traceAst(ast);
 						return TYPE_any;
 					}
@@ -699,7 +699,7 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 					}
 
 					block.stmt.stmt = ast->stmt.stmt;
-					if (!cgen(rt, &block, TYPE_vid)) {
+					if (!cgen(rt, &block, CAST_vid)) {
 						traceAst(ast);
 						return TYPE_any;
 					}
@@ -710,14 +710,14 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 					fixjump(rt, jmpt, emitopc(rt, markIP), -1);
 
 					block.stmt.stmt = ast->stmt.step;
-					if (!cgen(rt, &block, TYPE_vid)) {
+					if (!cgen(rt, &block, CAST_vid)) {
 						traceAst(ast);
 						return TYPE_any;
 					}
 					fixjump(rt, jmpf, emitopc(rt, markIP), -1);
 				}
 				else if (ast->stmt.stmt) {							// if then
-					if (!cgen(rt, ast->stmt.test, TYPE_bit)) {
+					if (!cgen(rt, ast->stmt.test, CAST_bit)) {
 						traceAst(ast);
 						return TYPE_any;
 					}
@@ -729,14 +729,14 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 					}
 
 					block.stmt.stmt = ast->stmt.stmt;
-					if (!cgen(rt, &block, TYPE_vid)) {
+					if (!cgen(rt, &block, CAST_vid)) {
 						traceAst(ast);
 						return TYPE_any;
 					}
 					fixjump(rt, jmpt, emitopc(rt, markIP), -1);
 				}
 				else if (ast->stmt.step) {							// if else
-					if (!cgen(rt, ast->stmt.test, TYPE_bit)) {
+					if (!cgen(rt, ast->stmt.test, CAST_bit)) {
 						traceAst(ast);
 						return TYPE_any;
 					}
@@ -748,13 +748,13 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 					}
 
 					block.stmt.stmt = ast->stmt.step;
-					if (!cgen(rt, &block, TYPE_vid)) {
+					if (!cgen(rt, &block, CAST_vid)) {
 						traceAst(ast);
 						return TYPE_any;
 					}
 					fixjump(rt, jmpt, emitopc(rt, markIP), -1);
 				}
-				dieif(get != TYPE_vid || stpos != stkoffs(rt, 0), "internal fatal error");
+				dieif(get != CAST_vid || stpos != stkoffs(rt, 0), "internal fatal error");
 			}
 			//~ TODO: destruct(ast->stmt.test)
 			dieif(stpos != stkoffs(rt, 0), "invalid stacksize(%d:%d) in statement %+t", stkoffs(rt, 0), stpos, ast);
@@ -762,7 +762,7 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 		case STMT_con:
 		case STMT_brk: {
 			size_t offs;
-			dieif(get != TYPE_vid, ERR_INTERNAL_ERROR);
+			dieif(get != CAST_vid, ERR_INTERNAL_ERROR);
 			if (!(offs = emitopc(rt, opc_jmp))) {
 				traceAst(ast);
 				return TYPE_any;
@@ -776,7 +776,7 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 		} break;
 		case STMT_end: {	// expr statement
 			size_t stpos = stkoffs(rt, 0);
-			if (!cgen(rt, ast->stmt.stmt, TYPE_vid)) {
+			if (!cgen(rt, ast->stmt.stmt, CAST_vid)) {
 				traceAst(ast);
 				return TYPE_any;
 			}
@@ -787,12 +787,12 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 		case STMT_ret: {
 			//~ TODO: declared reference variables should be freed.
 			size_t bppos = stkoffs(rt, 0);
-			if (ast->stmt.stmt && !cgen(rt, ast->stmt.stmt, TYPE_vid)) {
+			if (ast->stmt.stmt && !cgen(rt, ast->stmt.stmt, CAST_vid)) {
 				traceAst(ast);
 				return TYPE_any;
 			}
-			dieif(get != TYPE_vid, ERR_INTERNAL_ERROR);
-			if (get == TYPE_vid && rt->vm.ro != stkoffs(rt, 0)) {
+			dieif(get != CAST_vid, ERR_INTERNAL_ERROR);
+			if (get == CAST_vid && rt->vm.ro != stkoffs(rt, 0)) {
 				if (!emitidx(rt, opc_drop, rt->vm.ro)) {
 					trace("leve %d", rt->vm.ro);
 					return TYPE_any;
@@ -841,25 +841,25 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 
 						switch (object->cast) {
 							default:
-								if (argv->kind != OPER_adr && object->type->cast != TYPE_ref) {
+								if (argv->kind != OPER_adr && object->type->cast != CAST_ref) {
 									warn(rt, 2, argv->file, argv->line,
 										 "argument `%+t` is not explicitly passed by reference", argv);
 								}
 								break;
 
-							case TYPE_arr:	// from slice
+							case CAST_arr:	// from slice
 								warn(rt, 2, argv->file, argv->line, "converting `%+t` to %-T discards length property",
 									 argv, ast->type);
 								//~ TODO: loadIndirect = 1;
 								break;
 
-							case TYPE_var:	// from variant
+							case CAST_var:	// from variant
 								warn(rt, 2, argv->file, argv->line, "converting `%+t` to %-T discards type property",
 									 argv, ast->type);
 								//~ TODO: loadIndirect = 1;
 								break;
 
-							case TYPE_ref:	// from reference
+							case CAST_ref:	// from reference
 								loadIndirect = 1;
 								break;
 						}
@@ -869,7 +869,7 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 								return TYPE_any;
 							}
 						}
-						return TYPE_var;
+						return CAST_var;
 					}
 				}
 			}
@@ -879,13 +879,13 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 				if (argv != NULL) {
 					while (argv->kind == OPER_com) {
 						astn arg = argv->op.rhso;
-						if (!cgen(rt, arg, arg->cst2)) {
+						if (!cgen(rt, arg, arg->cast)) {
 							traceAst(arg);
 							return TYPE_any;
 						}
 						argv = argv->op.lhso;
 					}
-					if (!cgen(rt, argv, argv->cst2)) {
+					if (!cgen(rt, argv, argv->cast)) {
 						traceAst(argv);
 						return TYPE_any;
 					}
@@ -922,7 +922,7 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 						astn arg = an;
 
 						// TODO: skip over aliases?
-						while (arg && arg->kind == TYPE_ref) {
+						while (arg && arg->kind == CAST_ref) {
 							symn def = arg->ref.link;
 							if (def == NULL) {
 								break;
@@ -941,7 +941,7 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 						}
 
 						/* TODO: make args inlineable
-						if (param->cast != TYPE_ref) {
+						if (param->cast != CAST_ref) {
 							switch (arg->kind) {
 								default:
 									if (useCount <= 1) {
@@ -949,7 +949,7 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 									}
 									break;
 
-								case TYPE_ref:
+								case CAST_ref:
 									if (arg->type == param->type) {
 										symn link = arg->ref.link;
 										// static variables should not be inlined ?
@@ -959,7 +959,7 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 											}
 										}
 										// what about indirect references ?
-										//~ if (link->cast == TYPE_ref) { break; }
+										//~ if (link->cast == CAST_ref) { break; }
 										inlineArg = 1;
 									}
 									break;
@@ -987,7 +987,7 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 							}
 
 							param->offs = stkoffs(rt, 0);
-							//~ param->kind = TYPE_ref;
+							//~ param->kind = CAST_ref;
 							if (stktop != param->offs) {
 								error(rt, ast->file, ast->line, "invalid size: %d <> got(%d): `%+t`", stktop,
 									  param->offs, param);
@@ -1012,7 +1012,7 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 
 				if (stkret != stkoffs(rt, 0)) {
 					logif(chachedArgSize != stkoffs(rt, 0) - stkret, "%+T(%d%+d): %+t", ast->type, stkret, stkoffs(rt, 0)-stkret, ast);
-					if (get != TYPE_vid) {
+					if (get != CAST_vid) {
 						if (!emitidx(rt, opc_ldsp, stkret)) {	// get stack
 							trace(ERR_INTERNAL_ERROR);
 							return TYPE_any;
@@ -1033,7 +1033,7 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 				for (param = var->prms; param; param = param->next) {
 					param->init = NULL;
 					// TODO: ugly hack
-					//~ param->kind = param->cast == TYPE_def ? TYPE_def : TYPE_ref;
+					//~ param->kind = param->cast == TYPE_def ? TYPE_def : CAST_ref;
 				}
 				break;
 			}
@@ -1052,7 +1052,7 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 
 				while (argv->kind == OPER_com) {
 					astn arg = argv->op.rhso;
-					if (!cgen(rt, arg, arg->cst2)) {
+					if (!cgen(rt, arg, arg->cast)) {
 						traceAst(arg);
 						return TYPE_any;
 					}
@@ -1066,12 +1066,12 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 					break;
 				}
 
-				if (!cgen(rt, argv, argv->cst2)) {
+				if (!cgen(rt, argv, argv->cast)) {
 					traceAst(argv);
 					return TYPE_any;
 				}
 
-				if (var && var != rt->cc->emit_opc && var != rt->cc->libc_dbg && var->call && var->cast != TYPE_ref) {
+				if (var && var != rt->cc->emit_opc && var != rt->cc->libc_dbg && var->call && var->cast != CAST_ref) {
 					if (var->prms->offs != stkoffs(rt, 0) - stktop) {
 						trace("args:%T(%d != %d(%d - %d))", var, var->prms->offs, stkoffs(rt, 0) - stktop, stkoffs(rt, 0), stktop);
 						return TYPE_any;
@@ -1091,7 +1091,7 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 			}
 			else if (var) {						// call()
 				if (var->call) {
-					if (!cgen(rt, ast->op.lhso, TYPE_ref)) {
+					if (!cgen(rt, ast->op.lhso, CAST_ref)) {
 						traceAst(ast);
 						return TYPE_any;
 					}
@@ -1122,11 +1122,11 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 		case OPER_idx: {	// '[]'
 			int r;
 			size_t esize;
-			if (!(r = cgen(rt, ast->op.lhso, TYPE_ref))) {
+			if (!(r = cgen(rt, ast->op.lhso, CAST_ref))) {
 				traceAst(ast);
 				return TYPE_any;
 			}
-			if (r == TYPE_arr) {
+			if (r == CAST_arr) {
 				if (!emitint(rt, opc_ldi, vm_size)) {
 					traceAst(ast);
 					return TYPE_any;
@@ -1142,7 +1142,7 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 				}
 			}
 			else {
-				if (!cgen(rt, ast->op.rhso, TYPE_u32)) {
+				if (!cgen(rt, ast->op.rhso, CAST_u32)) {
 					traceAst(ast);
 					return TYPE_any;
 				}
@@ -1164,8 +1164,8 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 				}
 			}
 
-			if (get == TYPE_ref)
-				return TYPE_ref;
+			if (get == CAST_ref)
+				return CAST_ref;
 
 			// ve need the value on that position (this can be a ref).
 			if (!emitint(rt, opc_ldi, esize)) {
@@ -1189,7 +1189,7 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 				return TYPE_any;
 			}
 			if (member->stat) {
-				if (!lhsstat && object->kind != TYPE_arr) {
+				if (!lhsstat && object->kind != CAST_arr) {
 					warn(rt, 5, ast->file, ast->line, "accessing static member using instance variable `%+T`/ %+T",
 						 member, object->type);
 				}
@@ -1197,7 +1197,7 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 			}
 
 			if (member->memb) {
-				if (!cgen(rt, ast->op.lhso, TYPE_ref)) {
+				if (!cgen(rt, ast->op.lhso, CAST_ref)) {
 					traceAst(ast);
 					return TYPE_any;
 				}
@@ -1209,7 +1209,7 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 				return cgen(rt, ast->op.rhso, get);
 			}
 
-			if (!cgen(rt, ast->op.lhso, TYPE_ref)) {
+			if (!cgen(rt, ast->op.lhso, CAST_ref)) {
 				traceAst(ast);
 				return TYPE_any;
 			}
@@ -1219,15 +1219,15 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 				return TYPE_any;
 			}
 
-			if (member->cast == TYPE_ref) {
+			if (member->cast == CAST_ref) {
 				if (!emitint(rt, opc_ldi, vm_size)) {
 					traceAst(ast);
 					return TYPE_any;
 				}
 			}
 
-			if (get == TYPE_ref) {
-				return TYPE_ref;
+			if (get == CAST_ref) {
+				return CAST_ref;
 			}
 
 			if (!emitint(rt, opc_ldi, sizeOf(ast->type, 1))) {
@@ -1254,7 +1254,7 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 					opc = opc_neg;
 					break;
 				case OPER_not:
-					dieif(got != TYPE_bit, ERR_INTERNAL_ERROR);
+					dieif(got != CAST_bit, ERR_INTERNAL_ERROR);
 					opc = opc_not;
 					break;
 				case OPER_cmt:
@@ -1357,16 +1357,16 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 				traceAst(ast);
 				return TYPE_any;
 			}
-			if (!emitopr(rt, opc, ast->op.lhso->cst2)) {	// uint % int => u32.mod
+			if (!emitopr(rt, opc, ast->op.lhso->cast)) {	// uint % int => u32.mod
 				traceAst(ast);
 				return TYPE_any;
 			}
 
 			#ifdef DEBUGGING	// extra check: validate some conditions.
-			if (ast->op.lhso->cst2 != ast->op.rhso->cst2) {
+			if (ast->op.lhso->cast != ast->op.rhso->cast) {
 				dmpDbg(rt, ast, ipdbg, emitopc(rt, markIP));
 			}
-			dieif(ast->op.lhso->cst2 != ast->op.rhso->cst2, "RemMe", ast);
+			dieif(ast->op.lhso->cast != ast->op.rhso->cast, "RemMe", ast);
 			dieif(got != castOf(ast->type), "RemMe");
 			switch (ast->kind) {
 				case OPER_neq:
@@ -1375,7 +1375,7 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 				case OPER_lte:
 				case OPER_leq:
 				case OPER_gte:
-					dieif(got != TYPE_bit, "RemMe(%K): %+t", got, ast);
+					dieif(got != CAST_bit, "RemMe(%K): %+t", got, ast);
 				default:
 					break;
 			}
@@ -1399,17 +1399,17 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 					break;
 			}
 
-			if (!cgen(rt, ast->op.lhso, TYPE_bit)) {
+			if (!cgen(rt, ast->op.lhso, CAST_bit)) {
 				traceAst(ast);
 				return TYPE_any;
 			}
 
-			if (!cgen(rt, ast->op.rhso, TYPE_bit)) {
+			if (!cgen(rt, ast->op.rhso, CAST_bit)) {
 				traceAst(ast);
 				return TYPE_any;
 			}
 
-			if (!emitopr(rt, opc, TYPE_u32)) {
+			if (!emitopr(rt, opc, CAST_u32)) {
 				trace("opc__%02x:%+t", opc, ast);
 				return TYPE_any;
 			}
@@ -1433,7 +1433,7 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 					break;
 			}
 
-			if (!cgen(rt, ast->op.lhso, TYPE_bit)) {
+			if (!cgen(rt, ast->op.lhso, CAST_bit)) {
 				traceAst(ast);
 				return 0;
 			}
@@ -1442,7 +1442,7 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 			jmp1->next = rt->cc->jmps;
 			rt->cc->jmps = jmp1;
 
-			if (!cgen(rt, ast->op.rhso, TYPE_bit)) {
+			if (!cgen(rt, ast->op.rhso, CAST_bit)) {
 				traceAst(ast);
 				return 0;
 			}
@@ -1454,10 +1454,10 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 
 			#ifdef DEBUGGING	// extra check: validate some conditions.
 			//~ dieif(ast->op.lhso->cst2 != ast->op.rhso->cst2, "RemMe");
-			dieif(ast->op.lhso->cst2 != TYPE_bit, "RemMe");
-			dieif(ast->op.lhso->cst2 != TYPE_bit, "RemMe");
+			dieif(ast->op.lhso->cast != CAST_bit, "RemMe");
+			dieif(ast->op.lhso->cast != CAST_bit, "RemMe");
 			dieif(got != castOf(ast->type), "RemMe");
-			dieif(got != TYPE_bit, "RemMe");
+			dieif(got != CAST_bit, "RemMe");
 			#endif
 			if (rt->cc->warn > 0) {
 				static int firstTimeShowOnly = 1;
@@ -1478,7 +1478,7 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 			else {
 				size_t bppos = stkoffs(rt, 0);
 
-				if (!cgen(rt, ast->op.test, TYPE_bit)) {
+				if (!cgen(rt, ast->op.test, CAST_bit)) {
 					traceAst(ast);
 					return TYPE_any;
 				}
@@ -1512,17 +1512,17 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 		case ASGN_set: {	// ':='
 			// TODO: ast->type->size;
 			size_t size = sizeOf(ast->type, 1);
-			ccToken refAssign = TYPE_ref;
+			ccToken refAssign = CAST_ref;
 			int codeBegin, codeEnd;
 
 			dieif(size == 0, "Error: %+t", ast);
 
-			if (ast->op.lhso->kind == TYPE_ref) {
+			if (ast->op.lhso->kind == CAST_ref) {
 				symn typ = ast->op.lhso->type;
 				//~ assign a reference type by reference
-				if (typ->kind == TYPE_rec && typ->cast == TYPE_ref) {
+				if (typ->kind == TYPE_rec && typ->cast == CAST_ref) {
 					debug("reference assignment: %+t", ast);
-					dieif(got != TYPE_ref, ERR_INTERNAL_ERROR);
+					dieif(got != CAST_ref, ERR_INTERNAL_ERROR);
 					refAssign = ASGN_set;
 					size = vm_size;
 				}
@@ -1534,10 +1534,10 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 				return TYPE_any;
 			}
 
-			if (get != TYPE_vid) {
+			if (get != CAST_vid) {
 				/* TODO: int &a = b = 9;
 				in case when: int &a = b = 9;
-				dieif(get == TYPE_ref, ERR_INTERNAL_ERROR);
+				dieif(get == CAST_ref, ERR_INTERNAL_ERROR);
 				*/
 				// in case a = b = sum(2, 700);
 				// dupplicate the result
@@ -1577,7 +1577,7 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 		//#}
 		//#{ VALUES
 		case TYPE_int:
-			if (get == TYPE_vid) {
+			if (get == CAST_vid) {
 				// void(0);
 				return get;
 			}
@@ -1586,11 +1586,11 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 				traceAst(ast);
 				return TYPE_any;
 			}
-			got = TYPE_i64;
+			got = CAST_i64;
 			break;
 
 		case TYPE_flt:
-			if (get == TYPE_vid) {
+			if (get == CAST_vid) {
 				// void(1.0);
 				return get;
 			}
@@ -1599,7 +1599,7 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 				traceAst(ast);
 				return TYPE_any;
 			}
-			got = TYPE_f64;
+			got = CAST_f64;
 			break;
 
 		case TYPE_str: switch (get) {
@@ -1607,18 +1607,18 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 				error(rt, ast->file, ast->line, "invalid cast of `%+t`", ast);
 				return TYPE_any;
 
-			case TYPE_vid:
+			case CAST_vid:
 				// void("");
-				return TYPE_vid;
+				return CAST_vid;
 
-			case TYPE_ref:
+			case CAST_ref:
 				if (!emitref(rt, ast->ref.name)) {
 					traceAst(ast);
 					return TYPE_any;
 				}
-				return TYPE_ref;
+				return CAST_ref;
 
-			case TYPE_arr:
+			case CAST_arr:
 				if (!emiti32(rt, strlen(ast->ref.name))) {
 					traceAst(ast);
 					return TYPE_any;
@@ -1627,10 +1627,10 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 					traceAst(ast);
 					return TYPE_any;
 				}
-				return TYPE_ref;
+				return CAST_ref;
 		} break;
 
-		case TYPE_ref: {					// use (var, func, define)
+		case CAST_ref: {					// use (var, func, define)
 			symn typ = ast->type;			// type
 			symn var = ast->ref.link;		// link
 			// TODO: use ast->type->size;
@@ -1650,21 +1650,21 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 					error(rt, ast->file, ast->line, "invalid rvalue `%+t:` %K", ast, var->kind);
 					return TYPE_any;
 
-				case TYPE_arr:		// typename
+				case CAST_arr:		// typename
 				case TYPE_rec:		// typename
-				case TYPE_ref: {	// variable
+				case CAST_ref: {	// variable
 					ccToken retarr = TYPE_any;
 					dieif(var->size == 0, "invalid use of variable(%s:%d): `%-T`", ast->file, ast->line, var);
 
 					// a slice is needed, push length first.
-					if (get == TYPE_arr && got != TYPE_arr) {
+					if (get == CAST_arr && got != CAST_arr) {
 						// ArraySize
 						if (!emiti32(rt, typ->offs)) {
 							traceAst(ast);
 							return TYPE_any;
 						}
-						retarr = TYPE_arr;
-						get = TYPE_ref;
+						retarr = CAST_arr;
+						get = CAST_ref;
 					}
 
 					if (!emitvar(rt, var)) {
@@ -1675,18 +1675,18 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 					// byVal references are assigned by value
 					// byRef references are assigned by reference
 					if (get == ASGN_set) {
-						get = TYPE_ref;
+						get = CAST_ref;
 					}
-					//TODO: else if (var != typ && (var->cast == TYPE_ref || var->cast == TYPE_arr)) {
-					else if (var->cast == TYPE_ref && var != typ) {
+					//TODO: else if (var != typ && (var->cast == CAST_ref || var->cast == CAST_arr)) {
+					else if (var->cast == CAST_ref && var != typ) {
 						if (!emitint(rt, opc_ldi, vm_size)) {
 							traceAst(ast);
 							return TYPE_any;
 						}
 					}
 
-					if (get != TYPE_ref) {
-						if (get == TYPE_arr && got == TYPE_arr) {
+					if (get != CAST_ref) {
+						if (get == CAST_arr && got == CAST_arr) {
 							//~ info(rt, ast->file, ast->line, "assign to array from %K @ %+t", ret, ast);
 							size = 2 * vm_size;
 						}
@@ -1697,11 +1697,11 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 						}
 					}
 					else {
-						if (var->cast == TYPE_arr) {
+						if (var->cast == CAST_arr) {
 							//~ info(rt, __FILE__, __LINE__, "assign to array from %K @ %+t", ret, ast);
-							retarr = TYPE_arr;
+							retarr = CAST_arr;
 						}
-						got = TYPE_ref;
+						got = CAST_ref;
 					}
 
 					if (retarr != 0) {
@@ -1709,7 +1709,7 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 					}
 				} break;
 				case EMIT_opc:
-					dieif(get == TYPE_ref, ERR_INTERNAL_ERROR);
+					dieif(get == CAST_ref, ERR_INTERNAL_ERROR);
 					if (!emitint(rt, (vmOpcode)var->offs, var->init ? constint(var->init) : 0)) {
 						error(rt, ast->file, ast->line, "error emiting opcode: %+t", ast);
 						if (stkoffs(rt, 0) > 0) {
@@ -1717,13 +1717,13 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 						}
 						return TYPE_any;
 					}
-					return TYPE_vid;
+					return CAST_vid;
 
 				case TYPE_def:
 					//~ TODO: reimplement: it works, but ...
 					if (var->init != NULL) {
 						if (get == ENUM_kwd) {
-							get = ast->cst2;
+							get = ast->cast;
 						}
 						return cgen(rt, var->init, get);
 					}
@@ -1738,12 +1738,12 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 			dieif(typ == NULL, ERR_INTERNAL_ERROR);
 			dieif(var == NULL, ERR_INTERNAL_ERROR);
 
-			if (var->kind == TYPE_ref) {
+			if (var->kind == CAST_ref) {
 
 				// skip initialized static variables and function
 				if (var->stat && var->offs && (var->call || !rt->cc->init)) {
 					debug("variable already initialized: %+T", var);
-					return TYPE_vid;
+					return CAST_vid;
 				}
 
 				// initialize (and allocate local) variables.
@@ -1758,16 +1758,16 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 					// string a = null;		// initialization with null
 					else if (rt->cc->null_ref && rt->cc->null_ref == linkOf(val)) {
 						debug("assigning null: %-T", var);
-						val->cst2 = got = TYPE_ref;
+						val->cast = got = CAST_ref;
 					}
 
 					// int a(int x) = abs;	// reference initialization
-					else if (var->call || var->cast == TYPE_ref) {
-						got = TYPE_ref;
+					else if (var->call || var->cast == CAST_ref) {
+						got = CAST_ref;
 					}
 
 					// int a[3] = {1,2,3};	// array initialization by elements
-					if (typ->kind == TYPE_arr && var->arrB == val->type) {
+					if (typ->kind == CAST_arr && var->arrB == val->type) {
 						size_t i, esize;
 						symn base = typ;
 						astn tmp = NULL;
@@ -1952,7 +1952,7 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 
 					// int a = 99;	// variable initialization
 					else {
-						logif(val->cst2 != var->cast, "cast error [%K -> %K] -> %K: %-T := %+t", val->cst2, var->cast, get, var, val);
+						logif(val->cast != var->cast, "cast error [%K -> %K] -> %K: %-T := %+t", val->cast, var->cast, get, var, val);
 						switch (val->kind) {
 							case TYPE_int:
 							case TYPE_flt:
@@ -2004,8 +2004,8 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 				}
 			}
 
-			dieif(get != TYPE_vid, ERR_INTERNAL_ERROR);
-			get = got = TYPE_vid;
+			dieif(get != CAST_vid, ERR_INTERNAL_ERROR);
+			get = got = CAST_vid;
 		} break;
 
 		case EMIT_opc:
@@ -2017,7 +2017,7 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 	// generate cast
 	if (get != got) switch (get) {
 
-		case TYPE_vid:
+		case CAST_vid:
 			// FIXME: free stack.
 			got = get;
 			break;
@@ -2026,35 +2026,35 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 			default:
 				goto errorcast2;
 
-			case TYPE_vid:
-			case TYPE_ref:
+			case CAST_vid:
+			case CAST_ref:
 				break;
 		} break;
 
-		case TYPE_bit: switch (got) {		// to boolean
+		case CAST_bit: switch (got) {		// to boolean
 			default:
 				goto errorcast2;
 
-			case TYPE_u32:
-			case TYPE_i32:
+			case CAST_u32:
+			case CAST_i32:
 				if (!emitopc(rt, i32_bol)) {
 					traceAst(ast);
 					return TYPE_any;
 				}
 				break;
-			case TYPE_i64:
+			case CAST_i64:
 				if (!emitopc(rt, i64_bol)) {
 					traceAst(ast);
 					return TYPE_any;
 				}
 				break;
-			case TYPE_f32:
+			case CAST_f32:
 				if (!emitopc(rt, f32_bol)) {
 					traceAst(ast);
 					return TYPE_any;
 				}
 				break;
-			case TYPE_f64:
+			case CAST_f64:
 				if (!emitopc(rt, f64_bol)) {
 					traceAst(ast);
 					return TYPE_any;
@@ -2062,48 +2062,48 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 				break;
 		} break;
 
-		case TYPE_u32: switch (got) {
+		case CAST_u32: switch (got) {
 			default:
 				goto errorcast2;
 
-			case TYPE_bit:
-			case TYPE_i32:
+			case CAST_bit:
+			case CAST_i32:
 				break;
 
-			case TYPE_i64: {
+			case CAST_i64: {
 				if (!emitopc(rt, i64_i32)) {
 					traceAst(ast);
 					return TYPE_any;
 				}
 				get = got = TYPE_int;
 			} break;
-			//~ case TYPE_f32: if (!emitopc(s, f32_i32)) return TYPE_any; break;
-			//~ case TYPE_f64: if (!emitopc(s, f64_i32)) return TYPE_any; break;
+			//~ case CAST_f32: if (!emitopc(s, f32_i32)) return TYPE_any; break;
+			//~ case CAST_f64: if (!emitopc(s, f64_i32)) return TYPE_any; break;
 		} break;
 
-		case TYPE_i32: switch (got) {
+		case CAST_i32: switch (got) {
 			default:
 				goto errorcast2;
 
-			case TYPE_bit:
-			case TYPE_u32:
+			case CAST_bit:
+			case CAST_u32:
 				break;
 
-			case TYPE_i64:
+			case CAST_i64:
 				if (!emitopc(rt, i64_i32)) {
 					traceAst(ast);
 					return TYPE_any;
 				}
 				break;
 
-			case TYPE_f32:
+			case CAST_f32:
 				if (!emitopc(rt, f32_i32)) {
 					traceAst(ast);
 					return TYPE_any;
 				}
 				break;
 
-			case TYPE_f64:
+			case CAST_f64:
 				if (!emitopc(rt, f64_i32)) {
 					traceAst(ast);
 					return TYPE_any;
@@ -2111,33 +2111,33 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 				break;
 		} break;
 
-		case TYPE_i64: switch (got) {
+		case CAST_i64: switch (got) {
 			default:
 				goto errorcast2;
 
-			case TYPE_bit:
-			case TYPE_u32:
+			case CAST_bit:
+			case CAST_u32:
 				if (!emitopc(rt, u32_i64)) {
 					traceAst(ast);
 					return TYPE_any;
 				}
 				break;
 
-			case TYPE_i32:
+			case CAST_i32:
 				if (!emitopc(rt, i32_i64)) {
 					traceAst(ast);
 					return TYPE_any;
 				}
 				break;
 
-			case TYPE_f32:
+			case CAST_f32:
 				if (!emitopc(rt, f32_i64)) {
 					traceAst(ast);
 					return TYPE_any;
 				}
 				break;
 
-			case TYPE_f64:
+			case CAST_f64:
 				if (!emitopc(rt, f64_i64)) {
 					traceAst(ast);
 					return TYPE_any;
@@ -2145,27 +2145,27 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 				break;
 		} break;
 
-		case TYPE_f32: switch (got) {
+		case CAST_f32: switch (got) {
 			default:
 				goto errorcast2;
 
-			case TYPE_bit:
-			//~ case TYPE_u32:
-			case TYPE_i32:
+			case CAST_bit:
+			//~ case CAST_u32:
+			case CAST_i32:
 				if (!emitopc(rt, i32_f32)) {
 					traceAst(ast);
 					return TYPE_any;
 				}
 				break;
 
-			case TYPE_i64:
+			case CAST_i64:
 				if (!emitopc(rt, i64_f32)) {
 					traceAst(ast);
 					return TYPE_any;
 				}
 				break;
 
-			case TYPE_f64:
+			case CAST_f64:
 				if (!emitopc(rt, f64_f32)) {
 					traceAst(ast);
 					return TYPE_any;
@@ -2173,27 +2173,27 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 				break;
 		} break;
 
-		case TYPE_f64: switch (got) {
+		case CAST_f64: switch (got) {
 			default:
 				goto errorcast2;
 
-			case TYPE_bit:
-			//~ case TYPE_u32:
-			case TYPE_i32:
+			case CAST_bit:
+			//~ case CAST_u32:
+			case CAST_i32:
 				if (!emitopc(rt, i32_f64)) {
 					traceAst(ast);
 					return TYPE_any;
 				}
 				break;
 
-			case TYPE_i64:
+			case CAST_i64:
 				if (!emitopc(rt, i64_f64)) {
 					traceAst(ast);
 					return TYPE_any;
 				}
 				break;
 
-			case TYPE_f32:
+			case CAST_f32:
 				if (!emitopc(rt, f32_f64)) {
 					traceAst(ast);
 					return TYPE_any;
@@ -2201,8 +2201,8 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 				break;
 		} break;
 
-		case TYPE_ref:
-		case TYPE_arr: switch (got) {
+		case CAST_ref:
+		case CAST_arr: switch (got) {
 			default:
 				goto errorcast2;
 
@@ -2214,7 +2214,7 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 			default:
 				goto errorcast2;
 
-			case TYPE_ref:
+			case CAST_ref:
 				return TYPE_ptr;
 		}
 
@@ -2228,7 +2228,7 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 	}
 
 	// zero extend ...
-	if (get == TYPE_u32) {
+	if (get == CAST_u32) {
 		debug("zero extend[%K->%K]: %-T %+t (%s:%d)", got, get, ast->type, ast, ast->file, ast->line);
 		switch (ast->type->size) {
 			default:
@@ -2290,7 +2290,7 @@ int gencode(rtContext rt, int mode) {
 		for (ng = cc->gdef; ng; ng = ng->gdef) {
 			symn Ng, Pg = NULL;
 
-			if (ng->call && ng->cast == TYPE_ref) {
+			if (ng->call && ng->cast == CAST_ref) {
 				// skip non functions
 				continue;
 			}
@@ -2374,7 +2374,7 @@ int gencode(rtContext rt, int mode) {
 				continue;
 
 			// exclude aliases and typenames
-			if (var->kind != TYPE_ref)
+			if (var->kind != CAST_ref)
 				continue;
 
 			// exclude non static variables
@@ -2391,7 +2391,7 @@ int gencode(rtContext rt, int mode) {
 				error(cc->rt, var->file, var->line, "uninimplemented function `%+T`", var);
 			}
 
-			if (var->call && var->cast != TYPE_ref) {
+			if (var->call && var->cast != CAST_ref) {
 				size_t seg = emitopc(rt, markIP);
 
 				if (!var->init) {
@@ -2408,7 +2408,7 @@ int gencode(rtContext rt, int mode) {
 
 				var->offs = emitopc(rt, markIP);
 
-				if (!cgen(rt, var->init, TYPE_vid)) {
+				if (!cgen(rt, var->init, CAST_vid)) {
 					continue;
 				}
 				if (!emitopc(rt, opc_jmpi)) {
@@ -2472,7 +2472,7 @@ int gencode(rtContext rt, int mode) {
 					init->type = var->type;
 					init->file = var->file;
 					init->line = var->line;
-					init->cst2 = var->cast;
+					init->cast = var->cast;
 					init->ref.link = var;
 
 					init = wrapStmt(cc, init);
@@ -2508,8 +2508,8 @@ int gencode(rtContext rt, int mode) {
 
 		dieif(cc->root->kind != STMT_beg, ERR_INTERNAL_ERROR);
 
-		// TYPE_vid clears the stack
-		if (!cgen(rt, cc->root, gStatic ? TYPE_vid : TYPE_any)) {
+		// CAST_vid clears the stack
+		if (!cgen(rt, cc->root, gStatic ? CAST_vid : TYPE_any)) {
 			trace(ERR_INTERNAL_ERROR);
 			return 0;
 		}
@@ -2536,7 +2536,7 @@ int gencode(rtContext rt, int mode) {
 	// buils the initialization function.
 	rt->main->file = NULL;
 	rt->main->line = 0;
-	rt->main->kind = TYPE_ref;
+	rt->main->kind = CAST_ref;
 	rt->main->call = 1;
 	rt->main->offs = Lmain;
 	rt->main->size = emitopc(rt, markIP) - Lmain;

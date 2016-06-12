@@ -76,13 +76,13 @@ struct symNode {
 	size_t	size;		// variable or function size.
 	size_t	offs;		// address of variable or function.
 
-	symn	type;		// base type of TYPE_ref/TYPE_arr/function (void, int, float, struct, ...)
+	symn	type;		// base type of CAST_ref/CAST_arr/function (void, int, float, struct, ...)
 	symn	flds;		// all fields: static + non static fields / function return value + parameters
 	symn	prms;		// tail of flds: struct non static fields / function parameters
 	symn	decl;		// declaring symbol (defined in ...): struct, function, ...
 	symn	next;		// next symbol: field / param / ... / (in scope table)
 
-	ccToken	kind;		// TYPE_def / TYPE_rec / TYPE_ref / TYPE_arr
+	ccToken	kind;		// TYPE_def / TYPE_rec / CAST_ref / CAST_arr
 	ccToken	cast;		// casts to type(TYPE_(bit, vid, ref, u32, i32, i64, f32, f64, p4x)).
 
 	union {				// Attributes
@@ -112,8 +112,8 @@ struct symNode {
 
 /// Abstract syntax tree node
 struct astNode {
-	ccToken		kind;				// code: TYPE_ref, OPER_???
-	ccToken		cst2;				// casts to: (void, bool, int32, int64, float32, float64, reference, value)
+	ccToken		kind;				// code: CAST_ref, OPER_???
+	ccToken		cast;				// casts to: (void, bool, int32, int64, float32, float64, reference, value)
 	symn		type;				// typeof() return type of operator
 	astn		next;				// next statement, next usage, do not use for preorder
 	char*		file;				// file name of the token belongs to
@@ -129,7 +129,7 @@ struct astNode {
 			astn	test;			// condition: if, for
 			astn	init;			// for statement init
 		} stmt;
-		struct {			// TYPE_ref: identifyer
+		struct {			// CAST_ref: identifyer
 			char*	name;			// name of identifyer
 			unsigned hash;			// hash code for 'name'
 			symn	link;			// variable
@@ -266,7 +266,7 @@ symn leave(ccContext cc, symn dcl, int mode);
 /**
  * @brief Install a new symbol: alias, type, variable or function.
  * @param name Symbol name.
- * @param kind Kind of sybol: (TYPE_def, TYPE_ref,TYPE_rec, TYPE_arr)
+ * @param kind Kind of sybol: (TYPE_def, CAST_ref,TYPE_rec, CAST_arr)
  * @param cast Casts to ...
  * @param size Size of symbol
  * @param type Type of symbol (base type / return type).
@@ -277,7 +277,7 @@ symn install(ccContext, const char* name, ccToken kind, ccToken cast, unsigned s
 
 /**
  * @brief Install a new symbol: alias, type, variable or function.
- * @param kind Kind of sybol: (TYPE_def, TYPE_ref,TYPE_rec, TYPE_arr)
+ * @param kind Kind of sybol: (TYPE_def, CAST_ref,TYPE_rec, CAST_arr)
  * @param tag Parsed tree node representing the sybol.
  * @param typ Type of symbol.
  * @return The symbol.
@@ -361,7 +361,7 @@ float64_t constflt(astn ast);
  * @brief Try to evaluate a constant expression.
  * @param res Place the result here.
  * @param ast Abstract syntax tree to be evaluated.
- * @return Type of result: [TYPE_err, TYPE_bit, TYPE_int, TYPE_flt, TYPE_str]
+ * @return Type of result: [TYPE_err, CAST_bit, TYPE_int, TYPE_flt, TYPE_str]
  */
 // TODO: to be deleted; use vm to evaluate constants.
 ccToken eval(astn res, astn ast);
@@ -407,7 +407,7 @@ int isConstExpr(astn ast);
 int isStaticExpr(ccContext, astn ast);
 
 /** Cast
- * returns one of (TYPE_bit, ref, u32, i32, i64, f32, f64)
+ * returns one of (CAST_bit, ref, u32, i32, i64, f32, f64)
 **/
 // TODO: check / remove function
 ccToken castOf(symn typ);

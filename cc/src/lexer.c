@@ -1047,7 +1047,7 @@ static int readTok(ccContext cc, astn tok) {
 				tok->kind = keywords[hi].type;
 			}
 			else {
-				tok->kind = TYPE_ref;
+				tok->kind = CAST_ref;
 				tok->type = tok->ref.link = NULL;
 				tok->ref.hash = rehash(beg, ptr - beg) % TBLS;
 				tok->ref.name = mapstr(cc, beg, ptr - beg, tok->ref.hash);
@@ -1222,7 +1222,7 @@ static int readTok(ccContext cc, astn tok) {
 
 			if (*suffix) {	// error
 				if (suffix[0] == 'f' && suffix[1] == 0) {
-					tok->cst2 = TYPE_f32;
+					tok->cast = CAST_f32;
 					flt = 1;
 				}
 				else {

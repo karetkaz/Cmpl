@@ -648,7 +648,7 @@ int ccLibStdc(rtContext rt) {
 				break;
 			}
 		}
-		//~ install(cc, "Arguments", TYPE_arr, 0, 0);	// string Args[];
+		//~ install(cc, "Arguments", CAST_arr, 0, 0);	// string Args[];
 		//~ install(cc, "Enviroment", TYPE_def, 0, 0);	// string Env[string];
 		ccEnd(rt, nsp, ATTR_stat);
 	}

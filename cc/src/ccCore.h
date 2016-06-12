@@ -12,16 +12,16 @@ extern "C" {
 
 // Tokens - CC
 typedef enum {
-#define TOKDEF(NAME, TYPE, SIZE, STR) NAME,
-#include "defs.inl"
+	#define TOKDEF(NAME, TYPE, SIZE, STR) NAME,
+	#include "defs.inl"
 	tok_last,
 
 	OPER_beg = OPER_fnc,
 	OPER_end = OPER_com,
 
 	TOKN_err = TYPE_any,
-	TYPE_int = TYPE_i64,
-	TYPE_flt = TYPE_f64,
+	TYPE_int = CAST_i64,
+	TYPE_flt = CAST_f64,
 	TYPE_str = TYPE_ptr,
 
 	KIND_mask   = 0x0ff,		// mask
@@ -36,29 +36,7 @@ typedef enum {
 	decl_NoDefs = 0x100,		// disable typedefs in decl.
 	decl_NoInit = 0x200,		// disable initialization.
 	decl_ItDecl = 0x400,		// enable ':' after declaration: for(int a : range(0, 12))
-
-	/*? enum Kind {
-		CAST_any    = 0x000000;		// invalid, error, ...
-		CAST_vid    = 0x000001;		// void;
-		CAST_bit    = 0x000002;		// bool;
-		CAST_i32    = 0x000003;		// int32, int16, int8
-
-		// ...
-		// alias    = 0x000000;		// invalid at runtime.
-
-		KIND_typ
-		typename    = 0x000010;		// struct metadata info.
-
-		KIND_fun
-		function    = 0x000020;		// function
-
-		KIND_var
-		variable    = 0x000030;		// functions and types are also variables
-
-		ATTR_const  = 0x000040;
-		ATTR_static = 0x000080;
-	}*/
-} ccToken;
+} ccToken, ccKind;
 struct tok_inf {
 	int const	type;
 	int const	argc;
@@ -79,6 +57,7 @@ enum {
 	installEswz = 0x0040 | installEopc,         // swizzle constants: emit.swz.(xxxx, ... xyzw, ... wwww)
 
 	// register defaults if ccInit not invoked explicitly.
+	install_min = install_ptr + install_var + install_obj,
 	install_def = install_ptr + install_var + install_obj + installEopc,
 	install_all = install_ptr + install_var + install_obj + installEswz,
 };

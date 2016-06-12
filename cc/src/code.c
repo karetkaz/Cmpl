@@ -1466,7 +1466,7 @@ vmError invoke(rtContext rt, symn fun, void* res, void* args, void* extra) {
 	vmError result;
 
 	// invoked symbol must be a function reference
-	dieif(fun->kind != TYPE_ref || !fun->call, "FixMe");
+	dieif(fun->kind != CAST_ref || !fun->call, "FixMe");
 
 	// result is the last argument.
 	resp = pu->sp - ressize;
@@ -1779,12 +1779,12 @@ void fputVal(FILE *out, const char *esc[], rtContext rt, symn var, stkval *ref, 
 		indent = -indent;
 	}
 
-	if (var->kind == TYPE_ref) {
+	if (var->kind == CAST_ref) {
 		typ = var->call ? &func : var->type;
 		fmt = var->pfmt ? var->pfmt : typ->pfmt;
 
 		//~ fputfmt(out, "@%06x", vmOffset(rt, ref));
-		if (var != typ && var->cast == TYPE_ref && ref != NULL) {	// indirect reference
+		if (var != typ && var->cast == CAST_ref && ref != NULL) {	// indirect reference
 			ref = getip(rt, ref->u4);
 			//~ fputfmt(out, "->@%06x", vmOffset(rt, ref));
 		}
@@ -1800,8 +1800,8 @@ void fputVal(FILE *out, const char *esc[], rtContext rt, symn var, stkval *ref, 
 	}
 	if (var != typ) {
 		int byref = 0;
-		if (var->cast == TYPE_ref) {
-			if (typ->cast != TYPE_ref) {
+		if (var->cast == CAST_ref) {
+			if (typ->cast != CAST_ref) {
 				byref = '&';
 			}
 		}
@@ -1840,7 +1840,7 @@ void fputVal(FILE *out, const char *esc[], rtContext rt, symn var, stkval *ref, 
 						break;
 
 					case 1:
-						if (typ->cast == TYPE_u32) {
+						if (typ->cast == CAST_u32) {
 							fputFmt(out, esc, fmt, ref->u1);
 						}
 						else {
@@ -1849,7 +1849,7 @@ void fputVal(FILE *out, const char *esc[], rtContext rt, symn var, stkval *ref, 
 						break;
 
 					case 2:
-						if (typ->cast == TYPE_u32) {
+						if (typ->cast == CAST_u32) {
 							fputFmt(out, esc, fmt, ref->u2);
 						}
 						else {
@@ -1858,10 +1858,10 @@ void fputVal(FILE *out, const char *esc[], rtContext rt, symn var, stkval *ref, 
 						break;
 
 					case 4:
-						if (typ->cast == TYPE_f32) {
+						if (typ->cast == CAST_f32) {
 							fputFmt(out, esc, fmt, ref->f4);
 						}
-						else if (typ->cast == TYPE_u32) {
+						else if (typ->cast == CAST_u32) {
 							// force zero extend (may sign extend to int64 ?).
 							fputFmt(out, esc, fmt, ref->u4);
 						}
@@ -1871,7 +1871,7 @@ void fputVal(FILE *out, const char *esc[], rtContext rt, symn var, stkval *ref, 
 						break;
 
 					case 8:
-						if (typ->cast == TYPE_f64) {
+						if (typ->cast == CAST_f64) {
 							fputFmt(out, esc, fmt, ref->f8);
 						}
 						else {
@@ -1885,7 +1885,7 @@ void fputVal(FILE *out, const char *esc[], rtContext rt, symn var, stkval *ref, 
 				fputFmt(out, esc, "{");
 				for (tmp = typ->prms; tmp; tmp = tmp->next) {
 
-					if (tmp->stat || tmp->kind != TYPE_ref)
+					if (tmp->stat || tmp->kind != CAST_ref)
 						continue;
 
 					if (tmp->pfmt && !*tmp->pfmt)
@@ -1911,7 +1911,7 @@ void fputVal(FILE *out, const char *esc[], rtContext rt, symn var, stkval *ref, 
 				fputFmt(out, esc, "<%?T%?+d@%06x>", sym, (int32_t)offs, vmOffset(rt, ref));
 			}
 		} break;
-		case TYPE_arr: {
+		case CAST_arr: {
 			// ArraySize
 			int i, n = typ->size;
 			symn base = typ->type;
@@ -1919,7 +1919,7 @@ void fputVal(FILE *out, const char *esc[], rtContext rt, symn var, stkval *ref, 
 			int arrayHasMoreElements = 0;
 
 			//~ fputFmt(out, esc, "@%06x", vmOffset(rt, ref));
-			if (typ->cast != TYPE_arr) { // TODO: OR USE: if (typ->stat) {
+			if (typ->cast != CAST_arr) { // TODO: OR USE: if (typ->stat) {
 				// fixed size array
 				dieif(n % base->size != 0, "FixMe");
 				fputFmt(out, esc, "[");
@@ -1938,7 +1938,7 @@ void fputVal(FILE *out, const char *esc[], rtContext rt, symn var, stkval *ref, 
 			}
 			#endif
 
-			if (base->kind == TYPE_arr) {
+			if (base->kind == CAST_arr) {
 				elementsOnNewLine = 1;
 			}
 
@@ -2029,7 +2029,7 @@ static void traceArgs(rtContext rt, FILE *out, symn fun, char *file, int line, v
 			}
 			dieif(sym->stat, ERR_INTERNAL_ERROR);
 
-			if (fun->kind == TYPE_ref) {
+			if (fun->kind == CAST_ref) {
 				// vm_size holds the return value of the function.
 				offs += vm_size + fun->prms->offs - sym->offs;
 				fputVal(out, NULL, rt, sym, (void *) offs, 0, -ident);

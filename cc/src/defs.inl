@@ -6,22 +6,22 @@
 	ARGS: if != 0 then operator
 */
 TOKDEF(TYPE_any, 0x00, 0, ".nil")                // alias, define, error
-TOKDEF(TYPE_vid, 0x00, 0, ".vid")                // void
-TOKDEF(TYPE_bit, 0x04, 0, ".bit")                // bool
-TOKDEF(TYPE_i32, 0x04, 0, ".i32")                // int8, int16, int32
-TOKDEF(TYPE_u32, 0x04, 0, ".u32")                // uint8, uint16, uint32
-TOKDEF(TYPE_i64, 0x08, 0, ".i64")                // int64
+TOKDEF(CAST_vid, 0x00, 0, ".vid")                // void
+TOKDEF(CAST_bit, 0x04, 0, ".bit")                // bool
+TOKDEF(CAST_i32, 0x04, 0, ".i32")                // int8, int16, int32
+TOKDEF(CAST_u32, 0x04, 0, ".u32")                // uint8, uint16, uint32
+TOKDEF(CAST_i64, 0x08, 0, ".i64")                // int64
 //TOKDEF(TYPE_u64, 0x08, 0, ".u64")              // uint64: no vm support yet
-TOKDEF(TYPE_f32, 0x04, 0, ".f32")                // float32
-TOKDEF(TYPE_f64, 0x08, 0, ".f64")                // float64
+TOKDEF(CAST_f32, 0x04, 0, ".f32")                // float32
+TOKDEF(CAST_f64, 0x08, 0, ".f64")                // float64
 TOKDEF(TYPE_ptr, 0x04, 0, ".ptr")                // pointer, string, ...
 // compound 0x0a ... 0x0f
-TOKDEF(TYPE_arr, 0x08, 0, ".arr")                // slice
-TOKDEF(TYPE_var, 0x08, 0, ".var")                // variant
+TOKDEF(CAST_arr, 0x08, 0, ".arr")                // slice
+TOKDEF(CAST_var, 0x08, 0, ".var")                // variant
 
 TOKDEF(TYPE_def, 0x00, 0, ".def")                // alias or inline expression
 TOKDEF(TYPE_rec, 0x00, 0, ".rec")                // type: struct, cast: by value
-TOKDEF(TYPE_ref, 0x00, 0, ".ref")                // type: variable, cast: by reference
+TOKDEF(CAST_ref, 0x00, 0, ".ref")                // type: variable, cast: by reference
 
 //~ Statements =================================================================
 //! keep STMT_beg the first and STMT_end the last statement token
