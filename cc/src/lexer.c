@@ -167,13 +167,7 @@ static int backChr(ccContext cc, int chr) {
 	return cc->_chr = chr;
 }
 
-/**
- * @brief set source(file or string) to be parsed.
- * @param cc compiler context.
- * @param src file name or text to pe parsed.
- * @param isFile src is a filename.
- * @return boolean value of success.
- */
+/// @doc: header
 int source(ccContext cc, int isFile, char* src) {
 	if (cc->fin._fin > 3) {
 		// close previous opened file
@@ -184,22 +178,17 @@ int source(ccContext cc, int isFile, char* src) {
 	cc->fin._ptr = 0;
 	cc->fin._cnt = 0;
 	cc->_chr = -1;
-	cc->_tok = 0;
+	cc->_tok = NULL;
 
 	cc->file = NULL;
 	cc->line = 0;
 
 	if (isFile && src != NULL) {
-#ifdef __WATCOMC__
-		if ((cc->fin._fin = open(src, O_RDONLY|O_BINARY)) <= 0)
-#else
-		if ((cc->fin._fin = open(src, O_RDONLY)) <= 0)
-#endif
-		{
+		if ((cc->fin._fin = open(src, O_RDONLY)) <= 0) {
 			return -1;
 		}
 
-		cc->file = mapstr(cc, src, -1, -1);
+		cc->file = mapstr(cc, src, (size_t) -1, (unsigned) -1);
 		cc->line = 1;
 
 		if (fillBuf(cc) > 2) {
@@ -224,12 +213,7 @@ int source(ccContext cc, int isFile, char* src) {
 
 //#}
 
-/** Calculate hash of string.
- * @brief calculate the hash of a string.
- * @param str string to be hashed.
- * @param len length of string.
- * @return hash code of the input.
- */
+/// @doc: header
 unsigned rehash(const char* str, size_t len) {
 	static unsigned const crc_tab[256] = {
 		0x00000000, 0x77073096, 0xEE0E612C, 0x990951BA,
@@ -311,14 +295,7 @@ unsigned rehash(const char* str, size_t len) {
 	return hs ^ 0xffffffff;
 }
 
-/** Add string to string table.
- * @brief add string to string table.
- * @param cc compiler context.
- * @param str the string to be mapped.
- * @param len the length of the string, -1 recalculates using strlen.
- * @param hash precalculated hashcode, -1 recalculates.
- * @return the mapped string in the string table.
- */
+/// @doc: header
 char* mapstr(ccContext cc, const char* str, size_t len/* = -1*/, unsigned hash/* = -1*/) {
 	rtContext rt = cc->rt;
 	list newn, next, prev = 0;
@@ -767,7 +744,7 @@ static int readTok(ccContext cc, astn tok) {
 			}
 			if (chr == '&') {
 				readChr(cc);
-				tok->kind = OPER_lnd;
+				tok->kind = OPER_all;
 				break;
 			}
 			tok->kind = OPER_and;
@@ -782,7 +759,7 @@ static int readTok(ccContext cc, astn tok) {
 			}
 			if (chr == '|') {
 				readChr(cc);
-				tok->kind = OPER_lor;
+				tok->kind = OPER_any;
 				break;
 			}
 			tok->kind = OPER_ior;
@@ -1049,7 +1026,7 @@ static int readTok(ccContext cc, astn tok) {
 				if (!(chr_map[chr & 0xff] & CWORD)) {
 					break;
 				}
-				*ptr++ = chr;
+				*ptr++ = (char) chr;
 				chr = readChr(cc);
 			}
 			backChr(cc, chr);
@@ -1086,7 +1063,7 @@ static int readTok(ccContext cc, astn tok) {
 
 			//~ 0[.oObBxX]?
 			if (chr == '0') {
-				*ptr++ = chr;
+				*ptr++ = (char) chr;
 				chr = readChr(cc);
 
 				switch (chr) {
@@ -1101,21 +1078,21 @@ static int readTok(ccContext cc, astn tok) {
 					case 'b':
 					case 'B':
 						radix = 2;
-						*ptr++ = chr;
+						*ptr++ = (char) chr;
 						chr = readChr(cc);
 						break;
 
 					case 'o':
 					case 'O':
 						radix = 8;
-						*ptr++ = chr;
+						*ptr++ = (char) chr;
 						chr = readChr(cc);
 						break;
 
 					case 'x':
 					case 'X':
 						radix = 16;
-						*ptr++ = chr;
+						*ptr++ = (char) chr;
 						chr = readChr(cc);
 						break;
 				}
@@ -1145,7 +1122,7 @@ static int readTok(ccContext cc, astn tok) {
 
 				i64v = i64v * radix + value;
 
-				*ptr++ = chr;
+				*ptr++ = (char) chr;
 				chr = readChr(cc);
 			}
 
@@ -1162,14 +1139,14 @@ static int readTok(ccContext cc, astn tok) {
 					long double val = 0;
 					long double exp = 1;
 
-					*ptr++ = chr;
+					*ptr++ = (char) chr;
 					chr = readChr(cc);
 
 					while (chr >= '0' && chr <= '9') {
 						val = val * 10 + (chr - '0');
 						exp *= 10;
 
-						*ptr++ = chr;
+						*ptr++ = (char) chr;
 						chr = readChr(cc);
 					}
 
@@ -1182,14 +1159,14 @@ static int readTok(ccContext cc, astn tok) {
 					unsigned int val = 0;
 					int sgn = 1;
 
-					*ptr++ = chr;
+					*ptr++ = (char) chr;
 					chr = readChr(cc);
 
 					switch (chr) {
 						case '-':
 							sgn = -1;
 						case '+':
-							*ptr++ = chr;
+							*ptr++ = (char) chr;
 							chr = readChr(cc);
 						default:
 							break;
@@ -1203,7 +1180,7 @@ static int readTok(ccContext cc, astn tok) {
 							ovrf = 1;
 						}
 
-						*ptr++ = chr;
+						*ptr++ = (char) chr;
 						chr = readChr(cc);
 					}
 
@@ -1237,7 +1214,7 @@ static int readTok(ccContext cc, astn tok) {
 				if (!(chr_map[chr & 0xff] & CWORD)) {
 					break;
 				}
-				*ptr++ = chr;
+				*ptr++ = (char) chr;
 				chr = readChr(cc);
 			}
 			backChr(cc, chr);
@@ -1259,7 +1236,7 @@ static int readTok(ccContext cc, astn tok) {
 			}
 			else {			// integer
 				tok->kind = TYPE_int;
-				tok->cint = i64v;
+				tok->cint = (int32_t) i64v;
 			}
 		} break;
 	}
@@ -1272,11 +1249,7 @@ static int readTok(ccContext cc, astn tok) {
 	return tok->kind;
 }
 
-/** Push back a token.
- * @brief put back token to be read next time.
- * @param cc compiler context.
- * @param tok the token to be pushed back.
- */
+/// @doc: header
 void backTok(ccContext cc, astn tok) {
 	if (tok != NULL) {
 		tok->next = cc->_tok;
@@ -1284,13 +1257,9 @@ void backTok(ccContext cc, astn tok) {
 	}
 }
 
-/** Peek the next token.
- * @brief peek the next token from input.
- * @param cc compiler context.
- * @param kind filter: 0 matches everithing.
- * @return next token, or null.
- */
+/// @doc: header
 astn peekTok(ccContext cc, ccToken kind) {
+	// read lookahead token
 	if (cc->_tok == NULL) {
 		cc->_tok = newnode(cc, TOKN_err);
 		if (!readTok(cc, cc->_tok)) {
@@ -1305,12 +1274,7 @@ astn peekTok(ccContext cc, ccToken kind) {
 	return NULL;
 }
 
-/** Read the next token.
- * @brief read the next token from input.
- * @param cc compiler context.
- * @param kind filter: 0 matches everithing.
- * @return next token, or null.
- */
+/// @doc: header
 astn next(ccContext cc, ccToken kind) {
 	if (peekTok(cc, kind)) {
 		astn ast = cc->_tok;
@@ -1321,12 +1285,7 @@ astn next(ccContext cc, ccToken kind) {
 	return 0;
 }
 
-/** Skip the next token.
- * @brief skip the next token.
- * @param cc compiler context.
- * @param kind filter: 0 matches everithing.
- * @return true if token was skipped.
- */
+/// @doc: header
 int skip(ccContext cc, ccToken kind) {
 	astn ast = peekTok(cc, TYPE_any);
 	if (!ast || (kind && ast->kind != kind)) {

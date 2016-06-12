@@ -37,40 +37,40 @@ TOKDEF(STMT_ret, 0x00, 0, "return")              // stmt: return
 TOKDEF(STMT_end, 0x00, 0, ";")                   // stmt: expression
 
 //~ Operators ==================================================================
-TOKDEF(OPER_fnc, 0x0f, 2, ".call")               // a(x): function call, cast, emit, ctor = <typename>(args...), dtor ?= void(<typename> &&variable), ...
-TOKDEF(OPER_idx, 0x0f, 2, ".idx")                // a[i]: index
-TOKDEF(OPER_dot, 0x0f, 2, ".dot")                // a.b:  member
+TOKDEF(OPER_fnc, 0x0f, 2, "(?)")                 // a(x): function call, cast, emit, ctor = <typename>(args...), dtor ?= void(<typename> &&variable), ...
+TOKDEF(OPER_idx, 0x0f, 2, "[?]")                 // a[i]: index
+TOKDEF(OPER_dot, 0x0f, 2, ".")                   // a.b:  member
 
-TOKDEF(OPER_adr, 0x1e, 1, ".adr")                // & a:  address of [todo: remove]
-TOKDEF(OPER_pls, 0x1e, 1, ".pls")                // + a:  unary plus
-TOKDEF(OPER_mns, 0x1e, 1, ".neg")                // - a:  unary minus
-TOKDEF(OPER_cmt, 0x1e, 1, ".cmt")                // ~ a:  complement / ?reciprocal
-TOKDEF(OPER_not, 0x1e, 1, ".not")                // ! a:  logical not
+TOKDEF(OPER_adr, 0x1e, 1, "&")                   // & a:  address of
+TOKDEF(OPER_pls, 0x1e, 1, "+")                   // + a:  unary plus
+TOKDEF(OPER_mns, 0x1e, 1, "-")                   // - a:  unary minus
+TOKDEF(OPER_cmt, 0x1e, 1, "~")                   // ~ a:  complement / ?reciprocal
+TOKDEF(OPER_not, 0x1e, 1, "!")                   // ! a:  logical not
 
-TOKDEF(OPER_mul, 0x0d, 2, ".mul")                // a * b
-TOKDEF(OPER_div, 0x0d, 2, ".div")                // a / b
-TOKDEF(OPER_mod, 0x0d, 2, ".mod")                // a % b
+TOKDEF(OPER_mul, 0x0d, 2, "*")                   // a * b
+TOKDEF(OPER_div, 0x0d, 2, "/")                   // a / b
+TOKDEF(OPER_mod, 0x0d, 2, "%")                   // a % b
 
-TOKDEF(OPER_add, 0x0c, 2, ".add")                // a + b
-TOKDEF(OPER_sub, 0x0c, 2, ".sub")                // a - b
+TOKDEF(OPER_add, 0x0c, 2, "+")                   // a + b
+TOKDEF(OPER_sub, 0x0c, 2, "-")                   // a - b
 
-TOKDEF(OPER_shr, 0x0b, 2, ".shr")                // a >> b
-TOKDEF(OPER_shl, 0x0b, 2, ".shl")                // a << b
+TOKDEF(OPER_shr, 0x0b, 2, ">>")                  // a >> b
+TOKDEF(OPER_shl, 0x0b, 2, "<<")                  // a << b
 
-TOKDEF(OPER_gte, 0x0a, 2, ".cgt")                // a > b
-TOKDEF(OPER_geq, 0x0a, 2, ".cge")                // a >= b
-TOKDEF(OPER_lte, 0x0a, 2, ".clt")                // a < b
-TOKDEF(OPER_leq, 0x0a, 2, ".cle")                // a <= b
+TOKDEF(OPER_gte, 0x0a, 2, ">")                   // a > b
+TOKDEF(OPER_geq, 0x0a, 2, ">=")                  // a >= b
+TOKDEF(OPER_lte, 0x0a, 2, "<")                   // a < b
+TOKDEF(OPER_leq, 0x0a, 2, "<=")                  // a <= b
 
-TOKDEF(OPER_equ, 0x09, 2, ".ceq")                // a == b
-TOKDEF(OPER_neq, 0x09, 2, ".cne")                // a != b
+TOKDEF(OPER_equ, 0x09, 2, "==")                  // a == b
+TOKDEF(OPER_neq, 0x09, 2, "!=")                  // a != b
 
-TOKDEF(OPER_and, 0x08, 2, ".and")                // a & b
-TOKDEF(OPER_xor, 0x07, 2, ".xor")                // a ^ b
-TOKDEF(OPER_ior, 0x06, 2, ".ior")                // a | b
+TOKDEF(OPER_and, 0x08, 2, "&")                   // a & b
+TOKDEF(OPER_xor, 0x07, 2, "^")                   // a ^ b
+TOKDEF(OPER_ior, 0x06, 2, "|")                   // a | b
 
-TOKDEF(OPER_lnd, 0x05, 2, "&&")                  // a && b
-TOKDEF(OPER_lor, 0x04, 2, "||")                  // a || b
+TOKDEF(OPER_all, 0x05, 2, "&&")                  // a && b
+TOKDEF(OPER_any, 0x04, 2, "||")                  // a || b
 TOKDEF(OPER_sel, 0x13, 3, "?:")                  // a ? b : c
 
 TOKDEF(ASGN_set, 0x12, 2, ":=")                  // a := b

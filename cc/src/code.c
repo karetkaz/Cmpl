@@ -258,23 +258,6 @@ int optimizeAssign(rtContext rt, size_t offsBegin, size_t offsEnd) {
 	return 0;
 }
 
-void dumpAsm(rtContext rt, size_t start, size_t end, userContext ctx, void action(userContext, size_t, void*)) {
-	size_t is, offs;
-	for (offs = start; offs < end; offs += is) {
-		register bcde ip = getip(rt, offs);
-		switch (ip->opc) {
-			error_opc:
-				error(rt, NULL, 0, "invalid opcode: %02x `%A`", ip->opc, ip);
-				return;
-
-			#define NEXT(__IP, __SP, __CHK) {if (__IP) is = (__IP);}
-			#define STOP(__ERR, __CHK, __ERC) if (__CHK) goto __ERR
-			#include "code.inl"
-		}
-		action(ctx, offs, ip);
-	}
-}
-
 // base function emiting an ocode, see header
 size_t emitarg(rtContext rt, vmOpcode opc, stkval arg) {
 	libc libcvec = rt->vm.libv;
@@ -1482,6 +1465,7 @@ vmError invoke(rtContext rt, symn fun, void* res, void* args, void* extra) {
 	void* resp = NULL;
 	vmError result;
 
+	// invoked symbol must be a function reference
 	dieif(fun->kind != TYPE_ref || !fun->call, "FixMe");
 
 	// result is the last argument.
@@ -1554,7 +1538,7 @@ void fputAsm(FILE *out, const char *esc[], rtContext rt, void *ptr, int mode) {
 	size_t i, len = (size_t) mode & prAsmCode;
 	size_t offs = (size_t)ptr;
 	char *fmt_addr = " .%06x"; // "0x%08x";
-	char *fmt_offs = " <%T+%d>";
+	char *fmt_offs = " <%.T+%d>";
 	symn sym = NULL;
 
 	if (rt != NULL) {
@@ -1720,7 +1704,7 @@ void fputAsm(FILE *out, const char *esc[], rtContext rt, void *ptr, int mode) {
 			if (rt != NULL) {
 				symn sym = rtFindSym(rt, offs, 0);
 				if (sym != NULL) {
-					fputFmt(out, esc, " ;%+T%?+d", sym, offs - sym->offs);
+					fputFmt(out, esc, " ;%T%?+d", sym, offs - sym->offs);
 				}
 				else if (rt->cc != NULL) {
 					char *str = getip(rt, offs);
@@ -1755,7 +1739,7 @@ void fputAsm(FILE *out, const char *esc[], rtContext rt, void *ptr, int mode) {
 					lc = &((libc)rt->vm.libv)[offs];
 				}
 				if (lc && lc->sym) {
-					fputFmt(out, esc, " ;%+T", lc->sym);
+					fputFmt(out, esc, " ;%T", lc->sym);
 				}
 			}
 			break;
@@ -1821,15 +1805,10 @@ void fputVal(FILE *out, const char *esc[], rtContext rt, symn var, stkval *ref, 
 				byref = '&';
 			}
 		}
-		if (mode & prSymQual) {
-			fputFmt(out, esc, "%T%?c: ", var, byref);
-		}
-		else {
-			fputFmt(out, esc, "%.T%?c: ", var, byref);
-		}
+		fputFmt(out, esc, "%.*T%?c: ", mode & ~prSymType, var, byref);
 	}
 
-	if (mode & prType) {
+	if (mode & prSymType) {
 		fputFmt(out, esc, "%-T(", typ);
 	}
 
@@ -1848,7 +1827,7 @@ void fputVal(FILE *out, const char *esc[], rtContext rt, symn var, stkval *ref, 
 		typ = getip(rt, (size_t) ref->var.type);
 		ref = getip(rt, (size_t) ref->var.value);
 		fputFmt(out, esc, "%+T, ", typ);
-		fputVal(out, esc, rt, typ, ref, prType, indent);
+		fputVal(out, esc, rt, typ, ref, mode & ~prSymQual, indent);
 	}
 	else switch (typ->kind) {
 		case TYPE_rec: {
@@ -1917,7 +1896,7 @@ void fputVal(FILE *out, const char *esc[], rtContext rt, symn var, stkval *ref, 
 					}
 
 					fputFmt(out, esc, "\n");
-					fputVal(out, esc, rt, tmp, (void *) ((char *) ref + tmp->offs), prType, indent + 1);
+					fputVal(out, esc, rt, tmp, (void *) ((char *) ref + tmp->offs), mode & ~prSymQual, indent + 1);
 					n += 1;
 				}
 				fputFmt(out, esc, "\n%I}", indent);
@@ -1999,7 +1978,7 @@ void fputVal(FILE *out, const char *esc[], rtContext rt, symn var, stkval *ref, 
 			fputFmt(out, esc, "%+T[ERROR(%K)]", typ, typ->kind);
 			break;
 	}
-	if (mode & prType) {
+	if (mode & prSymType) {
 		fputFmt(out, esc, ")");
 	}
 }
@@ -2127,8 +2106,9 @@ void logTrace(dbgContext dbg, FILE *out, int indent, int startLevel, int traceLe
 	}
 }
 
-int vmTest() {
+int vmSelfTest() {
 	int i, err = 0;
+	int test = 0, skip = 0;
 	FILE *out = stdout;
 	struct bcde ip[1];
 	struct libc libcvec[1];
@@ -2143,6 +2123,7 @@ int vmTest() {
 		switch (ip->opc = (uint8_t) i) {
 			error_opc:
 				if (opc_tbl[i].name == NULL) {
+					skip += 1;
 					// skip unimplemented instruction.
 					continue;
 				}
@@ -2184,48 +2165,11 @@ int vmTest() {
 			#include "code.inl"
 		}
 
+		test += 1;
 		if (NEXT > 1 && i != opc_spc) {
 			fputfmt(out, "More than one NEXT: opcode 0x%02x: '%.A'\n", i, ip);
 		}
 	}
-	return err;
-}
-int vmHelp() {
-	int i, err = 0;
-	FILE* out = stdout;
-	struct bcde ip[1];
-	ip->arg.i8 = 0;
-
-	fprintf(out, "\nVirtual machine opcode listing.\n");
-
-	for (i = 0; i < opc_last; i++) {
-		switch (i) {
-			error_opc:
-				if (opc_tbl[i].name == NULL) {
-					// skip unimplemented instruction.
-					continue;
-				}
-				fprintf(out, "Invalid instruction opc_x%02x: %s\n", i, opc_tbl[i].name);
-				err += 1;
-				continue;
-
-			#define NEXT(__IP, __SP, __CHK) if ((__IP) && opc_tbl[i].size != (__IP)) goto error_opc;
-			#define STOP(__ERR, __CHK, __ERR1) if (__CHK) goto error_opc
-			#include "code.inl"
-		}
-
-		fprintf(out, "\nInstruction: %s: #", opc_tbl[i].name);
-		fprintf(out, "\nOpcode		Size		Stack trasition");
-		fprintf(out, "\n0x%02x		%d		[..., a, b, c, d => [..., a, b, c, d#", opc_tbl[i].code, opc_tbl[i].size);
-
-		fprintf(out, "\n\nDescription");
-		fprintf(out, "\n#");
-		fprintf(out, "\n\nOperation");
-		fprintf(out, "\n#");
-		fprintf(out, "\n\nExceptions");
-		fprintf(out, "\nNone#");
-
-		fprintf(out, "\n\n");		// end of text
-	}
+	fputfmt(out, "vmSelfTest finished with %d errors from %d tested and %d skiped instructions\n", err, test, skip);
 	return err;
 }

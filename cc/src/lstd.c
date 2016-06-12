@@ -454,7 +454,7 @@ static vmError sysRaise(libcContext args) {
 		if (isOutput) {
 			fputfmt(rt->logFile, ": ");
 		}
-		fputVal(rt->logFile, NULL, rt, varType, varRef, prType, 0);
+		fputVal(rt->logFile, NULL, rt, varType, varRef, prSymType, 0);
 		isOutput = 1;
 	}
 

@@ -59,18 +59,18 @@ typedef enum {
  * @brief Runtime context
  */
 struct rtContextRec {
-	int32_t  errCount;		// error count
+	int32_t errCount;		// error count
+	int32_t padFlags: 23;
 	// disable code generation optimization
-	int32_t foldConst:1;	// fold constant expressions (3 + 4 => 7)
-	int32_t fastInstr:1;	// replace some instructions with a faster or shorter version (load 1, add => inc 1)
-	int32_t fastAssign:1;	// remove dup and set instructions when modifying the last declared variable.
-	int32_t genGlobals:1;	// generate global variables as static variables
-	int32_t padFlags:23;
+	int32_t foldConst: 1;	// fold constant expressions (3 + 4 => 7)
+	int32_t fastInstr: 1;	// replace some instructions with a faster or shorter version (load 1, add => inc 1)
+	int32_t fastAssign: 1;	// remove dup and set instructions when modifying the last declared variable.
+	int32_t genGlobals: 1;	// generate global variables as static variables
 
-	uint32_t logLevel:3;	// runtime logging level (0-7)
-	uint32_t logClose:1;	// close log file
-	uint32_t freeMem:1;		// release memory
-	FILE *logFile;		// log file
+	uint32_t logLevel: 3;	// runtime logging level (0-7)
+	uint32_t logClose: 1;	// close log file
+	uint32_t freeMem: 1;	// release memory
+	FILE *logFile;			// log file
 
 	symn  vars;		// global variables and functions
 	symn  main;		// the main initializer function
@@ -167,12 +167,12 @@ struct libcContextRec {
 /**
  * @brief Get the value of a libcall argument.
  * @param args Libcall arguments context.
- * @param offset Relative offset of argument.
  * @param result Optionally copy here the result.
+ * @param offset Relative offset of argument.
  * @param size Size of the argument to copy to result.
  * @return Pointer where the result is located or copied.
  */
-static inline void* argget(libcContext args, size_t offset, void *result, size_t size) {
+static inline void* argget(libcContext args, void *result, size_t offset, size_t size) {
 	// if result is not null copy
 	if (result != NULL) {
 		memcpy(result, args->argv + offset, size);

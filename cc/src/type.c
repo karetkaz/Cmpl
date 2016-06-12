@@ -187,7 +187,7 @@ symn install(ccContext s, const char* name, ccToken kind, ccToken cast, unsigned
 		return NULL;
 	}
 
-	if ((kind & 0xff) == TYPE_rec) {
+	if ((kind & KIND_mask) == TYPE_rec) {
 		logif((kind & (ATTR_stat | ATTR_const)) != (ATTR_stat | ATTR_const), "symbol `%s` should be declared as static and constant", name);
 		kind |= ATTR_stat | ATTR_const;
 	}
@@ -811,8 +811,8 @@ symn typeCheck(ccContext s, symn loc, astn ast) {
 			fatal(FATAL_UNIMPLEMENTED_OPERATOR, ast, lht, rht, ast);
 		} break;
 
-		case OPER_lor:		// '&&'
-		case OPER_lnd: {	// '||'
+		case OPER_any:		// '&&'
+		case OPER_all: {	// '||'
 			symn lht = typeCheck(s, loc, ast->op.lhso);
 			symn rht = typeCheck(s, loc, ast->op.rhso);
 			ccToken cast;

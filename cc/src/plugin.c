@@ -14,8 +14,8 @@ static inline library_t findSym(library_t lib, const char *name) { return dlsym(
 #else
 typedef void *library_t;
 static inline void closeLib(library_t lib) { (void)lib;}
-static inline library_t openLib(const char *path) { return NULL; }
-static inline library_t findSym(library_t lib, const char *name) { return NULL; }
+static inline library_t openLib(const char *path) { return 0; }
+static inline library_t findSym(library_t lib, const char *name) { return 0; }
 #endif
 
 #include "internal.h"

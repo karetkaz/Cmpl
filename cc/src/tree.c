@@ -101,6 +101,17 @@ astn opnode(ccContext cc, ccToken kind, astn lhs, astn rhs) {
 	return result;
 }
 
+astn wrapStmt(ccContext cc, astn node) {
+	astn result = newnode(cc, STMT_end);
+	if (result != NULL) {
+		result->type = cc->type_vid;
+		result->cst2 = TYPE_any;
+		result->file = node->file;
+		result->line = node->line;
+		result->stmt.stmt = node;
+	}
+	return result;
+}
 /// get value of constant node
 int32_t constbol(astn ast) {
 	if (ast != NULL) {
@@ -552,8 +563,8 @@ ccToken eval(astn res, astn ast) {
 			}
 			break;
 
-		case OPER_lnd:
-		case OPER_lor:
+		case OPER_all:
+		case OPER_any:
 
 			if (!eval(&lhs, ast->op.lhso))
 				return 0;
@@ -569,11 +580,11 @@ ccToken eval(astn res, astn ast) {
 					fatal(ERR_INTERNAL_ERROR);
 					return 0;
 
-				case OPER_lor:
+				case OPER_any:
 					res->cint = lhs.cint || rhs.cint;
 					break;
 
-				case OPER_lnd:
+				case OPER_all:
 					res->cint = lhs.cint && rhs.cint;
 					break;
 			}
@@ -811,8 +822,8 @@ int isStaticExpr(ccContext cc, astn ast) {
 		case OPER_mod:		// '%'
 			return isStaticExpr(cc, ast->op.lhso) && isStaticExpr(cc, ast->op.rhso);
 
-		case OPER_lnd:		// '&&'
-		case OPER_lor:		// '||'
+		case OPER_all:		// '&&'
+		case OPER_any:		// '||'
 			return isStaticExpr(cc, ast->op.lhso) && isStaticExpr(cc, ast->op.rhso);
 
 		case OPER_sel:		// '?:'

@@ -181,6 +181,7 @@ void *rtAlloc(rtContext rt, void* ptr, size_t size, void dbg(rtContext rt, void*
 			chunk = next;
 		}
 	}
+	// Debug.
 	else {
 		chunk = NULL;
 		if (dbg != NULL) {

@@ -246,13 +246,13 @@ struct ccContextRec {
 
 /// Debugger context
 struct dbgContextRec {
-	rtContext rt;
-	userContext extra;		// extra data for debuger
-	int (*debug)(dbgContext ctx, vmError, size_t ss, void* sp, void* ip);
 	int (*profile)(dbgContext ctx, size_t ss, void* caller, void* callee, time_t now);
-	int checked;			// execution is inside an try catch
+	int (*debug)(dbgContext ctx, vmError, size_t ss, void* sp, void* ip);
+	userContext extra;		// extra data for debuger
+	rtContext rt;
 	struct arrBuffer functions;
 	struct arrBuffer statements;
+	int checked;			// execution is inside an try catch
 };
 
 
@@ -350,6 +350,9 @@ astn lnknode(ccContext, symn ref);
 /// Allocate an operator tree node.
 astn opnode(ccContext, ccToken kind, astn lhs, astn rhs);
 
+/// wrap an expression into a staemen.
+astn wrapStmt(ccContext cc, astn node);
+
 // return constant values of nodes
 int32_t constbol(astn ast);
 int64_t constint(astn ast);
@@ -423,33 +426,69 @@ size_t sizeOf(symn sym, int varSize);
 
 
 //             *** Parsing section
-/// skip the next token.
+/**
+ * @brief set source(file or string) to be parsed.
+ * @param cc compiler context.
+ * @param src file name or text to pe parsed.
+ * @param isFile src is a filename.
+ * @return boolean value of success.
+ */
+int source(ccContext, int isFile, char* src);
+
+/** Read the next token.
+ * @brief read the next token from input.
+ * @param cc compiler context.
+ * @param match: read next token only if matches.
+ * @return next token, or null.
+ */
 astn next(ccContext, ccToken kind);
+
+/** Peek the next token.
+ * @brief read the next token from input.
+ * @param cc compiler context.
+ * @param match: read next token only if matches.
+ * @return next token, or null.
+ */
+astn peekTok(ccContext, ccToken kind);
+
+/** Read the next token and recycle it.
+ * @brief read the next token from input.
+ * @param cc compiler context.
+ * @param match: read next token only if matches.
+ * @return kind of read token.
+ */
+ccToken skiptok(ccContext, ccToken kind, int raise);
 int skip(ccContext, ccToken kind);
 ccToken test(ccContext);
+
+/** Push back a token, to be read next time.
+ * @brief put back token to be read next time.
+ * @param cc compiler context.
+ * @param tok the token to be pushed back.
+ */
 void backTok(ccContext, astn tok);
-astn peekTok(ccContext, ccToken kind);
-ccToken skiptok(ccContext, ccToken kind, int raise);
-int source(ccContext, int isFile, char* src);
 
 //             *** Print and dump
 enum Format {
-	// fputAst
-	nlAstBody = 0x0400,
-	nlAstElIf = 0x0800,
+	prAsmCode = 0x00000f,   // print code bytes (0-15)
+	prAsmAddr = 0x000010,   // print global address: (@0x003d8c)
+	prAsmName = 0x000040,   // use symbol names instead of addresses: <main+80>
 
-	// sym & ast & val
-	prType = 0x0010,
-	prSymQual = 0x0020,
-	prAstCast = 0x0020,
-	prSymInit = 0x0040,
+	prOneLine = 0x000080,   // force printing on a single line (skip: function body, typename fields, statement blocks, ...)
 
-	// fputAsm
-	prAsmCode = 0x000f, // print code bytes (0-15)
-	prAsmAddr = 0x0010, // print global address: (@0x003d8c)
-	prAsmName = 0x0040, // use symbol names instead of addresses: <main+80>
+	prSymQual = 0x000100,   // print qualified symbol names.
+	prSymArgs = 0x000200,   // print functions parameters.
+	prSymType = 0x000400,   // print variable type, function return type, typename base type.
+	prSymInit = 0x000800,   // print variable initializer, function body, typename fields.
 
-	// prArgs = 0x0080,
+	prAttr    = 0x001000,   // print attributes: const, static, parallel
+	prAstCast = 0x002000,   // print type cast of each subexpression
+	nlAstBody = 0x004000,   // print compound statements on new line (like in cs)
+	nlAstElIf = 0x008000,   // don't keep `else if` constructs on the same line.
+
+	prName = 0,		// print operator or symbol name only.
+	prShort = prSymQual | prSymArgs | prOneLine ,	// %t, %t, %T, %T
+	prFull = prAttr | prSymQual | prSymArgs | prSymType | prSymInit,		// %+t, %-t, %+T, %-T
 };
 
 void fputFmt(FILE *out, const char *esc[], const char *fmt, ...);
@@ -486,15 +525,7 @@ void fputVal(FILE *out, const char *esc[], rtContext, symn var, stkval *ref, int
  */
 void dumpApi(rtContext rt, userContext ctx, void action(userContext, symn));
 
-/**
- * @brief Iterate over instructions.
- * @param Runtime context.
- * @param offsBegin First instruction offset.
- * @param offsEnd Last instruction offset.
- * @param extra Extra arguments for callback.
- * @param action Callback executed on each instruction.
- */
-void dumpAsm(rtContext rt, size_t start, size_t end, userContext extra, void action(userContext, size_t offs, void *ip));
+int vmSelfTest();
 
 // TODO: remove: print compiler error
 void ccError(rtContext rt, int level, const char *file, int line, const char *msg, ...);
@@ -529,26 +560,20 @@ static inline size_t padded(size_t offs, unsigned align) {
 void closeLibs();
 int importLib(rtContext rt, const char* path);
 
-static inline void _abort() {
-#ifndef DEBUGGING	// abort on first internal error
-	abort();
-#endif
-}
-
 // TODO: Extract all error and warnings messages.
 #define ERR_INTERNAL_ERROR "Internal Error"
 #define ERR_MEMORY_OVERRUN "Memory Overrun"
 
-#define ERR_ASSIGN_TO_CONST "assignment of constant variable `%+t`"
 #define ERR_SYNTAX_ERR_BEFORE "syntax error before token '%t'"
+#define ERR_ASSIGN_TO_CONST "assignment of constant variable `%+t`"
 #define ERR_CONST_INIT "invalid constant initialization `%+t`"
 
-#define WARN_USE_BLOCK_STATEMENT "statement should be a block statement {%+t}."
 #define WARN_EMPTY_STATEMENT "empty statement `;`."
+#define WARN_USE_BLOCK_STATEMENT "statement should be a block statement {%t}."
 #define WARN_TRAILING_COMMA "skipping trailing comma before `%t`"
 #define WARN_INVALID_EXPRESSION_STATEMENT "expression statement expected"
 
-#define FATAL_UNIMPLEMENTED_OPERATOR "operator %t (%T, %T): %+t"
+#define FATAL_UNIMPLEMENTED_OPERATOR "operator %.t (%T, %T): %+t"
 
 //~ disable warning messages
 #ifdef _MSC_VER
@@ -556,13 +581,20 @@ static inline void _abort() {
 #pragma warning(disable: 4996)
 #endif
 
-#define prerr(__DBG, __MSG, ...) do { fputfmt(stdout, "%s:%u: "__DBG": %s: "__MSG"\n", __FILE__, __LINE__, __FUNCTION__, ##__VA_ARGS__); } while(0)
+static inline void _break() {/* Add a breakpoint to break on errors. */}
+static inline void _abort() {
+	_break();
+#ifndef DEBUGGING	// abort on first internal error
+	abort();
+#endif
+}
+#define prerr(__DBG, __MSG, ...) do { fputfmt(stdout, "%s:%u: "__DBG": %s: "__MSG"\n", __FILE__, __LINE__, __FUNCTION__, ##__VA_ARGS__); _break(); } while(0)
 
 #define fatal(msg, ...) do { prerr("internal error", msg, ##__VA_ARGS__); _abort(); } while(0)
 #define dieif(__EXP, msg, ...) do {if (__EXP) { prerr("internal error("#__EXP")", msg, ##__VA_ARGS__); _abort(); }} while(0)
 
 // compilation errors
-#define error(__ENV, __FILE, __LINE, msg, ...) do { ccError(__ENV, -1, __FILE, __LINE, msg, ##__VA_ARGS__); trace(msg, ##__VA_ARGS__); } while(0)
+#define error(__ENV, __FILE, __LINE, msg, ...) do { ccError(__ENV, -1, __FILE, __LINE, msg, ##__VA_ARGS__); trace(msg, ##__VA_ARGS__); _break(); } while(0)
 #define warn(__ENV, __LEVEL, __FILE, __LINE, msg, ...) do { ccError(__ENV, __LEVEL, __FILE, __LINE, msg, ##__VA_ARGS__); } while(0)
 #define info(__ENV, __FILE, __LINE, msg, ...) do { ccError(__ENV, 0, __FILE, __LINE, msg, ##__VA_ARGS__); } while(0)
 

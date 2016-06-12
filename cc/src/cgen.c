@@ -879,7 +879,6 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 				if (argv != NULL) {
 					while (argv->kind == OPER_com) {
 						astn arg = argv->op.rhso;
-
 						if (!cgen(rt, arg, arg->cst2)) {
 							traceAst(arg);
 							return TYPE_any;
@@ -1019,8 +1018,7 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 							return TYPE_any;
 						}
 						if (!emitint(rt, opc_sti, sizeOf(ast->type, 1))) {
-							error(rt, ast->file, ast->line, "store indirect: %T:%d of `%+t`", ast->type,
-								  sizeOf(ast->type, 1), ast);
+							error(rt, ast->file, ast->line, "store indirect: %T: %d of `%+t`", ast->type, sizeOf(ast->type, 1), ast);
 							return TYPE_any;
 						}
 					}
@@ -1384,8 +1382,8 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 			#endif
 		} break;
 
-		case OPER_lnd:		// '&&'
-		case OPER_lor: {	// '||'
+		case OPER_all:		// '&&'
+		case OPER_any: {	// '||'
 			vmOpcode opc;
 			// TODO: short circuit && and ||
 			switch (ast->kind) {
@@ -1393,10 +1391,10 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 					fatal(ERR_INTERNAL_ERROR);
 					return TYPE_any;
 
-				case OPER_lnd:
+				case OPER_all:
 					opc = opc_and;
 					break;
-				case OPER_lor:
+				case OPER_any:
 					opc = opc_ior;
 					break;
 			}
@@ -1422,13 +1420,13 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 					fatal(ERR_INTERNAL_ERROR);
 					return 0;
 
-				case OPER_lnd:
+				case OPER_all:
 					jmp1 = newnode(rt->cc, STMT_brk);
 					jmp2 = newnode(rt->cc, STMT_brk);
 					opc = opc_jnz;
 					break;
 
-				case OPER_lor:
+				case OPER_any:
 					jmp1 = newnode(rt->cc, STMT_con);
 					jmp2 = newnode(rt->cc, STMT_con);
 					opc = opc_jz;
@@ -2305,7 +2303,7 @@ int gencode(rtContext rt, int mode) {
 			}
 
 			//~ this must be generated before sym;
-			if (Ng) {
+			if (Ng != NULL) {
 				trace("global `%T` must be generated before `%T`", Ng, ng);
 				Pg->gdef = Ng->gdef;	// remove
 				Ng->gdef = ng;
@@ -2477,10 +2475,7 @@ int gencode(rtContext rt, int mode) {
 					init->cst2 = var->cast;
 					init->ref.link = var;
 
-					init = opnode(cc, STMT_end, NULL, init);
-					init->type = cc->type_vid;
-					init->file = var->file;
-					init->line = var->line;
+					init = wrapStmt(cc, init);
 
 					if (staticinitializers->lst.head == NULL) {
 						staticinitializers->lst.head = init;
@@ -2528,7 +2523,7 @@ int gencode(rtContext rt, int mode) {
 	}
 
 	// TODO: if the main function exists generate: exit(main());
-	// application exit point: exit(0)
+	// application exit point: halt(0)
 	// !needed when invoking functions inside vm.
 	rt->vm.px = emitopc(rt, opc_ldz1);
 	emitint(rt, opc_libc, 0);

@@ -58,7 +58,7 @@ struct opc_inf {
 	unsigned int const size;	// length of opcode with args
 	signed int const chck;		// minimum elements on stack before execution
 	signed int const diff;		// stack size difference after execution
-	char *const name;	// mnemonic for the opcode
+	const char * const name;	// mnemonic for the opcode
 };
 extern const struct opc_inf opc_tbl[255];
 
@@ -255,22 +255,28 @@ void logTrace(dbgContext rt, FILE *out, int indent, int startLevel, int traceLev
 
 /**
  * @brief Print formatted text to the output stream.
- * @param fout Output stream.
+ * @param out Output stream.
  * @param msg Format text.
  * @param ... Format variables.
- * @note %(\?)?[+-]?[0 ]?([1-9][0-9]*)?(.(\*)|([1-9][0-9]*))?[tTkKAIbBoOxXuUdDfFeEsScC]
- *    skip: (\?)? skip printing if variable is null or zero (prints pad character if specified.)
+ * @note %[?]?[+-]?[0 ]?[0-9]*(\.([*]|[0-9]*))?[tTKAIbBoOxXuUdDfFeEsScC]
+ *    skip: [?]? skip printing `(null)` or `0` (may print pad character if specified)
  *    sign: [+-]? sign flag / alignment.
- *    padd: [0 ]? padding character.
- *    len:  ([1-9][0-9]*)? length
- *    offs: (.(*)|([1-9][0-9]*))? percent or offset.
+ *    pad:  [0 ]? padding character.
+ *    len:  [0-9]* length / indent.
+ *    mode: (\.[*]|[0-9]*)? precision / mode.
  *
  *    T: symbol
- *      +: expand function
- *      -: qualified name only
- *    k: ast
- *      +: expand statements
- *      -: ?
+ *      %T: prints qualified symbol name
+ *      %.T: prints simple symbol name
+ *      %+T: prints function parameters and typename members
+ *      %-T: same as '%+T', but skip first indent
+ *
+ *    t: abstract syntax tree
+ *      %t: print statement or expression
+ *      %.t: print only the token
+ *      %+t: expand the whole expression tree
+ *      %-t: same as '%+t', but skip first indent
+ *
  *    K: kind
  *    A: instruction (asm)
  *    I: indent

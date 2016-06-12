@@ -83,7 +83,7 @@ void randomize(int arr[], int max) {
 	}
 }
 
-int arr2[50];			// array
+int arr2[1024];			// array
 
 randomize(arr2, 50);
 

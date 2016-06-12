@@ -163,6 +163,14 @@ function displayCallTree(chartDiv, treeDiv, focusedNode) {
 		if (obj != null && obj.calltree != null) {
 			ct = [];
 			for (i = 0; i < obj.calltree.length; ++i) {
+				/* TODO: filter very short calls
+				var node = obj.calltree[i];
+				var time = node.total * 100;
+				time /= samples.leave - samples.enter;
+				if (time < 0.01) {
+					continue;
+				}
+				*/
 				ct.push(extendCallTree(obj.calltree[i], result));
 			}
 			Object.defineProperty(result, 'calltree', {value: ct});

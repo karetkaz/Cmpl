@@ -1285,7 +1285,7 @@ static astn decl_var(ccContext cc, astn* argv, int mode) {
 	}
 	typ = tag->type;
 
-	inout = skip(cc, OPER_lnd);
+	inout = skip(cc, OPER_all);
 	byref = inout || skip(cc, OPER_and);
 
 	if (typ->cast == TYPE_ref) {
@@ -2023,6 +2023,7 @@ static astn stmt(ccContext cc, int mode) {
 			case ASGN_set:
 				break;
 		}
+		node = wrapStmt(cc, node);
 	}
 	else if ((node = peekTok(cc, TYPE_any))) {
 		error(cc->rt, node->file, node->line, "unexpected token: `%t`", node);

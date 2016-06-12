@@ -22,7 +22,7 @@ rm -f $logFile
 mkdir -p $outDir
 
 #~ export api
-./main -debug/L/P/G/h -api/a/d/p/u -asm/a/n/s -astFF -dump $apiFile
+./main -debug/L/p/G/h -api/a/d/p/u -asm/a/n/s -ast -dump $apiFile
 ./main -api -ast -asm -dump.json $apiFileJs
 
 #~ run each test
