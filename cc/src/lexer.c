@@ -161,7 +161,8 @@ static int skipChr(ccContext cc, int chr) {
  */
 static int backChr(ccContext cc, int chr) {
 	if(cc->_chr != -1) {
-		fatal("can not put back more than one character");
+		// can not put back more than one character
+		fatal(ERR_INTERNAL_ERROR);
 		return -1;
 	}
 	return cc->_chr = chr;
@@ -362,7 +363,7 @@ char* mapstr(ccContext cc, const char* str, size_t len/* = -1*/, unsigned hash/*
  * @param tok out parameter to be filled with data.
  * @return the kind of token, TOKN_err (0) if error occurred.
  */
-static int readTok(ccContext cc, astn tok) {
+static ccToken readTok(ccContext cc, astn tok) {
 	enum {
 		OTHER = 0x00000000,
 
@@ -533,11 +534,11 @@ static int readTok(ccContext cc, astn tok) {
 					if (chr == '\n') {
 						break;
 					}
-					*ptr++ = chr;
+					*ptr++ = (char) chr;
 					chr = readChr(cc);
 				}
 				if (chr == -1) {
-					warn(cc->rt, 9, cc->file, line, "no newline at end of file");
+					warn(cc->rt, 9, cc->file, line, ERR_EXPECTED_BEFORE_END, "newline");
 				}
 				else if (cc->line != line + 1) {
 					warn(cc->rt, 9, cc->file, line, "multi-line comment: `%s`", ptr);
@@ -547,7 +548,7 @@ static int readTok(ccContext cc, astn tok) {
 				// example: struct hex32: int32; //%%0x8x
 				if (fmt && cc->pfmt && cc->pfmt->line == line) {
 					*ptr++ = 0;
-					cc->pfmt->pfmt = mapstr(cc, beg, ptr - beg, -1);
+					cc->pfmt->pfmt = mapstr(cc, beg, ptr - beg, (unsigned) -1);
 				}
 			}
 
@@ -622,7 +623,7 @@ static int readTok(ccContext cc, astn tok) {
 			if (chr_map[chr & 0xff] & CWORD) {
 				goto read_idf;
 			}
-				error(cc->rt, cc->file, cc->line, "invalid character: '%c'", chr);
+			error(cc->rt, cc->file, cc->line, "invalid character: '%c'", chr);
 			tok->kind = TOKN_err;
 			break;
 

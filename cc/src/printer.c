@@ -1024,7 +1024,14 @@ void ccError(rtContext rt, int level, const char *file, int line, const char *ms
 // dump
 void dumpApi(rtContext rt, userContext ctx, void customPrinter(userContext, symn)) {
 	symn sym, bp[TOKS], *sp = bp;
-	for (*sp = rt->vars; sp >= bp;) {
+
+	// compilation errors or compiler was not initialized.
+	if (rt->cc == NULL || rt->main == NULL) {
+		// fatal(ERR_INTERNAL_ERROR);
+		return;
+	}
+	dieif(rt->cc->defs != rt->main->flds, ERR_INTERNAL_ERROR);
+	for (*sp = rt->main->flds; sp >= bp;) {
 		if (!(sym = *sp)) {
 			--sp;
 			continue;

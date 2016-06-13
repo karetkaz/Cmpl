@@ -72,8 +72,7 @@ struct rtContextRec {
 	uint32_t freeMem: 1;	// release memory
 	FILE *logFile;			// log file
 
-	symn  vars;		// global variables and functions
-	symn  main;		// the main initializer function
+	symn main;		// the main initializer function
 
 	/**
 	 * @brief Compiler context.
@@ -89,10 +88,6 @@ struct rtContextRec {
 	 *  * break point lists
 	 */
 	dbgContext dbg;
-
-	// TODO: remove variant and string typename symbols
-	symn type_var;	// TODO: to be removed, used only for printing.
-	symn type_str;	// TODO: to be removed, used only for printing.
 
 	// virtual machine state
 	struct {

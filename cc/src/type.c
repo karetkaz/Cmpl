@@ -127,15 +127,15 @@ symn leave(ccContext cc, symn dcl, int mode) {
 	}
 
 	// clear from stack
-	while (rt->vars && cc->nest < rt->vars->nest) {
-		symn sym = rt->vars;
+	while (cc->vars && cc->nest < cc->vars->nest) {
+		symn sym = cc->vars;
 
 		// pop from stack
-		rt->vars = sym->defs;
+		cc->vars = sym->defs;
 
 		sym->next = NULL;
 
-		// declared in: (structure, function or wathever)
+		// declared in: (structure, function or whatever)
 		sym->decl = dcl ? dcl : cc->func;
 
 		if (mode & ATTR_stat) {
@@ -174,10 +174,10 @@ symn leave(ccContext cc, symn dcl, int mode) {
 }
 
 /// Install a symbol(typename or variable)
-symn install(ccContext s, const char* name, ccToken kind, ccToken cast, unsigned size, symn type, astn init) {
+symn install(ccContext cc, const char* name, ccToken kind, ccKind cast, unsigned size, symn type, astn init) {
 	symn def;
 
-	if (s == NULL || name == NULL || kind == TYPE_any) {
+	if (cc == NULL || name == NULL || kind == TYPE_any) {
 		fatal(ERR_INTERNAL_ERROR);
 		return NULL;
 	}
@@ -192,11 +192,11 @@ symn install(ccContext s, const char* name, ccToken kind, ccToken cast, unsigned
 		kind |= ATTR_stat | ATTR_const;
 	}
 
-	if ((def = newdefn(s, kind & 0xff))) {
+	if ((def = newdefn(cc, kind & 0xff))) {
 		size_t length = strlen(name) + 1;
 		unsigned hash = rehash(name, length) % TBLS;
-		def->name = mapstr(s, (char*)name, length, hash);
-		def->nest = s->nest;
+		def->name = mapstr(cc, (char*)name, length, hash);
+		def->nest = cc->nest;
 		def->type = type;
 		def->init = init;
 		def->size = size;
@@ -217,7 +217,7 @@ symn install(ccContext s, const char* name, ccToken kind, ccToken cast, unsigned
 			//~ case TYPE_ptr:
 			case CAST_arr:	// string
 			case TYPE_rec:
-				def->offs = vmOffset(s->rt, def);
+				def->offs = vmOffset(cc->rt, def);
 				//~ def->pack = size;
 				break;
 
@@ -232,11 +232,11 @@ symn install(ccContext s, const char* name, ccToken kind, ccToken cast, unsigned
 				break;
 		}
 
-		def->next = s->deft[hash];
-		s->deft[hash] = def;
+		def->next = cc->deft[hash];
+		cc->deft[hash] = def;
 
-		def->defs = s->rt->vars;
-		s->rt->vars = def;
+		def->defs = cc->vars;
+		cc->vars = def;
 	}
 	return def;
 }

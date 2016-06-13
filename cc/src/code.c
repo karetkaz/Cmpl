@@ -1756,7 +1756,7 @@ void fputAsm(FILE *out, const char *esc[], rtContext rt, void *ptr, int mode) {
 
 void fputVal(FILE *out, const char *esc[], rtContext rt, symn var, stkval *ref, int mode, int indent) {
 	symn typ = var;
-	char* fmt = var->pfmt;
+	const char *fmt = var->pfmt;
 
 	static int initStatic = 1;
 	static struct symNode func;	// for printig only
@@ -1765,10 +1765,10 @@ void fputVal(FILE *out, const char *esc[], rtContext rt, symn var, stkval *ref, 
 	if (initStatic) {
 		initStatic = 0;
 
-		type = *rt->vars;
+		type = *rt->main->flds;
 		type.name = "<typename>";
 
-		func = *rt->vars;
+		func = *rt->main->flds;
 		func.name = "<function>";
 	}
 
@@ -1820,13 +1820,13 @@ void fputVal(FILE *out, const char *esc[], rtContext rt, symn var, stkval *ref, 
 		// null reference.
 		fputFmt(out, esc, "null");
 	}
-	else if (typ == rt->type_str) {
+	else if (typ->pfmt == type_fmt_string) {
 		fputFmt(out, esc, fmt, ref);
 	}
-	else if (typ == rt->type_var) {		// TODO: temp only.
+	else if (typ->pfmt == type_fmt_variant) {
 		typ = getip(rt, (size_t) ref->var.type);
 		ref = getip(rt, (size_t) ref->var.value);
-		fputFmt(out, esc, "%+T, ", typ);
+		fputFmt(out, esc, type_fmt_variant, typ);
 		fputVal(out, esc, rt, typ, ref, mode & ~prSymQual, indent);
 	}
 	else switch (typ->kind) {
@@ -1922,6 +1922,10 @@ void fputVal(FILE *out, const char *esc[], rtContext rt, symn var, stkval *ref, 
 			if (typ->cast != CAST_arr) { // TODO: OR USE: if (typ->stat) {
 				// fixed size array
 				dieif(n % base->size != 0, "FixMe");
+				if (base->pfmt == type_fmt_character) {
+					fputFmt(out, esc, type_fmt_string, ref);
+					break;
+				}
 				fputFmt(out, esc, "[");
 				n /= base->size;
 			}

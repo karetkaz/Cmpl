@@ -103,7 +103,7 @@ struct symNode {
 	astn	init;		// VAR init / FUN body, this shuld be null after codegen
 
 	astn	used;		// TEMP: usage references
-	char*	pfmt;		// TEMP: print format
+	const char*	pfmt;		// TEMP: print format
 
 	//~ TODO: deprecated members
 	symn	arrB;		// array variable base type
@@ -113,7 +113,7 @@ struct symNode {
 /// Abstract syntax tree node
 struct astNode {
 	ccToken		kind;				// code: CAST_ref, OPER_???
-	ccToken		cast;				// casts to: (void, bool, int32, int64, float32, float64, reference, value)
+	ccKind		cast;				// casts to: (void, bool, int32, int64, float32, float64, reference, value)
 	symn		type;				// typeof() return type of operator
 	astn		next;				// next statement, next usage, do not use for preorder
 	char*		file;				// file name of the token belongs to
@@ -181,6 +181,7 @@ struct ccContextRec {
 	symn	defs;		// all definitions
 	libc	libc;		// installed libcalls
 	symn	func;		// functions level stack
+	symn	vars;		// global variables and functions TODO: move to main->defs or flds
 	astn	root;		// statements
 
 	// lists and tables
@@ -246,10 +247,10 @@ struct ccContextRec {
 
 /// Debugger context
 struct dbgContextRec {
+	rtContext rt;
 	int (*profile)(dbgContext ctx, size_t ss, void* caller, void* callee, time_t now);
 	int (*debug)(dbgContext ctx, vmError, size_t ss, void* sp, void* ip);
-	userContext extra;		// extra data for debuger
-	rtContext rt;
+	userContext extra;		// extra data for debuger and profiler
 	struct arrBuffer functions;
 	struct arrBuffer statements;
 	int checked;			// execution is inside an try catch
@@ -326,13 +327,23 @@ void addUsage(symn sym, astn tag);
  */
 int countUsages(symn sym);
 
+extern const char * const type_fmt_character;
+extern const char * const type_fmt_signed32;
+extern const char * const type_fmt_signed64;
+extern const char * const type_fmt_unsigned32;
+extern const char * const type_fmt_unsigned64;
+extern const char * const type_fmt_float32;
+extern const char * const type_fmt_float64;
+extern const char * const type_fmt_string;
+extern const char * const type_fmt_variant;
+
 
 //             *** Tree related functions
 /// Allocate a symbol node.
 symn newdefn(ccContext, ccToken kind);
 /// Allocate a tree node.
 astn newnode(ccContext, ccToken kind);
-/// Consume node, so it may be reused.
+/// Recycle node, so it may be reused.
 void eatnode(ccContext, astn ast);
 
 /// Allocate a constant integer node.
@@ -564,14 +575,23 @@ int importLib(rtContext rt, const char* path);
 #define ERR_INTERNAL_ERROR "Internal Error"
 #define ERR_MEMORY_OVERRUN "Memory Overrun"
 
-#define ERR_SYNTAX_ERR_BEFORE "syntax error before token '%t'"
+#define ERR_SYNTAX_ERR_BEFORE "syntax error before token `%?.t`"
+#define ERR_EXPECTED_BEFORE_TOK "expected `%s` before token `%?.t`"
+#define ERR_EXPECTED_BEFORE_END "expected `%s` before end of input"
+#define ERR_UNEXPECTED_TOKEN "unexpected token `%.t`"
+#define ERR_UNEXPECTED_TOKEN_MATCHING "unexpected token `%?.t`, matching `%.k`"
+#define ERR_UNEXPECTED_QUAL "unexpected qualifier `%.t` declared more than once"
+
+#define ERR_UNDECLARED_REFERENCE "undeclared reference `%+t`"
 #define ERR_ASSIGN_TO_CONST "assignment of constant variable `%+t`"
 #define ERR_CONST_INIT "invalid constant initialization `%+t`"
 
 #define WARN_EMPTY_STATEMENT "empty statement `;`."
 #define WARN_USE_BLOCK_STATEMENT "statement should be a block statement {%t}."
 #define WARN_TRAILING_COMMA "skipping trailing comma before `%t`"
-#define WARN_INVALID_EXPRESSION_STATEMENT "expression statement expected"
+#define WARN_INVALID_EXPRESSION_STATEMENT "expression statement expected, got: `%-15t`"
+#define WARN_DISCARD_DATA "converting `%+t` to %-T is discarding one property"
+#define WARN_PASS_ARG_BY_REF "argument `%+t` is not explicitly passed by reference"
 
 #define FATAL_UNIMPLEMENTED_OPERATOR "operator %.t (%T, %T): %+t"
 

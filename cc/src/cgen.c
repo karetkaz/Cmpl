@@ -137,7 +137,7 @@ static inline size_t emitref(rtContext rt, void* value) {
 #pragma clang diagnostic pop
 
 // emit operator(add, sub, mul, ...), based on type
-static size_t emitopr(rtContext rt, vmOpcode opc, ccToken cast) {
+static size_t emitopr(rtContext rt, vmOpcode opc, ccKind cast) {
 	// comparation
 	if (opc == opc_ceq) switch (cast) {
 		default:
@@ -475,13 +475,13 @@ static inline size_t emitvar(rtContext rt, symn var) {
  * @param get Override node cast.
  * @return Should be get || cast of ast node.
  */
-static ccToken cgen(rtContext rt, astn ast, ccToken get) {
+static ccKind cgen(rtContext rt, astn ast, ccKind get) {
 	#ifdef DEBUGGING	// extra check: every statement qualifier must be processed.
-	ccToken stmt_qual = TYPE_any;
+	ccKind stmt_qual = TYPE_any;
 	#endif
 
 	struct astNode tmp;
-	ccToken got = TYPE_any;
+	ccKind got = TYPE_any;
 
 	dieif(ast == NULL, ERR_INTERNAL_ERROR);
 	dieif(ast->type == NULL, ERR_INTERNAL_ERROR);
@@ -500,7 +500,7 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 	}
 	#endif
 
-	// generate code
+	// generate instructions
 	switch (ast->kind) {
 
 		default:
@@ -643,7 +643,7 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 		case STMT_if:  {
 			size_t jmpt = 0, jmpf = 0;
 			size_t stpos = stkoffs(rt, 0);
-			ccToken tt = eval(&tmp, ast->stmt.test);
+			ccKind tt = eval(&tmp, ast->stmt.test);
 
 			dieif(get != CAST_vid, ERR_INTERNAL_ERROR);
 
@@ -809,14 +809,14 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 		case OPER_fnc: {	// '()' emit/call/cast
 			size_t stktop = stkoffs(rt, 0);
 			size_t stkret = stkoffs(rt, sizeOf(ast->type, 1));
-			astn argv = ast->op.rhso;
 			symn var = linkOf(ast->op.lhso);
+			astn argv = ast->op.rhso;
 
 			dieif(var == NULL && ast->op.lhso != NULL, "Error %+t", ast);
 
 			// pointer(&info); variant(&info);
 			if (var && (var == rt->cc->type_ptr || var == rt->cc->type_var)) {
-				if (argv && argv->kind != OPER_com) {
+				if (argv != NULL && argv->kind != OPER_com) {
 					symn object;
 					int loadIndirect = 0;
 					if (argv->kind == OPER_adr) {
@@ -842,20 +842,17 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 						switch (object->cast) {
 							default:
 								if (argv->kind != OPER_adr && object->type->cast != CAST_ref) {
-									warn(rt, 2, argv->file, argv->line,
-										 "argument `%+t` is not explicitly passed by reference", argv);
+									warn(rt, 2, argv->file, argv->line, WARN_PASS_ARG_BY_REF, argv);
 								}
 								break;
 
 							case CAST_arr:	// from slice
-								warn(rt, 2, argv->file, argv->line, "converting `%+t` to %-T discards length property",
-									 argv, ast->type);
+								warn(rt, 2, argv->file, argv->line, WARN_DISCARD_DATA, argv, ast->type);
 								//~ TODO: loadIndirect = 1;
 								break;
 
 							case CAST_var:	// from variant
-								warn(rt, 2, argv->file, argv->line, "converting `%+t` to %-T discards type property",
-									 argv, ast->type);
+								warn(rt, 2, argv->file, argv->line, WARN_DISCARD_DATA, argv, ast->type);
 								//~ TODO: loadIndirect = 1;
 								break;
 
@@ -1453,7 +1450,7 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 			// */
 
 			#ifdef DEBUGGING	// extra check: validate some conditions.
-			//~ dieif(ast->op.lhso->cst2 != ast->op.rhso->cst2, "RemMe");
+			//~ dieif(ast->op.lhso->cast != ast->op.rhso->cast, "RemMe");
 			dieif(ast->op.lhso->cast != CAST_bit, "RemMe");
 			dieif(ast->op.lhso->cast != CAST_bit, "RemMe");
 			dieif(got != castOf(ast->type), "RemMe");
@@ -1512,8 +1509,8 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 		case ASGN_set: {	// ':='
 			// TODO: ast->type->size;
 			size_t size = sizeOf(ast->type, 1);
-			ccToken refAssign = CAST_ref;
-			int codeBegin, codeEnd;
+			ccKind refAssign = CAST_ref;
+			size_t codeBegin, codeEnd;
 
 			dieif(size == 0, "Error: %+t", ast);
 
@@ -1653,7 +1650,7 @@ static ccToken cgen(rtContext rt, astn ast, ccToken get) {
 				case CAST_arr:		// typename
 				case TYPE_rec:		// typename
 				case CAST_ref: {	// variable
-					ccToken retarr = TYPE_any;
+					ccKind retarr = TYPE_any;
 					dieif(var->size == 0, "invalid use of variable(%s:%d): `%-T`", ast->file, ast->line, var);
 
 					// a slice is needed, push length first.
@@ -2268,12 +2265,18 @@ int gencode(rtContext rt, int mode) {
 	// make global variables static
 	int gStatic = rt->genGlobals;
 
-	dieif(rt->errCount, "can not generate code");
+	if (rt->errCount != 0) {
+		trace("can not generate code with errors");
+		return 0;
+	}
+
 	dieif(cc == NULL, "no compiler context");
 
 	// leave the global scope.
 	rt->main = ccDefType(rt, ".main", 0, 0);
-	rt->vars = ccEnd(rt, NULL, gStatic);
+	cc->vars = ccEnd(rt, NULL, gStatic);
+
+	dieif(cc->vars != cc->gdef, "globals are not the same with defs");
 
 	/* reorder the initialization of static variables and functions.
 	 * TODO: optimize code.
@@ -2360,7 +2363,7 @@ int gencode(rtContext rt, int mode) {
 
 	// TODO: generate functions first
 	// static variables & functions
-	if (rt->vars != NULL) {
+	if (cc->gdef != NULL) {
 		symn var;
 
 		// we will append the list of declarations here.
@@ -2425,7 +2428,7 @@ int gencode(rtContext rt, int mode) {
 				addDbgFunction(rt, var);
 			}
 			else {
-				unsigned padd = rt_size;
+				unsigned align = rt_size;
 				dieif(var->size <= 0, "Error %-T", var);	// instance of void ?
 				dieif(var->offs != 0, "Error %-T", var);	// already generated ?
 
@@ -2435,26 +2438,26 @@ int gencode(rtContext rt, int mode) {
 
 				// align the memory of the variable. speeding up the read and write of it.
 				if (var->size >= 16) {
-					padd = 16;
+					align = 16;
 				}
 				else if (var->size >= 8) {
-					padd = 8;
+					align = 8;
 				}
 				else if (var->size >= 4) {
-					padd = 4;
+					align = 4;
 				}
 				else if (var->size >= 2) {
-					padd = 2;
+					align = 2;
 				}
 				else if (var->size >= 1) {
-					padd = 1;
+					align = 1;
 				}
 				else {
 					fatal(ERR_INTERNAL_ERROR);
 					return 0;
 				}
 
-				rt->_beg = paddptr(rt->_beg, padd);
+				rt->_beg = paddptr(rt->_beg, align);
 				var->offs = vmOffset(rt, rt->_beg);
 				rt->_beg += var->size;
 
@@ -2494,8 +2497,6 @@ int gencode(rtContext rt, int mode) {
 			dieif(cc->root == NULL || cc->root->kind != STMT_beg, ERR_INTERNAL_ERROR);
 			staticinitializers->lst.tail->next = cc->root->stmt.stmt;
 			cc->root->stmt.stmt = staticinitializers->lst.head;
-			//~ staticinitializers->list.tail->next = cc->root->stmt.stmt;
-			//~ cc->root = staticinitializers->list.head;
 		}
 	}
 
@@ -2522,7 +2523,6 @@ int gencode(rtContext rt, int mode) {
 		}
 	}
 
-	// TODO: if the main function exists generate: exit(main());
 	// application exit point: halt(0)
 	// !needed when invoking functions inside vm.
 	rt->vm.px = emitopc(rt, opc_ldz1);
@@ -2531,16 +2531,19 @@ int gencode(rtContext rt, int mode) {
 	// program entry point
 	rt->vm.pc = Lmain;
 
-	dieif(rt->vars != cc->gdef, "globals are not the same with defs");
+	dieif(cc->vars != cc->gdef, "globals are not the same with defs");
 
 	// buils the initialization function.
-	rt->main->file = NULL;
-	rt->main->line = 0;
 	rt->main->kind = CAST_ref;
-	rt->main->call = 1;
-	rt->main->offs = Lmain;
-	rt->main->size = emitopc(rt, markIP) - Lmain;
+	rt->main->type = cc->type_vid;
+	rt->main->flds = cc->gdef;
+	rt->main->prms = NULL;
 	rt->main->init = cc->root;
+
+	rt->main->file = "main";
+	rt->main->line = 1;
+	rt->main->size = emitopc(rt, markIP) - Lmain;
+	rt->main->offs = Lmain;
 
 	rt->_end = rt->_mem + rt->_size;
 	if (rt->dbg != NULL) {
