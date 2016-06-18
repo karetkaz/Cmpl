@@ -2074,8 +2074,8 @@ void logTrace(dbgContext dbg, FILE *out, int indent, int startLevel, int traceLe
 		// TODO: check why we have 0
 		pos = 1;
 	}
-	if (traceLevel > pos) {
-		traceLevel = pos;
+	if (traceLevel > (int) pos) {
+		traceLevel = (int) pos;
 	}
 	for (i = startLevel; i < traceLevel; ++i) {
 		dbgn trInfo = mapDbgStatement(rt, vmOffset(rt, tr[pos - i].caller));
@@ -2097,7 +2097,7 @@ void logTrace(dbgContext dbg, FILE *out, int indent, int startLevel, int traceLe
 		traceArgs(rt, out, fun, file, line, sp, indent);
 		isOutput += 1;
 	}
-	if (i < pos) {
+	if (i < (int) pos) {
 		if (isOutput > 0) {
 			fputc('\n', out);
 		}

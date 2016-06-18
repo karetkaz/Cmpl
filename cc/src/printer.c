@@ -520,7 +520,7 @@ void fputSym(FILE *out, const char *esc[], symn sym, int mode, int indent) {
 
 	switch (sym->kind) {
 
-		case EMIT_opc: {
+		case EMIT_kwd: {
 			if (sym->init) {
 				fputfmt(out, "(%t)", sym->init);
 			}
@@ -1062,7 +1062,7 @@ void dumpApi(rtContext rt, userContext ctx, void customPrinter(userContext, symn
 				// */
 				break;
 
-			case EMIT_opc:
+			case EMIT_kwd:
 				*++sp = sym->flds;
 				break;
 

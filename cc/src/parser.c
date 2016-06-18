@@ -357,7 +357,7 @@ static int qual(ccContext cc, int mode) {
 					error(cc->rt, ast->file, ast->line, "qualifier `%K` declared more than once", ast);
 				}
 				result |= ATTR_const;
-				skip(cc, TYPE_any);
+				skipTok(cc, TYPE_any, 0);
 				break;
 
 			case ATTR_stat:
@@ -368,7 +368,7 @@ static int qual(ccContext cc, int mode) {
 					error(cc->rt, ast->file, ast->line, "qualifier `%K` declared more than once", ast);
 				}
 				result |= ATTR_stat;
-				skip(cc, TYPE_any);
+				skipTok(cc, TYPE_any, 0);
 				break;
 		}
 	}
@@ -380,7 +380,7 @@ static int qual(ccContext cc, int mode) {
 static astn type(ccContext cc/* , int mode */) {	// type(.type)*
 	symn def = NULL;
 	astn tok, typ = NULL;
-	while ((tok = next(cc, CAST_ref))) {
+	while ((tok = nextTok(cc, CAST_ref))) {
 
 		symn loc = def ? def->flds : cc->deft[tok->ref.hash];
 		symn sym = lookup(cc, loc, tok, NULL, 0);
@@ -395,7 +395,7 @@ static astn type(ccContext cc/* , int mode */) {	// type(.type)*
 			break;
 		}
 
-		if ((tok = next(cc, OPER_dot))) {
+		if ((tok = nextTok(cc, OPER_dot))) {
 			tok->next = typ;
 			typ = tok;
 		}
@@ -439,11 +439,11 @@ static astn expr(ccContext cc, int mode) {
 		return NULL;
 	}
 
-	while ((tok = next(cc, TYPE_any))) {					// parse
+	while ((tok = nextTok(cc, TYPE_any))) {					// parse
 		int pri = level << 4;
 		traceLoop("%t", peek(cc));
 		// statements are not allowed in expressions !!!!
-		if (tok->kind == PNCT_rcb || (tok->kind >= STMT_beg && tok->kind <= STMT_end)) {
+		if (tok->kind == RIGHT_crl || (tok->kind >= STMT_beg && tok->kind <= STMT_end)) {
 			backTok(cc, tok);
 			tok = 0;
 			break;
@@ -487,10 +487,10 @@ static astn expr(ccContext cc, int mode) {
 				}
 			} break;
 
-			case PNCT_lp: {			// '('
+			case LEFT_par: {			// '('
 				if (unary)			// a + (3*b)
 					*post++ = 0;
-				else if (peekTok(cc, PNCT_rp)) {	// a()
+				else if (peekTok(cc, RIGHT_par)) {	// a()
 					unary = 2;
 				}
 				else {
@@ -501,7 +501,7 @@ static astn expr(ccContext cc, int mode) {
 				sym[++level] = '(';
 
 			} goto tok_op;
-			case PNCT_rp: {			// ')'
+			case RIGHT_par: {			// ')'
 				if (unary == 2 && sym[level] == '(') {
 					tok->kind = STMT_end;
 					*post++ = NULL;
@@ -522,7 +522,7 @@ static astn expr(ccContext cc, int mode) {
 				}
 				unary = 0;
 			} goto tok_op;
-			case PNCT_lc: {			// '['
+			case LEFT_sqr: {			// '['
 				if (!unary)
 					tok->kind = OPER_idx;
 				else {
@@ -532,7 +532,7 @@ static astn expr(ccContext cc, int mode) {
 				sym[++level] = '[';
 				unary = 1;
 			} goto tok_op;
-			case PNCT_rc: {			// ']'
+			case RIGHT_sqr: {			// ']'
 				if (!unary && sym[level] == '[') {
 					tok->kind = STMT_end;
 					level -= 1;
@@ -603,9 +603,9 @@ static astn expr(ccContext cc, int mode) {
 					error(cc->rt, tok->file, tok->line, ERR_SYNTAX_ERR_BEFORE, tok);
 				// skip trailing commas
 				switch (test(cc)) {
-					case PNCT_rcb:
-					case PNCT_rc:
-					case PNCT_rp:
+					case RIGHT_crl:
+					case RIGHT_sqr:
+					case RIGHT_par:
 						warn(cc->rt, 1, tok->file, tok->line, WARN_TRAILING_COMMA, peekTok(cc, 0));
 						continue;
 					default:
@@ -764,7 +764,7 @@ static astn expr(ccContext cc, int mode) {
 static astn args(ccContext cc, int mode) {
 	astn root = NULL;
 
-	if (peekTok(cc, PNCT_rp)) {
+	if (peekTok(cc, RIGHT_par)) {
 		return cc->void_tag;
 	}
 
@@ -779,7 +779,7 @@ static astn args(ccContext cc, int mode) {
 			}
 		}
 
-		if (!skip(cc, OPER_com)) {
+		if (!skipTok(cc, OPER_com, 0)) {
 			break;
 		}
 	}
@@ -793,26 +793,26 @@ static astn args(ccContext cc, int mode) {
  * @return the initializer expression.
  */
 static astn init_var(ccContext cc, symn var) {
-	if (skip(cc, ASGN_set)) {
+	if (skipTok(cc, ASGN_set, 0)) {
 		symn typ = var->type;
 		ccToken cast = var->cast;
 		int mkcon = var->cnst;
 		ccToken arrayInit = TYPE_any;
 
 		if (typ->kind == CAST_arr) {
-			if (skip(cc, STMT_beg)) {
-				arrayInit = PNCT_rcb;
+			if (skipTok(cc, STMT_beg, 0)) {
+				arrayInit = RIGHT_crl;
 			}
-			else if (skip(cc, PNCT_lc)) {
-				arrayInit = PNCT_rc;
+			else if (skipTok(cc, LEFT_sqr, 0)) {
+				arrayInit = RIGHT_sqr;
 			}
-			else if (skip(cc, PNCT_lp)) {
-				arrayInit = PNCT_rp;
+			else if (skipTok(cc, LEFT_par, 0)) {
+				arrayInit = RIGHT_par;
 			}
 		}
 		var->init = expr(cc, TYPE_def);
 		if (arrayInit != TYPE_any) {
-			skiptok(cc, arrayInit, 1);
+			skipTokens(cc, arrayInit, 1);
 		}
 
 		if (var->init != NULL) {
@@ -939,18 +939,18 @@ static astn decl_alias(ccContext cc) {
 	symn def = NULL;
 	symn typ = NULL;
 
-	if (!skiptok(cc, TYPE_def, 1)) {	// 'define'
+	if (!skipTokens(cc, TYPE_def, 1)) {	// 'define'
 		traceAst(tag);
 		return NULL;
 	}
 
-	if (!(tag = next(cc, CAST_ref))) {	// name?
+	if (!(tag = nextTok(cc, CAST_ref))) {	// name?
 		error(cc->rt, cc->file, cc->line, "Identifyer expected");
-		skiptok(cc, STMT_end, 1);
+		skipTokens(cc, STMT_end, 1);
 		return NULL;
 	}
 
-	if (skip(cc, ASGN_set)) {				// const: define PI = 3.14...;
+	if (skipTok(cc, ASGN_set, 0)) {				// const: define PI = 3.14...;
 		// can not call decl_init
 		// TODO: check if locals are used.
 		astn val = expr(cc, TYPE_def);
@@ -972,7 +972,7 @@ static astn decl_alias(ccContext cc) {
 			error(cc->rt, cc->file, cc->line, "expression expected");
 		}
 	}
-	else if (skip(cc, PNCT_lp)) {			// inline: define isNan(float64 x) = x != x;
+	else if (skipTok(cc, LEFT_par, 0)) {			// inline: define isNan(float64 x) = x != x;
 		astn init = NULL;
 		symn param;
 
@@ -981,9 +981,9 @@ static astn decl_alias(ccContext cc) {
 
 		enter(cc, NULL);
 		args(cc, TYPE_def);
-		skiptok(cc, PNCT_rp, 1);
+		skipTokens(cc, RIGHT_par, 1);
 
-		if (skip(cc, ASGN_set)) {
+		if (skipTok(cc, ASGN_set, 0)) {
 			// define sqr(int a) = (a * a);
 			if ((init = expr(cc, TYPE_def))) {
 				typ = init->type;
@@ -1031,7 +1031,7 @@ static astn decl_alias(ccContext cc) {
 		return NULL;
 	}
 
-	if (!skiptok(cc, STMT_end, 1)) {
+	if (!skipTokens(cc, STMT_end, 1)) {
 		traceAst(tag);
 		return NULL;
 	}
@@ -1054,14 +1054,14 @@ static astn decl_enum(ccContext cc) {
 	int enuminc = 1;
 	int64_t lastval = -1;
 
-	if (!skiptok(cc, ENUM_kwd, 1)) {	// 'enum'
+	if (!skipTokens(cc, ENUM_kwd, 1)) {	// 'enum'
 		traceAst(peekTok(cc, 0));
 		return NULL;
 	}
 
-	tag = next(cc, CAST_ref);			// ref?
+	tag = nextTok(cc, CAST_ref);			// ref?
 
-	if (skip(cc, PNCT_cln)) {			// ':' type
+	if (skipTok(cc, PNCT_cln, 0)) {			// ':' type
 		base = NULL;
 		if ((tok = expr(cc, TYPE_def))) {
 			if (isTypeExpr(tok)) {
@@ -1077,7 +1077,7 @@ static astn decl_enum(ccContext cc) {
 		enuminc = base && (base->cast == CAST_i32 || base->cast == CAST_i64);
 	}
 
-	if (!skiptok(cc, STMT_beg, 1)) {	// '{'
+	if (!skipTokens(cc, STMT_beg, 1)) {	// '{'
 		traceAst(peekTok(cc, 0));
 		return NULL;
 	}
@@ -1096,11 +1096,11 @@ static astn decl_enum(ccContext cc) {
 	while (peekTok(cc, TYPE_any)) {			// enum members
 		traceLoop("%t", peek(cc));
 
-		if (peekTok(cc, PNCT_rcb)) {
+		if (peekTok(cc, RIGHT_crl)) {
 			break;
 		}
 
-		if ((tok = next(cc, CAST_ref))) {
+		if ((tok = nextTok(cc, CAST_ref))) {
 			// HACK: declare as a variable to be assignable, then revert it to be an alias.
 			symn ref = declare(cc, CAST_ref, tok, base);
 			ref->stat = ref->cnst = 1;
@@ -1123,7 +1123,7 @@ static astn decl_enum(ccContext cc) {
 			}
 			ref->kind = TYPE_def;
 		}
-		skiptok(cc, STMT_end, 1);
+		skipTokens(cc, STMT_end, 1);
 	}
 
 	if (def != NULL) {
@@ -1132,7 +1132,7 @@ static astn decl_enum(ccContext cc) {
 		def->cast = ENUM_kwd;
 	}
 
-	if (!skiptok(cc, PNCT_rcb, 1)) {	// '}'
+	if (!skipTokens(cc, RIGHT_crl, 1)) {	// '}'
 		traceAst(tag);
 		return NULL;
 	}
@@ -1156,14 +1156,14 @@ static astn decl_struct(ccContext cc, int Attr) {
 	int byref = 0;
 	unsigned pack = vm_size;
 
-	if (!skiptok(cc, TYPE_rec, 1)) {	// 'struct'
+	if (!skipTokens(cc, TYPE_rec, 1)) {	// 'struct'
 		traceAst(peekTok(cc, 0));
 		return NULL;
 	}
 
-	tag = next(cc, CAST_ref);			// ref
+	tag = nextTok(cc, CAST_ref);			// ref
 
-	if (skip(cc, PNCT_cln)) {			// ':' type or pack
+	if (skipTok(cc, PNCT_cln, 0)) {			// ':' type or pack
 		if ((tok = expr(cc, TYPE_def))) {
 			if (tok->kind == TYPE_int) {
 				if (tok->cint > 16 || (tok->cint & -tok->cint) != tok->cint) {
@@ -1186,7 +1186,7 @@ static astn decl_struct(ccContext cc, int Attr) {
 		}
 	}
 
-	if (!skiptok(cc, STMT_beg, 1)) {	// '{'
+	if (!skipTokens(cc, STMT_beg, 1)) {	// '{'
 		traceAst(peekTok(cc, 0));
 		return NULL;
 	}
@@ -1202,13 +1202,13 @@ static astn decl_struct(ccContext cc, int Attr) {
 	while (peekTok(cc, TYPE_any)) {			// struct members
 		traceLoop("%t", peekTok(cc, 0));
 
-		if (peekTok(cc, PNCT_rcb)) {
+		if (peekTok(cc, RIGHT_crl)) {
 			break;
 		}
 
 		if (!decl(cc, 0)) {
 			error(cc->rt, cc->file, cc->line, "declaration expected, got: `%+t`", peekTok(cc, TYPE_any));
-			skiptok(cc, STMT_end, 0);
+			skipTokens(cc, STMT_end, 0);
 		}
 	}
 
@@ -1216,7 +1216,7 @@ static astn decl_struct(ccContext cc, int Attr) {
 	type->prms = type->flds;
 	type->size = fixargs(type, pack, 0);
 
-	if (!skiptok(cc, PNCT_rcb, 1)) {	// '}'
+	if (!skipTokens(cc, RIGHT_crl, 1)) {	// '}'
 		traceAst(peekTok(cc, 0));
 		return tag;
 	}
@@ -1248,7 +1248,7 @@ static astn decl_struct(ccContext cc, int Attr) {
 	// Error checking
 	if (base && base->cast != CAST_ref) {
 		// TODO: to be removed: declarations like: struct hex32: int32 { };
-		if (skip(cc, STMT_end)) {
+		if (skipTok(cc, STMT_end, 0)) {
 			warn(cc->rt, 1, tag->file, tag->line, "deprecated declaration of `%t`", tag);
 		}
 		else {
@@ -1285,8 +1285,8 @@ static astn decl_var(ccContext cc, astn* argv, int mode) {
 	}
 	typ = tag->type;
 
-	inout = skip(cc, OPER_all);
-	byref = inout || skip(cc, OPER_and);
+	inout = skipTok(cc, OPER_all, 0);
+	byref = inout || skipTok(cc, OPER_and, 0);
 
 	if (typ->cast == CAST_ref) {
 		if (byref) {
@@ -1295,7 +1295,7 @@ static astn decl_var(ccContext cc, astn* argv, int mode) {
 		//byref = 1;
 	}
 
-	if (!(tag = next(cc, CAST_ref))) {
+	if (!(tag = nextTok(cc, CAST_ref))) {
 		if (mode != TYPE_def) {
 			trace("id expected, not `%t` at(%s:%u)", peekTok(cc, 0), cc->file, cc->line);
 			return NULL;
@@ -1310,12 +1310,12 @@ static astn decl_var(ccContext cc, astn* argv, int mode) {
 		*argv = NULL;
 	}
 
-	if (skip(cc, PNCT_lp)) {			// int a(...)
+	if (skipTok(cc, LEFT_par, 0)) {			// int a(...)
 		astn argroot;
 		enter(cc, tag);
 		argroot = args(cc, CAST_ref);
 		ref->prms = leave(cc, ref, 0);
-		skiptok(cc, PNCT_rp, 1);
+		skipTokens(cc, RIGHT_par, 1);
 
 		ref->call = 1;
 		ref->size = vm_size;
@@ -1337,7 +1337,7 @@ static astn decl_var(ccContext cc, astn* argv, int mode) {
 		byref = 0;
 	}
 
-	if (skip(cc, PNCT_lc)) {			// int a[...]
+	if (skipTok(cc, LEFT_sqr, 0)) {			// int a[...]
 		symn arr = newdefn(cc, CAST_arr);
 		symn tmp = arr;
 		symn base = typ;
@@ -1352,7 +1352,7 @@ static astn decl_var(ccContext cc, astn* argv, int mode) {
 		//~ arr->offs = vmOffset(cc->s, arr);
 		//~ arr->stat = 1;
 
-		if (!peekTok(cc, PNCT_rc)) {
+		if (!peekTok(cc, RIGHT_sqr)) {
 			astn init = expr(cc, TYPE_def);
 			typ->init = init;
 
@@ -1390,10 +1390,10 @@ static astn decl_var(ccContext cc, astn* argv, int mode) {
 			typ->cast = CAST_ref;
 			typ->stat = 1;
 		}
-		skiptok(cc, PNCT_rc, 1);
+		skipTokens(cc, RIGHT_sqr, 1);
 
 		// Multi dimensional arrays
-		while (skip(cc, PNCT_lc)) {
+		while (skipTok(cc, LEFT_sqr, 0)) {
 			tmp = newdefn(cc, CAST_arr);
 			traceLoop("%t", peekTok(cc, 0));
 			tmp->type = typ->type;
@@ -1405,7 +1405,7 @@ static astn decl_var(ccContext cc, astn* argv, int mode) {
 			//~ tmp->stat = 1;
 			typ = tmp;
 
-			if (!peekTok(cc, PNCT_rc)) {
+			if (!peekTok(cc, RIGHT_sqr)) {
 				struct astNode val;
 				astn init = expr(cc, TYPE_def);
 				if (eval(&val, init) == TYPE_int) {
@@ -1437,7 +1437,7 @@ static astn decl_var(ccContext cc, astn* argv, int mode) {
 				error(cc->rt, ref->file, ref->line, "invalid mixing of dynamic sized arrays");
 			}
 
-			skiptok(cc, PNCT_rc, 1);
+			skipTokens(cc, RIGHT_sqr, 1);
 		}
 
 		ref->arrB = base;
@@ -1605,7 +1605,7 @@ static astn decl(ccContext cc, int mode) {
 		}
 
 		cc->pfmt = ref;
-		skiptok(cc, STMT_end, 1);
+		skipTokens(cc, STMT_end, 1);
 
 		// TODO: functions type == return type
 		if (typ->cast == CAST_vid && !ref->call) {	// void x;
@@ -1654,9 +1654,9 @@ static astn block(ccContext cc, int mode) {
 			default:
 				break;
 			case TYPE_any:	// end of file
-			case PNCT_rp:
-			case PNCT_rc:
-			case PNCT_rcb:
+			case RIGHT_par:
+			case RIGHT_sqr:
+			case RIGHT_crl:
 				stop = 1;
 				break;
 		}
@@ -1694,12 +1694,12 @@ static astn stmt(ccContext cc, int mode) {
 	switch (test(cc)) {
 		default:
 			break;
-		case PNCT_rcb:
-		case PNCT_rp:
-		case PNCT_rc:
+		case RIGHT_crl:
+		case RIGHT_par:
+		case RIGHT_sqr:
 		case 0:	// end of file
 			traceAst(peekTok(cc, 0));
-			skiptok(cc, TYPE_any, 1);
+			skipTokens(cc, TYPE_any, 1);
 			return NULL;
 	}
 	if (!peekTok(cc, TYPE_any)) {
@@ -1708,7 +1708,7 @@ static astn stmt(ccContext cc, int mode) {
 	}
 
 	// check statement construct
-	if ((node = next(cc, ATTR_stat))) {			// 'static' ('if' | 'for')
+	if ((node = nextTok(cc, ATTR_stat))) {			// 'static' ('if' | 'for')
 		switch (test(cc)) {
 			case STMT_if:		// compile time if
 			case STMT_for:		// loop unroll
@@ -1720,7 +1720,7 @@ static astn stmt(ccContext cc, int mode) {
 		}
 		node = NULL;
 	}
-	else if ((node = next(cc, ATTR_paral))) {		// 'parallel' ('{' | 'for')
+	else if ((node = nextTok(cc, ATTR_paral))) {		// 'parallel' ('{' | 'for')
 		switch (test(cc)) {
 			case STMT_beg:		// parallel task
 			case STMT_for:		// parallel loop
@@ -1734,10 +1734,10 @@ static astn stmt(ccContext cc, int mode) {
 	}
 
 	// scan the statement
-	if (skip(cc, STMT_end)) {				// ;
+	if (skipTok(cc, STMT_end, 0)) {				// ;
 		warn(cc->rt, 2, cc->file, cc->line, WARN_EMPTY_STATEMENT);
 	}
-	else if ((node = next(cc, STMT_beg))) {	// { ... }
+	else if ((node = nextTok(cc, STMT_beg))) {	// { ... }
 		int newscope = !mode;
 		astn blk;
 
@@ -1761,15 +1761,15 @@ static astn stmt(ccContext cc, int mode) {
 			leave(cc, NULL, 0);
 		}
 
-		skiptok(cc, PNCT_rcb, 1);
+		skipTokens(cc, RIGHT_crl, 1);
 	}
-	else if ((node = next(cc, STMT_if ))) {	// if (...)
+	else if ((node = nextTok(cc, STMT_if))) {	// if (...)
 		int siffalse = cc->siff;
 		int newscope = 1;
 
-		skiptok(cc, PNCT_lp, 1);
+		skipTokens(cc, LEFT_par, 1);
 		node->stmt.test = expr(cc, CAST_bit);
-		skiptok(cc, PNCT_rp, 1);
+		skipTokens(cc, RIGHT_par, 1);
 
 		// static if (true) does not need entering a new scope.
 		// every declaration should be available outside if.
@@ -1805,7 +1805,7 @@ static astn stmt(ccContext cc, int mode) {
 					break;
 			}
 		}
-		if (skip(cc, ELSE_kwd)) {		// optionally parse else part
+		if (skipTok(cc, ELSE_kwd, 0)) {		// optionally parse else part
 			if (newscope) {
 				leave(cc, NULL, 0);
 				enter(cc, node);
@@ -1836,18 +1836,18 @@ static astn stmt(ccContext cc, int mode) {
 
 		cc->siff = siffalse;
 	}
-	else if ((node = next(cc, STMT_for))) {	// for (...)
+	else if ((node = nextTok(cc, STMT_for))) {	// for (...)
 
 		enter(cc, node);
-		skiptok(cc, PNCT_lp, 1);
-		if (!skip(cc, STMT_end)) {		// init or iterate
+		skipTokens(cc, LEFT_par, 1);
+		if (!skipTok(cc, STMT_end, 0)) {		// init or iterate
 			node->stmt.init = decl(cc, decl_NoDefs|decl_ItDecl);
 
 			if (node->stmt.init == NULL) {
 				node->stmt.init = expr(cc, CAST_vid);
-				skiptok(cc, STMT_end, 1);
+				skipTokens(cc, STMT_end, 1);
 			}
-			else if (skip(cc, PNCT_cln)) {		// iterate
+			else if (skipTok(cc, PNCT_cln, 0)) {		// iterate
 				//~ for (Type value : iterable) {...}
 				astn iton = expr(cc, CAST_vid); // iterate on expression
 
@@ -1950,13 +1950,13 @@ static astn stmt(ccContext cc, int mode) {
 				backTok(cc, newnode(cc, STMT_end));
 			}
 		}
-		if (!skip(cc, STMT_end)) {		// test
+		if (!skipTok(cc, STMT_end, 0)) {		// test
 			node->stmt.test = expr(cc, CAST_bit);
-			skiptok(cc, STMT_end, 1);
+			skipTokens(cc, STMT_end, 1);
 		}
-		if (!skip(cc, PNCT_rp)) {		// incr
+		if (!skipTok(cc, RIGHT_par, 0)) {		// incr
 			node->stmt.step = expr(cc, CAST_vid);
-			skiptok(cc, PNCT_rp, 1);
+			skipTokens(cc, RIGHT_par, 1);
 		}
 		node->stmt.stmt = stmt(cc, 1);	// no new scope & disable decl
 		if (node->stmt.stmt != NULL) {	// suggest using `for (...) {...}`
@@ -1971,15 +1971,15 @@ static astn stmt(ccContext cc, int mode) {
 		node->cast = qual;
 		qual = TYPE_any;
 	}
-	else if ((node = next(cc, STMT_brk))) {	// break;
+	else if ((node = nextTok(cc, STMT_brk))) {	// break;
 		node->type = cc->type_vid;
-		skiptok(cc, STMT_end, 1);
+		skipTokens(cc, STMT_end, 1);
 	}
-	else if ((node = next(cc, STMT_con))) {	// continue;
+	else if ((node = nextTok(cc, STMT_con))) {	// continue;
 		node->type = cc->type_vid;
-		skiptok(cc, STMT_end, 1);
+		skipTokens(cc, STMT_end, 1);
 	}
-	else if ((node = next(cc, STMT_ret))) {	// return;
+	else if ((node = nextTok(cc, STMT_ret))) {	// return;
 		node->type = cc->type_vid;
 		if (cc->func != NULL) {
 			symn result = cc->func->flds;
@@ -2005,7 +2005,7 @@ static astn stmt(ccContext cc, int mode) {
 				warn(cc->rt, 4, cc->file, cc->line, "returning from function with no value");
 			}
 		}
-		skiptok(cc, STMT_end, 1);
+		skipTokens(cc, STMT_end, 1);
 	}
 	else if ((node = decl(cc, TYPE_any))) {	// declaration
 		if (mode) {
@@ -2013,7 +2013,7 @@ static astn stmt(ccContext cc, int mode) {
 		}
 	}
 	else if ((node = expr(cc, CAST_vid))) {	// expression
-		skiptok(cc, STMT_end, 1);
+		skipTokens(cc, STMT_end, 1);
 		switch (node->kind) {
 			default:
 				warn(cc->rt, 1, node->file, node->line, WARN_INVALID_EXPRESSION_STATEMENT, node);
@@ -2027,7 +2027,7 @@ static astn stmt(ccContext cc, int mode) {
 	}
 	else if ((node = peekTok(cc, TYPE_any))) {
 		error(cc->rt, node->file, node->line, "unexpected token: `%t`", node);
-		skiptok(cc, STMT_end, 1);
+		skipTokens(cc, STMT_end, 1);
 	}
 	else {
 		error(cc->rt, cc->file, cc->line, "unexpected end of file");
@@ -2055,7 +2055,7 @@ static astn parse(ccContext cc, int asUnit, int warn) {
 
 	if (0) {
 		astn ast, prev = NULL;
-		while ((ast = next(cc, TYPE_any))) {
+		while ((ast = nextTok(cc, TYPE_any))) {
 			if (prev == NULL) {
 				prev = ast;
 			}
@@ -2217,7 +2217,7 @@ static symn installref(rtContext rt, const char* prot, astn* argv) {
 
 	dieif(root == NULL, "error declaring: %s", prot);
 
-	dieif(!skip(rt->cc, STMT_end), "`;` expected declaring: %s", prot);
+	dieif(!skipTok(rt->cc, STMT_end, 0), "`;` expected declaring: %s", prot);
 
 	dieif(ccClose(rt->cc) != 0, "FixMe");
 
@@ -2246,7 +2246,7 @@ symn ccDefCall(rtContext rt, vmError libc(libcContext), void *data, const char *
 
 	if ((sym = installref(rt, proto, &args))) {
 		struct libc* lc = NULL;
-		symn link = newdefn(rt->cc, EMIT_opc);
+		symn link = newdefn(rt->cc, EMIT_kwd);
 		astn libcinit;
 		size_t libcpos = rt->cc->libc ? rt->cc->libc->pos + 1 : 0;
 

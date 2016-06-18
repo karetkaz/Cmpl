@@ -411,7 +411,7 @@ static void install_emit(ccContext cc, int mode) {
 	rtContext rt = cc->rt;
 
 	// TODO: emit is a keyword ???
-	cc->emit_opc = install(cc, "emit", EMIT_opc, TYPE_any, 0, NULL, NULL);
+	cc->emit_opc = install(cc, "emit", EMIT_kwd, TYPE_any, 0, NULL, NULL);
 
 	if (cc->emit_opc && (mode & installEopc) == installEopc) {
 		symn opc, type_p4x;
@@ -424,173 +424,173 @@ static void install_emit(ccContext cc, int mode) {
 		symn type_f64 = cc->type_f64;
 
 		ccBegin(rt, NULL);
-		install(cc, "nop", EMIT_opc, TYPE_any, opc_nop, type_vid, NULL);
-		install(cc, "not", EMIT_opc, TYPE_any, opc_not, type_bol, NULL);
-		install(cc, "set", EMIT_opc, TYPE_any, opc_set1, type_vid, intnode(cc, 1));
-		install(cc, "join", EMIT_opc, TYPE_any, opc_sync, type_vid, intnode(cc, 1));
-		install(cc, "call", EMIT_opc, TYPE_any, opc_call, type_vid, NULL);
+		install(cc, "nop", EMIT_kwd, TYPE_any, opc_nop, type_vid, NULL);
+		install(cc, "not", EMIT_kwd, TYPE_any, opc_not, type_bol, NULL);
+		install(cc, "set", EMIT_kwd, TYPE_any, opc_set1, type_vid, intnode(cc, 1));
+		install(cc, "join", EMIT_kwd, TYPE_any, opc_sync, type_vid, intnode(cc, 1));
+		install(cc, "call", EMIT_kwd, TYPE_any, opc_call, type_vid, NULL);
 
 		type_p4x = install(cc, "p4x", ATTR_stat | ATTR_const | TYPE_rec, TYPE_rec, 16, cc->type_rec, NULL);
 
 		if ((opc = ccBegin(rt, "dupp")) != NULL) {
-			install(cc, "x1", EMIT_opc, TYPE_any, opc_dup1, type_i32, intnode(cc, 0));
-			install(cc, "x2", EMIT_opc, TYPE_any, opc_dup2, type_i64, intnode(cc, 0));
-			install(cc, "x4", EMIT_opc, TYPE_any, opc_dup4, type_p4x, intnode(cc, 0));
+			install(cc, "x1", EMIT_kwd, TYPE_any, opc_dup1, type_i32, intnode(cc, 0));
+			install(cc, "x2", EMIT_kwd, TYPE_any, opc_dup2, type_i64, intnode(cc, 0));
+			install(cc, "x4", EMIT_kwd, TYPE_any, opc_dup4, type_p4x, intnode(cc, 0));
 			// duplicate the second and or third element on stack
-			//~ install(cc, "x1_1", EMIT_opc, TYPE_any, opc_dup1, type_i32, intnode(cc, 1));
-			//~ install(cc, "x1_2", EMIT_opc, TYPE_any, opc_dup1, type_i32, intnode(cc, 2));
+			//~ install(cc, "x1_1", EMIT_kwd, TYPE_any, opc_dup1, type_i32, intnode(cc, 1));
+			//~ install(cc, "x1_2", EMIT_kwd, TYPE_any, opc_dup1, type_i32, intnode(cc, 2));
 			ccEnd(rt, opc, ATTR_stat);
 		}
 		if ((opc = ccBegin(rt, "load")) != NULL) {
 			// load zero
-			install(cc, "z32", EMIT_opc, TYPE_any, opc_ldz1, type_i32, NULL);
-			install(cc, "z64", EMIT_opc, TYPE_any, opc_ldz2, type_i64, NULL);
-			install(cc, "z128", EMIT_opc, TYPE_any, opc_ldz4, type_p4x, NULL);
+			install(cc, "z32", EMIT_kwd, TYPE_any, opc_ldz1, type_i32, NULL);
+			install(cc, "z64", EMIT_kwd, TYPE_any, opc_ldz2, type_i64, NULL);
+			install(cc, "z128", EMIT_kwd, TYPE_any, opc_ldz4, type_p4x, NULL);
 
 			// load memory
-			install(cc, "i8",   EMIT_opc, TYPE_any, opc_ldi1, type_i32, NULL);
-			install(cc, "i16",  EMIT_opc, TYPE_any, opc_ldi2, type_i32, NULL);
-			install(cc, "i32",  EMIT_opc, TYPE_any, opc_ldi4, type_i32, NULL);
-			install(cc, "i64",  EMIT_opc, TYPE_any, opc_ldi8, type_i64, NULL);
-			install(cc, "i128", EMIT_opc, TYPE_any, opc_ldiq, type_p4x, NULL);
+			install(cc, "i8",   EMIT_kwd, TYPE_any, opc_ldi1, type_i32, NULL);
+			install(cc, "i16",  EMIT_kwd, TYPE_any, opc_ldi2, type_i32, NULL);
+			install(cc, "i32",  EMIT_kwd, TYPE_any, opc_ldi4, type_i32, NULL);
+			install(cc, "i64",  EMIT_kwd, TYPE_any, opc_ldi8, type_i64, NULL);
+			install(cc, "i128", EMIT_kwd, TYPE_any, opc_ldiq, type_p4x, NULL);
 			ccEnd(rt, opc, ATTR_stat);
 		}
 		if ((opc = ccBegin(rt, "store")) != NULL) {
-			install(cc, "i8",   EMIT_opc, TYPE_any, opc_sti1, type_vid, NULL);
-			install(cc, "i16",  EMIT_opc, TYPE_any, opc_sti2, type_vid, NULL);
-			install(cc, "i32",  EMIT_opc, TYPE_any, opc_sti4, type_vid, NULL);
-			install(cc, "i64",  EMIT_opc, TYPE_any, opc_sti8, type_vid, NULL);
-			install(cc, "i128", EMIT_opc, TYPE_any, opc_stiq, type_vid, NULL);
+			install(cc, "i8",   EMIT_kwd, TYPE_any, opc_sti1, type_vid, NULL);
+			install(cc, "i16",  EMIT_kwd, TYPE_any, opc_sti2, type_vid, NULL);
+			install(cc, "i32",  EMIT_kwd, TYPE_any, opc_sti4, type_vid, NULL);
+			install(cc, "i64",  EMIT_kwd, TYPE_any, opc_sti8, type_vid, NULL);
+			install(cc, "i128", EMIT_kwd, TYPE_any, opc_stiq, type_vid, NULL);
 			ccEnd(rt, opc, ATTR_stat);
 		}
 		if ((opc = ccBegin(rt, "cmt")) != NULL) {   // complement
-			install(cc, "u32", EMIT_opc, TYPE_any, b32_cmt, type_u32, NULL);
-			//install(cc, "u64", EMIT_opc, TYPE_any, b64_cmt, type_u64, NULL);
+			install(cc, "u32", EMIT_kwd, TYPE_any, b32_cmt, type_u32, NULL);
+			//install(cc, "u64", EMIT_kwd, TYPE_any, b64_cmt, type_u64, NULL);
 			ccEnd(rt, opc, ATTR_stat);
 		}
 		if ((opc = ccBegin(rt, "and")) != NULL) {
-			install(cc, "u32", EMIT_opc, TYPE_any, b32_and, type_u32, NULL);
-			//install(cc, "u64", EMIT_opc, TYPE_any, b64_and, type_u64, NULL);
+			install(cc, "u32", EMIT_kwd, TYPE_any, b32_and, type_u32, NULL);
+			//install(cc, "u64", EMIT_kwd, TYPE_any, b64_and, type_u64, NULL);
 			ccEnd(rt, opc, ATTR_stat);
 		}
 		if ((opc = ccBegin(rt, "or")) != NULL) {
-			install(cc, "u32", EMIT_opc, TYPE_any, b32_ior, type_u32, NULL);
-			//install(cc, "u64", EMIT_opc, TYPE_any, b64_ior, type_u64, NULL);
+			install(cc, "u32", EMIT_kwd, TYPE_any, b32_ior, type_u32, NULL);
+			//install(cc, "u64", EMIT_kwd, TYPE_any, b64_ior, type_u64, NULL);
 			ccEnd(rt, opc, ATTR_stat);
 		}
 		if ((opc = ccBegin(rt, "xor")) != NULL) {
-			install(cc, "u32", EMIT_opc, TYPE_any, b32_xor, type_u32, NULL);
-			//install(cc, "u64", EMIT_opc, TYPE_any, b64_xor, type_u64, NULL);
+			install(cc, "u32", EMIT_kwd, TYPE_any, b32_xor, type_u32, NULL);
+			//install(cc, "u64", EMIT_kwd, TYPE_any, b64_xor, type_u64, NULL);
 			ccEnd(rt, opc, ATTR_stat);
 		}
 		if ((opc = ccBegin(rt, "shl")) != NULL) {
-			install(cc, "u32", EMIT_opc, TYPE_any, b32_shl, type_u32, NULL);
-			//install(cc, "u64", EMIT_opc, TYPE_any, b64_shl, type_u64, NULL);
+			install(cc, "u32", EMIT_kwd, TYPE_any, b32_shl, type_u32, NULL);
+			//install(cc, "u64", EMIT_kwd, TYPE_any, b64_shl, type_u64, NULL);
 			ccEnd(rt, opc, ATTR_stat);
 		}
 
 		if ((opc = ccBegin(rt, "shr")) != NULL) {
-			install(cc, "u32", EMIT_opc, TYPE_any, b32_shr, type_u32, NULL);
-			install(cc, "i32", EMIT_opc, TYPE_any, b32_sar, type_i32, NULL);
-			//install(cc, "u64", EMIT_opc, TYPE_any, b64_shr, type_u64, NULL);
-			//install(cc, "i64", EMIT_opc, TYPE_any, b64_sar, type_i64, NULL);
+			install(cc, "u32", EMIT_kwd, TYPE_any, b32_shr, type_u32, NULL);
+			install(cc, "i32", EMIT_kwd, TYPE_any, b32_sar, type_i32, NULL);
+			//install(cc, "u64", EMIT_kwd, TYPE_any, b64_shr, type_u64, NULL);
+			//install(cc, "i64", EMIT_kwd, TYPE_any, b64_sar, type_i64, NULL);
 			ccEnd(rt, opc, ATTR_stat);
 		}
 		if ((opc = ccBegin(rt, "neg")) != NULL) {
-			install(cc, "i32", EMIT_opc, TYPE_any, i32_neg, type_i32, NULL);
-			install(cc, "i64", EMIT_opc, TYPE_any, i64_neg, type_i64, NULL);
-			install(cc, "f32", EMIT_opc, TYPE_any, f32_neg, type_f32, NULL);
-			install(cc, "f64", EMIT_opc, TYPE_any, f64_neg, type_f64, NULL);
-			install(cc, "p4f", EMIT_opc, TYPE_any, v4f_neg, type_p4x, NULL);
-			install(cc, "p2d", EMIT_opc, TYPE_any, v2d_neg, type_p4x, NULL);
+			install(cc, "i32", EMIT_kwd, TYPE_any, i32_neg, type_i32, NULL);
+			install(cc, "i64", EMIT_kwd, TYPE_any, i64_neg, type_i64, NULL);
+			install(cc, "f32", EMIT_kwd, TYPE_any, f32_neg, type_f32, NULL);
+			install(cc, "f64", EMIT_kwd, TYPE_any, f64_neg, type_f64, NULL);
+			install(cc, "p4f", EMIT_kwd, TYPE_any, v4f_neg, type_p4x, NULL);
+			install(cc, "p2d", EMIT_kwd, TYPE_any, v2d_neg, type_p4x, NULL);
 			ccEnd(rt, opc, ATTR_stat);
 		}
 		if ((opc = ccBegin(rt, "add")) != NULL) {
-			install(cc, "i32", EMIT_opc, TYPE_any, i32_add, type_i32, NULL);
-			install(cc, "i64", EMIT_opc, TYPE_any, i64_add, type_i64, NULL);
-			install(cc, "f32", EMIT_opc, TYPE_any, f32_add, type_f32, NULL);
-			install(cc, "f64", EMIT_opc, TYPE_any, f64_add, type_f64, NULL);
-			install(cc, "p4f", EMIT_opc, TYPE_any, v4f_add, type_p4x, NULL);
-			install(cc, "p2d", EMIT_opc, TYPE_any, v2d_add, type_p4x, NULL);
+			install(cc, "i32", EMIT_kwd, TYPE_any, i32_add, type_i32, NULL);
+			install(cc, "i64", EMIT_kwd, TYPE_any, i64_add, type_i64, NULL);
+			install(cc, "f32", EMIT_kwd, TYPE_any, f32_add, type_f32, NULL);
+			install(cc, "f64", EMIT_kwd, TYPE_any, f64_add, type_f64, NULL);
+			install(cc, "p4f", EMIT_kwd, TYPE_any, v4f_add, type_p4x, NULL);
+			install(cc, "p2d", EMIT_kwd, TYPE_any, v2d_add, type_p4x, NULL);
 			ccEnd(rt, opc, ATTR_stat);
 		}
 		if ((opc = ccBegin(rt, "sub")) != NULL) {
-			install(cc, "i32", EMIT_opc, TYPE_any, i32_sub, type_i32, NULL);
-			install(cc, "i64", EMIT_opc, TYPE_any, i64_sub, type_i64, NULL);
-			install(cc, "f32", EMIT_opc, TYPE_any, f32_sub, type_f32, NULL);
-			install(cc, "f64", EMIT_opc, TYPE_any, f64_sub, type_f64, NULL);
-			install(cc, "p4f", EMIT_opc, TYPE_any, v4f_sub, type_p4x, NULL);
-			install(cc, "p2d", EMIT_opc, TYPE_any, v2d_sub, type_p4x, NULL);
+			install(cc, "i32", EMIT_kwd, TYPE_any, i32_sub, type_i32, NULL);
+			install(cc, "i64", EMIT_kwd, TYPE_any, i64_sub, type_i64, NULL);
+			install(cc, "f32", EMIT_kwd, TYPE_any, f32_sub, type_f32, NULL);
+			install(cc, "f64", EMIT_kwd, TYPE_any, f64_sub, type_f64, NULL);
+			install(cc, "p4f", EMIT_kwd, TYPE_any, v4f_sub, type_p4x, NULL);
+			install(cc, "p2d", EMIT_kwd, TYPE_any, v2d_sub, type_p4x, NULL);
 			ccEnd(rt, opc, ATTR_stat);
 		}
 		if ((opc = ccBegin(rt, "mul")) != NULL) {
-			install(cc, "u32", EMIT_opc, TYPE_any, u32_mul, type_u32, NULL);
-			install(cc, "i32", EMIT_opc, TYPE_any, i32_mul, type_i32, NULL);
-			install(cc, "i64", EMIT_opc, TYPE_any, i64_mul, type_i64, NULL);
-			install(cc, "f32", EMIT_opc, TYPE_any, f32_mul, type_f32, NULL);
-			install(cc, "f64", EMIT_opc, TYPE_any, f64_mul, type_f64, NULL);
-			install(cc, "p4f", EMIT_opc, TYPE_any, v4f_mul, type_p4x, NULL);
-			install(cc, "p2d", EMIT_opc, TYPE_any, v2d_mul, type_p4x, NULL);
+			install(cc, "u32", EMIT_kwd, TYPE_any, u32_mul, type_u32, NULL);
+			install(cc, "i32", EMIT_kwd, TYPE_any, i32_mul, type_i32, NULL);
+			install(cc, "i64", EMIT_kwd, TYPE_any, i64_mul, type_i64, NULL);
+			install(cc, "f32", EMIT_kwd, TYPE_any, f32_mul, type_f32, NULL);
+			install(cc, "f64", EMIT_kwd, TYPE_any, f64_mul, type_f64, NULL);
+			install(cc, "p4f", EMIT_kwd, TYPE_any, v4f_mul, type_p4x, NULL);
+			install(cc, "p2d", EMIT_kwd, TYPE_any, v2d_mul, type_p4x, NULL);
 			ccEnd(rt, opc, ATTR_stat);
 		}
 		if ((opc = ccBegin(rt, "div")) != NULL) {
-			install(cc, "u32", EMIT_opc, TYPE_any, u32_div, type_u32, NULL);
-			install(cc, "i32", EMIT_opc, TYPE_any, i32_div, type_i32, NULL);
-			install(cc, "i64", EMIT_opc, TYPE_any, i64_div, type_i64, NULL);
-			install(cc, "f32", EMIT_opc, TYPE_any, f32_div, type_f32, NULL);
-			install(cc, "f64", EMIT_opc, TYPE_any, f64_div, type_f64, NULL);
-			install(cc, "p4f", EMIT_opc, TYPE_any, v4f_div, type_p4x, NULL);
-			install(cc, "p2d", EMIT_opc, TYPE_any, v2d_div, type_p4x, NULL);
+			install(cc, "u32", EMIT_kwd, TYPE_any, u32_div, type_u32, NULL);
+			install(cc, "i32", EMIT_kwd, TYPE_any, i32_div, type_i32, NULL);
+			install(cc, "i64", EMIT_kwd, TYPE_any, i64_div, type_i64, NULL);
+			install(cc, "f32", EMIT_kwd, TYPE_any, f32_div, type_f32, NULL);
+			install(cc, "f64", EMIT_kwd, TYPE_any, f64_div, type_f64, NULL);
+			install(cc, "p4f", EMIT_kwd, TYPE_any, v4f_div, type_p4x, NULL);
+			install(cc, "p2d", EMIT_kwd, TYPE_any, v2d_div, type_p4x, NULL);
 			ccEnd(rt, opc, ATTR_stat);
 		}
 		if ((opc = ccBegin(rt, "mod")) != NULL) {
-			install(cc, "u32", EMIT_opc, TYPE_any, u32_mod, type_u32, NULL);
-			install(cc, "i32", EMIT_opc, TYPE_any, i32_mod, type_i32, NULL);
-			install(cc, "i64", EMIT_opc, TYPE_any, i64_mod, type_i64, NULL);
-			install(cc, "f32", EMIT_opc, TYPE_any, f32_mod, type_f32, NULL);
-			install(cc, "f64", EMIT_opc, TYPE_any, f64_mod, type_f64, NULL);
+			install(cc, "u32", EMIT_kwd, TYPE_any, u32_mod, type_u32, NULL);
+			install(cc, "i32", EMIT_kwd, TYPE_any, i32_mod, type_i32, NULL);
+			install(cc, "i64", EMIT_kwd, TYPE_any, i64_mod, type_i64, NULL);
+			install(cc, "f32", EMIT_kwd, TYPE_any, f32_mod, type_f32, NULL);
+			install(cc, "f64", EMIT_kwd, TYPE_any, f64_mod, type_f64, NULL);
 			ccEnd(rt, opc, ATTR_stat);
 		}
 		if ((opc = ccBegin(rt, "ceq")) != NULL) {
-			install(cc, "i32", EMIT_opc, TYPE_any, i32_ceq, type_bol, NULL);
-			install(cc, "i64", EMIT_opc, TYPE_any, i64_ceq, type_bol, NULL);
-			install(cc, "f32", EMIT_opc, TYPE_any, f32_ceq, type_bol, NULL);
-			install(cc, "f64", EMIT_opc, TYPE_any, f64_ceq, type_bol, NULL);
-			install(cc, "p4f", EMIT_opc, TYPE_any, v4f_ceq, type_bol, NULL);
-			install(cc, "p2d", EMIT_opc, TYPE_any, v2d_ceq, type_bol, NULL);
+			install(cc, "i32", EMIT_kwd, TYPE_any, i32_ceq, type_bol, NULL);
+			install(cc, "i64", EMIT_kwd, TYPE_any, i64_ceq, type_bol, NULL);
+			install(cc, "f32", EMIT_kwd, TYPE_any, f32_ceq, type_bol, NULL);
+			install(cc, "f64", EMIT_kwd, TYPE_any, f64_ceq, type_bol, NULL);
+			install(cc, "p4f", EMIT_kwd, TYPE_any, v4f_ceq, type_bol, NULL);
+			install(cc, "p2d", EMIT_kwd, TYPE_any, v2d_ceq, type_bol, NULL);
 			ccEnd(rt, opc, ATTR_stat);
 		}
 		if ((opc = ccBegin(rt, "clt")) != NULL) {
-			install(cc, "u32", EMIT_opc, TYPE_any, u32_clt, type_bol, NULL);
-			install(cc, "i32", EMIT_opc, TYPE_any, i32_clt, type_bol, NULL);
-			install(cc, "i64", EMIT_opc, TYPE_any, i64_clt, type_bol, NULL);
-			install(cc, "f32", EMIT_opc, TYPE_any, f32_clt, type_bol, NULL);
-			install(cc, "f64", EMIT_opc, TYPE_any, f64_clt, type_bol, NULL);
+			install(cc, "u32", EMIT_kwd, TYPE_any, u32_clt, type_bol, NULL);
+			install(cc, "i32", EMIT_kwd, TYPE_any, i32_clt, type_bol, NULL);
+			install(cc, "i64", EMIT_kwd, TYPE_any, i64_clt, type_bol, NULL);
+			install(cc, "f32", EMIT_kwd, TYPE_any, f32_clt, type_bol, NULL);
+			install(cc, "f64", EMIT_kwd, TYPE_any, f64_clt, type_bol, NULL);
 			ccEnd(rt, opc, ATTR_stat);
 		}
 		if ((opc = ccBegin(rt, "cgt")) != NULL) {
-			install(cc, "u32", EMIT_opc, TYPE_any, u32_cgt, type_bol, NULL);
-			install(cc, "i32", EMIT_opc, TYPE_any, i32_cgt, type_bol, NULL);
-			install(cc, "i64", EMIT_opc, TYPE_any, i64_cgt, type_bol, NULL);
-			install(cc, "f32", EMIT_opc, TYPE_any, f32_cgt, type_bol, NULL);
-			install(cc, "f64", EMIT_opc, TYPE_any, f64_cgt, type_bol, NULL);
+			install(cc, "u32", EMIT_kwd, TYPE_any, u32_cgt, type_bol, NULL);
+			install(cc, "i32", EMIT_kwd, TYPE_any, i32_cgt, type_bol, NULL);
+			install(cc, "i64", EMIT_kwd, TYPE_any, i64_cgt, type_bol, NULL);
+			install(cc, "f32", EMIT_kwd, TYPE_any, f32_cgt, type_bol, NULL);
+			install(cc, "f64", EMIT_kwd, TYPE_any, f64_cgt, type_bol, NULL);
 			ccEnd(rt, opc, ATTR_stat);
 		}
 		if ((opc = ccBegin(rt, "min")) != NULL) {
-			install(cc, "p4f", EMIT_opc, TYPE_any, v4f_min, type_p4x, NULL);
-			install(cc, "p2d", EMIT_opc, TYPE_any, v2d_min, type_p4x, NULL);
+			install(cc, "p4f", EMIT_kwd, TYPE_any, v4f_min, type_p4x, NULL);
+			install(cc, "p2d", EMIT_kwd, TYPE_any, v2d_min, type_p4x, NULL);
 			ccEnd(rt, opc, ATTR_stat);
 		}
 		if ((opc = ccBegin(rt, "max")) != NULL) {
-			install(cc, "p4f", EMIT_opc, TYPE_any, v4f_max, type_p4x, NULL);
-			install(cc, "p2d", EMIT_opc, TYPE_any, v2d_max, type_p4x, NULL);
+			install(cc, "p4f", EMIT_kwd, TYPE_any, v4f_max, type_p4x, NULL);
+			install(cc, "p2d", EMIT_kwd, TYPE_any, v2d_max, type_p4x, NULL);
 			ccEnd(rt, opc, ATTR_stat);
 		}
 		if ((opc = type_p4x) != NULL) {
 			ccBegin(rt, NULL);
-			install(cc, "dp3", EMIT_opc, TYPE_any, v4f_dp3, type_f32, NULL);
-			install(cc, "dp4", EMIT_opc, TYPE_any, v4f_dp4, type_f32, NULL);
-			install(cc, "dph", EMIT_opc, TYPE_any, v4f_dph, type_f32, NULL);
+			install(cc, "dp3", EMIT_kwd, TYPE_any, v4f_dp3, type_f32, NULL);
+			install(cc, "dp4", EMIT_kwd, TYPE_any, v4f_dp4, type_f32, NULL);
+			install(cc, "dph", EMIT_kwd, TYPE_any, v4f_dph, type_f32, NULL);
 			// p4x.xyzw
 			if ((mode & installEswz) == installEswz) {
 				unsigned i;
@@ -609,7 +609,7 @@ static void install_emit(ccContext cc, int mode) {
 					swz[i].node = intnode(cc, i);
 				}
 				for (i = 0; i < lengthOf(swz); i += 1) {
-					install(cc, swz[i].name, EMIT_opc, TYPE_any, p4x_swz, type_p4x, swz[i].node);
+					install(cc, swz[i].name, EMIT_kwd, TYPE_any, p4x_swz, type_p4x, swz[i].node);
 				}
 			}
 			ccEnd(rt, opc, ATTR_stat);

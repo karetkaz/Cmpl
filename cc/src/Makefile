@@ -44,13 +44,13 @@ OBJS=\
 
 
 build:$(OBJDIR) $(OBJS)
-	gcc $(ARH) -o $(BINDIR)/main $(OBJS) $(LIBS)
+	cc $(ARH) -o $(BINDIR)/main $(OBJS) $(LIBS)
 
 $(OBJDIR):
 	$(MKDIR) "$(OBJDIR)"
 
 $(OBJDIR)/%.o: $(SRCDIR)/%.c $(SRCDIR)/*.h $(SRCDIR)/*.inl
-	gcc $(ARH) -c $(CFLAGS) $< -o $@
+	cc $(ARH) -c $(CFLAGS) $< -o $@
 
 clean:
 	rm -f $(OBJS) $(OBJDIR)/main.o

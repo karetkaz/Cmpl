@@ -19,7 +19,8 @@ typedef enum {
 	OPER_beg = OPER_fnc,
 	OPER_end = OPER_com,
 
-	TOKN_err = TYPE_any,
+	TOKEN_any = TYPE_any,
+
 	TYPE_int = CAST_i64,
 	TYPE_flt = CAST_f64,
 	TYPE_str = TYPE_ptr,

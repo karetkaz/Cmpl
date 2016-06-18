@@ -71,7 +71,7 @@ astn fltnode(ccContext cc, float64_t v) {
 	}
 	return ast;
 }
-astn strnode(ccContext cc, char* v) {
+astn strnode(ccContext cc, char *v) {
 	astn ast = newnode(cc, TYPE_str);
 	if (ast != NULL) {
 		ast->type = cc->type_str;
@@ -162,13 +162,13 @@ float64_t constflt(astn ast) {
 	fatal("not a constant %+t", ast);
 	return 0;
 }
-ccToken eval(astn res, astn ast) {
+ccKind eval(astn res, astn ast) {
 	symn type = NULL;
-	ccToken cast;
+	ccKind cast;
 	struct astNode lhs, rhs;
 
 	if (ast == NULL)
-		return 0;
+		return TYPE_any;
 
 	if (!res)
 		res = &rhs;
@@ -177,7 +177,7 @@ ccToken eval(astn res, astn ast) {
 	switch (ast->cast) {
 		default:
 			trace("(%+t):%K(%s:%u)", ast, ast->cast, ast->file, ast->line);
-			return 0;
+			return TYPE_any;
 
 		case CAST_bit:
 			cast = CAST_bit;
@@ -200,7 +200,7 @@ ccToken eval(astn res, astn ast) {
 		case TYPE_rec:
 			switch (ast->kind) {
 				default:
-					return 0;
+					return TYPE_any;
 
 				case TYPE_int:
 				case TYPE_flt:
@@ -214,7 +214,7 @@ ccToken eval(astn res, astn ast) {
 		case CAST_arr:
 		case CAST_ref:
 		case CAST_vid:
-			return 0;
+			return TYPE_any;
 
 		case TYPE_any:
 			cast = ast->cast;
@@ -224,15 +224,15 @@ ccToken eval(astn res, astn ast) {
 	switch (ast->kind) {
 		default:
 			fatal(ERR_INTERNAL_ERROR);
-			return 0;
+			return TYPE_any;
 
 		case OPER_com:
 		case STMT_beg:
-			return 0;
+			return TYPE_any;
 
 		case OPER_dot:
 			if (!isTypeExpr(ast->op.lhso))
-				return 0;
+				return TYPE_any;
 			return eval(res, ast->op.rhso);
 
 		case OPER_fnc: {
@@ -240,15 +240,15 @@ ccToken eval(astn res, astn ast) {
 
 			// evaluate only type casts.
 			if (func && !isTypeExpr(func))
-				return 0;
+				return TYPE_any;
 
 			if (!eval(res, ast->op.rhso))
-				return 0;
+				return TYPE_any;
 
 		} break;
 		case OPER_adr:
 		case OPER_idx:
-			return 0;
+			return TYPE_any;
 
 		case TYPE_int:
 		case TYPE_flt:
@@ -261,25 +261,25 @@ ccToken eval(astn res, astn ast) {
 			if (var && var->kind == TYPE_def && var->init) {
 				type = var->type;
 				if (!eval(res, var->init))
-					return 0;
+					return TYPE_any;
 			}
 			else {
-				return 0;
+				return TYPE_any;
 			}
 		} break;
 
 		case OPER_pls:		// '+'
 			if (!eval(res, ast->op.rhso))
-				return 0;
+				return TYPE_any;
 			break;
 
 		case OPER_mns:		// '-'
 			if (!eval(res, ast->op.rhso))
-				return 0;
+				return TYPE_any;
 
 			switch (res->kind) {
 				default:
-					return 0;
+					return TYPE_any;
 				case TYPE_int:
 					res->cint = -res->cint;
 					break;
@@ -292,12 +292,12 @@ ccToken eval(astn res, astn ast) {
 		case OPER_cmt:			// '~'
 
 			if (!eval(res, ast->op.rhso))
-				return 0;
+				return TYPE_any;
 
 			switch (res->kind) {
 
 				default:
-					return 0;
+					return TYPE_any;
 
 				case TYPE_int:
 					res->cint = ~res->cint;
@@ -313,14 +313,14 @@ ccToken eval(astn res, astn ast) {
 		case OPER_not:			// '!'
 
 			if (!eval(res, ast->op.rhso))
-				return 0;
+				return TYPE_any;
 
 			dieif(ast->cast != CAST_bit, "FixMe %+t", ast);
 
 			switch (res->kind) {
 
 				default:
-					return 0;
+					return TYPE_any;
 
 				case TYPE_int:
 					res->cint = !res->cint;
@@ -340,16 +340,16 @@ ccToken eval(astn res, astn ast) {
 		case OPER_div:			// '/'
 		case OPER_mod:			// '%'
 			if (!eval(&lhs, ast->op.lhso))
-				return 0;
+				return TYPE_any;
 
 			if (!eval(&rhs, ast->op.rhso))
-				return 0;
+				return TYPE_any;
 
 			dieif(lhs.kind != rhs.kind, "eval operator %t (%K, %K): %K", ast, lhs.kind, rhs.kind, ast->cast);
 
 			switch (rhs.kind) {
 				default:
-					return 0;
+					return TYPE_any;
 
 				case TYPE_int:
 					res->kind = TYPE_int;
@@ -357,7 +357,7 @@ ccToken eval(astn res, astn ast) {
 
 						default:
 							fatal(ERR_INTERNAL_ERROR);
-							return 0;
+							return TYPE_any;
 
 						case OPER_add:
 							res->cint = lhs.cint + rhs.cint;
@@ -431,24 +431,24 @@ ccToken eval(astn res, astn ast) {
 		case OPER_leq:			// '<='
 
 			if (!eval(&lhs, ast->op.lhso))
-				return 0;
+				return TYPE_any;
 
 			if (!eval(&rhs, ast->op.rhso))
-				return 0;
+				return TYPE_any;
 
 			dieif(lhs.kind != rhs.kind, "eval operator %t (%K, %K): %K", ast, lhs.kind, rhs.kind, ast->cast);
 
 			res->kind = CAST_bit;
 			switch (rhs.kind) {
 				default:
-					return 0;
+					return TYPE_any;
 
 				case TYPE_int:
 					switch (ast->kind) {
 
 						default:
 							fatal(ERR_INTERNAL_ERROR);
-							return 0;
+							return TYPE_any;
 
 						case OPER_neq:
 							res->cint = lhs.cint != rhs.cint;
@@ -480,7 +480,7 @@ ccToken eval(astn res, astn ast) {
 
 						default:
 							fatal(ERR_INTERNAL_ERROR);
-							return 0;
+							return TYPE_any;
 
 						case OPER_neq:
 							res->cint = lhs.cflt != rhs.cflt;
@@ -517,10 +517,10 @@ ccToken eval(astn res, astn ast) {
 		case OPER_xor:			// '^'
 
 			if (!eval(&lhs, ast->op.lhso))
-				return 0;
+				return TYPE_any;
 
 			if (!eval(&rhs, ast->op.rhso)) {
-				return 0;
+				return TYPE_any;
 			}
 
 			dieif(lhs.kind != rhs.kind, "eval operator %t (%K, %K): %K", ast, lhs.kind, rhs.kind, ast->cast);
@@ -529,7 +529,7 @@ ccToken eval(astn res, astn ast) {
 
 				default:
 					trace("eval(%+t) : %K", ast->op.rhso, rhs.kind);
-					return 0;
+					return TYPE_any;
 
 				case TYPE_int:
 					res->kind = TYPE_int;
@@ -567,10 +567,10 @@ ccToken eval(astn res, astn ast) {
 		case OPER_any:
 
 			if (!eval(&lhs, ast->op.lhso))
-				return 0;
+				return TYPE_any;
 
 			if (!eval(&rhs, ast->op.rhso))
-				return 0;
+				return TYPE_any;
 
 			dieif(lhs.kind != rhs.kind, "eval operator %t (%K, %K): %K", ast, lhs.kind, rhs.kind, ast->cast);
 
@@ -592,7 +592,7 @@ ccToken eval(astn res, astn ast) {
 
 		case OPER_sel:
 			if (!eval(&lhs, ast->op.test))
-				return 0;
+				return TYPE_any;
 
 			return eval(res, lhs.cint ? ast->op.lhso : ast->op.rhso);
 
@@ -607,8 +607,8 @@ ccToken eval(astn res, astn ast) {
 			//~ case ASGN_and:
 			//~ case ASGN_ior:
 			//~ case ASGN_xor:
-		case EMIT_opc:
-			return 0;
+		case EMIT_kwd:
+			return TYPE_any;
 	}
 
 	if (cast != res->kind) switch (cast) {
@@ -641,7 +641,7 @@ ccToken eval(astn res, astn ast) {
 		default:
 			fatal(ERR_INTERNAL_ERROR);
 			res->type = NULL;
-			return 0;
+			return TYPE_any;
 
 		case CAST_bit:
 		case TYPE_int:
@@ -659,7 +659,7 @@ symn linkOf(astn ast) {
 		return NULL;
 	}
 
-	if (ast->kind == EMIT_opc) {
+	if (ast->kind == EMIT_kwd) {
 		return ast->type;
 	}
 
@@ -716,7 +716,7 @@ int isTypeExpr(astn ast) {
 		return 0;
 	}
 
-	if (ast->kind == EMIT_opc) {
+	if (ast->kind == EMIT_kwd) {
 		return 0;
 	}
 
@@ -850,7 +850,7 @@ int isStaticExpr(ccContext cc, astn ast) {
 		}
 
 		//~ case TYPE_def:					// new (var, func, define)
-		//~ case EMIT_opc:
+		//~ case EMIT_kwd:
 		//#}
 	}
 	traceAst(ast);
@@ -878,7 +878,7 @@ ccToken castOf(symn typ) {
 				return CAST_arr;
 			return CAST_ref;
 
-		case EMIT_opc:
+		case EMIT_kwd:
 			return typ->cast;
 
 		case TYPE_rec:
@@ -945,7 +945,7 @@ size_t sizeOf(symn sym, int varSize) {
 				//~ case TYPE_int:
 				//~ case TYPE_flt:
 
-			case EMIT_opc:
+			case EMIT_kwd:
 				if (sym->cast == CAST_ref) {
 					return vm_size;
 				}

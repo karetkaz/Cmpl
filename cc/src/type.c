@@ -112,7 +112,6 @@ void enter(ccContext cc, astn ast) {
 /// Leave current scope.
 symn leave(ccContext cc, symn dcl, int mode) {
 	int i;
-	rtContext rt = cc->rt;
 	symn result = NULL;
 
 	cc->nest -= 1;
@@ -226,7 +225,7 @@ symn install(ccContext cc, const char* name, ccToken kind, ccKind cast, unsigned
 			case CAST_ref:
 				break;
 
-			case EMIT_opc:
+			case EMIT_kwd:
 				def->offs = size;
 				def->size = 0;
 				break;
@@ -493,7 +492,7 @@ symn typeCheck(ccContext s, symn loc, astn ast) {
 				astn linearize = NULL;
 				symn lin = NULL;
 
-				if (fun->kind == EMIT_opc) {
+				if (fun->kind == EMIT_kwd) {
 					lin = s->emit_opc;
 				}
 
@@ -558,7 +557,7 @@ symn typeCheck(ccContext s, symn loc, astn ast) {
 						ref = fun->op.rhso;
 						break;
 
-					case EMIT_opc: {
+					case EMIT_kwd: {
 						astn arg;
 						for (arg = args; arg; arg = arg->next) {
 							arg->cast = arg->type->cast;
@@ -946,7 +945,7 @@ symn typeCheck(ccContext s, symn loc, astn ast) {
 			}
 			break;
 
-		case EMIT_opc:
+		case EMIT_kwd:
 			return ast->type = s->emit_opc;
 
 		case TYPE_int:
@@ -984,7 +983,7 @@ symn typeCheck(ccContext s, symn loc, astn ast) {
 					//~ debug("%T:%T in `%+t` (%d)", sym, result, ast, ast->line);
 					break;
 
-				case EMIT_opc:
+				case EMIT_kwd:
 				case CAST_ref:
 					result = sym->type;
 					break;
@@ -1056,7 +1055,7 @@ symn typeCheck(ccContext s, symn loc, astn ast) {
 	return result;
 }
 
-ccToken canAssign(ccContext cc, symn var, astn val, int strict) {
+ccKind canAssign(ccContext cc, symn var, astn val, int strict) {
 	symn lnk = linkOf(val);
 	symn typ = var;
 	symn cast;
@@ -1100,7 +1099,7 @@ ccToken canAssign(ccContext cc, symn var, astn val, int strict) {
 			atag.cast = var->cast;
 			atag.ref.link = var;
 
-			if (fun && fun->kind == EMIT_opc) {
+			if (fun && fun->kind == EMIT_kwd) {
 				val->type = var;
 				return CAST_ref;
 			}
@@ -1248,7 +1247,7 @@ int countUsages(symn sym) {
 }
 
 // TODO: remove function
-static inline ccToken castKind(symn typ) {
+static inline ccKind castKind(symn typ) {
 	if (typ != NULL) {
 		switch (typ->cast) {
 			default:

@@ -486,7 +486,7 @@ static void jsonDumpAst(FILE *out, const char **esc, astn ast, const char *kind,
 
 			//#}
 			//#{ TVAL
-		case EMIT_opc:
+		case EMIT_kwd:
 			//~ fputFmt(out, escape, " />\n", text);
 			//~ break;
 
@@ -1250,6 +1250,7 @@ static int conProfile(dbgContext dbg, size_t ss, void* caller, void* callee, clo
 		}
 	}
 	return 0;
+	(void)caller;
 }
 
 static int program(int argc, char *argv[]) {

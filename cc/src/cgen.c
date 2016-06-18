@@ -83,7 +83,7 @@ static size_t emitidx(rtContext rt, vmOpcode opc, size_t arg) {
 	}
 
 
-	if (tmp.sz != tmp.i8) {
+	if (tmp.sz != (size_t) tmp.i8) {
 		trace("opc_x%02x(%D(%d))", opc, tmp.i8, arg);
 		return 0;
 	}
@@ -150,12 +150,12 @@ static size_t emitopr(rtContext rt, vmOpcode opc, ccKind cast) {
 			opc = i32_ceq;
 			break;
 
-		case CAST_f32:
-			opc = f32_ceq;
-			break;
-
 		case CAST_i64:
 			opc = i64_ceq;
+			break;
+
+		case CAST_f32:
+			opc = f32_ceq;
 			break;
 
 		case CAST_f64:
@@ -530,7 +530,7 @@ static ccKind cgen(rtContext rt, astn ast, ccKind get) {
 			for (ptr = ast->stmt.stmt; ptr; ptr = ptr->next) {
 				size_t ipStart = emitopc(rt, markIP);
 				if (!cgen(rt, ptr, CAST_vid)) {		// we will free stack on scope close
-					error(rt, ptr->file, ptr->line, "emitting statement `%+t`", ptr);
+					error(rt, ptr->file, ptr->line, "emitting statement");
 					dmpDbg(rt, ptr, ipStart, emitopc(rt, markIP));
 					return TYPE_any;
 				}
@@ -1705,7 +1705,7 @@ static ccKind cgen(rtContext rt, astn ast, ccKind get) {
 						got = get = retarr;
 					}
 				} break;
-				case EMIT_opc:
+				case EMIT_kwd:
 					dieif(get == CAST_ref, ERR_INTERNAL_ERROR);
 					if (!emitint(rt, (vmOpcode)var->offs, var->init ? constint(var->init) : 0)) {
 						error(rt, ast->file, ast->line, "error emiting opcode: %+t", ast);
@@ -2005,7 +2005,7 @@ static ccKind cgen(rtContext rt, astn ast, ccKind get) {
 			get = got = CAST_vid;
 		} break;
 
-		case EMIT_opc:
+		case EMIT_kwd:
 			traceAst(ast);
 			return TYPE_any;
 		//#}
@@ -2203,8 +2203,8 @@ static ccKind cgen(rtContext rt, astn ast, ccKind get) {
 			default:
 				goto errorcast2;
 
-			case EMIT_opc:
-				return EMIT_opc;
+			case EMIT_kwd:
+				return EMIT_kwd;
 		}
 
 		case TYPE_ptr: switch (got) {

@@ -83,7 +83,7 @@ struct symNode {
 	symn	next;		// next symbol: field / param / ... / (in scope table)
 
 	ccToken	kind;		// TYPE_def / TYPE_rec / CAST_ref / CAST_arr
-	ccToken	cast;		// casts to type(TYPE_(bit, vid, ref, u32, i32, i64, f32, f64, p4x)).
+	ccKind	cast;		// casts to type(TYPE_(bit, vid, ref, u32, i32, i64, f32, f64, p4x)).
 
 	union {				// Attributes
 		uint32_t	Attr;
@@ -235,8 +235,7 @@ struct ccContextRec {
 	symn	type_f64;		// 64bit floating point
 	symn	type_ptr;		// pointer
 	symn	type_var;		// variant
-
-	symn	type_str;		// TODO: string should be replaced with pointer or char* or cstr
+	symn	type_str;		// cstring
 
 	symn	null_ref;		// variable null
 	symn	emit_opc;		// emit intrinsic function, or whatever it is.
@@ -311,7 +310,7 @@ symn typeCheck(ccContext, symn loc, astn ast);
  * @param strict Strict mode: casts are not enabled.
  * @return cast of the assignmet if it can be done.
  */
-ccToken canAssign(ccContext, symn rhs, astn val, int strict);
+ccKind canAssign(ccContext, symn rhs, astn val, int strict);
 
 /**
  * @brief Add usage of the symbol.
@@ -340,7 +339,7 @@ extern const char * const type_fmt_variant;
 
 //             *** Tree related functions
 /// Allocate a symbol node.
-symn newdefn(ccContext, ccToken kind);
+symn newdefn(ccContext, ccKind kind);
 /// Allocate a tree node.
 astn newnode(ccContext, ccToken kind);
 /// Recycle node, so it may be reused.
@@ -375,7 +374,7 @@ float64_t constflt(astn ast);
  * @return Type of result: [TYPE_err, CAST_bit, TYPE_int, TYPE_flt, TYPE_str]
  */
 // TODO: to be deleted; use vm to evaluate constants.
-ccToken eval(astn res, astn ast);
+ccKind eval(astn res, astn ast);
 
 /**
  * @brief Get the symbol(variable) linked to expression.
@@ -452,7 +451,7 @@ int source(ccContext, int isFile, char* src);
  * @param match: read next token only if matches.
  * @return next token, or null.
  */
-astn next(ccContext, ccToken kind);
+astn nextTok(ccContext, ccToken match);
 
 /** Peek the next token.
  * @brief read the next token from input.
@@ -460,7 +459,7 @@ astn next(ccContext, ccToken kind);
  * @param match: read next token only if matches.
  * @return next token, or null.
  */
-astn peekTok(ccContext, ccToken kind);
+astn peekTok(ccContext, ccToken match);
 
 /** Read the next token and recycle it.
  * @brief read the next token from input.
@@ -468,8 +467,9 @@ astn peekTok(ccContext, ccToken kind);
  * @param match: read next token only if matches.
  * @return kind of read token.
  */
-ccToken skiptok(ccContext, ccToken kind, int raise);
-int skip(ccContext, ccToken kind);
+ccToken skipTok(ccContext, ccToken match, int raise);
+
+ccToken skipTokens(ccContext, ccToken match, int raise);
 ccToken test(ccContext);
 
 /** Push back a token, to be read next time.

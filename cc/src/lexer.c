@@ -62,7 +62,6 @@ Lexical elements
 #include "internal.h"
 
 //#{~~~~~~~~~ Input ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-// used mostly by the lexer
 
 /** Fill some characters from the file.
  * @brief fill the memory buffer from file.
@@ -357,11 +356,32 @@ char* mapstr(ccContext cc, const char* str, size_t len/* = -1*/, unsigned hash/*
 	return (char*)str;
 }
 
+static const struct {
+	char *name;
+	ccToken type;
+} keywords[] = {
+	// Warning: keep keywords sorted by name, binary search is used to match keywords
+	//~ {"operator", OPER_def},
+	{"break",    STMT_brk},
+	{"const",    ATTR_const},
+	{"continue", STMT_con},
+	{"define",   TYPE_def},
+	{"else",     ELSE_kwd},
+	{"emit",     EMIT_kwd},
+	{"enum",     ENUM_kwd},
+	{"for",      STMT_for},
+	{"if",       STMT_if},
+	{"parallel", ATTR_paral},
+	{"return",   STMT_ret},
+	{"static",   ATTR_stat},
+	{"struct",   TYPE_rec}
+};
+
 /** Read the next token.
  * @brief read the next token from input.
  * @param cc compiler context.
  * @param tok out parameter to be filled with data.
- * @return the kind of token, TOKN_err (0) if error occurred.
+ * @return the kind of token, TOKEN_err (0) if error occurred.
  */
 static ccToken readTok(ccContext cc, astn tok) {
 	enum {
@@ -380,7 +400,7 @@ static ccToken readTok(ccContext cc, astn tok) {
 		ALNUM = DIGIT|ALPHA,   // letters and numbers
 		CWORD = UNDER|ALNUM,   // letters numbers and underscore
 	};
-	static unsigned const chr_map[256] = {
+	static int const chr_map[256] = {
 		/* 000 nul */	CNTRL,
 		/* 001 soh */	CNTRL,
 		/* 002 stx */	CNTRL,
@@ -605,7 +625,7 @@ static ccToken readTok(ccContext cc, astn tok) {
 	cc->pfmt = NULL;
 
 	if (tok == NULL) {
-		return TOKN_err;
+		return TOKEN_any;
 	}
 
 	// our token begins here
@@ -624,7 +644,7 @@ static ccToken readTok(ccContext cc, astn tok) {
 				goto read_idf;
 			}
 			error(cc->rt, cc->file, cc->line, "invalid character: '%c'", chr);
-			tok->kind = TOKN_err;
+			tok->kind = TOKEN_any;
 			break;
 
 		case '.':
@@ -647,23 +667,23 @@ static ccToken readTok(ccContext cc, astn tok) {
 			break;
 
 		case '[':
-			tok->kind = PNCT_lc;
+			tok->kind = LEFT_sqr;
 			break;
 
 		case '(':
-			tok->kind = PNCT_lp;
+			tok->kind = LEFT_par;
 			break;
 
 		case '}':
-			tok->kind = PNCT_rcb;
+			tok->kind = RIGHT_crl;
 			break;
 
 		case ']':
-			tok->kind = PNCT_rc;
+			tok->kind = RIGHT_sqr;
 			break;
 
 		case ')':
-			tok->kind = PNCT_rp;
+			tok->kind = RIGHT_par;
 			break;
 
 		case '?':
@@ -958,14 +978,14 @@ static ccToken readTok(ccContext cc, astn tok) {
 					}
 				}
 
-				*ptr++ = chr;
+				*ptr++ = (char) chr;
 			}
 
 			*ptr++ = 0;
 
 			if (chr != start_char) {
 				error(cc->rt, cc->file, cc->line, "unclosed %s literal", start_char == '"' ? "string" : "character");
-				return tok->kind = TOKN_err;
+				return tok->kind = TOKEN_any;
 			}
 
 			if (start_char == '"') {
@@ -978,7 +998,7 @@ static ccToken readTok(ccContext cc, astn tok) {
 
 				if (ptr == beg) {
 					error(cc->rt, cc->file, cc->line, "empty character constant");
-					return tok->kind = TOKN_err;
+					return tok->kind = TOKEN_any;
 				}
 				if (ptr > beg + vm_size + 1) {
 					warn(cc->rt, 1, cc->file, cc->line, "character constant truncated");
@@ -997,28 +1017,6 @@ static ccToken readTok(ccContext cc, astn tok) {
 			}
 		} break;
 		read_idf: {			// [a-zA-Z_][a-zA-Z0-9_]*
-			static const struct {
-				char* name;
-				ccToken type;
-			}
-			keywords[] = {
-				// Warning: sort keyword list by name
-				//~ {"operator", OPER_def},
-				{"break", STMT_brk},
-				{"const", ATTR_const},
-				{"continue", STMT_con},
-				{"define", TYPE_def},
-				{"else", ELSE_kwd},
-				{"emit", EMIT_opc},
-				{"enum", ENUM_kwd},
-				{"for", STMT_for},
-				{"if", STMT_if},
-				{"parallel", ATTR_paral},
-				{"return", STMT_ret},
-				{"static", ATTR_stat},
-				{"struct", TYPE_rec}
-			};
-
 			int lo = 0;
 			int hi = lengthOf(keywords);
 			int cmp = -1;
@@ -1228,7 +1226,7 @@ static ccToken readTok(ccContext cc, astn tok) {
 				}
 				else {
 					error(cc->rt, tok->file, tok->line, "invalid suffix in numeric constant '%s'", suffix);
-					tok->kind = TOKN_err;
+					tok->kind = TOKEN_any;
 				}
 			}
 			if (flt != 0) {	// float
@@ -1244,7 +1242,7 @@ static ccToken readTok(ccContext cc, astn tok) {
 
 	if (ptr >= end) {
 		fatal(ERR_MEMORY_OVERRUN);
-		return TOKN_err;
+		return TOKEN_any;
 	}
 
 	return tok->kind;
@@ -1259,42 +1257,52 @@ void backTok(ccContext cc, astn tok) {
 }
 
 /// @doc: header
-astn peekTok(ccContext cc, ccToken kind) {
+astn peekTok(ccContext cc, ccToken match) {
 	// read lookahead token
 	if (cc->_tok == NULL) {
-		cc->_tok = newnode(cc, TOKN_err);
+		cc->_tok = newnode(cc, TOKEN_any);
 		if (!readTok(cc, cc->_tok)) {
 			eatnode(cc, cc->_tok);
 			cc->_tok = NULL;
 			return NULL;
 		}
 	}
-	if (!kind || cc->_tok->kind == kind) {
+	if (match == TOKEN_any || match == cc->_tok->kind) {
 		return cc->_tok;
 	}
 	return NULL;
 }
 
 /// @doc: header
-astn next(ccContext cc, ccToken kind) {
-	if (peekTok(cc, kind)) {
-		astn ast = cc->_tok;
-		cc->_tok = ast->next;
-		ast->next = 0;
-		return ast;
+astn nextTok(ccContext cc, ccToken match) {
+	astn token = peekTok(cc, match);
+	if (token != NULL) {
+		cc->_tok = token->next;
+		token->next = NULL;
+		return token;
 	}
-	return 0;
+	return NULL;
 }
 
 /// @doc: header
-int skip(ccContext cc, ccToken kind) {
-	astn ast = peekTok(cc, TYPE_any);
-	if (!ast || (kind && ast->kind != kind)) {
-		return 0;
+ccToken skipTok(ccContext cc, ccToken match, int raise) {
+	astn node = nextTok(cc, match);
+	if (node != NULL) {
+		ccToken result = node->kind;
+		eatnode(cc, node);
+		return result;
 	}
-	cc->_tok = ast->next;
-	eatnode(cc, ast);
-	return 1;
+	if (raise) {
+		char *file = cc->file;
+		int line = cc->line;
+		node = cc->_tok;
+		if (node && node->file && node->line) {
+			file = node->file;
+			line = node->line;
+		}
+		error(cc->rt, file, line, ERR_UNEXPECTED_TOKEN_MATCHING, node, match);
+	}
+	return TOKEN_any;
 }
 
 // TODO: to be removed.
@@ -1304,40 +1312,32 @@ ccToken test(ccContext cc) {
 }
 
 // TODO: rename, review.
-ccToken skiptok(ccContext cc, ccToken kind, int raise) {
-	if (!skip(cc, kind)) {
-		if (raise) {
-			if (!peekTok(cc, TYPE_any)) {
-				error(cc->rt, cc->file, cc->line, "unexpected end of file, `%K` excepted", kind);
-			}
-			else {
-				error(cc->rt, cc->file, cc->line, "`%K` excepted, got `%t`", kind, peekTok(cc, TYPE_any));
-			}
-		}
+ccToken skipTokens(ccContext cc, ccToken kind, int raise) {
+	if (!skipTok(cc, kind, raise)) {
 
 		switch (kind) {
 			case STMT_end:
-			case PNCT_rcb:
-			case PNCT_rp:
-			case PNCT_rc:
+			case RIGHT_crl:
+			case RIGHT_par:
+			case RIGHT_sqr:
 				break;
 
 			default:
-				return TYPE_any;
+				return TOKEN_any;
 		}
-		while (!skip(cc, kind)) {
-			if (skip(cc, STMT_end))
-				return TYPE_any;
-			if (skip(cc, PNCT_rcb))
-				return TYPE_any;
-			if (skip(cc, PNCT_rp))
-				return TYPE_any;
-			if (skip(cc, PNCT_rc))
-				return TYPE_any;
-			if (!skip(cc, TYPE_any))
-				return TYPE_any;		// eof?
+		while (!skipTok(cc, kind, 0)) {
+			if (skipTok(cc, STMT_end, 0))
+				return TOKEN_any;
+			if (skipTok(cc, RIGHT_crl, 0))
+				return TOKEN_any;
+			if (skipTok(cc, RIGHT_par, 0))
+				return TOKEN_any;
+			if (skipTok(cc, RIGHT_sqr, 0))
+				return TOKEN_any;
+			if (!skipTok(cc, TOKEN_any, 0))
+				return TOKEN_any;		// eof?
 		}
-		return TYPE_any;
+		return TOKEN_any;
 	}
 	return kind;
 }
