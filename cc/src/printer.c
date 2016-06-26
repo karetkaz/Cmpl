@@ -638,7 +638,7 @@ static void FPUTFMT(FILE* fout, const char *esc[], const char* msg, va_list ap) 
 					fputchr(fout, chr);
 					continue;
 
-				case 'T': {		// symbol
+				case 'T': {		// type name
 					symn sym = va_arg(ap, symn);
 
 					if (sym == NULL && nil) {
@@ -650,6 +650,9 @@ static void FPUTFMT(FILE* fout, const char *esc[], const char* msg, va_list ap) 
 
 					switch (sgn) {
 						default:
+							if (noPrc) {
+								prc = prShort;
+							}
 							break;
 						case '-':
 							len = -len;
@@ -659,9 +662,6 @@ static void FPUTFMT(FILE* fout, const char *esc[], const char* msg, va_list ap) 
 								prc = prFull;
 							}
 							break;
-					}
-					if (noPrc) {
-						prc = prShort;
 					}
 					fputSym(fout, esc, sym, prc, len);
 					continue;
@@ -679,6 +679,9 @@ static void FPUTFMT(FILE* fout, const char *esc[], const char* msg, va_list ap) 
 
 					switch (sgn) {
 						default:
+							if (noPrc) {
+								prc = prShort;
+							}
 							break;
 						case '-':
 							len = -len;
@@ -688,9 +691,6 @@ static void FPUTFMT(FILE* fout, const char *esc[], const char* msg, va_list ap) 
 								prc = prFull;
 							}
 							break;
-					}
-					if (noPrc) {
-						prc = prShort;
 					}
 					fputAst(fout, esc, ast, prc, len);
 					continue;

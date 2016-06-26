@@ -579,7 +579,7 @@ int importLib(rtContext rt, const char* path);
 #define ERR_EXPECTED_BEFORE_TOK "expected `%s` before token `%?.t`"
 #define ERR_EXPECTED_BEFORE_END "expected `%s` before end of input"
 #define ERR_UNEXPECTED_TOKEN "unexpected token `%.t`"
-#define ERR_UNEXPECTED_TOKEN_MATCHING "unexpected token `%?.t`, matching `%.k`"
+#define ERR_UNEXPECTED_TOKEN_MATCHING "unexpected token `%?.t`, matching `%.K`"
 #define ERR_UNEXPECTED_QUAL "unexpected qualifier `%.t` declared more than once"
 
 #define ERR_UNDECLARED_REFERENCE "undeclared reference `%+t`"
@@ -590,7 +590,7 @@ int importLib(rtContext rt, const char* path);
 #define WARN_USE_BLOCK_STATEMENT "statement should be a block statement {%t}."
 #define WARN_TRAILING_COMMA "skipping trailing comma before `%t`"
 #define WARN_INVALID_EXPRESSION_STATEMENT "expression statement expected, got: `%-15t`"
-#define WARN_DISCARD_DATA "converting `%+t` to %-T is discarding one property"
+#define WARN_DISCARD_DATA "converting `%+t` to %T is discarding one property"
 #define WARN_PASS_ARG_BY_REF "argument `%+t` is not explicitly passed by reference"
 
 #define FATAL_UNIMPLEMENTED_OPERATOR "operator %.t (%T, %T): %+t"

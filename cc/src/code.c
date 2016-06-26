@@ -1809,7 +1809,7 @@ void fputVal(FILE *out, const char *esc[], rtContext rt, symn var, stkval *ref, 
 	}
 
 	if (mode & prSymType) {
-		fputFmt(out, esc, "%-T(", typ);
+		fputFmt(out, esc, "%T(", typ);
 	}
 
 	if (!isValidOffset(rt, ref)) {

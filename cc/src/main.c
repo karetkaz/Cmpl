@@ -77,9 +77,8 @@ examples:
         print message when line 19 is hit
 */
 
-#include <stdlib.h>
-#include <string.h>
 #include <time.h>
+#include <stddef.h>
 #include "internal.h"
 
 // default values

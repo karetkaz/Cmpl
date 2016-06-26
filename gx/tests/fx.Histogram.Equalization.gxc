@@ -32,17 +32,17 @@ copySurf(image2, Window.resx - 266, 10, lut2Surf(lui, &lut, true), null);
 void drawCB() {
 	if (reDraw == 1) {
 		copySurf(offScreen, 0, 0, image1, null);
-		reDraw := 0;
+		reDraw = 0;
 	}
 	else if (reDraw == 2) {
 		copySurf(offScreen, 0, 0, image2, null);
-		reDraw := 0;
+		reDraw = 0;
 	}
 	else if (reDraw == 3) {
 		roi.x = Math.clamp(roi.x, 0, width(image) - roi.w);
 		roi.y = Math.clamp(roi.y, 0, height(image) - roi.h);
 		copySurf(offScreen, 0, 0, image, roi);
-		reDraw := 0;
+		reDraw = 0;
 	}
 }
 
@@ -51,10 +51,10 @@ void mouseCB(int btn, int x, int y) {
 	static int old_x;
 	static int old_y;
 	if (btn != old_btn) {
-		reDraw := btn + 1;
+		reDraw = btn + 1;
 	}
 	if (btn == 2 && (x != old_x || y != old_y)) {
-		reDraw := btn + 1;
+		reDraw = btn + 1;
 	}
 	old_btn = btn;
 	old_x = roi.x = x;

@@ -1506,7 +1506,7 @@ static ccKind cgen(rtContext rt, astn ast, ccKind get) {
 			}
 		} break;
 
-		case ASGN_set: {	// ':='
+		case ASGN_set: {	// '='
 			// TODO: ast->type->size;
 			size_t size = sizeOf(ast->type, 1);
 			ccKind refAssign = CAST_ref;

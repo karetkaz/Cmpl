@@ -23,17 +23,17 @@ void mouseCB(int btn, int x, int y) {
 	static int ox;
 	static int oy;
 	if (btn & 1) {
-		reDraw := true;
+		reDraw = true;
 		magx = x;
 		magy = y;
 	}
 	if (btn & 2) {
-		reDraw := true;
+		reDraw = true;
 		roi.x = Math.clamp(roi.x + ox - x, 0, bgresx - roi.w);
 		roi.y = Math.clamp(roi.y + oy - y, 0, bgresy - roi.h);
 	}
-	ox := x;
-	oy := y;
+	ox = x;
+	oy = y;
 }
 void drawCB() {
 	if (reDraw) {

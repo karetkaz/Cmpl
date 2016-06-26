@@ -36,7 +36,7 @@ Lexical elements
 			~ & | ^ >> <<
 			&& ||
 			! == != < <= > >=
-			= := += -= *= /= %= &= |= ^= >>= <<=
+			= += -= *= /= %= &= |= ^= >>= <<=
 			( ) [ ] { } ? : ;
 
 		Integer and Floating-point literals:
@@ -691,10 +691,6 @@ static ccToken readTok(ccContext cc, astn tok) {
 			break;
 
 		case ':':
-			if (skipChr(cc, '=')) {
-				tok->kind = ASGN_set;
-				break;
-			}
 			tok->kind = PNCT_cln;
 			break;
 

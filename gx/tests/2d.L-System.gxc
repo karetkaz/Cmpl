@@ -31,7 +31,7 @@ drawTree(offScreen, Window.resx / 2, Window.resy, -90, 11);
 	static int ox;
 	static int oy;
 	if (btn & 1) {
-		reDraw := true;
+		reDraw = true;
 		// ...
 	}
 	ox = x;

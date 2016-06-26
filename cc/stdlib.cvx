@@ -196,10 +196,10 @@ Number.prototype.log10 = function(){return Math.log(this) / Math.LN10;};
 		/*TODO: if (isNullOrEmpty(data)) {
 			return nan;
 		}*/
-		result := data[0];
+		result = data[0];
 		for (int i = 1; i < data.length; i += 1) {
 			if (result > data[i]) {
-				result := data[i];
+				result = data[i];
 			}
 		}
 		return result;
@@ -208,16 +208,16 @@ Number.prototype.log10 = function(){return Math.log(this) / Math.LN10;};
 		/*TODO: if (isNullOrEmpty(data)) {
 			return nan;
 		}*/
-		result := data[0];
+		result = data[0];
 		for (int i = 1; i < data.length; i += 1) {
 			if (result < data[i]) {
-				result := data[i];
+				result = data[i];
 			}
 		}
 		return result;
 	}
 	float64 Sum(float64 data[]) {
-		result := 0;
+		result = 0;
 		for (int i = 0; i < data.length; i += 1) {
 			result += data[i];
 		}
@@ -376,23 +376,23 @@ Number.prototype.log10 = function(){return Math.log(this) / Math.LN10;};
 			Q2 = -0.173678953558233699533450911e+3;
 		}
 
-		bool sign := false;
+		bool sign = false;
 		if (x < 0) {
-			x := -x;
-			sign := true;
+			x = -x;
+			sign = true;
 		}
 
 		if (x > 21) {
 			return float64.exp(x) / 2;
 		}
 		if (x > 0.5) {
-			result := (float64.exp(x) - float64.exp(-x)) / 2;
+			result = (float64.exp(x) - float64.exp(-x)) / 2;
 		}
 		else {
-			float64 sq := x * x;
-			//~ result := x * eval(sq, P0, P1, P2, P3);
+			float64 sq = x * x;
+			//~ result = x * eval(sq, P0, P1, P2, P3);
 			//~ result /= eval(sq, Q0, Q1, Q2, 1.);
-			result := (((P3 * sq + P2) * sq + P1) * sq + P0) * x;
+			result = (((P3 * sq + P2) * sq + P1) * sq + P0) * x;
 			result /= ((sq + Q2) * sq + Q1) * sq + Q0;
 		}
 
@@ -424,10 +424,10 @@ Number.prototype.log10 = function(){return Math.log(this) / Math.LN10;};
 			// special case
 			return x;
 		}
-		bool sign := false;
+		bool sign = false;
 		if (x < 0) {
-			x := -x;
-			sign := true;
+			x = -x;
+			sign = true;
 		}
 		if (x > 1) {
 			return nan; // special case

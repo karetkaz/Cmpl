@@ -435,7 +435,7 @@ symn lookup(ccContext cc, symn sym, astn ref, astn args, int raise) {
 
 	if (sym == NULL && best) {
 		if (found > 1) {
-			warn(cc->rt, 2, ref->file, ref->line, "using overload `%-T` of %d declared symbols.", best, found);
+			warn(cc->rt, 2, ref->file, ref->line, "using overload `%T` of %d declared symbols.", best, found);
 		}
 		sym = best;
 	}

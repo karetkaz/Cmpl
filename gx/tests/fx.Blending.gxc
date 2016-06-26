@@ -43,15 +43,15 @@ gxSurf image0 = gxSurf(Window.resx, Window.resy);
 void drawCB() {
 	if (reDraw == 1) {
 		copySurf(offScreen, 0, 0, image0, null);
-		reDraw := 0;
+		reDraw = 0;
 	}
 	else if (reDraw == 2) {
 		copySurf(offScreen, 0, 0, image1, null);
-		reDraw := 0;
+		reDraw = 0;
 	}
 	else if (reDraw == 3) {
 		copySurf(offScreen, 0, 0, image2, null);
-		reDraw := 0;
+		reDraw = 0;
 	}
 }
 
@@ -60,7 +60,7 @@ void mouseCB(int btn, int x, int y) {
 	static int ox;
 	static int oy;
 	if (btn != ob) {
-		reDraw := btn + 1;
+		reDraw = btn + 1;
 	}
 	ox = x;
 	oy = y;

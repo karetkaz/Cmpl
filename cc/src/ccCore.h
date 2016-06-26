@@ -37,7 +37,9 @@ typedef enum {
 	decl_NoDefs = 0x100,		// disable typedefs in decl.
 	decl_NoInit = 0x200,		// disable initialization.
 	decl_ItDecl = 0x400,		// enable ':' after declaration: for(int a : range(0, 12))
-} ccToken, ccKind;
+} ccToken;
+typedef ccToken ccKind;
+
 struct tok_inf {
 	int const	type;
 	int const	argc;

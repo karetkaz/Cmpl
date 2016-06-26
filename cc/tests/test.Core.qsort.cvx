@@ -19,17 +19,17 @@ void qsort(int array[]) {
 		debug(variant(array));
 	}
 	static void qsort(int array[], int low, int high) {
-		int pivot := array[low + (high - low) / 2];
-		int i := low;
-		int j := high;
+		int pivot = array[low + (high - low) / 2];
+		int i = low;
+		int j = high;
 		for ( ; i <= j; ) {
 			for ( ; array[i] < pivot; i += 1) {}
 			for ( ; array[j] > pivot; j -= 1) {}
 
 			if (i <= j) {
-				int temp := array[i];
-				array[i] := array[j];
-				array[j] := temp;
+				int temp = array[i];
+				array[i] = array[j];
+				array[j] = temp;
 				i += 1;
 				j -= 1;
 			}

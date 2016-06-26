@@ -2,75 +2,81 @@ grammar Grammar;
 
 // options {language=Java;}
 
-program: statement_list;
+program: statementList EOF;
 
 statement
-	: ';'  // empty statement
-	| '{' statement_list '}'
-	| statement_for
-	| statement_if
-	| 'break' ';'
-	| 'continue' ';'
-	| 'return' (expression)? ';'
-	// declaration statements
-	| declare_alias ';'
-	| declare_type
-	| declare_enum
-	| declare_fun
-	| declare_var initializer? ';'
-	// expression statement
-	| expression ';'
+	: ';'                                                                     # EmptyStatement
+	| '{' statementList '}'                                                   # CompoundStatement
+	// control flow
+	| 'for' '(' for_init? ';' expression? ';' expression? ')' statement       # ForStatement
+	| 'for' '(' variable ':' expression ')' statement                         # ForEachStatement
+	| 'if' '(' expression ')' statement ('else' statement)?                   # IfStatement
+	| 'if' '(' variable '=' initializer ')' statement ('else' statement)?     # IfStatement
+	| 'return' (expression)? ';'                                              # ReturnStatement
+	| 'break' ';'                                                             # BreakStatement
+	| 'continue' ';'                                                          # ContinueStatement
+	| expression ';'                                                          # ExpressionStatement
+	| declaration                                                             # DeclarationStatement
+	| qualifier statement                                                     # QualifiedStatement   // static if, parallel for, and so on
 	;
+statementList: statement*;
+
+declaration
+	: qualifier declaration                                                   # QualifiedDeclaration
+	| 'struct' Identifier? (':' (Literal | typename))? '{' declarationList '}' # TypeDeclaration
+	| 'enum' Identifier? (':' typename)? '{' propertyList '}'                 # EnumDeclaration
+	| 'define' Identifier parameters? '=' initializer ';'                     # InlineDeclaration
+	| variable ( '=' initializer)? ';'                                        # VariableDeclaration
+	| typename Identifier parameters '{' statementList '}'                    # FunctionDeclaration
+	;
+declarationList: declaration*;
 
 expression
-	: NAME
-	| VALUE
-	| '(' expression ')'
-	| unop expression
-	| expression binop expression
-	| expression '.' NAME
-	| expression '(' expression? ')'
-	| expression '[' expression? ']'
-	| expression '?' expression ':' expression
+	: (Identifier | Literal)                                                  # ValueExpression
+	| '(' expressionList? ')'                                                 # Parenthesized
+	| expression '(' expressionList? ')'                                      # FunctionCall
+	| expression '.' Identifier                                               # MemberAccess
+	| expression '[' expressionList? ']'                                      # ElementAccess
+	| ('+' | '-' | '~' | '!' | '&') expression                                # UnaryExpression
+	| expression ('*' | '/' | '%' | '+' | '-') expression                     # ArithmeticExpression
+	| expression ('&' | '|' | '^' | '<<' | '>>') expression                   # BitwiseExpression
+	| expression ('<' | '<=' | '>' | '>=') expression                         # RelationalExpression
+	| expression ('==' | '!=' | '===' | '!==') expression                     # EqualityExpression
+	| expression ('=' | '+=' | '-=' | '*=' | '/=' | '%=') expression          # AssignmentExpression
+	| expression ('&=' | '|=' | '^=' | '<<=' | '>>=') expression              # AssignmentExpression
+	| expression ('&&' | '||') expression                                     # LogicalExpression
+	| expression '?' expression ':' expression                                # TernaryExpression
 	;
+expressionList: expression (',' expression)*;
 
-statement_list: (qualifier? statement)*;
-statement_for: 'for' '(' ((declare_var initializer?) | expression)? ';' expression? ';' expression? ')' statement;
-statement_if: 'if' '(' expression ')' statement ('else' statement)?;
-
-//~ declare_operator: 'operator' ...;
-declare_alias: 'define' NAME ('(' parameters? ')')? initializer?;
-declare_type: 'struct' NAME? (':' (VALUE | typename))? '{' statement_list '}';
-declare_enum: 'enum' NAME? (':' typename)? '{' (NAME initializer? ';')* '}';
-declare_var : typename ('&' | '&&')? NAME ('(' parameters? ')')? ('[' expression? ']')*;
-declare_fun: typename NAME ('(' parameters? ')') '{' statement_list '}';
-
-initializer: ('=' | ':=') (expression | ('{' (expression | (properties ';')+) '}'));
-
-parameters: qualifier? declare_var (',' parameters)*;
-properties: NAME ((':' ((typename? '{' (properties ';')+ '}') | expression)) | ('{' (properties ';')+ '}'));
 qualifier: ('const' | 'static' | 'parallel')+;
-typename: NAME ('.' NAME)*;
+parameters: '(' (qualifier? variable (',' qualifier? variable)*)? ')';
 
-binop
-	: '+' | '-' | '*' | '/' | '%'
-	| '&' | '|' | '^' | '<<' | '>>'
-	| '<' | '<=' | '>' | '>=' | '==' | '!='
-	| '=' | '+=' | '-=' | '*=' | '/=' | '%=' | '&=' | '|=' | '^=' | '<<=' | '>>='
-	| '&&' | '||' | ','
-	// TODO: remove ':='
-	| ':='
+typename: Identifier ('.' Identifier)*;
+variable: typename ('&' | '&&')? Identifier parameters? ('[' ('*' | expression)? ']')*;
+// TODO: allow only `var: value;` mode?
+property: (Identifier | Literal) ((':' | '=') initializer)?;
+propertyList: property (',' property)* | (property ';')+;
+
+initializer
+	: expression                  # Value
+	| '{' expressionList '}'      # Array
+	| '{' propertyList '}'        # Object
+	// TODO: remove
+	| '[' expressionList ']'      # Array
+	| '[' expressionList ',' ']'  # TrailingArray
+	| '{' expressionList ',' '}'  # TrailingArray
 	;
 
-unop: '+' | '-' | '~' | '!' | '&';
+for_init: expressionList | variable ('=' initializer)?;
 
-NAME : LETTER (LETTER | NUMBER)*;
+Identifier : Letter (Letter | Number)*;
 
-VALUE
-	: '0' | '1'..'9' NUMBER*
+Literal
+	: '0' | '1'..'9' Number* Suffix?
 	// floating point literals
-	| '.' NUMBER+ (('e'|'E') ('+'|'-')? NUMBER+)?
-	| (NUMBER+ ('.' NUMBER*)?) (('e'|'E') ('+'|'-')? NUMBER+)?
+	| '.' Number+ (('e'|'E') ('+'|'-')? Number+)? Suffix?
+	| (Number+ ('.' Number*)?) (('e'|'E') ('+'|'-')? Number+)? Suffix?
 	// custom base integers
 	| '0x'('a'..'f' | 'A'..'F' | '0'..'9')+
 	| '0b'('0'..'1')+
@@ -79,35 +85,14 @@ VALUE
 	// character and string literals
 	| '\'' .*? '\''
 	| '"' .*? '"'
-	//| '0'('0'..'7')+
 	;
 
-fragment NUMBER : '0' .. '9';
-fragment LETTER : '_' | 'A' .. 'Z' | 'a' .. 'z';
+fragment Suffix : 'f' | 'F' | 'd' | 'D';
+fragment Number : '0' .. '9';
+fragment Letter : '_' | 'A' .. 'Z' | 'a' .. 'z';
 
-Whitespace
-    :   [ \t]+
-        -> skip
-    ;
+Whitespace: [ \t\n\r]+ -> skip;
+LineComment: '//' ~[\r\n]* -> skip;
+BlockComment: '/*' .*? '*/' -> skip;
+NestedComment: '/+' .*? '+/' -> skip;
 
-Newline
-    :   (   '\r' '\n'?
-        |   '\n'
-        )
-        -> skip
-    ;
-
-BlockComment
-    :   '/*' .*? '*/'
-        -> skip
-    ;
-
-BlockComment2
-    :   '/+' .*? '+/'
-        -> skip
-    ;
-
-LineComment
-    :   '//' ~[\r\n]*
-        -> skip
-    ;
