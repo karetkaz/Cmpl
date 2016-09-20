@@ -1812,83 +1812,88 @@ void fputVal(FILE *out, const char *esc[], rtContext rt, symn var, stkval *ref, 
 		fputFmt(out, esc, "%T(", typ);
 	}
 
+	// invalid offset.
 	if (!isValidOffset(rt, ref)) {
-		// invalid offset.
 		fputFmt(out, esc, "BadRef@%06x", var->offs);
 	}
+	// null reference.
 	else if (ref == NULL) {
-		// null reference.
 		fputFmt(out, esc, "null");
 	}
-	else if (typ->pfmt == type_fmt_string) {
-		fputFmt(out, esc, fmt, ref);
+	// builtin type
+	else if (fmt != NULL) {
+		if (fmt == type_fmt_variant) {
+			typ = getip(rt, (size_t) ref->var.type);
+			ref = getip(rt, (size_t) ref->var.value);
+			fputFmt(out, esc, type_fmt_variant, typ);
+			fputVal(out, esc, rt, typ, ref, mode & ~prSymQual, indent);
+		}
+		else if (fmt == type_fmt_string) {
+			fputFmt(out, esc, fmt, ref);
+		}
+		else switch (typ->size) {
+			default:
+				// there should be no formated(<=> builtin) type matching none of this size.
+				fputFmt(out, esc, "!-!@%?c%06x, size: %d", var->stat ? 0 : '+', var->offs, var->size);
+				break;
+
+			case 1:
+				if (typ->cast == CAST_u32) {
+					fputFmt(out, esc, fmt, ref->u1);
+				}
+				else {
+					fputFmt(out, esc, fmt, ref->i1);
+				}
+				break;
+
+			case 2:
+				if (typ->cast == CAST_u32) {
+					fputFmt(out, esc, fmt, ref->u2);
+				}
+				else {
+					fputFmt(out, esc, fmt, ref->i2);
+				}
+				break;
+
+			case 4:
+				if (typ->cast == CAST_f32) {
+					fputFmt(out, esc, fmt, ref->f4);
+				}
+				else if (typ->cast == CAST_u32) {
+					// force zero extend (may sign extend to int64 ?).
+					fputFmt(out, esc, fmt, ref->u4);
+				}
+				else {
+					fputFmt(out, esc, fmt, ref->i4);
+				}
+				break;
+
+			case 8:
+				if (typ->cast == CAST_f64) {
+					fputFmt(out, esc, fmt, ref->f8);
+				}
+				else {
+					fputFmt(out, esc, fmt, ref->i8);
+				}
+				break;
+		}
 	}
-	else if (typ->pfmt == type_fmt_variant) {
-		typ = getip(rt, (size_t) ref->var.type);
-		ref = getip(rt, (size_t) ref->var.value);
-		fputFmt(out, esc, type_fmt_variant, typ);
-		fputVal(out, esc, rt, typ, ref, mode & ~prSymQual, indent);
+	// disable deep printing
+	else if (indent > LOG_MAX_ITEMS) {
+		fputFmt(out, esc, "???");
 	}
 	else switch (typ->kind) {
 		case TYPE_rec: {
-			int n = 0;
-			if (fmt != NULL) {
-				switch (typ->size) {
-					default:
-						// there should be no formated(<=> builtin) type matching none of this size.
-						fputFmt(out, esc, "!-!@%?c%06x, size: %d", var->stat ? 0 : '+', var->offs, var->size);
-						break;
-
-					case 1:
-						if (typ->cast == CAST_u32) {
-							fputFmt(out, esc, fmt, ref->u1);
-						}
-						else {
-							fputFmt(out, esc, fmt, ref->i1);
-						}
-						break;
-
-					case 2:
-						if (typ->cast == CAST_u32) {
-							fputFmt(out, esc, fmt, ref->u2);
-						}
-						else {
-							fputFmt(out, esc, fmt, ref->i2);
-						}
-						break;
-
-					case 4:
-						if (typ->cast == CAST_f32) {
-							fputFmt(out, esc, fmt, ref->f4);
-						}
-						else if (typ->cast == CAST_u32) {
-							// force zero extend (may sign extend to int64 ?).
-							fputFmt(out, esc, fmt, ref->u4);
-						}
-						else {
-							fputFmt(out, esc, fmt, ref->i4);
-						}
-						break;
-
-					case 8:
-						if (typ->cast == CAST_f64) {
-							fputFmt(out, esc, fmt, ref->f8);
-						}
-						else {
-							fputFmt(out, esc, fmt, ref->i8);
-						}
-						break;
-				}
-			}
-			else if (typ->prms != NULL) {
-				symn tmp;
+			if (typ->prms != NULL) {
+				int n = 0;
+				symn fld = typ->prms;
 				fputFmt(out, esc, "{");
-				for (tmp = typ->prms; tmp; tmp = tmp->next) {
+				for (; fld; fld = fld->next) {
 
-					if (tmp->stat || tmp->kind != CAST_ref)
+					if (fld->stat || fld->kind != CAST_ref)
 						continue;
 
-					if (tmp->pfmt && !*tmp->pfmt)
+					if (fld->pfmt && !*fld->pfmt)
 						continue;
 
 					if (n > 0) {
@@ -1896,10 +1901,15 @@ void fputVal(FILE *out, const char *esc[], rtContext rt, symn var, stkval *ref, 
 					}
 
 					fputFmt(out, esc, "\n");
-					fputVal(out, esc, rt, tmp, (void *) ((char *) ref + tmp->offs), mode & ~prSymQual, indent + 1);
+					fputVal(out, esc, rt, fld, (void *) ((char *) ref + fld->offs), mode & ~prSymQual, indent + 1);
 					n += 1;
 				}
-				fputFmt(out, esc, "\n%I}", indent);
+				if (n > 0) {
+					fputFmt(out, esc, "\n%I}", indent);
+				}
+				else {
+					fputFmt(out, esc, "}");
+				}
 			}
 			else {
 				// empty struct, typename, function, pointer
@@ -1908,7 +1918,7 @@ void fputVal(FILE *out, const char *esc[], rtContext rt, symn var, stkval *ref, 
 				if (sym != NULL) {
 					offs = offs - sym->offs;
 				}
-				fputFmt(out, esc, "<%?T%?+d@%06x>", sym, (int32_t)offs, vmOffset(rt, ref));
+				fputFmt(out, esc, "<%?.T%?+d@%06x>", sym, (int32_t)offs, vmOffset(rt, ref));
 			}
 		} break;
 		case CAST_arr: {

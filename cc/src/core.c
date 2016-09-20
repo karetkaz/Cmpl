@@ -20,8 +20,7 @@ the core:
 				ex complex a = emit(struct, f64(1), f64(-1));
 	emit is used for libcalls, constructors, ..., optimizations
 *******************************************************************************/
-#include <string.h>
-#include <stdlib.h>
+#include <stddef.h>
 #include "internal.h"
 
 const char * const type_fmt_signed32 = "%d";

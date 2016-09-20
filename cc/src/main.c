@@ -292,7 +292,7 @@ static void jsonDumpSym(FILE *out, const char **esc, symn ptr, const char *kind,
 		fputFmt(out, esc, FMT_START, indent - 1, kind, ptr);
 	}
 
-	fputFmt(out, esc, "%I\"%s\": \"%-T\"\n", indent, KEY_PROTO, ptr);
+	fputFmt(out, esc, "%I\"%s\": \"%T\"\n", indent, KEY_PROTO, ptr);
 	fputFmt(out, esc, "%I, \"%s\": \"%K\"\n", indent, KEY_KIND, ptr->kind);
 	fputFmt(out, esc, "%I, \"%s\": \"%.T\"\n", indent, KEY_NAME, ptr);
 	if (ptr->decl != NULL) {
