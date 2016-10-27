@@ -1,1 +1,0 @@
-Main purpose of this extension is to provide all-in-one tool to convert some common things for a web developer. You can also copy selected text and current URL to the input area with button click.
