@@ -1,6 +1,6 @@
 // test field initializations
 
-struct Record {
+struct RecordMemberTest {
 
 	struct Inner {
 		int member;
@@ -50,14 +50,14 @@ struct Record {
 	static const Inner globalConstantRec = {member: 61, constant: 62};
 }
 
-Record r1 = {
-//	member: 6;
+RecordMemberTest recordMemberTest = {
+	member: 6;
 	constant: 7;
-//	memberInit: 8;
-//	constantInit: 9;
+	memberInit: 8;
+	constantInit: 9;
 
 	memberRec: {
-//		member: 61;
+		member: 61;
 		constant: 62;
 	};
 	// constant member mut be initialized with all fields set

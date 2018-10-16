@@ -9,7 +9,7 @@ PLUGIN=$PWD/src.ext/*.c
 OBJECT=$PWD/out/obj
 OUTPUT=$PWD/out/cmpl
 
-export WATCOM="$(echo ~/bin/Compilers/ow_daily/rel2)"
+export WATCOM="$(echo ~/bin/ow_daily/rel2)"
 if [ ! -z $WATCOM ] && [ -x $WATCOM ]
 then
 	export INCLUDE="$WATCOM/lh"

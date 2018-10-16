@@ -511,7 +511,7 @@ int cmplInit(rtContext _rt) {
 		}
 
 		for (int i = 0; i < sizeof(libcGl) / sizeof(*libcGl); i += 1) {
-			if (!rt->api.ccDefCall(rt->cc, libcGl[i].fun, libcGl[i].def)) {
+			if (!rt->api.ccAddCall(rt->cc, libcGl[i].fun, libcGl[i].def)) {
 				return -1;
 			}
 		}
@@ -535,7 +535,7 @@ int cmplInit(rtContext _rt) {
 			}
 		}
 		for (int i = 0; i < sizeof(libcGlu) / sizeof(*libcGlu); i += 1) {
-			if (!rt->api.ccDefCall(rt->cc, libcGlu[i].fun, libcGlu[i].def)) {
+			if (!rt->api.ccAddCall(rt->cc, libcGlu[i].fun, libcGlu[i].def)) {
 				return -2;
 			}
 		}
@@ -551,7 +551,7 @@ int cmplInit(rtContext _rt) {
 			}
 		}
 		for (int i = 0; i < sizeof(libcGlut) / sizeof(*libcGlut); i += 1) {
-			if (!rt->api.ccDefCall(rt->cc, libcGlut[i].fun, libcGlut[i].def)) {
+			if (!rt->api.ccAddCall(rt->cc, libcGlut[i].fun, libcGlut[i].def)) {
 				return -3;
 			}
 		}
