@@ -3,7 +3,6 @@
 static struct Math {
 
 	// constants
-	/* TODO: implement enumerations
 	enum: float64 {
 		pi: 3.14159265358979323846264338327950288419716939937510582097494459;		// A000796
 		e: 2.71828182845904523536028747135266249775724709369995957496696763;		// A001113
@@ -18,20 +17,7 @@ static struct Math {
 		sqrtPhi: 1.27201964951406896425242246173749149171560804184009624861664038;	// A139339
 		nan: 0 / 0.;
 		inf: 1 / 0.;
-	}*/
-	inline pi = 3.14159265358979323846264338327950288419716939937510582097494459;		// A000796
-	inline e = 2.71828182845904523536028747135266249775724709369995957496696763;		// A001113
-	inline ln2 = 0.693147180559945309417232121458176568075500134360255254120680009;	// A002162
-	inline log2E = 1. / ln2;
-	inline ln10 = 2.30258509299404568401799145468436420760110148862877297603332790;	// A002392
-	inline log10E = 1. / ln10;
-	inline phi = 1.61803398874989484820458683436563811772030917980576286213544862;		// A001622
-	inline sqrt2 = 1.41421356237309504880168872420969807856967187537694807317667974;	// A002193
-	inline sqrtE = 1.64872127070012814684865078781416357165377610071014801157507931;	// A019774
-	inline sqrtPi = 1.77245385090551602729816748334114518279754945612238712821380779;	// A002161
-	inline sqrtPhi = 1.27201964951406896425242246173749149171560804184009624861664038;	// A139339
-	inline nan = 0 / 0.;
-	inline inf = 1 / 0.;
+	}
 
 	float64 modf(float64 x, float64 intPart&) {
 		if (x < 1) {
@@ -81,6 +67,25 @@ static struct Math {
 	// inline floor(float32 x) = float32(floor(float64(x)));
 	// inline ceil(float32 x) = -floor(-x);
 	// inline round(float32 x) = floor(x + .5f);
+
+	int sign(float32 x) {
+		if (x == 0) {
+			return 0;
+		}
+		if (x < 0) {
+			return -1;
+		}
+		return 1;
+	}
+	int sign(float64 x) {
+		if (x == 0) {
+			return 0;
+		}
+		if (x < 0) {
+			return -1;
+		}
+		return 1;
+	}
 
 	float32 abs(float32 x) {
 		if (x < 0) {
@@ -143,8 +148,17 @@ static struct Math {
 	float32 lerp(float32 t, float32 a, float32 b) {
 		return a + t * (b - a);
 	}
-	float32 lerp(float64 t, float64 a, float64 b) {
+	float64 lerp(float64 t, float64 a, float64 b) {
 		return a + t * (b - a);
+	}
+
+	float32 smooth(float32 t, float32 a, float32 b) {
+		t = clamp((t - a) / (b - a), 0f, 1f);
+		return t * t * (3 - 2 * t);
+	}
+	float64 smooth(float64 t, float64 a, float64 b) {
+		t = clamp((t - a) / (b - a), 0F, 1F);
+		return t * t * (3 - 2 * t);
 	}
 
 	// inline max(int32 a, int32 b) = a > b ? a : b;
@@ -177,20 +191,6 @@ static struct Math {
 	// inline absMod(float64 val, float64 mod) = (val < 0 ? val + mod : val) % mod;
 
 	/* TODO: implement vararg functions
-	float64 eval(float64 x, float64 polynomial...) {
-		result = 0;
-		for (int i = polynomial.length; i >= 0; i -= 1) {
-			result = result * x + polynomial[i];
-		}
-		return result;
-	}*/
-
-	// speedup with some inline expressions
-	// inline eval(float64 x, float64 a0, float64 a1) = (a0 + x * a1);
-	// inline eval(float64 x, float64 a0, float64 a1, float64 a2) = (a0 + x * eval(x, a1, a2));
-	// inline eval(float64 x, float64 a0, float64 a1, float64 a2, float64 a3) = (a0 + x * eval(x, a1, a2, a3));
-
-	/* TODO: implement vararg functions
 	float64 min(float64 data...) {
 		result = data[0];
 		for (int i = 1; i < data.length; i += 1) {
@@ -209,6 +209,7 @@ static struct Math {
 		}
 		return result;
 	}
+
 	float64 sum(float64 data...) {
 		result = 0;
 		for (int i = 0; i < data.length; i += 1) {
@@ -216,9 +217,24 @@ static struct Math {
 		}
 		return result;
 	}
+
 	float64 mean(float64 data...) {
 		return sum(data) / data.length;
-	}*/
+	}
+
+	float64 eval(float64 x, float64 polynomial...) {
+		result = 0;
+		for (int i = polynomial.length; i >= 0; i -= 1) {
+			result = result * x + polynomial[i];
+		}
+		return result;
+	}
+	// */
+
+	// speedup with some inline expressions
+	// inline eval(float64 x, float64 a0, float64 a1) = (a0 + x * a1);
+	// inline eval(float64 x, float64 a0, float64 a1, float64 a2) = (a0 + x * eval(x, a1, a2));
+	// inline eval(float64 x, float64 a0, float64 a1, float64 a2, float64 a3) = (a0 + x * eval(x, a1, a2, a3));
 
 	int cmp(float32 a, float32 b, float32 eps) {
 		if (a < b) {
@@ -244,7 +260,6 @@ static struct Math {
 	}
 
 	float64 sinCos(float64 arg, int quad) {
-		/* TODO: implement enumerations
 		enum: float64 {
 			PIO2: 1.570796326794896619231e0;
 			p0: .1357884097877375669092680e8;
@@ -256,17 +271,7 @@ static struct Math {
 			q1: .4081792252343299749395779e6;
 			q2: .9463096101538208180571257e4;
 			q3: .1326534908786136358911494e3;
-		}*/
-		inline PIO2 = 1.570796326794896619231e0;
-		inline p0 = .1357884097877375669092680e8;
-		inline p1 = -.4942908100902844161158627e7;
-		inline p2 = .4401030535375266501944918e6;
-		inline p3 = -.1384727249982452873054457e5;
-		inline p4 = .1459688406665768722226959e3;
-		inline q0 = .8644558652922534429915149e7;
-		inline q1 = .4081792252343299749395779e6;
-		inline q2 = .9463096101538208180571257e4;
-		inline q3 = .1326534908786136358911494e3;
+		}
 
 		float64 x = arg;
 		if (x < 0) {
@@ -312,7 +317,6 @@ static struct Math {
 
 	// Tan returns the tangent of arg.
 	float64 tan(float64 arg) {
-		/* TODO: implement enumerations
 		enum: float64 {
 			PIO2: 1.570796326794896619231e0;
 			p0: -0.1306820264754825668269611177e+5;
@@ -323,18 +327,7 @@ static struct Math {
 			q0: -0.1663895238947119001851464661e+5;
 			q1:  0.4765751362916483698926655581e+4;
 			q2: -0.1555033164031709966900124574e+3;
-			nan: 0./0;
-		}*/
-		inline PIO2 = 1.570796326794896619231e0;
-		inline p0 = -0.1306820264754825668269611177e+5;
-		inline p1 =  0.1055970901714953193602353981e+4;
-		inline p2 = -0.1550685653483266376941705728e+2;
-		inline p3 =  0.3422554387241003435328470489e-1;
-		inline p4 =  0.3386638642677172096076369e-4;
-		inline q0 = -0.1663895238947119001851464661e+5;
-		inline q1 =  0.4765751362916483698926655581e+4;
-		inline q2 = -0.1555033164031709966900124574e+3;
-		inline nan = 0./0;
+		}
 
 		bool complement = false;
 		bool negate = false;
@@ -382,7 +375,6 @@ static struct Math {
 	// Sinh returns the hyperbolic sine of x.
 	float64 sinh(float64 x) {
 		// The coefficients are #2029 from Hart & Cheney. (20.36D)
-		/* TODO: implement enumerations
 		enum: float64 {
 			P0: -0.6307673640497716991184787251e+6;
 			P1: -0.8991272022039509355398013511e+5;
@@ -391,15 +383,7 @@ static struct Math {
 			Q0: -0.6307673640497716991212077277e+6;
 			Q1: 0.1521517378790019070696485176e+5;
 			Q2: -0.173678953558233699533450911e+3;
-		}*/
-
-		inline P0 = -0.6307673640497716991184787251e+6;
-		inline P1 = -0.8991272022039509355398013511e+5;
-		inline P2 = -0.2894211355989563807284660366e+4;
-		inline P3 = -0.2630563213397497062819489e+2;
-		inline Q0 = -0.6307673640497716991212077277e+6;
-		inline Q1 = 0.1521517378790019070696485176e+5;
-		inline Q2 = -0.173678953558233699533450911e+3;
+		}
 
 		bool negate = false;
 		if (x < 0) {
