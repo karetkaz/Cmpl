@@ -3,7 +3,6 @@
  *   Date: 2018.01.24
  *   Desc: openGl wrapper
  *******************************************************************************
-gcc -shared -fPIC -Wall -g0 -Os -o out/libOpenGL.so src/plugin/openGL.c -I src/ -lGL -lGLU -lglut
  */
 
 #include "cmpl.h"

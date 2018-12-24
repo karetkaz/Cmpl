@@ -16,7 +16,7 @@ static inline rtValue nextArg(nfcContext ctx) {
 static const char *const proto_file_open = "File open(char path[*])";
 static const char *const proto_file_create = "File create(char path[*])";
 static const char *const proto_file_append = "File append(char path[*])";
-static vmError FILE_open(nfcContext ctx) {       // File open(char filename[]);
+static vmError FILE_open(nfcContext ctx) {
 	char *name = nextArg(ctx).ref;
 	const char *mode = NULL;
 	if (ctx->proto == proto_file_open) {
@@ -49,7 +49,7 @@ static vmError FILE_peek(nfcContext ctx) {
 }
 
 static const char *const proto_file_read_buff = "int read(File file, uint8 buff[])";
-static vmError FILE_read(nfcContext ctx) {         // int read(File &f, uint8 buff[])
+static vmError FILE_read(nfcContext ctx) {
 	FILE *file = (FILE *) nextArg(ctx).ref;
 	rtValue buff = nextArg(ctx);
 	reti32(ctx, fread(buff.ref, buff.length, 1, file));
@@ -57,7 +57,7 @@ static vmError FILE_read(nfcContext ctx) {         // int read(File &f, uint8 bu
 }
 
 static const char *const proto_file_read_line = "int readLine(File file, uint8 buff[])";
-static vmError FILE_gets(nfcContext ctx) {       // int fgets(File &f, uint8 buff[])
+static vmError FILE_gets(nfcContext ctx) {
 	FILE *file = (FILE *) nextArg(ctx).ref;
 	rtValue buff = nextArg(ctx);
 	if (feof(file)) {
@@ -81,7 +81,7 @@ static vmError FILE_putc(nfcContext ctx) {
 }
 
 static const char *const proto_file_write_buff = "int write(File file, uint8 buff[])";
-static vmError FILE_write(nfcContext ctx) {      // int write(File &f, uint8 buff[])
+static vmError FILE_write(nfcContext ctx) {
 	FILE *file = (FILE *) nextArg(ctx).ref;
 	rtValue buff = nextArg(ctx);
 	int len = fwrite(buff.ref, buff.length, 1, file);
@@ -97,7 +97,7 @@ static vmError FILE_flush(nfcContext ctx) {
 }
 
 static const char *const proto_file_close = "void close(File file)";
-static vmError FILE_close(nfcContext ctx) {      // void close(File file);
+static vmError FILE_close(nfcContext ctx) {
 	FILE *file = (FILE *) arghnd(ctx, 0);
 	fclose(file);
 	return noError;
@@ -107,7 +107,7 @@ static const char *const proto_file_get_stdIn = "File in";
 static const char *const proto_file_get_stdOut = "File out";
 static const char *const proto_file_get_stdErr = "File err";
 static const char *const proto_file_get_logOut = "File log";
-static vmError FILE_stream(nfcContext ctx) {     // File std[in, out, err];
+static vmError FILE_stream(nfcContext ctx) {
 	if (ctx->proto == proto_file_get_stdIn) {
 		rethnd(ctx, stdin);
 		return noError;

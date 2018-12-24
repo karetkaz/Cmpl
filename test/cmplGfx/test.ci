@@ -1,5 +1,5 @@
-// CLion.Arguments: -std$PROJECT_DIR$/lib/stdlib.ci -run $PROJECT_DIR$/out/libGfx.so $PROJECT_DIR$/libGfx/gfxlib.ci test.ci
-// CLion.Directory: $PROJECT_DIR$/libGfx/test
+// CLion.Arguments: -X-stdin+steps+times -std$PROJECT_DIR$/lib/stdlib.ci -run $PROJECT_DIR$/bin/libGfx.so $PROJECT_DIR$/lib/cmplGfx/gfxlib.ci test.ci
+// CLion.Directory: $PROJECT_DIR$/test/cmplGfx
 
 //inline "2d.ComplexPlane.ci";
 //inline "2d.image.diff.ci";

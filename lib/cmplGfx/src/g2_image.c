@@ -551,7 +551,7 @@ gx_Surf gx_loadJpg(gx_Surf dst, const char *src, int depth) {
 			int r = x ^ y;
 			int g = x & y;
 			int b = x | y;
-			gx_setpixel(dst, x, y, __rgb(r, g, b));
+			gx_setpixel(dst, x, y, make_rgb(0, r, g, b).val);
 		}
 	}
 	return dst;
@@ -633,7 +633,7 @@ gx_Surf gx_loadPng(gx_Surf dst, const char *src, int depth) {
 			int r = x ^ y;
 			int g = x & y;
 			int b = x | y;
-			gx_setpixel(dst, x, y, __rgb(r, g, b));
+			gx_setpixel(dst, x, y, make_rgb(0, r, g, b).val);
 		}
 	}
 	return dst;

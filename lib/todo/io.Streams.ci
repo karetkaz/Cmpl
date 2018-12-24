@@ -454,8 +454,8 @@ struct ByteBuffer {
 	void close(ByteBuffer this) {
 		// release memory
 		pointer.alloc(this.buffer, 0);
-		this.buffer = null;
 
+		this.buffer = null;
 		this.position = 0;
 		this.capacity = 0;
 		this.length = 0;
