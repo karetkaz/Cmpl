@@ -1,4 +1,4 @@
-#include "gx_gui.h"
+#include "../gx_gui.h"
 #include <windows.h>
 #include <winuser.h>
 

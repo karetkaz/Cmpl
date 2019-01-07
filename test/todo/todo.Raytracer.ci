@@ -28,7 +28,7 @@ struct Ray {
 
 
 struct Shape: object {
-	// abstract(uninitialized) method must be overridden
+	// abstract(uninitialized/unimplemented) method must be overridden
 	bool intersect(Shape this, Ray &ray, float &outDistance);
 }
 
@@ -37,14 +37,14 @@ struct Plane: Shape {
 	const float offset;
 
 	// override intersection method
-	bool intersect(Plane plane, Ray &ray, float &outDistance) {
-		float denom = dp3(ray.direction, plane.normal);
+	bool intersect(const Plane &this, const Ray &ray, float &outDistance) {
+		float denom = dp3(ray.direction, this.normal);
 		if (denom == 0) {
 			return false;
 		}
-		outDistance = -(dp3(plane.normal, ray.position) + plane.offset) / denom;
+		outDistance = -(dp3(this.normal, ray.position) + this.offset) / denom;
 		//~ vec4f outPosition = ray.position + (ray.direction * outDistance);
-		//~ vec4f outNormal = plane.normal;
+		//~ vec4f outNormal = this.normal;
 		return true;
 	}
 }
@@ -54,10 +54,10 @@ struct Sphere: Shape {
 	const float radius;
 
 	// override intersection method
-	bool intersect(Sphere sphere, Ray &ray, float &outDistance) {
-		var dst = ray.position - sphere.position;
+	bool intersect(const Sphere &this, const Ray &ray, float &outDistance) {
+		var dst = ray.position - this.position;
 		var B = dp3(dst, ray.direction);
-		var C = dp3(dst, dst) - (sphere.radius * sphere.radius);
+		var C = dp3(dst, dst) - (this.radius * this.radius);
 		var D = B * B - C;
 
 		if (D <= 0) {
@@ -65,7 +65,7 @@ struct Sphere: Shape {
 		}
 		outDistance = -B - Math.sqrt(D);
 		//~ vec4f outPosition = add(ray.position, mul(ray.direction, outDistance));
-		//~ vec4f outNormal = normalize(sub(outPosition, sphere.position));
+		//~ vec4f outNormal = normalize(sub(outPosition, this.position));
 		return true;
 	}
 }
@@ -75,10 +75,10 @@ struct Scene {
 	Light lights[];
 	Shape things[];
 
-	Shape intersect(const Scene &scene, const Ray &ray) {
+	Shape intersect(const Scene &this, const Ray &ray) {
 		result = null;
 		float closest = Math.inf;
-		for (Shape shape: scene.things) {
+		for (Shape shape: this.things) {
 			float distance;
 			if (shape.intersect(ray, &distance)) {
 				if (closest > distance) {
@@ -90,7 +90,7 @@ struct Scene {
 		return result;
 	}
 
-	void render(const Scene &scene, int width, int height, void action(int x, int y, int color)) {
+	void render(const Scene &this, int width, int height, void action(int x, int y, int color)) {
 		for (int y = 0; y < height; y += 1) {
 			for (int x = 0; x < width; x += 1) {
 				// TODO: shade

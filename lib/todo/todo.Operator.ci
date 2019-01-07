@@ -109,3 +109,19 @@ inline +(float64 lhs, float64 rhs) = float64(emit(float64(lhs), float64(rhs), ad
 // TODO: Not
 // TODO: Compare
 // TODO: Equal
+
+/* TODO: bool
+inline !(bool rhs) = emit(bool(rhs), not);
+inline &(bool lhs, bool rhs) = emit(bool(lhs), bool(rhs), and.u32);
+inline |(bool lhs, bool rhs) = emit(bool(lhs), bool(rhs), or.u32);
+inline ^(bool lhs, bool rhs) = emit(bool(lhs), bool(rhs), xor.u32);
+inline <>(bool lhs, bool rhs) = emit(bool(lhs), bool(rhs), sub.i32);
+... */
+
+/*
+lang
+io.file
+io.socket
+io.stream
+io.process
+*/
