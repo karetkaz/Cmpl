@@ -1,5 +1,5 @@
 // graphics library extension
-inline "lib/color.ci";
+inline "gfx/color.ci";
 
 /// Create a surface with the given with, height and depth
 inline gxSurf(int width, int height, int depth) = gxSurf.create(width, height, depth);
