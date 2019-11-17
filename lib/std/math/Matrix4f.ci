@@ -1,5 +1,3 @@
-static if (typename(mat4f) == null) {
-
 /// A 4x4 matrix
 struct mat4f: 0 {
 	/// Access elements as a flatten array: data[4] => m[1][0]
@@ -175,5 +173,4 @@ mat4f scale(const vec4f direction&, float amount) {
 		z: {x: 0, y: 0, z: rcp(direction.z * amount), w: 0};
 		w: {x: 0, y: 0, z: 0, w: 1};
 	};
-}
 }

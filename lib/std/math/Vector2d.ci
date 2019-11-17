@@ -1,5 +1,3 @@
-static if (typename(vec2d) == null) {
-
 /// A 2d vector (2x float64)
 struct vec2d: 0 {
 	/// Access the components as an array
@@ -25,4 +23,3 @@ inline sub(vec2d a, vec2d b) = vec2d(emit(struct(a), struct(b), sub.p2d));
 
 /// Dot product
 inline dot(const vec2d a&, const vec2d b&) = a.x * b.x + a.y * b.y;
-}

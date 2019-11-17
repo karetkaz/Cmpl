@@ -105,7 +105,7 @@ inline argb(uint32 argb) = argb(emit(uint32(argb)));
 inline uint32(argb value) = uint32(emit(struct(value)));
 
 
-// clamp signed gray or color component to fit in 8 bits (0 ... 255)
+/// clamp signed gray or color component to fit in 8 bits (0 ... 255)
 uint32 grayClamp(int32 c) {
 	if (c < 0) {
 		return 0;
@@ -115,7 +115,7 @@ uint32 grayClamp(int32 c) {
 	}
 	return c;
 }
-// clamp unsigned gray or color component to fit in 8 bits (0 ... 255)
+/// clamp unsigned gray or color component to fit in 8 bits (0 ... 255)
 uint32 grayClamp(uint32 c) {
 	if (c > 255) {
 		return 255;
