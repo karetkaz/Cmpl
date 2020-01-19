@@ -133,26 +133,88 @@ int onEvent(int action, int button, int x, int y) {
 	static Checker autoUpdate = {
 		text: "auto update";
 		checked: true;
+		selectable: false;
 	};
-	static Slider amount = {
-		text: "amount";
+	static Slider sldBlur = {
+		text: "blur";
+		value: 2000;
+		minimum: 30;
+		maximum: 2000;
+		divisor: 100;
+	};
+	static Slider sldSharpness = {
+		text: "sharpness";
 		minimum: 0;
 		maximum: 512;
 	};
-	static Slider radius = {
-		text: "sigma";
-		value: 50;
-		minimum: 30;
-		maximum: 500;
-		divisor: 100;
+	static Slider btnLinear = {
+		text: "Linear";
+		minimum: -255;
+		maximum: 255;
+	};
+	static Slider btnRadial = {
+		text: "Radial";
+		minimum: -255;
+		maximum: 255;
+	};
+	static Slider btnSquare = {
+		text: "Square";
+		minimum: -255;
+		maximum: 255;
+	};
+	static Slider btnConical = {
+		text: "Conical";
+		minimum: -255;
+		maximum: 255;
+	};
+	static Slider btnSpiral = {
+		text: "Spiral";
+		minimum: -255;
+		maximum: 255;
+	};
+	static Checker chkInvert = {
+		text: "Invert";
+		selectable: false;
+	};
+	static Checker chkRepeat = {
+		text: "Repeat";
+		selectable: false;
+	};
+	static Checker chkRect = {
+		text: "Show rect";
+		selectable: false;
+	};
+	static bool resetRect(View view);
+	static Button btnReset = {
+		text: "Reset rect";
+		onClick: resetRect;
+		selectable: false;
 	};
 	static Slider time = {
 		text: "time";
 		enabled: false;
 	};
-	static Layout layout = Layout(offs, font, autoUpdate, amount, radius, time);
+
+	static Layout layout = Layout(offs, font,
+		autoUpdate, sldBlur, sldSharpness,
+		btnLinear, btnRadial, btnSquare, btnConical, btnSpiral,
+		chkInvert, chkRepeat, chkRect, btnReset, time);
 
 	static int oldRadius = 0;
+	static gxRect rect = {
+		x: offs.width() / 2;
+		y: offs.height() / 2;
+		w: offs.width() / 2 - 1;
+		h: offs.height() / 2 - 1;
+	};
+
+	static bool resetRect(View view) {
+		rect.x = offs.width() / 2;
+		rect.y = offs.height() / 2;
+		rect.w = offs.width() / 2 - 1;
+		rect.h = offs.height() / 2 - 1;
+		return true;
+	}
 
 	bool reCalculate = uiEvent(layout, action, button, x, y);
 	if (action == Gui.KEY_PRESS) {
@@ -160,24 +222,101 @@ int onEvent(int action, int button, int x, int y) {
 			return -1;
 		}
 	}
+	if (action == Gui.MOUSE_PRESS && button != 1) {
+		rect.x = x;
+		rect.y = y;
+	}
+	if (action == Gui.MOUSE_MOTION && button != 1) {
+		if (layout.isSelected(btnLinear)) {
+			rect.w = x - rect.x;
+			rect.h = y - rect.y;
+			reCalculate = true;
+		}
+		else if (layout.isSelected(btnRadial)) {
+			rect.w = x - rect.x;
+			rect.h = y - rect.y;
+			reCalculate = true;
+		}
+		else if (layout.isSelected(btnSquare)) {
+			rect.w = x - rect.x;
+			rect.h = y - rect.y;
+			reCalculate = true;
+		}
+		else if (layout.isSelected(btnConical)) {
+			rect.w = x - rect.x;
+			rect.h = y - rect.y;
+			reCalculate = true;
+		}
+		else if (layout.isSelected(btnSpiral)) {
+			rect.w = x - rect.x;
+			rect.h = y - rect.y;
+			reCalculate = true;
+		}
+	}
+	if (action == Gui.MOUSE_RELEASE && button != 1) {
+		rect.w = x - rect.x;
+		rect.h = y - rect.y;
+		reCalculate = true;
+	}
+
 	if (reCalculate) {
 		// clamp input values
-		int amountValue = amount.val();
-		int radiusValue = radius.val();
+		int amountValue = -sldSharpness.val();
+		int radiusValue = sldBlur.val();
+		gxRect roi = {
+			x: rect.x - rect.w;
+			y: rect.y - rect.h;
+			w: rect.w * 2;
+			h: rect.h * 2;
+		};
 
 		uint64 start = System.millis();
 		offs.resize(null, surf, null, 1);
 		if (autoUpdate.checked) {
+			uint32 startColor = 0;
+			uint32 endColor = 255;
+			bool repeat = chkRepeat.checked;
+			bool invert = chkInvert.checked;
+
+			inline blend() = offs.blend(0, 0, blur, null, 256, true, null);
 			if (oldRadius != radiusValue) {
 				oldRadius = radiusValue;
 				blur.copy(0, 0, surf, null);
-				blur.blur(radius.valFlt());
+				blur.blur(sldBlur.valFlt());
 			}
-			offs.blend(0, 0, blur, null, -amountValue, null);
+			if (layout.isSelected(sldBlur)) {
+				offs.copy(0, 0, blur, null);
+			}
+			else if (layout.isSelected(sldSharpness)) {
+				offs.blend(0, 0, blur, null, amountValue, false, null);
+			}
+			else if (layout.isSelected(btnLinear)) {
+				int alpha = btnLinear.val();
+				offs.gradient(roi, 0, btnLinear.val(), repeat, invert, endColor, startColor, endColor);
+				blend();
+			}
+			else if (layout.isSelected(btnRadial)) {
+				offs.gradient(roi, 1, btnRadial.val(), repeat, invert, startColor, endColor);
+				blend();
+			}
+			else if (layout.isSelected(btnSquare)) {
+				offs.gradient(roi, 2, btnSquare.val(), repeat, invert, startColor, endColor);
+				blend();
+			}
+			else if (layout.isSelected(btnConical)) {
+				offs.gradient(roi, 3, btnConical.val(), repeat, invert, startColor, endColor);
+				blend();
+			}
+			else if (layout.isSelected(btnSpiral)) {
+				offs.gradient(roi, 4, btnSpiral.val(), repeat, invert, endColor, startColor, endColor);
+				blend();
+			}
+		}
+		if (chkRect.checked) {
+			offs.drawRect(roi, 0xff00ff);
 		}
 		offs.drawHist(null, 0x00ffffff);
 		time.value = System.millis() - start;
-
 		layout.draw(30, 30);
 	}
 	return 0;

@@ -312,17 +312,9 @@ typedef struct bltContext {
 	int32_t alpha;
 	rtContext rt;
 } *bltContext;
-static int bltCallback(argb* dst, argb *src, bltContext ctx, size_t cnt) {
-	if (ctx->callback == NULL) {
-		for (size_t i = 0; i < cnt; ++i, ++dst, ++src) {
-			dst->r = clamp_s8(dst->r + ctx->alpha * (src->r - dst->r) / 256);
-			dst->g = clamp_s8(dst->g + ctx->alpha * (src->g - dst->g) / 256);
-			dst->b = clamp_s8(dst->b + ctx->alpha * (src->b - dst->b) / 256);
-		}
-		return 0;
-	}
-
+static int blendDstAlphaCallback(argb* dst, argb *src, bltContext ctx, size_t cnt) {
 	rtContext rt = ctx->rt;
+	int ctxAlpha = ctx->alpha;
 	for (size_t i = 0; i < cnt; ++i, ++dst, ++src) {
 		struct vector args[2];
 		args[0] = vecldc(*src);
@@ -331,13 +323,52 @@ static int bltCallback(argb* dst, argb *src, bltContext ctx, size_t cnt) {
 			return -1;
 		}
 		register argb val = vecrgb(args);
-		dst->r = clamp_s8(dst->r + ctx->alpha * (val.r - dst->r) / 256);
-		dst->g = clamp_s8(dst->g + ctx->alpha * (val.g - dst->g) / 256);
-		dst->b = clamp_s8(dst->b + ctx->alpha * (val.b - dst->b) / 256);
+		int alpha = ctxAlpha * dst->a >> 8;
+		dst->r = clamp_s8(dst->r + alpha * (val.r - dst->r) / 256);
+		dst->g = clamp_s8(dst->g + alpha * (val.g - dst->g) / 256);
+		dst->b = clamp_s8(dst->b + alpha * (val.b - dst->b) / 256);
 	}
 	return 0;
 }
-static const char *proto_surf_blendSurf = "void blend(gxSurf surf, int32 x, int32 y, const gxSurf src, const gxRect roi&, int32 alpha, vec4f blend(vec4f base, vec4f with))";
+static int blendAlphaCallback(argb* dst, argb *src, bltContext ctx, size_t cnt) {
+	rtContext rt = ctx->rt;
+	int alpha = ctx->alpha;
+	for (size_t i = 0; i < cnt; ++i, ++dst, ++src) {
+		struct vector args[2];
+		args[0] = vecldc(*src);
+		args[1] = vecldc(*dst);
+		if (rt->api.invoke(rt, ctx->callback, args, args, NULL) != noError) {
+			return -1;
+		}
+		register argb val = vecrgb(args);
+		dst->r = clamp_s8(dst->r + alpha * (val.r - dst->r) / 256);
+		dst->g = clamp_s8(dst->g + alpha * (val.g - dst->g) / 256);
+		dst->b = clamp_s8(dst->b + alpha * (val.b - dst->b) / 256);
+	}
+	return 0;
+}
+static int blendDstAlpha(argb* dst, argb *src, bltContext ctx, size_t cnt) {
+	int ctxAlpha = ctx->alpha;
+	for (size_t i = 0; i < cnt; ++i, ++dst, ++src) {
+		int alpha = ctxAlpha * dst->a >> 8;
+		dst->r = clamp_s8(dst->r + alpha * (src->r - dst->r) / 256);
+		dst->g = clamp_s8(dst->g + alpha * (src->g - dst->g) / 256);
+		dst->b = clamp_s8(dst->b + alpha * (src->b - dst->b) / 256);
+	}
+	return 0;
+	(void) ctx;
+}
+static int blendAlpha(argb* dst, argb *src, bltContext ctx, size_t cnt) {
+	int alpha = ctx->alpha;
+	for (size_t i = 0; i < cnt; ++i, ++dst, ++src) {
+		dst->r = clamp_s8(dst->r + alpha * (src->r - dst->r) / 256);
+		dst->g = clamp_s8(dst->g + alpha * (src->g - dst->g) / 256);
+		dst->b = clamp_s8(dst->b + alpha * (src->b - dst->b) / 256);
+	}
+	return 0;
+}
+
+static const char *proto_surf_blendSurf = "void blend(gxSurf surf, int32 x, int32 y, const gxSurf src, const gxRect roi&, int32 alpha, bool dstAlpha, vec4f blend(vec4f base, vec4f with))";
 static vmError surf_blendSurf(nfcContext ctx) {
 	rtContext rt = ctx->rt;
 	gx_Surf surf = nextValue(ctx).ref;
@@ -346,6 +377,7 @@ static vmError surf_blendSurf(nfcContext ctx) {
 	gx_Surf src = nextValue(ctx).ref;
 	gx_Rect roi = nextValue(ctx).ref;
 	int alpha = nextValue(ctx).i32;
+	int dstAlpha = nextValue(ctx).i32;
 	size_t cbOffs = argref(ctx, rt->api.nfcNextArg(ctx));
 	symn callback = rt->api.rtLookup(ctx->rt, cbOffs);
 
@@ -365,7 +397,22 @@ static vmError surf_blendSurf(nfcContext ctx) {
 		.rt = rt,
 	};
 
-	if (gx_blitSurf(surf, x, y, src, roi, &arg, (cblt_proc) bltCallback) < 0) {
+	cblt_proc blt = NULL;
+	if (callback != NULL) {
+		if (dstAlpha) {
+			blt = (cblt_proc) blendDstAlphaCallback;
+		} else {
+			blt = (cblt_proc) blendAlphaCallback;
+		}
+	} else {
+		if (dstAlpha) {
+			blt = (cblt_proc) blendDstAlpha;
+		} else {
+			blt = (cblt_proc) blendAlpha;
+		}
+	}
+
+	if (gx_blitSurf(surf, x, y, src, roi, &arg, blt) < 0) {
 		return nativeCallError;
 	}
 	return noError;
@@ -385,77 +432,77 @@ static vmError surf_transformSurf(nfcContext ctx) {
 		return nativeCallError;
 	}
 
-	struct gx_Rect srec;
-	srec.x = srec.y = 0;
-	srec.w = src->width;
-	srec.h = src->height;
+	struct gx_Rect srcRec;
+	srcRec.x = srcRec.y = 0;
+	srcRec.w = src->width;
+	srcRec.h = src->height;
 	if (roi != NULL) {
 		if (roi->x > 0) {
-			srec.w -= roi->x;
-			srec.x = roi->x;
+			srcRec.w -= roi->x;
+			srcRec.x = roi->x;
 		}
 		if (roi->y > 0) {
-			srec.h -= roi->y;
-			srec.y = roi->y;
+			srcRec.h -= roi->y;
+			srcRec.y = roi->y;
 		}
-		if (roi->w < srec.w)
-			srec.w = roi->w;
-		if (roi->h < srec.h)
-			srec.h = roi->h;
+		if (roi->w < srcRec.w)
+			srcRec.w = roi->w;
+		if (roi->h < srcRec.h)
+			srcRec.h = roi->h;
 	}
 
-	struct gx_Rect drec;
+	struct gx_Rect dstRec;
 	if (rect != NULL) {
-		drec = *rect;
+		dstRec = *rect;
 	} else {
-		drec.x = drec.y = 0;
-		drec.w = surf->width;
-		drec.h = surf->height;
+		dstRec.x = dstRec.y = 0;
+		dstRec.w = surf->width;
+		dstRec.h = surf->height;
 	}
 
-	if (drec.w <= 0 || drec.h <= 0) {
+	if (dstRec.w <= 0 || dstRec.h <= 0) {
 		return noError;
 	}
-	if (srec.w <= 0 || srec.h <= 0) {
+	if (srcRec.w <= 0 || srcRec.h <= 0) {
 		return noError;
 	}
 
-	if (drec.x < 0) {
-		srec.x = -drec.x;
+	if (dstRec.x < 0) {
+		srcRec.x = -dstRec.x;
 	}
-	if (drec.y < 0) {
-		srec.y = -drec.y;
+	if (dstRec.y < 0) {
+		srcRec.y = -dstRec.y;
 	}
 
-	char *dptr = gx_cliprect(surf, &drec);
+	char *dptr = gx_cliprect(surf, &dstRec);
 	if (dptr == NULL) {
 		return noError;
 	}
 
 	// convert floating point values to fixed point(16.16) values (scale + rotate + translate)
-	int32_t xx = mat ? (int32_t) (mat[0] * 65535) : (srec.w << 16) / drec.w;
+	int32_t xx = mat ? (int32_t) (mat[0] * 65535) : (srcRec.w << 16) / dstRec.w;
 	int32_t xy = mat ? (int32_t) (mat[1] * 65535) : 0;
-	int32_t xt = mat ? (int32_t) (mat[3] * 65535) : srec.x;
-	int32_t yy = mat ? (int32_t) (mat[5] * 65535) : (srec.h << 16) / drec.h;
+	int32_t xt = mat ? (int32_t) (mat[3] * 65535) : srcRec.x;
+	int32_t yy = mat ? (int32_t) (mat[5] * 65535) : (srcRec.h << 16) / dstRec.h;
 	int32_t yx = mat ? (int32_t) (mat[4] * 65535) : 0;
-	int32_t yt = mat ? (int32_t) (mat[7] * 65535) : srec.y;
+	int32_t yt = mat ? (int32_t) (mat[7] * 65535) : srcRec.y;
 
 	if (interpolate == 0) {
-		for (int y = 0, sy = srec.y; y < drec.h; ++y, ++sy) {
-			for (int x = 0, sx = srec.x; x < drec.w; ++x, ++sx) {
+		for (int y = 0, sy = srcRec.y; y < dstRec.h; ++y, ++sy) {
+			for (int x = 0, sx = srcRec.x; x < dstRec.w; ++x, ++sx) {
 				int32_t tx = (xx * sx + xy * sy + xt + 0x8000) >> 16;
 				int32_t ty = (yx * sx + yy * sy + yt + 0x8000) >> 16;
-				gx_setpixel(surf, drec.x + x, drec.y + y, gx_getpixel(src, tx, ty));
+				gx_setpixel(surf, dstRec.x + x, dstRec.y + y, gx_getpixel(src, tx, ty));
 			}
 		}
 		return noError;
 	}
 
-	for (int y = 0, sy = srec.y; y < drec.h; ++y, ++sy) {
-		for (int x = 0, sx = srec.x; x < drec.w; ++x, ++sx) {
+	for (int y = 0, sy = srcRec.y; y < dstRec.h; ++y, ++sy) {
+		for (int x = 0, sx = srcRec.x; x < dstRec.w; ++x, ++sx) {
 			int32_t tx = xx * sx + xy * sy + xt;
 			int32_t ty = yx * sx + yy * sy + yt;
-			gx_setpixel(surf, drec.x + x, drec.y + y, gx_getpix16(src, tx, ty));
+			gx_setpixel(surf, dstRec.x + x, dstRec.y + y, gx_getpix16(src, tx, ty));
 		}
 	}
 	return noError;
@@ -503,24 +550,24 @@ static vmError surf_calcHist(nfcContext ctx) {
 	}
 
 	// init
-	uint32_t histoB[256];
-	uint32_t histoG[256];
-	uint32_t histoR[256];
-	uint32_t histoL[256];
+	uint32_t histB[256];
+	uint32_t histG[256];
+	uint32_t histR[256];
+	uint32_t histL[256];
 	for (int i = 0; i < 256; i += 1) {
-		histoB[i] = 0;
-		histoG[i] = 0;
-		histoR[i] = 0;
-		histoL[i] = 0;
+		histB[i] = 0;
+		histG[i] = 0;
+		histR[i] = 0;
+		histL[i] = 0;
 	}
 
 	for (int y = 0; y < rect.h; y += 1) {
 		argb *cBuff = (argb *) dptr;
 		for (int x = 0; x < rect.w; x += 1) {
-			histoL[lum(*cBuff)] += 1;
-			histoB[cBuff->b] += 1;
-			histoG[cBuff->g] += 1;
-			histoR[cBuff->r] += 1;
+			histL[lum(*cBuff)] += 1;
+			histB[cBuff->b] += 1;
+			histG[cBuff->g] += 1;
+			histR[cBuff->r] += 1;
 			cBuff += 1;
 		}
 		dptr += surf->scanLen;
@@ -532,30 +579,30 @@ static vmError surf_calcHist(nfcContext ctx) {
 	uint32_t useR = rch(rgb);
 	uint32_t useL = ach(rgb);
 	for (size_t i = 0; i < 256; i += 1) {
-		histoB[i] = histoB[i] * useB >> 8;
-		histoG[i] = histoG[i] * useG >> 8;
-		histoR[i] = histoR[i] * useR >> 8;
-		histoL[i] = histoL[i] * useL >> 8;
-		if (max < histoB[i]) {
-			max = histoB[i];
+		histB[i] = histB[i] * useB >> 8;
+		histG[i] = histG[i] * useG >> 8;
+		histR[i] = histR[i] * useR >> 8;
+		histL[i] = histL[i] * useL >> 8;
+		if (max < histB[i]) {
+			max = histB[i];
 		}
-		if (max < histoG[i]) {
-			max = histoG[i];
+		if (max < histG[i]) {
+			max = histG[i];
 		}
-		if (max < histoR[i]) {
-			max = histoR[i];
+		if (max < histR[i]) {
+			max = histR[i];
 		}
-		if (max < histoL[i]) {
-			max = histoL[i];
+		if (max < histL[i]) {
+			max = histL[i];
 		}
 	}
 
 	argb *data = lut.ref;
 	for (size_t x = 0; x < 256; x += 1) {
-		data[x].b = clamp_u8(histoB[x] * 255 / max);
-		data[x].g = clamp_u8(histoG[x] * 255 / max);
-		data[x].r = clamp_u8(histoR[x] * 255 / max);
-		data[x].a = clamp_u8(histoL[x] * 255 / max);
+		data[x].b = clamp_u8(histB[x] * 255 / max);
+		data[x].g = clamp_u8(histG[x] * 255 / max);
+		data[x].r = clamp_u8(histR[x] * 255 / max);
+		data[x].a = clamp_u8(histL[x] * 255 / max);
 	}
 
 	return noError;
@@ -584,23 +631,23 @@ static vmError surf_cLutSurf(nfcContext ctx) {
 	rect.w = roi ? roi->w : surf->width;
 	rect.h = roi ? roi->h : surf->height;
 
-	argb *lptr = (argb *) lut.ref;
-	char *dptr = gx_cliprect(surf, &rect);
-	if (dptr == NULL) {
+	argb *lutPtr = (argb *) lut.ref;
+	char *dstPtr = gx_cliprect(surf, &rect);
+	if (dstPtr == NULL) {
 		ctx->rt->api.raise(ctx->rt, raiseVerbose, "Empty roi, in function: %T", ctx->sym);
 		return noError;
 	}
 
 	if (!useLuminosity) {
 		for (int y = 0; y < rect.h; y += 1) {
-			argb *cBuff = (argb *) dptr;
+			argb *cBuff = (argb *) dstPtr;
 			for (int x = 0; x < rect.w; x += 1) {
-				cBuff->b = lptr[cBuff->b].b;
-				cBuff->g = lptr[cBuff->g].g;
-				cBuff->r = lptr[cBuff->r].r;
+				cBuff->b = lutPtr[cBuff->b].b;
+				cBuff->g = lutPtr[cBuff->g].g;
+				cBuff->r = lutPtr[cBuff->r].r;
 				cBuff += 1;
 			}
-			dptr += surf->scanLen;
+			dstPtr += surf->scanLen;
 		}
 		return noError;
 	}
@@ -642,25 +689,25 @@ static vmError surf_cLutSurf(nfcContext ctx) {
 	const int32_t *rgb2luv = RGB2LUV;
 	const int32_t *luv2rgb = LUV2RGB;
 	for (int y = 0; y < rect.h; y += 1) {
-		argb *cBuff = (argb *) dptr;
+		argb *cBuff = (argb *) dstPtr;
 
 		for (int x = 0; x < rect.w; x += 1) {
-			int32_t r = lptr[cBuff->r].r;
-			int32_t g = lptr[cBuff->g].g;
-			int32_t b = lptr[cBuff->b].b;
+			int32_t r = lutPtr[cBuff->r].r;
+			int32_t g = lutPtr[cBuff->g].g;
+			int32_t b = lutPtr[cBuff->b].b;
 
 			int32_t l = (r * rgb2luv[0x0] + g * rgb2luv[0x1] + b * rgb2luv[0x2]) >> 16;
 			int32_t u = (r * rgb2luv[0x4] + g * rgb2luv[0x5] + b * rgb2luv[0x6]) >> 16;
 			int32_t v = (r * rgb2luv[0x8] + g * rgb2luv[0x9] + b * rgb2luv[0xa]) >> 16;
 
-			l = lptr[clamp_s8(l)].a;
+			l = lutPtr[clamp_s8(l)].a;
 
 			cBuff->r = clamp_s8((l * luv2rgb[0x0] + u * luv2rgb[0x1] + v * luv2rgb[0x2]) >> 16);
 			cBuff->g = clamp_s8((l * luv2rgb[0x4] + u * luv2rgb[0x5] + v * luv2rgb[0x6]) >> 16);
 			cBuff->b = clamp_s8((l * luv2rgb[0x8] + u * luv2rgb[0x9] + v * luv2rgb[0xa]) >> 16);
 			cBuff += 1;
 		}
-		dptr += surf->scanLen;
+		dstPtr += surf->scanLen;
 	}
 	return noError;
 }
@@ -683,9 +730,9 @@ static vmError surf_cMatSurf(nfcContext ctx) {
 
 	// convert floating point values to fixed point(16.16) values
 	int32_t cMat[16];
-	float32_t *mptr = mat.ref;
+	float32_t *matPtr = mat.ref;
 	for (int i = 0; i < 16; i++) {
-		cMat[i] = fxp16(mptr[i]);
+		cMat[i] = fxp16(matPtr[i]);
 	}
 
 	struct gx_Rect rect;
@@ -714,6 +761,45 @@ static vmError surf_cMatSurf(nfcContext ctx) {
 		}
 		dptr += surf->scanLen;
 	}
+	return noError;
+}
+
+static const char *proto_surf_gradient = "void gradient(gxSurf surf, const gxRect roi&, int32 type, int alpha, bool repeat, bool invert, uint32 lut...)";
+static vmError surf_gradient(nfcContext ctx) {
+	struct gx_Clut lut;
+	gx_Surf surf = nextValue(ctx).ref;
+	gx_Rect rect = nextValue(ctx).ref;
+	gradient_type type = nextValue(ctx).i32;
+	int alpha = nextValue(ctx).i32;
+	int repeat = nextValue(ctx).i32;
+	int invert = nextValue(ctx).i32;
+	rtValue colors = nextValue(ctx);
+	uint32_t *colorArr = colors.ref;
+
+	lut.count = 256;
+	lut.flags = lut.trans = 0;
+
+	int mid = alpha < 0 ? 0 : 255;
+	alpha = 256 - clamp_u8(alpha > 0 ? alpha : -alpha);
+	int dt = ((colors.length - 1) << 16) / (lut.count - 1);
+	for (int i = 0; i < lut.count; i += 1) {
+		int t = i * dt;
+		int32_t c1 = colorArr[(t >> 16)];
+		int32_t c2 = colorArr[(t >> 16) + 1];
+		int32_t val = c1 + ((t & 0xffff) * (c2 - c1 + 1) >> 16);
+		lut.data[i].val = clamp_s8((val - mid) * 255 / alpha + mid) << 24;
+	}
+
+	if (invert) {
+		for (int i = 0; i < lut.count; i += 1) {
+			lut.data[i].val = ~lut.data[i].val;
+		}
+	}
+	if (repeat) {
+		type |= flag_repeat;
+	}
+	type |= flag_alpha;
+	gx_gradSurf(surf, rect, &lut, type);
 	return noError;
 }
 
@@ -888,7 +974,7 @@ static vmError mesh_setVertex(nfcContext ctx) {
 	return noError;
 }
 
-typedef struct looperArgs {
+typedef struct mainLoopArgs {
 	rtContext rt;
 	symn callback;
 	vmError error;
@@ -902,22 +988,22 @@ typedef struct looperArgs {
 		vmOffs closure;
 	} event;
 
-} *looperArgs;
+} *mainLoopArgs;
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
-static void exitLooper(looperArgs args) {
+static void exitMainLoop(mainLoopArgs args) {
 	emscripten_cancel_main_loop();
 	destroyWindow(args->window);
 }
 #else
 
-static void exitLooper(looperArgs args) {
+static void exitMainLoop(mainLoopArgs args) {
 	args->timeout = -1;
 }
 #endif
 
-static void looperCallback(looperArgs args) {
+static void mainLoopCallback(mainLoopArgs args) {
 	rtContext rt = args->rt;
 	symn callback = args->callback;
 	args->event.action = getWindowEvent(args->window, &args->event.button, &args->event.x, &args->event.y);
@@ -926,7 +1012,7 @@ static void looperCallback(looperArgs args) {
 		if (callback != NULL) {
 			args->error = rt->api.invoke(rt, callback, NULL, &args->event, NULL);
 		}
-		return exitLooper(args);
+		return exitMainLoop(args);
 	}
 	if (args->event.action == 0) {
 		// skip unknown events
@@ -940,7 +1026,7 @@ static void looperCallback(looperArgs args) {
 		int32_t timeout;
 		args->error = rt->api.invoke(rt, callback, &timeout, &args->event, args);
 		if (args->error != noError || timeout < 0) {
-			return exitLooper(args);
+			return exitMainLoop(args);
 		}
 		if (timeout >= 0) {
 			if (timeout == 0) {
@@ -954,11 +1040,10 @@ static void looperCallback(looperArgs args) {
 	else {
 		if (args->event.button == 27) {
 			// if there is no callback, exit wit esc key
-			return exitLooper(args);
+			return exitMainLoop(args);
 		}
 		args->timeout = INT64_MAX;
 	}
-	//printf("event(action: %d, button: %d, x: %d, y: %d)\n", args->event.action, args->event.button, args->event.x, args->event.y);
 	flushWindow(args->window);
 }
 
@@ -969,7 +1054,7 @@ static vmError window_show(nfcContext ctx) {
 	size_t cbClosure = argref(ctx, rt->api.nfcNextArg(ctx));
 	size_t cbOffs = argref(ctx, rt->api.nfcNextArg(ctx));
 
-	struct looperArgs args;
+	struct mainLoopArgs args;
 	args.rt = rt;
 	args.callback = rt->api.rtLookup(ctx->rt, cbOffs);
 	args.error = noError;
@@ -990,10 +1075,10 @@ static vmError window_show(nfcContext ctx) {
 	args.window = createWindow(offScreen);
 
 #ifdef __EMSCRIPTEN__
-	emscripten_set_main_loop_arg((void*)looperCallback, &args, 0, 1);
+	emscripten_set_main_loop_arg((void*)mainLoopCallback, &args, 0, 1);
 #else
 	for ( ; args.timeout >= 0; ) {
-		looperCallback(&args);
+		mainLoopCallback(&args);
 	}
 #endif
 	destroyWindow(args.window);
@@ -1003,7 +1088,7 @@ static vmError window_show(nfcContext ctx) {
 static const char *proto_window_title = "void setTitle(char title[*])";
 static vmError window_title(nfcContext ctx) {
 	char *title = nextValue(ctx).ref;
-	looperArgs args = (looperArgs) ctx->extra;
+	mainLoopArgs args = (mainLoopArgs) ctx->extra;
 	if (args != NULL && args->window != NULL) {
 		setWindowText(args->window, title);
 	}
@@ -1013,7 +1098,7 @@ static vmError window_title(nfcContext ctx) {
 
 static const char *proto_camera_lookAt = "void lookAt(float32 eye[3], float32 at[3], float32 up[3])";
 //static const char *proto_camera_ortho = "void orthographic(float32 left, float32 right, float32 bottom, float32 top, float32 near, float32 far)";
-//static const char *proto_camera_persp = "void perspective(float32 left, float32 right, float32 bottom, float32 top, float32 near, float32 far)";
+//static const char *proto_camera_perspective = "void perspective(float32 left, float32 right, float32 bottom, float32 top, float32 near, float32 far)";
 static const char *proto_camera_projection = "void projection(float32 fovy, float32 aspect, float32 near, float32 far)";
 static const char *proto_camera_move = "void move(float32 direction[3], float32 amount)";
 static const char *proto_camera_rotate = "void rotate(float32 direction[3], float32 orbit[3], float32 angle)";
@@ -1253,6 +1338,7 @@ int cmplInit(rtContext rt) {
 		{surf_blurSurf, proto_surf_blurSurf},
 		{surf_cLutSurf, proto_surf_cLutSurf},
 		{surf_cMatSurf, proto_surf_cMatSurf},
+		{surf_gradient, proto_surf_gradient},
 		{surf_calcHist, proto_surf_calcHist},
 		{surf_drawMesh, proto_surf_drawMesh},
 	},
