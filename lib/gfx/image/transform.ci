@@ -1,16 +1,16 @@
 // emulated implementation
-void transform(gxSurf surf, const gxRect rect&, gxSurf src, const gxRect roi&, int32 interpolate, float32 mat[16]) {
+void transform(Image surf, const Rect rect&, Image src, const Rect roi&, int32 interpolate, float32 mat[16]) {
 	assert(roi == null);
 	assert(rect != null);
 
-	gxRect dRec = {
+	Rect dRec = {
 		x: rect != null ? rect.x : 0;
 		y: rect != null ? rect.y : 0;
 		w: rect != null ? rect.w : surf.width();
 		h: rect != null ? rect.h : surf.height();
 	};
 
-	gxRect sRec = {
+	Rect sRec = {
 		x: roi != null ? roi.x : 0;
 		y: roi != null ? roi.y : 0;
 		w: roi != null ? roi.w : src.width();

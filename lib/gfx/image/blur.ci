@@ -1,5 +1,5 @@
 // emulated implementation
-void blur(gxSurf img, int radius, double sigma) {
+void blur(Image img, int radius, double sigma) {
 	static double gauss(double x, double sigma) {
 		inline SQRT_2_PI_INV = 0.398942280401432677939946059935;
 		double t = x / sigma;
@@ -36,7 +36,7 @@ void blur(gxSurf img, int radius, double sigma) {
 	int width = img.width();
 	int height = img.height();
 
-	gxSurf tmp = gxSurf(width, height, img.depth());
+	Image tmp = Image(width, height, img.depth());
 
 	// x direction: inout -> temp
 	for (int y = 0; y < height; y += 1) {

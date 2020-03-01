@@ -1,8 +1,17 @@
-// Color levels demo.
-
-gxSurf back = gxSurf("asset/image/forest.png", 32);
-gxSurf font = gxSurf.openFnt("asset/font/modern-1.fnt");
-gxSurf offs = gxSurf(back.width(), back.height(), back.depth());
+/* Color levels demo.
+ *
+ * use 'tab' / 'shift' + 'tab' to select next control
+ * use 'enter' / 'shift' + 'enter' to select next control
+ * use '+' / '-' to adjust value of selected control (use shift for more precision)
+ * use 'backspace' / 'shift' + 'backspace' to reset selected / every control value
+ * use 'space' to press a button, toggle switch or reset slider value
+ * use '[' or ']' to show and hide the controls
+ *
+ * drag the mouse up or down in the window to adjust control value
+ */
+Image back = Image("asset/image/forest.png", 32);
+Image font = Image.openFnt("asset/font/modern-1.fnt");
+Image offs = Image(back.width(), back.height(), back.depth());
 
 void levels(uint32 lut[256], int input, int output) {
 	argb lut2[*] = lut;
@@ -48,13 +57,11 @@ int onEvent(int action, int button, int x, int y) {
 	static Histogram histogram = {
 		text: null;
 		image: offs;
-		height: 128;
 		enabled: false;
 	};
 	static Histogram curves = {
 		text: null;
 		image: offs;
-		height: 128;
 		lines: true;
 		enabled: false;
 		selectable: false;
