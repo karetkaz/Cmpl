@@ -1,18 +1,21 @@
 // graphics library extension
-inline "gfx/color.ci";
-inline "gfx/image.ci";
-inline "gfx/mesh.ci";
+inline "lib/color.ci";
+inline "lib/image.ci";
+inline "lib/mesh.ci";
 
 static if (typename(Image.blur) == null) {
-inline "/lib/gfx/emulated/blur.ci";
+raise(raise.debug, raise.noTrace, "emulated/blur.ci", null);
+inline "lib/emulated/blur.ci";
 }
 
 static if (typename(Image.blend) == null) {
-inline "/lib/gfx/emulated/blend.ci";
+raise(raise.debug, raise.noTrace, "emulated/blend.ci", null);
+inline "lib/emulated/blend.ci";
 }
 
 static if (typename(Image.transform) == null) {
-inline "/lib/gfx/emulated/transform.ci";
+raise(raise.debug, raise.noTrace, "emulated/transform.ci", null);
+inline "lib/emulated/transform.ci";
 }
 
 /// Show the surface in a window

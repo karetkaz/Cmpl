@@ -255,10 +255,10 @@ struct Histogram: View {
 					offs.drawLine(x, y - pl, x, y - lv, colL);
 				}
 
-				pl = lv;
 				pb = bv;
 				pg = gv;
 				pr = rv;
+				pl = lv;
 			}
 		} else {
 			for (int i = 0; i < this.data.length; i += 1) {
@@ -273,7 +273,7 @@ struct Histogram: View {
 					int bv = bch(data) * rect.h / 256;
 					int gv = gch(data) * rect.h / 256;
 					int rv = rch(data) * rect.h / 256;
-					int lv = rch(data) * rect.h / 256;
+					int lv = ach(data) * rect.h / 256;
 					for (int y = 0; y < rect.h; y += 1) {
 						uint32 b = colB * uint32(y < bv);
 						uint32 g = colG * uint32(y < gv);

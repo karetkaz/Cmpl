@@ -37,18 +37,18 @@ inline unsigned(int64 value) = uint64(value);
 inline sizeof(typename type) = int(type.size);
 
 static if (typename(raise) == function) {
-inline "std/debug.ci";
+inline "lib/debug.ci";
 }
 
-inline "std/math.ci";
-//inline "std/math/Decimal.ci"?;      // -> Decimal TODO: implement http://dec64.com/
-//inline "std/math/Rational.ci"?;     // -> Rational<int64>
-inline "std/math/Complex.ci"?;      // -> Complex<float64>
-inline "std/math/Vector4f.ci"?;
-inline "std/math/Matrix4f.ci"?;
-inline "std/math/Vector2d.ci"?;
-//inline "std/math/BigInteger.ci?"   // TODO: inline Rational -> BigInteger.Rational<BigInteger>
-//inline "std/math/BigDecimal.ci?"   // TODO: inline Complex -> BigDecimal.Complex<BigDecimal>
-//inline "std/math/Perlin.ci"?;
+inline "lib/math.ci";
+//inline "lib/math/Decimal.ci"?;      // -> Decimal TODO: implement http://dec64.com/
+//inline "lib/math/Rational.ci"?;     // -> Rational<int64>
+inline "lib/math/Complex.ci"?;      // -> Complex<float64>
+inline "lib/math/Vector4f.ci"?;
+inline "lib/math/Matrix4f.ci"?;
+inline "lib/math/Vector2d.ci"?;
+//inline "lib/math/BigInteger.ci?"   // TODO: inline Rational -> BigInteger.Rational<BigInteger>
+//inline "lib/math/BigDecimal.ci?"   // TODO: inline Complex -> BigDecimal.Complex<BigDecimal>
+//inline "lib/math/Perlin.ci"?;
 
-inline "std/string.ci";
+inline "lib/string.ci";

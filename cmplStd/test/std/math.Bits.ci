@@ -1,5 +1,5 @@
 // test functions implemented in file: `Bits.ci`
-inline "/lib/std/math/Bits.ci";
+inline "/cmplStd/lib/math/Bits.ci";
 
 inline byte(uint64 value, int i) = uint8((value >> 8 * i) & 255);
 

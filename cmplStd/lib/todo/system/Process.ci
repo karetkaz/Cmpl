@@ -12,7 +12,7 @@ struct Process {
 	Stream stdout;
 	Stream stderr;
 
-	static const current();
+	static const Process current();
 
 	bool started();
 	bool exited();
