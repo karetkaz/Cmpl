@@ -18,7 +18,7 @@ A very "simple" C like language.
 
 * [Ray Tracer](http://karetkaz.github.io/Cmpl/demo.html#libGfx&file=RayTracer0.ci&project=cmplGfx/test/demo/RayTracer0.ci)
 
-* [Yin Yang](http://karetkaz.github.io/Cmpl/demo.html#libGfx&file=pd.yinyang.ci&project=cmplGfx/test/pd.yinyang.ci)
+* [Yin Yang](http://karetkaz.github.io/Cmpl/demo.html#libGfx&file=YinYang.ci&project=cmplGfx/test/demo.procedural/YinYang.ci)
 
 * [File create + write](http://karetkaz.github.io/Cmpl/demo.html#libFile&file=file.ci&content=Ly8gdGVzdCB3cml0aW5nIGludG8gYSBmaWxlCi8vIGFmdGVyIGV4ZWN1dGlvbiwgcmVmcmVzaCB0aGUgbGlzdCBvZiBmaWxlcyB0byBzZWUgdGhlIG91dHB1dAoKRmlsZSBmaWxlID0gRmlsZS5jcmVhdGUoImEudHh0Iik7CmZpbGUud3JpdGUoIlRoZSBxdWljayBicm93biBmb3gganVtcHMgb3ZlciB0aGUgbGF6eSBkb2cuXG4iKTsKZmlsZS5jbG9zZSgpOwo)
 

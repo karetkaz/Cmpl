@@ -28,15 +28,13 @@ static vmError FILE_open(nfcContext ctx) {
 	else if (ctx->proto == proto_file_append) {
 		mode = "a";
 	}
-	FILE *file = fopen(name, mode);
-	rethnd(ctx, file);
-	return file != NULL ? noError : nativeCallError;
-}
 
-static const char *const proto_file_read_byte = "int read(File file)";
-static vmError FILE_getc(nfcContext ctx) {
-	FILE *file = (FILE *) arghnd(ctx, 0);
-	reti32(ctx, fgetc(file));
+	FILE *file = fopen(name, mode);
+	if (file == NULL) {
+		return nativeCallError;
+	}
+
+	rethnd(ctx, file);
 	return noError;
 }
 
@@ -73,22 +71,13 @@ static vmError FILE_gets(nfcContext ctx) {
 	return noError;
 }
 
-static const char *const proto_file_write_byte = "int write(File file, uint8 byte)";
 static const char *const proto_file_write_buff = "int write(File file, const uint8 buff[])";
 static vmError FILE_write(nfcContext ctx) {
 	FILE *file = (FILE *) nextArg(ctx).ref;
-	if (ctx->proto == proto_file_write_byte) {
-		int data = nextArg(ctx).i32;
-		reti32(ctx, putc(data, file));
-		return noError;
-	}
-	if (ctx->proto == proto_file_write_buff) {
-		rtValue buff = nextArg(ctx);
-		size_t len = fwrite(buff.ref, 1, buff.length, file);
-		reti32(ctx, len);
-		return noError;
-	}
-	return nativeCallError;
+	rtValue buff = nextArg(ctx);
+	size_t len = fwrite(buff.ref, 1, buff.length, file);
+	reti32(ctx, len);
+	return noError;
 }
 
 static const char *const proto_file_flush = "void flush(File file)";
@@ -156,12 +145,10 @@ int cmplInit(rtContext rt) {
 		err = err || !rt->api.ccAddCall(cc, FILE_open, proto_file_create);
 		err = err || !rt->api.ccAddCall(cc, FILE_open, proto_file_append);
 
-		err = err || !rt->api.ccAddCall(cc, FILE_getc, proto_file_read_byte);
 		err = err || !rt->api.ccAddCall(cc, FILE_peek, proto_file_peek_byte);
 		err = err || !rt->api.ccAddCall(cc, FILE_read, proto_file_read_buff);
 		err = err || !rt->api.ccAddCall(cc, FILE_gets, proto_file_read_line);
 
-		err = err || !rt->api.ccAddCall(cc, FILE_write, proto_file_write_byte);
 		err = err || !rt->api.ccAddCall(cc, FILE_write, proto_file_write_buff);
 
 		err = err || !rt->api.ccAddCall(cc, FILE_flush, proto_file_flush);

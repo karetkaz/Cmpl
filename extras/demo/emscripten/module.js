@@ -149,14 +149,26 @@ Module.openProjectFile = function(data, callBack) {
 	if (data.file !== undefined) {
 		let operation = 'operation';
 		try {
+			let open = true;
 			let path = data.file;
-			if (data.content != null) {
+			if (data.content === null) {
+				if (Module.pathExists(path)) {
+					list = [Module.workspace];
+				}
+				// delete file content
+				operation = 'delete';
+				FS.unlink(Module.absolutePath(path));
+				open = false;
+				sync = true;
+			}
+			else if (data.content !== undefined) {
 				if (!Module.pathExists(path)) {
 					list = [Module.workspace];
 				}
 				// save file content
 				operation = 'save';
 				Module.saveFile(path, data.content);
+				open = false;
 				sync = true;
 			}
 			else if (data.url != null) {
@@ -165,8 +177,9 @@ Module.openProjectFile = function(data, callBack) {
 				}
 				operation = 'download';
 				sync = Module.wgetFiles([data]);
+				open = false;
 			}
-			else {
+			if (open || data.reopen) {
 				// read file content
 				operation = 'read';
 				result.content = Module.readFile(path);
@@ -178,6 +191,7 @@ Module.openProjectFile = function(data, callBack) {
 					result.link = URL.createObjectURL(blob);
 				}
 			}
+			Module.print('File ' + operation + ': ' + Module.absolutePath(path));
 		} catch (err) {
 			result.error = 'File ' + operation + ' failed[' + data.file + ']: ' + err;
 			console.trace(err);

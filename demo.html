@@ -66,8 +66,6 @@
 	<div class="submenu">
 		<li onclick="setStyle(parentElement, '~collapsed');">Workspace<span class="" id="workspaceName"></span>
 			<button class="right" onclick="event.stopPropagation(); setStyle(parentElement.parentElement, '-collapsed'); params.update({folder: null}); params.update('folder');" title="Refresh workspace">⟳</button>
-			<!--<button class="right" onclick="event.stopPropagation(); downloadFiles();">📥</button>-->
-			<!--<button class="right" onclick="event.stopPropagation(); uploadFiles();">📤</button>-->
 		</li>
 		<ul id="fileList"></ul>
 		<ul>
@@ -103,6 +101,7 @@
 		<li onclick="setStyle(parentElement, '~collapsed');">File
 			<button class="right" onclick="event.stopPropagation(); shareInput();" title="Share link">🔗</button>
 		</li>
+		<ul><li><input type="file" onchange="uploadFiles(this)" multiple value="upload"></li></ul>
 		<ul id="projectOptions" class="hidden">
 			<li onclick="params.update({workspace: prompt('Save project as:')});"><span class="right"></span>📥 Persist project</li>
 			<li onclick="editProject();"><span class="right"></span>🛠 Edit project</li>

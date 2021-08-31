@@ -11,7 +11,7 @@
  */
 
 Image back = Image("asset/image/forest.jpg");
-Image offs = Image(back.width(), back.height(), back.depth());
+Image offs = Image(back);
 int onEvent(int action, int button, int x, int y);
 Gui.showWindow(offs, onEvent);
 offs.destroy();

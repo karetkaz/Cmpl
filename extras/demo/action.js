@@ -26,11 +26,19 @@ var customCommands = {
 		params.update({content: null, file: null});
 		return true;
 	},
-	download: function (value, action) {
+	downloadFile: function () {
 		openProjectFile({
 			file: params.file,
 			link: true
 		});
+		return true;
+	},
+	deleteFile: function () {
+		openProjectFile({
+			file: params.file,
+			content: null
+		});
+		setStyle(document.body, 'edited');
 		return true;
 	},
 
@@ -42,7 +50,7 @@ var customCommands = {
 		);
 	},
 	selectWord: function () {
-		var sel = editor.findWordAt(editor.getCursor());
+		let sel = editor.findWordAt(editor.getCursor());
 		editor.setSelection(sel.anchor, sel.head);
 	},
 };
@@ -135,11 +143,11 @@ function setActions(actions, nextPrev) {
 		let item = -1;
 		let items = Object.keys(actions);
 		nextPrev = function (direction) {
-			if (direction == null || direction.constructor != Number) {
+			if (direction == null || direction.constructor !== Number) {
 				return setActions();
 			}
 
-			if (document.activeElement != edtFileName) {
+			if (document.activeElement !== edtFileName) {
 				return actionError();
 			}
 			item += direction;
@@ -322,7 +330,7 @@ edtFileName.onkeydown = function (event) {
 				editor.focus();
 				return setActions();
 			}
-			if (direction == null || direction.constructor != Number) {
+			if (direction == null || direction.constructor !== Number) {
 				return setActions();
 			}
 			selection += direction;
@@ -376,9 +384,7 @@ edtFileName.onkeydown = function (event) {
 		let line = match[3];
 		if (match[1] != null) {
 			file = file.replace(/^(.*[/])?(.*)(\..*)$/, '$2$3');
-			openProjectFile({ file, project: [{
-				file, url: match[1] + match[2]
-			}]});
+			openProjectFile({ file, url: match[1] + match[2]});
 		}
 		else if (file.endsWith('/') || file.endsWith('*')) {
 			params.update({ folder: match.input });
@@ -395,34 +401,34 @@ edtFileName.oninput = function (event) {
 	completeAction(edtFileName.value, event.inputType === 'insertText');
 };
 
-CodeMirror.commands.save = function (cm) {
+CodeMirror.commands.save = function () {
 	saveInput();
 }
-CodeMirror.commands.goToLine = function (cm) {
+CodeMirror.commands.goToLine = function () {
 	let line = editor.getCursor().line || 0;
 	completeAction(':', line + 1);
-	var middleHeight = editor.getScrollerElement().offsetHeight / 2;
-	var t = editor.charCoords({line, ch: 0}, 'local').top;
+	let middleHeight = editor.getScrollerElement().offsetHeight / 2;
+	let t = editor.charCoords({line, ch: 0}, 'local').top;
 	editor.scrollTo(null, t - middleHeight - 5);
 	editor.setCursor(line);
 }
 
-CodeMirror.commands.find = function (cm) {
+CodeMirror.commands.find = function () {
 	completeAction('?');
 }
-CodeMirror.commands.findNext = function (cm) {
+CodeMirror.commands.findNext = function () {
 	if (commands.onNextPrev == null) {
 		return actionError();
 	}
 	commands.onNextPrev(+1);
 }
-CodeMirror.commands.findPrev = function (cm) {
+CodeMirror.commands.findPrev = function () {
 	if (commands.onNextPrev == null) {
 		return actionError();
 	}
 	commands.onNextPrev(-1);
 }
-CodeMirror.commands.selectFound = function (cm) {
+CodeMirror.commands.selectFound = function () {
 	if (commands.onNextPrev == null) {
 		return actionError();
 	}

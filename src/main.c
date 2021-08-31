@@ -2373,9 +2373,13 @@ int main(int argc, char *argv[]) {
 		if (extra.compileSteps != NULL) {printLog(extra.rt, raisePrint, NULL, 0, NULL, "%sCompile: `%?s`", extra.compileSteps, stdlib);}
 		char buffer[1024];
 		if (stdlib != NULL) {
-		    snprintf(buffer, sizeof(buffer), "inline \"%s\";", stdlib);
+			snprintf(buffer, sizeof(buffer), "inline \"%s\";", stdlib);
 		} else {
-		    buffer[0] = 0;
+			buffer[0] = 0;
+		}
+		if (ccLibSys(cc) != 0) {
+			error(rt, NULL, 0, "error registering standard library");
+			return -1;
 		}
 		if (!ccAddUnit(cc, ccLibStd, stdlib, 0, buffer)) {
 			error(rt, NULL, 0, "error registering standard library");
