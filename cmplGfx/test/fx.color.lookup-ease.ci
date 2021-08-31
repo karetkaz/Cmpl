@@ -11,7 +11,7 @@
  */
 
 Image back = Image("asset/image/forest.jpg", 32);
-Image offs = Image(back.width(), back.height(), back.depth());
+Image offs = Image(back);
 int onEvent(int action, int button, int x, int y);
 Gui.showWindow(offs, onEvent);
 offs.destroy();
@@ -89,7 +89,7 @@ int onEvent(int action, int button, int x, int y) {
 
 	debug.startTimer();
 	brightnessContrast(&curves.data, brightness.value, contrast.value);
-	offs.resize(null, back, null, 1);
+	offs.copy(0, 0, back, null);
 	offs.colorMap(null, curves.data);
 	histogram.update(offs);
 	return ui.draw(offs);

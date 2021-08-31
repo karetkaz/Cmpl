@@ -26,6 +26,9 @@ typename: typename {
 	cmplGfx/gfxlib.ci:26: referenced as `typename`
 	cmplGfx/gfxlib.ci:21: referenced as `typename`
 	cmplGfx/lib/color.ci:260: referenced as `typename`
+	cmplStd/lib/math.ci:369: referenced as `typename`
+	cmplStd/lib/math.ci:360: referenced as `typename`
+	cmplStd/lib/math.ci:351: referenced as `typename`
 	cmplStd/stdlib.ci:39: referenced as `typename`
 	cmplStd/stdlib.ci:37: referenced as `typename`
 	cmplStd/stdlib.ci:37: referenced as `typename`
@@ -150,10 +153,10 @@ bool: typename {
 	cmplGfx/lib/color.ci:235: referenced as `bool`
 	cmplStd/lib/text/string.ci:46: referenced as `bool`
 	cmplStd/lib/text/string.ci:36: referenced as `bool`
-	cmplStd/lib/math.ci:473: referenced as `bool`
-	cmplStd/lib/math.ci:425: referenced as `bool`
-	cmplStd/lib/math.ci:370: referenced as `bool`
-	cmplStd/lib/math.ci:369: referenced as `bool`
+	cmplStd/lib/math.ci:489: referenced as `bool`
+	cmplStd/lib/math.ci:441: referenced as `bool`
+	cmplStd/lib/math.ci:386: referenced as `bool`
+	cmplStd/lib/math.ci:385: referenced as `bool`
 	cmplStd/lib/debug.ci:45: referenced as `bool`
 	cmplStd/lib/debug.ci:43: referenced as `bool`
 	cmplStd/lib/debug.ci:41: referenced as `bool`
@@ -515,8 +518,8 @@ int32: typename {
 	cmplStd/lib/text/string.ci:15: referenced as `int`
 	cmplStd/lib/text/string.ci:8: referenced as `int`
 	cmplStd/lib/text/string.ci:4: referenced as `int`
-	cmplStd/lib/math.ci:380: referenced as `int`
-	cmplStd/lib/math.ci:380: referenced as `int`
+	cmplStd/lib/math.ci:396: referenced as `int`
+	cmplStd/lib/math.ci:396: referenced as `int`
 	cmplStd/lib/math.ci:331: referenced as `int`
 	cmplStd/lib/math.ci:299: referenced as `int`
 	cmplStd/lib/math.ci:284: referenced as `int`
@@ -550,7 +553,7 @@ int32: typename {
 	cmplStd/lib/debug.ci:61: referenced as `int`
 	cmplStd/stdlib.ci:31: referenced as `int32`
 	cmplStd/stdlib.ci:19: referenced as `int32`
-	internal usages: 155
+	internal usages: 153
 }
 int64: typename {
 .kind: static const typename(i64)
@@ -601,7 +604,7 @@ uint8: typename {
 	cmplStd/stdlib.ci:25: referenced as `uint8`
 	cmplStd/stdlib.ci:13: referenced as `uint8`
 	cmplStd/stdlib.ci:8: referenced as `uint8`
-	internal usages: 5
+	internal usages: 4
 }
 uint16: typename {
 .kind: static const typename(u32)
@@ -1222,38 +1225,46 @@ float64: typename {
 	cmplStd/lib/math/Complex.ci:24: referenced as `float64`
 	cmplStd/lib/math/Complex.ci:8: referenced as `float64`
 	cmplStd/lib/math/Complex.ci:5: referenced as `float64`
-	cmplStd/lib/math.ci:529: referenced as `float64`
-	cmplStd/lib/math.ci:529: referenced as `float64`
-	cmplStd/lib/math.ci:526: referenced as `float64`
-	cmplStd/lib/math.ci:526: referenced as `float64`
+	cmplStd/lib/math.ci:545: referenced as `float64`
+	cmplStd/lib/math.ci:545: referenced as `float64`
+	cmplStd/lib/math.ci:542: referenced as `float64`
+	cmplStd/lib/math.ci:542: referenced as `float64`
+	cmplStd/lib/math.ci:518: referenced as `float64`
+	cmplStd/lib/math.ci:505: referenced as `float64`
 	cmplStd/lib/math.ci:502: referenced as `float64`
-	cmplStd/lib/math.ci:489: referenced as `float64`
-	cmplStd/lib/math.ci:486: referenced as `float64`
-	cmplStd/lib/math.ci:484: referenced as `float64`
-	cmplStd/lib/math.ci:484: referenced as `float64`
-	cmplStd/lib/math.ci:467: referenced as `float64`
-	cmplStd/lib/math.ci:467: referenced as `float64`
-	cmplStd/lib/math.ci:459: referenced as `float64`
-	cmplStd/lib/math.ci:459: referenced as `float64`
-	cmplStd/lib/math.ci:457: referenced as `float64`
-	cmplStd/lib/math.ci:452: referenced as `float64`
-	cmplStd/lib/math.ci:452: referenced as `float64`
-	cmplStd/lib/math.ci:440: referenced as `float64`
-	cmplStd/lib/math.ci:437: referenced as `float64`
-	cmplStd/lib/math.ci:437: referenced as `float64`
-	cmplStd/lib/math.ci:435: referenced as `float64`
-	cmplStd/lib/math.ci:432: referenced as `float64`
-	cmplStd/lib/math.ci:415: referenced as `float64`
+	cmplStd/lib/math.ci:500: referenced as `float64`
+	cmplStd/lib/math.ci:500: referenced as `float64`
+	cmplStd/lib/math.ci:483: referenced as `float64`
+	cmplStd/lib/math.ci:483: referenced as `float64`
+	cmplStd/lib/math.ci:475: referenced as `float64`
+	cmplStd/lib/math.ci:475: referenced as `float64`
+	cmplStd/lib/math.ci:473: referenced as `float64`
+	cmplStd/lib/math.ci:468: referenced as `float64`
+	cmplStd/lib/math.ci:468: referenced as `float64`
+	cmplStd/lib/math.ci:456: referenced as `float64`
+	cmplStd/lib/math.ci:453: referenced as `float64`
+	cmplStd/lib/math.ci:453: referenced as `float64`
+	cmplStd/lib/math.ci:451: referenced as `float64`
+	cmplStd/lib/math.ci:448: referenced as `float64`
+	cmplStd/lib/math.ci:431: referenced as `float64`
+	cmplStd/lib/math.ci:429: referenced as `float64`
+	cmplStd/lib/math.ci:429: referenced as `float64`
 	cmplStd/lib/math.ci:413: referenced as `float64`
-	cmplStd/lib/math.ci:413: referenced as `float64`
-	cmplStd/lib/math.ci:397: referenced as `float64`
-	cmplStd/lib/math.ci:396: referenced as `float64`
-	cmplStd/lib/math.ci:379: referenced as `float64`
-	cmplStd/lib/math.ci:378: referenced as `float64`
-	cmplStd/lib/math.ci:357: referenced as `float64`
-	cmplStd/lib/math.ci:356: referenced as `float64`
-	cmplStd/lib/math.ci:356: referenced as `float64`
+	cmplStd/lib/math.ci:412: referenced as `float64`
+	cmplStd/lib/math.ci:395: referenced as `float64`
+	cmplStd/lib/math.ci:394: referenced as `float64`
+	cmplStd/lib/math.ci:373: referenced as `float64`
+	cmplStd/lib/math.ci:371: referenced as `float64`
+	cmplStd/lib/math.ci:369: referenced as `float64`
+	cmplStd/lib/math.ci:368: referenced as `float64`
+	cmplStd/lib/math.ci:368: referenced as `float64`
+	cmplStd/lib/math.ci:362: referenced as `float64`
+	cmplStd/lib/math.ci:360: referenced as `float64`
+	cmplStd/lib/math.ci:359: referenced as `float64`
+	cmplStd/lib/math.ci:359: referenced as `float64`
 	cmplStd/lib/math.ci:353: referenced as `float64`
+	cmplStd/lib/math.ci:351: referenced as `float64`
+	cmplStd/lib/math.ci:350: referenced as `float64`
 	cmplStd/lib/math.ci:350: referenced as `float64`
 	cmplStd/lib/math.ci:345: referenced as `float64`
 	cmplStd/lib/math.ci:344: referenced as `float64`
@@ -1346,6 +1357,8 @@ float64.sin(x: float64): float64: function {
 	cmplStd/lib/math/Complex.ci:149: referenced as `sin`
 	cmplStd/lib/math/Complex.ci:142: referenced as `sin`
 	cmplStd/lib/math/Complex.ci:129: referenced as `sin`
+	cmplStd/lib/math.ci:353: referenced as `sin`
+	cmplStd/lib/math.ci:351: referenced as `sin`
 }
 float64.cos(x: float64): float64: function {
 .kind: static const inline
@@ -1362,6 +1375,8 @@ float64.cos(x: float64): float64: function {
 	cmplStd/lib/math/Complex.ci:149: referenced as `cos`
 	cmplStd/lib/math/Complex.ci:141: referenced as `cos`
 	cmplStd/lib/math/Complex.ci:129: referenced as `cos`
+	cmplStd/lib/math.ci:362: referenced as `cos`
+	cmplStd/lib/math.ci:360: referenced as `cos`
 }
 float64.tan(x: float64): float64: function {
 .kind: static const inline
@@ -1373,6 +1388,8 @@ float64.tan(x: float64): float64: function {
 .param x: float64 (size: 8, cast: variable(f64))
 .value: nfc(44)
 .usages:
+	cmplStd/lib/math.ci:371: referenced as `tan`
+	cmplStd/lib/math.ci:369: referenced as `tan`
 }
 float64.log(x: float64): float64: function {
 .kind: static const inline
@@ -1400,12 +1417,12 @@ float64.exp(x: float64): float64: function {
 	cmplStd/lib/math/Complex.ci:139: referenced as `exp`
 	cmplStd/lib/math/Complex.ci:129: referenced as `exp`
 	cmplStd/lib/math/Complex.ci:129: referenced as `exp`
-	cmplStd/lib/math.ci:459: referenced as `exp`
-	cmplStd/lib/math.ci:459: referenced as `exp`
-	cmplStd/lib/math.ci:457: referenced as `exp`
-	cmplStd/lib/math.ci:437: referenced as `exp`
-	cmplStd/lib/math.ci:437: referenced as `exp`
-	cmplStd/lib/math.ci:432: referenced as `exp`
+	cmplStd/lib/math.ci:475: referenced as `exp`
+	cmplStd/lib/math.ci:475: referenced as `exp`
+	cmplStd/lib/math.ci:473: referenced as `exp`
+	cmplStd/lib/math.ci:453: referenced as `exp`
+	cmplStd/lib/math.ci:453: referenced as `exp`
+	cmplStd/lib/math.ci:448: referenced as `exp`
 }
 float64.pow(x: float64, y: float64): float64: function {
 .kind: static const inline
@@ -1431,7 +1448,7 @@ float64.sqrt(x: float64): float64: function {
 .value: nfc(48)
 .usages:
 	cmplStd/lib/math/Complex.ci:112: referenced as `sqrt`
-	cmplStd/lib/math.ci:484: referenced as `sqrt`
+	cmplStd/lib/math.ci:500: referenced as `sqrt`
 }
 float64.atan2(x: float64, y: float64): float64: function {
 .kind: static const inline
@@ -1445,8 +1462,8 @@ float64.atan2(x: float64, y: float64): float64: function {
 .value: nfc(49)
 .usages:
 	cmplStd/lib/math/Complex.ci:114: referenced as `atan2`
-	cmplStd/lib/math.ci:489: referenced as `atan2`
-	cmplStd/lib/math.ci:486: referenced as `atan2`
+	cmplStd/lib/math.ci:505: referenced as `atan2`
+	cmplStd/lib/math.ci:502: referenced as `atan2`
 }
 pointer: typename {
 .kind: static const typename(ref)
@@ -1658,6 +1675,9 @@ null: pointer {
 	cmplGfx/lib/color.ci:260: referenced as `null`
 	cmplStd/lib/text/string.ci:135: referenced as `null`
 	cmplStd/lib/text/string.ci:5: referenced as `null`
+	cmplStd/lib/math.ci:369: referenced as `null`
+	cmplStd/lib/math.ci:360: referenced as `null`
+	cmplStd/lib/math.ci:351: referenced as `null`
 	cmplStd/lib/debug.ci:74: referenced as `null`
 	cmplStd/lib/debug.ci:56: referenced as `null`
 	cmplStd/lib/debug.ci:38: referenced as `null`
@@ -3103,6 +3123,7 @@ System: typename {
 .field sleep: function (size: 0, cast: static const inline)
 .field rand: function (size: 0, cast: static const inline)
 .field clock: function (size: 0, cast: static const inline)
+.field Platform: typename (size: 0, cast: static const typename(void))
 .usages:
 	cmplGfx/gfxlib.ci:295: referenced as `System`
 	cmplGfx/gfxlib.ci:129: referenced as `System`
@@ -3206,6 +3227,58 @@ System.clock.perSec: int64 {
 .owner: System.clock(): int32
 .value: 1000000
 }
+System.Platform: typename {
+.kind: static const typename(void)
+.base: `typename`
+.size: 0
+.name: 'Platform'
+.owner: System
+.field WebAssembly: int64 (size: 0, cast: static const i64)
+.field Windows: int64 (size: 0, cast: static const i64)
+.field MacOS: int64 (size: 0, cast: static const i64)
+.field Linux: int64 (size: 0, cast: static const i64)
+.field Unix: int64 (size: 0, cast: static const i64)
+}
+System.Platform.WebAssembly: int64 {
+.kind: static const i64
+.base: `int64`
+.size: 0
+.name: 'WebAssembly'
+.owner: System.Platform
+.value: 0
+}
+System.Platform.Windows: int64 {
+.kind: static const i64
+.base: `int64`
+.size: 0
+.name: 'Windows'
+.owner: System.Platform
+.value: 0
+}
+System.Platform.MacOS: int64 {
+.kind: static const i64
+.base: `int64`
+.size: 0
+.name: 'MacOS'
+.owner: System.Platform
+.value: 0
+}
+System.Platform.Linux: int64 {
+.kind: static const i64
+.base: `int64`
+.size: 0
+.name: 'Linux'
+.owner: System.Platform
+.value: 1
+}
+System.Platform.Unix: int64 {
+.kind: static const i64
+.base: `int64`
+.size: 0
+.name: 'Unix'
+.owner: System.Platform
+.value: 1
+}
 true: bool {
 .kind: static const val
 .base: `bool`
@@ -3219,11 +3292,11 @@ true: bool {
 	cmplGfx/lib/image.ci:151: referenced as `true`
 	cmplStd/lib/text/string.ci:57: referenced as `true`
 	cmplStd/lib/text/string.ci:42: referenced as `true`
-	cmplStd/lib/math.ci:475: referenced as `true`
-	cmplStd/lib/math.ci:428: referenced as `true`
-	cmplStd/lib/math.ci:389: referenced as `true`
-	cmplStd/lib/math.ci:385: referenced as `true`
-	cmplStd/lib/math.ci:374: referenced as `true`
+	cmplStd/lib/math.ci:491: referenced as `true`
+	cmplStd/lib/math.ci:444: referenced as `true`
+	cmplStd/lib/math.ci:405: referenced as `true`
+	cmplStd/lib/math.ci:401: referenced as `true`
+	cmplStd/lib/math.ci:390: referenced as `true`
 }
 false: bool {
 .kind: static const val
@@ -3239,10 +3312,10 @@ false: bool {
 	cmplStd/lib/text/string.ci:54: referenced as `false`
 	cmplStd/lib/text/string.ci:50: referenced as `false`
 	cmplStd/lib/text/string.ci:39: referenced as `false`
-	cmplStd/lib/math.ci:473: referenced as `false`
-	cmplStd/lib/math.ci:425: referenced as `false`
-	cmplStd/lib/math.ci:370: referenced as `false`
-	cmplStd/lib/math.ci:369: referenced as `false`
+	cmplStd/lib/math.ci:489: referenced as `false`
+	cmplStd/lib/math.ci:441: referenced as `false`
+	cmplStd/lib/math.ci:386: referenced as `false`
+	cmplStd/lib/math.ci:385: referenced as `false`
 }
 byte: typename {
 .kind: inline
@@ -3818,9 +3891,9 @@ Math: typename {
 .field cmp: function (size: 57, cast: static function)
 .field cmp: function (size: 57, cast: static function)
 .field sinCos: function (size: 335, cast: static function)
-.field sin: function (size: 0, cast: static inline)
-.field cos: function (size: 0, cast: static inline)
-.field tan: function (size: 378, cast: static function)
+.field sin: function (size: 26, cast: static function)
+.field cos: function (size: 49, cast: static function)
+.field tan: function (size: 387, cast: static function)
 .field sinh: function (size: 241, cast: static function)
 .field cosh: function (size: 75, cast: static function)
 .field asin: function (size: 173, cast: static function)
@@ -3858,10 +3931,10 @@ Math.pi: float64 {
 .doc: 'pi'
 .value: 3.141593
 .usages:
-	cmplStd/lib/math.ci:529: referenced as `pi`
-	cmplStd/lib/math.ci:526: referenced as `pi`
+	cmplStd/lib/math.ci:545: referenced as `pi`
+	cmplStd/lib/math.ci:542: referenced as `pi`
+	cmplStd/lib/math.ci:518: referenced as `pi`
 	cmplStd/lib/math.ci:502: referenced as `pi`
-	cmplStd/lib/math.ci:486: referenced as `pi`
 }
 Math.e: float64 {
 .kind: static const val
@@ -3987,8 +4060,8 @@ Math.nan: float64 {
 .usages:
 	cmplStd/lib/text/string.ci:327: referenced as `nan`
 	cmplStd/lib/text/string.ci:315: referenced as `nan`
-	cmplStd/lib/math.ci:481: referenced as `nan`
-	cmplStd/lib/math.ci:402: referenced as `nan`
+	cmplStd/lib/math.ci:497: referenced as `nan`
+	cmplStd/lib/math.ci:418: referenced as `nan`
 	cmplStd/lib/math.ci:222: referenced as `nan`
 	cmplStd/lib/math.ci:208: referenced as `nan`
 }
@@ -4083,7 +4156,7 @@ Math.modf(x: float64, intPart: float64): float64: function {
 .usages:
 	cmplStd/lib/text/string.ci:284: referenced as `modf`
 	cmplStd/lib/text/string.ci:267: referenced as `modf`
-	cmplStd/lib/math.ci:379: referenced as `modf`
+	cmplStd/lib/math.ci:395: referenced as `modf`
 	cmplStd/lib/math.ci:327: referenced as `modf`
 	cmplStd/lib/math.ci:323: referenced as `modf`
 	cmplStd/lib/math.ci:49: referenced as `modf`
@@ -4381,7 +4454,7 @@ Math.abs(x: float64): float64: function {
 	cmplStd/lib/text/string.ci:267: referenced as `abs`
 	cmplStd/lib/math/Complex.ci:90: referenced as `abs`
 	cmplStd/lib/math/Complex.ci:90: referenced as `abs`
-	cmplStd/lib/math.ci:353: referenced as `abs`
+	cmplStd/lib/math.ci:364: referenced as `abs`
 }
 Math.min(a: int32, b: int32): int32: function {
 .kind: static inline
@@ -4789,7 +4862,7 @@ Math.smooth(t: float64, a: float64, b: float64): float64: function {
 .value: smooth(clamp((t - a) / (b - a), 0.000000, 1.000000))
 .usages:
 }
-Math.min(data: float64[]): float64: function {
+Math.min(values: float64[]): float64: function {
 .kind: static function
 .base: `function`
 .size: 79
@@ -4797,22 +4870,22 @@ Math.min(data: float64[]): float64: function {
 .file: 'cmplStd/lib/math.ci:206'
 .owner: Math
 .param .result: float64 (size: 8, cast: variable(f64))
-.param data: float64[] (size: 8, cast: variable(arr))
+.param values: float64[] (size: 8, cast: variable(arr))
 .doc: 'Returns the smaller value from the input values'
 .value: {
-	if (data.length == (0)) {
+	if (values.length == (0)) {
 		return .result := nan;
 	}
-	result: float64 := data[0];
-	for (i: int32 := 1; i < (data.length); i := i + 1) {
-		if (result > data[i]) {
-			result := data[i];
+	result: float64 := values[0];
+	for (i: int32 := 1; i < (values.length); i := i + 1) {
+		if (result > values[i]) {
+			result := values[i];
 		}
 	}
 	return .result := result;
 }
 .instructions: (79 bytes)
-	cmplStd/lib/math.ci:207: (20 bytes): if (data.length == (0))
+	cmplStd/lib/math.ci:207: (20 bytes): if (values.length == (0))
 	<min>  : dup.x32 sp(2)
 	<min+?>: load.z32
 	<min+?>: ceq.i32
@@ -4821,13 +4894,13 @@ Math.min(data: float64[]): float64: function {
 	<min+?>: load.f64 -nan
 	<min+?>: set.x64 sp(5)
 	<min+?>: ret
-	cmplStd/lib/math.ci:210: (3 bytes): result: float64 := data[0]
+	cmplStd/lib/math.ci:210: (3 bytes): result: float64 := values[0]
 	<min+?>: dup.x32 sp(1)
 	<min+?>: load.i64
-	cmplStd/lib/math.ci:211: (53 bytes): for (i: int32 := 1; i < (data.length); i := i + 1)
+	cmplStd/lib/math.ci:211: (53 bytes): for (i: int32 := 1; i < (values.length); i := i + 1)
 	<min+?>: load.c32 1
 	<min+?>: jmp +35
-	cmplStd/lib/math.ci:212: (27 bytes): if (result > data[i])
+	cmplStd/lib/math.ci:212: (27 bytes): if (result > values[i])
 	<min+?>: dup.x64 sp(1)
 	<min+?>: dup.x32 sp(6)
 	<min+?>: dup.x32 sp(3)
@@ -4835,7 +4908,7 @@ Math.min(data: float64[]): float64: function {
 	<min+?>: load.i64
 	<min+?>: cgt.f64
 	<min+?>: jz +15
-	cmplStd/lib/math.ci:213: (11 bytes): result := data[i];
+	cmplStd/lib/math.ci:213: (11 bytes): result := values[i];
 	<min+?>: dup.x32 sp(4)
 	<min+?>: dup.x32 sp(1)
 	<min+?>: mad.u32 8
@@ -4843,7 +4916,7 @@ Math.min(data: float64[]): float64: function {
 	<min+?>: set.x64 sp(3)
 	cmplStd/lib/math.ci:211: (4 bytes): i := i + 1
 	<min+?>: inc.i32(+1)
-	cmplStd/lib/math.ci:211: (9 bytes): i < (data.length)
+	cmplStd/lib/math.ci:211: (9 bytes): i < (values.length)
 	<min+?>: dup.x32 sp(0)
 	<min+?>: dup.x32 sp(6)
 	<min+?>: clt.i32
@@ -4854,7 +4927,7 @@ Math.min(data: float64[]): float64: function {
 	<min+?>: ret
 .usages:
 }
-Math.max(data: float64[]): float64: function {
+Math.max(values: float64[]): float64: function {
 .kind: static function
 .base: `function`
 .size: 79
@@ -4862,22 +4935,22 @@ Math.max(data: float64[]): float64: function {
 .file: 'cmplStd/lib/math.ci:220'
 .owner: Math
 .param .result: float64 (size: 8, cast: variable(f64))
-.param data: float64[] (size: 8, cast: variable(arr))
+.param values: float64[] (size: 8, cast: variable(arr))
 .doc: 'Returns the greater value from the input values'
 .value: {
-	if (data.length == (0)) {
+	if (values.length == (0)) {
 		return .result := nan;
 	}
-	result: float64 := data[0];
-	for (i: int32 := 1; i < (data.length); i := i + 1) {
-		if (result < data[i]) {
-			result := data[i];
+	result: float64 := values[0];
+	for (i: int32 := 1; i < (values.length); i := i + 1) {
+		if (result < values[i]) {
+			result := values[i];
 		}
 	}
 	return .result := result;
 }
 .instructions: (79 bytes)
-	cmplStd/lib/math.ci:221: (20 bytes): if (data.length == (0))
+	cmplStd/lib/math.ci:221: (20 bytes): if (values.length == (0))
 	<max>  : dup.x32 sp(2)
 	<max+?>: load.z32
 	<max+?>: ceq.i32
@@ -4886,13 +4959,13 @@ Math.max(data: float64[]): float64: function {
 	<max+?>: load.f64 -nan
 	<max+?>: set.x64 sp(5)
 	<max+?>: ret
-	cmplStd/lib/math.ci:224: (3 bytes): result: float64 := data[0]
+	cmplStd/lib/math.ci:224: (3 bytes): result: float64 := values[0]
 	<max+?>: dup.x32 sp(1)
 	<max+?>: load.i64
-	cmplStd/lib/math.ci:225: (53 bytes): for (i: int32 := 1; i < (data.length); i := i + 1)
+	cmplStd/lib/math.ci:225: (53 bytes): for (i: int32 := 1; i < (values.length); i := i + 1)
 	<max+?>: load.c32 1
 	<max+?>: jmp +35
-	cmplStd/lib/math.ci:226: (27 bytes): if (result < data[i])
+	cmplStd/lib/math.ci:226: (27 bytes): if (result < values[i])
 	<max+?>: dup.x64 sp(1)
 	<max+?>: dup.x32 sp(6)
 	<max+?>: dup.x32 sp(3)
@@ -4900,7 +4973,7 @@ Math.max(data: float64[]): float64: function {
 	<max+?>: load.i64
 	<max+?>: clt.f64
 	<max+?>: jz +15
-	cmplStd/lib/math.ci:227: (11 bytes): result := data[i];
+	cmplStd/lib/math.ci:227: (11 bytes): result := values[i];
 	<max+?>: dup.x32 sp(4)
 	<max+?>: dup.x32 sp(1)
 	<max+?>: mad.u32 8
@@ -4908,7 +4981,7 @@ Math.max(data: float64[]): float64: function {
 	<max+?>: set.x64 sp(3)
 	cmplStd/lib/math.ci:225: (4 bytes): i := i + 1
 	<max+?>: inc.i32(+1)
-	cmplStd/lib/math.ci:225: (9 bytes): i < (data.length)
+	cmplStd/lib/math.ci:225: (9 bytes): i < (values.length)
 	<max+?>: dup.x32 sp(0)
 	<max+?>: dup.x32 sp(6)
 	<max+?>: clt.i32
@@ -4919,7 +4992,7 @@ Math.max(data: float64[]): float64: function {
 	<max+?>: ret
 .usages:
 }
-Math.sum(data: float64[]): float64: function {
+Math.sum(values: float64[]): float64: function {
 .kind: static function
 .base: `function`
 .size: 40
@@ -4927,22 +5000,22 @@ Math.sum(data: float64[]): float64: function {
 .file: 'cmplStd/lib/math.ci:234'
 .owner: Math
 .param .result: float64 (size: 8, cast: variable(f64))
-.param data: float64[] (size: 8, cast: variable(arr))
+.param values: float64[] (size: 8, cast: variable(arr))
 .doc: 'Returns the sum of the input values'
 .value: {
 	result: float64 := 0;
-	for (i: int32 := 0; i < (data.length); i := i + 1) {
-		result := result + data[i];
+	for (i: int32 := 0; i < (values.length); i := i + 1) {
+		result := result + values[i];
 	}
 	return .result := result;
 }
 .instructions: (40 bytes)
 	cmplStd/lib/math.ci:235: (1 byte): result: float64 := 0
 	<sum>  : load.z128
-	cmplStd/lib/math.ci:236: (36 bytes): for (i: int32 := 0; i < (data.length); i := i + 1)
+	cmplStd/lib/math.ci:236: (36 bytes): for (i: int32 := 0; i < (values.length); i := i + 1)
 	<sum+?>: i64.2i32
 	<sum+?>: jmp +22
-	cmplStd/lib/math.ci:237: (14 bytes): result := result + data[i];
+	cmplStd/lib/math.ci:237: (14 bytes): result := result + values[i];
 	<sum+?>: dup.x64 sp(1)
 	<sum+?>: dup.x32 sp(6)
 	<sum+?>: dup.x32 sp(3)
@@ -4952,7 +5025,7 @@ Math.sum(data: float64[]): float64: function {
 	<sum+?>: set.x64 sp(3)
 	cmplStd/lib/math.ci:236: (4 bytes): i := i + 1
 	<sum+?>: inc.i32(+1)
-	cmplStd/lib/math.ci:236: (9 bytes): i < (data.length)
+	cmplStd/lib/math.ci:236: (9 bytes): i < (values.length)
 	<sum+?>: dup.x32 sp(0)
 	<sum+?>: dup.x32 sp(6)
 	<sum+?>: clt.i32
@@ -4964,7 +5037,7 @@ Math.sum(data: float64[]): float64: function {
 .usages:
 	cmplStd/lib/math.ci:244: referenced as `sum`
 }
-Math.mean(data: float64[]): float64: function {
+Math.mean(values: float64[]): float64: function {
 .kind: static function
 .base: `function`
 .size: 20
@@ -4972,16 +5045,16 @@ Math.mean(data: float64[]): float64: function {
 .file: 'cmplStd/lib/math.ci:243'
 .owner: Math
 .param .result: float64 (size: 8, cast: variable(f64))
-.param data: float64[] (size: 8, cast: variable(arr))
+.param values: float64[] (size: 8, cast: variable(arr))
 .doc: 'Returns the mean of the input values'
 .value: {
-	return .result := sum(...data) / (signed(data.length));
+	return .result := sum(...values) / (signed(values.length));
 }
 .instructions: (20 bytes)
-	cmplStd/lib/math.ci:244: (20 bytes): return .result := sum(...data) / (signed(data.length));
+	cmplStd/lib/math.ci:244: (20 bytes): return .result := sum(...values) / (signed(values.length));
 	<mean>  : load.z64
 	<mean+?>: dup.x64 sp(3)
-	<mean+?>: load.ref <?> ;Math.sum(data: float64[]): float64
+	<mean+?>: load.ref <?> ;Math.sum(values: float64[]): float64
 	<mean+?>: call
 	<mean+?>: inc.sp(-8)
 	<mean+?>: dup.x32 sp(4)
@@ -5407,46 +5480,98 @@ Math.sinCos(arg: float64, quad: int32): float64: function {
 	<sinCos+?>: inc.sp(-40)
 	<sinCos+?>: ret
 .usages:
-	cmplStd/lib/math.ci:353: referenced as `sinCos`
-	cmplStd/lib/math.ci:350: referenced as `sinCos`
+	cmplStd/lib/math.ci:364: referenced as `sinCos`
+	cmplStd/lib/math.ci:355: referenced as `sinCos`
 }
 Math.sin(arg: float64): float64: function {
-.kind: static inline
+.kind: static function
 .base: `function`
-.size: 0
+.size: 26
 .name: 'sin'
 .file: 'cmplStd/lib/math.ci:350'
 .owner: Math
-.param .result: float64 (size: 8, cast: f64)
-.param arg: float64 (size: 8, cast: f64)
+.param .result: float64 (size: 8, cast: variable(f64))
+.param arg: float64 (size: 8, cast: variable(f64))
 .doc: 'Returns the sine of the input'
-.value: sinCos(arg, 0)
+.value: {
+	static if ((typename(float64.sin)) != null) {
+		return .result := float64.sin(arg);
+	}
+	return .result := sinCos(arg, 0);
+}
+.instructions: (26 bytes)
+	cmplStd/lib/math.ci:353: (9 bytes): return .result := float64.sin(arg);
+	<sin>  : dup.x64 sp(1)
+	<sin+?>: nfc(42) ;float64.sin(x: float64): float64
+	<sin+?>: set.x64 sp(5)
+	<sin+?>: ret
+	cmplStd/lib/math.ci:355: (17 bytes): return .result := sinCos(arg, 0);
+	<sin+?>: load.z64
+	<sin+?>: dup.x64 sp(3)
+	<sin+?>: load.z32
+	<sin+?>: load.ref <?> ;Math.sinCos(arg: float64, quad: int32): float64
+	<sin+?>: call
+	<sin+?>: inc.sp(-12)
+	<sin+?>: set.x64 sp(5)
+	<sin+?>: ret
 .usages:
 }
 Math.cos(arg: float64): float64: function {
-.kind: static inline
+.kind: static function
 .base: `function`
-.size: 0
+.size: 49
 .name: 'cos'
-.file: 'cmplStd/lib/math.ci:353'
+.file: 'cmplStd/lib/math.ci:359'
 .owner: Math
-.param .result: float64 (size: 8, cast: f64)
-.param arg: float64 (size: 8, cast: f64)
+.param .result: float64 (size: 8, cast: variable(f64))
+.param arg: float64 (size: 8, cast: variable(f64))
 .doc: 'Returns the cosine of the input'
-.value: sinCos(abs(arg), 1)
+.value: {
+	static if ((typename(float64.cos)) != null) {
+		return .result := float64.cos(arg);
+	}
+	return .result := sinCos(abs(arg), 1);
+}
+.instructions: (49 bytes)
+	cmplStd/lib/math.ci:362: (9 bytes): return .result := float64.cos(arg);
+	<cos>  : dup.x64 sp(1)
+	<cos+?>: nfc(43) ;float64.cos(x: float64): float64
+	<cos+?>: set.x64 sp(5)
+	<cos+?>: ret
+	cmplStd/lib/math.ci:364: (40 bytes): return .result := sinCos(abs(arg), 1);
+	<cos+?>: load.z64
+	<cos+?>: dup.x64 sp(3)
+	<cos+?>: dup.x64 sp(0)
+	<cos+?>: load.z64
+	<cos+?>: clt.f64
+	<cos+?>: jz +11
+	<cos+?>: dup.x64 sp(0)
+	<cos+?>: neg.f64
+	<cos+?>: jmp +6
+	<cos+?>: dup.x64 sp(0)
+	<cos+?>: set.x64 sp(2)
+	<cos+?>: load.c32 1
+	<cos+?>: load.ref <?> ;Math.sinCos(arg: float64, quad: int32): float64
+	<cos+?>: call
+	<cos+?>: inc.sp(-12)
+	<cos+?>: set.x64 sp(5)
+	<cos+?>: ret
 .usages:
 }
 Math.tan(arg: float64): float64: function {
 .kind: static function
 .base: `function`
-.size: 378
+.size: 387
 .name: 'tan'
-.file: 'cmplStd/lib/math.ci:356'
+.file: 'cmplStd/lib/math.ci:368'
 .owner: Math
 .param .result: float64 (size: 8, cast: variable(f64))
 .param arg: float64 (size: 8, cast: variable(f64))
 .doc: 'Returns the tangent of the input'
 .value: {
+	static if ((typename(float64.tan)) != null) {
+		return .result := float64.tan(arg);
+	}
 	complement: bool := false;
 	negate: bool := false;
 	if (arg < (0)) {
@@ -5484,101 +5609,106 @@ Math.tan(arg: float64): float64: function {
 	}
 	return .result := result;
 }
-.instructions: (378 bytes)
-	cmplStd/lib/math.ci:369: (1 byte): complement: bool := false
-	<tan>  : load.z32
-	cmplStd/lib/math.ci:370: (1 byte): negate: bool := false
+.instructions: (387 bytes)
+	cmplStd/lib/math.ci:371: (9 bytes): return .result := float64.tan(arg);
+	<tan>  : dup.x64 sp(1)
+	<tan+?>: nfc(44) ;float64.tan(x: float64): float64
+	<tan+?>: set.x64 sp(5)
+	<tan+?>: ret
+	cmplStd/lib/math.ci:385: (1 byte): complement: bool := false
 	<tan+?>: load.z32
-	cmplStd/lib/math.ci:372: (23 bytes): if (arg < (0))
+	cmplStd/lib/math.ci:386: (1 byte): negate: bool := false
+	<tan+?>: load.z32
+	cmplStd/lib/math.ci:388: (23 bytes): if (arg < (0))
 	<tan+?>: dup.x64 sp(3)
 	<tan+?>: load.z64
 	<tan+?>: clt.f64
 	<tan+?>: jz +19
-	cmplStd/lib/math.ci:373: (5 bytes): arg := -arg;
+	cmplStd/lib/math.ci:389: (5 bytes): arg := -arg;
 	<tan+?>: dup.x64 sp(3)
 	<tan+?>: neg.f64
 	<tan+?>: set.x64 sp(5)
-	cmplStd/lib/math.ci:374: (10 bytes): negate := true;
+	cmplStd/lib/math.ci:390: (10 bytes): negate := true;
 	<tan+?>: load.c32 1
 	<tan+?>: load.sp(+4)
 	<tan+?>: store.i8
-	cmplStd/lib/math.ci:376: (24 bytes): arg := (2) * arg / PIO2;
+	cmplStd/lib/math.ci:392: (24 bytes): arg := (2) * arg / PIO2;
 	<tan+?>: load.f64 2.000000
 	<tan+?>: dup.x64 sp(5)
 	<tan+?>: mul.f64
 	<tan+?>: load.f64 1.570796
 	<tan+?>: div.f64
 	<tan+?>: set.x64 sp(5)
-	cmplStd/lib/math.ci:378: (1 byte): e: float64
+	cmplStd/lib/math.ci:394: (1 byte): e: float64
 	<tan+?>: load.z128
-	cmplStd/lib/math.ci:379: (16 bytes): x: float64 := modf(arg, &e)
+	cmplStd/lib/math.ci:395: (16 bytes): x: float64 := modf(arg, &e)
 	<tan+?>: dup.x64 sp(7)
 	<tan+?>: load.sp(+16)
 	<tan+?>: load.ref <?> ;Math.modf(x: float64, intPart: float64): float64
 	<tan+?>: call
 	<tan+?>: inc.sp(-12)
-	cmplStd/lib/math.ci:380: (9 bytes): i: int32 := int32(e) % 4
+	cmplStd/lib/math.ci:396: (9 bytes): i: int32 := int32(e) % 4
 	<tan+?>: dup.x64 sp(2)
 	<tan+?>: f64.2i32
 	<tan+?>: load.c32 4
 	<tan+?>: mod.i32
-	cmplStd/lib/math.ci:382: (122 bytes): if (i == 0)
+	cmplStd/lib/math.ci:398: (122 bytes): if (i == 0)
 	<tan+?>: dup.x32 sp(0)
 	<tan+?>: load.z32
 	<tan+?>: ceq.i32
 	<tan+?>: jnz +118
-	cmplStd/lib/math.ci:383: (114 bytes): if (i == 1)
+	cmplStd/lib/math.ci:399: (114 bytes): if (i == 1)
 	<tan+?>: dup.x32 sp(0)
 	<tan+?>: load.c32 1
 	<tan+?>: ceq.i32
 	<tan+?>: jz +32
-	cmplStd/lib/math.ci:384: (14 bytes): x := (1) - x;
+	cmplStd/lib/math.ci:400: (14 bytes): x := (1) - x;
 	<tan+?>: load.f64 1.000000
 	<tan+?>: dup.x64 sp(3)
 	<tan+?>: sub.f64
 	<tan+?>: set.x64 sp(3)
-	cmplStd/lib/math.ci:385: (10 bytes): complement := true;
+	cmplStd/lib/math.ci:401: (10 bytes): complement := true;
 	<tan+?>: load.c32 1
 	<tan+?>: load.sp(+28)
 	<tan+?>: store.i8
 	<tan+?>: jmp +78
-	cmplStd/lib/math.ci:387: (74 bytes): if (i == 2)
+	cmplStd/lib/math.ci:403: (74 bytes): if (i == 2)
 	<tan+?>: dup.x32 sp(0)
 	<tan+?>: load.c32 2
 	<tan+?>: ceq.i32
 	<tan+?>: jz +29
-	cmplStd/lib/math.ci:388: (11 bytes): negate := !negate;
+	cmplStd/lib/math.ci:404: (11 bytes): negate := !negate;
 	<tan+?>: load.sp(+20)
 	<tan+?>: load.i8
 	<tan+?>: not.b32
 	<tan+?>: load.sp(+24)
 	<tan+?>: store.i8
-	cmplStd/lib/math.ci:389: (10 bytes): complement := true;
+	cmplStd/lib/math.ci:405: (10 bytes): complement := true;
 	<tan+?>: load.c32 1
 	<tan+?>: load.sp(+28)
 	<tan+?>: store.i8
 	<tan+?>: jmp +41
-	cmplStd/lib/math.ci:391: (37 bytes): if (i == 3)
+	cmplStd/lib/math.ci:407: (37 bytes): if (i == 3)
 	<tan+?>: dup.x32 sp(0)
 	<tan+?>: load.c32 3
 	<tan+?>: ceq.i32
 	<tan+?>: jz +29
-	cmplStd/lib/math.ci:392: (14 bytes): x := (1) - x;
+	cmplStd/lib/math.ci:408: (14 bytes): x := (1) - x;
 	<tan+?>: load.f64 1.000000
 	<tan+?>: dup.x64 sp(3)
 	<tan+?>: sub.f64
 	<tan+?>: set.x64 sp(3)
-	cmplStd/lib/math.ci:393: (11 bytes): negate := !negate;
+	cmplStd/lib/math.ci:409: (11 bytes): negate := !negate;
 	<tan+?>: load.sp(+20)
 	<tan+?>: load.i8
 	<tan+?>: not.b32
 	<tan+?>: load.sp(+24)
 	<tan+?>: store.i8
-	cmplStd/lib/math.ci:396: (5 bytes): xsq: float64 := x * x
+	cmplStd/lib/math.ci:412: (5 bytes): xsq: float64 := x * x
 	<tan+?>: dup.x64 sp(1)
 	<tan+?>: dup.x64 sp(3)
 	<tan+?>: mul.f64
-	cmplStd/lib/math.ci:397: (64 bytes): result: float64 := ((((p4 * xsq + p3) * xsq + p2) * xsq + p1) * xsq + p0) * x
+	cmplStd/lib/math.ci:413: (64 bytes): result: float64 := ((((p4 * xsq + p3) * xsq + p2) * xsq + p1) * xsq + p0) * x
 	<tan+?>: load.f64 0.000034
 	<tan+?>: dup.x64 sp(2)
 	<tan+?>: mul.f64
@@ -5598,7 +5728,7 @@ Math.tan(arg: float64): float64: function {
 	<tan+?>: add.f64
 	<tan+?>: dup.x64 sp(5)
 	<tan+?>: mul.f64
-	cmplStd/lib/math.ci:398: (39 bytes): result := result / (((xsq + q2) * xsq + q1) * xsq + q0);
+	cmplStd/lib/math.ci:414: (39 bytes): result := result / (((xsq + q2) * xsq + q1) * xsq + q0);
 	<tan+?>: dup.x64 sp(2)
 	<tan+?>: load.f64 -155.503316
 	<tan+?>: add.f64
@@ -5611,36 +5741,36 @@ Math.tan(arg: float64): float64: function {
 	<tan+?>: load.f64 -16638.952389
 	<tan+?>: add.f64
 	<tan+?>: div.f64
-	cmplStd/lib/math.ci:400: (47 bytes): if (complement)
+	cmplStd/lib/math.ci:416: (47 bytes): if (complement)
 	<tan+?>: load.sp(+40)
 	<tan+?>: load.i8
 	<tan+?>: jz +42
-	cmplStd/lib/math.ci:401: (24 bytes): if (result == (0))
+	cmplStd/lib/math.ci:417: (24 bytes): if (result == (0))
 	<tan+?>: dup.x64 sp(0)
 	<tan+?>: load.z64
 	<tan+?>: ceq.f64
 	<tan+?>: jz +20
-	cmplStd/lib/math.ci:402: (16 bytes): return .result := nan;
+	cmplStd/lib/math.ci:418: (16 bytes): return .result := nan;
 	<tan+?>: load.f64 -nan
 	<tan+?>: set.x64 sp(16)
 	<tan+?>: inc.sp(-44)
 	<tan+?>: ret
-	cmplStd/lib/math.ci:404: (14 bytes): result := (1) / result;
+	cmplStd/lib/math.ci:420: (14 bytes): result := (1) / result;
 	<tan+?>: load.f64 1.000000
 	<tan+?>: dup.x64 sp(2)
 	<tan+?>: div.f64
 	<tan+?>: set.x64 sp(2)
-	cmplStd/lib/math.ci:406: (19 bytes): if (negate)
+	cmplStd/lib/math.ci:422: (19 bytes): if (negate)
 	<tan+?>: load.sp(+36)
 	<tan+?>: load.i8
 	<tan+?>: jz +14
-	cmplStd/lib/math.ci:407: (10 bytes): return .result := -result;
+	cmplStd/lib/math.ci:423: (10 bytes): return .result := -result;
 	<tan+?>: dup.x64 sp(0)
 	<tan+?>: neg.f64
 	<tan+?>: set.x64 sp(16)
 	<tan+?>: inc.sp(-44)
 	<tan+?>: ret
-	cmplStd/lib/math.ci:409: (7 bytes): return .result := result;
+	cmplStd/lib/math.ci:425: (7 bytes): return .result := result;
 	<tan+?>: set.x64 sp(14)
 	<tan+?>: inc.sp(-36)
 	<tan+?>: ret
@@ -5651,7 +5781,7 @@ Math.sinh(x: float64): float64: function {
 .base: `function`
 .size: 241
 .name: 'sinh'
-.file: 'cmplStd/lib/math.ci:413'
+.file: 'cmplStd/lib/math.ci:429'
 .owner: Math
 .param .result: float64 (size: 8, cast: variable(f64))
 .param x: float64 (size: 8, cast: variable(f64))
@@ -5680,27 +5810,27 @@ Math.sinh(x: float64): float64: function {
 	return .result := result;
 }
 .instructions: (241 bytes)
-	cmplStd/lib/math.ci:425: (1 byte): negate: bool := false
+	cmplStd/lib/math.ci:441: (1 byte): negate: bool := false
 	<sinh>  : load.z32
-	cmplStd/lib/math.ci:426: (23 bytes): if (x < (0))
+	cmplStd/lib/math.ci:442: (23 bytes): if (x < (0))
 	<sinh+?>: dup.x64 sp(2)
 	<sinh+?>: load.z64
 	<sinh+?>: clt.f64
 	<sinh+?>: jz +19
-	cmplStd/lib/math.ci:427: (5 bytes): x := -x;
+	cmplStd/lib/math.ci:443: (5 bytes): x := -x;
 	<sinh+?>: dup.x64 sp(2)
 	<sinh+?>: neg.f64
 	<sinh+?>: set.x64 sp(4)
-	cmplStd/lib/math.ci:428: (10 bytes): negate := true;
+	cmplStd/lib/math.ci:444: (10 bytes): negate := true;
 	<sinh+?>: load.c32 1
 	<sinh+?>: load.sp(+4)
 	<sinh+?>: store.i8
-	cmplStd/lib/math.ci:431: (39 bytes): if (x > (21))
+	cmplStd/lib/math.ci:447: (39 bytes): if (x > (21))
 	<sinh+?>: dup.x64 sp(2)
 	<sinh+?>: load.f64 21.000000
 	<sinh+?>: cgt.f64
 	<sinh+?>: jz +27
-	cmplStd/lib/math.ci:432: (23 bytes): return .result := float64.exp(x) / (2);
+	cmplStd/lib/math.ci:448: (23 bytes): return .result := float64.exp(x) / (2);
 	<sinh+?>: dup.x64 sp(2)
 	<sinh+?>: nfc(46) ;float64.exp(x: float64): float64
 	<sinh+?>: load.f64 2.000000
@@ -5708,14 +5838,14 @@ Math.sinh(x: float64): float64: function {
 	<sinh+?>: set.x64 sp(6)
 	<sinh+?>: inc.sp(-4)
 	<sinh+?>: ret
-	cmplStd/lib/math.ci:435: (1 byte): result: float64
+	cmplStd/lib/math.ci:451: (1 byte): result: float64
 	<sinh+?>: load.z64
-	cmplStd/lib/math.ci:436: (151 bytes): if (x > 0.500000)
+	cmplStd/lib/math.ci:452: (151 bytes): if (x > 0.500000)
 	<sinh+?>: dup.x64 sp(4)
 	<sinh+?>: load.f64 0.500000
 	<sinh+?>: cgt.f64
 	<sinh+?>: jz +34
-	cmplStd/lib/math.ci:437: (26 bytes): result := (float64.exp(x) - float64.exp(-x)) / (2);
+	cmplStd/lib/math.ci:453: (26 bytes): result := (float64.exp(x) - float64.exp(-x)) / (2);
 	<sinh+?>: dup.x64 sp(4)
 	<sinh+?>: nfc(46) ;float64.exp(x: float64): float64
 	<sinh+?>: dup.x64 sp(6)
@@ -5726,11 +5856,11 @@ Math.sinh(x: float64): float64: function {
 	<sinh+?>: div.f64
 	<sinh+?>: set.x64 sp(2)
 	<sinh+?>: jmp +109
-	cmplStd/lib/math.ci:440: (5 bytes): sq: float64 := x * x
+	cmplStd/lib/math.ci:456: (5 bytes): sq: float64 := x * x
 	<sinh+?>: dup.x64 sp(4)
 	<sinh+?>: dup.x64 sp(6)
 	<sinh+?>: mul.f64
-	cmplStd/lib/math.ci:441: (53 bytes): result := (((P3 * sq + P2) * sq + P1) * sq + P0) * x;
+	cmplStd/lib/math.ci:457: (53 bytes): result := (((P3 * sq + P2) * sq + P1) * sq + P0) * x;
 	<sinh+?>: load.f64 -26.305632
 	<sinh+?>: dup.x64 sp(2)
 	<sinh+?>: mul.f64
@@ -5747,7 +5877,7 @@ Math.sinh(x: float64): float64: function {
 	<sinh+?>: dup.x64 sp(8)
 	<sinh+?>: mul.f64
 	<sinh+?>: set.x64 sp(4)
-	cmplStd/lib/math.ci:442: (43 bytes): result := result / (((sq + Q2) * sq + Q1) * sq + Q0);
+	cmplStd/lib/math.ci:458: (43 bytes): result := result / (((sq + Q2) * sq + Q1) * sq + Q0);
 	<sinh+?>: dup.x64 sp(2)
 	<sinh+?>: dup.x64 sp(2)
 	<sinh+?>: load.f64 -173.678954
@@ -5763,17 +5893,17 @@ Math.sinh(x: float64): float64: function {
 	<sinh+?>: div.f64
 	<sinh+?>: set.x64 sp(4)
 	<sinh+?>: inc.sp(-8)
-	cmplStd/lib/math.ci:445: (19 bytes): if (negate)
+	cmplStd/lib/math.ci:461: (19 bytes): if (negate)
 	<sinh+?>: load.sp(+8)
 	<sinh+?>: load.i8
 	<sinh+?>: jz +14
-	cmplStd/lib/math.ci:446: (10 bytes): return .result := -result;
+	cmplStd/lib/math.ci:462: (10 bytes): return .result := -result;
 	<sinh+?>: dup.x64 sp(0)
 	<sinh+?>: neg.f64
 	<sinh+?>: set.x64 sp(8)
 	<sinh+?>: inc.sp(-12)
 	<sinh+?>: ret
-	cmplStd/lib/math.ci:448: (7 bytes): return .result := result;
+	cmplStd/lib/math.ci:464: (7 bytes): return .result := result;
 	<sinh+?>: set.x64 sp(6)
 	<sinh+?>: inc.sp(-4)
 	<sinh+?>: ret
@@ -5786,7 +5916,7 @@ Math.cosh(x: float64): float64: function {
 .base: `function`
 .size: 75
 .name: 'cosh'
-.file: 'cmplStd/lib/math.ci:452'
+.file: 'cmplStd/lib/math.ci:468'
 .owner: Math
 .param .result: float64 (size: 8, cast: variable(f64))
 .param x: float64 (size: 8, cast: variable(f64))
@@ -5801,28 +5931,28 @@ Math.cosh(x: float64): float64: function {
 	return .result := (float64.exp(x) + float64.exp(-x)) / (2);
 }
 .instructions: (75 bytes)
-	cmplStd/lib/math.ci:453: (13 bytes): if (x < (0))
+	cmplStd/lib/math.ci:469: (13 bytes): if (x < (0))
 	<cosh>  : dup.x64 sp(1)
 	<cosh+?>: load.z64
 	<cosh+?>: clt.f64
 	<cosh+?>: jz +9
-	cmplStd/lib/math.ci:454: (5 bytes): x := -x;
+	cmplStd/lib/math.ci:470: (5 bytes): x := -x;
 	<cosh+?>: dup.x64 sp(1)
 	<cosh+?>: neg.f64
 	<cosh+?>: set.x64 sp(3)
-	cmplStd/lib/math.ci:456: (35 bytes): if (x > (21))
+	cmplStd/lib/math.ci:472: (35 bytes): if (x > (21))
 	<cosh+?>: dup.x64 sp(1)
 	<cosh+?>: load.f64 21.000000
 	<cosh+?>: cgt.f64
 	<cosh+?>: jz +23
-	cmplStd/lib/math.ci:457: (19 bytes): return .result := float64.exp(x) / (2);
+	cmplStd/lib/math.ci:473: (19 bytes): return .result := float64.exp(x) / (2);
 	<cosh+?>: dup.x64 sp(1)
 	<cosh+?>: nfc(46) ;float64.exp(x: float64): float64
 	<cosh+?>: load.f64 2.000000
 	<cosh+?>: div.f64
 	<cosh+?>: set.x64 sp(5)
 	<cosh+?>: ret
-	cmplStd/lib/math.ci:459: (27 bytes): return .result := (float64.exp(x) + float64.exp(-x)) / (2);
+	cmplStd/lib/math.ci:475: (27 bytes): return .result := (float64.exp(x) + float64.exp(-x)) / (2);
 	<cosh+?>: dup.x64 sp(1)
 	<cosh+?>: nfc(46) ;float64.exp(x: float64): float64
 	<cosh+?>: dup.x64 sp(3)
@@ -5842,7 +5972,7 @@ Math.asin(x: float64): float64: function {
 .base: `function`
 .size: 173
 .name: 'asin'
-.file: 'cmplStd/lib/math.ci:467'
+.file: 'cmplStd/lib/math.ci:483'
 .owner: Math
 .param .result: float64 (size: 8, cast: variable(f64))
 .param x: float64 (size: 8, cast: variable(f64))
@@ -5875,52 +6005,52 @@ Math.asin(x: float64): float64: function {
 	return .result := result;
 }
 .instructions: (173 bytes)
-	cmplStd/lib/math.ci:468: (12 bytes): if (x == (0))
+	cmplStd/lib/math.ci:484: (12 bytes): if (x == (0))
 	<asin>  : dup.x64 sp(1)
 	<asin+?>: load.z64
 	<asin+?>: ceq.f64
 	<asin+?>: jz +8
-	cmplStd/lib/math.ci:470: (4 bytes): return .result := x;
+	cmplStd/lib/math.ci:486: (4 bytes): return .result := x;
 	<asin+?>: mov.x64 sp(3, 1)
 	<asin+?>: ret
-	cmplStd/lib/math.ci:473: (1 byte): negate: bool := false
+	cmplStd/lib/math.ci:489: (1 byte): negate: bool := false
 	<asin+?>: load.z32
-	cmplStd/lib/math.ci:474: (23 bytes): if (x < (0))
+	cmplStd/lib/math.ci:490: (23 bytes): if (x < (0))
 	<asin+?>: dup.x64 sp(2)
 	<asin+?>: load.z64
 	<asin+?>: clt.f64
 	<asin+?>: jz +19
-	cmplStd/lib/math.ci:475: (10 bytes): negate := true;
+	cmplStd/lib/math.ci:491: (10 bytes): negate := true;
 	<asin+?>: load.c32 1
 	<asin+?>: load.sp(+4)
 	<asin+?>: store.i8
-	cmplStd/lib/math.ci:476: (5 bytes): x := -x;
+	cmplStd/lib/math.ci:492: (5 bytes): x := -x;
 	<asin+?>: dup.x64 sp(2)
 	<asin+?>: neg.f64
 	<asin+?>: set.x64 sp(4)
-	cmplStd/lib/math.ci:479: (32 bytes): if (x > (1))
+	cmplStd/lib/math.ci:495: (32 bytes): if (x > (1))
 	<asin+?>: dup.x64 sp(2)
 	<asin+?>: load.f64 1.000000
 	<asin+?>: cgt.f64
 	<asin+?>: jz +20
-	cmplStd/lib/math.ci:481: (16 bytes): return .result := nan;
+	cmplStd/lib/math.ci:497: (16 bytes): return .result := nan;
 	<asin+?>: load.f64 -nan
 	<asin+?>: set.x64 sp(6)
 	<asin+?>: inc.sp(-4)
 	<asin+?>: ret
-	cmplStd/lib/math.ci:484: (19 bytes): result: float64 := float64.sqrt((1) - x * x)
+	cmplStd/lib/math.ci:500: (19 bytes): result: float64 := float64.sqrt((1) - x * x)
 	<asin+?>: load.f64 1.000000
 	<asin+?>: dup.x64 sp(4)
 	<asin+?>: dup.x64 sp(6)
 	<asin+?>: mul.f64
 	<asin+?>: sub.f64
 	<asin+?>: nfc(48) ;float64.sqrt(x: float64): float64
-	cmplStd/lib/math.ci:485: (60 bytes): if (x > 0.700000)
+	cmplStd/lib/math.ci:501: (60 bytes): if (x > 0.700000)
 	<asin+?>: dup.x64 sp(4)
 	<asin+?>: load.f64 0.700000
 	<asin+?>: cgt.f64
 	<asin+?>: jz +38
-	cmplStd/lib/math.ci:486: (30 bytes): result := pi / (2) - float64.atan2(result, x);
+	cmplStd/lib/math.ci:502: (30 bytes): result := pi / (2) - float64.atan2(result, x);
 	<asin+?>: load.f64 3.141593
 	<asin+?>: load.f64 2.000000
 	<asin+?>: div.f64
@@ -5930,34 +6060,34 @@ Math.asin(x: float64): float64: function {
 	<asin+?>: sub.f64
 	<asin+?>: set.x64 sp(2)
 	<asin+?>: jmp +14
-	cmplStd/lib/math.ci:489: (10 bytes): result := float64.atan2(x, result);
+	cmplStd/lib/math.ci:505: (10 bytes): result := float64.atan2(x, result);
 	<asin+?>: dup.x64 sp(4)
 	<asin+?>: dup.x64 sp(2)
 	<asin+?>: nfc(49) ;float64.atan2(x: float64, y: float64): float64
 	<asin+?>: set.x64 sp(2)
-	cmplStd/lib/math.ci:492: (19 bytes): if (negate)
+	cmplStd/lib/math.ci:508: (19 bytes): if (negate)
 	<asin+?>: load.sp(+8)
 	<asin+?>: load.i8
 	<asin+?>: jz +14
-	cmplStd/lib/math.ci:493: (10 bytes): return .result := -result;
+	cmplStd/lib/math.ci:509: (10 bytes): return .result := -result;
 	<asin+?>: dup.x64 sp(0)
 	<asin+?>: neg.f64
 	<asin+?>: set.x64 sp(8)
 	<asin+?>: inc.sp(-12)
 	<asin+?>: ret
-	cmplStd/lib/math.ci:495: (7 bytes): return .result := result;
+	cmplStd/lib/math.ci:511: (7 bytes): return .result := result;
 	<asin+?>: set.x64 sp(6)
 	<asin+?>: inc.sp(-4)
 	<asin+?>: ret
 .usages:
-	cmplStd/lib/math.ci:502: referenced as `asin`
+	cmplStd/lib/math.ci:518: referenced as `asin`
 }
 Math.acos(x: float64): float64: function {
 .kind: static inline
 .base: `function`
 .size: 0
 .name: 'acos'
-.file: 'cmplStd/lib/math.ci:502'
+.file: 'cmplStd/lib/math.ci:518'
 .owner: Math
 .param .result: float64 (size: 8, cast: f64)
 .param x: float64 (size: 8, cast: f64)
@@ -5972,7 +6102,7 @@ Math.radians(degrees: float64): float64: function {
 .base: `function`
 .size: 0
 .name: 'radians'
-.file: 'cmplStd/lib/math.ci:526'
+.file: 'cmplStd/lib/math.ci:542'
 .owner: Math
 .param .result: float64 (size: 8, cast: f64)
 .param degrees: float64 (size: 8, cast: f64)
@@ -5986,7 +6116,7 @@ Math.degrees(radians: float64): float64: function {
 .base: `function`
 .size: 0
 .name: 'degrees'
-.file: 'cmplStd/lib/math.ci:529'
+.file: 'cmplStd/lib/math.ci:545'
 .owner: Math
 .param .result: float64 (size: 8, cast: f64)
 .param radians: float64 (size: 8, cast: f64)
@@ -11528,11 +11658,9 @@ File: typename {
 .field open: function (size: 0, cast: static const inline)
 .field create: function (size: 0, cast: static const inline)
 .field append: function (size: 0, cast: static const inline)
-.field read: function (size: 0, cast: static const inline)
 .field peek: function (size: 0, cast: static const inline)
 .field read: function (size: 0, cast: static const inline)
 .field readLine: function (size: 0, cast: static const inline)
-.field write: function (size: 0, cast: static const inline)
 .field write: function (size: 0, cast: static const inline)
 .field flush: function (size: 0, cast: static const inline)
 .field close: function (size: 0, cast: static const inline)
@@ -11542,7 +11670,7 @@ File: typename {
 .field err: File (size: 0, cast: static const inline)
 .field log: File (size: 0, cast: static const inline)
 .usages:
-	internal usages: 16
+	internal usages: 14
 }
 File.open(path: char[*]): File: function {
 .kind: static const inline
@@ -11577,17 +11705,6 @@ File.append(path: char[*]): File: function {
 .value: nfc(52)
 .usages:
 }
-File.read(file: File): int32: function {
-.kind: static const inline
-.base: `function`
-.size: 0
-.name: 'read'
-.owner: File
-.param .result: int32 (size: 4, cast: inline)
-.param file: File (size: 8, cast: variable(val))
-.value: nfc(53)
-.usages:
-}
 File.peek(file: File): int32: function {
 .kind: static const inline
 .base: `function`
@@ -11596,7 +11713,7 @@ File.peek(file: File): int32: function {
 .owner: File
 .param .result: int32 (size: 4, cast: inline)
 .param file: File (size: 8, cast: variable(val))
-.value: nfc(54)
+.value: nfc(53)
 .usages:
 }
 File.read(file: File, buff: uint8[]): int32: function {
@@ -11608,7 +11725,7 @@ File.read(file: File, buff: uint8[]): int32: function {
 .param .result: int32 (size: 4, cast: inline)
 .param file: File (size: 8, cast: variable(val))
 .param buff: uint8[] (size: 8, cast: variable(arr))
-.value: nfc(55)
+.value: nfc(54)
 .usages:
 }
 File.readLine(file: File, buff: uint8[]): int32: function {
@@ -11620,19 +11737,7 @@ File.readLine(file: File, buff: uint8[]): int32: function {
 .param .result: int32 (size: 4, cast: inline)
 .param file: File (size: 8, cast: variable(val))
 .param buff: uint8[] (size: 8, cast: variable(arr))
-.value: nfc(56)
-.usages:
-}
-File.write(file: File, byte: uint8): int32: function {
-.kind: static const inline
-.base: `function`
-.size: 0
-.name: 'write'
-.owner: File
-.param .result: int32 (size: 4, cast: inline)
-.param file: File (size: 8, cast: variable(val))
-.param byte: uint8 (size: 4, cast: variable(u32))
-.value: nfc(57)
+.value: nfc(55)
 .usages:
 }
 File.write(file: File, buff: uint8[]): int32: function {
@@ -11644,7 +11749,7 @@ File.write(file: File, buff: uint8[]): int32: function {
 .param .result: int32 (size: 4, cast: inline)
 .param file: File (size: 8, cast: variable(val))
 .param buff: uint8[] (size: 8, cast: const variable(arr))
-.value: nfc(58)
+.value: nfc(56)
 .usages:
 }
 File.flush(file: File): void: function {
@@ -11655,7 +11760,7 @@ File.flush(file: File): void: function {
 .owner: File
 .param .result: void (size: 0, cast: inline)
 .param file: File (size: 8, cast: variable(val))
-.value: nfc(59)
+.value: nfc(57)
 .usages:
 }
 File.close(file: File): void: function {
@@ -11666,7 +11771,7 @@ File.close(file: File): void: function {
 .owner: File
 .param .result: void (size: 0, cast: inline)
 .param file: File (size: 8, cast: variable(val))
-.value: nfc(60)
+.value: nfc(58)
 .usages:
 }
 File.tell(file: File): int32: function {
@@ -11677,7 +11782,7 @@ File.tell(file: File): int32: function {
 .owner: File
 .param .result: int32 (size: 4, cast: inline)
 .param file: File (size: 8, cast: variable(val))
-.value: nfc(61)
+.value: nfc(59)
 .usages:
 }
 File.in: File {
@@ -11686,7 +11791,7 @@ File.in: File {
 .size: 0
 .name: 'in'
 .owner: File
-.value: nfc(62)
+.value: nfc(60)
 .usages:
 }
 File.out: File {
@@ -11695,7 +11800,7 @@ File.out: File {
 .size: 0
 .name: 'out'
 .owner: File
-.value: nfc(63)
+.value: nfc(61)
 .usages:
 }
 File.err: File {
@@ -11704,7 +11809,7 @@ File.err: File {
 .size: 0
 .name: 'err'
 .owner: File
-.value: nfc(64)
+.value: nfc(62)
 .usages:
 }
 File.log: File {
@@ -11713,7 +11818,7 @@ File.log: File {
 .size: 0
 .name: 'log'
 .owner: File
-.value: nfc(65)
+.value: nfc(63)
 .usages:
 }
 Rect: typename {
@@ -11955,7 +12060,7 @@ Image.create(width: int32, height: int32, depth: int32): Image: function {
 .param width: int32 (size: 4, cast: variable(i32))
 .param height: int32 (size: 4, cast: variable(i32))
 .param depth: int32 (size: 4, cast: variable(i32))
-.value: nfc(84)
+.value: nfc(82)
 .usages:
 	cmplGfx/lib/image.ci:6: referenced as `create`
 	cmplGfx/lib/image.ci:2: referenced as `create`
@@ -11969,7 +12074,7 @@ Image.create3d(width: int32, height: int32): Image: function {
 .param .result: Image (size: 8, cast: inline)
 .param width: int32 (size: 4, cast: variable(i32))
 .param height: int32 (size: 4, cast: variable(i32))
-.value: nfc(85)
+.value: nfc(83)
 .usages:
 	cmplGfx/gfxlib.ci:307: referenced as `create3d`
 }
@@ -11985,7 +12090,7 @@ Image.recycle(recycle: Image, width: int32, height: int32, depth: int32, flags: 
 .param height: int32 (size: 4, cast: variable(i32))
 .param depth: int32 (size: 4, cast: variable(i32))
 .param flags: int32 (size: 4, cast: variable(i32))
-.value: nfc(86)
+.value: nfc(84)
 .usages:
 }
 Image.slice(image: Image, recycle: Image, rect: Rect): Image: function {
@@ -11998,7 +12103,7 @@ Image.slice(image: Image, recycle: Image, rect: Rect): Image: function {
 .param image: Image (size: 8, cast: variable(val))
 .param recycle: Image (size: 8, cast: variable(val))
 .param rect: Rect (size: 4, cast: const variable(ref))
-.value: nfc(87)
+.value: nfc(85)
 .usages:
 	cmplGfx/lib/image.ci:116: referenced as `slice`
 }
@@ -12010,7 +12115,7 @@ Image.destroy(image: Image): void: function {
 .owner: Image
 .param .result: void (size: 0, cast: inline)
 .param image: Image (size: 8, cast: variable(val))
-.value: nfc(88)
+.value: nfc(86)
 .usages:
 	cmplGfx/gfxlib.ci:314: referenced as `destroy`
 	cmplGfx/gfxlib.ci:162: referenced as `destroy`
@@ -12027,7 +12132,7 @@ Image.openBmp(path: char[*], depth: int32): Image: function {
 .param .result: Image (size: 8, cast: inline)
 .param path: char[*] (size: 4, cast: const variable(ref))
 .param depth: int32 (size: 4, cast: variable(i32))
-.value: nfc(89)
+.value: nfc(87)
 .usages:
 	cmplGfx/lib/image.ci:84: referenced as `openBmp`
 }
@@ -12040,7 +12145,7 @@ Image.openPng(path: char[*], depth: int32): Image: function {
 .param .result: Image (size: 8, cast: inline)
 .param path: char[*] (size: 4, cast: const variable(ref))
 .param depth: int32 (size: 4, cast: variable(i32))
-.value: nfc(90)
+.value: nfc(88)
 .usages:
 }
 Image.openJpg(path: char[*], depth: int32): Image: function {
@@ -12052,7 +12157,7 @@ Image.openJpg(path: char[*], depth: int32): Image: function {
 .param .result: Image (size: 8, cast: inline)
 .param path: char[*] (size: 4, cast: const variable(ref))
 .param depth: int32 (size: 4, cast: variable(i32))
-.value: nfc(91)
+.value: nfc(89)
 .usages:
 }
 Image.openImg(path: char[*], depth: int32): Image: function {
@@ -12064,7 +12169,7 @@ Image.openImg(path: char[*], depth: int32): Image: function {
 .param .result: Image (size: 8, cast: inline)
 .param path: char[*] (size: 4, cast: const variable(ref))
 .param depth: int32 (size: 4, cast: variable(i32))
-.value: nfc(92)
+.value: nfc(90)
 .usages:
 	cmplGfx/lib/image.ci:86: referenced as `openImg`
 }
@@ -12077,7 +12182,7 @@ Image.openTtf(path: char[*], height: int32): Image: function {
 .param .result: Image (size: 8, cast: inline)
 .param path: char[*] (size: 4, cast: const variable(ref))
 .param height: int32 (size: 4, cast: variable(i32))
-.value: nfc(93)
+.value: nfc(91)
 .usages:
 }
 Image.openFnt(path: char[*]): Image: function {
@@ -12088,7 +12193,7 @@ Image.openFnt(path: char[*]): Image: function {
 .owner: Image
 .param .result: Image (size: 8, cast: inline)
 .param path: char[*] (size: 4, cast: const variable(ref))
-.value: nfc(94)
+.value: nfc(92)
 .usages:
 }
 Image.saveBmp(image: Image, path: char[*], flags: int32): void: function {
@@ -12101,7 +12206,7 @@ Image.saveBmp(image: Image, path: char[*], flags: int32): void: function {
 .param image: Image (size: 8, cast: variable(val))
 .param path: char[*] (size: 4, cast: const variable(ref))
 .param flags: int32 (size: 4, cast: variable(i32))
-.value: nfc(95)
+.value: nfc(93)
 .usages:
 	cmplGfx/gfxlib.ci:125: referenced as `saveBmp`
 	cmplGfx/gfxlib.ci:124: referenced as `saveBmp`
@@ -12112,7 +12217,7 @@ Image.null: Image {
 .size: 0
 .name: 'null'
 .owner: Image
-.value: nfc(96)
+.value: nfc(94)
 .usages:
 }
 Image.width(image: Image): int32: function {
@@ -12123,7 +12228,7 @@ Image.width(image: Image): int32: function {
 .owner: Image
 .param .result: int32 (size: 4, cast: inline)
 .param image: Image (size: 8, cast: variable(val))
-.value: nfc(97)
+.value: nfc(95)
 .usages:
 	cmplGfx/lib/image.ci:210: referenced as `width`
 	cmplGfx/lib/image.ci:196: referenced as `width`
@@ -12144,7 +12249,7 @@ Image.height(image: Image): int32: function {
 .owner: Image
 .param .result: int32 (size: 4, cast: inline)
 .param image: Image (size: 8, cast: variable(val))
-.value: nfc(98)
+.value: nfc(96)
 .usages:
 	cmplGfx/lib/image.ci:211: referenced as `height`
 	cmplGfx/lib/image.ci:197: referenced as `height`
@@ -12165,7 +12270,7 @@ Image.depth(image: Image): int32: function {
 .owner: Image
 .param .result: int32 (size: 4, cast: inline)
 .param image: Image (size: 8, cast: variable(val))
-.value: nfc(99)
+.value: nfc(97)
 .usages:
 	cmplGfx/lib/image.ci:116: referenced as `depth`
 	cmplGfx/lib/image.ci:26: referenced as `depth`
@@ -12181,7 +12286,7 @@ Image.get(image: Image, x: int32, y: int32): int32: function {
 .param image: Image (size: 8, cast: variable(val))
 .param x: int32 (size: 4, cast: variable(i32))
 .param y: int32 (size: 4, cast: variable(i32))
-.value: nfc(100)
+.value: nfc(98)
 .usages:
 }
 Image.set(image: Image, x: int32, y: int32, color: uint32): void: function {
@@ -12195,7 +12300,7 @@ Image.set(image: Image, x: int32, y: int32, color: uint32): void: function {
 .param x: int32 (size: 4, cast: variable(i32))
 .param y: int32 (size: 4, cast: variable(i32))
 .param color: uint32 (size: 4, cast: variable(u32))
-.value: nfc(101)
+.value: nfc(99)
 .usages:
 	cmplGfx/lib/image.ci:107: referenced as `set`
 }
@@ -12209,7 +12314,7 @@ Image.tex(image: Image, x: float32, y: float32): vec4f: function {
 .param image: Image (size: 8, cast: variable(val))
 .param x: float32 (size: 4, cast: variable(f32))
 .param y: float32 (size: 4, cast: variable(f32))
-.value: nfc(102)
+.value: nfc(100)
 .usages:
 }
 Image.drawRect(image: Image, x1: int32, y1: int32, x2: int32, y2: int32, color: int32): void: function {
@@ -12225,7 +12330,7 @@ Image.drawRect(image: Image, x1: int32, y1: int32, x2: int32, y2: int32, color: 
 .param x2: int32 (size: 4, cast: variable(i32))
 .param y2: int32 (size: 4, cast: variable(i32))
 .param color: int32 (size: 4, cast: variable(i32))
-.value: nfc(103)
+.value: nfc(101)
 .usages:
 	cmplGfx/lib/image.ci:284: referenced as `drawRect`
 }
@@ -12242,7 +12347,7 @@ Image.fillRect(image: Image, x1: int32, y1: int32, x2: int32, y2: int32, color: 
 .param x2: int32 (size: 4, cast: variable(i32))
 .param y2: int32 (size: 4, cast: variable(i32))
 .param color: int32 (size: 4, cast: variable(i32))
-.value: nfc(104)
+.value: nfc(102)
 .usages:
 	cmplGfx/lib/image.ci:293: referenced as `fillRect`
 	cmplGfx/lib/image.ci:260: referenced as `fillRect`
@@ -12263,7 +12368,7 @@ Image.drawOval(image: Image, x1: int32, y1: int32, x2: int32, y2: int32, color: 
 .param x2: int32 (size: 4, cast: variable(i32))
 .param y2: int32 (size: 4, cast: variable(i32))
 .param color: int32 (size: 4, cast: variable(i32))
-.value: nfc(105)
+.value: nfc(103)
 .usages:
 }
 Image.fillOval(image: Image, x1: int32, y1: int32, x2: int32, y2: int32, color: int32): void: function {
@@ -12279,7 +12384,7 @@ Image.fillOval(image: Image, x1: int32, y1: int32, x2: int32, y2: int32, color: 
 .param x2: int32 (size: 4, cast: variable(i32))
 .param y2: int32 (size: 4, cast: variable(i32))
 .param color: int32 (size: 4, cast: variable(i32))
-.value: nfc(106)
+.value: nfc(104)
 .usages:
 }
 Image.drawLine(image: Image, x1: int32, y1: int32, x2: int32, y2: int32, color: int32): void: function {
@@ -12295,7 +12400,7 @@ Image.drawLine(image: Image, x1: int32, y1: int32, x2: int32, y2: int32, color: 
 .param x2: int32 (size: 4, cast: variable(i32))
 .param y2: int32 (size: 4, cast: variable(i32))
 .param color: int32 (size: 4, cast: variable(i32))
-.value: nfc(107)
+.value: nfc(105)
 .usages:
 }
 Image.drawBezier(image: Image, x1: int32, y1: int32, x2: int32, y2: int32, x3: int32, y3: int32, color: int32): void: function {
@@ -12313,7 +12418,7 @@ Image.drawBezier(image: Image, x1: int32, y1: int32, x2: int32, y2: int32, x3: i
 .param x3: int32 (size: 4, cast: variable(i32))
 .param y3: int32 (size: 4, cast: variable(i32))
 .param color: int32 (size: 4, cast: variable(i32))
-.value: nfc(108)
+.value: nfc(106)
 .usages:
 }
 Image.drawBezier(image: Image, x1: int32, y1: int32, x2: int32, y2: int32, x3: int32, y3: int32, x4: int32, y4: int32, color: int32): void: function {
@@ -12333,7 +12438,7 @@ Image.drawBezier(image: Image, x1: int32, y1: int32, x2: int32, y2: int32, x3: i
 .param x4: int32 (size: 4, cast: variable(i32))
 .param y4: int32 (size: 4, cast: variable(i32))
 .param color: int32 (size: 4, cast: variable(i32))
-.value: nfc(109)
+.value: nfc(107)
 .usages:
 }
 Image.clipText(font: Image, rect: Rect, text: char[*]): void: function {
@@ -12346,7 +12451,7 @@ Image.clipText(font: Image, rect: Rect, text: char[*]): void: function {
 .param font: Image (size: 8, cast: variable(val))
 .param rect: Rect (size: 4, cast: variable(ref))
 .param text: char[*] (size: 4, cast: const variable(ref))
-.value: nfc(110)
+.value: nfc(108)
 .usages:
 }
 Image.drawText(image: Image, x: int32, y: int32, font: Image, text: char[*], color: int32): void: function {
@@ -12362,7 +12467,7 @@ Image.drawText(image: Image, x: int32, y: int32, font: Image, text: char[*], col
 .param font: Image (size: 8, cast: variable(val))
 .param text: char[*] (size: 4, cast: const variable(ref))
 .param color: int32 (size: 4, cast: variable(i32))
-.value: nfc(111)
+.value: nfc(109)
 .usages:
 }
 Image.drawText(image: Image, roi: Rect, font: Image, text: char[*], color: int32): void: function {
@@ -12377,7 +12482,7 @@ Image.drawText(image: Image, roi: Rect, font: Image, text: char[*], color: int32
 .param font: Image (size: 8, cast: variable(val))
 .param text: char[*] (size: 4, cast: const variable(ref))
 .param color: int32 (size: 4, cast: variable(i32))
-.value: nfc(112)
+.value: nfc(110)
 .usages:
 }
 Image.copy(image: Image, x: int32, y: int32, src: Image, roi: Rect): void: function {
@@ -12392,7 +12497,7 @@ Image.copy(image: Image, x: int32, y: int32, src: Image, roi: Rect): void: funct
 .param y: int32 (size: 4, cast: variable(i32))
 .param src: Image (size: 8, cast: variable(val))
 .param roi: Rect (size: 4, cast: const variable(ref))
-.value: nfc(113)
+.value: nfc(111)
 .usages:
 	cmplGfx/gfxlib.ci:72: referenced as `copy`
 	cmplGfx/gfxlib.ci:68: referenced as `copy`
@@ -12414,7 +12519,7 @@ Image.blend(image: Image, x: int32, y: int32, src: Image, roi: Rect, alpha: int3
 .param alpha: int32 (size: 4, cast: variable(i32))
 .param dstAlpha: bool (size: 4, cast: variable(bool))
 .param blend: function (size: 4, cast: variable(ref))
-.value: nfc(114)
+.value: nfc(112)
 .usages:
 	cmplGfx/gfxlib.ci:26: referenced as `blend`
 }
@@ -12431,7 +12536,7 @@ Image.transform(image: Image, rect: Rect, src: Image, roi: Rect, interpolate: in
 .param roi: Rect (size: 4, cast: const variable(ref))
 .param interpolate: int32 (size: 4, cast: variable(i32))
 .param mat: float32[16] (size: 4, cast: const variable(ref))
-.value: nfc(115)
+.value: nfc(113)
 .usages:
 	cmplGfx/gfxlib.ci:31: referenced as `transform`
 	cmplGfx/lib/image.ci:113: referenced as `transform`
@@ -12447,7 +12552,7 @@ Image.blur(image: Image, radius: int32, sigma: float64): void: function {
 .param image: Image (size: 8, cast: variable(val))
 .param radius: int32 (size: 4, cast: variable(i32))
 .param sigma: float64 (size: 8, cast: variable(f64))
-.value: nfc(116)
+.value: nfc(114)
 .usages:
 	cmplGfx/gfxlib.ci:21: referenced as `blur`
 }
@@ -12461,7 +12566,7 @@ Image.colorMap(image: Image, roi: Rect, lut: uint32[256]): void: function {
 .param image: Image (size: 8, cast: variable(val))
 .param roi: Rect (size: 4, cast: const variable(ref))
 .param lut: uint32[256] (size: 4, cast: const variable(ref))
-.value: nfc(117)
+.value: nfc(115)
 .usages:
 	cmplGfx/lib/image.ci:110: referenced as `colorMap`
 }
@@ -12475,7 +12580,7 @@ Image.colorMat(image: Image, roi: Rect, mat: float32[16]): void: function {
 .param image: Image (size: 8, cast: variable(val))
 .param roi: Rect (size: 4, cast: const variable(ref))
 .param mat: float32[16] (size: 4, cast: const variable(ref))
-.value: nfc(118)
+.value: nfc(116)
 .usages:
 }
 Image.calcHueHist(image: Image, roi: Rect, lut: uint32[256]): void: function {
@@ -12488,7 +12593,7 @@ Image.calcHueHist(image: Image, roi: Rect, lut: uint32[256]): void: function {
 .param image: Image (size: 8, cast: variable(val))
 .param roi: Rect (size: 4, cast: const variable(ref))
 .param lut: uint32[256] (size: 4, cast: variable(ref))
-.value: nfc(119)
+.value: nfc(117)
 .usages:
 }
 Image.calcLumHist(image: Image, roi: Rect, lut: uint32[256]): void: function {
@@ -12501,7 +12606,7 @@ Image.calcLumHist(image: Image, roi: Rect, lut: uint32[256]): void: function {
 .param image: Image (size: 8, cast: variable(val))
 .param roi: Rect (size: 4, cast: const variable(ref))
 .param lut: uint32[256] (size: 4, cast: variable(ref))
-.value: nfc(120)
+.value: nfc(118)
 .usages:
 }
 Image.calcRgbHist(image: Image, roi: Rect, lut: uint32[256]): void: function {
@@ -12514,7 +12619,7 @@ Image.calcRgbHist(image: Image, roi: Rect, lut: uint32[256]): void: function {
 .param image: Image (size: 8, cast: variable(val))
 .param roi: Rect (size: 4, cast: const variable(ref))
 .param lut: uint32[256] (size: 4, cast: variable(ref))
-.value: nfc(121)
+.value: nfc(119)
 .usages:
 }
 Image.drawMesh(image: Image, mesh: Mesh, mode: int32): int32: function {
@@ -12527,7 +12632,7 @@ Image.drawMesh(image: Image, mesh: Mesh, mode: int32): int32: function {
 .param image: Image (size: 8, cast: variable(val))
 .param mesh: Mesh (size: 4, cast: variable(ref))
 .param mode: int32 (size: 4, cast: variable(i32))
-.value: nfc(122)
+.value: nfc(120)
 .usages:
 	cmplGfx/gfxlib.ci:282: referenced as `drawMesh`
 }
@@ -12593,7 +12698,7 @@ Mesh.create(size: int32): Mesh: function {
 .owner: Mesh
 .param .result: Mesh (size: 4, cast: inline)
 .param size: int32 (size: 4, cast: variable(i32))
-.value: nfc(66)
+.value: nfc(64)
 .usages:
 }
 Mesh.recycle(recycle: Mesh, size: int32): Mesh: function {
@@ -12605,7 +12710,7 @@ Mesh.recycle(recycle: Mesh, size: int32): Mesh: function {
 .param .result: Mesh (size: 4, cast: inline)
 .param recycle: Mesh (size: 4, cast: variable(ref))
 .param size: int32 (size: 4, cast: variable(i32))
-.value: nfc(67)
+.value: nfc(65)
 .usages:
 }
 Mesh.destroy(mesh: Mesh): void: function {
@@ -12616,7 +12721,7 @@ Mesh.destroy(mesh: Mesh): void: function {
 .owner: Mesh
 .param .result: void (size: 0, cast: inline)
 .param mesh: Mesh (size: 4, cast: variable(ref))
-.value: nfc(68)
+.value: nfc(66)
 .usages:
 }
 Mesh.openObj(path: char[*]): Mesh: function {
@@ -12627,7 +12732,7 @@ Mesh.openObj(path: char[*]): Mesh: function {
 .owner: Mesh
 .param .result: Mesh (size: 4, cast: inline)
 .param path: char[*] (size: 4, cast: const variable(ref))
-.value: nfc(69)
+.value: nfc(67)
 .usages:
 	cmplGfx/lib/mesh.ci:4: referenced as `openObj`
 }
@@ -12639,7 +12744,7 @@ Mesh.open3ds(path: char[*]): Mesh: function {
 .owner: Mesh
 .param .result: Mesh (size: 4, cast: inline)
 .param path: char[*] (size: 4, cast: const variable(ref))
-.value: nfc(70)
+.value: nfc(68)
 .usages:
 	cmplGfx/lib/mesh.ci:7: referenced as `open3ds`
 }
@@ -12652,7 +12757,7 @@ Mesh.saveObj(mesh: Mesh, path: char[*]): void: function {
 .param .result: void (size: 0, cast: inline)
 .param mesh: Mesh (size: 4, cast: variable(ref))
 .param path: char[*] (size: 4, cast: const variable(ref))
-.value: nfc(71)
+.value: nfc(69)
 .usages:
 }
 Mesh.normalize(mesh: Mesh, tolerance: float32, center: float32[3], resize: float32[3]): void: function {
@@ -12666,7 +12771,7 @@ Mesh.normalize(mesh: Mesh, tolerance: float32, center: float32[3], resize: float
 .param tolerance: float32 (size: 4, cast: variable(f32))
 .param center: float32[3] (size: 4, cast: variable(ref))
 .param resize: float32[3] (size: 4, cast: variable(ref))
-.value: nfc(72)
+.value: nfc(70)
 .usages:
 }
 Mesh.addVertex(mesh: Mesh, x: float32, y: float32, z: float32): int32: function {
@@ -12680,7 +12785,7 @@ Mesh.addVertex(mesh: Mesh, x: float32, y: float32, z: float32): int32: function 
 .param x: float32 (size: 4, cast: variable(f32))
 .param y: float32 (size: 4, cast: variable(f32))
 .param z: float32 (size: 4, cast: variable(f32))
-.value: nfc(73)
+.value: nfc(71)
 .usages:
 }
 Mesh.addFace(mesh: Mesh, v1: int32, v2: int32, v3: int32): int32: function {
@@ -12694,7 +12799,7 @@ Mesh.addFace(mesh: Mesh, v1: int32, v2: int32, v3: int32): int32: function {
 .param v1: int32 (size: 4, cast: variable(i32))
 .param v2: int32 (size: 4, cast: variable(i32))
 .param v3: int32 (size: 4, cast: variable(i32))
-.value: nfc(74)
+.value: nfc(72)
 .usages:
 }
 Mesh.addFace(mesh: Mesh, v1: int32, v2: int32, v3: int32, v4: int32): int32: function {
@@ -12709,7 +12814,7 @@ Mesh.addFace(mesh: Mesh, v1: int32, v2: int32, v3: int32, v4: int32): int32: fun
 .param v2: int32 (size: 4, cast: variable(i32))
 .param v3: int32 (size: 4, cast: variable(i32))
 .param v4: int32 (size: 4, cast: variable(i32))
-.value: nfc(75)
+.value: nfc(73)
 .usages:
 }
 Mesh.setVertex(mesh: Mesh, idx: int32, x: float32, y: float32, z: float32): bool: function {
@@ -12724,7 +12829,7 @@ Mesh.setVertex(mesh: Mesh, idx: int32, x: float32, y: float32, z: float32): bool
 .param x: float32 (size: 4, cast: variable(f32))
 .param y: float32 (size: 4, cast: variable(f32))
 .param z: float32 (size: 4, cast: variable(f32))
-.value: nfc(76)
+.value: nfc(74)
 .usages:
 }
 Mesh.setNormal(mesh: Mesh, idx: int32, x: float32, y: float32, z: float32): bool: function {
@@ -12739,7 +12844,7 @@ Mesh.setNormal(mesh: Mesh, idx: int32, x: float32, y: float32, z: float32): bool
 .param x: float32 (size: 4, cast: variable(f32))
 .param y: float32 (size: 4, cast: variable(f32))
 .param z: float32 (size: 4, cast: variable(f32))
-.value: nfc(77)
+.value: nfc(75)
 .usages:
 }
 Mesh.setTexture(mesh: Mesh, idx: int32, s: float32, t: float32): bool: function {
@@ -12753,7 +12858,7 @@ Mesh.setTexture(mesh: Mesh, idx: int32, s: float32, t: float32): bool: function 
 .param idx: int32 (size: 4, cast: variable(i32))
 .param s: float32 (size: 4, cast: variable(f32))
 .param t: float32 (size: 4, cast: variable(f32))
-.value: nfc(78)
+.value: nfc(76)
 .usages:
 }
 Mesh.ambient(mesh: Mesh, r: float32, g: float32, b: float32): void: function {
@@ -12767,7 +12872,7 @@ Mesh.ambient(mesh: Mesh, r: float32, g: float32, b: float32): void: function {
 .param r: float32 (size: 4, cast: variable(f32))
 .param g: float32 (size: 4, cast: variable(f32))
 .param b: float32 (size: 4, cast: variable(f32))
-.value: nfc(79)
+.value: nfc(77)
 .usages:
 }
 Mesh.diffuse(mesh: Mesh, r: float32, g: float32, b: float32): void: function {
@@ -12781,7 +12886,7 @@ Mesh.diffuse(mesh: Mesh, r: float32, g: float32, b: float32): void: function {
 .param r: float32 (size: 4, cast: variable(f32))
 .param g: float32 (size: 4, cast: variable(f32))
 .param b: float32 (size: 4, cast: variable(f32))
-.value: nfc(80)
+.value: nfc(78)
 .usages:
 }
 Mesh.specular(mesh: Mesh, r: float32, g: float32, b: float32): void: function {
@@ -12795,7 +12900,7 @@ Mesh.specular(mesh: Mesh, r: float32, g: float32, b: float32): void: function {
 .param r: float32 (size: 4, cast: variable(f32))
 .param g: float32 (size: 4, cast: variable(f32))
 .param b: float32 (size: 4, cast: variable(f32))
-.value: nfc(81)
+.value: nfc(79)
 .usages:
 }
 Mesh.shine(mesh: Mesh, value: float32): void: function {
@@ -12807,7 +12912,7 @@ Mesh.shine(mesh: Mesh, value: float32): void: function {
 .param .result: void (size: 0, cast: inline)
 .param mesh: Mesh (size: 4, cast: variable(ref))
 .param value: float32 (size: 4, cast: variable(f32))
-.value: nfc(82)
+.value: nfc(80)
 .usages:
 }
 Mesh.texture(mesh: Mesh, texture: Image): void: function {
@@ -12819,7 +12924,7 @@ Mesh.texture(mesh: Mesh, texture: Image): void: function {
 .param .result: void (size: 0, cast: inline)
 .param mesh: Mesh (size: 4, cast: variable(ref))
 .param texture: Image (size: 8, cast: variable(val))
-.value: nfc(83)
+.value: nfc(81)
 .usages:
 }
 Mesh.clearDepth: int64 {
@@ -12964,7 +13069,7 @@ gradient(image: Image, roi: Rect, type: int32, repeat: bool, colors: uint32[]): 
 .param type: int32 (size: 4, cast: variable(i32))
 .param repeat: bool (size: 4, cast: variable(bool))
 .param colors: uint32[] (size: 8, cast: variable(arr))
-.value: nfc(123)
+.value: nfc(121)
 .usages:
 }
 gradient.Linear: int64 {
@@ -13042,7 +13147,7 @@ camera(proj: float32[16], position: float32[4], forward: float32[4], right: floa
 .param forward: float32[4] (size: 4, cast: const variable(ref))
 .param right: float32[4] (size: 4, cast: const variable(ref))
 .param up: float32[4] (size: 4, cast: const variable(ref))
-.value: nfc(124)
+.value: nfc(122)
 .usages:
 	cmplGfx/gfxlib.ci:184: referenced as `camera`
 }
@@ -13076,7 +13181,7 @@ lights.enabled(light: int32): bool: function {
 .owner: lights
 .param .result: bool (size: 4, cast: inline)
 .param light: int32 (size: 4, cast: variable(i32))
-.value: nfc(125)
+.value: nfc(123)
 .usages:
 	cmplGfx/gfxlib.ci:224: referenced as `enabled`
 	cmplGfx/gfxlib.ci:221: referenced as `enabled`
@@ -13092,7 +13197,7 @@ lights.enable(light: int32, on: bool): void: function {
 .param .result: void (size: 0, cast: inline)
 .param light: int32 (size: 4, cast: variable(i32))
 .param on: bool (size: 4, cast: variable(bool))
-.value: nfc(126)
+.value: nfc(124)
 .usages:
 	cmplGfx/gfxlib.ci:224: referenced as `enable`
 	cmplGfx/gfxlib.ci:221: referenced as `enable`
@@ -13110,7 +13215,7 @@ lights.position(light: int32, x: float32, y: float32, z: float32): void: functio
 .param x: float32 (size: 4, cast: variable(f32))
 .param y: float32 (size: 4, cast: variable(f32))
 .param z: float32 (size: 4, cast: variable(f32))
-.value: nfc(127)
+.value: nfc(125)
 .usages:
 }
 lights.ambient(light: int32, r: float32, g: float32, b: float32): void: function {
@@ -13124,7 +13229,7 @@ lights.ambient(light: int32, r: float32, g: float32, b: float32): void: function
 .param r: float32 (size: 4, cast: variable(f32))
 .param g: float32 (size: 4, cast: variable(f32))
 .param b: float32 (size: 4, cast: variable(f32))
-.value: nfc(128)
+.value: nfc(126)
 .usages:
 }
 lights.diffuse(light: int32, r: float32, g: float32, b: float32): void: function {
@@ -13138,7 +13243,7 @@ lights.diffuse(light: int32, r: float32, g: float32, b: float32): void: function
 .param r: float32 (size: 4, cast: variable(f32))
 .param g: float32 (size: 4, cast: variable(f32))
 .param b: float32 (size: 4, cast: variable(f32))
-.value: nfc(129)
+.value: nfc(127)
 .usages:
 }
 lights.specular(light: int32, r: float32, g: float32, b: float32): void: function {
@@ -13152,7 +13257,7 @@ lights.specular(light: int32, r: float32, g: float32, b: float32): void: functio
 .param r: float32 (size: 4, cast: variable(f32))
 .param g: float32 (size: 4, cast: variable(f32))
 .param b: float32 (size: 4, cast: variable(f32))
-.value: nfc(130)
+.value: nfc(128)
 .usages:
 }
 lights.attenuation(light: int32, constant: float32, linear: float32, quadratic: float32): void: function {
@@ -13166,7 +13271,7 @@ lights.attenuation(light: int32, constant: float32, linear: float32, quadratic: 
 .param constant: float32 (size: 4, cast: variable(f32))
 .param linear: float32 (size: 4, cast: variable(f32))
 .param quadratic: float32 (size: 4, cast: variable(f32))
-.value: nfc(131)
+.value: nfc(129)
 .usages:
 }
 Gui: typename {
@@ -13359,7 +13464,7 @@ Gui.showWindow(surf: Image, closure: pointer, onEvent(closure: pointer, action: 
 .param surf: Image (size: 8, cast: variable(val))
 .param closure: pointer (size: 4, cast: variable(ref))
 .param onEvent: function (size: 4, cast: variable(ref))
-.value: nfc(132)
+.value: nfc(130)
 .usages:
 	cmplGfx/gfxlib.ci:313: referenced as `showWindow`
 	cmplGfx/gfxlib.ci:160: referenced as `showWindow`
@@ -13376,7 +13481,7 @@ Gui.setTitle(title: char[*]): void: function {
 .owner: Gui
 .param .result: void (size: 0, cast: inline)
 .param title: char[*] (size: 4, cast: const variable(ref))
-.value: nfc(133)
+.value: nfc(131)
 .usages:
 	cmplGfx/gfxlib.ci:293: referenced as `setTitle`
 	cmplGfx/gfxlib.ci:135: referenced as `setTitle`
@@ -13388,7 +13493,7 @@ Gui.font: Image {
 .size: 0
 .name: 'font'
 .owner: Gui
-.value: nfc(134)
+.value: nfc(132)
 .usages:
 }
 argb: typename {
@@ -15214,19 +15319,19 @@ Image(copy: Image): Image: function {
 .instructions: (40 bytes)
 	cmplGfx/lib/image.ci:6: (22 bytes): result: Image := Image.create(Image.width(copy), Image.height(copy), Image.depth(copy))
 	<Image>  : dup.x64 sp(1)
-	<Image+?>: nfc(97) ;Image.width(image: Image): int32
+	<Image+?>: nfc(95) ;Image.width(image: Image): int32
 	<Image+?>: dup.x64 sp(2)
-	<Image+?>: nfc(98) ;Image.height(image: Image): int32
+	<Image+?>: nfc(96) ;Image.height(image: Image): int32
 	<Image+?>: dup.x64 sp(3)
-	<Image+?>: nfc(99) ;Image.depth(image: Image): int32
-	<Image+?>: nfc(84) ;Image.create(width: int32, height: int32, depth: int32): Image
+	<Image+?>: nfc(97) ;Image.depth(image: Image): int32
+	<Image+?>: nfc(82) ;Image.create(width: int32, height: int32, depth: int32): Image
 	cmplGfx/lib/image.ci:7: (15 bytes): Image.copy(result, 0, 0, copy, null);
 	<Image+?>: dup.x64 sp(0)
 	<Image+?>: load.z32
 	<Image+?>: load.z32
 	<Image+?>: dup.x64 sp(7)
 	<Image+?>: load.ref <?> ;null
-	<Image+?>: nfc(113) ;Image.copy(image: Image, x: int32, y: int32, src: Image, roi: Rect): void
+	<Image+?>: nfc(111) ;Image.copy(image: Image, x: int32, y: int32, src: Image, roi: Rect): void
 	cmplGfx/lib/image.ci:8: (3 bytes): return .result := result;
 	<Image+?>: set.x64 sp(5)
 	<Image+?>: ret
@@ -15314,8 +15419,8 @@ Image(image: Image, width: int32, height: int32, align: int32, maxScale: float64
 	<Image+?>: dup.x32 sp(7)
 	<Image+?>: dup.x32 sp(7)
 	<Image+?>: dup.x64 sp(10)
-	<Image+?>: nfc(99) ;Image.depth(image: Image): int32
-	<Image+?>: nfc(84) ;Image.create(width: int32, height: int32, depth: int32): Image
+	<Image+?>: nfc(97) ;Image.depth(image: Image): int32
+	<Image+?>: nfc(82) ;Image.create(width: int32, height: int32, depth: int32): Image
 	cmplGfx/lib/image.ci:28: (4 bytes): alignVertical: int32 := align & fitVertical
 	<Image+?>: dup.x32 sp(7)
 	<Image+?>: b32.and 0x03
@@ -15344,14 +15449,14 @@ Image(image: Image, width: int32, height: int32, align: int32, maxScale: float64
 	<Image+?>: dup.x32 sp(13)
 	<Image+?>: i32.2f64
 	<Image+?>: dup.x64 sp(16)
-	<Image+?>: nfc(97) ;Image.width(image: Image): int32
+	<Image+?>: nfc(95) ;Image.width(image: Image): int32
 	<Image+?>: i32.2f64
 	<Image+?>: div.f64
 	cmplGfx/lib/image.ci:36: (11 bytes): heightScale: float64 := (height) / float64(Image.height(image))
 	<Image+?>: dup.x32 sp(14)
 	<Image+?>: i32.2f64
 	<Image+?>: dup.x64 sp(18)
-	<Image+?>: nfc(98) ;Image.height(image: Image): int32
+	<Image+?>: nfc(96) ;Image.height(image: Image): int32
 	<Image+?>: i32.2f64
 	<Image+?>: div.f64
 	cmplGfx/lib/image.ci:37: (74 bytes): if (align & fill)
@@ -15396,7 +15501,7 @@ Image(image: Image, width: int32, height: int32, align: int32, maxScale: float64
 	<Image+?>: dup.x32 sp(13)
 	<Image+?>: i32.2f64
 	<Image+?>: dup.x64 sp(16)
-	<Image+?>: nfc(97) ;Image.width(image: Image): int32
+	<Image+?>: nfc(95) ;Image.width(image: Image): int32
 	<Image+?>: i32.2f64
 	<Image+?>: div.f64
 	<Image+?>: set.x64 sp(8)
@@ -15409,7 +15514,7 @@ Image(image: Image, width: int32, height: int32, align: int32, maxScale: float64
 	<Image+?>: dup.x32 sp(12)
 	<Image+?>: i32.2f64
 	<Image+?>: dup.x64 sp(16)
-	<Image+?>: nfc(98) ;Image.height(image: Image): int32
+	<Image+?>: nfc(96) ;Image.height(image: Image): int32
 	<Image+?>: i32.2f64
 	<Image+?>: div.f64
 	<Image+?>: set.x64 sp(8)
@@ -15436,7 +15541,7 @@ Image(image: Image, width: int32, height: int32, align: int32, maxScale: float64
 	<Image+?>: dup.x32 sp(15)
 	<Image+?>: i32.2f64
 	<Image+?>: dup.x64 sp(18)
-	<Image+?>: nfc(97) ;Image.width(image: Image): int32
+	<Image+?>: nfc(95) ;Image.width(image: Image): int32
 	<Image+?>: i32.2f64
 	<Image+?>: dup.x64 sp(12)
 	<Image+?>: mul.f64
@@ -15454,7 +15559,7 @@ Image(image: Image, width: int32, height: int32, align: int32, maxScale: float64
 	<Image+?>: dup.x32 sp(15)
 	<Image+?>: i32.2f64
 	<Image+?>: dup.x64 sp(18)
-	<Image+?>: nfc(97) ;Image.width(image: Image): int32
+	<Image+?>: nfc(95) ;Image.width(image: Image): int32
 	<Image+?>: i32.2f64
 	<Image+?>: dup.x64 sp(12)
 	<Image+?>: mul.f64
@@ -15476,7 +15581,7 @@ Image(image: Image, width: int32, height: int32, align: int32, maxScale: float64
 	<Image+?>: dup.x32 sp(16)
 	<Image+?>: i32.2f64
 	<Image+?>: dup.x64 sp(20)
-	<Image+?>: nfc(98) ;Image.height(image: Image): int32
+	<Image+?>: nfc(96) ;Image.height(image: Image): int32
 	<Image+?>: i32.2f64
 	<Image+?>: dup.x64 sp(14)
 	<Image+?>: mul.f64
@@ -15494,7 +15599,7 @@ Image(image: Image, width: int32, height: int32, align: int32, maxScale: float64
 	<Image+?>: dup.x32 sp(16)
 	<Image+?>: i32.2f64
 	<Image+?>: dup.x64 sp(20)
-	<Image+?>: nfc(98) ;Image.height(image: Image): int32
+	<Image+?>: nfc(96) ;Image.height(image: Image): int32
 	<Image+?>: i32.2f64
 	<Image+?>: dup.x64 sp(14)
 	<Image+?>: mul.f64
@@ -15580,7 +15685,7 @@ Image(image: Image, width: int32, height: int32, align: int32, maxScale: float64
 	<Image+?>: jmp +5
 	<Image+?>: load.z32
 	<Image+?>: load.sp(+28)
-	<Image+?>: nfc(115) ;Image.transform(image: Image, rect: Rect, src: Image, roi: Rect, interpolate: int32, mat: float32[16]): void
+	<Image+?>: nfc(113) ;Image.transform(image: Image, rect: Rect, src: Image, roi: Rect, interpolate: int32, mat: float32[16]): void
 	cmplGfx/lib/image.ci:78: (8 bytes): return .result := result;
 	<Image+?>: mov.x64 sp(36, 24)
 	<Image+?>: inc.sp(-112)
@@ -15617,13 +15722,13 @@ Image(fileName: char[*], depth: int32): Image: function {
 	cmplGfx/lib/image.ci:84: (11 bytes): return .result := Image.openBmp(fileName, depth);
 	<Image+?>: dup.x32 sp(2)
 	<Image+?>: dup.x32 sp(2)
-	<Image+?>: nfc(89) ;Image.openBmp(path: char[*], depth: int32): Image
+	<Image+?>: nfc(87) ;Image.openBmp(path: char[*], depth: int32): Image
 	<Image+?>: set.x64 sp(5)
 	<Image+?>: ret
 	cmplGfx/lib/image.ci:86: (11 bytes): return .result := Image.openImg(fileName, depth);
 	<Image+?>: dup.x32 sp(2)
 	<Image+?>: dup.x32 sp(2)
-	<Image+?>: nfc(92) ;Image.openImg(path: char[*], depth: int32): Image
+	<Image+?>: nfc(90) ;Image.openImg(path: char[*], depth: int32): Image
 	<Image+?>: set.x64 sp(5)
 	<Image+?>: ret
 .usages:
@@ -15682,7 +15787,7 @@ Image(fileName: char[*], width: int32, height: int32, depth: int32, align: int32
 	<Image+?>: inc.sp(-28)
 	cmplGfx/lib/image.ci:96: (6 bytes): Image.destroy(image);
 	<Image+?>: dup.x64 sp(2)
-	<Image+?>: nfc(88) ;Image.destroy(image: Image): void
+	<Image+?>: nfc(86) ;Image.destroy(image: Image): void
 	cmplGfx/lib/image.ci:97: (7 bytes): return .result := result;
 	<Image+?>: set.x64 sp(12)
 	<Image+?>: inc.sp(-8)
@@ -15865,7 +15970,7 @@ clip(src: Image, roi: Rect): bool: function {
 	<clip+?>: store.i32
 	cmplGfx/lib/image.ci:132: (6 bytes): width: int32 := Image.width(src)
 	<clip+?>: dup.x64 sp(2)
-	<clip+?>: nfc(97) ;Image.width(image: Image): int32
+	<clip+?>: nfc(95) ;Image.width(image: Image): int32
 	cmplGfx/lib/image.ci:133: (23 bytes): if (roi.w > width)
 	<clip+?>: dup.x32 sp(2)
 	<clip+?>: inc.i32(+8)
@@ -15880,7 +15985,7 @@ clip(src: Image, roi: Rect): bool: function {
 	<clip+?>: store.i32
 	cmplGfx/lib/image.ci:137: (6 bytes): height: int32 := Image.height(src)
 	<clip+?>: dup.x64 sp(3)
-	<clip+?>: nfc(98) ;Image.height(image: Image): int32
+	<clip+?>: nfc(96) ;Image.height(image: Image): int32
 	cmplGfx/lib/image.ci:138: (23 bytes): if (roi.h > height)
 	<clip+?>: dup.x32 sp(3)
 	<clip+?>: inc.i32(+12)
@@ -16040,7 +16145,7 @@ eval(image: Image, roi: Rect, aspect: float32, time: float32, eval(in: vec4f): v
 	<eval+?>: load.i32
 	<eval+?>: jmp +10
 	<eval+?>: dup.x64 sp(9)
-	<eval+?>: nfc(97) ;Image.width(image: Image): int32
+	<eval+?>: nfc(95) ;Image.width(image: Image): int32
 	<eval+?>: set.x32 sp(3)
 	cmplGfx/lib/image.ci:163: (31 bytes): rect.h := (roi) != null ? roi.h : Image.height(image);
 	<eval+?>: dup.x32 sp(8)
@@ -16052,7 +16157,7 @@ eval(image: Image, roi: Rect, aspect: float32, time: float32, eval(in: vec4f): v
 	<eval+?>: load.i32
 	<eval+?>: jmp +10
 	<eval+?>: dup.x64 sp(9)
-	<eval+?>: nfc(98) ;Image.height(image: Image): int32
+	<eval+?>: nfc(96) ;Image.height(image: Image): int32
 	<eval+?>: set.x32 sp(4)
 	cmplGfx/lib/image.ci:166: (26 bytes): if (!clip(image, &rect))
 	<eval+?>: load.z32
@@ -16067,11 +16172,11 @@ eval(image: Image, roi: Rect, aspect: float32, time: float32, eval(in: vec4f): v
 	<eval+?>: ret
 	cmplGfx/lib/image.ci:170: (7 bytes): w: float32 := Image.width(image)
 	<eval+?>: dup.x64 sp(9)
-	<eval+?>: nfc(97) ;Image.width(image: Image): int32
+	<eval+?>: nfc(95) ;Image.width(image: Image): int32
 	<eval+?>: i32.2f32
 	cmplGfx/lib/image.ci:171: (7 bytes): h: float32 := Image.height(image)
 	<eval+?>: dup.x64 sp(10)
-	<eval+?>: nfc(98) ;Image.height(image: Image): int32
+	<eval+?>: nfc(96) ;Image.height(image: Image): int32
 	<eval+?>: i32.2f32
 	cmplGfx/lib/image.ci:172: (15 bytes): if (aspect == (0))
 	<eval+?>: dup.x32 sp(9)
@@ -16162,7 +16267,7 @@ eval(image: Image, roi: Rect, aspect: float32, time: float32, eval(in: vec4f): v
 	<eval+?>: or.b32
 	<eval+?>: set.x32 sp(5)
 	<eval+?>: inc.sp(-16)
-	<eval+?>: nfc(101) ;Image.set(image: Image, x: int32, y: int32, color: uint32): void
+	<eval+?>: nfc(99) ;Image.set(image: Image, x: int32, y: int32, color: uint32): void
 	cmplGfx/lib/image.ci:184: (4 bytes): x := x + 1
 	<eval+?>: inc.i32(+1)
 	cmplGfx/lib/image.ci:184: (12 bytes): x < rect.x + rect.w
@@ -16261,7 +16366,7 @@ tile(image: Image, x: int32, y: int32, src: Image, roi: Rect): void: function {
 	<tile+?>: load.i32
 	<tile+?>: jmp +10
 	<tile+?>: dup.x64 sp(6)
-	<tile+?>: nfc(97) ;Image.width(image: Image): int32
+	<tile+?>: nfc(95) ;Image.width(image: Image): int32
 	<tile+?>: set.x32 sp(3)
 	cmplGfx/lib/image.ci:197: (31 bytes): rect.h := (roi) != null ? roi.h : Image.height(src);
 	<tile+?>: dup.x32 sp(5)
@@ -16273,7 +16378,7 @@ tile(image: Image, x: int32, y: int32, src: Image, roi: Rect): void: function {
 	<tile+?>: load.i32
 	<tile+?>: jmp +10
 	<tile+?>: dup.x64 sp(6)
-	<tile+?>: nfc(98) ;Image.height(image: Image): int32
+	<tile+?>: nfc(96) ;Image.height(image: Image): int32
 	<tile+?>: set.x32 sp(4)
 	cmplGfx/lib/image.ci:200: (26 bytes): if (!clip(src, &rect))
 	<tile+?>: load.z32
@@ -16312,10 +16417,10 @@ tile(image: Image, x: int32, y: int32, src: Image, roi: Rect): void: function {
 	<tile+?>: set.x32 sp(9)
 	cmplGfx/lib/image.ci:210: (6 bytes): width: int32 := Image.width(image)
 	<tile+?>: dup.x64 sp(10)
-	<tile+?>: nfc(97) ;Image.width(image: Image): int32
+	<tile+?>: nfc(95) ;Image.width(image: Image): int32
 	cmplGfx/lib/image.ci:211: (6 bytes): height: int32 := Image.height(image)
 	<tile+?>: dup.x64 sp(11)
-	<tile+?>: nfc(98) ;Image.height(image: Image): int32
+	<tile+?>: nfc(96) ;Image.height(image: Image): int32
 	cmplGfx/lib/image.ci:212: (60 bytes): for (j: int32 := y; j < height; j := j + rect.h)
 	<tile+?>: dup.x32 sp(10)
 	<tile+?>: jmp +45
@@ -16328,7 +16433,7 @@ tile(image: Image, x: int32, y: int32, src: Image, roi: Rect): void: function {
 	<tile+?>: dup.x32 sp(4)
 	<tile+?>: dup.x64 sp(14)
 	<tile+?>: load.sp(+40)
-	<tile+?>: nfc(113) ;Image.copy(image: Image, x: int32, y: int32, src: Image, roi: Rect): void
+	<tile+?>: nfc(111) ;Image.copy(image: Image, x: int32, y: int32, src: Image, roi: Rect): void
 	cmplGfx/lib/image.ci:213: (3 bytes): i := i + rect.w
 	<tile+?>: dup.x32 sp(6)
 	<tile+?>: add.i32
@@ -16514,7 +16619,7 @@ fillRect(image: Image, x1: int32, y1: int32, x2: int32, y2: int32, rx: int32, ry
 	<fillRect+?>: dup.x32 sp(4)
 	<fillRect+?>: dup.x32 sp(18)
 	<fillRect+?>: dup.x32 sp(14)
-	<fillRect+?>: nfc(104) ;Image.fillRect(image: Image, x1: int32, y1: int32, x2: int32, y2: int32, color: int32): void
+	<fillRect+?>: nfc(102) ;Image.fillRect(image: Image, x1: int32, y1: int32, x2: int32, y2: int32, color: int32): void
 	cmplGfx/lib/image.ci:248: (16 bytes): Image.fillRect(image, rx1, y2, rx2, y2, color);
 	<fillRect+?>: dup.x64 sp(15)
 	<fillRect+?>: dup.x32 sp(3)
@@ -16522,7 +16627,7 @@ fillRect(image: Image, x1: int32, y1: int32, x2: int32, y2: int32, rx: int32, ry
 	<fillRect+?>: dup.x32 sp(4)
 	<fillRect+?>: dup.x32 sp(16)
 	<fillRect+?>: dup.x32 sp(14)
-	<fillRect+?>: nfc(104) ;Image.fillRect(image: Image, x1: int32, y1: int32, x2: int32, y2: int32, color: int32): void
+	<fillRect+?>: nfc(102) ;Image.fillRect(image: Image, x1: int32, y1: int32, x2: int32, y2: int32, color: int32): void
 	cmplGfx/lib/image.ci:249: (34 bytes): if (r >= 0)
 	<fillRect+?>: dup.x32 sp(4)
 	<fillRect+?>: load.z32
@@ -16577,7 +16682,7 @@ fillRect(image: Image, x1: int32, y1: int32, x2: int32, y2: int32, rx: int32, ry
 	<fillRect+?>: dup.x32 sp(16)
 	<fillRect+?>: dup.x32 sp(16)
 	<fillRect+?>: dup.x32 sp(14)
-	<fillRect+?>: nfc(104) ;Image.fillRect(image: Image, x1: int32, y1: int32, x2: int32, y2: int32, color: int32): void
+	<fillRect+?>: nfc(102) ;Image.fillRect(image: Image, x1: int32, y1: int32, x2: int32, y2: int32, color: int32): void
 	<fillRect+?>: inc.sp(-28)
 	<fillRect+?>: ret
 .usages:
@@ -16748,7 +16853,7 @@ drawRect(image: Image, roi: Rect, color: uint32): void: function {
 	<drawRect+?>: add.i32
 	<drawRect+?>: inc.i32(-1)
 	<drawRect+?>: dup.x32 sp(7)
-	<drawRect+?>: nfc(103) ;Image.drawRect(image: Image, x1: int32, y1: int32, x2: int32, y2: int32, color: int32): void
+	<drawRect+?>: nfc(101) ;Image.drawRect(image: Image, x1: int32, y1: int32, x2: int32, y2: int32, color: int32): void
 	<drawRect+?>: ret
 .usages:
 }
@@ -16812,7 +16917,7 @@ fillRect(image: Image, roi: Rect, color: uint32): void: function {
 	<fillRect+?>: add.i32
 	<fillRect+?>: inc.i32(-1)
 	<fillRect+?>: dup.x32 sp(7)
-	<fillRect+?>: nfc(104) ;Image.fillRect(image: Image, x1: int32, y1: int32, x2: int32, y2: int32, color: int32): void
+	<fillRect+?>: nfc(102) ;Image.fillRect(image: Image, x1: int32, y1: int32, x2: int32, y2: int32, color: int32): void
 	<fillRect+?>: ret
 .usages:
 }
@@ -16846,7 +16951,7 @@ Mesh(fileName: char[*]): Mesh: function {
 	<Mesh+?>: jz +13
 	cmplGfx/lib/mesh.ci:4: (9 bytes): return .result := Mesh.openObj(fileName);
 	<Mesh+?>: dup.x32 sp(1)
-	<Mesh+?>: nfc(69) ;Mesh.openObj(path: char[*]): Mesh
+	<Mesh+?>: nfc(67) ;Mesh.openObj(path: char[*]): Mesh
 	<Mesh+?>: set.x32 sp(3)
 	<Mesh+?>: ret
 	cmplGfx/lib/mesh.ci:6: (36 bytes): if (endsWith(fileName, ".3ds", ignCaseCmp))
@@ -16860,7 +16965,7 @@ Mesh(fileName: char[*]): Mesh: function {
 	<Mesh+?>: jz +13
 	cmplGfx/lib/mesh.ci:7: (9 bytes): return .result := Mesh.open3ds(fileName);
 	<Mesh+?>: dup.x32 sp(1)
-	<Mesh+?>: nfc(70) ;Mesh.open3ds(path: char[*]): Mesh
+	<Mesh+?>: nfc(68) ;Mesh.open3ds(path: char[*]): Mesh
 	<Mesh+?>: set.x32 sp(3)
 	<Mesh+?>: ret
 	cmplGfx/lib/mesh.ci:9: (36 bytes): abort("unknown file extension", fileName);
@@ -17786,7 +17891,7 @@ Gui.showWindow(surf: Image): void: function {
 	<showWindow>  : dup.x64 sp(1)
 	<showWindow+?>: load.ref <?> ;null
 	<showWindow+?>: load.ref <?> ;null
-	<showWindow+?>: nfc(132) ;Gui.showWindow(surf: Image, closure: pointer, onEvent(closure: pointer, action: int32, button: int32, x: int32, y: int32): int32): void
+	<showWindow+?>: nfc(130) ;Gui.showWindow(surf: Image, closure: pointer, onEvent(closure: pointer, action: int32, button: int32, x: int32, y: int32): int32): void
 	<showWindow+?>: ret
 .usages:
 	cmplGfx/gfxlib.ci:149: referenced as `showWindow`
@@ -17821,13 +17926,13 @@ Gui.showWindow(image: Image, onEvent(action: int32, button: int32, ex: int32, ey
 	<showWindow+?>: dup.x64 sp(2)
 	<showWindow+?>: load.ref <?> ;null
 	<showWindow+?>: load.ref <?> ;null
-	<showWindow+?>: nfc(132) ;Gui.showWindow(surf: Image, closure: pointer, onEvent(closure: pointer, action: int32, button: int32, x: int32, y: int32): int32): void
+	<showWindow+?>: nfc(130) ;Gui.showWindow(surf: Image, closure: pointer, onEvent(closure: pointer, action: int32, button: int32, x: int32, y: int32): int32): void
 	<showWindow+?>: ret
 	cmplGfx/gfxlib.ci:50: (13 bytes): Gui.showWindow(image, onEvent, delegate);
 	<showWindow+?>: dup.x64 sp(2)
 	<showWindow+?>: dup.x32 sp(3)
 	<showWindow+?>: load.ref <?> ;Gui.showWindow.delegate(onEvent(action: int32, button: int32, ex: int32, ey: int32): int32, action: int32, button: int32, ex: int32, ey: int32): int32
-	<showWindow+?>: nfc(132) ;Gui.showWindow(surf: Image, closure: pointer, onEvent(closure: pointer, action: int32, button: int32, x: int32, y: int32): int32): void
+	<showWindow+?>: nfc(130) ;Gui.showWindow(surf: Image, closure: pointer, onEvent(closure: pointer, action: int32, button: int32, x: int32, y: int32): int32): void
 	<showWindow+?>: ret
 .usages:
 }
@@ -17889,7 +17994,7 @@ Gui.showWindow(image1: Image, image2: Image): void: function {
 	<showWindow+?>: dup.x64 sp(0)
 	<showWindow+?>: load.sp(+8)
 	<showWindow+?>: load.ref <?> ;Gui.showWindow.onEvent(closure: Closure, action: int32, button: int32, ex: int32, ey: int32): int32
-	<showWindow+?>: nfc(132) ;Gui.showWindow(surf: Image, closure: pointer, onEvent(closure: pointer, action: int32, button: int32, x: int32, y: int32): int32): void
+	<showWindow+?>: nfc(130) ;Gui.showWindow(surf: Image, closure: pointer, onEvent(closure: pointer, action: int32, button: int32, x: int32, y: int32): int32): void
 	<showWindow+?>: inc.sp(-24)
 	<showWindow+?>: ret
 .usages:
@@ -17999,7 +18104,7 @@ Gui.showWindow(width: int32, height: int32, animationResolution: int32, eval(in:
 	<showWindow+?>: dup.x32 sp(5)
 	<showWindow+?>: dup.x32 sp(5)
 	<showWindow+?>: load.c32 32
-	<showWindow+?>: nfc(84) ;Image.create(width: int32, height: int32, depth: int32): Image
+	<showWindow+?>: nfc(82) ;Image.create(width: int32, height: int32, depth: int32): Image
 	cmplGfx/gfxlib.ci:148: (22 bytes): eval(image, null, aspect, 0.000000, eval);
 	<showWindow+?>: dup.x64 sp(0)
 	<showWindow+?>: load.ref <?> ;null
@@ -18016,7 +18121,7 @@ Gui.showWindow(width: int32, height: int32, animationResolution: int32, eval(in:
 	<showWindow+?>: inc.sp(-8)
 	cmplGfx/gfxlib.ci:150: (6 bytes): Image.destroy(image);
 	<showWindow+?>: dup.x64 sp(0)
-	<showWindow+?>: nfc(88) ;Image.destroy(image: Image): void
+	<showWindow+?>: nfc(86) ;Image.destroy(image: Image): void
 	cmplGfx/gfxlib.ci:151: (5 bytes): return;
 	<showWindow+?>: inc.sp(-12)
 	<showWindow+?>: ret
@@ -18027,13 +18132,13 @@ Gui.showWindow(width: int32, height: int32, animationResolution: int32, eval(in:
 	<showWindow+?>: dup.x32 sp(14)
 	<showWindow+?>: dup.x32 sp(14)
 	<showWindow+?>: load.c32 32
-	<showWindow+?>: nfc(84) ;Image.create(width: int32, height: int32, depth: int32): Image
+	<showWindow+?>: nfc(82) ;Image.create(width: int32, height: int32, depth: int32): Image
 	<showWindow+?>: set.x64 sp(4)
 	cmplGfx/gfxlib.ci:156: (15 bytes): closure.thumb := Image(animationResolution, animationResolution, 32);
 	<showWindow+?>: dup.x32 sp(12)
 	<showWindow+?>: dup.x32 sp(13)
 	<showWindow+?>: load.c32 32
-	<showWindow+?>: nfc(84) ;Image.create(width: int32, height: int32, depth: int32): Image
+	<showWindow+?>: nfc(82) ;Image.create(width: int32, height: int32, depth: int32): Image
 	<showWindow+?>: set.x64 sp(6)
 	cmplGfx/gfxlib.ci:157: (9 bytes): closure.aspect := (width) / float32(height);
 	<showWindow+?>: dup.x32 sp(14)
@@ -18058,13 +18163,13 @@ Gui.showWindow(width: int32, height: int32, animationResolution: int32, eval(in:
 	<showWindow+?>: dup.x64 sp(2)
 	<showWindow+?>: load.sp(+8)
 	<showWindow+?>: load.ref <?> ;Gui.showWindow.onEvent(closure: Closure, action: int32, button: int32, ex: int32, ey: int32): int32
-	<showWindow+?>: nfc(132) ;Gui.showWindow(surf: Image, closure: pointer, onEvent(closure: pointer, action: int32, button: int32, x: int32, y: int32): int32): void
+	<showWindow+?>: nfc(130) ;Gui.showWindow(surf: Image, closure: pointer, onEvent(closure: pointer, action: int32, button: int32, x: int32, y: int32): int32): void
 	cmplGfx/gfxlib.ci:161: (6 bytes): Image.destroy(closure.thumb);
 	<showWindow+?>: dup.x64 sp(4)
-	<showWindow+?>: nfc(88) ;Image.destroy(image: Image): void
+	<showWindow+?>: nfc(86) ;Image.destroy(image: Image): void
 	cmplGfx/gfxlib.ci:162: (6 bytes): Image.destroy(closure.offs);
 	<showWindow+?>: dup.x64 sp(2)
-	<showWindow+?>: nfc(88) ;Image.destroy(image: Image): void
+	<showWindow+?>: nfc(86) ;Image.destroy(image: Image): void
 	<showWindow+?>: inc.sp(-40)
 	<showWindow+?>: ret
 .usages:
@@ -18274,7 +18379,7 @@ Gui.showWindow(w: int32, h: int32, fovy: float32, mesh: Mesh): void: function {
 	cmplGfx/gfxlib.ci:307: (10 bytes): closure.offs := Image.create3d(w, h);
 	<showWindow+?>: dup.x32 sp(46)
 	<showWindow+?>: dup.x32 sp(46)
-	<showWindow+?>: nfc(85) ;Image.create3d(width: int32, height: int32): Image
+	<showWindow+?>: nfc(83) ;Image.create3d(width: int32, height: int32): Image
 	<showWindow+?>: set.x64 sp(8)
 	cmplGfx/gfxlib.ci:308: (49 bytes): closure.proj := Camera.projection(fovy, (w) / float32(h), 1, 100);
 	<showWindow+?>: inc.sp(+64)
@@ -18338,10 +18443,10 @@ Gui.showWindow(w: int32, h: int32, fovy: float32, mesh: Mesh): void: function {
 	<showWindow+?>: dup.x64 sp(6)
 	<showWindow+?>: load.sp(+8)
 	<showWindow+?>: load.ref <?> ;Gui.showWindow.onEvent(closure: Closure, action: int32, button: int32, ex: int32, ey: int32): int32
-	<showWindow+?>: nfc(132) ;Gui.showWindow(surf: Image, closure: pointer, onEvent(closure: pointer, action: int32, button: int32, x: int32, y: int32): int32): void
+	<showWindow+?>: nfc(130) ;Gui.showWindow(surf: Image, closure: pointer, onEvent(closure: pointer, action: int32, button: int32, x: int32, y: int32): int32): void
 	cmplGfx/gfxlib.ci:314: (6 bytes): Image.destroy(closure.offs);
 	<showWindow+?>: dup.x64 sp(6)
-	<showWindow+?>: nfc(88) ;Image.destroy(image: Image): void
+	<showWindow+?>: nfc(86) ;Image.destroy(image: Image): void
 	<showWindow+?>: inc.sp(-168)
 	<showWindow+?>: ret
 .usages:
@@ -18510,7 +18615,7 @@ Gui.showWindow(surf: Image, closure: pointer, onEvent(closure: pointer, action: 
 .param surf: Image (size: 8, cast: variable(val))
 .param closure: pointer (size: 4, cast: variable(ref))
 .param onEvent: function (size: 4, cast: variable(ref))
-.value: nfc(132)
+.value: nfc(130)
 .usages:
 	cmplGfx/gfxlib.ci:313: referenced as `showWindow`
 	cmplGfx/gfxlib.ci:160: referenced as `showWindow`
@@ -18527,7 +18632,7 @@ Gui.setTitle(title: char[*]): void: function {
 .owner: Gui
 .param .result: void (size: 0, cast: inline)
 .param title: char[*] (size: 4, cast: const variable(ref))
-.value: nfc(133)
+.value: nfc(131)
 .usages:
 	cmplGfx/gfxlib.ci:293: referenced as `setTitle`
 	cmplGfx/gfxlib.ci:135: referenced as `setTitle`
@@ -18539,7 +18644,7 @@ Gui.font: Image {
 .size: 0
 .name: 'font'
 .owner: Gui
-.value: nfc(134)
+.value: nfc(132)
 .usages:
 }
 .main: function {
@@ -18957,39 +19062,39 @@ Gui.font: Image {
 			static smooth(t: float64): float64 := t * t * ((3) - (2) * t);
 			static smooth(t: float32, a: float32, b: float32): float32 := smooth(clamp((t - a) / (b - a), 0.000000, 1.000000));
 			static smooth(t: float64, a: float64, b: float64): float64 := smooth(clamp((t - a) / (b - a), 0.000000, 1.000000));
-			static min(data: float64[]): float64 := {
-				if (data.length == (0)) {
+			static min(values: float64[]): float64 := {
+				if (values.length == (0)) {
 					return .result := nan;
 				}
-				result: float64 := data[0];
-				for (i: int32 := 1; i < (data.length); i := i + 1) {
-					if (result > data[i]) {
-						result := data[i];
+				result: float64 := values[0];
+				for (i: int32 := 1; i < (values.length); i := i + 1) {
+					if (result > values[i]) {
+						result := values[i];
 					}
 				}
 				return .result := result;
 			};
-			static max(data: float64[]): float64 := {
-				if (data.length == (0)) {
+			static max(values: float64[]): float64 := {
+				if (values.length == (0)) {
 					return .result := nan;
 				}
-				result: float64 := data[0];
-				for (i: int32 := 1; i < (data.length); i := i + 1) {
-					if (result < data[i]) {
-						result := data[i];
+				result: float64 := values[0];
+				for (i: int32 := 1; i < (values.length); i := i + 1) {
+					if (result < values[i]) {
+						result := values[i];
 					}
 				}
 				return .result := result;
 			};
-			static sum(data: float64[]): float64 := {
+			static sum(values: float64[]): float64 := {
 				result: float64 := 0;
-				for (i: int32 := 0; i < (data.length); i := i + 1) {
-					result := result + data[i];
+				for (i: int32 := 0; i < (values.length); i := i + 1) {
+					result := result + values[i];
 				}
 				return .result := result;
 			};
-			static mean(data: float64[]): float64 := {
-				return .result := sum(...data) / (signed(data.length));
+			static mean(values: float64[]): float64 := {
+				return .result := sum(...values) / (signed(values.length));
 			};
 			static eval(x: float64, a0: float64): float64 := (a0);
 			static eval(x: float64, a0: float64, a1: float64): float64 := (a0 + x * a1);
@@ -19057,9 +19162,22 @@ Gui.font: Image {
 				temp2: float64 := ((((ysq + q3) * ysq + q2) * ysq + q1) * ysq + q0);
 				return .result := temp1 / temp2;
 			};
-			static sin(arg: float64): float64 := sinCos(arg, 0);
-			static cos(arg: float64): float64 := sinCos(abs(arg), 1);
+			static sin(arg: float64): float64 := {
+				static if ((typename(float64.sin)) != null) {
+					return .result := float64.sin(arg);
+				}
+				return .result := sinCos(arg, 0);
+			};
+			static cos(arg: float64): float64 := {
+				static if ((typename(float64.cos)) != null) {
+					return .result := float64.cos(arg);
+				}
+				return .result := sinCos(abs(arg), 1);
+			};
 			static tan(arg: float64): float64 := {
+				static if ((typename(float64.tan)) != null) {
+					return .result := float64.tan(arg);
+				}
 				complement: bool := false;
 				negate: bool := false;
 				if (arg < (0)) {
@@ -20585,9 +20703,9 @@ Gui.font: Image {
 			static const KEY_MASK_SHIFT: int64 := 1;
 			static const KEY_MASK_CTRL: int64 := 2;
 			static const KEY_MASK_ALT: int64 := 4;
-			static const showWindow(surf: Image, closure: pointer, onEvent(closure: pointer, action: int32, button: int32, x: int32, y: int32): int32): void := nfc(132);
-			static const setTitle(const title: char[*]): void := nfc(133);
-			static const font: Image := nfc(134);
+			static const showWindow(surf: Image, closure: pointer, onEvent(closure: pointer, action: int32, button: int32, x: int32, y: int32): int32): void := nfc(130);
+			static const setTitle(const title: char[*]): void := nfc(131);
+			static const font: Image := nfc(132);
 		};
 	}
 }
@@ -20695,6 +20813,7 @@ emit.min: typename(<emit.min>)
 emit.max: typename(<emit.max>)
 emit.swz: typename(<emit.swz>)
 emit: typename(<emit>)
+System.Platform: typename(<System.Platform>)
 System: typename(<System>)
 cmplStd/lib/debug.ci:48: NotEquals: typename(<NotEquals>)
 cmplStd/lib/debug.ci:61: assertEq: function(<assertEq>)
@@ -20712,10 +20831,12 @@ cmplStd/lib/math.ci:260: Math.eval: function(<Math.eval>)
 cmplStd/lib/math.ci:269: Math.cmp: function(<Math.cmp>)
 cmplStd/lib/math.ci:284: Math.cmp: function(<Math.cmp>)
 cmplStd/lib/math.ci:299: Math.sinCos: function(<Math.sinCos>)
-cmplStd/lib/math.ci:356: Math.tan: function(<Math.tan>)
-cmplStd/lib/math.ci:413: Math.sinh: function(<Math.sinh>)
-cmplStd/lib/math.ci:452: Math.cosh: function(<Math.cosh>)
-cmplStd/lib/math.ci:467: Math.asin: function(<Math.asin>)
+cmplStd/lib/math.ci:350: Math.sin: function(<Math.sin>)
+cmplStd/lib/math.ci:359: Math.cos: function(<Math.cos>)
+cmplStd/lib/math.ci:368: Math.tan: function(<Math.tan>)
+cmplStd/lib/math.ci:429: Math.sinh: function(<Math.sinh>)
+cmplStd/lib/math.ci:468: Math.cosh: function(<Math.cosh>)
+cmplStd/lib/math.ci:483: Math.asin: function(<Math.asin>)
 cmplStd/lib/math.ci:2: Math: typename(<Math>)
 cmplStd/lib/math/Complex.ci:2: Complex: typename(<Complex>)
 cmplStd/lib/math/Complex.ci:24: Complex: function(<Complex>)
@@ -20795,16 +20916,16 @@ cmplGfx/gfxlib.ci:36: Gui: typename(<Gui>)
 
 ---------- Memory usage:
 memory[all] @000000; size: 4194016(4.0 Mb)
-memory[used] @000000; size: 449928(439.4 Kb)
-memory[heap] @06dd88; size: 2695536(2.6 Mb)
+memory[used] @000000; size: 449832(439.3 Kb)
+memory[heap] @06dd28; size: 2695632(2.6 Mb)
 memory[stack] @1fff40; size: 1048504(1023.9 Kb)
 
 ---------- used memory:
-memory[meta] @000000; size: 435752(425.5 Kb)
-memory[code] @000000; size: 13814(13.5 Kb)
+memory[meta] @000000; size: 435560(425.4 Kb)
+memory[code] @000000; size: 13898(13.6 Kb)
 memory[data] @000000; size: 76(76.0 bytes)
 
 ---------- heap memory:
-memory[free] @06dda0; size: 2695488(2.6 Mb)
+memory[free] @06dd40; size: 2695584(2.6 Mb)
 
 ---------- Exitcode: 0, time: 0.000 ms

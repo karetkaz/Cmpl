@@ -32,11 +32,11 @@ cmplStd/lib/math.ci:196: warn: adding implicit cast float32(3: int32)
 cmplStd/lib/math.ci:197: warn: adding implicit cast float64(2: int32)
 cmplStd/lib/math.ci:197: warn: adding implicit cast float64(3: int32)
 cmplStd/lib/math.ci:207: warn: adding implicit cast uint32(0: int32)
-cmplStd/lib/math.ci:211: warn: adding implicit cast int32(data.length: uint32)
+cmplStd/lib/math.ci:211: warn: adding implicit cast int32(values.length: uint32)
 cmplStd/lib/math.ci:221: warn: adding implicit cast uint32(0: int32)
-cmplStd/lib/math.ci:225: warn: adding implicit cast int32(data.length: uint32)
-cmplStd/lib/math.ci:236: warn: adding implicit cast int32(data.length: uint32)
-cmplStd/lib/math.ci:244: warn: adding implicit cast float64(signed(data.length): int32)
+cmplStd/lib/math.ci:225: warn: adding implicit cast int32(values.length: uint32)
+cmplStd/lib/math.ci:236: warn: adding implicit cast int32(values.length: uint32)
+cmplStd/lib/math.ci:244: warn: adding implicit cast float64(signed(values.length): int32)
 cmplStd/lib/math.ci:262: warn: adding implicit cast uint32(1: int32)
 cmplStd/lib/math.ci:314: warn: adding implicit cast float64(0: int32)
 cmplStd/lib/math.ci:320: warn: adding implicit cast float64(1: int32)
@@ -46,28 +46,31 @@ cmplStd/lib/math.ci:328: warn: adding implicit cast float64(4: int32)
 cmplStd/lib/math.ci:328: warn: adding implicit cast int32(e - (4) * f: float64)
 cmplStd/lib/math.ci:332: warn: adding implicit cast float64(k: int32)
 cmplStd/lib/math.ci:337: warn: adding implicit cast float64(1: int32)
-cmplStd/lib/math.ci:372: warn: adding implicit cast float64(0: int32)
-cmplStd/lib/math.ci:376: warn: adding implicit cast float64(2: int32)
-cmplStd/lib/math.ci:384: warn: adding implicit cast float64(1: int32)
-cmplStd/lib/math.ci:392: warn: adding implicit cast float64(1: int32)
-cmplStd/lib/math.ci:401: warn: adding implicit cast float64(0: int32)
-cmplStd/lib/math.ci:404: warn: adding implicit cast float64(1: int32)
-cmplStd/lib/math.ci:426: warn: adding implicit cast float64(0: int32)
-cmplStd/lib/math.ci:431: warn: adding implicit cast float64(21: int32)
-cmplStd/lib/math.ci:432: warn: adding implicit cast float64(2: int32)
-cmplStd/lib/math.ci:437: warn: adding implicit cast float64(2: int32)
-cmplStd/lib/math.ci:453: warn: adding implicit cast float64(0: int32)
-cmplStd/lib/math.ci:456: warn: adding implicit cast float64(21: int32)
-cmplStd/lib/math.ci:457: warn: adding implicit cast float64(2: int32)
-cmplStd/lib/math.ci:459: warn: adding implicit cast float64(2: int32)
-cmplStd/lib/math.ci:468: warn: adding implicit cast float64(0: int32)
-cmplStd/lib/math.ci:474: warn: adding implicit cast float64(0: int32)
-cmplStd/lib/math.ci:479: warn: adding implicit cast float64(1: int32)
-cmplStd/lib/math.ci:484: warn: adding implicit cast float64(1: int32)
-cmplStd/lib/math.ci:486: warn: adding implicit cast float64(2: int32)
+cmplStd/lib/math.ci:351: warn: adding implicit cast pointer(typename(float64.sin): typename)
+cmplStd/lib/math.ci:360: warn: adding implicit cast pointer(typename(float64.cos): typename)
+cmplStd/lib/math.ci:369: warn: adding implicit cast pointer(typename(float64.tan): typename)
+cmplStd/lib/math.ci:388: warn: adding implicit cast float64(0: int32)
+cmplStd/lib/math.ci:392: warn: adding implicit cast float64(2: int32)
+cmplStd/lib/math.ci:400: warn: adding implicit cast float64(1: int32)
+cmplStd/lib/math.ci:408: warn: adding implicit cast float64(1: int32)
+cmplStd/lib/math.ci:417: warn: adding implicit cast float64(0: int32)
+cmplStd/lib/math.ci:420: warn: adding implicit cast float64(1: int32)
+cmplStd/lib/math.ci:442: warn: adding implicit cast float64(0: int32)
+cmplStd/lib/math.ci:447: warn: adding implicit cast float64(21: int32)
+cmplStd/lib/math.ci:448: warn: adding implicit cast float64(2: int32)
+cmplStd/lib/math.ci:453: warn: adding implicit cast float64(2: int32)
+cmplStd/lib/math.ci:469: warn: adding implicit cast float64(0: int32)
+cmplStd/lib/math.ci:472: warn: adding implicit cast float64(21: int32)
+cmplStd/lib/math.ci:473: warn: adding implicit cast float64(2: int32)
+cmplStd/lib/math.ci:475: warn: adding implicit cast float64(2: int32)
+cmplStd/lib/math.ci:484: warn: adding implicit cast float64(0: int32)
+cmplStd/lib/math.ci:490: warn: adding implicit cast float64(0: int32)
+cmplStd/lib/math.ci:495: warn: adding implicit cast float64(1: int32)
+cmplStd/lib/math.ci:500: warn: adding implicit cast float64(1: int32)
 cmplStd/lib/math.ci:502: warn: adding implicit cast float64(2: int32)
-cmplStd/lib/math.ci:526: warn: adding implicit cast float64(180: int32)
-cmplStd/lib/math.ci:529: warn: adding implicit cast float64(180: int32)
+cmplStd/lib/math.ci:518: warn: adding implicit cast float64(2: int32)
+cmplStd/lib/math.ci:542: warn: adding implicit cast float64(180: int32)
+cmplStd/lib/math.ci:545: warn: adding implicit cast float64(180: int32)
 cmplStd/stdlib.ci:46: debug: inline file: `cmplStd/lib/math/Complex.ci`
 cmplStd/lib/math/Complex.ci:24: debug: using default field initializer: Complex.im := 0
 cmplStd/lib/math/Complex.ci:8: warn: adding implicit cast float64(0: int32)
@@ -285,8 +288,8 @@ cmplStd/lib/math.ci:48: warn: using default type initializer: Math.floor.result 
 cmplStd/lib/math.ci:319: warn: using default type initializer: Math.sinCos.y := 0
 cmplStd/lib/math.ci:322: warn: using default type initializer: e := 0
 cmplStd/lib/math.ci:326: warn: using default type initializer: f := 0
-cmplStd/lib/math.ci:378: warn: using default type initializer: Math.tan.e := 0
-cmplStd/lib/math.ci:435: warn: using default type initializer: Math.sinh.result := 0
+cmplStd/lib/math.ci:394: warn: using default type initializer: Math.tan.e := 0
+cmplStd/lib/math.ci:451: warn: using default type initializer: Math.sinh.result := 0
 cmplStd/lib/math/Matrix4f.ci:98: warn: uninitialized variable `.result`
 cmplStd/lib/debug.ci:41: warn: no code will be generated for statement: 0
 cmplStd/lib/debug.ci:41: warn: no code will be generated for statement: 0
@@ -2155,6 +2158,7 @@ System: typename {
 .field sleep: function (size: 0, cast: static const inline)
 .field rand: function (size: 0, cast: static const inline)
 .field clock: function (size: 0, cast: static const inline)
+.field Platform: typename (size: 0, cast: static const typename(void))
 }
 System.exit(code: int32): void: function {
 .kind: static const inline
@@ -2239,6 +2243,58 @@ System.clock.perSec: int64 {
 .name: 'perSec'
 .owner: System.clock(): int32
 .value: 1000000
+}
+System.Platform: typename {
+.kind: static const typename(void)
+.base: `typename`
+.size: 0
+.name: 'Platform'
+.owner: System
+.field WebAssembly: int64 (size: 0, cast: static const i64)
+.field Windows: int64 (size: 0, cast: static const i64)
+.field MacOS: int64 (size: 0, cast: static const i64)
+.field Linux: int64 (size: 0, cast: static const i64)
+.field Unix: int64 (size: 0, cast: static const i64)
+}
+System.Platform.WebAssembly: int64 {
+.kind: static const i64
+.base: `int64`
+.size: 0
+.name: 'WebAssembly'
+.owner: System.Platform
+.value: 0
+}
+System.Platform.Windows: int64 {
+.kind: static const i64
+.base: `int64`
+.size: 0
+.name: 'Windows'
+.owner: System.Platform
+.value: 0
+}
+System.Platform.MacOS: int64 {
+.kind: static const i64
+.base: `int64`
+.size: 0
+.name: 'MacOS'
+.owner: System.Platform
+.value: 0
+}
+System.Platform.Linux: int64 {
+.kind: static const i64
+.base: `int64`
+.size: 0
+.name: 'Linux'
+.owner: System.Platform
+.value: 1
+}
+System.Platform.Unix: int64 {
+.kind: static const i64
+.base: `int64`
+.size: 0
+.name: 'Unix'
+.owner: System.Platform
+.value: 1
 }
 true: bool {
 .kind: static const val
@@ -2777,9 +2833,9 @@ Math: typename {
 .field cmp: function (size: 57, cast: static function)
 .field cmp: function (size: 57, cast: static function)
 .field sinCos: function (size: 335, cast: static function)
-.field sin: function (size: 0, cast: static inline)
-.field cos: function (size: 0, cast: static inline)
-.field tan: function (size: 378, cast: static function)
+.field sin: function (size: 26, cast: static function)
+.field cos: function (size: 49, cast: static function)
+.field tan: function (size: 387, cast: static function)
 .field sinh: function (size: 241, cast: static function)
 .field cosh: function (size: 75, cast: static function)
 .field asin: function (size: 173, cast: static function)
@@ -3639,7 +3695,7 @@ Math.smooth(t: float64, a: float64, b: float64): float64: function {
 .doc: 'Returns smooth interpolation between `a` and `b` by `t`'
 .value: smooth(clamp((t - a) / (b - a), 0.000000, 1.000000))
 }
-Math.min(data: float64[]): float64: function {
+Math.min(values: float64[]): float64: function {
 .kind: static function
 .base: `function`
 .size: 79
@@ -3647,22 +3703,22 @@ Math.min(data: float64[]): float64: function {
 .file: 'cmplStd/lib/math.ci:206'
 .owner: Math
 .param .result: float64 (size: 8, cast: variable(f64))
-.param data: float64[] (size: 8, cast: variable(arr))
+.param values: float64[] (size: 8, cast: variable(arr))
 .doc: 'Returns the smaller value from the input values'
 .value: {
-	if (data.length == (0)) {
+	if (values.length == (0)) {
 		return .result := nan;
 	}
-	result: float64 := data[0];
-	for (i: int32 := 1; i < (data.length); i := i + 1) {
-		if (result > data[i]) {
-			result := data[i];
+	result: float64 := values[0];
+	for (i: int32 := 1; i < (values.length); i := i + 1) {
+		if (result > values[i]) {
+			result := values[i];
 		}
 	}
 	return .result := result;
 }
 .instructions: (79 bytes)
-	cmplStd/lib/math.ci:207: (20 bytes): if (data.length == (0))
+	cmplStd/lib/math.ci:207: (20 bytes): if (values.length == (0))
 	<min>  : dup.x32 sp(2)
 	<min+?>: load.z32
 	<min+?>: ceq.i32
@@ -3671,13 +3727,13 @@ Math.min(data: float64[]): float64: function {
 	<min+?>: load.f64 -nan
 	<min+?>: set.x64 sp(5)
 	<min+?>: ret
-	cmplStd/lib/math.ci:210: (3 bytes): result: float64 := data[0]
+	cmplStd/lib/math.ci:210: (3 bytes): result: float64 := values[0]
 	<min+?>: dup.x32 sp(1)
 	<min+?>: load.i64
-	cmplStd/lib/math.ci:211: (53 bytes): for (i: int32 := 1; i < (data.length); i := i + 1)
+	cmplStd/lib/math.ci:211: (53 bytes): for (i: int32 := 1; i < (values.length); i := i + 1)
 	<min+?>: load.c32 1
 	<min+?>: jmp +35
-	cmplStd/lib/math.ci:212: (27 bytes): if (result > data[i])
+	cmplStd/lib/math.ci:212: (27 bytes): if (result > values[i])
 	<min+?>: dup.x64 sp(1)
 	<min+?>: dup.x32 sp(6)
 	<min+?>: dup.x32 sp(3)
@@ -3685,7 +3741,7 @@ Math.min(data: float64[]): float64: function {
 	<min+?>: load.i64
 	<min+?>: cgt.f64
 	<min+?>: jz +15
-	cmplStd/lib/math.ci:213: (11 bytes): result := data[i];
+	cmplStd/lib/math.ci:213: (11 bytes): result := values[i];
 	<min+?>: dup.x32 sp(4)
 	<min+?>: dup.x32 sp(1)
 	<min+?>: mad.u32 8
@@ -3693,7 +3749,7 @@ Math.min(data: float64[]): float64: function {
 	<min+?>: set.x64 sp(3)
 	cmplStd/lib/math.ci:211: (4 bytes): i := i + 1
 	<min+?>: inc.i32(+1)
-	cmplStd/lib/math.ci:211: (9 bytes): i < (data.length)
+	cmplStd/lib/math.ci:211: (9 bytes): i < (values.length)
 	<min+?>: dup.x32 sp(0)
 	<min+?>: dup.x32 sp(6)
 	<min+?>: clt.i32
@@ -3703,7 +3759,7 @@ Math.min(data: float64[]): float64: function {
 	<min+?>: set.x64 sp(5)
 	<min+?>: ret
 }
-Math.max(data: float64[]): float64: function {
+Math.max(values: float64[]): float64: function {
 .kind: static function
 .base: `function`
 .size: 79
@@ -3711,22 +3767,22 @@ Math.max(data: float64[]): float64: function {
 .file: 'cmplStd/lib/math.ci:220'
 .owner: Math
 .param .result: float64 (size: 8, cast: variable(f64))
-.param data: float64[] (size: 8, cast: variable(arr))
+.param values: float64[] (size: 8, cast: variable(arr))
 .doc: 'Returns the greater value from the input values'
 .value: {
-	if (data.length == (0)) {
+	if (values.length == (0)) {
 		return .result := nan;
 	}
-	result: float64 := data[0];
-	for (i: int32 := 1; i < (data.length); i := i + 1) {
-		if (result < data[i]) {
-			result := data[i];
+	result: float64 := values[0];
+	for (i: int32 := 1; i < (values.length); i := i + 1) {
+		if (result < values[i]) {
+			result := values[i];
 		}
 	}
 	return .result := result;
 }
 .instructions: (79 bytes)
-	cmplStd/lib/math.ci:221: (20 bytes): if (data.length == (0))
+	cmplStd/lib/math.ci:221: (20 bytes): if (values.length == (0))
 	<max>  : dup.x32 sp(2)
 	<max+?>: load.z32
 	<max+?>: ceq.i32
@@ -3735,13 +3791,13 @@ Math.max(data: float64[]): float64: function {
 	<max+?>: load.f64 -nan
 	<max+?>: set.x64 sp(5)
 	<max+?>: ret
-	cmplStd/lib/math.ci:224: (3 bytes): result: float64 := data[0]
+	cmplStd/lib/math.ci:224: (3 bytes): result: float64 := values[0]
 	<max+?>: dup.x32 sp(1)
 	<max+?>: load.i64
-	cmplStd/lib/math.ci:225: (53 bytes): for (i: int32 := 1; i < (data.length); i := i + 1)
+	cmplStd/lib/math.ci:225: (53 bytes): for (i: int32 := 1; i < (values.length); i := i + 1)
 	<max+?>: load.c32 1
 	<max+?>: jmp +35
-	cmplStd/lib/math.ci:226: (27 bytes): if (result < data[i])
+	cmplStd/lib/math.ci:226: (27 bytes): if (result < values[i])
 	<max+?>: dup.x64 sp(1)
 	<max+?>: dup.x32 sp(6)
 	<max+?>: dup.x32 sp(3)
@@ -3749,7 +3805,7 @@ Math.max(data: float64[]): float64: function {
 	<max+?>: load.i64
 	<max+?>: clt.f64
 	<max+?>: jz +15
-	cmplStd/lib/math.ci:227: (11 bytes): result := data[i];
+	cmplStd/lib/math.ci:227: (11 bytes): result := values[i];
 	<max+?>: dup.x32 sp(4)
 	<max+?>: dup.x32 sp(1)
 	<max+?>: mad.u32 8
@@ -3757,7 +3813,7 @@ Math.max(data: float64[]): float64: function {
 	<max+?>: set.x64 sp(3)
 	cmplStd/lib/math.ci:225: (4 bytes): i := i + 1
 	<max+?>: inc.i32(+1)
-	cmplStd/lib/math.ci:225: (9 bytes): i < (data.length)
+	cmplStd/lib/math.ci:225: (9 bytes): i < (values.length)
 	<max+?>: dup.x32 sp(0)
 	<max+?>: dup.x32 sp(6)
 	<max+?>: clt.i32
@@ -3767,7 +3823,7 @@ Math.max(data: float64[]): float64: function {
 	<max+?>: set.x64 sp(5)
 	<max+?>: ret
 }
-Math.sum(data: float64[]): float64: function {
+Math.sum(values: float64[]): float64: function {
 .kind: static function
 .base: `function`
 .size: 40
@@ -3775,22 +3831,22 @@ Math.sum(data: float64[]): float64: function {
 .file: 'cmplStd/lib/math.ci:234'
 .owner: Math
 .param .result: float64 (size: 8, cast: variable(f64))
-.param data: float64[] (size: 8, cast: variable(arr))
+.param values: float64[] (size: 8, cast: variable(arr))
 .doc: 'Returns the sum of the input values'
 .value: {
 	result: float64 := 0;
-	for (i: int32 := 0; i < (data.length); i := i + 1) {
-		result := result + data[i];
+	for (i: int32 := 0; i < (values.length); i := i + 1) {
+		result := result + values[i];
 	}
 	return .result := result;
 }
 .instructions: (40 bytes)
 	cmplStd/lib/math.ci:235: (1 byte): result: float64 := 0
 	<sum>  : load.z128
-	cmplStd/lib/math.ci:236: (36 bytes): for (i: int32 := 0; i < (data.length); i := i + 1)
+	cmplStd/lib/math.ci:236: (36 bytes): for (i: int32 := 0; i < (values.length); i := i + 1)
 	<sum+?>: i64.2i32
 	<sum+?>: jmp +22
-	cmplStd/lib/math.ci:237: (14 bytes): result := result + data[i];
+	cmplStd/lib/math.ci:237: (14 bytes): result := result + values[i];
 	<sum+?>: dup.x64 sp(1)
 	<sum+?>: dup.x32 sp(6)
 	<sum+?>: dup.x32 sp(3)
@@ -3800,7 +3856,7 @@ Math.sum(data: float64[]): float64: function {
 	<sum+?>: set.x64 sp(3)
 	cmplStd/lib/math.ci:236: (4 bytes): i := i + 1
 	<sum+?>: inc.i32(+1)
-	cmplStd/lib/math.ci:236: (9 bytes): i < (data.length)
+	cmplStd/lib/math.ci:236: (9 bytes): i < (values.length)
 	<sum+?>: dup.x32 sp(0)
 	<sum+?>: dup.x32 sp(6)
 	<sum+?>: clt.i32
@@ -3810,7 +3866,7 @@ Math.sum(data: float64[]): float64: function {
 	<sum+?>: set.x64 sp(5)
 	<sum+?>: ret
 }
-Math.mean(data: float64[]): float64: function {
+Math.mean(values: float64[]): float64: function {
 .kind: static function
 .base: `function`
 .size: 20
@@ -3818,16 +3874,16 @@ Math.mean(data: float64[]): float64: function {
 .file: 'cmplStd/lib/math.ci:243'
 .owner: Math
 .param .result: float64 (size: 8, cast: variable(f64))
-.param data: float64[] (size: 8, cast: variable(arr))
+.param values: float64[] (size: 8, cast: variable(arr))
 .doc: 'Returns the mean of the input values'
 .value: {
-	return .result := sum(...data) / (signed(data.length));
+	return .result := sum(...values) / (signed(values.length));
 }
 .instructions: (20 bytes)
-	cmplStd/lib/math.ci:244: (20 bytes): return .result := sum(...data) / (signed(data.length));
+	cmplStd/lib/math.ci:244: (20 bytes): return .result := sum(...values) / (signed(values.length));
 	<mean>  : load.z64
 	<mean+?>: dup.x64 sp(3)
-	<mean+?>: load.ref <?> ;Math.sum(data: float64[]): float64
+	<mean+?>: load.ref <?> ;Math.sum(values: float64[]): float64
 	<mean+?>: call
 	<mean+?>: inc.sp(-8)
 	<mean+?>: dup.x32 sp(4)
@@ -4244,40 +4300,92 @@ Math.sinCos(arg: float64, quad: int32): float64: function {
 	<sinCos+?>: ret
 }
 Math.sin(arg: float64): float64: function {
-.kind: static inline
+.kind: static function
 .base: `function`
-.size: 0
+.size: 26
 .name: 'sin'
 .file: 'cmplStd/lib/math.ci:350'
 .owner: Math
-.param .result: float64 (size: 8, cast: f64)
-.param arg: float64 (size: 8, cast: f64)
+.param .result: float64 (size: 8, cast: variable(f64))
+.param arg: float64 (size: 8, cast: variable(f64))
 .doc: 'Returns the sine of the input'
-.value: sinCos(arg, 0)
+.value: {
+	static if ((typename(float64.sin)) != null) {
+		return .result := float64.sin(arg);
+	}
+	return .result := sinCos(arg, 0);
+}
+.instructions: (26 bytes)
+	cmplStd/lib/math.ci:353: (9 bytes): return .result := float64.sin(arg);
+	<sin>  : dup.x64 sp(1)
+	<sin+?>: nfc(42) ;float64.sin(x: float64): float64
+	<sin+?>: set.x64 sp(5)
+	<sin+?>: ret
+	cmplStd/lib/math.ci:355: (17 bytes): return .result := sinCos(arg, 0);
+	<sin+?>: load.z64
+	<sin+?>: dup.x64 sp(3)
+	<sin+?>: load.z32
+	<sin+?>: load.ref <?> ;Math.sinCos(arg: float64, quad: int32): float64
+	<sin+?>: call
+	<sin+?>: inc.sp(-12)
+	<sin+?>: set.x64 sp(5)
+	<sin+?>: ret
 }
 Math.cos(arg: float64): float64: function {
-.kind: static inline
+.kind: static function
 .base: `function`
-.size: 0
+.size: 49
 .name: 'cos'
-.file: 'cmplStd/lib/math.ci:353'
+.file: 'cmplStd/lib/math.ci:359'
 .owner: Math
-.param .result: float64 (size: 8, cast: f64)
-.param arg: float64 (size: 8, cast: f64)
+.param .result: float64 (size: 8, cast: variable(f64))
+.param arg: float64 (size: 8, cast: variable(f64))
 .doc: 'Returns the cosine of the input'
-.value: sinCos(abs(arg), 1)
+.value: {
+	static if ((typename(float64.cos)) != null) {
+		return .result := float64.cos(arg);
+	}
+	return .result := sinCos(abs(arg), 1);
+}
+.instructions: (49 bytes)
+	cmplStd/lib/math.ci:362: (9 bytes): return .result := float64.cos(arg);
+	<cos>  : dup.x64 sp(1)
+	<cos+?>: nfc(43) ;float64.cos(x: float64): float64
+	<cos+?>: set.x64 sp(5)
+	<cos+?>: ret
+	cmplStd/lib/math.ci:364: (40 bytes): return .result := sinCos(abs(arg), 1);
+	<cos+?>: load.z64
+	<cos+?>: dup.x64 sp(3)
+	<cos+?>: dup.x64 sp(0)
+	<cos+?>: load.z64
+	<cos+?>: clt.f64
+	<cos+?>: jz +11
+	<cos+?>: dup.x64 sp(0)
+	<cos+?>: neg.f64
+	<cos+?>: jmp +6
+	<cos+?>: dup.x64 sp(0)
+	<cos+?>: set.x64 sp(2)
+	<cos+?>: load.c32 1
+	<cos+?>: load.ref <?> ;Math.sinCos(arg: float64, quad: int32): float64
+	<cos+?>: call
+	<cos+?>: inc.sp(-12)
+	<cos+?>: set.x64 sp(5)
+	<cos+?>: ret
 }
 Math.tan(arg: float64): float64: function {
 .kind: static function
 .base: `function`
-.size: 378
+.size: 387
 .name: 'tan'
-.file: 'cmplStd/lib/math.ci:356'
+.file: 'cmplStd/lib/math.ci:368'
 .owner: Math
 .param .result: float64 (size: 8, cast: variable(f64))
 .param arg: float64 (size: 8, cast: variable(f64))
 .doc: 'Returns the tangent of the input'
 .value: {
+	static if ((typename(float64.tan)) != null) {
+		return .result := float64.tan(arg);
+	}
 	complement: bool := false;
 	negate: bool := false;
 	if (arg < (0)) {
@@ -4315,101 +4423,106 @@ Math.tan(arg: float64): float64: function {
 	}
 	return .result := result;
 }
-.instructions: (378 bytes)
-	cmplStd/lib/math.ci:369: (1 byte): complement: bool := false
-	<tan>  : load.z32
-	cmplStd/lib/math.ci:370: (1 byte): negate: bool := false
+.instructions: (387 bytes)
+	cmplStd/lib/math.ci:371: (9 bytes): return .result := float64.tan(arg);
+	<tan>  : dup.x64 sp(1)
+	<tan+?>: nfc(44) ;float64.tan(x: float64): float64
+	<tan+?>: set.x64 sp(5)
+	<tan+?>: ret
+	cmplStd/lib/math.ci:385: (1 byte): complement: bool := false
 	<tan+?>: load.z32
-	cmplStd/lib/math.ci:372: (23 bytes): if (arg < (0))
+	cmplStd/lib/math.ci:386: (1 byte): negate: bool := false
+	<tan+?>: load.z32
+	cmplStd/lib/math.ci:388: (23 bytes): if (arg < (0))
 	<tan+?>: dup.x64 sp(3)
 	<tan+?>: load.z64
 	<tan+?>: clt.f64
 	<tan+?>: jz +19
-	cmplStd/lib/math.ci:373: (5 bytes): arg := -arg;
+	cmplStd/lib/math.ci:389: (5 bytes): arg := -arg;
 	<tan+?>: dup.x64 sp(3)
 	<tan+?>: neg.f64
 	<tan+?>: set.x64 sp(5)
-	cmplStd/lib/math.ci:374: (10 bytes): negate := true;
+	cmplStd/lib/math.ci:390: (10 bytes): negate := true;
 	<tan+?>: load.c32 1
 	<tan+?>: load.sp(+4)
 	<tan+?>: store.i8
-	cmplStd/lib/math.ci:376: (24 bytes): arg := (2) * arg / PIO2;
+	cmplStd/lib/math.ci:392: (24 bytes): arg := (2) * arg / PIO2;
 	<tan+?>: load.f64 2.000000
 	<tan+?>: dup.x64 sp(5)
 	<tan+?>: mul.f64
 	<tan+?>: load.f64 1.570796
 	<tan+?>: div.f64
 	<tan+?>: set.x64 sp(5)
-	cmplStd/lib/math.ci:378: (1 byte): e: float64
+	cmplStd/lib/math.ci:394: (1 byte): e: float64
 	<tan+?>: load.z128
-	cmplStd/lib/math.ci:379: (16 bytes): x: float64 := modf(arg, &e)
+	cmplStd/lib/math.ci:395: (16 bytes): x: float64 := modf(arg, &e)
 	<tan+?>: dup.x64 sp(7)
 	<tan+?>: load.sp(+16)
 	<tan+?>: load.ref <?> ;Math.modf(x: float64, intPart: float64): float64
 	<tan+?>: call
 	<tan+?>: inc.sp(-12)
-	cmplStd/lib/math.ci:380: (9 bytes): i: int32 := int32(e) % 4
+	cmplStd/lib/math.ci:396: (9 bytes): i: int32 := int32(e) % 4
 	<tan+?>: dup.x64 sp(2)
 	<tan+?>: f64.2i32
 	<tan+?>: load.c32 4
 	<tan+?>: mod.i32
-	cmplStd/lib/math.ci:382: (122 bytes): if (i == 0)
+	cmplStd/lib/math.ci:398: (122 bytes): if (i == 0)
 	<tan+?>: dup.x32 sp(0)
 	<tan+?>: load.z32
 	<tan+?>: ceq.i32
 	<tan+?>: jnz +118
-	cmplStd/lib/math.ci:383: (114 bytes): if (i == 1)
+	cmplStd/lib/math.ci:399: (114 bytes): if (i == 1)
 	<tan+?>: dup.x32 sp(0)
 	<tan+?>: load.c32 1
 	<tan+?>: ceq.i32
 	<tan+?>: jz +32
-	cmplStd/lib/math.ci:384: (14 bytes): x := (1) - x;
+	cmplStd/lib/math.ci:400: (14 bytes): x := (1) - x;
 	<tan+?>: load.f64 1.000000
 	<tan+?>: dup.x64 sp(3)
 	<tan+?>: sub.f64
 	<tan+?>: set.x64 sp(3)
-	cmplStd/lib/math.ci:385: (10 bytes): complement := true;
+	cmplStd/lib/math.ci:401: (10 bytes): complement := true;
 	<tan+?>: load.c32 1
 	<tan+?>: load.sp(+28)
 	<tan+?>: store.i8
 	<tan+?>: jmp +78
-	cmplStd/lib/math.ci:387: (74 bytes): if (i == 2)
+	cmplStd/lib/math.ci:403: (74 bytes): if (i == 2)
 	<tan+?>: dup.x32 sp(0)
 	<tan+?>: load.c32 2
 	<tan+?>: ceq.i32
 	<tan+?>: jz +29
-	cmplStd/lib/math.ci:388: (11 bytes): negate := !negate;
+	cmplStd/lib/math.ci:404: (11 bytes): negate := !negate;
 	<tan+?>: load.sp(+20)
 	<tan+?>: load.i8
 	<tan+?>: not.b32
 	<tan+?>: load.sp(+24)
 	<tan+?>: store.i8
-	cmplStd/lib/math.ci:389: (10 bytes): complement := true;
+	cmplStd/lib/math.ci:405: (10 bytes): complement := true;
 	<tan+?>: load.c32 1
 	<tan+?>: load.sp(+28)
 	<tan+?>: store.i8
 	<tan+?>: jmp +41
-	cmplStd/lib/math.ci:391: (37 bytes): if (i == 3)
+	cmplStd/lib/math.ci:407: (37 bytes): if (i == 3)
 	<tan+?>: dup.x32 sp(0)
 	<tan+?>: load.c32 3
 	<tan+?>: ceq.i32
 	<tan+?>: jz +29
-	cmplStd/lib/math.ci:392: (14 bytes): x := (1) - x;
+	cmplStd/lib/math.ci:408: (14 bytes): x := (1) - x;
 	<tan+?>: load.f64 1.000000
 	<tan+?>: dup.x64 sp(3)
 	<tan+?>: sub.f64
 	<tan+?>: set.x64 sp(3)
-	cmplStd/lib/math.ci:393: (11 bytes): negate := !negate;
+	cmplStd/lib/math.ci:409: (11 bytes): negate := !negate;
 	<tan+?>: load.sp(+20)
 	<tan+?>: load.i8
 	<tan+?>: not.b32
 	<tan+?>: load.sp(+24)
 	<tan+?>: store.i8
-	cmplStd/lib/math.ci:396: (5 bytes): xsq: float64 := x * x
+	cmplStd/lib/math.ci:412: (5 bytes): xsq: float64 := x * x
 	<tan+?>: dup.x64 sp(1)
 	<tan+?>: dup.x64 sp(3)
 	<tan+?>: mul.f64
-	cmplStd/lib/math.ci:397: (64 bytes): result: float64 := ((((p4 * xsq + p3) * xsq + p2) * xsq + p1) * xsq + p0) * x
+	cmplStd/lib/math.ci:413: (64 bytes): result: float64 := ((((p4 * xsq + p3) * xsq + p2) * xsq + p1) * xsq + p0) * x
 	<tan+?>: load.f64 0.000034
 	<tan+?>: dup.x64 sp(2)
 	<tan+?>: mul.f64
@@ -4429,7 +4542,7 @@ Math.tan(arg: float64): float64: function {
 	<tan+?>: add.f64
 	<tan+?>: dup.x64 sp(5)
 	<tan+?>: mul.f64
-	cmplStd/lib/math.ci:398: (39 bytes): result := result / (((xsq + q2) * xsq + q1) * xsq + q0);
+	cmplStd/lib/math.ci:414: (39 bytes): result := result / (((xsq + q2) * xsq + q1) * xsq + q0);
 	<tan+?>: dup.x64 sp(2)
 	<tan+?>: load.f64 -155.503316
 	<tan+?>: add.f64
@@ -4442,36 +4555,36 @@ Math.tan(arg: float64): float64: function {
 	<tan+?>: load.f64 -16638.952389
 	<tan+?>: add.f64
 	<tan+?>: div.f64
-	cmplStd/lib/math.ci:400: (47 bytes): if (complement)
+	cmplStd/lib/math.ci:416: (47 bytes): if (complement)
 	<tan+?>: load.sp(+40)
 	<tan+?>: load.i8
 	<tan+?>: jz +42
-	cmplStd/lib/math.ci:401: (24 bytes): if (result == (0))
+	cmplStd/lib/math.ci:417: (24 bytes): if (result == (0))
 	<tan+?>: dup.x64 sp(0)
 	<tan+?>: load.z64
 	<tan+?>: ceq.f64
 	<tan+?>: jz +20
-	cmplStd/lib/math.ci:402: (16 bytes): return .result := nan;
+	cmplStd/lib/math.ci:418: (16 bytes): return .result := nan;
 	<tan+?>: load.f64 -nan
 	<tan+?>: set.x64 sp(16)
 	<tan+?>: inc.sp(-44)
 	<tan+?>: ret
-	cmplStd/lib/math.ci:404: (14 bytes): result := (1) / result;
+	cmplStd/lib/math.ci:420: (14 bytes): result := (1) / result;
 	<tan+?>: load.f64 1.000000
 	<tan+?>: dup.x64 sp(2)
 	<tan+?>: div.f64
 	<tan+?>: set.x64 sp(2)
-	cmplStd/lib/math.ci:406: (19 bytes): if (negate)
+	cmplStd/lib/math.ci:422: (19 bytes): if (negate)
 	<tan+?>: load.sp(+36)
 	<tan+?>: load.i8
 	<tan+?>: jz +14
-	cmplStd/lib/math.ci:407: (10 bytes): return .result := -result;
+	cmplStd/lib/math.ci:423: (10 bytes): return .result := -result;
 	<tan+?>: dup.x64 sp(0)
 	<tan+?>: neg.f64
 	<tan+?>: set.x64 sp(16)
 	<tan+?>: inc.sp(-44)
 	<tan+?>: ret
-	cmplStd/lib/math.ci:409: (7 bytes): return .result := result;
+	cmplStd/lib/math.ci:425: (7 bytes): return .result := result;
 	<tan+?>: set.x64 sp(14)
 	<tan+?>: inc.sp(-36)
 	<tan+?>: ret
@@ -4481,7 +4594,7 @@ Math.sinh(x: float64): float64: function {
 .base: `function`
 .size: 241
 .name: 'sinh'
-.file: 'cmplStd/lib/math.ci:413'
+.file: 'cmplStd/lib/math.ci:429'
 .owner: Math
 .param .result: float64 (size: 8, cast: variable(f64))
 .param x: float64 (size: 8, cast: variable(f64))
@@ -4510,27 +4623,27 @@ Math.sinh(x: float64): float64: function {
 	return .result := result;
 }
 .instructions: (241 bytes)
-	cmplStd/lib/math.ci:425: (1 byte): negate: bool := false
+	cmplStd/lib/math.ci:441: (1 byte): negate: bool := false
 	<sinh>  : load.z32
-	cmplStd/lib/math.ci:426: (23 bytes): if (x < (0))
+	cmplStd/lib/math.ci:442: (23 bytes): if (x < (0))
 	<sinh+?>: dup.x64 sp(2)
 	<sinh+?>: load.z64
 	<sinh+?>: clt.f64
 	<sinh+?>: jz +19
-	cmplStd/lib/math.ci:427: (5 bytes): x := -x;
+	cmplStd/lib/math.ci:443: (5 bytes): x := -x;
 	<sinh+?>: dup.x64 sp(2)
 	<sinh+?>: neg.f64
 	<sinh+?>: set.x64 sp(4)
-	cmplStd/lib/math.ci:428: (10 bytes): negate := true;
+	cmplStd/lib/math.ci:444: (10 bytes): negate := true;
 	<sinh+?>: load.c32 1
 	<sinh+?>: load.sp(+4)
 	<sinh+?>: store.i8
-	cmplStd/lib/math.ci:431: (39 bytes): if (x > (21))
+	cmplStd/lib/math.ci:447: (39 bytes): if (x > (21))
 	<sinh+?>: dup.x64 sp(2)
 	<sinh+?>: load.f64 21.000000
 	<sinh+?>: cgt.f64
 	<sinh+?>: jz +27
-	cmplStd/lib/math.ci:432: (23 bytes): return .result := float64.exp(x) / (2);
+	cmplStd/lib/math.ci:448: (23 bytes): return .result := float64.exp(x) / (2);
 	<sinh+?>: dup.x64 sp(2)
 	<sinh+?>: nfc(46) ;float64.exp(x: float64): float64
 	<sinh+?>: load.f64 2.000000
@@ -4538,14 +4651,14 @@ Math.sinh(x: float64): float64: function {
 	<sinh+?>: set.x64 sp(6)
 	<sinh+?>: inc.sp(-4)
 	<sinh+?>: ret
-	cmplStd/lib/math.ci:435: (1 byte): result: float64
+	cmplStd/lib/math.ci:451: (1 byte): result: float64
 	<sinh+?>: load.z64
-	cmplStd/lib/math.ci:436: (151 bytes): if (x > 0.500000)
+	cmplStd/lib/math.ci:452: (151 bytes): if (x > 0.500000)
 	<sinh+?>: dup.x64 sp(4)
 	<sinh+?>: load.f64 0.500000
 	<sinh+?>: cgt.f64
 	<sinh+?>: jz +34
-	cmplStd/lib/math.ci:437: (26 bytes): result := (float64.exp(x) - float64.exp(-x)) / (2);
+	cmplStd/lib/math.ci:453: (26 bytes): result := (float64.exp(x) - float64.exp(-x)) / (2);
 	<sinh+?>: dup.x64 sp(4)
 	<sinh+?>: nfc(46) ;float64.exp(x: float64): float64
 	<sinh+?>: dup.x64 sp(6)
@@ -4556,11 +4669,11 @@ Math.sinh(x: float64): float64: function {
 	<sinh+?>: div.f64
 	<sinh+?>: set.x64 sp(2)
 	<sinh+?>: jmp +109
-	cmplStd/lib/math.ci:440: (5 bytes): sq: float64 := x * x
+	cmplStd/lib/math.ci:456: (5 bytes): sq: float64 := x * x
 	<sinh+?>: dup.x64 sp(4)
 	<sinh+?>: dup.x64 sp(6)
 	<sinh+?>: mul.f64
-	cmplStd/lib/math.ci:441: (53 bytes): result := (((P3 * sq + P2) * sq + P1) * sq + P0) * x;
+	cmplStd/lib/math.ci:457: (53 bytes): result := (((P3 * sq + P2) * sq + P1) * sq + P0) * x;
 	<sinh+?>: load.f64 -26.305632
 	<sinh+?>: dup.x64 sp(2)
 	<sinh+?>: mul.f64
@@ -4577,7 +4690,7 @@ Math.sinh(x: float64): float64: function {
 	<sinh+?>: dup.x64 sp(8)
 	<sinh+?>: mul.f64
 	<sinh+?>: set.x64 sp(4)
-	cmplStd/lib/math.ci:442: (43 bytes): result := result / (((sq + Q2) * sq + Q1) * sq + Q0);
+	cmplStd/lib/math.ci:458: (43 bytes): result := result / (((sq + Q2) * sq + Q1) * sq + Q0);
 	<sinh+?>: dup.x64 sp(2)
 	<sinh+?>: dup.x64 sp(2)
 	<sinh+?>: load.f64 -173.678954
@@ -4593,17 +4706,17 @@ Math.sinh(x: float64): float64: function {
 	<sinh+?>: div.f64
 	<sinh+?>: set.x64 sp(4)
 	<sinh+?>: inc.sp(-8)
-	cmplStd/lib/math.ci:445: (19 bytes): if (negate)
+	cmplStd/lib/math.ci:461: (19 bytes): if (negate)
 	<sinh+?>: load.sp(+8)
 	<sinh+?>: load.i8
 	<sinh+?>: jz +14
-	cmplStd/lib/math.ci:446: (10 bytes): return .result := -result;
+	cmplStd/lib/math.ci:462: (10 bytes): return .result := -result;
 	<sinh+?>: dup.x64 sp(0)
 	<sinh+?>: neg.f64
 	<sinh+?>: set.x64 sp(8)
 	<sinh+?>: inc.sp(-12)
 	<sinh+?>: ret
-	cmplStd/lib/math.ci:448: (7 bytes): return .result := result;
+	cmplStd/lib/math.ci:464: (7 bytes): return .result := result;
 	<sinh+?>: set.x64 sp(6)
 	<sinh+?>: inc.sp(-4)
 	<sinh+?>: ret
@@ -4613,7 +4726,7 @@ Math.cosh(x: float64): float64: function {
 .base: `function`
 .size: 75
 .name: 'cosh'
-.file: 'cmplStd/lib/math.ci:452'
+.file: 'cmplStd/lib/math.ci:468'
 .owner: Math
 .param .result: float64 (size: 8, cast: variable(f64))
 .param x: float64 (size: 8, cast: variable(f64))
@@ -4628,28 +4741,28 @@ Math.cosh(x: float64): float64: function {
 	return .result := (float64.exp(x) + float64.exp(-x)) / (2);
 }
 .instructions: (75 bytes)
-	cmplStd/lib/math.ci:453: (13 bytes): if (x < (0))
+	cmplStd/lib/math.ci:469: (13 bytes): if (x < (0))
 	<cosh>  : dup.x64 sp(1)
 	<cosh+?>: load.z64
 	<cosh+?>: clt.f64
 	<cosh+?>: jz +9
-	cmplStd/lib/math.ci:454: (5 bytes): x := -x;
+	cmplStd/lib/math.ci:470: (5 bytes): x := -x;
 	<cosh+?>: dup.x64 sp(1)
 	<cosh+?>: neg.f64
 	<cosh+?>: set.x64 sp(3)
-	cmplStd/lib/math.ci:456: (35 bytes): if (x > (21))
+	cmplStd/lib/math.ci:472: (35 bytes): if (x > (21))
 	<cosh+?>: dup.x64 sp(1)
 	<cosh+?>: load.f64 21.000000
 	<cosh+?>: cgt.f64
 	<cosh+?>: jz +23
-	cmplStd/lib/math.ci:457: (19 bytes): return .result := float64.exp(x) / (2);
+	cmplStd/lib/math.ci:473: (19 bytes): return .result := float64.exp(x) / (2);
 	<cosh+?>: dup.x64 sp(1)
 	<cosh+?>: nfc(46) ;float64.exp(x: float64): float64
 	<cosh+?>: load.f64 2.000000
 	<cosh+?>: div.f64
 	<cosh+?>: set.x64 sp(5)
 	<cosh+?>: ret
-	cmplStd/lib/math.ci:459: (27 bytes): return .result := (float64.exp(x) + float64.exp(-x)) / (2);
+	cmplStd/lib/math.ci:475: (27 bytes): return .result := (float64.exp(x) + float64.exp(-x)) / (2);
 	<cosh+?>: dup.x64 sp(1)
 	<cosh+?>: nfc(46) ;float64.exp(x: float64): float64
 	<cosh+?>: dup.x64 sp(3)
@@ -4666,7 +4779,7 @@ Math.asin(x: float64): float64: function {
 .base: `function`
 .size: 173
 .name: 'asin'
-.file: 'cmplStd/lib/math.ci:467'
+.file: 'cmplStd/lib/math.ci:483'
 .owner: Math
 .param .result: float64 (size: 8, cast: variable(f64))
 .param x: float64 (size: 8, cast: variable(f64))
@@ -4699,52 +4812,52 @@ Math.asin(x: float64): float64: function {
 	return .result := result;
 }
 .instructions: (173 bytes)
-	cmplStd/lib/math.ci:468: (12 bytes): if (x == (0))
+	cmplStd/lib/math.ci:484: (12 bytes): if (x == (0))
 	<asin>  : dup.x64 sp(1)
 	<asin+?>: load.z64
 	<asin+?>: ceq.f64
 	<asin+?>: jz +8
-	cmplStd/lib/math.ci:470: (4 bytes): return .result := x;
+	cmplStd/lib/math.ci:486: (4 bytes): return .result := x;
 	<asin+?>: mov.x64 sp(3, 1)
 	<asin+?>: ret
-	cmplStd/lib/math.ci:473: (1 byte): negate: bool := false
+	cmplStd/lib/math.ci:489: (1 byte): negate: bool := false
 	<asin+?>: load.z32
-	cmplStd/lib/math.ci:474: (23 bytes): if (x < (0))
+	cmplStd/lib/math.ci:490: (23 bytes): if (x < (0))
 	<asin+?>: dup.x64 sp(2)
 	<asin+?>: load.z64
 	<asin+?>: clt.f64
 	<asin+?>: jz +19
-	cmplStd/lib/math.ci:475: (10 bytes): negate := true;
+	cmplStd/lib/math.ci:491: (10 bytes): negate := true;
 	<asin+?>: load.c32 1
 	<asin+?>: load.sp(+4)
 	<asin+?>: store.i8
-	cmplStd/lib/math.ci:476: (5 bytes): x := -x;
+	cmplStd/lib/math.ci:492: (5 bytes): x := -x;
 	<asin+?>: dup.x64 sp(2)
 	<asin+?>: neg.f64
 	<asin+?>: set.x64 sp(4)
-	cmplStd/lib/math.ci:479: (32 bytes): if (x > (1))
+	cmplStd/lib/math.ci:495: (32 bytes): if (x > (1))
 	<asin+?>: dup.x64 sp(2)
 	<asin+?>: load.f64 1.000000
 	<asin+?>: cgt.f64
 	<asin+?>: jz +20
-	cmplStd/lib/math.ci:481: (16 bytes): return .result := nan;
+	cmplStd/lib/math.ci:497: (16 bytes): return .result := nan;
 	<asin+?>: load.f64 -nan
 	<asin+?>: set.x64 sp(6)
 	<asin+?>: inc.sp(-4)
 	<asin+?>: ret
-	cmplStd/lib/math.ci:484: (19 bytes): result: float64 := float64.sqrt((1) - x * x)
+	cmplStd/lib/math.ci:500: (19 bytes): result: float64 := float64.sqrt((1) - x * x)
 	<asin+?>: load.f64 1.000000
 	<asin+?>: dup.x64 sp(4)
 	<asin+?>: dup.x64 sp(6)
 	<asin+?>: mul.f64
 	<asin+?>: sub.f64
 	<asin+?>: nfc(48) ;float64.sqrt(x: float64): float64
-	cmplStd/lib/math.ci:485: (60 bytes): if (x > 0.700000)
+	cmplStd/lib/math.ci:501: (60 bytes): if (x > 0.700000)
 	<asin+?>: dup.x64 sp(4)
 	<asin+?>: load.f64 0.700000
 	<asin+?>: cgt.f64
 	<asin+?>: jz +38
-	cmplStd/lib/math.ci:486: (30 bytes): result := pi / (2) - float64.atan2(result, x);
+	cmplStd/lib/math.ci:502: (30 bytes): result := pi / (2) - float64.atan2(result, x);
 	<asin+?>: load.f64 3.141593
 	<asin+?>: load.f64 2.000000
 	<asin+?>: div.f64
@@ -4754,22 +4867,22 @@ Math.asin(x: float64): float64: function {
 	<asin+?>: sub.f64
 	<asin+?>: set.x64 sp(2)
 	<asin+?>: jmp +14
-	cmplStd/lib/math.ci:489: (10 bytes): result := float64.atan2(x, result);
+	cmplStd/lib/math.ci:505: (10 bytes): result := float64.atan2(x, result);
 	<asin+?>: dup.x64 sp(4)
 	<asin+?>: dup.x64 sp(2)
 	<asin+?>: nfc(49) ;float64.atan2(x: float64, y: float64): float64
 	<asin+?>: set.x64 sp(2)
-	cmplStd/lib/math.ci:492: (19 bytes): if (negate)
+	cmplStd/lib/math.ci:508: (19 bytes): if (negate)
 	<asin+?>: load.sp(+8)
 	<asin+?>: load.i8
 	<asin+?>: jz +14
-	cmplStd/lib/math.ci:493: (10 bytes): return .result := -result;
+	cmplStd/lib/math.ci:509: (10 bytes): return .result := -result;
 	<asin+?>: dup.x64 sp(0)
 	<asin+?>: neg.f64
 	<asin+?>: set.x64 sp(8)
 	<asin+?>: inc.sp(-12)
 	<asin+?>: ret
-	cmplStd/lib/math.ci:495: (7 bytes): return .result := result;
+	cmplStd/lib/math.ci:511: (7 bytes): return .result := result;
 	<asin+?>: set.x64 sp(6)
 	<asin+?>: inc.sp(-4)
 	<asin+?>: ret
@@ -4779,7 +4892,7 @@ Math.acos(x: float64): float64: function {
 .base: `function`
 .size: 0
 .name: 'acos'
-.file: 'cmplStd/lib/math.ci:502'
+.file: 'cmplStd/lib/math.ci:518'
 .owner: Math
 .param .result: float64 (size: 8, cast: f64)
 .param x: float64 (size: 8, cast: f64)
@@ -4793,7 +4906,7 @@ Math.radians(degrees: float64): float64: function {
 .base: `function`
 .size: 0
 .name: 'radians'
-.file: 'cmplStd/lib/math.ci:526'
+.file: 'cmplStd/lib/math.ci:542'
 .owner: Math
 .param .result: float64 (size: 8, cast: f64)
 .param degrees: float64 (size: 8, cast: f64)
@@ -4805,7 +4918,7 @@ Math.degrees(radians: float64): float64: function {
 .base: `function`
 .size: 0
 .name: 'degrees'
-.file: 'cmplStd/lib/math.ci:529'
+.file: 'cmplStd/lib/math.ci:545'
 .owner: Math
 .param .result: float64 (size: 8, cast: f64)
 .param radians: float64 (size: 8, cast: f64)
@@ -15974,7 +16087,7 @@ testMathAbsMod_f32_8d: float32 {
 .main: function {
 .kind: static function
 .base: `function`
-.size: 9728
+.size: 9703
 .name: '.main'
 .print: '.main'
 .field typename: typename (size: 160, cast: static const typename(ref))
@@ -16810,7 +16923,7 @@ testMathAbsMod_f32_8d: float32 {
 .field testMathAbsMod_f32_8b: float32 (size: 4, cast: variable(f32))
 .field testMathAbsMod_f32_8c: float32 (size: 4, cast: variable(f32))
 .field testMathAbsMod_f32_8d: float32 (size: 4, cast: variable(f32))
-.field .main: function (size: 9728, cast: static function)
+.field .main: function (size: 9703, cast: static function)
 .value: {
 	{
 		byte: typename := uint8;
@@ -16964,39 +17077,39 @@ testMathAbsMod_f32_8d: float32 {
 			static smooth(t: float64): float64 := t * t * ((3) - (2) * t);
 			static smooth(t: float32, a: float32, b: float32): float32 := smooth(clamp((t - a) / (b - a), 0.000000, 1.000000));
 			static smooth(t: float64, a: float64, b: float64): float64 := smooth(clamp((t - a) / (b - a), 0.000000, 1.000000));
-			static min(data: float64[]): float64 := {
-				if (data.length == (0)) {
+			static min(values: float64[]): float64 := {
+				if (values.length == (0)) {
 					return .result := nan;
 				}
-				result: float64 := data[0];
-				for (i: int32 := 1; i < (data.length); i := i + 1) {
-					if (result > data[i]) {
-						result := data[i];
+				result: float64 := values[0];
+				for (i: int32 := 1; i < (values.length); i := i + 1) {
+					if (result > values[i]) {
+						result := values[i];
 					}
 				}
 				return .result := result;
 			};
-			static max(data: float64[]): float64 := {
-				if (data.length == (0)) {
+			static max(values: float64[]): float64 := {
+				if (values.length == (0)) {
 					return .result := nan;
 				}
-				result: float64 := data[0];
-				for (i: int32 := 1; i < (data.length); i := i + 1) {
-					if (result < data[i]) {
-						result := data[i];
+				result: float64 := values[0];
+				for (i: int32 := 1; i < (values.length); i := i + 1) {
+					if (result < values[i]) {
+						result := values[i];
 					}
 				}
 				return .result := result;
 			};
-			static sum(data: float64[]): float64 := {
+			static sum(values: float64[]): float64 := {
 				result: float64 := 0;
-				for (i: int32 := 0; i < (data.length); i := i + 1) {
-					result := result + data[i];
+				for (i: int32 := 0; i < (values.length); i := i + 1) {
+					result := result + values[i];
 				}
 				return .result := result;
 			};
-			static mean(data: float64[]): float64 := {
-				return .result := sum(...data) / (signed(data.length));
+			static mean(values: float64[]): float64 := {
+				return .result := sum(...values) / (signed(values.length));
 			};
 			static eval(x: float64, a0: float64): float64 := (a0);
 			static eval(x: float64, a0: float64, a1: float64): float64 := (a0 + x * a1);
@@ -17064,9 +17177,22 @@ testMathAbsMod_f32_8d: float32 {
 				temp2: float64 := ((((ysq + q3) * ysq + q2) * ysq + q1) * ysq + q0);
 				return .result := temp1 / temp2;
 			};
-			static sin(arg: float64): float64 := sinCos(arg, 0);
-			static cos(arg: float64): float64 := sinCos(abs(arg), 1);
+			static sin(arg: float64): float64 := {
+				static if ((typename(float64.sin)) != null) {
+					return .result := float64.sin(arg);
+				}
+				return .result := sinCos(arg, 0);
+			};
+			static cos(arg: float64): float64 := {
+				static if ((typename(float64.cos)) != null) {
+					return .result := float64.cos(arg);
+				}
+				return .result := sinCos(abs(arg), 1);
+			};
 			static tan(arg: float64): float64 := {
+				static if ((typename(float64.tan)) != null) {
+					return .result := float64.tan(arg);
+				}
 				complement: bool := false;
 				negate: bool := false;
 				if (arg < (0)) {
@@ -18723,7 +18849,7 @@ testMathAbsMod_f32_8d: float32 {
 		testMathAbsMod_f32_8d: float32 := Math.absMod(-12.000000, 10.000000);
 	}
 }
-.instructions: (9728 bytes)
+.instructions: (9703 bytes)
 	cmplStd/lib/text/string.ci:155: (14 bytes): static const whiteSpace: char[] := " \t\n\r"
 	<.main>  : load.c32 4
 	<.main+?>: load.ref <?> ;" \t\n\r"
@@ -22221,7 +22347,7 @@ testMathAbsMod_f32_8d: float32 {
 	<.main+?>: load.sp(+4)
 	<.main+?>: load.z64
 	<.main+?>: dup.x64 sp(2)
-	<.main+?>: load.ref <?> ;Math.min(data: float64[]): float64
+	<.main+?>: load.ref <?> ;Math.min(values: float64[]): float64
 	<.main+?>: call
 	<.main+?>: mov.x64 sp(4, 2)
 	<.main+?>: inc.sp(-16)
@@ -22239,7 +22365,7 @@ testMathAbsMod_f32_8d: float32 {
 	<.main+?>: load.sp(+4)
 	<.main+?>: load.z64
 	<.main+?>: dup.x64 sp(2)
-	<.main+?>: load.ref <?> ;Math.min(data: float64[]): float64
+	<.main+?>: load.ref <?> ;Math.min(values: float64[]): float64
 	<.main+?>: call
 	<.main+?>: mov.x64 sp(22, 2)
 	<.main+?>: inc.sp(-88)
@@ -22248,7 +22374,7 @@ testMathAbsMod_f32_8d: float32 {
 	<.main+?>: load.sp(+4)
 	<.main+?>: load.z64
 	<.main+?>: dup.x64 sp(2)
-	<.main+?>: load.ref <?> ;Math.max(data: float64[]): float64
+	<.main+?>: load.ref <?> ;Math.max(values: float64[]): float64
 	<.main+?>: call
 	<.main+?>: mov.x64 sp(4, 2)
 	<.main+?>: inc.sp(-16)
@@ -22266,7 +22392,7 @@ testMathAbsMod_f32_8d: float32 {
 	<.main+?>: load.sp(+4)
 	<.main+?>: load.z64
 	<.main+?>: dup.x64 sp(2)
-	<.main+?>: load.ref <?> ;Math.max(data: float64[]): float64
+	<.main+?>: load.ref <?> ;Math.max(values: float64[]): float64
 	<.main+?>: call
 	<.main+?>: mov.x64 sp(22, 2)
 	<.main+?>: inc.sp(-88)
@@ -22275,7 +22401,7 @@ testMathAbsMod_f32_8d: float32 {
 	<.main+?>: load.sp(+4)
 	<.main+?>: load.z64
 	<.main+?>: dup.x64 sp(2)
-	<.main+?>: load.ref <?> ;Math.sum(data: float64[]): float64
+	<.main+?>: load.ref <?> ;Math.sum(values: float64[]): float64
 	<.main+?>: call
 	<.main+?>: mov.x64 sp(4, 2)
 	<.main+?>: inc.sp(-16)
@@ -22285,7 +22411,7 @@ testMathAbsMod_f32_8d: float32 {
 	<.main+?>: load.sp(+4)
 	<.main+?>: load.z64
 	<.main+?>: dup.x64 sp(2)
-	<.main+?>: load.ref <?> ;Math.sum(data: float64[]): float64
+	<.main+?>: load.ref <?> ;Math.sum(values: float64[]): float64
 	<.main+?>: call
 	<.main+?>: mov.x64 sp(6, 2)
 	<.main+?>: inc.sp(-24)
@@ -22296,7 +22422,7 @@ testMathAbsMod_f32_8d: float32 {
 	<.main+?>: load.sp(+4)
 	<.main+?>: load.z64
 	<.main+?>: dup.x64 sp(2)
-	<.main+?>: load.ref <?> ;Math.sum(data: float64[]): float64
+	<.main+?>: load.ref <?> ;Math.sum(values: float64[]): float64
 	<.main+?>: call
 	<.main+?>: mov.x64 sp(8, 2)
 	<.main+?>: inc.sp(-32)
@@ -22315,7 +22441,7 @@ testMathAbsMod_f32_8d: float32 {
 	<.main+?>: load.sp(+4)
 	<.main+?>: load.z64
 	<.main+?>: dup.x64 sp(2)
-	<.main+?>: load.ref <?> ;Math.sum(data: float64[]): float64
+	<.main+?>: load.ref <?> ;Math.sum(values: float64[]): float64
 	<.main+?>: call
 	<.main+?>: mov.x64 sp(24, 2)
 	<.main+?>: inc.sp(-96)
@@ -22400,33 +22526,22 @@ testMathAbsMod_f32_8d: float32 {
 	<.main+?>: call
 	<.main+?>: mov.x64 sp(18, 4)
 	<.main+?>: inc.sp(-72)
-	cmplStd/test/std/test.math.ci:57: (31 bytes): testMathSin_f64: float64 := Math.sin(Math.pi / (2))
+	cmplStd/test/std/test.math.ci:57: (30 bytes): testMathSin_f64: float64 := Math.sin(Math.pi / (2))
 	<.main+?>: load.z64
 	<.main+?>: load.f64 3.141593
 	<.main+?>: load.f64 2.000000
 	<.main+?>: div.f64
-	<.main+?>: load.z32
-	<.main+?>: load.ref <?> ;Math.sinCos(arg: float64, quad: int32): float64
+	<.main+?>: load.ref <?> ;Math.sin(arg: float64): float64
 	<.main+?>: call
-	<.main+?>: inc.sp(-12)
-	cmplStd/test/std/test.math.ci:58: (54 bytes): testMathCos_f64: float64 := Math.cos(Math.pi / (2))
+	<.main+?>: inc.sp(-8)
+	cmplStd/test/std/test.math.ci:58: (30 bytes): testMathCos_f64: float64 := Math.cos(Math.pi / (2))
 	<.main+?>: load.z64
 	<.main+?>: load.f64 3.141593
 	<.main+?>: load.f64 2.000000
 	<.main+?>: div.f64
-	<.main+?>: dup.x64 sp(0)
-	<.main+?>: load.z64
-	<.main+?>: clt.f64
-	<.main+?>: jz +11
-	<.main+?>: dup.x64 sp(0)
-	<.main+?>: neg.f64
-	<.main+?>: jmp +6
-	<.main+?>: dup.x64 sp(0)
-	<.main+?>: set.x64 sp(2)
-	<.main+?>: load.c32 1
-	<.main+?>: load.ref <?> ;Math.sinCos(arg: float64, quad: int32): float64
+	<.main+?>: load.ref <?> ;Math.cos(arg: float64): float64
 	<.main+?>: call
-	<.main+?>: inc.sp(-12)
+	<.main+?>: inc.sp(-8)
 	cmplStd/test/std/test.math.ci:59: (30 bytes): testMathTan_f64: float64 := Math.tan(Math.pi / (4))
 	<.main+?>: load.z64
 	<.main+?>: load.f64 3.141593
@@ -22752,6 +22867,7 @@ emit.min: typename(<emit.min>)
 emit.max: typename(<emit.max>)
 emit.swz: typename(<emit.swz>)
 emit: typename(<emit>)
+System.Platform: typename(<System.Platform>)
 System: typename(<System>)
 cmplStd/lib/debug.ci:48: NotEquals: typename(<NotEquals>)
 cmplStd/lib/debug.ci:61: assertEq: function(<assertEq>)
@@ -22769,10 +22885,12 @@ cmplStd/lib/math.ci:260: Math.eval: function(<Math.eval>)
 cmplStd/lib/math.ci:269: Math.cmp: function(<Math.cmp>)
 cmplStd/lib/math.ci:284: Math.cmp: function(<Math.cmp>)
 cmplStd/lib/math.ci:299: Math.sinCos: function(<Math.sinCos>)
-cmplStd/lib/math.ci:356: Math.tan: function(<Math.tan>)
-cmplStd/lib/math.ci:413: Math.sinh: function(<Math.sinh>)
-cmplStd/lib/math.ci:452: Math.cosh: function(<Math.cosh>)
-cmplStd/lib/math.ci:467: Math.asin: function(<Math.asin>)
+cmplStd/lib/math.ci:350: Math.sin: function(<Math.sin>)
+cmplStd/lib/math.ci:359: Math.cos: function(<Math.cos>)
+cmplStd/lib/math.ci:368: Math.tan: function(<Math.tan>)
+cmplStd/lib/math.ci:429: Math.sinh: function(<Math.sinh>)
+cmplStd/lib/math.ci:468: Math.cosh: function(<Math.cosh>)
+cmplStd/lib/math.ci:483: Math.asin: function(<Math.asin>)
 cmplStd/lib/math.ci:2: Math: typename(<Math>)
 cmplStd/lib/math/Complex.ci:2: Complex: typename(<Complex>)
 cmplStd/lib/math/Complex.ci:24: Complex: function(<Complex>)
@@ -23078,13 +23196,13 @@ cmplStd/test/lang/reflect.ci:22: RecordSizeof: typename(<RecordSizeof>)
 cmplStd/test/lang/reflect.ci:26: RecordSizeofExt: typename(<RecordSizeofExt>)
 cmplStd/test/lang/reflect.ci:30: typeofRecord: typename(<RecordSizeofExt>)
 cmplStd/test/lang/reflect.ci:31: nameOfRecord: char[*]("RecordSizeofExt")
-cmplStd/test/lang/reflect.ci:32: offsetOfRecord: int32(319472)
+cmplStd/test/lang/reflect.ci:32: offsetOfRecord: int32(320512)
 cmplStd/test/lang/reflect.ci:33: sizeOfRecord: int32(16)
 cmplStd/test/lang/reflect.ci:34: fileOfRecord: char[*]("cmplStd/test/lang/reflect.ci")
 cmplStd/test/lang/reflect.ci:35: lineOfRecord: int32(26)
 cmplStd/test/lang/reflect.ci:37: typeofBase: typename(<RecordSizeof>)
 cmplStd/test/lang/reflect.ci:38: nameOfBase: char[*]("RecordSizeof")
-cmplStd/test/lang/reflect.ci:39: offsetOfBase: int32(319152)
+cmplStd/test/lang/reflect.ci:39: offsetOfBase: int32(320192)
 cmplStd/test/lang/reflect.ci:40: sizeOfBase: int32(12)
 cmplStd/test/lang/reflect.ci:41: fileOfBase: char[*]("cmplStd/test/lang/reflect.ci")
 cmplStd/test/lang/reflect.ci:42: lineOfBase: int32(22)
@@ -23463,7 +23581,7 @@ cmplStd/test/std/test.math.ci:53: testMathEval_4: float64(1111.000000)
 cmplStd/test/std/test.math.ci:54: testMathEval_5: float64(11111.000000)
 cmplStd/test/std/test.math.ci:55: testMathEval_6: float64(111111.000000)
 cmplStd/test/std/test.math.ci:57: testMathSin_f64: float64(1.000000)
-cmplStd/test/std/test.math.ci:58: testMathCos_f64: float64(-0.000000)
+cmplStd/test/std/test.math.ci:58: testMathCos_f64: float64(0.000000)
 cmplStd/test/std/test.math.ci:59: testMathTan_f64: float64(1.000000)
 cmplStd/test/std/test.math.ci:60: testMathSinh_f64: float64(2.301299)
 cmplStd/test/std/test.math.ci:61: testMathCosh_f64: float64(2.509178)
@@ -23496,18 +23614,18 @@ cmplStd/test/std/test.math.ci:96: testMathAbsMod_f32_8d: float32(8.000000)
 
 ---------- Memory usage:
 memory[all] @000000; size: 4194016(4.0 Mb)
-memory[used] @000000; size: 416391(406.6 Kb)
-memory[heap] @065a87; size: 2729073(2.6 Mb)
+memory[used] @000000; size: 417502(407.7 Kb)
+memory[heap] @065ede; size: 2727962(2.6 Mb)
 memory[stack] @1fff40; size: 1048504(1023.9 Kb)
 
 ---------- used memory:
-memory[meta] @000000; size: 400160(390.8 Kb)
-memory[code] @000000; size: 15921(15.5 Kb)
+memory[meta] @000000; size: 401200(391.8 Kb)
+memory[code] @000000; size: 15980(15.6 Kb)
 memory[data] @000000; size: 104(104.0 bytes)
 
 ---------- heap memory:
-memory[used] @065aa0; size: 32(32.0 bytes)
-memory[used] @065ad0; size: 32(32.0 bytes)
-memory[free] @065b00; size: 2728928(2.6 Mb)
+memory[used] @065ef0; size: 32(32.0 bytes)
+memory[used] @065f20; size: 32(32.0 bytes)
+memory[free] @065f50; size: 2727824(2.6 Mb)
 
 ---------- Exitcode: 0, time: 0.000 ms

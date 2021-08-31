@@ -203,45 +203,45 @@ static struct Math {
 	inline smooth(float64 t, float64 a, float64 b) = smooth(clamp((t - a) / (b - a), 0F, 1F));
 
 	/// Returns the smaller value from the input values
-	float64 min(float64 data...) {
-		if (data.length == 0) {
+	float64 min(float64 values...) {
+		if (values.length == 0) {
 			return nan;
 		}
-		float64 result = data[0];
-		for (int i = 1; i < data.length; i += 1) {
-			if (result > data[i]) {
-				result = data[i];
+		float64 result = values[0];
+		for (int i = 1; i < values.length; i += 1) {
+			if (result > values[i]) {
+				result = values[i];
 			}
 		}
 		return result;
 	}
 
 	/// Returns the greater value from the input values
-	float64 max(float64 data...) {
-		if (data.length == 0) {
+	float64 max(float64 values...) {
+		if (values.length == 0) {
 			return nan;
 		}
-		float64 result = data[0];
-		for (int i = 1; i < data.length; i += 1) {
-			if (result < data[i]) {
-				result = data[i];
+		float64 result = values[0];
+		for (int i = 1; i < values.length; i += 1) {
+			if (result < values[i]) {
+				result = values[i];
 			}
 		}
 		return result;
 	}
 
 	/// Returns the sum of the input values
-	float64 sum(float64 data...) {
+	float64 sum(float64 values...) {
 		float64 result = 0;
-		for (int i = 0; i < data.length; i += 1) {
-			result += data[i];
+		for (int i = 0; i < values.length; i += 1) {
+			result += values[i];
 		}
 		return result;
 	}
 
 	/// Returns the mean of the input values
-	float64 mean(float64 data...) {
-		return sum(...data) / signed(data.length);
+	float64 mean(float64 values...) {
+		return sum(...values) / signed(values.length);
 	}
 
 	/// Return the polynomial evaluated at x using Horner's algorithm
@@ -347,13 +347,29 @@ static struct Math {
 	}
 
 	/// Returns the sine of the input
-	inline sin(float64 arg) = sinCos(arg, 0);
+	float64 sin(float64 arg) {
+		static if (typename(float64.sin) != null) {
+			// use the native method if available
+			return float64.sin(arg);
+		}
+		return sinCos(arg, 0);
+	}
 
 	/// Returns the cosine of the input
-	inline cos(float64 arg) = sinCos(abs(arg), 1);
+	float64 cos(float64 arg) {
+		static if (typename(float64.cos) != null) {
+			// use the native method if available
+			return float64.cos(arg);
+		}
+		return sinCos(abs(arg), 1);
+	}
 
 	/// Returns the tangent of the input
 	float64 tan(float64 arg) {
+		static if (typename(float64.tan) != null) {
+			// use the native method if available
+			return float64.tan(arg);
+		}
 		enum: float64 {
 			PIO2: 1.570796326794896619231e0;
 			p0: -0.1306820264754825668269611177e+5;

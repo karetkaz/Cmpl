@@ -302,12 +302,172 @@ static vmError sysMemMove(nfcContext ctx) {
 	retref(ctx, vmOffset(ctx->rt, res));
 	return noError;
 }
-//#}#endregion
 
-int ccLibStd(ccContext cc) {
+
+static int installPlatform(ccContext cc) {
+	int err = 0;
+	symn nsp = NULL;		// namespace
+
+	if ((nsp = ccBegin(cc, "Platform"))) {
+		int isWebAssembly = 0;
+		int isWindows = 0;
+		int isMacOs = 0;
+		int isLinux = 0;
+		int isUnix = 0;
+#if defined(__EMSCRIPTEN__)
+		isWebAssembly = 1;
+#endif
+#if defined(WIN32) || defined(_WIN32) || defined(__WIN32__)
+		isWindows = 32;
+#endif
+#if defined(WIN64) || defined(_WIN64) || defined(__WIN64__)
+		isWindows = 64;
+#endif
+#if defined(__OSX__) || defined(__MACOSX__) || defined(__APPLE__)
+		isMacOs = 64;
+		//isUnix = 1;
+#endif
+#if defined(linux) || defined(__linux) || defined(__linux__)
+		isLinux = 1;
+			//isUnix = 1;
+#endif
+#if defined(unix)        || defined(__unix)      || defined(__unix__) \
+|| defined(sun)         || defined(__sun) \
+|| defined(BSD)         || defined(__OpenBSD__) || defined(__NetBSD__) \
+|| defined(__FreeBSD__) || defined (__DragonFly__) \
+|| defined(sgi)         || defined(__sgi) \
+|| defined(__CYGWIN__)
+		isUnix = 1;
+#endif
+		err = err || !ccDefInt(cc, "WebAssembly", isWebAssembly);
+		err = err || !ccDefInt(cc, "Windows", isWindows);
+		err = err || !ccDefInt(cc, "MacOS", isMacOs);
+		err = err || !ccDefInt(cc, "Linux", isLinux);
+		err = err || !ccDefInt(cc, "Unix", isUnix);
+		//err = err || !ccDefInt(cc, "Android", 0);
+		//err = err || !ccDefInt(cc, "iOS", 0);
+		//err = err || !ccDefInt(cc, "Dos", 0);
+		ccEnd(cc, nsp);
+	}
+	return err;
+}
+
+int ccLibSys(ccContext cc) {
 	symn nsp = NULL;		// namespace
 	int err = 0;
-	size_t i;
+
+	struct {
+		vmError (*fun)(nfcContext);
+		char *def;
+	}
+	sys[] = {       // IO/MEM/EXIT
+			{sysExit,   "void exit(int32 code)"},
+			{sysSRand,  "void srand(int32 seed)"},
+
+			{sysTime,   "int32 time()"},
+			{sysMillis, "int64 millis()"},
+			{sysMSleep, "void sleep(int64 millis)"},
+	};
+	struct {
+		int64_t value;
+		char *name;
+	}
+	logLevels[] = {
+			{raiseFatal, "abort"},
+			{raiseError, "error"},
+			{raiseWarn, "warn"},
+			{raiseInfo, "info"},
+			{raiseDebug, "debug"},
+			{raiseVerbose, "verbose"},
+			// trace levels
+			{0, "noTrace"},
+			{128, "defTrace"},
+	};
+
+	// raise(fatal, error, warn, info, debug, trace)
+	if (cc->type_var != NULL) {
+		cc->libc_dbg = ccAddCall(cc, sysRaise, "void raise(const char file[*], int32 line, int32 level, int32 trace, const char message[*], const variant inspect)");
+		if (cc->libc_dbg == NULL) {
+			err = 2;
+		}
+		if (!err && ccExtend(cc, cc->libc_dbg)) {
+			cc->libc_dbg->doc = "Report messages or raise errors.";
+			for (size_t i = 0; i < lengthOf(logLevels); i += 1) {
+				if (!ccDefInt(cc, logLevels[i].name, logLevels[i].value)) {
+					err = 1;
+					break;
+				}
+			}
+			ccEnd(cc, cc->libc_dbg);
+		}
+	}
+
+	// tryExecute
+	if (!err && cc->type_ptr != NULL) {
+		cc->libc_try = ccAddCall(cc, sysTryExec, "int32 tryExec(pointer args, void action(pointer args))");
+		if (cc->libc_try == NULL) {
+			err = 2;
+		}
+	}
+
+	// alloc, free, memset, memcpy
+	if (!err && ccExtend(cc, cc->type_ptr)) {
+		cc->libc_mem = ccAddCall(cc, sysMemMgr, "pointer alloc(pointer ptr, int32 size)");
+		if (cc->libc_mem == NULL) {
+			err = 3;
+		}
+		if (!ccAddCall(cc, sysMemSet, "pointer fill(pointer dst, uint8 value, int32 size)")) {
+			err = 3;
+		}
+		if (!ccAddCall(cc, sysMemCpy, "pointer copy(pointer dst, pointer src, int32 size)")) {
+			err = 3;
+		}
+		if (!ccAddCall(cc, sysMemMove, "pointer move(pointer dst, pointer src, int32 size)")) {
+			err = 3;
+		}
+		ccEnd(cc, cc->type_ptr);
+	}
+
+	if (!err && (nsp = ccBegin(cc, "System"))) {
+		for (size_t i = 0; i < lengthOf(sys); i += 1) {
+			if (!ccAddCall(cc, sys[i].fun, sys[i].def)) {
+				err = 4;
+				break;
+			}
+		}
+
+		symn rand = ccAddCall(cc, sysRand, "int32 rand()");
+		if (!err && ccExtend(cc, rand) != NULL) {
+			if (!ccDefInt(cc, "max", RAND_MAX)) {
+				err = 1;
+			}
+			ccEnd(cc, rand);
+		}
+		else {
+			err = 2;
+		}
+
+		symn clock = ccAddCall(cc, sysClock, "int32 clock()");
+		if (!err && ccExtend(cc, clock) != NULL) {
+			if (!ccDefInt(cc, "perSec", CLOCKS_PER_SEC)) {
+				err = 1;
+			}
+			ccEnd(cc, clock);
+		}
+		else {
+			err = 2;
+		}
+
+		installPlatform(cc);
+		//~ install(cc, "Arguments", CAST_arr, 0, 0);	// string Args[];
+		//~ install(cc, "Environment", KIND_def, 0, 0);	// string Env[string];
+		ccEnd(cc, nsp);
+	}
+	return err;
+}
+
+int ccLibStd(ccContext cc) {
+	int err = 0;
 
 	struct {
 		vmError (*fun)(nfcContext);
@@ -346,112 +506,11 @@ int ccLibStd(ccContext cc) {
 		{f64pow,    "float64 pow(float64 x, float64 y)"},
 		{f64sqrt,   "float64 sqrt(float64 x)"},
 		{f64atan2,  "float64 atan2(float64 x, float64 y)"},
-	},
-	misc[] = {       // IO/MEM/EXIT
-		{sysExit,   "void exit(int32 code)"},
-		{sysSRand,  "void srand(int32 seed)"},
-
-		{sysTime,   "int32 time()"},
-		{sysMillis, "int64 millis()"},
-		{sysMSleep, "void sleep(int64 millis)"},
 	};
-	struct {
-		int64_t value;
-		char *name;
-	}
-	logLevels[] = {
-		{raiseFatal, "abort"},
-		{raiseError, "error"},
-		{raiseWarn, "warn"},
-		{raiseInfo, "info"},
-		{raiseDebug, "debug"},
-		{raiseVerbose, "verbose"},
-		// trace levels
-		{0, "noTrace"},
-		{128, "defTrace"},
-	};
-
-	if (!err && cc->type_var != NULL) {		// debug, trace, assert, fatal, ...
-		cc->libc_dbg = ccAddCall(cc, sysRaise, "void raise(const char file[*], int32 line, int32 level, int32 trace, const char message[*], const variant inspect)");
-		if (cc->libc_dbg == NULL) {
-			err = 2;
-		}
-		if (!err && ccExtend(cc, cc->libc_dbg)) {
-			cc->libc_dbg->doc = "Report messages or raise errors.";
-			for (i = 0; i < lengthOf(logLevels); i += 1) {
-				if (!ccDefInt(cc, logLevels[i].name, logLevels[i].value)) {
-					err = 1;
-					break;
-				}
-			}
-			ccEnd(cc, cc->libc_dbg);
-		}
-	}
-
-	if (!err && cc->type_ptr != NULL) {		// tryExecute
-		cc->libc_try = ccAddCall(cc, sysTryExec, "int32 tryExec(pointer args, void action(pointer args))");
-		if (cc->libc_try == NULL) {
-			err = 2;
-		}
-	}
-
-	// re-alloc, malloc, free, memset, memcpy
-	if (!err && ccExtend(cc, cc->type_ptr)) {
-		cc->libc_mem = ccAddCall(cc, sysMemMgr, "pointer alloc(pointer ptr, int32 size)");
-		if (cc->libc_mem == NULL) {
-			err = 3;
-		}
-		if (!ccAddCall(cc, sysMemSet, "pointer fill(pointer dst, uint8 value, int32 size)")) {
-			err = 3;
-		}
-		if (!ccAddCall(cc, sysMemCpy, "pointer copy(pointer dst, pointer src, int32 size)")) {
-			err = 3;
-		}
-		if (!ccAddCall(cc, sysMemMove, "pointer move(pointer dst, pointer src, int32 size)")) {
-			err = 3;
-		}
-		ccEnd(cc, cc->type_ptr);
-	}
-
-	// System.exit(int code), ...
-	if (!err && (nsp = ccBegin(cc, "System"))) {
-		for (i = 0; i < lengthOf(misc); i += 1) {
-			if (!ccAddCall(cc, misc[i].fun, misc[i].def)) {
-				err = 4;
-				break;
-			}
-		}
-
-		symn rand = ccAddCall(cc, sysRand, "int32 rand()");
-		if (!err && ccExtend(cc, rand) != NULL) {
-			if (!ccDefInt(cc, "max", RAND_MAX)) {
-				err = 1;
-			}
-			ccEnd(cc, rand);
-		}
-		else {
-			err = 2;
-		}
-
-		symn clock = ccAddCall(cc, sysClock, "int32 clock()");
-		if (!err && ccExtend(cc, clock) != NULL) {
-			if (!ccDefInt(cc, "perSec", CLOCKS_PER_SEC)) {
-				err = 1;
-			}
-			ccEnd(cc, clock);
-		}
-		else {
-			err = 2;
-		}
-
-		//~ install(cc, "Arguments", CAST_arr, 0, 0);	// string Args[];
-		//~ install(cc, "Environment", KIND_def, 0, 0);	// string Env[string];
-		ccEnd(cc, nsp);
-	}
 
 	// Add extra operations to int32
 	if (!err && ccExtend(cc, cc->type_u32)) {
-		for (i = 0; i < lengthOf(bit32); i += 1) {
+		for (size_t i = 0; i < lengthOf(bit32); i += 1) {
 			if (!ccAddCall(cc, bit32[i].fun, bit32[i].def)) {
 				err = 5;
 				break;
@@ -461,7 +520,7 @@ int ccLibStd(ccContext cc) {
 	}
 	// Add extra operations to int64
 	if (!err && ccExtend(cc, cc->type_u64)) {
-		for (i = 0; i < lengthOf(bit64); i += 1) {
+		for (size_t i = 0; i < lengthOf(bit64); i += 1) {
 			if (!ccAddCall(cc, bit64[i].fun, bit64[i].def)) {
 				err = 5;
 				break;
@@ -471,7 +530,7 @@ int ccLibStd(ccContext cc) {
 	}
 	// add math functions to float32
 	if (!err && ccExtend(cc, cc->type_f32)) {
-		for (i = 0; i < lengthOf(flt32); i += 1) {
+		for (size_t i = 0; i < lengthOf(flt32); i += 1) {
 			if (!ccAddCall(cc, flt32[i].fun, flt32[i].def)) {
 				err = 7;
 				break;
@@ -481,7 +540,7 @@ int ccLibStd(ccContext cc) {
 	}
 	// add math functions to float64
 	if (!err && ccExtend(cc, cc->type_f64)) {
-		for (i = 0; i < lengthOf(flt64); i += 1) {
+		for (size_t i = 0; i < lengthOf(flt64); i += 1) {
 			if (!ccAddCall(cc, flt64[i].fun, flt64[i].def)) {
 				err = 6;
 				break;

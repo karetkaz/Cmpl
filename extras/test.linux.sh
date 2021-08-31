@@ -80,8 +80,8 @@ TEST_FILES="$TEST_FILES $(echo $CMPL_HOME/cmplGfx/test/*.ci)"
 TEST_FILES="$TEST_FILES $(echo $CMPL_HOME/cmplGfx/test/demo/*.ci)"
 TEST_FILES="$TEST_FILES $(echo $CMPL_HOME/cmplGfx/test/demo.procedural/*.ci)"
 TEST_FILES="$TEST_FILES $(echo $CMPL_HOME/cmplGfx/test/demo.widget/*.ci)"
-TEST_FILES="$TEST_FILES $(echo $CMPL_HOME/temp/todo.cmplGfx/*.ci)"
-TEST_FILES="$TEST_FILES $(echo $CMPL_HOME/temp/todo.cmplGfx/demo/*.ci)"
+TEST_FILES="$TEST_FILES $(echo $CMPL_HOME/temp/cmplGfx/*.ci)"
+TEST_FILES="$TEST_FILES $(echo $CMPL_HOME/temp/cmplGfx/demo/*.ci)"
 
 BIN="$CMPL_HOME/$BIN"
 DUMP_FILE=$BIN.dump.ci
@@ -89,14 +89,15 @@ $BIN/cmpl -log/d "$DUMP_FILE"
 for file in $(echo "$TEST_FILES")
 do
 	if ! cd "$(dirname "$file")"; then
-    echo "**** cannot run test: $file"
-    continue
-  fi
-	if ! $BIN/cmpl -X-stdin+steps -run -log/a/d "$DUMP_FILE" "$BIN/libFile.so" "$BIN/libGfx.so" "$file"; then
-		echo "****** test failed: $file"
+		echo "**** cannot run test: $file"
 		continue
 	fi
-	echo "**** test finished: $file"
+	echo -n "**** test: $file\\r"
+	if ! $BIN/cmpl -X-stdin+steps -run -log/a/d "$DUMP_FILE" "$BIN/libFile.so" "$BIN/libGfx.so" "$file"; then
+		echo "****** test failed: $file"
+	else
+		echo "**** test finished: $file"
+	fi
 done
 
 TEST_FILES="$(echo $CMPL_HOME/cmplGL/test/*.ci)"
@@ -106,11 +107,12 @@ do
     echo "**** cannot run test: $file"
     continue
   fi
+	echo -n "**** test: $file\\r"
 	if ! $BIN/cmpl -X-stdin+steps -run -log/a/d "$DUMP_FILE" "$BIN/libFile.so" "$BIN/libOpenGL.so" "$file"; then
 		echo "****** test failed: $file"
-		continue
+	else
+		echo "**** test finished: $file"
 	fi
-	echo "**** test finished: $file"
 done
 
 # requirements to build and run on linux

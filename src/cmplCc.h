@@ -203,6 +203,9 @@ int ccGenCode(ccContext cc, int debug);
  */
 symn ccLookup(rtContext rt, symn scope, char *name);
 
+/// system modules for `ccAddLib`
+int ccLibSys(ccContext cc);
+
 /// standard modules for `ccAddLib`
 int ccLibStd(ccContext cc);
 

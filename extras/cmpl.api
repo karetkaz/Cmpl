@@ -205,6 +205,12 @@ System.rand(): int32
 System.rand.max
 System.clock(): int32
 System.clock.perSec
+System.Platform
+System.Platform.WebAssembly
+System.Platform.Windows
+System.Platform.MacOS
+System.Platform.Linux
+System.Platform.Unix
 true
 false
 byte
@@ -299,10 +305,10 @@ Math.smooth(t: float32): float32
 Math.smooth(t: float64): float64
 Math.smooth(t: float32, a: float32, b: float32): float32 # Returns smooth interpolation between `a` and `b` by `t`
 Math.smooth(t: float64, a: float64, b: float64): float64 # Returns smooth interpolation between `a` and `b` by `t`
-Math.min(data: float64[]): float64 # Returns the smaller value from the input values
-Math.max(data: float64[]): float64 # Returns the greater value from the input values
-Math.sum(data: float64[]): float64 # Returns the sum of the input values
-Math.mean(data: float64[]): float64 # Returns the mean of the input values
+Math.min(values: float64[]): float64 # Returns the smaller value from the input values
+Math.max(values: float64[]): float64 # Returns the greater value from the input values
+Math.sum(values: float64[]): float64 # Returns the sum of the input values
+Math.mean(values: float64[]): float64 # Returns the mean of the input values
 Math.eval(x: float64, a0: float64): float64 # Return the polynomial evaluated at x using Horner's algorithm
 Math.eval(x: float64, a0: float64, a1: float64): float64 # Return the polynomial evaluated at x using Horner's algorithm
 Math.eval(x: float64, a0: float64, a1: float64, a2: float64): float64 # Return the polynomial evaluated at x using Horner's algorithm
@@ -511,11 +517,9 @@ File
 File.open(path: char[*]): File
 File.create(path: char[*]): File
 File.append(path: char[*]): File
-File.read(file: File): int32
 File.peek(file: File): int32
 File.read(file: File, buff: uint8[]): int32
 File.readLine(file: File, buff: uint8[]): int32
-File.write(file: File, byte: uint8): int32
 File.write(file: File, buff: uint8[]): int32
 File.flush(file: File): void
 File.close(file: File): void

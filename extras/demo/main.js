@@ -581,7 +581,7 @@ function shareInput() {
 	let content = editor.getValue();
 	terminal.append('decoded uri: ' + decodeURIComponent(window.location));
 	let hash = 'content=' + btoa(editor.getValue());
-	if (params.file !== null) {
+	if (params.file != null) {
 		hash = 'file=' + params.file + '&' + hash;
 	}
 	terminal.append('current file: ' + window.location.origin + window.location.pathname + '#' + hash);
@@ -744,49 +744,67 @@ function process(data) {
 	}
 }
 
-function dragStart(e) {
-	e.preventDefault();
-	props.dragging = e;
-}
-function dragStop() {
-	if (props.dragging == null) {
-		return;
+function uploadFiles(input) {
+	for (let file of input.files) {
+		const reader = new FileReader();
+		reader.addEventListener("load", function () {
+			let fileName = (params.folder || '') + file.name;
+			openProjectFile({
+				file: fileName,
+				reopen: fileName === params.file,
+				content: new Uint8Array(reader.result)
+			});
+		}, false);
+		reader.readAsArrayBuffer(file);
 	}
-	props.dragging = null;
-	editor.refresh();
+	input.value = null;
 }
-function dragMove(event) {
-	let evDown = props.dragging;
-	if (evDown == null) {
-		return;
+
+// allow sidebar resizing
+if (window.addEventListener) {
+	function dragStart(e) {
+		e.preventDefault();
+		props.dragging = e;
+	}
+	function dragStop() {
+		if (props.dragging == null) {
+			return;
+		}
+		props.dragging = null;
+		editor.refresh();
+	}
+	function dragMove(event) {
+		let evDown = props.dragging;
+		if (evDown == null) {
+			return;
+		}
+
+		if (evDown.target.id === 'output-pan-sidebar') {
+			if (!hasStyle(document.body, 'output')) {
+				return;
+			}
+			let y = event.pageY - evDown.offsetY;
+			if (y !== y && event.touches !== undefined) {
+				y = event.touches[0].pageY;
+			}
+			document.documentElement.style.setProperty('--bottom-bar-size', (window.innerHeight - y) + "px");
+			return;
+		}
+		if (evDown.target.id === 'left-pan-sidebar') {
+			let x = event.pageX;
+			if (event.pageX === undefined) {
+				x = event.touches[0].pageX;
+			}
+			var percentage = (x + 5) / window.innerWidth * 100;
+			if (percentage < 10 || percentage > 90) {
+				return;
+			}
+			document.documentElement.style.setProperty('--left-bar-size', percentage + "%");
+			return;
+		}
+		console.log(event);
 	}
 
-	if (evDown.target.id === 'output-pan-sidebar') {
-		if (!hasStyle(document.body, 'output')) {
-			return;
-		}
-		let y = event.pageY - evDown.offsetY;
-		if (y !== y && event.touches !== undefined) {
-			y = event.touches[0].pageY;
-		}
-		document.documentElement.style.setProperty('--bottom-bar-size', (window.innerHeight - y) + "px");
-		return;
-	}
-	if (evDown.target.id === 'left-pan-sidebar') {
-		let x = event.pageX;
-		if (event.pageX === undefined) {
-			x = event.touches[0].pageX;
-		}
-		var percentage = (x + 5) / window.innerWidth * 100;
-		if (percentage < 10 || percentage > 90) {
-			return;
-		}
-		document.documentElement.style.setProperty('--left-bar-size', percentage + "%");
-		return;
-	}
-	console.log(event);
-}
-if (window.addEventListener) {
 	document.getElementById("output-pan-sidebar").addEventListener("mousedown", dragStart);
 	document.getElementById("output-pan-sidebar").addEventListener("touchstart", dragStart);
 	document.getElementById("left-pan-sidebar").addEventListener("mousedown", dragStart);
@@ -796,3 +814,15 @@ if (window.addEventListener) {
 	window.addEventListener("mouseup", dragStop);
 	window.addEventListener("touchend", dragStop);
 }
+
+// allow drag and drop files
+document.ondragover = function (e) {
+	return false;
+};
+document.ondragend = function (e) {
+	return false;
+};
+document.ondrop = function (e) {
+	uploadFiles(e.dataTransfer);
+	return false;
+};
