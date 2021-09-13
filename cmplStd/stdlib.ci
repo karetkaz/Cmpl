@@ -9,38 +9,18 @@ inline byte = uint8;
 inline float = float32;
 inline double = float64;
 
-/// convert unsigned to signed integer
-inline signed(uint8 value) = int8(value);
-
-/// convert unsigned to signed integer
-inline signed(uint16 value) = int16(value);
-
-/// convert unsigned to signed integer
-inline signed(uint32 value) = int32(value);
-
-/// convert unsigned to signed integer
-inline signed(uint64 value) = int64(value);
-
-/// convert signed to unsigned integer
-inline unsigned(int8 value) = uint8(value);
-
-/// convert signed to unsigned integer
-inline unsigned(int16 value) = uint16(value);
-
-/// convert signed to unsigned integer
-inline unsigned(int32 value) = uint32(value);
-
-/// convert signed to unsigned integer
-inline unsigned(int64 value) = uint64(value);
+inline "lib/lang/Integer.ci";       // integer extension methods
+inline "lib/lang/Pointer.ci";       // pointer extension methods
 
 /// Returns the size of the given type
 inline sizeof(typename type) = typename.size(type);
 
 static if (typename(raise) == function) {
-inline "lib/debug.ci";
+// extension methods for debugging
+inline "lib/lang/Debug.ci";
 }
 
-inline "lib/math.ci";
+inline "lib/math/Math.ci";
 //inline "lib/math/Decimal.ci"?;      // -> Decimal TODO: implement http://dec64.com/
 //inline "lib/math/Rational.ci"?;     // -> Rational<int64>
 inline "lib/math/Complex.ci"?;      // -> Complex<float64>
@@ -51,4 +31,4 @@ inline "lib/math/Vector2d.ci"?;
 //inline "lib/math/BigDecimal.ci?"   // TODO: inline Complex -> BigDecimal.Complex<BigDecimal>
 //inline "lib/math/Perlin.ci"?;
 
-inline "lib/text/string.ci";
+inline "lib/text/cstr.ci";

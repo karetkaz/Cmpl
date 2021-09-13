@@ -160,7 +160,8 @@ static int decrementStackAccess(rtContext rt, size_t offsBegin, size_t offsEnd, 
 }
 
 int foldAssignment(rtContext rt, size_t stkBegin, size_t offsBegin, size_t offsEnd) {
-	vmValue arg, argSet;
+	vmValue arg = {0};
+	vmValue argSet = {0};
 	uint64_t stkMax = stkBegin / vm_stk_align;
 	if (testOcp(rt, offsBegin, opc_dup1, &arg)) {
 		if (!testOcp(rt, offsEnd, opc_set1, &argSet)) {
@@ -828,7 +829,7 @@ size_t emitOpc(rtContext rt, vmOpcode opc, vmValue arg) {
 			}
 			ip = lastIp(rt);
 			if (ip->opc == opc_inc) {
-				vmValue tmp;
+				vmValue tmp = {0};
 				tmp.i64 = arg.i64 + ip->rel;
 				if (tmp.i24 == tmp.i64) {
 					ip->rel = tmp.i24;
@@ -836,7 +837,7 @@ size_t emitOpc(rtContext rt, vmOpcode opc, vmValue arg) {
 				}
 			}
 			else if (ip->opc == opc_ldsp) {
-				vmValue tmp;
+				vmValue tmp = {0};
 				if (arg.i64 < 0) {
 					// local variable bound error.
 					trace(ERR_INTERNAL_ERROR);
@@ -849,7 +850,7 @@ size_t emitOpc(rtContext rt, vmOpcode opc, vmValue arg) {
 				}
 			}
 			else if (ip->opc == opc_lref) {
-				vmValue tmp;
+				vmValue tmp = {0};
 				if (arg.i64 < 0) {
 					// global variable bound error.
 					trace(ERR_INTERNAL_ERROR);
@@ -2643,7 +2644,7 @@ void printAsm(FILE *out, const char **esc, rtContext ctx, void *ptr, dmpMode mod
 					for (i = 0; i < hashTableSize; i += 1) {
 						list lst;
 						for (lst = ctx->cc->stringTable[i]; lst; lst = lst->next) {
-							char *data = (char *) lst->data;
+							const char *data = lst->data;
 							dieif(data == NULL, ERR_INTERNAL_ERROR);
 							if (str >= data && str < data + strlen(data)) {
 								printFmt(out, esc, " ;%c", type_fmt_string_chr);
@@ -2686,10 +2687,8 @@ void printAsm(FILE *out, const char **esc, rtContext ctx, void *ptr, dmpMode mod
 
 int vmSelfTest(void cb(const char *, const struct opcodeRec *)) {
 	int errors = 0;
-	struct vmInstruction ip[1];
-
-	struct libc nfc0[1];
-	memset(nfc0, 0, sizeof(nfc0));
+	struct vmInstruction ip[1] = {0};
+	struct libc nfc0[1] = {0};
 
 	struct libc *nativeCalls[1];
 	nativeCalls[0] = nfc0;
@@ -2704,7 +2703,6 @@ int vmSelfTest(void cb(const char *, const struct opcodeRec *)) {
 			continue;
 		}
 
-		memset(ip, 0, sizeof(ip));
 		// take care of some special opcodes
 		switch (i) {
 			default:

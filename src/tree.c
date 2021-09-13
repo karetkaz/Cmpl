@@ -72,7 +72,7 @@ astn fltNode(ccContext cc, float64_t value) {
 	return ast;
 }
 
-astn strNode(ccContext cc, char *value) {
+astn strNode(ccContext cc, const char *value) {
 	astn ast = newNode(cc, TOKEN_val);
 	if (ast != NULL) {
 		ast->type = cc->type_str;
@@ -308,8 +308,8 @@ ccKind eval(ccContext cc, astn res, astn ast) {
 				traceAst(ast);
 				return CAST_any;
 			}
-			ccKind cast = eval(cc, res, args);
-			if (cast == CAST_any) {
+
+			if (eval(cc, res, args) == CAST_any) {
 				traceAst(ast);
 				return CAST_any;
 			}

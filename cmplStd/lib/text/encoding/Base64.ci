@@ -1,0 +1,193 @@
+static if (typename(ByteWriter) == null) {
+inline "/cmplStd/lib/system/Stream.ci";
+}
+
+// Base64 encoder
+struct Base64Encoder: ByteWriter {
+	static const byte lookup[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+
+	const ByteWriter writer;
+	byte buffer[1024] = null;
+	int bufferSize = 0;
+	int padding = 0;
+
+	// wrap the length at the given position
+	const int wrap = 80;
+	int wrapSize = 0;
+
+	static void flushBuffer(Base64Encoder this) {
+		ByteWriter writer = this.writer;
+		int size = this.bufferSize;
+
+		int wrap = this.wrap - this.wrapSize;
+		if (wrap > size || this.wrap == 0) {
+			wrap = size;
+		}
+
+		writer.write(writer, this.buffer[...wrap]);
+		this.wrapSize += wrap;
+
+		// print the rest of the buffer as one or multiple lines
+		for ( ; wrap < size; ) {
+			writer.write(writer, "\n");
+
+			int len = Math.min(size - wrap, this.wrap);
+			byte buffer[*] = this.buffer.inc(wrap);
+			writer.write(writer, buffer[...len]);
+			this.wrapSize = len;
+			wrap += len;
+		}
+		this.bufferSize = 0;
+	}
+
+	void write(Base64Encoder this, byte data[]) {
+		assert(buffer.length > 3);
+
+		ByteWriter writer = this.writer;
+		byte buffer[] = this.buffer;
+		int size& = this.bufferSize;
+		int i = 0;
+
+		// revert padding and continue encoding (not mandatory, but reduces output size)
+		if (size > 3 && buffer[size - 1] == '=' && data.length > 0) {
+			if (buffer[size - 2] == '=') {
+				if (data.length < 2) {
+					// debug("convert padding: 62== to 664=");
+					int32 b = (this.padding << 6)
+						| ((data[i] & 0xff) << 2);
+					buffer[size - 3] = lookup[b >> 6 & 0x3f];
+					buffer[size - 2] = lookup[b & 0x3f];
+					this.padding = b;
+					return;
+				}
+				// debug("revert padding: 62==");
+				int32 b = (this.padding << 12)
+					| ((data[i] & 0xff) << 8)
+					| (data[i + 1] & 0xff);
+				buffer[size - 3] = lookup[b >> 12 & 0x3f];
+				buffer[size - 2] = lookup[b >> 6 & 0x3f];
+				buffer[size - 1] = lookup[b & 0x3f];
+				i += 2;
+			} else {
+				// debug("revert padding: 664=");
+				int32 b = (this.padding << 6)
+					| (data[i] & 0xff);
+				buffer[size - 2] = lookup[b >> 6 & 0x3f];
+				buffer[size - 1] = lookup[b & 0x3f];
+				i += 1;
+			}
+		}
+
+		// fast loop: read 3 and write 4 bytes at once
+		for (int n = data.length - 2; i < n; i += 3) {
+			if (size + 4 > buffer.length) {
+				flushBuffer(this);
+			}
+
+			// Encode the 3 bytes into 4 bytes: 3 * 8 = 4 * 6
+			int32 b = ((data[i + 0] & 0xff) << 16)
+					| ((data[i + 1] & 0xff) << 8)
+					| ((data[i + 2] & 0xff) << 0);
+			buffer[size + 0] = lookup[b >> 18 & 0x3f];
+			buffer[size + 1] = lookup[b >> 12 & 0x3f];
+			buffer[size + 2] = lookup[b >> 6 & 0x3f];
+			buffer[size + 3] = lookup[b & 0x3f];
+			size += 4;
+		}
+
+		// if the input size is not multiple of 3 bytes, add padding, so output will be multiple of 4
+		if (int left = data.length - i) {
+			if (size + 4 > buffer.length) {
+				flushBuffer(this);
+			}
+			if (left == 2) {
+				// 2 bytes = 16 bits => 6 + 6 + 4 + =
+				int32 b = ((data[i + 0] & 0xff) << 10)
+						| ((data[i + 1] & 0xff) << 2);
+				buffer[size + 0] = lookup[b >> 12 & 0x3f];
+				buffer[size + 1] = lookup[b >> 6 & 0x3f];
+				buffer[size + 2] = lookup[b & 0x3f];
+				buffer[size + 3] = '=';
+				this.padding = b;
+				size += 4;
+			} else {
+				// 1 bye = 8 bits = 6 + 2 + = + =
+				int32 b = (data[i] & 0xff) << 4;
+				buffer[size + 0] = lookup[(b >> 6) & 0x3f];
+				buffer[size + 1] = lookup[(b >> 0) & 0x3f];
+				buffer[size + 2] = '=';
+				buffer[size + 3] = '=';
+				this.padding = b;
+				size += 4;
+			}
+		}
+	}
+
+	void flush(Base64Encoder this) {
+		this.flushBuffer();
+		this.writer.flush();
+	}
+
+	void close(Base64Encoder this) {
+		this.flushBuffer();
+	}
+}
+
+// Base64 decoder
+struct Base64Decoder: ByteReader {
+	static const int lookup[256] = {
+		-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+		-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+		-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 62, -1, -1, -1, 63,
+		52, 53, 54, 55, 56, 57, 58, 59, 60, 61, -1, -1, -1, -2, -1, -1,
+		-1,  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14,
+		15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, -1, -1, -1, -1, -1,
+		-1, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40,
+		41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, -1, -1, -1, -1, -1,
+		-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+		-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+		-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+		-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+		-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+		-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+		-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+		-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+	};
+
+	const ByteReader reader;
+	// TODO: make it buffered
+	int bitsDecoded = 0;
+	int charDecoded = 0;
+
+	int read(Base64Decoder this, byte data[]) {
+		inline isWhite(char c) = c == ' ' || c == '\t' || c == '\n' || c == '\r';
+
+		byte in[1] = {0};
+		ByteReader reader = this.reader;
+		inline bitsDecoded = this.bitsDecoded;
+		inline charDecoded = this.charDecoded;
+		for (int i = 0; i < data.length;) {
+			if (reader.read(reader, in) <= 0) {
+				return i;
+			}
+			else if (in[0] == '=') {
+				bitsDecoded -= 2;
+			}
+			else if (!isWhite(in[0])) {
+				bitsDecoded += 6;
+				charDecoded <<= 6;
+				charDecoded |= lookup[in[0]] & 0x3f;
+				if (bitsDecoded >= 8) {
+					bitsDecoded -= 8;
+					data[i] = byte(charDecoded >> bitsDecoded);
+					i += 1;
+				}
+			}
+		}
+		return data.length;
+	}
+
+	void close(Base64Decoder this) {
+		assert(this.bitsDecoded == 0, "unprocessed bits remaining.", this.bitsDecoded);
+	}
+}

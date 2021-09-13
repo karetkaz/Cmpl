@@ -31,9 +31,8 @@ case opc_nfc:  NEXT(4, 0, 0) {
 
 	TRACE(nfc->sym->offs);
 	vmError nfcError = nfc->call(&args);
-	TRACE((size_t)-1);
-
 	STOP(error_libc, nfcError != noError);
+	TRACE((size_t)-1);
 	STOP(stop_vm, ip->rel == 0);			// Halt();
 #endif
 	NEXT(0, nfc->out - nfc->in, nfc->in);

@@ -68,7 +68,7 @@ let editor = CodeMirror.fromTextArea(input, {
 	mode: 'text/x-cmpl',
 	lineNumbers: true,
 	tabSize: 4,
-	indentUnit: 4,
+	//indentUnit: 4,
 	indentWithTabs: true,
 	keyMap: 'extraKeys',
 
@@ -224,6 +224,7 @@ let params = JsArgs('#', function (params, changes) {
 				}
 				document.body.style.fontSize = '1.2em';
 				editor.setSize('100%', '100%');
+				editor.setOption('tabSize', 2);
 				editor.focus();
 				break;
 

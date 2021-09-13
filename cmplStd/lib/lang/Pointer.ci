@@ -1,0 +1,8 @@
+static if (int == int32) {
+	/// Returns the pointer incremented with the given value
+	inline inc(pointer ptr, int val) = pointer(emit(pointer(ptr), int(val), add.i32));
+}
+static if (int == int64) {
+	/// Returns the pointer incremented with the given value
+	inline inc(pointer ptr, int val) = pointer(emit(pointer(ptr), int(val), add.i64));
+}

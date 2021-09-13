@@ -7,9 +7,11 @@
 #include "gx_surf.h"
 #include "g3_draw.h"
 
-struct camera cam[1]; // TODO: singleton like camera
-struct GxImage fnt[1]; // TODO: singleton like font
-struct GxLight lights[32];  // max 32 lights
+static struct GxImage fnt[64] = {0};
+static GxImage defaultFont(int height);
+
+struct camera cam[1] = {0}; // TODO: singleton like camera
+struct GxLight lights[32] = {0};  // max 32 lights
 
 // convert a double to 16 bit fixed point
 #define fxp16(__VALUE) ((int32_t)(65536 * (double)(__VALUE)))
@@ -42,7 +44,7 @@ static const char *const proto_image_create2d = "Image create(int32 width, int32
 static const char *const proto_image_create3d = "Image create3d(int32 width, int32 height)";
 static const char *const proto_image_destroy = "void destroy(Image image)";
 static const char *const proto_image_recycle = "Image recycle(Image recycle, int32 width, int32 height, int32 depth, int32 flags)";
-static const char *const proto_image_slice = "Image slice(Image image, Image recycle, const Rect rect&)";
+static const char *const proto_image_slice = "Image slice(Image image, const Rect rect&)";
 static vmError surf_recycle(nfcContext ctx) {
 	if (ctx->proto == proto_image_create2d) {
 		int width = nextValue(ctx).i32;
@@ -81,10 +83,9 @@ static vmError surf_recycle(nfcContext ctx) {
 		}
 	}
 	if (ctx->proto == proto_image_slice) {
-		GxImage recycle = nextValue(ctx).ref;
-		GxImage parent = nextValue(ctx).ref;
+		GxImage image = nextValue(ctx).ref;
 		GxRect region = nextValue(ctx).ref;
-		GxImage result = sliceImage(recycle, parent, region);
+		GxImage result = sliceImage(NULL, image, region);
 		if (result != NULL) {
 			rethnd(ctx, result);
 			return noError;
@@ -95,25 +96,31 @@ static vmError surf_recycle(nfcContext ctx) {
 	return nativeCallError;
 }
 
-static const char *const proto_image_defFont = "Image font";
-static const char *const proto_image_null = "Image null";
-static vmError surf_const(nfcContext ctx) {
-	if (ctx->proto == proto_image_defFont) {
-		rethnd(ctx, fnt);
-		return noError;
+static const char *const proto_font_resized = "Image font(int height)";
+static const char *const proto_font_default = "Image font";
+static vmError surf_font(nfcContext ctx) {
+	GxImage result = NULL;
+	if (ctx->proto == proto_font_resized) {
+		int size = nextValue(ctx).i32;
+		result = defaultFont(size);
 	}
-	if (ctx->proto == proto_image_null) {
-		rethnd(ctx, NULL);
-		return noError;
+	else if (ctx->proto == proto_font_default) {
+		result = defaultFont(0);
 	}
-	return nativeCallError;
+
+	if (result == NULL) {
+		return nativeCallError;
+	}
+
+	rethnd(ctx, result);
+	return noError;
 }
 
 static const char *const proto_image_openImg = "Image openImg(const char path[*], int32 depth)";
-static const char *const proto_image_openTtf = "Image openTtf(const char path[*], int32 height)";
 static const char *const proto_image_openBmp = "Image openBmp(const char path[*], int32 depth)";
 static const char *const proto_image_openPng = "Image openPng(const char path[*], int32 depth)";
 static const char *const proto_image_openJpg = "Image openJpg(const char path[*], int32 depth)";
+static const char *const proto_image_openTtf = "Image openTtf(const char path[*], int32 height)";
 static const char *const proto_image_openFnt = "Image openFnt(const char path[*])";
 static vmError surf_open(nfcContext ctx) {
 	char *path = nextValue(ctx).ref;
@@ -1316,7 +1323,7 @@ static symn typSigned(rtContext rt, int size) {
 	return NULL;
 }
 
-static GxImage defaultFont(GxImage dst) {
+static GxImage defaultFont(int height) {
 	static const unsigned char font[] = {
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 		0x00, 0x00, 0x1c, 0x22, 0x41, 0x55, 0x41, 0x55, 0x5d, 0x22, 0x1c, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -1573,13 +1580,34 @@ static GxImage defaultFont(GxImage dst) {
 		0x00, 0x2c, 0x12, 0x12, 0x12, 0x12, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 		0x00, 0x18, 0x24, 0x08, 0x10, 0x3c, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 		0x00, 0x00, 0x00, 0x3e, 0x3e, 0x3e, 0x3e, 0x3e, 0x3e, 0x3e, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 	};
-	uint16_t width = 8;
-	uint16_t height = (uint16_t) (sizeof(font) >> 8);
 
-	dst = createImage(dst, 256 * width, height, 8, ImageFnt);
+	if ((size_t) height > sizeof(fnt) / sizeof(*fnt)) {
+		// invalid height
+		return NULL;
+	}
+
+	if (fnt[height].basePtr != NULL) {
+		// font already cached
+		return &fnt[height];
+	}
+
+	int nHeight = sizeof(font) >> 8;
+	if (height == 0) {
+		height = nHeight;
+	}
+
+	uint16_t width = 8 * height / nHeight;
+	GxImage dst = createImage(&fnt[height], 256 * width, height, 8, ImageFnt);
 	if (dst == NULL) {
+		gx_debug("Failed to init image");
+		return NULL;
+	}
+
+	struct GxImage temp = {0};
+	GxImage chr = createImage(&temp, 8, nHeight, 8, Image2d);
+	if (chr == NULL) {
 		gx_debug("Failed to init image");
 		return NULL;
 	}
@@ -1587,31 +1615,55 @@ static GxImage defaultFont(GxImage dst) {
 	unsigned char *chrPtr = (void *) dst->basePtr;
 	GxFLut lut = dst->LLUTPtr;
 	lut->count = 256;
-	for (int i = 0; i < 256; ++i) {
+	for (int i = 0, x0 = 0; i < 256; ++i, x0 += width) {
 		lut->data[i].pad_x = 0;
 		lut->data[i].pad_y = 0;
 		lut->data[i].width = width;
 		lut->data[i].basePtr = chrPtr;
-		unsigned char *ptr = chrPtr;
-		for (int y = 0; y < height; ++y) {
-			ptr[0] = (font[i * height + y] & 0X80) ? 255 : 0;
-			ptr[1] = (font[i * height + y] & 0X40) ? 255 : 0;
-			ptr[2] = (font[i * height + y] & 0X20) ? 255 : 0;
-			ptr[3] = (font[i * height + y] & 0X10) ? 255 : 0;
-			ptr[4] = (font[i * height + y] & 0X08) ? 255 : 0;
-			ptr[5] = (font[i * height + y] & 0X04) ? 255 : 0;
-			ptr[6] = (font[i * height + y] & 0X02) ? 255 : 0;
-			ptr[7] = (font[i * height + y] & 0X01) ? 255 : 0;
-			ptr += dst->scanLen;
+		if (height != nHeight) {
+			unsigned char *ptr = (unsigned char *) chr->basePtr;
+			for (int y = 0; y < nHeight; ++y) {
+				ptr[0] = (font[i * nHeight + y] & 0X80) ? 255 : 0;
+				ptr[1] = (font[i * nHeight + y] & 0X40) ? 255 : 0;
+				ptr[2] = (font[i * nHeight + y] & 0X20) ? 255 : 0;
+				ptr[3] = (font[i * nHeight + y] & 0X10) ? 255 : 0;
+				ptr[4] = (font[i * nHeight + y] & 0X08) ? 255 : 0;
+				ptr[5] = (font[i * nHeight + y] & 0X04) ? 255 : 0;
+				ptr[6] = (font[i * nHeight + y] & 0X02) ? 255 : 0;
+				ptr[7] = (font[i * nHeight + y] & 0X01) ? 255 : 0;
+				ptr += chr->scanLen;
+			}
+			struct GxRect roi = {
+					.x = x0,
+					.y = 0,
+					.w = width,
+					.h = height
+			};
+			resizeImage(dst, &roi, &temp, NULL, 1);
+		} else {
+			unsigned char *ptr = chrPtr;
+			for (int y = 0; y < nHeight; ++y) {
+				ptr[0] = (font[i * nHeight + y] & 0X80) ? 255 : 0;
+				ptr[1] = (font[i * nHeight + y] & 0X40) ? 255 : 0;
+				ptr[2] = (font[i * nHeight + y] & 0X20) ? 255 : 0;
+				ptr[3] = (font[i * nHeight + y] & 0X10) ? 255 : 0;
+				ptr[4] = (font[i * nHeight + y] & 0X08) ? 255 : 0;
+				ptr[5] = (font[i * nHeight + y] & 0X04) ? 255 : 0;
+				ptr[6] = (font[i * nHeight + y] & 0X02) ? 255 : 0;
+				ptr[7] = (font[i * nHeight + y] & 0X01) ? 255 : 0;
+				ptr += dst->scanLen;
+			}
 		}
 		chrPtr += width;
 	}
+	destroyImage(chr);
 	return dst;
 }
 
 #define offsetOf(__TYPE, __FIELD) ((size_t) &((__TYPE*)NULL)->__FIELD)
 #define sizeOf(__TYPE, __FIELD) sizeof(((__TYPE*)NULL)->__FIELD)
 
+const char cmplUnit[] = "/cmplGfx/gfxlib.ci";
 int cmplInit(rtContext rt) {
 
 	struct {
@@ -1631,7 +1683,6 @@ int cmplInit(rtContext rt) {
 		{surf_open,     proto_image_openTtf},
 		{surf_open,     proto_image_openFnt},
 		{surf_save,     proto_image_saveBmp},
-		{surf_const,    proto_image_null},
 
 		{surf_width,    proto_image_width},
 		{surf_height,   proto_image_height},
@@ -1663,7 +1714,8 @@ int cmplInit(rtContext rt) {
 	nfcWindow[] = {
 		{window_show,  proto_window_show},
 		{window_title, proto_window_title},
-		{surf_const,   proto_image_defFont},
+		{surf_font,    proto_font_resized},
+		{surf_font,    proto_font_default},
 	},
 	nfcMesh[] = {
 		{mesh_recycle, proto_mesh_create},
@@ -1818,11 +1870,7 @@ int cmplInit(rtContext rt) {
 		rt->api.ccEnd(cc, gui);
 	}
 
-	if (!rt->api.ccAddUnit(cc, NULL, NULL, 0, "inline \"/cmplGfx/gfxlib.ci\"?;")) {
-		return 1;
-	}
-
-	if (1) {
+	if (/*Initialize:*/ 1) {
 		struct vector eye, tgt, up;
 		vecldf(&eye, 0, 0, 2.0f, 1);
 		vecldf(&tgt, 0, 0, 0, 1);
@@ -1831,15 +1879,16 @@ int cmplInit(rtContext rt) {
 		projv_mat(&cam->proj, 30, 1, 1, 100);
 		camset(cam, &eye, &tgt, &up);
 
-		memset(lights, 0, sizeof(lights));
 		for (size_t i = 1; i < sizeof(lights) / sizeof(*lights); ++i) {
 			lights[i - 1].next = lights + i;
 		}
-
-		memset(fnt, 0, sizeof(fnt));
-		if (!defaultFont(fnt)) {
-			return -1;
-		}
 	}
+
 	return 0;
+}
+void cmplClose(rtContext rt) {
+	for (size_t i = 0; i < sizeof(fnt) / sizeof(*fnt); ++i) {
+		destroyImage(fnt + i);
+	}
+	(void) rt;
 }

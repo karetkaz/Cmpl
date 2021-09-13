@@ -2,80 +2,84 @@
 ---------- Compile: `/cmplStd/stdlib.ci`
 warn: variable `args` hides previous declaration
 debug: inline file: `cmplStd/stdlib.ci`
-cmplStd/stdlib.ci:40: debug: inline file: `cmplStd/lib/debug.ci`
-cmplStd/lib/debug.ci:65: warn: adding implicit cast variant(message: char[*])
-cmplStd/lib/debug.ci:67: warn: adding implicit cast variant(expected: int32)
-cmplStd/lib/debug.ci:68: warn: adding implicit cast variant(returned: int32)
-cmplStd/lib/debug.ci:69: warn: adding implicit cast variant[](extras: variant[1])
-cmplStd/stdlib.ci:43: debug: inline file: `cmplStd/lib/math.ci`
-cmplStd/lib/math.ci:17: warn: adding implicit cast float64(0: int32)
-cmplStd/lib/math.ci:18: warn: adding implicit cast float64(1: int32)
-cmplStd/lib/math.ci:23: warn: adding implicit cast float64(1: int32)
-cmplStd/lib/math.ci:24: warn: adding implicit cast float64(0: int32)
-cmplStd/lib/math.ci:29: warn: adding implicit cast float64(0: int32)
-cmplStd/lib/math.ci:32: warn: adding implicit cast float64(1: int32)
-cmplStd/lib/math.ci:67: warn: adding implicit cast int64(0: int32)
-cmplStd/lib/math.ci:67: warn: adding implicit cast int64(0: int32)
-cmplStd/lib/math.ci:70: warn: adding implicit cast uint32(0: int32)
-cmplStd/lib/math.ci:73: warn: adding implicit cast uint64(0: int32)
-cmplStd/lib/math.ci:76: warn: adding implicit cast float32(0: int32)
-cmplStd/lib/math.ci:76: warn: adding implicit cast float32(0: int32)
-cmplStd/lib/math.ci:79: warn: adding implicit cast float64(0: int32)
-cmplStd/lib/math.ci:79: warn: adding implicit cast float64(0: int32)
-cmplStd/lib/math.ci:83: warn: adding implicit cast float32(0: int32)
-cmplStd/lib/math.ci:91: warn: adding implicit cast float64(0: int32)
-cmplStd/lib/math.ci:101: warn: adding implicit cast int64(0: int32)
-cmplStd/lib/math.ci:110: warn: adding implicit cast float32(0: int32)
-cmplStd/lib/math.ci:113: warn: adding implicit cast float64(0: int32)
-cmplStd/lib/math.ci:196: warn: adding implicit cast float32(2: int32)
-cmplStd/lib/math.ci:196: warn: adding implicit cast float32(3: int32)
-cmplStd/lib/math.ci:197: warn: adding implicit cast float64(2: int32)
-cmplStd/lib/math.ci:197: warn: adding implicit cast float64(3: int32)
-cmplStd/lib/math.ci:207: warn: adding implicit cast uint32(0: int32)
-cmplStd/lib/math.ci:211: warn: adding implicit cast int32(values.length: uint32)
-cmplStd/lib/math.ci:221: warn: adding implicit cast uint32(0: int32)
-cmplStd/lib/math.ci:225: warn: adding implicit cast int32(values.length: uint32)
-cmplStd/lib/math.ci:236: warn: adding implicit cast int32(values.length: uint32)
-cmplStd/lib/math.ci:244: warn: adding implicit cast float64(signed(values.length): int32)
-cmplStd/lib/math.ci:262: warn: adding implicit cast uint32(1: int32)
-cmplStd/lib/math.ci:314: warn: adding implicit cast float64(0: int32)
-cmplStd/lib/math.ci:320: warn: adding implicit cast float64(1: int32)
-cmplStd/lib/math.ci:321: warn: adding implicit cast float64(32764: int32)
-cmplStd/lib/math.ci:324: warn: adding implicit cast float64(quad: int32)
-cmplStd/lib/math.ci:328: warn: adding implicit cast float64(4: int32)
-cmplStd/lib/math.ci:328: warn: adding implicit cast int32(e - (4) * f: float64)
-cmplStd/lib/math.ci:332: warn: adding implicit cast float64(k: int32)
-cmplStd/lib/math.ci:337: warn: adding implicit cast float64(1: int32)
-cmplStd/lib/math.ci:351: warn: adding implicit cast pointer(typename(float64.sin): typename)
-cmplStd/lib/math.ci:360: warn: adding implicit cast pointer(typename(float64.cos): typename)
-cmplStd/lib/math.ci:369: warn: adding implicit cast pointer(typename(float64.tan): typename)
-cmplStd/lib/math.ci:388: warn: adding implicit cast float64(0: int32)
-cmplStd/lib/math.ci:392: warn: adding implicit cast float64(2: int32)
-cmplStd/lib/math.ci:400: warn: adding implicit cast float64(1: int32)
-cmplStd/lib/math.ci:408: warn: adding implicit cast float64(1: int32)
-cmplStd/lib/math.ci:417: warn: adding implicit cast float64(0: int32)
-cmplStd/lib/math.ci:420: warn: adding implicit cast float64(1: int32)
-cmplStd/lib/math.ci:442: warn: adding implicit cast float64(0: int32)
-cmplStd/lib/math.ci:447: warn: adding implicit cast float64(21: int32)
-cmplStd/lib/math.ci:448: warn: adding implicit cast float64(2: int32)
-cmplStd/lib/math.ci:453: warn: adding implicit cast float64(2: int32)
-cmplStd/lib/math.ci:469: warn: adding implicit cast float64(0: int32)
-cmplStd/lib/math.ci:472: warn: adding implicit cast float64(21: int32)
-cmplStd/lib/math.ci:473: warn: adding implicit cast float64(2: int32)
-cmplStd/lib/math.ci:475: warn: adding implicit cast float64(2: int32)
-cmplStd/lib/math.ci:484: warn: adding implicit cast float64(0: int32)
-cmplStd/lib/math.ci:490: warn: adding implicit cast float64(0: int32)
-cmplStd/lib/math.ci:495: warn: adding implicit cast float64(1: int32)
-cmplStd/lib/math.ci:500: warn: adding implicit cast float64(1: int32)
-cmplStd/lib/math.ci:502: warn: adding implicit cast float64(2: int32)
-cmplStd/lib/math.ci:518: warn: adding implicit cast float64(2: int32)
-cmplStd/lib/math.ci:542: warn: adding implicit cast float64(180: int32)
-cmplStd/lib/math.ci:545: warn: adding implicit cast float64(180: int32)
-cmplStd/stdlib.ci:46: debug: inline file: `cmplStd/lib/math/Complex.ci`
+cmplStd/stdlib.ci:12: debug: inline file: `cmplStd/lib/lang/Integer.ci`
+cmplStd/stdlib.ci:13: debug: inline file: `cmplStd/lib/lang/Pointer.ci`
+cmplStd/lib/lang/Pointer.ci:7: warn: variable `inc(ptr: pointer, val: int32): pointer` hides previous declaration
+cmplStd/lib/lang/Pointer.ci:3: warn: previously defined as `inc(ptr: pointer, val: int32): pointer`
+cmplStd/stdlib.ci:20: debug: inline file: `cmplStd/lib/lang/Debug.ci`
+cmplStd/lib/lang/Debug.ci:65: warn: adding implicit cast variant(message: char[*])
+cmplStd/lib/lang/Debug.ci:67: warn: adding implicit cast variant(expected: int32)
+cmplStd/lib/lang/Debug.ci:68: warn: adding implicit cast variant(returned: int32)
+cmplStd/lib/lang/Debug.ci:69: warn: adding implicit cast variant[](extras: variant[1])
+cmplStd/stdlib.ci:23: debug: inline file: `cmplStd/lib/math/Math.ci`
+cmplStd/lib/math/Math.ci:17: warn: adding implicit cast float64(0: int32)
+cmplStd/lib/math/Math.ci:18: warn: adding implicit cast float64(1: int32)
+cmplStd/lib/math/Math.ci:23: warn: adding implicit cast float64(1: int32)
+cmplStd/lib/math/Math.ci:24: warn: adding implicit cast float64(0: int32)
+cmplStd/lib/math/Math.ci:29: warn: adding implicit cast float64(0: int32)
+cmplStd/lib/math/Math.ci:32: warn: adding implicit cast float64(1: int32)
+cmplStd/lib/math/Math.ci:67: warn: adding implicit cast int64(0: int32)
+cmplStd/lib/math/Math.ci:67: warn: adding implicit cast int64(0: int32)
+cmplStd/lib/math/Math.ci:70: warn: adding implicit cast uint32(0: int32)
+cmplStd/lib/math/Math.ci:73: warn: adding implicit cast uint64(0: int32)
+cmplStd/lib/math/Math.ci:76: warn: adding implicit cast float32(0: int32)
+cmplStd/lib/math/Math.ci:76: warn: adding implicit cast float32(0: int32)
+cmplStd/lib/math/Math.ci:79: warn: adding implicit cast float64(0: int32)
+cmplStd/lib/math/Math.ci:79: warn: adding implicit cast float64(0: int32)
+cmplStd/lib/math/Math.ci:83: warn: adding implicit cast float32(0: int32)
+cmplStd/lib/math/Math.ci:91: warn: adding implicit cast float64(0: int32)
+cmplStd/lib/math/Math.ci:101: warn: adding implicit cast int64(0: int32)
+cmplStd/lib/math/Math.ci:110: warn: adding implicit cast float32(0: int32)
+cmplStd/lib/math/Math.ci:113: warn: adding implicit cast float64(0: int32)
+cmplStd/lib/math/Math.ci:196: warn: adding implicit cast float32(2: int32)
+cmplStd/lib/math/Math.ci:196: warn: adding implicit cast float32(3: int32)
+cmplStd/lib/math/Math.ci:197: warn: adding implicit cast float64(2: int32)
+cmplStd/lib/math/Math.ci:197: warn: adding implicit cast float64(3: int32)
+cmplStd/lib/math/Math.ci:207: warn: adding implicit cast uint32(0: int32)
+cmplStd/lib/math/Math.ci:211: warn: adding implicit cast int32(values.length: uint32)
+cmplStd/lib/math/Math.ci:221: warn: adding implicit cast uint32(0: int32)
+cmplStd/lib/math/Math.ci:225: warn: adding implicit cast int32(values.length: uint32)
+cmplStd/lib/math/Math.ci:236: warn: adding implicit cast int32(values.length: uint32)
+cmplStd/lib/math/Math.ci:244: warn: adding implicit cast float64(signed(values.length): int32)
+cmplStd/lib/math/Math.ci:262: warn: adding implicit cast uint32(1: int32)
+cmplStd/lib/math/Math.ci:314: warn: adding implicit cast float64(0: int32)
+cmplStd/lib/math/Math.ci:320: warn: adding implicit cast float64(1: int32)
+cmplStd/lib/math/Math.ci:321: warn: adding implicit cast float64(32764: int32)
+cmplStd/lib/math/Math.ci:324: warn: adding implicit cast float64(quad: int32)
+cmplStd/lib/math/Math.ci:328: warn: adding implicit cast float64(4: int32)
+cmplStd/lib/math/Math.ci:328: warn: adding implicit cast int32(e - (4) * f: float64)
+cmplStd/lib/math/Math.ci:332: warn: adding implicit cast float64(k: int32)
+cmplStd/lib/math/Math.ci:337: warn: adding implicit cast float64(1: int32)
+cmplStd/lib/math/Math.ci:351: warn: adding implicit cast pointer(typename(float64.sin): typename)
+cmplStd/lib/math/Math.ci:360: warn: adding implicit cast pointer(typename(float64.cos): typename)
+cmplStd/lib/math/Math.ci:369: warn: adding implicit cast pointer(typename(float64.tan): typename)
+cmplStd/lib/math/Math.ci:388: warn: adding implicit cast float64(0: int32)
+cmplStd/lib/math/Math.ci:392: warn: adding implicit cast float64(2: int32)
+cmplStd/lib/math/Math.ci:400: warn: adding implicit cast float64(1: int32)
+cmplStd/lib/math/Math.ci:408: warn: adding implicit cast float64(1: int32)
+cmplStd/lib/math/Math.ci:417: warn: adding implicit cast float64(0: int32)
+cmplStd/lib/math/Math.ci:420: warn: adding implicit cast float64(1: int32)
+cmplStd/lib/math/Math.ci:442: warn: adding implicit cast float64(0: int32)
+cmplStd/lib/math/Math.ci:447: warn: adding implicit cast float64(21: int32)
+cmplStd/lib/math/Math.ci:448: warn: adding implicit cast float64(2: int32)
+cmplStd/lib/math/Math.ci:453: warn: adding implicit cast float64(2: int32)
+cmplStd/lib/math/Math.ci:469: warn: adding implicit cast float64(0: int32)
+cmplStd/lib/math/Math.ci:472: warn: adding implicit cast float64(21: int32)
+cmplStd/lib/math/Math.ci:473: warn: adding implicit cast float64(2: int32)
+cmplStd/lib/math/Math.ci:475: warn: adding implicit cast float64(2: int32)
+cmplStd/lib/math/Math.ci:484: warn: adding implicit cast float64(0: int32)
+cmplStd/lib/math/Math.ci:490: warn: adding implicit cast float64(0: int32)
+cmplStd/lib/math/Math.ci:495: warn: adding implicit cast float64(1: int32)
+cmplStd/lib/math/Math.ci:500: warn: adding implicit cast float64(1: int32)
+cmplStd/lib/math/Math.ci:502: warn: adding implicit cast float64(2: int32)
+cmplStd/lib/math/Math.ci:518: warn: adding implicit cast float64(2: int32)
+cmplStd/lib/math/Math.ci:542: warn: adding implicit cast float64(180: int32)
+cmplStd/lib/math/Math.ci:545: warn: adding implicit cast float64(180: int32)
+cmplStd/stdlib.ci:26: debug: inline file: `cmplStd/lib/math/Complex.ci`
 cmplStd/lib/math/Complex.ci:24: debug: using default field initializer: Complex.im := 0
 cmplStd/lib/math/Complex.ci:8: warn: adding implicit cast float64(0: int32)
-cmplStd/stdlib.ci:47: debug: inline file: `cmplStd/lib/math/Vector4f.ci`
-cmplStd/stdlib.ci:48: debug: inline file: `cmplStd/lib/math/Matrix4f.ci`
+cmplStd/stdlib.ci:27: debug: inline file: `cmplStd/lib/math/Vector4f.ci`
+cmplStd/stdlib.ci:28: debug: inline file: `cmplStd/lib/math/Matrix4f.ci`
 cmplStd/lib/math/Matrix4f.ci:113: warn: adding implicit cast float64(len: float32)
 cmplStd/lib/math/Matrix4f.ci:137: warn: adding implicit cast float32(1: int32)
 cmplStd/lib/math/Matrix4f.ci:169: warn: adding implicit cast float32(1: int32)
@@ -112,63 +116,63 @@ cmplStd/lib/math/Matrix4f.ci:209: warn: adding implicit cast float32(0: int32)
 cmplStd/lib/math/Matrix4f.ci:209: warn: adding implicit cast float32(0: int32)
 cmplStd/lib/math/Matrix4f.ci:209: warn: adding implicit cast float32(0: int32)
 cmplStd/lib/math/Matrix4f.ci:209: warn: adding implicit cast float32(1: int32)
-cmplStd/stdlib.ci:49: debug: inline file: `cmplStd/lib/math/Vector2d.ci`
-cmplStd/stdlib.ci:54: debug: inline file: `cmplStd/lib/text/string.ci`
-cmplStd/lib/text/string.ci:5: warn: adding implicit cast pointer(str: char[*])
-cmplStd/lib/text/string.ci:37: warn: adding implicit cast int32(with[i]: char)
-cmplStd/lib/text/string.ci:65: warn: adding implicit cast int32(str[i]: char)
-cmplStd/lib/text/string.ci:124: warn: padding `FormatFlags.precision` with 3 bytes: (1 -> 4)
-cmplStd/lib/text/string.ci:130: warn: padding `FormatFlags.padLen` with 3 bytes: (9 -> 12)
-cmplStd/lib/text/string.ci:135: warn: adding implicit cast pointer(value: char[*])
-cmplStd/lib/text/string.ci:139: warn: adding implicit cast int32(output.length: uint32)
-cmplStd/lib/text/string.ci:146: warn: adding implicit cast int32(output.length: uint32)
-cmplStd/lib/text/string.ci:147: warn: adding implicit cast uint32(1: int32)
-cmplStd/lib/text/string.ci:147: warn: adding implicit cast int32(output.length - (1): uint32)
-cmplStd/lib/text/string.ci:149: warn: adding implicit cast char(0: int32)
-cmplStd/lib/text/string.ci:162: warn: adding implicit cast int32(radixDigits.length: uint32)
-cmplStd/lib/text/string.ci:165: warn: adding implicit cast uint64(0: int32)
-cmplStd/lib/text/string.ci:165: warn: adding implicit cast uint64(radix: int32)
-cmplStd/lib/text/string.ci:166: warn: adding implicit cast uint64(radix: int32)
-cmplStd/lib/text/string.ci:180: warn: adding implicit cast int32(format.sign: char)
-cmplStd/lib/text/string.ci:185: warn: adding implicit cast int32(output.length: uint32)
-cmplStd/lib/text/string.ci:190: warn: adding implicit cast int32(output.length: uint32)
-cmplStd/lib/text/string.ci:197: warn: adding implicit cast int32(output.length: uint32)
-cmplStd/lib/text/string.ci:204: warn: adding implicit cast int32(output.length: uint32)
-cmplStd/lib/text/string.ci:209: warn: adding implicit cast int32(output.length: uint32)
-cmplStd/lib/text/string.ci:210: warn: adding implicit cast uint32(1: int32)
-cmplStd/lib/text/string.ci:210: warn: adding implicit cast int32(output.length - (1): uint32)
-cmplStd/lib/text/string.ci:212: warn: adding implicit cast char(0: int32)
-cmplStd/lib/text/string.ci:231: warn: adding implicit cast int64(0: int32)
-cmplStd/lib/text/string.ci:236: warn: adding implicit cast int64(0: int32)
-cmplStd/lib/text/string.ci:257: debug: using default field initializer: FormatFlags.sign := 0
-cmplStd/lib/text/string.ci:121: warn: adding implicit cast char(0: int32)
-cmplStd/lib/text/string.ci:257: debug: using default field initializer: FormatFlags.precision := 0
-cmplStd/lib/text/string.ci:257: debug: using default field initializer: FormatFlags.padChr := 0
-cmplStd/lib/text/string.ci:127: warn: adding implicit cast char(0: int32)
-cmplStd/lib/text/string.ci:257: debug: using default field initializer: FormatFlags.padLen := 0
-cmplStd/lib/text/string.ci:259: warn: adding implicit cast float64(0: int32)
-cmplStd/lib/text/string.ci:265: warn: adding implicit cast uint32(1: int32)
-cmplStd/lib/text/string.ci:277: warn: adding implicit cast uint32(1: int32)
-cmplStd/lib/text/string.ci:281: warn: adding implicit cast uint32(1: int32)
-cmplStd/lib/text/string.ci:281: warn: adding implicit cast int32(output.length - (1): uint32)
-cmplStd/lib/text/string.ci:284: warn: adding implicit cast float64(10: int32)
-cmplStd/lib/text/string.ci:295: debug: using default field initializer: FormatFlags.sign := 0
-cmplStd/lib/text/string.ci:121: warn: adding implicit cast char(0: int32)
-cmplStd/lib/text/string.ci:295: debug: using default field initializer: FormatFlags.precision := 0
-cmplStd/lib/text/string.ci:295: debug: using default field initializer: FormatFlags.padChr := 0
-cmplStd/lib/text/string.ci:127: warn: adding implicit cast char(0: int32)
-cmplStd/lib/text/string.ci:295: debug: using default field initializer: FormatFlags.padLen := 0
-cmplStd/lib/text/string.ci:306: warn: adding implicit cast int32(value.length: uint32)
-cmplStd/lib/text/string.ci:306: warn: adding implicit cast int32(value[i]: char)
-cmplStd/lib/text/string.ci:309: warn: adding implicit cast float64(10: int32)
-cmplStd/lib/text/string.ci:309: warn: adding implicit cast float64((chr - '0'): char)
-cmplStd/lib/text/string.ci:310: warn: adding implicit cast float64(10: int32)
-cmplStd/lib/text/string.ci:313: warn: adding implicit cast float64(0: int32)
-cmplStd/lib/text/string.ci:317: warn: adding implicit cast float64(1: int32)
-cmplStd/lib/text/string.ci:320: warn: adding implicit cast float64(-1: int32)
-cmplStd/lib/text/string.ci:323: warn: adding implicit cast float64(1: int32)
-cmplStd/lib/text/string.ci:331: warn: adding implicit cast float64(0: int32)
-cmplStd/lib/text/string.ci:332: warn: adding implicit cast uint32(0: int32)
+cmplStd/stdlib.ci:29: debug: inline file: `cmplStd/lib/math/Vector2d.ci`
+cmplStd/stdlib.ci:34: debug: inline file: `cmplStd/lib/text/cstr.ci`
+cmplStd/lib/text/cstr.ci:5: warn: adding implicit cast pointer(str: char[*])
+cmplStd/lib/text/cstr.ci:37: warn: adding implicit cast int32(with[i]: char)
+cmplStd/lib/text/cstr.ci:65: warn: adding implicit cast int32(str[i]: char)
+cmplStd/lib/text/cstr.ci:124: warn: padding `FormatFlags.precision` with 3 bytes: (1 -> 4)
+cmplStd/lib/text/cstr.ci:130: warn: padding `FormatFlags.padLen` with 3 bytes: (9 -> 12)
+cmplStd/lib/text/cstr.ci:135: warn: adding implicit cast pointer(value: char[*])
+cmplStd/lib/text/cstr.ci:139: warn: adding implicit cast int32(output.length: uint32)
+cmplStd/lib/text/cstr.ci:146: warn: adding implicit cast int32(output.length: uint32)
+cmplStd/lib/text/cstr.ci:147: warn: adding implicit cast uint32(1: int32)
+cmplStd/lib/text/cstr.ci:147: warn: adding implicit cast int32(output.length - (1): uint32)
+cmplStd/lib/text/cstr.ci:149: warn: adding implicit cast char(0: int32)
+cmplStd/lib/text/cstr.ci:162: warn: adding implicit cast int32(radixDigits.length: uint32)
+cmplStd/lib/text/cstr.ci:165: warn: adding implicit cast uint64(0: int32)
+cmplStd/lib/text/cstr.ci:165: warn: adding implicit cast uint64(radix: int32)
+cmplStd/lib/text/cstr.ci:166: warn: adding implicit cast uint64(radix: int32)
+cmplStd/lib/text/cstr.ci:180: warn: adding implicit cast int32(format.sign: char)
+cmplStd/lib/text/cstr.ci:185: warn: adding implicit cast int32(output.length: uint32)
+cmplStd/lib/text/cstr.ci:190: warn: adding implicit cast int32(output.length: uint32)
+cmplStd/lib/text/cstr.ci:197: warn: adding implicit cast int32(output.length: uint32)
+cmplStd/lib/text/cstr.ci:204: warn: adding implicit cast int32(output.length: uint32)
+cmplStd/lib/text/cstr.ci:209: warn: adding implicit cast int32(output.length: uint32)
+cmplStd/lib/text/cstr.ci:210: warn: adding implicit cast uint32(1: int32)
+cmplStd/lib/text/cstr.ci:210: warn: adding implicit cast int32(output.length - (1): uint32)
+cmplStd/lib/text/cstr.ci:212: warn: adding implicit cast char(0: int32)
+cmplStd/lib/text/cstr.ci:231: warn: adding implicit cast int64(0: int32)
+cmplStd/lib/text/cstr.ci:236: warn: adding implicit cast int64(0: int32)
+cmplStd/lib/text/cstr.ci:257: debug: using default field initializer: FormatFlags.sign := 0
+cmplStd/lib/text/cstr.ci:121: warn: adding implicit cast char(0: int32)
+cmplStd/lib/text/cstr.ci:257: debug: using default field initializer: FormatFlags.precision := 0
+cmplStd/lib/text/cstr.ci:257: debug: using default field initializer: FormatFlags.padChr := 0
+cmplStd/lib/text/cstr.ci:127: warn: adding implicit cast char(0: int32)
+cmplStd/lib/text/cstr.ci:257: debug: using default field initializer: FormatFlags.padLen := 0
+cmplStd/lib/text/cstr.ci:259: warn: adding implicit cast float64(0: int32)
+cmplStd/lib/text/cstr.ci:265: warn: adding implicit cast uint32(1: int32)
+cmplStd/lib/text/cstr.ci:277: warn: adding implicit cast uint32(1: int32)
+cmplStd/lib/text/cstr.ci:281: warn: adding implicit cast uint32(1: int32)
+cmplStd/lib/text/cstr.ci:281: warn: adding implicit cast int32(output.length - (1): uint32)
+cmplStd/lib/text/cstr.ci:284: warn: adding implicit cast float64(10: int32)
+cmplStd/lib/text/cstr.ci:295: debug: using default field initializer: FormatFlags.sign := 0
+cmplStd/lib/text/cstr.ci:121: warn: adding implicit cast char(0: int32)
+cmplStd/lib/text/cstr.ci:295: debug: using default field initializer: FormatFlags.precision := 0
+cmplStd/lib/text/cstr.ci:295: debug: using default field initializer: FormatFlags.padChr := 0
+cmplStd/lib/text/cstr.ci:127: warn: adding implicit cast char(0: int32)
+cmplStd/lib/text/cstr.ci:295: debug: using default field initializer: FormatFlags.padLen := 0
+cmplStd/lib/text/cstr.ci:306: warn: adding implicit cast int32(value.length: uint32)
+cmplStd/lib/text/cstr.ci:306: warn: adding implicit cast int32(value[i]: char)
+cmplStd/lib/text/cstr.ci:309: warn: adding implicit cast float64(10: int32)
+cmplStd/lib/text/cstr.ci:309: warn: adding implicit cast float64((chr - '0'): char)
+cmplStd/lib/text/cstr.ci:310: warn: adding implicit cast float64(10: int32)
+cmplStd/lib/text/cstr.ci:313: warn: adding implicit cast float64(0: int32)
+cmplStd/lib/text/cstr.ci:317: warn: adding implicit cast float64(1: int32)
+cmplStd/lib/text/cstr.ci:320: warn: adding implicit cast float64(-1: int32)
+cmplStd/lib/text/cstr.ci:323: warn: adding implicit cast float64(1: int32)
+cmplStd/lib/text/cstr.ci:331: warn: adding implicit cast float64(0: int32)
+cmplStd/lib/text/cstr.ci:332: warn: adding implicit cast uint32(0: int32)
 
 ---------- Compile: `cmplStd/test/test.ci`
 cmplStd/test/test.ci:9: debug: inline file: `cmplStd/test/lang/emit.ci`
@@ -187,7 +191,7 @@ cmplStd/test/std/number.ci:48: warn: adding implicit cast float32(4: int32)
 cmplStd/test/test.ci:15: debug: inline file: `cmplStd/test/std/memory.ci`
 cmplStd/test/test.ci:16: debug: inline file: `cmplStd/test/std/tryExec.ci`
 cmplStd/test/std/tryExec.ci:25: warn: variable `abortExecution.NotEquals` hides previous declaration
-cmplStd/lib/debug.ci:48: warn: previously defined as `NotEquals`
+cmplStd/lib/lang/Debug.ci:48: warn: previously defined as `NotEquals`
 cmplStd/test/std/tryExec.ci:25: warn: padding `abortExecution.NotEquals` with 4 bytes: (12 -> 16)
 cmplStd/test/std/tryExec.ci:31: warn: adding implicit cast char[*]("assertion failed": .cstr)
 cmplStd/test/test.ci:20: debug: inline file: `cmplStd/test/lang/init.reference.ci`
@@ -284,19 +288,19 @@ cmplStd/test/std/test.math.ci:60: warn: adding implicit cast float64(2: int32)
 cmplStd/test/std/test.math.ci:61: warn: adding implicit cast float64(2: int32)
 
 ---------- Generate: byte-code
-cmplStd/lib/math.ci:48: warn: using default type initializer: Math.floor.result := 0
-cmplStd/lib/math.ci:319: warn: using default type initializer: Math.sinCos.y := 0
-cmplStd/lib/math.ci:322: warn: using default type initializer: e := 0
-cmplStd/lib/math.ci:326: warn: using default type initializer: f := 0
-cmplStd/lib/math.ci:394: warn: using default type initializer: Math.tan.e := 0
-cmplStd/lib/math.ci:451: warn: using default type initializer: Math.sinh.result := 0
+cmplStd/lib/math/Math.ci:48: warn: using default type initializer: Math.floor.result := 0
+cmplStd/lib/math/Math.ci:319: warn: using default type initializer: Math.sinCos.y := 0
+cmplStd/lib/math/Math.ci:322: warn: using default type initializer: e := 0
+cmplStd/lib/math/Math.ci:326: warn: using default type initializer: f := 0
+cmplStd/lib/math/Math.ci:394: warn: using default type initializer: Math.tan.e := 0
+cmplStd/lib/math/Math.ci:451: warn: using default type initializer: Math.sinh.result := 0
 cmplStd/lib/math/Matrix4f.ci:98: warn: uninitialized variable `.result`
-cmplStd/lib/debug.ci:41: warn: no code will be generated for statement: 0
-cmplStd/lib/debug.ci:41: warn: no code will be generated for statement: 0
-cmplStd/lib/debug.ci:45: warn: no code will be generated for statement: 0
-cmplStd/lib/debug.ci:45: warn: no code will be generated for statement: 0
-cmplStd/lib/debug.ci:45: warn: no code will be generated for statement: 0
-cmplStd/lib/debug.ci:45: warn: no code will be generated for statement: 0
+cmplStd/lib/lang/Debug.ci:41: warn: no code will be generated for statement: 0
+cmplStd/lib/lang/Debug.ci:41: warn: no code will be generated for statement: 0
+cmplStd/lib/lang/Debug.ci:45: warn: no code will be generated for statement: 0
+cmplStd/lib/lang/Debug.ci:45: warn: no code will be generated for statement: 0
+cmplStd/lib/lang/Debug.ci:45: warn: no code will be generated for statement: 0
+cmplStd/lib/lang/Debug.ci:45: warn: no code will be generated for statement: 0
 cmplStd/test/lang/init.member.ci:34: warn: using default type initializer: RecordMemberTest.global := 0
 cmplStd/test/lang/init.variable.ci:3: warn: using default type initializer: variable := 0
 cmplStd/test/lang/useOperator.ci:76: warn: using signed cast for unsigned value: `96.300000`
@@ -2343,7 +2347,7 @@ signed(value: uint8): int8: function {
 .base: `function`
 .size: 0
 .name: 'signed'
-.file: 'cmplStd/stdlib.ci:13'
+.file: 'cmplStd/lib/lang/Integer.ci:2'
 .param .result: int8 (size: 1, cast: i32)
 .param value: uint8 (size: 4, cast: u32)
 .doc: 'convert unsigned to signed integer'
@@ -2354,7 +2358,7 @@ signed(value: uint16): int16: function {
 .base: `function`
 .size: 0
 .name: 'signed'
-.file: 'cmplStd/stdlib.ci:16'
+.file: 'cmplStd/lib/lang/Integer.ci:5'
 .param .result: int16 (size: 2, cast: i32)
 .param value: uint16 (size: 4, cast: u32)
 .doc: 'convert unsigned to signed integer'
@@ -2365,7 +2369,7 @@ signed(value: uint32): int32: function {
 .base: `function`
 .size: 0
 .name: 'signed'
-.file: 'cmplStd/stdlib.ci:19'
+.file: 'cmplStd/lib/lang/Integer.ci:8'
 .param .result: int32 (size: 4, cast: i32)
 .param value: uint32 (size: 4, cast: u32)
 .doc: 'convert unsigned to signed integer'
@@ -2376,7 +2380,7 @@ signed(value: uint64): int64: function {
 .base: `function`
 .size: 0
 .name: 'signed'
-.file: 'cmplStd/stdlib.ci:22'
+.file: 'cmplStd/lib/lang/Integer.ci:11'
 .param .result: int64 (size: 8, cast: i64)
 .param value: uint64 (size: 8, cast: u64)
 .doc: 'convert unsigned to signed integer'
@@ -2387,7 +2391,7 @@ unsigned(value: int8): uint8: function {
 .base: `function`
 .size: 0
 .name: 'unsigned'
-.file: 'cmplStd/stdlib.ci:25'
+.file: 'cmplStd/lib/lang/Integer.ci:14'
 .param .result: uint8 (size: 1, cast: u32)
 .param value: int8 (size: 4, cast: i32)
 .doc: 'convert signed to unsigned integer'
@@ -2398,7 +2402,7 @@ unsigned(value: int16): uint16: function {
 .base: `function`
 .size: 0
 .name: 'unsigned'
-.file: 'cmplStd/stdlib.ci:28'
+.file: 'cmplStd/lib/lang/Integer.ci:17'
 .param .result: uint16 (size: 2, cast: u32)
 .param value: int16 (size: 4, cast: i32)
 .doc: 'convert signed to unsigned integer'
@@ -2409,7 +2413,7 @@ unsigned(value: int32): uint32: function {
 .base: `function`
 .size: 0
 .name: 'unsigned'
-.file: 'cmplStd/stdlib.ci:31'
+.file: 'cmplStd/lib/lang/Integer.ci:20'
 .param .result: uint32 (size: 4, cast: u32)
 .param value: int32 (size: 4, cast: i32)
 .doc: 'convert signed to unsigned integer'
@@ -2420,18 +2424,30 @@ unsigned(value: int64): uint64: function {
 .base: `function`
 .size: 0
 .name: 'unsigned'
-.file: 'cmplStd/stdlib.ci:34'
+.file: 'cmplStd/lib/lang/Integer.ci:23'
 .param .result: uint64 (size: 8, cast: u64)
 .param value: int64 (size: 8, cast: i64)
 .doc: 'convert signed to unsigned integer'
 .value: uint64(value)
+}
+inc(ptr: pointer, val: int32): pointer: function {
+.kind: inline
+.base: `function`
+.size: 0
+.name: 'inc'
+.file: 'cmplStd/lib/lang/Pointer.ci:3'
+.param .result: pointer (size: 4, cast: ref)
+.param ptr: pointer (size: 4, cast: ref)
+.param val: int32 (size: 4, cast: i32)
+.doc: 'Returns the pointer incremented with the given value'
+.value: pointer(emit(pointer(ptr), int32(val), add.i32))
 }
 sizeof(type: typename): int32: function {
 .kind: inline
 .base: `function`
 .size: 0
 .name: 'sizeof'
-.file: 'cmplStd/stdlib.ci:37'
+.file: 'cmplStd/stdlib.ci:16'
 .param .result: int32 (size: 4, cast: i32)
 .param type: typename (size: 4, cast: ref)
 .doc: 'Returns the size of the given type'
@@ -2442,7 +2458,7 @@ verbose(message: char[*], inspect: variant): void: function {
 .base: `function`
 .size: 0
 .name: 'verbose'
-.file: 'cmplStd/lib/debug.ci:4'
+.file: 'cmplStd/lib/lang/Debug.ci:4'
 .param .result: void (size: 0, cast: void)
 .param message: char[*] (size: 4, cast: const ref)
 .param inspect: variant (size: 8, cast: const var)
@@ -2454,7 +2470,7 @@ verbose(message: char[*]): void: function {
 .base: `function`
 .size: 0
 .name: 'verbose'
-.file: 'cmplStd/lib/debug.ci:6'
+.file: 'cmplStd/lib/lang/Debug.ci:6'
 .param .result: void (size: 0, cast: void)
 .param message: char[*] (size: 4, cast: const ref)
 .doc: 'report message at `verbose` logging level'
@@ -2465,7 +2481,7 @@ debug(message: char[*], inspect: variant): void: function {
 .base: `function`
 .size: 0
 .name: 'debug'
-.file: 'cmplStd/lib/debug.ci:9'
+.file: 'cmplStd/lib/lang/Debug.ci:9'
 .param .result: void (size: 0, cast: void)
 .param message: char[*] (size: 4, cast: const ref)
 .param inspect: variant (size: 8, cast: const var)
@@ -2477,7 +2493,7 @@ debug(message: char[*]): void: function {
 .base: `function`
 .size: 0
 .name: 'debug'
-.file: 'cmplStd/lib/debug.ci:11'
+.file: 'cmplStd/lib/lang/Debug.ci:11'
 .param .result: void (size: 0, cast: void)
 .param message: char[*] (size: 4, cast: const ref)
 .doc: 'report message at `debug` logging level'
@@ -2488,7 +2504,7 @@ trace(message: char[*], inspect: variant): void: function {
 .base: `function`
 .size: 0
 .name: 'trace'
-.file: 'cmplStd/lib/debug.ci:14'
+.file: 'cmplStd/lib/lang/Debug.ci:14'
 .param .result: void (size: 0, cast: void)
 .param message: char[*] (size: 4, cast: const ref)
 .param inspect: variant (size: 8, cast: const var)
@@ -2500,7 +2516,7 @@ trace(message: char[*]): void: function {
 .base: `function`
 .size: 0
 .name: 'trace'
-.file: 'cmplStd/lib/debug.ci:16'
+.file: 'cmplStd/lib/lang/Debug.ci:16'
 .param .result: void (size: 0, cast: void)
 .param message: char[*] (size: 4, cast: const ref)
 .doc: 'report message with stacktrace at `debug` logging level'
@@ -2511,7 +2527,7 @@ info(message: char[*], inspect: variant): void: function {
 .base: `function`
 .size: 0
 .name: 'info'
-.file: 'cmplStd/lib/debug.ci:19'
+.file: 'cmplStd/lib/lang/Debug.ci:19'
 .param .result: void (size: 0, cast: void)
 .param message: char[*] (size: 4, cast: const ref)
 .param inspect: variant (size: 8, cast: const var)
@@ -2523,7 +2539,7 @@ info(message: char[*]): void: function {
 .base: `function`
 .size: 0
 .name: 'info'
-.file: 'cmplStd/lib/debug.ci:21'
+.file: 'cmplStd/lib/lang/Debug.ci:21'
 .param .result: void (size: 0, cast: void)
 .param message: char[*] (size: 4, cast: const ref)
 .doc: 'report message at `info` logging level'
@@ -2534,7 +2550,7 @@ warn(message: char[*], inspect: variant): void: function {
 .base: `function`
 .size: 0
 .name: 'warn'
-.file: 'cmplStd/lib/debug.ci:24'
+.file: 'cmplStd/lib/lang/Debug.ci:24'
 .param .result: void (size: 0, cast: void)
 .param message: char[*] (size: 4, cast: const ref)
 .param inspect: variant (size: 8, cast: const var)
@@ -2546,7 +2562,7 @@ warn(message: char[*]): void: function {
 .base: `function`
 .size: 0
 .name: 'warn'
-.file: 'cmplStd/lib/debug.ci:26'
+.file: 'cmplStd/lib/lang/Debug.ci:26'
 .param .result: void (size: 0, cast: void)
 .param message: char[*] (size: 4, cast: const ref)
 .doc: 'report message at `warn` logging level'
@@ -2557,7 +2573,7 @@ error(message: char[*], inspect: variant): void: function {
 .base: `function`
 .size: 0
 .name: 'error'
-.file: 'cmplStd/lib/debug.ci:29'
+.file: 'cmplStd/lib/lang/Debug.ci:29'
 .param .result: void (size: 0, cast: void)
 .param message: char[*] (size: 4, cast: const ref)
 .param inspect: variant (size: 8, cast: const var)
@@ -2569,7 +2585,7 @@ error(message: char[*]): void: function {
 .base: `function`
 .size: 0
 .name: 'error'
-.file: 'cmplStd/lib/debug.ci:31'
+.file: 'cmplStd/lib/lang/Debug.ci:31'
 .param .result: void (size: 0, cast: void)
 .param message: char[*] (size: 4, cast: const ref)
 .doc: 'report message with stacktrace at `error` logging level'
@@ -2580,7 +2596,7 @@ abort(message: char[*], inspect: variant): void: function {
 .base: `function`
 .size: 0
 .name: 'abort'
-.file: 'cmplStd/lib/debug.ci:34'
+.file: 'cmplStd/lib/lang/Debug.ci:34'
 .param .result: void (size: 0, cast: void)
 .param message: char[*] (size: 4, cast: const ref)
 .param inspect: variant (size: 8, cast: const var)
@@ -2592,7 +2608,7 @@ abort(message: char[*]): void: function {
 .base: `function`
 .size: 0
 .name: 'abort'
-.file: 'cmplStd/lib/debug.ci:36'
+.file: 'cmplStd/lib/lang/Debug.ci:36'
 .param .result: void (size: 0, cast: void)
 .param message: char[*] (size: 4, cast: const ref)
 .doc: 'report message with stacktrace at `abort` logging level and abort execution'
@@ -2603,7 +2619,7 @@ abort(): void: function {
 .base: `function`
 .size: 0
 .name: 'abort'
-.file: 'cmplStd/lib/debug.ci:38'
+.file: 'cmplStd/lib/lang/Debug.ci:38'
 .param .result: void (size: 0, cast: void)
 .doc: 'report message with stacktrace at `abort` logging level and abort execution'
 .value: raise(raise.abort, raise.defTrace, "execution aborted!", null)
@@ -2613,7 +2629,7 @@ assert(condition: bool, message: char[*], inspect: variant): void: function {
 .base: `function`
 .size: 0
 .name: 'assert'
-.file: 'cmplStd/lib/debug.ci:41'
+.file: 'cmplStd/lib/lang/Debug.ci:41'
 .param .result: void (size: 0, cast: void)
 .param condition: bool (size: 4, cast: bool)
 .param message: char[*] (size: 4, cast: const ref)
@@ -2626,7 +2642,7 @@ assert(condition: bool, message: char[*]): void: function {
 .base: `function`
 .size: 0
 .name: 'assert'
-.file: 'cmplStd/lib/debug.ci:43'
+.file: 'cmplStd/lib/lang/Debug.ci:43'
 .param .result: void (size: 0, cast: void)
 .param condition: bool (size: 4, cast: bool)
 .param message: char[*] (size: 4, cast: const ref)
@@ -2638,7 +2654,7 @@ assert(condition: bool): void: function {
 .base: `function`
 .size: 0
 .name: 'assert'
-.file: 'cmplStd/lib/debug.ci:45'
+.file: 'cmplStd/lib/lang/Debug.ci:45'
 .param .result: void (size: 0, cast: void)
 .param condition: bool (size: 4, cast: bool)
 .doc: 'report message and abort the execution if the assertion condition fails (is false)'
@@ -2649,7 +2665,7 @@ NotEquals: typename {
 .base: `typename`
 .size: 24
 .name: 'NotEquals'
-.file: 'cmplStd/lib/debug.ci:48'
+.file: 'cmplStd/lib/lang/Debug.ci:48'
 .field expected: variant (size: 8, cast: const variable(var))
 .field returned: variant (size: 8, cast: const variable(var))
 .field extras: variant[] (size: 8, cast: const variable(arr))
@@ -2660,7 +2676,7 @@ NotEquals.expected: variant {
 .base: `variant`
 .size: 8
 .name: 'expected'
-.file: 'cmplStd/lib/debug.ci:50'
+.file: 'cmplStd/lib/lang/Debug.ci:50'
 .owner: NotEquals
 .doc: 'Value of the expected result'
 }
@@ -2669,7 +2685,7 @@ NotEquals.returned: variant {
 .base: `variant`
 .size: 8
 .name: 'returned'
-.file: 'cmplStd/lib/debug.ci:53'
+.file: 'cmplStd/lib/lang/Debug.ci:53'
 .owner: NotEquals
 .doc: 'Value of the actual result'
 }
@@ -2678,7 +2694,7 @@ NotEquals.extras: variant[] {
 .base: `variant[]`
 .size: 8
 .name: 'extras'
-.file: 'cmplStd/lib/debug.ci:56'
+.file: 'cmplStd/lib/lang/Debug.ci:56'
 .owner: NotEquals
 .doc: 'Extra argument to identify what happened'
 .value: null
@@ -2688,7 +2704,7 @@ assertEq(expected: int32, returned: int32, message: char[*]): void: function {
 .base: `function`
 .size: 103
 .name: 'assertEq'
-.file: 'cmplStd/lib/debug.ci:61'
+.file: 'cmplStd/lib/lang/Debug.ci:61'
 .param .result: void (size: 0, cast: variable(void))
 .param expected: int32 (size: 4, cast: variable(i32))
 .param returned: int32 (size: 4, cast: variable(i32))
@@ -2709,35 +2725,35 @@ assertEq(expected: int32, returned: int32, message: char[*]): void: function {
 	raise(raise.abort, raise.defTrace, "assertion failed", details);
 }
 .instructions: (103 bytes)
-	cmplStd/lib/debug.ci:62: (10 bytes): if (returned == expected)
+	cmplStd/lib/lang/Debug.ci:62: (10 bytes): if (returned == expected)
 	<assertEq>  : dup.x32 sp(2)
 	<assertEq+?>: dup.x32 sp(4)
 	<assertEq+?>: ceq.i32
 	<assertEq+?>: jz +5
-	cmplStd/lib/debug.ci:63: (1 byte): return;
+	cmplStd/lib/lang/Debug.ci:63: (1 byte): return;
 	<assertEq+?>: ret
-	cmplStd/lib/debug.ci:65: (13 bytes): extras: variant[1] := {...}
+	cmplStd/lib/lang/Debug.ci:65: (13 bytes): extras: variant[1] := {...}
 	<assertEq+?>: inc.sp(+8)
-	cmplStd/lib/debug.ci:65: (9 bytes): extras[0] := (message);
+	cmplStd/lib/lang/Debug.ci:65: (9 bytes): extras[0] := (message);
 	<assertEq+?>: load.ref <?>
 	<assertEq+?>: dup.x32 sp(4)
 	<assertEq+?>: set.x64 sp(2)
-	cmplStd/lib/debug.ci:66: (37 bytes): details: NotEquals := {...}
+	cmplStd/lib/lang/Debug.ci:66: (37 bytes): details: NotEquals := {...}
 	<assertEq+?>: inc.sp(+24)
-	cmplStd/lib/debug.ci:67: (11 bytes): details.expected := (expected);
+	cmplStd/lib/lang/Debug.ci:67: (11 bytes): details.expected := (expected);
 	<assertEq+?>: load.ref <?> ;int32
 	<assertEq+?>: load.sp(+48)
 	<assertEq+?>: set.x64 sp(2)
-	cmplStd/lib/debug.ci:68: (11 bytes): details.returned := (returned);
+	cmplStd/lib/lang/Debug.ci:68: (11 bytes): details.returned := (returned);
 	<assertEq+?>: load.ref <?> ;int32
 	<assertEq+?>: load.sp(+44)
 	<assertEq+?>: set.x64 sp(4)
-	cmplStd/lib/debug.ci:69: (11 bytes): details.extras := (extras);
+	cmplStd/lib/lang/Debug.ci:69: (11 bytes): details.extras := (extras);
 	<assertEq+?>: load.c32 1
 	<assertEq+?>: load.sp(+28)
 	<assertEq+?>: set.x64 sp(6)
-	cmplStd/lib/debug.ci:71: (38 bytes): raise(raise.abort, raise.defTrace, "assertion failed", details);
-	<assertEq+?>: load.ref <?> ;"cmplStd/lib/debug.ci"
+	cmplStd/lib/lang/Debug.ci:71: (38 bytes): raise(raise.abort, raise.defTrace, "assertion failed", details);
+	<assertEq+?>: load.ref <?> ;"cmplStd/lib/lang/Debug.ci"
 	<assertEq+?>: load.c32 71
 	<assertEq+?>: load.c32 -2
 	<assertEq+?>: load.c32 128
@@ -2753,7 +2769,7 @@ assertEq(expected: int32, returned: int32): void: function {
 .base: `function`
 .size: 0
 .name: 'assertEq'
-.file: 'cmplStd/lib/debug.ci:74'
+.file: 'cmplStd/lib/lang/Debug.ci:74'
 .param .result: void (size: 0, cast: void)
 .param expected: int32 (size: 4, cast: i32)
 .param returned: int32 (size: 4, cast: i32)
@@ -2765,7 +2781,7 @@ Math: typename {
 .base: `typename`
 .size: 0
 .name: 'Math'
-.file: 'cmplStd/lib/math.ci:2'
+.file: 'cmplStd/lib/math/Math.ci:2'
 .field pi: float64 (size: 0, cast: static const val)
 .field e: float64 (size: 0, cast: static const val)
 .field ln2: float64 (size: 0, cast: static const val)
@@ -2849,7 +2865,7 @@ Math.pi: float64 {
 .base: `float64`
 .size: 0
 .name: 'pi'
-.file: 'cmplStd/lib/math.ci:6'
+.file: 'cmplStd/lib/math/Math.ci:6'
 .owner: Math
 .doc: 'pi'
 .value: 3.141593
@@ -2859,7 +2875,7 @@ Math.e: float64 {
 .base: `float64`
 .size: 0
 .name: 'e'
-.file: 'cmplStd/lib/math.ci:7'
+.file: 'cmplStd/lib/math/Math.ci:7'
 .owner: Math
 .doc: 'e'
 .value: 2.718282
@@ -2869,7 +2885,7 @@ Math.ln2: float64 {
 .base: `float64`
 .size: 0
 .name: 'ln2'
-.file: 'cmplStd/lib/math.ci:8'
+.file: 'cmplStd/lib/math/Math.ci:8'
 .owner: Math
 .doc: 'ln2'
 .value: 0.693147
@@ -2879,7 +2895,7 @@ Math.log2E: float64 {
 .base: `float64`
 .size: 0
 .name: 'log2E'
-.file: 'cmplStd/lib/math.ci:9'
+.file: 'cmplStd/lib/math/Math.ci:9'
 .owner: Math
 .doc: 'log2E'
 .value: 1.442695
@@ -2889,7 +2905,7 @@ Math.ln10: float64 {
 .base: `float64`
 .size: 0
 .name: 'ln10'
-.file: 'cmplStd/lib/math.ci:10'
+.file: 'cmplStd/lib/math/Math.ci:10'
 .owner: Math
 .doc: 'ln10'
 .value: 2.302585
@@ -2899,7 +2915,7 @@ Math.log10E: float64 {
 .base: `float64`
 .size: 0
 .name: 'log10E'
-.file: 'cmplStd/lib/math.ci:11'
+.file: 'cmplStd/lib/math/Math.ci:11'
 .owner: Math
 .doc: 'log10E'
 .value: 0.434294
@@ -2909,7 +2925,7 @@ Math.phi: float64 {
 .base: `float64`
 .size: 0
 .name: 'phi'
-.file: 'cmplStd/lib/math.ci:12'
+.file: 'cmplStd/lib/math/Math.ci:12'
 .owner: Math
 .doc: 'phi'
 .value: 1.618034
@@ -2919,7 +2935,7 @@ Math.sqrt2: float64 {
 .base: `float64`
 .size: 0
 .name: 'sqrt2'
-.file: 'cmplStd/lib/math.ci:13'
+.file: 'cmplStd/lib/math/Math.ci:13'
 .owner: Math
 .doc: 'sqrt2'
 .value: 1.414214
@@ -2929,7 +2945,7 @@ Math.sqrtE: float64 {
 .base: `float64`
 .size: 0
 .name: 'sqrtE'
-.file: 'cmplStd/lib/math.ci:14'
+.file: 'cmplStd/lib/math/Math.ci:14'
 .owner: Math
 .doc: 'sqrtE'
 .value: 1.648721
@@ -2939,7 +2955,7 @@ Math.sqrtPi: float64 {
 .base: `float64`
 .size: 0
 .name: 'sqrtPi'
-.file: 'cmplStd/lib/math.ci:15'
+.file: 'cmplStd/lib/math/Math.ci:15'
 .owner: Math
 .doc: 'sqrtPi'
 .value: 1.772454
@@ -2949,7 +2965,7 @@ Math.sqrtPhi: float64 {
 .base: `float64`
 .size: 0
 .name: 'sqrtPhi'
-.file: 'cmplStd/lib/math.ci:16'
+.file: 'cmplStd/lib/math/Math.ci:16'
 .owner: Math
 .doc: 'sqrtPhi'
 .value: 1.272020
@@ -2959,7 +2975,7 @@ Math.nan: float64 {
 .base: `float64`
 .size: 0
 .name: 'nan'
-.file: 'cmplStd/lib/math.ci:17'
+.file: 'cmplStd/lib/math/Math.ci:17'
 .owner: Math
 .doc: 'nan'
 .value: -nan
@@ -2969,7 +2985,7 @@ Math.inf: float64 {
 .base: `float64`
 .size: 0
 .name: 'inf'
-.file: 'cmplStd/lib/math.ci:18'
+.file: 'cmplStd/lib/math/Math.ci:18'
 .owner: Math
 .doc: 'inf'
 .value: inf
@@ -2979,7 +2995,7 @@ Math.modf(x: float64, intPart: float64): float64: function {
 .base: `function`
 .size: 86
 .name: 'modf'
-.file: 'cmplStd/lib/math.ci:22'
+.file: 'cmplStd/lib/math/Math.ci:22'
 .owner: Math
 .param .result: float64 (size: 8, cast: variable(f64))
 .param x: float64 (size: 8, cast: variable(f64))
@@ -3000,17 +3016,17 @@ Math.modf(x: float64, intPart: float64): float64: function {
 	return .result := result;
 }
 .instructions: (86 bytes)
-	cmplStd/lib/math.ci:23: (63 bytes): if (x < (1))
+	cmplStd/lib/math/Math.ci:23: (63 bytes): if (x < (1))
 	<modf>  : dup.x64 sp(2)
 	<modf+?>: load.f64 1.000000
 	<modf+?>: clt.f64
 	<modf+?>: jz +51
-	cmplStd/lib/math.ci:24: (39 bytes): if (x < (0))
+	cmplStd/lib/math/Math.ci:24: (39 bytes): if (x < (0))
 	<modf+?>: dup.x64 sp(2)
 	<modf+?>: load.z64
 	<modf+?>: clt.f64
 	<modf+?>: jz +35
-	cmplStd/lib/math.ci:25: (17 bytes): result: float64 := -modf(-x, &intPart)
+	cmplStd/lib/math/Math.ci:25: (17 bytes): result: float64 := -modf(-x, &intPart)
 	<modf+?>: load.z64
 	<modf+?>: dup.x64 sp(4)
 	<modf+?>: neg.f64
@@ -3019,34 +3035,34 @@ Math.modf(x: float64, intPart: float64): float64: function {
 	<modf+?>: call
 	<modf+?>: inc.sp(-12)
 	<modf+?>: neg.f64
-	cmplStd/lib/math.ci:26: (7 bytes): intPart := -intPart;
+	cmplStd/lib/math/Math.ci:26: (7 bytes): intPart := -intPart;
 	<modf+?>: dup.x32 sp(3)
 	<modf+?>: load.i64
 	<modf+?>: neg.f64
 	<modf+?>: dup.x32 sp(5)
 	<modf+?>: store.i64
-	cmplStd/lib/math.ci:27: (3 bytes): return .result := result;
+	cmplStd/lib/math/Math.ci:27: (3 bytes): return .result := result;
 	<modf+?>: set.x64 sp(6)
 	<modf+?>: ret
 	<modf+?>: inc.sp(-8)
-	cmplStd/lib/math.ci:29: (4 bytes): intPart := (0);
+	cmplStd/lib/math/Math.ci:29: (4 bytes): intPart := (0);
 	<modf+?>: load.z64
 	<modf+?>: dup.x32 sp(3)
 	<modf+?>: store.i64
-	cmplStd/lib/math.ci:30: (4 bytes): return .result := x;
+	cmplStd/lib/math/Math.ci:30: (4 bytes): return .result := x;
 	<modf+?>: mov.x64 sp(4, 2)
 	<modf+?>: ret
-	cmplStd/lib/math.ci:32: (12 bytes): result: float64 := x % (1)
+	cmplStd/lib/math/Math.ci:32: (12 bytes): result: float64 := x % (1)
 	<modf+?>: dup.x64 sp(2)
 	<modf+?>: load.f64 1.000000
 	<modf+?>: mod.f64
-	cmplStd/lib/math.ci:33: (8 bytes): intPart := x - result;
+	cmplStd/lib/math/Math.ci:33: (8 bytes): intPart := x - result;
 	<modf+?>: dup.x64 sp(4)
 	<modf+?>: dup.x64 sp(2)
 	<modf+?>: sub.f64
 	<modf+?>: dup.x32 sp(5)
 	<modf+?>: store.i64
-	cmplStd/lib/math.ci:34: (3 bytes): return .result := result;
+	cmplStd/lib/math/Math.ci:34: (3 bytes): return .result := result;
 	<modf+?>: set.x64 sp(6)
 	<modf+?>: ret
 }
@@ -3055,7 +3071,7 @@ Math.floor(x: float64): float64: function {
 .base: `function`
 .size: 24
 .name: 'floor'
-.file: 'cmplStd/lib/math.ci:47'
+.file: 'cmplStd/lib/math/Math.ci:47'
 .owner: Math
 .param .result: float64 (size: 8, cast: variable(f64))
 .param x: float64 (size: 8, cast: variable(f64))
@@ -3066,16 +3082,16 @@ Math.floor(x: float64): float64: function {
 	return .result := result;
 }
 .instructions: (24 bytes)
-	cmplStd/lib/math.ci:48: (1 byte): result: float64
+	cmplStd/lib/math/Math.ci:48: (1 byte): result: float64
 	<floor>  : load.z128
-	cmplStd/lib/math.ci:49: (20 bytes): modf(x, &result);
+	cmplStd/lib/math/Math.ci:49: (20 bytes): modf(x, &result);
 	<floor+?>: dup.x64 sp(5)
 	<floor+?>: load.sp(+16)
 	<floor+?>: load.ref <?> ;Math.modf(x: float64, intPart: float64): float64
 	<floor+?>: call
 	<floor+?>: inc.sp(-12)
 	<floor+?>: inc.sp(-8)
-	cmplStd/lib/math.ci:50: (3 bytes): return .result := result;
+	cmplStd/lib/math/Math.ci:50: (3 bytes): return .result := result;
 	<floor+?>: set.x64 sp(5)
 	<floor+?>: ret
 }
@@ -3084,7 +3100,7 @@ Math.ceil(x: float64): float64: function {
 .base: `function`
 .size: 0
 .name: 'ceil'
-.file: 'cmplStd/lib/math.ci:54'
+.file: 'cmplStd/lib/math/Math.ci:54'
 .owner: Math
 .param .result: float64 (size: 8, cast: f64)
 .param x: float64 (size: 8, cast: f64)
@@ -3096,7 +3112,7 @@ Math.round(x: float64): float64: function {
 .base: `function`
 .size: 0
 .name: 'round'
-.file: 'cmplStd/lib/math.ci:57'
+.file: 'cmplStd/lib/math/Math.ci:57'
 .owner: Math
 .param .result: float64 (size: 8, cast: f64)
 .param x: float64 (size: 8, cast: f64)
@@ -3108,7 +3124,7 @@ Math.sign(x: int32): int32: function {
 .base: `function`
 .size: 0
 .name: 'sign'
-.file: 'cmplStd/lib/math.ci:64'
+.file: 'cmplStd/lib/math/Math.ci:64'
 .owner: Math
 .param .result: int32 (size: 4, cast: i32)
 .param x: int32 (size: 4, cast: variable(i32))
@@ -3120,7 +3136,7 @@ Math.sign(x: int64): int32: function {
 .base: `function`
 .size: 0
 .name: 'sign'
-.file: 'cmplStd/lib/math.ci:67'
+.file: 'cmplStd/lib/math/Math.ci:67'
 .owner: Math
 .param .result: int32 (size: 4, cast: i32)
 .param x: int64 (size: 8, cast: variable(i64))
@@ -3132,7 +3148,7 @@ Math.sign(x: uint32): int32: function {
 .base: `function`
 .size: 0
 .name: 'sign'
-.file: 'cmplStd/lib/math.ci:70'
+.file: 'cmplStd/lib/math/Math.ci:70'
 .owner: Math
 .param .result: int32 (size: 4, cast: i32)
 .param x: uint32 (size: 4, cast: u32)
@@ -3144,7 +3160,7 @@ Math.sign(x: uint64): int32: function {
 .base: `function`
 .size: 0
 .name: 'sign'
-.file: 'cmplStd/lib/math.ci:73'
+.file: 'cmplStd/lib/math/Math.ci:73'
 .owner: Math
 .param .result: int32 (size: 4, cast: i32)
 .param x: uint64 (size: 8, cast: u64)
@@ -3156,7 +3172,7 @@ Math.sign(x: float32): int32: function {
 .base: `function`
 .size: 0
 .name: 'sign'
-.file: 'cmplStd/lib/math.ci:76'
+.file: 'cmplStd/lib/math/Math.ci:76'
 .owner: Math
 .param .result: int32 (size: 4, cast: i32)
 .param x: float32 (size: 4, cast: variable(f32))
@@ -3168,7 +3184,7 @@ Math.sign(x: float64): int32: function {
 .base: `function`
 .size: 0
 .name: 'sign'
-.file: 'cmplStd/lib/math.ci:79'
+.file: 'cmplStd/lib/math/Math.ci:79'
 .owner: Math
 .param .result: int32 (size: 4, cast: i32)
 .param x: float64 (size: 8, cast: variable(f64))
@@ -3180,7 +3196,7 @@ Math.absMod(val: float32, mod: float32): float32: function {
 .base: `function`
 .size: 27
 .name: 'absMod'
-.file: 'cmplStd/lib/math.ci:82'
+.file: 'cmplStd/lib/math/Math.ci:82'
 .owner: Math
 .param .result: float32 (size: 4, cast: variable(f32))
 .param val: float32 (size: 4, cast: variable(f32))
@@ -3193,7 +3209,7 @@ Math.absMod(val: float32, mod: float32): float32: function {
 	return .result := val;
 }
 .instructions: (27 bytes)
-	cmplStd/lib/math.ci:83: (23 bytes): if ((val := val % mod) < (0))
+	cmplStd/lib/math/Math.ci:83: (23 bytes): if ((val := val % mod) < (0))
 	<absMod>  : dup.x32 sp(2)
 	<absMod+?>: dup.x32 sp(2)
 	<absMod+?>: mod.f32
@@ -3202,13 +3218,13 @@ Math.absMod(val: float32, mod: float32): float32: function {
 	<absMod+?>: load.z32
 	<absMod+?>: clt.f32
 	<absMod+?>: jz +12
-	cmplStd/lib/math.ci:84: (8 bytes): return .result := val + mod;
+	cmplStd/lib/math/Math.ci:84: (8 bytes): return .result := val + mod;
 	<absMod+?>: dup.x32 sp(2)
 	<absMod+?>: dup.x32 sp(2)
 	<absMod+?>: add.f32
 	<absMod+?>: set.x32 sp(4)
 	<absMod+?>: ret
-	cmplStd/lib/math.ci:86: (4 bytes): return .result := val;
+	cmplStd/lib/math/Math.ci:86: (4 bytes): return .result := val;
 	<absMod+?>: mov.x32 sp(3, 2)
 	<absMod+?>: ret
 }
@@ -3217,7 +3233,7 @@ Math.absMod(val: float64, mod: float64): float64: function {
 .base: `function`
 .size: 27
 .name: 'absMod'
-.file: 'cmplStd/lib/math.ci:90'
+.file: 'cmplStd/lib/math/Math.ci:90'
 .owner: Math
 .param .result: float64 (size: 8, cast: variable(f64))
 .param val: float64 (size: 8, cast: variable(f64))
@@ -3230,7 +3246,7 @@ Math.absMod(val: float64, mod: float64): float64: function {
 	return .result := val;
 }
 .instructions: (27 bytes)
-	cmplStd/lib/math.ci:91: (23 bytes): if ((val := val % mod) < (0))
+	cmplStd/lib/math/Math.ci:91: (23 bytes): if ((val := val % mod) < (0))
 	<absMod>  : dup.x64 sp(3)
 	<absMod+?>: dup.x64 sp(3)
 	<absMod+?>: mod.f64
@@ -3239,13 +3255,13 @@ Math.absMod(val: float64, mod: float64): float64: function {
 	<absMod+?>: load.z64
 	<absMod+?>: clt.f64
 	<absMod+?>: jz +12
-	cmplStd/lib/math.ci:92: (8 bytes): return .result := val + mod;
+	cmplStd/lib/math/Math.ci:92: (8 bytes): return .result := val + mod;
 	<absMod+?>: dup.x64 sp(3)
 	<absMod+?>: dup.x64 sp(3)
 	<absMod+?>: add.f64
 	<absMod+?>: set.x64 sp(7)
 	<absMod+?>: ret
-	cmplStd/lib/math.ci:94: (4 bytes): return .result := val;
+	cmplStd/lib/math/Math.ci:94: (4 bytes): return .result := val;
 	<absMod+?>: mov.x64 sp(5, 3)
 	<absMod+?>: ret
 }
@@ -3254,7 +3270,7 @@ Math.abs(x: int32): int32: function {
 .base: `function`
 .size: 0
 .name: 'abs'
-.file: 'cmplStd/lib/math.ci:98'
+.file: 'cmplStd/lib/math/Math.ci:98'
 .owner: Math
 .param .result: int32 (size: 4, cast: i32)
 .param x: int32 (size: 4, cast: variable(i32))
@@ -3266,7 +3282,7 @@ Math.abs(x: int64): int64: function {
 .base: `function`
 .size: 0
 .name: 'abs'
-.file: 'cmplStd/lib/math.ci:101'
+.file: 'cmplStd/lib/math/Math.ci:101'
 .owner: Math
 .param .result: int64 (size: 8, cast: i64)
 .param x: int64 (size: 8, cast: variable(i64))
@@ -3278,7 +3294,7 @@ Math.abs(x: uint32): uint32: function {
 .base: `function`
 .size: 0
 .name: 'abs'
-.file: 'cmplStd/lib/math.ci:104'
+.file: 'cmplStd/lib/math/Math.ci:104'
 .owner: Math
 .param .result: uint32 (size: 4, cast: u32)
 .param x: uint32 (size: 4, cast: u32)
@@ -3290,7 +3306,7 @@ Math.abs(x: uint64): uint64: function {
 .base: `function`
 .size: 0
 .name: 'abs'
-.file: 'cmplStd/lib/math.ci:107'
+.file: 'cmplStd/lib/math/Math.ci:107'
 .owner: Math
 .param .result: uint64 (size: 8, cast: u64)
 .param x: uint64 (size: 8, cast: u64)
@@ -3302,7 +3318,7 @@ Math.abs(x: float32): float32: function {
 .base: `function`
 .size: 0
 .name: 'abs'
-.file: 'cmplStd/lib/math.ci:110'
+.file: 'cmplStd/lib/math/Math.ci:110'
 .owner: Math
 .param .result: float32 (size: 4, cast: f32)
 .param x: float32 (size: 4, cast: variable(f32))
@@ -3314,7 +3330,7 @@ Math.abs(x: float64): float64: function {
 .base: `function`
 .size: 0
 .name: 'abs'
-.file: 'cmplStd/lib/math.ci:113'
+.file: 'cmplStd/lib/math/Math.ci:113'
 .owner: Math
 .param .result: float64 (size: 8, cast: f64)
 .param x: float64 (size: 8, cast: variable(f64))
@@ -3326,7 +3342,7 @@ Math.min(a: int32, b: int32): int32: function {
 .base: `function`
 .size: 0
 .name: 'min'
-.file: 'cmplStd/lib/math.ci:116'
+.file: 'cmplStd/lib/math/Math.ci:116'
 .owner: Math
 .param .result: int32 (size: 4, cast: i32)
 .param a: int32 (size: 4, cast: variable(i32))
@@ -3339,7 +3355,7 @@ Math.min(a: int64, b: int64): int64: function {
 .base: `function`
 .size: 0
 .name: 'min'
-.file: 'cmplStd/lib/math.ci:119'
+.file: 'cmplStd/lib/math/Math.ci:119'
 .owner: Math
 .param .result: int64 (size: 8, cast: i64)
 .param a: int64 (size: 8, cast: variable(i64))
@@ -3352,7 +3368,7 @@ Math.min(a: uint32, b: uint32): uint32: function {
 .base: `function`
 .size: 0
 .name: 'min'
-.file: 'cmplStd/lib/math.ci:122'
+.file: 'cmplStd/lib/math/Math.ci:122'
 .owner: Math
 .param .result: uint32 (size: 4, cast: u32)
 .param a: uint32 (size: 4, cast: variable(u32))
@@ -3365,7 +3381,7 @@ Math.min(a: uint64, b: uint64): uint64: function {
 .base: `function`
 .size: 0
 .name: 'min'
-.file: 'cmplStd/lib/math.ci:125'
+.file: 'cmplStd/lib/math/Math.ci:125'
 .owner: Math
 .param .result: uint64 (size: 8, cast: u64)
 .param a: uint64 (size: 8, cast: variable(u64))
@@ -3378,7 +3394,7 @@ Math.min(a: float32, b: float32): float32: function {
 .base: `function`
 .size: 0
 .name: 'min'
-.file: 'cmplStd/lib/math.ci:128'
+.file: 'cmplStd/lib/math/Math.ci:128'
 .owner: Math
 .param .result: float32 (size: 4, cast: f32)
 .param a: float32 (size: 4, cast: variable(f32))
@@ -3391,7 +3407,7 @@ Math.min(a: float64, b: float64): float64: function {
 .base: `function`
 .size: 0
 .name: 'min'
-.file: 'cmplStd/lib/math.ci:131'
+.file: 'cmplStd/lib/math/Math.ci:131'
 .owner: Math
 .param .result: float64 (size: 8, cast: f64)
 .param a: float64 (size: 8, cast: variable(f64))
@@ -3404,7 +3420,7 @@ Math.max(a: int32, b: int32): int32: function {
 .base: `function`
 .size: 0
 .name: 'max'
-.file: 'cmplStd/lib/math.ci:134'
+.file: 'cmplStd/lib/math/Math.ci:134'
 .owner: Math
 .param .result: int32 (size: 4, cast: i32)
 .param a: int32 (size: 4, cast: variable(i32))
@@ -3417,7 +3433,7 @@ Math.max(a: int64, b: int64): int64: function {
 .base: `function`
 .size: 0
 .name: 'max'
-.file: 'cmplStd/lib/math.ci:137'
+.file: 'cmplStd/lib/math/Math.ci:137'
 .owner: Math
 .param .result: int64 (size: 8, cast: i64)
 .param a: int64 (size: 8, cast: variable(i64))
@@ -3430,7 +3446,7 @@ Math.max(a: uint32, b: uint32): uint32: function {
 .base: `function`
 .size: 0
 .name: 'max'
-.file: 'cmplStd/lib/math.ci:140'
+.file: 'cmplStd/lib/math/Math.ci:140'
 .owner: Math
 .param .result: uint32 (size: 4, cast: u32)
 .param a: uint32 (size: 4, cast: variable(u32))
@@ -3443,7 +3459,7 @@ Math.max(a: uint64, b: uint64): uint64: function {
 .base: `function`
 .size: 0
 .name: 'max'
-.file: 'cmplStd/lib/math.ci:143'
+.file: 'cmplStd/lib/math/Math.ci:143'
 .owner: Math
 .param .result: uint64 (size: 8, cast: u64)
 .param a: uint64 (size: 8, cast: variable(u64))
@@ -3456,7 +3472,7 @@ Math.max(a: float32, b: float32): float32: function {
 .base: `function`
 .size: 0
 .name: 'max'
-.file: 'cmplStd/lib/math.ci:146'
+.file: 'cmplStd/lib/math/Math.ci:146'
 .owner: Math
 .param .result: float32 (size: 4, cast: f32)
 .param a: float32 (size: 4, cast: variable(f32))
@@ -3469,7 +3485,7 @@ Math.max(a: float64, b: float64): float64: function {
 .base: `function`
 .size: 0
 .name: 'max'
-.file: 'cmplStd/lib/math.ci:149'
+.file: 'cmplStd/lib/math/Math.ci:149'
 .owner: Math
 .param .result: float64 (size: 8, cast: f64)
 .param a: float64 (size: 8, cast: variable(f64))
@@ -3482,7 +3498,7 @@ Math.clamp(t: int32, a: int32, b: int32): int32: function {
 .base: `function`
 .size: 0
 .name: 'clamp'
-.file: 'cmplStd/lib/math.ci:152'
+.file: 'cmplStd/lib/math/Math.ci:152'
 .owner: Math
 .param .result: int32 (size: 4, cast: i32)
 .param t: int32 (size: 4, cast: variable(i32))
@@ -3496,7 +3512,7 @@ Math.clamp(t: int64, a: int64, b: int64): int64: function {
 .base: `function`
 .size: 0
 .name: 'clamp'
-.file: 'cmplStd/lib/math.ci:155'
+.file: 'cmplStd/lib/math/Math.ci:155'
 .owner: Math
 .param .result: int64 (size: 8, cast: i64)
 .param t: int64 (size: 8, cast: variable(i64))
@@ -3510,7 +3526,7 @@ Math.clamp(t: uint32, a: uint32, b: uint32): uint32: function {
 .base: `function`
 .size: 0
 .name: 'clamp'
-.file: 'cmplStd/lib/math.ci:158'
+.file: 'cmplStd/lib/math/Math.ci:158'
 .owner: Math
 .param .result: uint32 (size: 4, cast: u32)
 .param t: uint32 (size: 4, cast: variable(u32))
@@ -3524,7 +3540,7 @@ Math.clamp(t: uint64, a: uint64, b: uint64): uint64: function {
 .base: `function`
 .size: 0
 .name: 'clamp'
-.file: 'cmplStd/lib/math.ci:161'
+.file: 'cmplStd/lib/math/Math.ci:161'
 .owner: Math
 .param .result: uint64 (size: 8, cast: u64)
 .param t: uint64 (size: 8, cast: variable(u64))
@@ -3538,7 +3554,7 @@ Math.clamp(t: float32, a: float32, b: float32): float32: function {
 .base: `function`
 .size: 30
 .name: 'clamp'
-.file: 'cmplStd/lib/math.ci:164'
+.file: 'cmplStd/lib/math/Math.ci:164'
 .owner: Math
 .param .result: float32 (size: 4, cast: variable(f32))
 .param t: float32 (size: 4, cast: variable(f32))
@@ -3555,23 +3571,23 @@ Math.clamp(t: float32, a: float32, b: float32): float32: function {
 	return .result := t;
 }
 .instructions: (30 bytes)
-	cmplStd/lib/math.ci:165: (13 bytes): if (t < a)
+	cmplStd/lib/math/Math.ci:165: (13 bytes): if (t < a)
 	<clamp>  : dup.x32 sp(3)
 	<clamp+?>: dup.x32 sp(3)
 	<clamp+?>: clt.f32
 	<clamp+?>: jz +8
-	cmplStd/lib/math.ci:166: (4 bytes): return .result := a;
+	cmplStd/lib/math/Math.ci:166: (4 bytes): return .result := a;
 	<clamp+?>: mov.x32 sp(4, 2)
 	<clamp+?>: ret
-	cmplStd/lib/math.ci:168: (13 bytes): if (t > b)
+	cmplStd/lib/math/Math.ci:168: (13 bytes): if (t > b)
 	<clamp+?>: dup.x32 sp(3)
 	<clamp+?>: dup.x32 sp(2)
 	<clamp+?>: cgt.f32
 	<clamp+?>: jz +8
-	cmplStd/lib/math.ci:169: (4 bytes): return .result := b;
+	cmplStd/lib/math/Math.ci:169: (4 bytes): return .result := b;
 	<clamp+?>: mov.x32 sp(4, 1)
 	<clamp+?>: ret
-	cmplStd/lib/math.ci:171: (4 bytes): return .result := t;
+	cmplStd/lib/math/Math.ci:171: (4 bytes): return .result := t;
 	<clamp+?>: mov.x32 sp(4, 3)
 	<clamp+?>: ret
 }
@@ -3580,7 +3596,7 @@ Math.clamp(t: float64, a: float64, b: float64): float64: function {
 .base: `function`
 .size: 30
 .name: 'clamp'
-.file: 'cmplStd/lib/math.ci:175'
+.file: 'cmplStd/lib/math/Math.ci:175'
 .owner: Math
 .param .result: float64 (size: 8, cast: variable(f64))
 .param t: float64 (size: 8, cast: variable(f64))
@@ -3597,23 +3613,23 @@ Math.clamp(t: float64, a: float64, b: float64): float64: function {
 	return .result := t;
 }
 .instructions: (30 bytes)
-	cmplStd/lib/math.ci:176: (13 bytes): if (t < a)
+	cmplStd/lib/math/Math.ci:176: (13 bytes): if (t < a)
 	<clamp>  : dup.x64 sp(5)
 	<clamp+?>: dup.x64 sp(5)
 	<clamp+?>: clt.f64
 	<clamp+?>: jz +8
-	cmplStd/lib/math.ci:177: (4 bytes): return .result := a;
+	cmplStd/lib/math/Math.ci:177: (4 bytes): return .result := a;
 	<clamp+?>: mov.x64 sp(7, 3)
 	<clamp+?>: ret
-	cmplStd/lib/math.ci:179: (13 bytes): if (t > b)
+	cmplStd/lib/math/Math.ci:179: (13 bytes): if (t > b)
 	<clamp+?>: dup.x64 sp(5)
 	<clamp+?>: dup.x64 sp(3)
 	<clamp+?>: cgt.f64
 	<clamp+?>: jz +8
-	cmplStd/lib/math.ci:180: (4 bytes): return .result := b;
+	cmplStd/lib/math/Math.ci:180: (4 bytes): return .result := b;
 	<clamp+?>: mov.x64 sp(7, 1)
 	<clamp+?>: ret
-	cmplStd/lib/math.ci:182: (4 bytes): return .result := t;
+	cmplStd/lib/math/Math.ci:182: (4 bytes): return .result := t;
 	<clamp+?>: mov.x64 sp(7, 5)
 	<clamp+?>: ret
 }
@@ -3622,7 +3638,7 @@ Math.lerp(t: float32, a: float32, b: float32): float32: function {
 .base: `function`
 .size: 0
 .name: 'lerp'
-.file: 'cmplStd/lib/math.ci:191'
+.file: 'cmplStd/lib/math/Math.ci:191'
 .owner: Math
 .param .result: float32 (size: 4, cast: f32)
 .param t: float32 (size: 4, cast: f32)
@@ -3636,7 +3652,7 @@ Math.lerp(t: float64, a: float64, b: float64): float64: function {
 .base: `function`
 .size: 0
 .name: 'lerp'
-.file: 'cmplStd/lib/math.ci:194'
+.file: 'cmplStd/lib/math/Math.ci:194'
 .owner: Math
 .param .result: float64 (size: 8, cast: f64)
 .param t: float64 (size: 8, cast: f64)
@@ -3650,7 +3666,7 @@ Math.smooth(t: float32): float32: function {
 .base: `function`
 .size: 0
 .name: 'smooth'
-.file: 'cmplStd/lib/math.ci:196'
+.file: 'cmplStd/lib/math/Math.ci:196'
 .owner: Math
 .param .result: float32 (size: 4, cast: f32)
 .param t: float32 (size: 4, cast: variable(f32))
@@ -3661,7 +3677,7 @@ Math.smooth(t: float64): float64: function {
 .base: `function`
 .size: 0
 .name: 'smooth'
-.file: 'cmplStd/lib/math.ci:197'
+.file: 'cmplStd/lib/math/Math.ci:197'
 .owner: Math
 .param .result: float64 (size: 8, cast: f64)
 .param t: float64 (size: 8, cast: variable(f64))
@@ -3672,7 +3688,7 @@ Math.smooth(t: float32, a: float32, b: float32): float32: function {
 .base: `function`
 .size: 0
 .name: 'smooth'
-.file: 'cmplStd/lib/math.ci:200'
+.file: 'cmplStd/lib/math/Math.ci:200'
 .owner: Math
 .param .result: float32 (size: 4, cast: f32)
 .param t: float32 (size: 4, cast: f32)
@@ -3686,7 +3702,7 @@ Math.smooth(t: float64, a: float64, b: float64): float64: function {
 .base: `function`
 .size: 0
 .name: 'smooth'
-.file: 'cmplStd/lib/math.ci:203'
+.file: 'cmplStd/lib/math/Math.ci:203'
 .owner: Math
 .param .result: float64 (size: 8, cast: f64)
 .param t: float64 (size: 8, cast: f64)
@@ -3700,7 +3716,7 @@ Math.min(values: float64[]): float64: function {
 .base: `function`
 .size: 79
 .name: 'min'
-.file: 'cmplStd/lib/math.ci:206'
+.file: 'cmplStd/lib/math/Math.ci:206'
 .owner: Math
 .param .result: float64 (size: 8, cast: variable(f64))
 .param values: float64[] (size: 8, cast: variable(arr))
@@ -3718,22 +3734,22 @@ Math.min(values: float64[]): float64: function {
 	return .result := result;
 }
 .instructions: (79 bytes)
-	cmplStd/lib/math.ci:207: (20 bytes): if (values.length == (0))
+	cmplStd/lib/math/Math.ci:207: (20 bytes): if (values.length == (0))
 	<min>  : dup.x32 sp(2)
 	<min+?>: load.z32
 	<min+?>: ceq.i32
 	<min+?>: jz +16
-	cmplStd/lib/math.ci:208: (12 bytes): return .result := nan;
+	cmplStd/lib/math/Math.ci:208: (12 bytes): return .result := nan;
 	<min+?>: load.f64 -nan
 	<min+?>: set.x64 sp(5)
 	<min+?>: ret
-	cmplStd/lib/math.ci:210: (3 bytes): result: float64 := values[0]
+	cmplStd/lib/math/Math.ci:210: (3 bytes): result: float64 := values[0]
 	<min+?>: dup.x32 sp(1)
 	<min+?>: load.i64
-	cmplStd/lib/math.ci:211: (53 bytes): for (i: int32 := 1; i < (values.length); i := i + 1)
+	cmplStd/lib/math/Math.ci:211: (53 bytes): for (i: int32 := 1; i < (values.length); i := i + 1)
 	<min+?>: load.c32 1
 	<min+?>: jmp +35
-	cmplStd/lib/math.ci:212: (27 bytes): if (result > values[i])
+	cmplStd/lib/math/Math.ci:212: (27 bytes): if (result > values[i])
 	<min+?>: dup.x64 sp(1)
 	<min+?>: dup.x32 sp(6)
 	<min+?>: dup.x32 sp(3)
@@ -3741,21 +3757,21 @@ Math.min(values: float64[]): float64: function {
 	<min+?>: load.i64
 	<min+?>: cgt.f64
 	<min+?>: jz +15
-	cmplStd/lib/math.ci:213: (11 bytes): result := values[i];
+	cmplStd/lib/math/Math.ci:213: (11 bytes): result := values[i];
 	<min+?>: dup.x32 sp(4)
 	<min+?>: dup.x32 sp(1)
 	<min+?>: mad.u32 8
 	<min+?>: load.i64
 	<min+?>: set.x64 sp(3)
-	cmplStd/lib/math.ci:211: (4 bytes): i := i + 1
+	cmplStd/lib/math/Math.ci:211: (4 bytes): i := i + 1
 	<min+?>: inc.i32(+1)
-	cmplStd/lib/math.ci:211: (9 bytes): i < (values.length)
+	cmplStd/lib/math/Math.ci:211: (9 bytes): i < (values.length)
 	<min+?>: dup.x32 sp(0)
 	<min+?>: dup.x32 sp(6)
 	<min+?>: clt.i32
 	<min+?>: jnz -36
 	<min+?>: inc.sp(-4)
-	cmplStd/lib/math.ci:216: (3 bytes): return .result := result;
+	cmplStd/lib/math/Math.ci:216: (3 bytes): return .result := result;
 	<min+?>: set.x64 sp(5)
 	<min+?>: ret
 }
@@ -3764,7 +3780,7 @@ Math.max(values: float64[]): float64: function {
 .base: `function`
 .size: 79
 .name: 'max'
-.file: 'cmplStd/lib/math.ci:220'
+.file: 'cmplStd/lib/math/Math.ci:220'
 .owner: Math
 .param .result: float64 (size: 8, cast: variable(f64))
 .param values: float64[] (size: 8, cast: variable(arr))
@@ -3782,22 +3798,22 @@ Math.max(values: float64[]): float64: function {
 	return .result := result;
 }
 .instructions: (79 bytes)
-	cmplStd/lib/math.ci:221: (20 bytes): if (values.length == (0))
+	cmplStd/lib/math/Math.ci:221: (20 bytes): if (values.length == (0))
 	<max>  : dup.x32 sp(2)
 	<max+?>: load.z32
 	<max+?>: ceq.i32
 	<max+?>: jz +16
-	cmplStd/lib/math.ci:222: (12 bytes): return .result := nan;
+	cmplStd/lib/math/Math.ci:222: (12 bytes): return .result := nan;
 	<max+?>: load.f64 -nan
 	<max+?>: set.x64 sp(5)
 	<max+?>: ret
-	cmplStd/lib/math.ci:224: (3 bytes): result: float64 := values[0]
+	cmplStd/lib/math/Math.ci:224: (3 bytes): result: float64 := values[0]
 	<max+?>: dup.x32 sp(1)
 	<max+?>: load.i64
-	cmplStd/lib/math.ci:225: (53 bytes): for (i: int32 := 1; i < (values.length); i := i + 1)
+	cmplStd/lib/math/Math.ci:225: (53 bytes): for (i: int32 := 1; i < (values.length); i := i + 1)
 	<max+?>: load.c32 1
 	<max+?>: jmp +35
-	cmplStd/lib/math.ci:226: (27 bytes): if (result < values[i])
+	cmplStd/lib/math/Math.ci:226: (27 bytes): if (result < values[i])
 	<max+?>: dup.x64 sp(1)
 	<max+?>: dup.x32 sp(6)
 	<max+?>: dup.x32 sp(3)
@@ -3805,21 +3821,21 @@ Math.max(values: float64[]): float64: function {
 	<max+?>: load.i64
 	<max+?>: clt.f64
 	<max+?>: jz +15
-	cmplStd/lib/math.ci:227: (11 bytes): result := values[i];
+	cmplStd/lib/math/Math.ci:227: (11 bytes): result := values[i];
 	<max+?>: dup.x32 sp(4)
 	<max+?>: dup.x32 sp(1)
 	<max+?>: mad.u32 8
 	<max+?>: load.i64
 	<max+?>: set.x64 sp(3)
-	cmplStd/lib/math.ci:225: (4 bytes): i := i + 1
+	cmplStd/lib/math/Math.ci:225: (4 bytes): i := i + 1
 	<max+?>: inc.i32(+1)
-	cmplStd/lib/math.ci:225: (9 bytes): i < (values.length)
+	cmplStd/lib/math/Math.ci:225: (9 bytes): i < (values.length)
 	<max+?>: dup.x32 sp(0)
 	<max+?>: dup.x32 sp(6)
 	<max+?>: clt.i32
 	<max+?>: jnz -36
 	<max+?>: inc.sp(-4)
-	cmplStd/lib/math.ci:230: (3 bytes): return .result := result;
+	cmplStd/lib/math/Math.ci:230: (3 bytes): return .result := result;
 	<max+?>: set.x64 sp(5)
 	<max+?>: ret
 }
@@ -3828,7 +3844,7 @@ Math.sum(values: float64[]): float64: function {
 .base: `function`
 .size: 40
 .name: 'sum'
-.file: 'cmplStd/lib/math.ci:234'
+.file: 'cmplStd/lib/math/Math.ci:234'
 .owner: Math
 .param .result: float64 (size: 8, cast: variable(f64))
 .param values: float64[] (size: 8, cast: variable(arr))
@@ -3841,12 +3857,12 @@ Math.sum(values: float64[]): float64: function {
 	return .result := result;
 }
 .instructions: (40 bytes)
-	cmplStd/lib/math.ci:235: (1 byte): result: float64 := 0
+	cmplStd/lib/math/Math.ci:235: (1 byte): result: float64 := 0
 	<sum>  : load.z128
-	cmplStd/lib/math.ci:236: (36 bytes): for (i: int32 := 0; i < (values.length); i := i + 1)
+	cmplStd/lib/math/Math.ci:236: (36 bytes): for (i: int32 := 0; i < (values.length); i := i + 1)
 	<sum+?>: i64.2i32
 	<sum+?>: jmp +22
-	cmplStd/lib/math.ci:237: (14 bytes): result := result + values[i];
+	cmplStd/lib/math/Math.ci:237: (14 bytes): result := result + values[i];
 	<sum+?>: dup.x64 sp(1)
 	<sum+?>: dup.x32 sp(6)
 	<sum+?>: dup.x32 sp(3)
@@ -3854,15 +3870,15 @@ Math.sum(values: float64[]): float64: function {
 	<sum+?>: load.i64
 	<sum+?>: add.f64
 	<sum+?>: set.x64 sp(3)
-	cmplStd/lib/math.ci:236: (4 bytes): i := i + 1
+	cmplStd/lib/math/Math.ci:236: (4 bytes): i := i + 1
 	<sum+?>: inc.i32(+1)
-	cmplStd/lib/math.ci:236: (9 bytes): i < (values.length)
+	cmplStd/lib/math/Math.ci:236: (9 bytes): i < (values.length)
 	<sum+?>: dup.x32 sp(0)
 	<sum+?>: dup.x32 sp(6)
 	<sum+?>: clt.i32
 	<sum+?>: jnz -23
 	<sum+?>: inc.sp(-4)
-	cmplStd/lib/math.ci:239: (3 bytes): return .result := result;
+	cmplStd/lib/math/Math.ci:239: (3 bytes): return .result := result;
 	<sum+?>: set.x64 sp(5)
 	<sum+?>: ret
 }
@@ -3871,7 +3887,7 @@ Math.mean(values: float64[]): float64: function {
 .base: `function`
 .size: 20
 .name: 'mean'
-.file: 'cmplStd/lib/math.ci:243'
+.file: 'cmplStd/lib/math/Math.ci:243'
 .owner: Math
 .param .result: float64 (size: 8, cast: variable(f64))
 .param values: float64[] (size: 8, cast: variable(arr))
@@ -3880,7 +3896,7 @@ Math.mean(values: float64[]): float64: function {
 	return .result := sum(...values) / (signed(values.length));
 }
 .instructions: (20 bytes)
-	cmplStd/lib/math.ci:244: (20 bytes): return .result := sum(...values) / (signed(values.length));
+	cmplStd/lib/math/Math.ci:244: (20 bytes): return .result := sum(...values) / (signed(values.length));
 	<mean>  : load.z64
 	<mean+?>: dup.x64 sp(3)
 	<mean+?>: load.ref <?> ;Math.sum(values: float64[]): float64
@@ -3897,7 +3913,7 @@ Math.eval(x: float64, a0: float64): float64: function {
 .base: `function`
 .size: 0
 .name: 'eval'
-.file: 'cmplStd/lib/math.ci:248'
+.file: 'cmplStd/lib/math/Math.ci:248'
 .owner: Math
 .param .result: float64 (size: 8, cast: f64)
 .param x: float64 (size: 8, cast: f64)
@@ -3910,7 +3926,7 @@ Math.eval(x: float64, a0: float64, a1: float64): float64: function {
 .base: `function`
 .size: 0
 .name: 'eval'
-.file: 'cmplStd/lib/math.ci:251'
+.file: 'cmplStd/lib/math/Math.ci:251'
 .owner: Math
 .param .result: float64 (size: 8, cast: f64)
 .param x: float64 (size: 8, cast: f64)
@@ -3924,7 +3940,7 @@ Math.eval(x: float64, a0: float64, a1: float64, a2: float64): float64: function 
 .base: `function`
 .size: 0
 .name: 'eval'
-.file: 'cmplStd/lib/math.ci:254'
+.file: 'cmplStd/lib/math/Math.ci:254'
 .owner: Math
 .param .result: float64 (size: 8, cast: f64)
 .param x: float64 (size: 8, cast: variable(f64))
@@ -3939,7 +3955,7 @@ Math.eval(x: float64, a0: float64, a1: float64, a2: float64, a3: float64): float
 .base: `function`
 .size: 0
 .name: 'eval'
-.file: 'cmplStd/lib/math.ci:257'
+.file: 'cmplStd/lib/math/Math.ci:257'
 .owner: Math
 .param .result: float64 (size: 8, cast: f64)
 .param x: float64 (size: 8, cast: variable(f64))
@@ -3955,7 +3971,7 @@ Math.eval(x: float64, polynomial: float64[]): float64: function {
 .base: `function`
 .size: 47
 .name: 'eval'
-.file: 'cmplStd/lib/math.ci:260'
+.file: 'cmplStd/lib/math/Math.ci:260'
 .owner: Math
 .param .result: float64 (size: 8, cast: variable(f64))
 .param x: float64 (size: 8, cast: variable(f64))
@@ -3969,13 +3985,13 @@ Math.eval(x: float64, polynomial: float64[]): float64: function {
 	return .result := result;
 }
 .instructions: (47 bytes)
-	cmplStd/lib/math.ci:261: (1 byte): result: float64 := 0
+	cmplStd/lib/math/Math.ci:261: (1 byte): result: float64 := 0
 	<eval>  : load.z64
-	cmplStd/lib/math.ci:262: (43 bytes): for (i: int32 := polynomial.length - (1); i >= 0; i := i - 1)
+	cmplStd/lib/math/Math.ci:262: (43 bytes): for (i: int32 := polynomial.length - (1); i >= 0; i := i - 1)
 	<eval+?>: dup.x32 sp(4)
 	<eval+?>: inc.i32(-1)
 	<eval+?>: jmp +25
-	cmplStd/lib/math.ci:263: (17 bytes): result := result * x + polynomial[i];
+	cmplStd/lib/math/Math.ci:263: (17 bytes): result := result * x + polynomial[i];
 	<eval+?>: dup.x64 sp(1)
 	<eval+?>: dup.x64 sp(8)
 	<eval+?>: mul.f64
@@ -3985,15 +4001,15 @@ Math.eval(x: float64, polynomial: float64[]): float64: function {
 	<eval+?>: load.i64
 	<eval+?>: add.f64
 	<eval+?>: set.x64 sp(3)
-	cmplStd/lib/math.ci:262: (4 bytes): i := i - 1
+	cmplStd/lib/math/Math.ci:262: (4 bytes): i := i - 1
 	<eval+?>: inc.i32(-1)
-	cmplStd/lib/math.ci:262: (8 bytes): i >= 0
+	cmplStd/lib/math/Math.ci:262: (8 bytes): i >= 0
 	<eval+?>: dup.x32 sp(0)
 	<eval+?>: load.z32
 	<eval+?>: clt.i32
 	<eval+?>: jz -25
 	<eval+?>: inc.sp(-4)
-	cmplStd/lib/math.ci:265: (3 bytes): return .result := result;
+	cmplStd/lib/math/Math.ci:265: (3 bytes): return .result := result;
 	<eval+?>: set.x64 sp(7)
 	<eval+?>: ret
 }
@@ -4002,7 +4018,7 @@ Math.cmp(a: float32, b: float32, eps: float32): int32: function {
 .base: `function`
 .size: 57
 .name: 'cmp'
-.file: 'cmplStd/lib/math.ci:269'
+.file: 'cmplStd/lib/math/Math.ci:269'
 .owner: Math
 .param .result: int32 (size: 4, cast: variable(i32))
 .param a: float32 (size: 4, cast: variable(f32))
@@ -4021,35 +4037,35 @@ Math.cmp(a: float32, b: float32, eps: float32): int32: function {
 	return .result := 0;
 }
 .instructions: (57 bytes)
-	cmplStd/lib/math.ci:270: (53 bytes): if (a < b)
+	cmplStd/lib/math/Math.ci:270: (53 bytes): if (a < b)
 	<cmp>  : dup.x32 sp(3)
 	<cmp+?>: dup.x32 sp(3)
 	<cmp+?>: clt.f32
 	<cmp+?>: jz +28
-	cmplStd/lib/math.ci:271: (20 bytes): if (eps < (b - a))
+	cmplStd/lib/math/Math.ci:271: (20 bytes): if (eps < (b - a))
 	<cmp+?>: dup.x32 sp(1)
 	<cmp+?>: dup.x32 sp(3)
 	<cmp+?>: dup.x32 sp(5)
 	<cmp+?>: sub.f32
 	<cmp+?>: clt.f32
 	<cmp+?>: jz +12
-	cmplStd/lib/math.ci:272: (8 bytes): return .result := -1;
+	cmplStd/lib/math/Math.ci:272: (8 bytes): return .result := -1;
 	<cmp+?>: load.c32 -1
 	<cmp+?>: set.x32 sp(5)
 	<cmp+?>: ret
 	<cmp+?>: jmp +24
-	cmplStd/lib/math.ci:276: (20 bytes): if (eps < (a - b))
+	cmplStd/lib/math/Math.ci:276: (20 bytes): if (eps < (a - b))
 	<cmp+?>: dup.x32 sp(1)
 	<cmp+?>: dup.x32 sp(4)
 	<cmp+?>: dup.x32 sp(4)
 	<cmp+?>: sub.f32
 	<cmp+?>: clt.f32
 	<cmp+?>: jz +12
-	cmplStd/lib/math.ci:277: (8 bytes): return .result := +1;
+	cmplStd/lib/math/Math.ci:277: (8 bytes): return .result := +1;
 	<cmp+?>: load.c32 1
 	<cmp+?>: set.x32 sp(5)
 	<cmp+?>: ret
-	cmplStd/lib/math.ci:280: (4 bytes): return .result := 0;
+	cmplStd/lib/math/Math.ci:280: (4 bytes): return .result := 0;
 	<cmp+?>: load.z32
 	<cmp+?>: set.x32 sp(5)
 	<cmp+?>: ret
@@ -4059,7 +4075,7 @@ Math.cmp(a: float64, b: float64, eps: float64): int32: function {
 .base: `function`
 .size: 57
 .name: 'cmp'
-.file: 'cmplStd/lib/math.ci:284'
+.file: 'cmplStd/lib/math/Math.ci:284'
 .owner: Math
 .param .result: int32 (size: 4, cast: variable(i32))
 .param a: float64 (size: 8, cast: variable(f64))
@@ -4078,35 +4094,35 @@ Math.cmp(a: float64, b: float64, eps: float64): int32: function {
 	return .result := 0;
 }
 .instructions: (57 bytes)
-	cmplStd/lib/math.ci:285: (53 bytes): if (a < b)
+	cmplStd/lib/math/Math.ci:285: (53 bytes): if (a < b)
 	<cmp>  : dup.x64 sp(5)
 	<cmp+?>: dup.x64 sp(5)
 	<cmp+?>: clt.f64
 	<cmp+?>: jz +28
-	cmplStd/lib/math.ci:286: (20 bytes): if (eps < (b - a))
+	cmplStd/lib/math/Math.ci:286: (20 bytes): if (eps < (b - a))
 	<cmp+?>: dup.x64 sp(1)
 	<cmp+?>: dup.x64 sp(5)
 	<cmp+?>: dup.x64 sp(9)
 	<cmp+?>: sub.f64
 	<cmp+?>: clt.f64
 	<cmp+?>: jz +12
-	cmplStd/lib/math.ci:287: (8 bytes): return .result := -1;
+	cmplStd/lib/math/Math.ci:287: (8 bytes): return .result := -1;
 	<cmp+?>: load.c32 -1
 	<cmp+?>: set.x32 sp(8)
 	<cmp+?>: ret
 	<cmp+?>: jmp +24
-	cmplStd/lib/math.ci:291: (20 bytes): if (eps < (a - b))
+	cmplStd/lib/math/Math.ci:291: (20 bytes): if (eps < (a - b))
 	<cmp+?>: dup.x64 sp(1)
 	<cmp+?>: dup.x64 sp(7)
 	<cmp+?>: dup.x64 sp(7)
 	<cmp+?>: sub.f64
 	<cmp+?>: clt.f64
 	<cmp+?>: jz +12
-	cmplStd/lib/math.ci:292: (8 bytes): return .result := +1;
+	cmplStd/lib/math/Math.ci:292: (8 bytes): return .result := +1;
 	<cmp+?>: load.c32 1
 	<cmp+?>: set.x32 sp(8)
 	<cmp+?>: ret
-	cmplStd/lib/math.ci:295: (4 bytes): return .result := 0;
+	cmplStd/lib/math/Math.ci:295: (4 bytes): return .result := 0;
 	<cmp+?>: load.z32
 	<cmp+?>: set.x32 sp(8)
 	<cmp+?>: ret
@@ -4116,7 +4132,7 @@ Math.sinCos(arg: float64, quad: int32): float64: function {
 .base: `function`
 .size: 335
 .name: 'sinCos'
-.file: 'cmplStd/lib/math.ci:299'
+.file: 'cmplStd/lib/math/Math.ci:299'
 .owner: Math
 .param .result: float64 (size: 8, cast: variable(f64))
 .param arg: float64 (size: 8, cast: variable(f64))
@@ -4155,49 +4171,49 @@ Math.sinCos(arg: float64, quad: int32): float64: function {
 	return .result := temp1 / temp2;
 }
 .instructions: (335 bytes)
-	cmplStd/lib/math.ci:313: (2 bytes): x: float64 := arg
+	cmplStd/lib/math/Math.ci:313: (2 bytes): x: float64 := arg
 	<sinCos>  : dup.x64 sp(2)
-	cmplStd/lib/math.ci:314: (17 bytes): if (x < (0))
+	cmplStd/lib/math/Math.ci:314: (17 bytes): if (x < (0))
 	<sinCos+?>: dup.x64 sp(0)
 	<sinCos+?>: load.z64
 	<sinCos+?>: clt.f64
 	<sinCos+?>: jz +13
-	cmplStd/lib/math.ci:315: (1 byte): x := -x;
+	cmplStd/lib/math/Math.ci:315: (1 byte): x := -x;
 	<sinCos+?>: neg.f64
-	cmplStd/lib/math.ci:316: (8 bytes): quad := quad + 2;
+	cmplStd/lib/math/Math.ci:316: (8 bytes): quad := quad + 2;
 	<sinCos+?>: dup.x32 sp(3)
 	<sinCos+?>: inc.i32(+2)
 	<sinCos+?>: set.x32 sp(4)
-	cmplStd/lib/math.ci:319: (1 byte): y: float64
+	cmplStd/lib/math/Math.ci:319: (1 byte): y: float64
 	<sinCos+?>: load.z64
-	cmplStd/lib/math.ci:320: (24 bytes): x := x * (1) / PIO2;
+	cmplStd/lib/math/Math.ci:320: (24 bytes): x := x * (1) / PIO2;
 	<sinCos+?>: dup.x64 sp(2)
 	<sinCos+?>: load.f64 1.000000
 	<sinCos+?>: load.f64 1.570796
 	<sinCos+?>: div.f64
 	<sinCos+?>: mul.f64
 	<sinCos+?>: set.x64 sp(4)
-	cmplStd/lib/math.ci:321: (124 bytes): if (x > (32764))
+	cmplStd/lib/math/Math.ci:321: (124 bytes): if (x > (32764))
 	<sinCos+?>: dup.x64 sp(2)
 	<sinCos+?>: load.f64 32764.000000
 	<sinCos+?>: cgt.f64
 	<sinCos+?>: jz +84
-	cmplStd/lib/math.ci:322: (1 byte): e: float64
+	cmplStd/lib/math/Math.ci:322: (1 byte): e: float64
 	<sinCos+?>: load.z128
-	cmplStd/lib/math.ci:323: (18 bytes): y := modf(x, &e);
+	cmplStd/lib/math/Math.ci:323: (18 bytes): y := modf(x, &e);
 	<sinCos+?>: dup.x64 sp(6)
 	<sinCos+?>: load.sp(+16)
 	<sinCos+?>: load.ref <?> ;Math.modf(x: float64, intPart: float64): float64
 	<sinCos+?>: call
 	<sinCos+?>: inc.sp(-12)
 	<sinCos+?>: set.x64 sp(4)
-	cmplStd/lib/math.ci:324: (4 bytes): e := e + (quad);
+	cmplStd/lib/math/Math.ci:324: (4 bytes): e := e + (quad);
 	<sinCos+?>: dup.x32 sp(7)
 	<sinCos+?>: i32.2f64
 	<sinCos+?>: add.f64
-	cmplStd/lib/math.ci:326: (1 byte): f: float64
+	cmplStd/lib/math/Math.ci:326: (1 byte): f: float64
 	<sinCos+?>: load.z128
-	cmplStd/lib/math.ci:327: (30 bytes): modf(0.250000 * e, &f);
+	cmplStd/lib/math/Math.ci:327: (30 bytes): modf(0.250000 * e, &f);
 	<sinCos+?>: load.f64 0.250000
 	<sinCos+?>: dup.x64 sp(6)
 	<sinCos+?>: mul.f64
@@ -4206,7 +4222,7 @@ Math.sinCos(arg: float64, quad: int32): float64: function {
 	<sinCos+?>: call
 	<sinCos+?>: inc.sp(-12)
 	<sinCos+?>: inc.sp(-8)
-	cmplStd/lib/math.ci:328: (18 bytes): quad := (e - (4) * f);
+	cmplStd/lib/math/Math.ci:328: (18 bytes): quad := (e - (4) * f);
 	<sinCos+?>: dup.x64 sp(2)
 	<sinCos+?>: load.f64 4.000000
 	<sinCos+?>: dup.x64 sp(4)
@@ -4216,46 +4232,46 @@ Math.sinCos(arg: float64, quad: int32): float64: function {
 	<sinCos+?>: set.x32 sp(10)
 	<sinCos+?>: inc.sp(-16)
 	<sinCos+?>: jmp +32
-	cmplStd/lib/math.ci:331: (3 bytes): k: int32 := x
+	cmplStd/lib/math/Math.ci:331: (3 bytes): k: int32 := x
 	<sinCos+?>: dup.x64 sp(2)
 	<sinCos+?>: f64.2i32
-	cmplStd/lib/math.ci:332: (8 bytes): y := x - (k);
+	cmplStd/lib/math/Math.ci:332: (8 bytes): y := x - (k);
 	<sinCos+?>: dup.x64 sp(3)
 	<sinCos+?>: dup.x32 sp(2)
 	<sinCos+?>: i32.2f64
 	<sinCos+?>: sub.f64
 	<sinCos+?>: set.x64 sp(3)
-	cmplStd/lib/math.ci:333: (7 bytes): quad := quad + k;
+	cmplStd/lib/math/Math.ci:333: (7 bytes): quad := quad + k;
 	<sinCos+?>: dup.x32 sp(6)
 	<sinCos+?>: dup.x32 sp(1)
 	<sinCos+?>: add.i32
 	<sinCos+?>: set.x32 sp(7)
-	cmplStd/lib/math.ci:334: (6 bytes): quad := quad & 3;
+	cmplStd/lib/math/Math.ci:334: (6 bytes): quad := quad & 3;
 	<sinCos+?>: dup.x32 sp(6)
 	<sinCos+?>: b32.and 0x03
 	<sinCos+?>: set.x32 sp(7)
 	<sinCos+?>: inc.sp(-4)
-	cmplStd/lib/math.ci:336: (22 bytes): if (quad & 1)
+	cmplStd/lib/math/Math.ci:336: (22 bytes): if (quad & 1)
 	<sinCos+?>: dup.x32 sp(5)
 	<sinCos+?>: b32.and 0x01
 	<sinCos+?>: jz +18
-	cmplStd/lib/math.ci:337: (14 bytes): y := (1) - y;
+	cmplStd/lib/math/Math.ci:337: (14 bytes): y := (1) - y;
 	<sinCos+?>: load.f64 1.000000
 	<sinCos+?>: dup.x64 sp(2)
 	<sinCos+?>: sub.f64
 	<sinCos+?>: set.x64 sp(2)
-	cmplStd/lib/math.ci:339: (13 bytes): if (quad > 1)
+	cmplStd/lib/math/Math.ci:339: (13 bytes): if (quad > 1)
 	<sinCos+?>: dup.x32 sp(5)
 	<sinCos+?>: load.c32 1
 	<sinCos+?>: cgt.i32
 	<sinCos+?>: jz +5
-	cmplStd/lib/math.ci:340: (1 byte): y := -y;
+	cmplStd/lib/math/Math.ci:340: (1 byte): y := -y;
 	<sinCos+?>: neg.f64
-	cmplStd/lib/math.ci:343: (5 bytes): ysq: float64 := y * y
+	cmplStd/lib/math/Math.ci:343: (5 bytes): ysq: float64 := y * y
 	<sinCos+?>: dup.x64 sp(0)
 	<sinCos+?>: dup.x64 sp(2)
 	<sinCos+?>: mul.f64
-	cmplStd/lib/math.ci:344: (64 bytes): temp1: float64 := ((((p4 * ysq + p3) * ysq + p2) * ysq + p1) * ysq + p0) * y
+	cmplStd/lib/math/Math.ci:344: (64 bytes): temp1: float64 := ((((p4 * ysq + p3) * ysq + p2) * ysq + p1) * ysq + p0) * y
 	<sinCos+?>: load.f64 145.968841
 	<sinCos+?>: dup.x64 sp(2)
 	<sinCos+?>: mul.f64
@@ -4275,7 +4291,7 @@ Math.sinCos(arg: float64, quad: int32): float64: function {
 	<sinCos+?>: add.f64
 	<sinCos+?>: dup.x64 sp(4)
 	<sinCos+?>: mul.f64
-	cmplStd/lib/math.ci:345: (51 bytes): temp2: float64 := ((((ysq + q3) * ysq + q2) * ysq + q1) * ysq + q0)
+	cmplStd/lib/math/Math.ci:345: (51 bytes): temp2: float64 := ((((ysq + q3) * ysq + q2) * ysq + q1) * ysq + q0)
 	<sinCos+?>: dup.x64 sp(2)
 	<sinCos+?>: load.f64 132.653491
 	<sinCos+?>: add.f64
@@ -4291,7 +4307,7 @@ Math.sinCos(arg: float64, quad: int32): float64: function {
 	<sinCos+?>: mul.f64
 	<sinCos+?>: load.f64 8644558.652923
 	<sinCos+?>: add.f64
-	cmplStd/lib/math.ci:346: (12 bytes): return .result := temp1 / temp2;
+	cmplStd/lib/math/Math.ci:346: (12 bytes): return .result := temp1 / temp2;
 	<sinCos+?>: dup.x64 sp(2)
 	<sinCos+?>: dup.x64 sp(2)
 	<sinCos+?>: div.f64
@@ -4304,7 +4320,7 @@ Math.sin(arg: float64): float64: function {
 .base: `function`
 .size: 26
 .name: 'sin'
-.file: 'cmplStd/lib/math.ci:350'
+.file: 'cmplStd/lib/math/Math.ci:350'
 .owner: Math
 .param .result: float64 (size: 8, cast: variable(f64))
 .param arg: float64 (size: 8, cast: variable(f64))
@@ -4316,12 +4332,12 @@ Math.sin(arg: float64): float64: function {
 	return .result := sinCos(arg, 0);
 }
 .instructions: (26 bytes)
-	cmplStd/lib/math.ci:353: (9 bytes): return .result := float64.sin(arg);
+	cmplStd/lib/math/Math.ci:353: (9 bytes): return .result := float64.sin(arg);
 	<sin>  : dup.x64 sp(1)
 	<sin+?>: nfc(42) ;float64.sin(x: float64): float64
 	<sin+?>: set.x64 sp(5)
 	<sin+?>: ret
-	cmplStd/lib/math.ci:355: (17 bytes): return .result := sinCos(arg, 0);
+	cmplStd/lib/math/Math.ci:355: (17 bytes): return .result := sinCos(arg, 0);
 	<sin+?>: load.z64
 	<sin+?>: dup.x64 sp(3)
 	<sin+?>: load.z32
@@ -4336,7 +4352,7 @@ Math.cos(arg: float64): float64: function {
 .base: `function`
 .size: 49
 .name: 'cos'
-.file: 'cmplStd/lib/math.ci:359'
+.file: 'cmplStd/lib/math/Math.ci:359'
 .owner: Math
 .param .result: float64 (size: 8, cast: variable(f64))
 .param arg: float64 (size: 8, cast: variable(f64))
@@ -4348,12 +4364,12 @@ Math.cos(arg: float64): float64: function {
 	return .result := sinCos(abs(arg), 1);
 }
 .instructions: (49 bytes)
-	cmplStd/lib/math.ci:362: (9 bytes): return .result := float64.cos(arg);
+	cmplStd/lib/math/Math.ci:362: (9 bytes): return .result := float64.cos(arg);
 	<cos>  : dup.x64 sp(1)
 	<cos+?>: nfc(43) ;float64.cos(x: float64): float64
 	<cos+?>: set.x64 sp(5)
 	<cos+?>: ret
-	cmplStd/lib/math.ci:364: (40 bytes): return .result := sinCos(abs(arg), 1);
+	cmplStd/lib/math/Math.ci:364: (40 bytes): return .result := sinCos(abs(arg), 1);
 	<cos+?>: load.z64
 	<cos+?>: dup.x64 sp(3)
 	<cos+?>: dup.x64 sp(0)
@@ -4377,7 +4393,7 @@ Math.tan(arg: float64): float64: function {
 .base: `function`
 .size: 387
 .name: 'tan'
-.file: 'cmplStd/lib/math.ci:368'
+.file: 'cmplStd/lib/math/Math.ci:368'
 .owner: Math
 .param .result: float64 (size: 8, cast: variable(f64))
 .param arg: float64 (size: 8, cast: variable(f64))
@@ -4424,105 +4440,105 @@ Math.tan(arg: float64): float64: function {
 	return .result := result;
 }
 .instructions: (387 bytes)
-	cmplStd/lib/math.ci:371: (9 bytes): return .result := float64.tan(arg);
+	cmplStd/lib/math/Math.ci:371: (9 bytes): return .result := float64.tan(arg);
 	<tan>  : dup.x64 sp(1)
 	<tan+?>: nfc(44) ;float64.tan(x: float64): float64
 	<tan+?>: set.x64 sp(5)
 	<tan+?>: ret
-	cmplStd/lib/math.ci:385: (1 byte): complement: bool := false
+	cmplStd/lib/math/Math.ci:385: (1 byte): complement: bool := false
 	<tan+?>: load.z32
-	cmplStd/lib/math.ci:386: (1 byte): negate: bool := false
+	cmplStd/lib/math/Math.ci:386: (1 byte): negate: bool := false
 	<tan+?>: load.z32
-	cmplStd/lib/math.ci:388: (23 bytes): if (arg < (0))
+	cmplStd/lib/math/Math.ci:388: (23 bytes): if (arg < (0))
 	<tan+?>: dup.x64 sp(3)
 	<tan+?>: load.z64
 	<tan+?>: clt.f64
 	<tan+?>: jz +19
-	cmplStd/lib/math.ci:389: (5 bytes): arg := -arg;
+	cmplStd/lib/math/Math.ci:389: (5 bytes): arg := -arg;
 	<tan+?>: dup.x64 sp(3)
 	<tan+?>: neg.f64
 	<tan+?>: set.x64 sp(5)
-	cmplStd/lib/math.ci:390: (10 bytes): negate := true;
+	cmplStd/lib/math/Math.ci:390: (10 bytes): negate := true;
 	<tan+?>: load.c32 1
 	<tan+?>: load.sp(+4)
 	<tan+?>: store.i8
-	cmplStd/lib/math.ci:392: (24 bytes): arg := (2) * arg / PIO2;
+	cmplStd/lib/math/Math.ci:392: (24 bytes): arg := (2) * arg / PIO2;
 	<tan+?>: load.f64 2.000000
 	<tan+?>: dup.x64 sp(5)
 	<tan+?>: mul.f64
 	<tan+?>: load.f64 1.570796
 	<tan+?>: div.f64
 	<tan+?>: set.x64 sp(5)
-	cmplStd/lib/math.ci:394: (1 byte): e: float64
+	cmplStd/lib/math/Math.ci:394: (1 byte): e: float64
 	<tan+?>: load.z128
-	cmplStd/lib/math.ci:395: (16 bytes): x: float64 := modf(arg, &e)
+	cmplStd/lib/math/Math.ci:395: (16 bytes): x: float64 := modf(arg, &e)
 	<tan+?>: dup.x64 sp(7)
 	<tan+?>: load.sp(+16)
 	<tan+?>: load.ref <?> ;Math.modf(x: float64, intPart: float64): float64
 	<tan+?>: call
 	<tan+?>: inc.sp(-12)
-	cmplStd/lib/math.ci:396: (9 bytes): i: int32 := int32(e) % 4
+	cmplStd/lib/math/Math.ci:396: (9 bytes): i: int32 := int32(e) % 4
 	<tan+?>: dup.x64 sp(2)
 	<tan+?>: f64.2i32
 	<tan+?>: load.c32 4
 	<tan+?>: mod.i32
-	cmplStd/lib/math.ci:398: (122 bytes): if (i == 0)
+	cmplStd/lib/math/Math.ci:398: (122 bytes): if (i == 0)
 	<tan+?>: dup.x32 sp(0)
 	<tan+?>: load.z32
 	<tan+?>: ceq.i32
 	<tan+?>: jnz +118
-	cmplStd/lib/math.ci:399: (114 bytes): if (i == 1)
+	cmplStd/lib/math/Math.ci:399: (114 bytes): if (i == 1)
 	<tan+?>: dup.x32 sp(0)
 	<tan+?>: load.c32 1
 	<tan+?>: ceq.i32
 	<tan+?>: jz +32
-	cmplStd/lib/math.ci:400: (14 bytes): x := (1) - x;
+	cmplStd/lib/math/Math.ci:400: (14 bytes): x := (1) - x;
 	<tan+?>: load.f64 1.000000
 	<tan+?>: dup.x64 sp(3)
 	<tan+?>: sub.f64
 	<tan+?>: set.x64 sp(3)
-	cmplStd/lib/math.ci:401: (10 bytes): complement := true;
+	cmplStd/lib/math/Math.ci:401: (10 bytes): complement := true;
 	<tan+?>: load.c32 1
 	<tan+?>: load.sp(+28)
 	<tan+?>: store.i8
 	<tan+?>: jmp +78
-	cmplStd/lib/math.ci:403: (74 bytes): if (i == 2)
+	cmplStd/lib/math/Math.ci:403: (74 bytes): if (i == 2)
 	<tan+?>: dup.x32 sp(0)
 	<tan+?>: load.c32 2
 	<tan+?>: ceq.i32
 	<tan+?>: jz +29
-	cmplStd/lib/math.ci:404: (11 bytes): negate := !negate;
+	cmplStd/lib/math/Math.ci:404: (11 bytes): negate := !negate;
 	<tan+?>: load.sp(+20)
 	<tan+?>: load.i8
 	<tan+?>: not.b32
 	<tan+?>: load.sp(+24)
 	<tan+?>: store.i8
-	cmplStd/lib/math.ci:405: (10 bytes): complement := true;
+	cmplStd/lib/math/Math.ci:405: (10 bytes): complement := true;
 	<tan+?>: load.c32 1
 	<tan+?>: load.sp(+28)
 	<tan+?>: store.i8
 	<tan+?>: jmp +41
-	cmplStd/lib/math.ci:407: (37 bytes): if (i == 3)
+	cmplStd/lib/math/Math.ci:407: (37 bytes): if (i == 3)
 	<tan+?>: dup.x32 sp(0)
 	<tan+?>: load.c32 3
 	<tan+?>: ceq.i32
 	<tan+?>: jz +29
-	cmplStd/lib/math.ci:408: (14 bytes): x := (1) - x;
+	cmplStd/lib/math/Math.ci:408: (14 bytes): x := (1) - x;
 	<tan+?>: load.f64 1.000000
 	<tan+?>: dup.x64 sp(3)
 	<tan+?>: sub.f64
 	<tan+?>: set.x64 sp(3)
-	cmplStd/lib/math.ci:409: (11 bytes): negate := !negate;
+	cmplStd/lib/math/Math.ci:409: (11 bytes): negate := !negate;
 	<tan+?>: load.sp(+20)
 	<tan+?>: load.i8
 	<tan+?>: not.b32
 	<tan+?>: load.sp(+24)
 	<tan+?>: store.i8
-	cmplStd/lib/math.ci:412: (5 bytes): xsq: float64 := x * x
+	cmplStd/lib/math/Math.ci:412: (5 bytes): xsq: float64 := x * x
 	<tan+?>: dup.x64 sp(1)
 	<tan+?>: dup.x64 sp(3)
 	<tan+?>: mul.f64
-	cmplStd/lib/math.ci:413: (64 bytes): result: float64 := ((((p4 * xsq + p3) * xsq + p2) * xsq + p1) * xsq + p0) * x
+	cmplStd/lib/math/Math.ci:413: (64 bytes): result: float64 := ((((p4 * xsq + p3) * xsq + p2) * xsq + p1) * xsq + p0) * x
 	<tan+?>: load.f64 0.000034
 	<tan+?>: dup.x64 sp(2)
 	<tan+?>: mul.f64
@@ -4542,7 +4558,7 @@ Math.tan(arg: float64): float64: function {
 	<tan+?>: add.f64
 	<tan+?>: dup.x64 sp(5)
 	<tan+?>: mul.f64
-	cmplStd/lib/math.ci:414: (39 bytes): result := result / (((xsq + q2) * xsq + q1) * xsq + q0);
+	cmplStd/lib/math/Math.ci:414: (39 bytes): result := result / (((xsq + q2) * xsq + q1) * xsq + q0);
 	<tan+?>: dup.x64 sp(2)
 	<tan+?>: load.f64 -155.503316
 	<tan+?>: add.f64
@@ -4555,36 +4571,36 @@ Math.tan(arg: float64): float64: function {
 	<tan+?>: load.f64 -16638.952389
 	<tan+?>: add.f64
 	<tan+?>: div.f64
-	cmplStd/lib/math.ci:416: (47 bytes): if (complement)
+	cmplStd/lib/math/Math.ci:416: (47 bytes): if (complement)
 	<tan+?>: load.sp(+40)
 	<tan+?>: load.i8
 	<tan+?>: jz +42
-	cmplStd/lib/math.ci:417: (24 bytes): if (result == (0))
+	cmplStd/lib/math/Math.ci:417: (24 bytes): if (result == (0))
 	<tan+?>: dup.x64 sp(0)
 	<tan+?>: load.z64
 	<tan+?>: ceq.f64
 	<tan+?>: jz +20
-	cmplStd/lib/math.ci:418: (16 bytes): return .result := nan;
+	cmplStd/lib/math/Math.ci:418: (16 bytes): return .result := nan;
 	<tan+?>: load.f64 -nan
 	<tan+?>: set.x64 sp(16)
 	<tan+?>: inc.sp(-44)
 	<tan+?>: ret
-	cmplStd/lib/math.ci:420: (14 bytes): result := (1) / result;
+	cmplStd/lib/math/Math.ci:420: (14 bytes): result := (1) / result;
 	<tan+?>: load.f64 1.000000
 	<tan+?>: dup.x64 sp(2)
 	<tan+?>: div.f64
 	<tan+?>: set.x64 sp(2)
-	cmplStd/lib/math.ci:422: (19 bytes): if (negate)
+	cmplStd/lib/math/Math.ci:422: (19 bytes): if (negate)
 	<tan+?>: load.sp(+36)
 	<tan+?>: load.i8
 	<tan+?>: jz +14
-	cmplStd/lib/math.ci:423: (10 bytes): return .result := -result;
+	cmplStd/lib/math/Math.ci:423: (10 bytes): return .result := -result;
 	<tan+?>: dup.x64 sp(0)
 	<tan+?>: neg.f64
 	<tan+?>: set.x64 sp(16)
 	<tan+?>: inc.sp(-44)
 	<tan+?>: ret
-	cmplStd/lib/math.ci:425: (7 bytes): return .result := result;
+	cmplStd/lib/math/Math.ci:425: (7 bytes): return .result := result;
 	<tan+?>: set.x64 sp(14)
 	<tan+?>: inc.sp(-36)
 	<tan+?>: ret
@@ -4594,7 +4610,7 @@ Math.sinh(x: float64): float64: function {
 .base: `function`
 .size: 241
 .name: 'sinh'
-.file: 'cmplStd/lib/math.ci:429'
+.file: 'cmplStd/lib/math/Math.ci:429'
 .owner: Math
 .param .result: float64 (size: 8, cast: variable(f64))
 .param x: float64 (size: 8, cast: variable(f64))
@@ -4623,27 +4639,27 @@ Math.sinh(x: float64): float64: function {
 	return .result := result;
 }
 .instructions: (241 bytes)
-	cmplStd/lib/math.ci:441: (1 byte): negate: bool := false
+	cmplStd/lib/math/Math.ci:441: (1 byte): negate: bool := false
 	<sinh>  : load.z32
-	cmplStd/lib/math.ci:442: (23 bytes): if (x < (0))
+	cmplStd/lib/math/Math.ci:442: (23 bytes): if (x < (0))
 	<sinh+?>: dup.x64 sp(2)
 	<sinh+?>: load.z64
 	<sinh+?>: clt.f64
 	<sinh+?>: jz +19
-	cmplStd/lib/math.ci:443: (5 bytes): x := -x;
+	cmplStd/lib/math/Math.ci:443: (5 bytes): x := -x;
 	<sinh+?>: dup.x64 sp(2)
 	<sinh+?>: neg.f64
 	<sinh+?>: set.x64 sp(4)
-	cmplStd/lib/math.ci:444: (10 bytes): negate := true;
+	cmplStd/lib/math/Math.ci:444: (10 bytes): negate := true;
 	<sinh+?>: load.c32 1
 	<sinh+?>: load.sp(+4)
 	<sinh+?>: store.i8
-	cmplStd/lib/math.ci:447: (39 bytes): if (x > (21))
+	cmplStd/lib/math/Math.ci:447: (39 bytes): if (x > (21))
 	<sinh+?>: dup.x64 sp(2)
 	<sinh+?>: load.f64 21.000000
 	<sinh+?>: cgt.f64
 	<sinh+?>: jz +27
-	cmplStd/lib/math.ci:448: (23 bytes): return .result := float64.exp(x) / (2);
+	cmplStd/lib/math/Math.ci:448: (23 bytes): return .result := float64.exp(x) / (2);
 	<sinh+?>: dup.x64 sp(2)
 	<sinh+?>: nfc(46) ;float64.exp(x: float64): float64
 	<sinh+?>: load.f64 2.000000
@@ -4651,14 +4667,14 @@ Math.sinh(x: float64): float64: function {
 	<sinh+?>: set.x64 sp(6)
 	<sinh+?>: inc.sp(-4)
 	<sinh+?>: ret
-	cmplStd/lib/math.ci:451: (1 byte): result: float64
+	cmplStd/lib/math/Math.ci:451: (1 byte): result: float64
 	<sinh+?>: load.z64
-	cmplStd/lib/math.ci:452: (151 bytes): if (x > 0.500000)
+	cmplStd/lib/math/Math.ci:452: (151 bytes): if (x > 0.500000)
 	<sinh+?>: dup.x64 sp(4)
 	<sinh+?>: load.f64 0.500000
 	<sinh+?>: cgt.f64
 	<sinh+?>: jz +34
-	cmplStd/lib/math.ci:453: (26 bytes): result := (float64.exp(x) - float64.exp(-x)) / (2);
+	cmplStd/lib/math/Math.ci:453: (26 bytes): result := (float64.exp(x) - float64.exp(-x)) / (2);
 	<sinh+?>: dup.x64 sp(4)
 	<sinh+?>: nfc(46) ;float64.exp(x: float64): float64
 	<sinh+?>: dup.x64 sp(6)
@@ -4669,11 +4685,11 @@ Math.sinh(x: float64): float64: function {
 	<sinh+?>: div.f64
 	<sinh+?>: set.x64 sp(2)
 	<sinh+?>: jmp +109
-	cmplStd/lib/math.ci:456: (5 bytes): sq: float64 := x * x
+	cmplStd/lib/math/Math.ci:456: (5 bytes): sq: float64 := x * x
 	<sinh+?>: dup.x64 sp(4)
 	<sinh+?>: dup.x64 sp(6)
 	<sinh+?>: mul.f64
-	cmplStd/lib/math.ci:457: (53 bytes): result := (((P3 * sq + P2) * sq + P1) * sq + P0) * x;
+	cmplStd/lib/math/Math.ci:457: (53 bytes): result := (((P3 * sq + P2) * sq + P1) * sq + P0) * x;
 	<sinh+?>: load.f64 -26.305632
 	<sinh+?>: dup.x64 sp(2)
 	<sinh+?>: mul.f64
@@ -4690,7 +4706,7 @@ Math.sinh(x: float64): float64: function {
 	<sinh+?>: dup.x64 sp(8)
 	<sinh+?>: mul.f64
 	<sinh+?>: set.x64 sp(4)
-	cmplStd/lib/math.ci:458: (43 bytes): result := result / (((sq + Q2) * sq + Q1) * sq + Q0);
+	cmplStd/lib/math/Math.ci:458: (43 bytes): result := result / (((sq + Q2) * sq + Q1) * sq + Q0);
 	<sinh+?>: dup.x64 sp(2)
 	<sinh+?>: dup.x64 sp(2)
 	<sinh+?>: load.f64 -173.678954
@@ -4706,17 +4722,17 @@ Math.sinh(x: float64): float64: function {
 	<sinh+?>: div.f64
 	<sinh+?>: set.x64 sp(4)
 	<sinh+?>: inc.sp(-8)
-	cmplStd/lib/math.ci:461: (19 bytes): if (negate)
+	cmplStd/lib/math/Math.ci:461: (19 bytes): if (negate)
 	<sinh+?>: load.sp(+8)
 	<sinh+?>: load.i8
 	<sinh+?>: jz +14
-	cmplStd/lib/math.ci:462: (10 bytes): return .result := -result;
+	cmplStd/lib/math/Math.ci:462: (10 bytes): return .result := -result;
 	<sinh+?>: dup.x64 sp(0)
 	<sinh+?>: neg.f64
 	<sinh+?>: set.x64 sp(8)
 	<sinh+?>: inc.sp(-12)
 	<sinh+?>: ret
-	cmplStd/lib/math.ci:464: (7 bytes): return .result := result;
+	cmplStd/lib/math/Math.ci:464: (7 bytes): return .result := result;
 	<sinh+?>: set.x64 sp(6)
 	<sinh+?>: inc.sp(-4)
 	<sinh+?>: ret
@@ -4726,7 +4742,7 @@ Math.cosh(x: float64): float64: function {
 .base: `function`
 .size: 75
 .name: 'cosh'
-.file: 'cmplStd/lib/math.ci:468'
+.file: 'cmplStd/lib/math/Math.ci:468'
 .owner: Math
 .param .result: float64 (size: 8, cast: variable(f64))
 .param x: float64 (size: 8, cast: variable(f64))
@@ -4741,28 +4757,28 @@ Math.cosh(x: float64): float64: function {
 	return .result := (float64.exp(x) + float64.exp(-x)) / (2);
 }
 .instructions: (75 bytes)
-	cmplStd/lib/math.ci:469: (13 bytes): if (x < (0))
+	cmplStd/lib/math/Math.ci:469: (13 bytes): if (x < (0))
 	<cosh>  : dup.x64 sp(1)
 	<cosh+?>: load.z64
 	<cosh+?>: clt.f64
 	<cosh+?>: jz +9
-	cmplStd/lib/math.ci:470: (5 bytes): x := -x;
+	cmplStd/lib/math/Math.ci:470: (5 bytes): x := -x;
 	<cosh+?>: dup.x64 sp(1)
 	<cosh+?>: neg.f64
 	<cosh+?>: set.x64 sp(3)
-	cmplStd/lib/math.ci:472: (35 bytes): if (x > (21))
+	cmplStd/lib/math/Math.ci:472: (35 bytes): if (x > (21))
 	<cosh+?>: dup.x64 sp(1)
 	<cosh+?>: load.f64 21.000000
 	<cosh+?>: cgt.f64
 	<cosh+?>: jz +23
-	cmplStd/lib/math.ci:473: (19 bytes): return .result := float64.exp(x) / (2);
+	cmplStd/lib/math/Math.ci:473: (19 bytes): return .result := float64.exp(x) / (2);
 	<cosh+?>: dup.x64 sp(1)
 	<cosh+?>: nfc(46) ;float64.exp(x: float64): float64
 	<cosh+?>: load.f64 2.000000
 	<cosh+?>: div.f64
 	<cosh+?>: set.x64 sp(5)
 	<cosh+?>: ret
-	cmplStd/lib/math.ci:475: (27 bytes): return .result := (float64.exp(x) + float64.exp(-x)) / (2);
+	cmplStd/lib/math/Math.ci:475: (27 bytes): return .result := (float64.exp(x) + float64.exp(-x)) / (2);
 	<cosh+?>: dup.x64 sp(1)
 	<cosh+?>: nfc(46) ;float64.exp(x: float64): float64
 	<cosh+?>: dup.x64 sp(3)
@@ -4779,7 +4795,7 @@ Math.asin(x: float64): float64: function {
 .base: `function`
 .size: 173
 .name: 'asin'
-.file: 'cmplStd/lib/math.ci:483'
+.file: 'cmplStd/lib/math/Math.ci:483'
 .owner: Math
 .param .result: float64 (size: 8, cast: variable(f64))
 .param x: float64 (size: 8, cast: variable(f64))
@@ -4812,52 +4828,52 @@ Math.asin(x: float64): float64: function {
 	return .result := result;
 }
 .instructions: (173 bytes)
-	cmplStd/lib/math.ci:484: (12 bytes): if (x == (0))
+	cmplStd/lib/math/Math.ci:484: (12 bytes): if (x == (0))
 	<asin>  : dup.x64 sp(1)
 	<asin+?>: load.z64
 	<asin+?>: ceq.f64
 	<asin+?>: jz +8
-	cmplStd/lib/math.ci:486: (4 bytes): return .result := x;
+	cmplStd/lib/math/Math.ci:486: (4 bytes): return .result := x;
 	<asin+?>: mov.x64 sp(3, 1)
 	<asin+?>: ret
-	cmplStd/lib/math.ci:489: (1 byte): negate: bool := false
+	cmplStd/lib/math/Math.ci:489: (1 byte): negate: bool := false
 	<asin+?>: load.z32
-	cmplStd/lib/math.ci:490: (23 bytes): if (x < (0))
+	cmplStd/lib/math/Math.ci:490: (23 bytes): if (x < (0))
 	<asin+?>: dup.x64 sp(2)
 	<asin+?>: load.z64
 	<asin+?>: clt.f64
 	<asin+?>: jz +19
-	cmplStd/lib/math.ci:491: (10 bytes): negate := true;
+	cmplStd/lib/math/Math.ci:491: (10 bytes): negate := true;
 	<asin+?>: load.c32 1
 	<asin+?>: load.sp(+4)
 	<asin+?>: store.i8
-	cmplStd/lib/math.ci:492: (5 bytes): x := -x;
+	cmplStd/lib/math/Math.ci:492: (5 bytes): x := -x;
 	<asin+?>: dup.x64 sp(2)
 	<asin+?>: neg.f64
 	<asin+?>: set.x64 sp(4)
-	cmplStd/lib/math.ci:495: (32 bytes): if (x > (1))
+	cmplStd/lib/math/Math.ci:495: (32 bytes): if (x > (1))
 	<asin+?>: dup.x64 sp(2)
 	<asin+?>: load.f64 1.000000
 	<asin+?>: cgt.f64
 	<asin+?>: jz +20
-	cmplStd/lib/math.ci:497: (16 bytes): return .result := nan;
+	cmplStd/lib/math/Math.ci:497: (16 bytes): return .result := nan;
 	<asin+?>: load.f64 -nan
 	<asin+?>: set.x64 sp(6)
 	<asin+?>: inc.sp(-4)
 	<asin+?>: ret
-	cmplStd/lib/math.ci:500: (19 bytes): result: float64 := float64.sqrt((1) - x * x)
+	cmplStd/lib/math/Math.ci:500: (19 bytes): result: float64 := float64.sqrt((1) - x * x)
 	<asin+?>: load.f64 1.000000
 	<asin+?>: dup.x64 sp(4)
 	<asin+?>: dup.x64 sp(6)
 	<asin+?>: mul.f64
 	<asin+?>: sub.f64
 	<asin+?>: nfc(48) ;float64.sqrt(x: float64): float64
-	cmplStd/lib/math.ci:501: (60 bytes): if (x > 0.700000)
+	cmplStd/lib/math/Math.ci:501: (60 bytes): if (x > 0.700000)
 	<asin+?>: dup.x64 sp(4)
 	<asin+?>: load.f64 0.700000
 	<asin+?>: cgt.f64
 	<asin+?>: jz +38
-	cmplStd/lib/math.ci:502: (30 bytes): result := pi / (2) - float64.atan2(result, x);
+	cmplStd/lib/math/Math.ci:502: (30 bytes): result := pi / (2) - float64.atan2(result, x);
 	<asin+?>: load.f64 3.141593
 	<asin+?>: load.f64 2.000000
 	<asin+?>: div.f64
@@ -4867,22 +4883,22 @@ Math.asin(x: float64): float64: function {
 	<asin+?>: sub.f64
 	<asin+?>: set.x64 sp(2)
 	<asin+?>: jmp +14
-	cmplStd/lib/math.ci:505: (10 bytes): result := float64.atan2(x, result);
+	cmplStd/lib/math/Math.ci:505: (10 bytes): result := float64.atan2(x, result);
 	<asin+?>: dup.x64 sp(4)
 	<asin+?>: dup.x64 sp(2)
 	<asin+?>: nfc(49) ;float64.atan2(x: float64, y: float64): float64
 	<asin+?>: set.x64 sp(2)
-	cmplStd/lib/math.ci:508: (19 bytes): if (negate)
+	cmplStd/lib/math/Math.ci:508: (19 bytes): if (negate)
 	<asin+?>: load.sp(+8)
 	<asin+?>: load.i8
 	<asin+?>: jz +14
-	cmplStd/lib/math.ci:509: (10 bytes): return .result := -result;
+	cmplStd/lib/math/Math.ci:509: (10 bytes): return .result := -result;
 	<asin+?>: dup.x64 sp(0)
 	<asin+?>: neg.f64
 	<asin+?>: set.x64 sp(8)
 	<asin+?>: inc.sp(-12)
 	<asin+?>: ret
-	cmplStd/lib/math.ci:511: (7 bytes): return .result := result;
+	cmplStd/lib/math/Math.ci:511: (7 bytes): return .result := result;
 	<asin+?>: set.x64 sp(6)
 	<asin+?>: inc.sp(-4)
 	<asin+?>: ret
@@ -4892,7 +4908,7 @@ Math.acos(x: float64): float64: function {
 .base: `function`
 .size: 0
 .name: 'acos'
-.file: 'cmplStd/lib/math.ci:518'
+.file: 'cmplStd/lib/math/Math.ci:518'
 .owner: Math
 .param .result: float64 (size: 8, cast: f64)
 .param x: float64 (size: 8, cast: f64)
@@ -4906,7 +4922,7 @@ Math.radians(degrees: float64): float64: function {
 .base: `function`
 .size: 0
 .name: 'radians'
-.file: 'cmplStd/lib/math.ci:542'
+.file: 'cmplStd/lib/math/Math.ci:542'
 .owner: Math
 .param .result: float64 (size: 8, cast: f64)
 .param degrees: float64 (size: 8, cast: f64)
@@ -4918,7 +4934,7 @@ Math.degrees(radians: float64): float64: function {
 .base: `function`
 .size: 0
 .name: 'degrees'
-.file: 'cmplStd/lib/math.ci:545'
+.file: 'cmplStd/lib/math/Math.ci:545'
 .owner: Math
 .param .result: float64 (size: 8, cast: f64)
 .param radians: float64 (size: 8, cast: f64)
@@ -7865,7 +7881,7 @@ length(str: char[*]): int32: function {
 .base: `function`
 .size: 38
 .name: 'length'
-.file: 'cmplStd/lib/text/string.ci:4'
+.file: 'cmplStd/lib/text/cstr.ci:4'
 .param .result: int32 (size: 4, cast: variable(i32))
 .param str: char[*] (size: 4, cast: const variable(ref))
 .doc: 'Computes the length of the string'
@@ -7878,28 +7894,28 @@ length(str: char[*]): int32: function {
 	return .result := result;
 }
 .instructions: (38 bytes)
-	cmplStd/lib/text/string.ci:5: (16 bytes): if ((str) == null)
+	cmplStd/lib/text/cstr.ci:5: (16 bytes): if ((str) == null)
 	<length>  : dup.x32 sp(1)
 	<length+?>: load.ref <?> ;null
 	<length+?>: ceq.i32
 	<length+?>: jz +8
-	cmplStd/lib/text/string.ci:6: (4 bytes): return .result := 0;
+	cmplStd/lib/text/cstr.ci:6: (4 bytes): return .result := 0;
 	<length+?>: load.z32
 	<length+?>: set.x32 sp(3)
 	<length+?>: ret
-	cmplStd/lib/text/string.ci:8: (1 byte): result: int32 := 0
+	cmplStd/lib/text/cstr.ci:8: (1 byte): result: int32 := 0
 	<length+?>: load.z32
-	cmplStd/lib/text/string.ci:9: (18 bytes): for ( ; str[result]; result := result + 1)
+	cmplStd/lib/text/cstr.ci:9: (18 bytes): for ( ; str[result]; result := result + 1)
 	<length+?>: jmp +8
-	cmplStd/lib/text/string.ci:9: (4 bytes): result := result + 1
+	cmplStd/lib/text/cstr.ci:9: (4 bytes): result := result + 1
 	<length+?>: inc.i32(+1)
-	cmplStd/lib/text/string.ci:9: (10 bytes): str[result]
+	cmplStd/lib/text/cstr.ci:9: (10 bytes): str[result]
 	<length+?>: dup.x32 sp(2)
 	<length+?>: dup.x32 sp(1)
 	<length+?>: add.i32
 	<length+?>: load.i8
 	<length+?>: jnz -10
-	cmplStd/lib/text/string.ci:11: (3 bytes): return .result := result;
+	cmplStd/lib/text/cstr.ci:11: (3 bytes): return .result := result;
 	<length+?>: set.x32 sp(3)
 	<length+?>: ret
 }
@@ -7908,7 +7924,7 @@ indexOf(str: char[*], chr: char): int32: function {
 .base: `function`
 .size: 50
 .name: 'indexOf'
-.file: 'cmplStd/lib/text/string.ci:15'
+.file: 'cmplStd/lib/text/cstr.ci:15'
 .param .result: int32 (size: 4, cast: variable(i32))
 .param str: char[*] (size: 4, cast: const variable(ref))
 .param chr: char (size: 4, cast: variable(i32))
@@ -7922,10 +7938,10 @@ indexOf(str: char[*], chr: char): int32: function {
 	return .result := -1;
 }
 .instructions: (50 bytes)
-	cmplStd/lib/text/string.ci:16: (42 bytes): for (i: int32 := 0; str[i]; i := i + 1)
+	cmplStd/lib/text/cstr.ci:16: (42 bytes): for (i: int32 := 0; str[i]; i := i + 1)
 	<indexOf>  : load.z32
 	<indexOf+?>: jmp +27
-	cmplStd/lib/text/string.ci:17: (19 bytes): if (str[i] == chr)
+	cmplStd/lib/text/cstr.ci:17: (19 bytes): if (str[i] == chr)
 	<indexOf+?>: dup.x32 sp(3)
 	<indexOf+?>: dup.x32 sp(1)
 	<indexOf+?>: add.i32
@@ -7934,19 +7950,19 @@ indexOf(str: char[*], chr: char): int32: function {
 	<indexOf+?>: load.i8
 	<indexOf+?>: ceq.i32
 	<indexOf+?>: jz +7
-	cmplStd/lib/text/string.ci:18: (3 bytes): return .result := i;
+	cmplStd/lib/text/cstr.ci:18: (3 bytes): return .result := i;
 	<indexOf+?>: set.x32 sp(4)
 	<indexOf+?>: ret
-	cmplStd/lib/text/string.ci:16: (4 bytes): i := i + 1
+	cmplStd/lib/text/cstr.ci:16: (4 bytes): i := i + 1
 	<indexOf+?>: inc.i32(+1)
-	cmplStd/lib/text/string.ci:16: (10 bytes): str[i]
+	cmplStd/lib/text/cstr.ci:16: (10 bytes): str[i]
 	<indexOf+?>: dup.x32 sp(3)
 	<indexOf+?>: dup.x32 sp(1)
 	<indexOf+?>: add.i32
 	<indexOf+?>: load.i8
 	<indexOf+?>: jnz -29
 	<indexOf+?>: inc.sp(-4)
-	cmplStd/lib/text/string.ci:21: (8 bytes): return .result := -1;
+	cmplStd/lib/text/cstr.ci:21: (8 bytes): return .result := -1;
 	<indexOf+?>: load.c32 -1
 	<indexOf+?>: set.x32 sp(4)
 	<indexOf+?>: ret
@@ -7956,7 +7972,7 @@ lastIndexOf(str: char[*], chr: char): int32: function {
 .base: `function`
 .size: 50
 .name: 'lastIndexOf'
-.file: 'cmplStd/lib/text/string.ci:25'
+.file: 'cmplStd/lib/text/cstr.ci:25'
 .param .result: int32 (size: 4, cast: variable(i32))
 .param str: char[*] (size: 4, cast: const variable(ref))
 .param chr: char (size: 4, cast: variable(i32))
@@ -7971,12 +7987,12 @@ lastIndexOf(str: char[*], chr: char): int32: function {
 	return .result := result;
 }
 .instructions: (50 bytes)
-	cmplStd/lib/text/string.ci:26: (5 bytes): result: int32 := -1
+	cmplStd/lib/text/cstr.ci:26: (5 bytes): result: int32 := -1
 	<lastIndexOf>  : load.c32 -1
-	cmplStd/lib/text/string.ci:27: (42 bytes): for (i: int32 := 0; str[i]; i := i + 1)
+	cmplStd/lib/text/cstr.ci:27: (42 bytes): for (i: int32 := 0; str[i]; i := i + 1)
 	<lastIndexOf+?>: load.z32
 	<lastIndexOf+?>: jmp +27
-	cmplStd/lib/text/string.ci:28: (19 bytes): if (str[i] == chr)
+	cmplStd/lib/text/cstr.ci:28: (19 bytes): if (str[i] == chr)
 	<lastIndexOf+?>: dup.x32 sp(4)
 	<lastIndexOf+?>: dup.x32 sp(1)
 	<lastIndexOf+?>: add.i32
@@ -7985,18 +8001,18 @@ lastIndexOf(str: char[*], chr: char): int32: function {
 	<lastIndexOf+?>: load.i8
 	<lastIndexOf+?>: ceq.i32
 	<lastIndexOf+?>: jz +7
-	cmplStd/lib/text/string.ci:29: (3 bytes): result := i;
+	cmplStd/lib/text/cstr.ci:29: (3 bytes): result := i;
 	<lastIndexOf+?>: mov.x32 sp(1, 0)
-	cmplStd/lib/text/string.ci:27: (4 bytes): i := i + 1
+	cmplStd/lib/text/cstr.ci:27: (4 bytes): i := i + 1
 	<lastIndexOf+?>: inc.i32(+1)
-	cmplStd/lib/text/string.ci:27: (10 bytes): str[i]
+	cmplStd/lib/text/cstr.ci:27: (10 bytes): str[i]
 	<lastIndexOf+?>: dup.x32 sp(4)
 	<lastIndexOf+?>: dup.x32 sp(1)
 	<lastIndexOf+?>: add.i32
 	<lastIndexOf+?>: load.i8
 	<lastIndexOf+?>: jnz -29
 	<lastIndexOf+?>: inc.sp(-4)
-	cmplStd/lib/text/string.ci:32: (3 bytes): return .result := result;
+	cmplStd/lib/text/cstr.ci:32: (3 bytes): return .result := result;
 	<lastIndexOf+?>: set.x32 sp(4)
 	<lastIndexOf+?>: ret
 }
@@ -8005,7 +8021,7 @@ startsWith(str: char[*], with: char[*], cmp(chr: char, with: char): int32): bool
 .base: `function`
 .size: 73
 .name: 'startsWith'
-.file: 'cmplStd/lib/text/string.ci:36'
+.file: 'cmplStd/lib/text/cstr.ci:36'
 .param .result: bool (size: 4, cast: variable(bool))
 .param str: char[*] (size: 4, cast: const variable(ref))
 .param with: char[*] (size: 4, cast: const variable(ref))
@@ -8020,10 +8036,10 @@ startsWith(str: char[*], with: char[*], cmp(chr: char, with: char): int32): bool
 	return .result := true;
 }
 .instructions: (73 bytes)
-	cmplStd/lib/text/string.ci:37: (62 bytes): for (i: int32 := 0; (with[i]) != 0; i := i + 1)
+	cmplStd/lib/text/cstr.ci:37: (62 bytes): for (i: int32 := 0; (with[i]) != 0; i := i + 1)
 	<startsWith>  : load.z32
 	<startsWith+?>: jmp +45
-	cmplStd/lib/text/string.ci:38: (37 bytes): if (cmp(str[i], with[i]) != 0)
+	cmplStd/lib/text/cstr.ci:38: (37 bytes): if (cmp(str[i], with[i]) != 0)
 	<startsWith+?>: load.z32
 	<startsWith+?>: dup.x32 sp(5)
 	<startsWith+?>: dup.x32 sp(2)
@@ -8039,15 +8055,15 @@ startsWith(str: char[*], with: char[*], cmp(chr: char, with: char): int32): bool
 	<startsWith+?>: load.z32
 	<startsWith+?>: ceq.i32
 	<startsWith+?>: jnz +15
-	cmplStd/lib/text/string.ci:39: (11 bytes): return .result := false;
+	cmplStd/lib/text/cstr.ci:39: (11 bytes): return .result := false;
 	<startsWith+?>: load.z32
 	<startsWith+?>: load.sp(+24)
 	<startsWith+?>: store.i8
 	<startsWith+?>: inc.sp(-4)
 	<startsWith+?>: ret
-	cmplStd/lib/text/string.ci:37: (4 bytes): i := i + 1
+	cmplStd/lib/text/cstr.ci:37: (4 bytes): i := i + 1
 	<startsWith+?>: inc.i32(+1)
-	cmplStd/lib/text/string.ci:37: (12 bytes): (with[i]) != 0
+	cmplStd/lib/text/cstr.ci:37: (12 bytes): (with[i]) != 0
 	<startsWith+?>: dup.x32 sp(3)
 	<startsWith+?>: dup.x32 sp(1)
 	<startsWith+?>: add.i32
@@ -8056,7 +8072,7 @@ startsWith(str: char[*], with: char[*], cmp(chr: char, with: char): int32): bool
 	<startsWith+?>: ceq.i32
 	<startsWith+?>: jz -49
 	<startsWith+?>: inc.sp(-4)
-	cmplStd/lib/text/string.ci:42: (11 bytes): return .result := true;
+	cmplStd/lib/text/cstr.ci:42: (11 bytes): return .result := true;
 	<startsWith+?>: load.c32 1
 	<startsWith+?>: load.sp(+20)
 	<startsWith+?>: store.i8
@@ -8067,7 +8083,7 @@ endsWith(str: char[*], with: char[*], cmp(chr: char, with: char): int32): bool: 
 .base: `function`
 .size: 126
 .name: 'endsWith'
-.file: 'cmplStd/lib/text/string.ci:46'
+.file: 'cmplStd/lib/text/cstr.ci:46'
 .param .result: bool (size: 4, cast: variable(bool))
 .param str: char[*] (size: 4, cast: const variable(ref))
 .param with: char[*] (size: 4, cast: const variable(ref))
@@ -8087,33 +8103,33 @@ endsWith(str: char[*], with: char[*], cmp(chr: char, with: char): int32): bool: 
 	return .result := true;
 }
 .instructions: (126 bytes)
-	cmplStd/lib/text/string.ci:47: (13 bytes): withLen: int32 := length(with)
+	cmplStd/lib/text/cstr.ci:47: (13 bytes): withLen: int32 := length(with)
 	<endsWith>  : load.z32
 	<endsWith+?>: dup.x32 sp(3)
 	<endsWith+?>: load.ref <?> ;length(str: char[*]): int32
 	<endsWith+?>: call
 	<endsWith+?>: inc.sp(-4)
-	cmplStd/lib/text/string.ci:48: (13 bytes): strLen: int32 := length(str)
+	cmplStd/lib/text/cstr.ci:48: (13 bytes): strLen: int32 := length(str)
 	<endsWith+?>: load.z32
 	<endsWith+?>: dup.x32 sp(5)
 	<endsWith+?>: load.ref <?> ;length(str: char[*]): int32
 	<endsWith+?>: call
 	<endsWith+?>: inc.sp(-4)
-	cmplStd/lib/text/string.ci:49: (20 bytes): if (strLen < withLen)
+	cmplStd/lib/text/cstr.ci:49: (20 bytes): if (strLen < withLen)
 	<endsWith+?>: dup.x32 sp(0)
 	<endsWith+?>: dup.x32 sp(2)
 	<endsWith+?>: clt.i32
 	<endsWith+?>: jz +15
-	cmplStd/lib/text/string.ci:50: (11 bytes): return .result := false;
+	cmplStd/lib/text/cstr.ci:50: (11 bytes): return .result := false;
 	<endsWith+?>: load.z32
 	<endsWith+?>: load.sp(+28)
 	<endsWith+?>: store.i8
 	<endsWith+?>: inc.sp(-8)
 	<endsWith+?>: ret
-	cmplStd/lib/text/string.ci:52: (65 bytes): for (i: int32 := 0; i < withLen; i := i + 1)
+	cmplStd/lib/text/cstr.ci:52: (65 bytes): for (i: int32 := 0; i < withLen; i := i + 1)
 	<endsWith+?>: load.z32
 	<endsWith+?>: jmp +51
-	cmplStd/lib/text/string.ci:53: (43 bytes): if (cmp(str[strLen - withLen + i], with[i]) != 0)
+	cmplStd/lib/text/cstr.ci:53: (43 bytes): if (cmp(str[strLen - withLen + i], with[i]) != 0)
 	<endsWith+?>: load.z32
 	<endsWith+?>: dup.x32 sp(7)
 	<endsWith+?>: dup.x32 sp(3)
@@ -8133,21 +8149,21 @@ endsWith(str: char[*], with: char[*], cmp(chr: char, with: char): int32): bool: 
 	<endsWith+?>: load.z32
 	<endsWith+?>: ceq.i32
 	<endsWith+?>: jnz +15
-	cmplStd/lib/text/string.ci:54: (11 bytes): return .result := false;
+	cmplStd/lib/text/cstr.ci:54: (11 bytes): return .result := false;
 	<endsWith+?>: load.z32
 	<endsWith+?>: load.sp(+32)
 	<endsWith+?>: store.i8
 	<endsWith+?>: inc.sp(-12)
 	<endsWith+?>: ret
-	cmplStd/lib/text/string.ci:52: (4 bytes): i := i + 1
+	cmplStd/lib/text/cstr.ci:52: (4 bytes): i := i + 1
 	<endsWith+?>: inc.i32(+1)
-	cmplStd/lib/text/string.ci:52: (9 bytes): i < withLen
+	cmplStd/lib/text/cstr.ci:52: (9 bytes): i < withLen
 	<endsWith+?>: dup.x32 sp(0)
 	<endsWith+?>: dup.x32 sp(3)
 	<endsWith+?>: clt.i32
 	<endsWith+?>: jnz -52
 	<endsWith+?>: inc.sp(-4)
-	cmplStd/lib/text/string.ci:57: (15 bytes): return .result := true;
+	cmplStd/lib/text/cstr.ci:57: (15 bytes): return .result := true;
 	<endsWith+?>: load.c32 1
 	<endsWith+?>: load.sp(+28)
 	<endsWith+?>: store.i8
@@ -8159,7 +8175,7 @@ compare(str: char[*], with: char[*], cmp(chr: char, with: char): int32): int32: 
 .base: `function`
 .size: 63
 .name: 'compare'
-.file: 'cmplStd/lib/text/string.ci:61'
+.file: 'cmplStd/lib/text/cstr.ci:61'
 .param .result: int32 (size: 4, cast: variable(i32))
 .param str: char[*] (size: 4, cast: const variable(ref))
 .param with: char[*] (size: 4, cast: const variable(ref))
@@ -8176,12 +8192,12 @@ compare(str: char[*], with: char[*], cmp(chr: char, with: char): int32): int32: 
 	return .result := result;
 }
 .instructions: (63 bytes)
-	cmplStd/lib/text/string.ci:62: (1 byte): result: int32 := 0
+	cmplStd/lib/text/cstr.ci:62: (1 byte): result: int32 := 0
 	<compare>  : load.z32
-	cmplStd/lib/text/string.ci:63: (59 bytes): for (i: int32 := 0; result == 0; i := i + 1)
+	cmplStd/lib/text/cstr.ci:63: (59 bytes): for (i: int32 := 0; result == 0; i := i + 1)
 	<compare+?>: load.z32
 	<compare+?>: jmp +46
-	cmplStd/lib/text/string.ci:64: (22 bytes): result := cmp(str[i], with[i]);
+	cmplStd/lib/text/cstr.ci:64: (22 bytes): result := cmp(str[i], with[i]);
 	<compare+?>: load.z32
 	<compare+?>: dup.x32 sp(6)
 	<compare+?>: dup.x32 sp(2)
@@ -8195,7 +8211,7 @@ compare(str: char[*], with: char[*], cmp(chr: char, with: char): int32): int32: 
 	<compare+?>: call
 	<compare+?>: inc.sp(-8)
 	<compare+?>: set.x32 sp(2)
-	cmplStd/lib/text/string.ci:65: (16 bytes): if ((str[i]) == 0)
+	cmplStd/lib/text/cstr.ci:65: (16 bytes): if ((str[i]) == 0)
 	<compare+?>: dup.x32 sp(5)
 	<compare+?>: dup.x32 sp(1)
 	<compare+?>: add.i32
@@ -8203,17 +8219,17 @@ compare(str: char[*], with: char[*], cmp(chr: char, with: char): int32): int32: 
 	<compare+?>: load.z32
 	<compare+?>: ceq.i32
 	<compare+?>: jz +8
-	cmplStd/lib/text/string.ci:66: (4 bytes): break;
+	cmplStd/lib/text/cstr.ci:66: (4 bytes): break;
 	<compare+?>: jmp +16
-	cmplStd/lib/text/string.ci:63: (4 bytes): i := i + 1
+	cmplStd/lib/text/cstr.ci:63: (4 bytes): i := i + 1
 	<compare+?>: inc.i32(+1)
-	cmplStd/lib/text/string.ci:63: (8 bytes): result == 0
+	cmplStd/lib/text/cstr.ci:63: (8 bytes): result == 0
 	<compare+?>: dup.x32 sp(1)
 	<compare+?>: load.z32
 	<compare+?>: ceq.i32
 	<compare+?>: jnz -46
 	<compare+?>: inc.sp(-4)
-	cmplStd/lib/text/string.ci:69: (3 bytes): return .result := result;
+	cmplStd/lib/text/cstr.ci:69: (3 bytes): return .result := result;
 	<compare+?>: set.x32 sp(5)
 	<compare+?>: ret
 }
@@ -8222,7 +8238,7 @@ ignCaseCmp(chr: char, with: char): int32: function {
 .base: `function`
 .size: 36
 .name: 'ignCaseCmp'
-.file: 'cmplStd/lib/text/string.ci:73'
+.file: 'cmplStd/lib/text/cstr.ci:73'
 .param .result: int32 (size: 4, cast: variable(i32))
 .param chr: char (size: 4, cast: variable(i32))
 .param with: char (size: 4, cast: variable(i32))
@@ -8240,7 +8256,7 @@ ignCaseCmp(chr: char, with: char): int32: function {
 	return .result := ignCase(chr) - ignCase(with);
 }
 .instructions: (36 bytes)
-	cmplStd/lib/text/string.ci:84: (36 bytes): return .result := ignCase(chr) - ignCase(with);
+	cmplStd/lib/text/cstr.ci:84: (36 bytes): return .result := ignCase(chr) - ignCase(with);
 	<ignCaseCmp>  : load.z32
 	<ignCaseCmp+?>: load.sp(+12)
 	<ignCaseCmp+?>: load.i8
@@ -8262,7 +8278,7 @@ caseCmp(chr: char, with: char): int32: function {
 .base: `function`
 .size: 14
 .name: 'caseCmp'
-.file: 'cmplStd/lib/text/string.ci:88'
+.file: 'cmplStd/lib/text/cstr.ci:88'
 .param .result: int32 (size: 4, cast: variable(i32))
 .param chr: char (size: 4, cast: variable(i32))
 .param with: char (size: 4, cast: variable(i32))
@@ -8271,7 +8287,7 @@ caseCmp(chr: char, with: char): int32: function {
 	return .result := chr - with;
 }
 .instructions: (14 bytes)
-	cmplStd/lib/text/string.ci:89: (14 bytes): return .result := chr - with;
+	cmplStd/lib/text/cstr.ci:89: (14 bytes): return .result := chr - with;
 	<caseCmp>  : load.sp(+8)
 	<caseCmp+?>: load.i8
 	<caseCmp+?>: load.sp(+8)
@@ -8285,7 +8301,7 @@ toHex(value: int32): int32: function {
 .base: `function`
 .size: 0
 .name: 'toHex'
-.file: 'cmplStd/lib/text/string.ci:93'
+.file: 'cmplStd/lib/text/cstr.ci:93'
 .param .result: int32 (size: 4, cast: i32)
 .param value: int32 (size: 4, cast: i32)
 .doc: 'convert lower part (4 bits) of the input value to the corresponding lower case hexadecimal character'
@@ -8296,7 +8312,7 @@ startsWith(str: char[*], with: char[*]): bool: function {
 .base: `function`
 .size: 0
 .name: 'startsWith'
-.file: 'cmplStd/lib/text/string.ci:96'
+.file: 'cmplStd/lib/text/cstr.ci:96'
 .param .result: bool (size: 1, cast: bool)
 .param str: char[*] (size: 4, cast: const ref)
 .param with: char[*] (size: 4, cast: const ref)
@@ -8308,7 +8324,7 @@ endsWith(str: char[*], with: char[*]): bool: function {
 .base: `function`
 .size: 0
 .name: 'endsWith'
-.file: 'cmplStd/lib/text/string.ci:98'
+.file: 'cmplStd/lib/text/cstr.ci:98'
 .param .result: bool (size: 1, cast: bool)
 .param str: char[*] (size: 4, cast: const ref)
 .param with: char[*] (size: 4, cast: const ref)
@@ -8320,7 +8336,7 @@ compare(str: char[*], with: char[*]): int32: function {
 .base: `function`
 .size: 0
 .name: 'compare'
-.file: 'cmplStd/lib/text/string.ci:100'
+.file: 'cmplStd/lib/text/cstr.ci:100'
 .param .result: int32 (size: 4, cast: i32)
 .param str: char[*] (size: 4, cast: const ref)
 .param with: char[*] (size: 4, cast: const ref)
@@ -8332,7 +8348,7 @@ equals(str: char[*], with: char[*]): bool: function {
 .base: `function`
 .size: 0
 .name: 'equals'
-.file: 'cmplStd/lib/text/string.ci:102'
+.file: 'cmplStd/lib/text/cstr.ci:102'
 .param .result: bool (size: 1, cast: bool)
 .param str: char[*] (size: 4, cast: const ref)
 .param with: char[*] (size: 4, cast: const ref)
@@ -8344,7 +8360,7 @@ contains(str: char[*], chr: char): bool: function {
 .base: `function`
 .size: 0
 .name: 'contains'
-.file: 'cmplStd/lib/text/string.ci:105'
+.file: 'cmplStd/lib/text/cstr.ci:105'
 .param .result: bool (size: 1, cast: bool)
 .param str: char[*] (size: 4, cast: const ref)
 .param chr: char (size: 4, cast: i32)
@@ -8356,7 +8372,7 @@ FormatFlags: typename {
 .base: `typename`
 .size: 16
 .name: 'FormatFlags'
-.file: 'cmplStd/lib/text/string.ci:119'
+.file: 'cmplStd/lib/text/cstr.ci:119'
 .field sign: char (size: 1, cast: const variable(i32))
 .field precision: int32 (size: 4, cast: const variable(i32))
 .field padChr: char (size: 1, cast: const variable(i32))
@@ -8368,7 +8384,7 @@ FormatFlags.sign: char {
 .base: `char`
 .size: 1
 .name: 'sign'
-.file: 'cmplStd/lib/text/string.ci:121'
+.file: 'cmplStd/lib/text/cstr.ci:121'
 .owner: FormatFlags
 .doc: 'forced show sign'
 .value: 0
@@ -8378,7 +8394,7 @@ FormatFlags.precision: int32 {
 .base: `int32`
 .size: 4
 .name: 'precision'
-.file: 'cmplStd/lib/text/string.ci:124'
+.file: 'cmplStd/lib/text/cstr.ci:124'
 .owner: FormatFlags
 .doc: 'precision length'
 .value: 0
@@ -8388,7 +8404,7 @@ FormatFlags.padChr: char {
 .base: `char`
 .size: 1
 .name: 'padChr'
-.file: 'cmplStd/lib/text/string.ci:127'
+.file: 'cmplStd/lib/text/cstr.ci:127'
 .owner: FormatFlags
 .doc: 'padding character'
 .value: 0
@@ -8398,7 +8414,7 @@ FormatFlags.padLen: int32 {
 .base: `int32`
 .size: 4
 .name: 'padLen'
-.file: 'cmplStd/lib/text/string.ci:130'
+.file: 'cmplStd/lib/text/cstr.ci:130'
 .owner: FormatFlags
 .doc: 'padding length'
 .value: 0
@@ -8408,7 +8424,7 @@ append(output: char[], pos: int32, value: char[*]): int32: function {
 .base: `function`
 .size: 119
 .name: 'append'
-.file: 'cmplStd/lib/text/string.ci:134'
+.file: 'cmplStd/lib/text/cstr.ci:134'
 .param .result: int32 (size: 4, cast: variable(i32))
 .param output: char[] (size: 8, cast: variable(arr))
 .param pos: int32 (size: 4, cast: variable(i32))
@@ -8432,12 +8448,12 @@ append(output: char[], pos: int32, value: char[*]): int32: function {
 	return .result := pos;
 }
 .instructions: (119 bytes)
-	cmplStd/lib/text/string.ci:135: (35 bytes): if ((value) == null)
+	cmplStd/lib/text/cstr.ci:135: (35 bytes): if ((value) == null)
 	<append>  : dup.x32 sp(1)
 	<append+?>: load.ref <?> ;null
 	<append+?>: ceq.i32
 	<append+?>: jz +27
-	cmplStd/lib/text/string.ci:136: (23 bytes): return .result := append(output, pos, "NULL");
+	cmplStd/lib/text/cstr.ci:136: (23 bytes): return .result := append(output, pos, "NULL");
 	<append+?>: load.z32
 	<append+?>: dup.x64 sp(4)
 	<append+?>: dup.x32 sp(5)
@@ -8447,17 +8463,17 @@ append(output: char[], pos: int32, value: char[*]): int32: function {
 	<append+?>: inc.sp(-16)
 	<append+?>: set.x32 sp(6)
 	<append+?>: ret
-	cmplStd/lib/text/string.ci:138: (56 bytes): for (i: int32 := 0; value[i]; i := i + 1)
+	cmplStd/lib/text/cstr.ci:138: (56 bytes): for (i: int32 := 0; value[i]; i := i + 1)
 	<append+?>: load.z32
 	<append+?>: jmp +41
-	cmplStd/lib/text/string.ci:139: (13 bytes): if (pos >= (output.length))
+	cmplStd/lib/text/cstr.ci:139: (13 bytes): if (pos >= (output.length))
 	<append+?>: dup.x32 sp(3)
 	<append+?>: dup.x32 sp(6)
 	<append+?>: clt.i32
 	<append+?>: jnz +8
-	cmplStd/lib/text/string.ci:140: (4 bytes): break;
+	cmplStd/lib/text/cstr.ci:140: (4 bytes): break;
 	<append+?>: jmp +38
-	cmplStd/lib/text/string.ci:142: (12 bytes): output[pos] := value[i];
+	cmplStd/lib/text/cstr.ci:142: (12 bytes): output[pos] := value[i];
 	<append+?>: dup.x32 sp(2)
 	<append+?>: dup.x32 sp(1)
 	<append+?>: add.i32
@@ -8466,35 +8482,35 @@ append(output: char[], pos: int32, value: char[*]): int32: function {
 	<append+?>: dup.x32 sp(5)
 	<append+?>: add.i32
 	<append+?>: store.i8
-	cmplStd/lib/text/string.ci:143: (8 bytes): pos := pos + 1;
+	cmplStd/lib/text/cstr.ci:143: (8 bytes): pos := pos + 1;
 	<append+?>: dup.x32 sp(3)
 	<append+?>: inc.i32(+1)
 	<append+?>: set.x32 sp(4)
-	cmplStd/lib/text/string.ci:138: (4 bytes): i := i + 1
+	cmplStd/lib/text/cstr.ci:138: (4 bytes): i := i + 1
 	<append+?>: inc.i32(+1)
-	cmplStd/lib/text/string.ci:138: (10 bytes): value[i]
+	cmplStd/lib/text/cstr.ci:138: (10 bytes): value[i]
 	<append+?>: dup.x32 sp(2)
 	<append+?>: dup.x32 sp(1)
 	<append+?>: add.i32
 	<append+?>: load.i8
 	<append+?>: jnz -43
 	<append+?>: inc.sp(-4)
-	cmplStd/lib/text/string.ci:146: (17 bytes): if (pos >= (output.length))
+	cmplStd/lib/text/cstr.ci:146: (17 bytes): if (pos >= (output.length))
 	<append+?>: dup.x32 sp(2)
 	<append+?>: dup.x32 sp(5)
 	<append+?>: clt.i32
 	<append+?>: jnz +12
-	cmplStd/lib/text/string.ci:147: (8 bytes): pos := (output.length - (1));
+	cmplStd/lib/text/cstr.ci:147: (8 bytes): pos := (output.length - (1));
 	<append+?>: dup.x32 sp(4)
 	<append+?>: inc.i32(-1)
 	<append+?>: set.x32 sp(3)
-	cmplStd/lib/text/string.ci:149: (7 bytes): output[pos] := (0);
+	cmplStd/lib/text/cstr.ci:149: (7 bytes): output[pos] := (0);
 	<append+?>: load.z32
 	<append+?>: dup.x32 sp(4)
 	<append+?>: dup.x32 sp(4)
 	<append+?>: add.i32
 	<append+?>: store.i8
-	cmplStd/lib/text/string.ci:150: (4 bytes): return .result := pos;
+	cmplStd/lib/text/cstr.ci:150: (4 bytes): return .result := pos;
 	<append+?>: mov.x32 sp(5, 2)
 	<append+?>: ret
 }
@@ -8503,7 +8519,7 @@ append(output: char[], pos: int32, radix: int32, value: uint64, format: FormatFl
 .base: `function`
 .size: 653
 .name: 'append'
-.file: 'cmplStd/lib/text/string.ci:154'
+.file: 'cmplStd/lib/text/cstr.ci:154'
 .param .result: int32 (size: 4, cast: variable(i32))
 .param output: char[] (size: 8, cast: variable(arr))
 .param pos: int32 (size: 4, cast: variable(i32))
@@ -8560,17 +8576,17 @@ append(output: char[], pos: int32, radix: int32, value: uint64, format: FormatFl
 	return .result := pos;
 }
 .instructions: (653 bytes)
-	cmplStd/lib/text/string.ci:158: (1 byte): len: int32 := 0
+	cmplStd/lib/text/cstr.ci:158: (1 byte): len: int32 := 0
 	<append>  : load.z32
-	cmplStd/lib/text/string.ci:159: (4 bytes): digits: char[80] := {...}
+	cmplStd/lib/text/cstr.ci:159: (4 bytes): digits: char[80] := {...}
 	<append+?>: inc.sp(+80)
-	cmplStd/lib/text/string.ci:161: (54 bytes): assert(radix > 1, "radix is too small", radix);
+	cmplStd/lib/text/cstr.ci:161: (54 bytes): assert(radix > 1, "radix is too small", radix);
 	<append+?>: dup.x32 sp(25)
 	<append+?>: load.c32 1
 	<append+?>: cgt.i32
 	<append+?>: jz +8
 	<append+?>: jmp +42
-	<append+?>: load.ref <?> ;"cmplStd/lib/text/string.ci"
+	<append+?>: load.ref <?> ;"cmplStd/lib/text/cstr.ci"
 	<append+?>: load.c32 161
 	<append+?>: load.c32 -2
 	<append+?>: load.c32 128
@@ -8578,13 +8594,13 @@ append(output: char[], pos: int32, radix: int32, value: uint64, format: FormatFl
 	<append+?>: load.ref <?> ;int32
 	<append+?>: load.sp(+124)
 	<append+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], inspect: variant): void
-	cmplStd/lib/text/string.ci:162: (53 bytes): assert(radix < (radixDigits.length), "radix is too big", radix);
+	cmplStd/lib/text/cstr.ci:162: (53 bytes): assert(radix < (radixDigits.length), "radix is too big", radix);
 	<append+?>: dup.x32 sp(25)
 	<append+?>: load.m32 <?> ;append.radixDigits+4
 	<append+?>: clt.i32
 	<append+?>: jz +8
 	<append+?>: jmp +42
-	<append+?>: load.ref <?> ;"cmplStd/lib/text/string.ci"
+	<append+?>: load.ref <?> ;"cmplStd/lib/text/cstr.ci"
 	<append+?>: load.c32 162
 	<append+?>: load.c32 -2
 	<append+?>: load.c32 128
@@ -8592,9 +8608,9 @@ append(output: char[], pos: int32, radix: int32, value: uint64, format: FormatFl
 	<append+?>: load.ref <?> ;int32
 	<append+?>: load.sp(+124)
 	<append+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], inspect: variant): void
-	cmplStd/lib/text/string.ci:165: (49 bytes): for ( ; value > (0); value := value / (radix))
+	cmplStd/lib/text/cstr.ci:165: (49 bytes): for ( ; value > (0); value := value / (radix))
 	<append+?>: jmp +41
-	cmplStd/lib/text/string.ci:166: (29 bytes): digits[len := len + 1] := radixDigits[value % (radix)];
+	cmplStd/lib/text/cstr.ci:166: (29 bytes): digits[len := len + 1] := radixDigits[value % (radix)];
 	<append+?>: load.m32 <?> ;append.radixDigits
 	<append+?>: dup.x64 sp(24)
 	<append+?>: dup.x32 sp(28)
@@ -8610,23 +8626,23 @@ append(output: char[], pos: int32, radix: int32, value: uint64, format: FormatFl
 	<append+?>: set.x32 sp(24)
 	<append+?>: add.i32
 	<append+?>: store.i8
-	cmplStd/lib/text/string.ci:165: (8 bytes): value := value / (radix)
+	cmplStd/lib/text/cstr.ci:165: (8 bytes): value := value / (radix)
 	<append+?>: dup.x64 sp(23)
 	<append+?>: dup.x32 sp(27)
 	<append+?>: i32.2i64
 	<append+?>: div.u64
 	<append+?>: set.x64 sp(25)
-	cmplStd/lib/text/string.ci:165: (8 bytes): value > (0)
+	cmplStd/lib/text/cstr.ci:165: (8 bytes): value > (0)
 	<append+?>: dup.x64 sp(23)
 	<append+?>: load.z64
 	<append+?>: cgt.u64
 	<append+?>: jnz -41
-	cmplStd/lib/text/string.ci:168: (29 bytes): if (len == 0)
+	cmplStd/lib/text/cstr.ci:168: (29 bytes): if (len == 0)
 	<append+?>: dup.x32 sp(20)
 	<append+?>: load.z32
 	<append+?>: ceq.i32
 	<append+?>: jz +25
-	cmplStd/lib/text/string.ci:169: (21 bytes): digits[len := len + 1] := '0';
+	cmplStd/lib/text/cstr.ci:169: (21 bytes): digits[len := len + 1] := '0';
 	<append+?>: load.c32 48
 	<append+?>: load.sp(+4)
 	<append+?>: dup.x32 sp(22)
@@ -8635,37 +8651,37 @@ append(output: char[], pos: int32, radix: int32, value: uint64, format: FormatFl
 	<append+?>: set.x32 sp(24)
 	<append+?>: add.i32
 	<append+?>: store.i8
-	cmplStd/lib/text/string.ci:172: (10 bytes): maxLen: int32 := format.padLen - len
+	cmplStd/lib/text/cstr.ci:172: (10 bytes): maxLen: int32 := format.padLen - len
 	<append+?>: dup.x32 sp(22)
 	<append+?>: inc.i32(+12)
 	<append+?>: load.i32
 	<append+?>: dup.x32 sp(21)
 	<append+?>: sub.i32
-	cmplStd/lib/text/string.ci:174: (7 bytes): padChr: char := format.padChr
+	cmplStd/lib/text/cstr.ci:174: (7 bytes): padChr: char := format.padChr
 	<append+?>: dup.x32 sp(23)
 	<append+?>: inc.i32(+8)
 	<append+?>: load.i8
-	cmplStd/lib/text/string.ci:175: (21 bytes): if (padChr == '')
+	cmplStd/lib/text/cstr.ci:175: (21 bytes): if (padChr == '')
 	<append+?>: load.sp(+0)
 	<append+?>: load.i8
 	<append+?>: load.z32
 	<append+?>: ceq.i32
 	<append+?>: jz +14
-	cmplStd/lib/text/string.ci:176: (10 bytes): padChr := ' ';
+	cmplStd/lib/text/cstr.ci:176: (10 bytes): padChr := ' ';
 	<append+?>: load.c32 32
 	<append+?>: load.sp(+4)
 	<append+?>: store.i8
-	cmplStd/lib/text/string.ci:180: (203 bytes): if ((format.sign) != 0)
+	cmplStd/lib/text/cstr.ci:180: (203 bytes): if ((format.sign) != 0)
 	<append+?>: dup.x32 sp(24)
 	<append+?>: load.i8
 	<append+?>: load.z32
 	<append+?>: ceq.i32
 	<append+?>: jnz +198
-	cmplStd/lib/text/string.ci:181: (8 bytes): maxLen := maxLen - 1;
+	cmplStd/lib/text/cstr.ci:181: (8 bytes): maxLen := maxLen - 1;
 	<append+?>: dup.x32 sp(1)
 	<append+?>: inc.i32(-1)
 	<append+?>: set.x32 sp(2)
-	cmplStd/lib/text/string.ci:182: (117 bytes): if (contains(whiteSpace, padChr))
+	cmplStd/lib/text/cstr.ci:182: (117 bytes): if (contains(whiteSpace, padChr))
 	<append+?>: load.z32
 	<append+?>: load.m32 <?> ;append.whiteSpace
 	<append+?>: load.sp(+8)
@@ -8676,15 +8692,15 @@ append(output: char[], pos: int32, radix: int32, value: uint64, format: FormatFl
 	<append+?>: load.z32
 	<append+?>: clt.i32
 	<append+?>: jnz +95
-	cmplStd/lib/text/string.ci:184: (91 bytes): for ( ; maxLen > 0; maxLen := maxLen - 1)
+	cmplStd/lib/text/cstr.ci:184: (91 bytes): for ( ; maxLen > 0; maxLen := maxLen - 1)
 	<append+?>: jmp +83
-	cmplStd/lib/text/string.ci:185: (52 bytes): assert(pos < (output.length));
+	cmplStd/lib/text/cstr.ci:185: (52 bytes): assert(pos < (output.length));
 	<append+?>: dup.x32 sp(28)
 	<append+?>: dup.x32 sp(31)
 	<append+?>: clt.i32
 	<append+?>: jz +8
 	<append+?>: jmp +43
-	<append+?>: load.ref <?> ;"cmplStd/lib/text/string.ci"
+	<append+?>: load.ref <?> ;"cmplStd/lib/text/cstr.ci"
 	<append+?>: load.c32 185
 	<append+?>: load.c32 -2
 	<append+?>: load.c32 128
@@ -8692,33 +8708,33 @@ append(output: char[], pos: int32, radix: int32, value: uint64, format: FormatFl
 	<append+?>: load.ref <?> ;pointer
 	<append+?>: load.ref <?> ;null
 	<append+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], inspect: variant): void
-	cmplStd/lib/text/string.ci:186: (11 bytes): output[pos] := padChr;
+	cmplStd/lib/text/cstr.ci:186: (11 bytes): output[pos] := padChr;
 	<append+?>: load.sp(+0)
 	<append+?>: load.i8
 	<append+?>: dup.x32 sp(30)
 	<append+?>: dup.x32 sp(30)
 	<append+?>: add.i32
 	<append+?>: store.i8
-	cmplStd/lib/text/string.ci:187: (8 bytes): pos := pos + 1;
+	cmplStd/lib/text/cstr.ci:187: (8 bytes): pos := pos + 1;
 	<append+?>: dup.x32 sp(28)
 	<append+?>: inc.i32(+1)
 	<append+?>: set.x32 sp(29)
-	cmplStd/lib/text/string.ci:184: (8 bytes): maxLen := maxLen - 1
+	cmplStd/lib/text/cstr.ci:184: (8 bytes): maxLen := maxLen - 1
 	<append+?>: dup.x32 sp(1)
 	<append+?>: inc.i32(-1)
 	<append+?>: set.x32 sp(2)
-	cmplStd/lib/text/string.ci:184: (8 bytes): maxLen > 0
+	cmplStd/lib/text/cstr.ci:184: (8 bytes): maxLen > 0
 	<append+?>: dup.x32 sp(1)
 	<append+?>: load.z32
 	<append+?>: cgt.i32
 	<append+?>: jnz -83
-	cmplStd/lib/text/string.ci:190: (52 bytes): assert(pos < (output.length));
+	cmplStd/lib/text/cstr.ci:190: (52 bytes): assert(pos < (output.length));
 	<append+?>: dup.x32 sp(28)
 	<append+?>: dup.x32 sp(31)
 	<append+?>: clt.i32
 	<append+?>: jz +8
 	<append+?>: jmp +43
-	<append+?>: load.ref <?> ;"cmplStd/lib/text/string.ci"
+	<append+?>: load.ref <?> ;"cmplStd/lib/text/cstr.ci"
 	<append+?>: load.c32 190
 	<append+?>: load.c32 -2
 	<append+?>: load.c32 128
@@ -8726,26 +8742,26 @@ append(output: char[], pos: int32, radix: int32, value: uint64, format: FormatFl
 	<append+?>: load.ref <?> ;pointer
 	<append+?>: load.ref <?> ;null
 	<append+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], inspect: variant): void
-	cmplStd/lib/text/string.ci:191: (9 bytes): output[pos] := format.sign;
+	cmplStd/lib/text/cstr.ci:191: (9 bytes): output[pos] := format.sign;
 	<append+?>: dup.x32 sp(24)
 	<append+?>: load.i8
 	<append+?>: dup.x32 sp(30)
 	<append+?>: dup.x32 sp(30)
 	<append+?>: add.i32
 	<append+?>: store.i8
-	cmplStd/lib/text/string.ci:192: (8 bytes): pos := pos + 1;
+	cmplStd/lib/text/cstr.ci:192: (8 bytes): pos := pos + 1;
 	<append+?>: dup.x32 sp(28)
 	<append+?>: inc.i32(+1)
 	<append+?>: set.x32 sp(29)
-	cmplStd/lib/text/string.ci:196: (91 bytes): for ( ; maxLen > 0; maxLen := maxLen - 1)
+	cmplStd/lib/text/cstr.ci:196: (91 bytes): for ( ; maxLen > 0; maxLen := maxLen - 1)
 	<append+?>: jmp +83
-	cmplStd/lib/text/string.ci:197: (52 bytes): assert(pos < (output.length));
+	cmplStd/lib/text/cstr.ci:197: (52 bytes): assert(pos < (output.length));
 	<append+?>: dup.x32 sp(28)
 	<append+?>: dup.x32 sp(31)
 	<append+?>: clt.i32
 	<append+?>: jz +8
 	<append+?>: jmp +43
-	<append+?>: load.ref <?> ;"cmplStd/lib/text/string.ci"
+	<append+?>: load.ref <?> ;"cmplStd/lib/text/cstr.ci"
 	<append+?>: load.c32 197
 	<append+?>: load.c32 -2
 	<append+?>: load.c32 128
@@ -8753,36 +8769,36 @@ append(output: char[], pos: int32, radix: int32, value: uint64, format: FormatFl
 	<append+?>: load.ref <?> ;pointer
 	<append+?>: load.ref <?> ;null
 	<append+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], inspect: variant): void
-	cmplStd/lib/text/string.ci:198: (11 bytes): output[pos] := padChr;
+	cmplStd/lib/text/cstr.ci:198: (11 bytes): output[pos] := padChr;
 	<append+?>: load.sp(+0)
 	<append+?>: load.i8
 	<append+?>: dup.x32 sp(30)
 	<append+?>: dup.x32 sp(30)
 	<append+?>: add.i32
 	<append+?>: store.i8
-	cmplStd/lib/text/string.ci:199: (8 bytes): pos := pos + 1;
+	cmplStd/lib/text/cstr.ci:199: (8 bytes): pos := pos + 1;
 	<append+?>: dup.x32 sp(28)
 	<append+?>: inc.i32(+1)
 	<append+?>: set.x32 sp(29)
-	cmplStd/lib/text/string.ci:196: (8 bytes): maxLen := maxLen - 1
+	cmplStd/lib/text/cstr.ci:196: (8 bytes): maxLen := maxLen - 1
 	<append+?>: dup.x32 sp(1)
 	<append+?>: inc.i32(-1)
 	<append+?>: set.x32 sp(2)
-	cmplStd/lib/text/string.ci:196: (8 bytes): maxLen > 0
+	cmplStd/lib/text/cstr.ci:196: (8 bytes): maxLen > 0
 	<append+?>: dup.x32 sp(1)
 	<append+?>: load.z32
 	<append+?>: cgt.i32
 	<append+?>: jnz -83
-	cmplStd/lib/text/string.ci:203: (99 bytes): for (i: int32 := 0; i < len; i := i + 1)
+	cmplStd/lib/text/cstr.ci:203: (99 bytes): for (i: int32 := 0; i < len; i := i + 1)
 	<append+?>: load.z32
 	<append+?>: jmp +85
-	cmplStd/lib/text/string.ci:204: (52 bytes): assert(i < (output.length));
+	cmplStd/lib/text/cstr.ci:204: (52 bytes): assert(i < (output.length));
 	<append+?>: dup.x32 sp(0)
 	<append+?>: dup.x32 sp(32)
 	<append+?>: clt.i32
 	<append+?>: jz +8
 	<append+?>: jmp +43
-	<append+?>: load.ref <?> ;"cmplStd/lib/text/string.ci"
+	<append+?>: load.ref <?> ;"cmplStd/lib/text/cstr.ci"
 	<append+?>: load.c32 204
 	<append+?>: load.c32 -2
 	<append+?>: load.c32 128
@@ -8790,7 +8806,7 @@ append(output: char[], pos: int32, radix: int32, value: uint64, format: FormatFl
 	<append+?>: load.ref <?> ;pointer
 	<append+?>: load.ref <?> ;null
 	<append+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], inspect: variant): void
-	cmplStd/lib/text/string.ci:205: (17 bytes): output[pos] := digits[len - i];
+	cmplStd/lib/text/cstr.ci:205: (17 bytes): output[pos] := digits[len - i];
 	<append+?>: load.sp(+12)
 	<append+?>: dup.x32 sp(24)
 	<append+?>: dup.x32 sp(2)
@@ -8801,34 +8817,34 @@ append(output: char[], pos: int32, radix: int32, value: uint64, format: FormatFl
 	<append+?>: dup.x32 sp(31)
 	<append+?>: add.i32
 	<append+?>: store.i8
-	cmplStd/lib/text/string.ci:206: (8 bytes): pos := pos + 1;
+	cmplStd/lib/text/cstr.ci:206: (8 bytes): pos := pos + 1;
 	<append+?>: dup.x32 sp(29)
 	<append+?>: inc.i32(+1)
 	<append+?>: set.x32 sp(30)
-	cmplStd/lib/text/string.ci:203: (4 bytes): i := i + 1
+	cmplStd/lib/text/cstr.ci:203: (4 bytes): i := i + 1
 	<append+?>: inc.i32(+1)
-	cmplStd/lib/text/string.ci:203: (9 bytes): i < len
+	cmplStd/lib/text/cstr.ci:203: (9 bytes): i < len
 	<append+?>: dup.x32 sp(0)
 	<append+?>: dup.x32 sp(24)
 	<append+?>: clt.i32
 	<append+?>: jnz -86
 	<append+?>: inc.sp(-4)
-	cmplStd/lib/text/string.ci:209: (17 bytes): if (pos >= (output.length))
+	cmplStd/lib/text/cstr.ci:209: (17 bytes): if (pos >= (output.length))
 	<append+?>: dup.x32 sp(28)
 	<append+?>: dup.x32 sp(31)
 	<append+?>: clt.i32
 	<append+?>: jnz +12
-	cmplStd/lib/text/string.ci:210: (8 bytes): pos := (output.length - (1));
+	cmplStd/lib/text/cstr.ci:210: (8 bytes): pos := (output.length - (1));
 	<append+?>: dup.x32 sp(30)
 	<append+?>: inc.i32(-1)
 	<append+?>: set.x32 sp(29)
-	cmplStd/lib/text/string.ci:212: (7 bytes): output[pos] := (0);
+	cmplStd/lib/text/cstr.ci:212: (7 bytes): output[pos] := (0);
 	<append+?>: load.z32
 	<append+?>: dup.x32 sp(30)
 	<append+?>: dup.x32 sp(30)
 	<append+?>: add.i32
 	<append+?>: store.i8
-	cmplStd/lib/text/string.ci:213: (8 bytes): return .result := pos;
+	cmplStd/lib/text/cstr.ci:213: (8 bytes): return .result := pos;
 	<append+?>: mov.x32 sp(31, 28)
 	<append+?>: inc.sp(-92)
 	<append+?>: ret
@@ -8838,7 +8854,7 @@ append(output: char[], pos: int32, value: uint64, format: FormatFlags): int32: f
 .base: `function`
 .size: 0
 .name: 'append'
-.file: 'cmplStd/lib/text/string.ci:217'
+.file: 'cmplStd/lib/text/cstr.ci:217'
 .param .result: int32 (size: 4, cast: i32)
 .param output: char[] (size: 8, cast: arr)
 .param pos: int32 (size: 4, cast: i32)
@@ -8852,7 +8868,7 @@ append(output: char[], pos: int32, value: uint32, format: FormatFlags): int32: f
 .base: `function`
 .size: 0
 .name: 'append'
-.file: 'cmplStd/lib/text/string.ci:220'
+.file: 'cmplStd/lib/text/cstr.ci:220'
 .param .result: int32 (size: 4, cast: i32)
 .param output: char[] (size: 8, cast: arr)
 .param pos: int32 (size: 4, cast: i32)
@@ -8866,7 +8882,7 @@ append(output: char[], pos: int32, value: uint16, format: FormatFlags): int32: f
 .base: `function`
 .size: 0
 .name: 'append'
-.file: 'cmplStd/lib/text/string.ci:223'
+.file: 'cmplStd/lib/text/cstr.ci:223'
 .param .result: int32 (size: 4, cast: i32)
 .param output: char[] (size: 8, cast: arr)
 .param pos: int32 (size: 4, cast: i32)
@@ -8880,7 +8896,7 @@ append(output: char[], pos: int32, value: uint8, format: FormatFlags): int32: fu
 .base: `function`
 .size: 0
 .name: 'append'
-.file: 'cmplStd/lib/text/string.ci:226'
+.file: 'cmplStd/lib/text/cstr.ci:226'
 .param .result: int32 (size: 4, cast: i32)
 .param output: char[] (size: 8, cast: arr)
 .param pos: int32 (size: 4, cast: i32)
@@ -8894,7 +8910,7 @@ append(output: char[], pos: int32, radix: int32, value: int64, format: FormatFla
 .base: `function`
 .size: 102
 .name: 'append'
-.file: 'cmplStd/lib/text/string.ci:229'
+.file: 'cmplStd/lib/text/cstr.ci:229'
 .param .result: int32 (size: 4, cast: variable(i32))
 .param output: char[] (size: 8, cast: variable(arr))
 .param pos: int32 (size: 4, cast: variable(i32))
@@ -8915,9 +8931,9 @@ append(output: char[], pos: int32, radix: int32, value: int64, format: FormatFla
 	return .result := append(output, pos, radix, uint64(value), signedFormat);
 }
 .instructions: (102 bytes)
-	cmplStd/lib/text/string.ci:230: (59 bytes): signedFormat: FormatFlags := {...}
+	cmplStd/lib/text/cstr.ci:230: (59 bytes): signedFormat: FormatFlags := {...}
 	<append>  : inc.sp(+16)
-	cmplStd/lib/text/string.ci:231: (25 bytes): signedFormat.sign := value < (0) ? '-' : format.sign;
+	cmplStd/lib/text/cstr.ci:231: (25 bytes): signedFormat.sign := value < (0) ? '-' : format.sign;
 	<append+?>: dup.x64 sp(6)
 	<append+?>: load.z64
 	<append+?>: clt.i64
@@ -8928,32 +8944,32 @@ append(output: char[], pos: int32, radix: int32, value: int64, format: FormatFla
 	<append+?>: load.i8
 	<append+?>: load.sp(+4)
 	<append+?>: store.i8
-	cmplStd/lib/text/string.ci:232: (9 bytes): signedFormat.precision := format.precision;
+	cmplStd/lib/text/cstr.ci:232: (9 bytes): signedFormat.precision := format.precision;
 	<append+?>: dup.x32 sp(5)
 	<append+?>: inc.i32(+4)
 	<append+?>: load.i32
 	<append+?>: set.x32 sp(2)
-	cmplStd/lib/text/string.ci:233: (9 bytes): signedFormat.padLen := format.padLen;
+	cmplStd/lib/text/cstr.ci:233: (9 bytes): signedFormat.padLen := format.padLen;
 	<append+?>: dup.x32 sp(5)
 	<append+?>: inc.i32(+12)
 	<append+?>: load.i32
 	<append+?>: set.x32 sp(4)
-	cmplStd/lib/text/string.ci:234: (12 bytes): signedFormat.padChr := format.padChr;
+	cmplStd/lib/text/cstr.ci:234: (12 bytes): signedFormat.padChr := format.padChr;
 	<append+?>: dup.x32 sp(5)
 	<append+?>: inc.i32(+8)
 	<append+?>: load.i8
 	<append+?>: load.sp(+12)
 	<append+?>: store.i8
-	cmplStd/lib/text/string.ci:236: (13 bytes): if (value < (0))
+	cmplStd/lib/text/cstr.ci:236: (13 bytes): if (value < (0))
 	<append+?>: dup.x64 sp(6)
 	<append+?>: load.z64
 	<append+?>: clt.i64
 	<append+?>: jz +9
-	cmplStd/lib/text/string.ci:237: (5 bytes): value := -value;
+	cmplStd/lib/text/cstr.ci:237: (5 bytes): value := -value;
 	<append+?>: dup.x64 sp(6)
 	<append+?>: neg.i64
 	<append+?>: set.x64 sp(8)
-	cmplStd/lib/text/string.ci:239: (30 bytes): return .result := append(output, pos, radix, uint64(value), signedFormat);
+	cmplStd/lib/text/cstr.ci:239: (30 bytes): return .result := append(output, pos, radix, uint64(value), signedFormat);
 	<append+?>: load.z32
 	<append+?>: dup.x64 sp(11)
 	<append+?>: dup.x32 sp(12)
@@ -8972,7 +8988,7 @@ append(output: char[], pos: int32, value: int64, format: FormatFlags): int32: fu
 .base: `function`
 .size: 0
 .name: 'append'
-.file: 'cmplStd/lib/text/string.ci:243'
+.file: 'cmplStd/lib/text/cstr.ci:243'
 .param .result: int32 (size: 4, cast: i32)
 .param output: char[] (size: 8, cast: arr)
 .param pos: int32 (size: 4, cast: i32)
@@ -8986,7 +9002,7 @@ append(output: char[], pos: int32, value: int32, format: FormatFlags): int32: fu
 .base: `function`
 .size: 0
 .name: 'append'
-.file: 'cmplStd/lib/text/string.ci:246'
+.file: 'cmplStd/lib/text/cstr.ci:246'
 .param .result: int32 (size: 4, cast: i32)
 .param output: char[] (size: 8, cast: arr)
 .param pos: int32 (size: 4, cast: i32)
@@ -9000,7 +9016,7 @@ append(output: char[], pos: int32, value: int16, format: FormatFlags): int32: fu
 .base: `function`
 .size: 0
 .name: 'append'
-.file: 'cmplStd/lib/text/string.ci:249'
+.file: 'cmplStd/lib/text/cstr.ci:249'
 .param .result: int32 (size: 4, cast: i32)
 .param output: char[] (size: 8, cast: arr)
 .param pos: int32 (size: 4, cast: i32)
@@ -9014,7 +9030,7 @@ append(output: char[], pos: int32, value: int8, format: FormatFlags): int32: fun
 .base: `function`
 .size: 0
 .name: 'append'
-.file: 'cmplStd/lib/text/string.ci:252'
+.file: 'cmplStd/lib/text/cstr.ci:252'
 .param .result: int32 (size: 4, cast: i32)
 .param output: char[] (size: 8, cast: arr)
 .param pos: int32 (size: 4, cast: i32)
@@ -9028,7 +9044,7 @@ append(output: char[], pos: int32, value: float64, format: FormatFlags): int32: 
 .base: `function`
 .size: 402
 .name: 'append'
-.file: 'cmplStd/lib/text/string.ci:255'
+.file: 'cmplStd/lib/text/cstr.ci:255'
 .param .result: int32 (size: 4, cast: variable(i32))
 .param output: char[] (size: 8, cast: variable(arr))
 .param pos: int32 (size: 4, cast: variable(i32))
@@ -9067,9 +9083,9 @@ append(output: char[], pos: int32, value: float64, format: FormatFlags): int32: 
 	return .result := pos;
 }
 .instructions: (402 bytes)
-	cmplStd/lib/text/string.ci:258: (69 bytes): formatInt: FormatFlags := {...}
+	cmplStd/lib/text/cstr.ci:258: (69 bytes): formatInt: FormatFlags := {...}
 	<append>  : inc.sp(+16)
-	cmplStd/lib/text/string.ci:259: (25 bytes): formatInt.sign := value < (0) ? '-' : format.sign;
+	cmplStd/lib/text/cstr.ci:259: (25 bytes): formatInt.sign := value < (0) ? '-' : format.sign;
 	<append+?>: dup.x64 sp(6)
 	<append+?>: load.z64
 	<append+?>: clt.f64
@@ -9080,16 +9096,16 @@ append(output: char[], pos: int32, value: float64, format: FormatFlags): int32: 
 	<append+?>: load.i8
 	<append+?>: load.sp(+4)
 	<append+?>: store.i8
-	cmplStd/lib/text/string.ci:260: (7 bytes): formatInt.precision := 10;
+	cmplStd/lib/text/cstr.ci:260: (7 bytes): formatInt.precision := 10;
 	<append+?>: load.c32 10
 	<append+?>: set.x32 sp(2)
-	cmplStd/lib/text/string.ci:261: (12 bytes): formatInt.padChr := format.padChr;
+	cmplStd/lib/text/cstr.ci:261: (12 bytes): formatInt.padChr := format.padChr;
 	<append+?>: dup.x32 sp(5)
 	<append+?>: inc.i32(+8)
 	<append+?>: load.i8
 	<append+?>: load.sp(+12)
 	<append+?>: store.i8
-	cmplStd/lib/text/string.ci:262: (21 bytes): formatInt.padLen := format.padLen - format.precision - 1;
+	cmplStd/lib/text/cstr.ci:262: (21 bytes): formatInt.padLen := format.padLen - format.precision - 1;
 	<append+?>: dup.x32 sp(5)
 	<append+?>: inc.i32(+12)
 	<append+?>: load.i32
@@ -9099,7 +9115,7 @@ append(output: char[], pos: int32, value: float64, format: FormatFlags): int32: 
 	<append+?>: sub.i32
 	<append+?>: inc.i32(-1)
 	<append+?>: set.x32 sp(4)
-	cmplStd/lib/text/string.ci:265: (39 bytes): end: int32 := Math.min(int32(output.length - (1)), pos + format.padLen)
+	cmplStd/lib/text/cstr.ci:265: (39 bytes): end: int32 := Math.min(int32(output.length - (1)), pos + format.padLen)
 	<append+?>: dup.x32 sp(10)
 	<append+?>: inc.i32(-1)
 	<append+?>: dup.x32 sp(9)
@@ -9116,7 +9132,7 @@ append(output: char[], pos: int32, value: float64, format: FormatFlags): int32: 
 	<append+?>: dup.x32 sp(0)
 	<append+?>: set.x32 sp(2)
 	<append+?>: inc.sp(-4)
-	cmplStd/lib/text/string.ci:267: (36 bytes): fraction: float64 := Math.modf(Math.abs(value), &value)
+	cmplStd/lib/text/cstr.ci:267: (36 bytes): fraction: float64 := Math.modf(Math.abs(value), &value)
 	<append+?>: load.z64
 	<append+?>: dup.x64 sp(9)
 	<append+?>: dup.x64 sp(0)
@@ -9132,7 +9148,7 @@ append(output: char[], pos: int32, value: float64, format: FormatFlags): int32: 
 	<append+?>: load.ref <?> ;Math.modf(x: float64, intPart: float64): float64
 	<append+?>: call
 	<append+?>: inc.sp(-12)
-	cmplStd/lib/text/string.ci:268: (29 bytes): pos := append(output, pos, uint64(int64(value)), formatInt);
+	cmplStd/lib/text/cstr.ci:268: (29 bytes): pos := append(output, pos, uint64(int64(value)), formatInt);
 	<append+?>: load.z32
 	<append+?>: dup.x64 sp(13)
 	<append+?>: dup.x32 sp(14)
@@ -9144,7 +9160,7 @@ append(output: char[], pos: int32, value: float64, format: FormatFlags): int32: 
 	<append+?>: call
 	<append+?>: inc.sp(-28)
 	<append+?>: set.x32 sp(12)
-	cmplStd/lib/text/string.ci:271: (35 bytes): if (fraction < eps && pos >= end)
+	cmplStd/lib/text/cstr.ci:271: (35 bytes): if (fraction < eps && pos >= end)
 	<append+?>: dup.x64 sp(0)
 	<append+?>: load.m64 <?> ;append.eps
 	<append+?>: clt.f64
@@ -9156,11 +9172,11 @@ append(output: char[], pos: int32, value: float64, format: FormatFlags): int32: 
 	<append+?>: clt.i32
 	<append+?>: not.b32
 	<append+?>: jz +12
-	cmplStd/lib/text/string.ci:272: (8 bytes): return .result := pos;
+	cmplStd/lib/text/cstr.ci:272: (8 bytes): return .result := pos;
 	<append+?>: mov.x32 sp(14, 11)
 	<append+?>: inc.sp(-28)
 	<append+?>: ret
-	cmplStd/lib/text/string.ci:276: (22 bytes): pos := append(output, pos, ".");
+	cmplStd/lib/text/cstr.ci:276: (22 bytes): pos := append(output, pos, ".");
 	<append+?>: load.z32
 	<append+?>: dup.x64 sp(13)
 	<append+?>: dup.x32 sp(14)
@@ -9169,7 +9185,7 @@ append(output: char[], pos: int32, value: float64, format: FormatFlags): int32: 
 	<append+?>: call
 	<append+?>: inc.sp(-16)
 	<append+?>: set.x32 sp(12)
-	cmplStd/lib/text/string.ci:277: (39 bytes): max: int32 := Math.min(int32(output.length - (1)), pos + format.precision)
+	cmplStd/lib/text/cstr.ci:277: (39 bytes): max: int32 := Math.min(int32(output.length - (1)), pos + format.precision)
 	<append+?>: dup.x32 sp(13)
 	<append+?>: inc.i32(-1)
 	<append+?>: dup.x32 sp(12)
@@ -9186,20 +9202,20 @@ append(output: char[], pos: int32, value: float64, format: FormatFlags): int32: 
 	<append+?>: dup.x32 sp(0)
 	<append+?>: set.x32 sp(2)
 	<append+?>: inc.sp(-4)
-	cmplStd/lib/text/string.ci:279: (21 bytes): if (format.precision == 0)
+	cmplStd/lib/text/cstr.ci:279: (21 bytes): if (format.precision == 0)
 	<append+?>: dup.x32 sp(9)
 	<append+?>: inc.i32(+4)
 	<append+?>: load.i32
 	<append+?>: load.z32
 	<append+?>: ceq.i32
 	<append+?>: jz +12
-	cmplStd/lib/text/string.ci:281: (8 bytes): max := (output.length - (1));
+	cmplStd/lib/text/cstr.ci:281: (8 bytes): max := (output.length - (1));
 	<append+?>: dup.x32 sp(14)
 	<append+?>: inc.i32(-1)
 	<append+?>: set.x32 sp(1)
-	cmplStd/lib/text/string.ci:283: (104 bytes): for ( ; (fraction > eps && pos < max) || pos < end; )
+	cmplStd/lib/text/cstr.ci:283: (104 bytes): for ( ; (fraction > eps && pos < max) || pos < end; )
 	<append+?>: jmp +63
-	cmplStd/lib/text/string.ci:284: (29 bytes): fraction := Math.modf(fraction * (10), &value);
+	cmplStd/lib/text/cstr.ci:284: (29 bytes): fraction := Math.modf(fraction * (10), &value);
 	<append+?>: load.z64
 	<append+?>: dup.x64 sp(3)
 	<append+?>: load.f64 10.000000
@@ -9209,7 +9225,7 @@ append(output: char[], pos: int32, value: float64, format: FormatFlags): int32: 
 	<append+?>: call
 	<append+?>: inc.sp(-12)
 	<append+?>: set.x64 sp(3)
-	cmplStd/lib/text/string.ci:285: (30 bytes): pos := append(output, pos, uint64(int64(value)), formatDec);
+	cmplStd/lib/text/cstr.ci:285: (30 bytes): pos := append(output, pos, uint64(int64(value)), formatDec);
 	<append+?>: load.z32
 	<append+?>: dup.x64 sp(14)
 	<append+?>: dup.x32 sp(15)
@@ -9221,7 +9237,7 @@ append(output: char[], pos: int32, value: float64, format: FormatFlags): int32: 
 	<append+?>: call
 	<append+?>: inc.sp(-28)
 	<append+?>: set.x32 sp(13)
-	cmplStd/lib/text/string.ci:283: (41 bytes): (fraction > eps && pos < max) || pos < end
+	cmplStd/lib/text/cstr.ci:283: (41 bytes): (fraction > eps && pos < max) || pos < end
 	<append+?>: dup.x64 sp(1)
 	<append+?>: load.m64 <?> ;append.eps
 	<append+?>: cgt.f64
@@ -9238,7 +9254,7 @@ append(output: char[], pos: int32, value: float64, format: FormatFlags): int32: 
 	<append+?>: dup.x32 sp(4)
 	<append+?>: clt.i32
 	<append+?>: jnz -96
-	cmplStd/lib/text/string.ci:287: (8 bytes): return .result := pos;
+	cmplStd/lib/text/cstr.ci:287: (8 bytes): return .result := pos;
 	<append+?>: mov.x32 sp(15, 12)
 	<append+?>: inc.sp(-32)
 	<append+?>: ret
@@ -9248,7 +9264,7 @@ append(output: char[], pos: int32, value: float32, format: FormatFlags): int32: 
 .base: `function`
 .size: 0
 .name: 'append'
-.file: 'cmplStd/lib/text/string.ci:291'
+.file: 'cmplStd/lib/text/cstr.ci:291'
 .param .result: int32 (size: 4, cast: i32)
 .param output: char[] (size: 8, cast: arr)
 .param pos: int32 (size: 4, cast: i32)
@@ -9262,7 +9278,7 @@ append(output: char[], pos: int32, value: int32): int32: function {
 .base: `function`
 .size: 31
 .name: 'append'
-.file: 'cmplStd/lib/text/string.ci:294'
+.file: 'cmplStd/lib/text/cstr.ci:294'
 .param .result: int32 (size: 4, cast: variable(i32))
 .param output: char[] (size: 8, cast: variable(arr))
 .param pos: int32 (size: 4, cast: variable(i32))
@@ -9278,7 +9294,7 @@ append(output: char[], pos: int32, value: int32): int32: function {
 	return .result := append(output, pos, value, format);
 }
 .instructions: (31 bytes)
-	cmplStd/lib/text/string.ci:296: (31 bytes): return .result := append(output, pos, value, format);
+	cmplStd/lib/text/cstr.ci:296: (31 bytes): return .result := append(output, pos, value, format);
 	<append>  : load.z32
 	<append+?>: dup.x64 sp(4)
 	<append+?>: dup.x32 sp(5)
@@ -9297,7 +9313,7 @@ float64(value: char[]): float64: function {
 .base: `function`
 .size: 343
 .name: 'float64'
-.file: 'cmplStd/lib/text/string.ci:300'
+.file: 'cmplStd/lib/text/cstr.ci:300'
 .param .result: float64 (size: 8, cast: variable(f64))
 .param value: char[] (size: 8, cast: const variable(arr))
 .doc: 'Convert a string to a 64 bit floating point value'
@@ -9335,19 +9351,19 @@ float64(value: char[]): float64: function {
 	return .result := sign * result / decimal;
 }
 .instructions: (343 bytes)
-	cmplStd/lib/text/string.ci:301: (9 bytes): sign: float64 := 1
+	cmplStd/lib/text/cstr.ci:301: (9 bytes): sign: float64 := 1
 	<float64>  : load.f64 1.000000
-	cmplStd/lib/text/string.ci:302: (1 byte): result: float64 := 0
+	cmplStd/lib/text/cstr.ci:302: (1 byte): result: float64 := 0
 	<float64+?>: load.z128
-	cmplStd/lib/text/string.ci:306: (290 bytes): for (i: int32 := 0; i < (value.length) && (value[i]) != 0; i := i + 1)
+	cmplStd/lib/text/cstr.ci:306: (290 bytes): for (i: int32 := 0; i < (value.length) && (value[i]) != 0; i := i + 1)
 	<float64+?>: load.z32
 	<float64+?>: jmp +257
-	cmplStd/lib/text/string.ci:307: (6 bytes): chr: char := value[i]
+	cmplStd/lib/text/cstr.ci:307: (6 bytes): chr: char := value[i]
 	<float64+?>: dup.x32 sp(8)
 	<float64+?>: dup.x32 sp(1)
 	<float64+?>: add.i32
 	<float64+?>: load.i8
-	cmplStd/lib/text/string.ci:308: (239 bytes): if (chr >= '0' && chr <= '9')
+	cmplStd/lib/text/cstr.ci:308: (239 bytes): if (chr >= '0' && chr <= '9')
 	<float64+?>: load.sp(+0)
 	<float64+?>: load.i8
 	<float64+?>: load.c32 48
@@ -9362,7 +9378,7 @@ float64(value: char[]): float64: function {
 	<float64+?>: cgt.i32
 	<float64+?>: not.b32
 	<float64+?>: jz +47
-	cmplStd/lib/text/string.ci:309: (25 bytes): result := result * (10) + ((chr - '0'));
+	cmplStd/lib/text/cstr.ci:309: (25 bytes): result := result * (10) + ((chr - '0'));
 	<float64+?>: dup.x64 sp(4)
 	<float64+?>: load.f64 10.000000
 	<float64+?>: mul.f64
@@ -9372,33 +9388,33 @@ float64(value: char[]): float64: function {
 	<float64+?>: i32.2f64
 	<float64+?>: add.f64
 	<float64+?>: set.x64 sp(6)
-	cmplStd/lib/text/string.ci:310: (14 bytes): decimal := decimal * (10);
+	cmplStd/lib/text/cstr.ci:310: (14 bytes): decimal := decimal * (10);
 	<float64+?>: dup.x64 sp(2)
 	<float64+?>: load.f64 10.000000
 	<float64+?>: mul.f64
 	<float64+?>: set.x64 sp(4)
 	<float64+?>: jmp +162
-	cmplStd/lib/text/string.ci:312: (158 bytes): if (chr == '.')
+	cmplStd/lib/text/cstr.ci:312: (158 bytes): if (chr == '.')
 	<float64+?>: load.sp(+0)
 	<float64+?>: load.i8
 	<float64+?>: load.c32 46
 	<float64+?>: ceq.i32
 	<float64+?>: jz +43
-	cmplStd/lib/text/string.ci:313: (24 bytes): if (decimal != (0))
+	cmplStd/lib/text/cstr.ci:313: (24 bytes): if (decimal != (0))
 	<float64+?>: dup.x64 sp(2)
 	<float64+?>: load.z64
 	<float64+?>: ceq.f64
 	<float64+?>: jnz +20
-	cmplStd/lib/text/string.ci:315: (16 bytes): return .result := Math.nan;
+	cmplStd/lib/text/cstr.ci:315: (16 bytes): return .result := Math.nan;
 	<float64+?>: load.f64 -nan
 	<float64+?>: set.x64 sp(13)
 	<float64+?>: inc.sp(-32)
 	<float64+?>: ret
-	cmplStd/lib/text/string.ci:317: (11 bytes): decimal := (1);
+	cmplStd/lib/text/cstr.ci:317: (11 bytes): decimal := (1);
 	<float64+?>: load.f64 1.000000
 	<float64+?>: set.x64 sp(4)
 	<float64+?>: jmp +108
-	cmplStd/lib/text/string.ci:319: (104 bytes): if (chr == '-' && i == 0)
+	cmplStd/lib/text/cstr.ci:319: (104 bytes): if (chr == '-' && i == 0)
 	<float64+?>: load.sp(+0)
 	<float64+?>: load.i8
 	<float64+?>: load.c32 45
@@ -9410,11 +9426,11 @@ float64(value: char[]): float64: function {
 	<float64+?>: load.z32
 	<float64+?>: ceq.i32
 	<float64+?>: jz +19
-	cmplStd/lib/text/string.ci:320: (11 bytes): sign := (-1);
+	cmplStd/lib/text/cstr.ci:320: (11 bytes): sign := (-1);
 	<float64+?>: load.f64 -1.000000
 	<float64+?>: set.x64 sp(8)
 	<float64+?>: jmp +64
-	cmplStd/lib/text/string.ci:322: (60 bytes): if (chr == '+' && i == 0)
+	cmplStd/lib/text/cstr.ci:322: (60 bytes): if (chr == '+' && i == 0)
 	<float64+?>: load.sp(+0)
 	<float64+?>: load.i8
 	<float64+?>: load.c32 43
@@ -9426,19 +9442,19 @@ float64(value: char[]): float64: function {
 	<float64+?>: load.z32
 	<float64+?>: ceq.i32
 	<float64+?>: jz +19
-	cmplStd/lib/text/string.ci:323: (11 bytes): sign := (1);
+	cmplStd/lib/text/cstr.ci:323: (11 bytes): sign := (1);
 	<float64+?>: load.f64 1.000000
 	<float64+?>: set.x64 sp(8)
 	<float64+?>: jmp +20
-	cmplStd/lib/text/string.ci:327: (16 bytes): return .result := Math.nan;
+	cmplStd/lib/text/cstr.ci:327: (16 bytes): return .result := Math.nan;
 	<float64+?>: load.f64 -nan
 	<float64+?>: set.x64 sp(13)
 	<float64+?>: inc.sp(-32)
 	<float64+?>: ret
 	<float64+?>: inc.sp(-4)
-	cmplStd/lib/text/string.ci:306: (4 bytes): i := i + 1
+	cmplStd/lib/text/cstr.ci:306: (4 bytes): i := i + 1
 	<float64+?>: inc.i32(+1)
-	cmplStd/lib/text/string.ci:306: (28 bytes): i < (value.length) && (value[i]) != 0
+	cmplStd/lib/text/cstr.ci:306: (28 bytes): i < (value.length) && (value[i]) != 0
 	<float64+?>: dup.x32 sp(0)
 	<float64+?>: dup.x32 sp(10)
 	<float64+?>: clt.i32
@@ -9454,24 +9470,24 @@ float64(value: char[]): float64: function {
 	<float64+?>: not.b32
 	<float64+?>: jnz -277
 	<float64+?>: inc.sp(-4)
-	cmplStd/lib/text/string.ci:331: (28 bytes): if (decimal == (0))
+	cmplStd/lib/text/cstr.ci:331: (28 bytes): if (decimal == (0))
 	<float64+?>: dup.x64 sp(0)
 	<float64+?>: load.z64
 	<float64+?>: ceq.f64
 	<float64+?>: jz +24
-	cmplStd/lib/text/string.ci:332: (20 bytes): if (value.length > (0))
+	cmplStd/lib/text/cstr.ci:332: (20 bytes): if (value.length > (0))
 	<float64+?>: dup.x32 sp(8)
 	<float64+?>: load.z32
 	<float64+?>: cgt.u32
 	<float64+?>: jz +16
-	cmplStd/lib/text/string.ci:333: (12 bytes): return .result := sign * result;
+	cmplStd/lib/text/cstr.ci:333: (12 bytes): return .result := sign * result;
 	<float64+?>: dup.x64 sp(4)
 	<float64+?>: dup.x64 sp(4)
 	<float64+?>: mul.f64
 	<float64+?>: set.x64 sp(11)
 	<float64+?>: inc.sp(-24)
 	<float64+?>: ret
-	cmplStd/lib/text/string.ci:336: (15 bytes): return .result := sign * result / decimal;
+	cmplStd/lib/text/cstr.ci:336: (15 bytes): return .result := sign * result / decimal;
 	<float64+?>: dup.x64 sp(4)
 	<float64+?>: dup.x64 sp(4)
 	<float64+?>: mul.f64
@@ -16129,6 +16145,7 @@ testMathAbsMod_f32_8d: float32 {
 .field unsigned: function (size: 0, cast: inline)
 .field unsigned: function (size: 0, cast: inline)
 .field unsigned: function (size: 0, cast: inline)
+.field inc: function (size: 0, cast: inline)
 .field sizeof: function (size: 0, cast: inline)
 .field verbose: function (size: 0, cast: inline)
 .field verbose: function (size: 0, cast: inline)
@@ -16937,6 +16954,12 @@ testMathAbsMod_f32_8d: float32 {
 		unsigned(value: int16): uint16 := uint16(value);
 		unsigned(value: int32): uint32 := uint32(value);
 		unsigned(value: int64): uint64 := uint64(value);
+		static if (int32 == int32) {
+			inc(ptr: pointer, val: int32): pointer := pointer(emit(pointer(ptr), int32(val), add.i32));
+		}
+		static if (int32 == int64) {
+			inc(ptr: pointer, val: int32): pointer := pointer(emit(pointer(ptr), int32(val), add.i64));
+		}
 		sizeof(type: typename): int32 := typename.size(type);
 		static if (typename(raise) == function) {
 			verbose(const message: char[*], const inspect: variant): void := raise(raise.verbose, raise.noTrace, message, inspect);
@@ -18850,15 +18873,15 @@ testMathAbsMod_f32_8d: float32 {
 	}
 }
 .instructions: (9703 bytes)
-	cmplStd/lib/text/string.ci:155: (14 bytes): static const whiteSpace: char[] := " \t\n\r"
+	cmplStd/lib/text/cstr.ci:155: (14 bytes): static const whiteSpace: char[] := " \t\n\r"
 	<.main>  : load.c32 4
 	<.main+?>: load.ref <?> ;" \t\n\r"
 	<.main+?>: store.m64 <?> ;append.whiteSpace
-	cmplStd/lib/text/string.ci:156: (14 bytes): static const radixDigits: char[] := "0123456789abcdefghijklmnopqrstuvwxyz"
+	cmplStd/lib/text/cstr.ci:156: (14 bytes): static const radixDigits: char[] := "0123456789abcdefghijklmnopqrstuvwxyz"
 	<.main+?>: load.c32 36
 	<.main+?>: load.ref <?> ;"0123456789abcdefghijklmnopqrstuvwxyz"
 	<.main+?>: store.m64 <?> ;append.radixDigits
-	cmplStd/lib/text/string.ci:257: (24 bytes): static const formatDec: FormatFlags := {...}
+	cmplStd/lib/text/cstr.ci:257: (24 bytes): static const formatDec: FormatFlags := {...}
 	:: (7 bytes): formatDec.sign := (0);
 	<.main+?>: load.z32
 	<.main+?>: load.ref <?> ;append.formatDec
@@ -18873,10 +18896,10 @@ testMathAbsMod_f32_8d: float32 {
 	:: (5 bytes): formatDec.padLen := 0;
 	<.main+?>: load.z32
 	<.main+?>: store.m32 <?> ;append.formatDec+12
-	cmplStd/lib/text/string.ci:270: (13 bytes): static const eps: float64 := 0.000010
+	cmplStd/lib/text/cstr.ci:270: (13 bytes): static const eps: float64 := 0.000010
 	<.main+?>: load.f64 0.000010
 	<.main+?>: store.m64 <?> ;append.eps
-	cmplStd/lib/text/string.ci:295: (24 bytes): static const format: FormatFlags := {...}
+	cmplStd/lib/text/cstr.ci:295: (24 bytes): static const format: FormatFlags := {...}
 	:: (7 bytes): format.sign := (0);
 	<.main+?>: load.z32
 	<.main+?>: load.ref <?> ;append.format
@@ -22869,29 +22892,29 @@ emit.swz: typename(<emit.swz>)
 emit: typename(<emit>)
 System.Platform: typename(<System.Platform>)
 System: typename(<System>)
-cmplStd/lib/debug.ci:48: NotEquals: typename(<NotEquals>)
-cmplStd/lib/debug.ci:61: assertEq: function(<assertEq>)
-cmplStd/lib/math.ci:22: Math.modf: function(<Math.modf>)
-cmplStd/lib/math.ci:47: Math.floor: function(<Math.floor>)
-cmplStd/lib/math.ci:82: Math.absMod: function(<Math.absMod>)
-cmplStd/lib/math.ci:90: Math.absMod: function(<Math.absMod>)
-cmplStd/lib/math.ci:164: Math.clamp: function(<Math.clamp>)
-cmplStd/lib/math.ci:175: Math.clamp: function(<Math.clamp>)
-cmplStd/lib/math.ci:206: Math.min: function(<Math.min>)
-cmplStd/lib/math.ci:220: Math.max: function(<Math.max>)
-cmplStd/lib/math.ci:234: Math.sum: function(<Math.sum>)
-cmplStd/lib/math.ci:243: Math.mean: function(<Math.mean>)
-cmplStd/lib/math.ci:260: Math.eval: function(<Math.eval>)
-cmplStd/lib/math.ci:269: Math.cmp: function(<Math.cmp>)
-cmplStd/lib/math.ci:284: Math.cmp: function(<Math.cmp>)
-cmplStd/lib/math.ci:299: Math.sinCos: function(<Math.sinCos>)
-cmplStd/lib/math.ci:350: Math.sin: function(<Math.sin>)
-cmplStd/lib/math.ci:359: Math.cos: function(<Math.cos>)
-cmplStd/lib/math.ci:368: Math.tan: function(<Math.tan>)
-cmplStd/lib/math.ci:429: Math.sinh: function(<Math.sinh>)
-cmplStd/lib/math.ci:468: Math.cosh: function(<Math.cosh>)
-cmplStd/lib/math.ci:483: Math.asin: function(<Math.asin>)
-cmplStd/lib/math.ci:2: Math: typename(<Math>)
+cmplStd/lib/lang/Debug.ci:48: NotEquals: typename(<NotEquals>)
+cmplStd/lib/lang/Debug.ci:61: assertEq: function(<assertEq>)
+cmplStd/lib/math/Math.ci:22: Math.modf: function(<Math.modf>)
+cmplStd/lib/math/Math.ci:47: Math.floor: function(<Math.floor>)
+cmplStd/lib/math/Math.ci:82: Math.absMod: function(<Math.absMod>)
+cmplStd/lib/math/Math.ci:90: Math.absMod: function(<Math.absMod>)
+cmplStd/lib/math/Math.ci:164: Math.clamp: function(<Math.clamp>)
+cmplStd/lib/math/Math.ci:175: Math.clamp: function(<Math.clamp>)
+cmplStd/lib/math/Math.ci:206: Math.min: function(<Math.min>)
+cmplStd/lib/math/Math.ci:220: Math.max: function(<Math.max>)
+cmplStd/lib/math/Math.ci:234: Math.sum: function(<Math.sum>)
+cmplStd/lib/math/Math.ci:243: Math.mean: function(<Math.mean>)
+cmplStd/lib/math/Math.ci:260: Math.eval: function(<Math.eval>)
+cmplStd/lib/math/Math.ci:269: Math.cmp: function(<Math.cmp>)
+cmplStd/lib/math/Math.ci:284: Math.cmp: function(<Math.cmp>)
+cmplStd/lib/math/Math.ci:299: Math.sinCos: function(<Math.sinCos>)
+cmplStd/lib/math/Math.ci:350: Math.sin: function(<Math.sin>)
+cmplStd/lib/math/Math.ci:359: Math.cos: function(<Math.cos>)
+cmplStd/lib/math/Math.ci:368: Math.tan: function(<Math.tan>)
+cmplStd/lib/math/Math.ci:429: Math.sinh: function(<Math.sinh>)
+cmplStd/lib/math/Math.ci:468: Math.cosh: function(<Math.cosh>)
+cmplStd/lib/math/Math.ci:483: Math.asin: function(<Math.asin>)
+cmplStd/lib/math/Math.ci:2: Math: typename(<Math>)
 cmplStd/lib/math/Complex.ci:2: Complex: typename(<Complex>)
 cmplStd/lib/math/Complex.ci:24: Complex: function(<Complex>)
 cmplStd/lib/math/Complex.ci:31: Complex: function(<Complex>)
@@ -22910,21 +22933,21 @@ cmplStd/lib/math/Matrix4f.ci:193: translation: function(<translation>)
 cmplStd/lib/math/Matrix4f.ci:203: scale: function(<scale>)
 cmplStd/lib/math/Vector2d.ci:2: vec2d: typename(<vec2d>)
 cmplStd/lib/math/Vector2d.ci:14: vec2d: function(<vec2d>)
-cmplStd/lib/text/string.ci:4: length: function(<length>)
-cmplStd/lib/text/string.ci:15: indexOf: function(<indexOf>)
-cmplStd/lib/text/string.ci:25: lastIndexOf: function(<lastIndexOf>)
-cmplStd/lib/text/string.ci:36: startsWith: function(<startsWith>)
-cmplStd/lib/text/string.ci:46: endsWith: function(<endsWith>)
-cmplStd/lib/text/string.ci:61: compare: function(<compare>)
-cmplStd/lib/text/string.ci:73: ignCaseCmp: function(<ignCaseCmp>)
-cmplStd/lib/text/string.ci:88: caseCmp: function(<caseCmp>)
-cmplStd/lib/text/string.ci:119: FormatFlags: typename(<FormatFlags>)
-cmplStd/lib/text/string.ci:134: append: function(<append>)
-cmplStd/lib/text/string.ci:154: append: function(<append>)
-cmplStd/lib/text/string.ci:229: append: function(<append>)
-cmplStd/lib/text/string.ci:255: append: function(<append>)
-cmplStd/lib/text/string.ci:294: append: function(<append>)
-cmplStd/lib/text/string.ci:300: float64: function(<float64>)
+cmplStd/lib/text/cstr.ci:4: length: function(<length>)
+cmplStd/lib/text/cstr.ci:15: indexOf: function(<indexOf>)
+cmplStd/lib/text/cstr.ci:25: lastIndexOf: function(<lastIndexOf>)
+cmplStd/lib/text/cstr.ci:36: startsWith: function(<startsWith>)
+cmplStd/lib/text/cstr.ci:46: endsWith: function(<endsWith>)
+cmplStd/lib/text/cstr.ci:61: compare: function(<compare>)
+cmplStd/lib/text/cstr.ci:73: ignCaseCmp: function(<ignCaseCmp>)
+cmplStd/lib/text/cstr.ci:88: caseCmp: function(<caseCmp>)
+cmplStd/lib/text/cstr.ci:119: FormatFlags: typename(<FormatFlags>)
+cmplStd/lib/text/cstr.ci:134: append: function(<append>)
+cmplStd/lib/text/cstr.ci:154: append: function(<append>)
+cmplStd/lib/text/cstr.ci:229: append: function(<append>)
+cmplStd/lib/text/cstr.ci:255: append: function(<append>)
+cmplStd/lib/text/cstr.ci:294: append: function(<append>)
+cmplStd/lib/text/cstr.ci:300: float64: function(<float64>)
 cmplStd/test/lang/emit.ci:3: emitldz32: int32(0)
 cmplStd/test/lang/emit.ci:4: emitldz64: int64(0)
 cmplStd/test/lang/emit.ci:6: emitA: int32(42)
@@ -23196,13 +23219,13 @@ cmplStd/test/lang/reflect.ci:22: RecordSizeof: typename(<RecordSizeof>)
 cmplStd/test/lang/reflect.ci:26: RecordSizeofExt: typename(<RecordSizeofExt>)
 cmplStd/test/lang/reflect.ci:30: typeofRecord: typename(<RecordSizeofExt>)
 cmplStd/test/lang/reflect.ci:31: nameOfRecord: char[*]("RecordSizeofExt")
-cmplStd/test/lang/reflect.ci:32: offsetOfRecord: int32(320512)
+cmplStd/test/lang/reflect.ci:32: offsetOfRecord: int32(321944)
 cmplStd/test/lang/reflect.ci:33: sizeOfRecord: int32(16)
 cmplStd/test/lang/reflect.ci:34: fileOfRecord: char[*]("cmplStd/test/lang/reflect.ci")
 cmplStd/test/lang/reflect.ci:35: lineOfRecord: int32(26)
 cmplStd/test/lang/reflect.ci:37: typeofBase: typename(<RecordSizeof>)
 cmplStd/test/lang/reflect.ci:38: nameOfBase: char[*]("RecordSizeof")
-cmplStd/test/lang/reflect.ci:39: offsetOfBase: int32(320192)
+cmplStd/test/lang/reflect.ci:39: offsetOfBase: int32(321624)
 cmplStd/test/lang/reflect.ci:40: sizeOfBase: int32(12)
 cmplStd/test/lang/reflect.ci:41: fileOfBase: char[*]("cmplStd/test/lang/reflect.ci")
 cmplStd/test/lang/reflect.ci:42: lineOfBase: int32(22)
@@ -23614,18 +23637,18 @@ cmplStd/test/std/test.math.ci:96: testMathAbsMod_f32_8d: float32(8.000000)
 
 ---------- Memory usage:
 memory[all] @000000; size: 4194016(4.0 Mb)
-memory[used] @000000; size: 417502(407.7 Kb)
-memory[heap] @065ede; size: 2727962(2.6 Mb)
+memory[used] @000000; size: 418934(409.1 Kb)
+memory[heap] @066476; size: 2726530(2.6 Mb)
 memory[stack] @1fff40; size: 1048504(1023.9 Kb)
 
----------- used memory:
-memory[meta] @000000; size: 401200(391.8 Kb)
+---------- Used memory:
+memory[meta] @000000; size: 402632(393.2 Kb)
 memory[code] @000000; size: 15980(15.6 Kb)
 memory[data] @000000; size: 104(104.0 bytes)
 
----------- heap memory:
-memory[used] @065ef0; size: 32(32.0 bytes)
-memory[used] @065f20; size: 32(32.0 bytes)
-memory[free] @065f50; size: 2727824(2.6 Mb)
+---------- Heap memory:
+memory[used] @066490; size: 32(32.0 bytes)
+memory[used] @0664c0; size: 32(32.0 bytes)
+memory[free] @0664f0; size: 2726384(2.6 Mb)
 
 ---------- Exitcode: 0, time: 0.000 ms

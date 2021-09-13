@@ -48,6 +48,31 @@ typedef struct dbgContextRec *dbgContext;       // debuggerContext
 typedef struct nfcContextRec *nfcContext;       // nativeCallContext
 typedef struct userContextRec *userContext;     // customUserContext
 
+/**
+ * specify the extension file to be compiled with this plugin.
+ *
+ * @see cmplFile module:
+ * const char cmplUnit[] = "/cmplStd/lib/system/File.ci";
+ */
+extern const char cmplUnit[];
+
+/**
+ * main entry point of the module plugin.
+ *
+ * @param rt Runtime context.
+ * @return error code in case of failure, 0 on success
+ *
+ * @see cmplFile module
+ */
+extern int cmplInit(rtContext rt);
+
+/**
+ * method called when the the plugin is disposed (on app exits).
+ *
+ * @param rt Runtime context.
+ */
+extern void cmplClose(rtContext rt);
+
 typedef enum {
 	raiseFatal = -2,
 	raiseError = -1,
@@ -201,7 +226,7 @@ struct rtContextRec {
 		symn (*const ccAddCall)(ccContext ctx, vmError libc(nfcContext), const char *proto);
 
 		/// Compile code snippet; @see ccAddUnit
-		astn (*const ccAddUnit)(ccContext cc, int init(ccContext cc), char *file, int line, char *text);
+		astn (*const ccAddUnit)(ccContext cc, int init(ccContext cc), char *file, int line, const char *text);
 
 		/// Lookup function by name; @see ccLookup
 		symn (*const ccLookup)(rtContext ctx, symn scope, const char *name);
@@ -348,65 +373,6 @@ static inline int isMember(symn sym) {
 static inline ccKind castOf(symn sym) {
 	return sym->kind & MASK_cast;
 }
-/// same as castOf forcing arrays to cast as reference
-static inline ccKind refCast(symn sym) {
-	ccKind got = castOf(sym);
-	if (got == CAST_arr && isArrayType(sym)) {
-		symn len = sym->fields;
-		if (len == NULL || isStatic(len)) {
-			// pointer or fixed size array
-			got = CAST_ref;
-		}
-	}
-	return got;
-}
-
-static inline size_t refSize(symn sym) {
-	switch (refCast(sym)) {
-		default:
-			return sym->size;
-
-		case CAST_ref:
-			return sizeof(vmOffs);
-
-		case CAST_arr:
-		case CAST_var:
-			return 2 * sizeof(vmOffs);
-	}
-}
-
-/**
- * check if the given filter excludes the given symbol or not
- * isFiltered(staticVariable, KIND_var | ATTR_stat) == 0
- * isFiltered(localVariable, KIND_var | ATTR_stat) != 0
- * @param sym the symbol to be checked
- * @param filter the filter to be applied
- * @return 0 if is not excluded
- */
-static inline int isFiltered(symn sym, ccKind filter) {
-	ccKind filterStat = filter & ATTR_stat;
-	if (filterStat != 0 && (sym->kind & ATTR_stat) != filterStat) {
-		return 1;
-	}
-	ccKind filterCnst = filter & ATTR_cnst;
-	if (filterCnst != 0 && (sym->kind & ATTR_cnst) != filterCnst) {
-		return 1;
-	}
-	ccKind filterKind = filter & MASK_kind;
-	if (filterKind != 0 && (sym->kind & MASK_kind) != filterKind) {
-		return 1;
-	}
-	ccKind filterCast = filter & MASK_cast;
-	if (filterCast != 0 && (sym->kind & MASK_cast) != filterCast) {
-		return 1;
-	}
-	return 0;
-}
-
-/**
- * Check if the given symbol is extending the object type
- */
-int isObjectType(symn sym);
 
 /**
  * Native function invocation context.

@@ -94,7 +94,8 @@ void flushWindow(GxWindow window) {
 }
 
 int getWindowEvent(GxWindow window, int *button, int *x, int *y) {
-	static int btnstate = 0;
+	static int btnMod = 0;
+	static int keyMod = 0;
 
 	MSG msg;
 	msg.message = 0;
@@ -131,18 +132,18 @@ int getWindowEvent(GxWindow window, int *button, int *x, int *y) {
 		case WM_RBUTTONDOWN:
 			switch (msg.message) {
 				case WM_LBUTTONDOWN:
-					btnstate |= 1;
+					btnMod |= 1;
 					break;
 
 				case WM_RBUTTONDOWN:
-					btnstate |= 2;
+					btnMod |= 2;
 					break;
 
 				case WM_MBUTTONDOWN:
-					btnstate |= 4;
+					btnMod |= 4;
 					break;
 			}
-			*button = btnstate;
+			*button = btnMod;
 			*x = LOWORD(msg.lParam);
 			*y = HIWORD(msg.lParam);
 			DispatchMessage(&msg);
@@ -151,46 +152,86 @@ int getWindowEvent(GxWindow window, int *button, int *x, int *y) {
 		case WM_LBUTTONUP:
 		case WM_MBUTTONUP:
 		case WM_RBUTTONUP:
-			*button = btnstate;
+			*button = btnMod;
 			*x = LOWORD(msg.lParam);
 			*y = HIWORD(msg.lParam);
 			switch (msg.message) {
 				case WM_LBUTTONUP:
-					btnstate &= ~1;
+					btnMod &= ~1;
 					break;
 
 				case WM_RBUTTONUP:
-					btnstate &= ~2;
+					btnMod &= ~2;
 					break;
 
 				case WM_MBUTTONUP:
-					btnstate &= ~4;
+					btnMod &= ~4;
 					break;
 			}
 			DispatchMessage(&msg);
 			return MOUSE_RELEASE;
 
 		case WM_MOUSEMOVE:
-			if (btnstate == 0) {
+			if (btnMod == 0) {
 				break;
 			}
-			*button = btnstate;
+			*button = btnMod;
 			*x = LOWORD(msg.lParam);
 			*y = HIWORD(msg.lParam);
 			DispatchMessage(&msg);
 			return MOUSE_MOTION;
 
 		case WM_KEYDOWN:
+			switch (msg.wParam) {
+				case VK_SHIFT:
+				case VK_LSHIFT:
+				case VK_RSHIFT:
+					keyMod |= KEY_MASK_SHIFT;
+					break;
+
+				case VK_CONTROL:
+				case VK_LCONTROL:
+				case VK_RCONTROL:
+					keyMod |= KEY_MASK_CTRL;
+					break;
+
+				case VK_MENU:
+				case VK_LMENU:
+				case VK_RMENU:
+					keyMod |= KEY_MASK_ALT;
+					break;
+			}
+
 			*button = msg.wParam;
 			*x = HIWORD(msg.lParam) & 127;
-			*y = HIWORD(msg.lParam);
+			*y = keyMod;
 			DispatchMessage(&msg);
 			return KEY_PRESS;
 
 		case WM_KEYUP:
+			switch (msg.wParam) {
+				case VK_SHIFT:
+				case VK_LSHIFT:
+				case VK_RSHIFT:
+					keyMod &= ~KEY_MASK_SHIFT;
+					break;
+
+				case VK_CONTROL:
+				case VK_LCONTROL:
+				case VK_RCONTROL:
+					keyMod &= ~KEY_MASK_CTRL;
+					break;
+
+				case VK_MENU:
+				case VK_LMENU:
+				case VK_RMENU:
+					keyMod &= ~KEY_MASK_ALT;
+					break;
+			}
+
 			*button = msg.wParam;
 			*x = HIWORD(msg.lParam) & 127;
-			*y = HIWORD(msg.lParam);
+			*y = keyMod;
 			DispatchMessage(&msg);
 			return KEY_RELEASE;
 	}

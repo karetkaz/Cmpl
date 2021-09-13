@@ -27,7 +27,7 @@ bool onFn(Button this);
 Button btnResult = {
 	text: result;
 	enabled: false;
-	style: pointer(display);
+	style: display;
 };
 
 Button buttons[] = {

@@ -269,35 +269,35 @@ void *rollbackPc(rtContext rt);
 
 /// Emit an instruction without argument(s).
 static inline size_t emit(rtContext rt, vmOpcode opc) {
-	vmValue arg;
+	vmValue arg = {0};
 	arg.i64 = 0;
 	return emitOpc(rt, opc, arg);
 }
 
 /// Emit an instruction with an integer argument.
 static inline size_t emitInt(rtContext rt, vmOpcode opc, int64_t value) {
-	vmValue arg;
+	vmValue arg = {0};
 	arg.i64 = value;
 	return emitOpc(rt, opc, arg);
 }
 
 /// Emit load int64 constant value instruction.
 static inline size_t emitI64(rtContext rt, int64_t value) {
-	vmValue arg;
+	vmValue arg = {0};
 	arg.i64 = value;
 	return emitOpc(rt, opc_lc64, arg);
 }
 
 /// Emit load float64 constant value instruction.
 static inline size_t emitF64(rtContext rt, float64_t value) {
-	vmValue arg;
+	vmValue arg = {0};
 	arg.f64 = value;
 	return emitOpc(rt, opc_lf64, arg);
 }
 
 /// Emit load offset value instruction.
 static inline size_t emitRef(rtContext rt, size_t value) {
-	vmValue arg;
+	vmValue arg = {0};
 	arg.i64 = value;
 	return emitOpc(rt, opc_lref, arg);
 }

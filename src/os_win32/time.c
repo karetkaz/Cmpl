@@ -2,7 +2,7 @@
 
 uint64_t timeMillis() {
 	static const int64_t kTimeEpoc = 116444736000000000LL;
-	static const int64_t kTimeScaler = 10000;  // 100 ns to us.
+	static const int64_t kTimeScale = 10000;  // 100 ns to us.
 
 	// Although win32 uses 64-bit integers for representing timestamps,
 	// these are packed into a FILETIME structure. The FILETIME
@@ -16,7 +16,7 @@ uint64_t timeMillis() {
 	} TimeStamp;
 	TimeStamp time;
 	GetSystemTimeAsFileTime(&time.ftime);
-	return (time.time - kTimeEpoc) / kTimeScaler;
+	return (time.time - kTimeEpoc) / kTimeScale;
 }
 
 void sleepMillis(int64_t milliseconds) {

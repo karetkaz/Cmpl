@@ -224,6 +224,7 @@ unsigned(value: int8): uint8 # convert signed to unsigned integer
 unsigned(value: int16): uint16 # convert signed to unsigned integer
 unsigned(value: int32): uint32 # convert signed to unsigned integer
 unsigned(value: int64): uint64 # convert signed to unsigned integer
+inc(ptr: pointer, val: int32): pointer # Returns the pointer incremented with the given value
 sizeof(type: typename): int32 # Returns the size of the given type
 verbose(message: char[*], inspect: variant): void # report message at `verbose` logging level
 verbose(message: char[*]): void # report message at `verbose` logging level
@@ -518,16 +519,20 @@ File.open(path: char[*]): File
 File.create(path: char[*]): File
 File.append(path: char[*]): File
 File.peek(file: File): int32
+File.tell(file: File): int64
+File.seek(file: File, position: int64): File
+File.seekCur(file: File, position: int64): File
+File.seekEnd(file: File, position: int64): File
 File.read(file: File, buff: uint8[]): int32
-File.readLine(file: File, buff: uint8[]): int32
 File.write(file: File, buff: uint8[]): int32
 File.flush(file: File): void
 File.close(file: File): void
-File.tell(file: File): int32
 File.in
 File.out
 File.err
 File.log
+read(file: File): int32 # extension method to read a single byte from a file
+write(file: File, value: int32): int32 # extension method to write a single byte into a file
 Rect
 Rect.x
 Rect.y
@@ -537,7 +542,7 @@ Image
 Image.create(width: int32, height: int32, depth: int32): Image
 Image.create3d(width: int32, height: int32): Image
 Image.recycle(recycle: Image, width: int32, height: int32, depth: int32, flags: int32): Image
-Image.slice(image: Image, recycle: Image, rect: Rect): Image
+Image.slice(image: Image, rect: Rect): Image
 Image.destroy(image: Image): void
 Image.openBmp(path: char[*], depth: int32): Image
 Image.openPng(path: char[*], depth: int32): Image
@@ -546,7 +551,6 @@ Image.openImg(path: char[*], depth: int32): Image
 Image.openTtf(path: char[*], height: int32): Image
 Image.openFnt(path: char[*]): Image
 Image.saveBmp(image: Image, path: char[*], flags: int32): void
-Image.null
 Image.width(image: Image): int32
 Image.height(image: Image): int32
 Image.depth(image: Image): int32
@@ -643,6 +647,7 @@ Gui.KEY_MASK_CTRL
 Gui.KEY_MASK_ALT
 Gui.showWindow(surf: Image, closure: pointer, onEvent(closure: pointer, action: int32, button: int32, x: int32, y: int32): int32): void
 Gui.setTitle(title: char[*]): void
+Gui.font(height: int32): Image
 Gui.font
 argb # an 32 bit argb color
 argb.v # value of color
@@ -702,7 +707,6 @@ Image(fileName: char[*], width: int32, height: int32, depth: int32): Image # Cre
 set(image: Image, x: int32, y: int32, color: argb): void # Set the the color of a pixel at the given position
 colorMap(image: Image, roi: Rect, lut: argb[256]): void # apply the 2d lookup table to the image
 resize(image: Image, rect: Rect, src: Image, roi: Rect, interpolate: int32): void # @public
-slice(image: Image, rect: Rect): Image # @public
 clip(src: Image, roi: Rect): bool # @public
 fill(image: Image, color: uint32): void # Fill the entire image with the given color
 eval(image: Image, roi: Rect, aspect: float32, time: float32, eval(in: vec4f): vec4f): void # Fill the surface by evaluating the given function for each pixel
@@ -754,4 +758,5 @@ Gui.KEY_MASK_CTRL
 Gui.KEY_MASK_ALT
 Gui.showWindow(surf: Image, closure: pointer, onEvent(closure: pointer, action: int32, button: int32, x: int32, y: int32): int32): void
 Gui.setTitle(title: char[*]): void
+Gui.font(height: int32): Image
 Gui.font

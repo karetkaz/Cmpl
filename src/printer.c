@@ -1270,16 +1270,14 @@ FILE *logFile(rtContext rt, char *file, int append) {
 }
 
 const char **escapeStr() {
-	static const char *escape[256];
-	static char initialized = 0;
-	if (!initialized) {
-		memset((void*)escape, 0, sizeof(escape));
+	static const char *escape[256] = {0};
+	if (escape[0] == 0) {
+		escape[0] = "\\0";
 		escape['\n'] = "\\n";
 		escape['\r'] = "\\r";
 		escape['\t'] = "\\t";
 		escape['\''] = "\\'";
 		escape['\"'] = "\\\"";
-		initialized = 1;
 	}
 	return escape;
 }

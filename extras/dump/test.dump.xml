@@ -111,6 +111,62 @@
 				<call token=".variable" type="typename" kind="static const typename(ref)" value="uint64"/>
 			</init>
 		</stmt>
+		<stmt token="static if" type="void" kind="static const typename(void)" stmt="static if (int32 == int32)">
+			<test token="==" type="bool" kind="static const typename(bool)" value="int32 == int32">
+				<left token=".variable" type="typename" kind="static const typename(ref)" value="int32"/>
+				<right token=".variable" type="typename" kind="static const typename(ref)" value="int32"/>
+			</test>
+			<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/lang/Pointer.ci:1">
+				<stmt token=".variable" type="typename" kind="static const typename(ref)" value="inc(ptr: pointer, val: int32): pointer">
+					<init token="()" type="pointer" kind="static const typename(ref)" value="pointer(emit(pointer(ptr), int32(val), add.i32))">
+						<push token="()" type="emit" kind="static const typename(void)" value="emit(pointer(ptr), int32(val), add.i32)">
+							<push token="()" type="pointer" kind="static const typename(ref)" value="pointer(ptr)">
+								<push token=".variable" type="pointer" kind="static const typename(ref)" value="ptr"/>
+								<call token=".variable" type="typename" kind="static const typename(ref)" value="pointer"/>
+							</push>
+							<push token="()" type="int32" kind="static const typename(i32)" value="int32(val)">
+								<push token=".variable" type="int32" kind="static const typename(i32)" value="val"/>
+								<call token=".variable" type="typename" kind="static const typename(ref)" value="int32"/>
+							</push>
+							<push token="." type="int32" kind="static const typename(i32)" value="add.i32">
+								<left token=".variable" type="typename" kind="static const typename(ref)" value="add"/>
+								<right token=".variable" type="int32" kind="static const typename(i32)" value="i32"/>
+							</push>
+							<call token=".variable" type="function" kind="static const typename(ref)" value="emit"/>
+						</push>
+						<call token=".variable" type="typename" kind="static const typename(ref)" value="pointer"/>
+					</init>
+				</stmt>
+			</then>
+		</stmt>
+		<stmt token="static if" type="void" kind="static const typename(void)" stmt="static if (int32 == int64)">
+			<test token="==" type="bool" kind="static const typename(bool)" value="int32 == int64">
+				<left token=".variable" type="typename" kind="static const typename(ref)" value="int32"/>
+				<right token=".variable" type="typename" kind="static const typename(ref)" value="int64"/>
+			</test>
+			<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/lang/Pointer.ci:5">
+				<stmt token=".variable" type="typename" kind="static const typename(ref)" value="inc(ptr: pointer, val: int32): pointer">
+					<init token="()" type="pointer" kind="static const typename(ref)" value="pointer(emit(pointer(ptr), int32(val), add.i64))">
+						<push token="()" type="emit" kind="static const typename(void)" value="emit(pointer(ptr), int32(val), add.i64)">
+							<push token="()" type="pointer" kind="static const typename(ref)" value="pointer(ptr)">
+								<push token=".variable" type="pointer" kind="static const typename(ref)" value="ptr"/>
+								<call token=".variable" type="typename" kind="static const typename(ref)" value="pointer"/>
+							</push>
+							<push token="()" type="int32" kind="static const typename(i32)" value="int32(val)">
+								<push token=".variable" type="int32" kind="static const typename(i32)" value="val"/>
+								<call token=".variable" type="typename" kind="static const typename(ref)" value="int32"/>
+							</push>
+							<push token="." type="int64" kind="static const typename(i64)" value="add.i64">
+								<left token=".variable" type="typename" kind="static const typename(ref)" value="add"/>
+								<right token=".variable" type="int64" kind="static const typename(i64)" value="i64"/>
+							</push>
+							<call token=".variable" type="function" kind="static const typename(ref)" value="emit"/>
+						</push>
+						<call token=".variable" type="typename" kind="static const typename(ref)" value="pointer"/>
+					</init>
+				</stmt>
+			</then>
+		</stmt>
 		<stmt token=".variable" type="typename" kind="static const typename(ref)" value="sizeof(type: typename): int32">
 			<init token="()" type="int32" kind="static const typename(i32)" value="typename.size(type)">
 				<push token=".variable" type="typename" kind="static const typename(ref)" value="type"/>
@@ -128,7 +184,7 @@
 				</left>
 				<right token=".variable" type="typename" kind="static const typename(ref)" value="function"/>
 			</test>
-			<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/stdlib.ci:39">
+			<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/stdlib.ci:18">
 				<stmt token=".variable" type="typename" kind="static const typename(ref)" value="verbose(message: char[*], inspect: variant): void">
 					<init token="()" type="void" kind="static const typename(void)" value="raise(raise.verbose, raise.noTrace, message, inspect)">
 						<push token="." type="int64" kind="static const typename(i64)" value="raise.verbose">
@@ -415,13 +471,13 @@
 					</field>
 				</stmt>
 				<stmt token=".variable" type="function" kind="static const typename(ref)" value="assertEq(expected: int32, returned: int32, message: char[*]): void">
-					<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/debug.ci:61">
+					<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/lang/Debug.ci:61">
 						<stmt token="if" type="void" kind="static const typename(void)" stmt="if (returned == expected)">
 							<test token="==" type="bool" kind="static const typename(bool)" value="returned == expected">
 								<left token=".variable" type="int32" kind="static const typename(i32)" value="returned"/>
 								<right token=".variable" type="int32" kind="static const typename(i32)" value="expected"/>
 							</test>
-							<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/debug.ci:62">
+							<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/lang/Debug.ci:62">
 								<stmt token="return" type="void" kind="static const typename(void)" stmt="return;" />
 							</then>
 						</stmt>
@@ -545,7 +601,7 @@
 				<init token=".literal" type="float64" kind="static const typename(f64)" value="inf" />
 			</field>
 			<field token=".variable" type="function" kind="static const typename(ref)" value="modf(x: float64, intPart: float64): float64">
-				<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math.ci:22">
+				<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Math.ci:22">
 					<stmt token="if" type="void" kind="static const typename(void)" stmt="if (x &lt; (1))">
 						<test token="&lt;" type="bool" kind="static const typename(bool)" value="x &lt; (1)">
 							<left token=".variable" type="float64" kind="static const typename(f64)" value="x"/>
@@ -553,7 +609,7 @@
 								<push token=".literal" type="int32" kind="static const typename(i32)" value="1" />
 							</right>
 						</test>
-						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math.ci:23">
+						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Math.ci:23">
 							<stmt token="if" type="void" kind="static const typename(void)" stmt="if (x &lt; (0))">
 								<test token="&lt;" type="bool" kind="static const typename(bool)" value="x &lt; (0)">
 									<left token=".variable" type="float64" kind="static const typename(f64)" value="x"/>
@@ -561,7 +617,7 @@
 										<push token=".literal" type="int32" kind="static const typename(i32)" value="0" />
 									</right>
 								</test>
-								<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math.ci:24">
+								<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Math.ci:24">
 									<stmt token=".variable" type="float64" kind="static const typename(f64)" value="result">
 										<init token="-" type="float64" kind="static const typename(f64)" value="-modf(-x, &amp;intPart)">
 											<right token="()" type="float64" kind="static const typename(f64)" value="modf(-x, &amp;intPart)">
@@ -633,7 +689,7 @@
 				</init>
 			</field>
 			<field token=".variable" type="function" kind="static const typename(ref)" value="floor(x: float64): float64">
-				<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math.ci:47">
+				<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Math.ci:47">
 					<stmt token=".variable" type="float64" kind="static const typename(f64)" value="result">
 					</stmt>
 					<stmt token=";" type="void" kind="static const typename(void)" stmt="modf(x, &amp;result);">
@@ -779,7 +835,7 @@
 				</init>
 			</field>
 			<field token=".variable" type="function" kind="static const typename(ref)" value="absMod(val: float32, mod: float32): float32">
-				<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math.ci:82">
+				<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Math.ci:82">
 					<stmt token="if" type="void" kind="static const typename(void)" stmt="if ((val := val % mod) &lt; (0))">
 						<test token="&lt;" type="bool" kind="static const typename(bool)" value="(val := val % mod) &lt; (0)">
 							<left token="()" type="float32" kind="static const typename(f32)" value="(val := val % mod)">
@@ -795,7 +851,7 @@
 								<push token=".literal" type="int32" kind="static const typename(i32)" value="0" />
 							</right>
 						</test>
-						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math.ci:83">
+						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Math.ci:83">
 							<stmt token="return" type="void" kind="static const typename(void)" stmt="return .result := val + mod;">
 								<expr token=":=" type="float32" kind="static const typename(f32)" value=".result := val + mod">
 									<left token=".variable" type="float32" kind="static const typename(f32)" value=".result"/>
@@ -816,7 +872,7 @@
 				</init>
 			</field>
 			<field token=".variable" type="function" kind="static const typename(ref)" value="absMod(val: float64, mod: float64): float64">
-				<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math.ci:90">
+				<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Math.ci:90">
 					<stmt token="if" type="void" kind="static const typename(void)" stmt="if ((val := val % mod) &lt; (0))">
 						<test token="&lt;" type="bool" kind="static const typename(bool)" value="(val := val % mod) &lt; (0)">
 							<left token="()" type="float64" kind="static const typename(f64)" value="(val := val % mod)">
@@ -832,7 +888,7 @@
 								<push token=".literal" type="int32" kind="static const typename(i32)" value="0" />
 							</right>
 						</test>
-						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math.ci:91">
+						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Math.ci:91">
 							<stmt token="return" type="void" kind="static const typename(void)" stmt="return .result := val + mod;">
 								<expr token=":=" type="float64" kind="static const typename(f64)" value=".result := val + mod">
 									<left token=".variable" type="float64" kind="static const typename(f64)" value=".result"/>
@@ -1103,13 +1159,13 @@
 				</init>
 			</field>
 			<field token=".variable" type="function" kind="static const typename(ref)" value="clamp(t: float32, a: float32, b: float32): float32">
-				<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math.ci:164">
+				<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Math.ci:164">
 					<stmt token="if" type="void" kind="static const typename(void)" stmt="if (t &lt; a)">
 						<test token="&lt;" type="bool" kind="static const typename(bool)" value="t &lt; a">
 							<left token=".variable" type="float32" kind="static const typename(f32)" value="t"/>
 							<right token=".variable" type="float32" kind="static const typename(f32)" value="a"/>
 						</test>
-						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math.ci:165">
+						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Math.ci:165">
 							<stmt token="return" type="void" kind="static const typename(void)" stmt="return .result := a;">
 								<expr token=":=" type="float32" kind="static const typename(f32)" value=".result := a">
 									<left token=".variable" type="float32" kind="static const typename(f32)" value=".result"/>
@@ -1123,7 +1179,7 @@
 							<left token=".variable" type="float32" kind="static const typename(f32)" value="t"/>
 							<right token=".variable" type="float32" kind="static const typename(f32)" value="b"/>
 						</test>
-						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math.ci:168">
+						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Math.ci:168">
 							<stmt token="return" type="void" kind="static const typename(void)" stmt="return .result := b;">
 								<expr token=":=" type="float32" kind="static const typename(f32)" value=".result := b">
 									<left token=".variable" type="float32" kind="static const typename(f32)" value=".result"/>
@@ -1141,13 +1197,13 @@
 				</init>
 			</field>
 			<field token=".variable" type="function" kind="static const typename(ref)" value="clamp(t: float64, a: float64, b: float64): float64">
-				<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math.ci:175">
+				<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Math.ci:175">
 					<stmt token="if" type="void" kind="static const typename(void)" stmt="if (t &lt; a)">
 						<test token="&lt;" type="bool" kind="static const typename(bool)" value="t &lt; a">
 							<left token=".variable" type="float64" kind="static const typename(f64)" value="t"/>
 							<right token=".variable" type="float64" kind="static const typename(f64)" value="a"/>
 						</test>
-						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math.ci:176">
+						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Math.ci:176">
 							<stmt token="return" type="void" kind="static const typename(void)" stmt="return .result := a;">
 								<expr token=":=" type="float64" kind="static const typename(f64)" value=".result := a">
 									<left token=".variable" type="float64" kind="static const typename(f64)" value=".result"/>
@@ -1161,7 +1217,7 @@
 							<left token=".variable" type="float64" kind="static const typename(f64)" value="t"/>
 							<right token=".variable" type="float64" kind="static const typename(f64)" value="b"/>
 						</test>
-						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math.ci:179">
+						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Math.ci:179">
 							<stmt token="return" type="void" kind="static const typename(void)" stmt="return .result := b;">
 								<expr token=":=" type="float64" kind="static const typename(f64)" value=".result := b">
 									<left token=".variable" type="float64" kind="static const typename(f64)" value=".result"/>
@@ -1297,7 +1353,7 @@
 				</init>
 			</field>
 			<field token=".variable" type="function" kind="static const typename(ref)" value="min(values: float64[]): float64">
-				<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math.ci:206">
+				<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Math.ci:206">
 					<stmt token="if" type="void" kind="static const typename(void)" stmt="if (values.length == (0))">
 						<test token="==" type="bool" kind="static const typename(bool)" value="values.length == (0)">
 							<left token="." type="uint32" kind="static const typename(u32)" value="values.length">
@@ -1308,7 +1364,7 @@
 								<push token=".literal" type="int32" kind="static const typename(i32)" value="0" />
 							</right>
 						</test>
-						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math.ci:207">
+						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Math.ci:207">
 							<stmt token="return" type="void" kind="static const typename(void)" stmt="return .result := nan;">
 								<expr token=":=" type="float64" kind="static const typename(f64)" value=".result := nan">
 									<left token=".variable" type="float64" kind="static const typename(f64)" value=".result"/>
@@ -1343,7 +1399,7 @@
 								<right token=".literal" type="int32" kind="static const typename(i32)" value="1" />
 							</right>
 						</step>
-						<stmt token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math.ci:211">
+						<stmt token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Math.ci:211">
 							<stmt token="if" type="void" kind="static const typename(void)" stmt="if (result &gt; values[i])">
 								<test token="&gt;" type="bool" kind="static const typename(bool)" value="result &gt; values[i]">
 									<left token=".variable" type="float64" kind="static const typename(f64)" value="result"/>
@@ -1352,7 +1408,7 @@
 										<right token=".variable" type="int32" kind="static const typename(i32)" value="i"/>
 									</right>
 								</test>
-								<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math.ci:212">
+								<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Math.ci:212">
 									<stmt token=";" type="void" kind="static const typename(void)" stmt="result := values[i];">
 										<expr token=":=" type="float64" kind="static const typename(f64)" value="result := values[i]">
 											<left token=".variable" type="float64" kind="static const typename(f64)" value="result"/>
@@ -1375,7 +1431,7 @@
 				</init>
 			</field>
 			<field token=".variable" type="function" kind="static const typename(ref)" value="max(values: float64[]): float64">
-				<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math.ci:220">
+				<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Math.ci:220">
 					<stmt token="if" type="void" kind="static const typename(void)" stmt="if (values.length == (0))">
 						<test token="==" type="bool" kind="static const typename(bool)" value="values.length == (0)">
 							<left token="." type="uint32" kind="static const typename(u32)" value="values.length">
@@ -1386,7 +1442,7 @@
 								<push token=".literal" type="int32" kind="static const typename(i32)" value="0" />
 							</right>
 						</test>
-						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math.ci:221">
+						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Math.ci:221">
 							<stmt token="return" type="void" kind="static const typename(void)" stmt="return .result := nan;">
 								<expr token=":=" type="float64" kind="static const typename(f64)" value=".result := nan">
 									<left token=".variable" type="float64" kind="static const typename(f64)" value=".result"/>
@@ -1421,7 +1477,7 @@
 								<right token=".literal" type="int32" kind="static const typename(i32)" value="1" />
 							</right>
 						</step>
-						<stmt token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math.ci:225">
+						<stmt token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Math.ci:225">
 							<stmt token="if" type="void" kind="static const typename(void)" stmt="if (result &lt; values[i])">
 								<test token="&lt;" type="bool" kind="static const typename(bool)" value="result &lt; values[i]">
 									<left token=".variable" type="float64" kind="static const typename(f64)" value="result"/>
@@ -1430,7 +1486,7 @@
 										<right token=".variable" type="int32" kind="static const typename(i32)" value="i"/>
 									</right>
 								</test>
-								<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math.ci:226">
+								<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Math.ci:226">
 									<stmt token=";" type="void" kind="static const typename(void)" stmt="result := values[i];">
 										<expr token=":=" type="float64" kind="static const typename(f64)" value="result := values[i]">
 											<left token=".variable" type="float64" kind="static const typename(f64)" value="result"/>
@@ -1453,7 +1509,7 @@
 				</init>
 			</field>
 			<field token=".variable" type="function" kind="static const typename(ref)" value="sum(values: float64[]): float64">
-				<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math.ci:234">
+				<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Math.ci:234">
 					<stmt token=".variable" type="float64" kind="static const typename(f64)" value="result">
 						<init token=".literal" type="int32" kind="static const typename(i32)" value="0" />
 					</stmt>
@@ -1477,7 +1533,7 @@
 								<right token=".literal" type="int32" kind="static const typename(i32)" value="1" />
 							</right>
 						</step>
-						<stmt token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math.ci:236">
+						<stmt token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Math.ci:236">
 							<stmt token=";" type="void" kind="static const typename(void)" stmt="result := result + values[i];">
 								<expr token=":=" type="float64" kind="static const typename(f64)" value="result := result + values[i]">
 									<left token=".variable" type="float64" kind="static const typename(f64)" value="result"/>
@@ -1501,7 +1557,7 @@
 				</init>
 			</field>
 			<field token=".variable" type="function" kind="static const typename(ref)" value="mean(values: float64[]): float64">
-				<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math.ci:243">
+				<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Math.ci:243">
 					<stmt token="return" type="void" kind="static const typename(void)" stmt="return .result := sum(...values) / (signed(values.length));">
 						<expr token=":=" type="float64" kind="static const typename(f64)" value=".result := sum(...values) / (signed(values.length))">
 							<left token=".variable" type="float64" kind="static const typename(f64)" value=".result"/>
@@ -1576,7 +1632,7 @@
 				</init>
 			</field>
 			<field token=".variable" type="function" kind="static const typename(ref)" value="eval(x: float64, polynomial: float64[]): float64">
-				<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math.ci:260">
+				<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Math.ci:260">
 					<stmt token=".variable" type="float64" kind="static const typename(f64)" value="result">
 						<init token=".literal" type="int32" kind="static const typename(i32)" value="0" />
 					</stmt>
@@ -1603,7 +1659,7 @@
 								<right token=".literal" type="int32" kind="static const typename(i32)" value="1" />
 							</right>
 						</step>
-						<stmt token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math.ci:262">
+						<stmt token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Math.ci:262">
 							<stmt token=";" type="void" kind="static const typename(void)" stmt="result := result * x + polynomial[i];">
 								<expr token=":=" type="float64" kind="static const typename(f64)" value="result := result * x + polynomial[i]">
 									<left token=".variable" type="float64" kind="static const typename(f64)" value="result"/>
@@ -1630,13 +1686,13 @@
 				</init>
 			</field>
 			<field token=".variable" type="function" kind="static const typename(ref)" value="cmp(a: float32, b: float32, eps: float32): int32">
-				<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math.ci:269">
+				<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Math.ci:269">
 					<stmt token="if" type="void" kind="static const typename(void)" stmt="if (a &lt; b)">
 						<test token="&lt;" type="bool" kind="static const typename(bool)" value="a &lt; b">
 							<left token=".variable" type="float32" kind="static const typename(f32)" value="a"/>
 							<right token=".variable" type="float32" kind="static const typename(f32)" value="b"/>
 						</test>
-						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math.ci:270">
+						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Math.ci:270">
 							<stmt token="if" type="void" kind="static const typename(void)" stmt="if (eps &lt; (b - a))">
 								<test token="&lt;" type="bool" kind="static const typename(bool)" value="eps &lt; (b - a)">
 									<left token=".variable" type="float32" kind="static const typename(f32)" value="eps"/>
@@ -1647,7 +1703,7 @@
 										</push>
 									</right>
 								</test>
-								<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math.ci:271">
+								<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Math.ci:271">
 									<stmt token="return" type="void" kind="static const typename(void)" stmt="return .result := -1;">
 										<expr token=":=" type="int32" kind="static const typename(i32)" value=".result := -1">
 											<left token=".variable" type="int32" kind="static const typename(i32)" value=".result"/>
@@ -1659,7 +1715,7 @@
 								</then>
 							</stmt>
 						</then>
-						<else token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math.ci:275">
+						<else token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Math.ci:275">
 							<stmt token="if" type="void" kind="static const typename(void)" stmt="if (eps &lt; (a - b))">
 								<test token="&lt;" type="bool" kind="static const typename(bool)" value="eps &lt; (a - b)">
 									<left token=".variable" type="float32" kind="static const typename(f32)" value="eps"/>
@@ -1670,7 +1726,7 @@
 										</push>
 									</right>
 								</test>
-								<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math.ci:276">
+								<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Math.ci:276">
 									<stmt token="return" type="void" kind="static const typename(void)" stmt="return .result := +1;">
 										<expr token=":=" type="int32" kind="static const typename(i32)" value=".result := +1">
 											<left token=".variable" type="int32" kind="static const typename(i32)" value=".result"/>
@@ -1692,13 +1748,13 @@
 				</init>
 			</field>
 			<field token=".variable" type="function" kind="static const typename(ref)" value="cmp(a: float64, b: float64, eps: float64): int32">
-				<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math.ci:284">
+				<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Math.ci:284">
 					<stmt token="if" type="void" kind="static const typename(void)" stmt="if (a &lt; b)">
 						<test token="&lt;" type="bool" kind="static const typename(bool)" value="a &lt; b">
 							<left token=".variable" type="float64" kind="static const typename(f64)" value="a"/>
 							<right token=".variable" type="float64" kind="static const typename(f64)" value="b"/>
 						</test>
-						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math.ci:285">
+						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Math.ci:285">
 							<stmt token="if" type="void" kind="static const typename(void)" stmt="if (eps &lt; (b - a))">
 								<test token="&lt;" type="bool" kind="static const typename(bool)" value="eps &lt; (b - a)">
 									<left token=".variable" type="float64" kind="static const typename(f64)" value="eps"/>
@@ -1709,7 +1765,7 @@
 										</push>
 									</right>
 								</test>
-								<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math.ci:286">
+								<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Math.ci:286">
 									<stmt token="return" type="void" kind="static const typename(void)" stmt="return .result := -1;">
 										<expr token=":=" type="int32" kind="static const typename(i32)" value=".result := -1">
 											<left token=".variable" type="int32" kind="static const typename(i32)" value=".result"/>
@@ -1721,7 +1777,7 @@
 								</then>
 							</stmt>
 						</then>
-						<else token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math.ci:290">
+						<else token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Math.ci:290">
 							<stmt token="if" type="void" kind="static const typename(void)" stmt="if (eps &lt; (a - b))">
 								<test token="&lt;" type="bool" kind="static const typename(bool)" value="eps &lt; (a - b)">
 									<left token=".variable" type="float64" kind="static const typename(f64)" value="eps"/>
@@ -1732,7 +1788,7 @@
 										</push>
 									</right>
 								</test>
-								<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math.ci:291">
+								<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Math.ci:291">
 									<stmt token="return" type="void" kind="static const typename(void)" stmt="return .result := +1;">
 										<expr token=":=" type="int32" kind="static const typename(i32)" value=".result := +1">
 											<left token=".variable" type="int32" kind="static const typename(i32)" value=".result"/>
@@ -1754,7 +1810,7 @@
 				</init>
 			</field>
 			<field token=".variable" type="function" kind="static const typename(ref)" value="sinCos(arg: float64, quad: int32): float64">
-				<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math.ci:299">
+				<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Math.ci:299">
 					<stmt token=".variable" type="float64" kind="static const typename(f64)" value="x">
 						<init token=".variable" type="float64" kind="static const typename(f64)" value="arg">
 						</init>
@@ -1766,7 +1822,7 @@
 								<push token=".literal" type="int32" kind="static const typename(i32)" value="0" />
 							</right>
 						</test>
-						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math.ci:314">
+						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Math.ci:314">
 							<stmt token=";" type="void" kind="static const typename(void)" stmt="x := -x;">
 								<expr token=":=" type="float64" kind="static const typename(f64)" value="x := -x">
 									<left token=".variable" type="float64" kind="static const typename(f64)" value="x"/>
@@ -1809,7 +1865,7 @@
 								<push token=".literal" type="int32" kind="static const typename(i32)" value="32764" />
 							</right>
 						</test>
-						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math.ci:321">
+						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Math.ci:321">
 							<stmt token=".variable" type="float64" kind="static const typename(f64)" value="e">
 							</stmt>
 							<stmt token=";" type="void" kind="static const typename(void)" stmt="y := modf(x, &amp;e);">
@@ -1866,7 +1922,7 @@
 								</expr>
 							</stmt>
 						</then>
-						<else token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math.ci:330">
+						<else token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Math.ci:330">
 							<stmt token=".variable" type="int32" kind="static const typename(i32)" value="k">
 								<init token=".variable" type="float64" kind="static const typename(f64)" value="x">
 									<init token=".variable" type="float64" kind="static const typename(f64)" value="arg">
@@ -1909,7 +1965,7 @@
 							<left token=".variable" type="int32" kind="static const typename(i32)" value="quad"/>
 							<right token=".literal" type="int32" kind="static const typename(i32)" value="1" />
 						</test>
-						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math.ci:336">
+						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Math.ci:336">
 							<stmt token=";" type="void" kind="static const typename(void)" stmt="y := (1) - y;">
 								<expr token=":=" type="float64" kind="static const typename(f64)" value="y := (1) - y">
 									<left token=".variable" type="float64" kind="static const typename(f64)" value="y"/>
@@ -1928,7 +1984,7 @@
 							<left token=".variable" type="int32" kind="static const typename(i32)" value="quad"/>
 							<right token=".literal" type="int32" kind="static const typename(i32)" value="1" />
 						</test>
-						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math.ci:339">
+						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Math.ci:339">
 							<stmt token=";" type="void" kind="static const typename(void)" stmt="y := -y;">
 								<expr token=":=" type="float64" kind="static const typename(f64)" value="y := -y">
 									<left token=".variable" type="float64" kind="static const typename(f64)" value="y"/>
@@ -2027,7 +2083,7 @@
 				</init>
 			</field>
 			<field token=".variable" type="function" kind="static const typename(ref)" value="sin(arg: float64): float64">
-				<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math.ci:350">
+				<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Math.ci:350">
 					<stmt token="static if" type="void" kind="static const typename(void)" stmt="static if ((typename(float64.sin)) != null)">
 						<test token="!=" type="bool" kind="static const typename(bool)" value="(typename(float64.sin)) != null">
 							<left token="()" type="pointer" kind="static const typename(ref)" value="(typename(float64.sin))">
@@ -2041,7 +2097,7 @@
 							</left>
 							<right token=".variable" type="pointer" kind="static const typename(ref)" value="null"/>
 						</test>
-						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math.ci:351">
+						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Math.ci:351">
 							<stmt token="return" type="void" kind="static const typename(void)" stmt="return .result := float64.sin(arg);">
 								<expr token=":=" type="float64" kind="static const typename(f64)" value=".result := float64.sin(arg)">
 									<left token=".variable" type="float64" kind="static const typename(f64)" value=".result"/>
@@ -2069,7 +2125,7 @@
 				</init>
 			</field>
 			<field token=".variable" type="function" kind="static const typename(ref)" value="cos(arg: float64): float64">
-				<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math.ci:359">
+				<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Math.ci:359">
 					<stmt token="static if" type="void" kind="static const typename(void)" stmt="static if ((typename(float64.cos)) != null)">
 						<test token="!=" type="bool" kind="static const typename(bool)" value="(typename(float64.cos)) != null">
 							<left token="()" type="pointer" kind="static const typename(ref)" value="(typename(float64.cos))">
@@ -2083,7 +2139,7 @@
 							</left>
 							<right token=".variable" type="pointer" kind="static const typename(ref)" value="null"/>
 						</test>
-						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math.ci:360">
+						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Math.ci:360">
 							<stmt token="return" type="void" kind="static const typename(void)" stmt="return .result := float64.cos(arg);">
 								<expr token=":=" type="float64" kind="static const typename(f64)" value=".result := float64.cos(arg)">
 									<left token=".variable" type="float64" kind="static const typename(f64)" value=".result"/>
@@ -2114,7 +2170,7 @@
 				</init>
 			</field>
 			<field token=".variable" type="function" kind="static const typename(ref)" value="tan(arg: float64): float64">
-				<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math.ci:368">
+				<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Math.ci:368">
 					<stmt token="static if" type="void" kind="static const typename(void)" stmt="static if ((typename(float64.tan)) != null)">
 						<test token="!=" type="bool" kind="static const typename(bool)" value="(typename(float64.tan)) != null">
 							<left token="()" type="pointer" kind="static const typename(ref)" value="(typename(float64.tan))">
@@ -2128,7 +2184,7 @@
 							</left>
 							<right token=".variable" type="pointer" kind="static const typename(ref)" value="null"/>
 						</test>
-						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math.ci:369">
+						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Math.ci:369">
 							<stmt token="return" type="void" kind="static const typename(void)" stmt="return .result := float64.tan(arg);">
 								<expr token=":=" type="float64" kind="static const typename(f64)" value=".result := float64.tan(arg)">
 									<left token=".variable" type="float64" kind="static const typename(f64)" value=".result"/>
@@ -2160,7 +2216,7 @@
 								<push token=".literal" type="int32" kind="static const typename(i32)" value="0" />
 							</right>
 						</test>
-						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math.ci:388">
+						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Math.ci:388">
 							<stmt token=";" type="void" kind="static const typename(void)" stmt="arg := -arg;">
 								<expr token=":=" type="float64" kind="static const typename(f64)" value="arg := -arg">
 									<left token=".variable" type="float64" kind="static const typename(f64)" value="arg"/>
@@ -2216,13 +2272,13 @@
 							<left token=".variable" type="int32" kind="static const typename(i32)" value="i"/>
 							<right token=".literal" type="int32" kind="static const typename(i32)" value="0" />
 						</test>
-						<else token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math.ci:399">
+						<else token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Math.ci:399">
 							<stmt token="if" type="void" kind="static const typename(void)" stmt="if (i == 1)">
 								<test token="==" type="bool" kind="static const typename(bool)" value="i == 1">
 									<left token=".variable" type="int32" kind="static const typename(i32)" value="i"/>
 									<right token=".literal" type="int32" kind="static const typename(i32)" value="1" />
 								</test>
-								<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math.ci:399">
+								<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Math.ci:399">
 									<stmt token=";" type="void" kind="static const typename(void)" stmt="x := (1) - x;">
 										<expr token=":=" type="float64" kind="static const typename(f64)" value="x := (1) - x">
 											<left token=".variable" type="float64" kind="static const typename(f64)" value="x"/>
@@ -2241,13 +2297,13 @@
 										</expr>
 									</stmt>
 								</then>
-								<else token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math.ci:403">
+								<else token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Math.ci:403">
 									<stmt token="if" type="void" kind="static const typename(void)" stmt="if (i == 2)">
 										<test token="==" type="bool" kind="static const typename(bool)" value="i == 2">
 											<left token=".variable" type="int32" kind="static const typename(i32)" value="i"/>
 											<right token=".literal" type="int32" kind="static const typename(i32)" value="2" />
 										</test>
-										<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math.ci:403">
+										<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Math.ci:403">
 											<stmt token=";" type="void" kind="static const typename(void)" stmt="negate := !negate;">
 												<expr token=":=" type="bool" kind="static const typename(bool)" value="negate := !negate">
 													<left token=".variable" type="bool" kind="static const typename(bool)" value="negate"/>
@@ -2263,13 +2319,13 @@
 												</expr>
 											</stmt>
 										</then>
-										<else token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math.ci:407">
+										<else token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Math.ci:407">
 											<stmt token="if" type="void" kind="static const typename(void)" stmt="if (i == 3)">
 												<test token="==" type="bool" kind="static const typename(bool)" value="i == 3">
 													<left token=".variable" type="int32" kind="static const typename(i32)" value="i"/>
 													<right token=".literal" type="int32" kind="static const typename(i32)" value="3" />
 												</test>
-												<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math.ci:407">
+												<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Math.ci:407">
 													<stmt token=";" type="void" kind="static const typename(void)" stmt="x := (1) - x;">
 														<expr token=":=" type="float64" kind="static const typename(f64)" value="x := (1) - x">
 															<left token=".variable" type="float64" kind="static const typename(f64)" value="x"/>
@@ -2375,7 +2431,7 @@
 								<init token=".literal" type="bool" kind="static const typename(bool)" value="0" />
 							</init>
 						</test>
-						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math.ci:416">
+						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Math.ci:416">
 							<stmt token="if" type="void" kind="static const typename(void)" stmt="if (result == (0))">
 								<test token="==" type="bool" kind="static const typename(bool)" value="result == (0)">
 									<left token=".variable" type="float64" kind="static const typename(f64)" value="result"/>
@@ -2383,7 +2439,7 @@
 										<push token=".literal" type="int32" kind="static const typename(i32)" value="0" />
 									</right>
 								</test>
-								<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math.ci:417">
+								<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Math.ci:417">
 									<stmt token="return" type="void" kind="static const typename(void)" stmt="return .result := nan;">
 										<expr token=":=" type="float64" kind="static const typename(f64)" value=".result := nan">
 											<left token=".variable" type="float64" kind="static const typename(f64)" value=".result"/>
@@ -2411,7 +2467,7 @@
 								<init token=".literal" type="bool" kind="static const typename(bool)" value="0" />
 							</init>
 						</test>
-						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math.ci:422">
+						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Math.ci:422">
 							<stmt token="return" type="void" kind="static const typename(void)" stmt="return .result := -result;">
 								<expr token=":=" type="float64" kind="static const typename(f64)" value=".result := -result">
 									<left token=".variable" type="float64" kind="static const typename(f64)" value=".result"/>
@@ -2431,7 +2487,7 @@
 				</init>
 			</field>
 			<field token=".variable" type="function" kind="static const typename(ref)" value="sinh(x: float64): float64">
-				<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math.ci:429">
+				<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Math.ci:429">
 					<stmt token=".variable" type="bool" kind="static const typename(bool)" value="negate">
 						<init token=".variable" type="bool" kind="static const typename(bool)" value="false">
 							<init token=".literal" type="bool" kind="static const typename(bool)" value="0" />
@@ -2444,7 +2500,7 @@
 								<push token=".literal" type="int32" kind="static const typename(i32)" value="0" />
 							</right>
 						</test>
-						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math.ci:442">
+						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Math.ci:442">
 							<stmt token=";" type="void" kind="static const typename(void)" stmt="x := -x;">
 								<expr token=":=" type="float64" kind="static const typename(f64)" value="x := -x">
 									<left token=".variable" type="float64" kind="static const typename(f64)" value="x"/>
@@ -2468,7 +2524,7 @@
 								<push token=".literal" type="int32" kind="static const typename(i32)" value="21" />
 							</right>
 						</test>
-						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math.ci:447">
+						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Math.ci:447">
 							<stmt token="return" type="void" kind="static const typename(void)" stmt="return .result := float64.exp(x) / (2);">
 								<expr token=":=" type="float64" kind="static const typename(f64)" value=".result := float64.exp(x) / (2)">
 									<left token=".variable" type="float64" kind="static const typename(f64)" value=".result"/>
@@ -2495,7 +2551,7 @@
 							<left token=".variable" type="float64" kind="static const typename(f64)" value="x"/>
 							<right token=".literal" type="float64" kind="static const typename(f64)" value="0.500000" />
 						</test>
-						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math.ci:452">
+						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Math.ci:452">
 							<stmt token=";" type="void" kind="static const typename(void)" stmt="result := (float64.exp(x) - float64.exp(-x)) / (2);">
 								<expr token=":=" type="float64" kind="static const typename(f64)" value="result := (float64.exp(x) - float64.exp(-x)) / (2)">
 									<left token=".variable" type="float64" kind="static const typename(f64)" value="result"/>
@@ -2527,7 +2583,7 @@
 								</expr>
 							</stmt>
 						</then>
-						<else token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math.ci:455">
+						<else token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Math.ci:455">
 							<stmt token=".variable" type="float64" kind="static const typename(f64)" value="sq">
 								<init token="*" type="float64" kind="static const typename(f64)" value="x * x">
 									<left token=".variable" type="float64" kind="static const typename(f64)" value="x"/>
@@ -2603,7 +2659,7 @@
 								<init token=".literal" type="bool" kind="static const typename(bool)" value="0" />
 							</init>
 						</test>
-						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math.ci:461">
+						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Math.ci:461">
 							<stmt token="return" type="void" kind="static const typename(void)" stmt="return .result := -result;">
 								<expr token=":=" type="float64" kind="static const typename(f64)" value=".result := -result">
 									<left token=".variable" type="float64" kind="static const typename(f64)" value=".result"/>
@@ -2623,7 +2679,7 @@
 				</init>
 			</field>
 			<field token=".variable" type="function" kind="static const typename(ref)" value="cosh(x: float64): float64">
-				<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math.ci:468">
+				<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Math.ci:468">
 					<stmt token="if" type="void" kind="static const typename(void)" stmt="if (x &lt; (0))">
 						<test token="&lt;" type="bool" kind="static const typename(bool)" value="x &lt; (0)">
 							<left token=".variable" type="float64" kind="static const typename(f64)" value="x"/>
@@ -2631,7 +2687,7 @@
 								<push token=".literal" type="int32" kind="static const typename(i32)" value="0" />
 							</right>
 						</test>
-						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math.ci:469">
+						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Math.ci:469">
 							<stmt token=";" type="void" kind="static const typename(void)" stmt="x := -x;">
 								<expr token=":=" type="float64" kind="static const typename(f64)" value="x := -x">
 									<left token=".variable" type="float64" kind="static const typename(f64)" value="x"/>
@@ -2649,7 +2705,7 @@
 								<push token=".literal" type="int32" kind="static const typename(i32)" value="21" />
 							</right>
 						</test>
-						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math.ci:472">
+						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Math.ci:472">
 							<stmt token="return" type="void" kind="static const typename(void)" stmt="return .result := float64.exp(x) / (2);">
 								<expr token=":=" type="float64" kind="static const typename(f64)" value=".result := float64.exp(x) / (2)">
 									<left token=".variable" type="float64" kind="static const typename(f64)" value=".result"/>
@@ -2702,7 +2758,7 @@
 				</init>
 			</field>
 			<field token=".variable" type="function" kind="static const typename(ref)" value="asin(x: float64): float64">
-				<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math.ci:483">
+				<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Math.ci:483">
 					<stmt token="if" type="void" kind="static const typename(void)" stmt="if (x == (0))">
 						<test token="==" type="bool" kind="static const typename(bool)" value="x == (0)">
 							<left token=".variable" type="float64" kind="static const typename(f64)" value="x"/>
@@ -2710,7 +2766,7 @@
 								<push token=".literal" type="int32" kind="static const typename(i32)" value="0" />
 							</right>
 						</test>
-						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math.ci:484">
+						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Math.ci:484">
 							<stmt token="return" type="void" kind="static const typename(void)" stmt="return .result := x;">
 								<expr token=":=" type="float64" kind="static const typename(f64)" value=".result := x">
 									<left token=".variable" type="float64" kind="static const typename(f64)" value=".result"/>
@@ -2731,7 +2787,7 @@
 								<push token=".literal" type="int32" kind="static const typename(i32)" value="0" />
 							</right>
 						</test>
-						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math.ci:490">
+						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Math.ci:490">
 							<stmt token=";" type="void" kind="static const typename(void)" stmt="negate := true;">
 								<expr token=":=" type="bool" kind="static const typename(bool)" value="negate := true">
 									<left token=".variable" type="bool" kind="static const typename(bool)" value="negate"/>
@@ -2755,7 +2811,7 @@
 								<push token=".literal" type="int32" kind="static const typename(i32)" value="1" />
 							</right>
 						</test>
-						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math.ci:495">
+						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Math.ci:495">
 							<stmt token="return" type="void" kind="static const typename(void)" stmt="return .result := nan;">
 								<expr token=":=" type="float64" kind="static const typename(f64)" value=".result := nan">
 									<left token=".variable" type="float64" kind="static const typename(f64)" value=".result"/>
@@ -2786,7 +2842,7 @@
 							<left token=".variable" type="float64" kind="static const typename(f64)" value="x"/>
 							<right token=".literal" type="float64" kind="static const typename(f64)" value="0.700000" />
 						</test>
-						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math.ci:501">
+						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Math.ci:501">
 							<stmt token=";" type="void" kind="static const typename(void)" stmt="result := pi / (2) - float64.atan2(result, x);">
 								<expr token=":=" type="float64" kind="static const typename(f64)" value="result := pi / (2) - float64.atan2(result, x)">
 									<left token=".variable" type="float64" kind="static const typename(f64)" value="result"/>
@@ -2809,7 +2865,7 @@
 								</expr>
 							</stmt>
 						</then>
-						<else token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math.ci:504">
+						<else token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Math.ci:504">
 							<stmt token=";" type="void" kind="static const typename(void)" stmt="result := float64.atan2(x, result);">
 								<expr token=":=" type="float64" kind="static const typename(f64)" value="result := float64.atan2(x, result)">
 									<left token=".variable" type="float64" kind="static const typename(f64)" value="result"/>
@@ -2831,7 +2887,7 @@
 								<init token=".literal" type="bool" kind="static const typename(bool)" value="0" />
 							</init>
 						</test>
-						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math.ci:508">
+						<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Math.ci:508">
 							<stmt token="return" type="void" kind="static const typename(void)" stmt="return .result := -result;">
 								<expr token=":=" type="float64" kind="static const typename(f64)" value=".result := -result">
 									<left token=".variable" type="float64" kind="static const typename(f64)" value=".result"/>
@@ -6655,7 +6711,7 @@
 			</init>
 		</stmt>
 		<stmt token=".variable" type="function" kind="static const typename(ref)" value="length(str: char[*]): int32">
-			<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/string.ci:4">
+			<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/cstr.ci:4">
 				<stmt token="if" type="void" kind="static const typename(void)" stmt="if ((str) == null)">
 					<test token="==" type="bool" kind="static const typename(bool)" value="(str) == null">
 						<left token="()" type="pointer" kind="static const typename(ref)" value="(str)">
@@ -6663,7 +6719,7 @@
 						</left>
 						<right token=".variable" type="pointer" kind="static const typename(ref)" value="null"/>
 					</test>
-					<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/string.ci:5">
+					<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/cstr.ci:5">
 						<stmt token="return" type="void" kind="static const typename(void)" stmt="return .result := 0;">
 							<expr token=":=" type="int32" kind="static const typename(i32)" value=".result := 0">
 								<left token=".variable" type="int32" kind="static const typename(i32)" value=".result"/>
@@ -6697,7 +6753,7 @@
 			</init>
 		</stmt>
 		<stmt token=".variable" type="function" kind="static const typename(ref)" value="indexOf(str: char[*], chr: char): int32">
-			<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/string.ci:15">
+			<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/cstr.ci:15">
 				<stmt token="for" type="void" kind="static const typename(void)" stmt="for (i; str[i]; i := i + 1)">
 					<init token=".variable" type="int32" kind="static const typename(i32)" value="i">
 						<init token=".literal" type="int32" kind="static const typename(i32)" value="0" />
@@ -6713,7 +6769,7 @@
 							<right token=".literal" type="int32" kind="static const typename(i32)" value="1" />
 						</right>
 					</step>
-					<stmt token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/string.ci:16">
+					<stmt token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/cstr.ci:16">
 						<stmt token="if" type="void" kind="static const typename(void)" stmt="if (str[i] == chr)">
 							<test token="==" type="bool" kind="static const typename(bool)" value="str[i] == chr">
 								<left token="[]" type="char" kind="static const typename(i32)" value="str[i]">
@@ -6722,7 +6778,7 @@
 								</left>
 								<right token=".variable" type="char" kind="static const typename(i32)" value="chr"/>
 							</test>
-							<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/string.ci:17">
+							<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/cstr.ci:17">
 								<stmt token="return" type="void" kind="static const typename(void)" stmt="return .result := i;">
 									<expr token=":=" type="int32" kind="static const typename(i32)" value=".result := i">
 										<left token=".variable" type="int32" kind="static const typename(i32)" value=".result"/>
@@ -6744,7 +6800,7 @@
 			</init>
 		</stmt>
 		<stmt token=".variable" type="function" kind="static const typename(ref)" value="lastIndexOf(str: char[*], chr: char): int32">
-			<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/string.ci:25">
+			<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/cstr.ci:25">
 				<stmt token=".variable" type="int32" kind="static const typename(i32)" value="result">
 					<init token="-" type="int32" kind="static const typename(i32)" value="-1">
 						<right token=".literal" type="int32" kind="static const typename(i32)" value="1" />
@@ -6765,7 +6821,7 @@
 							<right token=".literal" type="int32" kind="static const typename(i32)" value="1" />
 						</right>
 					</step>
-					<stmt token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/string.ci:27">
+					<stmt token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/cstr.ci:27">
 						<stmt token="if" type="void" kind="static const typename(void)" stmt="if (str[i] == chr)">
 							<test token="==" type="bool" kind="static const typename(bool)" value="str[i] == chr">
 								<left token="[]" type="char" kind="static const typename(i32)" value="str[i]">
@@ -6774,7 +6830,7 @@
 								</left>
 								<right token=".variable" type="char" kind="static const typename(i32)" value="chr"/>
 							</test>
-							<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/string.ci:28">
+							<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/cstr.ci:28">
 								<stmt token=";" type="void" kind="static const typename(void)" stmt="result := i;">
 									<expr token=":=" type="int32" kind="static const typename(i32)" value="result := i">
 										<left token=".variable" type="int32" kind="static const typename(i32)" value="result"/>
@@ -6794,7 +6850,7 @@
 			</init>
 		</stmt>
 		<stmt token=".variable" type="function" kind="static const typename(ref)" value="startsWith(str: char[*], with: char[*], cmp(chr: char, with: char): int32): bool">
-			<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/string.ci:36">
+			<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/cstr.ci:36">
 				<stmt token="for" type="void" kind="static const typename(void)" stmt="for (i; (with[i]) != 0; i := i + 1)">
 					<init token=".variable" type="int32" kind="static const typename(i32)" value="i">
 						<init token=".literal" type="int32" kind="static const typename(i32)" value="0" />
@@ -6815,7 +6871,7 @@
 							<right token=".literal" type="int32" kind="static const typename(i32)" value="1" />
 						</right>
 					</step>
-					<stmt token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/string.ci:37">
+					<stmt token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/cstr.ci:37">
 						<stmt token="if" type="void" kind="static const typename(void)" stmt="if (cmp(str[i], with[i]) != 0)">
 							<test token="!=" type="bool" kind="static const typename(bool)" value="cmp(str[i], with[i]) != 0">
 								<left token="()" type="int32" kind="static const typename(i32)" value="cmp(str[i], with[i])">
@@ -6831,7 +6887,7 @@
 								</left>
 								<right token=".literal" type="int32" kind="static const typename(i32)" value="0" />
 							</test>
-							<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/string.ci:38">
+							<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/cstr.ci:38">
 								<stmt token="return" type="void" kind="static const typename(void)" stmt="return .result := false;">
 									<expr token=":=" type="bool" kind="static const typename(bool)" value=".result := false">
 										<left token=".variable" type="bool" kind="static const typename(bool)" value=".result"/>
@@ -6851,7 +6907,7 @@
 			</init>
 		</stmt>
 		<stmt token=".variable" type="function" kind="static const typename(ref)" value="endsWith(str: char[*], with: char[*], cmp(chr: char, with: char): int32): bool">
-			<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/string.ci:46">
+			<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/cstr.ci:46">
 				<stmt token=".variable" type="int32" kind="static const typename(i32)" value="withLen">
 					<init token="()" type="int32" kind="static const typename(i32)" value="length(with)">
 						<push token=".variable" type="char[*]" kind="static typename(arr)" value="with"/>
@@ -6869,7 +6925,7 @@
 						<left token=".variable" type="int32" kind="static const typename(i32)" value="strLen"/>
 						<right token=".variable" type="int32" kind="static const typename(i32)" value="withLen"/>
 					</test>
-					<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/string.ci:49">
+					<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/cstr.ci:49">
 						<stmt token="return" type="void" kind="static const typename(void)" stmt="return .result := false;">
 							<expr token=":=" type="bool" kind="static const typename(bool)" value=".result := false">
 								<left token=".variable" type="bool" kind="static const typename(bool)" value=".result"/>
@@ -6893,7 +6949,7 @@
 							<right token=".literal" type="int32" kind="static const typename(i32)" value="1" />
 						</right>
 					</step>
-					<stmt token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/string.ci:52">
+					<stmt token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/cstr.ci:52">
 						<stmt token="if" type="void" kind="static const typename(void)" stmt="if (cmp(str[strLen - withLen + i], with[i]) != 0)">
 							<test token="!=" type="bool" kind="static const typename(bool)" value="cmp(str[strLen - withLen + i], with[i]) != 0">
 								<left token="()" type="int32" kind="static const typename(i32)" value="cmp(str[strLen - withLen + i], with[i])">
@@ -6915,7 +6971,7 @@
 								</left>
 								<right token=".literal" type="int32" kind="static const typename(i32)" value="0" />
 							</test>
-							<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/string.ci:53">
+							<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/cstr.ci:53">
 								<stmt token="return" type="void" kind="static const typename(void)" stmt="return .result := false;">
 									<expr token=":=" type="bool" kind="static const typename(bool)" value=".result := false">
 										<left token=".variable" type="bool" kind="static const typename(bool)" value=".result"/>
@@ -6935,7 +6991,7 @@
 			</init>
 		</stmt>
 		<stmt token=".variable" type="function" kind="static const typename(ref)" value="compare(str: char[*], with: char[*], cmp(chr: char, with: char): int32): int32">
-			<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/string.ci:61">
+			<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/cstr.ci:61">
 				<stmt token=".variable" type="int32" kind="static const typename(i32)" value="result">
 					<init token=".literal" type="int32" kind="static const typename(i32)" value="0" />
 				</stmt>
@@ -6954,7 +7010,7 @@
 							<right token=".literal" type="int32" kind="static const typename(i32)" value="1" />
 						</right>
 					</step>
-					<stmt token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/string.ci:63">
+					<stmt token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/cstr.ci:63">
 						<stmt token=";" type="void" kind="static const typename(void)" stmt="result := cmp(str[i], with[i]);">
 							<expr token=":=" type="int32" kind="static const typename(i32)" value="result := cmp(str[i], with[i])">
 								<left token=".variable" type="int32" kind="static const typename(i32)" value="result"/>
@@ -6981,7 +7037,7 @@
 								</left>
 								<right token=".literal" type="int32" kind="static const typename(i32)" value="0" />
 							</test>
-							<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/string.ci:65">
+							<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/cstr.ci:65">
 								<stmt token="break" type="void" kind="static const typename(void)" stmt="break;" />
 							</then>
 						</stmt>
@@ -6996,15 +7052,15 @@
 			</init>
 		</stmt>
 		<stmt token=".variable" type="function" kind="static const typename(ref)" value="ignCaseCmp(chr: char, with: char): int32">
-			<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/string.ci:73">
+			<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/cstr.ci:73">
 				<stmt token=".variable" type="function" kind="static const typename(ref)" value="ignCase(chr: char): char">
-					<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/string.ci:74">
+					<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/cstr.ci:74">
 						<stmt token="if" type="void" kind="static const typename(void)" stmt="if (chr &lt; &apos;A&apos;)">
 							<test token="&lt;" type="bool" kind="static const typename(bool)" value="chr &lt; &apos;A&apos;">
 								<left token=".variable" type="char" kind="static const typename(i32)" value="chr"/>
 								<right token=".literal" type="char" kind="static const typename(i32)" value="&apos;A&apos;" />
 							</test>
-							<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/string.ci:75">
+							<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/cstr.ci:75">
 								<stmt token="return" type="void" kind="static const typename(void)" stmt="return .result := chr;">
 									<expr token=":=" type="char" kind="static const typename(i32)" value=".result := chr">
 										<left token=".variable" type="char" kind="static const typename(i32)" value=".result"/>
@@ -7018,7 +7074,7 @@
 								<left token=".variable" type="char" kind="static const typename(i32)" value="chr"/>
 								<right token=".literal" type="char" kind="static const typename(i32)" value="&apos;Z&apos;" />
 							</test>
-							<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/string.ci:78">
+							<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/cstr.ci:78">
 								<stmt token="return" type="void" kind="static const typename(void)" stmt="return .result := chr;">
 									<expr token=":=" type="char" kind="static const typename(i32)" value=".result := chr">
 										<left token=".variable" type="char" kind="static const typename(i32)" value=".result"/>
@@ -7059,7 +7115,7 @@
 			</init>
 		</stmt>
 		<stmt token=".variable" type="function" kind="static const typename(ref)" value="caseCmp(chr: char, with: char): int32">
-			<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/string.ci:88">
+			<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/cstr.ci:88">
 				<stmt token="return" type="void" kind="static const typename(void)" stmt="return .result := chr - with;">
 					<expr token=":=" type="char" kind="static const typename(i32)" value=".result := chr - with">
 						<left token=".variable" type="int32" kind="static const typename(i32)" value=".result"/>
@@ -7143,7 +7199,7 @@
 			</field>
 		</stmt>
 		<stmt token=".variable" type="function" kind="static const typename(ref)" value="append(output: char[], pos: int32, value: char[*]): int32">
-			<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/string.ci:134">
+			<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/cstr.ci:134">
 				<stmt token="if" type="void" kind="static const typename(void)" stmt="if ((value) == null)">
 					<test token="==" type="bool" kind="static const typename(bool)" value="(value) == null">
 						<left token="()" type="pointer" kind="static const typename(ref)" value="(value)">
@@ -7151,7 +7207,7 @@
 						</left>
 						<right token=".variable" type="pointer" kind="static const typename(ref)" value="null"/>
 					</test>
-					<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/string.ci:135">
+					<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/cstr.ci:135">
 						<stmt token="return" type="void" kind="static const typename(void)" stmt="return .result := append(output, pos, &quot;NULL&quot;);">
 							<expr token=":=" type="int32" kind="static const typename(i32)" value=".result := append(output, pos, &quot;NULL&quot;)">
 								<left token=".variable" type="int32" kind="static const typename(i32)" value=".result"/>
@@ -7180,7 +7236,7 @@
 							<right token=".literal" type="int32" kind="static const typename(i32)" value="1" />
 						</right>
 					</step>
-					<stmt token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/string.ci:138">
+					<stmt token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/cstr.ci:138">
 						<stmt token="if" type="void" kind="static const typename(void)" stmt="if (pos &gt;= (output.length))">
 							<test token="&gt;=" type="bool" kind="static const typename(bool)" value="pos &gt;= (output.length)">
 								<left token=".variable" type="int32" kind="static const typename(i32)" value="pos"/>
@@ -7191,7 +7247,7 @@
 									</push>
 								</right>
 							</test>
-							<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/string.ci:139">
+							<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/cstr.ci:139">
 								<stmt token="break" type="void" kind="static const typename(void)" stmt="break;" />
 							</then>
 						</stmt>
@@ -7228,7 +7284,7 @@
 							</push>
 						</right>
 					</test>
-					<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/string.ci:146">
+					<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/cstr.ci:146">
 						<stmt token=";" type="void" kind="static const typename(void)" stmt="pos := (output.length - (1));">
 							<expr token=":=" type="int32" kind="static const typename(i32)" value="pos := (output.length - (1))">
 								<left token=".variable" type="int32" kind="static const typename(i32)" value="pos"/>
@@ -7267,7 +7323,7 @@
 			</init>
 		</stmt>
 		<stmt token=".variable" type="function" kind="static const typename(ref)" value="append(output: char[], pos: int32, radix: int32, value: uint64, format: FormatFlags): int32">
-			<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/string.ci:154">
+			<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/cstr.ci:154">
 				<stmt token=".variable" type="char[]" kind="static typename(arr)" value="whiteSpace">
 					<init token=".literal" type=".cstr" kind="static const typename(arr)" value="&quot; 	
 &quot;" />
@@ -7325,7 +7381,7 @@
 							</right>
 						</right>
 					</step>
-					<stmt token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/string.ci:165">
+					<stmt token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/cstr.ci:165">
 						<stmt token=";" type="void" kind="static const typename(void)" stmt="digits[len := len + 1] := radixDigits[value % (radix)];">
 							<expr token=":=" type="char" kind="static const typename(i32)" value="digits[len := len + 1] := radixDigits[value % (radix)]">
 								<left token="[]" type="char" kind="static const typename(i32)" value="digits[len := len + 1]">
@@ -7356,7 +7412,7 @@
 						<left token=".variable" type="int32" kind="static const typename(i32)" value="len"/>
 						<right token=".literal" type="int32" kind="static const typename(i32)" value="0" />
 					</test>
-					<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/string.ci:168">
+					<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/cstr.ci:168">
 						<stmt token=";" type="void" kind="static const typename(void)" stmt="digits[len := len + 1] := &apos;0&apos;;">
 							<expr token=":=" type="char" kind="static const typename(i32)" value="digits[len := len + 1] := &apos;0&apos;">
 								<left token="[]" type="char" kind="static const typename(i32)" value="digits[len := len + 1]">
@@ -7394,7 +7450,7 @@
 						<left token=".variable" type="char" kind="static const typename(i32)" value="padChr"/>
 						<right token=".literal" type="char" kind="static const typename(i32)" value="&apos;&apos;" />
 					</test>
-					<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/string.ci:175">
+					<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/cstr.ci:175">
 						<stmt token=";" type="void" kind="static const typename(void)" stmt="padChr := &apos; &apos;;">
 							<expr token=":=" type="char" kind="static const typename(i32)" value="padChr := &apos; &apos;">
 								<left token=".variable" type="char" kind="static const typename(i32)" value="padChr"/>
@@ -7413,7 +7469,7 @@
 						</left>
 						<right token=".literal" type="int32" kind="static const typename(i32)" value="0" />
 					</test>
-					<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/string.ci:180">
+					<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/cstr.ci:180">
 						<stmt token=";" type="void" kind="static const typename(void)" stmt="maxLen := maxLen - 1;">
 							<expr token=":=" type="int32" kind="static const typename(i32)" value="maxLen := maxLen - 1">
 								<left token=".variable" type="int32" kind="static const typename(i32)" value="maxLen"/>
@@ -7429,7 +7485,7 @@
 								<push token=".variable" type="char" kind="static const typename(i32)" value="padChr"/>
 								<call token=".variable" type="function" kind="static const typename(ref)" value="contains"/>
 							</test>
-							<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/string.ci:182">
+							<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/cstr.ci:182">
 								<stmt token="for" type="void" kind="static const typename(void)" stmt="for ( ; maxLen &gt; 0; maxLen := maxLen - 1)">
 									<test token="&gt;" type="bool" kind="static const typename(bool)" value="maxLen &gt; 0">
 										<left token=".variable" type="int32" kind="static const typename(i32)" value="maxLen"/>
@@ -7442,7 +7498,7 @@
 											<right token=".literal" type="int32" kind="static const typename(i32)" value="1" />
 										</right>
 									</step>
-									<stmt token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/string.ci:184">
+									<stmt token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/cstr.ci:184">
 										<stmt token=";" type="void" kind="static const typename(void)" stmt="assert(pos &lt; (output.length));">
 											<expr token="()" type="void" kind="static const typename(void)" value="assert(pos &lt; (output.length))">
 												<push token="&lt;" type="bool" kind="static const typename(bool)" value="pos &lt; (output.length)">
@@ -7528,7 +7584,7 @@
 							<right token=".literal" type="int32" kind="static const typename(i32)" value="1" />
 						</right>
 					</step>
-					<stmt token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/string.ci:196">
+					<stmt token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/cstr.ci:196">
 						<stmt token=";" type="void" kind="static const typename(void)" stmt="assert(pos &lt; (output.length));">
 							<expr token="()" type="void" kind="static const typename(void)" value="assert(pos &lt; (output.length))">
 								<push token="&lt;" type="bool" kind="static const typename(bool)" value="pos &lt; (output.length)">
@@ -7578,7 +7634,7 @@
 							<right token=".literal" type="int32" kind="static const typename(i32)" value="1" />
 						</right>
 					</step>
-					<stmt token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/string.ci:203">
+					<stmt token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/cstr.ci:203">
 						<stmt token=";" type="void" kind="static const typename(void)" stmt="assert(i &lt; (output.length));">
 							<expr token="()" type="void" kind="static const typename(void)" value="assert(i &lt; (output.length))">
 								<push token="&lt;" type="bool" kind="static const typename(bool)" value="i &lt; (output.length)">
@@ -7629,7 +7685,7 @@
 							</push>
 						</right>
 					</test>
-					<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/string.ci:209">
+					<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/cstr.ci:209">
 						<stmt token=";" type="void" kind="static const typename(void)" stmt="pos := (output.length - (1));">
 							<expr token=":=" type="int32" kind="static const typename(i32)" value="pos := (output.length - (1))">
 								<left token=".variable" type="int32" kind="static const typename(i32)" value="pos"/>
@@ -7720,7 +7776,7 @@
 			</init>
 		</stmt>
 		<stmt token=".variable" type="function" kind="static const typename(ref)" value="append(output: char[], pos: int32, radix: int32, value: int64, format: FormatFlags): int32">
-			<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/string.ci:229">
+			<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/cstr.ci:229">
 				<stmt token=".variable" type="FormatFlags" kind="static const typename(val)" value="signedFormat">
 					<init token="{}" type="FormatFlags" kind="static const typename(val)">
 						<stmt token=";" type="void" kind="static const typename(void)" stmt="signedFormat.sign := value &lt; (0) ? &apos;-&apos; : format.sign;">
@@ -7789,7 +7845,7 @@
 							<push token=".literal" type="int32" kind="static const typename(i32)" value="0" />
 						</right>
 					</test>
-					<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/string.ci:236">
+					<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/cstr.ci:236">
 						<stmt token=";" type="void" kind="static const typename(void)" stmt="value := -value;">
 							<expr token=":=" type="int64" kind="static const typename(i64)" value="value := -value">
 								<left token=".variable" type="int64" kind="static const typename(i64)" value="value"/>
@@ -7871,7 +7927,7 @@
 			</init>
 		</stmt>
 		<stmt token=".variable" type="function" kind="static const typename(ref)" value="append(output: char[], pos: int32, value: float64, format: FormatFlags): int32">
-			<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/string.ci:255">
+			<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/cstr.ci:255">
 				<stmt token=".variable" type="FormatFlags" kind="static const typename(val)" value="formatDec">
 					<init token="{}" type="FormatFlags" kind="static const typename(val)">
 						<stmt token=";" type="void" kind="static const typename(void)" stmt="formatDec.sign := (0);">
@@ -8060,7 +8116,7 @@
 							<right token=".variable" type="int32" kind="static const typename(i32)" value="end"/>
 						</right>
 					</test>
-					<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/string.ci:271">
+					<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/cstr.ci:271">
 						<stmt token="return" type="void" kind="static const typename(void)" stmt="return .result := pos;">
 							<expr token=":=" type="int32" kind="static const typename(i32)" value=".result := pos">
 								<left token=".variable" type="int32" kind="static const typename(i32)" value=".result"/>
@@ -8115,7 +8171,7 @@
 						</left>
 						<right token=".literal" type="int32" kind="static const typename(i32)" value="0" />
 					</test>
-					<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/string.ci:279">
+					<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/cstr.ci:279">
 						<stmt token=";" type="void" kind="static const typename(void)" stmt="max := (output.length - (1));">
 							<expr token=":=" type="int32" kind="static const typename(i32)" value="max := (output.length - (1))">
 								<left token=".variable" type="int32" kind="static const typename(i32)" value="max"/>
@@ -8153,7 +8209,7 @@
 							<right token=".variable" type="int32" kind="static const typename(i32)" value="end"/>
 						</right>
 					</test>
-					<stmt token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/string.ci:283">
+					<stmt token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/cstr.ci:283">
 						<stmt token=";" type="void" kind="static const typename(void)" stmt="fraction := Math.modf(fraction * (10), &amp;value);">
 							<expr token=":=" type="float64" kind="static const typename(f64)" value="fraction := Math.modf(fraction * (10), &amp;value)">
 								<left token=".variable" type="float64" kind="static const typename(f64)" value="fraction"/>
@@ -8215,7 +8271,7 @@
 			</init>
 		</stmt>
 		<stmt token=".variable" type="function" kind="static const typename(ref)" value="append(output: char[], pos: int32, value: int32): int32">
-			<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/string.ci:294">
+			<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/cstr.ci:294">
 				<stmt token=".variable" type="FormatFlags" kind="static const typename(val)" value="format">
 					<init token="{}" type="FormatFlags" kind="static const typename(val)">
 						<stmt token=";" type="void" kind="static const typename(void)" stmt="format.sign := (0);">
@@ -8275,7 +8331,7 @@
 			</init>
 		</stmt>
 		<stmt token=".variable" type="function" kind="static const typename(ref)" value="float64(value: char[]): float64">
-			<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/string.ci:300">
+			<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/cstr.ci:300">
 				<stmt token=".variable" type="float64" kind="static const typename(f64)" value="sign">
 					<init token=".literal" type="int32" kind="static const typename(i32)" value="1" />
 				</stmt>
@@ -8316,7 +8372,7 @@
 							<right token=".literal" type="int32" kind="static const typename(i32)" value="1" />
 						</right>
 					</step>
-					<stmt token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/string.ci:306">
+					<stmt token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/cstr.ci:306">
 						<stmt token=".variable" type="char" kind="static const typename(i32)" value="chr">
 							<init token="[]" type="char" kind="static const typename(i32)" value="value[i]">
 								<left token=".variable" type="char[]" kind="static typename(arr)" value="value"/>
@@ -8334,7 +8390,7 @@
 									<right token=".literal" type="char" kind="static const typename(i32)" value="&apos;9&apos;" />
 								</right>
 							</test>
-							<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/string.ci:308">
+							<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/cstr.ci:308">
 								<stmt token=";" type="void" kind="static const typename(void)" stmt="result := result * (10) + ((chr - &apos;0&apos;));">
 									<expr token=":=" type="float64" kind="static const typename(f64)" value="result := result * (10) + ((chr - &apos;0&apos;))">
 										<left token=".variable" type="float64" kind="static const typename(f64)" value="result"/>
@@ -8368,13 +8424,13 @@
 									</expr>
 								</stmt>
 							</then>
-							<else token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/string.ci:312">
+							<else token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/cstr.ci:312">
 								<stmt token="if" type="void" kind="static const typename(void)" stmt="if (chr == &apos;.&apos;)">
 									<test token="==" type="bool" kind="static const typename(bool)" value="chr == &apos;.&apos;">
 										<left token=".variable" type="char" kind="static const typename(i32)" value="chr"/>
 										<right token=".literal" type="char" kind="static const typename(i32)" value="&apos;.&apos;" />
 									</test>
-									<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/string.ci:312">
+									<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/cstr.ci:312">
 										<stmt token="if" type="void" kind="static const typename(void)" stmt="if (decimal != (0))">
 											<test token="!=" type="bool" kind="static const typename(bool)" value="decimal != (0)">
 												<left token=".variable" type="float64" kind="static const typename(f64)" value="decimal"/>
@@ -8382,7 +8438,7 @@
 													<push token=".literal" type="int32" kind="static const typename(i32)" value="0" />
 												</right>
 											</test>
-											<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/string.ci:313">
+											<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/cstr.ci:313">
 												<stmt token="return" type="void" kind="static const typename(void)" stmt="return .result := Math.nan;">
 													<expr token=":=" type="float64" kind="static const typename(f64)" value=".result := Math.nan">
 														<left token=".variable" type="float64" kind="static const typename(f64)" value=".result"/>
@@ -8403,7 +8459,7 @@
 											</expr>
 										</stmt>
 									</then>
-									<else token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/string.ci:319">
+									<else token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/cstr.ci:319">
 										<stmt token="if" type="void" kind="static const typename(void)" stmt="if (chr == &apos;-&apos; &amp;&amp; i == 0)">
 											<test token="&amp;&amp;" type="bool" kind="static const typename(bool)" value="chr == &apos;-&apos; &amp;&amp; i == 0">
 												<left token="==" type="bool" kind="static const typename(bool)" value="chr == &apos;-&apos;">
@@ -8415,7 +8471,7 @@
 													<right token=".literal" type="int32" kind="static const typename(i32)" value="0" />
 												</right>
 											</test>
-											<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/string.ci:319">
+											<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/cstr.ci:319">
 												<stmt token=";" type="void" kind="static const typename(void)" stmt="sign := (-1);">
 													<expr token=":=" type="float64" kind="static const typename(f64)" value="sign := (-1)">
 														<left token=".variable" type="float64" kind="static const typename(f64)" value="sign"/>
@@ -8427,7 +8483,7 @@
 													</expr>
 												</stmt>
 											</then>
-											<else token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/string.ci:322">
+											<else token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/cstr.ci:322">
 												<stmt token="if" type="void" kind="static const typename(void)" stmt="if (chr == &apos;+&apos; &amp;&amp; i == 0)">
 													<test token="&amp;&amp;" type="bool" kind="static const typename(bool)" value="chr == &apos;+&apos; &amp;&amp; i == 0">
 														<left token="==" type="bool" kind="static const typename(bool)" value="chr == &apos;+&apos;">
@@ -8439,7 +8495,7 @@
 															<right token=".literal" type="int32" kind="static const typename(i32)" value="0" />
 														</right>
 													</test>
-													<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/string.ci:322">
+													<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/cstr.ci:322">
 														<stmt token=";" type="void" kind="static const typename(void)" stmt="sign := (1);">
 															<expr token=":=" type="float64" kind="static const typename(f64)" value="sign := (1)">
 																<left token=".variable" type="float64" kind="static const typename(f64)" value="sign"/>
@@ -8449,7 +8505,7 @@
 															</expr>
 														</stmt>
 													</then>
-													<else token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/string.ci:325">
+													<else token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/cstr.ci:325">
 														<stmt token="return" type="void" kind="static const typename(void)" stmt="return .result := Math.nan;">
 															<expr token=":=" type="float64" kind="static const typename(f64)" value=".result := Math.nan">
 																<left token=".variable" type="float64" kind="static const typename(f64)" value=".result"/>
@@ -8476,7 +8532,7 @@
 							<push token=".literal" type="int32" kind="static const typename(i32)" value="0" />
 						</right>
 					</test>
-					<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/string.ci:331">
+					<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/cstr.ci:331">
 						<stmt token="if" type="void" kind="static const typename(void)" stmt="if (value.length &gt; (0))">
 							<test token="&gt;" type="bool" kind="static const typename(bool)" value="value.length &gt; (0)">
 								<left token="." type="uint32" kind="static const typename(u32)" value="value.length">
@@ -8487,7 +8543,7 @@
 									<push token=".literal" type="int32" kind="static const typename(i32)" value="0" />
 								</right>
 							</test>
-							<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/string.ci:332">
+							<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/text/cstr.ci:332">
 								<stmt token="return" type="void" kind="static const typename(void)" stmt="return .result := sign * result;">
 									<expr token=":=" type="float64" kind="static const typename(f64)" value=".result := sign * result">
 										<left token=".variable" type="float64" kind="static const typename(f64)" value=".result"/>

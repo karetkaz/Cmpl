@@ -7,7 +7,6 @@ static struct pluginLib {
 } *pluginLibs = NULL;
 
 int importLib(rtContext rt, const char *path) {
-
 	HANDLE library = LoadLibraryA(path);
 	if (library == NULL) {
 		error(rt, NULL, 0, "Error executing LoadLibrary(`%s`): 0x%08x", path, GetLastError());
@@ -31,7 +30,20 @@ int importLib(rtContext rt, const char *path) {
 	lib->handle = library;
 	lib->next = pluginLibs;
 	pluginLibs = lib;
-	return install(rt);
+
+	if (install(rt) != 0) {
+		return -1;
+	}
+
+	const char *import = (void*)GetProcAddress(library, pluginLibImport);
+	if (import != NULL) {
+		char inlineUnit[512];
+		snprintf(inlineUnit, sizeof(inlineUnit), "inline \"%s\"?;", import);
+		if (!ccAddUnit(rt->cc, NULL, NULL, 0, inlineUnit)) {
+			return 1;
+		}
+	}
+	return 0;
 }
 
 void closeLibs(rtContext rt) {

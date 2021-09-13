@@ -1,0 +1,14 @@
+/// extension method to read a single byte from a file
+int read(File file) {
+	uint8 buff[1] = {0};
+	if (file.read(buff) <= 0) {
+		return -1;
+	}
+	return buff[0] & 0xff;
+}
+
+/// extension method to write a single byte into a file
+int write(File file, int value) {
+	uint8 buff[1] = {value};
+	return file.write(buff);
+}
