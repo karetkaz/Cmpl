@@ -104,30 +104,26 @@ static const char *parseInt(const char *str, int32_t *res, int radix) {
 }
 
 static const char **escapeXML() {
-	static const char *escape[256];
-	static char initialized = 0;
-	if (!initialized) {
-		memset((void*)escape, 0, sizeof(escape));
+	static const char *escape[256] = {0};
+	if (escape[0] == 0) {
+		escape[0] = "&#0;";
 		escape['\''] = "&apos;";
 		escape['"'] = "&quot;";
 		escape['&'] = "&amp;";
 		escape['<'] = "&lt;";
 		escape['>'] = "&gt;";
-		initialized = 1;
 	}
 	return escape;
 }
 static const char **escapeJSON() {
-	static const char *escape[256];
-	static char initialized = 0;
-	if (!initialized) {
-		memset((void*)escape, 0, sizeof(escape));
+	static const char *escape[256] = {0};
+	if (escape[0] == 0) {
+		escape[0] = "\\u0000";
 		escape['\n'] = "\\n";
 		escape['\r'] = "\\r";
 		escape['\t'] = "\\t";
 		//~ escape['\''] = "\\'";
 		escape['\"'] = "\\\"";
-		initialized = 1;
 	}
 	return escape;
 }
@@ -1008,10 +1004,9 @@ static void textPostProfile(userContext usr) {
 	}
 
 	if (usr->dmpMemoryUse > 0) {
-		struct dbgContextRec tmp;
+		struct dbgContextRec tmp = {0};
 		dbgContext dbg = rt->dbg;
 		if (dbg == NULL) {
-			memset(&tmp, 0, sizeof(tmp));
 			tmp.rt = rt;
 			dbg = &tmp;
 		}
@@ -1021,14 +1016,14 @@ static void textPostProfile(userContext usr) {
 		textDumpMem(dbg, rt->_beg, rt->_end - rt->_beg, "heap");
 		textDumpMem(dbg, rt->_end - rt->vm.ss, rt->vm.ss, "stack");
 
-		printFmt(out, esc, "%?sused memory:\n", prefix);
+		printFmt(out, esc, "%?sUsed memory:\n", prefix);
 		textDumpMem(dbg, rt->_mem, rt->vm.ro, "meta");
 		textDumpMem(dbg, rt->_mem, rt->vm.cs, "code");
 		textDumpMem(dbg, rt->_mem, rt->vm.ds, "data");
 
 		if (usr->dmpMemoryUse > 1) {
 			// show allocated and free memory chunks.
-			printFmt(out, esc, "%?sheap memory:\n", prefix);
+			printFmt(out, esc, "%?sHeap memory:\n", prefix);
 			rtAlloc(rt, NULL, 0, textDumpMem);
 		}
 	}
@@ -1411,7 +1406,6 @@ static vmError conDebug(dbgContext ctx, vmError error, size_t ss, void *stack, s
 		printFmt(con, esc, ">dbg[%?c] %.A: ", cmd, vmPointer(rt, caller));
 		if (usr->in == NULL || fgets(buff, sizeof(buff), usr->in) == NULL) {
 			printFmt(con, esc, "can not read from standard input, aborting\n");
-			traceCalls(ctx, con, 1, rt->traceLevel, 0);
 			return illegalState;
 		}
 		if ((arg = strchr(buff, '\n'))) {
@@ -1633,9 +1627,8 @@ int main(int argc, char *argv[]) {
 			return vmSelfTest(dumpVmOpc);
 		}
 	}
-	struct userContextRec extra;
-	memset(&extra, 0, sizeof(extra));
 
+	struct userContextRec extra = {0};
 	extra.in = stdin;
 	extra.out = stdout;
 	extra.dbgCommand = dbgResume;	// last command: resume
@@ -2602,4 +2595,7 @@ int main(int argc, char *argv[]) {
 	}
 
 	return rtClose(rt) != 0;
+	(void) cmplUnit;
+	(void) cmplInit;
+	(void) cmplClose;
 }

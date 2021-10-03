@@ -72,8 +72,8 @@ struct astNode {
 			astn	init;			// for statement init
 		} stmt;
 		struct {					// OPER_xxx: operator
-			astn	lhso;			// left hand side operand
-			astn	rhso;			// right hand side operand
+			astn	lhso;			// left-hand side operand
+			astn	rhso;			// right-hand side operand
 			astn	test;			// ?: operator condition
 			int		prec;			// precedence level
 		} op;
@@ -116,7 +116,7 @@ astn intNode(ccContext cc, int64_t value);
 astn fltNode(ccContext cc, float64_t value);
 
 /// Allocate a constant string node.
-astn strNode(ccContext cc, char *value);
+astn strNode(ccContext cc, const char *value);
 
 /// Allocate node which is a link to a reference.
 astn lnkNode(ccContext cc, symn ref);

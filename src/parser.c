@@ -373,7 +373,7 @@ static astn expandInitializerObj(ccContext cc, astn varNode, astn initObj, astn 
 		if (len == NULL || len == cc->length_ref) {
 			symn ref = linkOf(varNode, 0);
 			if (varNode->kind != TOKEN_var || (isMember(ref) && !isStatic(ref))) {
-				// non static members can not expand their size, raise error, that this is not possible yet
+				// non-static members can not expand their size, raise error, that this is not possible yet
 				error(cc->rt, varNode->file, varNode->line, ERR_INVALID_INITIALIZER, varNode);
 				return NULL;
 			}
@@ -1470,7 +1470,7 @@ static astn declare_record(ccContext cc, ccKind attr) {
 	type->fields = leave(cc, KIND_typ | attr, pack, baseSize, &type->size, fields);
 	type->kind |= ATTR_stat | ATTR_cnst;
 	if (expose) {
-		// HACK: convert the type into a variable of it's own type ...?
+		// HACK: convert the type into a variable of its own type ...?
 		type->kind = KIND_var | CAST_val;
 		type->type = type;
 

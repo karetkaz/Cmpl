@@ -22,7 +22,7 @@
 	2: include debug messages
 	3: include debug messages from code generator
 	4: include debug messages from code emitter
- 	if not defined no extra messages and extra checks are performed.
+	if not defined, no extra messages and extra checks are performed.
 */
 //#define DEBUGGING 0
 
@@ -49,7 +49,7 @@ enum Settings {
 // linked list
 typedef struct list {
 	struct list *next;
-	unsigned char *data;
+	const char *data;
 } *list;
 
 // native function call
@@ -112,8 +112,8 @@ struct ccContextRec {
 	symn type_obj;        // object
 	symn type_str;        // string
 
-	symn type_int;        // integer: 32/64 bit signed
-	symn type_idx;        // length / index: 32/64 bit unsigned
+	symn type_int;        // integer: 32-bit/64-bit signed
+	symn type_idx;        // length / index: 32-bit/64-bit unsigned
 
 	symn null_ref;        // variable null
 	symn length_ref;      // slice length attribute
@@ -246,6 +246,7 @@ void nfcCheckArg(nfcContext nfc, ccKind cast, char *name);
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+extern const char * const pluginLibImport;
 extern const char * const pluginLibInstall;
 extern const char * const pluginLibDestroy;
 
@@ -286,7 +287,7 @@ unsigned rehash(const char *str, size_t size);
  * @param hash pre-calculated hashcode, -1 recalculates.
  * @return the mapped string in the string table.
  */
-char *ccUniqueStr(ccContext cc, const char *str, size_t size/* = -1*/, unsigned hash/* = -1*/);
+const char *ccUniqueStr(ccContext cc, const char *str, size_t size/* = -1*/, unsigned hash/* = -1*/);
 
 // open log file for both compiler and runtime
 void logFILE(rtContext ctx, FILE *file);

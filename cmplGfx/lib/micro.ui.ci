@@ -7,7 +7,7 @@ struct Style {
 	static const argb light = argb(0xdadada);
 	static const argb accent = argb(51, 123, 246);
 
-	int align;
+	int align = 0;
 	const int padding = 8;
 
 	const Image font = Gui.font;
@@ -90,21 +90,14 @@ struct Style {
 		}
 	}
 
-	static void align(const Style this&, Rect parent, Rect rect&, const char value[*], int padding, int align) {
-		parent.x += padding;
-		parent.y += padding;
-		parent.w -= 2 * padding;
-		parent.h -= 2 * padding;
+	static void align(const Style this&, Rect parent, Rect rect&, const char value[*], int align) {
+		parent.adjust(-this.padding);
 		this.font.clipText(&rect, value);
 		align(parent, &rect, align);
 	}
 
-	static void align(const Style this&, Rect parent, Rect rect&, const char value[*], int align) {
-		return align(this, parent, &rect, value, this.padding, align);
-	}
-
 	static void align(const Style this&, Rect parent, Rect rect&, const char value[*]) {
-		return align(this, parent, &rect, value, this.padding, this.align);
+		return align(this, parent, &rect, value, this.align);
 	}
 
 	static void setColor(Style style&, argb background, argb accent) {

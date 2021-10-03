@@ -11,13 +11,13 @@ make -j 12 cmpl libFile.dylib libGfx.dylib BINDIR="$BIN"
 
 # test the virtual machine
 if ! $BIN/cmpl --test-vm; then
-  echo "virtual machine test failed"
+	echo "virtual machine test failed"
 	exit 1
 fi
 
 ## dump api for scite including all libraries
 if ! $BIN/cmpl -dump.scite extras/cmpl.api "$BIN/libFile.dylib" "$BIN/libGfx.dylib"; then
-  echo "failed to dump compiler api"
+	echo "failed to dump compiler api"
 	exit 1
 fi
 

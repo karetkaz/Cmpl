@@ -115,7 +115,7 @@ static vmError b32zxt(nfcContext args) {
 	retu32(args, (val << (32 - (ofs + cnt))) >> (32 - cnt));
 	return noError;
 }
-// count bit population
+// count population of bits set to 1
 static vmError b32pop(nfcContext args) {
 	uint32_t val = argu32(args, 0);
 	retu32(args, bitcnt(val));

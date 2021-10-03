@@ -376,12 +376,10 @@ GxImage loadBmp(GxImage dst, const char *src, int depth) {
 	return dst;
 }
 int saveBmp(const char *dst, GxImage src, int flags) {
-	BMP_INF infoHeader;
-	memset(&infoHeader, 0, sizeof(BMP_INF));
+	BMP_INF infoHeader = {0};
 
 	// bitmap palette
-	struct GxCLut palette;
-	memset(&palette, 0, sizeof(struct GxCLut));
+	struct GxCLut palette = {0};
 
 	switch (src->depth) {
 		default:

@@ -24,14 +24,14 @@ static inline size_t stkOffset(rtContext rt, size_t size) {
 
 /// Emit an offset: address or index (32 or 64 bit based on vm size)
 static inline size_t emitOffs(rtContext rt, size_t value) {
-	vmValue arg;
+	vmValue arg = {0};
 	arg.i64 = value;
 	return emitOpc(rt, vmSelect(opc_lc32, opc_lc64), arg);
 }
 
 /// Emit an instruction indexing nth element on stack.
 static inline size_t emitStack(rtContext rt, vmOpcode opc, ssize_t arg) {
-	vmValue tmp;
+	vmValue tmp = {0};
 	tmp.u64 = rt->vm.ss * vm_stk_align - arg;
 
 	switch (opc) {
@@ -341,7 +341,7 @@ static ccKind genDeclaration(ccContext cc, symn variable, ccKind get) {
 /// Generate byte-code for variable indirect load.
 static ccKind genIndirection(ccContext cc, symn variable, ccKind get, int isIndex) {
 	if (get == KIND_var) {
-		// load only the offset of the variable, no matter if its a reference or not
+		// load only the offset of the variable, no matter if it's a reference or not
 		// HACK: currently used to get the length of a slice
 		return CAST_ref;
 	}
@@ -700,7 +700,7 @@ static ccKind genCast(ccContext cc, astn ast, ccKind get) {
 	// float64(3)
 	switch (cast) {
 		case CAST_val:
-			// cast the result of an emit to a value-type
+			// cast the result of emit to a value-type
 			if (arg->type == cc->emit_opc) {
 				if (!genAst(cc, arg, cast)) {
 					traceAst(ast);
@@ -737,9 +737,9 @@ static ccKind genCall(ccContext cc, astn ast) {
 		return CAST_any;
 	}
 
-	struct astNode extraFile;
-	struct astNode extraLine;
-	struct astNode extraResult;
+	struct astNode extraFile = {0};
+	struct astNode extraLine = {0};
+	struct astNode extraResult = {0};
 	size_t offsets[maxTokenCount];
 	astn values[maxTokenCount];
 	symn vaElemType = NULL;
@@ -763,9 +763,6 @@ static ccKind genCall(ccContext cc, astn ast) {
 				dbgCgen("%?s:%?u: Using the location of the last expression statement", file, line);
 			}
 
-			memset(&extraFile, 0, sizeof(extraFile));
-			memset(&extraLine, 0, sizeof(extraLine));
-
 			// add 2 extra computed argument to the raise function(file and line)
 			extraFile.kind = TOKEN_val;
 			extraLine.kind = TOKEN_val;
@@ -780,7 +777,6 @@ static ccKind genCall(ccContext cc, astn ast) {
 			arg = &extraFile;
 		}
 
-		memset(&extraResult, 0, sizeof(extraResult));
 		if (function->params->init != NULL) {
 			extraResult = *function->params->init;
 		}
@@ -2441,7 +2437,7 @@ int ccGenCode(ccContext cc, int debug) {
 					}
 				}
 			}
-			// last instruction of a function must be ret
+			// last instruction of a function must be: ret
 			if (!testOcp(rt, rt->vm.pc, opc_jmpi, NULL)) {
 				if (!emit(rt, opc_jmpi)) {
 					error(rt, var->file, var->line, ERR_EMIT_FUNCTION, var);

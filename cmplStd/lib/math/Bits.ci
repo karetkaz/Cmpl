@@ -18,6 +18,15 @@ uint16 swapBytes(uint16 x) {
 	return (x & 0x00ff) << 8 | (x & 0xff00) >> 8;
 }
 
+/// convert a 64 bit value between Little endian and Big endian
+inline swapBytes(int64 x) = int64(swapBytes(uint64(x)));
+
+/// convert a 32 bit value between Little endian and Big endian
+inline swapBytes(int32 x) = int32(swapBytes(uint32(x)));
+
+/// convert a 16 bit value between Little endian and Big endian
+inline swapBytes(int16 x) = int16(swapBytes(uint16(x)));
+
 
 /// find the index of the most significant(highest) bit
 int scanMsb(uint64 x) {
@@ -127,6 +136,7 @@ int scanMsb(uint8 x) {
 	return result;
 }
 
+
 /// find the index of the least significant(lowest) bit
 int scanLsb(uint64 x) {
 	if (x == 0) {
@@ -235,8 +245,7 @@ int scanLsb(uint8 x) {
 	return result;
 }
 
-// TODO: uint16 keepMsb(uint16 x)
-// TODO: uint8 keepMsb(uint8 x)
+
 /// keep the highest bit set
 uint64 keepMsb(uint64 x) {
 	x |= x >> 1;
@@ -247,6 +256,7 @@ uint64 keepMsb(uint64 x) {
 	x |= x >> 32;
 	return x - (x >> 1);
 }
+
 /// keep the highest bit set
 uint32 keepMsb(uint32 x) {
 	x |= x >> 1;
@@ -257,18 +267,20 @@ uint32 keepMsb(uint32 x) {
 	return x - (x >> 1);
 }
 
+
 /// keep the lowest bit set
 inline keepLsb(uint64 x) = uint64(x & -x);
+
 /// keep the lowest bit set
 inline keepLsb(uint32 x) = uint32(x & -x);
+
 /// keep the lowest bit set
 inline keepLsb(uint16 x) = uint16(x & -x);
+
 /// keep the lowest bit set
 inline keepLsb(uint8 x) = uint8(x & -x);
 
-// TODO: int countBits(uint64 x)
-// TODO: int countBits(uint16 x)
-// TODO: int countBits(uint8 x)
+
 /// count bits set to one
 int countBits(uint64 x) {
 	x -= (x >> 1) & 0x5555555555555555;
@@ -279,6 +291,8 @@ int countBits(uint64 x) {
 	x += x >> 32;
 	return x & 0x3f;
 }
+
+/// count bits set to one
 int countBits(uint32 x) {
 	x -= (x >> 1) & 0x55555555;
 	x = (x & 0x33333333) + ((x >> 2) & 0x33333333);
@@ -287,6 +301,8 @@ int countBits(uint32 x) {
 	x += x >> 16;
 	return x & 0x3f;
 }
+
+
 // reverse all the bits
 uint64 swapBits(uint64 x) {
 	x = ((x >> 1) & 0x5555555555555555) | ((x & 0x5555555555555555) << 1);
@@ -321,17 +337,16 @@ uint8 swapBits(uint8 x) {
 	return (x >> 4) | (x << 4);
 }
 
-inline swapBytes(int64 x) = int64(swapBytes(uint64(x)));
-inline swapBytes(int32 x) = int32(swapBytes(uint32(x)));
-inline swapBytes(int16 x) = int16(swapBytes(uint16(x)));
-
 /* TODO: leftovers
+uint16 keepMsb(uint16 x)
+uint8 keepMsb(uint8 x)
+int countBits(uint16 x)
+int countBits(uint8 x)
+
 define Lo32(int64 a) = int32(a);					// Lo32 part
 define Hi32(int64 a) = Lo32(int64.Shr(a, 32));		// Hi32 part
 define Lo16(int32 a) = int32(a & 0xffff);			// Lo16 part
 define Hi16(int32 a) = Lo16(a >> 16);				// Hi16 part
 define Lo8(int32 a) = int32(a & 0xff);				// Lo16 part
 define Hi8(int32 a) = Lo8(a >> 8);					// Hi16 part
-define sxt64(int32 a) = int64(int32(a));			// sign extend
-define zxt64(int32 a) = int64(uint32(a));			// zero extend
 */

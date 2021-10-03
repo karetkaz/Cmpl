@@ -7,7 +7,6 @@ static struct pluginLib {
 } *pluginLibs = NULL;
 
 int importLib(rtContext rt, const char *path) {
-
 	void *library = dlopen(path, RTLD_NOW);
 	if (library == NULL) {
 		error(rt, NULL, 0, "Error executing dlopen(`%s`): %s", path, dlerror());
@@ -31,7 +30,21 @@ int importLib(rtContext rt, const char *path) {
 	lib->handle = library;
 	lib->next = pluginLibs;
 	pluginLibs = lib;
-	return install(rt);
+
+	if (install(rt) != 0) {
+		return -1;
+	}
+
+	const char *import = dlsym(library, pluginLibImport);
+	if (import != NULL) {
+		char inlineUnit[1024];
+		size_t len = strnlen(import, 1024);
+		snprintf(inlineUnit, sizeof(inlineUnit), "inline \"%s\"?;", import);
+		if (!ccAddUnit(rt->cc, NULL, NULL, 0, inlineUnit)) {
+			return 1;
+		}
+	}
+	return 0;
 }
 
 void closeLibs(rtContext rt) {

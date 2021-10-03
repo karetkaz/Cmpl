@@ -283,7 +283,7 @@ int resizeImage(GxImage image, GxRect rect, GxImage src, GxRect roi, int interpo
 		return 0;
 	}
 
-	if (!interpolation || dx >= 0x20000 || dy >= 0x20000) {
+	if (!interpolation || dx > 0x20000 || dy > 0x20000) {
 		for (int y = 0, sy = y0; y < drec.h; ++y, sy += dy) {
 			for (int x = 0, sx = x0; x < drec.w; ++x, sx += dx) {
 				setPixel(image, drec.x + x, drec.y + y, getPixel(src, sx >> 16, sy >> 16));

@@ -9,8 +9,9 @@
 
 #include "internal.h"
 
+const char *const pluginLibImport = "cmplUnit";
 const char *const pluginLibInstall = "cmplInit";
-const char *const pluginLibDestroy = "cmplDone";
+const char *const pluginLibDestroy = "cmplClose";
 
 const char *const type_fmt_signed32 = "%d";
 const char *const type_fmt_signed64 = "%D";
@@ -240,8 +241,7 @@ static inline vmValue *nfcPeekArg(nfcContext nfc, size_t argOffs) {
 
 rtValue nfcReadArg(nfcContext nfc, size_t offs) {
 	vmValue *value = nfcPeekArg(nfc, offs);
-	rtValue result;
-	memset(&result, 0, sizeof(result));
+	rtValue result = {0};
 	switch (castOf(nfc->param)) {
 		default:
 			fatal(ERR_INTERNAL_ERROR);
@@ -612,7 +612,7 @@ static void install_emit(ccContext cc, ccInstall mode) {
 			ccDefOpCode(cc, "x2", type_i32, p4x_swz, 2 | 3 << 2 | 0 << 4 | 1 << 6);
 			if ((mode & installEswz) == installEswz) {
 				for (size_t i = 0; i < 256; i += 1) {
-					char *name;
+					const char *name;
 					if (rt->_end - rt->_beg < 5) {
 						fatal(ERR_MEMORY_OVERRUN);
 						return;
@@ -646,12 +646,11 @@ static void install_emit(ccContext cc, ccInstall mode) {
  * @returns 0 on success
  */
 static int install_base(rtContext rt, ccInstall mode, vmError onHalt(nfcContext)) {
-	int error = 0;
 	ccContext cc = rt->cc;
 	symn field;
 
 	// !!! halt must be the first native call.
-	error = error || !ccAddCall(cc, onHalt ? onHalt : haltDummy, "void halt()");
+	int error = !ccAddCall(cc, onHalt ? onHalt : haltDummy, "void halt()");
 
 	// 4 reflection
 	if (cc->type_rec != NULL && cc->type_var != NULL) {
@@ -906,7 +905,7 @@ size_t vmInit(rtContext rt, int debug, vmError onHalt(nfcContext)) {
 void *rtAlloc(rtContext rt, void *ptr, size_t size, void dbg(dbgContext, void *, size_t, char *)) {
 	/* memory manager
 	 * using one linked list containing both used and unused memory chunks.
-	 * The idea is when allocating a block of memory we always must to traverse the list of chunks.
+	 * The idea is when allocating a block of memory we always must traverse the list of chunks.
 	 * when freeing a block not. Because of this if a block is used prev points to the previous block.
 	 * a block is free when prev is null.
 	 .
@@ -1145,7 +1144,7 @@ symn ccExtend(ccContext cc, symn sym) {
 		return NULL;
 	}
 	if (sym == NULL) {
-		// can not extend nothing
+		// cannot extend nothing
 		return NULL;
 	}
 	if (sym->fields != NULL) {
@@ -1190,7 +1189,7 @@ symn ccDefFlt(ccContext cc, const char *name, double value) {
 	return install(cc, name, ATTR_stat | ATTR_cnst | KIND_def | CAST_f64, 0, cc->type_f64, fltNode(cc, value));
 }
 
-symn ccDefStr(ccContext cc, const char *name, char *value) {
+symn ccDefStr(ccContext cc, const char *name, const char *value) {
 	if (!cc || !name) {
 		trace(ERR_INTERNAL_ERROR);
 		return NULL;
@@ -1222,8 +1221,7 @@ symn ccAddType(ccContext cc, const char *name, unsigned size, int refType) {
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Lookup
 
 symn ccLookup(rtContext rt, symn scope, char *name) {
-	struct astNode ast;
-	memset(&ast, 0, sizeof(struct astNode));
+	struct astNode ast = {0};
 	ast.kind = TOKEN_var;
 	ast.ref.name = name;
 	ast.ref.hash = rehash(name, -1) % hashTableSize;
@@ -1291,7 +1289,7 @@ symn rtLookup(rtContext rt, size_t offs, ccKind filter) {
 	return NULL;
 }
 
-char *ccUniqueStr(ccContext cc, const char *str, size_t len, unsigned hash) {
+const char *ccUniqueStr(ccContext cc, const char *str, size_t len, unsigned hash) {
 	if (str == NULL) {
 		return NULL;
 	}
@@ -1315,9 +1313,9 @@ char *ccUniqueStr(ccContext cc, const char *str, size_t len, unsigned hash) {
 	list prev = NULL;
 	list next = cc->stringTable[hash];
 	while (next != NULL) {
-		int cmp = memcmp(next->data, str, len);
+		int cmp = strncmp(next->data, str, len);
 		if (cmp == 0) {
-			return (char*)next->data;
+			return next->data;
 		}
 		if (cmp > 0) {
 			break;
@@ -1351,9 +1349,8 @@ char *ccUniqueStr(ccContext cc, const char *str, size_t len, unsigned hash) {
 	}
 
 	node->next = next;
-	node->data = (unsigned char*)str;
-
-	return (char*)str;
+	node->data = str;
+	return str;
 }
 
 

@@ -24,12 +24,12 @@ ifneq "$(OS)" "Windows_NT"
 	CFLAGS+=-fPIC
 	CLIBS+=-ldl
 	UNAME_S := $(shell uname -s)
-    ifeq ($(UNAME_S),Linux)
+	ifeq ($(UNAME_S),Linux)
 		MKDIRF=--parents
-    endif
-    ifeq ($(UNAME_S),Darwin)
+	endif
+	ifeq ($(UNAME_S),Darwin)
 		MKDIRF=-p
-    endif
+	endif
 else
 	#CFLAGS+=-D NO_LIBPNG -D NO_LIBJPEG
 	CFLAGS+=-I libs/libjpeg

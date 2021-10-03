@@ -272,7 +272,7 @@ symn lookup(ccContext cc, symn sym, astn ref, astn arguments, ccKind filter, int
 	for (; sym; sym = sym->next) {
 
 		if (sym->name == NULL || strcmp(sym->name, ref->ref.name) != 0) {
-			// exclude anonymous symbols or non matching names
+			// exclude anonymous symbols or non-matching names
 			continue;
 		}
 
@@ -352,7 +352,7 @@ symn lookup(ccContext cc, symn sym, astn ref, astn arguments, ccKind filter, int
 					continue;
 				}
 
-				// allow emit type cast like: `Complex(emit(...))`
+				// allow type cast of emit: `Complex(emit(...))`
 				if (argument->type != cc->emit_opc) {
 					// but only for types defined by user
 					if (castOf(base) == CAST_val) {
@@ -616,7 +616,7 @@ symn typeCheck(ccContext cc, symn loc, astn ast, int raise) {
 
 				// emit may contain instructions, but those are hidden in emit (like: emit.sub.i64).
 				if (type == cc->emit_opc) {
-					// lookup first in current scope, than what failed in emit scope
+					// lookup first in current scope, then what failed in emit scope
 					typeCheck(cc, loc, args, 0);
 					loc = cc->emit_opc;
 				}
@@ -1063,9 +1063,8 @@ ccKind canAssign(ccContext cc, symn variable, astn value, int strict) {
 
 			symn arg1 = variable->params;
 			symn arg2 = valueRef->params;
-			struct astNode temp;
+			struct astNode temp = {0};
 
-			memset(&temp, 0, sizeof(temp));
 			temp.kind = TOKEN_var;
 			temp.type = varType;
 			temp.ref.link = variable;
@@ -1147,10 +1146,9 @@ ccKind canAssign(ccContext cc, symn variable, astn value, int strict) {
 
 	// Assign array
 	if (castOf(varType) == CAST_arr) {
-		struct astNode temp;
+		struct astNode temp = {0};
 		symn vty = value->type;
 
-		memset(&temp, 0, sizeof(temp));
 		temp.kind = TOKEN_var;
 		temp.type = vty ? vty->type : NULL;
 		temp.ref.link = NULL;

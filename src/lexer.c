@@ -187,7 +187,7 @@ static ccToken readTok(lexContext ctx, astn tok) {
 		SCTRL = CNTRL|SPACE,   // whitespace or control chars
 		ALPHA = UPPER|LOWER,   // letters
 		ALNUM = DIGIT|ALPHA,   // letters and numbers
-		CWORD = UNDER|ALNUM,   // letters numbers and underscore
+		CWORD = UNDER|ALNUM,   // letters, numbers and underscore
 	};
 	static int const chr_map[256] = {
 		/* 000 nul */	CNTRL,

@@ -127,7 +127,7 @@ symn ccDefFlt(ccContext cc, const char *name, double value);
  * @param value Value of the constant.
  * @return Defined symbol, null on error.
  */
-symn ccDefStr(ccContext cc, const char *name, char *value);
+symn ccDefStr(ccContext cc, const char *name, const char *value);
 
 /**
  * Define a variable or reference.
@@ -208,6 +208,66 @@ int ccLibSys(ccContext cc);
 
 /// standard modules for `ccAddLib`
 int ccLibStd(ccContext cc);
+
+/// same as castOf forcing arrays to cast as reference
+static inline ccKind refCast(symn sym) {
+	ccKind got = castOf(sym);
+	if (got == CAST_arr && isArrayType(sym)) {
+		symn len = sym->fields;
+		if (len == NULL || isStatic(len)) {
+			// pointer or fixed size array
+			got = CAST_ref;
+		}
+	}
+	return got;
+}
+
+static inline size_t refSize(symn sym) {
+	switch (refCast(sym)) {
+		default:
+			return sym->size;
+
+		case CAST_ref:
+			return sizeof(vmOffs);
+
+		case CAST_arr:
+		case CAST_var:
+			return 2 * sizeof(vmOffs);
+	}
+}
+
+/**
+ * check if the given filter excludes the given symbol or not
+ * isFiltered(staticVariable, KIND_var | ATTR_stat) == 0
+ * isFiltered(localVariable, KIND_var | ATTR_stat) != 0
+ * @param sym the symbol to be checked
+ * @param filter the filter to be applied
+ * @return 0 if is not excluded
+ */
+static inline int isFiltered(symn sym, ccKind filter) {
+	ccKind filterStat = filter & ATTR_stat;
+	if (filterStat != 0 && (sym->kind & ATTR_stat) != filterStat) {
+		return 1;
+	}
+	ccKind filterCnst = filter & ATTR_cnst;
+	if (filterCnst != 0 && (sym->kind & ATTR_cnst) != filterCnst) {
+		return 1;
+	}
+	ccKind filterKind = filter & MASK_kind;
+	if (filterKind != 0 && (sym->kind & MASK_kind) != filterKind) {
+		return 1;
+	}
+	ccKind filterCast = filter & MASK_cast;
+	if (filterCast != 0 && (sym->kind & MASK_cast) != filterCast) {
+		return 1;
+	}
+	return 0;
+}
+
+/**
+ * Check if the given symbol is extending the object type
+ */
+int isObjectType(symn sym);
 
 #ifdef __cplusplus
 }

@@ -36,14 +36,14 @@ struct RangeIterator {
 		return false;
 	}
 
-    // make RangeIterator iterable using an int
-    static bool next(RangeIterator &it, int &value) {
-        if (RangeIterator.next(it)) {
-            value = it.current;
-            return true;
-        }
-        return false;
-    }
+	// make RangeIterator iterable using an int
+	static bool next(RangeIterator &it, int &value) {
+		if (RangeIterator.next(it)) {
+			value = it.current;
+			return true;
+		}
+		return false;
+	}
 }
 
 // make the iterator for the Range type (make Range iterable)

@@ -38,36 +38,12 @@ static vmError FILE_open(nfcContext ctx) {
 	return noError;
 }
 
-static const char *const proto_file_peek_byte = "int peek(File file)";
-static vmError FILE_peek(nfcContext ctx) {
-	FILE *file = (FILE *) arghnd(ctx, 0);
-	int chr = ungetc(getc(file), file);
-	reti32(ctx, chr);
-	return noError;
-}
-
 static const char *const proto_file_read_buff = "int read(File file, uint8 buff[])";
 static vmError FILE_read(nfcContext ctx) {
 	FILE *file = (FILE *) nextArg(ctx).ref;
 	rtValue buff = nextArg(ctx);
 	size_t n = fread(buff.ref, 1, buff.length, file);
 	reti32(ctx, n);
-	return noError;
-}
-
-static const char *const proto_file_read_line = "int readLine(File file, uint8 buff[])";
-static vmError FILE_gets(nfcContext ctx) {
-	FILE *file = (FILE *) nextArg(ctx).ref;
-	rtValue buff = nextArg(ctx);
-	if (feof(file)) {
-		reti32(ctx, -1);
-	}
-	else {
-		long pos = ftell(file);
-		char *unused = fgets((char *) buff.ref, buff.length, file);
-		reti32(ctx, ftell(file) - pos);
-		(void)unused;
-	}
 	return noError;
 }
 
@@ -83,15 +59,9 @@ static vmError FILE_write(nfcContext ctx) {
 static const char *const proto_file_flush = "void flush(File file)";
 static vmError FILE_flush(nfcContext ctx) {
 	FILE *file = (FILE *) arghnd(ctx, 0);
-	fflush(file);
-	return noError;
-}
-
-static const char *const proto_file_tell = "int tell(File file)";
-static vmError FILE_tell(nfcContext ctx) {
-	FILE *file = (FILE *) arghnd(ctx, 0);
-	size_t pos = ftell(file);
-	reti32(ctx, pos);
+	if (fflush(file) != 0) {
+		return nativeCallError;
+	}
 	return noError;
 }
 
@@ -106,6 +76,52 @@ static vmError FILE_close(nfcContext ctx) {
 		return nativeCallError;
 	}*/
 	fclose(file);
+	return noError;
+}
+
+static const char *const proto_file_seek_set = "File seek(File file, int64 position)";
+static const char *const proto_file_seek_cur = "File seekCur(File file, int64 position)";
+static const char *const proto_file_seek_end = "File seekEnd(File file, int64 position)";
+static vmError FILE_seek(nfcContext ctx) {
+	FILE *file = (FILE *) nextArg(ctx).ref;
+	ssize_t pos = nextArg(ctx).i64;
+	if (ctx->proto == proto_file_seek_set) {
+		if (fseek(file, pos, SEEK_SET) == 0) {
+			rethnd(ctx, file);
+			return noError;
+		}
+	}
+	else if (ctx->proto == proto_file_seek_cur) {
+		if (fseek(file, pos, SEEK_CUR) == 0) {
+			rethnd(ctx, file);
+			return noError;
+		}
+	}
+	else if (ctx->proto == proto_file_seek_end) {
+		if (fseek(file, pos, SEEK_END) == 0) {
+			rethnd(ctx, file);
+			return noError;
+		}
+	}
+	return nativeCallError;
+}
+
+static const char *const proto_file_tell = "int64 tell(File file)";
+static vmError FILE_tell(nfcContext ctx) {
+	FILE *file = (FILE *) arghnd(ctx, 0);
+	ssize_t pos = ftell(file);
+	if (pos < 0) {
+		return nativeCallError;
+	}
+	reti64(ctx, pos);
+	return noError;
+}
+
+static const char *const proto_file_peek = "int peek(File file)";
+static vmError FILE_peek(nfcContext ctx) {
+	FILE *file = (FILE *) arghnd(ctx, 0);
+	int chr = ungetc(getc(file), file);
+	reti32(ctx, chr);
 	return noError;
 }
 
@@ -134,26 +150,29 @@ static vmError FILE_stream(nfcContext ctx) {
 	return nativeCallError;
 }
 
+const char cmplUnit[] = "/cmplStd/lib/system/File.ci";
 int cmplInit(rtContext rt) {
 	ccContext cc = rt->cc;
 	symn type = rt->api.ccAddType(cc, proto_file, sizeof(FILE*), 0);
 	int err = type == NULL;
 
-	if (rt->api.ccExtend(cc, type)) {
+	if (rt->api.ccExtend(cc, type) != NULL) {
 
 		err = err || !rt->api.ccAddCall(cc, FILE_open, proto_file_open);
 		err = err || !rt->api.ccAddCall(cc, FILE_open, proto_file_create);
 		err = err || !rt->api.ccAddCall(cc, FILE_open, proto_file_append);
 
-		err = err || !rt->api.ccAddCall(cc, FILE_peek, proto_file_peek_byte);
-		err = err || !rt->api.ccAddCall(cc, FILE_read, proto_file_read_buff);
-		err = err || !rt->api.ccAddCall(cc, FILE_gets, proto_file_read_line);
+		err = err || !rt->api.ccAddCall(cc, FILE_peek, proto_file_peek);
+		err = err || !rt->api.ccAddCall(cc, FILE_tell, proto_file_tell);
+		err = err || !rt->api.ccAddCall(cc, FILE_seek, proto_file_seek_set);
+		err = err || !rt->api.ccAddCall(cc, FILE_seek, proto_file_seek_cur);
+		err = err || !rt->api.ccAddCall(cc, FILE_seek, proto_file_seek_end);
 
+		err = err || !rt->api.ccAddCall(cc, FILE_read, proto_file_read_buff);
 		err = err || !rt->api.ccAddCall(cc, FILE_write, proto_file_write_buff);
 
 		err = err || !rt->api.ccAddCall(cc, FILE_flush, proto_file_flush);
 		err = err || !rt->api.ccAddCall(cc, FILE_close, proto_file_close);
-		err = err || !rt->api.ccAddCall(cc, FILE_tell, proto_file_tell);
 
 		err = err || !rt->api.ccAddCall(cc, FILE_stream, proto_file_get_stdIn);
 		err = err || !rt->api.ccAddCall(cc, FILE_stream, proto_file_get_stdOut);

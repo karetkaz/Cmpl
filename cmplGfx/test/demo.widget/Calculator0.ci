@@ -2,9 +2,13 @@
 // double click result to clear it
 
 inline "/cmplGfx/lib/micro.ui.ci";
-const FormatFlags format = {
-	precision: 10;
+Style display = {
+	font: Gui.font(48);
+	align: Style.right;
+	format: { precision: 10; };
+	backgroundColor: 0x1f1f1f;
 };
+
 char result[256] = {'0', 0};
 char operation = 0;
 float64 value = 0;
@@ -14,21 +18,24 @@ bool onClear(Button this);
 bool onVal(Button this);
 bool onOp(Button this);
 
-struct CalcResult: Button {
-	void onDraw(CalcResult this, Image offs, Rect rect, const Style style&) {
-		offs.fillRect(rect, style.hoveredColor);
+struct Result: Button {
+	void onDraw(Result this, Image offs, Rect rect, const Style style&) {
 		Rect textRect = {};
 		rect.adjust(-style.padding);
 		style.font.clipText(&textRect, this.text);
-		Style.align(rect, &textRect, Style.right);
+		if (textRect.w > rect.w) {
+			Style.align(rect, &textRect, Style.left);
+		} else {
+			Style.align(rect, &textRect, style.align);
+		}
 		offs.drawText(textRect, style.font, this.text, style.textColor);
 	}
 }
 
-CalcResult btnResult = {
+Result btnResult = {
 	text: result;
-	focusable: false;
-	onReset: onClear;
+	enabled: false;
+	style: display;
 };
 
 Button buttons[] = {
@@ -116,7 +123,7 @@ bool onOp(Button this) {
 		result.append(0, "Inf");
 	}
 	else {
-		result.append(0, value, format);
+		result.append(0, value, display.format);
 	}
 
 	// make sure all operators were handled

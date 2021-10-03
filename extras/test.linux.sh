@@ -12,32 +12,32 @@ make clean BINDIR="$BIN"
 make -j 12 cmpl libFile.so libGfx.so libOpenGL.so BINDIR="$BIN"
 
 if [ -n "$BIN_EMC" ]; then
-  make -j 12 cmpl.js libFile.wasm libGfx.wasm BINDIR="$BIN_EMC"
+	make -j 12 cmpl.js libFile.wasm libGfx.wasm BINDIR="$BIN_EMC"
 fi
 
 # build and run test on 32 bit platform
 WATCOM="$(echo ~/bin/ow_daily/rel2)"
 if [ -n "$BIN_WCC" ] && [ -d "$WATCOM" ]; then
-  export WATCOM="$WATCOM"
-  export INCLUDE="$WATCOM/lh"
-  export LIB="$WATCOM/lib386"
-  PATH="$WATCOM/binl:$PATH"
+	export WATCOM="$WATCOM"
+	export INCLUDE="$WATCOM/lh"
+	export LIB="$WATCOM/lib386"
+	PATH="$WATCOM/binl:$PATH"
 
-  mkdir -p $BIN_WCC && cd $BIN_WCC
-  owcc -xc -std=c99 -o "$BIN_WCC/cmpl" $(echo "$CMPL_HOME/src/*.c")
-  cd $CMPL_HOME || exit 1
+	mkdir -p $BIN_WCC && cd $BIN_WCC
+	owcc -xc -std=c99 -o "$BIN_WCC/cmpl" $(echo "$CMPL_HOME/src/*.c")
+	cd $CMPL_HOME || exit 1
 fi
 
 # test the virtual machine
 $BIN_WCC/cmpl --test-vm
 if ! $BIN/cmpl --test-vm; then
-  echo "virtual machine test failed"
+	echo "virtual machine test failed"
 	exit 1
 fi
 
 ## dump api for scite including all libraries
 if ! $BIN/cmpl -dump.scite extras/cmpl.api "$BIN/libFile.so" "$BIN/libGfx.so"; then
-  echo "failed to dump compiler api"
+	echo "failed to dump compiler api"
 	exit 1
 fi
 
@@ -58,7 +58,7 @@ done
 TEST_FLAGS="$(echo -X+steps-stdin-offsets -asm/m/n/s -debug/g "$CMPL_HOME/cmplStd/test/test.ci")"
 $BIN_WCC/cmpl -log/d "$BIN_WCC.ci" $TEST_FLAGS
 if ! $BIN/cmpl -log/d "$BIN.ci" $TEST_FLAGS; then
-  echo "main test failed: $TEST_FLAGS"
+	echo "main test failed: $TEST_FLAGS"
 	exit 1
 fi
 
@@ -92,7 +92,6 @@ do
 		echo "**** cannot run test: $file"
 		continue
 	fi
-	echo -n "**** test: $file\\r"
 	if ! $BIN/cmpl -X-stdin+steps -run -log/a/d "$DUMP_FILE" "$BIN/libFile.so" "$BIN/libGfx.so" "$file"; then
 		echo "****** test failed: $file"
 	else
@@ -104,10 +103,9 @@ TEST_FILES="$(echo $CMPL_HOME/cmplGL/test/*.ci)"
 for file in $(echo "$TEST_FILES")
 do
 	if ! cd "$(dirname "$file")"; then
-    echo "**** cannot run test: $file"
-    continue
-  fi
-	echo -n "**** test: $file\\r"
+		echo "**** cannot run test: $file"
+		continue
+	fi
 	if ! $BIN/cmpl -X-stdin+steps -run -log/a/d "$DUMP_FILE" "$BIN/libFile.so" "$BIN/libOpenGL.so" "$file"; then
 		echo "****** test failed: $file"
 	else

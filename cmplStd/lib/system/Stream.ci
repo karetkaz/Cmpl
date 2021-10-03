@@ -25,12 +25,11 @@ struct ByteReader: Closeable {
 	int read(ByteReader this, byte bytes[]);
 
 	static int read(ByteReader this) {
-		byte bytes[1] = {};
-		int result = this.read(bytes);
-		if (result > 0) {
-			return bytes[0];
+		byte bytes[1] = {0};
+		if (this.read(bytes) <= 0) {
+			return -1;
 		}
-		return result;
+		return bytes[0] & 255;
 	}
 
 	/* TODO: subclasses
@@ -55,7 +54,7 @@ struct ByteWriter: Closeable {
 		return this.write(this, bytes[... count]);
 	}
 
-	/*TODO:static*/ void write(ByteWriter this, byte oneByte) {
+	static void write(ByteWriter this, byte oneByte) {
 		byte bytes[1] = { oneByte };
 		return this.write(this, bytes);
 	}
@@ -80,7 +79,6 @@ struct ByteWriter: Closeable {
 		for ( ; ; ) {
 			int read = reader.read(buffer);
 			if (read <= 0) {
-				// TODO: break;
 				return result;
 			}
 			this.write(buffer, read);
@@ -99,6 +97,7 @@ struct ByteWriter: Closeable {
 
 // TextReader := Decoder & Parser(java:Reader + Scanner?Parser?)
 struct TextReader: Closeable {
+	// The Unicode Character Set (UCS) contains 1,114,112 code points: U+0000—U+10FFFF
 	inline unicode = uint32;
 
 	const ByteReader reader;
@@ -106,24 +105,23 @@ struct TextReader: Closeable {
 	// abstract method
 	int read(TextReader this, unicode chars[]);
 
-	/*TODO:static*/ unicode read(TextReader this) {
-		unicode chars[1] = {};
-		int result = this.read(chars);
-		if (result > 0) {
-			return chars[0];
+	static int read(TextReader this) {
+		unicode chars[1] = {0};
+		if (this.read(chars) <= 0) {
+			return -1;
 		}
-		return result;
+		return chars[0] & 0x00ffffff;
 	}
 
 	void close(TextReader this) {
 		this.reader.close();
 	}
 
-	// TODO: string readNext(TextReader this, regex matcher) { /*...*/ }
-	// TODO: string readWord(TextReader this) { return this.readNext(/\w+/); }
-	// TODO: string readLine(TextReader this) { return this.readNext(/.*$/); }
-	// TODO: string readAll(TextReader this) { return this.readMatch(/.*/); }
-	// TODO: double readNumber(TextReader this, Locale locale) { /*...*/ }
+	// TODO: static string readNext(TextReader this, regex matcher) { /*...*/ }
+	// TODO: static string readWord(TextReader this) { return this.readNext(/\w+/); }
+	// TODO: static string readLine(TextReader this) { return this.readNext(/.*$/); }
+	// TODO: static string readAll(TextReader this) { return this.readMatch(/.*/); }
+	// TODO: static double readNumber(TextReader this, Locale locale) { /*...*/ }
 
 	/* TODO: subclasses
 		Latin1
@@ -140,7 +138,7 @@ struct TextWriter: Closeable {
 		void write(Writeable this, TextWriter writer);
 	}
 
-	inline unicode = uint32;
+	inline unicode = uint32; // FIXME: TextReader.unicode;
 
 	const ByteWriter writer;
 
@@ -196,17 +194,17 @@ struct TextWriter: Closeable {
 		this.writer.safeClose();
 	}
 
-	// TODO: void write(TextWriter this, Locale locale, bool value) { /*...*/ }
-	// TODO: void write(TextWriter this, Locale locale, char value) { /*...*/ }
-	// TODO: void write(TextWriter this, Locale locale, int32 value) { /*...*/ }
-	// TODO: void write(TextWriter this, Locale locale, int64 value) { /*...*/ }
-	// TODO: void write(TextWriter this, Locale locale, uint32 value) { /*...*/ }
-	// TODO: void write(TextWriter this, Locale locale, uint64 value) { /*...*/ }
-	// TODO: void write(TextWriter this, Locale locale, float32 value) { /*...*/ }
-	// TODO: void write(TextWriter this, Locale locale, float64 value) { /*...*/ }
-	// TODO: void write(TextWriter this, Locale locale, string value) { /*...*/ }
-	// TODO: void write(TextWriter this, Locale locale, object value) { /*...*/ }
-	// TODO: void write(TextWriter this, Locale locale, variant value) { /*...*/ }
+	// TODO: static void write(TextWriter this, Locale locale, bool value) { /*...*/ }
+	// TODO: static void write(TextWriter this, Locale locale, char value) { /*...*/ }
+	// TODO: static void write(TextWriter this, Locale locale, int32 value) { /*...*/ }
+	// TODO: static void write(TextWriter this, Locale locale, int64 value) { /*...*/ }
+	// TODO: static void write(TextWriter this, Locale locale, uint32 value) { /*...*/ }
+	// TODO: static void write(TextWriter this, Locale locale, uint64 value) { /*...*/ }
+	// TODO: static void write(TextWriter this, Locale locale, float32 value) { /*...*/ }
+	// TODO: static void write(TextWriter this, Locale locale, float64 value) { /*...*/ }
+	// TODO: static void write(TextWriter this, Locale locale, string value) { /*...*/ }
+	// TODO: static void write(TextWriter this, Locale locale, object value) { /*...*/ }
+	// TODO: static void write(TextWriter this, Locale locale, variant value) { /*...*/ }
 
 	/* TODO: subclasses
 		Latin1

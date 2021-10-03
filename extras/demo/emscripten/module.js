@@ -168,6 +168,7 @@ Module.openProjectFile = function(data, callBack) {
 				// save file content
 				operation = 'save';
 				Module.saveFile(path, data.content);
+				operation = 'saved';
 				open = false;
 				sync = true;
 			}
