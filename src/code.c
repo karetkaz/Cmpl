@@ -1651,7 +1651,7 @@ static vmError vmTrace(rtContext rt, void *sp, size_t caller, ssize_t callee) {
 	// trace return from function
 	if (callee < 0) {
 		if (pu->tp - (trcptr)pu->bp < 1) {
-			trace("stack underflow(tp: %d, sp: %d)", tp - (trcptr)pu->bp, pu->sp - (stkptr)pu->bp);
+			trace("stack underflow(tp: %d, sp: %d)", pu->tp - (trcptr)pu->bp, pu->sp - (stkptr)pu->bp);
 			return illegalState;
 		}
 		pu->tp -= 1;
@@ -1692,7 +1692,7 @@ static vmError vmTrace(rtContext rt, void *sp, size_t caller, ssize_t callee) {
 
 	// trace call function
 	if ((trcptr)pu->sp - pu->tp < 1) {
-		trace("stack overflow(tp: %d, sp: %d)", tp - (trcptr)pu->bp, pu->sp - (stkptr)pu->bp);
+		trace("stack overflow(tp: %d, sp: %d)", pu->tp - (trcptr)pu->bp, pu->sp - (stkptr)pu->bp);
 		return stackOverflow;
 	}
 

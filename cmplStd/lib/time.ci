@@ -151,4 +151,7 @@ struct Date {
 }
 
 // adapted from https://github.com/dotnet/runtime/blob/master/src/libraries/System.Private.CoreLib/src/System/Globalization/GregorianCalendar.cs
+// https://github.com/dotnet/runtime/blob/main/src/libraries/System.Private.CoreLib/src/System/TimeZone.cs
+// https://github.com/unicode-org/icu/blob/main/icu4j/main/classes/core/src/com/ibm/icu/util/Calendar.java
+// https://github.com/JodaOrg/joda-time/blob/master/src/main/java/org/joda/time/DateTime.java
 // todo: https://github.com/HowardHinnant/date

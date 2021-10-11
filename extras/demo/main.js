@@ -14,6 +14,10 @@ function setStyle(element, ...styles) {
 
 	let prevChanged = false;
 	for (let style of styles) {
+		if (style == null || style === '' || style.constructor !== String) {
+			continue;
+		}
+
 		// conditional apply
 		if (style.startsWith('?')) {
 			if (!prevChanged) {
@@ -172,22 +176,27 @@ let params = JsArgs('#', function (params, changes) {
 			}
 		}
 
-		// theme is not defined, try to guess it
+		// check if the theme is defined in the html, in case it is, use that one
 		if (theme === undefined) {
-			if (document.body.classList.contains('dark')) {
-				theme = 'dark';
-			}
-			else if (document.body.classList.contains('light')) {
+			if (document.body.classList.contains('light')) {
 				theme = 'light';
 			}
-			else if (window.matchMedia) {
-				// theme not overridden by page, lookup system theme
-				if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-					theme = 'dark';
+			else if (document.body.classList.contains('dark')) {
+				theme = 'dark';
+			}
+		}
+
+		// theme is not defined in params or in the html, so request it from browser
+		if (window.matchMedia) {
+			let lightScheme = window.matchMedia('(prefers-color-scheme: light)');
+			lightScheme.addEventListener('change', function (e) {
+				if (params.theme === undefined) {
+					// keep the theme defined in the params
+					setStyle(document.body, '-dark', e.matches ? 'light' : '-light');
 				}
-				else if (window.matchMedia('(prefers-color-scheme: light)').matches) {
-					theme = 'light';
-				}
+			});
+			if (theme === undefined) {
+				theme = lightScheme.matches ? 'light' : 'dark';
 			}
 		}
 
@@ -200,7 +209,7 @@ let params = JsArgs('#', function (params, changes) {
 			}
 		}
 
-		setStyle(document.body, '-dark', '-light', theme || 'dark');
+		setStyle(document.body, '-dark', '-light', theme);
 
 		// custom layout, only after loading
 		props.mobile = mode === 'mobile';

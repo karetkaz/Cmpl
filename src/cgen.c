@@ -365,6 +365,9 @@ static ccKind genIndirection(ccContext cc, symn variable, ccKind get, int isInde
 			break;
 
 		case KIND_var:
+			if (isEnumType(type)) {
+				type = type->type;
+			}
 			break;
 	}
 

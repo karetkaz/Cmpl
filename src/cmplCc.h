@@ -219,6 +219,9 @@ static inline ccKind refCast(symn sym) {
 			got = CAST_ref;
 		}
 	}
+	if (got == CAST_enm && isEnumType(sym)) {
+		got = refCast(sym->type);
+	}
 	return got;
 }
 

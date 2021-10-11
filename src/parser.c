@@ -1521,7 +1521,7 @@ static astn declare_enum(ccContext cc) {
 
 	symn type = NULL;
 	if (tag != NULL) {
-		type = declare(cc, ATTR_stat | ATTR_cnst | KIND_typ | CAST_val, tag, base, NULL);
+		type = declare(cc, ATTR_stat | ATTR_cnst | KIND_typ | CAST_enm, tag, base, NULL);
 		enter(cc, tag, type);
 	}
 
@@ -1566,7 +1566,7 @@ static astn declare_enum(ccContext cc) {
 		if (!canAssign(cc, member, value, 0)) {
 			error(cc->rt, id->file, id->line, ERR_INVALID_VALUE_ASSIGN, member, value);
 		}
-		member->init = castTo(cc, value, type == NULL ? base : type);
+		member->init = castTo(cc, value, base);
 		// enumeration values are documented public symbols
 		member->doc = member->name;
 
@@ -1575,6 +1575,7 @@ static astn declare_enum(ccContext cc) {
 
 	if (type != NULL) {
 		type->fields = leave(cc, KIND_typ, vm_stk_align, 0, &type->size, NULL);
+		type->size = base->size;
 	}
 
 	return tag;

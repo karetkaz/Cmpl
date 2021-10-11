@@ -279,10 +279,10 @@ typedef enum {
 	CAST_u64   = 0x0006,		// uint64
 	CAST_f32   = 0x0007,		// float32
 	CAST_f64   = 0x0008,		// float64
-	CAST_val   = 0x0009,		// value, record
-	CAST_ref   = 0x000a,		// reference, pointer, array
+	CAST_ref   = 0x0009,		// reference, pointer, array(c-like)
+	CAST_arr   = 0x000a,		// slice: pair of {size, data}
 	CAST_var   = 0x000b,		// variant: pair of {type, data}
-	CAST_arr   = 0x000c,		// slice: pair of {size, data}
+	CAST_val   = 0x000c,		// value, record, array(fixed)
 	//CAST_d   = 0x000d,		// dictionary
 	CAST_enm   = 0x000e,		// enumeration
 	//CAST_f   = 0x000f,		// unused(function)
@@ -292,15 +292,18 @@ typedef enum {
 	KIND_fun   = 0x0020,		// function
 	KIND_var   = 0x0030,		// variable: function and typename are also variables
 
-	ATTR_stat  = 0x0040,		// static attribute
-	ATTR_cnst  = 0x0080,		// constant attribute
-	ATTR_paral = 0x0100,		// inline argument
-	ARGS_varg  = 0x0100,		// variable argument
-	ARGS_this  = 0x1000,		// first argument is this (used at lookup)
+	ATTR_stat  = 0x0100,		// static attribute
+	ATTR_cnst  = 0x0200,		// constant attribute
+	//ATTR_pure  = 0x0400,		// TODO: pure attribute (type fun() const {...})
+	//ATTR_null  = 0x0800,		// todo: nullable attribute (int nullable? = null; int notnull& = a;)
+
+	ATTR_paral = 0x1000,		// inline argument
+	ARGS_varg  = 0x2000,		// variable argument
+	ARGS_this  = 0x4000,		// first argument is this (used at lookup)
 
 	MASK_cast  = 0x000f,
 	MASK_kind  = 0x0030,
-	MASK_attr  = 0x00c0,
+	MASK_attr  = 0x0f00,
 } ccKind;
 
 struct symNode {

@@ -38,7 +38,6 @@ int importLib(rtContext rt, const char *path) {
 	const char *import = dlsym(library, pluginLibImport);
 	if (import != NULL) {
 		char inlineUnit[1024];
-		size_t len = strnlen(import, 1024);
 		snprintf(inlineUnit, sizeof(inlineUnit), "inline \"%s\"?;", import);
 		if (!ccAddUnit(rt->cc, NULL, NULL, 0, inlineUnit)) {
 			return 1;

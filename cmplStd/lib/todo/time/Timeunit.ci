@@ -1,0 +1,28 @@
+enum Timeunit: uint64 {
+	// approximately 584 years of nanoseconds can be represented in uint64
+	Nanos: 1;
+	Micros: 1000 * Nanos;
+	Millis: 1000 * Micros;
+	Seconds: 1000 * Millis;
+	Minutes: 60 * Seconds;
+	Hours: 60 * Minutes;
+	Days: 24 * Hours;
+}
+
+uint64 convert(uint64 value, Timeunit from, Timeunit to) {
+	if (from > to) {
+		// from Minutes to Seconds
+		return value * (from / to);
+	}
+	// from Seconds to Minutes
+	return value / (to / from);
+}
+
+float64 convert(float64 value, Timeunit from, Timeunit to) {
+	if (from > to) {
+		// from Minutes to Seconds
+		return value * signed(from / to);
+	}
+	// from Seconds to Minutes
+	return value / signed(to / from);
+}

@@ -89,34 +89,42 @@ vec4f blendHsl(vec4f base, vec4f blend) {
 		lum = 0;
 	}
 
-	float hue = 1;
 	min = Math.min(Math.min(blend.x, blend.y), blend.z);
 	max = Math.max(Math.max(blend.x, blend.y), blend.z);
-	if (max != min) {
-		float delta = max - min;
-		if (max == blend.x) {
-			hue = ((blend.y - blend.z) / delta) / 6;
-		}
-		else if (max == blend.y) {
-			hue = (2 + (blend.z - blend.x) / delta) / 6;
-		}
-		else {// if (max == blend.z)
-			hue = (4 + (blend.x - blend.y)  / delta) / 6;
-		}
-		if (hue < 0) {
-			hue += 1;
-		}
-		min = sldHueMin.value / 359f;
-		max = sldHueMax.value / 359f;
-		if (hue < min) {
-			hue = Math.smooth(min - hue, 0f, val);
-		}
-		else if (hue > max) {
-			hue = Math.smooth(hue - max, 0f, val);
-		}
-		else {
-			hue = 0;
-		}
+	if (max == min) {
+		// return blue mask with computed alpha component
+		return {
+			x: 0;
+			y: 0;
+			z: 1;
+			w: lum;
+		};
+	}
+
+	float hue = 1;
+	float delta = max - min;
+	if (max == blend.x) {
+		hue = ((blend.y - blend.z) / delta) / 6;
+	}
+	else if (max == blend.y) {
+		hue = (2 + (blend.z - blend.x) / delta) / 6;
+	}
+	else {// if (max == blend.z)
+		hue = (4 + (blend.x - blend.y)  / delta) / 6;
+	}
+	if (hue < 0) {
+		hue += 1;
+	}
+	min = sldHueMin.value / 359f;
+	max = sldHueMax.value / 359f;
+	if (hue < min) {
+		hue = Math.smooth(min - hue, 0f, val);
+	}
+	else if (hue > max) {
+		hue = Math.smooth(hue - max, 0f, val);
+	}
+	else {
+		hue = 0;
 	}
 
 	// return red mask with computed alpha component

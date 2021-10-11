@@ -21093,16 +21093,16 @@ cmplGfx/gfxlib.ci:36: Gui: typename(<Gui>)
 
 ---------- Memory usage:
 memory[all] @000000; size: 4194016(4.0 Mb)
-memory[used] @000000; size: 454376(443.7 Kb)
-memory[heap] @06eee8; size: 2691088(2.6 Mb)
+memory[used] @000000; size: 454392(443.7 Kb)
+memory[heap] @06eef8; size: 2691072(2.6 Mb)
 memory[stack] @1fff40; size: 1048504(1023.9 Kb)
 
 ---------- Used memory:
-memory[meta] @000000; size: 439992(429.7 Kb)
+memory[meta] @000000; size: 440008(429.7 Kb)
 memory[code] @000000; size: 13994(13.7 Kb)
 memory[data] @000000; size: 76(76.0 bytes)
 
 ---------- Heap memory:
-memory[free] @06ef00; size: 2691040(2.6 Mb)
+memory[free] @06ef10; size: 2691024(2.6 Mb)
 
 ---------- Exitcode: 0, time: 0.000 ms
