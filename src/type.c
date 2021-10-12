@@ -982,6 +982,9 @@ symn typeCheck(ccContext cc, symn loc, astn ast, int raise) {
 				traceAst(ast);
 				return NULL;
 			}
+			if (isEnumType(type)) {
+				type = type->type;
+			}
 			ast->type = type;
 			return type;
 	}
@@ -1144,6 +1147,21 @@ ccKind canAssign(ccContext cc, symn variable, astn value, int strict) {
 		}
 	}*/
 
+	// Assign enum
+	if (castOf(varType) == CAST_enm) {
+		if (valueRef == NULL) {
+			return CAST_any;
+		}
+		if (varType == valueRef->type) {
+			// Enum e = e2;
+			return varCast;
+		}
+		if (varType == valueRef->owner) {
+			// Enum e = Enum.value1;
+			return varCast;
+		}
+		return CAST_any;
+	}
 	// Assign array
 	if (castOf(varType) == CAST_arr) {
 		struct astNode temp = {0};

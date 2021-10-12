@@ -1,6 +1,6 @@
 // TODO: define operators in the language, not builtin in the compiler
 
-// explicit and implicit casts
+// conversion
 inline "explicit.cast.ci";
 inline "implicit.cast.ci";
 

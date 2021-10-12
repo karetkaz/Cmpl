@@ -1,64 +1,66 @@
 .overlay { background-color: #50505050; }
 
-/* light theme */
-body .toolbar { background-color: #eaeaea; color: #333; }
-body .toolbar>span:hover { background-color: #dadada; }
+/* dark theme */
+body { background-color: #4a4a4a; }
+body .toolbar {background-color: #4a4a4a;color: #ccc;}
+body .toolbar>span:hover { background-color: #5a5a5a; }
 
-body .sidebar { background-color: #fafafa; color:#333; }
-body .sidebar * { background-color: #fafafa; color:#333; }
-body .sidebar hr { background-color: #dadada; }
-body .sidebar li:hover { background-color: #dadada; }
-body .sidebar li:hover * { background-color: #dadada; }
-body .sidebar button { background-color: #dadada; border: solid 1px #eaeaea; }
-body .sidebar button:hover { background-color: #fafafa; }
-body select {background-color: #fafafa;color:#333;}
-body #fileList > .active { background-color: #dadada; }
+body .sidebar { background-color: #3f3f3f; color: #bbb; }
+body .sidebar * { background-color: #3f3f3f; color: #bbb; }
+body .sidebar hr { background-color: #6a6a6a; }
+body .sidebar li:hover { background-color: #6a6a6a; }
+body .sidebar li:hover * { background-color: #6a6a6a; }
+body .sidebar button { background-color: #6a6a6a; border: solid 1px #4a4a4a; }
+body .sidebar button:hover {background-color: #3f3f3f;}
+body select {background-color: #3f3f3f;color: #bbb;}
+body #fileList > .active { background-color: #6a6a6a; }
 
-body #editor-panel .CodeMirror-activeline-background { background: #FFFAE3; }
-body #editor-panel span.cm-number { color: #0000FF; }
-body #editor-panel span.cm-builtin { color: #30a; }
-body #editor-panel span.cm-keyword { line-height: 1em; font-weight: bold; color: #000080; }
-body #editor-panel span.cm-operator { color: black; }
+body #editor-panel .CodeMirror { background: #2a2a2a; color: #aaa; }
+body #editor-panel .CodeMirror-gutters { background: #3a3a3a; border-right: 1px solid #4a4a4a; }
+body #editor-panel .CodeMirror-matchingbracket { background: darkgreen; }
+body #editor-panel .CodeMirror-activeline-background { background: #4f4f4f; }
+body #editor-panel span.cm-number { color: #6897BB; }
+body #editor-panel span.cm-builtin { color: #ab51b2; }
+body #editor-panel span.cm-keyword { line-height: 1em; font-weight: bold; color: #CC7832; }
+body #editor-panel span.cm-operator { color: #A9B7C6; }
 body #editor-panel span.cm-string-2,
-body #editor-panel span.cm-string {color: #008000;}
+body #editor-panel span.cm-string { color: #6A8759; }
 body #editor-panel span.cm-variable-2,
 body #editor-panel span.cm-variable-3,
-body #editor-panel span.cm-variable { color: black; }
+body #editor-panel span.cm-variable { color: #A9B7C6; }
 body #editor-panel span.cm-comment { color: #808080; }
-body #editor-panel span.CodeMirror-matchingbracket { background: lightgreen; }
 
-body #output-panel { background-color: #eee; }
-body #output-panel a { color: #007bff; }
+body #output-panel { background-color: #202020; color: #bbb; }
+body #output-panel a { color: #006bef; }
 
-/* dark theme */
-body.dark { background-color: #4a4a4a; }
-body.dark .toolbar {background-color: #4a4a4a;color: #ccc;}
-body.dark .toolbar>span:hover { background-color: #5a5a5a; }
+/* light theme */
+body.light .toolbar { background-color: #eaeaea; color: #333; }
+body.light .toolbar>span:hover { background-color: #dadada; }
 
-body.dark .sidebar { background-color: #3f3f3f; color: #bbb; }
-body.dark .sidebar * { background-color: #3f3f3f; color: #bbb; }
-body.dark .sidebar hr { background-color: #6a6a6a; }
-body.dark .sidebar li:hover { background-color: #6a6a6a; }
-body.dark .sidebar li:hover * { background-color: #6a6a6a; }
-body.dark .sidebar button { background-color: #6a6a6a; border: solid 1px #4a4a4a; }
-body.dark .sidebar button:hover {background-color: #3f3f3f;}
-body.dark select {background-color: #3f3f3f;color: #bbb;}
-body.dark #fileList > .active { background-color: #6a6a6a; }
+body.light .sidebar { background-color: #fafafa; color:#333; }
+body.light .sidebar * { background-color: #fafafa; color:#333; }
+body.light .sidebar hr { background-color: #dadada; }
+body.light .sidebar li:hover { background-color: #dadada; }
+body.light .sidebar li:hover * { background-color: #dadada; }
+body.light .sidebar button { background-color: #dadada; border: solid 1px #eaeaea; }
+body.light .sidebar button:hover { background-color: #fafafa; }
+body.light select {background-color: #fafafa;color:#333;}
+body.light #fileList > .active { background-color: #dadada; }
 
-body.dark #editor-panel .CodeMirror { background: #2a2a2a;color: #aaa; }
-body.dark #editor-panel .CodeMirror-activeline-background { background: #4f4f4f; }
-body.dark #editor-panel .CodeMirror-gutters { background: #3a3a3a; border-right: 1px solid #4a4a4a; }
-body.dark #editor-panel span.cm-number { color: #6897BB; }
-body.dark #editor-panel span.cm-builtin { color: #ab51b2; }
-body.dark #editor-panel span.cm-keyword { line-height: 1em; font-weight: bold; color: #CC7832; }
-body.dark #editor-panel span.cm-operator { color: #A9B7C6; }
-body.dark #editor-panel span.cm-string-2,
-body.dark #editor-panel span.cm-string { color: #6A8759; }
-body.dark #editor-panel span.cm-variable-2,
-body.dark #editor-panel span.cm-variable-3,
-body.dark #editor-panel span.cm-variable { color: #A9B7C6; }
-body.dark #editor-panel span.cm-comment { color: #808080; }
-body.dark #editor-panel .CodeMirror-matchingbracket { background: darkgreen; }
+body.light #editor-panel .CodeMirror { background: white; color: black; }
+body.light #editor-panel .CodeMirror-gutters { background: #f7f7f7; border-right: 1px solid #ddd; }
+body.light #editor-panel .CodeMirror-activeline-background { background: #FFFAE3; }
+body.light #editor-panel span.CodeMirror-matchingbracket { background: lightgreen; }
+body.light #editor-panel span.cm-number { color: #0000FF; }
+body.light #editor-panel span.cm-builtin { color: #30a; }
+body.light #editor-panel span.cm-keyword { line-height: 1em; font-weight: bold; color: #000080; }
+body.light #editor-panel span.cm-operator { color: black; }
+body.light #editor-panel span.cm-string-2,
+body.light #editor-panel span.cm-string {color: #008000;}
+body.light #editor-panel span.cm-variable-2,
+body.light #editor-panel span.cm-variable-3,
+body.light #editor-panel span.cm-variable { color: black; }
+body.light #editor-panel span.cm-comment { color: #808080; }
 
-body.dark #output-panel { background-color: #202020; color: #bbb; }
-body.dark #output-panel a { color: #006bef; }
+body.light #output-panel { background-color: #eee; }
+body.light #output-panel a { color: #007bff; }
