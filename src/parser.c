@@ -1289,7 +1289,7 @@ static astn declare_alias(ccContext cc, ccKind attr) {
 			params->type = type;
 			params->size = type->size;
 			params->init = type->init;
-			params->kind = ATTR_paral | KIND_var;
+			params->kind = ARGS_inln | KIND_var;
 		}
 		init = expandInitializer(cc, params, init);
 		for (astn n = init->stmt.stmt; n != NULL; n = n->next) {
@@ -1329,7 +1329,7 @@ static astn declare_alias(ccContext cc, ccKind attr) {
 				}
 			}
 
-			if (!(param->kind & ATTR_paral) && (isInline(param) || usages < 2)) {
+			if (!(param->kind & ARGS_inln) && (isInline(param) || usages < 2)) {
 				// mark parameter as inline if it was not used more than once
 				param->kind = (param->kind & ~MASK_kind) | KIND_def;
 			}
@@ -1566,7 +1566,7 @@ static astn declare_enum(ccContext cc) {
 		if (!canAssign(cc, member, value, 0)) {
 			error(cc->rt, id->file, id->line, ERR_INVALID_VALUE_ASSIGN, member, value);
 		}
-		member->init = castTo(cc, value, base);
+		member->init = castTo(cc, value, type == NULL ? base : type);
 		// enumeration values are documented public symbols
 		member->doc = member->name;
 

@@ -26,6 +26,7 @@ int32 emitFloatAsInt3 = floatAsInt64(500);
 int64 emitFloatAsInt4 = floatAsInt64(500);
 
 // create a slice with runtime length set to 3, from the given character sequence
+// a complicated way instead of `char strSlice[] = "string"[...3];`
 char emitSlice[] = emit(int(3), pointer("string"));
 
 // these should not compile

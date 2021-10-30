@@ -1,0 +1,25 @@
+inline "/cmplStd/lib/math/Polynomial.ci";
+inline "/cmplStd/lib/text/encoding/Ascii.ci";
+
+static TextWriter out = AsciiWriter {
+	writer: FileWriter {
+		file: File.log;
+	};
+};
+
+//Polynomial a = Polynomial(10, 3, 6, 2, 4, 9, 0, 4);
+Polynomial a = Polynomial(1, 0, 3, 1);
+Polynomial b = Polynomial(1, 2, 0);
+out.write("a: ").writeln(a);
+out.write("b: ").writeln(b);
+out.write("-a: ").writeln(Polynomial.neg(a));        // fixme: a.neg()
+out.write("-b: ").writeln(Polynomial.neg(b));        // fixme: b.neg()
+out.write("a + b: ").writeln(Polynomial.add(a, b));  // fixme: a.add(b)
+out.write("a - b: ").writeln(Polynomial.sub(a, b));  // fixme: a.sub(b)
+out.write("a * b: ").writeln(Polynomial.mul(a, b));  // fixme: a.mul(b)
+out.write("a(2): ").write(a.evaluate(2)).writeln();
+
+for (int i = 0; i < 10; i += 1) {
+	out.write("a[").write(i).write("] = ").write(a.get(i)).writeln();
+//	a.set(i, a.get(i));  // long form: Polynomial.set(a, i, Polynomial.get(a, i));
+}

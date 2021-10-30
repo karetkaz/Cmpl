@@ -2,10 +2,6 @@
 
 Image back = Image("asset/image/forest.jpg", 32);
 Image offs = Image(back);
-int onEvent(int action, int button, int x, int y);
-Gui.showWindow(offs, onEvent);
-offs.destroy();
-back.destroy();
 
 inline "/cmplGfx/lib/micro.ui.ci";
 
@@ -24,41 +20,36 @@ Button btnRgb = {
 };
 Switch chkRed = {
 	text: "red";
-	visible: 1;
 	selected: 1;
 	focusable: false;
 };
 Switch chkGreen = {
 	text: "green";
-	visible: 1;
 	selected: 1;
 	focusable: false;
 };
 Switch chkBlue = {
 	text: "blue";
-	visible: 1;
 	selected: 1;
 	focusable: false;
 };
+Panel panRGB = {
+	visible: false;
+};
+
 DebugView debug = {
 	focusable: false;
 	measures: -1;
 	draws: -1;
 };
 
-Widget ui = Widget().addItems(
-	histogram, Layout.divider,
-	btnLum, btnHue, btnRgb,
-	chkRed, chkGreen, chkBlue,
-	Layout.divider, debug
-);
-
-int onEvent(int action, int button, int x, int y) {
+int onEvent(Window win&, int action, int button, int x, int y) {
 	if (action == Gui.KEY_RELEASE && button == 27) {
 		// exit when releasing escape key
 		return -1;
 	}
-	if (!ui.onEvent(action, button, x, y)) {
+	Widget ui = win.widget;
+	if (!win.dispatchEvent(ui, action, button, x, y)) {
 		// event not processed, wait for the next one
 		return 0;
 	}
@@ -67,7 +58,7 @@ int onEvent(int action, int button, int x, int y) {
 	uint32 hist[histogram.data.length] = {};
 
 	offs.copy(0, 0, back, null);
-	if (ui.isFocused(btnHue)) {
+	if (btnHue.isFocused()) {
 		offs.calcHueHist(null, &hist);
 		uint32 max = 1;  // avoid division by zero
 		for (int i = 0; i < hist.length; i += 1) {
@@ -82,9 +73,9 @@ int onEvent(int action, int button, int x, int y) {
 			histogram.data[i] = rgb;
 		}
 		histogram.color = true;
-		ui.setGroup(~1);
+		panRGB.visible(false);
 	}
-	if (ui.isFocused(btnLum)) {
+	if (btnLum.isFocused()) {
 		offs.calcLumHist(null, &hist);
 		uint32 max = 1;  // avoid division by zero
 		for (int i = 0; i < hist.length; i += 1) {
@@ -98,9 +89,9 @@ int onEvent(int action, int button, int x, int y) {
 			histogram.data[i] = rgb;
 		}
 		histogram.color = true;
-		ui.setGroup(~1);
+		panRGB.visible(false);
 	}
-	if (ui.isFocused(btnRgb)) {
+	if (btnRgb.isFocused()) {
 		offs.calcRgbHist(null, &hist);
 		for (int i = 0; i < hist.length; i += 1) {
 			argb data = argb(hist[i]);
@@ -116,8 +107,20 @@ int onEvent(int action, int button, int x, int y) {
 			histogram.data[i] = data;
 		}
 		histogram.color = false;
-		ui.setGroup(-1);
+		panRGB.visible(true);
 	}
 
-	return ui.draw(offs);
+	return win.draw(ui);
 }
+
+Gui.showWindow(offs, onEvent, Widget(
+	histogram,
+
+	null,
+	btnLum, btnHue, btnRgb,
+	panRGB.addItems(Style.fill, chkRed, chkGreen, chkBlue),
+
+	null, debug
+));
+offs.destroy();
+back.destroy();

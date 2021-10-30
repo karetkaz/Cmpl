@@ -1,15 +1,19 @@
+static if (typename(TextReader) == null) {
+inline "/cmplStd/lib/system/Stream.ci";
+}
+
 // Ascii reader TODO: untested
 struct AsciiReader: TextReader {
 	// convert bytes to chars
-	int read(AsciiReader this, unicode chars[]) {
+	int decode(AsciiReader this, unicode chars[]) {
 		ByteReader reader = this.reader;
 		for (int i = 0; i < chars.length; i += 1) {
-			int value = reader.read();
-			if (value < 0) {
+			char value[1] = {};
+			if (reader.read(value) < 0) {
 				// end of stream
 				return i;
 			}
-			chars[i] = value;
+			chars[i] = value[i];
 		}
 		return chars.length;
 	}
@@ -18,10 +22,11 @@ struct AsciiReader: TextReader {
 // Ascii Writer TODO: untested
 struct AsciiWriter: TextWriter {
 	// convert characters to bytes(can cause data loss)
-	void write(TextWriter this, unicode chars[]) {
+	void encode(TextWriter this, unicode chars[]) {
 		ByteWriter writer = this.writer;
 		for (int i = 0; i < chars.length; i += 1) {
-			writer.write(byte(chars[i]));
+			char value[1] = {chars[i]};
+			writer.write(value);
 		}
 	}
 }

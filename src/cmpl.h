@@ -292,14 +292,22 @@ typedef enum {
 	KIND_fun   = 0x0020,		// function
 	KIND_var   = 0x0030,		// variable: function and typename are also variables
 
-	ATTR_stat  = 0x0100,		// static attribute
-	ATTR_cnst  = 0x0200,		// constant attribute
-	//ATTR_pure  = 0x0400,		// TODO: pure attribute (type fun() const {...})
-	//ATTR_null  = 0x0800,		// todo: nullable attribute (int nullable? = null; int notnull& = a;)
+	// https://code.likeagirl.io/scala-variances-covariance-contravariance-and-invariance-67cc0c4fdc84
+	// https://medium.com/@thejameskyle/type-systems-covariance-contravariance-bivariance-and-invariance-explained-35f43d1110f8
+	// https://flow.org/en/docs/lang/variance/
+//	Invariant     0x0000,
+//	Covariant     0x0040,
+//	Contravariant 0x0080,
+//	Bivariant     0x00c0,
 
-	ATTR_paral = 0x1000,		// inline argument
-	ARGS_varg  = 0x2000,		// variable argument
-	ARGS_this  = 0x4000,		// first argument is this (used at lookup)
+	ATTR_stat  = 0x0100,        // static attribute
+	ATTR_cnst  = 0x0200,        // constant attribute
+	//ATTR_pure  = 0x0400,      // TODO: pure attribute (type fun() const {...})
+	//ATTR_null  = 0x0800,      // todo: nullable attribute (int nullable? = null; int notnull& = a;)
+
+	ARGS_inln = 0x1000,         // inline argument
+	ARGS_varg  = 0x2000,        // variable argument
+	ARGS_this  = 0x4000,        // first argument is this (used at lookup)
 
 	MASK_cast  = 0x000f,
 	MASK_kind  = 0x0030,

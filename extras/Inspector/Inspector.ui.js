@@ -174,7 +174,7 @@ function printSamples() {
 }
 
 // build callChart and callTree
-function displayCallTree(chartDiv, treeDiv, focusedNode) {
+function displayCallTree(treeDiv, focusedNode) {
 	var samples = data.getSamples();
 	var tree = (focusedNode && focusedNode.__proto__);
 	if (tree != null) {
@@ -218,16 +218,8 @@ function displayCallTree(chartDiv, treeDiv, focusedNode) {
 		}
 	}
 
-	if (chartDiv != null) {
-		var chartWidth = chartDiv.clientWidth;
-		var timeScale = chartWidth / (tree.leave - tree.enter);
-		var heightScale = 2 + parseFloat(getComputedStyle(chartDiv).fontSize);
-		var maxDepth = 100;//(chartDiv.clientHeight) / heightScale - 1;
-		var minTime = 0;//(tree.leave - tree.enter) / 5000;	// 0.05%
-
+	if (treeDiv != null) {
 		treeDiv.innerHTML = '';
-		chartDiv.innerHTML = '';
-
 		var row = document.createElement("tr");
 		var func, hits, selfTime, totalTime;
 		row.appendChild(hits = document.createElement("th"));
@@ -252,30 +244,28 @@ function displayCallTree(chartDiv, treeDiv, focusedNode) {
 				// return ticks + ' ticks';
 				return (ticks * 1000 / samples.ticksPerSec).toFixed(2) + ' ms';
 			}
-			var chartRow, treeRow, expandable = false;
-			var left = timeScale * (node.enter - tree.enter);
-			var right = timeScale * (tree.leave - node.leave);
+			let treeRow, expandable = false;
 
-			var funct = node.func || { name: '??' };
-			var sample = samples.samples[funct.offs] || {};	// make everything undefined if function is not found
+			let funct = node.func || { name: '??' };
+			let sample = samples.samples[funct.offs] || {};	// make everything undefined if function is not found
 
-			var globalTime = samples.leave - samples.enter;
+			let globalTime = samples.leave - samples.enter;
 
-			var callSelfCost = (node.self * 100 / globalTime).toFixed(2) + '%';
-			var callTotalCost = (node.total * 100 / globalTime).toFixed(2) + '%';
-			var sampleSelfCost = (sample.self * 100 / globalTime).toFixed(2) + '%';
-			var sampleTotalCost = (sample.total * 100 / globalTime).toFixed(2) + '%';
+			let callSelfCost = (node.self * 100 / globalTime).toFixed(2) + '%';
+			let callTotalCost = (node.total * 100 / globalTime).toFixed(2) + '%';
+			let sampleSelfCost = (sample.self * 100 / globalTime).toFixed(2) + '%';
+			let sampleTotalCost = (sample.total * 100 / globalTime).toFixed(2) + '%';
 
-			var callSelfTime = toMs(node.self);
-			var callTotalTime = toMs(node.total);
-			var sampleSelfTime = toMs(sample.self);
-			var sampleTotalTime = toMs(sample.total);
+			let callSelfTime = toMs(node.self);
+			let callTotalTime = toMs(node.total);
+			let sampleSelfTime = toMs(sample.self);
+			let sampleTotalTime = toMs(sample.total);
 
-			var funcPos = ' <@' + funct.offs + '>';
+			let funcPos = ' <@' + funct.offs + '>';
 			if (funct.file && funct.line) {
 				funcPos = '(' + funct.file + ':' + funct.line + ')';
 			}
-			var title = 'Function: ' + funct.name + funcPos;
+			let title = 'Function: ' + funct.name + funcPos;
 			if (sample.hits > 1) {
 				title += '\nHit Count: ' + node.hits + ' / ' + sample.hits;
 				title += '\nSelf Cost: ' + callSelfCost + ' / ' + sampleSelfCost;
@@ -294,138 +284,91 @@ function displayCallTree(chartDiv, treeDiv, focusedNode) {
 			title += '\nMemory Usage: ' + node.memory;
 			title += '\n' + funct.proto;
 
-			// add to call chartDiv
-			if (depth < maxDepth && timeScale * node.total > .3) {
-				chartRow = document.createElement("div");
-				chartDiv.appendChild(chartRow);
-
-				chartRow.innerText = '\xa0' + funct.name;
-
-				chartRow.style.left = left;
-				chartRow.style.right = right;
-				chartRow.style.top = depth * heightScale + 1;
-				chartRow.style.height = heightScale - 1;
-				chartRow.title = title;
-				//node.htmlChartRow = chartRow;
-				chartRow.onclick = function() {
-					node.showTree(true, true);
-					var tooltip = document.getElementById('tooltip');
-					tooltip.innerText = title;
-					tooltip.classList.remove('gone');
-				};
-				chartRow.ondblclick = function() {
-					displayCallTree(chartDiv, treeDiv, node);
-				};
-			}
-
 			// add to call tree
-			if (node.total > minTime) {
-				var func, hits, selfTime, totalTime;
-				treeRow = document.createElement("tr");
-				treeRow.appendChild(hits = document.createElement("td"));
-				treeRow.appendChild(selfTime = document.createElement("td"));
-				treeRow.appendChild(totalTime = document.createElement("td"));
-				treeRow.appendChild(func = document.createElement("td"));
+			let func, hits, selfTime, totalTime;
+			treeRow = document.createElement("tr");
+			treeRow.appendChild(hits = document.createElement("td"));
+			treeRow.appendChild(selfTime = document.createElement("td"));
+			treeRow.appendChild(totalTime = document.createElement("td"));
+			treeRow.appendChild(func = document.createElement("td"));
 
-				hits.innerText = node.hits;
-				//selfTime.innerText = callSelfCost;
-				//totalTime.innerText = callTotalCost;
-				// use local percentages
-				selfTime.innerText = (node.self * 100 / (tree.leave - tree.enter)).toFixed(2) + '%';
-				totalTime.innerText = (node.total * 100 / (tree.leave - tree.enter)).toFixed(2) + '%';
+			hits.innerText = node.hits;
+			// use local percentages
+			selfTime.innerText = (node.self * 100 / (tree.leave - tree.enter)).toFixed(2) + '%';
+			totalTime.innerText = (node.total * 100 / (tree.leave - tree.enter)).toFixed(2) + '%';
 
-				node.htmlTreeRow = treeRow;		// add a reference to the table row
+			node.htmlTreeRow = treeRow;		// add a reference to the table row
 
-				// check if the node has sub-calls
-				//expandable = node.callTree && node.callTree.length > 0;
-				expandable = node.callTree != null;
+			// check if the node has sub-calls
+			expandable = node.callTree != null;
 
-				node.isExpanded = function() {
-					if (func.classList.contains("expanded")) {
-						if (this.parent.isExpanded == null) {
-							return true;
-						}
-						return this.parent.isExpanded();
+			node.isExpanded = function() {
+				if (func.classList.contains("expanded")) {
+					if (this.parent.isExpanded == null) {
+						return true;
 					}
-					return false;
-				};
-
-				node.showTree = function(show, highlight) {
-					var n;
-					if (show == false) {
-						treeRow.style.display = 'none';
-						return;
-					}
-
-					// show parent nodes
-					for (n = node; n != null; n = n.parent) {
-						if (n.htmlTreeRow != null) {
-							n.htmlTreeRow.style.display = '';
-						}
-					}
-					if (highlight) {
-						treeRow.scrollIntoView(false);
-						treeRow.classList.add('hover');
-						setTimeout(function() {
-							treeRow.classList.remove('hover');
-						}, 500);
-					}
-
-				};
-				node.expandTree = function(expand, recursive, expandOnly) {
-					if (expandable) {
-						// set expanded or collapsed
-						func.classList.remove("expanded");
-						func.classList.remove("collapsed");
-						func.classList.add(expand ? "expanded" : "collapsed");
-					}
-
-					if (expandOnly !== true) {
-						walkCallTree(node, 0, function(node, depth, parent) {
-							node.showTree(expand && parent.isExpanded());
-							if (recursive && node.expandTree) {
-								node.expandTree(expand, recursive, true);
-							}
-						});
-					}
-				};
-				if (expandable) {
-					// expanded by default.
-					func.classList.add("expanded");
-					func.onclick = function(event) {
-						var expand = func.classList.contains("collapsed");
-						node.expandTree(expand, event.ctrlKey);
-					}
+					return this.parent.isExpanded();
 				}
+				return false;
+			};
 
-				func.appendChild(document.createTextNode(funct.proto));
-				func.style.paddingLeft = depth + 'em';
-				treeRow.title = title;
-				treeRow.onmouseenter = function() {
-					node.highlightInChart(true);
-				};
-				treeRow.onmouseleave = function() {
-					node.highlightInChart(false);
-				};
-				treeRow.onclick = function() {
-					var tooltip = document.getElementById('tooltip');
-					tooltip.innerText = title;
-					tooltip.classList.remove('gone');
-				};
-				treeDiv.appendChild(treeRow);
-			}
-
-			node.highlightInChart = function(active) {
-				if (chartRow == null) {
+			node.showTree = function(show, highlight) {
+				if (show === false) {
+					treeRow.style.display = 'none';
 					return;
 				}
-				if (active) {
-					chartRow.classList.add('hover');
+
+				// show parent nodes
+				for (let n = node; n != null; n = n.parent) {
+					if (n.htmlTreeRow != null) {
+						n.htmlTreeRow.style.display = '';
+					}
 				}
-				else {
-					chartRow.classList.remove('hover');
+				if (highlight) {
+					treeRow.scrollIntoView(false);
+					treeRow.classList.add('hover');
+					setTimeout(function() {
+						treeRow.classList.remove('hover');
+					}, 500);
+				}
+
+			};
+			node.expandTree = function(expand, recursive, expandOnly) {
+				if (expandable) {
+					// set expanded or collapsed
+					func.classList.remove("expanded");
+					func.classList.remove("collapsed");
+					func.classList.add(expand ? "expanded" : "collapsed");
+				}
+
+				if (expandOnly !== true) {
+					walkCallTree(node, 0, function(node, depth, parent) {
+						node.showTree(expand && parent.isExpanded());
+						if (recursive && node.expandTree) {
+							node.expandTree(expand, recursive, true);
+						}
+					});
 				}
 			};
+			if (expandable) {
+				// expanded by default.
+				func.classList.add("expanded");
+				func.onclick = function(event) {
+					let expand = func.classList.contains("collapsed");
+					node.expandTree(expand, event.ctrlKey);
+				}
+			}
+
+			func.appendChild(document.createTextNode(funct.proto));
+			func.style.paddingLeft = depth + 'em';
+			treeRow.title = title;
+			treeRow.onclick = function() {
+				var tooltip = document.getElementById('tooltip');
+				tooltip.innerText = title;
+				tooltip.classList.remove('gone');
+			};
+			treeDiv.appendChild(treeRow);
 		});
+		treeDiv.expandTree(false, true);
 	}
 }

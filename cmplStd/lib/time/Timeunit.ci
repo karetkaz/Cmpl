@@ -1,4 +1,4 @@
-enum Timeunit: uint64 {
+enum Timeunit: int64 {
 	// approximately 584 years of nanoseconds can be represented in uint64
 	Nanos: 1;
 	Micros: 1000 * Nanos;
@@ -7,9 +7,12 @@ enum Timeunit: uint64 {
 	Minutes: 60 * Seconds;
 	Hours: 60 * Minutes;
 	Days: 24 * Hours;
+
+	// default precision for duration and timestamp
+	precision: Millis;
 }
 
-uint64 convert(uint64 value, Timeunit from, Timeunit to) {
+int64 convert(int64 value, Timeunit from, Timeunit to) {
 	if (from > to) {
 		// from Minutes to Seconds
 		return value * (from / to);
@@ -21,8 +24,8 @@ uint64 convert(uint64 value, Timeunit from, Timeunit to) {
 float64 convert(float64 value, Timeunit from, Timeunit to) {
 	if (from > to) {
 		// from Minutes to Seconds
-		return value * signed(from / to);
+		return value * (from / to);
 	}
 	// from Seconds to Minutes
-	return value / signed(to / from);
+	return value / (to / from);
 }

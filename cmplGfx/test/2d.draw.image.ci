@@ -23,10 +23,11 @@ int onEvent(int action, int button, int x, int y) {
 		w: 120;
 		h: 120;
 	};
+	if (action == Gui.KEY_RELEASE && button == 27) {
+		// exit when releasing escape key
+		return -1;
+	}
 	if (action == Gui.KEY_PRESS) {
-		if (button == 27) {
-			return -1;
-		}
 		if (button == ' ') {
 			// toggle animation
 			if (millis == 0) {

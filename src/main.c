@@ -427,7 +427,6 @@ static inline dbgn profile(dbgContext ctx, vmError error, size_t ss, void *stack
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ json output
 static char *const JSON_KEY_VERSION = "version";
 static char *const JSON_KEY_SYMBOLS = "symbols";
-static char *const JSON_KEY_PROFILE = "profile";
 
 static char *const JSON_OBJ_ARR_START = "%I, \"%s\": [{\n";
 static char *const JSON_OBJ_START = "%I, \"%s\": {\n";
@@ -745,9 +744,9 @@ static void jsonPostProfile(dbgContext ctx) {
 	size_t covStmt = 0, nStmt = ctx->statements.cnt;
 	dbgn dbg = (dbgn) ctx->functions.ptr;
 
-	printFmt(out, esc, JSON_ARR_END, indent + 1);
+	printFmt(out, esc, JSON_ARR_END, indent);
 
-	printFmt(out, esc, JSON_OBJ_ARR_START, indent + 1, JSON_KEY_FUNC);
+	printFmt(out, esc, JSON_OBJ_ARR_START, indent, JSON_KEY_FUNC);
 	for (size_t i = 0; i < nFunc; ++i, dbg++) {
 		symn sym = dbg->func;
 		if (dbg->hits == 0) {
@@ -759,17 +758,17 @@ static void jsonPostProfile(dbgContext ctx) {
 			sym = rtLookup(ctx->rt, dbg->start, 0);
 		}
 		if (covFunc > 1) {
-			printFmt(out, esc, JSON_OBJ_NEXT, indent + 1);
+			printFmt(out, esc, JSON_OBJ_NEXT, indent);
 		}
-		jsonDumpSym(out, esc, sym, NULL, indent + 2);
-		printFmt(out, esc, "%I, \"%s\": %d\n", indent + 2, JSON_KEY_HITS, dbg->hits);
-		printFmt(out, esc, "%I, \"%s\": %d\n", indent + 2, JSON_KEY_TIME, dbg->time);
-		printFmt(out, esc, "%I, \"%s\": %d\n", indent + 2, JSON_KEY_TOTAL, dbg->total);
-		printFmt(out, esc, "%I, \"%s\": %d\n", indent + 2, JSON_KEY_FAILS, dbg->fails);
+		jsonDumpSym(out, esc, sym, NULL, indent + 1);
+		printFmt(out, esc, "%I, \"%s\": %d\n", indent + 1, JSON_KEY_HITS, dbg->hits);
+		printFmt(out, esc, "%I, \"%s\": %d\n", indent + 1, JSON_KEY_TIME, dbg->time);
+		printFmt(out, esc, "%I, \"%s\": %d\n", indent + 1, JSON_KEY_TOTAL, dbg->total);
+		printFmt(out, esc, "%I, \"%s\": %d\n", indent + 1, JSON_KEY_FAILS, dbg->fails);
 	}
-	printFmt(out, esc, JSON_OBJ_ARR_END, indent + 1);
+	printFmt(out, esc, JSON_OBJ_ARR_END, indent);
 
-	printFmt(out, esc, JSON_OBJ_ARR_START, indent + 1, JSON_KEY_STMT);
+	printFmt(out, esc, JSON_OBJ_ARR_START, indent, JSON_KEY_STMT);
 	dbg = (dbgn) ctx->statements.ptr;
 	for (size_t i = 0; i < nStmt; ++i, dbg++) {
 		size_t symOffs = 0;
@@ -785,24 +784,23 @@ static void jsonPostProfile(dbgContext ctx) {
 			symOffs = dbg->start - sym->offs;
 		}
 		if (covStmt > 1) {
-			printFmt(out, esc, JSON_OBJ_NEXT, indent + 1);
+			printFmt(out, esc, JSON_OBJ_NEXT, indent);
 		}
-		printFmt(out, esc, "%I\"%s\": \"%?.T+%d\"\n", indent + 2, "", sym, symOffs);
-		printFmt(out, esc, "%I, \"%s\": %d\n", indent + 2, JSON_KEY_OFFS, dbg->start);
-		printFmt(out, esc, "%I, \"%s\": %d\n", indent + 2, JSON_KEY_HITS, dbg->hits);
-		printFmt(out, esc, "%I, \"%s\": %d\n", indent + 2, JSON_KEY_TOTAL, dbg->total);
-		printFmt(out, esc, "%I, \"%s\": %d\n", indent + 2, JSON_KEY_FAILS, dbg->fails);
+		printFmt(out, esc, "%I\"%s\": \"%?.T+%d\"\n", indent + 1, "", sym, symOffs);
+		printFmt(out, esc, "%I, \"%s\": %d\n", indent + 1, JSON_KEY_OFFS, dbg->start);
+		printFmt(out, esc, "%I, \"%s\": %d\n", indent + 1, JSON_KEY_HITS, dbg->hits);
+		printFmt(out, esc, "%I, \"%s\": %d\n", indent + 1, JSON_KEY_TOTAL, dbg->total);
+		printFmt(out, esc, "%I, \"%s\": %d\n", indent + 1, JSON_KEY_FAILS, dbg->fails);
 		if (dbg->file != NULL && dbg->line > 0) {
-			printFmt(out, esc, "%I, \"%s\": \"%s\"\n", indent + 2, JSON_KEY_FILE, dbg->file);
-			printFmt(out, esc, "%I, \"%s\": %d\n", indent + 2, JSON_KEY_LINE, dbg->line);
+			printFmt(out, esc, "%I, \"%s\": \"%s\"\n", indent + 1, JSON_KEY_FILE, dbg->file);
+			printFmt(out, esc, "%I, \"%s\": %d\n", indent + 1, JSON_KEY_LINE, dbg->line);
 		}
 	}
-	printFmt(out, esc, JSON_OBJ_ARR_END, indent + 1);
+	printFmt(out, esc, JSON_OBJ_ARR_END, indent);
 
-	printFmt(out, esc, "%I, \"%s\": %d\n", indent + 1, "ticksPerSec", CLOCKS_PER_SEC);
-	printFmt(out, esc, "%I, \"%s\": %d\n", indent + 1, "functionCount", ctx->functions.cnt);
-	printFmt(out, esc, "%I, \"%s\": %d\n", indent + 1, "statementCount", ctx->statements.cnt);
-	printFmt(out, esc, JSON_OBJ_END, indent);
+	printFmt(out, esc, "%I, \"%s\": %d\n", indent, "ticksPerSec", CLOCKS_PER_SEC);
+	printFmt(out, esc, "%I, \"%s\": %d\n", indent, "functionCount", ctx->functions.cnt);
+	printFmt(out, esc, "%I, \"%s\": %d\n", indent, "statementCount", ctx->statements.cnt);
 }
 static void jsonPreProfile(dbgContext ctx) {
 	userContext usr = ctx->rt->usr;
@@ -810,15 +808,13 @@ static void jsonPreProfile(dbgContext ctx) {
 	const int indent = usr->indent;
 	const char **esc = usr->esc;
 
-	// TODO: use JSON_*_START and JSON_*_END
-	printFmt(out, esc, "%I, \"%s\": {\n", indent, JSON_KEY_PROFILE);
-	printFmt(out, esc, "%I\"%s\": [", indent + 1, "callTreeData");
-	printFmt(out, esc, "\"%s\", ", "ctTickIndex");
-	printFmt(out, esc, "\"%s\", ", "ctHeapIndex");
-	printFmt(out, esc, "\"%s\"", "ctFunIndex");
-	printFmt(out, esc, "]\n");
+	printFmt(out, esc, JSON_ARR_START, indent, "callTreeData");
+	printFmt(out, esc, "\"%s\", \"%s\", \"%s\"\n",
+		"ctTickIndex", "ctHeapIndex", "ctFunIndex"
+	);
+	printFmt(out, esc, JSON_ARR_END, indent);
 
-	printFmt(out, esc, JSON_ARR_START, indent + 1, "callTree");
+	printFmt(out, esc, JSON_ARR_START, indent, "callTree");
 }
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ text output
@@ -943,8 +939,8 @@ static void textPostProfile(userContext usr) {
 		if (usr->profFunctions) {
 			size_t cov = 0, err = 0;
 			size_t cnt = dbg->functions.cnt;
-			dbgn ptrFunc = (dbgn) dbg->functions.ptr;
-			for (size_t i = 0; i < cnt; ++i, ptrFunc++) {
+			for (size_t i = 0; i < cnt; ++i) {
+				dbgn ptrFunc = (dbgn) dbg->functions.ptr + i;
 				cov += ptrFunc->hits > 0;
 				err += ptrFunc->fails > 0;
 			}

@@ -2400,10 +2400,9 @@ int ccGenCode(ccContext cc, int debug) {
 					fatal(ERR_INTERNAL_ERROR);
 					continue;
 				}
-				if (param->size != 0) {
-					continue;
+				if (param->size == 0) {
+					param->size = padOffset(param->type->size, vm_stk_align);
 				}
-				param->size = padOffset(param->type->size, vm_stk_align);
 				param->offs = offs += param->size;
 			}
 

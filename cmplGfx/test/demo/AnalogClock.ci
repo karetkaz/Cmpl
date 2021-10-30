@@ -1,7 +1,4 @@
 // analog clock using antialias lines
-static if (typename(Image.drawAALine) == null) {
-inline "/cmplGfx/lib/emulated/aaDraw.ci";
-}
 
 inline hourText = 0xadadad;
 inline hourHand = 0xff0000;
@@ -12,12 +9,12 @@ Image offs = Image(320, 320, 32);
 int onEvent(int action, int button, int ex, int ey) {
 	static bool aaDraw = true;
 	if (action == Gui.KEY_RELEASE) {
-		if (button == ' ') {
-			aaDraw = !aaDraw;
-		}
 		if (button == 27) {
 			// exit with escape button
 			return -1;
+		}
+		if (button == ' ') {
+			aaDraw = !aaDraw;
 		}
 	}
 
@@ -28,7 +25,7 @@ int onEvent(int action, int button, int ex, int ey) {
 	int x1 = offs.width() / 2;
 	int y1 = offs.height() / 2;
 	int r = Math.min(x1, y1) - 2;
-	offs.fillAAOval(x1 - r, y1 - r, x1 + r, y1 + r, 0x4a4a4a);
+	offs.fillOval(x1 - r, y1 - r, x1 + r, y1 + r, aaDraw, 0x4a4a4a);
 
 	if (hourText != 0) {
 		for (int i = 1; i <= 12; i += 1) {
@@ -64,11 +61,7 @@ int onEvent(int action, int button, int ex, int ey) {
 		double angle = Math.radians(((time / hoursInMillis) % 12) * (360 / 12) - 90);
 		int x2 = x1 + int(Math.cos(angle) * size);
 		int y2 = y1 + int(Math.sin(angle) * size);
-		if (aaDraw) {
-			offs.drawAALine(x1, y1, x2, y2, hourHand);
-		} else {
-			offs.drawLine(x1, y1, x2, y2, hourHand);
-		}
+		offs.drawLine(x1, y1, x2, y2, aaDraw, hourHand);
 	}
 
 	if (minuteHand != 0) {
@@ -76,11 +69,7 @@ int onEvent(int action, int button, int ex, int ey) {
 		double angle = Math.radians(((time / minutesInMillis) % 60) * 6 - 90);
 		int x2 = x1 + int(Math.cos(angle) * size);
 		int y2 = y1 + int(Math.sin(angle) * size);
-		if (aaDraw) {
-			offs.drawAALine(x1, y1, x2, y2, minuteHand);
-		} else {
-			offs.drawLine(x1, y1, x2, y2, minuteHand);
-		}
+		offs.drawLine(x1, y1, x2, y2, aaDraw, minuteHand);
 	}
 
 	if (secondHand != 0) {
@@ -88,11 +77,7 @@ int onEvent(int action, int button, int ex, int ey) {
 		double angle = Math.radians(((time / secondsInMillis) % 60) * 6 - 90);
 		int x2 = x1 + int(Math.cos(angle) * size);
 		int y2 = y1 + int(Math.sin(angle) * size);
-		if (aaDraw) {
-			offs.drawAALine(x1, y1, x2, y2, secondHand);
-		} else {
-			offs.drawLine(x1, y1, x2, y2, secondHand);
-		}
+		offs.drawLine(x1, y1, x2, y2, aaDraw, secondHand);
 	}
 
 	// sleep for a while

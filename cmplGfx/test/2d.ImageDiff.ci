@@ -44,10 +44,9 @@ image2.eval(null, 1, 0, rgbOp2);
 image.copy(0, 0, image1, null);
 
 int onEvent(int action, int button, int ex, int ey) {
-	if (action == Gui.KEY_PRESS) {
-		if (button == 27) {
-			return -1;
-		}
+	if (action == Gui.KEY_RELEASE && button == 27) {
+		// exit when releasing escape key
+		return -1;
 	}
 	if (action == Gui.MOUSE_PRESS) {
 		image.copy(0, 0, image2, null);

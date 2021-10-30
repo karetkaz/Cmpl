@@ -5,8 +5,28 @@ struct Rational {
 	const int64 den = 1;	// denominator
 
 	enum: Rational {
-		zero: { num: 0 };
-		unit: { num: 1 };
+		zero:  { num: 0 };
+		unit:  { num: 1 };
+		// yocto: { num: 1, den: 1000000000000000000000000 };
+		// zepto: { num: 1, den: 1000000000000000000000 };
+		atto:  { num: 1, den: 1000000000000000000 };
+		femto: { num: 1, den: 1000000000000000 };
+		pico:  { num: 1, den: 1000000000000 };
+		nano:  { num: 1, den: 1000000000 };
+		micro: { num: 1, den: 1000000 };
+		milli: { num: 1, den: 1000 };
+		centi: { num: 1, den: 100 };
+		deci:  { num: 1, den: 10 };
+		deca:  { num: 10, den: 1 };
+		hecto: { num: 100, den: 1 };
+		kilo:  { num: 1000, den: 1 };
+		mega:  { num: 1000000, den: 1 };
+		giga:  { num: 1000000000, den: 1 };
+		tera:  { num: 1000000000000, den: 1 };
+		peta:  { num: 1000000000000000, den: 1 };
+		exa	:  { num: 1000000000000000000, den: 1 };
+		// zetta: { num: 1000000000000000000000, den: 1 };
+		// yotta: { num: 1000000000000000000000000, den: 1 };
 	}
 }
 
@@ -77,3 +97,4 @@ Rational pow(Rational a, int64 exponent) {
 	return result;
 }
 
+// constants adapted from: https://en.cppreference.com/w/cpp/numeric/ratio/ratio

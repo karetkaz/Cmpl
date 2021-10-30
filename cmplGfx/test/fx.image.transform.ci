@@ -12,10 +12,6 @@
 
 Image back = Image("asset/image/forest.jpg", 32);
 Image offs = Image("asset/image/texture_nature_01.png", back.width(), back.height(), 32);
-int onEvent(int action, int button, int x, int y);
-Gui.showWindow(offs, onEvent);
-offs.destroy();
-back.destroy();
 
 /// compute the the transformation matrix to center/crop/fit an image to a new size.
 mat4f fitMatrix(const Image src, int newWidth, int newHeight, bool fitWidth, bool fitHeight, float64 maxScale, float64 maxAspect) {
@@ -142,23 +138,14 @@ Slider imgRatio = {
 	value: back.width() * imgRatio.divisor / back.height();
 };
 
-Widget ui = Widget().addItems(
-	quality,
-	fitWidth, fitHeight,
-	scaleX, scaleY,
-	skewX, skewY,
-	flipX, flipY,
-	rotate,
-	translateX, translateY,
-	imgRatio
-);
-
-int onEvent(int action, int button, int x, int y) {
+int onEvent(Window win&, int action, int button, int x, int y) {
 	if (action == Gui.KEY_RELEASE && button == 27) {
 		// exit when releasing escape key
 		return -1;
 	}
-	if (!ui.onEvent(action, button, x, y)) {
+
+	Widget ui = win.widget;
+	if (!win.dispatchEvent(ui, action, button, x, y)) {
 		// event not processed, wait for the next one
 		return 0;
 	}
@@ -181,5 +168,18 @@ int onEvent(int action, int button, int x, int y) {
 		.mul(fitMatrix(back, to.w, to.h, fitWidth.checked(), fitHeight.checked(), 1, 0));
 	debug("transform", mat.m);
 	offs.transform(to, back, null, quality.checked() ? 1 : 0, mat.data);
-	return ui.draw(offs);
+	return win.draw(ui);
 }
+
+Gui.showWindow(offs, onEvent, Widget(
+	quality,
+	fitWidth, fitHeight,
+	scaleX, scaleY,
+	skewX, skewY,
+	flipX, flipY,
+	rotate,
+	translateX, translateY,
+	imgRatio
+));
+offs.destroy();
+back.destroy();

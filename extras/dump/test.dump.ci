@@ -2053,7 +2053,7 @@ halt(): void: function {
 .param .result: void (size: 0, cast: inline)
 .value: nfc(0)
 }
-raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], inspect: variant): void: function {
+raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void: function {
 .kind: static const inline
 .base: `function`
 .size: 0
@@ -2072,7 +2072,7 @@ raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], 
 .param level: int32 (size: 4, cast: variable(i32))
 .param trace: int32 (size: 4, cast: variable(i32))
 .param message: char[*] (size: 4, cast: const variable(ref))
-.param inspect: variant (size: 8, cast: const variable(var))
+.param details: variant (size: 8, cast: const variable(var))
 .doc: 'Report messages or raise errors.'
 .value: nfc(11)
 }
@@ -2081,7 +2081,7 @@ raise.abort: int64 {
 .base: `int64`
 .size: 0
 .name: 'abort'
-.owner: raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], inspect: variant): void
+.owner: raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
 .value: -2
 }
 raise.error: int64 {
@@ -2089,7 +2089,7 @@ raise.error: int64 {
 .base: `int64`
 .size: 0
 .name: 'error'
-.owner: raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], inspect: variant): void
+.owner: raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
 .value: -1
 }
 raise.warn: int64 {
@@ -2097,7 +2097,7 @@ raise.warn: int64 {
 .base: `int64`
 .size: 0
 .name: 'warn'
-.owner: raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], inspect: variant): void
+.owner: raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
 .value: 1
 }
 raise.info: int64 {
@@ -2105,7 +2105,7 @@ raise.info: int64 {
 .base: `int64`
 .size: 0
 .name: 'info'
-.owner: raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], inspect: variant): void
+.owner: raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
 .value: 13
 }
 raise.debug: int64 {
@@ -2113,7 +2113,7 @@ raise.debug: int64 {
 .base: `int64`
 .size: 0
 .name: 'debug'
-.owner: raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], inspect: variant): void
+.owner: raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
 .value: 14
 }
 raise.verbose: int64 {
@@ -2121,7 +2121,7 @@ raise.verbose: int64 {
 .base: `int64`
 .size: 0
 .name: 'verbose'
-.owner: raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], inspect: variant): void
+.owner: raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
 .value: 15
 }
 raise.noTrace: int64 {
@@ -2129,7 +2129,7 @@ raise.noTrace: int64 {
 .base: `int64`
 .size: 0
 .name: 'noTrace'
-.owner: raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], inspect: variant): void
+.owner: raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
 .value: 0
 }
 raise.defTrace: int64 {
@@ -2137,7 +2137,7 @@ raise.defTrace: int64 {
 .base: `int64`
 .size: 0
 .name: 'defTrace'
-.owner: raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], inspect: variant): void
+.owner: raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
 .value: 128
 }
 tryExec(args: pointer, action(args: pointer): void): int32: function {
@@ -2290,7 +2290,7 @@ System.Platform.Linux: int64 {
 .size: 0
 .name: 'Linux'
 .owner: System.Platform
-.value: 1
+.value: 64
 }
 System.Platform.Unix: int64 {
 .kind: static const i64
@@ -2298,7 +2298,7 @@ System.Platform.Unix: int64 {
 .size: 0
 .name: 'Unix'
 .owner: System.Platform
-.value: 1
+.value: 64
 }
 true: bool {
 .kind: static const val
@@ -2760,7 +2760,7 @@ assertEq(expected: int32, returned: int32, message: char[*]): void: function {
 	<assertEq+?>: load.ref <?> ;"assertion failed"
 	<assertEq+?>: load.ref <?> ;NotEquals
 	<assertEq+?>: load.sp(+24)
-	<assertEq+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], inspect: variant): void
+	<assertEq+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
 	<assertEq+?>: inc.sp(-32)
 	<assertEq+?>: ret
 }
@@ -6994,7 +6994,7 @@ adapted from: https://sites.google.com/site/glennmurray/Home/rotation-matrices-a
 	<rotation+?>: load.ref <?> ;"invalid direction of rotation"
 	<rotation+?>: load.ref <?> ;vec4f
 	<rotation+?>: dup.x32 sp(9)
-	<rotation+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], inspect: variant): void
+	<rotation+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
 	cmplStd/lib/math/Matrix4f.ci:115: (29 bytes): return .result := {...};
 	cmplStd/lib/math/Matrix4f.ci:116: (6 bytes): .result.x := vec4f(0, 0, 0, 0);
 	<rotation+?>: load.z32
@@ -8593,7 +8593,7 @@ append(output: char[], pos: int32, radix: int32, value: uint64, format: FormatFl
 	<append+?>: load.ref <?> ;"radix is too small"
 	<append+?>: load.ref <?> ;int32
 	<append+?>: load.sp(+124)
-	<append+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], inspect: variant): void
+	<append+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
 	cmplStd/lib/text/cstr.ci:162: (53 bytes): assert(radix < (radixDigits.length), "radix is too big", radix);
 	<append+?>: dup.x32 sp(25)
 	<append+?>: load.m32 <?> ;append.radixDigits+4
@@ -8607,7 +8607,7 @@ append(output: char[], pos: int32, radix: int32, value: uint64, format: FormatFl
 	<append+?>: load.ref <?> ;"radix is too big"
 	<append+?>: load.ref <?> ;int32
 	<append+?>: load.sp(+124)
-	<append+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], inspect: variant): void
+	<append+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
 	cmplStd/lib/text/cstr.ci:165: (49 bytes): for ( ; value > (0); value := value / (radix))
 	<append+?>: jmp +41
 	cmplStd/lib/text/cstr.ci:166: (29 bytes): digits[len := len + 1] := radixDigits[value % (radix)];
@@ -8707,7 +8707,7 @@ append(output: char[], pos: int32, radix: int32, value: uint64, format: FormatFl
 	<append+?>: load.ref <?> ;"assertion failed!"
 	<append+?>: load.ref <?> ;pointer
 	<append+?>: load.ref <?> ;null
-	<append+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], inspect: variant): void
+	<append+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
 	cmplStd/lib/text/cstr.ci:186: (11 bytes): output[pos] := padChr;
 	<append+?>: load.sp(+0)
 	<append+?>: load.i8
@@ -8741,7 +8741,7 @@ append(output: char[], pos: int32, radix: int32, value: uint64, format: FormatFl
 	<append+?>: load.ref <?> ;"assertion failed!"
 	<append+?>: load.ref <?> ;pointer
 	<append+?>: load.ref <?> ;null
-	<append+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], inspect: variant): void
+	<append+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
 	cmplStd/lib/text/cstr.ci:191: (9 bytes): output[pos] := format.sign;
 	<append+?>: dup.x32 sp(24)
 	<append+?>: load.i8
@@ -8768,7 +8768,7 @@ append(output: char[], pos: int32, radix: int32, value: uint64, format: FormatFl
 	<append+?>: load.ref <?> ;"assertion failed!"
 	<append+?>: load.ref <?> ;pointer
 	<append+?>: load.ref <?> ;null
-	<append+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], inspect: variant): void
+	<append+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
 	cmplStd/lib/text/cstr.ci:198: (11 bytes): output[pos] := padChr;
 	<append+?>: load.sp(+0)
 	<append+?>: load.i8
@@ -8805,7 +8805,7 @@ append(output: char[], pos: int32, radix: int32, value: uint64, format: FormatFl
 	<append+?>: load.ref <?> ;"assertion failed!"
 	<append+?>: load.ref <?> ;pointer
 	<append+?>: load.ref <?> ;null
-	<append+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], inspect: variant): void
+	<append+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
 	cmplStd/lib/text/cstr.ci:205: (17 bytes): output[pos] := digits[len - i];
 	<append+?>: load.sp(+12)
 	<append+?>: dup.x32 sp(24)
@@ -9623,7 +9623,7 @@ emitSlice: char[] {
 .base: `char[]`
 .size: 8
 .name: 'emitSlice'
-.file: 'cmplStd/test/lang/emit.ci:29'
+.file: 'cmplStd/test/lang/emit.ci:30'
 .value: emit(int32(3), pointer("string"))
 }
 zero(a: int32, b: int32): int32: function {
@@ -10919,7 +10919,7 @@ abortExecution(args: pointer): void: function {
 	<abortExecution+?>: load.ref <?> ;"fatal error"
 	<abortExecution+?>: load.ref <?> ;abortExecution.NotEquals
 	<abortExecution+?>: load.sp(+24)
-	<abortExecution+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], inspect: variant): void
+	<abortExecution+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
 	<abortExecution+?>: inc.sp(-16)
 	<abortExecution+?>: ret
 }
@@ -12677,8 +12677,8 @@ RecordMethodTest.staticMethod(this: RecordMethodTest, x: int32): void: function 
 	<staticMethod+?>: load.c32 128
 	<staticMethod+?>: load.ref <?> ;"staticMethod"
 	<staticMethod+?>: load.ref <?> ;int32
-	<staticMethod+?>: load.sp(+40)
-	<staticMethod+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], inspect: variant): void
+	<staticMethod+?>: load.sp(+28)
+	<staticMethod+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
 	<staticMethod+?>: ret
 }
 RecordMethodTest.forwardMethod(this: RecordMethodTest, x: int32): void: function {
@@ -12745,8 +12745,8 @@ RecordMethodTest.virtualMethod(this: RecordMethodTest, x: int32): void: function
 	<virtualMethod+?>: load.c32 128
 	<virtualMethod+?>: load.ref <?> ;"virtualMethod"
 	<virtualMethod+?>: load.ref <?> ;int32
-	<virtualMethod+?>: load.sp(+40)
-	<virtualMethod+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], inspect: variant): void
+	<virtualMethod+?>: load.sp(+28)
+	<virtualMethod+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
 	<virtualMethod+?>: ret
 }
 RecordMethodTest.virtualMethod(this: RecordMethodTest, x: int32): void: function {
@@ -12787,8 +12787,8 @@ RecordMethodTest.forwardMethod(this: RecordMethodTest, x: int32): void: function
 	<forwardMethod+?>: load.c32 128
 	<forwardMethod+?>: load.ref <?> ;"forwardMethod"
 	<forwardMethod+?>: load.ref <?> ;int32
-	<forwardMethod+?>: load.sp(+40)
-	<forwardMethod+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], inspect: variant): void
+	<forwardMethod+?>: load.sp(+28)
+	<forwardMethod+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
 	<forwardMethod+?>: ret
 }
 globalFunction(this: RecordMethodTest, x: int32): void: function {
@@ -12812,7 +12812,7 @@ globalFunction(this: RecordMethodTest, x: int32): void: function {
 	<globalFunction+?>: load.ref <?> ;"globalFunction"
 	<globalFunction+?>: load.ref <?> ;int32
 	<globalFunction+?>: load.sp(+28)
-	<globalFunction+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], inspect: variant): void
+	<globalFunction+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
 	<globalFunction+?>: ret
 }
 recordMethodTest: RecordMethodTest {
@@ -12831,7 +12831,7 @@ recordMethodTest: RecordMethodTest {
 staticMethod(this: RecordMethodTest, x: int32): void: function {
 .kind: static function
 .base: `function`
-.size: 66
+.size: 64
 .name: 'staticMethod'
 .file: 'cmplStd/test/lang/init.method.ci:84'
 .param .result: void (size: 0, cast: variable(void))
@@ -12844,7 +12844,7 @@ staticMethod(this: RecordMethodTest, x: int32): void: function {
 		RecordMethodTest.staticMethod(this, x);
 	}
 }
-.instructions: (66 bytes)
+.instructions: (64 bytes)
 	cmplStd/test/lang/init.method.ci:85: (35 bytes): debug("extension.staticMethod");
 	<staticMethod>  : load.ref <?> ;"cmplStd/test/lang/init.method.ci"
 	<staticMethod+?>: load.c32 85
@@ -12853,25 +12853,24 @@ staticMethod(this: RecordMethodTest, x: int32): void: function {
 	<staticMethod+?>: load.ref <?> ;"extension.staticMethod"
 	<staticMethod+?>: load.ref <?> ;pointer
 	<staticMethod+?>: load.ref <?> ;null
-	<staticMethod+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], inspect: variant): void
-	cmplStd/test/lang/init.method.ci:86: (30 bytes): if ((this) != null)
+	<staticMethod+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
+	cmplStd/test/lang/init.method.ci:86: (28 bytes): if ((this) != null)
 	<staticMethod+?>: load.sp(+8)
 	<staticMethod+?>: load.ref <?> ;null
 	<staticMethod+?>: ceq.i32
-	<staticMethod+?>: jnz +20
-	cmplStd/test/lang/init.method.ci:87: (16 bytes): RecordMethodTest.staticMethod(this, x);
+	<staticMethod+?>: jnz +18
+	cmplStd/test/lang/init.method.ci:87: (14 bytes): RecordMethodTest.staticMethod(this, x);
 	<staticMethod+?>: dup.x128 sp(2)
 	<staticMethod+?>: dup.x32 sp(5)
-	<staticMethod+?>: set.x32 sp(4)
 	<staticMethod+?>: load.ref <?> ;RecordMethodTest.staticMethod(this: RecordMethodTest, x: int32): void
 	<staticMethod+?>: call
-	<staticMethod+?>: inc.sp(-16)
+	<staticMethod+?>: inc.sp(-20)
 	<staticMethod+?>: ret
 }
 virtualMethod(this: RecordMethodTest, x: int32): void: function {
 .kind: static function
 .base: `function`
-.size: 63
+.size: 61
 .name: 'virtualMethod'
 .file: 'cmplStd/test/lang/init.method.ci:90'
 .param .result: void (size: 0, cast: variable(void))
@@ -12883,7 +12882,7 @@ virtualMethod(this: RecordMethodTest, x: int32): void: function {
 		this.virtualMethod(this, x);
 	}
 }
-.instructions: (63 bytes)
+.instructions: (61 bytes)
 	cmplStd/test/lang/init.method.ci:91: (35 bytes): debug("extension.virtualMethod");
 	<virtualMethod>  : load.ref <?> ;"cmplStd/test/lang/init.method.ci"
 	<virtualMethod+?>: load.c32 91
@@ -12892,19 +12891,18 @@ virtualMethod(this: RecordMethodTest, x: int32): void: function {
 	<virtualMethod+?>: load.ref <?> ;"extension.virtualMethod"
 	<virtualMethod+?>: load.ref <?> ;pointer
 	<virtualMethod+?>: load.ref <?> ;null
-	<virtualMethod+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], inspect: variant): void
-	cmplStd/test/lang/init.method.ci:92: (27 bytes): if ((this) != null)
+	<virtualMethod+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
+	cmplStd/test/lang/init.method.ci:92: (25 bytes): if ((this) != null)
 	<virtualMethod+?>: load.sp(+8)
 	<virtualMethod+?>: load.ref <?> ;null
 	<virtualMethod+?>: ceq.i32
-	<virtualMethod+?>: jnz +17
-	cmplStd/test/lang/init.method.ci:93: (13 bytes): this.virtualMethod(this, x);
+	<virtualMethod+?>: jnz +15
+	cmplStd/test/lang/init.method.ci:93: (11 bytes): this.virtualMethod(this, x);
 	<virtualMethod+?>: dup.x128 sp(2)
 	<virtualMethod+?>: dup.x32 sp(5)
-	<virtualMethod+?>: set.x32 sp(4)
-	<virtualMethod+?>: dup.x32 sp(8)
+	<virtualMethod+?>: dup.x32 sp(9)
 	<virtualMethod+?>: call
-	<virtualMethod+?>: inc.sp(-16)
+	<virtualMethod+?>: inc.sp(-20)
 	<virtualMethod+?>: ret
 }
 rgbF32: typename {
@@ -16103,7 +16101,7 @@ testMathAbsMod_f32_8d: float32 {
 .main: function {
 .kind: static function
 .base: `function`
-.size: 9703
+.size: 9693
 .name: '.main'
 .print: '.main'
 .field typename: typename (size: 160, cast: static const typename(ref))
@@ -16597,8 +16595,8 @@ testMathAbsMod_f32_8d: float32 {
 .field RecordMethodTest: typename (size: 16, cast: static const typename(val))
 .field globalFunction: function (size: 39, cast: static function)
 .field recordMethodTest: RecordMethodTest (size: 16, cast: variable(val))
-.field staticMethod: function (size: 66, cast: static function)
-.field virtualMethod: function (size: 63, cast: static function)
+.field staticMethod: function (size: 64, cast: static function)
+.field virtualMethod: function (size: 61, cast: static function)
 .field rgbF32: typename (size: 16, cast: static const typename(val))
 .field rgbU8: typename (size: 3, cast: static const typename(val))
 .field color: typename (size: 4, cast: static const typename(val))
@@ -16940,7 +16938,7 @@ testMathAbsMod_f32_8d: float32 {
 .field testMathAbsMod_f32_8b: float32 (size: 4, cast: variable(f32))
 .field testMathAbsMod_f32_8c: float32 (size: 4, cast: variable(f32))
 .field testMathAbsMod_f32_8d: float32 (size: 4, cast: variable(f32))
-.field .main: function (size: 9703, cast: static function)
+.field .main: function (size: 9693, cast: static function)
 .value: {
 	{
 		byte: typename := uint8;
@@ -18872,7 +18870,7 @@ testMathAbsMod_f32_8d: float32 {
 		testMathAbsMod_f32_8d: float32 := Math.absMod(-12.000000, 10.000000);
 	}
 }
-.instructions: (9703 bytes)
+.instructions: (9693 bytes)
 	cmplStd/lib/text/cstr.ci:155: (14 bytes): static const whiteSpace: char[] := " \t\n\r"
 	<.main>  : load.c32 4
 	<.main+?>: load.ref <?> ;" \t\n\r"
@@ -18981,7 +18979,7 @@ testMathAbsMod_f32_8d: float32 {
 	<.main+?>: i64.2i32
 	cmplStd/test/lang/emit.ci:26: (9 bytes): emitFloatAsInt4: int64 := floatAsInt64(500)
 	<.main+?>: load.f64 500.000000
-	cmplStd/test/lang/emit.ci:29: (10 bytes): emitSlice: char[] := emit(int32(3), pointer("string"))
+	cmplStd/test/lang/emit.ci:30: (10 bytes): emitSlice: char[] := emit(int32(3), pointer("string"))
 	<.main+?>: load.c32 3
 	<.main+?>: load.ref <?> ;"string"
 	cmplStd/test/lang/inlineMacros.ci:10: (5 bytes): i3: int32 := 3
@@ -20019,7 +20017,7 @@ testMathAbsMod_f32_8d: float32 {
 	<.main+?>: load.ref <?> ;"val1"
 	<.main+?>: load.ref <?> ;int64
 	<.main+?>: load.sp(+32)
-	<.main+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], inspect: variant): void
+	<.main+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
 	cmplStd/test/std/memory.ci:27: (34 bytes): debug("val2", val2);
 	<.main+?>: load.ref <?> ;"cmplStd/test/std/memory.ci"
 	<.main+?>: load.c32 27
@@ -20028,7 +20026,7 @@ testMathAbsMod_f32_8d: float32 {
 	<.main+?>: load.ref <?> ;"val2"
 	<.main+?>: load.ref <?> ;int64
 	<.main+?>: load.sp(+24)
-	<.main+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], inspect: variant): void
+	<.main+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
 	cmplStd/test/std/memory.ci:29: (25 bytes): pointer.move(pointer(val2), pointer(val1), sizeof(int64));
 	<.main+?>: load.sp(+0)
 	<.main+?>: load.sp(+12)
@@ -20051,7 +20049,7 @@ testMathAbsMod_f32_8d: float32 {
 	<.main+?>: load.ref <?> ;"val1"
 	<.main+?>: load.ref <?> ;int64
 	<.main+?>: load.sp(+32)
-	<.main+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], inspect: variant): void
+	<.main+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
 	cmplStd/test/std/memory.ci:33: (34 bytes): debug("val2", val2);
 	<.main+?>: load.ref <?> ;"cmplStd/test/std/memory.ci"
 	<.main+?>: load.c32 33
@@ -20060,7 +20058,7 @@ testMathAbsMod_f32_8d: float32 {
 	<.main+?>: load.ref <?> ;"val2"
 	<.main+?>: load.ref <?> ;int64
 	<.main+?>: load.sp(+24)
-	<.main+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], inspect: variant): void
+	<.main+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
 	cmplStd/test/std/tryExec.ci:47: (14 bytes): tryExecErr0: int32 := tryExec(null, noError)
 	<.main+?>: load.ref <?> ;null
 	<.main+?>: load.ref <?> ;noError(ptr: pointer): void
@@ -20511,20 +20509,18 @@ testMathAbsMod_f32_8d: float32 {
 	:: (7 bytes): recordMethodTest.virtualMethod := virtualMethod;
 	<.main+?>: load.ref <?> ;RecordMethodTest.virtualMethod(this: RecordMethodTest, x: int32): void
 	<.main+?>: set.x32 sp(3)
-	cmplStd/test/lang/init.method.ci:78: (19 bytes): RecordMethodTest.staticMethod(recordMethodTest, 1);
+	cmplStd/test/lang/init.method.ci:78: (17 bytes): RecordMethodTest.staticMethod(recordMethodTest, 1);
 	<.main+?>: dup.x128 sp(0)
 	<.main+?>: load.c32 1
-	<.main+?>: set.x32 sp(4)
 	<.main+?>: load.ref <?> ;RecordMethodTest.staticMethod(this: RecordMethodTest, x: int32): void
 	<.main+?>: call
-	<.main+?>: inc.sp(-16)
-	cmplStd/test/lang/init.method.ci:79: (16 bytes): recordMethodTest.virtualMethod(recordMethodTest, 1);
+	<.main+?>: inc.sp(-20)
+	cmplStd/test/lang/init.method.ci:79: (14 bytes): recordMethodTest.virtualMethod(recordMethodTest, 1);
 	<.main+?>: dup.x128 sp(0)
 	<.main+?>: load.c32 1
-	<.main+?>: set.x32 sp(4)
-	<.main+?>: dup.x32 sp(6)
+	<.main+?>: dup.x32 sp(7)
 	<.main+?>: call
-	<.main+?>: inc.sp(-16)
+	<.main+?>: inc.sp(-20)
 	cmplStd/test/lang/init.method.ci:97: (17 bytes): staticMethod(recordMethodTest, 2);
 	<.main+?>: dup.x128 sp(0)
 	<.main+?>: load.c32 2
@@ -20537,27 +20533,24 @@ testMathAbsMod_f32_8d: float32 {
 	<.main+?>: load.ref <?> ;virtualMethod(this: RecordMethodTest, x: int32): void
 	<.main+?>: call
 	<.main+?>: inc.sp(-20)
-	cmplStd/test/lang/init.method.ci:101: (19 bytes): RecordMethodTest.staticMethod(recordMethodTest, 3);
+	cmplStd/test/lang/init.method.ci:101: (17 bytes): RecordMethodTest.staticMethod(recordMethodTest, 3);
 	<.main+?>: dup.x128 sp(0)
 	<.main+?>: load.c32 3
-	<.main+?>: set.x32 sp(4)
 	<.main+?>: load.ref <?> ;RecordMethodTest.staticMethod(this: RecordMethodTest, x: int32): void
 	<.main+?>: call
-	<.main+?>: inc.sp(-16)
-	cmplStd/test/lang/init.method.ci:102: (19 bytes): RecordMethodTest.virtualMethod(recordMethodTest, 3);
+	<.main+?>: inc.sp(-20)
+	cmplStd/test/lang/init.method.ci:102: (17 bytes): RecordMethodTest.virtualMethod(recordMethodTest, 3);
 	<.main+?>: dup.x128 sp(0)
 	<.main+?>: load.c32 3
-	<.main+?>: set.x32 sp(4)
 	<.main+?>: load.ref <?> ;RecordMethodTest.virtualMethod(this: RecordMethodTest, x: int32): void
 	<.main+?>: call
-	<.main+?>: inc.sp(-16)
-	cmplStd/test/lang/init.method.ci:103: (16 bytes): recordMethodTest.virtualMethod(recordMethodTest, 3);
+	<.main+?>: inc.sp(-20)
+	cmplStd/test/lang/init.method.ci:103: (14 bytes): recordMethodTest.virtualMethod(recordMethodTest, 3);
 	<.main+?>: dup.x128 sp(0)
 	<.main+?>: load.c32 3
-	<.main+?>: set.x32 sp(4)
-	<.main+?>: dup.x32 sp(6)
+	<.main+?>: dup.x32 sp(7)
 	<.main+?>: call
-	<.main+?>: inc.sp(-16)
+	<.main+?>: inc.sp(-20)
 	cmplStd/test/lang/recUnion.ci:26: (22 bytes): black: rgbU8 := {...}
 	<.main+?>: inc.sp(+4)
 	cmplStd/test/lang/recUnion.ci:26: (6 bytes): black.r := (0);
@@ -21744,7 +21737,7 @@ testMathAbsMod_f32_8d: float32 {
 	<.main+?>: load.ref <?> ;"0 == 0"
 	<.main+?>: load.ref <?> ;pointer
 	<.main+?>: load.ref <?> ;null
-	<.main+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], inspect: variant): void
+	<.main+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
 	cmplStd/test/lang/stmt.if.ci:12: (39 bytes): raise(raise.debug, 3, "0 == 0", null);
 	<.main+?>: load.ref <?> ;"cmplStd/test/lang/stmt.if.ci"
 	<.main+?>: load.c32 12
@@ -21753,7 +21746,7 @@ testMathAbsMod_f32_8d: float32 {
 	<.main+?>: load.ref <?> ;"0 == 0"
 	<.main+?>: load.ref <?> ;pointer
 	<.main+?>: load.ref <?> ;null
-	<.main+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], inspect: variant): void
+	<.main+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
 	cmplStd/test/lang/stmt.if.ci:22: (39 bytes): raise(raise.debug, 6, "0 == 0", null);
 	<.main+?>: load.ref <?> ;"cmplStd/test/lang/stmt.if.ci"
 	<.main+?>: load.c32 22
@@ -21762,7 +21755,7 @@ testMathAbsMod_f32_8d: float32 {
 	<.main+?>: load.ref <?> ;"0 == 0"
 	<.main+?>: load.ref <?> ;pointer
 	<.main+?>: load.ref <?> ;null
-	<.main+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], inspect: variant): void
+	<.main+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
 	cmplStd/test/lang/stmt.if.ci:26: (1 byte): t: int32 := 0
 	<.main+?>: load.z32
 	cmplStd/test/lang/stmt.if.ci:28: (46 bytes): if (t == 0)
@@ -21778,7 +21771,7 @@ testMathAbsMod_f32_8d: float32 {
 	<.main+?>: load.ref <?> ;"t == 0"
 	<.main+?>: load.ref <?> ;int32
 	<.main+?>: load.sp(+24)
-	<.main+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], inspect: variant): void
+	<.main+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
 	cmplStd/test/lang/stmt.if.ci:32: (46 bytes): if (t != 0)
 	<.main+?>: dup.x32 sp(0)
 	<.main+?>: load.z32
@@ -21792,7 +21785,7 @@ testMathAbsMod_f32_8d: float32 {
 	<.main+?>: load.ref <?> ;"t != 0"
 	<.main+?>: load.ref <?> ;int32
 	<.main+?>: load.sp(+24)
-	<.main+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], inspect: variant): void
+	<.main+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
 	cmplStd/test/lang/stmt.if.ci:36: (88 bytes): if (t == 0)
 	<.main+?>: dup.x32 sp(0)
 	<.main+?>: load.z32
@@ -21806,7 +21799,7 @@ testMathAbsMod_f32_8d: float32 {
 	<.main+?>: load.ref <?> ;"t == 0"
 	<.main+?>: load.ref <?> ;int32
 	<.main+?>: load.sp(+24)
-	<.main+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], inspect: variant): void
+	<.main+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
 	<.main+?>: jmp +42
 	cmplStd/test/lang/stmt.if.ci:40: (38 bytes): raise(raise.debug, 10, "t != 0", t);
 	<.main+?>: load.ref <?> ;"cmplStd/test/lang/stmt.if.ci"
@@ -21816,7 +21809,7 @@ testMathAbsMod_f32_8d: float32 {
 	<.main+?>: load.ref <?> ;"t != 0"
 	<.main+?>: load.ref <?> ;int32
 	<.main+?>: load.sp(+24)
-	<.main+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], inspect: variant): void
+	<.main+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
 	cmplStd/test/lang/stmt.if.ci:43: (88 bytes): if (t != 0)
 	<.main+?>: dup.x32 sp(0)
 	<.main+?>: load.z32
@@ -21830,7 +21823,7 @@ testMathAbsMod_f32_8d: float32 {
 	<.main+?>: load.ref <?> ;"t != 0"
 	<.main+?>: load.ref <?> ;int32
 	<.main+?>: load.sp(+24)
-	<.main+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], inspect: variant): void
+	<.main+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
 	<.main+?>: jmp +42
 	cmplStd/test/lang/stmt.if.ci:47: (38 bytes): raise(raise.debug, 12, "t == 0", t);
 	<.main+?>: load.ref <?> ;"cmplStd/test/lang/stmt.if.ci"
@@ -21840,7 +21833,7 @@ testMathAbsMod_f32_8d: float32 {
 	<.main+?>: load.ref <?> ;"t == 0"
 	<.main+?>: load.ref <?> ;int32
 	<.main+?>: load.sp(+24)
-	<.main+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], inspect: variant): void
+	<.main+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
 	cmplStd/test/lang/stmt.if.ci:50: (358 bytes): if (t == 0)
 	<.main+?>: dup.x32 sp(0)
 	<.main+?>: load.z32
@@ -21854,7 +21847,7 @@ testMathAbsMod_f32_8d: float32 {
 	<.main+?>: load.ref <?> ;"t == 0"
 	<.main+?>: load.ref <?> ;int32
 	<.main+?>: load.sp(+24)
-	<.main+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], inspect: variant): void
+	<.main+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
 	<.main+?>: jmp +312
 	cmplStd/test/lang/stmt.if.ci:53: (308 bytes): if (t == 1)
 	<.main+?>: dup.x32 sp(0)
@@ -21869,7 +21862,7 @@ testMathAbsMod_f32_8d: float32 {
 	<.main+?>: load.ref <?> ;"t == 1"
 	<.main+?>: load.ref <?> ;int32
 	<.main+?>: load.sp(+24)
-	<.main+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], inspect: variant): void
+	<.main+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
 	<.main+?>: jmp +258
 	cmplStd/test/lang/stmt.if.ci:56: (254 bytes): if (t == 2)
 	<.main+?>: dup.x32 sp(0)
@@ -21884,7 +21877,7 @@ testMathAbsMod_f32_8d: float32 {
 	<.main+?>: load.ref <?> ;"t == 2"
 	<.main+?>: load.ref <?> ;int32
 	<.main+?>: load.sp(+24)
-	<.main+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], inspect: variant): void
+	<.main+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
 	<.main+?>: jmp +204
 	cmplStd/test/lang/stmt.if.ci:59: (200 bytes): if (t == 3)
 	<.main+?>: dup.x32 sp(0)
@@ -21899,7 +21892,7 @@ testMathAbsMod_f32_8d: float32 {
 	<.main+?>: load.ref <?> ;"t == 3"
 	<.main+?>: load.ref <?> ;int32
 	<.main+?>: load.sp(+24)
-	<.main+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], inspect: variant): void
+	<.main+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
 	<.main+?>: jmp +150
 	cmplStd/test/lang/stmt.if.ci:62: (146 bytes): if (t == 4)
 	<.main+?>: dup.x32 sp(0)
@@ -21914,7 +21907,7 @@ testMathAbsMod_f32_8d: float32 {
 	<.main+?>: load.ref <?> ;"t == 4"
 	<.main+?>: load.ref <?> ;int32
 	<.main+?>: load.sp(+24)
-	<.main+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], inspect: variant): void
+	<.main+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
 	<.main+?>: jmp +96
 	cmplStd/test/lang/stmt.if.ci:65: (92 bytes): if (t == 5)
 	<.main+?>: dup.x32 sp(0)
@@ -21929,7 +21922,7 @@ testMathAbsMod_f32_8d: float32 {
 	<.main+?>: load.ref <?> ;"t == 5"
 	<.main+?>: load.ref <?> ;int32
 	<.main+?>: load.sp(+24)
-	<.main+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], inspect: variant): void
+	<.main+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
 	<.main+?>: jmp +42
 	cmplStd/test/lang/stmt.if.ci:69: (38 bytes): raise(raise.debug, 10, "t not in (0, 1, 2, 3, 4, 5)", t);
 	<.main+?>: load.ref <?> ;"cmplStd/test/lang/stmt.if.ci"
@@ -21939,7 +21932,7 @@ testMathAbsMod_f32_8d: float32 {
 	<.main+?>: load.ref <?> ;"t not in (0, 1, 2, 3, 4, 5)"
 	<.main+?>: load.ref <?> ;int32
 	<.main+?>: load.sp(+24)
-	<.main+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], inspect: variant): void
+	<.main+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
 	cmplStd/test/lang/stmt.for.ci:3: (47 bytes): for ( ; ; )
 	<.main+?>: jmp +43
 	cmplStd/test/lang/stmt.for.ci:4: (35 bytes): debug("for ( ; ; )");
@@ -21950,7 +21943,7 @@ testMathAbsMod_f32_8d: float32 {
 	<.main+?>: load.ref <?> ;"for ( ; ; )"
 	<.main+?>: load.ref <?> ;pointer
 	<.main+?>: load.ref <?> ;null
-	<.main+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], inspect: variant): void
+	<.main+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
 	cmplStd/test/lang/stmt.for.ci:5: (4 bytes): break;
 	<.main+?>: jmp +8
 	:: (4 bytes)
@@ -21966,7 +21959,7 @@ testMathAbsMod_f32_8d: float32 {
 	<.main+?>: load.ref <?> ;"for (int i = 0; i < 2; i += 1)"
 	<.main+?>: load.ref <?> ;int32
 	<.main+?>: load.sp(+24)
-	<.main+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], inspect: variant): void
+	<.main+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
 	cmplStd/test/lang/stmt.for.ci:8: (4 bytes): i := i + 1
 	<.main+?>: inc.i32(+1)
 	cmplStd/test/lang/stmt.for.ci:8: (12 bytes): i < 2
@@ -21989,7 +21982,7 @@ testMathAbsMod_f32_8d: float32 {
 	<.main+?>: load.ref <?> ;"for (forIdx = 0; forIdx < 2; forIdx += 1)"
 	<.main+?>: load.ref <?> ;int32
 	<.main+?>: load.sp(+24)
-	<.main+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], inspect: variant): void
+	<.main+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
 	cmplStd/test/lang/stmt.for.ci:13: (4 bytes): forIdx := forIdx + 1
 	<.main+?>: inc.i32(+1)
 	cmplStd/test/lang/stmt.for.ci:13: (12 bytes): forIdx < 2
@@ -22015,7 +22008,7 @@ testMathAbsMod_f32_8d: float32 {
 	<.main+?>: load.ref <?> ;"for with continue"
 	<.main+?>: load.ref <?> ;int32
 	<.main+?>: load.sp(+24)
-	<.main+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], inspect: variant): void
+	<.main+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
 	cmplStd/test/lang/stmt.for.ci:17: (4 bytes): i := i + 1
 	<.main+?>: inc.i32(+1)
 	cmplStd/test/lang/stmt.for.ci:17: (12 bytes): i < 7
@@ -22042,7 +22035,7 @@ testMathAbsMod_f32_8d: float32 {
 	<.main+?>: load.ref <?> ;"for with break"
 	<.main+?>: load.ref <?> ;int32
 	<.main+?>: load.sp(+24)
-	<.main+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], inspect: variant): void
+	<.main+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
 	cmplStd/test/lang/stmt.for.ci:24: (4 bytes): i := i + 1
 	<.main+?>: inc.i32(+1)
 	cmplStd/test/lang/stmt.for.ci:24: (12 bytes): i < 7
@@ -22959,7 +22952,7 @@ cmplStd/test/lang/emit.ci:23: emitFloatAsInt1: int32(1140457472)
 cmplStd/test/lang/emit.ci:24: emitFloatAsInt2: int64(1140457472)
 cmplStd/test/lang/emit.ci:25: emitFloatAsInt3: int32(0)
 cmplStd/test/lang/emit.ci:26: emitFloatAsInt4: int64(4647503709213818880)
-cmplStd/test/lang/emit.ci:29: emitSlice: char[]([3] {'s', 't', 'r'})
+cmplStd/test/lang/emit.ci:30: emitSlice: char[]([3] {'s', 't', 'r'})
 cmplStd/test/lang/inlineMacros.ci:10: i3: int32(3)
 cmplStd/test/lang/inlineMacros.ci:11: i6: int32(6)
 cmplStd/test/lang/inlineMacros.ci:12: i2: int32(2)
@@ -23637,18 +23630,18 @@ cmplStd/test/std/test.math.ci:96: testMathAbsMod_f32_8d: float32(8.000000)
 
 ---------- Memory usage:
 memory[all] @000000; size: 4194016(4.0 Mb)
-memory[used] @000000; size: 418950(409.1 Kb)
-memory[heap] @066486; size: 2726514(2.6 Mb)
+memory[used] @000000; size: 418930(409.1 Kb)
+memory[heap] @066472; size: 2726534(2.6 Mb)
 memory[stack] @1fff40; size: 1048504(1023.9 Kb)
 
 ---------- Used memory:
 memory[meta] @000000; size: 402648(393.2 Kb)
-memory[code] @000000; size: 15980(15.6 Kb)
+memory[code] @000000; size: 15966(15.6 Kb)
 memory[data] @000000; size: 104(104.0 bytes)
 
 ---------- Heap memory:
-memory[used] @0664a0; size: 32(32.0 bytes)
-memory[used] @0664d0; size: 32(32.0 bytes)
-memory[free] @066500; size: 2726368(2.6 Mb)
+memory[used] @066490; size: 32(32.0 bytes)
+memory[used] @0664c0; size: 32(32.0 bytes)
+memory[free] @0664f0; size: 2726384(2.6 Mb)
 
 ---------- Exitcode: 0, time: 0.000 ms

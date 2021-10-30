@@ -1,7 +1,7 @@
 // InputOutput
 
 struct Closeable: object {
-	// abstract method
+	// abstract
 	void close(Closeable this);
 
 	static void skipClose(Closeable closeable) {
@@ -20,8 +20,7 @@ inline void(Closeable instance) = Closeable.safeClose(instance);
 
 // ByteReader ~= java:InputStream
 struct ByteReader: Closeable {
-
-	// abstract method
+	// abstract
 	int read(ByteReader this, byte bytes[]);
 
 	static int read(ByteReader this) {
@@ -43,16 +42,11 @@ struct ByteReader: Closeable {
 
 // ByteWriter ~= java:OutputStream
 struct ByteWriter: Closeable {
-	// abstract method
+	// abstract
 	void write(ByteWriter this, byte bytes[]);
 
-	// abstract method
+	// abstract
 	void flush(ByteWriter this);
-
-	static void write(ByteWriter this, byte bytes[], int count) {
-		assert(count <= bytes.length);
-		return this.write(this, bytes[... count]);
-	}
 
 	static void write(ByteWriter this, byte oneByte) {
 		byte bytes[1] = { oneByte };
@@ -65,7 +59,7 @@ struct ByteWriter: Closeable {
 	}
 
 	struct Writeable: object {
-		// abstract method
+		// abstract
 		void write(Writeable this, ByteWriter writer);
 	}
 
@@ -81,7 +75,7 @@ struct ByteWriter: Closeable {
 			if (read <= 0) {
 				return result;
 			}
-			this.write(buffer, read);
+			this.write(this, buffer[...read]);
 			result += read;
 		}
 		return result;
@@ -95,26 +89,29 @@ struct ByteWriter: Closeable {
 	*/
 }
 
+// The Unicode Character Set (UCS) contains 1,114,112 code points: U+0000—U+10FFFF
+inline unicode = uint32;
+
 // TextReader := Decoder & Parser(java:Reader + Scanner?Parser?)
 struct TextReader: Closeable {
-	// The Unicode Character Set (UCS) contains 1,114,112 code points: U+0000—U+10FFFF
-	inline unicode = uint32;
-
 	const ByteReader reader;
 
-	// abstract method
-	int read(TextReader this, unicode chars[]);
+	// abstract
+	int decode(TextReader this, unicode chars[]);
 
-	static int read(TextReader this) {
+	// override
+	void close(TextReader this) {
+		// by default close the stream.
+		// override if no need to close it.
+		this.reader.close();
+	}
+
+	static int decode(TextReader this) {
 		unicode chars[1] = {0};
-		if (this.read(chars) <= 0) {
+		if (this.decode(chars) <= 0) {
 			return -1;
 		}
 		return chars[0] & 0x00ffffff;
-	}
-
-	void close(TextReader this) {
-		this.reader.close();
 	}
 
 	// TODO: static string readNext(TextReader this, regex matcher) { /*...*/ }
@@ -126,7 +123,6 @@ struct TextReader: Closeable {
 	/* TODO: subclasses
 		Latin1
 		Ascii
-		Utf7
 		Utf8
 	*/
 }
@@ -134,37 +130,96 @@ struct TextReader: Closeable {
 // TextWriter := Encoder & Printer (java:Writer + PrintStream)
 struct TextWriter: Closeable {
 	struct Writeable: object {
-		// abstract method
+		// abstract
 		void write(Writeable this, TextWriter writer);
 	}
 
-	inline unicode = uint32; // FIXME: TextReader.unicode;
-
 	const ByteWriter writer;
 
-	// abstract method
-	void write(TextWriter this, unicode chars[]);
+	// abstract
+	void encode(TextWriter this, unicode chars[]);
 
-	static void write(TextWriter this, unicode chars[], int count) {
-		assert(count <= chars.length);
-		return this.write(chars[... count]);
+	// override
+	void flush(TextWriter this) {
+		this.writer.flush(this.writer);
 	}
 
-	static void write(TextWriter this, unicode oneChar) {
-		unicode chars[1] = { oneChar };
-		return this.write(chars);
+	// override
+	void close(TextWriter this) {
+		this.writer.safeClose();
 	}
 
-	/*static void write(TextWriter this, void write(TextWriter writer)) {
-		return write(this);
+	static TextWriter write(TextWriter this, char value[]) {
+		ByteWriter writer = this.writer;
+		writer.write(writer, value);
+		return this;
 	}
 
-	static void write(TextWriter this, Writeable value) {
-		return write(this, value.write);
-	}*/
+	static TextWriter write(TextWriter this, char value) {
+		char buffer[1] = { value };
+		return this.write(buffer);
+	}
+
+	static TextWriter write(TextWriter this, bool value) {
+		if (value) {
+			return this.write("true");
+		}
+		return this.write("false");
+	}
+
+	static TextWriter write(TextWriter this, int32 value, const FormatFlags flags&) {
+		char buff[1024]= {};
+		int n = buff.append(0, value, flags);
+		return write(this, buff[ ... n]);
+	}
+
+	static TextWriter write(TextWriter this, int64 value, const FormatFlags flags&) {
+		char buff[1024]= {};
+		int n = buff.append(0, value, flags);
+		return write(this, buff[ ... n]);
+	}
+
+	static TextWriter write(TextWriter this, uint32 value, const FormatFlags flags&) {
+		char buff[1024]= {};
+		int n = buff.append(0, value, flags);
+		return write(this, buff[ ... n]);
+	}
+
+	static TextWriter write(TextWriter this, uint64 value, const FormatFlags flags&) {
+		char buff[1024]= {};
+		int n = buff.append(0, value, flags);
+		return write(this, buff[ ... n]);
+	}
+
+	static TextWriter write(TextWriter this, float32 value, const FormatFlags flags&) {
+		char buff[1024]= {};
+		int n = buff.append(0, value, flags);
+		return write(this, buff[ ... n]);
+	}
+
+	static TextWriter write(TextWriter this, float64 value, const FormatFlags flags&) {
+		char buff[1024]= {};
+		int n = buff.append(0, value, flags);
+		return write(this, buff[ ... n]);
+	}
+
+	static TextWriter write(TextWriter this, Writeable value) {
+		value.write(this);
+		return this;
+	}
+
+	static TextWriter writeln(TextWriter this) {
+		return this.write("\n");
+	}
+
+	// TODO: static void write(TextWriter this, Locale locale, char value) { /*...*/ }
+	// TODO: static void write(TextWriter this, Locale locale, string value) { /*...*/ }
+	// TODO: static void write(TextWriter this, Locale locale, object value) { /*...*/ }
+	// TODO: static void write(TextWriter this, Locale locale, variant value) { /*...*/ }
+	// TODO: static void write(TextWriter this, void write(TextWriter writer)) { /*...*/ }
 
 	/**
-	 * Convert from one encoding to another.
+	 * Convert from one encoding to another one.
 	 * @returns converted character count.
 	 *
 	 * example: convert utf-8 encoded file to ascii
@@ -172,44 +227,23 @@ struct TextWriter: Closeable {
 	 * TextReader input = Utf8Reader("in.txt");
 	 * output.write(input);
 	 */
-	static int write(TextWriter this, TextReader reader) {
+	static int write(TextWriter writer, TextReader reader) {
 		unicode buffer[1024] = {};
 		int result = 0;
 		for ( ; ; ) {
-			int read = reader.read(buffer);
-			if (read <= 0) {
+			int n = reader.decode(buffer);
+			if (n <= 0) {
 				return result;
 			}
-			this.write(buffer, read);
-			result += read;
+			writer.encode(buffer[...n]);
+			result += n;
 		}
 		return result;
 	}
 
-	void flush(TextWriter this) {
-		this.writer.flush(this.writer);
-	}
-
-	void close(TextWriter this) {
-		this.writer.safeClose();
-	}
-
-	// TODO: static void write(TextWriter this, Locale locale, bool value) { /*...*/ }
-	// TODO: static void write(TextWriter this, Locale locale, char value) { /*...*/ }
-	// TODO: static void write(TextWriter this, Locale locale, int32 value) { /*...*/ }
-	// TODO: static void write(TextWriter this, Locale locale, int64 value) { /*...*/ }
-	// TODO: static void write(TextWriter this, Locale locale, uint32 value) { /*...*/ }
-	// TODO: static void write(TextWriter this, Locale locale, uint64 value) { /*...*/ }
-	// TODO: static void write(TextWriter this, Locale locale, float32 value) { /*...*/ }
-	// TODO: static void write(TextWriter this, Locale locale, float64 value) { /*...*/ }
-	// TODO: static void write(TextWriter this, Locale locale, string value) { /*...*/ }
-	// TODO: static void write(TextWriter this, Locale locale, object value) { /*...*/ }
-	// TODO: static void write(TextWriter this, Locale locale, variant value) { /*...*/ }
-
 	/* TODO: subclasses
 		Latin1
 		Ascii
-		Utf7
 		Utf8
 	*/
 }
@@ -219,14 +253,16 @@ struct CopyReader: ByteReader {
 	const ByteReader source;
 	const ByteWriter clone;
 
+	// override
 	int read(CopyReader this, byte bytes[]) {
 		int result = this.source.read(bytes);
 		if (result > 0) {
-			this.clone.write(bytes, result);
+			this.clone.write(bytes[...result]);
 		}
 		return result;
 	}
 
+	// override
 	void close(CopyReader this) {
 		this.source.close();
 		this.clone.close();
@@ -307,4 +343,22 @@ struct ByteBuffer {
 		this.capacity = 0;
 		this.length = 0;
 	}
+}
+
+static if (true) {
+// todo: fix lookup and delete these global methods
+static const FormatFlags flagsTextWriter = {};
+static TextWriter write(TextWriter this, int32 value) { return this.write(value, flagsTextWriter); }
+static TextWriter write(TextWriter this, int64 value) { return this.write(value, flagsTextWriter); }
+static TextWriter write(TextWriter this, uint32 value) { return this.write(value, flagsTextWriter); }
+static TextWriter write(TextWriter this, uint64 value) { return this.write(value, flagsTextWriter); }
+static TextWriter write(TextWriter this, float32 value) { return this.write(value, flagsTextWriter); }
+static TextWriter write(TextWriter this, float64 value) { return this.write(value, flagsTextWriter); }
+static TextWriter writeln(TextWriter this, int32 value) { return this.write(value, flagsTextWriter).writeln(); }
+static TextWriter writeln(TextWriter this, int64 value) { return this.write(value, flagsTextWriter).writeln(); }
+static TextWriter writeln(TextWriter this, uint32 value) { return this.write(value, flagsTextWriter).writeln(); }
+static TextWriter writeln(TextWriter this, uint64 value) { return this.write(value, flagsTextWriter).writeln(); }
+static TextWriter writeln(TextWriter this, float32 value) { return this.write(value, flagsTextWriter).writeln(); }
+static TextWriter writeln(TextWriter this, float64 value) { return this.write(value, flagsTextWriter).writeln(); }
+static TextWriter writeln(TextWriter this, TextWriter.Writeable value) { return this.write(value).writeln(); }
 }

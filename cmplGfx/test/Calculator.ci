@@ -57,61 +57,13 @@ Button buttons[] = {
 	{text: "+", onClick: onOp}
 };
 
-// disable focusing first element, using Layout.onCreate
-Widget ui = Widget(300, 400, 0, Layout.onCreate)
-	.style(global)
-	.addItems(btnResult)
-	.addItems(Layout.Custom(4, Style.fill, ...buttons));
-
-display.setColor(gray(120), gray(200));
 global.setColor(gray(200), gray(20));
-Gui.showWindow(ui);
+display.setColor(gray(120), gray(200));
+Gui.showWindow(Widget(300, 400, global).focus(null).addItems(
+	btnResult, Layout.Custom(4, Style.fill, ...buttons)
+));
 
-bool onClear(Button this) {
-	result.append(0, "0");
-	operation = 0;
-	value = 0;
-	clear = true;
-	return true;
-}
-bool onVal(Button this) {
-	int len = length(result);
-	if (clear) {
-		clear = false;
-		len = 0;
-	}
-	result.append(len, this.text);
-	return true;
-}
-void setValue() {
-	// check for errors (not a number)
-	if (value != value) {
-		result.append(0, "Error");
-	}
-	else if (value < 0 && value == 2 * value) {
-		result.append(0, "-Inf");
-	}
-	else if (value > 0 && value == 2 * value) {
-		result.append(0, "Inf");
-	}
-	else {
-		result.append(0, value, display.format);
-	}
-}
-bool onNeg(Button this) {
-	value = -float64(result);
-	setValue();
-	operation = 0;
-	return true;
-}
-bool onOp(Button this) {
-	assert(this.text.length() == 1);
-	if (clear) {
-		// keep the last clicked operator
-		operation = this.text[0];
-		return true;
-	}
-
+bool onResult(Button this) {
 	if (operation == '=' || operation == 0) {
 		value = float64(result);
 		operation = 0;
@@ -132,24 +84,76 @@ bool onOp(Button this) {
 		value /= float64(result);
 		operation = 0;
 	}
-	setValue();
+	else if (operation == '$') {
+		// value already calculated
+		operation = 0;
+	}
+	else {
+		abort("unknown operation", operation);
+	}
 
 	// make sure all operators were handled
 	assert(operation == 0);
-	operation = this.text[0];
+	clear = true;
+
+	// check for errors (not a number, infinity)
+	if (value != value) {
+		result.append(0, "Error");
+	}
+	else if (value < 0 && value == 2 * value) {
+		result.append(0, "-Inf");
+	}
+	else if (value > 0 && value == 2 * value) {
+		result.append(0, "Inf");
+	}
+	else {
+		result.append(0, value, display.format);
+	}
+	return true;
+}
+bool onClear(Button this) {
+	result.append(0, "0");
+	operation = 0;
+	value = 0;
 	clear = true;
 	return true;
 }
-bool onFn(Button this) {
+bool onVal(Button this) {
 	int len = length(result);
+	if (clear) {
+		clear = false;
+		len = 0;
+	}
+	result.append(len, this.text);
+	return true;
+}
+bool onNeg(Button this) {
+	value = -float64(result);
+	bool wasClear = clear;
+	operation = '$';
+	onResult(this);
+	clear = wasClear;
+	return true;
+}
+bool onOp(Button this) {
+	assert(this.text.length() == 1);
+	if (clear) {
+		// keep the last clicked operator
+		operation = this.text[0];
+		return true;
+	}
+	onResult(this);
+	operation = this.text[0];
+	return true;
+}
+bool onFn(Button this) {
 	if (equals(this.text, "sqrt")) {
+		// precalculate last operation onResult(this);
 		value = float64.sqrt(float64(result));
 	}
 	else {
 		value = Math.nan;
 	}
-	setValue();
-	operation = 0;
-	clear = true;
-	return true;
+	operation = '$';
+	return onResult(this);
 }

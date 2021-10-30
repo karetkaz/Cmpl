@@ -1,0 +1,270 @@
+static if (typename(Timeunit) == null) {
+inline "Timeunit.ci";
+}
+static if (typename(Timestamp) == null) {
+inline "Timestamp.ci";
+}
+static if (typename(Timezone) == null) {
+inline "Timezone.ci";
+}
+
+enum Month: uint8 {
+	January: 1;
+	February;
+	March;
+	April;
+	May;
+	June;
+	July;
+	August;
+	September;
+	October;
+	November;
+	December;
+}
+// FIXME: implement enum indexing
+inline Month(int index) = Month(emit(int32(index + Month.January)));
+inline indexOf(Month month) = int32(month - Month.January);
+
+enum Weekday: uint8 {
+	Monday: 12;
+	Tuesday;
+	Wednesday;
+	Thursday;
+	Friday;
+	Saturday;
+	Sunday;
+}
+// FIXME: implement enum indexing
+inline Weekday(int index) = Weekday(emit(int32(index + Weekday.Monday)));
+inline indexOf(Weekday value) = int32(value - Weekday.Monday);
+
+struct Calendar {
+	// Date
+	const int32 year;			// Year
+	const Month month;			// Month of year: 1 ... 12 / [Jan, Feb, Mar, ...]
+	const uint8 day;			// Day of month: 1 ... 30
+	// Time
+	const uint8 hour = 0;		// Hour of day: 0 ... 23
+	const uint8 minute = 0;		// Minute of hour: 0 ... 59
+	const uint8 second = 0;		// Second of minute: 0 ... 59
+	const uint16 millis = 0;	// millis of second: 0 ... 999
+	// Zone
+	const Timezone timezone;	// timezone
+//	const bool dayLightSaving;	// day light saving's time
+	// Extra
+	const uint8 weekOfYear;		// 1 ... 53
+//	const uint8 weekOfMonth;	// 1 ... 4
+	const uint16 dayOfYear;     // example: 1..365
+	const Weekday dayOfWeek;	// Day of week: 1 ... 7 / [Mon, Tue, ...]
+	const bool leapYear;		// this is a leap year
+
+	//dayOfWeekInMonth;		// example: 1..4, may be specified as -1
+
+	static const int DaysToMonth365[13] = {0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365};
+	static const int DaysToMonth366[13] = {0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335, 366};
+	static const int DaysTil1970 = 719162;
+
+	static bool isLeapYear(int year) {
+		if (year % 4 != 0) {
+			return false;
+		}
+		if (year % 100 != 0) {
+			return true;
+		}
+		if (year % 400 != 0) {
+			return false;
+		}
+		return true;
+	}
+
+	static Calendar add(Calendar cal, int years, int months, int days) {
+		int year = cal.year + years;
+
+		int month = indexOf(cal.month) + months;
+		if (month > 12) {
+			year += month / 12;
+			month %= 12;
+		}
+		else if (month < 0) {
+			year += month / 12 - 1;
+			month = -(month % 12);
+		}
+
+		assert(days == 0);
+
+		return {
+			year: year;
+			month: Month(month % 12);
+			day: cal.day;
+			hour: cal.hour;
+			minute: cal.minute;
+			second: cal.second;
+			millis: cal.millis;
+			timezone: cal.timezone;
+			weekOfYear: cal.weekOfYear;
+			dayOfYear: cal.dayOfYear;
+			dayOfWeek: cal.dayOfWeek;
+			leapYear: isLeapYear(year);
+		};
+	}
+}
+
+Calendar Calendar(Timestamp time, Timezone zone) {
+	enum: int {
+		// Number of days in a non-leap year
+		DaysPerYear: 365;
+
+		// Number of days in a leap year
+		DaysPerLeapYear: 366;
+
+		// Number of days in 4 years
+		DaysPer4Years: DaysPerYear * 4 + 1;
+		// Number of days in 100 years
+		DaysPer100Years: DaysPer4Years * 25 - 1;
+		// Number of days in 400 years
+		DaysPer400Years: DaysPer100Years * 4 + 1;
+	}
+
+	time = time.add(zone.value, Timeunit.Hours);
+	int n = Calendar.DaysTil1970 + time.value(Timeunit.Days);
+
+	// n = number of days since 1/1/0001
+	int dayOfWeek = n % 7;
+
+	// y400 = number of whole 400-year periods since 1/1/0001
+	int y400 = n / DaysPer400Years;
+	// n = day number within 400-year period
+	n -= y400 * DaysPer400Years;
+
+	// y100 = number of whole 100-year periods within 400-year period
+	int y100 = n / DaysPer100Years;
+
+	// Last 100-year period has an extra day, so decrement result if 4
+	if (y100 == 4) {
+		y100 = 3;
+	}
+	// n = day number within 100-year period
+	n -= y100 * DaysPer100Years;
+
+	// y4 = number of whole 4-year periods within 100-year period
+	int y4 = n / DaysPer4Years;
+	// n = day number within 4-year period
+	n -= y4 * DaysPer4Years;
+
+	// y1 = number of whole years within 4-year period
+	int y1 = n / DaysPerYear;
+	// Last year has an extra day, so decrement result if 4
+	if (y1 == 4) {
+		y1 = 3;
+	}
+
+	// If year was requested, compute and return it
+	int year = y400 * 400 + y100 * 100 + y4 * 4 + y1 + 1;
+
+	// n = day number within year
+	n -= y1 * DaysPerYear;
+
+	// All months have less than 32 days, so n >> 5 is a good conservative
+	// estimate for the month
+	int m = n >> 5 + 1;
+	const int DaysToMonth[*] = Calendar.isLeapYear(year) ? Calendar.DaysToMonth366 : Calendar.DaysToMonth365;
+
+	// m = 1-based month number
+	for (;n >= DaysToMonth[m];) {
+		m += 1;
+	}
+
+	return {
+		// date
+		year: year;
+		month: Month(m - 1);
+		day: n - DaysToMonth[m - 1] + 1;
+
+		// time
+		hour: time.value(Timeunit.Hours) % 24;
+		minute: time.value(Timeunit.Minutes) % 60;
+		second: time.value(Timeunit.Seconds) % 60;
+		millis: time.value(Timeunit.Millis) % 1000;
+
+		// zone
+		timezone: zone;
+
+		// extra
+		dayOfYear: n + 1;
+		dayOfWeek: Weekday(dayOfWeek);
+		weekOfYear: (n - dayOfWeek + indexOf(Weekday.Thursday)) / 7 + 1;
+		leapYear: DaysToMonth == Calendar.DaysToMonth366;
+	};
+}
+inline Calendar(Timestamp time) = Calendar(time, Timezone.local());
+
+Calendar Calendar(int year, int month, int day, int hour, int minute, int second, int millis, Timezone zone) {
+	return {
+		year: year;
+		month: Month(month - 1);
+		day: day;
+		hour: hour;
+		minute: minute;
+		second: second;
+		millis: millis;
+		timezone: zone;
+		weekOfYear: 0;
+		dayOfYear: 0;
+		dayOfWeek: Weekday.Monday;
+		leapYear: false;
+	};
+}
+Calendar Calendar(int year, int month, int day, int hour, int minute, int second, int millis) {
+	return Calendar(year, month, day, hour, minute, second, millis, Timezone.local());
+}
+Calendar Calendar(int year, int month, int day, int hour, int minute, int second, Timezone zone) {
+	return Calendar(year, month, day, hour, minute, second, 0, zone);
+}
+Calendar Calendar(int year, int month, int day, Timezone zone) {
+	return Calendar(year, month, day, 0, 0, 0, 0, zone);
+}
+
+Calendar Calendar(int year, int month, int day) {
+	return Calendar(year, month, day, 0, 0, 0, 0, Timezone.local());
+}
+
+Timestamp Timestamp(Calendar value) {
+	int year = value.year;
+	if (year < 0 || year > 9999) {
+		trace("invalid year", year);
+		return Timestamp(1D << 63, Timestamp.precision);
+	}
+
+	int month = value.month;
+	if (month < Month.January || month > Month.December) {
+		trace("invalid month", month);
+		month = Math.clamp(month, int32(Month.January), int32(Month.December));
+	}
+
+	const int DaysToMonth[*] = Calendar.isLeapYear(year) ? Calendar.DaysToMonth366 : Calendar.DaysToMonth365;
+
+	int day = value.day;
+	int daysInYear = DaysToMonth[month - 1];
+	int daysInMonth = DaysToMonth[month] - daysInYear;
+	if (day < 1 || day > daysInMonth) {
+		trace("invalid day of month", day);
+		day = Math.clamp(day, 1, daysInMonth);
+	}
+
+	int y = year - 1;
+	int64 d = y * 365 + y / 4 - y / 100 + y / 400 + daysInYear + day - 1 - Calendar.DaysTil1970;
+	int64 t = (((d * 24 + value.hour) * 60 + value.minute) * 60 + value.second) * 1000 + value.millis;
+	return Timestamp(t, Timeunit.Millis);
+}
+
+Calendar addDays(Calendar calendar, int value) {
+	return Calendar(Timestamp(calendar).add(value, Timeunit.Days));
+}
+
+// adapted from
+// https://github.com/dotnet/runtime/blob/master/src/libraries/System.Private.CoreLib/src/System/Globalization/GregorianCalendar.cs
+// https://github.com/dotnet/runtime/blob/main/src/libraries/System.Private.CoreLib/src/System/TimeZone.cs
+// https://github.com/unicode-org/icu/blob/main/icu4j/main/classes/core/src/com/ibm/icu/util/Calendar.java
+// https://github.com/JodaOrg/joda-time/blob/master/src/main/java/org/joda/time/DateTime.java
+// todo: https://github.com/HowardHinnant/date

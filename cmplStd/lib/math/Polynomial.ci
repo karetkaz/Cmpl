@@ -1,0 +1,172 @@
+// Implementation of a Polynomial
+static if (typename(TextWriter) == null) {
+inline "/cmplStd/lib/system/Stream.ci";
+}
+
+inline scalar = float64;  // fixme: declare inside Polynomial
+struct Polynomial/*(typename scalar)*/: TextWriter.Writeable {
+	scalar elements[*];
+	const int capacity;
+
+	enum: scalar {
+		c_zero: 0;
+		c_unit: 1;
+	}
+
+	void write(Polynomial this, TextWriter writer) {
+		bool first = true;
+		for (int i = this.capacity - 1; i >= 0; i -= 1) {
+			if (this.elements[i] == c_zero && !(first && i == 0)) {
+				continue;
+			}
+
+			scalar value = this.elements[i];
+			if (value < c_zero) {
+				value = -value;
+				if (!first) {
+					// binary operator
+					writer.write(" - ");
+				}
+				else {
+					// unary operator
+					writer.write("-");
+				}
+			}
+			else if (!first) {
+				// binary operator
+				writer.write(" + ");
+			}
+
+			if (value != c_unit || i == 0) {
+				writer.write(value);
+			}
+
+			if (i > 0) {
+				writer.write("x");
+				if (i > 1) {
+					writer.write("^");
+					writer.write(i);
+				}
+			}
+			first = false;
+		}
+	}
+
+	void destroy(Polynomial this) {
+		pointer.alloc(this.elements, 0);
+		// this.elements = null;
+	}
+
+	// construct a new instance
+	static Polynomial create(int capacity, scalar values[]) {
+		assert(capacity >= values.length);
+		scalar elements[*] = pointer.alloc(null, capacity * sizeof(scalar));
+		for (int i = 0; i < capacity; i += 1) {
+			elements[i] = c_zero;
+		}
+		for (int i = 0; i < values.length; i += 1) {
+			elements[values.length - i - 1] = values[i];
+		}
+		return {
+			elements: elements;
+			capacity: capacity;
+		};
+	}
+
+	static int degree(const Polynomial this&) {
+		for (int i = this.capacity - 1; i > 0; i -= 1) {
+			if (this.elements[i] != c_zero) {
+				return i;
+			}
+		}
+		return 0;
+	}
+
+	static scalar evaluate(const Polynomial this&, scalar value) {
+		scalar result = c_zero;
+		for (int i = this.capacity - 1; i >= 0; i -= 1) {
+			result = result * value + this.elements[i];
+		}
+		return result;
+	}
+
+	static scalar get(const Polynomial this&, int index) {
+		assert(index >= 0, "negative index", index);
+		if (index >= this.capacity) {
+			return c_zero;
+		}
+		return this.elements[index];
+	}
+
+	static scalar set(const Polynomial this&, int index, scalar value) {
+		if (index < 0 || index >= this.capacity) {
+			abort("invalid index", index);
+			return c_zero;
+		}
+		return this.elements[index];
+	}
+
+	static Polynomial neg(const Polynomial a&) {
+		int size = degree(a) + 1;
+		Polynomial result = create(size, null);
+		for (int i = 0; i < size; i += 1) {
+			result.elements[i] = -a.get(i);
+		}
+		return result;
+	}
+
+	static Polynomial add(const Polynomial a&, const Polynomial b&) {
+		int size = Math.max(degree(a), degree(b)) + 1;
+		Polynomial result = create(size, null);
+		for (int i = 0; i < size; i += 1) {
+			result.elements[i] = a.get(i) + b.get(i);
+		}
+		return result;
+	}
+
+	static Polynomial sub(const Polynomial a&, const Polynomial b&) {
+		int size = Math.max(degree(a), degree(b)) + 1;
+		Polynomial result = create(size, null);
+		for (int i = 0; i < size; i += 1) {
+			result.elements[i] = a.get(i) - b.get(i);
+		}
+		return result;
+	}
+
+	static Polynomial mul(const Polynomial a&, const Polynomial b&) {
+		int degreeA = degree(a);
+		int degreeB = degree(b);
+		int size = degreeA + degreeB + 1;
+		Polynomial result = create(size, null);
+		for (int i = 0; i < size; i += 1) {
+			result.elements[i] = 0;
+		}
+		for (int i = 0; i <= degreeA; i += 1) {
+			for (int j = 0; j <= degreeB; j += 1) {
+				result.elements[i + j] += a.get(i) * b.get(j);
+			}
+		}
+		return result;
+	}
+}
+
+inline Polynomial(scalar values...) = Polynomial.create(values.length, values);
+
+inline Polynomial(const Polynomial copy&) = Polynomial.create(copy.capacity, copy.elements);
+
+/* TODO: implement enums, operator overloading
+	enum: Polynomial {
+		zero: {
+			elements: { c_zero };
+			capacity: 1;
+		}
+	}
+
+inline [](Polynomial &this, int index) = Polynomial.get(this, index);
+inline ()(Polynomial &this, scalar x) = Polynomial.evaluate(this, x);
+
+inline -(const Polynomial &a) = Polynomial.neg(a);
+inline +(const Polynomial &a, const Polynomial &b) = Polynomial.add(a, b);
+inline -(const Polynomial &a, const Polynomial &b) = Polynomial.sub(a, b);
+inline *(const Polynomial &a, const Polynomial &b) = Polynomial.mul(a, b);
+// */

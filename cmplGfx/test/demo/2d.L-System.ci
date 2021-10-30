@@ -1,6 +1,4 @@
 // Recursive tree drawer demo.
-inline "/cmplGfx/lib/emulated/aaDraw.ci";
-
 void drawTree(Image surf, int x1, int y1, float64 angle, float64 length, int depth) {
 	inline Angle = 20;
 
@@ -11,7 +9,7 @@ void drawTree(Image surf, int x1, int y1, float64 angle, float64 length, int dep
 	int x2 = x1 + int(Math.cos(Math.radians(angle)) * depth * length);
 	int y2 = y1 + int(Math.sin(Math.radians(angle)) * depth * length);
 
-	surf.drawAALine(x1, y1, x2, y2, 0);
+	surf.drawLine(x1, y1, x2, y2, true, 0);
 	surf.drawTree(x2, y2, angle - Angle, length, depth - 1);
 	surf.drawTree(x2, y2, angle + Angle, length, depth - 1);
 }

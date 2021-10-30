@@ -1,14 +1,9 @@
 // Color picker demo.
+inline "/cmplGfx/lib/micro.ui.ci";
 
 Image back = Image("asset/image/forest.jpg", 32);
 Image offs = Image(back);
-int onEvent(int action, int button, int x, int y);
-Gui.showWindow(offs, onEvent);
-offs.destroy();
-back.destroy();
 
-
-inline "/cmplGfx/lib/micro.ui.ci";
 static bool printStyle(Button button) {
 	Style style& = button.style;
 	debug("style", style);
@@ -30,9 +25,9 @@ struct ColorPicker: View {
 		return this.get(this.hue, 1 - this.val);
 	}
 
-	bool onMouseEvent(ColorPicker this, const Rect rect&, const MouseEvent event&) {
+	bool onTouchEvent(ColorPicker this, const Rect rect&, const TouchEvent event&) {
 		if (event.release || !event.button) {
-			return View.onMouseEvent(this, rect, event);
+			return View.onTouchEvent(this, rect, event);
 		}
 
 		this.hue = Math.clamp(float32(event.x - rect.x), 0f, rect.w - 1f) / rect.w;
@@ -40,13 +35,13 @@ struct ColorPicker: View {
 		return true;
 	}
 
-	bool onMeasure(Histogram this, Rect rect&, int visible) {
+	bool onMeasure(Histogram this, Rect rect&) {
 		if (this.height == 0) {
 			rect.h = 128;
 		} else {
 			rect.h = this.height;
 		}
-		return View.onMeasure(this, &rect, visible);
+		return View.onMeasure(this, &rect);
 	}
 
 	void onDraw(ColorPicker this, Image offs, const Rect rect, const Style style&) {
@@ -82,7 +77,7 @@ Switch theme = {
 	selected: 1;
 };
 
-Button btn = {
+Button button = {
 	text: "Dump theme";
 	onClick: printStyle;
 };
@@ -98,21 +93,14 @@ DebugView debug = {
 	draws: -1;
 };
 
-Widget ui = Widget().addItems(
-	colorPicker,
-	Layout.divider,
-	theme,
-	btn, slider,
-	Layout.divider,
-	debug
-);
-
-int onEvent(int action, int button, int x, int y) {
+int onEvent(Window win&, int action, int button, int x, int y) {
 	if (action == Gui.KEY_RELEASE && button == 27) {
 		// exit when releasing escape key
 		return -1;
 	}
-	if (!ui.onEvent(action, button, x, y)) {
+
+	Widget ui = win.widget;
+	if (!win.dispatchEvent(ui, action, button, x, y)) {
 		// event not processed, wait for the next one
 		return 0;
 	}
@@ -128,5 +116,19 @@ int onEvent(int action, int button, int x, int y) {
 		ui.theme(Style.light, colorPicker.value());
 	}
 
-	return ui.draw(offs);
+	return win.draw(ui);
 }
+
+Gui.showWindow(offs, onEvent, Widget(
+	colorPicker,
+
+	null,
+	theme,
+	button,
+	slider,
+
+	null,
+	debug
+));
+offs.destroy();
+back.destroy();

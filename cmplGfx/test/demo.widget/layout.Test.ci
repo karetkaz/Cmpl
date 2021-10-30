@@ -1,0 +1,246 @@
+// test inspired by https://developer.microsoft.com/en-us/fluentui#/controls/web/stack
+// test layout direction, alignment, and padding. todo: spacing
+
+static void debugLayoutDraw(Image img, const Rect rect&, uint32 rgb);
+inline "/cmplGfx/lib/micro.ui.ci";
+
+bool syncOrientation(Slider this, int value);
+bool syncAlignment(Switch this, int value);
+bool syncPadding(Slider this, int value);
+
+inline itemSize = -50;
+inline minPadding = 0;
+inline maxPadding = 1000;
+
+Slider orientation = {
+	onUpdate: syncOrientation;
+	text: "orientation";
+	minimum: -4;
+	maximum: 50;
+	value: 1;
+};
+
+Slider paddingTop = {
+	onUpdate: syncPadding;
+	text: "LayoutPadding.top";
+	minimum: minPadding;
+	maximum: maxPadding;
+	value: 20;
+};
+Slider paddingLeft = {
+	onUpdate: syncPadding;
+	text: "LayoutPadding.left";
+	minimum: minPadding;
+	maximum: maxPadding;
+	value: 20;
+};
+Slider paddingRight = {
+	onUpdate: syncPadding;
+	text: "LayoutPadding.right";
+	minimum: minPadding;
+	maximum: maxPadding;
+	value: 20;
+};
+Slider paddingBottom = {
+	onUpdate: syncPadding;
+	text: "LayoutPadding.bottom";
+	minimum: minPadding;
+	maximum: maxPadding;
+	value: 20;
+};
+
+Switch layoutAlignTop = {
+	onUpdate: syncAlignment;
+	text: "LayoutAlign.top";
+	states: null;
+};
+Switch layoutAlignLeft = {
+	onUpdate: syncAlignment;
+	text: "LayoutAlign.left";
+	states: null;
+};
+Switch layoutAlignRight = {
+	onUpdate: syncAlignment;
+	text: "LayoutAlign.right";
+	states: null;
+};
+Switch layoutAlignBottom = {
+	onUpdate: syncAlignment;
+	text: "LayoutAlign.bottom";
+	states: null;
+};
+
+Switch itemAlignTop = {
+	onUpdate: syncAlignment;
+	text: "ItemAlign.top";
+	states: null;
+};
+Switch itemAlignLeft = {
+	onUpdate: syncAlignment;
+	text: "ItemAlign.left";
+	states: null;
+};
+Switch itemAlignRight = {
+	onUpdate: syncAlignment;
+	text: "ItemAlign.right";
+	states: null;
+};
+Switch itemAlignBottom = {
+	onUpdate: syncAlignment;
+	text: "ItemAlign.bottom";
+	states: null;
+};
+Switch drawDebugRect = {
+	onUpdate: syncAlignment;
+	text: "Debug.layout";
+	states: null;
+};
+
+// container for rectangles
+Layout layout = {
+	enabled: false;
+	focusable: false;
+};
+
+// container for controls
+Widget widget = {
+	rect: {};
+	widgetStyle: {
+		align: Style.left;
+		format: { padLen: 5, precision: 2 };
+	};
+
+	width: 1440;
+	height: 900;
+	orientation: 0;
+	align: Style.center;
+};
+
+// create some custom views with a background color and a text
+View Rectangle(int rgb, const char text[*]) {
+	struct Rectangle: Button {
+		const argb background;
+		void onDraw(Rectangle this, Image offs, Rect rect, const Style style&) {
+			offs.fillRect(rect, this.background.v);
+			Button.onDraw(this, offs, rect, style);
+		}
+	}
+	return Rectangle {
+		background: argb(rgb);
+		enabled: false;
+		text: text;
+		width: itemSize;
+		height: itemSize;
+	};
+}
+
+Gui.showWindow(widget
+	.focus(orientation)
+	// add the layout to background
+	.addItems(Style.center, layout.addItems(Style.center,
+		Rectangle(0x101010, "1"),
+		Rectangle(0x101040, "2"),
+		Rectangle(0x104010, "3"),
+		Rectangle(0x401010, "4"),
+		Rectangle(0x104040, "5"),
+		Rectangle(0x401040, "6"),
+		Rectangle(0x404010, "7"),
+		Rectangle(0x404040, "8")
+	))
+	.addItems(Style.right, Layout.Column(
+		orientation,
+
+		null,
+		paddingTop,
+		paddingLeft,
+		paddingRight,
+		paddingBottom,
+		null,
+		layoutAlignTop,
+		layoutAlignLeft,
+		layoutAlignRight,
+		layoutAlignBottom,
+		null,
+		itemAlignTop,
+		itemAlignLeft,
+		itemAlignRight,
+		itemAlignBottom,
+
+		null,
+		drawDebugRect
+	))
+);
+
+bool syncOrientation(Slider this, int value) {
+	bool result = Slider.onUpdate(this, value);
+	layout.orientation = this.value;
+	layout.invalidate();
+	return result;
+}
+bool syncPadding(Slider this, int value) {
+	bool result = Slider.onUpdate(this, value);
+	layout.paddingTop = paddingTop.value;
+	layout.paddingLeft = paddingLeft.value;
+	layout.paddingRight = paddingRight.value;
+	layout.paddingBottom = paddingBottom.value;
+	layout.invalidate();
+	return result;
+}
+bool syncAlignment(Switch this, int value) {
+	bool result = Switch.onUpdate(this, value);
+	int itemAlign = Style.center;
+	if (itemAlignTop.checked()) {
+		itemAlign |= Style.top;
+	}
+	if (itemAlignLeft.checked()) {
+		itemAlign |= Style.left;
+	}
+	if (itemAlignRight.checked()) {
+		itemAlign |= Style.right;
+	}
+	if (itemAlignBottom.checked()) {
+		itemAlign |= Style.bottom;
+	}
+	for (int i = 0; i < layout.itemCount; i += 1) {
+		layout.items[i].align = itemAlign;
+	}
+
+	if (Widget w = layout.parent.as(Widget)) {
+		int layoutAlign = Style.center;
+		if (layoutAlignTop.checked()) {
+			layoutAlign |= Style.top;
+		}
+		if (layoutAlignLeft.checked()) {
+			layoutAlign |= Style.left;
+		}
+		if (layoutAlignRight.checked()) {
+			layoutAlign |= Style.right;
+		}
+		if (layoutAlignBottom.checked()) {
+			layoutAlign |= Style.bottom;
+		}
+		assert(layout == w.items[0].view, "layout should be the first view");
+		w.items[0].align = layoutAlign;
+	}
+
+	layout.invalidate();
+	return result;
+}
+static void debugLayoutDraw(Image img, const Rect rect&, uint32 rgb) {
+	if (!drawDebugRect.checked()) {
+		return;
+	}
+	img.drawRect(rect, rgb);
+
+	/* alpha blend with red on each layer
+	static Image OverlayImage(uint32 color) {
+		trace("OverlayImage");
+		Image result = Image(widget.width, widget.height, 32);
+		result.fill(color);
+		return result;
+	}
+	int alpha = 32;
+	static Image red = OverlayImage(0xff0000);
+	img.blend(rect.x, rect.y, red, rect, alpha, false, null);
+	// */
+}

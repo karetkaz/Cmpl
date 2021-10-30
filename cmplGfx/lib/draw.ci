@@ -1,0 +1,378 @@
+inline xcl(int a, int b) = a - int(b < a);
+
+/// Fill the entire image with the given color
+inline fill(Image image, uint32 color) = image.fillRect(0, 0, image.width(), image.height(), color);
+
+inline fill(Image image, int x0, int y0, int x1, int y1, uint32 color) = image.fillRect(x0, y0, x1 + int(x0 == x1), y1 + int(y0 == y1), color);
+
+/// Draw a rectangle on the `image` specified by the coordinates with the given `color`
+void drawRect(Image image, int x0, int y0, int x1, int y1, uint32 color) {
+	if (y0 > y1) {
+		int t = y1;
+		y1 = y0;
+		y0 = t;
+	}
+	if (x0 > x1) {
+		int t = x1;
+		x1 = x0;
+		x0 = t;
+	}
+
+	if (x1 - x0 < 3 || y1 - y0 < 3) {
+		// no gap between top and bottom or left and right; draw all at once
+		return image.fill(x0, y0, x1, y1, color);
+	}
+
+	image.fillRect(x0, y0, x1, y0 + 1, color);			// top
+	image.fillRect(x0, y0 + 1, x0 + 1, y1 - 1, color);	// left
+	image.fillRect(x1 - 1, y0 + 1, x1, y1 - 1, color);	// right
+	image.fillRect(x0, y1 - 1, x1, y1, color);			// bottom
+}
+
+/// TODO: Fill the given rectangle rounding the corners using the given radius
+void fillRect(Image image, int x1, int y1, int x2, int y2, int rx, int ry, uint32 color) {
+	if (x1 > x2) {
+		int t = x1;
+		x1 = x2;
+		x2 = t;
+	}
+	if (y1 > y2) {
+		int t = y1;
+		y1 = y2;
+		y2 = t;
+	}
+
+	inline clamp(int value, int min, int max) = value < min ? min : value > max ? max : value;
+	rx = clamp(rx, 1, (x2 - x1) / 2);
+	ry = clamp(ry, 1, (y2 - y1) / 2);
+
+	int sx = rx * rx;
+	int sy = ry * ry;
+
+	int r = sx * ry / 2;
+	int rdy = r * 2;
+	int rdx = 0;
+
+	int rx1 = x1 + rx;
+	int rx2 = x2 - rx;
+
+	for (;y1 < y2;) {
+		image.fill(rx1, y1, rx2, y1, color);
+		image.fill(rx1, y2, rx2, y2, color);
+		if (r >= 0) {
+			rx1 -= 1;
+			rx2 += 1;
+			r -= rdx += sy;
+		}
+		if (r < 0) {
+			y1 += 1;
+			y2 -= 1;
+			r += rdy -= sx;
+		}
+	}
+	image.fill(x1, y1, x2, y2, color);
+}
+
+/// Fill the given rectangle rounding the corners using the given radius
+inline fillRect(Image image, int x1, int y1, int x2, int y2, int r, uint32 color) = fillRect(image, x1, y1, x2, y2, r, r, color);
+
+/// Fill the given rectangle rounding the corners using the given radius
+void fillRect(Image image, const Rect roi&, int rx, int ry, uint32 color) {
+	if (roi.w <= 0 || roi.h <= 0) {
+		// empty rectangle
+		return;
+	}
+	image.fillRect(roi.x, roi.y, roi.x + roi.w, roi.y + roi.h, rx, ry, color);
+}
+
+/// Fill the given rectangle rounding the corners using the given radius
+inline fillRect(Image image, const Rect roi&, int r, uint32 color) = fillRect(image, roi, r, r, color);
+
+/// Draw a normal or smooth(anti-aliased) line
+void drawLineImpl(Image image, int x0, int y0, int x1, int y1, bool smooth, uint32 color) {
+	inline mix(Image image, int x0, int y0, int alpha, uint32 color) = image.set(x0, y0, mix_s8(alpha, argb(uint32(image.get(x0, y0))), argb(color)));
+
+	if (x0 == x1 || y0 == y1) {
+		// horizontal or vertical line && avoid division by zero
+		if (x0 > x1) {
+			int t = x0;
+			x0 = x1;
+			x1 = t;
+		}
+		if (y0 > y1) {
+			int t = y0;
+			y0 = y1;
+			y1 = t;
+		}
+		return image.fill(x0, y0, x1 + 1, y1 + 1, color);
+	}
+
+	int dx = x1 - x0;
+	int dy = y1 - y0;
+
+	if (Math.abs(dx) > Math.abs(dy)) {
+		if (x0 > x1) {
+			int x = x0;
+			x0 = x1;
+			x1 = x;
+			y0 = y1;
+		}
+		int y = y0 << 16;
+		dy = (dy << 16) / dx;
+		if (x1 > image.width()) {
+			x1 = image.width();
+		}
+		if (x0 < 0) {
+			y -= dy * x0;
+			x0 = 0;
+		}
+
+		if (!smooth) {
+			y += 0x8000;
+			for (int x = x0; x <= x1; x += 1) {
+				image.set(x, y >> 16, color);
+				y += dy;
+			}
+			return;
+		}
+
+		for (int x = x0; x <= x1; x += 1) {
+			uint32 alpha = (~y >> 8) & 255;
+			image.mix(x, y >> 16, alpha, color);
+			image.mix(x, (y >> 16) + 1, 255 - alpha, color);
+			y += dy;
+		}
+	} else {
+		if (y0 > y1) {
+			int y = y0;
+			y0 = y1;
+			y1 = y;
+			x0 = x1;
+		}
+		int x = x0 << 16;
+		dx = (dx << 16) / dy;
+		if (y1 > image.height()) {
+			y1 = image.height();
+		}
+		if (y0 < 0) {
+			x -= dx * y0;
+			y0 = 0;
+		}
+
+		if (!smooth) {
+			x += 0x8000;
+			for (int y = y0; y <= y1; y += 1) {
+				image.set(x >> 16, y, color);
+				x += dx;
+			}
+			return;
+		}
+
+		for (int y = y0; y <= y1; y += 1) {
+			int alpha = (~x >> 8) & 255;
+			image.mix(x >> 16, y, alpha, color);
+			image.mix((x >> 16) + 1, y, 255 - alpha, color);
+			x += dx;
+		}
+	}
+}
+inline drawLine(Image image, int x0, int y0, int x1, int y1, bool smooth, uint32 color) = drawLineImpl(image, xcl(x0 , x1), xcl(y0, y1), xcl(x1, x0), xcl(y1, y0), smooth, color);
+
+void drawBezier(Image image, int x0, int y0, int x1, int y1, int x2, int y2, bool smooth, uint32 color) {
+	int px_0 = x0;
+	int py_0 = y0;
+	int px_1 = 2 * (x1 - x0);
+	int py_1 = 2 * (y1 - y0);
+	int px_2 = x2 - 2 * x1 + x0;
+	int py_2 = y2 - 2 * y1 + y0;
+
+	double dt = 1. / 128;
+	for (double t = dt; t < 1; t += dt) {
+		x1 = (px_2 * t + px_1) * t + px_0;
+		y1 = (py_2 * t + py_1) * t + py_0;
+		drawLineImpl(image, x0, y0, x1, y1, smooth, color);
+		x0 = x1;
+		y0 = y1;
+	}
+	drawLine(image, x0, y0, x2, y2, smooth, color);
+}
+void drawBezier(Image image, int x0, int y0, int x1, int y1, int x2, int y2, int x3, int y3, bool smooth, uint32 color) {
+	int px_0 = x0;
+	int py_0 = y0;
+	int px_1 = 3 * (x1 - x0);
+	int py_1 = 3 * (y1 - y0);
+	int px_2 = 3 * (x2 - x1) - px_1;
+	int py_2 = 3 * (y2 - y1) - py_1;
+	int px_3 = x3 - px_2 - px_1 - px_0;
+	int py_3 = y3 - py_2 - py_1 - py_0;
+
+	double dt = 1. / 128;
+	for (double t = dt; t < 1; t += dt) {
+		x1 = ((px_3 * t + px_2) * t + px_1) * t + px_0;
+		y1 = ((py_3 * t + py_2) * t + py_1) * t + py_0;
+		drawLineImpl(image, x0, y0, x1, y1, smooth, color);
+		x0 = x1;
+		y0 = y1;
+	}
+	drawLine(image, x0, y0, x3, y3, smooth, color);
+}
+
+// TODO: implement: smooth curves
+// https://create.stephan-brumme.com/antialiased-circle/
+// https://yellowsplash.wordpress.com/2009/10/23/fast-antialiased-circles-and-ellipses-from-xiaolin-wus-concepts/
+void fillOvalImpl(Image image, int x0, int y0, int x1, int y1, bool smooth, uint32 color) {
+	//todo(!smooth, "not implemented");
+
+	if (x0 > x1) {
+		int t = x0;
+		x0 = x1;
+		x1 = t;
+	}
+	if (y0 > y1) {
+		int t = y0;
+		y0 = y1;
+		y1 = t;
+	}
+	if (x0 == x1 || y0 == y1) {
+		// horizontal or vertical line && avoid division by zero
+		return image.fill(x0, y0, x1, y1 + int(x0 == x1), color);
+	}
+
+	int dx = x1 - x0;
+	int dy = y1 - y0;
+
+	x1 = x0 += dx / 2;
+	x0 += dx & 1;
+
+	dx += dx & 1;
+	dy += dy & 1;
+
+	int sx = dx * dx;
+	int sy = dy * dy;
+
+	int r = sx * dy / 4;
+	int rdy = r * 2;
+	int rdx = 0;
+
+	for (;y0 < y1;) {
+		image.fill(x0, y0, x1, y0, color);
+		image.fill(x0, y1, x1, y1, color);
+		if (r >= 0) {
+			x0 -= 1;
+			x1 += 1;
+			r -= rdx += sy;
+		}
+		if (r < 0) {
+			y0 += 1;
+			y1 -= 1;
+			r += rdy -= sx;
+		}
+	}
+	image.fill(x0, y0, x1, y1, color);
+}
+inline fillOval(Image image, int x0, int y0, int x1, int y1, bool smooth, uint32 color) = fillOvalImpl(image, x0, xcl(y0, y1), x1, xcl(y1, y0), smooth, color);
+
+void drawOvalImpl(Image image, int x0, int y0, int x1, int y1, bool smooth, uint32 color) {
+	//todo(!smooth, "not implemented");
+
+	if (x0 > x1) {
+		int t = x0;
+		x0 = x1;
+		x1 = t;
+	}
+	if (y0 > y1) {
+		int t = y0;
+		y0 = y1;
+		y1 = t;
+	}
+	if (x0 == x1 || y0 == y1) {
+		// horizontal or vertical line && avoid division by zero
+		return image.fill(x0, y0, x1 + int(y0 == y1), y1 + int(x0 == x1), color);
+	}
+
+	int dx = x1 - x0;
+	int dy = y1 - y0;
+
+	x1 = x0 += dx / 2;
+	x0 += dx & 1;
+
+	dx += dx & 1;
+	dy += dy & 1;
+
+	int sx = dx * dx;
+	int sy = dy * dy;
+
+	int r = sx * dy / 4;
+	int rdy = r * 2;
+	int rdx = 0;
+
+	for (;y0 < y1;) {
+		image.set(x0, y0, color);
+		image.set(x1, y0, color);
+		image.set(x0, y1, color);
+		image.set(x1, y1, color);
+		if (r >= 0) {
+			x0 -= 1;
+			x1 += 1;
+			r -= rdx += sy;
+		}
+		if (r < 0) {
+			y0 += 1;
+			y1 -= 1;
+			r += rdy -= sx;
+		}
+	}
+	image.set(x0, y0, color);
+	image.set(x1, y0, color);
+	image.set(x0, y1, color);
+	image.set(x1, y1, color);
+}
+inline drawOval(Image image, int x0, int y0, int x1, int y1, bool smooth, uint32 color) = drawOvalImpl(image, xcl(x0 , x1), xcl(y0, y1), xcl(x1, x0), xcl(y1, y0), smooth, color);
+
+//todo: https://rreusser.github.io/regl-gpu-lines/docs/debug.html
+//void fillTriangle(Image image, int x0, int y0, int x1, int y1, int x1, int y1, bool smooth, uint32 color);
+
+/// Draw a line on the `image`
+inline drawAntiAliased = false;
+inline fillOval(Image image, int x0, int y0, int x1, int y1, uint32 color) = fillOval(image, x0, y0, x1, y1, drawAntiAliased, color);
+inline drawOval(Image image, int x0, int y0, int x1, int y1, uint32 color) = drawOval(image, x0, y0, x1, y1, drawAntiAliased, color);
+inline drawLine(Image image, int x0, int y0, int x1, int y1, uint32 color) = drawLine(image, x0, y0, x1, y1, drawAntiAliased, color);
+inline drawBezier(Image image, int x0, int y0, int x1, int y1, int x2, int y2, uint32 color) = drawBezier(image, x0, y0, x1, y1, x2, y2, drawAntiAliased, color);
+inline drawBezier(Image image, int x0, int y0, int x1, int y1, int x2, int y2, int x3, int y3, uint32 color) = drawBezier(image, x0, y0, x1, y1, x2, y2, x3, y3, drawAntiAliased, color);
+
+/// Fill a rectangle on the `image` specified by `roi` with the given `color`
+void fillRect(Image image, const Rect roi&, uint32 color) {
+	if (roi.w <= 0 || roi.h <= 0) {
+		// empty rectangle
+		return;
+	}
+	image.fillRect(roi.x, roi.y, roi.x + roi.w, roi.y + roi.h, color);
+}
+
+/// Draw a rectangle on the `image` specified by `roi` with the given `color`
+void drawRect(Image image, const Rect roi&, uint32 color) {
+	if (roi.w <= 0 || roi.h <= 0) {
+		// empty rectangle
+		return;
+	}
+	image.drawRect(roi.x, roi.y, roi.x + roi.w, roi.y + roi.h, color);
+}
+
+/// Fill a rectangle on the `image` specified by `roi` with the given `color`
+void fillOval(Image image, const Rect roi&, uint32 color) {
+	if (roi.w <= 0 || roi.h <= 0) {
+		// empty rectangle
+		return;
+	}
+	image.fillOval(roi.x, roi.y, roi.x + roi.w, roi.y + roi.h, color);
+}
+
+/// Draw a rectangle on the `image` specified by `roi` with the given `color`
+void drawOval(Image image, const Rect roi&, uint32 color) {
+	if (roi.w <= 0 || roi.h <= 0) {
+		// empty rectangle
+		return;
+	}
+	image.drawOval(roi.x, roi.y, roi.x + roi.w, roi.y + roi.h, color);
+}
+

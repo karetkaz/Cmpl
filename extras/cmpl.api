@@ -185,7 +185,7 @@ emit.max.p2d
 emit.swz
 emit.swz.x2
 halt(): void
-raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], inspect: variant): void # Report messages or raise errors.
+raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void # Report messages or raise errors.
 raise.abort
 raise.error
 raise.warn
@@ -557,13 +557,7 @@ Image.depth(image: Image): int32
 Image.get(image: Image, x: int32, y: int32): int32
 Image.set(image: Image, x: int32, y: int32, color: uint32): void
 Image.tex(image: Image, x: float32, y: float32): vec4f
-Image.drawRect(image: Image, x1: int32, y1: int32, x2: int32, y2: int32, color: int32): void
 Image.fillRect(image: Image, x1: int32, y1: int32, x2: int32, y2: int32, color: int32): void
-Image.drawOval(image: Image, x1: int32, y1: int32, x2: int32, y2: int32, color: int32): void
-Image.fillOval(image: Image, x1: int32, y1: int32, x2: int32, y2: int32, color: int32): void
-Image.drawLine(image: Image, x1: int32, y1: int32, x2: int32, y2: int32, color: int32): void
-Image.drawBezier(image: Image, x1: int32, y1: int32, x2: int32, y2: int32, x3: int32, y3: int32, color: int32): void
-Image.drawBezier(image: Image, x1: int32, y1: int32, x2: int32, y2: int32, x3: int32, y3: int32, x4: int32, y4: int32, color: int32): void
 Image.clipText(font: Image, rect: Rect, text: char[*]): void
 Image.drawText(image: Image, x: int32, y: int32, font: Image, text: char[*], color: int32): void
 Image.drawText(image: Image, roi: Rect, font: Image, text: char[*], color: int32): void
@@ -708,15 +702,34 @@ set(image: Image, x: int32, y: int32, color: argb): void # Set the the color of 
 colorMap(image: Image, roi: Rect, lut: argb[256]): void # apply the 2d lookup table to the image
 resize(image: Image, rect: Rect, src: Image, roi: Rect, interpolate: int32): void # @public
 clip(src: Image, roi: Rect): bool # @public
-fill(image: Image, color: uint32): void # Fill the entire image with the given color
 eval(image: Image, roi: Rect, aspect: float32, time: float32, eval(in: vec4f): vec4f): void # Fill the surface by evaluating the given function for each pixel
 tile(image: Image, x: int32, y: int32, src: Image, roi: Rect): void # @public
-fillRect(image: Image, x1: int32, y1: int32, x2: int32, y2: int32, rx: int32, ry: int32, color: uint32): void # Fill the given rectangle rounding the corners using the given radius
+xcl(a: int32, b: int32): int32
+fill(image: Image, color: uint32): void # Fill the entire image with the given color
+fill(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, color: uint32): void
+drawRect(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, color: uint32): void # Draw a rectangle on the `image` specified by the coordinates with the given `color`
+fillRect(image: Image, x1: int32, y1: int32, x2: int32, y2: int32, rx: int32, ry: int32, color: uint32): void # TODO: Fill the given rectangle rounding the corners using the given radius
 fillRect(image: Image, x1: int32, y1: int32, x2: int32, y2: int32, r: int32, color: uint32): void # Fill the given rectangle rounding the corners using the given radius
 fillRect(image: Image, roi: Rect, rx: int32, ry: int32, color: uint32): void # Fill the given rectangle rounding the corners using the given radius
 fillRect(image: Image, roi: Rect, r: int32, color: uint32): void # Fill the given rectangle rounding the corners using the given radius
-drawRect(image: Image, roi: Rect, color: uint32): void # Fill the entire image with the given color
-fillRect(image: Image, roi: Rect, color: uint32): void # Fill the entire image with the given color
+drawLineImpl(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, smooth: bool, color: uint32): void # Draw a normal or smooth(anti-aliased) line
+drawLine(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, smooth: bool, color: uint32): void
+drawBezier(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, x2: int32, y2: int32, smooth: bool, color: uint32): void
+drawBezier(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, x2: int32, y2: int32, x3: int32, y3: int32, smooth: bool, color: uint32): void
+fillOvalImpl(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, smooth: bool, color: uint32): void
+fillOval(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, smooth: bool, color: uint32): void
+drawOvalImpl(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, smooth: bool, color: uint32): void
+drawOval(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, smooth: bool, color: uint32): void
+drawAntiAliased # Draw a line on the `image`
+fillOval(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, color: uint32): void
+drawOval(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, color: uint32): void
+drawLine(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, color: uint32): void
+drawBezier(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, x2: int32, y2: int32, color: uint32): void
+drawBezier(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, x2: int32, y2: int32, x3: int32, y3: int32, color: uint32): void
+fillRect(image: Image, roi: Rect, color: uint32): void # Fill a rectangle on the `image` specified by `roi` with the given `color`
+drawRect(image: Image, roi: Rect, color: uint32): void # Draw a rectangle on the `image` specified by `roi` with the given `color`
+fillOval(image: Image, roi: Rect, color: uint32): void # Fill a rectangle on the `image` specified by `roi` with the given `color`
+drawOval(image: Image, roi: Rect, color: uint32): void # Draw a rectangle on the `image` specified by `roi` with the given `color`
 Mesh(fileName: char[*]): Mesh # Create a mesh by opening a file
 Camera
 Camera.position

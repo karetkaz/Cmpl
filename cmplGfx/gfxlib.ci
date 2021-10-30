@@ -1,6 +1,7 @@
 // graphics library extension
 inline "lib/color.ci";
 inline "lib/image.ci";
+inline "lib/draw.ci";
 inline "lib/mesh.ci";
 inline "lib/camera.ci";
 
@@ -59,10 +60,9 @@ void showWindow(Image image1, Image image2) {
 	}
 
 	static int onEvent(Closure closure&, int action, int button, int ex, int ey) {
-		if (action == Gui.KEY_PRESS) {
-			if (button == 27) {
-				return -1;
-			}
+		if (action == Gui.KEY_RELEASE && button == 27) {
+			// exit when releasing escape key
+			return -1;
 		}
 		if (action == Gui.MOUSE_PRESS) {
 			closure.offs.copy(0, 0, closure.image2, null);
@@ -98,14 +98,13 @@ void showWindow(int width, int height, int animationResolution, vec4f eval(vec4f
 	}
 
 	static int onEvent(Closure closure&, int action, int button, int ex, int ey) {
+		if (action == Gui.KEY_RELEASE && button == 27) {
+			// exit when releasing escape key
+			return -1;
+		}
 		if (action == Gui.WINDOW_CLOSE) {
 			trace("closing ...");
 			return 0;
-		}
-		if (action == Gui.KEY_PRESS) {
-			if (button == 27) {
-				return -1;
-			}
 		}
 		if (action == Gui.KEY_RELEASE) {
 			if (button == ' ') {
@@ -205,11 +204,12 @@ void showWindow(int w, int h, float32 fovy, Mesh mesh) {
 		if (action == Gui.FINGER_MOTION) {
 			action = Gui.MOUSE_MOTION;
 		}
+		if (action == Gui.KEY_RELEASE && button == 27) {
+			// exit when releasing escape key
+			return -1;
+		}
 		if (action == Gui.KEY_PRESS) {
-			if (button == 27) {
-				return -1;
-			}
-			else if (button == 'l') {
+			if (button == 'l') {
 				closure.mode ^= Mesh.useLights;
 			}
 			else if (button == '0') {

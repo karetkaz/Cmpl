@@ -12,10 +12,6 @@
 
 Image back = Image("asset/image/forest.jpg", 32);
 Image offs = Image(back);
-int onEvent(int action, int button, int x, int y);
-Gui.showWindow(offs, onEvent);
-offs.destroy();
-back.destroy();
 
 inline "/cmplGfx/lib/micro.ui.ci";
 void drawColorSlider(Slider this, Image offs, Rect rect, const Style style&);
@@ -136,25 +132,16 @@ vec4f blendHsl(vec4f base, vec4f blend) {
 	};
 }
 
-Widget ui = Widget().addItems(
-	histogram,
-	Layout.divider,
-	sldHueMin, sldHueMax,
-	sldLumMin, sldLumMax,
-	sldVal,
-	Layout.divider,
-	debug
-);
-
-int onEvent(int action, int button, int x, int y) {
+int onEvent(Window win&, int action, int button, int x, int y) {
 	if (action == Gui.KEY_RELEASE && button == 27) {
 		// exit when releasing escape key
 		return -1;
 	}
-	if (!ui.onEvent(action, button, x, y)) {
+	Widget ui = win.widget;
+	if (!win.dispatchEvent(ui, action, button, x, y)) {
 		if (ui.pressedIndex != -1) {
 			// redraw only ui, in case there is an active control
-			return ui.draw(offs);
+			return win.draw(ui);
 		}
 		if (action != Gui.MOUSE_MOTION && action != Gui.FINGER_MOTION && action != Gui.MOUSE_RELEASE) {
 			// event not processed, wait for the next one
@@ -168,12 +155,12 @@ int onEvent(int action, int button, int x, int y) {
 		updateSlider(sldHueMin, sldHueMax, col.x * 359);
 		updateSlider(sldLumMin, sldLumMax, col.z * 255);
 		if (action == Gui.MOUSE_MOTION) {
-			return ui.draw(offs);
+			return win.draw(ui);
 		}
 	}
 
 	if (button == 0 && (action == Gui.MOUSE_MOTION || action == Gui.FINGER_MOTION)) {
-		return ui.draw(offs);
+		return win.draw(ui);
 	}
 
 	offs.copy(0, 0, back, null);
@@ -185,7 +172,7 @@ int onEvent(int action, int button, int x, int y) {
 	}
 
 	histogram.update(offs);
-	return ui.draw(offs);
+	return win.draw(ui);
 }
 
 void drawColorSlider(Slider this, Image offs, Rect rect, const Style style&) {
@@ -198,12 +185,12 @@ void drawColorSlider(Slider this, Image offs, Rect rect, const Style style&) {
 		for (int x = rect.x; x < x0; x += 1) {
 			float32 val = float32(x - rect.x) / rect.w;
 			argb color = argb(hsl2rgb(vec4f(val, 1f, .5f)));
-			offs.fillRect(x, y - padding, x, y, color.v);
+			offs.fill(x, y - padding, x, y, color.v);
 		}
 		for (int x = x0; x < x1; x += 1) {
 			float32 val = float32(x - rect.x) / rect.w;
 			argb color = argb(hsl2rgb(vec4f(val, 1f, .5f)));
-			offs.fillRect(x, y, x, y, color.v);
+			offs.fill(x, y, x, y, color.v);
 		}
 		return;
 	}
@@ -213,12 +200,12 @@ void drawColorSlider(Slider this, Image offs, Rect rect, const Style style&) {
 		for (int x = rect.x; x < x0; x += 1) {
 			float32 val = float32(x - rect.x) / rect.w;
 			argb color = argb(vec4f(val, val, val));
-			offs.fillRect(x, y - padding, x, y, color.v);
+			offs.fill(x, y - padding, x, y, color.v);
 		}
 		for (int x = x0; x < x1; x += 1) {
 			float32 val = float32(x - rect.x) / rect.w;
 			argb color = argb(vec4f(val, val, val));
-			offs.fillRect(x, y, x, y, color.v);
+			offs.fill(x, y, x, y, color.v);
 		}
 		return;
 	}
@@ -255,3 +242,16 @@ bool syncMinMax(Slider this, int value) {
 	}
 	return result;
 }
+
+Gui.showWindow(offs, onEvent, Widget(
+	histogram,
+
+	null,
+	sldHueMin, sldHueMax,
+	sldLumMin, sldLumMax,
+	sldVal,
+
+	null, debug
+));
+offs.destroy();
+back.destroy();

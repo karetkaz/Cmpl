@@ -1,26 +1,10 @@
-// CLion.Arguments: -run $CMakeCurrentBuildDir$/libFile.? $CMakeCurrentBuildDir$/libGfx.? $FilePath$
-// CLion.Directory: $FileDir$
-// CLion.Environment: CMPL_HOME=$PROJECT_DIR$
+// test the generated events
 
-//inline "../todo/ImageEditor.ci";
-//inline "demo.widget/DatePicker.ci";
-//inline "demo.widget/Calculator0.ci";
-//inline "demo.widget/layout.Align.ci";
-//inline "demo.widget/layout.padding.ci";
-//inline "fx.image.transform.ci";
-//inline "fx.color.lookup.ci";
-//inline "fx.color.lookup-ease.ci";
-//inline "fx.color.lookup-levels.ci";
-//inline "fx.color.lookup-manual.ci";
-//inline "fx.color.matrix.ci";
-//inline "fx.color.select-hsl.ci";
-//inline "fx.color.blend.ci";
-//inline "fx.image.blur.ci";
-//inline "fx.histogram.ci";
-//inline "pd.blob.ci";
-
-//* test the generated events
+static int onEvent(int action, int button, int x, int y);
 static Image image = Image(512, 512, 32);
+Gui.showWindow(image, onEvent);
+image.destroy();
+
 static int onEvent(int action, int button, int x, int y) {
 	struct Event {
 		char actionName[*];
@@ -40,12 +24,12 @@ static int onEvent(int action, int button, int x, int y) {
 	};
 	if (action == Gui.KEY_PRESS) {
 		event.actionName = "KEY_PRESS";
-		if (button == 27) {
-			return -1;
-		}
 	}
 	else if (action == Gui.KEY_RELEASE) {
 		event.actionName = "KEY_RELEASE";
+		if (button == 27) {
+			return -1;
+		}
 	}
 	else if (action == Gui.MOUSE_WHEEL) {
 		event.actionName = "MOUSE_WHEEL";
@@ -123,17 +107,20 @@ static int onEvent(int action, int button, int x, int y) {
 			enabled: false;
 			text: "clicks";
 		};
-		static Widget ui = Widget().addItems(
-			btnAction,
-			sldAction,
-			sldButton,
-			sldX,
-			sldY,
-			sldKeyRepeat,
-			sldClicks
-		);
+		static Window ui = {
+			offscreen: image;
+			widget: Widget(
+				btnAction,
+				sldAction,
+				sldButton,
+				sldX,
+				sldY,
+				sldKeyRepeat,
+				sldClicks
+			);
+		};
 
-		ui.onEvent(action, button, x, y);
+		ui.dispatchEvent(ui.widget, action, button, x, y);
 		actionText.append(0, event.actionName);
 		sldAction.value = action;
 		sldButton.value = button;
@@ -141,11 +128,8 @@ static int onEvent(int action, int button, int x, int y) {
 		sldY.value = y;
 		sldKeyRepeat.value = ui.repeat;
 		sldClicks.value = ui.clicks;
-		return ui.draw(image);
+		return ui.draw(ui.widget);
 	}
 
 	return 20000;	// 20 sec timeout
 }
-Gui.showWindow(image, onEvent);
-image.destroy();
-// */

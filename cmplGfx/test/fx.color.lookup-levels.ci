@@ -12,10 +12,6 @@
 
 Image back = Image("asset/image/forest.jpg", 32);
 Image offs = Image(back);
-int onEvent(int action, int button, int x, int y);
-Gui.showWindow(offs, onEvent);
-offs.destroy();
-back.destroy();
 
 void levels(argb lut[256], int brightness, int x0, int x1, int y0, int y1) {
 	if (x1 == x0) {
@@ -43,6 +39,7 @@ void levels(argb lut[256], int brightness, int output, int input) {
 inline "/cmplGfx/lib/micro.ui.ci";
 bool updateInputOutput(Slider slider, int value);
 bool resetInputOutput(Slider slider);
+bool showHideAdvanced(Switch switch, Rect rect&);
 
 Histogram histogram = {
 	enabled: false;
@@ -60,7 +57,13 @@ DebugView debug = {
 };
 
 Switch chkAdvanced = {
+	static bool onClick(Switch switch) {
+		switch.invalidate();
+		return Switch.onClick(switch);
+	}
+
 	text: "Advanced";
+	onClick: onClick;
 };
 
 Slider sldBrightness = {
@@ -77,20 +80,20 @@ Slider sldInput = {
 	onReset: resetInputOutput;
 };
 Slider sldInputMin = {
-	visible: 1;
 	text: " Input.min";
 	maximum: sldInput.maximum;
 	value: 0;
 	onUpdate: updateInputOutput;
 	onReset: resetInputOutput;
+	onMeasure: showHideAdvanced;
 };
 Slider sldInputMax = {
-	visible: 1;
 	text: " Input.max";
 	maximum: sldInput.maximum;
 	value: sldInput.maximum;
 	onUpdate: updateInputOutput;
 	onReset: resetInputOutput;
+	onMeasure: showHideAdvanced;
 };
 
 Slider sldOutput = {
@@ -101,60 +104,40 @@ Slider sldOutput = {
 	onReset: resetInputOutput;
 };
 Slider sldOutputMin = {
-	visible: 1;
 	text: " Output.min";
 	maximum: sldOutput.maximum;
 	value: 0;
 	onUpdate: updateInputOutput;
 	onReset: resetInputOutput;
+	onMeasure: showHideAdvanced;
 };
 Slider sldOutputMax = {
-	visible: 1;
 	text: " Output.max";
 	maximum: sldOutput.maximum;
 	value: sldOutput.maximum;
 	onUpdate: updateInputOutput;
 	onReset: resetInputOutput;
+	onMeasure: showHideAdvanced;
 };
 
-Widget ui = Widget().addItems(
-	histogram,
-	lookup,
-	Layout.divider,
-	sldBrightness,
-	sldOutput,
-	sldOutputMin,
-	sldOutputMax,
-	sldInput,
-	sldInputMin,
-	sldInputMax,
-	chkAdvanced,
-	Layout.divider,
-	debug
-);
-
-int onEvent(int action, int button, int x, int y) {
+int onEvent(Window win&, int action, int button, int x, int y) {
 	if (action == Gui.KEY_RELEASE && button == 27) {
 		// exit when releasing escape key
 		return -1;
 	}
-	if (!ui.onEvent(action, button, x, y)) {
+	Widget ui = win.widget;
+	if (!win.dispatchEvent(ui, action, button, x, y)) {
 		// event not processed, wait for the next one
 		return 0;
 	}
-	if (action == Gui.WINDOW_INIT) {
-		ui.setGroup(2);
-	}
 
 	debug.startTimer();
-	ui.setGroup(~(1 << chkAdvanced.selected));
 	levels(&lookup.data, sldBrightness.value, sldInputMin.value, sldInputMax.value, sldOutputMin.value, sldOutputMax.value);
 	offs.copy(0, 0, back, null);
 	offs.colorMap(null, lookup.data);
 	histogram.update(offs);
-	return ui.draw(offs);
+	return win.draw(ui);
 }
-
 bool updateInputOutput(Slider slider, int value) {
 	if (slider == sldInput) {
 		Slider.onUpdate(sldInput, value);
@@ -187,4 +170,30 @@ bool resetInputOutput(Slider slider) {
 	}
 	return Slider.onReset(slider);
 }
+bool showHideAdvanced(Switch switch, Rect rect&) {
+	if (!chkAdvanced.checked()) {
+		// view is hidden
+		rect.w = rect.h = 0;
+		return false;
+	}
+	return Switch.onMeasure(switch, &rect);
+}
 
+Gui.showWindow(offs, onEvent, Widget(
+	histogram,
+	lookup,
+
+	null,
+	sldBrightness,
+	sldOutput,
+	sldOutputMin,
+	sldOutputMax,
+	sldInput,
+	sldInputMin,
+	sldInputMax,
+	chkAdvanced,
+
+	null, debug
+));
+offs.destroy();
+back.destroy();

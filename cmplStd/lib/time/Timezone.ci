@@ -1,0 +1,14 @@
+struct Timezone {
+	int value;
+
+	static Timezone zone(int value) {
+		return {value: value};
+	}
+
+	static Timezone local() {
+		return zone(0/*System.timezone()*/);
+	}
+
+//	static Timezone Utc = zone(0);
+//	static Timezone Gmt = zone(0);
+}

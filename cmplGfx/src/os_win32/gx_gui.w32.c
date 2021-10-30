@@ -31,7 +31,7 @@ GxWindow createWindow(GxImage image, const char *title) {
 	HINSTANCE mainhins = 0;
 	char *class_name = "GFX(2/3)D_Window";
 
-	WNDCLASS windowClass;
+	WNDCLASS windowClass = {0};
 	windowClass.style = CS_OWNDC; // The style of the window. CS_OWNDC means every window has it's own DC
 	windowClass.lpfnWndProc = WindowProc;//bitmapWindowHandler; // The function to call when this window receives a message
 	windowClass.cbClsExtra = 0; // Extra bytes to allocate for this class (none)
@@ -55,7 +55,7 @@ GxWindow createWindow(GxImage image, const char *title) {
 		NULL,				// Handle to a parent window (none)
 		NULL,				// Handle to a child window (none)
 		mainhins,			// Handle to the current Instance
-		0					// Pointer to extra data I don't care about
+		NULL					// Pointer to extra data I don't care about
 	);
 	result->BMP.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
 	result->BMP.bmiHeader.biWidth = image->width;

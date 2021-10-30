@@ -12,10 +12,6 @@
 
 Image back = Image("asset/image/forest.jpg");
 Image offs = Image(back);
-int onEvent(int action, int button, int x, int y);
-Gui.showWindow(offs, onEvent);
-offs.destroy();
-back.destroy();
 
 mat4f colorMatrix(float brightness, float saturation, float contrast, float temp, float tint, float hue) {
 	static mat4f brightnessMat(float val) {
@@ -110,39 +106,24 @@ mat4f colorMatrix(float brightness, float saturation, float contrast, float temp
 }
 
 inline "/cmplGfx/lib/micro.ui.ci";
-bool onPresetsClick(Switch view);
 Histogram histogram = {
 	enabled: false;
 };
 
-char groups[*][] = {
-	">";
-	"<<<";
-};
-Switch selGroups = {
-	text: "Presets";
-	states: groups;
-	focusable: false;
-	onClick: onPresetsClick;
-};
-
 // controls
 Slider brightness = {
-	visible: 1;
 	text: "brightness";
 	minimum: -200;
 	maximum: 200;
 	divisor: 200;
 };
 Slider saturation = {
-	visible: 1;
 	text: "saturation";
 	value: 200;
 	maximum: 1000;
 	divisor: 200;
 };
 Slider contrast = {
-	visible: 1;
 	text: "contrast";
 	value: 200;
 	minimum: -200;
@@ -150,21 +131,18 @@ Slider contrast = {
 	divisor: 200;
 };
 Slider temp = {
-	visible: 1;
 	text: "temperature";
 	minimum: -200;
 	maximum: 200;
 	divisor: 400;
 };
 Slider tint = {
-	visible: 1;
 	text: "tint";
 	minimum: -200;
 	maximum: 200;
 	divisor: 400;
 };
 Slider hue = {
-	visible: 1;
 	text: "hue";
 	minimum: 0;
 	maximum: 720;
@@ -177,7 +155,6 @@ struct PresetButton: Button {
 	const mat4f data;
 }
 PresetButton original = {
-	visible: 2;
 	text: "original";
 	data: mat4f(
 		1, 0, 0, 0,
@@ -187,7 +164,6 @@ PresetButton original = {
 	);
 };
 PresetButton invert = {
-	visible: 2;
 	text: "invert";
 	data: mat4f(
 		-1, 0, 0, 1,
@@ -197,7 +173,6 @@ PresetButton invert = {
 	);
 };
 PresetButton grayScale = {
-	visible: 2;
 	text: "gray scale";
 	data: mat4f(
 		0.299, 0.587, 0.114, 0,
@@ -207,7 +182,6 @@ PresetButton grayScale = {
 	);
 };
 PresetButton blackAndWhite = {
-	visible: 2;
 	text: "black & white";
 	data: mat4f(
 		1.5, 1.5, 1.5, -1,
@@ -217,7 +191,6 @@ PresetButton blackAndWhite = {
 	);
 };
 PresetButton sepiaColor = {
-	visible: 2;
 	text: "sepia color";
 	data: mat4f(
 		0.393, 0.769, 0.189, 0,
@@ -227,7 +200,6 @@ PresetButton sepiaColor = {
 	);
 };
 PresetButton technicolor = {
-	visible: 2;
 	text: "technicolor";
 	data: mat4f(// https://github.com/pixijs/pixi.js/blob/dev/packages/filters/filter-color-matrix/src/ColorMatrixFilter.ts
 		1.9125277891456083, -0.8545344976951645, -0.09155508482755585, 11.793603434377337 / 255,
@@ -237,7 +209,6 @@ PresetButton technicolor = {
 	);
 };
 PresetButton polaroid = {
-	visible: 2;
 	text: "polaroid";
 	data: mat4f(// https://github.com/pixijs/pixi.js/blob/dev/packages/filters/filter-color-matrix/src/ColorMatrixFilter.ts
 		1.438, -0.062, -0.062, 0,
@@ -247,7 +218,6 @@ PresetButton polaroid = {
 	);
 };
 PresetButton kodachrome = {
-	visible: 2;
 	text: "kodachrome";
 	data: mat4f(// https://github.com/pixijs/pixi.js/blob/dev/packages/filters/filter-color-matrix/src/ColorMatrixFilter.ts
 		1.1285582396593525, -0.3967382283601348, -0.03992559172921793, 63.72958762196502 / 255,
@@ -257,7 +227,6 @@ PresetButton kodachrome = {
 	);
 };
 PresetButton browni = {
-	visible: 2;
 	text: "browni";
 	data: mat4f(// https://github.com/pixijs/pixi.js/blob/dev/packages/filters/filter-color-matrix/src/ColorMatrixFilter.ts
 		0.5997023498159715, 0.34553243048391263, -0.2708298674538042, 47.43192855600873 / 255,
@@ -267,7 +236,6 @@ PresetButton browni = {
 	);
 };
 PresetButton vintage = {
-	visible: 2;
 	text: "vintage";
 	data: mat4f(// https://github.com/pixijs/pixi.js/blob/dev/packages/filters/filter-color-matrix/src/ColorMatrixFilter.ts
 		0.6279345635605994, 0.3202183420819367, -0.03965408211312453, 9.651285835294123 / 255,
@@ -277,7 +245,6 @@ PresetButton vintage = {
 	);
 };
 PresetButton nightVision = {
-	visible: 2;
 	text: "night vision";
 	data: mat4f(// https://github.com/skratchdot/color-matrix/blob/master/lib/filters.js
 		0.1, 0.4, 0, 0,
@@ -287,7 +254,6 @@ PresetButton nightVision = {
 	);
 };
 PresetButton warm = {
-	visible: 2;
 	text: "warm";
 	data: mat4f(// https://github.com/skratchdot/color-matrix/blob/master/lib/filters.js
 		1.06, 0, 0, 0,
@@ -297,7 +263,6 @@ PresetButton warm = {
 	);
 };
 PresetButton cool = {
-	visible: 2;
 	text: "cool";
 	data: mat4f(// https://github.com/skratchdot/color-matrix/blob/master/lib/filters.js
 		0.99, 0, 0, 0,
@@ -307,7 +272,6 @@ PresetButton cool = {
 	);
 };
 PresetButton lsd = {
-	visible: 2;
 	text: "lsd";
 	data: mat4f(// https://github.com/pixijs/pixi.js/blob/dev/packages/filters/filter-color-matrix/src/ColorMatrixFilter.ts
 		2, -0.4, 0.5, 0,
@@ -317,22 +281,12 @@ PresetButton lsd = {
 	);
 };
 
+TabPage tabPage = {};
 DebugView debug = {
 	focusable: false;
 	measures: -1;
 	draws: -1;
 };
-
-Widget ui = Widget().addItems(
-	histogram, Layout.divider, selGroups, Layout.divider,
-	// group 1 - Controls
-	brightness, saturation, contrast, temp, tint, hue,
-	// group 2 - Presets
-	original, invert, grayScale, blackAndWhite, sepiaColor, technicolor, polaroid,
-	kodachrome, browni, vintage, nightVision, warm, cool, lsd,
-
-	Layout.divider, debug
-);
 
 Rect rect = {
 	x: 0;
@@ -347,22 +301,20 @@ mat4f mat = {
 	wx: 0; wy: 0; wz: 0; ww:1;
 };
 
-int onEvent(int action, int button, int x, int y) {
+int onEvent(Window win&, int action, int button, int x, int y) {
 	if (action == Gui.KEY_RELEASE && button == 27) {
 		// exit when releasing escape key
 		return -1;
 	}
-	if (!ui.onEvent(action, button, x, y)) {
+
+	Widget ui = win.widget;
+	if (!win.dispatchEvent(ui, action, button, x, y)) {
 		// event not processed, wait for the next one
 		return 0;
 	}
 
-	if (action == Gui.WINDOW_INIT) {
-		ui.setGroup(1 << selGroups.selected, true);
-	}
-
 	debug.startTimer();
-	if (ui.isFocused(brightness, saturation, contrast, temp, tint, hue)) {
+	if (win.hasFocused(brightness, saturation, contrast, temp, tint, hue)) {
 		float b = brightness.valueF64();
 		float s = saturation.valueF64();
 		float c = contrast.valueF64();
@@ -379,12 +331,21 @@ int onEvent(int action, int button, int x, int y) {
 	offs.copy(0, 0, back, null);
 	offs.colorMat(null, mat.data);
 	histogram.update(offs);
-	return ui.draw(offs);
+	return win.draw(ui);
 }
-bool onPresetsClick(Switch view) {
-	if (!Switch.onClick(view)) {
-		return !false;
-	}
-	ui.setGroup(1 << view.selected, true);
-	return true;
-}
+
+Gui.showWindow(offs, onEvent, Widget(
+	histogram,
+
+	null,
+	tabPage.addItems("Controls", Style.fill,
+		brightness, saturation, contrast, temp, tint, hue
+	).addItems("Presets", Style.fill,
+		original, invert, grayScale, blackAndWhite, sepiaColor, technicolor, polaroid,
+		kodachrome, browni, vintage, nightVision, warm, cool, lsd
+	),
+
+	null, debug
+));
+offs.destroy();
+back.destroy();
