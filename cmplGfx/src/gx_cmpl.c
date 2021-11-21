@@ -224,19 +224,6 @@ static vmError surf_set(nfcContext ctx) {
 	return noError;
 }
 
-static const char *const proto_image_drawRect = "void drawRect(Image image, int32 x1, int32 y1, int32 x2, int32 y2, int32 color)";
-static vmError surf_drawRect(nfcContext ctx) {
-	GxImage surf = nextValue(ctx).ref;
-	int x0 = nextValue(ctx).i32;
-	int y0 = nextValue(ctx).i32;
-	int x1 = nextValue(ctx).i32;
-	int y1 = nextValue(ctx).i32;
-	uint32_t color = nextValue(ctx).u32;
-
-	drawRect(surf, x0, y0, x1, y1, color);
-	return noError;
-}
-
 static const char *const proto_image_fillRect = "void fillRect(Image image, int32 x1, int32 y1, int32 x2, int32 y2, int32 color)";
 static vmError surf_fillRect(nfcContext ctx) {
 	GxImage surf = nextValue(ctx).ref;
@@ -247,77 +234,6 @@ static vmError surf_fillRect(nfcContext ctx) {
 	uint32_t color = nextValue(ctx).u32;
 
 	fillRect(surf, x0, y0, x1, y1, color);
-	return noError;
-}
-
-static const char *const proto_image_drawOval = "void drawOval(Image image, int32 x1, int32 y1, int32 x2, int32 y2, int32 color)";
-static vmError surf_drawOval(nfcContext ctx) {
-	GxImage surf = nextValue(ctx).ref;
-	int x0 = nextValue(ctx).i32;
-	int y0 = nextValue(ctx).i32;
-	int x1 = nextValue(ctx).i32;
-	int y1 = nextValue(ctx).i32;
-	uint32_t color = nextValue(ctx).u32;
-
-	drawOval(surf, x0, y0, x1, y1, color);
-	return noError;
-}
-
-static const char *const proto_image_fillOval = "void fillOval(Image image, int32 x1, int32 y1, int32 x2, int32 y2, int32 color)";
-static vmError surf_fillOval(nfcContext ctx) {
-	GxImage surf = nextValue(ctx).ref;
-	int x0 = nextValue(ctx).i32;
-	int y0 = nextValue(ctx).i32;
-	int x1 = nextValue(ctx).i32;
-	int y1 = nextValue(ctx).i32;
-	uint32_t color = nextValue(ctx).u32;
-
-	fillOval(surf, x0, y0, x1, y1, color);
-	return noError;
-}
-
-static const char *const proto_image_drawLine = "void drawLine(Image image, int32 x1, int32 y1, int32 x2, int32 y2, int32 color)";
-static vmError surf_drawLine(nfcContext ctx) {
-	GxImage surf = nextValue(ctx).ref;
-	int x0 = nextValue(ctx).i32;
-	int y0 = nextValue(ctx).i32;
-	int x1 = nextValue(ctx).i32;
-	int y1 = nextValue(ctx).i32;
-	uint32_t color = nextValue(ctx).u32;
-
-	drawLine(surf, x0, y0, x1, y1, color);
-	return noError;
-}
-
-static const char *const proto_image_drawBez2 = "void drawBezier(Image image, int32 x1, int32 y1, int32 x2, int32 y2, int32 x3, int32 y3, int32 color)";
-static vmError surf_drawBez2(nfcContext ctx) {
-	GxImage surf = nextValue(ctx).ref;
-	int x0 = nextValue(ctx).i32;
-	int y0 = nextValue(ctx).i32;
-	int x1 = nextValue(ctx).i32;
-	int y1 = nextValue(ctx).i32;
-	int x2 = nextValue(ctx).i32;
-	int y2 = nextValue(ctx).i32;
-	uint32_t color = nextValue(ctx).u32;
-
-	drawBez2(surf, x0, y0, x1, y1, x2, y2, color);
-	return noError;
-}
-
-static const char *const proto_image_drawBez3 = "void drawBezier(Image image, int32 x1, int32 y1, int32 x2, int32 y2, int32 x3, int32 y3, int32 x4, int32 y4, int32 color)";
-static vmError surf_drawBez3(nfcContext ctx) {
-	GxImage surf = nextValue(ctx).ref;
-	int x0 = nextValue(ctx).i32;
-	int y0 = nextValue(ctx).i32;
-	int x1 = nextValue(ctx).i32;
-	int y1 = nextValue(ctx).i32;
-	int x2 = nextValue(ctx).i32;
-	int y2 = nextValue(ctx).i32;
-	int x3 = nextValue(ctx).i32;
-	int y3 = nextValue(ctx).i32;
-	uint32_t color = nextValue(ctx).u32;
-
-	drawBez3(surf, x0, y0, x1, y1, x2, y2, x3, y3, color);
 	return noError;
 }
 
@@ -565,8 +481,8 @@ static vmError surf_transformSurf(nfcContext ctx) {
 	if (interpolate == 0) {
 		for (int y = 0, sy = srcRec.y; y < dstRec.h; ++y, ++sy) {
 			for (int x = 0, sx = srcRec.x; x < dstRec.w; ++x, ++sx) {
-				int32_t tx = (xx * sx + xy * sy + xt + 0x8000) >> 16;
-				int32_t ty = (yx * sx + yy * sy + yt + 0x8000) >> 16;
+				int32_t tx = (xx * sx + xy * sy + xt) >> 16;
+				int32_t ty = (yx * sx + yy * sy + yt) >> 16;
 				setPixel(surf, dstRec.x + x, dstRec.y + y, getPixel(src, tx, ty));
 			}
 		}
@@ -1690,13 +1606,7 @@ int cmplInit(rtContext rt) {
 		{surf_get,      proto_image_get},
 		{surf_set,      proto_image_set},
 		{surf_tex,      proto_image_tex},
-		{surf_drawRect, proto_image_drawRect},
 		{surf_fillRect, proto_image_fillRect},
-		{surf_drawOval, proto_image_drawOval},
-		{surf_fillOval, proto_image_fillOval},
-		{surf_drawLine, proto_image_drawLine},
-		{surf_drawBez2, proto_image_drawBez2},
-		{surf_drawBez3, proto_image_drawBez3},
 		{surf_clipText, proto_image_clipText},
 		{surf_drawText, proto_image_drawText},
 		{surf_drawText, proto_image_drawTextRoi},

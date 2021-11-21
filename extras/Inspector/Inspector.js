@@ -129,22 +129,11 @@ function Inspector(data) {
 		var tickIndex = 0;
 		var heapIndex = -1;
 
-		if (data.profile == null) {
-			data.profile = {
-				callTree: [],
-				ticksPerSec: -1,
-				functions: [],
-				functionCount: 0,
-				statements: [],
-				statementCount: 0
-			};
-		}
-
-		if (data.profile.callTreeData != null) {
-			recSize = data.profile.callTreeData.length;
-			funIndex = data.profile.callTreeData.indexOf("ctFunIndex");
-			tickIndex = data.profile.callTreeData.indexOf("ctTickIndex");
-			heapIndex = data.profile.callTreeData.indexOf("ctHeapIndex");
+		if (data.callTreeData != null) {
+			recSize = data.callTreeData.length;
+			funIndex = data.callTreeData.indexOf("ctFunIndex");
+			tickIndex = data.callTreeData.indexOf("ctTickIndex");
+			heapIndex = data.callTreeData.indexOf("ctHeapIndex");
 			if (!(recSize > 0)) {
 				throw "callTreeData header is invalid";
 			}
@@ -156,11 +145,11 @@ function Inspector(data) {
 			samples: {},
 			callTree: null,
 			//excluded: ['Halt', 'ToDays'],
-			ticksPerSec: data.profile.ticksPerSec
+			ticksPerSec: data.ticksPerSec
 		}];
 
-		for (i = 0; i < data.profile.functions.length; ++i) {
-			var symbol = data.profile.functions[i];
+		for (i = 0; i < data.functions.length; ++i) {
+			var symbol = data.functions[i];
 			if (symbol.proto == null) {
 				symbol.proto = symbol[''];
 			}
@@ -168,10 +157,10 @@ function Inspector(data) {
 		}
 
 		var lastTick = 0;
-		for (i = 0; i < data.profile.callTree.length; i += recSize) {
-			var offs = data.profile.callTree[i + funIndex];
-			var tick = tickIndex < 0 ? undefined : data.profile.callTree[i + tickIndex];
-			var heap = heapIndex < 0 ? undefined : data.profile.callTree[i + heapIndex];
+		for (i = 0; i < data.callTree.length; i += recSize) {
+			var offs = data.callTree[i + funIndex];
+			var tick = tickIndex < 0 ? undefined : data.callTree[i + tickIndex];
+			var heap = heapIndex < 0 ? undefined : data.callTree[i + heapIndex];
 
 			// if a function executes in zero time we are in trouble displaying, so correct it to 1 unit
 			// this happens with old compilers, with low resolution `clock()` function

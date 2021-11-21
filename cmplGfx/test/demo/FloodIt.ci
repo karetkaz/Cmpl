@@ -44,10 +44,9 @@ bool flood(int i, int j, int o, int c) {
 Image image = Image(displaySize, displaySize, 32);
 int onEvent(int action, int button, int x, int y) {
 	static int moves = 0;
-	if (action == Gui.KEY_PRESS) {
-		if (button == 27) {
-			return -1;
-		}
+	if (action == Gui.KEY_RELEASE && button == 27) {
+		// exit when releasing escape key
+		return -1;
 	}
 	if (action == Gui.WINDOW_CLOSE) {
 		info("moves used", moves);
@@ -72,7 +71,7 @@ int onEvent(int action, int button, int x, int y) {
 		for (int i = 0; i < gridSize; i += 1) {
 			int x = i * displaySize / gridSize;
 			int y = j * displaySize / gridSize;
-			int s = displaySize / gridSize - 2;
+			int s = displaySize / gridSize - 1;
 			int c = grid[i + j * gridSize];
 			image.fillRect(x, y, x + s, y + s, colors[c]);
 		}

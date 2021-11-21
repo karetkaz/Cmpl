@@ -9,18 +9,20 @@ int x[4] = {100, 400, 700, 400};
 int y[4] = {100, 100, 400, 400};
 
 int onEvent(int action, int button, int ex, int ey) {
+	static bool smooth = false;
 	static int ox = 0;
 	static int oy = 0;
 
-	if (action == Gui.FINGER_MOTION) {
-		action = Gui.MOUSE_MOTION;
+	if (action == Gui.KEY_RELEASE && button == 27) {
+		// exit when releasing escape key
+		return -1;
 	}
 	if (action == Gui.KEY_PRESS) {
-		if (button == 27) {
-			return -1;
-		}
 		if (button >= '0' && button < '0' + x.length) {
 			idx = button - '0';
+		}
+		else if (button == ' ') {
+			smooth = !smooth;
 		}
 	}
 	if (action == Gui.MOUSE_RELEASE || action == Gui.FINGER_RELEASE) {
@@ -45,27 +47,28 @@ int onEvent(int action, int button, int ex, int ey) {
 			y[idx] += ey - oy;
 		}
 
-		inline R = 2;
-		inline controlColor = 0x00ff00;
-		inline bezierColor = 0xffffff;
-
-		offs.fillRect(0, 0, 65535, 65535, 0x00000000);
-
-		// draw control lines
-		offs.drawLine(x[0], y[0], x[1], y[1], controlColor);
-		offs.drawLine(x[3], y[3], x[2], y[2], controlColor);
-
-		// draw control points
-		offs.drawOval(x[0] - R, y[0] - R, x[0] + R, y[0] + R, controlColor);
-		offs.drawOval(x[1] - R, y[1] - R, x[1] + R, y[1] + R, controlColor);
-		offs.drawOval(x[2] - R, y[2] - R, x[2] + R, y[2] + R, controlColor);
-		offs.drawOval(x[3] - R, y[3] - R, x[3] + R, y[3] + R, controlColor);
-
-		// draw bezier curve
-		offs.drawBezier(x[0], y[0], x[1], y[1], x[3], y[3], x[2], y[2], bezierColor);
 		ox = ex;
 		oy = ey;
 	}
+
+	inline R = 2;
+	inline controlColor = 0x00ff00;
+	inline bezierColor = 0xffffff;
+
+	offs.fill(0x00000000);
+
+	// draw control lines
+	offs.drawLine(x[0], y[0], x[1], y[1], controlColor);
+	offs.drawLine(x[3], y[3], x[2], y[2], controlColor);
+
+	// draw control points
+	offs.drawOval(x[0] - R, y[0] - R, x[0] + R, y[0] + R, controlColor);
+	offs.drawOval(x[1] - R, y[1] - R, x[1] + R, y[1] + R, controlColor);
+	offs.drawOval(x[2] - R, y[2] - R, x[2] + R, y[2] + R, controlColor);
+	offs.drawOval(x[3] - R, y[3] - R, x[3] + R, y[3] + R, controlColor);
+
+	// draw bezier curve
+	offs.drawBezier(x[0], y[0], x[1], y[1], x[3], y[3], x[2], y[2], smooth, bezierColor);
 
 	return 0;
 }

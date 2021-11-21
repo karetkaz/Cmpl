@@ -225,15 +225,7 @@ static inline uint32_t getPixelLinear(GxImage image, int32_t x16, int32_t y16) {
 }
 
 // draw
-void drawRect(GxImage image, int x1, int y1, int x2, int y2, uint32_t color);
-void fillRect(GxImage image, int x1, int y1, int x2, int y2, uint32_t color);
-
-void drawOval(GxImage image, int x1, int y1, int x2, int y2, uint32_t color);
-void fillOval(GxImage image, int x1, int y1, int x2, int y2, uint32_t color);
-
-void drawLine(GxImage image, int x1, int y1, int x2, int y2, uint32_t color);
-void drawBez2(GxImage image, int x1, int y1, int x2, int y2, int x3, int y3, uint32_t color);
-void drawBez3(GxImage image, int x1, int y1, int x2, int y2, int x3, int y3, int x4, int y4, uint32_t color);
+void fillRect(GxImage image, int x0, int y0, int x1, int y1, uint32_t color);
 
 void clipText(GxRect rect, GxImage font, const char *text);
 void drawChar(GxImage image, int x, int y, GxImage font, int chr, uint32_t color);

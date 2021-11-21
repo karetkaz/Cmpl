@@ -19,6 +19,8 @@ void sleepMillis(int64_t millis) {
 }
 
 void parkThread() {
-	// FIXME: sched_yield();
-	sleepMillis(0);
+	struct timespec ts;
+	ts.tv_sec = 0;
+	ts.tv_nsec = 500000;
+	nanosleep(&ts, NULL);
 }

@@ -1,3 +1,7 @@
+static if (typename(ByteReader) == null) {
+inline "Stream.ci";
+}
+
 struct FileReader: ByteReader {
 	const File file;
 

@@ -1115,7 +1115,7 @@ void print_log(rtContext rt, raiseLevel level, const char *file, int line, rtVal
 
 	if (rt->cc && rt->cc->inStaticIfFalse && level < raiseWarn) {
 		// convert errors to warnings inside static if (false) { ... }
-		level = raiseWarn;
+		level = raiseVerbose;
 	}
 	if (level > (int)rt->logLevel) {
 		// no need to show the log on the current level

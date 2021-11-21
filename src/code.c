@@ -2061,8 +2061,15 @@ void printOfs(FILE *out, const char **esc, rtContext ctx, symn sym, size_t offs,
 		printFmt(out, esc, "%c%s%c", '<', "?", '>');
 	}
 }
-void printVal(FILE *out, const char **esc, rtContext ctx, symn var, vmValue *val, dmpMode mode, int indent) {
-	ccKind varCast = castOf(var);
+static inline int isRecursive(list prev, void *data) {
+	for (list ptr = prev; ptr != NULL; ptr = ptr->next) {
+		if (ptr->data == (char*) data) {
+			return 1;
+		}
+	}
+	return 0;
+}
+static void printValue(FILE *out, const char **esc, rtContext ctx, symn var, vmValue *val, list prev, dmpMode mode, int indent) {
 	const char *format = var->fmt;
 	memptr data = (memptr) val;
 	symn typ = var;
@@ -2079,7 +2086,7 @@ void printVal(FILE *out, const char **esc, rtContext ctx, symn var, vmValue *val
 		if (format == NULL) {
 			format = typ->fmt;
 		}
-		if (varCast == CAST_ref) {
+		if (castOf(var) == CAST_ref) {
 			data = vmPointer(ctx, (size_t) val->ref);
 		}
 	}
@@ -2100,13 +2107,20 @@ void printVal(FILE *out, const char **esc, rtContext ctx, symn var, vmValue *val
 		printFmt(out, esc, "%.T(", typ);
 	}
 
+	struct list node;
+	node.next = prev;
+	node.data = (void*) data;
+
 	// null reference.
 	if (data == NULL) {
 		printFmt(out, esc, "%s", "null");
 	}
 	// invalid offset.
 	else if (!isValidOffset(ctx, data)) {
-		printFmt(out, esc, "BadRef");
+		printFmt(out, esc, "BadRef{offset}");
+	}
+	else if (typCast == CAST_ref && isRecursive(prev, data)) {
+		printFmt(out, esc, "BadRef{recursive}");
 	}
 	// builtin type.
 	else if (format != NULL) {
@@ -2174,6 +2188,9 @@ void printVal(FILE *out, const char **esc, rtContext ctx, symn var, vmValue *val
 	else if (indent > maxLogItems) {
 		printFmt(out, esc, "...");
 	}
+	else if (typCast == CAST_enm) {
+		printValue(out, esc, ctx, typ->type, val, &node, mode & ~(prSymQual | prSymType), -indent);
+	}
 	else if (typCast == CAST_var) {
 		memptr varData = vmPointer(ctx, (size_t) val->ref);
 		symn varType = vmPointer(ctx, (size_t) val->type);
@@ -2186,26 +2203,17 @@ void printVal(FILE *out, const char **esc, rtContext ctx, symn var, vmValue *val
 		}
 		else {
 			printFmt(out, esc, "%.T: ", varType);
-			printVal(out, esc, ctx, varType, (vmValue *) varData, mode & ~(prSymQual | prSymType), -indent);
-			printFmt(out, esc, "");
+			printValue(out, esc, ctx, varType, (vmValue *) varData, &node, mode & ~(prSymQual | prSymType), -indent);
 		}
 	}
 	else if (typCast == CAST_arr) {
 		symn lenField = typ->fields;
-		if (typ == var || varCast == CAST_val) {
+		if (lenField != NULL && isStatic(lenField)) {
 			// fixed size array or direct reference
 			data = (memptr) val;
-		}
-		else if (varCast == CAST_arr || varCast == CAST_ref) {
+		} else {
 			// follow indirection
 			data = vmPointer(ctx, (size_t) val->ref);
-		}
-		else {
-			printFmt(out, esc, "@BadArray");
-			if (mode & prSymType) {
-				printFmt(out, esc, ")");
-			}
-			return;
 		}
 
 		if (data == NULL) {
@@ -2263,9 +2271,9 @@ void printVal(FILE *out, const char **esc, rtContext ctx, symn var, vmValue *val
 					element = vmPointer(ctx, (size_t) element->ref);
 				}
 				if (minified == 0) {
-					printVal(out, esc, ctx, typ->type, element, mode & ~(prSymQual | prSymType), indent + 1);
+					printValue(out, esc, ctx, typ->type, element, &node, mode & ~(prSymQual | prSymType), indent + 1);
 				} else {
-					printVal(out, esc, ctx, typ->type, element, mode & ~(prSymQual | prSymType), -indent);
+					printValue(out, esc, ctx, typ->type, element, &node, mode & ~(prSymQual | prSymType), -indent);
 				}
 				values += 1;
 			}
@@ -2305,10 +2313,10 @@ void printVal(FILE *out, const char **esc, rtContext ctx, symn var, vmValue *val
 				}
 
 				if (typ != typ->type && sym == sym->type) {
-					printVal(out, esc, ctx, sym, (void *) (data + sym->offs), (mode | prMember) & ~prSymQual, -indent);
+					printValue(out, esc, ctx, sym, (void *) (data + sym->offs), &node, (mode | prMember) & ~prSymQual, -indent);
 				} else {
 					printFmt(out, esc, "\n");
-					printVal(out, esc, ctx, sym, (void *) (data + sym->offs), (mode | prMember) & ~prSymQual, indent + 1);
+					printValue(out, esc, ctx, sym, (void *) (data + sym->offs), &node, (mode | prMember) & ~prSymQual, indent + 1);
 				}
 				fields += 1;
 			}
@@ -2326,6 +2334,9 @@ void printVal(FILE *out, const char **esc, rtContext ctx, symn var, vmValue *val
 	if (mode & prSymType) {
 		printFmt(out, esc, ")");
 	}
+}
+void printVal(FILE *out, const char **esc, rtContext ctx, symn var, vmValue *val, dmpMode mode, int indent) {
+	printValue(out, esc, ctx, var, val, NULL, mode, indent);
 }
 
 static void traceArgs(rtContext rt, FILE *out, symn fun, const char *file, int line, void *sp, int indent, dmpMode mode) {

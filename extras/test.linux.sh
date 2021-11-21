@@ -80,7 +80,6 @@ TEST_FILES="$TEST_FILES $(echo $CMPL_HOME/cmplGfx/test/*.ci)"
 TEST_FILES="$TEST_FILES $(echo $CMPL_HOME/cmplGfx/test/demo/*.ci)"
 TEST_FILES="$TEST_FILES $(echo $CMPL_HOME/cmplGfx/test/demo.procedural/*.ci)"
 TEST_FILES="$TEST_FILES $(echo $CMPL_HOME/cmplGfx/test/demo.widget/*.ci)"
-TEST_FILES="$TEST_FILES $(echo $CMPL_HOME/temp/cmplGfx/*.ci)"
 TEST_FILES="$TEST_FILES $(echo $CMPL_HOME/temp/cmplGfx/demo/*.ci)"
 
 BIN="$CMPL_HOME/$BIN"
@@ -100,7 +99,7 @@ do
 done
 
 TEST_FILES="$(echo $CMPL_HOME/cmplGL/test/*.ci)"
-for file in $(echo "$TEST_FILES")
+for file in $TEST_FILES
 do
 	if ! cd "$(dirname "$file")"; then
 		echo "**** cannot run test: $file"

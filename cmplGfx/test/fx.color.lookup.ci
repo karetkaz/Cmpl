@@ -12,11 +12,6 @@
 
 Image back = Image("asset/image/forest.jpg", 32);
 Image offs = Image(back);
-int onEvent(int action, int button, int x, int y);
-Gui.showWindow(offs, onEvent);
-offs.destroy();
-back.destroy();
-
 
 void brightnessContrastGamma(argb lut[256], float brightness, float contrast, float gamma, float highlights, float shadows, float whites, float blacks) {
 	// adapted from: https://gitlab.bestminr.com/bestminr/FrontShaders/blob/master/shaders/whites_blacks.glsl
@@ -206,6 +201,7 @@ Switch auto = {
 	text: "auto";
 	states: options;
 	focusable: true;
+	clickToFocus: true;
 };
 
 DebugView debug = {
@@ -214,27 +210,20 @@ DebugView debug = {
 	draws: -1;
 };
 
-Widget ui = Widget().addItems(
-	histogram, curves, Layout.divider,
-	brightness, contrast, gamma,
-	highlights, shadows, whites, blacks,
-	Layout.divider, auto,
-	Layout.divider, debug
-);
-
-int onEvent(int action, int button, int x, int y) {
+int onEvent(Window win&, int action, int button, int x, int y) {
 	if (action == Gui.KEY_RELEASE && button == 27) {
 		// exit when releasing escape key
 		return -1;
 	}
-	if (!ui.onEvent(action, button, x, y)) {
+	Widget ui = win.widget;
+	if (!win.dispatchEvent(ui, action, button, x, y)) {
 		// event not processed, wait for the next one
 		return 0;
 	}
 
 	debug.startTimer();
 	offs.copy(0, 0, back, null);
-	if (ui.isFocused(brightness, contrast, gamma, highlights, shadows, whites, blacks)) {
+	if (win.hasFocused(brightness, contrast, gamma, highlights, shadows, whites, blacks)) {
 		brightnessContrastGamma(&curves.data,
 			brightness.valueF64(),
 			contrast.valueF64(),
@@ -245,11 +234,24 @@ int onEvent(int action, int button, int x, int y) {
 			blacks.valueF64()
 		);
 	}
-	else if (ui.isFocused(auto)) {
+	else if (auto.isFocused()) {
 		calcAutoEqualize(&curves.data, offs, auto.selected == 0);
 	}
 
 	offs.colorMap(null, curves.data);
 	histogram.update(offs);
-	return ui.draw(offs);
+	return win.draw(ui);
 }
+
+Gui.showWindow(offs, onEvent, Widget(
+	histogram, curves,
+
+	null,
+	brightness, contrast, gamma,
+	highlights, shadows, whites, blacks,
+
+	null, auto,
+	null, debug
+));
+offs.destroy();
+back.destroy();

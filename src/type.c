@@ -1153,11 +1153,8 @@ ccKind canAssign(ccContext cc, symn variable, astn value, int strict) {
 			return CAST_any;
 		}
 		if (varType == valueRef->type) {
-			// Enum e = e2;
-			return varCast;
-		}
-		if (varType == valueRef->owner) {
-			// Enum e = Enum.value1;
+			// Enum eVal = Enum.value;
+			// Enum eVar = eVal;
 			return varCast;
 		}
 		return CAST_any;

@@ -1,17 +1,10 @@
 // DatePicker
-
-inline "/cmplStd/lib/time.ci";
+inline "/cmplStd/lib/time/Calendar.ci";
 inline "/cmplGfx/lib/micro.ui.ci";
-bool onClick(Button this);
 
 struct IntButton: View {
-	char text[16] = null;
+	char text[16] = "";
 	int value;
-
-	static bool increment(IntButton this, int value) {
-		this.text.append(0, this.value += value);
-		return value != 0;
-	}
 
 	static bool update(IntButton this, int value) {
 		if (this.value == value) {
@@ -22,15 +15,10 @@ struct IntButton: View {
 		return true;
 	}
 
-	void onCreate(IntButton this, View parent) {
-		View.onCreate(this, parent);
-		increment(this, 0);
-	}
-
-	bool onMeasure(IntButton this, Rect rect&, int visible) {
+	bool onMeasure(IntButton this, Rect rect&) {
 		Style style& = this.style;
 		style.measure(&rect, this.text);
-		return View.onMeasure(this, &rect, visible);
+		return View.onMeasure(this, &rect);
 	}
 
 	void onDraw(IntButton this, Image offs, Rect rect, const Style style&) {
@@ -40,7 +28,7 @@ struct IntButton: View {
 }
 
 struct DayButton: IntButton {
-	int64 timestamp = 0;
+	Timestamp timestamp = Timestamp(0, Timeunit.Millis);
 
 	void onDraw(IntButton this, Image offs, Rect rect, const Style style&) {
 		style.align(rect, &rect, this.text);
@@ -56,234 +44,300 @@ struct WeekButton: IntButton {
 	}
 }
 
-IntButton btnYear = {
-	enabled: false;
-	value: 2020;
-};
-Button btnYearDec = {
-	onClick: onClick;
-	focusable: false;
-	text: "<";
-};
-Button btnYearInc = {
-	onClick: onClick;
-	focusable: false;
-	text: ">";
-};
+struct DatePicker: Layout {
+	Timestamp timestamp = Timestamp.now();
+	IntButton btnYear = null;
+	IntButton btnMonth = null;
+	IntButton btnDay = null;
+	Layout btnDays = null;
+	const bool header = true;
 
-IntButton btnMonth = {
-	enabled: false;
-	value: 12;
-};
-Button btnMonthDec = {
-	onClick: onClick;
-	focusable: false;
-	text: "<";
-};
-Button btnMonthInc = {
-	onClick: onClick;
-	focusable: false;
-	text: ">";
-};
-
-IntButton btnDay = {
-	enabled: false;
-	value: 21;
-};
-Button btnDayDec = {
-	onClick: onClick;
-	focusable: false;
-	text: "<";
-};
-Button btnDayInc = {
-	onClick: onClick;
-	focusable: false;
-	text: ">";
-};
-
-Button btnToday = {
-	onClick: onClick;
-	focusable: false;
-	text: "Today";
-};
-
-View btnDays[] = {
-	Button {text: "Week", enabled: false};
-	Button {text: "Mon", enabled: false};
-	Button {text: "Tue", enabled: false};
-	Button {text: "Wed", enabled: false};
-	Button {text: "Thu", enabled: false};
-	Button {text: "Fri", enabled: false};
-	Button {text: "Sat", enabled: false};
-	Button {text: "Sun", enabled: false};
-
-	WeekButton {enabled: false};
-	DayButton {focusable: false; onClick: onClick;};
-	DayButton {focusable: false; onClick: onClick;};
-	DayButton {focusable: false; onClick: onClick;};
-	DayButton {focusable: false; onClick: onClick;};
-	DayButton {focusable: false; onClick: onClick;};
-	DayButton {focusable: false; onClick: onClick;};
-	DayButton {focusable: false; onClick: onClick;};
-
-	WeekButton {enabled: false};
-	DayButton {focusable: false; onClick: onClick;};
-	DayButton {focusable: false; onClick: onClick;};
-	DayButton {focusable: false; onClick: onClick;};
-	DayButton {focusable: false; onClick: onClick;};
-	DayButton {focusable: false; onClick: onClick;};
-	DayButton {focusable: false; onClick: onClick;};
-	DayButton {focusable: false; onClick: onClick;};
-
-	WeekButton {enabled: false};
-	DayButton {focusable: false; onClick: onClick;};
-	DayButton {focusable: false; onClick: onClick;};
-	DayButton {focusable: false; onClick: onClick;};
-	DayButton {focusable: false; onClick: onClick;};
-	DayButton {focusable: false; onClick: onClick;};
-	DayButton {focusable: false; onClick: onClick;};
-	DayButton {focusable: false; onClick: onClick;};
-
-	WeekButton {enabled: false};
-	DayButton {focusable: false; onClick: onClick;};
-	DayButton {focusable: false; onClick: onClick;};
-	DayButton {focusable: false; onClick: onClick;};
-	DayButton {focusable: false; onClick: onClick;};
-	DayButton {focusable: false; onClick: onClick;};
-	DayButton {focusable: false; onClick: onClick;};
-	DayButton {focusable: false; onClick: onClick;};
-
-	WeekButton {enabled: false};
-	DayButton {focusable: false; onClick: onClick;};
-	DayButton {focusable: false; onClick: onClick;};
-	DayButton {focusable: false; onClick: onClick;};
-	DayButton {focusable: false; onClick: onClick;};
-	DayButton {focusable: false; onClick: onClick;};
-	DayButton {focusable: false; onClick: onClick;};
-	DayButton {focusable: false; onClick: onClick;};
-
-	WeekButton {enabled: false};
-	DayButton {focusable: false; onClick: onClick;};
-	DayButton {focusable: false; onClick: onClick;};
-	DayButton {focusable: false; onClick: onClick;};
-	DayButton {focusable: false; onClick: onClick;};
-	DayButton {focusable: false; onClick: onClick;};
-	DayButton {focusable: false; onClick: onClick;};
-	DayButton {focusable: false; onClick: onClick;};
-};
-
-bool resetCounter(IntButton this) {
-	this.value = -1;
-	return true;
-}
-
-DebugView debug = {
-	focusable: false;
-};
-
-void init(Widget ui, View parent) {
-	Widget.onCreate(ui, parent);
-	onClick(btnToday);
-}
-
-Widget ui = Widget(512, 400, Style.center, init)
-	.addItems(Style.fill,
-		Layout.Custom(-1, Style.fill
-			, Layout.Row(btnYearDec, btnYear, btnYearInc)
-			, Layout.Row(btnMonthDec, btnMonth, btnMonthInc)
-			, Layout.Row(btnDayDec, btnDay, btnDayInc)
-			, btnToday
-		)
-		, Layout.Custom(8, Style.fill, ...btnDays)
-		, debug
-	);
-
-int64 now = System.millis();
-bool onClick(Button this) {
-	if (DayButton day = this.as(DayButton)) {
-		now = day.timestamp;
+	void onSelect(DatePicker this, DayButton day) {
+		this.setFocused(day);
 	}
-	else if (this == btnYearInc) {
-		Date parts = Date.parts(now);
-		now = Date.millis(parts.year + 1, parts.month, parts.dayOfMonth);
-	}
-	else if (this == btnYearDec) {
-		Date parts = Date.parts(now);
-		now = Date.millis(parts.year - 1, parts.month, parts.dayOfMonth);
-	}
-	else if (this == btnMonthInc) {
-		Date parts = Date.parts(now);
-		if (parts.month < 12) {
-			parts.month += 1;
-		} else {
-			parts.year += 1;
-			parts.month = 1;
+
+	static bool update(DatePicker this, Timestamp timestamp) {
+		if (this.timestamp.value == timestamp.value) {
+			return false;
 		}
-		now = Date.millis(parts.year, parts.month, parts.dayOfMonth);
-	}
-	else if (this == btnMonthDec) {
-		Date parts = Date.parts(now);
-		if (parts.month > 1) {
-			parts.month -= 1;
-		} else {
-			parts.year -= 1;
-			parts.month = 12;
-		}
-		now = Date.millis(parts.year, parts.month, parts.dayOfMonth);
-	}
-	else if (this == btnDayInc) {
-		now += Date.MillisPerDay;
-	}
-	else if (this == btnDayDec) {
-		now -= Date.MillisPerDay;
-	}
-	else if (this == btnToday) {
-		now = System.millis();
-	}
+		this.timestamp = timestamp;
 
-	// update year, month and day buttons
-	Date parts = Date.parts(now);
-	btnYear.update(parts.year);
-	btnMonth.update(parts.month);
-	btnDay.update(parts.dayOfMonth);
+		// update year, month and day buttons
+		Calendar cNow = Calendar(timestamp);
+		this.btnYear.update(cNow.year);
+		this.btnMonth.update(cNow.month);
+		this.btnDay.update(cNow.day);
 
-	// calculate first day of month
-	int64 today = Date.millis(parts.year, parts.month, parts.dayOfMonth);
-	int64 start = Date.millis(parts.year, parts.month, 1);
-	parts = Date.parts(start);
+		// calculate first day of month
+		Timestamp start = Timestamp(Calendar(cNow.year, cNow.month, 1));
+		Calendar cStart = Calendar(start);
 
-	// calculate first monday
-	start -= (parts.dayOfWeek - 1) * Date.MillisPerDay;
+		// calculate first monday
+		start = start.add(Weekday.Monday - cStart.dayOfWeek, Timeunit.Days);
 
-	WeekButton week = null;
-	// fill the days in the "grid", skip header with week names
-	for (int i = 8; i < btnDays.length; i += 1) {
-		parts = Date.parts(start);
-		if (WeekButton button = btnDays[i].as(WeekButton)) {
-			button.update(parts.weekOfYear);
-			week = button;
-		}
-		if (DayButton button = btnDays[i].as(DayButton)) {
-			if (today == start) {
-				ui.setFocused(button);
+		int year = this.btnYear.value;
+		int month = this.btnMonth.value;
+		int day = this.btnDay.value;
+
+		// fill the days in the "grid", skip header with week names
+		for (int i = 8; i < this.btnDays.itemCount; i += 1) {
+			Calendar parts = Calendar(start);
+			View btn = this.btnDays.items[i].view;
+			if (WeekButton button = btn.as(WeekButton)) {
+				button.update(parts.weekOfYear);
 			}
-			if (btnMonth.value == parts.month) {
-				button.timestamp = start;
-				button.enabled = true;
-			} else {
-				button.timestamp = now;
-				button.enabled = false;
-			}
-			button.update(parts.dayOfMonth);
-			start += Date.MillisPerDay;
+			if (DayButton button = btn.as(DayButton)) {
+				if (this.btnMonth.value == parts.month) {
+					button.timestamp = start;
+					button.enabled = true;
+				} else {
+					button.timestamp = timestamp;
+					button.enabled = false;
+				}
+				button.update(parts.day);
+				start = start.add(1, Timeunit.Days);
 
-			if (week != null && week.value > parts.weekOfYear) {
-				week.update(parts.weekOfYear);
+				if (day == parts.day && month == parts.month && year == parts.year) {
+					this.onSelect(this, button);
+				}
 			}
 		}
+
+		return true;
 	}
 
-	return true;
+	static bool addYears(DatePicker this, int value) {
+		Calendar c = Calendar(this.timestamp);
+		return this.update(Timestamp(c.add(value, 0, 0)));
+	}
+
+	static bool addMonths(DatePicker this, int value) {
+		Calendar c = Calendar(this.timestamp);
+		return this.update(Timestamp(c.add(0, value, 0)));
+	}
+
+	static bool addDays(DatePicker this, int value) {
+		return this.update(this.timestamp.add(value, Timeunit.Days));
+	}
+
+	static bool setDate(DayButton btn) {
+		return btn.data.as(DatePicker).update(btn.timestamp);
+	}
+
+	void onCreate(DatePicker this, View parent) {
+		static bool setToday(Button btn) {
+			DatePicker this = btn.data.as(DatePicker);
+			return this.onReset(this);
+		}
+		static bool incYear(Button btn) {
+			return btn.data.as(DatePicker).addYears(1);
+		}
+		static bool decYear(Button btn) {
+			return btn.data.as(DatePicker).addYears(-1);
+		}
+		static bool incMonth(Button btn) {
+			return btn.data.as(DatePicker).addMonths(1);
+		}
+		static bool decMonth(Button btn) {
+			return btn.data.as(DatePicker).addMonths(-1);
+		}
+		static bool incDay(Button btn) {
+			return btn.data.as(DatePicker).addDays(1);
+		}
+		static bool decDay(Button btn) {
+			return btn.data.as(DatePicker).addDays(-1);
+		}
+
+		IntButton btnYear = {
+			enabled: false;
+		};
+		IntButton btnMonth = {
+			enabled: false;
+		};
+		IntButton btnDay = {
+			enabled: false;
+		};
+		View btnDays[] = {
+			Button {text: "Week", enabled: false};
+			Button {text: "Mon", enabled: false};
+			Button {text: "Tue", enabled: false};
+			Button {text: "Wed", enabled: false};
+			Button {text: "Thu", enabled: false};
+			Button {text: "Fri", enabled: false};
+			Button {text: "Sat", enabled: false};
+			Button {text: "Sun", enabled: false};
+
+			WeekButton {enabled: false};
+			DayButton {data: this, onClick: setDate};
+			DayButton {data: this, onClick: setDate};
+			DayButton {data: this, onClick: setDate};
+			DayButton {data: this, onClick: setDate};
+			DayButton {data: this, onClick: setDate};
+			DayButton {data: this, onClick: setDate};
+			DayButton {data: this, onClick: setDate};
+
+			WeekButton {enabled: false};
+			DayButton {data: this, onClick: setDate};
+			DayButton {data: this, onClick: setDate};
+			DayButton {data: this, onClick: setDate};
+			DayButton {data: this, onClick: setDate};
+			DayButton {data: this, onClick: setDate};
+			DayButton {data: this, onClick: setDate};
+			DayButton {data: this, onClick: setDate};
+
+			WeekButton {enabled: false};
+			DayButton {data: this, onClick: setDate};
+			DayButton {data: this, onClick: setDate};
+			DayButton {data: this, onClick: setDate};
+			DayButton {data: this, onClick: setDate};
+			DayButton {data: this, onClick: setDate};
+			DayButton {data: this, onClick: setDate};
+			DayButton {data: this, onClick: setDate};
+
+			WeekButton {enabled: false};
+			DayButton {data: this, onClick: setDate};
+			DayButton {data: this, onClick: setDate};
+			DayButton {data: this, onClick: setDate};
+			DayButton {data: this, onClick: setDate};
+			DayButton {data: this, onClick: setDate};
+			DayButton {data: this, onClick: setDate};
+			DayButton {data: this, onClick: setDate};
+
+			WeekButton {enabled: false};
+			DayButton {data: this, onClick: setDate};
+			DayButton {data: this, onClick: setDate};
+			DayButton {data: this, onClick: setDate};
+			DayButton {data: this, onClick: setDate};
+			DayButton {data: this, onClick: setDate};
+			DayButton {data: this, onClick: setDate};
+			DayButton {data: this, onClick: setDate};
+
+			WeekButton {enabled: false};
+			DayButton {data: this, onClick: setDate};
+			DayButton {data: this, onClick: setDate};
+			DayButton {data: this, onClick: setDate};
+			DayButton {data: this, onClick: setDate};
+			DayButton {data: this, onClick: setDate};
+			DayButton {data: this, onClick: setDate};
+			DayButton {data: this, onClick: setDate};
+		};
+
+		if (this.header) {
+			Button btnYearDec = {
+				onClick: decYear;
+				focusable: false;
+				data: this;
+				text: "<";
+			};
+			Button btnYearInc = {
+				onClick: incYear;
+				focusable: false;
+				data: this;
+				text: ">";
+			};
+
+			Button btnMonthDec = {
+				onClick: decMonth;
+				focusable: false;
+				data: this;
+				text: "<";
+			};
+			Button btnMonthInc = {
+				onClick: incMonth;
+				focusable: false;
+				data: this;
+				text: ">";
+			};
+
+			Button btnDayDec = {
+				onClick: decDay;
+				focusable: false;
+				data: this;
+				text: "<";
+			};
+			Button btnDayInc = {
+				onClick: incDay;
+				focusable: false;
+				data: this;
+				text: ">";
+			};
+
+			Button btnToday = {
+				onClick: setToday;
+				focusable: false;
+				data: this;
+				text: "Today";
+			};
+
+			this.addItems(Style.fill, Layout.Row(
+				btnYearDec, btnYear, btnYearInc,
+				btnMonthDec, btnMonth, btnMonthInc,
+				btnDayDec, btnDay, btnDayInc,
+				btnToday
+			));
+		}
+
+		this.btnYear = btnYear;
+		this.btnMonth = btnMonth;
+		this.btnDay = btnDay;
+		this.btnDays = Layout.Custom(8, Style.fill, ...btnDays);
+		this.addItems(Style.fill, this.btnDays);
+		Layout.onCreate(this, parent);
+
+		Timestamp initValue = this.timestamp;
+		this.timestamp.value = 0;
+		this.update(initValue);
+	}
+
+	bool onClick(DatePicker this) {
+		trace("click");
+		return true;
+	}
+
+	bool onReset(DatePicker this) {
+		this.timestamp.value = -1;
+		return this.update(Timestamp.now());
+	}
 }
 
-Gui.showWindow(ui);
+DebugView debugView = {
+	focusable: false;
+};
+
+DatePicker datePicker = {};
+Gui.showWindow(Widget(-10, -10)
+	.focus(datePicker)
+	.addItems(datePicker)
+	.addItems(debugView)
+);
+
+/* Todo: show each month of the year
+Style style = {
+	align: Style.center;
+	font: Gui.font;
+	padding: 3;
+	format: {};
+};
+
+Calendar now = Calendar(Timestamp.now());
+DatePicker months[] = {
+	{style: style, header: false, timestamp: Timestamp(Calendar(now.year, 1, 1))};
+	{style: style, header: false, timestamp: Timestamp(Calendar(now.year, 2, 1))};
+	{style: style, header: false, timestamp: Timestamp(Calendar(now.year, 3, 1))};
+	{style: style, header: false, timestamp: Timestamp(Calendar(now.year, 4, 1))};
+	{style: style, header: false, timestamp: Timestamp(Calendar(now.year, 5, 1))};
+	{style: style, header: false, timestamp: Timestamp(Calendar(now.year, 6, 1))};
+	{style: style, header: false, timestamp: Timestamp(Calendar(now.year, 7, 1))};
+	{style: style, header: false, timestamp: Timestamp(Calendar(now.year, 8, 1))};
+	{style: style, header: false, timestamp: Timestamp(Calendar(now.year, 9, 1))};
+	{style: style, header: false, timestamp: Timestamp(Calendar(now.year, 10, 1))};
+	{style: style, header: false, timestamp: Timestamp(Calendar(now.year, 11, 1))};
+	{style: style, header: false, timestamp: Timestamp(Calendar(now.year, 12, 1))};
+};
+Gui.showWindow(Widget(-1, -1)
+	.focus(months[indexOf(now.month)])
+	.addItems(Layout.Custom(3, Style.fill, ...months)
+		//.padding(30, 30, 30, 30)
+		// todo: .spacing(0, 100)
+	)
+);// */

@@ -15,6 +15,7 @@ let projects = {
 			'cmplGfx/test/asset/image/texture_nature_01.png',
 			'cmplGfx/test/asset/mesh/teapot.obj',
 			'cmplGfx/test/demo/2d.draw.bezier.ci',
+			'cmplGfx/test/demo/2d.draw.line.ci',
 			'cmplGfx/test/demo/2d.L-System.ci',
 			'cmplGfx/test/demo/AnalogClock.ci',
 			'cmplGfx/test/demo/FloodIt.ci',
@@ -24,10 +25,9 @@ let projects = {
 			'cmplGfx/test/demo.procedural/Complex.ci',
 			'cmplGfx/test/demo.procedural/Mandelbrot.ci',
 			'cmplGfx/test/demo.procedural/YinYang.ci',
-			'cmplGfx/test/demo.widget/Calculator0.ci',
 			'cmplGfx/test/demo.widget/DatePicker.ci',
 			'cmplGfx/test/demo.widget/layout.Align.ci',
-			'cmplGfx/test/demo.widget/layout.Padding.ci',
+			'cmplGfx/test/demo.widget/layout.Test.ci',
 			'cmplGfx/test/2d.draw.image.ci',
 			'cmplGfx/test/2d.ImageDiff.ci',
 			'cmplGfx/test/3d.draw.mesh.ci',
@@ -78,35 +78,6 @@ let projects = {
 			'lang/init.variable.ci',
 			'lang/recUnion.ci',
 			'demo/BitwiseArithmetic.ci',
-		]
-	},
-	'initialization' : {
-		base: 'cmplStd/test/lang/',
-		main: 'function.ci',
-		files: [
-			'function.ci',
-			'init.array.ci',
-			'init.member.ci',
-			'init.method.ci',
-			'init.variable.ci',
-		]
-	},
-	'image edit' : {
-		base: 'cmplGfx/test/',
-		libs: ['libGfx', 'libFile'],
-		files: [
-			'asset/image/forest.jpg',
-			'asset/image/texture.png',
-			'asset/image/texture_nature_01.png',
-			'fx.color.blend.ci',
-			'fx.color.lookup-levels.ci',
-			'fx.color.lookup-manual.ci',
-			'fx.color.lookup.ci',
-			'fx.color.matrix.ci',
-			'fx.color.select-hsl.ci',
-			'fx.histogram.ci',
-			'fx.image.blur.ci',
-			'fx.image.transform.ci',
 		]
 	},
 };

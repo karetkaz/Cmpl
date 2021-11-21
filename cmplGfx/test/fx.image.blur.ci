@@ -14,15 +14,10 @@
 Image surf = Image("asset/image/forest.jpg", 32);
 Image offs = Image(surf);
 Image blur = Image(surf);
-int onEvent(int action, int button, int x, int y);
-Gui.showWindow(offs, onEvent);
-blur.destroy();
-offs.destroy();
-surf.destroy();
 
 inline "/cmplGfx/lib/micro.ui.ci";
 
-bool onMouseEvent(Button view, const Rect rect&, const MouseEvent event&);
+bool onTouchEvent(Button view, const Rect rect&, const TouchEvent event&);
 bool onResetClick(Button view);
 Histogram histogram = {
 	enabled: false;
@@ -45,26 +40,25 @@ Slider sldSharpness = {
 
 Button btnLinear = {
 	text: "Linear";
-	onMouseEvent: onMouseEvent;
+	onTouchEvent: onTouchEvent;
 };
 Button btnReflect = {
 	text: "Reflect";
-	onMouseEvent: onMouseEvent;
+	onTouchEvent: onTouchEvent;
 };
 Button btnRadial = {
 	text: "Radial";
-	onMouseEvent: onMouseEvent;
+	onTouchEvent: onTouchEvent;
 };
 Button btnSquare = {
 	text: "Square";
-	onMouseEvent: onMouseEvent;
+	onTouchEvent: onTouchEvent;
 };
 
 Slider sldHardness = {
 	text: "Hardness";
 	minimum: -255;
 	maximum: 255;
-	visible: 1;
 	focusable: false;
 };
 Slider sldAlpha = {
@@ -72,7 +66,6 @@ Slider sldAlpha = {
 	minimum: -255;
 	maximum: 255;
 	value: 255;
-	visible: 1;
 	focusable: false;
 };
 char scaleMove[*][] = {
@@ -82,24 +75,23 @@ char scaleMove[*][] = {
 Switch chkMoveScale = {
 	states: scaleMove;
 	text: "Drag mode";
-	visible: 1;
 	focusable: false;
 };
 Switch chkRect = {
 	text: "Show rect";
-	visible: 1;
 	focusable: false;
 };
 Switch chkMask = {
 	text: "Show mask";
-	visible: 1;
 	focusable: false;
 };
 Button btnReset = {
 	text: "Reset rect";
-	visible: 1;
 	focusable: false;
 	onClick: onResetClick;
+};
+Panel panMask = {
+	visible: false;
 };
 
 DebugView debug = {
@@ -107,14 +99,6 @@ DebugView debug = {
 	measures: -1;
 	draws: -1;
 };
-
-Widget ui = Widget().addItems(
-	histogram, Layout.divider,
-	sldBlur, sldSharpness,
-	btnLinear, btnReflect, btnRadial, btnSquare,
-	Layout.divider, sldAlpha, sldHardness, chkMoveScale, chkMask, chkRect, btnReset,
-	Layout.divider, debug
-);
 
 //inline blur(Image surf, int radius) = surf.blur(radius, 0.3 * (radius - 1) + 0.8);
 inline blur(Image surf, float64 sigma) = surf.blur(Math.max(1., (sigma - 0.8) / 0.3 + 1), sigma);
@@ -125,18 +109,20 @@ Rect rect = {
 };
 int oldRadius = 0;
 
-int onEvent(int action, int button, int x, int y) {
+int onEvent(Window win&, int action, int button, int x, int y) {
 	if (action == Gui.KEY_RELEASE && button == 27) {
 		// exit when releasing escape key
 		return -1;
 	}
-	if (!ui.onEvent(action, button, x, y)) {
+
+	Widget ui = win.widget;
+	if (!win.dispatchEvent(ui, action, button, x, y)) {
 		// event not processed, wait for the next one
 		return 0;
 	}
 
 	debug.startTimer();
-	if (!ui.isPressed(sldBlur)) {
+	if (!sldBlur.isPressed()) {
 		if (oldRadius != sldBlur.value) {
 			oldRadius = sldBlur.value;
 			blur.copy(0, 0, surf, null);
@@ -147,50 +133,56 @@ int onEvent(int action, int button, int x, int y) {
 	// apply blur from cached image
 	offs.copy(0, 0, blur, null);
 
-	if (ui.isFocused(btnLinear, btnReflect, btnRadial, btnSquare)) {
+	if (win.hasFocused(btnLinear, btnReflect, btnRadial, btnSquare)) {
 		uint32 colors[512] = {};
 
 		if (chkMask.checked()) {
 			offs.fill(0xff0000);
 		}
-		if (ui.isFocused(btnReflect)) {
+		if (btnReflect.isFocused()) {
 			alphaLut(colors, sldHardness.value, sldAlpha.value, true);
 			offs.gradient(&rect, gradient.MaskLinear, false, ...colors);
 		}
-		else if (ui.isFocused(btnLinear)) {
+		else if (btnLinear.isFocused()) {
 			alphaLut(colors, sldHardness.value, sldAlpha.value, false);
 			offs.gradient(&rect, gradient.MaskLinear, false, ...colors);
 		}
-		else if (ui.isFocused(btnRadial)) {
+		else if (btnRadial.isFocused()) {
 			alphaLut(colors, sldHardness.value, sldAlpha.value, false);
 			offs.gradient(&rect, gradient.MaskRadial, false, ...colors);
 		}
-		else if (ui.isFocused(btnSquare)) {
+		else if (btnSquare.isFocused()) {
 			alphaLut(colors, sldHardness.value, sldAlpha.value, false);
 			offs.gradient(&rect, gradient.MaskSquare, false, ...colors);
 		}
 
 		offs.blend(0, 0, surf, null, 256, true, null);
 		if (chkRect.checked()) {
-			offs.drawRect(rect, 0x00ff00);
+			int x0 = rect.x;
+			int x1 = x0 + rect.w;
+			int y0 = rect.y;
+			int y1 = y0 + rect.h;
+			offs.drawRect(x0, y0, x1, y1, 0x00ff00);
+			offs.drawLine(x0, y0, x1, y1, 0xff0000);
 		}
-		ui.setGroup(1);
+		panMask.visible(true);
 	} else {
-		if (ui.isFocused(sldSharpness)) {
+		if (sldSharpness.isFocused()) {
 			offs.blend(0, 0, surf, null, sldSharpness.value, false, null);
 		}
-		ui.setGroup(2);
+		panMask.visible(false);
 	}
 
 	histogram.update(offs);
-	return ui.draw(offs);
+
+	return win.draw(ui);
 }
-bool onMouseEvent(Button view, const Rect r&, const MouseEvent event&) {
-	bool result = Button.onMouseEvent(view, r, event);
-	if (ui.isPressed(view)) {
+bool onTouchEvent(Button view, const Rect r&, const TouchEvent event&) {
+	bool result = Button.onTouchEvent(view, r, event);
+	if (!event.button) {
 		return result;
 	}
-	if (!event.button) {
+	if (view.isPressed()) {
 		return result;
 	}
 
@@ -222,3 +214,15 @@ bool onResetClick(Button view) {
 	return true;
 }
 
+Gui.showWindow(offs, onEvent, Widget(
+	histogram,
+	null, sldBlur, sldSharpness,
+	null, btnLinear, btnReflect, btnRadial, btnSquare,
+	panMask.addItems(Style.fill,
+		null, sldAlpha, sldHardness, chkMoveScale, chkMask, chkRect, btnReset
+	),
+	null, debug
+));
+blur.destroy();
+offs.destroy();
+surf.destroy();

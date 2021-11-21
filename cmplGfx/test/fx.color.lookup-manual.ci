@@ -13,10 +13,6 @@
 
 Image back = Image("asset/image/forest.jpg", 32);
 Image offs = Image(back);
-int onEvent(int action, int button, int x, int y);
-Gui.showWindow(offs, onEvent);
-offs.destroy();
-back.destroy();
 
 inline "/cmplGfx/lib/micro.ui.ci";
 bool onResetClick(Button this);
@@ -65,13 +61,7 @@ DebugView debug = {
 	draws: -1;
 };
 
-Widget ui = Widget().addItems(
-	histogram, curves, Layout.divider,
-	btnLuminosity, btnRgb, btnRed, btnGreen, btnBlue,
-	btnReset, Layout.divider, debug
-);
-
-int onEvent(int action, int button, int x, int y) {
+int onEvent(Window win&, int action, int button, int x, int y) {
 	if (action == Gui.KEY_RELEASE && button == 27) {
 		// exit when releasing escape key
 		return -1;
@@ -96,7 +86,8 @@ int onEvent(int action, int button, int x, int y) {
 			File.out.write("\n};\n");
 		}
 	}
-	if (!ui.onEvent(action, button, x, y)) {
+	Widget ui = win.widget;
+	if (!win.dispatchEvent(ui, action, button, x, y)) {
 		// event not processed, wait for the next one
 		return 0;
 	}
@@ -105,28 +96,28 @@ int onEvent(int action, int button, int x, int y) {
 	offs.copy(0, 0, back, null);
 	offs.colorMap(null, curves.data);
 	histogram.update(offs);
-	return ui.draw(offs);
+	return win.draw(ui);
 }
-
 bool onCurveUpdate(Histogram this, int idx, int value) {
+	Widget ui = this.getWidget();
 	argb data& = this.data[idx];
-	if (ui.isFocused(btnLuminosity)) {
+	if (btnLuminosity.isFocused()) {
 		data.a = clamp_s8(value);
 		return true;
 	}
-	if (ui.isFocused(btnRed)) {
+	if (btnRed.isFocused()) {
 		data.r = clamp_s8(value);
 		return true;
 	}
-	if (ui.isFocused(btnGreen)) {
+	if (btnGreen.isFocused()) {
 		data.g = clamp_s8(value);
 		return true;
 	}
-	if (ui.isFocused(btnBlue)) {
+	if (btnBlue.isFocused()) {
 		data.b = clamp_s8(value);
 		return true;
 	}
-	if (ui.isFocused(btnRgb)) {
+	if (btnRgb.isFocused()) {
 		data.r = data.g = data.b = clamp_s8(value);
 		return true;
 	}
@@ -158,3 +149,15 @@ bool onResetClick(Button this) {
 	}
 	return true;
 }
+
+Gui.showWindow(offs, onEvent, Widget(
+	histogram, curves,
+
+	null,
+	btnLuminosity, btnRgb, btnRed, btnGreen, btnBlue,
+	btnReset,
+
+	null, debug
+));
+offs.destroy();
+back.destroy();

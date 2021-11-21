@@ -223,7 +223,7 @@ static vmError sysRaise(nfcContext ctx) {
 	char *message = nfcReadArg(ctx, nfcNextArg(ctx)).ref;
 	nfcCheckArg(ctx, CAST_ref, "message");
 	rtValue inspect = nfcReadArg(ctx, nfcNextArg(ctx));
-	nfcCheckArg(ctx, CAST_var, "inspect");
+	nfcCheckArg(ctx, CAST_var, "details");
 
 	// logging is disabled or log level not reached.
 	if (rt->logFile == NULL || logLevel > (int)rt->logLevel) {
@@ -245,7 +245,7 @@ static vmError sysRaise(nfcContext ctx) {
 	return noError;
 }
 
-// int tryExec(pointer args, void action(pointer args));
+// int tryExec(variant outError, pointer args, void action(pointer args));
 static vmError sysTryExec(nfcContext ctx) {
 	vmError result;
 	rtContext rt = ctx->rt;
@@ -315,21 +315,19 @@ static int installPlatform(ccContext cc) {
 		int isLinux = 0;
 		int isUnix = 0;
 #if defined(__EMSCRIPTEN__)
-		isWebAssembly = 1;
+		isWebAssembly = 8 * sizeof(void*);
 #endif
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32__)
-		isWindows = 32;
+		isWindows = 8 * sizeof(void*);
 #endif
 #if defined(WIN64) || defined(_WIN64) || defined(__WIN64__)
-		isWindows = 64;
+		isWindows = 8 * sizeof(void*);
 #endif
 #if defined(__OSX__) || defined(__MACOSX__) || defined(__APPLE__)
-		isMacOs = 64;
-		//isUnix = 1;
+		isMacOs = 8 * sizeof(void*);
 #endif
 #if defined(linux) || defined(__linux) || defined(__linux__)
-		isLinux = 1;
-			//isUnix = 1;
+		isLinux = 8 * sizeof(void*);
 #endif
 #if defined(unix)        || defined(__unix)      || defined(__unix__) \
 || defined(sun)         || defined(__sun) \
@@ -337,7 +335,7 @@ static int installPlatform(ccContext cc) {
 || defined(__FreeBSD__) || defined (__DragonFly__) \
 || defined(sgi)         || defined(__sgi) \
 || defined(__CYGWIN__)
-		isUnix = 1;
+		isUnix = 8 * sizeof(void*);
 #endif
 		err = err || !ccDefInt(cc, "WebAssembly", isWebAssembly);
 		err = err || !ccDefInt(cc, "Windows", isWindows);
@@ -386,7 +384,7 @@ int ccLibSys(ccContext cc) {
 
 	// raise(fatal, error, warn, info, debug, trace)
 	if (cc->type_var != NULL) {
-		cc->libc_dbg = ccAddCall(cc, sysRaise, "void raise(const char file[*], int32 line, int32 level, int32 trace, const char message[*], const variant inspect)");
+		cc->libc_dbg = ccAddCall(cc, sysRaise, "void raise(const char file[*], int32 line, int32 level, int32 trace, const char message[*], const variant details)");
 		if (cc->libc_dbg == NULL) {
 			err = 2;
 		}

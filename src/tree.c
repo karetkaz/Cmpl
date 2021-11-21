@@ -203,6 +203,9 @@ ccKind eval(ccContext cc, astn res, astn ast) {
 	}
 
 	symn type = ast->type;
+	if (isEnumType(type)) {
+		type = type->type;
+	}
 	ccKind cast = CAST_any;
 	switch (castOf(type)) {
 		default:

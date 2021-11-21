@@ -114,12 +114,6 @@ html, body, table {
 	bottom: 0;
 	right: 0;
 }
-#chart>div {
-	overflow: hidden;
-	background-color: gray;
-	position: absolute;
-	cursor: pointer;
-}
 
 #tree {
 	width: 100%;
@@ -135,9 +129,7 @@ html, body, table {
 }
 /* Highlighting */
 #tree>tr:hover,
-#tree>tr.hover,
-#chart>div:hover,
-#chart>div.hover {
+#tree>tr.hover {
 	background-color: #eee;
 }
 

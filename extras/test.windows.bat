@@ -48,7 +48,6 @@ SET TEST_FILES=%TEST_FILES%;%CMPL_HOME%\cmplGfx\test\*.ci
 SET TEST_FILES=%TEST_FILES%;%CMPL_HOME%\cmplGfx\test\demo\*.ci
 SET TEST_FILES=%TEST_FILES%;%CMPL_HOME%\cmplGfx\test\demo.procedural\*.ci
 SET TEST_FILES=%TEST_FILES%;%CMPL_HOME%\cmplGfx\test\demo.widget\*.ci
-SET TEST_FILES=%TEST_FILES%;%CMPL_HOME%\temp\todo.cmplGfx\*.ci
 SET TEST_FILES=%TEST_FILES%;%CMPL_HOME%\temp\todo.cmplGfx\demo\*.ci
 @REM SET TEST_FILES=%TEST_FILES%;%CMPL_HOME%\cmplGL\test\*.ci
 
