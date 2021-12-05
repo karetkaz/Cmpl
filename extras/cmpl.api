@@ -213,6 +213,7 @@ System.Platform.Linux
 System.Platform.Unix
 true
 false
+fastNativeCalls # use fast native methods when possible
 byte
 float
 double
@@ -396,10 +397,12 @@ mul(a: float32, b: vec4f): vec4f # Component wise multiply vector and scalar.
 mul(a: vec4f, b: float32): vec4f # Component wise multiply vector and scalar.
 div(a: float32, b: vec4f): vec4f # Component wise divide vector and scalar.
 div(a: vec4f, b: float32): vec4f # Component wise divide vector and scalar.
+abs(a: vec4f): vec4f # Component wise absolute value of a vector.
 min(lhs: vec4f, rhs: vec4f): vec4f # Component wise minimum of the two vectors.
 max(lhs: vec4f, rhs: vec4f): vec4f # Component wise maximum of the two vectors.
 clamp(vec: vec4f, min: vec4f, max: vec4f): vec4f # Clamp the vector component wise to the range [min ... max]
 clamp(vec: vec4f, min: float32, max: float32): vec4f # Clamp each component of the vector to the range [min ... max]
+mix(t: float32, a: vec4f, b: vec4f): vec4f # linear interpolate
 dp3(lhs: vec4f, rhs: vec4f): float32 # Dot product of the first 3 elements
 dph(lhs: vec4f, rhs: vec4f): float32 # Homogeneous dot product
 dp4(lhs: vec4f, rhs: vec4f): float32 # Dot product
@@ -557,12 +560,11 @@ Image.depth(image: Image): int32
 Image.get(image: Image, x: int32, y: int32): int32
 Image.set(image: Image, x: int32, y: int32, color: uint32): void
 Image.tex(image: Image, x: float32, y: float32): vec4f
-Image.fillRect(image: Image, x1: int32, y1: int32, x2: int32, y2: int32, color: int32): void
 Image.clipText(font: Image, rect: Rect, text: char[*]): void
 Image.drawText(image: Image, x: int32, y: int32, font: Image, text: char[*], color: int32): void
 Image.drawText(image: Image, roi: Rect, font: Image, text: char[*], color: int32): void
-Image.copy(image: Image, x: int32, y: int32, src: Image, roi: Rect): void
-Image.blend(image: Image, x: int32, y: int32, src: Image, roi: Rect, alpha: int32, dstAlpha: bool, blend(base: vec4f, with: vec4f): vec4f): void
+Image.fillRect(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, incl: int32, color: uint32): void
+Image.copy(image: Image, x: int32, y: int32, src: Image, roi: Rect, alpha: int32, extra: pointer, blend(extra: pointer, base: uint32, with: uint32): uint32): void
 Image.transform(image: Image, rect: Rect, src: Image, roi: Rect, interpolate: int32, mat: float32[16]): void
 Image.blur(image: Image, radius: int32, sigma: float64): void
 Image.colorMap(image: Image, roi: Rect, lut: uint32[256]): void
@@ -679,50 +681,57 @@ gch(color: argb): int32 # get the Green channel of the color
 bch(color: argb): int32 # get the Blue channel of the color
 lum(color: argb): int32 # get the luminosity of the color (0.299 * color.r + 0.587 * color.g + 0.114 * color.b)
 hue(rgb: argb): uint32 # get the hue of the color
-mix_s8(t: int32, a: uint32, b: uint32): uint32
-mix_s16(t: int32, a: uint32, b: uint32): uint32
+mix_s8(t: int32, a: uint32, b: uint32): int32
+mix_s16(t: int32, a: uint32, b: uint32): int32
 mix_s8(t: int32, a: argb, b: argb): argb
 lerpLut(lut: argb[], colors: argb[]): void # linear interpolate a lookup-table with the given colors
 alphaLut(lut: uint32[], hardness: int32, alpha: int32, reflect: bool): void # linear interpolate a alpha lookup-table with the given colors
 vec4f(rgb: argb): vec4f # convert an argb color to a floating point vector
 argb(vec: vec4f): argb # convert a floating point vector to an argb color
 lum(vec: vec4f): float32 # calculate the luminosity of a color
-hsv2rgb(hsv: vec4f): vec4f # convert from hsv color space to rgb color space
 rgb2hsl(rgb: vec4f): vec4f # Convert color from Rgb color space to Hsl color space
 hsl2rgb(hsl: vec4f): vec4f # Convert color from Hsl color space to Rgb color space
+adjust(roi: Rect, x: int32, y: int32, w: int32, h: int32): void # adjust the rectangle position and size
+adjust(roi: Rect, w: int32, h: int32): void # adjust the rectangle position and size
+adjust(roi: Rect, s: int32): void # adjust the rectangle position and size
+clip(image: Image, roi: Rect): bool # @public
+set(image: Image, x: int32, y: int32, color: argb): void # Set the the color of a pixel at the given position
 Image(width: int32, height: int32, depth: int32): Image # Create an image with the given with, height and depth
-Image(copy: Image): Image # Create an image by copying another one
-Image(image: Image, width: int32, height: int32, align: int32, maxScale: float64): Image # Create an image by copying another one using a custom width and height
 Image(fileName: char[*], depth: int32): Image # Create an image by opening an image file
 Image(fileName: char[*]): Image # Create an image by opening an image file
+copy(image: Image, x0: int32, y0: int32, src: Image, roi: Rect, alpha: int32, extra: pointer, blend(extra: pointer, base: argb, with: argb): argb): void # emulated implementation of blend function (incomplete)
+copy(image: Image, x0: int32, y0: int32, src: Image, roi: Rect, alpha: int32, blend(base: vec4f, with: vec4f): vec4f): void # emulated implementation of blend function (incomplete)
+copy(image: Image, x: int32, y: int32, src: Image, roi: Rect): void # emulated implementation of blend function (incomplete)
+Image(copy: Image): Image # Create an image by copying another one
+tile(image: Image, x: int32, y: int32, src: Image, roi: Rect): void # @public
+fill(image: Image, roi: Rect, color: uint32, alpha: int32, blend(base: argb, with: argb): argb): void # Fill the surface with the given color using alpha and blend method
+eval(image: Image, roi: Rect, aspect: float32, time: float32, eval(in: vec4f): vec4f): void # Fill the surface by evaluating the given function for each pixel
+colorMap(image: Image, roi: Rect, lut: argb[256]): void
+colorMat(image: Image, roi: Rect, mat: mat4f): void
+transform(image: Image, rect: Rect, src: Image, roi: Rect, interpolate: int32, mat: mat4f): void # Copy one image to another using a transformation matrix [scale, rotate, translate, shear, perspective, etc]
+Image(image: Image, width: int32, height: int32, align: int32, maxScale: float64): Image # Create an image by copying another one using a custom width and height
 Image(fileName: char[*], width: int32, height: int32, depth: int32, align: int32, maxScale: float64): Image # Create an image by opening an image file with custom width and height
 Image(fileName: char[*], width: int32, height: int32, depth: int32, align: int32): Image # Create an image by opening an image file with custom width and height
 Image(fileName: char[*], width: int32, height: int32, depth: int32): Image # Create an image by opening an image file with custom width and height
-set(image: Image, x: int32, y: int32, color: argb): void # Set the the color of a pixel at the given position
-colorMap(image: Image, roi: Rect, lut: argb[256]): void # apply the 2d lookup table to the image
-resize(image: Image, rect: Rect, src: Image, roi: Rect, interpolate: int32): void # @public
-clip(src: Image, roi: Rect): bool # @public
-eval(image: Image, roi: Rect, aspect: float32, time: float32, eval(in: vec4f): vec4f): void # Fill the surface by evaluating the given function for each pixel
-tile(image: Image, x: int32, y: int32, src: Image, roi: Rect): void # @public
-xcl(a: int32, b: int32): int32
-fill(image: Image, color: uint32): void # Fill the entire image with the given color
-fill(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, color: uint32): void
+blur(image: Image, radius: int32, sigma: float64): void # emulated implementation of blur function
+fillRect(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, incl: int32, color: uint32): void # Fill a rectangle on the `image` specified by the coordinates with the given `color`
+fillRect(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, color: uint32): void # Fill a rectangle on the `image` specified by the coordinates with the given `color`
 drawRect(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, color: uint32): void # Draw a rectangle on the `image` specified by the coordinates with the given `color`
-fillRect(image: Image, x1: int32, y1: int32, x2: int32, y2: int32, rx: int32, ry: int32, color: uint32): void # TODO: Fill the given rectangle rounding the corners using the given radius
-fillRect(image: Image, x1: int32, y1: int32, x2: int32, y2: int32, r: int32, color: uint32): void # Fill the given rectangle rounding the corners using the given radius
-fillRect(image: Image, roi: Rect, rx: int32, ry: int32, color: uint32): void # Fill the given rectangle rounding the corners using the given radius
-fillRect(image: Image, roi: Rect, r: int32, color: uint32): void # Fill the given rectangle rounding the corners using the given radius
-drawLineImpl(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, smooth: bool, color: uint32): void # Draw a normal or smooth(anti-aliased) line
-drawLine(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, smooth: bool, color: uint32): void
-drawBezier(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, x2: int32, y2: int32, smooth: bool, color: uint32): void
-drawBezier(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, x2: int32, y2: int32, x3: int32, y3: int32, smooth: bool, color: uint32): void
-fillOvalImpl(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, smooth: bool, color: uint32): void
-fillOval(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, smooth: bool, color: uint32): void
-drawOvalImpl(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, smooth: bool, color: uint32): void
-drawOval(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, smooth: bool, color: uint32): void
-drawAntiAliased # Draw a line on the `image`
+fillRRect(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, rx: int32, ry: int32, color: uint32): void # Fill a rounded rectangle on `image` specified by the coordinates and rounding, with the given `color`
+drawRRect(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, rx: int32, ry: int32, color: uint32): void # Draw a rounded rectangle on `image` specified by the coordinates and rounding, with the given `color`
 fillOval(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, color: uint32): void
 drawOval(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, color: uint32): void
+fillRRect(image: Image, x1: int32, y1: int32, x2: int32, y2: int32, r: int32, color: uint32): void # Fill the given rectangle rounding the corners using the given radius
+drawRRect(image: Image, x1: int32, y1: int32, x2: int32, y2: int32, r: int32, color: uint32): void # draw the given rectangle rounding the corners using the given radius
+drawLineIncl(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, smooth: bool, color: uint32): void # Draw a normal or smooth(anti-aliased) line, including ending pixel
+xcl(a: int32, b: int32): int32
+drawLine(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, smooth: bool, color: uint32): void # Draw a normal or smooth(anti-aliased) line
+drawBezier(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, x2: int32, y2: int32, smooth: bool, color: uint32): void # Draw a bezier curve normal or smooth(anti-aliased)
+drawBezier(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, x2: int32, y2: int32, x3: int32, y3: int32, smooth: bool, color: uint32): void # Draw a bezier curve normal or smooth(anti-aliased)
+fill(image: Image, color: uint32): Image # Fill the entire image with the given color
+fillRect(image: Image, roi: Rect, rx: int32, ry: int32, color: uint32): void # Fill the given rectangle rounding the corners using the given radius
+fillRect(image: Image, roi: Rect, r: int32, color: uint32): void # Fill the given rectangle rounding the corners using the given radius
+drawAntiAliased
 drawLine(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, color: uint32): void
 drawBezier(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, x2: int32, y2: int32, color: uint32): void
 drawBezier(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, x2: int32, y2: int32, x3: int32, y3: int32, color: uint32): void
@@ -742,13 +751,13 @@ Camera.matrix(camera: Camera): mat4f # get the matrix of the camera, which can b
 Camera.matrix(projection: mat4f, camera: Camera): mat4f # get the matrix of the camera multiplied with the projection matrix
 Camera.move(camera: Camera, direction: vec4f, amount: float32): void # Move the camera in the given `direction` with the given `amount`
 Camera.rotate(camera: Camera, orbit: vec4f, direction: vec4f, amount: float32): void # Rotate the camera around `orbit` in the given `direction` with the given `amount`
-adjust(roi: Rect, x: int32, y: int32, w: int32, h: int32): void # adjust the rectangle position and size
-adjust(roi: Rect, w: int32, h: int32): void # adjust the rectangle position and size
-adjust(roi: Rect, s: int32): void # adjust the rectangle position and size
+resize(image: Image, rect: Rect, src: Image, roi: Rect, interpolate: int32): void # @public
 Gui
 Gui.showWindow(surf: Image): void # Show the surface in a window
 Gui.showWindow(image: Image, onEvent(action: int32, button: int32, ex: int32, ey: int32): int32): void # Show the surface in a window
-Gui.showWindow(image1: Image, image2: Image): void # Show the surfaces in a window clicking on the window toggles the shown surface
+Gui.showWindow(width: int32, height: int32, image0: Image, image1: Image, image2: Image): void # Show the surfaces in a window clicking on the window toggles the shown surface
+Gui.showWindow(image0: Image, image1: Image, image2: Image): void
+Gui.showWindow(image0: Image, image1: Image): void
 Gui.showWindow(width: int32, height: int32, animationResolution: int32, eval(in: vec4f): vec4f): void # Show or animate the the procedural image generated by the `eval` function
 Gui.showWindow(width: int32, height: int32, eval(in: vec4f): vec4f): void
 Gui.showWindow(w: int32, h: int32, fovy: float32, mesh: Mesh): void # Show the mesh in a window

@@ -1,11 +1,37 @@
 // test the functions from Math
 
-float64 testMathFloor_1 = Math.floor(3.2);
-float64 testMathFloor_2 = Math.floor(3.5);
-float64 testMathFloor_3 = Math.floor(3.6);
-float64 testMathFloor_4 = Math.floor(-3.2);
-float64 testMathFloor_5 = Math.floor(-3.5);
-float64 testMathFloor_6 = Math.floor(-3.6);
+float64 testMathFloor_pos_3_0 = Math.floor(3.0);
+float64 testMathFloor_pos_3_2 = Math.floor(3.2);
+float64 testMathFloor_pos_3_5 = Math.floor(3.5);
+float64 testMathFloor_pos_3_7 = Math.floor(3.7);
+float64 testMathFloor_pos_3_9 = Math.floor(3.9);
+float64 testMathFloor_neg_3_0 = Math.floor(-3.0);
+float64 testMathFloor_neg_3_2 = Math.floor(-3.2);
+float64 testMathFloor_neg_3_5 = Math.floor(-3.5);
+float64 testMathFloor_neg_3_7 = Math.floor(-3.7);
+float64 testMathFloor_neg_3_9 = Math.floor(-3.9);
+
+float64 testMathRound_pos_3_0 = Math.round(3.0);
+float64 testMathRound_pos_3_2 = Math.round(3.2);
+float64 testMathRound_pos_3_5 = Math.round(3.5);
+float64 testMathRound_pos_3_7 = Math.round(3.7);
+float64 testMathRound_pos_3_9 = Math.round(3.9);
+float64 testMathRound_neg_3_0 = Math.round(-3.0);
+float64 testMathRound_neg_3_2 = Math.round(-3.2);
+float64 testMathRound_neg_3_5 = Math.round(-3.5);
+float64 testMathRound_neg_3_7 = Math.round(-3.7);
+float64 testMathRound_neg_3_9 = Math.round(-3.9);
+
+float64 testMathCeil_pos_3_0 = Math.ceil(3.0);
+float64 testMathCeil_pos_3_2 = Math.ceil(3.2);
+float64 testMathCeil_pos_3_5 = Math.ceil(3.5);
+float64 testMathCeil_pos_3_7 = Math.ceil(3.7);
+float64 testMathCeil_pos_3_9 = Math.ceil(3.9);
+float64 testMathCeil_neg_3_0 = Math.ceil(-3.0);
+float64 testMathCeil_neg_3_2 = Math.ceil(-3.2);
+float64 testMathCeil_neg_3_5 = Math.ceil(-3.5);
+float64 testMathCeil_neg_3_7 = Math.ceil(-3.7);
+float64 testMathCeil_neg_3_9 = Math.ceil(-3.9);
 
 float64 testMathSign_1F = Math.sign(0.2F);
 float64 testMathSign_2F = Math.sign(0.0F);

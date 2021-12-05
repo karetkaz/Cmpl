@@ -616,14 +616,6 @@ GxImage loadJpg(GxImage dst, const char *src, int depth) {
 	fclose(fin);
 	return dst;
 }
-#else
-GxImage loadJpg(GxImage dst, const char *src, int depth) {
-	gx_debug("no jpg support to open: %s", src);
-	(void) dst;
-	(void) src;
-	(void) depth;
-	return NULL;
-}
 #endif
 
 #ifndef NO_LIBPNG
@@ -761,14 +753,6 @@ GxImage loadPng(GxImage dst, const char *src, int depth) {
 	fclose(fin);
 	return result;
 }
-#else
-GxImage loadPng(GxImage dst, const char *src, int depth) {
-	gx_debug("no png support to open: %s", src);
-	(void) dst;
-	(void) src;
-	(void) depth;
-	return NULL;
-}
 #endif
 
 #pragma GCC diagnostic push
@@ -888,7 +872,7 @@ GxImage loadTtf(GxImage dst, const char *src, int height, int firstChar, int las
 	int x = 0;
 	GxFLut lut = dst->LLUTPtr;
 	lut->count = numChars;
-	fillRect(dst, 0, 0, (1 << 16) - 1, (1 << 16) - 1, 0);
+	fillRect(dst, 0, 0, dst->width, dst->height, 0, 0);
 	for (int i = 0; i < numChars; ++i) {
 		stbtt_bakedchar *inf = &cdata[i];
 		int yLen = inf->y1 - inf->y0;

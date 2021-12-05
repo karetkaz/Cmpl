@@ -337,7 +337,7 @@ int onEvent(Window win&, int action, int button, int x, int y) {
 	bool reverse = chkReverse.selected != 0;
 	offs.copy(0, 0, reverse ? base : blend, null);
 	if (BlendButton selected = win.widget.getFocused().as(BlendButton)) {
-		offs.blend(0, 0, reverse ? blend : base, null, btnAlpha.value, false, selected.blend);
+		offs.copy(0, 0, reverse ? blend : base, null, btnAlpha.value, selected.blend);
 	}
 	return win.draw(ui);
 }

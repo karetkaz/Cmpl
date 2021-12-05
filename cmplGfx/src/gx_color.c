@@ -14,11 +14,12 @@ static int colcpy32(byte *dst, byte *src, void *lut, size_t cnt) {
 	(void) lut;
 	return 0;
 }
-static int colset32(argb *dst, void *src, argb *lut, size_t cnt) {
+static int colset32(argb *dst, argb *src, void *lut, size_t cnt) {
+	argb value = *(argb *)src;
 	for (size_t i = 0; i < cnt; ++i, ++dst) {
-		*dst = *lut;
+		*dst = value;
 	}
-	(void) src;
+	(void) lut;
 	return 0;
 }
 static int colcpy32_bgra(byte *dst, byte *src, void *lut, size_t cnt) {
@@ -88,11 +89,19 @@ static int colcpy32_08(argb *dst, byte *src, argb *lut, size_t cnt) {
 	}
 	return 0;
 }
-static int colset32_mix(argb *dst, byte *src, argb *lut, size_t cnt) {
+static int colset32_mix(argb *dst, argb *src, byte *lut, size_t cnt) {
 	// src is alpha channel, lut points to the color
-	argb val = *lut;
-	for (size_t i = 0; i < cnt; ++i, ++dst, ++src) {
-		*dst = mix_rgb(*dst, val, *src);
+	argb value = *src;
+	if (lut == NULL) {
+		int alpha = ach(value.val);
+		for (size_t i = 0; i < cnt; ++i, ++dst) {
+			*dst = mix_rgb(alpha, *dst, value);
+		}
+		return 0;
+	}
+
+	for (size_t i = 0; i < cnt; ++i, ++dst, ++lut) {
+		*dst = mix_rgb(*lut, *dst, value);
 	}
 	return 0;
 }
@@ -100,7 +109,7 @@ static int colcpy32_mix(byte *dst, byte *src, int *lut, size_t cnt) {
 	// lut points to the alpha value to be used
 	int alpha = *lut;
 	for (size_t i = 0; i < 4 * cnt; ++i, ++dst, ++src) {
-		*dst = mix_s8(*dst, *src, alpha);
+		*dst = sat_s8(mix_s8(alpha, *dst, *src));
 	}
 	return 0;
 }
@@ -170,11 +179,12 @@ static int colcpy16(word *dst, word *src, void *lut, size_t cnt) {
 	return 0;
 	(void) lut;
 }
-static int colset16(word *dst, void *src, word *lut, size_t cnt) {
+static int colset16(word *dst, word *src, void *lut, size_t cnt) {
+	word value = *src;
 	for (size_t i = 0; i < cnt; ++i, ++dst) {
-		*dst = *lut;
+		*dst = value;
 	}
-	(void) src;
+	(void) lut;
 	return 0;
 }
 static int colcpy16_bgra(word *dst, byte *src, void *lut, size_t cnt) {
@@ -218,7 +228,7 @@ static inline word toRGB555(argb rgb) {
 	return makeRGB555(rch(rgb.val), gch(rgb.val), bch(rgb.val));
 }
 static int (*const colcpy15)(word *dst, word *src, void *lut, size_t cnt) = colcpy16;
-static int (*const colset15)(word *dst, void *src, word *lut, size_t cnt) = colset16;
+static int (*const colset15)(word *dst, word *src, void *lut, size_t cnt) = colset16;
 static int colcpy15_bgra(word *dst, byte *src, void *lut, size_t cnt) {
 	// RRRRRRRR`GGGGGGGG`BBBBBBBB => XRRRRRGG`GGGBBBBB
 	for (size_t i = 0; i < cnt; ++i, ++dst, src += 4) {
@@ -256,11 +266,12 @@ static int colcpy08(void *dst, void *src, void *lut, size_t cnt) {
 	(void) lut;
 	return 0;
 }
-static int colset08(byte *dst, void *src, byte *lut, size_t cnt) {
+static int colset08(byte *dst, byte *src, void *lut, size_t cnt) {
+	int value = *src;
 	for (size_t i = 0; i < cnt; ++i, ++dst) {
-		*dst = *lut;
+		*dst = value;
 	}
-	(void) src;
+	(void) lut;
 	return 0;
 }
 static int colcpy08_bgra(byte *dst, byte *src, void *lut, size_t cnt) {

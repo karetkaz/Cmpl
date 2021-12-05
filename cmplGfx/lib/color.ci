@@ -106,22 +106,9 @@ inline uint32(argb value) = uint32(emit(struct(value)));
 
 
 /// clamp signed gray or color component to fit in 8 bits (0 ... 255)
-uint32 clamp_s8(int32 c) {
-	if (c < 0) {
-		return 0;
-	}
-	if (c > 255) {
-		return 255;
-	}
-	return c;
-}
+inline clamp_s8(int32 c) = uint32(c > 255 ? 255 : c < 0 ? 0 : c);
 /// clamp unsigned gray or color component to fit in 8 bits (0 ... 255)
-uint32 clamp_u8(uint32 c) {
-	if (c > 255) {
-		return 255;
-	}
-	return c;
-}
+inline clamp_u8(uint32 c) = uint32(c > 255 ? 255 : c);
 
 // construct a rgb8 gray color from the given value
 inline _gray(uint32 c) = argb((((c << 8) | c) << 8) | c);
@@ -159,11 +146,11 @@ inline argb(float64 a, float64 r, float64 g, float64 b) = argb(int32(a * 255), i
 
 
 /// get the Alpha channel of the color
-inline ach(argb color) = int32((uint32(color) >> 24) & 0xff);
+inline ach(argb color) = int32((uint32(color) >> 24));
 /// get the Red channel of the color
-inline rch(argb color) = int32((uint32(color) >> 16) & 0xff);
+inline rch(argb color) = int32(uint32(color) >> 16 & 0xff);
 /// get the Green channel of the color
-inline gch(argb color) = int32((uint32(color) >> 8) & 0xff);
+inline gch(argb color) = int32(uint32(color) >> 8 & 0xff);
 /// get the Blue channel of the color
 inline bch(argb color) = int32(uint32(color) & 0xff);
 
@@ -212,8 +199,8 @@ uint32 hue(argb rgb) {
 	return hue;
 }
 
-inline mix_s8(int32 t, uint32 a, uint32 b) = a + (t * (b - a + 1) >> 8);
-inline mix_s16(int32 t, uint32 a, uint32 b) = a + (t * (b - a + 1) >> 16);
+inline mix_s8(int32 t, uint32 a, uint32 b) = int32(a + (t * (b - a + 1) >> 8));
+inline mix_s16(int32 t, uint32 a, uint32 b) = int32(a + (t * (b - a + 1) >> 16));
 inline mix_s8(int32 t, argb a, argb b) = argb(mix_s8(t, rch(a), rch(b)), mix_s8(t, gch(a), gch(b)), mix_s8(t, bch(a), bch(b)));
 
 /// linear interpolate a lookup-table with the given colors
@@ -263,11 +250,10 @@ static if (typename(vec4f) != null) {
 inline vec4f(argb rgb) = vec4f(rch(rgb) / 255f, gch(rgb) / 255f, bch(rgb) / 255f, ach(rgb) / 255f);
 
 /// convert a floating point vector to an argb color
-inline argb(const vec4f vec&) = argb(vec.x, vec.y, vec.z);
+inline argb(const vec4f vec&) = argb(vec.w, vec.x, vec.y, vec.z);
 
 /// calculate the luminosity of a color
 inline lum(const vec4f vec&) = 0.299f * vec.x + 0.587f * vec.y + 0.114f * vec.z;
-}
 
-inline "color.hsv.ci";
 inline "color.hsl.ci";
+}

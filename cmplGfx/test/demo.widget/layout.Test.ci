@@ -16,7 +16,7 @@ Slider orientation = {
 	onUpdate: syncOrientation;
 	text: "orientation";
 	minimum: -4;
-	maximum: 50;
+	maximum: 10;
 	value: 1;
 };
 
@@ -74,21 +74,25 @@ Switch itemAlignTop = {
 	onUpdate: syncAlignment;
 	text: "ItemAlign.top";
 	states: null;
+	selected: 1;
 };
 Switch itemAlignLeft = {
 	onUpdate: syncAlignment;
 	text: "ItemAlign.left";
 	states: null;
+	selected: 1;
 };
 Switch itemAlignRight = {
 	onUpdate: syncAlignment;
 	text: "ItemAlign.right";
 	states: null;
+	selected: 1;
 };
 Switch itemAlignBottom = {
 	onUpdate: syncAlignment;
 	text: "ItemAlign.bottom";
 	states: null;
+	selected: 1;
 };
 Switch drawDebugRect = {
 	onUpdate: syncAlignment;
@@ -231,16 +235,5 @@ static void debugLayoutDraw(Image img, const Rect rect&, uint32 rgb) {
 		return;
 	}
 	img.drawRect(rect, rgb);
-
-	/* alpha blend with red on each layer
-	static Image OverlayImage(uint32 color) {
-		trace("OverlayImage");
-		Image result = Image(widget.width, widget.height, 32);
-		result.fill(color);
-		return result;
-	}
-	int alpha = 32;
-	static Image red = OverlayImage(0xff0000);
-	img.blend(rect.x, rect.y, red, rect, alpha, false, null);
-	// */
+//	img.blend(rect, rgb, 32, false, null);
 }

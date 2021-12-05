@@ -2233,10 +2233,12 @@ static void printValue(FILE *out, const char **esc, rtContext ctx, symn var, vmV
 		}
 		else {
 			size_t length = 0;
+			size_t step = refSize(typ->type);
 			int minified = mode & prMinified;
 			if (lenField && isStatic(lenField)) {
 				// fixed size array
-				length = typ->size / typ->type->size;
+				step = typ->type->size;
+				length = typ->size / step;
 			}
 			else if (lenField) {
 				// dynamic size array
@@ -2251,7 +2253,6 @@ static void printValue(FILE *out, const char **esc, rtContext ctx, symn var, vmV
 				minified = 0;
 			}
 			printFmt(out, esc, "[%d] {", length);
-			size_t step = refSize(typ->type);
 			for (size_t idx = 0; idx < length; idx += 1) {
 				if (minified == 0) {
 					if (idx > 0) {

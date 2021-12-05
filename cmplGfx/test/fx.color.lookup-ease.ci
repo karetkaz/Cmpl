@@ -17,18 +17,18 @@ void brightnessContrast(argb lut[256], int brightness, int contrast) {
 	inline "/cmplStd/lib/math/Easing.ci";
 	float64 cVal = (256 + contrast) / 256.;
 
-	float64 easing(float64 ratio) = Easing.Circle;
+	float64 easing(float64 ratio) = Easing.circle;
 	for (int idx = 0; idx < lut.length; idx += 1) {
 		float64 value = idx / 256.;
 		if (contrast < 0) {
-			value = Math.lerp(-contrast / 256., value, easing.easeOutIn(value));
+			value = Math.lerp(-contrast / 256., value, easing.outIn(value));
 		} else {
-			value = Math.lerp(contrast / 256., value, easing.easeInOut(value));
+			value = Math.lerp(contrast / 256., value, easing.inOut(value));
 		}
 		if (brightness < 0) {
 			value = Math.lerp(-brightness / 256., value, easing(value));
 		} else {
-			value = Math.lerp(brightness / 256., value, easing.easeOut(value));
+			value = Math.lerp(brightness / 256., value, easing.out(value));
 		}
 
 		int rgb = clamp_s8(256 * value);

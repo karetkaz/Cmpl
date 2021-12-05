@@ -44,17 +44,7 @@ typedef union {				// ARGB color structure
 		uint8_t v;
 		uint16_t y;
 	} yuv;
-	enum {
-		cs_argb = 'argb',
-		cs_cmyk = 'cmyk',
-		cs_hsv  = '_hsv',
-		cs_yuv  = '_yuv',
-		//~ cs_xyz  = ' xyz',
-		//~ cs_rgb  = ' rgb',
-		//~ cs_cmy  = ' cmy',
-		//~ cs_hsl  = ' hsl',
-		//~ cs_yiq  = ' yiq',
-	} argb_cs; // */
+	*/
 } argb;
 
 typedef enum {			// color block transfer
@@ -79,10 +69,10 @@ typedef enum {			// color block transfer
 
 typedef int (*bltProc)(void* dst, void *src, void *lut, size_t cnt);
 
-static inline int32_t bch(uint32_t color) { return color >>  0 & 0xff; }
+static inline int32_t bch(uint32_t color) { return color & 0xff; }
 static inline int32_t gch(uint32_t color) { return color >>  8 & 0xff; }
 static inline int32_t rch(uint32_t color) { return color >> 16 & 0xff; }
-static inline int32_t ach(uint32_t color) { return color >> 24 & 0xff; }
+static inline int32_t ach(uint32_t color) { return color >> 24; }
 
 static inline int32_t hue(uint32_t color) {
 	// adapted from: https://gist.github.com/mity/6034000
@@ -152,26 +142,14 @@ static inline argb cast_rgb(uint32_t val) {
 static inline argb make_rgb(unsigned a, unsigned r, unsigned g, unsigned b) {
 	return cast_rgb(a << 24 | r << 16 | g << 8 | b);
 }
-static inline argb sat_srgb(signed a, signed r, signed g, signed b) {
+static inline argb sat_rgb(signed a, signed r, signed g, signed b) {
 	return make_rgb(sat_s8(a), sat_s8(r), sat_s8(g), sat_s8(b));
 }
-static inline argb sat_urgb(unsigned a, unsigned r, unsigned g, unsigned b) {
-	return make_rgb(sat_u8(a), sat_u8(r), sat_u8(g), sat_u8(b));
-}
 
-
-static inline uint8_t mix_s8(int c1, int c2, int alpha) {
-	return c1 + (alpha * (c2 - c1 + 1) >> 8);
+static inline int mix_s8(int alpha, int c1, int c2) {
+	return c1 + (c2 - c1) * alpha / 255;
 }
-static inline uint8_t mix_u8(int c1, int c2, int alpha) {
-	return c1 + (alpha * (c2 - c1 + 1) >> 8);
-}
-static inline argb mix_rgb(argb c1, argb c2, int alpha) {
-	//~ uint32_t r = (c1 & 0xff0000) + (alpha * ((c2 & 0xff0000) - (c1 & 0xff0000)) >> 8);
-	//~ uint32_t g = (c1 & 0xff00) + (alpha * ((c2 & 0xff00) - (c1 & 0xff00)) >> 8);
-	//~ uint32_t b = (c1 & 0xff) + (alpha * ((c2 & 0xff) - (c1 & 0xff)) >> 8);
-	//~ return (r & 0xff0000) | (g & 0xff00) | (b & 0xff);
-
+static inline argb mix_rgb(int alpha, argb c1, argb c2) {
 	uint32_t rb = c1.val & 0xff00ff;
 	rb += alpha * ((c2.val & 0xff00ff) - rb) >> 8;
 

@@ -1,28 +1,21 @@
 // Color picker demo.
 inline "/cmplGfx/lib/micro.ui.ci";
 
-Image back = Image("asset/image/forest.jpg", 32);
-Image offs = Image(back);
-
-static bool printStyle(Button button) {
-	Style style& = button.style;
-	debug("style", style);
-}
-
 struct ColorPicker: View {
 	float hue = 0;
 	float val = 0;
-	bool dark = true;
 
 	static argb get(ColorPicker this, float x, float y) {
-		if (this.dark) {
-			return argb(hsv2rgb(vec4f(x, y, 1)));
-		}
-		return argb(hsv2rgb(vec4f(x, y, y)));
+		// todo: use integer based color space conversions
+		return argb(hsl2rgb(vec4f(x, 1, y)));
 	}
 
 	static argb value(ColorPicker this) {
 		return this.get(this.hue, 1 - this.val);
+	}
+
+	bool onUpdate(ColorPicker this, argb value) {
+		return true;
 	}
 
 	bool onTouchEvent(ColorPicker this, const Rect rect&, const TouchEvent event&) {
@@ -32,7 +25,7 @@ struct ColorPicker: View {
 
 		this.hue = Math.clamp(float32(event.x - rect.x), 0f, rect.w - 1f) / rect.w;
 		this.val = Math.clamp(float32(event.y - rect.y), 0f, rect.h - 1f) / rect.h;
-		return true;
+		return this.onUpdate(this, this.value());
 	}
 
 	bool onMeasure(Histogram this, Rect rect&) {
@@ -61,10 +54,18 @@ struct ColorPicker: View {
 	}
 }
 
+static bool printStyle(Button button) {
+	Style style& = button.style;
+	debug("style", style);
+}
+static bool updateColor(ColorPicker this, argb value);
+static bool updateTheme(Switch this, int value);
+
 ColorPicker colorPicker = {
 	width: 360;
 	height: 256/2;
 	focusable: false;
+	onUpdate: updateColor;
 };
 
 char themes[*][] = {
@@ -75,6 +76,7 @@ Switch theme = {
 	text: "Theme";
 	states: themes;
 	selected: 1;
+	onUpdate: updateTheme;
 };
 
 Button button = {
@@ -93,33 +95,7 @@ DebugView debug = {
 	draws: -1;
 };
 
-int onEvent(Window win&, int action, int button, int x, int y) {
-	if (action == Gui.KEY_RELEASE && button == 27) {
-		// exit when releasing escape key
-		return -1;
-	}
-
-	Widget ui = win.widget;
-	if (!win.dispatchEvent(ui, action, button, x, y)) {
-		// event not processed, wait for the next one
-		return 0;
-	}
-
-	debug.startTimer();
-	offs.copy(0, 0, back, null);
-
-	 if (theme.selected != 0) {
-		colorPicker.dark = true;
-		ui.theme(Style.dark, colorPicker.value());
-	} else {
-		colorPicker.dark = false;
-		ui.theme(Style.light, colorPicker.value());
-	}
-
-	return win.draw(ui);
-}
-
-Gui.showWindow(offs, onEvent, Widget(
+Gui.showWindow(Widget(0, 0).addItems(
 	colorPicker,
 
 	null,
@@ -130,5 +106,26 @@ Gui.showWindow(offs, onEvent, Widget(
 	null,
 	debug
 ));
-offs.destroy();
-back.destroy();
+
+static void updateTheme() {
+	Widget ui = theme.getWidget();
+	if (theme.selected != 0) {
+		ui.theme(Style.dark, colorPicker.value());
+	} else {
+		ui.theme(Style.light, colorPicker.value());
+	}
+}
+static bool updateColor(ColorPicker this, argb value) {
+	if (!ColorPicker.onUpdate(this, value)) {
+		return false;
+	}
+	updateTheme();
+	return true;
+}
+static bool updateTheme(Switch this, int value) {
+	if (!Switch.onUpdate(this, value)) {
+		return false;
+	}
+	updateTheme();
+	return true;
+}

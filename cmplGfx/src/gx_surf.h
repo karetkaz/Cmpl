@@ -82,7 +82,7 @@ typedef struct GxImage {
 	union {
 		GxCLut CLUTPtr;	// palette
 		GxFLut LLUTPtr;	// font-faces
-		char *tempPtr; // clutPtr / cibgPtr (cursor BG data) / ...
+		char *tempPtr; // fixme: remove: clutPtr / cibgPtr (cursor BG data) / ...
 	};
 } *GxImage;
 
@@ -177,19 +177,19 @@ static inline uint32_t getPixelLinear(GxImage image, int32_t x16, int32_t y16) {
 				argb p2 = *(argb*)(ofs + 0);
 				argb p3 = *(argb*)(ofs + 4);
 
-				p0 = mix_rgb(p0, p1, lx);
-				p2 = mix_rgb(p2, p3, lx);
-				return mix_rgb(p0, p2, ly).val;
+				p0 = mix_rgb(lx, p0, p1);
+				p2 = mix_rgb(lx, p2, p3);
+				return mix_rgb(ly, p0, p2).val;
 			}
 			if (lx) {
 				argb p0 = *(argb*)(ofs + 0);
 				argb p1 = *(argb*)(ofs + 4);
-				return mix_rgb(p0, p1, lx).val;
+				return mix_rgb(lx, p0, p1).val;
 			}
 			if (ly) {
 				argb p0 = *(argb*)(ofs + 0);
 				argb p1 = *(argb*)(ofs + image->scanLen);
-				return mix_rgb(p0, p1, ly).val;
+				return mix_rgb(ly, p0, p1).val;
 			}
 			return *(uint32_t*)ofs;
 		case 24:
@@ -199,25 +199,25 @@ static inline uint32_t getPixelLinear(GxImage image, int32_t x16, int32_t y16) {
 			return *(uint16_t*)ofs;
 		case 8:
 			if (lx && ly) {
-				uint8_t p0 = *(uint8_t*)(ofs + 0);
-				uint8_t p1 = *(uint8_t*)(ofs + 1);
+				int p0 = *(uint8_t*)(ofs + 0);
+				int p1 = *(uint8_t*)(ofs + 1);
 				ofs += image->scanLen;
-				uint8_t p2 = *(uint8_t*)(ofs + 0);
-				uint8_t p3 = *(uint8_t*)(ofs + 1);
+				int p2 = *(uint8_t*)(ofs + 0);
+				int p3 = *(uint8_t*)(ofs + 1);
 
-				p0 = mix_u8(p0, p1, lx);
-				p2 = mix_u8(p2, p3, lx);
-				return mix_u8(p0, p2, ly);
+				p0 = mix_s8(lx, p0, p1);
+				p2 = mix_s8(lx, p2, p3);
+				return mix_s8(ly, p0, p2);
 			}
 			if (lx) {
-				uint8_t p0 = *(uint8_t*)(ofs + 0);
-				uint8_t p1 = *(uint8_t*)(ofs + 1);
-				return mix_u8(p0, p1, lx);
+				int p0 = *(uint8_t*)(ofs + 0);
+				int p1 = *(uint8_t*)(ofs + 1);
+				return mix_s8(lx, p0, p1);
 			}
 			if (ly) {
-				uint8_t p0 = *(uint8_t*)(ofs + 0);
-				uint8_t p1 = *(uint8_t*)(ofs + image->scanLen);
-				return mix_u8(p0, p1, ly);
+				int p0 = *(uint8_t*)(ofs + 0);
+				int p1 = *(uint8_t*)(ofs + image->scanLen);
+				return mix_s8(ly, p0, p1);
 			}
 			return *(uint8_t*)ofs;
 	}
@@ -225,21 +225,26 @@ static inline uint32_t getPixelLinear(GxImage image, int32_t x16, int32_t y16) {
 }
 
 // draw
-void fillRect(GxImage image, int x0, int y0, int x1, int y1, uint32_t color);
+void fillRect(GxImage image, int x0, int y0, int x1, int y1, int incl, uint32_t color);
 
 void clipText(GxRect rect, GxImage font, const char *text);
 void drawChar(GxImage image, int x, int y, GxImage font, int chr, uint32_t color);
 void drawText(GxImage image, int x, int y, GxImage font, const char *text, uint32_t color);
 
-int blitImage(GxImage image, int x, int y, GxImage src, GxRect roi, void *extra, bltProc blt);
+int fillImage(GxImage image, GxRect roi, void *color, void *extra, bltProc blt);
+int copyImage(GxImage image, int x, int y, GxImage src, GxRect roi, void *extra, bltProc blt);
 int resizeImage(GxImage image, GxRect rect, GxImage src, GxRect roi, int interpolation);
 
 // image read write
 GxImage loadImg(GxImage dst, const char *src, int depth);
 GxImage loadTtf(GxImage dst, const char *src, int height, int firstChar, int lastChars);
 GxImage loadBmp(GxImage dst, const char *src, int depth);
+#ifndef NO_LIBJPEG
 GxImage loadJpg(GxImage dst, const char *src, int depth);
+#endif
+#ifndef NO_LIBPNG
 GxImage loadPng(GxImage dst, const char *src, int depth);
+#endif
 GxImage loadFnt(GxImage dst, const char *src);
 int saveBmp(const char *dst, GxImage src, int flags);
 
@@ -249,8 +254,8 @@ int blurImage(GxImage image, int radius, double sigma);
 
 int drawGradient(GxImage dst, GxRect roi, GradientFlags type, int length, uint32_t *colors);
 
-static inline int copyImage(GxImage image, int x, int y, GxImage src, GxRect roi) {
-	return blitImage(image, x, y, src, roi, NULL, getBltProc(src->depth, image->depth));
+static inline int convertImage(GxImage image, int x, int y, GxImage src, GxRect roi) {
+	return copyImage(image, x, y, src, roi, NULL, getBltProc(src->depth, image->depth));
 }
 
 static inline int blendImage(GxImage image, int x, int y, GxImage src, GxRect roi, int alpha) {
@@ -258,7 +263,7 @@ static inline int blendImage(GxImage image, int x, int y, GxImage src, GxRect ro
 		// source and destination must have same depth
 		return -2;
 	}
-	return blitImage(image, x, y, src, roi, &alpha, getBltProc(blt_cpy_mix, image->depth));
+	return copyImage(image, x, y, src, roi, &alpha, getBltProc(blt_cpy_mix, image->depth));
 }
 
 #if __cplusplus

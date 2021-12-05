@@ -89,12 +89,7 @@ vec4f blendHsl(vec4f base, vec4f blend) {
 	max = Math.max(Math.max(blend.x, blend.y), blend.z);
 	if (max == min) {
 		// return blue mask with computed alpha component
-		return {
-			x: 0;
-			y: 0;
-			z: 1;
-			w: lum;
-		};
+		return mix(lum, vec4f(0, 0, 1), base);
 	}
 
 	float hue = 1;
@@ -124,12 +119,8 @@ vec4f blendHsl(vec4f base, vec4f blend) {
 	}
 
 	// return red mask with computed alpha component
-	return {
-		x: 1;
-		y: 0;
-		z: 0;
-		w: 1 - (1 - hue) * (1 - lum);
-	};
+	float32 a = 1 - (1 - hue) * (1 - lum);
+	return mix(a, vec4f(1, 0, 0), base);
 }
 
 int onEvent(Window win&, int action, int button, int x, int y) {
@@ -168,7 +159,7 @@ int onEvent(Window win&, int action, int button, int x, int y) {
 	// blending is slow, so blend only when mouse button is released
 	if (button == 1 && (action == Gui.MOUSE_RELEASE || action == Gui.FINGER_RELEASE)) {
 		debug.startTimer();
-		offs.blend(0, 0, back, null, 256, true, blendHsl);
+		offs.copy(0, 0, back, null, 256, blendHsl);
 	}
 
 	histogram.update(offs);
@@ -176,21 +167,21 @@ int onEvent(Window win&, int action, int button, int x, int y) {
 }
 
 void drawColorSlider(Slider this, Image offs, Rect rect, const Style style&) {
-	inline normalized(Slider slider) = float32(this.value - this.minimum) / (this.maximum - this.minimum);
-	const int padding = style.padding / 3;
-	const int y = rect.y + rect.h - 1;
+	const int yOff = 1;
+	const int yOn = yOff + style.padding / 3;
+	const int y = rect.y + rect.h;
 	if (this == sldHueMin || this == sldHueMax) {
 		const int x1 = rect.x + rect.w;
 		const int x0 = rect.x + int64(this.value - this.minimum) * rect.w / (this.maximum - this.minimum);
 		for (int x = rect.x; x < x0; x += 1) {
 			float32 val = float32(x - rect.x) / rect.w;
 			argb color = argb(hsl2rgb(vec4f(val, 1f, .5f)));
-			offs.fill(x, y - padding, x, y, color.v);
+			offs.fillRect(x, y - yOn, x + 1, y, color.v);
 		}
 		for (int x = x0; x < x1; x += 1) {
 			float32 val = float32(x - rect.x) / rect.w;
 			argb color = argb(hsl2rgb(vec4f(val, 1f, .5f)));
-			offs.fill(x, y, x, y, color.v);
+			offs.fillRect(x, y - yOff, x + 1, y, color.v);
 		}
 		return;
 	}
@@ -200,12 +191,12 @@ void drawColorSlider(Slider this, Image offs, Rect rect, const Style style&) {
 		for (int x = rect.x; x < x0; x += 1) {
 			float32 val = float32(x - rect.x) / rect.w;
 			argb color = argb(vec4f(val, val, val));
-			offs.fill(x, y - padding, x, y, color.v);
+			offs.fillRect(x, y - yOn, x + 1, y, color.v);
 		}
 		for (int x = x0; x < x1; x += 1) {
 			float32 val = float32(x - rect.x) / rect.w;
 			argb color = argb(vec4f(val, val, val));
-			offs.fill(x, y, x, y, color.v);
+			offs.fillRect(x, y - yOff, x + 1, y, color.v);
 		}
 		return;
 	}

@@ -1,0 +1,10 @@
+/// mix using alpha from destination
+argb dstAlpha(pointer extra, argb base, argb with) {
+	int alpha = ach(base);
+	return {
+		b: mix_s8(alpha, bch(base), bch(with));
+		g: mix_s8(alpha, gch(base), gch(with));
+		r: mix_s8(alpha, rch(base), rch(with));
+		a: alpha;
+	};
+}

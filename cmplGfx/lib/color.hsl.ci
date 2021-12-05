@@ -66,20 +66,17 @@ float hue2rgb(float f1, float f2, float hue) {
 	else if (hue > 1) {
 		hue -= 1;
 	}
-	float res;
-	if ((6 * hue) < 1) {
-		res = f1 + (f2 - f1) * 6 * hue;
+
+	if (hue < 1f / 6) {
+		return f1 + (f2 - f1) * 6 * hue;
 	}
-	else if ((2 * hue) < 1) {
-		res = f2;
+	if (hue < 1f / 2) {
+		return f2;
 	}
-	else if ((3 * hue) < 2) {
-		res = f1 + (f2 - f1) * ((2 / 3f) - hue) * 6;
+	if (hue < 2f / 3) {
+		return f1 + (f2 - f1) * ((2 / 3f) - hue) * 6;
 	}
-	else {
-		res = f1;
-	}
-	return res;
+	return f1;
 }
 
 	if (hsl.y == 0) {
@@ -101,61 +98,3 @@ float hue2rgb(float f1, float f2, float hue) {
 		z: hue2rgb(f1, f2, hsl.x - (1 / 3f));
 	};
 }
-
-/* TODO: integer based hsl and hsv calculation
-/// hue saturation lightness color model
-struct hsl {
-	/// hue: 0 ... 359
-	uint16 hue;
-	/// sat: 0 ... 255
-	uint8 sat;
-	/// lum: 0 ... 255
-	uint8 lum;
-}
-
-///@public
-hsl hsl(argb rgb) {
-	// adapted from: https://gist.github.com/mity/6034000
-	int r = rch(rgb);
-	int g = gch(rgb);
-	int b = bch(rgb);
-
-	int min = r;
-	if (min > g) min = g;
-	if (min > b) min = b;
-
-	int max = r;
-	if (max < g) max = g;
-	if (max < b) max = b;
-
-	int lum = lum(rgb);
-	if (max == min) {
-		return {
-			hue: 0;
-			sat: 0;
-			lum: lum;
-		};
-	}
-
-	int hue = 0;
-	int sat = max - min;
-	//int lum = (min + max) / 2;
-	if (max == r) {
-		hue = ((g - b) * 60) / sat;
-	}
-	else if (max == g) {
-		hue = ((b - r) * 60) / sat + 120;
-	}
-	else /+if(max == b)+/ {
-		hue = ((r - g) * 60) / sat + 240;
-	}
-	if (hue < 0) {
-		hue += 360;
-	}
-	return {
-		hue: hue;
-		sat: sat;
-		lum: lum;
-	};
-}
-*/
