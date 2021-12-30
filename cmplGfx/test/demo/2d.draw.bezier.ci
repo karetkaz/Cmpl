@@ -73,6 +73,5 @@ int onEvent(int action, int button, int ex, int ey) {
 	return 0;
 }
 
-onEvent(Gui.MOUSE_MOTION, 0, 0, 0);
 Gui.showWindow(offs, onEvent);
 offs.destroy();

@@ -1706,8 +1706,13 @@ struct Switch: View {
 			Style.align(rect, &onOffRect, Style.right);
 
 			onOffRect.adjust(-style.padding);
-			uint32 color = this.checked() ? style.valueColor :
-							this.isFocused() ? style.hoveredColor : style.focusedColor;
+			uint32 color = style.focusedColor;
+			if (this.checked()) {
+				color = style.valueColor;
+			}
+			else if (this.isFocused()) {
+				color = style.hoveredColor;
+			}
 			offs.fillRect(onOffRect, onOffRect.h / 2, color);
 
 			if (this.checked()) {
@@ -1844,10 +1849,10 @@ struct Slider: View {
 		const int x1 = rect.x + rect.w;
 		const int x = x0 + int64(this.value - this.minimum) * rect.w / (this.maximum - this.minimum);
 		if (x > x0) {
-			offs.fill(x0, y0, x, y1, style.valueColor);
+			offs.fillRect(x0, y0, x, y1, style.valueColor);
 		}
 		if (x < x1) {
-			offs.fill(x, y0, x1, y1, style.focusedColor);
+			offs.fillRect(x, y0, x1, y1, style.focusedColor);
 		}
 	}
 
@@ -1954,7 +1959,7 @@ struct Histogram: View {
 		}
 		int px = (rect.w - 256) / 2;
 		if (this.lines) {
-			int y = rect.y + rect.h - 1;
+			int y = rect.y + rect.h;
 			int pb = bch(this.data[0]) * rect.h / 256;
 			int pg = gch(this.data[0]) * rect.h / 256;
 			int pr = rch(this.data[0]) * rect.h / 256;
@@ -1969,12 +1974,12 @@ struct Histogram: View {
 				int lv = ach(data) * rect.h / 256;
 
 				if (this.color) {
-					offs.fill(x, y - pl, x, y - lv, uint32(data));
+					offs.fillRect(x, y - pl, x + 1, y - lv + int(pl == lv), data.v);
 				} else {
-					offs.fill(x, y - pb, x, y - bv, colB);
-					offs.fill(x, y - pg, x, y - gv, colG);
-					offs.fill(x, y - pr, x, y - rv, colR);
-					offs.fill(x, y - pl, x, y - lv, colL);
+					offs.fillRect(x, y - pb, x + 1, y - bv + int(pb == bv), colB);
+					offs.fillRect(x, y - pg, x + 1, y - gv + int(pg == gv), colG);
+					offs.fillRect(x, y - pr, x + 1, y - rv + int(pr == rv), colR);
+					offs.fillRect(x, y - pl, x + 1, y - lv + int(pl == lv), colL);
 				}
 
 				pb = bv;

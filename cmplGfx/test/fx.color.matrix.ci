@@ -329,7 +329,7 @@ int onEvent(Window win&, int action, int button, int x, int y) {
 
 	// apply color matrix
 	offs.copy(0, 0, back, null);
-	offs.colorMat(null, mat.data);
+	offs.colorMat(null, mat);
 	histogram.update(offs);
 	return win.draw(ui);
 }

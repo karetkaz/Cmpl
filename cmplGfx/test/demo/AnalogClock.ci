@@ -25,7 +25,7 @@ int onEvent(int action, int button, int ex, int ey) {
 	int x1 = offs.width() / 2;
 	int y1 = offs.height() / 2;
 	int r = Math.min(x1, y1) - 2;
-	offs.fillOval(x1 - r, y1 - r, x1 + r, y1 + r, aaDraw, 0x4a4a4a);
+	offs.fillOval(x1 - r, y1 - r, x1 + r, y1 + r, 0x4a4a4a);
 
 	if (hourText != 0) {
 		for (int i = 1; i <= 12; i += 1) {

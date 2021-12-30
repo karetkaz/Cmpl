@@ -1,0 +1,77 @@
+void colorMap(Image image, const Rect roi&, const argb lut[256]) {
+	static if (fastNativeCalls && typename(Image.colorMap) != null) {
+		return Image.colorMap(image, roi, pointer(lut));
+	}
+
+	assert(image.depth() == 32);
+
+	// clip roi with source image
+	Rect r = {
+		x: roi != null ? roi.x : 0;
+		y: roi != null ? roi.y : 0;
+		w: roi != null ? roi.w : image.width();
+		h: roi != null ? roi.h : image.height();
+	};
+	if (!image.clip(&r)) {
+		// nothing to set
+		return;
+	}
+
+	bool useLuminosity = false;
+	for (int i = 0; i < 256; i += 1) {
+		if (ach(lut[i]) != i) {
+			useLuminosity = true;
+			break;
+		}
+	}
+
+	if (!useLuminosity) {
+		// fast version, r, g, b lookup only
+		for (int y = r.y; y < r.y + r.h; y += 1) {
+			for (int x = r.x; x < r.x + r.w; x += 1) {
+				argb col = argb(image.get(x, y));
+				col.r = lut[rch(col)].r;
+				col.g = lut[gch(col)].g;
+				col.b = lut[bch(col)].b;
+				image.set(x, y, col);
+			}
+		}
+		return;
+	}
+
+	// lookup also luminosity using the alpha channel:
+	// convert the color from `rgb` to `luv` color space,
+	// lookup luminosity, then convert back and store the new color
+	inline fxpBits = 16;
+	inline fxp(float64 v) = int32(v * (1 << fxpBits));
+	static const int32 rgb2luv[] = {
+		fxp( 0.299), fxp( 0.587), fxp( 0.114), 0,
+		fxp(-0.147), fxp(-0.289), fxp( 0.437), 0,
+		fxp( 0.615), fxp(-0.515), fxp(-0.100), 0,
+	};
+	static const int32 luv2rgb[] = {
+		fxp(1), fxp( 0.000), fxp( 1.140), 0,
+		fxp(1), fxp(-0.394), fxp(-0.581), 0,
+		fxp(1), fxp( 2.028), fxp( 0.000), 0,
+	};
+
+	for (int y = r.y; y < r.y + r.h; y += 1) {
+		for (int x = r.x; x < r.x + r.w; x += 1) {
+			argb col = argb(image.get(x, y));
+			int32 r = rch(lut[rch(col)]);
+			int32 g = gch(lut[gch(col)]);
+			int32 b = bch(lut[bch(col)]);
+
+			int32 l = (r * rgb2luv[0x0] + g * rgb2luv[0x1] + b * rgb2luv[0x2]) >> fxpBits;
+			int32 u = (r * rgb2luv[0x4] + g * rgb2luv[0x5] + b * rgb2luv[0x6]) >> fxpBits;
+			int32 v = (r * rgb2luv[0x8] + g * rgb2luv[0x9] + b * rgb2luv[0xa]) >> fxpBits;
+
+			l = ach(lut[clamp_s8(l)]);
+
+			col.r = clamp_s8((l * luv2rgb[0x0] + u * luv2rgb[0x1] + v * luv2rgb[0x2]) >> fxpBits);
+			col.g = clamp_s8((l * luv2rgb[0x4] + u * luv2rgb[0x5] + v * luv2rgb[0x6]) >> fxpBits);
+			col.b = clamp_s8((l * luv2rgb[0x8] + u * luv2rgb[0x9] + v * luv2rgb[0xa]) >> fxpBits);
+			image.set(x, y, col);
+		}
+	}
+}

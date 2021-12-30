@@ -626,7 +626,7 @@ function execute(cmd, args) {
 			execArgs.push('-X' + (params.X || '-stdin'));
 
 			// allocate 2Mb of memory by default,
-			execArgs.push('-mem' + (params.mem || '2M'));
+			execArgs.push('-mem' + (params.mem || '4M'));
 
 			if (params.log != null) {
 				execArgs.push('-log');

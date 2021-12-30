@@ -1,5 +1,8 @@
 /// emulated implementation of blur function
-void blur(Image img, int radius, double sigma) {
+void blur(Image image, int radius, float64 sigma) {
+	static if (fastNativeCalls && typename(Image.blur) != null) {
+		return Image.blur(image, radius, sigma);
+	}
 	static double gauss(double x, double sigma) {
 		inline SQRT_2_PI_INV = 0.398942280401432677939946059935;
 		double t = x / sigma;
@@ -33,10 +36,9 @@ void blur(Image img, int radius, double sigma) {
 		kernel[i] = 65536 * (kernelFlt[i] / kernelSum);
 	}
 
-	int width = img.width();
-	int height = img.height();
-
-	Image tmp = Image(width, height, img.depth());
+	int width = image.width();
+	int height = image.height();
+	Image tmp = Image.create(width, height, image.depth());
 
 	// x direction: inout -> temp
 	for (int y = 0; y < height; y += 1) {
@@ -47,7 +49,7 @@ void blur(Image img, int radius, double sigma) {
 			for (int i = 0; i < size; i += 1) {
 				int _x = x + i - radius;
 				if (_x >= 0 && _x < width) {
-					argb col = argb(img.get(_x, y));
+					argb col = argb(image.get(_x, y));
 					int32 _k = kernel[i];
 					r += _k * rch(col);
 					g += _k * gch(col);
@@ -74,7 +76,7 @@ void blur(Image img, int radius, double sigma) {
 					b += _k * bch(col);
 				}
 			}
-			img.set(x, y, argb(r >> 16, g >> 16, b >> 16));
+			image.set(x, y, argb(r >> 16, g >> 16, b >> 16));
 		}
 	}
 

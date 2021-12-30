@@ -45,9 +45,11 @@ static struct Math {
 
 	/// Computes the largest integer value not greater than the input
 	float64 floor(float64 x) {
-		float64 result;
-		modf(x, &result);
-		return result;
+		float64 mod = x % 1;
+		if (mod < 0) {
+			mod += 1;
+		}
+		return x - mod;
 	}
 
 	/// Computes the smallest integer not less than the input
@@ -348,7 +350,7 @@ static struct Math {
 
 	/// Returns the sine of the input
 	float64 sin(float64 arg) {
-		static if (typename(float64.sin) != null) {
+		static if (fastNativeCalls && typename(float64.sin) != null) {
 			// use the native method if available
 			return float64.sin(arg);
 		}
@@ -357,7 +359,7 @@ static struct Math {
 
 	/// Returns the cosine of the input
 	float64 cos(float64 arg) {
-		static if (typename(float64.cos) != null) {
+		static if (fastNativeCalls && typename(float64.cos) != null) {
 			// use the native method if available
 			return float64.cos(arg);
 		}
@@ -366,7 +368,7 @@ static struct Math {
 
 	/// Returns the tangent of the input
 	float64 tan(float64 arg) {
-		static if (typename(float64.tan) != null) {
+		static if (fastNativeCalls && typename(float64.tan) != null) {
 			// use the native method if available
 			return float64.tan(arg);
 		}

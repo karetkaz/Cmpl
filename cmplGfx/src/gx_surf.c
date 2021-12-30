@@ -173,7 +173,37 @@ void* clipRect(GxImage image, GxRect roi) {
 	return getPAddr(image, roi->x, roi->y);
 }
 
-int blitImage(GxImage image, int x, int y, GxImage src, GxRect roi, void *extra, bltProc blt) {
+int fillImage(GxImage image, GxRect roi, void *color, void *extra, bltProc blt) {
+	if (blt == NULL) {
+		// error: operation is invalid or not implemented
+		return -1;
+	}
+
+	struct GxRect clip;
+	if (roi == NULL) {
+		clip.x = clip.y = 0;
+		clip.w = image->width;
+		clip.h = image->height;
+	} else {
+		clip = *roi;
+	}
+
+	char *dst = clipRect(image, &clip);
+	if (dst == NULL) {
+		// there are no pixels to set
+		return 0;
+	}
+
+	while (clip.h--) {
+		if (blt(dst, color, extra, (size_t) clip.w) < 0) {
+			return -1;
+		};
+		dst += image->scanLen;
+	}
+	return 0;
+}
+
+int copyImage(GxImage image, int x, int y, GxImage src, GxRect roi, void *extra, bltProc blt) {
 	if (blt == NULL) {
 		// error: operation is invalid or not implemented
 		return -1;
@@ -357,7 +387,7 @@ int blurImage(GxImage image, int radius, double sigma) {
 					b += _k * bch(col);
 				}
 			}
-			setPixel(tmp, x, y, sat_srgb(255, r >> 16, g >> 16, b >> 16).val);
+			setPixel(tmp, x, y, sat_rgb(255, r >> 16, g >> 16, b >> 16).val);
 		}
 	}
 
@@ -377,7 +407,7 @@ int blurImage(GxImage image, int radius, double sigma) {
 					b += _k * bch(col);
 				}
 			}
-			setPixel(image, x, y, sat_srgb(255, r >> 16, g >> 16, b >> 16).val);
+			setPixel(image, x, y, sat_rgb(255, r >> 16, g >> 16, b >> 16).val);
 		}
 	}
 	destroyImage(tmp);
