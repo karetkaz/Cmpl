@@ -1,3 +1,4 @@
+/// apply a color lookup table to each pixel defined by the `roi` on the `image`
 void colorMap(Image image, const Rect roi&, const argb lut[256]) {
 	static if (fastNativeCalls && typename(Image.colorMap) != null) {
 		return Image.colorMap(image, roi, pointer(lut));
@@ -66,11 +67,11 @@ void colorMap(Image image, const Rect roi&, const argb lut[256]) {
 			int32 u = (r * rgb2luv[0x4] + g * rgb2luv[0x5] + b * rgb2luv[0x6]) >> fxpBits;
 			int32 v = (r * rgb2luv[0x8] + g * rgb2luv[0x9] + b * rgb2luv[0xa]) >> fxpBits;
 
-			l = ach(lut[clamp_s8(l)]);
+			l = ach(lut[sat_s8(l)]);
 
-			col.r = clamp_s8((l * luv2rgb[0x0] + u * luv2rgb[0x1] + v * luv2rgb[0x2]) >> fxpBits);
-			col.g = clamp_s8((l * luv2rgb[0x4] + u * luv2rgb[0x5] + v * luv2rgb[0x6]) >> fxpBits);
-			col.b = clamp_s8((l * luv2rgb[0x8] + u * luv2rgb[0x9] + v * luv2rgb[0xa]) >> fxpBits);
+			col.r = sat_s8((l * luv2rgb[0x0] + u * luv2rgb[0x1] + v * luv2rgb[0x2]) >> fxpBits);
+			col.g = sat_s8((l * luv2rgb[0x4] + u * luv2rgb[0x5] + v * luv2rgb[0x6]) >> fxpBits);
+			col.b = sat_s8((l * luv2rgb[0x8] + u * luv2rgb[0x9] + v * luv2rgb[0xa]) >> fxpBits);
 			image.set(x, y, col);
 		}
 	}

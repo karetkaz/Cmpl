@@ -82,13 +82,13 @@ struct Calendar {
 		int year = cal.year + years;
 
 		int month = indexOf(cal.month) + months;
-		if (month > 12) {
+		if (month >= 12) {
 			year += month / 12;
 			month %= 12;
 		}
 		else if (month < 0) {
 			year += month / 12 - 1;
-			month = -(month % 12);
+			month = 12 - (-month % 12);
 		}
 
 		assert(days == 0);

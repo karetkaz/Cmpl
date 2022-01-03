@@ -1,0 +1,64 @@
+// test the emulated math trigonometry functions: sin cos tan
+static struct Emu {
+	inline fastNativeCalls = false;
+	inline "/cmplStd/lib/math/Math.ci";
+}
+
+void assertEq(float64 expected, float64 returned, float64 maxErr&, const char func[*], float64 args...) {
+	float64 diff = Math.abs(returned - expected);
+	if (diff < maxErr) {
+		return;
+	}
+	if (diff == diff && diff != 2 * diff) {
+		maxErr = diff;
+	}
+	struct NotEquals {
+		const char function[*];
+		float64 arguments[];
+
+		float64 expected;
+		float64 returned;
+		float64 error;
+	}
+	NotEquals details = {
+		function: func;
+		arguments: args;
+		expected: expected;
+		returned: returned;
+		error: diff;
+	};
+	raise(raise.error, raise.defTrace, "assertion failed", details);
+}
+int N = 100000;
+float64 sinMaxErr = 1e-15;
+float64 cosMaxErr = 1e-15;
+float64 tanMaxErr = 1e-9;
+float64 sinMaxErr100 = 1e-13;
+float64 cosMaxErr100 = 1e-13;
+float64 tanMaxErr100 = 1e-7;
+
+for (int i = 0; i < N; i += 1) {
+	float64 x = 2 * Math.pi * i / N;
+
+	assertEq(float64.sin(+x), Emu.Math.sin(+x), &sinMaxErr, "sin(+x)", x);
+	assertEq(float64.sin(-x), Emu.Math.sin(-x), &sinMaxErr, "sin(-x)", x);
+	assertEq(float64.cos(+x), Emu.Math.cos(+x), &cosMaxErr, "cos(+x)", x);
+	assertEq(float64.cos(-x), Emu.Math.cos(-x), &cosMaxErr, "cos(-x)", x);
+	assertEq(float64.tan(+x), Emu.Math.tan(+x), &tanMaxErr, "tan(+x)", x);
+	assertEq(float64.tan(-x), Emu.Math.tan(-x), &tanMaxErr, "tan(-x)", x);
+
+	assertEq(float64.sin(100 + x), Emu.Math.sin(100 + x), &sinMaxErr100, "sin(100 + x)", x);
+	assertEq(float64.sin(100 - x), Emu.Math.sin(100 - x), &sinMaxErr100, "sin(100 - x)", x);
+	assertEq(float64.cos(100 + x), Emu.Math.cos(100 + x), &cosMaxErr100, "cos(100 + x)", x);
+	assertEq(float64.cos(100 - x), Emu.Math.cos(100 - x), &cosMaxErr100, "cos(100 - x)", x);
+	assertEq(float64.tan(100 + x), Emu.Math.tan(100 + x), &tanMaxErr100, "tan(100 + x)", x);
+	assertEq(float64.tan(100 - x), Emu.Math.tan(100 - x), &tanMaxErr100, "tan(100 - x)", x);
+}
+
+inline log10(float64 x) = float64.log(x) / Math.ln10;
+sinMaxErr = log10(sinMaxErr);
+cosMaxErr = log10(cosMaxErr);
+tanMaxErr = log10(tanMaxErr);
+sinMaxErr100 = log10(sinMaxErr100);
+cosMaxErr100 = log10(cosMaxErr100);
+tanMaxErr100 = log10(tanMaxErr100);

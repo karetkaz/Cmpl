@@ -294,22 +294,20 @@ ccKind eval(ccContext cc, astn res, astn ast) {
 					traceAst(ast);
 					return CAST_any;
 				}
-				if (args->kind == OPER_dot) {
-					if (!isTypeExpr(args->op.lhso)) {
-						traceAst(ast);
-						return CAST_any;
+				while (args->kind == OPER_dot) {
+					// if ast has no type => is not defined, return null
+					if (args->op.lhso->type == NULL) {
+						break;
 					}
 					args = args->op.rhso;
 				}
+				res->kind = TOKEN_val;
+				res->type = cc->type_rec;
 				if (args->kind == TOKEN_var) {
 					symn id = args->ref.link;
-					res->kind = TOKEN_val;
-					res->type = cc->type_rec;
 					res->cInt = id && id->type ? id->type->offs : 0;
-					break;
 				}
-				traceAst(ast);
-				return CAST_any;
+				break;
 			}
 
 			if (eval(cc, res, args) == CAST_any) {

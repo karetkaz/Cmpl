@@ -90,9 +90,6 @@ float64 testMathAsin_f64 = Math.asin(.2);
 float64 testMathAcos_f64 = Math.acos(.2);
 //float64 testMathAtan_f64 = Math.atan(.3);
 
-bool testMathCmp_f32 = Math.cmp(1.0e-5f, 1.2e-5f, 1e-5f) == 0;
-bool testMathCmp_f64 = Math.cmp(1.0e-5F, 1.2e-5F, 1e-5F) == 0;
-
 float64 testMathAbsMod_f64_0a = Math.absMod(10F, 10F);
 float64 testMathAbsMod_f64_0b = Math.absMod(0F, 10F);
 float64 testMathAbsMod_f64_0c = Math.absMod(-10F, 10F);

@@ -26,9 +26,9 @@ inline "lib/lang/Debug.ci";
 }
 
 inline "lib/math/Math.ci";
-//inline "lib/math/Decimal.ci"?;      // -> Decimal TODO: implement http://dec64.com/
-//inline "lib/math/Rational.ci"?;     // -> Rational<int64>
-inline "lib/math/Complex.ci"?;      // -> Complex<float64>
+//inline "lib/math/Decimal.ci"?;      // -> Decimal
+//inline "lib/math/Rational.ci"?;     // -> Rational
+inline "lib/math/Complex.ci"?;
 inline "lib/math/Vector4f.ci"?;
 inline "lib/math/Matrix4f.ci"?;
 inline "lib/math/Vector2d.ci"?;

@@ -184,7 +184,7 @@ inline drawRRect(Image image, int x1, int y1, int x2, int y2, int r, uint32 colo
 
 /// Draw a normal or smooth(anti-aliased) line, including ending pixel
 void drawLineIncl(Image image, int x0, int y0, int x1, int y1, bool smooth, uint32 color) {
-	inline mix(Image image, int x0, int y0, int alpha, uint32 color) = image.set(x0, y0, mix_s8(alpha, argb(uint32(image.get(x0, y0))), argb(color)));
+	inline mix(Image image, int x0, int y0, int alpha, uint32 color) = image.set(x0, y0, mix_rgb8(alpha, argb(uint32(image.get(x0, y0))), argb(color)));
 
 	if (x0 == x1 || y0 == y1) {
 		// horizontal or vertical line && avoid division by zero
@@ -370,4 +370,3 @@ void drawOval(Image image, const Rect roi&, uint32 color) {
 	}
 	image.drawOval(roi.x, roi.y, roi.x + roi.w, roi.y + roi.h, color);
 }
-

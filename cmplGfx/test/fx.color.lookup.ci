@@ -83,7 +83,7 @@ void brightnessContrastGamma(argb lut[256], float brightness, float contrast, fl
 		// use luminosity channel for: highlights, shadows, whites, blacks
 		val = WhitesBlacks(val, whites, blacks);
 		val = ShadowsHighlights(val, shadows, highlights);
-		int lum = clamp_s8(256 * val);
+		int lum = sat_s8(256 * val);
 
 		// use rgb channel for: brightness, contrast, gamma
 		val = idx / 256f;
@@ -94,7 +94,7 @@ void brightnessContrastGamma(argb lut[256], float brightness, float contrast, fl
 		// apply brightness
 		val = brightness + val;
 
-		int rgb = clamp_s8(256 * val);
+		int rgb = sat_s8(256 * val);
 		lut[idx].r = rgb;
 		lut[idx].g = rgb;
 		lut[idx].b = rgb;
@@ -120,9 +120,9 @@ void calcAutoEqualize(argb lut[256], Image image, bool luminosity) {
 		uint32 sumRgb = (sumR + sumG + sumB) / 3;
 		for (uint32 i = 0; i < 256; i += 1) {
 			lut[i] = _argb(i,
-				clamp_u8(histR[i] * 255 / sumRgb),
-				clamp_u8(histG[i] * 255 / sumRgb),
-				clamp_u8(histB[i] * 255 / sumRgb)
+				sat_u8(histR[i] * 255 / sumRgb),
+				sat_u8(histG[i] * 255 / sumRgb),
+				sat_u8(histB[i] * 255 / sumRgb)
 			);
 		}
 		return;
@@ -134,7 +134,7 @@ void calcAutoEqualize(argb lut[256], Image image, bool luminosity) {
 		hist[i] = sum += hist[i];
 	}
 	for (uint32 i = 0; i < lut.length; i += 1) {
-		uint32 l = clamp_u8(hist[i] * 255 / sum);
+		uint32 l = sat_u8(hist[i] * 255 / sum);
 		lut[i] = _argb(l, i, i, i);
 	}
 }

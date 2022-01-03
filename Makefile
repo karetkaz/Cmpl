@@ -4,8 +4,8 @@ GX_OUT=$(BINDIR)/obj
 GX_SRC=cmplGfx/src
 
 CFLAGS=-Wall -Wextra -g0 -O3 -std=gnu99
-EMFLAGS=-g0 -O3 -s WASM=1 -s EXPORT_ALL=1 -s INVOKE_RUN=0 -s ASSERTIONS=0 -s BINARYEN_TRAP_MODE='clamp' --no-heap-copy
-EMFLAGS+=--memory-init-file 0 -s TOTAL_MEMORY=128MB -s WASM_MEM_MAX=1GB -s ALLOW_MEMORY_GROWTH=1
+EMFLAGS=-g0 -O3 -s WASM=1 -s EXPORT_ALL=0 -s INVOKE_RUN=0 -s ASSERTIONS=0
+EMFLAGS+=--no-heap-copy --memory-init-file 0 -s TOTAL_MEMORY=128MB -s WASM_MEM_MAX=1GB -s ALLOW_MEMORY_GROWTH=1
 EMFLAGS+=-D NO_LIBJPEG -D NO_LIBPNG
 
 EM_EMBED='--preload-file' 'cmplStd/stdlib.ci' '--preload-file' 'cmplGfx/gfxlib.ci'

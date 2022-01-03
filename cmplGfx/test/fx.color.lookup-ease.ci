@@ -31,7 +31,7 @@ void brightnessContrast(argb lut[256], int brightness, int contrast) {
 			value = Math.lerp(brightness / 256., value, easing.out(value));
 		}
 
-		int rgb = clamp_s8(256 * value);
+		int rgb = sat_s8(256 * value);
 		lut[idx].r = rgb;
 		lut[idx].g = rgb;
 		lut[idx].b = rgb;

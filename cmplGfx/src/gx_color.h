@@ -147,9 +147,9 @@ static inline argb sat_rgb(signed a, signed r, signed g, signed b) {
 }
 
 static inline int mix_s8(int alpha, int c1, int c2) {
-	return c1 + (c2 - c1) * alpha / 255;
+	return c1 + (c2 - c1) * alpha / 256;
 }
-static inline argb mix_rgb(int alpha, argb c1, argb c2) {
+static inline argb mix_rgb(uint8_t alpha, argb c1, argb c2) {
 	uint32_t rb = c1.val & 0xff00ff;
 	rb += alpha * ((c2.val & 0xff00ff) - rb) >> 8;
 

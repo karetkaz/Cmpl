@@ -134,6 +134,49 @@ typedef union {
 	};
 } rtValue;
 
+/// Symbol node: types and variables
+typedef enum {
+	CAST_any   = 0x0000,		// error
+	CAST_vid   = 0x0001,		// void
+	CAST_bit   = 0x0002,		// bool
+	CAST_i32   = 0x0003,		// int32, int16, int8
+	CAST_u32   = 0x0004,		// uint32, uint16, uint8
+	CAST_i64   = 0x0005,		// int64
+	CAST_u64   = 0x0006,		// uint64
+	CAST_f32   = 0x0007,		// float32
+	CAST_f64   = 0x0008,		// float64
+	CAST_ref   = 0x0009,		// reference, pointer, array(c-like)
+	CAST_arr   = 0x000a,		// slice: pair of {size, data}
+	CAST_var   = 0x000b,		// variant: pair of {type, data}
+	CAST_val   = 0x000c,		// value, record, array(fixed)
+	//CAST_d   = 0x000d,		// dictionary
+	CAST_enm   = 0x000e,		// enumeration
+	//CAST_f   = 0x000f,		// unused(function)
+
+	KIND_def   = 0x0000,		// alias (/ error at runtime)
+	KIND_typ   = 0x0010,		// typename: struct metadata info.
+	KIND_fun   = 0x0020,		// function
+	KIND_var   = 0x0030,		// variable: function and typename are also variables
+
+	// https://flow.org/en/docs/lang/variance/
+//	Invariant     0x0000,
+//	Covariant     0x0040,
+//	Contravariant 0x0080,
+//	Bivariant     0x00c0,
+
+	ATTR_stat  = 0x0100,        // static attribute
+	ATTR_cnst  = 0x0200,        // constant attribute
+	//ATTR_pure  = 0x0400,      // TODO: pure attribute (type fun() const {...})
+	//ATTR_null  = 0x0800,      // todo: nullable attribute (int nullable? = null; int notnull& = a;)
+
+	ARGS_inln = 0x1000,         // inline argument
+	ARGS_varg  = 0x2000,        // variable argument
+	ARGS_this  = 0x4000,        // first argument is this (used at lookup)
+
+	MASK_cast  = 0x000f,
+	MASK_kind  = 0x0030,
+	MASK_attr  = 0x0f00,
+} ccKind;
 
 /**
  * Runtime context.
@@ -234,7 +277,7 @@ struct rtContextRec {
 		void (*const raise)(rtContext ctx, raiseLevel level, const char *msg, ...);
 
 		/// Lookup function by offset; @see rtLookup
-		symn (*const rtLookup)(rtContext ctx, size_t offset);
+		symn (*const rtLookup)(rtContext ctx, size_t offset, ccKind filter);
 
 		/// Invoke a function; @see invoke
 		vmError (*const invoke)(rtContext ctx, symn fun, void *res, void *args, void *extra);
@@ -267,52 +310,6 @@ struct rtContextRec {
 	const size_t _size;         // size of available memory
 	unsigned char _mem[];       // this is where the memory begins.
 };
-
-/// Symbol node: types and variables
-typedef enum {
-	CAST_any   = 0x0000,		// error
-	CAST_vid   = 0x0001,		// void
-	CAST_bit   = 0x0002,		// bool
-	CAST_i32   = 0x0003,		// int32, int16, int8
-	CAST_u32   = 0x0004,		// uint32, uint16, uint8
-	CAST_i64   = 0x0005,		// int64
-	CAST_u64   = 0x0006,		// uint64
-	CAST_f32   = 0x0007,		// float32
-	CAST_f64   = 0x0008,		// float64
-	CAST_ref   = 0x0009,		// reference, pointer, array(c-like)
-	CAST_arr   = 0x000a,		// slice: pair of {size, data}
-	CAST_var   = 0x000b,		// variant: pair of {type, data}
-	CAST_val   = 0x000c,		// value, record, array(fixed)
-	//CAST_d   = 0x000d,		// dictionary
-	CAST_enm   = 0x000e,		// enumeration
-	//CAST_f   = 0x000f,		// unused(function)
-
-	KIND_def   = 0x0000,		// alias (/ error at runtime)
-	KIND_typ   = 0x0010,		// typename: struct metadata info.
-	KIND_fun   = 0x0020,		// function
-	KIND_var   = 0x0030,		// variable: function and typename are also variables
-
-	// https://code.likeagirl.io/scala-variances-covariance-contravariance-and-invariance-67cc0c4fdc84
-	// https://medium.com/@thejameskyle/type-systems-covariance-contravariance-bivariance-and-invariance-explained-35f43d1110f8
-	// https://flow.org/en/docs/lang/variance/
-//	Invariant     0x0000,
-//	Covariant     0x0040,
-//	Contravariant 0x0080,
-//	Bivariant     0x00c0,
-
-	ATTR_stat  = 0x0100,        // static attribute
-	ATTR_cnst  = 0x0200,        // constant attribute
-	//ATTR_pure  = 0x0400,      // TODO: pure attribute (type fun() const {...})
-	//ATTR_null  = 0x0800,      // todo: nullable attribute (int nullable? = null; int notnull& = a;)
-
-	ARGS_inln = 0x1000,         // inline argument
-	ARGS_varg  = 0x2000,        // variable argument
-	ARGS_this  = 0x4000,        // first argument is this (used at lookup)
-
-	MASK_cast  = 0x000f,
-	MASK_kind  = 0x0030,
-	MASK_attr  = 0x0f00,
-} ccKind;
 
 struct symNode {
 	const char *name;  // symbol name

@@ -1,0 +1,63 @@
+// rounded rectangle demo
+inline "/cmplGfx/lib/micro.ui.ci";
+
+Slider sldSx = {
+	text: "size.x";
+	maximum: 200;
+	value: 100;
+};
+Slider sldSy = {
+	text: "size.y";
+	maximum: 200;
+	value: 20;
+};
+Slider sldRx = {
+	text: "round.x";
+	maximum: 200;
+	value: 20;
+};
+Slider sldRy = {
+	text: "round.y";
+	maximum: 200;
+	value: 20;
+};
+Slider time = {
+	text: "time";
+	enabled: false;
+	onDrawSlider: null;
+};
+Button separator = {
+	text: null;
+	height: 1;
+	enabled: false;
+};
+
+Image offs = Image(410, 410, 32);
+int onEvent(Window win&, int action, int button, int x, int y) {
+	if (action == Gui.KEY_RELEASE && button == 27) {
+		// exit when releasing escape key
+		return -1;
+	}
+	Widget ui = win.widget;
+	if (!win.dispatchEvent(ui, action, button, x, y)) {
+		// event not processed, wait for the next one
+		return 0;
+	}
+
+	uint64 start = System.millis();
+	offs.fill(0);
+	int x = offs.width() / 2;
+	int y = offs.height() / 2;
+	int sx = sldSx.value;
+	int sy = sldSy.value;
+	int rx = sldRx.value;
+	int ry = sldRy.value;
+	offs.fillRRect(x - sx, y - sy, x + sx, y + sy, rx, ry, 0xffffff);
+	time.value = System.millis() - start;
+	return win.draw(ui);
+}
+Gui.showWindow(offs, onEvent, Widget(
+	sldSx, sldSy, sldRx, sldRy,
+	separator, time
+));
+offs.destroy();

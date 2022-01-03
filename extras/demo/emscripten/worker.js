@@ -29,7 +29,8 @@ var Module = {
 		postMessage({initialized: true});
 	},
 	onFileDownloaded: function(progress, total) {
-		postMessage({progress, total});
+		let list = Module.listFiles(Module.workspace + '/');
+		postMessage({ progress, total, list });
 	}
 };
 
@@ -39,8 +40,7 @@ importScripts("cmpl.js");
 /* communication with worker/args
 request => {
 	list - download these files to the workspace directory [{path|file, url|content}]
-	file - open or save the content of the file
-	line - jump to / position in file
+	path - list, open or save the content of the file
 	url - download and save content
 	content - save content
 	workspace - switch workspace
@@ -50,7 +50,6 @@ request => {
 response => {
 	list - list of files in the workspace
 	data - content of the requested file
-	line - jump to / position in file
 	print - print the message to the output
 	error - print the error to the output
 	exitcode - response to execute
@@ -82,8 +81,7 @@ onmessage = function(event) {
 					callMain(data.execute);
 					if (data.dump != null) {
 						result.content = Module.readFile(data.dump);
-						result.file = data.dump;
-						result.line = 1;
+						result.path = data.dump;
 					}
 					result.exitCode = 0;
 					sync = true;

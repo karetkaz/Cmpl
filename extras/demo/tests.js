@@ -1,12 +1,50 @@
 let projects = {
-	'cmplGfx.tests' : {
+	'test.cmplStd' : {
+		base: 'cmplStd/test/',
+		main: 'cmplStd/test/test.ci',
+		flags: ['useWebWorker', 'libFile'],
+		files: [
+			'benchmark/DNA K-mers/k-mers.cpp',
+			'benchmark/DNA K-mers/k-mers.ci',
+			'benchmark/DNA K-mers/k-mers.py',
+			'benchmark/DNA K-mers/results.txt',
+
+			'demo/BitwiseArithmetic.ci',
+
+			'lang/emit.ci',
+			'lang/function.ci',
+			'lang/init.array.ci',
+			'lang/init.member.ci',
+			'lang/init.method.ci',
+			'lang/init.reference.ci',
+			'lang/init.variable.ci',
+			'lang/inlineMacros.ci',
+			'lang/overload.inline.ci',
+			'lang/recPacking.ci',
+			'lang/recUnion.ci',
+			'lang/reflect.ci',
+			'lang/stmt.for.ci',
+			'lang/stmt.if.ci',
+			'lang/useOperator.ci',
+
+			'std/math.Bits.ci',
+			'std/math.Complex.ci',
+			'std/math.Polynomial.ci',
+			'std/math.Trigonometry.ci',
+			'std/memory.ci',
+			'std/number.ci',
+			'std/test.math.ci',
+			'std/tryExec.ci',
+
+			'test.ci',
+		]
+	},
+	'test.cmplGfx' : {
 		base: 'cmplGfx/test/',
-		libs: ['libGfx', 'libFile'],
 		main: 'cmplGfx/test/testGfx.ci',
+		flags: ['libGfx'],
 		files: [
 			'cmplGfx/test/asset/font/NokiaPureText.ttf',
-			'cmplGfx/test/asset/font/NokiaPureTextBold.ttf',
-			'cmplGfx/test/asset/font/NokiaPureTextLight.ttf',
 			'cmplGfx/test/asset/image/david.png',
 			'cmplGfx/test/asset/image/forest.jpg',
 			'cmplGfx/test/asset/image/garden.png',
@@ -14,6 +52,7 @@ let projects = {
 			'cmplGfx/test/asset/image/texture.png',
 			'cmplGfx/test/asset/image/texture_nature_01.png',
 			'cmplGfx/test/asset/mesh/teapot.obj',
+
 			'cmplGfx/test/demo/2d.draw.bezier.ci',
 			'cmplGfx/test/demo/2d.draw.rrect.ci',
 			'cmplGfx/test/demo/2d.draw.test.ci',
@@ -22,16 +61,20 @@ let projects = {
 			'cmplGfx/test/demo/FloodIt.ci',
 			'cmplGfx/test/demo/RayTracer0.ci',
 			'cmplGfx/test/demo/StarField.ci',
+
+			'cmplGfx/test/demo.procedural/2d.ImageDiff.ci',
 			'cmplGfx/test/demo.procedural/Blobs.ci',
 			'cmplGfx/test/demo.procedural/Complex.ci',
 			'cmplGfx/test/demo.procedural/Mandelbrot.ci',
 			'cmplGfx/test/demo.procedural/YinYang.ci',
+
 			'cmplGfx/test/demo.widget/ColorPicker.ci',
 			'cmplGfx/test/demo.widget/DatePicker.ci',
 			'cmplGfx/test/demo.widget/layout.Align.ci',
 			'cmplGfx/test/demo.widget/layout.Test.ci',
+			'cmplGfx/test/demo.widget/rounded.rect.ci',
+
 			'cmplGfx/test/2d.draw.image.ci',
-			'cmplGfx/test/2d.ImageDiff.ci',
 			'cmplGfx/test/3d.draw.mesh.ci',
 			'cmplGfx/test/3d.height.map.ci',
 			'cmplGfx/test/3d.parametric.ci',
@@ -50,35 +93,17 @@ let projects = {
 			'cmplGfx/test/testGfx.ci',
 		]
 	},
-	'cmplStd.tests' : {
-		base: 'cmplStd/test/',
-		libs: ['libFile'],
-		main: 'cmplStd/test/test.ci',
+	'test.cmplFile' : {
+		base: 'cmplFile/test/',
+		main: 'hello.world.ci',
+		flags: ['useWebWorker', 'libFile'],
 		files: [
-			'lang/recPacking.ci',
-			'lang/inlineMacros.ci',
-			'lang/init.reference.ci',
-			'lang/init.array.ci',
-			'lang/stmt.for.ci',
-			'lang/init.method.ci',
-			'lang/overload.inline.ci',
-			'lang/useOperator.ci',
-			'lang/reflect.ci',
-			'std/test.math.ci',
-			'std/number.ci',
-			'std/test.trigonometry.ci',
-			'std/math.Complex.ci',
-			'lang/emit.ci',
-			'test.ci',
-			'lang/init.member.ci',
-			'std/tryExec.ci',
-			'std/math.Bits.ci',
-			'std/memory.ci',
-			'lang/function.ci',
-			'lang/stmt.if.ci',
-			'lang/init.variable.ci',
-			'lang/recUnion.ci',
-			'demo/BitwiseArithmetic.ci',
+			{path: '~/out/', content: ''}, // create output directory
+			{path: '/cmplGfx/test/asset/image/david.png', url: '/Cmpl/cmplGfx/test/asset/image/david.png'},
+
+			'file.write.ci',
+			'hello.world.ci',
+			'test.base64.ci',
 		]
 	},
 };
@@ -117,10 +142,9 @@ function toProject(proj) {
 	let project = {};
 
 	// set libraries to be used
-	if (proj.libs != null) {
-		let libs = [];
-		for (let lib of proj.libs) {
-			project[lib] = '';
+	if (proj.flags != null) {
+		for (let flag of proj.flags) {
+			project[flag] = '';
 		}
 	}
 
@@ -128,6 +152,10 @@ function toProject(proj) {
 	if (proj.files != null) {
 		let files = [];
 		for (let file of proj.files) {
+			if (file != null && file.constructor === Object) {
+				files.push(file);
+				continue;
+			}
 			if (file.startsWith(proj.base)) {
 				file = file.substring(proj.base.length, file.length);
 			}
@@ -149,7 +177,7 @@ function toProject(proj) {
 		if (main.startsWith(proj.base)) {
 			main = main.substring(proj.base.length, main.length);
 		}
-		project.file = main;
+		project.path = main;
 	}
 
 	return project;

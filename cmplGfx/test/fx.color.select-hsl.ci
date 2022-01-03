@@ -159,7 +159,7 @@ int onEvent(Window win&, int action, int button, int x, int y) {
 	// blending is slow, so blend only when mouse button is released
 	if (button == 1 && (action == Gui.MOUSE_RELEASE || action == Gui.FINGER_RELEASE)) {
 		debug.startTimer();
-		offs.copy(0, 0, back, null, 256, blendHsl);
+		offs.blend(0, 0, back, null, blendHsl);
 	}
 
 	histogram.update(offs);

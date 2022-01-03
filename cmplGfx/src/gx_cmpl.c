@@ -289,37 +289,16 @@ static vmError surf_fillRect(nfcContext ctx) {
 	return noError;
 }
 
+static const char *const proto_image_blend_color = "color";
+static const char *const proto_image_blend_alpha = "alpha";
+static const char *const proto_image_blend_dstAlpha = "dstAlpha";
+static const char *const proto_image_blend = "void blend(Image image, int32 x, int32 y, const Image src, const Rect roi&, pointer extra, uint32 blend(pointer extra, uint32 base, uint32 with))";
 typedef struct bltContext {
 	symn callback;
 	vmOffs extra;
-	uint32_t color;
-	int32_t alpha;
 	rtContext rt;
 } *bltContext;
-
-static const char *const proto_image_copy = "void copy(Image image, int32 x, int32 y, const Image src, const Rect roi&, int32 alpha, pointer extra, uint32 blend(pointer extra, uint32 base, uint32 with))";
-static int alphaCopyCallback(argb* dst, argb *src, bltContext ctx, size_t cnt) {
-	rtContext rt = ctx->rt;
-	int alpha = ctx->alpha;
-	argb val;
-#pragma pack(push, 4)
-	struct { argb with, base; vmOffs extra; } args = {
-			.extra = ctx->extra
-	};
-#pragma pack(pop)
-	for (size_t i = 0; i < cnt; ++i, ++dst, ++src) {
-		args.base = *dst;
-		args.with = *src;
-		if (rt->api.invoke(rt, ctx->callback, &val, &args, NULL) != noError) {
-			return -1;
-		}
-		dst->r = (dst->r + alpha * (val.r - dst->r) / 255);
-		dst->g = (dst->g + alpha * (val.g - dst->g) / 255);
-		dst->b = (dst->b + alpha * (val.b - dst->b) / 255);
-	}
-	return 0;
-}
-static int copyCallback(argb* dst, argb *src, bltContext ctx, size_t cnt) {
+static int blendCallback(argb* dst, argb *src, bltContext ctx, size_t cnt) {
 	rtContext rt = ctx->rt;
 #pragma pack(push, 4)
 	struct { argb with, base; vmOffs extra; } args = {
@@ -335,57 +314,86 @@ static int copyCallback(argb* dst, argb *src, bltContext ctx, size_t cnt) {
 	}
 	return 0;
 }
-static vmError surf_copy(nfcContext ctx) {
+static int blendDstAlpha(argb* dst, argb *src, void *extra, size_t cnt) {
+	for (size_t i = 0; i < cnt; ++i, ++dst, ++src) {
+		*dst = mix_rgb(ach(dst->val), *dst, *src);
+	}
+	(void) extra;
+	return 0;
+}
+static int blendColor(argb* dst, argb *src, argb *color, size_t cnt) {
+	int alpha = ach(color->val);
+	argb col = *color;
+	for (size_t i = 0; i < cnt; ++i, ++dst, ++src) {
+		*dst = mix_rgb(alpha, col, *src);
+	}
+	return 0;
+}
+static int blendAlpha(argb* dst, argb *src, argb *color, size_t cnt) {
+	int alpha = color->val;
+	for (size_t i = 0; i < cnt; ++i, ++dst, ++src) {
+		dst->r = sat_s8(mix_s8(alpha, dst->r, src->r));
+		dst->g = sat_s8(mix_s8(alpha, dst->g, src->g));
+		dst->b = sat_s8(mix_s8(alpha, dst->b, src->b));
+	}
+	return 0;
+}
+static vmError surf_blend(nfcContext ctx) {
 	rtContext rt = ctx->rt;
 	GxImage surf = nextValue(ctx).ref;
 	int x = nextValue(ctx).i32;
 	int y = nextValue(ctx).i32;
 	GxImage src = nextValue(ctx).ref;
 	GxRect roi = nextValue(ctx).ref;
-	int alpha = nextValue(ctx).i32;
-	size_t cbExtra = argref(ctx, rt->api.nfcNextArg(ctx));
-	size_t cbOffs = argref(ctx, rt->api.nfcNextArg(ctx));
-	symn callback = rt->api.rtLookup(ctx->rt, cbOffs);
+	size_t extra = argref(ctx, rt->api.nfcNextArg(ctx));
+	size_t offset = argref(ctx, rt->api.nfcNextArg(ctx));
+	symn builtin = rt->api.rtLookup(ctx->rt, offset, KIND_typ);
+	symn callback = rt->api.rtLookup(ctx->rt, offset, KIND_fun);
 
-	if (cbOffs != 0 && callback == NULL) {
+	if (callback == NULL && builtin == NULL && offset != 0) {
 		rt->api.raise(rt, raiseError, "Invalid callback");
 		return nativeCallError;
 	}
 
-	struct bltContext cbArgs = {
-		.callback = callback,
-		.extra = cbExtra,
-		.alpha = alpha,
-		.rt = rt,
-	};
-	void *arg = &cbArgs;
+	if (callback == NULL && builtin == NULL) {
+		// convert from one color format to another, or copy
+		bltProc blt = getBltProc(src->depth, surf->depth);
 
+		if (copyImage(surf, x, y, src, roi, NULL, blt) < 0) {
+			rt->api.raise(rt, raiseError, "failed to copy image: %T", ctx->sym);
+			return nativeCallError;
+		}
+		return noError;
+	}
+
+	if (surf->depth != 32 || src->depth != 32) {
+		rt->api.raise(rt, raiseError, "Image depths must be 32 to blend them with %T", ctx->sym);
+		return nativeCallError;
+	}
+
+	struct bltContext args = {
+			.callback = callback,
+			.extra = extra,
+			.rt = rt,
+	};
 	bltProc blt = NULL;
-	if (callback != NULL && alpha != 256) {
-		if (surf->depth != 32 || src->depth != 32) {
-			rt->api.raise(rt, raiseError, "Image depths must be 32 to blend them with %T", ctx->sym);
-			return nativeCallError;
-		}
-		blt = (bltProc) alphaCopyCallback;
+	void *arg = NULL;
+
+	if (callback != NULL) {
+		blt = (bltProc) blendCallback;
+		arg = &args;
 	}
-	else if (callback != NULL) {
-		if (surf->depth != 32 || src->depth != 32) {
-			rt->api.raise(rt, raiseError, "Image depths must be 32 to blend them with %T", ctx->sym);
-			return nativeCallError;
-		}
-		blt = (bltProc) copyCallback;
+	else if (builtin->fmt == proto_image_blend_color) {
+		blt = (bltProc) blendColor;
+		arg = vmPointer(rt, extra);
 	}
-	else if (alpha != 256) {
-		if (surf->depth != src->depth) {
-			rt->api.raise(rt, raiseError, "Image depths must match to alpha mix them with %T", ctx->sym);
-			return nativeCallError;
-		}
-		blt = getBltProc(blt_cpy_mix, surf->depth);
-		arg = &alpha;
+	else if (builtin->fmt == proto_image_blend_alpha) {
+		//blt = getBltProc(blt_cpy_mix, surf->depth);
+		blt = (bltProc) blendAlpha;
+		arg = vmPointer(rt, extra);
 	}
-	else {
-		// convert from one color format to another, or fast copy
-		blt = getBltProc(src->depth, surf->depth);
+	else if (builtin->fmt == proto_image_blend_dstAlpha) {
+		blt = (bltProc) blendDstAlpha;
 		arg = NULL;
 	}
 
@@ -396,100 +404,6 @@ static vmError surf_copy(nfcContext ctx) {
 
 	return noError;
 }
-
-/* TODO: static const char *const proto_image_fill = "void fill(Image image, const Rect roi&, uint32 color, int32 alpha, pointer extra, uint32 blend(pointer extra, uint32 base, uint32 with))";
-static int alphaFillCallback(argb* dst, argb const * const srcCol, bltContext ctx, size_t cnt) {
-	rtContext rt = ctx->rt;
-	int alpha = ctx->alpha;
-	argb val;
-#pragma pack(push, 4)
-	struct { argb with, base; vmOffs extra; } args = {
-			.extra = ctx->extra,
-			.with = *srcCol
-	};
-#pragma pack(pop)
-	for (size_t i = 0; i < cnt; ++i, ++dst) {
-		args.base = *dst;
-		if (rt->api.invoke(rt, ctx->callback, &val, &args, NULL) != noError) {
-			return -1;
-		}
-		dst->r = (dst->r + alpha * (val.r - dst->r) / 255);
-		dst->g = (dst->g + alpha * (val.g - dst->g) / 255);
-		dst->b = (dst->b + alpha * (val.b - dst->b) / 255);
-	}
-	return 0;
-}
-static int fillCallback(argb* dst, argb *srcCol, bltContext ctx, size_t cnt) {
-	rtContext rt = ctx->rt;
-#pragma pack(push, 4)
-	struct { argb with, base; vmOffs extra; } args = {
-			.extra = ctx->extra,
-			.with = *srcCol
-	};
-#pragma pack(pop)
-	for (size_t i = 0; i < cnt; ++i, ++dst) {
-		args.base = *dst;
-		if (rt->api.invoke(rt, ctx->callback, dst, &args, NULL) != noError) {
-			return -1;
-		}
-	}
-	return 0;
-}
-static vmError surf_fill(nfcContext ctx) {
-	rtContext rt = ctx->rt;
-	GxImage surf = nextValue(ctx).ref;
-	GxRect roi = nextValue(ctx).ref;
-	uint32_t color = nextValue(ctx).u32;
-	int alpha = nextValue(ctx).i32;
-	size_t cbExtra = argref(ctx, rt->api.nfcNextArg(ctx));
-	size_t cbOffs = argref(ctx, rt->api.nfcNextArg(ctx));
-	symn callback = rt->api.rtLookup(ctx->rt, cbOffs);
-
-	if (cbOffs != 0 && callback == NULL) {
-		rt->api.raise(rt, raiseError, "Invalid callback");
-		return nativeCallError;
-	}
-
-	struct bltContext cbArgs = {
-			.callback = callback,
-			.extra = cbExtra,
-			.alpha = alpha,
-			.rt = rt,
-	};
-	void *arg = &cbArgs;
-
-	bltProc blt = NULL;
-	if (callback != NULL && alpha != 256) {
-		if (surf->depth != 32) {
-			rt->api.raise(rt, raiseError, "Image depth must be 32 to blend them with %T", ctx->sym);
-			return nativeCallError;
-		}
-		blt = (bltProc) alphaFillCallback;
-	}
-	else if (callback != NULL) {
-		if (surf->depth != 32) {
-			rt->api.raise(rt, raiseError, "Image depth must be 32 to blend them with %T", ctx->sym);
-			return nativeCallError;
-		}
-		blt = (bltProc) fillCallback;
-	}
-	else if (alpha != 256) {
-		blt = getBltProc(blt_set_mix, surf->depth);
-		arg = &alpha;
-	}
-	else {
-		// convert from one color format to another, or fast copy
-		blt = getBltProc(blt_set_col, surf->depth);
-		arg = NULL;
-	}
-
-	if (fillImage(surf, roi, &color, arg, blt) < 0) {
-		rt->api.raise(rt, raiseError, "failed to copy image: %T", ctx->sym);
-		return nativeCallError;
-	}
-
-	return noError;
-}*/
 
 static const char *const proto_image_transform = "void transform(Image image, const Rect rect&, Image src, const Rect roi&, int32 interpolate, const float32 mat[16])";
 static vmError surf_transform(nfcContext ctx) {
@@ -1133,7 +1047,7 @@ static vmError window_show(nfcContext ctx) {
 
 	struct mainLoopArgs args;
 	args.rt = rt;
-	args.callback = rt->api.rtLookup(ctx->rt, cbOffs);
+	args.callback = rt->api.rtLookup(ctx->rt, cbOffs, KIND_fun);
 	args.error = noError;
 	args.timeout = 0;
 	args.window = NULL;
@@ -1301,26 +1215,6 @@ static vmError mesh_material(nfcContext ctx) {
 	}
 
 	return illegalState;
-}
-
-static symn typSigned(rtContext rt, int size) {
-	switch (size) {
-		default:
-			break;
-
-		case 1:
-			return rt->api.ccLookup(rt, NULL, "int8");
-
-		case 2:
-			return rt->api.ccLookup(rt, NULL, "int16");
-
-		case 4:
-			return rt->api.ccLookup(rt, NULL, "int32");
-
-		case 8:
-			return rt->api.ccLookup(rt, NULL, "int64");
-	}
-	return NULL;
 }
 
 static GxImage defaultFont(int height) {
@@ -1660,6 +1554,34 @@ static GxImage defaultFont(int height) {
 	return dst;
 }
 
+static symn typSigned(rtContext rt, int size) {
+	switch (size) {
+		default:
+			break;
+
+		case 1:
+			return rt->api.ccLookup(rt, NULL, "int8");
+
+		case 2:
+			return rt->api.ccLookup(rt, NULL, "int16");
+
+		case 4:
+			return rt->api.ccLookup(rt, NULL, "int32");
+
+		case 8:
+			return rt->api.ccLookup(rt, NULL, "int64");
+	}
+	return NULL;
+}
+
+static void builtinBlend(const struct rtContextRec *rt, const char * proto, symn funType) {
+	symn type = rt->api.ccAddType(rt->cc, proto, 0, 1);
+	// fake it to be function like
+	type->params = funType->params;
+	type->type = funType->type;
+	type->fmt = proto;
+}
+
 #define offsetOf(__TYPE, __FIELD) ((size_t) &((__TYPE*)NULL)->__FIELD)
 #define sizeOf(__TYPE, __FIELD) sizeof(((__TYPE*)NULL)->__FIELD)
 
@@ -1699,7 +1621,7 @@ int cmplInit(rtContext rt) {
 		{surf_drawText, proto_image_drawTextRoi},
 
 		{surf_fillRect, proto_image_fillRect},
-		{surf_copy, proto_image_copy},
+		{surf_blend, proto_image_blend},
 		{surf_transform, proto_image_transform},
 		{surf_blur, proto_image_blur},
 
@@ -1802,9 +1724,29 @@ int cmplInit(rtContext rt) {
 	}
 
 	if (rt->api.ccExtend(cc, symImage)) {
+		symn blend = NULL;
 		for (size_t i = 0; i < sizeof(nfcSurf) / sizeof(*nfcSurf); i += 1) {
-			if (!rt->api.ccAddCall(cc, nfcSurf[i].func, nfcSurf[i].proto)) {
+			symn nfc = rt->api.ccAddCall(cc, nfcSurf[i].func, nfcSurf[i].proto);
+			if (nfc == NULL) {
 				return 1;
+			}
+			if (nfcSurf[i].proto == proto_image_blend) {
+				// needed to add some builtin blend methods
+				blend = nfc;
+			}
+		}
+		if (blend != NULL && blend->params != NULL) {
+			if (rt->api.ccExtend(cc, blend)) {
+				symn method = NULL;
+				for (symn p = blend->params; p; p = p->next) {
+					// blend callback is the last parameter
+					method = p;
+				}
+
+				builtinBlend(rt, proto_image_blend_color, method);// Image.blend.color
+				builtinBlend(rt, proto_image_blend_alpha, method);
+				builtinBlend(rt, proto_image_blend_dstAlpha, method);
+				rt->api.ccEnd(cc, blend);
 			}
 		}
 		rt->api.ccEnd(cc, symImage);

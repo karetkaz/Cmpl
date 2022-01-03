@@ -85,7 +85,7 @@ TEST_FILES="$TEST_FILES $(echo $CMPL_HOME/temp/cmplGfx/demo/*.ci)"
 BIN="$CMPL_HOME/$BIN"
 DUMP_FILE=$BIN.dump.ci
 $BIN/cmpl -log/d "$DUMP_FILE"
-for file in $(echo "$TEST_FILES")
+for file in $TEST_FILES
 do
 	if ! cd "$(dirname "$file")"; then
 		echo "**** cannot run test: $file"

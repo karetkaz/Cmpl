@@ -65,7 +65,7 @@
 <div id="left-sidebar" class="sidebar">
 	<div class="submenu">
 		<li onclick="setStyle(parentElement, '~collapsed');">Workspace<span class="" id="workspaceName"></span>
-			<button class="right" onclick="event.stopPropagation(); setStyle(parentElement.parentElement, '-collapsed'); params.update({folder: null}); params.update('folder');" title="Refresh workspace">⟳</button>
+			<button class="right" onclick="event.stopPropagation(); setStyle(parentElement.parentElement, '-collapsed'); params.update('path');" title="Refresh workspace">⟳</button>
 		</li>
 		<ul id="fileList"></ul>
 		<ul>
@@ -73,7 +73,7 @@
 				<li onclick="setStyle(parentElement, '~collapsed')">Dependencies</li>
 				<ul>
 					<li id="libFile" onclick="params.update({libFile: params.libFile == null ? '' : null});">libFile</li>
-					<li id="libGfx" onclick="params.update({libGfx: params.libGfx == null ? '' : null});">libGfx (reloads page)</li>
+					<li id="libGfx" onclick="params.update({libGfx: params.libGfx == null ? '' : null});">libGfx</li>
 					<hr>
 				</ul>
 			</div>
@@ -341,7 +341,7 @@ function centerCanvas(zoom) {
 }
 
 // libGfx for canvas based execution
-if (params.libGfx === undefined) {
+if (params.useWebWorker !== undefined) {
 	props.locateFile = function (path) {
 		return path;
 	}
@@ -364,6 +364,12 @@ if (params.libGfx === undefined) {
 			dump, execute: args || []
 		});
 	}
+
+	libGfx.onclick = function () {
+		if (confirm('libGfx is not compatible with WebWorker, continue and reload the page')) {
+			params.update({ libGfx: params.libGfx == null ? '' : null, useWebWorker: null });
+		}
+	};
 }
 else {
 	props.locateFile = function (path) {
@@ -392,7 +398,8 @@ else {
 			process({initialized: true});
 		},
 		onFileDownloaded: function (progress, total) {
-			process({progress, total});
+			let list = Module.listFiles(Module.workspace + '/');
+			process({ progress, total, list });
 		},
 	};
 
@@ -433,7 +440,7 @@ else {
 			try {
 				callMain(args || []);
 				if (extra && extra.dump) {
-					openProjectFile({file: extra.dump});
+					openProjectFile({ path: extra.dump });
 				}
 			} finally {
 				if (canvas.width === 0) {
@@ -446,7 +453,7 @@ else {
 	document.write('<script type="text/javascript" src="extras/demo/emscripten/module.js"><\/script>');
 	document.write('<script type="text/javascript" src="extras/demo/emscripten/cmpl.js"><\/script>');
 }
-if (params.workspace == null && params.project == null && params.folder == null && params.file == null) {
+if (params.workspace == null && params.project == null && params.path == null) {
 	document.write('<script type="text/javascript" src="extras/demo/tests.js"><\/script>');
 }
 </script>

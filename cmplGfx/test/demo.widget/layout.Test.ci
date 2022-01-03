@@ -235,5 +235,5 @@ static void debugLayoutDraw(Image img, const Rect rect&, uint32 rgb) {
 		return;
 	}
 	img.drawRect(rect, rgb);
-//	img.blend(rect, rgb, 32, false, null);
+	img.blend(rect, argb(0xf0ff0000));
 }

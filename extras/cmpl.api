@@ -266,6 +266,7 @@ Math.sqrtPhi
 Math.nan
 Math.inf
 Math.modf(x: float64, intPart: float64): float64 # Decompose a value into integer and fractional parts
+Math.ldexp(x: float64, exp: int32): float64 # ldexp(float64 x, int exp) = x * 2 ** exp\nadapted from: https://git.musl-libc.org/cgit/musl/tree/src/math/scalbn.c
 Math.floor(x: float64): float64 # Computes the largest integer value not greater than the input
 Math.ceil(x: float64): float64 # Computes the smallest integer not less than the input
 Math.round(x: float64): float64 # Computes the nearest integer to the input
@@ -315,13 +316,14 @@ Math.eval(x: float64, a0: float64): float64 # Return the polynomial evaluated at
 Math.eval(x: float64, a0: float64, a1: float64): float64 # Return the polynomial evaluated at x using Horner's algorithm
 Math.eval(x: float64, a0: float64, a1: float64, a2: float64): float64 # Return the polynomial evaluated at x using Horner's algorithm
 Math.eval(x: float64, a0: float64, a1: float64, a2: float64, a3: float64): float64 # Return the polynomial evaluated at x using Horner's algorithm
+Math.eval(x: float64, a0: float64, a1: float64, a2: float64, a3: float64, a4: float64): float64 # Return the polynomial evaluated at x using Horner's algorithm
 Math.eval(x: float64, polynomial: float64[]): float64 # Return the polynomial evaluated at x using Horner's algorithm
-Math.cmp(a: float32, b: float32, eps: float32): int32 # Compare `a` and `b` floating point with `eps` tolerance
-Math.cmp(a: float64, b: float64, eps: float64): int32 # Compare `a` and `b` floating point with `eps` tolerance
 Math.sinCos(arg: float64, quad: int32): float64
-Math.sin(arg: float64): float64 # Returns the sine of the input
-Math.cos(arg: float64): float64 # Returns the cosine of the input
-Math.tan(arg: float64): float64 # Returns the tangent of the input
+Math.tanCot(x: float64, flag: int32): float64
+Math.sin(x: float64): float64 # Returns the sine of the radian argument `x`.
+Math.cos(x: float64): float64 # Returns the cosine of the radian argument `x`.
+Math.tan(x: float64): float64 # Returns the tangent of the radian argument `x`.
+Math.cot(x: float64): float64 # Returns the cotangent of the radian argument `x`.
 Math.sinh(x: float64): float64 # Returns the hyperbolic sine of the input
 Math.cosh(x: float64): float64 # Returns the hyperbolic cosine of the input
 Math.asin(x: float64): float64 # Returns the arc sine of the input\n Special cases are:\n   Asin(±0) = ±0\n   Asin(x) = NaN if x < -1 or x > 1
@@ -564,7 +566,10 @@ Image.clipText(font: Image, rect: Rect, text: char[*]): void
 Image.drawText(image: Image, x: int32, y: int32, font: Image, text: char[*], color: int32): void
 Image.drawText(image: Image, roi: Rect, font: Image, text: char[*], color: int32): void
 Image.fillRect(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, incl: int32, color: uint32): void
-Image.copy(image: Image, x: int32, y: int32, src: Image, roi: Rect, alpha: int32, extra: pointer, blend(extra: pointer, base: uint32, with: uint32): uint32): void
+Image.blend(image: Image, x: int32, y: int32, src: Image, roi: Rect, extra: pointer, blend(extra: pointer, base: uint32, with: uint32): uint32): void
+Image.blend.color
+Image.blend.alpha
+Image.blend.dstAlpha
 Image.transform(image: Image, rect: Rect, src: Image, roi: Rect, interpolate: int32, mat: float32[16]): void
 Image.blur(image: Image, radius: int32, sigma: float64): void
 Image.colorMap(image: Image, roi: Rect, lut: uint32[256]): void
@@ -658,8 +663,8 @@ argb.r # red component
 argb.a # alpha component
 argb(argb: uint32): argb # cast unsigned integer to argb value
 uint32(value: argb): uint32 # cast argb value to unsigned integer
-clamp_s8(c: int32): uint32 # clamp signed gray or color component to fit in 8 bits (0 ... 255)
-clamp_u8(c: uint32): uint32 # clamp unsigned gray or color component to fit in 8 bits (0 ... 255)
+sat_s8(c: int32): uint32 # clamp signed gray or color component to fit in 8 bits (0 ... 255)
+sat_u8(c: uint32): uint32 # clamp unsigned gray or color component to fit in 8 bits (0 ... 255)
 _gray(c: uint32): argb
 gray(c: int32): argb # construct a rgb8 color from the given gray value, clamp the input
 gray(c: uint32): argb # construct a rgb8 color from the given gray value, clamp the input
@@ -683,7 +688,7 @@ lum(color: argb): int32 # get the luminosity of the color (0.299 * color.r + 0.5
 hue(rgb: argb): uint32 # get the hue of the color
 mix_s8(t: int32, a: uint32, b: uint32): int32
 mix_s16(t: int32, a: uint32, b: uint32): int32
-mix_s8(t: int32, a: argb, b: argb): argb
+mix_rgb8(t: int32, a: argb, b: argb): argb
 lerpLut(lut: argb[], colors: argb[]): void # linear interpolate a lookup-table with the given colors
 alphaLut(lut: uint32[], hardness: int32, alpha: int32, reflect: bool): void # linear interpolate a alpha lookup-table with the given colors
 vec4f(rgb: argb): vec4f # convert an argb color to a floating point vector
@@ -699,15 +704,17 @@ set(image: Image, x: int32, y: int32, color: argb): void # Set the the color of 
 Image(width: int32, height: int32, depth: int32): Image # Create an image with the given with, height and depth
 Image(fileName: char[*], depth: int32): Image # Create an image by opening an image file
 Image(fileName: char[*]): Image # Create an image by opening an image file
-copy(image: Image, x0: int32, y0: int32, src: Image, roi: Rect, alpha: int32, extra: pointer, blend(extra: pointer, base: argb, with: argb): argb): void # emulated implementation of blend function (incomplete)
-copy(image: Image, x0: int32, y0: int32, src: Image, roi: Rect, alpha: int32, blend(base: vec4f, with: vec4f): vec4f): void # emulated implementation of blend function (incomplete)
-copy(image: Image, x: int32, y: int32, src: Image, roi: Rect): void # emulated implementation of blend function (incomplete)
+blend(image: Image, x0: int32, y0: int32, src: Image, roi: Rect, extra: pointer, blend(extra: pointer, base: argb, with: argb): argb): void # copy the `src` image to the destination with an optional blend method
+blend(image: Image, x0: int32, y0: int32, src: Image, roi: Rect, blend(base: vec4f, with: vec4f): vec4f): void # copy the `src` image to the destination with an optional blend method
+blend(image: Image, roi: Rect, col: argb): void # fill the destination with the given `col` (alpha channel is used)
+blendAlpha(image: Image, x: int32, y: int32, src: Image, roi: Rect, alpha: int32): void # copy the `src` image to the destination with the given transparency
+blendDstAlpha(image: Image, x: int32, y: int32, src: Image, roi: Rect): void # copy the `src` image to the destination masked with destination alpha
+copy(image: Image, x: int32, y: int32, src: Image, roi: Rect): void # copy the `src` image to the destination
 Image(copy: Image): Image # Create an image by copying another one
-tile(image: Image, x: int32, y: int32, src: Image, roi: Rect): void # @public
-fill(image: Image, roi: Rect, color: uint32, alpha: int32, blend(base: argb, with: argb): argb): void # Fill the surface with the given color using alpha and blend method
+tile(image: Image, x: int32, y: int32, src: Image, roi: Rect): void # copy the `src` image multiple times so it fills the whole `image`
 eval(image: Image, roi: Rect, aspect: float32, time: float32, eval(in: vec4f): vec4f): void # Fill the surface by evaluating the given function for each pixel
-colorMap(image: Image, roi: Rect, lut: argb[256]): void
-colorMat(image: Image, roi: Rect, mat: mat4f): void
+colorMap(image: Image, roi: Rect, lut: argb[256]): void # apply a color lookup table to each pixel defined by the `roi` on the `image`
+colorMat(image: Image, roi: Rect, mat: mat4f): void # apply a color matrix to each pixel defined by the `roi` on the `image`
 transform(image: Image, rect: Rect, src: Image, roi: Rect, interpolate: int32, mat: mat4f): void # Copy one image to another using a transformation matrix [scale, rotate, translate, shear, perspective, etc]
 Image(image: Image, width: int32, height: int32, align: int32, maxScale: float64): Image # Create an image by copying another one using a custom width and height
 Image(fileName: char[*], width: int32, height: int32, depth: int32, align: int32, maxScale: float64): Image # Create an image by opening an image file with custom width and height

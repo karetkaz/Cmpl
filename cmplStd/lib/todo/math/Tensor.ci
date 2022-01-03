@@ -1,0 +1,16 @@
+struct Tensor(int degree, typename type) {
+	int lengths[degree];
+	type elements[*];
+}
+
+struct Matrix(typename type): Tensor(2, type) {
+	int rows() {return lengths[0];}
+	int cols() {return lengths[1];}
+}
+
+struct Vector(typename type): Tensor(1, type) {
+	int size() {return lengths[0];}
+}
+
+struct Scalar(typename type): Tensor(0, type) {
+}

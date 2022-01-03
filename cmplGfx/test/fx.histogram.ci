@@ -69,7 +69,7 @@ int onEvent(Window win&, int action, int button, int x, int y) {
 		for (int i = 0; i < hist.length; i += 1) {
 			float hue = float32(i) / hist.length;
 			argb rgb = argb(hsl2rgb(vec4f(hue, 1f, .5f)));
-			rgb.a = clamp_s8(hist[i] * 255 / max);
+			rgb.a = sat_s8(hist[i] * 255 / max);
 			histogram.data[i] = rgb;
 		}
 		histogram.color = true;
@@ -85,7 +85,7 @@ int onEvent(Window win&, int action, int button, int x, int y) {
 		}
 		for (int i = 0; i < hist.length; i += 1) {
 			argb rgb = argb(0xdadada);
-			rgb.a = clamp_s8(hist[i] * 255 / max);
+			rgb.a = sat_s8(hist[i] * 255 / max);
 			histogram.data[i] = rgb;
 		}
 		histogram.color = true;

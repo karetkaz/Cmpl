@@ -1,3 +1,4 @@
+/// apply a color matrix to each pixel defined by the `roi` on the `image`
 void colorMat(Image image, const Rect roi&, const mat4f mat&) {
 	static if (fastNativeCalls && typename(Image.colorMat) != null) {
 		return Image.colorMat(image, roi, mat.data);
@@ -35,12 +36,12 @@ void colorMat(Image image, const Rect roi&, const mat4f mat&) {
 	for (int y = r.y; y < r.y + r.h; y += 1) {
 		for (int x = r.x; x < r.x + r.w; x += 1) {
 			argb col = argb(image.get(x, y));
-			int r = col.r & 255;
-			int g = col.g & 255;
-			int b = col.b & 255;
-			col.r = clamp_s8((r * m00 + g * m01 + b * m02 + m03) >> 16);
-			col.g = clamp_s8((r * m10 + g * m11 + b * m12 + m13) >> 16);
-			col.b = clamp_s8((r * m20 + g * m21 + b * m22 + m23) >> 16);
+			int r = rch(col);
+			int g = gch(col);
+			int b = bch(col);
+			col.r = sat_s8((r * m00 + g * m01 + b * m02 + m03) >> 16);
+			col.g = sat_s8((r * m10 + g * m11 + b * m12 + m13) >> 16);
+			col.b = sat_s8((r * m20 + g * m21 + b * m22 + m23) >> 16);
 			image.set(x, y, col);
 		}
 	}

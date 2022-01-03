@@ -368,62 +368,6 @@ static inline int canDump(userContext ctx, symn sym) {
 	return !isMain && !isBuiltin && !isExternal;
 }
 
-static inline dbgn profile(dbgContext ctx, vmError error, size_t ss, void *stack, size_t caller, ssize_t callee) {
-	dbgn dbg = mapDbgStatement(ctx->rt, caller, NULL);
-	if (error != noError) {
-		if (dbg != NULL) {
-			dbg->fails += 1;
-		}
-		return dbg;
-	}
-
-	// call or return
-	if (callee != 0) {
-		/* TODO: measure execution time here
-		clock_t now = clock();
-		if (callee < 0) {
-			dbgn calleeFunc = mapDbgFunction(ctx->rt, -callee);
-			if (calleeFunc != NULL) {
-				clock_t ticks = now - tp->func;
-				if (callee == -1) {
-					calleeFunc->fails += 1;
-				}
-				if (calleeFunc->hits > calleeFunc->returns) {
-					// we are inside a recursive function
-					calleeFunc->total += ticks;
-				}
-				calleeFunc->time += ticks;
-				calleeFunc->returns -= 1;
-			}
-
-			dbgn callerFunc = mapDbgFunction(ctx->rt, caller);
-			if (callerFunc != NULL) {
-				clock_t ticks = now - tp->func;
-				callerFunc->time -= ticks;
-			}
-			return dbg;
-		}
-
-		dbgn calleeFunc = mapDbgFunction(ctx->rt, callee);
-		if (calleeFunc != NULL) {
-			calleeFunc->hits += 1;
-			calleeFunc->time = now;
-		}// */
-		return dbg;
-	}
-
-	// statement
-	if (dbg != NULL) {
-		if (caller == dbg->start) {
-			dbg->hits += 1;
-		}
-		dbg->total += 1;
-	}
-	return dbg;
-	(void) stack;
-	(void) ss;
-}
-
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ json output
 static char *const JSON_KEY_VERSION = "version";
 static char *const JSON_KEY_SYMBOLS = "symbols";
@@ -875,7 +819,7 @@ static void textDumpMem(dbgContext dbg, void *ptr, size_t size, char *kind) {
 	printFmt(out, esc, "memory[%s] @%06x; size: %d(%?.1F %s)\n", kind, vmOffset(rt, ptr), size, value, unit);
 }
 
-void printFields(FILE *out, const char **esc, symn sym, userContext ctx) {
+static void printFields(FILE *out, const char **esc, symn sym, userContext ctx) {
 	rtContext rt = ctx->rt;
 	for (symn var = sym->fields; var; var = var->next) {
 		if (var == rt->main || isInline(var)) {
@@ -1212,86 +1156,140 @@ static void dumpApiSciTE(userContext ctx, symn sym) {
 }
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ console debugger and profiler
+static void traceMethods(userContext usr, size_t ss, size_t callee) {
+	if (!usr->traceMethods) {
+		return;
+	}
+
+	rtContext rt = usr->rt;
+	const char **esc = usr->esc;
+	FILE *out = usr->out;
+
+	if (usr->traceTime) {
+		double now = clock() * 1000. / CLOCKS_PER_SEC;
+		printFmt(out, esc, "[% 3.2F]", now);
+	}
+	if ((ssize_t) callee > 0) {
+		printFmt(out, esc, "% I > %T\n", ss, rtLookup(rt, callee, 0));
+	}
+	else {
+		printFmt(out, esc, "% I < return\n", ss);
+	}
+}
+static void traceOpcodes(userContext usr, size_t ss, void *stack, size_t caller, dbgn dbg) {
+	if (!usr->traceOpcodes) {
+		return;
+	}
+
+	rtContext rt = usr->rt;
+	const char **esc = usr->esc;
+	FILE *out = usr->out;
+
+	if (usr->traceLocals && caller != rt->main->offs) {
+		size_t i = 0;
+		printFmt(out, esc, "    stack: %7d: [", ss);
+		if (ss > maxLogItems) {
+			printFmt(out, esc, " …");
+			i = ss - maxLogItems;
+		}
+		for (; i < ss; i++) {
+			if (i > 0) {
+				printFmt(out, esc, ", ");
+			}
+			symn sym = NULL;
+			uint32_t val = ((uint32_t *) stack)[ss - i - 1];
+			if (val > 0 && val <= rt->vm.px) {
+				sym = rtLookup(rt, val, 0);
+				if (sym && !isFunction(sym)) {
+					if (sym->offs != val) {
+						sym = NULL;
+					}
+				}
+			}
+			// TODO: use printOfs
+			if (sym != NULL) {
+				size_t symOffs = val - sym->offs;
+				printFmt(out, esc, "<%?.T%?+d>", sym, symOffs);
+			} else {
+				printFmt(out, esc, "%d", val);
+			}
+		}
+		printFmt(out, esc, "\n");
+	}
+
+	if (usr->dmpAsmStmt && dbg && dbg->start == caller) {
+		textDumpDbg(out, esc, usr, NULL, dbg, 0);
+	}
+	if (usr->traceTime) {
+		double now = clock() * 1000. / CLOCKS_PER_SEC;
+		printFmt(out, esc, "[% 3.2F]: ", now);
+	}
+	textDumpAsm(out, esc, caller, usr, 0);
+}
+
 static vmError conProfile(dbgContext ctx, vmError error, size_t ss, void *stack, size_t caller, size_t callee) {
 	rtContext rt = ctx->rt;
 	userContext usr = rt->usr;
 
-	const char **esc = usr->esc;
-	FILE *out = usr->out;
-
-	dbgn dbg = profile(ctx, error, ss, stack, caller, callee);
+	dbgn dbg = mapDbgStatement(rt, caller, NULL);
 	if (error != noError) {
+		if (dbg != NULL) {
+			dbg->fails += 1;
+		}
 		// abort the execution
 		return error;
 	}
 
-	// print executing method.
+	// function call or return.
 	if (callee != 0) {
-		if (usr->traceMethods) {
-			if (usr->traceTime) {
-				double now = clock() * 1000. / CLOCKS_PER_SEC;
-				printFmt(out, esc, "[% 3.2F]", now);
+		/* TODO: measure execution time here
+		clock_t now = clock();
+		if (callee < 0) {
+			dbgn calleeFunc = mapDbgFunction(ctx->rt, -callee);
+			if (calleeFunc != NULL) {
+				clock_t ticks = now - tp->func;
+				if (callee == -1) {
+					calleeFunc->fails += 1;
+				}
+				if (calleeFunc->hits > calleeFunc->returns) {
+					// we are inside a recursive function
+					calleeFunc->total += ticks;
+				}
+				calleeFunc->time += ticks;
+				calleeFunc->returns -= 1;
 			}
-			if ((ssize_t) callee > 0) {
-				printFmt(out, esc, "% I > %T\n", ss, rtLookup(rt, callee, 0));
+
+			dbgn callerFunc = mapDbgFunction(ctx->rt, caller);
+			if (callerFunc != NULL) {
+				clock_t ticks = now - tp->func;
+				callerFunc->time -= ticks;
 			}
-			else {
-				printFmt(out, esc, "% I < return\n", ss);
-			}
+			return dbg;
 		}
+
+		dbgn calleeFunc = mapDbgFunction(ctx->rt, callee);
+		if (calleeFunc != NULL) {
+			calleeFunc->hits += 1;
+			calleeFunc->time = now;
+		}// */
+		traceMethods(usr, ss, callee);
 		return noError;
 	}
 
-	// print executing instruction.
-	if (usr->traceOpcodes) {
-		if (usr->traceLocals && caller != rt->main->offs) {
-			size_t i = 0;
-			printFmt(out, esc, "    stack: %7d: [", ss);
-			if (ss > maxLogItems) {
-				printFmt(out, esc, " …");
-				i = ss - maxLogItems;
-			}
-			for (; i < ss; i++) {
-				if (i > 0) {
-					printFmt(out, esc, ", ");
-				}
-				symn sym = NULL;
-				uint32_t val = ((uint32_t *) stack)[ss - i - 1];
-				if (val > 0 && val <= rt->vm.px) {
-					sym = rtLookup(rt, val, 0);
-					if (sym && !isFunction(sym)) {
-						if (sym->offs != val) {
-							sym = NULL;
-						}
-					}
-				}
-				// TODO: use printOfs
-				if (sym != NULL) {
-					size_t symOffs = val - sym->offs;
-					printFmt(out, esc, "<%?.T%?+d>", sym, symOffs);
-				} else {
-					printFmt(out, esc, "%d", val);
-				}
-			}
-			printFmt(out, esc, "\n");
+	// statement / instruction execution.
+	if (dbg != NULL) {
+		if (caller == dbg->start) {
+			dbg->hits += 1;
 		}
-
-		if (usr->dmpAsmStmt && dbg && dbg->start == caller) {
-			textDumpDbg(out, esc, usr, NULL, dbg, 0);
-		}
-		if (usr->traceTime) {
-			double now = clock() * 1000. / CLOCKS_PER_SEC;
-			printFmt(out, esc, "[% 3.2F]: ", now);
-		}
-		textDumpAsm(out, esc, caller, usr, 0);
+		dbg->total += 1;
 	}
+
+	traceOpcodes(usr, ss, stack, caller, dbg);
 	return noError;
 }
-
 static vmError conDebug(dbgContext ctx, vmError error, size_t ss, void *stack, size_t caller, size_t callee) {
 	rtContext rt = ctx->rt;
 	userContext usr = rt->usr;
-	dbgn dbg = profile(ctx, error, ss, stack, caller, callee);
 
 	if (callee != 0) {
 		// TODO: enter will break after executing call?
@@ -1302,9 +1300,11 @@ static vmError conDebug(dbgContext ctx, vmError error, size_t ss, void *stack, s
 		else if (usr->dbgCommand == dbgStepOut && (ssize_t) callee < 0) {
 			usr->dbgNextBreak = (size_t) -1;
 		}
+		traceMethods(usr, ss, callee);
 		return noError;
 	}
 
+	dbgn dbg = mapDbgStatement(rt, caller, NULL);
 	brkMode breakMode = brkSkip;
 	char *breakCause = NULL;
 
@@ -1369,6 +1369,7 @@ static vmError conDebug(dbgContext ctx, vmError error, size_t ss, void *stack, s
 		printFmt(out, esc, "\n");
 		usr->dbgNextValue = NULL;
 	}
+	traceOpcodes(usr, ss, stack, caller, dbg);
 
 	// print error type
 	if (breakMode & brkPrint) {
@@ -1467,6 +1468,7 @@ static vmError conDebug(dbgContext ctx, vmError error, size_t ss, void *stack, s
 	return noError;
 }
 
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 static void dumpVmOpc(const char *error, const struct opcodeRec *info) {
 	FILE *out = stdout;
 	printFmt(out, NULL, "\n### Instruction `%s`\n", info->name);
@@ -1490,7 +1492,6 @@ static void dumpVmOpc(const char *error, const struct opcodeRec *info) {
 		printFmt(out, NULL, "\n**Note**\n\n%s\n", error);
 	}
 }
-
 static void testVmOpc(const char *error, const struct opcodeRec *info) {
 	if (error == NULL) {
 		return;
@@ -1652,8 +1653,8 @@ int main(int argc, char *argv[]) {
 		.warnLevel = 5,
 		.raiseLevel = 15,
 
-		// 4 Mb memory compiler + runtime
-		.memory = 4 << 20
+		// 8 Mb memory compiler + runtime
+		.memory = 8 << 20
 	};
 
 	const char *stdlib = STDLIB;

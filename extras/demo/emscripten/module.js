@@ -1,5 +1,6 @@
 Module.workspace = '/workspace';
 Module.listFiles = function(folders, recursive) {
+	let cwd = FS.cwd() + '/';
 	let result = [];
 
 	function listRecursive(path) {
@@ -18,32 +19,21 @@ Module.listFiles = function(folders, recursive) {
 					}
 				}
 				if (filepath) {
-					result.push(filepath);
+					if (filepath.startsWith(cwd)) {
+						result.push(filepath.substr(cwd.length));
+					} else {
+						result.push(filepath);
+					}
 				}
 			}
 		}
 	}
 
-	if (folders != null && folders.constructor === String) {
-		if (folders.endsWith('/*')) {
-			folders = folders.substr(0, folders.length - 1);
-			recursive = true;
-		}
-		if (folders.endsWith('/') && folders !== '/') {
-			folders = folders.substr(0, folders.length - 1);
-		}
-
-		if (folders === '~') {
-			// list all files from workspace directory
-			folders = [Module.workspace];
-		}
-		else {
-			folders = [folders];
-		}
+	if (folders && folders.constructor === String) {
+		folders = [folders];
 	}
 
-	for (let i = 0; i < folders.length; ++i) {
-		let folder = folders[i];
+	for (let folder of folders) {
 		let tail = result.length;
 		listRecursive(folder);
 		let sorted = result.slice(tail).sort(function(lhs, rhs) {
@@ -70,16 +60,31 @@ Module.pathExists = function(path) {
 }
 
 Module.absolutePath = function(path) {
-	if (path != null && path[0] != "/") {
-		return Module.workspace + '/' + path;
+	if (path == null) {
+		return path;
 	}
-	return path;
+	if (path.startsWith('/')) {
+		// already absolute path
+		return path;
+	}
+
+	if (path.startsWith('~/')) {
+		// relative workspace path
+		return Module.workspace + path.substr(1);
+	}
+
+	// relative path
+	return Module.workspace + '/' + path;
+}
+
+Module.parentDir = function(path) {
+	return path.replace(/^(.*[/])?(.*)(\..*)$/, "$1");
 }
 
 Module.saveFile = function(path, content) {
 	// persist the content of the file
 	path = Module.absolutePath(path);
-	FS.mkdirTree(path.replace(/^(.*[/])?(.*)(\..*)$/, "$1"));
+	FS.mkdirTree(Module.parentDir(path));
 	FS.writeFile(path, content, {encoding: 'binary'});
 }
 
@@ -146,27 +151,35 @@ Module.openProjectFile = function(data, callBack) {
 	}
 
 	// open, save, download file
-	if (data.file !== undefined) {
+	if (data.path !== undefined) {
 		let operation = 'operation';
 		try {
 			let open = true;
-			let path = data.file;
+			let path = Module.absolutePath(data.path);
+
+			// not a file, list the content of the directory
+			if (path.endsWith('/')) {
+				open = false;
+				list = [path];
+			}
+
 			if (data.content === null) {
 				if (Module.pathExists(path)) {
-					list = [Module.workspace];
+					// file deleted, refresh file list
+					list = [Module.parentDir(path)]
 				}
 				// delete file content
-				operation = 'delete';
 				FS.unlink(Module.absolutePath(path));
+				operation = 'delete';
 				open = false;
 				sync = true;
 			}
 			else if (data.content !== undefined) {
 				if (!Module.pathExists(path)) {
-					list = [Module.workspace];
+					// file saved, refresh file list
+					list = [Module.parentDir(path)]
 				}
 				// save file content
-				operation = 'save';
 				Module.saveFile(path, data.content);
 				operation = 'saved';
 				open = false;
@@ -184,26 +197,24 @@ Module.openProjectFile = function(data, callBack) {
 				// read file content
 				operation = 'read';
 				result.content = Module.readFile(path);
-				result.file = data.file;
-				result.line = data.line;
+				result.path = data.path;
 				if (data.link === true) {
 					let data = FS.readFile(path, {encoding: 'binary'});
 					const blob = new Blob([data], {type: 'application/octet-stream'});
 					result.link = URL.createObjectURL(blob);
 				}
+
+				// file opened, refresh file list
+				list = [Module.parentDir(path)]
 			}
 			Module.print('File ' + operation + ': ' + Module.absolutePath(path));
 		} catch (err) {
-			result.error = 'File ' + operation + ' failed[' + data.file + ']: ' + err;
+			result.error = 'File ' + operation + ' failed[' + data.path + ']: ' + err;
 			console.trace(err);
 		}
 	}
 
 	// list files from custom directory
-	if (data.folder != null) {
-		list = data.folder;
-	}
-
 	if (list != null) {
 		result.list = Module.listFiles(list);
 	}
@@ -275,8 +286,9 @@ Module.wgetFiles = function(files) {
 				if (Module.onFileDownloaded != null) {
 					Module.onFileDownloaded(inProgress, files.length);
 				}
-				if (inProgress == 0) {
+				if (inProgress === 0) {
 					Module.print("Project file(s) download complete.");
+
 				}
 			}
 			request.send();
