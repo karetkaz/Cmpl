@@ -109,7 +109,7 @@ static int colcpy32_mix(byte *dst, byte *src, int *lut, size_t cnt) {
 	// lut points to the alpha value to be used
 	int alpha = *lut;
 	for (size_t i = 0; i < 4 * cnt; ++i, ++dst, ++src) {
-		*dst = sat_s8(mix_s8(alpha, *dst, *src));
+		*dst = mix_s8(alpha, *dst, *src);
 	}
 	return 0;
 }

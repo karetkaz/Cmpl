@@ -195,15 +195,6 @@ static void raiseApi(rtContext rt, int level, const char *msg, ...) {
 	}
 }
 
-/// Private function lookup  wrapper for the api
-static symn rtLookupApi(rtContext rt, size_t offset) {
-	symn sym = rtLookup(rt, offset, 0);
-	if (sym == NULL || !isFunction(sym)) {
-		return NULL;
-	}
-	return sym;
-}
-
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Native
 
 size_t nfcFirstArg(nfcContext nfc) {
@@ -769,7 +760,7 @@ rtContext rtInit(void *mem, size_t size) {
 		*(void**)&rt->api.raise = raiseApi;
 		*(void**)&rt->api.invoke = invoke;
 		*(void**)&rt->api.rtAlloc = rtAllocApi;
-		*(void**)&rt->api.rtLookup = rtLookupApi;
+		*(void**)&rt->api.rtLookup = rtLookup;
 
 		*(void**)&rt->api.nfcFirstArg = nfcFirstArg;
 		*(void**)&rt->api.nfcNextArg = nfcNextArg;
@@ -1238,14 +1229,14 @@ symn ccLookup(rtContext rt, symn scope, char *name) {
 	return lookup(rt->cc, scope, &ast, NULL, 0, 1);
 }
 
-symn rtLookup(rtContext rt, size_t offs, ccKind filter) {
-	dieif(offs > rt->_size, ERR_INVALID_OFFSET, offs);
-	if (offs > rt->vm.px + px_size) {
+symn rtLookup(rtContext rt, size_t offset, ccKind filter) {
+	dieif(offset > rt->_size, ERR_INVALID_OFFSET, offset);
+	if (offset > rt->vm.px + px_size) {
 		// local variable on stack ?
 		return NULL;
 	}
 	symn sym = rt->main;
-	if (offs >= sym->offs && offs < sym->offs + sym->size) {
+	if (offset >= sym->offs && offset < sym->offs + sym->size) {
 		// is the main function ?
 		return sym;
 	}
@@ -1267,7 +1258,7 @@ symn rtLookup(rtContext rt, size_t offs, ccKind filter) {
 		if (filterCast && (sym->kind & MASK_cast) != filterCast) {
 			continue;
 		}
-		if (offs == sym->offs) {
+		if (offset == sym->offs) {
 			return sym;
 		}
 		if (symKind == KIND_def) {
@@ -1282,7 +1273,7 @@ symn rtLookup(rtContext rt, size_t offs, ccKind filter) {
 		} else {
 			size = refSize(sym);
 		}
-		if (offs > sym->offs && offs < sym->offs + size) {
+		if (offset > sym->offs && offset < sym->offs + size) {
 			return sym;
 		}
 	}

@@ -75,7 +75,7 @@ static int ccInline(ccContext cc, astn tag) {
 		return 0;
 	}
 
-	char buff[PATH_MAX];
+	char buff[PATH_MAX] = {0};
 	if (tag->ref.name && tag->ref.name[0] == '/') {
 		absolutePath(cc->home, buff, sizeof(buff));
 	}

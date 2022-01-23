@@ -20,8 +20,7 @@ vec4f rgbOp1(vec4f in) {
 		im: Math.lerp(in.y, -N, N);
 	};
 
-	z = z.toPolar();
-	z = z.sech();
+	z = z.toPolar().sech();
 	return domain(z, 1);
 }
 
@@ -31,8 +30,7 @@ vec4f rgbOp2(vec4f in) {
 		im: Math.lerp(in.y, -N, N);
 	};
 
-	z = z.toPolar();
-	z = z.csch();
+	z = z.toPolar().csch();
 	return domain(z, 1);
 }
 

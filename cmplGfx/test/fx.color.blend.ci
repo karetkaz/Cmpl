@@ -32,19 +32,11 @@ Switch chkReverse = {
 };
 Slider btnAlpha = {
 	text: "alpha";
-	focusable: false;
 	value: 192;
 	maximum: 256;
 	divisor: 256;
 };
 
-BlendButton btnNormal = {
-	static vec4f normal(vec4f base, vec4f blend) {
-		return base;
-	}
-	text: "normal";
-	blend: null;
-};
 BlendButton btnAddition = {
 	static vec4f addition(vec4f base, vec4f blend) {
 		inline op(float32 base, float32 blend) = base + blend;
@@ -337,7 +329,12 @@ int onEvent(Window win&, int action, int button, int x, int y) {
 	bool reverse = chkReverse.selected != 0;
 	offs.copy(0, 0, reverse ? base : blend, null);
 	if (BlendButton selected = win.widget.getFocused().as(BlendButton)) {
-		offs.copy(0, 0, reverse ? blend : base, null, btnAlpha.value, selected.blend);
+		offs.blend(0, 0, reverse ? blend : base, null, selected.blend);
+		// optionally apply the blend effect with alpha strength (copying back the original image)
+		offs.blendAlpha(0, 0, reverse ? base : blend, null, 256 - btnAlpha.value);
+	}
+	else if (btnAlpha.isFocused()) {
+		offs.blendAlpha(0, 0, reverse ? blend : base, null, btnAlpha.value);
 	}
 	return win.draw(ui);
 }
@@ -345,7 +342,6 @@ int onEvent(Window win&, int action, int button, int x, int y) {
 Gui.showWindow(offs, onEvent, Widget(
 	chkReverse,
 	btnAlpha,
-	btnNormal,
 	btnAddition,
 	btnSubtract,
 	btnMultiply,

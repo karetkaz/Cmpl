@@ -16,7 +16,6 @@ Image offs = Image(surf);
 Image blur = Image(surf);
 
 inline "/cmplGfx/lib/micro.ui.ci";
-inline "/cmplGfx/lib/color.ops.ci";
 
 bool onTouchEvent(Button view, const Rect rect&, const TouchEvent event&);
 bool onResetClick(Button view);
@@ -157,7 +156,7 @@ int onEvent(Window win&, int action, int button, int x, int y) {
 			offs.gradient(&rect, gradient.MaskSquare, false, ...colors);
 		}
 
-		offs.copy(0, 0, surf, null, 256, null, dstAlpha);
+		offs.blendDstAlpha(0, 0, surf, null);
 		if (chkRect.checked()) {
 			int x0 = rect.x;
 			int x1 = x0 + rect.w;
@@ -169,7 +168,7 @@ int onEvent(Window win&, int action, int button, int x, int y) {
 		panMask.visible(true);
 	} else {
 		if (sldSharpness.isFocused()) {
-			offs.copy(0, 0, surf, null, sldSharpness.value, null);
+			offs.blendAlpha(0, 0, surf, null, sldSharpness.value);
 		}
 		panMask.visible(false);
 	}

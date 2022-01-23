@@ -65,8 +65,8 @@ function setStyle(element, ...styles) {
 
 var props = props || {};
 props.title = document.title;
-const pathMather = /(?=[\w\/])((?:\w+:\/\/)(?:[^:@\n\r"'`]+(?:\:\w+)?@)?(?:[^:/?#\n\r"'`]+)(?:\:\d+)?(?=[/?#]))?([^<>=:;,?#*|\n\r"'`]*)?(?:\:(?:(\d+)(?:\:(\d+))?))?(?:\?([^#\n\r"'`]*))?(?:\#([^\n\r"'`]*))?/;
-const pathFinder = new RegExp(pathMather, 'g');
+//[0: match, 1: host, 2: path, 3: file, 4: line, 5: column, 6: query, 7: hash]
+const pathMather = /(?=[\w\/])((?:\w+:\/\/)(?:[^:@\n\r"'`]+(?:\:\w+)?@)?(?:[^:\/?#\n\r"'`]+)(?:\:\d+)?(?=[\/?#]))?([^<>=:;,?#*|\n\r"'`]*\/)?([^<>=:;,?#*|\n\r"'`]*)?(?:\:(?:(\d+)(?:\:(\d+))?))?(?:\?([^#\n\r"'`]*))?(?:\#([^\n\r"'`]*))?/;
 
 let editor = CodeMirror.fromTextArea(input, {
 	mode: 'text/x-cmpl',
@@ -85,7 +85,7 @@ let editor = CodeMirror.fromTextArea(input, {
 	highlightSelectionMatches: {showToken: /\w/, annotateScrollbar: true}
 });
 let terminal = Terminal(output, function(escaped, text) {
-	return escaped.replace(pathFinder, function (match, host, path, line, column, query, hash) {
+	return escaped.replace(new RegExp(pathMather, 'g'), function (match, host, path, file, line, column, query, hash) {
 		if (path === undefined) {
 			return match;
 		}
@@ -96,7 +96,7 @@ let terminal = Terminal(output, function(escaped, text) {
 			return '<a href="' + encodeURI(match) + '" target="_blank">' + match + '</a>';
 		}
 		if (line > 0) {
-			return '<a href="javascript:void(params.update({file:\'' + path + '\', line:' + line + ', content: null}));">' + match + '</a>';
+			return '<a href="javascript:void(params.update({ content: null, path:\'' + path + '/' + file + ':' + line + '\'}));">' + match + '</a>';
 		}
 		return match;
 	});
@@ -130,21 +130,82 @@ let params = JsArgs('#', function (params, changes) {
 		return value;
 	}
 
+	/// get the full file path, without line
+	function getPath(defValue) {
+		let path = params.path;
+		if (path == null) {
+			// not defined
+			return defValue;
+		}
+		if (path.endsWith('/')) {
+			// it's a directory
+			return path;
+		}
+		let match = path.match(pathMather);
+		if (match && match[2] && match[3]) {
+			return match[2] + match[3];
+		}
+		if (match && match[3]) {
+			return match[3];
+		}
+		if (match && match[2]) {
+			return match[2];
+		}
+		return defValue;
+	}
+
+	/// get file name only, no folder and no line
+	function getFile(defValue) {
+		let path = params.path;
+		if (path == null) {
+			// not defined
+			return defValue;
+		}
+		if (path.endsWith('/')) {
+			// it's a directory
+			return defValue;
+		}
+
+		let match = path.match(pathMather);
+		if (match && match[3]) {
+			return match[3];
+		}
+		return defValue;
+	}
+
+	/// get the line number
+	function getLine(defValue) {
+		let path = params.path;
+		if (path == null) {
+			// not defined
+			return defValue;
+		}
+		if (path.endsWith('/')) {
+			// it's a directory
+			return defValue;
+		}
+		let match = path.match(pathMather);
+		if (match && match[4]) {
+			return match[4];
+		}
+		return defValue;
+	}
+
 	// set window title
-	let title = params.file || '';
-	if (params.line) {
-		title += ':' + params.line;
+	if (params.path != null) {
+		document.title = params.path + ' - ' + props.title;
+	} else {
+		document.title = props.title;
 	}
-	if (params.folder) {
-		title += '][' + params.folder;
-	}
-	document.title = props.title + ' [' + title + ']';
 
 	setStyle(libFile, params.libFile != null ? 'checked' : '-checked');
 	setStyle(libGfx, params.libGfx != null ? 'checked' : '-checked');
 
 	// no changes => page loaded
 	if (changes === undefined) {
+		params.__proto__.getPath = getPath;
+		params.__proto__.getFile = getFile;
+		params.__proto__.getLine = getLine;
 		// setup theme, only after loading
 		let theme = undefined;
 		let mode = undefined;
@@ -226,7 +287,7 @@ let params = JsArgs('#', function (params, changes) {
 
 			case 'mobile':
 				// for mobile show the left menu, in case there is no content loaded
-				if (params.content != null || params.file != null) {
+				if (params.content != null || params.path != null) {
 					setStyle(document.body, '-left-pin', '-left-bar', '-output');
 				} else {
 					setStyle(document.body, '-left-pin', 'left-bar', '-output');
@@ -258,7 +319,7 @@ let params = JsArgs('#', function (params, changes) {
 
 		// setup editor content, only after loading
 		if (params.content != null) {
-			setContent(content(params.content || ''), params.file, params.line);
+			setContent(content(params.content || ''), getFile(), getLine(1));
 		} else {
 			showPosition();
 		}
@@ -269,7 +330,8 @@ let params = JsArgs('#', function (params, changes) {
 		setStyle(document.body, '-dark', '-light', params.theme);
 	}
 
-	if (changes.libGfx !== undefined) {
+	if (changes.useWebWorker !== undefined) {
+		// reload page
 		params.update(true);
 		return;
 	}
@@ -298,46 +360,31 @@ let params = JsArgs('#', function (params, changes) {
 			workspace: params.workspace,
 			project: project(params.project),
 			content: content(params.content),
-			folder: params.folder,
-			file: params.file,
-			line: params.line,
+			path: getPath()
 		});
 		if (params.workspace) {
 			params.project = null;
 			params.content = null;
-			params.folder = null;
-			params.file = null;
-			params.line = null;
+			params.path = null;
 			return true;
 		}
 		return;
 	}
 
-	if (changes.folder !== undefined) {
-		openProjectFile({
-			folder: params.folder || '~/'
-		})
-	}
-
-	if (changes.file !== undefined) {
-		if (params.file == null && params.content == null) {
+	if (changes.path !== undefined) {
+		if (params.path == null && params.content == null) {
 			// close the current file
 			setContent('', '');
 			return;
 		}
 		openProjectFile({
-			file: params.file,
-			line: params.line
+			path: getPath()
 		});
 		return;
 	}
 
-	if (changes.line !== undefined) {
-		setContent(undefined, params.file, params.line);
-	}
-
 	if (changes.content !== undefined) {
-		setContent(content(params.content), params.file, params.line);
+		setContent(content(params.content), getFile(), getLine(1));
 	}
 });
 
@@ -493,15 +540,15 @@ function hideOverlay() {
 }
 
 function saveInput(saveAs) {
-	let file = params.file;
-	if (file == null || saveAs === true) {
-		file = prompt('Save file as:', file || 'untitled.ci');
-		if (file == null) {
+	let path = params.getPath();
+	if (path == null || saveAs === true) {
+		path = prompt('Save file as:', path || 'untitled.ci');
+		if (path == null) {
 			return null;
 		}
 	}
 	let content = editor.getValue();
-	openProjectFile({ content, file });
+	openProjectFile({ content, path });
 	setStyle(document.body, '-edited');
 	if (params.content !== undefined) {
 		let oldValue = params.content;
@@ -515,12 +562,12 @@ function saveInput(saveAs) {
 		if (oldValue !== content) {
 			params.update({ content: encB64 ? btoa(content) : content });
 		} else {
-			params.update({ file });
+			params.update({ path });
 		}
 	} else {
-		params.update({ file });
+		params.update({ path });
 	}
-	return file;
+	return path;
 }
 
 function editProject() {
@@ -551,7 +598,7 @@ function editProject() {
 			content += JSON.stringify(file, null, '\t');
 		}
 		content = '[' + content + ']';
-		params.update({content: btoa(content), project: undefined, file: undefined, line: undefined});
+		params.update({ content: btoa(content), project: undefined, path: undefined });
 	}
 }
 
@@ -579,7 +626,7 @@ function pinOutput(pinOption) {
 }
 
 function editOutput() {
-	params.update({ file: null, content: null });
+	params.update({ content: null, path: null });
 	setContent(terminal.text());
 	if (props.mobile) {
 		setStyle(document.body, '-output');
@@ -688,8 +735,8 @@ function process(data) {
 	}
 	if (data.link !== undefined) {
 		const link = document.createElement('a');
-		link.innerText = data.file || 'Download file';
-		link.download = data.file || 'file.bin';
+		link.innerText = data.path || 'Download file';
+		link.download = data.path || 'file.bin';
 		link.href = data.link;
 		const line = document.createElement('p');
 		line.textContent = 'Download link: '
@@ -700,49 +747,47 @@ function process(data) {
 	}
 	if (data.list !== undefined) {
 		fileList.innerHTML = '';
-		for (let file of data.list) {
+		for (let path of data.list) {
 			const li = document.createElement('li');
-			li.innerText = file;
-			if (file.endsWith('/')) {
+			li.innerText = path;
+			if (path.endsWith('/')) {
 				li.classList.add('folder');
 				li.onclick = function() {
 					// update params to preserve history navigation
-					params.update({folder: file});
+					params.update({ path });
 				};
 			} else {
 				li.classList.add('file');
 				li.onclick = function() {
 					// update params to preserve history navigation
-					params.update({file, line: null, content: null});
+					params.update({ path, content: null });
 				};
 				li.ondblclick = function() {
-					openProjectFile({ file, link: true });
+					openProjectFile({ path, link: true });
 				};
 			}
-			if (file === params.file) {
+			if (path === params.file) {
 				li.classList.add('active');
 			}
 			fileList.appendChild(li);
 		}
 	}
 
-	if (data.content || data.file || data.line) {
-		if (setContent(data.content, data.file, data.line)) {
-			params.update({
-				file: data.file || params.file,
-				line: data.line || params.line,
-				content: params.content ? data.content : null
-			});
+	if (data.content || data.path) {
+		let path = data.path;
+		let line = params.getLine();
+		if (!isNaN(line)) {
+			path += ':' + line;
+		}
+		if (setContent(data.content, data.path, params.getLine(1))) {
+			params.update({ path, content: params.content ? data.content : null });
 		} else {
-			params.update({
-				file: data.file,
-				line: data.line
-			});
+			params.update({ path });
 		}
 	}
 	if (data.initialized) {
 		spnStatus.innerText = null;
-		params.update('workspace', 'project', 'content', 'folder', 'file');
+		params.update('workspace', 'project', 'content', 'path');
 	}
 	if (data.progress !== undefined) {
 		if (data.progress > 0) {
@@ -750,7 +795,7 @@ function process(data) {
 			return;
 		}
 		spnStatus.innerText = null;
-		params.update('file', 'folder', 'content');
+		params.update('content', 'path');
 	}
 }
 
@@ -758,10 +803,9 @@ function uploadFiles(input) {
 	for (let file of input.files) {
 		const reader = new FileReader();
 		reader.addEventListener("load", function () {
-			let fileName = (params.folder || '') + file.name;
 			openProjectFile({
-				file: fileName,
-				reopen: fileName === params.file,
+				path: params.path,
+				reopen: file.name === params.file,
 				content: new Uint8Array(reader.result)
 			});
 		}, false);

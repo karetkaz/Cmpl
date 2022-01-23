@@ -169,7 +169,7 @@ vmError invoke(rtContext rt, symn fun, void *ret, void *args, const void *extra)
 		error(...)
 	}
  */
-symn rtLookup(rtContext rt, size_t offs, ccKind filter);
+symn rtLookup(rtContext rt, size_t offset, ccKind filter);
 
 /**
  * Allocate free and resize memory inside the vm heap.

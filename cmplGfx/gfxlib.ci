@@ -55,8 +55,7 @@ bool clip(Image image, Rect roi&) {
 inline set(Image image, int32 x, int32 y, argb color) = Image.set(image, x, y, uint32(color));
 
 inline "lib/image.ci";
-inline "lib/image.copy.ci";
-inline "lib/image.fill.ci";
+inline "lib/image.blend.ci";
 inline "lib/color.lookup.ci";
 inline "lib/color.matrix.ci";
 inline "lib/image.transform.ci";

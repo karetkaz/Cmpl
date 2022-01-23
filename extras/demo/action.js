@@ -5,7 +5,7 @@ var customCommands = {
 			return false;
 		}
 		if (value === 'dark' || value === 'light') {
-			params.update({theme: value});
+			params.update({ theme: value });
 			return true;
 		}
 		return actionError();
@@ -23,19 +23,19 @@ var customCommands = {
 		if (value !== undefined && value !== '') {
 			return false;
 		}
-		params.update({content: null, file: null});
+		params.update({ content: null, path: null });
 		return true;
 	},
 	downloadFile: function () {
 		openProjectFile({
-			file: params.file,
+			path: params.path,
 			link: true
 		});
 		return true;
 	},
 	deleteFile: function () {
 		openProjectFile({
-			file: params.file,
+			path: params.path,
 			content: null
 		});
 		setStyle(document.body, 'edited');
@@ -239,7 +239,7 @@ edtFileName.onfocus = function () {
 	edtFileName.selectionEnd = edtFileName.value.length;
 }
 edtFileName.onblur = function () {
-	edtFileName.value = params.file || '';
+	edtFileName.value = params.getPath('');
 	spnCounter.innerText = null;
 	editor.focus();
 }
@@ -296,7 +296,7 @@ edtFileName.onkeydown = function (event) {
 			actionError();
 			return false;
 		}
-		params.update({line});
+		params.update({ path: params.getPath() + ':'  + line });
 	}
 
 	// ? => find text
@@ -356,8 +356,7 @@ edtFileName.onkeydown = function (event) {
 	else if (action.startsWith('[{')) {
 		openProjectFile({
 			project: JSON.parse(action),
-			file: params.file,
-			line: params.line
+			path: params.path
 		});
 	}
 	else if (action === '-') {
@@ -367,11 +366,6 @@ edtFileName.onkeydown = function (event) {
 		editor.execCommand('unfoldAll');
 	}
 
-	/* close file
-	else if (action === '') {
-		params.update({ content: null, file: null });
-	}*/
-
 	// open or download file
 	else {
 		// [match, host, path, line, column, query, hash]
@@ -380,17 +374,18 @@ edtFileName.onkeydown = function (event) {
 			return actionError();
 		}
 
-		let file = match[2];
-		let line = match[3];
-		if (match[1] != null) {
-			file = file.replace(/^(.*[/])?(.*)(\..*)$/, '$2$3');
-			openProjectFile({ file, url: match[1] + match[2]});
+		let file = match[3];
+		if (match[1] && match[2] && match[3]) {
+			openProjectFile({
+				url: match[1] + match[2] + match[3],
+				path: match[3]
+			});
 		}
-		else if (file.endsWith('/') || file.endsWith('*')) {
-			params.update({ folder: match.input });
+		else if (file && file.endsWith('/')) {
+			params.update({ path: action });
 		}
 		else {
-			params.update({ content: null, file, line });
+			params.update({ content: null, path: action });
 		}
 	}
 

@@ -21,7 +21,7 @@ void levels(argb lut[256], int brightness, int x0, int x1, int y0, int y1) {
 		int val = y0 + (idx - x0) * (y1 - y0) / (x1 - x0);
 		val = Math.max(val, Math.min(y0, y1));
 		val = Math.min(val, Math.max(y0, y1));
-		int rgb = clamp_s8(val + brightness);
+		int rgb = sat_s8(val + brightness);
 		lut[idx].r = rgb;
 		lut[idx].g = rgb;
 		lut[idx].b = rgb;

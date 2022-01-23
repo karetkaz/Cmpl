@@ -5,15 +5,38 @@ enum Platform {
 	/// https://www.microsoft.com/windows
 	Windows,
 
+	/// https://apple.com/macos
+	MacOS,
+
 	/// https://linux.org
 	Linux,
 
-	/// https://apple.com/macos
-	macOS,
+	/// unix based systems
+	Unix,
 
 	/// https://android.com
-	//Android,
+	// TODO: Android,
 
 	/// https://apple.com/ios
-	//iOS,
+	// TODO: iOS, tvOS, watchOS,
+
+	/// https://bsd.org
+	// freeBSD, netBSD, openBSD, dragonFlyBSD
+
+	/// Big endian byte order
+	// TODO: BigEndian,
+
+	/// Little endian byte order
+	// TODO: LittleEndian,
 }
+
+/* possible usage of platform:
+static if (System.Platform.WebAssembly != 0) {
+static if (System.Platform.WebAssembly == 64) {
+debug("64 bit WebAssembly platform")
+}
+static if (System.Platform.WebAssembly == 32) {
+debug("32 bit WebAssembly platform")
+}
+debug("WebAssembly platform")
+}*/
