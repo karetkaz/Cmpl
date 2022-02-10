@@ -2,17 +2,16 @@
 ---------- Compile: `/cmplStd/stdlib.ci`
 warn: variable `args` hides previous declaration
 debug: inline file: `cmplStd/stdlib.ci`
-cmplStd/stdlib.ci:8: warn: adding implicit cast pointer(typename(fastNativeCalls): typename)
-cmplStd/stdlib.ci:17: debug: inline file: `cmplStd/lib/lang/Integer.ci`
-cmplStd/stdlib.ci:18: debug: inline file: `cmplStd/lib/lang/Pointer.ci`
+cmplStd/stdlib.ci:12: debug: inline file: `cmplStd/lib/lang/Integer.ci`
+cmplStd/stdlib.ci:13: debug: inline file: `cmplStd/lib/lang/Pointer.ci`
 cmplStd/lib/lang/Pointer.ci:7: warn: variable `inc(ptr: pointer, val: int32): pointer` hides previous declaration
 cmplStd/lib/lang/Pointer.ci:3: warn: previously defined as `inc(ptr: pointer, val: int32): pointer`
-cmplStd/stdlib.ci:25: debug: inline file: `cmplStd/lib/lang/Debug.ci`
+cmplStd/stdlib.ci:20: debug: inline file: `cmplStd/lib/lang/Debug.ci`
 cmplStd/lib/lang/Debug.ci:65: warn: adding implicit cast variant(message: char[*])
 cmplStd/lib/lang/Debug.ci:67: warn: adding implicit cast variant(expected: int32)
 cmplStd/lib/lang/Debug.ci:68: warn: adding implicit cast variant(returned: int32)
 cmplStd/lib/lang/Debug.ci:69: warn: adding implicit cast variant[](extras: variant[1])
-cmplStd/stdlib.ci:28: debug: inline file: `cmplStd/lib/math/Math.ci`
+cmplStd/stdlib.ci:23: debug: inline file: `cmplStd/lib/math/Math.ci`
 cmplStd/lib/math/Math.ci:17: warn: adding implicit cast float64(0: int32)
 cmplStd/lib/math/Math.ci:18: warn: adding implicit cast float64(1: int32)
 cmplStd/lib/math/Math.ci:23: warn: adding implicit cast float64(1: int32)
@@ -59,11 +58,15 @@ cmplStd/lib/math/Math.ci:385: warn: adding implicit cast float64(-1: int32)
 cmplStd/lib/math/Math.ci:423: warn: adding implicit cast float64(-1: int32)
 cmplStd/lib/math/Math.ci:427: warn: adding implicit cast float64(1: int32)
 cmplStd/lib/math/Math.ci:436: warn: adding implicit cast pointer(typename(float64.sin): typename)
+cmplStd/lib/math/Math.ci:436: warn: adding implicit cast bool(preferNativeCalls: int64)
 cmplStd/lib/math/Math.ci:445: warn: adding implicit cast pointer(typename(float64.cos): typename)
+cmplStd/lib/math/Math.ci:445: warn: adding implicit cast bool(preferNativeCalls: int64)
 cmplStd/lib/math/Math.ci:454: warn: adding implicit cast pointer(typename(float64.tan): typename)
+cmplStd/lib/math/Math.ci:454: warn: adding implicit cast bool(preferNativeCalls: int64)
 cmplStd/lib/math/Math.ci:459: warn: adding implicit cast float64(0: int32)
 cmplStd/lib/math/Math.ci:466: warn: adding implicit cast float64(2: int32)
 cmplStd/lib/math/Math.ci:476: warn: adding implicit cast pointer(typename(float64.cot): typename)
+cmplStd/lib/math/Math.ci:476: warn: adding implicit cast bool(preferNativeCalls: int64)
 cmplStd/lib/math/Math.ci:478: verbose: reference `cot` is not defined
 cmplStd/lib/math/Math.ci:478: verbose: reference `cot` is not defined
 cmplStd/lib/math/Math.ci:478: verbose: can not type check expression: `.result := float64.cot(x)`
@@ -84,11 +87,11 @@ cmplStd/lib/math/Math.ci:561: warn: adding implicit cast float64(2: int32)
 cmplStd/lib/math/Math.ci:577: warn: adding implicit cast float64(2: int32)
 cmplStd/lib/math/Math.ci:580: warn: adding implicit cast float64(180: int32)
 cmplStd/lib/math/Math.ci:583: warn: adding implicit cast float64(180: int32)
-cmplStd/stdlib.ci:31: debug: inline file: `cmplStd/lib/math/Complex.ci`
+cmplStd/stdlib.ci:26: debug: inline file: `cmplStd/lib/math/Complex.ci`
 cmplStd/lib/math/Complex.ci:24: debug: using default field initializer: Complex.im := 0
 cmplStd/lib/math/Complex.ci:8: warn: adding implicit cast float64(0: int32)
-cmplStd/stdlib.ci:32: debug: inline file: `cmplStd/lib/math/Vector4f.ci`
-cmplStd/stdlib.ci:33: debug: inline file: `cmplStd/lib/math/Matrix4f.ci`
+cmplStd/stdlib.ci:27: debug: inline file: `cmplStd/lib/math/Vector4f.ci`
+cmplStd/stdlib.ci:28: debug: inline file: `cmplStd/lib/math/Matrix4f.ci`
 cmplStd/lib/math/Matrix4f.ci:113: warn: adding implicit cast float64(len: float32)
 cmplStd/lib/math/Matrix4f.ci:137: warn: adding implicit cast float32(1: int32)
 cmplStd/lib/math/Matrix4f.ci:169: warn: adding implicit cast float32(1: int32)
@@ -125,8 +128,8 @@ cmplStd/lib/math/Matrix4f.ci:209: warn: adding implicit cast float32(0: int32)
 cmplStd/lib/math/Matrix4f.ci:209: warn: adding implicit cast float32(0: int32)
 cmplStd/lib/math/Matrix4f.ci:209: warn: adding implicit cast float32(0: int32)
 cmplStd/lib/math/Matrix4f.ci:209: warn: adding implicit cast float32(1: int32)
-cmplStd/stdlib.ci:34: debug: inline file: `cmplStd/lib/math/Vector2d.ci`
-cmplStd/stdlib.ci:39: debug: inline file: `cmplStd/lib/text/cstr.ci`
+cmplStd/stdlib.ci:29: debug: inline file: `cmplStd/lib/math/Vector2d.ci`
+cmplStd/stdlib.ci:34: debug: inline file: `cmplStd/lib/text/cstr.ci`
 cmplStd/lib/text/cstr.ci:5: warn: adding implicit cast pointer(str: char[*])
 cmplStd/lib/text/cstr.ci:37: warn: adding implicit cast int32(with[i]: char)
 cmplStd/lib/text/cstr.ci:65: warn: adding implicit cast int32(str[i]: char)
@@ -1112,7 +1115,9 @@ emit.load: typename {
 .field z64: int64 (size: 0, cast: static const inline)
 .field z128: emit.p4x (size: 0, cast: static const inline)
 .field i8: int32 (size: 0, cast: static const inline)
+.field u8: int32 (size: 0, cast: static const inline)
 .field i16: int32 (size: 0, cast: static const inline)
+.field u16: int32 (size: 0, cast: static const inline)
 .field i32: int32 (size: 0, cast: static const inline)
 .field i64: int64 (size: 0, cast: static const inline)
 .field i128: emit.p4x (size: 0, cast: static const inline)
@@ -1147,7 +1152,15 @@ emit.load.i8: int32 {
 .size: 0
 .name: 'i8'
 .owner: emit.load
-.value: load.i8
+.value: load.is8
+}
+emit.load.u8: int32 {
+.kind: static const inline
+.base: `int32`
+.size: 0
+.name: 'u8'
+.owner: emit.load
+.value: load.iu8
 }
 emit.load.i16: int32 {
 .kind: static const inline
@@ -1155,7 +1168,15 @@ emit.load.i16: int32 {
 .size: 0
 .name: 'i16'
 .owner: emit.load
-.value: load.i16
+.value: load.is16
+}
+emit.load.u16: int32 {
+.kind: static const inline
+.base: `int32`
+.size: 0
+.name: 'u16'
+.owner: emit.load
+.value: load.iu16
 }
 emit.load.i32: int32 {
 .kind: static const inline
@@ -2060,6 +2081,13 @@ halt(): void: function {
 .param .result: void (size: 0, cast: inline)
 .value: nfc(0)
 }
+preferNativeCalls: int64 {
+.kind: static const i64
+.base: `int64`
+.size: 0
+.name: 'preferNativeCalls'
+.value: 1
+}
 raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void: function {
 .kind: static const inline
 .base: `function`
@@ -2325,21 +2353,12 @@ false: bool {
 .doc: 'false'
 .value: 0
 }
-fastNativeCalls: typename {
-.kind: inline
-.base: `typename`
-.size: 0
-.name: 'fastNativeCalls'
-.file: 'cmplStd/stdlib.ci:10'
-.doc: 'use fast native methods when possible'
-.value: true
-}
 byte: typename {
 .kind: inline
 .base: `typename`
 .size: 0
 .name: 'byte'
-.file: 'cmplStd/stdlib.ci:13'
+.file: 'cmplStd/stdlib.ci:8'
 .value: uint8
 }
 float: typename {
@@ -2347,7 +2366,7 @@ float: typename {
 .base: `typename`
 .size: 0
 .name: 'float'
-.file: 'cmplStd/stdlib.ci:14'
+.file: 'cmplStd/stdlib.ci:9'
 .value: float32
 }
 double: typename {
@@ -2355,7 +2374,7 @@ double: typename {
 .base: `typename`
 .size: 0
 .name: 'double'
-.file: 'cmplStd/stdlib.ci:15'
+.file: 'cmplStd/stdlib.ci:10'
 .value: float64
 }
 signed(value: uint8): int8: function {
@@ -2463,7 +2482,7 @@ sizeof(type: typename): int32: function {
 .base: `function`
 .size: 0
 .name: 'sizeof'
-.file: 'cmplStd/stdlib.ci:21'
+.file: 'cmplStd/stdlib.ci:16'
 .param .result: int32 (size: 4, cast: i32)
 .param type: typename (size: 4, cast: ref)
 .doc: 'Returns the size of the given type'
@@ -4626,7 +4645,7 @@ Math.sin(x: float64): float64: function {
 .param x: float64 (size: 8, cast: variable(f64))
 .doc: 'Returns the sine of the radian argument `x`.'
 .value: {
-	static if (true && (typename(float64.sin)) != null) {
+	static if ((preferNativeCalls) && (typename(float64.sin)) != null) {
 		return .result := float64.sin(x);
 	}
 	return .result := sinCos(x, 0);
@@ -4658,7 +4677,7 @@ Math.cos(x: float64): float64: function {
 .param x: float64 (size: 8, cast: variable(f64))
 .doc: 'Returns the cosine of the radian argument `x`.'
 .value: {
-	static if (true && (typename(float64.cos)) != null) {
+	static if ((preferNativeCalls) && (typename(float64.cos)) != null) {
 		return .result := float64.cos(x);
 	}
 	return .result := sinCos(abs(x), 1);
@@ -4699,7 +4718,7 @@ Math.tan(x: float64): float64: function {
 .param x: float64 (size: 8, cast: variable(f64))
 .doc: 'Returns the tangent of the radian argument `x`.'
 .value: {
-	static if (true && (typename(float64.tan)) != null) {
+	static if ((preferNativeCalls) && (typename(float64.tan)) != null) {
 		return .result := float64.tan(x);
 	}
 	if (x == (0)) {
@@ -4767,7 +4786,7 @@ Math.cot(x: float64): float64: function {
 .param x: float64 (size: 8, cast: variable(f64))
 .doc: 'Returns the cotangent of the radian argument `x`.'
 .value: {
-	static if (true && (typename(float64.cot)) != null) {
+	static if ((preferNativeCalls) && (typename(float64.cot)) != null) {
 		return .result := float64.cot(x);
 	}
 	if (x == (0)) {
@@ -4914,7 +4933,7 @@ Math.sinh(x: float64): float64: function {
 	<sinh+?>: inc.sp(-8)
 	cmplStd/lib/math/Math.ci:520: (19 bytes): if (negate)
 	<sinh+?>: load.sp(+8)
-	<sinh+?>: load.i8
+	<sinh+?>: load.is8
 	<sinh+?>: jz +14
 	cmplStd/lib/math/Math.ci:521: (10 bytes): return .result := -result;
 	<sinh+?>: dup.x64 sp(0)
@@ -5080,7 +5099,7 @@ Math.asin(x: float64): float64: function {
 	<asin+?>: set.x64 sp(2)
 	cmplStd/lib/math/Math.ci:567: (19 bytes): if (negate)
 	<asin+?>: load.sp(+8)
-	<asin+?>: load.i8
+	<asin+?>: load.is8
 	<asin+?>: jz +14
 	cmplStd/lib/math/Math.ci:568: (10 bytes): return .result := -result;
 	<asin+?>: dup.x64 sp(0)
@@ -8127,7 +8146,7 @@ length(str: char[*]): int32: function {
 	<length+?>: dup.x32 sp(2)
 	<length+?>: dup.x32 sp(1)
 	<length+?>: add.i32
-	<length+?>: load.i8
+	<length+?>: load.is8
 	<length+?>: jnz -10
 	cmplStd/lib/text/cstr.ci:11: (3 bytes): return .result := result;
 	<length+?>: set.x32 sp(3)
@@ -8159,9 +8178,9 @@ indexOf(str: char[*], chr: char): int32: function {
 	<indexOf+?>: dup.x32 sp(3)
 	<indexOf+?>: dup.x32 sp(1)
 	<indexOf+?>: add.i32
-	<indexOf+?>: load.i8
+	<indexOf+?>: load.is8
 	<indexOf+?>: load.sp(+12)
-	<indexOf+?>: load.i8
+	<indexOf+?>: load.is8
 	<indexOf+?>: ceq.i32
 	<indexOf+?>: jz +7
 	cmplStd/lib/text/cstr.ci:18: (3 bytes): return .result := i;
@@ -8173,7 +8192,7 @@ indexOf(str: char[*], chr: char): int32: function {
 	<indexOf+?>: dup.x32 sp(3)
 	<indexOf+?>: dup.x32 sp(1)
 	<indexOf+?>: add.i32
-	<indexOf+?>: load.i8
+	<indexOf+?>: load.is8
 	<indexOf+?>: jnz -29
 	<indexOf+?>: inc.sp(-4)
 	cmplStd/lib/text/cstr.ci:21: (8 bytes): return .result := -1;
@@ -8210,9 +8229,9 @@ lastIndexOf(str: char[*], chr: char): int32: function {
 	<lastIndexOf+?>: dup.x32 sp(4)
 	<lastIndexOf+?>: dup.x32 sp(1)
 	<lastIndexOf+?>: add.i32
-	<lastIndexOf+?>: load.i8
+	<lastIndexOf+?>: load.is8
 	<lastIndexOf+?>: load.sp(+16)
-	<lastIndexOf+?>: load.i8
+	<lastIndexOf+?>: load.is8
 	<lastIndexOf+?>: ceq.i32
 	<lastIndexOf+?>: jz +7
 	cmplStd/lib/text/cstr.ci:29: (3 bytes): result := i;
@@ -8223,7 +8242,7 @@ lastIndexOf(str: char[*], chr: char): int32: function {
 	<lastIndexOf+?>: dup.x32 sp(4)
 	<lastIndexOf+?>: dup.x32 sp(1)
 	<lastIndexOf+?>: add.i32
-	<lastIndexOf+?>: load.i8
+	<lastIndexOf+?>: load.is8
 	<lastIndexOf+?>: jnz -29
 	<lastIndexOf+?>: inc.sp(-4)
 	cmplStd/lib/text/cstr.ci:32: (3 bytes): return .result := result;
@@ -8258,11 +8277,11 @@ startsWith(str: char[*], with: char[*], cmp(chr: char, with: char): int32): bool
 	<startsWith+?>: dup.x32 sp(5)
 	<startsWith+?>: dup.x32 sp(2)
 	<startsWith+?>: add.i32
-	<startsWith+?>: load.i8
+	<startsWith+?>: load.is8
 	<startsWith+?>: dup.x32 sp(5)
 	<startsWith+?>: dup.x32 sp(3)
 	<startsWith+?>: add.i32
-	<startsWith+?>: load.i8
+	<startsWith+?>: load.is8
 	<startsWith+?>: dup.x32 sp(5)
 	<startsWith+?>: call
 	<startsWith+?>: inc.sp(-8)
@@ -8281,7 +8300,7 @@ startsWith(str: char[*], with: char[*], cmp(chr: char, with: char): int32): bool
 	<startsWith+?>: dup.x32 sp(3)
 	<startsWith+?>: dup.x32 sp(1)
 	<startsWith+?>: add.i32
-	<startsWith+?>: load.i8
+	<startsWith+?>: load.is8
 	<startsWith+?>: load.z32
 	<startsWith+?>: ceq.i32
 	<startsWith+?>: jz -49
@@ -8352,11 +8371,11 @@ endsWith(str: char[*], with: char[*], cmp(chr: char, with: char): int32): bool: 
 	<endsWith+?>: dup.x32 sp(3)
 	<endsWith+?>: add.i32
 	<endsWith+?>: add.i32
-	<endsWith+?>: load.i8
+	<endsWith+?>: load.is8
 	<endsWith+?>: dup.x32 sp(7)
 	<endsWith+?>: dup.x32 sp(3)
 	<endsWith+?>: add.i32
-	<endsWith+?>: load.i8
+	<endsWith+?>: load.is8
 	<endsWith+?>: dup.x32 sp(7)
 	<endsWith+?>: call
 	<endsWith+?>: inc.sp(-8)
@@ -8416,11 +8435,11 @@ compare(str: char[*], with: char[*], cmp(chr: char, with: char): int32): int32: 
 	<compare+?>: dup.x32 sp(6)
 	<compare+?>: dup.x32 sp(2)
 	<compare+?>: add.i32
-	<compare+?>: load.i8
+	<compare+?>: load.is8
 	<compare+?>: dup.x32 sp(6)
 	<compare+?>: dup.x32 sp(3)
 	<compare+?>: add.i32
-	<compare+?>: load.i8
+	<compare+?>: load.is8
 	<compare+?>: dup.x32 sp(6)
 	<compare+?>: call
 	<compare+?>: inc.sp(-8)
@@ -8429,7 +8448,7 @@ compare(str: char[*], with: char[*], cmp(chr: char, with: char): int32): int32: 
 	<compare+?>: dup.x32 sp(5)
 	<compare+?>: dup.x32 sp(1)
 	<compare+?>: add.i32
-	<compare+?>: load.i8
+	<compare+?>: load.is8
 	<compare+?>: load.z32
 	<compare+?>: ceq.i32
 	<compare+?>: jz +8
@@ -8473,13 +8492,13 @@ ignCaseCmp(chr: char, with: char): int32: function {
 	cmplStd/lib/text/cstr.ci:84: (36 bytes): return .result := ignCase(chr) - ignCase(with);
 	<ignCaseCmp>  : load.z32
 	<ignCaseCmp+?>: load.sp(+12)
-	<ignCaseCmp+?>: load.i8
+	<ignCaseCmp+?>: load.is8
 	<ignCaseCmp+?>: load.ref <?> ;ignCaseCmp.ignCase(chr: char): char
 	<ignCaseCmp+?>: call
 	<ignCaseCmp+?>: inc.sp(-4)
 	<ignCaseCmp+?>: load.z32
 	<ignCaseCmp+?>: load.sp(+12)
-	<ignCaseCmp+?>: load.i8
+	<ignCaseCmp+?>: load.is8
 	<ignCaseCmp+?>: load.ref <?> ;ignCaseCmp.ignCase(chr: char): char
 	<ignCaseCmp+?>: call
 	<ignCaseCmp+?>: inc.sp(-4)
@@ -8503,9 +8522,9 @@ caseCmp(chr: char, with: char): int32: function {
 .instructions: (14 bytes)
 	cmplStd/lib/text/cstr.ci:89: (14 bytes): return .result := chr - with;
 	<caseCmp>  : load.sp(+8)
-	<caseCmp+?>: load.i8
+	<caseCmp+?>: load.is8
 	<caseCmp+?>: load.sp(+8)
-	<caseCmp+?>: load.i8
+	<caseCmp+?>: load.is8
 	<caseCmp+?>: sub.i32
 	<caseCmp+?>: set.x32 sp(4)
 	<caseCmp+?>: ret
@@ -8691,7 +8710,7 @@ append(output: char[], pos: int32, value: char[*]): int32: function {
 	<append+?>: dup.x32 sp(2)
 	<append+?>: dup.x32 sp(1)
 	<append+?>: add.i32
-	<append+?>: load.i8
+	<append+?>: load.is8
 	<append+?>: dup.x32 sp(5)
 	<append+?>: dup.x32 sp(5)
 	<append+?>: add.i32
@@ -8706,7 +8725,7 @@ append(output: char[], pos: int32, value: char[*]): int32: function {
 	<append+?>: dup.x32 sp(2)
 	<append+?>: dup.x32 sp(1)
 	<append+?>: add.i32
-	<append+?>: load.i8
+	<append+?>: load.is8
 	<append+?>: jnz -43
 	<append+?>: inc.sp(-4)
 	cmplStd/lib/text/cstr.ci:146: (17 bytes): if (pos >= (output.length))
@@ -8832,7 +8851,7 @@ append(output: char[], pos: int32, radix: int32, value: uint64, format: FormatFl
 	<append+?>: mod.u64
 	<append+?>: i64.2i32
 	<append+?>: add.i32
-	<append+?>: load.i8
+	<append+?>: load.is8
 	<append+?>: load.sp(+4)
 	<append+?>: dup.x32 sp(22)
 	<append+?>: inc.i32(+1)
@@ -8874,10 +8893,10 @@ append(output: char[], pos: int32, radix: int32, value: uint64, format: FormatFl
 	cmplStd/lib/text/cstr.ci:174: (7 bytes): padChr: char := format.padChr
 	<append+?>: dup.x32 sp(23)
 	<append+?>: inc.i32(+8)
-	<append+?>: load.i8
+	<append+?>: load.is8
 	cmplStd/lib/text/cstr.ci:175: (21 bytes): if (padChr == '')
 	<append+?>: load.sp(+0)
-	<append+?>: load.i8
+	<append+?>: load.is8
 	<append+?>: load.z32
 	<append+?>: ceq.i32
 	<append+?>: jz +14
@@ -8887,7 +8906,7 @@ append(output: char[], pos: int32, radix: int32, value: uint64, format: FormatFl
 	<append+?>: store.i8
 	cmplStd/lib/text/cstr.ci:180: (203 bytes): if ((format.sign) != 0)
 	<append+?>: dup.x32 sp(24)
-	<append+?>: load.i8
+	<append+?>: load.is8
 	<append+?>: load.z32
 	<append+?>: ceq.i32
 	<append+?>: jnz +198
@@ -8899,7 +8918,7 @@ append(output: char[], pos: int32, radix: int32, value: uint64, format: FormatFl
 	<append+?>: load.z32
 	<append+?>: load.m32 <?> ;append.whiteSpace
 	<append+?>: load.sp(+8)
-	<append+?>: load.i8
+	<append+?>: load.is8
 	<append+?>: load.ref <?> ;indexOf(str: char[*], chr: char): int32
 	<append+?>: call
 	<append+?>: inc.sp(-8)
@@ -8924,7 +8943,7 @@ append(output: char[], pos: int32, radix: int32, value: uint64, format: FormatFl
 	<append+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
 	cmplStd/lib/text/cstr.ci:186: (11 bytes): output[pos] := padChr;
 	<append+?>: load.sp(+0)
-	<append+?>: load.i8
+	<append+?>: load.is8
 	<append+?>: dup.x32 sp(30)
 	<append+?>: dup.x32 sp(30)
 	<append+?>: add.i32
@@ -8958,7 +8977,7 @@ append(output: char[], pos: int32, radix: int32, value: uint64, format: FormatFl
 	<append+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
 	cmplStd/lib/text/cstr.ci:191: (9 bytes): output[pos] := format.sign;
 	<append+?>: dup.x32 sp(24)
-	<append+?>: load.i8
+	<append+?>: load.is8
 	<append+?>: dup.x32 sp(30)
 	<append+?>: dup.x32 sp(30)
 	<append+?>: add.i32
@@ -8985,7 +9004,7 @@ append(output: char[], pos: int32, radix: int32, value: uint64, format: FormatFl
 	<append+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
 	cmplStd/lib/text/cstr.ci:198: (11 bytes): output[pos] := padChr;
 	<append+?>: load.sp(+0)
-	<append+?>: load.i8
+	<append+?>: load.is8
 	<append+?>: dup.x32 sp(30)
 	<append+?>: dup.x32 sp(30)
 	<append+?>: add.i32
@@ -9026,7 +9045,7 @@ append(output: char[], pos: int32, radix: int32, value: uint64, format: FormatFl
 	<append+?>: dup.x32 sp(2)
 	<append+?>: sub.i32
 	<append+?>: add.i32
-	<append+?>: load.i8
+	<append+?>: load.is8
 	<append+?>: dup.x32 sp(31)
 	<append+?>: dup.x32 sp(31)
 	<append+?>: add.i32
@@ -9155,7 +9174,7 @@ append(output: char[], pos: int32, radix: int32, value: int64, format: FormatFla
 	<append+?>: load.c32 45
 	<append+?>: jmp +7
 	<append+?>: dup.x32 sp(5)
-	<append+?>: load.i8
+	<append+?>: load.is8
 	<append+?>: load.sp(+4)
 	<append+?>: store.i8
 	cmplStd/lib/text/cstr.ci:232: (9 bytes): signedFormat.precision := format.precision;
@@ -9171,7 +9190,7 @@ append(output: char[], pos: int32, radix: int32, value: int64, format: FormatFla
 	cmplStd/lib/text/cstr.ci:234: (12 bytes): signedFormat.padChr := format.padChr;
 	<append+?>: dup.x32 sp(5)
 	<append+?>: inc.i32(+8)
-	<append+?>: load.i8
+	<append+?>: load.is8
 	<append+?>: load.sp(+12)
 	<append+?>: store.i8
 	cmplStd/lib/text/cstr.ci:236: (13 bytes): if (value < (0))
@@ -9307,7 +9326,7 @@ append(output: char[], pos: int32, value: float64, format: FormatFlags): int32: 
 	<append+?>: load.c32 45
 	<append+?>: jmp +7
 	<append+?>: dup.x32 sp(5)
-	<append+?>: load.i8
+	<append+?>: load.is8
 	<append+?>: load.sp(+4)
 	<append+?>: store.i8
 	cmplStd/lib/text/cstr.ci:260: (7 bytes): formatInt.precision := 10;
@@ -9316,7 +9335,7 @@ append(output: char[], pos: int32, value: float64, format: FormatFlags): int32: 
 	cmplStd/lib/text/cstr.ci:261: (12 bytes): formatInt.padChr := format.padChr;
 	<append+?>: dup.x32 sp(5)
 	<append+?>: inc.i32(+8)
-	<append+?>: load.i8
+	<append+?>: load.is8
 	<append+?>: load.sp(+12)
 	<append+?>: store.i8
 	cmplStd/lib/text/cstr.ci:262: (21 bytes): formatInt.padLen := format.padLen - format.precision - 1;
@@ -9576,10 +9595,10 @@ float64(value: char[]): float64: function {
 	<float64+?>: dup.x32 sp(8)
 	<float64+?>: dup.x32 sp(1)
 	<float64+?>: add.i32
-	<float64+?>: load.i8
+	<float64+?>: load.is8
 	cmplStd/lib/text/cstr.ci:308: (239 bytes): if (chr >= '0' && chr <= '9')
 	<float64+?>: load.sp(+0)
-	<float64+?>: load.i8
+	<float64+?>: load.is8
 	<float64+?>: load.c32 48
 	<float64+?>: clt.i32
 	<float64+?>: not.b32
@@ -9587,7 +9606,7 @@ float64(value: char[]): float64: function {
 	<float64+?>: jz +20
 	<float64+?>: inc.sp(-4)
 	<float64+?>: load.sp(+0)
-	<float64+?>: load.i8
+	<float64+?>: load.is8
 	<float64+?>: load.c32 57
 	<float64+?>: cgt.i32
 	<float64+?>: not.b32
@@ -9597,7 +9616,7 @@ float64(value: char[]): float64: function {
 	<float64+?>: load.f64 10.000000
 	<float64+?>: mul.f64
 	<float64+?>: load.sp(+8)
-	<float64+?>: load.i8
+	<float64+?>: load.is8
 	<float64+?>: inc.i32(-48)
 	<float64+?>: i32.2f64
 	<float64+?>: add.f64
@@ -9610,7 +9629,7 @@ float64(value: char[]): float64: function {
 	<float64+?>: jmp +162
 	cmplStd/lib/text/cstr.ci:312: (158 bytes): if (chr == '.')
 	<float64+?>: load.sp(+0)
-	<float64+?>: load.i8
+	<float64+?>: load.is8
 	<float64+?>: load.c32 46
 	<float64+?>: ceq.i32
 	<float64+?>: jz +43
@@ -9630,7 +9649,7 @@ float64(value: char[]): float64: function {
 	<float64+?>: jmp +108
 	cmplStd/lib/text/cstr.ci:319: (104 bytes): if (chr == '-' && i == 0)
 	<float64+?>: load.sp(+0)
-	<float64+?>: load.i8
+	<float64+?>: load.is8
 	<float64+?>: load.c32 45
 	<float64+?>: ceq.i32
 	<float64+?>: dup.x32 sp(0)
@@ -9646,7 +9665,7 @@ float64(value: char[]): float64: function {
 	<float64+?>: jmp +64
 	cmplStd/lib/text/cstr.ci:322: (60 bytes): if (chr == '+' && i == 0)
 	<float64+?>: load.sp(+0)
-	<float64+?>: load.i8
+	<float64+?>: load.is8
 	<float64+?>: load.c32 43
 	<float64+?>: ceq.i32
 	<float64+?>: dup.x32 sp(0)
@@ -9678,7 +9697,7 @@ float64(value: char[]): float64: function {
 	<float64+?>: dup.x32 sp(8)
 	<float64+?>: dup.x32 sp(1)
 	<float64+?>: add.i32
-	<float64+?>: load.i8
+	<float64+?>: load.is8
 	<float64+?>: load.z32
 	<float64+?>: ceq.i32
 	<float64+?>: not.b32
@@ -16517,12 +16536,12 @@ testMathAbsMod_f32_8d: float32 {
 .field .cstr: char (size: 4, cast: static const typename(arr))
 .field emit: function (size: 0, cast: static const typename(void))
 .field halt: function (size: 0, cast: static const inline)
+.field preferNativeCalls: int64 (size: 0, cast: static const i64)
 .field raise: function (size: 0, cast: static const inline)
 .field tryExec: function (size: 0, cast: static const inline)
 .field System: typename (size: 0, cast: static const typename(void))
 .field true: bool (size: 0, cast: static const val)
 .field false: bool (size: 0, cast: static const val)
-.field fastNativeCalls: typename (size: 0, cast: inline)
 .field byte: typename (size: 0, cast: inline)
 .field float: typename (size: 0, cast: inline)
 .field double: typename (size: 0, cast: inline)
@@ -17356,9 +17375,6 @@ testMathAbsMod_f32_8d: float32 {
 .field .main: function (size: 10255, cast: static function)
 .value: {
 	{
-		static if ((typename(fastNativeCalls)) == null) {
-			fastNativeCalls: typename := true;
-		}
 		byte: typename := uint8;
 		float: typename := float32;
 		double: typename := float64;
@@ -17667,19 +17683,19 @@ testMathAbsMod_f32_8d: float32 {
 				return .result := sign * y;
 			};
 			static sin(x: float64): float64 := {
-				static if (true && (typename(float64.sin)) != null) {
+				static if ((preferNativeCalls) && (typename(float64.sin)) != null) {
 					return .result := float64.sin(x);
 				}
 				return .result := sinCos(x, 0);
 			};
 			static cos(x: float64): float64 := {
-				static if (true && (typename(float64.cos)) != null) {
+				static if ((preferNativeCalls) && (typename(float64.cos)) != null) {
 					return .result := float64.cos(x);
 				}
 				return .result := sinCos(abs(x), 1);
 			};
 			static tan(x: float64): float64 := {
-				static if (true && (typename(float64.tan)) != null) {
+				static if ((preferNativeCalls) && (typename(float64.tan)) != null) {
 					return .result := float64.tan(x);
 				}
 				if (x == (0)) {
@@ -17694,7 +17710,7 @@ testMathAbsMod_f32_8d: float32 {
 				return .result := tanCot(x, 0);
 			};
 			static cot(x: float64): float64 := {
-				static if (true && (typename(float64.cot)) != null) {
+				static if ((preferNativeCalls) && (typename(float64.cot)) != null) {
 					return .result := float64.cot(x);
 				}
 				if (x == (0)) {
@@ -21104,63 +21120,63 @@ testMathAbsMod_f32_8d: float32 {
 	<.main+?>: load.c32 1
 	cmplStd/test/lang/useOperator.ci:17: (11 bytes): boolAnd: bool := boolA & boolB
 	<.main+?>: load.sp(+4)
-	<.main+?>: load.i8
+	<.main+?>: load.is8
 	<.main+?>: load.sp(+4)
-	<.main+?>: load.i8
+	<.main+?>: load.is8
 	<.main+?>: and.b32
 	cmplStd/test/lang/useOperator.ci:18: (11 bytes): boolIor: bool := boolA | boolB
 	<.main+?>: load.sp(+8)
-	<.main+?>: load.i8
+	<.main+?>: load.is8
 	<.main+?>: load.sp(+8)
-	<.main+?>: load.i8
+	<.main+?>: load.is8
 	<.main+?>: or.b32
 	cmplStd/test/lang/useOperator.ci:19: (11 bytes): boolXor: bool := boolA ^ boolB
 	<.main+?>: load.sp(+12)
-	<.main+?>: load.i8
+	<.main+?>: load.is8
 	<.main+?>: load.sp(+12)
-	<.main+?>: load.i8
+	<.main+?>: load.is8
 	<.main+?>: xor.b32
 	cmplStd/test/lang/useOperator.ci:22: (6 bytes): boolNot: bool := !boolB
 	<.main+?>: load.sp(+12)
-	<.main+?>: load.i8
+	<.main+?>: load.is8
 	<.main+?>: not.b32
 	cmplStd/test/lang/useOperator.ci:23: (11 bytes): boolCeq: bool := boolA == boolB
 	<.main+?>: load.sp(+20)
-	<.main+?>: load.i8
+	<.main+?>: load.is8
 	<.main+?>: load.sp(+20)
-	<.main+?>: load.i8
+	<.main+?>: load.is8
 	<.main+?>: ceq.i32
 	cmplStd/test/lang/useOperator.ci:24: (12 bytes): boolCne: bool := boolA != boolB
 	<.main+?>: load.sp(+24)
-	<.main+?>: load.i8
+	<.main+?>: load.is8
 	<.main+?>: load.sp(+24)
-	<.main+?>: load.i8
+	<.main+?>: load.is8
 	<.main+?>: ceq.i32
 	<.main+?>: not.b32
 	cmplStd/test/lang/useOperator.ci:25: (11 bytes): boolClt: bool := boolA < boolB
 	<.main+?>: load.sp(+28)
-	<.main+?>: load.i8
+	<.main+?>: load.is8
 	<.main+?>: load.sp(+28)
-	<.main+?>: load.i8
+	<.main+?>: load.is8
 	<.main+?>: clt.i32
 	cmplStd/test/lang/useOperator.ci:26: (12 bytes): boolCle: bool := boolA <= boolB
 	<.main+?>: load.sp(+32)
-	<.main+?>: load.i8
+	<.main+?>: load.is8
 	<.main+?>: load.sp(+32)
-	<.main+?>: load.i8
+	<.main+?>: load.is8
 	<.main+?>: cgt.i32
 	<.main+?>: not.b32
 	cmplStd/test/lang/useOperator.ci:27: (11 bytes): boolCgt: bool := boolA > boolB
 	<.main+?>: load.sp(+36)
-	<.main+?>: load.i8
+	<.main+?>: load.is8
 	<.main+?>: load.sp(+36)
-	<.main+?>: load.i8
+	<.main+?>: load.is8
 	<.main+?>: cgt.i32
 	cmplStd/test/lang/useOperator.ci:28: (12 bytes): boolCge: bool := boolA >= boolB
 	<.main+?>: load.sp(+40)
-	<.main+?>: load.i8
+	<.main+?>: load.is8
 	<.main+?>: load.sp(+40)
-	<.main+?>: load.i8
+	<.main+?>: load.is8
 	<.main+?>: clt.i32
 	<.main+?>: not.b32
 	cmplStd/test/lang/useOperator.ci:30: (5 bytes): chrA: char := 'a'
@@ -21169,115 +21185,115 @@ testMathAbsMod_f32_8d: float32 {
 	<.main+?>: load.c32 98
 	cmplStd/test/lang/useOperator.ci:32: (5 bytes): chrPls: char := +chrB
 	<.main+?>: load.sp(+0)
-	<.main+?>: load.i8
+	<.main+?>: load.is8
 	cmplStd/test/lang/useOperator.ci:33: (6 bytes): chrNeg: char := -chrB
 	<.main+?>: load.sp(+4)
-	<.main+?>: load.i8
+	<.main+?>: load.is8
 	<.main+?>: neg.i32
 	cmplStd/test/lang/useOperator.ci:34: (6 bytes): chrCmt: char := ~chrB
 	<.main+?>: load.sp(+8)
-	<.main+?>: load.i8
+	<.main+?>: load.is8
 	<.main+?>: cmt.b32
 	cmplStd/test/lang/useOperator.ci:35: (11 bytes): chrAdd: char := chrA + chrB
 	<.main+?>: load.sp(+16)
-	<.main+?>: load.i8
+	<.main+?>: load.is8
 	<.main+?>: load.sp(+16)
-	<.main+?>: load.i8
+	<.main+?>: load.is8
 	<.main+?>: add.i32
 	cmplStd/test/lang/useOperator.ci:36: (11 bytes): chrSub: char := chrA - chrB
 	<.main+?>: load.sp(+20)
-	<.main+?>: load.i8
+	<.main+?>: load.is8
 	<.main+?>: load.sp(+20)
-	<.main+?>: load.i8
+	<.main+?>: load.is8
 	<.main+?>: sub.i32
 	cmplStd/test/lang/useOperator.ci:37: (11 bytes): chrMul: char := chrA * chrB
 	<.main+?>: load.sp(+24)
-	<.main+?>: load.i8
+	<.main+?>: load.is8
 	<.main+?>: load.sp(+24)
-	<.main+?>: load.i8
+	<.main+?>: load.is8
 	<.main+?>: mul.i32
 	cmplStd/test/lang/useOperator.ci:38: (11 bytes): chrDiv: char := chrA / chrB
 	<.main+?>: load.sp(+28)
-	<.main+?>: load.i8
+	<.main+?>: load.is8
 	<.main+?>: load.sp(+28)
-	<.main+?>: load.i8
+	<.main+?>: load.is8
 	<.main+?>: div.i32
 	cmplStd/test/lang/useOperator.ci:39: (11 bytes): chrMod: char := chrA % chrB
 	<.main+?>: load.sp(+32)
-	<.main+?>: load.i8
+	<.main+?>: load.is8
 	<.main+?>: load.sp(+32)
-	<.main+?>: load.i8
+	<.main+?>: load.is8
 	<.main+?>: mod.i32
 	cmplStd/test/lang/useOperator.ci:40: (11 bytes): chrAnd: char := chrA & chrB
 	<.main+?>: load.sp(+36)
-	<.main+?>: load.i8
+	<.main+?>: load.is8
 	<.main+?>: load.sp(+36)
-	<.main+?>: load.i8
+	<.main+?>: load.is8
 	<.main+?>: and.b32
 	cmplStd/test/lang/useOperator.ci:41: (11 bytes): chrIor: char := chrA | chrB
 	<.main+?>: load.sp(+40)
-	<.main+?>: load.i8
+	<.main+?>: load.is8
 	<.main+?>: load.sp(+40)
-	<.main+?>: load.i8
+	<.main+?>: load.is8
 	<.main+?>: or.b32
 	cmplStd/test/lang/useOperator.ci:42: (11 bytes): chrXor: char := chrA ^ chrB
 	<.main+?>: load.sp(+44)
-	<.main+?>: load.i8
+	<.main+?>: load.is8
 	<.main+?>: load.sp(+44)
-	<.main+?>: load.i8
+	<.main+?>: load.is8
 	<.main+?>: xor.b32
 	cmplStd/test/lang/useOperator.ci:43: (8 bytes): chrShl: char := (chrA) << shift
 	<.main+?>: load.sp(+48)
-	<.main+?>: load.i8
+	<.main+?>: load.is8
 	<.main+?>: dup.x32 sp(26)
 	<.main+?>: shl.b32
 	cmplStd/test/lang/useOperator.ci:44: (8 bytes): chrShr: char := (chrA) >> shift
 	<.main+?>: load.sp(+52)
-	<.main+?>: load.i8
+	<.main+?>: load.is8
 	<.main+?>: dup.x32 sp(27)
 	<.main+?>: sar.b32
 	cmplStd/test/lang/useOperator.ci:45: (7 bytes): chrNot: bool := !(chrB)
 	<.main+?>: load.sp(+52)
-	<.main+?>: load.i8
+	<.main+?>: load.is8
 	<.main+?>: i32.2bool
 	<.main+?>: not.b32
 	cmplStd/test/lang/useOperator.ci:46: (11 bytes): chrCeq: bool := chrA == chrB
 	<.main+?>: load.sp(+60)
-	<.main+?>: load.i8
+	<.main+?>: load.is8
 	<.main+?>: load.sp(+60)
-	<.main+?>: load.i8
+	<.main+?>: load.is8
 	<.main+?>: ceq.i32
 	cmplStd/test/lang/useOperator.ci:47: (12 bytes): chrCne: bool := chrA != chrB
 	<.main+?>: load.sp(+64)
-	<.main+?>: load.i8
+	<.main+?>: load.is8
 	<.main+?>: load.sp(+64)
-	<.main+?>: load.i8
+	<.main+?>: load.is8
 	<.main+?>: ceq.i32
 	<.main+?>: not.b32
 	cmplStd/test/lang/useOperator.ci:48: (11 bytes): chrClt: bool := chrA < chrB
 	<.main+?>: load.sp(+68)
-	<.main+?>: load.i8
+	<.main+?>: load.is8
 	<.main+?>: load.sp(+68)
-	<.main+?>: load.i8
+	<.main+?>: load.is8
 	<.main+?>: clt.i32
 	cmplStd/test/lang/useOperator.ci:49: (12 bytes): chrCle: bool := chrA <= chrB
 	<.main+?>: load.sp(+72)
-	<.main+?>: load.i8
+	<.main+?>: load.is8
 	<.main+?>: load.sp(+72)
-	<.main+?>: load.i8
+	<.main+?>: load.is8
 	<.main+?>: cgt.i32
 	<.main+?>: not.b32
 	cmplStd/test/lang/useOperator.ci:50: (11 bytes): chrCgt: bool := chrA > chrB
 	<.main+?>: load.sp(+76)
-	<.main+?>: load.i8
+	<.main+?>: load.is8
 	<.main+?>: load.sp(+76)
-	<.main+?>: load.i8
+	<.main+?>: load.is8
 	<.main+?>: cgt.i32
 	cmplStd/test/lang/useOperator.ci:51: (12 bytes): chrCge: bool := chrA >= chrB
 	<.main+?>: load.sp(+80)
-	<.main+?>: load.i8
+	<.main+?>: load.is8
 	<.main+?>: load.sp(+80)
-	<.main+?>: load.i8
+	<.main+?>: load.is8
 	<.main+?>: clt.i32
 	<.main+?>: not.b32
 	cmplStd/test/lang/useOperator.ci:53: (5 bytes): i8A: int8 := a
@@ -21286,115 +21302,115 @@ testMathAbsMod_f32_8d: float32 {
 	<.main+?>: load.c32 42
 	cmplStd/test/lang/useOperator.ci:55: (5 bytes): i8Pls: int8 := +i8B
 	<.main+?>: load.sp(+0)
-	<.main+?>: load.i8
+	<.main+?>: load.is8
 	cmplStd/test/lang/useOperator.ci:56: (6 bytes): i8Neg: int8 := -i8B
 	<.main+?>: load.sp(+4)
-	<.main+?>: load.i8
+	<.main+?>: load.is8
 	<.main+?>: neg.i32
 	cmplStd/test/lang/useOperator.ci:57: (6 bytes): i8Cmt: int8 := ~i8B
 	<.main+?>: load.sp(+8)
-	<.main+?>: load.i8
+	<.main+?>: load.is8
 	<.main+?>: cmt.b32
 	cmplStd/test/lang/useOperator.ci:58: (11 bytes): i8Add: int8 := i8A + i8B
 	<.main+?>: load.sp(+16)
-	<.main+?>: load.i8
+	<.main+?>: load.is8
 	<.main+?>: load.sp(+16)
-	<.main+?>: load.i8
+	<.main+?>: load.is8
 	<.main+?>: add.i32
 	cmplStd/test/lang/useOperator.ci:59: (11 bytes): i8Sub: int8 := i8A - i8B
 	<.main+?>: load.sp(+20)
-	<.main+?>: load.i8
+	<.main+?>: load.is8
 	<.main+?>: load.sp(+20)
-	<.main+?>: load.i8
+	<.main+?>: load.is8
 	<.main+?>: sub.i32
 	cmplStd/test/lang/useOperator.ci:60: (11 bytes): i8Mul: int8 := i8A * i8B
 	<.main+?>: load.sp(+24)
-	<.main+?>: load.i8
+	<.main+?>: load.is8
 	<.main+?>: load.sp(+24)
-	<.main+?>: load.i8
+	<.main+?>: load.is8
 	<.main+?>: mul.i32
 	cmplStd/test/lang/useOperator.ci:61: (11 bytes): i8Div: int8 := i8A / i8B
 	<.main+?>: load.sp(+28)
-	<.main+?>: load.i8
+	<.main+?>: load.is8
 	<.main+?>: load.sp(+28)
-	<.main+?>: load.i8
+	<.main+?>: load.is8
 	<.main+?>: div.i32
 	cmplStd/test/lang/useOperator.ci:62: (11 bytes): i8Mod: int8 := i8A % i8B
 	<.main+?>: load.sp(+32)
-	<.main+?>: load.i8
+	<.main+?>: load.is8
 	<.main+?>: load.sp(+32)
-	<.main+?>: load.i8
+	<.main+?>: load.is8
 	<.main+?>: mod.i32
 	cmplStd/test/lang/useOperator.ci:63: (11 bytes): i8And: int8 := i8A & i8B
 	<.main+?>: load.sp(+36)
-	<.main+?>: load.i8
+	<.main+?>: load.is8
 	<.main+?>: load.sp(+36)
-	<.main+?>: load.i8
+	<.main+?>: load.is8
 	<.main+?>: and.b32
 	cmplStd/test/lang/useOperator.ci:64: (11 bytes): i8Ior: int8 := i8A | i8B
 	<.main+?>: load.sp(+40)
-	<.main+?>: load.i8
+	<.main+?>: load.is8
 	<.main+?>: load.sp(+40)
-	<.main+?>: load.i8
+	<.main+?>: load.is8
 	<.main+?>: or.b32
 	cmplStd/test/lang/useOperator.ci:65: (11 bytes): i8Xor: int8 := i8A ^ i8B
 	<.main+?>: load.sp(+44)
-	<.main+?>: load.i8
+	<.main+?>: load.is8
 	<.main+?>: load.sp(+44)
-	<.main+?>: load.i8
+	<.main+?>: load.is8
 	<.main+?>: xor.b32
 	cmplStd/test/lang/useOperator.ci:66: (8 bytes): i8Shl: int8 := (i8A) << shift
 	<.main+?>: load.sp(+48)
-	<.main+?>: load.i8
+	<.main+?>: load.is8
 	<.main+?>: dup.x32 sp(48)
 	<.main+?>: shl.b32
 	cmplStd/test/lang/useOperator.ci:67: (8 bytes): i8Shr: int8 := (i8A) >> shift
 	<.main+?>: load.sp(+52)
-	<.main+?>: load.i8
+	<.main+?>: load.is8
 	<.main+?>: dup.x32 sp(49)
 	<.main+?>: sar.b32
 	cmplStd/test/lang/useOperator.ci:68: (7 bytes): i8Not: bool := !(i8B)
 	<.main+?>: load.sp(+52)
-	<.main+?>: load.i8
+	<.main+?>: load.is8
 	<.main+?>: i32.2bool
 	<.main+?>: not.b32
 	cmplStd/test/lang/useOperator.ci:69: (11 bytes): i8Ceq: bool := i8A == i8B
 	<.main+?>: load.sp(+60)
-	<.main+?>: load.i8
+	<.main+?>: load.is8
 	<.main+?>: load.sp(+60)
-	<.main+?>: load.i8
+	<.main+?>: load.is8
 	<.main+?>: ceq.i32
 	cmplStd/test/lang/useOperator.ci:70: (12 bytes): i8Cne: bool := i8A != i8B
 	<.main+?>: load.sp(+64)
-	<.main+?>: load.i8
+	<.main+?>: load.is8
 	<.main+?>: load.sp(+64)
-	<.main+?>: load.i8
+	<.main+?>: load.is8
 	<.main+?>: ceq.i32
 	<.main+?>: not.b32
 	cmplStd/test/lang/useOperator.ci:71: (11 bytes): i8Clt: bool := i8A < i8B
 	<.main+?>: load.sp(+68)
-	<.main+?>: load.i8
+	<.main+?>: load.is8
 	<.main+?>: load.sp(+68)
-	<.main+?>: load.i8
+	<.main+?>: load.is8
 	<.main+?>: clt.i32
 	cmplStd/test/lang/useOperator.ci:72: (12 bytes): i8Cle: bool := i8A <= i8B
 	<.main+?>: load.sp(+72)
-	<.main+?>: load.i8
+	<.main+?>: load.is8
 	<.main+?>: load.sp(+72)
-	<.main+?>: load.i8
+	<.main+?>: load.is8
 	<.main+?>: cgt.i32
 	<.main+?>: not.b32
 	cmplStd/test/lang/useOperator.ci:73: (11 bytes): i8Cgt: bool := i8A > i8B
 	<.main+?>: load.sp(+76)
-	<.main+?>: load.i8
+	<.main+?>: load.is8
 	<.main+?>: load.sp(+76)
-	<.main+?>: load.i8
+	<.main+?>: load.is8
 	<.main+?>: cgt.i32
 	cmplStd/test/lang/useOperator.ci:74: (12 bytes): i8Cge: bool := i8A >= i8B
 	<.main+?>: load.sp(+80)
-	<.main+?>: load.i8
+	<.main+?>: load.is8
 	<.main+?>: load.sp(+80)
-	<.main+?>: load.i8
+	<.main+?>: load.is8
 	<.main+?>: clt.i32
 	<.main+?>: not.b32
 	cmplStd/test/lang/useOperator.ci:76: (5 bytes): u8A: uint8 := a
@@ -21403,115 +21419,115 @@ testMathAbsMod_f32_8d: float32 {
 	<.main+?>: load.c32 42
 	cmplStd/test/lang/useOperator.ci:78: (5 bytes): u8Pls: uint8 := +u8B
 	<.main+?>: load.sp(+0)
-	<.main+?>: load.i8
+	<.main+?>: load.iu8
 	cmplStd/test/lang/useOperator.ci:79: (6 bytes): u8Neg: uint8 := -u8B
 	<.main+?>: load.sp(+4)
-	<.main+?>: load.i8
+	<.main+?>: load.iu8
 	<.main+?>: neg.i32
 	cmplStd/test/lang/useOperator.ci:80: (6 bytes): u8Cmt: uint8 := ~u8B
 	<.main+?>: load.sp(+8)
-	<.main+?>: load.i8
+	<.main+?>: load.iu8
 	<.main+?>: cmt.b32
 	cmplStd/test/lang/useOperator.ci:81: (11 bytes): u8Add: uint8 := u8A + u8B
 	<.main+?>: load.sp(+16)
-	<.main+?>: load.i8
+	<.main+?>: load.iu8
 	<.main+?>: load.sp(+16)
-	<.main+?>: load.i8
+	<.main+?>: load.iu8
 	<.main+?>: add.i32
 	cmplStd/test/lang/useOperator.ci:82: (11 bytes): u8Sub: uint8 := u8A - u8B
 	<.main+?>: load.sp(+20)
-	<.main+?>: load.i8
+	<.main+?>: load.iu8
 	<.main+?>: load.sp(+20)
-	<.main+?>: load.i8
+	<.main+?>: load.iu8
 	<.main+?>: sub.i32
 	cmplStd/test/lang/useOperator.ci:83: (11 bytes): u8Mul: uint8 := u8A * u8B
 	<.main+?>: load.sp(+24)
-	<.main+?>: load.i8
+	<.main+?>: load.iu8
 	<.main+?>: load.sp(+24)
-	<.main+?>: load.i8
+	<.main+?>: load.iu8
 	<.main+?>: mul.u32
 	cmplStd/test/lang/useOperator.ci:84: (11 bytes): u8Div: uint8 := u8A / u8B
 	<.main+?>: load.sp(+28)
-	<.main+?>: load.i8
+	<.main+?>: load.iu8
 	<.main+?>: load.sp(+28)
-	<.main+?>: load.i8
+	<.main+?>: load.iu8
 	<.main+?>: div.u32
 	cmplStd/test/lang/useOperator.ci:85: (11 bytes): u8Mod: uint8 := u8A % u8B
 	<.main+?>: load.sp(+32)
-	<.main+?>: load.i8
+	<.main+?>: load.iu8
 	<.main+?>: load.sp(+32)
-	<.main+?>: load.i8
+	<.main+?>: load.iu8
 	<.main+?>: mod.u32
 	cmplStd/test/lang/useOperator.ci:86: (11 bytes): u8And: uint8 := u8A & u8B
 	<.main+?>: load.sp(+36)
-	<.main+?>: load.i8
+	<.main+?>: load.iu8
 	<.main+?>: load.sp(+36)
-	<.main+?>: load.i8
+	<.main+?>: load.iu8
 	<.main+?>: and.b32
 	cmplStd/test/lang/useOperator.ci:87: (11 bytes): u8Ior: uint8 := u8A | u8B
 	<.main+?>: load.sp(+40)
-	<.main+?>: load.i8
+	<.main+?>: load.iu8
 	<.main+?>: load.sp(+40)
-	<.main+?>: load.i8
+	<.main+?>: load.iu8
 	<.main+?>: or.b32
 	cmplStd/test/lang/useOperator.ci:88: (11 bytes): u8Xor: uint8 := u8A ^ u8B
 	<.main+?>: load.sp(+44)
-	<.main+?>: load.i8
+	<.main+?>: load.iu8
 	<.main+?>: load.sp(+44)
-	<.main+?>: load.i8
+	<.main+?>: load.iu8
 	<.main+?>: xor.b32
 	cmplStd/test/lang/useOperator.ci:89: (8 bytes): u8Shl: uint8 := (u8A) << shift
 	<.main+?>: load.sp(+48)
-	<.main+?>: load.i8
+	<.main+?>: load.is8
 	<.main+?>: dup.x32 sp(70)
 	<.main+?>: shl.b32
 	cmplStd/test/lang/useOperator.ci:90: (8 bytes): u8Shr: uint8 := (u8A) >> shift
 	<.main+?>: load.sp(+52)
-	<.main+?>: load.i8
+	<.main+?>: load.is8
 	<.main+?>: dup.x32 sp(71)
 	<.main+?>: sar.b32
 	cmplStd/test/lang/useOperator.ci:91: (7 bytes): u8Not: bool := !(u8B)
 	<.main+?>: load.sp(+52)
-	<.main+?>: load.i8
+	<.main+?>: load.is8
 	<.main+?>: i32.2bool
 	<.main+?>: not.b32
 	cmplStd/test/lang/useOperator.ci:92: (11 bytes): u8Ceq: bool := u8A == u8B
 	<.main+?>: load.sp(+60)
-	<.main+?>: load.i8
+	<.main+?>: load.iu8
 	<.main+?>: load.sp(+60)
-	<.main+?>: load.i8
+	<.main+?>: load.iu8
 	<.main+?>: ceq.i32
 	cmplStd/test/lang/useOperator.ci:93: (12 bytes): u8Cne: bool := u8A != u8B
 	<.main+?>: load.sp(+64)
-	<.main+?>: load.i8
+	<.main+?>: load.iu8
 	<.main+?>: load.sp(+64)
-	<.main+?>: load.i8
+	<.main+?>: load.iu8
 	<.main+?>: ceq.i32
 	<.main+?>: not.b32
 	cmplStd/test/lang/useOperator.ci:94: (11 bytes): u8Clt: bool := u8A < u8B
 	<.main+?>: load.sp(+68)
-	<.main+?>: load.i8
+	<.main+?>: load.iu8
 	<.main+?>: load.sp(+68)
-	<.main+?>: load.i8
+	<.main+?>: load.iu8
 	<.main+?>: clt.u32
 	cmplStd/test/lang/useOperator.ci:95: (12 bytes): u8Cle: bool := u8A <= u8B
 	<.main+?>: load.sp(+72)
-	<.main+?>: load.i8
+	<.main+?>: load.iu8
 	<.main+?>: load.sp(+72)
-	<.main+?>: load.i8
+	<.main+?>: load.iu8
 	<.main+?>: cgt.u32
 	<.main+?>: not.b32
 	cmplStd/test/lang/useOperator.ci:96: (11 bytes): u8Cgt: bool := u8A > u8B
 	<.main+?>: load.sp(+76)
-	<.main+?>: load.i8
+	<.main+?>: load.iu8
 	<.main+?>: load.sp(+76)
-	<.main+?>: load.i8
+	<.main+?>: load.iu8
 	<.main+?>: cgt.u32
 	cmplStd/test/lang/useOperator.ci:97: (12 bytes): u8Cge: bool := u8A >= u8B
 	<.main+?>: load.sp(+80)
-	<.main+?>: load.i8
+	<.main+?>: load.iu8
 	<.main+?>: load.sp(+80)
-	<.main+?>: load.i8
+	<.main+?>: load.iu8
 	<.main+?>: clt.u32
 	<.main+?>: not.b32
 	cmplStd/test/lang/useOperator.ci:99: (5 bytes): i16A: int16 := a
@@ -21520,115 +21536,115 @@ testMathAbsMod_f32_8d: float32 {
 	<.main+?>: load.c32 42
 	cmplStd/test/lang/useOperator.ci:101: (5 bytes): i16Pls: int16 := +i16B
 	<.main+?>: load.sp(+0)
-	<.main+?>: load.i16
+	<.main+?>: load.is16
 	cmplStd/test/lang/useOperator.ci:102: (6 bytes): i16Neg: int16 := -i16B
 	<.main+?>: load.sp(+4)
-	<.main+?>: load.i16
+	<.main+?>: load.is16
 	<.main+?>: neg.i32
 	cmplStd/test/lang/useOperator.ci:103: (6 bytes): i16Cmt: int16 := ~i16B
 	<.main+?>: load.sp(+8)
-	<.main+?>: load.i16
+	<.main+?>: load.is16
 	<.main+?>: cmt.b32
 	cmplStd/test/lang/useOperator.ci:104: (11 bytes): i16Add: int16 := i16A + i16B
 	<.main+?>: load.sp(+16)
-	<.main+?>: load.i16
+	<.main+?>: load.is16
 	<.main+?>: load.sp(+16)
-	<.main+?>: load.i16
+	<.main+?>: load.is16
 	<.main+?>: add.i32
 	cmplStd/test/lang/useOperator.ci:105: (11 bytes): i16Sub: int16 := i16A - i16B
 	<.main+?>: load.sp(+20)
-	<.main+?>: load.i16
+	<.main+?>: load.is16
 	<.main+?>: load.sp(+20)
-	<.main+?>: load.i16
+	<.main+?>: load.is16
 	<.main+?>: sub.i32
 	cmplStd/test/lang/useOperator.ci:106: (11 bytes): i16Mul: int16 := i16A * i16B
 	<.main+?>: load.sp(+24)
-	<.main+?>: load.i16
+	<.main+?>: load.is16
 	<.main+?>: load.sp(+24)
-	<.main+?>: load.i16
+	<.main+?>: load.is16
 	<.main+?>: mul.i32
 	cmplStd/test/lang/useOperator.ci:107: (11 bytes): i16Div: int16 := i16A / i16B
 	<.main+?>: load.sp(+28)
-	<.main+?>: load.i16
+	<.main+?>: load.is16
 	<.main+?>: load.sp(+28)
-	<.main+?>: load.i16
+	<.main+?>: load.is16
 	<.main+?>: div.i32
 	cmplStd/test/lang/useOperator.ci:108: (11 bytes): i16Mod: int16 := i16A % i16B
 	<.main+?>: load.sp(+32)
-	<.main+?>: load.i16
+	<.main+?>: load.is16
 	<.main+?>: load.sp(+32)
-	<.main+?>: load.i16
+	<.main+?>: load.is16
 	<.main+?>: mod.i32
 	cmplStd/test/lang/useOperator.ci:109: (11 bytes): i16And: int16 := i16A & i16B
 	<.main+?>: load.sp(+36)
-	<.main+?>: load.i16
+	<.main+?>: load.is16
 	<.main+?>: load.sp(+36)
-	<.main+?>: load.i16
+	<.main+?>: load.is16
 	<.main+?>: and.b32
 	cmplStd/test/lang/useOperator.ci:110: (11 bytes): i16Ior: int16 := i16A | i16B
 	<.main+?>: load.sp(+40)
-	<.main+?>: load.i16
+	<.main+?>: load.is16
 	<.main+?>: load.sp(+40)
-	<.main+?>: load.i16
+	<.main+?>: load.is16
 	<.main+?>: or.b32
 	cmplStd/test/lang/useOperator.ci:111: (11 bytes): i16Xor: int16 := i16A ^ i16B
 	<.main+?>: load.sp(+44)
-	<.main+?>: load.i16
+	<.main+?>: load.is16
 	<.main+?>: load.sp(+44)
-	<.main+?>: load.i16
+	<.main+?>: load.is16
 	<.main+?>: xor.b32
 	cmplStd/test/lang/useOperator.ci:112: (8 bytes): i16Shl: int16 := (i16A) << shift
 	<.main+?>: load.sp(+48)
-	<.main+?>: load.i16
+	<.main+?>: load.is16
 	<.main+?>: dup.x32 sp(92)
 	<.main+?>: shl.b32
 	cmplStd/test/lang/useOperator.ci:113: (8 bytes): i16Shr: int16 := (i16A) >> shift
 	<.main+?>: load.sp(+52)
-	<.main+?>: load.i16
+	<.main+?>: load.is16
 	<.main+?>: dup.x32 sp(93)
 	<.main+?>: sar.b32
 	cmplStd/test/lang/useOperator.ci:114: (7 bytes): i16Not: bool := !(i16B)
 	<.main+?>: load.sp(+52)
-	<.main+?>: load.i16
+	<.main+?>: load.is16
 	<.main+?>: i32.2bool
 	<.main+?>: not.b32
 	cmplStd/test/lang/useOperator.ci:115: (11 bytes): i16Ceq: bool := i16A == i16B
 	<.main+?>: load.sp(+60)
-	<.main+?>: load.i16
+	<.main+?>: load.is16
 	<.main+?>: load.sp(+60)
-	<.main+?>: load.i16
+	<.main+?>: load.is16
 	<.main+?>: ceq.i32
 	cmplStd/test/lang/useOperator.ci:116: (12 bytes): i16Cne: bool := i16A != i16B
 	<.main+?>: load.sp(+64)
-	<.main+?>: load.i16
+	<.main+?>: load.is16
 	<.main+?>: load.sp(+64)
-	<.main+?>: load.i16
+	<.main+?>: load.is16
 	<.main+?>: ceq.i32
 	<.main+?>: not.b32
 	cmplStd/test/lang/useOperator.ci:117: (11 bytes): i16Clt: bool := i16A < i16B
 	<.main+?>: load.sp(+68)
-	<.main+?>: load.i16
+	<.main+?>: load.is16
 	<.main+?>: load.sp(+68)
-	<.main+?>: load.i16
+	<.main+?>: load.is16
 	<.main+?>: clt.i32
 	cmplStd/test/lang/useOperator.ci:118: (12 bytes): i16Cle: bool := i16A <= i16B
 	<.main+?>: load.sp(+72)
-	<.main+?>: load.i16
+	<.main+?>: load.is16
 	<.main+?>: load.sp(+72)
-	<.main+?>: load.i16
+	<.main+?>: load.is16
 	<.main+?>: cgt.i32
 	<.main+?>: not.b32
 	cmplStd/test/lang/useOperator.ci:119: (11 bytes): i16Cgt: bool := i16A > i16B
 	<.main+?>: load.sp(+76)
-	<.main+?>: load.i16
+	<.main+?>: load.is16
 	<.main+?>: load.sp(+76)
-	<.main+?>: load.i16
+	<.main+?>: load.is16
 	<.main+?>: cgt.i32
 	cmplStd/test/lang/useOperator.ci:120: (12 bytes): i16Cge: bool := i16A >= i16B
 	<.main+?>: load.sp(+80)
-	<.main+?>: load.i16
+	<.main+?>: load.is16
 	<.main+?>: load.sp(+80)
-	<.main+?>: load.i16
+	<.main+?>: load.is16
 	<.main+?>: clt.i32
 	<.main+?>: not.b32
 	cmplStd/test/lang/useOperator.ci:122: (5 bytes): u16A: uint16 := a
@@ -21637,115 +21653,115 @@ testMathAbsMod_f32_8d: float32 {
 	<.main+?>: load.c32 42
 	cmplStd/test/lang/useOperator.ci:124: (5 bytes): u16Pls: uint16 := +u16B
 	<.main+?>: load.sp(+0)
-	<.main+?>: load.i16
+	<.main+?>: load.iu16
 	cmplStd/test/lang/useOperator.ci:125: (6 bytes): u16Neg: uint16 := -u16B
 	<.main+?>: load.sp(+4)
-	<.main+?>: load.i16
+	<.main+?>: load.iu16
 	<.main+?>: neg.i32
 	cmplStd/test/lang/useOperator.ci:126: (6 bytes): u16Cmt: uint16 := ~u16B
 	<.main+?>: load.sp(+8)
-	<.main+?>: load.i16
+	<.main+?>: load.iu16
 	<.main+?>: cmt.b32
 	cmplStd/test/lang/useOperator.ci:127: (11 bytes): u16Add: uint16 := u16A + u16B
 	<.main+?>: load.sp(+16)
-	<.main+?>: load.i16
+	<.main+?>: load.iu16
 	<.main+?>: load.sp(+16)
-	<.main+?>: load.i16
+	<.main+?>: load.iu16
 	<.main+?>: add.i32
 	cmplStd/test/lang/useOperator.ci:128: (11 bytes): u16Sub: uint16 := u16A - u16B
 	<.main+?>: load.sp(+20)
-	<.main+?>: load.i16
+	<.main+?>: load.iu16
 	<.main+?>: load.sp(+20)
-	<.main+?>: load.i16
+	<.main+?>: load.iu16
 	<.main+?>: sub.i32
 	cmplStd/test/lang/useOperator.ci:129: (11 bytes): u16Mul: uint16 := u16A * u16B
 	<.main+?>: load.sp(+24)
-	<.main+?>: load.i16
+	<.main+?>: load.iu16
 	<.main+?>: load.sp(+24)
-	<.main+?>: load.i16
+	<.main+?>: load.iu16
 	<.main+?>: mul.u32
 	cmplStd/test/lang/useOperator.ci:130: (11 bytes): u16Div: uint16 := u16A / u16B
 	<.main+?>: load.sp(+28)
-	<.main+?>: load.i16
+	<.main+?>: load.iu16
 	<.main+?>: load.sp(+28)
-	<.main+?>: load.i16
+	<.main+?>: load.iu16
 	<.main+?>: div.u32
 	cmplStd/test/lang/useOperator.ci:131: (11 bytes): u16Mod: uint16 := u16A % u16B
 	<.main+?>: load.sp(+32)
-	<.main+?>: load.i16
+	<.main+?>: load.iu16
 	<.main+?>: load.sp(+32)
-	<.main+?>: load.i16
+	<.main+?>: load.iu16
 	<.main+?>: mod.u32
 	cmplStd/test/lang/useOperator.ci:132: (11 bytes): u16And: uint16 := u16A & u16B
 	<.main+?>: load.sp(+36)
-	<.main+?>: load.i16
+	<.main+?>: load.iu16
 	<.main+?>: load.sp(+36)
-	<.main+?>: load.i16
+	<.main+?>: load.iu16
 	<.main+?>: and.b32
 	cmplStd/test/lang/useOperator.ci:133: (11 bytes): u16Ior: uint16 := u16A | u16B
 	<.main+?>: load.sp(+40)
-	<.main+?>: load.i16
+	<.main+?>: load.iu16
 	<.main+?>: load.sp(+40)
-	<.main+?>: load.i16
+	<.main+?>: load.iu16
 	<.main+?>: or.b32
 	cmplStd/test/lang/useOperator.ci:134: (11 bytes): u16Xor: uint16 := u16A ^ u16B
 	<.main+?>: load.sp(+44)
-	<.main+?>: load.i16
+	<.main+?>: load.iu16
 	<.main+?>: load.sp(+44)
-	<.main+?>: load.i16
+	<.main+?>: load.iu16
 	<.main+?>: xor.b32
 	cmplStd/test/lang/useOperator.ci:135: (8 bytes): u16Shl: uint16 := (u16A) << shift
 	<.main+?>: load.sp(+48)
-	<.main+?>: load.i16
+	<.main+?>: load.is16
 	<.main+?>: dup.x32 sp(114)
 	<.main+?>: shl.b32
 	cmplStd/test/lang/useOperator.ci:136: (8 bytes): u16Shr: uint16 := (u16A) >> shift
 	<.main+?>: load.sp(+52)
-	<.main+?>: load.i16
+	<.main+?>: load.is16
 	<.main+?>: dup.x32 sp(115)
 	<.main+?>: sar.b32
 	cmplStd/test/lang/useOperator.ci:137: (7 bytes): u16Not: bool := !(u16B)
 	<.main+?>: load.sp(+52)
-	<.main+?>: load.i16
+	<.main+?>: load.is16
 	<.main+?>: i32.2bool
 	<.main+?>: not.b32
 	cmplStd/test/lang/useOperator.ci:138: (11 bytes): u16Ceq: bool := u16A == u16B
 	<.main+?>: load.sp(+60)
-	<.main+?>: load.i16
+	<.main+?>: load.iu16
 	<.main+?>: load.sp(+60)
-	<.main+?>: load.i16
+	<.main+?>: load.iu16
 	<.main+?>: ceq.i32
 	cmplStd/test/lang/useOperator.ci:139: (12 bytes): u16Cne: bool := u16A != u16B
 	<.main+?>: load.sp(+64)
-	<.main+?>: load.i16
+	<.main+?>: load.iu16
 	<.main+?>: load.sp(+64)
-	<.main+?>: load.i16
+	<.main+?>: load.iu16
 	<.main+?>: ceq.i32
 	<.main+?>: not.b32
 	cmplStd/test/lang/useOperator.ci:140: (11 bytes): u16Clt: bool := u16A < u16B
 	<.main+?>: load.sp(+68)
-	<.main+?>: load.i16
+	<.main+?>: load.iu16
 	<.main+?>: load.sp(+68)
-	<.main+?>: load.i16
+	<.main+?>: load.iu16
 	<.main+?>: clt.u32
 	cmplStd/test/lang/useOperator.ci:141: (12 bytes): u16Cle: bool := u16A <= u16B
 	<.main+?>: load.sp(+72)
-	<.main+?>: load.i16
+	<.main+?>: load.iu16
 	<.main+?>: load.sp(+72)
-	<.main+?>: load.i16
+	<.main+?>: load.iu16
 	<.main+?>: cgt.u32
 	<.main+?>: not.b32
 	cmplStd/test/lang/useOperator.ci:142: (11 bytes): u16Cgt: bool := u16A > u16B
 	<.main+?>: load.sp(+76)
-	<.main+?>: load.i16
+	<.main+?>: load.iu16
 	<.main+?>: load.sp(+76)
-	<.main+?>: load.i16
+	<.main+?>: load.iu16
 	<.main+?>: cgt.u32
 	cmplStd/test/lang/useOperator.ci:143: (12 bytes): u16Cge: bool := u16A >= u16B
 	<.main+?>: load.sp(+80)
-	<.main+?>: load.i16
+	<.main+?>: load.iu16
 	<.main+?>: load.sp(+80)
-	<.main+?>: load.i16
+	<.main+?>: load.iu16
 	<.main+?>: clt.u32
 	<.main+?>: not.b32
 	cmplStd/test/lang/useOperator.ci:145: (5 bytes): i32A: int32 := a
@@ -23860,13 +23876,13 @@ cmplStd/test/lang/reflect.ci:22: RecordSizeof: typename(<RecordSizeof>)
 cmplStd/test/lang/reflect.ci:26: RecordSizeofExt: typename(<RecordSizeofExt>)
 cmplStd/test/lang/reflect.ci:30: typeofRecord: typename(<RecordSizeofExt>)
 cmplStd/test/lang/reflect.ci:31: nameOfRecord: char[*]("RecordSizeofExt")
-cmplStd/test/lang/reflect.ci:32: offsetOfRecord: int32(326312)
+cmplStd/test/lang/reflect.ci:32: offsetOfRecord: int32(326632)
 cmplStd/test/lang/reflect.ci:33: sizeOfRecord: int32(16)
 cmplStd/test/lang/reflect.ci:34: fileOfRecord: char[*]("cmplStd/test/lang/reflect.ci")
 cmplStd/test/lang/reflect.ci:35: lineOfRecord: int32(26)
 cmplStd/test/lang/reflect.ci:37: typeofBase: typename(<RecordSizeof>)
 cmplStd/test/lang/reflect.ci:38: nameOfBase: char[*]("RecordSizeof")
-cmplStd/test/lang/reflect.ci:39: offsetOfBase: int32(325992)
+cmplStd/test/lang/reflect.ci:39: offsetOfBase: int32(326312)
 cmplStd/test/lang/reflect.ci:40: sizeOfBase: int32(12)
 cmplStd/test/lang/reflect.ci:41: fileOfBase: char[*]("cmplStd/test/lang/reflect.ci")
 cmplStd/test/lang/reflect.ci:42: lineOfBase: int32(22)
@@ -24300,18 +24316,18 @@ cmplStd/test/std/test.math.ci:119: testMathAbsMod_f32_8d: float32(8.000000)
 
 ---------- Memory usage:
 memory[all] @000000; size: 8388320(8.0 Mb)
-memory[used] @000000; size: 428244(418.2 Kb)
-memory[heap] @0688d4; size: 5862948(5.6 Mb)
+memory[used] @000000; size: 428564(418.5 Kb)
+memory[heap] @068a14; size: 5862628(5.6 Mb)
 memory[stack] @3fff40; size: 2097080(2.0 Mb)
 
 ---------- Used memory:
-memory[meta] @000000; size: 411048(401.4 Kb)
+memory[meta] @000000; size: 411368(401.7 Kb)
 memory[code] @000000; size: 16845(16.5 Kb)
 memory[data] @000000; size: 128(128.0 bytes)
 
 ---------- Heap memory:
-memory[used] @0688f0; size: 32(32.0 bytes)
-memory[used] @068920; size: 32(32.0 bytes)
-memory[free] @068950; size: 5862800(5.6 Mb)
+memory[used] @068a30; size: 32(32.0 bytes)
+memory[used] @068a60; size: 32(32.0 bytes)
+memory[free] @068a90; size: 5862480(5.6 Mb)
 
 ---------- Exitcode: 0, time: 0.000 ms

@@ -433,7 +433,7 @@ static struct Math {
 
 	/// Returns the sine of the radian argument `x`.
 	float64 sin(float64 x) {
-		static if (fastNativeCalls && typename(float64.sin) != null) {
+		static if (preferNativeCalls && typename(float64.sin) != null) {
 			// use the native method if available
 			return float64.sin(x);
 		}
@@ -442,7 +442,7 @@ static struct Math {
 
 	/// Returns the cosine of the radian argument `x`.
 	float64 cos(float64 x) {
-		static if (fastNativeCalls && typename(float64.cos) != null) {
+		static if (preferNativeCalls && typename(float64.cos) != null) {
 			// use the native method if available
 			return float64.cos(x);
 		}
@@ -451,7 +451,7 @@ static struct Math {
 
 	/// Returns the tangent of the radian argument `x`.
 	float64 tan(float64 x) {
-		static if (fastNativeCalls && typename(float64.tan) != null) {
+		static if (preferNativeCalls && typename(float64.tan) != null) {
 			// use the native method if available
 			return float64.tan(x);
 		}
@@ -473,7 +473,7 @@ static struct Math {
 
 	/// Returns the cotangent of the radian argument `x`.
 	float64 cot(float64 x) {
-		static if (fastNativeCalls && typename(float64.cot) != null) {
+		static if (preferNativeCalls && typename(float64.cot) != null) {
 			// use the native method if available
 			return float64.cot(x);
 		}
@@ -650,4 +650,34 @@ Number.prototype.log10 = function(){return Math.log(this) / Math.LN10;};
 //~ Number.prototype.pow = function(exponent){return Math.pow(this,exponent);};
 //- Number.prototype.mod = function(modulus){return this >= 0 ? this % modulus : (this % modulus + Math.abs(modulus)) % modulus;};
 //- Number.prototype.wrap = function(low, high){return low + (this - low).mod(high - low);};
+
+https://github.com/alexhuntley/Plots/blob/main/plots/shaders/fragment.glsl
+#define ln(x) log(x)
+#define lg(x) log2(x)
+#define log_base(b, x) (log(x)/log(b))
+#define sec(x) (1.0/cos(x))
+#define csc(x) (1.0/sin(x))
+#define cosec(x) csc(x)
+#define cot(x) (1.0/tan(x))
+#define arcsin(x) asin(x)
+#define arccos(x) acos(x)
+#define arctan(x) atan(x)
+#define asec(x) acos(1.0/(x))
+#define acsc(x) asin(1.0/(x))
+#define acosec(x) acsc(x)
+#define acot(x) (atan(1.0/(x)) - ((x) > 0 ? 0.0 : pi))
+#define arcsec(x) asec(x)
+#define arccsc(x) acsc(x)
+#define arccosec(x) acsc(x)
+#define arccot(x) acot(x)
+#define sech(x) (1.0/cosh(x))
+#define csch(x) (1.0/sinh(x))
+#define cosech(x) csch(x)
+#define coth(x) (1.0/tanh(x))
+#define asech(x) acosh(1.0/(x))
+#define acsch(x) asinh(1.0/(x))
+#define acosech(x) acsch(x)
+#define acoth(x) atanh(1.0/(x))
+#define sgn(x) sign(x)
+#define sinc(x) (sin(x)/(x))
 // */

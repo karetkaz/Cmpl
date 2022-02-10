@@ -17,7 +17,7 @@ Slider orientation = {
 	text: "orientation";
 	minimum: -4;
 	maximum: 10;
-	value: 1;
+	value: -1;
 };
 
 Slider paddingTop = {
@@ -39,7 +39,7 @@ Slider paddingRight = {
 	text: "LayoutPadding.right";
 	minimum: minPadding;
 	maximum: maxPadding;
-	value: 20;
+	value: 256;
 };
 Slider paddingBottom = {
 	onUpdate: syncPadding;
@@ -176,22 +176,28 @@ Gui.showWindow(widget
 );
 
 bool syncOrientation(Slider this, int value) {
-	bool result = Slider.onUpdate(this, value);
+	if (!Slider.onUpdate(this, value)) {
+		return false;
+	}
 	layout.orientation = this.value;
 	layout.invalidate();
-	return result;
+	return true;
 }
 bool syncPadding(Slider this, int value) {
-	bool result = Slider.onUpdate(this, value);
+	if (!Slider.onUpdate(this, value)) {
+		return false;
+	}
 	layout.paddingTop = paddingTop.value;
 	layout.paddingLeft = paddingLeft.value;
 	layout.paddingRight = paddingRight.value;
 	layout.paddingBottom = paddingBottom.value;
 	layout.invalidate();
-	return result;
+	return true;
 }
 bool syncAlignment(Switch this, int value) {
-	bool result = Switch.onUpdate(this, value);
+	if (!Switch.onUpdate(this, value)) {
+		return false;
+	}
 	int itemAlign = Style.center;
 	if (itemAlignTop.checked()) {
 		itemAlign |= Style.top;
@@ -228,7 +234,7 @@ bool syncAlignment(Switch this, int value) {
 	}
 
 	layout.invalidate();
-	return result;
+	return true;
 }
 static void debugLayoutDraw(Image img, const Rect rect&, uint32 rgb) {
 	if (!drawDebugRect.checked()) {

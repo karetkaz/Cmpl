@@ -1471,26 +1471,26 @@ static vmError conDebug(dbgContext ctx, vmError error, size_t ss, void *stack, s
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 static void dumpVmOpc(const char *error, const struct opcodeRec *info) {
 	FILE *out = stdout;
-	printFmt(out, NULL, "\n### Instruction `%s`\n", info->name);
-	printFmt(out, NULL, "\nPerform [TODO]\n");
-	printFmt(out, NULL, "\n**Description**\n");
-	printFmt(out, NULL, "\nInstruction code: `0x%02x`\n", info->code);
-	printFmt(out, NULL, "\nInstruction length: %d byte%?c\n", info->size, info->size == 1 ? 0 : 's');
-	printFmt(out, NULL, "\n**Stack change**\n");
+	printFmt(out, NULL, "### Instruction `%s`\n", info->name);
+	printFmt(out, NULL, "\nPerforms [todo]\n");
+	printFmt(out, NULL, "\n* Instruction code: `0x%02x`", info->code);
+	printFmt(out, NULL, "\n* Instruction length: %d byte%?c", info->size, info->size == 1 ? 0 : 's');
 
-	printFmt(out, NULL, "\nRequires %d operand%?c: […", info->stack_in, info->stack_in == 1 ? 0 : 's');
+	printFmt(out, NULL, "\n* Requires %d operand%?c: […", info->stack_in, info->stack_in == 1 ? 0 : 's');
 	for (unsigned i = 0; i < info->stack_in; ++i) {
-		printFmt(out, NULL, ", %c", 'a' + i);
+		printFmt(out, NULL, ", `%c`", 'a' + i);
 	}
-	printFmt(out, NULL, "\n\nReturns %d value%?c: […", info->stack_out, info->stack_in == 1 ? 0 : 's');
-	for (unsigned i = 0; i < info->stack_out; ++i) {
-		printFmt(out, NULL, ", %c", 'a' + i);
-	}
-	printFmt(out, NULL, ", [TODO]\n");
+	printFmt(out, NULL, ", [todo]\n");
 
-	if (error != NULL) {
-		printFmt(out, NULL, "\n**Note**\n\n%s\n", error);
+	printFmt(out, NULL, "* Returns %d value%?c: […", info->stack_out, info->stack_in == 1 ? 0 : 's');
+	for (unsigned i = 0; i < info->stack_out; ++i) {
+		printFmt(out, NULL, ", `%c`", 'a' + i);
 	}
+	printFmt(out, NULL, ", [todo]\n");
+
+	printFmt(out, NULL, "\n```\n[todo]\n```\n");
+	printFmt(out, NULL, "\n");
+	(void) error;
 }
 static void testVmOpc(const char *error, const struct opcodeRec *info) {
 	if (error == NULL) {
@@ -1639,6 +1639,7 @@ int main(int argc, char *argv[]) {
 		int genStaticGlobals;
 		int errPrivateAccess;
 		int errUninitialized;
+		int preferNativeCalls;
 		int warnLevel;	// compile log level
 		int raiseLevel;	// runtime log level
 
@@ -1650,6 +1651,7 @@ int main(int argc, char *argv[]) {
 		.genStaticGlobals = 1,
 		.errPrivateAccess = 1,
 		.errUninitialized = 1,
+		.preferNativeCalls = 1,
 		.warnLevel = 5,
 		.raiseLevel = 15,
 
@@ -2277,6 +2279,10 @@ int main(int argc, char *argv[]) {
 					extra.compileSteps = on ? "\n---------- " : NULL;
 					arg2 += 6;
 				}
+				else if (strBegins(arg2 + 1, "native")) {
+					settings.preferNativeCalls = on;
+					arg2 += 7;
+				}
 				else {
 					break;
 				}
@@ -2366,6 +2372,10 @@ int main(int argc, char *argv[]) {
 			snprintf(buffer, sizeof(buffer), "inline \"%s\";", stdlib);
 		} else {
 			buffer[0] = 0;
+		}
+		if (!ccDefInt(cc, "preferNativeCalls", settings.preferNativeCalls)) {
+			error(rt, NULL, 0, "error registering `preferNativeCalls`");
+			return -1;
 		}
 		if (ccLibSys(cc) != 0) {
 			error(rt, NULL, 0, "error registering standard library");

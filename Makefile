@@ -5,13 +5,13 @@ GX_SRC=cmplGfx/src
 
 CFLAGS=-Wall -Wextra -g0 -O3 -std=gnu99
 EMFLAGS=-g0 -O3 -s WASM=1 -s EXPORT_ALL=0 -s INVOKE_RUN=0 -s ASSERTIONS=0
-EMFLAGS+=--no-heap-copy --memory-init-file 0 -s TOTAL_MEMORY=128MB -s WASM_MEM_MAX=1GB -s ALLOW_MEMORY_GROWTH=1
+EMFLAGS+=--no-heap-copy --memory-init-file 0 -s ALLOW_MEMORY_GROWTH=1 -s TOTAL_MEMORY=32MB
 EMFLAGS+=-D NO_LIBJPEG -D NO_LIBPNG
 
 EM_EMBED='--preload-file' 'cmplStd/stdlib.ci' '--preload-file' 'cmplGfx/gfxlib.ci'
 EM_EMBED+=$(shell find cmplStd/lib -type f -name '*.ci' -not -path '*/todo/*' -printf '--preload-file %p\n')
 EM_EMBED+=$(shell find cmplGfx/lib -type f -name '*.ci' -not -path '*/todo/*' -printf '--preload-file %p\n')
-EM_SIDE_MODULE=-s SIDE_MODULE=1 -s "EXPORTED_FUNCTIONS=['_cmplInit']"
+EM_SIDE_MODULE=-s SIDE_MODULE=2 -s "EXPORTED_FUNCTIONS=['_cmplUnit', '_cmplInit', 'cmplClose']"
 EM_MAIN_MODULE=-s MAIN_MODULE=1 -lidbfs.js
 
 CLIBS=-lm

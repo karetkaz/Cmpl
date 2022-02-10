@@ -79,7 +79,9 @@ emit.load.z32
 emit.load.z64
 emit.load.z128
 emit.load.i8
+emit.load.u8
 emit.load.i16
+emit.load.u16
 emit.load.i32
 emit.load.i64
 emit.load.i128
@@ -185,6 +187,7 @@ emit.max.p2d
 emit.swz
 emit.swz.x2
 halt(): void
+preferNativeCalls
 raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void # Report messages or raise errors.
 raise.abort
 raise.error
@@ -213,7 +216,6 @@ System.Platform.Linux
 System.Platform.Unix
 true
 false
-fastNativeCalls # use fast native methods when possible
 byte
 float
 double
@@ -570,6 +572,7 @@ Image.blend(image: Image, x: int32, y: int32, src: Image, roi: Rect, extra: poin
 Image.blend.color
 Image.blend.alpha
 Image.blend.dstAlpha
+Image.blend.blendVec4f
 Image.transform(image: Image, rect: Rect, src: Image, roi: Rect, interpolate: int32, mat: float32[16]): void
 Image.blur(image: Image, radius: int32, sigma: float64): void
 Image.colorMap(image: Image, roi: Rect, lut: uint32[256]): void
@@ -709,7 +712,7 @@ blend(image: Image, x0: int32, y0: int32, src: Image, roi: Rect, blend(base: vec
 blend(image: Image, roi: Rect, col: argb): void # fill the destination with the given `col` (alpha channel is used)
 blendAlpha(image: Image, x: int32, y: int32, src: Image, roi: Rect, alpha: int32): void # copy the `src` image to the destination with the given transparency
 blendDstAlpha(image: Image, x: int32, y: int32, src: Image, roi: Rect): void # copy the `src` image to the destination masked with destination alpha
-copy(image: Image, x: int32, y: int32, src: Image, roi: Rect): void # copy the `src` image to the destination
+copy(image: Image, x: int32, y: int32, src: Image, roi: Rect): void # copy or convert `src` image to the destination `image`
 Image(copy: Image): Image # Create an image by copying another one
 tile(image: Image, x: int32, y: int32, src: Image, roi: Rect): void # copy the `src` image multiple times so it fills the whole `image`
 eval(image: Image, roi: Rect, aspect: float32, time: float32, eval(in: vec4f): vec4f): void # Fill the surface by evaluating the given function for each pixel

@@ -43,15 +43,11 @@ fi
 
 # create reference todo: cmpl -doc.md extras/Cmpl.md cmplStd/doc/cmpl.ci
 $BIN/cmpl>temp/Instructions.md --dump-vm
-DOC_FILES="$CMPL_HOME/cmplStd/doc/lang/*.md"             # Introduction
-DOC_FILES="$DOC_FILES $CMPL_HOME/cmplStd/doc/expr/*.md"  # Expressions
-DOC_FILES="$DOC_FILES $CMPL_HOME/cmplStd/doc/stmt/*.md"  # Statements
-DOC_FILES="$DOC_FILES $CMPL_HOME/cmplStd/doc/decl/*.md"  # Declarations
-DOC_FILES="$DOC_FILES $CMPL_HOME/cmplStd/doc/type/*.md"  # Type system
-#DOC_FILES="$DOC_FILES $CMPL_HOME/cmplStd/doc/exec/*.md"  # Execution and vm
 rm extras/Cmpl.md
+DOC_FILES="$CMPL_HOME/extras/docs/*.md"
 printf '%s\n' $DOC_FILES | while read file; do
 	cat>>extras/Cmpl.md "$file"
+	echo>>extras/Cmpl.md
 done
 
 # dump symbols, assembly, syntax tree and global variables

@@ -91,8 +91,6 @@ Slider slider = {
 
 DebugView debug = {
 	focusable: false;
-	measures: -1;
-	draws: -1;
 };
 
 Gui.showWindow(Widget(0, 0).addItems(

@@ -1,23 +1,5 @@
 <main token="{}" type="void" kind="static const typename(void)">
 	<stmt token="{}" type="void" kind="static const typename(void)" file="cmplStd/stdlib.ci:8">
-		<stmt token="static if" type="void" kind="static const typename(void)" stmt="static if ((typename(fastNativeCalls)) == null)">
-			<test token="==" type="bool" kind="static const typename(bool)" value="(typename(fastNativeCalls)) == null">
-				<left token="()" type="pointer" kind="static const typename(ref)" value="(typename(fastNativeCalls))">
-					<push token="()" type="typename" kind="static const typename(ref)" value="typename(fastNativeCalls)">
-						<push token=".variable" type="(null)" value="fastNativeCalls"/>
-						<call token=".variable" type="typename" kind="static const typename(ref)" value="typename"/>
-					</push>
-				</left>
-				<right token=".variable" type="pointer" kind="static const typename(ref)" value="null"/>
-			</test>
-			<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/stdlib.ci:8">
-				<stmt token=".variable" type="typename" kind="static const typename(ref)" value="fastNativeCalls">
-					<init token=".variable" type="bool" kind="static const typename(bool)" value="true">
-						<init token=".literal" type="bool" kind="static const typename(bool)" value="1" />
-					</init>
-				</stmt>
-			</then>
-		</stmt>
 		<stmt token=".variable" type="typename" kind="static const typename(ref)" value="byte">
 			<init token=".variable" type="typename" kind="static const typename(ref)" value="uint8">
 				<init token=".literal" type="int64" kind="static const typename(i64)" value="0" />
@@ -202,7 +184,7 @@
 				</left>
 				<right token=".variable" type="typename" kind="static const typename(ref)" value="function"/>
 			</test>
-			<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/stdlib.ci:23">
+			<then token="{}" type="void" kind="static const typename(void)" file="cmplStd/stdlib.ci:18">
 				<stmt token=".variable" type="typename" kind="static const typename(ref)" value="verbose(message: char[*], inspect: variant): void">
 					<init token="()" type="void" kind="static const typename(void)" value="raise(raise.verbose, raise.noTrace, message, inspect)">
 						<push token="." type="int64" kind="static const typename(i64)" value="raise.verbose">
@@ -2498,9 +2480,11 @@
 			</field>
 			<field token=".variable" type="function" kind="static const typename(ref)" value="sin(x: float64): float64">
 				<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Math.ci:435">
-					<stmt token="static if" type="void" kind="static const typename(void)" stmt="static if (true &amp;&amp; (typename(float64.sin)) != null)">
-						<test token="&amp;&amp;" type="bool" kind="static const typename(bool)" value="true &amp;&amp; (typename(float64.sin)) != null">
-							<left token=".variable" type="bool" kind="static const typename(bool)" value="true"/>
+					<stmt token="static if" type="void" kind="static const typename(void)" stmt="static if ((preferNativeCalls) &amp;&amp; (typename(float64.sin)) != null)">
+						<test token="&amp;&amp;" type="bool" kind="static const typename(bool)" value="(preferNativeCalls) &amp;&amp; (typename(float64.sin)) != null">
+							<left token="()" type="bool" kind="static const typename(bool)" value="(preferNativeCalls)">
+								<push token=".variable" type="int64" kind="static const typename(i64)" value="preferNativeCalls"/>
+							</left>
 							<right token="!=" type="bool" kind="static const typename(bool)" value="(typename(float64.sin)) != null">
 								<left token="()" type="pointer" kind="static const typename(ref)" value="(typename(float64.sin))">
 									<push token="()" type="typename" kind="static const typename(ref)" value="typename(float64.sin)">
@@ -2543,9 +2527,11 @@
 			</field>
 			<field token=".variable" type="function" kind="static const typename(ref)" value="cos(x: float64): float64">
 				<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Math.ci:444">
-					<stmt token="static if" type="void" kind="static const typename(void)" stmt="static if (true &amp;&amp; (typename(float64.cos)) != null)">
-						<test token="&amp;&amp;" type="bool" kind="static const typename(bool)" value="true &amp;&amp; (typename(float64.cos)) != null">
-							<left token=".variable" type="bool" kind="static const typename(bool)" value="true"/>
+					<stmt token="static if" type="void" kind="static const typename(void)" stmt="static if ((preferNativeCalls) &amp;&amp; (typename(float64.cos)) != null)">
+						<test token="&amp;&amp;" type="bool" kind="static const typename(bool)" value="(preferNativeCalls) &amp;&amp; (typename(float64.cos)) != null">
+							<left token="()" type="bool" kind="static const typename(bool)" value="(preferNativeCalls)">
+								<push token=".variable" type="int64" kind="static const typename(i64)" value="preferNativeCalls"/>
+							</left>
 							<right token="!=" type="bool" kind="static const typename(bool)" value="(typename(float64.cos)) != null">
 								<left token="()" type="pointer" kind="static const typename(ref)" value="(typename(float64.cos))">
 									<push token="()" type="typename" kind="static const typename(ref)" value="typename(float64.cos)">
@@ -2591,9 +2577,11 @@
 			</field>
 			<field token=".variable" type="function" kind="static const typename(ref)" value="tan(x: float64): float64">
 				<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Math.ci:453">
-					<stmt token="static if" type="void" kind="static const typename(void)" stmt="static if (true &amp;&amp; (typename(float64.tan)) != null)">
-						<test token="&amp;&amp;" type="bool" kind="static const typename(bool)" value="true &amp;&amp; (typename(float64.tan)) != null">
-							<left token=".variable" type="bool" kind="static const typename(bool)" value="true"/>
+					<stmt token="static if" type="void" kind="static const typename(void)" stmt="static if ((preferNativeCalls) &amp;&amp; (typename(float64.tan)) != null)">
+						<test token="&amp;&amp;" type="bool" kind="static const typename(bool)" value="(preferNativeCalls) &amp;&amp; (typename(float64.tan)) != null">
+							<left token="()" type="bool" kind="static const typename(bool)" value="(preferNativeCalls)">
+								<push token=".variable" type="int64" kind="static const typename(i64)" value="preferNativeCalls"/>
+							</left>
 							<right token="!=" type="bool" kind="static const typename(bool)" value="(typename(float64.tan)) != null">
 								<left token="()" type="pointer" kind="static const typename(ref)" value="(typename(float64.tan))">
 									<push token="()" type="typename" kind="static const typename(ref)" value="typename(float64.tan)">
@@ -2685,9 +2673,11 @@
 			</field>
 			<field token=".variable" type="function" kind="static const typename(ref)" value="cot(x: float64): float64">
 				<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Math.ci:475">
-					<stmt token="static if" type="void" kind="static const typename(void)" stmt="static if (true &amp;&amp; (typename(float64.cot)) != null)">
-						<test token="&amp;&amp;" type="bool" kind="static const typename(bool)" value="true &amp;&amp; (typename(float64.cot)) != null">
-							<left token=".variable" type="bool" kind="static const typename(bool)" value="true"/>
+					<stmt token="static if" type="void" kind="static const typename(void)" stmt="static if ((preferNativeCalls) &amp;&amp; (typename(float64.cot)) != null)">
+						<test token="&amp;&amp;" type="bool" kind="static const typename(bool)" value="(preferNativeCalls) &amp;&amp; (typename(float64.cot)) != null">
+							<left token="()" type="bool" kind="static const typename(bool)" value="(preferNativeCalls)">
+								<push token=".variable" type="int64" kind="static const typename(i64)" value="preferNativeCalls"/>
+							</left>
 							<right token="!=" type="bool" kind="static const typename(bool)" value="(typename(float64.cot)) != null">
 								<left token="()" type="pointer" kind="static const typename(ref)" value="(typename(float64.cot))">
 									<push token="()" type="typename" kind="static const typename(ref)" value="typename(float64.cot)">

@@ -292,6 +292,7 @@ static vmError surf_fillRect(nfcContext ctx) {
 static const char *const proto_image_blend_color = "color";
 static const char *const proto_image_blend_alpha = "alpha";
 static const char *const proto_image_blend_dstAlpha = "dstAlpha";
+static const char *const proto_image_blend_vec4f = "blendVec4f";
 static const char *const proto_image_blend = "void blend(Image image, int32 x, int32 y, const Image src, const Rect roi&, pointer extra, uint32 blend(pointer extra, uint32 base, uint32 with))";
 typedef struct bltContext {
 	symn callback;
@@ -311,6 +312,19 @@ static int blendCallback(argb* dst, argb *src, bltContext ctx, size_t cnt) {
 		if (rt->api.invoke(rt, ctx->callback, dst, &args, NULL) != noError) {
 			return -1;
 		}
+	}
+	return 0;
+}
+static int blendVec4fCb(argb* dst, argb *src, bltContext ctx, size_t cnt) {
+	rtContext rt = ctx->rt;
+	struct vector args[2];
+	for (size_t i = 0; i < cnt; ++i, ++dst, ++src) {
+		args[0] = vecldc(*src);
+		args[1] = vecldc(*dst);
+		if (rt->api.invoke(rt, ctx->callback, args, args, NULL) != noError) {
+			return -1;
+		}
+		*dst = vecrgb(args);
 	}
 	return 0;
 }
@@ -383,18 +397,27 @@ static vmError surf_blend(nfcContext ctx) {
 		blt = (bltProc) blendCallback;
 		arg = &args;
 	}
-	else if (builtin->fmt == proto_image_blend_color) {
-		blt = (bltProc) blendColor;
-		arg = vmPointer(rt, extra);
+	else if (builtin->fmt == proto_image_blend_dstAlpha) {
+		blt = (bltProc) blendDstAlpha;
+		arg = NULL;
 	}
 	else if (builtin->fmt == proto_image_blend_alpha) {
 		//blt = getBltProc(blt_cpy_mix, surf->depth);
 		blt = (bltProc) blendAlpha;
 		arg = vmPointer(rt, extra);
 	}
-	else if (builtin->fmt == proto_image_blend_dstAlpha) {
-		blt = (bltProc) blendDstAlpha;
-		arg = NULL;
+	else if (builtin->fmt == proto_image_blend_color) {
+		blt = (bltProc) blendColor;
+		arg = vmPointer(rt, extra);
+	}
+	else if (builtin->fmt == proto_image_blend_vec4f) {
+		args.callback = rt->api.rtLookup(ctx->rt, extra, KIND_fun);
+		blt = (bltProc) blendVec4fCb;
+		arg = &args;
+		if (args.callback == NULL) {
+			rt->api.raise(rt, raiseError, "invalid callback function: %T", ctx->sym);
+			return nativeCallError;
+		}
 	}
 
 	if (copyImage(surf, x, y, src, roi, arg, blt) < 0) {
@@ -1746,6 +1769,7 @@ int cmplInit(rtContext rt) {
 				builtinBlend(rt, proto_image_blend_color, method);// Image.blend.color
 				builtinBlend(rt, proto_image_blend_alpha, method);
 				builtinBlend(rt, proto_image_blend_dstAlpha, method);
+				builtinBlend(rt, proto_image_blend_vec4f, method);
 				rt->api.ccEnd(cc, blend);
 			}
 		}

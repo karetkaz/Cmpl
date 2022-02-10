@@ -40,11 +40,11 @@ inline Weekday(int index) = Weekday(emit(int32(index + Weekday.Monday)));
 inline indexOf(Weekday value) = int32(value - Weekday.Monday);
 
 struct Calendar {
-	// Date
+	// Date parts
 	const int32 year;			// Year
 	const Month month;			// Month of year: 1 ... 12 / [Jan, Feb, Mar, ...]
 	const uint8 day;			// Day of month: 1 ... 30
-	// Time
+	// Time parts
 	const uint8 hour = 0;		// Hour of day: 0 ... 23
 	const uint8 minute = 0;		// Minute of hour: 0 ... 59
 	const uint8 second = 0;		// Second of minute: 0 ... 59

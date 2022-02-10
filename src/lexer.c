@@ -48,7 +48,7 @@ typedef struct lexContext {
 
 	// buffered reading
 	int     _fin;		// file handle
-	char    *_ptr;		// pointer parsing trough source
+	char    *_ptr;		// pointer parsing through source
 	size_t  _cnt;		// chars left in buffer
 	uint8_t _buf[1024];	// memory file buffer
 } *lexContext;

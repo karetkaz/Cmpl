@@ -27,9 +27,10 @@ typename: typename {
 	cmplGfx/lib/image.transform.ci:5: referenced as `typename`
 	cmplGfx/lib/color.matrix.ci:3: referenced as `typename`
 	cmplGfx/lib/color.lookup.ci:3: referenced as `typename`
-	cmplGfx/lib/image.blend.ci:106: referenced as `typename`
-	cmplGfx/lib/image.blend.ci:89: referenced as `typename`
-	cmplGfx/lib/image.blend.ci:72: referenced as `typename`
+	cmplGfx/lib/image.blend.ci:109: referenced as `typename`
+	cmplGfx/lib/image.blend.ci:92: referenced as `typename`
+	cmplGfx/lib/image.blend.ci:75: referenced as `typename`
+	cmplGfx/lib/image.blend.ci:61: referenced as `typename`
 	cmplGfx/lib/image.blend.ci:3: referenced as `typename`
 	cmplGfx/lib/image.ci:19: referenced as `typename`
 	cmplGfx/lib/image.ci:11: referenced as `typename`
@@ -39,10 +40,9 @@ typename: typename {
 	cmplStd/lib/math/Math.ci:454: referenced as `typename`
 	cmplStd/lib/math/Math.ci:445: referenced as `typename`
 	cmplStd/lib/math/Math.ci:436: referenced as `typename`
-	cmplStd/stdlib.ci:23: referenced as `typename`
-	cmplStd/stdlib.ci:21: referenced as `typename`
-	cmplStd/stdlib.ci:21: referenced as `typename`
-	cmplStd/stdlib.ci:8: referenced as `typename`
+	cmplStd/stdlib.ci:18: referenced as `typename`
+	cmplStd/stdlib.ci:16: referenced as `typename`
+	cmplStd/stdlib.ci:16: referenced as `typename`
 	internal usages: 12
 }
 typename.size: int32 {
@@ -114,7 +114,7 @@ typename.size(type: typename): int32: function {
 .param type: typename (size: 4, cast: variable(ref))
 .value: nfc(6)
 .usages:
-	cmplStd/stdlib.ci:21: referenced as `size`
+	cmplStd/stdlib.ci:16: referenced as `size`
 }
 void: typename {
 .kind: static const typename(void)
@@ -149,12 +149,12 @@ void: typename {
 	cmplGfx/lib/image.transform.ci:2: referenced as `void`
 	cmplGfx/lib/color.matrix.ci:2: referenced as `void`
 	cmplGfx/lib/color.lookup.ci:2: referenced as `void`
-	cmplGfx/lib/image.blend.ci:163: referenced as `void`
-	cmplGfx/lib/image.blend.ci:135: referenced as `void`
-	cmplGfx/lib/image.blend.ci:123: referenced as `void`
-	cmplGfx/lib/image.blend.ci:105: referenced as `void`
-	cmplGfx/lib/image.blend.ci:88: referenced as `void`
-	cmplGfx/lib/image.blend.ci:71: referenced as `void`
+	cmplGfx/lib/image.blend.ci:166: referenced as `void`
+	cmplGfx/lib/image.blend.ci:138: referenced as `void`
+	cmplGfx/lib/image.blend.ci:126: referenced as `void`
+	cmplGfx/lib/image.blend.ci:108: referenced as `void`
+	cmplGfx/lib/image.blend.ci:91: referenced as `void`
+	cmplGfx/lib/image.blend.ci:74: referenced as `void`
 	cmplGfx/lib/image.blend.ci:60: referenced as `void`
 	cmplGfx/lib/image.blend.ci:2: referenced as `void`
 	cmplGfx/gfxlib.ci:5: referenced as `void`
@@ -574,24 +574,22 @@ int32: typename {
 	cmplGfx/lib/image.transform.ci:47: referenced as `int`
 	cmplGfx/lib/image.transform.ci:46: referenced as `int`
 	cmplGfx/lib/image.transform.ci:2: referenced as `int32`
-	cmplGfx/lib/color.matrix.ci:41: referenced as `int`
 	cmplGfx/lib/color.matrix.ci:40: referenced as `int`
 	cmplGfx/lib/color.matrix.ci:39: referenced as `int`
-	cmplGfx/lib/color.matrix.ci:37: referenced as `int`
+	cmplGfx/lib/color.matrix.ci:38: referenced as `int`
 	cmplGfx/lib/color.matrix.ci:36: referenced as `int`
-	cmplGfx/lib/color.matrix.ci:34: referenced as `int`
+	cmplGfx/lib/color.matrix.ci:35: referenced as `int`
 	cmplGfx/lib/color.matrix.ci:33: referenced as `int`
 	cmplGfx/lib/color.matrix.ci:32: referenced as `int`
 	cmplGfx/lib/color.matrix.ci:31: referenced as `int`
-	cmplGfx/lib/color.matrix.ci:29: referenced as `int`
+	cmplGfx/lib/color.matrix.ci:30: referenced as `int`
 	cmplGfx/lib/color.matrix.ci:28: referenced as `int`
 	cmplGfx/lib/color.matrix.ci:27: referenced as `int`
 	cmplGfx/lib/color.matrix.ci:26: referenced as `int`
-	cmplGfx/lib/color.matrix.ci:24: referenced as `int`
+	cmplGfx/lib/color.matrix.ci:25: referenced as `int`
 	cmplGfx/lib/color.matrix.ci:23: referenced as `int`
 	cmplGfx/lib/color.matrix.ci:22: referenced as `int`
 	cmplGfx/lib/color.matrix.ci:21: referenced as `int`
-	cmplGfx/lib/color.matrix.ci:20: referenced as `int`
 	cmplGfx/lib/color.matrix.ci:20: referenced as `int`
 	cmplGfx/lib/color.lookup.ci:68: referenced as `int32`
 	cmplGfx/lib/color.lookup.ci:67: referenced as `int32`
@@ -607,26 +605,26 @@ int32: typename {
 	cmplGfx/lib/color.lookup.ci:32: referenced as `int`
 	cmplGfx/lib/color.lookup.ci:31: referenced as `int`
 	cmplGfx/lib/color.lookup.ci:22: referenced as `int`
-	cmplGfx/lib/image.blend.ci:186: referenced as `int`
+	cmplGfx/lib/image.blend.ci:189: referenced as `int`
+	cmplGfx/lib/image.blend.ci:187: referenced as `int`
+	cmplGfx/lib/image.blend.ci:185: referenced as `int`
 	cmplGfx/lib/image.blend.ci:184: referenced as `int`
-	cmplGfx/lib/image.blend.ci:182: referenced as `int`
-	cmplGfx/lib/image.blend.ci:181: referenced as `int`
+	cmplGfx/lib/image.blend.ci:159: referenced as `int`
+	cmplGfx/lib/image.blend.ci:158: referenced as `int`
+	cmplGfx/lib/image.blend.ci:157: referenced as `int`
 	cmplGfx/lib/image.blend.ci:156: referenced as `int`
-	cmplGfx/lib/image.blend.ci:155: referenced as `int`
-	cmplGfx/lib/image.blend.ci:154: referenced as `int`
-	cmplGfx/lib/image.blend.ci:153: referenced as `int`
-	cmplGfx/lib/image.blend.ci:135: referenced as `int`
-	cmplGfx/lib/image.blend.ci:135: referenced as `int`
-	cmplGfx/lib/image.blend.ci:123: referenced as `int32`
-	cmplGfx/lib/image.blend.ci:123: referenced as `int32`
-	cmplGfx/lib/image.blend.ci:111: referenced as `int`
-	cmplGfx/lib/image.blend.ci:105: referenced as `int32`
-	cmplGfx/lib/image.blend.ci:105: referenced as `int32`
-	cmplGfx/lib/image.blend.ci:93: referenced as `int32`
-	cmplGfx/lib/image.blend.ci:88: referenced as `int32`
-	cmplGfx/lib/image.blend.ci:88: referenced as `int32`
-	cmplGfx/lib/image.blend.ci:88: referenced as `int32`
-	cmplGfx/lib/image.blend.ci:76: referenced as `int`
+	cmplGfx/lib/image.blend.ci:138: referenced as `int`
+	cmplGfx/lib/image.blend.ci:138: referenced as `int`
+	cmplGfx/lib/image.blend.ci:126: referenced as `int32`
+	cmplGfx/lib/image.blend.ci:126: referenced as `int32`
+	cmplGfx/lib/image.blend.ci:114: referenced as `int`
+	cmplGfx/lib/image.blend.ci:108: referenced as `int32`
+	cmplGfx/lib/image.blend.ci:108: referenced as `int32`
+	cmplGfx/lib/image.blend.ci:96: referenced as `int32`
+	cmplGfx/lib/image.blend.ci:91: referenced as `int32`
+	cmplGfx/lib/image.blend.ci:91: referenced as `int32`
+	cmplGfx/lib/image.blend.ci:91: referenced as `int32`
+	cmplGfx/lib/image.blend.ci:79: referenced as `int`
 	cmplGfx/lib/image.blend.ci:60: referenced as `int32`
 	cmplGfx/lib/image.blend.ci:60: referenced as `int32`
 	cmplGfx/lib/image.blend.ci:51: referenced as `int`
@@ -873,7 +871,7 @@ uint8: typename {
 	cmplStd/lib/text/cstr.ci:226: referenced as `uint8`
 	cmplStd/lib/lang/Integer.ci:14: referenced as `uint8`
 	cmplStd/lib/lang/Integer.ci:2: referenced as `uint8`
-	cmplStd/stdlib.ci:13: referenced as `uint8`
+	cmplStd/stdlib.ci:8: referenced as `uint8`
 	internal usages: 3
 }
 uint16: typename {
@@ -1163,10 +1161,10 @@ float32: typename {
 	cmplGfx/lib/image.transform.ci:59: referenced as `float32`
 	cmplGfx/lib/image.transform.ci:37: referenced as `float32`
 	cmplGfx/lib/image.transform.ci:36: referenced as `float32`
-	cmplGfx/lib/image.blend.ci:176: referenced as `float32`
-	cmplGfx/lib/image.blend.ci:175: referenced as `float32`
-	cmplGfx/lib/image.blend.ci:163: referenced as `float32`
-	cmplGfx/lib/image.blend.ci:163: referenced as `float32`
+	cmplGfx/lib/image.blend.ci:179: referenced as `float32`
+	cmplGfx/lib/image.blend.ci:178: referenced as `float32`
+	cmplGfx/lib/image.blend.ci:166: referenced as `float32`
+	cmplGfx/lib/image.blend.ci:166: referenced as `float32`
 	cmplGfx/lib/color.hsl.ci:94: referenced as `float`
 	cmplGfx/lib/color.hsl.ci:86: referenced as `float`
 	cmplGfx/lib/color.hsl.ci:62: referenced as `float`
@@ -1319,7 +1317,7 @@ float32: typename {
 	cmplStd/lib/math/Math.ci:119: referenced as `float32`
 	cmplStd/lib/math/Math.ci:119: referenced as `float32`
 	cmplStd/lib/math/Math.ci:113: referenced as `float32`
-	cmplStd/stdlib.ci:14: referenced as `float32`
+	cmplStd/stdlib.ci:9: referenced as `float32`
 	internal usages: 66
 }
 float32.sin(x: float32): float32: function {
@@ -1649,7 +1647,7 @@ float64: typename {
 	cmplStd/lib/math/Math.ci:22: referenced as `float64`
 	cmplStd/lib/math/Math.ci:22: referenced as `float64`
 	cmplStd/lib/math/Math.ci:5: referenced as `float64`
-	cmplStd/stdlib.ci:15: referenced as `float64`
+	cmplStd/stdlib.ci:10: referenced as `float64`
 	internal usages: 19
 }
 float64.sin(x: float64): float64: function {
@@ -1788,7 +1786,7 @@ pointer: typename {
 .usages:
 	cmplGfx/lib/image.transform.ci:6: referenced as `pointer`
 	cmplGfx/lib/color.lookup.ci:4: referenced as `pointer`
-	cmplGfx/lib/image.blend.ci:110: referenced as `pointer`
+	cmplGfx/lib/image.blend.ci:113: referenced as `pointer`
 	cmplGfx/lib/image.blend.ci:4: referenced as `pointer`
 	cmplGfx/lib/image.blend.ci:2: referenced as `pointer`
 	cmplGfx/lib/image.blend.ci:2: referenced as `pointer`
@@ -1890,7 +1888,7 @@ function: typename {
 .size: 4
 .name: 'function'
 .usages:
-	cmplStd/stdlib.ci:23: referenced as `function`
+	cmplStd/stdlib.ci:18: referenced as `function`
 }
 object: typename {
 .kind: static const typename(ref)
@@ -2002,29 +2000,30 @@ null: pointer {
 	cmplGfx/lib/color.lookup.ci:12: referenced as `null`
 	cmplGfx/lib/color.lookup.ci:11: referenced as `null`
 	cmplGfx/lib/color.lookup.ci:3: referenced as `null`
+	cmplGfx/lib/image.blend.ci:171: referenced as `null`
+	cmplGfx/lib/image.blend.ci:170: referenced as `null`
+	cmplGfx/lib/image.blend.ci:169: referenced as `null`
 	cmplGfx/lib/image.blend.ci:168: referenced as `null`
-	cmplGfx/lib/image.blend.ci:167: referenced as `null`
-	cmplGfx/lib/image.blend.ci:166: referenced as `null`
-	cmplGfx/lib/image.blend.ci:165: referenced as `null`
+	cmplGfx/lib/image.blend.ci:143: referenced as `null`
+	cmplGfx/lib/image.blend.ci:142: referenced as `null`
+	cmplGfx/lib/image.blend.ci:141: referenced as `null`
 	cmplGfx/lib/image.blend.ci:140: referenced as `null`
-	cmplGfx/lib/image.blend.ci:139: referenced as `null`
-	cmplGfx/lib/image.blend.ci:138: referenced as `null`
-	cmplGfx/lib/image.blend.ci:137: referenced as `null`
-	cmplGfx/lib/image.blend.ci:130: referenced as `null`
-	cmplGfx/lib/image.blend.ci:124: referenced as `null`
-	cmplGfx/lib/image.blend.ci:124: referenced as `null`
-	cmplGfx/lib/image.blend.ci:119: referenced as `null`
-	cmplGfx/lib/image.blend.ci:107: referenced as `null`
-	cmplGfx/lib/image.blend.ci:106: referenced as `null`
-	cmplGfx/lib/image.blend.ci:89: referenced as `null`
-	cmplGfx/lib/image.blend.ci:84: referenced as `null`
-	cmplGfx/lib/image.blend.ci:84: referenced as `null`
-	cmplGfx/lib/image.blend.ci:73: referenced as `null`
-	cmplGfx/lib/image.blend.ci:73: referenced as `null`
-	cmplGfx/lib/image.blend.ci:72: referenced as `null`
-	cmplGfx/lib/image.blend.ci:65: referenced as `null`
-	cmplGfx/lib/image.blend.ci:65: referenced as `null`
-	cmplGfx/lib/image.blend.ci:64: referenced as `null`
+	cmplGfx/lib/image.blend.ci:133: referenced as `null`
+	cmplGfx/lib/image.blend.ci:127: referenced as `null`
+	cmplGfx/lib/image.blend.ci:127: referenced as `null`
+	cmplGfx/lib/image.blend.ci:122: referenced as `null`
+	cmplGfx/lib/image.blend.ci:110: referenced as `null`
+	cmplGfx/lib/image.blend.ci:109: referenced as `null`
+	cmplGfx/lib/image.blend.ci:92: referenced as `null`
+	cmplGfx/lib/image.blend.ci:87: referenced as `null`
+	cmplGfx/lib/image.blend.ci:87: referenced as `null`
+	cmplGfx/lib/image.blend.ci:76: referenced as `null`
+	cmplGfx/lib/image.blend.ci:76: referenced as `null`
+	cmplGfx/lib/image.blend.ci:75: referenced as `null`
+	cmplGfx/lib/image.blend.ci:68: referenced as `null`
+	cmplGfx/lib/image.blend.ci:68: referenced as `null`
+	cmplGfx/lib/image.blend.ci:67: referenced as `null`
+	cmplGfx/lib/image.blend.ci:61: referenced as `null`
 	cmplGfx/lib/image.blend.ci:41: referenced as `null`
 	cmplGfx/lib/image.blend.ci:11: referenced as `null`
 	cmplGfx/lib/image.blend.ci:10: referenced as `null`
@@ -2051,7 +2050,6 @@ null: pointer {
 	cmplStd/lib/lang/Debug.ci:16: referenced as `null`
 	cmplStd/lib/lang/Debug.ci:11: referenced as `null`
 	cmplStd/lib/lang/Debug.ci:6: referenced as `null`
-	cmplStd/stdlib.ci:8: referenced as `null`
 }
 int: typename {
 .kind: static const inline
@@ -2256,7 +2254,9 @@ emit.load: typename {
 .field z64: int64 (size: 0, cast: static const inline)
 .field z128: emit.p4x (size: 0, cast: static const inline)
 .field i8: int32 (size: 0, cast: static const inline)
+.field u8: int32 (size: 0, cast: static const inline)
 .field i16: int32 (size: 0, cast: static const inline)
+.field u16: int32 (size: 0, cast: static const inline)
 .field i32: int32 (size: 0, cast: static const inline)
 .field i64: int64 (size: 0, cast: static const inline)
 .field i128: emit.p4x (size: 0, cast: static const inline)
@@ -2291,7 +2291,15 @@ emit.load.i8: int32 {
 .size: 0
 .name: 'i8'
 .owner: emit.load
-.value: load.i8
+.value: load.is8
+}
+emit.load.u8: int32 {
+.kind: static const inline
+.base: `int32`
+.size: 0
+.name: 'u8'
+.owner: emit.load
+.value: load.iu8
 }
 emit.load.i16: int32 {
 .kind: static const inline
@@ -2299,7 +2307,15 @@ emit.load.i16: int32 {
 .size: 0
 .name: 'i16'
 .owner: emit.load
-.value: load.i16
+.value: load.is16
+}
+emit.load.u16: int32 {
+.kind: static const inline
+.base: `int32`
+.size: 0
+.name: 'u16'
+.owner: emit.load
+.value: load.iu16
 }
 emit.load.i32: int32 {
 .kind: static const inline
@@ -3281,6 +3297,28 @@ halt(): void: function {
 .value: nfc(0)
 .usages:
 }
+preferNativeCalls: int64 {
+.kind: static const i64
+.base: `int64`
+.size: 0
+.name: 'preferNativeCalls'
+.value: 1
+.usages:
+	cmplGfx/lib/image.draw.ci:3: referenced as `preferNativeCalls`
+	cmplGfx/lib/image.blur.ci:3: referenced as `preferNativeCalls`
+	cmplGfx/lib/image.transform.ci:5: referenced as `preferNativeCalls`
+	cmplGfx/lib/color.matrix.ci:3: referenced as `preferNativeCalls`
+	cmplGfx/lib/color.lookup.ci:3: referenced as `preferNativeCalls`
+	cmplGfx/lib/image.blend.ci:109: referenced as `preferNativeCalls`
+	cmplGfx/lib/image.blend.ci:92: referenced as `preferNativeCalls`
+	cmplGfx/lib/image.blend.ci:75: referenced as `preferNativeCalls`
+	cmplGfx/lib/image.blend.ci:61: referenced as `preferNativeCalls`
+	cmplGfx/lib/image.blend.ci:3: referenced as `preferNativeCalls`
+	cmplStd/lib/math/Math.ci:476: referenced as `preferNativeCalls`
+	cmplStd/lib/math/Math.ci:454: referenced as `preferNativeCalls`
+	cmplStd/lib/math/Math.ci:445: referenced as `preferNativeCalls`
+	cmplStd/lib/math/Math.ci:436: referenced as `preferNativeCalls`
+}
 raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void: function {
 .kind: static const inline
 .base: `function`
@@ -3352,7 +3390,7 @@ raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], 
 	cmplStd/lib/lang/Debug.ci:4: referenced as `raise`
 	cmplStd/lib/lang/Debug.ci:4: referenced as `raise`
 	cmplStd/lib/lang/Debug.ci:4: referenced as `raise`
-	cmplStd/stdlib.ci:23: referenced as `raise`
+	cmplStd/stdlib.ci:18: referenced as `raise`
 }
 raise.abort: int64 {
 .kind: static const i64
@@ -3647,26 +3685,12 @@ true: bool {
 .value: 1
 .usages:
 	cmplGfx/gfxlib.ci:145: referenced as `true`
-	cmplGfx/lib/image.draw.ci:3: referenced as `fastNativeCalls`
-	cmplGfx/lib/image.blur.ci:3: referenced as `fastNativeCalls`
-	cmplGfx/lib/image.transform.ci:5: referenced as `fastNativeCalls`
-	cmplGfx/lib/color.matrix.ci:3: referenced as `fastNativeCalls`
 	cmplGfx/lib/color.lookup.ci:24: referenced as `true`
-	cmplGfx/lib/color.lookup.ci:3: referenced as `fastNativeCalls`
-	cmplGfx/lib/image.blend.ci:106: referenced as `fastNativeCalls`
-	cmplGfx/lib/image.blend.ci:89: referenced as `fastNativeCalls`
-	cmplGfx/lib/image.blend.ci:72: referenced as `fastNativeCalls`
-	cmplGfx/lib/image.blend.ci:3: referenced as `fastNativeCalls`
 	cmplGfx/gfxlib.ci:51: referenced as `true`
 	cmplStd/lib/text/cstr.ci:57: referenced as `true`
 	cmplStd/lib/text/cstr.ci:42: referenced as `true`
 	cmplStd/lib/math/Math.ci:550: referenced as `true`
 	cmplStd/lib/math/Math.ci:503: referenced as `true`
-	cmplStd/lib/math/Math.ci:476: referenced as `fastNativeCalls`
-	cmplStd/lib/math/Math.ci:454: referenced as `fastNativeCalls`
-	cmplStd/lib/math/Math.ci:445: referenced as `fastNativeCalls`
-	cmplStd/lib/math/Math.ci:436: referenced as `fastNativeCalls`
-	cmplStd/stdlib.ci:10: referenced as `true`
 }
 false: bool {
 .kind: static const val
@@ -3690,22 +3714,12 @@ false: bool {
 	cmplStd/lib/math/Math.ci:548: referenced as `false`
 	cmplStd/lib/math/Math.ci:500: referenced as `false`
 }
-fastNativeCalls: typename {
-.kind: inline
-.base: `typename`
-.size: 0
-.name: 'fastNativeCalls'
-.file: 'cmplStd/stdlib.ci:10'
-.doc: 'use fast native methods when possible'
-.value: true
-.usages:
-}
 byte: typename {
 .kind: inline
 .base: `typename`
 .size: 0
 .name: 'byte'
-.file: 'cmplStd/stdlib.ci:13'
+.file: 'cmplStd/stdlib.ci:8'
 .value: uint8
 .usages:
 }
@@ -3714,7 +3728,7 @@ float: typename {
 .base: `typename`
 .size: 0
 .name: 'float'
-.file: 'cmplStd/stdlib.ci:14'
+.file: 'cmplStd/stdlib.ci:9'
 .value: float32
 .usages:
 }
@@ -3723,7 +3737,7 @@ double: typename {
 .base: `typename`
 .size: 0
 .name: 'double'
-.file: 'cmplStd/stdlib.ci:15'
+.file: 'cmplStd/stdlib.ci:10'
 .value: float64
 .usages:
 }
@@ -3842,7 +3856,7 @@ sizeof(type: typename): int32: function {
 .base: `function`
 .size: 0
 .name: 'sizeof'
-.file: 'cmplStd/stdlib.ci:21'
+.file: 'cmplStd/stdlib.ci:16'
 .param .result: int32 (size: 4, cast: i32)
 .param type: typename (size: 4, cast: ref)
 .doc: 'Returns the size of the given type'
@@ -6226,7 +6240,7 @@ Math.sin(x: float64): float64: function {
 .param x: float64 (size: 8, cast: variable(f64))
 .doc: 'Returns the sine of the radian argument `x`.'
 .value: {
-	static if (true && (typename(float64.sin)) != null) {
+	static if ((preferNativeCalls) && (typename(float64.sin)) != null) {
 		return .result := float64.sin(x);
 	}
 	return .result := sinCos(x, 0);
@@ -6259,7 +6273,7 @@ Math.cos(x: float64): float64: function {
 .param x: float64 (size: 8, cast: variable(f64))
 .doc: 'Returns the cosine of the radian argument `x`.'
 .value: {
-	static if (true && (typename(float64.cos)) != null) {
+	static if ((preferNativeCalls) && (typename(float64.cos)) != null) {
 		return .result := float64.cos(x);
 	}
 	return .result := sinCos(abs(x), 1);
@@ -6301,7 +6315,7 @@ Math.tan(x: float64): float64: function {
 .param x: float64 (size: 8, cast: variable(f64))
 .doc: 'Returns the tangent of the radian argument `x`.'
 .value: {
-	static if (true && (typename(float64.tan)) != null) {
+	static if ((preferNativeCalls) && (typename(float64.tan)) != null) {
 		return .result := float64.tan(x);
 	}
 	if (x == (0)) {
@@ -6370,7 +6384,7 @@ Math.cot(x: float64): float64: function {
 .param x: float64 (size: 8, cast: variable(f64))
 .doc: 'Returns the cotangent of the radian argument `x`.'
 .value: {
-	static if (true && (typename(float64.cot)) != null) {
+	static if ((preferNativeCalls) && (typename(float64.cot)) != null) {
 		return .result := float64.cot(x);
 	}
 	if (x == (0)) {
@@ -6518,7 +6532,7 @@ Math.sinh(x: float64): float64: function {
 	<sinh+?>: inc.sp(-8)
 	cmplStd/lib/math/Math.ci:520: (19 bytes): if (negate)
 	<sinh+?>: load.sp(+8)
-	<sinh+?>: load.i8
+	<sinh+?>: load.is8
 	<sinh+?>: jz +14
 	cmplStd/lib/math/Math.ci:521: (10 bytes): return .result := -result;
 	<sinh+?>: dup.x64 sp(0)
@@ -6690,7 +6704,7 @@ Math.asin(x: float64): float64: function {
 	<asin+?>: set.x64 sp(2)
 	cmplStd/lib/math/Math.ci:567: (19 bytes): if (negate)
 	<asin+?>: load.sp(+8)
-	<asin+?>: load.i8
+	<asin+?>: load.is8
 	<asin+?>: jz +14
 	cmplStd/lib/math/Math.ci:568: (10 bytes): return .result := -result;
 	<asin+?>: dup.x64 sp(0)
@@ -7687,12 +7701,12 @@ vec4f: typename {
 	cmplGfx/lib/image.transform.ci:61: referenced as `vec4f`
 	cmplGfx/lib/image.transform.ci:52: referenced as `vec4f`
 	cmplGfx/lib/image.transform.ci:45: referenced as `vec4f`
-	cmplGfx/lib/image.blend.ci:183: referenced as `vec4f`
-	cmplGfx/lib/image.blend.ci:163: referenced as `vec4f`
-	cmplGfx/lib/image.blend.ci:163: referenced as `vec4f`
-	cmplGfx/lib/image.blend.ci:61: referenced as `vec4f`
-	cmplGfx/lib/image.blend.ci:61: referenced as `vec4f`
-	cmplGfx/lib/image.blend.ci:61: referenced as `vec4f`
+	cmplGfx/lib/image.blend.ci:186: referenced as `vec4f`
+	cmplGfx/lib/image.blend.ci:166: referenced as `vec4f`
+	cmplGfx/lib/image.blend.ci:166: referenced as `vec4f`
+	cmplGfx/lib/image.blend.ci:64: referenced as `vec4f`
+	cmplGfx/lib/image.blend.ci:64: referenced as `vec4f`
+	cmplGfx/lib/image.blend.ci:64: referenced as `vec4f`
 	cmplGfx/lib/image.blend.ci:60: referenced as `vec4f`
 	cmplGfx/lib/image.blend.ci:60: referenced as `vec4f`
 	cmplGfx/lib/image.blend.ci:60: referenced as `vec4f`
@@ -7804,7 +7818,7 @@ vec4f.<?>.x: float32 {
 	cmplGfx/lib/image.transform.ci:67: referenced as `x`
 	cmplGfx/lib/image.transform.ci:53: referenced as `x`
 	cmplGfx/lib/image.transform.ci:51: referenced as `x`
-	cmplGfx/lib/image.blend.ci:187: referenced as `x`
+	cmplGfx/lib/image.blend.ci:190: referenced as `x`
 	cmplGfx/lib/color.hsl.ci:96: referenced as `x`
 	cmplGfx/lib/color.hsl.ci:98: referenced as `x`
 	cmplGfx/lib/color.hsl.ci:97: referenced as `x`
@@ -7857,7 +7871,7 @@ vec4f.<?>.y: float32 {
 	cmplGfx/lib/image.transform.ci:64: referenced as `y`
 	cmplGfx/lib/image.transform.ci:53: referenced as `y`
 	cmplGfx/lib/image.transform.ci:48: referenced as `y`
-	cmplGfx/lib/image.blend.ci:185: referenced as `y`
+	cmplGfx/lib/image.blend.ci:188: referenced as `y`
 	cmplGfx/lib/color.hsl.ci:97: referenced as `y`
 	cmplGfx/lib/color.hsl.ci:91: referenced as `y`
 	cmplGfx/lib/color.hsl.ci:91: referenced as `y`
@@ -8051,7 +8065,7 @@ vec4f(x: float32, y: float32, z: float32, w: float32): vec4f: function {
 	cmplGfx/lib/image.transform.ci:38: referenced as `vec4f`
 	cmplGfx/lib/image.transform.ci:37: referenced as `vec4f`
 	cmplGfx/lib/image.transform.ci:36: referenced as `vec4f`
-	cmplGfx/lib/image.blend.ci:183: referenced as `vec4f`
+	cmplGfx/lib/image.blend.ci:186: referenced as `vec4f`
 	cmplGfx/lib/color.ci:250: referenced as `vec4f`
 	cmplStd/lib/math/Matrix4f.ci:188: referenced as `vec4f`
 	cmplStd/lib/math/Matrix4f.ci:155: referenced as `vec4f`
@@ -8782,7 +8796,7 @@ mat4f.<?>.xx: float32 {
 .owner: mat4f.<?>
 .doc: '@public'
 .usages:
-	cmplGfx/lib/color.matrix.ci:21: referenced as `xx`
+	cmplGfx/lib/color.matrix.ci:20: referenced as `xx`
 	cmplStd/lib/math/Matrix4f.ci:206: referenced as `xx`
 	cmplStd/lib/math/Matrix4f.ci:195: referenced as `xx`
 	cmplStd/lib/math/Matrix4f.ci:173: referenced as `xx`
@@ -8800,7 +8814,7 @@ mat4f.<?>.xy: float32 {
 .owner: mat4f.<?>
 .doc: '@public'
 .usages:
-	cmplGfx/lib/color.matrix.ci:22: referenced as `xy`
+	cmplGfx/lib/color.matrix.ci:21: referenced as `xy`
 	cmplStd/lib/math/Matrix4f.ci:206: referenced as `xy`
 	cmplStd/lib/math/Matrix4f.ci:195: referenced as `xy`
 	cmplStd/lib/math/Matrix4f.ci:174: referenced as `xy`
@@ -8818,7 +8832,7 @@ mat4f.<?>.xz: float32 {
 .owner: mat4f.<?>
 .doc: '@public'
 .usages:
-	cmplGfx/lib/color.matrix.ci:23: referenced as `xz`
+	cmplGfx/lib/color.matrix.ci:22: referenced as `xz`
 	cmplStd/lib/math/Matrix4f.ci:206: referenced as `xz`
 	cmplStd/lib/math/Matrix4f.ci:195: referenced as `xz`
 	cmplStd/lib/math/Matrix4f.ci:175: referenced as `xz`
@@ -8836,7 +8850,7 @@ mat4f.<?>.xw: float32 {
 .owner: mat4f.<?>
 .doc: '@public'
 .usages:
-	cmplGfx/lib/color.matrix.ci:24: referenced as `xw`
+	cmplGfx/lib/color.matrix.ci:23: referenced as `xw`
 	cmplStd/lib/math/Matrix4f.ci:206: referenced as `xw`
 	cmplStd/lib/math/Matrix4f.ci:195: referenced as `xw`
 	cmplStd/lib/math/Matrix4f.ci:176: referenced as `xw`
@@ -8854,7 +8868,7 @@ mat4f.<?>.yx: float32 {
 .owner: mat4f.<?>
 .doc: '@public'
 .usages:
-	cmplGfx/lib/color.matrix.ci:26: referenced as `yx`
+	cmplGfx/lib/color.matrix.ci:25: referenced as `yx`
 	cmplStd/lib/math/Matrix4f.ci:207: referenced as `yx`
 	cmplStd/lib/math/Matrix4f.ci:196: referenced as `yx`
 	cmplStd/lib/math/Matrix4f.ci:178: referenced as `yx`
@@ -8872,7 +8886,7 @@ mat4f.<?>.yy: float32 {
 .owner: mat4f.<?>
 .doc: '@public'
 .usages:
-	cmplGfx/lib/color.matrix.ci:27: referenced as `yy`
+	cmplGfx/lib/color.matrix.ci:26: referenced as `yy`
 	cmplStd/lib/math/Matrix4f.ci:207: referenced as `yy`
 	cmplStd/lib/math/Matrix4f.ci:196: referenced as `yy`
 	cmplStd/lib/math/Matrix4f.ci:179: referenced as `yy`
@@ -8890,7 +8904,7 @@ mat4f.<?>.yz: float32 {
 .owner: mat4f.<?>
 .doc: '@public'
 .usages:
-	cmplGfx/lib/color.matrix.ci:28: referenced as `yz`
+	cmplGfx/lib/color.matrix.ci:27: referenced as `yz`
 	cmplStd/lib/math/Matrix4f.ci:207: referenced as `yz`
 	cmplStd/lib/math/Matrix4f.ci:196: referenced as `yz`
 	cmplStd/lib/math/Matrix4f.ci:180: referenced as `yz`
@@ -8908,7 +8922,7 @@ mat4f.<?>.yw: float32 {
 .owner: mat4f.<?>
 .doc: '@public'
 .usages:
-	cmplGfx/lib/color.matrix.ci:29: referenced as `yw`
+	cmplGfx/lib/color.matrix.ci:28: referenced as `yw`
 	cmplStd/lib/math/Matrix4f.ci:207: referenced as `yw`
 	cmplStd/lib/math/Matrix4f.ci:196: referenced as `yw`
 	cmplStd/lib/math/Matrix4f.ci:181: referenced as `yw`
@@ -8926,7 +8940,7 @@ mat4f.<?>.zx: float32 {
 .owner: mat4f.<?>
 .doc: '@public'
 .usages:
-	cmplGfx/lib/color.matrix.ci:31: referenced as `zx`
+	cmplGfx/lib/color.matrix.ci:30: referenced as `zx`
 	cmplStd/lib/math/Matrix4f.ci:208: referenced as `zx`
 	cmplStd/lib/math/Matrix4f.ci:197: referenced as `zx`
 	cmplStd/lib/math/Matrix4f.ci:183: referenced as `zx`
@@ -8944,7 +8958,7 @@ mat4f.<?>.zy: float32 {
 .owner: mat4f.<?>
 .doc: '@public'
 .usages:
-	cmplGfx/lib/color.matrix.ci:32: referenced as `zy`
+	cmplGfx/lib/color.matrix.ci:31: referenced as `zy`
 	cmplStd/lib/math/Matrix4f.ci:208: referenced as `zy`
 	cmplStd/lib/math/Matrix4f.ci:197: referenced as `zy`
 	cmplStd/lib/math/Matrix4f.ci:184: referenced as `zy`
@@ -8962,7 +8976,7 @@ mat4f.<?>.zz: float32 {
 .owner: mat4f.<?>
 .doc: '@public'
 .usages:
-	cmplGfx/lib/color.matrix.ci:33: referenced as `zz`
+	cmplGfx/lib/color.matrix.ci:32: referenced as `zz`
 	cmplStd/lib/math/Matrix4f.ci:208: referenced as `zz`
 	cmplStd/lib/math/Matrix4f.ci:197: referenced as `zz`
 	cmplStd/lib/math/Matrix4f.ci:185: referenced as `zz`
@@ -8980,7 +8994,7 @@ mat4f.<?>.zw: float32 {
 .owner: mat4f.<?>
 .doc: '@public'
 .usages:
-	cmplGfx/lib/color.matrix.ci:34: referenced as `zw`
+	cmplGfx/lib/color.matrix.ci:33: referenced as `zw`
 	cmplStd/lib/math/Matrix4f.ci:208: referenced as `zw`
 	cmplStd/lib/math/Matrix4f.ci:197: referenced as `zw`
 	cmplStd/lib/math/Matrix4f.ci:186: referenced as `zw`
@@ -10642,7 +10656,7 @@ length(str: char[*]): int32: function {
 	<length+?>: dup.x32 sp(2)
 	<length+?>: dup.x32 sp(1)
 	<length+?>: add.i32
-	<length+?>: load.i8
+	<length+?>: load.is8
 	<length+?>: jnz -10
 	cmplStd/lib/text/cstr.ci:11: (3 bytes): return .result := result;
 	<length+?>: set.x32 sp(3)
@@ -10677,9 +10691,9 @@ indexOf(str: char[*], chr: char): int32: function {
 	<indexOf+?>: dup.x32 sp(3)
 	<indexOf+?>: dup.x32 sp(1)
 	<indexOf+?>: add.i32
-	<indexOf+?>: load.i8
+	<indexOf+?>: load.is8
 	<indexOf+?>: load.sp(+12)
-	<indexOf+?>: load.i8
+	<indexOf+?>: load.is8
 	<indexOf+?>: ceq.i32
 	<indexOf+?>: jz +7
 	cmplStd/lib/text/cstr.ci:18: (3 bytes): return .result := i;
@@ -10691,7 +10705,7 @@ indexOf(str: char[*], chr: char): int32: function {
 	<indexOf+?>: dup.x32 sp(3)
 	<indexOf+?>: dup.x32 sp(1)
 	<indexOf+?>: add.i32
-	<indexOf+?>: load.i8
+	<indexOf+?>: load.is8
 	<indexOf+?>: jnz -29
 	<indexOf+?>: inc.sp(-4)
 	cmplStd/lib/text/cstr.ci:21: (8 bytes): return .result := -1;
@@ -10730,9 +10744,9 @@ lastIndexOf(str: char[*], chr: char): int32: function {
 	<lastIndexOf+?>: dup.x32 sp(4)
 	<lastIndexOf+?>: dup.x32 sp(1)
 	<lastIndexOf+?>: add.i32
-	<lastIndexOf+?>: load.i8
+	<lastIndexOf+?>: load.is8
 	<lastIndexOf+?>: load.sp(+16)
-	<lastIndexOf+?>: load.i8
+	<lastIndexOf+?>: load.is8
 	<lastIndexOf+?>: ceq.i32
 	<lastIndexOf+?>: jz +7
 	cmplStd/lib/text/cstr.ci:29: (3 bytes): result := i;
@@ -10743,7 +10757,7 @@ lastIndexOf(str: char[*], chr: char): int32: function {
 	<lastIndexOf+?>: dup.x32 sp(4)
 	<lastIndexOf+?>: dup.x32 sp(1)
 	<lastIndexOf+?>: add.i32
-	<lastIndexOf+?>: load.i8
+	<lastIndexOf+?>: load.is8
 	<lastIndexOf+?>: jnz -29
 	<lastIndexOf+?>: inc.sp(-4)
 	cmplStd/lib/text/cstr.ci:32: (3 bytes): return .result := result;
@@ -10779,11 +10793,11 @@ startsWith(str: char[*], with: char[*], cmp(chr: char, with: char): int32): bool
 	<startsWith+?>: dup.x32 sp(5)
 	<startsWith+?>: dup.x32 sp(2)
 	<startsWith+?>: add.i32
-	<startsWith+?>: load.i8
+	<startsWith+?>: load.is8
 	<startsWith+?>: dup.x32 sp(5)
 	<startsWith+?>: dup.x32 sp(3)
 	<startsWith+?>: add.i32
-	<startsWith+?>: load.i8
+	<startsWith+?>: load.is8
 	<startsWith+?>: dup.x32 sp(5)
 	<startsWith+?>: call
 	<startsWith+?>: inc.sp(-8)
@@ -10802,7 +10816,7 @@ startsWith(str: char[*], with: char[*], cmp(chr: char, with: char): int32): bool
 	<startsWith+?>: dup.x32 sp(3)
 	<startsWith+?>: dup.x32 sp(1)
 	<startsWith+?>: add.i32
-	<startsWith+?>: load.i8
+	<startsWith+?>: load.is8
 	<startsWith+?>: load.z32
 	<startsWith+?>: ceq.i32
 	<startsWith+?>: jz -49
@@ -10875,11 +10889,11 @@ endsWith(str: char[*], with: char[*], cmp(chr: char, with: char): int32): bool: 
 	<endsWith+?>: dup.x32 sp(3)
 	<endsWith+?>: add.i32
 	<endsWith+?>: add.i32
-	<endsWith+?>: load.i8
+	<endsWith+?>: load.is8
 	<endsWith+?>: dup.x32 sp(7)
 	<endsWith+?>: dup.x32 sp(3)
 	<endsWith+?>: add.i32
-	<endsWith+?>: load.i8
+	<endsWith+?>: load.is8
 	<endsWith+?>: dup.x32 sp(7)
 	<endsWith+?>: call
 	<endsWith+?>: inc.sp(-8)
@@ -10947,11 +10961,11 @@ compare(str: char[*], with: char[*], cmp(chr: char, with: char): int32): int32: 
 	<compare+?>: dup.x32 sp(6)
 	<compare+?>: dup.x32 sp(2)
 	<compare+?>: add.i32
-	<compare+?>: load.i8
+	<compare+?>: load.is8
 	<compare+?>: dup.x32 sp(6)
 	<compare+?>: dup.x32 sp(3)
 	<compare+?>: add.i32
-	<compare+?>: load.i8
+	<compare+?>: load.is8
 	<compare+?>: dup.x32 sp(6)
 	<compare+?>: call
 	<compare+?>: inc.sp(-8)
@@ -10960,7 +10974,7 @@ compare(str: char[*], with: char[*], cmp(chr: char, with: char): int32): int32: 
 	<compare+?>: dup.x32 sp(5)
 	<compare+?>: dup.x32 sp(1)
 	<compare+?>: add.i32
-	<compare+?>: load.i8
+	<compare+?>: load.is8
 	<compare+?>: load.z32
 	<compare+?>: ceq.i32
 	<compare+?>: jz +8
@@ -11007,13 +11021,13 @@ ignCaseCmp(chr: char, with: char): int32: function {
 	cmplStd/lib/text/cstr.ci:84: (36 bytes): return .result := ignCase(chr) - ignCase(with);
 	<ignCaseCmp>  : load.z32
 	<ignCaseCmp+?>: load.sp(+12)
-	<ignCaseCmp+?>: load.i8
+	<ignCaseCmp+?>: load.is8
 	<ignCaseCmp+?>: load.ref <?> ;ignCaseCmp.ignCase(chr: char): char
 	<ignCaseCmp+?>: call
 	<ignCaseCmp+?>: inc.sp(-4)
 	<ignCaseCmp+?>: load.z32
 	<ignCaseCmp+?>: load.sp(+12)
-	<ignCaseCmp+?>: load.i8
+	<ignCaseCmp+?>: load.is8
 	<ignCaseCmp+?>: load.ref <?> ;ignCaseCmp.ignCase(chr: char): char
 	<ignCaseCmp+?>: call
 	<ignCaseCmp+?>: inc.sp(-4)
@@ -11044,9 +11058,9 @@ caseCmp(chr: char, with: char): int32: function {
 .instructions: (14 bytes)
 	cmplStd/lib/text/cstr.ci:89: (14 bytes): return .result := chr - with;
 	<caseCmp>  : load.sp(+8)
-	<caseCmp+?>: load.i8
+	<caseCmp+?>: load.is8
 	<caseCmp+?>: load.sp(+8)
-	<caseCmp+?>: load.i8
+	<caseCmp+?>: load.is8
 	<caseCmp+?>: sub.i32
 	<caseCmp+?>: set.x32 sp(4)
 	<caseCmp+?>: ret
@@ -11292,7 +11306,7 @@ append(output: char[], pos: int32, value: char[*]): int32: function {
 	<append+?>: dup.x32 sp(2)
 	<append+?>: dup.x32 sp(1)
 	<append+?>: add.i32
-	<append+?>: load.i8
+	<append+?>: load.is8
 	<append+?>: dup.x32 sp(5)
 	<append+?>: dup.x32 sp(5)
 	<append+?>: add.i32
@@ -11307,7 +11321,7 @@ append(output: char[], pos: int32, value: char[*]): int32: function {
 	<append+?>: dup.x32 sp(2)
 	<append+?>: dup.x32 sp(1)
 	<append+?>: add.i32
-	<append+?>: load.i8
+	<append+?>: load.is8
 	<append+?>: jnz -43
 	<append+?>: inc.sp(-4)
 	cmplStd/lib/text/cstr.ci:146: (17 bytes): if (pos >= (output.length))
@@ -11442,7 +11456,7 @@ append(output: char[], pos: int32, radix: int32, value: uint64, format: FormatFl
 	<append+?>: mod.u64
 	<append+?>: i64.2i32
 	<append+?>: add.i32
-	<append+?>: load.i8
+	<append+?>: load.is8
 	<append+?>: load.sp(+4)
 	<append+?>: dup.x32 sp(22)
 	<append+?>: inc.i32(+1)
@@ -11484,10 +11498,10 @@ append(output: char[], pos: int32, radix: int32, value: uint64, format: FormatFl
 	cmplStd/lib/text/cstr.ci:174: (7 bytes): padChr: char := format.padChr
 	<append+?>: dup.x32 sp(23)
 	<append+?>: inc.i32(+8)
-	<append+?>: load.i8
+	<append+?>: load.is8
 	cmplStd/lib/text/cstr.ci:175: (21 bytes): if (padChr == '')
 	<append+?>: load.sp(+0)
-	<append+?>: load.i8
+	<append+?>: load.is8
 	<append+?>: load.z32
 	<append+?>: ceq.i32
 	<append+?>: jz +14
@@ -11497,7 +11511,7 @@ append(output: char[], pos: int32, radix: int32, value: uint64, format: FormatFl
 	<append+?>: store.i8
 	cmplStd/lib/text/cstr.ci:180: (203 bytes): if ((format.sign) != 0)
 	<append+?>: dup.x32 sp(24)
-	<append+?>: load.i8
+	<append+?>: load.is8
 	<append+?>: load.z32
 	<append+?>: ceq.i32
 	<append+?>: jnz +198
@@ -11509,7 +11523,7 @@ append(output: char[], pos: int32, radix: int32, value: uint64, format: FormatFl
 	<append+?>: load.z32
 	<append+?>: load.m32 <?> ;append.whiteSpace
 	<append+?>: load.sp(+8)
-	<append+?>: load.i8
+	<append+?>: load.is8
 	<append+?>: load.ref <?> ;indexOf(str: char[*], chr: char): int32
 	<append+?>: call
 	<append+?>: inc.sp(-8)
@@ -11534,7 +11548,7 @@ append(output: char[], pos: int32, radix: int32, value: uint64, format: FormatFl
 	<append+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
 	cmplStd/lib/text/cstr.ci:186: (11 bytes): output[pos] := padChr;
 	<append+?>: load.sp(+0)
-	<append+?>: load.i8
+	<append+?>: load.is8
 	<append+?>: dup.x32 sp(30)
 	<append+?>: dup.x32 sp(30)
 	<append+?>: add.i32
@@ -11568,7 +11582,7 @@ append(output: char[], pos: int32, radix: int32, value: uint64, format: FormatFl
 	<append+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
 	cmplStd/lib/text/cstr.ci:191: (9 bytes): output[pos] := format.sign;
 	<append+?>: dup.x32 sp(24)
-	<append+?>: load.i8
+	<append+?>: load.is8
 	<append+?>: dup.x32 sp(30)
 	<append+?>: dup.x32 sp(30)
 	<append+?>: add.i32
@@ -11595,7 +11609,7 @@ append(output: char[], pos: int32, radix: int32, value: uint64, format: FormatFl
 	<append+?>: nfc(11) ;raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void
 	cmplStd/lib/text/cstr.ci:198: (11 bytes): output[pos] := padChr;
 	<append+?>: load.sp(+0)
-	<append+?>: load.i8
+	<append+?>: load.is8
 	<append+?>: dup.x32 sp(30)
 	<append+?>: dup.x32 sp(30)
 	<append+?>: add.i32
@@ -11636,7 +11650,7 @@ append(output: char[], pos: int32, radix: int32, value: uint64, format: FormatFl
 	<append+?>: dup.x32 sp(2)
 	<append+?>: sub.i32
 	<append+?>: add.i32
-	<append+?>: load.i8
+	<append+?>: load.is8
 	<append+?>: dup.x32 sp(31)
 	<append+?>: dup.x32 sp(31)
 	<append+?>: add.i32
@@ -11777,7 +11791,7 @@ append(output: char[], pos: int32, radix: int32, value: int64, format: FormatFla
 	<append+?>: load.c32 45
 	<append+?>: jmp +7
 	<append+?>: dup.x32 sp(5)
-	<append+?>: load.i8
+	<append+?>: load.is8
 	<append+?>: load.sp(+4)
 	<append+?>: store.i8
 	cmplStd/lib/text/cstr.ci:232: (9 bytes): signedFormat.precision := format.precision;
@@ -11793,7 +11807,7 @@ append(output: char[], pos: int32, radix: int32, value: int64, format: FormatFla
 	cmplStd/lib/text/cstr.ci:234: (12 bytes): signedFormat.padChr := format.padChr;
 	<append+?>: dup.x32 sp(5)
 	<append+?>: inc.i32(+8)
-	<append+?>: load.i8
+	<append+?>: load.is8
 	<append+?>: load.sp(+12)
 	<append+?>: store.i8
 	cmplStd/lib/text/cstr.ci:236: (13 bytes): if (value < (0))
@@ -11939,7 +11953,7 @@ append(output: char[], pos: int32, value: float64, format: FormatFlags): int32: 
 	<append+?>: load.c32 45
 	<append+?>: jmp +7
 	<append+?>: dup.x32 sp(5)
-	<append+?>: load.i8
+	<append+?>: load.is8
 	<append+?>: load.sp(+4)
 	<append+?>: store.i8
 	cmplStd/lib/text/cstr.ci:260: (7 bytes): formatInt.precision := 10;
@@ -11948,7 +11962,7 @@ append(output: char[], pos: int32, value: float64, format: FormatFlags): int32: 
 	cmplStd/lib/text/cstr.ci:261: (12 bytes): formatInt.padChr := format.padChr;
 	<append+?>: dup.x32 sp(5)
 	<append+?>: inc.i32(+8)
-	<append+?>: load.i8
+	<append+?>: load.is8
 	<append+?>: load.sp(+12)
 	<append+?>: store.i8
 	cmplStd/lib/text/cstr.ci:262: (21 bytes): formatInt.padLen := format.padLen - format.precision - 1;
@@ -12218,10 +12232,10 @@ float64(value: char[]): float64: function {
 	<float64+?>: dup.x32 sp(8)
 	<float64+?>: dup.x32 sp(1)
 	<float64+?>: add.i32
-	<float64+?>: load.i8
+	<float64+?>: load.is8
 	cmplStd/lib/text/cstr.ci:308: (239 bytes): if (chr >= '0' && chr <= '9')
 	<float64+?>: load.sp(+0)
-	<float64+?>: load.i8
+	<float64+?>: load.is8
 	<float64+?>: load.c32 48
 	<float64+?>: clt.i32
 	<float64+?>: not.b32
@@ -12229,7 +12243,7 @@ float64(value: char[]): float64: function {
 	<float64+?>: jz +20
 	<float64+?>: inc.sp(-4)
 	<float64+?>: load.sp(+0)
-	<float64+?>: load.i8
+	<float64+?>: load.is8
 	<float64+?>: load.c32 57
 	<float64+?>: cgt.i32
 	<float64+?>: not.b32
@@ -12239,7 +12253,7 @@ float64(value: char[]): float64: function {
 	<float64+?>: load.f64 10.000000
 	<float64+?>: mul.f64
 	<float64+?>: load.sp(+8)
-	<float64+?>: load.i8
+	<float64+?>: load.is8
 	<float64+?>: inc.i32(-48)
 	<float64+?>: i32.2f64
 	<float64+?>: add.f64
@@ -12252,7 +12266,7 @@ float64(value: char[]): float64: function {
 	<float64+?>: jmp +162
 	cmplStd/lib/text/cstr.ci:312: (158 bytes): if (chr == '.')
 	<float64+?>: load.sp(+0)
-	<float64+?>: load.i8
+	<float64+?>: load.is8
 	<float64+?>: load.c32 46
 	<float64+?>: ceq.i32
 	<float64+?>: jz +43
@@ -12272,7 +12286,7 @@ float64(value: char[]): float64: function {
 	<float64+?>: jmp +108
 	cmplStd/lib/text/cstr.ci:319: (104 bytes): if (chr == '-' && i == 0)
 	<float64+?>: load.sp(+0)
-	<float64+?>: load.i8
+	<float64+?>: load.is8
 	<float64+?>: load.c32 45
 	<float64+?>: ceq.i32
 	<float64+?>: dup.x32 sp(0)
@@ -12288,7 +12302,7 @@ float64(value: char[]): float64: function {
 	<float64+?>: jmp +64
 	cmplStd/lib/text/cstr.ci:322: (60 bytes): if (chr == '+' && i == 0)
 	<float64+?>: load.sp(+0)
-	<float64+?>: load.i8
+	<float64+?>: load.is8
 	<float64+?>: load.c32 43
 	<float64+?>: ceq.i32
 	<float64+?>: dup.x32 sp(0)
@@ -12320,7 +12334,7 @@ float64(value: char[]): float64: function {
 	<float64+?>: dup.x32 sp(8)
 	<float64+?>: dup.x32 sp(1)
 	<float64+?>: add.i32
-	<float64+?>: load.i8
+	<float64+?>: load.is8
 	<float64+?>: load.z32
 	<float64+?>: ceq.i32
 	<float64+?>: not.b32
@@ -12595,7 +12609,7 @@ read(file: File): int32: function {
 	<read+?>: ret
 	cmplStd/lib/system/File.ci:7: (14 bytes): return .result := (buff[0]) & 255;
 	<read+?>: load.sp(+0)
-	<read+?>: load.i8
+	<read+?>: load.is8
 	<read+?>: b32.and 0xff
 	<read+?>: set.x32 sp(5)
 	<read+?>: inc.sp(-4)
@@ -12661,14 +12675,14 @@ Rect: typename {
 	cmplGfx/lib/color.matrix.ci:2: referenced as `Rect`
 	cmplGfx/lib/color.lookup.ci:10: referenced as `Rect`
 	cmplGfx/lib/color.lookup.ci:2: referenced as `Rect`
-	cmplGfx/lib/image.blend.ci:164: referenced as `Rect`
-	cmplGfx/lib/image.blend.ci:163: referenced as `Rect`
-	cmplGfx/lib/image.blend.ci:136: referenced as `Rect`
-	cmplGfx/lib/image.blend.ci:135: referenced as `Rect`
-	cmplGfx/lib/image.blend.ci:123: referenced as `Rect`
-	cmplGfx/lib/image.blend.ci:105: referenced as `Rect`
-	cmplGfx/lib/image.blend.ci:88: referenced as `Rect`
-	cmplGfx/lib/image.blend.ci:71: referenced as `Rect`
+	cmplGfx/lib/image.blend.ci:167: referenced as `Rect`
+	cmplGfx/lib/image.blend.ci:166: referenced as `Rect`
+	cmplGfx/lib/image.blend.ci:139: referenced as `Rect`
+	cmplGfx/lib/image.blend.ci:138: referenced as `Rect`
+	cmplGfx/lib/image.blend.ci:126: referenced as `Rect`
+	cmplGfx/lib/image.blend.ci:108: referenced as `Rect`
+	cmplGfx/lib/image.blend.ci:91: referenced as `Rect`
+	cmplGfx/lib/image.blend.ci:74: referenced as `Rect`
 	cmplGfx/lib/image.blend.ci:60: referenced as `Rect`
 	cmplGfx/lib/image.blend.ci:7: referenced as `Rect`
 	cmplGfx/lib/image.blend.ci:2: referenced as `Rect`
@@ -12704,8 +12718,8 @@ Rect.x: int32 {
 	cmplGfx/lib/image.transform.ci:24: referenced as `x`
 	cmplGfx/lib/image.transform.ci:13: referenced as `x`
 	cmplGfx/lib/image.transform.ci:13: referenced as `x`
-	cmplGfx/lib/color.matrix.ci:37: referenced as `x`
-	cmplGfx/lib/color.matrix.ci:37: referenced as `x`
+	cmplGfx/lib/color.matrix.ci:36: referenced as `x`
+	cmplGfx/lib/color.matrix.ci:36: referenced as `x`
 	cmplGfx/lib/color.matrix.ci:10: referenced as `x`
 	cmplGfx/lib/color.matrix.ci:10: referenced as `x`
 	cmplGfx/lib/color.lookup.ci:60: referenced as `x`
@@ -12714,14 +12728,14 @@ Rect.x: int32 {
 	cmplGfx/lib/color.lookup.ci:32: referenced as `x`
 	cmplGfx/lib/color.lookup.ci:11: referenced as `x`
 	cmplGfx/lib/color.lookup.ci:11: referenced as `x`
-	cmplGfx/lib/image.blend.ci:186: referenced as `x`
-	cmplGfx/lib/image.blend.ci:181: referenced as `x`
-	cmplGfx/lib/image.blend.ci:165: referenced as `x`
-	cmplGfx/lib/image.blend.ci:165: referenced as `x`
-	cmplGfx/lib/image.blend.ci:137: referenced as `x`
-	cmplGfx/lib/image.blend.ci:137: referenced as `x`
-	cmplGfx/lib/image.blend.ci:84: referenced as `x`
-	cmplGfx/lib/image.blend.ci:73: referenced as `x`
+	cmplGfx/lib/image.blend.ci:189: referenced as `x`
+	cmplGfx/lib/image.blend.ci:184: referenced as `x`
+	cmplGfx/lib/image.blend.ci:168: referenced as `x`
+	cmplGfx/lib/image.blend.ci:168: referenced as `x`
+	cmplGfx/lib/image.blend.ci:140: referenced as `x`
+	cmplGfx/lib/image.blend.ci:140: referenced as `x`
+	cmplGfx/lib/image.blend.ci:87: referenced as `x`
+	cmplGfx/lib/image.blend.ci:76: referenced as `x`
 	cmplGfx/lib/image.blend.ci:51: referenced as `x`
 	cmplGfx/lib/image.blend.ci:51: referenced as `x`
 	cmplGfx/lib/image.blend.ci:43: referenced as `x`
@@ -12762,8 +12776,8 @@ Rect.y: int32 {
 	cmplGfx/lib/image.transform.ci:25: referenced as `y`
 	cmplGfx/lib/image.transform.ci:14: referenced as `y`
 	cmplGfx/lib/image.transform.ci:14: referenced as `y`
-	cmplGfx/lib/color.matrix.ci:36: referenced as `y`
-	cmplGfx/lib/color.matrix.ci:36: referenced as `y`
+	cmplGfx/lib/color.matrix.ci:35: referenced as `y`
+	cmplGfx/lib/color.matrix.ci:35: referenced as `y`
 	cmplGfx/lib/color.matrix.ci:11: referenced as `y`
 	cmplGfx/lib/color.matrix.ci:11: referenced as `y`
 	cmplGfx/lib/color.lookup.ci:59: referenced as `y`
@@ -12772,14 +12786,14 @@ Rect.y: int32 {
 	cmplGfx/lib/color.lookup.ci:31: referenced as `y`
 	cmplGfx/lib/color.lookup.ci:12: referenced as `y`
 	cmplGfx/lib/color.lookup.ci:12: referenced as `y`
-	cmplGfx/lib/image.blend.ci:184: referenced as `y`
-	cmplGfx/lib/image.blend.ci:182: referenced as `y`
-	cmplGfx/lib/image.blend.ci:166: referenced as `y`
-	cmplGfx/lib/image.blend.ci:166: referenced as `y`
-	cmplGfx/lib/image.blend.ci:138: referenced as `y`
-	cmplGfx/lib/image.blend.ci:138: referenced as `y`
-	cmplGfx/lib/image.blend.ci:84: referenced as `y`
-	cmplGfx/lib/image.blend.ci:73: referenced as `y`
+	cmplGfx/lib/image.blend.ci:187: referenced as `y`
+	cmplGfx/lib/image.blend.ci:185: referenced as `y`
+	cmplGfx/lib/image.blend.ci:169: referenced as `y`
+	cmplGfx/lib/image.blend.ci:169: referenced as `y`
+	cmplGfx/lib/image.blend.ci:141: referenced as `y`
+	cmplGfx/lib/image.blend.ci:141: referenced as `y`
+	cmplGfx/lib/image.blend.ci:87: referenced as `y`
+	cmplGfx/lib/image.blend.ci:76: referenced as `y`
 	cmplGfx/lib/image.blend.ci:50: referenced as `y`
 	cmplGfx/lib/image.blend.ci:50: referenced as `y`
 	cmplGfx/lib/image.blend.ci:42: referenced as `y`
@@ -12819,20 +12833,20 @@ Rect.w: int32 {
 	cmplGfx/lib/image.transform.ci:26: referenced as `w`
 	cmplGfx/lib/image.transform.ci:15: referenced as `w`
 	cmplGfx/lib/image.transform.ci:15: referenced as `w`
-	cmplGfx/lib/color.matrix.ci:37: referenced as `w`
+	cmplGfx/lib/color.matrix.ci:36: referenced as `w`
 	cmplGfx/lib/color.matrix.ci:12: referenced as `w`
 	cmplGfx/lib/color.matrix.ci:12: referenced as `w`
 	cmplGfx/lib/color.lookup.ci:60: referenced as `w`
 	cmplGfx/lib/color.lookup.ci:32: referenced as `w`
 	cmplGfx/lib/color.lookup.ci:13: referenced as `w`
 	cmplGfx/lib/color.lookup.ci:13: referenced as `w`
-	cmplGfx/lib/image.blend.ci:181: referenced as `w`
-	cmplGfx/lib/image.blend.ci:167: referenced as `w`
-	cmplGfx/lib/image.blend.ci:167: referenced as `w`
-	cmplGfx/lib/image.blend.ci:156: referenced as `w`
-	cmplGfx/lib/image.blend.ci:148: referenced as `w`
-	cmplGfx/lib/image.blend.ci:139: referenced as `w`
-	cmplGfx/lib/image.blend.ci:139: referenced as `w`
+	cmplGfx/lib/image.blend.ci:184: referenced as `w`
+	cmplGfx/lib/image.blend.ci:170: referenced as `w`
+	cmplGfx/lib/image.blend.ci:170: referenced as `w`
+	cmplGfx/lib/image.blend.ci:159: referenced as `w`
+	cmplGfx/lib/image.blend.ci:151: referenced as `w`
+	cmplGfx/lib/image.blend.ci:142: referenced as `w`
+	cmplGfx/lib/image.blend.ci:142: referenced as `w`
 	cmplGfx/lib/image.blend.ci:51: referenced as `w`
 	cmplGfx/lib/image.blend.ci:43: referenced as `w`
 	cmplGfx/lib/image.blend.ci:30: referenced as `w`
@@ -12871,20 +12885,20 @@ Rect.h: int32 {
 	cmplGfx/lib/image.transform.ci:27: referenced as `h`
 	cmplGfx/lib/image.transform.ci:16: referenced as `h`
 	cmplGfx/lib/image.transform.ci:16: referenced as `h`
-	cmplGfx/lib/color.matrix.ci:36: referenced as `h`
+	cmplGfx/lib/color.matrix.ci:35: referenced as `h`
 	cmplGfx/lib/color.matrix.ci:13: referenced as `h`
 	cmplGfx/lib/color.matrix.ci:13: referenced as `h`
 	cmplGfx/lib/color.lookup.ci:59: referenced as `h`
 	cmplGfx/lib/color.lookup.ci:31: referenced as `h`
 	cmplGfx/lib/color.lookup.ci:14: referenced as `h`
 	cmplGfx/lib/color.lookup.ci:14: referenced as `h`
-	cmplGfx/lib/image.blend.ci:182: referenced as `h`
-	cmplGfx/lib/image.blend.ci:168: referenced as `h`
-	cmplGfx/lib/image.blend.ci:168: referenced as `h`
-	cmplGfx/lib/image.blend.ci:155: referenced as `h`
-	cmplGfx/lib/image.blend.ci:151: referenced as `h`
-	cmplGfx/lib/image.blend.ci:140: referenced as `h`
-	cmplGfx/lib/image.blend.ci:140: referenced as `h`
+	cmplGfx/lib/image.blend.ci:185: referenced as `h`
+	cmplGfx/lib/image.blend.ci:171: referenced as `h`
+	cmplGfx/lib/image.blend.ci:171: referenced as `h`
+	cmplGfx/lib/image.blend.ci:158: referenced as `h`
+	cmplGfx/lib/image.blend.ci:154: referenced as `h`
+	cmplGfx/lib/image.blend.ci:143: referenced as `h`
+	cmplGfx/lib/image.blend.ci:143: referenced as `h`
 	cmplGfx/lib/image.blend.ci:50: referenced as `h`
 	cmplGfx/lib/image.blend.ci:42: referenced as `h`
 	cmplGfx/lib/image.blend.ci:33: referenced as `h`
@@ -13007,28 +13021,31 @@ Image: typename {
 	cmplGfx/lib/color.lookup.ci:4: referenced as `Image`
 	cmplGfx/lib/color.lookup.ci:3: referenced as `Image`
 	cmplGfx/lib/color.lookup.ci:2: referenced as `Image`
-	cmplGfx/lib/image.blend.ci:163: referenced as `Image`
-	cmplGfx/lib/image.blend.ci:135: referenced as `Image`
-	cmplGfx/lib/image.blend.ci:135: referenced as `Image`
-	cmplGfx/lib/image.blend.ci:129: referenced as `Image`
-	cmplGfx/lib/image.blend.ci:129: referenced as `Image`
-	cmplGfx/lib/image.blend.ci:128: referenced as `Image`
-	cmplGfx/lib/image.blend.ci:128: referenced as `Image`
-	cmplGfx/lib/image.blend.ci:123: referenced as `Image`
-	cmplGfx/lib/image.blend.ci:123: referenced as `Image`
-	cmplGfx/lib/image.blend.ci:107: referenced as `Image`
-	cmplGfx/lib/image.blend.ci:107: referenced as `Image`
-	cmplGfx/lib/image.blend.ci:106: referenced as `Image`
-	cmplGfx/lib/image.blend.ci:105: referenced as `Image`
-	cmplGfx/lib/image.blend.ci:105: referenced as `Image`
-	cmplGfx/lib/image.blend.ci:90: referenced as `Image`
-	cmplGfx/lib/image.blend.ci:90: referenced as `Image`
-	cmplGfx/lib/image.blend.ci:89: referenced as `Image`
-	cmplGfx/lib/image.blend.ci:88: referenced as `Image`
-	cmplGfx/lib/image.blend.ci:88: referenced as `Image`
-	cmplGfx/lib/image.blend.ci:73: referenced as `Image`
-	cmplGfx/lib/image.blend.ci:72: referenced as `Image`
-	cmplGfx/lib/image.blend.ci:71: referenced as `Image`
+	cmplGfx/lib/image.blend.ci:166: referenced as `Image`
+	cmplGfx/lib/image.blend.ci:138: referenced as `Image`
+	cmplGfx/lib/image.blend.ci:138: referenced as `Image`
+	cmplGfx/lib/image.blend.ci:132: referenced as `Image`
+	cmplGfx/lib/image.blend.ci:132: referenced as `Image`
+	cmplGfx/lib/image.blend.ci:131: referenced as `Image`
+	cmplGfx/lib/image.blend.ci:131: referenced as `Image`
+	cmplGfx/lib/image.blend.ci:126: referenced as `Image`
+	cmplGfx/lib/image.blend.ci:126: referenced as `Image`
+	cmplGfx/lib/image.blend.ci:110: referenced as `Image`
+	cmplGfx/lib/image.blend.ci:110: referenced as `Image`
+	cmplGfx/lib/image.blend.ci:109: referenced as `Image`
+	cmplGfx/lib/image.blend.ci:108: referenced as `Image`
+	cmplGfx/lib/image.blend.ci:108: referenced as `Image`
+	cmplGfx/lib/image.blend.ci:93: referenced as `Image`
+	cmplGfx/lib/image.blend.ci:93: referenced as `Image`
+	cmplGfx/lib/image.blend.ci:92: referenced as `Image`
+	cmplGfx/lib/image.blend.ci:91: referenced as `Image`
+	cmplGfx/lib/image.blend.ci:91: referenced as `Image`
+	cmplGfx/lib/image.blend.ci:76: referenced as `Image`
+	cmplGfx/lib/image.blend.ci:75: referenced as `Image`
+	cmplGfx/lib/image.blend.ci:74: referenced as `Image`
+	cmplGfx/lib/image.blend.ci:62: referenced as `Image`
+	cmplGfx/lib/image.blend.ci:62: referenced as `Image`
+	cmplGfx/lib/image.blend.ci:61: referenced as `Image`
 	cmplGfx/lib/image.blend.ci:60: referenced as `Image`
 	cmplGfx/lib/image.blend.ci:60: referenced as `Image`
 	cmplGfx/lib/image.blend.ci:4: referenced as `Image`
@@ -13063,7 +13080,7 @@ Image.create(width: int32, height: int32, depth: int32): Image: function {
 .value: nfc(84)
 .usages:
 	cmplGfx/lib/image.blur.ci:41: referenced as `create`
-	cmplGfx/lib/image.blend.ci:129: referenced as `create`
+	cmplGfx/lib/image.blend.ci:132: referenced as `create`
 	cmplGfx/lib/image.ci:2: referenced as `create`
 }
 Image.create3d(width: int32, height: int32): Image: function {
@@ -13242,11 +13259,11 @@ Image.width(image: Image): int32: function {
 	cmplGfx/lib/image.transform.ci:15: referenced as `width`
 	cmplGfx/lib/color.matrix.ci:12: referenced as `width`
 	cmplGfx/lib/color.lookup.ci:13: referenced as `width`
-	cmplGfx/lib/image.blend.ci:175: referenced as `width`
-	cmplGfx/lib/image.blend.ci:167: referenced as `width`
-	cmplGfx/lib/image.blend.ci:153: referenced as `width`
-	cmplGfx/lib/image.blend.ci:139: referenced as `width`
-	cmplGfx/lib/image.blend.ci:129: referenced as `width`
+	cmplGfx/lib/image.blend.ci:178: referenced as `width`
+	cmplGfx/lib/image.blend.ci:170: referenced as `width`
+	cmplGfx/lib/image.blend.ci:156: referenced as `width`
+	cmplGfx/lib/image.blend.ci:142: referenced as `width`
+	cmplGfx/lib/image.blend.ci:132: referenced as `width`
 	cmplGfx/lib/image.blend.ci:10: referenced as `width`
 	cmplGfx/gfxlib.ci:32: referenced as `width`
 }
@@ -13274,11 +13291,11 @@ Image.height(image: Image): int32: function {
 	cmplGfx/lib/image.transform.ci:16: referenced as `height`
 	cmplGfx/lib/color.matrix.ci:13: referenced as `height`
 	cmplGfx/lib/color.lookup.ci:14: referenced as `height`
-	cmplGfx/lib/image.blend.ci:176: referenced as `height`
-	cmplGfx/lib/image.blend.ci:168: referenced as `height`
-	cmplGfx/lib/image.blend.ci:154: referenced as `height`
-	cmplGfx/lib/image.blend.ci:140: referenced as `height`
-	cmplGfx/lib/image.blend.ci:129: referenced as `height`
+	cmplGfx/lib/image.blend.ci:179: referenced as `height`
+	cmplGfx/lib/image.blend.ci:171: referenced as `height`
+	cmplGfx/lib/image.blend.ci:157: referenced as `height`
+	cmplGfx/lib/image.blend.ci:143: referenced as `height`
+	cmplGfx/lib/image.blend.ci:132: referenced as `height`
 	cmplGfx/lib/image.blend.ci:11: referenced as `height`
 	cmplGfx/gfxlib.ci:37: referenced as `height`
 }
@@ -13300,7 +13317,7 @@ Image.depth(image: Image): int32: function {
 	cmplGfx/lib/image.transform.ci:9: referenced as `depth`
 	cmplGfx/lib/color.matrix.ci:6: referenced as `depth`
 	cmplGfx/lib/color.lookup.ci:7: referenced as `depth`
-	cmplGfx/lib/image.blend.ci:129: referenced as `depth`
+	cmplGfx/lib/image.blend.ci:132: referenced as `depth`
 	cmplGfx/lib/image.blend.ci:40: referenced as `depth`
 	cmplGfx/lib/image.blend.ci:40: referenced as `depth`
 }
@@ -13320,7 +13337,7 @@ Image.get(image: Image, x: int32, y: int32): int32: function {
 	cmplGfx/lib/image.blur.ci:72: referenced as `get`
 	cmplGfx/lib/image.blur.ci:52: referenced as `get`
 	cmplGfx/lib/image.transform.ci:53: referenced as `get`
-	cmplGfx/lib/color.matrix.ci:38: referenced as `get`
+	cmplGfx/lib/color.matrix.ci:37: referenced as `get`
 	cmplGfx/lib/color.lookup.ci:61: referenced as `get`
 	cmplGfx/lib/color.lookup.ci:33: referenced as `get`
 	cmplGfx/lib/image.blend.ci:53: referenced as `get`
@@ -13437,6 +13454,7 @@ Image.blend(image: Image, x: int32, y: int32, src: Image, roi: Rect, extra: poin
 .field color: function (size: 0, cast: static const typename(ref))
 .field alpha: function (size: 0, cast: static const typename(ref))
 .field dstAlpha: function (size: 0, cast: static const typename(ref))
+.field blendVec4f: function (size: 0, cast: static const typename(ref))
 .param .result: void (size: 0, cast: inline)
 .param image: Image (size: 8, cast: variable(val))
 .param x: int32 (size: 4, cast: variable(i32))
@@ -13447,15 +13465,18 @@ Image.blend(image: Image, x: int32, y: int32, src: Image, roi: Rect, extra: poin
 .param blend: function (size: 4, cast: variable(ref))
 .value: nfc(106)
 .usages:
-	cmplGfx/lib/image.blend.ci:107: referenced as `blend`
-	cmplGfx/lib/image.blend.ci:107: referenced as `blend`
-	cmplGfx/lib/image.blend.ci:106: referenced as `blend`
-	cmplGfx/lib/image.blend.ci:90: referenced as `blend`
-	cmplGfx/lib/image.blend.ci:90: referenced as `blend`
-	cmplGfx/lib/image.blend.ci:89: referenced as `blend`
-	cmplGfx/lib/image.blend.ci:73: referenced as `blend`
-	cmplGfx/lib/image.blend.ci:73: referenced as `blend`
-	cmplGfx/lib/image.blend.ci:72: referenced as `blend`
+	cmplGfx/lib/image.blend.ci:110: referenced as `blend`
+	cmplGfx/lib/image.blend.ci:110: referenced as `blend`
+	cmplGfx/lib/image.blend.ci:109: referenced as `blend`
+	cmplGfx/lib/image.blend.ci:93: referenced as `blend`
+	cmplGfx/lib/image.blend.ci:93: referenced as `blend`
+	cmplGfx/lib/image.blend.ci:92: referenced as `blend`
+	cmplGfx/lib/image.blend.ci:76: referenced as `blend`
+	cmplGfx/lib/image.blend.ci:76: referenced as `blend`
+	cmplGfx/lib/image.blend.ci:75: referenced as `blend`
+	cmplGfx/lib/image.blend.ci:62: referenced as `blend`
+	cmplGfx/lib/image.blend.ci:62: referenced as `blend`
+	cmplGfx/lib/image.blend.ci:61: referenced as `blend`
 	cmplGfx/lib/image.blend.ci:4: referenced as `blend`
 	cmplGfx/lib/image.blend.ci:3: referenced as `blend`
 }
@@ -13471,8 +13492,8 @@ Image.blend.color: function {
 .param base: uint32 (size: 4, cast: variable(u32))
 .param with: uint32 (size: 4, cast: variable(u32))
 .usages:
-	cmplGfx/lib/image.blend.ci:73: referenced as `color`
-	cmplGfx/lib/image.blend.ci:72: referenced as `color`
+	cmplGfx/lib/image.blend.ci:76: referenced as `color`
+	cmplGfx/lib/image.blend.ci:75: referenced as `color`
 }
 Image.blend.alpha: function {
 .kind: static const typename(ref)
@@ -13486,8 +13507,8 @@ Image.blend.alpha: function {
 .param base: uint32 (size: 4, cast: variable(u32))
 .param with: uint32 (size: 4, cast: variable(u32))
 .usages:
-	cmplGfx/lib/image.blend.ci:90: referenced as `alpha`
-	cmplGfx/lib/image.blend.ci:89: referenced as `alpha`
+	cmplGfx/lib/image.blend.ci:93: referenced as `alpha`
+	cmplGfx/lib/image.blend.ci:92: referenced as `alpha`
 }
 Image.blend.dstAlpha: function {
 .kind: static const typename(ref)
@@ -13501,8 +13522,23 @@ Image.blend.dstAlpha: function {
 .param base: uint32 (size: 4, cast: variable(u32))
 .param with: uint32 (size: 4, cast: variable(u32))
 .usages:
-	cmplGfx/lib/image.blend.ci:107: referenced as `dstAlpha`
-	cmplGfx/lib/image.blend.ci:106: referenced as `dstAlpha`
+	cmplGfx/lib/image.blend.ci:110: referenced as `dstAlpha`
+	cmplGfx/lib/image.blend.ci:109: referenced as `dstAlpha`
+}
+Image.blend.blendVec4f: function {
+.kind: static const typename(ref)
+.base: `function`
+.size: 0
+.name: 'blendVec4f'
+.print: 'blendVec4f'
+.owner: Image.blend(image: Image, x: int32, y: int32, src: Image, roi: Rect, extra: pointer, blend(extra: pointer, base: uint32, with: uint32): uint32): void
+.param .result: uint32 (size: 4, cast: variable(u32))
+.param extra: pointer (size: 4, cast: variable(ref))
+.param base: uint32 (size: 4, cast: variable(u32))
+.param with: uint32 (size: 4, cast: variable(u32))
+.usages:
+	cmplGfx/lib/image.blend.ci:62: referenced as `blendVec4f`
+	cmplGfx/lib/image.blend.ci:61: referenced as `blendVec4f`
 }
 Image.transform(image: Image, rect: Rect, src: Image, roi: Rect, interpolate: int32, mat: float32[16]): void: function {
 .kind: static const inline
@@ -14511,24 +14547,24 @@ argb: typename {
 .usages:
 	cmplGfx/lib/image.blur.ci:72: referenced as `argb`
 	cmplGfx/lib/image.blur.ci:52: referenced as `argb`
-	cmplGfx/lib/color.matrix.ci:38: referenced as `argb`
+	cmplGfx/lib/color.matrix.ci:37: referenced as `argb`
 	cmplGfx/lib/color.lookup.ci:61: referenced as `argb`
 	cmplGfx/lib/color.lookup.ci:33: referenced as `argb`
 	cmplGfx/lib/color.lookup.ci:2: referenced as `argb`
-	cmplGfx/lib/image.blend.ci:110: referenced as `argb`
-	cmplGfx/lib/image.blend.ci:110: referenced as `argb`
-	cmplGfx/lib/image.blend.ci:110: referenced as `argb`
-	cmplGfx/lib/image.blend.ci:93: referenced as `argb`
-	cmplGfx/lib/image.blend.ci:93: referenced as `argb`
-	cmplGfx/lib/image.blend.ci:93: referenced as `argb`
-	cmplGfx/lib/image.blend.ci:75: referenced as `argb`
-	cmplGfx/lib/image.blend.ci:75: referenced as `argb`
-	cmplGfx/lib/image.blend.ci:75: referenced as `argb`
-	cmplGfx/lib/image.blend.ci:75: referenced as `argb`
-	cmplGfx/lib/image.blend.ci:71: referenced as `argb`
-	cmplGfx/lib/image.blend.ci:61: referenced as `argb`
-	cmplGfx/lib/image.blend.ci:61: referenced as `argb`
-	cmplGfx/lib/image.blend.ci:61: referenced as `argb`
+	cmplGfx/lib/image.blend.ci:113: referenced as `argb`
+	cmplGfx/lib/image.blend.ci:113: referenced as `argb`
+	cmplGfx/lib/image.blend.ci:113: referenced as `argb`
+	cmplGfx/lib/image.blend.ci:96: referenced as `argb`
+	cmplGfx/lib/image.blend.ci:96: referenced as `argb`
+	cmplGfx/lib/image.blend.ci:96: referenced as `argb`
+	cmplGfx/lib/image.blend.ci:78: referenced as `argb`
+	cmplGfx/lib/image.blend.ci:78: referenced as `argb`
+	cmplGfx/lib/image.blend.ci:78: referenced as `argb`
+	cmplGfx/lib/image.blend.ci:78: referenced as `argb`
+	cmplGfx/lib/image.blend.ci:74: referenced as `argb`
+	cmplGfx/lib/image.blend.ci:64: referenced as `argb`
+	cmplGfx/lib/image.blend.ci:64: referenced as `argb`
+	cmplGfx/lib/image.blend.ci:64: referenced as `argb`
 	cmplGfx/lib/image.blend.ci:53: referenced as `argb`
 	cmplGfx/lib/image.blend.ci:52: referenced as `argb`
 	cmplGfx/lib/image.blend.ci:2: referenced as `argb`
@@ -14584,13 +14620,13 @@ argb.<?>.b: uint8 {
 .owner: argb.<?>
 .doc: 'blue component'
 .usages:
-	cmplGfx/lib/color.matrix.ci:44: referenced as `b`
+	cmplGfx/lib/color.matrix.ci:43: referenced as `b`
 	cmplGfx/lib/color.lookup.ci:74: referenced as `b`
 	cmplGfx/lib/color.lookup.ci:36: referenced as `b`
 	cmplGfx/lib/color.lookup.ci:36: referenced as `b`
-	cmplGfx/lib/image.blend.ci:113: referenced as `b`
-	cmplGfx/lib/image.blend.ci:95: referenced as `b`
-	cmplGfx/lib/image.blend.ci:78: referenced as `b`
+	cmplGfx/lib/image.blend.ci:116: referenced as `b`
+	cmplGfx/lib/image.blend.ci:98: referenced as `b`
+	cmplGfx/lib/image.blend.ci:81: referenced as `b`
 }
 argb.<?>.g: uint8 {
 .kind: variable(u32)
@@ -14601,13 +14637,13 @@ argb.<?>.g: uint8 {
 .owner: argb.<?>
 .doc: 'green component'
 .usages:
-	cmplGfx/lib/color.matrix.ci:43: referenced as `g`
+	cmplGfx/lib/color.matrix.ci:42: referenced as `g`
 	cmplGfx/lib/color.lookup.ci:73: referenced as `g`
 	cmplGfx/lib/color.lookup.ci:35: referenced as `g`
 	cmplGfx/lib/color.lookup.ci:35: referenced as `g`
-	cmplGfx/lib/image.blend.ci:114: referenced as `g`
-	cmplGfx/lib/image.blend.ci:96: referenced as `g`
-	cmplGfx/lib/image.blend.ci:79: referenced as `g`
+	cmplGfx/lib/image.blend.ci:117: referenced as `g`
+	cmplGfx/lib/image.blend.ci:99: referenced as `g`
+	cmplGfx/lib/image.blend.ci:82: referenced as `g`
 }
 argb.<?>.r: uint8 {
 .kind: variable(u32)
@@ -14618,13 +14654,13 @@ argb.<?>.r: uint8 {
 .owner: argb.<?>
 .doc: 'red component'
 .usages:
-	cmplGfx/lib/color.matrix.ci:42: referenced as `r`
+	cmplGfx/lib/color.matrix.ci:41: referenced as `r`
 	cmplGfx/lib/color.lookup.ci:72: referenced as `r`
 	cmplGfx/lib/color.lookup.ci:34: referenced as `r`
 	cmplGfx/lib/color.lookup.ci:34: referenced as `r`
-	cmplGfx/lib/image.blend.ci:115: referenced as `r`
-	cmplGfx/lib/image.blend.ci:97: referenced as `r`
-	cmplGfx/lib/image.blend.ci:80: referenced as `r`
+	cmplGfx/lib/image.blend.ci:118: referenced as `r`
+	cmplGfx/lib/image.blend.ci:100: referenced as `r`
+	cmplGfx/lib/image.blend.ci:83: referenced as `r`
 }
 argb.<?>.a: uint8 {
 .kind: variable(u32)
@@ -14635,9 +14671,9 @@ argb.<?>.a: uint8 {
 .owner: argb.<?>
 .doc: 'alpha component'
 .usages:
-	cmplGfx/lib/image.blend.ci:116: referenced as `a`
-	cmplGfx/lib/image.blend.ci:98: referenced as `a`
-	cmplGfx/lib/image.blend.ci:81: referenced as `a`
+	cmplGfx/lib/image.blend.ci:119: referenced as `a`
+	cmplGfx/lib/image.blend.ci:101: referenced as `a`
+	cmplGfx/lib/image.blend.ci:84: referenced as `a`
 }
 argb.b: uint8 {
 .kind: inline
@@ -14694,7 +14730,7 @@ argb(argb: uint32): argb: function {
 	cmplGfx/lib/image.draw.ci:187: referenced as `argb`
 	cmplGfx/lib/image.blur.ci:72: referenced as `argb`
 	cmplGfx/lib/image.blur.ci:52: referenced as `argb`
-	cmplGfx/lib/color.matrix.ci:38: referenced as `argb`
+	cmplGfx/lib/color.matrix.ci:37: referenced as `argb`
 	cmplGfx/lib/color.lookup.ci:61: referenced as `argb`
 	cmplGfx/lib/color.lookup.ci:33: referenced as `argb`
 	cmplGfx/lib/image.blend.ci:53: referenced as `argb`
@@ -14731,16 +14767,16 @@ sat_s8(c: int32): uint32: function {
 .doc: 'clamp signed gray or color component to fit in 8 bits (0 ... 255)'
 .value: uint32(c > 255 ? 255 : c < 0 ? 0 : c)
 .usages:
-	cmplGfx/lib/color.matrix.ci:44: referenced as `sat_s8`
 	cmplGfx/lib/color.matrix.ci:43: referenced as `sat_s8`
 	cmplGfx/lib/color.matrix.ci:42: referenced as `sat_s8`
+	cmplGfx/lib/color.matrix.ci:41: referenced as `sat_s8`
 	cmplGfx/lib/color.lookup.ci:74: referenced as `sat_s8`
 	cmplGfx/lib/color.lookup.ci:73: referenced as `sat_s8`
 	cmplGfx/lib/color.lookup.ci:72: referenced as `sat_s8`
 	cmplGfx/lib/color.lookup.ci:70: referenced as `sat_s8`
-	cmplGfx/lib/image.blend.ci:97: referenced as `sat_s8`
-	cmplGfx/lib/image.blend.ci:96: referenced as `sat_s8`
-	cmplGfx/lib/image.blend.ci:95: referenced as `sat_s8`
+	cmplGfx/lib/image.blend.ci:100: referenced as `sat_s8`
+	cmplGfx/lib/image.blend.ci:99: referenced as `sat_s8`
+	cmplGfx/lib/image.blend.ci:98: referenced as `sat_s8`
 	cmplGfx/lib/color.ci:227: referenced as `sat_s8`
 	cmplGfx/lib/color.ci:139: referenced as `sat_s8`
 	cmplGfx/lib/color.ci:139: referenced as `sat_s8`
@@ -15005,8 +15041,8 @@ ach(color: argb): int32: function {
 .usages:
 	cmplGfx/lib/color.lookup.ci:70: referenced as `ach`
 	cmplGfx/lib/color.lookup.ci:23: referenced as `ach`
-	cmplGfx/lib/image.blend.ci:111: referenced as `ach`
-	cmplGfx/lib/image.blend.ci:76: referenced as `ach`
+	cmplGfx/lib/image.blend.ci:114: referenced as `ach`
+	cmplGfx/lib/image.blend.ci:79: referenced as `ach`
 	cmplGfx/lib/color.ci:250: referenced as `ach`
 	cmplGfx/lib/color.ci:213: referenced as `ach`
 	cmplGfx/lib/color.ci:213: referenced as `ach`
@@ -15024,16 +15060,16 @@ rch(color: argb): int32: function {
 .usages:
 	cmplGfx/lib/image.blur.ci:74: referenced as `rch`
 	cmplGfx/lib/image.blur.ci:54: referenced as `rch`
-	cmplGfx/lib/color.matrix.ci:39: referenced as `rch`
+	cmplGfx/lib/color.matrix.ci:38: referenced as `rch`
 	cmplGfx/lib/color.lookup.ci:62: referenced as `rch`
 	cmplGfx/lib/color.lookup.ci:62: referenced as `rch`
 	cmplGfx/lib/color.lookup.ci:34: referenced as `rch`
-	cmplGfx/lib/image.blend.ci:115: referenced as `rch`
-	cmplGfx/lib/image.blend.ci:115: referenced as `rch`
-	cmplGfx/lib/image.blend.ci:97: referenced as `rch`
-	cmplGfx/lib/image.blend.ci:97: referenced as `rch`
-	cmplGfx/lib/image.blend.ci:80: referenced as `rch`
-	cmplGfx/lib/image.blend.ci:80: referenced as `rch`
+	cmplGfx/lib/image.blend.ci:118: referenced as `rch`
+	cmplGfx/lib/image.blend.ci:118: referenced as `rch`
+	cmplGfx/lib/image.blend.ci:100: referenced as `rch`
+	cmplGfx/lib/image.blend.ci:100: referenced as `rch`
+	cmplGfx/lib/image.blend.ci:83: referenced as `rch`
+	cmplGfx/lib/image.blend.ci:83: referenced as `rch`
 	cmplGfx/lib/color.ci:250: referenced as `rch`
 	cmplGfx/lib/color.ci:214: referenced as `rch`
 	cmplGfx/lib/color.ci:214: referenced as `rch`
@@ -15055,16 +15091,16 @@ gch(color: argb): int32: function {
 .usages:
 	cmplGfx/lib/image.blur.ci:75: referenced as `gch`
 	cmplGfx/lib/image.blur.ci:55: referenced as `gch`
-	cmplGfx/lib/color.matrix.ci:40: referenced as `gch`
+	cmplGfx/lib/color.matrix.ci:39: referenced as `gch`
 	cmplGfx/lib/color.lookup.ci:63: referenced as `gch`
 	cmplGfx/lib/color.lookup.ci:63: referenced as `gch`
 	cmplGfx/lib/color.lookup.ci:35: referenced as `gch`
-	cmplGfx/lib/image.blend.ci:114: referenced as `gch`
-	cmplGfx/lib/image.blend.ci:114: referenced as `gch`
-	cmplGfx/lib/image.blend.ci:96: referenced as `gch`
-	cmplGfx/lib/image.blend.ci:96: referenced as `gch`
-	cmplGfx/lib/image.blend.ci:79: referenced as `gch`
-	cmplGfx/lib/image.blend.ci:79: referenced as `gch`
+	cmplGfx/lib/image.blend.ci:117: referenced as `gch`
+	cmplGfx/lib/image.blend.ci:117: referenced as `gch`
+	cmplGfx/lib/image.blend.ci:99: referenced as `gch`
+	cmplGfx/lib/image.blend.ci:99: referenced as `gch`
+	cmplGfx/lib/image.blend.ci:82: referenced as `gch`
+	cmplGfx/lib/image.blend.ci:82: referenced as `gch`
 	cmplGfx/lib/color.ci:250: referenced as `gch`
 	cmplGfx/lib/color.ci:215: referenced as `gch`
 	cmplGfx/lib/color.ci:215: referenced as `gch`
@@ -15086,16 +15122,16 @@ bch(color: argb): int32: function {
 .usages:
 	cmplGfx/lib/image.blur.ci:76: referenced as `bch`
 	cmplGfx/lib/image.blur.ci:56: referenced as `bch`
-	cmplGfx/lib/color.matrix.ci:41: referenced as `bch`
+	cmplGfx/lib/color.matrix.ci:40: referenced as `bch`
 	cmplGfx/lib/color.lookup.ci:64: referenced as `bch`
 	cmplGfx/lib/color.lookup.ci:64: referenced as `bch`
 	cmplGfx/lib/color.lookup.ci:36: referenced as `bch`
-	cmplGfx/lib/image.blend.ci:113: referenced as `bch`
-	cmplGfx/lib/image.blend.ci:113: referenced as `bch`
-	cmplGfx/lib/image.blend.ci:95: referenced as `bch`
-	cmplGfx/lib/image.blend.ci:95: referenced as `bch`
-	cmplGfx/lib/image.blend.ci:78: referenced as `bch`
-	cmplGfx/lib/image.blend.ci:78: referenced as `bch`
+	cmplGfx/lib/image.blend.ci:116: referenced as `bch`
+	cmplGfx/lib/image.blend.ci:116: referenced as `bch`
+	cmplGfx/lib/image.blend.ci:98: referenced as `bch`
+	cmplGfx/lib/image.blend.ci:98: referenced as `bch`
+	cmplGfx/lib/image.blend.ci:81: referenced as `bch`
+	cmplGfx/lib/image.blend.ci:81: referenced as `bch`
 	cmplGfx/lib/color.ci:250: referenced as `bch`
 	cmplGfx/lib/color.ci:216: referenced as `bch`
 	cmplGfx/lib/color.ci:216: referenced as `bch`
@@ -15294,15 +15330,15 @@ mix_s8(t: int32, a: uint32, b: uint32): int32: function {
 .param b: uint32 (size: 4, cast: u32)
 .value: int32(a + ((t * ((b - a + (1))) >> 8)))
 .usages:
-	cmplGfx/lib/image.blend.ci:115: referenced as `mix_s8`
-	cmplGfx/lib/image.blend.ci:114: referenced as `mix_s8`
-	cmplGfx/lib/image.blend.ci:113: referenced as `mix_s8`
-	cmplGfx/lib/image.blend.ci:97: referenced as `mix_s8`
-	cmplGfx/lib/image.blend.ci:96: referenced as `mix_s8`
-	cmplGfx/lib/image.blend.ci:95: referenced as `mix_s8`
-	cmplGfx/lib/image.blend.ci:80: referenced as `mix_s8`
-	cmplGfx/lib/image.blend.ci:79: referenced as `mix_s8`
-	cmplGfx/lib/image.blend.ci:78: referenced as `mix_s8`
+	cmplGfx/lib/image.blend.ci:118: referenced as `mix_s8`
+	cmplGfx/lib/image.blend.ci:117: referenced as `mix_s8`
+	cmplGfx/lib/image.blend.ci:116: referenced as `mix_s8`
+	cmplGfx/lib/image.blend.ci:100: referenced as `mix_s8`
+	cmplGfx/lib/image.blend.ci:99: referenced as `mix_s8`
+	cmplGfx/lib/image.blend.ci:98: referenced as `mix_s8`
+	cmplGfx/lib/image.blend.ci:83: referenced as `mix_s8`
+	cmplGfx/lib/image.blend.ci:82: referenced as `mix_s8`
+	cmplGfx/lib/image.blend.ci:81: referenced as `mix_s8`
 	cmplGfx/lib/color.ci:204: referenced as `mix_s8`
 	cmplGfx/lib/color.ci:204: referenced as `mix_s8`
 	cmplGfx/lib/color.ci:204: referenced as `mix_s8`
@@ -15634,7 +15670,7 @@ alphaLut(lut: uint32[], hardness: int32, alpha: int32, reflect: bool): void: fun
 	<alphaLut+?>: inc.sp(-4)
 	cmplGfx/lib/color.ci:234: (123 bytes): if (reflect)
 	<alphaLut+?>: load.sp(+12)
-	<alphaLut+?>: load.i8
+	<alphaLut+?>: load.is8
 	<alphaLut+?>: jz +118
 	cmplGfx/lib/color.ci:235: (6 bytes): end: int32 := lut.length - (1)
 	<alphaLut+?>: dup.x32 sp(7)
@@ -15706,8 +15742,8 @@ vec4f(rgb: argb): vec4f: function {
 .doc: 'convert an argb color to a floating point vector'
 .value: vec4f((rch(rgb)) / 255.000000, (gch(rgb)) / 255.000000, (bch(rgb)) / 255.000000, (ach(rgb)) / 255.000000)
 .usages:
-	cmplGfx/lib/image.blend.ci:62: referenced as `vec4f`
-	cmplGfx/lib/image.blend.ci:62: referenced as `vec4f`
+	cmplGfx/lib/image.blend.ci:65: referenced as `vec4f`
+	cmplGfx/lib/image.blend.ci:65: referenced as `vec4f`
 }
 argb(vec: vec4f): argb: function {
 .kind: inline
@@ -15721,8 +15757,8 @@ argb(vec: vec4f): argb: function {
 .value: argb(vec.w, vec.x, vec.y, vec.z)
 .usages:
 	cmplGfx/lib/image.transform.ci:69: referenced as `argb`
-	cmplGfx/lib/image.blend.ci:188: referenced as `argb`
-	cmplGfx/lib/image.blend.ci:62: referenced as `argb`
+	cmplGfx/lib/image.blend.ci:191: referenced as `argb`
+	cmplGfx/lib/image.blend.ci:65: referenced as `argb`
 }
 lum(vec: vec4f): float32: function {
 .kind: inline
@@ -16441,8 +16477,8 @@ clip(image: Image, roi: Rect): bool: function {
 	cmplGfx/lib/image.transform.ci:18: referenced as `clip`
 	cmplGfx/lib/color.matrix.ci:15: referenced as `clip`
 	cmplGfx/lib/color.lookup.ci:16: referenced as `clip`
-	cmplGfx/lib/image.blend.ci:171: referenced as `clip`
-	cmplGfx/lib/image.blend.ci:143: referenced as `clip`
+	cmplGfx/lib/image.blend.ci:174: referenced as `clip`
+	cmplGfx/lib/image.blend.ci:146: referenced as `clip`
 	cmplGfx/lib/image.blend.ci:35: referenced as `clip`
 	cmplGfx/lib/image.blend.ci:21: referenced as `clip`
 }
@@ -16464,10 +16500,10 @@ set(image: Image, x: int32, y: int32, color: argb): void: function {
 	cmplGfx/lib/image.blur.ci:79: referenced as `set`
 	cmplGfx/lib/image.blur.ci:59: referenced as `set`
 	cmplGfx/lib/image.transform.ci:69: referenced as `set`
-	cmplGfx/lib/color.matrix.ci:45: referenced as `set`
+	cmplGfx/lib/color.matrix.ci:44: referenced as `set`
 	cmplGfx/lib/color.lookup.ci:75: referenced as `set`
 	cmplGfx/lib/color.lookup.ci:37: referenced as `set`
-	cmplGfx/lib/image.blend.ci:188: referenced as `set`
+	cmplGfx/lib/image.blend.ci:191: referenced as `set`
 	cmplGfx/lib/image.blend.ci:54: referenced as `set`
 }
 Image(width: int32, height: int32, depth: int32): Image: function {
@@ -16619,7 +16655,7 @@ blend(image: Image, x0: int32, y0: int32, src: Image, roi: Rect, extra: pointer,
 .param blend: function (size: 4, cast: variable(ref))
 .doc: 'copy the `src` image to the destination with an optional blend method'
 .value: {
-	static if (true && (typename(Image.blend)) != null) {
+	static if ((preferNativeCalls) && (typename(Image.blend)) != null) {
 		return .result := Image.blend(image, x0, y0, src, roi, extra, pointer(blend));
 	}
 	r: Rect := {
@@ -16924,17 +16960,17 @@ blend(image: Image, x0: int32, y0: int32, src: Image, roi: Rect, extra: pointer,
 	<blend+?>: inc.sp(-16)
 	<blend+?>: ret
 .usages:
-	cmplGfx/lib/image.blend.ci:124: referenced as `blend`
-	cmplGfx/lib/image.blend.ci:119: referenced as `blend`
-	cmplGfx/lib/image.blend.ci:101: referenced as `blend`
-	cmplGfx/lib/image.blend.ci:84: referenced as `blend`
-	cmplGfx/lib/image.blend.ci:67: referenced as `blend`
-	cmplGfx/lib/image.blend.ci:65: referenced as `blend`
+	cmplGfx/lib/image.blend.ci:127: referenced as `blend`
+	cmplGfx/lib/image.blend.ci:122: referenced as `blend`
+	cmplGfx/lib/image.blend.ci:104: referenced as `blend`
+	cmplGfx/lib/image.blend.ci:87: referenced as `blend`
+	cmplGfx/lib/image.blend.ci:70: referenced as `blend`
+	cmplGfx/lib/image.blend.ci:68: referenced as `blend`
 }
 blend(image: Image, x0: int32, y0: int32, src: Image, roi: Rect, blend(base: vec4f, with: vec4f): vec4f): void: function {
 .kind: static function
 .base: `function`
-.size: 71
+.size: 93
 .name: 'blend'
 .file: 'cmplGfx/lib/image.blend.ci:60'
 .param .result: void (size: 0, cast: variable(void))
@@ -16946,6 +16982,9 @@ blend(image: Image, x0: int32, y0: int32, src: Image, roi: Rect, blend(base: vec
 .param blend: function (size: 4, cast: variable(ref))
 .doc: 'copy the `src` image to the destination with an optional blend method'
 .value: {
+	static if ((preferNativeCalls) && (typename(Image.blend.blendVec4f)) != null) {
+		return .result := Image.blend(image, x0, y0, src, roi, blend, Image.blend.blendVec4f);
+	}
 	static blendVec4f(blend(base: vec4f, with: vec4f): vec4f, base: argb, with: argb): argb := {
 		return .result := argb(blend(vec4f(base), vec4f(with)));
 	};
@@ -16954,13 +16993,23 @@ blend(image: Image, x0: int32, y0: int32, src: Image, roi: Rect, blend(base: vec
 	}
 	return .result := blend(image, x0, y0, src, roi, blend, blendVec4f);
 }
-.instructions: (71 bytes)
-	cmplGfx/lib/image.blend.ci:64: (43 bytes): if ((blend) == null)
-	<blend>  : dup.x32 sp(1)
+.instructions: (93 bytes)
+	cmplGfx/lib/image.blend.ci:62: (22 bytes): return .result := Image.blend(image, x0, y0, src, roi, blend, Image.blend.blendVec4f);
+	<blend>  : dup.x64 sp(7)
+	<blend+?>: dup.x32 sp(8)
+	<blend+?>: dup.x32 sp(8)
+	<blend+?>: dup.x64 sp(7)
+	<blend+?>: dup.x32 sp(8)
+	<blend+?>: dup.x32 sp(8)
+	<blend+?>: load.ref <?> ;Image.blend.blendVec4f
+	<blend+?>: nfc(106) ;Image.blend(image: Image, x: int32, y: int32, src: Image, roi: Rect, extra: pointer, blend(extra: pointer, base: uint32, with: uint32): uint32): void
+	<blend+?>: ret
+	cmplGfx/lib/image.blend.ci:67: (43 bytes): if ((blend) == null)
+	<blend+?>: dup.x32 sp(1)
 	<blend+?>: load.ref <?> ;null
 	<blend+?>: ceq.i32
 	<blend+?>: jz +35
-	cmplGfx/lib/image.blend.ci:65: (31 bytes): return .result := blend(image, x0, y0, src, roi, null, null);
+	cmplGfx/lib/image.blend.ci:68: (31 bytes): return .result := blend(image, x0, y0, src, roi, null, null);
 	<blend+?>: dup.x64 sp(7)
 	<blend+?>: dup.x32 sp(8)
 	<blend+?>: dup.x32 sp(8)
@@ -16972,7 +17021,7 @@ blend(image: Image, x0: int32, y0: int32, src: Image, roi: Rect, blend(base: vec
 	<blend+?>: call
 	<blend+?>: inc.sp(-36)
 	<blend+?>: ret
-	cmplGfx/lib/image.blend.ci:67: (28 bytes): return .result := blend(image, x0, y0, src, roi, blend, blendVec4f);
+	cmplGfx/lib/image.blend.ci:70: (28 bytes): return .result := blend(image, x0, y0, src, roi, blend, blendVec4f);
 	<blend+?>: dup.x64 sp(7)
 	<blend+?>: dup.x32 sp(8)
 	<blend+?>: dup.x32 sp(8)
@@ -16991,29 +17040,29 @@ blend(image: Image, roi: Rect, col: argb): void: function {
 .base: `function`
 .size: 134
 .name: 'blend'
-.file: 'cmplGfx/lib/image.blend.ci:71'
+.file: 'cmplGfx/lib/image.blend.ci:74'
 .param .result: void (size: 0, cast: variable(void))
 .param image: Image (size: 8, cast: variable(val))
 .param roi: Rect (size: 4, cast: const variable(ref))
 .param col: argb (size: 4, cast: variable(val))
 .doc: 'fill the destination with the given `col` (alpha channel is used)'
 .value: {
-	static if (true && (typename(Image.blend.color)) != null) {
+	static if ((preferNativeCalls) && (typename(Image.blend.color)) != null) {
 		return .result := Image.blend(image, (roi) != null ? roi.x : 0, (roi) != null ? roi.y : 0, image, roi, col, Image.blend.color);
 	}
 	static blender(const color: argb, base: argb, with: argb): argb := {
 		alpha: int32 := ach(color);
 		return .result := {
-			.result.b := (mix_s8(alpha, bch(color), bch(with)));
-			.result.g := (mix_s8(alpha, gch(color), gch(with)));
-			.result.r := (mix_s8(alpha, rch(color), rch(with)));
+			.result.b := (mix_s8(alpha, bch(color), bch(base)));
+			.result.g := (mix_s8(alpha, gch(color), gch(base)));
+			.result.r := (mix_s8(alpha, rch(color), rch(base)));
 			.result.a := (alpha);
 		};
 	};
 	return .result := blend(image, (roi) != null ? roi.x : 0, (roi) != null ? roi.y : 0, image, roi, col, blender);
 }
 .instructions: (134 bytes)
-	cmplGfx/lib/image.blend.ci:73: (64 bytes): return .result := Image.blend(image, (roi) != null ? roi.x : 0, (roi) != null ? roi.y : 0, image, roi, col, Image.blend.color);
+	cmplGfx/lib/image.blend.ci:76: (64 bytes): return .result := Image.blend(image, (roi) != null ? roi.x : 0, (roi) != null ? roi.y : 0, image, roi, col, Image.blend.color);
 	<blend>  : dup.x64 sp(3)
 	<blend+?>: dup.x32 sp(4)
 	<blend+?>: load.ref <?> ;null
@@ -17038,7 +17087,7 @@ blend(image: Image, roi: Rect, col: argb): void: function {
 	<blend+?>: load.ref <?> ;Image.blend.color
 	<blend+?>: nfc(106) ;Image.blend(image: Image, x: int32, y: int32, src: Image, roi: Rect, extra: pointer, blend(extra: pointer, base: uint32, with: uint32): uint32): void
 	<blend+?>: ret
-	cmplGfx/lib/image.blend.ci:84: (70 bytes): return .result := blend(image, (roi) != null ? roi.x : 0, (roi) != null ? roi.y : 0, image, roi, col, blender);
+	cmplGfx/lib/image.blend.ci:87: (70 bytes): return .result := blend(image, (roi) != null ? roi.x : 0, (roi) != null ? roi.y : 0, image, roi, col, blender);
 	<blend+?>: dup.x64 sp(3)
 	<blend+?>: dup.x32 sp(4)
 	<blend+?>: load.ref <?> ;null
@@ -17072,7 +17121,7 @@ blendAlpha(image: Image, x: int32, y: int32, src: Image, roi: Rect, alpha: int32
 .base: `function`
 .size: 54
 .name: 'blendAlpha'
-.file: 'cmplGfx/lib/image.blend.ci:88'
+.file: 'cmplGfx/lib/image.blend.ci:91'
 .param .result: void (size: 0, cast: variable(void))
 .param image: Image (size: 8, cast: variable(val))
 .param x: int32 (size: 4, cast: variable(i32))
@@ -17082,7 +17131,7 @@ blendAlpha(image: Image, x: int32, y: int32, src: Image, roi: Rect, alpha: int32
 .param alpha: int32 (size: 4, cast: variable(i32))
 .doc: 'copy the `src` image to the destination with the given transparency'
 .value: {
-	static if (true && (typename(Image.blend.alpha)) != null) {
+	static if ((preferNativeCalls) && (typename(Image.blend.alpha)) != null) {
 		return .result := Image.blend(image, x, y, src, roi, alpha, Image.blend.alpha);
 	}
 	static blender(const alpha: int32, base: argb, with: argb): argb := {
@@ -17096,7 +17145,7 @@ blendAlpha(image: Image, x: int32, y: int32, src: Image, roi: Rect, alpha: int32
 	return .result := blend(image, x, y, src, roi, alpha, blender);
 }
 .instructions: (54 bytes)
-	cmplGfx/lib/image.blend.ci:90: (24 bytes): return .result := Image.blend(image, x, y, src, roi, alpha, Image.blend.alpha);
+	cmplGfx/lib/image.blend.ci:93: (24 bytes): return .result := Image.blend(image, x, y, src, roi, alpha, Image.blend.alpha);
 	<blendAlpha>  : dup.x64 sp(7)
 	<blendAlpha+?>: dup.x32 sp(8)
 	<blendAlpha+?>: dup.x32 sp(8)
@@ -17106,7 +17155,7 @@ blendAlpha(image: Image, x: int32, y: int32, src: Image, roi: Rect, alpha: int32
 	<blendAlpha+?>: load.ref <?> ;Image.blend.alpha
 	<blendAlpha+?>: nfc(106) ;Image.blend(image: Image, x: int32, y: int32, src: Image, roi: Rect, extra: pointer, blend(extra: pointer, base: uint32, with: uint32): uint32): void
 	<blendAlpha+?>: ret
-	cmplGfx/lib/image.blend.ci:101: (30 bytes): return .result := blend(image, x, y, src, roi, alpha, blender);
+	cmplGfx/lib/image.blend.ci:104: (30 bytes): return .result := blend(image, x, y, src, roi, alpha, blender);
 	<blendAlpha+?>: dup.x64 sp(7)
 	<blendAlpha+?>: dup.x32 sp(8)
 	<blendAlpha+?>: dup.x32 sp(8)
@@ -17125,7 +17174,7 @@ blendDstAlpha(image: Image, x: int32, y: int32, src: Image, roi: Rect): void: fu
 .base: `function`
 .size: 56
 .name: 'blendDstAlpha'
-.file: 'cmplGfx/lib/image.blend.ci:105'
+.file: 'cmplGfx/lib/image.blend.ci:108'
 .param .result: void (size: 0, cast: variable(void))
 .param image: Image (size: 8, cast: variable(val))
 .param x: int32 (size: 4, cast: variable(i32))
@@ -17134,7 +17183,7 @@ blendDstAlpha(image: Image, x: int32, y: int32, src: Image, roi: Rect): void: fu
 .param roi: Rect (size: 4, cast: const variable(ref))
 .doc: 'copy the `src` image to the destination masked with destination alpha'
 .value: {
-	static if (true && (typename(Image.blend.dstAlpha)) != null) {
+	static if ((preferNativeCalls) && (typename(Image.blend.dstAlpha)) != null) {
 		return .result := Image.blend(image, x, y, src, roi, null, Image.blend.dstAlpha);
 	}
 	static blender(null: pointer, base: argb, with: argb): argb := {
@@ -17149,7 +17198,7 @@ blendDstAlpha(image: Image, x: int32, y: int32, src: Image, roi: Rect): void: fu
 	return .result := blend(image, x, y, src, roi, null, blender);
 }
 .instructions: (56 bytes)
-	cmplGfx/lib/image.blend.ci:107: (25 bytes): return .result := Image.blend(image, x, y, src, roi, null, Image.blend.dstAlpha);
+	cmplGfx/lib/image.blend.ci:110: (25 bytes): return .result := Image.blend(image, x, y, src, roi, null, Image.blend.dstAlpha);
 	<blendDstAlpha>  : dup.x64 sp(6)
 	<blendDstAlpha+?>: dup.x32 sp(7)
 	<blendDstAlpha+?>: dup.x32 sp(7)
@@ -17159,7 +17208,7 @@ blendDstAlpha(image: Image, x: int32, y: int32, src: Image, roi: Rect): void: fu
 	<blendDstAlpha+?>: load.ref <?> ;Image.blend.dstAlpha
 	<blendDstAlpha+?>: nfc(106) ;Image.blend(image: Image, x: int32, y: int32, src: Image, roi: Rect, extra: pointer, blend(extra: pointer, base: uint32, with: uint32): uint32): void
 	<blendDstAlpha+?>: ret
-	cmplGfx/lib/image.blend.ci:119: (31 bytes): return .result := blend(image, x, y, src, roi, null, blender);
+	cmplGfx/lib/image.blend.ci:122: (31 bytes): return .result := blend(image, x, y, src, roi, null, blender);
 	<blendDstAlpha+?>: dup.x64 sp(6)
 	<blendDstAlpha+?>: dup.x32 sp(7)
 	<blendDstAlpha+?>: dup.x32 sp(7)
@@ -17178,19 +17227,19 @@ copy(image: Image, x: int32, y: int32, src: Image, roi: Rect): void: function {
 .base: `function`
 .size: 31
 .name: 'copy'
-.file: 'cmplGfx/lib/image.blend.ci:123'
+.file: 'cmplGfx/lib/image.blend.ci:126'
 .param .result: void (size: 0, cast: variable(void))
 .param image: Image (size: 8, cast: variable(val))
 .param x: int32 (size: 4, cast: variable(i32))
 .param y: int32 (size: 4, cast: variable(i32))
 .param src: Image (size: 8, cast: variable(val))
 .param roi: Rect (size: 4, cast: const variable(ref))
-.doc: 'copy the `src` image to the destination'
+.doc: 'copy or convert `src` image to the destination `image`'
 .value: {
 	return .result := blend(image, x, y, src, roi, null, null);
 }
 .instructions: (31 bytes)
-	cmplGfx/lib/image.blend.ci:124: (31 bytes): return .result := blend(image, x, y, src, roi, null, null);
+	cmplGfx/lib/image.blend.ci:127: (31 bytes): return .result := blend(image, x, y, src, roi, null, null);
 	<copy>  : dup.x64 sp(6)
 	<copy+?>: dup.x32 sp(7)
 	<copy+?>: dup.x32 sp(7)
@@ -17203,15 +17252,15 @@ copy(image: Image, x: int32, y: int32, src: Image, roi: Rect): void: function {
 	<copy+?>: inc.sp(-36)
 	<copy+?>: ret
 .usages:
-	cmplGfx/lib/image.blend.ci:157: referenced as `copy`
-	cmplGfx/lib/image.blend.ci:130: referenced as `copy`
+	cmplGfx/lib/image.blend.ci:160: referenced as `copy`
+	cmplGfx/lib/image.blend.ci:133: referenced as `copy`
 }
 Image(copy: Image): Image: function {
 .kind: static function
 .base: `function`
 .size: 46
 .name: 'Image'
-.file: 'cmplGfx/lib/image.blend.ci:128'
+.file: 'cmplGfx/lib/image.blend.ci:131'
 .param .result: Image (size: 8, cast: variable(val))
 .param copy: Image (size: 8, cast: variable(val))
 .doc: 'Create an image by copying another one'
@@ -17221,7 +17270,7 @@ Image(copy: Image): Image: function {
 	return .result := result;
 }
 .instructions: (46 bytes)
-	cmplGfx/lib/image.blend.ci:129: (22 bytes): result: Image := Image.create(Image.width(copy), Image.height(copy), Image.depth(copy))
+	cmplGfx/lib/image.blend.ci:132: (22 bytes): result: Image := Image.create(Image.width(copy), Image.height(copy), Image.depth(copy))
 	<Image>  : dup.x64 sp(1)
 	<Image+?>: nfc(96) ;Image.width(image: Image): int32
 	<Image+?>: dup.x64 sp(2)
@@ -17229,7 +17278,7 @@ Image(copy: Image): Image: function {
 	<Image+?>: dup.x64 sp(3)
 	<Image+?>: nfc(98) ;Image.depth(image: Image): int32
 	<Image+?>: nfc(84) ;Image.create(width: int32, height: int32, depth: int32): Image
-	cmplGfx/lib/image.blend.ci:130: (21 bytes): copy(result, 0, 0, copy, null);
+	cmplGfx/lib/image.blend.ci:133: (21 bytes): copy(result, 0, 0, copy, null);
 	<Image+?>: dup.x64 sp(0)
 	<Image+?>: load.z32
 	<Image+?>: load.z32
@@ -17238,7 +17287,7 @@ Image(copy: Image): Image: function {
 	<Image+?>: load.ref <?> ;copy(image: Image, x: int32, y: int32, src: Image, roi: Rect): void
 	<Image+?>: call
 	<Image+?>: inc.sp(-28)
-	cmplGfx/lib/image.blend.ci:131: (3 bytes): return .result := result;
+	cmplGfx/lib/image.blend.ci:134: (3 bytes): return .result := result;
 	<Image+?>: set.x64 sp(5)
 	<Image+?>: ret
 .usages:
@@ -17248,7 +17297,7 @@ tile(image: Image, x: int32, y: int32, src: Image, roi: Rect): void: function {
 .base: `function`
 .size: 257
 .name: 'tile'
-.file: 'cmplGfx/lib/image.blend.ci:135'
+.file: 'cmplGfx/lib/image.blend.ci:138'
 .param .result: void (size: 0, cast: variable(void))
 .param image: Image (size: 8, cast: variable(val))
 .param x: int32 (size: 4, cast: variable(i32))
@@ -17281,9 +17330,9 @@ tile(image: Image, x: int32, y: int32, src: Image, roi: Rect): void: function {
 	}
 }
 .instructions: (257 bytes)
-	cmplGfx/lib/image.blend.ci:136: (114 bytes): rect: Rect := {...}
+	cmplGfx/lib/image.blend.ci:139: (114 bytes): rect: Rect := {...}
 	<tile>  : inc.sp(+16)
-	cmplGfx/lib/image.blend.ci:137: (22 bytes): rect.x := (roi) != null ? roi.x : 0;
+	cmplGfx/lib/image.blend.ci:140: (22 bytes): rect.x := (roi) != null ? roi.x : 0;
 	<tile+?>: dup.x32 sp(5)
 	<tile+?>: load.ref <?> ;null
 	<tile+?>: ceq.i32
@@ -17293,7 +17342,7 @@ tile(image: Image, x: int32, y: int32, src: Image, roi: Rect): void: function {
 	<tile+?>: jmp +5
 	<tile+?>: load.z32
 	<tile+?>: set.x32 sp(1)
-	cmplGfx/lib/image.blend.ci:138: (26 bytes): rect.y := (roi) != null ? roi.y : 0;
+	cmplGfx/lib/image.blend.ci:141: (26 bytes): rect.y := (roi) != null ? roi.y : 0;
 	<tile+?>: dup.x32 sp(5)
 	<tile+?>: load.ref <?> ;null
 	<tile+?>: ceq.i32
@@ -17304,7 +17353,7 @@ tile(image: Image, x: int32, y: int32, src: Image, roi: Rect): void: function {
 	<tile+?>: jmp +5
 	<tile+?>: load.z32
 	<tile+?>: set.x32 sp(2)
-	cmplGfx/lib/image.blend.ci:139: (31 bytes): rect.w := (roi) != null ? roi.w : Image.width(src);
+	cmplGfx/lib/image.blend.ci:142: (31 bytes): rect.w := (roi) != null ? roi.w : Image.width(src);
 	<tile+?>: dup.x32 sp(5)
 	<tile+?>: load.ref <?> ;null
 	<tile+?>: ceq.i32
@@ -17316,7 +17365,7 @@ tile(image: Image, x: int32, y: int32, src: Image, roi: Rect): void: function {
 	<tile+?>: dup.x64 sp(6)
 	<tile+?>: nfc(96) ;Image.width(image: Image): int32
 	<tile+?>: set.x32 sp(3)
-	cmplGfx/lib/image.blend.ci:140: (31 bytes): rect.h := (roi) != null ? roi.h : Image.height(src);
+	cmplGfx/lib/image.blend.ci:143: (31 bytes): rect.h := (roi) != null ? roi.h : Image.height(src);
 	<tile+?>: dup.x32 sp(5)
 	<tile+?>: load.ref <?> ;null
 	<tile+?>: ceq.i32
@@ -17328,7 +17377,7 @@ tile(image: Image, x: int32, y: int32, src: Image, roi: Rect): void: function {
 	<tile+?>: dup.x64 sp(6)
 	<tile+?>: nfc(97) ;Image.height(image: Image): int32
 	<tile+?>: set.x32 sp(4)
-	cmplGfx/lib/image.blend.ci:143: (26 bytes): if (!clip(src, &rect))
+	cmplGfx/lib/image.blend.ci:146: (26 bytes): if (!clip(src, &rect))
 	<tile+?>: load.z32
 	<tile+?>: dup.x64 sp(7)
 	<tile+?>: load.sp(+12)
@@ -17336,46 +17385,46 @@ tile(image: Image, x: int32, y: int32, src: Image, roi: Rect): void: function {
 	<tile+?>: call
 	<tile+?>: inc.sp(-12)
 	<tile+?>: jnz +9
-	cmplGfx/lib/image.blend.ci:144: (5 bytes): return;
+	cmplGfx/lib/image.blend.ci:147: (5 bytes): return;
 	<tile+?>: inc.sp(-16)
 	<tile+?>: ret
-	cmplGfx/lib/image.blend.ci:147: (17 bytes): if (x < 0)
+	cmplGfx/lib/image.blend.ci:150: (17 bytes): if (x < 0)
 	<tile+?>: dup.x32 sp(9)
 	<tile+?>: load.z32
 	<tile+?>: clt.i32
 	<tile+?>: jz +13
-	cmplGfx/lib/image.blend.ci:148: (9 bytes): x := -(-x % rect.w);
+	cmplGfx/lib/image.blend.ci:151: (9 bytes): x := -(-x % rect.w);
 	<tile+?>: dup.x32 sp(9)
 	<tile+?>: neg.i32
 	<tile+?>: dup.x32 sp(3)
 	<tile+?>: mod.i32
 	<tile+?>: neg.i32
 	<tile+?>: set.x32 sp(10)
-	cmplGfx/lib/image.blend.ci:150: (17 bytes): if (y < 0)
+	cmplGfx/lib/image.blend.ci:153: (17 bytes): if (y < 0)
 	<tile+?>: dup.x32 sp(8)
 	<tile+?>: load.z32
 	<tile+?>: clt.i32
 	<tile+?>: jz +13
-	cmplGfx/lib/image.blend.ci:151: (9 bytes): y := -(-y % rect.h);
+	cmplGfx/lib/image.blend.ci:154: (9 bytes): y := -(-y % rect.h);
 	<tile+?>: dup.x32 sp(8)
 	<tile+?>: neg.i32
 	<tile+?>: dup.x32 sp(4)
 	<tile+?>: mod.i32
 	<tile+?>: neg.i32
 	<tile+?>: set.x32 sp(9)
-	cmplGfx/lib/image.blend.ci:153: (6 bytes): width: int32 := Image.width(image)
+	cmplGfx/lib/image.blend.ci:156: (6 bytes): width: int32 := Image.width(image)
 	<tile+?>: dup.x64 sp(10)
 	<tile+?>: nfc(96) ;Image.width(image: Image): int32
-	cmplGfx/lib/image.blend.ci:154: (6 bytes): height: int32 := Image.height(image)
+	cmplGfx/lib/image.blend.ci:157: (6 bytes): height: int32 := Image.height(image)
 	<tile+?>: dup.x64 sp(11)
 	<tile+?>: nfc(97) ;Image.height(image: Image): int32
-	cmplGfx/lib/image.blend.ci:155: (66 bytes): for (j: int32 := y; j < height; j := j + rect.h)
+	cmplGfx/lib/image.blend.ci:158: (66 bytes): for (j: int32 := y; j < height; j := j + rect.h)
 	<tile+?>: dup.x32 sp(10)
 	<tile+?>: jmp +51
-	cmplGfx/lib/image.blend.ci:156: (44 bytes): for (i: int32 := x; i < width; i := i + rect.w)
+	cmplGfx/lib/image.blend.ci:159: (44 bytes): for (i: int32 := x; i < width; i := i + rect.w)
 	<tile+?>: dup.x32 sp(12)
 	<tile+?>: jmp +29
-	cmplGfx/lib/image.blend.ci:157: (22 bytes): copy(image, i, j, src, rect);
+	cmplGfx/lib/image.blend.ci:160: (22 bytes): copy(image, i, j, src, rect);
 	<tile+?>: dup.x64 sp(14)
 	<tile+?>: dup.x32 sp(2)
 	<tile+?>: dup.x32 sp(4)
@@ -17384,19 +17433,19 @@ tile(image: Image, x: int32, y: int32, src: Image, roi: Rect): void: function {
 	<tile+?>: load.ref <?> ;copy(image: Image, x: int32, y: int32, src: Image, roi: Rect): void
 	<tile+?>: call
 	<tile+?>: inc.sp(-28)
-	cmplGfx/lib/image.blend.ci:156: (3 bytes): i := i + rect.w
+	cmplGfx/lib/image.blend.ci:159: (3 bytes): i := i + rect.w
 	<tile+?>: dup.x32 sp(6)
 	<tile+?>: add.i32
-	cmplGfx/lib/image.blend.ci:156: (9 bytes): i < width
+	cmplGfx/lib/image.blend.ci:159: (9 bytes): i < width
 	<tile+?>: dup.x32 sp(0)
 	<tile+?>: dup.x32 sp(4)
 	<tile+?>: clt.i32
 	<tile+?>: jnz -30
 	<tile+?>: inc.sp(-4)
-	cmplGfx/lib/image.blend.ci:155: (3 bytes): j := j + rect.h
+	cmplGfx/lib/image.blend.ci:158: (3 bytes): j := j + rect.h
 	<tile+?>: dup.x32 sp(6)
 	<tile+?>: add.i32
-	cmplGfx/lib/image.blend.ci:155: (9 bytes): j < height
+	cmplGfx/lib/image.blend.ci:158: (9 bytes): j < height
 	<tile+?>: dup.x32 sp(0)
 	<tile+?>: dup.x32 sp(2)
 	<tile+?>: clt.i32
@@ -17411,7 +17460,7 @@ eval(image: Image, roi: Rect, aspect: float32, time: float32, eval(in: vec4f): v
 .base: `function`
 .size: 500
 .name: 'eval'
-.file: 'cmplGfx/lib/image.blend.ci:163'
+.file: 'cmplGfx/lib/image.blend.ci:166'
 .param .result: void (size: 0, cast: variable(void))
 .param image: Image (size: 8, cast: variable(val))
 .param roi: Rect (size: 4, cast: const variable(ref))
@@ -17447,9 +17496,9 @@ eval(image: Image, roi: Rect, aspect: float32, time: float32, eval(in: vec4f): v
 	}
 }
 .instructions: (500 bytes)
-	cmplGfx/lib/image.blend.ci:164: (114 bytes): rect: Rect := {...}
+	cmplGfx/lib/image.blend.ci:167: (114 bytes): rect: Rect := {...}
 	<eval>  : inc.sp(+16)
-	cmplGfx/lib/image.blend.ci:165: (22 bytes): rect.x := (roi) != null ? roi.x : 0;
+	cmplGfx/lib/image.blend.ci:168: (22 bytes): rect.x := (roi) != null ? roi.x : 0;
 	<eval+?>: dup.x32 sp(8)
 	<eval+?>: load.ref <?> ;null
 	<eval+?>: ceq.i32
@@ -17459,7 +17508,7 @@ eval(image: Image, roi: Rect, aspect: float32, time: float32, eval(in: vec4f): v
 	<eval+?>: jmp +5
 	<eval+?>: load.z32
 	<eval+?>: set.x32 sp(1)
-	cmplGfx/lib/image.blend.ci:166: (26 bytes): rect.y := (roi) != null ? roi.y : 0;
+	cmplGfx/lib/image.blend.ci:169: (26 bytes): rect.y := (roi) != null ? roi.y : 0;
 	<eval+?>: dup.x32 sp(8)
 	<eval+?>: load.ref <?> ;null
 	<eval+?>: ceq.i32
@@ -17470,7 +17519,7 @@ eval(image: Image, roi: Rect, aspect: float32, time: float32, eval(in: vec4f): v
 	<eval+?>: jmp +5
 	<eval+?>: load.z32
 	<eval+?>: set.x32 sp(2)
-	cmplGfx/lib/image.blend.ci:167: (31 bytes): rect.w := (roi) != null ? roi.w : Image.width(image);
+	cmplGfx/lib/image.blend.ci:170: (31 bytes): rect.w := (roi) != null ? roi.w : Image.width(image);
 	<eval+?>: dup.x32 sp(8)
 	<eval+?>: load.ref <?> ;null
 	<eval+?>: ceq.i32
@@ -17482,7 +17531,7 @@ eval(image: Image, roi: Rect, aspect: float32, time: float32, eval(in: vec4f): v
 	<eval+?>: dup.x64 sp(9)
 	<eval+?>: nfc(96) ;Image.width(image: Image): int32
 	<eval+?>: set.x32 sp(3)
-	cmplGfx/lib/image.blend.ci:168: (31 bytes): rect.h := (roi) != null ? roi.h : Image.height(image);
+	cmplGfx/lib/image.blend.ci:171: (31 bytes): rect.h := (roi) != null ? roi.h : Image.height(image);
 	<eval+?>: dup.x32 sp(8)
 	<eval+?>: load.ref <?> ;null
 	<eval+?>: ceq.i32
@@ -17494,7 +17543,7 @@ eval(image: Image, roi: Rect, aspect: float32, time: float32, eval(in: vec4f): v
 	<eval+?>: dup.x64 sp(9)
 	<eval+?>: nfc(97) ;Image.height(image: Image): int32
 	<eval+?>: set.x32 sp(4)
-	cmplGfx/lib/image.blend.ci:171: (26 bytes): if (!clip(image, &rect))
+	cmplGfx/lib/image.blend.ci:174: (26 bytes): if (!clip(image, &rect))
 	<eval+?>: load.z32
 	<eval+?>: dup.x64 sp(10)
 	<eval+?>: load.sp(+12)
@@ -17502,62 +17551,62 @@ eval(image: Image, roi: Rect, aspect: float32, time: float32, eval(in: vec4f): v
 	<eval+?>: call
 	<eval+?>: inc.sp(-12)
 	<eval+?>: jnz +9
-	cmplGfx/lib/image.blend.ci:172: (5 bytes): return;
+	cmplGfx/lib/image.blend.ci:175: (5 bytes): return;
 	<eval+?>: inc.sp(-16)
 	<eval+?>: ret
-	cmplGfx/lib/image.blend.ci:175: (7 bytes): w: float32 := Image.width(image)
+	cmplGfx/lib/image.blend.ci:178: (7 bytes): w: float32 := Image.width(image)
 	<eval+?>: dup.x64 sp(9)
 	<eval+?>: nfc(96) ;Image.width(image: Image): int32
 	<eval+?>: i32.2f32
-	cmplGfx/lib/image.blend.ci:176: (7 bytes): h: float32 := Image.height(image)
+	cmplGfx/lib/image.blend.ci:179: (7 bytes): h: float32 := Image.height(image)
 	<eval+?>: dup.x64 sp(10)
 	<eval+?>: nfc(97) ;Image.height(image: Image): int32
 	<eval+?>: i32.2f32
-	cmplGfx/lib/image.blend.ci:177: (15 bytes): if (aspect == (0))
+	cmplGfx/lib/image.blend.ci:180: (15 bytes): if (aspect == (0))
 	<eval+?>: dup.x32 sp(9)
 	<eval+?>: load.z32
 	<eval+?>: ceq.f32
 	<eval+?>: jz +11
-	cmplGfx/lib/image.blend.ci:178: (7 bytes): aspect := w / h;
+	cmplGfx/lib/image.blend.ci:181: (7 bytes): aspect := w / h;
 	<eval+?>: dup.x32 sp(1)
 	<eval+?>: dup.x32 sp(1)
 	<eval+?>: div.f32
 	<eval+?>: set.x32 sp(10)
-	cmplGfx/lib/image.blend.ci:180: (3 bytes): h := h * aspect;
+	cmplGfx/lib/image.blend.ci:183: (3 bytes): h := h * aspect;
 	<eval+?>: dup.x32 sp(9)
 	<eval+?>: mul.f32
-	cmplGfx/lib/image.blend.ci:181: (5 bytes): x1: int32 := rect.x + rect.w
+	cmplGfx/lib/image.blend.ci:184: (5 bytes): x1: int32 := rect.x + rect.w
 	<eval+?>: dup.x32 sp(2)
 	<eval+?>: dup.x32 sp(5)
 	<eval+?>: add.i32
-	cmplGfx/lib/image.blend.ci:182: (5 bytes): y1: int32 := rect.y + rect.h
+	cmplGfx/lib/image.blend.ci:185: (5 bytes): y1: int32 := rect.y + rect.h
 	<eval+?>: dup.x32 sp(4)
 	<eval+?>: dup.x32 sp(7)
 	<eval+?>: add.i32
-	cmplGfx/lib/image.blend.ci:183: (5 bytes): in: vec4f := vec4f(0, 0, 0, time)
+	cmplGfx/lib/image.blend.ci:186: (5 bytes): in: vec4f := vec4f(0, 0, 0, time)
 	<eval+?>: dup.x32 sp(10)
 	<eval+?>: load.z32
 	<eval+?>: load.z32
 	<eval+?>: load.z32
-	cmplGfx/lib/image.blend.ci:184: (308 bytes): for (y: int32 := rect.y; y < y1; y := y + 1)
+	cmplGfx/lib/image.blend.ci:187: (308 bytes): for (y: int32 := rect.y; y < y1; y := y + 1)
 	<eval+?>: dup.x32 sp(9)
 	<eval+?>: jmp +293
-	cmplGfx/lib/image.blend.ci:185: (8 bytes): in.y := (y) / h;
+	cmplGfx/lib/image.blend.ci:188: (8 bytes): in.y := (y) / h;
 	<eval+?>: dup.x32 sp(0)
 	<eval+?>: i32.2f32
 	<eval+?>: dup.x32 sp(8)
 	<eval+?>: div.f32
 	<eval+?>: set.x32 sp(3)
-	cmplGfx/lib/image.blend.ci:186: (277 bytes): for (x: int32 := rect.x; x < x1; x := x + 1)
+	cmplGfx/lib/image.blend.ci:189: (277 bytes): for (x: int32 := rect.x; x < x1; x := x + 1)
 	<eval+?>: dup.x32 sp(9)
 	<eval+?>: jmp +262
-	cmplGfx/lib/image.blend.ci:187: (8 bytes): in.x := (x) / w;
+	cmplGfx/lib/image.blend.ci:190: (8 bytes): in.x := (x) / w;
 	<eval+?>: dup.x32 sp(0)
 	<eval+?>: i32.2f32
 	<eval+?>: dup.x32 sp(10)
 	<eval+?>: div.f32
 	<eval+?>: set.x32 sp(3)
-	cmplGfx/lib/image.blend.ci:188: (246 bytes): set(image, x, y, argb(eval(in)));
+	cmplGfx/lib/image.blend.ci:191: (246 bytes): set(image, x, y, argb(eval(in)));
 	<eval+?>: dup.x64 sp(19)
 	<eval+?>: dup.x32 sp(2)
 	<eval+?>: dup.x32 sp(4)
@@ -17655,17 +17704,17 @@ eval(image: Image, roi: Rect, aspect: float32, time: float32, eval(in: vec4f): v
 	<eval+?>: set.x32 sp(5)
 	<eval+?>: inc.sp(-16)
 	<eval+?>: nfc(100) ;Image.set(image: Image, x: int32, y: int32, color: uint32): void
-	cmplGfx/lib/image.blend.ci:186: (4 bytes): x := x + 1
+	cmplGfx/lib/image.blend.ci:189: (4 bytes): x := x + 1
 	<eval+?>: inc.i32(+1)
-	cmplGfx/lib/image.blend.ci:186: (9 bytes): x < x1
+	cmplGfx/lib/image.blend.ci:189: (9 bytes): x < x1
 	<eval+?>: dup.x32 sp(0)
 	<eval+?>: dup.x32 sp(8)
 	<eval+?>: clt.i32
 	<eval+?>: jnz -263
 	<eval+?>: inc.sp(-4)
-	cmplGfx/lib/image.blend.ci:184: (4 bytes): y := y + 1
+	cmplGfx/lib/image.blend.ci:187: (4 bytes): y := y + 1
 	<eval+?>: inc.i32(+1)
-	cmplGfx/lib/image.blend.ci:184: (9 bytes): y < y1
+	cmplGfx/lib/image.blend.ci:187: (9 bytes): y < y1
 	<eval+?>: dup.x32 sp(0)
 	<eval+?>: dup.x32 sp(6)
 	<eval+?>: clt.i32
@@ -17690,7 +17739,7 @@ colorMap(image: Image, roi: Rect, lut: argb[256]): void: function {
 .param lut: argb[256] (size: 4, cast: const variable(ref))
 .doc: 'apply a color lookup table to each pixel defined by the `roi` on the `image`'
 .value: {
-	static if (true && (typename(Image.colorMap)) != null) {
+	static if ((preferNativeCalls) && (typename(Image.colorMap)) != null) {
 		return .result := Image.colorMap(image, roi, pointer(lut));
 	}
 	assert(Image.depth(image) == 32);
@@ -17881,7 +17930,7 @@ colorMap(image: Image, roi: Rect, lut: argb[256]): void: function {
 	<colorMap+?>: inc.sp(-4)
 	cmplGfx/lib/color.lookup.ci:29: (152 bytes): if (!useLuminosity)
 	<colorMap+?>: load.sp(+0)
-	<colorMap+?>: load.i8
+	<colorMap+?>: load.is8
 	<colorMap+?>: jnz +147
 	cmplGfx/lib/color.lookup.ci:31: (138 bytes): for (y: int32 := r.y; y < r.y + r.h; y := y + 1)
 	<colorMap+?>: dup.x32 sp(2)
@@ -17901,7 +17950,7 @@ colorMap(image: Image, roi: Rect, lut: argb[256]): void: function {
 	<colorMap+?>: b32.and 0xff
 	<colorMap+?>: mad.u32 4
 	<colorMap+?>: inc.i32(+2)
-	<colorMap+?>: load.i8
+	<colorMap+?>: load.iu8
 	<colorMap+?>: load.sp(+6)
 	<colorMap+?>: store.i8
 	cmplGfx/lib/color.lookup.ci:35: (22 bytes): col.g := lut[gch(col)].g;
@@ -17911,7 +17960,7 @@ colorMap(image: Image, roi: Rect, lut: argb[256]): void: function {
 	<colorMap+?>: b32.and 0xff
 	<colorMap+?>: mad.u32 4
 	<colorMap+?>: inc.i32(+1)
-	<colorMap+?>: load.i8
+	<colorMap+?>: load.iu8
 	<colorMap+?>: load.sp(+5)
 	<colorMap+?>: store.i8
 	cmplGfx/lib/color.lookup.ci:36: (16 bytes): col.b := lut[bch(col)].b;
@@ -17919,7 +17968,7 @@ colorMap(image: Image, roi: Rect, lut: argb[256]): void: function {
 	<colorMap+?>: dup.x32 sp(1)
 	<colorMap+?>: b32.and 0xff
 	<colorMap+?>: mad.u32 4
-	<colorMap+?>: load.i8
+	<colorMap+?>: load.iu8
 	<colorMap+?>: load.sp(+4)
 	<colorMap+?>: store.i8
 	cmplGfx/lib/color.lookup.ci:37: (12 bytes): set(image, x, y, col);
@@ -18212,7 +18261,7 @@ colorMat(image: Image, roi: Rect, mat: mat4f): void: function {
 .param mat: mat4f (size: 4, cast: const variable(ref))
 .doc: 'apply a color matrix to each pixel defined by the `roi` on the `image`'
 .value: {
-	static if (true && (typename(Image.colorMat)) != null) {
+	static if ((preferNativeCalls) && (typename(Image.colorMat)) != null) {
 		return .result := Image.colorMat(image, roi, mat.data);
 	}
 	assert(Image.depth(image) == 32);
@@ -18225,7 +18274,6 @@ colorMat(image: Image, roi: Rect, mat: mat4f): void: function {
 	if (!clip(image, &r)) {
 		return;
 	}
-	p(x: int32, y: int32): int32 := x * 4 + y;
 	m00: int32 := (65536) * mat.xx;
 	m01: int32 := (65536) * mat.xy;
 	m02: int32 := (65536) * mat.xz;
@@ -18331,27 +18379,27 @@ colorMat(image: Image, roi: Rect, mat: mat4f): void: function {
 	cmplGfx/lib/color.matrix.ci:17: (5 bytes): return;
 	<colorMat+?>: inc.sp(-16)
 	<colorMat+?>: ret
-	cmplGfx/lib/color.matrix.ci:21: (10 bytes): m00: int32 := (65536) * mat.xx
+	cmplGfx/lib/color.matrix.ci:20: (10 bytes): m00: int32 := (65536) * mat.xx
 	<colorMat+?>: load.f32 65536.000000
 	<colorMat+?>: dup.x32 sp(6)
 	<colorMat+?>: load.i32
 	<colorMat+?>: mul.f32
 	<colorMat+?>: f32.2i32
-	cmplGfx/lib/color.matrix.ci:22: (14 bytes): m01: int32 := (65536) * mat.xy
+	cmplGfx/lib/color.matrix.ci:21: (14 bytes): m01: int32 := (65536) * mat.xy
 	<colorMat+?>: load.f32 65536.000000
 	<colorMat+?>: dup.x32 sp(7)
 	<colorMat+?>: inc.i32(+4)
 	<colorMat+?>: load.i32
 	<colorMat+?>: mul.f32
 	<colorMat+?>: f32.2i32
-	cmplGfx/lib/color.matrix.ci:23: (14 bytes): m02: int32 := (65536) * mat.xz
+	cmplGfx/lib/color.matrix.ci:22: (14 bytes): m02: int32 := (65536) * mat.xz
 	<colorMat+?>: load.f32 65536.000000
 	<colorMat+?>: dup.x32 sp(8)
 	<colorMat+?>: inc.i32(+8)
 	<colorMat+?>: load.i32
 	<colorMat+?>: mul.f32
 	<colorMat+?>: f32.2i32
-	cmplGfx/lib/color.matrix.ci:24: (21 bytes): m03: int32 := (256 * 65536) * mat.xw
+	cmplGfx/lib/color.matrix.ci:23: (21 bytes): m03: int32 := (256 * 65536) * mat.xw
 	<colorMat+?>: load.c32 256
 	<colorMat+?>: load.c32 65536
 	<colorMat+?>: mul.i32
@@ -18361,28 +18409,28 @@ colorMat(image: Image, roi: Rect, mat: mat4f): void: function {
 	<colorMat+?>: load.i32
 	<colorMat+?>: mul.f32
 	<colorMat+?>: f32.2i32
-	cmplGfx/lib/color.matrix.ci:26: (14 bytes): m10: int32 := (65536) * mat.yx
+	cmplGfx/lib/color.matrix.ci:25: (14 bytes): m10: int32 := (65536) * mat.yx
 	<colorMat+?>: load.f32 65536.000000
 	<colorMat+?>: dup.x32 sp(10)
 	<colorMat+?>: inc.i32(+16)
 	<colorMat+?>: load.i32
 	<colorMat+?>: mul.f32
 	<colorMat+?>: f32.2i32
-	cmplGfx/lib/color.matrix.ci:27: (14 bytes): m11: int32 := (65536) * mat.yy
+	cmplGfx/lib/color.matrix.ci:26: (14 bytes): m11: int32 := (65536) * mat.yy
 	<colorMat+?>: load.f32 65536.000000
 	<colorMat+?>: dup.x32 sp(11)
 	<colorMat+?>: inc.i32(+20)
 	<colorMat+?>: load.i32
 	<colorMat+?>: mul.f32
 	<colorMat+?>: f32.2i32
-	cmplGfx/lib/color.matrix.ci:28: (14 bytes): m12: int32 := (65536) * mat.yz
+	cmplGfx/lib/color.matrix.ci:27: (14 bytes): m12: int32 := (65536) * mat.yz
 	<colorMat+?>: load.f32 65536.000000
 	<colorMat+?>: dup.x32 sp(12)
 	<colorMat+?>: inc.i32(+24)
 	<colorMat+?>: load.i32
 	<colorMat+?>: mul.f32
 	<colorMat+?>: f32.2i32
-	cmplGfx/lib/color.matrix.ci:29: (21 bytes): m13: int32 := (256 * 65536) * mat.yw
+	cmplGfx/lib/color.matrix.ci:28: (21 bytes): m13: int32 := (256 * 65536) * mat.yw
 	<colorMat+?>: load.c32 256
 	<colorMat+?>: load.c32 65536
 	<colorMat+?>: mul.i32
@@ -18392,28 +18440,28 @@ colorMat(image: Image, roi: Rect, mat: mat4f): void: function {
 	<colorMat+?>: load.i32
 	<colorMat+?>: mul.f32
 	<colorMat+?>: f32.2i32
-	cmplGfx/lib/color.matrix.ci:31: (14 bytes): m20: int32 := (65536) * mat.zx
+	cmplGfx/lib/color.matrix.ci:30: (14 bytes): m20: int32 := (65536) * mat.zx
 	<colorMat+?>: load.f32 65536.000000
 	<colorMat+?>: dup.x32 sp(14)
 	<colorMat+?>: inc.i32(+32)
 	<colorMat+?>: load.i32
 	<colorMat+?>: mul.f32
 	<colorMat+?>: f32.2i32
-	cmplGfx/lib/color.matrix.ci:32: (14 bytes): m21: int32 := (65536) * mat.zy
+	cmplGfx/lib/color.matrix.ci:31: (14 bytes): m21: int32 := (65536) * mat.zy
 	<colorMat+?>: load.f32 65536.000000
 	<colorMat+?>: dup.x32 sp(15)
 	<colorMat+?>: inc.i32(+36)
 	<colorMat+?>: load.i32
 	<colorMat+?>: mul.f32
 	<colorMat+?>: f32.2i32
-	cmplGfx/lib/color.matrix.ci:33: (14 bytes): m22: int32 := (65536) * mat.zz
+	cmplGfx/lib/color.matrix.ci:32: (14 bytes): m22: int32 := (65536) * mat.zz
 	<colorMat+?>: load.f32 65536.000000
 	<colorMat+?>: dup.x32 sp(16)
 	<colorMat+?>: inc.i32(+40)
 	<colorMat+?>: load.i32
 	<colorMat+?>: mul.f32
 	<colorMat+?>: f32.2i32
-	cmplGfx/lib/color.matrix.ci:34: (21 bytes): m23: int32 := (256 * 65536) * mat.zw
+	cmplGfx/lib/color.matrix.ci:33: (21 bytes): m23: int32 := (256 * 65536) * mat.zw
 	<colorMat+?>: load.c32 256
 	<colorMat+?>: load.c32 65536
 	<colorMat+?>: mul.i32
@@ -18423,29 +18471,29 @@ colorMat(image: Image, roi: Rect, mat: mat4f): void: function {
 	<colorMat+?>: load.i32
 	<colorMat+?>: mul.f32
 	<colorMat+?>: f32.2i32
-	cmplGfx/lib/color.matrix.ci:36: (289 bytes): for (y: int32 := r.y; y < r.y + r.h; y := y + 1)
+	cmplGfx/lib/color.matrix.ci:35: (289 bytes): for (y: int32 := r.y; y < r.y + r.h; y := y + 1)
 	<colorMat+?>: dup.x32 sp(13)
 	<colorMat+?>: jmp +271
-	cmplGfx/lib/color.matrix.ci:37: (263 bytes): for (x: int32 := r.x; x < r.x + r.w; x := x + 1)
+	cmplGfx/lib/color.matrix.ci:36: (263 bytes): for (x: int32 := r.x; x < r.x + r.w; x := x + 1)
 	<colorMat+?>: dup.x32 sp(13)
 	<colorMat+?>: jmp +245
-	cmplGfx/lib/color.matrix.ci:38: (10 bytes): col: argb := argb(Image.get(image, x, y))
+	cmplGfx/lib/color.matrix.ci:37: (10 bytes): col: argb := argb(Image.get(image, x, y))
 	<colorMat+?>: dup.x64 sp(21)
 	<colorMat+?>: dup.x32 sp(2)
 	<colorMat+?>: dup.x32 sp(4)
 	<colorMat+?>: nfc(99) ;Image.get(image: Image, x: int32, y: int32): int32
-	cmplGfx/lib/color.matrix.ci:39: (6 bytes): r: int32 := rch(col)
+	cmplGfx/lib/color.matrix.ci:38: (6 bytes): r: int32 := rch(col)
 	<colorMat+?>: dup.x32 sp(0)
 	<colorMat+?>: b32.shr 0x10
 	<colorMat+?>: b32.and 0xff
-	cmplGfx/lib/color.matrix.ci:40: (6 bytes): g: int32 := gch(col)
+	cmplGfx/lib/color.matrix.ci:39: (6 bytes): g: int32 := gch(col)
 	<colorMat+?>: dup.x32 sp(1)
 	<colorMat+?>: b32.shr 0x08
 	<colorMat+?>: b32.and 0xff
-	cmplGfx/lib/color.matrix.ci:41: (4 bytes): b: int32 := bch(col)
+	cmplGfx/lib/color.matrix.ci:40: (4 bytes): b: int32 := bch(col)
 	<colorMat+?>: dup.x32 sp(2)
 	<colorMat+?>: b32.and 0xff
-	cmplGfx/lib/color.matrix.ci:42: (65 bytes): col.r := (sat_s8((r * m00 + g * m01 + b * m02 + m03) >> 16));
+	cmplGfx/lib/color.matrix.ci:41: (65 bytes): col.r := (sat_s8((r * m00 + g * m01 + b * m02 + m03) >> 16));
 	<colorMat+?>: dup.x32 sp(2)
 	<colorMat+?>: dup.x32 sp(18)
 	<colorMat+?>: mul.i32
@@ -18476,7 +18524,7 @@ colorMat(image: Image, roi: Rect, mat: mat4f): void: function {
 	<colorMat+?>: set.x32 sp(1)
 	<colorMat+?>: load.sp(+18)
 	<colorMat+?>: store.i8
-	cmplGfx/lib/color.matrix.ci:43: (65 bytes): col.g := (sat_s8((r * m10 + g * m11 + b * m12 + m13) >> 16));
+	cmplGfx/lib/color.matrix.ci:42: (65 bytes): col.g := (sat_s8((r * m10 + g * m11 + b * m12 + m13) >> 16));
 	<colorMat+?>: dup.x32 sp(2)
 	<colorMat+?>: dup.x32 sp(14)
 	<colorMat+?>: mul.i32
@@ -18507,7 +18555,7 @@ colorMat(image: Image, roi: Rect, mat: mat4f): void: function {
 	<colorMat+?>: set.x32 sp(1)
 	<colorMat+?>: load.sp(+17)
 	<colorMat+?>: store.i8
-	cmplGfx/lib/color.matrix.ci:44: (65 bytes): col.b := (sat_s8((r * m20 + g * m21 + b * m22 + m23) >> 16));
+	cmplGfx/lib/color.matrix.ci:43: (65 bytes): col.b := (sat_s8((r * m20 + g * m21 + b * m22 + m23) >> 16));
 	<colorMat+?>: dup.x32 sp(2)
 	<colorMat+?>: dup.x32 sp(10)
 	<colorMat+?>: mul.i32
@@ -18538,16 +18586,16 @@ colorMat(image: Image, roi: Rect, mat: mat4f): void: function {
 	<colorMat+?>: set.x32 sp(1)
 	<colorMat+?>: load.sp(+16)
 	<colorMat+?>: store.i8
-	cmplGfx/lib/color.matrix.ci:45: (12 bytes): set(image, x, y, col);
+	cmplGfx/lib/color.matrix.ci:44: (12 bytes): set(image, x, y, col);
 	<colorMat+?>: dup.x64 sp(25)
 	<colorMat+?>: dup.x32 sp(6)
 	<colorMat+?>: dup.x32 sp(8)
 	<colorMat+?>: dup.x32 sp(7)
 	<colorMat+?>: nfc(100) ;Image.set(image: Image, x: int32, y: int32, color: uint32): void
 	<colorMat+?>: inc.sp(-16)
-	cmplGfx/lib/color.matrix.ci:37: (4 bytes): x := x + 1
+	cmplGfx/lib/color.matrix.ci:36: (4 bytes): x := x + 1
 	<colorMat+?>: inc.i32(+1)
-	cmplGfx/lib/color.matrix.ci:37: (12 bytes): x < r.x + r.w
+	cmplGfx/lib/color.matrix.ci:36: (12 bytes): x < r.x + r.w
 	<colorMat+?>: dup.x32 sp(0)
 	<colorMat+?>: dup.x32 sp(15)
 	<colorMat+?>: dup.x32 sp(18)
@@ -18555,9 +18603,9 @@ colorMat(image: Image, roi: Rect, mat: mat4f): void: function {
 	<colorMat+?>: clt.i32
 	<colorMat+?>: jnz -249
 	<colorMat+?>: inc.sp(-4)
-	cmplGfx/lib/color.matrix.ci:36: (4 bytes): y := y + 1
+	cmplGfx/lib/color.matrix.ci:35: (4 bytes): y := y + 1
 	<colorMat+?>: inc.i32(+1)
-	cmplGfx/lib/color.matrix.ci:36: (12 bytes): y < r.y + r.h
+	cmplGfx/lib/color.matrix.ci:35: (12 bytes): y < r.y + r.h
 	<colorMat+?>: dup.x32 sp(0)
 	<colorMat+?>: dup.x32 sp(15)
 	<colorMat+?>: dup.x32 sp(18)
@@ -18584,7 +18632,7 @@ transform(image: Image, rect: Rect, src: Image, roi: Rect, interpolate: int32, m
 .param mat: mat4f (size: 4, cast: const variable(ref))
 .doc: 'Copy one image to another using a transformation matrix [scale, rotate, translate, shear, perspective, etc]'
 .value: {
-	static if (true && (typename(Image.transform)) != null) {
+	static if ((preferNativeCalls) && (typename(Image.transform)) != null) {
 		return .result := Image.transform(image, rect, src, roi, interpolate, pointer(mat.data));
 	}
 	assert(Image.depth(image) == Image.depth(src));
@@ -19238,12 +19286,12 @@ Image(image: Image, width: int32, height: int32, align: int32, maxScale: float64
 	<Image+?>: load.f64 1.000000
 	cmplGfx/lib/image.transform.ci:95: (176 bytes): if (fitWidth && fitHeight)
 	<Image+?>: load.sp(+12)
-	<Image+?>: load.i8
+	<Image+?>: load.is8
 	<Image+?>: dup.x32 sp(0)
 	<Image+?>: jz +13
 	<Image+?>: inc.sp(-4)
 	<Image+?>: load.sp(+8)
-	<Image+?>: load.i8
+	<Image+?>: load.is8
 	<Image+?>: jz +108
 	cmplGfx/lib/image.transform.ci:96: (11 bytes): widthScale: float64 := (width) / float64(Image.width(image))
 	<Image+?>: dup.x32 sp(11)
@@ -19295,7 +19343,7 @@ Image(image: Image, width: int32, height: int32, align: int32, maxScale: float64
 	<Image+?>: jmp +52
 	cmplGfx/lib/image.transform.ci:104: (48 bytes): if (fitWidth)
 	<Image+?>: load.sp(+12)
-	<Image+?>: load.i8
+	<Image+?>: load.is8
 	<Image+?>: jz +21
 	cmplGfx/lib/image.transform.ci:105: (13 bytes): scale := (width) / float64(Image.width(image));
 	<Image+?>: dup.x32 sp(11)
@@ -19308,7 +19356,7 @@ Image(image: Image, width: int32, height: int32, align: int32, maxScale: float64
 	<Image+?>: jmp +26
 	cmplGfx/lib/image.transform.ci:107: (22 bytes): if (fitHeight)
 	<Image+?>: load.sp(+8)
-	<Image+?>: load.i8
+	<Image+?>: load.is8
 	<Image+?>: jz +17
 	cmplGfx/lib/image.transform.ci:108: (13 bytes): scale := (height) / float64(Image.height(image));
 	<Image+?>: dup.x32 sp(10)
@@ -19329,7 +19377,7 @@ Image(image: Image, width: int32, height: int32, align: int32, maxScale: float64
 	<Image+?>: load.z64
 	cmplGfx/lib/image.transform.ci:116: (81 bytes): if (fitWidth || alignVertical == center)
 	<Image+?>: load.sp(+20)
-	<Image+?>: load.i8
+	<Image+?>: load.is8
 	<Image+?>: dup.x32 sp(0)
 	<Image+?>: jnz +12
 	<Image+?>: inc.sp(-4)
@@ -19369,7 +19417,7 @@ Image(image: Image, width: int32, height: int32, align: int32, maxScale: float64
 	<Image+?>: load.z64
 	cmplGfx/lib/image.transform.ci:124: (81 bytes): if (fitHeight || alignHorizontal == center)
 	<Image+?>: load.sp(+24)
-	<Image+?>: load.i8
+	<Image+?>: load.is8
 	<Image+?>: dup.x32 sp(0)
 	<Image+?>: jnz +12
 	<Image+?>: inc.sp(-4)
@@ -19593,7 +19641,7 @@ blur(image: Image, radius: int32, sigma: float64): void: function {
 .param sigma: float64 (size: 8, cast: variable(f64))
 .doc: 'emulated implementation of blur function'
 .value: {
-	static if (true && (typename(Image.blur)) != null) {
+	static if ((preferNativeCalls) && (typename(Image.blur)) != null) {
 		return .result := Image.blur(image, radius, sigma);
 	}
 	static gauss(x: float64, sigma: float64): float64 := {
@@ -20104,7 +20152,7 @@ fillRect(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, incl: int32, 
 .param color: uint32 (size: 4, cast: variable(u32))
 .doc: 'Fill a rectangle on the `image` specified by the coordinates with the given `color`'
 .value: {
-	static if (true && (typename(Image.fillRect)) != null) {
+	static if ((preferNativeCalls) && (typename(Image.fillRect)) != null) {
 		return .result := Image.fillRect(image, x0, y0, x1, y1, incl, color);
 	}
 	if (x0 > x1) {
@@ -21377,7 +21425,7 @@ drawLineIncl(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, smooth: b
 	<drawLineIncl+?>: set.x32 sp(10)
 	cmplGfx/lib/image.draw.ci:214: (62 bytes): if (!smooth)
 	<drawLineIncl+?>: load.sp(+20)
-	<drawLineIncl+?>: load.i8
+	<drawLineIncl+?>: load.is8
 	<drawLineIncl+?>: jnz +57
 	cmplGfx/lib/image.draw.ci:215: (4 bytes): y := y + 32768;
 	<drawLineIncl+?>: inc.i32(+32768)
@@ -21696,7 +21744,7 @@ drawLineIncl(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, smooth: b
 	<drawLineIncl+?>: set.x32 sp(9)
 	cmplGfx/lib/image.draw.ci:246: (62 bytes): if (!smooth)
 	<drawLineIncl+?>: load.sp(+20)
-	<drawLineIncl+?>: load.i8
+	<drawLineIncl+?>: load.is8
 	<drawLineIncl+?>: jnz +57
 	cmplGfx/lib/image.draw.ci:247: (4 bytes): x := x + 32768;
 	<drawLineIncl+?>: inc.i32(+32768)
@@ -22121,7 +22169,7 @@ drawBezier(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, x2: int32, 
 	<drawBezier+?>: dup.x32 sp(20)
 	<drawBezier+?>: dup.x32 sp(20)
 	<drawBezier+?>: load.sp(+72)
-	<drawBezier+?>: load.i8
+	<drawBezier+?>: load.is8
 	<drawBezier+?>: dup.x32 sp(18)
 	<drawBezier+?>: load.ref <?> ;drawLineIncl(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, smooth: bool, color: uint32): void
 	<drawBezier+?>: call
@@ -22174,7 +22222,7 @@ drawBezier(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, x2: int32, 
 	<drawBezier+?>: sub.i32
 	<drawBezier+?>: set.x32 sp(1)
 	<drawBezier+?>: load.sp(+80)
-	<drawBezier+?>: load.i8
+	<drawBezier+?>: load.is8
 	<drawBezier+?>: dup.x32 sp(20)
 	<drawBezier+?>: load.ref <?> ;drawLineIncl(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, smooth: bool, color: uint32): void
 	<drawBezier+?>: call
@@ -22326,7 +22374,7 @@ drawBezier(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, x2: int32, 
 	<drawBezier+?>: dup.x32 sp(24)
 	<drawBezier+?>: dup.x32 sp(24)
 	<drawBezier+?>: load.sp(+80)
-	<drawBezier+?>: load.i8
+	<drawBezier+?>: load.is8
 	<drawBezier+?>: dup.x32 sp(20)
 	<drawBezier+?>: load.ref <?> ;drawLineIncl(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, smooth: bool, color: uint32): void
 	<drawBezier+?>: call
@@ -22379,7 +22427,7 @@ drawBezier(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, x2: int32, 
 	<drawBezier+?>: sub.i32
 	<drawBezier+?>: set.x32 sp(1)
 	<drawBezier+?>: load.sp(+88)
-	<drawBezier+?>: load.i8
+	<drawBezier+?>: load.is8
 	<drawBezier+?>: dup.x32 sp(22)
 	<drawBezier+?>: load.ref <?> ;drawLineIncl(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, smooth: bool, color: uint32): void
 	<drawBezier+?>: call
@@ -24678,12 +24726,12 @@ Gui.font: Image {
 .field .cstr: char (size: 4, cast: static const typename(arr))
 .field emit: function (size: 0, cast: static const typename(void))
 .field halt: function (size: 0, cast: static const inline)
+.field preferNativeCalls: int64 (size: 0, cast: static const i64)
 .field raise: function (size: 0, cast: static const inline)
 .field tryExec: function (size: 0, cast: static const inline)
 .field System: typename (size: 0, cast: static const typename(void))
 .field true: bool (size: 0, cast: static const val)
 .field false: bool (size: 0, cast: static const val)
-.field fastNativeCalls: typename (size: 0, cast: inline)
 .field byte: typename (size: 0, cast: inline)
 .field float: typename (size: 0, cast: inline)
 .field double: typename (size: 0, cast: inline)
@@ -24896,7 +24944,7 @@ Gui.font: Image {
 .field Image: function (size: 163, cast: static function)
 .field Image: function (size: 0, cast: inline)
 .field blend: function (size: 551, cast: static function)
-.field blend: function (size: 71, cast: static function)
+.field blend: function (size: 93, cast: static function)
 .field blend: function (size: 134, cast: static function)
 .field blendAlpha: function (size: 54, cast: static function)
 .field blendDstAlpha: function (size: 56, cast: static function)
@@ -24944,9 +24992,6 @@ Gui.font: Image {
 .field .main: function (size: 621, cast: static function)
 .value: {
 	{
-		static if ((typename(fastNativeCalls)) == null) {
-			fastNativeCalls: typename := true;
-		}
 		byte: typename := uint8;
 		float: typename := float32;
 		double: typename := float64;
@@ -25255,19 +25300,19 @@ Gui.font: Image {
 				return .result := sign * y;
 			};
 			static sin(x: float64): float64 := {
-				static if (true && (typename(float64.sin)) != null) {
+				static if ((preferNativeCalls) && (typename(float64.sin)) != null) {
 					return .result := float64.sin(x);
 				}
 				return .result := sinCos(x, 0);
 			};
 			static cos(x: float64): float64 := {
-				static if (true && (typename(float64.cos)) != null) {
+				static if ((preferNativeCalls) && (typename(float64.cos)) != null) {
 					return .result := float64.cos(x);
 				}
 				return .result := sinCos(abs(x), 1);
 			};
 			static tan(x: float64): float64 := {
-				static if (true && (typename(float64.tan)) != null) {
+				static if ((preferNativeCalls) && (typename(float64.tan)) != null) {
 					return .result := float64.tan(x);
 				}
 				if (x == (0)) {
@@ -25282,7 +25327,7 @@ Gui.font: Image {
 				return .result := tanCot(x, 0);
 			};
 			static cot(x: float64): float64 := {
-				static if (true && (typename(float64.cot)) != null) {
+				static if ((preferNativeCalls) && (typename(float64.cot)) != null) {
 					return .result := float64.cot(x);
 				}
 				if (x == (0)) {
@@ -26213,7 +26258,7 @@ Gui.font: Image {
 		};
 		Image(const fileName: char[*]): Image := Image(fileName, 32);
 		static blend(image: Image, x0: int32, y0: int32, const src: Image, const roi: Rect, extra: pointer, blend(extra: pointer, base: argb, with: argb): argb): void := {
-			static if (true && (typename(Image.blend)) != null) {
+			static if ((preferNativeCalls) && (typename(Image.blend)) != null) {
 				return .result := Image.blend(image, x0, y0, src, roi, extra, pointer(blend));
 			}
 			r: Rect := {
@@ -26262,6 +26307,9 @@ Gui.font: Image {
 			}
 		};
 		static blend(image: Image, x0: int32, y0: int32, const src: Image, const roi: Rect, blend(base: vec4f, with: vec4f): vec4f): void := {
+			static if ((preferNativeCalls) && (typename(Image.blend.blendVec4f)) != null) {
+				return .result := Image.blend(image, x0, y0, src, roi, blend, Image.blend.blendVec4f);
+			}
 			static blendVec4f(blend(base: vec4f, with: vec4f): vec4f, base: argb, with: argb): argb := {
 				return .result := argb(blend(vec4f(base), vec4f(with)));
 			};
@@ -26271,22 +26319,22 @@ Gui.font: Image {
 			return .result := blend(image, x0, y0, src, roi, blend, blendVec4f);
 		};
 		static blend(image: Image, const roi: Rect, col: argb): void := {
-			static if (true && (typename(Image.blend.color)) != null) {
+			static if ((preferNativeCalls) && (typename(Image.blend.color)) != null) {
 				return .result := Image.blend(image, (roi) != null ? roi.x : 0, (roi) != null ? roi.y : 0, image, roi, col, Image.blend.color);
 			}
 			static blender(const color: argb, base: argb, with: argb): argb := {
 				alpha: int32 := ach(color);
 				return .result := {
-			.result.b := (mix_s8(alpha, bch(color), bch(with)));
-			.result.g := (mix_s8(alpha, gch(color), gch(with)));
-			.result.r := (mix_s8(alpha, rch(color), rch(with)));
+			.result.b := (mix_s8(alpha, bch(color), bch(base)));
+			.result.g := (mix_s8(alpha, gch(color), gch(base)));
+			.result.r := (mix_s8(alpha, rch(color), rch(base)));
 			.result.a := (alpha);
 		};
 			};
 			return .result := blend(image, (roi) != null ? roi.x : 0, (roi) != null ? roi.y : 0, image, roi, col, blender);
 		};
 		static blendAlpha(image: Image, x: int32, y: int32, const src: Image, const roi: Rect, alpha: int32): void := {
-			static if (true && (typename(Image.blend.alpha)) != null) {
+			static if ((preferNativeCalls) && (typename(Image.blend.alpha)) != null) {
 				return .result := Image.blend(image, x, y, src, roi, alpha, Image.blend.alpha);
 			}
 			static blender(const alpha: int32, base: argb, with: argb): argb := {
@@ -26300,7 +26348,7 @@ Gui.font: Image {
 			return .result := blend(image, x, y, src, roi, alpha, blender);
 		};
 		static blendDstAlpha(image: Image, x: int32, y: int32, const src: Image, const roi: Rect): void := {
-			static if (true && (typename(Image.blend.dstAlpha)) != null) {
+			static if ((preferNativeCalls) && (typename(Image.blend.dstAlpha)) != null) {
 				return .result := Image.blend(image, x, y, src, roi, null, Image.blend.dstAlpha);
 			}
 			static blender(null: pointer, base: argb, with: argb): argb := {
@@ -26374,7 +26422,7 @@ Gui.font: Image {
 			}
 		};
 		static colorMap(image: Image, const roi: Rect, const lut: argb[256]): void := {
-			static if (true && (typename(Image.colorMap)) != null) {
+			static if ((preferNativeCalls) && (typename(Image.colorMap)) != null) {
 				return .result := Image.colorMap(image, roi, pointer(lut));
 			}
 			assert(Image.depth(image) == 32);
@@ -26456,7 +26504,7 @@ Gui.font: Image {
 			}
 		};
 		static colorMat(image: Image, const roi: Rect, const mat: mat4f): void := {
-			static if (true && (typename(Image.colorMat)) != null) {
+			static if ((preferNativeCalls) && (typename(Image.colorMat)) != null) {
 				return .result := Image.colorMat(image, roi, mat.data);
 			}
 			assert(Image.depth(image) == 32);
@@ -26469,7 +26517,6 @@ Gui.font: Image {
 			if (!clip(image, &r)) {
 				return;
 			}
-			p(x: int32, y: int32): int32 := x * 4 + y;
 			m00: int32 := (65536) * mat.xx;
 			m01: int32 := (65536) * mat.xy;
 			m02: int32 := (65536) * mat.xz;
@@ -26496,7 +26543,7 @@ Gui.font: Image {
 			}
 		};
 		static transform(image: Image, const rect: Rect, src: Image, const roi: Rect, interpolate: int32, const mat: mat4f): void := {
-			static if (true && (typename(Image.transform)) != null) {
+			static if ((preferNativeCalls) && (typename(Image.transform)) != null) {
 				return .result := Image.transform(image, rect, src, roi, interpolate, pointer(mat.data));
 			}
 			assert(Image.depth(image) == Image.depth(src));
@@ -26626,7 +26673,7 @@ Gui.font: Image {
 		Image(const fileName: char[*], width: int32, height: int32, depth: int32, align: int32): Image := Image(fileName, width, height, depth, align, Math.inf);
 		Image(const fileName: char[*], width: int32, height: int32, depth: int32): Image := Image(fileName, width, height, depth, -1, Math.inf);
 		static blur(image: Image, radius: int32, sigma: float64): void := {
-			static if (true && (typename(Image.blur)) != null) {
+			static if ((preferNativeCalls) && (typename(Image.blur)) != null) {
 				return .result := Image.blur(image, radius, sigma);
 			}
 			static gauss(x: float64, sigma: float64): float64 := {
@@ -26690,7 +26737,7 @@ Gui.font: Image {
 			Image.destroy(tmp);
 		};
 		static fillRect(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, incl: int32, color: uint32): void := {
-			static if (true && (typename(Image.fillRect)) != null) {
+			static if ((preferNativeCalls) && (typename(Image.fillRect)) != null) {
 				return .result := Image.fillRect(image, x0, y0, x1, y1, incl, color);
 			}
 			if (x0 > x1) {
@@ -27727,13 +27774,13 @@ cmplGfx/gfxlib.ci:19: clip: function(<clip>)
 cmplGfx/lib/image.ci:5: Image: function(<Image>)
 cmplGfx/lib/image.blend.ci:2: blend: function(<blend>)
 cmplGfx/lib/image.blend.ci:60: blend: function(<blend>)
-cmplGfx/lib/image.blend.ci:71: blend: function(<blend>)
-cmplGfx/lib/image.blend.ci:88: blendAlpha: function(<blendAlpha>)
-cmplGfx/lib/image.blend.ci:105: blendDstAlpha: function(<blendDstAlpha>)
-cmplGfx/lib/image.blend.ci:123: copy: function(<copy>)
-cmplGfx/lib/image.blend.ci:128: Image: function(<Image>)
-cmplGfx/lib/image.blend.ci:135: tile: function(<tile>)
-cmplGfx/lib/image.blend.ci:163: eval: function(<eval>)
+cmplGfx/lib/image.blend.ci:74: blend: function(<blend>)
+cmplGfx/lib/image.blend.ci:91: blendAlpha: function(<blendAlpha>)
+cmplGfx/lib/image.blend.ci:108: blendDstAlpha: function(<blendDstAlpha>)
+cmplGfx/lib/image.blend.ci:126: copy: function(<copy>)
+cmplGfx/lib/image.blend.ci:131: Image: function(<Image>)
+cmplGfx/lib/image.blend.ci:138: tile: function(<tile>)
+cmplGfx/lib/image.blend.ci:166: eval: function(<eval>)
 cmplGfx/lib/color.lookup.ci:2: colorMap: function(<colorMap>)
 cmplGfx/lib/color.matrix.ci:2: colorMat: function(<colorMat>)
 cmplGfx/lib/image.transform.ci:2: transform: function(<transform>)
@@ -27773,16 +27820,16 @@ cmplGfx/gfxlib.ci:71: Gui: typename(<Gui>)
 
 ---------- Memory usage:
 memory[all] @000000; size: 8388320(8.0 Mb)
-memory[used] @000000; size: 526309(514.0 Kb)
-memory[heap] @0807e5; size: 5764883(5.5 Mb)
+memory[used] @000000; size: 526197(513.9 Kb)
+memory[heap] @080775; size: 5764995(5.5 Mb)
 memory[stack] @3fff40; size: 2097080(2.0 Mb)
 
 ---------- Used memory:
-memory[meta] @000000; size: 501736(490.0 Kb)
-memory[code] @000000; size: 23940(23.4 Kb)
+memory[meta] @000000; size: 501600(489.8 Kb)
+memory[code] @000000; size: 23962(23.4 Kb)
 memory[data] @000000; size: 212(212.0 bytes)
 
 ---------- Heap memory:
-memory[free] @080800; size: 5764832(5.5 Mb)
+memory[free] @080790; size: 5764944(5.5 Mb)
 
 ---------- Exitcode: 0, time: 0.000 ms

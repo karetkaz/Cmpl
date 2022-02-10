@@ -1,6 +1,6 @@
 /// Fill a rectangle on the `image` specified by the coordinates with the given `color`
 void fillRect(Image image, int x0, int y0, int x1, int y1, int incl, uint32 color) {
-	static if (fastNativeCalls && typename(Image.fillRect) != null) {
+	static if (preferNativeCalls && typename(Image.fillRect) != null) {
 		return Image.fillRect(image, x0, y0, x1, y1, incl, color);
 	}
 

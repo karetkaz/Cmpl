@@ -1,6 +1,6 @@
 /// apply a color matrix to each pixel defined by the `roi` on the `image`
 void colorMat(Image image, const Rect roi&, const mat4f mat&) {
-	static if (fastNativeCalls && typename(Image.colorMat) != null) {
+	static if (preferNativeCalls && typename(Image.colorMat) != null) {
 		return Image.colorMat(image, roi, mat.data);
 	}
 	assert(image.depth() == 32);
@@ -17,7 +17,6 @@ void colorMat(Image image, const Rect roi&, const mat4f mat&) {
 		return;
 	}
 
-	inline p(int x, int y) = x * 4 + y;
 	int m00 = 65536 * mat.xx;
 	int m01 = 65536 * mat.xy;
 	int m02 = 65536 * mat.xz;

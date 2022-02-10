@@ -1,6 +1,6 @@
 /// copy the `src` image to the destination with an optional blend method
 void blend(Image image, int32 x0, int32 y0, const Image src, const Rect roi&, pointer extra, argb blend(pointer extra, argb base, argb with)) {
-	static if (fastNativeCalls && typename(Image.blend) != null) {
+	static if (preferNativeCalls && typename(Image.blend) != null) {
 		return Image.blend(image, x0, y0, src, roi, extra, pointer(blend));
 	}
 	// clip roi with source imag
@@ -58,6 +58,9 @@ void blend(Image image, int32 x0, int32 y0, const Image src, const Rect roi&, po
 
 /// copy the `src` image to the destination with an optional blend method
 void blend(Image image, int32 x0, int32 y0, const Image src, const Rect roi&, vec4f blend(vec4f base, vec4f with)) {
+	static if (preferNativeCalls && typename(Image.blend.blendVec4f) != null) {
+		return Image.blend(image, x0, y0, src, roi, blend, Image.blend.blendVec4f);
+	}
 	static argb blendVec4f(vec4f blend(vec4f base, vec4f with), argb base, argb with) {
 		return argb(blend(vec4f(base), vec4f(with)));
 	}
@@ -69,15 +72,15 @@ void blend(Image image, int32 x0, int32 y0, const Image src, const Rect roi&, ve
 
 /// fill the destination with the given `col` (alpha channel is used)
 void blend(Image image, const Rect roi&, argb col) {
-	static if (fastNativeCalls && typename(Image.blend.color) != null) {
+	static if (preferNativeCalls && typename(Image.blend.color) != null) {
 		return image.blend(roi != null ? roi.x : 0, roi != null ? roi.y : 0, image, roi, col, Image.blend.color);
 	}
 	argb blender(const argb color&, argb base, argb with) {
 		int alpha = ach(color);
 		return {
-			b: mix_s8(alpha, bch(color), bch(with));
-			g: mix_s8(alpha, gch(color), gch(with));
-			r: mix_s8(alpha, rch(color), rch(with));
+			b: mix_s8(alpha, bch(color), bch(base));
+			g: mix_s8(alpha, gch(color), gch(base));
+			r: mix_s8(alpha, rch(color), rch(base));
 			a: alpha;
 		};
 	}
@@ -86,7 +89,7 @@ void blend(Image image, const Rect roi&, argb col) {
 
 /// copy the `src` image to the destination with the given transparency
 void blendAlpha(Image image, int32 x, int32 y, const Image src, const Rect roi&, int32 alpha) {
-	static if (fastNativeCalls && typename(Image.blend.alpha) != null) {
+	static if (preferNativeCalls && typename(Image.blend.alpha) != null) {
 		return Image.blend(image, x, y, src, roi, alpha, Image.blend.alpha);
 	}
 
@@ -103,7 +106,7 @@ void blendAlpha(Image image, int32 x, int32 y, const Image src, const Rect roi&,
 
 /// copy the `src` image to the destination masked with destination alpha
 void blendDstAlpha(Image image, int32 x, int32 y, const Image src, const Rect roi&) {
-	static if (fastNativeCalls && typename(Image.blend.dstAlpha) != null) {
+	static if (preferNativeCalls && typename(Image.blend.dstAlpha) != null) {
 		return Image.blend(image, x, y, src, roi, null, Image.blend.dstAlpha);
 	}
 
@@ -119,7 +122,7 @@ void blendDstAlpha(Image image, int32 x, int32 y, const Image src, const Rect ro
 	return image.blend(x, y, src, roi, null, blender);
 }
 
-/// copy the `src` image to the destination
+/// copy or convert `src` image to the destination `image`
 void copy(Image image, int32 x, int32 y, Image src, const Rect roi&) {
 	return blend(image, x, y, src, roi, null, null);
 }
