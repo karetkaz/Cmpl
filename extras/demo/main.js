@@ -86,7 +86,7 @@ let editor = CodeMirror.fromTextArea(input, {
 });
 let terminal = Terminal(output, function(escaped, text) {
 	return escaped.replace(new RegExp(pathMather, 'g'), function (match, host, path, file, line, column, query, hash) {
-		if (path === undefined) {
+		if (file === undefined) {
 			return match;
 		}
 
@@ -96,7 +96,7 @@ let terminal = Terminal(output, function(escaped, text) {
 			return '<a href="' + encodeURI(match) + '" target="_blank">' + match + '</a>';
 		}
 		if (line > 0) {
-			return '<a href="javascript:void(params.update({ content: null, path:\'' + path + '/' + file + ':' + line + '\'}));">' + match + '</a>';
+			return '<a href="javascript:void(params.update({ content: null, path:\'' + path + file + ':' + line + '\'}));">' + match + '</a>';
 		}
 		return match;
 	});
@@ -671,9 +671,6 @@ function execute(cmd, args) {
 		if (args.prms !== false) {
 			// do not use standard input
 			execArgs.push('-X' + (params.X || '-stdin'));
-
-			// allocate 2Mb of memory by default,
-			execArgs.push('-mem' + (params.mem || '4M'));
 
 			if (params.log != null) {
 				execArgs.push('-log');

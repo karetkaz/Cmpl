@@ -453,8 +453,10 @@ static void install_emit(ccContext cc, ccInstall mode) {
 			ccDefOpCode(cc, "z128", type_p4x, opc_lzx4, 0);
 
 			// load memory indirect
-			ccDefOpCode(cc, "i8", type_i32, opc_ldi1, 0);
-			ccDefOpCode(cc, "i16", type_i32, opc_ldi2, 0);
+			ccDefOpCode(cc, "i8", type_i32, opc_ldis1, 0);
+			ccDefOpCode(cc, "u8", type_i32, opc_ldiu1, 0);
+			ccDefOpCode(cc, "i16", type_i32, opc_ldis2, 0);
+			ccDefOpCode(cc, "u16", type_i32, opc_ldiu2, 0);
 			ccDefOpCode(cc, "i32", type_i32, opc_ldi4, 0);
 			ccDefOpCode(cc, "i64", type_i64, opc_ldi8, 0);
 			ccDefOpCode(cc, "i128", type_p4x, opc_ldiq, 0);

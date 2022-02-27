@@ -1,6 +1,6 @@
 /// emulated implementation of blur function
 void blur(Image image, int radius, float64 sigma) {
-	static if (fastNativeCalls && typename(Image.blur) != null) {
+	static if (preferNativeCalls && typename(Image.blur) != null) {
 		return Image.blur(image, radius, sigma);
 	}
 	static double gauss(double x, double sigma) {

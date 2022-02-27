@@ -2,7 +2,7 @@
 void transform(Image image, const Rect rect&, Image src, const Rect roi&, int32 interpolate, const mat4f mat&) {
 	// https://www.w3.org/TR/css-transforms/
 	// https://developer.mozilla.org/en-US/docs/Web/CSS/transform
-	static if (fastNativeCalls && typename(Image.transform) != null) {
+	static if (preferNativeCalls && typename(Image.transform) != null) {
 		return Image.transform(image, rect, src, roi, interpolate, pointer(mat.data));
 	}
 

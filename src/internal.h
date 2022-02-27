@@ -38,12 +38,7 @@ enum Settings {
 
 	// pre allocate space for argument on the stack
 	// faster execution if each argument is pushed when calculated
-	preAllocateArgs = 0,
-
-	// uint8 a = 130;   // a: uint8(130)
-	// uint32 b = a;    // b: uint32(4294967170)
-	// by default load.m8 will sign extend to 32 bits
-	zeroExtendUnsigned = 0
+	preAllocateArgs = 0
 };
 
 // linked list
@@ -333,7 +328,7 @@ static inline astn argNode(ccContext cc, astn lhs, astn rhs) {
 }
 
 /**
- * Chain the arguments trough ast.next link.
+ * Chain the arguments through ast.next link.
  * @param args root node of arguments tree.
  */
 static inline astn chainArgs(astn args) {

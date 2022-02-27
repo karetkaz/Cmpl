@@ -225,8 +225,8 @@ case opc_lzx4: NEXT(1, +4, 0) {
 #endif
 	break;
 }
-case opc_lf32: // temporary opc
 case opc_lref: // temporary opc
+case opc_lf32: // temporary opc
 case opc_lc32: NEXT(5, +1, 0) {
 #ifdef EXEC
 	STOP(error_ovf, ovf(pu));
@@ -244,7 +244,7 @@ case opc_lc64: NEXT(9, +2, 0) {
 }
 //#}
 //#{ 0x2?: MEM		// Memory
-case opc_ldi1: NEXT(1, -0, 1) {
+case opc_ldis1: NEXT(1, -0, 1) {
 #ifdef EXEC
 	size_t mem = SP(0, i32);
 	STOP(error_mem, mem <= 0);
@@ -254,13 +254,33 @@ case opc_ldi1: NEXT(1, -0, 1) {
 #endif
 	break;
 }
-case opc_ldi2: NEXT(1, -0, 1) {
+case opc_ldiu1: NEXT(1, -0, 1) {
+#ifdef EXEC
+	size_t mem = SP(0, i32);
+	STOP(error_mem, mem <= 0);
+	STOP(error_mem, mem > ms - 1);
+	//~ STOP(error_mem, !aligned(mem, 1));
+	SP(0, i32) = MP(mem, u08);
+#endif
+	break;
+}
+case opc_ldis2: NEXT(1, -0, 1) {
 #ifdef EXEC
 	size_t mem = SP(0, i32);
 	STOP(error_mem, mem <= 0);
 	STOP(error_mem, mem > ms - 2);
 	//~ STOP(error_mem, !aligned(mem, 2));
 	SP(0, i32) = MP(mem, i16);
+#endif
+	break;
+}
+case opc_ldiu2: NEXT(1, -0, 1) {
+#ifdef EXEC
+	size_t mem = SP(0, i32);
+	STOP(error_mem, mem <= 0);
+	STOP(error_mem, mem > ms - 2);
+	//~ STOP(error_mem, !aligned(mem, 2));
+	SP(0, i32) = MP(mem, u16);
 #endif
 	break;
 }
@@ -431,7 +451,6 @@ case opc_move: NEXT(4, -2, 2) {
 	STOP(error_mem, di > ms - cnt);
 
 	memmove(mp + di, mp + si, cnt);
-
 #endif
 	break;
 }

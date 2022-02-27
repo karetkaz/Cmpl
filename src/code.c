@@ -340,11 +340,11 @@ size_t emitOpc(rtContext rt, vmOpcode opc, vmValue arg) {
 		dieif (arg.i32 != arg.i64, ERR_INTERNAL_ERROR);
 		switch (arg.i32) {
 			case 1:
-				opc = opc_ldi1;
+				opc = opc_ldis1;
 				break;
 
 			case 2:
-				opc = opc_ldi2;
+				opc = opc_ldis2;
 				break;
 
 			case 4:
@@ -464,26 +464,6 @@ size_t emitOpc(rtContext rt, vmOpcode opc, vmValue arg) {
 					opc = opc_lzx4;
 				}
 			}
-			break;
-
-		case opc_ldi1:/* TODO: sign or zero extend
-			ip = lastIp(rt);
-			if (ip->opc == opc_ldsp && ((ip->rel & (vm_stk_align-1)) == 0) && ((ip->rel / vm_stk_align) < vm_regs)) {
-				arg.i32 = ip->rel / vm_stk_align;
-				opc = opc_dup1;
-				rt->_beg = (memptr)ip;
-				rt->vm.ss -= 1;
-			}*/
-			break;
-
-		case opc_ldi2:/* TODO: sign or zero extend
-			ip = lastIp(rt);
-			if (ip->opc == opc_ldsp && ((ip->rel & (vm_stk_align-1)) == 0) && ((ip->rel / vm_stk_align) < vm_regs)) {
-				arg.i32 = ip->rel / vm_stk_align;
-				opc = opc_dup1;
-				rt->_beg = (memptr)ip;
-				rt->vm.ss -= 1;
-			}*/
 			break;
 
 		case opc_ldi4:

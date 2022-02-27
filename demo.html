@@ -58,7 +58,7 @@
 		</select>
 		<span class="output left icon bold" title="Scroll to top" onclick="terminal.scroll(false);">⏫</span>
 		<span class="output left icon bold" title="Scroll to end" onclick="terminal.scroll(true);">⏬</span>
-		<p id="output-pan-sidebar"/>
+		<p id="output-pan-sidebar"></p>
 	</div>
 	<pre id="output"></pre>
 </div>
@@ -68,22 +68,31 @@
 			<button class="right" onclick="event.stopPropagation(); setStyle(parentElement.parentElement, '-collapsed'); params.update('path');" title="Refresh workspace">⟳</button>
 		</li>
 		<ul id="fileList"></ul>
-		<ul>
-			<div class="collapsed submenu">
-				<li onclick="setStyle(parentElement, '~collapsed')">Dependencies</li>
-				<ul>
-					<li id="libFile" onclick="params.update({libFile: params.libFile == null ? '' : null});">libFile</li>
-					<li id="libGfx" onclick="params.update({libGfx: params.libGfx == null ? '' : null});">libGfx</li>
-					<hr>
-				</ul>
-			</div>
-		</ul>
 		<hr>
 	</div>
 	<div class="collapsed submenu">
 		<li onclick="setStyle(parentElement, '~collapsed');">Execute
 			<button class="right" onclick="execute('-api/A/m', {file: false}); event.stopPropagation();" title="Compiler api">ƒ</button>
 		</li>
+		<ul>
+			<div class="collapsed submenu">
+				<li onclick="setStyle(parentElement, '~collapsed')">Dependencies</li>
+				<ul>
+					<li id="libFile" onclick="params.update({libFile: params.libFile == null ? '' : null});">libFile</li>
+					<li id="libGfx" onclick="params.update({libGfx: params.libGfx == null ? '' : null});">libGfx</li>
+					<!-- -profile/t/p/G/M -api/A/m/d/p -asm/a/n/s -ast -doc -use -X-stdin -mem4M -dump /dump.ci libFile.wasm test.ci
+					<hr>
+					<li onclick="params.update({?});">dumpGlobals</li>
+					<li onclick="params.update({?});">dumpApi</li>
+					<li onclick="params.update({?});">dumpAsm</li>
+					<li onclick="params.update({?});">dumpAst</li>
+					<li onclick="params.update({?});">dumpDoc</li>
+					<li onclick="params.update({?});">dumpUsage</li>
+					-->
+					<hr>
+				</ul>
+			</div>
+		</ul>
 		<ul>
 			<li onclick="execute('-run/g');"><span class="right">Ctrl+Shift+Enter</span>⚡ Run</li>
 			<li onclick="execute('-debug/g');">🐞 Debug</li>

@@ -1,6 +1,6 @@
 /// apply a color lookup table to each pixel defined by the `roi` on the `image`
 void colorMap(Image image, const Rect roi&, const argb lut[256]) {
-	static if (fastNativeCalls && typename(Image.colorMap) != null) {
+	static if (preferNativeCalls && typename(Image.colorMap) != null) {
 		return Image.colorMap(image, roi, pointer(lut));
 	}
 

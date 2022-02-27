@@ -1577,6 +1577,10 @@ bool isPressed(View view) {
 	Widget widget = getWidget(view);
 	return view == widget.getPressed();
 }
+bool isDirty(View view) {
+	Widget widget = getWidget(view);
+	return widget.measure;
+}
 
 struct Button: View {
 	const char text[*];
@@ -1625,7 +1629,7 @@ struct Switch: View {
 		}
 
 		if (this.selected == selected) {
-			return false;
+			return this.isDirty();
 		}
 
 		this.selected = selected;
@@ -1656,10 +1660,11 @@ struct Switch: View {
 
 	void onCreate(Switch this, View parent) {
 		View.onCreate(this, parent);
-		// clamp initial value
-		this.onUpdate(this, this.selected);
+		// clamp to initial value and force update with a reset
 		int resetValue& = pointer(this.resetValue);
+		Switch.onUpdate(this, this.selected);
 		resetValue = this.selected;
+		this.onReset(this);
 	}
 
 	bool onKeyEvent(Switch this, const KeyEvent event&) {
@@ -1756,7 +1761,7 @@ struct Slider: View {
 			value = this.minimum;
 		}
 		if (this.value == value) {
-			return false;
+			return this.isDirty();
 		}
 		this.value = value;
 		return true;
@@ -1768,9 +1773,11 @@ struct Slider: View {
 
 	void onCreate(Slider this, View parent) {
 		View.onCreate(this, parent);
-		this.onUpdate(this, this.value);// clamp initial value
+		// clamp to initial value and force update with a reset
 		int resetValue& = pointer(this.resetValue);
+		Slider.onUpdate(this, this.value);
 		resetValue = this.value;
+		this.onReset(this);
 	}
 
 	bool onKeyEvent(Slider this, const KeyEvent event&) {
