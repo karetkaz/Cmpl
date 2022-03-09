@@ -58,6 +58,8 @@ if ! $BIN/cmpl -log/d "$BIN.ci" $TEST_FLAGS; then
 	exit 1
 fi
 
+#exit 0
+
 # dump symbols, documentation, assembly, syntax tree and global variables (to be compared with previous version to test if the code is generated properly)
 $BIN/cmpl -X+steps+fold+fast-stdin-glob-offsets -debug/G/M -api/A/m/d/p -asm/n/s -ast -doc -log/d/15 "extras/dump/test.dump.ci" -dump.ast.xml "extras/dump/test.dump.xml" "cmplStd/test/test.ci"
 # dump symbols, documentation, assembly, syntax tree and global variables (to be compared with previous version to test if the code is generated properly)

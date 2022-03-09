@@ -1,4 +1,4 @@
-/* Brightness contrast gamma demo using a lookup table
+/* Select colors based on hue and luminance.
  *
  * use 'tab' / 'shift' + 'tab' to select next control
  * use 'enter' / 'shift' + 'enter' to select next control

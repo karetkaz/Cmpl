@@ -3495,7 +3495,7 @@ struct FileWriter: ByteWriter {
 	}
 }
 struct BufferedFileWriter: FileWriter {
-	byte buffer[1024] = null;
+	byte buffer[1024];
 	int bufferSize = 0;
 
 	static void flushBuffer(BufferedFileWriter this) {
@@ -3719,7 +3719,7 @@ struct Base64Encoder: ByteWriter {
 	static const byte lookup[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
 	const ByteWriter writer;
-	byte buffer[1024] = null;
+	byte buffer[1024];
 	int bufferSize = 0;
 	int padding = 0;
 
@@ -5022,6 +5022,1317 @@ inline "color.hsl.ci";
 }
 // micro ui, TODO: add comments
 
+inline "micro.ui.core.ci";
+
+Widget Widget(int width, int height, const Style style&) {
+	Widget widget = {
+		rect: {
+			w: width;
+			h: height;
+		};
+		width: width;
+		height: height;
+		widgetStyle: {
+			format: { padLen: 5, precision: 2 };
+		};
+		style: style;
+		focus: widget;	// focus first visible view
+	};
+	return widget;
+}
+Widget Widget(int width, int height) {
+	const Style style& = null;
+	return Widget(width, height, style);
+}
+Widget Widget(View views...) {
+struct Popup: Widget {
+
+	// fixme: these are needed to draw the widget on an image, move them to a different class
+	// the default method should be to draw it on the entire image
+	int align = Style.fill;
+	int margin = 0;
+	int radius = 0;
+
+
+	// TODO: remove: this override allows to forward the drag event to the focused view
+	bool onTouchEvent(Popup this, const Rect rect&, const TouchEvent event&) {
+		if (Widget.onTouchEvent(this, rect, event)) {
+			return true;
+		}
+
+		if (!(event.button && (event.dx || event.dy))) {
+			// event is not a drag event
+			return false;
+		}
+
+		if (this.pressedIndex != -1) {
+			// there is a pressed view, and is different than the focused one
+			return false;
+		}
+
+		View view = Widget.getFocused(this);
+		if (view == null) {
+			// there is no focused view
+			return false;
+		}
+		Layout parent = view.parent.as(Layout);
+		Rect r& = parent.items[parent.focusedIndex].rect;
+		// forward the event to the view
+		return view.onTouchEvent(view, r, event);
+	}
+	bool onKeyEvent(Popup this, const KeyEvent event&) {
+		if (Widget.onKeyEvent(this, event)) {
+			return true;
+		}
+
+		if (event.release) {
+			return false;
+		}
+
+		if (event.key == '[' || event.key == ']') {
+			// hide, show controls
+			if (event.key == '[') {
+				if (this.align != Style.topLeft) {
+					this.align = Style.topLeft;
+				} else {
+					this.enabled = !this.enabled;
+					this.invalidate();
+					return true;
+				}
+			}
+			if (event.key == ']') {
+				if (this.align != Style.topRight) {
+					this.align = Style.topRight;
+				} else {
+					this.enabled = !this.enabled;
+					this.invalidate();
+					return true;
+				}
+			}
+
+			this.enabled = true;
+			this.measure = true;
+			this.invalidate();
+			return true;
+		}
+
+		if (event.key == 8 && event.isShift) {
+			return this.onReset(this);
+		}
+
+		return false;
+	}
+
+	bool onMeasure(Popup this, Rect measured&) {
+		int margin = this.margin;
+		int align = this.align;
+		Rect rect = {
+			x: margin;
+			y: margin;
+			w: measured.w - 2 * margin;
+			h: measured.h - 2 * margin;
+		};
+
+		Layout.onMeasure(this, &measured);
+		this.measure = false;
+
+		measured.x = measured.y = 0;
+		this.onLayout(this, &measured);
+		Style.align(rect, &measured, align);
+		return true;
+	}
+
+	void onDraw(Popup this, Image offs, Rect rect, const Style style&) {
+		offs = offs.slice(rect);
+		if (style.backgroundColor != -1) {
+			Rect r = { w: offs.width(), h: offs.height() };
+			offs.fillRect(r, this.radius, style.backgroundColor);
+		}
+		Widget.onDraw(this, offs, rect, style);
+		offs.destroy();
+	}
+}
+
+	Popup widget = {
+		rect: {};
+
+		radius: 5;
+		margin: 10;
+		align: Style.topRight;
+
+		paddingTop: 3;
+		paddingLeft: 3;
+		paddingRight: 3;
+		paddingBottom: 3;
+		widgetStyle: {
+			align: Style.left;
+			format: { padLen: 5, precision: 2 };
+		};
+		focus: widget;	// focus first visible view
+	};
+	widget.style = widget.widgetStyle;
+
+	if (views.length > 0) {
+		widget.addItems(...views);
+	}
+	return widget;
+}
+
+struct Button: View {
+	const char text[*];
+
+	bool onMeasure(Button this, Rect rect&) {
+		Style style& = this.style;
+		style.measure(&rect, this.text);
+		return View.onMeasure(this, &rect);
+	}
+
+	void onDraw(Button this, Image offs, Rect rect, const Style style&) {
+		View.onDraw(this, offs, rect, style, null, this.text);
+	}
+}
+
+struct Switch: View {
+	static const char onOff[*][] = {
+		"off",
+		"on"
+	};
+
+	const char text[*];
+	const char states[*][] = onOff;
+
+	int selected = 0;
+	const int resetValue = 0;//TODO: selected;
+
+	// if the view is clicked but not focused, first just focus it
+	const bool clickToFocus = false;
+
+	static bool checked(Switch this) {
+		return this.selected != 0;
+	}
+
+	bool onUpdate(Switch this, int selected) {
+		int maxValue = this.states.length;
+		if (maxValue == 0) {
+			// graphical switch
+			maxValue = 2;
+		}
+		if (selected >= maxValue) {
+			selected = maxValue - 1;
+		}
+		else if (selected < 0) {
+			selected = 0;
+		}
+
+		if (this.selected == selected) {
+			return this.isDirty();
+		}
+
+		this.selected = selected;
+		return true;
+	}
+
+	bool onReset(Switch this) {
+		return this.onUpdate(this, this.resetValue);
+	}
+
+	bool onClick(Switch this) {
+		if (this.focusable && this.clickToFocus) {
+			if (!this.isFocused()) {
+				return true;
+			}
+		}
+		int maxValue = this.states.length;
+		int value = this.selected + 1;
+		if (maxValue == 0) {
+			// graphical switch
+			maxValue = 2;
+		}
+		if (value >= maxValue) {
+			value = 0;
+		}
+		return this.onUpdate(this, value);
+	}
+
+	void onCreate(Switch this, View parent) {
+		View.onCreate(this, parent);
+		// clamp to initial value and force update with a reset
+		int resetValue& = pointer(this.resetValue);
+		Switch.onUpdate(this, this.selected);
+		resetValue = this.selected;
+		this.onReset(this);
+	}
+
+	bool onKeyEvent(Switch this, const KeyEvent event&) {
+		if (event.release) {
+			return View.onKeyEvent(this, event);
+		}
+		if (event.key == '+' || event.key == '=') {
+			int value = this.selected + 1;
+			return this.onUpdate(this, value);
+		}
+		if (event.key == '-' || event.key == '_') {
+			int value = this.selected - 1;
+			return this.onUpdate(this, value);
+		}
+		return View.onKeyEvent(this, event);
+	}
+
+	bool onMeasure(Switch this, Rect rect&) {
+		int maxWidth = 0;
+		Style style& = this.style;
+		for (int i = 0; i < this.states.length; i += 1) {
+			Rect measured = {};
+			style.measure(&measured, this.states[i]);
+			if (maxWidth < measured.w) {
+				maxWidth = measured.w;
+			}
+		}
+		style.measure(&rect, this.text);
+		if (this.states.length == 0) {
+			rect.w += rect.h * 3 / 2;
+		} else {
+			rect.w += maxWidth;
+		}
+		return View.onMeasure(this, &rect);
+	}
+
+	void onDraw(Switch this, Image offs, Rect rect, const Style style&) {
+		char value[*] = null;
+		if (this.states.length == 0) {
+			Rect onOffRect = {
+				x: rect.x;
+				y: rect.y;
+				w: rect.h * 3 / 2;
+				h: rect.h;
+			};
+			Style.align(rect, &onOffRect, Style.right);
+
+			onOffRect.adjust(-style.padding);
+			uint32 color = style.focusedColor;
+			if (this.checked()) {
+				color = style.valueColor;
+			}
+			else if (this.isFocused()) {
+				color = style.hoveredColor;
+			}
+			offs.fillRect(onOffRect, onOffRect.h / 2, color);
+
+			if (this.checked()) {
+				onOffRect.x += rect.h / 2;
+			}
+
+			onOffRect.w = onOffRect.h;
+			offs.fillOval(onOffRect, style.textColor);
+			rect.w -= rect.h * 3 / 2;
+		} else {
+			value = this.states[this.selected];
+		}
+		View.onDraw(this, offs, rect, style, this.text, value);
+	}
+}
+
+struct Slider: View {
+	const char text[*];
+
+	int value = 0;
+	const int minimum = 0;
+	const int maximum = -1u >> 1;
+	const int divisor = 0;
+	const int resetValue = 0; // TODO: resetValue = value;
+
+	static float64 valueF64(Slider this) {
+		double value = this.value;
+		if (this.divisor != 0) {
+			return value / this.divisor;
+		}
+		return value;
+	}
+
+	bool onUpdate(Slider this, int value) {
+		if (value > this.maximum) {
+			value = this.maximum;
+		}
+		if (value < this.minimum) {
+			value = this.minimum;
+		}
+		if (this.value == value) {
+			return this.isDirty();
+		}
+		this.value = value;
+		return true;
+	}
+
+	bool onReset(Slider this) {
+		return this.onUpdate(this, this.resetValue);
+	}
+
+	void onCreate(Slider this, View parent) {
+		View.onCreate(this, parent);
+		// clamp to initial value and force update with a reset
+		int resetValue& = pointer(this.resetValue);
+		Slider.onUpdate(this, this.value);
+		resetValue = this.value;
+		this.onReset(this);
+	}
+
+	bool onKeyEvent(Slider this, const KeyEvent event&) {
+		if (event.release) {
+			return View.onKeyEvent(this, event);
+		}
+		if (event.key == ' ') {
+			return this.onReset(this);
+		}
+		if (event.key == '+' || event.key == '=') {
+			return this.onUpdate(this, this.value + (event.isShift ? 1 : 10));
+		}
+		if (event.key == '-' || event.key == '_') {
+			return this.onUpdate(this, this.value - (event.isShift ? 1 : 10));
+		}
+		return View.onKeyEvent(this, event);
+	}
+
+	bool onTouchEvent(Slider this, const Rect rect&, const TouchEvent event&) {
+		if (event.button == 0) {
+			return false;
+		}
+		if (event.release && (event.clicks < 0 || event.clicks > 1)) {
+			return this.onReset(this);
+		}
+
+		if (event.clicks < 1) {
+			float64 value = event.dx;
+			if (!event.isShift && value != 0) {
+				value *= float64(this.maximum - this.minimum) / rect.w;
+				if (value > -1 && value < 1) {
+					value = value < 0 ? -1 : 1;
+				}
+			}
+			value += this.value;
+			if (value > this.maximum) {
+				value = this.maximum;
+			}
+			if (value < this.minimum) {
+				value = this.minimum;
+			}
+			return this.onUpdate(this, value);
+		}
+		if (event.release) {
+			if (event.y < rect.y + rect.h - rect.h / 3) {
+				// clicking the upper part to focus control
+				return true;
+			}
+			float64 value = event.x - rect.x;
+			value *= float64(this.maximum - this.minimum) / rect.w;
+			return this.onUpdate(this, this.minimum + value);
+		}
+		return View.onTouchEvent(this, rect, event);
+	}
+
+	bool onMeasure(Slider this, Rect rect&) {
+		char value[64] = {0};
+		Style style& = this.style;
+		if (this.divisor != 0) {
+			value.append(0, this.valueF64(), style.format);
+		} else {
+			value.append(0, this.value, style.format);
+		}
+		Rect valueRect = {};
+		style.measure(&valueRect, value);
+		style.measure(&rect, this.text);
+		rect.w += valueRect.w;
+		return View.onMeasure(this, &rect);
+	}
+
+	void onDrawSlider(Slider this, Image offs, Rect rect, const Style style&) {
+		if (this.maximum == this.minimum) {
+			return;
+		}
+		const int y1 = rect.y + rect.h;
+		const int y0 = y1 - style.padding / 4;
+		const int x0 = rect.x;
+		const int x1 = rect.x + rect.w;
+		const int x = x0 + int64(this.value - this.minimum) * rect.w / (this.maximum - this.minimum);
+		if (x > x0) {
+			offs.fillRect(x0, y0, x, y1, style.valueColor);
+		}
+		if (x < x1) {
+			offs.fillRect(x, y0, x1, y1, style.focusedColor);
+		}
+	}
+
+	void onDraw(Slider this, Image offs, Rect rect, const Style style&) {
+		char value[64] = {0};
+		if (this.divisor != 0) {
+			value.append(0, this.valueF64(), style.format);
+		} else {
+			value.append(0, this.value, style.format);
+		}
+		if (this.onDrawSlider != null) {
+			this.onDrawSlider(this, offs, rect, style);
+		}
+		View.onDraw(this, offs, rect, style, this.text, value);
+	}
+}
+
+struct Histogram: View {
+	const bool lines = false;
+	// histogram data is in alpha channel, display it with color rgb
+	bool color = false;
+	argb data[256];
+
+	static void update(Histogram this, Image image) {
+		uint32 data[*] = pointer(this.data);
+		image.calcRgbHist(null, &data);
+		this.color = false;
+	}
+
+	bool onUpdate(Histogram this, int idx, int value) {
+		this.data[idx] = argb(idx, value, value, value);
+		return true;
+	}
+
+	bool onReset(Histogram this) {
+		bool result = false;
+		for (int i = 0; i < 256; i += 1) {
+			result |= Histogram.onUpdate(this, i, i);
+		}
+		return result;
+	}
+
+	void onCreate(Histogram this, View parent) {
+		View.onCreate(this, parent);
+		Histogram.onReset(this);
+	}
+
+	bool onTouchEvent(Histogram this, const Rect rect&, const TouchEvent event&) {
+		if (event.release || !event.button) {
+			return View.onTouchEvent(this, rect, event);
+		}
+
+		int px = Math.max(0, rect.w - 256) / 2;
+		int x0 = event.x - rect.x - px;
+		int x1 = x0 - event.dx;
+		int y0 = event.y - rect.y;
+		int y1 = y0 - event.dy;
+
+		if (x0 > x1) {
+			int x = x0;
+			x0 = x1;
+			x1 = x;
+			int y = y0;
+			y0 = y1;
+			y1 = y;
+		}
+		int y = y0 << 16;
+		int dy = y1 - y0;
+		if (x1 != x0) {
+			dy = (dy << 16) / (x1 - x0);
+		}
+		if (x0 < 0) {
+			y -= x0 * dy;
+			x0 = 0;
+		}
+		if (x1 > 256) {
+			x1 = 256;
+		}
+		int h = rect.h;
+		for (int x = x0; x < x1; x += 1) {
+			int val = 255 * (h - (y >> 16)) / h;
+			this.onUpdate(this, x, val);
+			y += dy;
+		}
+		return true;
+	}
+
+	bool onMeasure(Histogram this, Rect rect&) {
+		if (this.width < 0) {
+			rect.w = 256;
+		}
+		if (this.height < 0) {
+			rect.h = 128;
+		}
+		return View.onMeasure(this, &rect);
+	}
+
+	void onDraw(Histogram this, Image offs, const Rect rect, const Style style&) {
+		enum {
+			colB: 0x4371c6;
+			colG: 0x72d874;
+			colR: 0xfc6165;
+			colL: 0xdadada;
+		}
+		int px = (rect.w - 256) / 2;
+		if (this.lines) {
+			int y = rect.y + rect.h;
+			int pb = bch(this.data[0]) * rect.h / 256;
+			int pg = gch(this.data[0]) * rect.h / 256;
+			int pr = rch(this.data[0]) * rect.h / 256;
+			int pl = ach(this.data[0]) * rect.h / 256;
+
+			for (int i = 1; i < this.data.length; i += 1) {
+				int x = rect.x + i + px;
+				argb data = this.data[i];
+				int bv = bch(data) * rect.h / 256;
+				int gv = gch(data) * rect.h / 256;
+				int rv = rch(data) * rect.h / 256;
+				int lv = ach(data) * rect.h / 256;
+
+				if (this.color) {
+					offs.fillRect(x, y - pl, x + 1, y - lv + int(pl == lv), data.v);
+				} else {
+					offs.fillRect(x, y - pb, x + 1, y - bv + int(pb == bv), colB);
+					offs.fillRect(x, y - pg, x + 1, y - gv + int(pg == gv), colG);
+					offs.fillRect(x, y - pr, x + 1, y - rv + int(pr == rv), colR);
+					offs.fillRect(x, y - pl, x + 1, y - lv + int(pl == lv), colL);
+				}
+
+				pb = bv;
+				pg = gv;
+				pr = rv;
+				pl = lv;
+			}
+		}
+		else if (this.color) {
+			for (int i = 0; i < this.data.length; i += 1) {
+				argb data = this.data[i];
+				int x = rect.x + i + px;
+				int y1 = rect.y + rect.h;
+				int y0 = y1 - ach(data) * rect.h / 256;
+				offs.fillRect(x, y0 - int(y1 == y0), x + 1, y1, uint32(data));
+			}
+		}
+		else {
+			for (int i = 0; i < this.data.length; i += 1) {
+				int x = rect.x + i + px;
+				argb data = this.data[i];
+				int bv = bch(data) * rect.h / 256;
+				int gv = gch(data) * rect.h / 256;
+				int rv = rch(data) * rect.h / 256;
+				int lv = ach(data) * rect.h / 256;
+				for (int y = 0; y < rect.h; y += 1) {
+					uint32 b = colB * uint32(y < bv);
+					uint32 g = colG * uint32(y < gv);
+					uint32 r = colR * uint32(y < rv);
+					uint32 l = colL * uint32(y < lv);
+					offs.set(x, rect.h - y + rect.y - 1, r | g | b | l);
+				}
+			}
+		}
+	}
+}
+
+/// debug view to count draws
+struct DebugView: View {
+	char text[64];
+
+	int64 started = 0;
+	int64 maxDuration = 0;
+	int64 durations[64];
+
+	int64 measures = 0;
+	int64 draws = 0;
+
+	static void startTimer(DebugView this) {
+		this.started = System.millis();
+		this.maxDuration = 0;
+		// todo: don't copy, use a circular queue
+		for (int i = this.durations.length - 1; i >= 1; i -= 1) {
+			int64 duration = this.durations[i - 1];
+			this.durations[i] = duration;
+			if (this.maxDuration < duration) {
+				this.maxDuration = duration;
+			}
+		}
+		this.durations[0] = this.maxDuration;
+	}
+
+	static void update(DebugView this) {
+		int pos = 0;
+		if (this.measures > 0) {
+			pos = this.text.append(pos, pos > 0 ? ", " : "");
+			pos = this.text.append(pos, "measures: ");
+			pos = this.text.append(pos, this.measures);
+		}
+
+		if (this.draws > 0) {
+			pos = this.text.append(pos, pos > 0 ? ", " : "");
+			pos = this.text.append(pos, "draws: ");
+			pos = this.text.append(pos, this.draws);
+		}
+
+		if (this.durations[0] > 0 || pos == 0) {
+			pos = this.text.append(pos, pos > 0 ? ", " : "");
+			pos = this.text.append(pos, "time: ");
+			pos = this.text.append(pos, this.durations[0]);
+		}
+	}
+
+	bool onClick(DebugView this) {
+		return this.onReset(this);
+	}
+
+	bool onReset(DebugView this) {
+		if (this.measures > 0) {
+			this.measures = 0;
+		}
+		if (this.draws > 0) {
+			this.draws = 0;
+		}
+		for (int i = 0; i < this.durations.length; i += 1) {
+			this.durations[i] = 0;
+		}
+		this.maxDuration = 0;
+		this.started = 0;
+		return true;
+	}
+
+	void onCreate(DebugView this, View parent) {
+		View.onCreate(this, parent);
+		onReset(this);
+	}
+
+	bool onMeasure(DebugView this, Rect rect&) {
+		if (this.measures >= 0) {
+			this.measures += 1;
+		}
+		this.update();
+		Style style& = this.style;
+		style.measure(&rect, this.text);
+		return View.onMeasure(this, &rect);
+	}
+
+	void onDraw(DebugView this, Image offs, Rect rect, const Style style&) {
+		if (this.started > 0) {
+			int64 duration = System.millis() - this.started;
+			this.durations[0] = duration;
+			if (this.maxDuration < duration) {
+				this.maxDuration = duration;
+			}
+			this.started = 0;
+		}
+
+		if (this.maxDuration > 0) {
+			int y0 = rect.y + rect.h;
+			float64 ys = rect.h / float64(this.maxDuration);
+			float64 xs = rect.w / float64(this.durations.length);
+			for (int i = 0; i < this.durations.length; i += 1) {
+				int y1 = y0 - ys * this.durations[i];
+				int x1 = rect.x + xs * (this.durations.length - i);
+				offs.fillRect(x1 - xs, y0, x1, y1, style.focusedColor);
+			}
+		}
+
+		if (this.draws >= 0) {
+			this.draws += 1;
+		}
+		this.update();
+		style.align(rect, &rect, this.text);
+		offs.drawText(rect, style.font, this.text, style.textColor);
+	}
+}
+
+struct Panel: Layout {
+	bool visible;
+
+	static bool visible(Panel this, bool value) {
+		if (this.visible == value) {
+			return false;
+		}
+
+		this.visible = value;
+		this.invalidate();
+		return true;
+	}
+
+	bool onMeasure(Panel this, Rect rect&) {
+		if (!this.visible) {
+			// view is hidden
+			rect.w = rect.h = 0;
+			return false;
+		}
+		return Layout.onMeasure(this, &rect);
+	}
+}
+
+// todo this should be a TabPage and/or Accordion
+// tab/expand item should be a custom 2 state button
+// use a flag to enable multi selection for both TabPage or Accordion
+// in case of TabPage the `select button` should be in the tab list
+// in case of Accordion the `expand button` should be in the same list with the pages
+struct TabPage: Layout {
+	Layout tabs = null;
+	Layout active = null;
+	View separator = null;
+	argb background = argb(0);
+
+	void onCreate(TabPage this, View parent) {
+		Layout.onCreate(this, parent);
+		this.active = this.items[1].view;
+		Style style&  = this.style;
+		this.background = mix_rgb8(128, argb(style.backgroundColor), argb(style.hoveredColor));
+	}
+
+	static bool onMeasurePage(Layout layout, Rect rect&) {
+		TabPage parent = layout.data.as(TabPage);
+		if (parent != null && parent.active != layout) {
+			// view is hidden
+			rect.w = rect.h = 0;
+			return false;
+		}
+		return Layout.onMeasure(layout, &rect);
+	}
+
+	static void onDrawPage(Layout panel, Image offs, Rect rect, const Style style&) {
+		TabPage page = panel.data.as(TabPage);
+		offs.fillRect(rect, page.background.v);
+		Layout.onDraw(panel, offs, rect, style);
+	}
+
+	static void onDrawBar(Layout tabs, Image offs, Rect rect, const Style style&) {
+		TabPage page = tabs.data.as(TabPage);
+		offs.fillRect(rect, page.background.v);
+		Layout.onDraw(tabs, offs, rect, style);
+	}
+
+	static void onDrawTab(Button tab, Image offs, Rect rect, const Style style&) {
+		TabPage page = tab.parent.parent.as(TabPage);
+		if (page.active == tab.data.as(Layout)) {
+			offs.fillRect(rect, style.focusedColor);
+			style.align(rect, &rect, tab.text);
+			offs.drawText(rect, style.font, tab.text, style.textColor);
+			return;
+		}
+		Button.onDraw(tab, offs, rect, style);
+	}
+
+	static bool onClickTab(Button button) {
+		if (Layout page = button.data.as(Layout)) {
+			if (TabPage tabs = page.data.as(Layout)) {
+				if (tabs.active == page) {
+					return false;
+				}
+				tabs.active = page;
+				tabs.invalidate();
+				page.focus();
+			}
+		}
+		return true;
+	}
+
+	static TabPage addItems(TabPage this, const char text[*], int align, View views...) {
+		inline padding = 1;
+		if (this.tabs == null) {
+			Layout tabs = {
+				paddingTop: padding;
+				paddingLeft: padding;
+				paddingRight: padding;
+				paddingBottom: padding;
+				data: this;
+				onDraw: onDrawBar;
+				orientation: -this.orientation;
+			};
+
+			View separator = {
+				enabled: false;
+				width: padding;
+				height: padding;
+			};
+
+			this.tabs = tabs;
+			this.separator = separator;
+			Layout.addItems(this, Style.center, tabs);
+		}
+
+		Layout page = {
+			data: this;
+			// fixme: orientation;
+			onDraw: onDrawPage;
+			onMeasure: onMeasurePage;
+		};
+		Button tab = {
+			text: text;
+			data: page;
+			focusable: false;
+			onDraw: onDrawTab;
+			onClick: onClickTab;
+		};
+		if (this.tabs.itemCount > 0) {
+			this.tabs.addItems(0, this.separator);
+		}
+		this.tabs.addItems(0, tab);
+		page.addItems(align, ...views);
+		Layout.addItems(this, Style.fill, page);
+		return this;
+	}
+}
+
+static struct Gui {
+	static void showWindow(Image offscreen, int onEvent(Window window&, int action, int button, int x, int y), Widget widget) {
+		Window window = {
+			offscreen: offscreen;
+			widget: widget;
+		};
+		Gui.showWindow(offscreen, window, onEvent);
+	}
+
+	static void showWindow(Image offscreen, Widget widget) {
+		static int showWindowEvent(Window win&, int action, int button, int x, int y) {
+			if (action == Gui.KEY_RELEASE && button == 27) {
+				// exit when releasing escape key
+				return -1;
+			}
+			Widget widget = win.widget;
+			if (!win.dispatchEvent(widget, action, button, x, y)) {
+				// event not processed, wait for the next one
+				return 0;
+			}
+			return win.draw(widget);
+		}
+		return showWindow(offscreen, showWindowEvent, widget);
+	}
+
+	static void showWindow(Widget widget) {
+		widget.onCreate(widget, widget);
+		widget.onMeasure(widget, &widget.rect);
+		widget.measure = true;
+		Image offscreen = Image(widget.rect.w, widget.rect.h, 32);
+		showWindow(offscreen, widget);
+		offscreen.destroy();
+	}
+}
+
+/* original design
+struct View: object {...}	// garbage collected
+struct Text: View {...}
+struct Label: View {...}
+struct Image: View {...}
+struct Check: View {...}	// Switch?
+struct Input: View {...}	// single line, multi line
+struct Select: View {...}	// ComboBox
+struct Slider: View {...}
+struct Button: View {...}
+
+struct Panel ~= Layout
+struct List: View {...}
+struct Grid: View {...}
+struct Page: View {...}
+struct Window: View {...}
+
+Window window = {
+	width: 100;
+	height: 100;
+	items: {
+		Button {
+			label: "button1";
+			onClick: print("x");
+		};
+	};
+};
+window.show();
+*/
+/// Fill a rectangle on the `image` specified by the coordinates with the given `color`
+void fillRect(Image image, int x0, int y0, int x1, int y1, int incl, uint32 color) {
+	static if (preferNativeCalls && typename(Image.fillRect) != null) {
+		return Image.fillRect(image, x0, y0, x1, y1, incl, color);
+	}
+
+	if (x0 > x1) {
+		int t = x0;
+		x0 = x1;
+		x1 = t;
+	}
+	if (y0 > y1) {
+		int t = y0;
+		y0 = y1;
+		y1 = t;
+	}
+	x1 += incl;
+	y1 += incl;
+
+	for (int y = y0; y < y1; y += 1) {
+		for (int x = x0; x < x1; x += 1) {
+			image.set(x, y, color);
+		}
+	}
+}
+
+/// Fill a rectangle on the `image` specified by the coordinates with the given `color`
+inline fillRect(Image image, int x0, int y0, int x1, int y1, uint32 color) = image.fillRect(x0, y0, x1, y1, 0, color);
+
+/// Draw a rectangle on the `image` specified by the coordinates with the given `color`
+void drawRect(Image image, int x0, int y0, int x1, int y1, uint32 color) {
+	if (y0 > y1) {
+		int t = y1;
+		y1 = y0;
+		y0 = t;
+	}
+	if (x0 > x1) {
+		int t = x1;
+		x1 = x0;
+		x0 = t;
+	}
+
+	if (x1 - x0 < 3 || y1 - y0 < 3) {
+		// no gap between top and bottom or left and right; draw all at once
+		return image.fillRect(x0, y0, x1, y1, color);
+	}
+
+	image.fillRect(x0, y0, x1, y0 + 1, color);			// top
+	image.fillRect(x0, y0 + 1, x0 + 1, y1 - 1, color);	// left
+	image.fillRect(x1 - 1, y0 + 1, x1, y1 - 1, color);	// right
+	image.fillRect(x0, y1 - 1, x1, y1, color);			// bottom
+}
+
+/// Fill a rounded rectangle on `image` specified by the coordinates and rounding, with the given `color`
+void fillRRect(Image image, int x0, int y0, int x1, int y1, int rx, int ry, uint32 color) {
+	if (x0 > x1) {
+		int t = x0;
+		x0 = x1;
+		x1 = t;
+	}
+	if (y0 > y1) {
+		int t = y0;
+		y0 = y1;
+		y1 = t;
+	}
+	x1 -= int(x1 > x0);
+	y1 -= int(y1 > y0);
+
+	int dx = x1 - x0;
+	int dy = y1 - y0;
+	if (dx < 3 || dy < 3) {
+		// no rounding is needed
+		return image.fillRect(x0, y0, x1, y1, 1, color);
+	}
+
+	ry = Math.min(ry, (dy - int(dx > 16)) / 2);
+	rx = Math.min(rx, (dx - int(dy > 16)) / 2);
+	if (rx < 8 || ry < 8) {
+		if (rx < 1 || ry < 1) {
+			// no rounding is needed
+			return image.fillRect(x0, y0, x1, y1, 1, color);
+		}
+		// apply some visual fixes
+		rx += int(rx == 7) - int(rx == 6);
+		ry += int(ry == 7) - int(ry == 6);
+	}
+
+	int64 sx = rx * rx;
+	int64 sy = ry * ry;
+	int64 rdy = sx * ry;
+	int64 rdx = 0;
+	int64 r = rdy / 2;
+
+	x0 += rx;
+	x1 -= rx;
+	for (;y0 < y1;) {
+		image.fillRect(x0, y0, x1, y0, 1, color);
+		image.fillRect(x0, y1, x1, y1, 1, color);
+		if (r >= 0) {
+			x0 -= 1;
+			x1 += 1;
+			r -= rdx += sy;
+		}
+		if (r < 0) {
+			y0 += 1;
+			y1 -= 1;
+			r += rdy -= sx;
+		}
+	}
+	image.fillRect(x0, y0, x1, y1, 1, color);
+}
+
+/// Draw a rounded rectangle on `image` specified by the coordinates and rounding, with the given `color`
+void drawRRect(Image image, int x0, int y0, int x1, int y1, int rx, int ry, uint32 color) {
+	if (x0 > x1) {
+		int t = x0;
+		x0 = x1;
+		x1 = t;
+	}
+	if (y0 > y1) {
+		int t = y0;
+		y0 = y1;
+		y1 = t;
+	}
+	x1 -= int(x1 > x0);
+	y1 -= int(y1 > y0);
+
+	int dx = x1 - x0;
+	int dy = y1 - y0;
+	if (dx < 2 || dy < 2) {
+		// no gap between top and bottom or left and right; draw all at once
+		return image.fillRect(x0, y0, x1, y1, 1, color);
+	}
+
+	ry = Math.min(ry, (dy - int(dx > 16)) / 2);
+	rx = Math.min(rx, (dx - int(dy > 16)) / 2);
+	if (rx < 8 || ry < 8) {
+		if (rx < 1 || ry < 1) {
+			// no rounding is needed
+			return image.drawRect(x0, y0, x1 + 1, y1 + 1, color);
+		}
+		// apply some visual fixes
+		rx += int(rx == 7) - int(rx == 6);
+		ry += int(ry == 7) - int(ry == 6);
+	}
+
+	int64 sx = rx * rx;
+	int64 sy = ry * ry;
+	int64 rdy = sx * ry;
+	int64 rdx = 0;
+	int64 r = rdy / 2;
+
+	x0 += rx;
+	x1 -= rx;
+	image.fillRect(x0, y0, x1, y0, 1, color);
+	image.fillRect(x0, y1, x1, y1, 1, color);
+	for (;y0 < y1;) {
+		image.set(x0, y0, color);
+		image.set(x1, y0, color);
+		image.set(x0, y1, color);
+		image.set(x1, y1, color);
+		if (r >= 0) {
+			x0 -= 1;
+			x1 += 1;
+			r -= rdx += sy;
+		}
+		if (r < 0) {
+			y0 += 1;
+			y1 -= 1;
+			r += rdy -= sx;
+		}
+	}
+	image.fillRect(x0, y0, x0, y1, 1, color);
+	image.fillRect(x1, y0, x1, y1, 1, color);
+}
+
+inline fillOval(Image image, int x0, int y0, int x1, int y1, uint32 color) = image.fillRRect(x0, y0, x1, y1, Math.abs(x0 - x1), Math.abs(y0 - y1), color);
+inline drawOval(Image image, int x0, int y0, int x1, int y1, uint32 color) = image.drawRRect(x0, y0, x1, y1, Math.abs(x0 - x1), Math.abs(y0 - y1), color);
+
+/// Fill the given rectangle rounding the corners using the given radius
+inline fillRRect(Image image, int x1, int y1, int x2, int y2, int r, uint32 color) = fillRRect(image, x1, y1, x2, y2, r, r, color);
+/// draw the given rectangle rounding the corners using the given radius
+inline drawRRect(Image image, int x1, int y1, int x2, int y2, int r, uint32 color) = drawRRect(image, x1, y1, x2, y2, r, r, color);
+
+/// Draw a normal or smooth(anti-aliased) line, including ending pixel
+void drawLineIncl(Image image, int x0, int y0, int x1, int y1, bool smooth, uint32 color) {
+	inline mix(Image image, int x0, int y0, int alpha, uint32 color) = image.set(x0, y0, mix_rgb8(alpha, argb(uint32(image.get(x0, y0))), argb(color)));
+
+	if (x0 == x1 || y0 == y1) {
+		// horizontal or vertical line && avoid division by zero
+		return image.fillRect(x0, y0, x1, y1, 1, color);
+	}
+
+	int dx = x1 - x0;
+	int dy = y1 - y0;
+
+	if (Math.abs(dx) > Math.abs(dy)) {
+		if (x0 > x1) {
+			int x = x0;
+			x0 = x1;
+			x1 = x;
+			y0 = y1;
+		}
+		int y = y0 << 16;
+		dy = (dy << 16) / dx;
+		if (x1 > image.width()) {
+			x1 = image.width();
+		}
+		if (x0 < 0) {
+			y -= dy * x0;
+			x0 = 0;
+		}
+
+		if (!smooth) {
+			y += 0x8000;
+			for (int x = x0; x <= x1; x += 1) {
+				image.set(x, y >> 16, color);
+				y += dy;
+			}
+			return;
+		}
+
+		for (int x = x0; x <= x1; x += 1) {
+			uint32 alpha = (~y >> 8) & 255;
+			image.mix(x, y >> 16, alpha, color);
+			image.mix(x, (y >> 16) + 1, 255 - alpha, color);
+			y += dy;
+		}
+	} else {
+		if (y0 > y1) {
+			int y = y0;
+			y0 = y1;
+			y1 = y;
+			x0 = x1;
+		}
+		int x = x0 << 16;
+		dx = (dx << 16) / dy;
+		if (y1 > image.height()) {
+			y1 = image.height();
+		}
+		if (y0 < 0) {
+			x -= dx * y0;
+			y0 = 0;
+		}
+
+		if (!smooth) {
+			x += 0x8000;
+			for (int y = y0; y <= y1; y += 1) {
+				image.set(x >> 16, y, color);
+				x += dx;
+			}
+			return;
+		}
+
+		for (int y = y0; y <= y1; y += 1) {
+			int alpha = (~x >> 8) & 255;
+			image.mix(x >> 16, y, alpha, color);
+			image.mix((x >> 16) + 1, y, 255 - alpha, color);
+			x += dx;
+		}
+	}
+}
+
+inline xcl(int a, int b) = a - int(b < a);	// exclude right bottom
+/// Draw a normal or smooth(anti-aliased) line
+inline drawLine(Image image, int x0, int y0, int x1, int y1, bool smooth, uint32 color) = drawLineIncl(image, xcl(x0 , x1), xcl(y0, y1), xcl(x1, x0), xcl(y1, y0), smooth, color);
+
+/// Draw a bezier curve normal or smooth(anti-aliased)
+void drawBezier(Image image, int x0, int y0, int x1, int y1, int x2, int y2, bool smooth, uint32 color) {
+	int px_0 = x0;
+	int py_0 = y0;
+	int px_1 = 2 * (x1 - x0);
+	int py_1 = 2 * (y1 - y0);
+	int px_2 = x2 - 2 * x1 + x0;
+	int py_2 = y2 - 2 * y1 + y0;
+
+	double dt = 1. / 128;
+	for (double t = dt; t < 1; t += dt) {
+		x1 = (px_2 * t + px_1) * t + px_0;
+		y1 = (py_2 * t + py_1) * t + py_0;
+		drawLineIncl(image, x0, y0, x1, y1, smooth, color);
+		x0 = x1;
+		y0 = y1;
+	}
+	drawLine(image, x0, y0, x2, y2, smooth, color);
+}
+
+/// Draw a bezier curve normal or smooth(anti-aliased)
+void drawBezier(Image image, int x0, int y0, int x1, int y1, int x2, int y2, int x3, int y3, bool smooth, uint32 color) {
+	int px_0 = x0;
+	int py_0 = y0;
+	int px_1 = 3 * (x1 - x0);
+	int py_1 = 3 * (y1 - y0);
+	int px_2 = 3 * (x2 - x1) - px_1;
+	int py_2 = 3 * (y2 - y1) - py_1;
+	int px_3 = x3 - px_2 - px_1 - px_0;
+	int py_3 = y3 - py_2 - py_1 - py_0;
+
+	double dt = 1. / 128;
+	for (double t = dt; t < 1; t += dt) {
+		x1 = ((px_3 * t + px_2) * t + px_1) * t + px_0;
+		y1 = ((py_3 * t + py_2) * t + py_1) * t + py_0;
+		drawLineIncl(image, x0, y0, x1, y1, smooth, color);
+		x0 = x1;
+		y0 = y1;
+	}
+	drawLine(image, x0, y0, x3, y3, smooth, color);
+}
+
+// todo: https://rreusser.github.io/regl-gpu-lines/docs/debug.html
+// todo: void fillTriangle(Image image, int x0, int y0, int x1, int y1, int x1, int y1, bool smooth, uint32 color);
+
+/// Fill the entire image with the given color
+Image fill(Image image, uint32 color) {
+	image.fillRect(0, 0, image.width(), image.height(), color);
+	return image;
+}
+
+/// Fill the given rectangle rounding the corners using the given radius
+void fillRect(Image image, const Rect roi&, int rx, int ry, uint32 color) {
+	if (roi.w <= 0 || roi.h <= 0) {
+		// empty rectangle
+		return;
+	}
+	image.fillRRect(roi.x, roi.y, roi.x + roi.w, roi.y + roi.h, rx, ry, color);
+}
+
+/// Fill the given rectangle rounding the corners using the given radius
+inline fillRect(Image image, const Rect roi&, int r, uint32 color) = fillRect(image, roi, r, r, color);
+
+inline drawAntiAliased = false;
+//inline fillOval(Image image, int x0, int y0, int x1, int y1, bool aa, uint32 color) = fillOval(image, x0, y0, x1, y1, color);
+//inline drawOval(Image image, int x0, int y0, int x1, int y1, bool aa, uint32 color) = drawOval(image, x0, y0, x1, y1, color);
+inline drawLine(Image image, int x0, int y0, int x1, int y1, uint32 color) = drawLine(image, x0, y0, x1, y1, drawAntiAliased, color);
+inline drawBezier(Image image, int x0, int y0, int x1, int y1, int x2, int y2, uint32 color) = drawBezier(image, x0, y0, x1, y1, x2, y2, drawAntiAliased, color);
+inline drawBezier(Image image, int x0, int y0, int x1, int y1, int x2, int y2, int x3, int y3, uint32 color) = drawBezier(image, x0, y0, x1, y1, x2, y2, x3, y3, drawAntiAliased, color);
+
+/// Fill a rectangle on the `image` specified by `roi` with the given `color`
+void fillRect(Image image, const Rect roi&, uint32 color) {
+	if (roi.w <= 0 || roi.h <= 0) {
+		// empty rectangle
+		return;
+	}
+	image.fillRect(roi.x, roi.y, roi.x + roi.w, roi.y + roi.h, color);
+}
+
+/// Draw a rectangle on the `image` specified by `roi` with the given `color`
+void drawRect(Image image, const Rect roi&, uint32 color) {
+	if (roi.w <= 0 || roi.h <= 0) {
+		// empty rectangle
+		return;
+	}
+	image.drawRect(roi.x, roi.y, roi.x + roi.w, roi.y + roi.h, color);
+}
+
+/// Fill a rectangle on the `image` specified by `roi` with the given `color`
+void fillOval(Image image, const Rect roi&, uint32 color) {
+	if (roi.w <= 0 || roi.h <= 0) {
+		// empty rectangle
+		return;
+	}
+	image.fillOval(roi.x, roi.y, roi.x + roi.w, roi.y + roi.h, color);
+}
+
+/// Draw a rectangle on the `image` specified by `roi` with the given `color`
+void drawOval(Image image, const Rect roi&, uint32 color) {
+	if (roi.w <= 0 || roi.h <= 0) {
+		// empty rectangle
+		return;
+	}
+	image.drawOval(roi.x, roi.y, roi.x + roi.w, roi.y + roi.h, color);
+}
+/// Create an image with the given with, height and depth
+inline Image(int width, int height, int depth) = Image.create(width, height, depth);
+
+/// Create an image by opening an image file
+Image Image(const char fileName[*], int depth) {
+	static if (typename(Image.openPng) != null) {
+		if (fileName.endsWith(".png", ignCaseCmp)) {
+			return Image.openPng(fileName, depth);
+		}
+	}
+	static if (typename(Image.openJpg) != null) {
+		if (fileName.endsWith(".jpeg", ignCaseCmp)) {
+			return Image.openJpg(fileName, depth);
+		}
+		if (fileName.endsWith(".jpg", ignCaseCmp)) {
+			return Image.openJpg(fileName, depth);
+		}
+	}
+	static if (typename(Image.openBmp) != null) {
+		if (fileName.endsWith(".bmp", ignCaseCmp)) {
+			return Image.openBmp(fileName, depth);
+		}
+	}
+	return Image.openImg(fileName, depth);
+}
+
+/// Create an image by opening an image file
+inline Image(const char fileName[*]) = Image(fileName, 32);
+// micro ui, TODO: add comments
+
 static if (typename(debugLayoutDraw) == null) {
 inline debugLayoutDraw(Image img, const Rect rect&, uint32 rgb) = void(0);
 }
@@ -5991,12 +7302,6 @@ struct Widget: Layout {
 	int scrollX = 0;
 	int scrollY = 0;
 
-	// fixme: these are needed to draw the widget on an image, move them to a different class
-	// the default method should be to draw it on the entire image
-	int align = Style.fill;
-	int margin = 0;
-	int radius = 0;
-
 	static bool focusNext(View view, bool prev) {
 		if (view == null) {
 			// probably a separator
@@ -6105,35 +7410,6 @@ struct Widget: Layout {
 		}
 	}
 
-	bool onMeasure(Widget this, Rect measured&) {
-		int margin = this.margin;
-		int align = this.align;
-		Rect rect = {
-			x: margin;
-			y: margin;
-			w: measured.w - 2 * margin;
-			h: measured.h - 2 * margin;
-		};
-
-		Layout.onMeasure(this, &measured);
-		this.measure = false;
-
-		measured.x = measured.y = 0;
-		this.onLayout(this, &measured);
-		Style.align(rect, &measured, align);
-		return true;
-	}
-
-	void onDraw(Widget this, Image offs, Rect rect, const Style style&) {
-		offs = offs.slice(rect);
-		if (style.backgroundColor != -1) {
-			Rect r = { w: offs.width(), h: offs.height() };
-			offs.fillRect(r, this.radius, style.backgroundColor);
-		}
-		Layout.onDraw(this, offs, rect, style);
-		offs.destroy();
-	}
-
 	bool onKeyEvent(Widget this, const KeyEvent event&) {
 		if (Layout.onKeyEvent(this, event)) {
 			return true;
@@ -6152,65 +7428,20 @@ struct Widget: Layout {
 			return true;
 		}
 
-		if (event.key == '[' || event.key == ']') {
-			// hide, show controls
-			if (event.key == '[') {
-				if (this.align != Style.topLeft) {
-					this.align = Style.topLeft;
-				} else {
-					this.enabled = !this.enabled;
-					this.invalidate();
-					return true;
-				}
-			}
-			if (event.key == ']') {
-				if (this.align != Style.topRight) {
-					this.align = Style.topRight;
-				} else {
-					this.enabled = !this.enabled;
-					this.invalidate();
-					return true;
-				}
-			}
-
-			this.enabled = true;
-			this.measure = true;
-			this.invalidate();
-			return true;
-		}
-
-		if (event.key == 8 && event.isShift) {
-			return this.onReset(this);
-		}
-
 		return false;
 	}
 
-	// TODO: remove: this override allows to forward the drag event to the focused view
-	bool onTouchEvent(Widget this, const Rect rect&, const TouchEvent event&) {
-		if (Layout.onTouchEvent(this, rect, event)) {
-			return true;
-		}
+	// TODO: make layout part of the measure step: to calculate the correct width and height,
+	//       elements inside the layout must be placed to their position
+	bool onMeasure(Widget this, Rect measured&) {
+		Layout.onMeasure(this, &measured);
+		this.onLayout(this, &measured);
+		return true;
+	}
 
-		if (!(event.button && (event.dx || event.dy))) {
-			// event is not a drag event
-			return false;
-		}
-
-		if (this.pressedIndex != -1) {
-			// there is a pressed view, and is different than the focused one
-			return false;
-		}
-
-		View view = getFocused(this);
-		if (view == null) {
-			// there is no focused view
-			return false;
-		}
-		Layout parent = view.parent.as(Layout);
-		Rect r& = parent.items[parent.focusedIndex].rect;
-		// forward the event to the view
-		return view.onTouchEvent(view, r, event);
+	void onDraw(Widget this, Image offs, Rect rect, const Style style&) {
+		offs.fillRect(rect, style.backgroundColor);
+		Layout.onDraw(this, offs, rect, style);
 	}
 }
 
@@ -6221,10 +7452,11 @@ struct Window {
 	const Image offscreen;
 	Widget widget;
 
+	int64 timeout = 0;
+
 	// Touch state
 	int clicks = 0;
 	int64 time = 0;
-	int64 timeout = 0;
 	int32 button = 0;
 	int32 lastX = 0;
 	int32 lastY = 0;
@@ -6285,6 +7517,19 @@ struct Window {
 			return false;
 		}
 		return hasPressed(window.widget, ...items);
+	}
+
+	/// returns true if the event is processable, false in case only the ui needs to be updated
+	static bool processableEvent(Window window&, int action, int button, int x, int y) {
+		if (button == 0 && (action == Gui.MOUSE_MOTION || action == Gui.FINGER_MOTION)) {
+			// hover views
+			return false;
+		}
+		if (button != 0 && (action == Gui.MOUSE_PRESS || action == Gui.FINGER_PRESS)) {
+			// focus views
+			return false;
+		}
+		return true;
 	}
 
 	static bool dispatchEvent(Window window&, Widget widget, int action, int button, int x, int y) {
@@ -6495,50 +7740,6 @@ struct Window {
 	}
 }
 
-Widget Widget(int width, int height, const Style style&) {
-	Widget widget = {
-		rect: {};
-		width: width;
-		height: height;
-		align: Style.center;
-		widgetStyle: {
-			format: { padLen: 5, precision: 2 };
-		};
-		style: style;
-		focus: widget;	// focus first visible view
-	};
-	return widget;
-}
-Widget Widget(int width, int height) {
-	const Style style& = null;
-	return Widget(width, height, style);
-}
-Widget Widget(View views...) {
-	Widget widget = {
-		rect: {};
-
-		radius: 5;
-		margin: 10;
-		align: Style.topRight;
-
-		paddingTop: 3;
-		paddingLeft: 3;
-		paddingRight: 3;
-		paddingBottom: 3;
-		widgetStyle: {
-			align: Style.left;
-			format: { padLen: 5, precision: 2 };
-		};
-		focus: widget;	// focus first visible view
-	};
-	widget.style = widget.widgetStyle;
-
-	if (views.length > 0) {
-		widget.addItems(...views);
-	}
-	return widget;
-}
-
 Widget getWidget(View view) {
 	for (View v = view; v != null; v = v.parent) {
 		if (Widget w = v.as(Widget)) {
@@ -6591,6 +7792,7 @@ void focus(View view) {
 	widget.focusNext(false);
 	widget.measure = true;
 }
+
 bool isFocused(View view) {
 	Widget widget = getWidget(view);
 	return view == widget.getFocused();
@@ -6603,1160 +7805,6 @@ bool isDirty(View view) {
 	Widget widget = getWidget(view);
 	return widget.measure;
 }
-
-struct Button: View {
-	const char text[*];
-
-	bool onMeasure(Button this, Rect rect&) {
-		Style style& = this.style;
-		style.measure(&rect, this.text);
-		return View.onMeasure(this, &rect);
-	}
-
-	void onDraw(Button this, Image offs, Rect rect, const Style style&) {
-		View.onDraw(this, offs, rect, style, null, this.text);
-	}
-}
-
-struct Switch: View {
-	static const char onOff[*][] = {
-		"off",
-		"on"
-	};
-
-	const char text[*];
-	const char states[*][] = onOff;
-
-	int selected = 0;
-	const int resetValue = 0;//TODO: selected;
-
-	// if the view is clicked but not focused, first just focus it
-	const bool clickToFocus = false;
-
-	static bool checked(Switch this) {
-		return this.selected != 0;
-	}
-
-	bool onUpdate(Switch this, int selected) {
-		int maxValue = this.states.length;
-		if (maxValue == 0) {
-			// graphical switch
-			maxValue = 2;
-		}
-		if (selected >= maxValue) {
-			selected = maxValue - 1;
-		}
-		else if (selected < 0) {
-			selected = 0;
-		}
-
-		if (this.selected == selected) {
-			return this.isDirty();
-		}
-
-		this.selected = selected;
-		return true;
-	}
-
-	bool onReset(Switch this) {
-		return this.onUpdate(this, this.resetValue);
-	}
-
-	bool onClick(Switch this) {
-		if (this.focusable && this.clickToFocus) {
-			if (!this.isFocused()) {
-				return true;
-			}
-		}
-		int maxValue = this.states.length;
-		int value = this.selected + 1;
-		if (maxValue == 0) {
-			// graphical switch
-			maxValue = 2;
-		}
-		if (value >= maxValue) {
-			value = 0;
-		}
-		return this.onUpdate(this, value);
-	}
-
-	void onCreate(Switch this, View parent) {
-		View.onCreate(this, parent);
-		// clamp to initial value and force update with a reset
-		int resetValue& = pointer(this.resetValue);
-		Switch.onUpdate(this, this.selected);
-		resetValue = this.selected;
-		this.onReset(this);
-	}
-
-	bool onKeyEvent(Switch this, const KeyEvent event&) {
-		if (event.release) {
-			return View.onKeyEvent(this, event);
-		}
-		if (event.key == '+' || event.key == '=') {
-			int value = this.selected + 1;
-			return this.onUpdate(this, value);
-		}
-		if (event.key == '-' || event.key == '_') {
-			int value = this.selected - 1;
-			return this.onUpdate(this, value);
-		}
-		return View.onKeyEvent(this, event);
-	}
-
-	bool onMeasure(Switch this, Rect rect&) {
-		int maxWidth = 0;
-		Style style& = this.style;
-		for (int i = 0; i < this.states.length; i += 1) {
-			Rect measured = {};
-			style.measure(&measured, this.states[i]);
-			if (maxWidth < measured.w) {
-				maxWidth = measured.w;
-			}
-		}
-		style.measure(&rect, this.text);
-		if (this.states.length == 0) {
-			rect.w += rect.h * 3 / 2;
-		} else {
-			rect.w += maxWidth;
-		}
-		return View.onMeasure(this, &rect);
-	}
-
-	void onDraw(Switch this, Image offs, Rect rect, const Style style&) {
-		char value[*] = null;
-		if (this.states.length == 0) {
-			Rect onOffRect = {
-				x: rect.x;
-				y: rect.y;
-				w: rect.h * 3 / 2;
-				h: rect.h;
-			};
-			Style.align(rect, &onOffRect, Style.right);
-
-			onOffRect.adjust(-style.padding);
-			uint32 color = style.focusedColor;
-			if (this.checked()) {
-				color = style.valueColor;
-			}
-			else if (this.isFocused()) {
-				color = style.hoveredColor;
-			}
-			offs.fillRect(onOffRect, onOffRect.h / 2, color);
-
-			if (this.checked()) {
-				onOffRect.x += rect.h / 2;
-			}
-
-			onOffRect.w = onOffRect.h;
-			offs.fillOval(onOffRect, style.textColor);
-			rect.w -= rect.h * 3 / 2;
-		} else {
-			value = this.states[this.selected];
-		}
-		View.onDraw(this, offs, rect, style, this.text, value);
-	}
-}
-
-struct Slider: View {
-	const char text[*];
-
-	int value = 0;
-	const int minimum = 0;
-	const int maximum = -1u >> 1;
-	const int divisor = 0;
-	const int resetValue = 0; // TODO: resetValue = value;
-
-	static float64 valueF64(Slider this) {
-		double value = this.value;
-		if (this.divisor != 0) {
-			return value / this.divisor;
-		}
-		return value;
-	}
-
-	bool onUpdate(Slider this, int value) {
-		if (value > this.maximum) {
-			value = this.maximum;
-		}
-		if (value < this.minimum) {
-			value = this.minimum;
-		}
-		if (this.value == value) {
-			return this.isDirty();
-		}
-		this.value = value;
-		return true;
-	}
-
-	bool onReset(Slider this) {
-		return this.onUpdate(this, this.resetValue);
-	}
-
-	void onCreate(Slider this, View parent) {
-		View.onCreate(this, parent);
-		// clamp to initial value and force update with a reset
-		int resetValue& = pointer(this.resetValue);
-		Slider.onUpdate(this, this.value);
-		resetValue = this.value;
-		this.onReset(this);
-	}
-
-	bool onKeyEvent(Slider this, const KeyEvent event&) {
-		if (event.release) {
-			return View.onKeyEvent(this, event);
-		}
-		if (event.key == ' ') {
-			return this.onReset(this);
-		}
-		if (event.key == '+' || event.key == '=') {
-			return this.onUpdate(this, this.value + (event.isShift ? 1 : 10));
-		}
-		if (event.key == '-' || event.key == '_') {
-			return this.onUpdate(this, this.value - (event.isShift ? 1 : 10));
-		}
-		return View.onKeyEvent(this, event);
-	}
-
-	bool onTouchEvent(Slider this, const Rect rect&, const TouchEvent event&) {
-		if (event.button == 0) {
-			return false;
-		}
-		if (event.release && (event.clicks < 0 || event.clicks > 1)) {
-			return this.onReset(this);
-		}
-
-		if (event.clicks < 1) {
-			float64 value = event.dx;
-			if (!event.isShift && value != 0) {
-				value *= float64(this.maximum - this.minimum) / rect.w;
-				if (value > -1 && value < 1) {
-					value = value < 0 ? -1 : 1;
-				}
-			}
-			value += this.value;
-			if (value > this.maximum) {
-				value = this.maximum;
-			}
-			if (value < this.minimum) {
-				value = this.minimum;
-			}
-			return this.onUpdate(this, value);
-		}
-		if (event.release) {
-			if (event.y < rect.y + rect.h - rect.h / 3) {
-				// clicking the upper part to focus control
-				return true;
-			}
-			float64 value = event.x - rect.x;
-			value *= float64(this.maximum - this.minimum) / rect.w;
-			return this.onUpdate(this, this.minimum + value);
-		}
-		return View.onTouchEvent(this, rect, event);
-	}
-
-	bool onMeasure(Slider this, Rect rect&) {
-		char value[64] = {0};
-		Style style& = this.style;
-		if (this.divisor != 0) {
-			value.append(0, this.valueF64(), style.format);
-		} else {
-			value.append(0, this.value, style.format);
-		}
-		Rect valueRect = {};
-		style.measure(&valueRect, value);
-		style.measure(&rect, this.text);
-		rect.w += valueRect.w;
-		return View.onMeasure(this, &rect);
-	}
-
-	void onDrawSlider(Slider this, Image offs, Rect rect, const Style style&) {
-		if (this.maximum == this.minimum) {
-			return;
-		}
-		const int y1 = rect.y + rect.h;
-		const int y0 = y1 - style.padding / 4;
-		const int x0 = rect.x;
-		const int x1 = rect.x + rect.w;
-		const int x = x0 + int64(this.value - this.minimum) * rect.w / (this.maximum - this.minimum);
-		if (x > x0) {
-			offs.fillRect(x0, y0, x, y1, style.valueColor);
-		}
-		if (x < x1) {
-			offs.fillRect(x, y0, x1, y1, style.focusedColor);
-		}
-	}
-
-	void onDraw(Slider this, Image offs, Rect rect, const Style style&) {
-		char value[64] = {0};
-		if (this.divisor != 0) {
-			value.append(0, this.valueF64(), style.format);
-		} else {
-			value.append(0, this.value, style.format);
-		}
-		if (this.onDrawSlider != null) {
-			this.onDrawSlider(this, offs, rect, style);
-		}
-		View.onDraw(this, offs, rect, style, this.text, value);
-	}
-}
-
-struct Histogram: View {
-	const bool lines = false;
-	// histogram data is in alpha channel, display it with color rgb
-	bool color = false;
-	argb data[256] = null;   // FIXME: this should be not possible
-
-	static void update(Histogram this, Image image) {
-		uint32 data[*] = pointer(this.data);
-		image.calcRgbHist(null, &data);
-		this.color = false;
-	}
-
-	bool onUpdate(Histogram this, int idx, int value) {
-		this.data[idx] = argb(idx, value, value, value);
-		return true;
-	}
-
-	bool onReset(Histogram this) {
-		bool result = false;
-		for (int i = 0; i < 256; i += 1) {
-			result |= Histogram.onUpdate(this, i, i);
-		}
-		return result;
-	}
-
-	void onCreate(Histogram this, View parent) {
-		View.onCreate(this, parent);
-		Histogram.onReset(this);
-	}
-
-	bool onTouchEvent(Histogram this, const Rect rect&, const TouchEvent event&) {
-		if (event.release || !event.button) {
-			return View.onTouchEvent(this, rect, event);
-		}
-
-		int px = Math.max(0, rect.w - 256) / 2;
-		int x0 = event.x - rect.x - px;
-		int x1 = x0 - event.dx;
-		int y0 = event.y - rect.y;
-		int y1 = y0 - event.dy;
-
-		if (x0 > x1) {
-			int x = x0;
-			x0 = x1;
-			x1 = x;
-			int y = y0;
-			y0 = y1;
-			y1 = y;
-		}
-		int y = y0 << 16;
-		int dy = y1 - y0;
-		if (x1 != x0) {
-			dy = (dy << 16) / (x1 - x0);
-		}
-		if (x0 < 0) {
-			y -= x0 * dy;
-			x0 = 0;
-		}
-		if (x1 > 256) {
-			x1 = 256;
-		}
-		int h = rect.h;
-		for (int x = x0; x < x1; x += 1) {
-			int val = 255 * (h - (y >> 16)) / h;
-			this.onUpdate(this, x, val);
-			y += dy;
-		}
-		return true;
-	}
-
-	bool onMeasure(Histogram this, Rect rect&) {
-		if (this.width < 0) {
-			rect.w = 256;
-		}
-		if (this.height < 0) {
-			rect.h = 128;
-		}
-		return View.onMeasure(this, &rect);
-	}
-
-	void onDraw(Histogram this, Image offs, const Rect rect, const Style style&) {
-		enum {
-			colB: 0x4371c6;
-			colG: 0x72d874;
-			colR: 0xfc6165;
-			colL: 0xdadada;
-		}
-		int px = (rect.w - 256) / 2;
-		if (this.lines) {
-			int y = rect.y + rect.h;
-			int pb = bch(this.data[0]) * rect.h / 256;
-			int pg = gch(this.data[0]) * rect.h / 256;
-			int pr = rch(this.data[0]) * rect.h / 256;
-			int pl = ach(this.data[0]) * rect.h / 256;
-
-			for (int i = 1; i < this.data.length; i += 1) {
-				int x = rect.x + i + px;
-				argb data = this.data[i];
-				int bv = bch(data) * rect.h / 256;
-				int gv = gch(data) * rect.h / 256;
-				int rv = rch(data) * rect.h / 256;
-				int lv = ach(data) * rect.h / 256;
-
-				if (this.color) {
-					offs.fillRect(x, y - pl, x + 1, y - lv + int(pl == lv), data.v);
-				} else {
-					offs.fillRect(x, y - pb, x + 1, y - bv + int(pb == bv), colB);
-					offs.fillRect(x, y - pg, x + 1, y - gv + int(pg == gv), colG);
-					offs.fillRect(x, y - pr, x + 1, y - rv + int(pr == rv), colR);
-					offs.fillRect(x, y - pl, x + 1, y - lv + int(pl == lv), colL);
-				}
-
-				pb = bv;
-				pg = gv;
-				pr = rv;
-				pl = lv;
-			}
-		}
-		else if (this.color) {
-			for (int i = 0; i < this.data.length; i += 1) {
-				argb data = this.data[i];
-				int x = rect.x + i + px;
-				int y1 = rect.y + rect.h;
-				int y0 = y1 - ach(data) * rect.h / 256;
-				offs.fillRect(x, y0 - int(y1 == y0), x + 1, y1, uint32(data));
-			}
-		}
-		else {
-			for (int i = 0; i < this.data.length; i += 1) {
-				int x = rect.x + i + px;
-				argb data = this.data[i];
-				int bv = bch(data) * rect.h / 256;
-				int gv = gch(data) * rect.h / 256;
-				int rv = rch(data) * rect.h / 256;
-				int lv = ach(data) * rect.h / 256;
-				for (int y = 0; y < rect.h; y += 1) {
-					uint32 b = colB * uint32(y < bv);
-					uint32 g = colG * uint32(y < gv);
-					uint32 r = colR * uint32(y < rv);
-					uint32 l = colL * uint32(y < lv);
-					offs.set(x, rect.h - y + rect.y - 1, r | g | b | l);
-				}
-			}
-		}
-	}
-}
-
-/// debug view to count draws
-struct DebugView: View {
-	char text[64] = null;
-
-	int64 started = 0;
-	int64 maxDuration = 0;
-	int64 durations[64] = null;
-
-	int64 measures = 0;
-	int64 draws = 0;
-
-	static void startTimer(DebugView this) {
-		this.started = System.millis();
-		this.maxDuration = 0;
-		// todo: don't copy, use a circular queue
-		for (int i = this.durations.length - 1; i >= 1; i -= 1) {
-			int64 duration = this.durations[i - 1];
-			this.durations[i] = duration;
-			if (this.maxDuration < duration) {
-				this.maxDuration = duration;
-			}
-		}
-		this.durations[0] = this.maxDuration;
-	}
-
-	static void update(DebugView this) {
-		int pos = 0;
-		if (this.measures > 0) {
-			pos = this.text.append(pos, pos > 0 ? ", " : "");
-			pos = this.text.append(pos, "measures: ");
-			pos = this.text.append(pos, this.measures);
-		}
-
-		if (this.draws > 0) {
-			pos = this.text.append(pos, pos > 0 ? ", " : "");
-			pos = this.text.append(pos, "draws: ");
-			pos = this.text.append(pos, this.draws);
-		}
-
-		if (this.durations[0] > 0 || pos == 0) {
-			pos = this.text.append(pos, pos > 0 ? ", " : "");
-			pos = this.text.append(pos, "time: ");
-			pos = this.text.append(pos, this.durations[0]);
-		}
-	}
-
-	bool onClick(DebugView this) {
-		return this.onReset(this);
-	}
-
-	bool onReset(DebugView this) {
-		if (this.measures > 0) {
-			this.measures = 0;
-		}
-		if (this.draws > 0) {
-			this.draws = 0;
-		}
-		for (int i = 0; i < this.durations.length; i += 1) {
-			this.durations[i] = 0;
-		}
-		this.maxDuration = 0;
-		this.started = 0;
-		return true;
-	}
-
-	void onCreate(DebugView this, View parent) {
-		View.onCreate(this, parent);
-		onReset(this);
-	}
-
-	bool onMeasure(DebugView this, Rect rect&) {
-		if (this.measures >= 0) {
-			this.measures += 1;
-		}
-		this.update();
-		Style style& = this.style;
-		style.measure(&rect, this.text);
-		return View.onMeasure(this, &rect);
-	}
-
-	void onDraw(DebugView this, Image offs, Rect rect, const Style style&) {
-		if (this.started > 0) {
-			int64 duration = System.millis() - this.started;
-			this.durations[0] = duration;
-			if (this.maxDuration < duration) {
-				this.maxDuration = duration;
-			}
-			this.started = 0;
-		}
-
-		if (this.maxDuration > 0) {
-			int y0 = rect.y + rect.h;
-			float64 ys = rect.h / float64(this.maxDuration);
-			float64 xs = rect.w / float64(this.durations.length);
-			for (int i = 0; i < this.durations.length; i += 1) {
-				int y1 = y0 - ys * this.durations[i];
-				int x1 = rect.x + xs * (this.durations.length - i);
-				offs.fillRect(x1 - xs, y0, x1, y1, style.focusedColor);
-			}
-		}
-
-		if (this.draws >= 0) {
-			this.draws += 1;
-		}
-		this.update();
-		style.align(rect, &rect, this.text);
-		offs.drawText(rect, style.font, this.text, style.textColor);
-	}
-}
-
-struct Panel: Layout {
-	bool visible;
-
-	static bool visible(Panel this, bool value) {
-		if (this.visible == value) {
-			return false;
-		}
-
-		this.visible = value;
-		this.invalidate();
-		return true;
-	}
-
-	bool onMeasure(Panel this, Rect rect&) {
-		if (!this.visible) {
-			// view is hidden
-			rect.w = rect.h = 0;
-			return false;
-		}
-		return Layout.onMeasure(this, &rect);
-	}
-}
-
-// todo this should be a TabPage and/or Accordion
-// tab/expand item should be a custom 2 state button
-// use a flag to enable multi selection for both TabPage or Accordion
-// in case of TabPage the `select button` should be in the tab list
-// in case of Accordion the `expand button` should be in the same list with the pages
-struct TabPage: Layout {
-	Layout tabs = null;
-	Layout active = null;
-	View separator = null;
-	argb background = argb(0);
-
-	void onCreate(TabPage this, View parent) {
-		Layout.onCreate(this, parent);
-		this.active = this.items[1].view;
-		Style style&  = this.style;
-		this.background = mix_rgb8(128, argb(style.backgroundColor), argb(style.hoveredColor));
-	}
-
-	static bool onMeasurePage(Layout layout, Rect rect&) {
-		TabPage parent = layout.data.as(TabPage);
-		if (parent != null && parent.active != layout) {
-			// view is hidden
-			rect.w = rect.h = 0;
-			return false;
-		}
-		return Layout.onMeasure(layout, &rect);
-	}
-
-	static void onDrawPage(Layout panel, Image offs, Rect rect, const Style style&) {
-		TabPage page = panel.data.as(TabPage);
-		offs.fillRect(rect, page.background.v);
-		Layout.onDraw(panel, offs, rect, style);
-	}
-
-	static void onDrawBar(Layout tabs, Image offs, Rect rect, const Style style&) {
-		TabPage page = tabs.data.as(TabPage);
-		offs.fillRect(rect, page.background.v);
-		Layout.onDraw(tabs, offs, rect, style);
-	}
-
-	static void onDrawTab(Button tab, Image offs, Rect rect, const Style style&) {
-		TabPage page = tab.parent.parent.as(TabPage);
-		if (page.active == tab.data.as(Layout)) {
-			offs.fillRect(rect, style.focusedColor);
-			style.align(rect, &rect, tab.text);
-			offs.drawText(rect, style.font, tab.text, style.textColor);
-			return;
-		}
-		Button.onDraw(tab, offs, rect, style);
-	}
-
-	static bool onClickTab(Button button) {
-		if (Layout page = button.data.as(Layout)) {
-			if (TabPage tabs = page.data.as(Layout)) {
-				if (tabs.active == page) {
-					return false;
-				}
-				tabs.active = page;
-				tabs.invalidate();
-				page.focus();
-			}
-		}
-		return true;
-	}
-
-	static TabPage addItems(TabPage this, const char text[*], int align, View views...) {
-		inline padding = 1;
-		if (this.tabs == null) {
-			Layout tabs = {
-				paddingTop: padding;
-				paddingLeft: padding;
-				paddingRight: padding;
-				paddingBottom: padding;
-				data: this;
-				onDraw: onDrawBar;
-				orientation: -this.orientation;
-			};
-
-			View separator = {
-				enabled: false;
-				width: padding;
-				height: padding;
-			};
-
-			this.tabs = tabs;
-			this.separator = separator;
-			Layout.addItems(this, Style.center, tabs);
-		}
-
-		Layout page = {
-			data: this;
-			// fixme: orientation;
-			onDraw: onDrawPage;
-			onMeasure: onMeasurePage;
-		};
-		Button tab = {
-			text: text;
-			data: page;
-			focusable: false;
-			onDraw: onDrawTab;
-			onClick: onClickTab;
-		};
-		if (this.tabs.itemCount > 0) {
-			this.tabs.addItems(0, this.separator);
-		}
-		this.tabs.addItems(0, tab);
-		page.addItems(align, ...views);
-		Layout.addItems(this, Style.fill, page);
-		return this;
-	}
-}
-
-static struct Gui {
-	static void showWindow(Image offscreen, int onEvent(Window window&, int action, int button, int x, int y), Widget widget) {
-		Window window = {
-			offscreen: offscreen;
-			widget: widget;
-		};
-		Gui.showWindow(offscreen, window, onEvent);
-	}
-
-	static void showWindow(Image offscreen, Widget widget) {
-		static int showWindowEvent(Window win&, int action, int button, int x, int y) {
-			if (action == Gui.KEY_RELEASE && button == 27) {
-				// exit when releasing escape key
-				return -1;
-			}
-			Widget widget = win.widget;
-			if (!win.dispatchEvent(widget, action, button, x, y)) {
-				// event not processed, wait for the next one
-				return 0;
-			}
-			return win.draw(widget);
-		}
-		return showWindow(offscreen, showWindowEvent, widget);
-	}
-
-	static void showWindow(Widget widget) {
-		widget.onCreate(widget, widget);
-		widget.onMeasure(widget, &widget.rect);
-		widget.measure = true;
-		Image offscreen = Image(widget.rect.w, widget.rect.h, 32);
-		showWindow(offscreen, widget);
-		offscreen.destroy();
-	}
-}
-
-/* original design
-struct View: object {...}	// garbage collected
-struct Text: View {...}
-struct Label: View {...}
-struct Image: View {...}
-struct Check: View {...}	// Switch?
-struct Input: View {...}	// single line, multi line
-struct Select: View {...}	// ComboBox
-struct Slider: View {...}
-struct Button: View {...}
-
-struct Panel ~= Layout
-struct List: View {...}
-struct Grid: View {...}
-struct Page: View {...}
-struct Window: View {...}
-
-Window window = {
-	width: 100;
-	height: 100;
-	items: {
-		Button {
-			label: "button1";
-			onClick: print("x");
-		};
-	};
-};
-window.show();
-*/
-/// Fill a rectangle on the `image` specified by the coordinates with the given `color`
-void fillRect(Image image, int x0, int y0, int x1, int y1, int incl, uint32 color) {
-	static if (preferNativeCalls && typename(Image.fillRect) != null) {
-		return Image.fillRect(image, x0, y0, x1, y1, incl, color);
-	}
-
-	if (x0 > x1) {
-		int t = x0;
-		x0 = x1;
-		x1 = t;
-	}
-	if (y0 > y1) {
-		int t = y0;
-		y0 = y1;
-		y1 = t;
-	}
-	x1 += incl;
-	y1 += incl;
-
-	for (int y = y0; y < y1; y += 1) {
-		for (int x = x0; x < x1; x += 1) {
-			image.set(x, y, color);
-		}
-	}
-}
-
-/// Fill a rectangle on the `image` specified by the coordinates with the given `color`
-inline fillRect(Image image, int x0, int y0, int x1, int y1, uint32 color) = image.fillRect(x0, y0, x1, y1, 0, color);
-
-/// Draw a rectangle on the `image` specified by the coordinates with the given `color`
-void drawRect(Image image, int x0, int y0, int x1, int y1, uint32 color) {
-	if (y0 > y1) {
-		int t = y1;
-		y1 = y0;
-		y0 = t;
-	}
-	if (x0 > x1) {
-		int t = x1;
-		x1 = x0;
-		x0 = t;
-	}
-
-	if (x1 - x0 < 3 || y1 - y0 < 3) {
-		// no gap between top and bottom or left and right; draw all at once
-		return image.fillRect(x0, y0, x1, y1, color);
-	}
-
-	image.fillRect(x0, y0, x1, y0 + 1, color);			// top
-	image.fillRect(x0, y0 + 1, x0 + 1, y1 - 1, color);	// left
-	image.fillRect(x1 - 1, y0 + 1, x1, y1 - 1, color);	// right
-	image.fillRect(x0, y1 - 1, x1, y1, color);			// bottom
-}
-
-/// Fill a rounded rectangle on `image` specified by the coordinates and rounding, with the given `color`
-void fillRRect(Image image, int x0, int y0, int x1, int y1, int rx, int ry, uint32 color) {
-	if (x0 > x1) {
-		int t = x0;
-		x0 = x1;
-		x1 = t;
-	}
-	if (y0 > y1) {
-		int t = y0;
-		y0 = y1;
-		y1 = t;
-	}
-	x1 -= int(x1 > x0);
-	y1 -= int(y1 > y0);
-
-	int dx = x1 - x0;
-	int dy = y1 - y0;
-	if (dx < 3 || dy < 3) {
-		// no rounding is needed
-		return image.fillRect(x0, y0, x1, y1, 1, color);
-	}
-
-	ry = Math.min(ry, (dy - int(dx > 16)) / 2);
-	rx = Math.min(rx, (dx - int(dy > 16)) / 2);
-	if (rx < 8 || ry < 8) {
-		if (rx < 1 || ry < 1) {
-			// no rounding is needed
-			return image.fillRect(x0, y0, x1, y1, 1, color);
-		}
-		// apply some visual fixes
-		rx += int(rx == 7) - int(rx == 6);
-		ry += int(ry == 7) - int(ry == 6);
-	}
-
-	int64 sx = rx * rx;
-	int64 sy = ry * ry;
-	int64 rdy = sx * ry;
-	int64 rdx = 0;
-	int64 r = rdy / 2;
-
-	x0 += rx;
-	x1 -= rx;
-	for (;y0 < y1;) {
-		image.fillRect(x0, y0, x1, y0, 1, color);
-		image.fillRect(x0, y1, x1, y1, 1, color);
-		if (r >= 0) {
-			x0 -= 1;
-			x1 += 1;
-			r -= rdx += sy;
-		}
-		if (r < 0) {
-			y0 += 1;
-			y1 -= 1;
-			r += rdy -= sx;
-		}
-	}
-	image.fillRect(x0, y0, x1, y1, 1, color);
-}
-
-/// Draw a rounded rectangle on `image` specified by the coordinates and rounding, with the given `color`
-void drawRRect(Image image, int x0, int y0, int x1, int y1, int rx, int ry, uint32 color) {
-	if (x0 > x1) {
-		int t = x0;
-		x0 = x1;
-		x1 = t;
-	}
-	if (y0 > y1) {
-		int t = y0;
-		y0 = y1;
-		y1 = t;
-	}
-	x1 -= int(x1 > x0);
-	y1 -= int(y1 > y0);
-
-	int dx = x1 - x0;
-	int dy = y1 - y0;
-	if (dx < 2 || dy < 2) {
-		// no gap between top and bottom or left and right; draw all at once
-		return image.fillRect(x0, y0, x1, y1, 1, color);
-	}
-
-	ry = Math.min(ry, (dy - int(dx > 16)) / 2);
-	rx = Math.min(rx, (dx - int(dy > 16)) / 2);
-	if (rx < 8 || ry < 8) {
-		if (rx < 1 || ry < 1) {
-			// no rounding is needed
-			return image.drawRect(x0, y0, x1 + 1, y1 + 1, color);
-		}
-		// apply some visual fixes
-		rx += int(rx == 7) - int(rx == 6);
-		ry += int(ry == 7) - int(ry == 6);
-	}
-
-	int64 sx = rx * rx;
-	int64 sy = ry * ry;
-	int64 rdy = sx * ry;
-	int64 rdx = 0;
-	int64 r = rdy / 2;
-
-	x0 += rx;
-	x1 -= rx;
-	image.fillRect(x0, y0, x1, y0, 1, color);
-	image.fillRect(x0, y1, x1, y1, 1, color);
-	for (;y0 < y1;) {
-		image.set(x0, y0, color);
-		image.set(x1, y0, color);
-		image.set(x0, y1, color);
-		image.set(x1, y1, color);
-		if (r >= 0) {
-			x0 -= 1;
-			x1 += 1;
-			r -= rdx += sy;
-		}
-		if (r < 0) {
-			y0 += 1;
-			y1 -= 1;
-			r += rdy -= sx;
-		}
-	}
-	image.fillRect(x0, y0, x0, y1, 1, color);
-	image.fillRect(x1, y0, x1, y1, 1, color);
-}
-
-inline fillOval(Image image, int x0, int y0, int x1, int y1, uint32 color) = image.fillRRect(x0, y0, x1, y1, Math.abs(x0 - x1), Math.abs(y0 - y1), color);
-inline drawOval(Image image, int x0, int y0, int x1, int y1, uint32 color) = image.drawRRect(x0, y0, x1, y1, Math.abs(x0 - x1), Math.abs(y0 - y1), color);
-
-/// Fill the given rectangle rounding the corners using the given radius
-inline fillRRect(Image image, int x1, int y1, int x2, int y2, int r, uint32 color) = fillRRect(image, x1, y1, x2, y2, r, r, color);
-/// draw the given rectangle rounding the corners using the given radius
-inline drawRRect(Image image, int x1, int y1, int x2, int y2, int r, uint32 color) = drawRRect(image, x1, y1, x2, y2, r, r, color);
-
-/// Draw a normal or smooth(anti-aliased) line, including ending pixel
-void drawLineIncl(Image image, int x0, int y0, int x1, int y1, bool smooth, uint32 color) {
-	inline mix(Image image, int x0, int y0, int alpha, uint32 color) = image.set(x0, y0, mix_rgb8(alpha, argb(uint32(image.get(x0, y0))), argb(color)));
-
-	if (x0 == x1 || y0 == y1) {
-		// horizontal or vertical line && avoid division by zero
-		return image.fillRect(x0, y0, x1, y1, 1, color);
-	}
-
-	int dx = x1 - x0;
-	int dy = y1 - y0;
-
-	if (Math.abs(dx) > Math.abs(dy)) {
-		if (x0 > x1) {
-			int x = x0;
-			x0 = x1;
-			x1 = x;
-			y0 = y1;
-		}
-		int y = y0 << 16;
-		dy = (dy << 16) / dx;
-		if (x1 > image.width()) {
-			x1 = image.width();
-		}
-		if (x0 < 0) {
-			y -= dy * x0;
-			x0 = 0;
-		}
-
-		if (!smooth) {
-			y += 0x8000;
-			for (int x = x0; x <= x1; x += 1) {
-				image.set(x, y >> 16, color);
-				y += dy;
-			}
-			return;
-		}
-
-		for (int x = x0; x <= x1; x += 1) {
-			uint32 alpha = (~y >> 8) & 255;
-			image.mix(x, y >> 16, alpha, color);
-			image.mix(x, (y >> 16) + 1, 255 - alpha, color);
-			y += dy;
-		}
-	} else {
-		if (y0 > y1) {
-			int y = y0;
-			y0 = y1;
-			y1 = y;
-			x0 = x1;
-		}
-		int x = x0 << 16;
-		dx = (dx << 16) / dy;
-		if (y1 > image.height()) {
-			y1 = image.height();
-		}
-		if (y0 < 0) {
-			x -= dx * y0;
-			y0 = 0;
-		}
-
-		if (!smooth) {
-			x += 0x8000;
-			for (int y = y0; y <= y1; y += 1) {
-				image.set(x >> 16, y, color);
-				x += dx;
-			}
-			return;
-		}
-
-		for (int y = y0; y <= y1; y += 1) {
-			int alpha = (~x >> 8) & 255;
-			image.mix(x >> 16, y, alpha, color);
-			image.mix((x >> 16) + 1, y, 255 - alpha, color);
-			x += dx;
-		}
-	}
-}
-
-inline xcl(int a, int b) = a - int(b < a);	// exclude right bottom
-/// Draw a normal or smooth(anti-aliased) line
-inline drawLine(Image image, int x0, int y0, int x1, int y1, bool smooth, uint32 color) = drawLineIncl(image, xcl(x0 , x1), xcl(y0, y1), xcl(x1, x0), xcl(y1, y0), smooth, color);
-
-/// Draw a bezier curve normal or smooth(anti-aliased)
-void drawBezier(Image image, int x0, int y0, int x1, int y1, int x2, int y2, bool smooth, uint32 color) {
-	int px_0 = x0;
-	int py_0 = y0;
-	int px_1 = 2 * (x1 - x0);
-	int py_1 = 2 * (y1 - y0);
-	int px_2 = x2 - 2 * x1 + x0;
-	int py_2 = y2 - 2 * y1 + y0;
-
-	double dt = 1. / 128;
-	for (double t = dt; t < 1; t += dt) {
-		x1 = (px_2 * t + px_1) * t + px_0;
-		y1 = (py_2 * t + py_1) * t + py_0;
-		drawLineIncl(image, x0, y0, x1, y1, smooth, color);
-		x0 = x1;
-		y0 = y1;
-	}
-	drawLine(image, x0, y0, x2, y2, smooth, color);
-}
-
-/// Draw a bezier curve normal or smooth(anti-aliased)
-void drawBezier(Image image, int x0, int y0, int x1, int y1, int x2, int y2, int x3, int y3, bool smooth, uint32 color) {
-	int px_0 = x0;
-	int py_0 = y0;
-	int px_1 = 3 * (x1 - x0);
-	int py_1 = 3 * (y1 - y0);
-	int px_2 = 3 * (x2 - x1) - px_1;
-	int py_2 = 3 * (y2 - y1) - py_1;
-	int px_3 = x3 - px_2 - px_1 - px_0;
-	int py_3 = y3 - py_2 - py_1 - py_0;
-
-	double dt = 1. / 128;
-	for (double t = dt; t < 1; t += dt) {
-		x1 = ((px_3 * t + px_2) * t + px_1) * t + px_0;
-		y1 = ((py_3 * t + py_2) * t + py_1) * t + py_0;
-		drawLineIncl(image, x0, y0, x1, y1, smooth, color);
-		x0 = x1;
-		y0 = y1;
-	}
-	drawLine(image, x0, y0, x3, y3, smooth, color);
-}
-
-// todo: https://rreusser.github.io/regl-gpu-lines/docs/debug.html
-// todo: void fillTriangle(Image image, int x0, int y0, int x1, int y1, int x1, int y1, bool smooth, uint32 color);
-
-/// Fill the entire image with the given color
-Image fill(Image image, uint32 color) {
-	image.fillRect(0, 0, image.width(), image.height(), color);
-	return image;
-}
-
-/// Fill the given rectangle rounding the corners using the given radius
-void fillRect(Image image, const Rect roi&, int rx, int ry, uint32 color) {
-	if (roi.w <= 0 || roi.h <= 0) {
-		// empty rectangle
-		return;
-	}
-	image.fillRRect(roi.x, roi.y, roi.x + roi.w, roi.y + roi.h, rx, ry, color);
-}
-
-/// Fill the given rectangle rounding the corners using the given radius
-inline fillRect(Image image, const Rect roi&, int r, uint32 color) = fillRect(image, roi, r, r, color);
-
-inline drawAntiAliased = false;
-//inline fillOval(Image image, int x0, int y0, int x1, int y1, bool aa, uint32 color) = fillOval(image, x0, y0, x1, y1, color);
-//inline drawOval(Image image, int x0, int y0, int x1, int y1, bool aa, uint32 color) = drawOval(image, x0, y0, x1, y1, color);
-inline drawLine(Image image, int x0, int y0, int x1, int y1, uint32 color) = drawLine(image, x0, y0, x1, y1, drawAntiAliased, color);
-inline drawBezier(Image image, int x0, int y0, int x1, int y1, int x2, int y2, uint32 color) = drawBezier(image, x0, y0, x1, y1, x2, y2, drawAntiAliased, color);
-inline drawBezier(Image image, int x0, int y0, int x1, int y1, int x2, int y2, int x3, int y3, uint32 color) = drawBezier(image, x0, y0, x1, y1, x2, y2, x3, y3, drawAntiAliased, color);
-
-/// Fill a rectangle on the `image` specified by `roi` with the given `color`
-void fillRect(Image image, const Rect roi&, uint32 color) {
-	if (roi.w <= 0 || roi.h <= 0) {
-		// empty rectangle
-		return;
-	}
-	image.fillRect(roi.x, roi.y, roi.x + roi.w, roi.y + roi.h, color);
-}
-
-/// Draw a rectangle on the `image` specified by `roi` with the given `color`
-void drawRect(Image image, const Rect roi&, uint32 color) {
-	if (roi.w <= 0 || roi.h <= 0) {
-		// empty rectangle
-		return;
-	}
-	image.drawRect(roi.x, roi.y, roi.x + roi.w, roi.y + roi.h, color);
-}
-
-/// Fill a rectangle on the `image` specified by `roi` with the given `color`
-void fillOval(Image image, const Rect roi&, uint32 color) {
-	if (roi.w <= 0 || roi.h <= 0) {
-		// empty rectangle
-		return;
-	}
-	image.fillOval(roi.x, roi.y, roi.x + roi.w, roi.y + roi.h, color);
-}
-
-/// Draw a rectangle on the `image` specified by `roi` with the given `color`
-void drawOval(Image image, const Rect roi&, uint32 color) {
-	if (roi.w <= 0 || roi.h <= 0) {
-		// empty rectangle
-		return;
-	}
-	image.drawOval(roi.x, roi.y, roi.x + roi.w, roi.y + roi.h, color);
-}
-/// Create an image with the given with, height and depth
-inline Image(int width, int height, int depth) = Image.create(width, height, depth);
-
-/// Create an image by opening an image file
-Image Image(const char fileName[*], int depth) {
-	static if (typename(Image.openPng) != null) {
-		if (fileName.endsWith(".png", ignCaseCmp)) {
-			return Image.openPng(fileName, depth);
-		}
-	}
-	static if (typename(Image.openJpg) != null) {
-		if (fileName.endsWith(".jpeg", ignCaseCmp)) {
-			return Image.openJpg(fileName, depth);
-		}
-		if (fileName.endsWith(".jpg", ignCaseCmp)) {
-			return Image.openJpg(fileName, depth);
-		}
-	}
-	static if (typename(Image.openBmp) != null) {
-		if (fileName.endsWith(".bmp", ignCaseCmp)) {
-			return Image.openBmp(fileName, depth);
-		}
-	}
-	return Image.openImg(fileName, depth);
-}
-
-/// Create an image by opening an image file
-inline Image(const char fileName[*]) = Image(fileName, 32);
 struct Camera {
 	vec4f position = vec4f(0, 0, 0, 1);
 	vec4f forward = vec4f(0, 0, 0, 1);

@@ -497,6 +497,10 @@ static astn expandInitializerObj(ccContext cc, astn varNode, astn initObj, astn 
 		}
 
 		if (defInit == NULL) {
+			if (isFixedArray(field)) {
+				warn(cc->rt, raise_warn_typ4, varNode->file, varNode->line, ERR_UNINITIALIZED_MEMBER, linkOf(varNode, 0), field);
+				continue;
+			}
 			error(cc->rt, varNode->file, varNode->line, ERR_UNINITIALIZED_MEMBER, linkOf(varNode, 0), field);
 			continue;
 		}
@@ -1529,6 +1533,10 @@ static astn declare_enum(ccContext cc) {
 	astn ast = initializer(cc);
 	for (astn prop = ast->stmt.stmt; prop != NULL; prop = prop->next) {
 		astn id = prop->kind == INIT_set ? prop->op.lhso : prop;
+		if (id == NULL || id->kind != TOKEN_var) {
+			error(cc->rt, prop->file, prop->line, ERR_INITIALIZER_EXPECTED, prop);
+			continue;
+		}
 		symn member = declare(cc, ATTR_stat | ATTR_cnst | KIND_def | CAST_val, id, base, NULL);
 		astn value = NULL;
 		if (id == prop) {

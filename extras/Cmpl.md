@@ -1666,7 +1666,7 @@ The instructions of the vm are grouped by type:
 * `0xf0 ... 0xff` reserved
 
 ### Instruction matrix
-|  *  | 0        | 1        | 2         | 3         | 4        | 5        | 6         | 7        | 8         | 9         | a         | b          | c        | d        | e         | f            |
+|     | 0        | 1        | 2         | 3         | 4        | 5        | 6         | 7        | 8         | 9         | a         | b          | c        | d        | e         | f            |
 |:---:|:---------|:---------|:----------|:----------|:---------|:---------|:----------|:---------|:----------|:----------|:----------|:-----------|:---------|:---------|:----------|:-------------|
 |  0  | nop      | nfc      | call      | ret       | jmp      | jnz      | jz        | task     | sync      | not       | inc       | mad        | -        | -        | inc.sp    | ~~copy.mem~~ |
 |  1  | dup.x32  | dup.x64  | dup.x128  | set.x32   | set.x64  | set.x128 | mov.x32   | mov.x64  | mov.x128  | load.z32  | load.z64  | load.z128  | load.c32 | load.c64 | load.sp   | ~~load.ref~~ |
@@ -4059,22 +4059,22 @@ If JSON output format is used, the generated file can be opened with the Inspect
 ## Global options
 
 - `-run[*]`               run at full speed, but without: debug information, stacktrace, bounds checking, ...
-	- `/g /G`             dump global variable values (/G includes extra information)
-	- `/m /M`             dump memory usage (/M includes extra information)
+	- `/g /G`             dump global variable values (/G includes types and functions)
+	- `/m /M`             dump memory usage (/M includes heap allocations)
 
 - `-debug[*]`             run with attached debugger, pausing on uncaught errors and break points
-	- `/g /G`             dump global variable values (/G includes extra information)
-	- `/m /M`             dump memory usage (/M includes extra information)
-	- `/t /T`             trace the execution (/T includes extra information)
-	- `/p /P`             print caught errors (/P includes extra information)
+	- `/g /G`             dump global variable values (/G includes types and functions)
+	- `/m /M`             dump memory usage (/M includes heap allocations)
+	- `/p /P`             dump caught errors (/P includes stacktrace)
+	- `/t /T`             trace execution of invocations (/T includes instructions)
 	- `/a`                pause on all(caught) errors
 	- `/s`                pause on startup
 
 - `-profile[*]`           run code with profiler: coverage, method tracing
-	- `/g /G`             dump global variable values (/G includes extra information)
-	- `/m /M`             dump memory usage (/M includes extra information)
-	- `/t /T`             trace the execution (/T includes extra information)
-	- `/p /P`             print execution times (/P includes extra information)
+	- `/g /G`             dump global variable values (/G includes types and functions)
+	- `/m /M`             dump memory usage (/M includes heap allocations)
+	- `/p /P`             dump executed statements (/P include all functions and statements)
+	- `/t /T`             trace execution with timestamps (/T includes instructions)
 
 - `-std<file>`            specify custom standard library file (empty file name disables std library compilation).
 

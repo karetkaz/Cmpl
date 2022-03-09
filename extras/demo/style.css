@@ -305,18 +305,18 @@ body.canvas .toolbar>.no-canvas { display: none; }
 body:not(.canvas) .toolbar>.canvas { display: none; }
 
 /* right sidebar checked items */
-body.tool-bar #show-toolbar:before { content: '✓'; }
-body.left-bar #show-left:before { content: '✓'; }
-body.left-pin #pin-left:before { content: '✓'; }
-body.right-bar #show-right:before { content: '✓'; }
-body.right-pin #pin-right:before { content: '✓'; }
-body.bottom-bar #show-bottom:before { content: '✓'; }
-body.bottom-pin #pin-bottom:before { content: '✓'; }
-body.canvas #show-canvas:before { content: '✓'; }
-body.output #show-output:before { content: '✓'; }
-body.wrap-output #wrap-output:before { content: '✓'; }
-body.dark #dark-theme:before { content: '✓'; }
-body .sidebar li.checked:before { content: '✓'; }
+body.tool-bar #show-toolbar:before { content: '✓ '; }
+body.left-bar #show-left:before { content: '✓ '; }
+body.left-pin #pin-left:before { content: '✓ '; }
+body.right-bar #show-right:before { content: '✓ '; }
+body.right-pin #pin-right:before { content: '✓ '; }
+body.bottom-bar #show-bottom:before { content: '✓ '; }
+body.bottom-pin #pin-bottom:before { content: '✓ '; }
+body.canvas #show-canvas:before { content: '✓ '; }
+body.output #show-output:before { content: '✓ '; }
+body.wrap-output #wrap-output:before { content: '✓ '; }
+body.dark #dark-theme:before { content: '✓ '; }
+body .sidebar li.checked:before { content: '✓ '; }
 
 #canvasMove.overlay:not(.hidden) {
 	position: absolute;
