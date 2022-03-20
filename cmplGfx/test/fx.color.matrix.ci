@@ -288,19 +288,6 @@ DebugView debug = {
 	draws: -1;
 };
 
-Rect rect = {
-	x: 0;
-	y: 0;
-	w: offs.width();
-	h: offs.height();
-};
-mat4f mat = {
-	xx: 1; xy: 0; xz: 0; xw:0;
-	yx: 0; yy: 1; yz: 0; yw:0;
-	zx: 0; zy: 0; zz: 1; zw:0;
-	wx: 0; wy: 0; wz: 0; ww:1;
-};
-
 int onEvent(Window win&, int action, int button, int x, int y) {
 	if (action == Gui.KEY_RELEASE && button == 27) {
 		// exit when releasing escape key
@@ -312,8 +299,19 @@ int onEvent(Window win&, int action, int button, int x, int y) {
 		// event not processed, wait for the next one
 		return 0;
 	}
+	if (!win.processableEvent(action, button, x, y)) {
+		// hover view, focus view, and such things
+		return win.draw(ui);
+	}
 
 	debug.startTimer();
+	mat4f mat = {
+		xx: 1; xy: 0; xz: 0; xw:0;
+		yx: 0; yy: 1; yz: 0; yw:0;
+		zx: 0; zy: 0; zz: 1; zw:0;
+		wx: 0; wy: 0; wz: 0; ww:1;
+	};
+
 	if (win.hasFocused(brightness, saturation, contrast, temp, tint, hue)) {
 		float b = brightness.valueF64();
 		float s = saturation.valueF64();

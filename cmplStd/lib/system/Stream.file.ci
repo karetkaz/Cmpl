@@ -31,7 +31,7 @@ struct FileWriter: ByteWriter {
 	}
 }
 struct BufferedFileWriter: FileWriter {
-	byte buffer[1024] = null;
+	byte buffer[1024];
 	int bufferSize = 0;
 
 	static void flushBuffer(BufferedFileWriter this) {

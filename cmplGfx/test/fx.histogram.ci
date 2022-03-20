@@ -1,4 +1,4 @@
-// Histogram demo.
+// Luminance, hue and rgb histogram demo.
 
 Image back = Image("asset/image/forest.jpg", 32);
 Image offs = Image(back);

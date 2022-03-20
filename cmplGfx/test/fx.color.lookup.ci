@@ -220,6 +220,10 @@ int onEvent(Window win&, int action, int button, int x, int y) {
 		// event not processed, wait for the next one
 		return 0;
 	}
+	if (!win.processableEvent(action, button, x, y)) {
+		// hover view, focus view, and such things
+		return win.draw(ui);
+	}
 
 	debug.startTimer();
 	offs.copy(0, 0, back, null);

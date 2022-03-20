@@ -80,6 +80,7 @@ let projects = {
 			'cmplGfx/test/3d.parametric.ci',
 			'cmplGfx/test/Calculator.ci',
 			'cmplGfx/test/fx.color.blend.ci',
+			'cmplGfx/test/fx.color.dither.ci',
 			'cmplGfx/test/fx.color.lookup.ci',
 			'cmplGfx/test/fx.color.lookup-ease.ci',
 			'cmplGfx/test/fx.color.lookup-levels.ci',

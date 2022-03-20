@@ -285,6 +285,9 @@ static ccKind genDeclaration(ccContext cc, symn variable, ccKind get) {
 		else if (isInvokable(variable)) {
 			error(rt, variable->file, variable->line, ERR_UNIMPLEMENTED_FUNCTION, variable);
 		}
+		else if (isFixedArray(variable)) {
+			warn(rt, raise_warn_typ4, variable->file, variable->line, ERR_UNINITIALIZED_VARIABLE, variable);
+		}
 		else {
 			raiseLevel level = cc->errUninitialized ? raiseError : raiseWarn;
 			warn(rt, level, variable->file, variable->line, ERR_UNINITIALIZED_VARIABLE, variable);

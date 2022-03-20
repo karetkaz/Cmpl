@@ -90,7 +90,7 @@ typedef enum {
 
 	raise_warn_typ2 = 2,    // WARN_STATIC_FIELD_ACCESS
 	raise_warn_typ3 = 3,    // WARN_USING_BEST_OVERLOAD / PASS_ARG_BY_REFERENCE
-	raise_warn_typ4 = 4,    // WARN_USING_SIGNED_CAST
+	raise_warn_typ4 = 4,    // WARN_USING_SIGNED_CAST / UNINITIALIZED_ARRAY
 	raise_warn_typ6 = 6,    // WARN_ADDING_IMPLICIT_CAST / WARN_USING_DEF_TYPE_INITIALIZER
 	raise_warn_redef = 6,   // WARN_DECLARATION_REDEFINED
 	raiseInfo = 13,
@@ -146,9 +146,9 @@ typedef enum {
 	CAST_f32   = 0x0007,		// float32
 	CAST_f64   = 0x0008,		// float64
 	CAST_ref   = 0x0009,		// reference, pointer, array(c-like)
-	CAST_arr   = 0x000a,		// slice: pair of {size, data}
-	CAST_var   = 0x000b,		// variant: pair of {type, data}
-	CAST_val   = 0x000c,		// value, record, array(fixed)
+	CAST_val   = 0x000a,		// value, record, array(fixed)
+	CAST_arr   = 0x000b,		// slice: pair of {size, data}
+	CAST_var   = 0x000c,		// variant: pair of {type, data}
 	//CAST_d   = 0x000d,		// dictionary
 	CAST_enm   = 0x000e,		// enumeration
 	//CAST_f   = 0x000f,		// unused(function)
@@ -364,6 +364,12 @@ static inline int isEnumType(symn sym) {
 }
 static inline int isArrayType(symn sym) {
 	return (sym->kind & (MASK_kind | MASK_cast)) == (KIND_typ | CAST_arr);
+}
+static inline int isFixedArray(symn sym) {
+	if (!isArrayType(sym->type)) {
+		return 0;
+	}
+	return (sym->kind & (MASK_kind | MASK_cast)) == (KIND_var | CAST_val);
 }
 static inline int byReference(symn sym) {
 	return (sym->kind & MASK_cast) == CAST_ref;

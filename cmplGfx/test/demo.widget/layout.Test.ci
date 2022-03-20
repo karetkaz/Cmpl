@@ -117,7 +117,6 @@ Widget widget = {
 	width: 1440;
 	height: 900;
 	orientation: 0;
-	align: Style.center;
 };
 
 // create some custom views with a background color and a text

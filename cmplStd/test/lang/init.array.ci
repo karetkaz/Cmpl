@@ -4,7 +4,7 @@ inline integer = int32;
 }
 
 // uninitialized arrays will raise compilation error
-//integer arrayNoInit[7];  // OK: compilation error: uninitialized variable
+integer arrayNoInit[7];  // OK: compilation warning: uninitialized variable
 //integer sliceNoInit[];   // OK: compilation error: uninitialized variable
 //integer carrNoInit[*];   // OK: compilation error: uninitialized variable
 
@@ -48,7 +48,7 @@ integer carrInit[*] = {1, 2, 3, 4};
 // initialize arrays with null literal
 //
 
-//integer arrayInitNull[7] = null;  // OK: compilation error; TODO: use custom message
+//integer arrayInitNull[7] = null;  // FIXME: compilation error; TODO: use custom message
 integer sliceInitNull[] = null;
 integer carrInitNull[*] = null;
 
@@ -186,4 +186,3 @@ int a[100] = {*: mul(*, 2)};
 		a[i] = mul(i, 2);
 	}
 }*/
-

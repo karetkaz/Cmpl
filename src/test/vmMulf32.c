@@ -36,11 +36,11 @@ int main() {
 
 	// start emitting the instructions
 	size_t start = vmInit(rt, 0, onHalt);
-	dieif(!emitF64(rt, 16.5));              // push 16.5 as double
-	dieif(!emit(rt, f64_f32));              // convert double to float
-	dieif(!emitI64(rt, 13));                // push 13 as int64
-	dieif(!emit(rt, i64_f32));              // convert int64 to float
-	dieif(!emit(rt, f32_mul));              // multiply the values
+	dieif(!emitF64(rt, 16.5));            // push 16.5 as double
+	dieif(!emit(rt, f64_f32));             // convert double to float
+	dieif(!emitI64(rt, 13));              // push 13 as int64
+	dieif(!emit(rt, i64_f32));           	// convert int64 to float
+	dieif(!emit(rt, f32_mul));             // multiply the values
 
 	// prepare for execution
 	rt->vm.px = emitInt(rt, opc_nfc, 0);

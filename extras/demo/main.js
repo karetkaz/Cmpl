@@ -1,4 +1,13 @@
 function hasStyle(element, ...styles) {
+	if (element && element.constructor === String) {
+		// allow to reference using id.
+		element = document.getElementById(element);
+		if (element == null) {
+			console.debug("invalid element");
+			return false;
+		}
+	}
+
 	for (let style of styles) {
 		if (element.classList.contains(style)) {
 			return true;
@@ -8,8 +17,12 @@ function hasStyle(element, ...styles) {
 }
 function setStyle(element, ...styles) {
 	if (element && element.constructor === String) {
-		// allow to reference the splitter using id.
+		// allow to reference using id.
 		element = document.getElementById(element);
+		if (element == null) {
+			console.debug("invalid element");
+			return;
+		}
 	}
 
 	let prevChanged = false;
@@ -72,7 +85,7 @@ let editor = CodeMirror.fromTextArea(input, {
 	mode: 'text/x-cmpl',
 	lineNumbers: true,
 	tabSize: 4,
-	//indentUnit: 4,
+	indentUnit: 4,
 	indentWithTabs: true,
 	keyMap: 'extraKeys',
 
@@ -90,11 +103,12 @@ let terminal = Terminal(output, function(escaped, text) {
 			return match;
 		}
 
-		line = +(line || 0);
-		column = +(column || 0);
 		if (host !== undefined) {
 			return '<a href="' + encodeURI(match) + '" target="_blank">' + match + '</a>';
 		}
+		path = path || '';
+		line = +(line || 0);
+		column = +(column || 0);
 		if (line > 0) {
 			return '<a href="javascript:void(params.update({ content: null, path:\'' + path + file + ':' + line + '\'}));">' + match + '</a>';
 		}
@@ -295,6 +309,7 @@ let params = JsArgs('#', function (params, changes) {
 				document.body.style.fontSize = '1.2em';
 				editor.setSize('100%', '100%');
 				editor.setOption('tabSize', 2);
+				editor.setOption('indentUnit', 2);
 				editor.focus();
 				break;
 
@@ -661,21 +676,23 @@ function execute(cmd, args) {
 	if (cmd != null) {
 
 		execArgs = [];
+		if (args.prms !== false) {
+			let experimentalFlags = params.X;
+			if (experimentalFlags == null) {
+				experimentalFlags = '-stdin';
+				if (!hasStyle('preferNativeCalls', 'checked')) {
+					experimentalFlags += '-native';
+				}
+			}
+			// do not use standard input
+			execArgs.push('-X' + experimentalFlags);
+		}
+
 		for (let arg of cmd.split(' ')) {
 			if (arg === '') {
 				continue;
 			}
 			execArgs.push(arg);
-		}
-
-		if (args.prms !== false) {
-			// do not use standard input
-			execArgs.push('-X' + (params.X || '-stdin'));
-
-			if (params.log != null) {
-				execArgs.push('-log');
-				execArgs.push(params.log);
-			}
 		}
 
 		if (args.dump !== false && args.dump != null) {

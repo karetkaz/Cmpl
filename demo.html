@@ -72,35 +72,45 @@
 	</div>
 	<div class="collapsed submenu">
 		<li onclick="setStyle(parentElement, '~collapsed');">Execute
-			<button class="right" onclick="execute('-api/A/m', {file: false}); event.stopPropagation();" title="Compiler api">ƒ</button>
+			<button class="right" onclick="execute(title, {file: false}); event.stopPropagation();" title="-api/A">ƒ</button>
 		</li>
 		<ul>
 			<div class="collapsed submenu">
 				<li onclick="setStyle(parentElement, '~collapsed')">Dependencies</li>
 				<ul>
+					<li id="preferNativeCalls" class="checked" onclick="setStyle(this, '~checked');">Prefer native functions</li>
+					<hr>
 					<li id="libFile" onclick="params.update({libFile: params.libFile == null ? '' : null});">libFile</li>
 					<li id="libGfx" onclick="params.update({libGfx: params.libGfx == null ? '' : null});">libGfx</li>
-					<!-- -profile/t/p/G/M -api/A/m/d/p -asm/a/n/s -ast -doc -use -X-stdin -mem4M -dump /dump.ci libFile.wasm test.ci
-					<hr>
-					<li onclick="params.update({?});">dumpGlobals</li>
-					<li onclick="params.update({?});">dumpApi</li>
-					<li onclick="params.update({?});">dumpAsm</li>
-					<li onclick="params.update({?});">dumpAst</li>
-					<li onclick="params.update({?});">dumpDoc</li>
-					<li onclick="params.update({?});">dumpUsage</li>
+					<!--
+					<li id="dumpApi" onclick="setStyle(this, '~checked');">dumpApi</li>
+					<li id="dumpAsm" onclick="setStyle(this, '~checked');">dumpAsm</li>
+					<li id="dumpAst" onclick="setStyle(this, '~checked');">dumpAst</li>
+					<li id="dumpDoc" onclick="setStyle(this, '~checked');">dumpDoc</li>
+					<li id="dumpUse" onclick="setStyle(this, '~checked');">dumpUsage</li>
 					-->
 					<hr>
 				</ul>
 			</div>
 		</ul>
 		<ul>
-			<li onclick="execute('-run/g');"><span class="right">Ctrl+Shift+Enter</span>⚡ Run</li>
-			<li onclick="execute('-debug/g');">🐞 Debug</li>
-			<li onclick="execute('-profile/g');">⏱ Profile</li>
 			<li onclick="execute('');">⚙ Compile only</li>
-			<li onclick="execute('-api -doc -use');">Symbols</li>
-			<li onclick="execute('-asm/n/s');">Instructions</li>
-			<li onclick="execute('-profile/t/p/G/M -api/A/m/d/p -asm/a/n/s -ast -doc -use', {dump: '/dump.ci'});">Profile & full dump</li>
+			<li onclick="execute(title);" title="-run/g"><span class="right">Ctrl+Shift+Enter</span>⚡ Run</li>
+			<li onclick="execute(title);" title="-debug/g">🐞 Debug
+				<button class="right" onclick="execute(title); event.stopPropagation();" title="-debug/G/M/T/P">T</button>
+				<button class="right" onclick="execute(title); event.stopPropagation();" title="-debug/g/m/t/p">t</button>
+			</li>
+			<li onclick="execute(title);" title="-profile/g">⏱ Profile
+				<button class="right" onclick="execute(title); event.stopPropagation();" title="-profile/G/M/T/P">P</button>
+				<button class="right" onclick="execute(title); event.stopPropagation();" title="-profile/g/m/t/p">p</button>
+			</li>
+			<li onclick="execute(title);" title="-api -doc -use">Symbols
+				<button class="right" onclick="execute(title); event.stopPropagation();" title="-api/A/m/d/p -doc -use">All</button>
+			</li>
+			<li onclick="execute(title);" title="-asm/n/s">Instructions
+				<button class="right" onclick="execute(title); event.stopPropagation();" title="-asm/A/m/d/p/n/s">All</button>
+			</li>
+			<li onclick="execute(title, {dump: '/dump.ci'});" title="-profile/t/p/G/M -api/A/m/d/p -asm/n/s -ast -doc -use">Profile & full dump</li>
 			<hr>
 			<li onclick="execute();">Command Line Reference</li>
 		</ul>

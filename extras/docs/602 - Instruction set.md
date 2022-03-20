@@ -19,7 +19,7 @@ The instructions of the vm are grouped by type:
 * `0xf0 ... 0xff` reserved
 
 ### Instruction matrix
-|  *  | 0        | 1        | 2         | 3         | 4        | 5        | 6         | 7        | 8         | 9         | a         | b          | c        | d        | e         | f            |
+|     | 0        | 1        | 2         | 3         | 4        | 5        | 6         | 7        | 8         | 9         | a         | b          | c        | d        | e         | f            |
 |:---:|:---------|:---------|:----------|:----------|:---------|:---------|:----------|:---------|:----------|:----------|:----------|:-----------|:---------|:---------|:----------|:-------------|
 |  0  | nop      | nfc      | call      | ret       | jmp      | jnz      | jz        | task     | sync      | not       | inc       | mad        | -        | -        | inc.sp    | ~~copy.mem~~ |
 |  1  | dup.x32  | dup.x64  | dup.x128  | set.x32   | set.x64  | set.x128 | mov.x32   | mov.x64  | mov.x128  | load.z32  | load.z64  | load.z128  | load.c32 | load.c64 | load.sp   | ~~load.ref~~ |
