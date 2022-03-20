@@ -492,12 +492,12 @@ static vmError surf_transform(nfcContext ctx) {
 	// convert floating point values to fixed point(16.16) values (scale + rotate + translate)
 	int32_t xx = mat ? (int32_t) (mat[0] * 65535) : (srcRec.w << 16) / dstRec.w;
 	int32_t xy = mat ? (int32_t) (mat[1] * 65535) : 0;
+	int32_t xt = mat ? (int32_t) (mat[3] * 65535) : (srcRec.x << 16);
 	int32_t yy = mat ? (int32_t) (mat[5] * 65535) : (srcRec.h << 16) / dstRec.h;
 	int32_t yx = mat ? (int32_t) (mat[4] * 65535) : 0;
+	int32_t yt = mat ? (int32_t) (mat[7] * 65535) : (srcRec.y << 16);
 
 	if (interpolate == 0) {
-		int32_t xt = mat ? (int32_t) (mat[3] * 65535) : (srcRec.x << 16);
-		int32_t yt = mat ? (int32_t) (mat[7] * 65535) : (srcRec.y << 16);
 		for (int y = 0, sy = srcRec.y; y < dstRec.h; ++y, ++sy) {
 			for (int x = 0, sx = srcRec.x; x < dstRec.w; ++x, ++sx) {
 				int32_t tx = (xx * sx + xy * sy + xt) >> 16;
@@ -508,13 +508,15 @@ static vmError surf_transform(nfcContext ctx) {
 		return noError;
 	}
 
-	int32_t xt = mat ? (int32_t) (mat[3] * 65535) : (srcRec.x << 16) - 0x8000;
-	int32_t yt = mat ? (int32_t) (mat[7] * 65535) : (srcRec.y << 16) - 0x8000;
+	xt -= 0x8000;
+	yt -= 0x8000;
 	for (int y = 0, sy = srcRec.y; y < dstRec.h; ++y, ++sy) {
 		for (int x = 0, sx = srcRec.x; x < dstRec.w; ++x, ++sx) {
 			int32_t tx = xx * sx + xy * sy + xt;
 			int32_t ty = yx * sx + yy * sy + yt;
-			setPixel(surf, dstRec.x + x, dstRec.y + y, getPixelLinear(src, tx * (tx > 0), ty * (ty > 0)));
+			tx *= !(tx < 0 && tx > -0x8000);
+			ty *= !(ty < 0 && ty > -0x8000);
+			setPixel(surf, dstRec.x + x, dstRec.y + y, getPixelLinear(src, tx, ty));
 		}
 	}
 	return noError;
