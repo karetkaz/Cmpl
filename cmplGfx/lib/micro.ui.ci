@@ -25,14 +25,11 @@ Widget Widget(int width, int height) {
 Widget Widget(View views...) {
 struct Popup: Widget {
 
-	// fixme: these are needed to draw the widget on an image, move them to a different class
-	// the default method should be to draw it on the entire image
 	int align = Style.fill;
 	int margin = 0;
 	int radius = 0;
 
-
-	// TODO: remove: this override allows to forward the drag event to the focused view
+	// forward the drag event to the focused view
 	bool onTouchEvent(Popup this, const Rect rect&, const TouchEvent event&) {
 		if (Widget.onTouchEvent(this, rect, event)) {
 			return true;
@@ -59,12 +56,8 @@ struct Popup: Widget {
 		return view.onTouchEvent(view, r, event);
 	}
 	bool onKeyEvent(Popup this, const KeyEvent event&) {
-		if (Widget.onKeyEvent(this, event)) {
-			return true;
-		}
-
 		if (event.release) {
-			return false;
+			return Widget.onKeyEvent(this, event);
 		}
 
 		if (event.key == '[' || event.key == ']') {
@@ -98,7 +91,7 @@ struct Popup: Widget {
 			return this.onReset(this);
 		}
 
-		return false;
+		return Widget.onKeyEvent(this, event);
 	}
 
 	bool onMeasure(Popup this, Rect measured&) {
@@ -120,13 +113,14 @@ struct Popup: Widget {
 		return true;
 	}
 
-	void onDraw(Popup this, Image offs, Rect rect, const Style style&) {
+	void onDraw(Popup this, Image offs, Rect rect) {
 		offs = offs.slice(rect);
+		Style style& = this.style;
 		if (style.backgroundColor != -1) {
 			Rect r = { w: offs.width(), h: offs.height() };
 			offs.fillRect(r, this.radius, style.backgroundColor);
 		}
-		Widget.onDraw(this, offs, rect, style);
+		Widget.onDraw(this, offs, rect);
 		offs.destroy();
 	}
 }
@@ -148,7 +142,7 @@ struct Popup: Widget {
 		};
 		focus: widget;	// focus first visible view
 	};
-	widget.style = widget.widgetStyle;
+	widget.setStyle(widget.widgetStyle);
 
 	if (views.length > 0) {
 		widget.addItems(...views);
@@ -165,8 +159,8 @@ struct Button: View {
 		return View.onMeasure(this, &rect);
 	}
 
-	void onDraw(Button this, Image offs, Rect rect, const Style style&) {
-		View.onDraw(this, offs, rect, style, null, this.text);
+	void onDraw(Button this, Image offs, Rect rect) {
+		View.onDraw(this, offs, rect, null, this.text);
 	}
 }
 
@@ -275,8 +269,9 @@ struct Switch: View {
 		return View.onMeasure(this, &rect);
 	}
 
-	void onDraw(Switch this, Image offs, Rect rect, const Style style&) {
+	void onDraw(Switch this, Image offs, Rect rect) {
 		char value[*] = null;
+		Style style& = this.style;
 		if (this.states.length == 0) {
 			Rect onOffRect = {
 				x: rect.x;
@@ -306,7 +301,7 @@ struct Switch: View {
 		} else {
 			value = this.states[this.selected];
 		}
-		View.onDraw(this, offs, rect, style, this.text, value);
+		View.onDraw(this, offs, rect, this.text, value);
 	}
 }
 
@@ -422,10 +417,11 @@ struct Slider: View {
 		return View.onMeasure(this, &rect);
 	}
 
-	void onDrawSlider(Slider this, Image offs, Rect rect, const Style style&) {
+	void onDrawSlider(Slider this, Image offs, Rect rect) {
 		if (this.maximum == this.minimum) {
 			return;
 		}
+		Style style& = this.style;
 		const int y1 = rect.y + rect.h;
 		const int y0 = y1 - style.padding / 4;
 		const int x0 = rect.x;
@@ -439,17 +435,17 @@ struct Slider: View {
 		}
 	}
 
-	void onDraw(Slider this, Image offs, Rect rect, const Style style&) {
+	void onDraw(Slider this, Image offs, Rect rect) {
 		char value[64] = {0};
 		if (this.divisor != 0) {
-			value.append(0, this.valueF64(), style.format);
+			value.append(0, this.valueF64(), this.style.format);
 		} else {
-			value.append(0, this.value, style.format);
+			value.append(0, this.value, this.style.format);
 		}
 		if (this.onDrawSlider != null) {
-			this.onDrawSlider(this, offs, rect, style);
+			this.onDrawSlider(this, offs, rect);
 		}
-		View.onDraw(this, offs, rect, style, this.text, value);
+		View.onDraw(this, offs, rect, this.text, value);
 	}
 }
 
@@ -533,7 +529,7 @@ struct Histogram: View {
 		return View.onMeasure(this, &rect);
 	}
 
-	void onDraw(Histogram this, Image offs, const Rect rect, const Style style&) {
+	void onDraw(Histogram this, Image offs, const Rect rect) {
 		enum {
 			colB: 0x4371c6;
 			colG: 0x72d874;
@@ -680,7 +676,7 @@ struct DebugView: View {
 		return View.onMeasure(this, &rect);
 	}
 
-	void onDraw(DebugView this, Image offs, Rect rect, const Style style&) {
+	void onDraw(DebugView this, Image offs, Rect rect) {
 		if (this.started > 0) {
 			int64 duration = System.millis() - this.started;
 			this.durations[0] = duration;
@@ -690,6 +686,7 @@ struct DebugView: View {
 			this.started = 0;
 		}
 
+		Style style& = this.style;
 		if (this.maxDuration > 0) {
 			int y0 = rect.y + rect.h;
 			float64 ys = rect.h / float64(this.maxDuration);
@@ -741,7 +738,6 @@ struct Panel: Layout {
 struct TabPage: Layout {
 	Layout tabs = null;
 	Layout active = null;
-	View separator = null;
 	argb background = argb(0);
 
 	void onCreate(TabPage this, View parent) {
@@ -761,28 +757,31 @@ struct TabPage: Layout {
 		return Layout.onMeasure(layout, &rect);
 	}
 
-	static void onDrawPage(Layout panel, Image offs, Rect rect, const Style style&) {
+	static void onDrawPage(Layout panel, Image offs, Rect rect) {
 		TabPage page = panel.data.as(TabPage);
 		offs.fillRect(rect, page.background.v);
-		Layout.onDraw(panel, offs, rect, style);
+		Layout.onDraw(panel, offs, rect);
 	}
 
-	static void onDrawBar(Layout tabs, Image offs, Rect rect, const Style style&) {
+	static void onDrawBar(Layout tabs, Image offs, Rect rect) {
 		TabPage page = tabs.data.as(TabPage);
 		offs.fillRect(rect, page.background.v);
-		Layout.onDraw(tabs, offs, rect, style);
+		Layout.onDraw(tabs, offs, rect);
 	}
 
-	static void onDrawTab(Button tab, Image offs, Rect rect, const Style style&) {
+	static void onDrawTab(Button tab, Image offs, Rect rect) {
 		TabPage page = tab.parent.parent.as(TabPage);
+		Style style& = tab.style;
 		if (page.active == tab.data.as(Layout)) {
 			offs.fillRect(rect, style.focusedColor);
 			style.align(rect, &rect, tab.text);
 			offs.drawText(rect, style.font, tab.text, style.textColor);
 			return;
 		}
-		Button.onDraw(tab, offs, rect, style);
+		Button.onDraw(tab, offs, rect);
 	}
+
+	static void onDrawSeparator(View this, Image offs, Rect rect) {}
 
 	static bool onClickTab(Button button) {
 		if (Layout page = button.data.as(Layout)) {
@@ -800,28 +799,6 @@ struct TabPage: Layout {
 
 	static TabPage addItems(TabPage this, const char text[*], int align, View views...) {
 		inline padding = 1;
-		if (this.tabs == null) {
-			Layout tabs = {
-				paddingTop: padding;
-				paddingLeft: padding;
-				paddingRight: padding;
-				paddingBottom: padding;
-				data: this;
-				onDraw: onDrawBar;
-				orientation: -this.orientation;
-			};
-
-			View separator = {
-				enabled: false;
-				width: padding;
-				height: padding;
-			};
-
-			this.tabs = tabs;
-			this.separator = separator;
-			Layout.addItems(this, Style.center, tabs);
-		}
-
 		Layout page = {
 			data: this;
 			// fixme: orientation;
@@ -835,9 +812,38 @@ struct TabPage: Layout {
 			onDraw: onDrawTab;
 			onClick: onClickTab;
 		};
-		if (this.tabs.itemCount > 0) {
-			this.tabs.addItems(0, this.separator);
+
+		if (this.tabs == null) {
+			Layout tabs = {
+				paddingTop: padding;
+				paddingLeft: padding;
+				paddingRight: padding;
+				paddingBottom: padding;
+				data: this;
+				onDraw: onDrawBar;
+				orientation: -this.orientation;
+			};
+
+			this.tabs = tabs;
+			Layout.addItems(this, Style.center, tabs);
 		}
+
+		if (this.tabs.itemCount > 0) {
+			// todo: replace separator with rowSpacing and colSpacing
+			Layout tabs = this.tabs;
+			if (tabs.separator == null) {
+				View separator = {
+					width: padding;
+					height: padding;
+					enabled: false;
+					focusable: false;
+					onDraw: onDrawSeparator;
+				};
+				tabs.separator = separator;
+			}
+			tabs.addItems(0, tabs.separator);
+		}
+
 		this.tabs.addItems(0, tab);
 		page.addItems(align, ...views);
 		Layout.addItems(this, Style.fill, page);

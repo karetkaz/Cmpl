@@ -27,12 +27,12 @@ struct Style {
 	uint32 textColor = 0xdadada;
 
 	enum: int32 {
-		center: 0;
-
 		top: 1;
 		left: 2;
 		right: 4;
 		bottom: 8;
+
+		center: 0;
 
 		topLeft: top | left;
 		topRight: top | right;
@@ -186,8 +186,8 @@ struct View: object {
 	// parent view
 	View parent = null;
 
-	// style (FIXME: using pointer to enable updating the reference)
-	pointer style = null;
+	// style to be used when measuring and drawing the view
+	Style style& = null;
 
 	/// user attached data
 	variant data = null;
@@ -200,11 +200,15 @@ struct View: object {
 		return false;
 	}
 
+	static void setStyle(View this, const Style style&) {
+		this.style = emit(pointer(style));
+	}
+
 	void onCreate(View this, View parent) {
 		assert(this.parent == null || this.parent == parent, "can not add the same view to different layouts");
 		this.parent = parent;
 		if (this.style == null) {
-			this.style = parent.style;
+			this.setStyle(parent.style);
 		}
 	}
 
@@ -218,11 +222,13 @@ struct View: object {
 		if (event.release) {
 			return false;
 		}
-		if (event.key == 8 && !event.isShift) {
-			return this.onReset(this);
-		}
 		if (event.key == ' ') {
+			// click with space key
 			return this.onClick(this);
+		}
+		if (event.key == 8) {
+			// reset with backspace key
+			return this.onReset(this);
 		}
 		return false;
 	}
@@ -271,11 +277,10 @@ struct View: object {
 		return true;
 	}
 
-	void onDraw(View this, Image offs, Rect rect, const Style style&) { }
+	void onDraw(View this, Image offs, Rect rect);
 	static void onDraw(View this, Image offs, Rect rect, int state) {
-		Style style& = this.style;
-
-		if (this.parent.style != this.style) {
+		const Style style& = this.style;
+		if (this.parent.style != pointer(style)) {
 			offs.fillRect(rect, style.backgroundColor);
 		}
 		if (state & Style.focused) {
@@ -284,13 +289,14 @@ struct View: object {
 		else if (state & Style.hovered) {
 			offs.fillRect(rect, style.hoveredColor);
 		}
-		this.onDraw(this, offs, rect, style);
+		this.onDraw(this, offs, rect);
 		if (state & Style.pressed) {
 			offs.drawRect(rect, style.valueColor);
 		}
 	}
-	static void onDraw(View this, Image offs, Rect rect, const Style style&, const char text[*], const char value[*]) {
+	static void onDraw(View this, Image offs, Rect rect, const char text[*], const char value[*]) {
 		// fixme: draw text using textColor and value using valueColor
+		const Style style& = this.style;
 		if (text == null) {
 			style.align(rect, &rect, value);
 			offs.drawText(rect, style.font, value, style.valueColor);
@@ -320,7 +326,7 @@ struct Layout: View {
 		int align;
 	}
 
-	View divider = null;
+	View separator = null;
 
 	int itemCount = 0;
 	int itemCapacity = 0;
@@ -346,10 +352,8 @@ struct Layout: View {
 	// int colSpacing = 0;
 	// int rowSpacing = 0;
 
-	/// TODO: make width of each cell the same size
+	// TODO: make width and height of each cell the same size
 	// const bool uniformWidth = true;
-
-	/// TODO: make height of each cell the same size
 	// const bool uniformHeight = true;
 
 	static bool clearState(Layout this, int mode) {
@@ -447,16 +451,18 @@ struct Layout: View {
 	}
 
 	static Layout addItems(Layout this, int align, View views...) {
-		static View divider(Layout this) {
-			if (this.divider != null) {
-				return this.divider;
+		static View separator(Layout this) {
+			static void onDraw(View this, Image offs, Rect rect) {}
+			if (this.separator != null) {
+				return this.separator;
 			}
-			View divider = {
+			View separator = {
 				enabled: false;
 				focusable: false;
+				onDraw: onDraw;
 			};
-			this.divider = divider;
-			return divider;
+			this.separator = separator;
+			return separator;
 		}
 
 		int itemCount = this.itemCount + views.length;
@@ -474,7 +480,7 @@ struct Layout: View {
 			item.view = views[i];
 			item.align = align;
 			if (item.view == null) {
-				item.view = divider(this);
+				item.view = separator(this);
 			}
 		}
 		this.itemCount = itemCount;
@@ -909,7 +915,7 @@ struct Layout: View {
 		measured.padd(this.paddingTop, this.paddingLeft, this.paddingRight, this.paddingBottom);
 	}
 
-	void onDraw(Layout this, Image offs, Rect parent, const Style style&) {
+	void onDraw(Layout this, Image offs, Rect parent) {
 		for (int i = 0; i < this.itemCount; i += 1) {
 			const Item item& = this.items[i];
 			const Rect rect& = item.rect;
@@ -1066,7 +1072,7 @@ struct Widget: Layout {
 
 	void onCreate(Widget this, View parent) {
 		if (this.style == null) {
-			this.style = this.widgetStyle;
+			this.setStyle(this.widgetStyle);
 		}
 		Layout.onCreate(this, parent);
 		this.measure = true;
@@ -1106,9 +1112,10 @@ struct Widget: Layout {
 		return true;
 	}
 
-	void onDraw(Widget this, Image offs, Rect rect, const Style style&) {
+	void onDraw(Widget this, Image offs, Rect rect) {
+		Style style& = this.style;
 		offs.fillRect(rect, style.backgroundColor);
-		Layout.onDraw(this, offs, rect, style);
+		Layout.onDraw(this, offs, rect);
 	}
 }
 

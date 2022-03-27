@@ -4,7 +4,7 @@ inline "/cmplGfx/lib/micro.ui.ci";
 
 struct Rectangle: View {
 	argb background = argb(0xff00ff);
-	void onDraw(Rectangle this, Image offs, Rect rect, const Style style&) {
+	void onDraw(Rectangle this, Image offs, Rect rect) {
 		offs.fillRect(rect, this.background.v);
 	}
 }

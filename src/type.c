@@ -968,9 +968,22 @@ symn typeCheck(ccContext cc, symn loc, astn ast, int raise) {
 				error(cc->rt, ast->file, ast->line, ERR_INVALID_CONST_ASSIGN, ast);
 			}
 			if (!canAssign(cc, lType, ast->op.rhso, 0)) {
-				error(cc->rt, ast->file, ast->line, ERR_INVALID_VALUE_ASSIGN, lType, ast);
-				return NULL;
+				symn lnk = linkOf(ast->op.lhso, 0);
+				if (lnk && byReference(lnk) && !byReference(lnk->type) && !isArrayType(lnk->type) && ast->kind == ASGN_set) {
+					if (rType == cc->emit_opc) {
+						// hack: use initialization instead of assignment
+						// Value value& = null;
+						// value = emit(...);
+						ast->kind = INIT_set;
+						lType = rType;
+					}
+				}
+				if (!canAssign(cc, lType, ast->op.rhso, 0)) {
+					error(cc->rt, ast->file, ast->line, ERR_INVALID_VALUE_ASSIGN, lType, ast);
+					return NULL;
+				}
 			}
+
 			ast->op.rhso = castTo(cc, ast->op.rhso, lType);
 			ast->type = lType;
 			return lType;
