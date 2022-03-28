@@ -21,7 +21,8 @@ struct IntButton: View {
 		return View.onMeasure(this, &rect);
 	}
 
-	void onDraw(IntButton this, Image offs, Rect rect, const Style style&) {
+	void onDraw(IntButton this, Image offs, Rect rect) {
+		Style style& = this.style;
 		style.align(rect, &rect, this.text);
 		offs.drawText(rect, style.font, this.text, style.textColor);
 	}
@@ -30,7 +31,8 @@ struct IntButton: View {
 struct DayButton: IntButton {
 	Timestamp timestamp = Timestamp(0, Timeunit.Millis);
 
-	void onDraw(IntButton this, Image offs, Rect rect, const Style style&) {
+	void onDraw(IntButton this, Image offs, Rect rect) {
+		Style style& = this.style;
 		style.align(rect, &rect, this.text);
 		int32 color = this.enabled ? style.textColor : style.focusedColor;
 		offs.drawText(rect, style.font, this.text, color);

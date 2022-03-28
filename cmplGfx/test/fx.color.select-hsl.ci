@@ -14,7 +14,7 @@ Image back = Image("asset/image/forest.jpg", 32);
 Image offs = Image(back);
 
 inline "/cmplGfx/lib/micro.ui.ci";
-void drawColorSlider(Slider this, Image offs, Rect rect, const Style style&);
+void drawColorSlider(Slider this, Image offs, Rect rect);
 void updateSlider(Slider min, Slider max, int value);
 bool syncMinMax(Slider this, int value);
 
@@ -166,7 +166,8 @@ int onEvent(Window win&, int action, int button, int x, int y) {
 	return win.draw(ui);
 }
 
-void drawColorSlider(Slider this, Image offs, Rect rect, const Style style&) {
+void drawColorSlider(Slider this, Image offs, Rect rect) {
+	const Style style& = this.style;
 	const int yOff = 1;
 	const int yOn = yOff + style.padding / 3;
 	const int y = rect.y + rect.h;

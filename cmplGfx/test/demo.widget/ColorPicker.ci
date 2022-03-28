@@ -37,7 +37,7 @@ struct ColorPicker: View {
 		return View.onMeasure(this, &rect);
 	}
 
-	void onDraw(ColorPicker this, Image offs, const Rect rect, const Style style&) {
+	void onDraw(ColorPicker this, Image offs, const Rect rect) {
 		for (int y = 0; y < rect.h; y += 1) {
 			float32 py = float32(y) / rect.h;
 			for (int x = 0; x < rect.w; x += 1) {

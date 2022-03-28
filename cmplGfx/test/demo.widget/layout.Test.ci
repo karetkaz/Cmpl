@@ -123,9 +123,9 @@ Widget widget = {
 View Rectangle(int rgb, const char text[*]) {
 	struct Rectangle: Button {
 		const argb background;
-		void onDraw(Rectangle this, Image offs, Rect rect, const Style style&) {
+		void onDraw(Rectangle this, Image offs, Rect rect) {
 			offs.fillRect(rect, this.background.v);
-			Button.onDraw(this, offs, rect, style);
+			Button.onDraw(this, offs, rect);
 		}
 	}
 	return Rectangle {
