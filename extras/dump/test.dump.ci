@@ -23876,13 +23876,13 @@ cmplStd/test/lang/reflect.ci:22: RecordSizeof: typename(<RecordSizeof>)
 cmplStd/test/lang/reflect.ci:26: RecordSizeofExt: typename(<RecordSizeofExt>)
 cmplStd/test/lang/reflect.ci:30: typeofRecord: typename(<RecordSizeofExt>)
 cmplStd/test/lang/reflect.ci:31: nameOfRecord: char[*]("RecordSizeofExt")
-cmplStd/test/lang/reflect.ci:32: offsetOfRecord: int32(326632)
+cmplStd/test/lang/reflect.ci:32: offsetOfRecord: int32(326616)
 cmplStd/test/lang/reflect.ci:33: sizeOfRecord: int32(16)
 cmplStd/test/lang/reflect.ci:34: fileOfRecord: char[*]("cmplStd/test/lang/reflect.ci")
 cmplStd/test/lang/reflect.ci:35: lineOfRecord: int32(26)
 cmplStd/test/lang/reflect.ci:37: typeofBase: typename(<RecordSizeof>)
 cmplStd/test/lang/reflect.ci:38: nameOfBase: char[*]("RecordSizeof")
-cmplStd/test/lang/reflect.ci:39: offsetOfBase: int32(326312)
+cmplStd/test/lang/reflect.ci:39: offsetOfBase: int32(326296)
 cmplStd/test/lang/reflect.ci:40: sizeOfBase: int32(12)
 cmplStd/test/lang/reflect.ci:41: fileOfBase: char[*]("cmplStd/test/lang/reflect.ci")
 cmplStd/test/lang/reflect.ci:42: lineOfBase: int32(22)
@@ -24316,18 +24316,18 @@ cmplStd/test/std/test.math.ci:119: testMathAbsMod_f32_8d: float32(8.000000)
 
 ---------- Memory usage:
 memory[all] @000000; size: 8388320(8.0 Mb)
-memory[used] @000000; size: 428564(418.5 Kb)
-memory[heap] @068a14; size: 5862628(5.6 Mb)
+memory[used] @000000; size: 428548(418.5 Kb)
+memory[heap] @068a04; size: 5862644(5.6 Mb)
 memory[stack] @3fff40; size: 2097080(2.0 Mb)
 
 ---------- Used memory:
-memory[meta] @000000; size: 411368(401.7 Kb)
+memory[meta] @000000; size: 411352(401.7 Kb)
 memory[code] @000000; size: 16845(16.5 Kb)
 memory[data] @000000; size: 128(128.0 bytes)
 
 ---------- Heap memory:
-memory[used] @068a30; size: 32(32.0 bytes)
-memory[used] @068a60; size: 32(32.0 bytes)
-memory[free] @068a90; size: 5862480(5.6 Mb)
+memory[used] @068a20; size: 32(32.0 bytes)
+memory[used] @068a50; size: 32(32.0 bytes)
+memory[free] @068a80; size: 5862496(5.6 Mb)
 
 ---------- Exitcode: 0, time: 0.000 ms

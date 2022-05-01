@@ -1,0 +1,21 @@
+
+inline fillOval(Image image, int x0, int y0, int x1, int y1, uint32 color) = image.fillRRect(x0, y0, x1, y1, Math.abs(x0 - x1), Math.abs(y0 - y1), color);
+inline drawOval(Image image, int x0, int y0, int x1, int y1, uint32 color) = image.drawRRect(x0, y0, x1, y1, Math.abs(x0 - x1), Math.abs(y0 - y1), color);
+
+/// Fill a ellipse on the `image` specified by `roi` with the given `color`
+void fillOval(Image image, const Rect roi&, uint32 color) {
+	if (roi.w <= 0 || roi.h <= 0) {
+		// empty rectangle
+		return;
+	}
+	image.fillOval(roi.x, roi.y, roi.x + roi.w, roi.y + roi.h, color);
+}
+
+/// Draw an ellipse on the `image` specified by `roi` with the given `color`
+void drawOval(Image image, const Rect roi&, uint32 color) {
+	if (roi.w <= 0 || roi.h <= 0) {
+		// empty rectangle
+		return;
+	}
+	image.drawOval(roi.x, roi.y, roi.x + roi.w, roi.y + roi.h, color);
+}

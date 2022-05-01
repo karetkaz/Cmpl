@@ -992,7 +992,7 @@ typedef struct mainLoopArgs {
 	rtContext rt;
 	symn callback;
 	vmError error;
-	int64_t timeout;
+	uint64_t timeout;
 	GxWindow window;
 	struct {
 		int32_t y;
@@ -1013,17 +1013,29 @@ static void exitMainLoop(mainLoopArgs args) {
 #else
 
 static void exitMainLoop(mainLoopArgs args) {
-	args->timeout = -1;
+	args->event.action = WINDOW_CLOSE;
 }
 #endif
 
 static void mainLoopCallback(mainLoopArgs args) {
-	args->event.action = getWindowEvent(args->window, &args->event.button, &args->event.x, &args->event.y);
+#ifdef __EMSCRIPTEN__
+	args->event.action = getWindowEvent(args->window, &args->event.button, &args->event.x, &args->event.y, 1);
+#else
+	args->event.action = getWindowEvent(args->window, &args->event.button, &args->event.x, &args->event.y, args->timeout != 0);
+#endif
+
+	if (args->event.action == WINDOW_CLOSE) {
+		// window is closing, quit loop
+		return exitMainLoop(args);
+	}
+
 	if (args->event.action == 0) {
 		// skip unknown events
-		int64_t now = timeMillis();
-		if (now < args->timeout) {
-			return parkThread();
+		if (args->timeout == 0) {
+			return;
+		}
+		if (args->timeout > timeMillis()) {
+			return;
 		}
 		args->event.action = EVENT_TIMEOUT;
 	}
@@ -1033,32 +1045,20 @@ static void mainLoopCallback(mainLoopArgs args) {
 		int32_t timeout;
 		rtContext rt = args->rt;
 		args->error = rt->api.invoke(rt, callback, &timeout, &args->event, args);
-		if (args->error != noError || args->event.action == WINDOW_CLOSE || timeout < 0) {
-			if (args->error == noError && args->event.action != WINDOW_CLOSE) {
-				args->event.action = WINDOW_CLOSE;
-				rt->api.invoke(rt, callback, &timeout, &args->event, args);
-			}
+		if (args->error != noError || timeout < 0) {
 			return exitMainLoop(args);
 		}
-		if (timeout >= 0) {
-			if (timeout == 0) {
-				args->timeout = INT64_MAX;
-			}
-			else {
-				args->timeout = timeout + timeMillis();
-			}
+		if (timeout != 0) {
+			args->timeout = timeout + timeMillis();
+		} else {
+			args->timeout = 0;
 		}
-	}
-	else {
-		if (args->event.action == WINDOW_CLOSE) {
-			// window is closing, quit loop
-			return exitMainLoop(args);
-		}
+	} else {
 		if (args->event.action == KEY_RELEASE && args->event.button == 27) {
 			// if there is no callback, exit wit esc key
 			return exitMainLoop(args);
 		}
-		args->timeout = INT64_MAX;
+		args->timeout = 0;
 	}
 	flushWindow(args->window);
 }
@@ -1075,28 +1075,41 @@ static vmError window_show(nfcContext ctx) {
 	args.callback = rt->api.rtLookup(ctx->rt, cbOffs, KIND_fun);
 	args.error = noError;
 	args.timeout = 0;
-	args.window = NULL;
 	args.event.closure = (vmOffs) cbClosure;
-	args.event.action = WINDOW_INIT;
-	args.event.button = 0;
-	args.event.x = 0;
-	args.event.y = 0;
 
+	args.window = createWindow(offScreen, rt->main->unit);
 	if (args.callback != NULL) {
-		vmError error = rt->api.invoke(rt, args.callback, &args.timeout, &args.event, &args);
-		if (error != noError || args.timeout < 0) {
+		args.event.action = WINDOW_INIT;
+		args.event.button = 0;
+		args.event.x = 0;
+		args.event.y = 0;
+		int32_t timeout;
+		vmError error = rt->api.invoke(rt, args.callback, &timeout, &args.event, &args);
+		if (error != noError || timeout < 0) {
 			return error;
 		}
+		if (timeout != 0) {
+			args.timeout = timeout + timeMillis();
+		}
 	}
-	args.window = createWindow(offScreen, rt->main->unit);
+	flushWindow(args.window);
 
 #ifdef __EMSCRIPTEN__
 	emscripten_set_main_loop_arg((void*)mainLoopCallback, &args, 0, 1);
 #else
-	for ( ; args.timeout >= 0; ) {
+	for ( ; args.event.action != WINDOW_CLOSE; ) {
 		mainLoopCallback(&args);
 	}
 #endif
+
+	if (args.callback != NULL) {
+		args.event.action = WINDOW_CLOSE;
+		args.event.button = 0;
+		args.event.x = 0;
+		args.event.y = 0;
+		rt->api.invoke(rt, args.callback, NULL, &args.event, &args);
+	}
+
 	destroyWindow(args.window);
 	return args.error;
 }

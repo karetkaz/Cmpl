@@ -28,35 +28,42 @@ GxWindow createWindow(GxImage image, const char *title) {
 		return NULL;
 	}
 
-	HINSTANCE mainhins = 0;
-	char *class_name = "GFX(2/3)D_Window";
+	HINSTANCE mainInstance = 0;
+	char *class_name = "CmplGfxWindow";
 
 	WNDCLASS windowClass = {0};
-	windowClass.style = CS_OWNDC; // The style of the window. CS_OWNDC means every window has it's own DC
+	windowClass.style = CS_OWNDC; // The style of the window. CS_OWNDC means every window has its own DC
 	windowClass.lpfnWndProc = WindowProc;//bitmapWindowHandler; // The function to call when this window receives a message
 	windowClass.cbClsExtra = 0; // Extra bytes to allocate for this class (none)
 	windowClass.cbWndExtra = 0; // Extra bytes to allocate for each window (none)
-	windowClass.hInstance = mainhins; // This application's instance
-	windowClass.hIcon = LoadIcon(mainhins, IDI_APPLICATION); // A standard Icon
-	windowClass.hCursor = LoadCursor(mainhins, IDC_ARROW); // A standard cursor
+	windowClass.hInstance = mainInstance; // This application's instance
+	windowClass.hIcon = LoadIcon(mainInstance, IDI_APPLICATION); // A standard Icon
+	windowClass.hCursor = LoadCursor(mainInstance, IDC_ARROW); // A standard cursor
 	windowClass.hbrBackground = (HBRUSH)COLOR_APPWORKSPACE; // A standard background
 	windowClass.lpszMenuName = NULL; // No menus in this window
 	windowClass.lpszClassName = (void*)class_name; // A name for this class
 	RegisterClass(&windowClass); // Register the class
 
+	// center window and set inner size
+	int cx = (GetSystemMetrics(SM_CXSCREEN) - image->width) / 2;
+	int cy = (GetSystemMetrics(SM_CYSCREEN) - image->height) / 2;
+	RECT rc = { 0, 0, image->width, image->height };
+	AdjustWindowRect(&rc, WS_POPUPWINDOW|WS_CAPTION, FALSE);
+
 	result->hwnd = CreateWindow(
 		class_name,			// Name of the window class (registered above)
 		title,				// Name of the window, appears in the window title bar
-		WS_MINIMIZEBOX | WS_SYSMENU,	// Window style
-		CW_USEDEFAULT,			// X coordinate of the window on-screen
-		CW_USEDEFAULT,			// Y coordinate of the window on-screen
-		image->width,			// width of the window
-		image->height,			// height of the window
+		WS_POPUPWINDOW|WS_CAPTION|WS_MINIMIZEBOX,	// Window style
+		cx,			// X coordinate of the window on-screen
+		cy,			// Y coordinate of the window on-screen
+		rc.right - rc.left,			// width of the window
+		rc.bottom - rc.top,			// height of the window
 		NULL,				// Handle to a parent window (none)
 		NULL,				// Handle to a child window (none)
-		mainhins,			// Handle to the current Instance
+		mainInstance,			// Handle to the current Instance
 		NULL					// Pointer to extra data I don't care about
 	);
+
 	result->BMP.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
 	result->BMP.bmiHeader.biWidth = image->width;
 	result->BMP.bmiHeader.biHeight = -image->height;
@@ -73,15 +80,6 @@ GxWindow createWindow(GxImage image, const char *title) {
 	result->image = image;
 
 	ShowWindow(result->hwnd, SW_SHOW);
-
-	/*POINT ptDiff;
-	RECT rcClient, rcWindow;
-	GetClientRect(result->hwnd, &rcClient);
-	GetWindowRect(result->hwnd, &rcWindow);
-	ptDiff.x = (rcWindow.right - rcWindow.left) - rcClient.right;
-	ptDiff.y = (rcWindow.bottom - rcWindow.top) - rcClient.bottom;
-	MoveWindow(result->hwnd, rcWindow.left, rcWindow.top, ptDiff.x + image->width, ptDiff.y + image->height, TRUE);
-	// */
 	return result;
 }
 
@@ -93,22 +91,38 @@ void flushWindow(GxWindow window) {
 		src->basePtr, &window->BMP, DIB_RGB_COLORS);
 }
 
-int getWindowEvent(GxWindow window, int *button, int *x, int *y) {
+int getWindowEvent(GxWindow window, int *button, int *x, int *y, int timeout) {
 	static int btnMod = 0;
 	static int keyMod = 0;
 
 	MSG msg;
-	msg.message = 0;
-	while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
-		if (msg.message != WM_MOUSEMOVE) {
+	if (timeout != 0 && !PeekMessage(&msg, NULL, 0, 0, PM_NOREMOVE)) {
+		// park thread for a while
+		SwitchToThread();
+		return 0;
+	}
+
+	// block until next event
+	GetMessage(&msg, NULL, 0, 0);
+	if (msg.message == WM_MOUSEMOVE) {
+		MSG nextMsg;
+		while (PeekMessage(&nextMsg, NULL, 0, 0, PM_NOREMOVE)) {
+			if (nextMsg.message != WM_MOUSEMOVE) {
+				break;
+			}
 			// consume mouse motion events
-			break;
+			GetMessage(&msg, NULL, 0, 0);
 		}
 	}
+
 	*button = *x = *y = 0;
 	switch (msg.message) {
 		default:
 			*button = msg.message;
+			break;
+
+		case WM_PAINT:
+			flushWindow(window);
 			break;
 
 		case WM_QUIT:
@@ -172,9 +186,6 @@ int getWindowEvent(GxWindow window, int *button, int *x, int *y) {
 			return MOUSE_RELEASE;
 
 		case WM_MOUSEMOVE:
-			if (btnMod == 0) {
-				break;
-			}
 			*button = btnMod;
 			*x = LOWORD(msg.lParam);
 			*y = HIWORD(msg.lParam);
@@ -202,7 +213,11 @@ int getWindowEvent(GxWindow window, int *button, int *x, int *y) {
 					break;
 			}
 
-			*button = msg.wParam;
+			if (msg.wParam >= 'A' && msg.wParam <= 'Z') {
+				*button = tolower(msg.wParam);
+			} else {
+				*button = msg.wParam;
+			}
 			*x = HIWORD(msg.lParam) & 127;
 			*y = keyMod;
 			DispatchMessage(&msg);
@@ -229,7 +244,11 @@ int getWindowEvent(GxWindow window, int *button, int *x, int *y) {
 					break;
 			}
 
-			*button = msg.wParam;
+			if (msg.wParam >= 'A' && msg.wParam <= 'Z') {
+				*button = tolower(msg.wParam);
+			} else {
+				*button = msg.wParam;
+			}
 			*x = HIWORD(msg.lParam) & 127;
 			*y = keyMod;
 			DispatchMessage(&msg);
@@ -237,11 +256,12 @@ int getWindowEvent(GxWindow window, int *button, int *x, int *y) {
 	}
 	TranslateMessage(&msg);
 	DispatchMessage(&msg);
-	(void) window;
 	return 0;
 }
 
 void destroyWindow(GxWindow window) {
+	PostQuitMessage(0);
+	DestroyWindow(window->hwnd);
 	free(window);
 }
 

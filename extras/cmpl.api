@@ -724,31 +724,28 @@ Image(fileName: char[*], width: int32, height: int32, depth: int32, align: int32
 Image(fileName: char[*], width: int32, height: int32, depth: int32, align: int32): Image # Create an image by opening an image file with custom width and height
 Image(fileName: char[*], width: int32, height: int32, depth: int32): Image # Create an image by opening an image file with custom width and height
 blur(image: Image, radius: int32, sigma: float64): void # emulated implementation of blur function
+drawAntiAliased
 fillRect(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, incl: int32, color: uint32): void # Fill a rectangle on the `image` specified by the coordinates with the given `color`
 fillRect(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, color: uint32): void # Fill a rectangle on the `image` specified by the coordinates with the given `color`
+drawRect(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, width: int32, color: uint32): void # Draw a rectangle on the `image` specified by the coordinates with the given `width` and `color`
 drawRect(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, color: uint32): void # Draw a rectangle on the `image` specified by the coordinates with the given `color`
-fillRRect(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, rx: int32, ry: int32, color: uint32): void # Fill a rounded rectangle on `image` specified by the coordinates and rounding, with the given `color`
-drawRRect(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, rx: int32, ry: int32, color: uint32): void # Draw a rounded rectangle on `image` specified by the coordinates and rounding, with the given `color`
-fillOval(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, color: uint32): void
-drawOval(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, color: uint32): void
-fillRRect(image: Image, x1: int32, y1: int32, x2: int32, y2: int32, r: int32, color: uint32): void # Fill the given rectangle rounding the corners using the given radius
-drawRRect(image: Image, x1: int32, y1: int32, x2: int32, y2: int32, r: int32, color: uint32): void # draw the given rectangle rounding the corners using the given radius
-drawLineIncl(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, smooth: bool, color: uint32): void # Draw a normal or smooth(anti-aliased) line, including ending pixel
-xcl(a: int32, b: int32): int32
-drawLine(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, smooth: bool, color: uint32): void # Draw a normal or smooth(anti-aliased) line
-drawBezier(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, x2: int32, y2: int32, smooth: bool, color: uint32): void # Draw a bezier curve normal or smooth(anti-aliased)
-drawBezier(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, x2: int32, y2: int32, x3: int32, y3: int32, smooth: bool, color: uint32): void # Draw a bezier curve normal or smooth(anti-aliased)
-fill(image: Image, color: uint32): Image # Fill the entire image with the given color
-fillRect(image: Image, roi: Rect, rx: int32, ry: int32, color: uint32): void # Fill the given rectangle rounding the corners using the given radius
-fillRect(image: Image, roi: Rect, r: int32, color: uint32): void # Fill the given rectangle rounding the corners using the given radius
-drawAntiAliased
-drawLine(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, color: uint32): void
-drawBezier(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, x2: int32, y2: int32, color: uint32): void
-drawBezier(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, x2: int32, y2: int32, x3: int32, y3: int32, color: uint32): void
 fillRect(image: Image, roi: Rect, color: uint32): void # Fill a rectangle on the `image` specified by `roi` with the given `color`
 drawRect(image: Image, roi: Rect, color: uint32): void # Draw a rectangle on the `image` specified by `roi` with the given `color`
-fillOval(image: Image, roi: Rect, color: uint32): void # Fill a rectangle on the `image` specified by `roi` with the given `color`
-drawOval(image: Image, roi: Rect, color: uint32): void # Draw a rectangle on the `image` specified by `roi` with the given `color`
+fillRRect(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, rx: int32, ry: int32, color: uint32): void # Fill a rounded rectangle on `image` specified by the coordinates and rounding, with the given `color`
+drawRRect(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, rx: int32, ry: int32, color: uint32): void # Draw a rounded rectangle on `image` specified by the coordinates and rounding, with the given `color`
+fillRRect(image: Image, x1: int32, y1: int32, x2: int32, y2: int32, r: int32, color: uint32): void # Fill the given rectangle rounding the corners using the given radius
+drawRRect(image: Image, x1: int32, y1: int32, x2: int32, y2: int32, r: int32, color: uint32): void # Draw the given rectangle rounding the corners using the given radius
+fillRRect(image: Image, roi: Rect, rx: int32, ry: int32, color: uint32): void # Fill the given rectangle rounding the corners using the given radius
+fillRRect(image: Image, roi: Rect, r: int32, color: uint32): void # Fill the given rectangle rounding the corners using the given radius
+fillOval(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, color: uint32): void
+drawOval(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, color: uint32): void
+fillOval(image: Image, roi: Rect, color: uint32): void # Fill a ellipse on the `image` specified by `roi` with the given `color`
+drawOval(image: Image, roi: Rect, color: uint32): void # Draw an ellipse on the `image` specified by `roi` with the given `color`
+drawLineIncl(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, color: uint32): void # Draw a line, including ending pixel
+drawLine(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, color: uint32): void # Draw a line between the given coordinates(excluding the rightmost bottom pixel)
+drawBezier(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, x2: int32, y2: int32, color: uint32): void # Draw a quadratic bezier curve
+drawBezier(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, x2: int32, y2: int32, x3: int32, y3: int32, color: uint32): void # Draw a cubic bezier curve
+fill(image: Image, color: uint32): Image # Fill the entire image with the given color
 Mesh(fileName: char[*]): Mesh # Create a mesh by opening a file
 Camera
 Camera.position

@@ -5,9 +5,14 @@ echo "cmpl home is: $CMPL_HOME"
 cd "$CMPL_HOME" || exit 1
 
 BIN=bin/macos
+#BIN_EMC=$CMPL_HOME/extras/demo/emscripten
 
 make clean BINDIR="$BIN"
 make -j 12 cmpl libFile.dylib libGfx.dylib BINDIR="$BIN"
+
+if [ -n "$BIN_EMC" ]; then
+	make -j 12 cmpl.js libFile.wasm libGfx.wasm BINDIR="$BIN_EMC"
+fi
 
 # test the virtual machine
 if ! $BIN/cmpl --test-vm; then
@@ -31,8 +36,6 @@ $BIN/cmpl -X+steps+fold+fast-stdin-glob-offsets -debug/G/M -api/A/m/d/p -asm/n/s
 $BIN/cmpl -X-stdin+steps -profile/t/P/G/M -api/A/m/d/p -asm/g/n/s -ast/t -doc -use -log/d/15 "extras/dump/test.prof.ci" "cmplStd/test/test.ci"
 # dump profile data in json format
 $BIN/cmpl -X-stdin-steps -profile/t/P/G/M -api/A/m/d/p -asm/g/n/s -ast/t -doc -use -dump.json "extras/dump/test.prof.json" "cmplStd/test/test.ci"
-
-#exit 0
 
 TEST_FILES="$CMPL_HOME/cmplStd/test/test.ci"
 TEST_FILES="$TEST_FILES $(echo $CMPL_HOME/cmplStd/test/demo/*.ci)"

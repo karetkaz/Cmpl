@@ -23,7 +23,7 @@ typedef struct GxWindow *GxWindow;
 
 extern GxWindow createWindow(GxImage image, const char *title);
 
-extern int getWindowEvent(GxWindow window, int *button, int *x, int *y);
+extern int getWindowEvent(GxWindow window, int *button, int *x, int *y, int timeout);
 
 extern void setWindowTitle(GxWindow window, const char *title);
 
@@ -34,4 +34,3 @@ extern void destroyWindow(GxWindow window);
 // TODO: find a common place and merge platform specific implementations
 uint64_t timeMillis();
 void sleepMillis(int64_t millis);
-void parkThread();

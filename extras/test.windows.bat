@@ -7,7 +7,6 @@ echo cmpl home is: %CMPL_HOME%
 SET BIN=%CMPL_HOME%\bin\windows
 SET BIN_WCC=%CMPL_HOME%\bin\windows.wcc
 
-@REM SET "MINGW_HOME=C:\Program Files\mingw-w64\x86_64-8.1.0-posix-seh-rt_v6-rev0\mingw64"
 SET "MINGW_HOME=C:\Workspace\MinGw-5.3.0"
 SET "WATCOM=C:\Workspace\ow_daily\rel2"
 
