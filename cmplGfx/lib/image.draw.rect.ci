@@ -1,0 +1,80 @@
+/// Fill a rectangle on the `image` specified by the coordinates with the given `color`
+void fillRect(Image image, int x0, int y0, int x1, int y1, int incl, uint32 color) {
+	static if (preferNativeCalls && typename(Image.fillRect) != null) {
+		return Image.fillRect(image, x0, y0, x1, y1, incl, color);
+	}
+
+	if (x0 > x1) {
+		int t = x0;
+		x0 = x1;
+		x1 = t;
+	}
+	if (y0 > y1) {
+		int t = y0;
+		y0 = y1;
+		y1 = t;
+	}
+	x1 += incl;
+	y1 += incl;
+
+	for (int y = y0; y < y1; y += 1) {
+		for (int x = x0; x < x1; x += 1) {
+			image.set(x, y, color);
+		}
+	}
+}
+
+/// Fill a rectangle on the `image` specified by the coordinates with the given `color`
+inline fillRect(Image image, int x0, int y0, int x1, int y1, uint32 color) = image.fillRect(x0, y0, x1, y1, 0, color);
+
+/// Draw a rectangle on the `image` specified by the coordinates with the given `width` and `color`
+void drawRect(Image image, int x0, int y0, int x1, int y1, int width, uint32 color) {
+	if (y0 > y1) {
+		int t = y1;
+		y1 = y0;
+		y0 = t;
+	}
+	if (x0 > x1) {
+		int t = x1;
+		x1 = x0;
+		x0 = t;
+	}
+
+	int half1 = (width - 0) / 2;
+	int half2 = (width - 1) / 2;
+	x0 -= half1;
+	y0 -= half1;
+	x1 += half2;
+	y1 += half2;
+
+	if (x1 - x0 <= 2 * width || y1 - y0 <= 2 * width) {
+		// no gap between top and bottom or left and right; draw all at once
+		return image.fillRect(x0, y0, x1, y1, color);
+	}
+
+	image.fillRect(x0, y0, x1, y0 + width, color);					// top
+	image.fillRect(x0, y0 + width, x0 + width, y1 - width, color);	// left
+	image.fillRect(x1 - width, y0 + width, x1, y1 - width, color);	// right
+	image.fillRect(x0, y1 - width, x1, y1, color);					// bottom
+}
+
+/// Draw a rectangle on the `image` specified by the coordinates with the given `color`
+inline drawRect(Image image, int x0, int y0, int x1, int y1, uint32 color) = image.drawRect(x0, y0, x1, y1, 1, color);
+
+/// Fill a rectangle on the `image` specified by `roi` with the given `color`
+void fillRect(Image image, const Rect roi&, uint32 color) {
+	if (roi.w <= 0 || roi.h <= 0) {
+		// empty rectangle
+		return;
+	}
+	image.fillRect(roi.x, roi.y, roi.x + roi.w, roi.y + roi.h, color);
+}
+
+/// Draw a rectangle on the `image` specified by `roi` with the given `color`
+void drawRect(Image image, const Rect roi&, uint32 color) {
+	if (roi.w <= 0 || roi.h <= 0) {
+		// empty rectangle
+		return;
+	}
+	image.drawRect(roi.x, roi.y, roi.x + roi.w, roi.y + roi.h, 1, color);
+}

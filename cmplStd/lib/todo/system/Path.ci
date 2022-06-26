@@ -1,0 +1,13 @@
+
+struct Path {
+static if (System.Platform.Windows) {
+	static char separator = '\\';
+} else {
+	static char separator = '/';
+}
+	struct Builder {
+		// todo: ...
+	}
+
+	// todo: ...
+}

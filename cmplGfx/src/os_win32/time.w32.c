@@ -23,7 +23,3 @@ uint64_t timeMillis() {
 void sleepMillis(int64_t milliseconds) {
 	Sleep(milliseconds);
 }
-
-void parkThread() {
-	SwitchToThread();
-}

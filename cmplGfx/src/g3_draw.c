@@ -455,90 +455,95 @@ static void draw_triangle(GxImage dst, vector p, texcol tex, texcol col, int i1,
 		i2 ^= i3;
 	}
 
-	GxClip roi = getClip(dst);
 	int32_t y1 = projy(dst, p + i1);
 	int32_t y2 = projy(dst, p + i2);
 	int32_t y3 = projy(dst, p + i3);
 
-	if (y1 < y3) {				// clip (y)
-		int y = roi->ymin;
-		int dy1 = 0, dy2 = 0;
-		int ly1 = 0, ly2 = 0;
+	if (y1 == y3) {                // clip (y)
+		return;
+	}
 
-		struct edge v1, v2;
-		struct ssds s1, s2, s3;
+	struct ssds s1, s2, s3;
 
-		s1.x = projx(dst, p + i1, 16);
-		s2.x = projx(dst, p + i2, 16);
-		s3.x = projx(dst, p + i3, 16);
+	s1.x = projx(dst, p + i1, 16);
+	s2.x = projx(dst, p + i2, 16);
+	s3.x = projx(dst, p + i3, 16);
 
-		s1.z = projz(p + i1);
-		s2.z = projz(p + i2);
-		s3.z = projz(p + i3);
+	s1.z = projz(p + i1);
+	s2.z = projz(p + i2);
+	s3.z = projz(p + i3);
 
-		s1.c = col[i1].rgb;
-		s2.c = col[i2].rgb;
-		s3.c = col[i3].rgb;
+	s1.c = col[i1].rgb;
+	s2.c = col[i2].rgb;
+	s3.c = col[i3].rgb;
 
-		if (img && tex) {
-			int w = img->width-1;
-			int h = img->height-1;
-			s1.s = tex[i1].tex.s * w;
-			s1.t = tex[i1].tex.t * h;
-			s2.s = tex[i2].tex.s * w;
-			s2.t = tex[i2].tex.t * h;
-			s3.s = tex[i3].tex.s * w;
-			s3.t = tex[i3].tex.t * h;
+	if (img && tex) {
+		int w = img->width-1;
+		int h = img->height-1;
+		s1.s = tex[i1].tex.s * w;
+		s1.t = tex[i1].tex.t * h;
+		s2.s = tex[i2].tex.s * w;
+		s2.t = tex[i2].tex.t * h;
+		s3.s = tex[i3].tex.s * w;
+		s3.t = tex[i3].tex.t * h;
 
-			//TODO: mip-map selection
-			//~ if (y1 == y2) w = X2 - X1;
-			//~ else if (y2 == y3) w = X3 - X2;
-			//~ else w = X1 < X3 ? X1 - X2 : X3 - X1;
-			//~ if ((w >>= 16) < 0)w = -w;
-			//~ if (tmp > SCRH || ((w < 0 ? -w : w) >> 16) > SCRW) return;
-		}
-		else {
-			s1.s = s1.t = 0;
-			s2.s = s2.t = 0;
-			s3.s = s3.t = 0;
-		}
+		// TODO: perspective correct texture mapping
+		// TODO: mip-map selection
+		//~ if (y1 == y2) w = X2 - X1;
+		//~ else if (y2 == y3) w = X3 - X2;
+		//~ else w = X1 < X3 ? X1 - X2 : X3 - X1;
+		//~ if ((w >>= 16) < 0)w = -w;
+		//~ if (tmp > SCRH || ((w < 0 ? -w : w) >> 16) > SCRW) return;
+	}
+	else {
+		s1.s = s1.t = 0;
+		s2.s = s2.t = 0;
+		s3.s = s3.t = 0;
+	}
 
-		// calc slope y3 - y1 (the longest)
-		init_edge(&v1, &s1, &s3, y3 - y1, y - y1);
-		ly1 = y2 - y1; dy1 = y - y1;
-		ly2 = y3 - y2; dy2 = y - y2;
+	// calc slope y3 - y1 (the longest)
+	GxClip roi = getClip(dst);
+	int y = roi->ymin;
+	int ly1 = y2 - y1;
+	int dy1 = y - y1;
+	int ly2 = y3 - y2;
+	int dy2 = y - y2;
 
-		// clip y1, y2, y3
-		if (y1 < y) {
-			if (y2 < y) {
-				if (y3 < y) {
-					return;
-				}
-				y2 = y;
+	struct edge v1;
+	init_edge(&v1, &s1, &s3, y3 - y1, dy1);
+
+	// clip y1, y2, y3
+	if (y1 < y) {
+		if (y2 < y) {
+			if (y3 < y) {
+				return;
 			}
-			y1 = y;
+			y2 = y;
 		}
-		if (y3 > (y = roi->ymax)) {
-			if (y2 > y) {
-				if (y1 > y) {
-					return;
-				}
-				y2 = y;
+		y1 = y;
+	}
+	if (y3 > (y = roi->ymax)) {
+		if (y2 > y) {
+			if (y1 > y) {
+				return;
 			}
-			y3 = y;
+			y2 = y;
 		}
+		y3 = y;
+	}
 
-		//~ if (s1.z < 0) return;
-		//~ if (s2.z < 0) return;
-		//~ if (s3.z < 0) return;
-		if (y1 < y2) {				// y1 < y < y2
-			init_edge(&v2, &s1, &s2, ly1, dy1);
-			draw_tri_part(dst, roi, &v1, &v2, v2.dx < v1.dx, y1, y2, img);
-		}
-		if (y2 < y3) {				// y2 < y < y3
-			init_edge(&v2, &s2, &s3, ly2, dy2);
-			draw_tri_part(dst, roi, &v1, &v2, v2.x < v1.x, y2, y3, img);
-		}
+	//~ if (s1.z < 0) return;
+	//~ if (s2.z < 0) return;
+	//~ if (s3.z < 0) return;
+	if (y1 < y2) {				// y1 < y < y2
+		struct edge v2 = {0};
+		init_edge(&v2, &s1, &s2, ly1, dy1);
+		draw_tri_part(dst, roi, &v1, &v2, v2.dx < v1.dx, y1, y2, img);
+	}
+	if (y2 < y3) {				// y2 < y < y3
+		struct edge v2 = {0};
+		init_edge(&v2, &s2, &s3, ly2, dy2);
+		draw_tri_part(dst, roi, &v1, &v2, v2.x < v1.x, y2, y3, img);
 	}
 }
 

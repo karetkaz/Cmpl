@@ -370,7 +370,7 @@ Histogram histogram = {
 Slider sldLevels = {
 	text: "Levels";
 	minimum: 2;
-	maximum: 255;
+	maximum: 256;
 	value: 5;
 };
 
@@ -460,4 +460,5 @@ back.destroy();
 https://github.com/cyotek/Dithering/blob/master/src/Dithering/StuckiDithering.cs
 https://github.com/safecomp/AndroidImageProcessing/blob/master/AndroidImageProcessing/src/safecomp/ir/androidimageprocessing/Dithering.java
 https://www.arabicprogrammer.com/article/5386388171/
+https://en.wikipedia.org/wiki/Dither
 */

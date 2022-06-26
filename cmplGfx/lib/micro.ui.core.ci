@@ -19,7 +19,6 @@ struct Style {
 	const FormatFlags format;
 
 	uint32 backgroundColor = 0x1a1a1a;
-	// int highlightColor = TODO;
 	// int disabledColor = TODO;
 	uint32 hoveredColor = 0x2a2a2a;
 	uint32 focusedColor = 0x3b4754;
@@ -31,7 +30,6 @@ struct Style {
 		left: 2;
 		right: 4;
 		bottom: 8;
-
 		center: 0;
 
 		topLeft: top | left;
@@ -532,6 +530,11 @@ struct Layout: View {
 	}
 
 	bool onKeyEvent(Layout this, const KeyEvent event&) {
+		if (!this.enabled) {
+			// disabled layout does not consume events
+			return false;
+		}
+
 		int idx = this.focusedIndex;
 		if (idx < 0) {
 			return false;
@@ -555,6 +558,11 @@ struct Layout: View {
 				}
 			}
 			return -1;
+		}
+
+		if (!this.enabled) {
+			// disabled layout does not consume events
+			return false;
 		}
 
 		bool result = false;

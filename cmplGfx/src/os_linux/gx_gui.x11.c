@@ -2,7 +2,7 @@
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <stdlib.h>
-
+#include <sched.h>
 
 struct GxWindow {
 	Display *display;
@@ -34,8 +34,8 @@ GxWindow createWindow(GxImage offs, const char *title) {
 	XSetStandardProperties(result->display, result->window, title, "cmpl", None, NULL, 0, NULL);
 	XMapWindow(result->display, result->window);
 
-	XSelectInput(result->display, result->window, StructureNotifyMask// | VisibilityChangeMask
-		| ButtonPressMask | ButtonReleaseMask | ButtonMotionMask
+	XSelectInput(result->display, result->window, ExposureMask
+		| ButtonPressMask | ButtonReleaseMask | ButtonMotionMask | PointerMotionMask
 		| EnterWindowMask | LeaveWindowMask   // mouse enter and leave the window
 		| KeyPressMask | KeyReleaseMask
 	);
@@ -59,23 +59,50 @@ GxWindow createWindow(GxImage offs, const char *title) {
 	return result;
 }
 
-int getWindowEvent(GxWindow window, int *button, int *x, int *y) {
-	static int btnstate = 0;
+int getWindowEvent(GxWindow window, int *button, int *x, int *y, int timeout) {
+	static int btnState = 0;
+	static int keyState = 0;
+
+	if (timeout != 0 && !XPending(window->display)) {
+		// park thread for a while
+		sched_yield();
+		return 0;
+	}
 
 	XEvent event;
-	event.type = 0;
-	while (XPending(window->display)) {
-		XNextEvent(window->display, &event);
-		if (event.type != MotionNotify) {
+	XNextEvent(window->display, &event);
+
+	// use the last motion event
+	if (event.type == MotionNotify) {
+		XEvent nextEvent;
+		while (XPending(window->display)) {
+			XPeekEvent(window->display, &nextEvent);
+			if (nextEvent.type != MotionNotify) {
+				break;
+			}
 			// consume mouse motion events
-			break;
+			XNextEvent(window->display, &event);
 		}
 	}
+
+	// do nopt not process key release while key is pressed
+	if (event.type == KeyRelease && XPending(window->display)) {
+		XEvent nextEvent;
+		XPeekEvent(window->display, &nextEvent);
+		if (nextEvent.type == KeyPress && nextEvent.xkey.time == event.xkey.time && nextEvent.xkey.keycode == event.xkey.keycode) {
+			return 0;
+		}
+	}
+
 	*button = *x = *y = 0;
 	switch (event.type) {
 		default:
 			*button = event.type;
 			break;
+
+		case Expose:
+			flushWindow(window);
+			return 0;
 
 		case ClientMessage:
 			if ((Atom)event.xclient.data.l[0] == window->deleteWindow) {
@@ -95,65 +122,98 @@ int getWindowEvent(GxWindow window, int *button, int *x, int *y) {
 		case ButtonPress:
 			switch (event.xbutton.button) {
 				case 1:
-					btnstate |= 1;
+					btnState |= 1;
 					break;
 				case 2:
-					btnstate |= 4;
+					btnState |= 4;
 					break;
 				case 3:
-					btnstate |= 2;
+					btnState |= 2;
 					break;
 			}
-			*button = btnstate;
+			*button = btnState;
 			*x = event.xmotion.x;
 			*y = event.xmotion.y;
 			return MOUSE_PRESS;
 
 		case ButtonRelease:
-			*button = btnstate;
+			*button = btnState;
 			*x = event.xmotion.x;
 			*y = event.xmotion.y;
 			switch (event.xbutton.button) {
 				case 1:
-					btnstate &= ~1;
+					btnState &= ~1;
 					break;
 				case 2:
-					btnstate &= ~4;
+					btnState &= ~4;
 					break;
 				case 3:
-					btnstate &= ~2;
+					btnState &= ~2;
 					break;
 			}
 			return MOUSE_RELEASE;
 
 		case MotionNotify:
-			*button = btnstate;
+			*button = btnState;
 			*x = event.xmotion.x;
 			*y = event.xmotion.y;
 			return MOUSE_MOTION;
 
 		case KeyPress:
 		case KeyRelease: {
-			KeySym keysym;
-			char buffer[8];
-			XLookupString(&(event.xkey), buffer, sizeof(buffer), &keysym, NULL);
-			*button = buffer[0];
-			*x = event.xkey.keycode;
-			*y = keysym & ~255;
-			if (event.xkey.state & ShiftMask) {
-				*y |= KEY_MASK_SHIFT;
-			}
-			if (event.xkey.state & ControlMask) {
-				*y |= KEY_MASK_CTRL;
-			}
-			switch (event.type) {
-				case KeyPress:
-					return KEY_PRESS;
+			KeySym keysym = XLookupKeysym(&event.xkey, 0);
+			switch (keysym) {
+				default: {
+					char buffer[64] = {0};
+					XLookupString(&event.xkey, buffer, sizeof(buffer), &keysym, 0);
+					*button = buffer[0];
+					if (*button == 0) {
+						*button = keysym;
+					}
+					break;
+				}
 
-				case KeyRelease:
-					return KEY_RELEASE;
+				case XK_Tab:
+					*button = '\t';
+					break;
+
+				case XK_Shift_L:
+				case XK_Shift_R:
+					*button = keysym;
+					if (event.type == KeyRelease) {
+						keyState &= ~KEY_MASK_SHIFT;
+					} else {
+						keyState |= KEY_MASK_SHIFT;
+					}
+					break;
+
+				case XK_Control_L:
+				case XK_Control_R:
+					*button = keysym;
+					if (event.type == KeyRelease) {
+						keyState &= ~KEY_MASK_CTRL;
+					} else {
+						keyState |= KEY_MASK_CTRL;
+					}
+					break;
+
+				case XK_Alt_L:
+				case XK_Alt_R:
+					*button = keysym;
+					if (event.type == KeyRelease) {
+						keyState &= ~KEY_MASK_ALT;
+					} else {
+						keyState |= KEY_MASK_ALT;
+					}
+					break;
 			}
-			break;
+
+			*x = event.xkey.keycode;
+			*y = keyState;
+			if (event.type == KeyRelease) {
+				return KEY_RELEASE;
+			}
+			return KEY_PRESS;
 		}
 	}
 	return 0;

@@ -61,24 +61,23 @@ struct Popup: Widget {
 		}
 
 		if (event.key == '[' || event.key == ']') {
+			this.clearState(Style.hovered);
 			// hide, show controls
 			if (event.key == '[') {
-				if (this.align != Style.topLeft) {
-					this.align = Style.topLeft;
-				} else {
+				if (this.align == Style.topLeft) {
 					this.enabled = !this.enabled;
 					this.invalidate();
 					return true;
 				}
+				this.align = Style.topLeft;
 			}
 			if (event.key == ']') {
-				if (this.align != Style.topRight) {
-					this.align = Style.topRight;
-				} else {
+				if (this.align == Style.topRight) {
 					this.enabled = !this.enabled;
 					this.invalidate();
 					return true;
 				}
+				this.align = Style.topRight;
 			}
 
 			this.enabled = true;
@@ -104,10 +103,8 @@ struct Popup: Widget {
 			h: measured.h - 2 * margin;
 		};
 
-		Layout.onMeasure(this, &measured);
-		this.measure = false;
-
 		measured.x = measured.y = 0;
+		Layout.onMeasure(this, &measured);
 		this.onLayout(this, &measured);
 		Style.align(rect, &measured, align);
 		return true;
@@ -118,7 +115,7 @@ struct Popup: Widget {
 		Style style& = this.style;
 		if (style.backgroundColor != -1) {
 			Rect r = { w: offs.width(), h: offs.height() };
-			offs.fillRect(r, this.radius, style.backgroundColor);
+			offs.fillRRect(r, this.radius, style.backgroundColor);
 		}
 		Widget.onDraw(this, offs, rect);
 		offs.destroy();
@@ -236,7 +233,7 @@ struct Switch: View {
 	}
 
 	bool onKeyEvent(Switch this, const KeyEvent event&) {
-		if (event.release) {
+		if (!this.enabled || event.release) {
 			return View.onKeyEvent(this, event);
 		}
 		if (event.key == '+' || event.key == '=') {
@@ -248,6 +245,17 @@ struct Switch: View {
 			return this.onUpdate(this, value);
 		}
 		return View.onKeyEvent(this, event);
+	}
+
+	bool onTouchEvent(Switch this, const Rect rect&, const TouchEvent event&) {
+		if (!this.enabled || !event.release) {
+			return View.onTouchEvent(this, rect, event);
+		}
+		if (event.isShift && event.clicks >= 0) {
+			int value = this.selected - 1;
+			return this.onUpdate(this, value);
+		}
+		return View.onTouchEvent(this, rect, event);
 	}
 
 	bool onMeasure(Switch this, Rect rect&) {
@@ -289,7 +297,7 @@ struct Switch: View {
 			else if (this.isFocused()) {
 				color = style.hoveredColor;
 			}
-			offs.fillRect(onOffRect, onOffRect.h / 2, color);
+			offs.fillRRect(onOffRect, onOffRect.h / 2, color);
 
 			if (this.checked()) {
 				onOffRect.x += rect.h / 2;

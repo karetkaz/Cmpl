@@ -27,9 +27,6 @@ static int onEvent(int action, int button, int x, int y) {
 	}
 	else if (action == Gui.KEY_RELEASE) {
 		event.actionName = "KEY_RELEASE";
-		if (button == 27) {
-			return -1;
-		}
 	}
 	else if (action == Gui.MOUSE_WHEEL) {
 		event.actionName = "MOUSE_WHEEL";
@@ -69,6 +66,10 @@ static int onEvent(int action, int button, int x, int y) {
 	}
 
 	debug("event", event);
+	if (action == Gui.KEY_RELEASE && button == 27) {
+		return -1;
+	}
+
 	static if (true) {
 		inline "/cmplGfx/lib/micro.ui.ci";
 		static char actionText[32] = {0};

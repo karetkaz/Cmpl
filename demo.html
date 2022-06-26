@@ -424,6 +424,8 @@ else {
 
 	var canvasShown = new MutationObserver(function () {
 		if (canvas.width === 0) {
+			// update title
+			params.update('path');
 			return;
 		}
 		if (canvasShown.width === canvas.width) {

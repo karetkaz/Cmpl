@@ -37,8 +37,7 @@ void levels(argb lut[256], int brightness, int output, int input) {
 }
 
 inline "/cmplGfx/lib/micro.ui.ci";
-bool updateInputOutput(Slider slider, int value);
-bool resetInputOutput(Slider slider);
+bool syncInputOutput(Slider slider, int value);
 bool showHideAdvanced(Switch switch, Rect rect&);
 
 Histogram histogram = {
@@ -76,23 +75,20 @@ Slider sldInput = {
 	text: "Input";
 	minimum: -255;
 	maximum: 255;
-	onUpdate: updateInputOutput;
-	onReset: resetInputOutput;
+	onUpdate: syncInputOutput;
 };
 Slider sldInputMin = {
 	text: " Input.min";
 	maximum: sldInput.maximum;
 	value: 0;
-	onUpdate: updateInputOutput;
-	onReset: resetInputOutput;
+	onUpdate: syncInputOutput;
 	onMeasure: showHideAdvanced;
 };
 Slider sldInputMax = {
 	text: " Input.max";
 	maximum: sldInput.maximum;
 	value: sldInput.maximum;
-	onUpdate: updateInputOutput;
-	onReset: resetInputOutput;
+	onUpdate: syncInputOutput;
 	onMeasure: showHideAdvanced;
 };
 
@@ -100,23 +96,20 @@ Slider sldOutput = {
 	text: "Output";
 	minimum: -255;
 	maximum: 255;
-	onUpdate: updateInputOutput;
-	onReset: resetInputOutput;
+	onUpdate: syncInputOutput;
 };
 Slider sldOutputMin = {
 	text: " Output.min";
 	maximum: sldOutput.maximum;
 	value: 0;
-	onUpdate: updateInputOutput;
-	onReset: resetInputOutput;
+	onUpdate: syncInputOutput;
 	onMeasure: showHideAdvanced;
 };
 Slider sldOutputMax = {
 	text: " Output.max";
 	maximum: sldOutput.maximum;
 	value: sldOutput.maximum;
-	onUpdate: updateInputOutput;
-	onReset: resetInputOutput;
+	onUpdate: syncInputOutput;
 	onMeasure: showHideAdvanced;
 };
 
@@ -138,37 +131,27 @@ int onEvent(Window win&, int action, int button, int x, int y) {
 	histogram.update(offs);
 	return win.draw(ui);
 }
-bool updateInputOutput(Slider slider, int value) {
+bool syncInputOutput(Slider slider, int value) {
+	bool result = Slider.onUpdate(slider, value);
 	if (slider == sldInput) {
-		Slider.onUpdate(sldInput, value);
-		Slider.onUpdate(sldInputMin, value > 0 ? 0 : -value);
-		Slider.onUpdate(sldInputMax, value < 0 ? sldInput.maximum : sldInput.maximum - value);
-		return true;
+		result |= Slider.onUpdate(sldInputMin, value > 0 ? 0 : -value);
+		result |= Slider.onUpdate(sldInputMax, value < 0 ? sldInput.maximum : sldInput.maximum - value);
+		return result;
 	}
 	if (slider == sldOutput) {
-		Slider.onUpdate(sldOutput, value);
-		Slider.onUpdate(sldOutputMin, value < 0 ? 0 : value);
-		Slider.onUpdate(sldOutputMax, value > 0 ? sldOutput.maximum : sldOutput.maximum + value);
-		return true;
+		result |= Slider.onUpdate(sldOutputMin, value < 0 ? 0 : value);
+		result |= Slider.onUpdate(sldOutputMax, value > 0 ? sldOutput.maximum : sldOutput.maximum + value);
+		return result;
 	}
 	if (slider == sldInputMin || slider == sldInputMax) {
-		Slider.onUpdate(sldInput, 0);
+		result |= Slider.onUpdate(sldInput, 0);
+		return result;
 	}
 	if (slider == sldOutputMin || slider == sldOutputMax) {
-		Slider.onUpdate(sldOutput, 0);
+		result |= Slider.onUpdate(sldOutput, 0);
+		return result;
 	}
-	return Slider.onUpdate(slider, value);
-}
-bool resetInputOutput(Slider slider) {
-	if (slider == sldInput) {
-		Slider.onReset(sldInputMin);
-		Slider.onReset(sldInputMax);
-	}
-	if (slider == sldOutput) {
-		Slider.onReset(sldOutputMin);
-		Slider.onReset(sldOutputMax);
-	}
-	return Slider.onReset(slider);
+	return result;
 }
 bool showHideAdvanced(Switch switch, Rect rect&) {
 	if (!chkAdvanced.checked()) {

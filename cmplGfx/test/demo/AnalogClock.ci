@@ -6,15 +6,31 @@ inline minuteHand = 0x00ff00;
 inline secondHand = 0xffffff;
 Image offs = Image(320, 320, 32);
 
+void drawLine(Image image, int x0, int y0, int x1, int y1, bool smooth, uint32 color) {
+	static struct SmoothDraw {
+		inline drawAntiAliased = true;
+		inline "/cmplGfx/lib/image.draw.line.ci";
+	}
+	static struct RoughDraw {
+		inline drawAntiAliased = false;
+		inline "/cmplGfx/lib/image.draw.line.ci";
+	}
+
+	if (smooth) {
+		return SmoothDraw.drawLineIncl(image, x0, y0, x1, y1, color);
+	}
+	return RoughDraw.drawLineIncl(image, x0, y0, x1, y1, color);
+}
+
 int onEvent(int action, int button, int ex, int ey) {
-	static bool aaDraw = true;
+	static bool smooth = true;
 	if (action == Gui.KEY_RELEASE) {
 		if (button == 27) {
 			// exit with escape button
 			return -1;
 		}
 		if (button == ' ') {
-			aaDraw = !aaDraw;
+			smooth = !smooth;
 		}
 	}
 
@@ -47,7 +63,7 @@ int onEvent(int action, int button, int ex, int ey) {
 	roiClock.x = x1 - roiClock.w / 2;
 	roiClock.y = y1 + y1 / 3;
 	roiClock.adjust(padding);
-	offs.fillRect(roiClock, radius, 0x101010);
+	offs.fillRRect(roiClock, radius, 0x101010);
 	roiClock.adjust(-padding);
 	offs.drawText(roiClock, font, txtClock, 0xadadad);
 
@@ -61,7 +77,7 @@ int onEvent(int action, int button, int ex, int ey) {
 		double angle = Math.radians(((time / hoursInMillis) % 12) * (360 / 12) - 90);
 		int x2 = x1 + int(Math.cos(angle) * size);
 		int y2 = y1 + int(Math.sin(angle) * size);
-		offs.drawLine(x1, y1, x2, y2, aaDraw, hourHand);
+		offs.drawLine(x1, y1, x2, y2, smooth, hourHand);
 	}
 
 	if (minuteHand != 0) {
@@ -69,7 +85,7 @@ int onEvent(int action, int button, int ex, int ey) {
 		double angle = Math.radians(((time / minutesInMillis) % 60) * 6 - 90);
 		int x2 = x1 + int(Math.cos(angle) * size);
 		int y2 = y1 + int(Math.sin(angle) * size);
-		offs.drawLine(x1, y1, x2, y2, aaDraw, minuteHand);
+		offs.drawLine(x1, y1, x2, y2, smooth, minuteHand);
 	}
 
 	if (secondHand != 0) {
@@ -77,7 +93,7 @@ int onEvent(int action, int button, int ex, int ey) {
 		double angle = Math.radians(((time / secondsInMillis) % 60) * 6 - 90);
 		int x2 = x1 + int(Math.cos(angle) * size);
 		int y2 = y1 + int(Math.sin(angle) * size);
-		offs.drawLine(x1, y1, x2, y2, aaDraw, secondHand);
+		offs.drawLine(x1, y1, x2, y2, smooth, secondHand);
 	}
 
 	// sleep for a while

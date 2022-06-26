@@ -17,10 +17,3 @@ void sleepMillis(int64_t millis) {
 	ts.tv_nsec = (millis % 1000) * 1000000;
 	nanosleep(&ts, NULL);
 }
-
-void parkThread() {
-	struct timespec ts;
-	ts.tv_sec = 0;
-	ts.tv_nsec = 500000;
-	nanosleep(&ts, NULL);
-}

@@ -167,7 +167,7 @@ struct HashSet(struct Key): Set(Key) {
 /// Represents an immutable collection of distinct keys.
 struct Bag(struct Key): Sequence(Key) {
 
-	uint get(const Map this, const Key &key);
+	uint get(const Bag this, const Key &key);
 }
 
 /// Implements a mutable sorted bag.

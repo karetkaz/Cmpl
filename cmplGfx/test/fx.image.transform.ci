@@ -167,7 +167,7 @@ int onEvent(Window win&, int action, int button, int x, int y) {
 		.mul(translation(center, -1))
 		.mul(fitMatrix(back, to.w, to.h, fitWidth.checked(), fitHeight.checked(), 1, 0));
 	debug("transform", mat.m);
-	offs.transform(to, back, null, quality.checked() ? 1 : 0, mat.data);
+	offs.transform(to, back, null, quality.checked() ? 1 : 0, mat);
 	return win.draw(ui);
 }
 
@@ -189,4 +189,9 @@ https://stackoverflow.com/questions/51691482/how-to-create-a-2d-perspective-tran
 https://www.pyimagesearch.com/2014/08/25/4-point-opencv-getperspective-transform-example/
 https://developer.mozilla.org/en-US/docs/Web/CSS/transform
 https://www.w3.org/TR/css-transforms/
+*/
+
+/* todo: image scaling algorithms
+https://en.wikipedia.org/wiki/Comparison_gallery_of_image_scaling_algorithms
+https://en.wikipedia.org/wiki/Image_scaling
 */

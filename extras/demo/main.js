@@ -817,8 +817,15 @@ function uploadFiles(input) {
 	for (let file of input.files) {
 		const reader = new FileReader();
 		reader.addEventListener("load", function () {
+			let path = params.getPath('');
+			let match = path.match(pathMather);
+			if (match && match[2]) {
+				path = match[2];
+			} else {
+				path = '';
+			}
 			openProjectFile({
-				path: params.path,
+				path: path + file.name,
 				reopen: file.name === params.file,
 				content: new Uint8Array(reader.result)
 			});
