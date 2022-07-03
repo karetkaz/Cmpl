@@ -24,23 +24,23 @@ struct Sequence(struct Value): Object {
 
 	Iterator iterator();
 
-	static void each(const Sequence this, ...);
+	static void each(const Sequence this/*, ...*/);
 
-	static void map(const Sequence this, ...);
+	static void map(const Sequence this/*, ...*/);
 
-	static void reduce(const Sequence this, ...);
+	static void reduce(const Sequence this/*, ...*/);
 
-	static void filter(const Sequence this, ...);
+	static void filter(const Sequence this/*, ...*/);
 
-	static void first(const Sequence this, ...);
+	static void first(const Sequence this/*, ...*/);
 
-	static void last(const Sequence this, ...);
+	static void last(const Sequence this/*, ...*/);
 
-	static void slice(const Sequence this, ...);
+	static void slice(const Sequence this/*, ...*/);
 
-	static void split(const Sequence this, ...);
+	static void split(const Sequence this/*, ...*/);
 
-	static void join(const Sequence this, ...);
+	static void join(const Sequence this/*, ...*/);
 
 }
 
@@ -55,9 +55,9 @@ struct Collection(struct Value): Sequence(Value) {
 /// Implements a mutable sequence.
 struct List(struct Value): Sequence(Value) {
 
-	void insert(List this, const Value &value);
+	void insert(List this, const Value value&);
 
-	void append(List this, const Value &value);
+	void append(List this, const Value value&);
 
 	void removeFirst(List this);
 
@@ -67,9 +67,9 @@ struct List(struct Value): Sequence(Value) {
 /// Implements a mutable collection.
 struct Array(struct Value): Collection(Value) {
 
-	void set(Collection this, int index, const Value &value);
+	void set(Collection this, int index, const Value value&);
 
-	void insert(Array this, int index, const Value &value);
+	void insert(Array this, int index, const Value value&);
 
 	void remove(Array this, int from, int to);
 }
@@ -77,7 +77,7 @@ struct Array(struct Value): Collection(Value) {
 /// Implements a mutable LIFO collection.
 struct Stack(struct Value): Sequence(Value) {
 
-	void push(Stack this, const Value &value);
+	void push(Stack this, const Value value&);
 
 	Value pop(Stack this);
 
@@ -87,7 +87,7 @@ struct Stack(struct Value): Sequence(Value) {
 /// Implements a mutable FIFO collection.
 struct Queue(struct Value): Sequence(Value) {
 
-	void push(Queue this, const Value &value);
+	void push(Queue this, const Value value&);
 
 	Value take(Queue this);
 
@@ -97,9 +97,9 @@ struct Queue(struct Value): Sequence(Value) {
 /// Represents an immutable collection of key-value pair.
 struct Map(struct Key, struct Value): Sequence(Pair(Key, Value)) {
 
-	bool has(const Map this, const Key &key);
+	bool has(const Map this, const Key key&);
 
-	Value get(const Map this, const Key &key);
+	Value get(const Map this, const Key key&);
 }
 
 /// Implements a mutable sorted map.
@@ -117,7 +117,7 @@ struct TreeMap(struct Key, struct Value): Map(Key, Value) {
 		return make(compare, capacity);
 	}
 
-	static if (Key is Comparable) {
+	static if (Key.is(Comparable)) {
 		TreeMap make(int capacity) {
 			// allow static and dynamic compare dispatching
 			int compare(Key a, Key b) {
@@ -127,9 +127,9 @@ struct TreeMap(struct Key, struct Value): Map(Key, Value) {
 		}
 	}
 
-	bool put(TreeMap this, const Key &key, const Value &value);
+	bool put(TreeMap this, const Key key&, const Value value&);
 
-	bool remove(TreeMap this, const Key &key);
+	bool remove(TreeMap this, const Key key&);
 }
 
 /// Implements a mutable unsorted map.
@@ -137,51 +137,51 @@ struct HashMap(struct Key, struct Value): Map(Key, Value) {
 
 	HashMap make(int hash(Key a), bool equal(Key a, Key b));
 
-	bool put(HashMap this, const Key &key, const Value &value);
+	bool put(HashMap this, const Key key&, const Value value&);
 
-	bool remove(HashMap this, const Key &key);
+	bool remove(HashMap this, const Key key&);
 }
 
 /// Represents an immutable collection of distinct keys.
 struct Set(struct Key): Sequence(Key) {
 
-	bool has(const Set this, const Key &key);
+	bool has(const Set this, const Key key&);
 }
 
 /// Implements a mutable sorted set.
 struct TreeSet(struct Key): Set(Key) {
 
-	bool put(TreeSet this, const Key &key);
+	bool put(TreeSet this, const Key key&);
 
-	bool remove(TreeSet this, const Key &key);
+	bool remove(TreeSet this, const Key key&);
 }
 
 /// Implements a mutable unsorted set.
 struct HashSet(struct Key): Set(Key) {
 
-	bool put(HashSet this, const Key &key);
+	bool put(HashSet this, const Key key&);
 
-	bool remove(HashSet this, const Key &key);
+	bool remove(HashSet this, const Key key&);
 }
 
 /// Represents an immutable collection of distinct keys.
 struct Bag(struct Key): Sequence(Key) {
 
-	uint get(const Bag this, const Key &key);
+	uint get(const Bag this, const Key key&);
 }
 
 /// Implements a mutable sorted bag.
 struct TreeBag(struct Key): Bag(Key) {
 
-	bool put(TreeBag this, const Key &key);
+	bool put(TreeBag this, const Key key&);
 
-	bool remove(TreeBag this, const Key &key);
+	bool remove(TreeBag this, const Key key&);
 }
 
 /// Implements a mutable unsorted bag.
 struct HashBag(struct Key): Bag(Key) {
 
-	bool put(HashBag this, const Key &key);
+	bool put(HashBag this, const Key key&);
 
-	bool remove(HashBag this, const Key &key);
+	bool remove(HashBag this, const Key key&);
 }

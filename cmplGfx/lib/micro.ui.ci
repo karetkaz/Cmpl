@@ -10,16 +10,15 @@ Widget Widget(int width, int height, const Style style&) {
 		};
 		width: width;
 		height: height;
-		widgetStyle: {
-			format: { padLen: 5, precision: 2 };
-		};
 		style: style;
 		focus: widget;	// focus first visible view
 	};
 	return widget;
 }
 Widget Widget(int width, int height) {
-	const Style style& = null;
+	static const Style style = {
+		format: { padLen: 5, precision: 2 };
+	};
 	return Widget(width, height, style);
 }
 Widget Widget(View views...) {
@@ -122,6 +121,10 @@ struct Popup: Widget {
 	}
 }
 
+	static const Style style = {
+		align: Style.left;
+		format: { padLen: 5, precision: 2 };
+	};
 	Popup widget = {
 		rect: {};
 
@@ -133,13 +136,9 @@ struct Popup: Widget {
 		paddingLeft: 3;
 		paddingRight: 3;
 		paddingBottom: 3;
-		widgetStyle: {
-			align: Style.left;
-			format: { padLen: 5, precision: 2 };
-		};
+		style: style;
 		focus: widget;	// focus first visible view
 	};
-	widget.setStyle(widget.widgetStyle);
 
 	if (views.length > 0) {
 		widget.addItems(...views);
@@ -716,7 +715,7 @@ struct DebugView: View {
 }
 
 struct Panel: Layout {
-	bool visible;
+	bool visible = false;
 
 	static bool visible(Panel this, bool value) {
 		if (this.visible == value) {

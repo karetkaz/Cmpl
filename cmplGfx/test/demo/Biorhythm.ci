@@ -1,0 +1,107 @@
+// Biorhythm calculator
+
+inline "/cmplStd/lib/time/Datetime.ci";
+void drawBiorhythm(Image dst, Timestamp birth, Timestamp time, int days, int first);
+
+Image img = Image(1440, 500, 32);
+Datetime birthdate = Datetime(1983, 5,  2);
+img.drawBiorhythm(Timestamp(birthdate), Timestamp.now(), 30, 7);
+Gui.showWindow(img);
+
+struct Biorhythm {
+	const int color;
+	const int period;
+	const int period2 = 0;
+	const char label[];
+
+	static double value(const Biorhythm this&, Timestamp birth, Timestamp date) {
+		double d = date.value - birth.value;
+		double t = convert(d, Timestamp.precision, Timeunit.Days);
+
+		if (this.period2 != 0) {
+			double y1 = float64.sin(2 * Math.pi * t / this.period);
+			double y2 = float64.sin(2 * Math.pi * t / this.period2);
+			return (y1 + y2) / 2;
+		}
+
+		return float64.sin(2 * Math.pi * t / this.period);
+	}
+}
+
+const Biorhythm biorhythms[] = {
+	{color: uint32(argb(234, 50, 35)), period: 23, label: "Physical"};
+	{color: uint32(argb(68, 144, 247)), period: 33, label: "Intellectual"};
+	{color: uint32(argb(242,168, 59)), period: 38, label: "Intuitive"};
+	{color: 0xfeab00, period: 23, period2: 28, label: "Passion"};  // physical + emotional
+	{color: 0x6f6f6f, period: 23, period2: 33, label: "Mastery"};  // physical + intellectual
+	{color: 0x9466db, period: 28, period2: 33, label: "Wisdom"};   // emotional + intellectual
+	// extra biorhythms, uncomment to see them too
+//	{color: 0xdadada, period: 43, label: "Aesthetic"};
+//	{color: 0xdadada, period: 53, label: "Spiritual"};
+//	{color: 0xdadada, period: 48, label: "Self Awareness"};
+//	{color: 0xdadada, period: 23, period2: 38, label: "Perception"};  // Perception: physical, intuitive
+//	{color: 0xdadada, period: 28, period2: 38, label: "Psychic"};     // Psychic: emotional, intuitive
+//	{color: 0xdadada, period: 33, period2: 38, label: "Success"};     // Success: intellectual, intuitive
+};
+
+void drawBiorhythm(Image dst, Timestamp birth, Timestamp time, int days, int first) {
+
+	Image font = Gui.font;
+	const int lineHeight = font.height() + 3;
+	inline padding = 15;
+
+	int imgWidth = dst.width();
+	int imgHeight = dst.height();
+	int padding2 = imgWidth / days / 2;
+	int textPosition = imgHeight - padding - lineHeight * (biorhythms.length + 1);
+
+	char text[128] = {0};
+
+	// clear screen
+	dst.fill(0);
+
+	// day grid lines
+	dst.fillRect(first * imgWidth / days, 0, (first + 1) * imgWidth / days, imgHeight, 0x528252);
+	for (int i = 1; i < days; i += 1) {
+		int y = imgHeight;
+		int x = imgWidth * i / days;
+		dst.drawLine(x, 0, x, y, 0x282828);
+	}
+
+	// draw graphs & labels
+	for (int i = 0; i < biorhythms.length; i += 1) {
+		int ox = 0;
+		int oy = 0;
+		for (int j = 0; j < days; j += 1) {
+			Timestamp t = time.add(j - first, Timeunit.Days);
+			double b = biorhythms[i].value(birth, t);
+			int y = (imgHeight - 2 * padding) * (1 - b) / 2 + padding;
+			int x = imgWidth * j / days + padding2;
+			if (j > 0) {
+				drawLineIncl(dst, ox, oy, x, y, biorhythms[i].color);
+			}
+			ox = x;
+			oy = y;
+		}
+
+		int64 value = 100 * biorhythms[i].value(birth, time);
+		textPosition += lineHeight;
+		text.append(text.append(text.append(text.append(0, biorhythms[i].label), ": "), value), "%");
+		dst.drawText(padding, textPosition, font, text, biorhythms[i].color);
+	}
+
+	// coordinate
+	drawLine(dst, 0, imgHeight / 2, imgWidth, imgHeight / 2, 0x989898);
+	drawLine(dst, imgWidth * first / days, 0, imgWidth * first / days, imgHeight, 0x989898);
+
+	Datetime(time).format(text, "Target date: %Y.%m.%d");
+	dst.drawText(padding, padding, font, text, 0x528252);
+
+	Datetime(birth).format(text, "Birth date: %Y.%m.%d");
+	dst.drawText(padding, lineHeight + padding, font, text, 0xffffff);
+}
+
+/* resources
+http://lastunicorn.github.io/BioCalcJs/demo/index.html
+https://github.com/lastunicorn/BioCalcJs/blob/gh-pages/demo/libraries/BiorhythmControls/BiorhythmControls.js#L410
+// */

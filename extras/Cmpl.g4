@@ -1,13 +1,12 @@
 grammar Cmpl;
 
 // starting point for parsing a file
-unit: statementList EOF;
+unit: statement* EOF;
 
-statementList: statement*;
 statement
     : ';'                                                                                               # EmptyStatement
-    | 'inline' Literal ';'                                                                            # IncludeStatement
-    | qualifiers? '{' statementList '}'                                                              # CompoundStatement
+    | 'inline' Literal '?'? ';'                                                                       # IncludeStatement
+    | qualifiers? '{' statement* '}'                                                                 # CompoundStatement
     | qualifiers? 'if' '(' declExpr ')' statement ('else' statement)?                                      # IfStatement
     | qualifiers? 'for' '(' declExpr? ';' expression? ';' expression? ')' statement                       # ForStatement
     | 'for' '(' variable ':' expression ')' statement                                                    # EachStatement
@@ -18,69 +17,54 @@ statement
     | declaration                                                                                 # DeclarationStatement
     ;
 
-declarationList: declaration*;
 declaration
-    : qualifiers? 'enum' identifier? (':' typename)? '{' propertyList '}'                              # EnumDeclaration
-    | qualifiers? 'struct' identifier? (':' (Literal | typename))? '{' declarationList '}'             # TypeDeclaration
-    | qualifiers? 'inline' identifier ('(' parameterList? ')')? '=' initializer ';'                   # PropertyOperator
-    | qualifiers? 'inline' '('')' ('(' parameterList? ')')? '=' initializer ';'                        # InvokerOperator
-    | qualifiers? 'inline' '['']' ('(' parameterList? ')')? '=' initializer ';'                        # IndexerOperator
-    | qualifiers? 'inline' unary ('(' parameterList? ')')? '=' initializer ';'                           # UnaryOperator
-    | qualifiers? 'inline' arithmetic ('(' parameterList? ')')? '=' initializer ';'                 # ArithmeticOperator
-    | qualifiers? 'inline' bitwise ('(' parameterList? ')')? '=' initializer ';'                       # BitwiseOperator
-    | qualifiers? 'inline' relational ('(' parameterList? ')')? '=' initializer ';'                 # RelationalOperator
-    | qualifiers? 'inline' equality ('(' parameterList? ')')? '=' initializer ';'                     # EqualityOperator
+    : qualifiers? 'enum' Identifier? (':' typename)? '{' propertyList '}'                              # EnumDeclaration
+    | qualifiers? 'struct' Identifier? ('(' templateList? ')')? (':' expression)? '{' statement* '}'   # TypeDeclaration
+    | qualifiers? 'inline' Identifier? ('(' parameterList? ')')? '=' initializer ';'                  # AliasDeclaration
     | qualifiers? (variable | function) ( '=' initializer)? ';'                                    # VariableDeclaration
-    | qualifiers? functionImpl                                                                     # FunctionDeclaration
+    | qualifiers? function '{' statement* '}'                                                      # FunctionDeclaration
+    | qualifiers? 'inline' unary ('(' parameterList? ')')? '=' initializer ';'                   # UnaryOperatorOverload
+    | qualifiers? 'inline' binary ('(' parameterList? ')')? '=' initializer ';'                 # BinaryOperatorOverload
+    | qualifiers? 'inline' '('')' ('(' parameterList? ')')? '=' initializer ';'                # InvokerOperatorOverload
+    | qualifiers? 'inline' '['']' ('(' parameterList? ')')? '=' initializer ';'                # IndexerOperatorOverload
     ;
 
-argumentList: '&'?expression (',' '&'?expression)*;
-expressionList: expression (',' expression)*;
 expression
     : Literal                                                                                        # LiteralExpression
     | Identifier                                                                                  # IdentifierExpression
     | '(' argumentList? ')'                                                                    # ParenthesizedExpression
     | expression '(' argumentList? ')'                                                          # FunctionCallExpression
-    | '[' expressionList? ']'                                                                  # ParenthesizedExpression
-    | expression '[' expressionList? ']'                                                         # ArrayAccessExpression
-    | expression '[' expression '..' expression ']'                                               # ArraySliceExpression
+    | expression '[' argumentList? ']'                                                           # ArrayAccessExpression
+    | expression '[' expression? '...' expression ']'                                             # ArraySliceExpression
     | expression '.' Identifier                                                                 # MemberAccessExpression
     | unary expression                                                                                 # UnaryExpression
-    | expression arithmetic expression                                                            # ArithmeticExpression
-    | expression bitwise expression                                                                  # BitwiseExpression
-    | expression relational expression                                                            # RelationalExpression
-    | expression equality expression                                                                # EqualityExpression
-    | expression ('='| '*=' | '/=' | '%=' | '+=' | '-=' ) expression                              # AssignmentExpression
-    | expression ('&=' | '|=' | '^=' | '<<=' | '>>=') expression                                  # AssignmentExpression
-    | expression ('&&' | '||') expression                                                            # LogicalExpression
+    | expression (binary | logical) expression                                                        # BinaryExpression
     | expression '?' expression ':' expression                                                   # ConditionalExpression
+    | 'struct' '(' argumentList? ')'                                                                      # TEMP// FIXME
     ;
 
-initializer
-    : typename? '{' propertyList '}'                                                                 # ObjectInitializer
-    | typename? '{' expressionList '}'                                                                # ArrayInitializer
-    | expression                                                                                      # ValueInitializer
-    ;
+typename: expression;
+variable: typename Identifier ('&&' | '&' | '?' | ('[' ('*' | expression)? ']')*);
+function: typename Identifier '(' parameterList? ')';
+property: (Literal | Identifier ':')? initializer;
+initializer: typename? '{' propertyList '}'| expression;
 
-typename: Identifier ('.' Identifier)*;
-variable: typename ('&' | '&&')? identifier ('[' ('*' | expressionList)? ']')*;
-function: typename identifier '(' parameterList? ')';
-functionImpl: function '{' statementList '}';
-property: (Literal | Identifier) ':' initializer;
-propertyList: (functionImpl | (property ';'))* | (property (',' property)*)?;
-parameter: qualifiers? (variable | function);
-parameterList: parameter (',' parameter)* '...'?;
-
+parameterList: qualifiers? (variable | function) (',' parameterList)? '...'?;
+templateList: ('struct' | typename) Identifier (',' templateList)?;
+argumentList: ('&' | '...')? expression (',' argumentList)?;
+propertyList: (declaration | property ';')* | (property (',' property)* ','?)?;              // todo: remove declaration
 declExpr: expression | (variable '=' initializer);
 
 qualifiers: ('const' | 'static' | 'parallel')+;
+binary: arithmetic | bitwise | relational | equality | assignment;
 unary: ('+' | '-' | '~' | '!');
 arithmetic: ('*' | '/' | '%' | '+' | '-');
 bitwise: ('&' | '|' | '^' | '<<' | '>>');
 relational: ('<' | '<=' | '>' | '>=');
 equality: ('==' | '!=');
+assignment: '=' | '*=' | '/=' | '%=' | '+=' | '-=' | '&=' | '|=' | '^=' | '<<=' | '>>=';
+logical: '&&' | '||';
 
-identifier: Identifier;
 Identifier: Letter (Letter | Number)*;
 
 Literal

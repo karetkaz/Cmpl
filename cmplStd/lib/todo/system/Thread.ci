@@ -9,6 +9,6 @@ struct Thread {
 	int priority();
 
 	static Thread start(string name, Runnable runnable);
-	static void join(Thread, timeout);
-	static void stop(Thread);
+	static void join(Thread thread, Duration timeout);
+	static void stop(Thread thread);
 }

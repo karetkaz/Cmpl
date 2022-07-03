@@ -124,6 +124,15 @@ static bool updateTheme(Switch this, int value) {
 	if (!Switch.onUpdate(this, value)) {
 		return false;
 	}
+	if (theme.selected != 0) {
+		if (colorPicker.val > .75) {
+			colorPicker.val = 1 - colorPicker.val;
+		}
+	} else {
+		if (colorPicker.val < .25) {
+			colorPicker.val = 1 - colorPicker.val;
+		}
+	}
 	updateTheme();
 	return true;
 }

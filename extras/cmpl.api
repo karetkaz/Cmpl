@@ -506,6 +506,8 @@ FormatFlags.sign # forced show sign
 FormatFlags.precision # precision length
 FormatFlags.padChr # padding character
 FormatFlags.padLen # padding length
+FormatFlags.read(format: char[], pos: int32): FormatFlags # read and process c style format flags like: \"%02d\"
+FormatFlags.defPad(this: FormatFlags, padLen: int32, padChr: char): FormatFlags # override the default padding, in case it's length is zero
 append(output: char[], pos: int32, value: char[*]): int32 # Append a string to the output at the given position
 append(output: char[], pos: int32, radix: int32, value: uint64, format: FormatFlags): int32 # Append a number to the output at the given position
 append(output: char[], pos: int32, value: uint64, format: FormatFlags): int32 # Append a number to the output at the given position

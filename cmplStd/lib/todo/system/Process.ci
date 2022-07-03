@@ -20,13 +20,13 @@ struct Process {
 	static Process fork();
 	static Process start(string name, string args...);
 	static Process start(string env[string], string name, string args...);
-	static void start(Process);
-	static void join(Process);
+	static void start(Process process);
+	static void join(Process process);
 
 	//static void stop(Process);
-	static void kill(Process);
+	static void kill(Process process);
 
 	static void exit(int exitCode);
 
-	static void signal(pid, signal);
+	static void signal(int pid, int signal);
 }

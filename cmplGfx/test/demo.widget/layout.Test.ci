@@ -94,6 +94,29 @@ Switch itemAlignBottom = {
 	states: null;
 	selected: 1;
 };
+
+Switch textAlignTop = {
+	onUpdate: syncAlignment;
+	text: "TextAlign.top";
+	states: null;
+};
+Switch textAlignLeft = {
+	onUpdate: syncAlignment;
+	text: "TextAlign.left";
+	states: null;
+	selected: 1;
+};
+Switch textAlignRight = {
+	onUpdate: syncAlignment;
+	text: "TextAlign.right";
+	states: null;
+};
+Switch textAlignBottom = {
+	onUpdate: syncAlignment;
+	text: "TextAlign.bottom";
+	states: null;
+};
+
 Switch drawDebugRect = {
 	onUpdate: syncAlignment;
 	text: "Debug.layout";
@@ -106,16 +129,17 @@ Layout layout = {
 	focusable: false;
 };
 
+Style style = {
+	align: Style.center;
+	format: { padLen: 5, precision: 2 };
+};
+
 // container for controls
 Widget widget = {
 	rect: {};
-	widgetStyle: {
-		align: Style.left;
-		format: { padLen: 5, precision: 2 };
-	};
-
 	width: 1440;
 	height: 900;
+	style: style;
 	orientation: 0;
 };
 
@@ -170,6 +194,12 @@ Gui.showWindow(widget
 		itemAlignBottom,
 
 		null,
+		textAlignTop,
+		textAlignLeft,
+		textAlignRight,
+		textAlignBottom,
+
+		null,
 		drawDebugRect
 	))
 );
@@ -197,6 +227,25 @@ bool syncAlignment(Switch this, int value) {
 	if (!Switch.onUpdate(this, value)) {
 		return false;
 	}
+
+	int textAlign = Style.center;
+	if (textAlignTop.checked()) {
+		textAlign |= Style.top;
+	}
+	if (textAlignLeft.checked()) {
+		textAlign |= Style.left;
+	}
+	if (textAlignRight.checked()) {
+		textAlign |= Style.right;
+	}
+	if (textAlignBottom.checked()) {
+		textAlign |= Style.bottom;
+	}
+
+	// todo: hack to write constant value
+	int align& = pointer(style.align);
+	align = textAlign;
+
 	int itemAlign = Style.center;
 	if (itemAlignTop.checked()) {
 		itemAlign |= Style.top;
