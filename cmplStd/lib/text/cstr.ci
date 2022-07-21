@@ -128,6 +128,73 @@ struct FormatFlags {
 
 	/// padding length
 	const int padLen = 0;
+
+	/// read and process c style format flags like: "%02d"
+	static FormatFlags read(const char format[], int pos&) {
+		int chr = format[pos];
+		if (chr != '%') {
+			return {};
+		}
+
+		pos += 1;
+		chr = format[pos];
+
+		if (chr == '%') {
+			return {};
+		}
+
+		int sgnChr = 0;
+		if (chr == '-' || chr == '+') {
+			pos += 1;
+			sgnChr = chr;
+			chr = format[pos];
+		}
+
+		int padChr = ' ';
+		if (chr == '0') {
+			pos += 1;
+			padChr = chr;
+			chr = format[pos];
+		}
+
+		int padLen = 0;
+		for (;chr >= '0' && chr <= '9';) {
+			pos += 1;
+			padLen = padLen * 10 + chr - '0';
+			chr = format[pos];
+		}
+
+		int precision = 0;
+		if (chr == '.') {
+			pos += 1;
+			chr = format[pos];
+			for (;chr >= '0' && chr <= '9';) {
+				pos += 1;
+				precision = precision * 10 + chr - '0';
+				chr = format[pos];
+			}
+		}
+
+		return {
+			sign: sgnChr;
+			padChr: padChr;
+			padLen: padLen;
+			precision: precision;
+		};
+	}
+
+	/// override the default padding, in case it's length is zero
+	static FormatFlags defPad(const FormatFlags this&, int padLen, char padChr) {
+		if (this.padLen == 0) {
+			return {
+				sign: this.sign;
+				precision: this.precision;
+				padChr: padChr;
+				padLen: padLen;
+			};
+		}
+		return this;
+	}
 }
 
 /// Append a string to the output at the given position

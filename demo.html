@@ -1,7 +1,7 @@
 <html>
 <head>
 	<meta charset="UTF-8">
-	<title>Cmpl live demo</title>
+	<title>Cmpl WebIde</title>
 
 	<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0">
 
@@ -424,8 +424,9 @@ else {
 
 	var canvasShown = new MutationObserver(function () {
 		if (canvas.width === 0) {
-			// update title
-			params.update('path');
+			// update title and focus editor
+			params.update('');
+			editor.focus();
 			return;
 		}
 		if (canvasShown.width === canvas.width) {
@@ -474,7 +475,7 @@ else {
 	document.write('<script type="text/javascript" src="extras/demo/emscripten/module.js"><\/script>');
 	document.write('<script type="text/javascript" src="extras/demo/emscripten/cmpl.js"><\/script>');
 }
-if (params.workspace == null && params.project == null && params.path == null) {
+if (params.workspace == null && params.project == null && params.content == null && params.path == null) {
 	document.write('<script type="text/javascript" src="extras/demo/tests.js"><\/script>');
 }
 </script>

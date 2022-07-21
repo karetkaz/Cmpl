@@ -13,7 +13,7 @@ struct AsciiReader: TextReader {
 				// end of stream
 				return i;
 			}
-			chars[i] = value[i];
+			chars[i] = value[0];
 		}
 		return chars.length;
 	}

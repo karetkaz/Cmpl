@@ -206,6 +206,7 @@ struct View: object {
 		assert(this.parent == null || this.parent == parent, "can not add the same view to different layouts");
 		this.parent = parent;
 		if (this.style == null) {
+			assert(parent.style != null, "can not create view with a parent without a style");
 			this.setStyle(parent.style);
 		}
 	}
@@ -975,7 +976,6 @@ struct Layout: View {
  */
 struct Widget: Layout {
 	Rect rect;	// fixme: move or remove
-	Style widgetStyle;
 
 	bool measure = true;
 	View focus = null;
@@ -1079,9 +1079,6 @@ struct Widget: Layout {
 	}
 
 	void onCreate(Widget this, View parent) {
-		if (this.style == null) {
-			this.setStyle(this.widgetStyle);
-		}
 		Layout.onCreate(this, parent);
 		this.measure = true;
 

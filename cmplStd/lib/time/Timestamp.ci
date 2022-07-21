@@ -3,7 +3,7 @@ inline "Timeunit.ci";
 }
 /**
  * Timestamp is a position in time, without timezone information
- * in case locale is needed use calendar.
+ * in case locale is needed use Datetime.
  */
 struct Timestamp {
 	int64 value = 0;

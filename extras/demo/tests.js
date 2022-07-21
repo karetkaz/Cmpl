@@ -57,7 +57,9 @@ let projects = {
 			'cmplGfx/test/demo/2d.draw.rrect.ci',
 			'cmplGfx/test/demo/2d.draw.test.ci',
 			'cmplGfx/test/demo/2d.L-System.ci',
+			'cmplGfx/test/demo/2048.ci',
 			'cmplGfx/test/demo/AnalogClock.ci',
+			'cmplGfx/test/demo/Biorhythm.ci',
 			'cmplGfx/test/demo/FloodIt.ci',
 			'cmplGfx/test/demo/RayTracer0.ci',
 			'cmplGfx/test/demo/StarField.ci',
@@ -73,6 +75,7 @@ let projects = {
 			'cmplGfx/test/demo.widget/layout.Align.ci',
 			'cmplGfx/test/demo.widget/layout.Test.ci',
 			'cmplGfx/test/demo.widget/rounded.rect.ci',
+			'cmplGfx/test/demo.widget/TreeView.ci',
 
 			'cmplGfx/test/2d.draw.image.ci',
 			'cmplGfx/test/3d.draw.mesh.ci',

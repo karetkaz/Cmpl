@@ -1,5 +1,5 @@
 // DatePicker
-inline "/cmplStd/lib/time/Calendar.ci";
+inline "/cmplStd/lib/time/Datetime.ci";
 inline "/cmplGfx/lib/micro.ui.ci";
 
 struct IntButton: View {
@@ -65,14 +65,14 @@ struct DatePicker: Layout {
 		this.timestamp = timestamp;
 
 		// update year, month and day buttons
-		Calendar cNow = Calendar(timestamp);
+		Datetime cNow = Datetime(timestamp);
 		this.btnYear.update(cNow.year);
 		this.btnMonth.update(cNow.month);
 		this.btnDay.update(cNow.day);
 
 		// calculate first day of month
-		Timestamp start = Timestamp(Calendar(cNow.year, cNow.month, 1));
-		Calendar cStart = Calendar(start);
+		Timestamp start = Timestamp(Datetime(cNow.year, cNow.month, 1));
+		Datetime cStart = Datetime(start);
 
 		// calculate first monday
 		start = start.add(Weekday.Monday - cStart.dayOfWeek, Timeunit.Days);
@@ -83,7 +83,7 @@ struct DatePicker: Layout {
 
 		// fill the days in the "grid", skip header with week names
 		for (int i = 8; i < this.btnDays.itemCount; i += 1) {
-			Calendar parts = Calendar(start);
+			Datetime parts = Datetime(start);
 			View btn = this.btnDays.items[i].view;
 			if (WeekButton button = btn.as(WeekButton)) {
 				button.update(parts.weekOfYear);
@@ -109,12 +109,12 @@ struct DatePicker: Layout {
 	}
 
 	static bool addYears(DatePicker this, int value) {
-		Calendar c = Calendar(this.timestamp);
+		Datetime c = Datetime(this.timestamp);
 		return this.update(Timestamp(c.add(value, 0, 0)));
 	}
 
 	static bool addMonths(DatePicker this, int value) {
-		Calendar c = Calendar(this.timestamp);
+		Datetime c = Datetime(this.timestamp);
 		return this.update(Timestamp(c.add(0, value, 0)));
 	}
 
@@ -321,20 +321,20 @@ Style style = {
 	format: {};
 };
 
-Calendar now = Calendar(Timestamp.now());
+Datetime now = Datetime(Timestamp.now());
 DatePicker months[] = {
-	{style: style, header: false, timestamp: Timestamp(Calendar(now.year, 1, 1))};
-	{style: style, header: false, timestamp: Timestamp(Calendar(now.year, 2, 1))};
-	{style: style, header: false, timestamp: Timestamp(Calendar(now.year, 3, 1))};
-	{style: style, header: false, timestamp: Timestamp(Calendar(now.year, 4, 1))};
-	{style: style, header: false, timestamp: Timestamp(Calendar(now.year, 5, 1))};
-	{style: style, header: false, timestamp: Timestamp(Calendar(now.year, 6, 1))};
-	{style: style, header: false, timestamp: Timestamp(Calendar(now.year, 7, 1))};
-	{style: style, header: false, timestamp: Timestamp(Calendar(now.year, 8, 1))};
-	{style: style, header: false, timestamp: Timestamp(Calendar(now.year, 9, 1))};
-	{style: style, header: false, timestamp: Timestamp(Calendar(now.year, 10, 1))};
-	{style: style, header: false, timestamp: Timestamp(Calendar(now.year, 11, 1))};
-	{style: style, header: false, timestamp: Timestamp(Calendar(now.year, 12, 1))};
+	{style: style, header: false, timestamp: Timestamp(Datetime(now.year, 1, 1))};
+	{style: style, header: false, timestamp: Timestamp(Datetime(now.year, 2, 1))};
+	{style: style, header: false, timestamp: Timestamp(Datetime(now.year, 3, 1))};
+	{style: style, header: false, timestamp: Timestamp(Datetime(now.year, 4, 1))};
+	{style: style, header: false, timestamp: Timestamp(Datetime(now.year, 5, 1))};
+	{style: style, header: false, timestamp: Timestamp(Datetime(now.year, 6, 1))};
+	{style: style, header: false, timestamp: Timestamp(Datetime(now.year, 7, 1))};
+	{style: style, header: false, timestamp: Timestamp(Datetime(now.year, 8, 1))};
+	{style: style, header: false, timestamp: Timestamp(Datetime(now.year, 9, 1))};
+	{style: style, header: false, timestamp: Timestamp(Datetime(now.year, 10, 1))};
+	{style: style, header: false, timestamp: Timestamp(Datetime(now.year, 11, 1))};
+	{style: style, header: false, timestamp: Timestamp(Datetime(now.year, 12, 1))};
 };
 Gui.showWindow(Widget(-1, -1)
 	.focus(months[indexOf(now.month)])

@@ -1,6 +1,6 @@
 static if (typename(drawAntiAliased) == null) {
 	// by default draw without antialiasing
-	inline drawAntiAliased = false;
+	inline drawAntiAliased = true;
 }
 inline "image.draw.rect.ci";
 inline "image.draw.rrect.ci";

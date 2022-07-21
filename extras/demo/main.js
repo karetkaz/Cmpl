@@ -207,7 +207,7 @@ let params = JsArgs('#', function (params, changes) {
 
 	// set window title
 	if (params.path != null) {
-		document.title = params.path + ' - ' + props.title;
+		document.title = getFile('?') + ' - ' + props.title;
 	} else {
 		document.title = props.title;
 	}
@@ -653,8 +653,17 @@ function shareInput() {
 	let content = editor.getValue();
 	terminal.append('decoded uri: ' + decodeURIComponent(window.location));
 	let hash = 'content=' + btoa(editor.getValue());
-	if (params.file != null) {
-		hash = 'file=' + params.file + '&' + hash;
+	if (params.path != null) {
+		hash = 'path=' + params.path + '&' + hash;
+	}
+	if (params.exec != null) {
+		hash = 'exec=' + params.exec + '&' + hash;
+	}
+	if (params.libFile != null) {
+		hash = 'libFile&' + hash;
+	}
+	if (params.libGfx != null) {
+		hash = 'libGfx&' + hash;
 	}
 	terminal.append('current file: ' + window.location.origin + window.location.pathname + '#' + hash);
 	if (content.startsWith('[{')) {
@@ -780,7 +789,7 @@ function process(data) {
 					openProjectFile({ path, link: true });
 				};
 			}
-			if (path === params.file) {
+			if (path === params.getPath()) {
 				li.classList.add('active');
 			}
 			fileList.appendChild(li);
@@ -824,9 +833,10 @@ function uploadFiles(input) {
 			} else {
 				path = '';
 			}
+			path += file.name;
 			openProjectFile({
-				path: path + file.name,
-				reopen: file.name === params.file,
+				path: path,
+				reopen: path === params.getPath(),
 				content: new Uint8Array(reader.result)
 			});
 		}, false);
