@@ -1051,8 +1051,7 @@ struct Widget: Layout {
 	}
 
 	static Widget theme(Widget this, argb background, argb accent) {
-		Style style& = this.style;
-		style.setColor(background, accent);
+		this.style.setColor(background, accent);
 		return this;
 	}
 
@@ -1360,15 +1359,16 @@ struct Window {
 			window.isShift = (y & Gui.KEY_MASK_SHIFT) != 0;
 			window.isCtrl = (y & Gui.KEY_MASK_CTRL) != 0;
 			window.isAlt = (y & Gui.KEY_MASK_ALT) != 0;
-			window.key = 0;
 			KeyEvent event = {
 				release: true;
 				isShift: window.isShift;
 				isCtrl: window.isCtrl;
 				isAlt: window.isAlt;
-				repeat: 0;
+				repeat: window.repeat;
 				key: button;
 			};
+			window.key = 0;
+			window.repeat = 0;
 			return widget.onKeyEvent(widget, event);
 		}
 

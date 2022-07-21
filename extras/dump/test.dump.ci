@@ -1646,7 +1646,7 @@ emit.mul: typename {
 .field i32: int32 (size: 0, cast: static const inline)
 .field i64: int64 (size: 0, cast: static const inline)
 .field u32: uint32 (size: 0, cast: static const inline)
-.field u64: uint32 (size: 0, cast: static const inline)
+.field u64: uint64 (size: 0, cast: static const inline)
 .field f32: float32 (size: 0, cast: static const inline)
 .field f64: float64 (size: 0, cast: static const inline)
 .field p4f: emit.p4x (size: 0, cast: static const inline)
@@ -1676,9 +1676,9 @@ emit.mul.u32: uint32 {
 .owner: emit.mul
 .value: mul.u32
 }
-emit.mul.u64: uint32 {
+emit.mul.u64: uint64 {
 .kind: static const inline
-.base: `uint32`
+.base: `uint64`
 .size: 0
 .name: 'u64'
 .owner: emit.mul
@@ -1725,7 +1725,7 @@ emit.div: typename {
 .field i32: int32 (size: 0, cast: static const inline)
 .field i64: int64 (size: 0, cast: static const inline)
 .field u32: uint32 (size: 0, cast: static const inline)
-.field u64: uint32 (size: 0, cast: static const inline)
+.field u64: uint64 (size: 0, cast: static const inline)
 .field f32: float32 (size: 0, cast: static const inline)
 .field f64: float64 (size: 0, cast: static const inline)
 .field p4f: emit.p4x (size: 0, cast: static const inline)
@@ -1755,9 +1755,9 @@ emit.div.u32: uint32 {
 .owner: emit.div
 .value: div.u32
 }
-emit.div.u64: uint32 {
+emit.div.u64: uint64 {
 .kind: static const inline
-.base: `uint32`
+.base: `uint64`
 .size: 0
 .name: 'u64'
 .owner: emit.div
@@ -1804,7 +1804,7 @@ emit.mod: typename {
 .field i32: int32 (size: 0, cast: static const inline)
 .field i64: int64 (size: 0, cast: static const inline)
 .field u32: uint32 (size: 0, cast: static const inline)
-.field u64: uint32 (size: 0, cast: static const inline)
+.field u64: uint64 (size: 0, cast: static const inline)
 .field f32: float32 (size: 0, cast: static const inline)
 .field f64: float64 (size: 0, cast: static const inline)
 }
@@ -1832,9 +1832,9 @@ emit.mod.u32: uint32 {
 .owner: emit.mod
 .value: mod.u32
 }
-emit.mod.u64: uint32 {
+emit.mod.u64: uint64 {
 .kind: static const inline
-.base: `uint32`
+.base: `uint64`
 .size: 0
 .name: 'u64'
 .owner: emit.mod
@@ -2921,9 +2921,9 @@ Math: typename {
 .field cos: function (size: 49, cast: static function)
 .field tan: function (size: 82, cast: static function)
 .field cot: function (size: 41, cast: static function)
-.field sinh: function (size: 241, cast: static function)
+.field sinh: function (size: 242, cast: static function)
 .field cosh: function (size: 75, cast: static function)
-.field asin: function (size: 173, cast: static function)
+.field asin: function (size: 174, cast: static function)
 .field acos: function (size: 0, cast: static inline)
 .field radians: function (size: 0, cast: static inline)
 .field degrees: function (size: 0, cast: static inline)
@@ -4849,7 +4849,7 @@ Math.cot(x: float64): float64: function {
 Math.sinh(x: float64): float64: function {
 .kind: static function
 .base: `function`
-.size: 241
+.size: 242
 .name: 'sinh'
 .file: 'cmplStd/lib/math/Math.ci:488'
 .owner: Math
@@ -4879,7 +4879,7 @@ Math.sinh(x: float64): float64: function {
 	}
 	return .result := result;
 }
-.instructions: (241 bytes)
+.instructions: (242 bytes)
 	cmplStd/lib/math/Math.ci:500: (1 byte): negate: bool := false
 	<sinh>  : load.z32
 	cmplStd/lib/math/Math.ci:501: (23 bytes): if (x < (0))
@@ -4973,9 +4973,9 @@ Math.sinh(x: float64): float64: function {
 	<sinh+?>: set.x64 sp(8)
 	<sinh+?>: inc.sp(-12)
 	<sinh+?>: ret
-	cmplStd/lib/math/Math.ci:523: (7 bytes): return .result := result;
-	<sinh+?>: set.x64 sp(6)
-	<sinh+?>: inc.sp(-4)
+	cmplStd/lib/math/Math.ci:523: (8 bytes): return .result := result;
+	<sinh+?>: mov.x64 sp(6, 0)
+	<sinh+?>: inc.sp(-12)
 	<sinh+?>: ret
 }
 Math.cosh(x: float64): float64: function {
@@ -5034,7 +5034,7 @@ Math.cosh(x: float64): float64: function {
 Math.asin(x: float64): float64: function {
 .kind: static function
 .base: `function`
-.size: 173
+.size: 174
 .name: 'asin'
 .file: 'cmplStd/lib/math/Math.ci:542'
 .owner: Math
@@ -5068,7 +5068,7 @@ Math.asin(x: float64): float64: function {
 	}
 	return .result := result;
 }
-.instructions: (173 bytes)
+.instructions: (174 bytes)
 	cmplStd/lib/math/Math.ci:543: (12 bytes): if (x == (0))
 	<asin>  : dup.x64 sp(1)
 	<asin+?>: load.z64
@@ -5139,9 +5139,9 @@ Math.asin(x: float64): float64: function {
 	<asin+?>: set.x64 sp(8)
 	<asin+?>: inc.sp(-12)
 	<asin+?>: ret
-	cmplStd/lib/math/Math.ci:570: (7 bytes): return .result := result;
-	<asin+?>: set.x64 sp(6)
-	<asin+?>: inc.sp(-4)
+	cmplStd/lib/math/Math.ci:570: (8 bytes): return .result := result;
+	<asin+?>: mov.x64 sp(6, 0)
+	<asin+?>: inc.sp(-12)
 	<asin+?>: ret
 }
 Math.acos(x: float64): float64: function {
@@ -5614,7 +5614,7 @@ log(a: Complex): Complex: function {
 pow(a: Complex, b: Complex): Complex: function {
 .kind: static function
 .base: `function`
-.size: 100
+.size: 102
 .name: 'pow'
 .file: 'cmplStd/lib/math/Complex.ci:135'
 .param .result: Complex (size: 16, cast: variable(val))
@@ -5631,8 +5631,8 @@ pow(a: Complex, b: Complex): Complex: function {
 			.result.im := v * float64.sin(u);
 		};
 }
-.instructions: (100 bytes)
-	cmplStd/lib/math/Complex.ci:136: (23 bytes): r: float64 := abs(a)
+.instructions: (102 bytes)
+	cmplStd/lib/math/Complex.ci:136: (24 bytes): r: float64 := abs(a)
 	<pow>  : dup.x128 sp(5)
 	<pow+?>: dup.x64 sp(0)
 	<pow+?>: dup.x64 sp(2)
@@ -5642,15 +5642,15 @@ pow(a: Complex, b: Complex): Complex: function {
 	<pow+?>: mul.f64
 	<pow+?>: add.f64
 	<pow+?>: nfc(48) ;float64.sqrt(x: float64): float64
-	<pow+?>: set.x64 sp(4)
-	<pow+?>: inc.sp(-8)
-	cmplStd/lib/math/Complex.ci:137: (16 bytes): t: float64 := arg(a)
+	<pow+?>: mov.x64 sp(4, 0)
+	<pow+?>: inc.sp(-16)
+	cmplStd/lib/math/Complex.ci:137: (17 bytes): t: float64 := arg(a)
 	<pow+?>: dup.x128 sp(7)
 	<pow+?>: dup.x64 sp(0)
 	<pow+?>: dup.x64 sp(4)
 	<pow+?>: nfc(49) ;float64.atan2(x: float64, y: float64): float64
-	<pow+?>: set.x64 sp(4)
-	<pow+?>: inc.sp(-8)
+	<pow+?>: mov.x64 sp(4, 0)
+	<pow+?>: inc.sp(-16)
 	cmplStd/lib/math/Complex.ci:138: (15 bytes): u: float64 := b.re * t + b.im * float64.log(r)
 	<pow+?>: dup.x64 sp(5)
 	<pow+?>: dup.x64 sp(2)
@@ -7036,7 +7036,7 @@ transpose(mat: mat4f): mat4f: function {
 mul(lhs: mat4f, rhs: mat4f): mat4f: function {
 .kind: static function
 .base: `function`
-.size: 245
+.size: 265
 .name: 'mul'
 .file: 'cmplStd/lib/math/Matrix4f.ci:97'
 .param .result: mat4f (size: 64, cast: variable(val))
@@ -7052,7 +7052,7 @@ mul(lhs: mat4f, rhs: mat4f): mat4f: function {
 			.result.w := dp4(transposed, lhs.w);
 		};
 }
-.instructions: (245 bytes)
+.instructions: (265 bytes)
 	cmplStd/lib/math/Matrix4f.ci:98: (28 bytes): transposed: mat4f := transpose(rhs)
 	<mul>  : inc.sp(+64)
 	<mul+?>: dup.x32 sp(17)
@@ -7062,8 +7062,8 @@ mul(lhs: mat4f, rhs: mat4f): mat4f: function {
 	<mul+?>: load.ref <?> ;transpose(mat: mat4f): mat4f
 	<mul+?>: call
 	<mul+?>: inc.sp(-64)
-	cmplStd/lib/math/Matrix4f.ci:99: (217 bytes): return .result := {...};
-	cmplStd/lib/math/Matrix4f.ci:100: (50 bytes): .result.x := dp4(transposed, lhs.x);
+	cmplStd/lib/math/Matrix4f.ci:99: (237 bytes): return .result := {...};
+	cmplStd/lib/math/Matrix4f.ci:100: (55 bytes): .result.x := dp4(transposed, lhs.x);
 	<mul+?>: load.sp(+0)
 	<mul+?>: dup.x32 sp(19)
 	<mul+?>: dup.x32 sp(1)
@@ -7089,9 +7089,10 @@ mul(lhs: mat4f, rhs: mat4f): mat4f: function {
 	<mul+?>: dup.x32 sp(7)
 	<mul+?>: load.i128
 	<mul+?>: dp4.v4f
-	<mul+?>: set.x128 sp(2)
+	<mul+?>: mov.x128 sp(2, 0)
+	<mul+?>: inc.sp(-8)
 	<mul+?>: set.x128 sp(23)
-	cmplStd/lib/math/Matrix4f.ci:101: (54 bytes): .result.y := dp4(transposed, lhs.y);
+	cmplStd/lib/math/Matrix4f.ci:101: (59 bytes): .result.y := dp4(transposed, lhs.y);
 	<mul+?>: load.sp(+0)
 	<mul+?>: dup.x32 sp(19)
 	<mul+?>: inc.i32(+16)
@@ -7118,9 +7119,10 @@ mul(lhs: mat4f, rhs: mat4f): mat4f: function {
 	<mul+?>: dup.x32 sp(7)
 	<mul+?>: load.i128
 	<mul+?>: dp4.v4f
-	<mul+?>: set.x128 sp(2)
+	<mul+?>: mov.x128 sp(2, 0)
+	<mul+?>: inc.sp(-8)
 	<mul+?>: set.x128 sp(27)
-	cmplStd/lib/math/Matrix4f.ci:102: (54 bytes): .result.z := dp4(transposed, lhs.z);
+	cmplStd/lib/math/Matrix4f.ci:102: (59 bytes): .result.z := dp4(transposed, lhs.z);
 	<mul+?>: load.sp(+0)
 	<mul+?>: dup.x32 sp(19)
 	<mul+?>: inc.i32(+32)
@@ -7147,9 +7149,10 @@ mul(lhs: mat4f, rhs: mat4f): mat4f: function {
 	<mul+?>: dup.x32 sp(7)
 	<mul+?>: load.i128
 	<mul+?>: dp4.v4f
-	<mul+?>: set.x128 sp(2)
+	<mul+?>: mov.x128 sp(2, 0)
+	<mul+?>: inc.sp(-8)
 	<mul+?>: set.x128 sp(31)
-	cmplStd/lib/math/Matrix4f.ci:103: (54 bytes): .result.w := dp4(transposed, lhs.w);
+	cmplStd/lib/math/Matrix4f.ci:103: (59 bytes): .result.w := dp4(transposed, lhs.w);
 	<mul+?>: load.sp(+0)
 	<mul+?>: dup.x32 sp(19)
 	<mul+?>: inc.i32(+48)
@@ -7176,7 +7179,8 @@ mul(lhs: mat4f, rhs: mat4f): mat4f: function {
 	<mul+?>: dup.x32 sp(7)
 	<mul+?>: load.i128
 	<mul+?>: dp4.v4f
-	<mul+?>: set.x128 sp(2)
+	<mul+?>: mov.x128 sp(2, 0)
+	<mul+?>: inc.sp(-8)
 	<mul+?>: set.x128 sp(35)
 	<mul+?>: inc.sp(-64)
 	<mul+?>: ret
@@ -7184,7 +7188,7 @@ mul(lhs: mat4f, rhs: mat4f): mat4f: function {
 rotation(center: vec4f, direction: vec4f, angle: float32): mat4f: function {
 .kind: static function
 .base: `function`
-.size: 454
+.size: 455
 .name: 'rotation'
 .file: 'cmplStd/lib/math/Matrix4f.ci:111'
 .param .result: mat4f (size: 64, cast: variable(val))
@@ -7235,16 +7239,16 @@ adapted from: https://sites.google.com/site/glennmurray/Home/rotation-matrices-a
 			.result.w := vec4f(0, 0, 0, 1);
 		};
 }
-.instructions: (454 bytes)
-	cmplStd/lib/math/Matrix4f.ci:112: (18 bytes): len: float32 := length(direction)
+.instructions: (455 bytes)
+	cmplStd/lib/math/Matrix4f.ci:112: (19 bytes): len: float32 := length(direction)
 	<rotation>  : dup.x32 sp(2)
 	<rotation+?>: load.i128
 	<rotation+?>: dup.x128 sp(0)
 	<rotation+?>: dup.x128 sp(4)
 	<rotation+?>: dp3.v4f
 	<rotation+?>: nfc(40) ;float32.sqrt(x: float32): float32
-	<rotation+?>: set.x32 sp(4)
-	<rotation+?>: inc.sp(-12)
+	<rotation+?>: mov.x32 sp(4, 0)
+	<rotation+?>: inc.sp(-16)
 	cmplStd/lib/math/Matrix4f.ci:113: (82 bytes): if ((len) < 0.000000)
 	<rotation+?>: dup.x32 sp(0)
 	<rotation+?>: f32.2f64
@@ -7530,7 +7534,7 @@ adapted from: https://sites.google.com/site/glennmurray/Home/rotation-matrices-a
 rotation(direction: vec4f, angle: float32): mat4f: function {
 .kind: static function
 .base: `function`
-.size: 224
+.size: 229
 .name: 'rotation'
 .file: 'cmplStd/lib/math/Matrix4f.ci:160'
 .param .result: mat4f (size: 64, cast: variable(val))
@@ -7564,7 +7568,7 @@ rotation(direction: vec4f, angle: float32): mat4f: function {
 			.result.w := vec4f(0, 0, 0, 1);
 		};
 }
-.instructions: (224 bytes)
+.instructions: (229 bytes)
 	cmplStd/lib/math/Matrix4f.ci:161: (7 bytes): xx: float32 := direction.x * direction.x
 	<rotation>  : dup.x32 sp(2)
 	<rotation+?>: load.i32
@@ -7619,7 +7623,7 @@ rotation(direction: vec4f, angle: float32): mat4f: function {
 	<rotation+?>: load.f32 1.000000
 	<rotation+?>: dup.x32 sp(1)
 	<rotation+?>: sub.f32
-	cmplStd/lib/math/Matrix4f.ci:170: (16 bytes): tmp: vec4f := mul(direction, s)
+	cmplStd/lib/math/Matrix4f.ci:170: (21 bytes): tmp: vec4f := mul(direction, s)
 	<rotation+?>: dup.x32 sp(11)
 	<rotation+?>: load.i128
 	<rotation+?>: dup.x32 sp(6)
@@ -7627,7 +7631,8 @@ rotation(direction: vec4f, angle: float32): mat4f: function {
 	<rotation+?>: dup.x32 sp(1)
 	<rotation+?>: dup.x32 sp(2)
 	<rotation+?>: dup.x32 sp(3)
-	<rotation+?>: set.x128 sp(1)
+	<rotation+?>: mov.x128 sp(1, 0)
+	<rotation+?>: inc.sp(-4)
 	<rotation+?>: mul.v4f
 	cmplStd/lib/math/Matrix4f.ci:172: (114 bytes): return .result := {...};
 	cmplStd/lib/math/Matrix4f.ci:173: (10 bytes): .result.xx := k * xx + c;
@@ -9651,7 +9656,7 @@ append(output: char[], pos: int32, value: int8, format: FormatFlags): int32: fun
 append(output: char[], pos: int32, value: float64, format: FormatFlags): int32: function {
 .kind: static function
 .base: `function`
-.size: 402
+.size: 404
 .name: 'append'
 .file: 'cmplStd/lib/text/cstr.ci:322'
 .param .result: int32 (size: 4, cast: variable(i32))
@@ -9691,7 +9696,7 @@ append(output: char[], pos: int32, value: float64, format: FormatFlags): int32: 
 	}
 	return .result := pos;
 }
-.instructions: (402 bytes)
+.instructions: (404 bytes)
 	cmplStd/lib/text/cstr.ci:325: (69 bytes): formatInt: FormatFlags := {...}
 	<append>  : inc.sp(+16)
 	cmplStd/lib/text/cstr.ci:326: (25 bytes): formatInt.sign := value < (0) ? '-' : format.sign;
@@ -9724,7 +9729,7 @@ append(output: char[], pos: int32, value: float64, format: FormatFlags): int32: 
 	<append+?>: sub.i32
 	<append+?>: inc.i32(-1)
 	<append+?>: set.x32 sp(4)
-	cmplStd/lib/text/cstr.ci:332: (39 bytes): end: int32 := Math.min(int32(output.length - (1)), pos + format.padLen)
+	cmplStd/lib/text/cstr.ci:332: (40 bytes): end: int32 := Math.min(int32(output.length - (1)), pos + format.padLen)
 	<append+?>: dup.x32 sp(10)
 	<append+?>: inc.i32(-1)
 	<append+?>: dup.x32 sp(9)
@@ -9739,8 +9744,8 @@ append(output: char[], pos: int32, value: float64, format: FormatFlags): int32: 
 	<append+?>: dup.x32 sp(1)
 	<append+?>: jmp +6
 	<append+?>: dup.x32 sp(0)
-	<append+?>: set.x32 sp(2)
-	<append+?>: inc.sp(-4)
+	<append+?>: mov.x32 sp(2, 0)
+	<append+?>: inc.sp(-8)
 	cmplStd/lib/text/cstr.ci:334: (36 bytes): fraction: float64 := Math.modf(Math.abs(value), &value)
 	<append+?>: load.z64
 	<append+?>: dup.x64 sp(9)
@@ -9794,7 +9799,7 @@ append(output: char[], pos: int32, value: float64, format: FormatFlags): int32: 
 	<append+?>: call
 	<append+?>: inc.sp(-16)
 	<append+?>: set.x32 sp(12)
-	cmplStd/lib/text/cstr.ci:344: (39 bytes): max: int32 := Math.min(int32(output.length - (1)), pos + format.precision)
+	cmplStd/lib/text/cstr.ci:344: (40 bytes): max: int32 := Math.min(int32(output.length - (1)), pos + format.precision)
 	<append+?>: dup.x32 sp(13)
 	<append+?>: inc.i32(-1)
 	<append+?>: dup.x32 sp(12)
@@ -9809,8 +9814,8 @@ append(output: char[], pos: int32, value: float64, format: FormatFlags): int32: 
 	<append+?>: dup.x32 sp(1)
 	<append+?>: jmp +6
 	<append+?>: dup.x32 sp(0)
-	<append+?>: set.x32 sp(2)
-	<append+?>: inc.sp(-4)
+	<append+?>: mov.x32 sp(2, 0)
+	<append+?>: inc.sp(-8)
 	cmplStd/lib/text/cstr.ci:346: (21 bytes): if (format.precision == 0)
 	<append+?>: dup.x32 sp(9)
 	<append+?>: inc.i32(+4)
@@ -16886,7 +16891,7 @@ testMathAbsMod_f32_8d: float32 {
 .main: function {
 .kind: static function
 .base: `function`
-.size: 10255
+.size: 10304
 .name: '.main'
 .print: '.main'
 .field typename: typename (size: 160, cast: static const typename(ref))
@@ -16975,7 +16980,7 @@ testMathAbsMod_f32_8d: float32 {
 .field conj: function (size: 0, cast: inline)
 .field exp: function (size: 0, cast: inline)
 .field log: function (size: 0, cast: inline)
-.field pow: function (size: 100, cast: static function)
+.field pow: function (size: 102, cast: static function)
 .field pow: function (size: 0, cast: inline)
 .field sin: function (size: 0, cast: inline)
 .field cos: function (size: 0, cast: inline)
@@ -17030,9 +17035,9 @@ testMathAbsMod_f32_8d: float32 {
 .field dph: function (size: 0, cast: inline)
 .field dp4: function (size: 0, cast: inline)
 .field transpose: function (size: 49, cast: static function)
-.field mul: function (size: 245, cast: static function)
-.field rotation: function (size: 454, cast: static function)
-.field rotation: function (size: 224, cast: static function)
+.field mul: function (size: 265, cast: static function)
+.field rotation: function (size: 455, cast: static function)
+.field rotation: function (size: 229, cast: static function)
 .field translation: function (size: 88, cast: static function)
 .field scale: function (size: 217, cast: static function)
 .field vec2d: typename (size: 16, cast: static const typename(val))
@@ -17071,7 +17076,7 @@ testMathAbsMod_f32_8d: float32 {
 .field append: function (size: 0, cast: inline)
 .field append: function (size: 0, cast: inline)
 .field append: function (size: 0, cast: inline)
-.field append: function (size: 402, cast: static function)
+.field append: function (size: 404, cast: static function)
 .field append: function (size: 0, cast: inline)
 .field append: function (size: 31, cast: static function)
 .field float64: function (size: 343, cast: static function)
@@ -17748,7 +17753,7 @@ testMathAbsMod_f32_8d: float32 {
 .field testMathAbsMod_f32_8b: float32 (size: 4, cast: variable(f32))
 .field testMathAbsMod_f32_8c: float32 (size: 4, cast: variable(f32))
 .field testMathAbsMod_f32_8d: float32 (size: 4, cast: variable(f32))
-.field .main: function (size: 10255, cast: static function)
+.field .main: function (size: 10304, cast: static function)
 .value: {
 	{
 		byte: typename := uint8;
@@ -19803,7 +19808,7 @@ testMathAbsMod_f32_8d: float32 {
 		testMathAbsMod_f32_8d: float32 := Math.absMod(-12.000000, 10.000000);
 	}
 }
-.instructions: (10255 bytes)
+.instructions: (10304 bytes)
 	cmplStd/lib/math/Math.ci:42: (13 bytes): static const x1p53: float64 := intAsFloat64(4845873199050653696)
 	<.main>  : load.c64 4845873199050653696
 	<.main+?>: store.m64 <?> ;Math.ldexp.x1p53
@@ -19987,7 +19992,7 @@ testMathAbsMod_f32_8d: float32 {
 	<.main+?>: inc.i32(+1)
 	<.main+?>: set.x32 sp(1)
 	<.main+?>: inc.i32(-1)
-	cmplStd/test/lang/inlineMacros.ci:31: (33 bytes): min2Val: int32 := min(3, 6)
+	cmplStd/test/lang/inlineMacros.ci:31: (34 bytes): min2Val: int32 := min(3, 6)
 	<.main+?>: load.c32 3
 	<.main+?>: load.c32 6
 	<.main+?>: dup.x32 sp(1)
@@ -19997,9 +20002,9 @@ testMathAbsMod_f32_8d: float32 {
 	<.main+?>: dup.x32 sp(1)
 	<.main+?>: jmp +6
 	<.main+?>: dup.x32 sp(0)
-	<.main+?>: set.x32 sp(2)
-	<.main+?>: inc.sp(-4)
-	cmplStd/test/lang/inlineMacros.ci:32: (27 bytes): min2Var: int32 := min(i3, i6)
+	<.main+?>: mov.x32 sp(2, 0)
+	<.main+?>: inc.sp(-8)
+	cmplStd/test/lang/inlineMacros.ci:32: (28 bytes): min2Var: int32 := min(i3, i6)
 	<.main+?>: dup.x32 sp(16)
 	<.main+?>: dup.x32 sp(16)
 	<.main+?>: dup.x32 sp(1)
@@ -20009,9 +20014,9 @@ testMathAbsMod_f32_8d: float32 {
 	<.main+?>: dup.x32 sp(1)
 	<.main+?>: jmp +6
 	<.main+?>: dup.x32 sp(0)
-	<.main+?>: set.x32 sp(2)
-	<.main+?>: inc.sp(-4)
-	cmplStd/test/lang/inlineMacros.ci:33: (39 bytes): min2Xpr: int32 := min(i3 + 1, i6 + 1) - 1
+	<.main+?>: mov.x32 sp(2, 0)
+	<.main+?>: inc.sp(-8)
+	cmplStd/test/lang/inlineMacros.ci:33: (40 bytes): min2Xpr: int32 := min(i3 + 1, i6 + 1) - 1
 	<.main+?>: dup.x32 sp(17)
 	<.main+?>: inc.i32(+1)
 	<.main+?>: dup.x32 sp(17)
@@ -20023,10 +20028,10 @@ testMathAbsMod_f32_8d: float32 {
 	<.main+?>: dup.x32 sp(1)
 	<.main+?>: jmp +6
 	<.main+?>: dup.x32 sp(0)
-	<.main+?>: set.x32 sp(2)
-	<.main+?>: inc.sp(-4)
+	<.main+?>: mov.x32 sp(2, 0)
+	<.main+?>: inc.sp(-8)
 	<.main+?>: inc.i32(-1)
-	cmplStd/test/lang/inlineMacros.ci:35: (33 bytes): max2Val: int32 := max(3, 6)
+	cmplStd/test/lang/inlineMacros.ci:35: (34 bytes): max2Val: int32 := max(3, 6)
 	<.main+?>: load.c32 3
 	<.main+?>: load.c32 6
 	<.main+?>: dup.x32 sp(1)
@@ -20036,9 +20041,9 @@ testMathAbsMod_f32_8d: float32 {
 	<.main+?>: dup.x32 sp(1)
 	<.main+?>: jmp +6
 	<.main+?>: dup.x32 sp(0)
-	<.main+?>: set.x32 sp(2)
-	<.main+?>: inc.sp(-4)
-	cmplStd/test/lang/inlineMacros.ci:36: (27 bytes): max2Var: int32 := max(i3, i6)
+	<.main+?>: mov.x32 sp(2, 0)
+	<.main+?>: inc.sp(-8)
+	cmplStd/test/lang/inlineMacros.ci:36: (28 bytes): max2Var: int32 := max(i3, i6)
 	<.main+?>: dup.x32 sp(19)
 	<.main+?>: dup.x32 sp(19)
 	<.main+?>: dup.x32 sp(1)
@@ -20048,9 +20053,9 @@ testMathAbsMod_f32_8d: float32 {
 	<.main+?>: dup.x32 sp(1)
 	<.main+?>: jmp +6
 	<.main+?>: dup.x32 sp(0)
-	<.main+?>: set.x32 sp(2)
-	<.main+?>: inc.sp(-4)
-	cmplStd/test/lang/inlineMacros.ci:37: (39 bytes): max2Xpr: int32 := max(i3 + 1, i6 + 1) - 1
+	<.main+?>: mov.x32 sp(2, 0)
+	<.main+?>: inc.sp(-8)
+	cmplStd/test/lang/inlineMacros.ci:37: (40 bytes): max2Xpr: int32 := max(i3 + 1, i6 + 1) - 1
 	<.main+?>: dup.x32 sp(20)
 	<.main+?>: inc.i32(+1)
 	<.main+?>: dup.x32 sp(20)
@@ -20062,8 +20067,8 @@ testMathAbsMod_f32_8d: float32 {
 	<.main+?>: dup.x32 sp(1)
 	<.main+?>: jmp +6
 	<.main+?>: dup.x32 sp(0)
-	<.main+?>: set.x32 sp(2)
-	<.main+?>: inc.sp(-4)
+	<.main+?>: mov.x32 sp(2, 0)
+	<.main+?>: inc.sp(-8)
 	<.main+?>: inc.i32(-1)
 	cmplStd/test/lang/inlineMacros.ci:41: (21 bytes): sumRlVal: int32 := sumLr(3, 6, 2, 8)
 	<.main+?>: load.c32 3
@@ -20249,7 +20254,7 @@ testMathAbsMod_f32_8d: float32 {
 	<.main+?>: inc.i32(+1)
 	<.main+?>: set.x32 sp(1)
 	<.main+?>: inc.i32(-1)
-	cmplStd/test/lang/inlineMacros.ci:59: (89 bytes): minRlVal: int32 := minLr(3, 6, 2, 8)
+	cmplStd/test/lang/inlineMacros.ci:59: (92 bytes): minRlVal: int32 := minLr(3, 6, 2, 8)
 	<.main+?>: load.c32 3
 	<.main+?>: load.c32 6
 	<.main+?>: load.c32 2
@@ -20261,8 +20266,8 @@ testMathAbsMod_f32_8d: float32 {
 	<.main+?>: dup.x32 sp(1)
 	<.main+?>: jmp +6
 	<.main+?>: dup.x32 sp(0)
-	<.main+?>: set.x32 sp(2)
-	<.main+?>: inc.sp(-4)
+	<.main+?>: mov.x32 sp(2, 0)
+	<.main+?>: inc.sp(-8)
 	<.main+?>: dup.x32 sp(1)
 	<.main+?>: dup.x32 sp(1)
 	<.main+?>: clt.i32
@@ -20270,8 +20275,8 @@ testMathAbsMod_f32_8d: float32 {
 	<.main+?>: dup.x32 sp(1)
 	<.main+?>: jmp +6
 	<.main+?>: dup.x32 sp(0)
-	<.main+?>: set.x32 sp(2)
-	<.main+?>: inc.sp(-4)
+	<.main+?>: mov.x32 sp(2, 0)
+	<.main+?>: inc.sp(-8)
 	<.main+?>: dup.x32 sp(1)
 	<.main+?>: dup.x32 sp(1)
 	<.main+?>: clt.i32
@@ -20279,9 +20284,9 @@ testMathAbsMod_f32_8d: float32 {
 	<.main+?>: dup.x32 sp(1)
 	<.main+?>: jmp +6
 	<.main+?>: dup.x32 sp(0)
-	<.main+?>: set.x32 sp(2)
-	<.main+?>: inc.sp(-4)
-	cmplStd/test/lang/inlineMacros.ci:60: (89 bytes): minLrVal: int32 := minRl(3, 6, 2, 8)
+	<.main+?>: mov.x32 sp(2, 0)
+	<.main+?>: inc.sp(-8)
+	cmplStd/test/lang/inlineMacros.ci:60: (92 bytes): minLrVal: int32 := minRl(3, 6, 2, 8)
 	<.main+?>: load.c32 3
 	<.main+?>: load.c32 6
 	<.main+?>: dup.x32 sp(1)
@@ -20291,8 +20296,8 @@ testMathAbsMod_f32_8d: float32 {
 	<.main+?>: dup.x32 sp(1)
 	<.main+?>: jmp +6
 	<.main+?>: dup.x32 sp(0)
-	<.main+?>: set.x32 sp(2)
-	<.main+?>: inc.sp(-4)
+	<.main+?>: mov.x32 sp(2, 0)
+	<.main+?>: inc.sp(-8)
 	<.main+?>: load.c32 2
 	<.main+?>: dup.x32 sp(1)
 	<.main+?>: dup.x32 sp(1)
@@ -20301,8 +20306,8 @@ testMathAbsMod_f32_8d: float32 {
 	<.main+?>: dup.x32 sp(1)
 	<.main+?>: jmp +6
 	<.main+?>: dup.x32 sp(0)
-	<.main+?>: set.x32 sp(2)
-	<.main+?>: inc.sp(-4)
+	<.main+?>: mov.x32 sp(2, 0)
+	<.main+?>: inc.sp(-8)
 	<.main+?>: load.c32 8
 	<.main+?>: dup.x32 sp(1)
 	<.main+?>: dup.x32 sp(1)
@@ -20311,9 +20316,9 @@ testMathAbsMod_f32_8d: float32 {
 	<.main+?>: dup.x32 sp(1)
 	<.main+?>: jmp +6
 	<.main+?>: dup.x32 sp(0)
-	<.main+?>: set.x32 sp(2)
-	<.main+?>: inc.sp(-4)
-	cmplStd/test/lang/inlineMacros.ci:61: (77 bytes): minRlVar: int32 := minLr(i3, i6, i2, i8)
+	<.main+?>: mov.x32 sp(2, 0)
+	<.main+?>: inc.sp(-8)
+	cmplStd/test/lang/inlineMacros.ci:61: (80 bytes): minRlVar: int32 := minLr(i3, i6, i2, i8)
 	<.main+?>: dup.x32 sp(35)
 	<.main+?>: dup.x32 sp(35)
 	<.main+?>: dup.x32 sp(35)
@@ -20325,8 +20330,8 @@ testMathAbsMod_f32_8d: float32 {
 	<.main+?>: dup.x32 sp(1)
 	<.main+?>: jmp +6
 	<.main+?>: dup.x32 sp(0)
-	<.main+?>: set.x32 sp(2)
-	<.main+?>: inc.sp(-4)
+	<.main+?>: mov.x32 sp(2, 0)
+	<.main+?>: inc.sp(-8)
 	<.main+?>: dup.x32 sp(1)
 	<.main+?>: dup.x32 sp(1)
 	<.main+?>: clt.i32
@@ -20334,8 +20339,8 @@ testMathAbsMod_f32_8d: float32 {
 	<.main+?>: dup.x32 sp(1)
 	<.main+?>: jmp +6
 	<.main+?>: dup.x32 sp(0)
-	<.main+?>: set.x32 sp(2)
-	<.main+?>: inc.sp(-4)
+	<.main+?>: mov.x32 sp(2, 0)
+	<.main+?>: inc.sp(-8)
 	<.main+?>: dup.x32 sp(1)
 	<.main+?>: dup.x32 sp(1)
 	<.main+?>: clt.i32
@@ -20343,9 +20348,9 @@ testMathAbsMod_f32_8d: float32 {
 	<.main+?>: dup.x32 sp(1)
 	<.main+?>: jmp +6
 	<.main+?>: dup.x32 sp(0)
-	<.main+?>: set.x32 sp(2)
-	<.main+?>: inc.sp(-4)
-	cmplStd/test/lang/inlineMacros.ci:62: (77 bytes): minLrVar: int32 := minRl(i3, i6, i2, i8)
+	<.main+?>: mov.x32 sp(2, 0)
+	<.main+?>: inc.sp(-8)
+	cmplStd/test/lang/inlineMacros.ci:62: (80 bytes): minLrVar: int32 := minRl(i3, i6, i2, i8)
 	<.main+?>: dup.x32 sp(36)
 	<.main+?>: dup.x32 sp(36)
 	<.main+?>: dup.x32 sp(1)
@@ -20355,8 +20360,8 @@ testMathAbsMod_f32_8d: float32 {
 	<.main+?>: dup.x32 sp(1)
 	<.main+?>: jmp +6
 	<.main+?>: dup.x32 sp(0)
-	<.main+?>: set.x32 sp(2)
-	<.main+?>: inc.sp(-4)
+	<.main+?>: mov.x32 sp(2, 0)
+	<.main+?>: inc.sp(-8)
 	<.main+?>: dup.x32 sp(35)
 	<.main+?>: dup.x32 sp(1)
 	<.main+?>: dup.x32 sp(1)
@@ -20365,8 +20370,8 @@ testMathAbsMod_f32_8d: float32 {
 	<.main+?>: dup.x32 sp(1)
 	<.main+?>: jmp +6
 	<.main+?>: dup.x32 sp(0)
-	<.main+?>: set.x32 sp(2)
-	<.main+?>: inc.sp(-4)
+	<.main+?>: mov.x32 sp(2, 0)
+	<.main+?>: inc.sp(-8)
 	<.main+?>: dup.x32 sp(34)
 	<.main+?>: dup.x32 sp(1)
 	<.main+?>: dup.x32 sp(1)
@@ -20375,9 +20380,9 @@ testMathAbsMod_f32_8d: float32 {
 	<.main+?>: dup.x32 sp(1)
 	<.main+?>: jmp +6
 	<.main+?>: dup.x32 sp(0)
-	<.main+?>: set.x32 sp(2)
-	<.main+?>: inc.sp(-4)
-	cmplStd/test/lang/inlineMacros.ci:63: (97 bytes): minRlXpr: int32 := minLr(i3 + 1, i6 + 1, i2 + 1, i8 + 1) - 1
+	<.main+?>: mov.x32 sp(2, 0)
+	<.main+?>: inc.sp(-8)
+	cmplStd/test/lang/inlineMacros.ci:63: (100 bytes): minRlXpr: int32 := minLr(i3 + 1, i6 + 1, i2 + 1, i8 + 1) - 1
 	<.main+?>: dup.x32 sp(37)
 	<.main+?>: inc.i32(+1)
 	<.main+?>: dup.x32 sp(37)
@@ -20393,8 +20398,8 @@ testMathAbsMod_f32_8d: float32 {
 	<.main+?>: dup.x32 sp(1)
 	<.main+?>: jmp +6
 	<.main+?>: dup.x32 sp(0)
-	<.main+?>: set.x32 sp(2)
-	<.main+?>: inc.sp(-4)
+	<.main+?>: mov.x32 sp(2, 0)
+	<.main+?>: inc.sp(-8)
 	<.main+?>: dup.x32 sp(1)
 	<.main+?>: dup.x32 sp(1)
 	<.main+?>: clt.i32
@@ -20402,8 +20407,8 @@ testMathAbsMod_f32_8d: float32 {
 	<.main+?>: dup.x32 sp(1)
 	<.main+?>: jmp +6
 	<.main+?>: dup.x32 sp(0)
-	<.main+?>: set.x32 sp(2)
-	<.main+?>: inc.sp(-4)
+	<.main+?>: mov.x32 sp(2, 0)
+	<.main+?>: inc.sp(-8)
 	<.main+?>: dup.x32 sp(1)
 	<.main+?>: dup.x32 sp(1)
 	<.main+?>: clt.i32
@@ -20411,10 +20416,10 @@ testMathAbsMod_f32_8d: float32 {
 	<.main+?>: dup.x32 sp(1)
 	<.main+?>: jmp +6
 	<.main+?>: dup.x32 sp(0)
-	<.main+?>: set.x32 sp(2)
-	<.main+?>: inc.sp(-4)
+	<.main+?>: mov.x32 sp(2, 0)
+	<.main+?>: inc.sp(-8)
 	<.main+?>: inc.i32(-1)
-	cmplStd/test/lang/inlineMacros.ci:64: (97 bytes): minLrXpr: int32 := minRl(i3 + 1, i6 + 1, i2 + 1, i8 + 1) - 1
+	cmplStd/test/lang/inlineMacros.ci:64: (100 bytes): minLrXpr: int32 := minRl(i3 + 1, i6 + 1, i2 + 1, i8 + 1) - 1
 	<.main+?>: dup.x32 sp(38)
 	<.main+?>: inc.i32(+1)
 	<.main+?>: dup.x32 sp(38)
@@ -20426,8 +20431,8 @@ testMathAbsMod_f32_8d: float32 {
 	<.main+?>: dup.x32 sp(1)
 	<.main+?>: jmp +6
 	<.main+?>: dup.x32 sp(0)
-	<.main+?>: set.x32 sp(2)
-	<.main+?>: inc.sp(-4)
+	<.main+?>: mov.x32 sp(2, 0)
+	<.main+?>: inc.sp(-8)
 	<.main+?>: dup.x32 sp(37)
 	<.main+?>: inc.i32(+1)
 	<.main+?>: dup.x32 sp(1)
@@ -20437,8 +20442,8 @@ testMathAbsMod_f32_8d: float32 {
 	<.main+?>: dup.x32 sp(1)
 	<.main+?>: jmp +6
 	<.main+?>: dup.x32 sp(0)
-	<.main+?>: set.x32 sp(2)
-	<.main+?>: inc.sp(-4)
+	<.main+?>: mov.x32 sp(2, 0)
+	<.main+?>: inc.sp(-8)
 	<.main+?>: dup.x32 sp(36)
 	<.main+?>: inc.i32(+1)
 	<.main+?>: dup.x32 sp(1)
@@ -20448,10 +20453,10 @@ testMathAbsMod_f32_8d: float32 {
 	<.main+?>: dup.x32 sp(1)
 	<.main+?>: jmp +6
 	<.main+?>: dup.x32 sp(0)
-	<.main+?>: set.x32 sp(2)
-	<.main+?>: inc.sp(-4)
+	<.main+?>: mov.x32 sp(2, 0)
+	<.main+?>: inc.sp(-8)
 	<.main+?>: inc.i32(-1)
-	cmplStd/test/lang/inlineMacros.ci:68: (89 bytes): maxRlVal: int32 := maxLr(3, 6, 2, 8)
+	cmplStd/test/lang/inlineMacros.ci:68: (92 bytes): maxRlVal: int32 := maxLr(3, 6, 2, 8)
 	<.main+?>: load.c32 3
 	<.main+?>: load.c32 6
 	<.main+?>: load.c32 2
@@ -20463,8 +20468,8 @@ testMathAbsMod_f32_8d: float32 {
 	<.main+?>: dup.x32 sp(1)
 	<.main+?>: jmp +6
 	<.main+?>: dup.x32 sp(0)
-	<.main+?>: set.x32 sp(2)
-	<.main+?>: inc.sp(-4)
+	<.main+?>: mov.x32 sp(2, 0)
+	<.main+?>: inc.sp(-8)
 	<.main+?>: dup.x32 sp(1)
 	<.main+?>: dup.x32 sp(1)
 	<.main+?>: cgt.i32
@@ -20472,8 +20477,8 @@ testMathAbsMod_f32_8d: float32 {
 	<.main+?>: dup.x32 sp(1)
 	<.main+?>: jmp +6
 	<.main+?>: dup.x32 sp(0)
-	<.main+?>: set.x32 sp(2)
-	<.main+?>: inc.sp(-4)
+	<.main+?>: mov.x32 sp(2, 0)
+	<.main+?>: inc.sp(-8)
 	<.main+?>: dup.x32 sp(1)
 	<.main+?>: dup.x32 sp(1)
 	<.main+?>: cgt.i32
@@ -20481,9 +20486,9 @@ testMathAbsMod_f32_8d: float32 {
 	<.main+?>: dup.x32 sp(1)
 	<.main+?>: jmp +6
 	<.main+?>: dup.x32 sp(0)
-	<.main+?>: set.x32 sp(2)
-	<.main+?>: inc.sp(-4)
-	cmplStd/test/lang/inlineMacros.ci:69: (89 bytes): maxLrVal: int32 := maxRl(3, 6, 2, 8)
+	<.main+?>: mov.x32 sp(2, 0)
+	<.main+?>: inc.sp(-8)
+	cmplStd/test/lang/inlineMacros.ci:69: (92 bytes): maxLrVal: int32 := maxRl(3, 6, 2, 8)
 	<.main+?>: load.c32 3
 	<.main+?>: load.c32 6
 	<.main+?>: dup.x32 sp(1)
@@ -20493,8 +20498,8 @@ testMathAbsMod_f32_8d: float32 {
 	<.main+?>: dup.x32 sp(1)
 	<.main+?>: jmp +6
 	<.main+?>: dup.x32 sp(0)
-	<.main+?>: set.x32 sp(2)
-	<.main+?>: inc.sp(-4)
+	<.main+?>: mov.x32 sp(2, 0)
+	<.main+?>: inc.sp(-8)
 	<.main+?>: load.c32 2
 	<.main+?>: dup.x32 sp(1)
 	<.main+?>: dup.x32 sp(1)
@@ -20503,8 +20508,8 @@ testMathAbsMod_f32_8d: float32 {
 	<.main+?>: dup.x32 sp(1)
 	<.main+?>: jmp +6
 	<.main+?>: dup.x32 sp(0)
-	<.main+?>: set.x32 sp(2)
-	<.main+?>: inc.sp(-4)
+	<.main+?>: mov.x32 sp(2, 0)
+	<.main+?>: inc.sp(-8)
 	<.main+?>: load.c32 8
 	<.main+?>: dup.x32 sp(1)
 	<.main+?>: dup.x32 sp(1)
@@ -20513,9 +20518,9 @@ testMathAbsMod_f32_8d: float32 {
 	<.main+?>: dup.x32 sp(1)
 	<.main+?>: jmp +6
 	<.main+?>: dup.x32 sp(0)
-	<.main+?>: set.x32 sp(2)
-	<.main+?>: inc.sp(-4)
-	cmplStd/test/lang/inlineMacros.ci:70: (77 bytes): maxRlVar: int32 := maxLr(i3, i6, i2, i8)
+	<.main+?>: mov.x32 sp(2, 0)
+	<.main+?>: inc.sp(-8)
+	cmplStd/test/lang/inlineMacros.ci:70: (80 bytes): maxRlVar: int32 := maxLr(i3, i6, i2, i8)
 	<.main+?>: dup.x32 sp(41)
 	<.main+?>: dup.x32 sp(41)
 	<.main+?>: dup.x32 sp(41)
@@ -20527,8 +20532,8 @@ testMathAbsMod_f32_8d: float32 {
 	<.main+?>: dup.x32 sp(1)
 	<.main+?>: jmp +6
 	<.main+?>: dup.x32 sp(0)
-	<.main+?>: set.x32 sp(2)
-	<.main+?>: inc.sp(-4)
+	<.main+?>: mov.x32 sp(2, 0)
+	<.main+?>: inc.sp(-8)
 	<.main+?>: dup.x32 sp(1)
 	<.main+?>: dup.x32 sp(1)
 	<.main+?>: cgt.i32
@@ -20536,8 +20541,8 @@ testMathAbsMod_f32_8d: float32 {
 	<.main+?>: dup.x32 sp(1)
 	<.main+?>: jmp +6
 	<.main+?>: dup.x32 sp(0)
-	<.main+?>: set.x32 sp(2)
-	<.main+?>: inc.sp(-4)
+	<.main+?>: mov.x32 sp(2, 0)
+	<.main+?>: inc.sp(-8)
 	<.main+?>: dup.x32 sp(1)
 	<.main+?>: dup.x32 sp(1)
 	<.main+?>: cgt.i32
@@ -20545,9 +20550,9 @@ testMathAbsMod_f32_8d: float32 {
 	<.main+?>: dup.x32 sp(1)
 	<.main+?>: jmp +6
 	<.main+?>: dup.x32 sp(0)
-	<.main+?>: set.x32 sp(2)
-	<.main+?>: inc.sp(-4)
-	cmplStd/test/lang/inlineMacros.ci:71: (77 bytes): maxLrVar: int32 := maxRl(i3, i6, i2, i8)
+	<.main+?>: mov.x32 sp(2, 0)
+	<.main+?>: inc.sp(-8)
+	cmplStd/test/lang/inlineMacros.ci:71: (80 bytes): maxLrVar: int32 := maxRl(i3, i6, i2, i8)
 	<.main+?>: dup.x32 sp(42)
 	<.main+?>: dup.x32 sp(42)
 	<.main+?>: dup.x32 sp(1)
@@ -20557,8 +20562,8 @@ testMathAbsMod_f32_8d: float32 {
 	<.main+?>: dup.x32 sp(1)
 	<.main+?>: jmp +6
 	<.main+?>: dup.x32 sp(0)
-	<.main+?>: set.x32 sp(2)
-	<.main+?>: inc.sp(-4)
+	<.main+?>: mov.x32 sp(2, 0)
+	<.main+?>: inc.sp(-8)
 	<.main+?>: dup.x32 sp(41)
 	<.main+?>: dup.x32 sp(1)
 	<.main+?>: dup.x32 sp(1)
@@ -20567,8 +20572,8 @@ testMathAbsMod_f32_8d: float32 {
 	<.main+?>: dup.x32 sp(1)
 	<.main+?>: jmp +6
 	<.main+?>: dup.x32 sp(0)
-	<.main+?>: set.x32 sp(2)
-	<.main+?>: inc.sp(-4)
+	<.main+?>: mov.x32 sp(2, 0)
+	<.main+?>: inc.sp(-8)
 	<.main+?>: dup.x32 sp(40)
 	<.main+?>: dup.x32 sp(1)
 	<.main+?>: dup.x32 sp(1)
@@ -20577,9 +20582,9 @@ testMathAbsMod_f32_8d: float32 {
 	<.main+?>: dup.x32 sp(1)
 	<.main+?>: jmp +6
 	<.main+?>: dup.x32 sp(0)
-	<.main+?>: set.x32 sp(2)
-	<.main+?>: inc.sp(-4)
-	cmplStd/test/lang/inlineMacros.ci:72: (97 bytes): maxRlXpr: int32 := maxLr(i3 + 1, i6 + 1, i2 + 1, i8 + 1) - 1
+	<.main+?>: mov.x32 sp(2, 0)
+	<.main+?>: inc.sp(-8)
+	cmplStd/test/lang/inlineMacros.ci:72: (100 bytes): maxRlXpr: int32 := maxLr(i3 + 1, i6 + 1, i2 + 1, i8 + 1) - 1
 	<.main+?>: dup.x32 sp(43)
 	<.main+?>: inc.i32(+1)
 	<.main+?>: dup.x32 sp(43)
@@ -20595,8 +20600,8 @@ testMathAbsMod_f32_8d: float32 {
 	<.main+?>: dup.x32 sp(1)
 	<.main+?>: jmp +6
 	<.main+?>: dup.x32 sp(0)
-	<.main+?>: set.x32 sp(2)
-	<.main+?>: inc.sp(-4)
+	<.main+?>: mov.x32 sp(2, 0)
+	<.main+?>: inc.sp(-8)
 	<.main+?>: dup.x32 sp(1)
 	<.main+?>: dup.x32 sp(1)
 	<.main+?>: cgt.i32
@@ -20604,8 +20609,8 @@ testMathAbsMod_f32_8d: float32 {
 	<.main+?>: dup.x32 sp(1)
 	<.main+?>: jmp +6
 	<.main+?>: dup.x32 sp(0)
-	<.main+?>: set.x32 sp(2)
-	<.main+?>: inc.sp(-4)
+	<.main+?>: mov.x32 sp(2, 0)
+	<.main+?>: inc.sp(-8)
 	<.main+?>: dup.x32 sp(1)
 	<.main+?>: dup.x32 sp(1)
 	<.main+?>: cgt.i32
@@ -20613,10 +20618,10 @@ testMathAbsMod_f32_8d: float32 {
 	<.main+?>: dup.x32 sp(1)
 	<.main+?>: jmp +6
 	<.main+?>: dup.x32 sp(0)
-	<.main+?>: set.x32 sp(2)
-	<.main+?>: inc.sp(-4)
+	<.main+?>: mov.x32 sp(2, 0)
+	<.main+?>: inc.sp(-8)
 	<.main+?>: inc.i32(-1)
-	cmplStd/test/lang/inlineMacros.ci:73: (97 bytes): maxLrXpr: int32 := maxRl(i3 + 1, i6 + 1, i2 + 1, i8 + 1) - 1
+	cmplStd/test/lang/inlineMacros.ci:73: (100 bytes): maxLrXpr: int32 := maxRl(i3 + 1, i6 + 1, i2 + 1, i8 + 1) - 1
 	<.main+?>: dup.x32 sp(44)
 	<.main+?>: inc.i32(+1)
 	<.main+?>: dup.x32 sp(44)
@@ -20628,8 +20633,8 @@ testMathAbsMod_f32_8d: float32 {
 	<.main+?>: dup.x32 sp(1)
 	<.main+?>: jmp +6
 	<.main+?>: dup.x32 sp(0)
-	<.main+?>: set.x32 sp(2)
-	<.main+?>: inc.sp(-4)
+	<.main+?>: mov.x32 sp(2, 0)
+	<.main+?>: inc.sp(-8)
 	<.main+?>: dup.x32 sp(43)
 	<.main+?>: inc.i32(+1)
 	<.main+?>: dup.x32 sp(1)
@@ -20639,8 +20644,8 @@ testMathAbsMod_f32_8d: float32 {
 	<.main+?>: dup.x32 sp(1)
 	<.main+?>: jmp +6
 	<.main+?>: dup.x32 sp(0)
-	<.main+?>: set.x32 sp(2)
-	<.main+?>: inc.sp(-4)
+	<.main+?>: mov.x32 sp(2, 0)
+	<.main+?>: inc.sp(-8)
 	<.main+?>: dup.x32 sp(42)
 	<.main+?>: inc.i32(+1)
 	<.main+?>: dup.x32 sp(1)
@@ -20650,8 +20655,8 @@ testMathAbsMod_f32_8d: float32 {
 	<.main+?>: dup.x32 sp(1)
 	<.main+?>: jmp +6
 	<.main+?>: dup.x32 sp(0)
-	<.main+?>: set.x32 sp(2)
-	<.main+?>: inc.sp(-4)
+	<.main+?>: mov.x32 sp(2, 0)
+	<.main+?>: inc.sp(-8)
 	<.main+?>: inc.i32(-1)
 	cmplStd/test/lang/overload.inline.ci:9: (5 bytes): overload1: float32 := overload
 	<.main+?>: load.f32 1.000000
@@ -23196,7 +23201,7 @@ testMathAbsMod_f32_8d: float32 {
 	<.main+?>: call
 	<.main+?>: inc.sp(-8)
 	<.main+?>: neg.f64
-	cmplStd/test/std/test.math.ci:36: (25 bytes): testMathSign_1F: float64 := Math.sign(0.200000)
+	cmplStd/test/std/test.math.ci:36: (26 bytes): testMathSign_1F: float64 := Math.sign(0.200000)
 	<.main+?>: load.f64 0.200000
 	<.main+?>: dup.x64 sp(0)
 	<.main+?>: load.z64
@@ -23205,10 +23210,10 @@ testMathAbsMod_f32_8d: float32 {
 	<.main+?>: load.z64
 	<.main+?>: clt.f64
 	<.main+?>: sub.i32
-	<.main+?>: set.x32 sp(2)
-	<.main+?>: inc.sp(-4)
+	<.main+?>: mov.x32 sp(2, 0)
+	<.main+?>: inc.sp(-8)
 	<.main+?>: i32.2f64
-	cmplStd/test/std/test.math.ci:37: (17 bytes): testMathSign_2F: float64 := Math.sign(0.000000)
+	cmplStd/test/std/test.math.ci:37: (18 bytes): testMathSign_2F: float64 := Math.sign(0.000000)
 	<.main+?>: load.z64
 	<.main+?>: dup.x64 sp(0)
 	<.main+?>: load.z64
@@ -23217,10 +23222,10 @@ testMathAbsMod_f32_8d: float32 {
 	<.main+?>: load.z64
 	<.main+?>: clt.f64
 	<.main+?>: sub.i32
-	<.main+?>: set.x32 sp(2)
-	<.main+?>: inc.sp(-4)
+	<.main+?>: mov.x32 sp(2, 0)
+	<.main+?>: inc.sp(-8)
 	<.main+?>: i32.2f64
-	cmplStd/test/std/test.math.ci:38: (25 bytes): testMathSign_3F: float64 := Math.sign(-0.900000)
+	cmplStd/test/std/test.math.ci:38: (26 bytes): testMathSign_3F: float64 := Math.sign(-0.900000)
 	<.main+?>: load.f64 -0.900000
 	<.main+?>: dup.x64 sp(0)
 	<.main+?>: load.z64
@@ -23229,8 +23234,8 @@ testMathAbsMod_f32_8d: float32 {
 	<.main+?>: load.z64
 	<.main+?>: clt.f64
 	<.main+?>: sub.i32
-	<.main+?>: set.x32 sp(2)
-	<.main+?>: inc.sp(-4)
+	<.main+?>: mov.x32 sp(2, 0)
+	<.main+?>: inc.sp(-8)
 	<.main+?>: i32.2f64
 	cmplStd/test/std/test.math.ci:39: (17 bytes): testMathSign_1f: float64 := Math.sign(0.200000)
 	<.main+?>: load.f32 0.200000
@@ -23334,7 +23339,7 @@ testMathAbsMod_f32_8d: float32 {
 	<.main+?>: dup.x32 sp(0)
 	<.main+?>: set.x32 sp(1)
 	<.main+?>: f32.2f64
-	cmplStd/test/std/test.math.ci:50: (34 bytes): testMathMin_1f: float64 := Math.min(1.000000, 2.000000)
+	cmplStd/test/std/test.math.ci:50: (35 bytes): testMathMin_1f: float64 := Math.min(1.000000, 2.000000)
 	<.main+?>: load.f32 1.000000
 	<.main+?>: load.f32 2.000000
 	<.main+?>: dup.x32 sp(1)
@@ -23344,10 +23349,10 @@ testMathAbsMod_f32_8d: float32 {
 	<.main+?>: dup.x32 sp(1)
 	<.main+?>: jmp +6
 	<.main+?>: dup.x32 sp(0)
-	<.main+?>: set.x32 sp(2)
-	<.main+?>: inc.sp(-4)
+	<.main+?>: mov.x32 sp(2, 0)
+	<.main+?>: inc.sp(-8)
 	<.main+?>: f32.2f64
-	cmplStd/test/std/test.math.ci:51: (34 bytes): testMathMax_2f: float64 := Math.max(1.000000, 2.000000)
+	cmplStd/test/std/test.math.ci:51: (35 bytes): testMathMax_2f: float64 := Math.max(1.000000, 2.000000)
 	<.main+?>: load.f32 1.000000
 	<.main+?>: load.f32 2.000000
 	<.main+?>: dup.x32 sp(1)
@@ -23357,10 +23362,10 @@ testMathAbsMod_f32_8d: float32 {
 	<.main+?>: dup.x32 sp(1)
 	<.main+?>: jmp +6
 	<.main+?>: dup.x32 sp(0)
-	<.main+?>: set.x32 sp(2)
-	<.main+?>: inc.sp(-4)
+	<.main+?>: mov.x32 sp(2, 0)
+	<.main+?>: inc.sp(-8)
 	<.main+?>: f32.2f64
-	cmplStd/test/std/test.math.ci:52: (41 bytes): testMathMin_1F: float64 := Math.min(1.000000, 2.000000)
+	cmplStd/test/std/test.math.ci:52: (42 bytes): testMathMin_1F: float64 := Math.min(1.000000, 2.000000)
 	<.main+?>: load.f64 1.000000
 	<.main+?>: load.f64 2.000000
 	<.main+?>: dup.x64 sp(2)
@@ -23370,9 +23375,9 @@ testMathAbsMod_f32_8d: float32 {
 	<.main+?>: dup.x64 sp(2)
 	<.main+?>: jmp +6
 	<.main+?>: dup.x64 sp(0)
-	<.main+?>: set.x64 sp(4)
-	<.main+?>: inc.sp(-8)
-	cmplStd/test/std/test.math.ci:53: (41 bytes): testMathMax_2F: float64 := Math.max(1.000000, 2.000000)
+	<.main+?>: mov.x64 sp(4, 0)
+	<.main+?>: inc.sp(-16)
+	cmplStd/test/std/test.math.ci:53: (42 bytes): testMathMax_2F: float64 := Math.max(1.000000, 2.000000)
 	<.main+?>: load.f64 1.000000
 	<.main+?>: load.f64 2.000000
 	<.main+?>: dup.x64 sp(2)
@@ -23382,8 +23387,8 @@ testMathAbsMod_f32_8d: float32 {
 	<.main+?>: dup.x64 sp(2)
 	<.main+?>: jmp +6
 	<.main+?>: dup.x64 sp(0)
-	<.main+?>: set.x64 sp(4)
-	<.main+?>: inc.sp(-8)
+	<.main+?>: mov.x64 sp(4, 0)
+	<.main+?>: inc.sp(-16)
 	cmplStd/test/std/test.math.ci:55: (23 bytes): testMathClamp_1f: float64 := Math.clamp(10.000000, 0.000000, 1.000000)
 	<.main+?>: load.z32
 	<.main+?>: load.f32 10.000000
@@ -24759,19 +24764,19 @@ cmplStd/test/std/test.math.ci:118: testMathAbsMod_f32_8c: float32(8.000000)
 cmplStd/test/std/test.math.ci:119: testMathAbsMod_f32_8d: float32(8.000000)
 
 ---------- Memory usage:
-memory[all] @000000; size: 8388320(8.0 Mb)
-memory[used] @000000; size: 431516(421.4 Kb)
-memory[heap] @06959c; size: 5859676(5.6 Mb)
-memory[stack] @3fff40; size: 2097080(2.0 Mb)
+memory[all] @000000; size: 134217440(128.0 Mb)
+memory[used] @000000; size: 431597(421.5 Kb)
+memory[heap] @0695ed; size: 100231435(95.6 Mb)
+memory[stack] @3ffff40; size: 33554360(32.0 Mb)
 
 ---------- Used memory:
 memory[meta] @000000; size: 413880(404.2 Kb)
-memory[code] @000000; size: 17277(16.9 Kb)
+memory[code] @000000; size: 17358(17.0 Kb)
 memory[data] @000000; size: 128(128.0 bytes)
 
 ---------- Heap memory:
-memory[used] @0695b0; size: 32(32.0 bytes)
-memory[used] @0695e0; size: 32(32.0 bytes)
-memory[free] @069610; size: 5859536(5.6 Mb)
+memory[used] @069600; size: 32(32.0 bytes)
+memory[used] @069630; size: 32(32.0 bytes)
+memory[free] @069660; size: 100231296(95.6 Mb)
 
 ---------- Exitcode: 0, time: 0.000 ms

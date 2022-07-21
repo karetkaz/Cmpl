@@ -29,8 +29,8 @@ if [ -n "$BIN_WCC" ] && [ -d "$WATCOM" ]; then
 fi
 
 # test the virtual machine
-$BIN_WCC/cmpl --test-vm
-if ! $BIN/cmpl --test-vm; then
+$BIN_WCC/cmpl>"$BIN_WCC-vm.dump.md" --test-vm
+if ! $BIN/cmpl>extras/dump/vm.dump.md --test-vm; then
 	echo "virtual machine test failed"
 	exit 1
 fi
@@ -42,7 +42,6 @@ if ! $BIN/cmpl -dump.scite extras/cmpl.api "$BIN/libFile.so" "$BIN/libGfx.so"; t
 fi
 
 # create reference todo: cmpl -doc.md extras/Cmpl.md cmplStd/doc/cmpl.ci
-$BIN/cmpl>temp/Instructions.md --dump-vm
 rm extras/Cmpl.md
 DOC_FILES="$CMPL_HOME/extras/docs/*.md"
 printf '%s\n' $DOC_FILES | while read file; do
@@ -68,6 +67,14 @@ $BIN/cmpl -X+steps+fold+fast-stdin-glob-offsets -debug/G/M -api/A/m/d/p -asm/n/s
 $BIN/cmpl -X-stdin+steps -profile/t/P/G/M -api/A/m/d/p -asm/g/n/s -ast/t -doc -use -log/d/15 "extras/dump/test.prof.ci" "cmplStd/test/test.ci"
 # dump profile data in json format
 $BIN/cmpl -X-stdin-steps -profile/t/P/G/M -api/A/m/d/p -asm/g/n/s -ast/t -doc -use -dump.json "extras/dump/test.prof.json" "cmplStd/test/test.ci"
+
+#exit 0
+
+DUMP_FILE=$BIN.antlr.dump.ci
+rm "$DUMP_FILE"
+find "$CMPL_HOME/cmplStd" -type f -name '*.ci' -exec cat {} \;>>"$DUMP_FILE"
+find "$CMPL_HOME/cmplGfx" -type f -name '*.ci' -exec cat {} \;>>"$DUMP_FILE"
+find "$CMPL_HOME/cmplFile" -type f -name '*.ci' -exec cat {} \;>>"$DUMP_FILE"
 
 TEST_FILES="$CMPL_HOME/cmplStd/test/test.ci"
 TEST_FILES="$TEST_FILES $(echo $CMPL_HOME/cmplStd/test/demo/*.ci)"

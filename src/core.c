@@ -535,7 +535,7 @@ static void install_emit(ccContext cc, ccInstall mode) {
 			ccDefOpCode(cc, "i32", type_i32, i32_mul, 0);
 			ccDefOpCode(cc, "i64", type_i64, i64_mul, 0);
 			ccDefOpCode(cc, "u32", type_u32, u32_mul, 0);
-			ccDefOpCode(cc, "u64", type_u32, u64_mul, 0);
+			ccDefOpCode(cc, "u64", type_u64, u64_mul, 0);
 			ccDefOpCode(cc, "f32", type_f32, f32_mul, 0);
 			ccDefOpCode(cc, "f64", type_f64, f64_mul, 0);
 			ccDefOpCode(cc, "p4f", type_p4x, v4f_mul, 0);
@@ -546,7 +546,7 @@ static void install_emit(ccContext cc, ccInstall mode) {
 			ccDefOpCode(cc, "i32", type_i32, i32_div, 0);
 			ccDefOpCode(cc, "i64", type_i64, i64_div, 0);
 			ccDefOpCode(cc, "u32", type_u32, u32_div, 0);
-			ccDefOpCode(cc, "u64", type_u32, u64_div, 0);
+			ccDefOpCode(cc, "u64", type_u64, u64_div, 0);
 			ccDefOpCode(cc, "f32", type_f32, f32_div, 0);
 			ccDefOpCode(cc, "f64", type_f64, f64_div, 0);
 			ccDefOpCode(cc, "p4f", type_p4x, v4f_div, 0);
@@ -557,7 +557,7 @@ static void install_emit(ccContext cc, ccInstall mode) {
 			ccDefOpCode(cc, "i32", type_i32, i32_mod, 0);
 			ccDefOpCode(cc, "i64", type_i64, i64_mod, 0);
 			ccDefOpCode(cc, "u32", type_u32, u32_mod, 0);
-			ccDefOpCode(cc, "u64", type_u32, u64_mod, 0);
+			ccDefOpCode(cc, "u64", type_u64, u64_mod, 0);
 			ccDefOpCode(cc, "f32", type_f32, f32_mod, 0);
 			ccDefOpCode(cc, "f64", type_f64, f64_mod, 0);
 			ccEnd(cc, opc);

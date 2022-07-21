@@ -159,15 +159,14 @@ static int decrementStackAccess(rtContext rt, size_t offsBegin, size_t offsEnd, 
 	return 1;
 }
 
-int foldAssignment(rtContext rt, size_t stkBegin, size_t offsBegin, size_t offsEnd) {
+int foldAssignment(rtContext rt, size_t offsBegin, size_t offsEnd) {
 	vmValue arg = {0};
 	vmValue argSet = {0};
-	uint64_t stkMax = stkBegin / vm_stk_align;
 	if (testOcp(rt, offsBegin, opc_dup1, &arg)) {
 		if (!testOcp(rt, offsEnd, opc_set1, &argSet)) {
 			return 0;
 		}
-		if (offsEnd - offsBegin == 2) {
+		if (offsEnd - offsBegin == 2 && emit(rt, markIP) - offsEnd == 2) {
 			if (!removeInstruction(rt, offsEnd)) {
 				fatal(ERR_INTERNAL_ERROR": %.*A", offsEnd, vmPointer(rt, offsEnd));
 				return 0;
@@ -176,13 +175,9 @@ int foldAssignment(rtContext rt, size_t stkBegin, size_t offsBegin, size_t offsE
 				fatal(ERR_INTERNAL_ERROR": %.*A", offsEnd, vmPointer(rt, offsEnd));
 				return 0;
 			}
-			if (arg.u08 != 0 || argSet.u08 < stkMax) {
-				arg.p128.u08[1] = arg.u08;
-				arg.p128.u08[0] = argSet.u08 - 1;
-				return emitOpc(rt, opc_mov1, arg);
-			}
-			argSet.u08 -= 1;
-			return emitOpc(rt, opc_set1, argSet);
+			arg.p128.u08[1] = arg.u08;
+			arg.p128.u08[0] = argSet.u08 - 1;
+			return emitOpc(rt, opc_mov1, arg);
 		}
 
 		if (arg.u08 != 0 || argSet.u08 != 1) {
@@ -206,7 +201,7 @@ int foldAssignment(rtContext rt, size_t stkBegin, size_t offsBegin, size_t offsE
 		if (!testOcp(rt, offsEnd, opc_set2, &argSet)) {
 			return 0;
 		}
-		if (offsEnd - offsBegin == 2) {
+		if (offsEnd - offsBegin == 2 && emit(rt, markIP) - offsEnd == 2) {
 			if (!removeInstruction(rt, offsEnd)) {
 				fatal(ERR_INTERNAL_ERROR": %.*A", offsEnd, vmPointer(rt, offsEnd));
 				return 0;
@@ -215,13 +210,9 @@ int foldAssignment(rtContext rt, size_t stkBegin, size_t offsBegin, size_t offsE
 				fatal(ERR_INTERNAL_ERROR": %.*A", offsEnd, vmPointer(rt, offsEnd));
 				return 0;
 			}
-			if (arg.u08 != 0 || argSet.u08 < stkMax) {
-				arg.p128.u08[1] = arg.u08;
-				arg.p128.u08[0] = argSet.u08 - 2;
-				return emitOpc(rt, opc_mov2, arg);
-			}
-			argSet.u08 -= 2;
-			return emitOpc(rt, opc_set2, argSet);
+			arg.p128.u08[1] = arg.u08;
+			arg.p128.u08[0] = argSet.u08 - 2;
+			return emitOpc(rt, opc_mov2, arg);
 		}
 
 		if (arg.u08 != 0 || argSet.u08 != 2) {
@@ -245,7 +236,7 @@ int foldAssignment(rtContext rt, size_t stkBegin, size_t offsBegin, size_t offsE
 		if (!testOcp(rt, offsEnd, opc_set4, &argSet)) {
 			return 0;
 		}
-		if (offsEnd - offsBegin == 2) {
+		if (offsEnd - offsBegin == 2 && emit(rt, markIP) - offsEnd == 2) {
 			if (!removeInstruction(rt, offsEnd)) {
 				fatal(ERR_INTERNAL_ERROR": %.*A", offsEnd, vmPointer(rt, offsEnd));
 				return 0;
@@ -254,13 +245,9 @@ int foldAssignment(rtContext rt, size_t stkBegin, size_t offsBegin, size_t offsE
 				fatal(ERR_INTERNAL_ERROR": %.*A", offsEnd, vmPointer(rt, offsEnd));
 				return 0;
 			}
-			if (arg.u08 != 0 || argSet.u08 < stkMax) {
-				arg.p128.u08[1] = arg.u08;
-				arg.p128.u08[0] = argSet.u08 - 4;
-				return emitOpc(rt, opc_mov4, arg);
-			}
-			argSet.u08 -= 4;
-			return emitOpc(rt, opc_set4, argSet);
+			arg.p128.u08[1] = arg.u08;
+			arg.p128.u08[0] = argSet.u08 - 4;
+			return emitOpc(rt, opc_mov4, arg);
 		}
 
 		if (arg.u08 != 0 || argSet.u08 != 4) {
@@ -1372,6 +1359,26 @@ size_t emitOpc(rtContext rt, vmOpcode opc, vmValue arg) {
 			if (arg.i64 == 0) {
 				return rt->_beg - rt->_mem;
 			}
+			if (!rt->foldInstr) {
+				break;
+			}
+			ip = lastIp(rt);
+			if (ip->opc == opc_mov1 && ip->mov.src == 0 && arg.i64 == -4) {
+				rt->_beg = (memptr) ip;
+				arg.i32 = ip->mov.dst;
+				opc = opc_set1;
+			}
+			if (ip->opc == opc_mov2 && ip->mov.src == 0 && arg.i64 == -8) {
+				rt->_beg = (memptr) ip;
+				arg.i32 = ip->mov.dst;
+				opc = opc_set2;
+			}
+			if (ip->opc == opc_mov4 && ip->mov.src == 0 && arg.i64 == -16) {
+				rt->_beg = (memptr) ip;
+				arg.i32 = ip->mov.dst;
+				opc = opc_set4;
+			}
+
 			/* TODO: merge stack allocations
 			ip = lastIp(rt);
 			if (ip->opc == opc_spc) {

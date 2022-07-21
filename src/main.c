@@ -1472,6 +1472,10 @@ static vmError conDebug(dbgContext ctx, vmError error, size_t ss, void *stack, s
 static void dumpVmOpc(const char *error, const struct opcodeRec *info) {
 	FILE *out = stdout;
 	printFmt(out, NULL, "### Instruction `%s`\n", info->name);
+	if (error != NULL) {
+		printFmt(out, NULL, "Error: `%s`\n\n", error);
+		return;
+	}
 	printFmt(out, NULL, "\nPerforms [todo]\n");
 	printFmt(out, NULL, "\n* Instruction code: `0x%02x`", info->code);
 	printFmt(out, NULL, "\n* Instruction length: %d byte%?c", info->size, info->size == 1 ? 0 : 's');
@@ -1490,13 +1494,6 @@ static void dumpVmOpc(const char *error, const struct opcodeRec *info) {
 
 	printFmt(out, NULL, "\n```\n[todo]\n```\n");
 	printFmt(out, NULL, "\n");
-	(void) error;
-}
-static void testVmOpc(const char *error, const struct opcodeRec *info) {
-	if (error == NULL) {
-		return;
-	}
-	printFmt(stdout, NULL, "%s: %s\n", error, info->name);
 }
 
 static int usage() {
@@ -1618,9 +1615,6 @@ int main(int argc, char *argv[]) {
 			return usage();
 		}
 		if (strcmp(argv[1], "--test-vm") == 0) {
-			return vmSelfTest(testVmOpc);
-		}
-		if (strcmp(argv[1], "--dump-vm") == 0) {
 			return vmSelfTest(dumpVmOpc);
 		}
 	}
@@ -1655,8 +1649,8 @@ int main(int argc, char *argv[]) {
 		.warnLevel = 5,
 		.raiseLevel = 15,
 
-		// 8 Mb memory compiler + runtime
-		.memory = 8 << 20
+		// 128 Mb memory compiler + runtime
+		.memory = 128 << 20
 	};
 
 	const char *stdlib = STDLIB;

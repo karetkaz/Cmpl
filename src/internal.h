@@ -355,12 +355,11 @@ static inline astn chainArgs(astn args) {
  * replace `dup 0`, `set x` with a single `set x` instruction
  *
  * @param Runtime context.
- * @param stkBegin Begin of stack.
  * @param offsBegin Begin of the byte code.
  * @param offsEnd End of the byte code.
  * @return non zero if the code was optimized.
  */
-int foldAssignment(rtContext rt, size_t stkBegin, size_t offsBegin, size_t offsEnd);
+int foldAssignment(rtContext rt, size_t offsBegin, size_t offsEnd);
 
 /**
  * Test the virtual machine instruction set(compare implementation with definition `OPCODE_DEF`).

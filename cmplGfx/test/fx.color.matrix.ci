@@ -13,96 +13,174 @@
 Image back = Image("asset/image/forest.jpg");
 Image offs = Image(back);
 
-mat4f colorMatrix(float brightness, float saturation, float contrast, float temp, float tint, float hue) {
-	static mat4f brightnessMat(float val) {
-		/*return {
-			x: vec4f(1 + val, 0, 0, 0);
-			y: vec4f(0, 1 + val, 0, 0);
-			z: vec4f(0, 0, 1 + val, 0);
-			w: vec4f(0, 0, 0,  1);
-		};*/
-		return {
-			x: vec4f(1, 0, 0, val);
-			y: vec4f(0, 1, 0, val);
-			z: vec4f(0, 0, 1, val);
-			w: vec4f(0, 0, 0,  1.);
-		};
-	}
+static struct ColorMatrix {
 
-	static mat4f saturationMat(float val) {
-		//~ val between 0, 3
-		const float inv = 1 - val;
-		const float R = .213f * inv;
-		const float G = .715f * inv;
-		const float B = .072f * inv;
+mat4f brightness(float val) {
+	return {
+		x: vec4f(1, 0, 0, val);
+		y: vec4f(0, 1, 0, val);
+		z: vec4f(0, 0, 1, val);
+		w: vec4f(0, 0, 0,  1.);
+	};
+}
+mat4f exposure(float val) {
+	// based on: https://stackoverflow.com/questions/22427424/image-processing-exposure-effect-on-image
+	return {
+		x: vec4f(1 + val, 0, 0, 0);
+		y: vec4f(0, 1 + val, 0, 0);
+		z: vec4f(0, 0, 1 + val, 0);
+		w: vec4f(0, 0, 0,  1);
+	};
+}
+mat4f saturation(float val) {
+	const float inv = 1 - val;
+	const float R = .213f * inv;
+	const float G = .715f * inv;
+	const float B = .072f * inv;
 
-		return {
-			x: vec4f(R + val, G, B, 0.);
-			y: vec4f(R, G + val, B, 0.);
-			z: vec4f(R, G, B + val, 0.);
-			w: vec4f(0., 0., 0., 1.);
-		};
-	}
+	return {
+		x: vec4f(R + val, G, B, 0.);
+		y: vec4f(R, G + val, B, 0.);
+		z: vec4f(R, G, B + val, 0.);
+		w: vec4f(0., 0., 0., 1.);
+	};
+}
+mat4f contrast(float val) {
+	float32 c = val;
+	float32 t = (1 - c) / 2;
 
-	static mat4f contrastMat(float val) {
-		float32 c = val;
-		float32 t = (1 - c) / 2;
+	return {
+		x: vec4f(c, 0, 0, t);
+		y: vec4f(0, c, 0, t);
+		z: vec4f(0, 0, c, t);
+		w: vec4f(0, 0, 0, 1);
+	};
+}
+mat4f warmth(float val) {
+	return {
+		x: vec4f(1 + val, 0, 0, 0);
+		y: vec4f(0, 1, 0, 0);
+		z: vec4f(0, 0, 1 - val, 0);
+		w: vec4f(0, 0, 0, 1);
+	};
+}
+mat4f tint(float val) {
+	return {
+		x: vec4f(1 + val, 0, 0, 0);
+		y: vec4f(0, 1, 0, 0);
+		z: vec4f(0, 0, 1 + val, 0);
+		w: vec4f(0, 0, 0, 1);
+	};
+}
+mat4f hue(float val) {
+	//~ assert(val >= 0 && val <= 2 * Math.pi);
+	inline lR = 0.213;
+	inline lG = 0.715;
+	inline lB = 0.072;
+	float cV = val.cos();
+	float sV = val.sin();
+	return {
+		x: vec4f(lR+cV*(1-lR)+sV*(   -lR), lG+cV*(   -lG)+sV*( -lG), lB+cV*( -lB)+sV*(1 - lB),0.);
+		y: vec4f(lR+cV*(0-lR)+sV*(0.1430), lG+cV*(1 - lG)+sV*(0.14), lB+cV*( -lB)+sV*(-0.283),0.);
+		z: vec4f(lR+cV*(0-lR)+sV*(lR - 1), lG+cV*(   -lG)+sV*(  lG), lB+cV*(1-lB)+sV*(    lB),0.);
+		w: vec4f(0., 0., 0., 1.);
+	};
+}
 
-		return {
-			x: vec4f(c, 0, 0, t);
-			y: vec4f(0, c, 0, t);
-			z: vec4f(0, 0, c, t);
-			w: vec4f(0, 0, 0, 1);
-		};
-	}
-
-	static mat4f temperatureMat(float val) {
-		return {
-			x: vec4f(1 + val, 0, 0, 0);
-			y: vec4f(0, 1, 0, 0);
-			z: vec4f(0, 0, 1 - val, 0);
-			w: vec4f(0, 0, 0, 1);
-		};
-	}
-
-	static mat4f tintMat(float val) {
-		return {
-			x: vec4f(1 + val, 0, 0, 0);
-			y: vec4f(0, 1, 0, 0);
-			z: vec4f(0, 0, 1 + val, 0);
-			w: vec4f(0, 0, 0, 1);
-		};
-	}
-
-	static mat4f hueMat(float val) {
-		//~ assert(val >= 0 && val <= 2 * Math.pi);
-		inline lR = 0.213;
-		inline lG = 0.715;
-		inline lB = 0.072;
-		float cV = val.cos();
-		float sV = val.sin();
-		return {
-			x: vec4f(lR+cV*(1-lR)+sV*(   -lR), lG+cV*(   -lG)+sV*( -lG), lB+cV*( -lB)+sV*(1 - lB),0.);
-			y: vec4f(lR+cV*(0-lR)+sV*(0.1430), lG+cV*(1 - lG)+sV*(0.14), lB+cV*( -lB)+sV*(-0.283),0.);
-			z: vec4f(lR+cV*(0-lR)+sV*(lR - 1), lG+cV*(   -lG)+sV*(  lG), lB+cV*(1-lB)+sV*(    lB),0.);
-			w: vec4f(0., 0., 0., 1.);
-		};
-	}
-
-	mat4f result = mat4f(
-		1, 0, 0, 0,
-		0, 1, 0, 0,
-		0, 0, 1, 0,
-		0, 0, 0, 1
-	);
-
-	return result
-		.mul(brightnessMat(brightness))
-		.mul(saturationMat(saturation))
-		.mul(contrastMat(contrast))
-		.mul(temperatureMat(temp))
-		.mul(tintMat(tint))
-		.mul(hueMat(hue));
+// presets
+mat4f identity = mat4f(
+	1, 0, 0, 0,
+	0, 1, 0, 0,
+	0, 0, 1, 0,
+	0, 0, 0, 1
+);
+mat4f invert = mat4f(
+	-1, 0, 0, 1,
+	0, -1, 0, 1,
+	0, 0, -1, 1,
+	0, 0,  0, 1
+);
+mat4f grayScale = mat4f(
+	0.299, 0.587, 0.114, 0,
+	0.299, 0.587, 0.114, 0,
+	0.299, 0.587, 0.114, 0,
+	0, 0, 0, 1
+);
+mat4f blackAndWhite = mat4f(
+	1.5, 1.5, 1.5, -1,
+	1.5, 1.5, 1.5, -1,
+	1.5, 1.5, 1.5, -1,
+	0, 0, 0, 1
+);
+mat4f sepiaColor = mat4f(
+	0.393, 0.769, 0.189, 0,
+	0.349, 0.686, 0.168, 0,
+	0.272, 0.534, 0.131, 0,
+	0, 0, 0, 1
+);
+mat4f technicolor = mat4f(
+	// https://github.com/pixijs/pixi.js/blob/dev/packages/filters/filter-color-matrix/src/ColorMatrixFilter.ts
+	1.9125277891456083, -0.8545344976951645, -0.09155508482755585, 11.793603434377337 / 255,
+	-0.3087833385928097, 1.7658908555458428, -0.10601743074722245, -70.35205161461398 / 255,
+	-0.231103377548616, -0.7501899197440212, 1.847597816108189, 30.950940869491138 / 255,
+	0, 0, 0, 1
+);
+mat4f polaroid = mat4f(
+	// https://github.com/pixijs/pixi.js/blob/dev/packages/filters/filter-color-matrix/src/ColorMatrixFilter.ts
+	1.438, -0.062, -0.062, 0,
+	-0.122, 1.378, -0.122, 0,
+	-0.016, -0.016, 1.483, 0,
+	0, 0, 0, 1
+);
+mat4f kodachrome = mat4f(
+	// https://github.com/pixijs/pixi.js/blob/dev/packages/filters/filter-color-matrix/src/ColorMatrixFilter.ts
+	1.1285582396593525, -0.3967382283601348, -0.03992559172921793, 63.72958762196502 / 255,
+	-0.16404339962244616, 1.0835251566291304, -0.05498805115633132, 24.732407896706203 / 255,
+	-0.16786010706155763, -0.5603416277695248, 1.6014850761964943, 35.62982807460946 / 255,
+	0, 0, 0, 1
+);
+mat4f browni = mat4f(
+	// https://github.com/pixijs/pixi.js/blob/dev/packages/filters/filter-color-matrix/src/ColorMatrixFilter.ts
+	0.5997023498159715, 0.34553243048391263, -0.2708298674538042, 47.43192855600873 / 255,
+	-0.037703249837783157, 0.8609577587992641, 0.15059552388459913, -36.96841498319127 / 255,
+	0.24113635128153335, -0.07441037908422492, 0.44972182064877153, -7.562075277591283 / 255,
+	0, 0, 0, 1
+);
+mat4f vintage = mat4f(
+	// https://github.com/pixijs/pixi.js/blob/dev/packages/filters/filter-color-matrix/src/ColorMatrixFilter.ts
+	0.6279345635605994, 0.3202183420819367, -0.03965408211312453, 9.651285835294123 / 255,
+	0.02578397704808868, 0.6441188644374771, 0.03259127616149294, 7.462829176470591 / 255,
+	0.0466055556782719, -0.0851232987247891, 0.5241648018700465, 5.159190588235296 / 255,
+	0, 0, 0, 1
+);
+mat4f nightVision = mat4f(
+	// https://github.com/skratchdot/color-matrix/blob/master/lib/filters.js
+	0.1, 0.4, 0, 0,
+	0.3, 1, 0.3, 0,
+	0, 0.4, 0.1, 0,
+	0, 0, 0, 1
+);
+mat4f warm = mat4f(
+	// https://github.com/skratchdot/color-matrix/blob/master/lib/filters.js
+	1.06, 0, 0, 0,
+	0, 1.01, 0, 0,
+	0, 0, 0.93, 0,
+	0, 0, 0, 1
+);
+mat4f cool = mat4f(
+	// https://github.com/skratchdot/color-matrix/blob/master/lib/filters.js
+	0.99, 0, 0, 0,
+	0, 0.93, 0, 0,
+	0, 0, 1.08, 0,
+	0, 0, 0, 1
+);
+mat4f lsd = mat4f(
+	// https://github.com/pixijs/pixi.js/blob/dev/packages/filters/filter-color-matrix/src/ColorMatrixFilter.ts
+	2, -0.4, 0.5, 0,
+	-0.5, 2, -0.4, 0,
+	-0.4, -0.5, 3, 0,
+	0, 0, 0, 1
+);
 }
 
 inline "/cmplGfx/lib/micro.ui.ci";
@@ -113,6 +191,12 @@ Histogram histogram = {
 // controls
 Slider brightness = {
 	text: "brightness";
+	minimum: -200;
+	maximum: 200;
+	divisor: 200;
+};
+Slider exposure = {
+	text: "exposure";
 	minimum: -200;
 	maximum: 200;
 	divisor: 200;
@@ -130,8 +214,8 @@ Slider contrast = {
 	maximum: 1000;
 	divisor: 200;
 };
-Slider temp = {
-	text: "temperature";
+Slider warmth = {
+	text: "warmth";
 	minimum: -200;
 	maximum: 200;
 	divisor: 400;
@@ -149,139 +233,9 @@ Slider hue = {
 	divisor: 2;
 };
 
-// presets
-struct PresetButton: Button {
-	// custom button for presets, containing the preset matrix
-	const mat4f data;
-}
-PresetButton original = {
-	text: "original";
-	data: mat4f(
-		1, 0, 0, 0,
-		0, 1, 0, 0,
-		0, 0, 1, 0,
-		0, 0, 0, 1
-	);
+Select preset = {
+	text: "preset";
 };
-PresetButton invert = {
-	text: "invert";
-	data: mat4f(
-		-1, 0, 0, 1,
-		0, -1, 0, 1,
-		0, 0, -1, 1,
-		0, 0,  0, 1
-	);
-};
-PresetButton grayScale = {
-	text: "gray scale";
-	data: mat4f(
-		0.299, 0.587, 0.114, 0,
-		0.299, 0.587, 0.114, 0,
-		0.299, 0.587, 0.114, 0,
-		0, 0, 0, 1
-	);
-};
-PresetButton blackAndWhite = {
-	text: "black & white";
-	data: mat4f(
-		1.5, 1.5, 1.5, -1,
-		1.5, 1.5, 1.5, -1,
-		1.5, 1.5, 1.5, -1,
-		0, 0, 0, 1
-	);
-};
-PresetButton sepiaColor = {
-	text: "sepia color";
-	data: mat4f(
-		0.393, 0.769, 0.189, 0,
-		0.349, 0.686, 0.168, 0,
-		0.272, 0.534, 0.131, 0,
-		0, 0, 0, 1
-	);
-};
-PresetButton technicolor = {
-	text: "technicolor";
-	data: mat4f(// https://github.com/pixijs/pixi.js/blob/dev/packages/filters/filter-color-matrix/src/ColorMatrixFilter.ts
-		1.9125277891456083, -0.8545344976951645, -0.09155508482755585, 11.793603434377337 / 255,
-		-0.3087833385928097, 1.7658908555458428, -0.10601743074722245, -70.35205161461398 / 255,
-		-0.231103377548616, -0.7501899197440212, 1.847597816108189, 30.950940869491138 / 255,
-		0, 0, 0, 1
-	);
-};
-PresetButton polaroid = {
-	text: "polaroid";
-	data: mat4f(// https://github.com/pixijs/pixi.js/blob/dev/packages/filters/filter-color-matrix/src/ColorMatrixFilter.ts
-		1.438, -0.062, -0.062, 0,
-		-0.122, 1.378, -0.122, 0,
-		-0.016, -0.016, 1.483, 0,
-		0, 0, 0, 1
-	);
-};
-PresetButton kodachrome = {
-	text: "kodachrome";
-	data: mat4f(// https://github.com/pixijs/pixi.js/blob/dev/packages/filters/filter-color-matrix/src/ColorMatrixFilter.ts
-		1.1285582396593525, -0.3967382283601348, -0.03992559172921793, 63.72958762196502 / 255,
-		-0.16404339962244616, 1.0835251566291304, -0.05498805115633132, 24.732407896706203 / 255,
-		-0.16786010706155763, -0.5603416277695248, 1.6014850761964943, 35.62982807460946 / 255,
-		0, 0, 0, 1
-	);
-};
-PresetButton browni = {
-	text: "browni";
-	data: mat4f(// https://github.com/pixijs/pixi.js/blob/dev/packages/filters/filter-color-matrix/src/ColorMatrixFilter.ts
-		0.5997023498159715, 0.34553243048391263, -0.2708298674538042, 47.43192855600873 / 255,
-		-0.037703249837783157, 0.8609577587992641, 0.15059552388459913, -36.96841498319127 / 255,
-		0.24113635128153335, -0.07441037908422492, 0.44972182064877153, -7.562075277591283 / 255,
-		0, 0, 0, 1
-	);
-};
-PresetButton vintage = {
-	text: "vintage";
-	data: mat4f(// https://github.com/pixijs/pixi.js/blob/dev/packages/filters/filter-color-matrix/src/ColorMatrixFilter.ts
-		0.6279345635605994, 0.3202183420819367, -0.03965408211312453, 9.651285835294123 / 255,
-		0.02578397704808868, 0.6441188644374771, 0.03259127616149294, 7.462829176470591 / 255,
-		0.0466055556782719, -0.0851232987247891, 0.5241648018700465, 5.159190588235296 / 255,
-		0, 0, 0, 1
-	);
-};
-PresetButton nightVision = {
-	text: "night vision";
-	data: mat4f(// https://github.com/skratchdot/color-matrix/blob/master/lib/filters.js
-		0.1, 0.4, 0, 0,
-		0.3, 1, 0.3, 0,
-		0, 0.4, 0.1, 0,
-		0, 0, 0, 1
-	);
-};
-PresetButton warm = {
-	text: "warm";
-	data: mat4f(// https://github.com/skratchdot/color-matrix/blob/master/lib/filters.js
-		1.06, 0, 0, 0,
-		0, 1.01, 0, 0,
-		0, 0, 0.93, 0,
-		0, 0, 0, 1
-	);
-};
-PresetButton cool = {
-	text: "cool";
-	data: mat4f(// https://github.com/skratchdot/color-matrix/blob/master/lib/filters.js
-		0.99, 0, 0, 0,
-		0, 0.93, 0, 0,
-		0, 0, 1.08, 0,
-		0, 0, 0, 1
-	);
-};
-PresetButton lsd = {
-	text: "lsd";
-	data: mat4f(// https://github.com/pixijs/pixi.js/blob/dev/packages/filters/filter-color-matrix/src/ColorMatrixFilter.ts
-		2, -0.4, 0.5, 0,
-		-0.5, 2, -0.4, 0,
-		-0.4, -0.5, 3, 0,
-		0, 0, 0, 1
-	);
-};
-
-TabPage tabPage = {};
 DebugView debug = {
 	focusable: false;
 	measures: -1;
@@ -294,7 +248,7 @@ int onEvent(Window win&, int action, int button, int x, int y) {
 		return -1;
 	}
 
-	Widget ui = win.widget;
+	FxWidget ui = win.widget.as(FxWidget);
 	if (!win.dispatchEvent(ui, action, button, x, y)) {
 		// event not processed, wait for the next one
 		return 0;
@@ -305,44 +259,52 @@ int onEvent(Window win&, int action, int button, int x, int y) {
 	}
 
 	debug.startTimer();
-	mat4f mat = {
-		xx: 1; xy: 0; xz: 0; xw:0;
-		yx: 0; yy: 1; yz: 0; yw:0;
-		zx: 0; zy: 0; zz: 1; zw:0;
-		wx: 0; wy: 0; wz: 0; ww:1;
-	};
-
-	if (win.hasFocused(brightness, saturation, contrast, temp, tint, hue)) {
-		float b = brightness.valueF64();
-		float s = saturation.valueF64();
-		float c = contrast.valueF64();
-		float h = Math.radians(hue.valueF64());
-		float te = temp.valueF64();
-		float ti = tint.valueF64();
-		mat = colorMatrix(b, s, c, te, ti, h);
+	offs.copy(0, 0, back, null);
+	if (ui.showOriginal) {
+		histogram.update(offs);
+		return win.draw(ui);
 	}
-	else if (PresetButton btn = ui.getFocused().as(PresetButton)) {
-		mat = btn.data;
+
+	mat4f mat = ColorMatrix.identity
+		.mul(ColorMatrix.brightness(brightness.valueF64()))
+		.mul(ColorMatrix.exposure(exposure.valueF64()))
+		.mul(ColorMatrix.saturation(saturation.valueF64()))
+		.mul(ColorMatrix.contrast(contrast.valueF64()))
+		.mul(ColorMatrix.warmth(warmth.valueF64()))
+		.mul(ColorMatrix.tint(tint.valueF64()))
+		.mul(ColorMatrix.hue(Math.radians(hue.valueF64())));
+
+	if (mat4f m& = preset.selectedData().as(mat4f)) {
+		// apply preset
+		mat = mat.mul(m);
 	}
 
 	// apply color matrix
-	offs.copy(0, 0, back, null);
 	offs.colorMat(null, mat);
 	histogram.update(offs);
 	return win.draw(ui);
 }
 
-Gui.showWindow(offs, onEvent, Widget(
+Gui.showWindow(offs, onEvent, FxWidget(
 	histogram,
 
-	null,
-	tabPage.addItems("Controls", Style.fill,
-		brightness, saturation, contrast, temp, tint, hue
-	).addItems("Presets", Style.fill,
-		original, invert, grayScale, blackAndWhite, sepiaColor, technicolor, polaroid,
-		kodachrome, browni, vintage, nightVision, warm, cool, lsd
-	),
+	null, preset
+		.addItem("original", ColorMatrix.identity)
+		.addItem("invert", ColorMatrix.invert)
+		.addItem("grayScale", ColorMatrix.grayScale)
+		.addItem("blackAndWhite", ColorMatrix.blackAndWhite)
+		.addItem("sepiaColor", ColorMatrix.sepiaColor)
+		.addItem("technicolor", ColorMatrix.technicolor)
+		.addItem("polaroid", ColorMatrix.polaroid)
+		.addItem("kodachrome", ColorMatrix.kodachrome)
+		.addItem("browni", ColorMatrix.browni)
+		.addItem("vintage", ColorMatrix.vintage)
+		.addItem("nightVision", ColorMatrix.nightVision)
+		.addItem("warm", ColorMatrix.warm)
+		.addItem("cool", ColorMatrix.cool)
+		.addItem("lsd", ColorMatrix.lsd),
 
+	null, brightness, exposure, saturation, contrast, warmth, tint, hue,
 	null, debug
 ));
 offs.destroy();

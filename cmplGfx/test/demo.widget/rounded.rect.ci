@@ -56,7 +56,7 @@ int onEvent(Window win&, int action, int button, int x, int y) {
 	time.value = System.millis() - start;
 	return win.draw(ui);
 }
-Gui.showWindow(offs, onEvent, Widget(
+Gui.showWindow(offs, onEvent, FxWidget(
 	sldSx, sldSy, sldRx, sldRy,
 	separator, time
 ));

@@ -1122,7 +1122,7 @@ static ccKind genCall(ccContext cc, astn ast) {
 		}
 
 		// optimize generated assignment to a single `set` instruction
-		if (foldAssignment(rt, 0, assignBegin, assignEnd)) {
+		if (foldAssignment(rt, assignBegin, assignEnd)) {
 			debug("assignment optimized: %t", ast);
 		}
 	}
@@ -1987,7 +1987,7 @@ static ccKind genAst(ccContext cc, astn ast, ccKind get) {
 			}
 
 			// optimize assignments.
-			if (rt->foldAssign && foldAssignment(rt, spBegin, ipBegin, codeEnd)) {
+			if (rt->foldAssign && foldAssignment(rt, ipBegin, codeEnd)) {
 				if (get == CAST_vid && stkOffset(rt, 0) < spBegin) {
 					// we probably cleared the stack
 					got = CAST_vid;

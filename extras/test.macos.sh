@@ -15,7 +15,7 @@ if [ -n "$BIN_EMC" ]; then
 fi
 
 # test the virtual machine
-if ! $BIN/cmpl --test-vm; then
+if ! $BIN/cmpl>extras/dump/vm.dump.md --test-vm; then
 	echo "virtual machine test failed"
 	exit 1
 fi

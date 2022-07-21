@@ -21,22 +21,8 @@ enum Platform {
 	// TODO: iOS, tvOS, watchOS,
 
 	/// https://bsd.org
-	// freeBSD, netBSD, openBSD, dragonFlyBSD
+	// TODO: freeBSD, netBSD, openBSD, dragonFlyBSD
 
-	/// Big endian byte order
-	// TODO: BigEndian,
-
-	/// Little endian byte order
-	// TODO: LittleEndian,
+	/// Little / Big endian byte order
+	// TODO: LittleEndian, BigEndian,
 }
-
-/* possible usage of platform:
-static if (System.Platform.WebAssembly != 0) {
-static if (System.Platform.WebAssembly == 64) {
-debug("64 bit WebAssembly platform")
-}
-static if (System.Platform.WebAssembly == 32) {
-debug("32 bit WebAssembly platform")
-}
-debug("WebAssembly platform")
-}*/

@@ -33,6 +33,7 @@ let projects = {
 			'std/math.Trigonometry.ci',
 			'std/memory.ci',
 			'std/number.ci',
+			'std/sys.Platform.ci',
 			'std/test.math.ci',
 			'std/tryExec.ci',
 
@@ -51,6 +52,8 @@ let projects = {
 			'cmplGfx/test/asset/image/heightmap.png',
 			'cmplGfx/test/asset/image/texture.png',
 			'cmplGfx/test/asset/image/texture_nature_01.png',
+			'cmplGfx/test/asset/lut3d/identity.png',
+			'cmplGfx/test/asset/lut3d/obs-guide-lut.png',
 			'cmplGfx/test/asset/mesh/teapot.obj',
 
 			'cmplGfx/test/demo/2d.draw.bezier.ci',
@@ -87,6 +90,7 @@ let projects = {
 			'cmplGfx/test/fx.color.lookup.ci',
 			'cmplGfx/test/fx.color.lookup-ease.ci',
 			'cmplGfx/test/fx.color.lookup-levels.ci',
+			'cmplGfx/test/fx.color.lookup-lut3d.ci',
 			'cmplGfx/test/fx.color.lookup-manual.ci',
 			'cmplGfx/test/fx.color.matrix.ci',
 			'cmplGfx/test/fx.color.select-hsl.ci',
@@ -117,7 +121,7 @@ let projects = {
 	if (indexedDB.databases != null) {
 		workspaceName.innerText = 's';
 		indexedDB.databases().then(function(dbs) {
-			let prefix = '/cmpl/';
+			let prefix = '/workspace-';
 			for (db of dbs) {
 				let name = db.name;
 				if (!name.startsWith(prefix)) {

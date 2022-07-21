@@ -19,7 +19,7 @@ Module.listFiles = function(folders, recursive) {
 					}
 				}
 				if (filepath) {
-					if (filepath.startsWith(cwd)) {
+					if (filepath.startsWith(cwd) && filepath !== cwd) {
 						result.push(filepath.substr(cwd.length));
 					} else {
 						result.push(filepath);
@@ -97,7 +97,7 @@ Module.initWorkspace = function(name, callback) {
 	if (name == null || name === "") {
 		return false;
 	}
-	let prefix = '/cmpl/'
+	let prefix = '/workspace-'
 	if (!name.startsWith(prefix)) {
 		name = prefix + name;
 	}
@@ -124,8 +124,8 @@ Module.openProjectFile = function(data, callBack) {
 			Module.printErr('error: ' + error);
 			return;
 		}
-		if (data.folder == null) {
-			data.folder = Module.workspace;
+		if (data.path == null) {
+			data.path = Module.workspace + '/';
 		}
 		try {
 			// TODO: remove recursive calls
