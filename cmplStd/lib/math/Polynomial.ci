@@ -5,8 +5,8 @@ inline "/cmplStd/lib/system/Stream.ci";
 
 inline scalar = float64;  // fixme: declare inside Polynomial
 struct Polynomial/*(typename scalar)*/: TextWriter.Writeable {
-	scalar elements[*];
-	const int capacity;
+	scalar elements[];
+	int degree = -1;
 
 	enum: scalar {
 		c_zero: 0;
@@ -15,7 +15,7 @@ struct Polynomial/*(typename scalar)*/: TextWriter.Writeable {
 
 	void write(Polynomial this, TextWriter writer) {
 		bool first = true;
-		for (int i = this.capacity - 1; i >= 0; i -= 1) {
+		for (int i = this.elements.length - 1; i >= 0; i -= 1) {
 			if (this.elements[i] == c_zero && !(first && i == 0)) {
 				continue;
 			}
@@ -68,23 +68,25 @@ struct Polynomial/*(typename scalar)*/: TextWriter.Writeable {
 			elements[values.length - i - 1] = values[i];
 		}
 		return {
-			elements: elements;
-			capacity: capacity;
+			elements: elements[...capacity];
 		};
 	}
 
-	static int degree(const Polynomial this&) {
-		for (int i = this.capacity - 1; i > 0; i -= 1) {
+	static int degree(Polynomial this&) {
+		if (this.degree >=  0) {
+			return this.degree;
+		}
+		for (int i = this.elements.length - 1; i > 0; i -= 1) {
 			if (this.elements[i] != c_zero) {
-				return i;
+				return this.degree = i;
 			}
 		}
-		return 0;
+		return this.degree = 0;
 	}
 
 	static scalar evaluate(const Polynomial this&, scalar value) {
 		scalar result = c_zero;
-		for (int i = this.capacity - 1; i >= 0; i -= 1) {
+		for (int i = degree(this); i >= 0; i -= 1) {
 			result = result * value + this.elements[i];
 		}
 		return result;
@@ -92,17 +94,16 @@ struct Polynomial/*(typename scalar)*/: TextWriter.Writeable {
 
 	static scalar get(const Polynomial this&, int index) {
 		assert(index >= 0, "negative index", index);
-		if (index >= this.capacity) {
+		if (index >= this.elements.length) {
 			return c_zero;
 		}
 		return this.elements[index];
 	}
 
-	static scalar set(const Polynomial this&, int index, scalar value) {
-		if (index < 0 || index >= this.capacity) {
-			abort("invalid index", index);
-			return c_zero;
-		}
+	static scalar set(Polynomial this&, int index, scalar value) {
+		assert(index >= 0, "negative index", index);
+		assert(index < this.elements.length, "invalid index");
+		this.degree = -1;
 		return this.elements[index];
 	}
 
@@ -152,7 +153,7 @@ struct Polynomial/*(typename scalar)*/: TextWriter.Writeable {
 
 inline Polynomial(scalar values...) = Polynomial.create(values.length, values);
 
-inline Polynomial(const Polynomial copy&) = Polynomial.create(copy.capacity, copy.elements);
+inline Polynomial(const Polynomial copy&) = Polynomial.create(copy.elements.length, copy.elements);
 
 /* TODO: implement enums, operator overloading
 	enum: Polynomial {

@@ -214,7 +214,7 @@ bool onResetClick(Button view) {
 	return true;
 }
 
-Gui.showWindow(offs, onEvent, Widget(
+Gui.showWindow(offs, onEvent, FxWidget(
 	histogram,
 	null, sldBlur, sldSharpness,
 	null, btnLinear, btnReflect, btnSquare, btnRadial,

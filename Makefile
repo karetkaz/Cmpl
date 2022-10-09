@@ -1,6 +1,5 @@
-BINDIR?=bin
-CC_OUT=$(BINDIR)/obj
-GX_OUT=$(BINDIR)/obj
+BINDIR?=build
+CC_SRC=src
 GX_SRC=cmplGfx/src
 
 CFLAGS=-Wall -Wextra -g0 -O3 -std=gnu99
@@ -39,19 +38,19 @@ else
 endif
 
 SRC_CC=\
-	src/*.h\
-	src/*.inl\
-	src/cgen.c\
-	src/code.c\
-	src/core.c\
-	src/lexer.c\
-	src/lstd.c\
-	src/parser.c\
-	src/platform.c\
-	src/printer.c\
-	src/tree.c\
-	src/type.c\
-	src/utils.c
+	$(CC_SRC)/*.h\
+	$(CC_SRC)/*.inl\
+	$(CC_SRC)/cgen.c\
+	$(CC_SRC)/code.c\
+	$(CC_SRC)/core.c\
+	$(CC_SRC)/lexer.c\
+	$(CC_SRC)/lstd.c\
+	$(CC_SRC)/parser.c\
+	$(CC_SRC)/platform.c\
+	$(CC_SRC)/printer.c\
+	$(CC_SRC)/tree.c\
+	$(CC_SRC)/type.c\
+	$(CC_SRC)/utils.c
 
 SRC_GX=\
 	$(GX_SRC)/*.h\
@@ -64,19 +63,22 @@ SRC_GX=\
 	$(GX_SRC)/g3_mesh.c\
 	$(GX_SRC)/gx_cmpl.c
 
+SRC_GX_X11=$(SRC_GX) $(GX_SRC)/os_linux/gx_gui.x11.c $(CC_SRC)/os_linux/time.c
+SRC_GX_W32=$(SRC_GX) $(GX_SRC)/os_win32/gx_gui.w32.c $(CC_SRC)/os_win32/time.c
+SRC_GX_SDL=$(SRC_GX) $(GX_SRC)/gx_gui.sdl.c $(CC_SRC)/os_linux/time.c
+SRC_CC_EXE=$(SRC_CC) $(CC_SRC)/main.c
 
-SRC_GX_X11=$(SRC_GX) $(GX_SRC)/os_linux/gx_gui.x11.c $(GX_SRC)/os_linux/time.unx.c
-SRC_GX_W32=$(SRC_GX) $(GX_SRC)/os_win32/gx_gui.w32.c $(GX_SRC)/os_win32/time.w32.c
-SRC_GX_SDL=$(SRC_GX) $(GX_SRC)/gx_gui.sdl.c $(GX_SRC)/os_linux/time.unx.c
-SRC_CC_EXE=$(SRC_CC) src/main.c
-cmpl: $(addprefix $(CC_OUT)/, $(notdir $(filter %.o, $(SRC_CC_EXE:%.c=%.o))))
+cmpl: $(addprefix $(BINDIR)/, $(filter %.o, $(SRC_CC_EXE:%.c=%.o)))
 	gcc -o $(BINDIR)/cmpl $^ $(CLIBS)
 
+clean:
+	rm -Rf $(BINDIR)
+
 # Linux platform
-libGfx.so: $(addprefix $(GX_OUT)/, $(notdir $(filter %.o, $(SRC_GX_X11:%.c=%.o))))
+libGfx.so: $(addprefix $(BINDIR)/, $(filter %.o, $(SRC_GX_X11:%.c=%.o)))
 	gcc -fPIC -shared $(CFLAGS) -I src -o $(BINDIR)/libGfx.so $^ $(GXLIBS) -lX11
 
-libGfxSdl.so: $(addprefix $(GX_OUT)/, $(notdir $(filter %.o, $(SRC_GX_SDL:%.c=%.o))))
+libGfxSdl.so: $(addprefix $(BINDIR)/, $(filter %.o, $(SRC_GX_SDL:%.c=%.o)))
 	gcc -fPIC -shared $(CFLAGS) -I src -o $(BINDIR)/libGfx.so $^ $(GXLIBS) -lSDL2
 
 libFile.so: cmplFile/src/file.c
@@ -87,10 +89,10 @@ libOpenGL.so: cmplGL/src/openGL.c
 
 
 # Macos platform
-libGfx11.dylib: $(addprefix $(GX_OUT)/, $(notdir $(filter %.o, $(SRC_GX_X11:%.c=%.o))))
+libGfx11.dylib: $(addprefix $(BINDIR)/, $(filter %.o, $(SRC_GX_X11:%.c=%.o)))
 	gcc -fPIC -shared $(CFLAGS) -I src -o $(BINDIR)/libGfx.dylib $^ $(GXLIBS)g -lX11
 
-libGfx.dylib: $(addprefix $(GX_OUT)/, $(notdir $(filter %.o, $(SRC_GX_SDL:%.c=%.o))))
+libGfx.dylib: $(addprefix $(BINDIR)/, $(filter %.o, $(SRC_GX_SDL:%.c=%.o)))
 	gcc -fPIC -shared $(CFLAGS) -I src -o $(BINDIR)/libGfx.dylib $^ $(GXLIBS) -lSDL2
 
 libFile.dylib: cmplFile/src/file.c
@@ -98,7 +100,7 @@ libFile.dylib: cmplFile/src/file.c
 
 
 # Windows platform
-libGfx.dll: $(addprefix $(GX_OUT)/, $(notdir $(filter %.o, $(SRC_GX_W32:%.c=%.o))))
+libGfx.dll: $(addprefix $(BINDIR)/, $(filter %.o, $(SRC_GX_W32:%.c=%.o)))
 	gcc -shared $(CFLAGS) -I src -o $(BINDIR)/libGfx.dll $^ $(GXLIBS) -lgdi32
 
 libFile.dll: cmplFile/src/file.c
@@ -115,25 +117,17 @@ cmpl.js: $(SRC_CC_EXE) cmplStd/stdlib.ci
 libFile.wasm: cmplFile/src/file.c
 	emcc $(EMFLAGS) -o $(BINDIR)/libFile.wasm -I src $(EM_SIDE_MODULE) $(filter %.c, $^)
 
-libGfx.wasm: $(SRC_GX) $(GX_SRC)/gx_gui.sdl.c $(GX_SRC)/os_linux/time.unx.c
+libGfx.wasm: $(SRC_GX) $(GX_SRC)/gx_gui.sdl.c $(CC_SRC)/os_linux/time.c
 	emcc $(EMFLAGS) -o $(BINDIR)/libGfx.wasm -I src $(EM_SIDE_MODULE) -s USE_SDL=2 $(filter %.c, $^)
 
 cmpl.dbg.js: $(SRC_CC_EXE) cmplStd/stdlib.ci
 	emcc -g3 -O0 -s WASM=0 $(filter %.c, $^) -o $(BINDIR)/cmpl.dbg.js
 
 
-clean:
-	rm -f -R $(BINDIR) $(CC_OUT) $(GX_OUT)
-	mkdir $(MKDIRF) "$(BINDIR)" "$(CC_OUT)" "$(GX_OUT)"
-
-$(CC_OUT)/%.o: src/%.c $(filter-out %.c, $(SRC_CC_EXE))
+$(BINDIR)/$(CC_SRC)/%.o: $(CC_SRC)/%.c $(filter-out %.c, $(SRC_CC_EXE))
+	@mkdir $(MKDIRF) "$(@D)" || true
 	gcc $(CFLAGS) -o "$@" -c "$<"
 
-$(GX_OUT)/%.o: $(GX_SRC)/%.c $(filter-out %.c, $(SRC_CC_EXE))
-	gcc $(CFLAGS) -I src -o "$@" -c "$<"
-
-$(GX_OUT)/%.o: $(GX_SRC)/os_win32/%.c $(filter-out %.c, $(SRC_CC_EXE))
-	gcc $(CFLAGS) -I src -o "$@" -c "$<"
-
-$(GX_OUT)/%.o: $(GX_SRC)/os_linux/%.c $(filter-out %.c, $(SRC_CC_EXE))
+$(BINDIR)/$(GX_SRC)/%.o: $(GX_SRC)/%.c $(filter-out %.c, $(SRC_CC_EXE))
+	@mkdir $(MKDIRF) "$(@D)" || true
 	gcc $(CFLAGS) -I src -o "$@" -c "$<"

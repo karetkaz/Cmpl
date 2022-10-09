@@ -1,3 +1,4 @@
+#include <stdint.h>
 #include <Windows.h>
 
 uint64_t timeMillis() {

@@ -150,7 +150,7 @@ bool onResetClick(Button this) {
 	return true;
 }
 
-Gui.showWindow(offs, onEvent, Widget(
+Gui.showWindow(offs, onEvent, FxWidget(
 	histogram, curves,
 
 	null,

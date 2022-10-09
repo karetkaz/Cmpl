@@ -110,7 +110,7 @@ static int onEvent(int action, int button, int x, int y) {
 		};
 		static Window ui = {
 			offscreen: image;
-			widget: Widget(
+			widget: FxWidget(
 				btnAction,
 				sldAction,
 				sldButton,

@@ -2,150 +2,6 @@
 
 inline "micro.ui.core.ci";
 
-Widget Widget(int width, int height, const Style style&) {
-	Widget widget = {
-		rect: {
-			w: width;
-			h: height;
-		};
-		width: width;
-		height: height;
-		style: style;
-		focus: widget;	// focus first visible view
-	};
-	return widget;
-}
-Widget Widget(int width, int height) {
-	static const Style style = {
-		format: { padLen: 5, precision: 2 };
-	};
-	return Widget(width, height, style);
-}
-Widget Widget(View views...) {
-struct Popup: Widget {
-
-	int align = Style.fill;
-	int margin = 0;
-	int radius = 0;
-
-	// forward the drag event to the focused view
-	bool onTouchEvent(Popup this, const Rect rect&, const TouchEvent event&) {
-		if (Widget.onTouchEvent(this, rect, event)) {
-			return true;
-		}
-
-		if (!(event.button && (event.dx || event.dy))) {
-			// event is not a drag event
-			return false;
-		}
-
-		if (this.pressedIndex != -1) {
-			// there is a pressed view, and is different than the focused one
-			return false;
-		}
-
-		View view = Widget.getFocused(this);
-		if (view == null) {
-			// there is no focused view
-			return false;
-		}
-		Layout parent = view.parent.as(Layout);
-		Rect r& = parent.items[parent.focusedIndex].rect;
-		// forward the event to the view
-		return view.onTouchEvent(view, r, event);
-	}
-	bool onKeyEvent(Popup this, const KeyEvent event&) {
-		if (event.release) {
-			return Widget.onKeyEvent(this, event);
-		}
-
-		if (event.key == '[' || event.key == ']') {
-			this.clearState(Style.hovered);
-			// hide, show controls
-			if (event.key == '[') {
-				if (this.align == Style.topLeft) {
-					this.enabled = !this.enabled;
-					this.invalidate();
-					return true;
-				}
-				this.align = Style.topLeft;
-			}
-			if (event.key == ']') {
-				if (this.align == Style.topRight) {
-					this.enabled = !this.enabled;
-					this.invalidate();
-					return true;
-				}
-				this.align = Style.topRight;
-			}
-
-			this.enabled = true;
-			this.measure = true;
-			this.invalidate();
-			return true;
-		}
-
-		if (event.key == 8 && event.isShift) {
-			return this.onReset(this);
-		}
-
-		return Widget.onKeyEvent(this, event);
-	}
-
-	bool onMeasure(Popup this, Rect measured&) {
-		int margin = this.margin;
-		int align = this.align;
-		Rect rect = {
-			x: margin;
-			y: margin;
-			w: measured.w - 2 * margin;
-			h: measured.h - 2 * margin;
-		};
-
-		measured.x = measured.y = 0;
-		Layout.onMeasure(this, &measured);
-		this.onLayout(this, &measured);
-		Style.align(rect, &measured, align);
-		return true;
-	}
-
-	void onDraw(Popup this, Image offs, Rect rect) {
-		offs = offs.slice(rect);
-		Style style& = this.style;
-		if (style.backgroundColor != -1) {
-			Rect r = { w: offs.width(), h: offs.height() };
-			offs.fillRRect(r, this.radius, style.backgroundColor);
-		}
-		Widget.onDraw(this, offs, rect);
-		offs.destroy();
-	}
-}
-
-	static const Style style = {
-		align: Style.left;
-		format: { padLen: 5, precision: 2 };
-	};
-	Popup widget = {
-		rect: {};
-
-		radius: 5;
-		margin: 10;
-		align: Style.topRight;
-
-		paddingTop: 3;
-		paddingLeft: 3;
-		paddingRight: 3;
-		paddingBottom: 3;
-		style: style;
-		focus: widget;	// focus first visible view
-	};
-
-	if (views.length > 0) {
-		widget.addItems(...views);
-	}
-	return widget;
-}
-
 struct Button: View {
 	const char text[*];
 
@@ -856,6 +712,263 @@ struct TabPage: Layout {
 		Layout.addItems(this, Style.fill, page);
 		return this;
 	}
+}
+
+// todo: in progress
+struct Select: Layout {
+	const char text[];
+	char states[*][2]; // fixme: initialize: = {"<", "^"};
+
+	Button selected = null;
+	Switch header = null;
+	Panel panel = null;
+
+	static variant selectedData(Select select) {
+		if (select.selected == null) {
+			return null;
+		}
+		return select.selected.data;
+	}
+
+	static bool expand(Select select, bool value) {
+		// focus the selected option
+		if (value && select.selected != null) {
+			select.selected.focus();
+		} else {
+			select.header.focus();
+		}
+
+		select.header.onUpdate(int(value));
+		select.panel.visible(value);
+		select.invalidate();
+		return true;
+	}
+
+	static bool onItemClick(Select select, Button view) {
+		select.selected = view;
+		select.expand(false);
+		select.states[0] = view.text;
+		return true;
+	}
+
+	static Select setSelectedIndex(Select select, int index) {
+		if (index < 0 || index > select.panel.itemCount) {
+			error("invalid index selected", index);
+			return select;
+		}
+		Button button = select.panel.items[index].view.as(Button);
+		if (button == null) {
+			return select;
+		}
+
+		select.selected = button;
+		select.states[0] = button.text;
+		return select;
+	}
+
+	static Select addItems(Select this, int align, View views...) {
+		struct Header: Switch {
+			const Select select;
+			bool onReset(Header this) {
+				return false;
+			}
+			bool onClick(Header this) {
+				if (!Switch.onClick(this)) {
+					return false;
+				}
+				this.select.expand(this.checked());
+				return true;
+			}
+		}
+		if (this.itemCount == 0) {
+			Header header = {
+				text: this.text;
+				states: this.states;
+				select: this;
+			};
+			Panel panel = {};
+
+			this.states[0] = "<";
+			this.states[1] = "^";
+			this.header = header;
+			this.panel = panel;
+			Layout.addItems(this, align, header, panel);
+		}
+
+		Layout.addItems(this.panel, align, ...views);
+		return this;
+	}
+
+	static Select addItem(Select this, const char text[*], variant data) {
+		struct SelectItem: Button {
+			const Select select;
+			bool onClick(SelectItem this) {
+				return this.select.onItemClick(this);
+			}
+		}
+		SelectItem item = {
+			select: this;
+			text: text;
+			data: data;
+		};
+		Select.addItems(this, Style.fill, item);
+		return this;
+	}
+}
+
+/// Widget used to display controls in image processing demos
+struct FxWidget: Widget {
+	bool showOriginal = false;
+	int align = Style.fill;
+	int margin = 0;
+	int radius = 0;
+
+	// forward the drag event to the focused view
+	bool onTouchEvent(FxWidget this, const Rect rect&, const TouchEvent event&) {
+		if (Widget.onTouchEvent(this, rect, event)) {
+			return true;
+		}
+
+		if (!(event.button && (event.dx || event.dy))) {
+			// event is not a drag event
+			return false;
+		}
+
+		if (this.pressedIndex != -1) {
+			// there is a pressed view, and is different than the focused one
+			return false;
+		}
+
+		View view = Widget.getFocused(this);
+		if (view == null) {
+			// there is no focused view
+			return false;
+		}
+		Layout parent = view.parent.as(Layout);
+		Rect r& = parent.items[parent.focusedIndex].rect;
+		// forward the event to the view
+		return view.onTouchEvent(view, r, event);
+	}
+	bool onKeyEvent(FxWidget this, const KeyEvent event&) {
+		if (event.key == '[' || event.key == ']') {
+			bool changed = this.showOriginal != event.release;
+			this.showOriginal = !event.release && event.repeat != 0 && !this.enabled;
+			// show hide on short and release
+			if (event.repeat != 0 && event.release == this.enabled) {
+				// hide on long press, show on long release
+				return changed;
+			}
+			if (event.repeat == 0 && !event.release) {
+				// show/hide when button is on released, not when pressed
+				return changed;
+			}
+
+			this.clearState(Style.hovered);
+			// hide, show controls
+			if (event.key == '[') {
+				if (this.align == Style.topLeft) {
+					this.enabled = !this.enabled;
+					this.invalidate();
+					return true;
+				}
+				this.align = Style.topLeft;
+			}
+			if (event.key == ']') {
+				if (this.align == Style.topRight) {
+					this.enabled = !this.enabled;
+					this.invalidate();
+					return true;
+				}
+				this.align = Style.topRight;
+			}
+
+			this.enabled = true;
+			this.measure = true;
+			this.invalidate();
+			return true;
+		}
+
+		if (event.release) {
+			return Widget.onKeyEvent(this, event);
+		}
+
+		if (event.key == 8 && event.isShift) {
+			return this.onReset(this);
+		}
+
+		return Widget.onKeyEvent(this, event);
+	}
+
+	bool onMeasure(FxWidget this, Rect measured&) {
+		int margin = this.margin;
+		int align = this.align;
+		Rect rect = {
+			x: margin;
+			y: margin;
+			w: measured.w - 2 * margin;
+			h: measured.h - 2 * margin;
+		};
+
+		measured.x = measured.y = 0;
+		Layout.onMeasure(this, &measured);
+		this.onLayout(this, &measured);
+		Style.align(rect, &measured, align);
+		return true;
+	}
+
+	void onDraw(FxWidget this, Image offs, Rect rect) {
+		offs = offs.slice(rect);
+		Style style& = this.style;
+		if (style.backgroundColor != -1) {
+			Rect r = { w: offs.width(), h: offs.height() };
+			offs.fillRRect(r, this.radius, style.backgroundColor);
+		}
+		Widget.onDraw(this, offs, rect);
+		offs.destroy();
+	}
+}
+
+Widget Widget(int width, int height, const Style style&) {
+	Widget widget = {
+		rect: {
+			w: width;
+			h: height;
+		};
+		width: width;
+		height: height;
+		style: style;
+	};
+	return widget
+		.focus(widget);	// focus first visible view
+}
+Widget Widget(int width, int height) {
+	static const Style style = {
+		format: { padLen: 5, precision: 2 };
+	};
+	return Widget(width, height, style);
+}
+FxWidget FxWidget(View views...) {
+	static const Style style = {
+		align: Style.left;
+		format: { padLen: 5, precision: 2 };
+	};
+	FxWidget widget = {
+		rect: {};
+
+		radius: 5;
+		margin: 10;
+		align: Style.topRight;
+
+		paddingTop: 3;
+		paddingLeft: 3;
+		paddingRight: 3;
+		paddingBottom: 3;
+		style: style;
+	};
+
+	return widget
+		.focus(widget)	// focus first visible view
+		.addItems(...views);
 }
 
 static struct Gui {

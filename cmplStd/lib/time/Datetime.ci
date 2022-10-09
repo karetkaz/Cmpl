@@ -2,6 +2,9 @@ static if (typename(Timeunit) == null) {
 inline "Timeunit.ci";
 }
 static if (typename(Timestamp) == null) {
+inline "Timespan.ci";
+}
+static if (typename(Timestamp) == null) {
 inline "Timestamp.ci";
 }
 static if (typename(Timezone) == null) {
@@ -39,6 +42,24 @@ enum Weekday: uint8 {
 inline Weekday(int index) = Weekday(emit(int32(index + Weekday.Monday)));
 inline indexOf(Weekday value) = int32(value - Weekday.Monday);
 
+enum Calendar: uint8 {
+	Gregorian;
+//	Buddhist;
+//	Chinese;
+//	Coptic;
+//	EthiopicAmeteAlem;
+//	EthiopicAmeteMihret;
+//	Hebrew;
+//	Indian;
+//	Islamic;
+//	IslamicCivil;
+//	IslamicTabular;
+//	IslamicUmmAlQura;
+//	Iso8601;
+//	Japanese;
+//	Persian;
+//	RepublicOfChina;
+}
 struct Datetime {
 	// Date parts
 	const int32 year;			// Year
@@ -116,7 +137,7 @@ struct Datetime {
 	 *  	@null defaults to: "%Y.%m.%d"
 	 *      @see: https://man7.org/linux/man-pages/man1/date.1.html
 	 */
-	static int format(const Datetime value&, char output[], const char format[]) {
+	static int format(const Datetime value&, char output[], int end, const char format[]) {
 		static const char weekDayNamess[][] = {
 			"Monday",
 			"Tuesday",
@@ -144,10 +165,9 @@ struct Datetime {
 		inline hours24to12(int hour) = hour > 12 ? hour - 12 : hour == 0 ? 12 : hour;
 
 		if (pointer(format) == null) {
-			return value.format(output, "%Y.%m.%d");
+			return value.format(output, end, "%Y.%m.%d");
 		}
 
-		int end = 0;
 		char chr = 0;
 		for (int pos = 0; pos < format.length; pos += 1) {
 			if (end >= output.length) {
@@ -191,7 +211,7 @@ struct Datetime {
 			}
 			else if (chr == 'D') {
 				// %D     date; same as %m/%d/%y
-				end = value.format(output, "%m/%d/%y");
+				end = value.format(output, end, "%m/%d/%y");
 			}
 			else if (chr == 'e') {
 				// %e     day of month, space padded; same as %_d
@@ -199,7 +219,7 @@ struct Datetime {
 			}
 			else if (chr == 'F') {
 				// %F     full date; like %+4Y-%m-%d
-				end = value.format(output, "%04Y-%m-%d");
+				end = value.format(output, end, "%04Y-%m-%d");
 			}
 //			else if (chr == 'g') // todo: %g     last two digits of year of ISO week number (see %G)
 //			else if (chr == 'G') // todo: %G     year of ISO week number (see %V); normally useful only with %V
@@ -255,7 +275,7 @@ struct Datetime {
 //			else if (chr == 'r') // todo: %r     locale's 12-hour clock time (e.g., 11:11:04 PM)
 			else if (chr == 'R') {
 				// %R     24-hour hour and minute; same as %H:%M
-				end = value.format(output, "%H:%M");
+				end = value.format(output, end, "%H:%M");
 			}
 //			else if (chr == 's') // todo: %s     seconds since 1970-01-01 00:00:00 UTC {end = append(output, end, Timestamp(value).value(Timeunit.Seconds), flags)}
 			else if (chr == 'S') {
@@ -268,7 +288,7 @@ struct Datetime {
 			}
 			else if (chr == 'T') {
 				// %T     time; same as %H:%M:%S
-				end = value.format(output, "%H:%M:%S");
+				end = value.format(output, end, "%H:%M:%S");
 			}
 			else if (chr == 'u') {
 				// %u     day of week (1..7); 1 is Monday
@@ -307,9 +327,14 @@ struct Datetime {
 		output[end] = 0;
 		return end;
 	}
+
+	static int format(const Datetime value&, char output[], const char format[]) {
+		return format(value, output, 0, format);
+	}
 }
 
-Datetime Datetime(Timestamp time, Timezone zone) {
+Datetime Datetime(Calendar calendar, Timezone timezone, Timestamp timestamp) {
+	assert(calendar == Calendar.Gregorian);
 	enum: int {
 		// Number of days in a non-leap year
 		DaysPerYear: 365;
@@ -325,8 +350,9 @@ Datetime Datetime(Timestamp time, Timezone zone) {
 		DaysPer400Years: DaysPer100Years * 4 + 1;
 	}
 
-	time = time.add(zone.value, Timeunit.Hours);
-	int n = Datetime.DaysTil1970 + time.value(Timeunit.Days);
+	Duration offset = timezone.offset(timestamp);
+	timestamp = timestamp.add(offset.value, Duration.precision);
+	int n = Datetime.DaysTil1970 + timestamp.value(Timeunit.Days);
 
 	// n = number of days since 1/1/0001
 	int dayOfWeek = n % 7;
@@ -381,13 +407,13 @@ Datetime Datetime(Timestamp time, Timezone zone) {
 		day: n - DaysToMonth[m - 1] + 1;
 
 		// time
-		hour: time.value(Timeunit.Hours) % 24;
-		minute: time.value(Timeunit.Minutes) % 60;
-		second: time.value(Timeunit.Seconds) % 60;
-		millis: time.value(Timeunit.Millis) % 1000;
+		hour: timestamp.value(Timeunit.Hours) % 24;
+		minute: timestamp.value(Timeunit.Minutes) % 60;
+		second: timestamp.value(Timeunit.Seconds) % 60;
+		millis: timestamp.value(Timeunit.Millis) % 1000;
 
 		// zone
-		timezone: zone;
+		timezone: timezone;
 
 		// extra
 		dayOfYear: n + 1;
@@ -396,7 +422,7 @@ Datetime Datetime(Timestamp time, Timezone zone) {
 		leapYear: DaysToMonth == Datetime.DaysToMonth366;
 	};
 }
-inline Datetime(Timestamp time) = Datetime(time, Timezone.local());
+inline Datetime(Timestamp time) = Datetime(Calendar.Gregorian, Timezone.utc(), time);
 
 Datetime Datetime(int year, int month, int day, int hour, int minute, int second, int millis, Timezone zone) {
 	return {
@@ -415,7 +441,7 @@ Datetime Datetime(int year, int month, int day, int hour, int minute, int second
 	};
 }
 Datetime Datetime(int year, int month, int day, int hour, int minute, int second, int millis) {
-	return Datetime(year, month, day, hour, minute, second, millis, Timezone.local());
+	return Datetime(year, month, day, hour, minute, second, millis, Timezone.utc());
 }
 Datetime Datetime(int year, int month, int day, int hour, int minute, int second, Timezone zone) {
 	return Datetime(year, month, day, hour, minute, second, 0, zone);
@@ -425,7 +451,7 @@ Datetime Datetime(int year, int month, int day, Timezone zone) {
 }
 
 Datetime Datetime(int year, int month, int day) {
-	return Datetime(year, month, day, 0, 0, 0, 0, Timezone.local());
+	return Datetime(year, month, day, 0, 0, 0, 0, Timezone.utc());
 }
 
 Timestamp Timestamp(Datetime value) {

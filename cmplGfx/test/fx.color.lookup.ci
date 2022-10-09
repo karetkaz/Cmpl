@@ -215,7 +215,7 @@ int onEvent(Window win&, int action, int button, int x, int y) {
 		// exit when releasing escape key
 		return -1;
 	}
-	Widget ui = win.widget;
+	FxWidget ui = win.widget.as(FxWidget);
 	if (!win.dispatchEvent(ui, action, button, x, y)) {
 		// event not processed, wait for the next one
 		return 0;
@@ -227,6 +227,12 @@ int onEvent(Window win&, int action, int button, int x, int y) {
 
 	debug.startTimer();
 	offs.copy(0, 0, back, null);
+
+	if (ui.showOriginal) {
+		histogram.update(offs);
+		return win.draw(ui);
+	}
+
 	if (win.hasFocused(brightness, contrast, gamma, highlights, shadows, whites, blacks)) {
 		brightnessContrastGamma(&curves.data,
 			brightness.valueF64(),
@@ -247,11 +253,10 @@ int onEvent(Window win&, int action, int button, int x, int y) {
 	return win.draw(ui);
 }
 
-Gui.showWindow(offs, onEvent, Widget(
+Gui.showWindow(offs, onEvent, FxWidget(
 	histogram, curves,
 
-	null,
-	brightness, contrast, gamma,
+	null, brightness, contrast, gamma,
 	highlights, shadows, whites, blacks,
 
 	null, auto,

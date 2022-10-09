@@ -162,7 +162,7 @@ bool showHideAdvanced(Switch switch, Rect rect&) {
 	return Switch.onMeasure(switch, &rect);
 }
 
-Gui.showWindow(offs, onEvent, Widget(
+Gui.showWindow(offs, onEvent, FxWidget(
 	histogram,
 	lookup,
 

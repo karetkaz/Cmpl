@@ -1,14 +1,55 @@
-struct Timezone {
-	int value;
+static if (typename(Timestamp) == null) {
+inline "Timespan.ci";
+}
 
-	static Timezone zone(int value) {
-		return {value: value};
+static if (typename(Timestamp) == null) {
+inline "Timestamp.ci";
+}
+
+struct Timezone {
+	const char name[];		// "UTC", "America/New_York", "Europe/Brussels"
+	Duration offset(const Timezone zone&, Timestamp timestamp, bool isDaylightSaving&);
+
+	static Duration offset(const Timezone zone&, Timestamp timestamp) {
+		bool isDaylightSaving;
+		return zone.offset(zone, timestamp, &isDaylightSaving);
 	}
+
+	static Timezone utc() {
+		static Duration offset(const Timezone zone&, Timestamp timestamp, bool isDaylightSaving&) {
+			isDaylightSaving = false;
+			return { value: 0 };
+		}
+		return {
+			offset: offset;
+			name: "UTC";
+		};
+	}
+
+	static Timezone lookup(const char name[]) { abort("todo"); }
 
 	static Timezone local() {
-		return zone(0/*System.timezone()*/);
+		warn("using fake timezone");	// fixme: fake timezone, needs to be read or lookup from the system
+		//static void System.timeInfo(const char timezoneName[*], int64 timeMillis, int64 zoneOffset&, int daylight&) {}
+		Duration offset(const Timezone zone&, Timestamp timestamp, bool isDaylightSaving&) {
+			isDaylightSaving = false;
+			return Duration(3, Timeunit.Hours);
+		}
+		return {
+			offset: offset;
+			name: "GMT+3";
+		};
 	}
-
-//	static Timezone Utc = zone(0);
-//	static Timezone Gmt = zone(0);
 }
+
+// Timezone Timezone() {return Timezone.local();}
+
+// Timezone Timezone(const char name[]) { return Timezone.lookup(name);}
+
+/* todo:
+https://cs.opensource.google/go/go/+/master:src/time/time.go;l=1440
+https://github.com/tkuchiki/go-timezone
+https://github.com/srawlins/timezone
+https://github.com/JodaOrg/joda-time
+
+// */

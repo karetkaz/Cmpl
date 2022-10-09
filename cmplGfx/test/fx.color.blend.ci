@@ -339,7 +339,7 @@ int onEvent(Window win&, int action, int button, int x, int y) {
 	return win.draw(ui);
 }
 
-Gui.showWindow(offs, onEvent, Widget(
+Gui.showWindow(offs, onEvent, FxWidget(
 	chkReverse,
 	btnAlpha,
 	btnAddition,

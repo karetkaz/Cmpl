@@ -596,15 +596,9 @@ static vmError surf_calcHist(nfcContext ctx) {
 	}
 
 	// init
-	uint32_t histB[256];
-	uint32_t histG[256];
-	uint32_t histR[256];
-	for (int i = 0; i < 256; i += 1) {
-		histB[i] = 0;
-		histG[i] = 0;
-		histR[i] = 0;
-	}
-
+	uint32_t histB[256] = {0};
+	uint32_t histG[256] = {0};
+	uint32_t histR[256] = {0};
 	for (int y = 0; y < rect.h; y += 1) {
 		uint32_t *cBuff = (uint32_t *) dptr;
 		for (int x = 0; x < rect.w; x += 1) {
@@ -630,11 +624,11 @@ static vmError surf_calcHist(nfcContext ctx) {
 	}
 
 	argb *data = lut.ref;
-	for (size_t x = 0; x < 256; x += 1) {
-		data[x].b = sat_u8(histB[x] * 255 / max);
-		data[x].g = sat_u8(histG[x] * 255 / max);
-		data[x].r = sat_u8(histR[x] * 255 / max);
-		data[x].a = 0;
+	for (size_t i = 0; i < 256; i += 1) {
+		data[i].b = sat_u8(histB[i] * 255 / max);
+		data[i].g = sat_u8(histG[i] * 255 / max);
+		data[i].r = sat_u8(histR[i] * 255 / max);
+		data[i].a = 0;
 	}
 
 	return noError;
@@ -1070,7 +1064,7 @@ static vmError window_show(nfcContext ctx) {
 	size_t cbClosure = argref(ctx, rt->api.nfcNextArg(ctx));
 	size_t cbOffs = argref(ctx, rt->api.nfcNextArg(ctx));
 
-	struct mainLoopArgs args;
+	struct mainLoopArgs args = {0};
 	args.rt = rt;
 	args.callback = rt->api.rtLookup(ctx->rt, cbOffs, KIND_fun);
 	args.error = noError;

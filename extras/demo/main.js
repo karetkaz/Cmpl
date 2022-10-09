@@ -407,8 +407,8 @@ function rmWorkspace(workspace) {
 	if (!confirm('Remove workspace: ' + workspace)) {
 		return;
 	}
-	if (!workspace.startsWith('/cmpl/')) {
-		workspace = '/cmpl/' + workspace;
+	if (!workspace.startsWith('/workspace-')) {
+		workspace = '/workspace-' + workspace;
 	}
 	var req = indexedDB.deleteDatabase(workspace);
 	req.onsuccess = function(event) {

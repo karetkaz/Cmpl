@@ -1,0 +1,191 @@
+/* Demo using 3d lookup table
+ *
+ * use 'tab' / 'shift' + 'tab' to select next control
+ * use 'enter' / 'shift' + 'enter' to select next control
+ * use '+' / '-' to adjust value of selected control (use shift for more precision)
+ * use 'backspace' / 'shift' + 'backspace' to reset selected / every control value
+ * use 'space' to press a button, toggle switch or reset slider value
+ * use '[' or ']' to show and hide the controls
+ *
+ * drag the mouse left or right in the window to adjust selected slider value
+ *
+ * obs-guide-lut.png downloaded from: https://streamshark.io/obs-guide/color-grading-lut
+ */
+struct ColorLut {
+	argb lookup[*] = null;
+	inline at(int x, int y, int z) = x + (256 * (y + 256 * z));
+
+	static void saveBmp(ColorLut this&, const char filename[], int flags) {
+		argb lut[*] = this.lookup;
+		if (flags == 0 || flags == 64 || flags == 512) {
+			// output: 64 x 64 x 64
+			Image lutImage = Image(512, 512, 32);
+			for (int yi = 0; yi < 512; yi += 1) {
+				for (int xi = 0; xi < 512; xi += 1) {
+					int x = xi % 64;
+					int y = yi % 64;
+					int z = (xi / 64) + 8 * (yi / 64);
+					lutImage.set(xi, yi, lut[at(x * 4 + 2, y * 4 + 2, z * 4 + 2)]);
+				}
+			}
+			lutImage.saveBmp(filename, 0);
+			lutImage.destroy();
+			return;
+		}
+
+		if (flags == 256 || flags == 4096) {
+			// output: 256 x 256 x 256
+			Image lutImage = Image(4096, 4096, 32);
+			for (int yi = 0; yi < 4096; yi += 1) {
+				for (int xi = 0; xi < 4096; xi += 1) {
+					int x = xi % 256;
+					int y = yi % 256;
+					int z = (xi / 256) + 16 * (xi / 256);
+					lutImage.set(xi, yi, lut[at(x, y, z)]);
+				}
+			}
+			lutImage.saveBmp(filename, 0);
+			lutImage.destroy();
+			return;
+		}
+
+		error("invalid output format", flags);
+	}
+
+	static void destroy(ColorLut this&) {
+		this.lookup = pointer.alloc(this.lookup, 0);
+	}
+}
+
+ColorLut ColorLut(const char filename[]) {
+	Image image = Image(filename, 32);
+	argb lut[*] = pointer.alloc(null, 256 * 256 * 256 * sizeof(argb));
+	assert(lut != null);
+	if (image.width() == 512 && image.height() == 512) {
+		// todo: apply interpolation for the missing values
+		// input: 64 x 64 x 64
+		for (int z = 0; z < 256; z += 1) {
+			for (int y = 0; y < 256; y += 1) {
+				for (int x = 0; x < 256; x += 1) {
+					int iz = z / (256 / 64);
+					int iy = y / (256 / 64) + 64 * (iz / 8);
+					int ix = x / (256 / 64) + 64 * (iz % 8);
+					lut[ColorLut.at(x, y, z)].v = image.get(ix, iy);
+				}
+			}
+		}
+	}
+	image.destroy();
+	return { lookup: lut };
+}
+
+void colorMap(Image image, const Rect roi&, const ColorLut map&) {
+	static if (preferNativeCalls && typename(Image.blend) != null) {
+		static argb blender(const argb lookup[*], argb base, argb with) {
+			return lookup[ColorLut.at(rch(with), gch(with), bch(with))];
+		}
+		return Image.blend(image, 0, 0, image, roi, map.lookup, pointer(blender));
+	}
+
+	// clip roi with source image
+	Rect r = {
+		x: roi != null ? roi.x : 0;
+		y: roi != null ? roi.y : 0;
+		w: roi != null ? roi.w : image.width();
+		h: roi != null ? roi.h : image.height();
+	};
+	if (!image.clip(&r)) {
+		// nothing to set
+		return;
+	}
+
+	argb lookup[*] = map.lookup;
+	for (int y = r.y; y < r.y + r.h; y += 1) {
+		for (int x = r.x; x < r.x + r.w; x += 1) {
+			argb col = argb(image.get(x, y));
+			image.set(x, y, lookup[ColorLut.at(rch(col), gch(col), bch(col))]);
+		}
+	}
+}
+
+ColorLut lookup = ColorLut("asset/lut3d/obs-guide-lut.png");
+Image back = Image("asset/image/forest.jpg", 32);
+Image offs = Image(back);
+
+inline "/cmplGfx/lib/micro.ui.ci";
+bool exportLut(Button this);
+Histogram histogram = {
+	enabled: false;
+};
+
+Button export64 = {
+	text: "export 64";
+	focusable: false;
+	onClick: exportLut;
+};
+Button export256 = {
+	text: "export 256";
+	focusable: false;
+	onClick: exportLut;
+};
+DebugView debug = {
+	focusable: false;
+	measures: -1;
+	draws: -1;
+};
+
+bool showOriginal(const Window win&, int action, int button) {
+	if (action == Gui.KEY_PRESS && (button == '[' || button == ']')) {
+		return win.repeat && !win.widget.enabled;
+	}
+	return false;
+}
+
+int onEvent(Window win&, int action, int button, int x, int y) {
+	if (action == Gui.KEY_RELEASE && button == 27) {
+		// exit when releasing escape key
+		return -1;
+	}
+	FxWidget ui = win.widget.as(FxWidget);
+	if (!win.dispatchEvent(ui, action, button, x, y)) {
+		// event not processed, wait for the next one
+		return 0;
+	}
+	if (!win.processableEvent(action, button, x, y)) {
+		// hover view, focus view, and such things
+		return win.draw(ui);
+	}
+
+	debug.startTimer();
+	offs.copy(0, 0, back, null);
+
+	if (ui.showOriginal) {
+		histogram.update(offs);
+		return win.draw(ui);
+	}
+
+	offs.colorMap(null, lookup);
+	histogram.update(offs);
+	return win.draw(ui);
+}
+
+Gui.showWindow(offs, onEvent, FxWidget(
+	histogram,
+	null, export64, export256,
+	null, debug
+));
+offs.destroy();
+back.destroy();
+lookup.destroy();
+
+bool exportLut(Button this) {
+	if (this == export64) {
+		lookup.saveBmp("asset/lut3d/lut3d.64.bmp", 64);
+		return true;
+	}
+	if (this == export256) {
+		lookup.saveBmp("asset/lut3d/lut3d.256.bmp", 256);
+		return true;
+	}
+	return false;
+}
