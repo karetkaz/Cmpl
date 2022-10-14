@@ -36,7 +36,6 @@ void levels(argb lut[256], int brightness, int output, int input) {
 	return levels(&lut, brightness, x0, x1, y0, y1);
 }
 
-inline "/cmplGfx/lib/micro.ui.ci";
 bool syncInputOutput(Slider slider, int value);
 bool showHideAdvanced(Switch switch, Rect rect&);
 
@@ -114,7 +113,7 @@ Slider sldOutputMax = {
 };
 
 int onEvent(Window win&, int action, int button, int x, int y) {
-	if (action == Gui.KEY_RELEASE && button == 27) {
+	if (action == Gui.KEY_RELEASE && button == Gui.KEY_CODE_ESC) {
 		// exit when releasing escape key
 		return -1;
 	}

@@ -648,6 +648,32 @@ Gui.WINDOW_INIT
 Gui.WINDOW_CLOSE
 Gui.WINDOW_ENTER
 Gui.WINDOW_LEAVE
+Gui.KEY_CODE_ESC
+Gui.KEY_CODE_BACK
+Gui.KEY_CODE_TAB
+Gui.KEY_CODE_ENTER
+Gui.KEY_CODE_CAPSLOCK
+Gui.KEY_CODE_PRINT_SCREEN
+Gui.KEY_CODE_SCROLL_LOCK
+Gui.KEY_CODE_PAUSE
+Gui.KEY_CODE_INSERT
+Gui.KEY_CODE_HOME
+Gui.KEY_CODE_PAGE_UP
+Gui.KEY_CODE_DELETE
+Gui.KEY_CODE_END
+Gui.KEY_CODE_PAGE_DOWN
+Gui.KEY_CODE_RIGHT
+Gui.KEY_CODE_LEFT
+Gui.KEY_CODE_DOWN
+Gui.KEY_CODE_UP
+Gui.KEY_CODE_L_SHIFT
+Gui.KEY_CODE_R_SHIFT
+Gui.KEY_CODE_L_CTRL
+Gui.KEY_CODE_R_CTRL
+Gui.KEY_CODE_L_ALT
+Gui.KEY_CODE_R_ALT
+Gui.KEY_CODE_L_GUI
+Gui.KEY_CODE_R_GUI
 Gui.KEY_MASK_SHIFT
 Gui.KEY_MASK_CTRL
 Gui.KEY_MASK_ALT
@@ -655,6 +681,9 @@ Gui.showWindow(surf: Image, closure: pointer, onEvent(closure: pointer, action: 
 Gui.setTitle(title: char[*]): void
 Gui.font(height: int32): Image
 Gui.font
+adjust(roi: Rect, x: int32, y: int32, w: int32, h: int32): void # adjust the rectangle position and size
+adjust(roi: Rect, w: int32, h: int32): void # adjust the rectangle position and size
+adjust(roi: Rect, s: int32): void # adjust the rectangle position and size
 argb # an 32 bit argb color
 argb.v # value of color
 argb.<?>
@@ -701,31 +730,11 @@ argb(vec: vec4f): argb # convert a floating point vector to an argb color
 lum(vec: vec4f): float32 # calculate the luminosity of a color
 rgb2hsl(rgb: vec4f): vec4f # Convert color from Rgb color space to Hsl color space
 hsl2rgb(hsl: vec4f): vec4f # Convert color from Hsl color space to Rgb color space
-adjust(roi: Rect, x: int32, y: int32, w: int32, h: int32): void # adjust the rectangle position and size
-adjust(roi: Rect, w: int32, h: int32): void # adjust the rectangle position and size
-adjust(roi: Rect, s: int32): void # adjust the rectangle position and size
-clip(image: Image, roi: Rect): bool # @public
-set(image: Image, x: int32, y: int32, color: argb): void # Set the the color of a pixel at the given position
 Image(width: int32, height: int32, depth: int32): Image # Create an image with the given with, height and depth
 Image(fileName: char[*], depth: int32): Image # Create an image by opening an image file
 Image(fileName: char[*]): Image # Create an image by opening an image file
-blend(image: Image, x0: int32, y0: int32, src: Image, roi: Rect, extra: pointer, blend(extra: pointer, base: argb, with: argb): argb): void # copy the `src` image to the destination with an optional blend method
-blend(image: Image, x0: int32, y0: int32, src: Image, roi: Rect, blend(base: vec4f, with: vec4f): vec4f): void # copy the `src` image to the destination with an optional blend method
-blend(image: Image, roi: Rect, col: argb): void # fill the destination with the given `col` (alpha channel is used)
-blendAlpha(image: Image, x: int32, y: int32, src: Image, roi: Rect, alpha: int32): void # copy the `src` image to the destination with the given transparency
-blendDstAlpha(image: Image, x: int32, y: int32, src: Image, roi: Rect): void # copy the `src` image to the destination masked with destination alpha
-copy(image: Image, x: int32, y: int32, src: Image, roi: Rect): void # copy or convert `src` image to the destination `image`
-Image(copy: Image): Image # Create an image by copying another one
-tile(image: Image, x: int32, y: int32, src: Image, roi: Rect): void # copy the `src` image multiple times so it fills the whole `image`
-eval(image: Image, roi: Rect, aspect: float32, time: float32, eval(in: vec4f): vec4f): void # Fill the surface by evaluating the given function for each pixel
-colorMap(image: Image, roi: Rect, lut: argb[256]): void # apply a color lookup table to each pixel defined by the `roi` on the `image`
-colorMat(image: Image, roi: Rect, mat: mat4f): void # apply a color matrix to each pixel defined by the `roi` on the `image`
-transform(image: Image, rect: Rect, src: Image, roi: Rect, interpolate: int32, mat: mat4f): void # Copy one image to another using a transformation matrix [scale, rotate, translate, shear, perspective, etc]
-Image(image: Image, width: int32, height: int32, align: int32, maxScale: float64): Image # Create an image by copying another one using a custom width and height
-Image(fileName: char[*], width: int32, height: int32, depth: int32, align: int32, maxScale: float64): Image # Create an image by opening an image file with custom width and height
-Image(fileName: char[*], width: int32, height: int32, depth: int32, align: int32): Image # Create an image by opening an image file with custom width and height
-Image(fileName: char[*], width: int32, height: int32, depth: int32): Image # Create an image by opening an image file with custom width and height
-blur(image: Image, radius: int32, sigma: float64): void # emulated implementation of blur function
+clip(image: Image, roi: Rect): bool # Clip the rectangle against the given image boundaries
+set(image: Image, x: int32, y: int32, color: argb): void # Set the the color of a pixel at the given position
 drawAntiAliased
 fillRect(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, incl: int32, color: uint32): void # Fill a rectangle on the `image` specified by the coordinates with the given `color`
 fillRect(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, color: uint32): void # Fill a rectangle on the `image` specified by the coordinates with the given `color`
@@ -748,6 +757,889 @@ drawLine(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, color: uint32
 drawBezier(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, x2: int32, y2: int32, color: uint32): void # Draw a quadratic bezier curve
 drawBezier(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, x2: int32, y2: int32, x3: int32, y3: int32, color: uint32): void # Draw a cubic bezier curve
 fill(image: Image, color: uint32): Image # Fill the entire image with the given color
+blend(image: Image, x0: int32, y0: int32, src: Image, roi: Rect, extra: pointer, blend(extra: pointer, base: argb, with: argb): argb): void # copy the `src` image to the destination with an optional blend method
+blend(image: Image, x0: int32, y0: int32, src: Image, roi: Rect, blend(base: vec4f, with: vec4f): vec4f): void # copy the `src` image to the destination with an optional blend method
+blend(image: Image, roi: Rect, col: argb): void # fill the destination with the given `col` (alpha channel is used)
+blendAlpha(image: Image, x: int32, y: int32, src: Image, roi: Rect, alpha: int32): void # copy the `src` image to the destination with the given transparency
+blendDstAlpha(image: Image, x: int32, y: int32, src: Image, roi: Rect): void # copy the `src` image to the destination masked with destination alpha
+copy(image: Image, x: int32, y: int32, src: Image, roi: Rect): void # copy or convert `src` image to the destination `image`
+Image(copy: Image): Image # Create an image by copying another one
+tile(image: Image, x: int32, y: int32, src: Image, roi: Rect): void # copy the `src` image multiple times so it fills the whole `image`
+eval(image: Image, roi: Rect, aspect: float32, time: float32, eval(in: vec4f): vec4f): void # Fill the surface by evaluating the given function for each pixel
+transform(image: Image, rect: Rect, src: Image, roi: Rect, interpolate: int32, mat: mat4f): void # Copy one image to another using a transformation matrix [scale, rotate, translate, shear, perspective, etc]
+Image(image: Image, width: int32, height: int32, align: int32, maxScale: float64): Image # Create an image by copying another one using a custom width and height
+Image(fileName: char[*], width: int32, height: int32, depth: int32, align: int32, maxScale: float64): Image # Create an image by opening an image file with custom width and height
+Image(fileName: char[*], width: int32, height: int32, depth: int32, align: int32): Image # Create an image by opening an image file with custom width and height
+Image(fileName: char[*], width: int32, height: int32, depth: int32): Image # Create an image by opening an image file with custom width and height
+blur(image: Image, radius: int32, sigma: float64): void # emulated implementation of blur function
+colorMap(image: Image, roi: Rect, lut: argb[256]): void # apply a color lookup table to each pixel defined by the `roi` on the `image`
+colorMat(image: Image, roi: Rect, mat: mat4f): void # apply a color matrix to each pixel defined by the `roi` on the `image`
+Style
+Style.dark
+Style.light
+Style.accent
+Style.align
+Style.padding
+Style.font
+Style.format
+Style.backgroundColor
+Style.hoveredColor
+Style.focusedColor
+Style.valueColor
+Style.textColor
+Style.top
+Style.left
+Style.right
+Style.bottom
+Style.center
+Style.topLeft
+Style.topRight
+Style.bottomLeft
+Style.bottomRight
+Style.vertical
+Style.verticalTop
+Style.verticalBottom
+Style.horizontal
+Style.horizontalLeft
+Style.horizontalRight
+Style.fill
+Style.hovered
+Style.pressed
+Style.focused
+Style.measure(this: Style, rect: Rect, text: char[*]): void
+Style.align(parent: Rect, rect: Rect, align: int32): void # Align one rect containing text relative to its container
+Style.align(this: Style, parent: Rect, rect: Rect, value: char[*], align: int32): void
+Style.align(this: Style, parent: Rect, rect: Rect, value: char[*]): void
+Style.setColor(style: Style, background: argb, accent: argb): void
+Style.vertical(align: int32): bool
+Style.horizontal(align: int32): bool
+KeyEvent
+KeyEvent.release
+KeyEvent.isShift
+KeyEvent.isCtrl
+KeyEvent.isAlt
+KeyEvent.repeat
+KeyEvent.key
+TouchEvent
+TouchEvent.release
+TouchEvent.isShift
+TouchEvent.isCtrl
+TouchEvent.isAlt
+TouchEvent.clicks
+TouchEvent.button
+TouchEvent.dx
+TouchEvent.dy
+TouchEvent.x
+TouchEvent.y
+TouchEvent.test(event: TouchEvent, rect: Rect): bool
+TouchEvent.isMotion(event: TouchEvent): bool
+TouchEvent.isPress(event: TouchEvent): bool
+TouchEvent.isLongPress(event: TouchEvent): bool
+TouchEvent.isPress(event: TouchEvent, button: int32): bool
+View # View is the base class of all user interface elements.\nit has width and height, forming a rectangular shape on screen.\nby it's own a view has no position, it must be positioned in a layout.
+View.width # fixed or minimum width of the view
+View.height # fixed or minimum height of the view
+View.enabled # the view accepts any user input(event) or not
+View.focusable # the view can be active(focused) or not
+View.parent
+View.style
+View.data # user attached data
+View.onClick(this: View): bool
+View.onClick(this: View): bool
+View.onReset(this: View): bool
+View.onReset(this: View): bool
+View.setStyle(this: View, style: Style): void
+View.onCreate(this: View, parent: View): void
+View.onCreate(this: View, parent: View): void
+View.onDestroy(this: View): void
+View.onDestroy(this: View): void
+View.onKeyEvent(this: View, event: KeyEvent): bool
+View.onKeyEvent(this: View, event: KeyEvent): bool
+View.onTouchEvent(this: View, rect: Rect, event: TouchEvent): bool
+View.onTouchEvent(this: View, rect: Rect, event: TouchEvent): bool
+View.onMeasure(this: View, rect: Rect): bool
+View.onMeasure(this: View, rect: Rect): bool
+View.onDraw(this: View, offs: Image, rect: Rect): void
+View.onDraw(this: View, offs: Image, rect: Rect, state: int32): void
+View.onDraw(this: View, offs: Image, rect: Rect, text: char[*], value: char[*]): void
+object.create(type: typename): pointer
+object.destroy(this: object): void
+object.as(this: object, type: typename): pointer
+object.type(this: object): typename
+invalidate(view: View): void
+focus(view: View): void
+Layout # Layout is a view containing other views positioned by it.\nthe Layout class does not clip its children.\nthe size of the Layout class should contain all the views.
+Layout.Item
+Layout.Item.rect
+Layout.Item.view
+Layout.Item.align
+Layout.separator
+Layout.itemCount
+Layout.itemCapacity
+Layout.items
+Layout.hoveredIndex
+Layout.pressedIndex
+Layout.focusedIndex
+Layout.paddingTop
+Layout.paddingLeft
+Layout.paddingRight
+Layout.paddingBottom
+Layout.orientation # Vertical, horizontal or other orientation of the layout\nzero represents a stack(Qt) or frame(Android) layout (all child elements are placed on top of each other)\nnegative value represents a column layout, specifying the number of columns to be used\npositive value represents a row layout, specifying the number of rows to be used
+Layout.clearState(this: Layout, mode: int32): bool
+Layout.getPressed(this: Layout): View
+Layout.getFocused(this: Layout): View
+Layout.setFocused(this: Layout, focus: View): bool
+Layout.capacity(this: Layout, capacity: int32): Layout
+Layout.addItems(this: Layout, align: int32, views: View[]): Layout
+Layout.padding(this: Layout, top: int32, left: int32, right: int32, bottom: int32): Layout
+Layout.onClick(this: Layout): bool
+Layout.onReset(this: Layout): bool
+Layout.onCreate(this: Layout, parent: View): void
+Layout.onDestroy(this: Layout): void
+Layout.onKeyEvent(this: Layout, event: KeyEvent): bool
+Layout.onTouchEvent(this: Layout, rect: Rect, event: TouchEvent): bool
+Layout.onMeasure(this: Layout, measured: Rect): bool
+Layout.onLayout(this: Layout, rect: Rect): void
+Layout.verticalLayout(this: Layout, measured: Rect, cols: int32): void
+Layout.horizontalLayout(this: Layout, measured: Rect, rows: int32): void
+Layout.onLayout(this: Layout, measured: Rect): void
+Layout.onDraw(this: Layout, offs: Image, parent: Rect): void
+Layout.Custom(rowsCols: int32, align: int32, items: View[]): Layout
+Layout.Row(items: View[]): Layout
+Layout.Column(items: View[]): Layout
+Layout.Frame(items: View[]): Layout
+View.width # fixed or minimum width of the view
+View.height # fixed or minimum height of the view
+View.enabled # the view accepts any user input(event) or not
+View.focusable # the view can be active(focused) or not
+View.parent
+View.style
+View.data # user attached data
+View.onClick(this: View): bool
+View.onClick(this: View): bool
+View.onReset(this: View): bool
+View.onReset(this: View): bool
+View.setStyle(this: View, style: Style): void
+View.onCreate(this: View, parent: View): void
+View.onCreate(this: View, parent: View): void
+View.onDestroy(this: View): void
+View.onDestroy(this: View): void
+View.onKeyEvent(this: View, event: KeyEvent): bool
+View.onKeyEvent(this: View, event: KeyEvent): bool
+View.onTouchEvent(this: View, rect: Rect, event: TouchEvent): bool
+View.onTouchEvent(this: View, rect: Rect, event: TouchEvent): bool
+View.onMeasure(this: View, rect: Rect): bool
+View.onMeasure(this: View, rect: Rect): bool
+View.onDraw(this: View, offs: Image, rect: Rect): void
+View.onDraw(this: View, offs: Image, rect: Rect, state: int32): void
+View.onDraw(this: View, offs: Image, rect: Rect, text: char[*], value: char[*]): void
+object.create(type: typename): pointer
+object.destroy(this: object): void
+object.as(this: object, type: typename): pointer
+object.type(this: object): typename
+Widget # Widget is a special kind of layout, which can clip the content of its elements.\na widget may clip its children and apply scrolling to them, even show a scrollbar.
+Widget.rect
+Widget.measure
+Widget.focus
+Widget.scrollX
+Widget.scrollY
+Widget.focusNext(view: View, prev: bool): bool
+Widget.addItems(this: Widget, align: int32, views: View[]): Widget
+Widget.addItems(this: Widget, views: View[]): Widget
+Widget.theme(this: Widget, background: argb, accent: argb): Widget
+Widget.theme(this: Widget, background: argb): Widget
+Widget.focus(this: Widget, value: View): Widget
+Widget.padding(this: Widget, padding: int32): Widget
+Widget.padding(this: Widget, vertical: int32, horizontal: int32): Layout
+Widget.padding(this: Layout, top: int32, left: int32, right: int32, bottom: int32): Layout
+Widget.onCreate(this: Widget, parent: View): void
+Widget.onKeyEvent(this: Widget, event: KeyEvent): bool
+Widget.onMeasure(this: Widget, measured: Rect): bool
+Widget.onDraw(this: Widget, offs: Image, rect: Rect): void
+Layout.Item
+Layout.Item.rect
+Layout.Item.view
+Layout.Item.align
+Layout.separator
+Layout.itemCount
+Layout.itemCapacity
+Layout.items
+Layout.hoveredIndex
+Layout.pressedIndex
+Layout.focusedIndex
+Layout.paddingTop
+Layout.paddingLeft
+Layout.paddingRight
+Layout.paddingBottom
+Layout.orientation # Vertical, horizontal or other orientation of the layout\nzero represents a stack(Qt) or frame(Android) layout (all child elements are placed on top of each other)\nnegative value represents a column layout, specifying the number of columns to be used\npositive value represents a row layout, specifying the number of rows to be used
+Layout.clearState(this: Layout, mode: int32): bool
+Layout.getPressed(this: Layout): View
+Layout.getFocused(this: Layout): View
+Layout.setFocused(this: Layout, focus: View): bool
+Layout.capacity(this: Layout, capacity: int32): Layout
+Layout.addItems(this: Layout, align: int32, views: View[]): Layout
+Layout.padding(this: Layout, top: int32, left: int32, right: int32, bottom: int32): Layout
+Layout.onClick(this: Layout): bool
+Layout.onReset(this: Layout): bool
+Layout.onCreate(this: Layout, parent: View): void
+Layout.onDestroy(this: Layout): void
+Layout.onKeyEvent(this: Layout, event: KeyEvent): bool
+Layout.onTouchEvent(this: Layout, rect: Rect, event: TouchEvent): bool
+Layout.onMeasure(this: Layout, measured: Rect): bool
+Layout.onLayout(this: Layout, rect: Rect): void
+Layout.verticalLayout(this: Layout, measured: Rect, cols: int32): void
+Layout.horizontalLayout(this: Layout, measured: Rect, rows: int32): void
+Layout.onLayout(this: Layout, measured: Rect): void
+Layout.onDraw(this: Layout, offs: Image, parent: Rect): void
+Layout.Custom(rowsCols: int32, align: int32, items: View[]): Layout
+Layout.Row(items: View[]): Layout
+Layout.Column(items: View[]): Layout
+Layout.Frame(items: View[]): Layout
+View.width # fixed or minimum width of the view
+View.height # fixed or minimum height of the view
+View.enabled # the view accepts any user input(event) or not
+View.focusable # the view can be active(focused) or not
+View.parent
+View.style
+View.data # user attached data
+View.onClick(this: View): bool
+View.onClick(this: View): bool
+View.onReset(this: View): bool
+View.onReset(this: View): bool
+View.setStyle(this: View, style: Style): void
+View.onCreate(this: View, parent: View): void
+View.onCreate(this: View, parent: View): void
+View.onDestroy(this: View): void
+View.onDestroy(this: View): void
+View.onKeyEvent(this: View, event: KeyEvent): bool
+View.onKeyEvent(this: View, event: KeyEvent): bool
+View.onTouchEvent(this: View, rect: Rect, event: TouchEvent): bool
+View.onTouchEvent(this: View, rect: Rect, event: TouchEvent): bool
+View.onMeasure(this: View, rect: Rect): bool
+View.onMeasure(this: View, rect: Rect): bool
+View.onDraw(this: View, offs: Image, rect: Rect): void
+View.onDraw(this: View, offs: Image, rect: Rect, state: int32): void
+View.onDraw(this: View, offs: Image, rect: Rect, text: char[*], value: char[*]): void
+object.create(type: typename): pointer
+object.destroy(this: object): void
+object.as(this: object, type: typename): pointer
+object.type(this: object): typename
+Window # Window contains all the needed information to display a widget\ntodo: should be able to display a stack of widgets
+Window.offscreen
+Window.widget
+Window.timeout
+Window.clicks
+Window.time
+Window.button
+Window.lastX
+Window.lastY
+Window.isShift
+Window.isCtrl
+Window.isAlt
+Window.key
+Window.repeat
+Window.hasFocused(window: Window, items: View[]): bool
+Window.hasPressed(window: Window, items: View[]): bool
+Window.processableEvent(window: Window, action: int32, button: int32, x: int32, y: int32): bool # returns true if the event is processable, false in case only the ui needs to be updated
+Window.dispatchEvent(window: Window, widget: Widget, action: int32, button: int32, x: int32, y: int32): bool
+Window.draw(window: Window, widget: Widget): int32
+getWidget(view: View): Widget
+invalidate(view: View): void
+focus(view: View): void
+isFocused(view: View): bool
+isPressed(view: View): bool
+isDirty(view: View): bool
+Button
+Button.text
+Button.onMeasure(this: Button, rect: Rect): bool
+Button.onDraw(this: Button, offs: Image, rect: Rect): void
+View.width # fixed or minimum width of the view
+View.height # fixed or minimum height of the view
+View.enabled # the view accepts any user input(event) or not
+View.focusable # the view can be active(focused) or not
+View.parent
+View.style
+View.data # user attached data
+View.onClick(this: View): bool
+View.onClick(this: View): bool
+View.onReset(this: View): bool
+View.onReset(this: View): bool
+View.setStyle(this: View, style: Style): void
+View.onCreate(this: View, parent: View): void
+View.onCreate(this: View, parent: View): void
+View.onDestroy(this: View): void
+View.onDestroy(this: View): void
+View.onKeyEvent(this: View, event: KeyEvent): bool
+View.onKeyEvent(this: View, event: KeyEvent): bool
+View.onTouchEvent(this: View, rect: Rect, event: TouchEvent): bool
+View.onTouchEvent(this: View, rect: Rect, event: TouchEvent): bool
+View.onMeasure(this: View, rect: Rect): bool
+View.onMeasure(this: View, rect: Rect): bool
+View.onDraw(this: View, offs: Image, rect: Rect): void
+View.onDraw(this: View, offs: Image, rect: Rect, state: int32): void
+View.onDraw(this: View, offs: Image, rect: Rect, text: char[*], value: char[*]): void
+object.create(type: typename): pointer
+object.destroy(this: object): void
+object.as(this: object, type: typename): pointer
+object.type(this: object): typename
+Switch
+Switch.onOff
+Switch.text
+Switch.states
+Switch.selected
+Switch.resetValue
+Switch.clickToFocus
+Switch.checked(this: Switch): bool
+Switch.onUpdate(this: Switch, selected: int32): bool
+Switch.onUpdate(this: Switch, selected: int32): bool
+Switch.onReset(this: Switch): bool
+Switch.onClick(this: Switch): bool
+Switch.onCreate(this: Switch, parent: View): void
+Switch.onKeyEvent(this: Switch, event: KeyEvent): bool
+Switch.onTouchEvent(this: Switch, rect: Rect, event: TouchEvent): bool
+Switch.onMeasure(this: Switch, rect: Rect): bool
+Switch.onDraw(this: Switch, offs: Image, rect: Rect): void
+View.width # fixed or minimum width of the view
+View.height # fixed or minimum height of the view
+View.enabled # the view accepts any user input(event) or not
+View.focusable # the view can be active(focused) or not
+View.parent
+View.style
+View.data # user attached data
+View.onClick(this: View): bool
+View.onClick(this: View): bool
+View.onReset(this: View): bool
+View.onReset(this: View): bool
+View.setStyle(this: View, style: Style): void
+View.onCreate(this: View, parent: View): void
+View.onCreate(this: View, parent: View): void
+View.onDestroy(this: View): void
+View.onDestroy(this: View): void
+View.onKeyEvent(this: View, event: KeyEvent): bool
+View.onKeyEvent(this: View, event: KeyEvent): bool
+View.onTouchEvent(this: View, rect: Rect, event: TouchEvent): bool
+View.onTouchEvent(this: View, rect: Rect, event: TouchEvent): bool
+View.onMeasure(this: View, rect: Rect): bool
+View.onMeasure(this: View, rect: Rect): bool
+View.onDraw(this: View, offs: Image, rect: Rect): void
+View.onDraw(this: View, offs: Image, rect: Rect, state: int32): void
+View.onDraw(this: View, offs: Image, rect: Rect, text: char[*], value: char[*]): void
+object.create(type: typename): pointer
+object.destroy(this: object): void
+object.as(this: object, type: typename): pointer
+object.type(this: object): typename
+Slider
+Slider.text
+Slider.value
+Slider.minimum
+Slider.maximum
+Slider.divisor
+Slider.resetValue
+Slider.valueF64(this: Slider): float64
+Slider.onUpdate(this: Slider, value: int32): bool
+Slider.onUpdate(this: Slider, value: int32): bool
+Slider.onReset(this: Slider): bool
+Slider.onCreate(this: Slider, parent: View): void
+Slider.onKeyEvent(this: Slider, event: KeyEvent): bool
+Slider.onTouchEvent(this: Slider, rect: Rect, event: TouchEvent): bool
+Slider.onMeasure(this: Slider, rect: Rect): bool
+Slider.onDrawSlider(this: Slider, offs: Image, rect: Rect): void
+Slider.onDrawSlider(this: Slider, offs: Image, rect: Rect): void
+Slider.onDraw(this: Slider, offs: Image, rect: Rect): void
+View.width # fixed or minimum width of the view
+View.height # fixed or minimum height of the view
+View.enabled # the view accepts any user input(event) or not
+View.focusable # the view can be active(focused) or not
+View.parent
+View.style
+View.data # user attached data
+View.onClick(this: View): bool
+View.onClick(this: View): bool
+View.onReset(this: View): bool
+View.onReset(this: View): bool
+View.setStyle(this: View, style: Style): void
+View.onCreate(this: View, parent: View): void
+View.onCreate(this: View, parent: View): void
+View.onDestroy(this: View): void
+View.onDestroy(this: View): void
+View.onKeyEvent(this: View, event: KeyEvent): bool
+View.onKeyEvent(this: View, event: KeyEvent): bool
+View.onTouchEvent(this: View, rect: Rect, event: TouchEvent): bool
+View.onTouchEvent(this: View, rect: Rect, event: TouchEvent): bool
+View.onMeasure(this: View, rect: Rect): bool
+View.onMeasure(this: View, rect: Rect): bool
+View.onDraw(this: View, offs: Image, rect: Rect): void
+View.onDraw(this: View, offs: Image, rect: Rect, state: int32): void
+View.onDraw(this: View, offs: Image, rect: Rect, text: char[*], value: char[*]): void
+object.create(type: typename): pointer
+object.destroy(this: object): void
+object.as(this: object, type: typename): pointer
+object.type(this: object): typename
+Histogram
+Histogram.lines
+Histogram.color
+Histogram.data
+Histogram.update(this: Histogram, image: Image): void
+Histogram.onUpdate(this: Histogram, idx: int32, value: int32): bool
+Histogram.onUpdate(this: Histogram, idx: int32, value: int32): bool
+Histogram.onReset(this: Histogram): bool
+Histogram.onCreate(this: Histogram, parent: View): void
+Histogram.onTouchEvent(this: Histogram, rect: Rect, event: TouchEvent): bool
+Histogram.onMeasure(this: Histogram, rect: Rect): bool
+Histogram.onDraw(this: Histogram, offs: Image, rect: Rect): void
+View.width # fixed or minimum width of the view
+View.height # fixed or minimum height of the view
+View.enabled # the view accepts any user input(event) or not
+View.focusable # the view can be active(focused) or not
+View.parent
+View.style
+View.data # user attached data
+View.onClick(this: View): bool
+View.onClick(this: View): bool
+View.onReset(this: View): bool
+View.onReset(this: View): bool
+View.setStyle(this: View, style: Style): void
+View.onCreate(this: View, parent: View): void
+View.onCreate(this: View, parent: View): void
+View.onDestroy(this: View): void
+View.onDestroy(this: View): void
+View.onKeyEvent(this: View, event: KeyEvent): bool
+View.onKeyEvent(this: View, event: KeyEvent): bool
+View.onTouchEvent(this: View, rect: Rect, event: TouchEvent): bool
+View.onTouchEvent(this: View, rect: Rect, event: TouchEvent): bool
+View.onMeasure(this: View, rect: Rect): bool
+View.onMeasure(this: View, rect: Rect): bool
+View.onDraw(this: View, offs: Image, rect: Rect): void
+View.onDraw(this: View, offs: Image, rect: Rect, state: int32): void
+View.onDraw(this: View, offs: Image, rect: Rect, text: char[*], value: char[*]): void
+object.create(type: typename): pointer
+object.destroy(this: object): void
+object.as(this: object, type: typename): pointer
+object.type(this: object): typename
+DebugView # debug view to count draws
+DebugView.text
+DebugView.started
+DebugView.maxDuration
+DebugView.durations
+DebugView.measures
+DebugView.draws
+DebugView.startTimer(this: DebugView): void
+DebugView.update(this: DebugView): void
+DebugView.onClick(this: DebugView): bool
+DebugView.onReset(this: DebugView): bool
+DebugView.onCreate(this: DebugView, parent: View): void
+DebugView.onMeasure(this: DebugView, rect: Rect): bool
+DebugView.onDraw(this: DebugView, offs: Image, rect: Rect): void
+View.width # fixed or minimum width of the view
+View.height # fixed or minimum height of the view
+View.enabled # the view accepts any user input(event) or not
+View.focusable # the view can be active(focused) or not
+View.parent
+View.style
+View.data # user attached data
+View.onClick(this: View): bool
+View.onClick(this: View): bool
+View.onReset(this: View): bool
+View.onReset(this: View): bool
+View.setStyle(this: View, style: Style): void
+View.onCreate(this: View, parent: View): void
+View.onCreate(this: View, parent: View): void
+View.onDestroy(this: View): void
+View.onDestroy(this: View): void
+View.onKeyEvent(this: View, event: KeyEvent): bool
+View.onKeyEvent(this: View, event: KeyEvent): bool
+View.onTouchEvent(this: View, rect: Rect, event: TouchEvent): bool
+View.onTouchEvent(this: View, rect: Rect, event: TouchEvent): bool
+View.onMeasure(this: View, rect: Rect): bool
+View.onMeasure(this: View, rect: Rect): bool
+View.onDraw(this: View, offs: Image, rect: Rect): void
+View.onDraw(this: View, offs: Image, rect: Rect, state: int32): void
+View.onDraw(this: View, offs: Image, rect: Rect, text: char[*], value: char[*]): void
+object.create(type: typename): pointer
+object.destroy(this: object): void
+object.as(this: object, type: typename): pointer
+object.type(this: object): typename
+Panel
+Panel.visible
+Panel.visible(this: Panel, value: bool): bool
+Panel.onMeasure(this: Panel, rect: Rect): bool
+Layout.Item
+Layout.Item.rect
+Layout.Item.view
+Layout.Item.align
+Layout.separator
+Layout.itemCount
+Layout.itemCapacity
+Layout.items
+Layout.hoveredIndex
+Layout.pressedIndex
+Layout.focusedIndex
+Layout.paddingTop
+Layout.paddingLeft
+Layout.paddingRight
+Layout.paddingBottom
+Layout.orientation # Vertical, horizontal or other orientation of the layout\nzero represents a stack(Qt) or frame(Android) layout (all child elements are placed on top of each other)\nnegative value represents a column layout, specifying the number of columns to be used\npositive value represents a row layout, specifying the number of rows to be used
+Layout.clearState(this: Layout, mode: int32): bool
+Layout.getPressed(this: Layout): View
+Layout.getFocused(this: Layout): View
+Layout.setFocused(this: Layout, focus: View): bool
+Layout.capacity(this: Layout, capacity: int32): Layout
+Layout.addItems(this: Layout, align: int32, views: View[]): Layout
+Layout.padding(this: Layout, top: int32, left: int32, right: int32, bottom: int32): Layout
+Layout.onClick(this: Layout): bool
+Layout.onReset(this: Layout): bool
+Layout.onCreate(this: Layout, parent: View): void
+Layout.onDestroy(this: Layout): void
+Layout.onKeyEvent(this: Layout, event: KeyEvent): bool
+Layout.onTouchEvent(this: Layout, rect: Rect, event: TouchEvent): bool
+Layout.onMeasure(this: Layout, measured: Rect): bool
+Layout.onLayout(this: Layout, rect: Rect): void
+Layout.verticalLayout(this: Layout, measured: Rect, cols: int32): void
+Layout.horizontalLayout(this: Layout, measured: Rect, rows: int32): void
+Layout.onLayout(this: Layout, measured: Rect): void
+Layout.onDraw(this: Layout, offs: Image, parent: Rect): void
+Layout.Custom(rowsCols: int32, align: int32, items: View[]): Layout
+Layout.Row(items: View[]): Layout
+Layout.Column(items: View[]): Layout
+Layout.Frame(items: View[]): Layout
+View.width # fixed or minimum width of the view
+View.height # fixed or minimum height of the view
+View.enabled # the view accepts any user input(event) or not
+View.focusable # the view can be active(focused) or not
+View.parent
+View.style
+View.data # user attached data
+View.onClick(this: View): bool
+View.onClick(this: View): bool
+View.onReset(this: View): bool
+View.onReset(this: View): bool
+View.setStyle(this: View, style: Style): void
+View.onCreate(this: View, parent: View): void
+View.onCreate(this: View, parent: View): void
+View.onDestroy(this: View): void
+View.onDestroy(this: View): void
+View.onKeyEvent(this: View, event: KeyEvent): bool
+View.onKeyEvent(this: View, event: KeyEvent): bool
+View.onTouchEvent(this: View, rect: Rect, event: TouchEvent): bool
+View.onTouchEvent(this: View, rect: Rect, event: TouchEvent): bool
+View.onMeasure(this: View, rect: Rect): bool
+View.onMeasure(this: View, rect: Rect): bool
+View.onDraw(this: View, offs: Image, rect: Rect): void
+View.onDraw(this: View, offs: Image, rect: Rect, state: int32): void
+View.onDraw(this: View, offs: Image, rect: Rect, text: char[*], value: char[*]): void
+object.create(type: typename): pointer
+object.destroy(this: object): void
+object.as(this: object, type: typename): pointer
+object.type(this: object): typename
+TabPage
+TabPage.tabs
+TabPage.active
+TabPage.background
+TabPage.onCreate(this: TabPage, parent: View): void
+TabPage.onMeasurePage(layout: Layout, rect: Rect): bool
+TabPage.onDrawPage(panel: Layout, offs: Image, rect: Rect): void
+TabPage.onDrawBar(tabs: Layout, offs: Image, rect: Rect): void
+TabPage.onDrawTab(tab: Button, offs: Image, rect: Rect): void
+TabPage.onDrawSeparator(this: View, offs: Image, rect: Rect): void
+TabPage.onClickTab(button: Button): bool
+TabPage.addItems(this: TabPage, text: char[*], align: int32, views: View[]): TabPage
+Layout.Item
+Layout.Item.rect
+Layout.Item.view
+Layout.Item.align
+Layout.separator
+Layout.itemCount
+Layout.itemCapacity
+Layout.items
+Layout.hoveredIndex
+Layout.pressedIndex
+Layout.focusedIndex
+Layout.paddingTop
+Layout.paddingLeft
+Layout.paddingRight
+Layout.paddingBottom
+Layout.orientation # Vertical, horizontal or other orientation of the layout\nzero represents a stack(Qt) or frame(Android) layout (all child elements are placed on top of each other)\nnegative value represents a column layout, specifying the number of columns to be used\npositive value represents a row layout, specifying the number of rows to be used
+Layout.clearState(this: Layout, mode: int32): bool
+Layout.getPressed(this: Layout): View
+Layout.getFocused(this: Layout): View
+Layout.setFocused(this: Layout, focus: View): bool
+Layout.capacity(this: Layout, capacity: int32): Layout
+Layout.addItems(this: Layout, align: int32, views: View[]): Layout
+Layout.padding(this: Layout, top: int32, left: int32, right: int32, bottom: int32): Layout
+Layout.onClick(this: Layout): bool
+Layout.onReset(this: Layout): bool
+Layout.onCreate(this: Layout, parent: View): void
+Layout.onDestroy(this: Layout): void
+Layout.onKeyEvent(this: Layout, event: KeyEvent): bool
+Layout.onTouchEvent(this: Layout, rect: Rect, event: TouchEvent): bool
+Layout.onMeasure(this: Layout, measured: Rect): bool
+Layout.onLayout(this: Layout, rect: Rect): void
+Layout.verticalLayout(this: Layout, measured: Rect, cols: int32): void
+Layout.horizontalLayout(this: Layout, measured: Rect, rows: int32): void
+Layout.onLayout(this: Layout, measured: Rect): void
+Layout.onDraw(this: Layout, offs: Image, parent: Rect): void
+Layout.Custom(rowsCols: int32, align: int32, items: View[]): Layout
+Layout.Row(items: View[]): Layout
+Layout.Column(items: View[]): Layout
+Layout.Frame(items: View[]): Layout
+View.width # fixed or minimum width of the view
+View.height # fixed or minimum height of the view
+View.enabled # the view accepts any user input(event) or not
+View.focusable # the view can be active(focused) or not
+View.parent
+View.style
+View.data # user attached data
+View.onClick(this: View): bool
+View.onClick(this: View): bool
+View.onReset(this: View): bool
+View.onReset(this: View): bool
+View.setStyle(this: View, style: Style): void
+View.onCreate(this: View, parent: View): void
+View.onCreate(this: View, parent: View): void
+View.onDestroy(this: View): void
+View.onDestroy(this: View): void
+View.onKeyEvent(this: View, event: KeyEvent): bool
+View.onKeyEvent(this: View, event: KeyEvent): bool
+View.onTouchEvent(this: View, rect: Rect, event: TouchEvent): bool
+View.onTouchEvent(this: View, rect: Rect, event: TouchEvent): bool
+View.onMeasure(this: View, rect: Rect): bool
+View.onMeasure(this: View, rect: Rect): bool
+View.onDraw(this: View, offs: Image, rect: Rect): void
+View.onDraw(this: View, offs: Image, rect: Rect, state: int32): void
+View.onDraw(this: View, offs: Image, rect: Rect, text: char[*], value: char[*]): void
+object.create(type: typename): pointer
+object.destroy(this: object): void
+object.as(this: object, type: typename): pointer
+object.type(this: object): typename
+Select
+Select.text
+Select.states
+Select.selected
+Select.header
+Select.panel
+Select.selectedData(select: Select): variant
+Select.expand(select: Select, value: bool): bool
+Select.onItemClick(select: Select, view: Button): bool
+Select.setSelectedIndex(select: Select, index: int32): Select
+Select.addItems(this: Select, align: int32, views: View[]): Select
+Select.addItem(this: Select, text: char[*], data: variant): Select
+Layout.Item
+Layout.Item.rect
+Layout.Item.view
+Layout.Item.align
+Layout.separator
+Layout.itemCount
+Layout.itemCapacity
+Layout.items
+Layout.hoveredIndex
+Layout.pressedIndex
+Layout.focusedIndex
+Layout.paddingTop
+Layout.paddingLeft
+Layout.paddingRight
+Layout.paddingBottom
+Layout.orientation # Vertical, horizontal or other orientation of the layout\nzero represents a stack(Qt) or frame(Android) layout (all child elements are placed on top of each other)\nnegative value represents a column layout, specifying the number of columns to be used\npositive value represents a row layout, specifying the number of rows to be used
+Layout.clearState(this: Layout, mode: int32): bool
+Layout.getPressed(this: Layout): View
+Layout.getFocused(this: Layout): View
+Layout.setFocused(this: Layout, focus: View): bool
+Layout.capacity(this: Layout, capacity: int32): Layout
+Layout.addItems(this: Layout, align: int32, views: View[]): Layout
+Layout.padding(this: Layout, top: int32, left: int32, right: int32, bottom: int32): Layout
+Layout.onClick(this: Layout): bool
+Layout.onReset(this: Layout): bool
+Layout.onCreate(this: Layout, parent: View): void
+Layout.onDestroy(this: Layout): void
+Layout.onKeyEvent(this: Layout, event: KeyEvent): bool
+Layout.onTouchEvent(this: Layout, rect: Rect, event: TouchEvent): bool
+Layout.onMeasure(this: Layout, measured: Rect): bool
+Layout.onLayout(this: Layout, rect: Rect): void
+Layout.verticalLayout(this: Layout, measured: Rect, cols: int32): void
+Layout.horizontalLayout(this: Layout, measured: Rect, rows: int32): void
+Layout.onLayout(this: Layout, measured: Rect): void
+Layout.onDraw(this: Layout, offs: Image, parent: Rect): void
+Layout.Custom(rowsCols: int32, align: int32, items: View[]): Layout
+Layout.Row(items: View[]): Layout
+Layout.Column(items: View[]): Layout
+Layout.Frame(items: View[]): Layout
+View.width # fixed or minimum width of the view
+View.height # fixed or minimum height of the view
+View.enabled # the view accepts any user input(event) or not
+View.focusable # the view can be active(focused) or not
+View.parent
+View.style
+View.data # user attached data
+View.onClick(this: View): bool
+View.onClick(this: View): bool
+View.onReset(this: View): bool
+View.onReset(this: View): bool
+View.setStyle(this: View, style: Style): void
+View.onCreate(this: View, parent: View): void
+View.onCreate(this: View, parent: View): void
+View.onDestroy(this: View): void
+View.onDestroy(this: View): void
+View.onKeyEvent(this: View, event: KeyEvent): bool
+View.onKeyEvent(this: View, event: KeyEvent): bool
+View.onTouchEvent(this: View, rect: Rect, event: TouchEvent): bool
+View.onTouchEvent(this: View, rect: Rect, event: TouchEvent): bool
+View.onMeasure(this: View, rect: Rect): bool
+View.onMeasure(this: View, rect: Rect): bool
+View.onDraw(this: View, offs: Image, rect: Rect): void
+View.onDraw(this: View, offs: Image, rect: Rect, state: int32): void
+View.onDraw(this: View, offs: Image, rect: Rect, text: char[*], value: char[*]): void
+object.create(type: typename): pointer
+object.destroy(this: object): void
+object.as(this: object, type: typename): pointer
+object.type(this: object): typename
+FxWidget # Widget used to display controls in image processing demos
+FxWidget.showOriginal
+FxWidget.align
+FxWidget.margin
+FxWidget.radius
+FxWidget.onTouchEvent(this: FxWidget, rect: Rect, event: TouchEvent): bool
+FxWidget.onKeyEvent(this: FxWidget, event: KeyEvent): bool
+FxWidget.onMeasure(this: FxWidget, measured: Rect): bool
+FxWidget.onDraw(this: FxWidget, offs: Image, rect: Rect): void
+Widget.rect
+Widget.measure
+Widget.focus
+Widget.scrollX
+Widget.scrollY
+Widget.focusNext(view: View, prev: bool): bool
+Widget.addItems(this: Widget, align: int32, views: View[]): Widget
+Widget.addItems(this: Widget, views: View[]): Widget
+Widget.theme(this: Widget, background: argb, accent: argb): Widget
+Widget.theme(this: Widget, background: argb): Widget
+Widget.focus(this: Widget, value: View): Widget
+Widget.padding(this: Widget, padding: int32): Widget
+Widget.padding(this: Widget, vertical: int32, horizontal: int32): Layout
+Widget.padding(this: Layout, top: int32, left: int32, right: int32, bottom: int32): Layout
+Widget.onCreate(this: Widget, parent: View): void
+Widget.onKeyEvent(this: Widget, event: KeyEvent): bool
+Widget.onMeasure(this: Widget, measured: Rect): bool
+Widget.onDraw(this: Widget, offs: Image, rect: Rect): void
+Layout.Item
+Layout.Item.rect
+Layout.Item.view
+Layout.Item.align
+Layout.separator
+Layout.itemCount
+Layout.itemCapacity
+Layout.items
+Layout.hoveredIndex
+Layout.pressedIndex
+Layout.focusedIndex
+Layout.paddingTop
+Layout.paddingLeft
+Layout.paddingRight
+Layout.paddingBottom
+Layout.orientation # Vertical, horizontal or other orientation of the layout\nzero represents a stack(Qt) or frame(Android) layout (all child elements are placed on top of each other)\nnegative value represents a column layout, specifying the number of columns to be used\npositive value represents a row layout, specifying the number of rows to be used
+Layout.clearState(this: Layout, mode: int32): bool
+Layout.getPressed(this: Layout): View
+Layout.getFocused(this: Layout): View
+Layout.setFocused(this: Layout, focus: View): bool
+Layout.capacity(this: Layout, capacity: int32): Layout
+Layout.addItems(this: Layout, align: int32, views: View[]): Layout
+Layout.padding(this: Layout, top: int32, left: int32, right: int32, bottom: int32): Layout
+Layout.onClick(this: Layout): bool
+Layout.onReset(this: Layout): bool
+Layout.onCreate(this: Layout, parent: View): void
+Layout.onDestroy(this: Layout): void
+Layout.onKeyEvent(this: Layout, event: KeyEvent): bool
+Layout.onTouchEvent(this: Layout, rect: Rect, event: TouchEvent): bool
+Layout.onMeasure(this: Layout, measured: Rect): bool
+Layout.onLayout(this: Layout, rect: Rect): void
+Layout.verticalLayout(this: Layout, measured: Rect, cols: int32): void
+Layout.horizontalLayout(this: Layout, measured: Rect, rows: int32): void
+Layout.onLayout(this: Layout, measured: Rect): void
+Layout.onDraw(this: Layout, offs: Image, parent: Rect): void
+Layout.Custom(rowsCols: int32, align: int32, items: View[]): Layout
+Layout.Row(items: View[]): Layout
+Layout.Column(items: View[]): Layout
+Layout.Frame(items: View[]): Layout
+View.width # fixed or minimum width of the view
+View.height # fixed or minimum height of the view
+View.enabled # the view accepts any user input(event) or not
+View.focusable # the view can be active(focused) or not
+View.parent
+View.style
+View.data # user attached data
+View.onClick(this: View): bool
+View.onClick(this: View): bool
+View.onReset(this: View): bool
+View.onReset(this: View): bool
+View.setStyle(this: View, style: Style): void
+View.onCreate(this: View, parent: View): void
+View.onCreate(this: View, parent: View): void
+View.onDestroy(this: View): void
+View.onDestroy(this: View): void
+View.onKeyEvent(this: View, event: KeyEvent): bool
+View.onKeyEvent(this: View, event: KeyEvent): bool
+View.onTouchEvent(this: View, rect: Rect, event: TouchEvent): bool
+View.onTouchEvent(this: View, rect: Rect, event: TouchEvent): bool
+View.onMeasure(this: View, rect: Rect): bool
+View.onMeasure(this: View, rect: Rect): bool
+View.onDraw(this: View, offs: Image, rect: Rect): void
+View.onDraw(this: View, offs: Image, rect: Rect, state: int32): void
+View.onDraw(this: View, offs: Image, rect: Rect, text: char[*], value: char[*]): void
+object.create(type: typename): pointer
+object.destroy(this: object): void
+object.as(this: object, type: typename): pointer
+object.type(this: object): typename
+Widget(width: int32, height: int32, style: Style): Widget
+Widget(width: int32, height: int32): Widget
+FxWidget(views: View[]): FxWidget
+Gui
+Gui.showWindow(offscreen: Image, onEvent(window: Window, action: int32, button: int32, x: int32, y: int32): int32, widget: Widget): void
+Gui.showWindow(offscreen: Image, widget: Widget): void
+Gui.showWindow(widget: Widget): void
+Gui.KEY_PRESS
+Gui.KEY_RELEASE
+Gui.MOUSE_WHEEL
+Gui.MOUSE_PRESS
+Gui.MOUSE_MOTION
+Gui.MOUSE_RELEASE
+Gui.FINGER_PRESS
+Gui.FINGER_MOTION
+Gui.FINGER_RELEASE
+Gui.EVENT_TIMEOUT
+Gui.WINDOW_INIT
+Gui.WINDOW_CLOSE
+Gui.WINDOW_ENTER
+Gui.WINDOW_LEAVE
+Gui.KEY_CODE_ESC
+Gui.KEY_CODE_BACK
+Gui.KEY_CODE_TAB
+Gui.KEY_CODE_ENTER
+Gui.KEY_CODE_CAPSLOCK
+Gui.KEY_CODE_PRINT_SCREEN
+Gui.KEY_CODE_SCROLL_LOCK
+Gui.KEY_CODE_PAUSE
+Gui.KEY_CODE_INSERT
+Gui.KEY_CODE_HOME
+Gui.KEY_CODE_PAGE_UP
+Gui.KEY_CODE_DELETE
+Gui.KEY_CODE_END
+Gui.KEY_CODE_PAGE_DOWN
+Gui.KEY_CODE_RIGHT
+Gui.KEY_CODE_LEFT
+Gui.KEY_CODE_DOWN
+Gui.KEY_CODE_UP
+Gui.KEY_CODE_L_SHIFT
+Gui.KEY_CODE_R_SHIFT
+Gui.KEY_CODE_L_CTRL
+Gui.KEY_CODE_R_CTRL
+Gui.KEY_CODE_L_ALT
+Gui.KEY_CODE_R_ALT
+Gui.KEY_CODE_L_GUI
+Gui.KEY_CODE_R_GUI
+Gui.KEY_MASK_SHIFT
+Gui.KEY_MASK_CTRL
+Gui.KEY_MASK_ALT
+Gui.showWindow(surf: Image, closure: pointer, onEvent(closure: pointer, action: int32, button: int32, x: int32, y: int32): int32): void
+Gui.setTitle(title: char[*]): void
+Gui.font(height: int32): Image
+Gui.font
 Mesh(fileName: char[*]): Mesh # Create a mesh by opening a file
 Camera
 Camera.position
@@ -770,6 +1662,9 @@ Gui.showWindow(image0: Image, image1: Image): void
 Gui.showWindow(width: int32, height: int32, animationResolution: int32, eval(in: vec4f): vec4f): void # Show or animate the the procedural image generated by the `eval` function
 Gui.showWindow(width: int32, height: int32, eval(in: vec4f): vec4f): void
 Gui.showWindow(w: int32, h: int32, fovy: float32, mesh: Mesh): void # Show the mesh in a window
+Gui.showWindow(offscreen: Image, onEvent(window: Window, action: int32, button: int32, x: int32, y: int32): int32, widget: Widget): void
+Gui.showWindow(offscreen: Image, widget: Widget): void
+Gui.showWindow(widget: Widget): void
 Gui.KEY_PRESS
 Gui.KEY_RELEASE
 Gui.MOUSE_WHEEL
@@ -784,6 +1679,32 @@ Gui.WINDOW_INIT
 Gui.WINDOW_CLOSE
 Gui.WINDOW_ENTER
 Gui.WINDOW_LEAVE
+Gui.KEY_CODE_ESC
+Gui.KEY_CODE_BACK
+Gui.KEY_CODE_TAB
+Gui.KEY_CODE_ENTER
+Gui.KEY_CODE_CAPSLOCK
+Gui.KEY_CODE_PRINT_SCREEN
+Gui.KEY_CODE_SCROLL_LOCK
+Gui.KEY_CODE_PAUSE
+Gui.KEY_CODE_INSERT
+Gui.KEY_CODE_HOME
+Gui.KEY_CODE_PAGE_UP
+Gui.KEY_CODE_DELETE
+Gui.KEY_CODE_END
+Gui.KEY_CODE_PAGE_DOWN
+Gui.KEY_CODE_RIGHT
+Gui.KEY_CODE_LEFT
+Gui.KEY_CODE_DOWN
+Gui.KEY_CODE_UP
+Gui.KEY_CODE_L_SHIFT
+Gui.KEY_CODE_R_SHIFT
+Gui.KEY_CODE_L_CTRL
+Gui.KEY_CODE_R_CTRL
+Gui.KEY_CODE_L_ALT
+Gui.KEY_CODE_R_ALT
+Gui.KEY_CODE_L_GUI
+Gui.KEY_CODE_R_GUI
 Gui.KEY_MASK_SHIFT
 Gui.KEY_MASK_CTRL
 Gui.KEY_MASK_ALT

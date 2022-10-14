@@ -4,8 +4,8 @@ export "CMPL_HOME=$(dirname "$(dirname "$(stat -f %N "$0")")")"
 echo "cmpl home is: $CMPL_HOME"
 cd "$CMPL_HOME" || exit 1
 
-BIN=bin/macos
-#BIN_EMC=$CMPL_HOME/extras/demo/emscripten
+BIN=build/macos
+#BIN_EMC=$CMPL_HOME/extras/demo/wasm
 
 make clean BINDIR="$BIN"
 make -j 12 cmpl libFile.dylib libGfx.dylib BINDIR="$BIN"
@@ -26,6 +26,8 @@ if ! $BIN/cmpl -dump.scite extras/cmpl.api "$BIN/libFile.dylib" "$BIN/libGfx.dyl
 	exit 1
 fi
 
+#exit 0
+
 # dump symbols, assembly, syntax tree and global variables
 $BIN/cmpl -X+steps-stdin-offsets -log/d "$BIN.ci" -asm/m/n/s -debug/g "$CMPL_HOME/cmplStd/test/test.ci"
 # dump symbols, documentation, assembly, syntax tree and global variables (to be compared with previous version to test if the code is generated properly)
@@ -36,6 +38,8 @@ $BIN/cmpl -X+steps+fold+fast-stdin-glob-offsets -debug/G/M -api/A/m/d/p -asm/n/s
 $BIN/cmpl -X-stdin+steps -profile/t/P/G/M -api/A/m/d/p -asm/g/n/s -ast/t -doc -use -log/d/15 "extras/dump/test.prof.ci" "cmplStd/test/test.ci"
 # dump profile data in json format
 $BIN/cmpl -X-stdin-steps -profile/t/P/G/M -api/A/m/d/p -asm/g/n/s -ast/t -doc -use -dump.json "extras/dump/test.prof.json" "cmplStd/test/test.ci"
+
+#exit 0
 
 TEST_FILES="$CMPL_HOME/cmplStd/test/test.ci"
 TEST_FILES="$TEST_FILES $(echo $CMPL_HOME/cmplStd/test/demo/*.ci)"

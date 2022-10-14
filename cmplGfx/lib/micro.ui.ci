@@ -892,7 +892,7 @@ struct FxWidget: Widget {
 			return Widget.onKeyEvent(this, event);
 		}
 
-		if (event.key == 8 && event.isShift) {
+		if (event.key == Gui.KEY_CODE_BACK && event.isShift) {
 			return this.onReset(this);
 		}
 
@@ -982,7 +982,7 @@ static struct Gui {
 
 	static void showWindow(Image offscreen, Widget widget) {
 		static int showWindowEvent(Window win&, int action, int button, int x, int y) {
-			if (action == Gui.KEY_RELEASE && button == 27) {
+			if (action == Gui.KEY_RELEASE && button == Gui.KEY_CODE_ESC) {
 				// exit when releasing escape key
 				return -1;
 			}

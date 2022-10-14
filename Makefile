@@ -112,15 +112,19 @@ libOpenGL.dll: cmplGL/src/openGL.c
 
 # Webassembly platform
 cmpl.js: $(SRC_CC_EXE) cmplStd/stdlib.ci
+	@mkdir $(MKDIRF) "$(BINDIR)" || true
 	emcc $(EMFLAGS) -o $(BINDIR)/cmpl.js $(EM_MAIN_MODULE) -s USE_SDL=2 $(filter %.c, $^) $(EM_EMBED)
 
 libFile.wasm: cmplFile/src/file.c
+	@mkdir $(MKDIRF) "$(BINDIR)" || true
 	emcc $(EMFLAGS) -o $(BINDIR)/libFile.wasm -I src $(EM_SIDE_MODULE) $(filter %.c, $^)
 
 libGfx.wasm: $(SRC_GX) $(GX_SRC)/gx_gui.sdl.c $(CC_SRC)/os_linux/time.c
+	@mkdir $(MKDIRF) "$(BINDIR)" || true
 	emcc $(EMFLAGS) -o $(BINDIR)/libGfx.wasm -I src $(EM_SIDE_MODULE) -s USE_SDL=2 $(filter %.c, $^)
 
 cmpl.dbg.js: $(SRC_CC_EXE) cmplStd/stdlib.ci
+	@mkdir $(MKDIRF) "$(BINDIR)" || true
 	emcc -g3 -O0 -s WASM=0 $(filter %.c, $^) -o $(BINDIR)/cmpl.dbg.js
 
 

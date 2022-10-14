@@ -163,18 +163,31 @@ int getWindowEvent(GxWindow window, int *button, int *x, int *y, int timeout) {
 		case KeyRelease: {
 			KeySym keysym = XLookupKeysym(&event.xkey, 0);
 			switch (keysym) {
-				default: {
-					char buffer[64] = {0};
-					XLookupString(&event.xkey, buffer, sizeof(buffer), &keysym, 0);
-					*button = buffer[0];
-					if (*button == 0) {
-						*button = keysym;
-					}
+				default:
+					*button = keysym;
 					break;
-				}
 
+				case XK_Escape:
+				case XK_BackSpace:
 				case XK_Tab:
-					*button = '\t';
+				case XK_Return:
+				case XK_Caps_Lock:
+				case XK_Print:
+				case XK_Scroll_Lock:
+				case XK_Pause:
+				case XK_Insert:
+				case XK_Home:
+				case XK_Page_Up:
+				case XK_Delete:
+				case XK_End:
+				case XK_Page_Down:
+				case XK_Right:
+				case XK_Left:
+				case XK_Down:
+				case XK_Up:
+				case XK_Super_L:
+				case XK_Super_R:
+					*button = keysym;
 					break;
 
 				case XK_Shift_L:
@@ -249,3 +262,30 @@ void destroyWindow(GxWindow window) {
 
 	free(window);
 }
+
+const int KEY_CODE_ESC = XK_Escape;
+const int KEY_CODE_BACKSPACE = XK_BackSpace;
+const int KEY_CODE_TAB = XK_Tab;
+const int KEY_CODE_RETURN = XK_Return;
+const int KEY_CODE_CAPSLOCK = XK_Caps_Lock;
+const int KEY_CODE_PRINT_SCREEN = XK_Print;
+const int KEY_CODE_SCROLL_LOCK = XK_Scroll_Lock;
+const int KEY_CODE_PAUSE = XK_Pause;
+const int KEY_CODE_INSERT = XK_Insert;
+const int KEY_CODE_HOME = XK_Home;
+const int KEY_CODE_PAGE_UP = XK_Page_Up;
+const int KEY_CODE_DELETE = XK_Delete;
+const int KEY_CODE_END = XK_End;
+const int KEY_CODE_PAGE_DOWN = XK_Page_Down;
+const int KEY_CODE_RIGHT = XK_Right;
+const int KEY_CODE_LEFT = XK_Left;
+const int KEY_CODE_DOWN = XK_Down;
+const int KEY_CODE_UP = XK_Up;
+const int KEY_CODE_L_SHIFT = XK_Shift_L;
+const int KEY_CODE_R_SHIFT = XK_Shift_R;
+const int KEY_CODE_L_CTRL = XK_Control_L;
+const int KEY_CODE_R_CTRL = XK_Control_R;
+const int KEY_CODE_L_ALT = XK_Alt_L;
+const int KEY_CODE_R_ALT = XK_Alt_R;
+const int KEY_CODE_L_GUI = XK_Super_L;
+const int KEY_CODE_R_GUI = XK_Super_R;

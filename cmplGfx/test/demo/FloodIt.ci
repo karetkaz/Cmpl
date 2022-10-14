@@ -44,7 +44,7 @@ bool flood(int i, int j, int o, int c) {
 Image image = Image(displaySize, displaySize, 32);
 int onEvent(int action, int button, int x, int y) {
 	static int moves = 0;
-	if (action == Gui.KEY_RELEASE && button == 27) {
+	if (action == Gui.KEY_RELEASE && button == Gui.KEY_CODE_ESC) {
 		// exit when releasing escape key
 		return -1;
 	}

@@ -112,7 +112,6 @@ ColorLut lookup = ColorLut("asset/lut3d/obs-guide-lut.png");
 Image back = Image("asset/image/forest.jpg", 32);
 Image offs = Image(back);
 
-inline "/cmplGfx/lib/micro.ui.ci";
 bool exportLut(Button this);
 Histogram histogram = {
 	enabled: false;
@@ -142,7 +141,7 @@ bool showOriginal(const Window win&, int action, int button) {
 }
 
 int onEvent(Window win&, int action, int button, int x, int y) {
-	if (action == Gui.KEY_RELEASE && button == 27) {
+	if (action == Gui.KEY_RELEASE && button == Gui.KEY_CODE_ESC) {
 		// exit when releasing escape key
 		return -1;
 	}

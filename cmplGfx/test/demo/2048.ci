@@ -1,4 +1,4 @@
-// Use your arrow keys (or WASD) to move the tiles. Two tiles will merge when they contain the same value.
+// Use your arrow keys to move the tiles. Two tiles will merge when they contain the same value.
 // based on: https://www.geeksforgeeks.org/2048-game-in-python/
 
 inline gridSize = 4;
@@ -97,7 +97,7 @@ void mirrorGrid() {
 }
 
 int onEvent(int action, int button, int x, int y) {
-	if (action == Gui.KEY_RELEASE && button == 27) {
+	if (action == Gui.KEY_RELEASE && button == Gui.KEY_CODE_ESC) {
 		// exit when releasing escape key
 		return -1;
 	}
@@ -116,20 +116,20 @@ int onEvent(int action, int button, int x, int y) {
 
 	bool moved = false;
 	inline KEY_ACTION = Gui.KEY_PRESS;
-	if (action == KEY_ACTION && (button == 1073741904 || button == 'a')) {
+	if (action == KEY_ACTION && button == Gui.KEY_CODE_LEFT) {
 		moved = mergeGrid();
 	}
-	if (action == KEY_ACTION && (button == 1073741903 || button == 'd')) {
+	if (action == KEY_ACTION && button == Gui.KEY_CODE_RIGHT) {
 		mirrorGrid();
 		moved = mergeGrid();
 		mirrorGrid();
 	}
-	if (action == KEY_ACTION && (button == 1073741906 || button == 'w')) {
+	if (action == KEY_ACTION && button == Gui.KEY_CODE_UP) {
 		rotateGrid();
 		moved = mergeGrid();
 		rotateGrid();
 	}
-	if (action == KEY_ACTION && (button == 1073741905 || button == 's')) {
+	if (action == KEY_ACTION && button == Gui.KEY_CODE_DOWN) {
 		rotateGrid();
 		mirrorGrid();
 		moved = mergeGrid();

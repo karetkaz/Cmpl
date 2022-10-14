@@ -4,9 +4,9 @@ export "CMPL_HOME=$(dirname "$(dirname "$(readlink -f "$0")")")"
 echo "cmpl home is: $CMPL_HOME"
 cd "$CMPL_HOME" || exit 1
 
-BIN=bin/linux
-BIN_WCC=$CMPL_HOME/bin/linux.wcc
-BIN_EMC=$CMPL_HOME/extras/demo/emscripten
+BIN=build/linux
+BIN_EMC=$CMPL_HOME/extras/demo/wasm
+BIN_WCC=$CMPL_HOME/build/wcc.linux
 
 make clean BINDIR="$BIN"
 make -j 12 cmpl libFile.so libGfx.so libOpenGL.so BINDIR="$BIN"

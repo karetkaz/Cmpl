@@ -1,6 +1,5 @@
 // DatePicker
 inline "/cmplStd/lib/time/Datetime.ci";
-inline "/cmplGfx/lib/micro.ui.ci";
 
 struct IntButton: View {
 	char text[16] = "";

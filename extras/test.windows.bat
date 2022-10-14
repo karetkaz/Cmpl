@@ -4,8 +4,8 @@ cd "%~dp0\.."
 SET CMPL_HOME=%CD%
 echo cmpl home is: %CMPL_HOME%
 
-SET BIN=%CMPL_HOME%\bin\windows
-SET BIN_WCC=%CMPL_HOME%\bin\windows.wcc
+SET BIN=%CMPL_HOME%\build\windows
+SET BIN_WCC=%CMPL_HOME%\build\wcc.windows
 
 SET "MINGW_HOME=C:\Workspace\MinGw-5.3.0"
 SET "WATCOM=C:\Workspace\ow_daily\rel2"
@@ -13,7 +13,6 @@ SET "WATCOM=C:\Workspace\ow_daily\rel2"
 IF EXIST "%MINGW_HOME%" (
 	SET "PATH=%MINGW_HOME%\bin;%PATH%"
 
-	IF NOT EXIST "%BIN%" mkdir "%BIN%"
 	mingw32-make -C "%CMPL_HOME%" BINDIR="%BIN%" clean
 	mingw32-make -C "%CMPL_HOME%" -j 12 BINDIR="%BIN%" cmpl libFile.dll libGfx.dll libOpenGL.dll
 )
@@ -30,8 +29,8 @@ IF EXIST "%WATCOM%" (
 )
 
 :: test the virtual machine
-%BIN_WCC%\cmpl --test-vm
-%BIN%\cmpl --test-vm
+%BIN_WCC%\cmpl>"%BIN_WCC%-vm.dump.md" --test-vm
+%BIN%\cmpl>"%BIN%-vm.dump.md" --test-vm
 
 :: dump symbols, assembly, syntax tree and global variables
 SET TEST_FLAGS=-X+steps-stdin-offsets -asm/m/n/s -debug/g "%CMPL_HOME%\cmplStd\test\test.ci"

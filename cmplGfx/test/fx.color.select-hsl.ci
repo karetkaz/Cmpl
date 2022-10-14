@@ -13,7 +13,6 @@
 Image back = Image("asset/image/forest.jpg", 32);
 Image offs = Image(back);
 
-inline "/cmplGfx/lib/micro.ui.ci";
 void drawColorSlider(Slider this, Image offs, Rect rect);
 void updateSlider(Slider min, Slider max, int value);
 bool syncMinMax(Slider this, int value);
@@ -124,7 +123,7 @@ vec4f blendHsl(vec4f base, vec4f blend) {
 }
 
 int onEvent(Window win&, int action, int button, int x, int y) {
-	if (action == Gui.KEY_RELEASE && button == 27) {
+	if (action == Gui.KEY_RELEASE && button == Gui.KEY_CODE_ESC) {
 		// exit when releasing escape key
 		return -1;
 	}

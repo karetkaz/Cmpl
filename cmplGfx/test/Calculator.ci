@@ -1,6 +1,5 @@
 // Simple Calculator with no precedence
 
-inline "/cmplGfx/lib/micro.ui.ci";
 Style display = {
 	font: Image.openTtf("asset/font/NokiaPureText.ttf", 48);
 	align: Style.right;

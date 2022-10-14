@@ -1048,7 +1048,7 @@ static void mainLoopCallback(mainLoopArgs args) {
 			args->timeout = 0;
 		}
 	} else {
-		if (args->event.action == KEY_RELEASE && args->event.button == 27) {
+		if (args->event.action == KEY_RELEASE && args->event.button == KEY_CODE_ESC) {
 			// if there is no callback, exit wit esc key
 			return exitMainLoop(args);
 		}
@@ -1830,6 +1830,36 @@ int cmplInit(rtContext rt) {
 		rt->api.ccDefInt(cc, "WINDOW_CLOSE", WINDOW_CLOSE);
 		rt->api.ccDefInt(cc, "WINDOW_ENTER", WINDOW_ENTER);
 		rt->api.ccDefInt(cc, "WINDOW_LEAVE", WINDOW_LEAVE);
+
+		rt->api.ccDefInt(cc, "KEY_CODE_ESC", KEY_CODE_ESC);
+		rt->api.ccDefInt(cc, "KEY_CODE_BACK", KEY_CODE_BACKSPACE);
+		rt->api.ccDefInt(cc, "KEY_CODE_TAB", KEY_CODE_TAB);
+		rt->api.ccDefInt(cc, "KEY_CODE_ENTER", KEY_CODE_RETURN);
+		rt->api.ccDefInt(cc, "KEY_CODE_CAPSLOCK", KEY_CODE_CAPSLOCK);
+
+		rt->api.ccDefInt(cc, "KEY_CODE_PRINT_SCREEN", KEY_CODE_PRINT_SCREEN);
+		rt->api.ccDefInt(cc, "KEY_CODE_SCROLL_LOCK", KEY_CODE_SCROLL_LOCK);
+		rt->api.ccDefInt(cc, "KEY_CODE_PAUSE", KEY_CODE_PAUSE);
+
+		rt->api.ccDefInt(cc, "KEY_CODE_INSERT", KEY_CODE_INSERT);
+		rt->api.ccDefInt(cc, "KEY_CODE_HOME", KEY_CODE_HOME);
+		rt->api.ccDefInt(cc, "KEY_CODE_PAGE_UP", KEY_CODE_PAGE_UP);
+		rt->api.ccDefInt(cc, "KEY_CODE_DELETE", KEY_CODE_DELETE);
+		rt->api.ccDefInt(cc, "KEY_CODE_END", KEY_CODE_END);
+		rt->api.ccDefInt(cc, "KEY_CODE_PAGE_DOWN", KEY_CODE_PAGE_DOWN);
+		rt->api.ccDefInt(cc, "KEY_CODE_RIGHT", KEY_CODE_RIGHT);
+		rt->api.ccDefInt(cc, "KEY_CODE_LEFT", KEY_CODE_LEFT);
+		rt->api.ccDefInt(cc, "KEY_CODE_DOWN", KEY_CODE_DOWN);
+		rt->api.ccDefInt(cc, "KEY_CODE_UP", KEY_CODE_UP);
+
+		rt->api.ccDefInt(cc, "KEY_CODE_L_SHIFT", KEY_CODE_L_SHIFT);
+		rt->api.ccDefInt(cc, "KEY_CODE_R_SHIFT", KEY_CODE_R_SHIFT);
+		rt->api.ccDefInt(cc, "KEY_CODE_L_CTRL", KEY_CODE_L_CTRL);
+		rt->api.ccDefInt(cc, "KEY_CODE_R_CTRL", KEY_CODE_R_CTRL);
+		rt->api.ccDefInt(cc, "KEY_CODE_L_ALT", KEY_CODE_L_ALT);
+		rt->api.ccDefInt(cc, "KEY_CODE_R_ALT", KEY_CODE_R_ALT);
+		rt->api.ccDefInt(cc, "KEY_CODE_L_GUI", KEY_CODE_L_GUI);
+		rt->api.ccDefInt(cc, "KEY_CODE_R_GUI", KEY_CODE_R_GUI);
 
 		rt->api.ccDefInt(cc, "KEY_MASK_SHIFT", KEY_MASK_SHIFT);
 		rt->api.ccDefInt(cc, "KEY_MASK_CTRL", KEY_MASK_CTRL);
