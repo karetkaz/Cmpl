@@ -183,7 +183,6 @@ mat4f lsd = mat4f(
 );
 }
 
-inline "/cmplGfx/lib/micro.ui.ci";
 Histogram histogram = {
 	enabled: false;
 };
@@ -243,7 +242,7 @@ DebugView debug = {
 };
 
 int onEvent(Window win&, int action, int button, int x, int y) {
-	if (action == Gui.KEY_RELEASE && button == 27) {
+	if (action == Gui.KEY_RELEASE && button == Gui.KEY_CODE_ESC) {
 		// exit when releasing escape key
 		return -1;
 	}
@@ -306,6 +305,6 @@ Gui.showWindow(offs, onEvent, FxWidget(
 
 	null, brightness, exposure, saturation, contrast, warmth, tint, hue,
 	null, debug
-));
+).focus(brightness));
 offs.destroy();
 back.destroy();

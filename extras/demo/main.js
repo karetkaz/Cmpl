@@ -718,10 +718,10 @@ function execute(cmd, args) {
 
 		if (args.libs !== false) {
 			if (params.libFile != null) {
-				execArgs.push(props.locateFile('libFile.wasm'));
+				execArgs.push('libFile.wasm');
 			}
 			if (params.libGfx != null) {
-				execArgs.push(props.locateFile('libGfx.wasm'));
+				execArgs.push('libGfx.wasm');
 			}
 		}
 

@@ -1,9 +1,5 @@
 // micro ui, TODO: add comments
 
-static if (typename(debugLayoutDraw) == null) {
-inline debugLayoutDraw(Image img, const Rect rect&, uint32 rgb) = void(0);
-}
-
 struct Style {
 	static const argb dark = argb(0x1a1a1a);
 	static const argb light = argb(0xdadada);
@@ -225,7 +221,7 @@ struct View: object {
 			// click with space key
 			return this.onClick(this);
 		}
-		if (event.key == 8) {
+		if (event.key == Gui.KEY_CODE_BACK) {
 			// reset with backspace key
 			return this.onReset(this);
 		}
@@ -941,12 +937,10 @@ struct Layout: View {
 					if (i == this.focusedIndex) {
 						state |= Style.focused;
 					}
-					offs.debugLayoutDraw(rect, 0x00ff00);
 				}
 				view.onDraw(offs, rect, state);
 			}
 		}
-		offs.debugLayoutDraw(parent, 0xff0000);
 	}
 
 	static Layout Custom(int rowsCols, int align, View items...) {
@@ -1096,7 +1090,7 @@ struct Widget: Layout {
 			return false;
 		}
 
-		if (event.key == '\t' || event.key == '\r') {
+		if (event.key == Gui.KEY_CODE_TAB || event.key == Gui.KEY_CODE_ENTER) {
 			// Tab, Enter: select prev or next control.
 			this.clearState(Style.hovered);
 			if (!this.focusNext(event.isShift)) {

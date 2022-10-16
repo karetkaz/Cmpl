@@ -25,7 +25,7 @@ void drawLine(Image image, int x0, int y0, int x1, int y1, bool smooth, uint32 c
 int onEvent(int action, int button, int ex, int ey) {
 	static bool smooth = true;
 	if (action == Gui.KEY_RELEASE) {
-		if (button == 27) {
+		if (button == Gui.KEY_CODE_ESC) {
 			// exit with escape button
 			return -1;
 		}

@@ -12,7 +12,7 @@ int onEvent(int action, int button, int ex, int ey) {
 	static int ox = 0;
 	static int oy = 0;
 
-	if (action == Gui.KEY_RELEASE && button == 27) {
+	if (action == Gui.KEY_RELEASE && button == Gui.KEY_CODE_ESC) {
 		// exit when releasing escape key
 		return -1;
 	}

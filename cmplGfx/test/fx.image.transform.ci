@@ -66,8 +66,6 @@ mat4f skewMatrix(float sx, float sy) {
 	};
 }
 
-inline "/cmplGfx/lib/micro.ui.ci";
-
 char filtering[*][] = {
 	"nearest",
 	"linear",
@@ -139,7 +137,7 @@ Slider imgRatio = {
 };
 
 int onEvent(Window win&, int action, int button, int x, int y) {
-	if (action == Gui.KEY_RELEASE && button == 27) {
+	if (action == Gui.KEY_RELEASE && button == Gui.KEY_CODE_ESC) {
 		// exit when releasing escape key
 		return -1;
 	}

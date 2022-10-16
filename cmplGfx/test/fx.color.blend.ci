@@ -15,7 +15,6 @@ Image image = Image("asset/image/texture_nature_01.png", 32);
 Image offs = Image(base);
 Image blend = Image(image, offs.width(), offs.height(), -1, 1.);
 
-inline "/cmplGfx/lib/micro.ui.ci";
 struct BlendButton: Button {
 	inline linear_dodge(float32 base, float32 blend) = Math.min(base + blend, 1f);
 	inline linear_burn(float32 base, float32 blend) = Math.max(base + blend - 1, 0f);
@@ -306,7 +305,7 @@ DebugView debug = {
 };
 
 int onEvent(Window win&, int action, int button, int x, int y) {
-	if (action == Gui.KEY_RELEASE && button == 27) {
+	if (action == Gui.KEY_RELEASE && button == Gui.KEY_CODE_ESC) {
 		// exit when releasing escape key
 		return -1;
 	}

@@ -1,4 +1,22 @@
+Module.locateFile = function(path) {
+	return (Module.locatePath || '/Cmpl/extras/demo/wasm/') + path;
+};
+Module.locateLibs = function (paths) {
+	let result = [];
+	for (let arg of paths) {
+		if (arg.startsWith('lib') && arg.endsWith('.wasm')) {
+			arg = Module.locateFile(arg);
+		}
+		result.push(arg);
+	}
+	return result;
+};
+
 Module.workspace = '/workspace';
+Module.dynamicLibraries = Module.locateLibs(Module.dynamicLibraries);
+
+Module.importScripts(Module.locateFile('cmpl.js'));
+
 Module.listFiles = function(folders, recursive) {
 	let cwd = FS.cwd() + '/';
 	let result = [];
@@ -207,10 +225,9 @@ Module.openProjectFile = function(data, callBack) {
 				// file opened, refresh file list
 				list = [Module.parentDir(path)]
 			}
-			Module.print('File ' + operation + ': ' + Module.absolutePath(path));
+			Module.printLog('File ' + operation + ': ' + Module.absolutePath(path));
 		} catch (err) {
-			result.error = 'File ' + operation + ' failed[' + data.path + ']: ' + err;
-			console.trace(err);
+			Module.printErr('File ' + operation + ' failed[' + data.path + ']: ' + err);
 		}
 	}
 
@@ -275,19 +292,19 @@ Module.wgetFiles = function(files) {
 				inProgress -= 1;
 				if (request.status < 200 || request.status >= 300) {
 					let err = new Error(request.status + ' (' + request.statusText + ')')
-					Module.print('Download failed: `' + request.responseURL + '`: ' + err);
+					Module.printErr('Download failed: `' + request.responseURL + '`: ' + err);
 					if (Module.onFileDownloaded != null) {
 						Module.onFileDownloaded(inProgress, files.length);
 					}
 					return err;
 				}
 				saveFile(path, new Uint8Array(request.response));
-				Module.print('Downloaded file: ' + path + ': ' + request.responseURL);
+				Module.printLog('Downloaded file: ' + path + ': ' + request.responseURL);
 				if (Module.onFileDownloaded != null) {
 					Module.onFileDownloaded(inProgress, files.length);
 				}
 				if (inProgress === 0) {
-					Module.print("Project file(s) download complete.");
+					Module.printLog("Project file(s) download complete.");
 
 				}
 			}

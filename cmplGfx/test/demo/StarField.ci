@@ -59,7 +59,7 @@ Image image = Image(resolutionx, resolutiony, 32);
 int onEvent(int action, int btn, int x, int y) {
 
 	if (action == Gui.KEY_PRESS) {
-		if (btn == 27) {
+		if (btn == Gui.KEY_CODE_ESC) {
 			return -1;
 		}
 		if (btn == '[') {

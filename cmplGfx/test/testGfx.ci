@@ -66,12 +66,11 @@ static int onEvent(int action, int button, int x, int y) {
 	}
 
 	debug("event", event);
-	if (action == Gui.KEY_RELEASE && button == 27) {
+	if (action == Gui.KEY_RELEASE && button == Gui.KEY_CODE_ESC) {
 		return -1;
 	}
 
 	static if (true) {
-		inline "/cmplGfx/lib/micro.ui.ci";
 		static char actionText[32] = {0};
 		static Button btnAction = {
 			enabled: false;

@@ -15,8 +15,6 @@ Image surf = Image("asset/image/forest.jpg", 32);
 Image offs = Image(surf);
 Image blur = Image(surf);
 
-inline "/cmplGfx/lib/micro.ui.ci";
-
 bool onTouchEvent(Button view, const Rect rect&, const TouchEvent event&);
 bool onResetClick(Button view);
 Histogram histogram = {
@@ -110,7 +108,7 @@ Rect rect = {
 int oldRadius = 0;
 
 int onEvent(Window win&, int action, int button, int x, int y) {
-	if (action == Gui.KEY_RELEASE && button == 27) {
+	if (action == Gui.KEY_RELEASE && button == Gui.KEY_CODE_ESC) {
 		// exit when releasing escape key
 		return -1;
 	}

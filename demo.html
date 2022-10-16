@@ -361,10 +361,7 @@ function centerCanvas(zoom) {
 
 // libGfx for canvas based execution
 if (params.useWebWorker !== undefined) {
-	props.locateFile = function (path) {
-		return path;
-	}
-	var worker = new Worker('extras/demo/emscripten/worker.js');
+	var worker = new Worker('extras/demo/worker.js');
 	worker.onmessage = function (event) {
 		//console.log('worker: ', event.data);
 		process(event.data);
@@ -391,18 +388,26 @@ if (params.useWebWorker !== undefined) {
 	};
 }
 else {
-	props.locateFile = function (path) {
-		return 'extras/demo/emscripten/' + path;
-	}
 	var Module = {
 		initialized: false,
-		locateFile: props.locateFile,
+		locatePath: params.version,
 		dynamicLibraries: [
-			'extras/demo/emscripten/libFile.wasm',
-			'extras/demo/emscripten/libGfx.wasm'
+			'libFile.wasm',
+			'libGfx.wasm'
 		],
+		importScripts: function (...urls) {
+			for (let url of urls) {
+				// fixme: url = escape(url);
+				document.write('<script type="text/javascript" src="' + url + '"><\/script>');
+			}
+		},
 		print: function (message) {
+			// console.log(message);
 			terminal.append(message);
+		},
+		printLog: function (message) {
+			console.debug(message);
+			// terminal.append(message);
 		},
 		printErr: function (message) {
 			console.error(message);
@@ -460,7 +465,7 @@ else {
 
 		setTimeout(function() {
 			try {
-				callMain(args || []);
+				callMain(Module.locateLibs(args || []));
 				if (extra && extra.dump) {
 					openProjectFile({ path: extra.dump });
 				}
@@ -472,8 +477,7 @@ else {
 		});
 	}
 
-	document.write('<script type="text/javascript" src="extras/demo/emscripten/module.js"><\/script>');
-	document.write('<script type="text/javascript" src="extras/demo/emscripten/cmpl.js"><\/script>');
+	document.write('<script type="text/javascript" src="extras/demo/module.js"><\/script>');
 }
 if (params.workspace == null && params.project == null && params.content == null && params.path == null) {
 	document.write('<script type="text/javascript" src="extras/demo/tests.js"><\/script>');

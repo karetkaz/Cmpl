@@ -1,5 +1,4 @@
 // graphics library extension
-inline "lib/color.ci";
 
 /// adjust the rectangle position and size
 void adjust(Rect roi&, int x, int y, int w, int h) {
@@ -15,52 +14,18 @@ inline adjust(Rect roi&, int w, int h) = roi.adjust(-w, -h, 2 * w, 2 * h);
 /// adjust the rectangle position and size
 inline adjust(Rect roi&, int s) = roi.adjust(-s, -s, 2 * s, 2 * s);
 
-///@public
-bool clip(Image image, Rect roi&) {
-
-	roi.w += roi.x;
-	roi.h += roi.y;
-
-	if (roi.x < 0) {
-		roi.x = 0;
-	}
-
-	if (roi.y < 0) {
-		roi.y = 0;
-	}
-
-	int width = image.width();
-	if (roi.w > width) {
-		roi.w = width;
-	}
-
-	int height = image.height();
-	if (roi.h > height) {
-		roi.h = height;
-	}
-
-	roi.w -= roi.x;
-	roi.h -= roi.y;
-
-	if (roi.w <= 0) {
-		return false;
-	}
-	if (roi.h <= 0) {
-		return false;
-	}
-	return true;
-}
-
-/// Set the the color of a pixel at the given position
-inline set(Image image, int32 x, int32 y, argb color) = Image.set(image, x, y, uint32(color));
-
+inline "lib/color.ci";
 inline "lib/image.ci";
+inline "lib/image.draw.ci";
 inline "lib/image.blend.ci";
+inline "lib/image.transform.ci";
+
+inline "lib/image.blur.ci";
+
 inline "lib/color.lookup.ci";
 inline "lib/color.matrix.ci";
-inline "lib/image.transform.ci";
-inline "lib/image.blur.ci";
-inline "lib/image.draw.ci";
+
+inline "lib/micro.ui.ci";
 
 inline "lib/mesh.ci";
 inline "lib/camera.ci";
@@ -95,7 +60,7 @@ void showWindow(int width, int height, Image image0, Image image1, Image image2)
 	}
 
 	static int onEvent(const Data data&, int action, int button, int ex, int ey) {
-		if (action == Gui.KEY_RELEASE && button == 27) {
+		if (action == Gui.KEY_RELEASE && button == Gui.KEY_CODE_ESC) {
 			// exit when releasing escape key
 			return -1;
 		}
@@ -152,7 +117,7 @@ void showWindow(int width, int height, int animationResolution, vec4f eval(vec4f
 	}
 
 	static int onEvent(Data data&, int action, int button, int ex, int ey) {
-		if (action == Gui.KEY_RELEASE && button == 27) {
+		if (action == Gui.KEY_RELEASE && button == Gui.KEY_CODE_ESC) {
 			// exit when releasing escape key
 			return -1;
 		}
@@ -170,7 +135,7 @@ void showWindow(int width, int height, int animationResolution, vec4f eval(vec4f
 				Gui.setTitle(text);
 				return 0;
 			}
-			if (button == '\t') {
+			if (button == Gui.KEY_CODE_TAB) {
 				data.lerp = !data.lerp;
 			}
 			if (button == 'S') {
@@ -258,7 +223,7 @@ void showWindow(int w, int h, float32 fovy, Mesh mesh) {
 		if (action == Gui.FINGER_MOTION) {
 			action = Gui.MOUSE_MOTION;
 		}
-		if (action == Gui.KEY_RELEASE && button == 27) {
+		if (action == Gui.KEY_RELEASE && button == Gui.KEY_CODE_ESC) {
 			// exit when releasing escape key
 			return -1;
 		}
@@ -284,10 +249,10 @@ void showWindow(int w, int h, float32 fovy, Mesh mesh) {
 			else if (button == '/') {
 				data.mode = next(data.mode, Mesh.cullBack | Mesh.cullFront);
 			}
-			else if (button == '\t') {
+			else if (button == Gui.KEY_CODE_TAB) {
 				data.mode = next(data.mode, Mesh.drawMode);
 			}
-			else if (button == '\r') {
+			else if (button == Gui.KEY_CODE_ENTER) {
 				vec4f eye = {x: 0, y: 0, z: 2, w: 1};
 				vec4f at = {x: 0, y: 0, z: 0, w: 1};
 				vec4f up = {x: 0, y: 1, z: 0, w: 1};

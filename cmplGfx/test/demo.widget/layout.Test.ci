@@ -1,9 +1,6 @@
 // test inspired by https://developer.microsoft.com/en-us/fluentui#/controls/web/stack
 // test layout direction, alignment, and padding. todo: spacing
 
-static void debugLayoutDraw(Image img, const Rect rect&, uint32 rgb);
-inline "/cmplGfx/lib/micro.ui.ci";
-
 bool syncOrientation(Slider this, int value);
 bool syncAlignment(Switch this, int value);
 bool syncPadding(Slider this, int value);
@@ -117,12 +114,6 @@ Switch textAlignBottom = {
 	states: null;
 };
 
-Switch drawDebugRect = {
-	onUpdate: syncAlignment;
-	text: "Debug.layout";
-	states: null;
-};
-
 // container for rectangles
 Layout layout = {
 	enabled: false;
@@ -197,10 +188,7 @@ Gui.showWindow(widget
 		textAlignTop,
 		textAlignLeft,
 		textAlignRight,
-		textAlignBottom,
-
-		null,
-		drawDebugRect
+		textAlignBottom
 	))
 );
 
@@ -283,11 +271,4 @@ bool syncAlignment(Switch this, int value) {
 
 	layout.invalidate();
 	return true;
-}
-static void debugLayoutDraw(Image img, const Rect rect&, uint32 rgb) {
-	if (!drawDebugRect.checked()) {
-		return;
-	}
-	img.drawRect(rect, rgb);
-	img.blend(rect, argb(0xf0ff0000));
 }

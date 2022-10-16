@@ -193,66 +193,119 @@ int getWindowEvent(GxWindow window, int *button, int *x, int *y, int timeout) {
 			return MOUSE_MOTION;
 
 		case WM_KEYDOWN:
+		case WM_KEYUP: {
+			// https://learn.microsoft.com/en-us/windows/win32/inputdev/virtual-key-codes
+			int modifier = 0;
 			switch (msg.wParam) {
+				default:
+					if (msg.wParam >= 'A' && msg.wParam <= 'Z') {
+						*button = tolower(msg.wParam);
+					} else {
+						*button = msg.wParam;
+					}
+					break;
+
 				case VK_SHIFT:
 				case VK_LSHIFT:
+					*button = KEY_CODE_L_SHIFT;
+					modifier = KEY_MASK_SHIFT;
+					break;
+
 				case VK_RSHIFT:
-					keyMod |= KEY_MASK_SHIFT;
+					*button = KEY_CODE_R_SHIFT;
+					modifier = KEY_MASK_SHIFT;
 					break;
 
 				case VK_CONTROL:
 				case VK_LCONTROL:
+					*button = KEY_CODE_L_CTRL;
+					modifier = KEY_MASK_CTRL;
+					break;
+
 				case VK_RCONTROL:
-					keyMod |= KEY_MASK_CTRL;
+					*button = KEY_CODE_R_CTRL;
+					modifier = KEY_MASK_CTRL;
 					break;
 
 				case VK_MENU:
 				case VK_LMENU:
+					*button = KEY_CODE_L_ALT;
+					modifier = KEY_MASK_ALT;
+					break;
+
 				case VK_RMENU:
-					keyMod |= KEY_MASK_ALT;
+					*button = KEY_CODE_R_ALT;
+					modifier = KEY_MASK_ALT;
+					break;
+
+				case VK_LWIN:
+					*button = KEY_CODE_L_GUI;
+					break;
+
+				case VK_RWIN:
+					*button = KEY_CODE_R_GUI;
+					break;
+
+				case VK_OEM_1:
+					*button = ';';
+					break;
+
+				case VK_OEM_PLUS:
+					*button = '+';
+					break;
+
+				case VK_OEM_COMMA:
+					*button = ',';
+					break;
+
+				case VK_OEM_MINUS:
+					*button = '-';
+					break;
+
+				case VK_OEM_PERIOD:
+					*button = '.';
+					break;
+
+				case VK_OEM_2:
+					*button = '/';
+					break;
+
+				case VK_OEM_3:
+					*button = '~';
+					break;
+
+				case VK_OEM_4:
+					*button = '[';
+					break;
+
+				case VK_OEM_5:
+				case VK_OEM_102:
+					*button = '\\';
+					break;
+
+				case VK_OEM_6:
+					*button = ']';
+					break;
+
+				case VK_OEM_7:
+					*button = '\'';
 					break;
 			}
 
-			if (msg.wParam >= 'A' && msg.wParam <= 'Z') {
-				*button = tolower(msg.wParam);
-			} else {
-				*button = msg.wParam;
-			}
 			*x = HIWORD(msg.lParam) & 127;
-			*y = keyMod;
 			DispatchMessage(&msg);
-			return KEY_PRESS;
 
-		case WM_KEYUP:
-			switch (msg.wParam) {
-				case VK_SHIFT:
-				case VK_LSHIFT:
-				case VK_RSHIFT:
-					keyMod &= ~KEY_MASK_SHIFT;
-					break;
+			switch (msg.message) {
+				case WM_KEYDOWN:
+					*y = keyMod |= modifier;
+					return KEY_PRESS;
 
-				case VK_CONTROL:
-				case VK_LCONTROL:
-				case VK_RCONTROL:
-					keyMod &= ~KEY_MASK_CTRL;
-					break;
-
-				case VK_MENU:
-				case VK_LMENU:
-				case VK_RMENU:
-					keyMod &= ~KEY_MASK_ALT;
-					break;
+				case WM_KEYUP:
+					*y = keyMod &= ~modifier;
+					return KEY_RELEASE;
 			}
-
-			if (msg.wParam >= 'A' && msg.wParam <= 'Z') {
-				*button = tolower(msg.wParam);
-			} else {
-				*button = msg.wParam;
-			}
-			*x = HIWORD(msg.lParam) & 127;
-			*y = keyMod;
-			DispatchMessage(&msg);
-			return KEY_RELEASE;
+		}
+		break;
 	}
 	TranslateMessage(&msg);
 	DispatchMessage(&msg);
@@ -268,3 +321,30 @@ void destroyWindow(GxWindow window) {
 void setWindowTitle(GxWindow window, const char *title) {
 	SetWindowTextA(window->hwnd, title);
 }
+
+const int KEY_CODE_ESC = VK_ESCAPE;
+const int KEY_CODE_BACKSPACE = VK_BACK;
+const int KEY_CODE_TAB = VK_TAB;
+const int KEY_CODE_RETURN = VK_RETURN;
+const int KEY_CODE_CAPSLOCK = VK_CAPITAL;
+const int KEY_CODE_PRINT_SCREEN = VK_PRINT;
+const int KEY_CODE_SCROLL_LOCK = VK_SCROLL;
+const int KEY_CODE_PAUSE = VK_PAUSE;
+const int KEY_CODE_INSERT = VK_INSERT;
+const int KEY_CODE_HOME = VK_HOME;
+const int KEY_CODE_PAGE_UP = VK_PRIOR;
+const int KEY_CODE_DELETE = VK_DELETE;
+const int KEY_CODE_END = VK_END;
+const int KEY_CODE_PAGE_DOWN = VK_NEXT;
+const int KEY_CODE_RIGHT = VK_RIGHT;
+const int KEY_CODE_LEFT = VK_LEFT;
+const int KEY_CODE_DOWN = VK_DOWN;
+const int KEY_CODE_UP = VK_UP;
+const int KEY_CODE_L_SHIFT = VK_LSHIFT;
+const int KEY_CODE_R_SHIFT = VK_RSHIFT;
+const int KEY_CODE_L_CTRL = VK_LCONTROL;
+const int KEY_CODE_R_CTRL = VK_RCONTROL;
+const int KEY_CODE_L_ALT = VK_LMENU;
+const int KEY_CODE_R_ALT = VK_RMENU;
+const int KEY_CODE_L_GUI = VK_LWIN;
+const int KEY_CODE_R_GUI = VK_RWIN;

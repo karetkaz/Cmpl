@@ -1,21 +1,25 @@
 var Module = {
 	initialized: false,
 	relativeUrl: function(path) {
-		let worker = '/extras/demo/emscripten/worker.js';
+		let worker = '/extras/demo/worker.js';
 		if (location.href.endsWith(worker) && !path.startsWith('/')) {
 			return location.href.substr(0, location.href.length - worker.length + 1) + path;
 		}
 		return path;
 	},
-	locateFile: function(path) {
-		return './' + path;
-	},
 	dynamicLibraries: [
 		'libFile.wasm'
 	],
+	importScripts: function (...urls) {
+		importScripts(...urls);
+	},
 	print: function(message) {
 		// console.log(message);
 		postMessage({ print: message });
+	},
+	printLog: function(message) {
+		console.debug(message);
+		// postMessage({ debug: message });
 	},
 	printErr: function(message) {
 		console.error(message);
@@ -35,7 +39,6 @@ var Module = {
 };
 
 importScripts("module.js");
-importScripts("cmpl.js");
 
 /* communication with worker/args
 request => {
@@ -78,7 +81,7 @@ onmessage = function(event) {
 			// execute
 			if (data.execute !== undefined) {
 				try {
-					callMain(data.execute);
+					callMain(Module.locateLibs(data.execute));
 					if (data.dump != null) {
 						result.content = Module.readFile(data.dump);
 						result.path = data.dump;

@@ -39,7 +39,6 @@ void brightnessContrast(argb lut[256], int brightness, int contrast) {
 	}
 }
 
-inline "/cmplGfx/lib/micro.ui.ci";
 Slider brightness = {
 	text: "brightness";
 	minimum: -256;
@@ -64,7 +63,7 @@ DebugView debug = {
 };
 
 int onEvent(Window win&, int action, int button, int x, int y) {
-	if (action == Gui.KEY_RELEASE && button == 27) {
+	if (action == Gui.KEY_RELEASE && button == Gui.KEY_CODE_ESC) {
 		// exit when releasing escape key
 		return -1;
 	}

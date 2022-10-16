@@ -1,7 +1,5 @@
 // layout test: alignment and padding
 
-inline "/cmplGfx/lib/micro.ui.ci";
-
 struct Rectangle: View {
 	argb background = argb(0xff00ff);
 	void onDraw(Rectangle this, Image offs, Rect rect) {
