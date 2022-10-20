@@ -33,7 +33,7 @@ IF EXIST "%WATCOM%" (
 %BIN%\cmpl>"%BIN%-vm.dump.md" --test-vm
 
 :: dump symbols, assembly, syntax tree and global variables
-SET TEST_FLAGS=-X+steps-stdin-offsets -asm/m/n/s -debug/g "%CMPL_HOME%\cmplStd\test\test.ci"
+SET TEST_FLAGS=-X+steps-stdin-offsets -asm/n/s -debug/g "%CMPL_HOME%\cmplStd\test\test.ci"
 %BIN_WCC%\cmpl -log/d "%BIN_WCC%.ci" %TEST_FLAGS%
 %BIN%\cmpl -log/d "%BIN%.ci" %TEST_FLAGS%
 

@@ -43,11 +43,13 @@ Slider brightness = {
 	text: "brightness";
 	minimum: -256;
 	maximum: 256;
+	stepSize: 1;
 };
 Slider contrast = {
 	text: "contrast";
 	minimum: -256;
 	maximum: 256;
+	stepSize: 1;
 };
 Histogram histogram = {
 	enabled: false;
@@ -62,26 +64,21 @@ DebugView debug = {
 	draws: -1;
 };
 
-int onEvent(Window win&, int action, int button, int x, int y) {
-	if (action == Gui.KEY_RELEASE && button == Gui.KEY_CODE_ESC) {
-		// exit when releasing escape key
-		return -1;
-	}
-	Widget ui = win.widget;
-	if (!win.dispatchEvent(ui, action, button, x, y)) {
-		// event not processed, wait for the next one
-		return 0;
+void onProcess(FxWidget widget) {
+	debug.startTimer();
+
+	offs.copy(0, 0, back, null);
+	if (widget.showOriginal) {
+		histogram.update(offs);
+		return;
 	}
 
-	debug.startTimer();
 	brightnessContrast(&curves.data, brightness.value, contrast.value);
-	offs.copy(0, 0, back, null);
 	offs.colorMap(null, curves.data);
 	histogram.update(offs);
-	return win.draw(ui);
 }
 
-Gui.showWindow(offs, onEvent, FxWidget(
+Gui.showWindow(offs, FxWidget(onProcess,
 	histogram,
 	curves,
 

@@ -101,7 +101,7 @@ static inline GxClip getClip(GxImage image) {
 void* clipRect(GxImage image, GxRect roi);
 
 // Get Pixel Address
-static inline void* getPAddr(GxImage image, int x, int y) {
+static inline void* refPixel(GxImage image, int x, int y) {
 	if ((unsigned) x >= image->width || (unsigned) y >= image->height) {
 		return NULL;
 	}
@@ -110,40 +110,50 @@ static inline void* getPAddr(GxImage image, int x, int y) {
 
 // Get Pixel Color
 static inline uint32_t getPixel(GxImage image, int x, int y) {
-	void *address = getPAddr(image, x, y);
-	if (address != NULL) {
-		switch (image->depth) {
-			case 32:
-			case 24:
-				return *(uint32_t*)address;
-			case 15:
-			case 16:
-				return *(uint16_t*)address;
-			case 8:
-				return *(uint8_t*)address;
-		}
+	void *address = refPixel(image, x, y);
+	if (address == NULL) {
+		// out of bounds
+		return 0;
 	}
-	return 0;
+	switch (image->depth) {
+		default:
+			// unknown depth
+			return 0;
+
+		case 32:
+		case 24:
+			return *(uint32_t*)address;
+
+		case 15:
+		case 16:
+			return *(uint16_t*)address;
+
+		case 8:
+			return *(uint8_t*)address;
+	}
 }
 // Set Pixel Color
 static inline void setPixel(GxImage image, int x, int y, uint32_t color) {
-	void *address = getPAddr(image, x, y);
-	if (address != NULL) {
-		switch (image->depth) {
-			case 32:
-				// TODO: case 24:
-				*(uint32_t*)address = color;
-				break;
+	void *address = refPixel(image, x, y);
+	if (address == NULL) {
+		// out of bounds
+		return;
+	}
 
-			case 16:
-			case 15:
-				*(uint16_t*)address = color;
-				break;
+	switch (image->depth) {
+		case 32:
+			// TODO: case 24:
+			*(uint32_t*)address = color;
+			break;
 
-			case 8:
-				*(uint8_t*)address = color;
-				break;
-		}
+		case 16:
+		case 15:
+			*(uint16_t*)address = color;
+			break;
+
+		case 8:
+			*(uint8_t*)address = color;
+			break;
 	}
 }
 // Get Pixel Color using linear interpolation
@@ -153,7 +163,7 @@ static inline uint32_t getPixelLinear(GxImage image, int32_t x16, int32_t y16) {
 	int32_t x = x16 >> 16;
 	int32_t y = y16 >> 16;
 
-	char *ofs = getPAddr(image, x, y);
+	char *ofs = refPixel(image, x, y);
 	if (ofs == NULL) {
 		// no pixel, return black
 		return 0;
@@ -192,11 +202,16 @@ static inline uint32_t getPixelLinear(GxImage image, int32_t x16, int32_t y16) {
 				return mix_rgb(ly, p0, p1).val;
 			}
 			return *(uint32_t*)ofs;
+
 		case 24:
+			// TODO: not implemented
+			return *(uint32_t*)ofs;
+
 		case 15:
 		case 16:
 			// TODO: not implemented
 			return *(uint16_t*)ofs;
+
 		case 8:
 			if (lx && ly) {
 				int p0 = *(uint8_t*)(ofs + 0);

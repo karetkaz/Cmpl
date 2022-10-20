@@ -7,6 +7,7 @@ static TextWriter out = AsciiWriter {
 	};
 };
 
+//Polynomial a = Polynomial(1);                     // fixme: single parameter
 //Polynomial a = Polynomial(10, 3, 6, 2, 4, 9, 0, 4);
 Polynomial a = Polynomial(1, 0, 3, 1);
 Polynomial b = Polynomial(1, 2, 0);
@@ -18,6 +19,8 @@ out.write("a + b: ").writeln(Polynomial.add(a, b));  // fixme: a.add(b)
 out.write("a - b: ").writeln(Polynomial.sub(a, b));  // fixme: a.sub(b)
 out.write("a * b: ").writeln(Polynomial.mul(a, b));  // fixme: a.mul(b)
 out.write("a(2): ").write(a.evaluate(2)).writeln();
+out.write("a': ").writeln(a.derivative());
+out.write("int(a): ").writeln(a.integral(10));
 
 for (int i = 0; i < 10; i += 1) {
 	out.write("a[").write(i).write("] = ").write(a.get(i)).writeln();

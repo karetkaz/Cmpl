@@ -1739,6 +1739,7 @@ int cmplInit(rtContext rt) {
 
 		rt->api.ccDefInt(cc, "useTexture", draw_tex);
 		rt->api.ccDefInt(cc, "useLights", draw_lit);
+		rt->api.ccDefInt(cc, "drawBounds", draw_box);
 
 		symn vtxCount = rt->api.ccDefVar(cc, "vertices", typSigned(rt, sizeOf(struct GxMesh, vtxcnt)));
 		symn triCount = rt->api.ccDefVar(cc, "triangles", typSigned(rt, sizeOf(struct GxMesh, tricnt)));

@@ -185,44 +185,23 @@ static struct Math {
 	/// Returns the greater value from the input values
 	inline max(float64 a, float64 b) = a > b ? a : b;
 
-	/// Returns the value of `t` clamped between `a` and `b`
-	inline clamp(int32 t, int32 a, int32 b) = t < a ? a : t > b ? b : t;
+	/// Returns the `value` clamped between `min` and `max`
+	inline clamp(int32 value, int32 min, int32 max) = min(max(value, min), max);
 
-	/// Returns the value of `t` clamped between `a` and `b`
-	inline clamp(int64 t, int64 a, int64 b) = t < a ? a : t > b ? b : t;
+	/// Returns the `value` clamped between `min` and `max`
+	inline clamp(int64 value, int64 min, int64 max) = min(max(value, min), max);
 
-	/// Returns the value of `t` clamped between `a` and `b`
-	inline clamp(uint32 t, uint32 a, uint32 b) = t < a ? a : t > b ? b : t;
+	/// Returns the `value` clamped between `min` and `max`
+	inline clamp(uint32 value, uint32 min, uint32 max) = min(max(value, min), max);
 
-	/// Returns the value of `t` clamped between `a` and `b`
-	inline clamp(uint64 t, uint64 a, uint64 b) = t < a ? a : t > b ? b : t;
+	/// Returns the `value` clamped between `min` and `max`
+	inline clamp(uint64 value, uint64 min, uint64 max) = min(max(value, min), max);
 
-	/// Returns the value of `t` clamped between `a` and `b`
-	float32 clamp(float32 t, float32 a, float32 b) {
-		if (t < a) {
-			return a;
-		}
-		if (t > b) {
-			return b;
-		}
-		return t;
-	}
+	/// Returns the `value` clamped between `min` and `max`
+	inline clamp(float32 value, float32 min, float32 max) = min(max(value, min), max);
 
-	/// Returns the value of `t` clamped between `a` and `b`
-	float64 clamp(float64 t, float64 a, float64 b) {
-		if (t < a) {
-			return a;
-		}
-		if (t > b) {
-			return b;
-		}
-		return t;
-	}
-
-	// inline clamp(int32 t, int32 a, int32 b) = min(max(t, a), b);
-	// inline clamp(int32 t, int32 a, int32 b) = t < a ? a : t > b ? b : t;
-	// inline clamp(float32 t, float32 a, float32 b) = t < a ? a : t > b ? b : t;
-	// inline clamp(float64 t, float64 a, float64 b) = t < a ? a : t > b ? b : t;
+	/// Returns the `value` clamped between `min` and `max`
+	inline clamp(float64 value, float64 min, float64 max) = min(max(value, min), max);
 
 	/// Returns the linear interpolation between `a` and `b` by `t`
 	inline lerp(float32 t, float32 a, float32 b) = a + t * (b - a);

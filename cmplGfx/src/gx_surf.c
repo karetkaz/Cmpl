@@ -170,7 +170,7 @@ void* clipRect(GxImage image, GxRect roi) {
 		return NULL;
 	}
 
-	return getPAddr(image, roi->x, roi->y);
+	return refPixel(image, roi->x, roi->y);
 }
 
 int fillImage(GxImage image, GxRect roi, void *color, void *extra, bltProc blt) {

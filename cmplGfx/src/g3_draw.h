@@ -17,6 +17,7 @@ enum {
 
 	draw_tex  = 0x00000040,		// use texture
 	draw_lit  = 0x00000080,		// use lights
+	draw_box  = 0x00000100,		// draw bounding box
 };
 
 typedef struct texcol {
@@ -190,13 +191,11 @@ static inline int addQuad(GxMesh msh, size_t p1, size_t p2, size_t p3, size_t p4
 
 void drawLine3d(GxImage dst, vector p1, vector p2, uint32_t c);
 int drawMesh(GxImage dst, GxMesh msh, matrix objm, camera cam, GxLight lights, int mode);
-int drawBbox(GxImage dst, GxMesh msh, matrix objm, camera cam);
-int drawCubeMap(GxImage dst, struct GxImage *img, vector view, matrix proj, double size);
 
 // extract the planes (near, far, left, right, top, bottom) from the projection matrix
-void getFrustum(struct vector *planes, matrix mat);
+void getFrustum(struct vector planes[6], matrix mat);
 
-// test if a point, sphere or triangle is inside or outside of the frustum
-int testPoint(struct vector *planes, vector p);
-int testSphere(struct vector *planes, vector p, scalar r);
-int testTriangle(struct vector *planes, vector p1, vector p2, vector p3);
+// test if a point, sphere or triangle is inside or outside the frustum
+int testPoint(struct vector planes[6], vector p);
+int testSphere(struct vector planes[6], vector p, scalar r);
+int testTriangle(struct vector planes[6], vector p1, vector p2, vector p3);

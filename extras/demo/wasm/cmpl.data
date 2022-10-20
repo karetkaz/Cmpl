@@ -253,7 +253,8 @@ void showWindow(int w, int h, float32 fovy, Mesh mesh) {
 	static int onEvent(Data data&, int action, int button, int ex, int ey) {
 		static int ox = 0;
 		static int oy = 0;
-		static const float32 speed = 1 / 100f;
+		static const float32 slow = 1 / 100f;
+		static const float32 fast = 5 / 100f;
 		if (action == Gui.FINGER_MOTION) {
 			action = Gui.MOUSE_MOTION;
 		}
@@ -262,8 +263,69 @@ void showWindow(int w, int h, float32 fovy, Mesh mesh) {
 			return -1;
 		}
 		if (action == Gui.KEY_PRESS) {
-			if (button == 'l') {
+			if (button == Gui.KEY_CODE_ENTER) {
+				vec4f eye = {x: 0, y: 0, z: 2, w: 1};
+				vec4f at = {x: 0, y: 0, z: 0, w: 1};
+				vec4f up = {x: 0, y: 1, z: 0, w: 1};
+				data.cam = Camera.lookAt(eye, at, up);
+				data.updateCamera();
+			}
+
+			else if (button == 'w') {
+				Camera camera& = data.cam;
+				bool shift = bool(ey & Gui.KEY_MASK_SHIFT);
+				camera.move(camera.forward, +(shift ? fast : slow));
+				data.updateCamera();
+			}
+			else if (button == 's') {
+				Camera camera& = data.cam;
+				bool shift = bool(ey & Gui.KEY_MASK_SHIFT);
+				camera.move(camera.forward, -(shift ? fast : slow));
+				data.updateCamera();
+			}
+			else if (button == 'a') {
+				Camera camera& = data.cam;
+				bool shift = bool(ey & Gui.KEY_MASK_SHIFT);
+				camera.move(camera.right, -(shift ? fast : slow));
+				data.updateCamera();
+			}
+			else if (button == 'd') {
+				Camera camera& = data.cam;
+				bool shift = bool(ey & Gui.KEY_MASK_SHIFT);
+				camera.move(camera.right, +(shift ? fast : slow));
+				data.updateCamera();
+			}
+
+			else if (button == Gui.KEY_CODE_UP) {
+				Camera camera& = data.cam;
+				bool shift = bool(ey & Gui.KEY_MASK_SHIFT);
+				camera.rotate(camera.position, camera.right, -(shift ? fast : slow));
+				data.updateCamera();
+			}
+			else if (button == Gui.KEY_CODE_DOWN) {
+				Camera camera& = data.cam;
+				bool shift = bool(ey & Gui.KEY_MASK_SHIFT);
+				camera.rotate(camera.position, camera.right, +(shift ? fast : slow));
+				data.updateCamera();
+			}
+			else if (button == Gui.KEY_CODE_LEFT) {
+				Camera camera& = data.cam;
+				bool shift = bool(ey & Gui.KEY_MASK_SHIFT);
+				camera.rotate(camera.position, camera.up, -(shift ? fast : slow));
+				data.updateCamera();
+			}
+			else if (button == Gui.KEY_CODE_RIGHT) {
+				Camera camera& = data.cam;
+				bool shift = bool(ey & Gui.KEY_MASK_SHIFT);
+				camera.rotate(camera.position, camera.up, +(shift ? fast : slow));
+				data.updateCamera();
+			}
+
+			else if (button == 'l') {
 				data.mode ^= Mesh.useLights;
+			}
+			else if (button == 'b') {
+				data.mode ^= Mesh.drawBounds;
 			}
 			else if (button == '0') {
 				lights.enable(0, !lights.enabled(0));
@@ -286,13 +348,6 @@ void showWindow(int w, int h, float32 fovy, Mesh mesh) {
 			else if (button == Gui.KEY_CODE_TAB) {
 				data.mode = next(data.mode, Mesh.drawMode);
 			}
-			else if (button == Gui.KEY_CODE_ENTER) {
-				vec4f eye = {x: 0, y: 0, z: 2, w: 1};
-				vec4f at = {x: 0, y: 0, z: 0, w: 1};
-				vec4f up = {x: 0, y: 1, z: 0, w: 1};
-				data.cam = Camera.lookAt(eye, at, up);
-				data.updateCamera();
-			}
 		}
 		else if (action == Gui.MOUSE_PRESS) {
 			ox = ex;
@@ -307,30 +362,35 @@ void showWindow(int w, int h, float32 fovy, Mesh mesh) {
 			if (button == 1) {
 				// orbit around the origin: (x: 0, y: 0, z: 0)
 				vec4f orbit = vec4f(0, 0, 0);
-				camera.rotate(orbit, camera.up, dx * speed);
-				camera.rotate(orbit, camera.right, dy * speed);
+				camera.rotate(orbit, camera.up, dx * slow);
+				camera.rotate(orbit, camera.right, dy * slow);
 				data.updateCamera();
 			}
 			else if (button == 2) {
 				// rotate
 				vec4f orbit = camera.position;
-				camera.rotate(orbit, camera.up, -dx * speed);
-				camera.rotate(orbit, camera.right, -dy * speed);
+				camera.rotate(orbit, camera.up, -dx * slow);
+				camera.rotate(orbit, camera.right, -dy * slow);
 				data.updateCamera();
 			}
 			else if (button == 3) {
 				// move the camera back and forward
-				camera.move(camera.forward, dy * speed);
+				camera.move(camera.forward, dy * slow);
 				data.updateCamera();
 			}
 			else if (button == 4) {
 				// pan the camera
-				camera.move(camera.right, -dx * speed);
-				camera.move(camera.up, dy * speed);
+				camera.move(camera.right, -dx * slow);
+				camera.move(camera.up, dy * slow);
 				data.updateCamera();
 			}
 			ox = ex;
 			oy = ey;
+		}
+		else if (action == Gui.MOUSE_WHEEL) {
+			Camera camera& = data.cam;
+			camera.move(camera.forward, ey * fast);
+			data.updateCamera();
 		}
 
 		int rendered = data.offs.drawMesh(data.mesh, data.mode);
@@ -1614,44 +1674,23 @@ static struct Math {
 	/// Returns the greater value from the input values
 	inline max(float64 a, float64 b) = a > b ? a : b;
 
-	/// Returns the value of `t` clamped between `a` and `b`
-	inline clamp(int32 t, int32 a, int32 b) = t < a ? a : t > b ? b : t;
+	/// Returns the `value` clamped between `min` and `max`
+	inline clamp(int32 value, int32 min, int32 max) = min(max(value, min), max);
 
-	/// Returns the value of `t` clamped between `a` and `b`
-	inline clamp(int64 t, int64 a, int64 b) = t < a ? a : t > b ? b : t;
+	/// Returns the `value` clamped between `min` and `max`
+	inline clamp(int64 value, int64 min, int64 max) = min(max(value, min), max);
 
-	/// Returns the value of `t` clamped between `a` and `b`
-	inline clamp(uint32 t, uint32 a, uint32 b) = t < a ? a : t > b ? b : t;
+	/// Returns the `value` clamped between `min` and `max`
+	inline clamp(uint32 value, uint32 min, uint32 max) = min(max(value, min), max);
 
-	/// Returns the value of `t` clamped between `a` and `b`
-	inline clamp(uint64 t, uint64 a, uint64 b) = t < a ? a : t > b ? b : t;
+	/// Returns the `value` clamped between `min` and `max`
+	inline clamp(uint64 value, uint64 min, uint64 max) = min(max(value, min), max);
 
-	/// Returns the value of `t` clamped between `a` and `b`
-	float32 clamp(float32 t, float32 a, float32 b) {
-		if (t < a) {
-			return a;
-		}
-		if (t > b) {
-			return b;
-		}
-		return t;
-	}
+	/// Returns the `value` clamped between `min` and `max`
+	inline clamp(float32 value, float32 min, float32 max) = min(max(value, min), max);
 
-	/// Returns the value of `t` clamped between `a` and `b`
-	float64 clamp(float64 t, float64 a, float64 b) {
-		if (t < a) {
-			return a;
-		}
-		if (t > b) {
-			return b;
-		}
-		return t;
-	}
-
-	// inline clamp(int32 t, int32 a, int32 b) = min(max(t, a), b);
-	// inline clamp(int32 t, int32 a, int32 b) = t < a ? a : t > b ? b : t;
-	// inline clamp(float32 t, float32 a, float32 b) = t < a ? a : t > b ? b : t;
-	// inline clamp(float64 t, float64 a, float64 b) = t < a ? a : t > b ? b : t;
+	/// Returns the `value` clamped between `min` and `max`
+	inline clamp(float64 value, float64 min, float64 max) = min(max(value, min), max);
 
 	/// Returns the linear interpolation between `a` and `b` by `t`
 	inline lerp(float32 t, float32 a, float32 b) = a + t * (b - a);
@@ -2306,8 +2345,8 @@ inline "/cmplStd/lib/system/Stream.ci";
 
 inline scalar = float64;  // fixme: declare inside Polynomial
 struct Polynomial/*(typename scalar)*/: TextWriter.Writeable {
-	scalar elements[];
-	int degree = -1;
+	scalar coefficients[*];
+	int capacity;
 
 	enum: scalar {
 		c_zero: 0;
@@ -2316,12 +2355,12 @@ struct Polynomial/*(typename scalar)*/: TextWriter.Writeable {
 
 	void write(Polynomial this, TextWriter writer) {
 		bool first = true;
-		for (int i = this.elements.length - 1; i >= 0; i -= 1) {
-			if (this.elements[i] == c_zero && !(first && i == 0)) {
+		for (int i = this.capacity - 1; i >= 0; i -= 1) {
+			if (this.coefficients[i] == c_zero && !(first && i == 0)) {
 				continue;
 			}
 
-			scalar value = this.elements[i];
+			scalar value = this.coefficients[i];
 			if (value < c_zero) {
 				value = -value;
 				if (!first) {
@@ -2354,83 +2393,72 @@ struct Polynomial/*(typename scalar)*/: TextWriter.Writeable {
 	}
 
 	void destroy(Polynomial this) {
-		pointer.alloc(this.elements, 0);
-		// this.elements = null;
+		pointer.alloc(this.coefficients, 0);
 	}
 
 	// construct a new instance
-	static Polynomial create(int capacity, scalar values[]) {
+	static Polynomial create(int degree, scalar values[]) {
+		int capacity = Math.max(0, degree) + 1;
 		assert(capacity >= values.length);
-		scalar elements[*] = pointer.alloc(null, capacity * sizeof(scalar));
-		for (int i = 0; i < capacity; i += 1) {
-			elements[i] = c_zero;
-		}
-		for (int i = 0; i < values.length; i += 1) {
-			elements[values.length - i - 1] = values[i];
-		}
-		return {
-			elements: elements[...capacity];
+		scalar coefficients[*] = pointer.alloc(null, capacity * sizeof(scalar));
+		Polynomial result = {
+			// fixme: coefficients: pointer.alloc(null, capacity * sizeof(scalar));
+			coefficients: coefficients;
+			capacity: capacity;
 		};
-	}
 
-	static int degree(Polynomial this&) {
-		if (this.degree >=  0) {
-			return this.degree;
+		for (int i = 0; i < values.length; i += 1) {
+			result.coefficients[i] = values[i];
 		}
-		for (int i = this.elements.length - 1; i > 0; i -= 1) {
-			if (this.elements[i] != c_zero) {
-				return this.degree = i;
-			}
-		}
-		return this.degree = 0;
-	}
-
-	static scalar evaluate(const Polynomial this&, scalar value) {
-		scalar result = c_zero;
-		for (int i = degree(this); i >= 0; i -= 1) {
-			result = result * value + this.elements[i];
+		for (int i = values.length; i < capacity; i += 1) {
+			result.coefficients[i] = c_zero;
 		}
 		return result;
 	}
 
+	static int degree(Polynomial this&) {
+		for (int i = this.capacity - 1; i > 0; i -= 1) {
+			if (this.coefficients[i] != c_zero) {
+				return i;
+			}
+		}
+		return 0;
+	}
+
 	static scalar get(const Polynomial this&, int index) {
 		assert(index >= 0, "negative index", index);
-		if (index >= this.elements.length) {
+		if (index >= this.capacity) {
 			return c_zero;
 		}
-		return this.elements[index];
+		return this.coefficients[index];
 	}
 
 	static scalar set(Polynomial this&, int index, scalar value) {
 		assert(index >= 0, "negative index", index);
-		assert(index < this.elements.length, "invalid index");
-		this.degree = -1;
-		return this.elements[index];
+		assert(index < this.capacity, "invalid index");
+		return this.coefficients[index];
 	}
 
 	static Polynomial neg(const Polynomial a&) {
-		int size = degree(a) + 1;
-		Polynomial result = create(size, null);
-		for (int i = 0; i < size; i += 1) {
-			result.elements[i] = -a.get(i);
+		Polynomial result = create(degree(a), null);
+		for (int i = 0; i < result.capacity; i += 1) {
+			result.coefficients[i] = -a.get(i);
 		}
 		return result;
 	}
 
 	static Polynomial add(const Polynomial a&, const Polynomial b&) {
-		int size = Math.max(degree(a), degree(b)) + 1;
-		Polynomial result = create(size, null);
-		for (int i = 0; i < size; i += 1) {
-			result.elements[i] = a.get(i) + b.get(i);
+		Polynomial result = create(Math.max(degree(a), degree(b)), null);
+		for (int i = 0; i < result.capacity; i += 1) {
+			result.coefficients[i] = a.get(i) + b.get(i);
 		}
 		return result;
 	}
 
 	static Polynomial sub(const Polynomial a&, const Polynomial b&) {
-		int size = Math.max(degree(a), degree(b)) + 1;
-		Polynomial result = create(size, null);
-		for (int i = 0; i < size; i += 1) {
-			result.elements[i] = a.get(i) - b.get(i);
+		Polynomial result = create(Math.max(degree(a), degree(b)), null);
+		for (int i = 0; i < result.capacity; i += 1) {
+			result.coefficients[i] = a.get(i) - b.get(i);
 		}
 		return result;
 	}
@@ -2438,23 +2466,51 @@ struct Polynomial/*(typename scalar)*/: TextWriter.Writeable {
 	static Polynomial mul(const Polynomial a&, const Polynomial b&) {
 		int degreeA = degree(a);
 		int degreeB = degree(b);
-		int size = degreeA + degreeB + 1;
-		Polynomial result = create(size, null);
-		for (int i = 0; i < size; i += 1) {
-			result.elements[i] = 0;
-		}
+		Polynomial result = create(degreeA + degreeB, null);
 		for (int i = 0; i <= degreeA; i += 1) {
 			for (int j = 0; j <= degreeB; j += 1) {
-				result.elements[i + j] += a.get(i) * b.get(j);
+				result.coefficients[i + j] += a.get(i) * b.get(j);
 			}
+		}
+		return result;
+	}
+
+	static scalar evaluate(const Polynomial this&, scalar value) {
+		scalar result = c_zero;
+		for (int i = degree(this); i >= 0; i -= 1) {
+			result = result * value + this.coefficients[i];
+		}
+		return result;
+	}
+
+	static Polynomial derivative(const Polynomial this&) {
+		Polynomial result = create(this.degree() - 1, null);
+		for (int i = 0; i < result.capacity; i += 1) {
+			result.coefficients[i] = (i + 1) * this.coefficients[i + 1];
+		}
+		return result;
+	}
+
+	static Polynomial integral(const Polynomial this&, scalar c) {
+		Polynomial result = create(this.degree() + 1, null);
+		result.coefficients[0] = c;
+		for (int i = 1; i < result.capacity; i += 1) {
+			result.coefficients[i] = this.coefficients[i - 1] / i;
 		}
 		return result;
 	}
 }
 
-inline Polynomial(scalar values...) = Polynomial.create(values.length, values);
+inline Polynomial(const Polynomial copy&) = Polynomial.create(copy.degree(), copy.coefficients);
 
-inline Polynomial(const Polynomial copy&) = Polynomial.create(copy.elements.length, copy.elements);
+/// reverse
+Polynomial Polynomial(scalar values...) {
+	Polynomial result = Polynomial.create(values.length - 1, null);
+	for (int i = 0; i < values.length; i += 1) {
+		result.coefficients[i] = values[values.length - i - 1];
+	}
+	return result;
+}
 
 /* TODO: implement enums, operator overloading
 	enum: Polynomial {
@@ -2471,6 +2527,11 @@ inline -(const Polynomial &a) = Polynomial.neg(a);
 inline +(const Polynomial &a, const Polynomial &b) = Polynomial.add(a, b);
 inline -(const Polynomial &a, const Polynomial &b) = Polynomial.sub(a, b);
 inline *(const Polynomial &a, const Polynomial &b) = Polynomial.mul(a, b);
+
+to check
+https://github.com/OpenSourcePhysics/osp/blob/master/src/org/opensourcephysics/numerics/Polynomial.java
+https://github.com/umontreal-simul/ssj/blob/master/src/main/java/umontreal/ssj/functions/Polynomial.java
+http://home.apache.org/~luc/commons-math-3.6-RC2-site/jacoco/org.apache.commons.math3.analysis.polynomials/PolynomialFunction.java.html
 // */
 static if (typename(Timeunit) == null) {
 inline "Timeunit.ci";
@@ -2612,7 +2673,7 @@ struct Datetime {
 	 *      @see: https://man7.org/linux/man-pages/man1/date.1.html
 	 */
 	static int format(const Datetime value&, char output[], int end, const char format[]) {
-		static const char weekDayNamess[][] = {
+		static const char weekDayNames[][] = {
 			"Monday",
 			"Tuesday",
 			"Wednesday",
@@ -2666,7 +2727,7 @@ struct Datetime {
 			else if (chr == 'A') {
 				// fixme: no locale
 				// %A     locale's full weekday name (e.g., en_US: [Sunday, ..., Saturday]; de_DE: [Sonntag, ..., Samstag])
-				end = append(output, end, weekDayNamess[indexOf(value.dayOfWeek)]);
+				end = append(output, end, weekDayNames[indexOf(value.dayOfWeek)]);
 			}
 //			else if (chr == 'b') // todo: %b     locale's abbreviated month name (e.g., en_US: [Jan, Feb, ..., Dec]; de_DE: [Jan, Feb, ..., Dez])
 			else if (chr == 'B') {
@@ -5638,26 +5699,23 @@ struct Switch: View {
 struct Slider: View {
 	const char text[*];
 
-	int value = 0;
-	const int minimum = 0;
-	const int maximum = -1u >> 1;
-	const int divisor = 0;
-	const int resetValue = 0; // TODO: resetValue = value;
+	float64 value = 0;
+	float64 _value = 0;
+	const float64 minimum = 0;
+	const float64 maximum = 1;
+	const float64 stepSize = 0;
+	const float64 resetValue = 0; // TODO: resetValue = value;
 
-	static float64 valueF64(Slider this) {
-		double value = this.value;
-		if (this.divisor != 0) {
-			return value / this.divisor;
-		}
-		return value;
-	}
-
-	bool onUpdate(Slider this, int value) {
+	bool onUpdate(Slider this, float64 value) {
 		if (value > this.maximum) {
 			value = this.maximum;
 		}
 		if (value < this.minimum) {
 			value = this.minimum;
+		}
+		this._value = value;
+		if (this.stepSize != 0) {
+			value = Math.round(value / this.stepSize) * this.stepSize;
 		}
 		if (this.value == value) {
 			return this.isDirty();
@@ -5673,7 +5731,7 @@ struct Slider: View {
 	void onCreate(Slider this, View parent) {
 		View.onCreate(this, parent);
 		// clamp to initial value and force update with a reset
-		int resetValue& = pointer(this.resetValue);
+		float64 resetValue& = pointer(this.resetValue);
 		Slider.onUpdate(this, this.value);
 		resetValue = this.value;
 		this.onReset(this);
@@ -5687,10 +5745,10 @@ struct Slider: View {
 			return this.onReset(this);
 		}
 		if (event.key == '+' || event.key == '=') {
-			return this.onUpdate(this, this.value + (event.isShift ? 1 : 10));
+			return this.onUpdate(this, this._value + (event.isShift ? 1 : 10));
 		}
 		if (event.key == '-' || event.key == '_') {
-			return this.onUpdate(this, this.value - (event.isShift ? 1 : 10));
+			return this.onUpdate(this, this._value - (event.isShift ? 1 : 10));
 		}
 		return View.onKeyEvent(this, event);
 	}
@@ -5707,17 +5765,15 @@ struct Slider: View {
 			float64 value = event.dx;
 			if (!event.isShift && value != 0) {
 				value *= float64(this.maximum - this.minimum) / rect.w;
-				if (value > -1 && value < 1) {
-					value = value < 0 ? -1 : 1;
-				}
 			}
-			value += this.value;
+			value += this._value;
 			if (value > this.maximum) {
 				value = this.maximum;
 			}
 			if (value < this.minimum) {
 				value = this.minimum;
 			}
+
 			return this.onUpdate(this, value);
 		}
 		if (event.release) {
@@ -5735,8 +5791,8 @@ struct Slider: View {
 	bool onMeasure(Slider this, Rect rect&) {
 		char value[64] = {0};
 		Style style& = this.style;
-		if (this.divisor != 0) {
-			value.append(0, this.valueF64(), style.format);
+		if (this.stepSize != 0 && this.stepSize % 1 == 0) {
+			value.append(0, int64(this.value), style.format);
 		} else {
 			value.append(0, this.value, style.format);
 		}
@@ -5756,7 +5812,7 @@ struct Slider: View {
 		const int y0 = y1 - style.padding / 4;
 		const int x0 = rect.x;
 		const int x1 = rect.x + rect.w;
-		const int x = x0 + int64(this.value - this.minimum) * rect.w / (this.maximum - this.minimum);
+		const int x = x0 + (this.value - this.minimum) * rect.w / (this.maximum - this.minimum);
 		if (x > x0) {
 			offs.fillRect(x0, y0, x, y1, style.valueColor);
 		}
@@ -5767,8 +5823,8 @@ struct Slider: View {
 
 	void onDraw(Slider this, Image offs, Rect rect) {
 		char value[64] = {0};
-		if (this.divisor != 0) {
-			value.append(0, this.valueF64(), this.style.format);
+		if (this.stepSize != 0 && this.stepSize % 1 == 0) {
+			value.append(0, int64(this.value), this.style.format);
 		} else {
 			value.append(0, this.value, this.style.format);
 		}
@@ -6281,6 +6337,10 @@ struct Select: Layout {
 		Select.addItems(this, Style.fill, item);
 		return this;
 	}
+
+	static Select addItem(Select this, const char text[*]) {
+		return addItem(this, text, text);
+	}
 }
 
 /// Widget used to display controls in image processing demos
@@ -6319,11 +6379,11 @@ struct FxWidget: Widget {
 	bool onKeyEvent(FxWidget this, const KeyEvent event&) {
 		if (event.key == '[' || event.key == ']') {
 			bool changed = this.showOriginal != event.release;
-			this.showOriginal = !event.release && event.repeat != 0 && !this.enabled;
-			// show hide on short and release
+			this.showOriginal = !event.release && (event.repeat != 0 || !this.enabled);
+			// show hide on short press and release
 			if (event.repeat != 0 && event.release == this.enabled) {
 				// hide on long press, show on long release
-				return changed;
+				return changed && event.repeat == 1;
 			}
 			if (event.repeat == 0 && !event.release) {
 				// show/hide when button is on released, not when pressed
@@ -6353,6 +6413,11 @@ struct FxWidget: Widget {
 			this.measure = true;
 			this.invalidate();
 			return true;
+		}
+
+		if (event.key == '\\') {
+			this.showOriginal = !event.release;
+			return event.repeat == 0 || event.release;
 		}
 
 		if (event.release) {
@@ -6393,14 +6458,12 @@ struct FxWidget: Widget {
 		Widget.onDraw(this, offs, rect);
 		offs.destroy();
 	}
+
+	void onProcess(FxWidget widget) { }
 }
 
 Widget Widget(int width, int height, const Style style&) {
 	Widget widget = {
-		rect: {
-			w: width;
-			h: height;
-		};
 		width: width;
 		height: height;
 		style: style;
@@ -6414,23 +6477,22 @@ Widget Widget(int width, int height) {
 	};
 	return Widget(width, height, style);
 }
-FxWidget FxWidget(View views...) {
+FxWidget FxWidget(void onProcess(FxWidget widget), View views...) {
 	static const Style style = {
 		align: Style.left;
 		format: { padLen: 5, precision: 2 };
 	};
 	FxWidget widget = {
-		rect: {};
-
 		radius: 5;
 		margin: 10;
 		align: Style.topRight;
+		style: style;
 
 		paddingTop: 3;
 		paddingLeft: 3;
 		paddingRight: 3;
 		paddingBottom: 3;
-		style: style;
+		onProcess: onProcess;
 	};
 
 	return widget
@@ -6438,17 +6500,288 @@ FxWidget FxWidget(View views...) {
 		.addItems(...views);
 }
 
-static struct Gui {
-	static void showWindow(Image offscreen, int onEvent(Window window&, int action, int button, int x, int y), Widget widget) {
-		Window window = {
-			offscreen: offscreen;
-			widget: widget;
-		};
-		Gui.showWindow(offscreen, window, onEvent);
+FxWidget FxWidget(View views...) {
+	return FxWidget(FxWidget.onProcess, ...views);
+}
+
+bool hasFocused(const Layout this, View items...) {
+	if (this.focusedIndex < 0) {
+		// nothing is focused.
+		return false;
+	}
+	if (items.length == 0) {
+		// something is focused
+		return true;
 	}
 
+	View view = this.items[this.focusedIndex].view;
+	for (int i = 0; i < items.length; i += 1) {
+		if (items[i] == view) {
+			return true;
+		}
+	}
+
+	if (Layout layout = view.as(Layout)) {
+		return hasFocused(layout, ...items);
+	}
+	return false;
+}
+bool hasPressed(const Layout this, View items...) {
+	if (this.pressedIndex < 0) {
+		// nothing is pressed.
+		return false;
+	}
+	if (items.length == 0) {
+		// something is pressed
+		return true;
+	}
+
+	View view = this.items[this.pressedIndex].view;
+	for (int i = 0; i < items.length; i += 1) {
+		if (items[i] == view) {
+			return true;
+		}
+	}
+
+	if (Layout layout = view.as(Layout)) {
+		return hasPressed(layout, ...items);
+	}
+	return false;
+}
+
+static struct Gui {
 	static void showWindow(Image offscreen, Widget widget) {
-		static int showWindowEvent(Window win&, int action, int button, int x, int y) {
+		struct Window {
+			Image offscreen;
+			Widget widget;
+			Rect rect;
+
+			int64 timeout = 0;
+
+			// Touch state
+			int clicks = 0;
+			int64 time = 0;
+			int32 button = 0;
+			int32 lastX = 0;
+			int32 lastY = 0;
+
+			// Keyboard state
+			bool isShift = false;
+			bool isCtrl = false;
+			bool isAlt = false;
+			int key = 0;
+			int repeat = 0;
+		}
+
+		static bool dispatchEvent(Window window&, Widget widget, int action, int button, int x, int y) {
+			if (widget.parent == null) {
+				// widget was not created, so create it first
+				widget.onCreate(widget, widget);
+				widget.measure = true;
+			}
+			if (action == Gui.WINDOW_INIT) {
+				return true;
+			}
+			if (action == Gui.WINDOW_CLOSE) {
+				// TODO: implement reference counted gc
+				widget.onDestroy(widget);
+				widget.destroy();
+				return false;
+			}
+			if (action == Gui.WINDOW_ENTER) {
+				// do not process event
+				return false;
+			}
+			if (action == Gui.WINDOW_LEAVE) {
+				// clear hovered state
+				return widget.clearState(Style.hovered);
+			}
+
+			if (action == Gui.FINGER_PRESS) {
+				// finger press results also a mouse event
+				// skip the finger event
+				return false;
+			}
+			if (action == Gui.FINGER_MOTION) {
+				// translate to mouse event
+				action = Gui.MOUSE_MOTION;
+			}
+			if (action == Gui.FINGER_RELEASE) {
+				// finger release results also a mouse event
+				// skip the finger event
+				return false;
+			}
+
+			if (action == Gui.MOUSE_PRESS) {
+				if (window.button != button || window.lastX != x || window.lastY != y) {
+					window.clicks = 0;
+				}
+				int64 now = System.millis();
+				if ((now - window.time) / 1000. > .5) {
+					window.clicks = 0;
+				}
+				window.time = now;
+				if (button == 1) {
+					window.timeout = now + 1000;
+				} else {
+					window.timeout = 0;
+				}
+				window.button = button;
+				window.lastX = x;
+				window.lastY = y;
+				window.clicks += 1;
+
+				if (button != 1) {
+					return false;
+				}
+
+				TouchEvent event = {
+					release: false;
+					isShift: window.isShift;
+					isCtrl: window.isCtrl;
+					isAlt: window.isAlt;
+					clicks: window.clicks;
+					button: button;
+					x: x - window.rect.x;
+					y: y - window.rect.y;
+				};
+				return widget.onTouchEvent(widget, window.rect, event);
+			}
+			if (action == Gui.MOUSE_MOTION) {
+				int lastX = window.lastX;
+				int lastY = window.lastY;
+				window.time = System.millis();
+				window.timeout = 0;
+				window.button = button;
+				window.lastX = x;
+				window.lastY = y;
+				window.clicks = 0;
+
+				if (button != 0 && button != 1) {
+					return false;
+				}
+				TouchEvent event = {
+					release: false;
+					isShift: window.isShift;
+					isCtrl: window.isCtrl;
+					isAlt: window.isAlt;
+					clicks: window.clicks;
+					button: button;
+					dx: x - lastX;
+					dy: y - lastY;
+					x: x - window.rect.x;
+					y: y - window.rect.y;
+				};
+				return widget.onTouchEvent(widget, window.rect, event);
+			}
+			if (action == Gui.MOUSE_RELEASE) {
+				int64 now = System.millis();
+				if ((now - window.time) / 1000. > .5) {
+					window.clicks = 0;
+				}
+				window.timeout = 0;
+				if (button != 1) {
+					return false;
+				}
+
+				TouchEvent event = {
+					release: true;
+					isShift: window.isShift;
+					isCtrl: window.isCtrl;
+					isAlt: window.isAlt;
+					clicks: window.clicks;
+					button: button;
+					x: x - window.rect.x;
+					y: y - window.rect.y;
+				};
+				return widget.onTouchEvent(widget, window.rect, event);
+			}
+
+			if (action == Gui.KEY_PRESS) {
+				window.isShift = (y & Gui.KEY_MASK_SHIFT) != 0;
+				window.isCtrl = (y & Gui.KEY_MASK_CTRL) != 0;
+				window.isAlt = (y & Gui.KEY_MASK_ALT) != 0;
+				if (window.key != button) {
+					window.key = button;
+					window.repeat = 0;
+				} else {
+					window.repeat += 1;
+				}
+
+				KeyEvent event = {
+					release: false;
+					isShift: window.isShift;
+					isCtrl: window.isCtrl;
+					isAlt: window.isAlt;
+					repeat: window.repeat;
+					key: button;
+				};
+				return widget.onKeyEvent(widget, event);
+			}
+			if (action == Gui.KEY_RELEASE) {
+				window.isShift = (y & Gui.KEY_MASK_SHIFT) != 0;
+				window.isCtrl = (y & Gui.KEY_MASK_CTRL) != 0;
+				window.isAlt = (y & Gui.KEY_MASK_ALT) != 0;
+				KeyEvent event = {
+					release: true;
+					isShift: window.isShift;
+					isCtrl: window.isCtrl;
+					isAlt: window.isAlt;
+					repeat: window.repeat;
+					key: button;
+				};
+				window.key = 0;
+				window.repeat = 0;
+				return widget.onKeyEvent(widget, event);
+			}
+
+			if (action == Gui.EVENT_TIMEOUT) {
+				if (window.timeout > 0) {
+					// long press
+					TouchEvent event = {
+						release: true;
+						isShift: window.isShift;
+						isCtrl: window.isCtrl;
+						isAlt: window.isAlt;
+						clicks: -1;
+						button: window.button;
+						x: window.lastX - window.rect.x;
+						y: window.lastY - window.rect.y;
+					};
+					return widget.onTouchEvent(widget, window.rect, event);
+				}
+			}
+
+			debug("event not processed", action);
+			return false;
+		}
+		static int draw(Window window&, Widget widget) {
+			if (!widget.enabled) {
+				// widget is disabled, do not show it
+				return 0;
+			}
+			int64 timeout = 0;
+			if (window.timeout > 0) {
+				timeout = window.timeout - System.millis();
+				if (timeout < 0) {
+					timeout = 0;
+				}
+			}
+
+			Image offs = window.offscreen;
+			Rect rect& = window.rect;
+			if (widget.measure) {
+				rect.w = offs.width();
+				rect.h = offs.height();
+				widget.onMeasure(widget, &rect);
+				widget.measure = false;
+			}
+
+			widget.onDraw(offs, rect, 0);
+			widget.redraw = false;
+			return timeout;
+		}
+		static int windowEvent(Window win&, int action, int button, int x, int y) {
 			if (action == Gui.KEY_RELEASE && button == Gui.KEY_CODE_ESC) {
 				// exit when releasing escape key
 				return -1;
@@ -6456,18 +6789,39 @@ static struct Gui {
 			Widget widget = win.widget;
 			if (!win.dispatchEvent(widget, action, button, x, y)) {
 				// event not processed, wait for the next one
-				return 0;
+				if (!widget.redraw) {
+					return 0;
+				}
+				return win.draw(widget);
+			}
+			if (button == 0 && (action == Gui.MOUSE_MOTION || action == Gui.FINGER_MOTION)) {
+				// hover views
+				return win.draw(widget);
+			}
+			if (button != 0 && (action == Gui.MOUSE_PRESS || action == Gui.FINGER_PRESS)) {
+				// focus views
+				return win.draw(widget);
+			}
+			if (FxWidget fxWidget = widget.as(FxWidget)) {
+				fxWidget.onProcess(fxWidget);
 			}
 			return win.draw(widget);
 		}
-		return showWindow(offscreen, showWindowEvent, widget);
+
+		Window window = {
+			offscreen: offscreen;
+			widget: widget;
+			rect: {};
+		};
+		return Gui.showWindow(offscreen, window, windowEvent);
 	}
 
 	static void showWindow(Widget widget) {
 		widget.onCreate(widget, widget);
-		widget.onMeasure(widget, &widget.rect);
+		Rect rect = {w: 0, h: 0};
+		widget.onMeasure(widget, &rect);
 		widget.measure = true;
-		Image offscreen = Image(widget.rect.w, widget.rect.h, 32);
+		Image offscreen = Image(rect.w, rect.h, 32);
 		showWindow(offscreen, widget);
 		offscreen.destroy();
 	}
@@ -6820,6 +7174,14 @@ struct Style {
 	static void align(const Style this&, Rect parent, Rect rect&, const char value[*], int align) {
 		parent.adjust(-this.padding);
 		this.font.clipText(&rect, value);
+		if ((align & horizontal) == horizontal) {
+			// center text if it is aligned both top and bottom
+			align &= ~horizontal;
+		}
+		if ((align & vertical) == vertical) {
+			// center text if it is aligned both left and right
+			align &= ~vertical;
+		}
 		align(parent, &rect, align);
 	}
 
@@ -6922,16 +7284,12 @@ struct View: object {
 		return false;
 	}
 
-	static void setStyle(View this, const Style style&) {
-		this.style = emit(pointer(style));
-	}
-
 	void onCreate(View this, View parent) {
 		assert(this.parent == null || this.parent == parent, "can not add the same view to different layouts");
 		this.parent = parent;
 		if (this.style == null) {
 			assert(parent.style != null, "can not create view with a parent without a style");
-			this.setStyle(parent.style);
+			this.style = emit(pointer(parent.style));
 		}
 	}
 
@@ -7035,7 +7393,7 @@ struct View: object {
 	}
 }
 
-static void invalidate(View view);
+static void invalidate(View view, bool layout);
 static void focus(View view);
 
 /** Layout is a view containing other views positioned by it.
@@ -7215,7 +7573,7 @@ struct Layout: View {
 		this.paddingLeft = left;
 		this.paddingRight = right;
 		this.paddingBottom = bottom;
-		this.invalidate();
+		this.invalidate(true);
 		return this;
 	}
 
@@ -7697,9 +8055,8 @@ struct Layout: View {
  * a widget may clip its children and apply scrolling to them, even show a scrollbar.
  */
 struct Widget: Layout {
-	Rect rect;	// fixme: move or remove
-
-	bool measure = true;
+	bool measure = true;	// force layout
+	bool redraw = true;		// force redraw
 	View focus = null;
 
 	int scrollX = 0;
@@ -7839,305 +8196,8 @@ struct Widget: Layout {
 	}
 
 	void onDraw(Widget this, Image offs, Rect rect) {
-		Style style& = this.style;
-		offs.fillRect(rect, style.backgroundColor);
+		offs.fillRect(rect, this.style.backgroundColor);
 		Layout.onDraw(this, offs, rect);
-	}
-}
-
-/** Window contains all the needed information to display a widget
- * todo: should be able to display a stack of widgets
- */
-struct Window {
-	const Image offscreen;
-	Widget widget;
-
-	int64 timeout = 0;
-
-	// Touch state
-	int clicks = 0;
-	int64 time = 0;
-	int32 button = 0;
-	int32 lastX = 0;
-	int32 lastY = 0;
-
-	// Keyboard state
-	bool isShift = false;
-	bool isCtrl = false;
-	bool isAlt = false;
-	int key = 0;
-	int repeat = 0;
-
-	static bool hasFocused(const Window window&, View items...) {
-		bool hasFocused(const Layout this, View items...) {
-			if (this.focusedIndex < 0) {
-				// nothing is focused.
-				return false;
-			}
-			if (items.length == 0) {
-				// something is focused
-				return true;
-			}
-
-			View view = this.items[this.focusedIndex].view;
-			for (int i = 0; i < items.length; i += 1) {
-				if (items[i] == view) {
-					return true;
-				}
-			}
-
-			if (Layout layout = view.as(Layout)) {
-				return hasFocused(layout, ...items);
-			}
-			return false;
-		}
-		return hasFocused(window.widget, ...items);
-	}
-	static bool hasPressed(const Window window&, View items...) {
-		bool hasPressed(const Layout this, View items...) {
-			if (this.pressedIndex < 0) {
-				// nothing is pressed.
-				return false;
-			}
-			if (items.length == 0) {
-				// something is pressed
-				return true;
-			}
-
-			View view = this.items[this.pressedIndex].view;
-			for (int i = 0; i < items.length; i += 1) {
-				if (items[i] == view) {
-					return true;
-				}
-			}
-
-			if (Layout layout = view.as(Layout)) {
-				return hasPressed(layout, ...items);
-			}
-			return false;
-		}
-		return hasPressed(window.widget, ...items);
-	}
-
-	/// returns true if the event is processable, false in case only the ui needs to be updated
-	static bool processableEvent(Window window&, int action, int button, int x, int y) {
-		if (button == 0 && (action == Gui.MOUSE_MOTION || action == Gui.FINGER_MOTION)) {
-			// hover views
-			return false;
-		}
-		if (button != 0 && (action == Gui.MOUSE_PRESS || action == Gui.FINGER_PRESS)) {
-			// focus views
-			return false;
-		}
-		return true;
-	}
-
-	static bool dispatchEvent(Window window&, Widget widget, int action, int button, int x, int y) {
-		if (widget.parent == null) {
-			// widget was not created, so create it first
-			widget.onCreate(widget, widget);
-			widget.measure = true;
-		}
-		if (action == Gui.WINDOW_INIT) {
-			return true;
-		}
-		if (action == Gui.WINDOW_CLOSE) {
-			// TODO: implement reference counted gc
-			widget.onDestroy(widget);
-			widget.destroy();
-			return false;
-		}
-		if (action == Gui.WINDOW_ENTER) {
-			// do not process event
-			return false;
-		}
-		if (action == Gui.WINDOW_LEAVE) {
-			// clear hovered state
-			return widget.clearState(Style.hovered);
-		}
-
-		if (action == Gui.FINGER_PRESS) {
-			// finger press results also a mouse event
-			// skip the finger event
-			return false;
-		}
-		if (action == Gui.FINGER_MOTION) {
-			// translate to mouse event
-			action = Gui.MOUSE_MOTION;
-		}
-		if (action == Gui.FINGER_RELEASE) {
-			// finger release results also a mouse event
-			// skip the finger event
-			return false;
-		}
-
-		if (action == Gui.MOUSE_PRESS) {
-			if (window.button != button || window.lastX != x || window.lastY != y) {
-				window.clicks = 0;
-			}
-			int64 now = System.millis();
-			if ((now - window.time) / 1000. > .5) {
-				window.clicks = 0;
-			}
-			window.time = now;
-			if (button == 1) {
-				window.timeout = now + 1000;
-			} else {
-				window.timeout = 0;
-			}
-			window.button = button;
-			window.lastX = x;
-			window.lastY = y;
-			window.clicks += 1;
-
-			if (button != 1) {
-				return false;
-			}
-
-			TouchEvent event = {
-				release: false;
-				isShift: window.isShift;
-				isCtrl: window.isCtrl;
-				isAlt: window.isAlt;
-				clicks: window.clicks;
-				button: button;
-				x: x - widget.rect.x;
-				y: y - widget.rect.y;
-			};
-			return widget.onTouchEvent(widget, widget.rect, event);
-		}
-		if (action == Gui.MOUSE_MOTION) {
-			int lastX = window.lastX;
-			int lastY = window.lastY;
-			window.time = System.millis();
-			window.timeout = 0;
-			window.button = button;
-			window.lastX = x;
-			window.lastY = y;
-			window.clicks = 0;
-
-			if (button != 0 && button != 1) {
-				return false;
-			}
-			TouchEvent event = {
-				release: false;
-				isShift: window.isShift;
-				isCtrl: window.isCtrl;
-				isAlt: window.isAlt;
-				clicks: window.clicks;
-				button: button;
-				dx: x - lastX;
-				dy: y - lastY;
-				x: x - widget.rect.x;
-				y: y - widget.rect.y;
-			};
-			return widget.onTouchEvent(widget, widget.rect, event);
-		}
-		if (action == Gui.MOUSE_RELEASE) {
-			int64 now = System.millis();
-			if ((now - window.time) / 1000. > .5) {
-				window.clicks = 0;
-			}
-			window.timeout = 0;
-			if (button != 1) {
-				return false;
-			}
-
-			TouchEvent event = {
-				release: true;
-				isShift: window.isShift;
-				isCtrl: window.isCtrl;
-				isAlt: window.isAlt;
-				clicks: window.clicks;
-				button: button;
-				x: x - widget.rect.x;
-				y: y - widget.rect.y;
-			};
-			return widget.onTouchEvent(widget, widget.rect, event);
-		}
-
-		if (action == Gui.KEY_PRESS) {
-			window.isShift = (y & Gui.KEY_MASK_SHIFT) != 0;
-			window.isCtrl = (y & Gui.KEY_MASK_CTRL) != 0;
-			window.isAlt = (y & Gui.KEY_MASK_ALT) != 0;
-			if (window.key != button) {
-				window.key = button;
-				window.repeat = 0;
-			} else {
-				window.repeat += 1;
-			}
-
-			KeyEvent event = {
-				release: false;
-				isShift: window.isShift;
-				isCtrl: window.isCtrl;
-				isAlt: window.isAlt;
-				repeat: window.repeat;
-				key: button;
-			};
-			return widget.onKeyEvent(widget, event);
-		}
-		if (action == Gui.KEY_RELEASE) {
-			window.isShift = (y & Gui.KEY_MASK_SHIFT) != 0;
-			window.isCtrl = (y & Gui.KEY_MASK_CTRL) != 0;
-			window.isAlt = (y & Gui.KEY_MASK_ALT) != 0;
-			KeyEvent event = {
-				release: true;
-				isShift: window.isShift;
-				isCtrl: window.isCtrl;
-				isAlt: window.isAlt;
-				repeat: window.repeat;
-				key: button;
-			};
-			window.key = 0;
-			window.repeat = 0;
-			return widget.onKeyEvent(widget, event);
-		}
-
-		if (action == Gui.EVENT_TIMEOUT) {
-			if (window.timeout > 0) {
-				// long press
-				TouchEvent event = {
-					release: true;
-					isShift: window.isShift;
-					isCtrl: window.isCtrl;
-					isAlt: window.isAlt;
-					clicks: -1;
-					button: window.button;
-					x: window.lastX - widget.rect.x;
-					y: window.lastY - widget.rect.y;
-				};
-				return widget.onTouchEvent(widget, widget.rect, event);
-			}
-		}
-
-		debug("event not processed", action);
-		return false;
-	}
-	static int draw(Window window&, Widget widget) {
-		if (!widget.enabled) {
-			// widget is disabled, do not show it
-			return 0;
-		}
-		int64 timeout = 0;
-		if (window.timeout > 0) {
-			timeout = window.timeout - System.millis();
-			if (timeout < 0) {
-				timeout = 0;
-			}
-		}
-
-		Image offs = window.offscreen;
-		Rect rect& = widget.rect;
-		if (widget.measure) {
-			rect.w = offs.width();
-			rect.h = offs.height();
-			widget.onMeasure(widget, &rect);
-			widget.measure = false;
-		}
-
-		widget.onDraw(offs, rect, 0);
-		return timeout;
 	}
 }
 
@@ -8152,10 +8212,14 @@ Widget getWidget(View view) {
 	return null;
 }
 
-void invalidate(View view) {
+void invalidate(View view, bool layout) {
 	Widget widget = getWidget(view);
-	widget.measure = true;
+	if (layout) {
+		widget.measure = true;
+	}
+	widget.redraw = true;
 }
+inline invalidate(View view) = invalidate(view, true);
 void focus(View view) {
 	static void clearFocus(Layout layout) {
 		for (int i = 0; i < layout.itemCount; i += 1) {
@@ -8186,8 +8250,9 @@ void focus(View view) {
 		return;
 	}
 
-	// focus the first element from the layout
-	widget.onMeasure(widget, &widget.rect);
+	Rect rect = {w: 0, h: 0};
+	// focus the first visible element from the layout
+	widget.onMeasure(widget, &rect);
 	widget.clearFocus();
 	widget.setFocused(view);
 	widget.focusNext(false);

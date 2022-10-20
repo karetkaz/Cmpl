@@ -219,7 +219,8 @@ void showWindow(int w, int h, float32 fovy, Mesh mesh) {
 	static int onEvent(Data data&, int action, int button, int ex, int ey) {
 		static int ox = 0;
 		static int oy = 0;
-		static const float32 speed = 1 / 100f;
+		static const float32 slow = 1 / 100f;
+		static const float32 fast = 5 / 100f;
 		if (action == Gui.FINGER_MOTION) {
 			action = Gui.MOUSE_MOTION;
 		}
@@ -228,8 +229,69 @@ void showWindow(int w, int h, float32 fovy, Mesh mesh) {
 			return -1;
 		}
 		if (action == Gui.KEY_PRESS) {
-			if (button == 'l') {
+			if (button == Gui.KEY_CODE_ENTER) {
+				vec4f eye = {x: 0, y: 0, z: 2, w: 1};
+				vec4f at = {x: 0, y: 0, z: 0, w: 1};
+				vec4f up = {x: 0, y: 1, z: 0, w: 1};
+				data.cam = Camera.lookAt(eye, at, up);
+				data.updateCamera();
+			}
+
+			else if (button == 'w') {
+				Camera camera& = data.cam;
+				bool shift = bool(ey & Gui.KEY_MASK_SHIFT);
+				camera.move(camera.forward, +(shift ? fast : slow));
+				data.updateCamera();
+			}
+			else if (button == 's') {
+				Camera camera& = data.cam;
+				bool shift = bool(ey & Gui.KEY_MASK_SHIFT);
+				camera.move(camera.forward, -(shift ? fast : slow));
+				data.updateCamera();
+			}
+			else if (button == 'a') {
+				Camera camera& = data.cam;
+				bool shift = bool(ey & Gui.KEY_MASK_SHIFT);
+				camera.move(camera.right, -(shift ? fast : slow));
+				data.updateCamera();
+			}
+			else if (button == 'd') {
+				Camera camera& = data.cam;
+				bool shift = bool(ey & Gui.KEY_MASK_SHIFT);
+				camera.move(camera.right, +(shift ? fast : slow));
+				data.updateCamera();
+			}
+
+			else if (button == Gui.KEY_CODE_UP) {
+				Camera camera& = data.cam;
+				bool shift = bool(ey & Gui.KEY_MASK_SHIFT);
+				camera.rotate(camera.position, camera.right, -(shift ? fast : slow));
+				data.updateCamera();
+			}
+			else if (button == Gui.KEY_CODE_DOWN) {
+				Camera camera& = data.cam;
+				bool shift = bool(ey & Gui.KEY_MASK_SHIFT);
+				camera.rotate(camera.position, camera.right, +(shift ? fast : slow));
+				data.updateCamera();
+			}
+			else if (button == Gui.KEY_CODE_LEFT) {
+				Camera camera& = data.cam;
+				bool shift = bool(ey & Gui.KEY_MASK_SHIFT);
+				camera.rotate(camera.position, camera.up, -(shift ? fast : slow));
+				data.updateCamera();
+			}
+			else if (button == Gui.KEY_CODE_RIGHT) {
+				Camera camera& = data.cam;
+				bool shift = bool(ey & Gui.KEY_MASK_SHIFT);
+				camera.rotate(camera.position, camera.up, +(shift ? fast : slow));
+				data.updateCamera();
+			}
+
+			else if (button == 'l') {
 				data.mode ^= Mesh.useLights;
+			}
+			else if (button == 'b') {
+				data.mode ^= Mesh.drawBounds;
 			}
 			else if (button == '0') {
 				lights.enable(0, !lights.enabled(0));
@@ -252,13 +314,6 @@ void showWindow(int w, int h, float32 fovy, Mesh mesh) {
 			else if (button == Gui.KEY_CODE_TAB) {
 				data.mode = next(data.mode, Mesh.drawMode);
 			}
-			else if (button == Gui.KEY_CODE_ENTER) {
-				vec4f eye = {x: 0, y: 0, z: 2, w: 1};
-				vec4f at = {x: 0, y: 0, z: 0, w: 1};
-				vec4f up = {x: 0, y: 1, z: 0, w: 1};
-				data.cam = Camera.lookAt(eye, at, up);
-				data.updateCamera();
-			}
 		}
 		else if (action == Gui.MOUSE_PRESS) {
 			ox = ex;
@@ -273,30 +328,35 @@ void showWindow(int w, int h, float32 fovy, Mesh mesh) {
 			if (button == 1) {
 				// orbit around the origin: (x: 0, y: 0, z: 0)
 				vec4f orbit = vec4f(0, 0, 0);
-				camera.rotate(orbit, camera.up, dx * speed);
-				camera.rotate(orbit, camera.right, dy * speed);
+				camera.rotate(orbit, camera.up, dx * slow);
+				camera.rotate(orbit, camera.right, dy * slow);
 				data.updateCamera();
 			}
 			else if (button == 2) {
 				// rotate
 				vec4f orbit = camera.position;
-				camera.rotate(orbit, camera.up, -dx * speed);
-				camera.rotate(orbit, camera.right, -dy * speed);
+				camera.rotate(orbit, camera.up, -dx * slow);
+				camera.rotate(orbit, camera.right, -dy * slow);
 				data.updateCamera();
 			}
 			else if (button == 3) {
 				// move the camera back and forward
-				camera.move(camera.forward, dy * speed);
+				camera.move(camera.forward, dy * slow);
 				data.updateCamera();
 			}
 			else if (button == 4) {
 				// pan the camera
-				camera.move(camera.right, -dx * speed);
-				camera.move(camera.up, dy * speed);
+				camera.move(camera.right, -dx * slow);
+				camera.move(camera.up, dy * slow);
 				data.updateCamera();
 			}
 			ox = ex;
 			oy = ey;
+		}
+		else if (action == Gui.MOUSE_WHEEL) {
+			Camera camera& = data.cam;
+			camera.move(camera.forward, ey * fast);
+			data.updateCamera();
 		}
 
 		int rendered = data.offs.drawMesh(data.mesh, data.mode);

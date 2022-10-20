@@ -298,12 +298,12 @@ Math.max(a: uint32, b: uint32): uint32 # Returns the greater value from the inpu
 Math.max(a: uint64, b: uint64): uint64 # Returns the greater value from the input values
 Math.max(a: float32, b: float32): float32 # Returns the greater value from the input values
 Math.max(a: float64, b: float64): float64 # Returns the greater value from the input values
-Math.clamp(t: int32, a: int32, b: int32): int32 # Returns the value of `t` clamped between `a` and `b`
-Math.clamp(t: int64, a: int64, b: int64): int64 # Returns the value of `t` clamped between `a` and `b`
-Math.clamp(t: uint32, a: uint32, b: uint32): uint32 # Returns the value of `t` clamped between `a` and `b`
-Math.clamp(t: uint64, a: uint64, b: uint64): uint64 # Returns the value of `t` clamped between `a` and `b`
-Math.clamp(t: float32, a: float32, b: float32): float32 # Returns the value of `t` clamped between `a` and `b`
-Math.clamp(t: float64, a: float64, b: float64): float64 # Returns the value of `t` clamped between `a` and `b`
+Math.clamp(value: int32, min: int32, max: int32): int32 # Returns the `value` clamped between `min` and `max`
+Math.clamp(value: int64, min: int64, max: int64): int64 # Returns the `value` clamped between `min` and `max`
+Math.clamp(value: uint32, min: uint32, max: uint32): uint32 # Returns the `value` clamped between `min` and `max`
+Math.clamp(value: uint64, min: uint64, max: uint64): uint64 # Returns the `value` clamped between `min` and `max`
+Math.clamp(value: float32, min: float32, max: float32): float32 # Returns the `value` clamped between `min` and `max`
+Math.clamp(value: float64, min: float64, max: float64): float64 # Returns the `value` clamped between `min` and `max`
 Math.lerp(t: float32, a: float32, b: float32): float32 # Returns the linear interpolation between `a` and `b` by `t`
 Math.lerp(t: float64, a: float64, b: float64): float64 # Returns the linear interpolation between `a` and `b` by `t`
 Math.smooth(t: float32): float32
@@ -612,6 +612,7 @@ Mesh.drawFill
 Mesh.drawMode
 Mesh.useTexture
 Mesh.useLights
+Mesh.drawBounds
 Mesh.vertices
 Mesh.triangles
 Mesh.segments
@@ -848,7 +849,6 @@ View.onClick(this: View): bool
 View.onClick(this: View): bool
 View.onReset(this: View): bool
 View.onReset(this: View): bool
-View.setStyle(this: View, style: Style): void
 View.onCreate(this: View, parent: View): void
 View.onCreate(this: View, parent: View): void
 View.onDestroy(this: View): void
@@ -866,7 +866,7 @@ object.create(type: typename): pointer
 object.destroy(this: object): void
 object.as(this: object, type: typename): pointer
 object.type(this: object): typename
-invalidate(view: View): void
+invalidate(view: View, layout: bool): void
 focus(view: View): void
 Layout # Layout is a view containing other views positioned by it.\nthe Layout class does not clip its children.\nthe size of the Layout class should contain all the views.
 Layout.Item
@@ -919,7 +919,6 @@ View.onClick(this: View): bool
 View.onClick(this: View): bool
 View.onReset(this: View): bool
 View.onReset(this: View): bool
-View.setStyle(this: View, style: Style): void
 View.onCreate(this: View, parent: View): void
 View.onCreate(this: View, parent: View): void
 View.onDestroy(this: View): void
@@ -938,8 +937,8 @@ object.destroy(this: object): void
 object.as(this: object, type: typename): pointer
 object.type(this: object): typename
 Widget # Widget is a special kind of layout, which can clip the content of its elements.\na widget may clip its children and apply scrolling to them, even show a scrollbar.
-Widget.rect
 Widget.measure
+Widget.redraw
 Widget.focus
 Widget.scrollX
 Widget.scrollY
@@ -1006,7 +1005,6 @@ View.onClick(this: View): bool
 View.onClick(this: View): bool
 View.onReset(this: View): bool
 View.onReset(this: View): bool
-View.setStyle(this: View, style: Style): void
 View.onCreate(this: View, parent: View): void
 View.onCreate(this: View, parent: View): void
 View.onDestroy(this: View): void
@@ -1024,26 +1022,8 @@ object.create(type: typename): pointer
 object.destroy(this: object): void
 object.as(this: object, type: typename): pointer
 object.type(this: object): typename
-Window # Window contains all the needed information to display a widget\ntodo: should be able to display a stack of widgets
-Window.offscreen
-Window.widget
-Window.timeout
-Window.clicks
-Window.time
-Window.button
-Window.lastX
-Window.lastY
-Window.isShift
-Window.isCtrl
-Window.isAlt
-Window.key
-Window.repeat
-Window.hasFocused(window: Window, items: View[]): bool
-Window.hasPressed(window: Window, items: View[]): bool
-Window.processableEvent(window: Window, action: int32, button: int32, x: int32, y: int32): bool # returns true if the event is processable, false in case only the ui needs to be updated
-Window.dispatchEvent(window: Window, widget: Widget, action: int32, button: int32, x: int32, y: int32): bool
-Window.draw(window: Window, widget: Widget): int32
 getWidget(view: View): Widget
+invalidate(view: View, layout: bool): void
 invalidate(view: View): void
 focus(view: View): void
 isFocused(view: View): bool
@@ -1064,7 +1044,6 @@ View.onClick(this: View): bool
 View.onClick(this: View): bool
 View.onReset(this: View): bool
 View.onReset(this: View): bool
-View.setStyle(this: View, style: Style): void
 View.onCreate(this: View, parent: View): void
 View.onCreate(this: View, parent: View): void
 View.onDestroy(this: View): void
@@ -1110,7 +1089,6 @@ View.onClick(this: View): bool
 View.onClick(this: View): bool
 View.onReset(this: View): bool
 View.onReset(this: View): bool
-View.setStyle(this: View, style: Style): void
 View.onCreate(this: View, parent: View): void
 View.onCreate(this: View, parent: View): void
 View.onDestroy(this: View): void
@@ -1131,13 +1109,13 @@ object.type(this: object): typename
 Slider
 Slider.text
 Slider.value
+Slider._value
 Slider.minimum
 Slider.maximum
-Slider.divisor
+Slider.stepSize
 Slider.resetValue
-Slider.valueF64(this: Slider): float64
-Slider.onUpdate(this: Slider, value: int32): bool
-Slider.onUpdate(this: Slider, value: int32): bool
+Slider.onUpdate(this: Slider, value: float64): bool
+Slider.onUpdate(this: Slider, value: float64): bool
 Slider.onReset(this: Slider): bool
 Slider.onCreate(this: Slider, parent: View): void
 Slider.onKeyEvent(this: Slider, event: KeyEvent): bool
@@ -1157,7 +1135,6 @@ View.onClick(this: View): bool
 View.onClick(this: View): bool
 View.onReset(this: View): bool
 View.onReset(this: View): bool
-View.setStyle(this: View, style: Style): void
 View.onCreate(this: View, parent: View): void
 View.onCreate(this: View, parent: View): void
 View.onDestroy(this: View): void
@@ -1198,7 +1175,6 @@ View.onClick(this: View): bool
 View.onClick(this: View): bool
 View.onReset(this: View): bool
 View.onReset(this: View): bool
-View.setStyle(this: View, style: Style): void
 View.onCreate(this: View, parent: View): void
 View.onCreate(this: View, parent: View): void
 View.onDestroy(this: View): void
@@ -1241,7 +1217,6 @@ View.onClick(this: View): bool
 View.onClick(this: View): bool
 View.onReset(this: View): bool
 View.onReset(this: View): bool
-View.setStyle(this: View, style: Style): void
 View.onCreate(this: View, parent: View): void
 View.onCreate(this: View, parent: View): void
 View.onDestroy(this: View): void
@@ -1313,7 +1288,6 @@ View.onClick(this: View): bool
 View.onClick(this: View): bool
 View.onReset(this: View): bool
 View.onReset(this: View): bool
-View.setStyle(this: View, style: Style): void
 View.onCreate(this: View, parent: View): void
 View.onCreate(this: View, parent: View): void
 View.onDestroy(this: View): void
@@ -1393,7 +1367,6 @@ View.onClick(this: View): bool
 View.onClick(this: View): bool
 View.onReset(this: View): bool
 View.onReset(this: View): bool
-View.setStyle(this: View, style: Style): void
 View.onCreate(this: View, parent: View): void
 View.onCreate(this: View, parent: View): void
 View.onDestroy(this: View): void
@@ -1423,6 +1396,7 @@ Select.onItemClick(select: Select, view: Button): bool
 Select.setSelectedIndex(select: Select, index: int32): Select
 Select.addItems(this: Select, align: int32, views: View[]): Select
 Select.addItem(this: Select, text: char[*], data: variant): Select
+Select.addItem(this: Select, text: char[*]): Select
 Layout.Item
 Layout.Item.rect
 Layout.Item.view
@@ -1473,7 +1447,6 @@ View.onClick(this: View): bool
 View.onClick(this: View): bool
 View.onReset(this: View): bool
 View.onReset(this: View): bool
-View.setStyle(this: View, style: Style): void
 View.onCreate(this: View, parent: View): void
 View.onCreate(this: View, parent: View): void
 View.onDestroy(this: View): void
@@ -1500,8 +1473,10 @@ FxWidget.onTouchEvent(this: FxWidget, rect: Rect, event: TouchEvent): bool
 FxWidget.onKeyEvent(this: FxWidget, event: KeyEvent): bool
 FxWidget.onMeasure(this: FxWidget, measured: Rect): bool
 FxWidget.onDraw(this: FxWidget, offs: Image, rect: Rect): void
-Widget.rect
+FxWidget.onProcess(widget: FxWidget): void
+FxWidget.onProcess(widget: FxWidget): void
 Widget.measure
+Widget.redraw
 Widget.focus
 Widget.scrollX
 Widget.scrollY
@@ -1568,7 +1543,6 @@ View.onClick(this: View): bool
 View.onClick(this: View): bool
 View.onReset(this: View): bool
 View.onReset(this: View): bool
-View.setStyle(this: View, style: Style): void
 View.onCreate(this: View, parent: View): void
 View.onCreate(this: View, parent: View): void
 View.onDestroy(this: View): void
@@ -1588,9 +1562,11 @@ object.as(this: object, type: typename): pointer
 object.type(this: object): typename
 Widget(width: int32, height: int32, style: Style): Widget
 Widget(width: int32, height: int32): Widget
+FxWidget(onProcess(widget: FxWidget): void, views: View[]): FxWidget
 FxWidget(views: View[]): FxWidget
+hasFocused(this: Layout, items: View[]): bool
+hasPressed(this: Layout, items: View[]): bool
 Gui
-Gui.showWindow(offscreen: Image, onEvent(window: Window, action: int32, button: int32, x: int32, y: int32): int32, widget: Widget): void
 Gui.showWindow(offscreen: Image, widget: Widget): void
 Gui.showWindow(widget: Widget): void
 Gui.KEY_PRESS
@@ -1662,7 +1638,6 @@ Gui.showWindow(image0: Image, image1: Image): void
 Gui.showWindow(width: int32, height: int32, animationResolution: int32, eval(in: vec4f): vec4f): void # Show or animate the the procedural image generated by the `eval` function
 Gui.showWindow(width: int32, height: int32, eval(in: vec4f): vec4f): void
 Gui.showWindow(w: int32, h: int32, fovy: float32, mesh: Mesh): void # Show the mesh in a window
-Gui.showWindow(offscreen: Image, onEvent(window: Window, action: int32, button: int32, x: int32, y: int32): int32, widget: Widget): void
 Gui.showWindow(offscreen: Image, widget: Widget): void
 Gui.showWindow(widget: Widget): void
 Gui.KEY_PRESS

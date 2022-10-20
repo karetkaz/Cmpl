@@ -73,8 +73,7 @@ If JSON output format is used, the generated file can be opened with the Inspect
 	- `/m /M`             dump memory usage (/M includes heap allocations)
 	- `/p /P`             dump caught errors (/P includes stacktrace)
 	- `/t /T`             trace execution of invocations (/T includes instructions)
-	- `/a`                pause on all(caught) errors
-	- `/s`                pause on startup
+	- `/s /S`             pause on any error (/S pauses on startup)
 
 - `-profile[*]`           run code with profiler: coverage, method tracing
 	- `/g /G`             dump global variable values (/G includes types and functions)
@@ -97,25 +96,21 @@ If JSON output format is used, the generated file can be opened with the Inspect
 
 - `-api[*]`               dump symbols
 	- `/a /A`             include all library symbols(/A includes builtins)
-	- `/m`                include `main` builtin initializer symbol
 	- `/d`                dump details of symbol
 	- `/p`                dump params and fields
 
 - `-doc[*]`               dump documentation
 	- `/a /A`             include all library symbols(/A includes builtins)
-	- `/m`                include main builtin symbol
 	- `/d`                dump details of symbol
 	- `/p`                dump params and fields
 
 - `-use[*]`               dump usages
 	- `/a /A`             include all library symbols(/A includes builtins)
-	- `/m`                include main builtin symbol
 	- `/d`                dump details of symbol
 	- `/p`                dump params and fields
 
 - `-asm[*]<int>`          dump assembled code: jmp +80
 	- `/a /A`             include all library symbols(/A includes builtins)
-	- `/m`                include main builtin symbol
 	- `/d`                dump details of symbol
 	- `/p`                dump params and fields
 	- `/g`                use global address: jmp @0x003d8c
@@ -124,7 +119,6 @@ If JSON output format is used, the generated file can be opened with the Inspect
 
 - `-ast[*]`               dump syntax tree
 	- `/a /A`             include all library symbols(/A includes builtins)
-	- `/m`                include main builtin symbol
 	- `/d`                dump details of symbol
 	- `/p`                dump params and fields
 	- `/t`                dump sub-expression type information

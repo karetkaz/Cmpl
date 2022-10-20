@@ -14,8 +14,10 @@ Image back = Image("asset/image/forest.jpg", 32);
 Image offs = Image(back);
 
 void drawColorSlider(Slider this, Image offs, Rect rect);
-void updateSlider(Slider min, Slider max, int value);
-bool syncMinMax(Slider this, int value);
+void updateSlider(Slider min, Slider max, float64 value);
+bool syncMinMax(Slider this, float64 value);
+bool onTouchEvent(FxWidget this, const Rect rect&, const TouchEvent event&);
+void onProcess(FxWidget widget);
 
 Histogram histogram = {
 	enabled: false;
@@ -28,6 +30,7 @@ Slider sldHueMin = {
 	text: "Hue.min";
 	focusable: false;
 	maximum: 359;
+	stepSize: 1;
 };
 Slider sldHueMax = {
 	onDrawSlider: drawColorSlider;
@@ -35,6 +38,7 @@ Slider sldHueMax = {
 	text: "Hue.max";
 	focusable: false;
 	maximum: 359;
+	stepSize: 1;
 };
 
 Slider sldLumMin = {
@@ -43,6 +47,7 @@ Slider sldLumMin = {
 	text: "Luminance.min";
 	focusable: false;
 	maximum: 255;
+	stepSize: 1;
 };
 Slider sldLumMax = {
 	onDrawSlider: drawColorSlider;
@@ -51,14 +56,13 @@ Slider sldLumMax = {
 	focusable: false;
 	maximum: 255;
 	value: 255;
+	stepSize: 1;
 };
 
 Slider sldVal = {
 	text: "Amount";
 	focusable: false;
-	maximum: 255;
-	divisor: 255;
-	value: 26;
+	value: .1;
 };
 
 DebugView debug = {
@@ -67,9 +71,27 @@ DebugView debug = {
 	draws: -1;
 };
 
+static const Style style = {
+	align: Style.left;
+	format: { padLen: 5, precision: 2 };
+};
+FxWidget widget = {
+	radius: 5;
+	margin: 10;
+	align: Style.topRight;
+
+	paddingTop: 3;
+	paddingLeft: 3;
+	paddingRight: 3;
+	paddingBottom: 3;
+	onTouchEvent: onTouchEvent;
+	onProcess: onProcess;
+	style: style;
+};
+
 // blending method executed for each pixel in the image
 vec4f blendHsl(vec4f base, vec4f blend) {
-	float val = sldVal.value / 255f;
+	float val = sldVal.value;
 
 	float lum = lum(blend);
 	float min = sldLumMin.value / 255f;
@@ -122,49 +144,6 @@ vec4f blendHsl(vec4f base, vec4f blend) {
 	return mix(a, vec4f(1, 0, 0), base);
 }
 
-int onEvent(Window win&, int action, int button, int x, int y) {
-	if (action == Gui.KEY_RELEASE && button == Gui.KEY_CODE_ESC) {
-		// exit when releasing escape key
-		return -1;
-	}
-	Widget ui = win.widget;
-	if (!win.dispatchEvent(ui, action, button, x, y)) {
-		if (ui.pressedIndex != -1) {
-			// redraw only ui, in case there is an active control
-			return win.draw(ui);
-		}
-		if (action != Gui.MOUSE_MOTION && action != Gui.FINGER_MOTION && action != Gui.MOUSE_RELEASE) {
-			// event not processed, wait for the next one
-			return 0;
-		}
-		if (button == 0 && (action == Gui.MOUSE_MOTION || action == Gui.FINGER_MOTION)) {
-			return 0;
-		}
-		// read the color under the cursor and update sliders
-		vec4f col = rgb2hsl(vec4f(argb(back.get(x, y))));
-		updateSlider(sldHueMin, sldHueMax, col.x * 359);
-		updateSlider(sldLumMin, sldLumMax, col.z * 255);
-		if (action == Gui.MOUSE_MOTION) {
-			return win.draw(ui);
-		}
-	}
-
-	if (button == 0 && (action == Gui.MOUSE_MOTION || action == Gui.FINGER_MOTION)) {
-		return win.draw(ui);
-	}
-
-	offs.copy(0, 0, back, null);
-
-	// blending is slow, so blend only when mouse button is released
-	if (button == 1 && (action == Gui.MOUSE_RELEASE || action == Gui.FINGER_RELEASE)) {
-		debug.startTimer();
-		offs.blend(0, 0, back, null, blendHsl);
-	}
-
-	histogram.update(offs);
-	return win.draw(ui);
-}
-
 void drawColorSlider(Slider this, Image offs, Rect rect) {
 	const Style style& = this.style;
 	const int yOff = 1;
@@ -201,8 +180,8 @@ void drawColorSlider(Slider this, Image offs, Rect rect) {
 		return;
 	}
 }
-void updateSlider(Slider min, Slider max, int value) {
-	int gap = max.value - min.value;
+void updateSlider(Slider min, Slider max, float64 value) {
+	float64 gap = max.value - min.value;
 	if (gap < 0) {
 		return;
 	}
@@ -215,26 +194,61 @@ void updateSlider(Slider min, Slider max, int value) {
 		min.onUpdate(value - gap);
 	}
 }
-bool syncMinMax(Slider this, int value) {
+bool syncMinMax(Slider this, float64 value) {
 	bool result = Slider.onUpdate(this, value);
 	if (this == sldHueMin || this == sldHueMax) {
 		if (sldHueMin.value > sldHueMax.value) {
-			sldHueMin.value = this.value;
-			sldHueMax.value = this.value;
+			Slider.onUpdate(sldHueMin, this.value);
+			Slider.onUpdate(sldHueMax, this.value);
 			return true;
 		}
 	}
 	if (this == sldLumMin || this == sldLumMax) {
 		if (sldLumMin.value > sldLumMax.value) {
-			sldLumMin.value = this.value;
-			sldLumMax.value = this.value;
+			Slider.onUpdate(sldLumMin, this.value);
+			Slider.onUpdate(sldLumMax, this.value);
 			return true;
 		}
 	}
 	return result;
 }
 
-Gui.showWindow(offs, onEvent, FxWidget(
+bool onTouchEvent(FxWidget this, const Rect rect&, const TouchEvent event&) {
+	if (FxWidget.onTouchEvent(this, rect, event)) {
+		// event processed by some view
+		return true;
+	}
+
+	if (this.hasPressed()) {
+		// a control is active, do not get the background color
+		return false;
+	}
+	if (event.button == 0) {
+		// just moving the mouse over
+		return false;
+	}
+
+	int x = rect.x + event.x;
+	int y = rect.y + event.y;
+	vec4f col = rgb2hsl(vec4f(argb(back.get(x, y))));
+	updateSlider(sldHueMin, sldHueMax, col.x * 359);
+	updateSlider(sldLumMin, sldLumMax, col.z * 255);
+	this.invalidate(false);	// force redraw
+	return event.release;
+}
+void onProcess(FxWidget widget) {
+	if (widget.hasPressed()) {
+		return;
+	}
+
+	debug.startTimer();
+
+	offs.copy(0, 0, back, null);
+	offs.blend(0, 0, back, null, blendHsl);
+	histogram.update(offs);
+}
+
+Gui.showWindow(offs, widget.addItems(
 	histogram,
 
 	null,

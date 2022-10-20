@@ -138,7 +138,7 @@ struct Datetime {
 	 *      @see: https://man7.org/linux/man-pages/man1/date.1.html
 	 */
 	static int format(const Datetime value&, char output[], int end, const char format[]) {
-		static const char weekDayNamess[][] = {
+		static const char weekDayNames[][] = {
 			"Monday",
 			"Tuesday",
 			"Wednesday",
@@ -192,7 +192,7 @@ struct Datetime {
 			else if (chr == 'A') {
 				// fixme: no locale
 				// %A     locale's full weekday name (e.g., en_US: [Sunday, ..., Saturday]; de_DE: [Sonntag, ..., Samstag])
-				end = append(output, end, weekDayNamess[indexOf(value.dayOfWeek)]);
+				end = append(output, end, weekDayNames[indexOf(value.dayOfWeek)]);
 			}
 //			else if (chr == 'b') // todo: %b     locale's abbreviated month name (e.g., en_US: [Jan, Feb, ..., Dec]; de_DE: [Jan, Feb, ..., Dez])
 			else if (chr == 'B') {

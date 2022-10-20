@@ -1,12 +1,4 @@
-// run with `-debug/P` switch to trace caught errors
-/* known errors:
-	Invalid state
-	Invalid memory access
-	Invalid instruction
-	Stack Overflow
-	Division by Zero
-	External call aborted execution
-*/
+#!cmpl -debug/P
 
 void noError(pointer ptr) {
 }

@@ -145,7 +145,7 @@ int drawGradient(GxImage dst, GxRect roi, GradientFlags type, int length, uint32
 	}
 
 	GxClip clip = getClip(dst);
-	char *dptr = (char *) getPAddr(dst, clip->l, clip->t);
+	char *dptr = (char *) refPixel(dst, clip->l, clip->t);
 	if (dptr == NULL) {
 		return -2;
 	}

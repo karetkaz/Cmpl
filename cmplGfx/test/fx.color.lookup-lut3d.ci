@@ -133,42 +133,20 @@ DebugView debug = {
 	draws: -1;
 };
 
-bool showOriginal(const Window win&, int action, int button) {
-	if (action == Gui.KEY_PRESS && (button == '[' || button == ']')) {
-		return win.repeat && !win.widget.enabled;
-	}
-	return false;
-}
-
-int onEvent(Window win&, int action, int button, int x, int y) {
-	if (action == Gui.KEY_RELEASE && button == Gui.KEY_CODE_ESC) {
-		// exit when releasing escape key
-		return -1;
-	}
-	FxWidget ui = win.widget.as(FxWidget);
-	if (!win.dispatchEvent(ui, action, button, x, y)) {
-		// event not processed, wait for the next one
-		return 0;
-	}
-	if (!win.processableEvent(action, button, x, y)) {
-		// hover view, focus view, and such things
-		return win.draw(ui);
-	}
-
+void onProcess(FxWidget widget) {
 	debug.startTimer();
-	offs.copy(0, 0, back, null);
 
-	if (ui.showOriginal) {
+	offs.copy(0, 0, back, null);
+	if (widget.showOriginal) {
 		histogram.update(offs);
-		return win.draw(ui);
+		return;
 	}
 
 	offs.colorMap(null, lookup);
 	histogram.update(offs);
-	return win.draw(ui);
 }
 
-Gui.showWindow(offs, onEvent, FxWidget(
+Gui.showWindow(offs, FxWidget(onProcess,
 	histogram,
 	null, export64, export256,
 	null, debug

@@ -8,6 +8,7 @@ let projects = {
 			'benchmark/DNA K-mers/k-mers.ci',
 			'benchmark/DNA K-mers/k-mers.py',
 			'benchmark/DNA K-mers/results.txt',
+			'benchmark/simd.complex.mul.ci',
 
 			'demo/BitwiseArithmetic.ci',
 

@@ -1,9 +1,9 @@
 // test inspired by https://developer.microsoft.com/en-us/fluentui#/controls/web/stack
 // test layout direction, alignment, and padding. todo: spacing
 
-bool syncOrientation(Slider this, int value);
+bool syncOrientation(Slider this, float64 value);
 bool syncAlignment(Switch this, int value);
-bool syncPadding(Slider this, int value);
+bool syncPadding(Slider this, float64 value);
 
 inline itemSize = -50;
 inline minPadding = 0;
@@ -15,6 +15,7 @@ Slider orientation = {
 	minimum: -4;
 	maximum: 10;
 	value: -1;
+	stepSize: 1;
 };
 
 Slider paddingTop = {
@@ -23,6 +24,7 @@ Slider paddingTop = {
 	minimum: minPadding;
 	maximum: maxPadding;
 	value: 20;
+	stepSize: 1;
 };
 Slider paddingLeft = {
 	onUpdate: syncPadding;
@@ -30,6 +32,7 @@ Slider paddingLeft = {
 	minimum: minPadding;
 	maximum: maxPadding;
 	value: 20;
+	stepSize: 1;
 };
 Slider paddingRight = {
 	onUpdate: syncPadding;
@@ -37,6 +40,7 @@ Slider paddingRight = {
 	minimum: minPadding;
 	maximum: maxPadding;
 	value: 256;
+	stepSize: 1;
 };
 Slider paddingBottom = {
 	onUpdate: syncPadding;
@@ -44,6 +48,7 @@ Slider paddingBottom = {
 	minimum: minPadding;
 	maximum: maxPadding;
 	value: 20;
+	stepSize: 1;
 };
 
 Switch layoutAlignTop = {
@@ -127,7 +132,6 @@ Style style = {
 
 // container for controls
 Widget widget = {
-	rect: {};
 	width: 1440;
 	height: 900;
 	style: style;
@@ -192,7 +196,7 @@ Gui.showWindow(widget
 	))
 );
 
-bool syncOrientation(Slider this, int value) {
+bool syncOrientation(Slider this, float64 value) {
 	if (!Slider.onUpdate(this, value)) {
 		return false;
 	}
@@ -200,7 +204,7 @@ bool syncOrientation(Slider this, int value) {
 	layout.invalidate();
 	return true;
 }
-bool syncPadding(Slider this, int value) {
+bool syncPadding(Slider this, float64 value) {
 	if (!Slider.onUpdate(this, value)) {
 		return false;
 	}
