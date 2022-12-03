@@ -149,47 +149,40 @@ Histogram curves = {
 
 Slider brightness = {
 	text: "brightness";
-	minimum: -256;
-	maximum: +256;
-	divisor: 256;
+	minimum: -1;
+	maximum: +1;
 };
 Slider contrast = {
 	text: "contrast";
-	value: 256;
-	minimum: -256;
-	maximum: +512;
-	divisor: 256;
+	value: 1;
+	minimum: -1;
+	maximum: +3;
 };
 Slider gamma = {
 	text: "gamma";
-	value: 100;
-	minimum: 1;
-	maximum: 1000;
-	divisor: 100;
+	value: 1;
+	minimum: .01;
+	maximum: 10;
 };
 Slider highlights = {
 	text: "highlights";
-	minimum: -256;
-	maximum: +256;
-	divisor: 256;
+	minimum: -1;
+	maximum: +1;
 };
 Slider shadows = {
 	text: "shadows";
-	minimum: -256;
-	maximum: +256;
-	divisor: 256;
+	minimum: -1;
+	maximum: +1;
 };
 Slider whites = {
 	text: "whites";
-	minimum: -256;
-	maximum: +256;
-	divisor: 256;
+	minimum: -1;
+	maximum: +1;
 };
 Slider blacks = {
 	text: "blacks";
-	minimum: -256;
-	maximum: +256;
-	divisor: 256;
+	minimum: -1;
+	maximum: +1;
 };
 
 char options[*][] = {
@@ -209,38 +202,24 @@ DebugView debug = {
 	draws: -1;
 };
 
-int onEvent(Window win&, int action, int button, int x, int y) {
-	if (action == Gui.KEY_RELEASE && button == Gui.KEY_CODE_ESC) {
-		// exit when releasing escape key
-		return -1;
-	}
-	FxWidget ui = win.widget.as(FxWidget);
-	if (!win.dispatchEvent(ui, action, button, x, y)) {
-		// event not processed, wait for the next one
-		return 0;
-	}
-	if (!win.processableEvent(action, button, x, y)) {
-		// hover view, focus view, and such things
-		return win.draw(ui);
-	}
-
+void onProcess(FxWidget widget) {
 	debug.startTimer();
-	offs.copy(0, 0, back, null);
 
-	if (ui.showOriginal) {
+	offs.copy(0, 0, back, null);
+	if (widget.showOriginal) {
 		histogram.update(offs);
-		return win.draw(ui);
+		return;
 	}
 
-	if (win.hasFocused(brightness, contrast, gamma, highlights, shadows, whites, blacks)) {
+	if (widget.hasFocused(brightness, contrast, gamma, highlights, shadows, whites, blacks)) {
 		brightnessContrastGamma(&curves.data,
-			brightness.valueF64(),
-			contrast.valueF64(),
-			gamma.valueF64(),
-			highlights.valueF64(),
-			shadows.valueF64(),
-			whites.valueF64(),
-			blacks.valueF64()
+			brightness.value,
+			contrast.value,
+			gamma.value,
+			highlights.value,
+			shadows.value,
+			whites.value,
+			blacks.value
 		);
 	}
 	else if (auto.isFocused()) {
@@ -249,10 +228,9 @@ int onEvent(Window win&, int action, int button, int x, int y) {
 
 	offs.colorMap(null, curves.data);
 	histogram.update(offs);
-	return win.draw(ui);
 }
 
-Gui.showWindow(offs, onEvent, FxWidget(
+Gui.showWindow(offs, FxWidget(onProcess,
 	histogram, curves,
 
 	null, brightness, contrast, gamma,

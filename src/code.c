@@ -1703,8 +1703,7 @@ static vmError vmTrace(rtContext rt, void *sp, size_t caller, ssize_t callee) {
 	return noError;
 }
 
-/// Private dummy debug function.
-static vmError dbgDummy(dbgContext ctx, vmError err, size_t ss, void *stack, size_t caller, size_t callee) {
+vmError dbgError(dbgContext ctx, vmError err, size_t ss, void *sp, size_t caller, size_t callee) {
 	if (err == noError) {
 		return noError;
 	}
@@ -1743,7 +1742,7 @@ static vmError dbgDummy(dbgContext ctx, vmError err, size_t ss, void *stack, siz
 	}
 	return err;
 	(void) callee;
-	(void) stack;
+	(void) sp;
 	(void) ss;
 }
 
@@ -1865,7 +1864,7 @@ static vmError exec(rtContext rt, vmProcessor pu, symn fun, const void *extra) {
 				if (execError != noError && fun == rt->main) {
 					struct dbgContextRec dbg;
 					dbg.rt = rt;
-					dbgDummy(&dbg, execError, st - sp, sp, vmOffset(rt, ip), 0);
+					dbgError(&dbg, execError, st - sp, sp, vmOffset(rt, ip), 0);
 				}
 				return execError;
 

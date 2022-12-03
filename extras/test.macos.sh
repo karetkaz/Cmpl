@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 export "CMPL_HOME=$(dirname "$(dirname "$(stat -f %N "$0")")")"
 echo "cmpl home is: $CMPL_HOME"
@@ -26,18 +26,22 @@ if ! $BIN/cmpl -dump.scite extras/cmpl.api "$BIN/libFile.dylib" "$BIN/libGfx.dyl
 	exit 1
 fi
 
-#exit 0
+read -rsn1 -p "Compilation finished, press enter to run tests"
+if [ -n "$REPLY" ]; then
+	echo
+	exit 0
+fi
 
 # dump symbols, assembly, syntax tree and global variables
-$BIN/cmpl -X+steps-stdin-offsets -log/d "$BIN.ci" -asm/m/n/s -debug/g "$CMPL_HOME/cmplStd/test/test.ci"
+$BIN/cmpl -X+steps-stdin-offsets -log/d "$BIN.ci" -asm/n/s -debug/g "$CMPL_HOME/cmplStd/test/test.ci"
 # dump symbols, documentation, assembly, syntax tree and global variables (to be compared with previous version to test if the code is generated properly)
-$BIN/cmpl -X+steps+fold+fast-stdin-glob-offsets -debug/G/M -api/A/m/d/p -asm/n/s -ast -doc -log/d/15 "extras/dump/test.dump.ci" -dump.ast.xml "extras/dump/test.dump.xml" "cmplStd/test/test.ci"
+$BIN/cmpl -X+steps+fold+fast-stdin-glob-offsets -debug/G/M -api/A/d/p -asm/n/s -ast -doc -log/d/15 "extras/dump/test.dump.ci" -dump.ast.xml "extras/dump/test.dump.xml" "cmplStd/test/test.ci"
 # dump symbols, documentation, assembly, syntax tree and global variables (to be compared with previous version to test if the code is generated properly)
-$BIN/cmpl -X+steps+fold+fast-stdin-glob-offsets -debug/G/M -api/A/m/d/p -asm/n/s -ast -doc -use -log/d "extras/dump/libs.dump.ci" "$BIN/libFile.dylib" "$BIN/libGfx.dylib"
+$BIN/cmpl -X+steps+fold+fast-stdin-glob-offsets -debug/G/M -api/A/d/p -asm/n/s -ast -doc -use -log/d "extras/dump/libs.dump.ci" "$BIN/libFile.dylib" "$BIN/libGfx.dylib"
 # dump profile data in text format including function tracing
-$BIN/cmpl -X-stdin+steps -profile/t/P/G/M -api/A/m/d/p -asm/g/n/s -ast/t -doc -use -log/d/15 "extras/dump/test.prof.ci" "cmplStd/test/test.ci"
+$BIN/cmpl -X-stdin+steps -profile/t/P/G/M -api/A/d/p -asm/g/n/s -ast/t -doc -use -log/d/15 "extras/dump/test.prof.ci" "cmplStd/test/test.ci"
 # dump profile data in json format
-$BIN/cmpl -X-stdin-steps -profile/t/P/G/M -api/A/m/d/p -asm/g/n/s -ast/t -doc -use -dump.json "extras/dump/test.prof.json" "cmplStd/test/test.ci"
+$BIN/cmpl -X-stdin-steps -profile/t/P/G/M -api/A/d/p -asm/g/n/s -ast/t -doc -use -dump.json "extras/dump/test.prof.json" "cmplStd/test/test.ci"
 
 #exit 0
 
@@ -61,7 +65,7 @@ do
 		echo "**** cannot run test: $file"
 		continue
 	fi
-	echo -ne "**** test: $file\\r"
+	printf "**** test: %s\\r" "$file"
 	if ! $BIN/cmpl -X-stdin+steps -run -log/a/d "$DUMP_FILE" "$BIN/libFile.dylib" "$BIN/libGfx.dylib" "$file"; then
 		echo "****** test failed: $file"
 	else

@@ -190,46 +190,39 @@ Histogram histogram = {
 // controls
 Slider brightness = {
 	text: "brightness";
-	minimum: -200;
-	maximum: 200;
-	divisor: 200;
+	minimum: -1;
+	maximum: 1;
 };
 Slider exposure = {
 	text: "exposure";
-	minimum: -200;
-	maximum: 200;
-	divisor: 200;
+	minimum: -1;
+	maximum: 1;
 };
 Slider saturation = {
 	text: "saturation";
-	value: 200;
-	maximum: 1000;
-	divisor: 200;
+	value: 1;
+	maximum: 5;
 };
 Slider contrast = {
 	text: "contrast";
-	value: 200;
-	minimum: -200;
-	maximum: 1000;
-	divisor: 200;
+	value: 1;
+	minimum: -1;
+	maximum: 3;
 };
 Slider warmth = {
 	text: "warmth";
-	minimum: -200;
-	maximum: 200;
-	divisor: 400;
+	minimum: -.5;
+	maximum: +.5;
 };
 Slider tint = {
 	text: "tint";
-	minimum: -200;
-	maximum: 200;
-	divisor: 400;
+	minimum: -.5;
+	maximum: +.5;
 };
 Slider hue = {
 	text: "hue";
-	minimum: 0;
-	maximum: 720;
-	divisor: 2;
+	maximum: 360;
+	stepSize: 1;
 };
 
 Select preset = {
@@ -241,37 +234,23 @@ DebugView debug = {
 	draws: -1;
 };
 
-int onEvent(Window win&, int action, int button, int x, int y) {
-	if (action == Gui.KEY_RELEASE && button == Gui.KEY_CODE_ESC) {
-		// exit when releasing escape key
-		return -1;
-	}
-
-	FxWidget ui = win.widget.as(FxWidget);
-	if (!win.dispatchEvent(ui, action, button, x, y)) {
-		// event not processed, wait for the next one
-		return 0;
-	}
-	if (!win.processableEvent(action, button, x, y)) {
-		// hover view, focus view, and such things
-		return win.draw(ui);
-	}
-
+void onProcess(FxWidget widget) {
 	debug.startTimer();
+
 	offs.copy(0, 0, back, null);
-	if (ui.showOriginal) {
+	if (widget.showOriginal) {
 		histogram.update(offs);
-		return win.draw(ui);
+		return;
 	}
 
 	mat4f mat = ColorMatrix.identity
-		.mul(ColorMatrix.brightness(brightness.valueF64()))
-		.mul(ColorMatrix.exposure(exposure.valueF64()))
-		.mul(ColorMatrix.saturation(saturation.valueF64()))
-		.mul(ColorMatrix.contrast(contrast.valueF64()))
-		.mul(ColorMatrix.warmth(warmth.valueF64()))
-		.mul(ColorMatrix.tint(tint.valueF64()))
-		.mul(ColorMatrix.hue(Math.radians(hue.valueF64())));
+		.mul(ColorMatrix.brightness(brightness.value))
+		.mul(ColorMatrix.exposure(exposure.value))
+		.mul(ColorMatrix.saturation(saturation.value))
+		.mul(ColorMatrix.contrast(contrast.value))
+		.mul(ColorMatrix.warmth(warmth.value))
+		.mul(ColorMatrix.tint(tint.value))
+		.mul(ColorMatrix.hue(Math.radians(hue.value)));
 
 	if (mat4f m& = preset.selectedData().as(mat4f)) {
 		// apply preset
@@ -281,10 +260,9 @@ int onEvent(Window win&, int action, int button, int x, int y) {
 	// apply color matrix
 	offs.colorMat(null, mat);
 	histogram.update(offs);
-	return win.draw(ui);
 }
 
-Gui.showWindow(offs, onEvent, FxWidget(
+Gui.showWindow(offs, FxWidget(onProcess,
 	histogram,
 
 	null, preset

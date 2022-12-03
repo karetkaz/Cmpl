@@ -36,8 +36,8 @@ void levels(argb lut[256], int brightness, int output, int input) {
 	return levels(&lut, brightness, x0, x1, y0, y1);
 }
 
-bool syncInputOutput(Slider slider, int value);
-bool showHideAdvanced(Switch switch, Rect rect&);
+bool syncInputOutput(Slider slider, float64 value);
+bool showHideAdvanced(Slider slider, Rect rect&);
 
 Histogram histogram = {
 	enabled: false;
@@ -68,18 +68,21 @@ Slider sldBrightness = {
 	text: "Brightness";
 	minimum: -256;
 	maximum: 256;
+	stepSize: 1;
 };
 
 Slider sldInput = {
 	text: "Input";
 	minimum: -255;
 	maximum: 255;
+	stepSize: 1;
 	onUpdate: syncInputOutput;
 };
 Slider sldInputMin = {
 	text: " Input.min";
 	maximum: sldInput.maximum;
 	value: 0;
+	stepSize: 1;
 	onUpdate: syncInputOutput;
 	onMeasure: showHideAdvanced;
 };
@@ -87,6 +90,7 @@ Slider sldInputMax = {
 	text: " Input.max";
 	maximum: sldInput.maximum;
 	value: sldInput.maximum;
+	stepSize: 1;
 	onUpdate: syncInputOutput;
 	onMeasure: showHideAdvanced;
 };
@@ -95,12 +99,14 @@ Slider sldOutput = {
 	text: "Output";
 	minimum: -255;
 	maximum: 255;
+	stepSize: 1;
 	onUpdate: syncInputOutput;
 };
 Slider sldOutputMin = {
 	text: " Output.min";
 	maximum: sldOutput.maximum;
 	value: 0;
+	stepSize: 1;
 	onUpdate: syncInputOutput;
 	onMeasure: showHideAdvanced;
 };
@@ -108,29 +114,25 @@ Slider sldOutputMax = {
 	text: " Output.max";
 	maximum: sldOutput.maximum;
 	value: sldOutput.maximum;
+	stepSize: 1;
 	onUpdate: syncInputOutput;
 	onMeasure: showHideAdvanced;
 };
 
-int onEvent(Window win&, int action, int button, int x, int y) {
-	if (action == Gui.KEY_RELEASE && button == Gui.KEY_CODE_ESC) {
-		// exit when releasing escape key
-		return -1;
-	}
-	Widget ui = win.widget;
-	if (!win.dispatchEvent(ui, action, button, x, y)) {
-		// event not processed, wait for the next one
-		return 0;
+void onProcess(FxWidget widget) {
+	debug.startTimer();
+
+	offs.copy(0, 0, back, null);
+	if (widget.showOriginal) {
+		histogram.update(offs);
+		return;
 	}
 
-	debug.startTimer();
 	levels(&lookup.data, sldBrightness.value, sldInputMin.value, sldInputMax.value, sldOutputMin.value, sldOutputMax.value);
-	offs.copy(0, 0, back, null);
 	offs.colorMap(null, lookup.data);
 	histogram.update(offs);
-	return win.draw(ui);
 }
-bool syncInputOutput(Slider slider, int value) {
+bool syncInputOutput(Slider slider, float64 value) {
 	bool result = Slider.onUpdate(slider, value);
 	if (slider == sldInput) {
 		result |= Slider.onUpdate(sldInputMin, value > 0 ? 0 : -value);
@@ -152,16 +154,16 @@ bool syncInputOutput(Slider slider, int value) {
 	}
 	return result;
 }
-bool showHideAdvanced(Switch switch, Rect rect&) {
+bool showHideAdvanced(Slider slider, Rect rect&) {
 	if (!chkAdvanced.checked()) {
 		// view is hidden
 		rect.w = rect.h = 0;
 		return false;
 	}
-	return Switch.onMeasure(switch, &rect);
+	return Slider.onMeasure(slider, &rect);
 }
 
-Gui.showWindow(offs, onEvent, FxWidget(
+Gui.showWindow(offs, FxWidget(onProcess,
 	histogram,
 	lookup,
 

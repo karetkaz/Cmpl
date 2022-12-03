@@ -130,6 +130,18 @@ vmError execute(rtContext rt, int argc, char *argv[], void *extra);
 vmError invoke(rtContext rt, symn fun, void *ret, void *args, const void *extra);
 
 /**
+ * Debugger function that prints runtime errors with stacktrace when available
+ * @param ctx Debugger context
+ * @param err Error why the function was invoked
+ * @param ss Stack size
+ * @param sp stack pointer(top of stack)
+ * @param caller caller method offset
+ * @param callee callee method offset
+ * @return the given @param err is returned
+ */
+vmError dbgError(dbgContext ctx, vmError err, size_t ss, void *sp, size_t caller, size_t callee);
+
+/**
  * Lookup a static symbol by offset.
  *
  * @param rt Runtime context.

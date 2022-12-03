@@ -150,18 +150,18 @@ struct userContextRec {
 	int indent;             // dump indentation
 	dmpMode dmpMode;        // dump flags
 
-	int dmpApi:1;           // dump symbols
-	int dmpUse:1;           // dump usages
-	int dmpDoc:1;           // dump documentation
-	int dmpAsm:1;           // dump instructions
-	int dmpAst:1;           // dump abstract syntax tree
+	unsigned dmpApi:1;           // dump symbols
+	unsigned dmpDoc:1;           // dump documentation
+	unsigned dmpAsm:1;           // dump instructions
+	unsigned dmpAst:1;           // dump abstract syntax tree
+	unsigned dmpUse:1;           // dump usages
 
-	int dmpMain:1;          // include main initializer
-	int dmpExtern:1;        // include library symbols
-	int dmpBuiltin:1;       // include builtin symbols
-	int dmpDetails:1;       // dump detailed info
-	int dmpParams:1;        // dump parameters and fields
-	int dmpAsmStmt:1;       // print source code position/statements
+	unsigned dmpDetails:1;       // dump detailed info
+	unsigned dmpParams:1;        // dump parameters and fields
+	unsigned dmpAsmStmt:1;       // print source code position/statements
+
+	// exclude by location file, unit, library, builtins
+	unsigned dmpSymbols:2;       // 0: from file, 1: from unit; 2: all compiled; 3: builtin symbols
 
 	// dump global variable, [function, [typename]] values
 	unsigned dmpGlobals:2;
@@ -169,16 +169,16 @@ struct userContextRec {
 	// dump memory allocation [used, [free] heap memory chunks] information
 	unsigned dmpMemoryUse:2;
 
-	int traceMethods:1;     // dump function call and return
-	int traceOpcodes:1;     // dump executing instruction
-	int traceLocals:1;      // dump the content of the stack
-	int traceTime:1;        // dump timestamp before `traceMethods` and `traceOpcodes`
-	int profFunctions:1;    // measure function execution times
-	int profStatements:1;   // measure statement execution times
-	int profNotExecuted:1;  // include not executed functions and statements in the dump
+	unsigned traceMethods:1;     // dump function call and return
+	unsigned traceOpcodes:1;     // dump executing instruction
+	unsigned traceLocals:1;      // dump the content of the stack
+	unsigned traceTime:1;        // dump timestamp before `traceMethods` and `traceOpcodes`
+	unsigned profFunctions:1;    // measure function execution times
+	unsigned profStatements:1;   // measure statement execution times
+	unsigned profNotExecuted:1;  // include not executed functions and statements in the dump
 
-	int closeOut:1;         // close `out` file.
-	int hideOffsets:1;      // remove offsets, bytecode, and durations from dumps
+	unsigned closeOut:1;         // close `out` file.
+	unsigned hideOffsets:1;      // remove offsets, bytecode, and durations from dumps
 	char *compileSteps;     // dump compilation steps
 
 	// debugger
@@ -348,24 +348,23 @@ static void dumpAstXML(FILE *out, const char **esc, astn ast, dmpMode mode, int 
 }
 
 static inline int canDump(userContext ctx, symn sym) {
-	// include generated main symbol
-	int isMain = sym == ctx->rt->main;
-	if (ctx->dmpMain && isMain) {
+	if (ctx->dmpSymbols == 3) {
+		// include builtin symbols (everything)
 		return 1;
 	}
 
-	// include builtin symbols
-	int isBuiltin = sym->file == NULL || sym->line == 0;
-	if (ctx->dmpBuiltin && isBuiltin && !isMain) {
-		return 1;
+	if (ctx->dmpSymbols == 2) {
+		// include external symbols
+		return sym->file != NULL && sym->line > 0;
 	}
 
-	// include external library symbols
-	int isExternal = !strEquals(sym->unit, ctx->rt->main->unit);
-	if (ctx->dmpExtern && isExternal && !isMain && !isBuiltin) {
-		return 1;
+	if (ctx->dmpSymbols == 1) {
+		// include internal symbols (current unit)
+		return strEquals(sym->unit, ctx->rt->main->unit);
 	}
-	return !isMain && !isBuiltin && !isExternal;
+
+	// include only symbols from the current compiled file
+	return strEquals(sym->file, ctx->rt->main->unit);
 }
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ json output
@@ -901,9 +900,13 @@ static void textPostProfile(userContext usr) {
 				if (sym == NULL) {
 					sym = rtLookup(rt, ptr->start, 0);
 				}
-				printFmt(out, esc, "%?s:%?u:[.%06x, .%06x): hits(%D%?+D), time(%.3F%?+.3F ms): %?T\n",
-					ptr->file, ptr->line, ptr->start, ptr->end, ptr->hits, -ptr->fails,
-					ptr->total / CLOCKS_PER_MILLIS, (ptr->time - ptr->total) / CLOCKS_PER_MILLIS, sym
+				if (sym == NULL || !canDump(usr, sym)) {
+					continue;
+				}
+				double timeTotal = ptr->total / CLOCKS_PER_MILLIS;
+				double timeOther = (ptr->total - ptr->time) / CLOCKS_PER_MILLIS;
+				printFmt(out, esc, "%?s:%?u:[.%06x, .%06x): hits(%D%?+D), time(%.3F%?.3F ms): %?T\n",
+					ptr->file, ptr->line, ptr->start, ptr->end, ptr->hits, -ptr->fails, timeTotal, -timeOther, sym
 				);
 			}
 		}
@@ -930,6 +933,9 @@ static void textPostProfile(userContext usr) {
 				size_t symOffs = 0;
 				if (sym != NULL) {
 					symOffs = ptr->start - sym->offs;
+				}
+				if (sym != NULL && !canDump(usr, sym)) {
+					continue;
 				}
 				printFmt(out, esc, "%?s:%?u:[.%06x, .%06x) hits(%D), instructions(%D%?+D): <%?.T+%d>\n",
 					ptr->file, ptr->line, ptr->start, ptr->end, ptr->hits, ptr->total, -ptr->fails, sym, symOffs
@@ -1227,7 +1233,7 @@ static void traceOpcodes(userContext usr, size_t ss, void *stack, size_t caller,
 	textDumpAsm(out, esc, caller, usr, 0);
 }
 
-static vmError conProfile(dbgContext ctx, vmError error, size_t ss, void *stack, size_t caller, size_t callee) {
+static vmError dbgProfile(dbgContext ctx, vmError error, size_t ss, void *sp, size_t caller, size_t callee) {
 	rtContext rt = ctx->rt;
 	userContext usr = rt->usr;
 
@@ -1284,10 +1290,10 @@ static vmError conProfile(dbgContext ctx, vmError error, size_t ss, void *stack,
 		dbg->total += 1;
 	}
 
-	traceOpcodes(usr, ss, stack, caller, dbg);
+	traceOpcodes(usr, ss, sp, caller, dbg);
 	return noError;
 }
-static vmError conDebug(dbgContext ctx, vmError error, size_t ss, void *stack, size_t caller, size_t callee) {
+static vmError dbgDebug(dbgContext ctx, vmError error, size_t ss, void *sp, size_t caller, size_t callee) {
 	rtContext rt = ctx->rt;
 	userContext usr = rt->usr;
 
@@ -1361,15 +1367,15 @@ static vmError conDebug(dbgContext ctx, vmError error, size_t ss, void *stack, s
 		// print current file position
 		printFmt(out, esc, "%s:%u: ", valPrint->file, valPrint->line);
 		if (valPrint->decl != NULL) {
-			printVal(out, esc, rt, valPrint->decl, stack, prSymType, 0);
+			printVal(out, esc, rt, valPrint->decl, sp, prSymType, 0);
 		} else {
-			vmValue *v = (vmValue *) stack;
+			vmValue *v = (vmValue *) sp;
 			printFmt(out, esc, "{0x%08x, i32(%d), f32(%f), i64(%D), f64(%F)}", v->i32, v->i32, v->f32, v->i64, v->f64);
 		}
 		printFmt(out, esc, "\n");
 		usr->dbgNextValue = NULL;
 	}
-	traceOpcodes(usr, ss, stack, caller, dbg);
+	traceOpcodes(usr, ss, sp, caller, dbg);
 
 	// print error type
 	if (breakMode & brkPrint) {
@@ -1451,7 +1457,7 @@ static vmError conDebug(dbgContext ctx, vmError error, size_t ss, void *stack, s
 					size_t offs;
 					// print top of stack
 					for (offs = 0; offs < ss; offs++) {
-						vmValue *v = (vmValue*)&((long*)stack)[offs];
+						vmValue *v = (vmValue*)&((long*)sp)[offs];
 						printFmt(con, esc, "\tsp(%d): {0x%08x, i32(%d), f32(%f), i64(%D), f64(%F)}\n", offs, v->i32, v->i32, v->f32, v->i64, v->f64);
 					}
 				}
@@ -1459,7 +1465,7 @@ static vmError conDebug(dbgContext ctx, vmError error, size_t ss, void *stack, s
 					symn sym = ccLookup(rt, NULL, arg);
 					printFmt(con, esc, "arg:%T", sym);
 					if (sym && isVariable(sym) && !isStatic(sym)) {
-						printVal(con, esc, rt, sym, (vmValue *) stack, prSymType, 0);
+						printVal(con, esc, rt, sym, (vmValue *) sp, prSymType, 0);
 					}
 				}
 				break;
@@ -1503,19 +1509,18 @@ static int usage() {
 		"\n<global options>:"
 		"\n"
 		"\n  -run[*]               run at full speed, but without: debug information, stacktrace, bounds checking, ..."
-		"\n    /g /G               dump global variable values (/G includes types and functions)"
+		"\n    /g /G               dump global variable values (/G includes builtin types and functions)"
 		"\n    /m /M               dump memory usage (/M includes heap allocations)"
 		"\n"
 		"\n  -debug[*]             run with attached debugger, pausing on uncaught errors and break points"
-		"\n    /g /G               dump global variable values (/G includes types and functions)"
+		"\n    /g /G               dump global variable values (/G includes builtin types and functions)"
 		"\n    /m /M               dump memory usage (/M includes heap allocations)"
 		"\n    /p /P               dump caught errors (/P includes stacktrace)"
 		"\n    /t /T               dump executed instructions (/T includes values on stack)"
-		"\n    /a                  pause on all(caught) errors"
-		"\n    /s                  pause on startup"
+		"\n    /s /S               pause on any error (/S pauses on startup)"
 		"\n"
 		"\n  -profile[*]           run code with profiler: coverage, method tracing"
-		"\n    /g /G               dump global variable values (/G includes types and functions)"
+		"\n    /g /G               dump global variable values (/G includes builtin types and functions)"
 		"\n    /m /M               dump memory usage (/M includes heap allocations)"
 		"\n    /p /P               dump executed statements (/P include all functions and statements)"
 		"\n    /t /T               trace execution with timestamps (/T includes instructions)"
@@ -1535,25 +1540,21 @@ static int usage() {
 		"\n"
 		"\n  -api[*]               dump symbols"
 		"\n    /a /A               include all library symbols(/A includes builtins)"
-		"\n    /m                  include `main` builtin initializer symbol"
 		"\n    /d                  dump details of symbol"
 		"\n    /p                  dump params and fields"
 		"\n"
 		"\n  -doc[*]               dump documentation"
 		"\n    /a /A               include all library symbols(/A includes builtins)"
-		"\n    /m                  include main builtin symbol"
 		"\n    /d                  dump details of symbol"
 		"\n    /p                  dump params and fields"
 		"\n"
 		"\n  -use[*]               dump usages"
 		"\n    /a /A               include all library symbols(/A includes builtins)"
-		"\n    /m                  include main builtin symbol"
 		"\n    /d                  dump details of symbol"
 		"\n    /p                  dump params and fields"
 		"\n"
 		"\n  -asm[*]<int>          dump assembled code: jmp +80"
 		"\n    /a /A               include all library symbols(/A includes builtins)"
-		"\n    /m                  include main builtin symbol"
 		"\n    /d                  dump details of symbol"
 		"\n    /p                  dump params and fields"
 		"\n    /g                  use global address: jmp @0x003d8c"
@@ -1562,7 +1563,6 @@ static int usage() {
 		"\n"
 		"\n  -ast[*]               dump syntax tree"
 		"\n    /a /A               include all library symbols(/A includes builtins)"
-		"\n    /m                  include main builtin symbol"
 		"\n    /d                  dump details of symbol"
 		"\n    /p                  dump params and fields"
 		"\n    /t                  dump sub-expression type information"
@@ -1622,6 +1622,7 @@ int main(int argc, char *argv[]) {
 	struct userContextRec extra = {0};
 	extra.in = stdin;
 	extra.out = stdout;
+	extra.dmpSymbols = 1;  // by default print symbols from inlined files also
 	extra.dbgCommand = dbgResume;	// last command: resume
 	extra.dbgOnError = brkPause | brkPrint | brkTrace;
 	extra.dbgOnCaught = brkSkip;
@@ -1665,9 +1666,7 @@ int main(int argc, char *argv[]) {
 	char *dumpFileName = NULL;      // dump file
 	char *pathAstDumpXml = NULL;    // dump ast to xml file before code generation
 	void (*dumpFun)(userContext, symn) = NULL;
-	enum { run, debug, profile, compile } run_code = compile;
-
-	int i;
+	enum { run, trace, debug, profile, compile } run_code = compile;
 
 	// TODO: max 32 break points ?
 	brkMode bp_type[32];
@@ -1675,6 +1674,7 @@ int main(int argc, char *argv[]) {
 	int bp_line[32];
 	int bp_size = 0;
 
+	int i;
 	// process global options
 	for (i = 1; i < argc; ++i) {
 		char *arg = argv[i];
@@ -1700,6 +1700,7 @@ int main(int argc, char *argv[]) {
 
 					case 'G':
 						extra.dmpGlobals = 3;
+						extra.dmpSymbols = 3;
 						arg2 += 2;
 						break;
 					case 'g':
@@ -1713,6 +1714,13 @@ int main(int argc, char *argv[]) {
 						break;
 					case 'm':
 						extra.dmpMemoryUse = 1;
+						arg2 += 2;
+						break;
+
+					case 't':
+						// this slows down execution only 20 times,
+						// debug and profile are 200 times slower
+						run_code = trace;
 						arg2 += 2;
 						break;
 				}
@@ -1737,6 +1745,7 @@ int main(int argc, char *argv[]) {
 
 					case 'G':
 						extra.dmpGlobals = 3;
+						extra.dmpSymbols = 3;
 						arg2 += 2;
 						break;
 					case 'g':
@@ -1769,12 +1778,13 @@ int main(int argc, char *argv[]) {
 						arg2 += 2;
 						break;
 
-					case 'a':
+					case 's':
 						extra.dbgOnCaught |= brkPause;
 						arg2 += 2;
 						break;
-					case 's':
+					case 'S':
 						extra.dbgNextBreak = (size_t)-1;
+						extra.dbgOnCaught |= brkPause;
 						arg2 += 2;
 						break;
 				}
@@ -1800,6 +1810,7 @@ int main(int argc, char *argv[]) {
 
 					case 'G':
 						extra.dmpGlobals = 3;
+						extra.dmpSymbols = 3;
 						arg2 += 2;
 						break;
 					case 'g':
@@ -1975,15 +1986,11 @@ int main(int argc, char *argv[]) {
 
 					// include extra symbols
 					case 'A':
-						extra.dmpBuiltin = 1;
-						// fall through
-					case 'a':
-						extra.dmpExtern = 1;
+						extra.dmpSymbols = 3;
 						arg2 += 2;
 						break;
-
-					case 'm':
-						extra.dmpMain = 1;
+					case 'a':
+						extra.dmpSymbols = 2;
 						arg2 += 2;
 						break;
 
@@ -2018,15 +2025,11 @@ int main(int argc, char *argv[]) {
 
 					// include extra symbols
 					case 'A':
-						extra.dmpBuiltin = 1;
-						// fall through
-					case 'a':
-						extra.dmpExtern = 1;
+						extra.dmpSymbols = 3;
 						arg2 += 2;
 						break;
-
-					case 'm':
-						extra.dmpMain = 1;
+					case 'a':
+						extra.dmpSymbols = 2;
 						arg2 += 2;
 						break;
 
@@ -2061,15 +2064,11 @@ int main(int argc, char *argv[]) {
 						break;
 
 					case 'A':
-						extra.dmpBuiltin = 1;
-						// fall through
-					case 'a':
-						extra.dmpExtern = 1;
+						extra.dmpSymbols = 3;
 						arg2 += 2;
 						break;
-
-					case 'm':
-						extra.dmpMain = 1;
+					case 'a':
+						extra.dmpSymbols = 2;
 						arg2 += 2;
 						break;
 
@@ -2124,15 +2123,11 @@ int main(int argc, char *argv[]) {
 						break;
 
 					case 'A':
-						extra.dmpBuiltin = 1;
-						// fall through
-					case 'a':
-						extra.dmpExtern = 1;
+						extra.dmpSymbols = 3;
 						arg2 += 2;
 						break;
-
-					case 'm':
-						extra.dmpMain = 1;
+					case 'a':
+						extra.dmpSymbols = 2;
 						arg2 += 2;
 						break;
 
@@ -2185,17 +2180,12 @@ int main(int argc, char *argv[]) {
 						arg2 += 1;
 						break;
 
-						// include extra symbols
 					case 'A':
-						extra.dmpBuiltin = 1;
-						// fall through
-					case 'a':
-						extra.dmpExtern = 1;
+						extra.dmpSymbols = 3;
 						arg2 += 2;
 						break;
-
-					case 'm':
-						extra.dmpMain = 1;
+					case 'a':
+						extra.dmpSymbols = 2;
 						arg2 += 2;
 						break;
 
@@ -2536,8 +2526,11 @@ int main(int argc, char *argv[]) {
 		rt->logLevel = settings.raiseLevel;
 		if (rt->dbg != NULL) {
 			// set debugger or profiler
-			if (run_code == debug) {
-				rt->dbg->debug = &conDebug;
+			if (run_code == trace) {
+				rt->dbg->debug = &dbgError;
+			}
+			else if (run_code == debug) {
+				rt->dbg->debug = &dbgDebug;
 				if (extra.dbgNextBreak != 0) {
 					// break on first instruction
 					extra.dbgNextBreak = rt->vm.pc;
@@ -2550,7 +2543,7 @@ int main(int argc, char *argv[]) {
 					jsonPreProfile(rt->dbg);
 				}
 				else {
-					rt->dbg->debug = &conProfile;
+					rt->dbg->debug = &dbgProfile;
 				}
 			}
 		}

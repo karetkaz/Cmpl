@@ -81,54 +81,48 @@ static int onEvent(int action, int button, int x, int y) {
 			onDrawSlider: null;
 			enabled: false;
 			text: "action";
+			stepSize: 1;
 		};
 		static Slider sldButton = {
 			onDrawSlider: null;
 			enabled: false;
 			text: "button";
+			stepSize: 1;
 		};
 		static Slider sldX = {
 			onDrawSlider: null;
 			enabled: false;
 			text: "x";
+			stepSize: 1;
 		};
 		static Slider sldY = {
 			onDrawSlider: null;
 			enabled: false;
 			text: "y";
+			stepSize: 1;
 		};
-		static Slider sldKeyRepeat = {
-			onDrawSlider: null;
-			enabled: false;
-			text: "keyRepeat";
+		static FxWidget ui = FxWidget(
+			btnAction,
+			sldAction,
+			sldButton,
+			sldX,
+			sldY
+		);
+		static Rect rect = {
+			w: image.width();
+			h: image.height();
 		};
-		static Slider sldClicks = {
-			onDrawSlider: null;
-			enabled: false;
-			text: "clicks";
-		};
-		static Window ui = {
-			offscreen: image;
-			widget: FxWidget(
-				btnAction,
-				sldAction,
-				sldButton,
-				sldX,
-				sldY,
-				sldKeyRepeat,
-				sldClicks
-			);
-		};
+		if (ui.parent == null) {
+			ui.onCreate(ui, ui);
+			ui.onMeasure(ui, rect);
+		}
 
-		ui.dispatchEvent(ui.widget, action, button, x, y);
 		actionText.append(0, event.actionName);
 		sldAction.value = action;
 		sldButton.value = button;
 		sldX.value = x;
 		sldY.value = y;
-		sldKeyRepeat.value = ui.repeat;
-		sldClicks.value = ui.clicks;
-		return ui.draw(ui.widget);
+		ui.onDraw(ui, image, rect, 0);
 	}
 
 	return 20000;	// 20 sec timeout

@@ -3,14 +3,14 @@
 struct TreeView: Layout {}
 
 TreeView TreeView(const char text[], View items...) {
-	bool onUpdate(Switch this, int selected) {
+	static bool onUpdate(Switch this, int selected) {
 		if (!Switch.onUpdate(this, selected)) {
 			return false;
 		}
 		this.invalidate();
 		return true;
 	}
-	bool onMeasure(Layout this, Rect rect&) {
+	static bool onMeasure(Layout this, Rect rect&) {
 		if (Switch switch = this.data.as(Switch)) {
 			if (switch.selected == 0) {
 				rect.w = rect.h = 0;
@@ -24,13 +24,15 @@ TreeView TreeView(const char text[], View items...) {
 		"^"
 	};
 
+	TreeView result = {};
+
 	Switch root = {
 		text: text;
 		states: states;
 		onUpdate: onUpdate;
 	};
-	TreeView result = {};
 	result.addItems(Style.verticalTop, root);
+
 	if (items.length > 0) {
 		Layout children = {
 			onMeasure: onMeasure;
@@ -44,8 +46,12 @@ TreeView TreeView(const char text[], View items...) {
 }
 
 View TextView(const char text[]) {
+	static bool click(Button this) {
+		trace("click", this.text);
+	}
 	return Button {
 		text: text;
+		onClick: click;
 	};
 }
 

@@ -13,40 +13,6 @@
 Image back = Image("asset/image/forest.jpg");
 Image offs = Image(back);
 
-void ditherThreshold(Image dst, Image src, bool grayscale, uint32 levels) {
-	if (levels >= 256) {
-		levels = 256;
-	}
-	int cols[256] = {0};
-	int colors = levels - 1;
-	for (int i = 0; i < cols.length; i += 1) {
-		cols[i] = (i * levels / cols.length) * cols.length / colors;
-	}
-
-	int width = src.width();
-	int height = src.height();
-
-	if (grayscale) {
-		for (int y = 0; y < height; y += 1) {
-			for (int x = 0; x < width; x += 1) {
-				argb col = argb(src.get(x, y));
-				int gray = cols[lum(col)];
-				dst.set(x, y, gray(gray));
-			}
-		}
-		return;
-	}
-	for (int y = 0; y < height; y += 1) {
-		for (int x = 0; x < width; x += 1) {
-			argb col = argb(src.get(x, y));
-			int r = cols[rch(col)];
-			int g = cols[gch(col)];
-			int b = cols[bch(col)];
-			dst.set(x, y, argb(r, g, b));
-		}
-	}
-}
-
 void ditherBayer(Image dst, Image src, bool grayscale, uint32 levels, const int pattern[64]) {
 	if (levels >= 256) {
 		levels = 256;
@@ -104,7 +70,17 @@ void ditherBayer(Image dst, Image src, bool grayscale, uint32 levels, const int 
 	}
 }
 
-void ditherBayer(Image dst, Image src, bool grayscale, uint32 levels) {
+enum Dithering {
+	Threshold;
+	Bayer2;
+	Bayer;
+
+	SteinbergFalse;
+	Steinberg;
+	Stucki;
+}
+
+void dither(Image img, bool grayscale, uint32 levels, Dithering method) {
 	static const int pattern[8 * 8] = {
 		 0, 32,  8, 40,  2, 34, 10, 42,
 		48, 16, 56, 24, 50, 18, 58, 26,
@@ -115,10 +91,6 @@ void ditherBayer(Image dst, Image src, bool grayscale, uint32 levels) {
 		15, 47,  7, 39, 13, 45,  5, 37,
 		63, 31, 55, 23, 61, 29, 53, 21
 	};
-	return ditherBayer(dst, src, grayscale, levels, pattern);
-}
-
-void ditherBayer2(Image dst, Image src, bool grayscale, uint32 levels) {
 	static const int pattern2[8 * 8] = {
 		// https://github.com/safecomp/AndroidImageProcessing/blob/master/AndroidImageProcessing/src/safecomp/ir/androidimageprocessing/Dithering.java#L207
 		1, 49, 13, 61, 4, 52, 16, 64,
@@ -174,15 +146,14 @@ void ditherBayer2(Image dst, Image src, bool grayscale, uint32 levels) {
 		21, 29, 28, 27, 10, 2, 3, 4,
 		17, 24, 20, 16, 14, 7, 11, 15,
 	};
-	return ditherBayer(dst, src, grayscale, levels, pattern3);
-}
 
-enum Dithering: int32 {
-	SteinbergFalse;
-	Steinberg;
-	Stucki;
-}
-void dither(Image img, bool grayscale, uint32 levels, Dithering method) {
+	if (method == Dithering.Bayer2) {
+		return ditherBayer(img, img, grayscale, levels, pattern3);
+	}
+	if (method == Dithering.Bayer) {
+		return ditherBayer(img, img, grayscale, levels, pattern);
+	}
+
 	if (levels >= 256) {
 		levels = 256;
 	}
@@ -195,7 +166,28 @@ void dither(Image img, bool grayscale, uint32 levels, Dithering method) {
 	int width = img.width();
 	int height = img.height();
 
-	if (method == Dithering.SteinbergFalse) {
+	if (method == Dithering.Threshold) {
+		if (grayscale) {
+			for (int y = 0; y < height; y += 1) {
+				for (int x = 0; x < width; x += 1) {
+					argb col = argb(img.get(x, y));
+					int gray = cols[lum(col)];
+					img.set(x, y, gray(gray));
+				}
+			}
+		} else {
+			for (int y = 0; y < height; y += 1) {
+				for (int x = 0; x < width; x += 1) {
+					argb col = argb(img.get(x, y));
+					int r = cols[rch(col)];
+					int g = cols[gch(col)];
+					int b = cols[bch(col)];
+					img.set(x, y, argb(r, g, b));
+				}
+			}
+		}
+	}
+	else if (method == Dithering.SteinbergFalse) {
 		/* False Floyd-Steinberg Dithering kernel (/8)
 		 * 	*   3
 		 *	3   2
@@ -216,8 +208,7 @@ void dither(Image img, bool grayscale, uint32 levels, Dithering method) {
 					img.set(x + 1, y + 1, rgbError(img.get(x + 1, y + 1), 2));
 				}
 			}
-		}
-		else {
+		} else {
 			for (int y = 0; y < height; y += 1) {
 				for (int x = 0; x < width; x += 1) {
 					argb col = argb(img.get(x, y));
@@ -265,8 +256,7 @@ void dither(Image img, bool grayscale, uint32 levels, Dithering method) {
 					img.set(x + 1, y + 1, rgbError(img.get(x + 1, y + 1), 1));
 				}
 			}
-		}
-		else {
+		} else {
 			for(int y = 0; y < height; y += 1) {
 				for (int x = 0; x < width; x += 1) {
 					argb col = argb(img.get(x, y));
@@ -324,8 +314,7 @@ void dither(Image img, bool grayscale, uint32 levels, Dithering method) {
 					img.set(x + 2, y + 2, rgbError(img.get(x + 2, y + 2), 1));
 				}
 			}
-		}
-		else {
+		} else {
 			for(int y = 0; y < height; y += 1) {
 				for (int x = 0; x < width; x += 1) {
 					argb col = argb(img.get(x, y));
@@ -368,9 +357,10 @@ Histogram histogram = {
 
 Slider sldLevels = {
 	text: "Levels";
-	minimum: 2;
-	maximum: 256;
 	value: 5;
+	minimum: 2;
+	maximum: 16;
+	stepSize: 1;
 };
 
 Switch chkGrayscale = {
@@ -380,18 +370,9 @@ Switch chkGrayscale = {
 	focusable: false;
 };
 
-char ditherOptions[*][] = {
-	"Threshold";
-//	"Bayer2";
-	"Bayer";
-	"SteinbergFalse";
-	"Steinberg";
-	"Stucki";
-};
-Switch selDither = {
-	text: "Dithering";
-	states: ditherOptions;
+Select selDither = {
 	focusable: false;
+	text: "Dithering";
 };
 
 DebugView debug = {
@@ -400,54 +381,51 @@ DebugView debug = {
 	draws: -1;
 };
 
-int onEvent(Window win&, int action, int button, int x, int y) {
-	if (action == Gui.KEY_RELEASE && button == Gui.KEY_CODE_ESC) {
-		// exit when releasing escape key
-		return -1;
-	}
+void onProcess(FxWidget widget) {
 
-	Widget ui = win.widget;
-	if (!win.dispatchEvent(ui, action, button, x, y)) {
-		// event not processed, wait for the next one
-		return 0;
-	}
-	if (!win.processableEvent(action, button, x, y)) {
-		// hover view, focus view, and such things
-		return win.draw(ui);
-	}
+	variant methodData = selDither.selectedData();
+	char method[*] = methodData;
 
+	int levels = sldLevels.value;
+	bool gray = chkGrayscale.checked();
 	debug.startTimer();
 	offs.copy(0, 0, back, null);
-	if (ditherOptions[selDither.selected] == "Threshold") {
-		offs.ditherThreshold(back, chkGrayscale.checked(), sldLevels.value);
+	if (method == null) {}
+	else if (method == "Threshold") {
+		offs.dither(gray, levels, Dithering.Threshold);
 	}
-	else if (ditherOptions[selDither.selected] == "Bayer") {
-		offs.ditherBayer(back, chkGrayscale.checked(), sldLevels.value);
+	else if (method == "Bayer") {
+		offs.dither(gray, levels, Dithering.Bayer);
 	}
-	else if (ditherOptions[selDither.selected] == "Bayer2") {
-		offs.ditherBayer2(back, chkGrayscale.checked(), sldLevels.value);
+	else if (method == "Bayer2") {
+		offs.dither(gray, levels, Dithering.Bayer2);
 	}
-	else if (ditherOptions[selDither.selected] == "SteinbergFalse") {
-		offs.dither(chkGrayscale.checked(), sldLevels.value, Dithering.SteinbergFalse);
+	else if (method == "SteinbergFalse") {
+		offs.dither(gray, levels, Dithering.SteinbergFalse);
 	}
-	else if (ditherOptions[selDither.selected] == "Steinberg") {
-		offs.dither(chkGrayscale.checked(), sldLevels.value, Dithering.Steinberg);
+	else if (method == "Steinberg") {
+		offs.dither(gray, levels, Dithering.Steinberg);
 	}
-	else if (ditherOptions[selDither.selected] == "Stucki") {
-		offs.dither(chkGrayscale.checked(), sldLevels.value, Dithering.Stucki);
+	else if (method == "Stucki") {
+		offs.dither(gray, levels, Dithering.Stucki);
 	}
 	else {
-		abort("invalid value");
+		abort("invalid method", method);
 	}
 
-
 	histogram.update(offs);
-	return win.draw(ui);
 }
 
-Gui.showWindow(offs, onEvent, FxWidget(
+Gui.showWindow(offs, FxWidget(onProcess,
 	histogram,
-	selDither,
+	selDither
+		.addItem("Threshold")
+		.addItem("Bayer")
+		.addItem("Bayer2")
+		.addItem("SteinbergFalse")
+		.addItem("Steinberg")
+		.addItem("Stucki")
+		.setSelectedIndex(0),
 	chkGrayscale,
 	sldLevels,
 	null, debug

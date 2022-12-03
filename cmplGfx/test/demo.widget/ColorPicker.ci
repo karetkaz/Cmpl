@@ -85,7 +85,10 @@ Button button = {
 
 Slider slider = {
 	text: "Slider";
-	value: 1 << 30;
+	value: 0;
+	maximum: 100;
+	minimum: -100;
+	stepSize: .5;
 };
 
 DebugView debug = {

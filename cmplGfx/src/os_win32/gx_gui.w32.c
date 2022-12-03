@@ -1,6 +1,7 @@
 #include "../gx_gui.h"
 #include <windows.h>
 #include <winuser.h>
+#include <ctype.h>
 
 struct GxWindow {
 	GxImage image;

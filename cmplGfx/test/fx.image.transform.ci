@@ -99,17 +99,15 @@ Slider skewY = {
 };
 Slider scaleX = {
 	text: "scale x";
-	value: 100;
-	minimum: 10;
-	maximum: 500;
-	divisor: 100;
+	value: 1;
+	minimum: .1;
+	maximum: 5;
 };
 Slider scaleY = {
 	text: "scale y";
-	value: 100;
-	minimum: 10;
-	maximum: 500;
-	divisor: 100;
+	value: 1;
+	minimum: .1;
+	maximum: 5;
 };
 Slider translateX = {
 	text: "translate x";
@@ -131,23 +129,12 @@ Switch fitHeight = {
 Slider imgRatio = {
 	text: "ratio";
 	enabled: false;
-	divisor: 100;
 	onDrawSlider: null;
-	value: back.width() * imgRatio.divisor / back.height();
+	value: float64(back.width()) / back.height();
+	maximum: 1000;
 };
 
-int onEvent(Window win&, int action, int button, int x, int y) {
-	if (action == Gui.KEY_RELEASE && button == Gui.KEY_CODE_ESC) {
-		// exit when releasing escape key
-		return -1;
-	}
-
-	Widget ui = win.widget;
-	if (!win.dispatchEvent(ui, action, button, x, y)) {
-		// event not processed, wait for the next one
-		return 0;
-	}
-
+void onProcess(FxWidget ui) {
 	Rect to = {
 		w: offs.width() - 100;
 		h: offs.height() - 100;
@@ -156,7 +143,7 @@ int onEvent(Window win&, int action, int button, int x, int y) {
 	};
 	vec4f center = vec4f(back.width() / 2, back.height() / 2, 0, 0);
 	mat4f mat = translation(center, 1)
-		.mul(scale(vec4f(scaleX.value, scaleY.value, 0, 1), 1f / 100))
+		.mul(scale(vec4f(scaleX.value, scaleY.value, 0, 1), 1f))
 		.mul(skewMatrix(Math.radians(skewX.value), Math.radians(skewY.value)))
 		.mul(rotation(vec4f(0, 1, 0, 0), Math.radians(int(flipX.checked()) * 180)))
 		.mul(rotation(vec4f(1, 0, 0, 0), Math.radians(int(flipY.checked()) * 180)))
@@ -166,10 +153,9 @@ int onEvent(Window win&, int action, int button, int x, int y) {
 		.mul(fitMatrix(back, to.w, to.h, fitWidth.checked(), fitHeight.checked(), 1, 0));
 	debug("transform", mat.m);
 	offs.transform(to, back, null, quality.checked() ? 1 : 0, mat);
-	return win.draw(ui);
 }
 
-Gui.showWindow(offs, onEvent, FxWidget(
+Gui.showWindow(offs, FxWidget(onProcess,
 	quality,
 	fitWidth, fitHeight,
 	scaleX, scaleY,

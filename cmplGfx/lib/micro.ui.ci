@@ -171,26 +171,23 @@ struct Switch: View {
 struct Slider: View {
 	const char text[*];
 
-	int value = 0;
-	const int minimum = 0;
-	const int maximum = -1u >> 1;
-	const int divisor = 0;
-	const int resetValue = 0; // TODO: resetValue = value;
+	float64 value = 0;
+	float64 _value = 0;
+	const float64 minimum = 0;
+	const float64 maximum = 1;
+	const float64 stepSize = 0;
+	const float64 resetValue = 0; // TODO: resetValue = value;
 
-	static float64 valueF64(Slider this) {
-		double value = this.value;
-		if (this.divisor != 0) {
-			return value / this.divisor;
-		}
-		return value;
-	}
-
-	bool onUpdate(Slider this, int value) {
+	bool onUpdate(Slider this, float64 value) {
 		if (value > this.maximum) {
 			value = this.maximum;
 		}
 		if (value < this.minimum) {
 			value = this.minimum;
+		}
+		this._value = value;
+		if (this.stepSize != 0) {
+			value = Math.round(value / this.stepSize) * this.stepSize;
 		}
 		if (this.value == value) {
 			return this.isDirty();
@@ -206,7 +203,7 @@ struct Slider: View {
 	void onCreate(Slider this, View parent) {
 		View.onCreate(this, parent);
 		// clamp to initial value and force update with a reset
-		int resetValue& = pointer(this.resetValue);
+		float64 resetValue& = pointer(this.resetValue);
 		Slider.onUpdate(this, this.value);
 		resetValue = this.value;
 		this.onReset(this);
@@ -220,10 +217,10 @@ struct Slider: View {
 			return this.onReset(this);
 		}
 		if (event.key == '+' || event.key == '=') {
-			return this.onUpdate(this, this.value + (event.isShift ? 1 : 10));
+			return this.onUpdate(this, this._value + (event.isShift ? 1 : 10));
 		}
 		if (event.key == '-' || event.key == '_') {
-			return this.onUpdate(this, this.value - (event.isShift ? 1 : 10));
+			return this.onUpdate(this, this._value - (event.isShift ? 1 : 10));
 		}
 		return View.onKeyEvent(this, event);
 	}
@@ -240,17 +237,15 @@ struct Slider: View {
 			float64 value = event.dx;
 			if (!event.isShift && value != 0) {
 				value *= float64(this.maximum - this.minimum) / rect.w;
-				if (value > -1 && value < 1) {
-					value = value < 0 ? -1 : 1;
-				}
 			}
-			value += this.value;
+			value += this._value;
 			if (value > this.maximum) {
 				value = this.maximum;
 			}
 			if (value < this.minimum) {
 				value = this.minimum;
 			}
+
 			return this.onUpdate(this, value);
 		}
 		if (event.release) {
@@ -268,8 +263,8 @@ struct Slider: View {
 	bool onMeasure(Slider this, Rect rect&) {
 		char value[64] = {0};
 		Style style& = this.style;
-		if (this.divisor != 0) {
-			value.append(0, this.valueF64(), style.format);
+		if (this.stepSize != 0 && this.stepSize % 1 == 0) {
+			value.append(0, int64(this.value), style.format);
 		} else {
 			value.append(0, this.value, style.format);
 		}
@@ -289,7 +284,7 @@ struct Slider: View {
 		const int y0 = y1 - style.padding / 4;
 		const int x0 = rect.x;
 		const int x1 = rect.x + rect.w;
-		const int x = x0 + int64(this.value - this.minimum) * rect.w / (this.maximum - this.minimum);
+		const int x = x0 + (this.value - this.minimum) * rect.w / (this.maximum - this.minimum);
 		if (x > x0) {
 			offs.fillRect(x0, y0, x, y1, style.valueColor);
 		}
@@ -300,8 +295,8 @@ struct Slider: View {
 
 	void onDraw(Slider this, Image offs, Rect rect) {
 		char value[64] = {0};
-		if (this.divisor != 0) {
-			value.append(0, this.valueF64(), this.style.format);
+		if (this.stepSize != 0 && this.stepSize % 1 == 0) {
+			value.append(0, int64(this.value), this.style.format);
 		} else {
 			value.append(0, this.value, this.style.format);
 		}
@@ -814,6 +809,10 @@ struct Select: Layout {
 		Select.addItems(this, Style.fill, item);
 		return this;
 	}
+
+	static Select addItem(Select this, const char text[*]) {
+		return addItem(this, text, text);
+	}
 }
 
 /// Widget used to display controls in image processing demos
@@ -852,11 +851,11 @@ struct FxWidget: Widget {
 	bool onKeyEvent(FxWidget this, const KeyEvent event&) {
 		if (event.key == '[' || event.key == ']') {
 			bool changed = this.showOriginal != event.release;
-			this.showOriginal = !event.release && event.repeat != 0 && !this.enabled;
-			// show hide on short and release
+			this.showOriginal = !event.release && (event.repeat != 0 || !this.enabled);
+			// show hide on short press and release
 			if (event.repeat != 0 && event.release == this.enabled) {
 				// hide on long press, show on long release
-				return changed;
+				return changed && event.repeat == 1;
 			}
 			if (event.repeat == 0 && !event.release) {
 				// show/hide when button is on released, not when pressed
@@ -886,6 +885,11 @@ struct FxWidget: Widget {
 			this.measure = true;
 			this.invalidate();
 			return true;
+		}
+
+		if (event.key == '\\') {
+			this.showOriginal = !event.release;
+			return event.repeat == 0 || event.release;
 		}
 
 		if (event.release) {
@@ -926,14 +930,12 @@ struct FxWidget: Widget {
 		Widget.onDraw(this, offs, rect);
 		offs.destroy();
 	}
+
+	void onProcess(FxWidget widget) { }
 }
 
 Widget Widget(int width, int height, const Style style&) {
 	Widget widget = {
-		rect: {
-			w: width;
-			h: height;
-		};
 		width: width;
 		height: height;
 		style: style;
@@ -947,23 +949,22 @@ Widget Widget(int width, int height) {
 	};
 	return Widget(width, height, style);
 }
-FxWidget FxWidget(View views...) {
+FxWidget FxWidget(void onProcess(FxWidget widget), View views...) {
 	static const Style style = {
 		align: Style.left;
 		format: { padLen: 5, precision: 2 };
 	};
 	FxWidget widget = {
-		rect: {};
-
 		radius: 5;
 		margin: 10;
 		align: Style.topRight;
+		style: style;
 
 		paddingTop: 3;
 		paddingLeft: 3;
 		paddingRight: 3;
 		paddingBottom: 3;
-		style: style;
+		onProcess: onProcess;
 	};
 
 	return widget
@@ -971,17 +972,288 @@ FxWidget FxWidget(View views...) {
 		.addItems(...views);
 }
 
-static struct Gui {
-	static void showWindow(Image offscreen, int onEvent(Window window&, int action, int button, int x, int y), Widget widget) {
-		Window window = {
-			offscreen: offscreen;
-			widget: widget;
-		};
-		Gui.showWindow(offscreen, window, onEvent);
+FxWidget FxWidget(View views...) {
+	return FxWidget(FxWidget.onProcess, ...views);
+}
+
+bool hasFocused(const Layout this, View items...) {
+	if (this.focusedIndex < 0) {
+		// nothing is focused.
+		return false;
+	}
+	if (items.length == 0) {
+		// something is focused
+		return true;
 	}
 
+	View view = this.items[this.focusedIndex].view;
+	for (int i = 0; i < items.length; i += 1) {
+		if (items[i] == view) {
+			return true;
+		}
+	}
+
+	if (Layout layout = view.as(Layout)) {
+		return hasFocused(layout, ...items);
+	}
+	return false;
+}
+bool hasPressed(const Layout this, View items...) {
+	if (this.pressedIndex < 0) {
+		// nothing is pressed.
+		return false;
+	}
+	if (items.length == 0) {
+		// something is pressed
+		return true;
+	}
+
+	View view = this.items[this.pressedIndex].view;
+	for (int i = 0; i < items.length; i += 1) {
+		if (items[i] == view) {
+			return true;
+		}
+	}
+
+	if (Layout layout = view.as(Layout)) {
+		return hasPressed(layout, ...items);
+	}
+	return false;
+}
+
+static struct Gui {
 	static void showWindow(Image offscreen, Widget widget) {
-		static int showWindowEvent(Window win&, int action, int button, int x, int y) {
+		struct Window {
+			Image offscreen;
+			Widget widget;
+			Rect rect;
+
+			int64 timeout = 0;
+
+			// Touch state
+			int clicks = 0;
+			int64 time = 0;
+			int32 button = 0;
+			int32 lastX = 0;
+			int32 lastY = 0;
+
+			// Keyboard state
+			bool isShift = false;
+			bool isCtrl = false;
+			bool isAlt = false;
+			int key = 0;
+			int repeat = 0;
+		}
+
+		static bool dispatchEvent(Window window&, Widget widget, int action, int button, int x, int y) {
+			if (widget.parent == null) {
+				// widget was not created, so create it first
+				widget.onCreate(widget, widget);
+				widget.measure = true;
+			}
+			if (action == Gui.WINDOW_INIT) {
+				return true;
+			}
+			if (action == Gui.WINDOW_CLOSE) {
+				// TODO: implement reference counted gc
+				widget.onDestroy(widget);
+				widget.destroy();
+				return false;
+			}
+			if (action == Gui.WINDOW_ENTER) {
+				// do not process event
+				return false;
+			}
+			if (action == Gui.WINDOW_LEAVE) {
+				// clear hovered state
+				return widget.clearState(Style.hovered);
+			}
+
+			if (action == Gui.FINGER_PRESS) {
+				// finger press results also a mouse event
+				// skip the finger event
+				return false;
+			}
+			if (action == Gui.FINGER_MOTION) {
+				// translate to mouse event
+				action = Gui.MOUSE_MOTION;
+			}
+			if (action == Gui.FINGER_RELEASE) {
+				// finger release results also a mouse event
+				// skip the finger event
+				return false;
+			}
+
+			if (action == Gui.MOUSE_PRESS) {
+				if (window.button != button || window.lastX != x || window.lastY != y) {
+					window.clicks = 0;
+				}
+				int64 now = System.millis();
+				if ((now - window.time) / 1000. > .5) {
+					window.clicks = 0;
+				}
+				window.time = now;
+				if (button == 1) {
+					window.timeout = now + 1000;
+				} else {
+					window.timeout = 0;
+				}
+				window.button = button;
+				window.lastX = x;
+				window.lastY = y;
+				window.clicks += 1;
+
+				if (button != 1) {
+					return false;
+				}
+
+				TouchEvent event = {
+					release: false;
+					isShift: window.isShift;
+					isCtrl: window.isCtrl;
+					isAlt: window.isAlt;
+					clicks: window.clicks;
+					button: button;
+					x: x - window.rect.x;
+					y: y - window.rect.y;
+				};
+				return widget.onTouchEvent(widget, window.rect, event);
+			}
+			if (action == Gui.MOUSE_MOTION) {
+				int lastX = window.lastX;
+				int lastY = window.lastY;
+				window.time = System.millis();
+				window.timeout = 0;
+				window.button = button;
+				window.lastX = x;
+				window.lastY = y;
+				window.clicks = 0;
+
+				if (button != 0 && button != 1) {
+					return false;
+				}
+				TouchEvent event = {
+					release: false;
+					isShift: window.isShift;
+					isCtrl: window.isCtrl;
+					isAlt: window.isAlt;
+					clicks: window.clicks;
+					button: button;
+					dx: x - lastX;
+					dy: y - lastY;
+					x: x - window.rect.x;
+					y: y - window.rect.y;
+				};
+				return widget.onTouchEvent(widget, window.rect, event);
+			}
+			if (action == Gui.MOUSE_RELEASE) {
+				int64 now = System.millis();
+				if ((now - window.time) / 1000. > .5) {
+					window.clicks = 0;
+				}
+				window.timeout = 0;
+				if (button != 1) {
+					return false;
+				}
+
+				TouchEvent event = {
+					release: true;
+					isShift: window.isShift;
+					isCtrl: window.isCtrl;
+					isAlt: window.isAlt;
+					clicks: window.clicks;
+					button: button;
+					x: x - window.rect.x;
+					y: y - window.rect.y;
+				};
+				return widget.onTouchEvent(widget, window.rect, event);
+			}
+
+			if (action == Gui.KEY_PRESS) {
+				window.isShift = (y & Gui.KEY_MASK_SHIFT) != 0;
+				window.isCtrl = (y & Gui.KEY_MASK_CTRL) != 0;
+				window.isAlt = (y & Gui.KEY_MASK_ALT) != 0;
+				if (window.key != button) {
+					window.key = button;
+					window.repeat = 0;
+				} else {
+					window.repeat += 1;
+				}
+
+				KeyEvent event = {
+					release: false;
+					isShift: window.isShift;
+					isCtrl: window.isCtrl;
+					isAlt: window.isAlt;
+					repeat: window.repeat;
+					key: button;
+				};
+				return widget.onKeyEvent(widget, event);
+			}
+			if (action == Gui.KEY_RELEASE) {
+				window.isShift = (y & Gui.KEY_MASK_SHIFT) != 0;
+				window.isCtrl = (y & Gui.KEY_MASK_CTRL) != 0;
+				window.isAlt = (y & Gui.KEY_MASK_ALT) != 0;
+				KeyEvent event = {
+					release: true;
+					isShift: window.isShift;
+					isCtrl: window.isCtrl;
+					isAlt: window.isAlt;
+					repeat: window.repeat;
+					key: button;
+				};
+				window.key = 0;
+				window.repeat = 0;
+				return widget.onKeyEvent(widget, event);
+			}
+
+			if (action == Gui.EVENT_TIMEOUT) {
+				if (window.timeout > 0) {
+					// long press
+					TouchEvent event = {
+						release: true;
+						isShift: window.isShift;
+						isCtrl: window.isCtrl;
+						isAlt: window.isAlt;
+						clicks: -1;
+						button: window.button;
+						x: window.lastX - window.rect.x;
+						y: window.lastY - window.rect.y;
+					};
+					return widget.onTouchEvent(widget, window.rect, event);
+				}
+			}
+
+			debug("event not processed", action);
+			return false;
+		}
+		static int draw(Window window&, Widget widget) {
+			if (!widget.enabled) {
+				// widget is disabled, do not show it
+				return 0;
+			}
+			int64 timeout = 0;
+			if (window.timeout > 0) {
+				timeout = window.timeout - System.millis();
+				if (timeout < 0) {
+					timeout = 0;
+				}
+			}
+
+			Image offs = window.offscreen;
+			Rect rect& = window.rect;
+			if (widget.measure) {
+				rect.w = offs.width();
+				rect.h = offs.height();
+				widget.onMeasure(widget, &rect);
+				widget.measure = false;
+			}
+
+			widget.onDraw(offs, rect, 0);
+			widget.redraw = false;
+			return timeout;
+		}
+		static int windowEvent(Window win&, int action, int button, int x, int y) {
 			if (action == Gui.KEY_RELEASE && button == Gui.KEY_CODE_ESC) {
 				// exit when releasing escape key
 				return -1;
@@ -989,18 +1261,39 @@ static struct Gui {
 			Widget widget = win.widget;
 			if (!win.dispatchEvent(widget, action, button, x, y)) {
 				// event not processed, wait for the next one
-				return 0;
+				if (!widget.redraw) {
+					return 0;
+				}
+				return win.draw(widget);
+			}
+			if (button == 0 && (action == Gui.MOUSE_MOTION || action == Gui.FINGER_MOTION)) {
+				// hover views
+				return win.draw(widget);
+			}
+			if (button != 0 && (action == Gui.MOUSE_PRESS || action == Gui.FINGER_PRESS)) {
+				// focus views
+				return win.draw(widget);
+			}
+			if (FxWidget fxWidget = widget.as(FxWidget)) {
+				fxWidget.onProcess(fxWidget);
 			}
 			return win.draw(widget);
 		}
-		return showWindow(offscreen, showWindowEvent, widget);
+
+		Window window = {
+			offscreen: offscreen;
+			widget: widget;
+			rect: {};
+		};
+		return Gui.showWindow(offscreen, window, windowEvent);
 	}
 
 	static void showWindow(Widget widget) {
 		widget.onCreate(widget, widget);
-		widget.onMeasure(widget, &widget.rect);
+		Rect rect = {w: 0, h: 0};
+		widget.onMeasure(widget, &rect);
 		widget.measure = true;
-		Image offscreen = Image(widget.rect.w, widget.rect.h, 32);
+		Image offscreen = Image(rect.w, rect.h, 32);
 		showWindow(offscreen, widget);
 		offscreen.destroy();
 	}

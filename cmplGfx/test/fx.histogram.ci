@@ -19,16 +19,19 @@ Button btnRgb = {
 Switch chkRed = {
 	text: "red";
 	selected: 1;
+	states: null;
 	focusable: false;
 };
 Switch chkGreen = {
 	text: "green";
 	selected: 1;
+	states: null;
 	focusable: false;
 };
 Switch chkBlue = {
 	text: "blue";
 	selected: 1;
+	states: null;
 	focusable: false;
 };
 Panel panRGB = {
@@ -41,16 +44,7 @@ DebugView debug = {
 	draws: -1;
 };
 
-int onEvent(Window win&, int action, int button, int x, int y) {
-	if (action == Gui.KEY_RELEASE && button == Gui.KEY_CODE_ESC) {
-		// exit when releasing escape key
-		return -1;
-	}
-	Widget ui = win.widget;
-	if (!win.dispatchEvent(ui, action, button, x, y)) {
-		// event not processed, wait for the next one
-		return 0;
-	}
+void onProcess(FxWidget ui) {
 
 	debug.startTimer();
 	uint32 hist[histogram.data.length] = {};
@@ -107,11 +101,9 @@ int onEvent(Window win&, int action, int button, int x, int y) {
 		histogram.color = false;
 		panRGB.visible(true);
 	}
-
-	return win.draw(ui);
 }
 
-Gui.showWindow(offs, onEvent, FxWidget(
+Gui.showWindow(offs, FxWidget(onProcess,
 	histogram,
 
 	null,
