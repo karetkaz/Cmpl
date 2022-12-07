@@ -22,34 +22,39 @@ void drawLine(Image image, int x0, int y0, int x1, int y1, bool smooth, uint32 c
 int onEvent(int action, int button, int ex, int ey) {
 	static int ox = offscreen.width() / 2;
 	static int oy = offscreen.height() / 2;
-	static int x[2] = {ox, ox + ox * 3 / 4};
-	static int y[2] = {oy, oy + oy * 3 / 4};
+	static int x[2] = {ox - ox * 3 / 4, ox + ox * 3 / 4};
+	static int y[2] = {oy - oy * 3 / 4, oy + oy * 3 / 4};
 	static int idx = -1;
 	static int mode = 0;
 
+	static bool fill = false;	// fixme: fill or antialiasing
 	static bool txt = true;
 	static bool rect = !true;
 	static bool grid = true;
 	static bool fine = !true;
 	static bool outline = true;
-	static bool smooth = false;
 	static bool shift = false;
 	static bool ctrl = false;
 	static bool alt = false;
+
+	if (action == Gui.KEY_RELEASE && button == Gui.KEY_CODE_ESC) {
+		// exit when releasing escape key
+		return -1;
+	}
+
+	int x0 = x[0] * image.width() / offscreen.width();
+	int y0 = y[0] * image.height() / offscreen.height();
+	int x1 = x[1] * image.width() / offscreen.width();
+	int y1 = y[1] * image.height() / offscreen.height();
 
 	if (action == Gui.KEY_PRESS || action == Gui.KEY_RELEASE) {
 		shift = (ey & Gui.KEY_MASK_SHIFT) != 0;
 		ctrl = (ey & Gui.KEY_MASK_CTRL) != 0;
 		alt = (ey & Gui.KEY_MASK_ALT) != 0;
 	}
-
-	if (action == Gui.KEY_RELEASE && button == Gui.KEY_CODE_ESC) {
-		// exit when releasing escape key
-		return -1;
-	}
 	if (action == Gui.KEY_PRESS) {
 		if (button == ' ') {
-			smooth = !smooth;
+			fill = !fill;
 		}
 		if (button == 't') {
 			txt = !txt;
@@ -66,7 +71,7 @@ int onEvent(int action, int button, int ex, int ey) {
 		if (button == 'o') {
 			outline = !outline;
 		}
-		if (button == '\b') {
+		if (button == Gui.KEY_CODE_BACK) {
 			int cx = offscreen.width() / 2;
 			int cy = offscreen.height() / 2;
 			x[0] = cx - cx * 3 / 4;
@@ -74,15 +79,20 @@ int onEvent(int action, int button, int ex, int ey) {
 			y[0] = cy - cy * 3 / 4;
 			y[1] = cy + cy * 3 / 4;
 		}
-		if (button == '\t') {
-			bool isShift = (ey & Gui.KEY_MASK_SHIFT) != 0;
-			mode += isShift ? -1 : 1;
+		if (button == Gui.KEY_CODE_TAB) {
+			mode += shift ? -1 : 1;
 			if (mode < -1) {
+				mode = -1;
+			}
+			if (mode > Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0)) / 2) {
 				mode = -1;
 			}
 		}
 		if (button >= '0' && button < '0' + x.length) {
 			idx = button - '0';
+		}
+		if (button == 's' && ctrl) {
+			image.saveBmp("dump.rrect.bmp", 0);
 		}
 	}
 	if (action == Gui.MOUSE_PRESS || action == Gui.FINGER_PRESS) {
@@ -121,37 +131,19 @@ int onEvent(int action, int button, int ex, int ey) {
 		idx = -1;
 	}
 
-	int x0 = x[0] * image.width() / offscreen.width();
-	int y0 = y[0] * image.height() / offscreen.height();
-	int x1 = x[1] * image.width() / offscreen.width();
-	int y1 = y[1] * image.height() / offscreen.height();
-
 	image.fill(0xffffff);
 	if (rect) {
 		image.fillRect(x0, y0, x1, y1, 0xa0ffa0);
 		image.drawRect(x0, y0, x1, y1, 0x00ff00);
 	}
 	if (mode < 0) {
-		// draw nothing
-	}
-	else if (mode == 0) {
-		image.drawLine(x0, y0, x1, y1, smooth, 0x9a67be);
-	}
-	else if (mode == 1) {
-		image.drawRect(x0, y0, x1, y1, 0x9a67be);
-	}
-	else if (mode == 2) {
-		image.fillRect(x0, y0, x1, y1, 0x9a67be);
-	}
-	else if (mode == 3) {
-		image.drawOval(x0, y0, x1, y1, 0x9a67be);
-	}
-	else if (mode == 4) {
-		image.fillOval(x0, y0, x1, y1, 0x9a67be);
-	}
-	else {
-		mode = 0;
-		return 1;
+		image.drawLine(x0, y0, x1, y1, fill, 0x9a67be);
+	} else {
+		if (fill) {
+			image.fillRRect(x0, y0, x1, y1, mode, 0x9a67be);
+		} else {
+			image.drawRRect(x0, y0, x1, y1, mode, 0x9a67be);
+		}
 	}
 
 	offscreen.transform(null, image, null, int(fine), null);
@@ -172,27 +164,25 @@ int onEvent(int action, int button, int ex, int ey) {
 		char text[1024] = {};
 		Rect rect = {};
 		int p = 0;
-		int w = x1 - x0;
-		int h = y1 - y0;
 		p = text.append(0, "(");
 		p = text.append(p, x0, flags);
 		p = text.append(p, ", ");
 		p = text.append(p, y0, flags);
 		p = text.append(p, ")");
 		Gui.font.clipText(&rect, text);
-		x0 = Math.min(x[0], offscreen.width() - rect.w);
-		y0 = Math.min(y[0], offscreen.height() - rect.h);
-		offscreen.drawText(x0, y0, Gui.font, text, 0);
+		rect.positionX(Math.min(x[0], offscreen.width() - rect.width()));
+		rect.positionY(Math.min(y[0], offscreen.height() - rect.height()));
+		offscreen.drawText(rect, Gui.font, text, 0);
 
-		p = text.append(0, "[");
-		p = text.append(p, Math.abs(w), flags);
+		p = text.append(0, "(");
+		p = text.append(p, x1, flags);
 		p = text.append(p, ", ");
-		p = text.append(p, Math.abs(h), flags);
-		p = text.append(p, "]");
+		p = text.append(p, y1, flags);
+		p = text.append(p, ")");
 		Gui.font.clipText(&rect, text);
-		x1 = Math.min(x[1], offscreen.width() - rect.w);
-		y1 = Math.min(y[1], offscreen.height() - rect.h);
-		offscreen.drawText(x1, y1, Gui.font, text, 0);
+		rect.positionX(Math.min(x[1], offscreen.width() - rect.width()));
+		rect.positionY(Math.min(y[1], offscreen.height() - rect.height()));
+		offscreen.drawText(rect, Gui.font, text, 0);
 	}
 	if (outline && sx > 0 && sy > 0) {
 		x0 = x[0] - x[0] % sx;
@@ -203,9 +193,13 @@ int onEvent(int action, int button, int ex, int ey) {
 		x1 -= sx / 2 * Math.sign(x1 - x0);
 		y0 += sy / 2 * Math.sign(y1 - y0);
 		y1 -= sy / 2 * Math.sign(y1 - y0);
-		offscreen.drawRect(x0, y0, x1, y1, 0);
-		offscreen.drawLine(x0, y0, x1, y1, 0);
-		offscreen.drawOval(x0, y0, x1, y1, 0);
+		if (mode < 0) {
+			offscreen.drawLine(x0, y0, x1, y1, 0);
+		} else {
+			offscreen.drawRRect(x0, y0, x1, y1, mode * sx, mode * sy, 0);
+			offscreen.drawRect(x0, y0, x1, y1, 0);
+			offscreen.drawOval(x0, y0, x1, y1, 0);
+		}
 	}
 	return 0;
 }

@@ -1,0 +1,1090 @@
+typename
+typename.size
+typename.offset
+typename.base(type: typename): typename
+typename.file(type: typename): .cstr
+typename.line(type: typename): int32
+typename.name(type: typename): .cstr
+typename.size(type: typename): int32
+void
+bool
+char
+int8
+int16
+int32
+int64
+uint8
+uint16
+uint32
+uint32.zxt(value: int32, offs: int32, count: int32): int32
+uint32.sxt(value: int32, offs: int32, count: int32): int32
+uint32.pop(value: int32): int32
+uint32.swap(value: int32): int32
+uint32.bsr(value: int32): int32
+uint32.bsf(value: int32): int32
+uint32.hib(value: int32): int32
+uint32.lob(value: int32): int32
+uint64
+uint64.zxt(value: int64, offs: int32, count: int32): int64
+uint64.sxt(value: int64, offs: int32, count: int32): int64
+float32
+float32.sin(x: float32): float32
+float32.cos(x: float32): float32
+float32.tan(x: float32): float32
+float32.log(x: float32): float32
+float32.exp(x: float32): float32
+float32.pow(x: float32, y: float32): float32
+float32.sqrt(x: float32): float32
+float32.atan2(x: float32, y: float32): float32
+float64
+float64.sin(x: float64): float64
+float64.cos(x: float64): float64
+float64.tan(x: float64): float64
+float64.log(x: float64): float64
+float64.exp(x: float64): float64
+float64.pow(x: float64, y: float64): float64
+float64.sqrt(x: float64): float64
+float64.atan2(x: float64, y: float64): float64
+pointer
+pointer.alloc(ptr: pointer, size: int32): pointer
+pointer.fill(dst: pointer, value: uint8, size: int32): pointer
+pointer.copy(dst: pointer, src: pointer, size: int32): pointer
+pointer.move(dst: pointer, src: pointer, size: int32): pointer
+variant
+variant.as(var: variant, type: typename): pointer
+function
+object
+object.create(type: typename): pointer
+object.destroy(this: object): void
+object.as(this: object, type: typename): pointer
+object.type(this: object): typename
+null
+int
+emit
+emit.nop
+emit.not
+emit.set
+emit.ret
+emit.call
+emit.p4x
+emit.p4x.dp3
+emit.p4x.dp4
+emit.p4x.dph
+emit.dup
+emit.dup.x1
+emit.dup.x2
+emit.dup.x4
+emit.load
+emit.load.z32
+emit.load.z64
+emit.load.z128
+emit.load.i8
+emit.load.u8
+emit.load.i16
+emit.load.u16
+emit.load.i32
+emit.load.i64
+emit.load.i128
+emit.store
+emit.store.i8
+emit.store.i16
+emit.store.i32
+emit.store.i64
+emit.store.i128
+emit.cmt
+emit.cmt.u32
+emit.cmt.u64
+emit.and
+emit.and.u32
+emit.and.u64
+emit.or
+emit.or.u32
+emit.or.u64
+emit.xor
+emit.xor.u32
+emit.xor.u64
+emit.shl
+emit.shl.u32
+emit.shl.u64
+emit.shr
+emit.shr.i32
+emit.shr.i64
+emit.shr.u32
+emit.shr.u64
+emit.neg
+emit.neg.i32
+emit.neg.i64
+emit.neg.f32
+emit.neg.f64
+emit.neg.p4f
+emit.neg.p2d
+emit.add
+emit.add.i32
+emit.add.i64
+emit.add.f32
+emit.add.f64
+emit.add.p4f
+emit.add.p2d
+emit.sub
+emit.sub.i32
+emit.sub.i64
+emit.sub.f32
+emit.sub.f64
+emit.sub.p4f
+emit.sub.p2d
+emit.mul
+emit.mul.i32
+emit.mul.i64
+emit.mul.u32
+emit.mul.u64
+emit.mul.f32
+emit.mul.f64
+emit.mul.p4f
+emit.mul.p2d
+emit.div
+emit.div.i32
+emit.div.i64
+emit.div.u32
+emit.div.u64
+emit.div.f32
+emit.div.f64
+emit.div.p4f
+emit.div.p2d
+emit.mod
+emit.mod.i32
+emit.mod.i64
+emit.mod.u32
+emit.mod.u64
+emit.mod.f32
+emit.mod.f64
+emit.ceq
+emit.ceq.i32
+emit.ceq.i64
+emit.ceq.f32
+emit.ceq.f64
+emit.ceq.p4f
+emit.ceq.p2d
+emit.clt
+emit.clt.i32
+emit.clt.i64
+emit.clt.u32
+emit.clt.u64
+emit.clt.f32
+emit.clt.f64
+emit.cgt
+emit.cgt.i32
+emit.cgt.i64
+emit.cgt.u32
+emit.cgt.u64
+emit.cgt.f32
+emit.cgt.f64
+emit.min
+emit.min.p4f
+emit.min.p2d
+emit.max
+emit.max.p4f
+emit.max.p2d
+emit.swz
+emit.swz.x2
+halt(): void
+preferNativeCalls
+raise(file: char[*], line: int32, level: int32, trace: int32, message: char[*], details: variant): void # Report messages or raise errors.
+raise.abort
+raise.error
+raise.warn
+raise.info
+raise.debug
+raise.verbose
+raise.noTrace
+raise.defTrace
+tryExec(args: pointer, action(args: pointer): void): int32
+System
+System.exit(code: int32): void
+System.srand(seed: int32): void
+System.time(): int32
+System.millis(): int64
+System.sleep(millis: int64): void
+System.rand(): int32
+System.rand.max
+System.clock(): int32
+System.clock.perSec
+System.Platform
+System.Platform.WebAssembly
+System.Platform.Windows
+System.Platform.MacOS
+System.Platform.Linux
+System.Platform.Unix
+true
+false
+byte
+float
+double
+signed(value: uint8): int8 # convert unsigned to signed integer
+signed(value: uint16): int16 # convert unsigned to signed integer
+signed(value: uint32): int32 # convert unsigned to signed integer
+signed(value: uint64): int64 # convert unsigned to signed integer
+unsigned(value: int8): uint8 # convert signed to unsigned integer
+unsigned(value: int16): uint16 # convert signed to unsigned integer
+unsigned(value: int32): uint32 # convert signed to unsigned integer
+unsigned(value: int64): uint64 # convert signed to unsigned integer
+inc(ptr: pointer, val: int32): pointer # Returns the pointer incremented with the given value
+sizeof(type: typename): int32 # Returns the size of the given type
+verbose(message: char[*], inspect: variant): void # report message at `verbose` logging level
+verbose(message: char[*]): void # report message at `verbose` logging level
+debug(message: char[*], inspect: variant): void # report message at `debug` logging level
+debug(message: char[*]): void # report message at `debug` logging level
+trace(message: char[*], inspect: variant): void # report message with stacktrace at `debug` logging level
+trace(message: char[*]): void # report message with stacktrace at `debug` logging level
+info(message: char[*], inspect: variant): void # report message at `info` logging level
+info(message: char[*]): void # report message at `info` logging level
+warn(message: char[*], inspect: variant): void # report message at `warn` logging level
+warn(message: char[*]): void # report message at `warn` logging level
+error(message: char[*], inspect: variant): void # report message with stacktrace at `error` logging level
+error(message: char[*]): void # report message with stacktrace at `error` logging level
+abort(message: char[*], inspect: variant): void # report message with stacktrace at `abort` logging level and abort execution
+abort(message: char[*]): void # report message with stacktrace at `abort` logging level and abort execution
+abort(): void # report message with stacktrace at `abort` logging level and abort execution
+assert(condition: bool, message: char[*], inspect: variant): void # report message and abort the execution if the assertion condition fails (is false)
+assert(condition: bool, message: char[*]): void # report message and abort the execution if the assertion condition fails (is false)
+assert(condition: bool): void # report message and abort the execution if the assertion condition fails (is false)
+NotEquals # @public
+NotEquals.expected # Value of the expected result
+NotEquals.returned # Value of the actual result
+NotEquals.extras # Extra argument to identify what happened
+assertEq(expected: int32, returned: int32, message: char[*]): void # abort execution if the returned value is not equal to the expected value
+assertEq(expected: int32, returned: int32): void # abort execution if the returned value is not equal to the expected value
+Math # Mathematical utility functions and constants
+Math.pi
+Math.e
+Math.ln2
+Math.log2E
+Math.ln10
+Math.log10E
+Math.phi
+Math.sqrt2
+Math.sqrtE
+Math.sqrtPi
+Math.sqrtPhi
+Math.nan
+Math.inf
+Math.modf(x: float64, intPart: float64): float64 # Decompose a value into integer and fractional parts
+Math.ldexp(x: float64, exp: int32): float64 # ldexp(float64 x, int exp) = x * 2 ** exp\nadapted from: https://git.musl-libc.org/cgit/musl/tree/src/math/scalbn.c
+Math.floor(x: float64): float64 # Computes the largest integer value not greater than the input
+Math.ceil(x: float64): float64 # Computes the smallest integer not less than the input
+Math.round(x: float64): float64 # Computes the nearest integer to the input
+Math.sign(x: int32): int32 # Returns the signum of the input (`0` if zero, `-1` if negative, `1` if positive)
+Math.sign(x: int64): int32 # Returns the signum of the input (`0` if zero, `-1` if negative, `1` if positive)
+Math.sign(x: uint32): int32 # Returns the signum of the input (`0` if zero, `1` if positive)
+Math.sign(x: uint64): int32 # Returns the signum of the input (`0` if zero, `1` if positive)
+Math.sign(x: float32): int32 # Returns the signum of the input (`0` if zero, `-1` if negative, `1` if positive)
+Math.sign(x: float64): int32 # Returns the signum of the input (`0` if zero, `-1` if negative, `1` if positive)
+Math.absMod(val: float32, mod: float32): float32 # Returns the positive modulus of the input
+Math.absMod(val: float64, mod: float64): float64 # Returns the positive modulus of the input
+Math.abs(x: int32): int32 # Returns the absolute value of the input
+Math.abs(x: int64): int64 # Returns the absolute value of the input
+Math.abs(x: uint32): uint32 # Returns the absolute value of the input
+Math.abs(x: uint64): uint64 # Returns the absolute value of the input
+Math.abs(x: float32): float32 # Returns the absolute value of the input
+Math.abs(x: float64): float64 # Returns the absolute value of the input
+Math.min(a: int32, b: int32): int32 # Returns the smaller value from the input values
+Math.min(a: int64, b: int64): int64 # Returns the smaller value from the input values
+Math.min(a: uint32, b: uint32): uint32 # Returns the smaller value from the input values
+Math.min(a: uint64, b: uint64): uint64 # Returns the smaller value from the input values
+Math.min(a: float32, b: float32): float32 # Returns the smaller value from the input values
+Math.min(a: float64, b: float64): float64 # Returns the smaller value from the input values
+Math.max(a: int32, b: int32): int32 # Returns the greater value from the input values
+Math.max(a: int64, b: int64): int64 # Returns the greater value from the input values
+Math.max(a: uint32, b: uint32): uint32 # Returns the greater value from the input values
+Math.max(a: uint64, b: uint64): uint64 # Returns the greater value from the input values
+Math.max(a: float32, b: float32): float32 # Returns the greater value from the input values
+Math.max(a: float64, b: float64): float64 # Returns the greater value from the input values
+Math.clamp(value: int32, min: int32, max: int32): int32 # Returns the `value` clamped between `min` and `max`
+Math.clamp(value: int64, min: int64, max: int64): int64 # Returns the `value` clamped between `min` and `max`
+Math.clamp(value: uint32, min: uint32, max: uint32): uint32 # Returns the `value` clamped between `min` and `max`
+Math.clamp(value: uint64, min: uint64, max: uint64): uint64 # Returns the `value` clamped between `min` and `max`
+Math.clamp(value: float32, min: float32, max: float32): float32 # Returns the `value` clamped between `min` and `max`
+Math.clamp(value: float64, min: float64, max: float64): float64 # Returns the `value` clamped between `min` and `max`
+Math.lerp(t: float32, a: float32, b: float32): float32 # Returns the linear interpolation between `a` and `b` by `t`
+Math.lerp(t: float64, a: float64, b: float64): float64 # Returns the linear interpolation between `a` and `b` by `t`
+Math.smooth(t: float32): float32
+Math.smooth(t: float64): float64
+Math.smooth(t: float32, a: float32, b: float32): float32 # Returns smooth interpolation between `a` and `b` by `t`
+Math.smooth(t: float64, a: float64, b: float64): float64 # Returns smooth interpolation between `a` and `b` by `t`
+Math.min(values: float64[]): float64 # Returns the smaller value from the input values
+Math.max(values: float64[]): float64 # Returns the greater value from the input values
+Math.sum(values: float64[]): float64 # Returns the sum of the input values
+Math.mean(values: float64[]): float64 # Returns the mean of the input values
+Math.eval(x: float64, a0: float64): float64 # Return the polynomial evaluated at x using Horner's algorithm
+Math.eval(x: float64, a0: float64, a1: float64): float64 # Return the polynomial evaluated at x using Horner's algorithm
+Math.eval(x: float64, a0: float64, a1: float64, a2: float64): float64 # Return the polynomial evaluated at x using Horner's algorithm
+Math.eval(x: float64, a0: float64, a1: float64, a2: float64, a3: float64): float64 # Return the polynomial evaluated at x using Horner's algorithm
+Math.eval(x: float64, a0: float64, a1: float64, a2: float64, a3: float64, a4: float64): float64 # Return the polynomial evaluated at x using Horner's algorithm
+Math.eval(x: float64, polynomial: float64[]): float64 # Return the polynomial evaluated at x using Horner's algorithm
+Math.sinCos(arg: float64, quad: int32): float64
+Math.tanCot(x: float64, flag: int32): float64
+Math.sin(x: float64): float64 # Returns the sine of the radian argument `x`.
+Math.cos(x: float64): float64 # Returns the cosine of the radian argument `x`.
+Math.tan(x: float64): float64 # Returns the tangent of the radian argument `x`.
+Math.cot(x: float64): float64 # Returns the cotangent of the radian argument `x`.
+Math.sinh(x: float64): float64 # Returns the hyperbolic sine of the input
+Math.cosh(x: float64): float64 # Returns the hyperbolic cosine of the input
+Math.asin(x: float64): float64 # Returns the arc sine of the input\n Special cases are:\n   Asin(±0) = ±0\n   Asin(x) = NaN if x < -1 or x > 1
+Math.acos(x: float64): float64 # Returns the arc cosine of the input\n Special case is:\n   Acos(x) = NaN if x < -1 or x > 1
+Math.radians(degrees: float64): float64 # Converts the input to radians from degrees.
+Math.degrees(radians: float64): float64 # Converts the input to degrees from radians.
+Complex # Complex number
+Complex.re # The real component of a complex number.
+Complex.im # The imaginary component of a complex number.
+Complex(re: float64): Complex # @public
+Complex(re: float64, im: float64): Complex # @public
+neg(a: Complex): Complex # @public: Complex(-a.re, -a.im);
+add(a: Complex, b: Complex): Complex # @public: Complex(a.re + b.re, a.im + b.im);
+add(a: Complex, b: float64): Complex # @public
+add(a: float64, b: Complex): Complex # @public
+sub(a: Complex, b: Complex): Complex # @public: Complex(a.re - b.re, a.im - b.im);
+sub(a: Complex, b: float64): Complex # @public
+sub(a: float64, b: Complex): Complex # @public
+mul(a: Complex, b: Complex): Complex # @public: Complex(a.re * b.re - a.im * b.im, a.re * b.im + a.im * b.re);
+mul(a: Complex, b: float64): Complex # @public
+mul(a: float64, b: Complex): Complex # @public
+div(a: Complex, b: Complex): Complex # @public
+div(a: Complex, b: float64): Complex # @public
+div(a: float64, b: Complex): Complex # @public
+abs(a: Complex): float64 # @public
+arg(a: Complex): float64 # @public
+inv(a: Complex): Complex # Reciprocal of a complex number (1 / a)
+conj(a: Complex): Complex # @public
+exp(a: Complex): Complex # @public
+log(a: Complex): Complex # @public
+pow(a: Complex, b: Complex): Complex # @public
+pow(a: Complex, b: float64): Complex # @public
+sin(a: Complex): Complex # @public
+cos(a: Complex): Complex # @public
+tan(a: Complex): Complex # @public
+cot(a: Complex): Complex # @public
+sinh(a: Complex): Complex # @public
+cosh(a: Complex): Complex # @public
+tanh(a: Complex): Complex # @public
+coth(a: Complex): Complex # @public
+sec(a: Complex): Complex # @public
+csc(a: Complex): Complex # @public
+sech(a: Complex): Complex # @public
+csch(a: Complex): Complex # @public
+toCartesian(x: Complex): Complex # @public
+toPolar(x: Complex): Complex # @public
+vec4f # A 4d vector (4x float32)
+vec4f.<?>
+vec4f.<?>.x # X component of the vector
+vec4f.<?>.y # Y component of the vector
+vec4f.<?>.z # Z component of the vector
+vec4f.<?>.w # W component of the vector
+vec4f.x # X component of the vector
+vec4f.y # Y component of the vector
+vec4f.z # Z component of the vector
+vec4f.w # W component of the vector
+vec4f.data # Access the components as an array
+vec4f(x: float32, y: float32, z: float32, w: float32): vec4f # Initialize with given x, y, z, w components
+vec4f(x: float32, y: float32, z: float32): vec4f # Initialize with  (x: x, y: y, z: z, w: 1)
+vec4f(x: float32, y: float32): vec4f # Initialize with (x: x, y: y, z: 0, w: 1)
+vec4f(xyz: vec4f, w: float32): vec4f # Initialize x, y, z components using the components form the given vector, and w with the given value
+vec4f(val: float32): vec4f # Initialize x, y, z, w components with the given scalar value
+neg(rhs: vec4f): vec4f # Returns a negated copy of the vector.
+add(lhs: vec4f, rhs: vec4f): vec4f # Component wise add the two vectors.
+sub(lhs: vec4f, rhs: vec4f): vec4f # Component wise subtract the two vectors.
+mul(lhs: vec4f, rhs: vec4f): vec4f # Component wise multiply the two vectors.
+div(lhs: vec4f, rhs: vec4f): vec4f # Component wise divide the two vectors.
+add(a: float32, b: vec4f): vec4f # Component wise add vector and scalar.
+add(a: vec4f, b: float32): vec4f # Component wise add vector and scalar.
+sub(a: float32, b: vec4f): vec4f # Component wise subtract vector and scalar.
+sub(a: vec4f, b: float32): vec4f # Component wise subtract vector and scalar.
+mul(a: float32, b: vec4f): vec4f # Component wise multiply vector and scalar.
+mul(a: vec4f, b: float32): vec4f # Component wise multiply vector and scalar.
+div(a: float32, b: vec4f): vec4f # Component wise divide vector and scalar.
+div(a: vec4f, b: float32): vec4f # Component wise divide vector and scalar.
+abs(a: vec4f): vec4f # Component wise absolute value of a vector.
+min(lhs: vec4f, rhs: vec4f): vec4f # Component wise minimum of the two vectors.
+max(lhs: vec4f, rhs: vec4f): vec4f # Component wise maximum of the two vectors.
+clamp(vec: vec4f, min: vec4f, max: vec4f): vec4f # Clamp the vector component wise to the range [min ... max]
+clamp(vec: vec4f, min: float32, max: float32): vec4f # Clamp each component of the vector to the range [min ... max]
+mix(t: float32, a: vec4f, b: vec4f): vec4f # linear interpolate
+dp3(lhs: vec4f, rhs: vec4f): float32 # Dot product of the first 3 elements
+dph(lhs: vec4f, rhs: vec4f): float32 # Homogeneous dot product
+dp4(lhs: vec4f, rhs: vec4f): float32 # Dot product
+cross(a: vec4f, b: vec4f): vec4f # Cross product of the first 3 elements
+length(v: vec4f): float32 # Length of the vector(xyz)
+normalize(v: vec4f): vec4f # Normalize the vector(xyz)
+eval(v: vec4f, x: float32): float32 # Evaluate as a polynomial in point x
+mat4f # A 4x4 matrix
+mat4f.m # Access elements as an array: m[1][0]
+mat4f.data # Access elements as a flatten array: data[4] => m[1][0]
+mat4f.v # Access elements as an array of vectors: v[1].x => m[1][0]
+mat4f.<?>
+mat4f.<?>.x # @public
+mat4f.<?>.y # @public
+mat4f.<?>.z # @public
+mat4f.<?>.w # @public
+mat4f.x # @public
+mat4f.y # @public
+mat4f.z # @public
+mat4f.w # @public
+mat4f.<?>
+mat4f.<?>.xx # @public
+mat4f.<?>.xy # @public
+mat4f.<?>.xz # @public
+mat4f.<?>.xw # @public
+mat4f.<?>.yx # @public
+mat4f.<?>.yy # @public
+mat4f.<?>.yz # @public
+mat4f.<?>.yw # @public
+mat4f.<?>.zx # @public
+mat4f.<?>.zy # @public
+mat4f.<?>.zz # @public
+mat4f.<?>.zw # @public
+mat4f.<?>.wx # @public
+mat4f.<?>.wy # @public
+mat4f.<?>.wz # @public
+mat4f.<?>.ww # @public
+mat4f.xx # @public
+mat4f.xy # @public
+mat4f.xz # @public
+mat4f.xw # @public
+mat4f.yx # @public
+mat4f.yy # @public
+mat4f.yz # @public
+mat4f.yw # @public
+mat4f.zx # @public
+mat4f.zy # @public
+mat4f.zz # @public
+mat4f.zw # @public
+mat4f.wx # @public
+mat4f.wy # @public
+mat4f.wz # @public
+mat4f.ww # @public
+mat4f(xx: float32, xy: float32, xz: float32, xw: float32, yx: float32, yy: float32, yz: float32, yw: float32, zx: float32, zy: float32, zz: float32, zw: float32, wx: float32, wy: float32, wz: float32, ww: float32): mat4f # Initialize all elements with the given values
+mat4f(x: vec4f, y: vec4f, z: vec4f, w: vec4f): mat4f # Initialize matrix with row vectors
+dp3(mat: mat4f, vec: vec4f): vec4f # Multiply with vector: dot product of the first 3 elements
+dph(mat: mat4f, vec: vec4f): vec4f # Multiply with vector: homogeneous dot product
+dp4(mat: mat4f, vec: vec4f): vec4f # Multiply with vector: dot product
+transpose(mat: mat4f): mat4f # Transpose the matrix
+mul(lhs: mat4f, rhs: mat4f): mat4f # Multiply two matrices (rows * cols)
+rotation(center: vec4f, direction: vec4f, angle: float32): mat4f # Build a rotation matrix\nadapted from: https://sites.google.com/site/glennmurray/Home/rotation-matrices-and-formulas
+rotation(direction: vec4f, angle: float32): mat4f # Build a rotation matrix
+translation(direction: vec4f, amount: float32): mat4f # Build a translation matrix
+scale(direction: vec4f, amount: float32): mat4f # Build a scaling matrix
+inverse(mat: mat4f): mat4f # Build the inverse of the matrix\nadapted from: https://github.com/glslify/glsl-inverse/blob/master/index.glsl
+vec2d # A 2d vector (2x float64)
+vec2d.<?>
+vec2d.<?>.x # X component of the vector
+vec2d.<?>.y # Y component of the vector
+vec2d.x # X component of the vector
+vec2d.y # Y component of the vector
+vec2d.data # Access the components as an array
+vec2d(x: float64, y: float64): vec2d # Initialize with given x, y components
+add(a: vec2d, b: vec2d): vec2d # Component wise add the two vectors.
+sub(a: vec2d, b: vec2d): vec2d # Component wise subtract the two vectors.
+mul(a: vec2d, b: vec2d): vec2d # Component wise multiply the two vectors.
+div(a: vec2d, b: vec2d): vec2d # Component wise divide the two vectors.
+min(a: vec2d, b: vec2d): vec2d # Component wise select the minimum from the two vectors.
+max(a: vec2d, b: vec2d): vec2d # Component wise select the maximum from the two vectors.
+ceq(a: vec2d, b: vec2d): vec2d # Compare the two vectors for equality.
+dot(a: vec2d, b: vec2d): float64 # Dot product of thw two vectors
+length(str: char[*]): int32 # Computes the length of the string
+indexOf(str: char[*], chr: char): int32 # Returns the index of the first occurrence of a character in string
+lastIndexOf(str: char[*], chr: char): int32 # Returns the index of the last occurrence of a character in string
+startsWith(str: char[*], with: char[*], cmp(chr: char, with: char): int32): bool # Check if a string begins with a specified string, using a custom comparator
+endsWith(str: char[*], with: char[*], cmp(chr: char, with: char): int32): bool # Check if a string ends in a specified string, using a custom comparator
+compare(str: char[*], with: char[*], cmp(chr: char, with: char): int32): int32 # Check if the two strings are equal, less or greater, using a custom comparator
+ignCaseCmp(chr: char, with: char): int32 # ignore case character comparator
+caseCmp(chr: char, with: char): int32 # default character comparator
+toHex(value: int32): int32 # convert lower part (4 bits) of the input value to the corresponding lower case hexadecimal character
+startsWith(str: char[*], with: char[*]): bool # Check if a string begins with a specified string, using case-sensitive comparison
+endsWith(str: char[*], with: char[*]): bool # Check if a string ends in a specified string, using case-sensitive comparison
+compare(str: char[*], with: char[*]): int32 # Check if the two strings are equal, less or greater, using case-sensitive comparison
+equals(str: char[*], with: char[*]): bool # Check if the two strings are equal, using case-sensitive comparison
+contains(str: char[*], chr: char): bool # Check if a string contains the given character
+FormatFlags # Flags to convert numbers to string
+FormatFlags.sign # forced show sign
+FormatFlags.precision # precision length
+FormatFlags.padChr # padding character
+FormatFlags.padLen # padding length
+FormatFlags.read(format: char[], pos: int32): FormatFlags # read and process c style format flags like: \"%02d\"
+FormatFlags.defPad(this: FormatFlags, padLen: int32, padChr: char): FormatFlags # override the default padding, in case it's length is zero
+append(output: char[], pos: int32, value: char[*]): int32 # Append a string to the output at the given position
+append(output: char[], pos: int32, radix: int32, value: uint64, format: FormatFlags): int32 # Append a number to the output at the given position
+append(output: char[], pos: int32, value: uint64, format: FormatFlags): int32 # Append a number to the output at the given position
+append(output: char[], pos: int32, value: uint32, format: FormatFlags): int32 # Append a number to the output at the given position
+append(output: char[], pos: int32, value: uint16, format: FormatFlags): int32 # Append a number to the output at the given position
+append(output: char[], pos: int32, value: uint8, format: FormatFlags): int32 # Append a number to the output at the given position
+append(output: char[], pos: int32, radix: int32, value: int64, format: FormatFlags): int32 # Append a number to the output at the given position
+append(output: char[], pos: int32, value: int64, format: FormatFlags): int32 # Append a number to the output at the given position
+append(output: char[], pos: int32, value: int32, format: FormatFlags): int32 # Append a number to the output at the given position
+append(output: char[], pos: int32, value: int16, format: FormatFlags): int32 # Append a number to the output at the given position
+append(output: char[], pos: int32, value: int8, format: FormatFlags): int32 # Append a number to the output at the given position
+append(output: char[], pos: int32, value: float64, format: FormatFlags): int32 # Append a number to the output at the given position
+append(output: char[], pos: int32, value: float32, format: FormatFlags): int32 # Append a number to the output at the given position
+append(output: char[], pos: int32, value: int32): int32 # Append a number to the output at the given position
+float64(value: char[]): float64 # Convert a string to a 64 bit floating point value
+File
+File.open(path: char[*]): File
+File.create(path: char[*]): File
+File.append(path: char[*]): File
+File.peek(file: File): int32
+File.tell(file: File): int64
+File.seek(file: File, position: int64): File
+File.seekCur(file: File, position: int64): File
+File.seekEnd(file: File, position: int64): File
+File.read(file: File, buff: uint8[]): int32
+File.write(file: File, buff: uint8[]): int32
+File.flush(file: File): void
+File.close(file: File): void
+File.in
+File.out
+File.err
+File.log
+read(file: File): int32 # extension method to read a single byte from a file
+write(file: File, value: int32): int32 # extension method to write a single byte into a file
+Rect
+Rect.x0
+Rect.y0
+Rect.x1
+Rect.y1
+Image
+Image.create(width: int32, height: int32, depth: int32): Image
+Image.create3d(width: int32, height: int32): Image
+Image.recycle(recycle: Image, width: int32, height: int32, depth: int32, flags: int32): Image
+Image.slice(image: Image, rect: Rect): Image
+Image.destroy(image: Image): void
+Image.openBmp(path: char[*], depth: int32): Image
+Image.openPng(path: char[*], depth: int32): Image
+Image.openJpg(path: char[*], depth: int32): Image
+Image.openImg(path: char[*], depth: int32): Image
+Image.openTtf(path: char[*], height: int32): Image
+Image.openFnt(path: char[*]): Image
+Image.saveBmp(image: Image, path: char[*], flags: int32): void
+Image.width(image: Image): int32
+Image.height(image: Image): int32
+Image.depth(image: Image): int32
+Image.get(image: Image, x: int32, y: int32): int32
+Image.set(image: Image, x: int32, y: int32, color: uint32): void
+Image.tex(image: Image, x: float32, y: float32): vec4f
+Image.clipText(font: Image, rect: Rect, text: char[*]): void
+Image.drawText(image: Image, roi: Rect, font: Image, text: char[*], color: int32): void
+Image.fillRect(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, incl: int32, color: uint32): void
+Image.blend(image: Image, x: int32, y: int32, src: Image, roi: Rect, extra: pointer, blend(extra: pointer, base: uint32, with: uint32): uint32): void
+Image.blend.color
+Image.blend.alpha
+Image.blend.dstAlpha
+Image.blend.blendVec4f
+Image.transform(image: Image, rect: Rect, src: Image, roi: Rect, interpolate: int32, mat: float32[16]): void
+Image.blur(image: Image, radius: int32, sigma: float64): void
+Image.colorMap(image: Image, roi: Rect, lut: uint32[256]): void
+Image.colorMat(image: Image, roi: Rect, mat: float32[16]): void
+Image.calcHueHist(image: Image, roi: Rect, lut: uint32[256]): void
+Image.calcLumHist(image: Image, roi: Rect, lut: uint32[256]): void
+Image.calcRgbHist(image: Image, roi: Rect, lut: uint32[256]): void
+Image.drawMesh(image: Image, mesh: Mesh, mode: int32): int32
+Mesh
+Mesh.create(size: int32): Mesh
+Mesh.recycle(recycle: Mesh, size: int32): Mesh
+Mesh.destroy(mesh: Mesh): void
+Mesh.openObj(path: char[*]): Mesh
+Mesh.open3ds(path: char[*]): Mesh
+Mesh.saveObj(mesh: Mesh, path: char[*]): void
+Mesh.normalize(mesh: Mesh, tolerance: float32, center: float32[3], resize: float32[3]): void
+Mesh.addVertex(mesh: Mesh, x: float32, y: float32, z: float32): int32
+Mesh.addFace(mesh: Mesh, v1: int32, v2: int32, v3: int32): int32
+Mesh.addFace(mesh: Mesh, v1: int32, v2: int32, v3: int32, v4: int32): int32
+Mesh.setVertex(mesh: Mesh, idx: int32, x: float32, y: float32, z: float32): bool
+Mesh.setNormal(mesh: Mesh, idx: int32, x: float32, y: float32, z: float32): bool
+Mesh.setTexture(mesh: Mesh, idx: int32, s: float32, t: float32): bool
+Mesh.ambient(mesh: Mesh, r: float32, g: float32, b: float32): void
+Mesh.diffuse(mesh: Mesh, r: float32, g: float32, b: float32): void
+Mesh.specular(mesh: Mesh, r: float32, g: float32, b: float32): void
+Mesh.shine(mesh: Mesh, value: float32): void
+Mesh.texture(mesh: Mesh, texture: Image): void
+Mesh.clearDepth
+Mesh.clearColor
+Mesh.cullBack
+Mesh.cullFront
+Mesh.drawPlot
+Mesh.drawWire
+Mesh.drawFill
+Mesh.drawMode
+Mesh.useTexture
+Mesh.useLights
+Mesh.drawBounds
+Mesh.vertices
+Mesh.triangles
+Mesh.segments
+gradient(image: Image, roi: Rect, type: int32, repeat: bool, colors: uint32[]): void
+gradient.Linear
+gradient.Radial
+gradient.Square
+gradient.Spiral
+gradient.Conical
+gradient.MaskLinear
+gradient.MaskRadial
+gradient.MaskSquare
+camera(proj: float32[16], position: float32[4], forward: float32[4], right: float32[4], up: float32[4]): void
+lights
+lights.enabled(light: int32): bool
+lights.enable(light: int32, on: bool): void
+lights.position(light: int32, x: float32, y: float32, z: float32): void
+lights.ambient(light: int32, r: float32, g: float32, b: float32): void
+lights.diffuse(light: int32, r: float32, g: float32, b: float32): void
+lights.specular(light: int32, r: float32, g: float32, b: float32): void
+lights.attenuation(light: int32, constant: float32, linear: float32, quadratic: float32): void
+Gui
+Gui.KEY_PRESS
+Gui.KEY_RELEASE
+Gui.MOUSE_WHEEL
+Gui.MOUSE_PRESS
+Gui.MOUSE_MOTION
+Gui.MOUSE_RELEASE
+Gui.FINGER_PRESS
+Gui.FINGER_MOTION
+Gui.FINGER_RELEASE
+Gui.EVENT_TIMEOUT
+Gui.WINDOW_INIT
+Gui.WINDOW_CLOSE
+Gui.WINDOW_ENTER
+Gui.WINDOW_LEAVE
+Gui.KEY_CODE_ESC
+Gui.KEY_CODE_BACK
+Gui.KEY_CODE_TAB
+Gui.KEY_CODE_ENTER
+Gui.KEY_CODE_CAPSLOCK
+Gui.KEY_CODE_PRINT_SCREEN
+Gui.KEY_CODE_SCROLL_LOCK
+Gui.KEY_CODE_PAUSE
+Gui.KEY_CODE_INSERT
+Gui.KEY_CODE_HOME
+Gui.KEY_CODE_PAGE_UP
+Gui.KEY_CODE_DELETE
+Gui.KEY_CODE_END
+Gui.KEY_CODE_PAGE_DOWN
+Gui.KEY_CODE_RIGHT
+Gui.KEY_CODE_LEFT
+Gui.KEY_CODE_DOWN
+Gui.KEY_CODE_UP
+Gui.KEY_CODE_L_SHIFT
+Gui.KEY_CODE_R_SHIFT
+Gui.KEY_CODE_L_CTRL
+Gui.KEY_CODE_R_CTRL
+Gui.KEY_CODE_L_ALT
+Gui.KEY_CODE_R_ALT
+Gui.KEY_CODE_L_GUI
+Gui.KEY_CODE_R_GUI
+Gui.KEY_MASK_SHIFT
+Gui.KEY_MASK_CTRL
+Gui.KEY_MASK_ALT
+Gui.showWindow(surf: Image, closure: pointer, onEvent(closure: pointer, action: int32, button: int32, x: int32, y: int32): int32): void
+Gui.setTitle(title: char[*]): void
+Gui.font(height: int32): Image
+Gui.font
+empty(roi: Rect): bool
+width(roi: Rect): int32
+width(rect: Rect, width: int32): void
+height(roi: Rect): int32
+height(rect: Rect, height: int32): void
+setSize(rect: Rect, width: int32, height: int32): void
+positionX(rect: Rect, x: int32): void
+positionY(rect: Rect, y: int32): void
+position(rect: Rect, x: int32, y: int32): void
+adjust(rect: Rect, dx0: int32, dy0: int32, dx1: int32, dy1: int32): void
+translate(rect: Rect, dx: int32, dy: int32): void
+translateX(rect: Rect, dx: int32): void
+translateY(rect: Rect, dy: int32): void
+contains(rect: Rect, x: int32, y: int32): bool
+argb # an 32 bit argb color
+argb.v # value of color
+argb.<?>
+argb.<?>.b # blue component
+argb.<?>.g # green component
+argb.<?>.r # red component
+argb.<?>.a # alpha component
+argb.b # blue component
+argb.g # green component
+argb.r # red component
+argb.a # alpha component
+argb(argb: uint32): argb # cast unsigned integer to argb value
+uint32(value: argb): uint32 # cast argb value to unsigned integer
+sat_s8(c: int32): uint32 # clamp signed gray or color component to fit in 8 bits (0 ... 255)
+sat_u8(c: uint32): uint32 # clamp unsigned gray or color component to fit in 8 bits (0 ... 255)
+_gray(c: uint32): argb
+gray(c: int32): argb # construct a rgb8 color from the given gray value, clamp the input
+gray(c: uint32): argb # construct a rgb8 color from the given gray value, clamp the input
+gray(c: float32): argb # construct a rgb8 color from the given gray value, clamp the input
+gray(c: float64): argb # construct a rgb8 color from the given gray value, clamp the input
+_argb(r: uint32, g: uint32, b: uint32): argb # construct an argb color from the given components
+_argb(a: uint32, r: uint32, g: uint32, b: uint32): argb # construct an argb color from the given components
+argb(r: int32, g: int32, b: int32): argb # construct a rgb8 color from the given components, clamp the input
+argb(r: uint32, g: uint32, b: uint32): argb # construct a rgb8 color from the given components, clamp the input
+argb(r: float32, g: float32, b: float32): argb # construct a rgb8 color from the given components, clamp the input
+argb(r: float64, g: float64, b: float64): argb # construct a rgb8 color from the given components, clamp the input
+argb(a: int32, r: int32, g: int32, b: int32): argb # construct a rgb8 color from the given components, clamp the input
+argb(a: uint32, r: uint32, g: uint32, b: uint32): argb # construct a rgb8 color from the given components, clamp the input
+argb(a: float32, r: float32, g: float32, b: float32): argb # construct a rgb8 color from the given components, clamp the input
+argb(a: float64, r: float64, g: float64, b: float64): argb # construct a rgb8 color from the given components, clamp the input
+ach(color: argb): int32 # get the Alpha channel of the color
+rch(color: argb): int32 # get the Red channel of the color
+gch(color: argb): int32 # get the Green channel of the color
+bch(color: argb): int32 # get the Blue channel of the color
+lum(color: argb): int32 # get the luminosity of the color (0.299 * color.r + 0.587 * color.g + 0.114 * color.b)
+hue(rgb: argb): uint32 # get the hue of the color
+mix_s8(t: int32, a: uint32, b: uint32): int32
+mix_s16(t: int32, a: uint32, b: uint32): int32
+mix_rgb8(t: int32, a: argb, b: argb): argb
+lerpLut(lut: argb[], colors: argb[]): void # linear interpolate a lookup-table with the given colors
+alphaLut(lut: uint32[], hardness: int32, alpha: int32, reflect: bool): void # linear interpolate a alpha lookup-table with the given colors
+vec4f(rgb: argb): vec4f # convert an argb color to a floating point vector
+argb(vec: vec4f): argb # convert a floating point vector to an argb color
+lum(vec: vec4f): float32 # calculate the luminosity of a color
+rgb2hsl(rgb: vec4f): vec4f # Convert color from Rgb color space to Hsl color space
+hsl2rgb(hsl: vec4f): vec4f # Convert color from Hsl color space to Rgb color space
+Image(width: int32, height: int32, depth: int32): Image # Create an image with the given with, height and depth
+Image(fileName: char[*], depth: int32): Image # Create an image by opening an image file
+Image(fileName: char[*]): Image # Create an image by opening an image file
+clip(image: Image, roi: Rect): bool # Clip the rectangle against the given image boundaries
+set(image: Image, x: int32, y: int32, color: argb): void # Set the the color of a pixel at the given position
+drawAntiAliased
+fillRect(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, incl: int32, color: uint32): void # Fill a rectangle on the `image` specified by the coordinates with the given `color`
+fillRect(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, color: uint32): void # Fill a rectangle on the `image` specified by the coordinates with the given `color`
+drawRect(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, width: int32, color: uint32): void # Draw a rectangle on the `image` specified by the coordinates with the given `width` and `color`
+drawRect(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, color: uint32): void # Draw a rectangle on the `image` specified by the coordinates with the given `color`
+fillRect(image: Image, roi: Rect, color: uint32): void # Fill a rectangle on the `image` specified by `roi` with the given `color`
+drawRect(image: Image, roi: Rect, color: uint32): void # Draw a rectangle on the `image` specified by `roi` with the given `color`
+fillRRect(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, rx: int32, ry: int32, color: uint32): void # Fill a rounded rectangle on `image` specified by the coordinates and rounding, with the given `color`
+drawRRect(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, rx: int32, ry: int32, color: uint32): void # Draw a rounded rectangle on `image` specified by the coordinates and rounding, with the given `color`
+fillRRect(image: Image, x1: int32, y1: int32, x2: int32, y2: int32, r: int32, color: uint32): void # Fill the given rectangle rounding the corners using the given radius
+drawRRect(image: Image, x1: int32, y1: int32, x2: int32, y2: int32, r: int32, color: uint32): void # Draw the given rectangle rounding the corners using the given radius
+fillRRect(image: Image, roi: Rect, rx: int32, ry: int32, color: uint32): void # Fill the given rectangle rounding the corners using the given radius
+fillRRect(image: Image, roi: Rect, r: int32, color: uint32): void # Fill the given rectangle rounding the corners using the given radius
+fillOval(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, color: uint32): void
+drawOval(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, color: uint32): void
+fillOval(image: Image, roi: Rect, color: uint32): void # Fill a ellipse on the `image` specified by `roi` with the given `color`
+drawOval(image: Image, roi: Rect, color: uint32): void # Draw an ellipse on the `image` specified by `roi` with the given `color`
+drawLineIncl(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, color: uint32): void # Draw a line, including ending pixel
+drawLine(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, color: uint32): void # Draw a line between the given coordinates(excluding the rightmost bottom pixel)
+drawBezier(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, x2: int32, y2: int32, color: uint32): void # Draw a quadratic bezier curve
+drawBezier(image: Image, x0: int32, y0: int32, x1: int32, y1: int32, x2: int32, y2: int32, x3: int32, y3: int32, color: uint32): void # Draw a cubic bezier curve
+fill(image: Image, color: uint32): Image # Fill the entire image with the given color
+drawText(image: Image, x: int32, y: int32, font: Image, text: char[*], color: int32): void
+blend(image: Image, x0: int32, y0: int32, src: Image, roi: Rect, extra: pointer, blend(extra: pointer, base: argb, with: argb): argb): void # copy the `src` image to the destination with an optional blend method
+blend(image: Image, x0: int32, y0: int32, src: Image, roi: Rect, blend(base: vec4f, with: vec4f): vec4f): void # copy the `src` image to the destination with an optional blend method
+blend(image: Image, roi: Rect, col: argb): void # fill the destination with the given `col` (alpha channel is used)
+blendAlpha(image: Image, x: int32, y: int32, src: Image, roi: Rect, alpha: int32): void # copy the `src` image to the destination with the given transparency
+blendDstAlpha(image: Image, x: int32, y: int32, src: Image, roi: Rect): void # copy the `src` image to the destination masked with destination alpha
+copy(image: Image, x: int32, y: int32, src: Image, roi: Rect): void # copy or convert `src` image to the destination `image`
+Image(copy: Image): Image # Create an image by copying another one
+tile(image: Image, x: int32, y: int32, src: Image, roi: Rect): void # copy the `src` image multiple times so it fills the whole `image`
+eval(image: Image, roi: Rect, aspect: float32, time: float32, eval(in: vec4f): vec4f): void # Fill the surface by evaluating the given function for each pixel
+transform(image: Image, rect: Rect, src: Image, roi: Rect, interpolate: int32, mat: mat4f): void # Copy one image to another using a transformation matrix [scale, rotate, translate, shear, perspective, etc]
+resize(image: Image, rect: Rect, src: Image, roi: Rect, interpolate: int32): void # @public
+Image(image: Image, width: int32, height: int32, align: int32, maxScale: float64): Image # Create an image by copying another one using a custom width and height
+Image(fileName: char[*], width: int32, height: int32, depth: int32, align: int32, maxScale: float64): Image # Create an image by opening an image file with custom width and height
+Image(fileName: char[*], width: int32, height: int32, depth: int32, align: int32): Image # Create an image by opening an image file with custom width and height
+Image(fileName: char[*], width: int32, height: int32, depth: int32): Image # Create an image by opening an image file with custom width and height
+blur(image: Image, radius: int32, sigma: float64): void # emulated implementation of blur function
+colorMap(image: Image, roi: Rect, lut: argb[256]): void # apply a color lookup table to each pixel defined by the `roi` on the `image`
+colorMat(image: Image, roi: Rect, mat: mat4f): void # apply a color matrix to each pixel defined by the `roi` on the `image`
+Style
+Style.dark
+Style.light
+Style.blue
+Style.green
+Style.gray
+Style.orange
+Style.red
+Style.magenta
+Style.cyan
+Style.theme
+Style.accent
+Style.align
+Style.padding
+Style.font
+Style.format
+Style.backgroundColor
+Style.hoveredColor
+Style.focusedColor
+Style.valueColor
+Style.textColor
+Style.top
+Style.left
+Style.right
+Style.bottom
+Style.center
+Style.topLeft
+Style.topRight
+Style.bottomLeft
+Style.bottomRight
+Style.vertical
+Style.verticalTop
+Style.verticalBottom
+Style.horizontal
+Style.horizontalLeft
+Style.horizontalRight
+Style.fill
+Style.hovered
+Style.pressed
+Style.focused
+Style.padded(rect: Rect, padding: int32): void
+Style.measure(this: Style, rect: Rect, text: char[*]): void
+Style.align(parent: Rect, rect: Rect, align: int32): void # Align one rect containing text relative to its container
+Style.align(this: Style, parent: Rect, rect: Rect, value: char[*], align: int32): void
+Style.align(this: Style, parent: Rect, rect: Rect, value: char[*]): void
+Style.setColor(style: Style, background: argb, accent: argb): void
+Style.vertical(align: int32): bool
+Style.horizontal(align: int32): bool
+KeyEvent
+KeyEvent.release
+KeyEvent.isShift
+KeyEvent.isCtrl
+KeyEvent.isAlt
+KeyEvent.repeat
+KeyEvent.key
+TouchEvent
+TouchEvent.release
+TouchEvent.isShift
+TouchEvent.isCtrl
+TouchEvent.isAlt
+TouchEvent.clicks
+TouchEvent.button
+TouchEvent.dx
+TouchEvent.dy
+TouchEvent.x
+TouchEvent.y
+TouchEvent.test(event: TouchEvent, rect: Rect): bool
+TouchEvent.isMotion(event: TouchEvent): bool
+TouchEvent.isPress(event: TouchEvent): bool
+TouchEvent.isLongPress(event: TouchEvent): bool
+TouchEvent.isPress(event: TouchEvent, button: int32): bool
+View # View is the base class of all user interface elements.\nit has width and height, forming a rectangular shape on screen.\nby it's own a view has no position, it must be positioned in a layout.
+View.width # fixed or minimum width of the view
+View.height # fixed or minimum height of the view
+View.enabled # the view accepts any user input(event) or not
+View.focusable # the view can be active(focused) or not
+View.parent
+View.style
+View.data # user attached data
+View.onClick(this: View): bool
+View.onClick(this: View): bool
+View.onReset(this: View): bool
+View.onReset(this: View): bool
+View.onCreate(this: View, parent: View): void
+View.onCreate(this: View, parent: View): void
+View.onDestroy(this: View): void
+View.onDestroy(this: View): void
+View.onKeyEvent(this: View, event: KeyEvent): bool
+View.onKeyEvent(this: View, event: KeyEvent): bool
+View.onTouchEvent(this: View, rect: Rect, event: TouchEvent): bool
+View.onTouchEvent(this: View, rect: Rect, event: TouchEvent): bool
+View.onMeasure(this: View, rect: Rect): bool
+View.onMeasure(this: View, rect: Rect): bool
+View.onDraw(this: View, offs: Image, rect: Rect): void
+View.onDraw(this: View, offs: Image, rect: Rect, state: int32): void
+View.onDraw(this: View, offs: Image, rect: Rect, text: char[*], value: char[*]): void
+invalidate(view: View, layout: bool): void
+focus(view: View): void
+Layout # Layout is a view containing other views positioned by it.\nthe Layout class does not clip its children.\nthe size of the Layout class should contain all the views.
+Layout.Item
+Layout.Item.rect
+Layout.Item.view
+Layout.Item.align
+Layout.separator
+Layout.itemCount
+Layout.itemCapacity
+Layout.items
+Layout.hoveredIndex
+Layout.pressedIndex
+Layout.focusedIndex
+Layout.paddingTop
+Layout.paddingLeft
+Layout.paddingRight
+Layout.paddingBottom
+Layout.orientation # Vertical, horizontal or other orientation of the layout\nzero represents a stack(Qt) or frame(Android) layout (all child elements are placed on top of each other)\nnegative value represents a column layout, specifying the number of columns to be used\npositive value represents a row layout, specifying the number of rows to be used
+Layout.clearState(this: Layout, mode: int32): bool
+Layout.getPressed(this: Layout): View
+Layout.getFocused(this: Layout): View
+Layout.setFocused(this: Layout, focus: View): bool
+Layout.capacity(this: Layout, capacity: int32): Layout
+Layout.addItems(this: Layout, align: int32, views: View[]): Layout
+Layout.padding(this: Layout, top: int32, left: int32, right: int32, bottom: int32): Layout
+Layout.onClick(this: Layout): bool
+Layout.onReset(this: Layout): bool
+Layout.onCreate(this: Layout, parent: View): void
+Layout.onDestroy(this: Layout): void
+Layout.onKeyEvent(this: Layout, event: KeyEvent): bool
+Layout.onTouchEvent(this: Layout, rect: Rect, event: TouchEvent): bool
+Layout.onMeasure(this: Layout, measured: Rect): bool
+Layout.onLayout(this: Layout, rect: Rect): void
+Layout.addPadding(this: Layout, rect: Rect, multiplier: int32): void
+Layout.verticalLayout(this: Layout, measured: Rect, cols: int32): void
+Layout.horizontalLayout(this: Layout, measured: Rect, rows: int32): void
+Layout.onLayout(this: Layout, measured: Rect): void
+Layout.onDraw(this: Layout, offs: Image, parent: Rect): void
+Layout.Custom(rowsCols: int32, align: int32, items: View[]): Layout
+Layout.Row(items: View[]): Layout
+Layout.Column(items: View[]): Layout
+Layout.Frame(items: View[]): Layout
+Widget # Widget is a special kind of layout, which can clip the content of its elements.\na widget may clip its children and apply scrolling to them, even show a scrollbar.
+Widget.measure
+Widget.redraw
+Widget.focus
+Widget.scrollX
+Widget.scrollY
+Widget.focusNext(view: View, prev: bool): bool
+Widget.addItems(this: Widget, align: int32, views: View[]): Widget
+Widget.addItems(this: Widget, views: View[]): Widget
+Widget.theme(this: Widget, background: argb, accent: argb): Widget
+Widget.theme(this: Widget, background: argb): Widget
+Widget.focus(this: Widget, value: View): Widget
+Widget.padding(this: Widget, padding: int32): Widget
+Widget.padding(this: Widget, vertical: int32, horizontal: int32): Layout
+Widget.padding(this: Layout, top: int32, left: int32, right: int32, bottom: int32): Layout
+Widget.onCreate(this: Widget, parent: View): void
+Widget.onKeyEvent(this: Widget, event: KeyEvent): bool
+Widget.onMeasure(this: Widget, measured: Rect): bool
+Widget.onDraw(this: Widget, offs: Image, rect: Rect): void
+getWidget(view: View): Widget
+invalidate(view: View, layout: bool): void
+invalidate(view: View): void
+focus(view: View): void
+isFocused(view: View): bool
+isPressed(view: View): bool
+isDirty(view: View): bool
+Button
+Button.text
+Button.onMeasure(this: Button, rect: Rect): bool
+Button.onDraw(this: Button, offs: Image, rect: Rect): void
+Switch
+Switch.onOff
+Switch.text
+Switch.states
+Switch.selected
+Switch.resetValue
+Switch.clickToFocus
+Switch.checked(this: Switch): bool
+Switch.onUpdate(this: Switch, selected: int32): bool
+Switch.onUpdate(this: Switch, selected: int32): bool
+Switch.onReset(this: Switch): bool
+Switch.onClick(this: Switch): bool
+Switch.onCreate(this: Switch, parent: View): void
+Switch.onKeyEvent(this: Switch, event: KeyEvent): bool
+Switch.onTouchEvent(this: Switch, rect: Rect, event: TouchEvent): bool
+Switch.onMeasure(this: Switch, rect: Rect): bool
+Switch.onDraw(this: Switch, offs: Image, rect: Rect): void
+Slider
+Slider.text
+Slider.value
+Slider._value
+Slider.minimum
+Slider.maximum
+Slider.stepSize
+Slider.resetValue
+Slider.onUpdate(this: Slider, value: float64): bool
+Slider.onUpdate(this: Slider, value: float64): bool
+Slider.onReset(this: Slider): bool
+Slider.onCreate(this: Slider, parent: View): void
+Slider.onKeyEvent(this: Slider, event: KeyEvent): bool
+Slider.onTouchEvent(this: Slider, rect: Rect, event: TouchEvent): bool
+Slider.onMeasure(this: Slider, rect: Rect): bool
+Slider.onDrawSlider(this: Slider, offs: Image, rect: Rect): void
+Slider.onDrawSlider(this: Slider, offs: Image, rect: Rect): void
+Slider.onDraw(this: Slider, offs: Image, rect: Rect): void
+Histogram
+Histogram.lines
+Histogram.color
+Histogram.data
+Histogram.update(this: Histogram, image: Image): void
+Histogram.onUpdate(this: Histogram, idx: int32, value: int32): bool
+Histogram.onUpdate(this: Histogram, idx: int32, value: int32): bool
+Histogram.onReset(this: Histogram): bool
+Histogram.onCreate(this: Histogram, parent: View): void
+Histogram.onTouchEvent(this: Histogram, rect: Rect, event: TouchEvent): bool
+Histogram.onMeasure(this: Histogram, rect: Rect): bool
+Histogram.onDraw(this: Histogram, offs: Image, rect: Rect): void
+DebugView # debug view to count draws
+DebugView.text
+DebugView.started
+DebugView.maxDuration
+DebugView.durations
+DebugView.measures
+DebugView.draws
+DebugView.startTimer(this: DebugView): void
+DebugView.update(this: DebugView): void
+DebugView.onClick(this: DebugView): bool
+DebugView.onReset(this: DebugView): bool
+DebugView.onCreate(this: DebugView, parent: View): void
+DebugView.onMeasure(this: DebugView, rect: Rect): bool
+DebugView.onDraw(this: DebugView, offs: Image, rect: Rect): void
+Panel
+Panel.visible
+Panel.visible(this: Panel, value: bool): bool
+Panel.onMeasure(this: Panel, rect: Rect): bool
+TabPage
+TabPage.tabs
+TabPage.active
+TabPage.background
+TabPage.onCreate(this: TabPage, parent: View): void
+TabPage.onMeasurePage(layout: Layout, rect: Rect): bool
+TabPage.onDrawPage(panel: Layout, offs: Image, rect: Rect): void
+TabPage.onDrawBar(tabs: Layout, offs: Image, rect: Rect): void
+TabPage.onDrawTab(tab: Button, offs: Image, rect: Rect): void
+TabPage.onDrawSeparator(this: View, offs: Image, rect: Rect): void
+TabPage.onClickTab(button: Button): bool
+TabPage.addItems(this: TabPage, text: char[*], align: int32, views: View[]): TabPage
+Select
+Select.text
+Select.states
+Select.selected
+Select.header
+Select.panel
+Select.selectedData(select: Select): variant
+Select.expand(select: Select, value: bool): bool
+Select.onItemClick(select: Select, view: Button): bool
+Select.setSelectedIndex(select: Select, index: int32): Select
+Select.addItems(this: Select, align: int32, views: View[]): Select
+Select.addItem(this: Select, text: char[*], data: variant): Select
+Select.addItem(this: Select, text: char[*]): Select
+FxWidget # Widget used to display controls in image processing demos
+FxWidget.showOriginal
+FxWidget.align
+FxWidget.margin
+FxWidget.radius
+FxWidget.onTouchEvent(this: FxWidget, rect: Rect, event: TouchEvent): bool
+FxWidget.onKeyEvent(this: FxWidget, event: KeyEvent): bool
+FxWidget.onMeasure(this: FxWidget, measured: Rect): bool
+FxWidget.onDraw(this: FxWidget, offs: Image, rect: Rect): void
+FxWidget.onProcess(widget: FxWidget): void
+FxWidget.onProcess(widget: FxWidget): void
+Widget(width: int32, height: int32, style: Style): Widget
+Widget(width: int32, height: int32): Widget
+FxWidget(onProcess(widget: FxWidget): void, views: View[]): FxWidget
+FxWidget(views: View[]): FxWidget
+hasFocused(this: Layout, items: View[]): bool
+hasPressed(this: Layout, items: View[]): bool
+Gui
+Gui.showWindow(offscreen: Image, widget: Widget): void
+Gui.showWindow(widget: Widget): void
+Mesh(fileName: char[*]): Mesh # Create a mesh by opening a file
+Camera
+Camera.position
+Camera.forward
+Camera.right
+Camera.up
+Camera.projection(fov: float32, asp: float32, n: float32, f: float32): mat4f # create an orthographic or perspective projection matrix
+Camera.lookAt(position: vec4f, target: vec4f, up: vec4f): Camera # Create a camera at the given `position` looking at the given `target`
+Camera.matrix(camera: Camera): mat4f # get the matrix of the camera, which can be multiplied with the projection matrix
+Camera.matrix(camera: Camera, fov: float32, asp: float32, n: float32, f: float32): mat4f # get the matrix of the camera multiplied with the projection matrix
+Camera.move(camera: Camera, direction: vec4f, amount: float32): void # Move the camera in the given `direction` with the given `amount`
+Camera.rotate(camera: Camera, orbit: vec4f, direction: vec4f, amount: float32): void # Rotate the camera around `orbit` in the given `direction` with the given `amount`
+Gui
+Gui.showWindow(surf: Image): void # Show the surface in a window
+Gui.showWindow(image: Image, onEvent(action: int32, button: int32, ex: int32, ey: int32): int32): void # Show the surface in a window
+Gui.showWindow(width: int32, height: int32, image0: Image, image1: Image, image2: Image): void # Show the surfaces in a window clicking on the window toggles the shown surface
+Gui.showWindow(image0: Image, image1: Image, image2: Image): void
+Gui.showWindow(image0: Image, image1: Image): void
+Gui.showWindow(width: int32, height: int32, animationResolution: int32, eval(in: vec4f): vec4f): void # Show or animate the the procedural image generated by the `eval` function
+Gui.showWindow(width: int32, height: int32, eval(in: vec4f): vec4f): void
+Gui.showWindow(w: int32, h: int32, fovy: float32, mesh: Mesh): void # Show the mesh in a window

@@ -136,10 +136,10 @@ Slider imgRatio = {
 
 void onProcess(FxWidget ui) {
 	Rect to = {
-		w: offs.width() - 100;
-		h: offs.height() - 100;
-		x: (offs.width() - to.w) / 2;
-		y: (offs.height() - to.h) / 2;
+		x0: 50;
+		y0: 50;
+		x1: offs.width() - to.x0;
+		y1: offs.height() - to.y0;
 	};
 	vec4f center = vec4f(back.width() / 2, back.height() / 2, 0, 0);
 	mat4f mat = translation(center, 1)
@@ -150,7 +150,7 @@ void onProcess(FxWidget ui) {
 		.mul(rotation(vec4f(0, 0, -1, 0), Math.radians(rotate.value)))
 		.mul(translation(vec4f(translateX.value, translateY.value, 0, 0), 1))
 		.mul(translation(center, -1))
-		.mul(fitMatrix(back, to.w, to.h, fitWidth.checked(), fitHeight.checked(), 1, 0));
+		.mul(fitMatrix(back, to.width(), to.height(), fitWidth.checked(), fitHeight.checked(), 1, 0));
 	debug("transform", mat.m);
 	offs.transform(to, back, null, quality.checked() ? 1 : 0, mat);
 }

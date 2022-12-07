@@ -34,19 +34,59 @@ inline "lib/math/Vector2d.ci"?;
 inline "lib/text/cstr.ci";
 // graphics library extension
 
-/// adjust the rectangle position and size
-void adjust(Rect roi&, int x, int y, int w, int h) {
-	roi.x += x;
-	roi.y += y;
-	roi.w += w;
-	roi.h += h;
+bool empty(const Rect roi&) {
+// fixme: inline empty(const Rect roi&) = roi.x0 >= roi.x1 || roi.y0 >= roi.y1;
+	return roi.x0 >= roi.x1 || roi.y0 >= roi.y1;
 }
 
-/// adjust the rectangle position and size
-inline adjust(Rect roi&, int w, int h) = roi.adjust(-w, -h, 2 * w, 2 * h);
+inline width(const Rect roi&) = roi.x1 - roi.x0;
+void width(Rect rect&, int width) {
+	rect.x1 = rect.x0 + width;
+}
 
-/// adjust the rectangle position and size
-inline adjust(Rect roi&, int s) = roi.adjust(-s, -s, 2 * s, 2 * s);
+inline height(const Rect roi&) = roi.y1 - roi.y0;
+void height(Rect rect&, int height) {
+	rect.y1 = rect.y0 + height;
+}
+
+void setSize(Rect rect&, int width, int height) {
+	rect.x1 = rect.x0 + width;
+	rect.y1 = rect.y0 + height;
+}
+
+void positionX(Rect rect&, int x) {
+	rect.x1 = x + rect.x1 - rect.x0;
+	rect.x0 = x;
+}
+void positionY(Rect rect&, int y) {
+	rect.y1 = y + rect.y1 - rect.y0;
+	rect.y0 = y;
+}
+
+void position(Rect rect&, int x, int y) {
+	rect.positionX(x);
+	rect.positionY(y);
+}
+
+void adjust(Rect rect&, int dx0, int dy0, int dx1, int dy1) {
+	rect.x0 += dx0;
+	rect.y0 += dy0;
+	rect.x1 += dx1;
+	rect.y1 += dy1;
+}
+inline translate(Rect rect&, int dx, int dy) = rect.adjust(dx, dy, dx, dy);
+void translateX(Rect rect&, int dx) {
+	rect.x0 += dx;
+	rect.x1 += dx;
+}
+void translateY(Rect rect&, int dy) {
+	rect.y0 += dy;
+	rect.y1 += dy;
+}
+
+bool contains(const Rect rect&, int x, int y) {
+	return x >= rect.x0 && x < rect.x1 && y >= rect.y0 && y < rect.y1;
+}
 
 inline "lib/color.ci";
 inline "lib/image.ci";
@@ -63,9 +103,6 @@ inline "lib/micro.ui.ci";
 
 inline "lib/mesh.ci";
 inline "lib/camera.ci";
-
-///@public
-inline resize(Image image, const Rect rect&, const Image src, const Rect roi&, int interpolate) = image.transform(rect, src, roi, interpolate, null);
 
 static struct Gui {
 /// Show the surface in a window
@@ -942,6 +979,66 @@ mat4f scale(const vec4f direction&, float32 amount) {
 		wx: 0; wy: 0; wz: 0; ww: 1;
 	};
 }
+
+/**
+ * Build the inverse of the matrix
+ * adapted from: https://github.com/glslify/glsl-inverse/blob/master/index.glsl
+ */
+mat4f inverse(const mat4f mat&) {
+	float32 a00 = mat.xx;
+	float32 a01 = mat.xy;
+	float32 a02 = mat.xz;
+	float32 a03 = mat.xw;
+
+	float32 a10 = mat.yx;
+	float32 a11 = mat.yy;
+	float32 a12 = mat.yz;
+	float32 a13 = mat.yw;
+
+	float32 a20 = mat.zx;
+	float32 a21 = mat.zy;
+	float32 a22 = mat.zz;
+	float32 a23 = mat.zw;
+
+	float32 a30 = mat.wx;
+	float32 a31 = mat.wy;
+	float32 a32 = mat.wz;
+	float32 a33 = mat.ww;
+
+	float32 b00 = a00 * a11 - a01 * a10;
+	float32 b01 = a00 * a12 - a02 * a10;
+	float32 b02 = a00 * a13 - a03 * a10;
+	float32 b03 = a01 * a12 - a02 * a11;
+	float32 b04 = a01 * a13 - a03 * a11;
+	float32 b05 = a02 * a13 - a03 * a12;
+	float32 b06 = a20 * a31 - a21 * a30;
+	float32 b07 = a20 * a32 - a22 * a30;
+	float32 b08 = a20 * a33 - a23 * a30;
+	float32 b09 = a21 * a32 - a22 * a31;
+	float32 b10 = a21 * a33 - a23 * a31;
+	float32 b11 = a22 * a33 - a23 * a32;
+
+	float32 det = b00 * b11 - b01 * b10 + b02 * b09 + b03 * b08 - b04 * b07 + b05 * b06;
+
+	return {
+		xx: (a11 * b11 - a12 * b10 + a13 * b09) / det;
+		xy: (a02 * b10 - a01 * b11 - a03 * b09) / det;
+		xz: (a31 * b05 - a32 * b04 + a33 * b03) / det;
+		xw: (a22 * b04 - a21 * b05 - a23 * b03) / det;
+		yx: (a12 * b08 - a10 * b11 - a13 * b07) / det;
+		yy: (a00 * b11 - a02 * b08 + a03 * b07) / det;
+		yz: (a32 * b02 - a30 * b05 - a33 * b01) / det;
+		yw: (a20 * b05 - a22 * b02 + a23 * b01) / det;
+		zx: (a10 * b10 - a11 * b08 + a13 * b06) / det;
+		zy: (a01 * b08 - a00 * b10 - a03 * b06) / det;
+		zz: (a30 * b04 - a31 * b02 + a33 * b00) / det;
+		zw: (a21 * b02 - a20 * b04 - a23 * b00) / det;
+		wx: (a11 * b07 - a10 * b09 - a12 * b06) / det;
+		wy: (a00 * b09 - a01 * b07 + a02 * b06) / det;
+		wz: (a31 * b01 - a30 * b03 - a32 * b00) / det;
+		ww: (a20 * b03 - a21 * b01 + a22 * b00) / det;
+	};
+}
 /// convert a 64 bit value between Little endian and Big endian
 uint64 swapBytes(uint64 x) {
 	x = (x & 0x00000000ffffffff) << 32 | (x & 0xffffffff00000000) >> 32;
@@ -1293,7 +1390,8 @@ define Lo16(int32 a) = int32(a & 0xffff);			// Lo16 part
 define Hi16(int32 a) = Lo16(a >> 16);				// Hi16 part
 define Lo8(int32 a) = int32(a & 0xff);				// Lo16 part
 define Hi8(int32 a) = Lo8(a >> 8);					// Hi16 part
-*//// A 4d vector (4x float32)
+*/
+/// A 4d vector (4x float32)
 struct vec4f: 0 {
 	struct {
 		/// X component of the vector
@@ -1444,7 +1542,8 @@ inline lerp(float32 t, vec4f lhs, vec4f rhs) = vec4f(Math.lerp(t, lhs.x, rhs.x),
 
 inline float32(vec4f &vec) = float32(vec.w);
 inline bool(vec4f vec) = bool(vec.x && vec.y && vec.z && vec.w);
-*//// A 2d vector (2x float64)
+*/
+/// A 2d vector (2x float64)
 struct vec2d: 0 {
 	struct {
 		/// X component of the vector
@@ -4608,72 +4707,63 @@ inline drawOval(Image image, int x0, int y0, int x1, int y1, uint32 color) = ima
 
 /// Fill a ellipse on the `image` specified by `roi` with the given `color`
 void fillOval(Image image, const Rect roi&, uint32 color) {
-	if (roi.w <= 0 || roi.h <= 0) {
-		// empty rectangle
+	if (roi.empty()) {
 		return;
 	}
-	image.fillOval(roi.x, roi.y, roi.x + roi.w, roi.y + roi.h, color);
+	image.fillOval(roi.x0, roi.y0, roi.x1, roi.y1, color);
 }
 
 /// Draw an ellipse on the `image` specified by `roi` with the given `color`
 void drawOval(Image image, const Rect roi&, uint32 color) {
-	if (roi.w <= 0 || roi.h <= 0) {
-		// empty rectangle
+	if (roi.empty()) {
 		return;
 	}
-	image.drawOval(roi.x, roi.y, roi.x + roi.w, roi.y + roi.h, color);
+	image.drawOval(roi.x0, roi.y0, roi.x1, roi.y1, color);
 }
 /// copy the `src` image to the destination with an optional blend method
 void blend(Image image, int32 x0, int32 y0, const Image src, const Rect roi&, pointer extra, argb blend(pointer extra, argb base, argb with)) {
 	static if (preferNativeCalls && typename(Image.blend) != null) {
 		return Image.blend(image, x0, y0, src, roi, extra, pointer(blend));
 	}
-	// clip roi with source imag
-	Rect r = {
-		x: roi != null ? roi.x : 0;
-		y: roi != null ? roi.y : 0;
-		w: roi != null ? roi.w : src.width();
-		h: roi != null ? roi.h : src.height();
+
+	// clip roi with source image
+	Rect rect = {
+		x0: roi != null ? roi.x0 : 0;
+		y0: roi != null ? roi.y0 : 0;
+		x1: roi != null ? roi.x1 : src.width();
+		y1: roi != null ? roi.y1 : src.height();
 	};
 	if (x0 < 0) {
-		r.x -= x0;
-		r.w += x0;
+		rect.x0 -= x0;
 	}
 	if (y0 < 0) {
-		r.y -= y0;
-		r.h += y0;
+		rect.y0 -= y0;
 	}
-	if (!src.clip(&r)) {
+	if (!src.clip(&rect)) {
 		// nothing to get
 		return;
 	}
 
 	// clip also destination
-	r.x = x0;
-	r.y = y0;
-	if (x0 < 0) {
-		r.w -= x0;
-	}
-	if (y0 < 0) {
-		r.h -= y0;
-	}
-	if (!image.clip(&r)) {
+	rect.positionX(x0 < 0 ? 0 : x0);
+	rect.positionY(y0 < 0 ? 0 : y0);
+	if (!image.clip(&rect)) {
 		// nothing to set
 		return;
 	}
 
 	assert(image.depth() == 32 && src.depth() == 32);
 	if (blend == null) {
-		for (int y = r.y; y < r.y + r.h; y += 1) {
-			for (int x = r.x; x < r.x + r.w; x += 1) {
+		for (int y = rect.y0; y < rect.y1; y += 1) {
+			for (int x = rect.x0; x < rect.x1; x += 1) {
 				image.set(x, y, src.get(x - x0, y - y0));
 			}
 		}
 		return;
 	}
 
-	for (int y = r.y; y < r.y + r.h; y += 1) {
-		for (int x = r.x; x < r.x + r.w; x += 1) {
+	for (int y = rect.y0; y < rect.y1; y += 1) {
+		for (int x = rect.x0; x < rect.x1; x += 1) {
 			argb base = argb(image.get(x, y));
 			argb with = argb(src.get(x - x0, y - y0));
 			image.set(x, y, blend(extra, base, with));
@@ -4698,7 +4788,7 @@ void blend(Image image, int32 x0, int32 y0, const Image src, const Rect roi&, ve
 /// fill the destination with the given `col` (alpha channel is used)
 void blend(Image image, const Rect roi&, argb col) {
 	static if (preferNativeCalls && typename(Image.blend.color) != null) {
-		return image.blend(roi != null ? roi.x : 0, roi != null ? roi.y : 0, image, roi, col, Image.blend.color);
+		return image.blend(roi != null ? roi.x0 : 0, roi != null ? roi.y0 : 0, image, roi, col, Image.blend.color);
 	}
 	argb blender(const argb color&, argb base, argb with) {
 		int alpha = ach(color);
@@ -4709,7 +4799,7 @@ void blend(Image image, const Rect roi&, argb col) {
 			a: alpha;
 		};
 	}
-	return image.blend(roi != null ? roi.x : 0, roi != null ? roi.y : 0, image, roi, col, blender);
+	return image.blend(roi != null ? roi.x0 : 0, roi != null ? roi.y0 : 0, image, roi, col, blender);
 }
 
 /// copy the `src` image to the destination with the given transparency
@@ -4762,10 +4852,10 @@ Image Image(Image copy) {
 /// copy the `src` image multiple times so it fills the whole `image`
 void tile(Image image, int x, int y, Image src, const Rect roi&) {
 	Rect rect = {
-		x: roi != null ? roi.x : 0;
-		y: roi != null ? roi.y : 0;
-		w: roi != null ? roi.w : src.width();
-		h: roi != null ? roi.h : src.height();
+		x0: roi != null ? roi.x0 : 0;
+		y0: roi != null ? roi.y0 : 0;
+		x1: roi != null ? roi.x1 : src.width();
+		y1: roi != null ? roi.y1 : src.height();
 	};
 
 	if (!src.clip(&rect)) {
@@ -4773,15 +4863,15 @@ void tile(Image image, int x, int y, Image src, const Rect roi&) {
 	}
 
 	if (x < 0) {
-		x = -(-x % rect.w);
+		x = -(-x % rect.width());
 	}
 	if (y < 0) {
-		y = -(-y % rect.h);
+		y = -(-y % rect.height());
 	}
 	int width = image.width();
 	int height = image.height();
-	for (int j = y; j < height; j += rect.h) {
-		for (int i = x; i < width; i += rect.w) {
+	for (int j = y; j < height; j += rect.height()) {
+		for (int i = x; i < width; i += rect.width()) {
 			image.copy(i, j, src, rect);
 		}
 	}
@@ -4790,10 +4880,10 @@ void tile(Image image, int x, int y, Image src, const Rect roi&) {
 /// Fill the surface by evaluating the given function for each pixel
 void eval(Image image, const Rect roi&, float32 aspect, float32 time, vec4f eval(vec4f in)) {
 	Rect rect = {
-		x: roi != null ? roi.x : 0;
-		y: roi != null ? roi.y : 0;
-		w: roi != null ? roi.w : image.width();
-		h: roi != null ? roi.h : image.height();
+		x0: roi != null ? roi.x0 : 0;
+		y0: roi != null ? roi.y0 : 0;
+		x1: roi != null ? roi.x1 : image.width();
+		y1: roi != null ? roi.y1 : image.height();
 	};
 
 	if (!image.clip(&rect)) {
@@ -4806,12 +4896,11 @@ void eval(Image image, const Rect roi&, float32 aspect, float32 time, vec4f eval
 		aspect = w / h;
 	}
 	h *= aspect;
-	int x1 = rect.x + rect.w;
-	int y1 = rect.y + rect.h;
+
 	vec4f in = vec4f(0, 0, 0, time);
-	for (int y = rect.y; y < y1; y += 1) {
+	for (int y = rect.y0; y < rect.y1; y += 1) {
 		in.y = y / h;
-		for (int x = rect.x; x < x1; x += 1) {
+		for (int x = rect.x0; x < rect.x1; x += 1) {
 			in.x = x / w;
 			image.set(x, y, argb(eval(in)));
 		}
@@ -4827,10 +4916,10 @@ void colorMap(Image image, const Rect roi&, const argb lut[256]) {
 
 	// clip roi with source image
 	Rect r = {
-		x: roi != null ? roi.x : 0;
-		y: roi != null ? roi.y : 0;
-		w: roi != null ? roi.w : image.width();
-		h: roi != null ? roi.h : image.height();
+		x0: roi != null ? roi.x0 : 0;
+		y0: roi != null ? roi.y0 : 0;
+		x1: roi != null ? roi.x1 : image.width();
+		y1: roi != null ? roi.y1 : image.height();
 	};
 	if (!image.clip(&r)) {
 		// nothing to set
@@ -4847,8 +4936,8 @@ void colorMap(Image image, const Rect roi&, const argb lut[256]) {
 
 	if (!useLuminosity) {
 		// fast version, r, g, b lookup only
-		for (int y = r.y; y < r.y + r.h; y += 1) {
-			for (int x = r.x; x < r.x + r.w; x += 1) {
+		for (int y = r.y0; y < r.y1; y += 1) {
+			for (int x = r.x0; x < r.x1; x += 1) {
 				argb col = argb(image.get(x, y));
 				col.r = lut[rch(col)].r;
 				col.g = lut[gch(col)].g;
@@ -4875,8 +4964,8 @@ void colorMap(Image image, const Rect roi&, const argb lut[256]) {
 		fxp(1), fxp( 2.028), fxp( 0.000), 0,
 	};
 
-	for (int y = r.y; y < r.y + r.h; y += 1) {
-		for (int x = r.x; x < r.x + r.w; x += 1) {
+	for (int y = r.y0; y < r.y1; y += 1) {
+		for (int x = r.x0; x < r.x1; x += 1) {
 			argb col = argb(image.get(x, y));
 			int32 r = rch(lut[rch(col)]);
 			int32 g = gch(lut[gch(col)]);
@@ -4907,66 +4996,60 @@ void transform(Image image, const Rect rect&, Image src, const Rect roi&, int32 
 	assert(image.depth() == 32);
 
 	Rect dRec = {
-		x: rect != null ? rect.x : 0;
-		y: rect != null ? rect.y : 0;
-		w: rect != null ? rect.w : image.width();
-		h: rect != null ? rect.h : image.height();
+		x0: rect != null ? rect.x0 : 0;
+		y0: rect != null ? rect.y0 : 0;
+		x1: rect != null ? rect.x1 : image.width();
+		y1: rect != null ? rect.y1 : image.height();
 	};
+	Rect sRec = {
+		x0: roi != null ? roi.x0 : 0;
+		y0: roi != null ? roi.y0 : 0;
+		x1: roi != null ? roi.x1 : src.width();
+		y1: roi != null ? roi.y1 : src.height();
+	};
+	if (mat == null) {
+		mat4f scale = {
+			x: vec4f(float32(sRec.width()) / dRec.width(), 0, 0, sRec.x0);
+			y: vec4f(0, float32(sRec.height()) / dRec.height(), 0, sRec.y0);
+			z: vec4f(0, 0, 1, 0);
+			w: vec4f(0, 0, 0, 1);
+		};
+		scale = scale.mul(translation(vec4f(dRec.x0, dRec.y0, 0, 0), -1));
+		return transform(image, rect, src, roi, interpolate, scale);
+	}
+
 	if (!image.clip(&dRec)) {
 		// nothing to set
 		return;
 	}
 
-	Rect sRec = {
-		x: roi != null ? roi.x : 0;
-		y: roi != null ? roi.y : 0;
-		w: roi != null ? roi.w : src.width();
-		h: roi != null ? roi.h : src.height();
-	};
 	if (!src.clip(&sRec)) {
 		// nothing to get
 		return;
 	}
 
-	if (mat == null) {
-		mat4f scale = {
-			x: vec4f(float32(sRec.w) / dRec.w, 0, 0, sRec.x);
-			y: vec4f(0, float32(sRec.h) / dRec.h, 0, sRec.y);
-			z: vec4f(0, 0, 1, 0);
-			w: vec4f(0, 0, 0, 1);
-		};
-		return transform(image, rect, src, roi, interpolate, scale);
-	}
-
 	if (interpolate == 0) {
-		vec4f p = vec4f(0, 0, 0, 1);
-		for (int y = 0; y < dRec.h; y += 1) {
-			int dy = dRec.y + y;
-			p.y = sRec.y + y;
-			for (int x = 0; x < dRec.w; x += 1) {
-				int dx = dRec.x + x;
-				p.x = sRec.x + x;
-				vec4f t = mat.dp4(p);
-				image.set(dx, dy, src.get(t.x, t.y));
+		for (int y = dRec.y0; y < dRec.y1; y += 1) {
+			for (int x = dRec.x0; x < dRec.x1; x += 1) {
+				vec4f t = mat.dph(vec4f(x, y, 0, 1));
+				image.set(x, y, src.get(t.x, t.y));
 			}
 		}
 		return;
 	}
 
-	float32 w = src.width();
-	float32 h = src.height();
-	vec4f p = vec4f(0, 0, 0, 1);
-	for (int y = 0; y < dRec.h; y += 1) {
-		int dy = dRec.y + y;
-		p.y = sRec.y + y;
-		for (int x = 0; x < dRec.w; x += 1) {
-			int dx = dRec.x + x;
-			p.x = sRec.x + x;
-			vec4f t = mat.dph(p);
-			image.set(dx, dy, argb(src.tex(t.x / w, t.y / h)));
+	// fixme: src.tex(x, y) does not center, do: transform.xw += .5; transform.yw += .5;
+	mat4f transform = scale(vec4f(src.width(), src.height(), 0, 0), 1).mul(mat);
+	for (int y = dRec.y0; y < dRec.y1; y += 1) {
+		for (int x = dRec.x0; x < dRec.x1; x += 1) {
+			vec4f t = transform.dph(vec4f(x, y, 0, 1));
+			image.set(x, y, argb(src.tex(t.x, t.y)));
 		}
 	}
 }
+
+///@public
+inline resize(Image image, const Rect rect&, const Image src, const Rect roi&, int interpolate) = image.transform(rect, src, roi, interpolate, null);
 
 /// Create an image by copying another one using a custom width and height
 Image Image(Image image, int width, int height, int align, float64 maxScale) {
@@ -5231,10 +5314,10 @@ void colorMat(Image image, const Rect roi&, const mat4f mat&) {
 
 	// clip roi with source image
 	Rect r = {
-		x: roi != null ? roi.x : 0;
-		y: roi != null ? roi.y : 0;
-		w: roi != null ? roi.w : image.width();
-		h: roi != null ? roi.h : image.height();
+		x0: roi != null ? roi.x0 : 0;
+		y0: roi != null ? roi.y0 : 0;
+		x1: roi != null ? roi.x1 : image.width();
+		y1: roi != null ? roi.y1 : image.height();
 	};
 	if (!image.clip(&r)) {
 		// nothing to set
@@ -5256,8 +5339,8 @@ void colorMat(Image image, const Rect roi&, const mat4f mat&) {
 	int m22 = 65536 * mat.zz;
 	int m23 = 256 * 65536 * mat.zw;
 
-	for (int y = r.y; y < r.y + r.h; y += 1) {
-		for (int x = r.x; x < r.x + r.w; x += 1) {
+	for (int y = r.y0; y < r.y1; y += 1) {
+		for (int x = r.x0; x < r.x1; x += 1) {
 			argb col = argb(image.get(x, y));
 			int r = rch(col);
 			int g = gch(col);
@@ -5334,20 +5417,18 @@ inline drawRect(Image image, int x0, int y0, int x1, int y1, uint32 color) = ima
 
 /// Fill a rectangle on the `image` specified by `roi` with the given `color`
 void fillRect(Image image, const Rect roi&, uint32 color) {
-	if (roi.w <= 0 || roi.h <= 0) {
-		// empty rectangle
+	if (roi.empty()) {
 		return;
 	}
-	image.fillRect(roi.x, roi.y, roi.x + roi.w, roi.y + roi.h, color);
+	image.fillRect(roi.x0, roi.y0, roi.x1, roi.y1, color);
 }
 
 /// Draw a rectangle on the `image` specified by `roi` with the given `color`
 void drawRect(Image image, const Rect roi&, uint32 color) {
-	if (roi.w <= 0 || roi.h <= 0) {
-		// empty rectangle
+	if (roi.empty()) {
 		return;
 	}
-	image.drawRect(roi.x, roi.y, roi.x + roi.w, roi.y + roi.h, 1, color);
+	image.drawRect(roi.x0, roi.y0, roi.x1, roi.y1, 1, color);
 }
 /// an 32 bit argb color
 struct argb: 0 {
@@ -5647,15 +5728,15 @@ struct Switch: View {
 		for (int i = 0; i < this.states.length; i += 1) {
 			Rect measured = {};
 			style.measure(&measured, this.states[i]);
-			if (maxWidth < measured.w) {
-				maxWidth = measured.w;
+			if (maxWidth < measured.width()) {
+				maxWidth = measured.width();
 			}
 		}
 		style.measure(&rect, this.text);
 		if (this.states.length == 0) {
-			rect.w += rect.h * 3 / 2;
+			rect.width(rect.width() + rect.height() * 3 / 2);
 		} else {
-			rect.w += maxWidth;
+			rect.width(rect.width() + maxWidth);
 		}
 		return View.onMeasure(this, &rect);
 	}
@@ -5665,14 +5746,15 @@ struct Switch: View {
 		Style style& = this.style;
 		if (this.states.length == 0) {
 			Rect onOffRect = {
-				x: rect.x;
-				y: rect.y;
-				w: rect.h * 3 / 2;
-				h: rect.h;
+				x0: rect.x0;
+				y0: rect.y0;
+				x1: rect.x0 + rect.height() * 3 / 2;
+				y1: rect.y1;
 			};
 			Style.align(rect, &onOffRect, Style.right);
+			rect.x1 = onOffRect.x0;
 
-			onOffRect.adjust(-style.padding);
+			Style.padded(&onOffRect, -style.padding);
 			uint32 color = style.focusedColor;
 			if (this.checked()) {
 				color = style.valueColor;
@@ -5680,15 +5762,16 @@ struct Switch: View {
 			else if (this.isFocused()) {
 				color = style.hoveredColor;
 			}
-			offs.fillRRect(onOffRect, onOffRect.h / 2, color);
+			offs.fillRRect(onOffRect, onOffRect.height() / 2, color);
 
 			if (this.checked()) {
-				onOffRect.x += rect.h / 2;
+				onOffRect.x0 = onOffRect.x1 - onOffRect.height();
+			} else {
+				onOffRect.x1 = onOffRect.x0 + onOffRect.height();
 			}
 
-			onOffRect.w = onOffRect.h;
+			Style.padded(&onOffRect, -style.padding / 3);
 			offs.fillOval(onOffRect, style.textColor);
-			rect.w -= rect.h * 3 / 2;
 		} else {
 			value = this.states[this.selected];
 		}
@@ -5764,7 +5847,7 @@ struct Slider: View {
 		if (event.clicks < 1) {
 			float64 value = event.dx;
 			if (!event.isShift && value != 0) {
-				value *= float64(this.maximum - this.minimum) / rect.w;
+				value *= float64(this.maximum - this.minimum) / rect.width();
 			}
 			value += this._value;
 			if (value > this.maximum) {
@@ -5777,12 +5860,12 @@ struct Slider: View {
 			return this.onUpdate(this, value);
 		}
 		if (event.release) {
-			if (event.y < rect.y + rect.h - rect.h / 3) {
+			if (event.y < rect.y0 + rect.height() - rect.height() / 3) {
 				// clicking the upper part to focus control
 				return true;
 			}
-			float64 value = event.x - rect.x;
-			value *= float64(this.maximum - this.minimum) / rect.w;
+			float64 value = event.x - rect.x0;
+			value *= float64(this.maximum - this.minimum) / rect.width();
 			return this.onUpdate(this, this.minimum + value);
 		}
 		return View.onTouchEvent(this, rect, event);
@@ -5799,7 +5882,7 @@ struct Slider: View {
 		Rect valueRect = {};
 		style.measure(&valueRect, value);
 		style.measure(&rect, this.text);
-		rect.w += valueRect.w;
+		rect.width(rect.width() + valueRect.width());
 		return View.onMeasure(this, &rect);
 	}
 
@@ -5808,11 +5891,11 @@ struct Slider: View {
 			return;
 		}
 		Style style& = this.style;
-		const int y1 = rect.y + rect.h;
+		const int y1 = rect.y1;
 		const int y0 = y1 - style.padding / 4;
-		const int x0 = rect.x;
-		const int x1 = rect.x + rect.w;
-		const int x = x0 + (this.value - this.minimum) * rect.w / (this.maximum - this.minimum);
+		const int x0 = rect.x0;
+		const int x1 = rect.x1;
+		const int x = x0 + (this.value - this.minimum) * rect.width() / (this.maximum - this.minimum);
 		if (x > x0) {
 			offs.fillRect(x0, y0, x, y1, style.valueColor);
 		}
@@ -5870,10 +5953,10 @@ struct Histogram: View {
 			return View.onTouchEvent(this, rect, event);
 		}
 
-		int px = Math.max(0, rect.w - 256) / 2;
-		int x0 = event.x - rect.x - px;
+		int px = Math.max(0, rect.width() - 256) / 2;
+		int x0 = event.x - rect.x0 - px;
 		int x1 = x0 - event.dx;
-		int y0 = event.y - rect.y;
+		int y0 = event.y - rect.y0;
 		int y1 = y0 - event.dy;
 
 		if (x0 > x1) {
@@ -5896,7 +5979,7 @@ struct Histogram: View {
 		if (x1 > 256) {
 			x1 = 256;
 		}
-		int h = rect.h;
+		int h = rect.height();
 		for (int x = x0; x < x1; x += 1) {
 			int val = 255 * (h - (y >> 16)) / h;
 			this.onUpdate(this, x, val);
@@ -5907,10 +5990,10 @@ struct Histogram: View {
 
 	bool onMeasure(Histogram this, Rect rect&) {
 		if (this.width < 0) {
-			rect.w = 256;
+			rect.width(256);
 		}
 		if (this.height < 0) {
-			rect.h = 128;
+			rect.height(128);
 		}
 		return View.onMeasure(this, &rect);
 	}
@@ -5922,21 +6005,22 @@ struct Histogram: View {
 			colR: 0xfc6165;
 			colL: 0xdadada;
 		}
-		int px = (rect.w - 256) / 2;
+		int px = (rect.width() - 256) / 2;
+		int h = rect.height();
 		if (this.lines) {
-			int y = rect.y + rect.h;
-			int pb = bch(this.data[0]) * rect.h / 256;
-			int pg = gch(this.data[0]) * rect.h / 256;
-			int pr = rch(this.data[0]) * rect.h / 256;
-			int pl = ach(this.data[0]) * rect.h / 256;
+			int y = rect.y1;
+			int pb = bch(this.data[0]) * h / 256;
+			int pg = gch(this.data[0]) * h / 256;
+			int pr = rch(this.data[0]) * h / 256;
+			int pl = ach(this.data[0]) * h / 256;
 
 			for (int i = 1; i < this.data.length; i += 1) {
-				int x = rect.x + i + px;
+				int x = rect.x0 + i + px;
 				argb data = this.data[i];
-				int bv = bch(data) * rect.h / 256;
-				int gv = gch(data) * rect.h / 256;
-				int rv = rch(data) * rect.h / 256;
-				int lv = ach(data) * rect.h / 256;
+				int bv = bch(data) * h / 256;
+				int gv = gch(data) * h / 256;
+				int rv = rch(data) * h / 256;
+				int lv = ach(data) * h / 256;
 
 				if (this.color) {
 					offs.fillRect(x, y - pl, x + 1, y - lv + int(pl == lv), data.v);
@@ -5956,26 +6040,26 @@ struct Histogram: View {
 		else if (this.color) {
 			for (int i = 0; i < this.data.length; i += 1) {
 				argb data = this.data[i];
-				int x = rect.x + i + px;
-				int y1 = rect.y + rect.h;
-				int y0 = y1 - ach(data) * rect.h / 256;
+				int x = rect.x0 + i + px;
+				int y1 = rect.y1;
+				int y0 = y1 - ach(data) * h / 256;
 				offs.fillRect(x, y0 - int(y1 == y0), x + 1, y1, uint32(data));
 			}
 		}
 		else {
 			for (int i = 0; i < this.data.length; i += 1) {
-				int x = rect.x + i + px;
+				int x = rect.x0 + i + px;
 				argb data = this.data[i];
-				int bv = bch(data) * rect.h / 256;
-				int gv = gch(data) * rect.h / 256;
-				int rv = rch(data) * rect.h / 256;
-				int lv = ach(data) * rect.h / 256;
-				for (int y = 0; y < rect.h; y += 1) {
+				int bv = bch(data) * h / 256;
+				int gv = gch(data) * h / 256;
+				int rv = rch(data) * h / 256;
+				int lv = ach(data) * h / 256;
+				for (int y = 0; y < h; y += 1) {
 					uint32 b = colB * uint32(y < bv);
 					uint32 g = colG * uint32(y < gv);
 					uint32 r = colR * uint32(y < rv);
 					uint32 l = colL * uint32(y < lv);
-					offs.set(x, rect.h - y + rect.y - 1, r | g | b | l);
+					offs.set(x, h - y + rect.y0 - 1, r | g | b | l);
 				}
 			}
 		}
@@ -6074,12 +6158,12 @@ struct DebugView: View {
 
 		Style style& = this.style;
 		if (this.maxDuration > 0) {
-			int y0 = rect.y + rect.h;
-			float64 ys = rect.h / float64(this.maxDuration);
-			float64 xs = rect.w / float64(this.durations.length);
+			int y0 = rect.y1;
+			float64 ys = rect.height() / float64(this.maxDuration);
+			float64 xs = rect.width() / float64(this.durations.length);
 			for (int i = 0; i < this.durations.length; i += 1) {
 				int y1 = y0 - ys * this.durations[i];
-				int x1 = rect.x + xs * (this.durations.length - i);
+				int x1 = rect.x0 + xs * (this.durations.length - i);
 				offs.fillRect(x1 - xs, y0, x1, y1, style.focusedColor);
 			}
 		}
@@ -6109,7 +6193,7 @@ struct Panel: Layout {
 	bool onMeasure(Panel this, Rect rect&) {
 		if (!this.visible) {
 			// view is hidden
-			rect.w = rect.h = 0;
+			rect.setSize(0, 0);
 			return false;
 		}
 		return Layout.onMeasure(this, &rect);
@@ -6137,7 +6221,7 @@ struct TabPage: Layout {
 		TabPage parent = layout.data.as(TabPage);
 		if (parent != null && parent.active != layout) {
 			// view is hidden
-			rect.w = rect.h = 0;
+			rect.setSize(0, 0);
 			return false;
 		}
 		return Layout.onMeasure(layout, &rect);
@@ -6410,7 +6494,6 @@ struct FxWidget: Widget {
 			}
 
 			this.enabled = true;
-			this.measure = true;
 			this.invalidate();
 			return true;
 		}
@@ -6435,13 +6518,14 @@ struct FxWidget: Widget {
 		int margin = this.margin;
 		int align = this.align;
 		Rect rect = {
-			x: margin;
-			y: margin;
-			w: measured.w - 2 * margin;
-			h: measured.h - 2 * margin;
+			x0: margin;
+			y0: margin;
+			x1: measured.width() - margin;
+			y1: measured.height() - margin;
 		};
 
-		measured.x = measured.y = 0;
+		measured.x1 = measured.x0 = 0;
+		measured.y1 = measured.y0 = 0;
 		Layout.onMeasure(this, &measured);
 		this.onLayout(this, &measured);
 		Style.align(rect, &measured, align);
@@ -6452,7 +6536,7 @@ struct FxWidget: Widget {
 		offs = offs.slice(rect);
 		Style style& = this.style;
 		if (style.backgroundColor != -1) {
-			Rect r = { w: offs.width(), h: offs.height() };
+			Rect r = { x0: 0, y0: 0, x1: offs.width(), y1: offs.height() };
 			offs.fillRRect(r, this.radius, style.backgroundColor);
 		}
 		Widget.onDraw(this, offs, rect);
@@ -6577,7 +6661,6 @@ static struct Gui {
 			if (widget.parent == null) {
 				// widget was not created, so create it first
 				widget.onCreate(widget, widget);
-				widget.measure = true;
 			}
 			if (action == Gui.WINDOW_INIT) {
 				return true;
@@ -6642,8 +6725,8 @@ static struct Gui {
 					isAlt: window.isAlt;
 					clicks: window.clicks;
 					button: button;
-					x: x - window.rect.x;
-					y: y - window.rect.y;
+					x: x - window.rect.x0;
+					y: y - window.rect.y0;
 				};
 				return widget.onTouchEvent(widget, window.rect, event);
 			}
@@ -6669,8 +6752,8 @@ static struct Gui {
 					button: button;
 					dx: x - lastX;
 					dy: y - lastY;
-					x: x - window.rect.x;
-					y: y - window.rect.y;
+					x: x - window.rect.x0;
+					y: y - window.rect.y0;
 				};
 				return widget.onTouchEvent(widget, window.rect, event);
 			}
@@ -6691,8 +6774,8 @@ static struct Gui {
 					isAlt: window.isAlt;
 					clicks: window.clicks;
 					button: button;
-					x: x - window.rect.x;
-					y: y - window.rect.y;
+					x: x - window.rect.x0;
+					y: y - window.rect.y0;
 				};
 				return widget.onTouchEvent(widget, window.rect, event);
 			}
@@ -6745,8 +6828,8 @@ static struct Gui {
 						isAlt: window.isAlt;
 						clicks: -1;
 						button: window.button;
-						x: window.lastX - window.rect.x;
-						y: window.lastY - window.rect.y;
+						x: window.lastX - window.rect.x0;
+						y: window.lastY - window.rect.y0;
 					};
 					return widget.onTouchEvent(widget, window.rect, event);
 				}
@@ -6755,6 +6838,7 @@ static struct Gui {
 			debug("event not processed", action);
 			return false;
 		}
+
 		static int draw(Window window&, Widget widget) {
 			if (!widget.enabled) {
 				// widget is disabled, do not show it
@@ -6771,8 +6855,7 @@ static struct Gui {
 			Image offs = window.offscreen;
 			Rect rect& = window.rect;
 			if (widget.measure) {
-				rect.w = offs.width();
-				rect.h = offs.height();
+				rect.setSize(offs.width(), offs.height());
 				widget.onMeasure(widget, &rect);
 				widget.measure = false;
 			}
@@ -6781,6 +6864,7 @@ static struct Gui {
 			widget.redraw = false;
 			return timeout;
 		}
+
 		static int windowEvent(Window win&, int action, int button, int x, int y) {
 			if (action == Gui.KEY_RELEASE && button == Gui.KEY_CODE_ESC) {
 				// exit when releasing escape key
@@ -6817,11 +6901,10 @@ static struct Gui {
 	}
 
 	static void showWindow(Widget widget) {
+		Rect rect = {};
 		widget.onCreate(widget, widget);
-		Rect rect = {w: 0, h: 0};
 		widget.onMeasure(widget, &rect);
-		widget.measure = true;
-		Image offscreen = Image(rect.w, rect.h, 32);
+		Image offscreen = Image(rect.width(), rect.height(), 32);
 		showWindow(offscreen, widget);
 		offscreen.destroy();
 	}
@@ -6872,6 +6955,11 @@ inline "image.draw.line.ci";
 Image fill(Image image, uint32 color) {
 	image.fillRect(0, 0, image.width(), image.height(), color);
 	return image;
+}
+
+void drawText(Image image, int32 x, int32 y, Image font, const char text[*], int32 color) {
+	Rect rect = {x0: x, y0: y, x1: image.width(), y1: image.height()};
+	return image.drawText(rect, font, text, color);
 }
 /// Fill a rounded rectangle on `image` specified by the coordinates and rounding, with the given `color`
 void fillRRect(Image image, int x0, int y0, int x1, int y1, int rx, int ry, uint32 color) {
@@ -7004,11 +7092,10 @@ inline drawRRect(Image image, int x1, int y1, int x2, int y2, int r, uint32 colo
 
 /// Fill the given rectangle rounding the corners using the given radius
 void fillRRect(Image image, const Rect roi&, int rx, int ry, uint32 color) {
-	if (roi.w <= 0 || roi.h <= 0) {
-		// empty rectangle
+	if (roi.empty()) {
 		return;
 	}
-	image.fillRRect(roi.x, roi.y, roi.x + roi.w, roi.y + roi.h, rx, ry, color);
+	image.fillRRect(roi.x0, roi.y0, roi.x1, roi.y1, rx, ry, color);
 }
 
 /// Fill the given rectangle rounding the corners using the given radius
@@ -7044,38 +7131,25 @@ inline Image(const char fileName[*]) = Image(fileName, 32);
 
 /// Clip the rectangle against the given image boundaries
 bool clip(Image image, Rect roi&) {
-
-	roi.w += roi.x;
-	roi.h += roi.y;
-
-	if (roi.x < 0) {
-		roi.x = 0;
+	if (roi.x0 < 0) {
+		roi.x0 = 0;
 	}
 
-	if (roi.y < 0) {
-		roi.y = 0;
+	if (roi.y0 < 0) {
+		roi.y0 = 0;
 	}
 
 	int width = image.width();
-	if (roi.w > width) {
-		roi.w = width;
+	if (roi.x1 > width) {
+		roi.x1 = width;
 	}
 
 	int height = image.height();
-	if (roi.h > height) {
-		roi.h = height;
+	if (roi.y1 > height) {
+		roi.y1 = height;
 	}
 
-	roi.w -= roi.x;
-	roi.h -= roi.y;
-
-	if (roi.w <= 0) {
-		return false;
-	}
-	if (roi.h <= 0) {
-		return false;
-	}
-	return true;
+	return !roi.empty();
 }
 
 /// Set the the color of a pixel at the given position
@@ -7085,7 +7159,17 @@ inline set(Image image, int32 x, int32 y, argb color) = Image.set(image, x, y, u
 struct Style {
 	static const argb dark = argb(0x1a1a1a);
 	static const argb light = argb(0xdadada);
-	static const argb accent = argb(51, 123, 246);
+
+	static const argb blue = argb(33, 149, 246);
+	static const argb green = argb(74, 174, 82);
+	static const argb gray = argb(98, 125, 139);
+	static const argb orange = argb(255, 153, 0);
+	static const argb red = argb(246, 64, 49);
+	static const argb magenta = argb(156, 36, 181);
+	static const argb cyan = argb(0, 149, 139);
+
+	static const argb theme = dark;
+	static const argb accent = gray;
 
 	// text alignment in views
 	const int align = 0;
@@ -7096,12 +7180,12 @@ struct Style {
 	const Image font = Gui.font;
 	const FormatFlags format;
 
-	uint32 backgroundColor = 0x1a1a1a;
+	uint32 backgroundColor = uint32(theme);
 	// int disabledColor = TODO;
-	uint32 hoveredColor = 0x2a2a2a;
-	uint32 focusedColor = 0x3b4754;
-	uint32 valueColor = 0x6897bb;
-	uint32 textColor = 0xdadada;
+	uint32 hoveredColor = uint32(mix_rgb8(16, theme, accent));
+	uint32 focusedColor = uint32(mix_rgb8(64, theme, accent));
+	uint32 valueColor = uint32(accent);
+	uint32 textColor = uint32(lum(theme) > 127 ? dark : light);
 
 	enum: int32 {
 		top: 1;
@@ -7132,54 +7216,60 @@ struct Style {
 		focused: 4;
 	}
 
+	static void padded(Rect rect&, int padding) {
+		rect.x0 -= padding;
+		rect.y0 -= padding;
+		rect.x1 += padding;
+		rect.y1 += padding;
+	}
+
 	static void measure(const Style this&, Rect rect&, const char text[*]) {
 		this.font.clipText(&rect, text);
-		rect.w += 2 * this.padding;
-		rect.h += 2 * this.padding;
+		padded(&rect, this.padding);
 	}
 
 	/// Align one rect containing text relative to its container
 	static void align(Rect parent, Rect rect&, int align) {
 		int vertical = align & Style.vertical;
 		if (vertical == center) {
-			rect.x = parent.x + (parent.w - rect.w) / 2;
+			rect.positionX(parent.x0 + (parent.width() - rect.width()) / 2);
 		}
 		else if (vertical == right) {
-			rect.x = parent.x + (parent.w - rect.w);
+			rect.positionX(parent.x0 + (parent.width() - rect.width()));
 		}
 		else if (vertical == left) {
-			rect.x = parent.x;
+			rect.positionX(parent.x0);
 		}
 		else { // fit
-			rect.x = parent.x;
-			rect.w = parent.w;
+			rect.x0 = parent.x0;
+			rect.x1 = parent.x1;
 		}
 
 		int horizontal = align & Style.horizontal;
 		if (horizontal == center) {
-			rect.y = parent.y + (parent.h - rect.h) / 2;
+			rect.positionY(parent.y0 + (parent.height() - rect.height()) / 2);
 		}
 		else if (horizontal == bottom) {
-			rect.y = parent.y + (parent.h - rect.h);
+			rect.positionY(parent.y0 + (parent.height() - rect.height()));
 		}
 		else if (horizontal == top) {
-			rect.y = parent.y;
+			rect.positionY(parent.y0);
 		}
 		else { // fit
-			rect.y = parent.y;
-			rect.h = parent.h;
+			rect.y0 = parent.y0;
+			rect.y1 = parent.y1;
 		}
 	}
 
 	static void align(const Style this&, Rect parent, Rect rect&, const char value[*], int align) {
-		parent.adjust(-this.padding);
+		parent.padded(-this.padding);
 		this.font.clipText(&rect, value);
 		if ((align & horizontal) == horizontal) {
 			// center text if it is aligned both top and bottom
 			align &= ~horizontal;
 		}
 		if ((align & vertical) == vertical) {
-			// center text if it is aligned both left and right
+			// todo: justify text if it is aligned both left and right
 			align &= ~vertical;
 		}
 		align(parent, &rect, align);
@@ -7194,7 +7284,7 @@ struct Style {
 		style.hoveredColor = uint32(mix_rgb8(16, background, accent));
 		style.focusedColor = uint32(mix_rgb8(64, background, accent));
 		style.valueColor = uint32(accent);
-		style.textColor = uint32(gray(lum(background) > 128 ? 0 : 150));
+		style.textColor = uint32(lum(background) > 127 ? dark : light);
 	}
 
 	inline vertical(int align) = (align & vertical) == vertical;
@@ -7221,10 +7311,10 @@ struct TouchEvent {
 	const int y;
 
 	static bool test(const TouchEvent event&, const Rect rect&) {
-		if (event.x < rect.x || event.x >= rect.x + rect.w) {
+		if (event.x < rect.x0 || event.x >= rect.x1) {
 			return false;
 		}
-		if (event.y < rect.y || event.y >= rect.y + rect.h) {
+		if (event.y < rect.y0 || event.y >= rect.y1) {
 			return false;
 		}
 		return true;
@@ -7348,12 +7438,12 @@ struct View: object {
 
 	bool onMeasure(View this, Rect rect&) {
 		int width = Math.abs(this.width);
-		if (rect.w < width || this.width > 0) {
-			rect.w = width;
+		if (rect.width() < width || this.width > 0) {
+			rect.width(width);
 		}
 		int height = Math.abs(this.height);
-		if (rect.h < height || this.height > 0) {
-			rect.h = height;
+		if (rect.height() < height || this.height > 0) {
+			rect.height(height);
 		}
 		return true;
 	}
@@ -7384,11 +7474,13 @@ struct View: object {
 			return;
 		}
 
-		Rect valueRoi = rect;
-		style.align(valueRoi, &valueRoi, value, Style.right);
-		rect.w -= valueRoi.w + style.padding;
+		if (value != null) {
+			Rect valueRoi = rect;
+			style.align(valueRoi, &valueRoi, value, Style.right);
+			offs.drawText(valueRoi, style.font, value, style.valueColor);
+			rect.x1 = valueRoi.x0 - style.padding;
+		}
 		style.align(rect, &rect, text);
-		offs.drawText(valueRoi, style.font, value, style.valueColor);
 		offs.drawText(rect, style.font, text, style.textColor);
 	}
 }
@@ -7631,13 +7723,8 @@ struct Layout: View {
 		static int findView(Layout this, int x, int y) {
 			for (int i = 0; i < this.itemCount; i += 1) {
 				Item item& = this.items[i];
-				if (item.view.enabled) {
-					Rect rect& = item.rect;
-					if (y >= rect.y && y < rect.y + rect.h) {
-						if (x >= rect.x && x < rect.x + rect.w) {
-							return i;
-						}
-					}
+				if (item.view.enabled && item.rect.contains(x, y)) {
+					return i;
 				}
 			}
 			return -1;
@@ -7752,10 +7839,11 @@ struct Layout: View {
 			Item item& = this.items[i];
 			Rect rect& = item.rect;
 			View view = item.view;
-			rect.w = rect.h = 0;
+			rect.x0 = rect.x1 = 0;
+			rect.y0 = rect.y1 = 0;
 			if (view.onMeasure(view, &rect)) {
-				int width = rect.w;
-				int height = rect.h;
+				int width = rect.width();
+				int height = rect.height();
 				if (n >= N) {
 					cols += int(dir < 0);
 					rows += int(dir > 0);
@@ -7784,16 +7872,22 @@ struct Layout: View {
 			// multi column layout, using uniform height
 			sumHeight = maxHeight * rows;
 		}
-		measured.w = sumWidth + this.paddingLeft + this.paddingRight;
-		measured.h = sumHeight + this.paddingTop + this.paddingBottom;
+		measured.width(sumWidth + this.paddingLeft + this.paddingRight);
+		measured.height(sumHeight + this.paddingTop + this.paddingBottom);
 		return View.onMeasure(this, &measured);
 	}
 
 	// TODO: make layout part of the measure step: to calculate the correct width and height,
 	//       elements inside the layout must be placed to their position
 	void onLayout(Layout this, Rect rect&);
+	static void addPadding(const Layout this, Rect rect&, int multiplier) {
+		rect.x0 -= multiplier * this.paddingLeft;
+		rect.y0 -= multiplier * this.paddingTop;
+		rect.x1 += multiplier * this.paddingRight;
+		rect.y1 += multiplier * this.paddingBottom;
+	}
 	static void verticalLayout(Layout this, Rect measured&, int cols) {
-		int rowSpacing = measured.w / cols;
+		int rowSpacing = measured.width() / cols;
 		int colSpacing = 0;
 		int grow = 0;
 
@@ -7804,15 +7898,15 @@ struct Layout: View {
 			int n = cols;
 			for (int i = 0; i < this.itemCount; i += 1) {
 				Rect rect& = this.items[i].rect;
-				if (rect.w && rect.h) {
+				if (!rect.empty()) {
 					if (n >= cols) {
 						sumSize += maxSize;
 						maxSize = 0;
 						rows += 1;
 						n = 0;
 					}
-					if (maxSize < rect.h) {
-						maxSize = rect.h;
+					if (maxSize < rect.height()) {
+						maxSize = rect.height();
 					}
 					if (colSpacing < maxSize) {
 						colSpacing = maxSize;
@@ -7821,30 +7915,30 @@ struct Layout: View {
 				}
 			}
 			sumSize += maxSize;
-			if (rows > 0 && measured.h > sumSize) {
-				grow = (measured.h - sumSize) / rows;
+			if (rows > 0 && measured.height() > sumSize) {
+				grow = (measured.height() - sumSize) / rows;
 			}
 		}
 
 		Rect r = {
-			x: measured.x;
-			y: measured.y;
-			w: this.width > 0 ? this.width : measured.w;
-			h: this.height > 0 ? this.height : measured.h;
+			x0: measured.x0;
+			y0: measured.y0;
+			x1: measured.x0 + (this.width > 0 ? this.width : measured.width());
+			y1: measured.y0 + (this.height > 0 ? this.height : measured.height());
 		};
 
 		int n = cols;
-		r.y -= colSpacing + grow;
+		r.translateY(-colSpacing - grow);
 		for (int i = 0; i < this.itemCount; i += 1) {
 			Item item& = this.items[i];
 			Rect rect& = item.rect;
-			if (rect.w && rect.h) {
+			if (!rect.empty()) {
 				if (n >= cols) {
-					r.x = measured.x;
-					r.y += colSpacing + grow;
+					r.positionX(measured.x0);
+					r.translateY(colSpacing + grow);
 					if (cols == 1) {
 						// single row, allow non uniform heights
-						colSpacing = rect.h;
+						colSpacing = rect.height();
 					//} else {
 						// using non uniform heights
 						//colSpacing = maxHeight(this, i, cols);
@@ -7852,8 +7946,8 @@ struct Layout: View {
 					n = 0;
 				}
 
-				r.w = rowSpacing;
-				r.h = colSpacing + grow;
+				r.width(rowSpacing);
+				r.height(colSpacing + grow);
 				View view = item.view;
 				int align = item.align;
 				if (view.width > 0 && Style.vertical(align)) {
@@ -7870,13 +7964,13 @@ struct Layout: View {
 					layout.onLayout(layout, &rect);
 				}
 
-				r.x += rowSpacing;
+				r.translateX(rowSpacing);
 				n += 1;
 			}
 		}
 	}
 	static void horizontalLayout(Layout this, Rect measured&, int rows) {
-		int colSpacing = measured.h / rows;
+		int colSpacing = measured.height() / rows;
 		int rowSpacing = 0;
 		int grow = 0;
 
@@ -7887,47 +7981,47 @@ struct Layout: View {
 			int n = rows;
 			for (int i = 0; i < this.itemCount; i += 1) {
 				Rect rect& = this.items[i].rect;
-				if (rect.w && rect.h) {
+				if (!rect.empty()) {
 					if (n >= rows) {
 						sumSize += maxSize;
 						maxSize = 0;
 						cols += 1;
 						n = 0;
 					}
-					if (maxSize < rect.w) {
-						maxSize = rect.w;
+					if (maxSize < rect.width()) {
+						maxSize = rect.width();
 					}
-					if (rowSpacing < rect.w) {
-						rowSpacing = rect.w;
+					if (rowSpacing < rect.width()) {
+						rowSpacing = rect.width();
 					}
 					n += 1;
 				}
 			}
 			sumSize += maxSize;
-			if (cols > 0 && measured.w > sumSize) {
-				grow = (measured.w - sumSize) / cols;
+			if (cols > 0 && measured.width() > sumSize) {
+				grow = (measured.width() - sumSize) / cols;
 			}
 		}
 
 		Rect r = {
-			x: measured.x;
-			y: measured.y;
-			w: this.width > 0 ? this.width : measured.w;
-			h: this.height > 0 ? this.height : measured.h;
+			x0: measured.x0;
+			y0: measured.y0;
+			x1: measured.x0 + (this.width > 0 ? this.width : measured.width());
+			y1: measured.y0 + (this.height > 0 ? this.height : measured.height());
 		};
 
 		int n = rows;
-		r.x -= rowSpacing + grow;
+		r.translateX(-rowSpacing - grow);
 		for (int i = 0; i < this.itemCount; i += 1) {
 			Item item& = this.items[i];
 			Rect rect& = item.rect;
-			if (rect.w && rect.h) {
+			if (!rect.empty()) {
 				if (n >= rows) {
-					r.y = measured.y;
-					r.x += rowSpacing + grow;
+					r.positionY(measured.y0);
+					r.translateX(rowSpacing + grow);
 					if (rows == 1) {
 						// single column, allow non uniform widths
-						rowSpacing = rect.w;
+						rowSpacing = rect.width();
 					//} else {
 						// using non uniform widths
 						//rowSpacing = maxWidth(this, i, rows);
@@ -7935,8 +8029,8 @@ struct Layout: View {
 					n = 0;
 				}
 
-				r.w = rowSpacing + grow;
-				r.h = colSpacing;
+				r.width(rowSpacing + grow);
+				r.height(colSpacing);
 				View view = item.view;
 				int align = item.align;
 				if (view.width > 0 && Style.vertical(align)) {
@@ -7953,14 +8047,13 @@ struct Layout: View {
 					layout.onLayout(layout, &rect);
 				}
 
-				r.y += colSpacing;
+				r.translateY(colSpacing);
 				n += 1;
 			}
 		}
 	}
 	void onLayout(Layout this, Rect measured&) {
-		inline padd(Rect rect&, int t, int l, int r, int b) = adjust(&rect, -l, -t, l + r, t + b);
-		measured.padd(-this.paddingTop, -this.paddingLeft, -this.paddingRight, -this.paddingBottom);
+		this.addPadding(&measured, -1);
 		if (this.orientation > 0) {
 			/* Multi column vertical layout, ex 3 cols:
 			/--- col0 ---+--- col1 ---+--- col2 ---\
@@ -7969,7 +8062,7 @@ struct Layout: View {
 			.    ...     |    ...     |    ...     . rowN
 			\------------+------------+-----------*/
 			verticalLayout(this, &measured, this.orientation);
-			measured.padd(this.paddingTop, this.paddingLeft, this.paddingRight, this.paddingBottom);
+			this.addPadding(&measured, 1);
 			return;
 			//return verticalLayout(this, &measured, this.orientation);
 		}
@@ -7980,22 +8073,22 @@ struct Layout: View {
 			|   item01   |   item03   |    ...     |    ...     | row1
 			\------------+------------+------------+--- ... ---*/
 			horizontalLayout(this, &measured, -this.orientation);
-			measured.padd(this.paddingTop, this.paddingLeft, this.paddingRight, this.paddingBottom);
+			this.addPadding(&measured, 1);
 			return;
 			//return horizontalLayout(this, &measured, -this.orientation);
 		}
 
 		Rect r = {
-			x: measured.x;
-			y: measured.y;
-			w: this.width > 0 ? this.width : measured.w;
-			h: this.height > 0 ? this.height : measured.h;
+			x0: measured.x0;
+			y0: measured.y0;
+			x1: measured.x0 + (this.width > 0 ? this.width : measured.width());
+			y1: measured.y0 + (this.height > 0 ? this.height : measured.height());
 		};
 
 		for (int i = 0; i < this.itemCount; i += 1) {
 			const Item item& = this.items[i];
 			const Rect rect& = item.rect;
-			if (rect.w && rect.h) {
+			if (!rect.empty()) {
 				const View view = item.view;
 				Style.align(measured, &rect, item.align);
 				if (Layout layout = view.as(Layout)) {
@@ -8003,14 +8096,14 @@ struct Layout: View {
 				}
 			}
 		}
-		measured.padd(this.paddingTop, this.paddingLeft, this.paddingRight, this.paddingBottom);
+		this.addPadding(&measured, 1);
 	}
 
 	void onDraw(Layout this, Image offs, Rect parent) {
 		for (int i = 0; i < this.itemCount; i += 1) {
 			const Item item& = this.items[i];
 			const Rect rect& = item.rect;
-			if (rect.w > 0 && rect.h > 0) {
+			if (!rect.empty()) {
 				const View view = item.view;
 				int state = 0;
 				if (view.as(Layout) == null) {
@@ -8091,7 +8184,7 @@ struct Widget: Layout {
 				const Item item& = this.items[i];
 				const Rect rect& = item.rect;
 				const View view = item.view;
-				if (rect.w && rect.h && focusNext(view, prev)) {
+				if (!rect.empty() && focusNext(view, prev)) {
 					if (view.as(Layout) != null || i != this.focusedIndex) {
 						this.focusedIndex = i;
 						return true;
@@ -8106,7 +8199,7 @@ struct Widget: Layout {
 				const Item item& = this.items[i];
 				const Rect rect& = item.rect;
 				const View view = item.view;
-				if (rect.w && rect.h && focusNext(view, prev)) {
+				if (!rect.empty() && focusNext(view, prev)) {
 					if (view.as(Layout) != null || i > this.focusedIndex) {
 						this.focusedIndex = i;
 						return true;
@@ -8250,7 +8343,7 @@ void focus(View view) {
 		return;
 	}
 
-	Rect rect = {w: 0, h: 0};
+	Rect rect = {};
 	// focus the first visible element from the layout
 	widget.onMeasure(widget, &rect);
 	widget.clearFocus();
@@ -8319,16 +8412,16 @@ struct Camera {
 	/// get the matrix of the camera, which can be multiplied with the projection matrix
 	static mat4f matrix(const Camera camera&) {
 		return {
-			x: camera.forward;
-			y: camera.right;
-			z: camera.up;
+			x: vec4f(camera.right, -camera.right.dp3(camera.position));
+			y: vec4f(camera.up, -camera.up.dp3(camera.position));
+			z: vec4f(camera.forward, -camera.forward.dp3(camera.position));
 			w: vec4f(0, 0, 0, 1);
 		};
 	}
 
 	/// get the matrix of the camera multiplied with the projection matrix
-	static mat4f matrix(const mat4f projection&, const Camera camera&) {
-		return projection.mul(camera.matrix());
+	static mat4f matrix(const Camera camera&, float32 fov, float32 asp, float32 n, float32 f) {
+		return projection(fov, asp, n, f).mul(camera.matrix());
 	}
 
 	/// Move the camera in the given `direction` with the given `amount`

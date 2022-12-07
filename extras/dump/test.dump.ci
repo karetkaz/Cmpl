@@ -5815,7 +5815,7 @@ vec4f.<?>: vec4f.<?> {
 .base: `vec4f.<?>`
 .size: 16
 .name: '<?>'
-.file: 'cmplStd/lib/math/Vector4f.ci:152'
+.file: 'cmplStd/lib/math/Vector4f.ci:153'
 .owner: vec4f
 .field x: float32 (size: 4, cast: variable(f32))
 .field y: float32 (size: 4, cast: variable(f32))
@@ -6345,7 +6345,7 @@ mat4f.<?>: mat4f.<?> {
 .base: `mat4f.<?>`
 .size: 64
 .name: '<?>'
-.file: 'cmplStd/lib/math/Matrix4f.ci:212'
+.file: 'cmplStd/lib/math/Matrix4f.ci:272'
 .owner: mat4f
 .field x: vec4f (size: 16, cast: variable(val))
 .field y: vec4f (size: 16, cast: variable(val))
@@ -6433,7 +6433,7 @@ mat4f.<?>: mat4f.<?> {
 .base: `mat4f.<?>`
 .size: 64
 .name: '<?>'
-.file: 'cmplStd/lib/math/Matrix4f.ci:212'
+.file: 'cmplStd/lib/math/Matrix4f.ci:272'
 .owner: mat4f
 .field xx: float32 (size: 4, cast: variable(f32))
 .field xy: float32 (size: 4, cast: variable(f32))
@@ -7900,6 +7900,493 @@ scale(direction: vec4f, amount: float32): mat4f: function {
 	<scale+?>: load.f32 1.000000
 	<scale+?>: set.x32 sp(19)
 	<scale+?>: ret
+}
+inverse(mat: mat4f): mat4f: function {
+.kind: static function
+.base: `function`
+.size: 632
+.name: 'inverse'
+.file: 'cmplStd/lib/math/Matrix4f.ci:217'
+.param .result: mat4f (size: 64, cast: variable(val))
+.param mat: mat4f (size: 4, cast: const variable(ref))
+.doc: 'Build the inverse of the matrix
+adapted from: https://github.com/glslify/glsl-inverse/blob/master/index.glsl'
+.value: {
+	a00: float32 := mat.xx;
+	a01: float32 := mat.xy;
+	a02: float32 := mat.xz;
+	a03: float32 := mat.xw;
+	a10: float32 := mat.yx;
+	a11: float32 := mat.yy;
+	a12: float32 := mat.yz;
+	a13: float32 := mat.yw;
+	a20: float32 := mat.zx;
+	a21: float32 := mat.zy;
+	a22: float32 := mat.zz;
+	a23: float32 := mat.zw;
+	a30: float32 := mat.wx;
+	a31: float32 := mat.wy;
+	a32: float32 := mat.wz;
+	a33: float32 := mat.ww;
+	b00: float32 := a00 * a11 - a01 * a10;
+	b01: float32 := a00 * a12 - a02 * a10;
+	b02: float32 := a00 * a13 - a03 * a10;
+	b03: float32 := a01 * a12 - a02 * a11;
+	b04: float32 := a01 * a13 - a03 * a11;
+	b05: float32 := a02 * a13 - a03 * a12;
+	b06: float32 := a20 * a31 - a21 * a30;
+	b07: float32 := a20 * a32 - a22 * a30;
+	b08: float32 := a20 * a33 - a23 * a30;
+	b09: float32 := a21 * a32 - a22 * a31;
+	b10: float32 := a21 * a33 - a23 * a31;
+	b11: float32 := a22 * a33 - a23 * a32;
+	det: float32 := b00 * b11 - b01 * b10 + b02 * b09 + b03 * b08 - b04 * b07 + b05 * b06;
+	return .result := {
+			.result.xx := (a11 * b11 - a12 * b10 + a13 * b09) / det;
+			.result.xy := (a02 * b10 - a01 * b11 - a03 * b09) / det;
+			.result.xz := (a31 * b05 - a32 * b04 + a33 * b03) / det;
+			.result.xw := (a22 * b04 - a21 * b05 - a23 * b03) / det;
+			.result.yx := (a12 * b08 - a10 * b11 - a13 * b07) / det;
+			.result.yy := (a00 * b11 - a02 * b08 + a03 * b07) / det;
+			.result.yz := (a32 * b02 - a30 * b05 - a33 * b01) / det;
+			.result.yw := (a20 * b05 - a22 * b02 + a23 * b01) / det;
+			.result.zx := (a10 * b10 - a11 * b08 + a13 * b06) / det;
+			.result.zy := (a01 * b08 - a00 * b10 - a03 * b06) / det;
+			.result.zz := (a30 * b04 - a31 * b02 + a33 * b00) / det;
+			.result.zw := (a21 * b02 - a20 * b04 - a23 * b00) / det;
+			.result.wx := (a11 * b07 - a10 * b09 - a12 * b06) / det;
+			.result.wy := (a00 * b09 - a01 * b07 + a02 * b06) / det;
+			.result.wz := (a31 * b01 - a30 * b03 - a32 * b00) / det;
+			.result.ww := (a20 * b03 - a21 * b01 + a22 * b00) / det;
+		};
+}
+.instructions: (632 bytes)
+	cmplStd/lib/math/Matrix4f.ci:218: (3 bytes): a00: float32 := mat.xx
+	<inverse>  : dup.x32 sp(1)
+	<inverse+?>: load.i32
+	cmplStd/lib/math/Matrix4f.ci:219: (7 bytes): a01: float32 := mat.xy
+	<inverse+?>: dup.x32 sp(2)
+	<inverse+?>: inc.i32(+4)
+	<inverse+?>: load.i32
+	cmplStd/lib/math/Matrix4f.ci:220: (7 bytes): a02: float32 := mat.xz
+	<inverse+?>: dup.x32 sp(3)
+	<inverse+?>: inc.i32(+8)
+	<inverse+?>: load.i32
+	cmplStd/lib/math/Matrix4f.ci:221: (7 bytes): a03: float32 := mat.xw
+	<inverse+?>: dup.x32 sp(4)
+	<inverse+?>: inc.i32(+12)
+	<inverse+?>: load.i32
+	cmplStd/lib/math/Matrix4f.ci:223: (7 bytes): a10: float32 := mat.yx
+	<inverse+?>: dup.x32 sp(5)
+	<inverse+?>: inc.i32(+16)
+	<inverse+?>: load.i32
+	cmplStd/lib/math/Matrix4f.ci:224: (7 bytes): a11: float32 := mat.yy
+	<inverse+?>: dup.x32 sp(6)
+	<inverse+?>: inc.i32(+20)
+	<inverse+?>: load.i32
+	cmplStd/lib/math/Matrix4f.ci:225: (7 bytes): a12: float32 := mat.yz
+	<inverse+?>: dup.x32 sp(7)
+	<inverse+?>: inc.i32(+24)
+	<inverse+?>: load.i32
+	cmplStd/lib/math/Matrix4f.ci:226: (7 bytes): a13: float32 := mat.yw
+	<inverse+?>: dup.x32 sp(8)
+	<inverse+?>: inc.i32(+28)
+	<inverse+?>: load.i32
+	cmplStd/lib/math/Matrix4f.ci:228: (7 bytes): a20: float32 := mat.zx
+	<inverse+?>: dup.x32 sp(9)
+	<inverse+?>: inc.i32(+32)
+	<inverse+?>: load.i32
+	cmplStd/lib/math/Matrix4f.ci:229: (7 bytes): a21: float32 := mat.zy
+	<inverse+?>: dup.x32 sp(10)
+	<inverse+?>: inc.i32(+36)
+	<inverse+?>: load.i32
+	cmplStd/lib/math/Matrix4f.ci:230: (7 bytes): a22: float32 := mat.zz
+	<inverse+?>: dup.x32 sp(11)
+	<inverse+?>: inc.i32(+40)
+	<inverse+?>: load.i32
+	cmplStd/lib/math/Matrix4f.ci:231: (7 bytes): a23: float32 := mat.zw
+	<inverse+?>: dup.x32 sp(12)
+	<inverse+?>: inc.i32(+44)
+	<inverse+?>: load.i32
+	cmplStd/lib/math/Matrix4f.ci:233: (7 bytes): a30: float32 := mat.wx
+	<inverse+?>: dup.x32 sp(13)
+	<inverse+?>: inc.i32(+48)
+	<inverse+?>: load.i32
+	cmplStd/lib/math/Matrix4f.ci:234: (7 bytes): a31: float32 := mat.wy
+	<inverse+?>: dup.x32 sp(14)
+	<inverse+?>: inc.i32(+52)
+	<inverse+?>: load.i32
+	cmplStd/lib/math/Matrix4f.ci:235: (7 bytes): a32: float32 := mat.wz
+	<inverse+?>: dup.x32 sp(15)
+	<inverse+?>: inc.i32(+56)
+	<inverse+?>: load.i32
+	cmplStd/lib/math/Matrix4f.ci:236: (7 bytes): a33: float32 := mat.ww
+	<inverse+?>: dup.x32 sp(16)
+	<inverse+?>: inc.i32(+60)
+	<inverse+?>: load.i32
+	cmplStd/lib/math/Matrix4f.ci:238: (11 bytes): b00: float32 := a00 * a11 - a01 * a10
+	<inverse+?>: dup.x32 sp(15)
+	<inverse+?>: dup.x32 sp(11)
+	<inverse+?>: mul.f32
+	<inverse+?>: dup.x32 sp(15)
+	<inverse+?>: dup.x32 sp(13)
+	<inverse+?>: mul.f32
+	<inverse+?>: sub.f32
+	cmplStd/lib/math/Matrix4f.ci:239: (11 bytes): b01: float32 := a00 * a12 - a02 * a10
+	<inverse+?>: dup.x32 sp(16)
+	<inverse+?>: dup.x32 sp(11)
+	<inverse+?>: mul.f32
+	<inverse+?>: dup.x32 sp(15)
+	<inverse+?>: dup.x32 sp(14)
+	<inverse+?>: mul.f32
+	<inverse+?>: sub.f32
+	cmplStd/lib/math/Matrix4f.ci:240: (11 bytes): b02: float32 := a00 * a13 - a03 * a10
+	<inverse+?>: dup.x32 sp(17)
+	<inverse+?>: dup.x32 sp(11)
+	<inverse+?>: mul.f32
+	<inverse+?>: dup.x32 sp(15)
+	<inverse+?>: dup.x32 sp(15)
+	<inverse+?>: mul.f32
+	<inverse+?>: sub.f32
+	cmplStd/lib/math/Matrix4f.ci:241: (11 bytes): b03: float32 := a01 * a12 - a02 * a11
+	<inverse+?>: dup.x32 sp(17)
+	<inverse+?>: dup.x32 sp(13)
+	<inverse+?>: mul.f32
+	<inverse+?>: dup.x32 sp(17)
+	<inverse+?>: dup.x32 sp(15)
+	<inverse+?>: mul.f32
+	<inverse+?>: sub.f32
+	cmplStd/lib/math/Matrix4f.ci:242: (11 bytes): b04: float32 := a01 * a13 - a03 * a11
+	<inverse+?>: dup.x32 sp(18)
+	<inverse+?>: dup.x32 sp(13)
+	<inverse+?>: mul.f32
+	<inverse+?>: dup.x32 sp(17)
+	<inverse+?>: dup.x32 sp(16)
+	<inverse+?>: mul.f32
+	<inverse+?>: sub.f32
+	cmplStd/lib/math/Matrix4f.ci:243: (11 bytes): b05: float32 := a02 * a13 - a03 * a12
+	<inverse+?>: dup.x32 sp(18)
+	<inverse+?>: dup.x32 sp(14)
+	<inverse+?>: mul.f32
+	<inverse+?>: dup.x32 sp(18)
+	<inverse+?>: dup.x32 sp(16)
+	<inverse+?>: mul.f32
+	<inverse+?>: sub.f32
+	cmplStd/lib/math/Matrix4f.ci:244: (11 bytes): b06: float32 := a20 * a31 - a21 * a30
+	<inverse+?>: dup.x32 sp(13)
+	<inverse+?>: dup.x32 sp(9)
+	<inverse+?>: mul.f32
+	<inverse+?>: dup.x32 sp(13)
+	<inverse+?>: dup.x32 sp(11)
+	<inverse+?>: mul.f32
+	<inverse+?>: sub.f32
+	cmplStd/lib/math/Matrix4f.ci:245: (11 bytes): b07: float32 := a20 * a32 - a22 * a30
+	<inverse+?>: dup.x32 sp(14)
+	<inverse+?>: dup.x32 sp(9)
+	<inverse+?>: mul.f32
+	<inverse+?>: dup.x32 sp(13)
+	<inverse+?>: dup.x32 sp(12)
+	<inverse+?>: mul.f32
+	<inverse+?>: sub.f32
+	cmplStd/lib/math/Matrix4f.ci:246: (11 bytes): b08: float32 := a20 * a33 - a23 * a30
+	<inverse+?>: dup.x32 sp(15)
+	<inverse+?>: dup.x32 sp(9)
+	<inverse+?>: mul.f32
+	<inverse+?>: dup.x32 sp(13)
+	<inverse+?>: dup.x32 sp(13)
+	<inverse+?>: mul.f32
+	<inverse+?>: sub.f32
+	cmplStd/lib/math/Matrix4f.ci:247: (11 bytes): b09: float32 := a21 * a32 - a22 * a31
+	<inverse+?>: dup.x32 sp(15)
+	<inverse+?>: dup.x32 sp(11)
+	<inverse+?>: mul.f32
+	<inverse+?>: dup.x32 sp(15)
+	<inverse+?>: dup.x32 sp(13)
+	<inverse+?>: mul.f32
+	<inverse+?>: sub.f32
+	cmplStd/lib/math/Matrix4f.ci:248: (11 bytes): b10: float32 := a21 * a33 - a23 * a31
+	<inverse+?>: dup.x32 sp(16)
+	<inverse+?>: dup.x32 sp(11)
+	<inverse+?>: mul.f32
+	<inverse+?>: dup.x32 sp(15)
+	<inverse+?>: dup.x32 sp(14)
+	<inverse+?>: mul.f32
+	<inverse+?>: sub.f32
+	cmplStd/lib/math/Matrix4f.ci:249: (11 bytes): b11: float32 := a22 * a33 - a23 * a32
+	<inverse+?>: dup.x32 sp(16)
+	<inverse+?>: dup.x32 sp(12)
+	<inverse+?>: mul.f32
+	<inverse+?>: dup.x32 sp(16)
+	<inverse+?>: dup.x32 sp(14)
+	<inverse+?>: mul.f32
+	<inverse+?>: sub.f32
+	cmplStd/lib/math/Matrix4f.ci:251: (35 bytes): det: float32 := b00 * b11 - b01 * b10 + b02 * b09 + b03 * b08 - b04 * b07 + b05 * b06
+	<inverse+?>: dup.x32 sp(11)
+	<inverse+?>: dup.x32 sp(1)
+	<inverse+?>: mul.f32
+	<inverse+?>: dup.x32 sp(11)
+	<inverse+?>: dup.x32 sp(3)
+	<inverse+?>: mul.f32
+	<inverse+?>: sub.f32
+	<inverse+?>: dup.x32 sp(10)
+	<inverse+?>: dup.x32 sp(4)
+	<inverse+?>: mul.f32
+	<inverse+?>: add.f32
+	<inverse+?>: dup.x32 sp(9)
+	<inverse+?>: dup.x32 sp(5)
+	<inverse+?>: mul.f32
+	<inverse+?>: add.f32
+	<inverse+?>: dup.x32 sp(8)
+	<inverse+?>: dup.x32 sp(6)
+	<inverse+?>: mul.f32
+	<inverse+?>: sub.f32
+	<inverse+?>: dup.x32 sp(7)
+	<inverse+?>: dup.x32 sp(7)
+	<inverse+?>: mul.f32
+	<inverse+?>: add.f32
+	cmplStd/lib/math/Matrix4f.ci:253: (357 bytes): return .result := {...};
+	cmplStd/lib/math/Matrix4f.ci:254: (22 bytes): .result.xx := (a11 * b11 - a12 * b10 + a13 * b09) / det;
+	<inverse+?>: dup.x32 sp(23)
+	<inverse+?>: dup.x32 sp(2)
+	<inverse+?>: mul.f32
+	<inverse+?>: dup.x32 sp(23)
+	<inverse+?>: dup.x32 sp(4)
+	<inverse+?>: mul.f32
+	<inverse+?>: sub.f32
+	<inverse+?>: dup.x32 sp(22)
+	<inverse+?>: dup.x32 sp(5)
+	<inverse+?>: mul.f32
+	<inverse+?>: add.f32
+	<inverse+?>: dup.x32 sp(1)
+	<inverse+?>: div.f32
+	<inverse+?>: set.x32 sp(32)
+	cmplStd/lib/math/Matrix4f.ci:255: (22 bytes): .result.xy := (a02 * b10 - a01 * b11 - a03 * b09) / det;
+	<inverse+?>: dup.x32 sp(26)
+	<inverse+?>: dup.x32 sp(3)
+	<inverse+?>: mul.f32
+	<inverse+?>: dup.x32 sp(28)
+	<inverse+?>: dup.x32 sp(3)
+	<inverse+?>: mul.f32
+	<inverse+?>: sub.f32
+	<inverse+?>: dup.x32 sp(26)
+	<inverse+?>: dup.x32 sp(5)
+	<inverse+?>: mul.f32
+	<inverse+?>: sub.f32
+	<inverse+?>: dup.x32 sp(1)
+	<inverse+?>: div.f32
+	<inverse+?>: set.x32 sp(33)
+	cmplStd/lib/math/Matrix4f.ci:256: (22 bytes): .result.xz := (a31 * b05 - a32 * b04 + a33 * b03) / det;
+	<inverse+?>: dup.x32 sp(15)
+	<inverse+?>: dup.x32 sp(8)
+	<inverse+?>: mul.f32
+	<inverse+?>: dup.x32 sp(15)
+	<inverse+?>: dup.x32 sp(10)
+	<inverse+?>: mul.f32
+	<inverse+?>: sub.f32
+	<inverse+?>: dup.x32 sp(14)
+	<inverse+?>: dup.x32 sp(11)
+	<inverse+?>: mul.f32
+	<inverse+?>: add.f32
+	<inverse+?>: dup.x32 sp(1)
+	<inverse+?>: div.f32
+	<inverse+?>: set.x32 sp(34)
+	cmplStd/lib/math/Matrix4f.ci:257: (22 bytes): .result.xw := (a22 * b04 - a21 * b05 - a23 * b03) / det;
+	<inverse+?>: dup.x32 sp(18)
+	<inverse+?>: dup.x32 sp(9)
+	<inverse+?>: mul.f32
+	<inverse+?>: dup.x32 sp(20)
+	<inverse+?>: dup.x32 sp(9)
+	<inverse+?>: mul.f32
+	<inverse+?>: sub.f32
+	<inverse+?>: dup.x32 sp(18)
+	<inverse+?>: dup.x32 sp(11)
+	<inverse+?>: mul.f32
+	<inverse+?>: sub.f32
+	<inverse+?>: dup.x32 sp(1)
+	<inverse+?>: div.f32
+	<inverse+?>: set.x32 sp(35)
+	cmplStd/lib/math/Matrix4f.ci:258: (22 bytes): .result.yx := (a12 * b08 - a10 * b11 - a13 * b07) / det;
+	<inverse+?>: dup.x32 sp(22)
+	<inverse+?>: dup.x32 sp(5)
+	<inverse+?>: mul.f32
+	<inverse+?>: dup.x32 sp(25)
+	<inverse+?>: dup.x32 sp(3)
+	<inverse+?>: mul.f32
+	<inverse+?>: sub.f32
+	<inverse+?>: dup.x32 sp(22)
+	<inverse+?>: dup.x32 sp(7)
+	<inverse+?>: mul.f32
+	<inverse+?>: sub.f32
+	<inverse+?>: dup.x32 sp(1)
+	<inverse+?>: div.f32
+	<inverse+?>: set.x32 sp(36)
+	cmplStd/lib/math/Matrix4f.ci:259: (22 bytes): .result.yy := (a00 * b11 - a02 * b08 + a03 * b07) / det;
+	<inverse+?>: dup.x32 sp(28)
+	<inverse+?>: dup.x32 sp(2)
+	<inverse+?>: mul.f32
+	<inverse+?>: dup.x32 sp(27)
+	<inverse+?>: dup.x32 sp(6)
+	<inverse+?>: mul.f32
+	<inverse+?>: sub.f32
+	<inverse+?>: dup.x32 sp(26)
+	<inverse+?>: dup.x32 sp(7)
+	<inverse+?>: mul.f32
+	<inverse+?>: add.f32
+	<inverse+?>: dup.x32 sp(1)
+	<inverse+?>: div.f32
+	<inverse+?>: set.x32 sp(37)
+	cmplStd/lib/math/Matrix4f.ci:260: (22 bytes): .result.yz := (a32 * b02 - a30 * b05 - a33 * b01) / det;
+	<inverse+?>: dup.x32 sp(14)
+	<inverse+?>: dup.x32 sp(11)
+	<inverse+?>: mul.f32
+	<inverse+?>: dup.x32 sp(17)
+	<inverse+?>: dup.x32 sp(9)
+	<inverse+?>: mul.f32
+	<inverse+?>: sub.f32
+	<inverse+?>: dup.x32 sp(14)
+	<inverse+?>: dup.x32 sp(13)
+	<inverse+?>: mul.f32
+	<inverse+?>: sub.f32
+	<inverse+?>: dup.x32 sp(1)
+	<inverse+?>: div.f32
+	<inverse+?>: set.x32 sp(38)
+	cmplStd/lib/math/Matrix4f.ci:261: (22 bytes): .result.yw := (a20 * b05 - a22 * b02 + a23 * b01) / det;
+	<inverse+?>: dup.x32 sp(20)
+	<inverse+?>: dup.x32 sp(8)
+	<inverse+?>: mul.f32
+	<inverse+?>: dup.x32 sp(19)
+	<inverse+?>: dup.x32 sp(12)
+	<inverse+?>: mul.f32
+	<inverse+?>: sub.f32
+	<inverse+?>: dup.x32 sp(18)
+	<inverse+?>: dup.x32 sp(13)
+	<inverse+?>: mul.f32
+	<inverse+?>: add.f32
+	<inverse+?>: dup.x32 sp(1)
+	<inverse+?>: div.f32
+	<inverse+?>: set.x32 sp(39)
+	cmplStd/lib/math/Matrix4f.ci:262: (22 bytes): .result.zx := (a10 * b10 - a11 * b08 + a13 * b06) / det;
+	<inverse+?>: dup.x32 sp(24)
+	<inverse+?>: dup.x32 sp(3)
+	<inverse+?>: mul.f32
+	<inverse+?>: dup.x32 sp(24)
+	<inverse+?>: dup.x32 sp(6)
+	<inverse+?>: mul.f32
+	<inverse+?>: sub.f32
+	<inverse+?>: dup.x32 sp(22)
+	<inverse+?>: dup.x32 sp(8)
+	<inverse+?>: mul.f32
+	<inverse+?>: add.f32
+	<inverse+?>: dup.x32 sp(1)
+	<inverse+?>: div.f32
+	<inverse+?>: set.x32 sp(40)
+	cmplStd/lib/math/Matrix4f.ci:263: (22 bytes): .result.zy := (a01 * b08 - a00 * b10 - a03 * b06) / det;
+	<inverse+?>: dup.x32 sp(27)
+	<inverse+?>: dup.x32 sp(5)
+	<inverse+?>: mul.f32
+	<inverse+?>: dup.x32 sp(29)
+	<inverse+?>: dup.x32 sp(4)
+	<inverse+?>: mul.f32
+	<inverse+?>: sub.f32
+	<inverse+?>: dup.x32 sp(26)
+	<inverse+?>: dup.x32 sp(8)
+	<inverse+?>: mul.f32
+	<inverse+?>: sub.f32
+	<inverse+?>: dup.x32 sp(1)
+	<inverse+?>: div.f32
+	<inverse+?>: set.x32 sp(41)
+	cmplStd/lib/math/Matrix4f.ci:264: (22 bytes): .result.zz := (a30 * b04 - a31 * b02 + a33 * b00) / det;
+	<inverse+?>: dup.x32 sp(16)
+	<inverse+?>: dup.x32 sp(9)
+	<inverse+?>: mul.f32
+	<inverse+?>: dup.x32 sp(16)
+	<inverse+?>: dup.x32 sp(12)
+	<inverse+?>: mul.f32
+	<inverse+?>: sub.f32
+	<inverse+?>: dup.x32 sp(14)
+	<inverse+?>: dup.x32 sp(14)
+	<inverse+?>: mul.f32
+	<inverse+?>: add.f32
+	<inverse+?>: dup.x32 sp(1)
+	<inverse+?>: div.f32
+	<inverse+?>: set.x32 sp(42)
+	cmplStd/lib/math/Matrix4f.ci:265: (22 bytes): .result.zw := (a21 * b02 - a20 * b04 - a23 * b00) / det;
+	<inverse+?>: dup.x32 sp(19)
+	<inverse+?>: dup.x32 sp(11)
+	<inverse+?>: mul.f32
+	<inverse+?>: dup.x32 sp(21)
+	<inverse+?>: dup.x32 sp(10)
+	<inverse+?>: mul.f32
+	<inverse+?>: sub.f32
+	<inverse+?>: dup.x32 sp(18)
+	<inverse+?>: dup.x32 sp(14)
+	<inverse+?>: mul.f32
+	<inverse+?>: sub.f32
+	<inverse+?>: dup.x32 sp(1)
+	<inverse+?>: div.f32
+	<inverse+?>: set.x32 sp(43)
+	cmplStd/lib/math/Matrix4f.ci:266: (22 bytes): .result.wx := (a11 * b07 - a10 * b09 - a12 * b06) / det;
+	<inverse+?>: dup.x32 sp(23)
+	<inverse+?>: dup.x32 sp(6)
+	<inverse+?>: mul.f32
+	<inverse+?>: dup.x32 sp(25)
+	<inverse+?>: dup.x32 sp(5)
+	<inverse+?>: mul.f32
+	<inverse+?>: sub.f32
+	<inverse+?>: dup.x32 sp(23)
+	<inverse+?>: dup.x32 sp(8)
+	<inverse+?>: mul.f32
+	<inverse+?>: sub.f32
+	<inverse+?>: dup.x32 sp(1)
+	<inverse+?>: div.f32
+	<inverse+?>: set.x32 sp(44)
+	cmplStd/lib/math/Matrix4f.ci:267: (22 bytes): .result.wy := (a00 * b09 - a01 * b07 + a02 * b06) / det;
+	<inverse+?>: dup.x32 sp(28)
+	<inverse+?>: dup.x32 sp(4)
+	<inverse+?>: mul.f32
+	<inverse+?>: dup.x32 sp(28)
+	<inverse+?>: dup.x32 sp(7)
+	<inverse+?>: mul.f32
+	<inverse+?>: sub.f32
+	<inverse+?>: dup.x32 sp(27)
+	<inverse+?>: dup.x32 sp(8)
+	<inverse+?>: mul.f32
+	<inverse+?>: add.f32
+	<inverse+?>: dup.x32 sp(1)
+	<inverse+?>: div.f32
+	<inverse+?>: set.x32 sp(45)
+	cmplStd/lib/math/Matrix4f.ci:268: (22 bytes): .result.wz := (a31 * b01 - a30 * b03 - a32 * b00) / det;
+	<inverse+?>: dup.x32 sp(15)
+	<inverse+?>: dup.x32 sp(12)
+	<inverse+?>: mul.f32
+	<inverse+?>: dup.x32 sp(17)
+	<inverse+?>: dup.x32 sp(11)
+	<inverse+?>: mul.f32
+	<inverse+?>: sub.f32
+	<inverse+?>: dup.x32 sp(15)
+	<inverse+?>: dup.x32 sp(14)
+	<inverse+?>: mul.f32
+	<inverse+?>: sub.f32
+	<inverse+?>: dup.x32 sp(1)
+	<inverse+?>: div.f32
+	<inverse+?>: set.x32 sp(46)
+	cmplStd/lib/math/Matrix4f.ci:269: (22 bytes): .result.ww := (a20 * b03 - a21 * b01 + a22 * b00) / det;
+	<inverse+?>: dup.x32 sp(20)
+	<inverse+?>: dup.x32 sp(10)
+	<inverse+?>: mul.f32
+	<inverse+?>: dup.x32 sp(20)
+	<inverse+?>: dup.x32 sp(13)
+	<inverse+?>: mul.f32
+	<inverse+?>: sub.f32
+	<inverse+?>: dup.x32 sp(19)
+	<inverse+?>: dup.x32 sp(14)
+	<inverse+?>: mul.f32
+	<inverse+?>: add.f32
+	<inverse+?>: dup.x32 sp(1)
+	<inverse+?>: div.f32
+	<inverse+?>: set.x32 sp(47)
+	<inverse+?>: inc.sp(-116)
+	<inverse+?>: ret
 }
 vec2d: typename {
 .kind: static const typename(val)
@@ -12304,54 +12791,6 @@ ComplexObj.im: float64 {
 .owner: ComplexObj
 .value: 0
 }
-object..type: typename {
-.kind: const variable(ref)
-.base: `typename`
-.size: 4
-.name: '.type'
-.owner: object
-}
-object.create(type: typename): pointer: function {
-.kind: static const inline
-.base: `function`
-.size: 0
-.name: 'create'
-.owner: object
-.param .result: pointer (size: 4, cast: inline)
-.param type: typename (size: 4, cast: variable(ref))
-.value: nfc(7)
-}
-object.destroy(this: object): void: function {
-.kind: static const inline
-.base: `function`
-.size: 0
-.name: 'destroy'
-.owner: object
-.param .result: void (size: 0, cast: inline)
-.param this: object (size: 4, cast: variable(ref))
-.value: nfc(8)
-}
-object.as(this: object, type: typename): pointer: function {
-.kind: static const inline
-.base: `function`
-.size: 0
-.name: 'as'
-.owner: object
-.param .result: pointer (size: 4, cast: inline)
-.param this: object (size: 4, cast: variable(ref))
-.param type: typename (size: 4, cast: variable(ref))
-.value: nfc(9)
-}
-object.type(this: object): typename: function {
-.kind: static const inline
-.base: `function`
-.size: 0
-.name: 'type'
-.owner: object
-.param .result: typename (size: 4, cast: inline)
-.param this: object (size: 4, cast: variable(ref))
-.value: nfc(10)
-}
 valInitImplicit: ComplexVal {
 .kind: variable(val)
 .base: `ComplexVal`
@@ -12749,54 +13188,6 @@ RecordSizeof.x: int64 {
 .owner: RecordSizeof
 .value: 0
 }
-object..type: typename {
-.kind: const variable(ref)
-.base: `typename`
-.size: 4
-.name: '.type'
-.owner: object
-}
-object.create(type: typename): pointer: function {
-.kind: static const inline
-.base: `function`
-.size: 0
-.name: 'create'
-.owner: object
-.param .result: pointer (size: 4, cast: inline)
-.param type: typename (size: 4, cast: variable(ref))
-.value: nfc(7)
-}
-object.destroy(this: object): void: function {
-.kind: static const inline
-.base: `function`
-.size: 0
-.name: 'destroy'
-.owner: object
-.param .result: void (size: 0, cast: inline)
-.param this: object (size: 4, cast: variable(ref))
-.value: nfc(8)
-}
-object.as(this: object, type: typename): pointer: function {
-.kind: static const inline
-.base: `function`
-.size: 0
-.name: 'as'
-.owner: object
-.param .result: pointer (size: 4, cast: inline)
-.param this: object (size: 4, cast: variable(ref))
-.param type: typename (size: 4, cast: variable(ref))
-.value: nfc(9)
-}
-object.type(this: object): typename: function {
-.kind: static const inline
-.base: `function`
-.size: 0
-.name: 'type'
-.owner: object
-.param .result: typename (size: 4, cast: inline)
-.param this: object (size: 4, cast: variable(ref))
-.value: nfc(10)
-}
 RecordSizeofExt: RecordSizeof {
 .kind: static const typename(ref)
 .base: `RecordSizeof`
@@ -12819,63 +13210,6 @@ RecordSizeofExt.y: int32 {
 .file: 'cmplStd/test/lang/reflect.ci:27'
 .owner: RecordSizeofExt
 .value: 0
-}
-RecordSizeof.x: int64 {
-.kind: variable(i64)
-.base: `int64`
-.size: 8
-.name: 'x'
-.file: 'cmplStd/test/lang/reflect.ci:23'
-.owner: RecordSizeof
-.value: 0
-}
-object..type: typename {
-.kind: const variable(ref)
-.base: `typename`
-.size: 4
-.name: '.type'
-.owner: object
-}
-object.create(type: typename): pointer: function {
-.kind: static const inline
-.base: `function`
-.size: 0
-.name: 'create'
-.owner: object
-.param .result: pointer (size: 4, cast: inline)
-.param type: typename (size: 4, cast: variable(ref))
-.value: nfc(7)
-}
-object.destroy(this: object): void: function {
-.kind: static const inline
-.base: `function`
-.size: 0
-.name: 'destroy'
-.owner: object
-.param .result: void (size: 0, cast: inline)
-.param this: object (size: 4, cast: variable(ref))
-.value: nfc(8)
-}
-object.as(this: object, type: typename): pointer: function {
-.kind: static const inline
-.base: `function`
-.size: 0
-.name: 'as'
-.owner: object
-.param .result: pointer (size: 4, cast: inline)
-.param this: object (size: 4, cast: variable(ref))
-.param type: typename (size: 4, cast: variable(ref))
-.value: nfc(9)
-}
-object.type(this: object): typename: function {
-.kind: static const inline
-.base: `function`
-.size: 0
-.name: 'type'
-.owner: object
-.param .result: typename (size: 4, cast: inline)
-.param this: object (size: 4, cast: variable(ref))
-.value: nfc(10)
 }
 typeofRecord: typename {
 .kind: variable(ref)
@@ -13576,54 +13910,6 @@ Color.value: rgbF32 {
 .name: 'value'
 .file: 'cmplStd/test/lang/recUnion.ci:23'
 .owner: Color
-}
-object..type: typename {
-.kind: const variable(ref)
-.base: `typename`
-.size: 4
-.name: '.type'
-.owner: object
-}
-object.create(type: typename): pointer: function {
-.kind: static const inline
-.base: `function`
-.size: 0
-.name: 'create'
-.owner: object
-.param .result: pointer (size: 4, cast: inline)
-.param type: typename (size: 4, cast: variable(ref))
-.value: nfc(7)
-}
-object.destroy(this: object): void: function {
-.kind: static const inline
-.base: `function`
-.size: 0
-.name: 'destroy'
-.owner: object
-.param .result: void (size: 0, cast: inline)
-.param this: object (size: 4, cast: variable(ref))
-.value: nfc(8)
-}
-object.as(this: object, type: typename): pointer: function {
-.kind: static const inline
-.base: `function`
-.size: 0
-.name: 'as'
-.owner: object
-.param .result: pointer (size: 4, cast: inline)
-.param this: object (size: 4, cast: variable(ref))
-.param type: typename (size: 4, cast: variable(ref))
-.value: nfc(9)
-}
-object.type(this: object): typename: function {
-.kind: static const inline
-.base: `function`
-.size: 0
-.name: 'type'
-.owner: object
-.param .result: typename (size: 4, cast: inline)
-.param this: object (size: 4, cast: variable(ref))
-.value: nfc(10)
 }
 black: rgbU8 {
 .kind: variable(val)
@@ -16984,6 +17270,7 @@ testMathAbsMod_f32_8d: float32 {
 .field rotation: function (size: 229, cast: static function)
 .field translation: function (size: 88, cast: static function)
 .field scale: function (size: 217, cast: static function)
+.field inverse: function (size: 632, cast: static function)
 .field vec2d: typename (size: 16, cast: static const typename(val))
 .field vec2d: function (size: 7, cast: static function)
 .field add: function (size: 0, cast: inline)
@@ -18402,6 +18689,55 @@ testMathAbsMod_f32_8d: float32 {
 			.result.wy := (0);
 			.result.wz := (0);
 			.result.ww := (1);
+		};
+		};
+		static inverse(const mat: mat4f): mat4f := {
+			a00: float32 := mat.xx;
+			a01: float32 := mat.xy;
+			a02: float32 := mat.xz;
+			a03: float32 := mat.xw;
+			a10: float32 := mat.yx;
+			a11: float32 := mat.yy;
+			a12: float32 := mat.yz;
+			a13: float32 := mat.yw;
+			a20: float32 := mat.zx;
+			a21: float32 := mat.zy;
+			a22: float32 := mat.zz;
+			a23: float32 := mat.zw;
+			a30: float32 := mat.wx;
+			a31: float32 := mat.wy;
+			a32: float32 := mat.wz;
+			a33: float32 := mat.ww;
+			b00: float32 := a00 * a11 - a01 * a10;
+			b01: float32 := a00 * a12 - a02 * a10;
+			b02: float32 := a00 * a13 - a03 * a10;
+			b03: float32 := a01 * a12 - a02 * a11;
+			b04: float32 := a01 * a13 - a03 * a11;
+			b05: float32 := a02 * a13 - a03 * a12;
+			b06: float32 := a20 * a31 - a21 * a30;
+			b07: float32 := a20 * a32 - a22 * a30;
+			b08: float32 := a20 * a33 - a23 * a30;
+			b09: float32 := a21 * a32 - a22 * a31;
+			b10: float32 := a21 * a33 - a23 * a31;
+			b11: float32 := a22 * a33 - a23 * a32;
+			det: float32 := b00 * b11 - b01 * b10 + b02 * b09 + b03 * b08 - b04 * b07 + b05 * b06;
+			return .result := {
+			.result.xx := (a11 * b11 - a12 * b10 + a13 * b09) / det;
+			.result.xy := (a02 * b10 - a01 * b11 - a03 * b09) / det;
+			.result.xz := (a31 * b05 - a32 * b04 + a33 * b03) / det;
+			.result.xw := (a22 * b04 - a21 * b05 - a23 * b03) / det;
+			.result.yx := (a12 * b08 - a10 * b11 - a13 * b07) / det;
+			.result.yy := (a00 * b11 - a02 * b08 + a03 * b07) / det;
+			.result.yz := (a32 * b02 - a30 * b05 - a33 * b01) / det;
+			.result.yw := (a20 * b05 - a22 * b02 + a23 * b01) / det;
+			.result.zx := (a10 * b10 - a11 * b08 + a13 * b06) / det;
+			.result.zy := (a01 * b08 - a00 * b10 - a03 * b06) / det;
+			.result.zz := (a30 * b04 - a31 * b02 + a33 * b00) / det;
+			.result.zw := (a21 * b02 - a20 * b04 - a23 * b00) / det;
+			.result.wx := (a11 * b07 - a10 * b09 - a12 * b06) / det;
+			.result.wy := (a00 * b09 - a01 * b07 + a02 * b06) / det;
+			.result.wz := (a31 * b01 - a30 * b03 - a32 * b00) / det;
+			.result.ww := (a20 * b03 - a21 * b01 + a22 * b00) / det;
 		};
 		};
 		static const vec2d: struct {
@@ -24018,6 +24354,7 @@ cmplStd/lib/math/Matrix4f.ci:111: rotation: function(<rotation>)
 cmplStd/lib/math/Matrix4f.ci:160: rotation: function(<rotation>)
 cmplStd/lib/math/Matrix4f.ci:193: translation: function(<translation>)
 cmplStd/lib/math/Matrix4f.ci:203: scale: function(<scale>)
+cmplStd/lib/math/Matrix4f.ci:217: inverse: function(<inverse>)
 cmplStd/lib/math/Vector2d.ci:2: vec2d: typename(<vec2d>)
 cmplStd/lib/math/Vector2d.ci:14: vec2d: function(<vec2d>)
 cmplStd/lib/text/cstr.ci:4: length: function(<length>)
@@ -24308,13 +24645,13 @@ cmplStd/test/lang/reflect.ci:22: RecordSizeof: typename(<RecordSizeof>)
 cmplStd/test/lang/reflect.ci:26: RecordSizeofExt: typename(<RecordSizeofExt>)
 cmplStd/test/lang/reflect.ci:30: typeofRecord: typename(<RecordSizeofExt>)
 cmplStd/test/lang/reflect.ci:31: nameOfRecord: char[*]("RecordSizeofExt")
-cmplStd/test/lang/reflect.ci:32: offsetOfRecord: int32(329136)
+cmplStd/test/lang/reflect.ci:32: offsetOfRecord: int32(334496)
 cmplStd/test/lang/reflect.ci:33: sizeOfRecord: int32(16)
 cmplStd/test/lang/reflect.ci:34: fileOfRecord: char[*]("cmplStd/test/lang/reflect.ci")
 cmplStd/test/lang/reflect.ci:35: lineOfRecord: int32(26)
 cmplStd/test/lang/reflect.ci:37: typeofBase: typename(<RecordSizeof>)
 cmplStd/test/lang/reflect.ci:38: nameOfBase: char[*]("RecordSizeof")
-cmplStd/test/lang/reflect.ci:39: offsetOfBase: int32(328816)
+cmplStd/test/lang/reflect.ci:39: offsetOfBase: int32(334176)
 cmplStd/test/lang/reflect.ci:40: sizeOfBase: int32(12)
 cmplStd/test/lang/reflect.ci:41: fileOfBase: char[*]("cmplStd/test/lang/reflect.ci")
 cmplStd/test/lang/reflect.ci:42: lineOfBase: int32(22)
@@ -24748,18 +25085,18 @@ cmplStd/test/std/test.math.ci:119: testMathAbsMod_f32_8d: float32(8.000000)
 
 ---------- Memory usage:
 memory[all] @000000; size: 134217440(128.0 Mb)
-memory[used] @000000; size: 431674(421.6 Kb)
-memory[heap] @06963a; size: 100231358(95.6 Mb)
+memory[used] @000000; size: 437666(427.4 Kb)
+memory[heap] @06ada2; size: 100225366(95.6 Mb)
 memory[stack] @3ffff40; size: 33554360(32.0 Mb)
 
 ---------- Used memory:
-memory[meta] @000000; size: 413872(404.2 Kb)
-memory[code] @000000; size: 17447(17.0 Kb)
+memory[meta] @000000; size: 419232(409.4 Kb)
+memory[code] @000000; size: 18079(17.7 Kb)
 memory[data] @000000; size: 128(128.0 bytes)
 
 ---------- Heap memory:
-memory[used] @069650; size: 32(32.0 bytes)
-memory[used] @069680; size: 32(32.0 bytes)
-memory[free] @0696b0; size: 100231216(95.6 Mb)
+memory[used] @06adc0; size: 32(32.0 bytes)
+memory[used] @06adf0; size: 32(32.0 bytes)
+memory[free] @06ae20; size: 100225216(95.6 Mb)
 
 ---------- Exitcode: 0, time: 0.000 ms

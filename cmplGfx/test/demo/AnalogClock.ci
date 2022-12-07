@@ -60,11 +60,10 @@ int onEvent(int action, int button, int ex, int ey) {
 	inline padding = 5;
 	inline radius = 5;
 	font.clipText(&roiClock, txtClock);
-	roiClock.x = x1 - roiClock.w / 2;
-	roiClock.y = y1 + y1 / 3;
-	roiClock.adjust(padding);
+	roiClock.position(x1 - roiClock.width() / 2, y1 + y1 / 3);
+	Style.padded(&roiClock, padding);
 	offs.fillRRect(roiClock, radius, 0x101010);
-	roiClock.adjust(-padding);
+	Style.padded(&roiClock, -padding);
 	offs.drawText(roiClock, font, txtClock, 0xadadad);
 
 	inline secondsInMillis = 1000;

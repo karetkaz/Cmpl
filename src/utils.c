@@ -5,7 +5,7 @@
  *******************************************************************************
  */
 
-#include "internal.h"
+#include "utils.h"
 
 unsigned rehash(const char *str, size_t len) {
 	static unsigned const crc_tab[256] = {
@@ -167,4 +167,3 @@ void freeBuff(struct arrBuffer *buff) {
 	buff->cap = 0;
 	buff->esz = 0;
 }
-

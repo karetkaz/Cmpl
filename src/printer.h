@@ -9,7 +9,6 @@
 #define CMPL_PRINTER_H
 
 #include "cmplVm.h"
-#include <stdlib.h>
 
 const char **escapeStr();
 

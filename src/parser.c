@@ -2014,13 +2014,8 @@ static astn statement(ccContext cc, const char *doc) {
 	return ast;
 }
 
-astn ccAddUnit(ccContext cc, int init(ccContext), const char *file, int line, char *text) {
+astn ccAddUnit(ccContext cc, const char *file, int line, char *text) {
 	cc->unit = file;
-	if (init != NULL && init(cc) != 0) {
-		error(cc->rt, NULL, 0, ERR_OPENING_FILE, file);
-		return NULL;
-	}
-
 	int nest = cc->nest;
 	if (ccOpen(cc, file, line, text) != 0) {
 		error(cc->rt, NULL, 0, ERR_OPENING_FILE, file);

@@ -6,6 +6,7 @@
  * convert ast to bytecode
  */
 
+#include "cmplDbg.h"
 #include "internal.h"
 
 // forward declarations

@@ -26,27 +26,17 @@ typedef enum {
 	flag_alpha   = 0x10,		// write alpha channel only
 } GradientFlags;
 
-// bounding box
-typedef struct GxClip {
-	union { uint16_t l, xmin; };	//(left)
-	union { uint16_t t, ymin; };	//(top)
-	union { uint16_t r, xmax; };	//(right)
-	union { uint16_t b, ymax; };	//(bottom)
-} *GxClip;
-
 // Rectangle
 typedef struct GxRect {
-	int32_t x;
-	int32_t y;
-	union { int32_t w, width; };
-	union { int32_t h, height; };
+	int32_t x0;  // left
+	int32_t y0;  // top
+	int32_t x1;  // right
+	int32_t y1;  // bottom
 } *GxRect;
 
 // Color Look Up Table (Palette)
 typedef struct GxCLut {
-	uint16_t count;
-	uint8_t flags;
-	uint8_t trans;
+	uint32_t count;
 	argb data[256];
 } *GxCLut;
 
@@ -63,10 +53,6 @@ typedef struct GxFLut {
 
 // image structure
 typedef struct GxImage {
-	struct {
-		uint16_t x0;
-		uint16_t y0;
-	};
 	uint16_t width;
 	uint16_t height;
 
@@ -76,8 +62,6 @@ typedef struct GxImage {
 	uint32_t scanLen;
 
 	char *basePtr;
-
-	GxClip clipPtr;
 
 	union {
 		GxCLut CLUTPtr;	// palette
@@ -94,9 +78,20 @@ GxImage createImage(GxImage recycle, int width, int height, int depth, ImageFlag
 GxImage sliceImage(GxImage recycle, GxImage parent, GxRect roi);
 void destroyImage(GxImage image);
 
-// Get current clip region
-static inline GxClip getClip(GxImage image) {
-	return image->clipPtr ? image->clipPtr : (GxClip)image;
+static inline int rectEmpty(struct GxRect roi) {
+	return roi.x0 >= roi.x1 || roi.y0 >= roi.y1;
+}
+static inline int rectWidth(struct GxRect rect) {
+	return rect.x1 - rect.x0;
+}
+static inline int rectHeight(struct GxRect rect) {
+	return rect.y1 - rect.y0;
+}
+static inline void rectPosition(GxRect rect, int x, int y) {
+	rect->x1 = x + rect->x1 - rect->x0;
+	rect->x0 = x;
+	rect->y1 = y + rect->y1 - rect->y0;
+	rect->y0 = y;
 }
 void* clipRect(GxImage image, GxRect roi);
 
@@ -242,13 +237,14 @@ static inline uint32_t getPixelLinear(GxImage image, int32_t x16, int32_t y16) {
 // draw
 void fillRect(GxImage image, int x0, int y0, int x1, int y1, int incl, uint32_t color);
 
-void clipText(GxRect rect, GxImage font, const char *text);
-void drawChar(GxImage image, int x, int y, GxImage font, int chr, uint32_t color);
-void drawText(GxImage image, int x, int y, GxImage font, const char *text, uint32_t color);
+void drawChar(GxImage image, int x0, int y0, GxImage font, int chr, uint32_t color);
 
-int fillImage(GxImage image, GxRect roi, void *color, void *extra, bltProc blt);
-int copyImage(GxImage image, int x, int y, GxImage src, GxRect roi, void *extra, bltProc blt);
-int resizeImage(GxImage image, GxRect rect, GxImage src, GxRect roi, int interpolation);
+void clipText(GxRect rect, GxImage font, const char *text);
+void drawText(GxImage image, GxRect rect, GxImage font, const char *text, uint32_t color);
+
+int fillImage(GxImage image, const GxRect roi, void *color, void *extra, bltProc blt);
+int copyImage(GxImage image, int x, int y, GxImage src, const GxRect roi, void *extra, bltProc blt);
+int transformImage(GxImage image, GxRect rect, GxImage src, const GxRect roi, int interpolation, float mat[16]);
 
 // image read write
 GxImage loadImg(GxImage dst, const char *src, int depth);

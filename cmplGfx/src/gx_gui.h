@@ -59,7 +59,3 @@ extern void setWindowTitle(GxWindow window, const char *title);
 extern void flushWindow(GxWindow window);
 
 extern void destroyWindow(GxWindow window);
-
-// TODO: find a common place and merge platform specific implementations
-uint64_t timeMillis();
-void sleepMillis(int64_t millis);

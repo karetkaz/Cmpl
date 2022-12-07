@@ -209,3 +209,63 @@ mat4f scale(const vec4f direction&, float32 amount) {
 		wx: 0; wy: 0; wz: 0; ww: 1;
 	};
 }
+
+/**
+ * Build the inverse of the matrix
+ * adapted from: https://github.com/glslify/glsl-inverse/blob/master/index.glsl
+ */
+mat4f inverse(const mat4f mat&) {
+	float32 a00 = mat.xx;
+	float32 a01 = mat.xy;
+	float32 a02 = mat.xz;
+	float32 a03 = mat.xw;
+
+	float32 a10 = mat.yx;
+	float32 a11 = mat.yy;
+	float32 a12 = mat.yz;
+	float32 a13 = mat.yw;
+
+	float32 a20 = mat.zx;
+	float32 a21 = mat.zy;
+	float32 a22 = mat.zz;
+	float32 a23 = mat.zw;
+
+	float32 a30 = mat.wx;
+	float32 a31 = mat.wy;
+	float32 a32 = mat.wz;
+	float32 a33 = mat.ww;
+
+	float32 b00 = a00 * a11 - a01 * a10;
+	float32 b01 = a00 * a12 - a02 * a10;
+	float32 b02 = a00 * a13 - a03 * a10;
+	float32 b03 = a01 * a12 - a02 * a11;
+	float32 b04 = a01 * a13 - a03 * a11;
+	float32 b05 = a02 * a13 - a03 * a12;
+	float32 b06 = a20 * a31 - a21 * a30;
+	float32 b07 = a20 * a32 - a22 * a30;
+	float32 b08 = a20 * a33 - a23 * a30;
+	float32 b09 = a21 * a32 - a22 * a31;
+	float32 b10 = a21 * a33 - a23 * a31;
+	float32 b11 = a22 * a33 - a23 * a32;
+
+	float32 det = b00 * b11 - b01 * b10 + b02 * b09 + b03 * b08 - b04 * b07 + b05 * b06;
+
+	return {
+		xx: (a11 * b11 - a12 * b10 + a13 * b09) / det;
+		xy: (a02 * b10 - a01 * b11 - a03 * b09) / det;
+		xz: (a31 * b05 - a32 * b04 + a33 * b03) / det;
+		xw: (a22 * b04 - a21 * b05 - a23 * b03) / det;
+		yx: (a12 * b08 - a10 * b11 - a13 * b07) / det;
+		yy: (a00 * b11 - a02 * b08 + a03 * b07) / det;
+		yz: (a32 * b02 - a30 * b05 - a33 * b01) / det;
+		yw: (a20 * b05 - a22 * b02 + a23 * b01) / det;
+		zx: (a10 * b10 - a11 * b08 + a13 * b06) / det;
+		zy: (a01 * b08 - a00 * b10 - a03 * b06) / det;
+		zz: (a30 * b04 - a31 * b02 + a33 * b00) / det;
+		zw: (a21 * b02 - a20 * b04 - a23 * b00) / det;
+		wx: (a11 * b07 - a10 * b09 - a12 * b06) / det;
+		wy: (a00 * b09 - a01 * b07 + a02 * b06) / det;
+		wz: (a31 * b01 - a30 * b03 - a32 * b00) / det;
+		ww: (a20 * b03 - a21 * b01 + a22 * b00) / det;
+	};
+}

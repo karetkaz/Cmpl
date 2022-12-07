@@ -13,7 +13,8 @@ TreeView TreeView(const char text[], View items...) {
 	static bool onMeasure(Layout this, Rect rect&) {
 		if (Switch switch = this.data.as(Switch)) {
 			if (switch.selected == 0) {
-				rect.w = rect.h = 0;
+				rect.x1 = rect.x0;
+				rect.y1 = rect.y0;
 				return false;
 			}
 		}

@@ -66,6 +66,7 @@ let projects = {
 			'cmplGfx/test/demo/Biorhythm.ci',
 			'cmplGfx/test/demo/FloodIt.ci',
 			'cmplGfx/test/demo/RayTracer0.ci',
+			'cmplGfx/test/demo/RayTracerI.ci',
 			'cmplGfx/test/demo/StarField.ci',
 
 			'cmplGfx/test/demo.procedural/2d.ImageDiff.ci',

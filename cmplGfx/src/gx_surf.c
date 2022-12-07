@@ -16,12 +16,10 @@ GxImage createImage(GxImage recycle, int width, int height, int depth, ImageFlag
 		free(recycle->basePtr);
 	}
 
-	recycle->x0 = recycle->y0 = 0;
 	recycle->width = (uint16_t) width;
 	recycle->height = (uint16_t) height;
 	recycle->depth = (uint8_t) depth;
 	recycle->flags = flags;
-	recycle->clipPtr = NULL;
 	recycle->basePtr = NULL;
 	recycle->tempPtr = NULL;
 
@@ -109,22 +107,20 @@ GxImage sliceImage(GxImage recycle, GxImage parent, const GxRect roi) {
 		free(recycle->basePtr);
 	}
 
-	recycle->x0 = recycle->y0 = 0;
 	recycle->width = parent->width;
 	recycle->height = parent->height;
 	recycle->depth = parent->depth;
 	recycle->flags = flags;
 	recycle->pixelLen = parent->pixelLen;
 	recycle->scanLen = parent->scanLen;
-	recycle->clipPtr = parent->clipPtr;
 	recycle->basePtr = parent->basePtr;
 	recycle->tempPtr = parent->tempPtr;
 
 	if (roi != NULL) {
 		struct GxRect rect = *roi;
 		recycle->basePtr = clipRect(parent, &rect);
-		recycle->width = rect.width < 0 ? 0 : rect.width;
-		recycle->height = rect.height < 0 ? 0 : rect.height;
+		recycle->width = rect.x1 < rect.x0 ? 0 : rect.x1 - rect.x0;
+		recycle->height = rect.y1 < rect.y0 ? 0 : rect.y1 - rect.y0;
 	}
 	return recycle;
 }
@@ -144,33 +140,27 @@ void destroyImage(GxImage image) {
 }
 
 void* clipRect(GxImage image, GxRect roi) {
-	GxClip clp = getClip(image);
-
-	roi->w += roi->x;
-	roi->h += roi->y;
-
-	if (clp->l > roi->x) {
-		roi->x = clp->l;
+	if (roi->x0 < 0) {
+		roi->x0 = 0;
 	}
-	if (clp->t > roi->y) {
-		roi->y = clp->t;
+	if (roi->y0 < 0) {
+		roi->y0 = 0;
 	}
-	if (clp->r < roi->w) {
-		roi->w = clp->r;
-	}
-	if (clp->b < roi->h) {
-		roi->h = clp->b;
+	int width = image->width;
+	if (roi->x1 > width) {
+		roi->x1 = width;
 	}
 
-	if ((roi->w -= roi->x) <= 0) {
+	int height = image->height;
+	if (roi->y1 > height) {
+		roi->y1 = height;
+	}
+
+	if (rectEmpty(*roi)) {
 		return NULL;
 	}
 
-	if ((roi->h -= roi->y) <= 0) {
-		return NULL;
-	}
-
-	return refPixel(image, roi->x, roi->y);
+	return refPixel(image, roi->x0, roi->y0);
 }
 
 int fillImage(GxImage image, GxRect roi, void *color, void *extra, bltProc blt) {
@@ -179,14 +169,12 @@ int fillImage(GxImage image, GxRect roi, void *color, void *extra, bltProc blt) 
 		return -1;
 	}
 
-	struct GxRect clip;
-	if (roi == NULL) {
-		clip.x = clip.y = 0;
-		clip.w = image->width;
-		clip.h = image->height;
-	} else {
-		clip = *roi;
-	}
+	struct GxRect clip = {
+		.x0 = roi ? roi->x0 : 0,
+		.y0 = roi ? roi->y0 : 0,
+		.x1 = roi ? roi->x1 : image->width,
+		.y1 = roi ? roi->y1 : image->height,
+	};
 
 	char *dst = clipRect(image, &clip);
 	if (dst == NULL) {
@@ -194,8 +182,9 @@ int fillImage(GxImage image, GxRect roi, void *color, void *extra, bltProc blt) 
 		return 0;
 	}
 
-	while (clip.h--) {
-		if (blt(dst, color, extra, (size_t) clip.w) < 0) {
+	int width = clip.x1 - clip.x0;
+	for (int y = clip.y0; y < clip.y1; ++y) {
+		if (blt(dst, color, extra, width) < 0) {
 			return -1;
 		};
 		dst += image->scanLen;
@@ -203,133 +192,106 @@ int fillImage(GxImage image, GxRect roi, void *color, void *extra, bltProc blt) 
 	return 0;
 }
 
-int copyImage(GxImage image, int x, int y, GxImage src, GxRect roi, void *extra, bltProc blt) {
+int copyImage(GxImage image, int x, int y, GxImage src, const GxRect roi, void *extra, bltProc blt) {
 	if (blt == NULL) {
 		// error: operation is invalid or not implemented
 		return -1;
 	}
 
-	struct GxRect clip;
-	clip.x = roi ? roi->x : 0;
-	clip.y = roi ? roi->y : 0;
-	clip.w = roi ? roi->w : src->width;
-	clip.h = roi ? roi->h : src->height;
-
+	struct GxRect rect = {
+		.x0 = roi ? roi->x0 : 0,
+		.y0 = roi ? roi->y0 : 0,
+		.x1 = roi ? roi->x1 : src->width,
+		.y1 = roi ? roi->y1 : src->height,
+	};
 	if (x < 0) {
-		clip.x -= x;
-		clip.w += x;
+		rect.x0 -= x;
 	}
 	if (y < 0) {
-		clip.y -= y;
-		clip.h += y;
+		rect.y0 -= y;
 	}
-	char *sptr = clipRect(src, &clip);
+	char *sptr = clipRect(src, &rect);
 	if (sptr == NULL) {
 		// there is noting to copy
 		return 0;
 	}
 
-	clip.x = x;
-	clip.y = y;
-	if (x < 0) {
-		clip.w -= x;
-	}
-	if (y < 0) {
-		clip.h -= y;
-	}
-	char *dptr = clipRect(image, &clip);
+	rectPosition(&rect, x < 0 ? 0 : x, y < 0 ? 0 : y);
+	char *dptr = clipRect(image, &rect);
 	if (dptr == NULL) {
 		// there are no pixels to set
 		return 0;
 	}
 
-	while (clip.h--) {
-		if (blt(dptr, sptr, extra, (size_t) clip.w) < 0) {
+	int width = rect.x1 - rect.x0;
+	for (int n = rect.y0; n < rect.y1; ++n) {
+		if (blt(dptr, sptr, extra, width) < 0) {
 			return -1;
-		};
+		}
 		dptr += image->scanLen;
 		sptr += src->scanLen;
 	}
 	return 0;
 }
 
-int resizeImage(GxImage image, GxRect rect, GxImage src, GxRect roi, int interpolation) {
+int transformImage(GxImage image, GxRect rect, GxImage src, GxRect roi, int interpolation, float mat[16]) {
 	if (image->depth != src->depth) {
 		return -2;
 	}
 
-	struct GxRect srec;
-	srec.x = srec.y = 0;
-	srec.w = src->width;
-	srec.h = src->height;
-	if (roi != NULL) {
-		if (roi->x > 0) {
-			srec.w -= roi->x;
-			srec.x = roi->x;
-		}
-		if (roi->y > 0) {
-			srec.h -= roi->y;
-			srec.y = roi->y;
-		}
-		if (roi->w < srec.w) {
-			srec.w = roi->w;
-		}
-		if (roi->h < srec.h) {
-			srec.h = roi->h;
-		}
-	}
+	struct GxRect dstRec = {
+		.x0 = rect ? rect->x0 : 0,
+		.y0 = rect ? rect->y0 : 0,
+		.x1 = rect ? rect->x1 : image->width,
+		.y1 = rect ? rect->y1 : image->height,
+	};
+	struct GxRect srcRec = {
+		.x0 = roi ? roi->x0 : 0,
+		.y0 = roi ? roi->y0 : 0,
+		.x1 = roi ? roi->x1 : src->width,
+		.y1 = roi ? roi->y1 : src->height,
+	};
 
-	struct GxRect drec;
-	if (rect != NULL) {
-		drec = *rect;
-	}
-	else {
-		drec.x = drec.y = 0;
-		drec.w = image->width;
-		drec.h = image->height;
-	}
+	// convert floating point values to fixed point(16.16) values (scale + rotate + translate)
+	int32_t xx = mat ? (int32_t) (mat[0] * 65535) : (rectWidth(srcRec) << 16) / rectWidth(dstRec);
+	int32_t xy = mat ? (int32_t) (mat[1] * 65535) : 0;
+	int32_t xt = (mat ? (int32_t) (mat[3] * 65535) : (srcRec.x0 << 16)) - xx * dstRec.x0;
+	int32_t yy = mat ? (int32_t) (mat[5] * 65535) : (rectHeight(srcRec) << 16) / rectHeight(dstRec);
+	int32_t yx = mat ? (int32_t) (mat[4] * 65535) : 0;
+	int32_t yt = (mat ? (int32_t) (mat[7] * 65535) : (srcRec.y0 << 16)) - yy * dstRec.y0;
 
-	if (drec.w <= 0 || drec.h <= 0) {
+	if (!clipRect(image, &dstRec)) {
+		// nothing to set
 		return 0;
 	}
-	if (srec.w <= 0 || srec.h <= 0) {
+	if (!clipRect(src, &srcRec)) {
+		// nothing to get
 		return 0;
 	}
 
-	int32_t x0 = 0;
-	int32_t y0 = 0;
-	int32_t dx = (srec.w << 16) / drec.w;
-	int32_t dy = (srec.h << 16) / drec.h;
-
-	if (drec.x < 0) {
-		x0 = -drec.x;
-	}
-	if (drec.y < 0) {
-		y0 = -drec.y;
-	}
-
-	char *dptr = clipRect(image, &drec);
-	if (dptr == NULL) {
-		return 0;
-	}
-
-	if (interpolation == 0 || dx > 0x20000 || dy > 0x20000) {
-		for (int y = 0, sy = y0; y < drec.h; ++y, sy += dy) {
-			for (int x = 0, sx = x0; x < drec.w; ++x, sx += dx) {
-				setPixel(image, drec.x + x, drec.y + y, getPixel(src, sx >> 16, sy >> 16));
+	if (interpolation == 0 || xx > 0x20000 || yy > 0x20000) {
+		for (int y = dstRec.y0; y < dstRec.y1; ++y) {
+			for (int x = dstRec.x0; x < dstRec.x1; ++x) {
+				int32_t tx = (xx * x + xy * y + xt) >> 16;
+				int32_t ty = (yx * x + yy * y + yt) >> 16;
+				setPixel(image, x, y, getPixel(src, tx, ty));
 			}
 		}
-		return 0;
+		return 1;
 	}
 
-	x0 -= 0x8000;
-	y0 -= 0x8000;
-	for (int y = 0, sy = y0; y < drec.h; ++y, sy += dy) {
-		for (int x = 0, sx = x0; x < drec.w; ++x, sx += dx) {
-			setPixel(image, drec.x + x, drec.y + y, getPixelLinear(src, sx, sy));
+	xt -= 0x7fff;
+	yt -= 0x7fff;
+	for (int y = dstRec.y0; y < dstRec.y1; ++y) {
+		for (int x = dstRec.x0; x < dstRec.x1; ++x) {
+			int32_t tx = xx * x + xy * y + xt;
+			int32_t ty = yx * x + yy * y + yt;
+			tx *= !(tx < 0 && tx > -0x8000);
+			ty *= !(ty < 0 && ty > -0x8000);
+			setPixel(image, x, y, getPixelLinear(src, tx, ty));
 		}
 	}
-	return 0;
+	return 1;
 }
 
 static inline double gauss(double x, double sigma) {

@@ -6791,6 +6791,757 @@
 				</stmt>
 			</init>
 		</stmt>
+		<stmt token=".variable" type="function" kind="static const typename(ref)" value="inverse(mat: mat4f): mat4f">
+			<init token="{}" type="void" kind="static const typename(void)" file="cmplStd/lib/math/Matrix4f.ci:217">
+				<stmt token=".variable" type="float32" kind="static const typename(f32)" value="a00">
+					<init token="." type="float32" kind="static const typename(f32)" value="mat.xx">
+						<left token=".variable" type="mat4f" kind="static const typename(val)" value="mat"/>
+						<right token=".variable" type="float32" kind="static const typename(f32)" value="xx"/>
+					</init>
+				</stmt>
+				<stmt token=".variable" type="float32" kind="static const typename(f32)" value="a01">
+					<init token="." type="float32" kind="static const typename(f32)" value="mat.xy">
+						<left token=".variable" type="mat4f" kind="static const typename(val)" value="mat"/>
+						<right token=".variable" type="float32" kind="static const typename(f32)" value="xy"/>
+					</init>
+				</stmt>
+				<stmt token=".variable" type="float32" kind="static const typename(f32)" value="a02">
+					<init token="." type="float32" kind="static const typename(f32)" value="mat.xz">
+						<left token=".variable" type="mat4f" kind="static const typename(val)" value="mat"/>
+						<right token=".variable" type="float32" kind="static const typename(f32)" value="xz"/>
+					</init>
+				</stmt>
+				<stmt token=".variable" type="float32" kind="static const typename(f32)" value="a03">
+					<init token="." type="float32" kind="static const typename(f32)" value="mat.xw">
+						<left token=".variable" type="mat4f" kind="static const typename(val)" value="mat"/>
+						<right token=".variable" type="float32" kind="static const typename(f32)" value="xw"/>
+					</init>
+				</stmt>
+				<stmt token=".variable" type="float32" kind="static const typename(f32)" value="a10">
+					<init token="." type="float32" kind="static const typename(f32)" value="mat.yx">
+						<left token=".variable" type="mat4f" kind="static const typename(val)" value="mat"/>
+						<right token=".variable" type="float32" kind="static const typename(f32)" value="yx"/>
+					</init>
+				</stmt>
+				<stmt token=".variable" type="float32" kind="static const typename(f32)" value="a11">
+					<init token="." type="float32" kind="static const typename(f32)" value="mat.yy">
+						<left token=".variable" type="mat4f" kind="static const typename(val)" value="mat"/>
+						<right token=".variable" type="float32" kind="static const typename(f32)" value="yy"/>
+					</init>
+				</stmt>
+				<stmt token=".variable" type="float32" kind="static const typename(f32)" value="a12">
+					<init token="." type="float32" kind="static const typename(f32)" value="mat.yz">
+						<left token=".variable" type="mat4f" kind="static const typename(val)" value="mat"/>
+						<right token=".variable" type="float32" kind="static const typename(f32)" value="yz"/>
+					</init>
+				</stmt>
+				<stmt token=".variable" type="float32" kind="static const typename(f32)" value="a13">
+					<init token="." type="float32" kind="static const typename(f32)" value="mat.yw">
+						<left token=".variable" type="mat4f" kind="static const typename(val)" value="mat"/>
+						<right token=".variable" type="float32" kind="static const typename(f32)" value="yw"/>
+					</init>
+				</stmt>
+				<stmt token=".variable" type="float32" kind="static const typename(f32)" value="a20">
+					<init token="." type="float32" kind="static const typename(f32)" value="mat.zx">
+						<left token=".variable" type="mat4f" kind="static const typename(val)" value="mat"/>
+						<right token=".variable" type="float32" kind="static const typename(f32)" value="zx"/>
+					</init>
+				</stmt>
+				<stmt token=".variable" type="float32" kind="static const typename(f32)" value="a21">
+					<init token="." type="float32" kind="static const typename(f32)" value="mat.zy">
+						<left token=".variable" type="mat4f" kind="static const typename(val)" value="mat"/>
+						<right token=".variable" type="float32" kind="static const typename(f32)" value="zy"/>
+					</init>
+				</stmt>
+				<stmt token=".variable" type="float32" kind="static const typename(f32)" value="a22">
+					<init token="." type="float32" kind="static const typename(f32)" value="mat.zz">
+						<left token=".variable" type="mat4f" kind="static const typename(val)" value="mat"/>
+						<right token=".variable" type="float32" kind="static const typename(f32)" value="zz"/>
+					</init>
+				</stmt>
+				<stmt token=".variable" type="float32" kind="static const typename(f32)" value="a23">
+					<init token="." type="float32" kind="static const typename(f32)" value="mat.zw">
+						<left token=".variable" type="mat4f" kind="static const typename(val)" value="mat"/>
+						<right token=".variable" type="float32" kind="static const typename(f32)" value="zw"/>
+					</init>
+				</stmt>
+				<stmt token=".variable" type="float32" kind="static const typename(f32)" value="a30">
+					<init token="." type="float32" kind="static const typename(f32)" value="mat.wx">
+						<left token=".variable" type="mat4f" kind="static const typename(val)" value="mat"/>
+						<right token=".variable" type="float32" kind="static const typename(f32)" value="wx"/>
+					</init>
+				</stmt>
+				<stmt token=".variable" type="float32" kind="static const typename(f32)" value="a31">
+					<init token="." type="float32" kind="static const typename(f32)" value="mat.wy">
+						<left token=".variable" type="mat4f" kind="static const typename(val)" value="mat"/>
+						<right token=".variable" type="float32" kind="static const typename(f32)" value="wy"/>
+					</init>
+				</stmt>
+				<stmt token=".variable" type="float32" kind="static const typename(f32)" value="a32">
+					<init token="." type="float32" kind="static const typename(f32)" value="mat.wz">
+						<left token=".variable" type="mat4f" kind="static const typename(val)" value="mat"/>
+						<right token=".variable" type="float32" kind="static const typename(f32)" value="wz"/>
+					</init>
+				</stmt>
+				<stmt token=".variable" type="float32" kind="static const typename(f32)" value="a33">
+					<init token="." type="float32" kind="static const typename(f32)" value="mat.ww">
+						<left token=".variable" type="mat4f" kind="static const typename(val)" value="mat"/>
+						<right token=".variable" type="float32" kind="static const typename(f32)" value="ww"/>
+					</init>
+				</stmt>
+				<stmt token=".variable" type="float32" kind="static const typename(f32)" value="b00">
+					<init token="-" type="float32" kind="static const typename(f32)" value="a00 * a11 - a01 * a10">
+						<left token="*" type="float32" kind="static const typename(f32)" value="a00 * a11">
+							<left token=".variable" type="float32" kind="static const typename(f32)" value="a00"/>
+							<right token=".variable" type="float32" kind="static const typename(f32)" value="a11"/>
+						</left>
+						<right token="*" type="float32" kind="static const typename(f32)" value="a01 * a10">
+							<left token=".variable" type="float32" kind="static const typename(f32)" value="a01"/>
+							<right token=".variable" type="float32" kind="static const typename(f32)" value="a10"/>
+						</right>
+					</init>
+				</stmt>
+				<stmt token=".variable" type="float32" kind="static const typename(f32)" value="b01">
+					<init token="-" type="float32" kind="static const typename(f32)" value="a00 * a12 - a02 * a10">
+						<left token="*" type="float32" kind="static const typename(f32)" value="a00 * a12">
+							<left token=".variable" type="float32" kind="static const typename(f32)" value="a00"/>
+							<right token=".variable" type="float32" kind="static const typename(f32)" value="a12"/>
+						</left>
+						<right token="*" type="float32" kind="static const typename(f32)" value="a02 * a10">
+							<left token=".variable" type="float32" kind="static const typename(f32)" value="a02"/>
+							<right token=".variable" type="float32" kind="static const typename(f32)" value="a10"/>
+						</right>
+					</init>
+				</stmt>
+				<stmt token=".variable" type="float32" kind="static const typename(f32)" value="b02">
+					<init token="-" type="float32" kind="static const typename(f32)" value="a00 * a13 - a03 * a10">
+						<left token="*" type="float32" kind="static const typename(f32)" value="a00 * a13">
+							<left token=".variable" type="float32" kind="static const typename(f32)" value="a00"/>
+							<right token=".variable" type="float32" kind="static const typename(f32)" value="a13"/>
+						</left>
+						<right token="*" type="float32" kind="static const typename(f32)" value="a03 * a10">
+							<left token=".variable" type="float32" kind="static const typename(f32)" value="a03"/>
+							<right token=".variable" type="float32" kind="static const typename(f32)" value="a10"/>
+						</right>
+					</init>
+				</stmt>
+				<stmt token=".variable" type="float32" kind="static const typename(f32)" value="b03">
+					<init token="-" type="float32" kind="static const typename(f32)" value="a01 * a12 - a02 * a11">
+						<left token="*" type="float32" kind="static const typename(f32)" value="a01 * a12">
+							<left token=".variable" type="float32" kind="static const typename(f32)" value="a01"/>
+							<right token=".variable" type="float32" kind="static const typename(f32)" value="a12"/>
+						</left>
+						<right token="*" type="float32" kind="static const typename(f32)" value="a02 * a11">
+							<left token=".variable" type="float32" kind="static const typename(f32)" value="a02"/>
+							<right token=".variable" type="float32" kind="static const typename(f32)" value="a11"/>
+						</right>
+					</init>
+				</stmt>
+				<stmt token=".variable" type="float32" kind="static const typename(f32)" value="b04">
+					<init token="-" type="float32" kind="static const typename(f32)" value="a01 * a13 - a03 * a11">
+						<left token="*" type="float32" kind="static const typename(f32)" value="a01 * a13">
+							<left token=".variable" type="float32" kind="static const typename(f32)" value="a01"/>
+							<right token=".variable" type="float32" kind="static const typename(f32)" value="a13"/>
+						</left>
+						<right token="*" type="float32" kind="static const typename(f32)" value="a03 * a11">
+							<left token=".variable" type="float32" kind="static const typename(f32)" value="a03"/>
+							<right token=".variable" type="float32" kind="static const typename(f32)" value="a11"/>
+						</right>
+					</init>
+				</stmt>
+				<stmt token=".variable" type="float32" kind="static const typename(f32)" value="b05">
+					<init token="-" type="float32" kind="static const typename(f32)" value="a02 * a13 - a03 * a12">
+						<left token="*" type="float32" kind="static const typename(f32)" value="a02 * a13">
+							<left token=".variable" type="float32" kind="static const typename(f32)" value="a02"/>
+							<right token=".variable" type="float32" kind="static const typename(f32)" value="a13"/>
+						</left>
+						<right token="*" type="float32" kind="static const typename(f32)" value="a03 * a12">
+							<left token=".variable" type="float32" kind="static const typename(f32)" value="a03"/>
+							<right token=".variable" type="float32" kind="static const typename(f32)" value="a12"/>
+						</right>
+					</init>
+				</stmt>
+				<stmt token=".variable" type="float32" kind="static const typename(f32)" value="b06">
+					<init token="-" type="float32" kind="static const typename(f32)" value="a20 * a31 - a21 * a30">
+						<left token="*" type="float32" kind="static const typename(f32)" value="a20 * a31">
+							<left token=".variable" type="float32" kind="static const typename(f32)" value="a20"/>
+							<right token=".variable" type="float32" kind="static const typename(f32)" value="a31"/>
+						</left>
+						<right token="*" type="float32" kind="static const typename(f32)" value="a21 * a30">
+							<left token=".variable" type="float32" kind="static const typename(f32)" value="a21"/>
+							<right token=".variable" type="float32" kind="static const typename(f32)" value="a30"/>
+						</right>
+					</init>
+				</stmt>
+				<stmt token=".variable" type="float32" kind="static const typename(f32)" value="b07">
+					<init token="-" type="float32" kind="static const typename(f32)" value="a20 * a32 - a22 * a30">
+						<left token="*" type="float32" kind="static const typename(f32)" value="a20 * a32">
+							<left token=".variable" type="float32" kind="static const typename(f32)" value="a20"/>
+							<right token=".variable" type="float32" kind="static const typename(f32)" value="a32"/>
+						</left>
+						<right token="*" type="float32" kind="static const typename(f32)" value="a22 * a30">
+							<left token=".variable" type="float32" kind="static const typename(f32)" value="a22"/>
+							<right token=".variable" type="float32" kind="static const typename(f32)" value="a30"/>
+						</right>
+					</init>
+				</stmt>
+				<stmt token=".variable" type="float32" kind="static const typename(f32)" value="b08">
+					<init token="-" type="float32" kind="static const typename(f32)" value="a20 * a33 - a23 * a30">
+						<left token="*" type="float32" kind="static const typename(f32)" value="a20 * a33">
+							<left token=".variable" type="float32" kind="static const typename(f32)" value="a20"/>
+							<right token=".variable" type="float32" kind="static const typename(f32)" value="a33"/>
+						</left>
+						<right token="*" type="float32" kind="static const typename(f32)" value="a23 * a30">
+							<left token=".variable" type="float32" kind="static const typename(f32)" value="a23"/>
+							<right token=".variable" type="float32" kind="static const typename(f32)" value="a30"/>
+						</right>
+					</init>
+				</stmt>
+				<stmt token=".variable" type="float32" kind="static const typename(f32)" value="b09">
+					<init token="-" type="float32" kind="static const typename(f32)" value="a21 * a32 - a22 * a31">
+						<left token="*" type="float32" kind="static const typename(f32)" value="a21 * a32">
+							<left token=".variable" type="float32" kind="static const typename(f32)" value="a21"/>
+							<right token=".variable" type="float32" kind="static const typename(f32)" value="a32"/>
+						</left>
+						<right token="*" type="float32" kind="static const typename(f32)" value="a22 * a31">
+							<left token=".variable" type="float32" kind="static const typename(f32)" value="a22"/>
+							<right token=".variable" type="float32" kind="static const typename(f32)" value="a31"/>
+						</right>
+					</init>
+				</stmt>
+				<stmt token=".variable" type="float32" kind="static const typename(f32)" value="b10">
+					<init token="-" type="float32" kind="static const typename(f32)" value="a21 * a33 - a23 * a31">
+						<left token="*" type="float32" kind="static const typename(f32)" value="a21 * a33">
+							<left token=".variable" type="float32" kind="static const typename(f32)" value="a21"/>
+							<right token=".variable" type="float32" kind="static const typename(f32)" value="a33"/>
+						</left>
+						<right token="*" type="float32" kind="static const typename(f32)" value="a23 * a31">
+							<left token=".variable" type="float32" kind="static const typename(f32)" value="a23"/>
+							<right token=".variable" type="float32" kind="static const typename(f32)" value="a31"/>
+						</right>
+					</init>
+				</stmt>
+				<stmt token=".variable" type="float32" kind="static const typename(f32)" value="b11">
+					<init token="-" type="float32" kind="static const typename(f32)" value="a22 * a33 - a23 * a32">
+						<left token="*" type="float32" kind="static const typename(f32)" value="a22 * a33">
+							<left token=".variable" type="float32" kind="static const typename(f32)" value="a22"/>
+							<right token=".variable" type="float32" kind="static const typename(f32)" value="a33"/>
+						</left>
+						<right token="*" type="float32" kind="static const typename(f32)" value="a23 * a32">
+							<left token=".variable" type="float32" kind="static const typename(f32)" value="a23"/>
+							<right token=".variable" type="float32" kind="static const typename(f32)" value="a32"/>
+						</right>
+					</init>
+				</stmt>
+				<stmt token=".variable" type="float32" kind="static const typename(f32)" value="det">
+					<init token="+" type="float32" kind="static const typename(f32)" value="b00 * b11 - b01 * b10 + b02 * b09 + b03 * b08 - b04 * b07 + b05 * b06">
+						<left token="-" type="float32" kind="static const typename(f32)" value="b00 * b11 - b01 * b10 + b02 * b09 + b03 * b08 - b04 * b07">
+							<left token="+" type="float32" kind="static const typename(f32)" value="b00 * b11 - b01 * b10 + b02 * b09 + b03 * b08">
+								<left token="+" type="float32" kind="static const typename(f32)" value="b00 * b11 - b01 * b10 + b02 * b09">
+									<left token="-" type="float32" kind="static const typename(f32)" value="b00 * b11 - b01 * b10">
+										<left token="*" type="float32" kind="static const typename(f32)" value="b00 * b11">
+											<left token=".variable" type="float32" kind="static const typename(f32)" value="b00"/>
+											<right token=".variable" type="float32" kind="static const typename(f32)" value="b11"/>
+										</left>
+										<right token="*" type="float32" kind="static const typename(f32)" value="b01 * b10">
+											<left token=".variable" type="float32" kind="static const typename(f32)" value="b01"/>
+											<right token=".variable" type="float32" kind="static const typename(f32)" value="b10"/>
+										</right>
+									</left>
+									<right token="*" type="float32" kind="static const typename(f32)" value="b02 * b09">
+										<left token=".variable" type="float32" kind="static const typename(f32)" value="b02"/>
+										<right token=".variable" type="float32" kind="static const typename(f32)" value="b09"/>
+									</right>
+								</left>
+								<right token="*" type="float32" kind="static const typename(f32)" value="b03 * b08">
+									<left token=".variable" type="float32" kind="static const typename(f32)" value="b03"/>
+									<right token=".variable" type="float32" kind="static const typename(f32)" value="b08"/>
+								</right>
+							</left>
+							<right token="*" type="float32" kind="static const typename(f32)" value="b04 * b07">
+								<left token=".variable" type="float32" kind="static const typename(f32)" value="b04"/>
+								<right token=".variable" type="float32" kind="static const typename(f32)" value="b07"/>
+							</right>
+						</left>
+						<right token="*" type="float32" kind="static const typename(f32)" value="b05 * b06">
+							<left token=".variable" type="float32" kind="static const typename(f32)" value="b05"/>
+							<right token=".variable" type="float32" kind="static const typename(f32)" value="b06"/>
+						</right>
+					</init>
+				</stmt>
+				<stmt token="return" type="void" kind="static const typename(void)" stmt="return .result := {...};">
+					<expr token=":=" type="void" kind="static const typename(void)" value=".result := {...}">
+						<left token=".variable" type="mat4f" kind="static const typename(val)" value=".result"/>
+						<right token="{}" type="void" kind="static const typename(void)">
+							<stmt token=";" type="void" kind="static const typename(void)" stmt=".result.xx := (a11 * b11 - a12 * b10 + a13 * b09) / det;">
+								<expr token=":=" type="void" kind="static const typename(void)" value=".result.xx := (a11 * b11 - a12 * b10 + a13 * b09) / det">
+									<left token="." type="float32" kind="static const typename(f32)" value=".result.xx">
+										<left token=".variable" type="mat4f" kind="static const typename(val)" value=".result"/>
+										<right token=".variable" type="float32" kind="static const typename(f32)" value="xx"/>
+									</left>
+									<right token="/" type="float32" kind="static const typename(f32)" value="(a11 * b11 - a12 * b10 + a13 * b09) / det">
+										<left token="()" type="float32" kind="static const typename(f32)" value="(a11 * b11 - a12 * b10 + a13 * b09)">
+											<push token="+" type="float32" kind="static const typename(f32)" value="a11 * b11 - a12 * b10 + a13 * b09">
+												<left token="-" type="float32" kind="static const typename(f32)" value="a11 * b11 - a12 * b10">
+													<left token="*" type="float32" kind="static const typename(f32)" value="a11 * b11">
+														<left token=".variable" type="float32" kind="static const typename(f32)" value="a11"/>
+														<right token=".variable" type="float32" kind="static const typename(f32)" value="b11"/>
+													</left>
+													<right token="*" type="float32" kind="static const typename(f32)" value="a12 * b10">
+														<left token=".variable" type="float32" kind="static const typename(f32)" value="a12"/>
+														<right token=".variable" type="float32" kind="static const typename(f32)" value="b10"/>
+													</right>
+												</left>
+												<right token="*" type="float32" kind="static const typename(f32)" value="a13 * b09">
+													<left token=".variable" type="float32" kind="static const typename(f32)" value="a13"/>
+													<right token=".variable" type="float32" kind="static const typename(f32)" value="b09"/>
+												</right>
+											</push>
+										</left>
+										<right token=".variable" type="float32" kind="static const typename(f32)" value="det"/>
+									</right>
+								</expr>
+							</stmt>
+							<stmt token=";" type="void" kind="static const typename(void)" stmt=".result.xy := (a02 * b10 - a01 * b11 - a03 * b09) / det;">
+								<expr token=":=" type="void" kind="static const typename(void)" value=".result.xy := (a02 * b10 - a01 * b11 - a03 * b09) / det">
+									<left token="." type="float32" kind="static const typename(f32)" value=".result.xy">
+										<left token=".variable" type="mat4f" kind="static const typename(val)" value=".result"/>
+										<right token=".variable" type="float32" kind="static const typename(f32)" value="xy"/>
+									</left>
+									<right token="/" type="float32" kind="static const typename(f32)" value="(a02 * b10 - a01 * b11 - a03 * b09) / det">
+										<left token="()" type="float32" kind="static const typename(f32)" value="(a02 * b10 - a01 * b11 - a03 * b09)">
+											<push token="-" type="float32" kind="static const typename(f32)" value="a02 * b10 - a01 * b11 - a03 * b09">
+												<left token="-" type="float32" kind="static const typename(f32)" value="a02 * b10 - a01 * b11">
+													<left token="*" type="float32" kind="static const typename(f32)" value="a02 * b10">
+														<left token=".variable" type="float32" kind="static const typename(f32)" value="a02"/>
+														<right token=".variable" type="float32" kind="static const typename(f32)" value="b10"/>
+													</left>
+													<right token="*" type="float32" kind="static const typename(f32)" value="a01 * b11">
+														<left token=".variable" type="float32" kind="static const typename(f32)" value="a01"/>
+														<right token=".variable" type="float32" kind="static const typename(f32)" value="b11"/>
+													</right>
+												</left>
+												<right token="*" type="float32" kind="static const typename(f32)" value="a03 * b09">
+													<left token=".variable" type="float32" kind="static const typename(f32)" value="a03"/>
+													<right token=".variable" type="float32" kind="static const typename(f32)" value="b09"/>
+												</right>
+											</push>
+										</left>
+										<right token=".variable" type="float32" kind="static const typename(f32)" value="det"/>
+									</right>
+								</expr>
+							</stmt>
+							<stmt token=";" type="void" kind="static const typename(void)" stmt=".result.xz := (a31 * b05 - a32 * b04 + a33 * b03) / det;">
+								<expr token=":=" type="void" kind="static const typename(void)" value=".result.xz := (a31 * b05 - a32 * b04 + a33 * b03) / det">
+									<left token="." type="float32" kind="static const typename(f32)" value=".result.xz">
+										<left token=".variable" type="mat4f" kind="static const typename(val)" value=".result"/>
+										<right token=".variable" type="float32" kind="static const typename(f32)" value="xz"/>
+									</left>
+									<right token="/" type="float32" kind="static const typename(f32)" value="(a31 * b05 - a32 * b04 + a33 * b03) / det">
+										<left token="()" type="float32" kind="static const typename(f32)" value="(a31 * b05 - a32 * b04 + a33 * b03)">
+											<push token="+" type="float32" kind="static const typename(f32)" value="a31 * b05 - a32 * b04 + a33 * b03">
+												<left token="-" type="float32" kind="static const typename(f32)" value="a31 * b05 - a32 * b04">
+													<left token="*" type="float32" kind="static const typename(f32)" value="a31 * b05">
+														<left token=".variable" type="float32" kind="static const typename(f32)" value="a31"/>
+														<right token=".variable" type="float32" kind="static const typename(f32)" value="b05"/>
+													</left>
+													<right token="*" type="float32" kind="static const typename(f32)" value="a32 * b04">
+														<left token=".variable" type="float32" kind="static const typename(f32)" value="a32"/>
+														<right token=".variable" type="float32" kind="static const typename(f32)" value="b04"/>
+													</right>
+												</left>
+												<right token="*" type="float32" kind="static const typename(f32)" value="a33 * b03">
+													<left token=".variable" type="float32" kind="static const typename(f32)" value="a33"/>
+													<right token=".variable" type="float32" kind="static const typename(f32)" value="b03"/>
+												</right>
+											</push>
+										</left>
+										<right token=".variable" type="float32" kind="static const typename(f32)" value="det"/>
+									</right>
+								</expr>
+							</stmt>
+							<stmt token=";" type="void" kind="static const typename(void)" stmt=".result.xw := (a22 * b04 - a21 * b05 - a23 * b03) / det;">
+								<expr token=":=" type="void" kind="static const typename(void)" value=".result.xw := (a22 * b04 - a21 * b05 - a23 * b03) / det">
+									<left token="." type="float32" kind="static const typename(f32)" value=".result.xw">
+										<left token=".variable" type="mat4f" kind="static const typename(val)" value=".result"/>
+										<right token=".variable" type="float32" kind="static const typename(f32)" value="xw"/>
+									</left>
+									<right token="/" type="float32" kind="static const typename(f32)" value="(a22 * b04 - a21 * b05 - a23 * b03) / det">
+										<left token="()" type="float32" kind="static const typename(f32)" value="(a22 * b04 - a21 * b05 - a23 * b03)">
+											<push token="-" type="float32" kind="static const typename(f32)" value="a22 * b04 - a21 * b05 - a23 * b03">
+												<left token="-" type="float32" kind="static const typename(f32)" value="a22 * b04 - a21 * b05">
+													<left token="*" type="float32" kind="static const typename(f32)" value="a22 * b04">
+														<left token=".variable" type="float32" kind="static const typename(f32)" value="a22"/>
+														<right token=".variable" type="float32" kind="static const typename(f32)" value="b04"/>
+													</left>
+													<right token="*" type="float32" kind="static const typename(f32)" value="a21 * b05">
+														<left token=".variable" type="float32" kind="static const typename(f32)" value="a21"/>
+														<right token=".variable" type="float32" kind="static const typename(f32)" value="b05"/>
+													</right>
+												</left>
+												<right token="*" type="float32" kind="static const typename(f32)" value="a23 * b03">
+													<left token=".variable" type="float32" kind="static const typename(f32)" value="a23"/>
+													<right token=".variable" type="float32" kind="static const typename(f32)" value="b03"/>
+												</right>
+											</push>
+										</left>
+										<right token=".variable" type="float32" kind="static const typename(f32)" value="det"/>
+									</right>
+								</expr>
+							</stmt>
+							<stmt token=";" type="void" kind="static const typename(void)" stmt=".result.yx := (a12 * b08 - a10 * b11 - a13 * b07) / det;">
+								<expr token=":=" type="void" kind="static const typename(void)" value=".result.yx := (a12 * b08 - a10 * b11 - a13 * b07) / det">
+									<left token="." type="float32" kind="static const typename(f32)" value=".result.yx">
+										<left token=".variable" type="mat4f" kind="static const typename(val)" value=".result"/>
+										<right token=".variable" type="float32" kind="static const typename(f32)" value="yx"/>
+									</left>
+									<right token="/" type="float32" kind="static const typename(f32)" value="(a12 * b08 - a10 * b11 - a13 * b07) / det">
+										<left token="()" type="float32" kind="static const typename(f32)" value="(a12 * b08 - a10 * b11 - a13 * b07)">
+											<push token="-" type="float32" kind="static const typename(f32)" value="a12 * b08 - a10 * b11 - a13 * b07">
+												<left token="-" type="float32" kind="static const typename(f32)" value="a12 * b08 - a10 * b11">
+													<left token="*" type="float32" kind="static const typename(f32)" value="a12 * b08">
+														<left token=".variable" type="float32" kind="static const typename(f32)" value="a12"/>
+														<right token=".variable" type="float32" kind="static const typename(f32)" value="b08"/>
+													</left>
+													<right token="*" type="float32" kind="static const typename(f32)" value="a10 * b11">
+														<left token=".variable" type="float32" kind="static const typename(f32)" value="a10"/>
+														<right token=".variable" type="float32" kind="static const typename(f32)" value="b11"/>
+													</right>
+												</left>
+												<right token="*" type="float32" kind="static const typename(f32)" value="a13 * b07">
+													<left token=".variable" type="float32" kind="static const typename(f32)" value="a13"/>
+													<right token=".variable" type="float32" kind="static const typename(f32)" value="b07"/>
+												</right>
+											</push>
+										</left>
+										<right token=".variable" type="float32" kind="static const typename(f32)" value="det"/>
+									</right>
+								</expr>
+							</stmt>
+							<stmt token=";" type="void" kind="static const typename(void)" stmt=".result.yy := (a00 * b11 - a02 * b08 + a03 * b07) / det;">
+								<expr token=":=" type="void" kind="static const typename(void)" value=".result.yy := (a00 * b11 - a02 * b08 + a03 * b07) / det">
+									<left token="." type="float32" kind="static const typename(f32)" value=".result.yy">
+										<left token=".variable" type="mat4f" kind="static const typename(val)" value=".result"/>
+										<right token=".variable" type="float32" kind="static const typename(f32)" value="yy"/>
+									</left>
+									<right token="/" type="float32" kind="static const typename(f32)" value="(a00 * b11 - a02 * b08 + a03 * b07) / det">
+										<left token="()" type="float32" kind="static const typename(f32)" value="(a00 * b11 - a02 * b08 + a03 * b07)">
+											<push token="+" type="float32" kind="static const typename(f32)" value="a00 * b11 - a02 * b08 + a03 * b07">
+												<left token="-" type="float32" kind="static const typename(f32)" value="a00 * b11 - a02 * b08">
+													<left token="*" type="float32" kind="static const typename(f32)" value="a00 * b11">
+														<left token=".variable" type="float32" kind="static const typename(f32)" value="a00"/>
+														<right token=".variable" type="float32" kind="static const typename(f32)" value="b11"/>
+													</left>
+													<right token="*" type="float32" kind="static const typename(f32)" value="a02 * b08">
+														<left token=".variable" type="float32" kind="static const typename(f32)" value="a02"/>
+														<right token=".variable" type="float32" kind="static const typename(f32)" value="b08"/>
+													</right>
+												</left>
+												<right token="*" type="float32" kind="static const typename(f32)" value="a03 * b07">
+													<left token=".variable" type="float32" kind="static const typename(f32)" value="a03"/>
+													<right token=".variable" type="float32" kind="static const typename(f32)" value="b07"/>
+												</right>
+											</push>
+										</left>
+										<right token=".variable" type="float32" kind="static const typename(f32)" value="det"/>
+									</right>
+								</expr>
+							</stmt>
+							<stmt token=";" type="void" kind="static const typename(void)" stmt=".result.yz := (a32 * b02 - a30 * b05 - a33 * b01) / det;">
+								<expr token=":=" type="void" kind="static const typename(void)" value=".result.yz := (a32 * b02 - a30 * b05 - a33 * b01) / det">
+									<left token="." type="float32" kind="static const typename(f32)" value=".result.yz">
+										<left token=".variable" type="mat4f" kind="static const typename(val)" value=".result"/>
+										<right token=".variable" type="float32" kind="static const typename(f32)" value="yz"/>
+									</left>
+									<right token="/" type="float32" kind="static const typename(f32)" value="(a32 * b02 - a30 * b05 - a33 * b01) / det">
+										<left token="()" type="float32" kind="static const typename(f32)" value="(a32 * b02 - a30 * b05 - a33 * b01)">
+											<push token="-" type="float32" kind="static const typename(f32)" value="a32 * b02 - a30 * b05 - a33 * b01">
+												<left token="-" type="float32" kind="static const typename(f32)" value="a32 * b02 - a30 * b05">
+													<left token="*" type="float32" kind="static const typename(f32)" value="a32 * b02">
+														<left token=".variable" type="float32" kind="static const typename(f32)" value="a32"/>
+														<right token=".variable" type="float32" kind="static const typename(f32)" value="b02"/>
+													</left>
+													<right token="*" type="float32" kind="static const typename(f32)" value="a30 * b05">
+														<left token=".variable" type="float32" kind="static const typename(f32)" value="a30"/>
+														<right token=".variable" type="float32" kind="static const typename(f32)" value="b05"/>
+													</right>
+												</left>
+												<right token="*" type="float32" kind="static const typename(f32)" value="a33 * b01">
+													<left token=".variable" type="float32" kind="static const typename(f32)" value="a33"/>
+													<right token=".variable" type="float32" kind="static const typename(f32)" value="b01"/>
+												</right>
+											</push>
+										</left>
+										<right token=".variable" type="float32" kind="static const typename(f32)" value="det"/>
+									</right>
+								</expr>
+							</stmt>
+							<stmt token=";" type="void" kind="static const typename(void)" stmt=".result.yw := (a20 * b05 - a22 * b02 + a23 * b01) / det;">
+								<expr token=":=" type="void" kind="static const typename(void)" value=".result.yw := (a20 * b05 - a22 * b02 + a23 * b01) / det">
+									<left token="." type="float32" kind="static const typename(f32)" value=".result.yw">
+										<left token=".variable" type="mat4f" kind="static const typename(val)" value=".result"/>
+										<right token=".variable" type="float32" kind="static const typename(f32)" value="yw"/>
+									</left>
+									<right token="/" type="float32" kind="static const typename(f32)" value="(a20 * b05 - a22 * b02 + a23 * b01) / det">
+										<left token="()" type="float32" kind="static const typename(f32)" value="(a20 * b05 - a22 * b02 + a23 * b01)">
+											<push token="+" type="float32" kind="static const typename(f32)" value="a20 * b05 - a22 * b02 + a23 * b01">
+												<left token="-" type="float32" kind="static const typename(f32)" value="a20 * b05 - a22 * b02">
+													<left token="*" type="float32" kind="static const typename(f32)" value="a20 * b05">
+														<left token=".variable" type="float32" kind="static const typename(f32)" value="a20"/>
+														<right token=".variable" type="float32" kind="static const typename(f32)" value="b05"/>
+													</left>
+													<right token="*" type="float32" kind="static const typename(f32)" value="a22 * b02">
+														<left token=".variable" type="float32" kind="static const typename(f32)" value="a22"/>
+														<right token=".variable" type="float32" kind="static const typename(f32)" value="b02"/>
+													</right>
+												</left>
+												<right token="*" type="float32" kind="static const typename(f32)" value="a23 * b01">
+													<left token=".variable" type="float32" kind="static const typename(f32)" value="a23"/>
+													<right token=".variable" type="float32" kind="static const typename(f32)" value="b01"/>
+												</right>
+											</push>
+										</left>
+										<right token=".variable" type="float32" kind="static const typename(f32)" value="det"/>
+									</right>
+								</expr>
+							</stmt>
+							<stmt token=";" type="void" kind="static const typename(void)" stmt=".result.zx := (a10 * b10 - a11 * b08 + a13 * b06) / det;">
+								<expr token=":=" type="void" kind="static const typename(void)" value=".result.zx := (a10 * b10 - a11 * b08 + a13 * b06) / det">
+									<left token="." type="float32" kind="static const typename(f32)" value=".result.zx">
+										<left token=".variable" type="mat4f" kind="static const typename(val)" value=".result"/>
+										<right token=".variable" type="float32" kind="static const typename(f32)" value="zx"/>
+									</left>
+									<right token="/" type="float32" kind="static const typename(f32)" value="(a10 * b10 - a11 * b08 + a13 * b06) / det">
+										<left token="()" type="float32" kind="static const typename(f32)" value="(a10 * b10 - a11 * b08 + a13 * b06)">
+											<push token="+" type="float32" kind="static const typename(f32)" value="a10 * b10 - a11 * b08 + a13 * b06">
+												<left token="-" type="float32" kind="static const typename(f32)" value="a10 * b10 - a11 * b08">
+													<left token="*" type="float32" kind="static const typename(f32)" value="a10 * b10">
+														<left token=".variable" type="float32" kind="static const typename(f32)" value="a10"/>
+														<right token=".variable" type="float32" kind="static const typename(f32)" value="b10"/>
+													</left>
+													<right token="*" type="float32" kind="static const typename(f32)" value="a11 * b08">
+														<left token=".variable" type="float32" kind="static const typename(f32)" value="a11"/>
+														<right token=".variable" type="float32" kind="static const typename(f32)" value="b08"/>
+													</right>
+												</left>
+												<right token="*" type="float32" kind="static const typename(f32)" value="a13 * b06">
+													<left token=".variable" type="float32" kind="static const typename(f32)" value="a13"/>
+													<right token=".variable" type="float32" kind="static const typename(f32)" value="b06"/>
+												</right>
+											</push>
+										</left>
+										<right token=".variable" type="float32" kind="static const typename(f32)" value="det"/>
+									</right>
+								</expr>
+							</stmt>
+							<stmt token=";" type="void" kind="static const typename(void)" stmt=".result.zy := (a01 * b08 - a00 * b10 - a03 * b06) / det;">
+								<expr token=":=" type="void" kind="static const typename(void)" value=".result.zy := (a01 * b08 - a00 * b10 - a03 * b06) / det">
+									<left token="." type="float32" kind="static const typename(f32)" value=".result.zy">
+										<left token=".variable" type="mat4f" kind="static const typename(val)" value=".result"/>
+										<right token=".variable" type="float32" kind="static const typename(f32)" value="zy"/>
+									</left>
+									<right token="/" type="float32" kind="static const typename(f32)" value="(a01 * b08 - a00 * b10 - a03 * b06) / det">
+										<left token="()" type="float32" kind="static const typename(f32)" value="(a01 * b08 - a00 * b10 - a03 * b06)">
+											<push token="-" type="float32" kind="static const typename(f32)" value="a01 * b08 - a00 * b10 - a03 * b06">
+												<left token="-" type="float32" kind="static const typename(f32)" value="a01 * b08 - a00 * b10">
+													<left token="*" type="float32" kind="static const typename(f32)" value="a01 * b08">
+														<left token=".variable" type="float32" kind="static const typename(f32)" value="a01"/>
+														<right token=".variable" type="float32" kind="static const typename(f32)" value="b08"/>
+													</left>
+													<right token="*" type="float32" kind="static const typename(f32)" value="a00 * b10">
+														<left token=".variable" type="float32" kind="static const typename(f32)" value="a00"/>
+														<right token=".variable" type="float32" kind="static const typename(f32)" value="b10"/>
+													</right>
+												</left>
+												<right token="*" type="float32" kind="static const typename(f32)" value="a03 * b06">
+													<left token=".variable" type="float32" kind="static const typename(f32)" value="a03"/>
+													<right token=".variable" type="float32" kind="static const typename(f32)" value="b06"/>
+												</right>
+											</push>
+										</left>
+										<right token=".variable" type="float32" kind="static const typename(f32)" value="det"/>
+									</right>
+								</expr>
+							</stmt>
+							<stmt token=";" type="void" kind="static const typename(void)" stmt=".result.zz := (a30 * b04 - a31 * b02 + a33 * b00) / det;">
+								<expr token=":=" type="void" kind="static const typename(void)" value=".result.zz := (a30 * b04 - a31 * b02 + a33 * b00) / det">
+									<left token="." type="float32" kind="static const typename(f32)" value=".result.zz">
+										<left token=".variable" type="mat4f" kind="static const typename(val)" value=".result"/>
+										<right token=".variable" type="float32" kind="static const typename(f32)" value="zz"/>
+									</left>
+									<right token="/" type="float32" kind="static const typename(f32)" value="(a30 * b04 - a31 * b02 + a33 * b00) / det">
+										<left token="()" type="float32" kind="static const typename(f32)" value="(a30 * b04 - a31 * b02 + a33 * b00)">
+											<push token="+" type="float32" kind="static const typename(f32)" value="a30 * b04 - a31 * b02 + a33 * b00">
+												<left token="-" type="float32" kind="static const typename(f32)" value="a30 * b04 - a31 * b02">
+													<left token="*" type="float32" kind="static const typename(f32)" value="a30 * b04">
+														<left token=".variable" type="float32" kind="static const typename(f32)" value="a30"/>
+														<right token=".variable" type="float32" kind="static const typename(f32)" value="b04"/>
+													</left>
+													<right token="*" type="float32" kind="static const typename(f32)" value="a31 * b02">
+														<left token=".variable" type="float32" kind="static const typename(f32)" value="a31"/>
+														<right token=".variable" type="float32" kind="static const typename(f32)" value="b02"/>
+													</right>
+												</left>
+												<right token="*" type="float32" kind="static const typename(f32)" value="a33 * b00">
+													<left token=".variable" type="float32" kind="static const typename(f32)" value="a33"/>
+													<right token=".variable" type="float32" kind="static const typename(f32)" value="b00"/>
+												</right>
+											</push>
+										</left>
+										<right token=".variable" type="float32" kind="static const typename(f32)" value="det"/>
+									</right>
+								</expr>
+							</stmt>
+							<stmt token=";" type="void" kind="static const typename(void)" stmt=".result.zw := (a21 * b02 - a20 * b04 - a23 * b00) / det;">
+								<expr token=":=" type="void" kind="static const typename(void)" value=".result.zw := (a21 * b02 - a20 * b04 - a23 * b00) / det">
+									<left token="." type="float32" kind="static const typename(f32)" value=".result.zw">
+										<left token=".variable" type="mat4f" kind="static const typename(val)" value=".result"/>
+										<right token=".variable" type="float32" kind="static const typename(f32)" value="zw"/>
+									</left>
+									<right token="/" type="float32" kind="static const typename(f32)" value="(a21 * b02 - a20 * b04 - a23 * b00) / det">
+										<left token="()" type="float32" kind="static const typename(f32)" value="(a21 * b02 - a20 * b04 - a23 * b00)">
+											<push token="-" type="float32" kind="static const typename(f32)" value="a21 * b02 - a20 * b04 - a23 * b00">
+												<left token="-" type="float32" kind="static const typename(f32)" value="a21 * b02 - a20 * b04">
+													<left token="*" type="float32" kind="static const typename(f32)" value="a21 * b02">
+														<left token=".variable" type="float32" kind="static const typename(f32)" value="a21"/>
+														<right token=".variable" type="float32" kind="static const typename(f32)" value="b02"/>
+													</left>
+													<right token="*" type="float32" kind="static const typename(f32)" value="a20 * b04">
+														<left token=".variable" type="float32" kind="static const typename(f32)" value="a20"/>
+														<right token=".variable" type="float32" kind="static const typename(f32)" value="b04"/>
+													</right>
+												</left>
+												<right token="*" type="float32" kind="static const typename(f32)" value="a23 * b00">
+													<left token=".variable" type="float32" kind="static const typename(f32)" value="a23"/>
+													<right token=".variable" type="float32" kind="static const typename(f32)" value="b00"/>
+												</right>
+											</push>
+										</left>
+										<right token=".variable" type="float32" kind="static const typename(f32)" value="det"/>
+									</right>
+								</expr>
+							</stmt>
+							<stmt token=";" type="void" kind="static const typename(void)" stmt=".result.wx := (a11 * b07 - a10 * b09 - a12 * b06) / det;">
+								<expr token=":=" type="void" kind="static const typename(void)" value=".result.wx := (a11 * b07 - a10 * b09 - a12 * b06) / det">
+									<left token="." type="float32" kind="static const typename(f32)" value=".result.wx">
+										<left token=".variable" type="mat4f" kind="static const typename(val)" value=".result"/>
+										<right token=".variable" type="float32" kind="static const typename(f32)" value="wx"/>
+									</left>
+									<right token="/" type="float32" kind="static const typename(f32)" value="(a11 * b07 - a10 * b09 - a12 * b06) / det">
+										<left token="()" type="float32" kind="static const typename(f32)" value="(a11 * b07 - a10 * b09 - a12 * b06)">
+											<push token="-" type="float32" kind="static const typename(f32)" value="a11 * b07 - a10 * b09 - a12 * b06">
+												<left token="-" type="float32" kind="static const typename(f32)" value="a11 * b07 - a10 * b09">
+													<left token="*" type="float32" kind="static const typename(f32)" value="a11 * b07">
+														<left token=".variable" type="float32" kind="static const typename(f32)" value="a11"/>
+														<right token=".variable" type="float32" kind="static const typename(f32)" value="b07"/>
+													</left>
+													<right token="*" type="float32" kind="static const typename(f32)" value="a10 * b09">
+														<left token=".variable" type="float32" kind="static const typename(f32)" value="a10"/>
+														<right token=".variable" type="float32" kind="static const typename(f32)" value="b09"/>
+													</right>
+												</left>
+												<right token="*" type="float32" kind="static const typename(f32)" value="a12 * b06">
+													<left token=".variable" type="float32" kind="static const typename(f32)" value="a12"/>
+													<right token=".variable" type="float32" kind="static const typename(f32)" value="b06"/>
+												</right>
+											</push>
+										</left>
+										<right token=".variable" type="float32" kind="static const typename(f32)" value="det"/>
+									</right>
+								</expr>
+							</stmt>
+							<stmt token=";" type="void" kind="static const typename(void)" stmt=".result.wy := (a00 * b09 - a01 * b07 + a02 * b06) / det;">
+								<expr token=":=" type="void" kind="static const typename(void)" value=".result.wy := (a00 * b09 - a01 * b07 + a02 * b06) / det">
+									<left token="." type="float32" kind="static const typename(f32)" value=".result.wy">
+										<left token=".variable" type="mat4f" kind="static const typename(val)" value=".result"/>
+										<right token=".variable" type="float32" kind="static const typename(f32)" value="wy"/>
+									</left>
+									<right token="/" type="float32" kind="static const typename(f32)" value="(a00 * b09 - a01 * b07 + a02 * b06) / det">
+										<left token="()" type="float32" kind="static const typename(f32)" value="(a00 * b09 - a01 * b07 + a02 * b06)">
+											<push token="+" type="float32" kind="static const typename(f32)" value="a00 * b09 - a01 * b07 + a02 * b06">
+												<left token="-" type="float32" kind="static const typename(f32)" value="a00 * b09 - a01 * b07">
+													<left token="*" type="float32" kind="static const typename(f32)" value="a00 * b09">
+														<left token=".variable" type="float32" kind="static const typename(f32)" value="a00"/>
+														<right token=".variable" type="float32" kind="static const typename(f32)" value="b09"/>
+													</left>
+													<right token="*" type="float32" kind="static const typename(f32)" value="a01 * b07">
+														<left token=".variable" type="float32" kind="static const typename(f32)" value="a01"/>
+														<right token=".variable" type="float32" kind="static const typename(f32)" value="b07"/>
+													</right>
+												</left>
+												<right token="*" type="float32" kind="static const typename(f32)" value="a02 * b06">
+													<left token=".variable" type="float32" kind="static const typename(f32)" value="a02"/>
+													<right token=".variable" type="float32" kind="static const typename(f32)" value="b06"/>
+												</right>
+											</push>
+										</left>
+										<right token=".variable" type="float32" kind="static const typename(f32)" value="det"/>
+									</right>
+								</expr>
+							</stmt>
+							<stmt token=";" type="void" kind="static const typename(void)" stmt=".result.wz := (a31 * b01 - a30 * b03 - a32 * b00) / det;">
+								<expr token=":=" type="void" kind="static const typename(void)" value=".result.wz := (a31 * b01 - a30 * b03 - a32 * b00) / det">
+									<left token="." type="float32" kind="static const typename(f32)" value=".result.wz">
+										<left token=".variable" type="mat4f" kind="static const typename(val)" value=".result"/>
+										<right token=".variable" type="float32" kind="static const typename(f32)" value="wz"/>
+									</left>
+									<right token="/" type="float32" kind="static const typename(f32)" value="(a31 * b01 - a30 * b03 - a32 * b00) / det">
+										<left token="()" type="float32" kind="static const typename(f32)" value="(a31 * b01 - a30 * b03 - a32 * b00)">
+											<push token="-" type="float32" kind="static const typename(f32)" value="a31 * b01 - a30 * b03 - a32 * b00">
+												<left token="-" type="float32" kind="static const typename(f32)" value="a31 * b01 - a30 * b03">
+													<left token="*" type="float32" kind="static const typename(f32)" value="a31 * b01">
+														<left token=".variable" type="float32" kind="static const typename(f32)" value="a31"/>
+														<right token=".variable" type="float32" kind="static const typename(f32)" value="b01"/>
+													</left>
+													<right token="*" type="float32" kind="static const typename(f32)" value="a30 * b03">
+														<left token=".variable" type="float32" kind="static const typename(f32)" value="a30"/>
+														<right token=".variable" type="float32" kind="static const typename(f32)" value="b03"/>
+													</right>
+												</left>
+												<right token="*" type="float32" kind="static const typename(f32)" value="a32 * b00">
+													<left token=".variable" type="float32" kind="static const typename(f32)" value="a32"/>
+													<right token=".variable" type="float32" kind="static const typename(f32)" value="b00"/>
+												</right>
+											</push>
+										</left>
+										<right token=".variable" type="float32" kind="static const typename(f32)" value="det"/>
+									</right>
+								</expr>
+							</stmt>
+							<stmt token=";" type="void" kind="static const typename(void)" stmt=".result.ww := (a20 * b03 - a21 * b01 + a22 * b00) / det;">
+								<expr token=":=" type="void" kind="static const typename(void)" value=".result.ww := (a20 * b03 - a21 * b01 + a22 * b00) / det">
+									<left token="." type="float32" kind="static const typename(f32)" value=".result.ww">
+										<left token=".variable" type="mat4f" kind="static const typename(val)" value=".result"/>
+										<right token=".variable" type="float32" kind="static const typename(f32)" value="ww"/>
+									</left>
+									<right token="/" type="float32" kind="static const typename(f32)" value="(a20 * b03 - a21 * b01 + a22 * b00) / det">
+										<left token="()" type="float32" kind="static const typename(f32)" value="(a20 * b03 - a21 * b01 + a22 * b00)">
+											<push token="+" type="float32" kind="static const typename(f32)" value="a20 * b03 - a21 * b01 + a22 * b00">
+												<left token="-" type="float32" kind="static const typename(f32)" value="a20 * b03 - a21 * b01">
+													<left token="*" type="float32" kind="static const typename(f32)" value="a20 * b03">
+														<left token=".variable" type="float32" kind="static const typename(f32)" value="a20"/>
+														<right token=".variable" type="float32" kind="static const typename(f32)" value="b03"/>
+													</left>
+													<right token="*" type="float32" kind="static const typename(f32)" value="a21 * b01">
+														<left token=".variable" type="float32" kind="static const typename(f32)" value="a21"/>
+														<right token=".variable" type="float32" kind="static const typename(f32)" value="b01"/>
+													</right>
+												</left>
+												<right token="*" type="float32" kind="static const typename(f32)" value="a22 * b00">
+													<left token=".variable" type="float32" kind="static const typename(f32)" value="a22"/>
+													<right token=".variable" type="float32" kind="static const typename(f32)" value="b00"/>
+												</right>
+											</push>
+										</left>
+										<right token=".variable" type="float32" kind="static const typename(f32)" value="det"/>
+									</right>
+								</expr>
+							</stmt>
+						</right>
+					</expr>
+				</stmt>
+			</init>
+		</stmt>
 		<stmt token=".variable" type="typename" kind="static const typename(ref)" value="vec2d">
 			<field token=".variable" type="typename" kind="static const typename(ref)" value="&lt;?&gt;">
 			</field>

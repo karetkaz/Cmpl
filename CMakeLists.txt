@@ -9,6 +9,8 @@ set(CC_HEADER_FILES
 	src/cmpl.h
 	src/cmplVm.h
 	src/cmplCc.h
+	src/cmplDbg.h
+	src/utils.h
 	src/parser.h
 	src/printer.h
 	src/internal.h
@@ -19,13 +21,13 @@ set(CC_SOURCE_FILES
 	src/code.c
 	src/core.c
 	src/lexer.c
-	src/lstd.c
 	src/parser.c
 	src/platform.c
 	src/printer.c
 	src/tree.c
 	src/type.c
 	src/utils.c
+	cmplStd/src/lstd.c
 )
 
 set(GX_HEADER_FILES
@@ -56,8 +58,6 @@ target_include_directories(File PUBLIC ./src/)
 if (WIN32)
 	add_library(Gfx SHARED ${GX_SOURCE_FILES} cmplGfx/src/os_win32/gx_gui.w32.c src/os_win32/time.c)
 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D NO_LIBPNG -D NO_LIBJPEG")
-	target_link_libraries(Gfx m gdi32)
-	target_link_libraries(cmpl m)
 else ()
 	if (APPLE)
 		include_directories(/usr/local/include)

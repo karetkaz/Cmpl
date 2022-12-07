@@ -148,32 +148,32 @@ void drawColorSlider(Slider this, Image offs, Rect rect) {
 	const Style style& = this.style;
 	const int yOff = 1;
 	const int yOn = yOff + style.padding / 3;
-	const int y = rect.y + rect.h;
+	const int y = rect.y1;
 	if (this == sldHueMin || this == sldHueMax) {
-		const int x1 = rect.x + rect.w;
-		const int x0 = rect.x + int64(this.value - this.minimum) * rect.w / (this.maximum - this.minimum);
-		for (int x = rect.x; x < x0; x += 1) {
-			float32 val = float32(x - rect.x) / rect.w;
+		const int x1 = rect.x1;
+		const int x0 = rect.x0 + int64(this.value - this.minimum) * rect.width() / (this.maximum - this.minimum);
+		for (int x = rect.x0; x < x0; x += 1) {
+			float32 val = float32(x - rect.x0) / rect.width();
 			argb color = argb(hsl2rgb(vec4f(val, 1f, .5f)));
 			offs.fillRect(x, y - yOn, x + 1, y, color.v);
 		}
 		for (int x = x0; x < x1; x += 1) {
-			float32 val = float32(x - rect.x) / rect.w;
+			float32 val = float32(x - rect.x0) / rect.width();
 			argb color = argb(hsl2rgb(vec4f(val, 1f, .5f)));
 			offs.fillRect(x, y - yOff, x + 1, y, color.v);
 		}
 		return;
 	}
 	if (this == sldLumMin || this == sldLumMax) {
-		const int x1 = rect.x + rect.w;
-		const int x0 = rect.x + int64(this.value - this.minimum) * rect.w / (this.maximum - this.minimum);
-		for (int x = rect.x; x < x0; x += 1) {
-			float32 val = float32(x - rect.x) / rect.w;
+		const int x1 = rect.x1;
+		const int x0 = rect.x0 + int64(this.value - this.minimum) * rect.width() / (this.maximum - this.minimum);
+		for (int x = rect.x0; x < x0; x += 1) {
+			float32 val = float32(x - rect.x0) / rect.width();
 			argb color = argb(vec4f(val, val, val));
 			offs.fillRect(x, y - yOn, x + 1, y, color.v);
 		}
 		for (int x = x0; x < x1; x += 1) {
-			float32 val = float32(x - rect.x) / rect.w;
+			float32 val = float32(x - rect.x0) / rect.width();
 			argb color = argb(vec4f(val, val, val));
 			offs.fillRect(x, y - yOff, x + 1, y, color.v);
 		}
@@ -228,8 +228,8 @@ bool onTouchEvent(FxWidget this, const Rect rect&, const TouchEvent event&) {
 		return false;
 	}
 
-	int x = rect.x + event.x;
-	int y = rect.y + event.y;
+	int x = rect.x0 + event.x;
+	int y = rect.y0 + event.y;
 	vec4f col = rgb2hsl(vec4f(argb(back.get(x, y))));
 	updateSlider(sldHueMin, sldHueMax, col.x * 359);
 	updateSlider(sldLumMin, sldLumMax, col.z * 255);

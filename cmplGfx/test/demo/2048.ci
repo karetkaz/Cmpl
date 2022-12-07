@@ -144,10 +144,10 @@ int onEvent(int action, int button, int x, int y) {
 	for (int j = 0; j < gridSize; j += 1) {
 		for (int i = 0; i < gridSize; i += 1) {
 			Rect rect = {
-				x: i * displaySize / gridSize;
-				y: j * displaySize / gridSize;
-				w: displaySize / gridSize - 1;
-				h: displaySize / gridSize - 1;
+				x0: i * displaySize / gridSize;
+				y0: j * displaySize / gridSize;
+				x1: (i + 1) * displaySize / gridSize - 1;
+				y1: (j + 1) * displaySize / gridSize - 1;
 			};
 
 			int v = grid[i + j * gridSize];
@@ -155,14 +155,13 @@ int onEvent(int action, int button, int x, int y) {
 			image.fillRect(rect, colors[c].v);
 
 			if (c != 0) {
+				Rect r = {};
 				char text[8] = {0};
 				text.append(0, 1 << v);
 
-				Rect r = {w: 0, h: 0};
 				font.clipText(&r, text);
-
-				r.x += rect.x + (rect.w - r.w) / 2;
-				r.y += rect.y + (rect.h - r.h) / 2;
+				r.positionX(rect.x0 + (rect.width() - r.width()) / 2);
+				r.positionY(rect.y0 + (rect.height() - r.height()) / 2);
 				image.drawText(r, font, text, 0);
 			}
 		}

@@ -4,18 +4,16 @@ inline drawOval(Image image, int x0, int y0, int x1, int y1, uint32 color) = ima
 
 /// Fill a ellipse on the `image` specified by `roi` with the given `color`
 void fillOval(Image image, const Rect roi&, uint32 color) {
-	if (roi.w <= 0 || roi.h <= 0) {
-		// empty rectangle
+	if (roi.empty()) {
 		return;
 	}
-	image.fillOval(roi.x, roi.y, roi.x + roi.w, roi.y + roi.h, color);
+	image.fillOval(roi.x0, roi.y0, roi.x1, roi.y1, color);
 }
 
 /// Draw an ellipse on the `image` specified by `roi` with the given `color`
 void drawOval(Image image, const Rect roi&, uint32 color) {
-	if (roi.w <= 0 || roi.h <= 0) {
-		// empty rectangle
+	if (roi.empty()) {
 		return;
 	}
-	image.drawOval(roi.x, roi.y, roi.x + roi.w, roi.y + roi.h, color);
+	image.drawOval(roi.x0, roi.y0, roi.x1, roi.y1, color);
 }

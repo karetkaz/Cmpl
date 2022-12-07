@@ -89,10 +89,10 @@ void colorMap(Image image, const Rect roi&, const ColorLut map&) {
 
 	// clip roi with source image
 	Rect r = {
-		x: roi != null ? roi.x : 0;
-		y: roi != null ? roi.y : 0;
-		w: roi != null ? roi.w : image.width();
-		h: roi != null ? roi.h : image.height();
+		x0: roi != null ? roi.x0 : 0;
+		y0: roi != null ? roi.y0 : 0;
+		x1: roi != null ? roi.x1 : image.width();
+		y1: roi != null ? roi.y1 : image.height();
 	};
 	if (!image.clip(&r)) {
 		// nothing to set
@@ -100,8 +100,8 @@ void colorMap(Image image, const Rect roi&, const ColorLut map&) {
 	}
 
 	argb lookup[*] = map.lookup;
-	for (int y = r.y; y < r.y + r.h; y += 1) {
-		for (int x = r.x; x < r.x + r.w; x += 1) {
+	for (int y = r.y0; y < r.y1; y += 1) {
+		for (int x = r.x0; x < r.x1; x += 1) {
 			argb col = argb(image.get(x, y));
 			image.set(x, y, lookup[ColorLut.at(rch(col), gch(col), bch(col))]);
 		}

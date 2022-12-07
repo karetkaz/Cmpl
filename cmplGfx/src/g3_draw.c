@@ -18,7 +18,7 @@ void getFrustum(struct vector planes[6], matrix mat) {
 
 static vector boundSphere(vector s, vector p1, vector p2, vector p3) {
 	vecadd(s, vecadd(s, p1, p2), p3);
-	vecsca(s, s, (scalar)(1. / 3));									// set s to Baricentrum;
+	vecsca(s, s, (scalar) (1. / 3));                                    // set s to Baricentrum;
 
 	struct vector tmp[1];
 	scalar len = vecdp3(tmp, vecsub(tmp, s, p1));
@@ -34,7 +34,7 @@ static vector boundSphere(vector s, vector p1, vector p2, vector p3) {
 	return s;
 }
 
-int testPoint(struct vector planes[6], vector p) {				// clip point
+int testPoint(struct vector planes[6], vector p) {                // clip point
 	const scalar r = 0;
 	if (vecdph(p, &planes[0]) <= r) return 0;
 	if (vecdph(p, &planes[1]) <= r) return 0;
@@ -42,17 +42,19 @@ int testPoint(struct vector planes[6], vector p) {				// clip point
 	if (vecdph(p, &planes[3]) <= r) return 0;
 	if (vecdph(p, &planes[4]) <= r) return 0;
 	if (vecdph(p, &planes[5]) <= r) return 0;
-	return 1;	// inside
+	return 1;    // inside
 }
-int testSphere(struct vector planes[6], vector p, scalar r) {			// clip sphere
+
+int testSphere(struct vector planes[6], vector p, scalar r) {            // clip sphere
 	if (vecdph(&planes[0], p) <= r) return 0;
 	if (vecdph(&planes[1], p) <= r) return 0;
 	if (vecdph(&planes[2], p) <= r) return 0;
 	if (vecdph(&planes[3], p) <= r) return 0;
 	if (vecdph(&planes[4], p) <= r) return 0;
 	if (vecdph(&planes[5], p) <= r) return 0;
-	return 1;	// inside
+	return 1;    // inside
 }
+
 int testTriangle(struct vector planes[6], vector p1, vector p2, vector p3) {
 	struct vector tmp[1];
 	boundSphere(tmp, p1, p2, p3);
@@ -60,10 +62,13 @@ int testTriangle(struct vector planes[6], vector p1, vector p2, vector p3) {
 }
 
 
-static inline uint32_t sca2fix(double __VAL, int __FIX) {return ((uint32_t)((__VAL) * (1 << (__FIX))));}
-static inline uint32_t projx(GxImage dst, vector p, int sca) {return sca2fix((dst->width - 1) * (1 + p->x) / 2, sca);}
-static inline uint32_t projy(GxImage dst, vector p) {return sca2fix((dst->height - 1) * (1 - p->y) / 2, 0);}
-static inline uint32_t projz(vector p) {return sca2fix((1 - p->z) / 2, 24);}
+static inline uint32_t sca2fix(double __VAL, int __FIX) { return ((uint32_t) ((__VAL) * (1 << (__FIX)))); }
+
+static inline uint32_t projx(GxImage dst, vector p, int sca) { return sca2fix((dst->width - 1) * (1 + p->x) / 2, sca); }
+
+static inline uint32_t projy(GxImage dst, vector p) { return sca2fix((dst->height - 1) * (1 - p->y) / 2, 0); }
+
+static inline uint32_t projz(vector p) { return sca2fix((1 - p->z) / 2, 24); }
 
 static inline int getOffs(GxImage dst, int x, int y) {
 	return y * (dst->scanLen / 4) + x;
@@ -71,14 +76,13 @@ static inline int getOffs(GxImage dst, int x, int y) {
 
 void setPixel3d(GxImage dst, int x, int y, unsigned z, uint32_t c) {
 	int offs = getOffs(dst, x, y);
-	uint32_t *cBuff = (void*)dst->basePtr;
-	uint32_t *zBuff = (void*)dst->tempPtr;
+	uint32_t *cBuff = (void *) dst->basePtr;
+	uint32_t *zBuff = (void *) dst->tempPtr;
 
-	const GxClip roi = getClip(dst);
-	if (y < roi->ymin || y >= roi->ymax) {
+	if ((unsigned) y >= (unsigned) dst->height) {
 		return;
 	}
-	if (x < roi->xmin || x >= roi->xmax) {
+	if ((unsigned) x >= (unsigned) dst->width) {
 		return;
 	}
 
@@ -116,9 +120,9 @@ typedef struct ssds {
 	argb c;
 } *ssds;
 typedef struct edge {
-	int32_t x, dx, z, dz;		//
-	int32_t s, ds, t, dt;		// texture
-	int32_t r, dr, g, dg, b, db;	// RGB color
+	int32_t x, dx, z, dz;           //
+	int32_t s, ds, t, dt;           // texture
+	int32_t r, dr, g, dg, b, db;    // RGB color
 	//~ int32_t sz, dsz, tz, dtz, rz, drz;
 	//~ float A, dA, S0, S1, T0, T1, Z0, Z1;
 	//~ union vector pos, dp;
@@ -150,6 +154,7 @@ static inline void edge_next(edge e) {
 	*/
 
 }
+
 static inline void edge_skip(edge e, int skip) {
 	e->x += skip * e->dx;
 	e->z += skip * e->dz;
@@ -172,6 +177,7 @@ static inline void edge_skip(edge e, int skip) {
 	e->nrm.z += skip * e->dn.z;
 	*/
 }
+
 static inline void init_frag(edge e, edge l, edge r, int len, int skip) {
 	e->dx = (r->x - (e->x = l->x)) / len;
 	e->dz = (r->z - (e->z = l->z)) / len;
@@ -208,6 +214,7 @@ static inline void init_frag(edge e, edge l, edge r, int len, int skip) {
 	}
 
 }
+
 static inline void init_edge(edge e, ssds s1, ssds s2, int len, int skip) {
 	if (len <= 0) {
 		e->x = 0;
@@ -240,7 +247,7 @@ static inline void init_edge(edge e, ssds s1, ssds s2, int len, int skip) {
 	}
 }
 
-static void draw_tri_part(GxImage dst, GxClip roi, edge l, edge r, int swap, int y1, int y2, GxImage img) {
+static void draw_tri_part(GxImage dst, GxRect roi, edge l, edge r, int swap, int y1, int y2, GxImage img) {
 	if (swap) {
 		edge x = l;
 		l = r;
@@ -256,10 +263,10 @@ static void draw_tri_part(GxImage dst, GxClip roi, edge l, edge r, int swap, int
 		int xlr = rx - lx;
 		if (xlr > 0) {
 			int sx = 0;
-			int x = roi->xmin;
+			int x = roi->x0;
 
-			if (rx > roi->xmax) {
-				rx = roi->xmax;
+			if (rx > roi->x1) {
+				rx = roi->x1;
 			}
 			if (lx < x) {
 				sx = x - lx;
@@ -272,7 +279,7 @@ static void draw_tri_part(GxImage dst, GxClip roi, edge l, edge r, int swap, int
 			rx = offs + rx - lx;
 
 			while (offs < rx) {
-				if (zBuff[offs] > (uint32_t)v.z) {
+				if (zBuff[offs] > (uint32_t) v.z) {
 					zBuff[offs] = v.z;
 					if (img) {
 						argb tex;
@@ -294,6 +301,7 @@ static void draw_tri_part(GxImage dst, GxClip roi, edge l, edge r, int swap, int
 		edge_next(r);
 	}
 }
+
 static void draw_triangle(GxImage dst, vector p, texcol tex, texcol col, int i1, int i2, int i3, GxImage img) {
 	// sort by y
 	if (p[i1].y < p[i3].y) {
@@ -335,8 +343,8 @@ static void draw_triangle(GxImage dst, vector p, texcol tex, texcol col, int i1,
 	s3.c = col[i3].rgb;
 
 	if (img && tex) {
-		int w = img->width-1;
-		int h = img->height-1;
+		int w = img->width - 1;
+		int h = img->height - 1;
 		s1.s = tex[i1].tex.s * w;
 		s1.t = tex[i1].tex.t * h;
 		s2.s = tex[i2].tex.s * w;
@@ -350,16 +358,20 @@ static void draw_triangle(GxImage dst, vector p, texcol tex, texcol col, int i1,
 		//~ else w = X1 < X3 ? X1 - X2 : X3 - X1;
 		//~ if ((w >>= 16) < 0)w = -w;
 		//~ if (tmp > SCRH || ((w < 0 ? -w : w) >> 16) > SCRW) return;
-	}
-	else {
+	} else {
 		s1.s = s1.t = 0;
 		s2.s = s2.t = 0;
 		s3.s = s3.t = 0;
 	}
 
 	// calc slope y3 - y1 (the longest)
-	GxClip roi = getClip(dst);
-	int y = roi->ymin;
+	struct GxRect roi = {
+		.x0 = 0,
+		.y0 = 0,
+		.x1 = dst->width,
+		.y1 = dst->height,
+	};
+	int y = roi.y0;
 	int ly1 = y2 - y1;
 	int dy1 = y - y1;
 	int ly2 = y3 - y2;
@@ -378,7 +390,7 @@ static void draw_triangle(GxImage dst, vector p, texcol tex, texcol col, int i1,
 		}
 		y1 = y;
 	}
-	if (y3 > (y = roi->ymax)) {
+	if (y3 > (y = roi.y1)) {
 		if (y2 > y) {
 			if (y1 > y) {
 				return;
@@ -391,15 +403,15 @@ static void draw_triangle(GxImage dst, vector p, texcol tex, texcol col, int i1,
 	//~ if (s1.z < 0) return;
 	//~ if (s2.z < 0) return;
 	//~ if (s3.z < 0) return;
-	if (y1 < y2) {				// y1 < y < y2
+	if (y1 < y2) {                // y1 < y < y2
 		struct edge v2 = {0};
 		init_edge(&v2, &s1, &s2, ly1, dy1);
-		draw_tri_part(dst, roi, &v1, &v2, v2.dx < v1.dx, y1, y2, img);
+		draw_tri_part(dst, &roi, &v1, &v2, v2.dx < v1.dx, y1, y2, img);
 	}
-	if (y2 < y3) {				// y2 < y < y3
+	if (y2 < y3) {                // y2 < y < y3
 		struct edge v2 = {0};
 		init_edge(&v2, &s2, &s3, ly2, dy2);
-		draw_tri_part(dst, roi, &v1, &v2, v2.x < v1.x, y2, y3, img);
+		draw_tri_part(dst, &roi, &v1, &v2, v2.x < v1.x, y2, y3, img);
 	}
 }
 
@@ -423,21 +435,21 @@ static inline vector mapVertex(vector dst, matrix mat, vector src) {
 static argb litVertex(vector color, vector V, vector N, vector E, MtlLight *light, int lightCnt) {
 	struct vector tmp[8];
 	for (int i = 0; i < lightCnt; ++i) {
-		vector D = vecsub(tmp+2, V, &light->pos);
+		vector D = vecsub(tmp + 2, V, &light->pos);
 		vector L = &light->dir;
 
 		scalar spot = 1;
-		if (vecdp3(L, L)) {					// directional or spot light
-			if (light->sCos) {			// Spot Light
+		if (vecdp3(L, L)) {               // directional or spot light
+			if (light->sCos) {            // Spot Light
 				spot = vecdp3(L, vecnrm(tmp, D));
 				if (spot > cos(toRad(light->sCos))) {
 					spot = pow(spot, light->sExp);
+				} else {
+					spot = 0;
 				}
-				else spot = 0;
 			}
-		}
-		else {
-			L = vecnrm(tmp+3, D);
+		} else {
+			L = vecnrm(tmp + 3, D);
 		}
 
 		scalar attn = spot / vecpev(&light->attn, veclen(D));
@@ -451,7 +463,7 @@ static argb litVertex(vector color, vector V, vector N, vector E, MtlLight *ligh
 			vecsca(tmp, &light->diff, attn * dot);
 			vecadd(color, color, tmp);
 
-			vector R = vecnrm(tmp+5, vecrfl(tmp+5, vecsub(tmp+4, V, E), N));
+			vector R = vecnrm(tmp + 5, vecrfl(tmp + 5, vecsub(tmp + 4, V, E), N));
 			if ((dot = -vecdp3(R, L)) > 0) {
 				// Specular
 				vecsca(tmp, &light->spec, attn * pow(dot, light->sPow));
@@ -539,6 +551,7 @@ static int drawCubeMap(GxImage dst, struct GxImage img[6], vector view, matrix p
 
 	return 0;
 }
+
 static int drawBbox(GxImage dst, GxMesh msh, matrix proj) {
 	const int32_t bbox_col = 0xff00ff;
 
@@ -585,7 +598,7 @@ int drawMesh(GxImage dst, GxMesh msh, matrix objm, camera cam, GxLight lights, i
 	GxImage img = NULL;
 	const int32_t line_col = 0xffffff;
 
-	#define MAXVTX (65536*16)
+#define MAXVTX (65536*16)
 	struct vector v[6];
 	struct matrix tmp[3];
 	MtlLight light[32];
@@ -600,13 +613,13 @@ int drawMesh(GxImage dst, GxMesh msh, matrix objm, camera cam, GxLight lights, i
 	}
 
 	if (mode & zero_cbuf) {
-		int *cBuff = (void*)dst->basePtr;
+		int *cBuff = (void *) dst->basePtr;
 		for (int e = 0; e < dst->width * dst->height; e += 1)
 			cBuff[e] = 0;
 	}
 
 	if (mode & zero_zbuf) {
-		int *zBuff = (void*)dst->tempPtr;
+		int *zBuff = (void *) dst->tempPtr;
 		for (int e = 0; e < dst->width * dst->height; e += 1)
 			zBuff[e] = 0x3fffffff;
 	}
@@ -651,10 +664,10 @@ int drawMesh(GxImage dst, GxMesh msh, matrix objm, camera cam, GxLight lights, i
 		if (mode & draw_lit) {
 			struct vector Col = msh->mtl.emis;
 			vector V = msh->pos + i;
-			vector N = msh->nrm + i;	// normalVec
+			vector N = msh->nrm + i;           // normalVec
 			if (objm != NULL) {
-				V = matvph(v+1, objm, V);	// vertexPos
-				N = matvph(v+0, objm, N);	// vertexPos
+				V = matvph(v + 1, objm, V);    // vertexPos
+				N = matvph(v + 0, objm, N);    // vertexPos
 			}
 			//~ const vector V = matvph(v+1, objm, msh->pos + i);	// vertexPos
 			//~ const vector N = matvp3(v+0, objm, msh->nrm + i);	// normalVec
@@ -665,8 +678,7 @@ int drawMesh(GxImage dst, GxMesh msh, matrix objm, camera cam, GxLight lights, i
 				int s = msh->tex[i].s * (img->width - 1);
 				int t = msh->tex[i].t * (img->height - 1);
 				col[i].val = getPixelLinear(img, s, t);
-			}
-			else {
+			} else {
 				col[i] = msh->tex[i];
 			}
 		}
@@ -750,15 +762,16 @@ int drawMesh(GxImage dst, GxMesh msh, matrix objm, camera cam, GxLight lights, i
 	return triangles;
 }
 
-static inline int calcclip(GxClip roi, int x, int y) {
-	return ((y >= roi->ymax) << 0)
-		| ((y < roi->ymin) << 1)
-		| ((x >= roi->xmax) << 2)
-		| ((x < roi->xmin) << 3);
+static inline int calcClip(GxRect roi, int x, int y) {
+	return ((y >= roi->y1) << 0)
+		| ((y < roi->y0) << 1)
+		| ((x >= roi->x1) << 2)
+		| ((x < roi->x0) << 3);
 }
-static int clipLine3d(GxClip roi, int *x1, int *y1, int *z1, int *x2, int *y2, int *z2) {
-	int c1 = calcclip(roi, *x1, *y1);
-	int c2 = calcclip(roi, *x2, *y2);
+
+static int clipLine3d(GxRect roi, int *x1, int *y1, int *z1, int *x2, int *y2, int *z2) {
+	int c1 = calcClip(roi, *x1, *y1);
+	int c2 = calcClip(roi, *x2, *y2);
 	int x = 0, dx, y = 0, dy, z = 0, e;
 
 	while (c1 | c2) {
@@ -772,7 +785,7 @@ static int clipLine3d(GxClip roi, int *x1, int *y1, int *z1, int *x2, int *y2, i
 
 		switch (LOBIT(e)) {        // get lowest bit set
 			case 1:
-				y = roi->ymax - 1;
+				y = roi->y1 - 1;
 				if (dy != 0) {
 					dy = ((y - *y1) << 16) / dy;
 				}
@@ -781,7 +794,7 @@ static int clipLine3d(GxClip roi, int *x1, int *y1, int *z1, int *x2, int *y2, i
 				break;
 
 			case 2:
-				y = roi->ymin;
+				y = roi->y0;
 				if (dy != 0) {
 					dy = ((y - *y1) << 16) / dy;
 				}
@@ -790,7 +803,7 @@ static int clipLine3d(GxClip roi, int *x1, int *y1, int *z1, int *x2, int *y2, i
 				break;
 
 			case 4:
-				x = roi->xmax - 1;
+				x = roi->x1 - 1;
 				if (dx != 0) {
 					dx = ((x - *x1) << 16) / dx;
 				}
@@ -799,7 +812,7 @@ static int clipLine3d(GxClip roi, int *x1, int *y1, int *z1, int *x2, int *y2, i
 				break;
 
 			case 8:
-				x = roi->xmin;
+				x = roi->x0;
 				if (dx != 0) {
 					dx = ((x - *x1) << 16) / dx;
 				}
@@ -811,18 +824,19 @@ static int clipLine3d(GxClip roi, int *x1, int *y1, int *z1, int *x2, int *y2, i
 			*x1 = x;
 			*y1 = y;
 			*z1 = z;
-			c1 = calcclip(roi, x, y);
+			c1 = calcClip(roi, x, y);
 		} else {
 			*x2 = x;
 			*y2 = y;
 			*z2 = z;
-			c2 = calcclip(roi, x, y);
+			c2 = calcClip(roi, x, y);
 		}
 	}
 
 	return 1;
 }
-void drawLine3d(GxImage dst, vector p1, vector p2, uint32_t c) {		// Bresenham
+
+void drawLine3d(GxImage dst, vector p1, vector p2, uint32_t c) {        // Bresenham
 	int32_t sx = 1, dx;
 	int32_t sy = 1, dy;
 	int32_t zs = 0, e;
@@ -843,7 +857,15 @@ void drawLine3d(GxImage dst, vector p1, vector p2, uint32_t c) {		// Bresenham
 		dx = -dx;
 		sx = -1;
 	}
-	if (!clipLine3d(getClip(dst), &x1, &y1, &z1, &x2, &y2, &z2)) return;
+	struct GxRect rect = {
+		.x0 = 0,
+		.y0 = 0,
+		.x1 = dst->width,
+		.y1 = dst->height,
+	};
+	if (!clipLine3d(&rect, &x1, &y1, &z1, &x2, &y2, &z2)) {
+		return;
+	}
 
 	if (dx > dy) {
 		e = dx >> 1;

@@ -451,9 +451,9 @@ editor.on('viewportChange', function(cm, from, to) {
 	window.parent.postMessage({frameHeight: height}, '*');
 });
 
-window.onkeydown = function() {
+window.onkeydown = function(event) {
 	// escape to editor
-	if (event.key == 'Escape') {
+	if (event.key === 'Escape') {
 		setStyle(document.body, '-right-bar');
 		if (editor.hasFocus()) {
 			setStyle(document.body, '~output');
@@ -464,13 +464,13 @@ window.onkeydown = function() {
 		}
 		return false;
 	}
-	// Ctrl + Enter => Focus command: [search, jump, fold, run, ...]
-	if (event.ctrlKey && !event.altKey && !event.shiftKey && event.key === 'Enter') {
+	// Ctrl|Cmd + Enter => Focus command: [search, jump, fold, run, ...]
+	if ((event.ctrlKey|event.metaKey) && !event.altKey && !event.shiftKey && event.key === 'Enter') {
 		completeAction();
 		return false;
 	}
-	// Ctrl + Shift + Enter => Execute script
-	if (event.ctrlKey && !event.altKey && event.shiftKey && event.key === 'Enter') {
+	// Ctrl|Cmd + Shift + Enter => Execute script
+	if ((event.ctrlKey|event.metaKey) && !event.altKey && event.shiftKey && event.key === 'Enter') {
 		onExecClick();
 		return false;
 	}

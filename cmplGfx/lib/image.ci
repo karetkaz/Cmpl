@@ -29,38 +29,25 @@ inline Image(const char fileName[*]) = Image(fileName, 32);
 
 /// Clip the rectangle against the given image boundaries
 bool clip(Image image, Rect roi&) {
-
-	roi.w += roi.x;
-	roi.h += roi.y;
-
-	if (roi.x < 0) {
-		roi.x = 0;
+	if (roi.x0 < 0) {
+		roi.x0 = 0;
 	}
 
-	if (roi.y < 0) {
-		roi.y = 0;
+	if (roi.y0 < 0) {
+		roi.y0 = 0;
 	}
 
 	int width = image.width();
-	if (roi.w > width) {
-		roi.w = width;
+	if (roi.x1 > width) {
+		roi.x1 = width;
 	}
 
 	int height = image.height();
-	if (roi.h > height) {
-		roi.h = height;
+	if (roi.y1 > height) {
+		roi.y1 = height;
 	}
 
-	roi.w -= roi.x;
-	roi.h -= roi.y;
-
-	if (roi.w <= 0) {
-		return false;
-	}
-	if (roi.h <= 0) {
-		return false;
-	}
-	return true;
+	return !roi.empty();
 }
 
 /// Set the the color of a pixel at the given position
