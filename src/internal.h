@@ -6,15 +6,14 @@
  *
  *
 *******************************************************************************/
+
 #ifndef CC_INTERNAL_H
 #define CC_INTERNAL_H
 
-#include "cmplVm.h"
-#include "cmplCc.h"
-#include "parser.h"
-#include "cmplDbg.h"
-#include "printer.h"
 #include <stdarg.h>
+#include "cmpl.h"
+#include "parser.h"
+#include "printer.h"
 
 /* Debugging the compiler:
 	0: show where errors were raised
@@ -26,27 +25,6 @@
 */
 //#define DEBUGGING 0
 
-enum Settings {
-	// maximum token count in expressions
-	maxTokenCount = 1024,
-
-	// size of the hash table for the symbol names
-	hashTableSize = 512,
-
-	// limit the count of printed elements(stacktrace, array elements)
-	maxLogItems = 25,
-
-	// pre allocate space for argument on the stack
-	// faster execution if each argument is pushed when calculated
-	preAllocateArgs = 0
-};
-
-// linked list
-typedef struct list {
-	struct list *next;
-	const char *data;
-} *list;
-
 // native function call
 typedef struct libc {
 	vmError (*call)(nfcContext);
@@ -55,96 +33,6 @@ typedef struct libc {
 	size_t offs;
 	size_t in, out;		// stack parameters
 } *libc;
-
-/// Compiler context
-struct ccContextRec {
-	rtContext rt;
-	astn root;                      // statements
-	symn owner;                     // scope variables and functions
-	symn scope;                     // scope variables and functions (next is symn->scope)
-	symn global;                    // global variables and functions (next is symn->global)
-	list native;                    // list of native functions
-	astn jumps;                     // list of break and continue statements to fix
-
-	int32_t nest;                   // nest level: modified by (enter/leave)
-	int32_t inStaticIfFalse: 1;     // inside a static if false
-	int32_t genDocumentation: 1;    // generate documentation
-	int32_t genStaticGlobals: 1;    // generate global variables as static variables
-	int32_t errPrivateAccess: 1;    // raise error accessing private data
-	int32_t errUninitialized: 1;    // raise error for uninitialized variables
-	astn scopeStack[maxTokenCount]; // scope stack used by enter leave
-
-	// Lexer
-	list stringTable[hashTableSize];// string table (hash)
-	astn tokPool;                   // list of recycled tokens
-	astn tokNext;                   // next token: look-ahead
-
-	// Parser
-	symn symbolStack[hashTableSize];// symbol stack (hash)
-	const char *home;               // home folder
-	const char *unit;               // unit file name
-	const char *file;               // current file name
-	int line;                       // current line number
-
-	// Type cache
-	symn type_vid;        // void
-	symn type_bol;        // boolean
-	symn type_chr;        // character
-	symn type_i08;        //  8bit signed integer
-	symn type_i16;        // 16bit signed integer
-	symn type_i32;        // 32bit signed integer
-	symn type_i64;        // 64bit signed integer
-	symn type_u08;        //  8bit unsigned integer
-	symn type_u16;        // 16bit unsigned integer
-	symn type_u32;        // 32bit unsigned integer
-	symn type_u64;        // 64bit unsigned integer
-	symn type_f32;        // 32bit floating point
-	symn type_f64;        // 64bit floating point
-	symn type_ptr;        // pointer
-	symn type_var;        // variant
-	symn type_rec;        // typename
-	symn type_fun;        // function
-	symn type_obj;        // object
-	symn type_str;        // string
-
-	symn type_int;        // integer: 32-bit/64-bit signed
-	symn type_idx;        // length / index: 32-bit/64-bit unsigned
-
-	symn null_ref;        // variable null
-	symn length_ref;      // slice length attribute
-
-	symn emit_opc;        // emit intrinsic function, or whatever it is.
-	astn void_tag;        // used to lookup function call with 0 argument
-
-	symn libc_dbg;        // raise(char file[*], int line, int level, int trace, char message[*], variant inspect);
-	symn libc_try;        // tryExec(pointer args, void action(pointer args));
-	symn libc_mem;        // pointer.alloc(pointer old, int size);
-	symn libc_new;        // object.create(typename type);
-};
-
-/// Debugger context
-struct dbgContextRec {
-	rtContext rt;
-	vmError (*debug)(dbgContext ctx, vmError, size_t ss, void *sp, size_t caller, size_t callee);
-
-	struct arrBuffer functions;
-	struct arrBuffer statements;
-	size_t freeMem, usedMem;
-	symn tryExec;	// the symbol of tryExec function
-};
-
-// helper macros
-#define lengthOf(__ARRAY) (sizeof(__ARRAY) / sizeof(*(__ARRAY)))
-#define offsetOf(__TYPE, __FIELD) ((size_t) &((__TYPE*)NULL)->__FIELD)
-
-/// Bit count: number of bits set to 1
-static inline int32_t bitcnt(uint32_t value) {
-	value -= ((value >> 1) & 0x55555555);
-	value = (((value >> 2) & 0x33333333) + (value & 0x33333333));
-	value = (((value >> 4) + value) & 0x0f0f0f0f);
-	value += (value >> 8) + (value >> 16);
-	return value & 0x3f;
-}
 
 /// Bit scan forward: position of the Least Significant Bit
 static inline int32_t bitsf(uint32_t value) {
@@ -169,34 +57,6 @@ static inline int32_t bitsf(uint32_t value) {
 		value >>= 2;
 	}
 	if ((value & 0x00000001) == 0) {
-		result += 1;
-	}
-	return result;
-}
-
-/// Bit scan reverse: position of the Most Significant Bit
-static inline int32_t bitsr(uint32_t value) {
-	if (value == 0) {
-		return -1;
-	}
-	int32_t result = 0;
-	if (value & 0xffff0000) {
-		result += 16;
-		value >>= 16;
-	}
-	if (value & 0x0000ff00) {
-		result +=  8;
-		value >>= 8;
-	}
-	if (value & 0x000000f0) {
-		result += 4;
-		value >>= 4;
-	}
-	if (value & 0x0000000c) {
-		result += 2;
-		value >>= 2;
-	}
-	if (value & 0x00000002) {
 		result += 1;
 	}
 	return result;
@@ -258,9 +118,6 @@ extern const char type_fmt_string_chr;
 extern const char type_fmt_character_chr;
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-uint64_t timeMillis();
-void sleepMillis(int64_t millis);
 
 char *absolutePath(const char *path, char *buff, size_t size);
 
@@ -543,12 +400,6 @@ static inline float expf(float x) { return (float) exp((float) x); }
 static inline float powf(float x, float y) { return (float) pow((float) x, (float) y); }
 static inline float sqrtf(float x) { return (float) sqrt((float) x); }
 static inline float atan2f(float x, float y) { return (float) atan2((float) x, (float) y); }
-#endif
-
-#ifdef _MSC_VER
-// disable warning messages
-// C4996: The POSIX ...
-#pragma warning(disable: 4996)
 #endif
 
 #endif

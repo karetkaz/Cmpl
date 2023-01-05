@@ -102,8 +102,10 @@ DebugView debug = {
 inline blur(Image surf, float64 sigma) = surf.blur(Math.max(1., (sigma - 0.8) / 0.3 + 1), sigma);
 
 Rect rect = {
-	w: offs.width();
-	h: offs.height();
+	x0: 0;
+	y0: 0;
+	x1: offs.width();
+	y1: offs.height();
 };
 float64 oldRadius = 0;
 
@@ -152,10 +154,10 @@ void onProcess(FxWidget widget) {
 
 		offs.blendDstAlpha(0, 0, surf, null);
 		if (chkRect.checked()) {
-			int x0 = rect.x;
-			int x1 = x0 + rect.w;
-			int y0 = rect.y;
-			int y1 = y0 + rect.h;
+			int x0 = rect.x0;
+			int x1 = rect.x1;
+			int y0 = rect.y0;
+			int y1 = rect.y1;
 			offs.drawRect(x0, y0, x1, y1, 0x00ff00);
 			offs.drawLine(x0, y0, x1, y1, 0xff0000);
 		}
@@ -180,29 +182,24 @@ bool onTouchEvent(Button view, const Rect r&, const TouchEvent event&) {
 
 	// resize
 	if (event.isAlt || chkMoveScale.selected == 2) {
-		rect.w += event.dx;
-		rect.h += event.dy;
+		rect.adjust(0, 0, event.dx, event.dy);
 		return true;
 	}
 	// move
 	if (event.isShift == bool(chkMoveScale.selected)) {
-		rect.x += event.dx;
-		rect.y += event.dy;
+		rect.translate(event.dx, event.dy);
 		return true;
 	}
 
 	// resize while the center of the rect is pinned
-	rect.x -= event.dx;
-	rect.y -= event.dy;
-	rect.w += 2 * event.dx;
-	rect.h += 2 * event.dy;
+	rect.adjust(-event.dx, -event.dy, event.dx, event.dy);
 	return true;
 }
 bool onResetClick(Button view) {
-	rect.x = 0;
-	rect.y = 0;
-	rect.w = offs.width();
-	rect.h = offs.height();
+	rect.x0 = 0;
+	rect.y0 = 0;
+	rect.x1 = offs.width();
+	rect.y1 = offs.height();
 	return true;
 }
 

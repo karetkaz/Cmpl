@@ -801,7 +801,7 @@ GxImage loadImg(GxImage dst, const char *src, int depth) {
 		return NULL;
 	}
 
-	for (ssize_t y = 0; y < height; ++y) {
+	for (int y = 0; y < height; ++y) {
 		size_t dstOffs = y * dst->scanLen;
 		size_t srcOffs = y * width * channels;
 		blt(dst->basePtr + dstOffs, pixels + srcOffs, NULL, width);

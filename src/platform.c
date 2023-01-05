@@ -5,10 +5,10 @@
 #define CMPL_PLATFORM_H
 
 #include "internal.h"
-#include <unistd.h>
 
 // mingw || gcc || emcc
 #if defined(__GNUC__) || defined(__EMSCRIPTEN__)
+#include <unistd.h>
 #ifdef _WIN32
 #include "os_win32/time.c"
 #include "os_win32/path.c"
@@ -21,6 +21,7 @@
 
 // watcom c/c++
 #elif defined(__WATCOMC__)
+#include <unistd.h>
 #if defined(__DOS)
 msdod not support
 #elif defined(_WIN32)
@@ -34,18 +35,16 @@ msdod not support
 #define __NO_PLUGINS
 #endif
 
-/* TODO: other compilers
-// visual studio
-#elif defined(_MSC_VER)
-#include "os_win32/time.c"
-#include "os_win32/path.c"
-#include "os_win32/plugin.c"
- */
-
 #elif defined(__APPLE__) && defined(__MACH__)
 #include "os_linux/time.c"
 #include "os_linux/path.c"
 #define __NO_PLUGINS
+
+#elif defined(_MSC_VER)
+// visual studio
+#include "os_win32/time.c"
+#include "os_win32/path.c"
+#include "os_win32/plugin.c"
 #endif
 
 #ifdef __NO_PLUGINS

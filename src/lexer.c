@@ -6,9 +6,10 @@
  * convert text to tokens
  */
 
-#include "internal.h"
 #include <limits.h>
 #include <fcntl.h>
+#include "utils.h"
+#include "internal.h"
 
 #if !(defined _MSC_VER)
 #include <unistd.h>

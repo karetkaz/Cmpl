@@ -46,16 +46,16 @@ struct Camera {
 	/// get the matrix of the camera, which can be multiplied with the projection matrix
 	static mat4f matrix(const Camera camera&) {
 		return {
-			x: camera.forward;
-			y: camera.right;
-			z: camera.up;
+			x: vec4f(camera.right, -camera.right.dp3(camera.position));
+			y: vec4f(camera.up, -camera.up.dp3(camera.position));
+			z: vec4f(camera.forward, -camera.forward.dp3(camera.position));
 			w: vec4f(0, 0, 0, 1);
 		};
 	}
 
 	/// get the matrix of the camera multiplied with the projection matrix
-	static mat4f matrix(const mat4f projection&, const Camera camera&) {
-		return projection.mul(camera.matrix());
+	static mat4f matrix(const Camera camera&, float32 fov, float32 asp, float32 n, float32 f) {
+		return projection(fov, asp, n, f).mul(camera.matrix());
 	}
 
 	/// Move the camera in the given `direction` with the given `amount`

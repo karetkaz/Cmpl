@@ -3,52 +3,45 @@ void blend(Image image, int32 x0, int32 y0, const Image src, const Rect roi&, po
 	static if (preferNativeCalls && typename(Image.blend) != null) {
 		return Image.blend(image, x0, y0, src, roi, extra, pointer(blend));
 	}
-	// clip roi with source imag
-	Rect r = {
-		x: roi != null ? roi.x : 0;
-		y: roi != null ? roi.y : 0;
-		w: roi != null ? roi.w : src.width();
-		h: roi != null ? roi.h : src.height();
+
+	// clip roi with source image
+	Rect rect = {
+		x0: roi != null ? roi.x0 : 0;
+		y0: roi != null ? roi.y0 : 0;
+		x1: roi != null ? roi.x1 : src.width();
+		y1: roi != null ? roi.y1 : src.height();
 	};
 	if (x0 < 0) {
-		r.x -= x0;
-		r.w += x0;
+		rect.x0 -= x0;
 	}
 	if (y0 < 0) {
-		r.y -= y0;
-		r.h += y0;
+		rect.y0 -= y0;
 	}
-	if (!src.clip(&r)) {
+	if (!src.clip(&rect)) {
 		// nothing to get
 		return;
 	}
 
 	// clip also destination
-	r.x = x0;
-	r.y = y0;
-	if (x0 < 0) {
-		r.w -= x0;
-	}
-	if (y0 < 0) {
-		r.h -= y0;
-	}
-	if (!image.clip(&r)) {
+	rect.positionX(x0 < 0 ? 0 : x0);
+	rect.positionY(y0 < 0 ? 0 : y0);
+	if (!image.clip(&rect)) {
 		// nothing to set
 		return;
 	}
 
 	assert(image.depth() == 32 && src.depth() == 32);
 	if (blend == null) {
-		for (int y = r.y; y < r.y + r.h; y += 1) {
-			for (int x = r.x; x < r.x + r.w; x += 1) {
+		for (int y = rect.y0; y < rect.y1; y += 1) {
+			for (int x = rect.x0; x < rect.x1; x += 1) {
 				image.set(x, y, src.get(x - x0, y - y0));
 			}
 		}
 		return;
 	}
 
-	for (int y = r.y; y < r.y + r.h; y += 1) {
-		for (int x = r.x; x < r.x + r.w; x += 1) {
+	for (int y = rect.y0; y < rect.y1; y += 1) {
+		for (int x = rect.x0; x < rect.x1; x += 1) {
 			argb base = argb(image.get(x, y));
 			argb with = argb(src.get(x - x0, y - y0));
 			image.set(x, y, blend(extra, base, with));
@@ -73,7 +66,7 @@ void blend(Image image, int32 x0, int32 y0, const Image src, const Rect roi&, ve
 /// fill the destination with the given `col` (alpha channel is used)
 void blend(Image image, const Rect roi&, argb col) {
 	static if (preferNativeCalls && typename(Image.blend.color) != null) {
-		return image.blend(roi != null ? roi.x : 0, roi != null ? roi.y : 0, image, roi, col, Image.blend.color);
+		return image.blend(roi != null ? roi.x0 : 0, roi != null ? roi.y0 : 0, image, roi, col, Image.blend.color);
 	}
 	argb blender(const argb color&, argb base, argb with) {
 		int alpha = ach(color);
@@ -84,7 +77,7 @@ void blend(Image image, const Rect roi&, argb col) {
 			a: alpha;
 		};
 	}
-	return image.blend(roi != null ? roi.x : 0, roi != null ? roi.y : 0, image, roi, col, blender);
+	return image.blend(roi != null ? roi.x0 : 0, roi != null ? roi.y0 : 0, image, roi, col, blender);
 }
 
 /// copy the `src` image to the destination with the given transparency
@@ -137,10 +130,10 @@ Image Image(Image copy) {
 /// copy the `src` image multiple times so it fills the whole `image`
 void tile(Image image, int x, int y, Image src, const Rect roi&) {
 	Rect rect = {
-		x: roi != null ? roi.x : 0;
-		y: roi != null ? roi.y : 0;
-		w: roi != null ? roi.w : src.width();
-		h: roi != null ? roi.h : src.height();
+		x0: roi != null ? roi.x0 : 0;
+		y0: roi != null ? roi.y0 : 0;
+		x1: roi != null ? roi.x1 : src.width();
+		y1: roi != null ? roi.y1 : src.height();
 	};
 
 	if (!src.clip(&rect)) {
@@ -148,15 +141,15 @@ void tile(Image image, int x, int y, Image src, const Rect roi&) {
 	}
 
 	if (x < 0) {
-		x = -(-x % rect.w);
+		x = -(-x % rect.width());
 	}
 	if (y < 0) {
-		y = -(-y % rect.h);
+		y = -(-y % rect.height());
 	}
 	int width = image.width();
 	int height = image.height();
-	for (int j = y; j < height; j += rect.h) {
-		for (int i = x; i < width; i += rect.w) {
+	for (int j = y; j < height; j += rect.height()) {
+		for (int i = x; i < width; i += rect.width()) {
 			image.copy(i, j, src, rect);
 		}
 	}
@@ -165,10 +158,10 @@ void tile(Image image, int x, int y, Image src, const Rect roi&) {
 /// Fill the surface by evaluating the given function for each pixel
 void eval(Image image, const Rect roi&, float32 aspect, float32 time, vec4f eval(vec4f in)) {
 	Rect rect = {
-		x: roi != null ? roi.x : 0;
-		y: roi != null ? roi.y : 0;
-		w: roi != null ? roi.w : image.width();
-		h: roi != null ? roi.h : image.height();
+		x0: roi != null ? roi.x0 : 0;
+		y0: roi != null ? roi.y0 : 0;
+		x1: roi != null ? roi.x1 : image.width();
+		y1: roi != null ? roi.y1 : image.height();
 	};
 
 	if (!image.clip(&rect)) {
@@ -181,12 +174,11 @@ void eval(Image image, const Rect roi&, float32 aspect, float32 time, vec4f eval
 		aspect = w / h;
 	}
 	h *= aspect;
-	int x1 = rect.x + rect.w;
-	int y1 = rect.y + rect.h;
+
 	vec4f in = vec4f(0, 0, 0, time);
-	for (int y = rect.y; y < y1; y += 1) {
+	for (int y = rect.y0; y < rect.y1; y += 1) {
 		in.y = y / h;
-		for (int x = rect.x; x < x1; x += 1) {
+		for (int x = rect.x0; x < rect.x1; x += 1) {
 			in.x = x / w;
 			image.set(x, y, argb(eval(in)));
 		}

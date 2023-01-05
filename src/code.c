@@ -6,9 +6,10 @@
  * generate and execute instructions
  */
 
-#include "internal.h"
 #include <math.h>
 #include <time.h>
+#include "cmplDbg.h"
+#include "internal.h"
 
 const struct opcodeRec opcode_tbl[256] = {
 	#define OPCODE_DEF(Name, Code, Size, In, Out, Text) {Code, Size, In, Out, Text},

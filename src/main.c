@@ -8,8 +8,10 @@
  * json / text dump
  */
 
-#include "internal.h"
 #include <time.h>
+#include "cmplDbg.h"
+#include "internal.h"
+#include "utils.h"
 
 // default values
 static const char *STDLIB = "/cmplStd/stdlib.ci";   // standard library
@@ -1598,8 +1600,9 @@ static int usage() {
 		"\n        print message when line 19 is hit"
 		"\n"
 		"\nfor more details visit: https://karetkaz.github.io/Cmpl/"
-		"\n\n";
+		"\n";
 	fputs(USAGE, stdout);
+	fprintf(stdout, "cmplVersion: %d\n", cmplVersion());
 	return 0;
 }
 
@@ -2361,11 +2364,11 @@ int main(int argc, char *argv[]) {
 			error(rt, NULL, 0, "error registering `preferNativeCalls`");
 			return -1;
 		}
-		if (ccLibSys(cc) != 0) {
+		if (cmplInit(rt) != 0) {
 			error(rt, NULL, 0, "error registering standard library");
 			return -1;
 		}
-		if (!ccAddUnit(cc, ccLibStd, stdlib, 0, buffer)) {
+		if (!ccAddUnit(cc, stdlib, 0, buffer)) {
 			error(rt, NULL, 0, "error registering standard library");
 			return -1;
 		}
@@ -2387,7 +2390,7 @@ int main(int argc, char *argv[]) {
 				else {
 					if (extra.compileSteps != NULL && ccFile != NULL) {printLog(extra.rt, raisePrint, NULL, 0, NULL, "%sCompile: `%?s`", extra.compileSteps, ccFile);}
 					int errors = rt->errors;
-					if (!ccAddUnit(cc, NULL, ccFile, 1, NULL) && errors == rt->errors) {
+					if (!ccAddUnit(cc, ccFile, 1, NULL) && errors == rt->errors) {
 						// show the error in case it was not raised, but returned
 						error(rt, ccFile, 1, "error compiling source `%s`", ccFile);
 					}
@@ -2509,7 +2512,7 @@ int main(int argc, char *argv[]) {
 		if (dumpFun == dumpApiJSON) {
 			extra.esc = escapeJSON();
 			printFmt(extra.out, NULL, "{\n");
-			printFmt(extra.out, extra.esc, "%I\"%s\": \"%d\"\n", extra.indent, JSON_KEY_VERSION, CMPL_API_H);
+			printFmt(extra.out, extra.esc, "%I\"%s\": \"%d\"\n", extra.indent, JSON_KEY_VERSION, cmplVersion());
 			printFmt(extra.out, extra.esc, JSON_OBJ_ARR_START, extra.indent, JSON_KEY_SYMBOLS);
 			dumpApi(rt, &extra, dumpApiJSON);
 			printFmt(extra.out, extra.esc, JSON_OBJ_ARR_END, extra.indent);
@@ -2590,6 +2593,5 @@ int main(int argc, char *argv[]) {
 
 	return rtClose(rt) != 0;
 	(void) cmplUnit;
-	(void) cmplInit;
 	(void) cmplClose;
 }

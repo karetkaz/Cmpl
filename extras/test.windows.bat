@@ -24,7 +24,7 @@ IF EXIST "%WATCOM%" (
 
 	IF NOT EXIST "%BIN_WCC%" mkdir "%BIN_WCC%"
 	pushd "%BIN_WCC%"
-	owcc -xc -std=c99 -o %BIN_WCC%\cmpl.exe %CMPL_HOME%\src\*.c
+	owcc -xc -std=c99 -o %BIN_WCC%\cmpl.exe %CMPL_HOME%\src\*.c %CMPL_HOME%\cmplStd\src\*.c
 	popd
 )
 
@@ -36,6 +36,15 @@ IF EXIST "%WATCOM%" (
 SET TEST_FLAGS=-X+steps-stdin-offsets -asm/n/s -debug/g "%CMPL_HOME%\cmplStd\test\test.ci"
 %BIN_WCC%\cmpl -log/d "%BIN_WCC%.ci" %TEST_FLAGS%
 %BIN%\cmpl -log/d "%BIN%.ci" %TEST_FLAGS%
+
+:: dump symbols, documentation, assembly, syntax tree and global variables (to be compared with previous version to test if the code is generated properly)
+%BIN%\cmpl -X+steps+fold+fast-stdin-glob-offsets -debug/G/M -api/A/d/p -asm/n/s -ast -doc -log/d/15 "%BIN%-test.dump.ci" -dump.ast.xml "%BIN%-test.dump.xml" "cmplStd\test\test.ci"
+:: dump symbols, documentation, assembly, syntax tree and global variables (to be compared with previous version to test if the code is generated properly)
+%BIN%\cmpl -X+steps+fold+fast-stdin-glob-offsets -debug/G/M -api/A/d/p -asm/n/s -ast -doc -use -log/d "%BIN%-libs.dump.ci" "%BIN%\libFile.dll" "%BIN%\libGfx.dll"
+:: dump profile data in text format including function tracing
+%BIN%\cmpl -X-stdin+steps -profile/t/P/G/M -api/A/d/p -asm/g/n/s -ast/t -doc -use -log/d/15 "%BIN%-test.prof.ci" "cmplStd\test\test.ci"
+:: dump profile data in json format
+%BIN%\cmpl -X-stdin-steps -profile/t/P/G/M -api/A/d/p -asm/g/n/s -ast/t -doc -use -dump.json "%BIN%-test.prof.json" "cmplStd\test\test.ci"
 
 SET TEST_FILES=%CMPL_HOME%\cmplStd\test\test.ci
 SET TEST_FILES=%TEST_FILES%;%CMPL_HOME%\cmplStd\test\demo\*.ci

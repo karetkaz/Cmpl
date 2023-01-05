@@ -70,10 +70,10 @@ int drawGradient(GxImage dst, GxRect roi, GradientFlags type, int length, uint32
 		return -1;
 
 	if (roi != NULL) {
-		g.sx = roi->x;
-		g.sy = roi->y;
-		g.x = roi->w;
-		g.y = roi->h;
+		g.sx = roi->x0;
+		g.sy = roi->y0;
+		g.x = roi->x1 - roi->x0;
+		g.y = roi->y1 - roi->y0;
 	}
 	else {
 		g.sx = g.sy = 0;
@@ -144,16 +144,21 @@ int drawGradient(GxImage dst, GxRect roi, GradientFlags type, int length, uint32
 			break;
 	}
 
-	GxClip clip = getClip(dst);
-	char *dptr = (char *) refPixel(dst, clip->l, clip->t);
+	struct GxRect clip = {
+		.x0 = 0,
+		.y0 = 0,
+		.x1 = dst->width,
+		.y1 = dst->height,
+	};
+	char *dptr = (char *) refPixel(dst, clip.x0, clip.y0);
 	if (dptr == NULL) {
 		return -2;
 	}
 
 	if (type & flag_alpha) {
-		for (g.y = clip->t; g.y < clip->b; ++g.y) {
+		for (g.y = clip.y0; g.y < clip.y1; ++g.y) {
 			argb *d = (argb *) dptr;
-			for (g.x = clip->l; g.x < clip->r; ++g.x) {
+			for (g.x = clip.x0; g.x < clip.x1; ++g.x) {
 				int idx = length * g.gf(&g);
 				if (idx >= length) {
 					idx = length - 1;
@@ -169,9 +174,9 @@ int drawGradient(GxImage dst, GxRect roi, GradientFlags type, int length, uint32
 		return 0;
 	}
 
-	for (g.y = clip->t; g.y < clip->b; ++g.y) {
+	for (g.y = clip.y0; g.y < clip.y1; ++g.y) {
 		argb *d = (argb *) dptr;
-		for (g.x = clip->l; g.x < clip->r; ++g.x) {
+		for (g.x = clip.x0; g.x < clip.x1; ++g.x) {
 			int idx = length * g.gf(&g);
 			if (idx >= length) {
 				idx = length - 1;

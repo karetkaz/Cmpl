@@ -129,11 +129,10 @@ inline drawRRect(Image image, int x1, int y1, int x2, int y2, int r, uint32 colo
 
 /// Fill the given rectangle rounding the corners using the given radius
 void fillRRect(Image image, const Rect roi&, int rx, int ry, uint32 color) {
-	if (roi.w <= 0 || roi.h <= 0) {
-		// empty rectangle
+	if (roi.empty()) {
 		return;
 	}
-	image.fillRRect(roi.x, roi.y, roi.x + roi.w, roi.y + roi.h, rx, ry, color);
+	image.fillRRect(roi.x0, roi.y0, roi.x1, roi.y1, rx, ry, color);
 }
 
 /// Fill the given rectangle rounding the corners using the given radius

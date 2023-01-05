@@ -39,7 +39,7 @@ int importLib(rtContext rt, const char *path) {
 	if (import != NULL) {
 		char inlineUnit[512];
 		snprintf(inlineUnit, sizeof(inlineUnit), "inline \"%s\"?;", import);
-		if (!ccAddUnit(rt->cc, NULL, NULL, 0, inlineUnit)) {
+		if (!ccAddUnit(rt->cc, NULL, 0, inlineUnit)) {
 			return 1;
 		}
 	}

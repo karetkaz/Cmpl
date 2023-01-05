@@ -1,29 +1,22 @@
 /**
  * Debugger core functions.
  */
-
 #ifndef CMPL_DBG_H
 #define CMPL_DBG_H
 
-/// Dynamic array
-struct arrBuffer {
-	char *ptr;         // data
-	size_t esz;        // element size
-	size_t cap;        // capacity
-	size_t cnt;        // allocated size
-};
+#include "cmpl.h"
+#include "utils.h"
 
-int initBuff(struct arrBuffer *buff, size_t initCount, size_t elemSize);
-static inline void *getBuff(struct arrBuffer *buff, size_t idx) {
-	size_t pos = idx * buff->esz;
-	if (pos >= buff->cap || buff->ptr == NULL) {
-		return NULL;
-	}
-	return buff->ptr + pos;
-}
-void *insBuff(struct arrBuffer *buff, size_t idx, void *data);
-void *setBuff(struct arrBuffer *buff, size_t idx, void *data);
-void freeBuff(struct arrBuffer *buff);
+/// Debugger context
+struct dbgContextRec {
+	rtContext rt;
+	vmError (*debug)(dbgContext ctx, vmError, size_t ss, void *sp, size_t caller, size_t callee);
+
+	struct arrBuffer functions;
+	struct arrBuffer statements;
+	size_t freeMem, usedMem;
+	symn tryExec;	// the symbol of tryExec function
+};
 
 /// Break point actions
 typedef enum {

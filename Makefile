@@ -44,13 +44,13 @@ SRC_CC=\
 	$(CC_SRC)/code.c\
 	$(CC_SRC)/core.c\
 	$(CC_SRC)/lexer.c\
-	$(CC_SRC)/lstd.c\
 	$(CC_SRC)/parser.c\
 	$(CC_SRC)/platform.c\
 	$(CC_SRC)/printer.c\
 	$(CC_SRC)/tree.c\
 	$(CC_SRC)/type.c\
-	$(CC_SRC)/utils.c
+	$(CC_SRC)/utils.c\
+	cmplStd/src/lstd.c
 
 SRC_GX=\
 	$(GX_SRC)/*.h\
@@ -135,3 +135,7 @@ $(BINDIR)/$(CC_SRC)/%.o: $(CC_SRC)/%.c $(filter-out %.c, $(SRC_CC_EXE))
 $(BINDIR)/$(GX_SRC)/%.o: $(GX_SRC)/%.c $(filter-out %.c, $(SRC_CC_EXE))
 	@mkdir $(MKDIRF) "$(@D)" || true
 	gcc $(CFLAGS) -I src -o "$@" -c "$<"
+
+$(BINDIR)/cmplStd/src/%.o: cmplStd/src/%.c $(filter-out %.c, $(SRC_CC_EXE))
+	@mkdir $(MKDIRF) "$(@D)" || true
+	gcc $(CFLAGS) -o "$@" -c "$<"

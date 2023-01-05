@@ -24,7 +24,7 @@ if [ -n "$BIN_WCC" ] && [ -d "$WATCOM" ]; then
 	PATH="$WATCOM/binl:$PATH"
 
 	mkdir -p $BIN_WCC && cd $BIN_WCC
-	owcc -xc -std=c99 -o "$BIN_WCC/cmpl" $(echo "$CMPL_HOME/src/*.c")
+	owcc -xc -std=c99 -o "$BIN_WCC/cmpl" $CMPL_HOME/src/*.c $CMPL_HOME/cmplStd/src/*.c
 	cd $CMPL_HOME || exit 1
 fi
 
@@ -36,7 +36,7 @@ if ! $BIN/cmpl>extras/dump/vm.dump.md --test-vm; then
 fi
 
 ## dump api for scite including all libraries
-if ! $BIN/cmpl -dump.scite extras/cmpl.api "$BIN/libFile.so" "$BIN/libGfx.so"; then
+if ! $BIN/cmpl -dump.scite extras/Cmpl.api "$BIN/libFile.so" "$BIN/libGfx.so"; then
 	echo "failed to dump compiler api"
 	exit 1
 fi

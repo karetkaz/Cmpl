@@ -46,6 +46,93 @@ typedef enum {
 	install_def = install_min | installEopc,
 } ccInstall;
 
+enum Settings {
+	// maximum token count in expressions
+	maxTokenCount = 1024,
+
+	// size of the hash table for the symbol names
+	hashTableSize = 512,
+
+	// limit the count of printed elements(stacktrace, array elements)
+	maxLogItems = 25,
+
+	// pre allocate space for argument on the stack
+	// faster execution if each argument is pushed when calculated
+	preAllocateArgs = 0
+};
+
+// linked list
+typedef struct list {
+	struct list *next;
+	const char *data;
+} *list;
+
+/// Compiler context
+struct ccContextRec {
+	rtContext rt;
+	astn root;                      // statements
+	symn owner;                     // scope variables and functions
+	symn scope;                     // scope variables and functions (next is symn->scope)
+	symn global;                    // global variables and functions (next is symn->global)
+	list native;                    // list of native functions
+	astn jumps;                     // list of break and continue statements to fix
+
+	int32_t nest;                   // nest level: modified by (enter/leave)
+	unsigned inStaticIfFalse: 1;    // inside a static if false
+	unsigned genDocumentation: 1;   // generate documentation
+	unsigned genStaticGlobals: 1;   // generate global variables as static variables
+	unsigned errPrivateAccess: 1;   // raise error accessing private data
+	unsigned errUninitialized: 1;   // raise error for uninitialized variables
+	astn scopeStack[maxTokenCount]; // scope stack used by enter leave
+
+	// Lexer
+	list stringTable[hashTableSize];// string table (hash)
+	astn tokPool;                   // list of recycled tokens
+	astn tokNext;                   // next token: look-ahead
+
+	// Parser
+	symn symbolStack[hashTableSize];// symbol stack (hash)
+	const char *home;               // home folder
+	const char *unit;               // unit file name
+	const char *file;               // current file name
+	int line;                       // current line number
+
+	// Type cache
+	symn type_vid;        // void
+	symn type_bol;        // boolean
+	symn type_chr;        // character
+	symn type_i08;        //  8bit signed integer
+	symn type_i16;        // 16bit signed integer
+	symn type_i32;        // 32bit signed integer
+	symn type_i64;        // 64bit signed integer
+	symn type_u08;        //  8bit unsigned integer
+	symn type_u16;        // 16bit unsigned integer
+	symn type_u32;        // 32bit unsigned integer
+	symn type_u64;        // 64bit unsigned integer
+	symn type_f32;        // 32bit floating point
+	symn type_f64;        // 64bit floating point
+	symn type_ptr;        // pointer
+	symn type_var;        // variant
+	symn type_rec;        // typename
+	symn type_fun;        // function
+	symn type_obj;        // object
+	symn type_str;        // string
+
+	symn type_int;        // integer: 32-bit/64-bit signed
+	symn type_idx;        // length / index: 32-bit/64-bit unsigned
+
+	symn null_ref;        // variable null
+	symn length_ref;      // slice length attribute
+
+	symn emit_opc;        // emit intrinsic function, or whatever it is.
+	astn void_tag;        // used to lookup function call with 0 argument
+
+	symn libc_dbg;        // raise(char file[*], int line, int level, int trace, char message[*], variant inspect);
+	symn libc_try;        // tryExec(pointer args, void action(pointer args));
+	symn libc_mal;        // pointer.alloc(pointer old, int size);
+	symn libc_new;        // object.create(typename type);
+};
+
 /**
  * Initialize compiler context.
  *
@@ -182,7 +269,7 @@ symn ccAddCall(ccContext cc, vmError call(nfcContext), const char *proto);
  * @param text If not null, this will be compiled instead of the file.
  * @return Root node of the compilation unit.
  */
-astn ccAddUnit(ccContext cc, int init(ccContext), const char *file, int line, char *text);
+astn ccAddUnit(ccContext cc, const char *file, int line, char *text);
 
 /**
  * Generate bytecode from the compiled syntax tree.
@@ -202,12 +289,6 @@ int ccGenCode(ccContext cc, int debug);
  * @return the first found symbol.
  */
 symn ccLookup(rtContext rt, symn scope, char *name);
-
-/// system modules for `ccAddLib`
-int ccLibSys(ccContext cc);
-
-/// standard modules for `ccAddLib`
-int ccLibStd(ccContext cc);
 
 /// same as castOf forcing arrays to cast as reference
 static inline ccKind refCast(symn sym) {

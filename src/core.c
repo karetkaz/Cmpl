@@ -7,6 +7,8 @@
  * memory management
  */
 
+#include <stdarg.h>
+#include "cmplDbg.h"
 #include "internal.h"
 
 const char *const pluginLibImport = "cmplUnit";

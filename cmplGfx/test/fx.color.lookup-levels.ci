@@ -157,7 +157,8 @@ bool syncInputOutput(Slider slider, float64 value) {
 bool showHideAdvanced(Slider slider, Rect rect&) {
 	if (!chkAdvanced.checked()) {
 		// view is hidden
-		rect.w = rect.h = 0;
+		rect.x1 = rect.x0;
+		rect.y1 = rect.y0;
 		return false;
 	}
 	return Slider.onMeasure(slider, &rect);

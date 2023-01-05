@@ -282,7 +282,6 @@ void *rollbackPc(rtContext rt);
 /// Emit an instruction without argument(s).
 static inline size_t emit(rtContext rt, vmOpcode opc) {
 	vmValue arg = {0};
-	arg.i64 = 0;
 	return emitOpc(rt, opc, arg);
 }
 

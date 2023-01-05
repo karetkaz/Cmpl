@@ -1,59 +1,71 @@
 // adapted from https://codemirror.net/keymap/sublime.js
-CodeMirror.normalizeKeyMap(CodeMirror.keyMap.extraKeys = {
-	"Ctrl--": "fold",	// todo: fold current block
-	"Ctrl-=": "unfold",
-	"Shift-Ctrl--": "foldAll",
-	"Shift-Ctrl-=": "unfoldAll",
+if (CodeMirror.keyMap.default === CodeMirror.keyMap.macDefault) {
+	CodeMirror.normalizeKeyMap(CodeMirror.keyMap.extraKeys = {
+		"Cmd--": "fold",	// todo: fold current block
+		"Cmd-=": "unfold",
+		"Shift-Cmd--": "foldAll",
+		"Shift-Cmd-=": "unfoldAll",
 
-	"Ctrl-U": "toggleCase",
-	"Shift-Ctrl-U": "toggleCase",
-	// "Shift-Ctrl-J": "joinLines",
-	// "Shift-Ctrl-S": "sortLines",
-	"Ctrl-D": "duplicate",
+		"Cmd-L": "goToLine",
+		"Cmd-B": "goToBrace",
+		"Shift-Cmd-B": "selectToBrace",
 
-	"Ctrl-B": "goToBrace",
-	"Shift-Ctrl-B": "selectToBrace",
+		"Cmd-U": "toggleCase",
+		"Shift-Cmd-U": "toggleCase",
+		"Cmd-/": "toggleCommentIndented",
 
-	"Shift-Tab": "indentLess",
-	"Ctrl-/": "toggleCommentIndented",
+		"Cmd-D": "duplicate",
+		"Shift-Tab": "indentLess",
+		"Shift-Delete": "deleteLine",
+		"Shift-Cmd-Up": "swapLineUp",
+		"Shift-Cmd-Down": "swapLineDown",
 
-	"Ctrl-Backspace": "delGroupBefore",
-	"Ctrl-Delete": "delGroupAfter",
-	"Shift-Delete": "deleteLine",
+		"Cmd-Up": "scrollLineUp",
+		"Cmd-Down": "scrollLineDown",
+		"Cmd-Left": "goLineStartSmart",
+		"Cmd-Right": "goLineEnd",
 
-	"Ctrl-Home": "goDocStart",
-	"Ctrl-End": "goDocEnd",
+		"F3": "findNext",
+		"Shift-F3": "findPrev",
+		// "Cmd-R": "replace",
+		// "Shift-Cmd-J": "joinLines",
+		// "Shift-Cmd-S": "sortLines",
 
-	"Shift-Ctrl-Up": "swapLineUp",
-	"Shift-Ctrl-Down": "swapLineDown",
+		"fallthrough": "macDefault",
+	});
+} else {
+	CodeMirror.normalizeKeyMap(CodeMirror.keyMap.extraKeys = {
+		"Ctrl--": "fold",	// todo: fold current block
+		"Ctrl-=": "unfold",
+		"Shift-Ctrl--": "foldAll",
+		"Shift-Ctrl-=": "unfoldAll",
 
-	"Ctrl-Up": "scrollLineUp",
-	"Ctrl-Down": "scrollLineDown",
-	"Ctrl-Left": "goGroupLeft",
-	"Ctrl-Right": "goGroupRight",
+		"Ctrl-L": "goToLine",
+		"Ctrl-B": "goToBrace",
+		"Shift-Ctrl-B": "selectToBrace",
 
-	"Ctrl-A": "selectAll",
-	"Ctrl-Z": "undo",
-	"Shift-Ctrl-Z": "redo",
+		"Ctrl-U": "toggleCase",
+		"Shift-Ctrl-U": "toggleCase",
+		"Ctrl-/": "toggleCommentIndented",
 
-	"Ctrl-[": "indentLess",
-	"Ctrl-]": "indentMore",
+		"Ctrl-D": "duplicate",
+		"Shift-Tab": "indentLess",
+		"Shift-Delete": "deleteLine",
+		"Shift-Ctrl-Up": "swapLineUp",
+		"Shift-Ctrl-Down": "swapLineDown",
 
-	"Ctrl-S": "save",
-	"Ctrl-G": "goToLine",
-	"Ctrl-F": "find",
-	"F3": "findNext",
-	"Shift-F3": "findPrev",
-// 	"Ctrl-R": "replace",
+		"Ctrl-Up": "scrollLineUp",
+		"Ctrl-Down": "scrollLineDown",
 
-// 	"Ctrl-U": "undoSelection",
-// 	"Shift-Ctrl-F": "replace",
-// 	"Shift-Ctrl-G": "findPrev",
-// 	"Shift-Ctrl-R": "replaceAll",
-// 	"Shift-Ctrl-U": "redoSelection",
-// 	"Shift-Ctrl-Z": "redo",
-	"fallthrough": "basic",
-});
+		"F3": "findNext",
+		"Shift-F3": "findPrev",
+		// "Ctrl-R": "replace",
+		// "Shift-Ctrl-J": "joinLines",
+		// "Shift-Ctrl-S": "sortLines",
+
+		"fallthrough": "pcDefault",
+	});
+}
 
 function modifySelection(cm, /*wordOrLine,*/ mod) {
 	cm.operation(function () {

@@ -5,8 +5,9 @@
  *******************************************************************************
  */
 
-#include "internal.h"
 #include <math.h>
+#include <stdarg.h>
+#include "internal.h"
 
 /// print a character
 static inline int printChr(FILE *out, int chr) { return fputc(chr, out); }
@@ -1206,9 +1207,19 @@ void printLog(rtContext rt, raiseLevel level, const char *file, int line, rtValu
 	va_end(vaList);
 }
 
+static void dumpApiSym(rtContext rt, userContext ctx, symn sym, void dumpSym(userContext, symn)) {
+	if (sym == rt->main) {
+		return;
+	}
+	dumpSym(ctx, sym);
+	for (symn fld = sym->fields; fld != NULL; fld = fld->next) {
+		if (fld->owner != sym) {
+			continue;
+		}
+		dumpApiSym(rt, ctx, fld, dumpSym);
+	}
+}
 void dumpApi(rtContext rt, userContext ctx, void dumpSym(userContext, symn)) {
-	symn bp[maxTokenCount], *sp = bp;
-
 	if (rt == NULL || dumpSym == NULL) {
 		dieif(rt == NULL, ERR_INTERNAL_ERROR);
 		dieif(dumpSym == NULL, ERR_INTERNAL_ERROR);
@@ -1225,21 +1236,8 @@ void dumpApi(rtContext rt, userContext ctx, void dumpSym(userContext, symn)) {
 		dieif(rt->cc->scope != rt->main->fields, ERR_INTERNAL_ERROR);
 		return;
 	}
-	for (*sp = rt->main->fields; sp >= bp;) {
-		symn sym = *sp;
-		if (sym == NULL) {
-			--sp;
-			continue;
-		}
-		*sp = sym->next;
-
-		if (sym->fields != NULL) {
-			if (sym == rt->main) {
-				continue;
-			}
-			*++sp = sym->fields;
-		}
-		dumpSym(ctx, sym);
+	for (symn fld = rt->main->fields; fld != NULL; fld = fld->next) {
+		dumpApiSym(rt, ctx, fld, dumpSym);
 	}
 	dumpSym(ctx, rt->main);
 }

@@ -15,3 +15,8 @@ Image fill(Image image, uint32 color) {
 	image.fillRect(0, 0, image.width(), image.height(), color);
 	return image;
 }
+
+void drawText(Image image, int32 x, int32 y, Image font, const char text[*], int32 color) {
+	Rect rect = {x0: x, y0: y, x1: image.width(), y1: image.height()};
+	return image.drawText(rect, font, text, color);
+}

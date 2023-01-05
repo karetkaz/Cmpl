@@ -2,7 +2,7 @@
 #define CMPL_PARSER_H
 
 #include "cmplCc.h"
-
+#include "cmplVm.h"
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Types
 

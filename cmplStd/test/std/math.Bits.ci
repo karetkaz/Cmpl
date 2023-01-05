@@ -8,14 +8,14 @@ static void assertEq(int64 expected, int64 returned, const char func[*], variant
 		return;
 	}
 	struct NotEquals {
-		const variant returned;
 		const variant expected;
+		const variant returned;
 		const char function[*];
 		const variant extras[];
 	}
 	NotEquals details = {
-		returned: returned;
 		expected: expected;
+		returned: returned;
 		function: func;
 		extras: extras;
 	};

@@ -63,18 +63,16 @@ inline drawRect(Image image, int x0, int y0, int x1, int y1, uint32 color) = ima
 
 /// Fill a rectangle on the `image` specified by `roi` with the given `color`
 void fillRect(Image image, const Rect roi&, uint32 color) {
-	if (roi.w <= 0 || roi.h <= 0) {
-		// empty rectangle
+	if (roi.empty()) {
 		return;
 	}
-	image.fillRect(roi.x, roi.y, roi.x + roi.w, roi.y + roi.h, color);
+	image.fillRect(roi.x0, roi.y0, roi.x1, roi.y1, color);
 }
 
 /// Draw a rectangle on the `image` specified by `roi` with the given `color`
 void drawRect(Image image, const Rect roi&, uint32 color) {
-	if (roi.w <= 0 || roi.h <= 0) {
-		// empty rectangle
+	if (roi.empty()) {
 		return;
 	}
-	image.drawRect(roi.x, roi.y, roi.x + roi.w, roi.y + roi.h, 1, color);
+	image.drawRect(roi.x0, roi.y0, roi.x1, roi.y1, 1, color);
 }

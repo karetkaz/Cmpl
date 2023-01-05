@@ -8,11 +8,6 @@
 #include "cmpl.h"
 
 static const char *const proto_file = "File";
-
-static inline rtValue nextArg(nfcContext ctx) {
-	return ctx->rt->api.nfcReadArg(ctx, ctx->rt->api.nfcNextArg(ctx));
-}
-
 static const char *const proto_file_open = "File open(const char path[*])";
 static const char *const proto_file_create = "File create(const char path[*])";
 static const char *const proto_file_append = "File append(const char path[*])";

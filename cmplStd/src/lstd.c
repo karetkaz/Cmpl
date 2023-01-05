@@ -7,9 +7,11 @@
  * standard functions
  */
 
-#include "internal.h"
 #include <math.h>
 #include <time.h>
+#include "../../src/cmpl.h"
+#include "../../src/internal.h"
+#include "../../src/utils.h"
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ math functions
 static vmError f64sin(nfcContext args) {
@@ -118,7 +120,11 @@ static vmError b32zxt(nfcContext args) {
 // count population of bits set to 1
 static vmError b32pop(nfcContext args) {
 	uint32_t val = argu32(args, 0);
-	retu32(args, bitcnt(val));
+	val -= ((val >> 1) & 0x55555555);
+	val = (((val >> 2) & 0x33333333) + (val & 0x33333333));
+	val = (((val >> 4) + val) & 0x0f0f0f0f);
+	val += (val >> 8) + (val >> 16);
+	retu32(args, val & 0x3f);
 	return noError;
 }
 // swap bits
@@ -133,14 +139,62 @@ static vmError b32swp(nfcContext args) {
 }
 // bit scan reverse: position of the Most Significant Bit
 static vmError b32sr(nfcContext args) {
-	uint32_t val = argu32(args, 0);
-	reti32(args, bitsr(val));
+	uint32_t value = argu32(args, 0);
+	if (value == 0) {
+		reti32(args, -1);
+		return noError;
+	}
+	int32_t result = 0;
+	if (value & 0xffff0000) {
+		result += 16;
+		value >>= 16;
+	}
+	if (value & 0x0000ff00) {
+		result +=  8;
+		value >>= 8;
+	}
+	if (value & 0x000000f0) {
+		result += 4;
+		value >>= 4;
+	}
+	if (value & 0x0000000c) {
+		result += 2;
+		value >>= 2;
+	}
+	if (value & 0x00000002) {
+		result += 1;
+	}
+	reti32(args, result);
 	return noError;
 }
 // bit scan forward: position of the Least Significant Bit
 static vmError b32sf(nfcContext args) {
-	uint32_t val = argu32(args, 0);
-	reti32(args, bitsf(val));
+	uint32_t value = argu32(args, 0);
+	if (value == 0) {
+		reti32(args, -1);
+		return noError;
+	}
+	int32_t result = 0;
+	if ((value & 0x0000ffff) == 0) {
+		result += 16;
+		value >>= 16;
+	}
+	if ((value & 0x000000ff) == 0) {
+		result += 8;
+		value >>= 8;
+	}
+	if ((value & 0x0000000f) == 0) {
+		result += 4;
+		value >>= 4;
+	}
+	if ((value & 0x00000003) == 0) {
+		result += 2;
+		value >>= 2;
+	}
+	if ((value & 0x00000001) == 0) {
+		result += 1;
+	}
+	reti32(args, result);
 	return noError;
 }
 // keep the highest: Most Significant Bit
@@ -212,18 +266,12 @@ static vmError sysMSleep(nfcContext args) {
 // void raise(char file[*], int line, int level, int trace, char message[*], variant inspect);
 static vmError sysRaise(nfcContext ctx) {
 	rtContext rt = ctx->rt;
-	char *file = nfcReadArg(ctx, nfcNextArg(ctx)).ref;
-	nfcCheckArg(ctx, CAST_ref, "file");
-	int line = argi32(ctx, nfcNextArg(ctx));
-	nfcCheckArg(ctx, CAST_i32, "line");
-	int logLevel = argi32(ctx, nfcNextArg(ctx));
-	nfcCheckArg(ctx, CAST_i32, "level");
-	int trace = argi32(ctx, nfcNextArg(ctx));
-	nfcCheckArg(ctx, CAST_i32, "trace");
-	char *message = nfcReadArg(ctx, nfcNextArg(ctx)).ref;
-	nfcCheckArg(ctx, CAST_ref, "message");
-	rtValue inspect = nfcReadArg(ctx, nfcNextArg(ctx));
-	nfcCheckArg(ctx, CAST_var, "details");
+	char *file = nextArg(ctx).ref;
+	int line = nextArg(ctx).i32;
+	int logLevel = nextArg(ctx).i32;
+	int trace = nextArg(ctx).i32;
+	char *message = nextArg(ctx).ref;
+	rtValue inspect = nextArg(ctx);
 
 	// logging is disabled or log level not reached.
 	if (rt->logFile == NULL || logLevel > (int)rt->logLevel) {
@@ -249,16 +297,16 @@ static vmError sysRaise(nfcContext ctx) {
 static vmError sysTryExec(nfcContext ctx) {
 	vmError result;
 	rtContext rt = ctx->rt;
-	size_t args = argref(ctx, nfcNextArg(ctx));
-	size_t actionOffs = argref(ctx, nfcNextArg(ctx));
-	symn action = rtLookup(rt, actionOffs, KIND_fun);
+	size_t args = argref(ctx, rt->api.nfcNextArg(ctx));
+	size_t actionOffs = argref(ctx, rt->api.nfcNextArg(ctx));
+	symn action = rt->api.rtLookup(rt, actionOffs, KIND_fun);
 
 	if (action != NULL && action->offs == actionOffs) {
 		#pragma pack(push, 4)
 		struct { vmOffs ptr; } cbArg;
 		cbArg.ptr = (vmOffs) args;
 		#pragma pack(pop)
-		result = invoke(rt, action, NULL, &cbArg, ctx->extra);
+		result = rt->api.invoke(rt, action, NULL, &cbArg, ctx->extra);
 	}
 	else {
 		result = illegalState;
@@ -269,35 +317,35 @@ static vmError sysTryExec(nfcContext ctx) {
 
 // pointer alloc(pointer ptr, int32 size);
 static vmError sysMemMgr(nfcContext ctx) {
-	void *old = nfcReadArg(ctx, nfcNextArg(ctx)).ref;
-	int size = nfcReadArg(ctx, nfcNextArg(ctx)).i32;
+	void *old = nextArg(ctx).ref;
+	int size = nextArg(ctx).i32;
 	void *res = rtAlloc(ctx->rt, old, (size_t) size, NULL);
 	retref(ctx, vmOffset(ctx->rt, res));
 	return noError;
 }
 // pointer fill(pointer dst, int value, int32 size)
 static vmError sysMemSet(nfcContext ctx) {
-	void *dst = nfcReadArg(ctx, nfcNextArg(ctx)).ref;
-	int value = nfcReadArg(ctx, nfcNextArg(ctx)).i32;
-	int size = nfcReadArg(ctx, nfcNextArg(ctx)).i32;
+	void *dst = nextArg(ctx).ref;
+	int value = nextArg(ctx).i32;
+	int size = nextArg(ctx).i32;
 	void *res = memset(dst, value, (size_t) size);
 	retref(ctx, vmOffset(ctx->rt, res));
 	return noError;
 }
 // pointer copy(pointer dst, pointer src, int32 size);
 static vmError sysMemCpy(nfcContext ctx) {
-	void *dst = nfcReadArg(ctx, nfcNextArg(ctx)).ref;
-	void *src = nfcReadArg(ctx, nfcNextArg(ctx)).ref;
-	int size = nfcReadArg(ctx, nfcNextArg(ctx)).i32;
+	void *dst = nextArg(ctx).ref;
+	void *src = nextArg(ctx).ref;
+	int size = nextArg(ctx).i32;
 	void *res = memcpy(dst, src, (size_t) size);
 	retref(ctx, vmOffset(ctx->rt, res));
 	return noError;
 }
 // pointer move(pointer dst, pointer src, int32 size);
 static vmError sysMemMove(nfcContext ctx) {
-	void *dst = nfcReadArg(ctx, nfcNextArg(ctx)).ref;
-	void *src = nfcReadArg(ctx, nfcNextArg(ctx)).ref;
-	int size = nfcReadArg(ctx, nfcNextArg(ctx)).i32;
+	void *dst = nextArg(ctx).ref;
+	void *src = nextArg(ctx).ref;
+	int size = nextArg(ctx).i32;
 	void *res = memmove(dst, src, (size_t) size);
 	retref(ctx, vmOffset(ctx->rt, res));
 	return noError;
@@ -350,7 +398,7 @@ static int installPlatform(ccContext cc) {
 	return err;
 }
 
-int ccLibSys(ccContext cc) {
+static int ccLibSys(ccContext cc) {
 	symn nsp = NULL;		// namespace
 	int err = 0;
 
@@ -410,8 +458,8 @@ int ccLibSys(ccContext cc) {
 
 	// alloc, free, memset, memcpy
 	if (!err && ccExtend(cc, cc->type_ptr)) {
-		cc->libc_mem = ccAddCall(cc, sysMemMgr, "pointer alloc(pointer ptr, int32 size)");
-		if (cc->libc_mem == NULL) {
+		cc->libc_mal = ccAddCall(cc, sysMemMgr, "pointer alloc(pointer ptr, int32 size)");
+		if (cc->libc_mal == NULL) {
 			err = 3;
 		}
 		if (!ccAddCall(cc, sysMemSet, "pointer fill(pointer dst, uint8 value, int32 size)")) {
@@ -464,8 +512,8 @@ int ccLibSys(ccContext cc) {
 	return err;
 }
 
-int ccLibStd(ccContext cc) {
-	int err = 0;
+static int ccLibStd(ccContext cc) {
+	int err = ccLibSys(cc);
 
 	struct {
 		vmError (*fun)(nfcContext);
@@ -547,4 +595,8 @@ int ccLibStd(ccContext cc) {
 		ccEnd(cc, cc->type_f64);
 	}
 	return err;
+}
+
+int cmplInit(rtContext rt) {
+	return ccLibStd(rt->cc);
 }

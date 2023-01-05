@@ -18,14 +18,17 @@ for (int idx = 0; idx < 256; idx += 1) {
 int onEvent(int action, int button, int x, int y) {
 	static int64 millis = 0;
 	static const Rect roi = {
-		x: 30;
-		y: 30;
-		w: 120;
-		h: 120;
+		x0: 30;
+		y0: 30;
+		x1: 150;
+		y1: 150;
 	};
 	if (action == Gui.KEY_RELEASE && button == Gui.KEY_CODE_ESC) {
 		// exit when releasing escape key
 		return -1;
+	}
+	if (action == Gui.WINDOW_INIT) {
+		offs.resize(null, back, null, 1);
 	}
 	if (action == Gui.KEY_PRESS) {
 		if (button == ' ') {
@@ -57,10 +60,10 @@ int onEvent(int action, int button, int x, int y) {
 		}
 		if (button == 3) {
 			Rect to = {
-				x: 0;
-				y: 0;
-				w: x;
-				h: y;
+				x0: 0;
+				y0: 0;
+				x1: x;
+				y1: y;
 			};
 			offs.resize(to, draw, null, 1);
 		}
@@ -83,7 +86,7 @@ int onEvent(int action, int button, int x, int y) {
 
 	return 0;
 }
-onEvent(Gui.MOUSE_PRESS, 0, 0, 0);
+
 Gui.showWindow(offs, onEvent);
 offs.destroy();
 back.destroy();

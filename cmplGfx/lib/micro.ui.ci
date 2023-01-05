@@ -119,15 +119,15 @@ struct Switch: View {
 		for (int i = 0; i < this.states.length; i += 1) {
 			Rect measured = {};
 			style.measure(&measured, this.states[i]);
-			if (maxWidth < measured.w) {
-				maxWidth = measured.w;
+			if (maxWidth < measured.width()) {
+				maxWidth = measured.width();
 			}
 		}
 		style.measure(&rect, this.text);
 		if (this.states.length == 0) {
-			rect.w += rect.h * 3 / 2;
+			rect.width(rect.width() + rect.height() * 3 / 2);
 		} else {
-			rect.w += maxWidth;
+			rect.width(rect.width() + maxWidth);
 		}
 		return View.onMeasure(this, &rect);
 	}
@@ -137,14 +137,15 @@ struct Switch: View {
 		Style style& = this.style;
 		if (this.states.length == 0) {
 			Rect onOffRect = {
-				x: rect.x;
-				y: rect.y;
-				w: rect.h * 3 / 2;
-				h: rect.h;
+				x0: rect.x0;
+				y0: rect.y0;
+				x1: rect.x0 + rect.height() * 3 / 2;
+				y1: rect.y1;
 			};
 			Style.align(rect, &onOffRect, Style.right);
+			rect.x1 = onOffRect.x0;
 
-			onOffRect.adjust(-style.padding);
+			Style.padded(&onOffRect, -style.padding);
 			uint32 color = style.focusedColor;
 			if (this.checked()) {
 				color = style.valueColor;
@@ -152,15 +153,16 @@ struct Switch: View {
 			else if (this.isFocused()) {
 				color = style.hoveredColor;
 			}
-			offs.fillRRect(onOffRect, onOffRect.h / 2, color);
+			offs.fillRRect(onOffRect, onOffRect.height() / 2, color);
 
 			if (this.checked()) {
-				onOffRect.x += rect.h / 2;
+				onOffRect.x0 = onOffRect.x1 - onOffRect.height();
+			} else {
+				onOffRect.x1 = onOffRect.x0 + onOffRect.height();
 			}
 
-			onOffRect.w = onOffRect.h;
+			Style.padded(&onOffRect, -style.padding / 3);
 			offs.fillOval(onOffRect, style.textColor);
-			rect.w -= rect.h * 3 / 2;
 		} else {
 			value = this.states[this.selected];
 		}
@@ -236,7 +238,7 @@ struct Slider: View {
 		if (event.clicks < 1) {
 			float64 value = event.dx;
 			if (!event.isShift && value != 0) {
-				value *= float64(this.maximum - this.minimum) / rect.w;
+				value *= float64(this.maximum - this.minimum) / rect.width();
 			}
 			value += this._value;
 			if (value > this.maximum) {
@@ -249,12 +251,12 @@ struct Slider: View {
 			return this.onUpdate(this, value);
 		}
 		if (event.release) {
-			if (event.y < rect.y + rect.h - rect.h / 3) {
+			if (event.y < rect.y0 + rect.height() - rect.height() / 3) {
 				// clicking the upper part to focus control
 				return true;
 			}
-			float64 value = event.x - rect.x;
-			value *= float64(this.maximum - this.minimum) / rect.w;
+			float64 value = event.x - rect.x0;
+			value *= float64(this.maximum - this.minimum) / rect.width();
 			return this.onUpdate(this, this.minimum + value);
 		}
 		return View.onTouchEvent(this, rect, event);
@@ -271,7 +273,7 @@ struct Slider: View {
 		Rect valueRect = {};
 		style.measure(&valueRect, value);
 		style.measure(&rect, this.text);
-		rect.w += valueRect.w;
+		rect.width(rect.width() + valueRect.width());
 		return View.onMeasure(this, &rect);
 	}
 
@@ -280,11 +282,11 @@ struct Slider: View {
 			return;
 		}
 		Style style& = this.style;
-		const int y1 = rect.y + rect.h;
+		const int y1 = rect.y1;
 		const int y0 = y1 - style.padding / 4;
-		const int x0 = rect.x;
-		const int x1 = rect.x + rect.w;
-		const int x = x0 + (this.value - this.minimum) * rect.w / (this.maximum - this.minimum);
+		const int x0 = rect.x0;
+		const int x1 = rect.x1;
+		const int x = x0 + (this.value - this.minimum) * rect.width() / (this.maximum - this.minimum);
 		if (x > x0) {
 			offs.fillRect(x0, y0, x, y1, style.valueColor);
 		}
@@ -342,10 +344,10 @@ struct Histogram: View {
 			return View.onTouchEvent(this, rect, event);
 		}
 
-		int px = Math.max(0, rect.w - 256) / 2;
-		int x0 = event.x - rect.x - px;
+		int px = Math.max(0, rect.width() - 256) / 2;
+		int x0 = event.x - rect.x0 - px;
 		int x1 = x0 - event.dx;
-		int y0 = event.y - rect.y;
+		int y0 = event.y - rect.y0;
 		int y1 = y0 - event.dy;
 
 		if (x0 > x1) {
@@ -368,7 +370,7 @@ struct Histogram: View {
 		if (x1 > 256) {
 			x1 = 256;
 		}
-		int h = rect.h;
+		int h = rect.height();
 		for (int x = x0; x < x1; x += 1) {
 			int val = 255 * (h - (y >> 16)) / h;
 			this.onUpdate(this, x, val);
@@ -379,10 +381,10 @@ struct Histogram: View {
 
 	bool onMeasure(Histogram this, Rect rect&) {
 		if (this.width < 0) {
-			rect.w = 256;
+			rect.width(256);
 		}
 		if (this.height < 0) {
-			rect.h = 128;
+			rect.height(128);
 		}
 		return View.onMeasure(this, &rect);
 	}
@@ -394,21 +396,22 @@ struct Histogram: View {
 			colR: 0xfc6165;
 			colL: 0xdadada;
 		}
-		int px = (rect.w - 256) / 2;
+		int px = (rect.width() - 256) / 2;
+		int h = rect.height();
 		if (this.lines) {
-			int y = rect.y + rect.h;
-			int pb = bch(this.data[0]) * rect.h / 256;
-			int pg = gch(this.data[0]) * rect.h / 256;
-			int pr = rch(this.data[0]) * rect.h / 256;
-			int pl = ach(this.data[0]) * rect.h / 256;
+			int y = rect.y1;
+			int pb = bch(this.data[0]) * h / 256;
+			int pg = gch(this.data[0]) * h / 256;
+			int pr = rch(this.data[0]) * h / 256;
+			int pl = ach(this.data[0]) * h / 256;
 
 			for (int i = 1; i < this.data.length; i += 1) {
-				int x = rect.x + i + px;
+				int x = rect.x0 + i + px;
 				argb data = this.data[i];
-				int bv = bch(data) * rect.h / 256;
-				int gv = gch(data) * rect.h / 256;
-				int rv = rch(data) * rect.h / 256;
-				int lv = ach(data) * rect.h / 256;
+				int bv = bch(data) * h / 256;
+				int gv = gch(data) * h / 256;
+				int rv = rch(data) * h / 256;
+				int lv = ach(data) * h / 256;
 
 				if (this.color) {
 					offs.fillRect(x, y - pl, x + 1, y - lv + int(pl == lv), data.v);
@@ -428,26 +431,26 @@ struct Histogram: View {
 		else if (this.color) {
 			for (int i = 0; i < this.data.length; i += 1) {
 				argb data = this.data[i];
-				int x = rect.x + i + px;
-				int y1 = rect.y + rect.h;
-				int y0 = y1 - ach(data) * rect.h / 256;
+				int x = rect.x0 + i + px;
+				int y1 = rect.y1;
+				int y0 = y1 - ach(data) * h / 256;
 				offs.fillRect(x, y0 - int(y1 == y0), x + 1, y1, uint32(data));
 			}
 		}
 		else {
 			for (int i = 0; i < this.data.length; i += 1) {
-				int x = rect.x + i + px;
+				int x = rect.x0 + i + px;
 				argb data = this.data[i];
-				int bv = bch(data) * rect.h / 256;
-				int gv = gch(data) * rect.h / 256;
-				int rv = rch(data) * rect.h / 256;
-				int lv = ach(data) * rect.h / 256;
-				for (int y = 0; y < rect.h; y += 1) {
+				int bv = bch(data) * h / 256;
+				int gv = gch(data) * h / 256;
+				int rv = rch(data) * h / 256;
+				int lv = ach(data) * h / 256;
+				for (int y = 0; y < h; y += 1) {
 					uint32 b = colB * uint32(y < bv);
 					uint32 g = colG * uint32(y < gv);
 					uint32 r = colR * uint32(y < rv);
 					uint32 l = colL * uint32(y < lv);
-					offs.set(x, rect.h - y + rect.y - 1, r | g | b | l);
+					offs.set(x, h - y + rect.y0 - 1, r | g | b | l);
 				}
 			}
 		}
@@ -546,12 +549,12 @@ struct DebugView: View {
 
 		Style style& = this.style;
 		if (this.maxDuration > 0) {
-			int y0 = rect.y + rect.h;
-			float64 ys = rect.h / float64(this.maxDuration);
-			float64 xs = rect.w / float64(this.durations.length);
+			int y0 = rect.y1;
+			float64 ys = rect.height() / float64(this.maxDuration);
+			float64 xs = rect.width() / float64(this.durations.length);
 			for (int i = 0; i < this.durations.length; i += 1) {
 				int y1 = y0 - ys * this.durations[i];
-				int x1 = rect.x + xs * (this.durations.length - i);
+				int x1 = rect.x0 + xs * (this.durations.length - i);
 				offs.fillRect(x1 - xs, y0, x1, y1, style.focusedColor);
 			}
 		}
@@ -581,7 +584,7 @@ struct Panel: Layout {
 	bool onMeasure(Panel this, Rect rect&) {
 		if (!this.visible) {
 			// view is hidden
-			rect.w = rect.h = 0;
+			rect.setSize(0, 0);
 			return false;
 		}
 		return Layout.onMeasure(this, &rect);
@@ -609,7 +612,7 @@ struct TabPage: Layout {
 		TabPage parent = layout.data.as(TabPage);
 		if (parent != null && parent.active != layout) {
 			// view is hidden
-			rect.w = rect.h = 0;
+			rect.setSize(0, 0);
 			return false;
 		}
 		return Layout.onMeasure(layout, &rect);
@@ -882,7 +885,6 @@ struct FxWidget: Widget {
 			}
 
 			this.enabled = true;
-			this.measure = true;
 			this.invalidate();
 			return true;
 		}
@@ -907,13 +909,14 @@ struct FxWidget: Widget {
 		int margin = this.margin;
 		int align = this.align;
 		Rect rect = {
-			x: margin;
-			y: margin;
-			w: measured.w - 2 * margin;
-			h: measured.h - 2 * margin;
+			x0: margin;
+			y0: margin;
+			x1: measured.width() - margin;
+			y1: measured.height() - margin;
 		};
 
-		measured.x = measured.y = 0;
+		measured.x1 = measured.x0 = 0;
+		measured.y1 = measured.y0 = 0;
 		Layout.onMeasure(this, &measured);
 		this.onLayout(this, &measured);
 		Style.align(rect, &measured, align);
@@ -924,7 +927,7 @@ struct FxWidget: Widget {
 		offs = offs.slice(rect);
 		Style style& = this.style;
 		if (style.backgroundColor != -1) {
-			Rect r = { w: offs.width(), h: offs.height() };
+			Rect r = { x0: 0, y0: 0, x1: offs.width(), y1: offs.height() };
 			offs.fillRRect(r, this.radius, style.backgroundColor);
 		}
 		Widget.onDraw(this, offs, rect);
@@ -1049,7 +1052,6 @@ static struct Gui {
 			if (widget.parent == null) {
 				// widget was not created, so create it first
 				widget.onCreate(widget, widget);
-				widget.measure = true;
 			}
 			if (action == Gui.WINDOW_INIT) {
 				return true;
@@ -1114,8 +1116,8 @@ static struct Gui {
 					isAlt: window.isAlt;
 					clicks: window.clicks;
 					button: button;
-					x: x - window.rect.x;
-					y: y - window.rect.y;
+					x: x - window.rect.x0;
+					y: y - window.rect.y0;
 				};
 				return widget.onTouchEvent(widget, window.rect, event);
 			}
@@ -1141,8 +1143,8 @@ static struct Gui {
 					button: button;
 					dx: x - lastX;
 					dy: y - lastY;
-					x: x - window.rect.x;
-					y: y - window.rect.y;
+					x: x - window.rect.x0;
+					y: y - window.rect.y0;
 				};
 				return widget.onTouchEvent(widget, window.rect, event);
 			}
@@ -1163,8 +1165,8 @@ static struct Gui {
 					isAlt: window.isAlt;
 					clicks: window.clicks;
 					button: button;
-					x: x - window.rect.x;
-					y: y - window.rect.y;
+					x: x - window.rect.x0;
+					y: y - window.rect.y0;
 				};
 				return widget.onTouchEvent(widget, window.rect, event);
 			}
@@ -1217,8 +1219,8 @@ static struct Gui {
 						isAlt: window.isAlt;
 						clicks: -1;
 						button: window.button;
-						x: window.lastX - window.rect.x;
-						y: window.lastY - window.rect.y;
+						x: window.lastX - window.rect.x0;
+						y: window.lastY - window.rect.y0;
 					};
 					return widget.onTouchEvent(widget, window.rect, event);
 				}
@@ -1227,6 +1229,7 @@ static struct Gui {
 			debug("event not processed", action);
 			return false;
 		}
+
 		static int draw(Window window&, Widget widget) {
 			if (!widget.enabled) {
 				// widget is disabled, do not show it
@@ -1243,8 +1246,7 @@ static struct Gui {
 			Image offs = window.offscreen;
 			Rect rect& = window.rect;
 			if (widget.measure) {
-				rect.w = offs.width();
-				rect.h = offs.height();
+				rect.setSize(offs.width(), offs.height());
 				widget.onMeasure(widget, &rect);
 				widget.measure = false;
 			}
@@ -1253,6 +1255,7 @@ static struct Gui {
 			widget.redraw = false;
 			return timeout;
 		}
+
 		static int windowEvent(Window win&, int action, int button, int x, int y) {
 			if (action == Gui.KEY_RELEASE && button == Gui.KEY_CODE_ESC) {
 				// exit when releasing escape key
@@ -1289,11 +1292,10 @@ static struct Gui {
 	}
 
 	static void showWindow(Widget widget) {
+		Rect rect = {};
 		widget.onCreate(widget, widget);
-		Rect rect = {w: 0, h: 0};
 		widget.onMeasure(widget, &rect);
-		widget.measure = true;
-		Image offscreen = Image(rect.w, rect.h, 32);
+		Image offscreen = Image(rect.width(), rect.height(), 32);
 		showWindow(offscreen, widget);
 		offscreen.destroy();
 	}

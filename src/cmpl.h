@@ -4,9 +4,11 @@
  */
 
 #ifndef CMPL_API_H
-#define CMPL_API_H 2
+#define CMPL_API_H
 
 #include <stdio.h>
+#include <stdlib.h>
+#include <stdint.h>
 #include <string.h>
 
 #if defined(__WATCOMC__) && defined(_WIN32)
@@ -14,21 +16,20 @@ typedef signed ssize_t;
 #endif
 
 #ifdef _MSC_VER
-typedef signed char			int8_t;
-typedef signed short		int16_t;
-typedef signed long			int32_t;
-typedef signed long long	int64_t;
-typedef unsigned char		uint8_t;
-typedef unsigned short		uint16_t;
-typedef unsigned long		uint32_t;
-typedef unsigned long long	uint64_t;
 #include <BaseTsd.h>
 typedef SSIZE_T ssize_t;
 #define inline __inline
-#else
-#include <stdint.h>
-#include <stdlib.h>
+#define PATH_MAX 1024
 
+// disable warning messages
+#pragma warning(disable: 4996) // warning C4996: 'read': The POSIX name for this item is deprecated. Instead, use the ISO C and C++ conformant name: _read. See online help for details.
+#pragma warning(disable: 4146) // warning C4146: unary minus operator applied to unsigned type, result still unsigned
+#pragma warning(disable: 4244) // warning C4244: 'initializing': conversion from 'int64_t' to 'size_t', possible loss of data
+#pragma warning(disable: 4018) // warning C4018: '>': signed/unsigned mismatch
+
+#define exported extern __declspec(dllexport)
+#else
+#define exported extern
 #endif
 
 typedef float float32_t;
@@ -54,7 +55,7 @@ typedef struct userContextRec *userContext;     // customUserContext
  * @see cmplFile module:
  * const char cmplUnit[] = "/cmplStd/lib/system/File.ci";
  */
-extern const char cmplUnit[];
+exported const char cmplUnit[];
 
 /**
  * main entry point of the module plugin.
@@ -64,14 +65,14 @@ extern const char cmplUnit[];
  *
  * @see cmplFile module
  */
-extern int cmplInit(rtContext rt);
+exported int cmplInit(rtContext rt);
 
 /**
  * method called when the the plugin is disposed (on app exits).
  *
  * @param rt Runtime context.
  */
-extern void cmplClose(rtContext rt);
+exported void cmplClose(rtContext rt);
 
 typedef enum {
 	raiseFatal = -2,
@@ -269,7 +270,7 @@ struct rtContextRec {
 		symn (*const ccAddCall)(ccContext ctx, vmError libc(nfcContext), const char *proto);
 
 		/// Compile code snippet; @see ccAddUnit
-		astn (*const ccAddUnit)(ccContext cc, int init(ccContext cc), char *file, int line, const char *text);
+		astn (*const ccAddUnit)(ccContext cc, char *file, int line, const char *text);
 
 		/// Lookup function by name; @see ccLookup
 		symn (*const ccLookup)(rtContext ctx, symn scope, const char *name);
@@ -280,7 +281,7 @@ struct rtContextRec {
 		symn (*const rtLookup)(rtContext ctx, size_t offset, ccKind filter);
 
 		/// Invoke a function; @see invoke
-		vmError (*const invoke)(rtContext ctx, symn fun, void *res, void *args, void *extra);
+		vmError (*const invoke)(rtContext ctx, symn fun, void *res, void *args, const void *extra);
 
 		/// Alloc, resize or free memory; @see rtAlloc
 		void *(*const rtAlloc)(rtContext ctx, void *ptr, size_t size);
@@ -323,9 +324,9 @@ struct symNode {
 	symn next;          // next symbol: field / param / ... / (in scope table)
 	symn type;          // base type of array / typename (void, int, float, struct, function, ...)
 	symn owner;         // the type that declares the current symbol (DeclaringType)
-	symn fields;        // all fields: static + non static
+	symn fields;        // all fields: static + non-static
 	symn params;        // function parameters, return value is the first parameter.
-	symn override;      // function overridest this other function
+	symn override;      // function overrides this other function
 
 	ccKind kind;        // KIND_def / KIND_typ / KIND_fun / KIND_var + ATTR_xxx + CAST_xxx
 
@@ -498,6 +499,28 @@ static inline void retf64(nfcContext ctx, float64_t val) { retset(ctx, float64_t
 static inline void retref(nfcContext ctx, size_t val) { retset(ctx, vmOffs, val); }
 static inline void rethnd(nfcContext ctx, void *val) { retset(ctx, char *, val); }
 #undef retset
+
+static inline int cmplVersion() {
+	int month = (__DATE__[0] == 'J' && __DATE__[1] == 'a' && __DATE__[2] == 'n') ? 1 :
+				(__DATE__[0] == 'F' && __DATE__[1] == 'e' && __DATE__[2] == 'b') ? 2 :
+				(__DATE__[0] == 'M' && __DATE__[1] == 'a' && __DATE__[2] == 'r') ? 3 :
+				(__DATE__[0] == 'A' && __DATE__[1] == 'p' && __DATE__[2] == 'r') ? 4 :
+				(__DATE__[0] == 'M' && __DATE__[1] == 'a' && __DATE__[2] == 'y') ? 5 :
+				(__DATE__[0] == 'J' && __DATE__[1] == 'u' && __DATE__[2] == 'n') ? 6 :
+				(__DATE__[0] == 'J' && __DATE__[1] == 'u' && __DATE__[2] == 'l') ? 7 :
+				(__DATE__[0] == 'A' && __DATE__[1] == 'u' && __DATE__[2] == 'g') ? 8 :
+				(__DATE__[0] == 'S' && __DATE__[1] == 'e' && __DATE__[2] == 'p') ? 9 :
+				(__DATE__[0] == 'O' && __DATE__[1] == 'c' && __DATE__[2] == 't') ? 10 :
+				(__DATE__[0] == 'N' && __DATE__[1] == 'o' && __DATE__[2] == 'v') ? 11 :
+				(__DATE__[0] == 'D' && __DATE__[1] == 'e' && __DATE__[2] == 'c') ? 12 : 0;
+	int day = (__DATE__[4] == ' ' ? 0 : __DATE__[4] - '0') * 10 + (__DATE__[5] - '0');
+	int year = (__DATE__[7] - '0') * 1000 + (__DATE__[8] - '0') * 100 + (__DATE__[9] - '0') * 10 + (__DATE__[10] - '0');
+	return (year * 100 + month) * 100 + day;
+}
+
+static inline rtValue nextArg(nfcContext ctx) {
+	return ctx->rt->api.nfcReadArg(ctx, ctx->rt->api.nfcNextArg(ctx));
+}
 
 #ifdef __cplusplus
 }
