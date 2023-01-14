@@ -63,13 +63,14 @@ static vmError FILE_flush(nfcContext ctx) {
 static const char *const proto_file_close = "void close(File file)";
 static vmError FILE_close(nfcContext ctx) {
 	FILE *file = (FILE *) arghnd(ctx, 0);
-	/* TODO: currently it is allowed to close any file
-	if (file == stdin || file == stdout || file == stderr) {
+	rtContext rt = ctx->rt;
+	if (file == rt->logFile) {
+		rt->api.raise(rt, raiseError, "can not close log file (not allowed)");
 		return nativeCallError;
 	}
-	if (file == ctx->rt->logFile) {
-		return nativeCallError;
-	}*/
+	if (file == stdin || file == stdout || file == stderr) {
+		rt->api.raise(rt, raiseWarn, "closing standard file (in, out, err)");
+	}
 	fclose(file);
 	return noError;
 }
@@ -145,7 +146,7 @@ static vmError FILE_stream(nfcContext ctx) {
 	return nativeCallError;
 }
 
-const char cmplUnit[] = "/cmplStd/lib/system/File.ci";
+const char cmplUnit[] = "/cmplFile/lib.ci";
 int cmplInit(rtContext rt) {
 	ccContext cc = rt->cc;
 	symn type = rt->api.ccAddType(cc, proto_file, sizeof(FILE*), 0);

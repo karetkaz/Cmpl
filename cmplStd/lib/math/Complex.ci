@@ -109,9 +109,9 @@ inline div(Complex a, float64 b) = div(a, Complex(b));
 inline div(float64 a, Complex b) = div(Complex(a), b);
 
 ///@public
-inline abs(Complex a) = float64.sqrt(a.re * a.re + a.im * a.im);
+inline abs(Complex a) = Math.sqrt(a.re * a.re + a.im * a.im);
 ///@public
-inline arg(Complex a) = float64.atan2(a.re, a.im);
+inline arg(Complex a) = Math.atan2(a.re, a.im);
 
 /// Reciprocal of a complex number (1 / a)
 Complex inv(Complex a) {
@@ -126,29 +126,29 @@ Complex inv(Complex a) {
 inline conj(Complex a) = Complex(a.re, -a.im);
 
 ///@public
-inline exp(Complex a) = Complex(float64.exp(a.re) * float64.cos(a.im), float64.exp(a.re) * float64.sin(a.im));
+inline exp(Complex a) = Complex(Math.exp(a.re) * Math.cos(a.im), Math.exp(a.re) * Math.sin(a.im));
 
 ///@public
-inline log(Complex a) = Complex(float64.log(abs(a)), arg(a));
+inline log(Complex a) = Complex(Math.log(abs(a)), arg(a));
 
 ///@public
 Complex pow(Complex a, Complex b) {
 	float64 r = abs(a);
 	float64 t = arg(a);
-	float64 u = b.re * t + b.im * float64.log(r);
-	float64 v = float64.pow(r, b.re) * float64.exp(-b.im * t);
+	float64 u = b.re * t + b.im * Math.log(r);
+	float64 v = Math.pow(r, b.re) * Math.exp(-b.im * t);
 	return {
-		re: v * float64.cos(u);
-		im: v * float64.sin(u);
+		re: v * Math.cos(u);
+		im: v * Math.sin(u);
 	};
 }
 ///@public
 inline pow(Complex a, float64 b) = pow(a, Complex(b));
 
 ///@public
-inline sin(Complex a) = Complex(float64.sin(a.re) * Math.cosh(a.im), +float64.cos(a.re) * Math.sinh(a.im));
+inline sin(Complex a) = Complex(Math.sin(a.re) * Math.cosh(a.im), +Math.cos(a.re) * Math.sinh(a.im));
 ///@public
-inline cos(Complex a) = Complex(float64.cos(a.re) * Math.cosh(a.im), -float64.sin(a.re) * Math.sinh(a.im));
+inline cos(Complex a) = Complex(Math.cos(a.re) * Math.cosh(a.im), -Math.sin(a.re) * Math.sinh(a.im));
 
 /* TODO: implement operator overloading
 inline tan(Complex a) = sin(a) / cos(a);
@@ -184,6 +184,6 @@ inline sech(Complex a) = inv(cosh(a));
 inline csch(Complex a) = inv(sinh(a));
 
 ///@public
-inline toCartesian(Complex x) = Complex(x.re * float64.cos(x.im), x.re * float64.sin(x.im));
+inline toCartesian(Complex x) = Complex(x.re * Math.cos(x.im), x.re * Math.sin(x.im));
 ///@public
 inline toPolar(Complex x) = Complex(abs(x), arg(x));

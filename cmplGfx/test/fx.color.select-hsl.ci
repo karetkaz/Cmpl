@@ -73,7 +73,7 @@ DebugView debug = {
 
 static const Style style = {
 	align: Style.left;
-	format: { padLen: 5, precision: 2 };
+	format: { precision: 2 };
 };
 FxWidget widget = {
 	radius: 5;
@@ -97,10 +97,10 @@ vec4f blendHsl(vec4f base, vec4f blend) {
 	float min = sldLumMin.value / 255f;
 	float max = sldLumMax.value / 255f;
 	if (lum < min) {
-		lum = Math.smooth(min - lum, 0f, val);
+		lum = Math.smoothstep(0f, val, min - lum);
 	}
 	else if (lum > max) {
-		lum = Math.smooth(lum - max, 0f, val);
+		lum = Math.smoothstep(0f, val, lum - max);
 	}
 	else {
 		lum = 0;
@@ -110,7 +110,7 @@ vec4f blendHsl(vec4f base, vec4f blend) {
 	max = Math.max(Math.max(blend.x, blend.y), blend.z);
 	if (max == min) {
 		// return blue mask with computed alpha component
-		return mix(lum, vec4f(0, 0, 1), base);
+		return mix(vec4f(0, 0, 1), base, lum);
 	}
 
 	float hue = 1;
@@ -130,10 +130,10 @@ vec4f blendHsl(vec4f base, vec4f blend) {
 	min = sldHueMin.value / 359f;
 	max = sldHueMax.value / 359f;
 	if (hue < min) {
-		hue = Math.smooth(min - hue, 0f, val);
+		hue = Math.smoothstep(0f, val, min - hue);
 	}
 	else if (hue > max) {
-		hue = Math.smooth(hue - max, 0f, val);
+		hue = Math.smoothstep(0f, val, hue - max);
 	}
 	else {
 		hue = 0;
@@ -141,7 +141,7 @@ vec4f blendHsl(vec4f base, vec4f blend) {
 
 	// return red mask with computed alpha component
 	float32 a = 1 - (1 - hue) * (1 - lum);
-	return mix(a, vec4f(1, 0, 0), base);
+	return mix(vec4f(1, 0, 0), base, a);
 }
 
 void drawColorSlider(Slider this, Image offs, Rect rect) {

@@ -1,340 +1,464 @@
-/// convert a 64 bit value between Little endian and Big endian
-uint64 swapBytes(uint64 x) {
-	x = (x & 0x00000000ffffffff) << 32 | (x & 0xffffffff00000000) >> 32;
-	x = (x & 0x0000ffff0000ffff) << 16 | (x & 0xffff0000ffff0000) >> 16;
-	x = (x & 0x00ff00ff00ff00ff) << 8  | (x & 0xff00ff00ff00ff00) >> 8;
-	return x;
-}
+/// Utility functions manipulating binary representations
+static struct Bits {
+	/// convert unsigned to signed integer
+	inline signed(uint8 value) = int8(value);
 
-/// convert a 32 bit value between Little endian and Big endian
-uint32 swapBytes(uint32 x) {
-	x = (x & 0x0000ffff) << 16 | (x & 0xffff0000) >> 16;
-	x = (x & 0x00ff00ff) << 8  | (x & 0xff00ff00) >> 8;
-	return x;
-}
+	/// convert unsigned to signed integer
+	inline signed(uint16 value) = int16(value);
 
-/// convert a 16 bit value between Little endian and Big endian
-uint16 swapBytes(uint16 x) {
-	return (x & 0x00ff) << 8 | (x & 0xff00) >> 8;
-}
+	/// convert unsigned to signed integer
+	inline signed(uint32 value) = int32(value);
 
-/// convert a 64 bit value between Little endian and Big endian
-inline swapBytes(int64 x) = int64(swapBytes(uint64(x)));
+	/// convert unsigned to signed integer
+	inline signed(uint64 value) = int64(value);
 
-/// convert a 32 bit value between Little endian and Big endian
-inline swapBytes(int32 x) = int32(swapBytes(uint32(x)));
+	/// convert signed to unsigned integer
+	inline unsigned(int8 value) = uint8(value);
 
-/// convert a 16 bit value between Little endian and Big endian
-inline swapBytes(int16 x) = int16(swapBytes(uint16(x)));
+	/// convert signed to unsigned integer
+	inline unsigned(int16 value) = uint16(value);
 
+	/// convert signed to unsigned integer
+	inline unsigned(int32 value) = uint32(value);
 
-/// find the index of the most significant(highest) bit
-int scanMsb(uint64 x) {
-	if (x == 0) {
-		return -1;
-	}
+	/// convert signed to unsigned integer
+	inline unsigned(int64 value) = uint64(value);
 
-	int result = 0;
-	if (x & 0xffffffff00000000) {
-		result += 32;
-		x >>= 32;
-	}
-	if (x & 0xffff0000) {
-		result += 16;
-		x >>= 16;
-	}
-	if (x & 0xff00) {
-		result += 8;
-		x >>= 8;
-	}
-	if (x & 0xf0) {
-		result += 4;
-		x >>= 4;
-	}
-	if (x & 0xc) {
-		result += 2;
-		x >>= 2;
-	}
-	if (x & 0x2) {
-		result += 1;
-	}
-	return result;
-}
+	/// return the 32 bit floating point value as an integer
+	inline fromFloat32(float32 value) = uint32(emit(float32(value)));
+	/// return the 64 bit floating point value as an integer
+	inline fromFloat64(float64 value) = uint64(emit(float64(value)));
 
-/// find the index of the most significant(highest) bit
-int scanMsb(uint32 x) {
-	if (x == 0) {
-		return -1;
+	/// return the 32 bit integer as a floating point value
+	inline asFloat32(uint32 value) = float32(emit(uint32(value)));
+	/// return the 64 bit integer as a floating point value
+	inline asFloat64(uint64 value) = float64(emit(uint64(value)));
+
+	///@public
+	int32 zxt32(int32 value, int32 offs, int32 count) {
+		static if (preferNativeCalls && typename(uint32.zxt) != null) {
+			// use the native method if available
+			return uint32.zxt(value, offs, count);
+		}
+
+		return uint32(value << (32 - (offs + count))) >> (32 - count);
 	}
 
-	int result = 0;
-	if (x & 0xffff0000) {
-		result += 16;
-		x >>= 16;
-	}
-	if (x & 0xff00) {
-		result += 8;
-		x >>= 8;
-	}
-	if (x & 0xf0) {
-		result += 4;
-		x >>= 4;
-	}
-	if (x & 0xc) {
-		result += 2;
-		x >>= 2;
-	}
-	if (x & 0x2) {
-		result += 1;
-	}
-	return result;
-}
-
-/// find the index of the most significant(highest) bit
-int scanMsb(uint16 x) {
-	if (x == 0) {
-		return -1;
+	///@public
+	int32 sxt32(int32 value, int32 offs, int32 count) {
+		static if (preferNativeCalls && typename(uint32.sxt) != null) {
+			// use the native method if available
+			return uint32.sxt(value, offs, count);
+		}
+		return int32(value << (32 - (offs + count))) >> (32 - count);
 	}
 
-	int result = 0;
-	if (x & 0xff00) {
-		result += 8;
-		x >>= 8;
-	}
-	if (x & 0xf0) {
-		result += 4;
-		x >>= 4;
-	}
-	if (x & 0xc) {
-		result += 2;
-		x >>= 2;
-	}
-	if (x & 0x2) {
-		result += 1;
-	}
-	return result;
-}
+	///@public
+	int64 zxt64(int64 value, int32 offs, int32 count) {
+		static if (preferNativeCalls && typename(uint64.zxt) != null) {
+			// use the native method if available
+			return uint64.zxt(value, offs, count);
+		}
 
-/// find the index of the most significant(highest) bit
-int scanMsb(uint8 x) {
-	if (x == 0) {
-		return -1;
+		return uint64(value << (64 - (offs + count))) >> (64 - count);
 	}
 
-	int result = 0;
-	if (x & 0xf0) {
-		result += 4;
-		x >>= 4;
-	}
-	if (x & 0xc) {
-		result += 2;
-		x >>= 2;
-	}
-	if (x & 0x2) {
-		result += 1;
-	}
-	return result;
-}
+	///@public
+	int64 sxt64(int64 value, int32 offs, int32 count) {
+		static if (preferNativeCalls && typename(uint64.sxt) != null) {
+			// use the native method if available
+			return uint64.sxt(value, offs, count);
+		}
 
-
-/// find the index of the least significant(lowest) bit
-int scanLsb(uint64 x) {
-	if (x == 0) {
-		return -1;
+		return int64(value << (64 - (offs + count))) >> (64 - count);
 	}
 
-	int result = 0;
-	if ((x & 0xffffffff) == 0) {
-		result += 32;
-		x >>= 32;
-	}
-	if ((x & 0xffff) == 0) {
-		result += 16;
-		x >>= 16;
-	}
-	if ((x & 0xff) == 0) {
-		result += 8;
-		x >>= 8;
-	}
-	if ((x & 0xf) == 0) {
-		result += 4;
-		x >>= 4;
-	}
-	if ((x & 0x3) == 0) {
-		result += 2;
-		x >>= 2;
-	}
-	if ((x & 0x1) == 0) {
-		result += 1;
-	}
-	return result;
-}
-
-/// find the index of the least significant(lowest) bit
-int scanLsb(uint32 x) {
-	if (x == 0) {
-		return -1;
+	/// convert a 64 bit value between Little endian and Big endian
+	uint64 swapBytes(uint64 x) {
+		x = (x & 0x00000000ffffffff) << 32 | (x & 0xffffffff00000000) >> 32;
+		x = (x & 0x0000ffff0000ffff) << 16 | (x & 0xffff0000ffff0000) >> 16;
+		x = (x & 0x00ff00ff00ff00ff) << 8  | (x & 0xff00ff00ff00ff00) >> 8;
+		return x;
 	}
 
-	int result = 0;
-	if ((x & 0xffff) == 0) {
-		result += 16;
-		x >>= 16;
-	}
-	if ((x & 0xff) == 0) {
-		result += 8;
-		x >>= 8;
-	}
-	if ((x & 0xf) == 0) {
-		result += 4;
-		x >>= 4;
-	}
-	if ((x & 0x3) == 0) {
-		result += 2;
-		x >>= 2;
-	}
-	if ((x & 0x1) == 0) {
-		result += 1;
-	}
-	return result;
-}
-
-/// find the index of the least significant(lowest) bit
-int scanLsb(uint16 x) {
-	if (x == 0) {
-		return -1;
+	/// convert a 32 bit value between Little endian and Big endian
+	uint32 swapBytes(uint32 x) {
+		x = (x & 0x0000ffff) << 16 | (x & 0xffff0000) >> 16;
+		x = (x & 0x00ff00ff) << 8  | (x & 0xff00ff00) >> 8;
+		return x;
 	}
 
-	int result = 0;
-	if ((x & 0xff) == 0) {
-		result += 8;
-		x >>= 8;
-	}
-	if ((x & 0xf) == 0) {
-		result += 4;
-		x >>= 4;
-	}
-	if ((x & 0x3) == 0) {
-		result += 2;
-		x >>= 2;
-	}
-	if ((x & 0x1) == 0) {
-		result += 1;
-	}
-	return result;
-}
-
-/// find the index of the least significant(lowest) bit
-int scanLsb(uint8 x) {
-	if (x == 0) {
-		return -1;
+	/// convert a 16 bit value between Little endian and Big endian
+	uint16 swapBytes(uint16 x) {
+		return (x & 0x00ff) << 8 | (x & 0xff00) >> 8;
 	}
 
-	int result = 0;
-	if ((x & 0xf) == 0) {
-		result += 4;
-		x >>= 4;
+	/// convert a 64 bit value between Little endian and Big endian
+	inline swapBytes(int64 x) = int64(swapBytes(uint64(x)));
+
+	/// convert a 32 bit value between Little endian and Big endian
+	inline swapBytes(int32 x) = int32(swapBytes(uint32(x)));
+
+	/// convert a 16 bit value between Little endian and Big endian
+	inline swapBytes(int16 x) = int16(swapBytes(uint16(x)));
+
+
+	/// find the index of the most significant(highest) bit
+	int scanMsb(uint64 x) {
+		static if (preferNativeCalls && typename(uint64.bsr) != null) {
+			// use the native method if available
+			return uint64.bsr(x);
+		}
+		if (x == 0) {
+			return -1;
+		}
+
+		int result = 0;
+		if (x & 0xffffffff00000000) {
+			result += 32;
+			x >>= 32;
+		}
+		if (x & 0xffff0000) {
+			result += 16;
+			x >>= 16;
+		}
+		if (x & 0xff00) {
+			result += 8;
+			x >>= 8;
+		}
+		if (x & 0xf0) {
+			result += 4;
+			x >>= 4;
+		}
+		if (x & 0xc) {
+			result += 2;
+			x >>= 2;
+		}
+		if (x & 0x2) {
+			result += 1;
+		}
+		return result;
 	}
-	if ((x & 0x3) == 0) {
-		result += 2;
-		x >>= 2;
+
+	/// find the index of the most significant(highest) bit
+	int scanMsb(uint32 x) {
+		static if (preferNativeCalls && typename(uint32.bsr) != null) {
+			// use the native method if available
+			return uint32.bsr(x);
+		}
+		if (x == 0) {
+			return -1;
+		}
+
+		int result = 0;
+		if (x & 0xffff0000) {
+			result += 16;
+			x >>= 16;
+		}
+		if (x & 0xff00) {
+			result += 8;
+			x >>= 8;
+		}
+		if (x & 0xf0) {
+			result += 4;
+			x >>= 4;
+		}
+		if (x & 0xc) {
+			result += 2;
+			x >>= 2;
+		}
+		if (x & 0x2) {
+			result += 1;
+		}
+		return result;
 	}
-	if ((x & 0x1) == 0) {
-		result += 1;
+
+	/// find the index of the most significant(highest) bit
+	int scanMsb(uint16 x) {
+		if (x == 0) {
+			return -1;
+		}
+
+		int result = 0;
+		if (x & 0xff00) {
+			result += 8;
+			x >>= 8;
+		}
+		if (x & 0xf0) {
+			result += 4;
+			x >>= 4;
+		}
+		if (x & 0xc) {
+			result += 2;
+			x >>= 2;
+		}
+		if (x & 0x2) {
+			result += 1;
+		}
+		return result;
 	}
-	return result;
-}
+
+	/// find the index of the most significant(highest) bit
+	int scanMsb(uint8 x) {
+		if (x == 0) {
+			return -1;
+		}
+
+		int result = 0;
+		if (x & 0xf0) {
+			result += 4;
+			x >>= 4;
+		}
+		if (x & 0xc) {
+			result += 2;
+			x >>= 2;
+		}
+		if (x & 0x2) {
+			result += 1;
+		}
+		return result;
+	}
 
 
-/// keep the highest bit set
-uint64 keepMsb(uint64 x) {
-	x |= x >> 1;
-	x |= x >> 2;
-	x |= x >> 4;
-	x |= x >> 8;
-	x |= x >> 16;
-	x |= x >> 32;
-	return x - (x >> 1);
-}
+	/// find the index of the least significant(lowest) bit
+	int scanLsb(uint64 x) {
+		static if (preferNativeCalls && typename(uint64.bsf) != null) {
+			// use the native method if available
+			return uint64.bsf(x);
+		}
 
-/// keep the highest bit set
-uint32 keepMsb(uint32 x) {
-	x |= x >> 1;
-	x |= x >> 2;
-	x |= x >> 4;
-	x |= x >> 8;
-	x |= x >> 16;
-	return x - (x >> 1);
-}
+		if (x == 0) {
+			return -1;
+		}
+
+		int result = 0;
+		if ((x & 0xffffffff) == 0) {
+			result += 32;
+			x >>= 32;
+		}
+		if ((x & 0xffff) == 0) {
+			result += 16;
+			x >>= 16;
+		}
+		if ((x & 0xff) == 0) {
+			result += 8;
+			x >>= 8;
+		}
+		if ((x & 0xf) == 0) {
+			result += 4;
+			x >>= 4;
+		}
+		if ((x & 0x3) == 0) {
+			result += 2;
+			x >>= 2;
+		}
+		if ((x & 0x1) == 0) {
+			result += 1;
+		}
+		return result;
+	}
+
+	/// find the index of the least significant(lowest) bit
+	int scanLsb(uint32 x) {
+		static if (preferNativeCalls && typename(uint32.bsf) != null) {
+			// use the native method if available
+			return uint32.bsf(x);
+		}
+
+		if (x == 0) {
+			return -1;
+		}
+
+		int result = 0;
+		if ((x & 0xffff) == 0) {
+			result += 16;
+			x >>= 16;
+		}
+		if ((x & 0xff) == 0) {
+			result += 8;
+			x >>= 8;
+		}
+		if ((x & 0xf) == 0) {
+			result += 4;
+			x >>= 4;
+		}
+		if ((x & 0x3) == 0) {
+			result += 2;
+			x >>= 2;
+		}
+		if ((x & 0x1) == 0) {
+			result += 1;
+		}
+		return result;
+	}
+
+	/// find the index of the least significant(lowest) bit
+	int scanLsb(uint16 x) {
+		if (x == 0) {
+			return -1;
+		}
+
+		int result = 0;
+		if ((x & 0xff) == 0) {
+			result += 8;
+			x >>= 8;
+		}
+		if ((x & 0xf) == 0) {
+			result += 4;
+			x >>= 4;
+		}
+		if ((x & 0x3) == 0) {
+			result += 2;
+			x >>= 2;
+		}
+		if ((x & 0x1) == 0) {
+			result += 1;
+		}
+		return result;
+	}
+
+	/// find the index of the least significant(lowest) bit
+	int scanLsb(uint8 x) {
+		if (x == 0) {
+			return -1;
+		}
+
+		int result = 0;
+		if ((x & 0xf) == 0) {
+			result += 4;
+			x >>= 4;
+		}
+		if ((x & 0x3) == 0) {
+			result += 2;
+			x >>= 2;
+		}
+		if ((x & 0x1) == 0) {
+			result += 1;
+		}
+		return result;
+	}
 
 
-/// keep the lowest bit set
-inline keepLsb(uint64 x) = uint64(x & -x);
+	/// keep the highest bit set
+	uint64 keepMsb(uint64 x) {
+		static if (preferNativeCalls && typename(uint64.hib) != null) {
+			// use the native method if available
+			return uint64.hib(x);
+		}
 
-/// keep the lowest bit set
-inline keepLsb(uint32 x) = uint32(x & -x);
+		x |= x >> 1;
+		x |= x >> 2;
+		x |= x >> 4;
+		x |= x >> 8;
+		x |= x >> 16;
+		x |= x >> 32;
+		return x - (x >> 1);
+	}
 
-/// keep the lowest bit set
-inline keepLsb(uint16 x) = uint16(x & -x);
+	/// keep the highest bit set
+	uint32 keepMsb(uint32 x) {
+		static if (preferNativeCalls && typename(uint32.hib) != null) {
+			// use the native method if available
+			return uint32.hib(x);
+		}
 
-/// keep the lowest bit set
-inline keepLsb(uint8 x) = uint8(x & -x);
-
-
-/// count bits set to one
-int countBits(uint64 x) {
-	x -= (x >> 1) & 0x5555555555555555;
-	x = (x & 0x3333333333333333) + ((x >> 2) & 0x3333333333333333);
-	x = (x + (x >> 4)) & 0x0f0f0f0f0f0f0f0f;
-	x += x >> 8;
-	x += x >> 16;
-	x += x >> 32;
-	return x & 0x3f;
-}
-
-/// count bits set to one
-int countBits(uint32 x) {
-	x -= (x >> 1) & 0x55555555;
-	x = (x & 0x33333333) + ((x >> 2) & 0x33333333);
-	x = (x + (x >> 4)) & 0x0f0f0f0f;
-	x += x >> 8;
-	x += x >> 16;
-	return x & 0x3f;
-}
+		x |= x >> 1;
+		x |= x >> 2;
+		x |= x >> 4;
+		x |= x >> 8;
+		x |= x >> 16;
+		return x - (x >> 1);
+	}
 
 
-// reverse all the bits
-uint64 swapBits(uint64 x) {
-	x = ((x >> 1) & 0x5555555555555555) | ((x & 0x5555555555555555) << 1);
-	x = ((x >> 2) & 0x3333333333333333) | ((x & 0x3333333333333333) << 2);
-	x = ((x >> 4) & 0x0f0f0f0f0f0f0f0f) | ((x & 0x0f0f0f0f0f0f0f0f) << 4);
-	x = ((x >> 8) & 0x00ff00ff00ff00ff) | ((x & 0x00ff00ff00ff00ff) << 8);
-	x = ((x >> 16) & 0x0000ffff0000ffff) | ((x & 0x0000ffff0000ffff) << 16);
-	return (x >> 32) | (x << 32);
-}
+	/// keep the lowest bit set
+	inline keepLsb(uint64 x) = uint64(x & -x);
 
-// reverse all the bits
-uint32 swapBits(uint32 x) {
-	x = ((x >> 1) & 0x55555555) | ((x & 0x55555555) << 1);
-	x = ((x >> 2) & 0x33333333) | ((x & 0x33333333) << 2);
-	x = ((x >> 4) & 0x0f0f0f0f) | ((x & 0x0f0f0f0f) << 4);
-	x = ((x >> 8) & 0x00ff00ff) | ((x & 0x00ff00ff) << 8);
-	return (x >> 16) | (x << 16);
-}
+	/// keep the lowest bit set
+	inline keepLsb(uint32 x) = uint32(x & -x);
 
-// reverse all the bits
-uint16 swapBits(uint16 x) {
-	x = ((x >> 1) & 0x5555) | ((x & 0x5555) << 1);
-	x = ((x >> 2) & 0x3333) | ((x & 0x3333) << 2);
-	x = ((x >> 4) & 0x0f0f) | ((x & 0x0f0f) << 4);
-	return (x >> 8) | (x << 8);
-}
+	/// keep the lowest bit set
+	inline keepLsb(uint16 x) = uint16(x & -x);
 
-// reverse all the bits
-uint8 swapBits(uint8 x) {
-	x = ((x >> 1) & 0x55) | ((x & 0x55) << 1);
-	x = ((x >> 2) & 0x33) | ((x & 0x33) << 2);
-	return (x >> 4) | (x << 4);
+	/// keep the lowest bit set
+	inline keepLsb(uint8 x) = uint8(x & -x);
+
+
+	/// count bits set to one
+	int countBits(uint64 x) {
+		static if (preferNativeCalls && typename(uint64.pop) != null) {
+			// use the native method if available
+			return uint64.pop(x);
+		}
+		x -= (x >> 1) & 0x5555555555555555;
+		x = (x & 0x3333333333333333) + ((x >> 2) & 0x3333333333333333);
+		x = (x + (x >> 4)) & 0x0f0f0f0f0f0f0f0f;
+		x += x >> 8;
+		x += x >> 16;
+		x += x >> 32;
+		return x & 0x3f;
+	}
+
+	/// count bits set to one
+	int countBits(uint32 x) {
+		static if (preferNativeCalls && typename(uint32.pop) != null) {
+			// use the native method if available
+			return uint32.pop(x);
+		}
+
+		x -= (x >> 1) & 0x55555555;
+		x = (x & 0x33333333) + ((x >> 2) & 0x33333333);
+		x = (x + (x >> 4)) & 0x0f0f0f0f;
+		x += x >> 8;
+		x += x >> 16;
+		return x & 0x3f;
+	}
+
+
+	/// reverse all the bits
+	uint64 swapBits(uint64 x) {
+		static if (preferNativeCalls && typename(uint64.swap) != null) {
+			// use the native method if available
+			return uint64.swap(x);
+		}
+
+		x = ((x >> 1) & 0x5555555555555555) | ((x & 0x5555555555555555) << 1);
+		x = ((x >> 2) & 0x3333333333333333) | ((x & 0x3333333333333333) << 2);
+		x = ((x >> 4) & 0x0f0f0f0f0f0f0f0f) | ((x & 0x0f0f0f0f0f0f0f0f) << 4);
+		x = ((x >> 8) & 0x00ff00ff00ff00ff) | ((x & 0x00ff00ff00ff00ff) << 8);
+		x = ((x >> 16) & 0x0000ffff0000ffff) | ((x & 0x0000ffff0000ffff) << 16);
+		return (x >> 32) | (x << 32);
+	}
+
+	/// reverse all the bits
+	uint32 swapBits(uint32 x) {
+		static if (preferNativeCalls && typename(uint32.swap) != null) {
+			// use the native method if available
+			return uint32.swap(x);
+		}
+
+		x = ((x >> 1) & 0x55555555) | ((x & 0x55555555) << 1);
+		x = ((x >> 2) & 0x33333333) | ((x & 0x33333333) << 2);
+		x = ((x >> 4) & 0x0f0f0f0f) | ((x & 0x0f0f0f0f) << 4);
+		x = ((x >> 8) & 0x00ff00ff) | ((x & 0x00ff00ff) << 8);
+		return (x >> 16) | (x << 16);
+	}
+
+	/// reverse all the bits
+	uint16 swapBits(uint16 x) {
+		// fixme: uint16 should implicitly cast to uint32
+		x = ((uint16(x) >> 1) & 0x5555) | ((x & 0x5555) << 1);
+		x = ((uint16(x) >> 2) & 0x3333) | ((x & 0x3333) << 2);
+		x = ((uint16(x) >> 4) & 0x0f0f) | ((x & 0x0f0f) << 4);
+		return (uint16(x) >> 8) | (x << 8);
+	}
+
+	/// reverse all the bits
+	uint8 swapBits(uint8 x) {
+		x = ((uint8(x) >> 1) & 0x55) | ((x & 0x55) << 1);
+		x = ((uint8(x) >> 2) & 0x33) | ((x & 0x33) << 2);
+		return (uint8(x) >> 4) | (x << 4);
+	}
 }
 
 /* TODO: leftovers
@@ -349,4 +473,14 @@ define Lo16(int32 a) = int32(a & 0xffff);			// Lo16 part
 define Hi16(int32 a) = Lo16(a >> 16);				// Hi16 part
 define Lo8(int32 a) = int32(a & 0xff);				// Lo16 part
 define Hi8(int32 a) = Lo8(a >> 8);					// Hi16 part
+
+// implement all native methods
+int32 zxt(int32 value, int32 offs, int32 count)
+int32 sxt(int32 value, int32 offs, int32 count)
+✓ int32 pop(int32 value)
+✓ int32 swap(int32 value)
+✓ int32 bsr(int32 value)
+✓ int32 bsf(int32 value)
+✓ int32 hib(int32 value)
+? int32 lob(int32 value)
 */

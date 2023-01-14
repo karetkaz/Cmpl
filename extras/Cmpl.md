@@ -41,7 +41,7 @@ Syntax is similar to c / js influenced by:
 
 ### Conditional compile-time code generation and declarations with `static if` statement.
 * [x] `static if (int == int32) { /* 32 bit platform code */ }`
-* [x] conditional inlinening `static if (int == int32) { inline "file"; }`
+* [x] conditional inlining `static if (int == int32) { inline "file"; }`
 
 
 ### Functions
@@ -64,10 +64,7 @@ Syntax is similar to c / js influenced by:
 ## Comments
 
 * line comments: `// ...`
-
 * block comments: `/* ... */`
-
-* nested comments: `/+ ... +/`
 
 ## Identifiers
 
@@ -84,29 +81,17 @@ Identifier: Letter (Letter | Number)*;
 Keywords are reserved words, which can not be used as identifiers.
 
 * break
-
 * const
-
 * continue
-
 * else
-
 * emit
-
 * enum
-
 * for
-
 * if
-
 * inline
-
 * parallel
-
 * return
-
 * static
-
 * struct
 
 ## Literals

@@ -1,6 +1,7 @@
 /cmake-build-*/
 /build/
 /.idea/
+/.fleet/
 .vscode/
 **/bin/
 **/out/

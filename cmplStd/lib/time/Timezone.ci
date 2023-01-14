@@ -1,11 +1,4 @@
-static if (typename(Timestamp) == null) {
-inline "Timespan.ci";
-}
-
-static if (typename(Timestamp) == null) {
-inline "Timestamp.ci";
-}
-
+// todo: unfinished implementation
 struct Timezone {
 	const char name[];		// "UTC", "America/New_York", "Europe/Brussels"
 	Duration offset(const Timezone zone&, Timestamp timestamp, bool isDaylightSaving&);

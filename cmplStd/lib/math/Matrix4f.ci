@@ -132,8 +132,8 @@ mat4f rotation(const vec4f center&, const vec4f direction&, float32 angle) {
 	float32 yz = y * z;
 	float32 zz = z * z;
 
-	float32 s = float32.sin(angle);
-	float32 c = float32.cos(angle);
+	float32 s = Math.sin(angle);
+	float32 c = Math.cos(angle);
 	float32 k = 1 - c;
 
 	return {
@@ -164,8 +164,8 @@ mat4f rotation(const vec4f direction&, float angle) {
 	float32 xy = direction.x * direction.y;
 	float32 xz = direction.x * direction.z;
 	float32 yz = direction.y * direction.z;
-	float32 s = float32.sin(angle);
-	float32 c = float32.cos(angle);
+	float32 s = Math.sin(angle);
+	float32 c = Math.cos(angle);
 	float32 k = 1 - c;
 	vec4f tmp = mul(direction, s);
 

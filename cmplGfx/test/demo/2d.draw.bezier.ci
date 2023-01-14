@@ -26,7 +26,7 @@ int onEvent(int action, int button, int ex, int ey) {
 	}
 	if (action == Gui.MOUSE_PRESS || action == Gui.FINGER_PRESS) {
 		idx = -1;
-		inline dst(int dx, int dy) = float.sqrt(dx * dx + dy * dy);
+		inline dst(int dx, int dy) = Math.sqrt(dx * dx + dy * dy);
 		inline dst(int i, int cx, int cy) = dst(x[i] - cx, y[i] - cy);
 		for (int i = 0; i < x.length; i += 1) {
 			int len = dst(i, ex, ey);

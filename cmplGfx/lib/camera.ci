@@ -20,7 +20,7 @@ struct Camera {
 		}
 
 		// perspective
-		bot = float32.tan(Math.radians(fov));
+		bot = Math.tan(Math.radians(fov));
 		asp *= bot;
 
 		return {

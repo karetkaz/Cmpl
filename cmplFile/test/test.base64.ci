@@ -1,11 +1,9 @@
-inline "/cmplStd/lib/text/encoding/Base64.ci";
 char original[*] = "../../cmplGfx/test/asset/image/david.png";
 char encoded[*] = "out/base64.enc.txt";
 char decoded[*] = "out/base64.dec.png";
-inline useBuffer = true;
 
 if (ByteReader reader = FileReader(original)) {
-	ByteWriter writer = FileWriter(encoded, useBuffer, false);
+	ByteWriter writer = BufferedFileWriter(encoded, false);
 	ByteWriter encoder = Base64Encoder {
 		writer: writer;
 		wrap: 100;
@@ -18,7 +16,7 @@ if (ByteReader reader = FileReader(original)) {
 }
 
 if (ByteReader reader = FileReader(encoded)) {
-	ByteWriter writer = FileWriter(decoded, useBuffer, false);
+	ByteWriter writer = BufferedFileWriter(decoded, false);
 	ByteReader decoder = Base64Decoder {
 		reader: reader;
 	};

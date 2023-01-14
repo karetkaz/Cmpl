@@ -77,8 +77,8 @@ mat4f hue(float val) {
 	inline lR = 0.213;
 	inline lG = 0.715;
 	inline lB = 0.072;
-	float cV = val.cos();
-	float sV = val.sin();
+	float cV = Math.cos(val);
+	float sV = Math.sin(val);
 	return {
 		x: vec4f(lR+cV*(1-lR)+sV*(   -lR), lG+cV*(   -lG)+sV*( -lG), lB+cV*( -lB)+sV*(1 - lB),0.);
 		y: vec4f(lR+cV*(0-lR)+sV*(0.1430), lG+cV*(1 - lG)+sV*(0.14), lB+cV*( -lB)+sV*(-0.283),0.);

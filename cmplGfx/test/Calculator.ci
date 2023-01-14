@@ -3,7 +3,7 @@
 Style display = {
 	font: Image.openTtf("asset/font/NokiaPureText.ttf", 48);
 	align: Style.right;
-	format: { precision: 10; };
+	format: { precision: 10 };
 };
 Style global = {
 	font: Image.openTtf("asset/font/NokiaPureText.ttf", 24);
@@ -11,7 +11,7 @@ Style global = {
 	format: {};
 };
 
-char result[256] = {'0', 0};
+char result[16] = {'0', 0};
 char operation = '=';
 float64 value = 0;
 bool clear = true;
@@ -46,17 +46,17 @@ bool onResult(Button this) {
 	clear = true;
 
 	// check for errors (not a number, infinity)
-	if (value != value) {
-		result.append(0, "Error");
+	if (value - value == 0) {
+		result.append(0, value, display.format);
 	}
-	else if (value < 0 && value == 2 * value) {
+	else if (value < 0) {
 		result.append(0, "-Inf");
 	}
-	else if (value > 0 && value == 2 * value) {
+	else if (value > 0) {
 		result.append(0, "Inf");
 	}
-	else {
-		result.append(0, value, display.format);
+	else {// value != value
+		result.append(0, "Error");
 	}
 	return true;
 }
@@ -105,8 +105,8 @@ bool onOp(Button this) {
 }
 bool onFn(Button this) {
 	if (this.text.equals("sqrt")) {
-		// precalculate last operation onResult(this);
-		value = float64.sqrt(float64(result));
+		// todo: precalculate last operation: onResult(this);
+		value = Math.sqrt(float64(result));
 	}
 	else {
 		value = Math.nan;
@@ -123,8 +123,9 @@ Button btnResult = {
 
 Button buttons[] = {
 	{text: "\xb1", onClick: onNeg}, // ±
-	{text: "sqrt", onClick: onFn},  // todo: √
-	{text: "", enabled: false},  // todo: %
+//	{text: "sqrt", onClick: onFn},  // todo: √
+	{text: "", enabled: false},  // todo: sqrt √
+	{text: "", enabled: false},  // todo: perc %
 	{text: "C", onClick: onClear},
 
 	{text: "7", onClick: onValue},

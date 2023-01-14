@@ -14,7 +14,7 @@
 #include "utils.h"
 
 // default values
-static const char *STDLIB = "/cmplStd/stdlib.ci";   // standard library
+static const char *STDLIB = "/cmplStd/lib.ci";   // standard library
 static const char *CMPL_HOME = "CMPL_HOME";    // Home environment path variable name
 
 static inline int strEquals(const char *str, const char *with) {
@@ -107,7 +107,7 @@ static const char *parseInt(const char *str, int32_t *res, int radix) {
 
 static const char **escapeXML() {
 	static const char *escape[256] = {0};
-	if (escape[0] == 0) {
+	if (escape[0] == NULL) {
 		escape[0] = "&#0;";
 		escape['\''] = "&apos;";
 		escape['"'] = "&quot;";
@@ -119,13 +119,13 @@ static const char **escapeXML() {
 }
 static const char **escapeJSON() {
 	static const char *escape[256] = {0};
-	if (escape[0] == 0) {
+	if (escape[0] == NULL) {
 		escape[0] = "\\u0000";
 		escape['\n'] = "\\n";
 		escape['\r'] = "\\r";
 		escape['\t'] = "\\t";
-		//~ escape['\''] = "\\'";
 		escape['\"'] = "\\\"";
+		escape['\\'] = "\\\\";
 	}
 	return escape;
 }
@@ -1134,9 +1134,15 @@ static void dumpApiText(userContext ctx, symn sym) {
 	printFmt(out, esc, "\n");
 }
 static void dumpApiSciTE(userContext ctx, symn sym) {
-	const char **esc = ctx->esc;
-	FILE *out = ctx->out;
+	static const char *escape[256] = {0};
+	if (escape[0] == NULL) {
+		escape[0] = "\0";
+		escape['\n'] = "\\n";
+		escape['\r'] = "\\r";
+		escape['\t'] = "\\t";
+	}
 
+	FILE *out = ctx->out;
 	if (sym->name == NULL) {
 		return;
 	}
@@ -1152,15 +1158,15 @@ static void dumpApiSciTE(userContext ctx, symn sym) {
 	}
 
 	if (isInvokable(sym)) {
-		printSym(out, NULL, sym, prSymQual|prSymArgs|prSymType, 0);
+		printSym(out, escape, sym, prSymQual|prSymArgs|prSymType, 0);
 	}
 	else {
-		printSym(out, NULL, sym, prSymQual|prSymArgs, 0);
+		printSym(out, escape, sym, prSymQual|prSymArgs, 0);
 	}
 	if (sym->doc != NULL && *sym->doc && sym->doc != sym->name) {
-		printFmt(out, escapeJSON(), " # %s", sym->doc);
+		printFmt(out, escape, " # %s", sym->doc);
 	}
-	printFmt(out, esc, "\n");
+	printFmt(out, escape, "\n");
 }
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ console debugger and profiler

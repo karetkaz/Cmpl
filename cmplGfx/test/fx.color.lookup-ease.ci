@@ -14,21 +14,20 @@ Image back = Image("asset/image/forest.jpg", 32);
 Image offs = Image(back);
 
 void brightnessContrast(argb lut[256], int brightness, int contrast) {
-	inline "/cmplStd/lib/math/Easing.ci";
 	float64 cVal = (256 + contrast) / 256.;
 
-	float64 easing(float64 ratio) = Easing.circle;
+	float64 easing(float64 ratio) = Easing.expo;
 	for (int idx = 0; idx < lut.length; idx += 1) {
 		float64 value = idx / 256.;
 		if (contrast < 0) {
-			value = Math.lerp(-contrast / 256., value, easing.outIn(value));
+			value = Math.mix(value, easing.outIn(value), -contrast / 256.);
 		} else {
-			value = Math.lerp(contrast / 256., value, easing.inOut(value));
+			value = Math.mix(value, easing.inOut(value), contrast / 256.);
 		}
 		if (brightness < 0) {
-			value = Math.lerp(-brightness / 256., value, easing(value));
+			value = Math.mix(value, easing.in(value), -brightness / 256.);
 		} else {
-			value = Math.lerp(brightness / 256., value, easing.out(value));
+			value = Math.mix(value, easing.out(value), brightness / 256.);
 		}
 
 		int rgb = sat_s8(256 * value);

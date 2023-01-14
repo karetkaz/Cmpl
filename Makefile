@@ -7,9 +7,10 @@ EMFLAGS=-g0 -O3 -s WASM=1 -s EXPORT_ALL=0 -s INVOKE_RUN=0 -s ASSERTIONS=0
 EMFLAGS+=--no-heap-copy --memory-init-file 0 -s ALLOW_MEMORY_GROWTH=1 -s TOTAL_MEMORY=32MB
 EMFLAGS+=-D NO_LIBJPEG -D NO_LIBPNG
 
-EM_EMBED='--preload-file' 'cmplStd/stdlib.ci' '--preload-file' 'cmplGfx/gfxlib.ci'
+EM_EMBED='--preload-file' 'cmplStd/lib.ci' '--preload-file' 'cmplGfx/lib.ci' '--preload-file' 'cmplFile/lib.ci'
 EM_EMBED+=$(shell find cmplStd/lib -type f -name '*.ci' -not -path '*/todo/*' -exec echo '--preload-file' {} \;)
 EM_EMBED+=$(shell find cmplGfx/lib -type f -name '*.ci' -not -path '*/todo/*' -exec echo '--preload-file' {} \;)
+EM_EMBED+=$(shell find cmplFile/lib -type f -name '*.ci' -not -path '*/todo/*' -exec echo '--preload-file' {} \;)
 EM_SIDE_MODULE=-s SIDE_MODULE=2 -s "EXPORTED_FUNCTIONS=['_cmplUnit', '_cmplInit', 'cmplClose']"
 EM_MAIN_MODULE=-s MAIN_MODULE=1 -lidbfs.js
 
@@ -30,11 +31,7 @@ ifneq "$(OS)" "Windows_NT"
 		MKDIRF=-p
 	endif
 else
-	#CFLAGS+=-D NO_LIBPNG -D NO_LIBJPEG
-	CFLAGS+=-I libs/libjpeg
-	CFLAGS+=-I libs/libpng
-	GXLIBS+=-lpng -ljpeg
-	CFLAGS+=-L libs
+	CFLAGS+=-D NO_LIBPNG -D NO_LIBJPEG
 endif
 
 SRC_CC=\
@@ -111,7 +108,7 @@ libOpenGL.dll: cmplGL/src/openGL.c
 
 
 # Webassembly platform
-cmpl.js: $(SRC_CC_EXE) cmplStd/stdlib.ci
+cmpl.js: $(SRC_CC_EXE)
 	@mkdir $(MKDIRF) "$(BINDIR)" || true
 	emcc $(EMFLAGS) -o $(BINDIR)/cmpl.js $(EM_MAIN_MODULE) -s USE_SDL=2 $(filter %.c, $^) $(EM_EMBED)
 
@@ -121,9 +118,9 @@ libFile.wasm: cmplFile/src/file.c
 
 libGfx.wasm: $(SRC_GX) $(GX_SRC)/gx_gui.sdl.c $(CC_SRC)/os_linux/time.c
 	@mkdir $(MKDIRF) "$(BINDIR)" || true
-	emcc $(EMFLAGS) -o $(BINDIR)/libGfx.wasm -I src $(EM_SIDE_MODULE) -s USE_SDL=2 $(filter %.c, $^)
+	emcc $(EMFLAGS) -o $(BINDIR)/libGfx.wasm -I src $(EM_SIDE_MODULE) $(filter %.c, $^)
 
-cmpl.dbg.js: $(SRC_CC_EXE) cmplStd/stdlib.ci
+cmpl.dbg.js: $(SRC_CC_EXE)
 	@mkdir $(MKDIRF) "$(BINDIR)" || true
 	emcc -g3 -O0 -s WASM=0 $(filter %.c, $^) -o $(BINDIR)/cmpl.dbg.js
 

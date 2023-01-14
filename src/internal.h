@@ -105,6 +105,7 @@ extern const char * const pluginLibImport;
 extern const char * const pluginLibInstall;
 extern const char * const pluginLibDestroy;
 
+extern const char * const type_doc_builtin;
 extern const char * const type_fmt_signed32;
 extern const char * const type_fmt_signed64;
 extern const char * const type_fmt_unsigned32;
@@ -332,7 +333,11 @@ void print_log(rtContext rt, raiseLevel level, const char *file, int line, rtVal
 #define WARN_USING_DEF_FIELD_INITIALIZER "using default field initializer: %T := %t"
 #define WARN_DECLARATION_REDEFINED "variable `%T` hides previous declaration"
 #define WARN_FUNCTION_TYPENAME "function name `%.t` is a type, but returns `%T`"
+#define WARN_FUNCTION_OVERRIDE "Overriding virtual function: %T"
+#define WARN_FUNCTION_OVERLOAD "Overwriting forward function: %T"
+#define WARN_EXTENDING_NAMESPACE "Extending static namespace: %T"
 #define WARN_INLINE_FILE "inline file: `%s`"
+#define INFO_PREVIOUS_DEFINITION "previously defined here as `%T`"
 
 
 #define prerr(__TAG, __FMT, ...) do { printFmt(stdout, NULL, "%?s:%?u: %s(" __TAG "): " __FMT "\n", __FILE__, __LINE__, __FUNCTION__, ##__VA_ARGS__); } while(0)

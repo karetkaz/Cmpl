@@ -1,3 +1,4 @@
+/// enumeration of some known time unit, used for conversions and to specify the precision
 enum Timeunit: int64 {
 	// approximately 584 years of nanoseconds can be represented in uint64
 	Nanos: 1;
@@ -7,11 +8,9 @@ enum Timeunit: int64 {
 	Minutes: 60 * Seconds;
 	Hours: 60 * Minutes;
 	Days: 24 * Hours;
-
-	// default precision for duration and timestamp
-	precision: Millis;
 }
 
+/// Convert the given integer `value` from the `from` to `to` unit
 int64 convert(int64 value, Timeunit from, Timeunit to) {
 	if (from > to) {
 		// from Minutes to Seconds
@@ -21,6 +20,7 @@ int64 convert(int64 value, Timeunit from, Timeunit to) {
 	return value / (to / from);
 }
 
+/// Convert the given floating point `value` from the `from` to `to` unit
 float64 convert(float64 value, Timeunit from, Timeunit to) {
 	if (from > to) {
 		// from Minutes to Seconds

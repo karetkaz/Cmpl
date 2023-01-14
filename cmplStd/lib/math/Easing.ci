@@ -1,48 +1,60 @@
 // TODO: enum Easing: double(double t) { ... }
+/// Easing functions maps an input of [0, 1) usually to [0, 1) with an acceleration: https://easings.net/.
 static struct Easing {
+	///@public
 	float64 linear(float64 t) {
 		return t;
 	}
 
+	///@public
 	float64 quad(float64 t) {
 		return t * t;
 	}
 
+	///@public
 	float64 cubic(float64 t) {
 		return t * t * t;
 	}
 
+	///@public
 	float64 quart(float64 t) {
 		return t * t * t * t;
 	}
 
+	///@public
 	float64 quint(float64 t) {
 		return t * t * t * t * t;
 	}
 
+	///@public
 	float64 expo(float64 t) {
-		return t == 0 ? 0 : float64.pow(2, 10 * (t - 1));
+		return t == 0 ? 0 : Math.pow(2., 10 * (t - 1));
 	}
 
+	///@public
 	float64 sine(float64 t) {
-		return -float64.cos(t * Math.pi / 2) + 1;
+		return -Math.cos(t * Math.pi / 2) + 1;
 	}
 
+	///@public
 	float64 circle(float64 t) {
-		return -(float64.sqrt(1 - t * t) - 1);
+		return -(Math.sqrt(1 - t * t) - 1);
 	}
 
+	///@public
 	float64 elastic(float64 t) {
 		if (t == 0.0 || t == 1.0) return t;
 		t = t - 1.0;
-		return - float64.pow(2.0, 10.0 * t) * float64.sin((t - 0.3 / 4.0) * (2.0 * Math.pi) / 0.3) ;
+		return - Math.pow(2.0, 10.0 * t) * Math.sin((t - 0.3 / 4.0) * (2.0 * Math.pi) / 0.3) ;
 	}
 
+	///@public
 	float64 back(float64 t) {
 		inline s = 1.70158;
 		return t * t * ((s + 1) * t - s);
 	}
 
+	///@public
 	float64 bounce(float64 t) {
 		static float64 Helper(float64 t, float64 c, float64 a) {
 			if (t == 1) {
@@ -67,6 +79,7 @@ static struct Easing {
 	}
 }
 
+/// ease in, ex: Easing.elastic.in(t)
 float64 in(float64 ease(float64 ratio), float64 ratio) {
 	if (ease == null) {
 		return ratio;
@@ -74,6 +87,7 @@ float64 in(float64 ease(float64 ratio), float64 ratio) {
 	return ease(ratio);
 }
 
+/// ease out, ex: Easing.elastic.out(t)
 float64 out(float64 ease(float64 ratio), float64 ratio) {
 	if (ease == null) {
 		return ratio;
@@ -81,6 +95,7 @@ float64 out(float64 ease(float64 ratio), float64 ratio) {
 	return 1. - ease(1 - ratio);
 }
 
+/// ease in and out, ex: Easing.elastic.inOut(t)
 float64 inOut(float64 ease(float64 ratio), float64 ratio) {
 	if (ease == null) {
 		return ratio;
@@ -89,6 +104,7 @@ float64 inOut(float64 ease(float64 ratio), float64 ratio) {
 	return (ratio < 1) ? .5 * ease(ratio) : .5 * ease.out(ratio - 1) + .5;
 }
 
+/// ease out and in, ex: Easing.elastic.outIn(t)
 float64 outIn(float64 ease(float64 ratio), float64 ratio) {
 	if (ease == null) {
 		return ratio;

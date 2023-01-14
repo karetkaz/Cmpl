@@ -177,14 +177,14 @@ static symn declare(ccContext cc, ccKind kind, astn tag, symn type, symn params)
 			// test if override is possible
 			if (ptr->owner != NULL && def->owner != NULL && isObjectType(def->owner)) {
 				if (isFunction(def) && !isStatic(def) && isVariable(ptr) && isInvokable(ptr)) {
-					warn(cc->rt, raise_warn_redef, def->file, def->line, "Overriding virtual function: %T", ptr);
+					warn(cc->rt, raise_warn_redef, def->file, def->line, WARN_FUNCTION_OVERRIDE, ptr);
 					def->override = ptr;
 					break;
 				}
 			}
 
 			if (kind == (ATTR_stat|KIND_typ|CAST_vid)) {
-				warn(cc->rt, raise_warn_redef, def->file, def->line, "Extending static namespace: %T", ptr);
+				warn(cc->rt, raise_warn_redef, def->file, def->line, WARN_EXTENDING_NAMESPACE, ptr);
 				def->fields = ptr->fields;
 				break;
 			}
@@ -192,7 +192,7 @@ static symn declare(ccContext cc, ccKind kind, astn tag, symn type, symn params)
 			// test if overwrite is possible (forward function implementation)
 			if (ptr->init == NULL && ptr->owner == def->owner && def->nest == ptr->nest) {
 				if (isFunction(def) && isVariable(ptr) && isInvokable(ptr)) {
-					warn(cc->rt, raise_warn_redef, def->file, def->line, "Overwriting forward function: %T", ptr);
+					warn(cc->rt, raise_warn_redef, def->file, def->line, WARN_FUNCTION_OVERLOAD, ptr);
 					ptr->init = lnkNode(cc, def);
 					break;
 				}
@@ -201,14 +201,14 @@ static symn declare(ccContext cc, ccKind kind, astn tag, symn type, symn params)
 			if (ptr->owner == def->owner && ptr->nest >= def->nest && strcmp(def->name, unknown_tag) != 0) {
 				error(cc->rt, def->file, def->line, ERR_DECLARATION_REDEFINED, def);
 				if (ptr->file && ptr->line) {
-					info(cc->rt, ptr->file, ptr->line, "previously defined as `%T`", ptr);
+					error(cc->rt, ptr->file, ptr->line, INFO_PREVIOUS_DEFINITION, ptr);
 				}
 				break;
 			}
 			else {
 				warn(cc->rt, raise_warn_redef, def->file, def->line, WARN_DECLARATION_REDEFINED, def);
 				if (ptr->file && ptr->line) {
-					warn(cc->rt, raise_warn_redef, ptr->file, ptr->line, "previously defined as `%T`", ptr);
+					warn(cc->rt, raise_warn_redef, ptr->file, ptr->line, INFO_PREVIOUS_DEFINITION, ptr);
 				}
 			}
 		}
@@ -2113,6 +2113,7 @@ symn ccAddCall(ccContext cc, vmError call(nfcContext), const char *proto) {
 	sym->init = init;
 	// native calls are undocumented public symbols
 	sym->unit = NULL;
+	sym->doc = type_doc_builtin;
 
 	// update the native call
 	nfc->proto = proto;

@@ -18,7 +18,7 @@ void blur(Image image, int radius, float64 sigma) {
 			case 2:
 				return (x * x - sigma * sigma) * SQRT_2_PI_INV * exp(-0.5*t*t) / (sigma * sigma * sigma * sigma * sigma);
 		}*/
-		return SQRT_2_PI_INV * double.exp(-0.5 * t * t) / sigma;
+		return SQRT_2_PI_INV * Math.exp(-0.5 * t * t) / sigma;
 	}
 
 	int32 kernel[1024] = {};

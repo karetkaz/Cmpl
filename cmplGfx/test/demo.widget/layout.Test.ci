@@ -127,7 +127,7 @@ Layout layout = {
 
 Style style = {
 	align: Style.center;
-	format: { padLen: 5, precision: 2 };
+	format: { precision: 2 };
 };
 
 // container for controls

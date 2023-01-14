@@ -1,8 +1,4 @@
-static if (typename(TextReader) == null) {
-inline "/cmplStd/lib/system/Stream.ci";
-}
-
-// Utf-8 reader TODO: untested
+// todo: untested: Utf-8 reader
 struct Utf8Reader: TextReader {
 	// convert utf-8 bytes to unicodes
 	int decode(Utf8Reader this, unicode chars[]) {
@@ -13,7 +9,7 @@ struct Utf8Reader: TextReader {
 			int value = reader.read();
 			if (value < 0) {
 				// end of stream
-				return i;
+				return i > 0 ? i : value;
 			}
 
 			if ((value & 0x80) == 0) {
@@ -40,7 +36,7 @@ struct Utf8Reader: TextReader {
 	}
 }
 
-// Utf-8 writer TODO: untested
+// todo: untested: Utf-8 writer
 struct Utf8Writer: TextWriter {
 	// convert characters to utf-8 bytes
 	void encode(Utf8Writer this, unicode chars[]) {

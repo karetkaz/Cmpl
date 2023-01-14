@@ -290,11 +290,6 @@ let params = JsArgs('#', function (params, changes) {
 		props.mobile = mode === 'mobile';
 		switch (mode) {
 			case 'normal':
-				if (params.workspace != null || params.project != null) {
-					setStyle(document.body, 'output');
-				} else {
-					setStyle(document.body, '-output');
-				}
 				editor.setSize('100%', '100%');
 				editor.focus();
 				break;
@@ -880,20 +875,34 @@ if (window.addEventListener) {
 			if (event.pageX === undefined) {
 				x = event.touches[0].pageX;
 			}
-			var percentage = (x + 5) / window.innerWidth * 100;
+			var percentage = x / window.innerWidth * 100;
 			if (percentage < 10 || percentage > 90) {
 				return;
 			}
 			document.documentElement.style.setProperty('--left-bar-size', percentage + "%");
 			return;
 		}
+		if (evDown.target.id === 'right-pan-sidebar') {
+			let x = event.pageX;
+			if (event.pageX === undefined) {
+				x = event.touches[0].pageX;
+			}
+			var percentage = (window.innerWidth - x) / window.innerWidth * 100;
+			if (percentage < 10 || percentage > 90) {
+				return;
+			}
+			document.documentElement.style.setProperty('--right-bar-size', percentage + "%");
+			return;
+		}
 		console.log(event);
 	}
 
-	document.getElementById("output-pan-sidebar").addEventListener("mousedown", dragStart);
-	document.getElementById("output-pan-sidebar").addEventListener("touchstart", dragStart);
 	document.getElementById("left-pan-sidebar").addEventListener("mousedown", dragStart);
 	document.getElementById("left-pan-sidebar").addEventListener("touchstart", dragStart);
+	document.getElementById("right-pan-sidebar").addEventListener("mousedown", dragStart);
+	document.getElementById("right-pan-sidebar").addEventListener("touchstart", dragStart);
+	document.getElementById("output-pan-sidebar").addEventListener("mousedown", dragStart);
+	document.getElementById("output-pan-sidebar").addEventListener("touchstart", dragStart);
 	window.addEventListener("mousemove", dragMove);
 	window.addEventListener("touchmove", dragMove);
 	window.addEventListener("mouseup", dragStop);

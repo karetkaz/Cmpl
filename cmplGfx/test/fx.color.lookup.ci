@@ -72,8 +72,8 @@ void brightnessContrastGamma(argb lut[256], float brightness, float contrast, fl
 
 	// adapted from: https://stackoverflow.com/questions/29073174/algorithm-behind-the-shadow-highlight-filter-in-photoshop
 	float ShadowsHighlights(float color, float shadows, float highlights) {
-		float h = highlights * 0.05 * (float.pow(8.0, color) - 1);
-		float s = shadows * 0.05 * (float.pow(8.0, 1.0 - color) - 1);
+		float h = highlights * 0.05 * (Math.pow(8f, color) - 1);
+		float s = shadows * 0.05 * (Math.pow(8f, 1 - color) - 1);
 		return color + h + s;
 	}
 
@@ -88,7 +88,7 @@ void brightnessContrastGamma(argb lut[256], float brightness, float contrast, fl
 		// use rgb channel for: brightness, contrast, gamma
 		val = idx / 256f;
 		// apply gamma
-		val = float.pow(val, 1 / gamma);
+		val = Math.pow(val, 1 / gamma);
 		// apply contrast
 		val = contrast * (val - .5f) + .5f;
 		// apply brightness

@@ -41,7 +41,7 @@ Syntax is similar to c / js influenced by:
 
 ### Conditional compile-time code generation and declarations with `static if` statement.
 * [x] `static if (int == int32) { /* 32 bit platform code */ }`
-* [x] conditional inlinening `static if (int == int32) { inline "file"; }`
+* [x] conditional inlining `static if (int == int32) { inline "file"; }`
 
 
 ### Functions

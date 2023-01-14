@@ -53,7 +53,7 @@ struct NotEquals {
 	const variant returned;
 
 	/// Extra argument to identify what happened
-	const variant extras[] = null;
+	const variant extras[];
 }
 
 /// abort execution if the returned value is not equal to the expected value

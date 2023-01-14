@@ -1,8 +1,4 @@
-static if (typename(TextReader) == null) {
-inline "/cmplStd/lib/system/Stream.ci";
-}
-
-// Ascii reader TODO: untested
+/// Ascii reader converts the given input by mapping every byte to a character
 struct AsciiReader: TextReader {
 	// convert bytes to chars
 	int decode(AsciiReader this, unicode chars[]) {
@@ -19,7 +15,7 @@ struct AsciiReader: TextReader {
 	}
 }
 
-// Ascii Writer TODO: untested
+/// Ascii Writer converts the given input by chopping each character to a byte
 struct AsciiWriter: TextWriter {
 	// convert characters to bytes(can cause data loss)
 	void encode(TextWriter this, unicode chars[]) {

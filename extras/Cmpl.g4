@@ -88,4 +88,3 @@ fragment Exponent: [eE] [+-]? Number+;
 Whitespace: [ \t\n\r]+ -> skip;
 LineComment: '//' ~[\r\n]* -> skip;
 BlockComment: '/*' .*? '*/' -> skip;
-NestedComment: '/+' .*? '+/' -> skip;	// todo: nesting

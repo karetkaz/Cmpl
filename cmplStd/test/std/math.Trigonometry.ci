@@ -1,64 +1,72 @@
-// test the emulated math trigonometry functions: sin cos tan
+#!cmpl -mem1G -run/g
+// test the emulated math trigonometry functions
 static struct Emu {
-	inline fastNativeCalls = false;
+	inline preferNativeCalls = false;
 	inline "/cmplStd/lib/math/Math.ci";
 }
 
 void assertEq(float64 expected, float64 returned, float64 maxErr&, const char func[*], float64 args...) {
-	float64 diff = Math.abs(returned - expected);
-	if (diff < maxErr) {
+	if (returned == expected) {
 		return;
 	}
-	if (diff == diff && diff != 2 * diff) {
-		maxErr = diff;
+
+	if (Math.isNan(returned) && Math.isNan(expected)) {
+		// nan === nan in this case
+		return;
 	}
-	struct NotEquals {
-		const char function[*];
-		float64 arguments[];
 
-		float64 expected;
-		float64 returned;
-		float64 error;
+	float64 diff = Math.abs(returned - expected);
+	if (diff == diff && diff < maxErr) {
+		return;
 	}
-	NotEquals details = {
-		function: func;
-		arguments: args;
-		expected: expected;
-		returned: returned;
-		error: diff;
-	};
-	raise(raise.error, raise.defTrace, "assertion failed", details);
-}
-int N = 100000;
-float64 sinMaxErr = 1e-15;
-float64 cosMaxErr = 1e-15;
-float64 tanMaxErr = 1e-9;
-float64 sinMaxErr100 = 1e-13;
-float64 cosMaxErr100 = 1e-13;
-float64 tanMaxErr100 = 1e-7;
-
-for (int i = 0; i < N; i += 1) {
-	float64 x = 2 * Math.pi * i / N;
-
-	assertEq(float64.sin(+x), Emu.Math.sin(+x), &sinMaxErr, "sin(+x)", x);
-	assertEq(float64.sin(-x), Emu.Math.sin(-x), &sinMaxErr, "sin(-x)", x);
-	assertEq(float64.cos(+x), Emu.Math.cos(+x), &cosMaxErr, "cos(+x)", x);
-	assertEq(float64.cos(-x), Emu.Math.cos(-x), &cosMaxErr, "cos(-x)", x);
-	assertEq(float64.tan(+x), Emu.Math.tan(+x), &tanMaxErr, "tan(+x)", x);
-	assertEq(float64.tan(-x), Emu.Math.tan(-x), &tanMaxErr, "tan(-x)", x);
-
-	assertEq(float64.sin(100 + x), Emu.Math.sin(100 + x), &sinMaxErr100, "sin(100 + x)", x);
-	assertEq(float64.sin(100 - x), Emu.Math.sin(100 - x), &sinMaxErr100, "sin(100 - x)", x);
-	assertEq(float64.cos(100 + x), Emu.Math.cos(100 + x), &cosMaxErr100, "cos(100 + x)", x);
-	assertEq(float64.cos(100 - x), Emu.Math.cos(100 - x), &cosMaxErr100, "cos(100 - x)", x);
-	assertEq(float64.tan(100 + x), Emu.Math.tan(100 + x), &tanMaxErr100, "tan(100 + x)", x);
-	assertEq(float64.tan(100 - x), Emu.Math.tan(100 - x), &tanMaxErr100, "tan(100 - x)", x);
+	maxErr = diff;
 }
 
-inline log10(float64 x) = float64.log(x) / Math.ln10;
-sinMaxErr = log10(sinMaxErr);
-cosMaxErr = log10(cosMaxErr);
-tanMaxErr = log10(tanMaxErr);
-sinMaxErr100 = log10(sinMaxErr100);
-cosMaxErr100 = log10(cosMaxErr100);
-tanMaxErr100 = log10(tanMaxErr100);
+struct Domain {
+	const float64 scale;
+	float64 logMaxErr = 0;
+	float64 expMaxErr = 0;
+	float64 sqrtMaxErr = 0;
+	float64 powMaxErr = 0;
+	float64 sinMaxErr = 0;
+	float64 cosMaxErr = 0;
+	float64 tanMaxErr = 0;
+	float64 atan2MaxErr = 0;
+
+	static void normalize(Domain domain&) {
+		domain.logMaxErr = Math.log10(domain.logMaxErr);
+		domain.expMaxErr = Math.log10(domain.expMaxErr);
+		domain.sqrtMaxErr = Math.log10(domain.sqrtMaxErr);
+		domain.powMaxErr = Math.log10(domain.powMaxErr);
+		domain.sinMaxErr = Math.log10(domain.sinMaxErr);
+		domain.cosMaxErr = Math.log10(domain.cosMaxErr);
+		domain.tanMaxErr = Math.log10(domain.tanMaxErr);
+		domain.atan2MaxErr = Math.log10(domain.atan2MaxErr);
+	}
+}
+
+int64 N = 1000000;
+Domain domains[] = {
+	{scale: 1},                // [-1, 1)
+	{scale: 2 * Math.pi},      // [-2π, 2π)
+	{scale: N},                // [-N, N)
+};
+
+for (int n = 0; n < domains.length; n += 1) {
+	Domain domain& = domains[n];
+	for (float64 Y = -N; Y < N; Y += 1) {
+		float64 x = Y * (domain.scale / N);
+		float64 y = (N + Y) / N;
+		assertEq(float64.log(x), Emu.Math.log(x), &domain.logMaxErr, "log(x)", x);
+		assertEq(float64.exp(x), Emu.Math.exp(x), &domain.expMaxErr, "exp(x)", x);
+		assertEq(float64.sqrt(x), Emu.Math.sqrt(x), &domain.sqrtMaxErr, "sqrt(x)", x);
+		assertEq(float64.pow(x, y), Emu.Math.pow(x, y), &domain.powMaxErr, "pow(x, y)", x, y);
+		assertEq(float64.pow(y, x), Emu.Math.pow(y, x), &domain.powMaxErr, "pow(y, x)", y, x);
+		assertEq(float64.sin(x), Emu.Math.sin(x), &domain.sinMaxErr, "sin(x)", x);
+		assertEq(float64.cos(x), Emu.Math.cos(x), &domain.cosMaxErr, "cos(x)", x);
+		assertEq(float64.tan(x), Emu.Math.tan(x), &domain.tanMaxErr, "tan(x)", x);
+		assertEq(float64.atan2(x, y), Emu.Math.atan2(x, y), &domain.atan2MaxErr, "atan2(x, y)", x, y);
+		assertEq(float64.atan2(y, x), Emu.Math.atan2(y, x), &domain.atan2MaxErr, "atan2(y, x)", y, x);
+	}
+	Domain.normalize(&domain);
+}

@@ -1,6 +1,6 @@
 // complex plane domain coloring demo.
 
-inline N = float32(Math.pi);
+inline N = Math.pi;
 
 inline absMod(float64 val, float64 mod) = ((val < 0 ? val + mod : val) % mod);
 
@@ -16,8 +16,8 @@ inline "/cmplGfx/lib/color.hsv.ci";
 
 vec4f rgbOp1(vec4f in) {
 	Complex z = {
-		re: Math.lerp(in.x, -N, N);
-		im: Math.lerp(in.y, -N, N);
+		re: Math.mix(-N, N, float64(in.x));
+		im: Math.mix(-N, N, float64(in.y));
 	};
 
 	z = z.toPolar().sech();
@@ -26,8 +26,8 @@ vec4f rgbOp1(vec4f in) {
 
 vec4f rgbOp2(vec4f in) {
 	Complex z = {
-		re: Math.lerp(in.x, -N, N);
-		im: Math.lerp(in.y, -N, N);
+		re: Math.mix(-N, N, float64(in.x));
+		im: Math.mix(-N, N, float64(in.y));
 	};
 
 	z = z.toPolar().csch();

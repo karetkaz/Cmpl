@@ -15,6 +15,7 @@ const char *const pluginLibImport = "cmplUnit";
 const char *const pluginLibInstall = "cmplInit";
 const char *const pluginLibDestroy = "cmplClose";
 
+const char *const type_doc_builtin = "@public.builtin";
 const char *const type_fmt_signed32 = "%d";
 const char *const type_fmt_signed64 = "%D";
 const char *const type_fmt_unsigned32 = "%u";
@@ -419,12 +420,14 @@ static void install_type(ccContext cc, ccInstall mode) {
 
 /// Install emit intrinsic.
 static void install_emit(ccContext cc, ccInstall mode) {
-	rtContext rt = cc->rt;
+	symn emit = install(cc, "emit", ATTR_stat | ATTR_cnst | KIND_typ | CAST_vid, 0, cc->type_fun, NULL);
+	if (emit == NULL) {
+		// error already reported
+		return;
+	}
 
-	cc->emit_opc = install(cc, "emit", ATTR_stat | ATTR_cnst | KIND_typ | CAST_vid, 0, cc->type_fun, NULL);
-
-	if ((mode & installEopc) == installEopc && ccExtend(cc, cc->emit_opc)) {
-		symn opc, type_p4x;
+	emit->doc = type_doc_builtin;
+	if ((mode & installEopc) == installEopc && ccExtend(cc, emit)) {
 		symn type_vid = cc->type_vid;
 		symn type_bol = cc->type_bol;
 		symn type_u32 = cc->type_u32;
@@ -440,8 +443,14 @@ static void install_emit(ccContext cc, ccInstall mode) {
 		ccDefOpCode(cc, "ret", type_vid, opc_jmpi, 0);
 		ccDefOpCode(cc, "call", type_vid, opc_call, 0);
 
-		type_p4x = install(cc, "p4x", ATTR_stat | ATTR_cnst | KIND_typ | CAST_val, 16, cc->type_rec, NULL);
+		symn type_p4x = install(cc, "p4x", ATTR_stat | ATTR_cnst | KIND_typ | CAST_val, 16, cc->type_rec, NULL);
+		if (type_p4x == NULL) {
+			ccEnd(cc, emit);
+			return;
+		}
 
+		type_p4x->doc = type_doc_builtin;
+		symn opc;
 		if ((opc = ccBegin(cc, "dup")) != NULL) {
 			ccDefOpCode(cc, "x1", type_i32, opc_dup1, 0);
 			ccDefOpCode(cc, "x2", type_i64, opc_dup2, 0);
@@ -606,6 +615,7 @@ static void install_emit(ccContext cc, ccInstall mode) {
 			//ccDefOpCode(cc, "x1", type_i32, p4x_swz, 1 | 0 << 2 | 2 << 4 | 3 << 6);
 			ccDefOpCode(cc, "x2", type_i32, p4x_swz, 2 | 3 << 2 | 0 << 4 | 1 << 6);
 			if ((mode & installEswz) == installEswz) {
+				rtContext rt = cc->rt;
 				for (size_t i = 0; i < 256; i += 1) {
 					const char *name;
 					if (rt->_end - rt->_beg < 5) {
@@ -629,7 +639,8 @@ static void install_emit(ccContext cc, ccInstall mode) {
 			ccDefOpCode(cc, "dph", type_f32, v4f_dph, 0);
 			ccEnd(cc, opc);
 		}
-		ccEnd(cc, cc->emit_opc);
+		ccEnd(cc, emit);
+		cc->emit_opc = emit;
 	}
 }
 
@@ -663,6 +674,7 @@ static int install_base(rtContext rt, ccInstall mode, vmError onHalt(nfcContext)
 
 		if ((field = install(cc, "size", ATTR_cnst | KIND_var, vm_stk_align, cc->type_i32, NULL))) {
 			field->offs = offsetOf(struct symNode, size);
+			field->doc = type_doc_builtin;
 		}
 		else {
 			error = 1;
@@ -670,6 +682,7 @@ static int install_base(rtContext rt, ccInstall mode, vmError onHalt(nfcContext)
 
 		if ((field = install(cc, "offset", ATTR_cnst | KIND_var, vm_stk_align, cc->type_i32, NULL))) {
 			field->offs = offsetOf(struct symNode, offs);
+			field->doc = type_doc_builtin;
 			field->fmt = "@%06x";
 		}
 		else {

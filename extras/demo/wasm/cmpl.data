@@ -9,7 +9,6 @@ inline byte = uint8;
 inline float = float32;
 inline double = float64;
 
-inline "lib/lang/Integer.ci";       // integer extension methods
 inline "lib/lang/Pointer.ci";       // pointer extension methods
 
 /// Returns the size of the given type
@@ -20,18 +19,47 @@ static if (typename(raise) == function) {
 inline "lib/lang/Debug.ci";
 }
 
-inline "lib/math/Math.ci";
-//inline "lib/math/Decimal.ci"?;      // -> Decimal
-//inline "lib/math/Rational.ci"?;     // -> Rational
-inline "lib/math/Complex.ci"?;
-inline "lib/math/Vector4f.ci"?;
-inline "lib/math/Matrix4f.ci"?;
-inline "lib/math/Vector2d.ci"?;
-//inline "lib/math/BigInteger.ci?"   // TODO: inline Rational -> BigInteger.Rational<BigInteger>
-//inline "lib/math/BigDecimal.ci?"   // TODO: inline Complex -> BigDecimal.Complex<BigDecimal>
-//inline "lib/math/Perlin.ci"?;
 
+// Math
+inline "lib/math/Bits.ci";
+inline "lib/math/Math.ci";
+inline "lib/math/Complex.ci";
+inline "lib/math/Vector4f.ci";
+inline "lib/math/Matrix4f.ci";
+inline "lib/math/Vector2d.ci";
+//todo: inline "lib/math/Decimal.ci"?;
+//todo: inline "lib/math/Rational.ci"?;
+//todo: inline "lib/math/BigInteger.ci?"   // TODO: inline Rational -> BigInteger.Rational<BigInteger>
+//todo: inline "lib/math/BigDecimal.ci?"   // TODO: inline Complex -> BigDecimal.Complex<BigDecimal>
+//todo: inline "lib/math/Perlin.ci"?;
+
+
+// Text
 inline "lib/text/cstr.ci";
+inline "lib/text/stream/ByteStream.ci";
+inline "lib/text/stream/TextStream.ci";
+inline "lib/text/encoding/binary/Base64.ci";
+inline "lib/text/encoding/Ascii.ci";
+inline "lib/text/encoding/Utf8.ci";
+//todo: inline "lib/text/String.ci";
+//todo: inline "lib/text/Collator.ci";
+//todo: inline "lib/text/serialization/csv.ci";
+//todo: inline "lib/text/serialization/json.ci";
+//todo: inline "lib/text/serialization/yaml.ci";
+//todo: inline "lib/text/serialization/xml.ci";
+
+
+// Time
+inline "lib/time/Timeunit.ci";
+inline "lib/time/Duration.ci";
+inline "lib/time/Timestamp.ci";
+inline "lib/time/Timezone.ci";
+inline "lib/time/Datetime.ci";
+
+// etc
+inline "lib/math/Easing.ci";
+//inline "lib/math/Perlin.ci";
+inline "lib/math/Polynomial.ci"?;
 // graphics library extension
 
 bool empty(const Rect roi&) {
@@ -465,51 +493,94 @@ void showWindow(int w, int h, float32 fovy, Mesh mesh) {
 	data.offs.destroy();
 }
 }
+/// extension method to read a single byte from a file
+int read(File file) {
+	uint8 buff[1] = {0};
+	if (file.read(buff) <= 0) {
+		return -1;
+	}
+	return buff[0] & 0xff;
+}
+
+/// extension method to write a single byte into a file
+int write(File file, int value) {
+	uint8 buff[1] = {value};
+	return file.write(buff);
+}
+
+static if (typename(Closeable) == object) {
+inline "lib/FileStream.ci";
+}
+
+/* TODO: uncomment
+static struct File {
+	bool exists(char path[]);
+	bool isFile(char path[]);
+	bool isDirectory(char path[]);
+	bool isAbsolute(char path[]);
+	bool isReadable(char path[]);
+	bool isWriteable(char path[]);
+	bool isExecutable(char path[]);
+
+	Path parent();
+}*/
 // TODO: enum Easing: double(double t) { ... }
+/// Easing functions maps an input of [0, 1) usually to [0, 1) with an acceleration: https://easings.net/.
 static struct Easing {
+	///@public
 	float64 linear(float64 t) {
 		return t;
 	}
 
+	///@public
 	float64 quad(float64 t) {
 		return t * t;
 	}
 
+	///@public
 	float64 cubic(float64 t) {
 		return t * t * t;
 	}
 
+	///@public
 	float64 quart(float64 t) {
 		return t * t * t * t;
 	}
 
+	///@public
 	float64 quint(float64 t) {
 		return t * t * t * t * t;
 	}
 
+	///@public
 	float64 expo(float64 t) {
-		return t == 0 ? 0 : float64.pow(2, 10 * (t - 1));
+		return t == 0 ? 0 : Math.pow(2., 10 * (t - 1));
 	}
 
+	///@public
 	float64 sine(float64 t) {
-		return -float64.cos(t * Math.pi / 2) + 1;
+		return -Math.cos(t * Math.pi / 2) + 1;
 	}
 
+	///@public
 	float64 circle(float64 t) {
-		return -(float64.sqrt(1 - t * t) - 1);
+		return -(Math.sqrt(1 - t * t) - 1);
 	}
 
+	///@public
 	float64 elastic(float64 t) {
 		if (t == 0.0 || t == 1.0) return t;
 		t = t - 1.0;
-		return - float64.pow(2.0, 10.0 * t) * float64.sin((t - 0.3 / 4.0) * (2.0 * Math.pi) / 0.3) ;
+		return - Math.pow(2.0, 10.0 * t) * Math.sin((t - 0.3 / 4.0) * (2.0 * Math.pi) / 0.3) ;
 	}
 
+	///@public
 	float64 back(float64 t) {
 		inline s = 1.70158;
 		return t * t * ((s + 1) * t - s);
 	}
 
+	///@public
 	float64 bounce(float64 t) {
 		static float64 Helper(float64 t, float64 c, float64 a) {
 			if (t == 1) {
@@ -534,6 +605,7 @@ static struct Easing {
 	}
 }
 
+/// ease in, ex: Easing.elastic.in(t)
 float64 in(float64 ease(float64 ratio), float64 ratio) {
 	if (ease == null) {
 		return ratio;
@@ -541,6 +613,7 @@ float64 in(float64 ease(float64 ratio), float64 ratio) {
 	return ease(ratio);
 }
 
+/// ease out, ex: Easing.elastic.out(t)
 float64 out(float64 ease(float64 ratio), float64 ratio) {
 	if (ease == null) {
 		return ratio;
@@ -548,6 +621,7 @@ float64 out(float64 ease(float64 ratio), float64 ratio) {
 	return 1. - ease(1 - ratio);
 }
 
+/// ease in and out, ex: Easing.elastic.inOut(t)
 float64 inOut(float64 ease(float64 ratio), float64 ratio) {
 	if (ease == null) {
 		return ratio;
@@ -556,6 +630,7 @@ float64 inOut(float64 ease(float64 ratio), float64 ratio) {
 	return (ratio < 1) ? .5 * ease(ratio) : .5 * ease.out(ratio - 1) + .5;
 }
 
+/// ease out and in, ex: Easing.elastic.outIn(t)
 float64 outIn(float64 ease(float64 ratio), float64 ratio) {
 	if (ease == null) {
 		return ratio;
@@ -593,7 +668,7 @@ static struct Perlin {
 			}
 
 			//~ normalize2(g2[i]);
-			float n2 = float64.sqrt(sqr(g2[i][0]) + sqr(g2[i][1]));
+			float n2 = Math.sqrt(sqr(g2[i][0]) + sqr(g2[i][1]));
 			if (n2 != 0) {
 				g2[i][0] /= n2;
 				g2[i][1] /= n2;
@@ -604,7 +679,7 @@ static struct Perlin {
 			}
 
 			//~ normalize3(g3[i]);
-			float n3 = float64.sqrt(sqr(g3[i][0]) + sqr(g3[i][1]) + sqr(g3[i][1]));
+			float n3 = Math.sqrt(sqr(g3[i][0]) + sqr(g3[i][1]) + sqr(g3[i][1]));
 			if (n3 != 0) {
 				g3[i][0] /= n3;
 				g3[i][1] /= n3;
@@ -902,8 +977,8 @@ mat4f rotation(const vec4f center&, const vec4f direction&, float32 angle) {
 	float32 yz = y * z;
 	float32 zz = z * z;
 
-	float32 s = float32.sin(angle);
-	float32 c = float32.cos(angle);
+	float32 s = Math.sin(angle);
+	float32 c = Math.cos(angle);
 	float32 k = 1 - c;
 
 	return {
@@ -934,8 +1009,8 @@ mat4f rotation(const vec4f direction&, float angle) {
 	float32 xy = direction.x * direction.y;
 	float32 xz = direction.x * direction.z;
 	float32 yz = direction.y * direction.z;
-	float32 s = float32.sin(angle);
-	float32 c = float32.cos(angle);
+	float32 s = Math.sin(angle);
+	float32 c = Math.cos(angle);
 	float32 k = 1 - c;
 	vec4f tmp = mul(direction, s);
 
@@ -1039,343 +1114,467 @@ mat4f inverse(const mat4f mat&) {
 		ww: (a20 * b03 - a21 * b01 + a22 * b00) / det;
 	};
 }
-/// convert a 64 bit value between Little endian and Big endian
-uint64 swapBytes(uint64 x) {
-	x = (x & 0x00000000ffffffff) << 32 | (x & 0xffffffff00000000) >> 32;
-	x = (x & 0x0000ffff0000ffff) << 16 | (x & 0xffff0000ffff0000) >> 16;
-	x = (x & 0x00ff00ff00ff00ff) << 8  | (x & 0xff00ff00ff00ff00) >> 8;
-	return x;
-}
+/// Utility functions manipulating binary representations
+static struct Bits {
+	/// convert unsigned to signed integer
+	inline signed(uint8 value) = int8(value);
 
-/// convert a 32 bit value between Little endian and Big endian
-uint32 swapBytes(uint32 x) {
-	x = (x & 0x0000ffff) << 16 | (x & 0xffff0000) >> 16;
-	x = (x & 0x00ff00ff) << 8  | (x & 0xff00ff00) >> 8;
-	return x;
-}
+	/// convert unsigned to signed integer
+	inline signed(uint16 value) = int16(value);
 
-/// convert a 16 bit value between Little endian and Big endian
-uint16 swapBytes(uint16 x) {
-	return (x & 0x00ff) << 8 | (x & 0xff00) >> 8;
-}
+	/// convert unsigned to signed integer
+	inline signed(uint32 value) = int32(value);
 
-/// convert a 64 bit value between Little endian and Big endian
-inline swapBytes(int64 x) = int64(swapBytes(uint64(x)));
+	/// convert unsigned to signed integer
+	inline signed(uint64 value) = int64(value);
 
-/// convert a 32 bit value between Little endian and Big endian
-inline swapBytes(int32 x) = int32(swapBytes(uint32(x)));
+	/// convert signed to unsigned integer
+	inline unsigned(int8 value) = uint8(value);
 
-/// convert a 16 bit value between Little endian and Big endian
-inline swapBytes(int16 x) = int16(swapBytes(uint16(x)));
+	/// convert signed to unsigned integer
+	inline unsigned(int16 value) = uint16(value);
 
+	/// convert signed to unsigned integer
+	inline unsigned(int32 value) = uint32(value);
 
-/// find the index of the most significant(highest) bit
-int scanMsb(uint64 x) {
-	if (x == 0) {
-		return -1;
-	}
+	/// convert signed to unsigned integer
+	inline unsigned(int64 value) = uint64(value);
 
-	int result = 0;
-	if (x & 0xffffffff00000000) {
-		result += 32;
-		x >>= 32;
-	}
-	if (x & 0xffff0000) {
-		result += 16;
-		x >>= 16;
-	}
-	if (x & 0xff00) {
-		result += 8;
-		x >>= 8;
-	}
-	if (x & 0xf0) {
-		result += 4;
-		x >>= 4;
-	}
-	if (x & 0xc) {
-		result += 2;
-		x >>= 2;
-	}
-	if (x & 0x2) {
-		result += 1;
-	}
-	return result;
-}
+	/// return the 32 bit floating point value as an integer
+	inline fromFloat32(float32 value) = uint32(emit(float32(value)));
+	/// return the 64 bit floating point value as an integer
+	inline fromFloat64(float64 value) = uint64(emit(float64(value)));
 
-/// find the index of the most significant(highest) bit
-int scanMsb(uint32 x) {
-	if (x == 0) {
-		return -1;
+	/// return the 32 bit integer as a floating point value
+	inline asFloat32(uint32 value) = float32(emit(uint32(value)));
+	/// return the 64 bit integer as a floating point value
+	inline asFloat64(uint64 value) = float64(emit(uint64(value)));
+
+	///@public
+	int32 zxt32(int32 value, int32 offs, int32 count) {
+		static if (preferNativeCalls && typename(uint32.zxt) != null) {
+			// use the native method if available
+			return uint32.zxt(value, offs, count);
+		}
+
+		return uint32(value << (32 - (offs + count))) >> (32 - count);
 	}
 
-	int result = 0;
-	if (x & 0xffff0000) {
-		result += 16;
-		x >>= 16;
-	}
-	if (x & 0xff00) {
-		result += 8;
-		x >>= 8;
-	}
-	if (x & 0xf0) {
-		result += 4;
-		x >>= 4;
-	}
-	if (x & 0xc) {
-		result += 2;
-		x >>= 2;
-	}
-	if (x & 0x2) {
-		result += 1;
-	}
-	return result;
-}
-
-/// find the index of the most significant(highest) bit
-int scanMsb(uint16 x) {
-	if (x == 0) {
-		return -1;
+	///@public
+	int32 sxt32(int32 value, int32 offs, int32 count) {
+		static if (preferNativeCalls && typename(uint32.sxt) != null) {
+			// use the native method if available
+			return uint32.sxt(value, offs, count);
+		}
+		return int32(value << (32 - (offs + count))) >> (32 - count);
 	}
 
-	int result = 0;
-	if (x & 0xff00) {
-		result += 8;
-		x >>= 8;
-	}
-	if (x & 0xf0) {
-		result += 4;
-		x >>= 4;
-	}
-	if (x & 0xc) {
-		result += 2;
-		x >>= 2;
-	}
-	if (x & 0x2) {
-		result += 1;
-	}
-	return result;
-}
+	///@public
+	int64 zxt64(int64 value, int32 offs, int32 count) {
+		static if (preferNativeCalls && typename(uint64.zxt) != null) {
+			// use the native method if available
+			return uint64.zxt(value, offs, count);
+		}
 
-/// find the index of the most significant(highest) bit
-int scanMsb(uint8 x) {
-	if (x == 0) {
-		return -1;
+		return uint64(value << (64 - (offs + count))) >> (64 - count);
 	}
 
-	int result = 0;
-	if (x & 0xf0) {
-		result += 4;
-		x >>= 4;
-	}
-	if (x & 0xc) {
-		result += 2;
-		x >>= 2;
-	}
-	if (x & 0x2) {
-		result += 1;
-	}
-	return result;
-}
+	///@public
+	int64 sxt64(int64 value, int32 offs, int32 count) {
+		static if (preferNativeCalls && typename(uint64.sxt) != null) {
+			// use the native method if available
+			return uint64.sxt(value, offs, count);
+		}
 
-
-/// find the index of the least significant(lowest) bit
-int scanLsb(uint64 x) {
-	if (x == 0) {
-		return -1;
+		return int64(value << (64 - (offs + count))) >> (64 - count);
 	}
 
-	int result = 0;
-	if ((x & 0xffffffff) == 0) {
-		result += 32;
-		x >>= 32;
-	}
-	if ((x & 0xffff) == 0) {
-		result += 16;
-		x >>= 16;
-	}
-	if ((x & 0xff) == 0) {
-		result += 8;
-		x >>= 8;
-	}
-	if ((x & 0xf) == 0) {
-		result += 4;
-		x >>= 4;
-	}
-	if ((x & 0x3) == 0) {
-		result += 2;
-		x >>= 2;
-	}
-	if ((x & 0x1) == 0) {
-		result += 1;
-	}
-	return result;
-}
-
-/// find the index of the least significant(lowest) bit
-int scanLsb(uint32 x) {
-	if (x == 0) {
-		return -1;
+	/// convert a 64 bit value between Little endian and Big endian
+	uint64 swapBytes(uint64 x) {
+		x = (x & 0x00000000ffffffff) << 32 | (x & 0xffffffff00000000) >> 32;
+		x = (x & 0x0000ffff0000ffff) << 16 | (x & 0xffff0000ffff0000) >> 16;
+		x = (x & 0x00ff00ff00ff00ff) << 8  | (x & 0xff00ff00ff00ff00) >> 8;
+		return x;
 	}
 
-	int result = 0;
-	if ((x & 0xffff) == 0) {
-		result += 16;
-		x >>= 16;
-	}
-	if ((x & 0xff) == 0) {
-		result += 8;
-		x >>= 8;
-	}
-	if ((x & 0xf) == 0) {
-		result += 4;
-		x >>= 4;
-	}
-	if ((x & 0x3) == 0) {
-		result += 2;
-		x >>= 2;
-	}
-	if ((x & 0x1) == 0) {
-		result += 1;
-	}
-	return result;
-}
-
-/// find the index of the least significant(lowest) bit
-int scanLsb(uint16 x) {
-	if (x == 0) {
-		return -1;
+	/// convert a 32 bit value between Little endian and Big endian
+	uint32 swapBytes(uint32 x) {
+		x = (x & 0x0000ffff) << 16 | (x & 0xffff0000) >> 16;
+		x = (x & 0x00ff00ff) << 8  | (x & 0xff00ff00) >> 8;
+		return x;
 	}
 
-	int result = 0;
-	if ((x & 0xff) == 0) {
-		result += 8;
-		x >>= 8;
-	}
-	if ((x & 0xf) == 0) {
-		result += 4;
-		x >>= 4;
-	}
-	if ((x & 0x3) == 0) {
-		result += 2;
-		x >>= 2;
-	}
-	if ((x & 0x1) == 0) {
-		result += 1;
-	}
-	return result;
-}
-
-/// find the index of the least significant(lowest) bit
-int scanLsb(uint8 x) {
-	if (x == 0) {
-		return -1;
+	/// convert a 16 bit value between Little endian and Big endian
+	uint16 swapBytes(uint16 x) {
+		return (x & 0x00ff) << 8 | (x & 0xff00) >> 8;
 	}
 
-	int result = 0;
-	if ((x & 0xf) == 0) {
-		result += 4;
-		x >>= 4;
+	/// convert a 64 bit value between Little endian and Big endian
+	inline swapBytes(int64 x) = int64(swapBytes(uint64(x)));
+
+	/// convert a 32 bit value between Little endian and Big endian
+	inline swapBytes(int32 x) = int32(swapBytes(uint32(x)));
+
+	/// convert a 16 bit value between Little endian and Big endian
+	inline swapBytes(int16 x) = int16(swapBytes(uint16(x)));
+
+
+	/// find the index of the most significant(highest) bit
+	int scanMsb(uint64 x) {
+		static if (preferNativeCalls && typename(uint64.bsr) != null) {
+			// use the native method if available
+			return uint64.bsr(x);
+		}
+		if (x == 0) {
+			return -1;
+		}
+
+		int result = 0;
+		if (x & 0xffffffff00000000) {
+			result += 32;
+			x >>= 32;
+		}
+		if (x & 0xffff0000) {
+			result += 16;
+			x >>= 16;
+		}
+		if (x & 0xff00) {
+			result += 8;
+			x >>= 8;
+		}
+		if (x & 0xf0) {
+			result += 4;
+			x >>= 4;
+		}
+		if (x & 0xc) {
+			result += 2;
+			x >>= 2;
+		}
+		if (x & 0x2) {
+			result += 1;
+		}
+		return result;
 	}
-	if ((x & 0x3) == 0) {
-		result += 2;
-		x >>= 2;
+
+	/// find the index of the most significant(highest) bit
+	int scanMsb(uint32 x) {
+		static if (preferNativeCalls && typename(uint32.bsr) != null) {
+			// use the native method if available
+			return uint32.bsr(x);
+		}
+		if (x == 0) {
+			return -1;
+		}
+
+		int result = 0;
+		if (x & 0xffff0000) {
+			result += 16;
+			x >>= 16;
+		}
+		if (x & 0xff00) {
+			result += 8;
+			x >>= 8;
+		}
+		if (x & 0xf0) {
+			result += 4;
+			x >>= 4;
+		}
+		if (x & 0xc) {
+			result += 2;
+			x >>= 2;
+		}
+		if (x & 0x2) {
+			result += 1;
+		}
+		return result;
 	}
-	if ((x & 0x1) == 0) {
-		result += 1;
+
+	/// find the index of the most significant(highest) bit
+	int scanMsb(uint16 x) {
+		if (x == 0) {
+			return -1;
+		}
+
+		int result = 0;
+		if (x & 0xff00) {
+			result += 8;
+			x >>= 8;
+		}
+		if (x & 0xf0) {
+			result += 4;
+			x >>= 4;
+		}
+		if (x & 0xc) {
+			result += 2;
+			x >>= 2;
+		}
+		if (x & 0x2) {
+			result += 1;
+		}
+		return result;
 	}
-	return result;
-}
+
+	/// find the index of the most significant(highest) bit
+	int scanMsb(uint8 x) {
+		if (x == 0) {
+			return -1;
+		}
+
+		int result = 0;
+		if (x & 0xf0) {
+			result += 4;
+			x >>= 4;
+		}
+		if (x & 0xc) {
+			result += 2;
+			x >>= 2;
+		}
+		if (x & 0x2) {
+			result += 1;
+		}
+		return result;
+	}
 
 
-/// keep the highest bit set
-uint64 keepMsb(uint64 x) {
-	x |= x >> 1;
-	x |= x >> 2;
-	x |= x >> 4;
-	x |= x >> 8;
-	x |= x >> 16;
-	x |= x >> 32;
-	return x - (x >> 1);
-}
+	/// find the index of the least significant(lowest) bit
+	int scanLsb(uint64 x) {
+		static if (preferNativeCalls && typename(uint64.bsf) != null) {
+			// use the native method if available
+			return uint64.bsf(x);
+		}
 
-/// keep the highest bit set
-uint32 keepMsb(uint32 x) {
-	x |= x >> 1;
-	x |= x >> 2;
-	x |= x >> 4;
-	x |= x >> 8;
-	x |= x >> 16;
-	return x - (x >> 1);
-}
+		if (x == 0) {
+			return -1;
+		}
+
+		int result = 0;
+		if ((x & 0xffffffff) == 0) {
+			result += 32;
+			x >>= 32;
+		}
+		if ((x & 0xffff) == 0) {
+			result += 16;
+			x >>= 16;
+		}
+		if ((x & 0xff) == 0) {
+			result += 8;
+			x >>= 8;
+		}
+		if ((x & 0xf) == 0) {
+			result += 4;
+			x >>= 4;
+		}
+		if ((x & 0x3) == 0) {
+			result += 2;
+			x >>= 2;
+		}
+		if ((x & 0x1) == 0) {
+			result += 1;
+		}
+		return result;
+	}
+
+	/// find the index of the least significant(lowest) bit
+	int scanLsb(uint32 x) {
+		static if (preferNativeCalls && typename(uint32.bsf) != null) {
+			// use the native method if available
+			return uint32.bsf(x);
+		}
+
+		if (x == 0) {
+			return -1;
+		}
+
+		int result = 0;
+		if ((x & 0xffff) == 0) {
+			result += 16;
+			x >>= 16;
+		}
+		if ((x & 0xff) == 0) {
+			result += 8;
+			x >>= 8;
+		}
+		if ((x & 0xf) == 0) {
+			result += 4;
+			x >>= 4;
+		}
+		if ((x & 0x3) == 0) {
+			result += 2;
+			x >>= 2;
+		}
+		if ((x & 0x1) == 0) {
+			result += 1;
+		}
+		return result;
+	}
+
+	/// find the index of the least significant(lowest) bit
+	int scanLsb(uint16 x) {
+		if (x == 0) {
+			return -1;
+		}
+
+		int result = 0;
+		if ((x & 0xff) == 0) {
+			result += 8;
+			x >>= 8;
+		}
+		if ((x & 0xf) == 0) {
+			result += 4;
+			x >>= 4;
+		}
+		if ((x & 0x3) == 0) {
+			result += 2;
+			x >>= 2;
+		}
+		if ((x & 0x1) == 0) {
+			result += 1;
+		}
+		return result;
+	}
+
+	/// find the index of the least significant(lowest) bit
+	int scanLsb(uint8 x) {
+		if (x == 0) {
+			return -1;
+		}
+
+		int result = 0;
+		if ((x & 0xf) == 0) {
+			result += 4;
+			x >>= 4;
+		}
+		if ((x & 0x3) == 0) {
+			result += 2;
+			x >>= 2;
+		}
+		if ((x & 0x1) == 0) {
+			result += 1;
+		}
+		return result;
+	}
 
 
-/// keep the lowest bit set
-inline keepLsb(uint64 x) = uint64(x & -x);
+	/// keep the highest bit set
+	uint64 keepMsb(uint64 x) {
+		static if (preferNativeCalls && typename(uint64.hib) != null) {
+			// use the native method if available
+			return uint64.hib(x);
+		}
 
-/// keep the lowest bit set
-inline keepLsb(uint32 x) = uint32(x & -x);
+		x |= x >> 1;
+		x |= x >> 2;
+		x |= x >> 4;
+		x |= x >> 8;
+		x |= x >> 16;
+		x |= x >> 32;
+		return x - (x >> 1);
+	}
 
-/// keep the lowest bit set
-inline keepLsb(uint16 x) = uint16(x & -x);
+	/// keep the highest bit set
+	uint32 keepMsb(uint32 x) {
+		static if (preferNativeCalls && typename(uint32.hib) != null) {
+			// use the native method if available
+			return uint32.hib(x);
+		}
 
-/// keep the lowest bit set
-inline keepLsb(uint8 x) = uint8(x & -x);
-
-
-/// count bits set to one
-int countBits(uint64 x) {
-	x -= (x >> 1) & 0x5555555555555555;
-	x = (x & 0x3333333333333333) + ((x >> 2) & 0x3333333333333333);
-	x = (x + (x >> 4)) & 0x0f0f0f0f0f0f0f0f;
-	x += x >> 8;
-	x += x >> 16;
-	x += x >> 32;
-	return x & 0x3f;
-}
-
-/// count bits set to one
-int countBits(uint32 x) {
-	x -= (x >> 1) & 0x55555555;
-	x = (x & 0x33333333) + ((x >> 2) & 0x33333333);
-	x = (x + (x >> 4)) & 0x0f0f0f0f;
-	x += x >> 8;
-	x += x >> 16;
-	return x & 0x3f;
-}
+		x |= x >> 1;
+		x |= x >> 2;
+		x |= x >> 4;
+		x |= x >> 8;
+		x |= x >> 16;
+		return x - (x >> 1);
+	}
 
 
-// reverse all the bits
-uint64 swapBits(uint64 x) {
-	x = ((x >> 1) & 0x5555555555555555) | ((x & 0x5555555555555555) << 1);
-	x = ((x >> 2) & 0x3333333333333333) | ((x & 0x3333333333333333) << 2);
-	x = ((x >> 4) & 0x0f0f0f0f0f0f0f0f) | ((x & 0x0f0f0f0f0f0f0f0f) << 4);
-	x = ((x >> 8) & 0x00ff00ff00ff00ff) | ((x & 0x00ff00ff00ff00ff) << 8);
-	x = ((x >> 16) & 0x0000ffff0000ffff) | ((x & 0x0000ffff0000ffff) << 16);
-	return (x >> 32) | (x << 32);
-}
+	/// keep the lowest bit set
+	inline keepLsb(uint64 x) = uint64(x & -x);
 
-// reverse all the bits
-uint32 swapBits(uint32 x) {
-	x = ((x >> 1) & 0x55555555) | ((x & 0x55555555) << 1);
-	x = ((x >> 2) & 0x33333333) | ((x & 0x33333333) << 2);
-	x = ((x >> 4) & 0x0f0f0f0f) | ((x & 0x0f0f0f0f) << 4);
-	x = ((x >> 8) & 0x00ff00ff) | ((x & 0x00ff00ff) << 8);
-	return (x >> 16) | (x << 16);
-}
+	/// keep the lowest bit set
+	inline keepLsb(uint32 x) = uint32(x & -x);
 
-// reverse all the bits
-uint16 swapBits(uint16 x) {
-	x = ((x >> 1) & 0x5555) | ((x & 0x5555) << 1);
-	x = ((x >> 2) & 0x3333) | ((x & 0x3333) << 2);
-	x = ((x >> 4) & 0x0f0f) | ((x & 0x0f0f) << 4);
-	return (x >> 8) | (x << 8);
-}
+	/// keep the lowest bit set
+	inline keepLsb(uint16 x) = uint16(x & -x);
 
-// reverse all the bits
-uint8 swapBits(uint8 x) {
-	x = ((x >> 1) & 0x55) | ((x & 0x55) << 1);
-	x = ((x >> 2) & 0x33) | ((x & 0x33) << 2);
-	return (x >> 4) | (x << 4);
+	/// keep the lowest bit set
+	inline keepLsb(uint8 x) = uint8(x & -x);
+
+
+	/// count bits set to one
+	int countBits(uint64 x) {
+		static if (preferNativeCalls && typename(uint64.pop) != null) {
+			// use the native method if available
+			return uint64.pop(x);
+		}
+		x -= (x >> 1) & 0x5555555555555555;
+		x = (x & 0x3333333333333333) + ((x >> 2) & 0x3333333333333333);
+		x = (x + (x >> 4)) & 0x0f0f0f0f0f0f0f0f;
+		x += x >> 8;
+		x += x >> 16;
+		x += x >> 32;
+		return x & 0x3f;
+	}
+
+	/// count bits set to one
+	int countBits(uint32 x) {
+		static if (preferNativeCalls && typename(uint32.pop) != null) {
+			// use the native method if available
+			return uint32.pop(x);
+		}
+
+		x -= (x >> 1) & 0x55555555;
+		x = (x & 0x33333333) + ((x >> 2) & 0x33333333);
+		x = (x + (x >> 4)) & 0x0f0f0f0f;
+		x += x >> 8;
+		x += x >> 16;
+		return x & 0x3f;
+	}
+
+
+	/// reverse all the bits
+	uint64 swapBits(uint64 x) {
+		static if (preferNativeCalls && typename(uint64.swap) != null) {
+			// use the native method if available
+			return uint64.swap(x);
+		}
+
+		x = ((x >> 1) & 0x5555555555555555) | ((x & 0x5555555555555555) << 1);
+		x = ((x >> 2) & 0x3333333333333333) | ((x & 0x3333333333333333) << 2);
+		x = ((x >> 4) & 0x0f0f0f0f0f0f0f0f) | ((x & 0x0f0f0f0f0f0f0f0f) << 4);
+		x = ((x >> 8) & 0x00ff00ff00ff00ff) | ((x & 0x00ff00ff00ff00ff) << 8);
+		x = ((x >> 16) & 0x0000ffff0000ffff) | ((x & 0x0000ffff0000ffff) << 16);
+		return (x >> 32) | (x << 32);
+	}
+
+	/// reverse all the bits
+	uint32 swapBits(uint32 x) {
+		static if (preferNativeCalls && typename(uint32.swap) != null) {
+			// use the native method if available
+			return uint32.swap(x);
+		}
+
+		x = ((x >> 1) & 0x55555555) | ((x & 0x55555555) << 1);
+		x = ((x >> 2) & 0x33333333) | ((x & 0x33333333) << 2);
+		x = ((x >> 4) & 0x0f0f0f0f) | ((x & 0x0f0f0f0f) << 4);
+		x = ((x >> 8) & 0x00ff00ff) | ((x & 0x00ff00ff) << 8);
+		return (x >> 16) | (x << 16);
+	}
+
+	/// reverse all the bits
+	uint16 swapBits(uint16 x) {
+		// fixme: uint16 should implicitly cast to uint32
+		x = ((uint16(x) >> 1) & 0x5555) | ((x & 0x5555) << 1);
+		x = ((uint16(x) >> 2) & 0x3333) | ((x & 0x3333) << 2);
+		x = ((uint16(x) >> 4) & 0x0f0f) | ((x & 0x0f0f) << 4);
+		return (uint16(x) >> 8) | (x << 8);
+	}
+
+	/// reverse all the bits
+	uint8 swapBits(uint8 x) {
+		x = ((uint8(x) >> 1) & 0x55) | ((x & 0x55) << 1);
+		x = ((uint8(x) >> 2) & 0x33) | ((x & 0x33) << 2);
+		return (uint8(x) >> 4) | (x << 4);
+	}
 }
 
 /* TODO: leftovers
@@ -1390,6 +1589,16 @@ define Lo16(int32 a) = int32(a & 0xffff);			// Lo16 part
 define Hi16(int32 a) = Lo16(a >> 16);				// Hi16 part
 define Lo8(int32 a) = int32(a & 0xff);				// Lo16 part
 define Hi8(int32 a) = Lo8(a >> 8);					// Hi16 part
+
+// implement all native methods
+int32 zxt(int32 value, int32 offs, int32 count)
+int32 sxt(int32 value, int32 offs, int32 count)
+✓ int32 pop(int32 value)
+✓ int32 swap(int32 value)
+✓ int32 bsr(int32 value)
+✓ int32 bsf(int32 value)
+✓ int32 hib(int32 value)
+? int32 lob(int32 value)
 */
 /// A 4d vector (4x float32)
 struct vec4f: 0 {
@@ -1504,11 +1713,11 @@ inline clamp(vec4f vec, vec4f min, vec4f max) = min(max(vec, min), max);
 inline clamp(vec4f vec, float32 min, float32 max) = clamp(vec, vec4f(min), vec4f(max));
 
 /// linear interpolate
-inline mix(float32 t, vec4f a, vec4f b) = vec4f(
-	Math.lerp(t, a.x, b.x),
-	Math.lerp(t, a.y, b.y),
-	Math.lerp(t, a.z, b.z),
-	Math.lerp(t, a.w, b.w)
+inline mix(vec4f a, vec4f b, float32 t) = vec4f(
+	Math.mix(a.x, b.x, t),
+	Math.mix(a.y, b.y, t),
+	Math.mix(a.z, b.z, t),
+	Math.mix(a.w, b.w, t)
 );
 
 /// Dot product of the first 3 elements
@@ -1527,7 +1736,7 @@ inline dp4(vec4f lhs, vec4f rhs) = float32(emit(struct(lhs), struct(rhs), p4x.dp
 inline cross(const vec4f a&, const vec4f b&) = vec4f(a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x);
 
 /// Length of the vector(xyz)
-inline length(vec4f v) = float32.sqrt(dp3(v, v));
+inline length(vec4f v) = Math.sqrt(dp3(v, v));
 /// Normalize the vector(xyz)
 inline normalize(const vec4f v&) = div(v, vec4f(length(v)));
 
@@ -1604,67 +1813,37 @@ static struct Math {
 		sqrtPhi: 1.27201964951406896425242246173749149171560804184009624861664038;	// A139339
 		nan: 0 / 0.;
 		inf: 1 / 0.;
+		smallestNormal: 2.2250738585072014e-308; // 2**-1022
 	}
 
-	/// Decompose a value into integer and fractional parts
-	float64 modf(float64 x, float64 intPart&) {
-		if (x < 1) {
-			if (x < 0) {
-				float64 result = -modf(-x, &intPart);
-				intPart = -intPart;
-				return result;
-			}
-			intPart = 0;
-			return x;
-		}
-		float64 result = x % 1;
-		intPart = x - result;
-		return result;
-	}
+	/// Determines whether the given floating point value is not-a-number
+	bool isNan(float64 x) { return x != x; }
 
-	/** ldexp(float64 x, int exp) = x * 2 ** exp
-	 * adapted from: https://git.musl-libc.org/cgit/musl/tree/src/math/scalbn.c
-	 */
-	float64 ldexp(float64 x, int exp) {
-		inline intAsFloat64(int64 value) = float64(emit(int64(value)));
-		static const float64 x1p53 = intAsFloat64(0x4340000000000000);		// 0x1p53
-		static const float64 x1p1023 = intAsFloat64(0x7fe0000000000000);	// 0x1p1023
-		static const float64 x1p_1022 = intAsFloat64(0x0010000000000000);	// 0x1p-1022
-
-		if (exp > 1023) {
-			x *= x1p1023;
-			exp -= 1023;
-			if (exp > 1023) {
-				x *= x1p1023;
-				exp -= 1023;
-				if (exp > 1023) {
-					exp = 1023;
-				}
-			}
-		}
-		else if (exp < -1022) {
-			/* make sure final n < -53 to avoid double rounding in the subnormal range */
-			x *= x1p_1022 * x1p53;
-			exp += 1022 - 53;
-			if (exp < -1022) {
-				x *= x1p_1022 * x1p53;
-				exp += 1022 - 53;
-				if (exp < -1022) {
-					exp = -1022;
-				}
-			}
-		}
-		return x * intAsFloat64(int64(0x3ff + exp) << 52);
-	}
-
-	// inline isNan(float64 x) = x != x;
+	/// Determines whether the given floating point value is not-a-number
 	// inline isNan(float32 x) = x != x;
 
-	// inline isInf(float64 x) = x != 0 && x == 2 * x;
+	/// Determines whether the given floating point value is ±infinity
+	bool isInf(float64 x) { return x != 0 && x == 2 * x; }
+	/// Determines whether the given floating point value is ±infinity
 	// inline isInf(float32 x) = x != 0 && x == 2 * x;
 
-	// inline isFinite(float64 x) = x - x == 0;
+	/// Determines whether the given floating point value is finite: `!isNan(x) && !isInf(x)`
+	bool isFinite(float64 x) { return x - x == 0; }
+
+	/// Determines whether the given floating point value is finite: `!isNan(x) && !isInf(x)`
 	// inline isFinite(float32 x) = x - x == 0;
+
+	// internal method to check if a number is infinity or not
+	bool isInf(float64 x, int sign) {
+		if (x.isFinite()) {
+			return false;
+		}
+		if (sign == 0) {
+			return true;
+		}
+		return sign < 0 ? x < 0 : x > 0;
+	}
+
 
 	/// Computes the largest integer value not greater than the input
 	float64 floor(float64 x) {
@@ -1675,15 +1854,27 @@ static struct Math {
 		return x - mod;
 	}
 
+	/// Computes the largest integer value not greater than the input
+	float32 floor(float32 x) {
+		float32 mod = x % 1;
+		if (mod < 0) {
+			mod += 1;
+		}
+		return x - mod;
+	}
+
 	/// Computes the smallest integer not less than the input
 	inline ceil(float64 x) = -floor(-x);
+
+	/// Computes the smallest integer not less than the input
+	inline ceil(float32 x) = -floor(-x);
 
 	/// Computes the nearest integer to the input
 	inline round(float64 x) = floor(x + .5);
 
-	// inline floor(float32 x) = float32(floor(float64(x)));
-	// inline ceil(float32 x) = -floor(-x);
-	// inline round(float32 x) = floor(x + .5f);
+	/// Computes the nearest integer to the input
+	inline round(float32 x) = floor(x + .5f);
+
 
 	/// Returns the signum of the input (`0` if zero, `-1` if negative, `1` if positive)
 	inline sign(int32 x) = int(x > 0) - int(x < 0);
@@ -1702,6 +1893,7 @@ static struct Math {
 
 	/// Returns the signum of the input (`0` if zero, `-1` if negative, `1` if positive)
 	inline sign(float64 x) = int(x > 0) - int(x < 0);
+
 
 	/// Returns the positive modulus of the input
 	float32 absMod(float32 val, float32 mod) {
@@ -1736,6 +1928,7 @@ static struct Math {
 
 	/// Returns the absolute value of the input
 	inline abs(float64 x) = x < 0 ? -x : x;
+
 
 	/// Returns the smaller value from the input values
 	inline min(int32 a, int32 b) = a < b ? a : b;
@@ -1773,6 +1966,7 @@ static struct Math {
 	/// Returns the greater value from the input values
 	inline max(float64 a, float64 b) = a > b ? a : b;
 
+
 	/// Returns the `value` clamped between `min` and `max`
 	inline clamp(int32 value, int32 min, int32 max) = min(max(value, min), max);
 
@@ -1792,19 +1986,21 @@ static struct Math {
 	inline clamp(float64 value, float64 min, float64 max) = min(max(value, min), max);
 
 	/// Returns the linear interpolation between `a` and `b` by `t`
-	inline lerp(float32 t, float32 a, float32 b) = a + t * (b - a);
+	inline mix(float32 a, float32 b, float32 t) = a + t * (b - a);
 
 	/// Returns the linear interpolation between `a` and `b` by `t`
-	inline lerp(float64 t, float64 a, float64 b) = a + t * (b - a);
+	inline mix(float64 a, float64 b, float64 t) = a + t * (b - a);
 
-	inline smooth(float32 t) = t * t * (3 - 2 * t);
-	inline smooth(float64 t) = t * t * (3 - 2 * t);
+	inline smoothstep(float32 t) = t * t * (3 - 2 * t);
 
-	/// Returns smooth interpolation between `a` and `b` by `t`
-	inline smooth(float32 t, float32 a, float32 b) = smooth(clamp((t - a) / (b - a), 0f, 1f));
+	/// Returns the Hermite interpolation between two values, https://thebookofshaders.com/glossary/?search=smoothstep
+	inline smoothstep(float32 min, float32 max, float32 t) = smoothstep(clamp((t - min) / (max - min), 0f, 1f));
 
-	/// Returns smooth interpolation between `a` and `b` by `t`
-	inline smooth(float64 t, float64 a, float64 b) = smooth(clamp((t - a) / (b - a), 0F, 1F));
+	inline smoothstep(float64 t) = t * t * (3 - 2 * t);
+
+	/// Returns the Hermite interpolation between two values, https://thebookofshaders.com/glossary/?search=smoothstep
+	inline smoothstep(float64 min, float64 max, float64 t) = smoothstep(clamp((t - min) / (max - min), 0F, 1F));
+
 
 	/// Returns the smaller value from the input values
 	float64 min(float64 values...) {
@@ -1845,7 +2041,7 @@ static struct Math {
 
 	/// Returns the mean of the input values
 	float64 mean(float64 values...) {
-		return sum(...values) / signed(values.length);
+		return sum(...values) / Bits.signed(values.length);
 	}
 
 	/// Return the polynomial evaluated at x using Horner's algorithm
@@ -1864,6 +2060,9 @@ static struct Math {
 	inline eval(float64 x, float64 a0, float64 a1, float64 a2, float64 a3, float64 a4) = a0 + x * eval(x, a1, a2, a3, a4);
 
 	/// Return the polynomial evaluated at x using Horner's algorithm
+	inline eval(float64 x, float64 a0, float64 a1, float64 a2, float64 a3, float64 a4, float64 a5) = a0 + x * eval(x, a1, a2, a3, a4, a5);
+
+	/// Return the polynomial evaluated at x using Horner's algorithm
 	float64 eval(float64 x, float64 polynomial...) {
 		float64 result = 0;
 		for (int i = polynomial.length - 1; i >= 0; i -= 1) {
@@ -1872,12 +2071,431 @@ static struct Math {
 		return result;
 	}
 
-	/* calculate sin or cos
-	 * adapted from: https://github.com/akavel/gostdc/blob/master/sin.c
+	/// Decompose a value into integer and fractional parts
+	float64 modf(float64 x, float64 intPart&) {
+		if (x < 1) {
+			if (x < 0) {
+				float64 result = modf(-x, &intPart);
+				intPart = -intPart;
+				return -result;
+			}
+			intPart = 0;
+			return x;
+		}
+		float64 result = x % 1;
+		intPart = x - result;
+		return result;
+	}
+
+	float64 copysign(float64 x, float64 y) {
+		uint64 sign = Bits.fromFloat64(y) & (1U << 63);
+		uint64 val = Bits.fromFloat64(x) & ~(1U << 63);
+		return Bits.asFloat64(sign | val);
+	}
+
+	/* Frexp breaks f into a normalized fraction and an integral power of two.
+	 *  It returns frac and exp satisfying f == frac × 2**exp,
+	 *  with the absolute value of frac in the interval [½, 1).
+	 *
+	 *  Special cases are:
+	 * 	  * Frexp(±0) = ±0, 0
+	 * 	  * Frexp(±Inf) = ±Inf, 0
+	 * 	  * Frexp(NaN) = NaN, 0
+	 *
+	 * adapted from: https://github.com/golang/go/blob/master/src/math/frexp.go
 	 */
-	float64 sinCos(float64 arg, int quad) {
+	float64 frexp(float64 f, int exp&) {
+		inline mask     = 0x7FFU;
+		inline shift    = 64 - 11 - 1;
+		inline bias     = 1023;
+		inline signMask = 1 << 63;
+		inline fracMask = 1 << shift - 1;
+
+		// special cases
+		if (f == 0) {
+			exp = 0;
+			return f;
+		}
+		if (isInf(f) || isNan(f)) {
+			exp = 0;
+			return f;
+		}
+
+		if (abs(f) < smallestNormal) {
+			// normalize
+			f *= 1 << 52;
+			exp -= 52;
+		} else {
+			exp = 0;
+		}
+
+		uint64 x = Bits.fromFloat64(f);
+		exp += int((x >> shift) & mask) - bias + 1;
+		x &= ~(mask << shift);
+		x |= (-1U + bias) << shift;
+		return Bits.asFloat64(x);
+	}
+
+	/* Ldexp is the inverse of Frexp.
+	 * It returns frac × 2**exp.
+	 *
+	 * Special cases are:
+	 *	 * Ldexp(±0, exp) = ±0
+	 *	 * Ldexp(±Inf, exp) = ±Inf
+	 *	 * Ldexp(NaN, exp) = NaN
+	 *
+	 * adapted from: https://github.com/golang/go/blob/master/src/math/ldexp.go
+	 */
+	float64 ldexp(float64 f, int exp) {
+		inline mask     = 0x7FFU;
+		inline shift    = 64 - 11 - 1;
+		inline bias     = 1023;
+		inline signMask = 1 << 63;
+		inline fracMask = 1 << shift - 1;
+
+		// special cases
+		if (f == 0) {
+			// correctly return -0
+			return f;
+		}
+		if (f != f || f - f != 0) {
+			// not a number or non finite number
+			return f;
+		}
+
+		if (abs(f) < smallestNormal) {
+			// normalize
+			f *= 1 << 52;
+			exp -= 52;
+		}
+
+		uint64 x = Bits.fromFloat64(f);
+		exp += (int(x>>shift) & mask) - bias;
+
+		if (exp < -1075) {
+			// trace("underflow", exp);
+			return copysign(0., f);
+		}
+		if (exp > 1023) {
+			// trace("overflow", exp);
+			return copysign(inf, f);
+		}
+		float64 m = 1;
+		if (exp < -1022) {
+			// denormal
+			exp += 53;
+			m = 1 / float64(1 << 53); // 2**-53
+		}
+		x &= ~(mask << shift);
+		x |= uint64(exp+bias) << shift;
+		return m * Bits.asFloat64(x);
+	}
+
+	/// Returns the natural logarithm of the argument `x`.
+	// adapted from: https://9p.io/sources/plan9/sys/src/libc/port/log.c
+	float64 log(float64 x) {
+		static if (preferNativeCalls && typename(float64.log) != null) {
+			// use the native method if available
+			return float64.log(x);
+		}
+
 		enum: float64 {
-			PIO2: 1.570796326794896619231e0;
+			log2: 0.693147180559945309e0;
+			ln10o1: .4342944819032518276511;
+			sqrto2: 0.707106781186547524e0;
+
+			p0: -.240139179559210510e2;
+			p1: 0.309572928215376501e2;
+			p2: -.963769093377840513e1;
+			p3: 0.421087371217979714e0;
+
+			q0: -.120069589779605255e2;
+			q1: 0.194809660700889731e2;
+			q2: -.891110902798312337e1;
+		}
+
+		if (x <= 0) {
+			if (x == 0) {
+				return -inf;
+			}
+			return nan;
+		}
+
+		int exp;
+		x = frexp(x, &exp);
+		for (;x < 0.5;) {
+			x *= 2;
+			exp -= 1;
+		}
+		if (x < sqrto2) {
+			x *= 2;
+			exp -= 1;
+		}
+
+		float64 z = (x-1) / (x+1);
+		float64 zsq = z * z;
+		float64 p = eval(zsq, p0, p1, p2, p3);
+		float64 q = eval(zsq, q0, q1, q2 + zsq);
+		return p / q * z + exp * log2;
+	}
+
+	/// Returns the natural logarithm of the argument `x`.
+	float32 log(float32 x) {
+		static if (preferNativeCalls && typename(float32.log) != null) {
+			// use the native method if available
+			return float32.log(x);
+		}
+
+		return float32(log(float64(x)));
+	}
+
+	/// Returns the base 2 logarithm of the argument `x`.
+	inline log2(float64 x) = log(x) / ln2;
+
+	/// Returns the base 10 logarithm of the argument `x`.
+	inline log10(float64 x) = log(x) / ln10;
+
+	/// Returns the logarithm of the specified `base` of the argument `x`.
+	inline log(float64 x, float64 base) = log(x) / log(base);
+
+
+	/// Returns the base-e exponential: $ e^x $.
+	// adapted from: https://github.com/jeremybarnes/cephes/blob/master/cmath/exp.c
+	float64 exp(float64 x) {
+		static if (preferNativeCalls && typename(float64.exp) != null) {
+			// use the native method if available
+			return float64.exp(x);
+		}
+
+		enum: float64 {
+			c1: 6.93145751953125E-1;
+			c2: 1.42860682030941723212E-6;
+
+			p0: 1.26177193074810590878E-4;
+			p1: 3.02994407707441961300E-2;
+			p2: 9.99999999999999999910E-1;
+
+			q0: 3.00198505138664455042E-6;
+			q1: 2.52448340349684104192E-3;
+			q2: 2.27265548208155028766E-1;
+			q3: 2.00000000000000000009E0;
+
+			MAXLOG: 7.08396418532264106224E2;     /* log 2**1022 */
+			MINLOG: -7.08396418532264106224E2;     /* log 2**-1022 */
+			LOG2E:  1.4426950408889634073599;     /* 1/log(2) */
+		}
+
+		if (isNan(x)) {
+			return x;
+		}
+		if (x > MAXLOG) {
+			return inf;
+		}
+
+		if (x < MINLOG) {
+			return 0;
+		}
+
+		/* Express e**x = e**g 2**n
+		 *   = e**g e**( n loge(2) )
+		 *   = e**( g + n loge(2) )
+		 */
+		/* floor() truncates toward -infinity. */
+		float64 px = floor(LOG2E * x + .5);
+		x -= px * c1;
+		x -= px * c2;
+
+		/* rational approximation for exponential of the fractional part:
+		 * e**x = 1 + 2x P(x**2) / (Q(x**2) - P(x**2))
+		 */
+		float64 xx = x * x;
+		float64 p = x * eval(xx, p2, p1, p0);
+		float64 q = eval(xx, q3, q2, q1, q0);
+
+		/* multiply by power of 2 */
+		return ldexp(1 + 2 * p / (q - p), px);
+	}
+
+	/// Returns the base-e exponential: $ e^x $.
+	float32 exp(float32 x) {
+		static if (preferNativeCalls && typename(float32.exp) != null) {
+			// use the native method if available
+			return float32.exp(x);
+		}
+
+		return float32(exp(float64(x)));
+	}
+
+	/// Returns the square root of the parameter `x`: $\sqrt{x}$.
+	// adapted from go: https://github.com/golang/go/blob/master/src/math/sqrt.go
+	float64 sqrt(float64 x) {
+		static if (preferNativeCalls && typename(float64.sqrt) != null) {
+			// use the native method if available
+			return float64.sqrt(x);
+		}
+
+		// Special cases are:
+		//   * Sqrt(+Inf) = +Inf
+		//   * Sqrt(±0) = ±0
+		//   * Sqrt(x < 0) = NaN
+		//   * Sqrt(NaN) = NaN
+
+		if (x == 0 || isNan(x) || isInf(x, 1)) {
+			return x;
+		}
+		if (x < 0) {
+			return nan;
+		}
+
+		inline mask     = 0x7FFU;
+		inline shift    = 64 - 11 - 1;
+		inline bias     = 1023;
+
+		uint64 ix = Bits.fromFloat64(x);
+		// normalize x
+		int exp = int((ix >> shift) & mask);
+		if (exp == 0) { // subnormal x
+			for (;(ix & (1U << shift)) == 0;) {
+				ix <<= 1;
+				exp -= 1;
+			}
+			exp += 1;
+		}
+		exp -= bias; // unbias exponent
+		ix &= ~(mask << shift);
+		ix |= 1U << shift;
+		if ((exp & 1) == 1) { // odd exp, double x to make it even
+			ix <<= 1;
+		}
+		exp >>= 1; // exp = exp/2, exponent of square root
+		// generate sqrt(x) bit by bit
+		ix <<= 1;
+		uint64 s = 0;
+		uint64 q = 0;               // q = sqrt(x)
+		uint64 r = 1U << (shift + 1); // r = moving bit from MSB to LSB
+		for (;r != 0;) {
+			uint64 t = s + r;
+			if (t <= ix) {
+				s = t + r;
+				ix -= t;
+				q += r;
+			}
+			ix <<= 1;
+			r >>= 1;
+		}
+		// final rounding
+		if (ix != 0) { // remainder, result not exact
+			q += q & 1; // round according to extra bit
+		}
+		ix = (q >> 1) + (uint64(exp - 1 + bias) << shift); // significand + biased exponent
+		return Bits.asFloat64(ix);
+	}
+
+	/// Returns the square root of the parameter `x`: $\sqrt{x}$.
+	float32 sqrt(float32 x) {
+		static if (preferNativeCalls && typename(float32.sqrt) != null) {
+			// use the native method if available
+			return float32.sqrt(x);
+		}
+
+		return float32(sqrt(float64(x)));
+	}
+
+	/// Returns `x` raised to the power of `y`: $ x^y $.
+	// adapted from: https://9p.io/sources/plan9/sys/src/libc/port/pow.c
+	float64 pow(float64 x, float64 y) {
+		static if (preferNativeCalls && typename(float64.pow) != null) {
+			// use the native method if available
+			return float64.pow(x, y);
+		}
+
+		if (y == 0) {
+			return 1;
+		}
+
+		int flip = 0;
+		if (y < 0) {
+			y = -y;
+			flip = 1;
+		}
+		float64 ye;
+		float64 xy = 1;
+		float64 y1 = modf(y, &ye);
+		if (y1 != 0.0) {
+			if(x <= 0.){
+				if (x == 0 && !flip) {
+					return 0;
+				}
+				return nan;
+			}
+			if (y1 > .5) {
+				y1 -= 1;
+				ye += 1;
+			}
+			xy = exp(y1 * log(x));
+		}
+		if (ye > 0x7FFFFFFF) {	/* should be ~0UL but compiler can't convert double to ulong */
+			if (x <= 0){
+				if (x == 0 && !flip) {
+					return 0;
+				}
+				return nan;
+			}
+			if (flip) {
+				if (y == .5) {
+					return 1 / sqrt(x);
+				}
+				y = -y;
+			}
+			else if (y == .5) {
+				return sqrt(x);
+			}
+			return exp(y * log(x));
+		}
+
+		int ex;
+		x = frexp(x, &ex);
+		int ey = 0;
+		int64 i = ye;
+		if (i) {
+			for (;;) {
+				if (i & 1) {
+					xy *= x;
+					ey += ex;
+				}
+				i >>= 1;
+				if (i == 0) {
+					break;
+				}
+				x *= x;
+				ex <<= 1;
+				if (x < .5) {
+					x += x;
+					ex -= 1;
+				}
+			}
+		}
+		if (flip) {
+			xy = 1. / xy;
+			ey = -ey;
+		}
+		return ldexp(xy, ey);
+	}
+
+	/// Returns `x` raised to the power of `y`: $ x^y $.
+	float32 pow(float32 x, float32 y) {
+		static if (preferNativeCalls && typename(float32.pow) != null) {
+			// use the native method if available
+			return float32.pow(x, y);
+		}
+
+		return float32(pow(float64(x), float64(y)));
+	}
+
+
+	// adapted from: https://9p.io/sources/plan9/sys/src/libc/port/sin.c
+	float64 sincos(float64 x, int quad) {
+		enum: float64 {
 			p0: .1357884097877375669092680e8;
 			p1: -.4942908100902844161158627e7;
 			p2: .4401030535375266501944918e6;
@@ -1889,14 +2507,13 @@ static struct Math {
 			q3: .1326534908786136358911494e3;
 		}
 
-		float64 x = arg;
 		if (x < 0) {
 			x = -x;
 			quad += 2;
 		}
 
 		float64 y;
-		x *= 1 / PIO2;	/* underflow? */
+		x *= 2 / pi;	/* underflow? */
 		if (x > 32764) {
 			float64 e;
 			y = modf(x, &e);
@@ -1912,37 +2529,36 @@ static struct Math {
 			quad &= 3;
 		}
 		if (quad & 1) {
-			y = 1-y;
+			y = 1 - y;
 		}
 		if (quad > 1) {
 			y = -y;
 		}
 
 		float64 ysq = y * y;
-		float64 temp1 = ((((p4 * ysq + p3) * ysq + p2) * ysq + p1) * ysq + p0) * y;
-		float64 temp2 = ((((ysq + q3) * ysq + q2) * ysq + q1) * ysq + q0);
-		return temp1 / temp2;
+		float64 p = y * eval(ysq, p0, p1, p2, p3, p4);
+		float64 q = eval(ysq, q0, q1, q2, q3 + ysq);
+		return p / q;
 	}
 
-	/* calculate tan or cot
-	 * adapted from: https://github.com/jeremybarnes/cephes/blob/master/cmath/tan.c
-	 */
-	float64 tanCot(float64 x, int flag) {
+	// adapted from: https://github.com/jeremybarnes/cephes/blob/master/cmath/tan.c
+	float64 tancot(float64 x, int flag) {
 		enum: float64 {
-			PIO4: 7.85398163397448309616E-1;    // pi / 4
-			DP1: 7.853981554508209228515625E-1;
-			DP2: 7.94662735614792836714E-9;
-			DP3: 3.06161699786838294307E-17;
+			dp1: 7.853981554508209228515625E-1;
+			dp2: 7.94662735614792836714E-9;
+			dp3: 3.06161699786838294307E-17;
 
-			P0: -1.30936939181383777646e4;
-			P1: 1.15351664838587416140e6;
-			P2: -1.79565251976484877988e7;
+			p0: -1.30936939181383777646e4;
+			p1: 1.15351664838587416140e6;
+			p2: -1.79565251976484877988e7;
 
-			Q0: 1.00000000000000000000e0;
-			Q1: 1.36812963470692954678e4;
-			Q2: -1.32089234440210967447e6;
-			Q3: 2.50083801823357915839e7;
-			Q4: -5.38695755929454629881e7;
+			q0: 1.00000000000000000000e0;
+			q1: 1.36812963470692954678e4;
+			q2: -1.32089234440210967447e6;
+			q3: 2.50083801823357915839e7;
+			q4: -5.38695755929454629881e7;
+
+			lossth: 1.073741824e9;
 		}
 
 		/* make argument positive but save the sign */
@@ -1952,13 +2568,13 @@ static struct Math {
 			sign = -1;
 		}
 
-		if (x > 1.073741824e9) {
-			error("total loss of precision");
+		if (x > lossth) {
+			//error("total loss of precision");
 			return 0;
 		}
 
 		/* compute x mod PIO4 */
-		float64 y = floor(x / PIO4);
+		float64 y = floor(x / (pi / 4));
 
 		/* strip high bits of integer part */
 		float64 z = ldexp(y, -3);
@@ -1974,11 +2590,11 @@ static struct Math {
 			y += 1.0;
 		}
 
-		z = ((x - y * DP1) - y * DP2) - y * DP3;
+		z = ((x - y * dp1) - y * dp2) - y * dp3;
 
 		float64 zz = z * z;
 		if (zz > 1.0e-14) {
-			y = z + z * (zz * eval(zz, P2, P1, P0) / eval(zz, Q4, Q3, Q2, Q1, Q0));
+			y = z + z * (zz * eval(zz, p2, p1, p0) / eval(zz, q4, q3, q2, q1, q0));
 		} else {
 			y = z;
 		}
@@ -1998,14 +2614,116 @@ static struct Math {
 		return sign * y;
 	}
 
+	/// Returns the inverse tangent of the radian argument `x`.
+	// adapted from: https://9p.io/sources/plan9/sys/src/libc/port/atan.c
+	float64 atan(float64 x) {
+		enum: float64 {
+			sq2p1: 2.414213562373095048802e0;
+			sq2m1: .414213562373095048802e0;
+
+			p4: .161536412982230228262e2;
+			p3: .26842548195503973794141e3;
+			p2: .11530293515404850115428136e4;
+			p1: .178040631643319697105464587e4;
+			p0: .89678597403663861959987488e3;
+
+			q4: .5895697050844462222791e2;
+			q3: .536265374031215315104235e3;
+			q2: .16667838148816337184521798e4;
+			q1: .207933497444540981287275926e4;
+			q0: .89678597403663861962481162e3;
+		}
+
+		// xatan evaluates a series valid in the range [-0.414...,+0.414...]. (tan(pi/8))
+		float64 xatan(float64 x) {
+			float64 z = x * x;
+			float64 p = eval(z, p0, p1, p2, p3, p4);
+			float64 q = eval(z, q0, q1, q2, q3, q4 + z);
+			return p / q * x;
+		}
+
+		// satan reduces its argument (known to be positive) to the range [0,0.414...] and calls xatan.
+		float64 satan(float64 x) {
+			if (x < sq2m1) {
+				return xatan(x);
+			}
+			if (x > sq2p1) {
+				return pi / 2 - xatan(1 / x);
+			}
+			return pi / 4 + xatan((x - 1) / (x + 1));
+		}
+
+		if (x > 0) {
+			return satan(x);
+		}
+		return -satan(-x);
+	}
+
+	/// Returns the inverse tangent of y/x.
+	// adapted from: https://9p.io/sources/plan9/sys/src/libc/port/atan2.c
+	float64 atan2(float64 arg1, float64 arg2) {
+		static if (preferNativeCalls && typename(float64.atan2) != null) {
+			// use the native method if available
+			return float64.atan2(arg1, arg2);
+		}
+
+		if (arg1 + arg2 == arg1) {
+			if (arg1 >= 0) {
+				return pi / 2;
+			}
+			return -pi / 2;
+		}
+
+		arg1 = atan(arg1 / arg2);
+		if (arg2 < 0) {
+			if (arg1 <= 0) {
+				return arg1 + pi;
+			}
+			return arg1 - pi;
+		}
+		return arg1;
+	}
+
+	/// Returns the inverse tangent of y/x.
+	float32 atan2(float32 y, float32 x) {
+		static if (preferNativeCalls && typename(float32.atan2) != null) {
+			// use the native method if available
+			return float32.atan2(y, x);
+		}
+
+		return float32(atan2(float64(y), float64(x)));
+	}
+
+
 	/// Returns the sine of the radian argument `x`.
 	float64 sin(float64 x) {
 		static if (preferNativeCalls && typename(float64.sin) != null) {
 			// use the native method if available
 			return float64.sin(x);
 		}
-		return sinCos(x, 0);
+
+		return sincos(x, 0);
 	}
+
+	/// Returns the sine of the radian argument `x`.
+	float32 sin(float32 x) {
+		static if (preferNativeCalls && typename(float32.sin) != null) {
+			// use the native method if available
+			return float32.sin(x);
+		}
+
+		return float32(sin(float64(x)));
+	}
+
+	/// Returns the hyperbolic sine of the radian argument `x`.
+	inline sinh(float64 x) = x == 0 ? 0 : (exp(x) - exp(-x)) / 2;
+
+	/// Returns the inverse sine of the radian argument `x`.
+	inline asin(float64 x) = atan2(x, sqrt((1 + x) * (1 - x)));
+
+	/// Returns the inverse hyperbolic sine of the radian argument `x`.
+	inline asinh(float64 x) = log(x + sqrt((x * x) + 1));
+
 
 	/// Returns the cosine of the radian argument `x`.
 	float64 cos(float64 x) {
@@ -2013,8 +2731,32 @@ static struct Math {
 			// use the native method if available
 			return float64.cos(x);
 		}
-		return sinCos(abs(x), 1);
+
+		if (x < 0) {
+			x = -x;
+		}
+		return sincos(x, 1);
 	}
+
+	/// Returns the sine of the radian argument `x`.
+	float32 cos(float32 x) {
+		static if (preferNativeCalls && typename(float32.cos) != null) {
+			// use the native method if available
+			return float32.cos(x);
+		}
+
+		return float32(cos(float64(x)));
+	}
+
+	/// Returns the hyperbolic cosine of the radian argument `x`.
+	inline cosh(float64 x) = x == 0 ? 1 : (exp(x) + exp(-x)) / 2;
+
+	/// Returns the inverse cosine of the radian argument `x`.
+	inline acos(float64 x) = atan2(sqrt((1 + x) * (1 - x)), x);
+
+	/// Returns the inverse hyperbolic cosine of the radian argument `x`.
+	inline acosh(float64 x) = log(x + sqrt((x - 1) / (x + 1)) * (x + 1));
+
 
 	/// Returns the tangent of the radian argument `x`.
 	float64 tan(float64 x) {
@@ -2035,8 +2777,25 @@ static struct Math {
 			return nan;
 		}
 
-		return tanCot(x, 0);
+		return tancot(x, 0);
 	}
+
+	/// Returns the tangent of the radian argument `x`.
+	float32 tan(float32 x) {
+		static if (preferNativeCalls && typename(float32.tan) != null) {
+			// use the native method if available
+			return float32.tan(x);
+		}
+
+		return float32(tan(float64(x)));
+	}
+
+	/// Returns the hyperbolic tangent of the radian argument `x`.
+	inline tanh(float64 x) = (exp(x) - exp(-x)) / (exp(x) + exp(-x)); // todo: check
+
+	/// Returns the inverse hyperbolic tangent of the radian argument `x`.
+	inline atanh(float64 x) = x >= 1 ? inf : x <= -1 ? -inf : .5 * log((1 + x) / (1 - x));
+
 
 	/// Returns the cotangent of the radian argument `x`.
 	float64 cot(float64 x) {
@@ -2048,100 +2807,44 @@ static struct Math {
 		if (x == 0) {
 			return inf;
 		}
-		return tanCot(x, 1);
+		return tancot(x, 1);
 	}
 
-	/// Returns the hyperbolic sine of the input
-	float64 sinh(float64 x) {
-		// The coefficients are #2029 from Hart & Cheney. (20.36D)
-		enum: float64 {
-			P0: -0.6307673640497716991184787251e+6;
-			P1: -0.8991272022039509355398013511e+5;
-			P2: -0.2894211355989563807284660366e+4;
-			P3: -0.2630563213397497062819489e+2;
-			Q0: -0.6307673640497716991212077277e+6;
-			Q1: 0.1521517378790019070696485176e+5;
-			Q2: -0.173678953558233699533450911e+3;
-		}
+	/// Returns the hyperbolic cotangent of the radian argument `x`.
+	inline coth(float64 x) = 1 / tanh(x);
 
-		bool negate = false;
-		if (x < 0) {
-			x = -x;
-			negate = true;
-		}
+	/// Returns the inverse cotangent of the radian argument `x`.
+	inline acot(float64 x) = x == 0 ? pi / 2 : atan(1 / x);
 
-		if (x > 21) {
-			return float64.exp(x) / 2;
-		}
+	/// Returns the inverse hyperbolic cotangent of the radian argument `x`.
+	inline acoth(float64 x) = x == 1 ? inf : x == -1 ? -inf : .5 * log((x + 1) / (x - 1));
 
-		float64 result;
-		if (x > 0.5) {
-			result = (float64.exp(x) - float64.exp(-x)) / 2;
-		}
-		else {
-			float64 sq = x * x;
-			result = (((P3 * sq + P2) * sq + P1) * sq + P0) * x;
-			result /= ((sq + Q2) * sq + Q1) * sq + Q0;
-		}
 
-		if (negate) {
-			return -result;
-		}
-		return result;
-	}
+	/// Returns the secant of the radian argument `x`.
+	inline sec(float64 x) = 1 / cos(x);
 
-	/// Returns the hyperbolic cosine of the input
-	float64 cosh(float64 x) {
-		if (x < 0) {
-			x = -x;
-		}
-		if (x > 21) {
-			return float64.exp(x) / 2;
-		}
-		return (float64.exp(x) + float64.exp(-x)) / 2;
-	}
+	/// Returns the hyperbolic secant of the radian argument `x`.
+	inline sech(float64 x) = 1 / cosh(x);
 
-	/** Returns the arc sine of the input
-	 *  Special cases are:
-	 *    Asin(±0) = ±0
-	 *    Asin(x) = NaN if x < -1 or x > 1
-	 */
-	float64 asin(float64 x) {
-		if (x == 0) {
-			// special case
-			return x;
-		}
+	/// Returns the inverse secant of the radian argument `x`.
+	inline asec(float64 x) = x == 0 ? inf : acos(1 / x);
 
-		bool negate = false;
-		if (x < 0) {
-			negate = true;
-			x = -x;
-		}
+	/// Returns the inverse hyperbolic secant of the radian argument `x`.
+	inline asech(float64 x) = x == 0 ? inf : x == 1 ? 0 : log((sqrt(1 - x * x) + 1) / x);
 
-		if (x > 1) {
-			// special case
-			return nan;
-		}
 
-		float64 result = float64.sqrt(1 - x * x);
-		if (x > 0.7) {
-			result = pi / 2 - float64.atan2(result, x);
-		}
-		else {
-			result = float64.atan2(x, result);
-		}
+	/// Returns the cosecant of the radian argument `x`.
+	inline csc(float64 x) = 1 / sin(x);
 
-		if (negate) {
-			return -result;
-		}
-		return result;
-	}
+	/// Returns the hyperbolic cosecant of the radian argument `x`.
+	inline csch(float64 x) = 1 / sinh(x);
 
-	/** Returns the arc cosine of the input
-	 *  Special case is:
-	 *    Acos(x) = NaN if x < -1 or x > 1
-	 */
-	inline acos(float64 x) = (pi / 2 - asin(x));
+	/// Returns the inverse cosecant of the radian argument `x`.
+	inline acsc(float64 x) = x == 0 ? inf : asin(1 / x);
+
+	/// Returns the inverse hyperbolic cosecant of the radian argument `x`.
+	inline acsch(float64 x) = x == 0 ? inf : x < 0 ? log((1 - sqrt(1 + x * x)) / x) : log((1 + sqrt(1 + x * x)) / x);
+
 
 	/// Converts the input to radians from degrees.
 	inline radians(float64 degrees) = float64(degrees * pi / 180);
@@ -2152,102 +2855,6 @@ static struct Math {
 	// inline rand(int min, int max) = System.rand() % (max - min) + min;
 	// inline rand(float64 min, float64 max) = (System.rand() / float64(System.rand.max)) * (max - min) + min;
 }
-
-/* TODO: leftovers
-//~ float64 abs(float64 x);
-//~ float64 sin(float64 x);
-//~ float64 cos(float64 x);
-//~ float64 tan(float64 x);
-float64 log(float64 x);
-float64 exp(float64 x);
-float64 pow(float64 x, float64 y);
-float64 sqrt(float64 x);
-float64 atan2(float64 x, float64 y);
-
-add these as inline expressions: https://gist.github.com/Witiko/6462162
-//~ Number.prototype.abs = function(){return Math.abs(this);};
-//~ Number.prototype.sign = function(){return this == 0 ? 0 : (this > 0 ? 1 : -1);};
-//~ Number.prototype.ceil = function(){return Math.ceil(this);};
-//~ Number.prototype.floor = function(){return Math.floor(this);};
-//~ Number.prototype.round = function(){return Math.round(this);};
-//~ Number.prototype.degToRad = function(){return this * Math.PI / 180;};
-//~ Number.prototype.radToDeg = function(){return this * 180 / Math.PI;};
-
-//~ Number.prototype.sin = function(){return Math.sin(this);};
-//~ Number.prototype.sinh = function(){return (Math.exp(this) - Math.exp(-this)) / 2;};
-//~ Number.prototype.asin = function(){return Math.asin(this);};
-Number.prototype.asinh = function(){return Math.log(this + Math.sqrt(this * this + 1));};
-
-Number.prototype.sec = function(){return 1 / Math.cos(this);};
-Number.prototype.sech = function(){return 2 / (Math.exp(this) + Math.exp(-this));};
-Number.prototype.asec = function(){return Math.PI / 2 - Math.asin(1 / this);};
-Number.prototype.asech = function(){return Math.log((1 + Math.sqrt(1 - this * this)) / this);};
-
-//~ Number.prototype.cos = function(){return Math.cos(this);};
-//~ Number.prototype.cosh = function(){return (Math.exp(this) + Math.exp(-this)) / 2;};
-//~ Number.prototype.acos = function(){return Math.acos(this);};
-Number.prototype.acosh = function(){return Math.log(this + Math.sqrt(this * this - 1));};
-
-Number.prototype.cot = function(){return 1 / Math.tan(this);};
-Number.prototype.coth = function(){return (Math.exp(this) + Math.exp(-this)) / (Math.exp(this) - Math.exp(-this));};
-Number.prototype.acot = function(){return Math.PI / 2 - Math.atan(this);};
-Number.prototype.acoth = function(){return Math.log((this + 1) / (this - 1)) / 2;};
-
-Number.prototype.cosec = function(){return 1 / Math.sin(this);};
-Number.prototype.cosech = function(){return 2 / (Math.exp(this) - Math.exp(-this));};
-Number.prototype.acosec = function(){return Math.asin(1 / this);};
-Number.prototype.acosech = function(){
-	return this < 0
-		? Math.log((1 - Math.sqrt(1 + this * this)) / this)
-		: Math.log((1 + Math.sqrt(1 + this * this)) / this);
-};
-
-//~ Number.prototype.tan = function(){return Math.tan(this);};
-Number.prototype.tanh = function(){return (Math.exp(this) - Math.exp(-this)) / (Math.exp(this) + Math.exp(-this));};
-Number.prototype.atan = function(){return Math.atan(this);};
-Number.prototype.atanh = function(){return Math.log((1 + this) / (1 - this)) / 2;};
-
-Number.prototype.ln = function(){return Math.log(this);};
-//~ Number.prototype.log = function(base){return Math.log(this) / Math.log(base);};
-Number.prototype.log2 = function(){return Math.log(this) / Math.LN2;};
-Number.prototype.log10 = function(){return Math.log(this) / Math.LN10;};
-//~ Number.prototype.exp = function(){return Math.exp(this);};
-
-//~ Number.prototype.sqrt = function(){return Math.sqrt(this);};
-//~ Number.prototype.pow = function(exponent){return Math.pow(this,exponent);};
-//- Number.prototype.mod = function(modulus){return this >= 0 ? this % modulus : (this % modulus + Math.abs(modulus)) % modulus;};
-//- Number.prototype.wrap = function(low, high){return low + (this - low).mod(high - low);};
-
-https://github.com/alexhuntley/Plots/blob/main/plots/shaders/fragment.glsl
-#define ln(x) log(x)
-#define lg(x) log2(x)
-#define log_base(b, x) (log(x)/log(b))
-#define sec(x) (1.0/cos(x))
-#define csc(x) (1.0/sin(x))
-#define cosec(x) csc(x)
-#define cot(x) (1.0/tan(x))
-#define arcsin(x) asin(x)
-#define arccos(x) acos(x)
-#define arctan(x) atan(x)
-#define asec(x) acos(1.0/(x))
-#define acsc(x) asin(1.0/(x))
-#define acosec(x) acsc(x)
-#define acot(x) (atan(1.0/(x)) - ((x) > 0 ? 0.0 : pi))
-#define arcsec(x) asec(x)
-#define arccsc(x) acsc(x)
-#define arccosec(x) acsc(x)
-#define arccot(x) acot(x)
-#define sech(x) (1.0/cosh(x))
-#define csch(x) (1.0/sinh(x))
-#define cosech(x) csch(x)
-#define coth(x) (1.0/tanh(x))
-#define asech(x) acosh(1.0/(x))
-#define acsch(x) asinh(1.0/(x))
-#define acosech(x) acsch(x)
-#define acoth(x) atanh(1.0/(x))
-#define sgn(x) sign(x)
-#define sinc(x) (sin(x)/(x))
-// */
 /// Complex number
 struct Complex {
 
@@ -2359,9 +2966,9 @@ inline div(Complex a, float64 b) = div(a, Complex(b));
 inline div(float64 a, Complex b) = div(Complex(a), b);
 
 ///@public
-inline abs(Complex a) = float64.sqrt(a.re * a.re + a.im * a.im);
+inline abs(Complex a) = Math.sqrt(a.re * a.re + a.im * a.im);
 ///@public
-inline arg(Complex a) = float64.atan2(a.re, a.im);
+inline arg(Complex a) = Math.atan2(a.re, a.im);
 
 /// Reciprocal of a complex number (1 / a)
 Complex inv(Complex a) {
@@ -2376,29 +2983,29 @@ Complex inv(Complex a) {
 inline conj(Complex a) = Complex(a.re, -a.im);
 
 ///@public
-inline exp(Complex a) = Complex(float64.exp(a.re) * float64.cos(a.im), float64.exp(a.re) * float64.sin(a.im));
+inline exp(Complex a) = Complex(Math.exp(a.re) * Math.cos(a.im), Math.exp(a.re) * Math.sin(a.im));
 
 ///@public
-inline log(Complex a) = Complex(float64.log(abs(a)), arg(a));
+inline log(Complex a) = Complex(Math.log(abs(a)), arg(a));
 
 ///@public
 Complex pow(Complex a, Complex b) {
 	float64 r = abs(a);
 	float64 t = arg(a);
-	float64 u = b.re * t + b.im * float64.log(r);
-	float64 v = float64.pow(r, b.re) * float64.exp(-b.im * t);
+	float64 u = b.re * t + b.im * Math.log(r);
+	float64 v = Math.pow(r, b.re) * Math.exp(-b.im * t);
 	return {
-		re: v * float64.cos(u);
-		im: v * float64.sin(u);
+		re: v * Math.cos(u);
+		im: v * Math.sin(u);
 	};
 }
 ///@public
 inline pow(Complex a, float64 b) = pow(a, Complex(b));
 
 ///@public
-inline sin(Complex a) = Complex(float64.sin(a.re) * Math.cosh(a.im), +float64.cos(a.re) * Math.sinh(a.im));
+inline sin(Complex a) = Complex(Math.sin(a.re) * Math.cosh(a.im), +Math.cos(a.re) * Math.sinh(a.im));
 ///@public
-inline cos(Complex a) = Complex(float64.cos(a.re) * Math.cosh(a.im), -float64.sin(a.re) * Math.sinh(a.im));
+inline cos(Complex a) = Complex(Math.cos(a.re) * Math.cosh(a.im), -Math.sin(a.re) * Math.sinh(a.im));
 
 /* TODO: implement operator overloading
 inline tan(Complex a) = sin(a) / cos(a);
@@ -2434,15 +3041,12 @@ inline sech(Complex a) = inv(cosh(a));
 inline csch(Complex a) = inv(sinh(a));
 
 ///@public
-inline toCartesian(Complex x) = Complex(x.re * float64.cos(x.im), x.re * float64.sin(x.im));
+inline toCartesian(Complex x) = Complex(x.re * Math.cos(x.im), x.re * Math.sin(x.im));
 ///@public
 inline toPolar(Complex x) = Complex(abs(x), arg(x));
-// Implementation of a Polynomial
-static if (typename(TextWriter) == null) {
-inline "/cmplStd/lib/system/Stream.ci";
-}
-
 inline scalar = float64;  // fixme: declare inside Polynomial
+
+///@public
 struct Polynomial/*(typename scalar)*/: TextWriter.Writeable {
 	scalar coefficients[*];
 	int capacity;
@@ -2452,6 +3056,7 @@ struct Polynomial/*(typename scalar)*/: TextWriter.Writeable {
 		c_unit: 1;
 	}
 
+	///@public
 	void write(Polynomial this, TextWriter writer) {
 		bool first = true;
 		for (int i = this.capacity - 1; i >= 0; i -= 1) {
@@ -2491,6 +3096,7 @@ struct Polynomial/*(typename scalar)*/: TextWriter.Writeable {
 		}
 	}
 
+	///@public
 	void destroy(Polynomial this) {
 		pointer.alloc(this.coefficients, 0);
 	}
@@ -2515,6 +3121,7 @@ struct Polynomial/*(typename scalar)*/: TextWriter.Writeable {
 		return result;
 	}
 
+	/// Compute the degree of the polynomial
 	static int degree(Polynomial this&) {
 		for (int i = this.capacity - 1; i > 0; i -= 1) {
 			if (this.coefficients[i] != c_zero) {
@@ -2524,6 +3131,7 @@ struct Polynomial/*(typename scalar)*/: TextWriter.Writeable {
 		return 0;
 	}
 
+	/// get the nth coefficient of the polynomial
 	static scalar get(const Polynomial this&, int index) {
 		assert(index >= 0, "negative index", index);
 		if (index >= this.capacity) {
@@ -2532,12 +3140,14 @@ struct Polynomial/*(typename scalar)*/: TextWriter.Writeable {
 		return this.coefficients[index];
 	}
 
+	/// set the nth coefficient of the polynomial
 	static scalar set(Polynomial this&, int index, scalar value) {
 		assert(index >= 0, "negative index", index);
 		assert(index < this.capacity, "invalid index");
 		return this.coefficients[index];
 	}
 
+	/// negate the polynomial
 	static Polynomial neg(const Polynomial a&) {
 		Polynomial result = create(degree(a), null);
 		for (int i = 0; i < result.capacity; i += 1) {
@@ -2546,6 +3156,7 @@ struct Polynomial/*(typename scalar)*/: TextWriter.Writeable {
 		return result;
 	}
 
+	/// add two polynomials
 	static Polynomial add(const Polynomial a&, const Polynomial b&) {
 		Polynomial result = create(Math.max(degree(a), degree(b)), null);
 		for (int i = 0; i < result.capacity; i += 1) {
@@ -2554,6 +3165,7 @@ struct Polynomial/*(typename scalar)*/: TextWriter.Writeable {
 		return result;
 	}
 
+	/// subtract two polynomials
 	static Polynomial sub(const Polynomial a&, const Polynomial b&) {
 		Polynomial result = create(Math.max(degree(a), degree(b)), null);
 		for (int i = 0; i < result.capacity; i += 1) {
@@ -2562,6 +3174,7 @@ struct Polynomial/*(typename scalar)*/: TextWriter.Writeable {
 		return result;
 	}
 
+	/// multiply two polynomials
 	static Polynomial mul(const Polynomial a&, const Polynomial b&) {
 		int degreeA = degree(a);
 		int degreeB = degree(b);
@@ -2574,6 +3187,7 @@ struct Polynomial/*(typename scalar)*/: TextWriter.Writeable {
 		return result;
 	}
 
+	/// evaluate the polynomial using Horner's method
 	static scalar evaluate(const Polynomial this&, scalar value) {
 		scalar result = c_zero;
 		for (int i = degree(this); i >= 0; i -= 1) {
@@ -2582,6 +3196,7 @@ struct Polynomial/*(typename scalar)*/: TextWriter.Writeable {
 		return result;
 	}
 
+	/// Compute the derivative of the polynomial
 	static Polynomial derivative(const Polynomial this&) {
 		Polynomial result = create(this.degree() - 1, null);
 		for (int i = 0; i < result.capacity; i += 1) {
@@ -2590,6 +3205,7 @@ struct Polynomial/*(typename scalar)*/: TextWriter.Writeable {
 		return result;
 	}
 
+	/// Compute the integral of the polynomial
 	static Polynomial integral(const Polynomial this&, scalar c) {
 		Polynomial result = create(this.degree() + 1, null);
 		result.coefficients[0] = c;
@@ -2600,9 +3216,10 @@ struct Polynomial/*(typename scalar)*/: TextWriter.Writeable {
 	}
 }
 
+/// Create a new polynomial by copying the given one.
 inline Polynomial(const Polynomial copy&) = Polynomial.create(copy.degree(), copy.coefficients);
 
-/// reverse
+/// Create a new polynomial with the given values, coefficients are reversed(lowest index === highest degree)
 Polynomial Polynomial(scalar values...) {
 	Polynomial result = Polynomial.create(values.length - 1, null);
 	for (int i = 0; i < values.length; i += 1) {
@@ -2632,19 +3249,51 @@ https://github.com/OpenSourcePhysics/osp/blob/master/src/org/opensourcephysics/n
 https://github.com/umontreal-simul/ssj/blob/master/src/main/java/umontreal/ssj/functions/Polynomial.java
 http://home.apache.org/~luc/commons-math-3.6-RC2-site/jacoco/org.apache.commons.math3.analysis.polynomials/PolynomialFunction.java.html
 // */
-static if (typename(Timeunit) == null) {
-inline "Timeunit.ci";
-}
-static if (typename(Timestamp) == null) {
-inline "Timespan.ci";
-}
-static if (typename(Timestamp) == null) {
-inline "Timestamp.ci";
-}
-static if (typename(Timezone) == null) {
-inline "Timezone.ci";
+/**
+ * Timespan is just a duration
+ * for example: 33 seconds
+ */
+struct Duration {
+	const int64 value = 0;
+	// fixme: inline precision = Timeunit.Millis;
+	static const Timeunit precision = Timeunit.Millis;
+
+	static int64 value(Duration duration, Timeunit precision) {
+		return convert(duration.value, Duration.precision, precision);
+	}
+
+	static Duration add(Duration lhs, Duration rhs) {
+		return { value: lhs.value + rhs.value };
+	}
 }
 
+Duration Duration(int64 value, Timeunit precision) {
+	return { value: convert(value, precision, Duration.precision) };
+}
+
+/* TODO: inline initialization, operator overloading
+inline Duration(int64 value, Timeunit precision) = {
+	value: convert(value, precision, Duration.precision);
+}
+
+inline +(Duration lhs, Duration rhs) = Duration {
+	value: lhs.value + rhs.value;
+}
+
+inline -(Duration lhs, Duration rhs) = Duration {
+	value: lhs.value - rhs.value;
+}
+
+struct Duration {
+	static Duration setField(Duration this, int64 value, Timeunit unit) { ... }
+	static Duration setValue(Duration this, int64 value, Timeunit unit) { ... }
+	static Duration floor(Duration this, Timeunit unit) { ... }
+	static Duration ceil(Duration this, Timeunit unit) { ... }
+	static Duration distribute(Duration this, Timeunit unit, uint64 duration) { ... }
+	static Duration distribute(Duration this, Timeunit unit, int start, int end) { ... }
+}
+*/
+///@public
 enum Month: uint8 {
 	January: 1;
 	February;
@@ -2663,6 +3312,7 @@ enum Month: uint8 {
 inline Month(int index) = Month(emit(int32(index + Month.January)));
 inline indexOf(Month month) = int32(month - Month.January);
 
+///@public
 enum Weekday: uint8 {
 	Monday: 1;
 	Tuesday;
@@ -2676,6 +3326,7 @@ enum Weekday: uint8 {
 inline Weekday(int index) = Weekday(emit(int32(index + Weekday.Monday)));
 inline indexOf(Weekday value) = int32(value - Weekday.Monday);
 
+///@public
 enum Calendar: uint8 {
 	Gregorian;
 //	Buddhist;
@@ -2694,32 +3345,55 @@ enum Calendar: uint8 {
 //	Persian;
 //	RepublicOfChina;
 }
+
+/// DateTime represents the parts of an instant in time.
 struct Datetime {
 	// Date parts
-	const int32 year;			// Year
-	const Month month;			// Month of year: 1 ... 12 / [Jan, Feb, Mar, ...]
-	const uint8 day;			// Day of month: 1 ... 30
-	// Time parts
-	const uint8 hour = 0;		// Hour of day: 0 ... 23
-	const uint8 minute = 0;		// Minute of hour: 0 ... 59
-	const uint8 second = 0;		// Second of minute: 0 ... 59
-	const uint16 millis = 0;	// millis of second: 0 ... 999
-	// Zone
-	const Timezone timezone;	// timezone
-//	const bool dayLightSaving;	// day light saving's time
-	// Extra
-	const uint8 weekOfYear;		// 1 ... 53
-//	const uint8 weekOfMonth;	// 1 ... 4
-	const uint16 dayOfYear;     // example: 1..365
-	const Weekday dayOfWeek;	// Day of week: 1 ... 7 / [Mon, Tue, ...]
-	const bool leapYear;		// this is a leap year
 
+	/// Year: 1970
+	const int32 year;
+	/// Month of year: 1 ... 12 / [Jan, Feb, Mar, ...]
+	const Month month;
+	/// Day of month: 1 ... 30
+	const uint8 day;
+
+	// Time parts
+
+	/// Hour of day: 0 ... 23
+	const uint8 hour = 0;
+	/// Minute of hour: 0 ... 59
+	const uint8 minute = 0;
+	/// Second of minute: 0 ... 59
+	const uint8 second = 0;
+	/// Milliseconds of second: 0 ... 999
+	const uint16 millis = 0;
+
+	// Zone
+//const bool dayLightSaving;	// day light saving's time
+	/// timezone
+	const Timezone timezone;
+
+	// Extra
+//	const uint8 weekOfMonth;	// 1 ... 4
 	//dayOfWeekInMonth;		// example: 1..4, may be specified as -1
+
+	/// Nth week of the year: 1 ... 53
+	const uint8 weekOfYear;
+
+	/// Nth day of the year: 1 ... 365
+	const uint16 dayOfYear;
+
+	/// Day of week: 1 ... 7 / [Mon, Tue, ...]
+	const Weekday dayOfWeek;
+
+	/// this is a leap year
+	const bool leapYear;
 
 	static const int DaysToMonth365[13] = {0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365};
 	static const int DaysToMonth366[13] = {0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335, 366};
 	static const int DaysTil1970 = 719162;
 
+	///@public
 	static bool isLeapYear(int year) {
 		if (year % 4 != 0) {
 			return false;
@@ -2733,6 +3407,7 @@ struct Datetime {
 		return true;
 	}
 
+	///@public
 	static Datetime add(Datetime cal, int years, int months, int days) {
 		int year = cal.year + years;
 
@@ -2764,13 +3439,6 @@ struct Datetime {
 		};
 	}
 
-	/** Format date to text
-	 * @param value date to format
-	 * @param output write output to this buffer
-	 * @param format format string
-	 *  	@null defaults to: "%Y.%m.%d"
-	 *      @see: https://man7.org/linux/man-pages/man1/date.1.html
-	 */
 	static int format(const Datetime value&, char output[], int end, const char format[]) {
 		static const char weekDayNames[][] = {
 			"Monday",
@@ -2962,11 +3630,19 @@ struct Datetime {
 		return end;
 	}
 
+	/** Format date to text
+	 * @param value date to format
+	 * @param output write output to this buffer
+	 * @param format format string
+	 *  	@null defaults to: "%Y.%m.%d"
+	 *      @see: https://man7.org/linux/man-pages/man1/date.1.html
+	 */
 	static int format(const Datetime value&, char output[], const char format[]) {
 		return format(value, output, 0, format);
 	}
 }
 
+///@public
 Datetime Datetime(Calendar calendar, Timezone timezone, Timestamp timestamp) {
 	assert(calendar == Calendar.Gregorian);
 	enum: int {
@@ -3056,8 +3732,10 @@ Datetime Datetime(Calendar calendar, Timezone timezone, Timestamp timestamp) {
 		leapYear: DaysToMonth == Datetime.DaysToMonth366;
 	};
 }
+///@public
 inline Datetime(Timestamp time) = Datetime(Calendar.Gregorian, Timezone.utc(), time);
 
+///@public
 Datetime Datetime(int year, int month, int day, int hour, int minute, int second, int millis, Timezone zone) {
 	return {
 		year: year;
@@ -3074,20 +3752,25 @@ Datetime Datetime(int year, int month, int day, int hour, int minute, int second
 		leapYear: false;
 	};
 }
+///@public
 Datetime Datetime(int year, int month, int day, int hour, int minute, int second, int millis) {
 	return Datetime(year, month, day, hour, minute, second, millis, Timezone.utc());
 }
+///@public
 Datetime Datetime(int year, int month, int day, int hour, int minute, int second, Timezone zone) {
 	return Datetime(year, month, day, hour, minute, second, 0, zone);
 }
+///@public
 Datetime Datetime(int year, int month, int day, Timezone zone) {
 	return Datetime(year, month, day, 0, 0, 0, 0, zone);
 }
 
+///@public
 Datetime Datetime(int year, int month, int day) {
 	return Datetime(year, month, day, 0, 0, 0, 0, Timezone.utc());
 }
 
+///@public
 Timestamp Timestamp(Datetime value) {
 	int year = value.year;
 	if (year < 0 || year > 9999) {
@@ -3117,6 +3800,7 @@ Timestamp Timestamp(Datetime value) {
 	return Timestamp(t, Timeunit.Millis);
 }
 
+///@public
 Datetime addDays(Datetime datetime, int value) {
 	return Datetime(Timestamp(datetime).add(value, Timeunit.Days));
 }
@@ -3129,14 +3813,7 @@ https://github.com/JodaOrg/joda-time/blob/master/src/main/java/org/joda/time/Dat
 todo: https://github.com/HowardHinnant/date
 https://zetcode.com/articles/cdatetime/
 */
-static if (typename(Timestamp) == null) {
-inline "Timespan.ci";
-}
-
-static if (typename(Timestamp) == null) {
-inline "Timestamp.ci";
-}
-
+// todo: unfinished implementation
 struct Timezone {
 	const char name[];		// "UTC", "America/New_York", "Europe/Brussels"
 	Duration offset(const Timezone zone&, Timestamp timestamp, bool isDaylightSaving&);
@@ -3184,6 +3861,7 @@ https://github.com/srawlins/timezone
 https://github.com/JodaOrg/joda-time
 
 // */
+/// enumeration of some known time unit, used for conversions and to specify the precision
 enum Timeunit: int64 {
 	// approximately 584 years of nanoseconds can be represented in uint64
 	Nanos: 1;
@@ -3193,11 +3871,9 @@ enum Timeunit: int64 {
 	Minutes: 60 * Seconds;
 	Hours: 60 * Minutes;
 	Days: 24 * Hours;
-
-	// default precision for duration and timestamp
-	precision: Millis;
 }
 
+/// Convert the given integer `value` from the `from` to `to` unit
 int64 convert(int64 value, Timeunit from, Timeunit to) {
 	if (from > to) {
 		// from Minutes to Seconds
@@ -3207,6 +3883,7 @@ int64 convert(int64 value, Timeunit from, Timeunit to) {
 	return value / (to / from);
 }
 
+/// Convert the given floating point `value` from the `from` to `to` unit
 float64 convert(float64 value, Timeunit from, Timeunit to) {
 	if (from > to) {
 		// from Minutes to Seconds
@@ -3215,27 +3892,48 @@ float64 convert(float64 value, Timeunit from, Timeunit to) {
 	// from Seconds to Minutes
 	return value / (to / from);
 }
-static if (typename(Timeunit) == null) {
-inline "Timeunit.ci";
-}
 /**
  * Timestamp is a position in time, without timezone information
  * in case locale is needed use Datetime.
  */
 struct Timestamp {
 	int64 value = 0;
-	static const Timeunit precision = Timeunit.precision;
 
+	///@public
+	static const Timeunit precision = Timeunit.Millis;
+
+	/// Returns the value of timestamp at the given precision (Seconds and Millis are mostly used as unix epoch)
 	static int64 value(Timestamp value, Timeunit precision) {
 		return convert(value.value, Timestamp.precision, precision);
 	}
 
+	/// Returns the value of timestamp at the given precision (Seconds and Millis are mostly used as unix epoch)
+	static int64 diff(Timestamp a, Timestamp b, Timeunit precision) {
+		return convert(a.value - b.value, Timestamp.precision, precision);
+	}
+
+	///@public
+	static Duration diff(Timestamp a, Timestamp b) {
+		return Duration(a.value - b.value, Timestamp.precision);
+	}
+
+	///@public
+	static bool equal(Timestamp a, Timestamp b, Timeunit precision) {
+		return a.value(precision) == b.value(precision);
+	}
+
+	///@public
+	static bool equal(Timestamp a, Timestamp b) {
+		return a.value == b.value;
+	}
+
+	/// increment the the current timestamp with the given `value` at the given `precision`
 	static Timestamp add(Timestamp lhs, int64 value, Timeunit precision) {
 		return { value: lhs.value + convert(value, precision, Timestamp.precision) };
 	}
 
 	/**
-	 * Floor the current datetime, leaving the field specified as the most significant field.
+	 * Floor the current timestamp, leaving the field specified as the most significant field.
 	 * For example, if you have the timestamp: 2002-03-28 13:45:01.231,
 	 * using resolution Timeunit.Days, it should return 2002-03-28 00:00:00.000.
 	 * using resolution Timeunit.Hours, it should return 2002-03-28 13:00:00.000.
@@ -3253,7 +3951,7 @@ struct Timestamp {
 	}
 
 	/**
-	 * Ceil the current datetime, leaving the field specified as the most significant field.
+	 * Ceil the current timestamp, leaving the field specified as the most significant field.
 	 * For example, if you have the timestamp: 2002-03-28 13:45:01.231,
 	 * using resolution Timeunit.Days, it should return 2002-03-29 00:00:00.000.
 	 * using resolution Timeunit.Hours, it should return 2002-03-28 14:00:00.000.
@@ -3301,11 +3999,13 @@ struct Timestamp {
 		return this./*setField(unit, start).*/distribute(unit, end - start);
 	}
 
+	/// get the current utc time as timestamp from the system
 	static Timestamp now() {
 		return { value: convert(System.millis(), Timeunit.Millis, Timestamp.precision) };
 	}
 }
 
+/// Create a timestamp from the given `value` at the given `precision`
 Timestamp Timestamp(int64 value, Timeunit precision) {
 	return { value: convert(value, precision, Timestamp.precision) };
 }
@@ -3326,53 +4026,6 @@ inline +(Timestamp lhs, Duration rhs) = Timestamp {
 };
 
 */
-static if (typename(Timeunit) == null) {
-inline "Timeunit.ci";
-}
-/**
- * Timespan is just a duration
- * for example: 33 seconds
- */
-struct Duration {
-	const int64 value = 0;
-	// fixme: inline precision = Timeunit.Millis;
-	static const Timeunit precision = Timeunit.precision;
-
-	static int64 value(Duration duration, Timeunit precision) {
-		return convert(duration.value, Duration.precision, precision);
-	}
-
-	static Duration add(Duration lhs, Duration rhs) {
-		return { value: lhs.value + rhs.value };
-	}
-}
-
-Duration Duration(int64 value, Timeunit precision) {
-	return { value: convert(value, precision, Duration.precision) };
-}
-
-/* TODO: inline initialization, operator overloading
-inline Duration(int64 value, Timeunit precision) = {
-	value: convert(value, precision, Duration.precision);
-}
-
-inline +(Duration lhs, Duration rhs) = Duration {
-	value: lhs.value + rhs.value;
-}
-
-inline -(Duration lhs, Duration rhs) = Duration {
-	value: lhs.value - rhs.value;
-}
-
-struct Duration {
-	static Duration setField(Duration this, int64 value, Timeunit unit) { ... }
-	static Duration setValue(Duration this, int64 value, Timeunit unit) { ... }
-	static Duration floor(Duration this, Timeunit unit) { ... }
-	static Duration ceil(Duration this, Timeunit unit) { ... }
-	static Duration distribute(Duration this, Timeunit unit, uint64 duration) { ... }
-	static Duration distribute(Duration this, Timeunit unit, int start, int end) { ... }
-}
-*/
 static if (int == int32) {
 	/// Returns the pointer incremented with the given value
 	inline inc(pointer ptr, int val) = pointer(emit(pointer(ptr), int(val), add.i32));
@@ -3381,29 +4034,6 @@ static if (int == int64) {
 	/// Returns the pointer incremented with the given value
 	inline inc(pointer ptr, int val) = pointer(emit(pointer(ptr), int(val), add.i64));
 }
-/// convert unsigned to signed integer
-inline signed(uint8 value) = int8(value);
-
-/// convert unsigned to signed integer
-inline signed(uint16 value) = int16(value);
-
-/// convert unsigned to signed integer
-inline signed(uint32 value) = int32(value);
-
-/// convert unsigned to signed integer
-inline signed(uint64 value) = int64(value);
-
-/// convert signed to unsigned integer
-inline unsigned(int8 value) = uint8(value);
-
-/// convert signed to unsigned integer
-inline unsigned(int16 value) = uint16(value);
-
-/// convert signed to unsigned integer
-inline unsigned(int32 value) = uint32(value);
-
-/// convert signed to unsigned integer
-inline unsigned(int64 value) = uint64(value);
 // debugging related functions
 
 /// report message at `verbose` logging level
@@ -3459,7 +4089,7 @@ struct NotEquals {
 	const variant returned;
 
 	/// Extra argument to identify what happened
-	const variant extras[] = null;
+	const variant extras[];
 }
 
 /// abort execution if the returned value is not equal to the expected value
@@ -3478,15 +4108,17 @@ static void assertEq(int expected, int returned, const char message[*]) {
 }
 /// abort execution if the returned value is not equal to the expected value
 inline assertEq(int expected, int returned) = assertEq(expected, returned, null);
-// InputOutput
-
+///@public
 struct Closeable: object {
 	// abstract
+	///@public
 	void close(Closeable this);
 
+	///@public
 	static void skipClose(Closeable closeable) {
 	}
 
+	///@public
 	static void safeClose(Closeable closeable) {
 		if (closeable.close != null) {
 			closeable.close(closeable);
@@ -3494,15 +4126,21 @@ struct Closeable: object {
 	}
 }
 
-// destroy a closeable invoking the abstract close method
+/// destroy a closeable invoking the abstract close method
 inline close(Closeable instance) = Closeable.safeClose(instance);
+///@public
 inline void(Closeable instance) = Closeable.safeClose(instance);
 
-// ByteReader ~= java:InputStream
+/// ByteReader can be used to read bytes from a stream (~= java:InputStream)
 struct ByteReader: Closeable {
-	// abstract
+
+	/** This abstract method must be implemented in subclasses containing the proper implementation
+	 * the method must return the number of bytes read from the stream into the `bytes` array
+	 * in case there is an error -1 should be returned
+	 */
 	int read(ByteReader this, byte bytes[]);
 
+	/// Read a single byte from the stream, a negative number is returned in case of error
 	static int read(ByteReader this) {
 		byte bytes[1] = {0};
 		if (this.read(bytes) <= 0) {
@@ -3520,14 +4158,19 @@ struct ByteReader: Closeable {
 	*/
 }
 
-// ByteWriter ~= java:OutputStream
+/// ByteWriter can be used to write bytes to a stream (~= java:OutputStream)
 struct ByteWriter: Closeable {
-	// abstract
+	/** This abstract method must be implemented in subclasses containing the proper implementation
+	 * the method must write all the bytes from the `bytes` array
+	 */
 	void write(ByteWriter this, byte bytes[]);
 
-	// abstract
+	/** This abstract method must be implemented in subclasses containing the proper implementation
+	 * if a buffer is used directly or indirectly this method must flush all buffered data to the stream.
+	 */
 	void flush(ByteWriter this);
 
+	/// Write a single byte to the stream
 	static void write(ByteWriter this, byte oneByte) {
 		byte bytes[1] = { oneByte };
 		return this.write(this, bytes);
@@ -3547,6 +4190,7 @@ struct ByteWriter: Closeable {
 		return this.write(this, value.write);
 	}// */
 
+	/// Copy all bytes from the reader to the writer
 	static int write(ByteWriter this, ByteReader reader) {
 		byte buffer[1024] = {};
 		int result = 0;
@@ -3569,166 +4213,7 @@ struct ByteWriter: Closeable {
 	*/
 }
 
-// The Unicode Character Set (UCS) contains 1,114,112 code points: U+0000—U+10FFFF
-inline unicode = uint32;
-
-// TextReader := Decoder & Parser(java:Reader + Scanner?Parser?)
-struct TextReader: Closeable {
-	const ByteReader reader;
-
-	// abstract
-	int decode(TextReader this, unicode chars[]);
-
-	// override
-	void close(TextReader this) {
-		// by default close the stream.
-		// override if no need to close it.
-		this.reader.close();
-	}
-
-	static int decode(TextReader this) {
-		unicode chars[1] = {0};
-		if (this.decode(chars) <= 0) {
-			return -1;
-		}
-		return chars[0] & 0x00ffffff;
-	}
-
-	// TODO: static string readNext(TextReader this, regex matcher) { /*...*/ }
-	// TODO: static string readWord(TextReader this) { return this.readNext(/\w+/); }
-	// TODO: static string readLine(TextReader this) { return this.readNext(/.*$/); }
-	// TODO: static string readAll(TextReader this) { return this.readMatch(/.*/); }
-	// TODO: static double readNumber(TextReader this, Locale locale) { /*...*/ }
-
-	/* TODO: subclasses
-		Latin1
-		Ascii
-		Utf8
-	*/
-}
-
-// TextWriter := Encoder & Printer (java:Writer + PrintStream)
-struct TextWriter: Closeable {
-	struct Writeable: object {
-		// abstract
-		void write(Writeable this, TextWriter writer);
-	}
-
-	const ByteWriter writer;
-
-	// abstract
-	void encode(TextWriter this, unicode chars[]);
-
-	// override
-	void flush(TextWriter this) {
-		this.writer.flush(this.writer);
-	}
-
-	// override
-	void close(TextWriter this) {
-		this.writer.safeClose();
-	}
-
-	static TextWriter write(TextWriter this, char value[]) {
-		ByteWriter writer = this.writer;
-		writer.write(writer, value);
-		return this;
-	}
-
-	static TextWriter write(TextWriter this, char value) {
-		char buffer[1] = { value };
-		return this.write(buffer);
-	}
-
-	static TextWriter write(TextWriter this, bool value) {
-		if (value) {
-			return this.write("true");
-		}
-		return this.write("false");
-	}
-
-	static TextWriter write(TextWriter this, int32 value, const FormatFlags flags&) {
-		char buff[1024]= {};
-		int n = buff.append(0, value, flags);
-		return write(this, buff[ ... n]);
-	}
-
-	static TextWriter write(TextWriter this, int64 value, const FormatFlags flags&) {
-		char buff[1024]= {};
-		int n = buff.append(0, value, flags);
-		return write(this, buff[ ... n]);
-	}
-
-	static TextWriter write(TextWriter this, uint32 value, const FormatFlags flags&) {
-		char buff[1024]= {};
-		int n = buff.append(0, value, flags);
-		return write(this, buff[ ... n]);
-	}
-
-	static TextWriter write(TextWriter this, uint64 value, const FormatFlags flags&) {
-		char buff[1024]= {};
-		int n = buff.append(0, value, flags);
-		return write(this, buff[ ... n]);
-	}
-
-	static TextWriter write(TextWriter this, float32 value, const FormatFlags flags&) {
-		char buff[1024]= {};
-		int n = buff.append(0, value, flags);
-		return write(this, buff[ ... n]);
-	}
-
-	static TextWriter write(TextWriter this, float64 value, const FormatFlags flags&) {
-		char buff[1024]= {};
-		int n = buff.append(0, value, flags);
-		return write(this, buff[ ... n]);
-	}
-
-	static TextWriter write(TextWriter this, Writeable value) {
-		value.write(this);
-		return this;
-	}
-
-	static TextWriter writeln(TextWriter this) {
-		return this.write("\n");
-	}
-
-	// TODO: static void write(TextWriter this, Locale locale, char value) { /*...*/ }
-	// TODO: static void write(TextWriter this, Locale locale, string value) { /*...*/ }
-	// TODO: static void write(TextWriter this, Locale locale, object value) { /*...*/ }
-	// TODO: static void write(TextWriter this, Locale locale, variant value) { /*...*/ }
-	// TODO: static void write(TextWriter this, void write(TextWriter writer)) { /*...*/ }
-
-	/**
-	 * Convert from one encoding to another one.
-	 * @returns converted character count.
-	 *
-	 * example: convert utf-8 encoded file to ascii
-	 * TextWriter output = AsciiWriter("out.txt");
-	 * TextReader input = Utf8Reader("in.txt");
-	 * output.write(input);
-	 */
-	static int write(TextWriter writer, TextReader reader) {
-		unicode buffer[1024] = {};
-		int result = 0;
-		for ( ; ; ) {
-			int n = reader.decode(buffer);
-			if (n <= 0) {
-				return result;
-			}
-			writer.encode(buffer[...n]);
-			result += n;
-		}
-		return result;
-	}
-
-	/* TODO: subclasses
-		Latin1
-		Ascii
-		Utf8
-	*/
-}
-
-// copy byte-stream
+// TODO: untested: copy byte-stream
 struct CopyReader: ByteReader {
 	const ByteReader source;
 	const ByteWriter clone;
@@ -3747,11 +4232,6 @@ struct CopyReader: ByteReader {
 		this.source.close();
 		this.clone.close();
 	}
-}
-
-// File streams
-static if (typename(File) != null) {
-inline "Stream.file.ci";
 }
 
 // TODO: untested
@@ -3824,183 +4304,222 @@ struct ByteBuffer {
 		this.length = 0;
 	}
 }
+// The Unicode Character Set (UCS) contains 1,114,112 code points: U+0000—U+10FFFF
+// todo: move inside class TextReader
+inline unicode = uint32;
+
+// TextReader := Decoder & Parser (java:Reader+Scanner?Parser?)
+/// TextReader can be used to read decoded text from a stream, including basic parsing
+struct TextReader: Closeable {
+
+	///@public
+	const ByteReader reader;
+
+	/** This abstract method must be implemented in subclasses containing the proper implementation
+	 * the method must return the number of characters decoded from the stream into the `chars` array
+	 * in case there is an error -1 should be returned
+	 */
+	int decode(TextReader this, unicode chars[]);
+
+	// override
+	void close(TextReader this) {
+		// by default close the stream.
+		// override if no need to close it.
+		this.reader.close();
+	}
+
+	/// Read a single character from the stream, a negative number is returned in case of error
+	static int decode(TextReader this) {
+		unicode chars[1] = {0};
+		if (this.decode(chars) <= 0) {
+			return -1;
+		}
+		return chars[0] & 0x00ffffff;
+	}
+
+	// TODO: static string readNext(TextReader this, regex matcher) { /*...*/ }
+	// TODO: static string readWord(TextReader this) { return this.readNext(/\w+/); }
+	// TODO: static string readLine(TextReader this) { return this.readNext(/.*$/); }
+	// TODO: static string readAll(TextReader this) { return this.readMatch(/.*/); }
+	// TODO: static double readNumber(TextReader this, Locale locale) { /*...*/ }
+
+	/* TODO: subclasses
+		Latin1
+		Ascii
+		Utf8
+	*/
+}
+
+// TextWriter := Encoder & Printer (java:Writer+PrintStream)
+/// TextWriter can be used to write encoded text to a stream, including basic printing
+struct TextWriter: Closeable {
+	///@public
+	struct Writeable: object {
+		// abstract
+		void write(Writeable this, TextWriter writer);
+	}
+
+	///@public
+	const ByteWriter writer;
+
+	/** This abstract method must be implemented in subclasses containing the proper implementation
+	 * the method must encode and write all the characters from the `chars` array
+	 */
+	void encode(TextWriter this, unicode chars[]);
+
+	// override
+	void flush(TextWriter this) {
+		this.writer.flush(this.writer);
+	}
+
+	// override
+	void close(TextWriter this) {
+		this.writer.safeClose();
+	}
+
+	/// Write an array of raw characters to the stream (no encoding)
+	static TextWriter write(TextWriter this, char value[]) {
+		ByteWriter writer = this.writer;
+		writer.write(writer, value);
+		return this;
+	}
+
+	/// Write a single raw character to the stream (no encoding)
+	static TextWriter write(TextWriter this, char value) {
+		char buffer[1] = { value };
+		return this.write(buffer);
+	}
+
+	/// Write the value of the boolean parameter: "true" or "false"
+	static TextWriter write(TextWriter this, bool value) {
+		if (value) {
+			return this.write("true");
+		}
+		return this.write("false");
+	}
+
+	/// Write the value of the 32-bit integer parameter
+	static TextWriter write(TextWriter this, int32 value, const FormatFlags flags&) {
+		char buff[1024]= {};
+		int n = buff.append(0, value, flags);
+		return write(this, buff[ ... n]);
+	}
+
+	/// Write the value of the 64-bit integer parameter
+	static TextWriter write(TextWriter this, int64 value, const FormatFlags flags&) {
+		char buff[1024]= {};
+		int n = buff.append(0, value, flags);
+		return write(this, buff[ ... n]);
+	}
+
+	/// Write the value of the 32-bit unsigned integer parameter
+	static TextWriter write(TextWriter this, uint32 value, const FormatFlags flags&) {
+		char buff[1024]= {};
+		int n = buff.append(0, value, flags);
+		return write(this, buff[ ... n]);
+	}
+
+	/// Write the value of the 64-bit unsigned integer parameter
+	static TextWriter write(TextWriter this, uint64 value, const FormatFlags flags&) {
+		char buff[1024]= {};
+		int n = buff.append(0, value, flags);
+		return write(this, buff[ ... n]);
+	}
+
+	/// Write the value of the 32-bit floating-point parameter
+	static TextWriter write(TextWriter this, float32 value, const FormatFlags flags&) {
+		char buff[1024]= {};
+		int n = buff.append(0, value, flags);
+		return write(this, buff[ ... n]);
+	}
+
+	/// Write the value of the 64-bit floating-point parameter
+	static TextWriter write(TextWriter this, float64 value, const FormatFlags flags&) {
+		char buff[1024]= {};
+		int n = buff.append(0, value, flags);
+		return write(this, buff[ ... n]);
+	}
+
+	/// Write the value of the writeable parameter
+	static TextWriter write(TextWriter this, Writeable value) {
+		value.write(this);
+		return this;
+	}
+
+	/// Write a newline character
+	static TextWriter writeln(TextWriter this) {
+		return this.write("\n");
+	}
+
+	// TODO: static void write(TextWriter this, Locale locale, char value) { /*...*/ }
+	// TODO: static void write(TextWriter this, Locale locale, string value) { /*...*/ }
+	// TODO: static void write(TextWriter this, Locale locale, object value) { /*...*/ }
+	// TODO: static void write(TextWriter this, Locale locale, variant value) { /*...*/ }
+	// TODO: static void write(TextWriter this, void write(TextWriter writer)) { /*...*/ }
+
+	/**
+	 * Convert from one encoding to another one.
+	 * @returns converted character count.
+	 *
+	 * example: convert utf-8 encoded file to ascii
+	 * TextWriter output = AsciiWriter("out.txt");
+	 * TextReader input = Utf8Reader("in.txt");
+	 * output.write(input);
+	 */
+	static int write(TextWriter writer, TextReader reader) {
+		unicode buffer[1024] = {};
+		int result = 0;
+		for ( ; ; ) {
+			int n = reader.decode(buffer);
+			if (n <= 0) {
+				return result;
+			}
+			writer.encode(buffer[...n]);
+			result += n;
+		}
+		return result;
+	}
+
+	/* TODO: subclasses
+		Latin1
+		Ascii
+		Utf8
+	*/
+}
 
 static if (true) {
 // todo: fix lookup and delete these global methods
 static const FormatFlags flagsTextWriter = {};
+///@public
 static TextWriter write(TextWriter this, int32 value) { return this.write(value, flagsTextWriter); }
+///@public
 static TextWriter write(TextWriter this, int64 value) { return this.write(value, flagsTextWriter); }
+///@public
 static TextWriter write(TextWriter this, uint32 value) { return this.write(value, flagsTextWriter); }
+///@public
 static TextWriter write(TextWriter this, uint64 value) { return this.write(value, flagsTextWriter); }
+///@public
 static TextWriter write(TextWriter this, float32 value) { return this.write(value, flagsTextWriter); }
+///@public
 static TextWriter write(TextWriter this, float64 value) { return this.write(value, flagsTextWriter); }
+///@public
+static TextWriter writeln(TextWriter this, char value[]) { return this.write(value).writeln(); }
+///@public
 static TextWriter writeln(TextWriter this, int32 value) { return this.write(value, flagsTextWriter).writeln(); }
+///@public
 static TextWriter writeln(TextWriter this, int64 value) { return this.write(value, flagsTextWriter).writeln(); }
+///@public
 static TextWriter writeln(TextWriter this, uint32 value) { return this.write(value, flagsTextWriter).writeln(); }
+///@public
 static TextWriter writeln(TextWriter this, uint64 value) { return this.write(value, flagsTextWriter).writeln(); }
+///@public
 static TextWriter writeln(TextWriter this, float32 value) { return this.write(value, flagsTextWriter).writeln(); }
+///@public
 static TextWriter writeln(TextWriter this, float64 value) { return this.write(value, flagsTextWriter).writeln(); }
+///@public
 static TextWriter writeln(TextWriter this, TextWriter.Writeable value) { return this.write(value).writeln(); }
 }
-/// extension method to read a single byte from a file
-int read(File file) {
-	uint8 buff[1] = {0};
-	if (file.read(buff) <= 0) {
-		return -1;
-	}
-	return buff[0] & 0xff;
-}
-
-/// extension method to write a single byte into a file
-int write(File file, int value) {
-	uint8 buff[1] = {value};
-	return file.write(buff);
-}
-static if (typename(ByteReader) == null) {
-inline "Stream.ci";
-}
-
-struct FileReader: ByteReader {
-	const File file;
-
-	int read(FileReader this, uint8 bytes[]) {
-		return File.read(this.file, bytes);
-	}
-
-	void close(FileReader this) {
-		File.close(this.file);
-	}
-}
-
-struct FileWriter: ByteWriter {
-	const File file;
-
-	void write(FileWriter this, byte bytes[]) {
-		int wrote = File.write(this.file, bytes);
-		assert(wrote == bytes.length);
-	}
-
-	void flush(FileWriter this) {
-		File.flush(this.file);
-	}
-
-	void close(FileWriter this) {
-		File.close(this.file);
-	}
-}
-struct BufferedFileWriter: FileWriter {
-	byte buffer[1024];
-	int bufferSize = 0;
-
-	static void flushBuffer(BufferedFileWriter this) {
-		int wrote = File.write(this.file, this.buffer[... this.bufferSize]);
-		assert(wrote == this.bufferSize);
-		this.bufferSize = 0;
-	}
-
-	void write(BufferedFileWriter this, byte bytes[]) {
-		if (this.bufferSize + bytes.length > this.buffer.length) {
-			if (this.bufferSize > 0) {
-				this.flushBuffer();
-			}
-			if (bytes.length > this.buffer.length / 2) {
-				// writing more than buffer half size, make the write
-				FileWriter.write(this, bytes);
-				return;
-			}
-		}
-		// accumulate into buffer
-		byte buffer[*] = this.buffer;
-		int bufferSize = this.bufferSize;
-		for (int i = 0; i < bytes.length; i += 1) {
-			buffer[bufferSize + i] = bytes[i];
-		}
-		this.bufferSize += bytes.length;
-	}
-
-	void flush(BufferedFileWriter this) {
-		this.flushBuffer();
-		FileWriter.flush(this);
-	}
-
-	void close(BufferedFileWriter this) {
-		this.flushBuffer();
-		FileWriter.close(this);
-	}
-}
-
-FileWriter StdOutWriter() {
-	return FileWriter {
-		file: File.out;
-		close: Closeable.skipClose;
-	};
-}
-
-FileReader FileReader(const char path[*]) {
-	return FileReader {
-		file: File.open(path);
-	};
-}
-
-FileWriter FileWriter(const char path[*], bool buffered, bool append) {
-	if (buffered && append) {
-		return BufferedFileWriter {
-			file: File.append(path);
-		};
-	}
-	if (buffered) {
-		return BufferedFileWriter {
-			file: File.create(path);
-		};
-	}
-	if (append) {
-		return FileWriter {
-			file: File.append(path);
-		};
-	}
-	return FileWriter {
-		file: File.create(path);
-	};
-}
-
-/* TODO: uncomment
-struct Path {
-	bool exists();
-	bool isFile();
-	bool isDirectory();
-	bool isHidden();
-	bool isAbsolute();
-
-	Path parent();
-	// permissions: canRead,write,execute,...
-}
-
-inline FileReader(Path path) = {
-	file: File.open(path);
-};
-inline FileWriter(Path path, bool append) = {
-	file: append ? File.append(path) : File.create(path);
-};
-
-inline AsciiReader(Path path) = {
-	reader: FileReader(path);
-};
-inline AsciiWriter(Path path, bool append) = {
-	writer: FileWriter(path, append);
-};
-
-inline Utf8Reader(Path path) = {
-	reader: FileReader(path);
-};
-inline Utf8Writer(Path path, bool append) = {
-	writer: FileWriter(path, append);
-};
-*/
-static if (typename(TextReader) == null) {
-inline "/cmplStd/lib/system/Stream.ci";
-}
-
-// Ascii reader TODO: untested
+/// Ascii reader converts the given input by mapping every byte to a character
 struct AsciiReader: TextReader {
 	// convert bytes to chars
 	int decode(AsciiReader this, unicode chars[]) {
@@ -4017,7 +4536,7 @@ struct AsciiReader: TextReader {
 	}
 }
 
-// Ascii Writer TODO: untested
+/// Ascii Writer converts the given input by chopping each character to a byte
 struct AsciiWriter: TextWriter {
 	// convert characters to bytes(can cause data loss)
 	void encode(TextWriter this, unicode chars[]) {
@@ -4028,11 +4547,7 @@ struct AsciiWriter: TextWriter {
 		}
 	}
 }
-static if (typename(TextReader) == null) {
-inline "/cmplStd/lib/system/Stream.ci";
-}
-
-// Utf-8 reader TODO: untested
+// todo: untested: Utf-8 reader
 struct Utf8Reader: TextReader {
 	// convert utf-8 bytes to unicodes
 	int decode(Utf8Reader this, unicode chars[]) {
@@ -4043,7 +4558,7 @@ struct Utf8Reader: TextReader {
 			int value = reader.read();
 			if (value < 0) {
 				// end of stream
-				return i;
+				return i > 0 ? i : value;
 			}
 
 			if ((value & 0x80) == 0) {
@@ -4070,7 +4585,7 @@ struct Utf8Reader: TextReader {
 	}
 }
 
-// Utf-8 writer TODO: untested
+// todo: untested: Utf-8 writer
 struct Utf8Writer: TextWriter {
 	// convert characters to utf-8 bytes
 	void encode(Utf8Writer this, unicode chars[]) {
@@ -4104,20 +4619,18 @@ struct Utf8Writer: TextWriter {
 		}
 	}
 }
-static if (typename(ByteWriter) == null) {
-inline "/cmplStd/lib/system/Stream.ci";
-}
-
-// Base64 encoder
+/// Base64 encoder
 struct Base64Encoder: ByteWriter {
 	static const byte lookup[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
+	///@public
 	const ByteWriter writer;
+
 	byte buffer[1024];
 	int bufferSize = 0;
 	int padding = 0;
 
-	// wrap the length at the given position
+	/// wrap at the given position with a newline
 	const int wrap = 80;
 	int wrapSize = 0;
 
@@ -4239,7 +4752,7 @@ struct Base64Encoder: ByteWriter {
 	}
 }
 
-// Base64 decoder
+/// Base64 decoder
 struct Base64Decoder: ByteReader {
 	static const int lookup[256] = {
 		-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
@@ -4260,7 +4773,9 @@ struct Base64Decoder: ByteReader {
 		-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
 	};
 
+	///@public
 	const ByteReader reader;
+
 	// TODO: make it buffered
 	int bitsDecoded = 0;
 	int charDecoded = 0;
@@ -4404,29 +4919,30 @@ inline equals(const char str[*], const char with[*]) = compare(str, with, caseCm
 inline contains(const char str[*], char chr) = indexOf(str, chr) >= 0;
 
 /* TODO: implement operator overloading
-
 inline ==(const char lhs[*], const char rhs[*]) = compare(lhs, rhs, caseCmp) == 0;
 inline !=(const char lhs[*], const char rhs[*]) = compare(lhs, rhs, caseCmp) != 0;
 inline <=(const char lhs[*], const char rhs[*]) = compare(lhs, rhs, caseCmp) <= 0;
 inline >=(const char lhs[*], const char rhs[*]) = compare(lhs, rhs, caseCmp) >= 0;
 inline <(const char lhs[*], const char rhs[*]) = compare(lhs, rhs, caseCmp) < 0;
 inline >(const char lhs[*], const char rhs[*]) = compare(lhs, rhs, caseCmp) > 0;
-
 // */
 
 /// Flags to convert numbers to string
 struct FormatFlags {
-	/// forced show sign
+	/// forced show sign '+' or '-'
 	const char sign = 0;
 
-	/// precision length
-	const int precision = 0;
-
-	/// padding character
+	/// padding character: usually '0' or space
 	const char padChr = 0;
 
 	/// padding length
-	const int padLen = 0;
+	const int width = 0;
+
+	/// precision length
+	const int precision = 10;
+
+	/// trim extra `0` decimal digits
+	const bool trimDecimal = true;
 
 	/// read and process c style format flags like: "%02d"
 	static FormatFlags read(const char format[], int pos&) {
@@ -4476,20 +4992,20 @@ struct FormatFlags {
 
 		return {
 			sign: sgnChr;
+			width: width;
 			padChr: padChr;
-			padLen: padLen;
 			precision: precision;
 		};
 	}
 
 	/// override the default padding, in case it's length is zero
-	static FormatFlags defPad(const FormatFlags this&, int padLen, char padChr) {
-		if (this.padLen == 0) {
+	static FormatFlags defPad(const FormatFlags this&, int width, char padChr) {
+		if (this.width == 0) {
 			return {
 				sign: this.sign;
 				precision: this.precision;
 				padChr: padChr;
-				padLen: padLen;
+				width: width;
 			};
 		}
 		return this;
@@ -4535,7 +5051,7 @@ int append(char output[], int pos, int radix, uint64 value, const FormatFlags fo
 		digits[len += 1] = '0';
 	}
 
-	int maxLen = format.padLen - len;
+	int maxLen = format.width - len;
 
 	char padChr = format.padChr;
 	if (padChr == '\0') {
@@ -4593,16 +5109,16 @@ inline append(char output[], int pos, uint8 value, const FormatFlags format&) = 
 
 /// Append a number to the output at the given position
 int append(char output[], int pos, int radix, int64 value, const FormatFlags format&) {
-	FormatFlags signedFormat = {
-		sign: value < 0 ? '-' : format.sign;
-		precision: format.precision;
-		padLen: format.padLen;
-		padChr: format.padChr;
-	};
-	if (value < 0) {
-		value = -value;
+	if (value < 0 /*&& value != -value*/) {
+		FormatFlags signedFormat = {
+			sign: '-';
+			padChr: format.padChr;
+			width: format.width;
+			precision: format.precision;
+		};
+		return append(output, pos, radix, uint64(-value), signedFormat);
 	}
-	return append(output, pos, radix, uint64(value), signedFormat);
+	return append(output, pos, radix, uint64(value), format);
 }
 
 /// Append a number to the output at the given position
@@ -4619,37 +5135,57 @@ inline append(char output[], int pos, int8 value, const FormatFlags format&) = a
 
 /// Append a number to the output at the given position
 int append(char output[], int pos, float64 value, const FormatFlags format&) {
-	// TODO: fix precision
-	static const FormatFlags formatDec = {};
 	FormatFlags formatInt = {
 		sign: value < 0 ? '-' : format.sign;
-		precision : 10;
 		padChr: format.padChr;
-		padLen: format.padLen - format.precision - 1;
+		width: format.width - format.precision - 1;
 	};
 
-	int end = Math.min(int(output.length - 1), pos + format.padLen);
+	int end = pos + format.width;
+	if (end >= output.length) {
+		end = output.length - 1;
+	}
 
 	float64 fraction = Math.modf(Math.abs(value), &value);
 	pos = output.append(pos, uint64(int64(value)), formatInt);
 
-	static const float64 eps = 1e-5;
-	if (fraction < eps && pos >= end) {
+	// add fractional part
+	int dotIndex = pos;
+	pos = output.append(pos, ".");
+	end = Math.max(end, pos + format.precision);
+	if (end >= output.length) {
+		end = output.length - 1;
+	}
+
+	// roundup
+	fraction += Math.pow(10., float64(pos - end)) / 2;
+	for (; pos < end; pos += 1) {
+		fraction = Math.modf(fraction * 10, &value);
+		output[pos] = '0' + int(value);
+	}
+
+	if (pos >= output.length) {
+		pos = output.length - 1;
+	}
+
+	if (!format.trimDecimal) {
+		output[pos] = 0;
 		return pos;
 	}
 
-	// add fractional part
-	pos = output.append(pos, ".");
-	int max = Math.min(int(output.length - 1), pos + format.precision);
+	// scan backwards all zeroes
+	for (int i = pos - 1; i >= dotIndex; i -= 1) {
+		if (output[i] != '0') {
+			if (i == dotIndex) {
+				// remove also the dot
+				output[i] = 0;
+				return i;
+			}
+			output[i + 1] = 0;
+			return i + 1;
+		}
+	}
 
-	if (format.precision == 0) {
-		// no precision: use max needed space
-		max = output.length - 1;
-	}
-	for (; (fraction > eps && pos < max) || pos < end;) {
-		fraction = Math.modf(fraction * 10, &value);
-		pos = output.append(pos, uint64(int64(value)), formatDec);
-	}
 	return pos;
 }
 
@@ -4664,11 +5200,20 @@ int append(char output[], int pos, int value) {
 
 /// Convert a string to a 64 bit floating point value
 float64 float64(const char value[]) {
-	float64 sign = 1;
 	float64 result = 0;
+	static if (preferNativeCalls && typename(float64.parse) != null) {
+		// use the native method if available
+		int len = float64.parse(value, &result);
+		if (len > 0 && len < value.length && value[len] == 0) {
+			return result;
+		}
+		// error("value is not a floating point number");
+		return Math.nan;
+	}
+
+	float64 sign = 1;
 	float64 decimal = 0;
 
-	// TODO: fix precision
 	for (int i = 0; i < value.length && value[i] != 0; i += 1) {
 		char chr = value[i];
 		if (chr >= '0' && chr <= '9') {
@@ -6557,14 +7102,14 @@ Widget Widget(int width, int height, const Style style&) {
 }
 Widget Widget(int width, int height) {
 	static const Style style = {
-		format: { padLen: 5, precision: 2 };
+		format: { precision: 2, trimDecimal: false };
 	};
 	return Widget(width, height, style);
 }
 FxWidget FxWidget(void onProcess(FxWidget widget), View views...) {
 	static const Style style = {
 		align: Style.left;
-		format: { padLen: 5, precision: 2 };
+		format: { precision: 2, trimDecimal: false };
 	};
 	FxWidget widget = {
 		radius: 5;
@@ -8386,7 +8931,7 @@ struct Camera {
 		}
 
 		// perspective
-		bot = float32.tan(Math.radians(fov));
+		bot = Math.tan(Math.radians(fov));
 		asp *= bot;
 
 		return {
@@ -8563,7 +9108,7 @@ void blur(Image image, int radius, float64 sigma) {
 			case 2:
 				return (x * x - sigma * sigma) * SQRT_2_PI_INV * exp(-0.5*t*t) / (sigma * sigma * sigma * sigma * sigma);
 		}*/
-		return SQRT_2_PI_INV * double.exp(-0.5 * t * t) / sigma;
+		return SQRT_2_PI_INV * Math.exp(-0.5 * t * t) / sigma;
 	}
 
 	int32 kernel[1024] = {};
@@ -8626,4 +9171,105 @@ void blur(Image image, int radius, float64 sigma) {
 	}
 
 	tmp.destroy();
+}
+///@public
+struct FileReader: ByteReader {
+	const File file;
+
+	int read(FileReader this, uint8 bytes[]) {
+		return File.read(this.file, bytes);
+	}
+
+	void close(FileReader this) {
+		File.close(this.file);
+	}
+}
+
+///@public
+struct FileWriter: ByteWriter {
+	const File file;
+
+	void write(FileWriter this, byte bytes[]) {
+		int wrote = File.write(this.file, bytes);
+		assert(wrote == bytes.length);
+	}
+
+	void flush(FileWriter this) {
+		File.flush(this.file);
+	}
+
+	void close(FileWriter this) {
+		File.close(this.file);
+	}
+}
+///@public
+struct BufferedFileWriter: FileWriter {
+	byte buffer[1024];
+	int bufferSize = 0;
+
+	static void flushBuffer(BufferedFileWriter this) {
+		int wrote = File.write(this.file, this.buffer[... this.bufferSize]);
+		assert(wrote == this.bufferSize);
+		this.bufferSize = 0;
+	}
+
+	void write(BufferedFileWriter this, byte bytes[]) {
+		if (this.bufferSize + bytes.length > this.buffer.length) {
+			if (this.bufferSize > 0) {
+				this.flushBuffer();
+			}
+			if (bytes.length > this.buffer.length / 2) {
+				// writing more than buffer half size, make the write
+				FileWriter.write(this, bytes);
+				return;
+			}
+		}
+		// accumulate into buffer
+		byte buffer[*] = this.buffer;
+		int bufferSize = this.bufferSize;
+		for (int i = 0; i < bytes.length; i += 1) {
+			buffer[bufferSize + i] = bytes[i];
+		}
+		this.bufferSize += bytes.length;
+	}
+
+	void flush(BufferedFileWriter this) {
+		this.flushBuffer();
+		FileWriter.flush(this);
+	}
+
+	void close(BufferedFileWriter this) {
+		this.flushBuffer();
+		FileWriter.close(this);
+	}
+}
+
+///@public
+FileWriter StdOutWriter() {
+	return FileWriter {
+		file: File.out;
+		close: Closeable.skipClose;
+	};
+}
+
+///@public
+FileReader FileReader(const char path[*]) {
+	return FileReader {
+		file: File.open(path);
+	};
+}
+
+///@public
+FileWriter FileWriter(const char path[*], bool append) {
+	return FileWriter {
+		file: append ? File.append(path) : File.create(path);
+	};
+}
+
+///@public
+BufferedFileWriter BufferedFileWriter(const char path[*], bool append) {
+	return BufferedFileWriter {
+		buffer: null;
+		file: append ? File.append(path) : File.create(path);
+	};
 }

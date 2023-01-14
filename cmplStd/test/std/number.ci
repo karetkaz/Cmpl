@@ -18,49 +18,49 @@ int b_comp = 31 << 3;
 int32 r5g6b5 = rgb565(r_comp, g_comp, b_comp);
 int32 r8g8b8 = rgb888(r_comp, g_comp, b_comp);
 
-int32 zxtR5 = uint32.zxt(r5g6b5, 11, 5);
-int32 zxtG6 = uint32.zxt(r5g6b5, 5, 6);
-int32 zxtB5 = uint32.zxt(r5g6b5, 0, 5);
+int32 zxtR5 = Bits.zxt32(r5g6b5, 11, 5);
+int32 zxtG6 = Bits.zxt32(r5g6b5, 5, 6);
+int32 zxtB5 = Bits.zxt32(r5g6b5, 0, 5);
 
-int32 sxtR5 = uint32.sxt(r5g6b5, 11, 5);
-int32 sxtG6 = uint32.sxt(r5g6b5, 5, 6);
-int32 sxtB5 = uint32.sxt(r5g6b5, 0, 5);
+int32 sxtR5 = Bits.sxt32(r5g6b5, 11, 5);
+int32 sxtG6 = Bits.sxt32(r5g6b5, 5, 6);
+int32 sxtB5 = Bits.sxt32(r5g6b5, 0, 5);
 
-int32 zxtR8 = uint32.zxt(r8g8b8, 16, 8);
-int32 zxtG8 = uint32.zxt(r8g8b8, 8, 8);
-int32 zxtB8 = uint32.zxt(r8g8b8, 0, 8);
+int32 zxtR8 = Bits.zxt32(r8g8b8, 16, 8);
+int32 zxtG8 = Bits.zxt32(r8g8b8, 8, 8);
+int32 zxtB8 = Bits.zxt32(r8g8b8, 0, 8);
 
-int32 sxtR8 = uint32.sxt(r8g8b8, 16, 8);
-int32 sxtG8 = uint32.sxt(r8g8b8, 8, 8);
-int32 sxtB8 = uint32.sxt(r8g8b8, 0, 8);
+int32 sxtR8 = Bits.sxt32(r8g8b8, 16, 8);
+int32 sxtG8 = Bits.sxt32(r8g8b8, 8, 8);
+int32 sxtB8 = Bits.sxt32(r8g8b8, 0, 8);
 
-float64 testSin_f64 = float64.sin(pi64 / 2);
-float64 testCos_f64 = float64.cos(pi64 / 2);
-float64 testTan_f64 = float64.tan(pi64 / 4);
-float64 testLog_f64 = float64.log(e64 * e64 * e64);
-float64 testExp_f64 = float64.exp(1F);
-float64 testPow_f64 = float64.pow(pi64 * pi64, .5F);
-float64 testSqrt_f64 = float64.sqrt(pi64 * pi64);
-float64 testAtan_f64 = float64.atan2(pi64, 1F);
+float64 testSin_f64 = Math.sin(pi64 / 2);
+float64 testCos_f64 = Math.cos(pi64 / 2);
+float64 testTan_f64 = Math.tan(pi64 / 4);
+float64 testLog_f64 = Math.log(e64 * e64 * e64);
+float64 testExp_f64 = Math.exp(1F);
+float64 testPow_f64 = Math.pow(pi64 * pi64, .5F);
+float64 testSqrt_f64 = Math.sqrt(pi64 * pi64);
+float64 testAtan_f64 = Math.atan2(pi64, 1F);
 
-float32 testSin_f32 = float32.sin(pi32 / 2);
-float32 testCos_f32 = float32.cos(pi32 / 2);
-float32 testTan_f32 = float32.tan(pi32 / 4);
-float32 testLog_f32 = float32.log(e32 * e32 * e32);
-float32 testExp_f32 = float32.exp(1f);
-float32 testPow_f32 = float32.pow(pi32 * pi32, .5f);
-float32 testSqrt_f32 = float32.sqrt(pi32 * pi32);
-float32 testAtan_f32 = float32.atan2(pi32, 1f);
+float32 testSin_f32 = Math.sin(pi32 / 2);
+float32 testCos_f32 = Math.cos(pi32 / 2);
+float32 testTan_f32 = Math.tan(pi32 / 4);
+float32 testLog_f32 = Math.log(e32 * e32 * e32);
+float32 testExp_f32 = Math.exp(1f);
+float32 testPow_f32 = Math.pow(pi32 * pi32, .5f);
+float32 testSqrt_f32 = Math.sqrt(pi32 * pi32);
+float32 testAtan_f32 = Math.atan2(pi32, 1f);
 
-int32 testPopulation_u32 = uint32.pop(r5g6b5);
-uint32 testSwapBits_u32 = uint32.swap(r5g6b5);
-int32 testBitScanReverse_u32 = uint32.bsr(r5g6b5);
-int32 testBitScanForward_u32 = uint32.bsf(r5g6b5);
-int32 testHighBit_u32 = uint32.hib(r5g6b5);
-int32 testLowBit_u32 = uint32.lob(r5g6b5);
+int32 testPopulation_u32 = Bits.countBits(r5g6b5);
+uint32 testSwapBits_u32 = Bits.swapBits(r5g6b5);
+int32 testBitScanReverse_u32 = Bits.scanMsb(r5g6b5);
+int32 testBitScanForward_u32 = Bits.scanLsb(r5g6b5);
+int32 testHighBit_u32 = Bits.keepMsb(r5g6b5);
+int32 testLowBit_u32 = Bits.keepLsb(r5g6b5);
 
-int32 testZeroExtend_u32 = uint32.zxt(r5g6b5, 0, 5);
-int32 testSignExtend_u32 = uint32.sxt(r5g6b5, 0, 5);
+int32 testZeroExtend_u32 = Bits.zxt32(r5g6b5, 0, 5);
+int32 testSignExtend_u32 = Bits.sxt32(r5g6b5, 0, 5);
 
-int32 testZeroExtend_u64 = uint64.zxt(r5g6b5, 0, 5);
-int32 testSignExtend_u64 = uint64.sxt(r5g6b5, 0, 5);
+int32 testZeroExtend_u64 = Bits.zxt64(r5g6b5, 0, 5);
+int32 testSignExtend_u64 = Bits.sxt64(r5g6b5, 0, 5);

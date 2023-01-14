@@ -1,10 +1,9 @@
 // Biorhythm calculator
 
-inline "/cmplStd/lib/time/Datetime.ci";
-int onEvent(int action, int button, int x, int y);
-
 Datetime birthdate = Datetime(1983, 5,  2);
 Timestamp now = Timestamp.now();
+
+int onEvent(int action, int button, int x, int y);
 Image img = Image(1440, 500, 32);
 Gui.showWindow(img, onEvent);
 
@@ -15,16 +14,16 @@ struct Biorhythm {
 	const char label[];
 
 	static double value(const Biorhythm this&, Timestamp birth, Timestamp date) {
-		double d = date.value - birth.value;
+		double d = date.diff(birth, Timestamp.precision);
 		double t = convert(d, Timestamp.precision, Timeunit.Days);
 
 		if (this.period2 != 0) {
-			double y1 = float64.sin(2 * Math.pi * t / this.period);
-			double y2 = float64.sin(2 * Math.pi * t / this.period2);
+			double y1 = Math.sin(2 * Math.pi * t / this.period);
+			double y2 = Math.sin(2 * Math.pi * t / this.period2);
 			return (y1 + y2) / 2;
 		}
 
-		return float64.sin(2 * Math.pi * t / this.period);
+		return Math.sin(2 * Math.pi * t / this.period);
 	}
 }
 

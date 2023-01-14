@@ -7,8 +7,8 @@ argb colors[24] = {};
 
 vec4f mandel(vec4f in) {
 	Complex c = {
-		re: xMin + Math.lerp(float64(in.x), -size, size);
-		im: yMin + Math.lerp(float64(in.y), -size, size);
+		re: xMin + Math.mix(-size, size, float64(in.x));
+		im: yMin + Math.mix(-size, size, float64(in.y));
 	};
 
 	Complex z = Complex(0, 0);

@@ -154,7 +154,7 @@ static struct BlendMode {
 	vec4f softLight(vec4f base, vec4f blend) {
 		inline op(float32 base, float32 blend) = blend < .5f
 			? (2 * base * blend + base * base * (1 - 2 * blend))
-			: (float32.sqrt(base) * (2 * blend - 1) + 2 * base * (1 - blend));
+			: (Math.sqrt(base) * (2 * blend - 1) + 2 * base * (1 - blend));
 		return {
 			x: op(base.x, blend.x);
 			y: op(base.y, blend.y);
