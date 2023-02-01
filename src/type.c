@@ -502,7 +502,7 @@ static symn typeCheckRef(ccContext cc, symn loc, astn ref, astn args, ccKind fil
 		type = sym->init->type;
 	}
 
-	if (sym != NULL && args != NULL && isInvokable(sym)) {
+	if (args != NULL && isInvokable(sym)) {
 		astn arg = chainArgs(args);
 		if (args == cc->void_tag) {
 			arg = NULL;
@@ -534,9 +534,12 @@ static symn typeCheckRef(ccContext cc, symn loc, astn ref, astn args, ccKind fil
 	}
 
 	// raise error or warning if accessing private symbols
-	if (sym && sym->unit && sym->unit != cc->unit && sym->doc == NULL) {
-		raiseLevel level = cc->errPrivateAccess ? raiseError : raiseWarn;
+	if (sym->unit && sym->unit != cc->unit && sym->doc == NULL) {
+		raiseLevel level = ref->file == NULL ? raise_warn_typ6 : cc->errPrivateAccess ? raiseError : raiseWarn;
 		warn(cc->rt, level, ref->file, ref->line, ERR_PRIVATE_DECLARATION, sym);
+		if (sym->file && sym->line) {
+			warn(cc->rt, level, sym->file, sym->line, INFO_PREVIOUS_DEFINITION, sym);
+		}
 	}
 
 	dieif(ref->kind != TOKEN_var, ERR_INTERNAL_ERROR);

@@ -1,17 +1,15 @@
-static if (typename(ByteWriter) == null) {
-inline "/cmplStd/lib/system/Stream.ci";
-}
-
-// Base64 encoder
+/// Base64 encoder
 struct Base64Encoder: ByteWriter {
 	static const byte lookup[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
+	///@public
 	const ByteWriter writer;
+
 	byte buffer[1024];
 	int bufferSize = 0;
 	int padding = 0;
 
-	// wrap the length at the given position
+	/// wrap at the given position with a newline
 	const int wrap = 80;
 	int wrapSize = 0;
 
@@ -133,7 +131,7 @@ struct Base64Encoder: ByteWriter {
 	}
 }
 
-// Base64 decoder
+/// Base64 decoder
 struct Base64Decoder: ByteReader {
 	static const int lookup[256] = {
 		-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
@@ -154,7 +152,9 @@ struct Base64Decoder: ByteReader {
 		-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
 	};
 
+	///@public
 	const ByteReader reader;
+
 	// TODO: make it buffered
 	int bitsDecoded = 0;
 	int charDecoded = 0;

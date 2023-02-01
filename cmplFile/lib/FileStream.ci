@@ -1,7 +1,4 @@
-static if (typename(ByteReader) == null) {
-inline "Stream.ci";
-}
-
+///@public
 struct FileReader: ByteReader {
 	const File file;
 
@@ -14,6 +11,7 @@ struct FileReader: ByteReader {
 	}
 }
 
+///@public
 struct FileWriter: ByteWriter {
 	const File file;
 
@@ -30,6 +28,7 @@ struct FileWriter: ByteWriter {
 		File.close(this.file);
 	}
 }
+///@public
 struct BufferedFileWriter: FileWriter {
 	byte buffer[1024];
 	int bufferSize = 0;
@@ -71,6 +70,7 @@ struct BufferedFileWriter: FileWriter {
 	}
 }
 
+///@public
 FileWriter StdOutWriter() {
 	return FileWriter {
 		file: File.out;
@@ -78,63 +78,24 @@ FileWriter StdOutWriter() {
 	};
 }
 
+///@public
 FileReader FileReader(const char path[*]) {
 	return FileReader {
 		file: File.open(path);
 	};
 }
 
-FileWriter FileWriter(const char path[*], bool buffered, bool append) {
-	if (buffered && append) {
-		return BufferedFileWriter {
-			file: File.append(path);
-		};
-	}
-	if (buffered) {
-		return BufferedFileWriter {
-			file: File.create(path);
-		};
-	}
-	if (append) {
-		return FileWriter {
-			file: File.append(path);
-		};
-	}
+///@public
+FileWriter FileWriter(const char path[*], bool append) {
 	return FileWriter {
-		file: File.create(path);
+		file: append ? File.append(path) : File.create(path);
 	};
 }
 
-/* TODO: uncomment
-struct Path {
-	bool exists();
-	bool isFile();
-	bool isDirectory();
-	bool isHidden();
-	bool isAbsolute();
-
-	Path parent();
-	// permissions: canRead,write,execute,...
+///@public
+BufferedFileWriter BufferedFileWriter(const char path[*], bool append) {
+	return BufferedFileWriter {
+		buffer: null;
+		file: append ? File.append(path) : File.create(path);
+	};
 }
-
-inline FileReader(Path path) = {
-	file: File.open(path);
-};
-inline FileWriter(Path path, bool append) = {
-	file: append ? File.append(path) : File.create(path);
-};
-
-inline AsciiReader(Path path) = {
-	reader: FileReader(path);
-};
-inline AsciiWriter(Path path, bool append) = {
-	writer: FileWriter(path, append);
-};
-
-inline Utf8Reader(Path path) = {
-	reader: FileReader(path);
-};
-inline Utf8Writer(Path path, bool append) = {
-	writer: FileWriter(path, append);
-};
-*/

@@ -11,10 +11,10 @@ inline "/cmplGfx/lib/color.hsv.ci";
 }
 
 vec4f rgbOp(vec4f in) {
-	inline N = float64(Math.pi);
+	inline N = Math.pi;
 	Complex z = {
-		re: Math.lerp(float64(in.x), -N, N);
-		im: Math.lerp(float64(in.y), -N, N);
+		re: Math.mix(-N, N, float64(in.x));
+		im: Math.mix(-N, N, float64(in.y));
 	};
 
 //	z = sin(z);

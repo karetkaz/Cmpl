@@ -107,7 +107,7 @@ bool onButtonClick(Button this) {
 		static if (typename(File) != null) {
 			const FormatFlags fmt = {
 				padChr: '0';
-				padLen: 8;
+				width: 8;
 			};
 			char str[32] = {0};
 			File.out.write("\nint32_t lookup[256] = {\n");

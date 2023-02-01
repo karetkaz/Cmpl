@@ -1269,7 +1269,7 @@ FILE *logFile(rtContext rt, char *file, int append) {
 
 const char **escapeStr() {
 	static const char *escape[256] = {0};
-	if (escape[0] == 0) {
+	if (escape[0] == NULL) {
 		escape[0] = "\\0";
 		escape['\n'] = "\\n";
 		escape['\r'] = "\\r";

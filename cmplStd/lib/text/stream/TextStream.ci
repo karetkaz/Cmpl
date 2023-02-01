@@ -1,102 +1,18 @@
-// InputOutput
-
-struct Closeable: object {
-	// abstract
-	void close(Closeable this);
-
-	static void skipClose(Closeable closeable) {
-	}
-
-	static void safeClose(Closeable closeable) {
-		if (closeable.close != null) {
-			closeable.close(closeable);
-		}
-	}
-}
-
-// destroy a closeable invoking the abstract close method
-inline close(Closeable instance) = Closeable.safeClose(instance);
-inline void(Closeable instance) = Closeable.safeClose(instance);
-
-// ByteReader ~= java:InputStream
-struct ByteReader: Closeable {
-	// abstract
-	int read(ByteReader this, byte bytes[]);
-
-	static int read(ByteReader this) {
-		byte bytes[1] = {0};
-		if (this.read(bytes) <= 0) {
-			return -1;
-		}
-		return bytes[0] & 255;
-	}
-
-	/* TODO: subclasses
-		CopyReader
-		FileReader
-		PipedReader
-		SocketReader
-		MemoryReader
-	*/
-}
-
-// ByteWriter ~= java:OutputStream
-struct ByteWriter: Closeable {
-	// abstract
-	void write(ByteWriter this, byte bytes[]);
-
-	// abstract
-	void flush(ByteWriter this);
-
-	static void write(ByteWriter this, byte oneByte) {
-		byte bytes[1] = { oneByte };
-		return this.write(this, bytes);
-	}
-
-	/* TODO: uncomment
-	static void write(ByteWriter this, void write(ByteWriter writer)) {
-		return write(this);
-	}
-
-	struct Writeable: object {
-		// abstract
-		void write(Writeable this, ByteWriter writer);
-	}
-
-	static void write(ByteWriter this, Writeable value) {
-		return this.write(this, value.write);
-	}// */
-
-	static int write(ByteWriter this, ByteReader reader) {
-		byte buffer[1024] = {};
-		int result = 0;
-		for ( ; ; ) {
-			int read = reader.read(buffer);
-			if (read <= 0) {
-				return result;
-			}
-			this.write(this, buffer[...read]);
-			result += read;
-		}
-		return result;
-	}
-
-	/* TODO: subclasses
-		FileWriter
-		PipedWriter
-		SocketWriter
-		MemoryWriter
-	*/
-}
-
 // The Unicode Character Set (UCS) contains 1,114,112 code points: U+0000—U+10FFFF
+// todo: move inside class TextReader
 inline unicode = uint32;
 
-// TextReader := Decoder & Parser(java:Reader + Scanner?Parser?)
+// TextReader := Decoder & Parser (java:Reader+Scanner?Parser?)
+/// TextReader can be used to read decoded text from a stream, including basic parsing
 struct TextReader: Closeable {
+
+	///@public
 	const ByteReader reader;
 
-	// abstract
+	/** This abstract method must be implemented in subclasses containing the proper implementation
+	 * the method must return the number of characters decoded from the stream into the `chars` array
+	 * in case there is an error -1 should be returned
+	 */
 	int decode(TextReader this, unicode chars[]);
 
 	// override
@@ -106,6 +22,7 @@ struct TextReader: Closeable {
 		this.reader.close();
 	}
 
+	/// Read a single character from the stream, a negative number is returned in case of error
 	static int decode(TextReader this) {
 		unicode chars[1] = {0};
 		if (this.decode(chars) <= 0) {
@@ -127,16 +44,21 @@ struct TextReader: Closeable {
 	*/
 }
 
-// TextWriter := Encoder & Printer (java:Writer + PrintStream)
+// TextWriter := Encoder & Printer (java:Writer+PrintStream)
+/// TextWriter can be used to write encoded text to a stream, including basic printing
 struct TextWriter: Closeable {
+	///@public
 	struct Writeable: object {
 		// abstract
 		void write(Writeable this, TextWriter writer);
 	}
 
+	///@public
 	const ByteWriter writer;
 
-	// abstract
+	/** This abstract method must be implemented in subclasses containing the proper implementation
+	 * the method must encode and write all the characters from the `chars` array
+	 */
 	void encode(TextWriter this, unicode chars[]);
 
 	// override
@@ -149,17 +71,20 @@ struct TextWriter: Closeable {
 		this.writer.safeClose();
 	}
 
+	/// Write an array of raw characters to the stream (no encoding)
 	static TextWriter write(TextWriter this, char value[]) {
 		ByteWriter writer = this.writer;
 		writer.write(writer, value);
 		return this;
 	}
 
+	/// Write a single raw character to the stream (no encoding)
 	static TextWriter write(TextWriter this, char value) {
 		char buffer[1] = { value };
 		return this.write(buffer);
 	}
 
+	/// Write the value of the boolean parameter: "true" or "false"
 	static TextWriter write(TextWriter this, bool value) {
 		if (value) {
 			return this.write("true");
@@ -167,47 +92,55 @@ struct TextWriter: Closeable {
 		return this.write("false");
 	}
 
+	/// Write the value of the 32-bit integer parameter
 	static TextWriter write(TextWriter this, int32 value, const FormatFlags flags&) {
 		char buff[1024]= {};
 		int n = buff.append(0, value, flags);
 		return write(this, buff[ ... n]);
 	}
 
+	/// Write the value of the 64-bit integer parameter
 	static TextWriter write(TextWriter this, int64 value, const FormatFlags flags&) {
 		char buff[1024]= {};
 		int n = buff.append(0, value, flags);
 		return write(this, buff[ ... n]);
 	}
 
+	/// Write the value of the 32-bit unsigned integer parameter
 	static TextWriter write(TextWriter this, uint32 value, const FormatFlags flags&) {
 		char buff[1024]= {};
 		int n = buff.append(0, value, flags);
 		return write(this, buff[ ... n]);
 	}
 
+	/// Write the value of the 64-bit unsigned integer parameter
 	static TextWriter write(TextWriter this, uint64 value, const FormatFlags flags&) {
 		char buff[1024]= {};
 		int n = buff.append(0, value, flags);
 		return write(this, buff[ ... n]);
 	}
 
+	/// Write the value of the 32-bit floating-point parameter
 	static TextWriter write(TextWriter this, float32 value, const FormatFlags flags&) {
 		char buff[1024]= {};
 		int n = buff.append(0, value, flags);
 		return write(this, buff[ ... n]);
 	}
 
+	/// Write the value of the 64-bit floating-point parameter
 	static TextWriter write(TextWriter this, float64 value, const FormatFlags flags&) {
 		char buff[1024]= {};
 		int n = buff.append(0, value, flags);
 		return write(this, buff[ ... n]);
 	}
 
+	/// Write the value of the writeable parameter
 	static TextWriter write(TextWriter this, Writeable value) {
 		value.write(this);
 		return this;
 	}
 
+	/// Write a newline character
 	static TextWriter writeln(TextWriter this) {
 		return this.write("\n");
 	}
@@ -248,117 +181,35 @@ struct TextWriter: Closeable {
 	*/
 }
 
-// copy byte-stream
-struct CopyReader: ByteReader {
-	const ByteReader source;
-	const ByteWriter clone;
-
-	// override
-	int read(CopyReader this, byte bytes[]) {
-		int result = this.source.read(bytes);
-		if (result > 0) {
-			this.clone.write(bytes[...result]);
-		}
-		return result;
-	}
-
-	// override
-	void close(CopyReader this) {
-		this.source.close();
-		this.clone.close();
-	}
-}
-
-// File streams
-static if (typename(File) != null) {
-inline "Stream.file.ci";
-}
-
-// TODO: untested
-struct ByteBuffer {
-	int position = 0;
-	int capacity = 32;
-	int length = 0;
-	byte buffer[*] = pointer.alloc(null, capacity);
-
-	int read(ByteBuffer this, byte bytes[]) {
-		if (this.position >= this.length) {
-			return -1;
-		}
-		for (int i = 0; i < bytes.length; i += 1) {
-			if (this.position >= this.length) {
-				return i;
-			}
-			bytes[i] = this.buffer[this.position];
-			this.position += 1;
-		}
-		return bytes.length;
-	}
-
-	int read(ByteBuffer this) {
-		if (this.position >= this.length) {
-			return -1;
-		}
-		int result = this.buffer[this.position];
-		this.position += 1;
-		return result;
-	}
-
-	void write(ByteBuffer this, byte bytes[]) {
-		int size = this.position + bytes.length;
-		if (size >= this.capacity) {
-			// try to double the current size
-			this.capacity *= 2;
-			if (size > 2 * this.capacity) {
-				// double the calculated size
-				this.capacity = size * 2;
-			}
-
-			// copy old bytes
-			byte new[*] = pointer.alloc(null, this.capacity);
-			for (int i = 0; i < this.position; i += 1) {
-				new[i] = this.buffer[i];
-			}
-			pointer.alloc(this.buffer, 0);
-			this.buffer = new;
-		}
-
-		// copy new bytes
-		for (int i = 0; i < bytes.length; i += 1) {
-			this.buffer[this.position] = bytes[i];
-			this.position += 1;
-		}
-	}
-
-	void flush(ByteBuffer this) {
-		// do nothing
-	}
-
-	void close(ByteBuffer this) {
-		// release memory
-		pointer.alloc(this.buffer, 0);
-
-		this.buffer = null;
-		this.position = 0;
-		this.capacity = 0;
-		this.length = 0;
-	}
-}
-
 static if (true) {
 // todo: fix lookup and delete these global methods
 static const FormatFlags flagsTextWriter = {};
+///@public
 static TextWriter write(TextWriter this, int32 value) { return this.write(value, flagsTextWriter); }
+///@public
 static TextWriter write(TextWriter this, int64 value) { return this.write(value, flagsTextWriter); }
+///@public
 static TextWriter write(TextWriter this, uint32 value) { return this.write(value, flagsTextWriter); }
+///@public
 static TextWriter write(TextWriter this, uint64 value) { return this.write(value, flagsTextWriter); }
+///@public
 static TextWriter write(TextWriter this, float32 value) { return this.write(value, flagsTextWriter); }
+///@public
 static TextWriter write(TextWriter this, float64 value) { return this.write(value, flagsTextWriter); }
+///@public
+static TextWriter writeln(TextWriter this, char value[]) { return this.write(value).writeln(); }
+///@public
 static TextWriter writeln(TextWriter this, int32 value) { return this.write(value, flagsTextWriter).writeln(); }
+///@public
 static TextWriter writeln(TextWriter this, int64 value) { return this.write(value, flagsTextWriter).writeln(); }
+///@public
 static TextWriter writeln(TextWriter this, uint32 value) { return this.write(value, flagsTextWriter).writeln(); }
+///@public
 static TextWriter writeln(TextWriter this, uint64 value) { return this.write(value, flagsTextWriter).writeln(); }
+///@public
 static TextWriter writeln(TextWriter this, float32 value) { return this.write(value, flagsTextWriter).writeln(); }
+///@public
 static TextWriter writeln(TextWriter this, float64 value) { return this.write(value, flagsTextWriter).writeln(); }
+///@public
 static TextWriter writeln(TextWriter this, TextWriter.Writeable value) { return this.write(value).writeln(); }
 }

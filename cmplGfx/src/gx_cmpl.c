@@ -1514,7 +1514,7 @@ static void builtinBlend(const struct rtContextRec *rt, const char * proto, symn
 	type->fmt = proto;
 }
 
-const char cmplUnit[] = "/cmplGfx/gfxlib.ci";
+const char cmplUnit[] = "/cmplGfx/lib.ci";
 int cmplInit(rtContext rt) {
 
 	struct {

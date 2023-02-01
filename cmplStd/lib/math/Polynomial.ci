@@ -1,9 +1,6 @@
-// Implementation of a Polynomial
-static if (typename(TextWriter) == null) {
-inline "/cmplStd/lib/system/Stream.ci";
-}
-
 inline scalar = float64;  // fixme: declare inside Polynomial
+
+///@public
 struct Polynomial/*(typename scalar)*/: TextWriter.Writeable {
 	scalar coefficients[*];
 	int capacity;
@@ -13,6 +10,7 @@ struct Polynomial/*(typename scalar)*/: TextWriter.Writeable {
 		c_unit: 1;
 	}
 
+	///@public
 	void write(Polynomial this, TextWriter writer) {
 		bool first = true;
 		for (int i = this.capacity - 1; i >= 0; i -= 1) {
@@ -52,6 +50,7 @@ struct Polynomial/*(typename scalar)*/: TextWriter.Writeable {
 		}
 	}
 
+	///@public
 	void destroy(Polynomial this) {
 		pointer.alloc(this.coefficients, 0);
 	}
@@ -76,6 +75,7 @@ struct Polynomial/*(typename scalar)*/: TextWriter.Writeable {
 		return result;
 	}
 
+	/// Compute the degree of the polynomial
 	static int degree(Polynomial this&) {
 		for (int i = this.capacity - 1; i > 0; i -= 1) {
 			if (this.coefficients[i] != c_zero) {
@@ -85,6 +85,7 @@ struct Polynomial/*(typename scalar)*/: TextWriter.Writeable {
 		return 0;
 	}
 
+	/// get the nth coefficient of the polynomial
 	static scalar get(const Polynomial this&, int index) {
 		assert(index >= 0, "negative index", index);
 		if (index >= this.capacity) {
@@ -93,12 +94,14 @@ struct Polynomial/*(typename scalar)*/: TextWriter.Writeable {
 		return this.coefficients[index];
 	}
 
+	/// set the nth coefficient of the polynomial
 	static scalar set(Polynomial this&, int index, scalar value) {
 		assert(index >= 0, "negative index", index);
 		assert(index < this.capacity, "invalid index");
 		return this.coefficients[index];
 	}
 
+	/// negate the polynomial
 	static Polynomial neg(const Polynomial a&) {
 		Polynomial result = create(degree(a), null);
 		for (int i = 0; i < result.capacity; i += 1) {
@@ -107,6 +110,7 @@ struct Polynomial/*(typename scalar)*/: TextWriter.Writeable {
 		return result;
 	}
 
+	/// add two polynomials
 	static Polynomial add(const Polynomial a&, const Polynomial b&) {
 		Polynomial result = create(Math.max(degree(a), degree(b)), null);
 		for (int i = 0; i < result.capacity; i += 1) {
@@ -115,6 +119,7 @@ struct Polynomial/*(typename scalar)*/: TextWriter.Writeable {
 		return result;
 	}
 
+	/// subtract two polynomials
 	static Polynomial sub(const Polynomial a&, const Polynomial b&) {
 		Polynomial result = create(Math.max(degree(a), degree(b)), null);
 		for (int i = 0; i < result.capacity; i += 1) {
@@ -123,6 +128,7 @@ struct Polynomial/*(typename scalar)*/: TextWriter.Writeable {
 		return result;
 	}
 
+	/// multiply two polynomials
 	static Polynomial mul(const Polynomial a&, const Polynomial b&) {
 		int degreeA = degree(a);
 		int degreeB = degree(b);
@@ -135,6 +141,7 @@ struct Polynomial/*(typename scalar)*/: TextWriter.Writeable {
 		return result;
 	}
 
+	/// evaluate the polynomial using Horner's method
 	static scalar evaluate(const Polynomial this&, scalar value) {
 		scalar result = c_zero;
 		for (int i = degree(this); i >= 0; i -= 1) {
@@ -143,6 +150,7 @@ struct Polynomial/*(typename scalar)*/: TextWriter.Writeable {
 		return result;
 	}
 
+	/// Compute the derivative of the polynomial
 	static Polynomial derivative(const Polynomial this&) {
 		Polynomial result = create(this.degree() - 1, null);
 		for (int i = 0; i < result.capacity; i += 1) {
@@ -151,6 +159,7 @@ struct Polynomial/*(typename scalar)*/: TextWriter.Writeable {
 		return result;
 	}
 
+	/// Compute the integral of the polynomial
 	static Polynomial integral(const Polynomial this&, scalar c) {
 		Polynomial result = create(this.degree() + 1, null);
 		result.coefficients[0] = c;
@@ -161,9 +170,10 @@ struct Polynomial/*(typename scalar)*/: TextWriter.Writeable {
 	}
 }
 
+/// Create a new polynomial by copying the given one.
 inline Polynomial(const Polynomial copy&) = Polynomial.create(copy.degree(), copy.coefficients);
 
-/// reverse
+/// Create a new polynomial with the given values, coefficients are reversed(lowest index === highest degree)
 Polynomial Polynomial(scalar values...) {
 	Polynomial result = Polynomial.create(values.length - 1, null);
 	for (int i = 0; i < values.length; i += 1) {

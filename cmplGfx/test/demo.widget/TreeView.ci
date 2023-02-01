@@ -66,7 +66,7 @@ Slider Slider(const char text[*], int min, int max, int val) {
 }
 
 Style style = {
-	format: { padLen: 5, precision: 2 };
+	format: { precision: 2 };
 	align: Style.topLeft;
 };
 

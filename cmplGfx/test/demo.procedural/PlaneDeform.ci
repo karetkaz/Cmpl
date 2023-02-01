@@ -21,12 +21,12 @@ inline tex2d(Image src, float64 x, float64 y, float64 w) = tex2d(src, x, y).mul(
 inline nz(float64 x, float64 eps) = float64(x ? x : eps);
 inline nz(float64 x) = float64(x ? x : 1e-20);
 inline abs(float64 x) = Math.abs(x);
-inline sin(float64 x) = float64.sin(x);
-inline cos(float64 x) = float64.cos(x);
-inline sqrt(float64 x) = float64.sqrt(x);
-inline pow(float64 x, float64 y) = float64.pow(x, y);
-inline atan(float64 x, float64 y) = float64.atan2(x, y);
-inline hypot(float64 x, float64 y) = float64.sqrt(x * x + y * y);
+inline sin(float64 x) = Math.sin(x);
+inline cos(float64 x) = Math.cos(x);
+inline sqrt(float64 x) = Math.sqrt(x);
+inline pow(float64 x, float64 y) = Math.pow(x, y);
+inline atan(float64 x, float64 y) = Math.atan2(x, y);
+inline hypot(float64 x, float64 y) = Math.sqrt(x * x + y * y);
 
 vec4f plasma(vec4f in) {
 	inline M = 20;
@@ -247,25 +247,6 @@ vec4f ball3d(vec4f in) {
 	return img.tex2d(u, v);
 }
 
-vec4f yinYang(vec4f in) {
-	float time = in.w;
-	float nx = 1 - 2 * in.x;
-	float ny = 1 - 2 * in.y;
-	float x = nx * float.sin(time) - ny * float.cos(time);
-	float y = nx * float.cos(time) + ny * float.sin(time);
-	float h = x*x + y*y;
-	if (h < 1.) {
-		float d = Math.abs(y) - h;
-		float a = d - 0.23;
-		float b = h - 1.00;
-		float c = Math.sign(a * b * (y + x + (y - x) * Math.sign(d)));
-
-		c = Math.lerp(Math.smooth(0.98f, 1.00f, h), c, 0.0f);
-		c = Math.lerp(Math.smooth(1.00f, 1.02f, h), c, 1.0f);
-		return vec4f(float(c));
-	}
-	return vec4f(float(1));
-}
 vec4f goodSinus(vec4f in) {
 	float64 x = in.x * 2 - 1;
 	float64 y = in.y * 2 - 1;
@@ -276,12 +257,12 @@ vec4f goodSinus(vec4f in) {
 	float64 s = 1.0;
 
 	static float64 length(vec2d vec) {
-		return float64.sqrt(vec.x * vec.x + vec.y * vec.y);
+		return Math.sqrt(vec.x * vec.x + vec.y * vec.y);
 	}
 
 	for (int i = 0; i < 10; i += 1) {
 		float64 fi = float64(i);
-		float64 t = float64.atan2(pos.x, pos.y) + time * .02 * fi;
+		float64 t = Math.atan2(pos.x, pos.y) + time * .02 * fi;
 		float64 len = (.0002 * fi) / nz(abs(length(pos) - (.5 + sin(t * (3 + fi)) * (.2 - fi * sin(time + fi) * .01))), 1e-10);
 		color += len * (1 - fi / 20);
 	}

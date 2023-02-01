@@ -1,3 +1,5 @@
+#!cmpl -X+steps -run/g
+
 char convert(char c) {
 	if (c == 'A') {
 		return 'C';

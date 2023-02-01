@@ -62,7 +62,7 @@ select {
 	display: block;
 	overflow: hidden;
 	width: 100%;
-	z-index: 10;
+	z-index: 11;
 }
 .toolbar * {
 	color: inherit;
@@ -373,12 +373,31 @@ body.autoheight .CodeMirror { height: unset; }
 body.autoheight .CodeMirror-scroll { height: auto; }
 
 #left-pan-sidebar {
-	float: right;
 	width: 5px;
 	top: 0;
-	right: 2;
+	left: var(--left-bar-size);
 	bottom: 0;
 	position: absolute;
 	cursor: col-resize;
 	background: transparent;
+	z-index: 11;
+}
+
+#right-pan-sidebar {
+	width: 5px;
+	top: 0;
+	right: var(--right-bar-size);
+	bottom: 0;
+	position: absolute;
+	cursor: col-resize;
+	background: transparent;
+	z-index: 11;
+}
+
+body:not(.left-bar) #left-pan-sidebar { display: none; }
+body:not(.right-bar) #right-pan-sidebar { display: none; }
+
+#left-pan-sidebar:hover,
+#right-pan-sidebar:hover {
+	background: rgba(173, 216, 230, 0.50);
 }

@@ -1,6 +1,4 @@
 // DatePicker
-inline "/cmplStd/lib/time/Datetime.ci";
-
 struct IntButton: View {
 	char text[16] = "";
 	int value;
@@ -58,7 +56,7 @@ struct DatePicker: Layout {
 	}
 
 	static bool update(DatePicker this, Timestamp timestamp) {
-		if (this.timestamp.value == timestamp.value) {
+		if (this.timestamp.equal(timestamp)) {
 			return false;
 		}
 		this.timestamp = timestamp;
@@ -286,7 +284,7 @@ struct DatePicker: Layout {
 		Layout.onCreate(this, parent);
 
 		Timestamp initValue = this.timestamp;
-		this.timestamp.value = 0;
+		this.timestamp = Timestamp(0, Timestamp.precision);
 		this.update(initValue);
 	}
 
@@ -296,7 +294,7 @@ struct DatePicker: Layout {
 	}
 
 	bool onReset(DatePicker this) {
-		this.timestamp.value = -1;
+		this.timestamp = Timestamp(-1, Timestamp.precision);
 		return this.update(Timestamp.now());
 	}
 }

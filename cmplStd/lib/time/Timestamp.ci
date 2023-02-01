@@ -1,24 +1,45 @@
-static if (typename(Timeunit) == null) {
-inline "Timeunit.ci";
-}
 /**
  * Timestamp is a position in time, without timezone information
  * in case locale is needed use Datetime.
  */
 struct Timestamp {
 	int64 value = 0;
-	static const Timeunit precision = Timeunit.precision;
 
+	///@public
+	static const Timeunit precision = Timeunit.Millis;
+
+	/// Returns the value of timestamp at the given precision (Seconds and Millis are mostly used as unix epoch)
 	static int64 value(Timestamp value, Timeunit precision) {
 		return convert(value.value, Timestamp.precision, precision);
 	}
 
+	/// Returns the value of timestamp at the given precision (Seconds and Millis are mostly used as unix epoch)
+	static int64 diff(Timestamp a, Timestamp b, Timeunit precision) {
+		return convert(a.value - b.value, Timestamp.precision, precision);
+	}
+
+	///@public
+	static Duration diff(Timestamp a, Timestamp b) {
+		return Duration(a.value - b.value, Timestamp.precision);
+	}
+
+	///@public
+	static bool equal(Timestamp a, Timestamp b, Timeunit precision) {
+		return a.value(precision) == b.value(precision);
+	}
+
+	///@public
+	static bool equal(Timestamp a, Timestamp b) {
+		return a.value == b.value;
+	}
+
+	/// increment the the current timestamp with the given `value` at the given `precision`
 	static Timestamp add(Timestamp lhs, int64 value, Timeunit precision) {
 		return { value: lhs.value + convert(value, precision, Timestamp.precision) };
 	}
 
 	/**
-	 * Floor the current datetime, leaving the field specified as the most significant field.
+	 * Floor the current timestamp, leaving the field specified as the most significant field.
 	 * For example, if you have the timestamp: 2002-03-28 13:45:01.231,
 	 * using resolution Timeunit.Days, it should return 2002-03-28 00:00:00.000.
 	 * using resolution Timeunit.Hours, it should return 2002-03-28 13:00:00.000.
@@ -36,7 +57,7 @@ struct Timestamp {
 	}
 
 	/**
-	 * Ceil the current datetime, leaving the field specified as the most significant field.
+	 * Ceil the current timestamp, leaving the field specified as the most significant field.
 	 * For example, if you have the timestamp: 2002-03-28 13:45:01.231,
 	 * using resolution Timeunit.Days, it should return 2002-03-29 00:00:00.000.
 	 * using resolution Timeunit.Hours, it should return 2002-03-28 14:00:00.000.
@@ -84,11 +105,13 @@ struct Timestamp {
 		return this./*setField(unit, start).*/distribute(unit, end - start);
 	}
 
+	/// get the current utc time as timestamp from the system
 	static Timestamp now() {
 		return { value: convert(System.millis(), Timeunit.Millis, Timestamp.precision) };
 	}
 }
 
+/// Create a timestamp from the given `value` at the given `precision`
 Timestamp Timestamp(int64 value, Timeunit precision) {
 	return { value: convert(value, precision, Timestamp.precision) };
 }

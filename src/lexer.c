@@ -364,11 +364,11 @@ static ccToken readTok(lexContext ctx, astn tok) {
 			}
 
 			// block comment
-			else if (next == '*' || next == '+') {
+			else if (next == '*') {
 				chr = readChr(ctx);
 
 				if (skipChr(ctx, chr)) {
-					// '/** ...' or '/++ ...'
+					// '/** ...'
 					if (peekChr(ctx) != '/') {
 						doc = ptr;
 					}
@@ -392,7 +392,7 @@ static ccToken readTok(lexContext ctx, astn tok) {
 							warn(ctx->rt, raise_warn_lex9, ctx->cc->file, ctx->cc->line, WARN_COMMENT_NESTED);
 							level = 1;
 						}
-						chr = 0;	// disable reading as valid comment: /*/ and /+/
+						chr = 0;	// disable reading as valid comment: /*/
 					}
 
 					if (newLine > 0 && !(chr_map[chr & 0xff] & SPACE)) {
@@ -917,14 +917,8 @@ static ccToken readTok(lexContext ctx, astn tok) {
 			break;
 		}
 		read_num: {			// int | ([0-9]+'.'[0-9]* | '.'[0-9]+)([eE][+-]?[0-9]+)?
-			int ovf = 0;			// overflow
-			ccKind cast;
-			int radix = 10;
-			int64_t i64v = 0;
-			float64_t f64v = 0;
-			char *suffix = NULL;
-
 			//~ 0[.oObBxX]?
+			int radix = 10;
 			if (chr == '0') {
 				*ptr++ = (char) chr;
 				chr = readChr(ctx);
@@ -961,6 +955,8 @@ static ccToken readTok(lexContext ctx, astn tok) {
 			}
 
 			//~ ([0-9a-fA-F])*
+			int overflow = 0;
+			int64_t i64v = 0;
 			while (chr != -1) {
 				int value = radix;
 				if (chr >= '0' && chr <= '9') {
@@ -979,7 +975,7 @@ static ccToken readTok(lexContext ctx, astn tok) {
 
 				// check for overflow
 				if (radix == 10 && i64v > (0x7fffffffffffffffLL - value) / radix) {
-					ovf = 1;
+					overflow = 1;
 				}
 
 				i64v = i64v * radix + value;
@@ -988,21 +984,18 @@ static ccToken readTok(lexContext ctx, astn tok) {
 				chr = readChr(ctx);
 			}
 
-			if (ovf != 0) {
+			if (overflow != 0) {
 				warn(ctx->rt, raise_warn_lex2, tok->file, tok->line, WARN_VALUE_OVERFLOW);
 			}
 
+			ccKind cast = CAST_i64;
 			if ((int32_t)i64v == i64v) {
 				cast = CAST_i32;
 			}
-			else {
-				cast = CAST_i64;
-			}
 
 			//~ ('.'[0-9]*)? ([eE]([+-]?)[0-9]+)?
+			float64_t f64v = i64v;
 			if (radix == 10) {
-
-				f64v = (float64_t)i64v;
 
 				if (chr == '.') {
 					long double val = 0;
@@ -1024,13 +1017,10 @@ static ccToken readTok(lexContext ctx, astn tok) {
 				}
 
 				if (chr == 'e' || chr == 'E') {
-					long double p = 1, m = 10;
-					unsigned int val = 0;
-					int sgn = 1;
-
 					*ptr++ = (char) chr;
 					chr = readChr(ctx);
 
+					int sgn = 1;
 					switch (chr) {
 						case '-':
 							sgn = -1;
@@ -1042,12 +1032,13 @@ static ccToken readTok(lexContext ctx, astn tok) {
 							break;
 					}
 
-					ovf = 0;
-					suffix = ptr;
+					overflow = 0;
+					char *suffix = ptr;
+					unsigned int val = 0;
 					while (chr >= '0' && chr <= '9') {
 						val = val * 10 + (chr - '0');
 						if (val > 1024) {
-							ovf = 1;
+							overflow = 1;
 						}
 
 						*ptr++ = (char) chr;
@@ -1057,10 +1048,12 @@ static ccToken readTok(lexContext ctx, astn tok) {
 					if (suffix == ptr) {
 						error(ctx->rt, tok->file, tok->line, ERR_INVALID_EXPONENT);
 					}
-					else if (ovf) {
+					else if (overflow) {
 						warn(ctx->rt, raise_warn_lex2, tok->file, tok->line, WARN_EXPONENT_OVERFLOW);
 					}
 
+					long double p = 1;
+					long double m = 10;
 					while (val) {		// pow(10, val);
 						if (val & 1) {
 							p *= m;
@@ -1071,15 +1064,14 @@ static ccToken readTok(lexContext ctx, astn tok) {
 
 					if (sgn < 0) {
 						f64v /= p;
-					}
-					else {
+					} else {
 						f64v *= p;
 					}
 					cast = CAST_f64;
 				}
 			}
 
-			suffix = ptr;
+			char *suffix = ptr;
 			while (ptr < end && chr != -1) {
 				if (!(chr_map[chr & 0xff] & CWORD)) {
 					break;

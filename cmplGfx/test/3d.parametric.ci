@@ -89,13 +89,13 @@ vec4f ellipse(float64 s, float64 t) {
 		tmax: +Math.pi / 2;
 	}
 
-	s = Math.lerp(s, smin, smax);
-	t = Math.lerp(t, tmin, tmax);
+	s = Math.mix(smin, smax, s);
+	t = Math.mix(tmin, tmax, t);
 
 	return {
-		x: X * float64.cos(t) * float64.cos(s);
-		y: Y * float64.cos(t) * float64.sin(s);
-		z: Z * float64.sin(t);
+		x: X * Math.cos(t) * Math.cos(s);
+		y: Y * Math.cos(t) * Math.sin(s);
+		z: Z * Math.sin(t);
 	};
 }
 vec4f cylinder(float64 s, float64 t) {
@@ -106,12 +106,12 @@ vec4f cylinder(float64 s, float64 t) {
 		tMax: 2 * Math.pi;
 	}
 
-	s = Math.lerp(s, sMin, sMax);
-	t = Math.lerp(t, tMin, tMax);
+	s = Math.mix(sMin, sMax, s);
+	t = Math.mix(tMin, tMax, t);
 
 	return {
-		x: float64.cos(t);
-		y: float64.sin(t);
+		x: Math.cos(t);
+		y: Math.sin(t);
 		z: -s;
 	};
 }
@@ -124,13 +124,13 @@ vec4f peak(float64 s, float64 t) {
 		tmin: -H;
 		tmax: +H;
 	}
-	s = Math.lerp(s, smin, smax);
-	t = Math.lerp(t, tmin, tmax);
-	float64 sst = float64.sqrt(s*s + t*t);
+	s = Math.mix(smin, smax, s);
+	t = Math.mix(tmin, tmax, t);
+	float64 sst = Math.sqrt(s*s + t*t);
 	return {
 		x: s / H;
 		y: t / H;
-		z: h / H * float64.sin(sst) / sst;
+		z: h / H * Math.sin(sst) / sst;
 	};
 }
 vec4f shell(float64 s, float64 t) {
@@ -143,14 +143,14 @@ vec4f shell(float64 s, float64 t) {
 		sMax: 2. * Math.pi;
 	}
 
-	s = Math.lerp(s, sMin, sMax);
-	t = Math.lerp(t, tMin, tMax);
+	s = Math.mix(sMin, sMax, s);
+	t = Math.mix(tMin, tMax, t);
 
 	float64 w = s / (2 * Math.pi);
 	return {
-		x: w * float64.cos(N * s) * (1 + float64.cos(t));
-		y: w * float64.sin(N * s) * (1 + float64.cos(t));
-		z: w * float64.sin(t) + H * (w * w);
+		x: w * Math.cos(N * s) * (1 + Math.cos(t));
+		y: w * Math.sin(N * s) * (1 + Math.cos(t));
+		z: w * Math.sin(t) + H * (w * w);
 	};
 }
 

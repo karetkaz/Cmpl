@@ -948,14 +948,14 @@ Widget Widget(int width, int height, const Style style&) {
 }
 Widget Widget(int width, int height) {
 	static const Style style = {
-		format: { padLen: 5, precision: 2 };
+		format: { precision: 2, trimDecimal: false };
 	};
 	return Widget(width, height, style);
 }
 FxWidget FxWidget(void onProcess(FxWidget widget), View views...) {
 	static const Style style = {
 		align: Style.left;
-		format: { padLen: 5, precision: 2 };
+		format: { precision: 2, trimDecimal: false };
 	};
 	FxWidget widget = {
 		radius: 5;

@@ -51,11 +51,32 @@ static vmError f64sqrt(nfcContext args) {
 	return noError;
 }
 static vmError f64atan2(nfcContext args) {
-	float64_t x = argf64(args, 8);
-	float64_t y = argf64(args, 0);
-	retf64(args, atan2(x, y));
+	float64_t y = argf64(args, 8);
+	float64_t x = argf64(args, 0);
+	retf64(args, atan2(y, x));
 	return noError;
 }
+static vmError f64ldexp(nfcContext args) {
+	float64_t x = argf64(args, sizeof(int32_t));
+	int32_t y = argi32(args, 0);
+	retf64(args, ldexp(x, y));
+	return noError;
+}
+static vmError f64frexp(nfcContext args) {
+	float64_t x = argf64(args, sizeof(vmOffs));
+	int32_t *y = vmPointer(args->rt, argref(args, 0));
+	retf64(args, frexp(x, y));
+	return noError;
+}
+static vmError f64parse(nfcContext args) {
+	const char *str = nextArg(args).ref;
+	float64_t *out = nextArg(args).ref;
+	char *end = NULL;
+	*out = strtod(str, &end);
+	retref(args, end - str);
+	return noError;
+}
+
 
 static vmError f32sin(nfcContext args) {
 	float32_t x = argf32(args, 0);
@@ -94,9 +115,9 @@ static vmError f32sqrt(nfcContext args) {
 	return noError;
 }
 static vmError f32atan2(nfcContext args) {
-	float32_t x = argf32(args, 4);
-	float32_t y = argf32(args, 0);
-	retf32(args, atan2f(x, y));
+	float32_t y = argf32(args, 4);
+	float32_t x = argf32(args, 0);
+	retf32(args, atan2f(y, x));
 	return noError;
 }
 
@@ -120,10 +141,11 @@ static vmError b32zxt(nfcContext args) {
 // count population of bits set to 1
 static vmError b32pop(nfcContext args) {
 	uint32_t val = argu32(args, 0);
-	val -= ((val >> 1) & 0x55555555);
-	val = (((val >> 2) & 0x33333333) + (val & 0x33333333));
-	val = (((val >> 4) + val) & 0x0f0f0f0f);
-	val += (val >> 8) + (val >> 16);
+	val -= (val >> 1) & 0x55555555;
+	val = (val & 0x33333333) + ((val >> 2) & 0x33333333);
+	val = (val + (val >> 4)) & 0x0f0f0f0f;
+	val += val >> 8;
+	val += val >> 16;
 	retu32(args, val & 0x3f);
 	return noError;
 }
@@ -265,13 +287,13 @@ static vmError sysMSleep(nfcContext args) {
 
 // void raise(char file[*], int line, int level, int trace, char message[*], variant inspect);
 static vmError sysRaise(nfcContext ctx) {
-	rtContext rt = ctx->rt;
-	char *file = nextArg(ctx).ref;
+	const char *file = nextArg(ctx).ref;
 	int line = nextArg(ctx).i32;
 	int logLevel = nextArg(ctx).i32;
 	int trace = nextArg(ctx).i32;
 	char *message = nextArg(ctx).ref;
 	rtValue inspect = nextArg(ctx);
+	rtContext rt = ctx->rt;
 
 	// logging is disabled or log level not reached.
 	if (rt->logFile == NULL || logLevel > (int)rt->logLevel) {
@@ -513,7 +535,6 @@ static int ccLibSys(ccContext cc) {
 }
 
 static int ccLibStd(ccContext cc) {
-	int err = ccLibSys(cc);
 
 	struct {
 		vmError (*fun)(nfcContext);
@@ -552,8 +573,12 @@ static int ccLibStd(ccContext cc) {
 		{f64pow,    "float64 pow(float64 x, float64 y)"},
 		{f64sqrt,   "float64 sqrt(float64 x)"},
 		{f64atan2,  "float64 atan2(float64 x, float64 y)"},
+		{f64ldexp,  "float64 ldexp(float64 x, int exp)"},
+		{f64frexp,  "float64 frexp(float64 x, int exp&)"},
+		{f64parse,  "int parse(const char value[], float64 out&)"},
 	};
 
+	int err = 0;
 	// Add extra operations to int32
 	if (!err && ccExtend(cc, cc->type_u32)) {
 		for (size_t i = 0; i < lengthOf(bit32); i += 1) {
@@ -598,5 +623,8 @@ static int ccLibStd(ccContext cc) {
 }
 
 int cmplInit(rtContext rt) {
-	return ccLibStd(rt->cc);
+	int err = 0;
+	err = err || ccLibSys(rt->cc);
+	err = err || ccLibStd(rt->cc);
+	return err;
 }

@@ -3,10 +3,7 @@
 ## Comments
 
 * line comments: `// ...`
-
 * block comments: `/* ... */`
-
-* nested comments: `/+ ... +/`
 
 ## Identifiers
 
@@ -23,29 +20,17 @@ Identifier: Letter (Letter | Number)*;
 Keywords are reserved words, which can not be used as identifiers.
 
 * break
-
 * const
-
 * continue
-
 * else
-
 * emit
-
 * enum
-
 * for
-
 * if
-
 * inline
-
 * parallel
-
 * return
-
 * static
-
 * struct
 
 ## Literals

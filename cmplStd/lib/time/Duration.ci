@@ -1,6 +1,3 @@
-static if (typename(Timeunit) == null) {
-inline "Timeunit.ci";
-}
 /**
  * Timespan is just a duration
  * for example: 33 seconds
@@ -8,7 +5,7 @@ inline "Timeunit.ci";
 struct Duration {
 	const int64 value = 0;
 	// fixme: inline precision = Timeunit.Millis;
-	static const Timeunit precision = Timeunit.precision;
+	static const Timeunit precision = Timeunit.Millis;
 
 	static int64 value(Duration duration, Timeunit precision) {
 		return convert(duration.value, Duration.precision, precision);

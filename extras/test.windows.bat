@@ -7,8 +7,8 @@ echo cmpl home is: %CMPL_HOME%
 SET BIN=%CMPL_HOME%\build\windows
 SET BIN_WCC=%CMPL_HOME%\build\wcc.windows
 
-SET "MINGW_HOME=C:\Workspace\MinGw-5.3.0"
-SET "WATCOM=C:\Workspace\ow_daily\rel2"
+SET "MINGW_HOME=%userprofile%\Dropbox\Software\bin\MinGw"
+SET "WATCOM=%userprofile%\Dropbox\Software\bin\Watcom"
 
 IF EXIST "%MINGW_HOME%" (
 	SET "PATH=%MINGW_HOME%\bin;%PATH%"

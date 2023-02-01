@@ -28,7 +28,7 @@ static struct Perlin {
 			}
 
 			//~ normalize2(g2[i]);
-			float n2 = float64.sqrt(sqr(g2[i][0]) + sqr(g2[i][1]));
+			float n2 = Math.sqrt(sqr(g2[i][0]) + sqr(g2[i][1]));
 			if (n2 != 0) {
 				g2[i][0] /= n2;
 				g2[i][1] /= n2;
@@ -39,7 +39,7 @@ static struct Perlin {
 			}
 
 			//~ normalize3(g3[i]);
-			float n3 = float64.sqrt(sqr(g3[i][0]) + sqr(g3[i][1]) + sqr(g3[i][1]));
+			float n3 = Math.sqrt(sqr(g3[i][0]) + sqr(g3[i][1]) + sqr(g3[i][1]));
 			if (n3 != 0) {
 				g3[i][0] /= n3;
 				g3[i][1] /= n3;

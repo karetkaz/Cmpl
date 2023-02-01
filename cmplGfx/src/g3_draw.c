@@ -759,6 +759,7 @@ int drawMesh(GxImage dst, GxMesh msh, matrix objm, camera cam, GxLight lights, i
 		drawBbox(dst, msh, proj);
 	}
 
+	(void) drawCubeMap;
 	return triangles;
 }
 

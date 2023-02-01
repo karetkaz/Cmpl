@@ -42,7 +42,7 @@ mat4f fitMatrix(const Image src, int newWidth, int newHeight, bool fitWidth, boo
 		}
 		// debug("new aspect", ratio);
 		if (ratio > maxAspect) {
-			scale *= float64.sqrt(maxAspect / ratio);
+			scale *= Math.sqrt(maxAspect / ratio);
 		}
 	}
 
@@ -59,8 +59,8 @@ mat4f fitMatrix(const Image src, int newWidth, int newHeight, bool fitWidth, boo
 }
 mat4f skewMatrix(float sx, float sy) {
 	return {
-		x: {x: 1, y: float.tan(sx), z: 0, w: 0};
-		y: {x: float.tan(sy), y: 1, z: 0, w: 0};
+		x: {x: 1, y: Math.tan(sx), z: 0, w: 0};
+		y: {x: Math.tan(sy), y: 1, z: 0, w: 0};
 		z: {x: 0, y: 0, z: 1, w: 0};
 		w: {x: 0, y: 0, z: 0, w: 1};
 	};

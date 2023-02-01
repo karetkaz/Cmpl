@@ -1,6 +1,3 @@
-inline "/cmplStd/lib/math/Polynomial.ci";
-inline "/cmplStd/lib/text/encoding/Ascii.ci";
-
 static TextWriter out = AsciiWriter {
 	writer: FileWriter {
 		file: File.log;
