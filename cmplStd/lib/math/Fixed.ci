@@ -1,0 +1,740 @@
+/// simple fixed point, `precision` bits used for decimal part, the rest for integer part
+struct Fixed {
+	int32 value = 0;
+
+	enum: int32 {
+		precision: 20; // todo: precision should be class parameter and/or declared as inline
+
+		one: 1 << precision;
+		nan: 0x80000000;
+		inf: 0x7fffffff;
+		half: one / 2;
+		mask: one - 1;
+
+		mpi_28: 0x3243f6a8;							// 3.141592653589793 : pi
+		ln2_28: 0x0b17217f;							// .6931471805599453 : natural logarithm (2)
+		lg2_28: 0x04d104d4;							// .3010299956639812 : decimal logarithm (2)
+		l2e_28: 0x17154765;							// 1.442695040888963 : logarithm base 2  (e)
+		l2t_28: 0x35269e12;							// 3.321928094887362 : logarithm base 2 (10)
+		d2r_28: 0x00477d1a;							// pi / 180 : degrees to radians
+		r2d_24: 0x394bb834;							// 180 / pi : radians to degrees
+
+		piMul2: mpi_28 >> (28 - precision - 1);		// 2 * pi
+		piDiv2: mpi_28 >> (28 - precision + 1);		// pi / 2
+
+		pi: mpi_28 >> (28 - precision);				// 3.141592653589793 : pi
+		ln2: ln2_28 >> (28 - precision);			// .6931471805599453 : natural logarithm (2)
+		lg2: lg2_28 >> (28 - precision);			// .3010299956639812 : decimal logarithm (2)
+		l2e: l2e_28 >> (28 - precision);			// 1.442695040888963 : logarithm base 2  (e)
+		l2t: l2t_28 >> (28 - precision);			// 3.321928094887362 : logarithm base 2 (10)
+	}
+
+	static Fixed as(int32 value) { return {value: value}; }
+
+	///@public
+	static Fixed neg(Fixed a) { return {value: -a.value}; }
+
+	///@public
+	static Fixed add(Fixed a, Fixed b) { return {value: a.value + b.value}; }
+	static Fixed add(Fixed a, int32 b) { return {value: a.value + b}; }
+
+	///@public
+	static Fixed sub(Fixed a, Fixed b) { return {value: a.value - b.value}; }
+	static Fixed sub(Fixed a, int32 b) { return {value: a.value - b}; }
+
+	///@public
+	static Fixed mul(Fixed a, Fixed b) { return {value: (int64(a.value) * b.value) >> precision}; }
+	static Fixed mul(Fixed a, int32 b) { return {value: a.value * b}; }
+	static Fixed mul_28(Fixed a, int32 b) { return {value: int64(a.value) * b >> 28}; }
+
+	///@public
+	static Fixed div(Fixed a, Fixed b) {
+		if (b.value == 0) {
+			if (a.value == 0) {
+				return as(nan);
+			}
+			return as(a.value < 0 ? -inf : inf);
+		}
+		return {value: (int64(a.value) << precision) / b.value};
+	}
+	static Fixed div(Fixed a, int32 b) { return {value: a.value / b}; }
+
+	///@public
+	static Fixed mod(Fixed a, Fixed b) { return {value: a.value % b.value}; }
+
+	///@public
+	static Fixed inv(Fixed x) {
+		if (x.value == 0) {
+			return {value: inf};
+		}
+		int64 value = (int64(one) << precision) / x.value;
+		if (value >> 31 != value >> 63) {
+			return {value: value < 0 ? -inf : inf};
+		}
+		return {value: value};
+	}
+
+
+	/// Returns the fractional part of the fixed point number
+	static Fixed fract(Fixed x) {
+		if (x.value < 0) {
+			return {value: -(-x.value & mask)};
+		}
+		return {value: x.value & (nan|mask)};
+	}
+
+	///@public
+	static Fixed floor(Fixed x) {
+		return {value: x.value & ~mask};
+	}
+
+	///@public
+	static Fixed ceil(Fixed x) {
+		return neg(floor(neg(x)));
+	}
+
+	///@public
+	static Fixed round(Fixed x) {
+		return floor(as(x.value + half));
+	}
+
+	/// Determines whether the given fixed point value is finite: `!isNan(x) && !isInf(x)`
+	static bool isFinite(Fixed x) {
+		if (x.value == nan) {
+			return false;
+		}
+		if (x.value == inf) {
+			return false;
+		}
+		if (x.value == -inf) {
+			return false;
+		}
+		return true;
+	}
+
+	/// Determines whether the given fixed point is less than the other one.
+	static int compare(Fixed a, Fixed b) {
+		return int(a.value < b.value) - int(a.value > b.value);
+	}
+
+
+	/**	Returns the binary logarithm of the argument `x`.
+	 * 	log2(x) = log2((2 ** n) * ((x / 2) ** n)) =
+	 * 	= log2(2 ** n) + log2((x / 2) ** n) = n + log2(q)
+	 * 	n = most significant bit of x (BSR (bit scan reverse))
+	 * 	q = (x / 2) ** n = (x > 1) ? (x >> n) : (x << -n)
+	 * 	x > 1 <=> n - precision > 0
+	 * 	log2(q) = look up from table
+	**/
+	static Fixed log2(Fixed x) {
+		// Special cases todo:
+		//  * log2(±Inf) = +Inf
+		//  * log2(0) = -Inf
+		//  * log2(x<0) = NaN
+		//  * log2(NaN) = NaN
+
+		static if (precision > 28) {error_precision_must_be_at_most_28_bits;}
+		static if (precision < 8) {error_precision_must_be_at_least_8_bits;}
+		static const uint32 tbl_log2[257] = {
+			// log2(x + 1), x : [0, 1), x = float64.log2(index / 256. + 1) << 28
+			0x00000000, 0x001709c4, 0x002dfca1, 0x0044d8c4, 0x005b9e5a, 0x00724d8e, 0x0088e68e, 0x009f6984,
+			0x00b5d69b, 0x00cc2dfe, 0x00e26fd5, 0x00f89c4c, 0x010eb389, 0x0124b5b7, 0x013aa2fd, 0x01507b83,
+			0x01663f6f, 0x017beee9, 0x01918a16, 0x01a7111d, 0x01bc8424, 0x01d1e34e, 0x01e72ec1, 0x01fc66a0,
+			0x02118b11, 0x02269c36, 0x023b9a32, 0x02508529, 0x02655d3c, 0x027a228d, 0x028ed53f, 0x02a37572,
+			0x02b80347, 0x02cc7edf, 0x02e0e85a, 0x02f53fd8, 0x0309857a, 0x031db95d, 0x0331dba0, 0x0345ec64,
+			0x0359ebc5, 0x036dd9e2, 0x0381b6d9, 0x039582c7, 0x03a93dc9, 0x03bce7fc, 0x03d0817c, 0x03e40a67,
+			0x03f782d7, 0x040aeae8, 0x041e42b6, 0x04318a5d, 0x0444c1f6, 0x0457e99d, 0x046b016c, 0x047e097d,
+			0x049101ea, 0x04a3eacd, 0x04b6c43f, 0x04c98e58, 0x04dc4933, 0x04eef4e8, 0x0501918e, 0x05141f3f,
+			0x05269e12, 0x05390e20, 0x054b6f7f, 0x055dc246, 0x0570068e, 0x05823c6d, 0x059463f9, 0x05a67d49,
+			0x05b88873, 0x05ca858d, 0x05dc74ae, 0x05ee55eb, 0x06002958, 0x0611ef0c, 0x0623a71c, 0x0635519c,
+			0x0646eea2, 0x06587e41, 0x066a008e, 0x067b759d, 0x068cdd82, 0x069e3851, 0x06af861e, 0x06c0c6fb,
+			0x06d1fafd, 0x06e32236, 0x06f43cba, 0x07054a9b, 0x07164beb, 0x072740bd, 0x07382924, 0x07490532,
+			0x0759d4f8, 0x076a9888, 0x077b4ff5, 0x078bfb4f, 0x079c9aa8, 0x07ad2e11, 0x07bdb59c, 0x07ce3159,
+			0x07dea15a, 0x07ef05ae, 0x07ff5e66, 0x080fab93, 0x081fed45, 0x0830238c, 0x08404e79, 0x08506e1a,
+			0x08608280, 0x08708bba, 0x088089d8, 0x08907ce9, 0x08a064fd, 0x08b04222, 0x08c01467, 0x08cfdbdc,
+			0x08df988f, 0x08ef4a8e, 0x08fef1e9, 0x090e8ead, 0x091e20ea, 0x092da8ac, 0x093d2602, 0x094c98fb,
+			0x095c01a3, 0x096b6009, 0x097ab43a, 0x0989fe45, 0x09993e35, 0x09a87419, 0x09b79ffd, 0x09c6c1f0,
+			0x09d5d9fd, 0x09e4e832, 0x09f3ec9b, 0x0a02e746, 0x0a11d83f, 0x0a20bf92, 0x0a2f9d4c, 0x0a3e7179,
+			0x0a4d3c25, 0x0a5bfd5d, 0x0a6ab52d, 0x0a7963a0, 0x0a8808c3, 0x0a96a4a1, 0x0aa53746, 0x0ab3c0bd,
+			0x0ac24113, 0x0ad0b852, 0x0adf2686, 0x0aed8bba, 0x0afbe7fa, 0x0b0a3b50, 0x0b1885c7, 0x0b26c76b,
+			0x0b350047, 0x0b433064, 0x0b5157cf, 0x0b5f7691, 0x0b6d8cb5, 0x0b7b9a45, 0x0b899f4d, 0x0b979bd6,
+			0x0ba58feb, 0x0bb37b95, 0x0bc15edf, 0x0bcf39d4, 0x0bdd0c7c, 0x0bead6e2, 0x0bf89910, 0x0c065310,
+			0x0c1404ea, 0x0c21aeaa, 0x0c2f5058, 0x0c3ce9fe, 0x0c4a7ba5, 0x0c580557, 0x0c65871d, 0x0c730101,
+			0x0c80730b, 0x0c8ddd44, 0x0c9b3fb6, 0x0ca89a6a, 0x0cb5ed69, 0x0cc338bb, 0x0cd07c69, 0x0cddb87d,
+			0x0ceaecfe, 0x0cf819f6, 0x0d053f6d, 0x0d125d6b, 0x0d1f73f9, 0x0d2c8320, 0x0d398ae8, 0x0d468b58,
+			0x0d53847a, 0x0d607656, 0x0d6d60f3, 0x0d7a445a, 0x0d872093, 0x0d93f5a5, 0x0da0c39a, 0x0dad8a78,
+			0x0dba4a47, 0x0dc70310, 0x0dd3b4d9, 0x0de05fab, 0x0ded038e, 0x0df9a088, 0x0e0636a2, 0x0e12c5e2,
+			0x0e1f4e51, 0x0e2bcff5, 0x0e384ad7, 0x0e44befd, 0x0e512c6e, 0x0e5d9332, 0x0e69f350, 0x0e764ccf,
+			0x0e829fb6, 0x0e8eec0c, 0x0e9b31d9, 0x0ea77122, 0x0eb3a9f0, 0x0ebfdc48, 0x0ecc0832, 0x0ed82db4,
+			0x0ee44cd5, 0x0ef0659c, 0x0efc7810, 0x0f088436, 0x0f148a17, 0x0f2089b7, 0x0f2c831e, 0x0f387652,
+			0x0f446359, 0x0f504a3a, 0x0f5c2afc, 0x0f6805a4, 0x0f73da38, 0x0f7fa8c0, 0x0f8b7140, 0x0f9733c0,
+			0x0fa2f045, 0x0faea6d6, 0x0fba5778, 0x0fc60231, 0x0fd1a708, 0x0fdd4602, 0x0fe8df26, 0x0ff47278,
+			0x10000000
+		};
+
+		if (x.value <= 0) {
+			if (x.value == 0) {
+				return {value: -inf};
+			}
+			return {value: nan};
+		}
+
+		// todo: simplify
+		int32 n = Bits.scanReverse(x.value);
+		uint32 idx = (n > 8 ? x.value >> n - 8 : x.value << 8 - n) & 0xff;
+		int32 value = tbl_log2[idx];
+		static if (precision > 8) {
+			uint32 mix = (n > 16
+				? x.value >> n - 16
+				: x.value << 16 - n
+			) & 0xff;
+			value += mix * (tbl_log2[idx + 1] - value) >> 8;
+		}
+		return {value: (n - precision << precision) + (value >> 28 - precision)};
+	}
+
+	/// Returns the natural logarithm of the argument `x`.
+	static Fixed log(Fixed x) {
+		// Special cases todo:
+		//  * log(+Inf) = +Inf
+		//  * log(0) = -Inf
+		//  * log(x<0) = NaN
+		//  * log(NaN) = NaN
+
+		// ln(x) = log2(x) / log2(e) = log2(x) * ln(2);
+		x = log2(x);
+		if (!isFinite(x)) {
+			return x;
+		}
+		// todo: more precision with division
+		return mul_28(x, ln2_28);
+	}
+
+	/// Returns the decimal logarithm of the argument `x`.
+	static Fixed log10(Fixed x) {
+		// Special cases todo:
+		//  * log10(+Inf) = +Inf
+		//  * log10(0) = -Inf
+		//  * log10(x<0) = NaN
+		//  * log10(NaN) = NaN
+
+		// log10(x) = log2(x) / log2(10) = log2(x) * log10(2);
+		x = log2(x);
+		if (!isFinite(x)) {
+			return x;
+		}
+		return mul_28(x, lg2_28);
+	}
+
+	/// Returns the logarithm of the argument `x`.
+	static Fixed log(Fixed x, Fixed base) {
+		// log(x, base) := log2(x) / log2(base);
+		x = log2(x);
+		if (!isFinite(x)) {
+			return x;
+		}
+		base = log2(base);
+		if (!isFinite(base)) {
+			return base;
+		}
+		return div(x, base);
+	}
+
+
+	/**	exp2(x) <=> 2 ** x
+	 *	exp2(x) = exp2(n + q) = exp2(n) * exp2(q)
+	 *	let n = floor(x);
+	 *  let q = fract(x);
+	 *  exp2(n) = 2 ** n = 1 << n
+	 *	exp2(q) = 1 + look up from table
+	 *	exp2(x) = (x >= 0) ? (exp2(q) << n) : (exp2(q) >> -n)
+	 *	---------------------------------------------------
+	**/
+	static Fixed exp2(Fixed x) {
+		// Special cases todo:
+		//  * exp(+Inf) = +Inf
+		//  * exp(NaN) = NaN
+		//  * exp(-Inf) = 0
+		//  * exp(0) = 1
+
+		static if (precision > 28) {error_precision_must_be_at_most_28_bits;}
+		static if (precision < 8) {error_precision_must_be_at_least_8_bits;}
+		static const uint32 tbl_exp2[257] = {
+			// (2 ** x) - 1, x : [0, 1), x = (float64.exp2(i / 256.) - 1) << 28
+			0x00000000, 0x000b1afa, 0x00163da9, 0x00216814, 0x002c9a3e, 0x0037d42e, 0x004315e8, 0x004e5f72,
+			0x0059b0d3, 0x00650a0e, 0x00706b29, 0x007bd42b, 0x00874518, 0x0092bdf6, 0x009e3eca, 0x00a9c79b,
+			0x00b5586c, 0x00c0f145, 0x00cc922b, 0x00d83b23, 0x00e3ec32, 0x00efa55f, 0x00fb66af, 0x01073028,
+			0x011301d0, 0x011edbab, 0x012abdc0, 0x0136a814, 0x01429aae, 0x014e9593, 0x015a98c8, 0x0166a454,
+			0x0172b83c, 0x017ed486, 0x018af938, 0x01972658, 0x01a35beb, 0x01af99f8, 0x01bbe084, 0x01c82f95,
+			0x01d48731, 0x01e0e75e, 0x01ed5022, 0x01f9c184, 0x02063b88, 0x0212be35, 0x021f4991, 0x022bdda2,
+			0x02387a6e, 0x02451ffb, 0x0251ce4f, 0x025e8571, 0x026b4565, 0x02780e34, 0x0284dfe1, 0x0291ba75,
+			0x029e9df5, 0x02ab8a66, 0x02b87fd0, 0x02c57e39, 0x02d285a6, 0x02df961f, 0x02ecafa9, 0x02f9d24a,
+			0x0306fe0a, 0x031432ed, 0x032170fc, 0x032eb83b, 0x033c08b2, 0x03496266, 0x0356c55f, 0x036431a2,
+			0x0371a737, 0x037f2623, 0x038cae6d, 0x039a401b, 0x03a7db34, 0x03b57fbf, 0x03c32dc3, 0x03d0e544,
+			0x03dea64c, 0x03ec70df, 0x03fa4504, 0x040822c3, 0x04160a21, 0x0423fb27, 0x0431f5d9, 0x043ffa3f,
+			0x044e0860, 0x045c2042, 0x046a41ed, 0x04786d66, 0x0486a2b5, 0x0494e1e1, 0x04a32af0, 0x04b17dea,
+			0x04bfdad5, 0x04ce41b8, 0x04dcb299, 0x04eb2d81, 0x04f9b276, 0x0508417f, 0x0516daa2, 0x05257de8,
+			0x05342b56, 0x0542e2f4, 0x0551a4ca, 0x056070dd, 0x056f4736, 0x057e27db, 0x058d12d4, 0x059c0827,
+			0x05ab07dd, 0x05ba11fb, 0x05c9268a, 0x05d84590, 0x05e76f15, 0x05f6a320, 0x0605e1b9, 0x06152ae6,
+			0x06247eb0, 0x0633dd1d, 0x06434634, 0x0652b9fe, 0x06623882, 0x0671c1c7, 0x068155d4, 0x0690f4b1,
+			0x06a09e66, 0x06b052fa, 0x06c01275, 0x06cfdcdd, 0x06dfb23c, 0x06ef9298, 0x06ff7df9, 0x070f7466,
+			0x071f75e8, 0x072f8286, 0x073f9a48, 0x074fbd35, 0x075feb56, 0x077024b1, 0x0780694f, 0x0790b938,
+			0x07a11473, 0x07b17b09, 0x07c1ed01, 0x07d26a62, 0x07e2f336, 0x07f38784, 0x08042754, 0x0814d2ad,
+			0x08258999, 0x08364c1e, 0x08471a46, 0x0857f417, 0x0868d99b, 0x0879cad9, 0x088ac7d9, 0x089bd0a4,
+			0x08ace542, 0x08be05ba, 0x08cf3216, 0x08e06a5e, 0x08f1ae99, 0x0902fed0, 0x09145b0b, 0x0925c353,
+			0x093737b0, 0x0948b82b, 0x095a44cb, 0x096bdd9a, 0x097d829f, 0x098f33e4, 0x09a0f170, 0x09b2bb4d,
+			0x09c49182, 0x09d67419, 0x09e86319, 0x09fa5e8d, 0x0a0c667b, 0x0a1e7aed, 0x0a309bec, 0x0a42c980,
+			0x0a5503b2, 0x0a674a8a, 0x0a799e13, 0x0a8bfe53, 0x0a9e6b55, 0x0ab0e521, 0x0ac36bbf, 0x0ad5ff3a,
+			0x0ae89f99, 0x0afb4ce6, 0x0b0e0729, 0x0b20ce6c, 0x0b33a2b8, 0x0b468415, 0x0b59728d, 0x0b6c6e29,
+			0x0b7f76f2, 0x0b928cf2, 0x0ba5b030, 0x0bb8e0b7, 0x0bcc1e90, 0x0bdf69c3, 0x0bf2c25b, 0x0c062861,
+			0x0c199bdd, 0x0c2d1cd9, 0x0c40ab5f, 0x0c544778, 0x0c67f12e, 0x0c7ba889, 0x0c8f6d94, 0x0ca34057,
+			0x0cb720dc, 0x0ccb0f2e, 0x0cdf0b55, 0x0cf3155b, 0x0d072d4a, 0x0d1b532b, 0x0d2f8708, 0x0d43c8ea,
+			0x0d5818dc, 0x0d6c76e8, 0x0d80e316, 0x0d955d71, 0x0da9e603, 0x0dbe7cd6, 0x0dd321f3, 0x0de7d564,
+			0x0dfc9733, 0x0e11676b, 0x0e264614, 0x0e3b333b, 0x0e502ee7, 0x0e653924, 0x0e7a51fb, 0x0e8f7977,
+			0x0ea4afa2, 0x0eb9f486, 0x0ecf482d, 0x0ee4aaa2, 0x0efa1bee, 0x0f0f9c1c, 0x0f252b37, 0x0f3ac948,
+			0x0f50765b, 0x0f663279, 0x0f7bfdad, 0x0f91d802, 0x0fa7c181, 0x0fbdba36, 0x0fd3c22b, 0x0fe9d96b,
+			0x10000000
+		};
+
+		uint32 idx = (x.value >> (precision - 8)) & 0xff;
+		uint32 value = tbl_exp2[idx];
+		static if (precision > 8) {
+			uint32 mix = (precision > 16
+				? x.value >> (precision - 16)
+				: x.value << (16 - precision)
+			) & 0xff;
+			value += mix * (tbl_exp2[idx + 1] - value) >> 8;
+		}
+
+		int32 n = (x.value >> precision) - (28 - precision);
+		int32 q = (1 << 28) + value; // add one missing from lookup table
+		return as(n < 0 ? q >> -n : q << n);
+	}
+
+	/// Returns the base-e exponential: $ e^x $.
+	static Fixed exp(Fixed x) {
+		// Special cases todo:
+		//  * exp(+Inf) = +Inf
+		//  * exp(NaN) = NaN
+		//  * exp(-Inf) = 0
+		//  * exp(0) = 1
+
+		// e ** x = exp(x) = exp2(x * log2(e))
+		return exp2(mul_28(x, l2e_28));
+	}
+
+	/// Returns the base 10 exponential: $ 10^x $.
+	static Fixed exp10(Fixed x) {
+		// Special cases todo:
+		//  * exp(+Inf) = +Inf
+		//  * exp(NaN) = NaN
+		//  * exp(-Inf) = 0
+		//  * exp(0) = 1
+
+		// 10 ** x = exp10(x) = exp2(x * log2(10))
+		return exp2(mul_28(x, l2t_28));
+	}
+
+	/// Returns the square root of the parameter `x`: $\sqrt{x}$.
+	static Fixed sqrt(Fixed x) {
+		// Special cases todo:
+		//  * sqrt(+Inf) = +Inf
+		//  * sqrt(±0) = ±0
+		//  * sqrt(x < 0) = NaN
+		//  * sqrt(NaN) = NaN
+
+		if (x.value <= 0) {
+			if (x.value < 0) {
+				return as(nan);
+			}
+			return as(0);
+		}
+
+		static if ((precision & 1) != 0) {
+			return exp2(div(log2(x), 2));
+		}
+
+		// adapted from "Graphics Gems"
+		uint32 root = 0;			// Clear root
+		uint32 remHi = 0;			// Clear high part of partial remainder
+		uint32 remLo = x.value;		// Get argument into low part of partial remainder
+		for (uint32 count = 16 + (precision >> 1); count != 0; count -= 1) {
+			remHi = (remHi << 2) | (remLo >> 30);		// get 2 bits of arg
+			remLo <<= 2;
+			root <<= 1;									// Get ready for the next bit in the root
+			uint32 testDiv = (root << 1) + 1;			// Test radical
+			if (remHi >= testDiv) {
+				remHi -= testDiv;
+				root += 1;
+			}
+		}
+		return as(root);
+	}
+
+	/// Returns `x` raised to the power of `y`: $ x^y $.
+	static Fixed pow(Fixed x, Fixed y) {
+		if (y.value == 0 || x.value == one) {
+			// pow(x, 0) = 1 for any x
+			// pow(1, y) = 1 for any y
+			return as(one);
+		}
+		if (y.value == one) {
+			// pow(x, 1) = x for any x
+			return x;
+		}
+		if (y.value == half) {
+			// pow(x, .5) = sqrt(x)
+			return sqrt(x);
+		}
+		if (x.value == nan || y.value == nan) {
+			// pow(NaN, y) = NaN
+			// pow(x, NaN) = NaN
+			return as(nan);
+		}
+		if (x.value == 0) {
+			// pow(±0, y) = ±Inf for y an odd integer < 0
+			// pow(±0, -Inf) = +Inf
+			// pow(±0, +Inf) = +0
+			// pow(±0, y) = +Inf for finite y < 0 and not an odd integer
+			// pow(±0, y) = ±0 for y an odd integer > 0
+			// pow(±0, y) = +0 for finite y > 0 and not an odd integer
+			if (y.value < 0) {
+				return as(inf);
+			}
+			return as(0);
+		}
+
+		// Special cases todo:
+		//  * pow(-1, ±Inf) = 1
+		//  * pow(x, +Inf) = +Inf for |x| > 1
+		//  * pow(x, -Inf) = +0 for |x| > 1
+		//  * pow(x, +Inf) = +0 for |x| < 1
+		//  * pow(x, -Inf) = +Inf for |x| < 1
+		//  * pow(+Inf, y) = +Inf for y > 0
+		//  * pow(+Inf, y) = +0 for y < 0
+		//  * pow(-Inf, y) = Pow(-0, -y)
+		//  * pow(x, y) = NaN for finite x < 0 and finite non-integer y
+
+		if ((y.value & mask) == 0) {
+			int32 res = one;
+			int64 sqr = x.value;
+			int32 pow = (y.value < 0 ? -y.value : y.value) >> precision;
+			// todo: overflow check
+			for (;pow != 0;) {
+				if ((pow & 1) != 0) {
+					res = res * sqr >> precision;
+				}
+				sqr = sqr * sqr >> precision;
+				pow >>= 1;
+			}
+			return y.value < 0 ? inv(as(res)) : as(res);
+		}
+
+		return exp2(mul(y, log2(x)));
+	}
+
+
+	inline horner(int32 x, int32 a0, int32 a1) = a0 + int32(a1 * int64(x) >> precision);
+	inline horner(int32 x, int32 a0, int32 a1, int32 a2) = horner(x, a0, horner(x, a1, a2));
+	inline horner(int32 x, int32 a0, int32 a1, int32 a2, int32 a3) = horner(x, a0, horner(x, a1, a2, a3));
+	inline horner(int32 x, int32 a0, int32 a1, int32 a2, int32 a3, int32 a4) = horner(x, a0, horner(x, a1, a2, a3, a4));
+	inline horner(int32 x, int32 a0, int32 a1, int32 a2, int32 a3, int32 a4, int32 a5) = horner(x, a0, horner(x, a1, a2, a3, a4, a5));
+
+	/// Returns the sine of the radian argument `x`.
+	static Fixed sin(Fixed x) {
+		// Special cases todo:
+		//  * sin(±0) = ±0
+		//  * sin(±Inf) = NaN
+		//  * sin(NaN) = NaN
+
+		enum: int32 {
+			p0: one * +1. / 1;			// 1/1!
+			p1: one * -1. / 6;			// 1/3!
+			p2: one * +1. / 120;		// 1/5!
+			p3: one * -1. / 5040;		// 1/7!
+			p4: one * +1. / 362880;		// 1/9!
+			p5: one * -1. / 39916800;	// 1/11!
+		}
+
+		x.value %= piMul2;
+		if (x.value < 0) {
+			x.value += piMul2;
+		}
+
+		// x in [0, 2*pi)
+		int32 sign = 1;
+		if (x.value >= pi) {
+			x.value -= pi;
+			sign = -1;
+		}
+
+		// x in [0, pi)
+		if (x.value >= piDiv2) {
+			x.value = pi - x.value;
+		}
+
+		// x in [0, pi / 2)
+		int32 xsq = int64(x.value) * x.value >> precision;
+		int32 res = horner(xsq, p0, p1, p2, p3, p4, p5);
+		return mul(x, as(sign * res));
+	}
+
+	/// Returns the hyperbolic sine of the radian argument `x`.
+	static Fixed sinh(Fixed x) {
+		// Special cases:
+		//  * sinh(±0) = ±0
+		//  * sinh(±Inf) = ±Inf
+		//  * sinh(NaN) = NaN
+		if (x.value == 0) {
+			return as(0);
+		}
+		if (!isFinite(x)) {
+			return x;
+		}
+
+		// sinh(x) = (exp(x) - exp(-x)) / 2;
+		return div(sub(exp(x), exp(neg(x))), 2);
+	}
+
+	/*todo:/// Returns the inverse sine of the radian argument `x`.
+	static Fixed asin(Fixed x) {
+		// Special cases:
+		//  * asin(±0) = ±0
+		//  * asin(x > 1) = NaN
+		//  * asin(x < -1) = NaN
+
+		// asin(x) = atan2(x, sqrt((1 + x) * (1 - x)));
+		return atan2(x, sqrt((1 + x) * (1 - x)));
+	}*/
+
+	/*todo:/// Returns the inverse hyperbolic sine of the radian argument `x`.
+	static Fixed asinh(Fixed x) {
+		// Special cases:
+		//  * asinh(±0) = ±0
+		//  * asinh(±Inf) = ±Inf
+		//  * asinh(NaN) = NaN
+
+		// asinh(x) = log(x + sqrt(x * x + 1));
+		return log(x + sqrt(x * x + 1));
+	}*/
+
+
+	/// Returns the cosine of the radian argument `x`.
+	static Fixed cos(Fixed x) {
+		// Special cases todo:
+		//  * cos(±Inf) = NaN
+		//  * cos(NaN) = NaN
+
+		enum: int32 {
+			p0: one * +1. / 1;			// 1/0!
+			p1: one * -1. / 2;			// 1/2!
+			p2: one * +1. / 24;			// 1/4!
+			p3: one * -1. / 720;		// 1/6!
+			p4: one * +1. / 40320;		// 1/8!
+			p5: one * -1. / 3628800;	// 1/10!
+		}
+
+		x.value %= piMul2;
+		if (x.value < 0) {
+			x.value += piMul2;
+		}
+
+		// x in [0, 2*pi)
+		if (x.value > pi) {
+			x.value = piMul2 - x.value;
+		}
+
+		// x in [0, pi)
+		int32 sign = 1;
+		if (x.value >= piDiv2) {
+			x.value -= pi;
+			sign = -1;
+		}
+
+		// x in [0, pi / 2)
+		int32 xsq = int64(x.value) * x.value >> precision;
+		int32 res = horner(xsq, p0, p1, p2, p3, p4, p5);
+		return as(sign * res);
+	}
+
+	/*todo:/// Returns the hyperbolic cosine of the radian argument `x`.
+	static Fixed cosh(Fixed x) {
+		// Special cases:
+		//  * cosh(±0) = 1
+		//  * cosh(±Inf) = +Inf
+		//  * cosh(NaN) = NaN
+
+		if (x.value == 0) {
+			return as(1);
+		}
+
+		// cosh(x) = (exp(x) + exp(-x)) / 2;
+		return (exp(x) + exp(-x)) / 2;
+	}*/
+
+	/*todo:/// Returns the inverse cosine of the radian argument `x`.
+	static Fixed acos(Fixed x) {
+		// Special cases:
+		//  * acos(x > 1) = NaN
+		//  * acos(x < -1) = NaN
+
+		// acos(x) = atan2(sqrt((1 + x) * (1 - x)), x);
+		return atan2(sqrt((1 + x) * (1 - x)), x);
+	}*/
+
+	/*todo:/// Returns the inverse hyperbolic cosine of the radian argument `x`.
+	static Fixed acosh(Fixed x) {
+		// Special cases:
+		//  * acosh(+Inf) = +Inf
+		//  * acosh(x < 1) = NaN
+		//  * acosh(NaN) = NaN
+
+		// acosh(x) = log(x + sqrt(x * x - 1));
+		return log(x + sqrt(x * x - 1));
+	}*/
+
+
+	/// Returns the tangent of the radian argument `x`.
+	static Fixed tan(Fixed x) {
+		// Special cases todo:
+		//  * tan(±0) = ±0
+		//  * tan(±Inf) = NaN
+		//  * tan(NaN) = NaN
+		return div(sin(x), cos(x));
+	}
+
+	/*todo:/// Returns the hyperbolic tangent of the radian argument `x`.
+	static Fixed tanh(Fixed x) {
+		// Special cases:
+		//  * tanh(±0) = ±0
+		//  * tanh(±Inf) = ±1
+		//  * tanh(NaN) = NaN
+
+		// tanh(x) = sinh(x) / cosh(x)
+		//         = (exp(x) - exp(-x)) / (exp(x) + exp(-x))
+		//         = (exp(2 * x) - 1) / (exp(2 * x) + 1)
+		//         = (1 - exp(-2*x)) / (exp(-2*x) - 1 + 2)
+		//         ...
+		//         = 1 - 2 / (exp(2 * x) + 1)
+		x = exp(mul(x, 2));
+		return div(sub(x, one), add(x, one));
+	}*/
+
+	/*todo:/// Returns the inverse tangent of the radian argument `x`.
+	static Fixed atan(Fixed x) {
+		// Special cases:
+		//  * atan(±0) = ±0
+		//  * atan(±Inf) = ±Pi/2
+	}*/
+
+	/*todo:/// Returns the inverse tangent of `y / x`.
+	static Fixed atan2(Fixed y, Fixed x) {
+		// Special cases (in order):
+		//  * atan2(y, NaN) = NaN
+		//  * atan2(NaN, x) = NaN
+		//  * atan2(+0, x>=0) = +0
+		//  * atan2(-0, x>=0) = -0
+		//  * atan2(+0, x<=-0) = +Pi
+		//  * atan2(-0, x<=-0) = -Pi
+		//  * atan2(y>0, 0) = +Pi/2
+		//  * atan2(y<0, 0) = -Pi/2
+		//  * atan2(+Inf, +Inf) = +Pi/4
+		//  * atan2(-Inf, +Inf) = -Pi/4
+		//  * atan2(+Inf, -Inf) = 3Pi/4
+		//  * atan2(-Inf, -Inf) = -3Pi/4
+		//  * atan2(y, +Inf) = 0
+		//  * atan2(y>0, -Inf) = +Pi
+		//  * atan2(y<0, -Inf) = -Pi
+		//  * atan2(+Inf, x) = +Pi/2
+		//  * atan2(-Inf, x) = -Pi/2
+	}*/
+
+	/*todo:/// Returns the inverse hyperbolic tangent of the radian argument `x`.
+	static Fixed atanh(Fixed x) {
+		// Special cases:
+		//  * atanh(1) = +Inf
+		//  * atanh(±0) = ±0
+		//  * atanh(-1) = -Inf
+		//  * atanh(x > 1) = NaN
+		//  * atanh(x < -1) = NaN
+		//  * atanh(NaN) = NaN
+		//  ? atanh(-x) = -atanh(x)
+
+		// atanh(x) = .5 * log((1 + x) / (1 - x))
+		return .5 * log((1 + x) / (1 - x));
+	}*/
+
+	/// Returns the cotangent of the radian argument `x`.
+	// todo: inline cot(float64 x) = 1 / tan(x);
+
+	/// Returns the hyperbolic cotangent of the radian argument `x`.
+	// todo: inline coth(float64 x) = 1 / tanh(x);
+
+	/// Returns the inverse cotangent of the radian argument `x`.
+	// todo: inline acot(float64 x) = x == 0 ? pi / 2 : atan(1 / x);
+
+	/// Returns the inverse hyperbolic cotangent of the radian argument `x`.
+	// todo: inline acoth(float64 x) = x == 1 ? inf : x == -1 ? -inf : .5 * log((x + 1) / (x - 1));
+
+
+	/// Returns the secant of the radian argument `x`.
+	// todo: inline sec(float64 x) = 1 / cos(x);
+
+	/// Returns the hyperbolic secant of the radian argument `x`.
+	// todo: inline sech(float64 x) = 1 / cosh(x);
+
+	/// Returns the inverse secant of the radian argument `x`.
+	// todo: inline asec(float64 x) = x == 0 ? inf : acos(1 / x);
+
+	/// Returns the inverse hyperbolic secant of the radian argument `x`.
+	// todo: inline asech(float64 x) = x == 0 ? inf : x == 1 ? 0 : log((sqrt(1 - x * x) + 1) / x);
+
+
+	/// Returns the cosecant of the radian argument `x`.
+	// todo: inline csc(float64 x) = 1 / sin(x);
+
+	/// Returns the hyperbolic cosecant of the radian argument `x`.
+	// todo: inline csch(float64 x) = 1 / sinh(x);
+
+	/// Returns the inverse cosecant of the radian argument `x`.
+	// todo: inline acsc(float64 x) = x == 0 ? inf : asin(1 / x);
+
+	/// Returns the inverse hyperbolic cosecant of the radian argument `x`.
+	// todo: inline acsch(float64 x) = x == 0 ? inf : x < 0 ? log((1 - sqrt(1 + x * x)) / x) : log((1 + sqrt(1 + x * x)) / x);
+
+
+	/// Converts the input to degrees from radians: $radians * 180 / pi$
+	static Fixed degrees(Fixed radians) {
+		return as(radians.value * int64(r2d_24) >> 24);
+	}
+
+	/// Converts the input to radians from degrees: $degrees * pi / 180$
+	static Fixed radians(Fixed degrees) {
+		return mul_28(degrees, d2r_28);
+	}
+}
+
+///@public
+inline Fixed(int32 value) = Fixed.as(value << Fixed.precision);
+
+///@public
+inline int32(const Fixed value&) = value.value >> Fixed.precision;
+
+///@public
+inline Fixed(float64 value) = Fixed.as(value * (1 << Fixed.precision));
+
+///@public
+//inline float64(const Fixed value&) = value.value / float64(1 << Fixed.precision);
+float64 float64(Fixed x) {
+	if (x.value == Fixed.nan) {
+		return Math.nan;
+	}
+	if (x.value == Fixed.inf) {
+		return Math.inf;
+	}
+	if (x.value == -Fixed.inf) {
+		return -Math.inf;
+	}
+
+	return x.value / float64(1 << Fixed.precision);
+}

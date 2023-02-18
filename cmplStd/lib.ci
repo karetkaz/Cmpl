@@ -23,6 +23,7 @@ inline "lib/lang/Debug.ci";
 // Math
 inline "lib/math/Bits.ci";
 inline "lib/math/Math.ci";
+inline "lib/math/Fixed.ci";
 inline "lib/math/Complex.ci";
 inline "lib/math/Vector4f.ci";
 inline "lib/math/Matrix4f.ci";

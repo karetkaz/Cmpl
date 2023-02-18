@@ -3,7 +3,6 @@
 <meta charset="UTF-8">
 <link rel="stylesheet" type="text/css" href="Inspector.css">
 <script type="application/javascript" src="Inspector.js"></script>
-<script type="application/javascript" src="Inspector.ui.js"></script>
 </head>
 <body style="overflow:auto">
 	<header id="tabs">
@@ -22,10 +21,10 @@
 		</div>
 
 		<div class="ext left" id="extProfile">
-			<input type="button" onclick="tree.expandTree(false, true);" value="-"/>
-			<input type="button" onclick="tree.expandTree(true, true);" value="+"/>
-			<input type="button" onClick="setActiveTab(null, null, code, printSamples);" value="Samples" />
-			<input type="button" onClick="exportChromeTracing();" value="Export tracing" />
+			<input type="button" title="Exported document can be imported to:
+	chrome developer tools
+	ui.perfetto.dev" onClick="exportChromeTracing();" value="Export tracing"  />
+			<a target="_blank" href="https://ui.perfetto.dev/">perfetto</a>
 		</div>
 
 		<input class="filter right" onchange="setActiveTab(null, null);" placeholder="Filter">
@@ -34,40 +33,13 @@
 		<div class="fixed mesage"><h1 id="loading">Loading file ...</h1></div>
 		<div class="fixed mesage"><h1 id="loaded">File loaded.</h1></div>
 		<div class="fixed mesage"><h1 id="error">Error loading file.</h1></div>
+		<div class="fixed mesage"><h1 id="empty">No data available.</h1></div>
 		<div class=""><table id="tree"></table></div>
 		<div><pre id="code"></pre></div>
 	</div>
 	<span id="tooltip" onclick="void(this.classList.add('gone'));"></span>
 </body>
 <script type="application/javascript">
-function exportChromeTracing() {
-	let value = '';
-	function printCall(node) {
-		if (value !== '') {
-			value += ",";
-		}
-		value += "{";
-		value += "\"cat\":\"function\",";
-		value += "\"dur\":" + (node.leave - node.enter) + ',';
-		value += "\"name\":\"" + (node.func || {})[''] + "\",";
-		value += "\"ph\":\"X\",";
-		value += "\"pid\":0,";
-		value += "\"tid\":" + 0 + ",";
-		value += "\"ts\":" + node.enter;
-		value += "}\n";
-		for (let child of (node.callTree || [])) {
-			printCall(child);
-		}
-	}
-	printCall(data.getSamples().callTree[0]);
-
-	const blob = new Blob(["{\"traceEvents\":[" + value + "]}"], {type: 'application/octet-stream'});
-	const link = document.createElement('a');
-	link.download = 'ChromeTracing.json';
-	link.href = URL.createObjectURL(blob);
-	link.click();
-}
-
 if (window.location.hash.length > 0) {
 	loadFile(window.location.hash.substr(1));
 }

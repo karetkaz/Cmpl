@@ -83,7 +83,9 @@ onmessage = function(event) {
 				try {
 					callMain(Module.locateLibs(data.execute));
 					if (data.dump != null) {
-						result.content = Module.readFile(data.dump);
+						const content = Module.readFile(data.dump);
+						const blob = new Blob([content], {type: 'application/octet-stream'});
+						result.dump = URL.createObjectURL(blob);
 						result.path = data.dump;
 					}
 					result.exitCode = 0;

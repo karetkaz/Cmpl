@@ -104,7 +104,7 @@ static struct Bits {
 
 
 	/// find the index of the most significant(highest) bit
-	int scanMsb(uint64 x) {
+	int scanReverse(uint64 x) {
 		static if (preferNativeCalls && typename(uint64.bsr) != null) {
 			// use the native method if available
 			return uint64.bsr(x);
@@ -141,7 +141,10 @@ static struct Bits {
 	}
 
 	/// find the index of the most significant(highest) bit
-	int scanMsb(uint32 x) {
+	inline scanReverse(int64 x) = scanReverse(uint64(x));
+
+	/// find the index of the most significant(highest) bit
+	int scanReverse(uint32 x) {
 		static if (preferNativeCalls && typename(uint32.bsr) != null) {
 			// use the native method if available
 			return uint32.bsr(x);
@@ -174,7 +177,10 @@ static struct Bits {
 	}
 
 	/// find the index of the most significant(highest) bit
-	int scanMsb(uint16 x) {
+	inline scanReverse(int32 x) = scanReverse(uint32(x));
+
+	/// find the index of the most significant(highest) bit
+	int scanReverse(uint16 x) {
 		if (x == 0) {
 			return -1;
 		}
@@ -199,7 +205,10 @@ static struct Bits {
 	}
 
 	/// find the index of the most significant(highest) bit
-	int scanMsb(uint8 x) {
+	inline scanReverse(int16 x) = scanReverse(uint16(x));
+
+	/// find the index of the most significant(highest) bit
+	int scanReverse(uint8 x) {
 		if (x == 0) {
 			return -1;
 		}
@@ -219,9 +228,12 @@ static struct Bits {
 		return result;
 	}
 
+	/// find the index of the most significant(highest) bit
+	inline scanReverse(int8 x) = scanReverse(uint8(x));
+
 
 	/// find the index of the least significant(lowest) bit
-	int scanLsb(uint64 x) {
+	int scanForward(uint64 x) {
 		static if (preferNativeCalls && typename(uint64.bsf) != null) {
 			// use the native method if available
 			return uint64.bsf(x);
@@ -259,7 +271,10 @@ static struct Bits {
 	}
 
 	/// find the index of the least significant(lowest) bit
-	int scanLsb(uint32 x) {
+	inline scanForward(int64 x) = scanForward(uint64(x));
+
+	/// find the index of the least significant(lowest) bit
+	int scanForward(uint32 x) {
 		static if (preferNativeCalls && typename(uint32.bsf) != null) {
 			// use the native method if available
 			return uint32.bsf(x);
@@ -293,7 +308,10 @@ static struct Bits {
 	}
 
 	/// find the index of the least significant(lowest) bit
-	int scanLsb(uint16 x) {
+	inline scanForward(int32 x) = scanForward(uint32(x));
+
+	/// find the index of the least significant(lowest) bit
+	int scanForward(uint16 x) {
 		if (x == 0) {
 			return -1;
 		}
@@ -318,7 +336,10 @@ static struct Bits {
 	}
 
 	/// find the index of the least significant(lowest) bit
-	int scanLsb(uint8 x) {
+	inline scanForward(int16 x) = scanForward(uint16(x));
+
+	/// find the index of the least significant(lowest) bit
+	int scanForward(uint8 x) {
 		if (x == 0) {
 			return -1;
 		}
@@ -338,6 +359,9 @@ static struct Bits {
 		return result;
 	}
 
+	/// find the index of the least significant(lowest) bit
+	inline scanForward(int8 x) = scanForward(uint8(x));
+
 
 	/// keep the highest bit set
 	uint64 keepMsb(uint64 x) {
@@ -356,6 +380,9 @@ static struct Bits {
 	}
 
 	/// keep the highest bit set
+	inline keepMsb(int64 x) = keepMsb(uint64(x));
+
+	/// keep the highest bit set
 	uint32 keepMsb(uint32 x) {
 		static if (preferNativeCalls && typename(uint32.hib) != null) {
 			// use the native method if available
@@ -370,22 +397,37 @@ static struct Bits {
 		return x - (x >> 1);
 	}
 
+	/// keep the highest bit set
+	inline keepMsb(int32 x) = keepMsb(uint32(x));
+
 
 	/// keep the lowest bit set
 	inline keepLsb(uint64 x) = uint64(x & -x);
 
 	/// keep the lowest bit set
+	inline keepLsb(int64 x) = keepLsb(uint64(x));
+
+	/// keep the lowest bit set
 	inline keepLsb(uint32 x) = uint32(x & -x);
+
+	/// keep the lowest bit set
+	inline keepLsb(int32 x) = keepLsb(uint32(x));
 
 	/// keep the lowest bit set
 	inline keepLsb(uint16 x) = uint16(x & -x);
 
 	/// keep the lowest bit set
+	inline keepLsb(int16 x) = keepLsb(uint16(x));
+
+	/// keep the lowest bit set
 	inline keepLsb(uint8 x) = uint8(x & -x);
+
+	/// keep the lowest bit set
+	inline keepLsb(int8 x) = keepLsb(uint8(x));
 
 
 	/// count bits set to one
-	int countBits(uint64 x) {
+	int countOnes(uint64 x) {
 		static if (preferNativeCalls && typename(uint64.pop) != null) {
 			// use the native method if available
 			return uint64.pop(x);
@@ -400,7 +442,10 @@ static struct Bits {
 	}
 
 	/// count bits set to one
-	int countBits(uint32 x) {
+	inline countOnes(int64 x) = countOnes(uint64(x));
+
+	/// count bits set to one
+	int countOnes(uint32 x) {
 		static if (preferNativeCalls && typename(uint32.pop) != null) {
 			// use the native method if available
 			return uint32.pop(x);
@@ -413,6 +458,9 @@ static struct Bits {
 		x += x >> 16;
 		return x & 0x3f;
 	}
+
+	/// count bits set to one
+	inline countOnes(int32 x) = countOnes(uint32(x));
 
 
 	/// reverse all the bits
@@ -431,6 +479,9 @@ static struct Bits {
 	}
 
 	/// reverse all the bits
+	inline swapBits(int64 x) = swapBits(uint64(x));
+
+	/// reverse all the bits
 	uint32 swapBits(uint32 x) {
 		static if (preferNativeCalls && typename(uint32.swap) != null) {
 			// use the native method if available
@@ -445,6 +496,9 @@ static struct Bits {
 	}
 
 	/// reverse all the bits
+	inline swapBits(int32 x) = swapBits(uint32(x));
+
+	/// reverse all the bits
 	uint16 swapBits(uint16 x) {
 		// fixme: uint16 should implicitly cast to uint32
 		x = ((uint16(x) >> 1) & 0x5555) | ((x & 0x5555) << 1);
@@ -454,18 +508,24 @@ static struct Bits {
 	}
 
 	/// reverse all the bits
+	inline swapBits(int16 x) = swapBits(uint16(x));
+
+	/// reverse all the bits
 	uint8 swapBits(uint8 x) {
 		x = ((uint8(x) >> 1) & 0x55) | ((x & 0x55) << 1);
 		x = ((uint8(x) >> 2) & 0x33) | ((x & 0x33) << 2);
 		return (uint8(x) >> 4) | (x << 4);
 	}
+
+	/// reverse all the bits
+	inline swapBits(int8 x) = swapBits(uint8(x));
 }
 
 /* TODO: leftovers
 uint16 keepMsb(uint16 x)
 uint8 keepMsb(uint8 x)
-int countBits(uint16 x)
-int countBits(uint8 x)
+int countOnes(uint16 x)
+int countOnes(uint8 x)
 
 define Lo32(int64 a) = int32(a);					// Lo32 part
 define Hi32(int64 a) = Lo32(int64.Shr(a, 32));		// Hi32 part

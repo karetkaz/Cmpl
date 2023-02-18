@@ -1604,11 +1604,9 @@ static int usage() {
 		"\n        show all warnings"
 		"\n        break execution on lines 12 and 15"
 		"\n        print message when line 19 is hit"
-		"\n"
-		"\nfor more details visit: https://karetkaz.github.io/Cmpl/"
-		"\n";
+		"\n\n";
 	fputs(USAGE, stdout);
-	fprintf(stdout, "cmplVersion: %d\n", cmplVersion());
+	fprintf(stdout, "Version: %d, more details at: https://karetkaz.github.io/Cmpl\n", cmplVersion());
 	return 0;
 }
 
@@ -2262,7 +2260,7 @@ int main(int argc, char *argv[]) {
 				}
 				else if (strBegins(arg2 + 1, "public")) {
 					settings.errPrivateAccess = !on;
-					arg2 += 8;
+					arg2 += 7;
 				}
 				else if (strBegins(arg2 + 1, "offsets")) {
 					extra.hideOffsets = !on;

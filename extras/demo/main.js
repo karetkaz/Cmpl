@@ -790,6 +790,27 @@ function process(data) {
 			fileList.appendChild(li);
 		}
 	}
+	if (data.dump !== undefined) {
+		terminal.append('');
+
+		if (data.path.endsWith('.json')) {
+			let open = document.createElement('p');
+			open.textContent = 'Open dump file in inspector: ';
+			let openLink = open.appendChild(document.createElement('a'));
+			openLink.href = window.location.origin + '/Cmpl/extras/Inspector/Inspector.html#' + data.dump;
+			openLink.target = '_blank'
+			openLink.textContent = data.path;
+			terminal.append(open);
+		}
+
+		let open = document.createElement('p');
+		open.textContent = 'Open dump file in editor: ';
+		let openLink = open.appendChild(document.createElement('a'));
+		openLink.href = 'javascript:void(params.update({ content: null, path:\'' + data.path + '\'}));';
+		openLink.textContent = data.path;
+		terminal.append(open);
+		data.path = null;
+	}
 
 	if (data.content || data.path) {
 		let path = data.path;
