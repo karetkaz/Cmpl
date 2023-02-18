@@ -110,7 +110,9 @@
 			<li onclick="execute(title);" title="-asm/n/s">Instructions
 				<button class="right" onclick="execute(title); event.stopPropagation();" title="-asm/A/d/p/n/s">All</button>
 			</li>
-			<li onclick="execute(title, {dump: '/dump.ci'});" title="-profile/t/p/G/M -api/A/d/p -asm/n/s -ast -doc -use">Profile & full dump</li>
+			<li onclick="execute(title, {dump: '/dump.json'});" title="-profile/t/p/G/M -api/A/d/p -asm/n/s -ast -doc -use">Profile & full dump
+				<button class="right" onclick="execute(title, {dump: '/dump.ci'}); event.stopPropagation();" title="-profile/t/p/G/M -api/A/d/p -asm/n/s -ast -doc -use">T</button>
+			</li>
 			<hr>
 			<li onclick="execute();">Command Line Reference</li>
 		</ul>

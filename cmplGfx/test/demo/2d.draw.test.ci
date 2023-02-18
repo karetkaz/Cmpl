@@ -105,12 +105,7 @@ int onEvent(int action, int button, int ex, int ey) {
 				idx = i;
 			}
 		}
-		if (!shift) {
-			x[idx] = ex;
-			y[idx] = ey;
-		}
-		ox = ex;
-		oy = ey;
+		action = Gui.MOUSE_MOTION;
 	}
 	if (action == Gui.MOUSE_MOTION || action == Gui.FINGER_MOTION) {
 		if (idx >= 0 && idx < x.length) {
@@ -125,6 +120,10 @@ int onEvent(int action, int button, int ex, int ey) {
 
 		ox = ex;
 		oy = ey;
+		x0 = x[0] * image.width() / offscreen.width();
+		y0 = y[0] * image.height() / offscreen.height();
+		x1 = x[1] * image.width() / offscreen.width();
+		y1 = y[1] * image.height() / offscreen.height();
 	}
 	if (action == Gui.MOUSE_RELEASE || action == Gui.FINGER_RELEASE) {
 		// release selected index

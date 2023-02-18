@@ -61,7 +61,7 @@ function Terminal(output, interpret) {
 			if (line instanceof HTMLElement) {
 				buffer.push(line);
 			} else {
-				let escaped = line.replace(/[<>&\r\n]/g, function (match) {
+				let escaped = (line || '').replace(/[<>&\r\n]/g, function (match) {
 					switch (match) {
 						default: return match;
 						case '<': return "&lt;";

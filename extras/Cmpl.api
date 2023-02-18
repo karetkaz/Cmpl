@@ -271,26 +271,46 @@ Bits.swapBytes(x: uint16): uint16 # convert a 16 bit value between Little endian
 Bits.swapBytes(x: int64): int64 # convert a 64 bit value between Little endian and Big endian
 Bits.swapBytes(x: int32): int32 # convert a 32 bit value between Little endian and Big endian
 Bits.swapBytes(x: int16): int16 # convert a 16 bit value between Little endian and Big endian
-Bits.scanMsb(x: uint64): int32 # find the index of the most significant(highest) bit
-Bits.scanMsb(x: uint32): int32 # find the index of the most significant(highest) bit
-Bits.scanMsb(x: uint16): int32 # find the index of the most significant(highest) bit
-Bits.scanMsb(x: uint8): int32 # find the index of the most significant(highest) bit
-Bits.scanLsb(x: uint64): int32 # find the index of the least significant(lowest) bit
-Bits.scanLsb(x: uint32): int32 # find the index of the least significant(lowest) bit
-Bits.scanLsb(x: uint16): int32 # find the index of the least significant(lowest) bit
-Bits.scanLsb(x: uint8): int32 # find the index of the least significant(lowest) bit
+Bits.scanReverse(x: uint64): int32 # find the index of the most significant(highest) bit
+Bits.scanReverse(x: int64): int32 # find the index of the most significant(highest) bit
+Bits.scanReverse(x: uint32): int32 # find the index of the most significant(highest) bit
+Bits.scanReverse(x: int32): int32 # find the index of the most significant(highest) bit
+Bits.scanReverse(x: uint16): int32 # find the index of the most significant(highest) bit
+Bits.scanReverse(x: int16): int32 # find the index of the most significant(highest) bit
+Bits.scanReverse(x: uint8): int32 # find the index of the most significant(highest) bit
+Bits.scanReverse(x: int8): int32 # find the index of the most significant(highest) bit
+Bits.scanForward(x: uint64): int32 # find the index of the least significant(lowest) bit
+Bits.scanForward(x: int64): int32 # find the index of the least significant(lowest) bit
+Bits.scanForward(x: uint32): int32 # find the index of the least significant(lowest) bit
+Bits.scanForward(x: int32): int32 # find the index of the least significant(lowest) bit
+Bits.scanForward(x: uint16): int32 # find the index of the least significant(lowest) bit
+Bits.scanForward(x: int16): int32 # find the index of the least significant(lowest) bit
+Bits.scanForward(x: uint8): int32 # find the index of the least significant(lowest) bit
+Bits.scanForward(x: int8): int32 # find the index of the least significant(lowest) bit
 Bits.keepMsb(x: uint64): uint64 # keep the highest bit set
+Bits.keepMsb(x: int64): uint64 # keep the highest bit set
 Bits.keepMsb(x: uint32): uint32 # keep the highest bit set
+Bits.keepMsb(x: int32): uint32 # keep the highest bit set
 Bits.keepLsb(x: uint64): uint64 # keep the lowest bit set
+Bits.keepLsb(x: int64): uint64 # keep the lowest bit set
 Bits.keepLsb(x: uint32): uint32 # keep the lowest bit set
+Bits.keepLsb(x: int32): uint32 # keep the lowest bit set
 Bits.keepLsb(x: uint16): uint16 # keep the lowest bit set
+Bits.keepLsb(x: int16): uint16 # keep the lowest bit set
 Bits.keepLsb(x: uint8): uint8 # keep the lowest bit set
-Bits.countBits(x: uint64): int32 # count bits set to one
-Bits.countBits(x: uint32): int32 # count bits set to one
+Bits.keepLsb(x: int8): uint8 # keep the lowest bit set
+Bits.countOnes(x: uint64): int32 # count bits set to one
+Bits.countOnes(x: int64): int32 # count bits set to one
+Bits.countOnes(x: uint32): int32 # count bits set to one
+Bits.countOnes(x: int32): int32 # count bits set to one
 Bits.swapBits(x: uint64): uint64 # reverse all the bits
+Bits.swapBits(x: int64): uint64 # reverse all the bits
 Bits.swapBits(x: uint32): uint32 # reverse all the bits
+Bits.swapBits(x: int32): uint32 # reverse all the bits
 Bits.swapBits(x: uint16): uint16 # reverse all the bits
+Bits.swapBits(x: int16): uint16 # reverse all the bits
 Bits.swapBits(x: uint8): uint8 # reverse all the bits
+Bits.swapBits(x: int8): uint8 # reverse all the bits
 Math # Mathematical utility functions and constants
 Math.pi
 Math.e
@@ -413,6 +433,71 @@ Math.acsc(x: float64): float64 # Returns the inverse cosecant of the radian argu
 Math.acsch(x: float64): float64 # Returns the inverse hyperbolic cosecant of the radian argument `x`.
 Math.radians(degrees: float64): float64 # Converts the input to radians from degrees.
 Math.degrees(radians: float64): float64 # Converts the input to degrees from radians.
+Fixed # simple fixed point, `precision` bits used for decimal part, the rest for integer part
+Fixed.value
+Fixed.precision
+Fixed.one
+Fixed.nan
+Fixed.inf
+Fixed.half
+Fixed.mask
+Fixed.mpi_28
+Fixed.ln2_28
+Fixed.lg2_28
+Fixed.l2e_28
+Fixed.l2t_28
+Fixed.d2r_28
+Fixed.r2d_24
+Fixed.piMul2
+Fixed.piDiv2
+Fixed.pi
+Fixed.ln2
+Fixed.lg2
+Fixed.l2e
+Fixed.l2t
+Fixed.as(value: int32): Fixed
+Fixed.neg(a: Fixed): Fixed # @public
+Fixed.add(a: Fixed, b: Fixed): Fixed # @public
+Fixed.add(a: Fixed, b: int32): Fixed
+Fixed.sub(a: Fixed, b: Fixed): Fixed # @public
+Fixed.sub(a: Fixed, b: int32): Fixed
+Fixed.mul(a: Fixed, b: Fixed): Fixed # @public
+Fixed.mul(a: Fixed, b: int32): Fixed
+Fixed.mul_28(a: Fixed, b: int32): Fixed
+Fixed.div(a: Fixed, b: Fixed): Fixed # @public
+Fixed.div(a: Fixed, b: int32): Fixed
+Fixed.mod(a: Fixed, b: Fixed): Fixed # @public
+Fixed.inv(x: Fixed): Fixed # @public
+Fixed.fract(x: Fixed): Fixed # Returns the fractional part of the fixed point number
+Fixed.floor(x: Fixed): Fixed # @public
+Fixed.ceil(x: Fixed): Fixed # @public
+Fixed.round(x: Fixed): Fixed # @public
+Fixed.isFinite(x: Fixed): bool # Determines whether the given fixed point value is finite: `!isNan(x) && !isInf(x)`
+Fixed.compare(a: Fixed, b: Fixed): int32 # Determines whether the given fixed point is less than the other one.
+Fixed.log2(x: Fixed): Fixed # Returns the binary logarithm of the argument `x`.\n\tlog2(x) = log2((2 ** n) * ((x / 2) ** n)) =\n\t= log2(2 ** n) + log2((x / 2) ** n) = n + log2(q)\n\tn = most significant bit of x (BSR (bit scan reverse))\n\tq = (x / 2) ** n = (x > 1) ? (x >> n) : (x << -n)\n\tx > 1 <=> n - precision > 0\n\tlog2(q) = look up from table
+Fixed.log(x: Fixed): Fixed # Returns the natural logarithm of the argument `x`.
+Fixed.log10(x: Fixed): Fixed # Returns the decimal logarithm of the argument `x`.
+Fixed.log(x: Fixed, base: Fixed): Fixed # Returns the logarithm of the argument `x`.
+Fixed.exp2(x: Fixed): Fixed # exp2(x) <=> 2 ** x\nexp2(x) = exp2(n + q) = exp2(n) * exp2(q)\nlet n = floor(x);\n let q = fract(x);\n exp2(n) = 2 ** n = 1 << n\nexp2(q) = 1 + look up from table\nexp2(x) = (x >= 0) ? (exp2(q) << n) : (exp2(q) >> -n)\n---------------------------------------------------
+Fixed.exp(x: Fixed): Fixed # Returns the base-e exponential: $ e^x $.
+Fixed.exp10(x: Fixed): Fixed # Returns the base 10 exponential: $ 10^x $.
+Fixed.sqrt(x: Fixed): Fixed # Returns the square root of the parameter `x`: $\sqrt{x}$.
+Fixed.pow(x: Fixed, y: Fixed): Fixed # Returns `x` raised to the power of `y`: $ x^y $.
+Fixed.horner(x: int32, a0: int32, a1: int32): int32
+Fixed.horner(x: int32, a0: int32, a1: int32, a2: int32): int32
+Fixed.horner(x: int32, a0: int32, a1: int32, a2: int32, a3: int32): int32
+Fixed.horner(x: int32, a0: int32, a1: int32, a2: int32, a3: int32, a4: int32): int32
+Fixed.horner(x: int32, a0: int32, a1: int32, a2: int32, a3: int32, a4: int32, a5: int32): int32
+Fixed.sin(x: Fixed): Fixed # Returns the sine of the radian argument `x`.
+Fixed.sinh(x: Fixed): Fixed # Returns the hyperbolic sine of the radian argument `x`.
+Fixed.cos(x: Fixed): Fixed # Returns the cosine of the radian argument `x`.
+Fixed.tan(x: Fixed): Fixed # Returns the tangent of the radian argument `x`.
+Fixed.degrees(radians: Fixed): Fixed # Converts the input to degrees from radians: $radians * 180 / pi$
+Fixed.radians(degrees: Fixed): Fixed # Converts the input to radians from degrees: $degrees * pi / 180$
+Fixed(value: int32): Fixed # @public
+int32(value: Fixed): int32 # @public
+Fixed(value: float64): Fixed # @public
+float64(x: Fixed): float64 # @public
 Complex # Complex number
 Complex.re # The real component of a complex number.
 Complex.im # The imaginary component of a complex number.

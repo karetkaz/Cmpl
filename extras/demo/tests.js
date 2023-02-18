@@ -93,12 +93,13 @@ let projects = {
 
 			'std/math.Bits.ci',
 			'std/math.Complex.ci',
+			'std/math.Floats.ci',
 			'std/math.Polynomial.ci',
-			'std/math.Trigonometry.ci',
 			'std/memory.ci',
-			'std/number.ci',
 			'std/sys.Platform.ci',
-			'std/test.math.ci',
+			'std/test.math.Bits.ci',
+			'std/test.math.Fixed.ci',
+			'std/test.math.Floats.ci',
 			'std/tryExec.ci',
 
 			'test.ci',

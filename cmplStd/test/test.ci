@@ -6,46 +6,50 @@ inline integer = int64;
 
 
 // Aliasing
-inline "lang/emit.ci"?;
-inline "lang/inlineMacros.ci"?;
-inline "lang/overload.inline.ci"?;
+inline "lang/emit.ci";
+inline "lang/inlineMacros.ci";
+inline "lang/overload.inline.ci";
 
 // native calls
-inline "std/number.ci"?;
-inline "std/memory.ci"?;
-inline "std/tryExec.ci"?;
+inline "std/memory.ci";
+inline "std/tryExec.ci";
 
 
 // Variables
-inline "lang/init.reference.ci"?;
-inline "lang/init.variable.ci"?;
+inline "lang/init.reference.ci";
+inline "lang/init.variable.ci";
 
 // Functions
-inline "lang/function.ci"?;
-inline "lang/reflect.ci"?;
+inline "lang/function.ci";
+inline "lang/reflect.ci";
 //inline "lang/todo.funIterator.ci";
 
 // Records & Arrays
-inline "lang/init.member.ci"?;
-inline "lang/init.method.ci"?;
+inline "lang/init.member.ci";
+inline "lang/init.method.ci";
 // FIXME: inline "lang/init.array.ci"?;
 
-inline "lang/recUnion.ci"?;
-inline "lang/recPacking.ci"?;
+inline "lang/recUnion.ci";
+inline "lang/recPacking.ci";
 
 // Enumerations
 //inline "todo/enum.ci";
 
 
 // Operators
-inline "lang/useOperator.ci"?;
+inline "lang/useOperator.ci";
 
 
 // statements
-inline "lang/stmt.if.ci"?;
-inline "lang/stmt.for.ci"?;
+inline "lang/stmt.if.ci";
+inline "lang/stmt.for.ci";
+
 
 // implemented functions
-inline "std/test.math.ci"?;
+inline "std/math.Bits.ci";
+//inline "std/math.Fixed.ci"; // todo: implement
+inline "std/math.Floats.ci";
+inline "std/math.Complex.ci";
+//inline "std/math.Polynomial.ci"; // fixme: requires file access
 
 // */

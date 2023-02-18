@@ -958,7 +958,7 @@ static struct Math {
 	inline acos(float64 x) = atan2(sqrt((1 + x) * (1 - x)), x);
 
 	/// Returns the inverse hyperbolic cosine of the radian argument `x`.
-	inline acosh(float64 x) = log(x + sqrt((x - 1) / (x + 1)) * (x + 1));
+	inline acosh(float64 x) = log(x + sqrt(x * x - 1)); // log(x + sqrt((x - 1) / (x + 1)) * (x + 1));
 
 
 	/// Returns the tangent of the radian argument `x`.
@@ -994,7 +994,7 @@ static struct Math {
 	}
 
 	/// Returns the hyperbolic tangent of the radian argument `x`.
-	inline tanh(float64 x) = (exp(x) - exp(-x)) / (exp(x) + exp(-x)); // todo: check
+	inline tanh(float64 x) = 1 - 2 / (exp(2 * x) + 1);
 
 	/// Returns the inverse hyperbolic tangent of the radian argument `x`.
 	inline atanh(float64 x) = x >= 1 ? inf : x <= -1 ? -inf : .5 * log((1 + x) / (1 - x));

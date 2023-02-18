@@ -121,68 +121,26 @@ html, body, table {
 }
 
 /* HitCount, SelfTime, TotalTime */
-#tree th,
-#tree td {
+#tree th, #tree td {
 	text-align: right;
 	padding: 5px;
+	width: 5em;
 	border-bottom: 1px solid #ddd;
 }
+
+#tree>tr:first-child>td {
+	font-weight: bold;
+}
 /* Highlighting */
-#tree>tr:hover,
-#tree>tr.hover {
+#tree th:hover, #tree>tr:hover {
 	background-color: #eee;
 }
 
-#tree>tr>td:hover,
-#tree>tr>td.hover {
+#tree>tr>td:hover {
 	background-color: #ccc;
 }
 
-/* Function name / expander */
-#tree th:last-child,
-#tree td:last-child {
+#tree th:last-child, #tree td:last-child {
 	text-align: left;
+	width: unset;
 }
-
-#tree td:last-child::before {
-	content: " ";
-	cursor: pointer;
-	display: inline-block;
-	text-align: center;
-	width: 1em;
-	min-width: 1em;
-	max-width: 1em;
-	zoom: 75%;
-}
-
-/*Big triangles:
-U+25B2 (Black up-pointing triangle ▲)
-U+25BC (Black down-pointing triangle ▼)
-U+25C0 (Black left-pointing triangle ◀)
-U+25B6 (Black right-pointing triangle ▶)
-U+25B3 (White up-pointing triangle △)
-U+25BD (White down-pointing triangle ▽)
-U+25C1 (White left-pointing triangle ◁)
-U+25B7 (White right-pointing triangle ▷)
-
-Smaller triangles:
-U+25B4 (Black up-pointing small triangle ▴)
-U+25C2 (Black left-pointing small triangle ◂)
-U+25BE (Black down-pointing small triangle ▾)
-U+25B8 (Black right-pointing small triangle ▸)
-U+25C3 (White left-pointing small triangle ◃)
-U+25BF (White down-pointing small triangle ▿)
-U+25B9 (White right-pointing small triangle ▹)
-U+25B5 (White up-pointing small triangle ▵)
-
-Other triangles:
-#tree td:last-child.expanded::before { content: "◿"; }
-#tree td:last-child.collapsed::before { content: "◹"; }
-#tree td:last-child.expanded:hover::before { content: "◢"; }
-#tree td:last-child.collapsed:hover::before { content: "◥"; }
-/*/
-
-#tree td:last-child.expanded::before { content: "◢"; }
-#tree td:last-child.expanded:hover::before { content: "◿"; }
-#tree td:last-child.collapsed::before { content: "▶"; }
-#tree td:last-child.collapsed:hover::before { content: "▷"; }
