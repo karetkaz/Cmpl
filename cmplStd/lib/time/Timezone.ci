@@ -38,11 +38,3 @@ struct Timezone {
 // Timezone Timezone() {return Timezone.local();}
 
 // Timezone Timezone(const char name[]) { return Timezone.lookup(name);}
-
-/* todo:
-https://cs.opensource.google/go/go/+/master:src/time/time.go;l=1440
-https://github.com/tkuchiki/go-timezone
-https://github.com/srawlins/timezone
-https://github.com/JodaOrg/joda-time
-
-// */

@@ -155,7 +155,7 @@ void onProcess(FxWidget ui) {
 	offs.transform(to, back, null, quality.checked() ? 1 : 0, mat);
 }
 
-Gui.showWindow(offs, FxWidget(onProcess,
+Window.show(offs, FxWidget(onProcess,
 	quality,
 	fitWidth, fitHeight,
 	scaleX, scaleY,
@@ -168,14 +168,20 @@ Gui.showWindow(offs, FxWidget(onProcess,
 offs.destroy();
 back.destroy();
 
-/* todo: add perspective transformations
+/* References:
+todo: image scaling algorithms
+https://en.wikipedia.org/wiki/Comparison_gallery_of_image_scaling_algorithms
+https://en.wikipedia.org/wiki/Image_scaling
+
+todo: perspective transformations
 https://stackoverflow.com/questions/51691482/how-to-create-a-2d-perspective-transform-matrix-from-individual-components
 https://www.pyimagesearch.com/2014/08/25/4-point-opencv-getperspective-transform-example/
 https://developer.mozilla.org/en-US/docs/Web/CSS/transform
 https://www.w3.org/TR/css-transforms/
-*/
 
-/* todo: image scaling algorithms
-https://en.wikipedia.org/wiki/Comparison_gallery_of_image_scaling_algorithms
-https://en.wikipedia.org/wiki/Image_scaling
+https://stackoverflow.com/questions/12995149/css3-transform-skew-both-ways
+https://dev.opera.com/articles/understanding-3d-transforms/
+https://www.intmath.com/math-art-code/css-matrix-math.php
+https://angrytools.com/css-generator/transform/
+https://ramlmn.github.io/visualizing-matrix3d/
 */

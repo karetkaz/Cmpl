@@ -18,7 +18,7 @@ struct argb: 0 {
 }
 
 /// cast unsigned integer to argb value
-inline argb(uint32 argb) = argb(emit(uint32(argb)));
+inline argb(uint32 argb) = argb(emit(struct(argb)));
 /// cast argb value to unsigned integer
 inline uint32(argb value) = uint32(emit(struct(value)));
 
@@ -28,35 +28,35 @@ inline sat_s8(int32 c) = uint32(c > 255 ? 255 : c < 0 ? 0 : c);
 /// clamp unsigned gray or color component to fit in 8 bits (0 ... 255)
 inline sat_u8(uint32 c) = uint32(c > 255 ? 255 : c);
 
-// construct a rgb8 gray color from the given value
-inline _gray(uint32 c) = argb((((c << 8) | c) << 8) | c);
+/// pack an argb color from the given component
+inline pack(uint32 c) = argb((((c << 8) | c) << 8) | c);
+/// pack an argb color from the given components
+inline pack(uint32 r, uint32 g, uint32 b) = argb((((r << 8) | g) << 8) | b);
+/// pack an argb color from the given components
+inline pack(uint32 a, uint32 r, uint32 g, uint32 b) = argb((((((a << 8) | r) << 8) | g) << 8) | b);
+
 /// construct a rgb8 color from the given gray value, clamp the input
-inline gray(int32 c) = _gray(sat_s8(c));
+inline gray(int32 c) = pack(sat_s8(c));
 /// construct a rgb8 color from the given gray value, clamp the input
-inline gray(uint32 c) = _gray(sat_s8(c));
+inline gray(uint32 c) = pack(sat_s8(c));
 /// construct a rgb8 color from the given gray value, clamp the input
 inline gray(float32 c) = gray(int32(c * 255));
 /// construct a rgb8 color from the given gray value, clamp the input
 inline gray(float64 c) = gray(int32(c * 255));
 
 
-/// construct an argb color from the given components
-inline _argb(uint32 r, uint32 g, uint32 b) = argb(uint32((((r << 8) | g) << 8) | b));
-/// construct an argb color from the given components
-inline _argb(uint32 a, uint32 r, uint32 g, uint32 b) = argb(uint32((((((a << 8) | r) << 8) | g) << 8) | b));
-
 /// construct a rgb8 color from the given components, clamp the input
-inline argb(int32 r, int32 g, int32 b) = _argb(sat_s8(r), sat_s8(g), sat_s8(b));
+inline argb(int32 r, int32 g, int32 b) = pack(sat_s8(r), sat_s8(g), sat_s8(b));
 /// construct a rgb8 color from the given components, clamp the input
-inline argb(uint32 r, uint32 g, uint32 b) = _argb(sat_u8(r), sat_u8(g), sat_u8(b));
+inline argb(uint32 r, uint32 g, uint32 b) = pack(sat_u8(r), sat_u8(g), sat_u8(b));
 /// construct a rgb8 color from the given components, clamp the input
 inline argb(float32 r, float32 g, float32 b) = argb(int32(r * 255), int32(g * 255), int32(b * 255));
 /// construct a rgb8 color from the given components, clamp the input
 inline argb(float64 r, float64 g, float64 b) = argb(int32(r * 255), int32(g * 255), int32(b * 255));
 /// construct a rgb8 color from the given components, clamp the input
-inline argb(int32 a, int32 r, int32 g, int32 b) = _argb(sat_s8(a), sat_s8(r), sat_s8(g), sat_s8(b));
+inline argb(int32 a, int32 r, int32 g, int32 b) = pack(sat_s8(a), sat_s8(r), sat_s8(g), sat_s8(b));
 /// construct a rgb8 color from the given components, clamp the input
-inline argb(uint32 a, uint32 r, uint32 g, uint32 b) = _argb(sat_u8(a), sat_u8(r), sat_u8(g), sat_u8(b));
+inline argb(uint32 a, uint32 r, uint32 g, uint32 b) = pack(sat_u8(a), sat_u8(r), sat_u8(g), sat_u8(b));
 /// construct a rgb8 color from the given components, clamp the input
 inline argb(float32 a, float32 r, float32 g, float32 b) = argb(int32(a * 255), int32(r * 255), int32(g * 255), int32(b * 255));
 /// construct a rgb8 color from the given components, clamp the input
@@ -76,8 +76,8 @@ inline bch(argb color) = int32(uint32(color) & 0xff);
 inline lum(argb color) = int32((19595 * rch(color) + 38470 * gch(color) + 7471 * bch(color)) >> 16);
 
 /// get the hue of the color
+// adapted from: https://gist.github.com/mity/6034000
 uint32 hue(argb rgb) {
-	// adapted from: https://gist.github.com/mity/6034000
 	int r = rch(rgb);
 	int g = gch(rgb);
 	int b = bch(rgb);

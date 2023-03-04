@@ -1,5 +1,5 @@
 // Click cells. Fill the board with a single color.
-// https://unixpapa.com/floodit
+// based on: https://unixpapa.com/floodit
 
 inline displaySize = 400;
 inline gridSize = 10;
@@ -44,14 +44,14 @@ bool flood(int i, int j, int o, int c) {
 Image image = Image(displaySize, displaySize, 32);
 int onEvent(int action, int button, int x, int y) {
 	static int moves = 0;
-	if (action == Gui.KEY_RELEASE && button == Gui.KEY_CODE_ESC) {
+	if (action == Window.KEY_RELEASE && button == Window.KEY_CODE_ESC) {
 		// exit when releasing escape key
 		return -1;
 	}
-	if (action == Gui.WINDOW_CLOSE) {
+	if (action == Window.WINDOW_CLOSE) {
 		info("moves used", moves);
 	}
-	if (action == Gui.MOUSE_RELEASE || action == Gui.FINGER_MOTION) {
+	if (action == Window.MOUSE_RELEASE || action == Window.FINGER_MOTION) {
 		int i = x * gridSize / displaySize;
 		int j = y * gridSize / displaySize;
 		if (i < 0 || i  >= gridSize) {
@@ -84,5 +84,5 @@ for (int j = 0; j < grid.length; j += 1) {
 	grid[j] = System.rand() % colors.length;
 }
 image.fill(0x000000);
-Gui.showWindow(image, onEvent);
+Window.show(image, onEvent);
 image.destroy();

@@ -14,6 +14,12 @@ struct GxWindow {
 	GC gc;
 };
 
+void initWindowing() {
+}
+
+void quitWindowing() {
+}
+
 GxWindow createWindow(GxImage offs, const char *title) {
 	if (offs == NULL) {
 		return NULL;
@@ -57,6 +63,27 @@ GxWindow createWindow(GxImage offs, const char *title) {
 	XFree(xsh);
 
 	return result;
+}
+
+void destroyWindow(GxWindow window) {
+
+	if (window->image) {
+		window->image->data = NULL;
+		XDestroyImage(window->image);
+	}
+
+	if (window->window) {
+		XDestroyWindow(window->display, window->window);
+		XFreeGC(window->display, window->gc);
+		XFlush(window->display);
+		window->window = 0;
+	}
+
+	if (window->display) {
+		XCloseDisplay(window->display);
+	}
+
+	free(window);
 }
 
 int getWindowEvent(GxWindow window, int *button, int *x, int *y, int timeout) {
@@ -240,27 +267,6 @@ void flushWindow(GxWindow window) {
 	XImage *screen = window->image;
 	XPutImage(window->display, window->window, window->gc, screen, 0, 0, 0, 0, screen->width, screen->height);
 	XFlush(window->display);
-}
-
-void destroyWindow(GxWindow window) {
-
-	if (window->image) {
-		window->image->data = NULL;
-		XDestroyImage(window->image);
-	}
-
-	if (window->window) {
-		XDestroyWindow(window->display, window->window);
-		XFreeGC(window->display, window->gc);
-		XFlush(window->display);
-		window->window = 0;
-	}
-
-	if (window->display) {
-		XCloseDisplay(window->display);
-	}
-
-	free(window);
 }
 
 const int KEY_CODE_ESC = XK_Escape;

@@ -19,6 +19,12 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 	return DefWindowProc(hWnd, message, wParam, lParam);
 }
 
+void initWindowing() {
+}
+
+void quitWindowing() {
+}
+
 GxWindow createWindow(GxImage image, const char *title) {
 	if (image == NULL) {
 		return NULL;
@@ -82,6 +88,12 @@ GxWindow createWindow(GxImage image, const char *title) {
 
 	ShowWindow(result->hwnd, SW_SHOW);
 	return result;
+}
+
+void destroyWindow(GxWindow window) {
+	PostQuitMessage(0);
+	DestroyWindow(window->hwnd);
+	free(window);
 }
 
 void flushWindow(GxWindow window) {
@@ -311,12 +323,6 @@ int getWindowEvent(GxWindow window, int *button, int *x, int *y, int timeout) {
 	TranslateMessage(&msg);
 	DispatchMessage(&msg);
 	return 0;
-}
-
-void destroyWindow(GxWindow window) {
-	PostQuitMessage(0);
-	DestroyWindow(window->hwnd);
-	free(window);
 }
 
 void setWindowTitle(GxWindow window, const char *title) {

@@ -181,25 +181,3 @@ Polynomial Polynomial(scalar values...) {
 	}
 	return result;
 }
-
-/* TODO: implement enums, operator overloading
-	enum: Polynomial {
-		zero: {
-			elements: { c_zero };
-			capacity: 1;
-		}
-	}
-
-inline [](Polynomial &this, int index) = Polynomial.get(this, index);
-inline ()(Polynomial &this, scalar x) = Polynomial.evaluate(this, x);
-
-inline -(const Polynomial &a) = Polynomial.neg(a);
-inline +(const Polynomial &a, const Polynomial &b) = Polynomial.add(a, b);
-inline -(const Polynomial &a, const Polynomial &b) = Polynomial.sub(a, b);
-inline *(const Polynomial &a, const Polynomial &b) = Polynomial.mul(a, b);
-
-to check
-https://github.com/OpenSourcePhysics/osp/blob/master/src/org/opensourcephysics/numerics/Polynomial.java
-https://github.com/umontreal-simul/ssj/blob/master/src/main/java/umontreal/ssj/functions/Polynomial.java
-http://home.apache.org/~luc/commons-math-3.6-RC2-site/jacoco/org.apache.commons.math3.analysis.polynomials/PolynomialFunction.java.html
-// */

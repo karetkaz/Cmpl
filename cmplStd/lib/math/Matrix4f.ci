@@ -80,7 +80,7 @@ mat4f mat4f(const vec4f x&, const vec4f y&, const vec4f z&, const vec4f w&) {
 inline dp3(const mat4f mat&, const vec4f vec&) = vec4f(dp3(mat.x, vec), dp3(mat.y, vec), dp3(mat.z, vec), 1f);
 /// Multiply with vector: homogeneous dot product
 inline dph(const mat4f mat&, const vec4f vec&) = vec4f(dph(mat.x, vec), dph(mat.y, vec), dph(mat.z, vec), dph(mat.w, vec));
-/// Multiply with vector: dot product
+/// Multiply with vector: full dot product
 inline dp4(const mat4f mat&, const vec4f vec&) = vec4f(dp4(mat.x, vec), dp4(mat.y, vec), dp4(mat.z, vec), dp4(mat.w, vec));
 
 /// Transpose the matrix
@@ -104,10 +104,8 @@ mat4f mul(const mat4f lhs&, const mat4f rhs&) {
 	};
 }
 
-/**
- * Build a rotation matrix
- * adapted from: https://sites.google.com/site/glennmurray/Home/rotation-matrices-and-formulas
- */
+/// Build a rotation matrix
+// adapted from: https://sites.google.com/site/glennmurray/Home/rotation-matrices-and-formulas
 mat4f rotation(const vec4f center&, const vec4f direction&, float32 angle) {
 	float32 len = direction.length();
 	if (len < 1e-9) {
@@ -210,10 +208,8 @@ mat4f scale(const vec4f direction&, float32 amount) {
 	};
 }
 
-/**
- * Build the inverse of the matrix
- * adapted from: https://github.com/glslify/glsl-inverse/blob/master/index.glsl
- */
+/// Build the inverse of the matrix
+// adapted from: https://github.com/glslify/glsl-inverse/blob/master/index.glsl
 mat4f inverse(const mat4f mat&) {
 	float32 a00 = mat.xx;
 	float32 a01 = mat.xy;

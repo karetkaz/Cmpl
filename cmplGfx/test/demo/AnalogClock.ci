@@ -24,8 +24,8 @@ void drawLine(Image image, int x0, int y0, int x1, int y1, bool smooth, uint32 c
 
 int onEvent(int action, int button, int ex, int ey) {
 	static bool smooth = true;
-	if (action == Gui.KEY_RELEASE) {
-		if (button == Gui.KEY_CODE_ESC) {
+	if (action == Window.KEY_RELEASE) {
+		if (button == Window.KEY_CODE_ESC) {
 			// exit with escape button
 			return -1;
 		}
@@ -37,7 +37,7 @@ int onEvent(int action, int button, int ex, int ey) {
 	// clear surface
 	offs.fill(0x00000000);
 
-	Image font = Gui.font;
+	Image font = Window.font;
 	int x1 = offs.width() / 2;
 	int y1 = offs.height() / 2;
 	int r = Math.min(x1, y1) - 2;
@@ -99,5 +99,5 @@ int onEvent(int action, int button, int ex, int ey) {
 	return 25;
 }
 
-Gui.showWindow(offs, onEvent);
+Window.show(offs, onEvent);
 offs.destroy();

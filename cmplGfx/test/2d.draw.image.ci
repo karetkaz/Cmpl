@@ -12,7 +12,7 @@ Image draw = Image("asset/image/david.png", 32);
 uint32 lut[256] = {};
 for (int idx = 0; idx < 256; idx += 1) {
 	int rgb = sat_s8(idx - 10);
-	lut[idx] = uint32(_argb(idx, rgb, rgb, rgb));
+	lut[idx] = uint32(pack(idx, rgb, rgb, rgb));
 }
 
 int onEvent(int action, int button, int x, int y) {
@@ -23,14 +23,14 @@ int onEvent(int action, int button, int x, int y) {
 		x1: 150;
 		y1: 150;
 	};
-	if (action == Gui.KEY_RELEASE && button == Gui.KEY_CODE_ESC) {
+	if (action == Window.KEY_RELEASE && button == Window.KEY_CODE_ESC) {
 		// exit when releasing escape key
 		return -1;
 	}
-	if (action == Gui.WINDOW_INIT) {
+	if (action == Window.WINDOW_INIT) {
 		offs.resize(null, back, null, 1);
 	}
-	if (action == Gui.KEY_PRESS) {
+	if (action == Window.KEY_PRESS) {
 		if (button == ' ') {
 			// toggle animation
 			if (millis == 0) {
@@ -44,14 +44,14 @@ int onEvent(int action, int button, int x, int y) {
 			offs.saveBmp("temp/dump.bmp", 0);
 		}
 	}
-	if (action == Gui.FINGER_MOTION) {
-		action = Gui.MOUSE_MOTION;
+	if (action == Window.FINGER_MOTION) {
+		action = Window.MOUSE_MOTION;
 	}
-	if (action == Gui.MOUSE_PRESS) {
+	if (action == Window.MOUSE_PRESS) {
 		offs.resize(null, back, null, 1);
-		action = Gui.MOUSE_MOTION;
+		action = Window.MOUSE_MOTION;
 	}
-	if (action == Gui.MOUSE_MOTION) {
+	if (action == Window.MOUSE_MOTION) {
 		if (button == 1) {
 			offs.copy(x, y, draw, null);
 		}
@@ -87,7 +87,7 @@ int onEvent(int action, int button, int x, int y) {
 	return 0;
 }
 
-Gui.showWindow(offs, onEvent);
+Window.show(offs, onEvent);
 offs.destroy();
 back.destroy();
 draw.destroy();

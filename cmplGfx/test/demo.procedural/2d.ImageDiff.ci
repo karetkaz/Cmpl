@@ -43,22 +43,22 @@ image2.eval(null, 1, 0, rgbOp2);
 image.copy(0, 0, image1, null);
 
 int onEvent(int action, int button, int ex, int ey) {
-	if (action == Gui.KEY_RELEASE && button == Gui.KEY_CODE_ESC) {
+	if (action == Window.KEY_RELEASE && button == Window.KEY_CODE_ESC) {
 		// exit when releasing escape key
 		return -1;
 	}
-	if (action == Gui.MOUSE_PRESS) {
+	if (action == Window.MOUSE_PRESS) {
 		image.copy(0, 0, image2, null);
 		return 0;
 	}
-	if (action == Gui.MOUSE_RELEASE) {
+	if (action == Window.MOUSE_RELEASE) {
 		image.copy(0, 0, image1, null);
 		return 0;
 	}
 	return 0;
 }
 
-Gui.showWindow(image, onEvent);
+Window.show(image, onEvent);
 image1.destroy();
 image2.destroy();
 image.destroy();

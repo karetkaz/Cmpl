@@ -712,7 +712,6 @@ struct TabPage: Layout {
 	}
 }
 
-// todo: in progress
 struct Select: Layout {
 	const char text[];
 	char states[*][2]; // fixme: initialize: = {"<", "^"};
@@ -898,7 +897,7 @@ struct FxWidget: Widget {
 			return Widget.onKeyEvent(this, event);
 		}
 
-		if (event.key == Gui.KEY_CODE_BACK && event.isShift) {
+		if (event.key == Window.KEY_CODE_BACK && event.isShift) {
 			return this.onReset(this);
 		}
 
@@ -1024,9 +1023,9 @@ bool hasPressed(const Layout this, View items...) {
 	return false;
 }
 
-static struct Gui {
-	static void showWindow(Image offscreen, Widget widget) {
-		struct Window {
+static struct Window {
+	static void show(Image offscreen, Widget widget) {
+		struct WindowData {
 			Image offscreen;
 			Widget widget;
 			Rect rect;
@@ -1048,45 +1047,45 @@ static struct Gui {
 			int repeat = 0;
 		}
 
-		static bool dispatchEvent(Window window&, Widget widget, int action, int button, int x, int y) {
+		static bool dispatchEvent(WindowData window&, Widget widget, int action, int button, int x, int y) {
 			if (widget.parent == null) {
 				// widget was not created, so create it first
 				widget.onCreate(widget, widget);
 			}
-			if (action == Gui.WINDOW_INIT) {
+			if (action == Window.WINDOW_INIT) {
 				return true;
 			}
-			if (action == Gui.WINDOW_CLOSE) {
+			if (action == Window.WINDOW_CLOSE) {
 				// TODO: implement reference counted gc
 				widget.onDestroy(widget);
 				widget.destroy();
 				return false;
 			}
-			if (action == Gui.WINDOW_ENTER) {
+			if (action == Window.WINDOW_ENTER) {
 				// do not process event
 				return false;
 			}
-			if (action == Gui.WINDOW_LEAVE) {
+			if (action == Window.WINDOW_LEAVE) {
 				// clear hovered state
 				return widget.clearState(Style.hovered);
 			}
 
-			if (action == Gui.FINGER_PRESS) {
+			if (action == Window.FINGER_PRESS) {
 				// finger press results also a mouse event
 				// skip the finger event
 				return false;
 			}
-			if (action == Gui.FINGER_MOTION) {
+			if (action == Window.FINGER_MOTION) {
 				// translate to mouse event
-				action = Gui.MOUSE_MOTION;
+				action = Window.MOUSE_MOTION;
 			}
-			if (action == Gui.FINGER_RELEASE) {
+			if (action == Window.FINGER_RELEASE) {
 				// finger release results also a mouse event
 				// skip the finger event
 				return false;
 			}
 
-			if (action == Gui.MOUSE_PRESS) {
+			if (action == Window.MOUSE_PRESS) {
 				if (window.button != button || window.lastX != x || window.lastY != y) {
 					window.clicks = 0;
 				}
@@ -1121,7 +1120,7 @@ static struct Gui {
 				};
 				return widget.onTouchEvent(widget, window.rect, event);
 			}
-			if (action == Gui.MOUSE_MOTION) {
+			if (action == Window.MOUSE_MOTION) {
 				int lastX = window.lastX;
 				int lastY = window.lastY;
 				window.time = System.millis();
@@ -1148,7 +1147,7 @@ static struct Gui {
 				};
 				return widget.onTouchEvent(widget, window.rect, event);
 			}
-			if (action == Gui.MOUSE_RELEASE) {
+			if (action == Window.MOUSE_RELEASE) {
 				int64 now = System.millis();
 				if ((now - window.time) / 1000. > .5) {
 					window.clicks = 0;
@@ -1171,10 +1170,10 @@ static struct Gui {
 				return widget.onTouchEvent(widget, window.rect, event);
 			}
 
-			if (action == Gui.KEY_PRESS) {
-				window.isShift = (y & Gui.KEY_MASK_SHIFT) != 0;
-				window.isCtrl = (y & Gui.KEY_MASK_CTRL) != 0;
-				window.isAlt = (y & Gui.KEY_MASK_ALT) != 0;
+			if (action == Window.KEY_PRESS) {
+				window.isShift = (y & Window.KEY_MASK_SHIFT) != 0;
+				window.isCtrl = (y & Window.KEY_MASK_CTRL) != 0;
+				window.isAlt = (y & Window.KEY_MASK_ALT) != 0;
 				if (window.key != button) {
 					window.key = button;
 					window.repeat = 0;
@@ -1192,10 +1191,10 @@ static struct Gui {
 				};
 				return widget.onKeyEvent(widget, event);
 			}
-			if (action == Gui.KEY_RELEASE) {
-				window.isShift = (y & Gui.KEY_MASK_SHIFT) != 0;
-				window.isCtrl = (y & Gui.KEY_MASK_CTRL) != 0;
-				window.isAlt = (y & Gui.KEY_MASK_ALT) != 0;
+			if (action == Window.KEY_RELEASE) {
+				window.isShift = (y & Window.KEY_MASK_SHIFT) != 0;
+				window.isCtrl = (y & Window.KEY_MASK_CTRL) != 0;
+				window.isAlt = (y & Window.KEY_MASK_ALT) != 0;
 				KeyEvent event = {
 					release: true;
 					isShift: window.isShift;
@@ -1209,7 +1208,7 @@ static struct Gui {
 				return widget.onKeyEvent(widget, event);
 			}
 
-			if (action == Gui.EVENT_TIMEOUT) {
+			if (action == Window.EVENT_TIMEOUT) {
 				if (window.timeout > 0) {
 					// long press
 					TouchEvent event = {
@@ -1230,7 +1229,7 @@ static struct Gui {
 			return false;
 		}
 
-		static int draw(Window window&, Widget widget) {
+		static int draw(WindowData window&, Widget widget) {
 			if (!widget.enabled) {
 				// widget is disabled, do not show it
 				return 0;
@@ -1256,8 +1255,8 @@ static struct Gui {
 			return timeout;
 		}
 
-		static int windowEvent(Window win&, int action, int button, int x, int y) {
-			if (action == Gui.KEY_RELEASE && button == Gui.KEY_CODE_ESC) {
+		static int windowEvent(WindowData win&, int action, int button, int x, int y) {
+			if (action == Window.KEY_RELEASE && button == Window.KEY_CODE_ESC) {
 				// exit when releasing escape key
 				return -1;
 			}
@@ -1269,11 +1268,11 @@ static struct Gui {
 				}
 				return win.draw(widget);
 			}
-			if (button == 0 && (action == Gui.MOUSE_MOTION || action == Gui.FINGER_MOTION)) {
+			if (button == 0 && (action == Window.MOUSE_MOTION || action == Window.FINGER_MOTION)) {
 				// hover views
 				return win.draw(widget);
 			}
-			if (button != 0 && (action == Gui.MOUSE_PRESS || action == Gui.FINGER_PRESS)) {
+			if (button != 0 && (action == Window.MOUSE_PRESS || action == Window.FINGER_PRESS)) {
 				// focus views
 				return win.draw(widget);
 			}
@@ -1283,20 +1282,20 @@ static struct Gui {
 			return win.draw(widget);
 		}
 
-		Window window = {
+		WindowData window = {
 			offscreen: offscreen;
 			widget: widget;
 			rect: {};
 		};
-		return Gui.showWindow(offscreen, window, windowEvent);
+		return Window.show(offscreen, window, windowEvent);
 	}
 
-	static void showWindow(Widget widget) {
+	static void show(Widget widget) {
 		Rect rect = {};
 		widget.onCreate(widget, widget);
 		widget.onMeasure(widget, &rect);
 		Image offscreen = Image(rect.width(), rect.height(), 32);
-		showWindow(offscreen, widget);
+		show(offscreen, widget);
 		offscreen.destroy();
 	}
 }

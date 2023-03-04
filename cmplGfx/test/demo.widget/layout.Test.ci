@@ -1,5 +1,5 @@
-// test inspired by https://developer.microsoft.com/en-us/fluentui#/controls/web/stack
 // test layout direction, alignment, and padding. todo: spacing
+// based on: https://developer.microsoft.com/en-us/fluentui#/controls/web/stack
 
 bool syncOrientation(Slider this, float64 value);
 bool syncAlignment(Switch this, int value);
@@ -156,7 +156,7 @@ View Rectangle(int rgb, const char text[*]) {
 	};
 }
 
-Gui.showWindow(widget
+Window.show(widget
 	.focus(orientation)
 	// add the layout to background
 	.addItems(Style.center, layout.addItems(Style.center,

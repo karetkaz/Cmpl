@@ -65,7 +65,7 @@
 <div id="left-sidebar" class="sidebar">
 	<div class="submenu">
 		<li onclick="setStyle(parentElement, '~collapsed');">Workspace<span class="" id="workspaceName"></span>
-			<button class="right" onclick="event.stopPropagation(); setStyle(parentElement.parentElement, '-collapsed'); params.update('path');" title="Refresh workspace">⟳</button>
+			<button class="right" onclick="event.stopPropagation(); setStyle(parentElement.parentElement, '-collapsed'); params.update('path');" title="Refresh file list">⟳</button>
 		</li>
 		<ul id="fileList"></ul>
 		<hr>
@@ -132,9 +132,8 @@
 			<li onclick="shareInput();"><span class="right"></span>🔗 Share link</li>
 			<li onclick="saveInput(true);"><span class="right"></span>💾 Save as</li>
 			<li onclick="saveInput();"><span class="right">Ctrl + s</span>💾 Save</li>
-			<li onclick="params.update({file: null});"><span class="right"></span>❌ Close</li>
-			<li onclick="params.update('file');"><span class="right"></span>Revert</li>
-			<!--<div class=""><li onclick="alert('TODO')">Help</li></div>-->
+			<li onclick="params.update({path: null});"><span class="right"></span>❌ Close</li>
+			<li onclick="params.update('path');"><span class="right"></span>⮌ Revert</li>
 		</ul>
 		<hr>
 	</div>

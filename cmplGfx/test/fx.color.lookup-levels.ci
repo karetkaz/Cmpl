@@ -164,7 +164,7 @@ bool showHideAdvanced(Slider slider, Rect rect&) {
 	return Slider.onMeasure(slider, &rect);
 }
 
-Gui.showWindow(offs, FxWidget(onProcess,
+Window.show(offs, FxWidget(onProcess,
 	histogram,
 	lookup,
 

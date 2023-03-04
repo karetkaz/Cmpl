@@ -1,5 +1,5 @@
-// adapted from: https://gitlab.bestminr.com/bestminr/FrontShaders/-/blob/master/shaders/hsl.glsl
 /// Convert color from Rgb color space to Hsl color space
+// adapted from: https://gitlab.bestminr.com/bestminr/FrontShaders/-/blob/master/shaders/hsl.glsl
 vec4f rgb2hsl(vec4f rgb) {
 	inline min(float32 x, float32 y) = x < y ? x : y;
 	inline max(float32 x, float32 y) = x > y ? x : y;

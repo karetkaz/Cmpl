@@ -35,8 +35,17 @@ inline "lib/math/Vector2d.ci";
 //todo: inline "lib/math/Perlin.ci"?;
 
 
+// Time
+inline "lib/time/Timeunit.ci";
+inline "lib/time/Duration.ci";
+inline "lib/time/Timestamp.ci";
+inline "lib/time/Timezone.ci";
+inline "lib/time/Datetime.ci";
+
+
 // Text
 inline "lib/text/cstr.ci";
+inline "lib/text/Format.ci";
 inline "lib/text/stream/ByteStream.ci";
 inline "lib/text/stream/TextStream.ci";
 inline "lib/text/encoding/binary/Base64.ci";
@@ -49,13 +58,6 @@ inline "lib/text/encoding/Utf8.ci";
 //todo: inline "lib/text/serialization/yaml.ci";
 //todo: inline "lib/text/serialization/xml.ci";
 
-
-// Time
-inline "lib/time/Timeunit.ci";
-inline "lib/time/Duration.ci";
-inline "lib/time/Timestamp.ci";
-inline "lib/time/Timezone.ci";
-inline "lib/time/Datetime.ci";
 
 // etc
 inline "lib/math/Easing.ci";

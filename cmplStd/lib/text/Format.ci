@@ -1,0 +1,566 @@
+/// Flags to convert numbers to string
+struct FormatFlags {
+	/// forced show sign '+' or '-'
+	const char sign = 0;
+
+	/// padding character: usually '0' or space
+	const char padChr = 0;
+
+	/// padding length
+	const int width = 0;
+
+	/// precision length
+	const int precision = 10;
+
+	/// trim extra `0` decimal digits
+	const bool trimDecimal = true;
+
+	/// read and process c style format flags like: "%02d"
+	static FormatFlags read(const char format[], int pos&) {
+		int chr = format[pos];
+		if (chr != '%') {
+			return {};
+		}
+
+		pos += 1;
+		chr = format[pos];
+
+		if (chr == '%') {
+			return {};
+		}
+
+		int sgnChr = 0;
+		if (chr == '-' || chr == '+') {
+			pos += 1;
+			sgnChr = chr;
+			chr = format[pos];
+		}
+
+		int padChr = ' ';
+		if (chr == '0') {
+			pos += 1;
+			padChr = chr;
+			chr = format[pos];
+		}
+
+		int padLen = 0;
+		for (;chr >= '0' && chr <= '9';) {
+			pos += 1;
+			padLen = padLen * 10 + chr - '0';
+			chr = format[pos];
+		}
+
+		int precision = 0;
+		if (chr == '.') {
+			pos += 1;
+			chr = format[pos];
+			for (;chr >= '0' && chr <= '9';) {
+				pos += 1;
+				precision = precision * 10 + chr - '0';
+				chr = format[pos];
+			}
+		}
+
+		return {
+			sign: sgnChr;
+			width: padLen;
+			padChr: padChr;
+			precision: precision;
+		};
+	}
+
+	/// override the default padding, in case it's length is zero
+	static FormatFlags defPad(const FormatFlags this&, int width, char padChr) {
+		if (this.width == 0) {
+			return {
+				sign: this.sign;
+				precision: this.precision;
+				padChr: padChr;
+				width: width;
+			};
+		}
+		return this;
+	}
+}
+
+/// Append a string to the output at the given position
+int append(char output[], int pos, const char value[*]) {
+	if (value == null) {
+		return append(output, pos, "NULL");
+	}
+	for (int i = 0; value[i]; i += 1) {
+		if (pos >= output.length) {
+			break;
+		}
+		output[pos] = value[i];
+		pos += 1;
+	}
+
+	if (pos >= output.length) {
+		pos = output.length - 1;
+	}
+	output[pos] = 0;
+	return pos;
+}
+
+/// Append a number to the output at the given position
+int append(char output[], int pos, int radix, uint64 value, const FormatFlags format&) {
+	static const char whiteSpace[] = " \t\n\r";
+	static const char radixDigits[] = "0123456789abcdefghijklmnopqrstuvwxyz";
+
+	int len = 0;
+	char digits[80] = {};
+
+	assert(radix > 1, "radix is too small", radix);
+	assert(radix < radixDigits.length, "radix is too big", radix);
+
+	// print digits in reverse order
+	for ( ; value > 0; value /= radix) {
+		digits[len += 1] = radixDigits[value % radix];
+	}
+	if (len == 0) {
+		digits[len += 1] = '0';
+	}
+
+	int maxLen = format.width - len;
+
+	char padChr = format.padChr;
+	if (padChr == '\0') {
+		padChr = ' ';
+	}
+
+	// print sign value
+	if (format.sign != 0) {
+		maxLen -= 1;
+		if (whiteSpace.contains(padChr)) {
+			// if padding character is whitespace pad before sign
+			for ( ; maxLen > 0; maxLen -= 1) {
+				assert(pos < output.length);
+				output[pos] = padChr;
+				pos += 1;
+			}
+		}
+		assert(pos < output.length);
+		output[pos] = format.sign;
+		pos += 1;
+	}
+
+	// print padding
+	for ( ; maxLen > 0; maxLen -= 1) {
+		assert(pos < output.length);
+		output[pos] = padChr;
+		pos += 1;
+	}
+
+	// print digits
+	for (int i = 0; i < len; i += 1) {
+		assert(i < output.length);
+		output[pos] = digits[len - i];
+		pos += 1;
+	}
+
+	if (pos >= output.length) {
+		pos = output.length - 1;
+	}
+	output[pos] = 0;
+	return pos;
+}
+
+/// Append a number to the output at the given position
+int append(char output[], int pos, int radix, int64 value, const FormatFlags format&) {
+	if (value < 0 /*&& value != -value*/) {
+		FormatFlags signedFormat = {
+			sign: '-';
+			padChr: format.padChr;
+			width: format.width;
+			precision: format.precision;
+		};
+		return append(output, pos, radix, uint64(-value), signedFormat);
+	}
+	return append(output, pos, radix, uint64(value), format);
+}
+
+/// Append a number to the output at the given position
+int append(char output[], int pos, float64 value, const FormatFlags format&) {
+	FormatFlags formatInt = {
+		sign: value < 0 ? '-' : format.sign;
+		padChr: format.padChr;
+		width: format.width - format.precision - 1;
+	};
+
+	int end = pos + format.width;
+	if (end >= output.length) {
+		end = output.length - 1;
+	}
+
+	const int beg = pos;
+	float64 fraction = Math.modf(Math.abs(value), &value);
+
+	// todo: integer part might not fit into int64
+	pos = output.append(pos, 10, uint64(int64(value)), formatInt);
+
+	// add fractional part
+	int dotIndex = pos;
+	pos = output.append(pos, ".");
+	end = Math.max(end, pos + format.precision);
+	if (end >= output.length) {
+		end = output.length - 1;
+	}
+
+	// roundup
+	fraction += Math.pow(10., float64(pos - end)) / 2;
+	// todo: more precision, don't rewrite the whole integer part
+	if (fraction >= 1) {
+		fraction %= 1;
+		pos = output.append(beg, 10, uint64(int64(value + 1)), formatInt);
+		dotIndex = pos;
+		pos = output.append(pos, ".");
+		end = Math.max(end, pos + format.precision);
+		if (end >= output.length) {
+			end = output.length - 1;
+		}
+	}
+
+	for (; pos < end; pos += 1) {
+		fraction = Math.modf(fraction * 10, &value);
+		output[pos] = '0' + int(value);
+	}
+
+	if (pos >= output.length) {
+		pos = output.length - 1;
+	}
+
+	if (!format.trimDecimal) {
+		output[pos] = 0;
+		return pos;
+	}
+
+	// scan backwards all zeroes
+	for (int i = pos - 1; i >= dotIndex; i -= 1) {
+		if (output[i] != '0') {
+			if (i == dotIndex) {
+				// remove also the dot
+				output[i] = 0;
+				return i;
+			}
+			output[i + 1] = 0;
+			return i + 1;
+		}
+	}
+
+	return pos;
+}
+
+/// Append a number to the output at the given position
+inline append(char output[], int pos, uint64 value, const FormatFlags format&) = append(output, pos, 10, uint64(value), format);
+
+/// Append a number to the output at the given position
+inline append(char output[], int pos, uint32 value, const FormatFlags format&) = append(output, pos, 10, uint64(value), format);
+
+/// Append a number to the output at the given position
+inline append(char output[], int pos, uint16 value, const FormatFlags format&) = append(output, pos, 10, uint64(value), format);
+
+/// Append a number to the output at the given position
+inline append(char output[], int pos, uint8 value, const FormatFlags format&) = append(output, pos, 10, uint64(value), format);
+
+/// Append a number to the output at the given position
+inline append(char output[], int pos, int64 value, const FormatFlags format&) = append(output, pos, 10, int64(value), format);
+
+/// Append a number to the output at the given position
+inline append(char output[], int pos, int32 value, const FormatFlags format&) = append(output, pos, 10, int64(value), format);
+
+/// Append a number to the output at the given position
+inline append(char output[], int pos, int16 value, const FormatFlags format&) = append(output, pos, 10, int64(value), format);
+
+/// Append a number to the output at the given position
+inline append(char output[], int pos, int8 value, const FormatFlags format&) = append(output, pos, 10, int64(value), format);
+
+/// Append a number to the output at the given position
+inline append(char output[], int pos, float32 value, const FormatFlags format&) = append(output, pos, float64(value), format);
+
+/* todo: replace FormatFlags with NumberFormat
+struct NumberFormat {
+	const char digitSymbols[] = "0123456789"; // binary: "01", decimal: "0123456789", hexadecimal: "0123456789abcdef"
+	const char negativePrefix = '-';
+	const char positivePrefix = '+';
+	const char decimalSeparator = '.';
+	const char digitGroupSymbol = '\'';
+
+//	const char signPrefix = 0;
+	const char decimalPlaces = 2;
+	const char digitGrouping = 0;	// 0: "123456789", 3: "123'456'789", 32: "12'34'56'789"
+	const bool leadingZeros = false; // false: ".7", true: "0.7"
+	const bool trailingZeros = false; // false: "0.7", true: ".70"
+	const bool trailingSeparator = false; // false: "6", true: "6."
+}*/
+
+/// datetime regional formatter, currently 'en' if instantiated with: `DatetimeFormat fmt = {};`
+struct DatetimeFormat {
+	// todo Calendar calendar = Calendar.Gregorian;
+	// todo Weekday firstDay = Weekday.Monday;
+	// todo Timezone timezone = Timezone(System.locale);
+	const char monthsLong[][];
+	const char monthsShort[][];
+	const char weeksLong[][];
+	const char weeksShort[][];
+	const char amPmUpper[][];
+	const char amPmLower[][];
+	const char dateLong[] = "%A %d %B %Y";
+	const char timeLong[] = "%r";
+	const char dateShort[] = "%x";
+	const char timeShort[] = "%I:%M %p";
+
+	static int format(const DatetimeFormat formatter&, char output[], int end, const Datetime value&, const char format[]) {
+		inline hours24to12(int hour) = hour > 12 ? hour - 12 : hour == 0 ? 12 : hour;
+
+		if (pointer(format) == null) {
+			return formatter.format(output, end, value, "%Y.%m.%d");
+		}
+
+		char chr = 0;
+		for (int pos = 0; pos < format.length; pos += 1) {
+			if (end >= output.length) {
+				output[output.length - 1] = 0;
+				return output.length - 1;
+			}
+
+			chr = format[pos];
+			if (chr != '%') {
+				output[end] = chr;
+				end += 1;
+				continue;
+			}
+
+			FormatFlags flags = FormatFlags.read(format, &pos);
+			chr = format[pos];
+
+			if (chr == '%') {
+				end = append(output, end, "%");
+			}
+			else if (chr == 'a') {
+				// %a     locale's abbreviated weekday name (e.g., en_US: [Sun, Mon, ..., Sat]; de_DE: [So, Mo, ..., Sa])
+				end = append(output, end, formatter.weeksShort[indexOf(value.dayOfWeek)]);
+			}
+			else if (chr == 'A') {
+				// %A     locale's full weekday name (e.g., en_US: [Sunday, ..., Saturday]; de_DE: [Sonntag, ..., Samstag])
+				end = append(output, end, formatter.weeksLong[indexOf(value.dayOfWeek)]);
+			}
+			else if (chr == 'b') {
+				// %b     locale's abbreviated month name (e.g., en_US: [Jan, Feb, ..., Dec]; de_DE: [Jan, Feb, ..., Dez])
+				end = append(output, end, formatter.monthsShort[indexOf(value.month)]);
+			}
+			else if (chr == 'B') {
+				// %B     locale's full month name (e.g., en_US: [January, ..., December];de_DE: [Januar, ..., Dezember])
+				end = append(output, end, formatter.monthsLong[indexOf(value.month)]);
+			}
+//			else if (chr == 'c') // todo: %c     locale's date and time (e.g., Thu Mar  3 23:05:25 2005)
+			else if (chr == 'C') {
+				// %C     century; like %Y, except omit last two digits (e.g., 20)
+				end = append(output, end, value.year / 100, flags.defPad(2, '0'));
+			}
+			else if (chr == 'd') {
+				// %d     day of month (e.g., 01)
+				end = append(output, end, value.day, flags.defPad(2, '0'));
+			}
+			else if (chr == 'D') {
+				// %D     date; same as %m/%d/%y
+				end = formatter.format(output, end, value, "%m/%d/%y");
+			}
+			else if (chr == 'e') {
+				// %e     day of month, space padded; same as %_d
+				end = append(output, end, value.day, flags.defPad(2, ' '));
+			}
+			else if (chr == 'F') {
+				// %F     full date; like %+4Y-%m-%d
+				end = formatter.format(output, end, value, "%04Y-%m-%d");
+			}
+//			else if (chr == 'g') // todo: %g     last two digits of year of ISO week number (see %G)
+//			else if (chr == 'G') // todo: %G     year of ISO week number (see %V); normally useful only with %V
+			else if (chr == 'h') {
+				// %h     same as %b
+				end = append(output, end, formatter.monthsShort[indexOf(value.month)]);
+			}
+			else if (chr == 'H') {
+				// %H     hour (00..23)
+				end = append(output, end, value.hour, flags.defPad(2, '0'));
+			}
+			else if (chr == 'I') {
+				// %I     hour (01..12)
+				end = append(output, end, hours24to12(value.hour), flags.defPad(2, '0'));
+			}
+			else if (chr == 'j') {
+				// %j     day of year (001..366)
+				end = append(output, end, value.dayOfYear, flags.defPad(3, '0'));
+			}
+			else if (chr == 'k') {
+				// %k     hour, space padded ( 0..23); same as %_H
+				end = append(output, end, value.hour, flags.defPad(2, ' '));
+			}
+			else if (chr == 'l') {
+				// %l     hour, space padded ( 1..12); same as %_I
+				end = append(output, end, hours24to12(value.hour), flags.defPad(2, ' '));
+			}
+			else if (chr == 'm') {
+				// %m     month (01..12)
+				end = append(output, end, indexOf(value.month) + 1, flags.defPad(2, '0'));
+			}
+			else if (chr == 'M') {
+				// %M     minute (00..59)
+				end = append(output, end, value.minute, flags.defPad(2, '0'));
+			}
+			else if (chr == 'n') {
+				// %n     a newline
+				end = append(output, end, "\n");
+			}
+			else if (chr == 'N') {
+				// fixme: precision
+				// %N     nanoseconds (000000000..999999999)
+				end = append(output, end, value.millis * 1000000, flags.defPad(9, '0'));
+			}
+			else if (chr == 'p') {
+				// %p     locale's equivalent of either AM or PM; blank if not known
+				end = append(output, end, formatter.amPmUpper[int(value.hour < 12)]);
+			}
+			else if (chr == 'P') {
+				// %P     like %p, but lower case
+				end = append(output, end, formatter.amPmLower[int(value.hour < 12)]);
+			}
+//			else if (chr == 'q') // todo: %q     quarter of year (1..4)
+//			else if (chr == 'r') // todo: %r     locale's 12-hour clock time (e.g., 11:11:04 PM)
+			else if (chr == 'R') {
+				// %R     24-hour hour and minute; same as %H:%M
+				end = formatter.format(output, end, value, "%H:%M");
+			}
+			else if (chr == 's') {
+				// %s     seconds since 1970-01-01 00:00:00 UTC
+				end = append(output, end, Timestamp(value).value(Timeunit.Seconds), flags);
+			}
+			else if (chr == 'S') {
+				// %S     second (00..60)
+				end = append(output, end, value.second, flags.defPad(2, '0'));
+			}
+			else if (chr == 't') {
+				// %t     a tab
+				end = append(output, end, "\t");
+			}
+			else if (chr == 'T') {
+				// %T     time; same as %H:%M:%S
+				end = formatter.format(output, end, value, "%H:%M:%S");
+			}
+			else if (chr == 'u') {
+				// %u     day of week (1..7); 1 is Monday
+				end = append(output, end, indexOf(value.dayOfWeek) + 1, flags);
+			}
+//			else if (chr == 'U') // todo: %U     week number of year, with Sunday as first day of week (00..53)
+//			else if (chr == 'V') // todo: %V     ISO week number, with Monday as first day of week (01..53)
+//			else if (chr == 'w') // todo: %w     day of week (0..6); 0 is Sunday
+			else if (chr == 'W') {
+				// %W     week number of year, with Monday as first day of week (00..53)
+				end = append(output, end, value.weekOfYear, flags.defPad(2, '0'));
+			}
+			else if (chr == 'x') {
+				// %x     locale's date representation (e.g., 12/31/99)
+				end = formatter.format(output, end, value, formatter.dateShort);
+			}
+			else if (chr == 'X') {
+				// %X     locale's time representation (e.g., 23:13:48)
+				end = formatter.format(output, end, value, formatter.timeShort);
+			}
+			else if (chr == 'y') {
+				// %y     last two digits of year (00..99)
+				end = append(output, end, value.year % 100, flags.defPad(2, '0'));
+			}
+			else if (chr == 'Y') {
+				// %Y     year
+				end = append(output, end, value.year, flags);
+			}
+//			else if (chr == 'z') // todo: %z     +hhmm numeric time zone (e.g., -0400)
+//			else if (chr == '?') // todo: %:z    +hh:mm numeric time zone (e.g., -04:00)
+//			else if (chr == '?') // todo: %::z   +hh:mm:ss numeric time zone (e.g., -04:00:00)
+//			else if (chr == '?') // todo: %:::z  numeric time zone with : to necessary precision (e.g., -04, +05:30)
+//			else if (chr == 'Z') // todo: %Z     alphabetic time zone abbreviation (e.g., EDT)
+			else {
+				abort("unimplemented or invalid format character", chr);
+			}
+		}
+
+		if (end >= output.length) {
+			end = output.length - 1;
+		}
+		output[end] = 0;
+		return end;
+	}
+
+	/** Format date to text
+	 * @param value date to format
+	 * @param output write output to this buffer
+	 * @param format format string
+	 *  	@null defaults to: "%Y.%m.%d"
+	 */
+	// see: https://man7.org/linux/man-pages/man1/date.1.html
+	static int format(const DatetimeFormat formatter&, char output[], const Datetime value&, const char format[]) {
+		return formatter.format(output, 0, value, format);
+	}
+}
+
+/// extension method for backward compatibility, using english region
+static int format(const Datetime value&, char output[], const char format[]) {
+	static const char monthsLongEn[][] = {
+		"January",
+		"February",
+		"March",
+		"April",
+		"May",
+		"June",
+		"July",
+		"August",
+		"September",
+		"October",
+		"November",
+		"December",
+	};
+	static const char monthsShortEn[][] = {
+		"Jan", "Feb", "Mar", "Apr",
+		"May", "Jun", "Jul", "Aug",
+		"Sep", "Oct", "Nov", "Dec",
+	};
+	static const char weeksLongEn[][] = {
+		"Monday",
+		"Tuesday",
+		"Wednesday",
+		"Thursday",
+		"Friday",
+		"Saturday",
+		"Sunday",
+	};
+	static const char weeksShortEn[][] = {
+		"Mon", "Tue", "Wed",
+		"Thu", "Fri", "Sat",
+		"Sun",
+	};
+	static const char amPmUpperEn[][] = {
+		"AM",
+		"PM"
+	};
+	static const char amPmLowerEn[][] = {
+		"am",
+		"pm"
+	};
+
+	static const DatetimeFormat fmtEN = {
+		monthsLong: monthsLongEn;
+		monthsShort: monthsShortEn;
+		weeksLong: weeksLongEn;
+		weeksShort: weeksShortEn;
+		amPmUpper: amPmUpperEn;
+		amPmLower: amPmLowerEn;
+	};
+	return fmtEN.format(output, value, format);
+}
+
+
+/// Append a number to the output at the given position
+int append(char output[], int pos, int value) {
+	static const FormatFlags format = {};
+	return append(output, pos, value, format);
+}

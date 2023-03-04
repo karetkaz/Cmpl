@@ -174,7 +174,7 @@ Image image = Image(resolution, resolution, 32);
 
 int onEvent(int action, int button, int x, int y) {
 	int64 time = System.millis();
-	if (action == Gui.KEY_RELEASE && button == Gui.KEY_CODE_ESC) {
+	if (action == Window.KEY_RELEASE && button == Window.KEY_CODE_ESC) {
 		// exit when releasing escape key
 		return -1;
 	}
@@ -184,11 +184,11 @@ int onEvent(int action, int button, int x, int y) {
 	static int lookAt = 1;
 	static const float32 slow = 1 / 50f;
 	static const float32 fast = 5 / 50f;
-	if (action == Gui.FINGER_MOTION) {
-		action = Gui.MOUSE_MOTION;
+	if (action == Window.FINGER_MOTION) {
+		action = Window.MOUSE_MOTION;
 	}
 
-	if (action == Gui.WINDOW_INIT) {
+	if (action == Window.WINDOW_INIT) {
 		// make a bunch of random spheres
 		for (int i = 2; i < things.length; i += 1) {
 			float fi = i * 11;
@@ -214,14 +214,14 @@ int onEvent(int action, int button, int x, int y) {
 		camera = Camera.lookAt(vec4f(0, 0, 2), things[lookAt].position, vec4f(0, 1, 0));
 		// return -1;
 	}
-	else if (action == Gui.KEY_PRESS) {
-		if (button == Gui.KEY_CODE_ENTER) {
+	else if (action == Window.KEY_PRESS) {
+		if (button == Window.KEY_CODE_ENTER) {
 			vec4f target = things[lookAt].position;
 			camera = Camera.lookAt(vec4f(target.x, target.y, target.z + target.w * 5, 1), target, vec4f(0, 1, 0));
 
 		}
-		else if (button == Gui.KEY_CODE_TAB) {
-			if ((y & Gui.KEY_MASK_SHIFT) != 0) {
+		else if (button == Window.KEY_CODE_TAB) {
+			if ((y & Window.KEY_MASK_SHIFT) != 0) {
 				lookAt -= 1;
 				if (lookAt < 1) {
 					lookAt = 1;
@@ -237,37 +237,37 @@ int onEvent(int action, int button, int x, int y) {
 			camera = Camera.lookAt(vec4f(target.x, target.y, target.z + target.w * 5, 1), target, vec4f(0, 1, 0));
 		}
 
-		else if (button == Gui.KEY_CODE_UP) {
-			bool shift = bool(y & Gui.KEY_MASK_SHIFT);
+		else if (button == Window.KEY_CODE_UP) {
+			bool shift = bool(y & Window.KEY_MASK_SHIFT);
 			camera.rotate(camera.position, camera.right, -(shift ? fast : slow));
 		}
-		else if (button == Gui.KEY_CODE_DOWN) {
-			bool shift = bool(y & Gui.KEY_MASK_SHIFT);
+		else if (button == Window.KEY_CODE_DOWN) {
+			bool shift = bool(y & Window.KEY_MASK_SHIFT);
 			camera.rotate(camera.position, camera.right, +(shift ? fast : slow));
 		}
-		else if (button == Gui.KEY_CODE_LEFT) {
-			bool shift = bool(y & Gui.KEY_MASK_SHIFT);
+		else if (button == Window.KEY_CODE_LEFT) {
+			bool shift = bool(y & Window.KEY_MASK_SHIFT);
 			camera.rotate(camera.position, camera.up, -(shift ? fast : slow));
 		}
-		else if (button == Gui.KEY_CODE_RIGHT) {
-			bool shift = bool(y & Gui.KEY_MASK_SHIFT);
+		else if (button == Window.KEY_CODE_RIGHT) {
+			bool shift = bool(y & Window.KEY_MASK_SHIFT);
 			camera.rotate(camera.position, camera.up, +(shift ? fast : slow));
 		}
 
 		else if (button == 'w') {
-			bool shift = bool(y & Gui.KEY_MASK_SHIFT);
+			bool shift = bool(y & Window.KEY_MASK_SHIFT);
 			camera.move(camera.forward, +(shift ? fast : slow));
 		}
 		else if (button == 'a') {
-			bool shift = bool(y & Gui.KEY_MASK_SHIFT);
+			bool shift = bool(y & Window.KEY_MASK_SHIFT);
 			camera.move(camera.right, -(shift ? fast : slow));
 		}
 		else if (button == 's') {
-			bool shift = bool(y & Gui.KEY_MASK_SHIFT);
+			bool shift = bool(y & Window.KEY_MASK_SHIFT);
 			camera.move(camera.forward, -(shift ? fast : slow));
 		}
 		else if (button == 'd') {
-			bool shift = bool(y & Gui.KEY_MASK_SHIFT);
+			bool shift = bool(y & Window.KEY_MASK_SHIFT);
 			camera.move(camera.right, +(shift ? fast : slow));
 		}
 
@@ -281,12 +281,12 @@ int onEvent(int action, int button, int x, int y) {
 			return 0;
 		}
 	}
-	else if (action == Gui.MOUSE_PRESS) {
+	else if (action == Window.MOUSE_PRESS) {
 		ox = x;
 		oy = y;
 		return 0;
 	}
-	else if (action == Gui.MOUSE_MOTION) {
+	else if (action == Window.MOUSE_MOTION) {
 		int dx = x - ox;
 		int dy = y - oy;
 
@@ -318,12 +318,12 @@ int onEvent(int action, int button, int x, int y) {
 		ox = x;
 		oy = y;
 	}
-	else if (action == Gui.MOUSE_WHEEL) {
+	else if (action == Window.MOUSE_WHEEL) {
 		// move forward and back using the wheel/scroll
 		camera.move(camera.forward, y * fast);
 		// camera.move(camera.right, x * fast);
 	}
-	else if (action == Gui.EVENT_TIMEOUT);
+	else if (action == Window.EVENT_TIMEOUT);
 	else {
 		// no need to process event
 		return 0;
@@ -337,5 +337,5 @@ int onEvent(int action, int button, int x, int y) {
 	return 0;
 }
 
-Gui.showWindow(image, onEvent);
+Window.show(image, onEvent);
 image.destroy();

@@ -5,7 +5,7 @@ Timestamp now = Timestamp.now();
 
 int onEvent(int action, int button, int x, int y);
 Image img = Image(1440, 500, 32);
-Gui.showWindow(img, onEvent);
+Window.show(img, onEvent);
 
 struct Biorhythm {
 	const int color;
@@ -45,7 +45,7 @@ const Biorhythm biorhythms[] = {
 
 void drawBiorhythm(Image dst, Timestamp birth, Timestamp time, int days, int first) {
 
-	Image font = Gui.font;
+	Image font = Window.font;
 	const int lineHeight = font.height() + 3;
 	inline padding = 15;
 
@@ -110,23 +110,23 @@ int onEvent(int action, int button, int x, int y) {
 	static int mouseX = 0;
 	static int mouseY = 0;
 
-	if (action == Gui.KEY_RELEASE && button == Gui.KEY_CODE_ESC) {
+	if (action == Window.KEY_RELEASE && button == Window.KEY_CODE_ESC) {
 		// exit when releasing escape key
 		return -1;
 	}
-	else if (action == Gui.KEY_RELEASE && button == ' ') {
+	else if (action == Window.KEY_RELEASE && button == ' ') {
 		scrollSpeedX = scrollStop;
 		scrollSpeedY = scrollStop;
 		scrollX = 0;
 		scrollY = 0;
 	}
-	else if (action == Gui.MOUSE_PRESS && button == 1) {
+	else if (action == Window.MOUSE_PRESS && button == 1) {
 		scrollSpeedX = scrollStop;
 		scrollSpeedY = scrollStop;
 		mouseX = x;
 		mouseY = y;
 	}
-	else if (action == Gui.MOUSE_MOTION && button == 1) {
+	else if (action == Window.MOUSE_MOTION && button == 1) {
 		static if (typename(scrollSpeed) != null) {
 			scrollX += scrollSpeedX = mouseX - x;
 			scrollY += scrollSpeedY = mouseY - y;
@@ -137,7 +137,7 @@ int onEvent(int action, int button, int x, int y) {
 		mouseX = x;
 		mouseY = y;
 	}
-	else if (action == Gui.WINDOW_INIT) {
+	else if (action == Window.WINDOW_INIT) {
 		scrollSpeedX = scrollStop;
 		scrollSpeedY = scrollStop;
 	}
@@ -153,7 +153,7 @@ int onEvent(int action, int button, int x, int y) {
 	}
 	return 0;
 }
-/* resources
+/* References:
 http://lastunicorn.github.io/BioCalcJs/demo/index.html
 https://github.com/lastunicorn/BioCalcJs/blob/gh-pages/demo/libraries/BiorhythmControls/BiorhythmControls.js#L410
 // */

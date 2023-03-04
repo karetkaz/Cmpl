@@ -23,6 +23,11 @@ struct Timestamp {
 		return Duration(a.value - b.value, Timestamp.precision);
 	}
 
+	/// Returns whether the firs timestamp is less(<0), equal(=0), or greater(>0) than the second timestamp
+	static int compare(Timestamp a, Timestamp b) {
+		return int(a.value > b.value) - int(a.value < b.value);
+	}
+
 	///@public
 	static bool equal(Timestamp a, Timestamp b, Timeunit precision) {
 		return a.value(precision) == b.value(precision);
@@ -130,5 +135,4 @@ inline Timestamp(int64 value, Timeunit precision) = {
 inline +(Timestamp lhs, Duration rhs) = Timestamp {
 	value: lhs.value + rhs.value(Timestamp.precision);
 };
-
 */

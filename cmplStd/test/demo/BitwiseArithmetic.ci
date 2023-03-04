@@ -1,7 +1,5 @@
-/**
- * Add two numbers without using arithmetic operators
- * https://www.geeksforgeeks.org/add-two-numbers-without-using-arithmetic-operators/
- */
+/// Add two numbers without using arithmetic operators
+// adapted from: https://www.geeksforgeeks.org/add-two-numbers-without-using-arithmetic-operators/
 int add(int x, int y) {
 	// Iterate till there is no carry
 	for (;y != 0;) {
@@ -17,10 +15,8 @@ int add(int x, int y) {
 	return x;
 }
 
-/**
- * Subtract two numbers without using arithmetic operators
- * https://www.geeksforgeeks.org/subtract-two-numbers-without-using-arithmetic-operators/
- */
+/// Subtract two numbers without using arithmetic operators
+// adapted from: https://www.geeksforgeeks.org/subtract-two-numbers-without-using-arithmetic-operators/
 int sub(int x, int y) {
 	// Iterate till there is no carry
 	for (;y != 0;) {

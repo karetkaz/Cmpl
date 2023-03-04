@@ -957,7 +957,7 @@ static void mainLoopCallback(mainLoopArgs args) {
 	flushWindow(args->window);
 }
 
-static const char *const proto_window_show = "void showWindow(Image surf, pointer closure, int32 onEvent(pointer closure, int32 action, int32 button, int32 x, int32 y))";
+static const char *const proto_window_show = "void show(Image surf, pointer closure, int32 onEvent(pointer closure, int32 action, int32 button, int32 x, int32 y))";
 static vmError window_show(nfcContext ctx) {
 	rtContext rt = ctx->rt;
 	GxImage offScreen = nextArg(ctx).ref;
@@ -1710,8 +1710,8 @@ int cmplInit(rtContext rt) {
 	}
 
 
-	symn gui = rt->api.ccBegin(cc, "Gui");
-	if (gui != NULL) {
+	symn win = rt->api.ccBegin(cc, "Window");
+	if (win != NULL) {
 		rt->api.ccDefInt(cc, "KEY_PRESS", KEY_PRESS);
 		rt->api.ccDefInt(cc, "KEY_RELEASE", KEY_RELEASE);
 		rt->api.ccDefInt(cc, "MOUSE_WHEEL", MOUSE_WHEEL);
@@ -1768,7 +1768,7 @@ int cmplInit(rtContext rt) {
 			}
 		}
 
-		rt->api.ccEnd(cc, gui);
+		rt->api.ccEnd(cc, win);
 	}
 
 	if (/*Initialize:*/ 1) {
@@ -1783,6 +1783,7 @@ int cmplInit(rtContext rt) {
 		for (size_t i = 1; i < sizeof(lights) / sizeof(*lights); ++i) {
 			lights[i - 1].next = lights + i;
 		}
+		initWindowing();
 	}
 
 	return 0;
@@ -1791,5 +1792,6 @@ void cmplClose(rtContext rt) {
 	for (size_t i = 0; i < sizeof(fnt) / sizeof(*fnt); ++i) {
 		destroyImage(fnt + i);
 	}
+	quitWindowing();
 	(void) rt;
 }

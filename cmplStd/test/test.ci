@@ -11,8 +11,8 @@ inline "lang/inlineMacros.ci";
 inline "lang/overload.inline.ci";
 
 // native calls
-inline "std/memory.ci";
-inline "std/tryExec.ci";
+inline "lang/memory.ci";
+inline "lang/tryExec.ci";
 
 
 // Variables
@@ -46,10 +46,10 @@ inline "lang/stmt.for.ci";
 
 
 // implemented functions
-inline "std/math.Bits.ci";
-//inline "std/math.Fixed.ci"; // todo: implement
-inline "std/math.Floats.ci";
-inline "std/math.Complex.ci";
-//inline "std/math.Polynomial.ci"; // fixme: requires file access
+inline "math/test.Bits.ci";
+//inline "math/test.Fixed.ci"; // todo: implement
+inline "math/test.Math.ci";
+inline "math/test.Complex.ci";
+//inline "math/test.Polynomial.ci"; // fixme: requires file access
 
 // */

@@ -24,7 +24,7 @@ mat4f brightness(float val) {
 	};
 }
 mat4f exposure(float val) {
-	// based on: https://stackoverflow.com/questions/22427424/image-processing-exposure-effect-on-image
+	// adapted from: https://stackoverflow.com/questions/22427424/image-processing-exposure-effect-on-image
 	return {
 		x: vec4f(1 + val, 0, 0, 0);
 		y: vec4f(0, 1 + val, 0, 0);
@@ -262,7 +262,7 @@ void onProcess(FxWidget widget) {
 	histogram.update(offs);
 }
 
-Gui.showWindow(offs, FxWidget(onProcess,
+Window.show(offs, FxWidget(onProcess,
 	histogram,
 
 	null, preset

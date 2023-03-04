@@ -70,7 +70,7 @@ Style style = {
 	align: Style.topLeft;
 };
 
-Gui.showWindow(Widget(300, 500, style).addItems(Style.verticalTop,
+Window.show(Widget(300, 500, style).addItems(Style.verticalTop,
 	TreeView("Cmpl",
 		Slider("progress", 0, 100, 37),
 

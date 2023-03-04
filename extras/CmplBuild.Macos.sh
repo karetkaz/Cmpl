@@ -6,6 +6,7 @@ cd "$CMPL_HOME" || exit 1
 
 BIN=build/macos
 #BIN_EMC=$CMPL_HOME/extras/demo/wasm
+#source "$EMSDK_HOME/emsdk_env.sh"
 
 make clean BINDIR="$BIN"
 make -j 12 cmpl libFile.dylib libGfx.dylib BINDIR="$BIN"
@@ -38,35 +39,39 @@ $BIN/cmpl -X-stdin+steps -profile/t/P/G/M -api/A/d/p -asm/g/n/s -ast/t -doc -use
 $BIN/cmpl -X-stdin-steps -profile/t/P/G/M -api/A/d/p -asm/g/n/s -ast/t -doc -use -dump.json "$BIN-test.prof.json" "cmplStd/test/test.ci"
 
 read -rsn1 -p "Compilation finished, press enter to run tests"
+echo
 if [ -n "$REPLY" ]; then
-	echo
 	exit 0
 fi
 
 TEST_FILES="$CMPL_HOME/cmplStd/test/test.ci"
 TEST_FILES="$TEST_FILES $(echo $CMPL_HOME/cmplStd/test/demo/*.ci)"
 TEST_FILES="$TEST_FILES $(echo $CMPL_HOME/cmplStd/test/lang/*.ci)"
-TEST_FILES="$TEST_FILES $(echo $CMPL_HOME/cmplStd/test/std/*.ci)"
-TEST_FILES="$TEST_FILES $(echo $CMPL_HOME/cmplFile/test/*.ci)"
+TEST_FILES="$TEST_FILES $(echo $CMPL_HOME/cmplStd/test/math/*.ci)"
+TEST_FILES="$TEST_FILES $(echo $CMPL_HOME/cmplStd/test/text/*.ci)"
+TEST_FILES="$TEST_FILES $(echo $CMPL_HOME/cmplStd/test/time/*.ci)"
+
 TEST_FILES="$TEST_FILES $(echo $CMPL_HOME/cmplGfx/test/*.ci)"
 TEST_FILES="$TEST_FILES $(echo $CMPL_HOME/cmplGfx/test/demo/*.ci)"
 TEST_FILES="$TEST_FILES $(echo $CMPL_HOME/cmplGfx/test/demo.procedural/*.ci)"
 TEST_FILES="$TEST_FILES $(echo $CMPL_HOME/cmplGfx/test/demo.widget/*.ci)"
+
+TEST_FILES="$TEST_FILES $(echo $CMPL_HOME/cmplFile/test/*.ci)"
 TEST_FILES="$TEST_FILES $(echo $CMPL_HOME/temp/cmplGfx/demo/*.ci)"
 
 BIN="$CMPL_HOME/$BIN"
-DUMP_FILE=$BIN.dump.ci
+DUMP_FILE=$BIN.dump.exec.ci
 $BIN/cmpl -log/d "$DUMP_FILE"
 for file in $(echo "$TEST_FILES")
 do
 	if ! cd "$(dirname "$file")"; then
-		echo "**** cannot run test: $file"
+		echo "**** cannot run test ❌: $file"
 		continue
 	fi
 	printf "**** test: %s\\r" "$file"
 	if ! $BIN/cmpl -X-stdin+steps -run -log/a/d "$DUMP_FILE" "$BIN/libFile.dylib" "$BIN/libGfx.dylib" "$file"; then
-		echo "****** test failed: $file"
+		echo "****** test failed ❌: $file"
 	else
-		echo "**** test finished: $file"
+		echo "**** test finished ✅: $file"
 	fi
 done

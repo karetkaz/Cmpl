@@ -146,7 +146,7 @@ void onProcess(FxWidget widget) {
 	histogram.update(offs);
 }
 
-Gui.showWindow(offs, FxWidget(onProcess,
+Window.show(offs, FxWidget(onProcess,
 	histogram,
 	null, export64, export256,
 	null, debug

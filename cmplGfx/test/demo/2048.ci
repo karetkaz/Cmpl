@@ -5,7 +5,7 @@ inline gridSize = 4;
 inline fontSize = 18;
 inline displaySize = 400;
 
-Image font = Gui.font(fontSize);
+Image font = Window.font(fontSize);
 Image image = Image(displaySize, displaySize, 32);
 argb colors[gridSize * gridSize + 1] = {argb(0)};
 int grid[gridSize * gridSize] = {};
@@ -97,16 +97,16 @@ void mirrorGrid() {
 }
 
 int onEvent(int action, int button, int x, int y) {
-	if (action == Gui.KEY_RELEASE && button == Gui.KEY_CODE_ESC) {
+	if (action == Window.KEY_RELEASE && button == Window.KEY_CODE_ESC) {
 		// exit when releasing escape key
 		return -1;
 	}
 
-	if (action == Gui.KEY_RELEASE && button == ' ') {
+	if (action == Window.KEY_RELEASE && button == ' ') {
 		// reset game with space-bar
-		action = Gui.WINDOW_INIT;
+		action = Window.WINDOW_INIT;
 	}
-	if (action == Gui.WINDOW_INIT) {
+	if (action == Window.WINDOW_INIT) {
 		for (int i = 0; i < grid.length; i += 1) {
 			grid[i] = 0;
 		}
@@ -115,21 +115,21 @@ int onEvent(int action, int button, int x, int y) {
 	}
 
 	bool moved = false;
-	inline KEY_ACTION = Gui.KEY_PRESS;
-	if (action == KEY_ACTION && button == Gui.KEY_CODE_LEFT) {
+	inline KEY_ACTION = Window.KEY_PRESS;
+	if (action == KEY_ACTION && button == Window.KEY_CODE_LEFT) {
 		moved = mergeGrid();
 	}
-	if (action == KEY_ACTION && button == Gui.KEY_CODE_RIGHT) {
+	if (action == KEY_ACTION && button == Window.KEY_CODE_RIGHT) {
 		mirrorGrid();
 		moved = mergeGrid();
 		mirrorGrid();
 	}
-	if (action == KEY_ACTION && button == Gui.KEY_CODE_UP) {
+	if (action == KEY_ACTION && button == Window.KEY_CODE_UP) {
 		rotateGrid();
 		moved = mergeGrid();
 		rotateGrid();
 	}
-	if (action == KEY_ACTION && button == Gui.KEY_CODE_DOWN) {
+	if (action == KEY_ACTION && button == Window.KEY_CODE_DOWN) {
 		rotateGrid();
 		mirrorGrid();
 		moved = mergeGrid();
@@ -173,5 +173,5 @@ System.srand(System.time());
 lerpLut(colors, argb(0xecdfc7), argb(0xecc12d), argb(0xff1e1f));
 image.fill(uint32(argb(185, 173, 161)));
 
-Gui.showWindow(image, onEvent);
+Window.show(image, onEvent);
 image.destroy();

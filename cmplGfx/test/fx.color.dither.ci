@@ -416,7 +416,7 @@ void onProcess(FxWidget widget) {
 	histogram.update(offs);
 }
 
-Gui.showWindow(offs, FxWidget(onProcess,
+Window.show(offs, FxWidget(onProcess,
 	histogram,
 	selDither
 		.addItem("Threshold")
@@ -433,7 +433,7 @@ Gui.showWindow(offs, FxWidget(onProcess,
 offs.destroy();
 back.destroy();
 
-/* todo
+/* References:
 https://github.com/cyotek/Dithering/blob/master/src/Dithering/StuckiDithering.cs
 https://github.com/safecomp/AndroidImageProcessing/blob/master/AndroidImageProcessing/src/safecomp/ir/androidimageprocessing/Dithering.java
 https://www.arabicprogrammer.com/article/5386388171/

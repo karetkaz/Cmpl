@@ -1,6 +1,3 @@
-// http://mrdoob.com/lab/javascript/effects/plane_deformations/
-// https://experiments.withgoogle.com/plane-deformations
-
 Image img = Image("../asset/image/download.jpg", 32);
 
 vec4f tex2d(Image src, float64 x, float64 y) {
@@ -271,5 +268,10 @@ vec4f goodSinus(vec4f in) {
 	return vec4f(color*2, color*2, color*4);
 }
 
-Gui.showWindow(512, 512, 192, scroll);
+Window.show(512, 512, 192, scroll);
 img.destroy();
+
+/* References:
+http://mrdoob.com/lab/javascript/effects/plane_deformations/
+https://experiments.withgoogle.com/plane-deformations
+*/

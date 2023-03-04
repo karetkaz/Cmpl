@@ -50,12 +50,16 @@ extern const int KEY_CODE_R_GUI;
 
 typedef struct GxWindow *GxWindow;
 
+extern void initWindowing();
+
+extern void quitWindowing();
+
 extern GxWindow createWindow(GxImage image, const char *title);
+
+extern void destroyWindow(GxWindow window);
 
 extern int getWindowEvent(GxWindow window, int *button, int *x, int *y, int timeout);
 
-extern void setWindowTitle(GxWindow window, const char *title);
-
 extern void flushWindow(GxWindow window);
 
-extern void destroyWindow(GxWindow window);
+extern void setWindowTitle(GxWindow window, const char *title);

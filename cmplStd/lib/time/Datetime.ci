@@ -13,9 +13,10 @@ enum Month: uint8 {
 	November;
 	December;
 }
-// FIXME: implement enum indexing
+/// FIXME: implement enum indexing
 inline Month(int index) = Month(emit(int32(index + Month.January)));
-inline indexOf(Month month) = int32(month - Month.January);
+/// FIXME: implement enum indexing
+inline indexOf(Month value) = int32(value - Month.January);
 
 ///@public
 enum Weekday: uint8 {
@@ -27,8 +28,9 @@ enum Weekday: uint8 {
 	Saturday;
 	Sunday;
 }
-// FIXME: implement enum indexing
+/// FIXME: implement enum indexing
 inline Weekday(int index) = Weekday(emit(int32(index + Weekday.Monday)));
+/// FIXME: implement enum indexing
 inline indexOf(Weekday value) = int32(value - Weekday.Monday);
 
 ///@public
@@ -74,12 +76,12 @@ struct Datetime {
 	const uint16 millis = 0;
 
 	// Zone
-//const bool dayLightSaving;	// day light saving's time
+	// const bool dayLightSaving;	// day light saving's time
 	/// timezone
 	const Timezone timezone;
 
 	// Extra
-//	const uint8 weekOfMonth;	// 1 ... 4
+	// const uint8 weekOfMonth;	// 1 ... 4
 	//dayOfWeekInMonth;		// example: 1..4, may be specified as -1
 
 	/// Nth week of the year: 1 ... 53
@@ -98,7 +100,7 @@ struct Datetime {
 	static const int DaysToMonth366[13] = {0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335, 366};
 	static const int DaysTil1970 = 719162;
 
-	///@public
+	/// Checks weather the given year is a leap year or not
 	static bool isLeapYear(int year) {
 		if (year % 4 != 0) {
 			return false;
@@ -142,208 +144,6 @@ struct Datetime {
 			dayOfWeek: cal.dayOfWeek;
 			leapYear: isLeapYear(year);
 		};
-	}
-
-	static int format(const Datetime value&, char output[], int end, const char format[]) {
-		static const char weekDayNames[][] = {
-			"Monday",
-			"Tuesday",
-			"Wednesday",
-			"Thursday",
-			"Friday",
-			"Saturday",
-			"Sunday",
-		};
-		static const char monthNames[][] = {
-			"January",
-			"February",
-			"March",
-			"April",
-			"May",
-			"June",
-			"July",
-			"August",
-			"September",
-			"October",
-			"November",
-			"December",
-		};
-
-		inline hours24to12(int hour) = hour > 12 ? hour - 12 : hour == 0 ? 12 : hour;
-
-		if (pointer(format) == null) {
-			return value.format(output, end, "%Y.%m.%d");
-		}
-
-		char chr = 0;
-		for (int pos = 0; pos < format.length; pos += 1) {
-			if (end >= output.length) {
-				output[output.length - 1] = 0;
-				return output.length - 1;
-			}
-
-			chr = format[pos];
-			if (chr != '%') {
-				output[end] = chr;
-				end += 1;
-				continue;
-			}
-
-			FormatFlags flags = FormatFlags.read(format, &pos);
-			chr = format[pos];
-
-			if (chr == '%') {
-				end = append(output, end, "%");
-			}
-//			else if (chr == 'a') // todo: %a     locale's abbreviated weekday name (e.g., en_US: [Sun, Mon, ..., Sat]; de_DE: [So, Mo, ..., Sa])
-			else if (chr == 'A') {
-				// fixme: no locale
-				// %A     locale's full weekday name (e.g., en_US: [Sunday, ..., Saturday]; de_DE: [Sonntag, ..., Samstag])
-				end = append(output, end, weekDayNames[indexOf(value.dayOfWeek)]);
-			}
-//			else if (chr == 'b') // todo: %b     locale's abbreviated month name (e.g., en_US: [Jan, Feb, ..., Dec]; de_DE: [Jan, Feb, ..., Dez])
-			else if (chr == 'B') {
-				// fixme: no locale
-				// %B     locale's full month name (e.g., en_US: [January, ..., December];de_DE: [Januar, ..., Dezember])
-				end = append(output, end, monthNames[indexOf(value.month)]);
-			}
-//			else if (chr == 'c') // todo: %c     locale's date and time (e.g., Thu Mar  3 23:05:25 2005)
-			else if (chr == 'C') {
-				// %C     century; like %Y, except omit last two digits (e.g., 20)
-				end = append(output, end, value.year / 100, flags.defPad(2, '0'));
-			}
-			else if (chr == 'd') {
-				// %d     day of month (e.g., 01)
-				end = append(output, end, value.day, flags.defPad(2, '0'));
-			}
-			else if (chr == 'D') {
-				// %D     date; same as %m/%d/%y
-				end = value.format(output, end, "%m/%d/%y");
-			}
-			else if (chr == 'e') {
-				// %e     day of month, space padded; same as %_d
-				end = append(output, end, value.day, flags.defPad(2, ' '));
-			}
-			else if (chr == 'F') {
-				// %F     full date; like %+4Y-%m-%d
-				end = value.format(output, end, "%04Y-%m-%d");
-			}
-//			else if (chr == 'g') // todo: %g     last two digits of year of ISO week number (see %G)
-//			else if (chr == 'G') // todo: %G     year of ISO week number (see %V); normally useful only with %V
-//			else if (chr == 'h') // todo: %h     same as %b
-			else if (chr == 'H') {
-				// %H     hour (00..23)
-				end = append(output, end, value.hour, flags.defPad(2, '0'));
-			}
-			else if (chr == 'I') {
-				// %I     hour (01..12)
-				end = append(output, end, hours24to12(value.hour), flags.defPad(2, '0'));
-			}
-			else if (chr == 'j') {
-				// %j     day of year (001..366)
-				end = append(output, end, value.dayOfYear, flags.defPad(3, '0'));
-			}
-			else if (chr == 'k') {
-				// %k     hour, space padded ( 0..23); same as %_H
-				end = append(output, end, value.hour, flags.defPad(2, ' '));
-			}
-			else if (chr == 'l') {
-				// %l     hour, space padded ( 1..12); same as %_I
-				end = append(output, end, hours24to12(value.hour), flags.defPad(2, ' '));
-			}
-			else if (chr == 'm') {
-				// %m     month (01..12)
-				end = append(output, end, indexOf(value.month) + 1, flags.defPad(2, '0'));
-			}
-			else if (chr == 'M') {
-				// %M     minute (00..59)
-				end = append(output, end, value.minute, flags.defPad(2, '0'));
-			}
-			else if (chr == 'n') {
-				// %n     a newline
-				end = append(output, end, "\n");
-			}
-			else if (chr == 'N') {
-				// fixme: precision
-				// %N     nanoseconds (000000000..999999999)
-				end = append(output, end, value.millis * 1000000, flags.defPad(9, '0'));
-			}
-			else if (chr == 'p') {
-				// fixme: no locale
-				// %p     locale's equivalent of either AM or PM; blank if not known
-				end = append(output, end, value.hour < 12 ? "AM" : "PM");
-			}
-			else if (chr == 'P') {
-				// fixme: no locale
-				// %P     like %p, but lower case
-				end = append(output, end, value.hour < 12 ? "am" : "pm");
-			}
-//			else if (chr == 'q') // todo: %q     quarter of year (1..4)
-//			else if (chr == 'r') // todo: %r     locale's 12-hour clock time (e.g., 11:11:04 PM)
-			else if (chr == 'R') {
-				// %R     24-hour hour and minute; same as %H:%M
-				end = value.format(output, end, "%H:%M");
-			}
-//			else if (chr == 's') // todo: %s     seconds since 1970-01-01 00:00:00 UTC {end = append(output, end, Timestamp(value).value(Timeunit.Seconds), flags)}
-			else if (chr == 'S') {
-				// %S     second (00..60)
-				end = append(output, end, value.second, flags.defPad(2, '0'));
-			}
-			else if (chr == 't') {
-				// %t     a tab
-				end = append(output, end, "\t");
-			}
-			else if (chr == 'T') {
-				// %T     time; same as %H:%M:%S
-				end = value.format(output, end, "%H:%M:%S");
-			}
-			else if (chr == 'u') {
-				// %u     day of week (1..7); 1 is Monday
-				end = append(output, end, indexOf(value.dayOfWeek) + 1, flags);
-			}
-//			else if (chr == 'U') // todo: %U     week number of year, with Sunday as first day of week (00..53)
-//			else if (chr == 'V') // todo: %V     ISO week number, with Monday as first day of week (01..53)
-//			else if (chr == 'w') // todo: %w     day of week (0..6); 0 is Sunday
-			else if (chr == 'W') {
-				// %W     week number of year, with Monday as first day of week (00..53)
-				end = append(output, end, value.weekOfYear, flags.defPad(2, '0'));
-			}
-//			else if (chr == 'x') // todo: %x     locale's date representation (e.g., 12/31/99)
-//			else if (chr == 'X') // todo: %X     locale's time representation (e.g., 23:13:48)
-			else if (chr == 'y') {
-				// %y     last two digits of year (00..99)
-				end = append(output, end, value.year % 100, flags.defPad(2, '0'));
-			}
-			else if (chr == 'Y') {
-				// %Y     year
-				end = append(output, end, value.year, flags);
-			}
-//			else if (chr == 'z') // todo: %z     +hhmm numeric time zone (e.g., -0400)
-//			else if (chr == '?') // todo: %:z    +hh:mm numeric time zone (e.g., -04:00)
-//			else if (chr == '?') // todo: %::z   +hh:mm:ss numeric time zone (e.g., -04:00:00)
-//			else if (chr == '?') // todo: %:::z  numeric time zone with : to necessary precision (e.g., -04, +05:30)
-//			else if (chr == 'Z') // todo: %Z     alphabetic time zone abbreviation (e.g., EDT)
-			else {
-				abort("unimplemented or invalid format character", chr);
-			}
-		}
-
-		if (end >= output.length) {
-			end = output.length - 1;
-		}
-		output[end] = 0;
-		return end;
-	}
-
-	/** Format date to text
-	 * @param value date to format
-	 * @param output write output to this buffer
-	 * @param format format string
-	 *  	@null defaults to: "%Y.%m.%d"
-	 *      @see: https://man7.org/linux/man-pages/man1/date.1.html
-	 */
-	static int format(const Datetime value&, char output[], const char format[]) {
-		return format(value, output, 0, format);
 	}
 }
 
@@ -437,6 +237,7 @@ Datetime Datetime(Calendar calendar, Timezone timezone, Timestamp timestamp) {
 		leapYear: DaysToMonth == Datetime.DaysToMonth366;
 	};
 }
+
 ///@public
 inline Datetime(Timestamp time) = Datetime(Calendar.Gregorian, Timezone.utc(), time);
 
@@ -457,14 +258,17 @@ Datetime Datetime(int year, int month, int day, int hour, int minute, int second
 		leapYear: false;
 	};
 }
+
 ///@public
 Datetime Datetime(int year, int month, int day, int hour, int minute, int second, int millis) {
 	return Datetime(year, month, day, hour, minute, second, millis, Timezone.utc());
 }
+
 ///@public
 Datetime Datetime(int year, int month, int day, int hour, int minute, int second, Timezone zone) {
 	return Datetime(year, month, day, hour, minute, second, 0, zone);
 }
+
 ///@public
 Datetime Datetime(int year, int month, int day, Timezone zone) {
 	return Datetime(year, month, day, 0, 0, 0, 0, zone);
@@ -509,12 +313,3 @@ Timestamp Timestamp(Datetime value) {
 Datetime addDays(Datetime datetime, int value) {
 	return Datetime(Timestamp(datetime).add(value, Timeunit.Days));
 }
-
-/* resources:
-https://github.com/dotnet/runtime/blob/master/src/libraries/System.Private.CoreLib/src/System/Globalization/GregorianCalendar.cs
-https://github.com/dotnet/runtime/blob/main/src/libraries/System.Private.CoreLib/src/System/TimeZone.cs
-https://github.com/unicode-org/icu/blob/main/icu4j/main/classes/core/src/com/ibm/icu/util/Calendar.java
-https://github.com/JodaOrg/joda-time/blob/master/src/main/java/org/joda/time/DateTime.java
-todo: https://github.com/HowardHinnant/date
-https://zetcode.com/articles/cdatetime/
-*/

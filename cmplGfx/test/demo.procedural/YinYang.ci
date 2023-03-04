@@ -1,5 +1,5 @@
 // procedural draw demo ~ YinYang
-// adapted from https://www.shadertoy.com/view/4dG3DV
+// based on: https://www.shadertoy.com/view/4dG3DV
 
 vec4f yinyang(vec4f in) {
 	float time = in.w;
@@ -21,4 +21,4 @@ vec4f yinyang(vec4f in) {
 	return vec4f(float(1));
 }
 
-Gui.showWindow(512, 512, 128, yinyang);
+Window.show(512, 512, 128, yinyang);
