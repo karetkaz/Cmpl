@@ -12,19 +12,19 @@ int onEvent(int action, int button, int ex, int ey) {
 	static int ox = 0;
 	static int oy = 0;
 
-	if (action == Gui.KEY_RELEASE && button == Gui.KEY_CODE_ESC) {
+	if (action == Window.KEY_RELEASE && button == Window.KEY_CODE_ESC) {
 		// exit when releasing escape key
 		return -1;
 	}
-	if (action == Gui.KEY_PRESS) {
+	if (action == Window.KEY_PRESS) {
 		if (button >= '0' && button < '0' + x.length) {
 			idx = button - '0';
 		}
 	}
-	if (action == Gui.MOUSE_RELEASE || action == Gui.FINGER_RELEASE) {
+	if (action == Window.MOUSE_RELEASE || action == Window.FINGER_RELEASE) {
 		idx = -1;
 	}
-	if (action == Gui.MOUSE_PRESS || action == Gui.FINGER_PRESS) {
+	if (action == Window.MOUSE_PRESS || action == Window.FINGER_PRESS) {
 		idx = -1;
 		inline dst(int dx, int dy) = Math.sqrt(dx * dx + dy * dy);
 		inline dst(int i, int cx, int cy) = dst(x[i] - cx, y[i] - cy);
@@ -37,7 +37,7 @@ int onEvent(int action, int button, int ex, int ey) {
 		ox = ex;
 		oy = ey;
 	}
-	if (action == Gui.MOUSE_MOTION || action == Gui.FINGER_MOTION) {
+	if (action == Window.MOUSE_MOTION || action == Window.FINGER_MOTION) {
 		if (idx >= 0 && idx < x.length) {
 			x[idx] += ex - ox;
 			y[idx] += ey - oy;
@@ -84,5 +84,5 @@ int onEvent(int action, int button, int ex, int ey) {
 	return 0;
 }
 
-Gui.showWindow(offs, onEvent);
+Window.show(offs, onEvent);
 offs.destroy();

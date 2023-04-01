@@ -21,7 +21,7 @@ struct Style {
 	// padding around text in views
 	const int padding = 8;
 
-	const Image font = Gui.font;
+	const Image font = Window.font;
 	const FormatFlags format;
 
 	uint32 backgroundColor = uint32(theme);
@@ -241,7 +241,7 @@ struct View: object {
 			// click with space key
 			return this.onClick(this);
 		}
-		if (event.key == Gui.KEY_CODE_BACK) {
+		if (event.key == Window.KEY_CODE_BACK) {
 			// reset with backspace key
 			return this.onReset(this);
 		}
@@ -984,8 +984,6 @@ struct Layout: View {
 	static Layout Frame(View items...) {
 		return Custom(0, Style.fill, ...items);
 	}
-	// FIXME: inline Row(View items...) = Custom(-1, Style.fill, items);
-	// FIXME: inline Column(View items...) = Custom(1, Style.fill, items);
 }
 
 /** Widget is a special kind of layout, which can clip the content of its elements.
@@ -1112,7 +1110,7 @@ struct Widget: Layout {
 			return false;
 		}
 
-		if (event.key == Gui.KEY_CODE_TAB || event.key == Gui.KEY_CODE_ENTER) {
+		if (event.key == Window.KEY_CODE_TAB || event.key == Window.KEY_CODE_ENTER) {
 			// Tab, Enter: select prev or next control.
 			this.clearState(Style.hovered);
 			if (!this.focusNext(event.isShift)) {

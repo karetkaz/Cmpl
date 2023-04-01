@@ -2,7 +2,7 @@
 
 static int onEvent(int action, int button, int x, int y);
 static Image image = Image(512, 512, 32);
-Gui.showWindow(image, onEvent);
+Window.show(image, onEvent);
 image.destroy();
 
 static int onEvent(int action, int button, int x, int y) {
@@ -22,51 +22,51 @@ static int onEvent(int action, int button, int x, int y) {
 		x: x;
 		y: y;
 	};
-	if (action == Gui.KEY_PRESS) {
+	if (action == Window.KEY_PRESS) {
 		event.actionName = "KEY_PRESS";
 	}
-	else if (action == Gui.KEY_RELEASE) {
+	else if (action == Window.KEY_RELEASE) {
 		event.actionName = "KEY_RELEASE";
 	}
-	else if (action == Gui.MOUSE_WHEEL) {
+	else if (action == Window.MOUSE_WHEEL) {
 		event.actionName = "MOUSE_WHEEL";
 	}
-	else if (action == Gui.MOUSE_PRESS) {
+	else if (action == Window.MOUSE_PRESS) {
 		event.actionName = "MOUSE_PRESS";
 	}
-	else if (action == Gui.MOUSE_MOTION) {
+	else if (action == Window.MOUSE_MOTION) {
 		event.actionName = "MOUSE_MOTION";
 	}
-	else if (action == Gui.MOUSE_RELEASE) {
+	else if (action == Window.MOUSE_RELEASE) {
 		event.actionName = "MOUSE_RELEASE";
 	}
-	else if (action == Gui.FINGER_PRESS) {
+	else if (action == Window.FINGER_PRESS) {
 		event.actionName = "FINGER_PRESS";
 	}
-	else if (action == Gui.FINGER_MOTION) {
+	else if (action == Window.FINGER_MOTION) {
 		event.actionName = "FINGER_MOTION";
 	}
-	else if (action == Gui.FINGER_RELEASE) {
+	else if (action == Window.FINGER_RELEASE) {
 		event.actionName = "FINGER_RELEASE";
 	}
-	else if (action == Gui.EVENT_TIMEOUT) {
+	else if (action == Window.EVENT_TIMEOUT) {
 		event.actionName = "EVENT_TIMEOUT";
 	}
-	else if (action == Gui.WINDOW_INIT) {
+	else if (action == Window.WINDOW_INIT) {
 		event.actionName = "WINDOW_INIT";
 	}
-	else if (action == Gui.WINDOW_CLOSE) {
+	else if (action == Window.WINDOW_CLOSE) {
 		event.actionName = "WINDOW_CLOSE";
 	}
-	else if (action == Gui.WINDOW_ENTER) {
+	else if (action == Window.WINDOW_ENTER) {
 		event.actionName = "WINDOW_ENTER";
 	}
-	else if (action == Gui.WINDOW_LEAVE) {
+	else if (action == Window.WINDOW_LEAVE) {
 		event.actionName = "WINDOW_LEAVE";
 	}
 
 	debug("event", event);
-	if (action == Gui.KEY_RELEASE && button == Gui.KEY_CODE_ESC) {
+	if (action == Window.KEY_RELEASE && button == Window.KEY_CODE_ESC) {
 		return -1;
 	}
 

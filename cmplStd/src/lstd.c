@@ -13,6 +13,17 @@
 #include "../../src/internal.h"
 #include "../../src/utils.h"
 
+enum PrintFlags {
+	minus = 1 << 0,  // '-'  Left-justify within the given field width; Right justification is the default (see width sub-specifier).
+	plus = 1 << 1,   // '+'  Forces to preceed the result with a plus or minus sign (+ or -) even for positive numbers. By default, only negative numbers are preceded with a - sign.
+	space = 1 << 3,  //	' '  If no sign is going to be written, a blank space is inserted before the value.
+	hash = 1 << 2,   // '#'  Used with o, x or X specifiers the value is preceeded with 0, 0x or 0X respectively for values different than zero. Used with a, A, e, E, f, F, g or G it forces the written output to contain a decimal point even if no more digits follow. By default, if no digits follow, no decimal point is written.
+	zero = 1 << 3,   // `0`  Left-pads the number with zeroes (0) instead of spaces when padding is specified (see width sub-specifier).
+	// https://cplusplus.com/reference/cstdio/printf/
+	// warning: flag ' ' is ignored when flag '+' is present [-Wformat]
+	// warning: flag '0' is ignored when flag '-' is present [-Wformat]
+};
+
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ math functions
 static vmError f64sin(nfcContext args) {
 	float64_t x = argf64(args, 0);
@@ -76,7 +87,46 @@ static vmError f64parse(nfcContext args) {
 	retref(args, end - str);
 	return noError;
 }
+static vmError f64print(nfcContext args) {
+	rtValue out = nextArg(args);
+	double val = nextArg(args).f64;
+	int32_t flags = nextArg(args).i32;
+	int32_t width = nextArg(args).i32;
+	int32_t precision = nextArg(args).i32;
+	int i = 0;
+	char format[16] = {0};
 
+	format[i++] = '%';
+	if (flags & minus) {
+		format[i++] = '-';
+	}
+	if (flags & plus) {
+		format[i++] = '+';
+	}
+	if (flags & space) {
+		format[i++] = ' ';
+	}
+	if (flags & hash) {
+		format[i++] = '#';
+	}
+	if (flags & zero) {
+		format[i++] = '0';
+	}
+	format[i++] = '*';
+	format[i++] = '.';
+	format[i++] = '*';
+	format[i++] = 'l';
+	format[i++] = 'f';
+	format[i++] = 0;
+
+#ifdef __WATCOMC__ // fixme: watcom compiler does not link snprintf from this file ???
+	return nativeCallError;
+#else
+	int res = snprintf((char *) out.ref, out.length, format, width, precision, val);
+	retref(args, res);
+	return noError;
+#endif
+}
 
 static vmError f32sin(nfcContext args) {
 	float32_t x = argf32(args, 0);
@@ -616,6 +666,15 @@ static int ccLibStd(ccContext cc) {
 				err = 6;
 				break;
 			}
+		}
+		symn print = ccAddCall(cc, f64print, "int print(char out[], float64 value, int32 flags, int32 width, int32 precision)");
+		if (ccExtend(cc, print)) {
+			ccDefInt(cc, "flagMinus", minus);
+			ccDefInt(cc, "flagPlus", plus);
+			ccDefInt(cc, "flagSpace", space);
+			ccDefInt(cc, "flagHash", hash);
+			ccDefInt(cc, "flagZero", zero);
+			ccEnd(cc, print);
 		}
 		ccEnd(cc, cc->type_f64);
 	}

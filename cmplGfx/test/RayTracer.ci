@@ -280,5 +280,5 @@ int64 time = System.millis();
 image.eval(null, 0, 0, raytrace);
 time = System.millis() - time;
 debug("raytrace millis", time);
-Gui.showWindow(image);
+Window.show(image);
 image.destroy();

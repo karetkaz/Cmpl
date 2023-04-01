@@ -1,5 +1,6 @@
 // TODO: enum Easing: double(double t) { ... }
-/// Easing functions maps an input of [0, 1) usually to [0, 1) with an acceleration: https://easings.net/.
+/// Easing functions maps an input of [0, 1) usually to [0, 1) with an acceleration
+// see: https://easings.net
 static struct Easing {
 	///@public
 	float64 linear(float64 t) {

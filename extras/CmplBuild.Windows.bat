@@ -5,14 +5,13 @@ SET CMPL_HOME=%CD%
 echo cmpl home is: %CMPL_HOME%
 
 SET BIN=%CMPL_HOME%\build\windows
-SET BIN_WCC=%CMPL_HOME%\build\wcc.windows
+SET BIN_WCC=%BIN%.wcc
 
 SET "MINGW_HOME=%userprofile%\Dropbox\Software\bin\MinGw"
-SET "WATCOM=%userprofile%\Dropbox\Software\bin\Watcom"
+SET "WATCOM=%userprofile%\Dropbox\Software\bin\Watcom\rel2"
 
 IF EXIST "%MINGW_HOME%" (
 	SET "PATH=%MINGW_HOME%\bin;%PATH%"
-
 	mingw32-make -C "%CMPL_HOME%" BINDIR="%BIN%" clean
 	mingw32-make -C "%CMPL_HOME%" -j 12 BINDIR="%BIN%" cmpl libFile.dll libGfx.dll libOpenGL.dll
 )
@@ -24,7 +23,7 @@ IF EXIST "%WATCOM%" (
 
 	IF NOT EXIST "%BIN_WCC%" mkdir "%BIN_WCC%"
 	pushd "%BIN_WCC%"
-	owcc -xc -std=c99 -o %BIN_WCC%\cmpl.exe %CMPL_HOME%\src\*.c %CMPL_HOME%\cmplStd\src\*.c
+	owcc -xc -std=c99 -o cmpl.exe %CMPL_HOME%\src\*.c %CMPL_HOME%\cmplStd\src\*.c
 	popd
 )
 
@@ -49,16 +48,20 @@ SET TEST_FLAGS=-X+steps-stdin-offsets -asm/n/s -debug/g "%CMPL_HOME%\cmplStd\tes
 SET TEST_FILES=%CMPL_HOME%\cmplStd\test\test.ci
 SET TEST_FILES=%TEST_FILES%;%CMPL_HOME%\cmplStd\test\demo\*.ci
 SET TEST_FILES=%TEST_FILES%;%CMPL_HOME%\cmplStd\test\lang\*.ci
-SET TEST_FILES=%TEST_FILES%;%CMPL_HOME%\cmplStd\test\std\*.ci
-SET TEST_FILES=%TEST_FILES%;%CMPL_HOME%\cmplFile\test\*.ci
+SET TEST_FILES=%TEST_FILES%;%CMPL_HOME%\cmplStd\test\math\*.ci
+SET TEST_FILES=%TEST_FILES%;%CMPL_HOME%\cmplStd\test\text\*.ci
+SET TEST_FILES=%TEST_FILES%;%CMPL_HOME%\cmplStd\test\time\*.ci
+
 SET TEST_FILES=%TEST_FILES%;%CMPL_HOME%\cmplGfx\test\*.ci
 SET TEST_FILES=%TEST_FILES%;%CMPL_HOME%\cmplGfx\test\demo\*.ci
 SET TEST_FILES=%TEST_FILES%;%CMPL_HOME%\cmplGfx\test\demo.procedural\*.ci
 SET TEST_FILES=%TEST_FILES%;%CMPL_HOME%\cmplGfx\test\demo.widget\*.ci
+
+SET TEST_FILES=%TEST_FILES%;%CMPL_HOME%\cmplFile\test\*.ci
 SET TEST_FILES=%TEST_FILES%;%CMPL_HOME%\temp\todo.cmplGfx\demo\*.ci
 @REM SET TEST_FILES=%TEST_FILES%;%CMPL_HOME%\cmplGL\test\*.ci
 
-SET DUMP_FILE=%BIN%.dump.ci
+SET DUMP_FILE=%BIN%.dump.exec.ci
 %BIN%\cmpl -log/d "%DUMP_FILE%"
 FOR %%f IN (%TEST_FILES%) DO (
 	pushd "%%~dpf"

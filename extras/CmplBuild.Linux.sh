@@ -5,8 +5,8 @@ echo "cmpl home is: $CMPL_HOME"
 cd "$CMPL_HOME" || exit 1
 
 BIN=build/linux
+BIN_WCC=$BIN.wcc
 BIN_EMC=$CMPL_HOME/extras/demo/wasm
-BIN_WCC=$CMPL_HOME/build/wcc.linux
 
 make clean BINDIR="$BIN"
 make -j 12 cmpl libFile.so libGfx.so libOpenGL.so BINDIR="$BIN"
@@ -16,7 +16,7 @@ if [ -n "$BIN_EMC" ]; then
 fi
 
 # build and run test on 32 bit platform
-WATCOM="$(echo ~/bin/ow_daily/rel2)"
+WATCOM="$(echo ~/Dropbox/Software/bin/Watcom/rel2)"
 if [ -n "$BIN_WCC" ] && [ -d "$WATCOM" ]; then
 	export WATCOM="$WATCOM"
 	export INCLUDE="$WATCOM/lh"
@@ -24,7 +24,7 @@ if [ -n "$BIN_WCC" ] && [ -d "$WATCOM" ]; then
 	PATH="$WATCOM/binl:$PATH"
 
 	mkdir -p $BIN_WCC && cd $BIN_WCC
-	owcc -xc -std=c99 -o "$BIN_WCC/cmpl" $CMPL_HOME/src/*.c $CMPL_HOME/cmplStd/src/*.c
+	owcc -xc -std=c99 -o cmpl $CMPL_HOME/src/*.c $CMPL_HOME/cmplStd/src/*.c
 	cd $CMPL_HOME || exit 1
 fi
 
@@ -41,7 +41,6 @@ if ! $BIN/cmpl -dump.scite extras/Cmpl.api "$BIN/libFile.so" "$BIN/libGfx.so"; t
 	exit 1
 fi
 
-# create reference todo: cmpl -doc.md extras/Cmpl.md cmplStd/doc/cmpl.ci
 rm extras/Cmpl.md
 DOC_FILES="$CMPL_HOME/extras/docs/*.md"
 printf '%s\n' $DOC_FILES | while read file; do
@@ -67,12 +66,12 @@ $BIN/cmpl -X-stdin+steps -profile/t/P/G/M -api/A/d/p -asm/g/n/s -ast/t -doc -use
 $BIN/cmpl -X-stdin-steps -profile/t/P/G/M -api/A/d/p -asm/g/n/s -ast/t -doc -use -dump.json "extras/dump/test.prof.json" "cmplStd/test/test.ci"
 
 read -rsn1 -p "Compilation finished, press enter to run tests"
+echo
 if [ -n "$REPLY" ]; then
-	echo
 	exit 0
 fi
 
-DUMP_FILE=$BIN.antlr.dump.ci
+DUMP_FILE=$BIN.dump.antlr.ci
 rm "$DUMP_FILE"
 find "$CMPL_HOME/cmplStd" -type f -name '*.ci' -exec cat {} \;>>"$DUMP_FILE"
 find "$CMPL_HOME/cmplGfx" -type f -name '*.ci' -exec cat {} \;>>"$DUMP_FILE"
@@ -81,28 +80,32 @@ find "$CMPL_HOME/cmplFile" -type f -name '*.ci' -exec cat {} \;>>"$DUMP_FILE"
 TEST_FILES="$CMPL_HOME/cmplStd/test/test.ci"
 TEST_FILES="$TEST_FILES $(echo $CMPL_HOME/cmplStd/test/demo/*.ci)"
 TEST_FILES="$TEST_FILES $(echo $CMPL_HOME/cmplStd/test/lang/*.ci)"
-TEST_FILES="$TEST_FILES $(echo $CMPL_HOME/cmplStd/test/std/*.ci)"
-TEST_FILES="$TEST_FILES $(echo $CMPL_HOME/cmplFile/test/*.ci)"
+TEST_FILES="$TEST_FILES $(echo $CMPL_HOME/cmplStd/test/math/*.ci)"
+TEST_FILES="$TEST_FILES $(echo $CMPL_HOME/cmplStd/test/text/*.ci)"
+TEST_FILES="$TEST_FILES $(echo $CMPL_HOME/cmplStd/test/time/*.ci)"
+
 TEST_FILES="$TEST_FILES $(echo $CMPL_HOME/cmplGfx/test/*.ci)"
 TEST_FILES="$TEST_FILES $(echo $CMPL_HOME/cmplGfx/test/demo/*.ci)"
 TEST_FILES="$TEST_FILES $(echo $CMPL_HOME/cmplGfx/test/demo.procedural/*.ci)"
 TEST_FILES="$TEST_FILES $(echo $CMPL_HOME/cmplGfx/test/demo.widget/*.ci)"
+
+TEST_FILES="$TEST_FILES $(echo $CMPL_HOME/cmplFile/test/*.ci)"
 TEST_FILES="$TEST_FILES $(echo $CMPL_HOME/temp/cmplGfx/demo/*.ci)"
 
 BIN="$CMPL_HOME/$BIN"
-DUMP_FILE=$BIN.dump.ci
+DUMP_FILE=$BIN.dump.exec.ci
 $BIN/cmpl -log/d "$DUMP_FILE"
 for file in $TEST_FILES
 do
 	if ! cd "$(dirname "$file")"; then
-		echo "**** cannot run test: $file"
+		echo "**** cannot run test ❌: $file"
 		continue
 	fi
 	printf "**** test: %s\\r" "$file"
 	if ! $BIN/cmpl -X-stdin+steps -run -log/a/d "$DUMP_FILE" "$BIN/libFile.so" "$BIN/libGfx.so" "$file"; then
-		echo "****** test failed: $file"
+		echo "****** test failed ❌: $file"
 	else
-		echo "**** test finished: $file"
+		echo "**** test finished ✅: $file"
 	fi
 done
 
@@ -110,14 +113,14 @@ TEST_FILES="$(echo $CMPL_HOME/cmplGL/test/*.ci)"
 for file in $TEST_FILES
 do
 	if ! cd "$(dirname "$file")"; then
-		echo "**** cannot run test: $file"
+		echo "**** cannot run test ❌: $file"
 		continue
 	fi
 	printf "**** test: %s\\r" "$file"
 	if ! $BIN/cmpl -X-stdin+steps -run -log/a/d "$DUMP_FILE" "$BIN/libFile.so" "$BIN/libOpenGL.so" "$file"; then
-		echo "****** test failed: $file"
+		echo "****** test failed ❌: $file"
 	else
-		echo "**** test finished: $file"
+		echo "**** test finished ✅: $file"
 	fi
 done
 

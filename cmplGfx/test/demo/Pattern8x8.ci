@@ -59,12 +59,12 @@ int onEvent(int action, int button, int x, int y) {
 	static bool edit = false;
 	static bool clear = false;
 
-	if (action == Gui.KEY_RELEASE && button == Gui.KEY_CODE_ESC) {
+	if (action == Window.KEY_RELEASE && button == Window.KEY_CODE_ESC) {
 		// exit when releasing escape key
 		return -1;
 	}
 
-	if (action == Gui.MOUSE_PRESS || action == Gui.MOUSE_MOTION) {
+	if (action == Window.MOUSE_PRESS || action == Window.MOUSE_MOTION) {
 		if (!edit || button == 0) {
 			return 0;
 		}
@@ -73,7 +73,7 @@ int onEvent(int action, int button, int x, int y) {
 		int j = y * 8 / img.height();
 		uint64 mask = 1U << (~i & 7) + 8 * (~j & 7);
 
-		if (action == Gui.MOUSE_PRESS) {
+		if (action == Window.MOUSE_PRESS) {
 			clear = bool(patterns[selected] & mask);
 		}
 
@@ -83,7 +83,7 @@ int onEvent(int action, int button, int x, int y) {
 			patterns[selected] |= mask;
 		}
 	}
-	else if (action == Gui.KEY_RELEASE && button == Gui.KEY_CODE_ENTER) {
+	else if (action == Window.KEY_RELEASE && button == Window.KEY_CODE_ENTER) {
 		edit = !edit;
 
 		FormatFlags flags = {};
@@ -94,8 +94,8 @@ int onEvent(int action, int button, int x, int y) {
 		p = append(output, p, 16, patterns[selected], flags);
 		debug(output);
 	}
-	else if (action == Gui.KEY_RELEASE && button == Gui.KEY_CODE_TAB) {
-		selected += bool(y & Gui.KEY_MASK_SHIFT) ? -1 : 1;
+	else if (action == Window.KEY_RELEASE && button == Window.KEY_CODE_TAB) {
+		selected += bool(y & Window.KEY_MASK_SHIFT) ? -1 : 1;
 		if (selected >= patterns.length) {
 			selected = 0;
 		}
@@ -104,7 +104,7 @@ int onEvent(int action, int button, int x, int y) {
 		}
 		debug("selected pattern", selected);
 	}
-	else if (action == Gui.KEY_RELEASE && button == '\\') {
+	else if (action == Window.KEY_RELEASE && button == '\\') {
 		// rotate
 		uint64 rotated = 0;
 		for (int y = 0; y < 8; y += 1) {
@@ -117,18 +117,18 @@ int onEvent(int action, int button, int x, int y) {
 		}
 		patterns[selected] = rotated;
 	}
-	else if (action == Gui.KEY_RELEASE && button == ']') {
+	else if (action == Window.KEY_RELEASE && button == ']') {
 		// flip vertical
 		patterns[selected] = Bits.swapBytes(patterns[selected]);
 	}
-	else if (action == Gui.KEY_RELEASE && button == '[') {
+	else if (action == Window.KEY_RELEASE && button == '[') {
 		// flip horizontal
 		uint8 bytes[*] = pointer(patterns[selected]);
 		for (int n = 0; n < 8; n += 1) {
 			bytes[n] = Bits.swapBits(bytes[n]);
 		}
 	}
-	else if (action != Gui.WINDOW_INIT) {
+	else if (action != Window.WINDOW_INIT) {
 		return 0;
 	}
 
@@ -167,4 +167,4 @@ int onEvent(int action, int button, int x, int y) {
 	}
 }
 
-Gui.showWindow(img, onEvent);
+Window.show(img, onEvent);

@@ -22,4 +22,4 @@ vec4f mandel(vec4f in) {
 }
 
 lerpLut(colors, argb(0x000020), argb(0xffffff));
-Gui.showWindow(512, 512, mandel);
+Window.show(512, 512, mandel);

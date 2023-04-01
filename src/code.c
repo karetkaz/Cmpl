@@ -2198,6 +2198,12 @@ static void printValue(FILE *out, const char **esc, rtContext ctx, symn var, vmV
 		if (lenField != NULL && isStatic(lenField)) {
 			// fixed size array or direct reference
 			data = (memptr) val;
+			if (typ->type->fmt == type_fmt_character) {
+				size_t length = typ->size / typ->type->size;
+				if (strlen((char *) val) < length) {
+					lenField = NULL;
+				}
+			}
 		} else {
 			// follow indirection
 			data = vmPointer(ctx, (size_t) val->ref);

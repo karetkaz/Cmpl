@@ -19,5 +19,5 @@ Image image = Image(1440, 900, 32);
 image.fill(0xffffff);
 drawTree(image, image.width() / 2, image.height() - 22, -90, 11, 12);
 
-Gui.showWindow(image);
+Window.show(image);
 image.destroy();

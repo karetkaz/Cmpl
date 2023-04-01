@@ -97,7 +97,7 @@ DebugView debug = {
 	focusable: false;
 };
 
-Gui.showWindow(Widget(0, 0).addItems(
+Window.show(Widget(0, 0).addItems(
 	colorPicker,
 
 	null,

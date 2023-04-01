@@ -196,12 +196,12 @@ static struct Math {
 
 	inline smoothstep(float32 t) = t * t * (3 - 2 * t);
 
-	/// Returns the Hermite interpolation between two values, https://thebookofshaders.com/glossary/?search=smoothstep
+	/// Returns the Hermite interpolation between two values
 	inline smoothstep(float32 min, float32 max, float32 t) = smoothstep(clamp((t - min) / (max - min), 0f, 1f));
 
 	inline smoothstep(float64 t) = t * t * (3 - 2 * t);
 
-	/// Returns the Hermite interpolation between two values, https://thebookofshaders.com/glossary/?search=smoothstep
+	/// Returns the Hermite interpolation between two values
 	inline smoothstep(float64 min, float64 max, float64 t) = smoothstep(clamp((t - min) / (max - min), 0F, 1F));
 
 
@@ -297,22 +297,21 @@ static struct Math {
 	}
 
 	/* Frexp breaks f into a normalized fraction and an integral power of two.
-	 *  It returns frac and exp satisfying f == frac × 2**exp,
-	 *  with the absolute value of frac in the interval [½, 1).
+	 * It returns frac and exp satisfying f == frac × 2**exp,
+	 * with the absolute value of frac in the interval [½, 1).
 	 *
-	 *  Special cases are:
-	 * 	  * Frexp(±0) = ±0, 0
-	 * 	  * Frexp(±Inf) = ±Inf, 0
-	 * 	  * Frexp(NaN) = NaN, 0
-	 *
-	 * adapted from: https://github.com/golang/go/blob/master/src/math/frexp.go
+	 * Special cases are:
+	 *   * Frexp(±0) = ±0, 0
+	 *   * Frexp(±Inf) = ±Inf, 0
+	 *   * Frexp(NaN) = NaN, 0
 	 */
+	// adapted from: https://github.com/golang/go/blob/master/src/math/frexp.go
 	float64 frexp(float64 f, int exp&) {
 		inline mask     = 0x7FFU;
 		inline shift    = 64 - 11 - 1;
 		inline bias     = 1023;
-		inline signMask = 1 << 63;
-		inline fracMask = 1 << shift - 1;
+		inline signMask = 1U << 63;
+		inline fracMask = 1U << shift - 1;
 
 		// special cases
 		if (f == 0) {
@@ -346,15 +345,14 @@ static struct Math {
 	 *	 * Ldexp(±0, exp) = ±0
 	 *	 * Ldexp(±Inf, exp) = ±Inf
 	 *	 * Ldexp(NaN, exp) = NaN
-	 *
-	 * adapted from: https://github.com/golang/go/blob/master/src/math/ldexp.go
 	 */
+	// adapted from: https://github.com/golang/go/blob/master/src/math/ldexp.go
 	float64 ldexp(float64 f, int exp) {
 		inline mask     = 0x7FFU;
 		inline shift    = 64 - 11 - 1;
 		inline bias     = 1023;
-		inline signMask = 1 << 63;
-		inline fracMask = 1 << shift - 1;
+		inline signMask = 1U << 63;
+		inline fracMask = 1U << shift - 1;
 
 		// special cases
 		if (f == 0) {
@@ -530,7 +528,7 @@ static struct Math {
 	}
 
 	/// Returns the square root of the parameter `x`: $\sqrt{x}$.
-	// adapted from go: https://github.com/golang/go/blob/master/src/math/sqrt.go
+	// adapted from: https://github.com/golang/go/blob/master/src/math/sqrt.go
 	float64 sqrt(float64 x) {
 		static if (preferNativeCalls && typename(float64.sqrt) != null) {
 			// use the native method if available

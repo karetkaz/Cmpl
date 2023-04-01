@@ -152,6 +152,6 @@ Button buttons[] = {
 global.setColor(gray(200), gray(20));
 display.setColor(gray(120), gray(200));
 
-Gui.showWindow(Widget(300, 400, global).focus(null).addItems(
+Window.show(Widget(300, 400, global).focus(null).addItems(
 	btnResult, Layout.Custom(4, Style.fill, ...buttons)
 ));

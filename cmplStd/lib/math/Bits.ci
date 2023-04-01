@@ -50,6 +50,7 @@ static struct Bits {
 			// use the native method if available
 			return uint32.sxt(value, offs, count);
 		}
+
 		return int32(value << (32 - (offs + count))) >> (32 - count);
 	}
 
@@ -432,6 +433,7 @@ static struct Bits {
 			// use the native method if available
 			return uint64.pop(x);
 		}
+
 		x -= (x >> 1) & 0x5555555555555555;
 		x = (x & 0x3333333333333333) + ((x >> 2) & 0x3333333333333333);
 		x = (x + (x >> 4)) & 0x0f0f0f0f0f0f0f0f;
@@ -520,27 +522,3 @@ static struct Bits {
 	/// reverse all the bits
 	inline swapBits(int8 x) = swapBits(uint8(x));
 }
-
-/* TODO: leftovers
-uint16 keepMsb(uint16 x)
-uint8 keepMsb(uint8 x)
-int countOnes(uint16 x)
-int countOnes(uint8 x)
-
-define Lo32(int64 a) = int32(a);					// Lo32 part
-define Hi32(int64 a) = Lo32(int64.Shr(a, 32));		// Hi32 part
-define Lo16(int32 a) = int32(a & 0xffff);			// Lo16 part
-define Hi16(int32 a) = Lo16(a >> 16);				// Hi16 part
-define Lo8(int32 a) = int32(a & 0xff);				// Lo16 part
-define Hi8(int32 a) = Lo8(a >> 8);					// Hi16 part
-
-// implement all native methods
-int32 zxt(int32 value, int32 offs, int32 count)
-int32 sxt(int32 value, int32 offs, int32 count)
-✓ int32 pop(int32 value)
-✓ int32 swap(int32 value)
-✓ int32 bsr(int32 value)
-✓ int32 bsf(int32 value)
-✓ int32 hib(int32 value)
-? int32 lob(int32 value)
-*/

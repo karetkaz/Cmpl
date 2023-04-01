@@ -49,7 +49,7 @@ void onProcess(FxWidget widget) {
 	offs.fillRRect(x - sx, y - sy, x + sx, y + sy, rx, ry, 0xffffff);
 	time.value = System.millis() - start;
 }
-Gui.showWindow(offs, FxWidget(onProcess,
+Window.show(offs, FxWidget(onProcess,
 	sldSx, sldSy, sldRx, sldRy,
 	separator, time
 ));

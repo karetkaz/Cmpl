@@ -16,7 +16,7 @@ Rectangle Rectangle(int rgb) {
 	};
 }
 
-Gui.showWindow(Widget(300, 400)
+Window.show(Widget(300, 400)
 	.addItems(Layout.Custom(0, Style.fill)
 		.addItems(Style.fill, Rectangle(0xffa1a1))
 

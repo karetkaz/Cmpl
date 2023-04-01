@@ -58,8 +58,8 @@ void drawStars(Image offScreen) {
 Image image = Image(resolutionx, resolutiony, 32);
 int onEvent(int action, int btn, int x, int y) {
 
-	if (action == Gui.KEY_PRESS) {
-		if (btn == Gui.KEY_CODE_ESC) {
+	if (action == Window.KEY_PRESS) {
+		if (btn == Window.KEY_CODE_ESC) {
 			return -1;
 		}
 		if (btn == '[') {
@@ -70,7 +70,7 @@ int onEvent(int action, int btn, int x, int y) {
 		}
 	}
 
-	if (action == Gui.MOUSE_PRESS) {
+	if (action == Window.MOUSE_PRESS) {
 		if (btn == 1) {
 			centerx = x;
 			centery = y;
@@ -84,5 +84,5 @@ for (int i = 0; i < stars.length; i += 1) {
 	initStar(&stars[i]);
 }
 
-Gui.showWindow(image, onEvent);
+Window.show(image, onEvent);
 image.destroy();

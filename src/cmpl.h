@@ -156,21 +156,22 @@ typedef enum {
 
 	KIND_def   = 0x0000,		// alias (/ error at runtime)
 	KIND_typ   = 0x0010,		// typename: struct metadata info.
-	KIND_fun   = 0x0020,		// function
+	KIND_fun   = 0x0020,		// function: executable byte-code.
 	KIND_var   = 0x0030,		// variable: function and typename are also variables
 
-	// https://flow.org/en/docs/lang/variance/
-//	Invariant     0x0000,
-//	Covariant     0x0040,
-//	Contravariant 0x0080,
-//	Bivariant     0x00c0,
+	// todo: variance: https://flow.org/en/docs/lang/variance
+	//Invariant     0x0000,     // can not assign super or subtypes
+	//Covariant     0x0040,     // can assign to subtypes: object o = (string)s;
+	//Contravariant 0x0080,     // can assign to supertypes: string s = (object) o;
+	//Bivariant     0x00c0,     // can assign to anything in the hierarchy tree.
 
-	ATTR_stat  = 0x0100,        // static attribute
-	ATTR_cnst  = 0x0200,        // constant attribute
-	//ATTR_pure  = 0x0400,      // TODO: pure attribute (type fun() const {...})
-	//ATTR_null  = 0x0800,      // todo: nullable attribute (int nullable? = null; int notnull& = a;)
+	ATTR_stat  = 0x0100,        // static attribute (not dynamic, usually computed at compile time)
+	ATTR_cnst  = 0x0200,        // constant attribute (not mutable), (value, not a variable) can't be changed after initialization
+	//ATTR_pure  = 0x0200,      // ==ATTR_cnst todo: pure attribute: no side effect for function
+	//ATTR_null  = 0x0400,      // todo: nullable attribute (int nullable? = null; int notnull& = a;)
+	//ATTR_scpe  = 0x0800,      // todo: variable doesn't escapes scope (heap allocation can be replaced with stack allocation)
 
-	ARGS_inln = 0x1000,         // inline argument
+	ARGS_inln  = 0x1000,        // inline argument
 	ARGS_varg  = 0x2000,        // variable argument
 	ARGS_this  = 0x4000,        // first argument is this (used at lookup)
 
@@ -360,7 +361,6 @@ static inline int isTypename(symn sym) {
 	return (sym->kind & MASK_kind) == KIND_typ;
 }
 static inline int isEnumType(symn sym) {
-	// TODO: enumerations are also arrays
 	return (sym->kind & (MASK_kind | MASK_cast)) == (KIND_typ | CAST_enm);
 }
 static inline int isArrayType(symn sym) {

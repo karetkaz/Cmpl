@@ -1,0 +1,23 @@
+Duration week = Duration(7, Timeunit.Days);
+Timestamp now3 = Timestamp(1634833355959, Timeunit.Millis)
+//	.floor(Timeunit.Millis)
+//	.floor(Timeunit.Seconds)
+//	.floor(Timeunit.Minutes)
+//	.floor(Timeunit.Hours)
+//	.floor(Timeunit.Days)
+
+//	.ceil(Timeunit.Millis)
+//	.ceil(Timeunit.Seconds)
+//	.ceil(Timeunit.Minutes)
+//	.ceil(Timeunit.Hours)
+//	.ceil(Timeunit.Days)
+;
+
+Timestamp now = Timestamp.now();
+Timestamp tomorrow = now.add(1, Timeunit.Days);
+Timestamp yesterday = now.add(-1, Timeunit.Days);
+
+Timestamp now2 = Timestamp(Datetime(now));
+Datetime calNow = Datetime(now.add(15, Timeunit.Days));
+
+// todo: add some assertions

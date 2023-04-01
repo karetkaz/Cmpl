@@ -30,7 +30,7 @@ typedef enum {
 
 	vm_stk_align = sizeof(int32_t),	// stack alignment: size of one element on stack; must be 4: 32bits
 	vm_mem_align = sizeof(void*),	// memory alignment: sizeof(void*), // value used to pad pointers
-	vm_ref_size = sizeof(vmOffs),	// size of reference: TODO: allow 32 or 64 bit
+	vm_ref_size = sizeof(vmOffs),	// size of reference: 32 or 64 bit
 	px_size = 4,	// size in bytes of the exit instruction halt()
 	vm_regs = 255	// maximum registers for dup, set, pop, ...
 } vmOpcode;

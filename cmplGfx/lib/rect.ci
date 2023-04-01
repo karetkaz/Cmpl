@@ -1,0 +1,53 @@
+bool empty(const Rect roi&) {
+// fixme: inline empty(const Rect roi&) = roi.x0 >= roi.x1 || roi.y0 >= roi.y1;
+	return roi.x0 >= roi.x1 || roi.y0 >= roi.y1;
+}
+
+inline width(const Rect roi&) = roi.x1 - roi.x0;
+void width(Rect rect&, int width) {
+	rect.x1 = rect.x0 + width;
+}
+
+inline height(const Rect roi&) = roi.y1 - roi.y0;
+void height(Rect rect&, int height) {
+	rect.y1 = rect.y0 + height;
+}
+
+void setSize(Rect rect&, int width, int height) {
+	rect.x1 = rect.x0 + width;
+	rect.y1 = rect.y0 + height;
+}
+
+void positionX(Rect rect&, int x) {
+	rect.x1 = x + rect.x1 - rect.x0;
+	rect.x0 = x;
+}
+void positionY(Rect rect&, int y) {
+	rect.y1 = y + rect.y1 - rect.y0;
+	rect.y0 = y;
+}
+
+void position(Rect rect&, int x, int y) {
+	rect.positionX(x);
+	rect.positionY(y);
+}
+
+void adjust(Rect rect&, int dx0, int dy0, int dx1, int dy1) {
+	rect.x0 += dx0;
+	rect.y0 += dy0;
+	rect.x1 += dx1;
+	rect.y1 += dy1;
+}
+inline translate(Rect rect&, int dx, int dy) = rect.adjust(dx, dy, dx, dy);
+void translateX(Rect rect&, int dx) {
+	rect.x0 += dx;
+	rect.x1 += dx;
+}
+void translateY(Rect rect&, int dy) {
+	rect.y0 += dy;
+	rect.y1 += dy;
+}
+
+bool contains(const Rect rect&, int x, int y) {
+	return x >= rect.x0 && x < rect.x1 && y >= rect.y0 && y < rect.y1;
+}

@@ -304,7 +304,7 @@ DebugView debugView = {
 };
 
 DatePicker datePicker = {};
-Gui.showWindow(Widget(-10, -10)
+Window.show(Widget(-10, -10)
 	.focus(datePicker)
 	.addItems(datePicker)
 	.addItems(debugView)
@@ -313,7 +313,7 @@ Gui.showWindow(Widget(-10, -10)
 /* Todo: show each month of the year
 Style style = {
 	align: Style.center;
-	font: Gui.font;
+	font: Window.font;
 	padding: 3;
 	format: {};
 };
@@ -333,7 +333,7 @@ DatePicker months[] = {
 	{style: style, header: false, timestamp: Timestamp(Datetime(now.year, 11, 1))};
 	{style: style, header: false, timestamp: Timestamp(Datetime(now.year, 12, 1))};
 };
-Gui.showWindow(Widget(-1, -1)
+Window.show(Widget(-1, -1)
 	.focus(months[indexOf(now.month)])
 	.addItems(Layout.Custom(3, Style.fill, ...months)
 		//.padding(30, 30, 30, 30)

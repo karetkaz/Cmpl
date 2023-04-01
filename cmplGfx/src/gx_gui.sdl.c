@@ -10,6 +10,14 @@ struct GxWindow {
 	SDL_Surface *screen;
 };
 
+void initWindowing() {
+	SDL_Init(SDL_INIT_VIDEO);
+}
+
+void quitWindowing() {
+	SDL_Quit();
+}
+
 GxWindow createWindow(GxImage offs, const char *title) {
 	if (offs == NULL) {
 		return NULL;
@@ -20,12 +28,18 @@ GxWindow createWindow(GxImage offs, const char *title) {
 		return NULL;
 	}
 
-	SDL_Init(SDL_INIT_VIDEO);
 	result->image = SDL_CreateRGBSurfaceFrom(offs->basePtr, offs->width, offs->height, offs->depth, offs->scanLen, rch(255), gch(255), bch(255), 0);
 	result->window = SDL_CreateWindow(title, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, offs->width, offs->height, SDL_WINDOW_HIDDEN);
 	result->screen = SDL_GetWindowSurface(result->window);
 	SDL_ShowWindow(result->window);
 	return result;
+}
+
+void destroyWindow(GxWindow window) {
+	SDL_FreeSurface(window->image);
+	SDL_FreeSurface(window->screen);
+	SDL_DestroyWindow(window->window);
+	free(window);
 }
 
 int getWindowEvent(GxWindow window, int *button, int *x, int *y, int timeout) {
@@ -204,14 +218,6 @@ void setWindowTitle(GxWindow window, const char *caption) {
 void flushWindow(GxWindow window) {
 	SDL_BlitSurface(window->image, NULL, window->screen, NULL);
 	SDL_UpdateWindowSurface(window->window);
-}
-
-void destroyWindow(GxWindow window) {
-	SDL_FreeSurface(window->image);
-	SDL_FreeSurface(window->screen);
-	SDL_DestroyWindow(window->window);
-	SDL_Quit();
-	free(window);
 }
 
 const int KEY_CODE_ESC = SDLK_ESCAPE;

@@ -71,6 +71,7 @@ void brightnessContrastGamma(argb lut[256], float brightness, float contrast, fl
 	}
 
 	// adapted from: https://stackoverflow.com/questions/29073174/algorithm-behind-the-shadow-highlight-filter-in-photoshop
+	// "It is not accurate but imitates well."
 	float ShadowsHighlights(float color, float shadows, float highlights) {
 		float h = highlights * 0.05 * (Math.pow(8f, color) - 1);
 		float s = shadows * 0.05 * (Math.pow(8f, 1 - color) - 1);
@@ -104,7 +105,6 @@ void brightnessContrastGamma(argb lut[256], float brightness, float contrast, fl
 void calcAutoEqualize(argb lut[256], Image image, bool luminosity) {
 	uint32 hist[256] = {};
 	if (!luminosity) {
-		// todo: remove rgb stretch
 		uint32 sumR = 0;
 		uint32 sumG = 0;
 		uint32 sumB = 0;
@@ -119,7 +119,7 @@ void calcAutoEqualize(argb lut[256], Image image, bool luminosity) {
 		}
 		uint32 sumRgb = (sumR + sumG + sumB) / 3;
 		for (uint32 i = 0; i < 256; i += 1) {
-			lut[i] = _argb(i,
+			lut[i] = pack(i,
 				sat_u8(histR[i] * 255 / sumRgb),
 				sat_u8(histG[i] * 255 / sumRgb),
 				sat_u8(histB[i] * 255 / sumRgb)
@@ -135,7 +135,7 @@ void calcAutoEqualize(argb lut[256], Image image, bool luminosity) {
 	}
 	for (uint32 i = 0; i < lut.length; i += 1) {
 		uint32 l = sat_u8(hist[i] * 255 / sum);
-		lut[i] = _argb(l, i, i, i);
+		lut[i] = pack(l, i, i, i);
 	}
 }
 
@@ -230,7 +230,7 @@ void onProcess(FxWidget widget) {
 	histogram.update(offs);
 }
 
-Gui.showWindow(offs, FxWidget(onProcess,
+Window.show(offs, FxWidget(onProcess,
 	histogram, curves,
 
 	null, brightness, contrast, gamma,
@@ -241,3 +241,12 @@ Gui.showWindow(offs, FxWidget(onProcess,
 ));
 offs.destroy();
 back.destroy();
+
+/* References:
+https://docs.gimp.org/2.10/en/gimp-filter-shadows-highlights.html
+https://github.com/MetalPetal/HighlightShadow/blob/master/Sources/MTIHighlightShadowFilter.metal
+https://www.photoshopessentials.com/photo-editing/applying-shadow-shighlights-as-a-smart-filter-in-photoshop/
+https://github.com/AHDCreative/ffxivitashader/blob/master/v1/dx11/reshade-shaders/Shaders/qUINT_lightroom.fx
+https://github.com/TelegramMessenger/Telegram-iOS/blob/26e5e9bfd94b2ae3eb5a552d16195310aed021e4/submodules/LegacyComponents/LegacyComponents/PGHighlightsTool.m
+https://github.com/ginozh/my_wmm/blob/master/testolive/effects/colorcorrection.frag
+*/

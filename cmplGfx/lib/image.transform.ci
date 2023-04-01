@@ -1,13 +1,11 @@
 /// Copy one image to another using a transformation matrix [scale, rotate, translate, shear, perspective, etc]
 void transform(Image image, const Rect rect&, Image src, const Rect roi&, int32 interpolate, const mat4f mat&) {
-	// https://www.w3.org/TR/css-transforms/
-	// https://developer.mozilla.org/en-US/docs/Web/CSS/transform
 	static if (preferNativeCalls && typename(Image.transform) != null) {
 		return Image.transform(image, rect, src, roi, interpolate, pointer(mat.data));
 	}
 
-	assert(image.depth() == src.depth());
 	assert(image.depth() == 32);
+	assert(src.depth() == 32);
 
 	Rect dRec = {
 		x0: rect != null ? rect.x0 : 0;

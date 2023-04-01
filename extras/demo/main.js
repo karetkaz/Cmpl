@@ -418,7 +418,7 @@ function rmWorkspace(workspace) {
 
 // usually content changed, show save icon
 editor.on('change', function(cm, change) {
-	setStyle(document.body, 'edited');
+	setStyle(document.body, cm.isClean() ? '-edited' : 'edited');
 });
 // show position and selection in document
 editor.on('cursorActivity', showPosition);
@@ -476,6 +476,7 @@ function setContent(content, file, line, column) {
 	if (content != null && content != editor.getValue()) {
 		editor.setValue(content);
 		editor.clearHistory();
+		editor.markClean();
 		setStyle(document.body, '-edited');
 		contentSet = true;
 	}
@@ -499,8 +500,7 @@ function showPosition() {
 	let sel = editor.listSelections();
 	if (sel.length !== 1) {
 		// multiple selections
-		editPosition.innerText = (pos.line+1) + ':' + (pos.ch + 1) +
-			' [' + (sel.length) + ' selections]';
+		editPosition.innerText = '[' + (sel.length) + ' selections]';
 		return;
 	}
 	if (sel[0].anchor !== sel[0].head) {
@@ -521,20 +521,12 @@ function showPosition() {
 		}
 		let lines = head.line - anchor.line + 1;
 		let chars = editor.getRange(anchor, head).length;
-		editPosition.innerText = (pos.line+1) + ':' + (pos.ch + 1) +
-			' [' + (lines) + ':' + (chars) + ']';
+		editPosition.innerText = '[' + (lines) + ':' + (chars) + ']';
 		return;
 	}
 
 	// no selection show document [lines:characters]
-	let lines = 0;
-	let chars = 0;
-	editor.doc.iter(function(line) {
-		chars += line.text.length;
-		lines += 1;
-	});
-	editPosition.innerText = (pos.line+1) + ':' + (pos.ch + 1) +
-		' [' + (lines) + ':' + (chars) + ']';
+	editPosition.innerText = (pos.line+1) + ':' + (pos.ch + 1)
 }
 
 function hideOverlay() {
@@ -560,6 +552,7 @@ function saveInput(saveAs) {
 	let content = editor.getValue();
 	openProjectFile({ content, path });
 	setStyle(document.body, '-edited');
+	editor.markClean();
 	if (params.content !== undefined) {
 		let oldValue = params.content;
 		let encB64 = true;
