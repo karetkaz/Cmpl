@@ -1,5 +1,11 @@
 var Module = {
+	process: function(args) {
+		postMessage(args)
+	},
 	initialized: false,
+	dynamicLibraries: [
+		'libFile.wasm'
+	],
 	relativeUrl: function(path) {
 		let worker = '/extras/demo/worker.js';
 		if (location.href.endsWith(worker) && !path.startsWith('/')) {
@@ -7,9 +13,6 @@ var Module = {
 		}
 		return path;
 	},
-	dynamicLibraries: [
-		'libFile.wasm'
-	],
 	importScripts: function (...urls) {
 		importScripts(...urls);
 	},
@@ -25,17 +28,6 @@ var Module = {
 		console.error(message);
 		postMessage({ error: message });
 	},
-	onRuntimeInitialized: function () {
-		ENV.CMPL_HOME = '/';
-		FS.mkdirTree(Module.workspace);
-		FS.chdir(Module.workspace);
-		Module.initialized = true;
-		postMessage({initialized: true});
-	},
-	onFileDownloaded: function(progress, total) {
-		let list = Module.listFiles(Module.workspace + '/');
-		postMessage({ progress, total, list });
-	}
 };
 
 importScripts("module.js");
@@ -81,17 +73,20 @@ onmessage = function(event) {
 			// execute
 			if (data.execute !== undefined) {
 				try {
-					callMain(Module.locateLibs(data.execute));
-					if (data.dump != null) {
-						const content = Module.readFile(data.dump);
-						const blob = new Blob([content], {type: 'application/octet-stream'});
-						result.dump = URL.createObjectURL(blob);
-						result.path = data.dump;
+					result.exitCode = callMain(Module.locateLibs(data.execute));
+					if (result.exitCode === 0 && data.dump != null) {
+						if (data.dump.constructor === String) {
+							const content = Module.readFile(data.dump);
+							const blob = new Blob([content], {type: 'application/octet-stream'});
+							result.dump = URL.createObjectURL(blob);
+							result.path = data.dump;
+						}
 					}
-					result.exitCode = 0;
 					sync = true;
 				} catch (error) {
+					result.error = '' + error;
 					result.exitCode = -1;
+					console.error(error);
 				}
 			}
 			postMessage(result);

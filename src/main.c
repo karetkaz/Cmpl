@@ -14,8 +14,8 @@
 #include "utils.h"
 
 // default values
-static const char *STDLIB = "/cmplStd/lib.ci";   // standard library
-static const char *CMPL_HOME = "CMPL_HOME";    // Home environment path variable name
+static const char * const STDLIB = "/cmplStd/lib.ci";   // standard library
+static const char * const CMPL_HOME = "CMPL_HOME";    // Home environment path variable name
 
 static inline int strEquals(const char *str, const char *with) {
 	if (str == NULL || with == NULL) {
@@ -370,35 +370,35 @@ static inline int canDump(userContext ctx, symn sym) {
 }
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ json output
-static char *const JSON_KEY_VERSION = "version";
-static char *const JSON_KEY_SYMBOLS = "symbols";
+static const char * const JSON_KEY_VERSION = "version";
+static const char * const JSON_KEY_SYMBOLS = "symbols";
 
-static char *const JSON_OBJ_ARR_START = "%I, \"%s\": [{\n";
-static char *const JSON_OBJ_START = "%I, \"%s\": {\n";
-static char *const JSON_ARR_START = "%I, \"%s\": [\n";
-static char *const JSON_OBJ_NEXT = "%I}, {\n";
-static char *const JSON_OBJ_ARR_END = "%I}]\n";
-static char *const JSON_OBJ_END = "%I}\n";
-static char *const JSON_ARR_END = "%I]\n";
+static const char * const JSON_OBJ_ARR_START = "%I, \"%s\": [{\n";
+static const char * const JSON_OBJ_START = "%I, \"%s\": {\n";
+static const char * const JSON_ARR_START = "%I, \"%s\": [\n";
+static const char * const JSON_OBJ_NEXT = "%I}, {\n";
+static const char * const JSON_OBJ_ARR_END = "%I}]\n";
+static const char * const JSON_OBJ_END = "%I}\n";
+static const char * const JSON_ARR_END = "%I]\n";
 
-static char *const JSON_KEY_FILE = "file";
-static char *const JSON_KEY_LINE = "line";
-static char *const JSON_KEY_NAME = "name";
-static char *const JSON_KEY_OFFS = "offs";
-static char *const JSON_KEY_SIZE = "size";
+static const char * const JSON_KEY_FILE = "file";
+static const char * const JSON_KEY_LINE = "line";
+static const char * const JSON_KEY_NAME = "name";
+static const char * const JSON_KEY_OFFS = "offs";
+static const char * const JSON_KEY_SIZE = "size";
 
 static void jsonDumpSym(FILE *out, const char **esc, symn ptr, const char *kind, int indent) {
-	static char *const JSON_KEY_PROTO = "";
-	static char *const JSON_KEY_KIND = "kind";
-	static char *const JSON_KEY_CAST = "cast";
-	static char *const JSON_KEY_OWNER = "owner";
-	static char *const JSON_KEY_TYPE = "type";
-	static char *const JSON_KEY_ARGS = "args";
-	static char *const JSON_KEY_CNST = "const";
-	static char *const JSON_KEY_STAT = "static";
+	static const char *const JSON_KEY_PROTO = "";
+	static const char *const JSON_KEY_KIND = "kind";
+	static const char *const JSON_KEY_CAST = "cast";
+	static const char *const JSON_KEY_OWNER = "owner";
+	static const char *const JSON_KEY_TYPE = "type";
+	static const char *const JSON_KEY_ARGS = "args";
+	static const char *const JSON_KEY_CNST = "const";
+	static const char *const JSON_KEY_STAT = "static";
 
-	static char *const JSON_VAL_TRUE = "true";
-	static char *const JSON_VAL_FALSE = "false";
+	static const char *const JSON_VAL_TRUE = "true";
+	static const char *const JSON_VAL_FALSE = "false";
 
 	if (ptr == NULL) {
 		return;
@@ -441,19 +441,19 @@ static void jsonDumpSym(FILE *out, const char **esc, symn ptr, const char *kind,
 	}
 }
 static void jsonDumpAst(FILE *out, const char **esc, astn ast, const char *kind, int indent) {
-	static char *const JSON_KEY_PROTO = "";
-	static char *const JSON_KEY_KIND = "kind";
-	static char *const JSON_KEY_TYPE = "type";
-	static char *const JSON_KEY_STMT = "stmt";
-	static char *const JSON_KEY_INIT = "init";
-	static char *const JSON_KEY_TEST = "test";
-	static char *const JSON_KEY_THEN = "then";
-	static char *const JSON_KEY_STEP = "step";
-	static char *const JSON_KEY_ELSE = "else";
-	static char *const JSON_KEY_ARGS = "args";
-	static char *const JSON_KEY_LHSO = "left";
-	static char *const JSON_KEY_RHSO = "right";
-	static char *const JSON_KEY_VALUE = "value";
+	static const char *const JSON_KEY_PROTO = "";
+	static const char *const JSON_KEY_KIND = "kind";
+	static const char *const JSON_KEY_TYPE = "type";
+	static const char *const JSON_KEY_STMT = "stmt";
+	static const char *const JSON_KEY_INIT = "init";
+	static const char *const JSON_KEY_TEST = "test";
+	static const char *const JSON_KEY_THEN = "then";
+	static const char *const JSON_KEY_STEP = "step";
+	static const char *const JSON_KEY_ELSE = "else";
+	static const char *const JSON_KEY_ARGS = "args";
+	static const char *const JSON_KEY_LHSO = "left";
+	static const char *const JSON_KEY_RHSO = "right";
+	static const char *const JSON_KEY_VALUE = "value";
 
 	if (ast == NULL) {
 		return;
@@ -481,9 +481,8 @@ static void jsonDumpAst(FILE *out, const char **esc, astn ast, const char *kind,
 
 		//#{ STATEMENTS
 		case STMT_beg: {
-			astn list;
 			printFmt(out, esc, JSON_OBJ_ARR_START, indent + 1, JSON_KEY_STMT);
-			for (list = ast->stmt.stmt; list; list = list->next) {
+			for (astn list = ast->stmt.stmt; list; list = list->next) {
 				if (list != ast->stmt.stmt) {
 					printFmt(out, esc, JSON_OBJ_NEXT, indent + 1, list);
 				}
@@ -587,8 +586,8 @@ static void jsonDumpAst(FILE *out, const char **esc, astn ast, const char *kind,
 	}
 }
 static void jsonDumpAsm(FILE *out, const char **esc, symn sym, rtContext rt, int indent) {
-	static char *const JSON_KEY_OPC = "instruction";
-	static char *const JSON_KEY_CODE = "code";
+	static const char *const JSON_KEY_OPC = "instruction";
+	static const char *const JSON_KEY_CODE = "code";
 
 	size_t end = sym->offs + sym->size;
 	for (size_t pc = sym->offs, n = pc; pc < end; pc = n) {
@@ -609,9 +608,9 @@ static void jsonDumpAsm(FILE *out, const char **esc, symn sym, rtContext rt, int
 	}
 }
 static void dumpApiJSON(userContext ctx, symn sym) {
-	static char *const JSON_KEY_DOC = "doc";
-	static char *const JSON_KEY_ASM = "asm";
-	static char *const JSON_KEY_AST = "ast";
+	static const char *const JSON_KEY_DOC = "doc";
+	static const char *const JSON_KEY_ASM = "asm";
+	static const char *const JSON_KEY_AST = "ast";
 
 	FILE *out = ctx->out;
 	int indent = ctx->indent;
@@ -628,6 +627,10 @@ static void dumpApiJSON(userContext ctx, symn sym) {
 
 	if (!dmpApi && !dmpDoc && !dmpAsm && !dmpAst) {
 		// nothing to dump
+		return;
+	}
+
+	if (!canDump(ctx, sym)) {
 		return;
 	}
 
@@ -673,12 +676,12 @@ static vmError jsonProfile(dbgContext ctx, vmError error, size_t ss, void *stack
 	return error;
 }
 static void jsonPostProfile(dbgContext ctx) {
-	static char *const JSON_KEY_FUNC = "functions";
-	static char *const JSON_KEY_STMT = "statements";
-	static char *const JSON_KEY_TIME = "time";
-	static char *const JSON_KEY_TOTAL = "total";
-	static char *const JSON_KEY_HITS = "hits";
-	static char *const JSON_KEY_FAILS = "fails";
+	static const char *const JSON_KEY_FUNC = "functions";
+	static const char *const JSON_KEY_STMT = "statements";
+	static const char *const JSON_KEY_TIME = "time";
+	static const char *const JSON_KEY_TOTAL = "total";
+	static const char *const JSON_KEY_HITS = "hits";
+	static const char *const JSON_KEY_FAILS = "fails";
 
 	userContext usr = ctx->rt->usr;
 	FILE *out = usr->out;
@@ -846,7 +849,7 @@ static void printFields(FILE *out, const char **esc, symn sym, userContext ctx) 
 			continue;
 		}
 
-		void *value;
+		void *value = NULL;
 		if (isStatic(var)) {
 			// static variable.
 			value = rt->_mem + var->offs;

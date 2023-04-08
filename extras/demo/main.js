@@ -321,7 +321,7 @@ let params = JsArgs('#', function (params, changes) {
 		}
 
 		if (params.project != null) {
-			setStyle(projectOptions, '-hidden');
+			setStyle(projectOptions, '-gone');
 		}
 		if (params.workspace != null) {
 			workspaceName.innerText = ': ' + params.workspace;
@@ -340,7 +340,7 @@ let params = JsArgs('#', function (params, changes) {
 		setStyle(document.body, '-dark', '-light', params.theme);
 	}
 
-	if (changes.useWebWorker !== undefined) {
+	if (changes.libGfx !== undefined) {
 		// reload page
 		params.update(true);
 		return;
@@ -608,27 +608,57 @@ function editProject() {
 function selectOutputTab(select) {
 	let item = select.options[select.selectedIndex];
 	if (item.onchange != null) {
-		if (item.keepSelected !== true) {
-			select.selectedIndex = 0;
-		}
 		item.onchange();
 	}
 }
 
-function pinOutput(pinOption) {
-	let newOption = document.createElement('option');
-	newOption.value = terminal.innerHtml();
-	pinOption.value = +(+pinOption.value || 0) + 1;
-	newOption.innerText = 'Output-' + pinOption.value;
-	newOption.keepSelected = true;
-	newOption.onchange = function () {
-		terminal.innerHtml(newOption.value);
+function clearOutput() {
+	let item = selOutput.options[selOutput.selectedIndex];
+	if (item === optionOutput) {
+		item.onchange = function () {
+			terminal.clear();
+		}
+	} else {
+		selOutput.removeChild(item);
 	}
-	selOutput.insertBefore(newOption, pinOption);
+
+	if (selOutput.onchange != null) {
+		selOutput.onchange();
+	}
+}
+
+function pinOutput(content, name) {
+	let item = selOutput.options[selOutput.selectedIndex];
+	if (item === optionOutput) {
+		let oldContent = terminal.innerHtml();
+		item.onchange = function () {
+			terminal.innerHtml(oldContent);
+		}
+	}
+	if (content == null) {
+		content = terminal.innerHtml();
+	}
+
+	let newOption = document.createElement('option');
+	optionPinOutput.value = +(+optionPinOutput.value || 0) + 1;
+	newOption.innerText = (name || 'Output-') + optionPinOutput.value;
+	newOption.onchange = function () {
+		if (content instanceof HTMLElement) {
+			output.replaceChildren(content);
+		} else {
+			terminal.innerHtml(content);
+		}
+	}
+	selOutput.insertBefore(newOption, optionPinOutput);
 	selOutput.selectedIndex = Array.prototype.indexOf.call(selOutput.children, newOption);
+	newOption.onchange();
 }
 
 function editOutput() {
+	selOutput.selectedIndex = 0;
+	if (optionOutput.onchange != null) {
+		optionOutput.onchange();
+	}
 	params.update({ content: null, path: null });
 	setContent(terminal.text());
 	if (props.mobile) {
@@ -702,6 +732,15 @@ function execute(cmd, args) {
 				execArgs.push('-dump');
 			}
 			execArgs.push(args.dump);
+		}
+		else if (args.dump === false) {
+			let i = execArgs.indexOf('-dump.json');
+			if (i < 0) {
+				i = execArgs.indexOf('-dump');
+			}
+			if (i >= 0 && i < execArgs.length - 1) {
+				args.dump = execArgs[i + 1];
+			}
 		}
 
 		if (args.libs !== false) {
@@ -785,23 +824,44 @@ function process(data) {
 	}
 	if (data.dump !== undefined) {
 		terminal.append('');
-
-		if (data.path.endsWith('.json')) {
-			let open = document.createElement('p');
-			open.textContent = 'Open dump file in inspector: ';
-			let openLink = open.appendChild(document.createElement('a'));
-			openLink.href = window.location.origin + '/Cmpl/extras/Inspector/Inspector.html#' + data.dump;
-			openLink.target = '_blank'
-			openLink.textContent = data.path;
-			terminal.append(open);
-		}
-
 		let open = document.createElement('p');
 		open.textContent = 'Open dump file in editor: ';
 		let openLink = open.appendChild(document.createElement('a'));
 		openLink.href = 'javascript:void(params.update({ content: null, path:\'' + data.path + '\'}));';
 		openLink.textContent = data.path;
 		terminal.append(open);
+
+		if (data.path.endsWith('.json')) {
+			let open = document.createElement('p');
+			open.textContent = 'Open dump file in inspector: ';
+			let openLink = open.appendChild(document.createElement('a'));
+			openLink.href = window.location.origin + '/Cmpl/extras/Inspector/Inspector.html#' + data.dump;
+			openLink.target = '_blank';
+			openLink.textContent = data.path;
+			terminal.append(open);
+
+			let trace = document.createElement('p');
+			trace.textContent = 'Convert to chrome trace file: ';
+			let traceLink = trace.appendChild(document.createElement('a'));
+			traceLink.textContent = 'ChromeTracing.json';
+			traceLink.download = 'ChromeTracing.json';
+			terminal.append(trace);
+
+			Inspector(data.dump, (data) => {
+				traceLink.href = data.createTraceEventsUrl();
+
+				let lst = document.createElement('ul');
+				lst.setAttribute('class', 'syms');
+				data.createSymbolList(lst);
+				pinOutput(lst, 'Symbols-');
+				optionPinOutput.value -= 1;
+
+				let tbl = document.createElement('table');
+				tbl.setAttribute('class', 'tree');
+				data.createCallTree(tbl.appendChild(document.createElement('tbody')));
+				pinOutput(tbl, 'Profiler-');
+			});
+		}
 		data.path = null;
 	}
 

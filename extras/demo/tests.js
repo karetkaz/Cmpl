@@ -64,7 +64,7 @@ let projects = {
 	'test.cmplStd' : {
 		base: 'cmplStd/test/',
 		main: 'cmplStd/test/test.ci',
-		flags: ['useWebWorker', 'libFile'],
+		flags: ['libFile'],
 		files: [ //$ find cmplStd/test -type f | sort
 			'benchmark/DNA K-mers/k-mers.ci',
 			'benchmark/DNA K-mers/k-mers.cpp',
@@ -111,7 +111,7 @@ let projects = {
 	'test.cmplFile' : {
 		base: 'cmplFile/test/',
 		main: 'hello.world.ci',
-		flags: ['useWebWorker', 'libFile'],
+		flags: ['libFile'],
 		files: [
 			{path: '~/out/', content: ''}, // create output directory
 			{path: '/cmplGfx/test/asset/image/david.png', url: '/Cmpl/cmplGfx/test/asset/image/david.png'},

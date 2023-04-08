@@ -32,7 +32,7 @@ select {
 .left {float: left;}
 .right {float: right;}
 .clear {clear: both;}
-.hidden {display: none;}
+.gone {display: none;}
 
 .overlay {
 	-webkit-user-select: none;
@@ -228,15 +228,13 @@ body.wrap-output #output {
 }
 
 #overlay>canvas {
-	top: 0;
-	left: 0;
-	right: 0;
-	bottom: 0;
+	top: 50%;
+	left: 50%;
+	right: 50%;
+	bottom: 50%;
 	margin: 0;
 	padding: 0;
 	position: relative;
-	top: 50%;
-	left: 50%;
 	transform: translate(-50%, -50%);
 }
 
@@ -290,6 +288,58 @@ body.bottom-bar.bottom-pin { padding-bottom: var(--bottom-bar-size); }
 body:not(.output).bottom-bar { padding-bottom: var(--output-toolbar-size); }
 body:not(.output).bottom-bar #bottom-sidebar { height: var(--output-toolbar-size); }
 
+span.expander {
+	width: 1em;
+	height: 1em;
+	display: inline-block;
+}
+.expandable span.expander {
+	cursor: pointer;
+}
+.expandable span.expander:before {
+	content: '▶';
+}
+.expandable.expanded span.expander:before {
+	content: '▼';
+}
+
+/* Call tree: HitCount, SelfTime, TotalTime */
+.tree {
+	width: 100%;
+	border-spacing: 0;
+}
+.tree tr:first-child {
+	font-weight: bold;
+	width: 100%;
+}
+.tree tr>td:last-child {
+	white-space: nowrap;
+	text-align: left;
+	width: unset;
+}
+
+.tree tr>td {
+	white-space: nowrap;
+	text-align: right;
+	padding: 5px;
+	width: 7em;
+}
+
+/* Symbol list */
+.syms {
+	width: 100%;
+	border-spacing: 0;
+}
+
+.sidebar>#output li { overflow: unset; }
+.sidebar>#output ul.syms { padding: unset; }
+.sidebar>#output li:hover { cursor: unset; }
+
+.syms>ul>li.documentation>.term { display: none; }
+.syms>ul>li:not(.description) { padding-left: 2em; }
+.syms>ul:not(.expanded)>li:not(.description, .documentation) { display: none; }
+.syms span.term:after { content: ': '; }
+
 /* overlay visibility */
 body.canvas #overlay { z-index: 21; display: initial; }
 body.tool-bar #overlay { top: var(--main-toolbar-size); }
@@ -318,7 +368,7 @@ body.wrap-output #wrap-output:before { content: '✓ '; }
 body.dark #dark-theme:before { content: '✓ '; }
 body .sidebar li.checked:before { content: '✓ '; }
 
-#canvasMove.overlay:not(.hidden) {
+#canvasMove.overlay:not(.gone) {
 	position: absolute;
 	display: block;
 }
