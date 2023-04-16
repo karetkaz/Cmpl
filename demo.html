@@ -34,13 +34,13 @@
 <body class="tool-bar left-bar left-pin bottom-bar bottom-pin">
 
 <div id="overlay" class="overlay" onclick="hideOverlay();"
-	 ontouchstart="setStyle(canvas, 'hidden');"
-	 ontouchend="setStyle(canvas, '-hidden');">
+	 ontouchstart="setStyle(canvas, 'gone');"
+	 ontouchend="setStyle(canvas, '-gone');">
 	<canvas id="canvas" width="0" onclick="event.stopPropagation();"
 			ontouchstart="event.stopPropagation();"
 			ontouchend="event.stopPropagation();"
 	></canvas>
-	<div id="canvasMove" class="hidden overlay" onclick="classList.add('hidden');"
+	<div id="canvasMove" class="gone overlay" onclick="classList.add('gone');"
 		 ontouchstart="event.stopPropagation();"
 		 ontouchend="event.stopPropagation();"
 	></div>
@@ -50,12 +50,11 @@
 		<span class="no-output left text" onclick="setStyle(body, 'output');">Output</span>
 		<span class="right text" id="editPosition" onclick="completeAction(':');"></span>
 		<select class="output left" id="selOutput" onchange="selectOutputTab(this);" onclick="event.stopPropagation()">
-			<option onchange="terminal.clear();">Output</option>
-			<option onchange="pinOutput(this);">Pin Output</option>
+			<option id="optionOutput">Output</option>
+			<option id="optionPinOutput" onchange="pinOutput();">Pin Output</option>
 			<option onchange="editOutput();">Edit Output</option>
-			<option onchange="terminal.clear();">Clear Output</option>
-			<!-- <option value="Search-0">Search</option> -->
 		</select>
+		<span class="output left icon bold" title="Clear or close" onclick="clearOutput()">❌</span>
 		<span class="output left icon bold" title="Scroll to top" onclick="terminal.scroll(false);">⏫</span>
 		<span class="output left icon bold" title="Scroll to end" onclick="terminal.scroll(true);">⏬</span>
 		<p id="output-pan-sidebar"></p>
@@ -80,8 +79,8 @@
 				<ul>
 					<li id="preferNativeCalls" class="checked" onclick="setStyle(this, '~checked');">Prefer native functions</li>
 					<hr>
-					<li id="libFile" onclick="params.update({libFile: params.libFile == null ? '' : null});">libFile</li>
-					<li id="libGfx" onclick="params.update({libGfx: params.libGfx == null ? '' : null});">libGfx</li>
+					<li id="libFile" onclick="onLibClick(this.id);">libFile</li>
+					<li id="libGfx" onclick="onLibClick(this.id);">libGfx</li>
 					<!--
 					<li id="dumpApi" onclick="setStyle(this, '~checked');">dumpApi</li>
 					<li id="dumpAsm" onclick="setStyle(this, '~checked');">dumpAsm</li>
@@ -123,7 +122,7 @@
 			<button class="right" onclick="event.stopPropagation(); shareInput();" title="Share link">🔗</button>
 		</li>
 		<ul><li><input type="file" onchange="uploadFiles(this)" multiple value="upload"></li></ul>
-		<ul id="projectOptions" class="hidden">
+		<ul id="projectOptions" class="gone">
 			<li onclick="params.update({workspace: prompt('Save project as:')});"><span class="right"></span>📥 Persist project</li>
 			<li onclick="editProject();"><span class="right"></span>🛠 Edit project</li>
 			<hr>
@@ -279,6 +278,7 @@
 
 <script type="text/javascript" src="extras/demo/main.js"></script>
 <script type="text/javascript" src="extras/demo/action.js"></script>
+<script type="text/javascript" src="extras/demo/inspect.js"></script>
 <script type="text/javascript">
 
 var props = props || {};
@@ -286,16 +286,24 @@ function onExecClick() {
 	// if already executing (canvas is shown), zoom or pan
 	if (document.body.classList.contains('canvas')) {
 		// todo: use style on body to do this: setStyle('canvas-pan');
-		if (canvasMove.classList.contains('hidden')) {
-			canvasMove.classList.remove('hidden');
+		if (canvasMove.classList.contains('gone')) {
+			canvasMove.classList.remove('gone');
 			centerCanvas(1);
 		} else {
-			canvasMove.classList.add('hidden');
+			canvasMove.classList.add('gone');
 			centerCanvas(Math.min(window.innerWidth / canvas.width, window.innerHeight / canvas.height));
 		}
 		return;
 	}
 	execute(params.exec || '-run/g');
+}
+function onLibClick(library) {
+	if (library === 'libGfx' && !confirm('libGfx is not compatible with WebWorker, continue and reload the page')) {
+		return;
+	}
+	let update = {};
+	update[library] = params[library] == null ? '' : null;
+	params.update(update);
 }
 
 function showCanvas(show) {
@@ -362,7 +370,7 @@ function centerCanvas(zoom) {
 }
 
 // libGfx for canvas based execution
-if (params.useWebWorker !== undefined) {
+if (params.libGfx === undefined) {
 	var worker = new Worker('extras/demo/worker.js');
 	worker.onmessage = function (event) {
 		//console.log('worker: ', event.data);
@@ -382,17 +390,13 @@ if (params.useWebWorker !== undefined) {
 			dump, execute: args || []
 		});
 	}
-
-	libGfx.onclick = function () {
-		if (confirm('libGfx is not compatible with WebWorker, continue and reload the page')) {
-			params.update({ libGfx: params.libGfx == null ? '' : null, useWebWorker: null });
-		}
-	};
 }
 else {
 	var Module = {
+		process: process,
 		initialized: false,
 		locatePath: params.version,
+		canvas: document.getElementById('canvas'),
 		dynamicLibraries: [
 			'libFile.wasm',
 			'libGfx.wasm'
@@ -414,18 +418,6 @@ else {
 		printErr: function (message) {
 			console.error(message);
 			terminal.append(message);
-		},
-		canvas: document.getElementById('canvas'),
-		onRuntimeInitialized: function () {
-			ENV.CMPL_HOME = '/';
-			FS.mkdirTree(Module.workspace);
-			FS.chdir(Module.workspace);
-			Module.initialized = true;
-			process({initialized: true});
-		},
-		onFileDownloaded: function (progress, total) {
-			let list = Module.listFiles(Module.workspace + '/');
-			process({ progress, total, list });
 		},
 	};
 
@@ -459,19 +451,30 @@ else {
 			Module.printErr('operation failed: ' + err);
 		}
 	}
-	var execInput = function(args, extra) {
+	var execInput = function(args, data) {
 		// show overlay while compiling and initializing
 		canvasShown.width = 0;
-		canvasMove.classList.add('hidden');
+		canvasMove.classList.add('gone');
 		setStyle(document.body, 'canvas', 'output');
 
 		setTimeout(function() {
+			let result = {};
 			try {
-				callMain(Module.locateLibs(args || []));
-				if (extra && extra.dump) {
-					openProjectFile({ path: extra.dump });
+				result.exitCode = callMain(Module.locateLibs(args || []));
+				if (result.exitCode === 0 && data.dump != null) {
+					if (data.dump.constructor === String) {
+						const content = Module.readFile(data.dump);
+						const blob = new Blob([content], {type: 'application/octet-stream'});
+						result.dump = URL.createObjectURL(blob);
+						result.path = data.dump;
+					}
 				}
+			} catch (error) {
+				result.error = '' + error;
+				result.exitCode = -1;
+				console.error(error);
 			} finally {
+				process(result);
 				if (canvas.width === 0) {
 					setStyle(document.body, '-canvas');
 				}

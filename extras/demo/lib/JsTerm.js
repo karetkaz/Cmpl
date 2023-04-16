@@ -20,7 +20,7 @@ function Terminal(output, interpret) {
 	let buffer = [];
 	function flush() {
 		// nothing to print
-		if (buffer.length == 0) {
+		if (buffer.length === 0) {
 			if (nextFlush !== 0) {
 				clearInterval(nextFlush);
 				nextFlush = 0;
@@ -92,6 +92,7 @@ function Terminal(output, interpret) {
 			return result;
 		},
 		innerHtml: function(set) {
+			flush();
 			if (set === undefined) {
 				return output.innerHTML;
 			}

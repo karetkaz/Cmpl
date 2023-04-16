@@ -75,7 +75,7 @@ Module.listFiles = function(folders, recursive) {
 
 Module.pathExists = function(path) {
 	return FS.analyzePath(path).exists;
-}
+};
 
 Module.absolutePath = function(path) {
 	if (path == null) {
@@ -93,23 +93,31 @@ Module.absolutePath = function(path) {
 
 	// relative path
 	return Module.workspace + '/' + path;
-}
+};
 
 Module.parentDir = function(path) {
 	return path.replace(/^(.*[/])?(.*)(\..*)$/, "$1");
-}
+};
 
 Module.saveFile = function(path, content) {
 	// persist the content of the file
 	path = Module.absolutePath(path);
 	FS.mkdirTree(Module.parentDir(path));
 	FS.writeFile(path, content, {encoding: 'binary'});
-}
+};
 
 Module.readFile = function(path) {
 	// persist the content of the file
 	return FS.readFile(path, {encoding: 'utf8'});
-}
+};
+
+Module.onRuntimeInitialized = function() {
+	ENV.CMPL_HOME = '/';
+	FS.mkdirTree(Module.workspace);
+	FS.chdir(Module.workspace);
+	Module.initialized = true;
+	Module.process({initialized: true});
+};
 
 Module.initWorkspace = function(name, callback) {
 	if (name == null || name === "") {
@@ -130,7 +138,7 @@ Module.initWorkspace = function(name, callback) {
 		console.log("Workspace initialized");
 	});
 	return true;
-}
+};
 
 Module.openProjectFile = function(data, callBack) {
 	if (!Module.initialized) {
@@ -244,7 +252,7 @@ Module.openProjectFile = function(data, callBack) {
 		});
 	}
 	return callBack(result);
-}
+};
 
 Module.wgetFiles = function(files) {
 	let isAsync = Module.onFileDownloaded != null;
@@ -319,4 +327,9 @@ Module.wgetFiles = function(files) {
 		}
 	}
 	return isAsync && files.length > 0;
+};
+
+Module.onFileDownloaded = function(progress, total) {
+	let list = Module.listFiles(Module.workspace + '/');
+	Module.process({ progress, total, list });
 };

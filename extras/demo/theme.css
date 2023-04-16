@@ -1,4 +1,5 @@
 .overlay { background-color: #50505050; }
+#output * { background-color: transparent; }
 
 /* dark theme */
 body { background-color: #4a4a4a; }
@@ -30,6 +31,7 @@ body #editor-panel span.cm-variable-3,
 body #editor-panel span.cm-variable { color: #A9B7C6; }
 body #editor-panel span.cm-comment { color: #808080; }
 
+body #output { background-color: #181818; }
 body #output-panel { background-color: #202020; color: #bbb; }
 body #output-panel a { color: #006bef; }
 
@@ -62,5 +64,6 @@ body.light #editor-panel span.cm-variable-3,
 body.light #editor-panel span.cm-variable { color: black; }
 body.light #editor-panel span.cm-comment { color: #808080; }
 
+body.light #output { background-color: #f0f0f0; }
 body.light #output-panel { background-color: #eee; }
 body.light #output-panel a { color: #007bff; }
