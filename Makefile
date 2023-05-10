@@ -4,7 +4,7 @@ GX_SRC=cmplGfx/src
 
 CFLAGS=-Wall -Wextra -g0 -O3 -std=gnu99
 EMFLAGS=-g0 -O3 -s WASM=1 -s EXPORT_ALL=0 -s INVOKE_RUN=0 -s ASSERTIONS=0
-EMFLAGS+=--no-heap-copy --memory-init-file 0 -s ALLOW_MEMORY_GROWTH=1 -s TOTAL_MEMORY=32MB
+EMFLAGS+=--no-heap-copy --memory-init-file 0 -s ALLOW_MEMORY_GROWTH=1 -s TOTAL_MEMORY=64MB -s STACK_SIZE=8MB
 EMFLAGS+=-D NO_LIBJPEG -D NO_LIBPNG
 
 EM_EMBED='--preload-file' 'cmplStd/lib.ci' '--preload-file' 'cmplGfx/lib.ci' '--preload-file' 'cmplFile/lib.ci'

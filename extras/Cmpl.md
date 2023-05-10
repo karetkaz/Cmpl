@@ -1655,7 +1655,6 @@ The instructions of the vm are grouped by type:
 |  e  | -        | -        | -         | -         | -        | -        | -         | -        | -         | -         | -         | -          | -        | -        | -         | -            |
 |  f  | -        | -        | -         | -         | -        | -        | -         | -        | -         | -         | -         | -          | -        | -        | -         | -            |
 
-
 ### Instruction `nop`
 
 Performs no operation.

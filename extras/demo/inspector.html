@@ -1,0 +1,174 @@
+<html>
+<head>
+	<meta charset="UTF-8">
+	<title>Cmpl Inspector</title>
+
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0">
+
+	<script type="text/javascript" src="lib/JsArgs.js"></script>
+	<script type="text/javascript" src="lib/JsTerm.js"></script>
+
+	<link rel="stylesheet" href="theme.css">
+	<link rel="stylesheet" href="style.css">
+	<style>
+		#editor-panel>#output {
+			position: unset;
+			height: 100%;
+		}
+	</style>
+
+</head>
+<body class="tool-bar">
+<div id="main-toolbar" class="toolbar">
+	<span class="left icon" title="Show symbols" onclick="showSymbolList();">ƒ</span>
+	<span class="left icon" title="Show profile data" onclick="showCalltree();">⏱</span>
+	<span class="right icon" title="Export profile data" onclick="exportCallTree();">💾</span>
+	<span class="right icon" title="Toggle dark theme" onclick="setStyle(body, '-dark', '~light');">◑</span>
+
+	<!-- filename -->
+	<span id="spnFileName" class="filename" onclick="dropFileInput.click();">
+		<span id="spnStatus">Open dump file</span>
+		<input id="dropFileInput" type="file" style="display:none;" onchange="loadFile(this);">
+	</span>
+</div>
+<div id="editor-panel">
+	<pre id="output" class="sidebar"></pre>
+</div>
+
+<script type="text/javascript" src="inspector.js"></script>
+<script type="text/javascript">
+function setStyle(element, ...styles) {
+	if (element && element.constructor === String) {
+		// allow to reference using id.
+		element = document.getElementById(element);
+		if (element == null) {
+			console.debug("invalid element");
+			return;
+		}
+	}
+
+	let prevChanged = false;
+	for (let style of styles) {
+		if (style == null || style === '' || style.constructor !== String) {
+			continue;
+		}
+
+		// conditional apply
+		if (style.startsWith('?')) {
+			if (!prevChanged) {
+				continue;
+			}
+			style = style.substring(1);
+		}
+
+		prevChanged = false;
+		// remove style
+		if (style.startsWith('-')) {
+			style = style.substring(1);
+			if (element.classList.contains(style)) {
+				element.classList.remove(style);
+				prevChanged = true;
+			}
+			continue;
+		}
+
+		// toggle style
+		if (style.startsWith('~')) {
+			style = style.substring(1);
+			if (element.classList.contains(style)) {
+				element.classList.remove(style);
+			} else {
+				element.classList.add(style);
+			}
+			prevChanged = true;
+			continue;
+		}
+
+		if (element.classList.contains(style)) {
+			// style already set
+			continue;
+		}
+		element.classList.add(style);
+		prevChanged = true;
+	}
+
+	return prevChanged;
+}
+function onError() {
+	spnFileName.classList.add('error');
+	setTimeout(function () {
+		spnFileName.classList.remove('error');
+	}, 250);
+	return false;
+}
+
+let inspector = Inspector();
+let terminal = Terminal(output);
+
+function exportCallTree() {
+	let traceLink = document.createElement('a');
+	traceLink.textContent = 'ChromeTracing.json';
+	traceLink.download = 'ChromeTracing.json';
+	traceLink.href = inspector.createTraceEventsUrl();
+	traceLink.click();
+}
+function showSymbolList() {
+	let lst = document.createElement('ul');
+	lst.setAttribute('class', 'syms');
+	inspector.createSymbolList(lst);
+	terminal.clear()
+	terminal.append(lst);
+}
+function showCalltree() {
+	let tbl = document.createElement('table');
+	tbl.setAttribute('class', 'tree');
+	inspector.createCallTree(tbl.appendChild(document.createElement('tbody')));
+	terminal.clear()
+	terminal.append(tbl);
+}
+function loadFile(input) {
+	if (input instanceof HTMLInputElement) {
+		let file = input.files[0];
+		let reader = new FileReader();
+		reader.onload = () => {
+			spnStatus.textContent = file.name;
+			try {
+				inspector = Inspector(JSON.parse(reader.result));
+				showCalltree();
+			} catch (err) {
+				terminal.innerHtml('Error loading: ' + file.name);
+				console.error(err);
+				onError();
+			}
+		};
+		reader.readAsText(file);
+		return;
+	}
+
+	Inspector(input, (data) => {
+		inspector = data;
+		spnStatus.textContent = input;
+		showCalltree();
+	});
+}
+
+if (window.location.hash.length > 0) {
+	loadFile(window.location.hash.substr(1));
+}
+
+document.body.ondragover = function() {
+	return false;
+};
+document.body.ondragend = function() {
+	return false;
+};
+document.body.ondrop = function(e) {
+	e.preventDefault();
+	dropFileInput.files = e.dataTransfer.files;
+	loadFile(dropFileInput);
+	return true;
+}
+
+</script>
+</body>
+</html>

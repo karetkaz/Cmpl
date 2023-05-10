@@ -7,7 +7,7 @@ var Module = {
 		'libFile.wasm'
 	],
 	relativeUrl: function(path) {
-		let worker = '/extras/demo/worker.js';
+		let worker = '/Cmpl/extras/demo/worker.js';
 		if (location.href.endsWith(worker) && !path.startsWith('/')) {
 			return location.href.substr(0, location.href.length - worker.length + 1) + path;
 		}
@@ -73,7 +73,7 @@ onmessage = function(event) {
 			// execute
 			if (data.execute !== undefined) {
 				try {
-					result.exitCode = callMain(Module.locateLibs(data.execute));
+					result.exitCode = callMain(data.execute);
 					if (result.exitCode === 0 && data.dump != null) {
 						if (data.dump.constructor === String) {
 							const content = Module.readFile(data.dump);

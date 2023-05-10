@@ -252,13 +252,15 @@ static void dumpAstXML(FILE *out, const char **esc, astn ast, dmpMode mode, int 
 
 		case STMT_con:
 		case STMT_brk:
+			printFmt(out, esc, " stmt=\"%?t\" />\n", ast);
+			break;
+
 		case STMT_ret:
-			if (ast->jmp.value != NULL) {
+			if (ast->ret.value != NULL) {
 				printFmt(out, esc, " stmt=\"%?t\">\n", ast);
-				dumpAstXML(out, esc, ast->jmp.value, mode & ~prSymInit, indent + 1, "expr");
+				dumpAstXML(out, esc, ast->ret.value, mode & ~prSymInit, indent + 1, "expr");
 				printFmt(out, esc, "%I</%s>\n", indent, text);
-			}
-			else {
+			} else {
 				printFmt(out, esc, " stmt=\"%?t\" />\n", ast);
 			}
 			break;
@@ -321,18 +323,18 @@ static void dumpAstXML(FILE *out, const char **esc, astn ast, dmpMode mode, int 
 		//#}
 		//#{ VALUES
 		case TOKEN_var:
-			if (ast->ref.link == NULL || (mode & prSymInit) == 0) {
+			if (ast->id.link == NULL || (mode & prSymInit) == 0) {
 				printFmt(out, esc, " value=\"%?t\"/>\n", ast);
 				break;
 			}
 
 			printFmt(out, esc, " value=\"%?t\">\n", ast);
-			if (ast->ref.link->init) {
-				dumpAstXML(out, esc, ast->ref.link->init, mode, indent + 1, "init");
+			if (ast->id.link->init) {
+				dumpAstXML(out, esc, ast->id.link->init, mode, indent + 1, "init");
 			}
-			if (isTypename(ast->ref.link)) {
+			if (isTypename(ast->id.link)) {
 				// declaration
-				for (symn field = ast->ref.link->fields; field; field = field->next) {
+				for (symn field = ast->id.link->fields; field; field = field->next) {
 					dumpAstXML(out, esc, field->tag, mode, indent + 1, "field");
 				}
 			}
@@ -512,7 +514,7 @@ static void jsonDumpAst(FILE *out, const char **esc, astn ast, const char *kind,
 
 		case STMT_end:
 		case STMT_ret:
-			jsonDumpAst(out, esc, ast->jmp.value, JSON_KEY_STMT, indent + 1);
+			jsonDumpAst(out, esc, ast->ret.value, JSON_KEY_STMT, indent + 1);
 			break;
 		//#}
 		//#{ OPERATORS
@@ -1117,7 +1119,7 @@ static void dumpApiText(userContext ctx, symn sym) {
 			dumpExtraData = 1;
 		}
 		printFmt(out, esc, "%I.usages:\n", indent);
-		for (astn usage = sym->use; usage; usage = usage->ref.used) {
+		for (astn usage = sym->use; usage; usage = usage->id.used) {
 			if (usage->file && usage->line && usage != sym->tag) {
 				printFmt(out, esc, "%I%?s:%?u: referenced as `%.t`\n", indent + 1, usage->file, usage->line, usage);
 			}
@@ -1865,7 +1867,7 @@ int main(int argc, char *argv[]) {
 		// override stdlib file
 		else if (strncmp(arg, "-std", 4) == 0) {
 			if (arg[4] != 0) {
-			    stdlib = arg + 4;
+				stdlib = arg + 4;
 			}
 			else {
 				// disable standard library
@@ -2503,7 +2505,7 @@ int main(int argc, char *argv[]) {
 			}
 
 			if (type & brkValue && dbg->stmt && dbg->stmt->kind == TOKEN_var) {
-				dbg->decl = dbg->stmt->ref.link;
+				dbg->decl = dbg->stmt->id.link;
 			}
 			dbg->bp = type;
 		}

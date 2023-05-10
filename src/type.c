@@ -23,7 +23,7 @@ static symn aliasOf(symn sym) {
 			sym = sym->type;
 		}
 		else if (sym->init->kind == TOKEN_var) {
-			sym = sym->init->ref.link;
+			sym = sym->init->id.link;
 		}
 		else {
 			break;
@@ -271,7 +271,7 @@ symn lookup(ccContext cc, symn sym, astn ref, astn arguments, ccKind filter, int
 
 	for (; sym; sym = sym->next) {
 
-		if (sym->name == NULL || strcmp(sym->name, ref->ref.name) != 0) {
+		if (sym->name == NULL || strcmp(sym->name, ref->id.name) != 0) {
 			// exclude anonymous symbols or non-matching names
 			continue;
 		}
@@ -438,8 +438,8 @@ static symn typeCheckRef(ccContext cc, symn loc, astn ref, astn args, ccKind fil
 	}
 
 	symn sym = NULL;
-	if (ref->ref.link != NULL) {
-		sym = ref->ref.link;
+	if (ref->id.link != NULL) {
+		sym = ref->id.link;
 	}
 	else if (loc != NULL) {
 		if (!isTypename(loc)) {
@@ -457,7 +457,7 @@ static symn typeCheckRef(ccContext cc, symn loc, astn ref, astn args, ccKind fil
 	}
 	else {
 		// first lookup in the current scope
-		loc = cc->symbolStack[ref->ref.hash];
+		loc = cc->symbolStack[ref->id.hash];
 		sym = lookup(cc, loc, ref, args, 0, 0);
 
 		// lookup parameters, fields, etc.
@@ -478,7 +478,7 @@ static symn typeCheckRef(ccContext cc, symn loc, astn ref, astn args, ccKind fil
 	if (sym == NULL) {
 		if (raise) {
 			if (loc == NULL) {
-				loc = cc->symbolStack[ref->ref.hash];
+				loc = cc->symbolStack[ref->id.hash];
 			}
 			// lookup again to raise the error
 			lookup(cc, loc, ref, args, 0, raise);
@@ -543,7 +543,7 @@ static symn typeCheckRef(ccContext cc, symn loc, astn ref, astn args, ccKind fil
 	}
 
 	dieif(ref->kind != TOKEN_var, ERR_INTERNAL_ERROR);
-	ref->ref.link = sym;
+	ref->id.link = sym;
 	ref->type = sym->type;
 	addUsage(sym, ref);
 	return type;
@@ -606,7 +606,7 @@ symn typeCheck(ccContext cc, symn loc, astn ast, int raise) {
 				return type;
 			}
 			if (ref->kind == TOKEN_var) {
-				type = cc->symbolStack[ref->ref.hash];
+				type = cc->symbolStack[ref->id.hash];
 				type = lookup(cc, type, ref, NULL, 0, 0);
 
 				// typename(identifier): returns null if identifier is not defined.
@@ -717,7 +717,7 @@ symn typeCheck(ccContext cc, symn loc, astn ast, int raise) {
 			if (loc == cc->emit_opc && ast->op.lhso->kind == TOKEN_var) {
 				// Fixme: if we have add.i32 and add was already checked, force a new lookup
 				ast->op.lhso->type = NULL;
-				ast->op.lhso->ref.link = NULL;
+				ast->op.lhso->id.link = NULL;
 			}
 			lType = typeCheck(cc, loc, ast->op.lhso, raise);
 			// if left side is a function or emit, we need to lookup parameters declared for the function
@@ -1086,12 +1086,12 @@ ccKind canAssign(ccContext cc, symn variable, astn value, int strict) {
 
 			temp.kind = TOKEN_var;
 			temp.type = varType;
-			temp.ref.link = variable;
+			temp.id.link = variable;
 
 			while (arg1 && arg2) {
 
 				temp.type = arg2->type;
-				temp.ref.link = arg2;
+				temp.id.link = arg2;
 
 				if (strict && castOf(arg1) != castOf(arg2)) {
 					// can not assign function: `int add(int a, int b)`
@@ -1182,8 +1182,8 @@ ccKind canAssign(ccContext cc, symn variable, astn value, int strict) {
 
 		temp.kind = TOKEN_var;
 		temp.type = vty ? vty->type : NULL;
-		temp.ref.link = NULL;
-		temp.ref.name = ".generated token";
+		temp.id.link = NULL;
+		temp.id.name = ".generated token";
 
 		//~ check if subtypes are assignable
 		if (canAssign(cc, varType->type, &temp, strict)) {

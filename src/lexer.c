@@ -44,7 +44,6 @@ typedef struct lexContext {
 
 	//~ current column = filePos - linePos
 	size_t filePos;		// current file position
-	size_t linePos;		// current line position
 	int    nextChr;		// next look-ahead character
 
 	// buffered reading
@@ -112,8 +111,6 @@ static int readChr(lexContext ctx) {
 			ctx->cc->line += 1;
 		}
 
-		// save where the next line begins.
-		ctx->linePos = ctx->filePos + 1;
 		chr = '\n';
 	}
 
@@ -437,8 +434,8 @@ static ccToken readTok(lexContext ctx, astn tok) {
 				tok->type = ctx->cc->type_vid;
 				tok->file = ctx->cc->file;
 				tok->line = line;
-				tok->ref.hash = rehash(doc, ptr - doc) % hashTableSize;
-				tok->ref.name = ccUniqueStr(ctx->cc, doc, ptr - doc, tok->ref.hash);
+				tok->id.hash = rehash(doc, ptr - doc) % hashTableSize;
+				tok->id.name = ccUniqueStr(ctx->cc, doc, ptr - doc, tok->id.hash);
 				return TOKEN_doc;
 			}
 		}
@@ -840,8 +837,8 @@ static ccToken readTok(lexContext ctx, astn tok) {
 			if (start_char == '"') {
 				tok->kind = TOKEN_val;
 				tok->type = ctx->cc->type_str;
-				tok->ref.hash = rehash(beg, ptr - beg) % hashTableSize;
-				tok->ref.name = ccUniqueStr(ctx->cc, beg, ptr - beg, tok->ref.hash);
+				tok->id.hash = rehash(beg, ptr - beg) % hashTableSize;
+				tok->id.name = ccUniqueStr(ctx->cc, beg, ptr - beg, tok->id.hash);
 			}
 			else {
 				int val = 0;
@@ -902,17 +899,17 @@ static ccToken readTok(lexContext ctx, astn tok) {
 					case EMIT_kwd:
 						tok->kind = TOKEN_var;
 						tok->type = ctx->cc->emit_opc;
-						tok->ref.link = ctx->cc->emit_opc;
-						tok->ref.hash = rehash(beg, ptr - beg) % hashTableSize;
-						tok->ref.name = ccUniqueStr(ctx->cc, beg, ptr - beg, tok->ref.hash);
+						tok->id.link = ctx->cc->emit_opc;
+						tok->id.hash = rehash(beg, ptr - beg) % hashTableSize;
+						tok->id.name = ccUniqueStr(ctx->cc, beg, ptr - beg, tok->id.hash);
 						break;
 				}
 			}
 			else {
 				tok->kind = TOKEN_var;
-				tok->type = tok->ref.link = NULL;
-				tok->ref.hash = rehash(beg, ptr - beg) % hashTableSize;
-				tok->ref.name = ccUniqueStr(ctx->cc, beg, ptr - beg, tok->ref.hash);
+				tok->type = tok->id.link = NULL;
+				tok->id.hash = rehash(beg, ptr - beg) % hashTableSize;
+				tok->id.name = ccUniqueStr(ctx->cc, beg, ptr - beg, tok->id.hash);
 			}
 			break;
 		}
@@ -1245,7 +1242,6 @@ int ccOpen(ccContext cc, const char *file, int line, char *text) {
 	input.cc = cc;
 	input.rt = cc->rt;
 	input.filePos = 0;
-	input.linePos = 0;
 	input.nextChr = -1;
 
 	cc->file = file;
@@ -1293,15 +1289,14 @@ int ccOpen(ccContext cc, const char *file, int line, char *text) {
 }
 
 int ccClose(ccContext cc) {
-	astn ast;
-
 	// not initialized
 	if (cc == NULL) {
 		return -1;
 	}
 
 	// check no token left to read
-	if ((ast = nextTok(cc, TOKEN_any, 0))) {
+	astn ast = nextTok(cc, TOKEN_any, 0);
+	if (ast != NULL) {
 		error(cc->rt, ast->file, ast->line, ERR_UNEXPECTED_TOKEN, ast);
 	}
 

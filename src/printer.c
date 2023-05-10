@@ -656,7 +656,7 @@ void printAst(FILE *out, const char **esc, astn ast, dmpMode mode, int indent) {
 							break;
 
 						case TOKEN_var:
-							if (list->ref.link && list->ref.link->tag == list) {
+							if (list->id.link && list->id.link->tag == list) {
 								// valid declaration statement
 								exprStatement = 1;
 							}
@@ -802,9 +802,9 @@ void printAst(FILE *out, const char **esc, astn ast, dmpMode mode, int indent) {
 			if (mode == prName) {
 				break;
 			}
-			if (ast->jmp.value != NULL) {
+			if (ast->kind == STMT_ret && ast->ret.value != NULL) {
 				printStr(out, esc, " ");
-				printAst(out, esc, ast->jmp.value, mode, exprLevel);
+				printAst(out, esc, ast->ret.value, mode, exprLevel);
 			}
 			printStr(out, esc, ";");
 			break;
@@ -947,7 +947,7 @@ void printAst(FILE *out, const char **esc, astn ast, dmpMode mode, int indent) {
 			}
 			else if (ast->type->fmt == type_fmt_string) {
 				printFmt(out, esc, "%c", type_fmt_string_chr);
-				printFmt(out, esc ? esc : escapeStr(), type_fmt_string, ast->ref.name);
+				printFmt(out, esc ? esc : escapeStr(), type_fmt_string, ast->id.name);
 				printFmt(out, esc, "%c", type_fmt_string_chr);
 			}
 			else if (ast->type->fmt == type_fmt_character) {
@@ -982,21 +982,21 @@ void printAst(FILE *out, const char **esc, astn ast, dmpMode mode, int indent) {
 			break;
 
 		case TOKEN_var:
-			if (mode != prName && ast->ref.link != NULL) {
-				if (ast->ref.link->tag == ast) {
-					printSym(out, esc, ast->ref.link, mode & ~prSymQual, -indent);
+			if (mode != prName && ast->id.link != NULL) {
+				if (ast->id.link->tag == ast) {
+					printSym(out, esc, ast->id.link, mode & ~prSymQual, -indent);
 				}
 				else {
-					printSym(out, esc, ast->ref.link, prName, 0);
+					printSym(out, esc, ast->id.link, prName, 0);
 				}
 			}
 			else {
-				printStr(out, esc, ast->ref.name);
+				printStr(out, esc, ast->id.name);
 			}
 			break;
 
 		case TOKEN_doc:
-			printFmt(out, esc, "/*%?s*/", ast->ref.name);
+			printFmt(out, esc, "/*%?s*/", ast->id.name);
 			break;
 		//#}
 	}

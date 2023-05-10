@@ -70,15 +70,15 @@ typedef struct vmInstruction {
 		} mov;
 		struct {
 			// used when starting a new parallel task
-			uint8_t  dl;	// data to to be copied to stack
-			uint16_t cl;	// code to to be executed parallel: 0 means fork
+			uint8_t  dl;	// data to be copied to stack
+			uint16_t cl;	// code to be executed parallel: 0 means fork
 		};
 	};
 } *vmInstruction;
 #pragma pack(pop)
 
 static inline vmInstruction lastIp(rtContext rt) {
-	return vmPointer(rt, rt->vm.pc);
+	return (vmInstruction) (rt->_mem + rt->vm.pc);
 }
 
 void *rollbackPc(rtContext rt) {

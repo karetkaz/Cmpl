@@ -57,37 +57,42 @@ void addUsage(symn sym, astn tag);
 /// Abstract syntax tree node
 struct astNode {
 	ccToken		kind;				// token kind: operator, statement, ...
+	int32_t		line;				// line position of token
+	const char* file;				// file name of the token belongs to
 	symn		type;				// token type: return
 	astn		next;				// next token / next argument / next statement
-	const char	*file;				// file name of the token belongs to
-	int32_t		line;				// line position of token
-	union {							// token value
+	union {
 		//char *cStr;				// constant string value (use: ref.name)
 		int64_t cInt;				// constant integer value
 		float64_t cFlt;				// constant floating point value
-		struct {					// STMT_xxx: statement
-			astn	stmt;			// statement / then block
-			astn	step;			// increment / else block
-			astn	test;			// condition: if, for
-			astn	init;			// for statement init
-		} stmt;
+		struct {					// KIND_var: identifier
+			const char *name;		// name of identifier
+			unsigned hash;			// hash code for 'name'
+			symn	link;			// symbol to variable
+			astn	used;			// next usage of variable
+		} id;
 		struct {					// OPER_xxx: operator
 			astn	lhso;			// left-hand side operand
 			astn	rhso;			// right-hand side operand
 			astn	test;			// ?: operator condition
 			int		prec;			// precedence level
 		} op;
-		struct {					// KIND_var: identifier
-			const char *name;			// name of identifier
-			unsigned hash;			// hash code for 'name'
-			symn	link;			// symbol to variable
-			astn	used;			// next usage of variable
-		} ref;
-		struct {					// STMT_ret, STMT_brk, STMT_con
+		struct {					// STMT_xxx: statement
+			astn	stmt;			// statement / then block
+			astn	step;			// increment / else block
+			astn	test;			// condition: if, for
+			astn	init;			// for statement init
+		} stmt;
+		struct {					// STMT_ret: return
 			symn func;				// return from function
 			astn value;				// return the value of expression
 			size_t offs;			// jump instruction offset
-			size_t stks;			// stack size
+		} ret;
+		struct {					// STMT_brk, STMT_con: break & continue
+			symn scope;				// scope variables
+			astn jumps;				// next jump in cc->jumps
+			size_t offs;			// jump instruction offset
+			int32_t nest;			// stack size
 		} jmp;
 		struct {					// OPER_opc
 			vmOpcode code;			// instruction code

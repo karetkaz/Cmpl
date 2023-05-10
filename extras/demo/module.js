@@ -1,19 +1,7 @@
+Module.workspace = '/workspace';
 Module.locateFile = function(path) {
 	return (Module.locatePath || '/Cmpl/extras/demo/wasm/') + path;
 };
-Module.locateLibs = function (paths) {
-	let result = [];
-	for (let arg of paths) {
-		if (arg.startsWith('lib') && arg.endsWith('.wasm')) {
-			arg = Module.locateFile(arg);
-		}
-		result.push(arg);
-	}
-	return result;
-};
-
-Module.workspace = '/workspace';
-Module.dynamicLibraries = Module.locateLibs(Module.dynamicLibraries);
 
 Module.importScripts(Module.locateFile('cmpl.js'));
 

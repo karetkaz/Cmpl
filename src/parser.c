@@ -57,7 +57,7 @@ static inline void addLength(ccContext cc, symn sym, astn init) {
 }
 
 static inline symn tagType(ccContext cc, astn tag) {
-	symn tagType = cc->symbolStack[tag->ref.hash];
+	symn tagType = cc->symbolStack[tag->id.hash];
 	tagType = lookup(cc, tagType, tag, NULL, 0, 0);
 	if (tagType != NULL && isTypename(tagType)) {
 		return tagType;
@@ -76,7 +76,7 @@ static int ccInline(ccContext cc, astn tag) {
 	}
 
 	char buff[PATH_MAX] = {0};
-	if (tag->ref.name && tag->ref.name[0] == '/') {
+	if (tag->id.name && tag->id.name[0] == '/') {
 		absolutePath(cc->home, buff, sizeof(buff));
 	}
 	else {
@@ -100,7 +100,7 @@ static int ccInline(ccContext cc, astn tag) {
 		}
 	}
 
-	strncat(buff, tag->ref.name, sizeof(buff) - strlen(buff) - 1);
+	strncat(buff, tag->id.name, sizeof(buff) - strlen(buff) - 1);
 	char *path = relativeToCWD(buff);
 	printLog(cc->rt, raiseDebug, tag->file, tag->line, NULL, WARN_INLINE_FILE, path);
 	return ccOpen(cc, path, 1, NULL);
@@ -136,10 +136,10 @@ static symn declare(ccContext cc, ccKind kind, astn tag, symn type, symn params)
 			}
 			break;
 	}
-	symn def = install(cc, tag->ref.name, kind, size, type, NULL);
+	symn def = install(cc, tag->id.name, kind, size, type, NULL);
 
 	if (def != NULL) {
-		tag->ref.link = def;
+		tag->id.link = def;
 		tag->type = type;
 
 		def->unit = cc->unit;
@@ -1010,7 +1010,7 @@ static astn parameters(ccContext cc, symn returns, astn function) {
 			break;
 		}
 
-		symn parameter = arg->ref.link;
+		symn parameter = arg->id.link;
 
 		// apply const qualifier
 		if (attr & ATTR_cnst) {
@@ -1258,9 +1258,9 @@ static astn declare_alias(ccContext cc, ccKind attr) {
 
 		if (!cc->inStaticIfFalse && ccInline(cc, tag) != 0) {
 			if (optional) {
-				warn(cc->rt, raiseWarn, tag->file, tag->line, ERR_OPENING_FILE, tag->ref.name);
+				warn(cc->rt, raiseWarn, tag->file, tag->line, ERR_OPENING_FILE, tag->id.name);
 			} else {
-				error(cc->rt, tag->file, tag->line, ERR_OPENING_FILE, tag->ref.name);
+				error(cc->rt, tag->file, tag->line, ERR_OPENING_FILE, tag->id.name);
 			}
 			return NULL;
 		}
@@ -1327,7 +1327,7 @@ static astn declare_alias(ccContext cc, ccKind attr) {
 		}
 		for (symn param = params; param != NULL; param = param->next) {
 			int usages = 0;
-			for (astn use = param->use; use != NULL; use = use->ref.used) {
+			for (astn use = param->use; use != NULL; use = use->id.used) {
 				if (use != param->tag) {
 					usages += 1;
 				}
@@ -1632,14 +1632,14 @@ static astn statement_if(ccContext cc, ccKind attr) {
 			if (isTypeExpr(test)) {
 				backTok(cc, test);
 				astn def = declaration(cc, 0, NULL);
-				if (def != NULL && def->ref.link->init != NULL) {
+				if (def != NULL && def->id.link->init != NULL) {
 					def->type = typeCheck(cc, NULL, def, 1);
 					ast->stmt.init = def;
-					if (castOf(def->ref.link) == CAST_ref) {
-						test = opNode(cc, NULL, OPER_cne, lnkNode(cc, def->ref.link), tagNode(cc, "null"));
+					if (castOf(def->id.link) == CAST_ref) {
+						test = opNode(cc, NULL, OPER_cne, lnkNode(cc, def->id.link), tagNode(cc, "null"));
 						test->type = typeCheck(cc, NULL, test, 1);
 					} else {
-						test = lnkNode(cc, def->ref.link);
+						test = lnkNode(cc, def->id.link);
 						test->type = typeCheck(cc, NULL, test, 1);
 					}
 				}
@@ -1697,9 +1697,9 @@ static astn statement_for(ccContext cc) {
 		if (isTypeExpr(init)) {
 			backTok(cc, init);
 			init = declaration(cc, 0, NULL);
-			if (init != NULL && init->ref.link->init != NULL) {
-				astn ast = init->ref.link->init;
-				ast->type = typeCheck(cc, NULL, ast, 1);
+			if (init != NULL && init->id.link->init != NULL) {
+				astn astInit = init->id.link->init;
+				astInit->type = typeCheck(cc, NULL, astInit, 1);
 			}
 		}
 		ast->stmt.init = init;
@@ -1729,8 +1729,9 @@ static astn statement_for(ccContext cc) {
 
 	skipTok(cc, RIGHT_par, 1);
 
+	enter(cc, ast, NULL);
 	ast->stmt.stmt = statement(cc, NULL);
-
+	leave(cc, KIND_def, 0, 0, NULL, NULL);
 	leave(cc, KIND_def, 0, 0, NULL, NULL);
 
 	ast->type = cc->type_vid;
@@ -1753,7 +1754,7 @@ static astn statement_list(ccContext cc) {
 
 			case TOKEN_doc:
 				cc->tokNext = cc->tokNext->next;
-				doc = ast->ref.name;
+				doc = ast->id.name;
 				continue;
 
 			//case TOKEN_any:	// error
@@ -1885,10 +1886,24 @@ static astn statement(ccContext cc, const char *doc) {
 	else if ((ast = nextTok(cc, STMT_brk, 0))) {   // break;
 		skipTok(cc, STMT_end, 1);
 		ast->type = cc->type_vid;
+		for (int i = cc->nest - 1; i >= 0; i -= 1) {
+			if (cc->scopeStack[i]->kind == STMT_for) {
+				ast->jmp.scope = cc->scope;
+				ast->jmp.nest = i;
+				break;
+			}
+		}
 	}
 	else if ((ast = nextTok(cc, STMT_con, 0))) {   // continue;
 		skipTok(cc, STMT_end, 1);
 		ast->type = cc->type_vid;
+		for (int i = cc->nest - 1; i >= 0; i -= 1) {
+			if (cc->scopeStack[i]->kind == STMT_for) {
+				ast->jmp.scope = cc->scope;
+				ast->jmp.nest = i;
+				break;
+			}
+		}
 	}
 	else if ((ast = nextTok(cc, STMT_ret, 0))) {   // return expression;
 		symn function = cc->owner;
@@ -1901,17 +1916,17 @@ static astn statement(ccContext cc, const char *doc) {
 					result = expandInitializer(cc, function->params, result);
 					result->type = cc->type_vid;
 				}
-				ast->jmp.value = opNode(cc, result->type, ASGN_set, lnkNode(cc, function->params), result);
+				ast->ret.value = opNode(cc, result->type, ASGN_set, lnkNode(cc, function->params), result);
 			}
 			else {
-				// returning from a non function, or returning a statement?
+				// returning from a non-function, or returning a statement?
 				error(cc->rt, ast->file, ast->line, ERR_UNEXPECTED_TOKEN, ast);
 			}
 			skipTok(cc, STMT_end, 1);
 		}
-		ast->jmp.func = function;
+		ast->ret.func = function;
 		ast->type = cc->type_vid;
-		check = ast->jmp.value;
+		check = ast->ret.value;
 	}
 
 	// type, enum and alias declaration
@@ -1920,7 +1935,7 @@ static astn statement(ccContext cc, const char *doc) {
 		if (ast != NULL) {
 			dieif(ast->kind != TOKEN_var, ERR_INTERNAL_ERROR);
 			ast->type = cc->type_rec;
-			ast->ref.link->doc = doc;
+			ast->id.link->doc = doc;
 			doc = NULL;
 			//ast = expand2Statement(cc, ast, 0);
 		}
@@ -1930,7 +1945,7 @@ static astn statement(ccContext cc, const char *doc) {
 		if (ast != NULL) {
 			dieif(ast->kind != TOKEN_var, ERR_INTERNAL_ERROR);
 			ast->type = cc->type_rec;
-			ast->ref.link->doc = doc;
+			ast->id.link->doc = doc;
 			doc = NULL;
 			//ast = expand2Statement(cc, ast, 0);
 		}
@@ -1941,7 +1956,7 @@ static astn statement(ccContext cc, const char *doc) {
 		if (ast != NULL) {
 			dieif(ast->kind != TOKEN_var, ERR_INTERNAL_ERROR);
 			ast->type = cc->type_rec;
-			ast->ref.link->doc = doc;
+			ast->id.link->doc = doc;
 			doc = NULL;
 			//ast = expand2Statement(cc, ast, 0);
 		}
@@ -1957,10 +1972,10 @@ static astn statement(ccContext cc, const char *doc) {
 			ast = declaration(cc, attr, NULL);
 			if (ast != NULL) {
 				dieif(ast->kind != TOKEN_var, ERR_INTERNAL_ERROR);
-				attr &= ~(ast->ref.link->kind & MASK_attr);
-				check = ast->ref.link->init;
+				attr &= ~(ast->id.link->kind & MASK_attr);
+				check = ast->id.link->init;
 				type = ast->type;
-				ast->ref.link->doc = doc;
+				ast->id.link->doc = doc;
 				doc = NULL;
 			}
 		}
@@ -2072,7 +2087,7 @@ symn ccAddCall(ccContext cc, vmError call(nfcContext), const char *proto) {
 		error(rt, NULL, 0, ERR_INVALID_DECLARATION, proto);
 		return NULL;
 	}
-	symn sym = init->ref.link;
+	symn sym = init->id.link;
 	if (sym == NULL) {
 		error(rt, NULL, 0, ERR_INVALID_DECLARATION, proto);
 		return NULL;
