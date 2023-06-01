@@ -1231,8 +1231,8 @@ symn ccAddType(ccContext cc, const char *name, unsigned size, int refType) {
 symn ccLookup(rtContext rt, symn scope, char *name) {
 	struct astNode ast = {0};
 	ast.kind = TOKEN_var;
-	ast.ref.name = name;
-	ast.ref.hash = rehash(name, -1) % hashTableSize;
+	ast.id.name = name;
+	ast.id.hash = rehash(name, -1) % hashTableSize;
 	if (scope == NULL) {
 		if (rt->main != NULL) {
 			// code was generated, globals are in the main fields
@@ -1240,7 +1240,7 @@ symn ccLookup(rtContext rt, symn scope, char *name) {
 		}
 		else if (rt->cc != NULL) {
 			// code was not executed, main not generated
-			scope = rt->cc->symbolStack[ast.ref.hash];
+			scope = rt->cc->symbolStack[ast.id.hash];
 		}
 	}
 	return lookup(rt->cc, scope, &ast, NULL, 0, 1);

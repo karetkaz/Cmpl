@@ -76,8 +76,8 @@ astn strNode(ccContext cc, const char *value) {
 	astn ast = newNode(cc, TOKEN_val);
 	if (ast != NULL) {
 		ast->type = cc->type_str;
-		ast->ref.name = value;
-		ast->ref.hash = -1;
+		ast->id.name = value;
+		ast->id.hash = -1;
 	}
 	return ast;
 }
@@ -86,9 +86,9 @@ astn lnkNode(ccContext cc, symn ref) {
 	astn result = newNode(cc, TOKEN_var);
 	if (result != NULL) {
 		result->type = isTypename(ref) ? ref : ref->type;
-		result->ref.name = ref->name;
-		result->ref.link = ref;
-		result->ref.hash = -1;
+		result->id.name = ref->name;
+		result->id.link = ref;
+		result->id.hash = -1;
 	}
 	return result;
 }
@@ -304,7 +304,7 @@ ccKind eval(ccContext cc, astn res, astn ast) {
 				res->kind = TOKEN_val;
 				res->type = cc->type_rec;
 				if (args->kind == TOKEN_var) {
-					symn id = args->ref.link;
+					symn id = args->id.link;
 					res->cInt = id && id->type ? id->type->offs : 0;
 				}
 				break;
@@ -327,7 +327,7 @@ ccKind eval(ccContext cc, astn res, astn ast) {
 			break;
 
 		case TOKEN_var: {
-			symn var = ast->ref.link;		// link
+			symn var = ast->id.link;		// link
 			if (isInline(var)) {
 				if (!eval(cc, res, var->init)) {
 					return CAST_any;
@@ -811,7 +811,7 @@ symn linkOf(astn ast, int follow) {
 
 	if (ast->kind == TOKEN_var) {
 		// TODO: do we need to skip over aliases
-		symn lnk = ast->ref.link;
+		symn lnk = ast->id.link;
 		if (follow) {
 			while (lnk != NULL) {
 				if (lnk->kind != KIND_def) {
@@ -833,7 +833,7 @@ void addUsage(symn sym, astn tag) {
 	if (sym == NULL || tag == NULL) {
 		return;
 	}
-	if (tag->ref.used != NULL) {
+	if (tag->id.used != NULL) {
 #ifdef DEBUGGING	// extra check: if this node is linked (.used) it must be in the list
 		astn usage;
 		for (usage = sym->use; usage; usage = usage->ref.used) {
@@ -846,7 +846,7 @@ void addUsage(symn sym, astn tag) {
 		return;
 	}
 	if (sym->use != tag) {
-		tag->ref.used = sym->use;
+		tag->id.used = sym->use;
 		sym->use = tag;
 	}
 }
@@ -864,7 +864,7 @@ int isTypeExpr(astn ast) {
 			return isTypeExpr(ast->op.lhso) && isTypeExpr(ast->op.rhso);
 
 		case TOKEN_var:
-			return ast->ref.link && isTypename(ast->ref.link);
+			return ast->id.link && isTypename(ast->id.link);
 	}
 
 	return 0;
@@ -886,8 +886,8 @@ static int isConstAst(astn ast, int varOnly) {
 			return isConstAst(ast->op.rhso, 0) || isConstAst(ast->op.lhso, 1);
 
 		case TOKEN_var:
-			if (ast->ref.link != NULL) {
-				symn link = ast->ref.link;
+			if (ast->id.link != NULL) {
+				symn link = ast->id.link;
 				switch (link->kind & MASK_kind) {
 					case KIND_def:
 					case KIND_typ:

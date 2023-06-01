@@ -162,9 +162,9 @@ static inline astn tagNode(ccContext cc, const char *name) {
 			ast->file = cc->file;
 			ast->line = cc->line;
 			ast->type = NULL;
-			ast->ref.link = NULL;
-			ast->ref.hash = rehash(name, len + 1) % hashTableSize;
-			ast->ref.name = ccUniqueStr(cc, name, len + 1, ast->ref.hash);
+			ast->id.link = NULL;
+			ast->id.hash = rehash(name, len + 1) % hashTableSize;
+			ast->id.name = ccUniqueStr(cc, name, len + 1, ast->id.hash);
 		}
 	}
 	return ast;

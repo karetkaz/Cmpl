@@ -121,26 +121,20 @@ static ccKind genLoop(ccContext cc, astn ast) {
 	}
 
 	size_t lBreak = emit(rt, markIP);
-	size_t stBreak = stkOffset(rt, 0);
 	while (cc->jumps != jl) {
 		astn jmp = cc->jumps;
-		cc->jumps = jmp->next;
-
-		if (jmp->jmp.stks != stBreak) {
-			error(rt, jmp->file, jmp->line, ERR_INVALID_JUMP, jmp);
-			return CAST_any;
-		}
+		cc->jumps = jmp->jmp.jumps;
 		switch (jmp->kind) {
 			default :
 				fatal(ERR_INTERNAL_ERROR);
 				return CAST_any;
 
 			case STMT_brk:
-				fixJump(rt, jmp->jmp.offs, lBreak, jmp->jmp.stks);
+				fixJump(rt, jmp->jmp.offs, lBreak, -1);
 				break;
 
 			case STMT_con:
-				fixJump(rt, jmp->jmp.offs, lCont, jmp->jmp.stks);
+				fixJump(rt, jmp->jmp.offs, lCont, -1);
 				break;
 		}
 	}
@@ -567,7 +561,7 @@ static ccKind genMember(ccContext cc, astn ast, ccKind get) {
 /// Generate byte-code for OPER_idx `a[b]`.
 static ccKind genIndex(ccContext cc, astn ast, ccKind get) {
 	rtContext rt = cc->rt;
-	struct astNode tmp;
+	struct astNode tmp = {0};
 
 	if (!genPreVarLen(cc, ast, ast->type, get, refCast(ast->type))) {
 		return CAST_any;
@@ -775,7 +769,7 @@ static ccKind genCall(ccContext cc, astn ast) {
 			extraLine.kind = TOKEN_val;
 			extraFile.type = function->params->next->type;
 			extraLine.type = function->params->next->next->type;
-			extraFile.ref.name = file;
+			extraFile.id.name = file;
 			extraLine.cInt = line;
 
 			// chain the new arguments
@@ -914,10 +908,10 @@ static ccKind genCall(ccContext cc, astn ast) {
 
 			temp->ast.kind = TOKEN_var;
 			temp->ast.type = prm->type;
-			temp->ast.ref.link = &temp->var;
-			temp->ast.ref.name = prm->name;
-			temp->ast.ref.hash = 0;
-			temp->ast.ref.used = NULL;
+			temp->ast.id.link = &temp->var;
+			temp->ast.id.name = prm->name;
+			temp->ast.id.hash = 0;
+			temp->ast.id.used = NULL;
 			prm->init = &temp->ast;
 			temp++;
 			break;
@@ -971,10 +965,10 @@ static ccKind genCall(ccContext cc, astn ast) {
 
 		temp->ast.kind = TOKEN_var;
 		temp->ast.type = prm->type;
-		temp->ast.ref.link = &temp->var;
-		temp->ast.ref.name = prm->name;
-		temp->ast.ref.hash = 0;
-		temp->ast.ref.used = NULL;
+		temp->ast.id.link = &temp->var;
+		temp->ast.id.name = prm->name;
+		temp->ast.id.hash = 0;
+		temp->ast.id.used = NULL;
 
 		ccKind got = genDeclaration(cc, &temp->var, CAST_vid);
 		if (got == CAST_any) {
@@ -1694,21 +1688,40 @@ static ccKind genAst(ccContext cc, astn ast, ccKind get) {
 		case STMT_brk:
 			dieif(get != CAST_vid, ERR_INTERNAL_ERROR);
 
-			ast->jmp.stks = spBegin;
+			size_t stBreak = stkOffset(rt, 0);
+			for (symn s = ast->jmp.scope; s != NULL; s = s->scope) {
+				if (s->nest <= ast->jmp.nest) {
+					break;
+				}
+				if (!isVariable(s) || isStatic(s)) {
+					continue;
+				}
+
+				stBreak -= padOffset(s->size, vm_stk_align);
+				dbgCgen("todo.destroy: %T", s);
+			}
+
+			// drop cached arguments, except result.
+			if (!emitStack(rt, opc_drop, stBreak)) {
+				fatal(ERR_INTERNAL_ERROR);
+				return CAST_any;
+			}
+
 			ast->jmp.offs = emit(rt, opc_jmp);
 			if (ast->jmp.offs == 0) {
 				traceAst(ast);
 				return CAST_any;
 			}
 
-			ast->next = cc->jumps;
+			fixJump(rt, 0, 0, spBegin);
+			ast->jmp.jumps = cc->jumps;
 			cc->jumps = ast;
 			break;
 
 		case STMT_ret:
 			dieif(get != CAST_vid, ERR_INTERNAL_ERROR);
-			if (ast->jmp.value != NULL) {
-				astn res = ast->jmp.value;
+			if (ast->ret.value != NULL) {
+				astn res = ast->ret.value;
 				// `return 3;` must be modified to `return (result := 3);`
 				dieif(res->kind != ASGN_set, ERR_INTERNAL_ERROR);
 
@@ -1722,7 +1735,7 @@ static ccKind genAst(ccContext cc, astn ast, ccKind get) {
 				}
 			}
 			// TODO: destroy local variables.
-			if (!emitStack(rt, opc_drop, vm_ref_size + argsSize(ast->jmp.func))) {
+			if (!emitStack(rt, opc_drop, vm_ref_size + argsSize(ast->ret.func))) {
 				trace(ERR_INTERNAL_ERROR);
 				return CAST_any;
 			}
@@ -2047,11 +2060,11 @@ static ccKind genAst(ccContext cc, astn ast, ccKind get) {
 						traceAst(ast);
 						return CAST_any;
 					}
-					if (get == CAST_arr && !emitOffs(rt, strlen(ast->ref.name))) {
+					if (get == CAST_arr && !emitOffs(rt, strlen(ast->id.name))) {
 						traceAst(ast);
 						return CAST_any;
 					}
-					if (!emitRef(rt, vmOffset(rt, ast->ref.name))) {
+					if (!emitRef(rt, vmOffset(rt, ast->id.name))) {
 						traceAst(ast);
 						return CAST_any;
 					}
@@ -2066,7 +2079,7 @@ static ccKind genAst(ccContext cc, astn ast, ccKind get) {
 			break;
 
 		case TOKEN_var: {                // var, func, type, enum, alias
-			symn var = ast->ref.link;
+			symn var = ast->id.link;
 			dieif(isTypename(var) && !isStatic(var), ERR_INTERNAL_ERROR);	// types are static
 			dieif(isFunction(var) && !isStatic(var), ERR_INTERNAL_ERROR);	// functions are static
 
@@ -2450,7 +2463,7 @@ int ccGenCode(ccContext cc, int debug) {
 			}
 			while (cc->jumps) {
 				fatal(ERR_INTERNAL_ERROR": invalid jump: `%t`", cc->jumps);
-				cc->jumps = cc->jumps->next;
+				cc->jumps = cc->jumps->jmp.jumps;
 			}
 			var->size = emit(rt, markIP) - var->offs;
 			var->kind |= ATTR_stat;
@@ -2507,7 +2520,7 @@ int ccGenCode(ccContext cc, int debug) {
 
 		if (cc->jumps != NULL) {
 			fatal(ERR_INTERNAL_ERROR": invalid jump: `%t`", cc->jumps);
-			cc->jumps = cc->jumps->next;
+			cc->jumps = cc->jumps->jmp.jumps;
 			return -6;
 		}
 	}

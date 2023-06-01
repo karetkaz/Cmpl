@@ -204,25 +204,28 @@ vec4f shade(const Thing thing&, vec4f pos, vec4f dir, vec4f rayDir) {
 		int hitIdx;
 
 		// exclude light if the ray intersects an object closer than the light
-		if (intersect(pos, l, &hitIdx) > d) {
-
-			float attn = 1 / light.attenuation.eval(d);
-			float diffuse = dp3(dir, l);
-
-			if (diffuse > 0) {
-				vec4f r = sub(l, mul(2 * diffuse, dir));
-				float specular = dp3(r, rayDir);
-
-				if (specular > 0) {
-					specular = Math.pow(specular, thing.shininess);
-					result = result.mad(attn * specular, thing.specular, light.specular);
-				}
-
-				result = result.mad(attn * diffuse, thing.diffuse, light.diffuse);
-			}
-
-			result = result.mad(attn, thing.ambient, light.ambient);
+		if (intersect(pos, l, &hitIdx) <= d) {
+			continue;
 		}
+
+		float attn = 1 / light.attenuation.eval(d);
+		result = result.mad(attn, thing.ambient, light.ambient);
+
+		float diffuse = dp3(dir, l);
+		if (diffuse <= 0) {
+			continue;
+		}
+
+		diffuse = attn * diffuse;
+		result = result.mad(diffuse, thing.diffuse, light.diffuse);
+
+		float specular = dp3(sub(l, mul(2 * diffuse, dir)), rayDir);
+		if (specular <= 0) {
+			continue;
+		}
+
+		specular = attn * Math.pow(specular, thing.shininess);
+		result = result.mad(specular, thing.specular, light.specular);
 	}
 	return result;
 }

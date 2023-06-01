@@ -701,7 +701,6 @@ function execute(cmd, args) {
 	}
 
 	if (cmd != null) {
-
 		execArgs = [];
 		if (args.prms !== false) {
 			let experimentalFlags = params.X;
@@ -709,6 +708,9 @@ function execute(cmd, args) {
 				experimentalFlags = '-stdin';
 				if (!hasStyle('preferNativeCalls', 'checked')) {
 					experimentalFlags += '-native';
+				}
+				if (hasStyle('printCompilerSteps', 'checked')) {
+					experimentalFlags += '+steps';
 				}
 			}
 			// do not use standard input
@@ -835,7 +837,7 @@ function process(data) {
 			let open = document.createElement('p');
 			open.textContent = 'Open dump file in inspector: ';
 			let openLink = open.appendChild(document.createElement('a'));
-			openLink.href = window.location.origin + '/Cmpl/extras/Inspector/Inspector.html#' + data.dump;
+			openLink.href = window.location.origin + '/Cmpl/extras/demo/inspector.html#' + data.dump;
 			openLink.target = '_blank';
 			openLink.textContent = data.path;
 			terminal.append(open);
@@ -848,6 +850,7 @@ function process(data) {
 			terminal.append(trace);
 
 			Inspector(data.dump, (data) => {
+				data.createSymbolLinks = 'javascript:void(params.update({ content: null, path:\'${file}:${line}\'}));';
 				traceLink.href = data.createTraceEventsUrl();
 
 				let lst = document.createElement('ul');

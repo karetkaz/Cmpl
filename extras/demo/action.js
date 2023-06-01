@@ -56,9 +56,9 @@ var customCommands = {
 };
 
 function actionError() {
-	edtFileName.classList.add('error');
+	spnFileName.classList.add('error');
 	setTimeout(function () {
-		edtFileName.classList.remove('error');
+		spnFileName.classList.remove('error');
 	}, 250);
 	return false;
 }

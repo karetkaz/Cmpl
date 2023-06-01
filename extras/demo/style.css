@@ -162,11 +162,12 @@ select {
 #main-toolbar > .icon {
 	min-width: var(--main-toolbar-size);
 }
+#main-toolbar>.filename {
+	padding: 0 .5em;
+}
 #main-toolbar input {
 	border: 0;
 	width: 100%;
-	height: inherit;
-	padding: 0 .5em;
 }
 
 #output-toolbar {
@@ -403,13 +404,13 @@ body .sidebar li.checked:before { content: '✓ '; }
 }
 
 /* Animations */
-#main-toolbar>.filename>input {
+#main-toolbar>.filename {
 	-webkit-transition: box-shadow 0.5s ease-out;
 	-moz-transition: box-shadow 0.5s ease-out;
 	-o-transition: box-shadow 0.5s ease-out;
 	transition: box-shadow 0.5s ease-out;
 }
-#main-toolbar>.filename>input.error {
+#main-toolbar>.filename.error {
 	box-shadow: 0 0 0 0 transparent, inset 0 0 2px 2px #f00;
 	-webkit-transition: none;
 	-moz-transition: none;

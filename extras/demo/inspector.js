@@ -157,7 +157,7 @@ function Inspector(data, callback) {
             }
         }
 
-        let i, caller, callee, calls = [{
+        let calls = [{
             enter: +Infinity,
             leave: -Infinity,
             samples: {},
@@ -166,7 +166,7 @@ function Inspector(data, callback) {
             ticksPerSec: data.ticksPerSec
         }];
 
-        for (i = 0; i < data.functions.length; ++i) {
+        for (let i = 0; i < data.functions.length; ++i) {
             let symbol = data.functions[i];
             if (symbol.proto == null) {
                 symbol.proto = symbol[''];
@@ -175,7 +175,7 @@ function Inspector(data, callback) {
         }
 
         let lastTick = 0;
-        for (i = 0; i < data.callTree.length; i += recSize) {
+        for (let i = 0; i < data.callTree.length; i += recSize) {
             let offs = data.callTree[i + funIndex];
             let tick = tickIndex < 0 ? undefined : data.callTree[i + tickIndex];
             let heap = heapIndex < 0 ? undefined : data.callTree[i + heapIndex];
@@ -188,12 +188,12 @@ function Inspector(data, callback) {
             }
             lastTick = tick;
             if (offs !== -1) {
-                callee = enter(calls, offs, tick);
+                let callee = enter(calls, offs, tick);
                 calls.push(callee);
             }
             else {
-                callee = calls.pop();
-                caller = calls[calls.length - 1];
+                let callee = calls.pop();
+                let caller = calls[calls.length - 1];
                 leave(calls, caller, callee, tick, heap);
                 Object.freeze(callee);
             }
@@ -202,22 +202,20 @@ function Inspector(data, callback) {
         while (calls.length > 0) {
             samples = calls.pop();
             if (calls.length > 1) {
-                caller = calls[calls.length - 1];
+                let caller = calls[calls.length - 1];
                 leave(calls, caller, samples, undefined);
             }
             Object.freeze(samples);
         }
     }
 
-    return {
+    let result = {
         samples,
         ticks: samples && samples.leave - samples.enter,
         ticksPerSec: data && data.ticksPerSec,
         createCallTree: function displayCallTree(treeDiv, sortList) {
             let data2 = {
-                samples,
-                ticks: samples && samples.leave - samples.enter,
-                ticksPerSec: data && data.ticksPerSec,
+                ...result,
                 display: function(sorting) {displayCallTree(treeDiv, sorting)}
             }
 
@@ -235,15 +233,16 @@ function Inspector(data, callback) {
                 treeDiv.appendChild(createTreeRow(node, data2));
             }
         },
-        createSymbolList: function displayCallTree(parentNode) {
+        createSymbolList: function(parentNode) {
             parentNode.replaceChildren();
             for (let sym of data.symbols || []) {
                 if (!sym.name) {
                     continue;
                 }
-                parentNode.appendChild(createSymbolRow(sym));
+                parentNode.appendChild(createSymbolRow(sym, result));
             }
         },
+        createSymbolLinks: null, // 'window.location.href="#${file}:${line}";',
         createTraceEventsUrl: function() {
             let value = '';
             function ms(ticks) { return ticks * 1000 / data.ticksPerSec; }
@@ -278,9 +277,10 @@ function Inspector(data, callback) {
             return URL.createObjectURL(blob);
         }
     }
+    return result;
 }
 
-function createSymbolRow(sym) {
+function createSymbolRow(sym, data) {
     let row = document.createElement('ul');
     row.classList.add('expandable');
 
@@ -322,10 +322,12 @@ function createSymbolRow(sym) {
         }
     }
 
-    if (sym.file && sym.line) {
+    if (data.createSymbolLinks && sym.file && sym.line) {
         let proto = func.appendChild(document.createElement('a'));
         proto.appendChild(document.createTextNode(sym['']));
-        proto.href = 'javascript:void(params.update({ content: null, path:\'' + sym.file +':'+ sym.line + '\'}));';
+        proto.href = data.createSymbolLinks
+            .replaceAll('${file}', sym.file)
+            .replaceAll('${line}', sym.line)
     } else {
         func.appendChild(document.createTextNode(sym['']));
     }
@@ -449,11 +451,12 @@ function createTreeRow(node, data, depth) {
     let expand = func.appendChild(document.createElement('span'));
     expand.setAttribute('class', 'expander');
 
-    if (sample.func.file && sample.func.line) {
+    if (data.createSymbolLinks && sample.func.file && sample.func.line) {
         let proto = func.appendChild(document.createElement('a'));
         proto.appendChild(document.createTextNode(sample.func.proto));
-        let goto = sample.func.file + ':' + sample.func.line;
-        proto.href = 'javascript:void(params.update({ content: null, path:\'' + goto + '\'}));';
+        proto.href = data.createSymbolLinks
+            .replaceAll('${file}', sample.func.file)
+            .replaceAll('${line}', sample.func.line)
     } else {
         func.appendChild(document.createTextNode(sample.func.proto));
     }

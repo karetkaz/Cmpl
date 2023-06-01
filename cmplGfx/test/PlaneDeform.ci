@@ -1,4 +1,4 @@
-Image img = Image("../asset/image/download.jpg", 32);
+Image img = Image("asset/image/download.jpg", 32);
 
 vec4f tex2d(Image src, float64 x, float64 y) {
 	int pos(float64 val, int resolution) {
