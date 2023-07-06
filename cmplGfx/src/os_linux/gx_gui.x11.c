@@ -1,8 +1,8 @@
 #include "../gx_gui.h"
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
+#include <sys/poll.h>
 #include <stdlib.h>
-#include <sched.h>
 
 struct GxWindow {
 	Display *display;
@@ -66,7 +66,6 @@ GxWindow createWindow(GxImage offs, const char *title) {
 }
 
 void destroyWindow(GxWindow window) {
-
 	if (window->image) {
 		window->image->data = NULL;
 		XDestroyImage(window->image);
@@ -90,32 +89,40 @@ int getWindowEvent(GxWindow window, int *button, int *x, int *y, int timeout) {
 	static int btnState = 0;
 	static int keyState = 0;
 
-	if (timeout != 0 && !XPending(window->display)) {
-		// park thread for a while
-		sched_yield();
-		return 0;
+	Display *display = window->display;
+
+	if (!XPending(display)) {
+		// based on: https://nrk.neocities.org/articles/x11-timeout-with-xsyncalarm
+		struct pollfd pfd = {
+			.fd = ConnectionNumber(display),
+			.events = POLLIN,
+		};
+
+		if (poll(&pfd, 1, timeout) >= 0) {
+			return 0;
+		}
 	}
 
 	XEvent event;
-	XNextEvent(window->display, &event);
+	XNextEvent(display, &event);
 
 	// use the last motion event
 	if (event.type == MotionNotify) {
 		XEvent nextEvent;
-		while (XPending(window->display)) {
-			XPeekEvent(window->display, &nextEvent);
+		while (XPending(display)) {
+			XPeekEvent(display, &nextEvent);
 			if (nextEvent.type != MotionNotify) {
 				break;
 			}
 			// consume mouse motion events
-			XNextEvent(window->display, &event);
+			XNextEvent(display, &event);
 		}
 	}
 
 	// do nopt not process key release while key is pressed
-	if (event.type == KeyRelease && XPending(window->display)) {
+	if (event.type == KeyRelease && XPending(display)) {
 		XEvent nextEvent;
-		XPeekEvent(window->display, &nextEvent);
+		XPeekEvent(display, &nextEvent);
 		if (nextEvent.type == KeyPress && nextEvent.xkey.time == event.xkey.time && nextEvent.xkey.keycode == event.xkey.keycode) {
 			return 0;
 		}

@@ -165,7 +165,7 @@ Module.openProjectFile = function(data, callBack) {
 	}
 
 	// open, save, download file
-	if (data.path !== undefined) {
+	else if (data.path !== undefined) {
 		let operation = 'operation';
 		try {
 			let open = true;

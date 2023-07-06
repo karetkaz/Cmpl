@@ -1,0 +1,48 @@
+#!cmpl -X+steps -run/g
+
+char convert(char c) {
+	if (c == 'A') {
+		return 'C';
+	}
+	if (c == 'C') {
+		return 'G';
+	}
+	if (c == 'G') {
+		return 'T';
+	}
+	if (c == 'T') {
+		return 'A';
+	}
+	return ' ';
+}
+
+char opt[4] = {'A', 'C', 'G', 'T'};
+
+inline len_str = 13;
+char s[len_str + 1] = {};
+char s_last[len_str + 1] = {};
+
+for (int i = 0; i < len_str; i += 1) {
+	s_last[i] = opt[opt.length - 1];
+	s[i] = opt[0];
+}
+s_last[len_str] = 0;
+s[len_str] = 0;
+
+int counter = 1;
+for (;!equals(s_last, s);) {
+	counter += 1;
+//	debug(s);//  uncomment to see all k-mers.
+	bool change_next = true;
+	for (int i = 0; i < len_str; i += 1) {
+		if (change_next) {
+			if (s[i] == opt[opt.length - 1]) {
+				s[i] = convert(s[i]);
+				change_next = true;
+			} else {
+				s[i] = convert(s[i]);
+				break;
+			}
+		}
+	}
+}

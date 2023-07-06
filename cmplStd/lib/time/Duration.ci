@@ -7,18 +7,18 @@ struct Duration {
 	// fixme: inline precision = Timeunit.Millis;
 	static const Timeunit precision = Timeunit.Millis;
 
-	///@public
+	/// Returns the value of the `duration` at the given `precision` (Seconds and Millis are mostly used as unix epoch)
 	static int64 value(Duration duration, Timeunit precision) {
 		return convert(duration.value, Duration.precision, precision);
 	}
 
-	///@public
+	/// Add two durations
 	static Duration add(Duration lhs, Duration rhs) {
 		return { value: lhs.value + rhs.value };
 	}
 }
 
-///@public
+/// Construct a duration from the given `value` at the given `precision`
 Duration Duration(int64 value, Timeunit precision) {
 	return { value: convert(value, precision, Duration.precision) };
 }

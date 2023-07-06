@@ -14,7 +14,6 @@ Image back = Image("asset/image/forest.jpg", 32);
 Image offs = Image(back);
 
 void drawColorSlider(Slider this, Image offs, Rect rect);
-void updateSlider(Slider min, Slider max, float64 value);
 bool syncMinMax(Slider this, float64 value);
 bool onTouchEvent(FxWidget this, const Rect rect&, const TouchEvent event&);
 void onProcess(FxWidget widget);

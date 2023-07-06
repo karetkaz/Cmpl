@@ -44,6 +44,7 @@ struct FileReader: ByteReader {
 
 ///@public
 struct FileWriter: ByteWriter {
+	///@public
 	const File file;
 
 	void write(FileWriter this, byte bytes[]) {
@@ -59,6 +60,7 @@ struct FileWriter: ByteWriter {
 		File.close(this.file);
 	}
 }
+
 ///@public
 struct BufferedFileWriter: FileWriter {
 	byte buffer[1024];
@@ -102,14 +104,6 @@ struct BufferedFileWriter: FileWriter {
 }
 
 ///@public
-FileWriter StdOutWriter() {
-	return FileWriter {
-		file: File.out;
-		close: Closeable.skipClose;
-	};
-}
-
-///@public
 FileReader FileReader(const char path[*]) {
 	return FileReader {
 		file: File.open(path);
@@ -150,13 +144,18 @@ inline "lib/mesh.ci";
 inline "lib/camera.ci";
 
 inline "lib/window.ci";
+/// Simple camera for 3d transformations and projection.
 struct Camera {
+	///@public
 	vec4f position = vec4f(0, 0, 0, 1);
+	///@public
 	vec4f forward = vec4f(0, 0, 0, 1);
+	///@public
 	vec4f right = vec4f(0, 0, 0, 1);
+	///@public
 	vec4f up = vec4f(0, 1, 0, 1);
 
-	/// create an orthographic or perspective projection matrix
+	/// Create an orthographic(`fov` == 0) or perspective projection matrix
 	static mat4f projection(float32 fov, float32 asp, float32 n, float32 f) {
 		float32 bot = 1;
 		float32 nf = n - f;
@@ -348,8 +347,11 @@ uint32 hue(argb rgb) {
 	return hue;
 }
 
+/// compute the linear interpolation of the values `a` and `b` by `t` in range 0...255
 inline mix_s8(int32 t, uint32 a, uint32 b) = int32(a + (t * (b - a + 1) >> 8));
+/// compute the linear interpolation of the values `a` and `b` by `t` in range 0...65535
 inline mix_s16(int32 t, uint32 a, uint32 b) = int32(a + (t * (b - a + 1) >> 16));
+/// compute the linear interpolation of the colors `a` and `b` by `t` in range 0...255
 inline mix_rgb8(int32 t, argb a, argb b) = argb(mix_s8(t, rch(a), rch(b)), mix_s8(t, gch(a), gch(b)), mix_s8(t, bch(a), bch(b)));
 
 /// linear interpolate a lookup-table with the given colors
@@ -1010,6 +1012,7 @@ Image fill(Image image, uint32 color) {
 	return image;
 }
 
+/// Draw the given ASCII `text` to the `image` at the given `x`, `y` coordinate, with the given `font` and `color`
 void drawText(Image image, int32 x, int32 y, Image font, const char text[*], int32 color) {
 	Rect rect = {x0: x, y0: y, x1: image.width(), y1: image.height()};
 	return image.drawText(rect, font, text, color);
@@ -1139,11 +1142,13 @@ void drawBezier(Image image, int x0, int y0, int x1, int y1, int x2, int y2, int
 	}
 	drawLine(image, x0, y0, x3, y3, color);
 }
-
+/// Fill an ellipse on the `image` specified by the given coordinates and the given `color`
 inline fillOval(Image image, int x0, int y0, int x1, int y1, uint32 color) = image.fillRRect(x0, y0, x1, y1, Math.abs(x0 - x1), Math.abs(y0 - y1), color);
+
+/// Draw an ellipse on the `image` specified by the given coordinates and the given `color`
 inline drawOval(Image image, int x0, int y0, int x1, int y1, uint32 color) = image.drawRRect(x0, y0, x1, y1, Math.abs(x0 - x1), Math.abs(y0 - y1), color);
 
-/// Fill a ellipse on the `image` specified by `roi` with the given `color`
+/// Fill an ellipse on the `image` specified by `roi` with the given `color`
 void fillOval(Image image, const Rect roi&, uint32 color) {
 	if (roi.empty()) {
 		return;
@@ -1437,8 +1442,8 @@ void transform(Image image, const Rect rect&, Image src, const Rect roi&, int32 
 	}
 }
 
-///@public
-inline resize(Image image, const Rect rect&, const Image src, const Rect roi&, int interpolate) = image.transform(rect, src, roi, interpolate, null);
+/// Resize the given `region` of the `source` image into the `destination` image using the `interpolation`.
+inline resize(Image destination, const Rect rect&, const Image source, const Rect region&, int interpolation) = destination.transform(rect, source, region, interpolation, null);
 
 /// Create an image by copying another one using a custom width and height
 Image Image(Image image, int width, int height, int align, float64 maxScale) {
@@ -1532,11 +1537,11 @@ Mesh Mesh(const char fileName[*]) {
 	}
 	abort("unknown file extension", fileName);
 }
-// micro ui, TODO: add comments
-
 inline "micro.ui.core.ci";
 
+///@public
 struct Button: View {
+	///@public
 	const char text[*];
 
 	bool onMeasure(Button this, Rect rect&) {
@@ -1550,25 +1555,31 @@ struct Button: View {
 	}
 }
 
+///@public
 struct Switch: View {
 	static const char onOff[*][] = {
 		"off",
 		"on"
 	};
 
+	///@public
 	const char text[*];
+	///@public
 	const char states[*][] = onOff;
 
+	///@public
 	int selected = 0;
 	const int resetValue = 0;//TODO: selected;
 
-	// if the view is clicked but not focused, first just focus it
-	const bool clickToFocus = false;
+	/// clicking on a non focused view will not update the value, it will just focus it.
+	const bool clickToFocus = true;
 
+	///@public
 	static bool checked(Switch this) {
 		return this.selected != 0;
 	}
 
+	///@public
 	bool onUpdate(Switch this, int selected) {
 		int maxValue = this.states.length;
 		if (maxValue == 0) {
@@ -1679,7 +1690,7 @@ struct Switch: View {
 			Style.align(rect, &onOffRect, Style.right);
 			rect.x1 = onOffRect.x0;
 
-			Style.padded(&onOffRect, -style.padding);
+			onOffRect.padded(-style.padding);
 			uint32 color = style.focusedColor;
 			if (this.checked()) {
 				color = style.valueColor;
@@ -1695,7 +1706,7 @@ struct Switch: View {
 				onOffRect.x1 = onOffRect.x0 + onOffRect.height();
 			}
 
-			Style.padded(&onOffRect, -style.padding / 3);
+			onOffRect.padded(-style.padding / 3);
 			offs.fillOval(onOffRect, style.textColor);
 		} else {
 			value = this.states[this.selected];
@@ -1704,16 +1715,26 @@ struct Switch: View {
 	}
 }
 
+///@public
 struct Slider: View {
+	///@public
 	const char text[*];
 
+	///@public
 	float64 value = 0;
 	float64 _value = 0;
+	///@public
 	const float64 minimum = 0;
+	///@public
 	const float64 maximum = 1;
+	///@public
 	const float64 stepSize = 0;
 	const float64 resetValue = 0; // TODO: resetValue = value;
 
+	/// clicking on a non focused view will not update the value, it will just focus it.
+	const bool clickToFocus = true;
+
+	///@public
 	bool onUpdate(Slider this, float64 value) {
 		if (value > this.maximum) {
 			value = this.maximum;
@@ -1785,9 +1806,10 @@ struct Slider: View {
 			return this.onUpdate(this, value);
 		}
 		if (event.release) {
-			if (event.y < rect.y0 + rect.height() - rect.height() / 3) {
-				// clicking the upper part to focus control
-				return true;
+			if (this.focusable && this.clickToFocus) {
+				if (!this.isFocused()) {
+					return true;
+				}
 			}
 			float64 value = event.x - rect.x0;
 			value *= float64(this.maximum - this.minimum) / rect.width();
@@ -1811,6 +1833,7 @@ struct Slider: View {
 		return View.onMeasure(this, &rect);
 	}
 
+	///@public
 	void onDrawSlider(Slider this, Image offs, Rect rect) {
 		if (this.maximum == this.minimum) {
 			return;
@@ -1843,18 +1866,24 @@ struct Slider: View {
 	}
 }
 
+///@public
 struct Histogram: View {
+	///@public
 	const bool lines = false;
 	// histogram data is in alpha channel, display it with color rgb
+	///@public
 	bool color = false;
+	///@public
 	argb data[256];
 
+	///@public
 	static void update(Histogram this, Image image) {
 		uint32 data[*] = pointer(this.data);
 		image.calcRgbHist(null, &data);
 		this.color = false;
 	}
 
+	///@public
 	bool onUpdate(Histogram this, int idx, int value) {
 		this.data[idx] = argb(idx, value, value, value);
 		return true;
@@ -1999,9 +2028,12 @@ struct DebugView: View {
 	int64 maxDuration = 0;
 	int64 durations[64];
 
+	/// Number of measures, initialize to `-1` to ignore
 	int64 measures = 0;
+	/// Number of draw calls, initialize to `-1` to ignore
 	int64 draws = 0;
 
+	/// Start time measurement until this view is drawn on screen
 	static void startTimer(DebugView this) {
 		this.started = System.millis();
 		this.maxDuration = 0;
@@ -2102,9 +2134,12 @@ struct DebugView: View {
 	}
 }
 
+///@public
 struct Panel: Layout {
+	///@public
 	bool visible = false;
 
+	///@public
 	static bool visible(Panel this, bool value) {
 		if (this.visible == value) {
 			return false;
@@ -2246,7 +2281,9 @@ struct TabPage: Layout {
 	}
 }
 
+///@public
 struct Select: Layout {
+	///@public
 	const char text[];
 	char states[*][2]; // fixme: initialize: = {"<", "^"};
 
@@ -2254,6 +2291,7 @@ struct Select: Layout {
 	Switch header = null;
 	Panel panel = null;
 
+	///@public
 	static variant selectedData(Select select) {
 		if (select.selected == null) {
 			return null;
@@ -2282,6 +2320,7 @@ struct Select: Layout {
 		return true;
 	}
 
+	///@public
 	static Select setSelectedIndex(Select select, int index) {
 		if (index < 0 || index > select.panel.itemCount) {
 			error("invalid index selected", index);
@@ -2297,6 +2336,7 @@ struct Select: Layout {
 		return select;
 	}
 
+	///@public
 	static Select addItems(Select this, int align, View views...) {
 		struct Header: Switch {
 			const Select select;
@@ -2315,6 +2355,7 @@ struct Select: Layout {
 			Header header = {
 				text: this.text;
 				states: this.states;
+				clickToFocus: false;
 				select: this;
 			};
 			Panel panel = {};
@@ -2330,6 +2371,7 @@ struct Select: Layout {
 		return this;
 	}
 
+	///@public
 	static Select addItem(Select this, const char text[*], variant data) {
 		struct SelectItem: Button {
 			const Select select;
@@ -2346,6 +2388,7 @@ struct Select: Layout {
 		return this;
 	}
 
+	///@public
 	static Select addItem(Select this, const char text[*]) {
 		return addItem(this, text, text);
 	}
@@ -2353,9 +2396,13 @@ struct Select: Layout {
 
 /// Widget used to display controls in image processing demos
 struct FxWidget: Widget {
+	///@public
 	bool showOriginal = false;
+	///@public
 	int align = Style.fill;
+	///@public
 	int margin = 0;
+	///@public
 	int radius = 0;
 
 	// forward the drag event to the focused view
@@ -2467,9 +2514,11 @@ struct FxWidget: Widget {
 		offs.destroy();
 	}
 
+	/// Callback to be executed when the value of a control changes
 	void onProcess(FxWidget widget) { }
 }
 
+/// Create a widget with the given `width`, `height` and `style`
 Widget Widget(int width, int height, const Style style&) {
 	Widget widget = {
 		width: width;
@@ -2479,12 +2528,14 @@ Widget Widget(int width, int height, const Style style&) {
 	return widget
 		.focus(widget);	// focus first visible view
 }
+/// Create a widget with the given `width`, `height` and a default style
 Widget Widget(int width, int height) {
 	static const Style style = {
 		format: { precision: 2, trimDecimal: false };
 	};
 	return Widget(width, height, style);
 }
+/// Create a widget with the given `views` used in image processing demos
 FxWidget FxWidget(void onProcess(FxWidget widget), View views...) {
 	static const Style style = {
 		align: Style.left;
@@ -2508,10 +2559,12 @@ FxWidget FxWidget(void onProcess(FxWidget widget), View views...) {
 		.addItems(...views);
 }
 
+///@public
 FxWidget FxWidget(View views...) {
 	return FxWidget(FxWidget.onProcess, ...views);
 }
 
+///@public
 bool hasFocused(const Layout this, View items...) {
 	if (this.focusedIndex < 0) {
 		// nothing is focused.
@@ -2534,6 +2587,7 @@ bool hasFocused(const Layout this, View items...) {
 	}
 	return false;
 }
+///@public
 bool hasPressed(const Layout this, View items...) {
 	if (this.pressedIndex < 0) {
 		// nothing is pressed.
@@ -2558,6 +2612,7 @@ bool hasPressed(const Layout this, View items...) {
 }
 
 static struct Window {
+	/// Show the given `widget` in a window drawn to the `offscreen` image
 	static void show(Image offscreen, Widget widget) {
 		struct WindowData {
 			Image offscreen;
@@ -2792,7 +2847,7 @@ static struct Window {
 		static int windowEvent(WindowData win&, int action, int button, int x, int y) {
 			if (action == Window.KEY_RELEASE && button == Window.KEY_CODE_ESC) {
 				// exit when releasing escape key
-				return -1;
+				return Window.quit();
 			}
 			Widget widget = win.widget;
 			if (!win.dispatchEvent(widget, action, button, x, y)) {
@@ -2824,6 +2879,7 @@ static struct Window {
 		return Window.show(offscreen, window, windowEvent);
 	}
 
+	/// Show the given `widget` in a window
 	static void show(Widget widget) {
 		Rect rect = {};
 		widget.onCreate(widget, widget);
@@ -2863,37 +2919,53 @@ Window window = {
 };
 window.show();
 */
-// micro ui, TODO: add comments
-
+/// Style used to layout and draw text and views.
 struct Style {
+	/// Default dark theme color for background
 	static const argb dark = argb(0x1a1a1a);
+	/// Default light theme color for background
 	static const argb light = argb(0xdadada);
 
+	/// Default blue accent color for controls
 	static const argb blue = argb(33, 149, 246);
+	/// Default green accent color for controls
 	static const argb green = argb(74, 174, 82);
+	/// Default gray accent color for controls
 	static const argb gray = argb(98, 125, 139);
+	/// Default orange accent color for controls
 	static const argb orange = argb(255, 153, 0);
+	/// Default red accent color for controls
 	static const argb red = argb(246, 64, 49);
+	/// Default magenta accent color for controls
 	static const argb magenta = argb(156, 36, 181);
+	/// Default cyan accent color for controls
 	static const argb cyan = argb(0, 149, 139);
 
 	static const argb theme = dark;
 	static const argb accent = gray;
 
-	// text alignment in views
+	/// Alignment of text in views
 	const int align = 0;
 
-	// padding around text in views
+	/// Padding around text in views
 	const int padding = 8;
 
+	/// The font to be used to draw text
 	const Image font = Window.font;
+
+	/// Formatting to be used printing numbers, dates, etc
 	const FormatFlags format;
 
+	///@public
 	uint32 backgroundColor = uint32(theme);
 	// int disabledColor = TODO;
+	///@public
 	uint32 hoveredColor = uint32(mix_rgb8(16, theme, accent));
+	///@public
 	uint32 focusedColor = uint32(mix_rgb8(64, theme, accent));
+	///@public
 	uint32 valueColor = uint32(accent);
+	///@public
 	uint32 textColor = uint32(lum(theme) > 127 ? dark : light);
 
 	enum: int32 {
@@ -2925,19 +2997,7 @@ struct Style {
 		focused: 4;
 	}
 
-	static void padded(Rect rect&, int padding) {
-		rect.x0 -= padding;
-		rect.y0 -= padding;
-		rect.x1 += padding;
-		rect.y1 += padding;
-	}
-
-	static void measure(const Style this&, Rect rect&, const char text[*]) {
-		this.font.clipText(&rect, text);
-		padded(&rect, this.padding);
-	}
-
-	/// Align one rect containing text relative to its container
+	/// Place the given `rect` inside the `parent` rectangle conforming to `align`
 	static void align(Rect parent, Rect rect&, int align) {
 		int vertical = align & Style.vertical;
 		if (vertical == center) {
@@ -2970,6 +3030,13 @@ struct Style {
 		}
 	}
 
+	/// Measure the given `text` whit `this` style.
+	static void measure(const Style this&, Rect rect&, const char text[*]) {
+		this.font.clipText(&rect, text);
+		padded(&rect, this.padding);
+	}
+
+	/// Measure and align the given `text` whit `this` style.
 	static void align(const Style this&, Rect parent, Rect rect&, const char value[*], int align) {
 		parent.padded(-this.padding);
 		this.font.clipText(&rect, value);
@@ -2984,10 +3051,12 @@ struct Style {
 		align(parent, &rect, align);
 	}
 
+	/// Measure and align the given `text` whit `this` style.
 	static void align(const Style this&, Rect parent, Rect rect&, const char value[*]) {
 		return align(this, parent, &rect, value, this.align);
 	}
 
+	/// Setup a custom color for the style
 	static void setColor(Style style&, argb background, argb accent) {
 		style.backgroundColor = uint32(background);
 		style.hoveredColor = uint32(mix_rgb8(16, background, accent));
@@ -2999,26 +3068,45 @@ struct Style {
 	inline vertical(int align) = (align & vertical) == vertical;
 	inline horizontal(int align) = (align & horizontal) == horizontal;
 }
+///@public
 struct KeyEvent {
+	///@public
 	const bool release;
+	///@public
 	const bool isShift;
+	///@public
 	const bool isCtrl;
+	///@public
 	const bool isAlt;
+	///@public
 	const int repeat;
+	///@public
 	const int key;
 }
+///@public
 struct TouchEvent {
+	///@public
 	const bool release;
+	///@public
 	const bool isShift;
+	///@public
 	const bool isCtrl;
+	///@public
 	const bool isAlt;
+	///@public
 	const int clicks;
+	///@public
 	const int button;
+	///@public
 	const int dx = 0;
+	///@public
 	const int dy = 0;
+	///@public
 	const int x;
+	///@public
 	const int y;
 
+	///@public
 	static bool test(const TouchEvent event&, const Rect rect&) {
 		if (event.x < rect.x0 || event.x >= rect.x1) {
 			return false;
@@ -3029,18 +3117,22 @@ struct TouchEvent {
 		return true;
 	}
 
+	///@public
 	static bool isMotion(const TouchEvent event&) {
 		return event.dx || event.dy;
 	}
 
+	///@public
 	static bool isPress(const TouchEvent event&) {
 		return !(event.release || event.dx || event.dy);
 	}
 
+	///@public
 	static bool isLongPress(const TouchEvent event&) {
 		return event.release && event.clicks < 0;
 	}
 
+	///@public
 	static bool isPress(const TouchEvent event&, int button) {
 		if (event.release || event.dx || event.dy) {
 			return false;
@@ -3069,20 +3161,28 @@ struct View: object {
 	// parent view
 	View parent = null;
 
-	// style to be used when measuring and drawing the view
+	/// style to be used when measuring and drawing the view
 	Style style& = null;
 
 	/// user attached data
 	variant data = null;
 
+	/// Returns the parent of the view
+	static View parent(View this) {
+		return this.parent;
+	}
+
+	/// Callback function executed when the view is clicked
 	bool onClick(View this) {
 		return true;
 	}
 
+	/// Callback function executed when the view is double clicked
 	bool onReset(View this) {
 		return false;
 	}
 
+	/// Callback function executed when the view is created
 	void onCreate(View this, View parent) {
 		assert(this.parent == null || this.parent == parent, "can not add the same view to different layouts");
 		this.parent = parent;
@@ -3092,8 +3192,10 @@ struct View: object {
 		}
 	}
 
+	/// Callback function executed when the view is destroyed
 	void onDestroy(View this) { }
 
+	/// Callback function executed when the view receives a KeyEvent: press or release
 	bool onKeyEvent(View this, const KeyEvent event&) {
 		if (!this.enabled) {
 			// disabled view does not consume events
@@ -3113,6 +3215,7 @@ struct View: object {
 		return false;
 	}
 
+	/// Callback function executed when the view receives a TouchEvent: press, motion or release
 	bool onTouchEvent(View this, const Rect rect&, const TouchEvent event&) {
 		/* press, release or motion
 		if (event.dx || event.dy) {
@@ -3145,6 +3248,7 @@ struct View: object {
 		return this.onClick(this);
 	}
 
+	/// Callback function executed when the view needs to be measured
 	bool onMeasure(View this, Rect rect&) {
 		int width = Math.abs(this.width);
 		if (rect.width() < width || this.width > 0) {
@@ -3157,17 +3261,20 @@ struct View: object {
 		return true;
 	}
 
+	/// Callback function executed when the view needs to be drawn
 	void onDraw(View this, Image offs, Rect rect);
+
+	///@public
 	static void onDraw(View this, Image offs, Rect rect, int state) {
 		const Style style& = this.style;
-		if (this.parent.style != pointer(style)) {
-			offs.fillRect(rect, style.backgroundColor);
-		}
 		if (state & Style.focused) {
 			offs.fillRect(rect, style.focusedColor);
 		}
 		else if (state & Style.hovered) {
 			offs.fillRect(rect, style.hoveredColor);
+		}
+		else if (this.parent.style != pointer(style)) {
+			offs.fillRect(rect, style.backgroundColor);
 		}
 		this.onDraw(this, offs, rect);
 		if (state & Style.pressed) {
@@ -3175,7 +3282,6 @@ struct View: object {
 		}
 	}
 	static void onDraw(View this, Image offs, Rect rect, const char text[*], const char value[*]) {
-		// fixme: draw text using textColor and value using valueColor
 		const Style style& = this.style;
 		if (text == null) {
 			style.align(rect, &rect, value);
@@ -3194,8 +3300,8 @@ struct View: object {
 	}
 }
 
-static void invalidate(View view, bool layout);
 static void focus(View view);
+static void invalidate(View view, bool layout);
 
 /** Layout is a view containing other views positioned by it.
  * the Layout class does not clip its children.
@@ -3210,17 +3316,20 @@ struct Layout: View {
 
 	View separator = null;
 
+	Item items[*] = null;
 	int itemCount = 0;
 	int itemCapacity = 0;
-	Item items[*] = null;
-
 	int hoveredIndex = -1;
 	int pressedIndex = -1;
 	int focusedIndex = -1;
 
+	/// Space between layout and its content at top.
 	int paddingTop = 0;
+	/// Space between layout and its content at left.
 	int paddingLeft = 0;
+	/// Space between layout and its content at right.
 	int paddingRight = 0;
+	/// Space between layout and its content at bottom.
 	int paddingBottom = 0;
 
 	/** Vertical, horizontal or other orientation of the layout
@@ -3267,32 +3376,37 @@ struct Layout: View {
 		return result;
 	}
 
+	/// Returns the pressed view in the current layout
 	static View getPressed(const Layout this) {
 		if (this.pressedIndex < 0) {
 			return null;
 		}
-		View selected = this.items[this.pressedIndex].view;
-		if (Layout layout = selected.as(Layout)) {
-			View view = getPressed(layout);
-			if (view != null) {
-				return view;
+		View view = this.items[this.pressedIndex].view;
+		if (Layout layout = view.as(Layout)) {
+			View child = getPressed(layout);
+			if (child != null) {
+				return child;
 			}
 		}
-		return selected;
+		return view;
 	}
+
+	/// Returns the focused view in the current layout
 	static View getFocused(const Layout this) {
 		if (this.focusedIndex < 0) {
 			return null;
 		}
-		View selected = this.items[this.focusedIndex].view;
-		if (Layout layout = selected.as(Layout)) {
-			View view = getFocused(layout);
-			if (view != null) {
-				return view;
+		View view = this.items[this.focusedIndex].view;
+		if (Layout layout = view.as(Layout)) {
+			View child = getFocused(layout);
+			if (child != null) {
+				return child;
 			}
 		}
-		return selected;
+		return view;
 	}
+
+	/// Sets the focused view in the current layout
 	static bool setFocused(Layout this, View focus) {
 		if (focus == null) {
 			this.clearState(Style.focused);
@@ -3332,7 +3446,8 @@ struct Layout: View {
 		return this;
 	}
 
-	static Layout addItems(Layout this, int align, View views...) {
+	/// Append the given `views` to `this` layout with the given `alignment`
+	static Layout addItems(Layout this, int alignment, View views...) {
 		static View separator(Layout this) {
 			static void onDraw(View this, Image offs, Rect rect) {}
 			if (this.separator != null) {
@@ -3360,7 +3475,7 @@ struct Layout: View {
 		for (int i = 0; i < views.length; i += 1) {
 			Item item& = this.items[this.itemCount + i];
 			item.view = views[i];
-			item.align = align;
+			item.align = alignment;
 			if (item.view == null) {
 				item.view = separator(this);
 			}
@@ -3369,6 +3484,24 @@ struct Layout: View {
 		return this;
 	}
 
+	///@public
+	static int size(Layout this) {
+		return this.itemCount;
+	}
+
+	///@public
+	static View getView(Layout this, int idx) {
+		assert(idx >= 0 && idx < this.itemCount);
+		return this.items[idx].view;
+	}
+
+	///@public
+	static void setAlignment(Layout this, int idx, int alignment) {
+		assert(idx >= 0 && idx < this.itemCount);
+		this.items[idx].align = alignment;
+	}
+
+	/// Set the padding of `this` layout to the given values
 	static Layout padding(Layout this, int top, int left, int right, int bottom) {
 		this.paddingTop = top;
 		this.paddingLeft = left;
@@ -3588,60 +3721,57 @@ struct Layout: View {
 
 	// TODO: make layout part of the measure step: to calculate the correct width and height,
 	//       elements inside the layout must be placed to their position
-	void onLayout(Layout this, Rect rect&);
-	static void addPadding(const Layout this, Rect rect&, int multiplier) {
-		rect.x0 -= multiplier * this.paddingLeft;
-		rect.y0 -= multiplier * this.paddingTop;
-		rect.x1 += multiplier * this.paddingRight;
-		rect.y1 += multiplier * this.paddingBottom;
-	}
-	static void verticalLayout(Layout this, Rect measured&, int cols) {
-		int rowSpacing = measured.width() / cols;
-		int colSpacing = 0;
-		int grow = 0;
+	void onLayout(Layout this, Rect measured&) {
+		static void verticalLayout(Layout this, Rect measured&, int cols) {
+			int rowSpacing = measured.width() / cols;
+			int colSpacing = 0;
+			int grow = 0;
 
-		if (true) {
-			int maxSize = 0;
-			int sumSize = 0;
-			int rows = 0;
-			int n = cols;
-			for (int i = 0; i < this.itemCount; i += 1) {
-				Rect rect& = this.items[i].rect;
-				if (!rect.empty()) {
-					if (n >= cols) {
-						sumSize += maxSize;
-						maxSize = 0;
-						rows += 1;
-						n = 0;
+			if (true) {
+				int maxSize = 0;
+				int sumSize = 0;
+				int rows = 0;
+				int n = cols;
+				for (int i = 0; i < this.itemCount; i += 1) {
+					Rect rect& = this.items[i].rect;
+					if (!rect.empty()) {
+						if (n >= cols) {
+							sumSize += maxSize;
+							maxSize = 0;
+							rows += 1;
+							n = 0;
+						}
+						if (maxSize < rect.height()) {
+							maxSize = rect.height();
+						}
+						if (colSpacing < maxSize) {
+							colSpacing = maxSize;
+						}
+						n += 1;
 					}
-					if (maxSize < rect.height()) {
-						maxSize = rect.height();
-					}
-					if (colSpacing < maxSize) {
-						colSpacing = maxSize;
-					}
-					n += 1;
+				}
+				sumSize += maxSize;
+				if (rows > 0 && measured.height() > sumSize) {
+					grow = (measured.height() - sumSize) / rows;
 				}
 			}
-			sumSize += maxSize;
-			if (rows > 0 && measured.height() > sumSize) {
-				grow = (measured.height() - sumSize) / rows;
-			}
-		}
 
-		Rect r = {
-			x0: measured.x0;
-			y0: measured.y0;
-			x1: measured.x0 + (this.width > 0 ? this.width : measured.width());
-			y1: measured.y0 + (this.height > 0 ? this.height : measured.height());
-		};
+			Rect r = {
+				x0: measured.x0;
+				y0: measured.y0;
+				x1: measured.x0 + (this.width > 0 ? this.width : measured.width());
+				y1: measured.y0 + (this.height > 0 ? this.height : measured.height());
+			};
 
-		int n = cols;
-		r.translateY(-colSpacing - grow);
-		for (int i = 0; i < this.itemCount; i += 1) {
-			Item item& = this.items[i];
-			Rect rect& = item.rect;
-			if (!rect.empty()) {
+			int n = cols;
+			r.translateY(-colSpacing - grow);
+			for (int i = 0; i < this.itemCount; i += 1) {
+				Item item& = this.items[i];
+				Rect rect& = item.rect;
+				if (rect.empty()) {
+					continue;
+				}
+
 				if (n >= cols) {
 					r.positionX(measured.x0);
 					r.translateY(colSpacing + grow);
@@ -3677,54 +3807,56 @@ struct Layout: View {
 				n += 1;
 			}
 		}
-	}
-	static void horizontalLayout(Layout this, Rect measured&, int rows) {
-		int colSpacing = measured.height() / rows;
-		int rowSpacing = 0;
-		int grow = 0;
+		static void horizontalLayout(Layout this, Rect measured&, int rows) {
+			int colSpacing = measured.height() / rows;
+			int rowSpacing = 0;
+			int grow = 0;
 
-		if (true) {
-			int maxSize = 0;
-			int sumSize = 0;
-			int cols = 0;
-			int n = rows;
-			for (int i = 0; i < this.itemCount; i += 1) {
-				Rect rect& = this.items[i].rect;
-				if (!rect.empty()) {
-					if (n >= rows) {
-						sumSize += maxSize;
-						maxSize = 0;
-						cols += 1;
-						n = 0;
+			if (true) {
+				int maxSize = 0;
+				int sumSize = 0;
+				int cols = 0;
+				int n = rows;
+				for (int i = 0; i < this.itemCount; i += 1) {
+					Rect rect& = this.items[i].rect;
+					if (!rect.empty()) {
+						if (n >= rows) {
+							sumSize += maxSize;
+							maxSize = 0;
+							cols += 1;
+							n = 0;
+						}
+						if (maxSize < rect.width()) {
+							maxSize = rect.width();
+						}
+						if (rowSpacing < rect.width()) {
+							rowSpacing = rect.width();
+						}
+						n += 1;
 					}
-					if (maxSize < rect.width()) {
-						maxSize = rect.width();
-					}
-					if (rowSpacing < rect.width()) {
-						rowSpacing = rect.width();
-					}
-					n += 1;
+				}
+				sumSize += maxSize;
+				if (cols > 0 && measured.width() > sumSize) {
+					grow = (measured.width() - sumSize) / cols;
 				}
 			}
-			sumSize += maxSize;
-			if (cols > 0 && measured.width() > sumSize) {
-				grow = (measured.width() - sumSize) / cols;
-			}
-		}
 
-		Rect r = {
-			x0: measured.x0;
-			y0: measured.y0;
-			x1: measured.x0 + (this.width > 0 ? this.width : measured.width());
-			y1: measured.y0 + (this.height > 0 ? this.height : measured.height());
-		};
+			Rect r = {
+				x0: measured.x0;
+				y0: measured.y0;
+				x1: measured.x0 + (this.width > 0 ? this.width : measured.width());
+				y1: measured.y0 + (this.height > 0 ? this.height : measured.height());
+			};
 
-		int n = rows;
-		r.translateX(-rowSpacing - grow);
-		for (int i = 0; i < this.itemCount; i += 1) {
-			Item item& = this.items[i];
-			Rect rect& = item.rect;
-			if (!rect.empty()) {
+			int n = rows;
+			r.translateX(-rowSpacing - grow);
+			for (int i = 0; i < this.itemCount; i += 1) {
+				Item item& = this.items[i];
+				Rect rect& = item.rect;
+				if (rect.empty()) {
+					continue;
+				}
+
 				if (n >= rows) {
 					r.positionY(measured.y0);
 					r.translateX(rowSpacing + grow);
@@ -3760,8 +3892,13 @@ struct Layout: View {
 				n += 1;
 			}
 		}
-	}
-	void onLayout(Layout this, Rect measured&) {
+		static void addPadding(const Layout this, Rect rect&, int multiplier) {
+			rect.x0 -= multiplier * this.paddingLeft;
+			rect.y0 -= multiplier * this.paddingTop;
+			rect.x1 += multiplier * this.paddingRight;
+			rect.y1 += multiplier * this.paddingBottom;
+		}
+
 		this.addPadding(&measured, -1);
 		if (this.orientation > 0) {
 			/* Multi column vertical layout, ex 3 cols:
@@ -3797,12 +3934,14 @@ struct Layout: View {
 		for (int i = 0; i < this.itemCount; i += 1) {
 			const Item item& = this.items[i];
 			const Rect rect& = item.rect;
-			if (!rect.empty()) {
-				const View view = item.view;
-				Style.align(measured, &rect, item.align);
-				if (Layout layout = view.as(Layout)) {
-					layout.onLayout(layout, &rect);
-				}
+			if (rect.empty()) {
+				continue;
+			}
+
+			const View view = item.view;
+			Style.align(measured, &rect, item.align);
+			if (Layout layout = view.as(Layout)) {
+				layout.onLayout(layout, &rect);
 			}
 		}
 		this.addPadding(&measured, 1);
@@ -3812,41 +3951,50 @@ struct Layout: View {
 		for (int i = 0; i < this.itemCount; i += 1) {
 			const Item item& = this.items[i];
 			const Rect rect& = item.rect;
-			if (!rect.empty()) {
-				const View view = item.view;
-				int state = 0;
-				if (view.as(Layout) == null) {
-					if (i == this.hoveredIndex) {
-						state |= Style.hovered;
-					}
-					if (i == this.pressedIndex) {
-						state |= Style.pressed;
-					}
-					if (i == this.focusedIndex) {
-						state |= Style.focused;
-					}
-				}
-				view.onDraw(offs, rect, state);
+			if (rect.empty()) {
+				continue;
 			}
+
+			const View view = item.view;
+			int state = 0;
+			if (view.as(Layout) == null) {
+				if (i == this.hoveredIndex) {
+					state |= Style.hovered;
+				}
+				if (i == this.pressedIndex) {
+					state |= Style.pressed;
+				}
+				if (i == this.focusedIndex) {
+					state |= Style.focused;
+				}
+			}
+			view.onDraw(offs, rect, state);
 		}
 	}
 
-	static Layout Custom(int rowsCols, int align, View items...) {
+	/// Create a custom Layout containing the given `items` all of them aligned as `alignment`
+	static Layout Custom(int rowsCols, int alignment, View items...) {
 		Layout layout = {
 			orientation: rowsCols;
 		};
 		if (items.length > 0) {
-			layout.addItems(align, ...items);
+			layout.addItems(alignment, ...items);
 		}
 		return layout;
 	}
+
+	/// Create a Row-layout containing the given `items` arranged vertically in a single row
 	static Layout Row(View items...) {
 		return Custom(-1, Style.fill, ...items);
 	}
+
+	/// Create a Column-layout containing the given `items` arranged horizontally in a single column
 	static Layout Column(View items...) {
 		return Custom(1, Style.fill, ...items);
 	}
-	static Layout Frame(View items...) {
+
+	/// Create a Stack-layout containing the given `items` stacked on top of each other
+	static Layout Stack(View items...) {
 		return Custom(0, Style.fill, ...items);
 	}
 }
@@ -3919,40 +4067,39 @@ struct Widget: Layout {
 		return false;
 	}
 
+	/// Append the given `views` to `this` widget with the given `alignment`
 	static Widget addItems(Widget this, int align, View views...) {
 		Layout.addItems(this, align, ...views);
 		return this;
 	}
 
+	/// Append the given `views` to `this` widget
 	static Widget addItems(Widget this, View views...) {
 		Layout.addItems(this, Style.fill, ...views);
 		return this;
 	}
 
-	static Widget theme(Widget this, argb background, argb accent) {
-		this.style.setColor(background, accent);
-		return this;
-	}
-
-	static Widget theme(Widget this, argb background) {
-		return this.theme(background, Style.accent);
-	}
-
+	/// Set the initial focused wie in the widget
 	static Widget focus(Widget this, View value) {
 		this.focus = value;
 		return this;
 	}
 
-	static Widget padding(Widget this, int padding) {
-		Layout.padding(this, padding, padding, padding, padding);
+	/// Set the padding of `this` widget to the given values
+	static Layout padding(Layout this, int top, int left, int right, int bottom) {
+		Layout.padding(this, top, left, right, bottom);
 		return this;
 	}
+
+	/// Set the padding of `this` widget to the given values
 	static Layout padding(Widget this, int vertical, int horizontal) {
 		Layout.padding(this, vertical, horizontal, horizontal, vertical);
 		return this;
 	}
-	static Layout padding(Layout this, int top, int left, int right, int bottom) {
-		Layout.padding(this, top, left, right, bottom);
+
+	/// Set the padding of `this` widget to the given value
+	static Widget padding(Widget this, int padding) {
+		Layout.padding(this, padding, padding, padding, padding);
 		return this;
 	}
 
@@ -4001,6 +4148,7 @@ struct Widget: Layout {
 	}
 }
 
+/// Return the root widget of the given `view`
 Widget getWidget(View view) {
 	for (View v = view; v != null; v = v.parent) {
 		if (Widget w = v.as(Widget)) {
@@ -4012,14 +4160,7 @@ Widget getWidget(View view) {
 	return null;
 }
 
-void invalidate(View view, bool layout) {
-	Widget widget = getWidget(view);
-	if (layout) {
-		widget.measure = true;
-	}
-	widget.redraw = true;
-}
-inline invalidate(View view) = invalidate(view, true);
+/// Set the given `view` focused
 void focus(View view) {
 	static void clearFocus(Layout layout) {
 		for (int i = 0; i < layout.itemCount; i += 1) {
@@ -4059,78 +4200,113 @@ void focus(View view) {
 	widget.measure = true;
 }
 
+/// Invalidate the view, so the next frame it will be redrawn, and measured in case `layout` is set to true
+void invalidate(View view, bool layout) {
+	Widget widget = getWidget(view);
+	if (layout) {
+		widget.measure = true;
+	}
+	widget.redraw = true;
+}
+
+/// Invalidate the view, so the next frame it will be measured and redrawn
+inline invalidate(View view) = invalidate(view, true);
+
+/// Returns weather the given `view` is in focused state or not.
 bool isFocused(View view) {
 	Widget widget = getWidget(view);
 	return view == widget.getFocused();
 }
+/// Returns weather the given `view` is in pressed state or not.
 bool isPressed(View view) {
 	Widget widget = getWidget(view);
 	return view == widget.getPressed();
 }
+/// Returns weather the given `view` needs to be measured or not.
 bool isDirty(View view) {
 	Widget widget = getWidget(view);
 	return widget.measure;
 }
-bool empty(const Rect roi&) {
+/// Checks whether the given `rectangle` is empty or not.
+bool empty(const Rect rectangle&) {
 // fixme: inline empty(const Rect roi&) = roi.x0 >= roi.x1 || roi.y0 >= roi.y1;
-	return roi.x0 >= roi.x1 || roi.y0 >= roi.y1;
+	return rectangle.x0 >= rectangle.x1 || rectangle.y0 >= rectangle.y1;
 }
 
-inline width(const Rect roi&) = roi.x1 - roi.x0;
-void width(Rect rect&, int width) {
-	rect.x1 = rect.x0 + width;
+/// Checks whether the given `rectangle` contains the point (`x`, `y`).
+bool contains(const Rect rect&, int x, int y) {
+	return x >= rect.x0 && x < rect.x1 && y >= rect.y0 && y < rect.y1;
 }
 
-inline height(const Rect roi&) = roi.y1 - roi.y0;
-void height(Rect rect&, int height) {
-	rect.y1 = rect.y0 + height;
+/// Computes the width of the given `rectangle`.
+inline width(const Rect rectangle&) = rectangle.x1 - rectangle.x0;
+/// Sets the width of the given `rectangle`.
+void width(Rect rectangle&, int width) {
+	rectangle.x1 = rectangle.x0 + width;
 }
 
-void setSize(Rect rect&, int width, int height) {
-	rect.x1 = rect.x0 + width;
-	rect.y1 = rect.y0 + height;
+/// Computes the height of the given `rectangle`.
+inline height(const Rect rectangle&) = rectangle.y1 - rectangle.y0;
+/// Sets the height of the given `rectangle`.
+void height(Rect rectangle&, int height) {
+	rectangle.y1 = rectangle.y0 + height;
 }
 
-void positionX(Rect rect&, int x) {
-	rect.x1 = x + rect.x1 - rect.x0;
-	rect.x0 = x;
-}
-void positionY(Rect rect&, int y) {
-	rect.y1 = y + rect.y1 - rect.y0;
-	rect.y0 = y;
+/// Sets the width and height of the given `rectangle`.
+void setSize(Rect rectangle&, int width, int height) {
+	rectangle.x1 = rectangle.x0 + width;
+	rectangle.y1 = rectangle.y0 + height;
 }
 
-void position(Rect rect&, int x, int y) {
-	rect.positionX(x);
-	rect.positionY(y);
+/// Sets the x position of the given `rectangle`.
+void positionX(Rect rectangle&, int x) {
+	rectangle.x1 = x + rectangle.x1 - rectangle.x0;
+	rectangle.x0 = x;
+}
+/// Sets the y position of the given `rectangle`.
+void positionY(Rect rectangle&, int y) {
+	rectangle.y1 = y + rectangle.y1 - rectangle.y0;
+	rectangle.y0 = y;
 }
 
+/// Sets the x and y position of the given `rectangle`.
+void position(Rect rectangle&, int x, int y) {
+	rectangle.positionX(x);
+	rectangle.positionY(y);
+}
+
+///@public
 void adjust(Rect rect&, int dx0, int dy0, int dx1, int dy1) {
 	rect.x0 += dx0;
 	rect.y0 += dy0;
 	rect.x1 += dx1;
 	rect.y1 += dy1;
 }
-inline translate(Rect rect&, int dx, int dy) = rect.adjust(dx, dy, dx, dy);
-void translateX(Rect rect&, int dx) {
-	rect.x0 += dx;
-	rect.x1 += dx;
-}
-void translateY(Rect rect&, int dy) {
-	rect.y0 += dy;
-	rect.y1 += dy;
+
+///@public
+void padded(Rect rect&, int padding) {
+	rect.x0 -= padding;
+	rect.y0 -= padding;
+	rect.x1 += padding;
+	rect.y1 += padding;
 }
 
-bool contains(const Rect rect&, int x, int y) {
-	return x >= rect.x0 && x < rect.x1 && y >= rect.y0 && y < rect.y1;
+/// Moves the given `rectangle` by `dx` and `dy`.
+inline translate(Rect rectangle&, int dx, int dy) = rectangle.adjust(dx, dy, dx, dy);
+/// Moves the given `rectangle` horizontally by `dx`.
+void translateX(Rect rectangle&, int dx) {
+	rectangle.x0 += dx;
+	rectangle.x1 += dx;
 }
+/// Moves the given `rectangle` vertically by `dy`.
+void translateY(Rect rectangle&, int dy) {
+	rectangle.y0 += dy;
+	rectangle.y1 += dy;
+}
+///@public
 static struct Window {
-/// Show the surface in a window
-void show(Image surf) {
-	Window.show(surf, null, null);
-}
 
-/// Show the surface in a window
+/// Show the given `image` in a window and delegate the events to the `onEvent` callback
 void show(Image image, int onEvent(int action, int button, int ex, int ey)) {
 	if (onEvent == null) {
 		return Window.show(image, null, null);
@@ -4141,7 +4317,7 @@ void show(Image image, int onEvent(int action, int button, int ex, int ey)) {
 	Window.show(image, onEvent, delegate);
 }
 
-/// Show the surfaces in a window clicking on the window toggles the shown surface
+/// Show the images in a window clicking on the window will select one of them
 void show(int width, int height, Image image0, Image image1, Image image2) {
 	struct Data {
 		Image offs;
@@ -4153,7 +4329,7 @@ void show(int width, int height, Image image0, Image image1, Image image2) {
 	static int onEvent(const Data data&, int action, int button, int ex, int ey) {
 		if (action == Window.KEY_RELEASE && button == Window.KEY_CODE_ESC) {
 			// exit when releasing escape key
-			return -1;
+			return Window.quit();
 		}
 		if (action == Window.MOUSE_PRESS || action == Window.MOUSE_RELEASE) {
 			Image show = data.image0;
@@ -4166,7 +4342,11 @@ void show(int width, int height, Image image0, Image image1, Image image2) {
 			else {
 				show = data.image2;
 			}
-			data.offs.transform(null, show, null, 1, null);
+			if (data.offs.width() != show.width() || data.offs.height() != show.height()) {
+				data.offs.transform(null, show, null, 1, null);
+			} else {
+				data.offs.copy(0, 0, show, null);
+			}
 			return 0;
 		}
 		return 0;
@@ -4184,14 +4364,21 @@ void show(int width, int height, Image image0, Image image1, Image image2) {
 	offs.destroy();
 }
 
+/// Show the images in a window clicking on the window will select one of them
 void show(Image image0, Image image1, Image image2) {
 	int width = image0.width();
 	int height = image0.height();
 	return show(width, height, image0, image1, image1);
 }
 
+/// Show the images in a window clicking on the window will select one of them
 void show(Image image0, Image image1) {
 	return show(image0, image1, image1);
+}
+
+/// Show the image in a window
+void show(Image image) {
+	Window.show(image, image, image);
 }
 
 /// Show or animate the the procedural image generated by the `eval` function
@@ -4210,11 +4397,10 @@ void show(int width, int height, int animationResolution, vec4f eval(vec4f in)) 
 	static int onEvent(Data data&, int action, int button, int ex, int ey) {
 		if (action == Window.KEY_RELEASE && button == Window.KEY_CODE_ESC) {
 			// exit when releasing escape key
-			return -1;
+			return Window.quit();
 		}
 		if (action == Window.WINDOW_CLOSE) {
-			trace("closing ...");
-			return 0;
+			return Window.quit();
 		}
 		if (action == Window.KEY_RELEASE) {
 			if (button == ' ') {
@@ -4272,13 +4458,13 @@ void show(int width, int height, int animationResolution, vec4f eval(vec4f in)) 
 	data.offs.destroy();
 }
 
+/// Show the the procedural image generated by the `eval` function
 void show(int width, int height, vec4f eval(vec4f in)) {
 	return show(width, height, 0, eval);
 }
 
 /// Show the mesh in a window
 void show(int w, int h, float32 fovy, Mesh mesh) {
-
 	struct Data {
 		int32 fpsCount = 0;	// frames drawn
 		int32 fpsShow = 0;	// frames drawn
@@ -4317,7 +4503,7 @@ void show(int w, int h, float32 fovy, Mesh mesh) {
 		}
 		if (action == Window.KEY_RELEASE && button == Window.KEY_CODE_ESC) {
 			// exit when releasing escape key
-			return -1;
+			return Window.quit();
 		}
 		if (action == Window.KEY_PRESS) {
 			if (button == Window.KEY_CODE_ENTER) {
@@ -4487,6 +4673,7 @@ void show(int w, int h, float32 fovy, Mesh mesh) {
 }
 // standard library extension
 
+// Known boolean values
 enum: bool {
 	true: 0 == 0;
 	false: 0 != 0;
@@ -4596,7 +4783,7 @@ inline assert(bool condition, const char message[*]) = void(condition ? void(0) 
 /// report message and abort the execution if the assertion condition fails (is false)
 inline assert(bool condition) = void(condition ? void(0) : abort("assertion failed!"));
 
-///@public
+/// Record used for debugging purposes, containing expected, returned and an array of extra values
 struct NotEquals {
 	/// Value of the expected result
 	const variant expected;
@@ -4607,6 +4794,20 @@ struct NotEquals {
 	/// Extra argument to identify what happened
 	const variant extras[];
 }
+
+/// Create a not equals record for inspection from expected and returned
+NotEquals NotEquals(const variant expected, const variant returned) {
+	return {
+		expected: expected;
+		returned: returned;
+		extras: null;
+	};
+}
+
+/// abort execution displaying the expected and returned values
+inline abort(const char message[*], const NotEquals inspect&) = raise(raise.abort, raise.defTrace, message, inspect);
+/// report message and abort the execution if the assertion condition fails (is false)
+inline assert(bool condition, const char message[*], const NotEquals inspect&) = void(condition ? void(0) : abort(message, inspect));
 
 /// abort execution if the returned value is not equal to the expected value
 // TODO: make inline
@@ -4667,6 +4868,8 @@ static struct Bits {
 	inline asFloat32(uint32 value) = float32(emit(uint32(value)));
 	/// return the 64 bit integer as a floating point value
 	inline asFloat64(uint64 value) = float64(emit(uint64(value)));
+	/// return the two 32 bit integers merged as a floating point value
+	inline asFloat64(uint32 hi, uint32 lo) = float64(emit(uint64(uint64(hi) << 32 | lo)));
 
 	///@public
 	int32 zxt32(int32 value, int32 offs, int32 count) {
@@ -5136,11 +5339,10 @@ static struct Bits {
 
 	/// reverse all the bits
 	uint16 swapBits(uint16 x) {
-		// fixme: uint16 should implicitly cast to uint32
-		x = ((uint16(x) >> 1) & 0x5555) | ((x & 0x5555) << 1);
-		x = ((uint16(x) >> 2) & 0x3333) | ((x & 0x3333) << 2);
-		x = ((uint16(x) >> 4) & 0x0f0f) | ((x & 0x0f0f) << 4);
-		return (uint16(x) >> 8) | (x << 8);
+		x = ((x >> 1) & 0x5555) | ((x & 0x5555) << 1);
+		x = ((x >> 2) & 0x3333) | ((x & 0x3333) << 2);
+		x = ((x >> 4) & 0x0f0f) | ((x & 0x0f0f) << 4);
+		return (x >> 8) | (x << 8);
 	}
 
 	/// reverse all the bits
@@ -5148,13 +5350,28 @@ static struct Bits {
 
 	/// reverse all the bits
 	uint8 swapBits(uint8 x) {
-		x = ((uint8(x) >> 1) & 0x55) | ((x & 0x55) << 1);
-		x = ((uint8(x) >> 2) & 0x33) | ((x & 0x33) << 2);
-		return (uint8(x) >> 4) | (x << 4);
+		x = ((x >> 1) & 0x55) | ((x & 0x55) << 1);
+		x = ((x >> 2) & 0x33) | ((x & 0x33) << 2);
+		return (x >> 4) | (x << 4);
 	}
 
 	/// reverse all the bits
 	inline swapBits(int8 x) = swapBits(uint8(x));
+
+	/// branch-less clamp
+	// adapted from: androidx.constraintlayout.widget.ConstraintAttribute#clamp
+	int32 clamp(int32 value, int32 max) {
+		value &= ~(value >> 31);
+		value -= max;
+		value &= (value >> 31);
+		value += max;
+		return value;
+	}
+
+	/// branch-less clamp
+	int32 clamp(int32 value, int32 min, int32 max) {
+		return clamp(value - min, max - min) + min;
+	}
 }
 /// Complex number
 struct Complex {
@@ -5164,83 +5381,51 @@ struct Complex {
 
 	/// The imaginary component of a complex number.
 	const float64 im = 0;
-
-	/* TODO: implement enumerations
-	enum: Complex {
-		zero: { re: 0 };	// 0 + 0i
-		unit: { re: 1 };	// 1 + 0i
-	}*/
 }
 
-/* TODO: implement inline initializer
-// constructing a complex number
-inline Complex(float64 re) = { re: re };
-inline Complex(float64 re, float64 im) = { re: re, im: im };
-*/
-
-///@public
-Complex Complex(float64 re) {
+/// Create a Complex number from the given `value`
+Complex Complex(float64 value) {
 	return {
-		re: re;
+		re: value;
 	};
 }
 
-///@public
-Complex Complex(float64 re, float64 im) {
+/// Create a Complex number from the given `real` and `imaginary` values
+Complex Complex(float64 real, float64 imaginary) {
 	return {
-		re: re;
-		im: im;
+		re: real;
+		im: imaginary;
 	};
 }
 
-/* TODO: implement operator overloading
-inline -(Complex a) = Complex(-a.re, -a.im);
-
-inline +(Complex a, Complex b) = Complex(a.re + b.re, a.im + b.im);
-inline +(Complex a, float64 b) = Complex(a.re + b, a.im);
-inline +(float64 a, Complex b) = Complex(a + b.re, b.im);
-
-inline -(Complex a, Complex b) = Complex(a.re - b.re, a.im - b.im);
-inline -(Complex a, float64 b) = Complex(a.re - b, a.im);
-inline -(float64 a, Complex b) = Complex(a - b.re, b.im);
-
-inline *(Complex a, Complex b) = Complex(a.re * b.re - a.im * b.im, a.re * b.im + a.im * b.re);
-inline *(Complex a, float64 b) = Complex(a.re * b, a.im * b);
-inline *(float64 a, Complex b) = Complex(a * b.re, a * b.im);
-
-inline /(Complex a, Complex b) = div(a, b);
-inline /(Complex a, float64 b) = div(a, Complex(b));
-inline /(float64 a, Complex b) = div(Complex(a), b);
-*/
-
-///@public: Complex(-a.re, -a.im);
+/// Unary negation of a complex number: -a := Complex(-a.re, -a.im);
 inline neg(Complex a) = Complex(emit(struct(a), neg.p2d));
 
-///@public: Complex(a.re + b.re, a.im + b.im);
+/// Add two complex numbers: a + b := Complex(a.re + b.re, a.im + b.im);
 inline add(Complex a, Complex b) = Complex(emit(struct(a), struct(b), add.p2d));
-///@public
+/// Add a complex number `a` to a real number `b`
 inline add(Complex a, float64 b) = Complex(a.re + b, a.im);
-///@public
+/// Add a complex number `b` to a real number `a`
 inline add(float64 a, Complex b) = Complex(a + b.re, b.im);
 
-///@public: Complex(a.re - b.re, a.im - b.im);
+/// Subtract two complex numbers: a - b := Complex(a.re - b.re, a.im - b.im);
 inline sub(Complex a, Complex b) = Complex(emit(struct(a), struct(b), sub.p2d));
-///@public
+/// Subtract the real number `b` from the complex number `a`
 inline sub(Complex a, float64 b) = Complex(a.re - b, a.im);
-///@public
+/// Subtract the complex number `b` from the real number `a`
 inline sub(float64 a, Complex b) = Complex(a - b.re, b.im);
 
-///@public: Complex(a.re * b.re - a.im * b.im, a.re * b.im + a.im * b.re);
+/// Multiply two complex numbers: a * b := Complex(a.re * b.re - a.im * b.im, a.re * b.im + a.im * b.re);
 inline mul(Complex a, Complex b) = Complex(emit(
 	struct(a), struct(b), swz.x2, mul.p2d, add.f64,
 	struct(a), struct(b), mul.p2d, swz.x2, sub.f64
 ));
-///@public
+/// Multiply a complex number `a` with a real number `b`
 inline mul(Complex a, float64 b) = Complex(a.re * b, a.im * b);
-///@public
+/// Multiply a complex number `b` with a real number `a`
 inline mul(float64 a, Complex b) = Complex(a * b.re, a * b.im);
 
-///@public
+/// Divide two complex numbers
 Complex div(Complex a, Complex b) {
 	// Adapted from Numerical Recipes in C - The Art of Scientific Computing
 	// ISBN 0-521-43108-5
@@ -5260,18 +5445,17 @@ Complex div(Complex a, Complex b) {
 		im: (a.im * r - a.re) / den;
 	};
 }
-
-///@public
+/// Divide the complex number `a` by the real number `b`
 inline div(Complex a, float64 b) = div(a, Complex(b));
-///@public
+/// Divide the real number `a` by the complex number `b`
 inline div(float64 a, Complex b) = div(Complex(a), b);
 
-///@public
+/// Compute the absolute value of the complex number `a`
 inline abs(Complex a) = Math.sqrt(a.re * a.re + a.im * a.im);
-///@public
+/// Compute the argument of the complex number `a`
 inline arg(Complex a) = Math.atan2(a.re, a.im);
 
-/// Reciprocal of a complex number (1 / a)
+/// Compute the reciprocal of a complex number (1 / a)
 Complex inv(Complex a) {
 	float64 d = a.re * a.re + a.im * a.im;
 	return {
@@ -5280,16 +5464,16 @@ Complex inv(Complex a) {
 	};
 }
 
-///@public
+/// Compute the conjugate of the complex number `a`
 inline conj(Complex a) = Complex(a.re, -a.im);
 
-///@public
+/// Compute the exponential of a complex number: $ e^a $.
 inline exp(Complex a) = Complex(Math.exp(a.re) * Math.cos(a.im), Math.exp(a.re) * Math.sin(a.im));
 
-///@public
+/// Compute the natural logarithm of the complex number `a`.
 inline log(Complex a) = Complex(Math.log(abs(a)), arg(a));
 
-///@public
+/// Compute the complex number `a` raised to the power of `b`: $ a^b $.
 Complex pow(Complex a, Complex b) {
 	float64 r = abs(a);
 	float64 t = arg(a);
@@ -5300,15 +5484,75 @@ Complex pow(Complex a, Complex b) {
 		im: v * Math.sin(u);
 	};
 }
-///@public
+/// Compute the complex number `a` raised to the power of `b`: $ a^b $.
 inline pow(Complex a, float64 b) = pow(a, Complex(b));
 
-///@public
+/// Compute the sine of the complex number `a`.
 inline sin(Complex a) = Complex(Math.sin(a.re) * Math.cosh(a.im), +Math.cos(a.re) * Math.sinh(a.im));
-///@public
+/// Compute the cosine of the complex number `a`.
 inline cos(Complex a) = Complex(Math.cos(a.re) * Math.cosh(a.im), -Math.sin(a.re) * Math.sinh(a.im));
+/// Compute the tangent of the complex number `a`.
+inline tan(Complex a) = div(sin(a), cos(a));
+/// Compute the cotangent of the complex number `a`.
+inline cot(Complex a) = div(cos(a), sin(a));
+/// Compute the secant of the complex number `a`.
+inline sec(Complex a) = inv(cos(a));
+/// Compute the cosecant of the complex number `a`.
+inline csc(Complex a) = inv(sin(a));
 
-/* TODO: implement operator overloading
+/// Compute the hyperbolic sine of the complex number `a`.
+inline sinh(Complex a) = div(sub(exp(a), exp(neg(a))), 2);
+/// Compute the hyperbolic cosine of the complex number `a`.
+inline cosh(Complex a) = div(add(exp(a), exp(neg(a))), 2);
+/// Compute the hyperbolic tangent of the complex number `a`.
+inline tanh(Complex a) = div(sub(exp(mul(2, a)), 1), add(exp(mul(2, a)), 1));
+/// Compute the hyperbolic cotangent of the complex number `a`.
+inline coth(Complex a) = div(add(exp(mul(2, a)), 1), sub(exp(mul(2, a)), 1));
+/// Compute the hyperbolic secant of the complex number `a`.
+inline sech(Complex a) = inv(cosh(a));
+/// Compute the hyperbolic cosecant of the complex number `a`.
+inline csch(Complex a) = inv(sinh(a));
+
+/// Convert the from polar(r,θ) to cartesian(x,y) coordinates
+inline toCartesian(Complex x) = Complex(x.re * Math.cos(x.im), x.re * Math.sin(x.im));
+/// Convert the from cartesian(x,y) to polar(r,θ) coordinates
+inline toPolar(Complex x) = Complex(abs(x), arg(x));
+
+
+/* TODO: implement enumerations, then:
+enum: Complex {
+	zero: { re: 0 };	// 0 + 0i
+	unit: { re: 1 };	// 1 + 0i
+}
+
+
+// TODO: implement inline initializer, then:
+// constructing a complex number
+inline Complex(float64 re) = { re: re };
+inline Complex(float64 re, float64 im) = { re: re, im: im };
+
+
+// TODO: implement operator overloading, then:
+inline -(Complex a) = Complex(-a.re, -a.im);
+
+inline +(Complex a, Complex b) = Complex(a.re + b.re, a.im + b.im);
+inline +(Complex a, float64 b) = Complex(a.re + b, a.im);
+inline +(float64 a, Complex b) = Complex(a + b.re, b.im);
+
+inline -(Complex a, Complex b) = Complex(a.re - b.re, a.im - b.im);
+inline -(Complex a, float64 b) = Complex(a.re - b, a.im);
+inline -(float64 a, Complex b) = Complex(a - b.re, b.im);
+
+inline *(Complex a, Complex b) = Complex(a.re * b.re - a.im * b.im, a.re * b.im + a.im * b.re);
+inline *(Complex a, float64 b) = Complex(a.re * b, a.im * b);
+inline *(float64 a, Complex b) = Complex(a * b.re, a * b.im);
+
+inline /(Complex a, Complex b) = div(a, b);
+inline /(Complex a, float64 b) = div(a, Complex(b));
+inline /(float64 a, Complex b) = div(Complex(a), b);
+
+
+// TODO: implement operator overloading, then:
 inline tan(Complex a) = sin(a) / cos(a);
 inline cot(Complex a) = cos(a) / sin(a);
 
@@ -5317,37 +5561,9 @@ inline cosh(Complex a) = (exp(a) + exp(-a)) / 2;
 inline tanh(Complex a) = (exp(2 * a) - 1) / (exp(2 * a) + 1);
 inline coth(Complex a) = (exp(2 * a) + 1) / (exp(2 * a) - 1);
 */
-
-///@public
-inline tan(Complex a) = div(sin(a), cos(a));
-///@public
-inline cot(Complex a) = div(cos(a), sin(a));
-
-///@public
-inline sinh(Complex a) = div(sub(exp(a), exp(neg(a))), 2);
-///@public
-inline cosh(Complex a) = div(add(exp(a), exp(neg(a))), 2);
-///@public
-inline tanh(Complex a) = div(sub(exp(mul(2, a)), 1), add(exp(mul(2, a)), 1));
-///@public
-inline coth(Complex a) = div(add(exp(mul(2, a)), 1), sub(exp(mul(2, a)), 1));
-
-///@public
-inline sec(Complex a) = inv(cos(a));
-///@public
-inline csc(Complex a) = inv(sin(a));
-///@public
-inline sech(Complex a) = inv(cosh(a));
-///@public
-inline csch(Complex a) = inv(sinh(a));
-
-///@public
-inline toCartesian(Complex x) = Complex(x.re * Math.cos(x.im), x.re * Math.sin(x.im));
-///@public
-inline toPolar(Complex x) = Complex(abs(x), arg(x));
-// TODO: enum Easing: double(double t) { ... }
 /// Easing functions maps an input of [0, 1) usually to [0, 1) with an acceleration
 // see: https://easings.net
+// todo: enum Easing: double(double t) { ... }
 static struct Easing {
 	///@public
 	float64 linear(float64 t) {
@@ -5496,23 +5712,23 @@ struct Fixed {
 
 	static Fixed as(int32 value) { return {value: value}; }
 
-	///@public
+	/// Computes the negated value of the given number.
 	static Fixed neg(Fixed a) { return {value: -a.value}; }
 
-	///@public
+	/// Adds the two fixed point numbers.
 	static Fixed add(Fixed a, Fixed b) { return {value: a.value + b.value}; }
 	static Fixed add(Fixed a, int32 b) { return {value: a.value + b}; }
 
-	///@public
+	/// Subtract one from another fixed point number.
 	static Fixed sub(Fixed a, Fixed b) { return {value: a.value - b.value}; }
 	static Fixed sub(Fixed a, int32 b) { return {value: a.value - b}; }
 
-	///@public
+	/// Multiply two fixed-point numbers.
 	static Fixed mul(Fixed a, Fixed b) { return {value: (int64(a.value) * b.value) >> precision}; }
 	static Fixed mul(Fixed a, int32 b) { return {value: a.value * b}; }
 	static Fixed mul_28(Fixed a, int32 b) { return {value: int64(a.value) * b >> 28}; }
 
-	///@public
+	/// Divide one fixed-point number with another one.
 	static Fixed div(Fixed a, Fixed b) {
 		if (b.value == 0) {
 			if (a.value == 0) {
@@ -5524,10 +5740,10 @@ struct Fixed {
 	}
 	static Fixed div(Fixed a, int32 b) { return {value: a.value / b}; }
 
-	///@public
+	/// Returns the remainder of the division of `a` by `b`.
 	static Fixed mod(Fixed a, Fixed b) { return {value: a.value % b.value}; }
 
-	///@public
+	/// Compute the reciprocal of a complex number (1 / a)
 	static Fixed inv(Fixed x) {
 		if (x.value == 0) {
 			return {value: inf};
@@ -5548,17 +5764,17 @@ struct Fixed {
 		return {value: x.value & (nan|mask)};
 	}
 
-	///@public
+	/// Computes the largest integer that is less than or equal to `x`.
 	static Fixed floor(Fixed x) {
 		return {value: x.value & ~mask};
 	}
 
-	///@public
+	/// Computes the smallest integer that is greater than or equal to `x`.
 	static Fixed ceil(Fixed x) {
 		return neg(floor(neg(x)));
 	}
 
-	///@public
+	/// Computes the nearest integer to `x`.
 	static Fixed round(Fixed x) {
 		return floor(as(x.value + half));
 	}
@@ -6185,13 +6401,13 @@ struct Fixed {
 	}
 }
 
-///@public
+/// Convert the integer `value` to fixed-point value
 inline Fixed(int32 value) = Fixed.as(value << Fixed.precision);
 
-///@public
+/// Convert the fixed point `value` to integer value
 inline int32(const Fixed value&) = value.value >> Fixed.precision;
 
-///@public
+/// Convert the floating point `value` to fixed-point value
 //inline Fixed(float64 value) = Fixed.as(value * (1 << Fixed.precision));
 Fixed Fixed(float64 value) {
 	Fixed result = Fixed.as(value * (1 << Fixed.precision));
@@ -6209,25 +6425,25 @@ Fixed Fixed(float64 value) {
 	return result;
 }
 
-///@public
+/// Convert the fixed point `value` to floating point value
 //inline float64(const Fixed value&) = value.value / float64(1 << Fixed.precision);
-float64 float64(Fixed x) {
-	if (x.value == Fixed.nan) {
+float64 float64(Fixed value) {
+	if (value.value == Fixed.nan) {
 		return Math.nan;
 	}
-	if (x.value == Fixed.inf) {
+	if (value.value == Fixed.inf) {
 		return Math.inf;
 	}
-	if (x.value == -Fixed.inf) {
+	if (value.value == -Fixed.inf) {
 		return -Math.inf;
 	}
 
-	return x.value / float64(1 << Fixed.precision);
+	return value.value / float64(1 << Fixed.precision);
 }
 /// Mathematical utility functions and constants
 static struct Math {
 
-	// constants
+	// Some useful mathematical constants
 	enum: float64 {
 		pi: 3.14159265358979323846264338327950288419716939937510582097494459;		// A000796
 		e: 2.71828182845904523536028747135266249775724709369995957496696763;		// A001113
@@ -7294,50 +7510,50 @@ struct mat4f: 0 {
 	vec4f v[4];
 
 	struct {
-		///@public
+		/// The first row as a vector
 		vec4f x;
-		///@public
+		/// The second row as a vector
 		vec4f y;
-		///@public
+		/// The third row as a vector
 		vec4f z;
-		///@public
+		/// The fourth row as a vector
 		vec4f w;
 	}
 	struct {
-		///@public
+		/// The first element of the first row
 		float32 xx;
-		///@public
+		/// The second element of the first row
 		float32 xy;
-		///@public
+		/// The third element of the first row
 		float32 xz;
-		///@public
+		/// The fourth element of the first row
 		float32 xw;
 
-		///@public
+		/// The first element of the second row
 		float32 yx;
-		///@public
+		/// The second element of the second row
 		float32 yy;
-		///@public
+		/// The third element of the second row
 		float32 yz;
-		///@public
+		/// The fourth element of the second row
 		float32 yw;
 
-		///@public
+		/// The first element of the third row
 		float32 zx;
-		///@public
+		/// The second element of the third row
 		float32 zy;
-		///@public
+		/// The third element of the third row
 		float32 zz;
-		///@public
+		/// The fourth element of the third row
 		float32 zw;
 
-		///@public
+		/// The first element of the fourth row
 		float32 wx;
-		///@public
+		/// The second element of the fourth row
 		float32 wy;
-		///@public
+		/// The third element of the fourth row
 		float32 wz;
-		///@public
+		/// The fourth element of the fourth row
 		float32 ww;
 	}
 }
@@ -7766,7 +7982,7 @@ struct Polynomial/*(typename scalar)*/: TextWriter.Writeable {
 		c_unit: 1;
 	}
 
-	///@public
+	// Formatted printing of the polynomial to the text writer
 	void write(Polynomial this, TextWriter writer) {
 		bool first = true;
 		for (int i = this.capacity - 1; i >= 0; i -= 1) {
@@ -7792,26 +8008,26 @@ struct Polynomial/*(typename scalar)*/: TextWriter.Writeable {
 			}
 
 			if (value != c_unit || i == 0) {
-				writer.write(value);
+				writer.write(value, writer.format);
 			}
 
 			if (i > 0) {
 				writer.write("x");
 				if (i > 1) {
 					writer.write("^");
-					writer.write(i);
+					writer.write(i, writer.format);
 				}
 			}
 			first = false;
 		}
 	}
 
-	///@public
+	/// Dispose the polynomial, free up used memory for coefficients
 	void destroy(Polynomial this) {
 		pointer.alloc(this.coefficients, 0);
 	}
 
-	// construct a new instance
+	// Construct a new instance
 	static Polynomial create(int degree, scalar values[]) {
 		int capacity = Math.max(0, degree) + 1;
 		assert(capacity >= values.length);
@@ -7841,7 +8057,7 @@ struct Polynomial/*(typename scalar)*/: TextWriter.Writeable {
 		return 0;
 	}
 
-	/// get the nth coefficient of the polynomial
+	/// Get the nth coefficient of the polynomial
 	static scalar get(const Polynomial this&, int index) {
 		assert(index >= 0, "negative index", index);
 		if (index >= this.capacity) {
@@ -7850,14 +8066,14 @@ struct Polynomial/*(typename scalar)*/: TextWriter.Writeable {
 		return this.coefficients[index];
 	}
 
-	/// set the nth coefficient of the polynomial
+	/// Set the nth coefficient of the polynomial
 	static scalar set(Polynomial this&, int index, scalar value) {
 		assert(index >= 0, "negative index", index);
 		assert(index < this.capacity, "invalid index");
 		return this.coefficients[index];
 	}
 
-	/// negate the polynomial
+	/// Negate the polynomial
 	static Polynomial neg(const Polynomial a&) {
 		Polynomial result = create(degree(a), null);
 		for (int i = 0; i < result.capacity; i += 1) {
@@ -7866,7 +8082,7 @@ struct Polynomial/*(typename scalar)*/: TextWriter.Writeable {
 		return result;
 	}
 
-	/// add two polynomials
+	/// Add two polynomials
 	static Polynomial add(const Polynomial a&, const Polynomial b&) {
 		Polynomial result = create(Math.max(degree(a), degree(b)), null);
 		for (int i = 0; i < result.capacity; i += 1) {
@@ -7875,7 +8091,7 @@ struct Polynomial/*(typename scalar)*/: TextWriter.Writeable {
 		return result;
 	}
 
-	/// subtract two polynomials
+	/// Subtract two polynomials
 	static Polynomial sub(const Polynomial a&, const Polynomial b&) {
 		Polynomial result = create(Math.max(degree(a), degree(b)), null);
 		for (int i = 0; i < result.capacity; i += 1) {
@@ -7884,7 +8100,7 @@ struct Polynomial/*(typename scalar)*/: TextWriter.Writeable {
 		return result;
 	}
 
-	/// multiply two polynomials
+	/// Multiply two polynomials
 	static Polynomial mul(const Polynomial a&, const Polynomial b&) {
 		int degreeA = degree(a);
 		int degreeB = degree(b);
@@ -7897,7 +8113,7 @@ struct Polynomial/*(typename scalar)*/: TextWriter.Writeable {
 		return result;
 	}
 
-	/// evaluate the polynomial using Horner's method
+	/// Evaluate the polynomial using Horner's method
 	static scalar evaluate(const Polynomial this&, scalar value) {
 		scalar result = c_zero;
 		for (int i = degree(this); i >= 0; i -= 1) {
@@ -9154,28 +9370,21 @@ struct Base64Decoder: ByteReader {
 		assert(this.bitsDecoded == 0, "unprocessed bits remaining.", this.bitsDecoded);
 	}
 }
-///@public
+/// Represents the base class of closeable objects like files, streams, etc
 struct Closeable: object {
-	// abstract
-	///@public
+
+	/// Release the resources hold by this object.
 	void close(Closeable this);
-
-	///@public
-	static void skipClose(Closeable closeable) {
-	}
-
-	///@public
-	static void safeClose(Closeable closeable) {
-		if (closeable.close != null) {
-			closeable.close(closeable);
-		}
-	}
 }
 
-/// destroy a closeable invoking the abstract close method
-inline close(Closeable instance) = Closeable.safeClose(instance);
-///@public
-inline void(Closeable instance) = Closeable.safeClose(instance);
+/// Extension method to safely call the close method
+void close(Closeable closeable) {
+	if (closeable.close == null) {
+		// close is disabled, stdout?
+		return;
+	}
+	closeable.close(closeable);
+}
 
 /// ByteReader can be used to read bytes from a stream (~= java:InputStream)
 struct ByteReader: Closeable {
@@ -9408,6 +9617,9 @@ struct TextWriter: Closeable {
 	///@public
 	const ByteWriter writer;
 
+	/// default formatter
+	const FormatFlags format;
+
 	/** This abstract method must be implemented in subclasses containing the proper implementation
 	 * the method must encode and write all the characters from the `chars` array
 	 */
@@ -9420,13 +9632,12 @@ struct TextWriter: Closeable {
 
 	// override
 	void close(TextWriter this) {
-		this.writer.safeClose();
+		this.writer.close();
 	}
 
 	/// Write an array of raw characters to the stream (no encoding)
 	static TextWriter write(TextWriter this, char value[]) {
-		ByteWriter writer = this.writer;
-		writer.write(writer, value);
+		this.writer.write(value);
 		return this;
 	}
 
@@ -9497,6 +9708,9 @@ struct TextWriter: Closeable {
 		return this.write("\n");
 	}
 
+	///@public
+	static TextWriter writeln(TextWriter this, TextWriter.Writeable value) { return this.write(value).writeln(); }
+
 	// TODO: static void write(TextWriter this, Locale locale, char value) { /*...*/ }
 	// TODO: static void write(TextWriter this, Locale locale, string value) { /*...*/ }
 	// TODO: static void write(TextWriter this, Locale locale, object value) { /*...*/ }
@@ -9532,40 +9746,7 @@ struct TextWriter: Closeable {
 		Utf8
 	*/
 }
-
-static if (true) {
-// todo: fix lookup and delete these global methods
-static const FormatFlags flagsTextWriter = {};
-///@public
-static TextWriter write(TextWriter this, int32 value) { return this.write(value, flagsTextWriter); }
-///@public
-static TextWriter write(TextWriter this, int64 value) { return this.write(value, flagsTextWriter); }
-///@public
-static TextWriter write(TextWriter this, uint32 value) { return this.write(value, flagsTextWriter); }
-///@public
-static TextWriter write(TextWriter this, uint64 value) { return this.write(value, flagsTextWriter); }
-///@public
-static TextWriter write(TextWriter this, float32 value) { return this.write(value, flagsTextWriter); }
-///@public
-static TextWriter write(TextWriter this, float64 value) { return this.write(value, flagsTextWriter); }
-///@public
-static TextWriter writeln(TextWriter this, char value[]) { return this.write(value).writeln(); }
-///@public
-static TextWriter writeln(TextWriter this, int32 value) { return this.write(value, flagsTextWriter).writeln(); }
-///@public
-static TextWriter writeln(TextWriter this, int64 value) { return this.write(value, flagsTextWriter).writeln(); }
-///@public
-static TextWriter writeln(TextWriter this, uint32 value) { return this.write(value, flagsTextWriter).writeln(); }
-///@public
-static TextWriter writeln(TextWriter this, uint64 value) { return this.write(value, flagsTextWriter).writeln(); }
-///@public
-static TextWriter writeln(TextWriter this, float32 value) { return this.write(value, flagsTextWriter).writeln(); }
-///@public
-static TextWriter writeln(TextWriter this, float64 value) { return this.write(value, flagsTextWriter).writeln(); }
-///@public
-static TextWriter writeln(TextWriter this, TextWriter.Writeable value) { return this.write(value).writeln(); }
-}
-///@public
+/// Month of year, January is 1, February is 2, ...
 enum Month: uint8 {
 	January: 1;
 	February;
@@ -9585,7 +9766,7 @@ inline Month(int index) = Month(emit(int32(index + Month.January)));
 /// FIXME: implement enum indexing
 inline indexOf(Month value) = int32(value - Month.January);
 
-///@public
+/// Day of week, Monday is 1, Tuesday is 2, ...
 enum Weekday: uint8 {
 	Monday: 1;
 	Tuesday;
@@ -9600,7 +9781,7 @@ inline Weekday(int index) = Weekday(emit(int32(index + Weekday.Monday)));
 /// FIXME: implement enum indexing
 inline indexOf(Weekday value) = int32(value - Weekday.Monday);
 
-///@public
+/// Type of the calendar
 enum Calendar: uint8 {
 	Gregorian;
 //	Buddhist;
@@ -9642,8 +9823,6 @@ struct Datetime {
 	/// Milliseconds of second: 0 ... 999
 	const uint16 millis = 0;
 
-	// Zone
-	// const bool dayLightSaving;	// day light saving's time
 	/// timezone
 	const Timezone timezone;
 
@@ -9681,7 +9860,7 @@ struct Datetime {
 		return true;
 	}
 
-	///@public
+	/// Add the amount of `years`, `months` and `days` to the datetime
 	static Datetime add(Datetime cal, int years, int months, int days) {
 		int year = cal.year + years;
 
@@ -9714,8 +9893,38 @@ struct Datetime {
 	}
 }
 
-///@public
-Datetime Datetime(Calendar calendar, Timezone timezone, Timestamp timestamp) {
+/// Convert the given Datetime `value` to a timestamp (milliseconds since 1970)
+Timestamp Timestamp(Datetime value) {
+	int year = value.year;
+	if (year < 0 || year > 9999) {
+		trace("invalid year", year);
+		return Timestamp(1D << 63, Timestamp.precision);
+	}
+
+	int month = value.month;
+	if (month < Month.January || month > Month.December) {
+		trace("invalid month", month);
+		month = Math.clamp(month, int32(Month.January), int32(Month.December));
+	}
+
+	const int DaysToMonth[*] = Datetime.isLeapYear(year) ? Datetime.DaysToMonth366 : Datetime.DaysToMonth365;
+
+	int day = value.day;
+	int daysInYear = DaysToMonth[month - 1];
+	int daysInMonth = DaysToMonth[month] - daysInYear;
+	if (day < 1 || day > daysInMonth) {
+		trace("invalid day of month", day);
+		day = Math.clamp(day, 1, daysInMonth);
+	}
+
+	int y = year - 1;
+	int64 d = y * 365 + y / 4 - y / 100 + y / 400 + daysInYear + day - 1 - Datetime.DaysTil1970;
+	int64 t = (((d * 24 + value.hour) * 60 + value.minute) * 60 + value.second) * 1000 + value.millis;
+	return Timestamp(t, Timeunit.Millis);
+}
+
+/// Convert the given `timestamp` to a datetime(year, month, day, ...) using the given `calendar` and `timezone`
+Datetime Datetime(Timestamp timestamp, Calendar calendar, Timezone timezone) {
 	assert(calendar == Calendar.Gregorian);
 	enum: int {
 		// Number of days in a non-leap year
@@ -9805,10 +10014,10 @@ Datetime Datetime(Calendar calendar, Timezone timezone, Timestamp timestamp) {
 	};
 }
 
-///@public
-inline Datetime(Timestamp time) = Datetime(Calendar.Gregorian, Timezone.utc(), time);
+/// Convert the given timestamp to a datetime
+inline Datetime(Timestamp timestamp) = Datetime(timestamp, Calendar.Gregorian, Timezone.utc());
 
-///@public
+/// Construct the Datetime from the given parts
 Datetime Datetime(int year, int month, int day, int hour, int minute, int second, int millis, Timezone zone) {
 	return {
 		year: year;
@@ -9822,63 +10031,28 @@ Datetime Datetime(int year, int month, int day, int hour, int minute, int second
 		weekOfYear: 0;
 		dayOfYear: 0;
 		dayOfWeek: Weekday.Monday;
-		leapYear: false;
+		leapYear: Datetime.isLeapYear(year);
 	};
 }
 
-///@public
+/// Construct the Datetime from the given parts
 Datetime Datetime(int year, int month, int day, int hour, int minute, int second, int millis) {
 	return Datetime(year, month, day, hour, minute, second, millis, Timezone.utc());
 }
 
-///@public
+/// Construct the Datetime from the given parts
 Datetime Datetime(int year, int month, int day, int hour, int minute, int second, Timezone zone) {
 	return Datetime(year, month, day, hour, minute, second, 0, zone);
 }
 
-///@public
+/// Construct the Datetime from the given parts
 Datetime Datetime(int year, int month, int day, Timezone zone) {
 	return Datetime(year, month, day, 0, 0, 0, 0, zone);
 }
 
-///@public
+/// Construct the Datetime from the given parts
 Datetime Datetime(int year, int month, int day) {
 	return Datetime(year, month, day, 0, 0, 0, 0, Timezone.utc());
-}
-
-///@public
-Timestamp Timestamp(Datetime value) {
-	int year = value.year;
-	if (year < 0 || year > 9999) {
-		trace("invalid year", year);
-		return Timestamp(1D << 63, Timestamp.precision);
-	}
-
-	int month = value.month;
-	if (month < Month.January || month > Month.December) {
-		trace("invalid month", month);
-		month = Math.clamp(month, int32(Month.January), int32(Month.December));
-	}
-
-	const int DaysToMonth[*] = Datetime.isLeapYear(year) ? Datetime.DaysToMonth366 : Datetime.DaysToMonth365;
-
-	int day = value.day;
-	int daysInYear = DaysToMonth[month - 1];
-	int daysInMonth = DaysToMonth[month] - daysInYear;
-	if (day < 1 || day > daysInMonth) {
-		trace("invalid day of month", day);
-		day = Math.clamp(day, 1, daysInMonth);
-	}
-
-	int y = year - 1;
-	int64 d = y * 365 + y / 4 - y / 100 + y / 400 + daysInYear + day - 1 - Datetime.DaysTil1970;
-	int64 t = (((d * 24 + value.hour) * 60 + value.minute) * 60 + value.second) * 1000 + value.millis;
-	return Timestamp(t, Timeunit.Millis);
-}
-
-///@public
-Datetime addDays(Datetime datetime, int value) {
-	return Datetime(Timestamp(datetime).add(value, Timeunit.Days));
 }
 /**
  * Timespan is just a duration
@@ -9889,18 +10063,18 @@ struct Duration {
 	// fixme: inline precision = Timeunit.Millis;
 	static const Timeunit precision = Timeunit.Millis;
 
-	///@public
+	/// Returns the value of the `duration` at the given `precision` (Seconds and Millis are mostly used as unix epoch)
 	static int64 value(Duration duration, Timeunit precision) {
 		return convert(duration.value, Duration.precision, precision);
 	}
 
-	///@public
+	/// Add two durations
 	static Duration add(Duration lhs, Duration rhs) {
 		return { value: lhs.value + rhs.value };
 	}
 }
 
-///@public
+/// Construct a duration from the given `value` at the given `precision`
 Duration Duration(int64 value, Timeunit precision) {
 	return { value: convert(value, precision, Duration.precision) };
 }
@@ -9934,20 +10108,20 @@ struct Duration {
 struct Timestamp {
 	int64 value = 0;
 
-	///@public
+	/// The time unit specifying the precision of the timestamp
 	static const Timeunit precision = Timeunit.Millis;
 
-	/// Returns the value of timestamp at the given precision (Seconds and Millis are mostly used as unix epoch)
-	static int64 value(Timestamp value, Timeunit precision) {
-		return convert(value.value, Timestamp.precision, precision);
+	/// Returns the value of `timestamp` at the given `precision` (Seconds and Millis are mostly used as unix epoch)
+	static int64 value(Timestamp timestamp, Timeunit precision) {
+		return convert(timestamp.value, Timestamp.precision, precision);
 	}
 
-	/// Returns the value of timestamp at the given precision (Seconds and Millis are mostly used as unix epoch)
+	/// Returns the difference of `a` and `b` at the given `precision`
 	static int64 diff(Timestamp a, Timestamp b, Timeunit precision) {
 		return convert(a.value - b.value, Timestamp.precision, precision);
 	}
 
-	///@public
+	/// Returns the difference of `a` and `b
 	static Duration diff(Timestamp a, Timestamp b) {
 		return Duration(a.value - b.value, Timestamp.precision);
 	}
@@ -9957,17 +10131,17 @@ struct Timestamp {
 		return int(a.value > b.value) - int(a.value < b.value);
 	}
 
-	///@public
+	/// Check whether the two timestamps `a` and `b` are equal at the given `precision`
 	static bool equal(Timestamp a, Timestamp b, Timeunit precision) {
 		return a.value(precision) == b.value(precision);
 	}
 
-	///@public
+	/// Check whether the two timestamps `a` and `b` are equal
 	static bool equal(Timestamp a, Timestamp b) {
 		return a.value == b.value;
 	}
 
-	/// increment the the current timestamp with the given `value` at the given `precision`
+	/// Increment the the current timestamp with the given `value` at the given `precision`
 	static Timestamp add(Timestamp lhs, int64 value, Timeunit precision) {
 		return { value: lhs.value + convert(value, precision, Timestamp.precision) };
 	}

@@ -44,12 +44,10 @@ void destroyWindow(GxWindow window) {
 
 int getWindowEvent(GxWindow window, int *button, int *x, int *y, int timeout) {
 	SDL_Event event;
-	if (timeout != 0 && !SDL_PollEvent(NULL)) {
-		SDL_Delay(0);
+	if (!SDL_WaitEventTimeout(&event, timeout)) {
 		return 0;
 	}
 
-	SDL_WaitEvent(&event);
 	// use the last motion event
 	if (event.type == SDL_MOUSEMOTION) {
 		while (SDL_HasEvent(SDL_MOUSEMOTION)) {
@@ -143,18 +141,6 @@ int getWindowEvent(GxWindow window, int *button, int *x, int *y, int timeout) {
 			}
 			break;
 
-		case SDL_MOUSEBUTTONDOWN:
-			*button = event.button.button;
-			*x = event.button.x;
-			*y = event.button.y;
-			return MOUSE_PRESS;
-
-		case SDL_MOUSEBUTTONUP:
-			*button = event.button.button;
-			*x = event.button.x;
-			*y = event.button.y;
-			return MOUSE_RELEASE;
-
 		case SDL_FINGERDOWN:
 			*button = 1;
 			*x = event.tfinger.x * window->image->w;
@@ -172,6 +158,18 @@ int getWindowEvent(GxWindow window, int *button, int *x, int *y, int timeout) {
 			*x = event.tfinger.x * window->image->w;
 			*y = event.tfinger.y * window->image->h;
 			return FINGER_MOTION;
+
+		case SDL_MOUSEBUTTONDOWN:
+			*button = event.button.button;
+			*x = event.button.x;
+			*y = event.button.y;
+			return MOUSE_PRESS;
+
+		case SDL_MOUSEBUTTONUP:
+			*button = event.button.button;
+			*x = event.button.x;
+			*y = event.button.y;
+			return MOUSE_RELEASE;
 
 		case SDL_MOUSEMOTION:
 			*button = event.button.button;

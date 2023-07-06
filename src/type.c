@@ -276,6 +276,11 @@ symn lookup(ccContext cc, symn sym, astn ref, astn arguments, ccKind filter, int
 			continue;
 		}
 
+		if (arguments != NULL && !isInvokable(sym) && !isTypename(aliasOf(sym))) {
+			// exclude non-invocable values looking up invocation
+			continue;
+		}
+
 		if (isFiltered(sym, filter)) {
 			continue;
 		}
@@ -534,7 +539,7 @@ static symn typeCheckRef(ccContext cc, symn loc, astn ref, astn args, ccKind fil
 	}
 
 	// raise error or warning if accessing private symbols
-	if (sym->unit && sym->unit != cc->unit && sym->doc == NULL) {
+	if (sym->unit != cc->unit && sym->doc == NULL) {
 		raiseLevel level = ref->file == NULL ? raise_warn_typ6 : cc->errPrivateAccess ? raiseError : raiseWarn;
 		warn(cc->rt, level, ref->file, ref->line, ERR_PRIVATE_DECLARATION, sym);
 		if (sym->file && sym->line) {

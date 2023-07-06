@@ -44,7 +44,7 @@ inline assert(bool condition, const char message[*]) = void(condition ? void(0) 
 /// report message and abort the execution if the assertion condition fails (is false)
 inline assert(bool condition) = void(condition ? void(0) : abort("assertion failed!"));
 
-///@public
+/// Record used for debugging purposes, containing expected, returned and an array of extra values
 struct NotEquals {
 	/// Value of the expected result
 	const variant expected;
@@ -55,6 +55,20 @@ struct NotEquals {
 	/// Extra argument to identify what happened
 	const variant extras[];
 }
+
+/// Create a not equals record for inspection from expected and returned
+NotEquals NotEquals(const variant expected, const variant returned) {
+	return {
+		expected: expected;
+		returned: returned;
+		extras: null;
+	};
+}
+
+/// abort execution displaying the expected and returned values
+inline abort(const char message[*], const NotEquals inspect&) = raise(raise.abort, raise.defTrace, message, inspect);
+/// report message and abort the execution if the assertion condition fails (is false)
+inline assert(bool condition, const char message[*], const NotEquals inspect&) = void(condition ? void(0) : abort(message, inspect));
 
 /// abort execution if the returned value is not equal to the expected value
 // TODO: make inline

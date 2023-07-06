@@ -56,6 +56,9 @@ struct TextWriter: Closeable {
 	///@public
 	const ByteWriter writer;
 
+	/// default formatter
+	const FormatFlags format;
+
 	/** This abstract method must be implemented in subclasses containing the proper implementation
 	 * the method must encode and write all the characters from the `chars` array
 	 */
@@ -68,13 +71,12 @@ struct TextWriter: Closeable {
 
 	// override
 	void close(TextWriter this) {
-		this.writer.safeClose();
+		this.writer.close();
 	}
 
 	/// Write an array of raw characters to the stream (no encoding)
 	static TextWriter write(TextWriter this, char value[]) {
-		ByteWriter writer = this.writer;
-		writer.write(writer, value);
+		this.writer.write(value);
 		return this;
 	}
 
@@ -145,6 +147,9 @@ struct TextWriter: Closeable {
 		return this.write("\n");
 	}
 
+	///@public
+	static TextWriter writeln(TextWriter this, TextWriter.Writeable value) { return this.write(value).writeln(); }
+
 	// TODO: static void write(TextWriter this, Locale locale, char value) { /*...*/ }
 	// TODO: static void write(TextWriter this, Locale locale, string value) { /*...*/ }
 	// TODO: static void write(TextWriter this, Locale locale, object value) { /*...*/ }
@@ -179,37 +184,4 @@ struct TextWriter: Closeable {
 		Ascii
 		Utf8
 	*/
-}
-
-static if (true) {
-// todo: fix lookup and delete these global methods
-static const FormatFlags flagsTextWriter = {};
-///@public
-static TextWriter write(TextWriter this, int32 value) { return this.write(value, flagsTextWriter); }
-///@public
-static TextWriter write(TextWriter this, int64 value) { return this.write(value, flagsTextWriter); }
-///@public
-static TextWriter write(TextWriter this, uint32 value) { return this.write(value, flagsTextWriter); }
-///@public
-static TextWriter write(TextWriter this, uint64 value) { return this.write(value, flagsTextWriter); }
-///@public
-static TextWriter write(TextWriter this, float32 value) { return this.write(value, flagsTextWriter); }
-///@public
-static TextWriter write(TextWriter this, float64 value) { return this.write(value, flagsTextWriter); }
-///@public
-static TextWriter writeln(TextWriter this, char value[]) { return this.write(value).writeln(); }
-///@public
-static TextWriter writeln(TextWriter this, int32 value) { return this.write(value, flagsTextWriter).writeln(); }
-///@public
-static TextWriter writeln(TextWriter this, int64 value) { return this.write(value, flagsTextWriter).writeln(); }
-///@public
-static TextWriter writeln(TextWriter this, uint32 value) { return this.write(value, flagsTextWriter).writeln(); }
-///@public
-static TextWriter writeln(TextWriter this, uint64 value) { return this.write(value, flagsTextWriter).writeln(); }
-///@public
-static TextWriter writeln(TextWriter this, float32 value) { return this.write(value, flagsTextWriter).writeln(); }
-///@public
-static TextWriter writeln(TextWriter this, float64 value) { return this.write(value, flagsTextWriter).writeln(); }
-///@public
-static TextWriter writeln(TextWriter this, TextWriter.Writeable value) { return this.write(value).writeln(); }
 }

@@ -10,50 +10,50 @@ struct mat4f: 0 {
 	vec4f v[4];
 
 	struct {
-		///@public
+		/// The first row as a vector
 		vec4f x;
-		///@public
+		/// The second row as a vector
 		vec4f y;
-		///@public
+		/// The third row as a vector
 		vec4f z;
-		///@public
+		/// The fourth row as a vector
 		vec4f w;
 	}
 	struct {
-		///@public
+		/// The first element of the first row
 		float32 xx;
-		///@public
+		/// The second element of the first row
 		float32 xy;
-		///@public
+		/// The third element of the first row
 		float32 xz;
-		///@public
+		/// The fourth element of the first row
 		float32 xw;
 
-		///@public
+		/// The first element of the second row
 		float32 yx;
-		///@public
+		/// The second element of the second row
 		float32 yy;
-		///@public
+		/// The third element of the second row
 		float32 yz;
-		///@public
+		/// The fourth element of the second row
 		float32 yw;
 
-		///@public
+		/// The first element of the third row
 		float32 zx;
-		///@public
+		/// The second element of the third row
 		float32 zy;
-		///@public
+		/// The third element of the third row
 		float32 zz;
-		///@public
+		/// The fourth element of the third row
 		float32 zw;
 
-		///@public
+		/// The first element of the fourth row
 		float32 wx;
-		///@public
+		/// The second element of the fourth row
 		float32 wy;
-		///@public
+		/// The third element of the fourth row
 		float32 wz;
-		///@public
+		/// The fourth element of the fourth row
 		float32 ww;
 	}
 }

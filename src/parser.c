@@ -52,7 +52,10 @@ static inline void addLength(ccContext cc, symn sym, astn init) {
 	// add static length to array
 	enter(cc, NULL, NULL);
 	ccKind kind = ATTR_cnst | ATTR_stat | KIND_def | refCast(cc->type_idx);
-	install(cc, "length", kind, cc->type_idx->size, cc->type_idx, init);
+	symn length = install(cc, "length", kind, cc->type_idx->size, cc->type_idx, init);
+	if (length != NULL) {
+		length->doc = type_doc_public;
+	}
 	sym->fields = leave(cc, KIND_def, 0, 0, NULL, NULL);
 }
 
@@ -114,7 +117,7 @@ static int ccInline(ccContext cc, astn tag) {
  * @param type Type of symbol.
  * @return The symbol.
  */
-static symn declare(ccContext cc, ccKind kind, astn tag, symn type, symn params) {
+static symn declare(ccContext cc, ccKind kind, astn tag, symn type, symn params, const char *doc) {
 	if (tag == NULL || tag->kind != TOKEN_var) {
 		fatal(ERR_INTERNAL_ERROR": identifier expected, not: %t", tag);
 		return NULL;
@@ -148,6 +151,7 @@ static symn declare(ccContext cc, ccKind kind, astn tag, symn type, symn params)
 		def->params = params;
 		def->use = tag;
 		def->tag = tag;
+		def->doc = doc;
 
 		addUsage(def, tag);
 
@@ -178,6 +182,9 @@ static symn declare(ccContext cc, ccKind kind, astn tag, symn type, symn params)
 			if (ptr->owner != NULL && def->owner != NULL && isObjectType(def->owner)) {
 				if (isFunction(def) && !isStatic(def) && isVariable(ptr) && isInvokable(ptr)) {
 					warn(cc->rt, raise_warn_redef, def->file, def->line, WARN_FUNCTION_OVERRIDE, ptr);
+					if (doc == NULL && ptr->doc != NULL) {
+						def->doc = ptr->doc;
+					}
 					def->override = ptr;
 					break;
 				}
@@ -545,7 +552,7 @@ static astn expandInitializer(ccContext cc, symn variable, astn initializer) {
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Parser
 static astn statement_list(ccContext cc);
 static astn statement(ccContext cc, const char *doc);
-static astn declaration(ccContext cc, ccKind attr, astn *args);
+static astn declaration(ccContext cc, ccKind attr, astn *args, const char *doc);
 
 /** Parse qualifiers.
  * @brief scan for qualifiers: const static parallel
@@ -912,7 +919,7 @@ static astn initializer(ccContext cc) {
 
 			case STATIC_kwd:
 				// allow static declarations in initializer
-				declaration(cc, qualifier(cc), NULL);
+				declaration(cc, qualifier(cc), NULL, NULL);
 				skipTok(cc, STMT_end, 1);
 				continue;
 		}
@@ -1003,7 +1010,7 @@ static astn parameters(ccContext cc, symn returns, astn function) {
 	// while there are tokens to read
 	while (peekTok(cc, TOKEN_any) != NULL) {
 		ccKind attr = qualifier(cc);
-		astn arg = declaration(cc, 0, NULL);
+		astn arg = declaration(cc, 0, NULL, NULL);
 
 		if (arg == NULL) {
 			// probably parse error
@@ -1068,7 +1075,7 @@ static astn parameters(ccContext cc, symn returns, astn function) {
  * @param mode
  * @return parsed syntax tree.
  */
-static astn declaration(ccContext cc, ccKind attr, astn *args) {
+static astn declaration(ccContext cc, ccKind attr, astn *args, const char* doc) {
 	// read typename
 	astn tok = expression(cc, 0);
 	if (tok == NULL) {
@@ -1103,9 +1110,8 @@ static astn declaration(ccContext cc, ccKind attr, astn *args) {
 	// parse function parameters
 	symn def = NULL, params = NULL;
 	if (skipTok(cc, LEFT_par, 0)) {			// int a(...)
-		astn argRoot;
 		enter(cc, tag, def);
-		argRoot = parameters(cc, type, tag);
+		astn argRoot = parameters(cc, type, tag);
 		skipTok(cc, RIGHT_par, 1);
 
 		params = leave(cc, KIND_fun, vm_stk_align, 0, NULL, NULL);
@@ -1118,10 +1124,10 @@ static astn declaration(ccContext cc, ccKind attr, astn *args) {
 		// parse function body
 		if (peekTok(cc, STMT_beg)) {
 			int isMember = (attr & ATTR_stat) == 0;
-			def = declare(cc, KIND_fun | attr | cast, tag, type, params);
+			def = declare(cc, KIND_fun | attr | cast, tag, type, params, doc);
 			if (isMember && def->override == NULL && cc->owner && isTypename(cc->owner) && !isStatic(cc->owner)) {
 				warn(cc->rt, raise_warn_redef, def->file, def->line, "Creating virtual method for: %T", def);
-				symn method = declare(cc, ATTR_cnst | KIND_var | CAST_ref, tag, type, params);
+				symn method = declare(cc, ATTR_cnst | KIND_var | CAST_ref, tag, type, params, doc);
 				method->init = lnkNode(cc, def);
 			}
 
@@ -1211,7 +1217,7 @@ static astn declaration(ccContext cc, ccKind attr, astn *args) {
 		}
 	}
 
-	def = declare(cc, (attr & MASK_attr) | KIND_var | cast, tag, type, params);
+	def = declare(cc, (attr & MASK_attr) | KIND_var | cast, tag, type, params, doc);
 	if (skipTok(cc, ASGN_set, 0)) {
 		astn init = initializer(cc);
 		if (init != NULL && init->kind == STMT_beg) {
@@ -1242,7 +1248,7 @@ static astn declaration(ccContext cc, ccKind attr, astn *args) {
  * @param cc compiler context.
  * @return root of declaration.
  */
-static astn declare_alias(ccContext cc, ccKind attr) {
+static astn declare_alias(ccContext cc, ccKind attr, const char* doc) {
 	symn def, type = NULL, params = NULL;
 	astn tag, init = NULL;
 
@@ -1355,7 +1361,7 @@ static astn declare_alias(ccContext cc, ccKind attr) {
 	}
 	skipTok(cc, STMT_end, 1);
 
-	def = declare(cc, (attr & MASK_attr) | KIND_def, tag, type, params);
+	def = declare(cc, (attr & MASK_attr) | KIND_def, tag, type, params, doc);
 	if (def != NULL) {
 		def->params = params;
 		def->init = init;
@@ -1371,7 +1377,7 @@ static astn declare_alias(ccContext cc, ccKind attr) {
  * @param attr attributes: static or const.
  * @return root of declaration.
  */
-static astn declare_record(ccContext cc, ccKind attr) {
+static astn declare_record(ccContext cc, ccKind attr, const char* doc) {
 
 	if (!skipTok(cc, RECORD_kwd, 1)) {
 		traceAst(peekTok(cc, 0));
@@ -1460,7 +1466,7 @@ static astn declare_record(ccContext cc, ccKind attr) {
 	}
 
 	symn type = base == NULL ? cc->type_rec : base;
-	type = declare(cc, KIND_typ | attr | cast, tag, type, NULL);
+	type = declare(cc, KIND_typ | attr | cast, tag, type, NULL, doc);
 
 	symn fields = NULL;
 	if (attr == ATTR_stat && type->fields != NULL) {
@@ -1496,7 +1502,7 @@ static astn declare_record(ccContext cc, ccKind attr) {
  * @param cc compiler context.
  * @return root of declaration.
  */
-static astn declare_enum(ccContext cc) {
+static astn declare_enum(ccContext cc, const char* doc) {
 
 	if (!skipTok(cc, ENUM_kwd, 1)) {
 		traceAst(peekTok(cc, 0));
@@ -1525,7 +1531,7 @@ static astn declare_enum(ccContext cc) {
 
 	symn type = NULL;
 	if (tag != NULL) {
-		type = declare(cc, ATTR_stat | ATTR_cnst | KIND_typ | CAST_enm, tag, base, NULL);
+		type = declare(cc, ATTR_stat | ATTR_cnst | KIND_typ | CAST_enm, tag, base, NULL, doc);
 		enter(cc, tag, type);
 	}
 
@@ -1537,7 +1543,9 @@ static astn declare_enum(ccContext cc) {
 			error(cc->rt, prop->file, prop->line, ERR_INITIALIZER_EXPECTED, prop);
 			continue;
 		}
-		symn member = declare(cc, ATTR_stat | ATTR_cnst | KIND_def | CAST_val, id, base, NULL);
+
+		// enumeration values are documented public symbols
+		symn member = declare(cc, ATTR_stat | ATTR_cnst | KIND_def | CAST_val, id, base, NULL, id->id.name);
 		astn value = NULL;
 		if (id == prop) {
 			value = intNode(cc, nextValue);
@@ -1575,9 +1583,6 @@ static astn declare_enum(ccContext cc) {
 			error(cc->rt, id->file, id->line, ERR_INVALID_VALUE_ASSIGN, member, value);
 		}
 		member->init = castTo(cc, value, type == NULL ? base : type);
-		// enumeration values are documented public symbols
-		member->doc = member->name;
-
 		debug("%s:%u: enum.member: `%t` => %+T", prop->file, prop->line, prop, member);
 	}
 
@@ -1631,7 +1636,7 @@ static astn statement_if(ccContext cc, ccKind attr) {
 			}
 			if (isTypeExpr(test)) {
 				backTok(cc, test);
-				astn def = declaration(cc, 0, NULL);
+				astn def = declaration(cc, 0, NULL, NULL);
 				if (def != NULL && def->id.link->init != NULL) {
 					def->type = typeCheck(cc, NULL, def, 1);
 					ast->stmt.init = def;
@@ -1696,7 +1701,7 @@ static astn statement_for(ccContext cc) {
 		init->type = typeCheck(cc, NULL, init, 1);
 		if (isTypeExpr(init)) {
 			backTok(cc, init);
-			init = declaration(cc, 0, NULL);
+			init = declaration(cc, 0, NULL, NULL);
 			if (init != NULL && init->id.link->init != NULL) {
 				astn astInit = init->id.link->init;
 				astInit->type = typeCheck(cc, NULL, astInit, 1);
@@ -1931,32 +1936,32 @@ static astn statement(ccContext cc, const char *doc) {
 
 	// type, enum and alias declaration
 	else if (peekTok(cc, INLINE_kwd) != NULL) { // alias
-		ast = declare_alias(cc, attr);
+		ast = declare_alias(cc, attr, doc);
 		if (ast != NULL) {
 			dieif(ast->kind != TOKEN_var, ERR_INTERNAL_ERROR);
+			dieif(doc && ast->id.link->doc != doc, ERR_INTERNAL_ERROR);
 			ast->type = cc->type_rec;
-			ast->id.link->doc = doc;
 			doc = NULL;
 			//ast = expand2Statement(cc, ast, 0);
 		}
 	}
 	else if (peekTok(cc, RECORD_kwd) != NULL) { // struct
-		ast = declare_record(cc, attr);
+		ast = declare_record(cc, attr, doc);
 		if (ast != NULL) {
 			dieif(ast->kind != TOKEN_var, ERR_INTERNAL_ERROR);
+			dieif(doc && ast->id.link->doc != doc, ERR_INTERNAL_ERROR);
 			ast->type = cc->type_rec;
-			ast->id.link->doc = doc;
 			doc = NULL;
 			//ast = expand2Statement(cc, ast, 0);
 		}
 		attr &= ~(ATTR_cnst | ATTR_stat);
 	}
 	else if (peekTok(cc, ENUM_kwd) != NULL) {   // enum
-		ast = declare_enum(cc);
+		ast = declare_enum(cc, doc);
 		if (ast != NULL) {
 			dieif(ast->kind != TOKEN_var, ERR_INTERNAL_ERROR);
+			dieif(doc && ast->id.link->doc != doc, ERR_INTERNAL_ERROR);
 			ast->type = cc->type_rec;
-			ast->id.link->doc = doc;
 			doc = NULL;
 			//ast = expand2Statement(cc, ast, 0);
 		}
@@ -1969,13 +1974,13 @@ static astn statement(ccContext cc, const char *doc) {
 		}
 		else if (isTypeExpr(ast)) {
 			backTok(cc, ast);
-			ast = declaration(cc, attr, NULL);
+			ast = declaration(cc, attr, NULL, doc);
 			if (ast != NULL) {
 				dieif(ast->kind != TOKEN_var, ERR_INTERNAL_ERROR);
+				dieif(doc && ast->id.link->doc != doc, ERR_INTERNAL_ERROR);
 				attr &= ~(ast->id.link->kind & MASK_attr);
 				check = ast->id.link->init;
 				type = ast->type;
-				ast->id.link->doc = doc;
 				doc = NULL;
 			}
 		}
@@ -2076,7 +2081,7 @@ symn ccAddCall(ccContext cc, vmError call(nfcContext), const char *proto) {
 	}
 
 	astn args = NULL;
-	astn init = declaration(cc, KIND_def, &args);
+	astn init = declaration(cc, KIND_def, &args, type_doc_public);
 
 	rtContext rt = cc->rt;
 	if (ccClose(cc) != 0) {
@@ -2128,7 +2133,6 @@ symn ccAddCall(ccContext cc, vmError call(nfcContext), const char *proto) {
 	sym->init = init;
 	// native calls are undocumented public symbols
 	sym->unit = NULL;
-	sym->doc = type_doc_builtin;
 
 	// update the native call
 	nfc->proto = proto;

@@ -6,83 +6,51 @@ struct Complex {
 
 	/// The imaginary component of a complex number.
 	const float64 im = 0;
-
-	/* TODO: implement enumerations
-	enum: Complex {
-		zero: { re: 0 };	// 0 + 0i
-		unit: { re: 1 };	// 1 + 0i
-	}*/
 }
 
-/* TODO: implement inline initializer
-// constructing a complex number
-inline Complex(float64 re) = { re: re };
-inline Complex(float64 re, float64 im) = { re: re, im: im };
-*/
-
-///@public
-Complex Complex(float64 re) {
+/// Create a Complex number from the given `value`
+Complex Complex(float64 value) {
 	return {
-		re: re;
+		re: value;
 	};
 }
 
-///@public
-Complex Complex(float64 re, float64 im) {
+/// Create a Complex number from the given `real` and `imaginary` values
+Complex Complex(float64 real, float64 imaginary) {
 	return {
-		re: re;
-		im: im;
+		re: real;
+		im: imaginary;
 	};
 }
 
-/* TODO: implement operator overloading
-inline -(Complex a) = Complex(-a.re, -a.im);
-
-inline +(Complex a, Complex b) = Complex(a.re + b.re, a.im + b.im);
-inline +(Complex a, float64 b) = Complex(a.re + b, a.im);
-inline +(float64 a, Complex b) = Complex(a + b.re, b.im);
-
-inline -(Complex a, Complex b) = Complex(a.re - b.re, a.im - b.im);
-inline -(Complex a, float64 b) = Complex(a.re - b, a.im);
-inline -(float64 a, Complex b) = Complex(a - b.re, b.im);
-
-inline *(Complex a, Complex b) = Complex(a.re * b.re - a.im * b.im, a.re * b.im + a.im * b.re);
-inline *(Complex a, float64 b) = Complex(a.re * b, a.im * b);
-inline *(float64 a, Complex b) = Complex(a * b.re, a * b.im);
-
-inline /(Complex a, Complex b) = div(a, b);
-inline /(Complex a, float64 b) = div(a, Complex(b));
-inline /(float64 a, Complex b) = div(Complex(a), b);
-*/
-
-///@public: Complex(-a.re, -a.im);
+/// Unary negation of a complex number: -a := Complex(-a.re, -a.im);
 inline neg(Complex a) = Complex(emit(struct(a), neg.p2d));
 
-///@public: Complex(a.re + b.re, a.im + b.im);
+/// Add two complex numbers: a + b := Complex(a.re + b.re, a.im + b.im);
 inline add(Complex a, Complex b) = Complex(emit(struct(a), struct(b), add.p2d));
-///@public
+/// Add a complex number `a` to a real number `b`
 inline add(Complex a, float64 b) = Complex(a.re + b, a.im);
-///@public
+/// Add a complex number `b` to a real number `a`
 inline add(float64 a, Complex b) = Complex(a + b.re, b.im);
 
-///@public: Complex(a.re - b.re, a.im - b.im);
+/// Subtract two complex numbers: a - b := Complex(a.re - b.re, a.im - b.im);
 inline sub(Complex a, Complex b) = Complex(emit(struct(a), struct(b), sub.p2d));
-///@public
+/// Subtract the real number `b` from the complex number `a`
 inline sub(Complex a, float64 b) = Complex(a.re - b, a.im);
-///@public
+/// Subtract the complex number `b` from the real number `a`
 inline sub(float64 a, Complex b) = Complex(a - b.re, b.im);
 
-///@public: Complex(a.re * b.re - a.im * b.im, a.re * b.im + a.im * b.re);
+/// Multiply two complex numbers: a * b := Complex(a.re * b.re - a.im * b.im, a.re * b.im + a.im * b.re);
 inline mul(Complex a, Complex b) = Complex(emit(
 	struct(a), struct(b), swz.x2, mul.p2d, add.f64,
 	struct(a), struct(b), mul.p2d, swz.x2, sub.f64
 ));
-///@public
+/// Multiply a complex number `a` with a real number `b`
 inline mul(Complex a, float64 b) = Complex(a.re * b, a.im * b);
-///@public
+/// Multiply a complex number `b` with a real number `a`
 inline mul(float64 a, Complex b) = Complex(a * b.re, a * b.im);
 
-///@public
+/// Divide two complex numbers
 Complex div(Complex a, Complex b) {
 	// Adapted from Numerical Recipes in C - The Art of Scientific Computing
 	// ISBN 0-521-43108-5
@@ -102,18 +70,17 @@ Complex div(Complex a, Complex b) {
 		im: (a.im * r - a.re) / den;
 	};
 }
-
-///@public
+/// Divide the complex number `a` by the real number `b`
 inline div(Complex a, float64 b) = div(a, Complex(b));
-///@public
+/// Divide the real number `a` by the complex number `b`
 inline div(float64 a, Complex b) = div(Complex(a), b);
 
-///@public
+/// Compute the absolute value of the complex number `a`
 inline abs(Complex a) = Math.sqrt(a.re * a.re + a.im * a.im);
-///@public
+/// Compute the argument of the complex number `a`
 inline arg(Complex a) = Math.atan2(a.re, a.im);
 
-/// Reciprocal of a complex number (1 / a)
+/// Compute the reciprocal of a complex number (1 / a)
 Complex inv(Complex a) {
 	float64 d = a.re * a.re + a.im * a.im;
 	return {
@@ -122,16 +89,16 @@ Complex inv(Complex a) {
 	};
 }
 
-///@public
+/// Compute the conjugate of the complex number `a`
 inline conj(Complex a) = Complex(a.re, -a.im);
 
-///@public
+/// Compute the exponential of a complex number: $ e^a $.
 inline exp(Complex a) = Complex(Math.exp(a.re) * Math.cos(a.im), Math.exp(a.re) * Math.sin(a.im));
 
-///@public
+/// Compute the natural logarithm of the complex number `a`.
 inline log(Complex a) = Complex(Math.log(abs(a)), arg(a));
 
-///@public
+/// Compute the complex number `a` raised to the power of `b`: $ a^b $.
 Complex pow(Complex a, Complex b) {
 	float64 r = abs(a);
 	float64 t = arg(a);
@@ -142,15 +109,75 @@ Complex pow(Complex a, Complex b) {
 		im: v * Math.sin(u);
 	};
 }
-///@public
+/// Compute the complex number `a` raised to the power of `b`: $ a^b $.
 inline pow(Complex a, float64 b) = pow(a, Complex(b));
 
-///@public
+/// Compute the sine of the complex number `a`.
 inline sin(Complex a) = Complex(Math.sin(a.re) * Math.cosh(a.im), +Math.cos(a.re) * Math.sinh(a.im));
-///@public
+/// Compute the cosine of the complex number `a`.
 inline cos(Complex a) = Complex(Math.cos(a.re) * Math.cosh(a.im), -Math.sin(a.re) * Math.sinh(a.im));
+/// Compute the tangent of the complex number `a`.
+inline tan(Complex a) = div(sin(a), cos(a));
+/// Compute the cotangent of the complex number `a`.
+inline cot(Complex a) = div(cos(a), sin(a));
+/// Compute the secant of the complex number `a`.
+inline sec(Complex a) = inv(cos(a));
+/// Compute the cosecant of the complex number `a`.
+inline csc(Complex a) = inv(sin(a));
 
-/* TODO: implement operator overloading
+/// Compute the hyperbolic sine of the complex number `a`.
+inline sinh(Complex a) = div(sub(exp(a), exp(neg(a))), 2);
+/// Compute the hyperbolic cosine of the complex number `a`.
+inline cosh(Complex a) = div(add(exp(a), exp(neg(a))), 2);
+/// Compute the hyperbolic tangent of the complex number `a`.
+inline tanh(Complex a) = div(sub(exp(mul(2, a)), 1), add(exp(mul(2, a)), 1));
+/// Compute the hyperbolic cotangent of the complex number `a`.
+inline coth(Complex a) = div(add(exp(mul(2, a)), 1), sub(exp(mul(2, a)), 1));
+/// Compute the hyperbolic secant of the complex number `a`.
+inline sech(Complex a) = inv(cosh(a));
+/// Compute the hyperbolic cosecant of the complex number `a`.
+inline csch(Complex a) = inv(sinh(a));
+
+/// Convert the from polar(r,θ) to cartesian(x,y) coordinates
+inline toCartesian(Complex x) = Complex(x.re * Math.cos(x.im), x.re * Math.sin(x.im));
+/// Convert the from cartesian(x,y) to polar(r,θ) coordinates
+inline toPolar(Complex x) = Complex(abs(x), arg(x));
+
+
+/* TODO: implement enumerations, then:
+enum: Complex {
+	zero: { re: 0 };	// 0 + 0i
+	unit: { re: 1 };	// 1 + 0i
+}
+
+
+// TODO: implement inline initializer, then:
+// constructing a complex number
+inline Complex(float64 re) = { re: re };
+inline Complex(float64 re, float64 im) = { re: re, im: im };
+
+
+// TODO: implement operator overloading, then:
+inline -(Complex a) = Complex(-a.re, -a.im);
+
+inline +(Complex a, Complex b) = Complex(a.re + b.re, a.im + b.im);
+inline +(Complex a, float64 b) = Complex(a.re + b, a.im);
+inline +(float64 a, Complex b) = Complex(a + b.re, b.im);
+
+inline -(Complex a, Complex b) = Complex(a.re - b.re, a.im - b.im);
+inline -(Complex a, float64 b) = Complex(a.re - b, a.im);
+inline -(float64 a, Complex b) = Complex(a - b.re, b.im);
+
+inline *(Complex a, Complex b) = Complex(a.re * b.re - a.im * b.im, a.re * b.im + a.im * b.re);
+inline *(Complex a, float64 b) = Complex(a.re * b, a.im * b);
+inline *(float64 a, Complex b) = Complex(a * b.re, a * b.im);
+
+inline /(Complex a, Complex b) = div(a, b);
+inline /(Complex a, float64 b) = div(a, Complex(b));
+inline /(float64 a, Complex b) = div(Complex(a), b);
+
+
+// TODO: implement operator overloading, then:
 inline tan(Complex a) = sin(a) / cos(a);
 inline cot(Complex a) = cos(a) / sin(a);
 
@@ -159,31 +186,3 @@ inline cosh(Complex a) = (exp(a) + exp(-a)) / 2;
 inline tanh(Complex a) = (exp(2 * a) - 1) / (exp(2 * a) + 1);
 inline coth(Complex a) = (exp(2 * a) + 1) / (exp(2 * a) - 1);
 */
-
-///@public
-inline tan(Complex a) = div(sin(a), cos(a));
-///@public
-inline cot(Complex a) = div(cos(a), sin(a));
-
-///@public
-inline sinh(Complex a) = div(sub(exp(a), exp(neg(a))), 2);
-///@public
-inline cosh(Complex a) = div(add(exp(a), exp(neg(a))), 2);
-///@public
-inline tanh(Complex a) = div(sub(exp(mul(2, a)), 1), add(exp(mul(2, a)), 1));
-///@public
-inline coth(Complex a) = div(add(exp(mul(2, a)), 1), sub(exp(mul(2, a)), 1));
-
-///@public
-inline sec(Complex a) = inv(cos(a));
-///@public
-inline csc(Complex a) = inv(sin(a));
-///@public
-inline sech(Complex a) = inv(cosh(a));
-///@public
-inline csch(Complex a) = inv(sinh(a));
-
-///@public
-inline toCartesian(Complex x) = Complex(x.re * Math.cos(x.im), x.re * Math.sin(x.im));
-///@public
-inline toPolar(Complex x) = Complex(abs(x), arg(x));

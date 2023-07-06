@@ -410,7 +410,7 @@ else {
 		},
 		print: function (message) {
 			// console.log(message);
-			terminal.append(message);
+			process({ print: message });
 		},
 		printLog: function (message) {
 			console.debug(message);
@@ -418,7 +418,7 @@ else {
 		},
 		printErr: function (message) {
 			console.error(message);
-			terminal.append(message);
+			process({ error: message });
 		},
 	};
 

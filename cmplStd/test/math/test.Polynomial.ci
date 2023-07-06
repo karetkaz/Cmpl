@@ -3,6 +3,7 @@ static TextWriter out = AsciiWriter {
 		file: File.log;
 		close: null;
 	};
+	format: {};
 };
 
 //Polynomial a = Polynomial(1);                     // fixme: single parameter
@@ -16,12 +17,12 @@ out.write("-b: ").writeln(Polynomial.neg(b));        // fixme: b.neg()
 out.write("a + b: ").writeln(Polynomial.add(a, b));  // fixme: a.add(b)
 out.write("a - b: ").writeln(Polynomial.sub(a, b));  // fixme: a.sub(b)
 out.write("a * b: ").writeln(Polynomial.mul(a, b));  // fixme: a.mul(b)
-out.write("a(2): ").write(a.evaluate(2)).writeln();
+out.write("a(2): ").write(a.evaluate(2), out.format).writeln();
 out.write("a': ").writeln(a.derivative());
 out.write("int(a): ").writeln(a.integral(10));
 
 for (int i = 0; i < 10; i += 1) {
-	out.write("a[").write(i).write("] = ").write(a.get(i)).writeln();
+	out.write("a[").write(i, out.format).write("] = ").write(a.get(i), out.format).writeln();
 //	a.set(i, a.get(i));  // long form: Polynomial.set(a, i, Polynomial.get(a, i));
 }
 

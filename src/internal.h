@@ -105,7 +105,7 @@ extern const char * const pluginLibImport;
 extern const char * const pluginLibInstall;
 extern const char * const pluginLibDestroy;
 
-extern const char * const type_doc_builtin;
+extern const char * const type_doc_public;
 extern const char * const type_fmt_signed32;
 extern const char * const type_fmt_signed64;
 extern const char * const type_fmt_unsigned32;

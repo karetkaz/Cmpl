@@ -398,8 +398,31 @@ static ccKind genIndirection(ccContext cc, symn variable, ccKind get, int isInde
 	}
 
 	// load the value of the variable
-	if (!emitInt(rt, opc_ldi, refSize(type))) {
-		return CAST_any;
+	if (cast == CAST_u32) {
+		int size = refSize(type);
+		switch (size) {
+			case 1:
+				if (!emit(rt, opc_ldiu1)) {
+					return CAST_any;
+				}
+				break;
+
+			case 2:
+				if (!emit(rt, opc_ldiu2)) {
+					return CAST_any;
+				}
+				break;
+
+			default:
+				if (!emitInt(rt, opc_ldi, size)) {
+					return CAST_any;
+				}
+				break;
+		}
+	} else {
+		if (!emitInt(rt, opc_ldi, refSize(type))) {
+			return CAST_any;
+		}
 	}
 
 	return castOf(type);
@@ -2280,40 +2303,6 @@ static ccKind genAst(ccContext cc, astn ast, ccKind get) {
 		}
 
 		got = get;
-	}
-
-	if (get == CAST_u32 || get == CAST_u64) {
-		dbgCgen("%?s:%?u: zero extend[%K->%K / %T]: %t", ast->file, ast->line, got, get, ast->type, ast);
-		switch (ast->type->size) {
-			default:
-				trace(ERR_INTERNAL_ERROR": size: %d, cast [%K->%K]: %t", ast->type->size, got, get, ast);
-				// fall through
-			case 8:
-			case 4:
-				break;
-
-			case 2:
-				if (!testOcp(rt, rt->vm.pc, opc_ldis2, NULL)) {
-					// zero extend only if previous instruction is an indirect load?
-					break;
-				}
-				if (!rollbackPc(rt) || !emit(rt, opc_ldiu2)) {
-					traceAst(ast);
-					return CAST_any;
-				}
-				break;
-
-			case 1:
-				if (!testOcp(rt, rt->vm.pc, opc_ldis1, NULL)) {
-					// zero extend only if previous instruction is an indirect load?
-					break;
-				}
-				if (!rollbackPc(rt) || !emit(rt, opc_ldiu1)) {
-					traceAst(ast);
-					return CAST_any;
-				}
-				break;
-		}
 	}
 
 	return got;

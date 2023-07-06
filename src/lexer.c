@@ -419,8 +419,8 @@ static ccToken readTok(lexContext ctx, astn tok) {
 
 			if (doc != NULL) {
 				if (!ctx->cc->genDocumentation) {
-					doc = "";
-					ptr = doc + 1;
+					doc = (char *) type_doc_public;
+					ptr = doc + strlen(doc) + 1;
 				}
 				else {
 					if (ptr == doc) {

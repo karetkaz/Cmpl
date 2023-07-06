@@ -45,7 +45,7 @@ image.copy(0, 0, image1, null);
 int onEvent(int action, int button, int ex, int ey) {
 	if (action == Window.KEY_RELEASE && button == Window.KEY_CODE_ESC) {
 		// exit when releasing escape key
-		return -1;
+		return Window.quit();
 	}
 	if (action == Window.MOUSE_PRESS) {
 		image.copy(0, 0, image2, null);

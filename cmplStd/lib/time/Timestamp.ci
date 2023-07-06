@@ -5,20 +5,20 @@
 struct Timestamp {
 	int64 value = 0;
 
-	///@public
+	/// The time unit specifying the precision of the timestamp
 	static const Timeunit precision = Timeunit.Millis;
 
-	/// Returns the value of timestamp at the given precision (Seconds and Millis are mostly used as unix epoch)
-	static int64 value(Timestamp value, Timeunit precision) {
-		return convert(value.value, Timestamp.precision, precision);
+	/// Returns the value of `timestamp` at the given `precision` (Seconds and Millis are mostly used as unix epoch)
+	static int64 value(Timestamp timestamp, Timeunit precision) {
+		return convert(timestamp.value, Timestamp.precision, precision);
 	}
 
-	/// Returns the value of timestamp at the given precision (Seconds and Millis are mostly used as unix epoch)
+	/// Returns the difference of `a` and `b` at the given `precision`
 	static int64 diff(Timestamp a, Timestamp b, Timeunit precision) {
 		return convert(a.value - b.value, Timestamp.precision, precision);
 	}
 
-	///@public
+	/// Returns the difference of `a` and `b
 	static Duration diff(Timestamp a, Timestamp b) {
 		return Duration(a.value - b.value, Timestamp.precision);
 	}
@@ -28,17 +28,17 @@ struct Timestamp {
 		return int(a.value > b.value) - int(a.value < b.value);
 	}
 
-	///@public
+	/// Check whether the two timestamps `a` and `b` are equal at the given `precision`
 	static bool equal(Timestamp a, Timestamp b, Timeunit precision) {
 		return a.value(precision) == b.value(precision);
 	}
 
-	///@public
+	/// Check whether the two timestamps `a` and `b` are equal
 	static bool equal(Timestamp a, Timestamp b) {
 		return a.value == b.value;
 	}
 
-	/// increment the the current timestamp with the given `value` at the given `precision`
+	/// Increment the the current timestamp with the given `value` at the given `precision`
 	static Timestamp add(Timestamp lhs, int64 value, Timeunit precision) {
 		return { value: lhs.value + convert(value, precision, Timestamp.precision) };
 	}

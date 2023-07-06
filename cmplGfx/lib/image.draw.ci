@@ -16,6 +16,7 @@ Image fill(Image image, uint32 color) {
 	return image;
 }
 
+/// Draw the given ASCII `text` to the `image` at the given `x`, `y` coordinate, with the given `font` and `color`
 void drawText(Image image, int32 x, int32 y, Image font, const char text[*], int32 color) {
 	Rect rect = {x0: x, y0: y, x1: image.width(), y1: image.height()};
 	return image.drawText(rect, font, text, color);
