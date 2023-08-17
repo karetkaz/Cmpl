@@ -15,7 +15,7 @@ const char *const pluginLibImport = "cmplUnit";
 const char *const pluginLibInstall = "cmplInit";
 const char *const pluginLibDestroy = "cmplClose";
 
-const char *const type_doc_builtin = "@public.builtin";
+const char *const type_doc_public = "@builtin";
 const char *const type_fmt_signed32 = "%d";
 const char *const type_fmt_signed64 = "%D";
 const char *const type_fmt_unsigned32 = "%u";
@@ -306,7 +306,12 @@ static inline symn ccDefOpCode(ccContext cc, const char *name, symn type, vmOpco
 		opc->type = type;
 		opc->opc.code = code;
 		opc->opc.args = args;
-		return install(cc, name, ATTR_cnst | ATTR_stat | KIND_def, 0, type, opc);
+		symn result = install(cc, name, ATTR_cnst | ATTR_stat | KIND_def, 0, type, opc);
+		if (result == NULL) {
+			return NULL;
+		}
+		result->doc = type_doc_public;
+		return result;
 	}
 	return NULL;
 }
@@ -339,30 +344,48 @@ static void install_type(ccContext cc, ccInstall mode) {
 
 	if (mode & install_ptr) {
 		type_ptr = install(cc, "pointer", ATTR_stat | ATTR_cnst | KIND_typ | CAST_ref, 1 * vm_ref_size, type_rec, NULL);
+		type_ptr->doc = type_doc_public;
 	}
 	if (mode & install_var) {
 		type_var = install(cc, "variant", ATTR_stat | ATTR_cnst | KIND_typ | CAST_var, 2 * vm_ref_size, type_rec, NULL);
+		type_var->doc = type_doc_public;
 	}
 	symn type_fun = install(cc, "function", ATTR_stat | ATTR_cnst | KIND_typ | CAST_ref, 1 * vm_ref_size, type_rec, NULL);
 	if (mode & install_obj) {
 		type_obj = install(cc,  typeProtoObj, ATTR_stat | ATTR_cnst | KIND_typ | CAST_ref, 1 * vm_ref_size, type_rec, NULL);
+		type_obj->doc = type_doc_public;
 		type_obj->name = typeProtoObj;
 	}
 
 	type_vid->fmt = NULL;
+	type_vid->doc = type_doc_public;
 	type_bol->fmt = type_fmt_signed32;
+	type_bol->doc = type_doc_public;
 	type_chr->fmt = type_fmt_character;
+	type_chr->doc = type_doc_public;
 	type_i08->fmt = type_fmt_signed32;
+	type_i08->doc = type_doc_public;
 	type_i16->fmt = type_fmt_signed32;
+	type_i16->doc = type_doc_public;
 	type_i32->fmt = type_fmt_signed32;
+	type_i32->doc = type_doc_public;
 	type_i64->fmt = type_fmt_signed64;
+	type_i64->doc = type_doc_public;
 	type_u08->fmt = type_fmt_unsigned32;
+	type_u08->doc = type_doc_public;
 	type_u16->fmt = type_fmt_unsigned32;
+	type_u16->doc = type_doc_public;
 	type_u32->fmt = type_fmt_unsigned32;
+	type_u32->doc = type_doc_public;
 	type_u64->fmt = type_fmt_unsigned64;
+	type_u64->doc = type_doc_public;
 	type_f32->fmt = type_fmt_float32;
+	type_f32->doc = type_doc_public;
 	type_f64->fmt = type_fmt_float64;
+	type_f64->doc = type_doc_public;
 	type_rec->fmt = type_fmt_typename;
+	type_rec->doc = type_doc_public;
+	type_fun->doc = type_doc_public;
 
 	cc->type_vid = type_vid;
 	cc->type_bol = type_bol;
@@ -393,6 +416,8 @@ static void install_type(ccContext cc, ccInstall mode) {
 	if (type_ptr != NULL) {
 		cc->null_ref = install(cc, "null", ATTR_stat | ATTR_cnst | KIND_def, 0, type_ptr, intNode(cc, 0));
 		cc->null_ref->init->type = type_ptr;
+		type_ptr->doc = type_doc_public;
+		cc->null_ref->doc = type_doc_public;
 	}
 
 	// cache the `length` of slices
@@ -400,6 +425,7 @@ static void install_type(ccContext cc, ccInstall mode) {
 	cc->length_ref = install(cc, "length", ATTR_cnst | KIND_var, cc->type_idx->size, cc->type_idx, NULL);
 	leave(cc, KIND_typ, 0, 0, NULL, NULL);
 	cc->length_ref->offs = offsetOf(vmValue, length);
+	cc->length_ref->doc = type_doc_public;
 	cc->length_ref->next = NULL;
 
 	// aliases
@@ -426,7 +452,7 @@ static void install_emit(ccContext cc, ccInstall mode) {
 		return;
 	}
 
-	emit->doc = type_doc_builtin;
+	emit->doc = type_doc_public;
 	if ((mode & installEopc) == installEopc && ccExtend(cc, emit)) {
 		symn type_vid = cc->type_vid;
 		symn type_bol = cc->type_bol;
@@ -449,7 +475,7 @@ static void install_emit(ccContext cc, ccInstall mode) {
 			return;
 		}
 
-		type_p4x->doc = type_doc_builtin;
+		type_p4x->doc = type_doc_public;
 		symn opc;
 		if ((opc = ccBegin(cc, "dup")) != NULL) {
 			ccDefOpCode(cc, "x1", type_i32, opc_dup1, 0);
@@ -674,7 +700,7 @@ static int install_base(rtContext rt, ccInstall mode, vmError onHalt(nfcContext)
 
 		if ((field = install(cc, "size", ATTR_cnst | KIND_var, vm_stk_align, cc->type_i32, NULL))) {
 			field->offs = offsetOf(struct symNode, size);
-			field->doc = type_doc_builtin;
+			field->doc = type_doc_public;
 		}
 		else {
 			error = 1;
@@ -682,7 +708,7 @@ static int install_base(rtContext rt, ccInstall mode, vmError onHalt(nfcContext)
 
 		if ((field = install(cc, "offset", ATTR_cnst | KIND_var, vm_stk_align, cc->type_i32, NULL))) {
 			field->offs = offsetOf(struct symNode, offs);
-			field->doc = type_doc_builtin;
+			field->doc = type_doc_public;
 			field->fmt = "@%06x";
 		}
 		else {
@@ -1131,18 +1157,16 @@ ccContext ccInit(rtContext rt, ccInstall mode, vmError onHalt(nfcContext)) {
 }
 
 symn ccBegin(ccContext cc, const char *name) {
-	if (cc == NULL) {
+	if (cc == NULL || name == NULL) {
 		trace(ERR_INTERNAL_ERROR);
 		return NULL;
 	}
-	symn result = NULL;
-	if (name != NULL) {
-		result = install(cc, name, ATTR_stat | ATTR_cnst | KIND_typ | CAST_vid, 0, cc->type_rec, NULL);
-		if (result == NULL) {
-			return NULL;
-		}
+	symn result = install(cc, name, ATTR_stat | ATTR_cnst | KIND_typ | CAST_vid, 0, cc->type_rec, NULL);
+	if (result == NULL) {
+		return NULL;
 	}
 	enter(cc, result->tag, result);
+	result->doc = type_doc_public;
 	return result;
 }
 
@@ -1180,25 +1204,35 @@ symn ccEnd(ccContext cc, symn sym) {
 }
 
 symn ccDefInt(ccContext cc, const char *name, int64_t value) {
-	if (!cc || !name) {
+	if (cc == NULL || name == NULL) {
 		trace(ERR_INTERNAL_ERROR);
 		return NULL;
 	}
 	name = ccUniqueStr(cc, name, -1, -1);
-	return install(cc, name, ATTR_stat | ATTR_cnst | KIND_def | CAST_i64, 0, cc->type_i64, intNode(cc, value));
+	symn result = install(cc, name, ATTR_stat | ATTR_cnst | KIND_def | CAST_i64, 0, cc->type_i64, intNode(cc, value));
+	if (result == NULL) {
+		return NULL;
+	}
+	result->doc = type_doc_public;
+	return result;
 }
 
 symn ccDefFlt(ccContext cc, const char *name, double value) {
-	if (!cc || !name) {
+	if (cc == NULL || name == NULL) {
 		trace(ERR_INTERNAL_ERROR);
 		return NULL;
 	}
 	name = ccUniqueStr(cc, name, -1, -1);
-	return install(cc, name, ATTR_stat | ATTR_cnst | KIND_def | CAST_f64, 0, cc->type_f64, fltNode(cc, value));
+	symn result = install(cc, name, ATTR_stat | ATTR_cnst | KIND_def | CAST_f64, 0, cc->type_f64, fltNode(cc, value));
+	if (result == NULL) {
+		return NULL;
+	}
+	result->doc = type_doc_public;
+	return result;
 }
 
 symn ccDefStr(ccContext cc, const char *name, const char *value) {
-	if (!cc || !name) {
+	if (cc == NULL || name == NULL) {
 		trace(ERR_INTERNAL_ERROR);
 		return NULL;
 	}
@@ -1206,24 +1240,39 @@ symn ccDefStr(ccContext cc, const char *name, const char *value) {
 	if (value != NULL) {
 		value = ccUniqueStr(cc, value, -1, -1);
 	}
-	return install(cc, name, ATTR_stat | ATTR_cnst | KIND_def | CAST_ref, 0, cc->type_str, strNode(cc, value));
+	symn result = install(cc, name, ATTR_stat | ATTR_cnst | KIND_def | CAST_ref, 0, cc->type_str, strNode(cc, value));
+	if (result == NULL) {
+		return NULL;
+	}
+	result->doc = type_doc_public;
+	return result;
 }
 
 symn ccDefVar(ccContext cc, const char *name, symn type) {
-	if (!cc || !name) {
+	if (cc == NULL || name == NULL) {
 		trace(ERR_INTERNAL_ERROR);
 		return NULL;
 	}
 	name = ccUniqueStr(cc, name, -1, -1);
-	return install(cc, name, KIND_var | refCast(type), 0, type, NULL);
+	symn result = install(cc, name, KIND_var | refCast(type), 0, type, NULL);
+	if (result == NULL) {
+		return NULL;
+	}
+	result->doc = type_doc_public;
+	return result;
 }
 
 symn ccAddType(ccContext cc, const char *name, unsigned size, int refType) {
-	if (!cc || !name) {
+	if (cc == NULL || name == NULL) {
 		trace(ERR_INTERNAL_ERROR);
 		return NULL;
 	}
-	return install(cc, name, ATTR_stat | ATTR_cnst | KIND_typ | (refType ? CAST_ref : CAST_val), size, cc->type_rec, NULL);
+	symn result = install(cc, name, ATTR_stat | ATTR_cnst | KIND_typ | (refType ? CAST_ref : CAST_val), size, cc->type_rec, NULL);
+	if (result == NULL) {
+		return NULL;
+	}
+	result->doc = type_doc_public;
+	return result;
 }
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Lookup

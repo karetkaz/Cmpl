@@ -61,7 +61,7 @@ int onEvent(int action, int button, int x, int y) {
 
 	if (action == Window.KEY_RELEASE && button == Window.KEY_CODE_ESC) {
 		// exit when releasing escape key
-		return -1;
+		return Window.quit();
 	}
 
 	if (action == Window.MOUSE_PRESS || action == Window.MOUSE_MOTION) {

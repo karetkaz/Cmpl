@@ -33,6 +33,8 @@ static struct Bits {
 	inline asFloat32(uint32 value) = float32(emit(uint32(value)));
 	/// return the 64 bit integer as a floating point value
 	inline asFloat64(uint64 value) = float64(emit(uint64(value)));
+	/// return the two 32 bit integers merged as a floating point value
+	inline asFloat64(uint32 hi, uint32 lo) = float64(emit(uint64(uint64(hi) << 32 | lo)));
 
 	///@public
 	int32 zxt32(int32 value, int32 offs, int32 count) {
@@ -502,11 +504,10 @@ static struct Bits {
 
 	/// reverse all the bits
 	uint16 swapBits(uint16 x) {
-		// fixme: uint16 should implicitly cast to uint32
-		x = ((uint16(x) >> 1) & 0x5555) | ((x & 0x5555) << 1);
-		x = ((uint16(x) >> 2) & 0x3333) | ((x & 0x3333) << 2);
-		x = ((uint16(x) >> 4) & 0x0f0f) | ((x & 0x0f0f) << 4);
-		return (uint16(x) >> 8) | (x << 8);
+		x = ((x >> 1) & 0x5555) | ((x & 0x5555) << 1);
+		x = ((x >> 2) & 0x3333) | ((x & 0x3333) << 2);
+		x = ((x >> 4) & 0x0f0f) | ((x & 0x0f0f) << 4);
+		return (x >> 8) | (x << 8);
 	}
 
 	/// reverse all the bits
@@ -514,11 +515,26 @@ static struct Bits {
 
 	/// reverse all the bits
 	uint8 swapBits(uint8 x) {
-		x = ((uint8(x) >> 1) & 0x55) | ((x & 0x55) << 1);
-		x = ((uint8(x) >> 2) & 0x33) | ((x & 0x33) << 2);
-		return (uint8(x) >> 4) | (x << 4);
+		x = ((x >> 1) & 0x55) | ((x & 0x55) << 1);
+		x = ((x >> 2) & 0x33) | ((x & 0x33) << 2);
+		return (x >> 4) | (x << 4);
 	}
 
 	/// reverse all the bits
 	inline swapBits(int8 x) = swapBits(uint8(x));
+
+	/// branch-less clamp
+	// adapted from: androidx.constraintlayout.widget.ConstraintAttribute#clamp
+	int32 clamp(int32 value, int32 max) {
+		value &= ~(value >> 31);
+		value -= max;
+		value &= (value >> 31);
+		value += max;
+		return value;
+	}
+
+	/// branch-less clamp
+	int32 clamp(int32 value, int32 min, int32 max) {
+		return clamp(value - min, max - min) + min;
+	}
 }

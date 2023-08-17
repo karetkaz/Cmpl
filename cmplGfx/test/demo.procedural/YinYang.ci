@@ -7,7 +7,7 @@ vec4f yinyang(vec4f in) {
 	float ny = 1 - 2 * in.y;
 	float x = nx * Math.sin(time) - ny * Math.cos(time);
 	float y = nx * Math.cos(time) + ny * Math.sin(time);
-	float h = x*x + y*y;
+	float h = x * x + y * y;
 	if (h < 1.) {
 		float d = Math.abs(y) - h;
 		float a = d - 0.23;

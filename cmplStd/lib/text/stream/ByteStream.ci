@@ -1,25 +1,18 @@
-///@public
+/// Represents the base class of closeable objects like files, streams, etc
 struct Closeable: object {
-	// abstract
-	///@public
+
+	/// Release the resources hold by this object.
 	void close(Closeable this);
-
-	///@public
-	static void skipClose(Closeable closeable) {
-	}
-
-	///@public
-	static void safeClose(Closeable closeable) {
-		if (closeable.close != null) {
-			closeable.close(closeable);
-		}
-	}
 }
 
-/// destroy a closeable invoking the abstract close method
-inline close(Closeable instance) = Closeable.safeClose(instance);
-///@public
-inline void(Closeable instance) = Closeable.safeClose(instance);
+/// Extension method to safely call the close method
+void close(Closeable closeable) {
+	if (closeable.close == null) {
+		// close is disabled, stdout?
+		return;
+	}
+	closeable.close(closeable);
+}
 
 /// ByteReader can be used to read bytes from a stream (~= java:InputStream)
 struct ByteReader: Closeable {

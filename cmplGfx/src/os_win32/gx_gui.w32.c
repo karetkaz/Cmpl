@@ -109,9 +109,9 @@ int getWindowEvent(GxWindow window, int *button, int *x, int *y, int timeout) {
 	static int keyMod = 0;
 
 	MSG msg;
-	if (timeout != 0 && !PeekMessage(&msg, NULL, 0, 0, PM_NOREMOVE)) {
-		// park thread for a while
-		SwitchToThread();
+	if (!PeekMessage(&msg, NULL, 0, 0, PM_NOREMOVE)) {
+		// based on: https://stackoverflow.com/questions/10866311/getmessage-with-a-timeout
+		MsgWaitForMultipleObjects(0, NULL, FALSE, timeout, QS_ALLINPUT);
 		return 0;
 	}
 

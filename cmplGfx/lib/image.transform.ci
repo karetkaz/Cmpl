@@ -60,8 +60,8 @@ void transform(Image image, const Rect rect&, Image src, const Rect roi&, int32 
 	}
 }
 
-///@public
-inline resize(Image image, const Rect rect&, const Image src, const Rect roi&, int interpolate) = image.transform(rect, src, roi, interpolate, null);
+/// Resize the given `region` of the `source` image into the `destination` image using the `interpolation`.
+inline resize(Image destination, const Rect rect&, const Image source, const Rect region&, int interpolation) = destination.transform(rect, source, region, interpolation, null);
 
 /// Create an image by copying another one using a custom width and height
 Image Image(Image image, int width, int height, int align, float64 maxScale) {

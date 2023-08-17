@@ -836,7 +836,7 @@ void addUsage(symn sym, astn tag) {
 	if (tag->id.used != NULL) {
 #ifdef DEBUGGING	// extra check: if this node is linked (.used) it must be in the list
 		astn usage;
-		for (usage = sym->use; usage; usage = usage->ref.used) {
+		for (usage = sym->use; usage; usage = usage->id.used) {
 			if (usage == tag) {
 				break;
 			}

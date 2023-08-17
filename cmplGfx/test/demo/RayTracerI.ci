@@ -176,7 +176,7 @@ int onEvent(int action, int button, int x, int y) {
 	int64 time = System.millis();
 	if (action == Window.KEY_RELEASE && button == Window.KEY_CODE_ESC) {
 		// exit when releasing escape key
-		return -1;
+		return Window.quit();
 	}
 
 	static int ox = 0;

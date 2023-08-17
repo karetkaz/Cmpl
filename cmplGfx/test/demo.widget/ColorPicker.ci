@@ -97,7 +97,8 @@ DebugView debug = {
 	focusable: false;
 };
 
-Window.show(Widget(0, 0).addItems(
+Style style = {format: {}};
+Window.show(Widget(0, 0, style).addItems(
 	colorPicker,
 
 	null,
@@ -112,11 +113,10 @@ Window.show(Widget(0, 0).addItems(
 ));
 
 static void updateTheme() {
-	Widget ui = theme.getWidget();
 	if (theme.selected != 0) {
-		ui.theme(Style.dark, colorPicker.value());
+		style.setColor(Style.dark, colorPicker.value());
 	} else {
-		ui.theme(Style.light, colorPicker.value());
+		style.setColor(Style.light, colorPicker.value());
 	}
 }
 static bool updateColor(ColorPicker this, argb value) {

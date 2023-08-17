@@ -1,6 +1,6 @@
 #!/bin/bash
 
-export "CMPL_HOME=$(dirname "$(dirname "$(stat -f %N "$0")")")"
+export "CMPL_HOME=$(dirname "$(dirname "$(readlink -f "$0")")")"
 echo "cmpl home is: $CMPL_HOME"
 cd "$CMPL_HOME" || exit 1
 

@@ -117,8 +117,11 @@ uint32 hue(argb rgb) {
 	return hue;
 }
 
+/// compute the linear interpolation of the values `a` and `b` by `t` in range 0...255
 inline mix_s8(int32 t, uint32 a, uint32 b) = int32(a + (t * (b - a + 1) >> 8));
+/// compute the linear interpolation of the values `a` and `b` by `t` in range 0...65535
 inline mix_s16(int32 t, uint32 a, uint32 b) = int32(a + (t * (b - a + 1) >> 16));
+/// compute the linear interpolation of the colors `a` and `b` by `t` in range 0...255
 inline mix_rgb8(int32 t, argb a, argb b) = argb(mix_s8(t, rch(a), rch(b)), mix_s8(t, gch(a), gch(b)), mix_s8(t, bch(a), bch(b)));
 
 /// linear interpolate a lookup-table with the given colors

@@ -1,4 +1,4 @@
-///@public
+/// Month of year, January is 1, February is 2, ...
 enum Month: uint8 {
 	January: 1;
 	February;
@@ -18,7 +18,7 @@ inline Month(int index) = Month(emit(int32(index + Month.January)));
 /// FIXME: implement enum indexing
 inline indexOf(Month value) = int32(value - Month.January);
 
-///@public
+/// Day of week, Monday is 1, Tuesday is 2, ...
 enum Weekday: uint8 {
 	Monday: 1;
 	Tuesday;
@@ -33,7 +33,7 @@ inline Weekday(int index) = Weekday(emit(int32(index + Weekday.Monday)));
 /// FIXME: implement enum indexing
 inline indexOf(Weekday value) = int32(value - Weekday.Monday);
 
-///@public
+/// Type of the calendar
 enum Calendar: uint8 {
 	Gregorian;
 //	Buddhist;
@@ -75,8 +75,6 @@ struct Datetime {
 	/// Milliseconds of second: 0 ... 999
 	const uint16 millis = 0;
 
-	// Zone
-	// const bool dayLightSaving;	// day light saving's time
 	/// timezone
 	const Timezone timezone;
 
@@ -114,7 +112,7 @@ struct Datetime {
 		return true;
 	}
 
-	///@public
+	/// Add the amount of `years`, `months` and `days` to the datetime
 	static Datetime add(Datetime cal, int years, int months, int days) {
 		int year = cal.year + years;
 
@@ -147,8 +145,38 @@ struct Datetime {
 	}
 }
 
-///@public
-Datetime Datetime(Calendar calendar, Timezone timezone, Timestamp timestamp) {
+/// Convert the given Datetime `value` to a timestamp (milliseconds since 1970)
+Timestamp Timestamp(Datetime value) {
+	int year = value.year;
+	if (year < 0 || year > 9999) {
+		trace("invalid year", year);
+		return Timestamp(1D << 63, Timestamp.precision);
+	}
+
+	int month = value.month;
+	if (month < Month.January || month > Month.December) {
+		trace("invalid month", month);
+		month = Math.clamp(month, int32(Month.January), int32(Month.December));
+	}
+
+	const int DaysToMonth[*] = Datetime.isLeapYear(year) ? Datetime.DaysToMonth366 : Datetime.DaysToMonth365;
+
+	int day = value.day;
+	int daysInYear = DaysToMonth[month - 1];
+	int daysInMonth = DaysToMonth[month] - daysInYear;
+	if (day < 1 || day > daysInMonth) {
+		trace("invalid day of month", day);
+		day = Math.clamp(day, 1, daysInMonth);
+	}
+
+	int y = year - 1;
+	int64 d = y * 365 + y / 4 - y / 100 + y / 400 + daysInYear + day - 1 - Datetime.DaysTil1970;
+	int64 t = (((d * 24 + value.hour) * 60 + value.minute) * 60 + value.second) * 1000 + value.millis;
+	return Timestamp(t, Timeunit.Millis);
+}
+
+/// Convert the given `timestamp` to a datetime(year, month, day, ...) using the given `calendar` and `timezone`
+Datetime Datetime(Timestamp timestamp, Calendar calendar, Timezone timezone) {
 	assert(calendar == Calendar.Gregorian);
 	enum: int {
 		// Number of days in a non-leap year
@@ -238,10 +266,10 @@ Datetime Datetime(Calendar calendar, Timezone timezone, Timestamp timestamp) {
 	};
 }
 
-///@public
-inline Datetime(Timestamp time) = Datetime(Calendar.Gregorian, Timezone.utc(), time);
+/// Convert the given timestamp to a datetime
+inline Datetime(Timestamp timestamp) = Datetime(timestamp, Calendar.Gregorian, Timezone.utc());
 
-///@public
+/// Construct the Datetime from the given parts
 Datetime Datetime(int year, int month, int day, int hour, int minute, int second, int millis, Timezone zone) {
 	return {
 		year: year;
@@ -255,61 +283,26 @@ Datetime Datetime(int year, int month, int day, int hour, int minute, int second
 		weekOfYear: 0;
 		dayOfYear: 0;
 		dayOfWeek: Weekday.Monday;
-		leapYear: false;
+		leapYear: Datetime.isLeapYear(year);
 	};
 }
 
-///@public
+/// Construct the Datetime from the given parts
 Datetime Datetime(int year, int month, int day, int hour, int minute, int second, int millis) {
 	return Datetime(year, month, day, hour, minute, second, millis, Timezone.utc());
 }
 
-///@public
+/// Construct the Datetime from the given parts
 Datetime Datetime(int year, int month, int day, int hour, int minute, int second, Timezone zone) {
 	return Datetime(year, month, day, hour, minute, second, 0, zone);
 }
 
-///@public
+/// Construct the Datetime from the given parts
 Datetime Datetime(int year, int month, int day, Timezone zone) {
 	return Datetime(year, month, day, 0, 0, 0, 0, zone);
 }
 
-///@public
+/// Construct the Datetime from the given parts
 Datetime Datetime(int year, int month, int day) {
 	return Datetime(year, month, day, 0, 0, 0, 0, Timezone.utc());
-}
-
-///@public
-Timestamp Timestamp(Datetime value) {
-	int year = value.year;
-	if (year < 0 || year > 9999) {
-		trace("invalid year", year);
-		return Timestamp(1D << 63, Timestamp.precision);
-	}
-
-	int month = value.month;
-	if (month < Month.January || month > Month.December) {
-		trace("invalid month", month);
-		month = Math.clamp(month, int32(Month.January), int32(Month.December));
-	}
-
-	const int DaysToMonth[*] = Datetime.isLeapYear(year) ? Datetime.DaysToMonth366 : Datetime.DaysToMonth365;
-
-	int day = value.day;
-	int daysInYear = DaysToMonth[month - 1];
-	int daysInMonth = DaysToMonth[month] - daysInYear;
-	if (day < 1 || day > daysInMonth) {
-		trace("invalid day of month", day);
-		day = Math.clamp(day, 1, daysInMonth);
-	}
-
-	int y = year - 1;
-	int64 d = y * 365 + y / 4 - y / 100 + y / 400 + daysInYear + day - 1 - Datetime.DaysTil1970;
-	int64 t = (((d * 24 + value.hour) * 60 + value.minute) * 60 + value.second) * 1000 + value.millis;
-	return Timestamp(t, Timeunit.Millis);
-}
-
-///@public
-Datetime addDays(Datetime datetime, int value) {
-	return Datetime(Timestamp(datetime).add(value, Timeunit.Days));
 }

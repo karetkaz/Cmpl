@@ -1,0 +1,44 @@
+int32 arr[5] = {1,2,3,4,5};
+pointer ptr = arr;
+int32 a0& = arr[0];
+int32 a1& = arr[1];
+int32 a2& = arr[2];
+int32 a3& = arr[3];
+int32 a4& = arr[4];
+
+assert(ptr == arr);
+assert(pointer(a0) == ptr.inc(0 * sizeof(int32)));
+assert(pointer(a1) == ptr.inc(1 * sizeof(int32)));
+assert(pointer(a2) == ptr.inc(2 * sizeof(int32)));
+assert(pointer(a3) == ptr.inc(3 * sizeof(int32)));
+assert(pointer(a4) == ptr.inc(4 * sizeof(int32)));
+
+/* todo: extend struct pointer {
+	/// read int32 value and advance
+	pointer read(pointer ptr, int32 value&) {
+		int32 ref& = ptr;
+		value = ref;
+		return ptr + sizeof(int32);
+	}
+
+	pointer read(pointer ptr, uint8 value&) {...}
+	pointer read(pointer ptr, uint16 value&) {...}
+	pointer read(pointer ptr, uint32 value&) {...}
+	pointer read(pointer ptr, uint64 value&) {...}
+	pointer read(pointer ptr, float32 value&) {...}
+	pointer read(pointer ptr, float64 value&) {...}
+	pointer read(pointer ptr, variant value&) {...}
+
+	/// volatile read
+	atomicGet(pointer ptr, int value&) {...}
+	atomicExchange(pointer ptr, int value) {...}
+	atomicGetAndSet(pointer ptr, int value) {...}     // ?= atomicExchange
+	atomicSetAndGet(pointer ptr, int value) {...}     // ?: not needed
+	atomicAddAndGet(pointer ptr, int value) {...}
+}*/
+
+/* todo: fix reference equality comparison with pointer
+assert(a0 == null); // fixme
+assert(a0 == ptr); // fixme
+assert(ptr == a0); // fixme
+// */

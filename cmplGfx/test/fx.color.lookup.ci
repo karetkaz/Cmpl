@@ -193,7 +193,6 @@ Switch auto = {
 	text: "auto";
 	states: options;
 	focusable: true;
-	clickToFocus: true;
 };
 
 DebugView debug = {

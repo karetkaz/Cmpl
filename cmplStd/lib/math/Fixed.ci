@@ -34,23 +34,23 @@ struct Fixed {
 
 	static Fixed as(int32 value) { return {value: value}; }
 
-	///@public
+	/// Computes the negated value of the given number.
 	static Fixed neg(Fixed a) { return {value: -a.value}; }
 
-	///@public
+	/// Adds the two fixed point numbers.
 	static Fixed add(Fixed a, Fixed b) { return {value: a.value + b.value}; }
 	static Fixed add(Fixed a, int32 b) { return {value: a.value + b}; }
 
-	///@public
+	/// Subtract one from another fixed point number.
 	static Fixed sub(Fixed a, Fixed b) { return {value: a.value - b.value}; }
 	static Fixed sub(Fixed a, int32 b) { return {value: a.value - b}; }
 
-	///@public
+	/// Multiply two fixed-point numbers.
 	static Fixed mul(Fixed a, Fixed b) { return {value: (int64(a.value) * b.value) >> precision}; }
 	static Fixed mul(Fixed a, int32 b) { return {value: a.value * b}; }
 	static Fixed mul_28(Fixed a, int32 b) { return {value: int64(a.value) * b >> 28}; }
 
-	///@public
+	/// Divide one fixed-point number with another one.
 	static Fixed div(Fixed a, Fixed b) {
 		if (b.value == 0) {
 			if (a.value == 0) {
@@ -62,10 +62,10 @@ struct Fixed {
 	}
 	static Fixed div(Fixed a, int32 b) { return {value: a.value / b}; }
 
-	///@public
+	/// Returns the remainder of the division of `a` by `b`.
 	static Fixed mod(Fixed a, Fixed b) { return {value: a.value % b.value}; }
 
-	///@public
+	/// Compute the reciprocal of a complex number (1 / a)
 	static Fixed inv(Fixed x) {
 		if (x.value == 0) {
 			return {value: inf};
@@ -86,17 +86,17 @@ struct Fixed {
 		return {value: x.value & (nan|mask)};
 	}
 
-	///@public
+	/// Computes the largest integer that is less than or equal to `x`.
 	static Fixed floor(Fixed x) {
 		return {value: x.value & ~mask};
 	}
 
-	///@public
+	/// Computes the smallest integer that is greater than or equal to `x`.
 	static Fixed ceil(Fixed x) {
 		return neg(floor(neg(x)));
 	}
 
-	///@public
+	/// Computes the nearest integer to `x`.
 	static Fixed round(Fixed x) {
 		return floor(as(x.value + half));
 	}
@@ -723,13 +723,13 @@ struct Fixed {
 	}
 }
 
-///@public
+/// Convert the integer `value` to fixed-point value
 inline Fixed(int32 value) = Fixed.as(value << Fixed.precision);
 
-///@public
+/// Convert the fixed point `value` to integer value
 inline int32(const Fixed value&) = value.value >> Fixed.precision;
 
-///@public
+/// Convert the floating point `value` to fixed-point value
 //inline Fixed(float64 value) = Fixed.as(value * (1 << Fixed.precision));
 Fixed Fixed(float64 value) {
 	Fixed result = Fixed.as(value * (1 << Fixed.precision));
@@ -747,18 +747,18 @@ Fixed Fixed(float64 value) {
 	return result;
 }
 
-///@public
+/// Convert the fixed point `value` to floating point value
 //inline float64(const Fixed value&) = value.value / float64(1 << Fixed.precision);
-float64 float64(Fixed x) {
-	if (x.value == Fixed.nan) {
+float64 float64(Fixed value) {
+	if (value.value == Fixed.nan) {
 		return Math.nan;
 	}
-	if (x.value == Fixed.inf) {
+	if (value.value == Fixed.inf) {
 		return Math.inf;
 	}
-	if (x.value == -Fixed.inf) {
+	if (value.value == -Fixed.inf) {
 		return -Math.inf;
 	}
 
-	return x.value / float64(1 << Fixed.precision);
+	return value.value / float64(1 << Fixed.precision);
 }

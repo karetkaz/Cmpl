@@ -13,6 +13,7 @@ inline "lang/overload.inline.ci";
 // native calls
 inline "lang/memory.ci";
 inline "lang/tryExec.ci";
+inline "lang/pointer.ci";
 
 
 // Variables

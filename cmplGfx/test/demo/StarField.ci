@@ -60,7 +60,7 @@ int onEvent(int action, int btn, int x, int y) {
 
 	if (action == Window.KEY_PRESS) {
 		if (btn == Window.KEY_CODE_ESC) {
-			return -1;
+			return Window.quit();
 		}
 		if (btn == '[') {
 			Star.speed -= 1;

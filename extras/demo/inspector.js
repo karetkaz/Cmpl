@@ -245,19 +245,19 @@ function Inspector(data, callback) {
         createSymbolLinks: null, // 'window.location.href="#${file}:${line}";',
         createTraceEventsUrl: function() {
             let value = '';
-            function ms(ticks) { return ticks * 1000 / data.ticksPerSec; }
+            function us(ticks) { return ticks * 1000000 / data.ticksPerSec; }
             function printCall(node) {
                 if (value !== '') {
                     value += ",";
                 }
                 value += "{";
                 value += "\"cat\":\"function\",";
-                value += "\"dur\":" + ms(node.leave - node.enter) + ',';
+                value += "\"dur\":" + us(node.leave - node.enter) + ',';
                 value += "\"name\":\"" + (node.func || {})[''] + "\",";
                 value += "\"ph\":\"X\",";
                 value += "\"pid\":0,";
                 value += "\"tid\":" + 0 + ",";
-                value += "\"ts\":" + ms(node.enter);
+                value += "\"ts\":" + us(node.enter - samples.enter);
                 value += "}\n";
                 for (let child of (node.callTree || [])) {
                     try {

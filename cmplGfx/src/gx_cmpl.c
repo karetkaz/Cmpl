@@ -913,22 +913,21 @@ static void exitMainLoop(mainLoopArgs args) {
 
 static void mainLoopCallback(mainLoopArgs args) {
 #ifdef __EMSCRIPTEN__
-	args->event.action = getWindowEvent(args->window, &args->event.button, &args->event.x, &args->event.y, 1);
+	int timeout = 0; // workaround for webassembly
 #else
-	args->event.action = getWindowEvent(args->window, &args->event.button, &args->event.x, &args->event.y, args->timeout != 0);
+	int timeout = (int) (args->timeout - timeMillis());
+	if (timeout < 0) timeout = 0;
 #endif
-
+	args->event.action = getWindowEvent(args->window, &args->event.button, &args->event.x, &args->event.y, timeout);
 	if (args->event.action == WINDOW_CLOSE) {
 		// window is closing, quit loop
 		return exitMainLoop(args);
 	}
 
+	uint64_t now = timeMillis();
 	if (args->event.action == 0) {
 		// skip unknown events
-		if (args->timeout == 0) {
-			return;
-		}
-		if (args->timeout > timeMillis()) {
+		if (args->timeout > now) {
 			return;
 		}
 		args->event.action = EVENT_TIMEOUT;
@@ -936,24 +935,23 @@ static void mainLoopCallback(mainLoopArgs args) {
 
 	symn callback = args->callback;
 	if (callback != NULL) {
-		int32_t timeout;
 		rtContext rt = args->rt;
 		args->error = rt->api.invoke(rt, callback, &timeout, &args->event, args);
-		if (args->error != noError || timeout < 0) {
+		if (args->error != noError) {
 			return exitMainLoop(args);
 		}
-		if (timeout != 0) {
-			args->timeout = timeout + timeMillis();
-		} else {
-			args->timeout = 0;
+		if (timeout == 0) {
+			// todo: allow timeout of 0 milliseconds
+			timeout = INT32_MAX;
 		}
 	} else {
 		if (args->event.action == KEY_RELEASE && args->event.button == KEY_CODE_ESC) {
 			// if there is no callback, exit wit esc key
 			return exitMainLoop(args);
 		}
-		args->timeout = 0;
+		timeout = INT32_MAX;
 	}
+	args->timeout = now + timeout;
 	flushWindow(args->window);
 }
 
@@ -966,26 +964,26 @@ static vmError window_show(nfcContext ctx) {
 
 	struct mainLoopArgs args = {0};
 	args.rt = rt;
-	args.callback = rt->api.rtLookup(ctx->rt, cbOffs, KIND_fun);
 	args.error = noError;
-	args.timeout = 0;
+	args.callback = rt->api.rtLookup(ctx->rt, cbOffs, KIND_fun);
 	args.event.closure = (vmOffs) cbClosure;
 
+	int timeout = 0;
 	args.window = createWindow(offScreen, rt->main->unit);
 	if (args.callback != NULL) {
 		args.event.action = WINDOW_INIT;
 		args.event.button = 0;
 		args.event.x = 0;
 		args.event.y = 0;
-		int32_t timeout;
 		vmError error = rt->api.invoke(rt, args.callback, &timeout, &args.event, &args);
-		if (error != noError || timeout < 0) {
+		if (error != noError) {
 			return error;
 		}
-		if (timeout != 0) {
-			args.timeout = timeout + timeMillis();
+		if (timeout == 0) {
+			timeout = INT32_MAX;
 		}
 	}
+	args.timeout = timeout + timeMillis();
 	flushWindow(args.window);
 
 #ifdef __EMSCRIPTEN__
@@ -1010,12 +1008,24 @@ static vmError window_show(nfcContext ctx) {
 
 static const char *const proto_window_title = "void setTitle(const char title[*])";
 static vmError window_title(nfcContext ctx) {
-	char *title = nextArg(ctx).ref;
 	mainLoopArgs args = (mainLoopArgs) ctx->extra;
 	if (args != NULL && args->window != NULL) {
+		char *title = nextArg(ctx).ref;
 		setWindowTitle(args->window, title);
+		return noError;
 	}
-	return noError;
+	return nativeCallError;
+}
+
+static const char *const proto_window_quit = "int32 quit()";
+static vmError window_quit(nfcContext ctx) {
+	mainLoopArgs args = (mainLoopArgs) ctx->extra;
+	if (args != NULL && args->window != NULL) {
+		exitMainLoop(args);
+		reti32(ctx, 0);
+		return noError;
+	}
+	return nativeCallError;
 }
 
 static const char *const proto_camera_set = "void camera(const float32 proj[16], const float32 position[4], const float32 forward[4], const float32 right[4], const float32 up[4])";
@@ -1563,6 +1573,7 @@ int cmplInit(rtContext rt) {
 	nfcWindow[] = {
 		{window_show,  proto_window_show},
 		{window_title, proto_window_title},
+		{window_quit,  proto_window_quit},
 		{surf_font,    proto_font_resized},
 		{surf_font,    proto_font_default},
 	},
@@ -1598,10 +1609,16 @@ int cmplInit(rtContext rt) {
 	ccContext cc = rt->cc;
 
 	// rectangle in 2d
-	rt->api.ccAddUnit(cc, NULL, 0, "struct Rect:1 {\n"
+	rt->api.ccAddUnit(cc, NULL, 0,
+		"/// The Rect type represents a rectangle in the plain.\n"
+		"struct Rect:1 {\n"
+		"	/// Represents the left edge of the rectangle\n"
 		"	int32 x0 = 0;\n"
+		"	/// Represents the top edge of the rectangle\n"
 		"	int32 y0 = 0;\n"
+		"	/// Represents the right edge of the rectangle\n"
 		"	int32 x1 = 0;\n"
+		"	/// Represents the bottom edge of the rectangle\n"
 		"	int32 y1 = 0;\n"
 		"}\n"
 	);

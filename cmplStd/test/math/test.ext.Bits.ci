@@ -87,6 +87,58 @@ for (int i = 0; i < 65536; i += 1) {
 			}
 		}
 	}
+
+	inline min = 10;
+	inline max = 300;
+	// both clamps are undefined if min > max, same result as: min(max(value, min), max)
+	assert(Bits.clamp(i, min, max) == Math.clamp(i, min, max), "assertion failed", i);
+	assert(Bits.clamp(-i, min, max) == Math.clamp(-i, min, max), "assertion failed", i);
+	assert(Bits.clamp(i, -min, max) == Math.clamp(i, -min, max), "assertion failed", i);
+	assert(Bits.clamp(-i, -min, max) == Math.clamp(-i, -min, max), "assertion failed", i);
+	assert(Bits.clamp(i, min, -max) == Math.clamp(i, min, -max), "assertion failed", i);
+	assert(Bits.clamp(-i, min, -max) == Math.clamp(-i, min, -max), "assertion failed", i);
+	assert(Bits.clamp(i, -max, min) == Math.clamp(i, -max, min), "assertion failed", i);
+	assert(Bits.clamp(-i, -max, min) == Math.clamp(-i, -max, min), "assertion failed", i);
+	assert(Bits.clamp(i, -min, -max) == Math.clamp(i, -min, -max), "assertion failed", i);
+	assert(Bits.clamp(-i, -min, -max) == Math.clamp(-i, -min, -max), "assertion failed", i);
+	assert(Bits.clamp(i, -max, -min) == Math.clamp(i, -max, -min), "assertion failed", i);
+	assert(Bits.clamp(-i, -max, -min) == Math.clamp(-i, -max, -min), "assertion failed", i);
+}
+
+struct BitMinMax {
+	const int bitSize;
+	const int64 signedMin;
+	const int64 signedMax;
+	const uint64 unsignedMax;
+
+	static BitMinMax get(int bitSize) {
+		int64 mask = ~(int64(-1) << bitSize);
+		if (bitSize >= 64) {
+			bitSize = 64;
+			mask = -1U;
+		}
+
+		uint64 min = -1U << (bitSize - 1);
+		if (bitSize <= 0) {
+			bitSize = 0;
+			min = 0;
+		}
+
+		return {
+			bitSize: bitSize;
+			signedMin: min;
+			signedMax: (min - 1) & mask;
+			unsignedMax: mask;
+		};
+	}
+}
+
+for (int i = 1; i <= 64; i += 1) {
+	BitMinMax bitMinMax = BitMinMax.get(i);
+	debug("bits", bitMinMax);
+	assert(bitMinMax.signedMin < 0, "error", bitMinMax);
+	assert(bitMinMax.signedMax >= 0, "error", bitMinMax);
+	assert(bitMinMax.unsignedMax != bitMinMax.signedMax, "error", bitMinMax);
 }
 
 /* TODO: leftovers

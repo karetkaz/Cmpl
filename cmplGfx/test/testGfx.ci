@@ -67,7 +67,7 @@ static int onEvent(int action, int button, int x, int y) {
 
 	debug("event", event);
 	if (action == Window.KEY_RELEASE && button == Window.KEY_CODE_ESC) {
-		return -1;
+		return Window.quit();
 	}
 
 	static if (true) {
@@ -114,7 +114,7 @@ static int onEvent(int action, int button, int x, int y) {
 			x1: image.width();
 			y1: image.height();
 		};
-		if (ui.parent == null) {
+		if (ui.parent() == null) {
 			ui.onCreate(ui, ui);
 			ui.onMeasure(ui, &rect);
 		}

@@ -27,7 +27,7 @@ int onEvent(int action, int button, int ex, int ey) {
 	if (action == Window.KEY_RELEASE) {
 		if (button == Window.KEY_CODE_ESC) {
 			// exit with escape button
-			return -1;
+			return Window.quit();
 		}
 		if (button == ' ') {
 			smooth = !smooth;
@@ -61,9 +61,9 @@ int onEvent(int action, int button, int ex, int ey) {
 	inline radius = 5;
 	font.clipText(&roiClock, txtClock);
 	roiClock.position(x1 - roiClock.width() / 2, y1 + y1 / 3);
-	Style.padded(&roiClock, padding);
+	roiClock.padded(padding);
 	offs.fillRRect(roiClock, radius, 0x101010);
-	Style.padded(&roiClock, -padding);
+	roiClock.padded(-padding);
 	offs.drawText(roiClock, font, txtClock, 0xadadad);
 
 	inline secondsInMillis = 1000;

@@ -79,9 +79,9 @@ struct DatePicker: Layout {
 		int day = this.btnDay.value;
 
 		// fill the days in the "grid", skip header with week names
-		for (int i = 8; i < this.btnDays.itemCount; i += 1) {
+		for (int i = 8; i < this.btnDays.size(); i += 1) {
 			Datetime parts = Datetime(start);
-			View btn = this.btnDays.items[i].view;
+			View btn = this.btnDays.getView(i);
 			if (WeekButton button = btn.as(WeekButton)) {
 				button.update(parts.weekOfYear);
 			}

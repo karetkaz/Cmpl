@@ -1,5 +1,9 @@
 static TextWriter out = AsciiWriter {
-	writer: FileWriter { file: File.log, close: null };
+	writer: FileWriter {
+		file: File.log;
+		close: null;
+	};
+	format: {};
 };
 
 Datetime now = Datetime(Timestamp.now());
@@ -23,7 +27,7 @@ for (Timestamp day = start; day.compare(end) < 0; day = day.add(1, Timeunit.Days
 		out.write("Week ")
 			.write(lastWeek, flagsDate)
 			.write(", starting on: ")
-			.write(date.year)
+			.write(date.year, flagsDate)
 			.write("/")
 			.write(int32(date.month), flagsDate)
 			.write("/")

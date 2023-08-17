@@ -1,10 +1,15 @@
+/// Simple camera for 3d transformations and projection.
 struct Camera {
+	///@public
 	vec4f position = vec4f(0, 0, 0, 1);
+	///@public
 	vec4f forward = vec4f(0, 0, 0, 1);
+	///@public
 	vec4f right = vec4f(0, 0, 0, 1);
+	///@public
 	vec4f up = vec4f(0, 1, 0, 1);
 
-	/// create an orthographic or perspective projection matrix
+	/// Create an orthographic(`fov` == 0) or perspective projection matrix
 	static mat4f projection(float32 fov, float32 asp, float32 n, float32 f) {
 		float32 bot = 1;
 		float32 nf = n - f;

@@ -104,7 +104,7 @@ for (int n = 0; n < domains.length; n += 1) {
 	Domain domain& = domains[n];
 	float64 scale = Math.abs(domain.hi - domain.lo) / Fixed.one;
 	float64 translate = domain.lo;
-	for (int32 Y = 0; Y < Fixed.one; Y += 1) {
+	for (int32 Y = 0; Y < Fixed.one; Y += 127) {
 		Fixed f = Fixed(Y * scale + translate);
 		float64 x = float64(f);
 

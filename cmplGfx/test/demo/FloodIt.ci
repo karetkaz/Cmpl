@@ -46,7 +46,7 @@ int onEvent(int action, int button, int x, int y) {
 	static int moves = 0;
 	if (action == Window.KEY_RELEASE && button == Window.KEY_CODE_ESC) {
 		// exit when releasing escape key
-		return -1;
+		return Window.quit();
 	}
 	if (action == Window.WINDOW_CLOSE) {
 		info("moves used", moves);
